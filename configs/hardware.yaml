@@ -1,0 +1,52 @@
+# Hardware configurations for supported GPUs
+# sm_count: total number of streaming multiprocessors
+# memory_bw_GBs: peak memory bandwidth in GB/s
+# memory_GB: total HBM/GDDR capacity
+
+a100_40gb:
+  name: "NVIDIA A100 40GB"
+  sm_count: 108
+  memory_bw_GBs: 1555
+  memory_GB: 40
+  compute_fp16_tflops: 312
+  sm_sweep_steps: [11, 22, 33, 44, 54, 65, 87, 108]  # ~10% increments
+
+a100_80gb:
+  name: "NVIDIA A100 80GB"
+  sm_count: 108
+  memory_bw_GBs: 2000
+  memory_GB: 80
+  compute_fp16_tflops: 312
+  sm_sweep_steps: [11, 22, 33, 44, 54, 65, 87, 108]
+
+h100_sxm:
+  name: "NVIDIA H100 SXM5"
+  sm_count: 132
+  memory_bw_GBs: 3350
+  memory_GB: 80
+  compute_fp16_tflops: 989
+  sm_sweep_steps: [14, 27, 40, 53, 66, 79, 106, 132]
+
+rtx_4090:
+  name: "NVIDIA RTX 4090"
+  sm_count: 128
+  memory_bw_GBs: 1008
+  memory_GB: 24
+  compute_fp16_tflops: 165
+  sm_sweep_steps: [13, 26, 38, 51, 64, 77, 102, 128]
+
+rtx_5060ti:
+  name: "NVIDIA RTX 5060 Ti"
+  sm_count: 36
+  memory_bw_GBs: 448
+  memory_GB: 16
+  compute_fp16_tflops: 55
+  sm_sweep_steps: [4, 8, 12, 18, 24, 30, 36]
+
+# Auto-detect: query at runtime with pynvml
+auto:
+  name: "auto"
+  sm_count: null
+  memory_bw_GBs: null
+  memory_GB: null
+  sm_sweep_steps: null  # computed as 8 steps from 10% to 100%

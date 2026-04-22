@@ -1,0 +1,49 @@
+zamba2:
+  full_name: "Zamba2-1.2B"
+  hf_repo: "Zyphra/Zamba2-1.2B"
+  hidden_size: 2048
+  num_layers: 54
+  # SSM (Mamba-2) layers
+  ssm:
+    n_heads: 64
+    head_dim: 32
+    d_state: 128
+    chunk_size: 256
+    expand: 2
+    # layer indices that are SSM (rest are Attention)
+    # Zamba2: mostly SSM with periodic attention
+    ssm_layer_fraction: 0.889  # ~48/54 layers are SSM
+  # Attention layers
+  attention:
+    num_heads: 8
+    num_kv_heads: 8
+    head_dim: 256
+    # attention appears every ~6 layers
+    attn_layer_fraction: 0.111
+  # MLP
+  mlp:
+    intermediate_size: 4096
+    # fused with SSM blocks
+
+falcon_h1:
+  full_name: "Falcon-H1-1.5B"
+  hf_repo: "tiiuae/Falcon-H1-1.5B"
+  hidden_size: 2048
+  num_layers: 32
+  # SSM (parallel Mamba-2) branch
+  ssm:
+    n_heads: 32
+    head_dim: 64
+    d_state: 64
+    chunk_size: 256
+    expand: 1
+    ssm_layer_fraction: 0.75   # ~24/32 layers are hybrid SSM+Attn
+  # Attention branch (in hybrid layers)
+  attention:
+    num_heads: 8
+    num_kv_heads: 4
+    head_dim: 256
+    attn_layer_fraction: 0.75  # all hybrid layers have both SSM+Attn
+  # MLP
+  mlp:
+    intermediate_size: 5504
