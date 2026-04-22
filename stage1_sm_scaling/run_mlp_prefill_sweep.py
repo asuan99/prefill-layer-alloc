@@ -31,8 +31,8 @@ def run_sweep(
     hw_cfg: dict,
     seq_lens: list[int],
     batch_sizes: list[int],
-    n_warmup: int = 10,
-    n_measure: int = 50,
+    n_warmup: int = 100,
+    n_measure: int = 200,
     output_dir: Path = None,
 ) -> list[dict]:
     if output_dir is None:
