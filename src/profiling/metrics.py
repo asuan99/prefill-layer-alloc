@@ -3,6 +3,16 @@ Latency and bandwidth measurement utilities.
 
 Provides CUDA-event based timing (eliminates CPU-GPU transfer overhead)
 and bandwidth estimation from tensor sizes and measured latency.
+
+Bandwidth estimation notes:
+  achieved_bandwidth_GBs = total_bytes_transferred / latency_s
+  This is a lower-bound estimate: only explicit tensor reads/writes are counted;
+  intermediate scratchpad traffic (e.g. softmax tiles in flash-attn, SSM dt/B/C)
+  is excluded, so actual hardware BW may be higher.
+
+  theoretical_bw_GBs is derived from torch device properties:
+    BW = 2 × memory_clock_rate_KHz × 1e3 × memory_bus_width_bits / 8 / 1e9
+  This matches the spec-sheet peak BW for DDR-type memories (HBM, GDDR).
 """
 
 import numpy as np
@@ -43,27 +53,18 @@ class LatencyMeter:
             kwargs: Keyword args for fn.
 
         Returns:
-            dict with latency statistics in milliseconds:
-                latency_ms       - median latency
-                latency_mean_ms  - mean latency
-                latency_p99_ms   - 99th percentile
-                latency_min_ms   - minimum
-                latency_max_ms   - maximum
-                latency_std_ms   - standard deviation
+            dict with latency statistics in milliseconds.
         """
         if kwargs is None:
             kwargs = {}
 
-        # Create CUDA events for timing
         start_events = [torch.cuda.Event(enable_timing=True) for _ in range(n_measure)]
         end_events = [torch.cuda.Event(enable_timing=True) for _ in range(n_measure)]
 
-        # Warm-up
         for _ in range(n_warmup):
             fn(*args, **kwargs)
         torch.cuda.synchronize()
 
-        # Measurement
         for i in range(n_measure):
             start_events[i].record()
             fn(*args, **kwargs)
@@ -100,12 +101,8 @@ class LatencyMeter:
     ) -> dict:
         """CPU-timer measurement with configurable synchronization.
 
-        Useful for measuring operations that include CPU overhead
-        (e.g., SM reconfiguration calls).
-
-        Args:
-            sync_before: If True, synchronize CUDA before starting the timer.
-            sync_after: If True, synchronize CUDA after the operation.
+        Useful for measuring operations that include CPU-side overhead
+        (e.g., SM reconfiguration calls via libsmctrl).
         """
         import time
 
@@ -139,33 +136,53 @@ class LatencyMeter:
 
 
 class BandwidthEstimator:
-    """Estimates achieved memory bandwidth from tensor sizes and latency.
+    """Estimates achieved and theoretical memory bandwidth.
 
-    For memory-bound operations (SSM prefill, attention), bandwidth
-    utilization is a better saturation indicator than raw latency.
+    Theoretical BW formula (DDR, HBM):
+      BW_GBs = 2 × mem_clock_KHz × 1e3 × bus_width_bits / 8 / 1e9
+
+    where:
+      mem_clock_KHz  = torch.cuda.get_device_properties().memory_clock_rate
+      bus_width_bits = torch.cuda.get_device_properties().memory_bus_width
+
+    This correctly handles HBM (A100: 1215 KHz × 5120 bits → 1555 GB/s),
+    GDDR6 (RTX 4090: 10501 KHz × 384 bits → 1008 GB/s), etc.
     """
 
-    def __init__(self, device_id: int = 0):
+    def __init__(self, device_id: int = 0, theoretical_bw_GBs: Optional[float] = None):
         self.device_id = device_id
-        self._theoretical_bw_GBs = self._query_theoretical_bw()
+        if theoretical_bw_GBs is not None:
+            self._theoretical_bw_GBs = theoretical_bw_GBs
+        else:
+            self._theoretical_bw_GBs = self._query_theoretical_bw()
 
     def _query_theoretical_bw(self) -> float:
-        """Query peak memory bandwidth from pynvml or use a hardcoded table."""
+        """Query peak memory bandwidth from torch device properties.
+
+        Uses the correct formula:
+          BW = 2 × memory_clock_rate(KHz) × 1e3 Hz/KHz × memory_bus_width(bits)
+               / 8 (bits/byte) / 1e9 (bytes/GB)
+        """
         try:
-            import pynvml
-            pynvml.nvmlInit()
-            handle = pynvml.nvmlDeviceGetHandleByIndex(self.device_id)
-            # Memory clock in MHz, bus width in bits
-            mem_clock_mhz = pynvml.nvmlDeviceGetMaxClockInfo(
-                handle, pynvml.NVML_CLOCK_MEM
-            )
             props = torch.cuda.get_device_properties(self.device_id)
-            # Approximate: BW = 2 × mem_clock × bus_width / 8 (GB/s)
-            # pynvml doesn't expose bus width directly; use torch props
-            # This is a rough estimate; hardware.yaml has accurate values
-            return float(mem_clock_mhz * 2 / 1000)  # very rough placeholder
+            # memory_clock_rate: effective clock in KHz (already accounts for DDR)
+            # For HBM and GDDR, torch reports the per-pin rate; ×2 for DDR.
+            mem_clock_hz = props.memory_clock_rate * 1e3      # KHz → Hz
+            bus_width_bits = props.memory_bus_width            # bits
+
+            # Factor 2 for Double Data Rate (DDR / HBM2 both transfer on both edges)
+            bw_GBs = (2.0 * mem_clock_hz * bus_width_bits) / (8.0 * 1e9)
+            return bw_GBs
         except Exception:
-            return 1000.0  # fallback: 1 TB/s (A100-class)
+            return 1000.0  # safe fallback: 1 TB/s
+
+    @property
+    def theoretical_bw_GBs(self) -> float:
+        return self._theoretical_bw_GBs
+
+    def set_theoretical_bw(self, bw_GBs: float) -> None:
+        """Override theoretical BW from hardware.yaml (recommended)."""
+        self._theoretical_bw_GBs = bw_GBs
 
     def estimate(
         self,
@@ -173,20 +190,29 @@ class BandwidthEstimator:
         write_bytes: int,
         latency_ms: float,
     ) -> dict:
-        """Estimate achieved bandwidth from transfer size and latency.
+        """Estimate achieved bandwidth from transfer size and measured latency.
+
+        achieved_GBs = (read_bytes + write_bytes) / latency_s
+
+        Note: read_bytes + write_bytes should include:
+          - activation tensor reads and writes
+          - weight parameter reads (loaded from HBM once per forward)
+        but NOT L2-cached intermediates (flash-attn tiles, etc.).
 
         Args:
-            read_bytes: Total bytes read from GPU memory.
-            write_bytes: Total bytes written to GPU memory.
-            latency_ms: Kernel latency in milliseconds.
+            read_bytes: Total bytes read from HBM.
+            write_bytes: Total bytes written to HBM.
+            latency_ms: Kernel latency in milliseconds (use median, not mean).
 
         Returns:
-            dict with achieved_GBs and utilization_pct.
+            dict with achieved_GBs, theoretical_bw_GBs, bw_utilization_pct.
         """
         total_bytes = read_bytes + write_bytes
         achieved_GBs = (total_bytes / 1e9) / (latency_ms / 1000.0)
-        utilization_pct = (achieved_GBs / self._theoretical_bw_GBs * 100.0
-                           if self._theoretical_bw_GBs > 0 else float("nan"))
+        utilization_pct = (
+            achieved_GBs / self._theoretical_bw_GBs * 100.0
+            if self._theoretical_bw_GBs > 0 else float("nan")
+        )
         return {
             "achieved_bandwidth_GBs": achieved_GBs,
             "theoretical_bw_GBs": self._theoretical_bw_GBs,
@@ -194,6 +220,84 @@ class BandwidthEstimator:
             "total_bytes": total_bytes,
         }
 
-    def set_theoretical_bw(self, bw_GBs: float) -> None:
-        """Override theoretical bandwidth from hardware.yaml."""
-        self._theoretical_bw_GBs = bw_GBs
+    # ------------------------------------------------------------------
+    # Layer-specific byte count helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def ssm_bytes(
+        batch: int,
+        seq_len: int,
+        hidden_size: int,
+        n_heads: int,
+        head_dim: int,
+        d_state: int,
+        weight_bytes: int,
+        bytes_per_elem: int = 2,
+    ) -> tuple[int, int]:
+        """Estimate HBM read/write bytes for an SSM (Mamba-2) prefill layer.
+
+        Counted transfers:
+          Read : in_proj(hidden→2*inner) weights + input activation
+                 + SSM params (A_log, D, dt_bias)
+                 + per-chunk B, C, dt projections
+          Write: output activation
+
+        Intermediate within-chunk state (SRAM resident in Triton kernel) excluded.
+        """
+        inner_dim = n_heads * head_dim
+        bpe = bytes_per_elem
+
+        # Activation: read input, write output
+        act_read = batch * seq_len * hidden_size * bpe
+        act_write = batch * seq_len * hidden_size * bpe
+
+        # Weights read once (in_proj, out_proj, SSM params)
+        # weight_bytes passed in from layer.parameters()
+
+        # dt/B/C are computed on-the-fly from in_proj; already counted via weight_bytes
+        total_read = act_read + weight_bytes
+        total_write = act_write
+        return total_read, total_write
+
+    @staticmethod
+    def attn_bytes(
+        batch: int,
+        seq_len: int,
+        total_kv_len: int,
+        n_heads: int,
+        n_kv_heads: int,
+        head_dim: int,
+        bytes_per_elem: int = 2,
+    ) -> tuple[int, int]:
+        """Estimate HBM read/write bytes for a prefill attention layer.
+
+        FlashAttention tiles Q/K/V in SRAM; the softmax intermediate is NOT
+        written back to HBM. Only Q, K, V reads and output write are counted.
+        """
+        bpe = bytes_per_elem
+        q_bytes = batch * seq_len * n_heads * head_dim * bpe
+        k_bytes = batch * total_kv_len * n_kv_heads * head_dim * bpe
+        v_bytes = batch * total_kv_len * n_kv_heads * head_dim * bpe
+        out_bytes = q_bytes  # output is same shape as Q
+
+        total_read = q_bytes + k_bytes + v_bytes
+        total_write = out_bytes
+        return total_read, total_write
+
+    @staticmethod
+    def mlp_bytes(
+        batch: int,
+        seq_len: int,
+        hidden_size: int,
+        intermediate_size: int,
+        weight_bytes: int,
+        bytes_per_elem: int = 2,
+    ) -> tuple[int, int]:
+        """Estimate HBM read/write bytes for a gated MLP layer."""
+        bpe = bytes_per_elem
+        act_read = batch * seq_len * hidden_size * bpe
+        act_write = batch * seq_len * hidden_size * bpe
+        total_read = act_read + weight_bytes
+        total_write = act_write
+        return total_read, total_write

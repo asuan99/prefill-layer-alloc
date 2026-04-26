@@ -48,7 +48,11 @@ def run_measurements(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     total_sm = hw_cfg["sm_count"]
-    runner = LayerRunner(device="cuda", total_sm_count=total_sm)
+    runner = LayerRunner(
+        device="cuda",
+        total_sm_count=total_sm,
+        theoretical_bw_GBs=hw_cfg.get("memory_bw_GBs"),
+    )
     tag = device_tag(hw_cfg)
 
     results = []
@@ -92,6 +96,8 @@ def run_measurements(
             "sm_count", "sm_ratio",
             "latency_ms", "latency_p99_ms",
             "achieved_bandwidth_GBs", "theoretical_bw_GBs", "bw_utilization_pct",
+            "nvml_sm_util_mean_pct", "nvml_sm_util_max_pct",
+            "effective_sm_util_mean_pct", "effective_sm_util_max_pct",
         ]
         with open(out_csv, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
