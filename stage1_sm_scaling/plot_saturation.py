@@ -437,7 +437,10 @@ def parse_args():
         default=Path(__file__).parent.parent / "results" / "stage1"
     )
     parser.add_argument("--model", default=None, help="Filter by model name")
-    parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument(
+        "--batch-sizes", nargs="+", type=int, default=None,
+        help="Batch sizes to plot (default: all found in data)"
+    )
     parser.add_argument(
         "--output-dir", type=Path,
         default=Path(__file__).parent.parent / "results" / "stage1"
@@ -451,13 +454,18 @@ if __name__ == "__main__":
     print(f"Loading results from {args.results_dir} …")
     df = load_results(args.results_dir)
 
-    models = [args.model] if args.model else df["model_name"].unique().tolist()
+    models = [args.model] if args.model else sorted(df["model_name"].unique().tolist())
+    batch_sizes = args.batch_sizes if args.batch_sizes else sorted(df["batch_size"].unique().tolist())
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     for model in models:
         print(f"\nPlotting {model} …")
-        plot_scaling_curves(df, args.output_dir, model, args.batch_size)
+        # Fig 2: one per model (SSM saturation, independent of batch_size axis)
         plot_free_sm_zone(df, args.output_dir, model)
-        plot_sm_util_curves(df, args.output_dir, model, args.batch_size)
+
+        for bs in batch_sizes:
+            print(f"  batch_size={bs}")
+            plot_scaling_curves(df, args.output_dir, model, bs)
+            plot_sm_util_curves(df, args.output_dir, model, bs)
 
     print("\nDone.")
