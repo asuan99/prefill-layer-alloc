@@ -1,0 +1,14 @@
+# SSM prefill layer SM sweep
+ python stage1_sm_scaling/run_ssm_prefill_sweep.py --model zamba2 --device auto
+ python stage1_sm_scaling/run_ssm_prefill_sweep.py --model falcon_h1 --device auto
+ 
+ # Attention prefill layer SM sweep
+ python stage1_sm_scaling/run_attn_prefill_sweep.py --model zamba2
+ python stage1_sm_scaling/run_attn_prefill_sweep.py --model falcon_h1
+  
+ # MLP layer SM sweep
+ python stage1_sm_scaling/run_mlp_prefill_sweep.py --model zamba2
+ python stage1_sm_scaling/run_mlp_prefill_sweep.py --model falcon_h1
+ # 결과 시각화 (results/stage1/*.png)
+ python stage1_sm_scaling/plot_saturation.py
+ 
