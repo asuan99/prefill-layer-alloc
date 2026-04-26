@@ -6,13 +6,18 @@ applying libsmctrl SM restrictions before each benchmark run to measure
 SM-scaling behavior.
 
 Design notes:
-  - SSM prefill uses mamba_chunk_scan_combined in parallel (not recurrent) mode;
-    no per-token recurrent state is needed for prefill.
-  - Attention prefill uses FlashInfer BatchPrefillWithPagedKVCacheWrapper with a
-    pre-filled KV cache to simulate realistic context lengths.
+  - SSM prefill uses mamba_chunk_scan_combined in parallel (not recurrent) mode.
+  - Attention prefill uses FlashInfer BatchPrefillWithRaggedKVCacheWrapper with a
+    pre-filled KV cache to simulate realistic context lengths, falling back to
+    torch.nn.functional.scaled_dot_product_attention if FlashInfer is unavailable.
   - SM restriction is applied via SMController.set_sm_count() before measurement
-    and reset() after. If libsmctrl is unavailable, SMController falls back to
-    CUDA MPS thread percentage.
+    and reset() after.
+  - CRITICAL: call LayerRunner.verify_sm_control() after construction to confirm
+    SM restriction is functional. If SM control is not working, all sweep data will
+    show latency independent of sm_count.
+  - This runner measures latency + bandwidth only. SM hardware counters (wave
+    quantization, SM utilization, occupancy) are captured separately via ncu
+    using NCURunner / run_ncu_profile.py.
 """
 
 import sys
@@ -31,13 +36,14 @@ from src.profiling.metrics import LatencyMeter, BandwidthEstimator
 class LayerRunner:
     """Runs individual hybrid model layers independently for latency benchmarking.
 
-    Supports Zamba2 and Falcon-H1 SSM, Attention, and MLP layers.
-    SM count is controlled via libsmctrl (or MPS fallback) before each run.
-
     Args:
-        device: CUDA device string (e.g. 'cuda' or 'cuda:0').
-        dtype: Computation dtype. Default: bfloat16.
-        total_sm_count: Total SM count on device. Auto-detected if None.
+        device: CUDA device string.
+        dtype: Computation dtype (default: bfloat16).
+        total_sm_count: Total SM count. Auto-detected if None.
+        theoretical_bw_GBs: Peak memory bandwidth in GB/s. If None, queried
+            from torch device properties. Pass the hardware.yaml value for
+            exact spec-sheet numbers.
+        sm_per_tpc: SMs per TPC for TPC mask computation (default 2, Ampere+).
     """
 
     def __init__(
@@ -45,15 +51,40 @@ class LayerRunner:
         device: str = "cuda",
         dtype: torch.dtype = torch.bfloat16,
         total_sm_count: Optional[int] = None,
+        theoretical_bw_GBs: Optional[float] = None,
+        sm_per_tpc: int = 2,
     ):
         self.device = device
         self.dtype = dtype
-        self.smctrl = SMController(total_sm_count=total_sm_count)
+        self.smctrl = SMController(
+            total_sm_count=total_sm_count,
+            sm_per_tpc=sm_per_tpc,
+        )
         self.meter = LatencyMeter(device=device)
-        self.bw_estimator = BandwidthEstimator()
+        self.bw_estimator = BandwidthEstimator(
+            theoretical_bw_GBs=theoretical_bw_GBs
+        )
 
         # Lazy-loaded layer extractors
         self._extractors: dict = {}
+
+    def verify_sm_control(self, verbose: bool = True) -> bool:
+        """Verify that SM restriction actually changes kernel latency.
+
+        MUST be called before running sweeps. If this returns False, all
+        sm_count sweep data will be meaningless (latency independent of SM count).
+        """
+        print(f"Verifying SM control (backend: {self.smctrl.get_backend_name()}) ...")
+        result = self.smctrl.verify_sm_control(verbose=verbose)
+        if not result:
+            print(
+                "\nWARNING: SM control verification FAILED.\n"
+                "  SM count restriction is not affecting kernel latency.\n"
+                "  Sweep results will NOT show SM-scaling behavior.\n"
+                "  Fix: build libsmctrl (https://github.com/msr-fiddle/libsmctrl)\n"
+                "       and set LIBSMCTRL_PATH=<path>/libsmctrl.so\n"
+            )
+        return result
 
     # ------------------------------------------------------------------
     # Layer extractor cache
@@ -72,8 +103,18 @@ class LayerRunner:
                     device=self.device, dtype=self.dtype
                 )
             else:
-                raise ValueError(f"Unknown model: {model_name!r}. Choose 'zamba2' or 'falcon_h1'.")
+                raise ValueError(
+                    f"Unknown model: {model_name!r}. Choose 'zamba2' or 'falcon_h1'."
+                )
         return self._extractors[model_name]
+
+    # ------------------------------------------------------------------
+    # Core measurement helper
+    # ------------------------------------------------------------------
+
+    def _measure(self, fn, n_warmup: int, n_measure: int) -> dict:
+        """Run latency measurement via CUDA events. No profiler overhead."""
+        return self.meter.measure(fn, n_warmup=n_warmup, n_measure=n_measure)
 
     # ------------------------------------------------------------------
     # SSM layer benchmark
@@ -91,23 +132,13 @@ class LayerRunner:
     ) -> dict:
         """Benchmark a single SSM (Mamba-2) prefill layer with sm_count SMs.
 
-        SSM layer prefill uses mamba_chunk_scan_combined in parallel mode.
-        No recurrent state buffer is needed; the parallel scan processes the
-        full sequence in one shot.
-
-        Args:
-            model_name: 'zamba2' | 'falcon_h1'
-            batch_size: Batch size.
-            seq_len: Sequence length (prefill tokens).
-            sm_count: Number of SMs to restrict to via libsmctrl.
-            n_warmup: Warm-up iterations (discarded).
-            n_measure: Measurement iterations.
-            use_fallback_kernel: If True, use FallbackSSMKernel instead of
-                                 loading the full model.
+        SSM prefill runs in parallel-scan mode (mamba_chunk_scan_combined).
+        No per-token recurrent state buffer is needed.
 
         Returns:
-            dict with keys: latency_ms, latency_p99_ms, achieved_bandwidth_GBs,
-                            sm_count, seq_len, layer_type, batch_size, model_name
+            dict with latency_ms, latency_p99_ms, achieved_bandwidth_GBs,
+            theoretical_bw_GBs, bw_utilization_pct, sm_count, sm_ratio,
+            seq_len, batch_size, layer_type='ssm', model_name.
         """
         extractor = self._get_extractor(model_name)
 
@@ -122,28 +153,40 @@ class LayerRunner:
         inputs = extractor.make_ssm_inputs(batch_size, seq_len)
         hidden_states = inputs["hidden_states"]
 
-        # Estimate memory traffic: read/write input+output + weight parameters
         cfg = extractor.get_model_config()
         hidden_size = cfg["hidden_size"]
+        n_heads = cfg.get("n_ssm_heads", 64)
+        head_dim = cfg.get("head_dim", cfg.get("ssm_head_dim", 32))
+        d_state = cfg.get("d_state", 128)
         bytes_per_elem = 2  # bfloat16
-        io_bytes = 2 * batch_size * seq_len * hidden_size * bytes_per_elem  # read + write
-        weight_bytes = sum(p.numel() * bytes_per_elem for p in layer.parameters())
-        total_bytes = io_bytes + weight_bytes
+
+        weight_bytes = sum(
+            p.numel() * bytes_per_elem for p in layer.parameters()
+        )
+        read_bytes, write_bytes = BandwidthEstimator.ssm_bytes(
+            batch=batch_size,
+            seq_len=seq_len,
+            hidden_size=hidden_size,
+            n_heads=n_heads,
+            head_dim=head_dim,
+            d_state=d_state,
+            weight_bytes=weight_bytes,
+            bytes_per_elem=bytes_per_elem,
+        )
 
         def _run():
             with torch.no_grad():
                 layer(hidden_states)
 
-        # Apply SM restriction
         self.smctrl.set_sm_count(sm_count)
         try:
-            result = self.meter.measure(_run, n_warmup=n_warmup, n_measure=n_measure)
+            result = self._measure(_run, n_warmup=n_warmup, n_measure=n_measure)
         finally:
             self.smctrl.reset()
 
         bw = self.bw_estimator.estimate(
-            read_bytes=total_bytes // 2,
-            write_bytes=total_bytes // 2,
+            read_bytes=read_bytes,
+            write_bytes=write_bytes,
             latency_ms=result["latency_ms"],
         )
 
@@ -178,21 +221,8 @@ class LayerRunner:
     ) -> dict:
         """Benchmark a single Attention prefill layer with sm_count SMs.
 
-        KV cache is pre-filled with context_len tokens to simulate the
-        case where attention prefill sees a realistic prior context.
-
-        Prefer FlashInfer for realistic performance; falls back to
-        scaled_dot_product_attention if FlashInfer is unavailable.
-
-        Args:
-            model_name: 'zamba2' | 'falcon_h1'
-            batch_size: Batch size.
-            seq_len: Sequence length (prefill tokens).
-            sm_count: SM count restriction.
-            context_len: Pre-filled KV cache length (simulates decode context).
-            n_warmup: Warm-up iterations.
-            n_measure: Measurement iterations.
-            use_flashinfer: Try FlashInfer first if True.
+        KV cache is pre-filled with context_len tokens to simulate a realistic
+        decode-time KV context.
 
         Returns:
             dict matching run_ssm_layer() schema with layer_type='attn'.
@@ -203,44 +233,43 @@ class LayerRunner:
         n_heads = cfg.get("n_attn_heads", 8)
         n_kv_heads = cfg.get("n_kv_heads", 8)
         head_dim = cfg.get("attn_head_dim", 256)
-        hidden_size = cfg["hidden_size"]
+        bytes_per_elem = 2
 
-        # Build inputs
         query = torch.randn(
             batch_size, seq_len, n_heads, head_dim,
             device=self.device, dtype=self.dtype
         )
-        # Pre-filled KV cache: (batch, context_len + seq_len, 2, n_kv_heads, head_dim)
         total_kv_len = context_len + seq_len
         kv_cache = torch.randn(
             batch_size, total_kv_len, 2, n_kv_heads, head_dim,
             device=self.device, dtype=self.dtype
         )
-        key = kv_cache[:, :, 0]    # (batch, total_kv_len, n_kv_heads, head_dim)
+        key = kv_cache[:, :, 0]
         value = kv_cache[:, :, 1]
 
-        # Try FlashInfer; fall back to SDPA
         attn_fn = self._build_attn_fn(
             query, key, value, n_heads, n_kv_heads, head_dim, use_flashinfer
         )
 
-        bytes_per_elem = 2
-        # Read: Q + K + V; Write: output
-        qkv_bytes = (
-            query.numel() + key.numel() + value.numel()
-        ) * bytes_per_elem
-        out_bytes = query.numel() * bytes_per_elem
-        total_bytes = qkv_bytes + out_bytes
+        read_bytes, write_bytes = BandwidthEstimator.attn_bytes(
+            batch=batch_size,
+            seq_len=seq_len,
+            total_kv_len=total_kv_len,
+            n_heads=n_heads,
+            n_kv_heads=n_kv_heads,
+            head_dim=head_dim,
+            bytes_per_elem=bytes_per_elem,
+        )
 
         self.smctrl.set_sm_count(sm_count)
         try:
-            result = self.meter.measure(attn_fn, n_warmup=n_warmup, n_measure=n_measure)
+            result = self._measure(attn_fn, n_warmup=n_warmup, n_measure=n_measure)
         finally:
             self.smctrl.reset()
 
         bw = self.bw_estimator.estimate(
-            read_bytes=qkv_bytes,
-            write_bytes=out_bytes,
+            read_bytes=read_bytes,
+            write_bytes=write_bytes,
             latency_ms=result["latency_ms"],
         )
 
@@ -274,14 +303,6 @@ class LayerRunner:
     ) -> dict:
         """Benchmark a single MLP/FFN layer with sm_count SMs.
 
-        Args:
-            model_name: 'zamba2' | 'falcon_h1'
-            batch_size: Batch size.
-            seq_len: Sequence length.
-            sm_count: SM count restriction.
-            n_warmup: Warm-up iterations.
-            n_measure: Measurement iterations.
-
         Returns:
             dict matching run_ssm_layer() schema with layer_type='mlp'.
         """
@@ -289,8 +310,8 @@ class LayerRunner:
         cfg = extractor.get_model_config()
         hidden_size = cfg["hidden_size"]
         intermediate_size = cfg.get("intermediate_size", 4096)
+        bytes_per_elem = 2
 
-        # Use a minimal 2-layer MLP if model loading fails
         try:
             layer = extractor.get_mlp_layer()
         except Exception:
@@ -301,9 +322,17 @@ class LayerRunner:
             device=self.device, dtype=self.dtype
         )
 
-        bytes_per_elem = 2
-        weight_bytes = sum(p.numel() * bytes_per_elem for p in layer.parameters())
-        io_bytes = 2 * batch_size * seq_len * hidden_size * bytes_per_elem
+        weight_bytes = sum(
+            p.numel() * bytes_per_elem for p in layer.parameters()
+        )
+        read_bytes, write_bytes = BandwidthEstimator.mlp_bytes(
+            batch=batch_size,
+            seq_len=seq_len,
+            hidden_size=hidden_size,
+            intermediate_size=intermediate_size,
+            weight_bytes=weight_bytes,
+            bytes_per_elem=bytes_per_elem,
+        )
 
         def _run():
             with torch.no_grad():
@@ -311,13 +340,13 @@ class LayerRunner:
 
         self.smctrl.set_sm_count(sm_count)
         try:
-            result = self.meter.measure(_run, n_warmup=n_warmup, n_measure=n_measure)
+            result = self._measure(_run, n_warmup=n_warmup, n_measure=n_measure)
         finally:
             self.smctrl.reset()
 
         bw = self.bw_estimator.estimate(
-            read_bytes=io_bytes // 2 + weight_bytes,
-            write_bytes=io_bytes // 2,
+            read_bytes=read_bytes,
+            write_bytes=write_bytes,
             latency_ms=result["latency_ms"],
         )
 
@@ -364,20 +393,20 @@ class LayerRunner:
         head_dim: int,
         use_flashinfer: bool,
     ):
-        """Return a callable that performs one attention forward pass."""
+        """Return a zero-arg callable that performs one attention forward pass."""
         if use_flashinfer:
             try:
-                return self._build_flashinfer_attn(query, key, value, n_heads, n_kv_heads, head_dim)
+                return self._build_flashinfer_attn(
+                    query, key, value, n_heads, n_kv_heads, head_dim
+                )
             except (ImportError, Exception):
                 pass  # fall through to SDPA
 
         # SDPA fallback
-        # Reshape to (batch, heads, seq, head_dim) for F.scaled_dot_product_attention
-        q = query.transpose(1, 2)  # (B, n_heads, seq_len, head_dim)
-        k = key.transpose(1, 2)    # (B, n_kv_heads, total_len, head_dim)
+        q = query.transpose(1, 2)   # (B, n_heads, seq_len, head_dim)
+        k = key.transpose(1, 2)     # (B, n_kv_heads, total_len, head_dim)
         v = value.transpose(1, 2)
 
-        # Expand KV heads if GQA
         if n_kv_heads != n_heads:
             repeat = n_heads // n_kv_heads
             k = k.repeat_interleave(repeat, dim=1)
@@ -403,7 +432,6 @@ class LayerRunner:
         batch_size, seq_len = query.shape[:2]
         total_kv_len = key.shape[1]
 
-        # FlashInfer ragged prefill (all sequences same length, simplified)
         qo_indptr = torch.arange(
             0, (batch_size + 1) * seq_len, seq_len,
             device=self.device, dtype=torch.int32
@@ -412,18 +440,8 @@ class LayerRunner:
             0, (batch_size + 1) * total_kv_len, total_kv_len,
             device=self.device, dtype=torch.int32
         )
-        kv_indices = torch.arange(
-            0, batch_size * total_kv_len,
-            device=self.device, dtype=torch.int32
-        )
-        kv_last_page_len = torch.full(
-            (batch_size,), total_kv_len,
-            device=self.device, dtype=torch.int32
-        )
 
-        # Flatten query for FlashInfer: (batch * seq_len, n_heads, head_dim)
         q_flat = query.reshape(-1, n_heads, head_dim)
-        # KV cache: (batch * total_kv_len, 2, n_kv_heads, head_dim)
         kv_flat = torch.stack([
             key.reshape(-1, n_kv_heads, head_dim),
             value.reshape(-1, n_kv_heads, head_dim),
