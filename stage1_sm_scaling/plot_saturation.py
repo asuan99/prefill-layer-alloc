@@ -260,21 +260,25 @@ def plot_sm_util_curves(
     model_name: str,
     batch_size: int,
 ) -> None:
-    """Plot ncu SM utilization and wave efficiency vs SM count.
+    """Plot ncu SM utilization, wave efficiency, and occupancy vs SM count.
 
-    Two subplots per layer type:
-      Top:    sm_util_per_sm_pct  — active SM cycles / elapsed SM cycles × 100
-              Source: ncu sm__cycles_active.sum / sm__cycles_elapsed.sum.
-              Captures wave quantization (idle SMs in last wave) and warp stalls.
-      Bottom: wave_efficiency_pct = grid_size / (n_waves × sm_count) × 100
-              Analytical wave efficiency from ncu grid size capture.
+    Three rows × N layer_type columns:
+      Row 0: sm_util_per_sm_pct  — active cycles / elapsed cycles × 100
+             Captures wave quantization (last-wave idle SMs) and warp stalls.
+      Row 1: wave_efficiency_pct — grid_size / (n_waves × sm_count) × 100
+             Pure scheduling loss from wave quantization.
+      Row 2: achieved_occupancy_pct — avg resident warps / max warps × 100
+             smsp__warps_active.sum / (sm__cycles_elapsed.sum × max_warps_per_sm)
+             Reflects register/shared-memory pressure limiting concurrent warps.
 
-    Skipped with a diagnostic message if ncu columns are absent.
-    These columns come from the ncu CSV (run_ncu_profile.py), not the latency CSV.
+    Skipped for models with no ncu data (run run_ncu_profile.py first).
     """
-    eff_col = "wave_efficiency_pct"
-    sm_eff_col = "sm_util_per_sm_pct"
-    if eff_col not in df.columns or sm_eff_col not in df.columns:
+    sm_eff_col  = "sm_util_per_sm_pct"
+    wave_col    = "wave_efficiency_pct"
+    occ_col     = "achieved_occupancy_pct"
+
+    required = [sm_eff_col, wave_col]
+    if not all(c in df.columns for c in required):
         print("  No ncu SM utilization columns found — skipping Figure 3")
         print("  (run run_ncu_profile.py to generate ncu_*.csv files)")
         return
@@ -283,49 +287,68 @@ def plot_sm_util_curves(
     if df_model.empty:
         return
 
-    # Skip if all ncu columns are NaN for this model (no ncu CSV was run for it)
     if df_model[sm_eff_col].isna().all():
         print(f"  No ncu data for {model_name} — skipping Figure 3")
         print(f"  (run: python stage1_sm_scaling/run_ncu_profile.py --model {model_name})")
         return
 
     layer_types = sorted(df_model["layer_type"].unique())
-    seq_lens = sorted(df_model["seq_len"].unique())
-    n_cols = len(layer_types)
+    seq_lens    = sorted(df_model["seq_len"].unique())
+    n_cols      = len(layer_types)
+    has_occ     = occ_col in df_model.columns and not df_model[occ_col].isna().all()
+    n_rows      = 3 if has_occ else 2
 
-    fig, axes = plt.subplots(2, n_cols, figsize=(6 * n_cols, 8), sharey="row")
-    if n_cols == 1:
-        axes = axes.reshape(2, 1)
+    row_specs = [
+        (sm_eff_col,
+         "SM Utilization\n(active / elapsed cycles × 100)\n"
+         "Wave quantization + warp stalls",
+         (0, 110), 100, "Utilization (%)"),
+        (wave_col,
+         "Wave Efficiency\n(grid_size / n_waves / sm_count × 100)\n"
+         "Pure scheduling loss from wave quantization",
+         (0, 110), 100, "Efficiency (%)"),
+    ]
+    if has_occ:
+        row_specs.append((
+            occ_col,
+            "Achieved Occupancy\n(avg resident warps / max warps × 100)\n"
+            "Register / shared-mem pressure limit",
+            (0, 110), None, "Occupancy (%)"),
+        )
+
+    fig, axes = plt.subplots(
+        n_rows, n_cols,
+        figsize=(6 * n_cols, 4 * n_rows),
+        sharey="row",
+    )
+    # Normalise axes shape to always (n_rows, n_cols)
+    if n_cols == 1 and n_rows == 1:
+        axes = np.array([[axes]])
+    elif n_cols == 1:
+        axes = axes.reshape(n_rows, 1)
+    elif n_rows == 1:
+        axes = axes.reshape(1, n_cols)
 
     fig.suptitle(
-        f"ncu SM Utilization & Wave Efficiency vs SM Count — {model_name}, batch_size={batch_size}",
-        fontsize=13, fontweight="bold"
+        f"ncu SM Utilization / Wave Efficiency / Occupancy — {model_name}, batch_size={batch_size}",
+        fontsize=13, fontweight="bold",
     )
 
-    total_sm = df_model["sm_count"].max()
-    cmap = plt.cm.viridis
+    total_sm  = df_model["sm_count"].max()
+    cmap      = plt.cm.viridis
     seq_colors = {sl: cmap(i / max(len(seq_lens) - 1, 1)) for i, sl in enumerate(seq_lens)}
-
-    row_labels = [
-        "ncu SM utilization  (active cycles / elapsed cycles × 100)\n"
-        "Captures wave quantization + warp stalls. NOT binary on/off.",
-        "Wave efficiency = grid_size / (n_waves × sm_count) × 100\n"
-        "= fraction of SM slots actually used per wave  [from ncu grid capture]",
-    ]
 
     for col_idx, lt in enumerate(layer_types):
         df_lt = df_model[df_model["layer_type"] == lt]
 
-        for row_idx, (col_name, row_label) in enumerate(
-            zip([sm_eff_col, eff_col], row_labels)
-        ):
+        for row_idx, (col_name, row_label, ylim, hline_y, ylabel) in enumerate(row_specs):
             ax = axes[row_idx][col_idx]
 
             for sl in seq_lens:
                 grp = df_lt[df_lt["seq_len"] == sl].sort_values("sm_count")
                 if grp.empty or col_name not in grp.columns:
                     continue
-                vals = grp[col_name].values
+                vals = grp[col_name].values.astype(float)
                 if np.all(np.isnan(vals)):
                     continue
                 ax.plot(
@@ -336,27 +359,24 @@ def plot_sm_util_curves(
                 )
 
             ax.set_xlim(0, total_sm * 1.05)
-            ax.set_ylim(0, 110)
-            ax.axhline(y=100, color="gray", linestyle=":", linewidth=1, alpha=0.5)
+            ax.set_ylim(*ylim)
+            if hline_y is not None:
+                ax.axhline(y=hline_y, color="gray", linestyle=":", linewidth=1, alpha=0.5)
             ax.grid(True, alpha=0.3)
             ax.set_xlabel("SM Count")
 
             if col_idx == 0:
-                ax.set_ylabel("Utilization (%)")
+                ax.set_ylabel(ylabel)
+                ax.annotate(
+                    row_label,
+                    xy=(-0.22, 0.5), xycoords="axes fraction",
+                    fontsize=7, va="center", ha="right",
+                    rotation=90,
+                )
 
             if row_idx == 0:
                 ax.set_title(LAYER_LABELS.get(lt, lt), fontsize=11)
 
-            # Add row label on leftmost column only
-            if col_idx == 0:
-                ax.annotate(
-                    row_label,
-                    xy=(-0.18, 0.5), xycoords="axes fraction",
-                    fontsize=7, va="center", ha="right",
-                    rotation=90, wrap=True,
-                )
-
-    # Shared legend
     handles = [
         mpatches.Patch(color=seq_colors[sl], label=f"seq_len={sl}")
         for sl in seq_lens
