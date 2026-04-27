@@ -90,13 +90,22 @@ def plot_scaling_curves(
     model_name: str,
     batch_size: int,
 ) -> None:
+    """Throughput vs seq_len, one line per SM count.
+
+    X-axis : seq_len (workload size)
+    Lines  : SM count (allocation)
+    Marker : ✕ on the saturation SM count line at each seq_len
+             (first SM allocation where adding more SMs yields < 3% gain per 10% SM)
+    """
     df_model = df[(df["model_name"] == model_name) & (df["batch_size"] == batch_size)]
     if df_model.empty:
         print(f"  No data for {model_name} batch_size={batch_size}")
         return
 
-    seq_lens = sorted(df_model["seq_len"].unique())
+    seq_lens   = sorted(df_model["seq_len"].unique())
+    sm_counts  = sorted(df_model["sm_count"].unique())
     layer_types = sorted(df_model["layer_type"].unique())
+    total_sm   = df_model["sm_count"].max()
 
     n_cols = len(layer_types)
     fig, axes = plt.subplots(1, n_cols, figsize=(6 * n_cols, 5), sharey=True)
@@ -104,47 +113,52 @@ def plot_scaling_curves(
         axes = [axes]
 
     fig.suptitle(
-        f"SM Scaling Curves — {model_name}, batch_size={batch_size}",
-        fontsize=13, fontweight="bold"
+        f"Throughput vs Sequence Length — {model_name}, batch_size={batch_size}",
+        fontsize=13, fontweight="bold",
     )
 
-    total_sm = df_model["sm_count"].max()
-    cmap = plt.cm.viridis
-    seq_colors = {sl: cmap(i / max(len(seq_lens) - 1, 1))
-                  for i, sl in enumerate(seq_lens)}
+    cmap = plt.cm.plasma
+    sm_colors = {sm: cmap(i / max(len(sm_counts) - 1, 1))
+                 for i, sm in enumerate(sm_counts)}
 
     for ax, lt in zip(axes, layer_types):
         df_lt = df_model[df_model["layer_type"] == lt]
-        sat_points = []
 
+        # Per-seq_len saturation SM count (to mark on the correct line)
+        sat_sm_per_seq = {}
         for sl in seq_lens:
             grp = df_lt[df_lt["seq_len"] == sl].sort_values("sm_count")
+            if not grp.empty:
+                sat_sm_per_seq[sl] = find_saturation_sm(grp)
+
+        # Plot one line per SM count
+        for sm in sm_counts:
+            grp = df_lt[df_lt["sm_count"] == sm].sort_values("seq_len")
             if grp.empty:
                 continue
-
+            ratio = sm / total_sm
             ax.plot(
-                grp["sm_count"], grp["normalized_throughput"],
-                color=seq_colors[sl],
+                grp["seq_len"], grp["normalized_throughput"],
+                color=sm_colors[sm],
                 linewidth=2,
                 marker="o", markersize=4,
-                label=f"seq={sl}",
+                label=f"sm={sm} ({ratio:.0%})",
             )
 
-            sat_sm = find_saturation_sm(grp)
-            sat_tp = grp.loc[grp["sm_count"] == sat_sm, "normalized_throughput"]
-            if not sat_tp.empty:
-                ax.axvline(
-                    x=sat_sm, color=seq_colors[sl],
-                    linestyle="--", linewidth=1, alpha=0.6
-                )
-                ax.scatter([sat_sm], [sat_tp.values[0]],
-                           color=seq_colors[sl], s=80, zorder=5,
-                           marker="x", linewidths=2)
-                sat_points.append(sat_sm)
+        # Saturation markers: ✕ on the saturation line at each seq_len
+        for sl, sat_sm in sat_sm_per_seq.items():
+            row = df_lt[(df_lt["seq_len"] == sl) & (df_lt["sm_count"] == sat_sm)]
+            if row.empty:
+                continue
+            tp = row["normalized_throughput"].values[0]
+            ax.scatter([sl], [tp], color=sm_colors[sat_sm],
+                       s=100, zorder=6, marker="x", linewidths=2.5)
 
         ax.set_title(LAYER_LABELS.get(lt, lt), fontsize=11)
-        ax.set_xlabel("SM Count")
-        ax.set_xlim(0, total_sm * 1.05)
+        ax.set_xlabel("Sequence Length")
+        ax.set_xscale("log", base=2)
+        ax.set_xticks(seq_lens)
+        ax.set_xticklabels(seq_lens, rotation=30)
         ax.set_ylim(0, 1.05)
         ax.grid(True, alpha=0.3)
         ax.axhline(y=1.0, color="black", linestyle=":", linewidth=1, alpha=0.5)
@@ -152,20 +166,18 @@ def plot_scaling_curves(
         if ax == axes[0]:
             ax.set_ylabel("Normalized Throughput (SM=100% → 1.0)")
 
-    # Shared legend for seq_lens
     handles = [
-        mpatches.Patch(color=seq_colors[sl], label=f"seq_len={sl}")
-        for sl in seq_lens
+        mpatches.Patch(color=sm_colors[sm], label=f"sm={sm} ({sm/total_sm:.0%})")
+        for sm in sm_counts
     ]
-    fig.legend(handles=handles, loc="lower center", ncol=len(seq_lens),
-               bbox_to_anchor=(0.5, -0.02))
+    n_legend_cols = min(len(sm_counts), 8)
+    fig.legend(handles=handles, loc="lower center", ncol=n_legend_cols,
+               bbox_to_anchor=(0.5, -0.04))
 
-    # Add saturation annotation note
     fig.text(
-        0.5, -0.06,
-        "✕ = saturation point (throughput gain < 3% per 10% SM increase)  "
-        "-- = saturation SM count",
-        ha="center", fontsize=9, style="italic"
+        0.5, -0.10,
+        "✕ = saturation point (first SM count where throughput gain < 3% per 10% SM increase)",
+        ha="center", fontsize=9, style="italic",
     )
 
     plt.tight_layout()
@@ -335,8 +347,9 @@ def plot_sm_util_curves(
     )
 
     total_sm  = df_model["sm_count"].max()
-    cmap      = plt.cm.viridis
-    seq_colors = {sl: cmap(i / max(len(seq_lens) - 1, 1)) for i, sl in enumerate(seq_lens)}
+    sm_counts = sorted(df_model["sm_count"].unique())
+    cmap      = plt.cm.plasma
+    sm_colors = {sm: cmap(i / max(len(sm_counts) - 1, 1)) for i, sm in enumerate(sm_counts)}
 
     for col_idx, lt in enumerate(layer_types):
         df_lt = df_model[df_model["layer_type"] == lt]
@@ -344,26 +357,29 @@ def plot_sm_util_curves(
         for row_idx, (col_name, row_label, ylim, hline_y, ylabel) in enumerate(row_specs):
             ax = axes[row_idx][col_idx]
 
-            for sl in seq_lens:
-                grp = df_lt[df_lt["seq_len"] == sl].sort_values("sm_count")
+            for sm in sm_counts:
+                grp = df_lt[df_lt["sm_count"] == sm].sort_values("seq_len")
                 if grp.empty or col_name not in grp.columns:
                     continue
                 vals = grp[col_name].values.astype(float)
                 if np.all(np.isnan(vals)):
                     continue
+                ratio = sm / total_sm
                 ax.plot(
-                    grp["sm_count"], vals,
-                    color=seq_colors[sl], linewidth=2,
+                    grp["seq_len"], vals,
+                    color=sm_colors[sm], linewidth=2,
                     marker="o", markersize=4,
-                    label=f"seq={sl}",
+                    label=f"sm={sm} ({ratio:.0%})",
                 )
 
-            ax.set_xlim(0, total_sm * 1.05)
+            ax.set_xscale("log", base=2)
+            ax.set_xticks(seq_lens)
+            ax.set_xticklabels(seq_lens, rotation=30)
             ax.set_ylim(*ylim)
             if hline_y is not None:
                 ax.axhline(y=hline_y, color="gray", linestyle=":", linewidth=1, alpha=0.5)
             ax.grid(True, alpha=0.3)
-            ax.set_xlabel("SM Count")
+            ax.set_xlabel("Sequence Length")
 
             if col_idx == 0:
                 ax.set_ylabel(ylabel)
@@ -378,10 +394,11 @@ def plot_sm_util_curves(
                 ax.set_title(LAYER_LABELS.get(lt, lt), fontsize=11)
 
     handles = [
-        mpatches.Patch(color=seq_colors[sl], label=f"seq_len={sl}")
-        for sl in seq_lens
+        mpatches.Patch(color=sm_colors[sm], label=f"sm={sm} ({sm/total_sm:.0%})")
+        for sm in sm_counts
     ]
-    fig.legend(handles=handles, loc="lower center", ncol=len(seq_lens),
+    n_legend_cols = min(len(sm_counts), 8)
+    fig.legend(handles=handles, loc="lower center", ncol=n_legend_cols,
                bbox_to_anchor=(0.5, -0.02))
 
     plt.tight_layout()
