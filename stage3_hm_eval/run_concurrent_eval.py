@@ -118,6 +118,7 @@ def run_eval(
     total_sm: int,
     n_warmup_steps: int = 20,
     nvml_interval_ms: int = 500,
+    slo_tpot_ms: float = SLO_TPOT_MS,
 ) -> tuple[EvalMetrics, list[dict]]:
     """Run the interleaved prefill+decode evaluation loop.
 
@@ -173,7 +174,7 @@ def run_eval(
 
         metrics.decode_tpot_ms.append(tpot_ms)
         metrics.n_decode_steps += 1
-        if tpot_ms > SLO_TPOT_MS:
+        if tpot_ms > slo_tpot_ms:
             metrics.slo_violations += 1
 
         # [Phase 2] One prefill layer (if any request in queue)
@@ -217,29 +218,38 @@ def run_eval(
 def _run_decode_step(
     runner: LayerRunner, model_name: str, batch_size: int, context_len: int, total_sm: int
 ) -> None:
-    """Simulate a single decode step: token-by-token (seq_len=1)."""
-    # Decode: SSM in recurrent mode (seq_len=1), Attn with KV cache
+    """Simulate a single decode step: token-by-token (seq_len=1).
+
+    SM ratio is already set by the policy before this call.
+    skip_sm_control=True preserves the policy's SM mask.
+    """
     runner.run_ssm_layer(
         model_name=model_name,
         batch_size=batch_size,
         seq_len=1,
-        sm_count=total_sm,  # SM already set by policy; runner will use current mask
+        sm_count=total_sm,
         n_warmup=0,
         n_measure=1,
+        skip_sm_control=True,
     )
 
 
 def _run_prefill_layer(
     runner: LayerRunner, model_name: str, batch_size: int, seq_len: int, total_sm: int
 ) -> None:
-    """Simulate one prefill layer (SSM or Attn)."""
+    """Simulate one prefill layer.
+
+    SM ratio is already set by the policy before this call.
+    skip_sm_control=True preserves the policy's SM mask.
+    """
     runner.run_ssm_layer(
         model_name=model_name,
         batch_size=batch_size,
         seq_len=seq_len,
-        sm_count=total_sm,  # SM already set by policy
+        sm_count=total_sm,
         n_warmup=0,
         n_measure=1,
+        skip_sm_control=True,
     )
 
 
@@ -326,9 +336,6 @@ if __name__ == "__main__":
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA device required")
 
-    global SLO_TPOT_MS
-    SLO_TPOT_MS = args.slo_tpot_ms
-
     hw_cfg = load_hardware_config(args.device)
     total_sm = hw_cfg["sm_count"]
     output_dir = Path(__file__).parent.parent / "results" / "stage3"
@@ -370,6 +377,7 @@ if __name__ == "__main__":
             context_len=args.context_len,
             total_sm=total_sm,
             n_warmup_steps=args.n_warmup_steps,
+            slo_tpot_ms=args.slo_tpot_ms,
         )
 
         # Summary

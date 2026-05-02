@@ -129,6 +129,7 @@ class LayerRunner:
         n_warmup: int = 10,
         n_measure: int = 50,
         use_fallback_kernel: bool = False,
+        skip_sm_control: bool = False,
     ) -> dict:
         """Benchmark a single SSM (Mamba-2) prefill layer with sm_count SMs.
 
@@ -178,11 +179,13 @@ class LayerRunner:
             with torch.no_grad():
                 layer(hidden_states)
 
-        self.smctrl.set_sm_count(sm_count)
+        if not skip_sm_control:
+            self.smctrl.set_sm_count(sm_count)
         try:
             result = self._measure(_run, n_warmup=n_warmup, n_measure=n_measure)
         finally:
-            self.smctrl.reset()
+            if not skip_sm_control:
+                self.smctrl.reset()
 
         bw = self.bw_estimator.estimate(
             read_bytes=read_bytes,
@@ -218,6 +221,7 @@ class LayerRunner:
         n_warmup: int = 10,
         n_measure: int = 50,
         use_flashinfer: bool = True,
+        skip_sm_control: bool = False,
     ) -> dict:
         """Benchmark a single Attention prefill layer with sm_count SMs.
 
@@ -261,11 +265,13 @@ class LayerRunner:
             bytes_per_elem=bytes_per_elem,
         )
 
-        self.smctrl.set_sm_count(sm_count)
+        if not skip_sm_control:
+            self.smctrl.set_sm_count(sm_count)
         try:
             result = self._measure(attn_fn, n_warmup=n_warmup, n_measure=n_measure)
         finally:
-            self.smctrl.reset()
+            if not skip_sm_control:
+                self.smctrl.reset()
 
         bw = self.bw_estimator.estimate(
             read_bytes=read_bytes,

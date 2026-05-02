@@ -57,6 +57,26 @@ POLICY_MARKERS = {"A": "o", "B": "s", "C": "^"}
 # Data loading
 # ---------------------------------------------------------------------------
 
+KNOWN_MODELS = {"zamba2", "falcon_h1"}
+
+
+def _parse_stem(stem: str, prefix: str) -> tuple[str, str]:
+    """Parse '{prefix}_{model}_{policy}_{device}' filename stem.
+
+    Handles multi-part model names like 'falcon_h1' by trying known names first.
+    Returns (model_name, policy_key).
+    """
+    body = stem[len(prefix) + 1:]  # strip 'eval_' or 'sm_timeline_'
+    for model in KNOWN_MODELS:
+        if body.startswith(model + "_"):
+            rest = body[len(model) + 1:]  # '{policy}_{device}'
+            policy = rest.split("_")[0]
+            return model, policy
+    # Fallback: assume single-token model name
+    parts = body.split("_")
+    return parts[0], parts[1] if len(parts) > 1 else "?"
+
+
 def load_eval_results(results_dir: Path) -> pd.DataFrame:
     csv_files = list(results_dir.glob("eval_*.csv"))
     if not csv_files:
@@ -65,10 +85,7 @@ def load_eval_results(results_dir: Path) -> pd.DataFrame:
     dfs = []
     for f in csv_files:
         df = pd.read_csv(f)
-        # Extract policy from filename: eval_{model}_{policy}_{device}.csv
-        parts = f.stem.split("_")
-        if len(parts) >= 3:
-            df["policy"] = parts[2]
+        # CSV already has 'model' and 'policy' columns written by save_results()
         dfs.append(df)
 
     return pd.concat(dfs, ignore_index=True)
@@ -78,12 +95,9 @@ def load_sm_timelines(results_dir: Path) -> dict[str, pd.DataFrame]:
     """Load SM utilization timelines keyed by (model, policy)."""
     timelines = {}
     for f in results_dir.glob("sm_timeline_*.csv"):
-        parts = f.stem.split("_")
-        if len(parts) >= 4:
-            model = parts[2]
-            policy = parts[3]
-            df = pd.read_csv(f)
-            timelines[(model, policy)] = df
+        model, policy = _parse_stem(f.stem, "sm_timeline")
+        df = pd.read_csv(f)
+        timelines[(model, policy)] = df
     return timelines
 
 

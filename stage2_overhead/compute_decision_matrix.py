@@ -242,7 +242,7 @@ def render_html(rows: list[dict], out_path: Path) -> None:
         }
         return colors.get(val, "")
 
-    styled = df.style.applymap(color_strategy, subset=["strategy"])
+    styled = df.style.map(color_strategy, subset=["strategy"])
     styled = styled.format({
         "overhead_ratio": "{:.2%}",
         "overhead_ratio_p99": "{:.2%}",
