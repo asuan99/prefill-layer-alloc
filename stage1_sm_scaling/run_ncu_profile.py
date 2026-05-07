@@ -264,9 +264,13 @@ def run_ncu_sweep(
                             print(f"  {wave_delta}")
                     else:
                         print(f"    ERROR: {row['error']}")
+                        # ncu errors (ERR_NVGPUCTRPERM etc.) go to stdout, not stderr
+                        ncu_out = row.get("ncu_stdout", "")
+                        if ncu_out:
+                            print(f"    NCU_OUT: {ncu_out.strip()}")
                         stderr = row.get("stderr", "")
                         if stderr:
-                            print(f"    STDERR: {stderr}")
+                            print(f"    STDERR: {stderr.strip()}")
                         row = _add_analytical_wave(row, layer_type, model_cfg)
 
                     layer_results.append(row)
@@ -389,6 +393,13 @@ if __name__ == "__main__":
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA device required")
+
+    # Early check: GPU hardware counter access (fails silently without this)
+    ncu_check = NCURunner()
+    ok, msg = ncu_check.check_permissions()
+    if not ok:
+        print(f"\n[ERROR] ncu permission check failed:\n{msg}", file=sys.stderr)
+        sys.exit(1)
 
     hw_cfg = load_hardware_config(args.device)
     model_cfg = load_model_config(args.model)

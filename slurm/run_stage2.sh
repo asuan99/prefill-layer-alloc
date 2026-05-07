@@ -15,6 +15,8 @@ module load conda/pytorch_2.9.1_cuda13
 module load cuda/13.0.2
 module load gcc/15.2.0
 
+source /scratch/$USER/whlee/prefill-layer-alloc/prefill-alloc/bin/activate
+
 cd /scratch/$USER/whlee/prefill-layer-alloc
 
 mkdir -p logs results

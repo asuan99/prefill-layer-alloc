@@ -16,7 +16,10 @@ module load cuda/13.0.2
 module load gcc/15.2.0
 # source activate /scratch/$USER/envs/prefill-alloc
 
+source /scratch/$USER/whlee/prefill-layer-alloc/prefill-alloc/bin/activate
+
 cd /scratch/$USER/whlee/prefill-layer-alloc
+source 
 mkdir -p logs results
 
 MODEL=${1:-zamba2}   # 인자로 모델 지정 가능: sbatch run_stage1.sh falcon_h1
@@ -26,5 +29,8 @@ echo "=== Stage 1: SM Scaling Sweep | model=$MODEL ==="
 python stage1_sm_scaling/run_ssm_prefill_sweep.py  --model $MODEL --device a100_80gb
 python stage1_sm_scaling/run_attn_prefill_sweep.py --model $MODEL --device a100_80gb
 python stage1_sm_scaling/run_mlp_prefill_sweep.py  --model $MODEL --device a100_80gb
+
+python stage1_sm_scaling/plot_srm.py 
+python stage1_sm_scaling/plot_saturation.py
 
 echo "=== Stage 1 Done ==="

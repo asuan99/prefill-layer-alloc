@@ -1,16 +1,20 @@
 """
-Stage 2: libsmctrl SM reconfiguration latency measurement.
+Stage 2: CUDA Green Context SM partition switch latency measurement.
 
 Measures three distinct overhead components:
-  1. Single SM mask transition (A → B): with/without GPU sync
+  1. Single SM partition transition (A → B): with/without GPU sync
   2. n consecutive transitions: simulate a full hybrid model layer sequence
-  3. Cold-start kernel penalty: first kernel after reconfiguration
+  3. Cold-start kernel penalty: first kernel after stream switch
 
 Results are saved to results/stage2/smctrl_overhead_{device}.json.
 
 Usage:
     python stage2_overhead/measure_smctrl_latency.py
     python stage2_overhead/measure_smctrl_latency.py --n-trials 500 --device auto
+
+Note: prefer measure_ctx_switch_latency.py for the full Green Context benchmark
+(initialization overhead, stream swap cost, etc.).  This script keeps the same
+measurement structure as the original libsmctrl version for comparison.
 """
 
 import sys
@@ -23,7 +27,7 @@ from pathlib import Path
 
 import torch
 
-from src.smctrl.libsmctrl_wrapper import SMController
+from src.smctrl.green_ctx_controller import SMController
 from src.smctrl.overhead_timer import SMOverheadTimer
 from stage1_sm_scaling.run_ssm_prefill_sweep import load_hardware_config, device_tag
 
@@ -111,7 +115,7 @@ def run_measurements(
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Measure libsmctrl reconfiguration latency")
+    parser = argparse.ArgumentParser(description="Measure Green Context SM partition switch latency")
     parser.add_argument("--device", default="auto")
     parser.add_argument("--n-warmup", type=int, default=50)
     parser.add_argument("--n-measure", type=int, default=200)
@@ -132,10 +136,7 @@ if __name__ == "__main__":
     smctrl = SMController(total_sm_count=hw_cfg["sm_count"])
     timer = SMOverheadTimer(smctrl=smctrl)
 
-    if smctrl.is_available():
-        print("Backend: libsmctrl (kernel-level SM mask)")
-    else:
-        print("Backend: CUDA MPS fallback (CUDA_MPS_ACTIVE_THREAD_PERCENTAGE)")
+    print(f"Backend: {smctrl.get_backend_name()}")
 
     results = run_measurements(smctrl, timer, args.n_warmup, args.n_measure)
 
@@ -143,7 +144,7 @@ if __name__ == "__main__":
     results["meta"] = {
         "device": hw_cfg["name"],
         "total_sm": hw_cfg["sm_count"],
-        "backend": "libsmctrl" if smctrl.is_available() else "mps_fallback",
+        "backend": smctrl.get_backend_name(),
         "n_warmup": args.n_warmup,
         "n_measure": args.n_measure,
         "ssm_ratio": SSM_RATIO,

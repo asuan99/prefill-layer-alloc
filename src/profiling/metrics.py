@@ -268,21 +268,48 @@ class BandwidthEstimator:
         n_heads: int,
         n_kv_heads: int,
         head_dim: int,
+        hidden_size: int = 0,
+        proj_weight_bytes: int = 0,
         bytes_per_elem: int = 2,
     ) -> tuple[int, int]:
-        """Estimate HBM read/write bytes for a prefill attention layer.
+        """Estimate HBM read/write bytes for a full prefill attention layer.
 
-        FlashAttention tiles Q/K/V in SRAM; the softmax intermediate is NOT
-        written back to HBM. Only Q, K, V reads and output write are counted.
+        Includes Q/K/V/O projection GEMMs when hidden_size and proj_weight_bytes
+        are provided (recommended — omitting them undercounts by 5–10×).
+
+        HBM transfers counted (non-fused kernel sequence):
+          Read : input hidden_states + W_q/W_k/W_v/W_o weights
+                 + projected Q/K/V tensors (read back by FlashAttn)
+                 + attn output (read back by O proj)
+          Write: projected Q/K/V tensors + attn output + final output
+
+        FlashAttention softmax intermediates remain in SRAM — not counted.
         """
         bpe = bytes_per_elem
-        q_bytes = batch * seq_len * n_heads * head_dim * bpe
-        k_bytes = batch * total_kv_len * n_kv_heads * head_dim * bpe
-        v_bytes = batch * total_kv_len * n_kv_heads * head_dim * bpe
-        out_bytes = q_bytes  # output is same shape as Q
 
-        total_read = q_bytes + k_bytes + v_bytes
-        total_write = out_bytes
+        # Projection weight load (once per forward)
+        weight_read = proj_weight_bytes
+
+        # Input hidden_states (read once for all three projections)
+        act_in  = batch * seq_len * hidden_size * bpe if hidden_size > 0 else 0
+
+        # Projected tensors: written after GEMM, read back by FlashAttn
+        q_bytes = batch * seq_len * n_heads * head_dim * bpe
+        k_new   = batch * seq_len * n_kv_heads * head_dim * bpe
+        v_new   = batch * seq_len * n_kv_heads * head_dim * bpe
+
+        # Context KV cache (pre-built, read by FlashAttn if context_len > 0)
+        ctx_kv_len = total_kv_len - seq_len
+        kv_ctx = batch * ctx_kv_len * n_kv_heads * head_dim * 2 * bpe if ctx_kv_len > 0 else 0
+
+        # Attention output (written by FlashAttn, read back by O proj)
+        attn_out = q_bytes  # same shape as Q
+
+        # Final output (written after O proj)
+        act_out = act_in  # same shape as input
+
+        total_read  = weight_read + act_in + q_bytes + k_new + v_new + kv_ctx + attn_out
+        total_write = q_bytes + k_new + v_new + attn_out + act_out
         return total_read, total_write
 
     @staticmethod

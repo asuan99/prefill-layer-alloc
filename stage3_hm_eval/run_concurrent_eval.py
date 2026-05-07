@@ -171,12 +171,10 @@ def run_eval(
             prefill_queue.append(ps)
             prefill_request_id += 1
 
-        # [Phase 1] Decode step
+        # [Phase 1] Decode step — tpot_ms from CUDA events, not wall-clock
         policy.on_decode()
-        decode_t0 = time.perf_counter_ns()
-        _run_decode_step(runner, model_name, decode_batch_size, context_len, total_sm)
-        decode_t1 = time.perf_counter_ns()
-        tpot_ms = (decode_t1 - decode_t0) / 1_000_000.0
+        decode_result = _run_decode_step(runner, model_name, decode_batch_size, context_len, total_sm)
+        tpot_ms = decode_result["latency_ms"]
 
         metrics.decode_tpot_ms.append(tpot_ms)
         metrics.n_decode_steps += 1
@@ -224,13 +222,14 @@ def run_eval(
 
 def _run_decode_step(
     runner: LayerRunner, model_name: str, batch_size: int, context_len: int, total_sm: int
-) -> None:
+) -> dict:
     """Simulate a single decode step: token-by-token (seq_len=1).
 
     SM ratio is already set by the policy before this call.
     skip_sm_control=True preserves the policy's SM mask.
+    Returns the run_ssm_layer result dict; latency_ms is CUDA-event based.
     """
-    runner.run_ssm_layer(
+    return runner.run_ssm_layer(
         model_name=model_name,
         batch_size=batch_size,
         seq_len=1,

@@ -410,6 +410,59 @@ class NCURunner:
         except FileNotFoundError:
             return False
 
+    def check_permissions(self) -> tuple[bool, str]:
+        """Check whether ncu can access GPU hardware performance counters.
+
+        ncu requires NVreg_RestrictProfilingToAdminUsers=0 (set by cluster admin)
+        or elevated privileges. On HPC clusters this is typically only available
+        inside a properly configured SLURM job — not in interactive sessions.
+
+        Returns:
+            (ok, message) — ok=True if counters are accessible, False with
+            a descriptive message explaining the failure and how to fix it.
+        """
+        import sys
+        probe_cmd = [
+            self.ncu_path,
+            "--metrics", "gpu__time_duration",
+            "--csv",
+            sys.executable,
+            "-c",
+            (
+                "import torch; "
+                "x=torch.ones(64,device='cuda',dtype=torch.float16); "
+                "y=x+x; "
+                "torch.cuda.synchronize()"
+            ),
+        ]
+        try:
+            proc = subprocess.run(
+                probe_cmd, capture_output=True, text=True, timeout=30
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+            return False, str(e)
+
+        combined = proc.stdout + proc.stderr
+        if "ERR_NVGPUCTRPERM" in combined:
+            return False, (
+                "ERR_NVGPUCTRPERM — GPU performance counter access denied.\n"
+                "  On HPC clusters this is controlled by the system administrator.\n"
+                "  Solutions:\n"
+                "    1. Submit via SLURM: sbatch slurm/run_ncu_profile.sh\n"
+                "       (SLURM jobs on the gpu partition may have counter access)\n"
+                "    2. Ask admin to set: NVreg_RestrictProfilingToAdminUsers=0\n"
+                "    3. Interactive access: srun --gres=gpu:1 --comment=pytorch "
+                "--pty bash, then retry\n"
+                f"  ncu stdout: {proc.stdout[:300]}"
+            )
+        if proc.returncode != 0:
+            return False, (
+                f"ncu probe failed (exit {proc.returncode}).\n"
+                f"  stdout: {proc.stdout[:300]}\n"
+                f"  stderr: {proc.stderr[:200]}"
+            )
+        return True, "ok"
+
     def profile(
         self,
         layer_type: str,
@@ -457,7 +510,7 @@ class NCURunner:
             # Profile only kernels inside the "ncu_measure" NVTX range
             # (set in _ncu_target.py after warmup passes complete)
             "--nvtx",
-            "--nvtx-include", "ncu_measure]",
+            "--nvtx-include", "ncu_measure",
         ]
         if extra_ncu_args:
             ncu_cmd.extend(extra_ncu_args)
@@ -490,10 +543,14 @@ class NCURunner:
             return {"error": str(e), "sm_count": sm_count}
 
         if proc.returncode != 0:
+            # ncu errors (ERR_NVGPUCTRPERM, etc.) go to STDOUT, not stderr.
+            # Include both so the caller can diagnose without re-running.
+            ncu_out = proc.stdout[:1000]
+            ncu_err = proc.stderr[:1000]
             return {
                 "error": f"ncu exit code {proc.returncode}",
-                "stderr": proc.stderr[:2000],
-                "stdout": proc.stdout[:500],
+                "ncu_stdout": ncu_out,
+                "stderr": ncu_err,
                 "sm_count": sm_count,
                 "seq_len": seq_len,
                 "batch_size": batch_size,

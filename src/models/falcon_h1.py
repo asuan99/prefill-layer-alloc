@@ -239,7 +239,7 @@ class FallbackSSMBranch(nn.Module):
         """Chunked PyTorch scan for environments where Triton JIT fails."""
         import math
         batch, seq_len, _ = hidden_states.shape
-        dev, dt = hidden_states.device, hidden_states.dtype
+        dev, dtype = hidden_states.device, hidden_states.dtype
 
         xz = self.in_proj(hidden_states)
         x, z = xz.chunk(2, dim=-1)
@@ -251,15 +251,18 @@ class FallbackSSMBranch(nn.Module):
             x = torch.nn.functional.pad(x, (0, 0, 0, 0, 0, pad))
 
         x_chunks = x.view(batch, n_chunks, self.chunk_size, self.n_heads, self.head_dim)
-        A = torch.exp(-self.A_log.float().abs()).to(dt).view(1, 1, self.n_heads, 1)
-        h = torch.zeros(batch, self.n_heads, self.head_dim, device=dev, dtype=dt)
+        A = torch.exp(-self.A_log.float().abs()).to(dtype).view(1, 1, self.n_heads, 1)
+        h = torch.zeros(batch, self.n_heads, self.head_dim, device=dev, dtype=dtype)
 
         outs = []
         for ci in range(n_chunks):
-            xc = x_chunks[:, ci]
-            h = h.unsqueeze(1) * A + xc * 0.1
-            outs.append(h)
-        y = torch.cat(outs, dim=1)[:, :seq_len].reshape(batch, seq_len, -1)
+            xc = x_chunks[:, ci]  # (batch, chunk_size, n_heads, head_dim)
+            out = h.unsqueeze(1) * A + xc  # (batch, chunk_size, n_heads, head_dim)
+            h = out[:, -1]  # (batch, n_heads, head_dim)
+            outs.append(out)
+
+        y = torch.cat(outs, dim=1)[:, :seq_len]  # (batch, seq_len, n_heads, head_dim)
+        y = y.reshape(batch, seq_len, self.n_heads * self.head_dim)
         y = y * torch.sigmoid(z)
         return self.out_proj(y)
 

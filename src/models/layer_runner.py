@@ -68,6 +68,10 @@ class LayerRunner:
 
         # Lazy-loaded layer extractors
         self._extractors: dict = {}
+        # Per-(model, batch, seq_len, use_fallback) cached (layer, hidden_states, read_bytes, write_bytes)
+        self._ssm_cache: dict = {}
+        # Per-(model, batch, seq_len, ctx_len, use_flashinfer) cached (attn_fn, read_bytes, write_bytes)
+        self._attn_cache: dict = {}
 
     def verify_sm_control(self, verbose: bool = True) -> bool:
         """Verify that SM restriction actually changes kernel latency.
@@ -145,37 +149,39 @@ class LayerRunner:
         """
         extractor = self._get_extractor(model_name)
 
-        if use_fallback_kernel:
-            layer = self._build_fallback_ssm(model_name)
-        else:
-            try:
-                layer = extractor.get_ssm_layer()
-            except Exception:
+        ssm_key = (model_name, batch_size, seq_len, use_fallback_kernel)
+        if ssm_key not in self._ssm_cache:
+            if use_fallback_kernel:
                 layer = self._build_fallback_ssm(model_name)
+            else:
+                try:
+                    layer = extractor.get_ssm_layer()
+                except Exception:
+                    layer = self._build_fallback_ssm(model_name)
 
-        inputs = extractor.make_ssm_inputs(batch_size, seq_len)
-        hidden_states = inputs["hidden_states"]
+            cached_inputs = extractor.make_ssm_inputs(batch_size, seq_len)
+            cached_hidden = cached_inputs["hidden_states"]
 
-        cfg = extractor.get_model_config()
-        hidden_size = cfg["hidden_size"]
-        n_heads = cfg.get("n_ssm_heads", 64)
-        head_dim = cfg.get("head_dim", cfg.get("ssm_head_dim", 32))
-        d_state = cfg.get("d_state", 128)
-        bytes_per_elem = 2  # bfloat16
+            cfg = extractor.get_model_config()
+            hidden_size = cfg["hidden_size"]
+            n_heads = cfg.get("n_ssm_heads", 64)
+            head_dim = cfg.get("head_dim", cfg.get("ssm_head_dim", 32))
+            d_state = cfg.get("d_state", 128)
+            bytes_per_elem = 2
+            weight_bytes = sum(p.numel() * bytes_per_elem for p in layer.parameters())
+            read_bytes, write_bytes = BandwidthEstimator.ssm_bytes(
+                batch=batch_size,
+                seq_len=seq_len,
+                hidden_size=hidden_size,
+                n_heads=n_heads,
+                head_dim=head_dim,
+                d_state=d_state,
+                weight_bytes=weight_bytes,
+                bytes_per_elem=bytes_per_elem,
+            )
+            self._ssm_cache[ssm_key] = (layer, cached_hidden, read_bytes, write_bytes)
 
-        weight_bytes = sum(
-            p.numel() * bytes_per_elem for p in layer.parameters()
-        )
-        read_bytes, write_bytes = BandwidthEstimator.ssm_bytes(
-            batch=batch_size,
-            seq_len=seq_len,
-            hidden_size=hidden_size,
-            n_heads=n_heads,
-            head_dim=head_dim,
-            d_state=d_state,
-            weight_bytes=weight_bytes,
-            bytes_per_elem=bytes_per_elem,
-        )
+        layer, hidden_states, read_bytes, write_bytes = self._ssm_cache[ssm_key]
 
         def _run():
             with torch.no_grad():
@@ -227,47 +233,28 @@ class LayerRunner:
         use_flashinfer: bool = True,
         skip_sm_control: bool = False,
     ) -> dict:
-        """Benchmark a single Attention prefill layer with sm_count SMs.
+        """Benchmark a full Attention prefill layer (Q/K/V/O projections + attention).
 
-        KV cache is pre-filled with context_len tokens to simulate a realistic
-        decode-time KV context.
+        Measures the complete attention block:
+          hidden_states → W_q/W_k/W_v → Q,K,V → FlashAttn/SDPA → W_o → output
+
+        Previously only FlashAttn kernel was measured (pre-projected Q/K/V tensors
+        passed directly), which excluded the dominant projection GEMMs. Now uses
+        nn.Linear layers with the correct weight shapes from the model config so
+        the GEMM load matches the real model.
+
+        Context KV cache (context_len > 0) is pre-built as random tensors; the
+        benchmark only projects the current seq_len query tokens.
 
         Returns:
             dict matching run_ssm_layer() schema with layer_type='attn'.
         """
-        extractor = self._get_extractor(model_name)
-        cfg = extractor.get_model_config()
-
-        n_heads = cfg.get("n_attn_heads", 8)
-        n_kv_heads = cfg.get("n_kv_heads", 8)
-        head_dim = cfg.get("attn_head_dim", 256)
-        bytes_per_elem = 2
-
-        query = torch.randn(
-            batch_size, seq_len, n_heads, head_dim,
-            device=self.device, dtype=self.dtype
-        )
-        total_kv_len = context_len + seq_len
-        kv_cache = torch.randn(
-            batch_size, total_kv_len, 2, n_kv_heads, head_dim,
-            device=self.device, dtype=self.dtype
-        )
-        key = kv_cache[:, :, 0]
-        value = kv_cache[:, :, 1]
-
-        attn_fn = self._build_attn_fn(
-            query, key, value, n_heads, n_kv_heads, head_dim, use_flashinfer
-        )
-
-        read_bytes, write_bytes = BandwidthEstimator.attn_bytes(
-            batch=batch_size,
-            seq_len=seq_len,
-            total_kv_len=total_kv_len,
-            n_heads=n_heads,
-            n_kv_heads=n_kv_heads,
-            head_dim=head_dim,
-            bytes_per_elem=bytes_per_elem,
-        )
+        attn_key = (model_name, batch_size, seq_len, context_len, use_flashinfer)
+        if attn_key not in self._attn_cache:
+            self._attn_cache[attn_key] = self._build_attn_cache(
+                model_name, batch_size, seq_len, context_len, use_flashinfer
+            )
+        attn_fn, read_bytes, write_bytes = self._attn_cache[attn_key]
 
         if not skip_sm_control:
             self.smctrl.set_sm_count(sm_count)
@@ -379,6 +366,81 @@ class LayerRunner:
         }
 
     # ------------------------------------------------------------------
+    # Attn setup cache builder
+    # ------------------------------------------------------------------
+
+    def _build_attn_cache(
+        self,
+        model_name: str,
+        batch_size: int,
+        seq_len: int,
+        context_len: int,
+        use_flashinfer: bool,
+    ) -> tuple:
+        """Allocate projection layers, input tensors, and attn callable once for caching.
+
+        Called on the first run_attn_layer() for a given (model, batch, seq, ctx) key.
+        Subsequent calls reuse the returned (attn_fn, read_bytes, write_bytes).
+        """
+        extractor = self._get_extractor(model_name)
+        cfg = extractor.get_model_config()
+
+        hidden_size = cfg["hidden_size"]
+        n_heads     = cfg.get("n_attn_heads", 8)
+        n_kv_heads  = cfg.get("n_kv_heads", 8)
+        head_dim    = cfg.get("attn_head_dim", 256)
+        attn_hidden = n_heads * head_dim
+        kv_hidden   = n_kv_heads * head_dim
+        bytes_per_elem = 2
+
+        with torch.no_grad():
+            w_q = nn.Linear(hidden_size, attn_hidden, bias=False, dtype=self.dtype).to(self.device)
+            w_k = nn.Linear(hidden_size, kv_hidden,   bias=False, dtype=self.dtype).to(self.device)
+            w_v = nn.Linear(hidden_size, kv_hidden,   bias=False, dtype=self.dtype).to(self.device)
+            w_o = nn.Linear(attn_hidden, hidden_size,  bias=False, dtype=self.dtype).to(self.device)
+
+        hidden_states = torch.randn(
+            batch_size, seq_len, hidden_size,
+            device=self.device, dtype=self.dtype
+        )
+
+        ctx_k = ctx_v = None
+        if context_len > 0:
+            ctx_k = torch.randn(
+                batch_size, context_len, n_kv_heads, head_dim,
+                device=self.device, dtype=self.dtype
+            )
+            ctx_v = torch.randn(
+                batch_size, context_len, n_kv_heads, head_dim,
+                device=self.device, dtype=self.dtype
+            )
+
+        attn_fn = self._build_attn_with_proj_fn(
+            hidden_states, w_q, w_k, w_v, w_o,
+            n_heads, n_kv_heads, head_dim, ctx_k, ctx_v,
+            use_flashinfer,
+        )
+
+        proj_weight_bytes = (
+            w_q.weight.numel() + w_k.weight.numel() +
+            w_v.weight.numel() + w_o.weight.numel()
+        ) * bytes_per_elem
+
+        read_bytes, write_bytes = BandwidthEstimator.attn_bytes(
+            batch=batch_size,
+            seq_len=seq_len,
+            total_kv_len=context_len + seq_len,
+            n_heads=n_heads,
+            n_kv_heads=n_kv_heads,
+            head_dim=head_dim,
+            hidden_size=hidden_size,
+            proj_weight_bytes=proj_weight_bytes,
+            bytes_per_elem=bytes_per_elem,
+        )
+
+        return attn_fn, read_bytes, write_bytes
+
+    # ------------------------------------------------------------------
     # Fallback layer builders (no HuggingFace required)
     # ------------------------------------------------------------------
 
@@ -397,6 +459,111 @@ class LayerRunner:
             nn.Linear(intermediate_size, hidden_size, bias=False, dtype=self.dtype),
         ).to(self.device)
 
+    def _build_attn_with_proj_fn(
+        self,
+        hidden_states: torch.Tensor,
+        w_q: nn.Linear,
+        w_k: nn.Linear,
+        w_v: nn.Linear,
+        w_o: nn.Linear,
+        n_heads: int,
+        n_kv_heads: int,
+        head_dim: int,
+        ctx_k: Optional[torch.Tensor],
+        ctx_v: Optional[torch.Tensor],
+        use_flashinfer: bool,
+    ):
+        """Return a callable: hidden → Q/K/V proj → attention → O proj → output."""
+        if use_flashinfer:
+            try:
+                return self._build_flashinfer_with_proj(
+                    hidden_states, w_q, w_k, w_v, w_o,
+                    n_heads, n_kv_heads, head_dim, ctx_k, ctx_v,
+                )
+            except (ImportError, Exception):
+                pass  # fall through to SDPA
+
+        # SDPA fallback — includes all four GEMMs + attention kernel
+        batch_size, seq_len, _ = hidden_states.shape
+        attn_hidden = n_heads * head_dim
+
+        def _full_sdpa():
+            import torch.nn.functional as F
+            with torch.no_grad():
+                q = w_q(hidden_states).view(batch_size, seq_len, n_heads, head_dim).transpose(1, 2)
+                k = w_k(hidden_states).view(batch_size, seq_len, n_kv_heads, head_dim).transpose(1, 2)
+                v = w_v(hidden_states).view(batch_size, seq_len, n_kv_heads, head_dim).transpose(1, 2)
+
+                if ctx_k is not None:
+                    k = torch.cat([ctx_k.transpose(1, 2), k], dim=2)
+                    v = torch.cat([ctx_v.transpose(1, 2), v], dim=2)
+
+                if n_kv_heads != n_heads:
+                    rep = n_heads // n_kv_heads
+                    k = k.repeat_interleave(rep, dim=1)
+                    v = v.repeat_interleave(rep, dim=1)
+
+                out = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+                out = out.transpose(1, 2).reshape(batch_size, seq_len, attn_hidden)
+                return w_o(out)
+
+        return _full_sdpa
+
+    def _build_flashinfer_with_proj(
+        self,
+        hidden_states: torch.Tensor,
+        w_q: nn.Linear,
+        w_k: nn.Linear,
+        w_v: nn.Linear,
+        w_o: nn.Linear,
+        n_heads: int,
+        n_kv_heads: int,
+        head_dim: int,
+        ctx_k: Optional[torch.Tensor],
+        ctx_v: Optional[torch.Tensor],
+    ):
+        import flashinfer
+        batch_size, seq_len, _ = hidden_states.shape
+        ctx_len = ctx_k.shape[1] if ctx_k is not None else 0
+        total_kv_len = ctx_len + seq_len
+        attn_hidden = n_heads * head_dim
+
+        qo_indptr = torch.arange(
+            0, (batch_size + 1) * seq_len, seq_len,
+            device=self.device, dtype=torch.int32
+        )
+        kv_indptr = torch.arange(
+            0, (batch_size + 1) * total_kv_len, total_kv_len,
+            device=self.device, dtype=torch.int32
+        )
+        workspace = torch.empty(128 * 1024 * 1024, dtype=torch.uint8, device=self.device)
+        wrapper = flashinfer.BatchPrefillWithRaggedKVCacheWrapper(workspace, "NHD")
+        wrapper.plan(
+            qo_indptr, kv_indptr,
+            batch_size, n_heads, n_kv_heads, head_dim,
+            causal=True,
+        )
+
+        def _flashinfer_run():
+            with torch.no_grad():
+                q = w_q(hidden_states).view(-1, n_heads, head_dim)
+                k_new = w_k(hidden_states).view(-1, n_kv_heads, head_dim)
+                v_new = w_v(hidden_states).view(-1, n_kv_heads, head_dim)
+
+                if ctx_k is not None:
+                    k = torch.cat([ctx_k.view(-1, n_kv_heads, head_dim), k_new], dim=0)
+                    v = torch.cat([ctx_v.view(-1, n_kv_heads, head_dim), v_new], dim=0)
+                else:
+                    k, v = k_new, v_new
+
+                kv_flat = torch.stack([k, v], dim=1)
+                out = wrapper.run(q, kv_flat)
+                out = out.view(batch_size, seq_len, attn_hidden)
+                return w_o(out)
+
+        return _flashinfer_run
+
+    # kept for internal use by legacy callers if any
     def _build_attn_fn(
         self,
         query: torch.Tensor,
@@ -407,18 +574,17 @@ class LayerRunner:
         head_dim: int,
         use_flashinfer: bool,
     ):
-        """Return a zero-arg callable that performs one attention forward pass."""
+        """Legacy: attention kernel only (no projections). Kept for compatibility."""
         if use_flashinfer:
             try:
                 return self._build_flashinfer_attn(
                     query, key, value, n_heads, n_kv_heads, head_dim
                 )
             except (ImportError, Exception):
-                pass  # fall through to SDPA
+                pass
 
-        # SDPA fallback
-        q = query.transpose(1, 2)   # (B, n_heads, seq_len, head_dim)
-        k = key.transpose(1, 2)     # (B, n_kv_heads, total_len, head_dim)
+        q = query.transpose(1, 2)
+        k = key.transpose(1, 2)
         v = value.transpose(1, 2)
 
         if n_kv_heads != n_heads:
@@ -442,6 +608,7 @@ class LayerRunner:
         n_kv_heads: int,
         head_dim: int,
     ):
+        """Legacy: flashinfer kernel only (no projections). Kept for compatibility."""
         import flashinfer
         batch_size, seq_len = query.shape[:2]
         total_kv_len = key.shape[1]
@@ -454,7 +621,6 @@ class LayerRunner:
             0, (batch_size + 1) * total_kv_len, total_kv_len,
             device=self.device, dtype=torch.int32
         )
-
         q_flat = query.reshape(-1, n_heads, head_dim)
         kv_flat = torch.stack([
             key.reshape(-1, n_kv_heads, head_dim),
@@ -468,7 +634,7 @@ class LayerRunner:
         wrapper.plan(
             qo_indptr, kv_indptr,
             batch_size, n_heads, n_kv_heads, head_dim,
-            causal=True
+            causal=True,
         )
 
         def _flashinfer_run():

@@ -39,11 +39,18 @@ def load_hardware_config(device_key: str) -> dict:
         props = torch.cuda.get_device_properties(0)
         n_sm = props.multi_processor_count
         steps = compute_sm_steps(n_sm)
+        # Estimate peak BW from device properties: 2 × clock(KHz→Hz) × bus(bits) / 8 / 1e9
+        try:
+            mem_bw_GBs = (
+                2.0 * props.memory_clock_rate * 1e3 * props.memory_bus_width
+            ) / (8.0 * 1e9)
+        except Exception:
+            mem_bw_GBs = None
         return {
             "name": torch.cuda.get_device_name(0),
             "sm_count": n_sm,
             "sm_sweep_steps": steps,
-            "memory_bw_GBs": None,
+            "memory_bw_GBs": mem_bw_GBs,
         }
 
     cfg = hw[device_key]
