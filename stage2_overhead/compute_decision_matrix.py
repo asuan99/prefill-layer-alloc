@@ -94,14 +94,21 @@ def load_stage1_saturation(stage1_dir: Path) -> dict:
 
 
 def load_stage2_overhead(stage2_dir: Path) -> dict:
-    """Load smctrl overhead from Stage 2 JSON files.
+    """Load SM-switch overhead from Stage 2 JSON files.
+
+    Supports both file naming conventions:
+      ctx_switch_overhead_*.json  — Green Contexts backend (current)
+      smctrl_overhead_*.json      — legacy libsmctrl / MPS backend
 
     Returns: {'mean_us': ..., 'p99_us': ..., 'backend': ...}
     """
-    json_files = list(stage2_dir.glob("smctrl_overhead_*.json"))
+    # Prefer Green Contexts output; fall back to legacy smctrl output
+    json_files = sorted(stage2_dir.glob("ctx_switch_overhead_*.json"))
     if not json_files:
-        print(f"  WARNING: No smctrl_overhead JSON in {stage2_dir}")
-        # Return synthetic defaults so pipeline can continue
+        json_files = sorted(stage2_dir.glob("smctrl_overhead_*.json"))
+    if not json_files:
+        print(f"  WARNING: No overhead JSON in {stage2_dir} "
+              f"(checked ctx_switch_overhead_*.json and smctrl_overhead_*.json)")
         return {
             "mean_us": 50.0,
             "p99_us": 120.0,
@@ -109,8 +116,7 @@ def load_stage2_overhead(stage2_dir: Path) -> dict:
             "device": "unknown",
         }
 
-    # Use most recent file
-    latest = sorted(json_files)[-1]
+    latest = json_files[-1]
     with open(latest) as f:
         data = json.load(f)
 
@@ -121,17 +127,26 @@ def load_stage2_overhead(stage2_dir: Path) -> dict:
         mean_us = transitions[key]["mean_us"]
         p99_us = transitions[key]["p99_us"]
     else:
-        # Fallback: average across all transitions
-        means = [v["mean_us"] for v in transitions.values() if "mean_us" in v]
-        p99s = [v["p99_us"] for v in transitions.values() if "p99_us" in v]
-        mean_us = sum(means) / len(means) if means else 50.0
-        p99_us = max(p99s) if p99s else 120.0
+        # Fallback: average across all sync=yes transitions, then any transitions
+        sync_means = [v["mean_us"] for k, v in transitions.items()
+                      if "sync_yes" in k and "mean_us" in v]
+        sync_p99s  = [v["p99_us"]  for k, v in transitions.items()
+                      if "sync_yes" in k and "p99_us"  in v]
+        if sync_means:
+            mean_us = sum(sync_means) / len(sync_means)
+            p99_us  = max(sync_p99s)
+        else:
+            means = [v["mean_us"] for v in transitions.values() if "mean_us" in v]
+            p99s  = [v["p99_us"]  for v in transitions.values() if "p99_us"  in v]
+            mean_us = sum(means) / len(means) if means else 50.0
+            p99_us  = max(p99s)               if p99s  else 120.0
 
     return {
         "mean_us": mean_us,
         "p99_us": p99_us,
         "backend": data.get("meta", {}).get("backend", "unknown"),
         "device": data.get("meta", {}).get("device", "unknown"),
+        "source_file": str(latest.name),
         "raw": data,
     }
 
