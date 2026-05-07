@@ -718,7 +718,7 @@ def plot_srm_bound_analysis(
     if sm_restrict_fail_marked:
         fig.text(
             0.5, -0.13,
-            "✕ marks: attained > ceiling(AI, r) — libsmctrl SM mask not enforced for this kernel\n"
+            "✕ marks: attained > ceiling(AI, r) — Green Context SM restriction not effective for this kernel\n"
             "(confirmed by Stage 4: cuStreamSetAttribute rc=801 on GeForce/RTX 5060 Ti)",
             ha="center", va="top", fontsize=7.5, color="darkred",
             style="italic",
