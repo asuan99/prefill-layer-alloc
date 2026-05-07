@@ -2,7 +2,7 @@
 Single-layer independent execution utility.
 
 LayerRunner runs individual SSM, Attention, or MLP layers in isolation,
-applying libsmctrl SM restrictions before each benchmark run to measure
+applying Green Context SM restrictions before each benchmark run to measure
 SM-scaling behavior.
 
 Design notes:
@@ -29,7 +29,7 @@ import torch.nn as nn
 import numpy as np
 from typing import Optional
 
-from src.smctrl.libsmctrl_wrapper import SMController
+from src.smctrl import SMController
 from src.profiling.metrics import LatencyMeter, BandwidthEstimator
 
 
@@ -53,10 +53,11 @@ class LayerRunner:
         total_sm_count: Optional[int] = None,
         theoretical_bw_GBs: Optional[float] = None,
         sm_per_tpc: int = 2,
+        smctrl: Optional[SMController] = None,
     ):
         self.device = device
         self.dtype = dtype
-        self.smctrl = SMController(
+        self.smctrl = smctrl or SMController(
             total_sm_count=total_sm_count,
             sm_per_tpc=sm_per_tpc,
         )
@@ -81,8 +82,9 @@ class LayerRunner:
                 "\nWARNING: SM control verification FAILED.\n"
                 "  SM count restriction is not affecting kernel latency.\n"
                 "  Sweep results will NOT show SM-scaling behavior.\n"
-                "  Fix: build libsmctrl (https://github.com/msr-fiddle/libsmctrl)\n"
-                "       and set LIBSMCTRL_PATH=<path>/libsmctrl.so\n"
+                "  Check: (1) GPU supports Green Contexts (A100/H100/H200),\n"
+                "         (2) MIG mode is disabled (nvidia-smi mig -e 0),\n"
+                "         (3) CUDA primary context initialized before SMController.\n"
             )
         return result
 
@@ -181,8 +183,10 @@ class LayerRunner:
 
         if not skip_sm_control:
             self.smctrl.set_sm_count(sm_count)
+        stream = self.smctrl.get_stream()
         try:
-            result = self._measure(_run, n_warmup=n_warmup, n_measure=n_measure)
+            with torch.cuda.stream(stream):
+                result = self._measure(_run, n_warmup=n_warmup, n_measure=n_measure)
         finally:
             if not skip_sm_control:
                 self.smctrl.reset()
@@ -267,8 +271,10 @@ class LayerRunner:
 
         if not skip_sm_control:
             self.smctrl.set_sm_count(sm_count)
+        stream = self.smctrl.get_stream()
         try:
-            result = self._measure(attn_fn, n_warmup=n_warmup, n_measure=n_measure)
+            with torch.cuda.stream(stream):
+                result = self._measure(attn_fn, n_warmup=n_warmup, n_measure=n_measure)
         finally:
             if not skip_sm_control:
                 self.smctrl.reset()
@@ -345,8 +351,10 @@ class LayerRunner:
                 layer(inputs)
 
         self.smctrl.set_sm_count(sm_count)
+        stream = self.smctrl.get_stream()
         try:
-            result = self._measure(_run, n_warmup=n_warmup, n_measure=n_measure)
+            with torch.cuda.stream(stream):
+                result = self._measure(_run, n_warmup=n_warmup, n_measure=n_measure)
         finally:
             self.smctrl.reset()
 

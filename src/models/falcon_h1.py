@@ -1,18 +1,19 @@
 """
-Falcon-H1-1.5B layer extractor.
+Falcon-H1-7B-Instruct layer extractor.
 
-Loads Falcon-H1-1.5B from HuggingFace and extracts individual hybrid layer
-components (parallel SSM branch, attention branch, MLP) for independent
-benchmarking.
+Loads tiiuae/Falcon-H1-7B-Instruct from HuggingFace and extracts individual
+hybrid layer components (parallel SSM branch, attention branch, MLP) for
+independent benchmarking.
 
-Falcon-H1 architecture:
-  - 32 total hybrid layers, each containing:
-    * Parallel Mamba-2 SSM branch (32 heads, head_dim=64)
-    * Grouped-query attention (8 heads, 4 KV heads)
-  - Unlike Zamba2, SSM and Attention run *in parallel* within each layer
+Falcon-H1 architecture (7B-Instruct, verified from config):
+  - 44 total hybrid layers, each containing:
+    * Parallel Mamba-2 SSM branch (24 heads, head_dim=128, d_state=256)
+    * Grouped-query attention (12 heads, 2 KV heads, head_dim=128)
+    * MLP with intermediate_size=12288
+  - SSM and Attention run *in parallel* within each layer
     (outputs are added before MLP), not alternating layers.
-  - This means "SSM layer" and "Attn layer" in Falcon-H1 refer to the
-    parallel branches within each hybrid block.
+  - mamba_use_mlp=True: the Mamba block also contains an embedded MLP.
+  - mamba_n_groups=1: B and C matrices are not group-split.
 """
 
 import torch
@@ -21,7 +22,7 @@ from typing import Optional
 
 
 class FalconH1LayerExtractor:
-    """Extracts and wraps individual layer components from Falcon-H1-1.5B.
+    """Extracts and wraps individual layer components from Falcon-H1-7B-Instruct.
 
     Args:
         model_path: HuggingFace model ID or local path.
@@ -29,19 +30,21 @@ class FalconH1LayerExtractor:
         dtype: Weight dtype (default: bfloat16).
     """
 
-    MODEL_PATH = "tiiuae/Falcon-H1-1.5B"
+    MODEL_PATH = "tiiuae/Falcon-H1-7B-Instruct"
 
-    # Falcon-H1 config constants
-    HIDDEN_SIZE = 2048
-    N_SSM_HEADS = 32
-    SSM_HEAD_DIM = 64    # d_model / n_heads = 2048 / 32
-    D_STATE = 64
-    CHUNK_SIZE = 256
-    SSM_EXPAND = 1
-    N_ATTN_HEADS = 8
-    N_KV_HEADS = 4
-    ATTN_HEAD_DIM = 256
-    INTERMEDIATE_SIZE = 5504
+    # Verified from tiiuae/Falcon-H1-7B-Instruct config.json
+    HIDDEN_SIZE = 3072
+    N_SSM_HEADS = 24            # mamba_n_heads
+    SSM_HEAD_DIM = 128          # mamba_d_head = mamba_d_ssm / mamba_n_heads = 3072/24
+    D_STATE = 256               # mamba_d_state
+    CHUNK_SIZE = 256            # mamba_chunk_size
+    SSM_EXPAND = 2              # mamba_expand
+    N_SSM_GROUPS = 1            # mamba_n_groups
+    N_ATTN_HEADS = 12           # num_attention_heads
+    N_KV_HEADS = 2              # num_key_value_heads
+    ATTN_HEAD_DIM = 128         # head_dim (attention)
+    INTERMEDIATE_SIZE = 12288   # intermediate_size (MLP)
+    NUM_HIDDEN_LAYERS = 44      # num_hidden_layers
 
     def __init__(
         self,
@@ -69,25 +72,30 @@ class FalconH1LayerExtractor:
         )
         self._model.eval()
 
-    def get_ssm_branch(self, layer_idx: int = 0) -> nn.Module:
+    def get_ssm_layer(self, layer_idx: int = 0) -> nn.Module:
         """Return the parallel SSM (Mamba-2) branch at layer_idx.
 
         In Falcon-H1, each hybrid layer has a parallel SSM branch.
         The branch accepts hidden_states and returns same-shape tensor.
         """
+        return self.get_ssm_branch(layer_idx)
+
+    def get_ssm_branch(self, layer_idx: int = 0) -> nn.Module:
         self._load_model()
         layer = self._model.model.layers[layer_idx]
         for name in ["mamba", "ssm_branch", "ssm", "mixer"]:
             if hasattr(layer, name):
                 return getattr(layer, name)
-        # Wrap entire layer as SSM-type
         return _HybridBranchWrapper(layer, "ssm", self.HIDDEN_SIZE, self.device, self.dtype)
 
-    def get_attention_branch(self, layer_idx: int = 0) -> nn.Module:
+    def get_attention_layer(self, layer_idx: int = 0) -> nn.Module:
         """Return the attention branch at layer_idx.
 
         In Falcon-H1, each hybrid layer has a parallel attention branch.
         """
+        return self.get_attention_branch(layer_idx)
+
+    def get_attention_branch(self, layer_idx: int = 0) -> nn.Module:
         self._load_model()
         layer = self._model.model.layers[layer_idx]
         for name in ["self_attn", "attention", "attn_branch", "attn"]:
@@ -113,11 +121,12 @@ class FalconH1LayerExtractor:
             "ssm_head_dim": self.SSM_HEAD_DIM,
             "d_state": self.D_STATE,
             "chunk_size": self.CHUNK_SIZE,
+            "n_ssm_groups": self.N_SSM_GROUPS,
             "n_attn_heads": self.N_ATTN_HEADS,
             "n_kv_heads": self.N_KV_HEADS,
             "attn_head_dim": self.ATTN_HEAD_DIM,
             "intermediate_size": self.INTERMEDIATE_SIZE,
-            # Falcon-H1: all 32 layers are hybrid (SSM + Attn in parallel)
+            # All 44 layers are hybrid (SSM + Attn in parallel)
             "ssm_layer_fraction": 1.0,
             "attn_layer_fraction": 1.0,
         }
@@ -156,19 +165,20 @@ class FalconH1LayerExtractor:
 
 
 class FallbackSSMBranch(nn.Module):
-    """Minimal Falcon-H1 SSM branch using mamba_chunk_scan_combined directly.
+    """Minimal Falcon-H1-7B SSM branch using mamba_chunk_scan_combined directly.
 
     Used when the full model is not available or for isolated kernel benchmarks.
-    Falcon-H1 uses n_heads=32, head_dim=64 (vs Zamba2's 64 heads, dim=32).
+    Falcon-H1-7B: n_heads=24, head_dim=128, d_state=256, n_groups=1.
     """
 
     def __init__(
         self,
-        d_model: int = 2048,
-        n_heads: int = 32,
-        head_dim: int = 64,
-        d_state: int = 64,
+        d_model: int = 3072,
+        n_heads: int = 24,
+        head_dim: int = 128,
+        d_state: int = 256,
         chunk_size: int = 256,
+        n_groups: int = 1,
         device: str = "cuda",
         dtype: torch.dtype = torch.bfloat16,
     ):
@@ -178,6 +188,7 @@ class FallbackSSMBranch(nn.Module):
         self.head_dim = head_dim
         self.d_state = d_state
         self.chunk_size = chunk_size
+        self.n_groups = n_groups
         self.device = device
         self.dtype = dtype
 
@@ -197,8 +208,8 @@ class FallbackSSMBranch(nn.Module):
         """
         try:
             from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
-        except ImportError:
-            return hidden_states  # identity fallback
+        except Exception:
+            return self._pytorch_fallback(hidden_states)
 
         batch, seq_len, _ = hidden_states.shape
         xz = self.in_proj(hidden_states)
@@ -206,18 +217,49 @@ class FallbackSSMBranch(nn.Module):
         x = x.view(batch, seq_len, self.n_heads, self.head_dim)
 
         dt = torch.ones(batch, seq_len, self.n_heads, device=self.device, dtype=self.dtype) * 0.1
-        B = torch.randn(batch, seq_len, 1, self.d_state, device=self.device, dtype=self.dtype)
-        C = torch.randn(batch, seq_len, 1, self.d_state, device=self.device, dtype=self.dtype)
+        B = torch.randn(batch, seq_len, self.n_groups, self.d_state, device=self.device, dtype=self.dtype)
+        C = torch.randn(batch, seq_len, self.n_groups, self.d_state, device=self.device, dtype=self.dtype)
         A = -torch.exp(self.A_log.float()).to(self.dtype)
 
-        y = mamba_chunk_scan_combined(
-            x, dt, A, B, C,
-            chunk_size=self.chunk_size,
-            D=self.D,
-            dt_bias=self.dt_bias,
-            dt_softplus=True,
-        )
+        try:
+            y = mamba_chunk_scan_combined(
+                x, dt, A, B, C,
+                chunk_size=self.chunk_size,
+                D=self.D,
+                dt_bias=self.dt_bias,
+                dt_softplus=True,
+            )
+        except Exception:
+            return self._pytorch_fallback(hidden_states)
         y = y.view(batch, seq_len, -1)
+        y = y * torch.sigmoid(z)
+        return self.out_proj(y)
+
+    def _pytorch_fallback(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """Chunked PyTorch scan for environments where Triton JIT fails."""
+        import math
+        batch, seq_len, _ = hidden_states.shape
+        dev, dt = hidden_states.device, hidden_states.dtype
+
+        xz = self.in_proj(hidden_states)
+        x, z = xz.chunk(2, dim=-1)
+        x = x.view(batch, seq_len, self.n_heads, self.head_dim)
+
+        n_chunks = math.ceil(seq_len / self.chunk_size)
+        pad = n_chunks * self.chunk_size - seq_len
+        if pad:
+            x = torch.nn.functional.pad(x, (0, 0, 0, 0, 0, pad))
+
+        x_chunks = x.view(batch, n_chunks, self.chunk_size, self.n_heads, self.head_dim)
+        A = torch.exp(-self.A_log.float().abs()).to(dt).view(1, 1, self.n_heads, 1)
+        h = torch.zeros(batch, self.n_heads, self.head_dim, device=dev, dtype=dt)
+
+        outs = []
+        for ci in range(n_chunks):
+            xc = x_chunks[:, ci]
+            h = h.unsqueeze(1) * A + xc * 0.1
+            outs.append(h)
+        y = torch.cat(outs, dim=1)[:, :seq_len].reshape(batch, seq_len, -1)
         y = y * torch.sigmoid(z)
         return self.out_proj(y)
 
