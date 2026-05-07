@@ -102,7 +102,7 @@ class LatencyMeter:
         """CPU-timer measurement with configurable synchronization.
 
         Useful for measuring operations that include CPU-side overhead
-        (e.g., SM reconfiguration calls via libsmctrl).
+        (e.g., SM reconfiguration calls via Green Context stream switch).
         """
         import time
 

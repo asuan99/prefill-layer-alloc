@@ -68,7 +68,7 @@ def compute_wave_stats(n_blocks: int, sm_count: int) -> WaveStats:
 
     Args:
         n_blocks: Total number of thread blocks (CTA) launched.
-        sm_count: Number of SMs available (may be restricted via libsmctrl).
+        sm_count: Number of SMs available (may be restricted via Green Contexts).
 
     Returns:
         WaveStats with efficiency and waste metrics.
@@ -124,7 +124,7 @@ class WaveEstimator:
             seq_len: Sequence length.
             n_heads: Number of SSM heads.
             chunk_size: Mamba-2 chunk size (default 256).
-            sm_count: Effective SM count (after libsmctrl restriction).
+            sm_count: Effective SM count (after Green Context SM restriction).
 
         Returns:
             WaveStats for the scan kernel.

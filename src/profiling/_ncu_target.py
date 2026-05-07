@@ -49,14 +49,15 @@ def main():
 
     dtype = torch.bfloat16 if args.dtype == "bfloat16" else torch.float16
 
-    from src.smctrl.libsmctrl_wrapper import SMController
+    from src.smctrl import SMController
     from src.models.layer_runner import LayerRunner
 
     smctrl = SMController()
-    runner = LayerRunner(device="cuda", dtype=dtype)
+    runner = LayerRunner(device="cuda", dtype=dtype, smctrl=smctrl)
 
-    # Apply SM restriction
+    # Apply SM restriction — must use runner.smctrl.get_stream() for kernels
     smctrl.set_sm_count(args.sm_count)
+    _stream = smctrl.get_stream()
 
     # Build the kernel function
     if args.layer_type == "ssm":
@@ -110,15 +111,17 @@ def main():
                 layer(inputs)
 
     # Warmup — outside NVTX range, ncu --nvtx-include skips these
-    for _ in range(args.n_warmup):
-        kernel()
+    with torch.cuda.stream(_stream):
+        for _ in range(args.n_warmup):
+            kernel()
     torch.cuda.synchronize()
 
     # Measured launches — inside "ncu_measure" NVTX range
     # ncu --nvtx --nvtx-include "ncu_measure" profiles only these kernels
     torch.cuda.nvtx.range_push("ncu_measure")
-    for _ in range(args.n_measure):
-        kernel()
+    with torch.cuda.stream(_stream):
+        for _ in range(args.n_measure):
+            kernel()
     torch.cuda.synchronize()
     torch.cuda.nvtx.range_pop()
 
