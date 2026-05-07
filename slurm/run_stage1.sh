@@ -10,8 +10,9 @@
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/stage1_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/stage1_%j.err
 
-module load conda/pytorch_2.9.1_cuda12
-module load cuda/12.9
+
+module load conda/pytorch_2.9.1_cuda13
+module load cuda/13.0.2
 module load gcc/15.2.0
 # source activate /scratch/$USER/envs/prefill-alloc
 

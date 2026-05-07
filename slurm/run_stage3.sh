@@ -7,15 +7,16 @@
 #SBATCH --gres=gpu:1
 #SBATCH --time=04:00:00
 #SBATCH --comment=pytorch
-#SBATCH -o /scratch/%u/prefill-layer-alloc/logs/stage3_%j.log
-#SBATCH -e /scratch/%u/prefill-layer-alloc/logs/stage3_%j.err
 
-module load conda/pytorch_2.9.1_cuda12
-module load cuda/12.8
+#SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/stage3_%j.log
+#SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/stage3_%j.err
+
+module load conda/pytorch_2.9.1_cuda13
+module load cuda/13.0.2
 module load gcc/15.2.0
-source activate /scratch/$USER/envs/prefill-alloc
 
-cd /scratch/$USER/prefill-layer-alloc
+cd /scratch/$USER/whlee/prefill-layer-alloc
+
 mkdir -p logs results
 
 MODEL=${1:-zamba2}

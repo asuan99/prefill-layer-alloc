@@ -7,27 +7,29 @@
 #SBATCH --gres=gpu:1
 #SBATCH --time=02:00:00
 #SBATCH --comment=pytorch
-#SBATCH -o /scratch/%u/setup_env_%j.log
+#SBATCH -o /scratch/%u/whlee/setup_env_%j.log
 
-module load conda/pytorch_2.9.1_cuda12
-module load cuda/12.8
+module load conda/pytorch_2.9.1_cuda13
+module load cuda/13.0.2
 module load gcc/15.2.0
 
-mkdir -p /scratch/$USER/envs
+mkdir -p /scratch/$USER/whlee/prefill-layer-alloc/envs
 
 # conda 환경 생성 (pytorch 모듈 환경 기반으로 venv)
-python -m venv /scratch/$USER/envs/prefill-alloc --system-site-packages
-source /scratch/$USER/envs/prefill-alloc/bin/activate
+python -m venv /scratch/$USER/whlee/prefill-layer-alloc/envs/prefill-alloc --system-site-packages
+source /scratch/$USER/whlee/prefill-layer-alloc/envs/prefill-alloc/bin/activate
 
-pip install --upgrade pip ninja
+
+pip install --user --upgrade pip ninja
 
 # CUDA 컴파일 필요 패키지
-pip install causal-conv1d==1.5.3.post1
-pip install mamba-ssm==2.3.1
-pip install flash-attn==2.7.4.post1 --no-build-isolation
+pip install --user causal-conv1d==1.5.3.post1
+pip install --user mamba-ssm==2.3.1
+pip install --user flash-attn==2.7.4.post1 --no-build-isolation
 
 # 나머지 패키지
-pip install pynvml pandas matplotlib seaborn pyyaml tqdm
+pip install --user pynvml pandas matplotlib seaborn pyyaml tqdm
+pip install --user flashinfer-python --index-url https://flashinfer.ai/whl/cu124/torch2.9/
 
 # 검증
 python -c "
