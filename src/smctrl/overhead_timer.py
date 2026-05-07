@@ -1,21 +1,27 @@
 """
-SM reconfiguration overhead timer.
+SM reconfiguration overhead timer — Green Contexts backend.
 
-Provides precise CPU-side timing of libsmctrl SM mask changes using
-perf_counter_ns, bracketed by torch.cuda.synchronize() calls to ensure
-the measured interval captures the full reconfiguration delay including
-any subsequent kernel launch stall.
+Measures the CPU-side and total latency of SM partition switching via
+CUDA Green Contexts.  With Green Contexts, set_sm_ratio() is a Python
+dict lookup (< 1 μs); the dominant overhead at layer boundaries is
+torch.cuda.synchronize() draining any in-flight work before the stream
+switch takes full effect.
+
+Three measurement modes:
+  measure_single_transition  — A→B switch with/without device sync
+  measure_n_transitions      — n consecutive layer-boundary switches
+  measure_cold_start_penalty — first-kernel latency after stream switch
 """
 
 import time
 import numpy as np
 import torch
 from typing import Optional
-from .libsmctrl_wrapper import SMController
+from .green_ctx_controller import SMController
 
 
 class SMOverheadTimer:
-    """Measures SM reconfiguration overhead with CUDA-event precision."""
+    """Measures Green Context stream-switch overhead."""
 
     def __init__(self, smctrl: Optional[SMController] = None):
         self.smctrl = smctrl or SMController()
@@ -28,13 +34,18 @@ class SMOverheadTimer:
         n_warmup: int = 50,
         n_measure: int = 200,
     ) -> dict:
-        """Measure a single SM mask transition (A → B) latency.
+        """Measure a single SM-partition switch (A → B) latency.
+
+        With Green Contexts, set_sm_ratio() is a CPU-side pointer swap.
+        include_sync=True adds torch.cuda.synchronize() after the switch,
+        which is the realistic layer-boundary cost (drain in-flight work,
+        then hand off to the new stream).
 
         Args:
             from_ratio: Source SM ratio.
-            to_ratio: Target SM ratio.
-            include_sync: If True, include torch.cuda.synchronize() overhead.
-            n_warmup: Discarded warm-up iterations.
+            to_ratio:   Target SM ratio.
+            include_sync: If True, include torch.cuda.synchronize() cost.
+            n_warmup:  Discarded warm-up iterations.
             n_measure: Measurement iterations.
 
         Returns:
@@ -44,14 +55,17 @@ class SMOverheadTimer:
         samples = []
 
         for i in range(n_warmup + n_measure):
+            # Set up source context and ensure a kernel is in-flight
             self.smctrl.set_sm_ratio(from_ratio)
-            dummy.fill_(0.0)
+            with torch.cuda.stream(self.smctrl.get_stream()):
+                dummy.fill_(0.0)
             if include_sync:
                 torch.cuda.synchronize()
 
             t0 = time.perf_counter_ns()
             self.smctrl.set_sm_ratio(to_ratio)
             if include_sync:
+                # Sync ensures the new stream is the active one before next kernel
                 torch.cuda.synchronize()
             t1 = time.perf_counter_ns()
 
@@ -79,17 +93,19 @@ class SMOverheadTimer:
         n_warmup: int = 20,
         n_measure: int = 100,
     ) -> dict:
-        """Simulate n layer-boundary transitions and measure total overhead.
+        """Simulate n layer-boundary stream switches and measure total overhead.
 
-        Models a hybrid model forward pass where SM ratio alternates between
-        SSM (prefill-heavy) and Attention layers for n_layers total.
+        Each layer uses the Green Context stream matching its SM ratio.
+        A minimal kernel (dummy.add_) is enqueued on each layer's stream
+        to model realistic usage.  Total time is measured with device sync
+        around the full sequence.
 
         Args:
-            n_layers: Number of layer boundaries to simulate.
-            ssm_ratio: SM ratio used for SSM layers.
-            attn_ratio: SM ratio used for Attention layers.
-            n_warmup: Discarded warm-up runs.
-            n_measure: Measurement runs.
+            n_layers:   Number of layer boundaries to simulate.
+            ssm_ratio:  SM ratio for SSM layers.
+            attn_ratio: SM ratio for Attention layers.
+            n_warmup:   Discarded warm-up runs.
+            n_measure:  Measurement runs.
 
         Returns:
             dict with total and per-transition overhead statistics (μs).
@@ -104,7 +120,8 @@ class SMOverheadTimer:
             for layer_idx in range(n_layers):
                 ratio = ssm_ratio if layer_idx % 2 == 0 else attn_ratio
                 self.smctrl.set_sm_ratio(ratio)
-                dummy.add_(1.0)  # minimal kernel to simulate layer execution
+                with torch.cuda.stream(self.smctrl.get_stream()):
+                    dummy.add_(1.0)
 
             torch.cuda.synchronize()
             t1 = time.perf_counter_ns()
@@ -130,10 +147,14 @@ class SMOverheadTimer:
         n_warmup: int = 20,
         n_measure: int = 100,
     ) -> dict:
-        """Measure if the first kernel after SM reconfiguration has extra latency.
+        """Measure if the first kernel on a new Green Context stream has extra latency.
 
-        Compares: (a) baseline kernel with no reconfiguration vs
-                  (b) first kernel after SM mask change.
+        Compares:
+          (a) baseline GEMM on the current full-SM stream
+          (b) same GEMM after switching to a restricted-SM stream
+
+        With Green Contexts, cold-start penalty is typically ~0 μs because
+        stream switching is handled by the GPU scheduler asynchronously.
 
         Returns:
             dict with baseline_us, post_reconfig_us, penalty_us.
@@ -144,21 +165,26 @@ class SMOverheadTimer:
         post_reconfig_samples = []
 
         for i in range(n_warmup + n_measure):
-            # Baseline: no reconfiguration
+            # Baseline: full-SM stream, no switch
+            self.smctrl.reset()
+            stream_full = self.smctrl.get_stream()
             torch.cuda.synchronize()
             t0 = time.perf_counter_ns()
-            _ = torch.mm(x, x)
+            with torch.cuda.stream(stream_full):
+                _ = torch.mm(x, x)
             torch.cuda.synchronize()
             t1 = time.perf_counter_ns()
             if i >= n_warmup:
                 baseline_samples.append((t1 - t0) / 1_000.0)
 
-            # Post-reconfig: first kernel after SM mask change
-            self.smctrl.set_sm_ratio(1.0)
+            # Post-switch: switch to ratio stream, then run first kernel
+            self.smctrl.reset()
             torch.cuda.synchronize()
             self.smctrl.set_sm_ratio(ratio)
+            stream_new = self.smctrl.get_stream()
             t0 = time.perf_counter_ns()
-            _ = torch.mm(x, x)
+            with torch.cuda.stream(stream_new):
+                _ = torch.mm(x, x)
             torch.cuda.synchronize()
             t1 = time.perf_counter_ns()
             if i >= n_warmup:
