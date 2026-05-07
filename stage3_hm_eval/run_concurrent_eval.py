@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 import torch
 import numpy as np
 
-from src.smctrl.libsmctrl_wrapper import SMController
+from src.smctrl import SMController
 from src.models.layer_runner import LayerRunner
 from src.profiling.nvml_monitor import NVMLMonitor
 from stage1_sm_scaling.run_ssm_prefill_sweep import load_hardware_config, device_tag
@@ -53,15 +53,21 @@ SLO_TPOT_MS = 50.0       # decode TPOT SLO threshold
 PREFILL_INTERVAL_STEPS = 4  # new prefill request every N decode steps
 N_PREFILL_REQUESTS = 50   # run until this many prefill requests are processed
 
+# Verified from model configs (Phase 2 update)
 MODEL_NUM_LAYERS = {
-    "zamba2": 54,
-    "falcon_h1": 32,
+    "zamba2": 81,     # Zamba2-7B-Instruct: 68 mamba + 13 hybrid
+    "falcon_h1": 44,  # Falcon-H1-7B-Instruct: all 44 layers hybrid
 }
 
-# Zamba2: SSM every layer except every 9th (attention); Falcon-H1: all hybrid
+# Actual hybrid layer indices from Zyphra/Zamba2-7B-Instruct config.json
+_ZAMBA2_HYBRID_IDS = frozenset([6, 11, 17, 23, 29, 35, 41, 47, 53, 59, 65, 71, 77])
+
 MODEL_LAYER_TYPES = {
-    "zamba2": lambda i: "ssm" if i % 9 != 6 else "attn",
-    "falcon_h1": lambda i: "ssm" if i % 2 == 0 else "attn",  # simplified: alternating
+    # Zamba2-7B: "attn" for hybrid layers (Mamba+Attn), "ssm" for pure Mamba layers
+    "zamba2": lambda i: "attn" if i in _ZAMBA2_HYBRID_IDS else "ssm",
+    # Falcon-H1-7B: all 44 layers run SSM+Attn in parallel → treat as "ssm"
+    # (SSM branch dominates prefill compute; both branches execute together)
+    "falcon_h1": lambda i: "ssm",
 }
 
 
@@ -186,7 +192,8 @@ def run_eval(
             policy.on_prefill_layer_start(current_prefill.layer_idx, lt)
 
             _run_prefill_layer(
-                runner, model_name, decode_batch_size, prefill_seq_len, total_sm
+                runner, model_name, decode_batch_size, prefill_seq_len, total_sm,
+                layer_type=lt,
             )
 
             policy.on_prefill_layer_end(current_prefill.layer_idx, lt)
@@ -235,14 +242,15 @@ def _run_decode_step(
 
 
 def _run_prefill_layer(
-    runner: LayerRunner, model_name: str, batch_size: int, seq_len: int, total_sm: int
+    runner: LayerRunner, model_name: str, batch_size: int, seq_len: int, total_sm: int,
+    layer_type: str = "ssm",
 ) -> None:
-    """Simulate one prefill layer.
+    """Simulate one prefill layer, dispatching by layer type.
 
     SM ratio is already set by the policy before this call.
     skip_sm_control=True preserves the policy's SM mask.
     """
-    runner.run_ssm_layer(
+    common = dict(
         model_name=model_name,
         batch_size=batch_size,
         seq_len=seq_len,
@@ -251,6 +259,10 @@ def _run_prefill_layer(
         n_measure=1,
         skip_sm_control=True,
     )
+    if layer_type == "attn":
+        runner.run_attn_layer(**common)
+    else:
+        runner.run_ssm_layer(**common)
 
 
 # ---------------------------------------------------------------------------
@@ -340,8 +352,12 @@ if __name__ == "__main__":
     total_sm = hw_cfg["sm_count"]
     output_dir = Path(__file__).parent.parent / "results" / "stage3"
 
+    # Single SMController shared between runner and policies so that
+    # policy.set_sm_ratio() and runner.get_stream() operate on the same
+    # Green Context state. Without sharing, policy SM changes would be invisible
+    # to the runner's stream selection.
     smctrl = SMController(total_sm_count=total_sm)
-    runner = LayerRunner(device="cuda", total_sm_count=total_sm)
+    runner = LayerRunner(device="cuda", total_sm_count=total_sm, smctrl=smctrl)
 
     # Determine which policies to run
     policies_to_run = set(args.policy)

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.smctrl.libsmctrl_wrapper import SMController
+    from src.smctrl.green_ctx_controller import SMController
 
 PREFILL_RATIO = 0.40
 DECODE_RATIO = 0.60

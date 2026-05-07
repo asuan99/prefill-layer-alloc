@@ -18,7 +18,7 @@ import yaml
 from pathlib import Path
 
 if TYPE_CHECKING:
-    from src.smctrl.libsmctrl_wrapper import SMController
+    from src.smctrl.green_ctx_controller import SMController
 
 # Per-model SM ratios based on SSM layer fraction
 # Zamba2: SSM fraction ~0.889 → higher prefill SM share (SSM is parallelizable)

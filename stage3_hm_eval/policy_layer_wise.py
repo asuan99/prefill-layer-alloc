@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.smctrl.libsmctrl_wrapper import SMController
+    from src.smctrl.green_ctx_controller import SMController
 
 # Per-layer-type SM ratios for prefill
 SSM_PREFILL_RATIO = 0.70   # SSM is memory-BW bound; benefits from SM parallelism
