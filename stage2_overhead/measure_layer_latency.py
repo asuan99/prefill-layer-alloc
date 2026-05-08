@@ -5,7 +5,7 @@ Collects SSM and Attention prefill latency at full SM count for the
 (model, seq_len, batch_size) combinations used in compute_decision_matrix.py.
 
 This data is the denominator in:
-  overhead_ratio = smctrl_overhead_us / (layer_latency_ms × 1000)
+  overhead_ratio = ctx_switch_overhead_us / (layer_latency_ms × 1000)
 
 Usage:
     python stage2_overhead/measure_layer_latency.py --model zamba2

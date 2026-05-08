@@ -1,10 +1,9 @@
 """
 Stage 2: CUDA Green Contexts stream-switch latency measurement.
 
-Replaces measure_smctrl_latency.py for CUDA driver 550+ (A100/H100/H200).
-With Green Contexts, SM partition switching is a CPU-side stream pointer
-swap rather than a kernel ioctl; this script quantifies each overhead
-component separately.
+Measures CUDA Green Contexts SM partition switching overhead for CUDA driver 550+
+(A100/H100/H200). Switching is a CPU-side stream pointer swap rather than a
+kernel ioctl; this script quantifies each overhead component separately.
 
 Four measurement sections:
   1. GreenContext initialization overhead  (one-time cost at startup)

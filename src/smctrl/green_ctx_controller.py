@@ -1,9 +1,6 @@
 """
 CUDA Green Contexts SM partitioning controller.
 
-Replaces libsmctrl_wrapper.SMController for CUDA driver 13.0 (A100).
-Public interface is identical to libsmctrl_wrapper.SMController.
-
 Design:
   Preset SM counts are materialized as (GreenContext, ExternalStream) pairs at
   __init__. set_sm_count(n) does a nearest-preset lookup and swaps the active
@@ -153,9 +150,6 @@ def _bind_symbols(lib: ctypes.CDLL) -> None:
 
 class SMController:
     """SM partitioning via CUDA Green Contexts (CUDA driver 550+, toolkit 12.4+).
-
-    Public interface matches libsmctrl_wrapper.SMController exactly so that
-    layer_runner.py and policy_*.py require no changes beyond import path.
 
     New method:
         get_stream() -> torch.cuda.Stream
@@ -316,7 +310,7 @@ class SMController:
         return green_ctx.value, ext_stream, actual_sm
 
     # ------------------------------------------------------------------
-    # Public interface (identical to libsmctrl_wrapper.SMController)
+    # Public interface
     # ------------------------------------------------------------------
 
     def is_available(self) -> bool:
@@ -451,7 +445,7 @@ class SMController:
         (O(1) Python dict lookup) plus the cost of torch.cuda.synchronize()
         to flush any in-flight work before the new context takes over.
 
-        Methodology mirrors libsmctrl_wrapper.SMController for direct comparison:
+        Methodology:
           synchronize → t0 → set_sm_ratio → synchronize → t1
         """
         dummy = torch.zeros(1, device=f"cuda:{self.device_id}")

@@ -5,7 +5,7 @@ Synthesizes Stage 1 (SM saturation) and Stage 2 (overhead) results
 to determine which allocation strategy to execute in Stage 3.
 
 Decision formula:
-  overhead_ratio = smctrl_overhead_us / (layer_latency_ms * 1000)
+  overhead_ratio = ctx_switch_overhead_us / (layer_latency_ms * 1000)
   free_sm_fraction = (SM_total - SM_saturation) / SM_total
   potential_gain = free_sm_fraction × ssm_layer_fraction × decode_sm_sensitivity
 
@@ -96,19 +96,14 @@ def load_stage1_saturation(stage1_dir: Path) -> dict:
 def load_stage2_overhead(stage2_dir: Path) -> dict:
     """Load SM-switch overhead from Stage 2 JSON files.
 
-    Supports both file naming conventions:
-      ctx_switch_overhead_*.json  — Green Contexts backend (current)
-      smctrl_overhead_*.json      — legacy libsmctrl / MPS backend
+    Reads ctx_switch_overhead_*.json produced by measure_ctx_switch_latency.py.
 
     Returns: {'mean_us': ..., 'p99_us': ..., 'backend': ...}
     """
-    # Prefer Green Contexts output; fall back to legacy smctrl output
     json_files = sorted(stage2_dir.glob("ctx_switch_overhead_*.json"))
     if not json_files:
-        json_files = sorted(stage2_dir.glob("smctrl_overhead_*.json"))
-    if not json_files:
         print(f"  WARNING: No overhead JSON in {stage2_dir} "
-              f"(checked ctx_switch_overhead_*.json and smctrl_overhead_*.json)")
+              f"(checked ctx_switch_overhead_*.json)")
         return {
             "mean_us": 50.0,
             "p99_us": 120.0,
@@ -228,8 +223,8 @@ def build_decision_matrix(
                 "seq_len": sl,
                 "batch_size": bs,
                 "ssm_layer_latency_ms": round(lat_ms, 4),
-                "smctrl_overhead_us": round(overhead["mean_us"], 2),
-                "smctrl_overhead_p99_us": round(overhead["p99_us"], 2),
+                "ctx_switch_overhead_us": round(overhead["mean_us"], 2),
+                "ctx_switch_overhead_p99_us": round(overhead["p99_us"], 2),
                 "overhead_ratio": round(overhead_ratio, 4),
                 "overhead_ratio_p99": round(overhead_ratio_p99, 4),
                 "saturation_sm": sat_sm,
@@ -287,7 +282,7 @@ def render_html(rows: list[dict], out_path: Path) -> None:
   <span class="sa">step_adaptive (5–20%)</span>
   <span class="fx">fixed (&gt; 20%)</span>
 </div>
-<p><b>overhead_ratio</b> = smctrl_overhead_μs / (ssm_layer_latency_ms × 1000)<br>
+<p><b>overhead_ratio</b> = ctx_switch_overhead_μs / (ssm_layer_latency_ms × 1000)<br>
    <b>potential_gain</b> = free_sm_fraction × ssm_layer_fraction × decode_sm_sensitivity</p>
 {styled.to_html()}
 </body>
