@@ -5,32 +5,75 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=04:00:00
+#SBATCH --time=10:00:00
 #SBATCH --comment=pytorch
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/stage1_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/stage1_%j.err
 
+# Usage:
+#   sbatch slurm/run_stage1.sh                   # zamba2, auto-detect GPU
+#   sbatch slurm/run_stage1.sh falcon_h1         # falcon_h1
+#   sbatch slurm/run_stage1.sh zamba2 a100_80gb  # explicit hardware key
+
+set -euo pipefail
 
 module load conda/pytorch_2.9.1_cuda13
 module load cuda/13.0.2
 module load gcc/15.2.0
-# source activate /scratch/$USER/envs/prefill-alloc
 
-source /scratch/$USER/whlee/prefill-layer-alloc/prefill-alloc/bin/activate
+source /scratch/$USER/whlee/prefill-layer-alloc/bin/activate
 
 cd /scratch/$USER/whlee/prefill-layer-alloc
-source 
-mkdir -p logs results
+mkdir -p logs results/stage1
 
-MODEL=${1:-zamba2}   # 인자로 모델 지정 가능: sbatch run_stage1.sh falcon_h1
+MODEL=${1:-zamba2}
+DEVICE=${2:-auto}
 
-echo "=== Stage 1: SM Scaling Sweep | model=$MODEL ==="
+# Sweep parameters — matching the feasibility-verified defaults in each script:
+#   SSM : seq=[512,1024,2048,4096,8192,16384,32768]  bs=[1,4,16,32,64]
+#   Attn: seq=[512,1024,2048,4096,8192,16384]         bs=[1,4,16,32]      ctx=4096
+#   MLP : seq=[512,1024,2048,4096,8192,16384]         bs=[1,4,16,32,64]
 
-python stage1_sm_scaling/run_ssm_prefill_sweep.py  --model $MODEL --device a100_80gb
-python stage1_sm_scaling/run_attn_prefill_sweep.py --model $MODEL --device a100_80gb
-python stage1_sm_scaling/run_mlp_prefill_sweep.py  --model $MODEL --device a100_80gb
+echo "========================================================"
+echo " Stage 1: SM Scaling Sweep"
+echo "   model  = $MODEL"
+echo "   device = $DEVICE"
+echo "   job    = ${SLURM_JOB_ID:-local}"
+echo "   GPU    = $(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)"
+echo "========================================================"
 
-python stage1_sm_scaling/plot_srm.py 
-python stage1_sm_scaling/plot_saturation.py
+# ── SSM prefill sweep ────────────────────────────────────────────────────────
+echo ""
+echo "[1/4] SSM prefill SM scaling sweep …"
+python stage1_sm_scaling/run_ssm_prefill_sweep.py \
+    --model "$MODEL" \
+    --device "$DEVICE"
 
-echo "=== Stage 1 Done ==="
+# ── Attention prefill sweep ──────────────────────────────────────────────────
+echo ""
+echo "[2/4] Attention prefill SM scaling sweep …"
+python stage1_sm_scaling/run_attn_prefill_sweep.py \
+    --model "$MODEL" \
+    --device "$DEVICE"
+
+# ── MLP prefill sweep ────────────────────────────────────────────────────────
+echo ""
+echo "[3/4] MLP prefill SM scaling sweep …"
+python stage1_sm_scaling/run_mlp_prefill_sweep.py \
+    --model "$MODEL" \
+    --device "$DEVICE"
+
+# ── Plots ────────────────────────────────────────────────────────────────────
+echo ""
+echo "[4/4] Generating plots …"
+python stage1_sm_scaling/plot_saturation.py  --model "$MODEL" 2>/dev/null || \
+    python stage1_sm_scaling/plot_saturation.py 2>/dev/null || true
+python stage1_sm_scaling/plot_srm.py         --model "$MODEL" 2>/dev/null || \
+    python stage1_sm_scaling/plot_srm.py         2>/dev/null || true
+python stage1_sm_scaling/plot_sm_split.py    --model "$MODEL" 2>/dev/null || \
+    python stage1_sm_scaling/plot_sm_split.py    2>/dev/null || true
+
+echo ""
+echo "========================================================"
+echo " Stage 1 Done  (results → results/stage1/)"
+echo "========================================================"

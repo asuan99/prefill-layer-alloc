@@ -179,11 +179,11 @@ def parse_args():
     )
     parser.add_argument(
         "--seq-lens", nargs="+", type=int,
-        default=[256, 512, 1024, 2048, 4096],
+        default=[512, 1024, 2048, 4096, 8192, 16384, 32768],
     )
     parser.add_argument(
         "--batch-sizes", nargs="+", type=int,
-        default=[1, 4, 16],
+        default=[1, 4, 16, 32, 64],
     )
     parser.add_argument("--n-warmup", type=int, default=100)
     parser.add_argument("--n-measure", type=int, default=200)

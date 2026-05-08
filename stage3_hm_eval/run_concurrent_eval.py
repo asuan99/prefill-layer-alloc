@@ -328,9 +328,9 @@ def parse_args():
         "--policy", nargs="+", choices=["A", "B", "C", "all"], default=["all"]
     )
     parser.add_argument("--device", default="auto")
-    parser.add_argument("--decode-batch-size", type=int, default=8)
-    parser.add_argument("--prefill-seq-len", type=int, default=1024)
-    parser.add_argument("--context-len", type=int, default=1024)
+    parser.add_argument("--decode-batch-size", type=int, default=64)
+    parser.add_argument("--prefill-seq-len", type=int, default=8192)
+    parser.add_argument("--context-len", type=int, default=4096)
     parser.add_argument("--n-warmup-steps", type=int, default=20)
     parser.add_argument("--slo-tpot-ms", type=float, default=SLO_TPOT_MS)
     parser.add_argument(

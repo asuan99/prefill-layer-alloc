@@ -117,9 +117,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Attention prefill SM scaling sweep")
     parser.add_argument("--model", choices=["zamba2", "falcon_h1"], default="zamba2")
     parser.add_argument("--device", default="auto")
-    parser.add_argument("--seq-lens", nargs="+", type=int, default=[256, 512, 1024, 2048, 4096])
-    parser.add_argument("--batch-sizes", nargs="+", type=int, default=[1, 4, 16])
-    parser.add_argument("--context-len", type=int, default=0,
+    parser.add_argument("--seq-lens", nargs="+", type=int, default=[512, 1024, 2048, 4096, 8192, 16384])
+    parser.add_argument("--batch-sizes", nargs="+", type=int, default=[1, 4, 16, 32])
+    parser.add_argument("--context-len", type=int, default=4096,
                         help="Pre-filled KV cache length (0 = empty context)")
     parser.add_argument("--n-warmup", type=int, default=100)
     parser.add_argument("--n-measure", type=int, default=200)

@@ -29,8 +29,8 @@ from stage1_sm_scaling.run_ssm_prefill_sweep import load_hardware_config, device
 
 
 # Measurement matrix for decision matrix denominator
-SEQ_LENS = [512, 1024, 2048]
-BATCH_SIZES = [1, 4]
+SEQ_LENS = [1024, 4096, 8192, 16384]
+BATCH_SIZES = [4, 16, 32]
 LAYER_TYPES = ["ssm", "attn"]
 
 
