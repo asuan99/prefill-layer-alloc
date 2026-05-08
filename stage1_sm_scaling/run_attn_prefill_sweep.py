@@ -94,7 +94,20 @@ def run_sweep(
                 f"({row['bw_utilization_pct']:.1f}%)"
             )
         except Exception as e:
+            err_str = str(e)
             tqdm.write(f"  ERROR sm={sm_count} seq={seq_len} bs={batch_size}: {e}")
+            is_oom = isinstance(e, torch.cuda.OutOfMemoryError) or "out of memory" in err_str.lower()
+            if is_oom:
+                results.append({
+                    "sm_count": sm_count,
+                    "sm_ratio": sm_count / total_sm,
+                    "seq_len": seq_len,
+                    "batch_size": batch_size,
+                    "context_len": context_len,
+                    "model_name": model_name,
+                    "layer_type": "attn",
+                    "error": "OOM",
+                })
 
     if results:
         out_csv = output_dir / f"attn_scaling_{model_name}_{tag}.csv"
@@ -102,10 +115,10 @@ def run_sweep(
             "sm_count", "sm_ratio", "seq_len", "batch_size", "context_len",
             "latency_ms", "latency_p99_ms",
             "achieved_bandwidth_GBs", "theoretical_bw_GBs", "bw_utilization_pct",
-            "model_name", "layer_type",
+            "model_name", "layer_type", "error",
         ]
         with open(out_csv, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore", restval="")
             writer.writeheader()
             writer.writerows(results)
         print(f"\nSaved: {out_csv}")
