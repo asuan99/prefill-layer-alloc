@@ -136,6 +136,7 @@ class LayerRunner:
         n_measure: int = 50,
         use_fallback_kernel: bool = False,
         skip_sm_control: bool = False,
+        force_pytorch_scan: bool = False,
     ) -> dict:
         """Benchmark a single SSM (Mamba-2) prefill layer with sm_count SMs.
 
@@ -149,15 +150,15 @@ class LayerRunner:
         """
         extractor = self._get_extractor(model_name)
 
-        ssm_key = (model_name, batch_size, seq_len, use_fallback_kernel)
+        ssm_key = (model_name, batch_size, seq_len, use_fallback_kernel, force_pytorch_scan)
         if ssm_key not in self._ssm_cache:
-            if use_fallback_kernel:
-                layer = self._build_fallback_ssm(model_name)
+            if use_fallback_kernel or force_pytorch_scan:
+                layer = self._build_fallback_ssm(model_name, force_pytorch_scan=force_pytorch_scan)
             else:
                 try:
                     layer = extractor.get_ssm_layer()
                 except Exception:
-                    layer = self._build_fallback_ssm(model_name)
+                    layer = self._build_fallback_ssm(model_name, force_pytorch_scan=force_pytorch_scan)
 
             cached_inputs = extractor.make_ssm_inputs(batch_size, seq_len)
             cached_hidden = cached_inputs["hidden_states"]
@@ -444,10 +445,13 @@ class LayerRunner:
     # Fallback layer builders (no HuggingFace required)
     # ------------------------------------------------------------------
 
-    def _build_fallback_ssm(self, model_name: str) -> nn.Module:
+    def _build_fallback_ssm(self, model_name: str, force_pytorch_scan: bool = False) -> nn.Module:
         if model_name == "zamba2":
             from src.models.zamba2 import FallbackSSMKernel
-            return FallbackSSMKernel(device=self.device, dtype=self.dtype).to(self.device)
+            return FallbackSSMKernel(
+                device=self.device, dtype=self.dtype,
+                force_pytorch_scan=force_pytorch_scan,
+            ).to(self.device)
         else:
             from src.models.falcon_h1 import FallbackSSMBranch
             return FallbackSSMBranch(device=self.device, dtype=self.dtype).to(self.device)

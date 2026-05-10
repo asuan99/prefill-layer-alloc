@@ -182,6 +182,14 @@ class FallbackSSMKernel(nn.Module):
 
     Uses mamba_ssm.ops.triton.ssd_combined.mamba_chunk_scan_combined directly.
     Zamba2-7B: n_heads=112, head_dim=64, d_state=64, n_groups=2.
+
+    Args:
+        force_pytorch_scan: Always use the pure-PyTorch chunked scan instead of
+            the Triton SSD kernel. Required when running under Green Context SM
+            restriction, because mamba_chunk_scan_combined uses cooperative
+            inter-block barriers that deadlock when fewer SMs are available than
+            the kernel expects, causing CUDA illegal memory access errors that
+            corrupt the entire CUDA context.
     """
 
     def __init__(
@@ -194,6 +202,7 @@ class FallbackSSMKernel(nn.Module):
         n_groups: int = 2,
         device: str = "cuda",
         dtype: torch.dtype = torch.bfloat16,
+        force_pytorch_scan: bool = False,
     ):
         super().__init__()
         self.d_model = d_model
@@ -204,6 +213,7 @@ class FallbackSSMKernel(nn.Module):
         self.n_groups = n_groups
         self.device = device
         self.dtype = dtype
+        self.force_pytorch_scan = force_pytorch_scan
 
         inner_dim = n_heads * head_dim
         self.in_proj = nn.Linear(d_model, 2 * inner_dim, bias=False, dtype=dtype, device=device)
@@ -219,6 +229,9 @@ class FallbackSSMKernel(nn.Module):
         Returns:
             (batch, seq_len, d_model)
         """
+        if self.force_pytorch_scan:
+            return self._pytorch_fallback(hidden_states)
+
         try:
             from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
         except Exception:
