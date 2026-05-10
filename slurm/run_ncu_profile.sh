@@ -7,7 +7,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #SBATCH --comment=pytorch
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/ncu_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/ncu_%j.err
@@ -28,7 +28,7 @@ module load conda/pytorch_2.9.1_cuda13
 module load cuda/13.0.2
 module load gcc/15.2.0
 
-source /scratch/$USER/whlee/prefill-layer-alloc/prefill-alloc/bin/activate
+source /scratch/$USER/whlee/prefill-layer-alloc/bin/activate
 
 cd /scratch/$USER/whlee/prefill-layer-alloc
 mkdir -p logs results/stage1
