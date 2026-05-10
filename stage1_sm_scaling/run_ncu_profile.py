@@ -357,12 +357,12 @@ def parse_args():
         ),
     )
     parser.add_argument(
-        "--seq-lens", nargs="+", type=int, default=[256, 512, 1024, 2048, 4096],
-        help="Sequence lengths to profile (default: 256 512 1024 2048 4096)",
+        "--seq-lens", nargs="+", type=int, default=[256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
+        help="Sequence lengths to profile (default: 256 512 1024 2048 4096 8192 16384 32768)",
     )
     parser.add_argument(
-        "--batch-sizes", nargs="+", type=int, default=[1, 4, 16],
-        help="Batch sizes (default: 1 4 16)",
+        "--batch-sizes", nargs="+", type=int, default=[1, 4, 16, 32, 64],
+        help="Batch sizes (default: 1 4 16 32 64)",
     )
     parser.add_argument(
         "--full-metrics", action="store_true",
