@@ -485,12 +485,11 @@ class NCURunner:
             --csv                               ← machine-readable output
             --target-processes all             ← profile child processes too
             --clock-control none               ← don't lock clocks
-            --nvtx --nvtx-include "ncu_measure" ← only kernels inside NVTX range
             python _ncu_target.py --layer-type ssm ...
 
-        _ncu_target.py runs n_warmup passes (outside NVTX), then n_measure
-        passes inside torch.cuda.nvtx.range_push("ncu_measure"). ncu captures
-        only the latter via NVTX filtering, so no --launch-skip math is needed.
+        _ncu_target.py runs n_warmup passes (JIT warm-up), then n_measure
+        measured passes. ncu captures all kernel launches; the dominant kernel
+        is selected by max sm__cycles_active.sum in the parsed CSV.
 
         Returns:
             dict with raw metric values + derived SM utilization / wave stats.
@@ -501,16 +500,21 @@ class NCURunner:
             metrics = NCU_METRICS_WAVE
 
         metrics_str = ",".join(metrics)
+        # --nvtx / --nvtx-include removed: when ncu cannot intercept NVTX
+        # annotations (CUDA 13 / Python 3.14 ABI mismatch, or Green Context
+        # stream correlation gap), it sees zero NVTX ranges and silently
+        # filters out every kernel → empty CSV → "No kernels captured".
+        #
+        # Fix: capture all launches from the subprocess and rely on
+        # dominant-kernel selection (max sm__cycles_active.sum) to identify
+        # the primary compute kernel. Warmup passes run the same kernel, so
+        # the dominant selection is unaffected by their inclusion.
         ncu_cmd = [
             self.ncu_path,
             "--metrics", metrics_str,
             "--csv",
             "--target-processes", "all",
             "--clock-control", "none",
-            # Profile only kernels inside the "ncu_measure" NVTX range
-            # (set in _ncu_target.py after warmup passes complete)
-            "--nvtx",
-            "--nvtx-include", "ncu_measure",
         ]
         if extra_ncu_args:
             ncu_cmd.extend(extra_ncu_args)

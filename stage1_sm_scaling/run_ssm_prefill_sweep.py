@@ -3,32 +3,41 @@ Stage 1: SSM prefill layer SM scaling curve measurement.
 
 Strategy
 --------
-mamba_chunk_scan_combined (Triton SSD kernel) uses cooperative inter-block
-barriers that require ALL thread blocks to be active simultaneously. Under
-Green Context SM restriction the barrier deadlocks, making direct measurement
-at restricted SM counts impossible.
+Two measurement modes are supported:
 
-Instead we use an analytical wave model:
+Default (analytical wave model):
+  mamba_chunk_scan_combined (Triton SSD kernel) uses cooperative inter-block
+  barriers that require ALL thread blocks to be active simultaneously. Under
+  Green Context SM restriction the barrier deadlocks, making direct measurement
+  at restricted SM counts impossible.
 
-  1. Measure latency at FULL SM (no Green Context, no restriction) for all
-     (seq_len, batch_size) combos. This is straightforward and reliable.
-  2. Derive n_blocks = batch × seq_len / BLOCKS_PER_SEQ_BS from the
-     empirically confirmed formula (verified against ncu profiling data).
-  3. For each target SM count k:
-       latency(k) = latency(full) × ceil(n_blocks / k) / ceil(n_blocks / total_sm)
-     This is exact for a perfectly wave-parallel kernel with constant time-per-wave.
+  Instead we use an analytical wave model:
+    1. Measure latency at FULL SM (no Green Context, no restriction) for all
+       (seq_len, batch_size) combos. This is straightforward and reliable.
+    2. Derive n_blocks = batch × seq_len / BLOCKS_PER_SEQ_BS from the
+       empirically confirmed formula (verified against ncu profiling data).
+    3. For each target SM count k:
+         latency(k) = latency(full) × ceil(n_blocks / k) / ceil(n_blocks / total_sm)
+       This is exact for a perfectly wave-parallel kernel with constant time-per-wave.
 
-The result is a synthetic SM scaling table that correctly represents the
-Triton SSD kernel's behaviour, unlike a PyTorch-scan proxy which has
-fundamentally different compute characteristics.
+  The result is a synthetic SM scaling table that correctly represents the
+  Triton SSD kernel's behaviour, unlike a PyTorch-scan proxy which has
+  fundamentally different compute characteristics.
 
-wave_eff_pct is always >99.96 % for all measured configs (verified from ncu),
-confirming the wave model assumption holds.
+  wave_eff_pct is always >99.96 % for all measured configs (verified from ncu),
+  confirming the wave model assumption holds.
+
+PyTorch scan mode (--force-pytorch-scan):
+  Uses a pure-PyTorch chunked scan implementation instead of the Triton SSD kernel.
+  This avoids the cooperative-barrier deadlock, so direct Green Context measurement
+  at each SM step is possible. Results reflect PyTorch scan compute characteristics,
+  not the Triton kernel. Output filename includes '_torchscan' suffix.
 
 Usage
 -----
     python stage1_sm_scaling/run_ssm_prefill_sweep.py --model zamba2 --device auto
     python stage1_sm_scaling/run_ssm_prefill_sweep.py --model falcon_h1 --device a100_40gb
+    python stage1_sm_scaling/run_ssm_prefill_sweep.py --model zamba2 --force-pytorch-scan
 """
 
 import sys
@@ -156,6 +165,62 @@ def _measure_full_sm(
 
 
 # ---------------------------------------------------------------------------
+# Direct measurement (PyTorch scan — no cooperative-barrier deadlock)
+# ---------------------------------------------------------------------------
+
+def _measure_direct_sm(
+    runner: LayerRunner,
+    model_name: str,
+    seq_lens: list[int],
+    batch_sizes: list[int],
+    sm_steps: list[int],
+    total_sm: int,
+    n_warmup: int,
+    n_measure: int,
+) -> list[dict]:
+    """Measure SSM latency directly at each SM step using PyTorch scan.
+
+    Safe under Green Context because the pure-PyTorch chunked scan has no
+    cooperative inter-block barriers (unlike mamba_chunk_scan_combined).
+    """
+    rows = []
+    combos = list(product(sm_steps, seq_lens, batch_sizes))
+    print(f"\n  [direct measurement / torch scan] {len(combos)} configs")
+
+    for sm_count, seq_len, batch_size in tqdm(combos, desc="  torch-scan"):
+        try:
+            row = runner.run_ssm_layer(
+                model_name=model_name,
+                batch_size=batch_size,
+                seq_len=seq_len,
+                sm_count=sm_count,
+                n_warmup=n_warmup,
+                n_measure=n_measure,
+                force_pytorch_scan=True,
+            )
+            nb = _n_blocks(batch_size, seq_len)
+            rows.append({
+                **row,
+                "n_blocks":   nb,
+                "waves":      None,
+                "analytical": False,
+            })
+            tqdm.write(
+                f"  sm={sm_count:3d} seq={seq_len:6d} bs={batch_size:3d}  "
+                f"lat={row['latency_ms']:.3f}ms  "
+                f"bw={row['achieved_bandwidth_GBs']:.1f}/{row['theoretical_bw_GBs']:.0f}GB/s"
+            )
+        except torch.cuda.OutOfMemoryError:
+            torch.cuda.empty_cache()
+            tqdm.write(f"  sm={sm_count:3d} seq={seq_len:6d} bs={batch_size:3d}  OOM — skipped")
+        except Exception as e:
+            tqdm.write(f"  sm={sm_count:3d} seq={seq_len:6d} bs={batch_size:3d}  ERROR: {e}")
+
+    rows.sort(key=lambda r: (r["sm_count"], r["seq_len"], r["batch_size"]))
+    return rows
+
+
+# ---------------------------------------------------------------------------
 # Analytical SM scaling synthesis
 # ---------------------------------------------------------------------------
 
@@ -216,15 +281,20 @@ def run_sweep(
     n_warmup: int = 20,
     n_measure: int = 50,
     output_dir: Path = None,
+    force_pytorch_scan: bool = False,
 ) -> list[dict]:
-    """Run SSM SM scaling sweep using the analytical wave model.
+    """Run SSM SM scaling sweep.
 
-    Step 1: measure at full SM (all SMs, no Green Context).
-    Step 2: synthesise latency at each SM step via wave scaling.
+    Default (force_pytorch_scan=False):
+      Step 1: measure at full SM (all SMs, no Green Context).
+      Step 2: synthesise latency at each SM step via wave scaling.
+      Correctly characterises mamba_chunk_scan_combined which uses cooperative
+      inter-block barriers and cannot be directly measured under Green Context.
 
-    This correctly characterises mamba_chunk_scan_combined which uses
-    cooperative inter-block barriers and cannot be directly measured under
-    Green Context SM restriction.
+    PyTorch scan mode (force_pytorch_scan=True):
+      Directly measures latency at each SM step using a pure-PyTorch chunked
+      scan. No cooperative barriers so Green Context restriction is safe.
+      Output filename includes '_torchscan' suffix.
     """
     if output_dir is None:
         output_dir = Path(__file__).parent.parent / "results" / "stage1"
@@ -241,34 +311,62 @@ def run_sweep(
         theoretical_bw_GBs=theoretical_bw,
     )
 
-    print(f"\n=== SSM Prefill SM Sweep (analytical): {model_name} on {hw_cfg['name']} ===")
+    if force_pytorch_scan:
+        mode_label = "direct (torch scan)"
+        method_desc = "direct Green Context measurement with PyTorch chunked scan"
+    else:
+        mode_label = "analytical (wave model)"
+        method_desc = "full-SM measurement + wave-model synthesis"
+
+    print(f"\n=== SSM Prefill SM Sweep ({mode_label}): {model_name} on {hw_cfg['name']} ===")
     print(f"  SM steps     : {sm_steps}")
     print(f"  seq_lens     : {seq_lens}")
     print(f"  batch_sizes  : {batch_sizes}")
-    print(f"  method       : full-SM measurement + wave-model synthesis")
-    print(f"  note         : Triton SSD uses cooperative barriers; direct Green Context")
-    print(f"                 measurement deadlocks. Wave model is exact for this kernel")
-    print(f"                 (wave_eff > 99.96% verified via ncu).")
+    print(f"  method       : {method_desc}")
+    if force_pytorch_scan:
+        print(f"  note         : PyTorch scan has no cooperative barriers; direct Green")
+        print(f"                 Context measurement is safe. Results reflect PyTorch scan")
+        print(f"                 characteristics, not the Triton SSD kernel.")
+    else:
+        print(f"  note         : Triton SSD uses cooperative barriers; direct Green Context")
+        print(f"                 measurement deadlocks. Wave model is exact for this kernel")
+        print(f"                 (wave_eff > 99.96% verified via ncu).")
 
-    # Step 1: measure at full SM
-    measured = _measure_full_sm(
-        runner=runner,
-        model_name=model_name,
-        seq_lens=seq_lens,
-        batch_sizes=batch_sizes,
-        n_warmup=n_warmup,
-        n_measure=n_measure,
-    )
+    if force_pytorch_scan:
+        results = _measure_direct_sm(
+            runner=runner,
+            model_name=model_name,
+            seq_lens=seq_lens,
+            batch_sizes=batch_sizes,
+            sm_steps=sm_steps,
+            total_sm=total_sm,
+            n_warmup=n_warmup,
+            n_measure=n_measure,
+        )
+        if not results:
+            print("\nERROR: no configs measured successfully — aborting sweep.")
+            return []
+    else:
+        # Step 1: measure at full SM
+        measured = _measure_full_sm(
+            runner=runner,
+            model_name=model_name,
+            seq_lens=seq_lens,
+            batch_sizes=batch_sizes,
+            n_warmup=n_warmup,
+            n_measure=n_measure,
+        )
 
-    if not measured:
-        print("\nERROR: no configs measured successfully — aborting sweep.")
-        return []
+        if not measured:
+            print("\nERROR: no configs measured successfully — aborting sweep.")
+            return []
 
-    # Step 2: synthesise SM scaling
-    results = _synthesize_sm_scaling(measured, sm_steps, total_sm)
+        # Step 2: synthesise SM scaling
+        results = _synthesize_sm_scaling(measured, sm_steps, total_sm)
 
     # Save CSV
-    out_csv = output_dir / f"ssm_scaling_{model_name}_{tag}.csv"
+    scan_suffix = "_torchscan" if force_pytorch_scan else ""
+    out_csv = output_dir / f"ssm_scaling_{model_name}_{tag}{scan_suffix}.csv"
     fieldnames = [
         "sm_count", "sm_ratio", "seq_len", "batch_size",
         "latency_ms", "latency_p99_ms",
@@ -280,10 +378,12 @@ def run_sweep(
         writer.writeheader()
         writer.writerows(results)
 
-    n_full = len(measured)
-    n_synth = len(results)
     print(f"\nSaved: {out_csv}")
-    print(f"  {n_full} direct measurements × {len(sm_steps)} SM steps = {n_synth} synthesised rows")
+    if force_pytorch_scan:
+        print(f"  {len(results)} directly measured rows (torch scan, {len(sm_steps)} SM steps)")
+    else:
+        n_full = len(measured)
+        print(f"  {n_full} direct measurements × {len(sm_steps)} SM steps = {len(results)} synthesised rows")
 
     return results
 
@@ -293,7 +393,9 @@ def run_sweep(
 # ---------------------------------------------------------------------------
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="SSM prefill SM scaling sweep (analytical)")
+    parser = argparse.ArgumentParser(
+        description="SSM prefill SM scaling sweep (analytical wave model or torch scan)"
+    )
     parser.add_argument("--model", choices=["zamba2", "falcon_h1"], default="zamba2")
     parser.add_argument(
         "--device", default="auto",
@@ -307,8 +409,17 @@ def parse_args():
         "--batch-sizes", nargs="+", type=int,
         default=[1, 4, 16, 32, 64],
     )
-    parser.add_argument("--n-warmup",  type=int, default=20)
-    parser.add_argument("--n-measure", type=int, default=50)
+    parser.add_argument("--n-warmup",  type=int, default=100)
+    parser.add_argument("--n-measure", type=int, default=200)
+    parser.add_argument(
+        "--force-pytorch-scan", action="store_true",
+        help=(
+            "Use pure-PyTorch chunked scan instead of the Triton SSD kernel. "
+            "Enables direct Green Context measurement at each SM step (no cooperative-"
+            "barrier deadlock). Results reflect PyTorch scan characteristics, not the "
+            "Triton kernel. Output file will include '_torchscan' in the filename."
+        ),
+    )
     parser.add_argument(
         "--skip-verify", action="store_true",
         help="Skip SM control verification (not needed for analytical path)"
@@ -331,4 +442,5 @@ if __name__ == "__main__":
         batch_sizes=args.batch_sizes,
         n_warmup=args.n_warmup,
         n_measure=args.n_measure,
+        force_pytorch_scan=args.force_pytorch_scan,
     )

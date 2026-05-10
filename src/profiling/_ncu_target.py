@@ -5,14 +5,14 @@ This script is spawned BY ncu (not called directly). ncu intercepts CUDA kernel
 launches and attaches hardware performance counters.
 
 Usage (via NCURunner, not directly):
-    ncu --metrics sm__active_cycles_sum,... \\
-        --launch-count 3 --launch-skip 10 \\
-        --csv python src/profiling/_ncu_target.py \\
+    ncu --metrics sm__active_cycles_sum,... --csv \\
+        python src/profiling/_ncu_target.py \\
         --layer-type ssm --model zamba2 \\
         --sm-count 27 --seq-len 1024 --batch-size 1
 
-The script runs n_warmup kernels (to warm GPU state), then the measured kernel.
-ncu's --launch-skip skips the warmup launches automatically.
+The script runs n_warmup kernels (to warm GPU caches and JIT-compile Triton
+kernels), then n_measure measured launches. ncu captures all kernel launches;
+NCURunner picks the dominant kernel by sm__cycles_active.sum.
 """
 
 import sys
@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument("--n-warmup", type=int, default=10,
                         help="Warmup launches before the measured kernel")
     parser.add_argument("--n-measure", type=int, default=3,
-                        help="Measured launches (ncu --launch-count should match)")
+                        help="Measured launches after warmup")
     parser.add_argument("--dtype", default="bfloat16")
     return parser.parse_args()
 
@@ -110,20 +110,19 @@ def main():
             with torch.no_grad():
                 layer(inputs)
 
-    # Warmup — outside NVTX range, ncu --nvtx-include skips these
+    # Warmup — warms GPU caches and JIT-compiles Triton kernels.
     with torch.cuda.stream(_stream):
         for _ in range(args.n_warmup):
             kernel()
     torch.cuda.synchronize()
 
-    # Measured launches — inside "ncu_measure" NVTX range
-    # ncu --nvtx --nvtx-include "ncu_measure" profiles only these kernels
-    torch.cuda.nvtx.range_push("ncu_measure")
+    # Measured launches — ncu captures all kernel launches from this process
+    # and dominant-kernel selection (max sm__cycles_active.sum) identifies the
+    # primary compute kernel regardless of warmup inclusion.
     with torch.cuda.stream(_stream):
         for _ in range(args.n_measure):
             kernel()
     torch.cuda.synchronize()
-    torch.cuda.nvtx.range_pop()
 
     smctrl.reset()
 
