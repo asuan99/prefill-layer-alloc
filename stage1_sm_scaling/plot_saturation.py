@@ -39,8 +39,23 @@ import seaborn as sns
 # ---------------------------------------------------------------------------
 
 SATURATION_THRESHOLD = 0.03   # < 3% throughput gain per 10% SM → saturated
-LAYER_COLORS = {"ssm": "#2196F3", "attn": "#FF5722", "mlp": "#4CAF50"}
-LAYER_LABELS = {"ssm": "SSM (Mamba-2)", "attn": "Attention", "mlp": "MLP/FFN"}
+LAYER_COLORS = {
+    "ssm":        "#2196F3",
+    "ssm_triton": "#1565C0",   # darker blue  — analytical wave model
+    "ssm_torch":  "#42A5F5",   # lighter blue — direct PyTorch scan
+    "attn":       "#FF5722",
+    "mlp":        "#4CAF50",
+}
+LAYER_LABELS = {
+    "ssm":        "SSM (Mamba-2)",
+    "ssm_triton": "SSM Triton (analytical)",
+    "ssm_torch":  "SSM PyTorch (direct)",
+    "attn":       "Attention",
+    "mlp":        "MLP/FFN",
+}
+
+# SSM variants that share the same Free-SM zone semantics (prefer triton when available)
+_SSM_TYPES = ("ssm_triton", "ssm", "ssm_torch")
 
 
 def compute_throughput(df: pd.DataFrame) -> pd.DataFrame:
@@ -196,7 +211,15 @@ def plot_free_sm_zone(
     output_dir: Path,
     model_name: str,
 ) -> None:
-    df_ssm = df[(df["model_name"] == model_name) & (df["layer_type"] == "ssm")]
+    # Prefer ssm_triton (production kernel), fall back to generic ssm or ssm_torch
+    ssm_type = next(
+        (t for t in _SSM_TYPES if t in df["layer_type"].values),
+        None,
+    )
+    if ssm_type is None:
+        print(f"  No SSM data for {model_name}")
+        return
+    df_ssm = df[(df["model_name"] == model_name) & (df["layer_type"] == ssm_type)]
     if df_ssm.empty:
         print(f"  No SSM data for {model_name}")
         return
@@ -248,7 +271,7 @@ def plot_free_sm_zone(
     ax.set_ylabel("SM Count")
     ax.set_ylim(0, total_sm * 1.15)
     ax.set_title(
-        f"Free SM Zone — {model_name} SSM Prefill\n"
+        f"Free SM Zone — {model_name}  [{LAYER_LABELS.get(ssm_type, ssm_type)}]\n"
         f"(Free SM = SMs available for decode during SSM prefill)",
         fontsize=11, fontweight="bold"
     )
@@ -429,6 +452,12 @@ def load_results(results_dir: Path) -> pd.DataFrame:
                 if lt in f.stem:
                     df["layer_type"] = lt
                     break
+        # Distinguish ssm_triton (analytical wave model) vs ssm_torch (direct torchscan)
+        # based on the output filename convention used by run_ssm_prefill_sweep.py.
+        if "_torchscan" in f.stem:
+            df["layer_type"] = df["layer_type"].replace({"ssm": "ssm_torch"})
+        elif f.stem.startswith("ssm_"):
+            df["layer_type"] = df["layer_type"].replace({"ssm": "ssm_triton"})
         dfs.append(df)
 
     df = pd.concat(dfs, ignore_index=True)
@@ -436,27 +465,44 @@ def load_results(results_dir: Path) -> pd.DataFrame:
 
     # --- ncu CSVs (ncu_ssm_*, ncu_attn_*, ncu_mlp_*) ---
     # Merge SM utilization and wave stats from ncu profiling results.
-    # ncu CSVs use "model" column; latency CSVs use "model_name".
+    # ncu CSVs use "model" column (or omit it entirely); latency CSVs use "model_name".
+    # Filename format: ncu_{layer_type}_{model}_{device}.csv — used as fallback.
     ncu_files = list(results_dir.glob("ncu_*.csv"))
     if ncu_files:
         ncu_dfs = []
         for f in ncu_files:
             ndf = pd.read_csv(f)
-            # Rename model → model_name to match latency schema
             if "model" in ndf.columns and "model_name" not in ndf.columns:
                 ndf = ndf.rename(columns={"model": "model_name"})
+
+            # Infer model_name / layer_type from filename when the CSV omits them.
+            # Filename: ncu_{layer_type}_{model}_{device...}.csv
+            stem_parts = f.stem.split("_")   # ['ncu','ssm','zamba2','a100',...]
+            if "layer_type" not in ndf.columns and len(stem_parts) >= 2:
+                raw_lt = stem_parts[1]   # ssm / attn / mlp
+                # ncu profiles use the Triton SSD path → tag as ssm_triton
+                ndf["layer_type"] = "ssm_triton" if raw_lt == "ssm" else raw_lt
+            if "model_name" not in ndf.columns:
+                for known in ("zamba2", "falcon_h1"):
+                    if f"_{known}_" in f.name or f.name.endswith(f"_{known}.csv"):
+                        ndf["model_name"] = known
+                        break
+
             ncu_dfs.append(ndf)
 
         ncu_df = pd.concat(ncu_dfs, ignore_index=True)
 
-        # Keep only the columns that don't already exist in the latency df
-        # plus the merge keys
+        # Keep only columns that are merge keys or new (not already in latency df)
         merge_keys = ["model_name", "layer_type", "sm_count", "seq_len", "batch_size"]
         ncu_cols = [c for c in ncu_df.columns
                     if c in merge_keys or c not in df.columns]
-        ncu_df = ncu_df[ncu_cols].drop_duplicates(subset=merge_keys)
+        # Only dedup on keys that actually exist in ncu_df
+        valid_dedup = [k for k in merge_keys if k in ncu_df.columns]
+        ncu_df = ncu_df[ncu_cols].drop_duplicates(subset=valid_dedup or None)
 
-        df = df.merge(ncu_df, on=merge_keys, how="left")
+        # Merge on the intersection of merge_keys present in both frames
+        valid_on = [k for k in merge_keys if k in ncu_df.columns and k in df.columns]
+        df = df.merge(ncu_df, on=valid_on, how="left")
         print(f"  Merged {len(ncu_files)} ncu CSV(s) → "
               f"SM util / wave stats columns added.")
 

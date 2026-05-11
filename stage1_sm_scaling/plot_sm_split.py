@@ -48,15 +48,34 @@ def _load_csv(path: Path) -> list[dict]:
 
 
 def find_stage1_csv(results_dir: Path, layer_type: str, model: str) -> Path:
-    """Glob for ssm_scaling_{model}_*.csv or attn_scaling_{model}_*.csv."""
-    prefix = f"{layer_type}_scaling_{model}_"
-    matches = sorted(results_dir.glob(f"{prefix}*.csv"))
+    """Glob for a stage-1 latency CSV.
+
+    Supported layer_type values:
+      ssm / ssm_triton  →  ssm_scaling_{model}_*.csv  (no _torchscan suffix)
+      ssm_torch         →  ssm_scaling_{model}_*_torchscan.csv
+      attn / mlp        →  {layer_type}_scaling_{model}_*.csv
+    """
+    if layer_type in ("ssm", "ssm_triton"):
+        matches = sorted(
+            f for f in results_dir.glob(f"ssm_scaling_{model}_*.csv")
+            if "_torchscan" not in f.name
+        )
+        desc = f"ssm_scaling_{model}_*.csv (non-torchscan)"
+    elif layer_type == "ssm_torch":
+        matches = sorted(results_dir.glob(f"ssm_scaling_{model}_*_torchscan.csv"))
+        desc = f"ssm_scaling_{model}_*_torchscan.csv"
+    else:
+        prefix = f"{layer_type}_scaling_{model}_"
+        matches = sorted(results_dir.glob(f"{prefix}*.csv"))
+        desc = f"{prefix}*.csv"
+
     if not matches:
+        sweep_script = layer_type.split("_")[0]   # attn / ssm / mlp
         raise FileNotFoundError(
             f"No {layer_type} CSV found in {results_dir}.\n"
-            f"  Expected pattern: {prefix}*.csv\n"
+            f"  Expected pattern: {desc}\n"
             f"  Run stage1 sweep first:\n"
-            f"    python stage1_sm_scaling/run_{layer_type}_prefill_sweep.py --model {model}"
+            f"    python stage1_sm_scaling/run_{sweep_script}_prefill_sweep.py --model {model}"
         )
     return matches[-1]  # pick most recent if multiple
 
