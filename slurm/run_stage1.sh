@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH -J prefill-stage1
+#SBATCH -J 1-prefill-sm-scaling
 #SBATCH -p amd_a100nv_8
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --time=10:00:00
+#SBATCH --time=24:00:00
 #SBATCH --comment=pytorch
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/stage1_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/stage1_%j.err
@@ -44,28 +44,35 @@ echo "========================================================"
 
 # ── SSM prefill sweep ────────────────────────────────────────────────────────
 echo ""
-echo "[1/4] SSM prefill SM scaling sweep …"
+echo "[1/5] SSM prefill SM scaling sweep …"
 python stage1_sm_scaling/run_ssm_prefill_sweep.py \
     --model "$MODEL" \
     --device "$DEVICE"
 
+echo ""
+echo "[2/5] SSM prefill SM scaling sweep (torch scan) …"
+python stage1_sm_scaling/run_ssm_prefill_sweep.py \
+    --model "$MODEL" \
+    --device "$DEVICE" \
+    --force_pytorch_scan
+
 # ── Attention prefill sweep ──────────────────────────────────────────────────
 echo ""
-echo "[2/4] Attention prefill SM scaling sweep …"
+echo "[3/5] Attention prefill SM scaling sweep …"
 python stage1_sm_scaling/run_attn_prefill_sweep.py \
     --model "$MODEL" \
     --device "$DEVICE"
 
 # ── MLP prefill sweep ────────────────────────────────────────────────────────
 echo ""
-echo "[3/4] MLP prefill SM scaling sweep …"
+echo "[4/5] MLP prefill SM scaling sweep …"
 python stage1_sm_scaling/run_mlp_prefill_sweep.py \
     --model "$MODEL" \
     --device "$DEVICE"
 
 # ── Plots ────────────────────────────────────────────────────────────────────
 echo ""
-echo "[4/4] Generating plots …"
+echo "[5/5] Generating plots …"
 python stage1_sm_scaling/plot_saturation.py  --model "$MODEL" 2>/dev/null || \
     python stage1_sm_scaling/plot_saturation.py 2>/dev/null || true
 python stage1_sm_scaling/plot_srm.py         --model "$MODEL" 2>/dev/null || \
