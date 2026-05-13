@@ -54,7 +54,7 @@ echo "[2/5] SSM prefill SM scaling sweep (torch scan) …"
 python stage1_sm_scaling/run_ssm_prefill_sweep.py \
     --model "$MODEL" \
     --device "$DEVICE" \
-    --force_pytorch_scan
+    --force-pytorch-scan
 
 # ── Attention prefill sweep ──────────────────────────────────────────────────
 echo ""
