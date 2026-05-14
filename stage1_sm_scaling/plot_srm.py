@@ -349,14 +349,18 @@ def plot_srm(
 
     # --- layout ---
     n_cols = len(layer_types)
-    fig, axes = plt.subplots(1, n_cols, figsize=(6.5 * n_cols, 5.5))
+    fig, axes = plt.subplots(
+        1, n_cols,
+        figsize=(7.0 * n_cols, 5.8),
+        layout="constrained",
+    )
     if n_cols == 1:
         axes = [axes]
 
     fig.suptitle(
-        f"SM-Parametric Roofline — {model_name}  |  batch_size={batch_size}\n"
-        f"{GPU_NAME}  ·  Peak FP16: {PEAK_TFLOPS_FP16:.0f} TFLOPS  ·  BW: {PEAK_BW_GBS:.0f} GB/s",
-        fontsize=12, fontweight="bold",
+        f"SM-Parametric Roofline — {model_name}  |  batch_size={batch_size}  |  "
+        f"{GPU_NAME}  ({PEAK_TFLOPS_FP16:.0f} TFLOPS FP16,  {PEAK_BW_GBS:.0f} GB/s)",
+        fontsize=11, fontweight="bold",
     )
 
     # AI axis range (log space)
@@ -473,28 +477,19 @@ def plot_srm(
                       label="Partial SM ceilings"),
     ]
 
-    n_leg_cols = min(len(sm_counts), 8)
+    n_leg_cols = min(len(sm_counts), 6)
     fig.legend(
         handles=sm_handles,
-        title="SM allocation (operating points)",
-        loc="lower center", ncol=n_leg_cols,
-        bbox_to_anchor=(0.5, -0.06), fontsize=8, title_fontsize=8,
+        title="SM allocation",
+        loc="outside lower center", ncol=n_leg_cols,
+        fontsize=8, title_fontsize=8,
     )
-    # Seq-len and roofline legend in a box outside right of axes[−1]
     axes[-1].legend(
         handles=seq_handles + roof_handles,
-        loc="upper left", fontsize=7.5, title="seq_len / ceilings",
-        title_fontsize=7.5, framealpha=0.85,
+        loc="upper left", fontsize=8, title="seq_len / ceilings",
+        title_fontsize=8, framealpha=0.85,
     )
 
-    # GPU label bottom-right
-    fig.text(
-        0.98, 0.01,
-        f"{GPU_NAME}\nPeak FP16: {PEAK_TFLOPS_FP16:.0f} TFLOPS  |  BW: {PEAK_BW_GBS:.0f} GB/s",
-        ha="right", va="bottom", fontsize=7, color="gray",
-    )
-
-    plt.tight_layout()
     out_path = output_dir / f"srm_{model_name}_bs{batch_size}.png"
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -533,14 +528,18 @@ def plot_srm_trajectory(
     bs_colors = {bs: bs_cmaps[i % len(bs_cmaps)](0.65) for i, bs in enumerate(batch_sizes)}
 
     n_cols = len(layer_types)
-    fig, axes = plt.subplots(1, n_cols, figsize=(6.5 * n_cols, 5.5))
+    fig, axes = plt.subplots(
+        1, n_cols,
+        figsize=(7.0 * n_cols, 5.8),
+        layout="constrained",
+    )
     if n_cols == 1:
         axes = [axes]
 
     fig.suptitle(
-        f"SRM Operating-Point Trajectory — {model_name}  |  seq_len={seq_len}\n"
-        f"{GPU_NAME}  ·  Peak FP16: {PEAK_TFLOPS_FP16:.0f} TFLOPS  ·  BW: {PEAK_BW_GBS:.0f} GB/s\n"
-        f"Arrow direction: increasing SM count (low→full)",
+        f"SRM Trajectory — {model_name}  |  seq_len={seq_len}  |  "
+        f"{GPU_NAME}  ({PEAK_TFLOPS_FP16:.0f} TFLOPS,  {PEAK_BW_GBS:.0f} GB/s)  "
+        f"— arrow: low→full SM",
         fontsize=11, fontweight="bold",
     )
 
@@ -623,23 +622,16 @@ def plot_srm_trajectory(
     ]
     fig.legend(
         handles=sm_handles,
-        title="SM count (point color)",
-        loc="lower center", ncol=min(len(sm_counts), 8),
-        bbox_to_anchor=(0.5, -0.06), fontsize=8, title_fontsize=8,
+        title="SM count",
+        loc="outside lower center", ncol=min(len(sm_counts), 6),
+        fontsize=8, title_fontsize=8,
     )
     axes[-1].legend(
         handles=bs_handles,
-        loc="upper left", fontsize=8, title="batch_size (line)",
+        loc="upper left", fontsize=8, title="batch_size",
         title_fontsize=8, framealpha=0.85,
     )
 
-    fig.text(
-        0.98, 0.01,
-        f"{GPU_NAME}  |  Peak FP16: {PEAK_TFLOPS_FP16:.0f} TFLOPS  |  BW: {PEAK_BW_GBS:.0f} GB/s",
-        ha="right", va="bottom", fontsize=7, color="gray",
-    )
-
-    plt.tight_layout()
     out_path = output_dir / f"srm_trajectory_{model_name}_seq{seq_len}.png"
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -677,14 +669,17 @@ def plot_srm_bound_analysis(
     cmap = plt.cm.plasma
     sm_colors = {sm: cmap(i / max(len(sm_counts) - 1, 1)) for i, sm in enumerate(sm_counts)}
 
-    fig, axes = plt.subplots(1, len(layer_types), figsize=(6 * len(layer_types), 5))
+    fig, axes = plt.subplots(
+        1, len(layer_types),
+        figsize=(7.0 * len(layer_types), 5.8),
+        layout="constrained",
+    )
     if len(layer_types) == 1:
         axes = [axes]
 
     fig.suptitle(
-        f"SRM Bound Analysis — {model_name}  |  batch_size={batch_size}\n"
-        f"Efficiency = attained_TFLOPS / ceiling(AI, r)   "
-        f"[1.0 = on roofline; <1 = sub-ceiling gap]",
+        f"SRM Bound Analysis — {model_name}  |  batch_size={batch_size}  "
+        f"— Efficiency = attained / ceiling(AI, r)  [1.0 = on roofline]",
         fontsize=11, fontweight="bold",
     )
 
@@ -755,23 +750,13 @@ def plot_srm_bound_analysis(
                           markersize=8, markeredgecolor="red", markeredgewidth=1.0,
                           label="eff>1: SM mask ineffective")
         )
-    n_leg_cols = min(len(sm_counts), 8)
+    n_leg_cols = min(len(sm_counts), 6)
     fig.legend(
         handles=handles,
-        loc="lower center", ncol=n_leg_cols,
-        bbox_to_anchor=(0.5, -0.08), fontsize=8,
+        loc="outside lower center", ncol=n_leg_cols,
+        fontsize=8,
     )
 
-    if sm_restrict_fail_marked:
-        fig.text(
-            0.5, -0.13,
-            "✕ marks: attained > ceiling(AI, r) — Green Context SM restriction not effective for this kernel\n"
-            "(confirmed by Stage 4: cuStreamSetAttribute rc=801 on GeForce/RTX 5060 Ti)",
-            ha="center", va="top", fontsize=7.5, color="darkred",
-            style="italic",
-        )
-
-    plt.tight_layout()
     out_path = output_dir / f"srm_bound_{model_name}_bs{batch_size}.png"
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)

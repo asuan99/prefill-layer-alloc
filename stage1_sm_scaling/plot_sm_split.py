@@ -203,25 +203,19 @@ def _plot_panel(
     if annotate_crossover:
         sm_ssm_opt  = int(round(r_opt * total_sm))
         sm_attn_opt = total_sm - sm_ssm_opt
-        label_x = r_opt + 0.04 if r_opt < 0.65 else r_opt - 0.32
+        label_x = min(r_opt + 0.04, 0.72)
         ax.annotate(
-            f"opt r={r_opt:.2f}\n"
-            f"SSM:{sm_ssm_opt}SM Attn:{sm_attn_opt}SM\n"
-            f"{lat_opt:.2f} ms",
+            f"r*={r_opt:.0%}\n{lat_opt:.1f}ms",
             xy=(r_opt, lat_opt),
-            xytext=(label_x, lat_opt * (1.3 if not log_scale else 2.0)),
-            fontsize=6,
+            xytext=(label_x, lat_opt * (1.25 if not log_scale else 1.8)),
+            fontsize=7,
             arrowprops=dict(arrowstyle="->", color="#d62728", lw=0.8),
             color="#d62728",
             zorder=6,
         )
-        if r_cross is not None:
-            lat_cross = np.interp(r_cross, r_grid, lat_total)
-            ax.scatter([r_cross], [lat_cross], color="black", s=25,
-                       marker="x", zorder=6, linewidths=1.2)
 
     ax.set_title(f"seq={seq_len}, bs={batch_size}", fontsize=9)
-    ax.set_xlabel("SM ratio → SSM  (r_ssm)", fontsize=8)
+    ax.set_xlabel("SSM SM ratio", fontsize=8)
     ax.set_ylabel("Latency (ms)", fontsize=8)
     ax.tick_params(labelsize=7)
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.0%}"))
@@ -229,16 +223,6 @@ def _plot_panel(
     if log_scale:
         ax.set_yscale("log")
     ax.grid(True, alpha=0.3)
-
-    # Secondary x-axis: Attn SM count (top)
-    ax2 = ax.twiny()
-    ax2.set_xlim(ax.get_xlim())
-    attn_ticks_sm = np.array([int(round((1 - r) * total_sm))
-                               for r in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]])
-    attn_ticks_r  = 1.0 - attn_ticks_sm / total_sm
-    ax2.set_xticks(attn_ticks_r)
-    ax2.set_xticklabels([str(v) for v in attn_ticks_sm], fontsize=6)
-    ax2.set_xlabel("Attn SMs", fontsize=7, labelpad=2)
 
 
 # ---------------------------------------------------------------------------
@@ -275,24 +259,22 @@ def plot_sm_split(
 
     n_rows = len(batch_sizes)
     n_cols = len(seq_lens)
-    fig_w  = max(5, 3.2 * n_cols)
-    fig_h  = max(4, 2.8 * n_rows)
+    fig_w  = max(5, 3.8 * n_cols)
+    fig_h  = max(4, 3.4 * n_rows)
 
     fig, axes = plt.subplots(
         n_rows, n_cols,
         figsize=(fig_w, fig_h),
         squeeze=False,
+        layout="constrained",
     )
 
     model_label = model.upper().replace("_", "-")
-    scale_tag = " [log scale]" if log_scale else ""
+    scale_tag = " [log]" if log_scale else ""
     fig.suptitle(
-        f"{model_label} — SM Split Latency Trade-off  (total SM={total_sm}){scale_tag}\n"
-        r"$r_{\rm SSM}$ → SSM,  $(1-r_{\rm SSM})$ → Attn  |  "
-        r"$L_{\rm total} = \max(L_{\rm SSM},\, L_{\rm Attn})$  [concurrent]  |  "
+        f"{model_label} — SM Split Latency Trade-off  (total SM={total_sm}){scale_tag}  |  "
         r"$\bullet$ = optimal split",
-        fontsize=10,
-        y=1.01,
+        fontsize=11, fontweight="bold",
     )
 
     for ri, batch_size in enumerate(batch_sizes):
@@ -336,7 +318,6 @@ def plot_sm_split(
             bbox_to_anchor=(0.5, -0.03),
         )
 
-    fig.tight_layout(rect=[0, 0.04, 1, 1])
     output_dir.mkdir(parents=True, exist_ok=True)
     suffix = "_log" if log_scale else ""
     out_path = output_dir / f"sm_split_{model}{suffix}.png"
@@ -477,6 +458,12 @@ if __name__ == "__main__":
 
     seq_lens    = args.seq_lens    or _get_available_values(ssm_path, "seq_len")
     batch_sizes = args.batch_sizes or _get_available_values(ssm_path, "batch_size")
+
+    # Cap combined grid to 4×4 to keep the figure readable.
+    # Use --per-batch or pass explicit --seq-lens / --batch-sizes to override.
+    if not args.per_batch and not args.seq_lens and not args.batch_sizes:
+        seq_lens    = seq_lens[:4]
+        batch_sizes = batch_sizes[:4]
 
     print(f"Model      : {args.model}")
     print(f"seq_lens   : {seq_lens}")

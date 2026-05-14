@@ -1,7 +1,7 @@
 """
-Stage 1 visualization: All-module comparison — attn, ssm_triton, ssm_torch.
+Stage 1 visualization: All-module comparison — attn, ssm_triton, ssm_torch, ssm_chunked.
 
-Generates four new figures (not covered by existing plot_*.py scripts):
+Generates seven figures (Figs 4–10):
 
   Figure 4 — Module Latency Comparison
     Grid of (batch_size × seq_len) panels.  Each panel plots latency vs SM
@@ -25,10 +25,27 @@ Generates four new figures (not covered by existing plot_*.py scripts):
     when SM allocation is halved to 75 %, 50 %, or 25 % of the total.
     Shows which module is most sensitive to SM under-provisioning.
 
+  Figure 8 — Chunked Prefill Cooperative Safety Map  [requires --ssm-chunked-csv]
+    Heatmap over sm_count × prefill_chunk_tokens, one panel per batch_size.
+    Green = cooperative_safe (n_blocks_per_call ≤ SM count).
+    Red = deadlock risk (n_blocks_per_call > SM count).
+    Dashed line = theoretical boundary: chunk_tokens = 4 × sm_count / batch_size.
+
+  Figure 9 — Chunked Prefill: Latency vs SM Allocation  [requires --ssm-chunked-csv]
+    Grid of (batch_size × seq_len) panels showing safe chunked-prefill configs.
+    Each line corresponds to one prefill_chunk_tokens value.
+    SSM Triton full-sequence curve overlaid as a dashed reference.
+
+  Figure 10 — Chunked Prefill: Latency vs Kernel Call Count  [requires --ssm-chunked-csv]
+    Scatter of latency vs n_kernel_calls (= seq_len / chunk_tokens), with a
+    linear fit per SM count per batch_size.  Reveals per-call overhead.
+
 Usage:
     python stage1_sm_scaling/plot_compare_modules.py
     python stage1_sm_scaling/plot_compare_modules.py --model zamba2 --batch-sizes 1 4 16
     python stage1_sm_scaling/plot_compare_modules.py --results-dir results/stage1
+    python stage1_sm_scaling/plot_compare_modules.py \\
+        --ssm-chunked-csv results/stage1/ssm_chunked_zamba2_a100-sxm4-80gb.csv
 """
 
 import sys
@@ -45,6 +62,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
+import matplotlib.colors as mcolors
 
 from stage1_sm_scaling.plot_saturation import (
     find_saturation_sm,
@@ -115,7 +133,7 @@ def _pick_best_csv(files: list[Path], layer_type: str) -> Path:
     return candidates[-1]
 
 
-def load_chunked_csv(chunked_csv: Path, model: str) -> pd.DataFrame:
+def load_chunked_csv(chunked_csv: Path, model: str, filter_unsafe: bool = True) -> pd.DataFrame:
     """Load a chunked prefill CSV and normalise it to the common module schema.
 
     chunked CSV columns (from run_chunked_ssm_sweep.py):
@@ -142,7 +160,7 @@ def load_chunked_csv(chunked_csv: Path, model: str) -> pd.DataFrame:
         df["sm_ratio"] = df["sm_ratio_pct"] / 100.0
 
     # Drop cooperative_safe=False rows (deadlock risk, latency likely NaN)
-    if "cooperative_safe" in df.columns:
+    if "cooperative_safe" in df.columns and filter_unsafe:
         df = df[df["cooperative_safe"].astype(bool)].copy()
 
     df["layer_type"]             = "ssm_chunked"
@@ -282,14 +300,15 @@ def plot_module_latency_comparison(
     n_cols = len(seq_lens)
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(3.6 * n_cols, 3.2 * n_rows),
+        figsize=(4.4 * n_cols, 3.8 * n_rows),
         squeeze=False,
+        layout="constrained",
     )
 
     model_label = model.upper().replace("_", "-")
     fig.suptitle(
-        f"{model_label} — Module Latency vs SM Allocation\n"
-        f"✕ = saturation point (< {SATURATION_THRESHOLD*100:.0f}% gain per 10% SM)",
+        f"{model_label} — Module Latency vs SM Allocation"
+        f"  (✕ = saturation, < {SATURATION_THRESHOLD*100:.0f}% gain per 10% SM)",
         fontsize=12, fontweight="bold",
     )
 
@@ -333,9 +352,9 @@ def plot_module_latency_comparison(
                 ax.text(0.5, 0.5, "no data", ha="center", va="center",
                         transform=ax.transAxes, fontsize=8, color="gray")
 
-            ax.set_xlabel("SM Allocation (%)", fontsize=7)
-            ax.set_ylabel("Latency (ms)", fontsize=7)
-            ax.tick_params(labelsize=6)
+            ax.set_xlabel("SM Allocation (%)", fontsize=8)
+            ax.set_ylabel("Latency (ms)", fontsize=8)
+            ax.tick_params(labelsize=7)
             ax.grid(True, alpha=0.3)
             ax.set_xlim(0, 105)
 
@@ -353,15 +372,13 @@ def plot_module_latency_comparison(
     ]
     handles.append(
         mlines.Line2D([], [], color="gray", marker="x", linestyle="None",
-                      markersize=7, linewidth=2, label="Saturation point"),
+                      markersize=7, linewidth=2, label="Saturation"),
     )
     fig.legend(
         handles=handles, loc="lower center",
-        ncol=len(handles), bbox_to_anchor=(0.5, -0.02),
-        fontsize=8,
+        ncol=len(handles), fontsize=9,
     )
 
-    plt.tight_layout(rect=[0, 0.04, 1, 1])
     out_path = output_dir / f"fig4_module_latency_{model}.png"
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -694,6 +711,437 @@ def plot_sm_sensitivity(
 
 
 # ---------------------------------------------------------------------------
+# Figure 8: Chunked Prefill Cooperative Safety Map
+# ---------------------------------------------------------------------------
+
+def _pcolormesh_edges(vals: list) -> np.ndarray:
+    """Return bin-edge array suitable for pcolormesh from a sorted list of centers."""
+    v = np.array(sorted(set(vals)), dtype=float)
+    if len(v) == 1:
+        return np.array([v[0] * 0.8, v[0] * 1.2])
+    d = np.diff(v) / 2.0
+    return np.concatenate([[v[0] - d[0]], v[:-1] + d, [v[-1] + d[-1]]])
+
+
+def plot_chunked_safety_map(
+    chunked_df: pd.DataFrame,
+    output_dir: Path,
+    model: str,
+) -> None:
+    """Fig 8: sm_count × prefill_chunk_tokens safety heatmap, one panel per batch_size.
+
+    Green = cooperative_safe=True (n_blocks_per_call ≤ sm_count).
+    Red   = cooperative_safe=False (cooperative barrier deadlock risk).
+    Dashed line = theoretical boundary: chunk_tokens = 4 × sm_count / batch_size.
+    """
+    if chunked_df.empty:
+        print(f"  [Fig 8] No chunked data for model={model} — skipping")
+        return
+    required = {"prefill_chunk_tokens", "cooperative_safe", "sm_count", "batch_size"}
+    if not required.issubset(chunked_df.columns):
+        missing = required - set(chunked_df.columns)
+        print(f"  [Fig 8] Missing columns {missing} — skipping")
+        return
+
+    df_m = (
+        chunked_df[chunked_df["model_name"] == model].copy()
+        if "model_name" in chunked_df.columns
+        else chunked_df.copy()
+    )
+    if df_m.empty:
+        print(f"  [Fig 8] No rows for model={model} — skipping")
+        return
+
+    batch_sizes = sorted(df_m["batch_size"].unique())
+    n_panels = len(batch_sizes)
+    fig, axes = plt.subplots(
+        1, n_panels,
+        figsize=(5.5 * n_panels, 5.2),
+        squeeze=False,
+        layout="constrained",
+    )
+    axes = axes[0]
+
+    model_label = model.upper().replace("_", "-")
+    fig.suptitle(f"{model_label} — Cooperative Safety Map", fontsize=13, fontweight="bold")
+    fig.supxlabel(
+        "Green = safe (n_blocks_per_call ≤ SM count)  |  Red = deadlock risk  |  Dashed = safety boundary",
+        fontsize=9, color="#555",
+    )
+
+    safe_cmap = mcolors.ListedColormap(["#EF5350", "#66BB6A"])  # red=0, green=1
+
+    for ax, bs in zip(axes, batch_sizes):
+        sub = df_m[df_m["batch_size"] == bs]
+        chunk_vals = sorted(sub["prefill_chunk_tokens"].unique())
+        sm_vals    = sorted(sub["sm_count"].unique())
+
+        mat = np.full((len(sm_vals), len(chunk_vals)), np.nan)
+        for i, sm in enumerate(sm_vals):
+            for j, ch in enumerate(chunk_vals):
+                cell = sub[(sub["sm_count"] == sm) & (sub["prefill_chunk_tokens"] == ch)]
+                if not cell.empty:
+                    mat[i, j] = float(cell["cooperative_safe"].astype(float).iloc[0])
+
+        im = ax.pcolormesh(
+            _pcolormesh_edges(chunk_vals),
+            _pcolormesh_edges(sm_vals),
+            mat,
+            cmap=safe_cmap, vmin=0.0, vmax=1.0,
+        )
+
+        # Safety boundary derived from actual n_blocks_per_call data (model-agnostic).
+        # n_blocks scales linearly with chunk_tokens; boundary: chunk = sm * min_chunk / n_blocks_at_min
+        legend_handles = []
+        if "n_blocks_per_call" in sub.columns:
+            min_chunk = float(chunk_vals[0])
+            ref_rows = sub[sub["prefill_chunk_tokens"] == chunk_vals[0]]
+            if not ref_rows.empty:
+                n_blocks_at_min = float(ref_rows["n_blocks_per_call"].iloc[0])
+                sm_arr = np.array(sm_vals, dtype=float)
+                boundary_ch = sm_arr * min_chunk / n_blocks_at_min
+
+                ch_lo = _pcolormesh_edges(chunk_vals)[0]
+                ch_hi = _pcolormesh_edges(chunk_vals)[-1]
+                visible = (boundary_ch >= ch_lo) & (boundary_ch <= ch_hi)
+
+                if visible.any():
+                    ax.plot(
+                        boundary_ch[visible], sm_arr[visible],
+                        "k--", linewidth=2.0, zorder=5,
+                    )
+                    legend_handles.append(
+                        mlines.Line2D([], [], color="black", linestyle="--",
+                                      linewidth=2, label="Safety boundary")
+                    )
+                else:
+                    # Boundary is outside chart — annotate with required SM count
+                    min_safe_sm = int(np.ceil(n_blocks_at_min))
+                    ax.text(
+                        0.5, 0.96,
+                        f"⚠ All configs unsafe\n(requires SM ≥ {min_safe_sm} for chunk={int(min_chunk)})",
+                        ha="center", va="top", transform=ax.transAxes,
+                        fontsize=7.5, color="#B71C1C",
+                        bbox=dict(boxstyle="round,pad=0.3", facecolor="#FFCDD2", alpha=0.9),
+                    )
+
+        ax.set_xlabel("Prefill Chunk Tokens", fontsize=9)
+        ax.set_ylabel("SM Count", fontsize=9)
+        ax.set_title(f"batch_size = {bs}", fontsize=10, fontweight="bold")
+        ax.set_xticks(chunk_vals)
+        ax.set_xticklabels([str(c) for c in chunk_vals], rotation=30, ha="right", fontsize=8)
+        ax.set_yticks(sm_vals)
+        ax.set_yticklabels([str(s) for s in sm_vals], fontsize=8)
+        if legend_handles:
+            ax.legend(handles=legend_handles, fontsize=8, loc="upper left")
+
+    # Shared colorbar
+    sm_mappable = plt.cm.ScalarMappable(
+        cmap=safe_cmap, norm=mcolors.Normalize(vmin=0, vmax=1)
+    )
+    cbar = fig.colorbar(sm_mappable, ax=list(axes), fraction=0.02, pad=0.01)
+    cbar.set_ticks([0.25, 0.75])
+    cbar.set_ticklabels(["Unsafe", "Safe"], fontsize=10)
+
+    out_path = output_dir / f"fig8_chunked_safety_{model}.png"
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {out_path}")
+
+
+# ---------------------------------------------------------------------------
+# Figure 9: Chunked Prefill SM Scaling
+# ---------------------------------------------------------------------------
+
+def plot_chunked_sm_scaling(
+    chunked_df: pd.DataFrame,
+    main_df: pd.DataFrame,
+    output_dir: Path,
+    model: str,
+    seq_lens: list[int],
+    batch_sizes: list[int],
+) -> None:
+    """Fig 9: Latency vs SM allocation ratio, lines per chunk size (all configs).
+
+    Grid: rows = batch_sizes, cols = seq_lens.
+    Filled markers = cooperative_safe=True; hollow markers = cooperative_safe=False.
+    SSM Triton full-sequence reference overlaid as a gray dashed curve.
+    """
+    if chunked_df.empty:
+        print(f"  [Fig 9] No chunked data for model={model} — skipping")
+        return
+    if "prefill_chunk_tokens" not in chunked_df.columns:
+        print(f"  [Fig 9] Missing prefill_chunk_tokens column — skipping")
+        return
+
+    df_m = (
+        chunked_df[chunked_df["model_name"] == model].copy()
+        if "model_name" in chunked_df.columns
+        else chunked_df.copy()
+    )
+    if df_m.empty:
+        print(f"  [Fig 9] No rows for model={model} — skipping")
+        return
+
+    avail_bs = sorted(df_m["batch_size"].unique())
+    avail_sl = sorted(df_m["seq_len"].unique())
+    plot_bs = [b for b in batch_sizes if b in avail_bs][:4]
+    plot_sl = [s for s in seq_lens if s in avail_sl][:5]
+    if not plot_bs or not plot_sl:
+        print(f"  [Fig 9] No matching (batch_size, seq_len) in chunked data — skipping")
+        return
+
+    chunk_vals = sorted(df_m["prefill_chunk_tokens"].unique())
+    cmap = plt.cm.viridis
+    chunk_colors = {
+        ch: cmap(i / max(len(chunk_vals) - 1, 1))
+        for i, ch in enumerate(chunk_vals)
+    }
+
+    # SSM Triton reference
+    triton_df = main_df[
+        (main_df.get("model_name", pd.Series([model] * len(main_df), index=main_df.index)) == model)
+        & (main_df["layer_type"] == "ssm_triton")
+    ] if "model_name" in main_df.columns else main_df[main_df["layer_type"] == "ssm_triton"]
+
+    n_rows, n_cols = len(plot_bs), len(plot_sl)
+    fig, axes = plt.subplots(
+        n_rows, n_cols,
+        figsize=(4.4 * n_cols, 3.8 * n_rows),
+        squeeze=False,
+        layout="constrained",
+    )
+
+    has_safe_col = "cooperative_safe" in df_m.columns
+    model_label = model.upper().replace("_", "-")
+    safe_note = "  ●=safe  ○=unsafe" if has_safe_col else ""
+    fig.suptitle(
+        f"{model_label} — Chunked Prefill: Latency vs SM Allocation",
+        fontsize=12, fontweight="bold",
+    )
+    fig.supxlabel(
+        f"Colored lines = chunk sizes (all configs).{safe_note}  "
+        "Gray dashed = SSM Triton full-seq ref.",
+        fontsize=9, color="#555",
+    )
+
+    for ri, bs in enumerate(plot_bs):
+        for ci, sl in enumerate(plot_sl):
+            ax = axes[ri][ci]
+            ax.set_title(f"seq={sl}, bs={bs}", fontsize=8)
+            has_data = False
+
+            ref = triton_df[
+                (triton_df["batch_size"] == bs) & (triton_df["seq_len"] == sl)
+            ].sort_values("sm_ratio")
+            if not ref.empty:
+                ax.plot(
+                    ref["sm_ratio"] * 100, ref["latency_ms"],
+                    color="gray", linestyle="--", linewidth=1.5, alpha=0.7,
+                    label="SSM Triton (ref)",
+                )
+
+            for ch in chunk_vals:
+                grp = df_m[
+                    (df_m["batch_size"] == bs) &
+                    (df_m["seq_len"] == sl) &
+                    (df_m["prefill_chunk_tokens"] == ch)
+                ].sort_values("sm_ratio")
+                if grp.empty:
+                    continue
+                has_data = True
+                # Connecting line
+                ax.plot(
+                    grp["sm_ratio"] * 100, grp["latency_ms"],
+                    color=chunk_colors[ch], linestyle="-", linewidth=1.5, alpha=0.6,
+                )
+                # Safety-aware markers: filled = safe, hollow = unsafe
+                if has_safe_col:
+                    safe_mask = grp["cooperative_safe"].astype(bool)
+                    for pts, facecolor in [
+                        (grp[safe_mask],  chunk_colors[ch]),
+                        (grp[~safe_mask], "none"),
+                    ]:
+                        if not pts.empty:
+                            ax.scatter(
+                                pts["sm_ratio"] * 100, pts["latency_ms"],
+                                s=18, color=chunk_colors[ch],
+                                facecolors=facecolor,
+                                edgecolors=chunk_colors[ch],
+                                linewidths=1.2, zorder=4,
+                            )
+                else:
+                    ax.scatter(grp["sm_ratio"] * 100, grp["latency_ms"],
+                               s=18, color=chunk_colors[ch], zorder=4)
+
+            if not has_data:
+                ax.text(0.5, 0.5, "no data", ha="center", va="center",
+                        transform=ax.transAxes, fontsize=8, color="gray")
+
+            ax.set_xlabel("SM Allocation (%)", fontsize=7)
+            ax.set_ylabel("Latency (ms)", fontsize=7)
+            ax.tick_params(labelsize=6)
+            ax.grid(True, alpha=0.3)
+            ax.set_xlim(0, 105)
+
+    chunk_handles = [
+        mlines.Line2D([], [], color=chunk_colors[ch], marker="o", linestyle="-",
+                      markersize=5, linewidth=2, label=f"chunk={ch}")
+        for ch in chunk_vals
+    ]
+    chunk_handles.append(
+        mlines.Line2D([], [], color="gray", linestyle="--", linewidth=1.5,
+                      label="SSM Triton (ref)")
+    )
+    if has_safe_col:
+        chunk_handles += [
+            mlines.Line2D([], [], color="black", marker="o", linestyle="None",
+                          markersize=6, label="safe (●)"),
+            mlines.Line2D([], [], color="black", marker="o", linestyle="None",
+                          markersize=6, markerfacecolor="none", label="unsafe (○)"),
+        ]
+    fig.legend(handles=chunk_handles, loc="outside lower center",
+               ncol=min(len(chunk_handles), 6), fontsize=9)
+
+    out_path = output_dir / f"fig9_chunked_sm_scaling_{model}.png"
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {out_path}")
+
+
+# ---------------------------------------------------------------------------
+# Figure 10: Chunked Prefill Kernel Overhead
+# ---------------------------------------------------------------------------
+
+def plot_chunked_kernel_overhead(
+    chunked_df: pd.DataFrame,
+    output_dir: Path,
+    model: str,
+) -> None:
+    """Fig 10: Latency vs n_kernel_calls with linear fit per SM count, one panel per batch_size.
+
+    n_kernel_calls = seq_len / prefill_chunk_tokens.
+    A linear fit slope estimates per-call latency overhead;
+    y-intercept estimates fixed dispatch overhead.
+    """
+    if chunked_df.empty:
+        print(f"  [Fig 10] No chunked data for model={model} — skipping")
+        return
+    if "n_kernel_calls" not in chunked_df.columns:
+        print(f"  [Fig 10] Missing n_kernel_calls column — skipping")
+        return
+
+    df_m = (
+        chunked_df[chunked_df["model_name"] == model].copy()
+        if "model_name" in chunked_df.columns
+        else chunked_df.copy()
+    )
+    if df_m.empty:
+        print(f"  [Fig 10] No rows for model={model} — skipping")
+        return
+
+    sm_vals    = sorted(df_m["sm_count"].unique())
+    batch_sizes = sorted(df_m["batch_size"].unique())
+    n_panels = len(batch_sizes)
+
+    fig, axes = plt.subplots(
+        1, n_panels,
+        figsize=(5.8 * n_panels, 5.0),
+        squeeze=False,
+        layout="constrained",
+    )
+    axes = axes[0]
+
+    has_safe_col = "cooperative_safe" in df_m.columns
+    model_label = model.upper().replace("_", "-")
+    safe_note = "  ●=safe  ○=unsafe" if has_safe_col else ""
+    fig.suptitle(
+        f"{model_label} — Chunked Prefill: Latency vs Kernel Call Count",
+        fontsize=13, fontweight="bold",
+    )
+    fig.supxlabel(
+        f"Points = one (seq_len, chunk_size) config.{safe_note}  "
+        "Lines = linear fit; slope shown as annotation.",
+        fontsize=9, color="#555",
+    )
+
+    cmap = plt.cm.plasma
+    sm_colors = {sm: cmap(i / max(len(sm_vals) - 1, 1)) for i, sm in enumerate(sm_vals)}
+
+    for ax, bs in zip(axes, batch_sizes):
+        sub = df_m[df_m["batch_size"] == bs]
+
+        for sm in sm_vals:
+            grp = sub[sub["sm_count"] == sm].sort_values("n_kernel_calls")
+            if grp.empty:
+                continue
+
+            # Safety-aware markers: filled = safe, hollow = unsafe
+            if has_safe_col:
+                safe_mask = grp["cooperative_safe"].astype(bool)
+                for pts, facecolor in [
+                    (grp[safe_mask],  sm_colors[sm]),
+                    (grp[~safe_mask], "none"),
+                ]:
+                    if not pts.empty:
+                        ax.scatter(
+                            pts["n_kernel_calls"], pts["latency_ms"],
+                            s=40, color=sm_colors[sm],
+                            facecolors=facecolor,
+                            edgecolors=sm_colors[sm],
+                            linewidths=1.2, alpha=0.85, zorder=4,
+                        )
+            else:
+                ax.scatter(
+                    grp["n_kernel_calls"], grp["latency_ms"],
+                    color=sm_colors[sm], s=40, alpha=0.82,
+                    edgecolors="white", linewidths=0.5, zorder=4,
+                )
+
+            if len(grp) >= 2:
+                x = grp["n_kernel_calls"].values.astype(float)
+                y = grp["latency_ms"].values.astype(float)
+                coeffs = np.polyfit(x, y, 1)
+                x_fit = np.linspace(x.min(), x.max(), 60)
+                y_fit = np.polyval(coeffs, x_fit)
+                ax.plot(x_fit, y_fit, color=sm_colors[sm], linewidth=1.5,
+                        alpha=0.72, label=f"SM={sm}")
+                # Slope annotation at the midpoint of the fit line
+                mid = len(x_fit) // 2
+                ax.annotate(
+                    f"{coeffs[0]:.2f}ms/call",
+                    xy=(x_fit[mid], y_fit[mid]),
+                    xytext=(3, 3), textcoords="offset points",
+                    fontsize=6, color=sm_colors[sm], alpha=0.85,
+                )
+
+        ax.set_xlabel("Kernel Calls  (seq_len / chunk_tokens)", fontsize=9)
+        ax.set_ylabel("Latency (ms)", fontsize=9)
+        ax.set_title(f"batch_size = {bs}", fontsize=10, fontweight="bold")
+        ax.grid(True, alpha=0.3)
+
+    # Shared figure-level legend (one per SM count)
+    handles_leg = [
+        mlines.Line2D([], [], color=sm_colors[sm], linewidth=2, label=f"SM={sm}")
+        for sm in sm_vals
+    ]
+    if has_safe_col:
+        handles_leg += [
+            mpatches.Patch(color="none", label=""),   # spacer
+            mlines.Line2D([], [], color="gray", marker="o", linestyle="None",
+                          markersize=6, label="safe (●)"),
+            mlines.Line2D([], [], color="gray", marker="o", linestyle="None",
+                          markersize=6, markerfacecolor="none", label="unsafe (○)"),
+        ]
+    fig.legend(handles=handles_leg, loc="outside right upper",
+               ncol=1, fontsize=8, title="SM count", title_fontsize=8)
+    out_path = output_dir / f"fig10_chunked_overhead_{model}.png"
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {out_path}")
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -790,8 +1238,8 @@ if __name__ == "__main__":
         seq_lens    = args.seq_lens    or sorted(df["seq_len"].unique().tolist())
 
         # For the grid figure, cap rows/cols to keep the figure readable
-        grid_bs = batch_sizes[:5]
-        grid_sl = seq_lens[:6]
+        grid_bs = batch_sizes[:3]
+        grid_sl = seq_lens[:4]
 
         print(f"\n  [Fig 4] Module latency comparison grid  "
               f"(bs={grid_bs}, seq={grid_sl}) …")
@@ -808,5 +1256,19 @@ if __name__ == "__main__":
             df, args.output_dir, model,
             batch_sizes, args.sensitivity_ratios,
         )
+
+        # Chunked-prefill figures — only when --ssm-chunked-csv is provided
+        if chunked_csv is not None and chunked_csv.exists():
+            print(f"\n  [Fig 8] Chunked prefill cooperative safety map …")
+            chunked_df_all = load_chunked_csv(chunked_csv, model, filter_unsafe=False)
+            plot_chunked_safety_map(chunked_df_all, args.output_dir, model)
+
+            print(f"\n  [Fig 9] Chunked prefill SM scaling (all configs, safety-coded) …")
+            plot_chunked_sm_scaling(
+                chunked_df_all, df, args.output_dir, model, grid_sl, batch_sizes,
+            )
+
+            print(f"\n  [Fig 10] Chunked prefill kernel call overhead …")
+            plot_chunked_kernel_overhead(chunked_df_all, args.output_dir, model)
 
     print("\nDone.")
