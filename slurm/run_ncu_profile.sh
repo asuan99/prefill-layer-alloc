@@ -7,7 +7,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --time=08:00:00
+#SBATCH --time=24:00:00
 #SBATCH --comment=pytorch
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/ncu_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/ncu_%j.err
@@ -17,12 +17,16 @@
 # interactive sessions (ERR_NVGPUCTRPERM, perf_event_paranoid=2).
 #
 # Usage:
-#   sbatch slurm/run_ncu_profile.sh                      # zamba2, wave metrics
-#   sbatch slurm/run_ncu_profile.sh falcon_h1            # falcon_h1
-#   sbatch slurm/run_ncu_profile.sh zamba2 ssm attn      # specific layer types
-#   sbatch slurm/run_ncu_profile.sh zamba2 ssm --sm-counts 27 54 108 --seq-lens 1024 4096
+#   sbatch slurm/run_ncu_profile.sh                                      # zamba2, all layer types
+#   sbatch slurm/run_ncu_profile.sh falcon_h1                            # falcon_h1
+#   sbatch slurm/run_ncu_profile.sh zamba2 --layer-types ssm attn        # specific layer types
+#   sbatch slurm/run_ncu_profile.sh zamba2 --layer-types ssm --sm-counts 27 54 108 --seq-lens 1024 4096
+#   sbatch slurm/run_ncu_profile.sh zamba2 --layer-types chunked_ssm \
+#       --prefill-chunk-tokens 256 512 1024 --sm-counts 27 54 108
 #
-# Arguments: MODEL [LAYER_TYPES...] [extra args passed to run_ncu_profile.py]
+# Arguments: MODEL [extra args passed directly to run_ncu_profile.py]
+#   Note: layer types and other options must use their full --flag form
+#         (e.g. --layer-types ssm attn), NOT bare positional words.
 
 module load conda/pytorch_2.9.1_cuda13
 module load cuda/13.0.2

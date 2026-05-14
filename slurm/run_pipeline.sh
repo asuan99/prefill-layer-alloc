@@ -38,55 +38,24 @@ MODEL=${1:-zamba2}
 DEVICE=${2:-auto}
 
 # ---------------------------------------------------------------------------
-# Helper: submit one stage, return job ID
+# Helper: sbatch wrapper that returns job ID (--parsable)
+# Usage: sbatch_job [sbatch_options...] -- script [script_args...]
 # ---------------------------------------------------------------------------
-submit() {
-    local script=$1; shift
-    sbatch --parsable "$@" "$script"
-}
-
-# ---------------------------------------------------------------------------
-# Helper: submit a full single-model chain; echos the final job ID
-# ---------------------------------------------------------------------------
-submit_chain() {
-    local model=$1
-    local device=$2
-    local dep_extra=${3:-}      # optional extra --dependency flag (for 'all' mode)
-
-    echo ""
-    echo "  ── $model ──────────────────────────────────"
-
-    # stage1
-    local jid1
-    jid1=$(submit slurm/run_stage1.sh \
-        --job-name "s1-${model}" \
-        slurm/run_stage1.sh "$model" "$device")
-    echo "  [stage1] job=$jid1"
-
-    # stage2 — depends on stage1, plus any external dependency (all-models case)
-    local dep2="afterok:${jid1}"
-    if [ -n "$dep_extra" ]; then
-        dep2="${dep2}:${dep_extra}"
-    fi
-    local jid2
-    jid2=$(submit slurm/run_stage2.sh \
-        --job-name "s2-${model}" \
-        --dependency="$dep2" \
-        slurm/run_stage2.sh "$model" "$device")
-    echo "  [stage2] job=$jid2  dep=$dep2"
-
-    # stage3 — depends on stage2
-    local jid3
-    jid3=$(submit slurm/run_stage3.sh \
-        --job-name "s3-${model}" \
-        --dependency="afterok:${jid2}" \
-        slurm/run_stage3.sh "$model" "$device")
-    echo "  [stage3] job=$jid3  dep=afterok:${jid2}"
-
-    echo "  chain : $jid1 → $jid2 → $jid3"
-
-    # return final jid for callers that need it
-    echo "$jid3"
+sbatch_job() {
+    local opts=() script="" args=()
+    local past_sep=0
+    for arg in "$@"; do
+        if [[ $past_sep -eq 0 && "$arg" == "--" ]]; then
+            past_sep=1
+        elif [[ $past_sep -eq 0 ]]; then
+            opts+=("$arg")
+        elif [[ -z "$script" ]]; then
+            script="$arg"
+        else
+            args+=("$arg")
+        fi
+    done
+    sbatch --parsable "${opts[@]}" "$script" "${args[@]}"
 }
 
 # ---------------------------------------------------------------------------
@@ -114,21 +83,18 @@ if [ "$MODEL" = "all" ]; then
     echo ""
     echo "[zamba2 chain]"
 
-    jid_z1=$(submit slurm/run_stage1.sh \
-        --job-name "s1-zamba2" \
-        slurm/run_stage1.sh "zamba2" "$DEVICE")
+    jid_z1=$(sbatch_job --job-name "s1-zamba2" \
+        -- slurm/run_stage1.sh "zamba2" "$DEVICE")
     echo "  [stage1] job=$jid_z1"
 
-    jid_z2=$(submit slurm/run_stage2.sh \
-        --job-name "s2-zamba2" \
+    jid_z2=$(sbatch_job --job-name "s2-zamba2" \
         --dependency="afterok:${jid_z1}" \
-        slurm/run_stage2.sh "zamba2" "$DEVICE")
+        -- slurm/run_stage2.sh "zamba2" "$DEVICE")
     echo "  [stage2] job=$jid_z2  dep=afterok:${jid_z1}"
 
-    jid_z3=$(submit slurm/run_stage3.sh \
-        --job-name "s3-zamba2" \
+    jid_z3=$(sbatch_job --job-name "s3-zamba2" \
         --dependency="afterok:${jid_z2}" \
-        slurm/run_stage3.sh "zamba2" "$DEVICE")
+        -- slurm/run_stage3.sh "zamba2" "$DEVICE")
     echo "  [stage3] job=$jid_z3  dep=afterok:${jid_z2}"
     echo "  chain  : $jid_z1 → $jid_z2 → $jid_z3"
 
@@ -136,22 +102,19 @@ if [ "$MODEL" = "all" ]; then
     echo ""
     echo "[falcon_h1 chain]"
 
-    jid_f1=$(submit slurm/run_stage1.sh \
-        --job-name "s1-falcon_h1" \
-        slurm/run_stage1.sh "falcon_h1" "$DEVICE")
+    jid_f1=$(sbatch_job --job-name "s1-falcon_h1" \
+        -- slurm/run_stage1.sh "falcon_h1" "$DEVICE")
     echo "  [stage1] job=$jid_f1  (parallel with zamba2 stage1)"
 
     # wait for BOTH falcon stage1 AND zamba2 stage2 — avoids decision_matrix conflict
-    jid_f2=$(submit slurm/run_stage2.sh \
-        --job-name "s2-falcon_h1" \
+    jid_f2=$(sbatch_job --job-name "s2-falcon_h1" \
         --dependency="afterok:${jid_f1}:${jid_z2}" \
-        slurm/run_stage2.sh "falcon_h1" "$DEVICE")
+        -- slurm/run_stage2.sh "falcon_h1" "$DEVICE")
     echo "  [stage2] job=$jid_f2  dep=afterok:${jid_f1}:${jid_z2}"
 
-    jid_f3=$(submit slurm/run_stage3.sh \
-        --job-name "s3-falcon_h1" \
+    jid_f3=$(sbatch_job --job-name "s3-falcon_h1" \
         --dependency="afterok:${jid_f2}" \
-        slurm/run_stage3.sh "falcon_h1" "$DEVICE")
+        -- slurm/run_stage3.sh "falcon_h1" "$DEVICE")
     echo "  [stage3] job=$jid_f3  dep=afterok:${jid_f2}"
     echo "  chain  : $jid_f1 → $jid_f2 → $jid_f3"
 
@@ -173,21 +136,18 @@ else
     echo ""
     echo "Mode: single model ($MODEL)"
 
-    jid1=$(submit slurm/run_stage1.sh \
-        --job-name "s1-${MODEL}" \
-        slurm/run_stage1.sh "$MODEL" "$DEVICE")
+    jid1=$(sbatch_job --job-name "s1-${MODEL}" \
+        -- slurm/run_stage1.sh "$MODEL" "$DEVICE")
     echo "  [stage1] job=$jid1"
 
-    jid2=$(submit slurm/run_stage2.sh \
-        --job-name "s2-${MODEL}" \
+    jid2=$(sbatch_job --job-name "s2-${MODEL}" \
         --dependency="afterok:${jid1}" \
-        slurm/run_stage2.sh "$MODEL" "$DEVICE")
+        -- slurm/run_stage2.sh "$MODEL" "$DEVICE")
     echo "  [stage2] job=$jid2  dep=afterok:${jid1}"
 
-    jid3=$(submit slurm/run_stage3.sh \
-        --job-name "s3-${MODEL}" \
+    jid3=$(sbatch_job --job-name "s3-${MODEL}" \
         --dependency="afterok:${jid2}" \
-        slurm/run_stage3.sh "$MODEL" "$DEVICE")
+        -- slurm/run_stage3.sh "$MODEL" "$DEVICE")
     echo "  [stage3] job=$jid3  dep=afterok:${jid2}"
 
     echo ""

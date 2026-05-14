@@ -85,7 +85,7 @@ python stage1_sm_scaling/run_ssm_prefill_sweep.py \
     --model  "$MODEL" \
     --device "$DEVICE" \
     --skip-verify
-echo "   done  ($(elapsed 2>/dev/null || _elapsed))"
+echo "   done  ($(_elapsed))"
 
 # ── [2/6] SSM chunked prefill sweep ──────────────────────────────────────────
 # kernel 호출을 prefill_chunk_tokens 단위로 분할해 cooperative barrier를 우회.
