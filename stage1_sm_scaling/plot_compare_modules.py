@@ -57,27 +57,31 @@ from stage1_sm_scaling.plot_saturation import (
 # Module-level constants
 # ---------------------------------------------------------------------------
 
-MODULE_ORDER = ["attn", "ssm_triton", "ssm_torch"]
+MODULE_ORDER = ["attn", "ssm_triton", "ssm_torch", "ssm_chunked"]
 
 MODULE_COLORS = {
-    "attn":       "#FF5722",   # red-orange
-    "ssm_triton": "#1565C0",   # deep blue  — analytical wave model
-    "ssm_torch":  "#42A5F5",   # light blue — direct PyTorch scan
+    "attn":        "#FF5722",   # red-orange
+    "ssm_triton":  "#1565C0",   # deep blue  — analytical wave model
+    "ssm_torch":   "#42A5F5",   # light blue — direct PyTorch scan
+    "ssm_chunked": "#2E7D32",   # dark green — chunked prefill direct measurement
 }
 MODULE_LABELS = {
-    "attn":       "Attention",
-    "ssm_triton": "SSM Triton (analytical)",
-    "ssm_torch":  "SSM PyTorch (direct)",
+    "attn":        "Attention",
+    "ssm_triton":  "SSM Triton (analytical)",
+    "ssm_torch":   "SSM PyTorch (direct)",
+    "ssm_chunked": "SSM Chunked Prefill (direct)",
 }
 MODULE_LINESTYLES = {
-    "attn":       "-.",
-    "ssm_triton": "-",
-    "ssm_torch":  "--",
+    "attn":        "-.",
+    "ssm_triton":  "-",
+    "ssm_torch":   "--",
+    "ssm_chunked": ":",
 }
 MODULE_MARKERS = {
-    "attn":       "^",
-    "ssm_triton": "o",
-    "ssm_torch":  "s",
+    "attn":        "^",
+    "ssm_triton":  "o",
+    "ssm_torch":   "s",
+    "ssm_chunked": "D",
 }
 
 
@@ -111,10 +115,50 @@ def _pick_best_csv(files: list[Path], layer_type: str) -> Path:
     return candidates[-1]
 
 
+def load_chunked_csv(chunked_csv: Path, model: str) -> pd.DataFrame:
+    """Load a chunked prefill CSV and normalise it to the common module schema.
+
+    chunked CSV columns (from run_chunked_ssm_sweep.py):
+        model, device, seq_len, batch_size, sm_count, sm_ratio_pct,
+        prefill_chunk_tokens, n_kernel_calls, n_blocks_per_call,
+        cooperative_safe, latency_ms, latency_std_ms
+
+    Added columns for compatibility with plot_compare_modules pipeline:
+        sm_ratio, layer_type='ssm_chunked', model_name, latency_p99_ms,
+        achieved_bandwidth_GBs, theoretical_bw_GBs, bw_utilization_pct
+    """
+    df = pd.read_csv(chunked_csv)
+
+    # Filter by model if column exists
+    if "model" in df.columns:
+        df = df[df["model"] == model].copy()
+        df = df.rename(columns={"model": "model_name"})
+    else:
+        df = df.copy()
+        df["model_name"] = model
+
+    # Normalise sm_ratio
+    if "sm_ratio_pct" in df.columns and "sm_ratio" not in df.columns:
+        df["sm_ratio"] = df["sm_ratio_pct"] / 100.0
+
+    # Drop cooperative_safe=False rows (deadlock risk, latency likely NaN)
+    if "cooperative_safe" in df.columns:
+        df = df[df["cooperative_safe"].astype(bool)].copy()
+
+    df["layer_type"]             = "ssm_chunked"
+    df["latency_p99_ms"]         = df["latency_ms"]    # no p99 in chunked CSV
+    df["achieved_bandwidth_GBs"] = float("nan")
+    df["theoretical_bw_GBs"]     = float("nan")
+    df["bw_utilization_pct"]     = float("nan")
+
+    return df
+
+
 def load_all_modules(
     results_dir: Path,
     model: str,
     device: str | None = None,
+    chunked_csv: Path | None = None,
 ) -> pd.DataFrame:
     """Load attn, ssm_triton, ssm_torch CSVs and tag them with explicit layer_type.
 
@@ -147,7 +191,7 @@ def load_all_modules(
         torch_files = [f for f in torch_files if device in f.name]
 
     specs = [
-        ("attn",      attn_files),
+        ("attn",       attn_files),
         ("ssm_triton", ssm_files),
         ("ssm_torch",  torch_files),
     ]
@@ -172,6 +216,22 @@ def load_all_modules(
         df["layer_type"] = module_type
         df["_source_file"] = chosen.name
         dfs.append(df)
+
+    # chunked prefill CSV (optional — passed explicitly via --ssm-chunked-csv)
+    if chunked_csv is not None and chunked_csv.exists():
+        ch_df = load_chunked_csv(chunked_csv, model)
+        if not ch_df.empty:
+            ch_df["_source_file"] = chunked_csv.name
+            dfs.append(ch_df)
+            print(
+                f"  [load_all_modules] ssm_chunked: loaded '{chunked_csv.name}' "
+                f"({len(ch_df)} rows, cooperative_safe=True only)"
+            )
+        else:
+            print(
+                f"  [load_all_modules] ssm_chunked: '{chunked_csv.name}' loaded but "
+                f"no cooperative_safe=True rows for model={model!r}"
+            )
 
     if not dfs:
         raise FileNotFoundError(
@@ -641,7 +701,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description=(
             "Stage 1 all-module comparison: "
-            "attn, ssm_triton (analytical), ssm_torch (direct)"
+            "attn, ssm_triton (analytical), ssm_torch (direct), ssm_chunked (direct)"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
@@ -658,6 +718,15 @@ def parse_args():
             "Hardware tag to filter CSVs (e.g. 'a100-sxm4-80gb'). "
             "When multiple CSVs exist for a model, the best one is auto-selected "
             "but --device lets you pin a specific run."
+        ),
+    )
+    parser.add_argument(
+        "--ssm-chunked-csv", type=Path, default=None,
+        metavar="CSV",
+        help=(
+            "chunked prefill 방식으로 직접 측정한 SSM CSV "
+            "(run_chunked_ssm_sweep.py 출력). "
+            "지정하면 wave-model ssm_triton 위에 ssm_chunked를 오버레이한다."
         ),
     )
     parser.add_argument("--batch-sizes", nargs="+", type=int, default=None)
@@ -699,8 +768,14 @@ if __name__ == "__main__":
         print(f"Model: {model}")
         print(f"{'='*60}")
 
+        chunked_csv = getattr(args, "ssm_chunked_csv", None)
+
         try:
-            df = load_all_modules(results_dir, model, device=args.device)
+            df = load_all_modules(
+                results_dir, model,
+                device=args.device,
+                chunked_csv=chunked_csv,
+            )
         except FileNotFoundError as e:
             print(f"  {e}")
             continue
