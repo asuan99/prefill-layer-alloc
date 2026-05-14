@@ -27,12 +27,14 @@ import torch
 
 def parse_args():
     parser = argparse.ArgumentParser(description="ncu kernel target")
-    parser.add_argument("--layer-type", choices=["ssm", "attn", "mlp"], required=True)
+    parser.add_argument("--layer-type", choices=["ssm", "chunked_ssm", "attn", "mlp"], required=True)
     parser.add_argument("--model", choices=["zamba2", "falcon_h1"], required=True)
     parser.add_argument("--sm-count", type=int, required=True)
     parser.add_argument("--seq-len", type=int, required=True)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--context-len", type=int, default=0)
+    parser.add_argument("--prefill-chunk-tokens", type=int, default=0,
+                        help="Tokens per kernel call for chunked_ssm (0 = full seq_len)")
     parser.add_argument("--n-warmup", type=int, default=10,
                         help="Warmup launches before the measured kernel")
     parser.add_argument("--n-measure", type=int, default=3,
@@ -92,6 +94,46 @@ def main():
         value = kv_cache[:, :, 1]
         kernel = runner._build_attn_fn(query, key, value, n_heads, n_kv_heads, head_dim,
                                        use_flashinfer=True)
+
+    elif args.layer_type == "chunked_ssm":
+        # Profile the SSD scan kernel for one prefill chunk (prefill_chunk_tokens tokens).
+        # This captures the per-call grid size used in chunked-prefill SSM, which is
+        # smaller than the full-sequence grid and avoids cooperative barrier deadlock.
+        import math
+        import yaml
+        from pathlib import Path
+        from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
+
+        cfg_path = Path(__file__).parent.parent.parent / "configs" / "models.yaml"
+        with open(cfg_path) as _f:
+            _raw = yaml.safe_load(_f)[args.model]
+        _ssm = _raw.get("ssm", {})
+        n_heads   = _ssm["n_heads"]
+        head_dim  = _ssm["head_dim"]
+        d_state   = _ssm["d_state"]
+        n_groups  = _ssm.get("n_groups", _ssm.get("expand", 2))
+        ssd_chunk = _ssm["chunk_size"]
+
+        # Use prefill_chunk_tokens if provided, otherwise fall back to full seq_len.
+        pct = args.prefill_chunk_tokens if args.prefill_chunk_tokens > 0 else args.seq_len
+
+        x  = torch.randn(args.batch_size, pct, n_heads, head_dim, device="cuda", dtype=dtype)
+        dt = torch.ones(args.batch_size, pct, n_heads, device="cuda", dtype=dtype) * 0.1
+        A  = -torch.ones(n_heads, device="cuda", dtype=dtype)
+        B  = torch.randn(args.batch_size, pct, n_groups, d_state, device="cuda", dtype=dtype)
+        C  = torch.randn(args.batch_size, pct, n_groups, d_state, device="cuda", dtype=dtype)
+        D  = torch.ones(n_heads, device="cuda", dtype=dtype)
+        dt_bias = torch.zeros(n_heads, device="cuda", dtype=dtype)
+
+        def kernel():
+            with torch.no_grad():
+                mamba_chunk_scan_combined(
+                    x, dt, A, B, C,
+                    chunk_size=ssd_chunk,
+                    D=D,
+                    dt_bias=dt_bias,
+                    dt_softplus=True,
+                )
 
     else:  # mlp
         extractor = runner._get_extractor(args.model)

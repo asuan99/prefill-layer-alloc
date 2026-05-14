@@ -113,6 +113,20 @@ def _add_analytical_wave(row: dict, layer_type: str, model_cfg: dict) -> dict:
                 chunk_size=model_cfg.get("chunk_size", 256),
                 sm_count=sm_count,
             )
+        elif layer_type == "chunked_ssm":
+            pct = row.get("prefill_chunk_tokens", 0)
+            if not pct:
+                return row
+            ssm_cfg = model_cfg.get("ssm", {})
+            n_heads  = ssm_cfg.get("n_heads", model_cfg.get("n_ssm_heads", 64))
+            ssd_chunk = ssm_cfg.get("chunk_size", model_cfg.get("chunk_size", 256))
+            stats = WaveEstimator.ssm_chunked_prefill(
+                batch=batch_size,
+                prefill_chunk_tokens=pct,
+                n_heads=n_heads,
+                ssd_chunk_size=ssd_chunk,
+                sm_count=sm_count,
+            )
         elif layer_type == "attn":
             stats = WaveEstimator.attn_prefill(
                 batch=batch_size,
@@ -160,6 +174,7 @@ def run_ncu_sweep(
     n_warmup: int = 10,
     n_measure: int = 3,
     timeout_s: int = 300,
+    chunked_prefill_tokens: list[int] = None,
 ) -> list[dict]:
     metrics = NCU_METRICS_FULL if use_full_metrics else NCU_METRICS_WAVE
 
@@ -177,7 +192,13 @@ def run_ncu_sweep(
             "  OR: sudo ncu ..."
         )
 
-    total_configs = len(layer_types) * len(sm_counts) * len(seq_lens) * len(batch_sizes)
+    n_pct_configs = len(chunked_prefill_tokens) if chunked_prefill_tokens else 1
+    n_chunked_ssm = sum(1 for lt in layer_types if lt == "chunked_ssm")
+    n_other = len(layer_types) - n_chunked_ssm
+    total_configs = (
+        (n_other + n_chunked_ssm * n_pct_configs)
+        * len(sm_counts) * len(seq_lens) * len(batch_sizes)
+    )
     total_sm = hw_cfg["sm_count"]
     tag = device_tag(hw_cfg)
 
@@ -186,6 +207,8 @@ def run_ncu_sweep(
     print(f"  SM counts    : {sm_counts}")
     print(f"  seq_lens     : {seq_lens}")
     print(f"  batch_sizes  : {batch_sizes}")
+    if chunked_prefill_tokens:
+        print(f"  prefill_chunk: {chunked_prefill_tokens}")
     print(f"  Metrics      : {'FULL' if use_full_metrics else 'WAVE'}")
     print(f"  Total configs: {total_configs}")
     est_lo = total_configs * 2
@@ -205,75 +228,85 @@ def run_ncu_sweep(
         layer_results = []
         print(f"\n--- Layer: {layer_type} ---")
 
-        for sm_count in sm_counts:
-            for seq_len in seq_lens:
-                for batch_size in batch_sizes:
-                    done += 1
-                    sm_pct = sm_count / total_sm * 100
-                    print(
-                        f"  [{done}/{total_configs}] ncu: {layer_type} "
-                        f"sm={sm_count}({sm_pct:.0f}%) seq={seq_len} bs={batch_size} ...",
-                        flush=True,
-                    )
+        # For chunked_ssm, sweep over prefill_chunk_tokens as an extra dimension.
+        pct_list = (
+            chunked_prefill_tokens
+            if layer_type == "chunked_ssm" and chunked_prefill_tokens
+            else [0]
+        )
 
-                    row = ncu.profile(
-                        layer_type=layer_type,
-                        model=model_name,
-                        sm_count=sm_count,
-                        seq_len=seq_len,
-                        batch_size=batch_size,
-                        metrics=metrics,
-                        n_warmup=n_warmup,
-                        n_measure=n_measure,
-                        timeout_s=timeout_s,
-                    )
-
-                    # Annotate with config metadata
-                    row["total_sm"] = total_sm
-                    row["sm_ratio"] = sm_count / total_sm
-
-                    if "error" not in row:
-                        # Print key diagnostics
-                        sm_util = row.get("sm_util_per_sm_pct", float("nan"))
-                        n_waves = row.get("n_waves", "N/A")
-                        wave_eff = row.get("wave_efficiency_pct", float("nan"))
-                        occupancy = row.get("achieved_occupancy_pct", float("nan"))
-                        grid = row.get("grid_size", "N/A")
+        for pct in pct_list:
+            for sm_count in sm_counts:
+                for seq_len in seq_lens:
+                    for batch_size in batch_sizes:
+                        done += 1
+                        sm_pct = sm_count / total_sm * 100
+                        pct_tag = f" pct={pct}" if pct > 0 else ""
                         print(
-                            f"    grid={grid}  waves={n_waves}  "
-                            f"wave_eff={wave_eff:.1f}%  "
-                            f"sm_util={sm_util:.1f}%  "
-                            f"occupancy={occupancy:.1f}%"
+                            f"  [{done}/{total_configs}] ncu: {layer_type}{pct_tag} "
+                            f"sm={sm_count}({sm_pct:.0f}%) seq={seq_len} bs={batch_size} ...",
+                            flush=True,
                         )
 
-                        # Add analytical comparison
-                        row = _add_analytical_wave(row, layer_type, model_cfg)
+                        row = ncu.profile(
+                            layer_type=layer_type,
+                            model=model_name,
+                            sm_count=sm_count,
+                            seq_len=seq_len,
+                            batch_size=batch_size,
+                            metrics=metrics,
+                            prefill_chunk_tokens=pct,
+                            n_warmup=n_warmup,
+                            n_measure=n_measure,
+                            timeout_s=timeout_s,
+                        )
 
-                        # Print delta vs analytical estimate
-                        an_waves = row.get("analytical_n_waves")
-                        an_eff = row.get("analytical_wave_eff_pct")
-                        if an_waves is not None:
-                            wave_delta = (
-                                f"  [analytical: waves={an_waves} "
-                                f"eff={an_eff:.1f}%"
+                        # Annotate with config metadata
+                        row["total_sm"] = total_sm
+                        row["sm_ratio"] = sm_count / total_sm
+
+                        if "error" not in row:
+                            # Print key diagnostics
+                            sm_util = row.get("sm_util_per_sm_pct", float("nan"))
+                            n_waves = row.get("n_waves", "N/A")
+                            wave_eff = row.get("wave_efficiency_pct", float("nan"))
+                            occupancy = row.get("achieved_occupancy_pct", float("nan"))
+                            grid = row.get("grid_size", "N/A")
+                            print(
+                                f"    grid={grid}  waves={n_waves}  "
+                                f"wave_eff={wave_eff:.1f}%  "
+                                f"sm_util={sm_util:.1f}%  "
+                                f"occupancy={occupancy:.1f}%"
                             )
-                            meas_n = row.get("n_waves")
-                            if meas_n is not None and meas_n != an_waves:
-                                wave_delta += f" ← differs from measured {meas_n}"
-                            wave_delta += "]"
-                            print(f"  {wave_delta}")
-                    else:
-                        print(f"    ERROR: {row['error']}")
-                        # ncu errors (ERR_NVGPUCTRPERM etc.) go to stdout, not stderr
-                        ncu_out = row.get("ncu_stdout", "")
-                        if ncu_out:
-                            print(f"    NCU_OUT: {ncu_out.strip()}")
-                        stderr = row.get("stderr", "")
-                        if stderr:
-                            print(f"    STDERR: {stderr.strip()}")
-                        row = _add_analytical_wave(row, layer_type, model_cfg)
 
-                    layer_results.append(row)
+                            # Add analytical comparison
+                            row = _add_analytical_wave(row, layer_type, model_cfg)
+
+                            # Print delta vs analytical estimate
+                            an_waves = row.get("analytical_n_waves")
+                            an_eff = row.get("analytical_wave_eff_pct")
+                            if an_waves is not None:
+                                wave_delta = (
+                                    f"  [analytical: waves={an_waves} "
+                                    f"eff={an_eff:.1f}%"
+                                )
+                                meas_n = row.get("n_waves")
+                                if meas_n is not None and meas_n != an_waves:
+                                    wave_delta += f" ← differs from measured {meas_n}"
+                                wave_delta += "]"
+                                print(f"  {wave_delta}")
+                        else:
+                            print(f"    ERROR: {row['error']}")
+                            # ncu errors (ERR_NVGPUCTRPERM etc.) go to stdout, not stderr
+                            ncu_out = row.get("ncu_stdout", "")
+                            if ncu_out:
+                                print(f"    NCU_OUT: {ncu_out.strip()}")
+                            stderr = row.get("stderr", "")
+                            if stderr:
+                                print(f"    STDERR: {stderr.strip()}")
+                            row = _add_analytical_wave(row, layer_type, model_cfg)
+
+                        layer_results.append(row)
 
         all_results.extend(layer_results)
 
@@ -294,7 +327,7 @@ def _save_csv(results: list[dict], out_path: Path, layer_type: str) -> None:
     # Ordered fieldnames — config first, then hardware metrics, then analytical
     priority_fields = [
         "layer_type", "model", "sm_count", "sm_ratio", "total_sm",
-        "seq_len", "batch_size",
+        "seq_len", "batch_size", "prefill_chunk_tokens",
         # ncu-derived
         "kernel_name", "n_kernels_captured",
         "grid_size", "n_waves", "last_wave_blocks", "wave_efficiency_pct",
@@ -346,8 +379,17 @@ def parse_args():
     )
     parser.add_argument(
         "--layer-types", nargs="+",
-        choices=["ssm", "attn", "mlp"], default=["ssm", "attn", "mlp"],
+        choices=["ssm", "chunked_ssm", "attn", "mlp"], default=["ssm", "attn", "mlp"],
         help="Layer types to profile (default: ssm attn mlp)",
+    )
+    parser.add_argument(
+        "--prefill-chunk-tokens", nargs="+", type=int, default=None,
+        metavar="PCT",
+        help=(
+            "Tokens per kernel call for chunked_ssm (required when --layer-types includes "
+            "chunked_ssm). Multiple values create a sweep. "
+            "cooperative-safe condition: batch × ceil(pct/256) × n_heads ≤ sm_count."
+        ),
     )
     parser.add_argument(
         "--sm-counts", nargs="+", type=int, default=None,
@@ -409,6 +451,14 @@ if __name__ == "__main__":
     if args.sm_counts is None:
         args.sm_counts = compute_sm_steps(total_sm, n_steps=8)
 
+    if "chunked_ssm" in args.layer_types and not args.prefill_chunk_tokens:
+        print(
+            "[ERROR] --prefill-chunk-tokens is required when --layer-types includes chunked_ssm.\n"
+            "  Example: --prefill-chunk-tokens 256 512 1024",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     run_ncu_sweep(
         layer_types=args.layer_types,
         model_name=args.model,
@@ -422,6 +472,7 @@ if __name__ == "__main__":
         n_warmup=args.n_warmup,
         n_measure=args.n_measure,
         timeout_s=args.timeout,
+        chunked_prefill_tokens=args.prefill_chunk_tokens,
     )
 
     print("\nDone.")

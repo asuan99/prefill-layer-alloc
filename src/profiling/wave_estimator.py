@@ -134,6 +134,42 @@ class WaveEstimator:
         return compute_wave_stats(n_blocks, sm_count)
 
     @staticmethod
+    def ssm_chunked_prefill(
+        batch: int,
+        prefill_chunk_tokens: int,
+        n_heads: int,
+        ssd_chunk_size: int = 256,
+        sm_count: int = 108,
+    ) -> WaveStats:
+        """Wave stats for a single mamba_chunk_scan_combined call in chunked prefill.
+
+        In chunked-prefill SSM the full sequence is split into host-side kernel
+        calls of prefill_chunk_tokens each, bypassing the cooperative grid.sync()
+        barrier that deadlocks under extreme Green Context SM restriction.
+
+        Per-call kernel grid (Triton SSD kernel):
+          grid = (batch × n_heads, n_chunks_per_call)
+          n_chunks_per_call = ceil(prefill_chunk_tokens / ssd_chunk_size)
+          n_blocks = batch × n_heads × n_chunks_per_call
+
+        This gives per-call wave stats; the full-sequence cost is
+        n_calls × per-call latency where n_calls = ceil(seq_len / prefill_chunk_tokens).
+
+        Args:
+            batch: Batch size.
+            prefill_chunk_tokens: Tokens processed per kernel call (the outer chunk).
+            n_heads: Number of SSM heads.
+            ssd_chunk_size: Mamba-2 internal SSD chunk size (default 256).
+            sm_count: Effective SM count (after Green Context SM restriction).
+
+        Returns:
+            WaveStats for one kernel call.
+        """
+        n_chunks_per_call = math.ceil(prefill_chunk_tokens / ssd_chunk_size)
+        n_blocks = batch * n_heads * n_chunks_per_call
+        return compute_wave_stats(n_blocks, sm_count)
+
+    @staticmethod
     def ssm_in_proj(
         batch: int,
         seq_len: int,
@@ -239,60 +275,85 @@ class WaveEstimator:
         seq_lens: list[int],
         batch_sizes: list[int],
         model_cfg: dict,
+        prefill_chunk_tokens: list[int] = None,
     ) -> list[dict]:
         """Compute wave stats for all (sm_count, seq_len, batch_size) combos.
 
         Args:
-            layer_type: 'ssm' | 'attn' | 'mlp'
+            layer_type: 'ssm' | 'chunked_ssm' | 'attn' | 'mlp'
             sm_counts: List of SM counts to evaluate.
             seq_lens: List of sequence lengths.
             batch_sizes: List of batch sizes.
             model_cfg: Dict from models.yaml (must have n_ssm_heads, chunk_size, etc.)
+            prefill_chunk_tokens: Tokens per kernel call for 'chunked_ssm' layer type.
+                                  Required when layer_type == 'chunked_ssm'.
 
         Returns:
             List of dicts with WaveStats fields + input config.
         """
         results = []
-        for sm_count in sm_counts:
-            for seq_len in seq_lens:
-                for batch_size in batch_sizes:
-                    if layer_type == "ssm":
-                        stats = WaveEstimator.ssm_prefill(
-                            batch=batch_size,
-                            seq_len=seq_len,
-                            n_heads=model_cfg.get("n_ssm_heads", 64),
-                            chunk_size=model_cfg.get("chunk_size", 256),
-                            sm_count=sm_count,
-                        )
-                    elif layer_type == "attn":
-                        stats = WaveEstimator.attn_prefill(
-                            batch=batch_size,
-                            seq_len=seq_len,
-                            n_heads=model_cfg.get("n_attn_heads", 8),
-                            head_dim=model_cfg.get("attn_head_dim", 256),
-                            sm_count=sm_count,
-                        )
-                    elif layer_type == "mlp":
-                        stats = WaveEstimator.mlp_gemm(
-                            batch=batch_size,
-                            seq_len=seq_len,
-                            hidden_size=model_cfg.get("hidden_size", 2048),
-                            intermediate_size=model_cfg.get("intermediate_size", 4096),
-                            sm_count=sm_count,
-                        )
-                    else:
-                        raise ValueError(f"Unknown layer_type: {layer_type!r}")
+        # For chunked_ssm, the outer loop is over prefill_chunk_tokens values.
+        pct_list = prefill_chunk_tokens if layer_type == "chunked_ssm" and prefill_chunk_tokens else [None]
 
-                    results.append({
-                        "layer_type": layer_type,
-                        "sm_count": sm_count,
-                        "seq_len": seq_len,
-                        "batch_size": batch_size,
-                        "n_blocks": stats.n_blocks,
-                        "n_waves": stats.n_waves,
-                        "last_wave_blocks": stats.last_wave_blocks,
-                        "wave_efficiency": stats.wave_efficiency,
-                        "last_wave_sm_util": stats.last_wave_sm_util,
-                        "wasted_sm_fraction": stats.wasted_sm_fraction,
-                    })
+        for pct in pct_list:
+            for sm_count in sm_counts:
+                for seq_len in seq_lens:
+                    for batch_size in batch_sizes:
+                        if layer_type == "ssm":
+                            stats = WaveEstimator.ssm_prefill(
+                                batch=batch_size,
+                                seq_len=seq_len,
+                                n_heads=model_cfg.get("n_ssm_heads", 64),
+                                chunk_size=model_cfg.get("chunk_size", 256),
+                                sm_count=sm_count,
+                            )
+                        elif layer_type == "chunked_ssm":
+                            if pct is None:
+                                raise ValueError(
+                                    "prefill_chunk_tokens required for layer_type='chunked_ssm'"
+                                )
+                            ssm_cfg = model_cfg.get("ssm", {})
+                            n_heads = ssm_cfg.get("n_heads", model_cfg.get("n_ssm_heads", 64))
+                            ssd_chunk = ssm_cfg.get("chunk_size", model_cfg.get("chunk_size", 256))
+                            stats = WaveEstimator.ssm_chunked_prefill(
+                                batch=batch_size,
+                                prefill_chunk_tokens=pct,
+                                n_heads=n_heads,
+                                ssd_chunk_size=ssd_chunk,
+                                sm_count=sm_count,
+                            )
+                        elif layer_type == "attn":
+                            stats = WaveEstimator.attn_prefill(
+                                batch=batch_size,
+                                seq_len=seq_len,
+                                n_heads=model_cfg.get("n_attn_heads", 8),
+                                head_dim=model_cfg.get("attn_head_dim", 256),
+                                sm_count=sm_count,
+                            )
+                        elif layer_type == "mlp":
+                            stats = WaveEstimator.mlp_gemm(
+                                batch=batch_size,
+                                seq_len=seq_len,
+                                hidden_size=model_cfg.get("hidden_size", 2048),
+                                intermediate_size=model_cfg.get("intermediate_size", 4096),
+                                sm_count=sm_count,
+                            )
+                        else:
+                            raise ValueError(f"Unknown layer_type: {layer_type!r}")
+
+                        row = {
+                            "layer_type": layer_type,
+                            "sm_count": sm_count,
+                            "seq_len": seq_len,
+                            "batch_size": batch_size,
+                            "n_blocks": stats.n_blocks,
+                            "n_waves": stats.n_waves,
+                            "last_wave_blocks": stats.last_wave_blocks,
+                            "wave_efficiency": stats.wave_efficiency,
+                            "last_wave_sm_util": stats.last_wave_sm_util,
+                            "wasted_sm_fraction": stats.wasted_sm_fraction,
+                        }
+                        if pct is not None:
+                            row["prefill_chunk_tokens"] = pct
+                        results.append(row)
         return results

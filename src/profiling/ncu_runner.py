@@ -471,6 +471,7 @@ class NCURunner:
         seq_len: int,
         batch_size: int = 1,
         context_len: int = 0,
+        prefill_chunk_tokens: int = 0,
         metrics: list[str] = None,
         n_warmup: int = 10,
         n_measure: int = 3,
@@ -531,6 +532,8 @@ class NCURunner:
             "--n-warmup", str(n_warmup),
             "--n-measure", str(n_measure),
         ]
+        if prefill_chunk_tokens > 0:
+            target_cmd += ["--prefill-chunk-tokens", str(prefill_chunk_tokens)]
 
         full_cmd = ncu_cmd + target_cmd
 
@@ -586,6 +589,8 @@ class NCURunner:
             **dominant,
             **derived,
         }
+        if prefill_chunk_tokens > 0:
+            result["prefill_chunk_tokens"] = prefill_chunk_tokens
         return result
 
     def profile_sweep(
@@ -596,6 +601,7 @@ class NCURunner:
         seq_lens: list[int],
         batch_sizes: list[int],
         metrics: list[str] = None,
+        prefill_chunk_tokens: int = 0,
         **kwargs,
     ) -> list[dict]:
         """Profile multiple configurations and return list of results.
@@ -627,6 +633,7 @@ class NCURunner:
                         seq_len=seq_len,
                         batch_size=batch_size,
                         metrics=metrics,
+                        prefill_chunk_tokens=prefill_chunk_tokens,
                         **kwargs,
                     )
                     results.append(row)
