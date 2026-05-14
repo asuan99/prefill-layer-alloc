@@ -94,10 +94,26 @@ run_stage1() {
     banner "Stage 1 · SM Scaling Sweep  |  model=$model  device=$device"
     _T_STAGE_START=$(date +%s)
 
-    step "SSM prefill SM scaling sweep  ($model)"
-    run_py stage1_sm_scaling/run_ssm_prefill_sweep.py \
-        --model "$model" --device "$device"
+    mkdir -p results/stage1/chunked
 
+    # 1. wave-model 합성 (전체 SM 직접 측정 → wave scaling 합성)
+    step "SSM prefill SM scaling sweep — wave-model analytical  ($model)"
+    run_py stage1_sm_scaling/run_ssm_prefill_sweep.py \
+        --model "$model" --device "$device" --skip-verify
+
+    # 2. chunked prefill 직접 측정 (cooperative barrier 우회, Green Context 실측)
+    #    prefill_chunk_tokens ∈ {256,512,1024,2048,4096} × sm_counts × seq_lens × batch_sizes
+    step "SSM chunked prefill SM sweep — direct measurement  ($model)"
+    run_py stage1_sm_scaling/run_chunked_ssm_sweep.py \
+        --model "$model" --device "$device" \
+        --prefill-chunk-tokens 256 512 1024 2048 4096 \
+        --sm-counts            14 27 40 54 68 81 94 108 \
+        --seq-lens             512 1024 2048 4096 8192 \
+        --batch-sizes          1 4 16 32 \
+        --n-warmup  3 --n-measure 10 \
+        --output-dir results/stage1/chunked/
+
+    # 3. Attention / MLP sweep
     step "Attention prefill SM scaling sweep  ($model)"
     run_py stage1_sm_scaling/run_attn_prefill_sweep.py \
         --model "$model" --device "$device"
@@ -106,13 +122,36 @@ run_stage1() {
     run_py stage1_sm_scaling/run_mlp_prefill_sweep.py \
         --model "$model" --device "$device"
 
-    step "Stage 1 plots  ($model)"
+    # 4. Analysis + Plots
+    step "Stage 1 analysis + plots  ($model)"
+
+    # chunked CSV 경로 자동 탐색
+    local chunked_csv
+    chunked_csv=$(ls results/stage1/chunked/ssm_chunked_${model}_*.csv 2>/dev/null \
+                  | sort | tail -1 || true)
+
+    if [ -n "$chunked_csv" ]; then
+        local wave_csv
+        wave_csv=$(ls results/stage1/ssm_scaling_${model}_*.csv 2>/dev/null \
+                   | grep -v torchscan | sort | tail -1 || true)
+        run_py_optional stage1_sm_scaling/analyze_chunk_size.py \
+            --csv "$chunked_csv" \
+            ${wave_csv:+--wave-csv "$wave_csv"}
+    fi
+
     run_py_optional stage1_sm_scaling/plot_saturation.py --model "$model"
     run_py_optional stage1_sm_scaling/plot_srm.py        --model "$model"
     run_py_optional stage1_sm_scaling/plot_sm_split.py   --model "$model"
 
+    if [ -n "$chunked_csv" ]; then
+        run_py_optional stage1_sm_scaling/plot_compare_modules.py \
+            --model "$model" --ssm-chunked-csv "$chunked_csv"
+    else
+        run_py_optional stage1_sm_scaling/plot_compare_modules.py --model "$model"
+    fi
+
     echo ""
-    echo "  Stage 1 done  ($(elapsed))  → results/stage1/"
+    echo "  Stage 1 done  ($(elapsed))  → results/stage1/  (chunked → results/stage1/chunked/)"
 }
 
 run_stage2() {
@@ -181,13 +220,14 @@ echo ""
 if [ "$MODEL" = "all" ]; then
     # ─────────────────────────────────────────────────────────────────────────
     # All models:
-    #   stage1 × 2 models (4 steps each) = 8
-    #   stage2 zamba2     (3 steps)       = 3   ← ctx_switch included
-    #   stage2 falcon_h1  (2 steps)       = 2   ← ctx_switch skipped
-    #   stage3 × 2 models (2 steps each)  = 4
-    #   total                             = 17
+    #   stage1 × 2 models (5 steps each) = 10
+    #     ssm wave-model, ssm chunked, attn, mlp, analysis+plots
+    #   stage2 zamba2     (3 steps)       =  3   ← ctx_switch included
+    #   stage2 falcon_h1  (2 steps)       =  2   ← ctx_switch skipped
+    #   stage3 × 2 models (2 steps each)  =  4
+    #   total                             = 19
     # ─────────────────────────────────────────────────────────────────────────
-    _STEP_TOTAL=17
+    _STEP_TOTAL=19
 
     run_stage1 "zamba2"    "$DEVICE"
     run_stage1 "falcon_h1" "$DEVICE"
@@ -201,12 +241,12 @@ if [ "$MODEL" = "all" ]; then
 else
     # ─────────────────────────────────────────────────────────────────────────
     # Single model:
-    #   stage1: ssm + attn + mlp + plots = 4
+    #   stage1: ssm wave-model + ssm chunked + attn + mlp + analysis+plots = 5
     #   stage2: latency + ctx_switch + matrix = 3
     #   stage3: eval + plots = 2
-    #   total = 9
+    #   total = 10
     # ─────────────────────────────────────────────────────────────────────────
-    _STEP_TOTAL=9
+    _STEP_TOTAL=10
 
     run_stage1 "$MODEL" "$DEVICE"
     run_stage2 "$MODEL" "$DEVICE" 0
