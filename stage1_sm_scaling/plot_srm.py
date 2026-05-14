@@ -27,9 +27,13 @@ Operating point coordinates:
   Arithmetic Intensity (FLOPs/Byte) — analytical formula per layer type
   Attained Performance (TFLOPS)     — FLOPs / measured_latency_s
 
+GPU specs are loaded from configs/hardware.yaml via --device (default: a100_80gb).
+Pass --device auto to query the runtime GPU via torch.cuda.
+
 Usage:
     python stage1_sm_scaling/plot_srm.py
-    python stage1_sm_scaling/plot_srm.py --model zamba2 --batch-sizes 1 4
+    python stage1_sm_scaling/plot_srm.py --device a100_80gb --model zamba2
+    python stage1_sm_scaling/plot_srm.py --device auto --batch-sizes 1 4
     python stage1_sm_scaling/plot_srm.py --seq-len 1024 --output-dir results/stage1
 """
 
@@ -52,12 +56,55 @@ import yaml
 
 
 # ---------------------------------------------------------------------------
-# Hardware constants — RTX 5060 Ti (GB206, Blackwell sm_12.0)
+# Hardware constants — loaded from configs/hardware.yaml at startup.
+# Defaults match A100-SXM4-80GB; overridden in __main__ via --device.
 # ---------------------------------------------------------------------------
-GPU_NAME        = "RTX 5060 Ti"
-PEAK_TFLOPS_FP16 = 200.0    # FP16 tensor-core peak (spec sheet)
-PEAK_BW_GBS      = 288.0    # GDDR7 peak bandwidth (spec sheet)
+GPU_NAME         = "NVIDIA A100-SXM4-80GB"
+PEAK_TFLOPS_FP16 = 312.0    # FP16 dense tensor-core (spec sheet, A100 SXM4)
+PEAK_BW_GBS      = 2000.0   # HBM2e peak bandwidth (spec sheet, A100 SXM4 80GB)
 RIDGE_FULL       = PEAK_TFLOPS_FP16 * 1e3 / PEAK_BW_GBS  # FLOPs/Byte at full SM
+
+
+def _load_hw_specs(device: str = "a100_80gb") -> None:
+    """Load GPU specs from configs/hardware.yaml and update module globals."""
+    global GPU_NAME, PEAK_TFLOPS_FP16, PEAK_BW_GBS, RIDGE_FULL
+    cfg_path = Path(__file__).parent.parent / "configs" / "hardware.yaml"
+    try:
+        with open(cfg_path) as f:
+            hw = yaml.safe_load(f)
+    except FileNotFoundError:
+        return
+
+    cfg = None
+    if device == "auto":
+        try:
+            import torch
+            props = torch.cuda.get_device_properties(0)
+            dev_name = props.device_name.lower()
+            for v in hw.values():
+                if isinstance(v, dict) and v.get("name", "").lower() in dev_name:
+                    cfg = v
+                    break
+            if cfg is None:
+                cfg = hw.get("a100_80gb", {})
+                bw_auto = (
+                    2.0 * props.memory_clock_rate * 1e3 * props.memory_bus_width
+                ) / (8.0 * 1e9)
+                cfg = {
+                    "name": props.device_name,
+                    "memory_bw_GBs": bw_auto,
+                    "compute_fp16_tflops": cfg.get("compute_fp16_tflops", 312.0),
+                }
+        except Exception:
+            cfg = hw.get("a100_80gb", {})
+    else:
+        cfg = hw.get(device) or hw.get("a100_80gb", {})
+
+    if cfg:
+        GPU_NAME         = cfg.get("name", GPU_NAME)
+        PEAK_BW_GBS      = float(cfg.get("memory_bw_GBs", PEAK_BW_GBS))
+        PEAK_TFLOPS_FP16 = float(cfg.get("compute_fp16_tflops", PEAK_TFLOPS_FP16))
+        RIDGE_FULL       = PEAK_TFLOPS_FP16 * 1e3 / PEAK_BW_GBS
 
 # Aesthetics
 LAYER_COLORS  = {"ssm": "#2196F3", "attn": "#FF5722", "mlp": "#4CAF50"}
@@ -747,6 +794,14 @@ def parse_args():
     )
     parser.add_argument("--model", default=None, help="Filter by model name")
     parser.add_argument(
+        "--device", default="a100_80gb",
+        help=(
+            "Hardware key from configs/hardware.yaml used to set roofline ceilings "
+            "(peak FP16 TFLOPS, memory BW). Use 'auto' for runtime GPU detection. "
+            "Default: a100_80gb"
+        ),
+    )
+    parser.add_argument(
         "--batch-sizes", nargs="+", type=int, default=None,
         help="Batch sizes to plot (default: all found in data)",
     )
@@ -763,6 +818,11 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    _load_hw_specs(args.device)
+    print(f"GPU         : {GPU_NAME}")
+    print(f"Peak FP16   : {PEAK_TFLOPS_FP16:.0f} TFLOPS")
+    print(f"Peak BW     : {PEAK_BW_GBS:.0f} GB/s")
+    print(f"Ridge (full): {RIDGE_FULL:.3f} FLOPs/Byte")
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     # Discover models from CSV filenames

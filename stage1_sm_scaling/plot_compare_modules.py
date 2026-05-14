@@ -724,9 +724,9 @@ def parse_args():
         "--ssm-chunked-csv", type=Path, default=None,
         metavar="CSV",
         help=(
-            "chunked prefill 방식으로 직접 측정한 SSM CSV "
-            "(run_chunked_ssm_sweep.py 출력). "
-            "지정하면 wave-model ssm_triton 위에 ssm_chunked를 오버레이한다."
+            "SSM CSV from direct chunked-prefill measurement "
+            "(output of run_chunked_ssm_sweep.py, not yet implemented). "
+            "When provided, overlays ssm_chunked on top of the wave-model ssm_triton curves."
         ),
     )
     parser.add_argument("--batch-sizes", nargs="+", type=int, default=None)
