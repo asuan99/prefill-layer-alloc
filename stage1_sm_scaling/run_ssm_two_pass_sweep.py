@@ -96,33 +96,44 @@ def device_tag(hw_cfg: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Per-SM subprocess runner
+# Optional type hint import
 # ---------------------------------------------------------------------------
 
-def _run_sm_subprocess(
+from typing import Optional
+
+
+# ---------------------------------------------------------------------------
+# Per-config subprocess runner
+# ---------------------------------------------------------------------------
+
+def _run_single_config(
     model_name: str,
     sm_count: int,
-    seq_lens: list[int],
-    batch_sizes: list[int],
+    seq_len: int,
+    batch_size: int,
     total_sm: int,
     bw_gbs: Optional[float],
     n_warmup: int,
     n_measure: int,
     worker_script: Path,
-) -> list[dict]:
-    """Launch _two_pass_worker.py in a subprocess for one SM level.
+    timeout: int = 600,
+) -> Optional[dict]:
+    """Launch _two_pass_worker.py for a single (sm_count, seq_len, batch_size).
 
-    Returns list of result dicts (empty on subprocess failure).
+    One subprocess per config avoids per-SM-level timeouts when some configs
+    are much slower than others (e.g. seq=32768, batch=64).
+
+    Returns the result dict, or None on failure/timeout.
     """
     cmd = [
         sys.executable, str(worker_script),
-        "--model",      model_name,
-        "--sm-count",   str(sm_count),
-        "--seq-lens",   *[str(s) for s in seq_lens],
-        "--batch-sizes", *[str(b) for b in batch_sizes],
-        "--total-sm",   str(total_sm),
-        "--n-warmup",   str(n_warmup),
-        "--n-measure",  str(n_measure),
+        "--model",       model_name,
+        "--sm-count",    str(sm_count),
+        "--seq-lens",    str(seq_len),
+        "--batch-sizes", str(batch_size),
+        "--total-sm",    str(total_sm),
+        "--n-warmup",    str(n_warmup),
+        "--n-measure",   str(n_measure),
     ]
     if bw_gbs is not None:
         cmd += ["--bw-gbs", str(bw_gbs)]
@@ -132,29 +143,30 @@ def _run_sm_subprocess(
             cmd,
             capture_output=True,
             text=True,
-            timeout=600,
+            timeout=timeout,
         )
         if proc.stderr:
             for line in proc.stderr.strip().splitlines():
                 tqdm.write(f"  [worker] {line}")
         if proc.returncode != 0:
-            tqdm.write(f"  [worker] exited with code {proc.returncode} for sm={sm_count}")
-            return []
+            tqdm.write(
+                f"  [worker] exited with code {proc.returncode} "
+                f"for sm={sm_count} seq={seq_len} bs={batch_size}"
+            )
+            return None
         rows = json.loads(proc.stdout.strip() or "[]")
-        return rows
+        return rows[0] if rows else None
     except subprocess.TimeoutExpired:
-        tqdm.write(f"  [worker] timeout for sm={sm_count}")
-        return []
+        tqdm.write(
+            f"  [worker] timeout ({timeout}s) for sm={sm_count} "
+            f"seq={seq_len} bs={batch_size}"
+        )
+        return None
     except Exception as e:
-        tqdm.write(f"  [worker] error for sm={sm_count}: {e}")
-        return []
-
-
-# ---------------------------------------------------------------------------
-# Optional type hint import
-# ---------------------------------------------------------------------------
-
-from typing import Optional
+        tqdm.write(
+            f"  [worker] error for sm={sm_count} seq={seq_len} bs={batch_size}: {e}"
+        )
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -196,37 +208,42 @@ def run_sweep(
     print(f"  SM steps    : {sm_steps}")
     print(f"  seq_lens    : {seq_lens}")
     print(f"  batch_sizes : {batch_sizes}")
-    print(f"  mode        : {'subprocess isolation' if isolate else 'in-process'}")
+    print(f"  mode        : {'per-config subprocess' if isolate else 'in-process'}")
     print(f"  note        : Two-pass kernel has no cooperative barriers.")
     print(f"                Direct Green Context measurement is safe.")
     print(f"                Compare against ssm_scaling_{model_name}_{tag}.csv (wave model).")
 
     all_rows: list[dict] = []
 
-    for sm_count in tqdm(sm_steps, desc="SM levels"):
+    n_configs = len(sm_steps) * len(seq_lens) * len(batch_sizes)
+    pbar = tqdm(total=n_configs, desc="configs")
+
+    if not isolate:
+        from src.models.zamba2_two_pass import TwoPassLayerRunner
+        runner = TwoPassLayerRunner(
+            device="cuda",
+            total_sm_count=total_sm,
+            theoretical_bw_GBs=bw_gbs,
+        )
+
+    for sm_count in sm_steps:
         tqdm.write(f"\n  SM {sm_count}/{total_sm}:")
 
-        if isolate:
-            rows = _run_sm_subprocess(
-                model_name=model_name,
-                sm_count=sm_count,
-                seq_lens=seq_lens,
-                batch_sizes=batch_sizes,
-                total_sm=total_sm,
-                bw_gbs=bw_gbs,
-                n_warmup=n_warmup,
-                n_measure=n_measure,
-                worker_script=worker_script,
-            )
-        else:
-            from src.models.zamba2_two_pass import TwoPassLayerRunner
-            runner = TwoPassLayerRunner(
-                device="cuda",
-                total_sm_count=total_sm,
-                theoretical_bw_GBs=bw_gbs,
-            )
-            rows = []
-            for seq_len, batch_size in product(seq_lens, batch_sizes):
+        for seq_len, batch_size in product(seq_lens, batch_sizes):
+            if isolate:
+                row = _run_single_config(
+                    model_name=model_name,
+                    sm_count=sm_count,
+                    seq_len=seq_len,
+                    batch_size=batch_size,
+                    total_sm=total_sm,
+                    bw_gbs=bw_gbs,
+                    n_warmup=n_warmup,
+                    n_measure=n_measure,
+                    worker_script=worker_script,
+                )
+            else:
+                row = None
                 try:
                     row = runner.run_ssm_layer(
                         model_name=model_name,
@@ -236,7 +253,6 @@ def run_sweep(
                         n_warmup=n_warmup,
                         n_measure=n_measure,
                     )
-                    rows.append(row)
                     tqdm.write(
                         f"  OK  sm={sm_count:3d} seq={seq_len:6d} bs={batch_size:3d} "
                         f"lat={row['latency_ms']:.3f}ms"
@@ -247,14 +263,14 @@ def run_sweep(
                 except Exception as e:
                     tqdm.write(f"  ERR sm={sm_count:3d} seq={seq_len:6d} bs={batch_size:3d}: {e}")
 
-        # Annotate with sweep metadata not set by the worker
-        for row in rows:
-            row["analytical"] = False
-            # n_blocks: two-pass doesn't have a fixed blocks-per-token formula
-            # but we record the original wave model's formula for reference
-            row["n_blocks"] = max(1, row["batch_size"] * row["seq_len"] // 4)
+            pbar.update(1)
 
-        all_rows.extend(rows)
+            if row is not None:
+                row["analytical"] = False
+                row["n_blocks"] = max(1, row["batch_size"] * row["seq_len"] // 4)
+                all_rows.append(row)
+
+    pbar.close()
 
     all_rows.sort(key=lambda r: (r["sm_count"], r["seq_len"], r["batch_size"]))
 
@@ -271,8 +287,9 @@ def run_sweep(
         writer.writerows(all_rows)
 
     print(f"\nSaved: {out_csv}")
-    print(f"  {len(all_rows)} rows ({len(sm_steps)} SM levels × up to "
-          f"{len(seq_lens) * len(batch_sizes)} configs each)")
+    print(f"  {len(all_rows)} rows out of "
+          f"{len(sm_steps) * len(seq_lens) * len(batch_sizes)} attempted "
+          f"({len(sm_steps)} SM levels × {len(seq_lens) * len(batch_sizes)} configs)")
     if all_rows:
         n_analytical = output_dir / f"ssm_scaling_{model_name}_{tag}.csv"
         if n_analytical.exists():
@@ -299,27 +316,26 @@ def parse_args():
     )
     parser.add_argument(
         "--seq-lens", nargs="+", type=int,
-        default=[512, 1024, 2048, 4096],
+        default=[512, 1024, 2048, 4096, 8192, 16384, 32768],
         help=(
-            "Sequence lengths to sweep. Default is conservative (≤4096) because the "
-            "pure-Python sequential scan is ~30-50× slower than the Triton kernel. "
-            "Large seq (16384+) with large batch will hit the subprocess timeout. "
-            "Use --seq-lens 512 1024 2048 for a quick smoke test."
+            "Sequence lengths to sweep. Matches the wave-model sweep for direct comparison. "
+            "Large configs use per-config subprocesses so no single subprocess exceeds the "
+            "timeout. Use --seq-lens 512 1024 2048 for a quick smoke test."
         ),
     )
     parser.add_argument(
         "--batch-sizes", nargs="+", type=int,
-        default=[1, 4, 16, 32],
+        default=[1, 4, 16, 32, 64],
     )
-    parser.add_argument("--n-warmup",  type=int, default=2,
-                        help="Warmup iterations per config. Keep small (2-5) for two-pass.")
-    parser.add_argument("--n-measure", type=int, default=5,
-                        help="Measurement iterations per config. Keep small (5-10) for two-pass.")
+    parser.add_argument("--n-warmup",  type=int, default=10,
+                        help="Warmup iterations per config.")
+    parser.add_argument("--n-measure", type=int, default=20,
+                        help="Measurement iterations per config.")
     parser.add_argument(
         "--no-isolate", action="store_true",
         help=(
-            "Run all SM levels in the same process instead of per-SM subprocesses. "
-            "Faster but CUDA context corruption at one SM level will poison subsequent levels."
+            "Run all configs in the same process instead of one subprocess per config. "
+            "Faster but CUDA context corruption at one config will affect subsequent ones."
         ),
     )
     return parser.parse_args()

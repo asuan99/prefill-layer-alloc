@@ -41,6 +41,51 @@ import torch
 import torch.nn.functional as F
 
 
+# ---------------------------------------------------------------------------
+# Phase 1 compiled scan
+# ---------------------------------------------------------------------------
+
+_phase1_scan_compiled: Optional[object] = None
+
+
+def _phase1_scan_impl(
+    A_c: torch.Tensor,   # (batch, K, n_heads)
+    x_c: torch.Tensor,   # (batch, K, n_heads, head_dim) float32
+    B_c: torch.Tensor,   # (batch, K, n_heads, d_state)  float32
+    C_c: torch.Tensor,   # (batch, K, n_heads, d_state)  float32
+    D_f32: Optional[torch.Tensor],  # (n_heads,) or None
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Sequential per-token scan for one chunk.  Returns (y_local, h_final)."""
+    batch, K, n_heads, head_dim = x_c.shape
+    d_state = B_c.shape[-1]
+    h = torch.zeros(batch, n_heads, head_dim, d_state, device=x_c.device, dtype=torch.float32)
+    y = torch.empty(batch, K, n_heads, head_dim, device=x_c.device, dtype=torch.float32)
+    for t in range(K):
+        A_t = A_c[:, t, :]              # (batch, n_heads)
+        x_t = x_c[:, t, :]             # (batch, n_heads, head_dim)
+        B_t = B_c[:, t, :]             # (batch, n_heads, d_state)
+        C_t = C_c[:, t, :]             # (batch, n_heads, d_state)
+        h = A_t[:, :, None, None] * h + x_t[:, :, :, None] * B_t[:, :, None, :]
+        y_t = (h * C_t[:, :, None, :]).sum(-1)
+        if D_f32 is not None:
+            y_t = y_t + D_f32[None, :, None] * x_t
+        y[:, t] = y_t
+    return y, h
+
+
+def _get_phase1_scan():
+    """Return compiled phase-1 scan (lazy; falls back to eager if compile fails)."""
+    global _phase1_scan_compiled
+    if _phase1_scan_compiled is None:
+        try:
+            _phase1_scan_compiled = torch.compile(
+                _phase1_scan_impl, dynamic=True, fullgraph=False
+            )
+        except Exception:
+            _phase1_scan_compiled = _phase1_scan_impl
+    return _phase1_scan_compiled
+
+
 def ssd_chunk_scan_twopass(
     x: torch.Tensor,                            # (batch, seq_len, n_heads, head_dim)
     A_bar: torch.Tensor,                        # (batch, seq_len, n_heads)  float32
@@ -93,20 +138,8 @@ def ssd_chunk_scan_twopass(
 
         # ── Phase 1: sequential local scan (chunk_size iterations) ──────────
         # h_local starts at 0; Phase 3 will correct for the actual prefix.
-        h_local = torch.zeros(batch, n_heads, head_dim, d_state, device=dev, dtype=torch.float32)
-        y_local = torch.zeros(batch, K, n_heads, head_dim, device=dev, dtype=torch.float32)
-
-        for t_local in range(K):
-            A_t = A_c[:, t_local, :]        # (batch, n_heads)
-            x_t = x_c[:, t_local, :]        # (batch, n_heads, head_dim)
-            B_t = B_c[:, t_local, :]        # (batch, n_heads, d_state)
-            C_t = C_c[:, t_local, :]        # (batch, n_heads, d_state)
-
-            h_local = A_t[:, :, None, None] * h_local + x_t[:, :, :, None] * B_t[:, :, None, :]
-            y_t = (h_local * C_t[:, :, None, :]).sum(-1)  # (batch, n_heads, head_dim)
-            if D_f32 is not None:
-                y_t = y_t + D_f32[None, :, None] * x_t
-            y_local[:, t_local] = y_t
+        # torch.compile eliminates Python dispatch overhead for the token loop.
+        y_local, h_local = _get_phase1_scan()(A_c, x_c, B_c, C_c, D_f32)
 
         # ── Phase 3: vectorized prefix correction (d_state iterations) ──────
         # correction[t] = sum_d C[t,d] * fp[t] * prefix_h[:,:,:,d]

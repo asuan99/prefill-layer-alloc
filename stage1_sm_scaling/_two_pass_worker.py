@@ -28,8 +28,8 @@ def main() -> None:
     p.add_argument("--batch-sizes", nargs="+", type=int, required=True)
     p.add_argument("--total-sm",    type=int, required=True)
     p.add_argument("--bw-gbs",      type=float, default=None)
-    p.add_argument("--n-warmup",    type=int, default=2)
-    p.add_argument("--n-measure",   type=int, default=5)
+    p.add_argument("--n-warmup",    type=int, default=10)
+    p.add_argument("--n-measure",   type=int, default=20)
     args = p.parse_args()
 
     from src.models.zamba2_two_pass import TwoPassLayerRunner
