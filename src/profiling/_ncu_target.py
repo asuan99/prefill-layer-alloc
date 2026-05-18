@@ -92,8 +92,17 @@ def main():
         )
         key = kv_cache[:, :, 0]
         value = kv_cache[:, :, 1]
-        kernel = runner._build_attn_fn(query, key, value, n_heads, n_kv_heads, head_dim,
-                                       use_flashinfer=True)
+        # flashinfer is preferred but may be unavailable or incompatible with the
+        # current CUDA runtime (e.g. cu124 wheel under cuda13). Fall back to
+        # standard flash_attn if flashinfer fails to load.
+        try:
+            kernel = runner._build_attn_fn(
+                query, key, value, n_heads, n_kv_heads, head_dim, use_flashinfer=True
+            )
+        except Exception:
+            kernel = runner._build_attn_fn(
+                query, key, value, n_heads, n_kv_heads, head_dim, use_flashinfer=False
+            )
 
     elif args.layer_type == "chunked_ssm":
         # Profile the SSD scan kernel for one prefill chunk (prefill_chunk_tokens tokens).

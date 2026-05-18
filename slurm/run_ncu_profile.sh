@@ -38,7 +38,13 @@ module load gcc/15.2.0
 #   ==ERROR== Failed to prepare kernel for profiling
 #   ==ERROR== Unknown Error on device 0.
 # NCURunner reads NCU_PYTHON to override sys.executable for the profiled subprocess.
-export NCU_PYTHON=$(command -v python3)
+#
+# Use sys.executable (not command -v python3) to get the real resolved path,
+# including symlink resolution. command -v may return system Python or a symlink
+# that resolves to the wrong version.
+export NCU_PYTHON=$(python3 -c 'import sys; print(sys.executable)' 2>/dev/null \
+    || python -c 'import sys; print(sys.executable)' 2>/dev/null \
+    || command -v python3)
 
 source /scratch/$USER/whlee/prefill-layer-alloc/bin/activate
 

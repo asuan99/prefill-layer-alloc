@@ -411,7 +411,23 @@ class NCURunner:
         # Underscore-suffix names (sm__active_cycles_sum) were removed in ncu 2025.
         ncu_ver = _get_ncu_major_version(self.ncu_path)
         self.ncu_version = ncu_ver
-        self.use_blackwell = _USE_BLACKWELL or (ncu_ver >= 2025)
+        if ncu_ver == 0:
+            # Detection failed: default to Blackwell (dot-notation) metrics.
+            # This is the safe default because:
+            #   - Modern CUDA toolkits (13+) ship ncu 2025+, which requires dot-notation.
+            #   - If running legacy ncu (<2025), override with NCU_USE_LEGACY_METRICS=1.
+            use_dot = os.environ.get("NCU_USE_LEGACY_METRICS", "0") != "1"
+            import warnings
+            warnings.warn(
+                f"ncu version detection failed for '{self.ncu_path}'. "
+                f"Defaulting to {'dot-notation (Blackwell)' if use_dot else 'underscore (legacy)'} metrics. "
+                f"Set NCU_USE_LEGACY_METRICS=1 to force legacy names.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            self.use_blackwell = use_dot
+        else:
+            self.use_blackwell = _USE_BLACKWELL or (ncu_ver >= 2025)
 
         if self.use_blackwell:
             self.metrics_wave    = list(_BLACKWELL_METRICS_WAVE)

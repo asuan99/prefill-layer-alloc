@@ -106,11 +106,12 @@ def _add_analytical_wave(row: dict, layer_type: str, model_cfg: dict) -> dict:
 
     try:
         if layer_type == "ssm":
+            ssm_cfg = model_cfg.get("ssm", {})
             stats = WaveEstimator.ssm_prefill(
                 batch=batch_size,
                 seq_len=seq_len,
-                n_heads=model_cfg.get("n_ssm_heads", 64),
-                chunk_size=model_cfg.get("chunk_size", 256),
+                n_heads=ssm_cfg.get("n_heads", model_cfg.get("n_ssm_heads", 64)),
+                chunk_size=ssm_cfg.get("chunk_size", model_cfg.get("chunk_size", 256)),
                 sm_count=sm_count,
             )
         elif layer_type == "chunked_ssm":
@@ -257,6 +258,20 @@ def run_ncu_sweep(
         layer_results = []
         print(f"\n--- Layer: {layer_type} ---")
 
+        # ssm (full-sequence Triton SSD) uses a cooperative grid.sync() between chunks.
+        # Under Green Context, only sm_count SMs are active; if grid_size > sm_count not
+        # all blocks can be resident simultaneously → cooperative barrier deadlock.
+        # ncu profiling for ssm is therefore only valid at full SM count (total_sm).
+        # Wave behavior at lower SM counts is handled analytically by WaveEstimator.
+        if layer_type == "ssm":
+            effective_sm_counts = [total_sm]
+            print(
+                f"  [ssm] cooperative kernel — restricting ncu measurement to "
+                f"sm_count={total_sm} (full). Use WaveEstimator for sub-SM wave analysis."
+            )
+        else:
+            effective_sm_counts = sm_counts
+
         # For chunked_ssm, sweep over prefill_chunk_tokens as an extra dimension.
         pct_list = (
             chunked_prefill_tokens
@@ -265,7 +280,7 @@ def run_ncu_sweep(
         )
 
         for pct in pct_list:
-            for sm_count in sm_counts:
+            for sm_count in effective_sm_counts:
                 for seq_len in seq_lens:
                     for batch_size in batch_sizes:
                         done += 1
