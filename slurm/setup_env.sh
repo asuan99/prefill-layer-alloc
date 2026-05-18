@@ -28,7 +28,7 @@ pip install --user mamba-ssm==2.3.1
 pip install --user flash-attn==2.7.4.post1 --no-build-isolation
 
 # 나머지 패키지
-pip install --user pynvml pandas matplotlib seaborn pyyaml tqdm
+pip install --user nvidia-ml-py pandas matplotlib seaborn pyyaml tqdm
 pip install --user flashinfer-python --index-url https://flashinfer.ai/whl/cu124/torch2.9/
 
 # 검증

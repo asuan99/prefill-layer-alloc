@@ -32,7 +32,20 @@ module load conda/pytorch_2.9.1_cuda13
 module load cuda/13.0.2
 module load gcc/15.2.0
 
+# Capture the cuda13 Python from the module BEFORE activating the venv.
+# The venv (bin/activate) symlinks to pytorch_2.9.1_cuda12/bin/python3.14;
+# ncu 2025.x (from cuda/13.0.2) cannot profile a CUDA 12 target process:
+#   ==ERROR== Failed to prepare kernel for profiling
+#   ==ERROR== Unknown Error on device 0.
+# NCURunner reads NCU_PYTHON to override sys.executable for the profiled subprocess.
+export NCU_PYTHON=$(command -v python3)
+
 source /scratch/$USER/whlee/prefill-layer-alloc/bin/activate
+
+# Prevent HuggingFace from making network calls inside each ncu subprocess.
+# Without this, each of the 960 profile() calls may hit the Hub and time out.
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
 
 cd /scratch/$USER/whlee/prefill-layer-alloc
 mkdir -p logs results/stage1
@@ -42,8 +55,10 @@ MODEL=${1:-zamba2}
 shift 2>/dev/null || true
 
 echo "=== Stage 1: ncu Wave Profiling | model=$MODEL | job=$SLURM_JOB_ID ==="
-echo "    GPU: $(nvidia-smi --query-gpu=name,driver_version --format=csv,noheader | head -1)"
-echo "    ncu: $(ncu --version 2>&1 | head -1)"
+echo "    GPU       : $(nvidia-smi --query-gpu=name,driver_version --format=csv,noheader | head -1)"
+echo "    ncu       : $(ncu --version 2>&1 | head -1)"
+echo "    py (venv) : $(python --version 2>&1)  $(which python)"
+echo "    NCU_PYTHON: $NCU_PYTHON"
 echo ""
 
 python stage1_sm_scaling/run_ncu_profile.py \

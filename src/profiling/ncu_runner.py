@@ -10,33 +10,39 @@ Architecture:
                       → collects stdout CSV
                       → parses and returns dict of metric values
 
-Metric naming by architecture
-──────────────────────────────
-Ampere / pre-Blackwell (sm_8x / sm_9x):
-  sm__active_cycles_sum          — SM-active cycles
-  sm__cycles_elapsed_sum         — elapsed SM cycles
+Metric naming — ncu version governs the format, NOT GPU architecture
+─────────────────────────────────────────────────────────────────────
+ncu < 2025 (CUDA ≤ 12, Ampere/Hopper):
+  sm__active_cycles_sum          — underscore-suffix form
+  sm__cycles_elapsed_sum
   smsp__warps_active_avg_per_cycle_active
   smsp__maximum_warps_per_active_cycle_pct
-  launch__grid_size              — grid dimensions (scalar metric)
-  launch__block_size
+  launch__grid_size              — scalar metric
   dram__bytes_read_sum / dram__bytes_write_sum
 
-Blackwell (sm_10x / sm_12x, ncu ≥ 2025.2):
-  sm__cycles_active.sum          — dot-notation suffix
+ncu ≥ 2025 (CUDA 13+, ALL architectures including A100/H100/Blackwell):
+  sm__cycles_active.sum          — dot-notation suffix (mandatory)
   sm__cycles_elapsed.sum
-  smsp__warps_active.sum         — warp count (not avg/pct)
-  "Grid Size" / "Block Size"     — CSV columns, format "(x, y, z)"
+  smsp__warps_active.sum
+  "Grid Size" / "Block Size"     — CSV columns (launch__grid_size removed)
   dram__bytes_op_read.sum / dram__bytes_op_write.sum
-  (launch__grid_size removed entirely)
 
-NCU_METRICS_WAVE: curated set for wave quantization + SM utilization.
-NCU_METRICS_FULL: extended set including memory and compute throughput.
+Key insight: ncu 2025+ dropped the underscore-suffix metric names on
+ALL GPUs (Ampere included). The old sm__active_cycles_sum causes
+  ==ERROR== Failed to find metric regex:^sm__active_cycles_sum.(...)$
+even on A100. Metric format must be determined by ncu binary version,
+not by GPU sm_major.
+
+NCURunner detects ncu version in __init__() and sets instance-level
+metrics_wave / metrics_full accordingly.  Module-level NCU_METRICS_WAVE
+is kept for backward compatibility but may be wrong for mixed envs.
 """
 
 import csv
 import io
 import math
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -78,6 +84,29 @@ def _get_max_warps_per_sm() -> int:
 def _is_blackwell(sm_major: int) -> bool:
     # Blackwell = sm_10x and sm_12x (GB100 / GB200 / GB20x)
     return sm_major >= 10
+
+
+def _get_ncu_major_version(ncu_path: str) -> int:
+    """Extract the year-based major version from ncu --version output.
+
+    ncu reports versions like "Version 2025.1.0.0 (build ...)".
+    Returns the 4-digit year (e.g. 2025), or 0 if detection fails.
+
+    This is the correct discriminator for metric name format:
+      ncu <  2025 → underscore-suffix (sm__active_cycles_sum)
+      ncu >= 2025 → dot-notation     (sm__cycles_active.sum) for ALL GPUs
+    """
+    try:
+        result = subprocess.run(
+            [ncu_path, "--version"], capture_output=True, text=True, timeout=5
+        )
+        for line in (result.stdout + result.stderr).splitlines():
+            m = re.search(r'Version\s+(\d{4})\.', line)
+            if m:
+                return int(m.group(1))
+    except Exception:
+        pass
+    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -368,11 +397,31 @@ class NCURunner:
         target_script: Optional[Path] = None,
     ):
         self.ncu_path = ncu_path or self._find_ncu()
-        self.python_path = python_path or sys.executable
+        # NCU_PYTHON lets the SLURM script inject the correct cuda13 Python path
+        # even when the venv (bin/activate) symlinks to a cuda12 Python.
+        # ncu requires the target process CUDA runtime to match ncu's own CUDA
+        # major version; a mismatch causes "Failed to prepare kernel for profiling".
+        self.python_path = python_path or os.environ.get("NCU_PYTHON") or sys.executable
         self.target_script = target_script or (
             Path(__file__).parent / "_ncu_target.py"
         )
-        self.use_blackwell = _USE_BLACKWELL
+
+        # Determine metric format by ncu binary version, not GPU architecture.
+        # ncu 2025+ requires dot-notation on ALL GPUs (Ampere/Hopper/Blackwell).
+        # Underscore-suffix names (sm__active_cycles_sum) were removed in ncu 2025.
+        ncu_ver = _get_ncu_major_version(self.ncu_path)
+        self.ncu_version = ncu_ver
+        self.use_blackwell = _USE_BLACKWELL or (ncu_ver >= 2025)
+
+        if self.use_blackwell:
+            self.metrics_wave    = list(_BLACKWELL_METRICS_WAVE)
+            self.metrics_memory  = list(_BLACKWELL_METRICS_MEMORY)
+            self.metrics_compute = list(_BLACKWELL_METRICS_COMPUTE)
+        else:
+            self.metrics_wave    = list(_LEGACY_METRICS_WAVE)
+            self.metrics_memory  = list(_LEGACY_METRICS_MEMORY)
+            self.metrics_compute = list(_LEGACY_METRICS_COMPUTE)
+        self.metrics_full = self.metrics_wave + self.metrics_memory + self.metrics_compute
 
     def _find_ncu(self) -> str:
         """Find ncu binary.
@@ -498,7 +547,7 @@ class NCURunner:
             sm_util_per_sm_pct, achieved_occupancy_pct, warps_active, ...
         """
         if metrics is None:
-            metrics = NCU_METRICS_WAVE
+            metrics = self.metrics_wave
 
         metrics_str = ",".join(metrics)
         # --nvtx / --nvtx-include removed: when ncu cannot intercept NVTX
@@ -611,7 +660,7 @@ class NCURunner:
         scripts for comprehensive latency measurement.
         """
         if metrics is None:
-            metrics = NCU_METRICS_WAVE
+            metrics = self.metrics_wave
 
         results = []
         total = len(sm_counts) * len(seq_lens) * len(batch_sizes)

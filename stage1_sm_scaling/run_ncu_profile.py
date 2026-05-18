@@ -60,7 +60,7 @@ from pathlib import Path
 import torch
 import yaml
 
-from src.profiling.ncu_runner import NCURunner, NCU_METRICS_WAVE, NCU_METRICS_FULL
+from src.profiling.ncu_runner import NCURunner
 from src.profiling.wave_estimator import WaveEstimator
 from stage1_sm_scaling.run_ssm_prefill_sweep import compute_sm_steps
 
@@ -176,8 +176,6 @@ def run_ncu_sweep(
     timeout_s: int = 300,
     chunked_prefill_tokens: list[int] = None,
 ) -> list[dict]:
-    metrics = NCU_METRICS_FULL if use_full_metrics else NCU_METRICS_WAVE
-
     ncu = NCURunner()
     if not ncu.is_available():
         raise RuntimeError(
@@ -191,6 +189,37 @@ def run_ncu_sweep(
             "  sudo modprobe nvidia NVreg_RestrictProfilingToAdminUsers=0\n"
             "  OR: sudo ncu ..."
         )
+
+    metrics = ncu.metrics_full if use_full_metrics else ncu.metrics_wave
+    print(f"  ncu version  : {ncu.ncu_version}  (metric format: {'dot-notation' if ncu.use_blackwell else 'underscore'})")
+
+    # Probe: run one config before the full sweep to catch metric name errors early.
+    probe_layer = next((lt for lt in layer_types if lt != "chunked_ssm"), layer_types[0])
+    probe_pct = (chunked_prefill_tokens[0] if probe_layer == "chunked_ssm" and chunked_prefill_tokens else 0)
+    print(f"\n  [probe] {probe_layer} sm={sm_counts[0]} seq={seq_lens[0]} bs={batch_sizes[0]} ...", flush=True)
+    probe = ncu.profile(
+        layer_type=probe_layer,
+        model=model_name,
+        sm_count=sm_counts[0],
+        seq_len=seq_lens[0],
+        batch_size=batch_sizes[0],
+        metrics=metrics,
+        prefill_chunk_tokens=probe_pct,
+        n_warmup=1,
+        n_measure=1,
+        timeout_s=timeout_s,
+    )
+    if "error" in probe:
+        raise RuntimeError(
+            f"ncu probe failed — aborting before full sweep.\n"
+            f"  error  : {probe['error']}\n"
+            f"  stdout : {probe.get('ncu_stdout', '')[:600]}\n"
+            f"  stderr : {probe.get('stderr', '')[:200]}\n"
+            f"\n"
+            f"Likely cause: metric name mismatch (ncu {ncu.ncu_version} vs metric set).\n"
+            f"Check _BLACKWELL_METRICS_* vs _LEGACY_METRICS_* in ncu_runner.py."
+        )
+    print(f"  [probe] ok — kernel={probe.get('kernel_name', '?')}")
 
     n_pct_configs = len(chunked_prefill_tokens) if chunked_prefill_tokens else 1
     n_chunked_ssm = sum(1 for lt in layer_types if lt == "chunked_ssm")
