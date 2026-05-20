@@ -57,9 +57,17 @@ def main():
     smctrl = SMController()
     runner = LayerRunner(device="cuda", dtype=dtype, smctrl=smctrl)
 
-    # Apply SM restriction — must use runner.smctrl.get_stream() for kernels
-    smctrl.set_sm_count(args.sm_count)
-    _stream = smctrl.get_stream()
+    # Do NOT call smctrl.set_sm_count() here.
+    # CUPTI (the API ncu uses for hardware counter collection) is incompatible with
+    # CUDA Green Contexts. Restricting SMs via Green Context while ncu is attached
+    # causes "Failed to prepare kernel for profiling / Unknown Error on device 0."
+    #
+    # Design intent: ncu profiling always runs at full GPU.  args.sm_count is the
+    # *target allocation* passed through to _derive_sm_util / _add_analytical_wave,
+    # where n_waves = ceil(measured_grid_size / sm_count) is computed analytically.
+    # Sweeping sm_count therefore produces different wave estimates from the same
+    # physical kernel run, which is exactly what we want for allocation analysis.
+    _stream = torch.cuda.current_stream()
 
     # Build the kernel function
     if args.layer_type == "ssm":

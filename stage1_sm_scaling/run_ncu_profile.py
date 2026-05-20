@@ -194,7 +194,9 @@ def run_ncu_sweep(
     metrics = ncu.metrics_full if use_full_metrics else ncu.metrics_wave
     print(f"  ncu version  : {ncu.ncu_version}  (metric format: {'dot-notation' if ncu.use_blackwell else 'underscore'})")
 
-    # Probe: run one config before the full sweep to catch metric name errors early.
+    # Probe: run one config before the full sweep to catch errors early.
+    # Note: _ncu_target.py runs at full GPU (no Green Context); sm_count here is
+    # used only for the analytical wave calculation, not for hardware SM restriction.
     probe_layer = next((lt for lt in layer_types if lt != "chunked_ssm"), layer_types[0])
     probe_pct = (chunked_prefill_tokens[0] if probe_layer == "chunked_ssm" and chunked_prefill_tokens else 0)
     print(f"\n  [probe] {probe_layer} sm={sm_counts[0]} seq={seq_lens[0]} bs={batch_sizes[0]} ...", flush=True)
@@ -217,8 +219,12 @@ def run_ncu_sweep(
             f"  stdout : {probe.get('ncu_stdout', '')[:600]}\n"
             f"  stderr : {probe.get('stderr', '')[:200]}\n"
             f"\n"
-            f"Likely cause: metric name mismatch (ncu {ncu.ncu_version} vs metric set).\n"
-            f"Check _BLACKWELL_METRICS_* vs _LEGACY_METRICS_* in ncu_runner.py."
+            f"Possible causes:\n"
+            f"  1. Metric name mismatch — ncu {ncu.ncu_version} vs metric set\n"
+            f"     Check _BLACKWELL_METRICS_* vs _LEGACY_METRICS_* in ncu_runner.py.\n"
+            f"  2. Green Context conflict — ensure _ncu_target.py does NOT call\n"
+            f"     smctrl.set_sm_count(); CUPTI is incompatible with Green Context.\n"
+            f"  3. Python/CUDA version mismatch — NCU_PYTHON={ncu.python_path}"
         )
     print(f"  [probe] ok — kernel={probe.get('kernel_name', '?')}")
 
@@ -258,20 +264,6 @@ def run_ncu_sweep(
         layer_results = []
         print(f"\n--- Layer: {layer_type} ---")
 
-        # ssm (full-sequence Triton SSD) uses a cooperative grid.sync() between chunks.
-        # Under Green Context, only sm_count SMs are active; if grid_size > sm_count not
-        # all blocks can be resident simultaneously → cooperative barrier deadlock.
-        # ncu profiling for ssm is therefore only valid at full SM count (total_sm).
-        # Wave behavior at lower SM counts is handled analytically by WaveEstimator.
-        if layer_type == "ssm":
-            effective_sm_counts = [total_sm]
-            print(
-                f"  [ssm] cooperative kernel — restricting ncu measurement to "
-                f"sm_count={total_sm} (full). Use WaveEstimator for sub-SM wave analysis."
-            )
-        else:
-            effective_sm_counts = sm_counts
-
         # For chunked_ssm, sweep over prefill_chunk_tokens as an extra dimension.
         pct_list = (
             chunked_prefill_tokens
@@ -280,7 +272,7 @@ def run_ncu_sweep(
         )
 
         for pct in pct_list:
-            for sm_count in effective_sm_counts:
+            for sm_count in sm_counts:
                 for seq_len in seq_lens:
                     for batch_size in batch_sizes:
                         done += 1
