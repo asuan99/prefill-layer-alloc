@@ -61,21 +61,12 @@ python stage2_overhead/measure_layer_latency.py \
 # ── Step 2: Green Context stream-switch overhead (hardware, run once) ────────
 # Produces ctx_switch_overhead_<device>.json; skip if already present for this
 # device so that repeated stage2 runs for different models don't re-measure.
-DEVICE_TAG=$(python - <<'EOF'
-import sys, os
-sys.path.insert(0, ".")
-import torch, yaml
-from pathlib import Path
-from stage1_sm_scaling.run_ssm_prefill_sweep import load_hardware_config, device_tag
-import os
-dev = os.environ.get("DEVICE", "auto")
-try:
-    hw = load_hardware_config(dev)
-    print(device_tag(hw))
-except Exception:
-    print("unknown")
-EOF
-)
+DEVICE_TAG=$(python -c "
+import sys; sys.path.insert(0, '.')
+from stage1_sm_scaling.run_ncu_profile import load_hardware_config, device_tag
+try: print(device_tag(load_hardware_config('${DEVICE}')))
+except Exception: print('unknown')
+" 2>/dev/null || echo "unknown")
 
 CTX_JSON="results/stage2/ctx_switch_overhead_${DEVICE_TAG}.json"
 if [ -f "$CTX_JSON" ]; then

@@ -18,6 +18,7 @@
 #   [2/6] SSM chunked prefill sweep   — kernel 호출 분할로 cooperative barrier 우회,
 #                                       Green Context 하에서 직접 측정 (핵심 신규)
 #   [3/6] SSM torch scan sweep        — wave model 정확도 검증용 (PyTorch scan)
+#                                       SKIP_TORCH_SCAN=1 로 건너뛸 수 있음
 #   [4/6] Attention sweep             — Green Context 직접 측정
 #   [5/6] MLP sweep                   — Green Context 직접 측정
 #   [6/6] Analysis + Plots            — chunked 결과 분석 + 전체 비교 시각화
@@ -28,10 +29,11 @@
 #   sbatch slurm/run_stage1.sh zamba2 a100_80gb   # explicit hardware key
 #
 # Env vars (optional overrides):
-#   CHUNKED_PCT   space-sep prefill_chunk_tokens  (default: "256 512 1024 2048 4096")
-#   CHUNKED_SM    space-sep sm_counts             (default: hardware.yaml sweep steps)
-#   CHUNKED_SEQ   space-sep seq_lens              (default: "512 1024 2048 4096 8192")
-#   CHUNKED_BS    space-sep batch_sizes           (default: "1 4 16 32")
+#   CHUNKED_PCT      space-sep prefill_chunk_tokens  (default: "256 512 1024 2048 4096")
+#   CHUNKED_SM       space-sep sm_counts             (default: hardware.yaml sweep steps)
+#   CHUNKED_SEQ      space-sep seq_lens              (default: "512 1024 2048 4096 8192")
+#   CHUNKED_BS       space-sep batch_sizes           (default: "1 4 16 32")
+#   SKIP_TORCH_SCAN  set to 1 to skip [3/6] torch scan sweep (default: 0)
 # =============================================================================
 
 set -euo pipefail
@@ -47,6 +49,7 @@ mkdir -p logs results/stage1 results/stage1/chunked
 
 MODEL=${1:-zamba2}
 DEVICE=${2:-auto}
+SKIP_TORCH_SCAN=${SKIP_TORCH_SCAN:-0}
 
 # ── chunked sweep parameters ─────────────────────────────────────────────────
 # CHUNKED_PCT: kernel 호출당 토큰 수 범위.
@@ -108,14 +111,19 @@ echo "   done  ($(_elapsed))"
 # ── [3/6] SSM torch scan sweep ───────────────────────────────────────────────
 # PyTorch chunked scan으로 wave model 정확도 검증 (cooperative barrier 없음).
 # wave-model 합성값 vs 직접 측정값의 MAPE를 plot_compare_modules.py에서 비교.
+# SKIP_TORCH_SCAN=1 이면 건너뜀 (chunked 실측값이 이미 있을 때 시간 절약).
 echo ""
-echo "── [3/6] $(date '+%H:%M:%S')  SSM prefill SM scaling sweep (torch scan, for validation) …"
-python stage1_sm_scaling/run_ssm_prefill_sweep.py \
-    --model  "$MODEL" \
-    --device "$DEVICE" \
-    --force-pytorch-scan \
-    --skip-verify
-echo "   done  ($(_elapsed))"
+if [[ "${SKIP_TORCH_SCAN}" == "1" ]]; then
+    echo "── [3/6] $(date '+%H:%M:%S')  SSM torch scan sweep — skipped (SKIP_TORCH_SCAN=1)"
+else
+    echo "── [3/6] $(date '+%H:%M:%S')  SSM prefill SM scaling sweep (torch scan, for validation) …"
+    python stage1_sm_scaling/run_ssm_prefill_sweep.py \
+        --model  "$MODEL" \
+        --device "$DEVICE" \
+        --force-pytorch-scan \
+        --skip-verify
+    echo "   done  ($(_elapsed))"
+fi
 
 # ── [4/6] Attention sweep ─────────────────────────────────────────────────────
 echo ""
@@ -153,24 +161,19 @@ else
     echo "   [warn] chunked CSV 없음 — 분석 skip"
 fi
 
-# 기존 saturation / SRM / SM-split 플롯
-python stage1_sm_scaling/plot_saturation.py  --model "$MODEL" 2>/dev/null \
-    || python stage1_sm_scaling/plot_saturation.py 2>/dev/null || true
-python stage1_sm_scaling/plot_srm.py         --model "$MODEL" 2>/dev/null \
-    || python stage1_sm_scaling/plot_srm.py         2>/dev/null || true
-python stage1_sm_scaling/plot_sm_split.py    --model "$MODEL" 2>/dev/null \
-    || python stage1_sm_scaling/plot_sm_split.py    2>/dev/null || true
+# saturation / SRM / SM-split 플롯 (실패 시 경고만 출력하고 계속)
+_plot() { python "$@" 2>/dev/null || echo "   [warn] $(basename "$1") 실패 — 계속"; }
+
+_plot stage1_sm_scaling/plot_saturation.py  --model "$MODEL"
+_plot stage1_sm_scaling/plot_srm.py         --model "$MODEL"
+_plot stage1_sm_scaling/plot_sm_split.py    --model "$MODEL"
 
 # 모듈 비교 플롯 — chunked CSV 있으면 overlay 포함
 if [ -n "$CHUNKED_CSV" ]; then
-    python stage1_sm_scaling/plot_compare_modules.py \
-        --model "$MODEL" \
-        --ssm-chunked-csv "$CHUNKED_CSV" \
-        2>/dev/null || true
+    _plot stage1_sm_scaling/plot_compare_modules.py \
+        --model "$MODEL" --ssm-chunked-csv "$CHUNKED_CSV"
 else
-    python stage1_sm_scaling/plot_compare_modules.py \
-        --model "$MODEL" \
-        2>/dev/null || true
+    _plot stage1_sm_scaling/plot_compare_modules.py --model "$MODEL"
 fi
 
 echo "   done  ($(_elapsed))"

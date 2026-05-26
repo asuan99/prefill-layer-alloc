@@ -419,11 +419,21 @@ def parse_args():
         help="Layer types to profile (default: ssm attn mlp)",
     )
     parser.add_argument(
+        "--chunked-prefill", action="store_true",
+        help=(
+            "Also profile chunked-prefill SSM. Adds chunked_ssm alongside ssm in "
+            "--layer-types (if ssm is present), and auto-derives --prefill-chunk-tokens "
+            "from model config (ssd_chunk × [1, 4, 16, 64]) when not explicitly set. "
+            "Use this instead of --layer-types chunked_ssm when you want a paired "
+            "comparison between full-sequence and chunked SSM profiling."
+        ),
+    )
+    parser.add_argument(
         "--prefill-chunk-tokens", nargs="+", type=int, default=None,
         metavar="PCT",
         help=(
             "Tokens per kernel call for chunked_ssm (required when --layer-types includes "
-            "chunked_ssm). Multiple values create a sweep. "
+            "chunked_ssm and --chunked-prefill is not set). Multiple values create a sweep. "
             "cooperative-safe condition: batch × ceil(pct/256) × n_heads ≤ sm_count."
         ),
     )
@@ -487,10 +497,33 @@ if __name__ == "__main__":
     if args.sm_counts is None:
         args.sm_counts = compute_sm_steps(total_sm, n_steps=8)
 
+    # --chunked-prefill: inject chunked_ssm into layer_types and auto-derive chunk sizes
+    if args.chunked_prefill:
+        if "ssm" in args.layer_types and "chunked_ssm" not in args.layer_types:
+            idx = args.layer_types.index("ssm")
+            args.layer_types = (
+                args.layer_types[: idx + 1] + ["chunked_ssm"] + args.layer_types[idx + 1 :]
+            )
+        if not args.prefill_chunk_tokens:
+            ssm_cfg = model_cfg.get("ssm", {})
+            ssd_chunk = ssm_cfg.get("chunk_size", 256)
+            args.prefill_chunk_tokens = [
+                ssd_chunk,        # 1 SSD chunk per kernel call (minimum)
+                ssd_chunk * 4,    # 1024 tokens
+                ssd_chunk * 16,   # 4096 tokens
+                ssd_chunk * 64,   # 16384 tokens
+            ]
+            print(
+                f"  [--chunked-prefill] added chunked_ssm to layer types\n"
+                f"  [--chunked-prefill] auto-derived prefill_chunk_tokens: "
+                f"{args.prefill_chunk_tokens} (ssd_chunk={ssd_chunk}×[1,4,16,64])"
+            )
+
     if "chunked_ssm" in args.layer_types and not args.prefill_chunk_tokens:
         print(
             "[ERROR] --prefill-chunk-tokens is required when --layer-types includes chunked_ssm.\n"
-            "  Example: --prefill-chunk-tokens 256 512 1024",
+            "  Use --chunked-prefill for auto-derived defaults, or pass explicitly:\n"
+            "  --prefill-chunk-tokens 256 1024 4096",
             file=sys.stderr,
         )
         sys.exit(1)

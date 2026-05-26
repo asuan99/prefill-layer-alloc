@@ -13,23 +13,23 @@ module load conda/pytorch_2.9.1_cuda13
 module load cuda/13.0.2
 module load gcc/15.2.0
 
-mkdir -p /scratch/$USER/whlee/prefill-layer-alloc/envs
+VENV_DIR="/scratch/$USER/whlee/prefill-layer-alloc"
 
-# conda 환경 생성 (pytorch 모듈 환경 기반으로 venv)
-python -m venv /scratch/$USER/whlee/prefill-layer-alloc/envs/prefill-alloc --system-site-packages
-source /scratch/$USER/whlee/prefill-layer-alloc/envs/prefill-alloc/bin/activate
+# venv를 프로젝트 루트에 생성 (run_stage*.sh / run_all.sh 모두
+# source $VENV_DIR/bin/activate 를 사용하므로 경로를 맞춤)
+python -m venv "$VENV_DIR" --system-site-packages
+source "$VENV_DIR/bin/activate"
 
-
-pip install --user --upgrade pip ninja
+pip install --upgrade pip ninja
 
 # CUDA 컴파일 필요 패키지
-pip install --user causal-conv1d==1.5.3.post1
-pip install --user mamba-ssm==2.3.1
-pip install --user flash-attn==2.7.4.post1 --no-build-isolation
+pip install causal-conv1d==1.5.3.post1
+pip install mamba-ssm==2.3.1
+pip install flash-attn==2.7.4.post1 --no-build-isolation
 
 # 나머지 패키지
-pip install --user nvidia-ml-py pandas matplotlib seaborn pyyaml tqdm
-pip install --user flashinfer-python --index-url https://flashinfer.ai/whl/cu124/torch2.9/
+pip install nvidia-ml-py pandas matplotlib seaborn pyyaml tqdm
+pip install flashinfer-python --index-url https://flashinfer.ai/whl/cu124/torch2.9/
 
 # 검증
 python -c "

@@ -17,16 +17,18 @@
 # interactive sessions (ERR_NVGPUCTRPERM, perf_event_paranoid=2).
 #
 # Usage:
-#   sbatch slurm/run_ncu_profile.sh                                      # zamba2, all layer types
-#   sbatch slurm/run_ncu_profile.sh falcon_h1                            # falcon_h1
-#   sbatch slurm/run_ncu_profile.sh zamba2 --layer-types ssm attn        # specific layer types
-#   sbatch slurm/run_ncu_profile.sh zamba2 --layer-types ssm --sm-counts 27 54 108 --seq-lens 1024 4096
-#   sbatch slurm/run_ncu_profile.sh zamba2 --layer-types chunked_ssm \
-#       --prefill-chunk-tokens 256 512 1024 --sm-counts 27 54 108
+#   sbatch slurm/run_ncu_profile.sh                          # zamba2, ssm+attn+mlp
+#   sbatch slurm/run_ncu_profile.sh falcon_h1                # falcon_h1
+#   sbatch slurm/run_ncu_profile.sh zamba2 --chunked-prefill # ssm+chunked_ssm+attn+mlp (auto chunk sizes)
+#   sbatch slurm/run_ncu_profile.sh zamba2 --layer-types ssm attn --sm-counts 27 54 108
+#   sbatch slurm/run_ncu_profile.sh zamba2 --chunked-prefill \
+#       --prefill-chunk-tokens 256 1024 4096 --sm-counts 27 54 108 --seq-lens 1024 4096
 #
 # Arguments: MODEL [extra args passed directly to run_ncu_profile.py]
-#   Note: layer types and other options must use their full --flag form
-#         (e.g. --layer-types ssm attn), NOT bare positional words.
+#   Note: all options must use their full --flag form (e.g. --layer-types ssm attn).
+#   --chunked-prefill adds chunked_ssm alongside ssm and auto-derives chunk sizes
+#   from the model config (ssd_chunk × [1, 4, 16, 64]) when --prefill-chunk-tokens
+#   is not set.
 
 module load conda/pytorch_2.9.1_cuda13
 module load cuda/13.0.2

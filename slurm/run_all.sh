@@ -113,7 +113,18 @@ run_stage1() {
         --n-warmup  3 --n-measure 10 \
         --output-dir results/stage1/chunked/
 
-    # 3. Attention / MLP sweep
+    # 3. torch scan sweep — wave model 정확도 검증 (cooperative barrier 없음)
+    #    SKIP_TORCH_SCAN=1 로 건너뛸 수 있음
+    if [[ "${SKIP_TORCH_SCAN:-0}" != "1" ]]; then
+        step "SSM prefill SM scaling sweep — torch scan validation  ($model)"
+        run_py stage1_sm_scaling/run_ssm_prefill_sweep.py \
+            --model "$model" --device "$device" \
+            --force-pytorch-scan --skip-verify
+    else
+        step "SSM torch scan sweep — skipped (SKIP_TORCH_SCAN=1)  ($model)"
+    fi
+
+    # 4. Attention / MLP sweep
     step "Attention prefill SM scaling sweep  ($model)"
     run_py stage1_sm_scaling/run_attn_prefill_sweep.py \
         --model "$model" --device "$device"
@@ -122,7 +133,7 @@ run_stage1() {
     run_py stage1_sm_scaling/run_mlp_prefill_sweep.py \
         --model "$model" --device "$device"
 
-    # 4. Analysis + Plots
+    # 5. Analysis + Plots
     step "Stage 1 analysis + plots  ($model)"
 
     # chunked CSV 경로 자동 탐색
@@ -220,14 +231,14 @@ echo ""
 if [ "$MODEL" = "all" ]; then
     # ─────────────────────────────────────────────────────────────────────────
     # All models:
-    #   stage1 × 2 models (5 steps each) = 10
-    #     ssm wave-model, ssm chunked, attn, mlp, analysis+plots
+    #   stage1 × 2 models (6 steps each) = 12
+    #     ssm wave-model, ssm chunked, ssm torch-scan, attn, mlp, analysis+plots
     #   stage2 zamba2     (3 steps)       =  3   ← ctx_switch included
     #   stage2 falcon_h1  (2 steps)       =  2   ← ctx_switch skipped
     #   stage3 × 2 models (2 steps each)  =  4
-    #   total                             = 19
+    #   total                             = 21
     # ─────────────────────────────────────────────────────────────────────────
-    _STEP_TOTAL=19
+    _STEP_TOTAL=21
 
     run_stage1 "zamba2"    "$DEVICE"
     run_stage1 "falcon_h1" "$DEVICE"
@@ -241,12 +252,12 @@ if [ "$MODEL" = "all" ]; then
 else
     # ─────────────────────────────────────────────────────────────────────────
     # Single model:
-    #   stage1: ssm wave-model + ssm chunked + attn + mlp + analysis+plots = 5
+    #   stage1: ssm wave-model + ssm chunked + ssm torch-scan + attn + mlp + plots = 6
     #   stage2: latency + ctx_switch + matrix = 3
     #   stage3: eval + plots = 2
-    #   total = 10
+    #   total = 11
     # ─────────────────────────────────────────────────────────────────────────
-    _STEP_TOTAL=10
+    _STEP_TOTAL=11
 
     run_stage1 "$MODEL" "$DEVICE"
     run_stage2 "$MODEL" "$DEVICE" 0

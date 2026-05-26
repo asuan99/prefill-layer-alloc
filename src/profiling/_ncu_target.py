@@ -71,17 +71,46 @@ def main():
 
     # Build the kernel function
     if args.layer_type == "ssm":
-        extractor = runner._get_extractor(args.model)
-        try:
-            layer = extractor.get_ssm_layer()
-        except Exception:
-            layer = runner._build_fallback_ssm(args.model)
-        inputs = extractor.make_ssm_inputs(args.batch_size, args.seq_len)
-        hidden_states = inputs["hidden_states"]
+        # Profile mamba_chunk_scan_combined directly (not through the full model layer).
+        # Using the full layer (in_proj + scan + out_proj) causes two problems under ncu:
+        #   1. Multiple kernels captured — dominant selection by sm__cycles_active.sum can
+        #      pick a GEMM rather than the scan kernel at small batch/seq sizes.
+        #   2. ncu hardware counter collection on the cooperative grid.sync() kernel with
+        #      tens-of-thousands of blocks produces incorrect sm_util_per_sm_pct values.
+        # Calling mamba_chunk_scan_combined directly mirrors the chunked_ssm branch and
+        # ensures ncu sees exactly one target kernel with the correct grid dimensions.
+        import math
+        import yaml
+        from pathlib import Path
+        from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
+
+        cfg_path = Path(__file__).parent.parent.parent / "configs" / "models.yaml"
+        with open(cfg_path) as _f:
+            _raw = yaml.safe_load(_f)[args.model]
+        _ssm = _raw.get("ssm", {})
+        n_heads   = _ssm["n_heads"]
+        head_dim  = _ssm["head_dim"]
+        d_state   = _ssm["d_state"]
+        n_groups  = _ssm.get("n_groups", _ssm.get("expand", 2))
+        ssd_chunk = _ssm["chunk_size"]
+
+        x  = torch.randn(args.batch_size, args.seq_len, n_heads, head_dim, device="cuda", dtype=dtype)
+        dt = torch.ones(args.batch_size, args.seq_len, n_heads, device="cuda", dtype=dtype) * 0.1
+        A  = -torch.ones(n_heads, device="cuda", dtype=dtype)
+        B  = torch.randn(args.batch_size, args.seq_len, n_groups, d_state, device="cuda", dtype=dtype)
+        C  = torch.randn(args.batch_size, args.seq_len, n_groups, d_state, device="cuda", dtype=dtype)
+        D  = torch.ones(n_heads, device="cuda", dtype=dtype)
+        dt_bias = torch.zeros(n_heads, device="cuda", dtype=dtype)
 
         def kernel():
             with torch.no_grad():
-                layer(hidden_states)
+                mamba_chunk_scan_combined(
+                    x, dt, A, B, C,
+                    chunk_size=ssd_chunk,
+                    D=D,
+                    dt_bias=dt_bias,
+                    dt_softplus=True,
+                )
 
     elif args.layer_type == "attn":
         extractor = runner._get_extractor(args.model)

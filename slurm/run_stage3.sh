@@ -67,9 +67,7 @@ echo ""
 echo "[2/2] Generating result plots …"
 python stage3_hm_eval/plot_results.py \
     --results-dir results/stage3 \
-    --model "$MODEL" 2>/dev/null || \
-python stage3_hm_eval/plot_results.py \
-    --results-dir results/stage3 2>/dev/null || true
+    --model "$MODEL" 2>/dev/null || echo "  [warn] plot_results.py 실패 — 계속"
 
 echo ""
 echo "========================================================"
