@@ -20,6 +20,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+import math
 import statistics
 from pathlib import Path
 from typing import Optional
@@ -28,6 +29,7 @@ import torch
 import yaml
 
 from src.smctrl.green_ctx_controller import SMController
+from src.profiling.metrics import BandwidthEstimator
 
 
 # ---------------------------------------------------------------------------
@@ -101,108 +103,6 @@ def _get_initial_states_kwarg() -> str:
     return "initial_states"  # default guess
 
 
-# ---------------------------------------------------------------------------
-# Per-chunk SSM kernel call
-# ---------------------------------------------------------------------------
-
-def _make_ssm_call_fn(model_cfg: dict, device: str):
-    """Return a closure that runs one SSM kernel call with state passing.
-
-    The returned function has signature:
-        (chunk: Tensor, state: Tensor, in_proj_weight: Tensor, A_log, D, dt_bias)
-            -> (y_chunk: Tensor, new_state: Tensor)
-
-    Where:
-        chunk:          (batch, chunk_tokens, d_model) bf16
-        state:          (batch, n_heads, head_dim, d_state) float32
-        in_proj_weight: (2*inner_dim, d_model) bf16
-
-    If mamba_ssm does not support initial_states/return_final_states, the state
-    is computed analytically (zeros propagation) and a warning is printed once.
-    In that case cooperative_safe analysis is still valid — the kernel grid is
-    the same; only the state value is wrong (but measurement is latency-only).
-    """
-    n_heads   = model_cfg["n_heads"]
-    head_dim  = model_cfg["head_dim"]
-    d_state   = model_cfg["d_state"]
-    n_groups  = model_cfg["n_groups"]
-    ssd_chunk = model_cfg["chunk_size"]
-    inner_dim = n_heads * head_dim
-
-    supports_state = _check_initial_states_support()
-    state_kwarg    = _get_initial_states_kwarg() if supports_state else None
-
-    _warned_no_state = [False]
-
-    def call_fn(
-        chunk: torch.Tensor,
-        state: torch.Tensor,
-        in_proj_weight: torch.Tensor,
-        A_log: torch.Tensor,
-        D_param: torch.Tensor,
-        dt_bias: torch.Tensor,
-    ):
-        from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
-
-        batch, chunk_tokens, _ = chunk.shape
-        dtype  = chunk.dtype
-        dev    = chunk.device
-
-        # in_proj: (d_model → 2*inner_dim)
-        xz = torch.nn.functional.linear(chunk, in_proj_weight)
-        x  = xz[:, :, :inner_dim]           # (batch, chunk_tokens, inner_dim)
-        # z is not used in the timed kernel (no gating in pure SSM pass)
-
-        x  = x.view(batch, chunk_tokens, n_heads, head_dim)
-
-        # Random dt, B, C — values don't affect latency or grid shape
-        dt = torch.ones(batch, chunk_tokens, n_heads, device=dev, dtype=dtype) * 0.1
-        B  = torch.randn(batch, chunk_tokens, n_groups, d_state, device=dev, dtype=dtype)
-        C  = torch.randn(batch, chunk_tokens, n_groups, d_state, device=dev, dtype=dtype)
-        A  = -torch.exp(A_log.float()).to(dtype)
-
-        if supports_state:
-            # state shape expected by mamba_chunk_scan_combined: (batch, n_heads, head_dim, d_state)
-            kwargs = {
-                state_kwarg:        state,
-                "return_final_states": True,
-            }
-            result = mamba_chunk_scan_combined(
-                x, dt, A, B, C,
-                chunk_size=ssd_chunk,
-                D=D_param,
-                dt_bias=dt_bias,
-                dt_softplus=True,
-                **kwargs,
-            )
-            # result is (y, new_state) when return_final_states=True
-            if isinstance(result, tuple):
-                y, new_state = result
-            else:
-                # Fallback: some versions return only y even with return_final_states
-                y = result
-                new_state = state
-        else:
-            if not _warned_no_state[0]:
-                print(
-                    "[chunked_ssm_runner] WARNING: mamba_chunk_scan_combined does not "
-                    "support initial_states/return_final_states.  State is not passed "
-                    "across chunks.  Latency measurement is still valid."
-                )
-                _warned_no_state[0] = True
-            y = mamba_chunk_scan_combined(
-                x, dt, A, B, C,
-                chunk_size=ssd_chunk,
-                D=D_param,
-                dt_bias=dt_bias,
-                dt_softplus=True,
-            )
-            new_state = state  # unchanged (no state passing)
-
-        y = y.view(batch, chunk_tokens, inner_dim)
-        return y, new_state
-
-    return call_fn
 
 
 # ---------------------------------------------------------------------------
@@ -275,39 +175,47 @@ def run_chunked_ssm_sweep(
             "batch_size":           int,
         }
     """
-    model_cfg = _load_model_config(model_name)
-    d_model   = model_cfg["d_model"]
-    n_heads   = model_cfg["n_heads"]
-    head_dim  = model_cfg["head_dim"]
-    d_state   = model_cfg["d_state"]
-    ssd_chunk = model_cfg["chunk_size"]
-    inner_dim = n_heads * head_dim
+    model_cfg   = _load_model_config(model_name)
+    n_heads     = model_cfg["n_heads"]
+    head_dim    = model_cfg["head_dim"]
+    d_state     = model_cfg["d_state"]
+    n_groups    = model_cfg["n_groups"]
+    ssd_chunk   = model_cfg["chunk_size"]
+    chunk_tokens = prefill_chunk_tokens
 
-    # cooperative 안전성 체크
-    nchunks_per_call  = max(1, prefill_chunk_tokens // ssd_chunk)
+    nchunks_per_call  = max(1, chunk_tokens // ssd_chunk)
     n_blocks_per_call = batch_size * nchunks_per_call * n_heads
-    coop_safe = _cooperative_safe(
-        batch_size, prefill_chunk_tokens, n_heads, ssd_chunk, sm_count
+    coop_safe = _cooperative_safe(batch_size, chunk_tokens, n_heads, ssd_chunk, sm_count)
+    n_calls   = math.ceil(seq_len / chunk_tokens)
+
+    # Pre-allocate scan-shaped tensors once (reused across all chunk iterations).
+    # Values don't affect latency or kernel grid — only shapes matter.
+    x_chunk   = torch.randn(batch_size, chunk_tokens, n_heads, head_dim,
+                             dtype=torch.bfloat16, device=device)
+    dt_chunk  = torch.full((batch_size, chunk_tokens, n_heads), 0.1,
+                            dtype=torch.bfloat16, device=device)
+    A         = -torch.ones(n_heads, dtype=torch.bfloat16, device=device)
+    B_chunk   = torch.randn(batch_size, chunk_tokens, n_groups, d_state,
+                             dtype=torch.bfloat16, device=device)
+    C_chunk   = torch.randn(batch_size, chunk_tokens, n_groups, d_state,
+                             dtype=torch.bfloat16, device=device)
+    D         = torch.ones(n_heads, dtype=torch.bfloat16, device=device)
+    dt_bias   = torch.zeros(n_heads, dtype=torch.bfloat16, device=device)
+
+    # HBM bytes for one mamba_chunk_scan_combined call (scan kernel only)
+    read_bytes_per_call, write_bytes_per_call = BandwidthEstimator.ssm_scan_bytes(
+        batch=batch_size,
+        seq_len=chunk_tokens,
+        n_heads=n_heads,
+        head_dim=head_dim,
+        d_state=d_state,
+        n_groups=n_groups,
     )
 
-    import math
-    n_calls = math.ceil(seq_len / prefill_chunk_tokens)
-
-    # 전체 시퀀스 입력 (고정)
-    x_full = torch.randn(
-        batch_size, seq_len, d_model,
-        dtype=torch.bfloat16, device=device,
-    )
-
-    # SSM 가중치 (측정 목적이므로 random 초기화; kernel shape에만 영향)
-    in_proj_weight = torch.randn(
-        2 * inner_dim, d_model, dtype=torch.bfloat16, device=device
-    )
-    A_log   = torch.randn(n_heads, dtype=torch.bfloat16, device=device)
-    D_param = torch.ones(n_heads, dtype=torch.bfloat16, device=device)
-    dt_bias = torch.randn(n_heads, dtype=torch.bfloat16, device=device)
-
-    call_fn = _make_ssm_call_fn(model_cfg, device)
+    from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
+    supports_state = _check_initial_states_support()
+    state_kwarg    = _get_initial_states_kwarg() if supports_state else None
+    _warned_no_state = [False]
 
     smctrl.set_sm_count(sm_count)
     stream = smctrl.get_stream()
@@ -318,19 +226,38 @@ def run_chunked_ssm_sweep(
             dtype=torch.float32, device=device,
         )
         with torch.cuda.stream(stream):
-            for start in range(0, seq_len, prefill_chunk_tokens):
-                end   = min(start + prefill_chunk_tokens, seq_len)
-                chunk = x_full[:, start:end, :]
-                _, ssm_state = call_fn(
-                    chunk, ssm_state, in_proj_weight, A_log, D_param, dt_bias
-                )
+            for _ in range(n_calls):
+                if supports_state:
+                    result = mamba_chunk_scan_combined(
+                        x_chunk, dt_chunk, A, B_chunk, C_chunk,
+                        chunk_size=ssd_chunk,
+                        D=D,
+                        dt_bias=dt_bias,
+                        dt_softplus=True,
+                        **{state_kwarg: ssm_state, "return_final_states": True},
+                    )
+                    if isinstance(result, tuple):
+                        _, ssm_state = result
+                else:
+                    if not _warned_no_state[0]:
+                        print(
+                            "[chunked_ssm_runner] WARNING: mamba_chunk_scan_combined does not "
+                            "support initial_states/return_final_states.  State is not passed "
+                            "across chunks.  Latency measurement is still valid."
+                        )
+                        _warned_no_state[0] = True
+                    mamba_chunk_scan_combined(
+                        x_chunk, dt_chunk, A, B_chunk, C_chunk,
+                        chunk_size=ssd_chunk,
+                        D=D,
+                        dt_bias=dt_bias,
+                        dt_softplus=True,
+                    )
         torch.cuda.synchronize()
 
-    # 워밍업
     for _ in range(n_warmup):
         _run_once()
 
-    # 측정 (CUDA event 기반)
     latencies: list[float] = []
     for _ in range(n_measure):
         t_start = torch.cuda.Event(enable_timing=True)
@@ -344,14 +271,16 @@ def run_chunked_ssm_sweep(
     smctrl.reset()
 
     return {
-        "latency_ms":           statistics.median(latencies),
-        "latency_std_ms":       statistics.stdev(latencies) if len(latencies) > 1 else 0.0,
-        "latency_list_ms":      latencies,
-        "n_kernel_calls":       n_calls,
-        "n_blocks_per_call":    n_blocks_per_call,
-        "cooperative_safe":     coop_safe,
-        "sm_count":             sm_count,
-        "prefill_chunk_tokens": prefill_chunk_tokens,
-        "seq_len":              seq_len,
-        "batch_size":           batch_size,
+        "latency_ms":              statistics.median(latencies),
+        "latency_std_ms":          statistics.stdev(latencies) if len(latencies) > 1 else 0.0,
+        "latency_list_ms":         latencies,
+        "n_kernel_calls":          n_calls,
+        "n_blocks_per_call":       n_blocks_per_call,
+        "cooperative_safe":        coop_safe,
+        "sm_count":                sm_count,
+        "prefill_chunk_tokens":    chunk_tokens,
+        "seq_len":                 seq_len,
+        "batch_size":              batch_size,
+        "read_bytes_per_call":     read_bytes_per_call,
+        "write_bytes_per_call":    write_bytes_per_call,
     }

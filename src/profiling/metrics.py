@@ -261,6 +261,40 @@ class BandwidthEstimator:
         return total_read, total_write
 
     @staticmethod
+    def ssm_scan_bytes(
+        batch: int,
+        seq_len: int,
+        n_heads: int,
+        head_dim: int,
+        d_state: int,
+        n_groups: int,
+        bytes_per_elem: int = 2,
+    ) -> tuple[int, int]:
+        """HBM bytes for mamba_chunk_scan_combined scan kernel only.
+
+        Inputs read from HBM:
+          x:      (batch, seq_len, n_heads, head_dim)
+          dt:     (batch, seq_len, n_heads)
+          B:      (batch, seq_len, n_groups, d_state)
+          C:      (batch, seq_len, n_groups, d_state)
+          A, D, dt_bias: (n_heads,) each — negligible but included
+
+        Output written to HBM:
+          y:      (batch, seq_len, n_heads, head_dim)
+        """
+        bpe = bytes_per_elem
+        x_bytes     = batch * seq_len * n_heads * head_dim * bpe
+        dt_bytes    = batch * seq_len * n_heads * bpe
+        B_bytes     = batch * seq_len * n_groups * d_state * bpe
+        C_bytes     = batch * seq_len * n_groups * d_state * bpe
+        param_bytes = n_heads * 3 * bpe   # A, D, dt_bias
+        y_bytes     = batch * seq_len * n_heads * head_dim * bpe
+
+        read_bytes  = x_bytes + dt_bytes + B_bytes + C_bytes + param_bytes
+        write_bytes = y_bytes
+        return read_bytes, write_bytes
+
+    @staticmethod
     def attn_bytes(
         batch: int,
         seq_len: int,

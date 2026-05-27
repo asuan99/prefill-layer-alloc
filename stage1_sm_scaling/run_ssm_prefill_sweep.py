@@ -1,5 +1,14 @@
 """
-Stage 1: SSM prefill layer SM scaling curve measurement.
+Stage 1: SSM prefill SM scaling curve measurement (scan kernel only).
+
+Measurement target
+------------------
+mamba_chunk_scan_combined scan kernel ONLY — not the full SSM layer.
+in_proj/out_proj GEMMs are intentionally excluded because they are
+compute-bound (AI ~1927 FLOPs/Byte) and dominate layer latency (~65%),
+masking the memory-bound scan kernel (AI ~31 FLOPs/Byte).  Measuring
+the scan kernel alone reveals the SM saturation behaviour described in
+BulletServe and related work.
 
 Strategy
 --------
@@ -14,15 +23,14 @@ Default (analytical wave model):
   Instead we use an analytical wave model:
     1. Measure latency at FULL SM (no Green Context, no restriction) for all
        (seq_len, batch_size) combos. This is straightforward and reliable.
-    2. Derive n_blocks = batch × seq_len / BLOCKS_PER_SEQ_BS from the
-       empirically confirmed formula (verified against ncu profiling data).
+    2. Derive n_blocks from the model-specific formula (verified against ncu):
+         nchunks = seq_len // chunk_size
+         n_blocks = batch × nchunks × n_heads
+       For Zamba2 (n_heads=112, chunk_size=256): n_blocks = batch × seq_len × 0.4375
+       For Falcon-H1 (n_heads=24, chunk_size=256): n_blocks = batch × seq_len × 0.09375
     3. For each target SM count k:
          latency(k) = latency(full) × ceil(n_blocks / k) / ceil(n_blocks / total_sm)
        This is exact for a perfectly wave-parallel kernel with constant time-per-wave.
-
-  The result is a synthetic SM scaling table that correctly represents the
-  Triton SSD kernel's behaviour, unlike a PyTorch-scan proxy which has
-  fundamentally different compute characteristics.
 
   wave_eff_pct is always >99.96 % for all measured configs (verified from ncu),
   confirming the wave model assumption holds.
@@ -60,14 +68,21 @@ from src.profiling.metrics import BandwidthEstimator
 
 # ---------------------------------------------------------------------------
 # n_blocks formula (empirically verified against ncu profiling data)
-# mamba_chunk_scan_combined: n_blocks = batch × seq_len / 4
-# (i.e. 4 seq tokens per thread block, invariant across head/state dims)
+#
+# mamba_chunk_scan_combined grid:
+#   nchunks  = seq_len // chunk_size
+#   n_blocks = batch × nchunks × n_heads
+#
+# For Zamba2  (n_heads=112, chunk_size=256): n_blocks = batch × seq_len × 112/256
+# For Falcon-H1 (n_heads=24, chunk_size=256): n_blocks = batch × seq_len × 24/256
+#
+# The old simplified formula (batch × seq_len // 4) was model-agnostic and incorrect.
 # ---------------------------------------------------------------------------
-_TOKENS_PER_BLOCK = 4
 
 
-def _n_blocks(batch: int, seq_len: int) -> int:
-    return max(1, batch * seq_len // _TOKENS_PER_BLOCK)
+def _n_blocks(batch: int, seq_len: int, n_heads: int, chunk_size: int = 256) -> int:
+    nchunks = max(1, seq_len // chunk_size)
+    return max(1, batch * nchunks * n_heads)
 
 
 # ---------------------------------------------------------------------------
@@ -177,6 +192,8 @@ def _measure_direct_sm(
     total_sm: int,
     n_warmup: int,
     n_measure: int,
+    n_heads: int,
+    chunk_size: int,
 ) -> list[dict]:
     """Measure SSM latency directly at each SM step using PyTorch scan.
 
@@ -196,9 +213,9 @@ def _measure_direct_sm(
                 sm_count=sm_count,
                 n_warmup=n_warmup,
                 n_measure=n_measure,
-                force_pytorch_scan=True,
+                use_pytorch_fallback=True,
             )
-            nb = _n_blocks(batch_size, seq_len)
+            nb = _n_blocks(batch_size, seq_len, n_heads, chunk_size)
             rows.append({
                 **row,
                 "n_blocks":   nb,
@@ -228,6 +245,8 @@ def _synthesize_sm_scaling(
     measured: dict[tuple, dict],
     sm_steps: list[int],
     total_sm: int,
+    n_heads: int,
+    chunk_size: int,
 ) -> list[dict]:
     """Derive latency at each SM step via the wave model.
 
@@ -239,7 +258,7 @@ def _synthesize_sm_scaling(
     """
     rows = []
     for (seq_len, batch_size), full_row in measured.items():
-        nb = _n_blocks(batch_size, seq_len)
+        nb = _n_blocks(batch_size, seq_len, n_heads, chunk_size)
         waves_full = math.ceil(nb / total_sm)
 
         for sm_count in sm_steps:
@@ -305,6 +324,14 @@ def run_sweep(
     theoretical_bw = hw_cfg.get("memory_bw_GBs")
     tag = device_tag(hw_cfg)
 
+    # Load model-specific SSM config for the correct n_blocks formula.
+    cfg_path = Path(__file__).parent.parent / "configs" / "models.yaml"
+    with open(cfg_path) as f:
+        model_cfg = yaml.safe_load(f)[model_name]
+    ssm_cfg       = model_cfg.get("ssm", {})
+    n_heads_ssm   = ssm_cfg["n_heads"]
+    chunk_size_ssm = ssm_cfg["chunk_size"]
+
     runner = LayerRunner(
         device="cuda",
         total_sm_count=total_sm,
@@ -342,6 +369,8 @@ def run_sweep(
             total_sm=total_sm,
             n_warmup=n_warmup,
             n_measure=n_measure,
+            n_heads=n_heads_ssm,
+            chunk_size=chunk_size_ssm,
         )
         if not results:
             print("\nERROR: no configs measured successfully — aborting sweep.")
@@ -362,7 +391,10 @@ def run_sweep(
             return []
 
         # Step 2: synthesise SM scaling
-        results = _synthesize_sm_scaling(measured, sm_steps, total_sm)
+        results = _synthesize_sm_scaling(
+            measured, sm_steps, total_sm,
+            n_heads=n_heads_ssm, chunk_size=chunk_size_ssm,
+        )
 
     # Save CSV
     scan_suffix = "_torchscan" if force_pytorch_scan else ""

@@ -68,7 +68,9 @@ class LayerRunner:
 
         # Lazy-loaded layer extractors
         self._extractors: dict = {}
-        # Per-(model, batch, seq_len, use_fallback) cached (layer, hidden_states, read_bytes, write_bytes)
+        # Per-(model, batch, seq_len, use_pytorch_fallback) cached tensors / layer objects.
+        # Main path (use_pytorch_fallback=False): tuple of 10 scan tensors + chunk_size + bytes.
+        # Fallback path (use_pytorch_fallback=True): (layer, hidden_states, read_bytes, write_bytes).
         self._ssm_cache: dict = {}
         # Per-(model, batch, seq_len, ctx_len, use_flashinfer) cached (attn_fn, read_bytes, write_bytes)
         self._attn_cache: dict = {}
@@ -134,14 +136,19 @@ class LayerRunner:
         sm_count: int,
         n_warmup: int = 10,
         n_measure: int = 50,
-        use_fallback_kernel: bool = False,
+        use_pytorch_fallback: bool = False,
         skip_sm_control: bool = False,
-        force_pytorch_scan: bool = False,
     ) -> dict:
-        """Benchmark a single SSM (Mamba-2) prefill layer with sm_count SMs.
+        """Benchmark mamba_chunk_scan_combined scan kernel with sm_count SMs.
 
-        SSM prefill runs in parallel-scan mode (mamba_chunk_scan_combined).
-        No per-token recurrent state buffer is needed.
+        Calls mamba_chunk_scan_combined directly with pre-allocated scan-shaped
+        tensors, bypassing in_proj/out_proj GEMMs. The scan kernel is
+        memory-bound (AI ~31 FLOPs/Byte vs ridge ~156), so BW utilization and
+        SM saturation are now correctly observable.
+
+        For use_pytorch_fallback=True, calls FallbackSSMKernel._pytorch_fallback()
+        instead — this measures a different kernel (includes in_proj/out_proj)
+        and should not be compared directly to the scan-only results.
 
         Returns:
             dict with latency_ms, latency_p99_ms, achieved_bandwidth_GBs,
@@ -149,44 +156,86 @@ class LayerRunner:
             seq_len, batch_size, layer_type='ssm', model_name.
         """
         extractor = self._get_extractor(model_name)
+        cfg = extractor.get_model_config()
+        n_heads    = cfg.get("n_ssm_heads", 64)
+        head_dim   = cfg.get("head_dim", cfg.get("ssm_head_dim", 32))
+        d_state    = cfg.get("d_state", 128)
+        n_groups   = cfg.get("n_ssm_groups", 1)
+        chunk_size = cfg.get("chunk_size", 256)
 
-        ssm_key = (model_name, batch_size, seq_len, use_fallback_kernel, force_pytorch_scan)
+        ssm_key = (model_name, batch_size, seq_len, use_pytorch_fallback)
         if ssm_key not in self._ssm_cache:
-            if use_fallback_kernel or force_pytorch_scan:
-                layer = self._build_fallback_ssm(model_name, force_pytorch_scan=force_pytorch_scan)
+            if use_pytorch_fallback:
+                # Fallback path: full SSM layer with PyTorch chunked scan.
+                # Measures in_proj + scan + out_proj, not scan-only.
+                layer = self._build_fallback_ssm(model_name, force_pytorch_scan=True)
+                hidden_size = cfg["hidden_size"]
+                hidden_states = torch.randn(
+                    batch_size, seq_len, hidden_size,
+                    device=self.device, dtype=self.dtype,
+                )
+                bpe = 2
+                weight_bytes = sum(p.numel() * bpe for p in layer.parameters())
+                read_bytes, write_bytes = BandwidthEstimator.ssm_bytes(
+                    batch=batch_size,
+                    seq_len=seq_len,
+                    hidden_size=hidden_size,
+                    n_heads=n_heads,
+                    head_dim=head_dim,
+                    d_state=d_state,
+                    weight_bytes=weight_bytes,
+                    bytes_per_elem=bpe,
+                )
+                self._ssm_cache[ssm_key] = (layer, hidden_states, read_bytes, write_bytes)
             else:
-                try:
-                    layer = extractor.get_ssm_layer()
-                except Exception:
-                    layer = self._build_fallback_ssm(model_name, force_pytorch_scan=force_pytorch_scan)
+                # Main path: scan kernel only — no in_proj/out_proj.
+                x_cache      = torch.randn(batch_size, seq_len, n_heads, head_dim,
+                                           device=self.device, dtype=self.dtype)
+                dt_cache     = torch.full((batch_size, seq_len, n_heads), 0.1,
+                                          device=self.device, dtype=self.dtype)
+                A_cache      = torch.full((n_heads,), -1.0,
+                                          device=self.device, dtype=self.dtype)
+                B_cache      = torch.randn(batch_size, seq_len, n_groups, d_state,
+                                           device=self.device, dtype=self.dtype)
+                C_cache      = torch.randn(batch_size, seq_len, n_groups, d_state,
+                                           device=self.device, dtype=self.dtype)
+                D_cache      = torch.ones(n_heads, device=self.device, dtype=self.dtype)
+                dt_bias_cache = torch.zeros(n_heads, device=self.device, dtype=self.dtype)
+                read_bytes, write_bytes = BandwidthEstimator.ssm_scan_bytes(
+                    batch=batch_size,
+                    seq_len=seq_len,
+                    n_heads=n_heads,
+                    head_dim=head_dim,
+                    d_state=d_state,
+                    n_groups=n_groups,
+                )
+                self._ssm_cache[ssm_key] = (
+                    x_cache, dt_cache, A_cache, B_cache, C_cache,
+                    D_cache, dt_bias_cache, chunk_size,
+                    read_bytes, write_bytes,
+                )
 
-            cached_inputs = extractor.make_ssm_inputs(batch_size, seq_len)
-            cached_hidden = cached_inputs["hidden_states"]
+        if use_pytorch_fallback:
+            layer, hidden_states, read_bytes, write_bytes = self._ssm_cache[ssm_key]
 
-            cfg = extractor.get_model_config()
-            hidden_size = cfg["hidden_size"]
-            n_heads = cfg.get("n_ssm_heads", 64)
-            head_dim = cfg.get("head_dim", cfg.get("ssm_head_dim", 32))
-            d_state = cfg.get("d_state", 128)
-            bytes_per_elem = 2
-            weight_bytes = sum(p.numel() * bytes_per_elem for p in layer.parameters())
-            read_bytes, write_bytes = BandwidthEstimator.ssm_bytes(
-                batch=batch_size,
-                seq_len=seq_len,
-                hidden_size=hidden_size,
-                n_heads=n_heads,
-                head_dim=head_dim,
-                d_state=d_state,
-                weight_bytes=weight_bytes,
-                bytes_per_elem=bytes_per_elem,
-            )
-            self._ssm_cache[ssm_key] = (layer, cached_hidden, read_bytes, write_bytes)
+            def _run():
+                with torch.no_grad():
+                    layer._pytorch_fallback(hidden_states)
+        else:
+            (x_cache, dt_cache, A_cache, B_cache, C_cache,
+             D_cache, dt_bias_cache, chunk_size,
+             read_bytes, write_bytes) = self._ssm_cache[ssm_key]
 
-        layer, hidden_states, read_bytes, write_bytes = self._ssm_cache[ssm_key]
-
-        def _run():
-            with torch.no_grad():
-                layer(hidden_states)
+            def _run():
+                with torch.no_grad():
+                    from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
+                    mamba_chunk_scan_combined(
+                        x_cache, dt_cache, A_cache, B_cache, C_cache,
+                        chunk_size=chunk_size,
+                        D=D_cache,
+                        dt_bias=dt_bias_cache,
+                        dt_softplus=True,
+                    )
 
         if not skip_sm_control:
             self.smctrl.set_sm_count(sm_count)
