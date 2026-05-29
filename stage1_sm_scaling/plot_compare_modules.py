@@ -1265,7 +1265,7 @@ if __name__ == "__main__":
 
             print(f"\n  [Fig 9] Chunked prefill SM scaling (all configs, safety-coded) …")
             plot_chunked_sm_scaling(
-                chunked_df_all, df, args.output_dir, model, grid_sl, batch_sizes,
+                chunked_df_all, df, args.output_dir, model, seq_lens, batch_sizes,
             )
 
             print(f"\n  [Fig 10] Chunked prefill kernel call overhead …")
