@@ -1,4 +1,20 @@
 """
+OPTIONAL ENRICHMENT — run_ncu_profile.py 는 critical path 가 아님.
+
+헤드라인 결과 (free-SM zone, decision matrix, motivation figures) 는 ncu 없이 완결된다.
+이 스크립트는 아래 조건을 모두 충족하는 경우에만 실행한다:
+  1. NVreg_RestrictProfilingToAdminUsers=0 권한이 설정된 환경
+     (SLURM 전용 잡 또는 관리자 권한 필요; 일반 interactive session 에서는 ERR_NVGPUCTRPERM)
+  2. 별도 GPU 할당 확보 (ncu 는 10–100× 지연으로 잡 타임아웃 발생 가능)
+  3. wave quantization 상세 진단이 필요한 경우에 한함
+
+헤드라인 결론에 ncu CSV 가 불필요함은 tests/test_no_ncu_required.py 에서 검증됨.
+
+대안 (권한 있는 일반 잡에서 사용 가능):
+  - src/profiling/cupti_monitor.py: in-process CUPTI (별도 SLURM 할당 불요, 동일 권한 필요)
+  - Stage 1 CUDA-event sweep: run_chunked_ssm_sweep.py / run_attn_prefill_sweep.py
+    (권한 불요, 헤드라인 free-SM zone 의 primary 입력)
+
 Stage 1: ncu (Nsight Compute) profiling sweep for per-SM hardware counter measurement.
 
 Unlike the NVML-based sweep (run_*_prefill_sweep.py), this script uses ncu to capture

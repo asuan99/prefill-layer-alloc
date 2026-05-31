@@ -567,11 +567,11 @@ def load_results(results_dir: Path, show_analytical: bool = False) -> pd.DataFra
     df = pd.concat(dfs, ignore_index=True)
     df = compute_throughput(df)
 
-    # --- ncu CSVs (ncu_ssm_*, ncu_attn_*, ncu_mlp_*) ---
-    # Merge SM utilization and wave stats from ncu profiling results.
+    # --- ncu CSVs (ncu_ssm_*, ncu_attn_*, ncu_mlp_*) --- OPTIONAL ENRICHMENT ---
+    # Loaded only when present; headline free-SM zone is complete without them.
     # ncu CSVs use "model" column (or omit it entirely); latency CSVs use "model_name".
     # Filename format: ncu_{layer_type}_{model}_{device}.csv — used as fallback.
-    ncu_files = list(results_dir.glob("ncu_*.csv"))
+    ncu_files = list(results_dir.glob("ncu_*.csv"))  # ncu_optional
     if ncu_files:
         ncu_dfs = []
         for f in ncu_files:

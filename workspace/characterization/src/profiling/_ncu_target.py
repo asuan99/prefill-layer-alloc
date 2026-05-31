@@ -1,4 +1,10 @@
 """
+OPTIONAL — ncu subprocess target (run_ncu_profile.py 전용).
+
+이 스크립트는 ncu (NCURunner) 가 spawn 하는 child process 로만 쓰인다.
+직접 실행하지 않는다. run_ncu_profile.py 가 OPTIONAL ENRICHMENT 이므로
+이 파일도 헤드라인 critical path 에 속하지 않는다.
+
 ncu subprocess target — thin single-kernel runner for Nsight Compute profiling.
 
 This script is spawned BY ncu (not called directly). ncu intercepts CUDA kernel

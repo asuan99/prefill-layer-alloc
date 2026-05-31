@@ -1,4 +1,15 @@
 """
+OPTIONAL ENRICHMENT — ncu_runner.py は헤드라인 critical path ではない.
+
+このモジュールは run_ncu_profile.py (OPTIONAL ENRICHMENT) からのみ呼ばれる.
+헤드라인 분석 (free-SM zone, decision matrix, motivation figures A/B/C) 은
+ncu CSV を必要とせず, CUDA-event sweep と NVML のみで完結する.
+
+권한 요건:
+  ncu は hardware counter access に ERR_NVGPUCTRPERM 이 발생하는 경우가 많음.
+  일반 SLURM 인터랙티브 세션이나 공유 GPU 환경에서는 실행 불가.
+  대안: src/profiling/cupti_monitor.py (in-process CUPTI, 별도 할당 불요).
+
 Nsight Compute (ncu) subprocess launcher and CSV parser.
 
 ncu cannot be called from within a running Python process because it works

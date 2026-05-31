@@ -1,4 +1,19 @@
 """
+OPTIONAL ENRICHMENT — ncu 대안 (in-process): cupti_monitor.py
+
+헤드라인 결론 (free-SM zone, decision matrix, motivation figures A/B/C) 은
+이 모듈 없이 CUDA-event sweep + NVML 만으로 완결된다.
+critical path 아님 — 선택적 진단 도구.
+
+위치:
+  - ncu (run_ncu_profile.py): subprocess 필요, 별도 SLURM 할당 필요, 10–100× 오버헤드
+  - CUPTIMonitor (이 모듈):   in-process, 별도 SLURM 할당 불요, 2–5× 오버헤드
+    동일한 perf_event 권한은 여전히 필요하지만 subprocess spawn 은 불필요.
+
+사용 시나리오:
+  - ncu SLURM 할당을 받을 수 없지만 CUPTI 권한이 있는 일반 GPU job 에서 사용.
+  - ncu CSV 없이 wave quantization 진단이 필요한 경우.
+
 In-process CUPTI hardware counter collector via torch.profiler.
 
 Replaces NVMLMonitor's device-level binary measurement with per-kernel

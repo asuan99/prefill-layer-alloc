@@ -1,26 +1,36 @@
 """
-Stage 3 visualization: TTFT-TPOT trade-off, SM utilization timeline,
-and prefill throughput improvement figures.
+Stage 3 visualization: SM utilization timeline and overlap figures.
 
-Generates three publication-quality figures from stage3 CSV results:
+NOTE: eval_*.csv (from the deprecated run_concurrent_eval.py) is NO LONGER a
+default input.  Pass --eval-dir explicitly only if you have legacy eval CSVs you
+want to visualise for reference; those files carry the caveats documented in
+stage3_hm_eval/deprecated/run_concurrent_eval.py.
 
-  Figure 1 — TTFT vs TPOT Trade-off Scatter
+Active primary inputs (from the non-deprecated pipeline):
+  - coexec_*.csv   from coexec_microbench.py  (SM timeline from real concurrent run)
+
+Generates figures from stage3 CSV results:
+
+  Figure 1 — TTFT vs TPOT Trade-off Scatter  [REQUIRES --eval-dir, legacy only]
     x: mean prefill TTFT (ms), y: decode TPOT p99 (ms)
-    Points: (model, policy, seq_len), color-coded by policy
-    SLO line: horizontal dashed at TPOT = 50ms
+    NOTE: TTFT in these CSVs is wall-clock synthetic, not a CUDA-event measurement.
 
   Figure 2 — SM Utilization Timeline
     x: time (sec), y: SM utilization (%)
     Policy A vs B/C side-by-side
     Background color bands for SSM / Attn layer regions (estimated)
 
-  Figure 3 — Prefill Throughput Improvement
+  Figure 3 — Prefill Throughput Improvement  [REQUIRES --eval-dir, legacy only]
     x: prefill seq_len, y: Policy B/C throughput / Policy A (ratio)
     1.0 = same as baseline; >1.0 = improvement
 
 Usage:
-    python stage3_hm_eval/plot_results.py
-    python stage3_hm_eval/plot_results.py --results-dir results/stage3 --model zamba2
+    # SM timeline only (active pipeline, no deprecated CSV needed):
+    python stage3_hm_eval/plot_results.py --results-dir results/stage3
+
+    # With legacy eval CSVs (reference only, see deprecation caveats):
+    python stage3_hm_eval/plot_results.py --results-dir results/stage3 \\
+        --eval-dir results/stage3_deprecated --model zamba2
 """
 
 import sys
@@ -77,15 +87,24 @@ def _parse_stem(stem: str, prefix: str) -> tuple[str, str]:
     return parts[0], parts[1] if len(parts) > 1 else "?"
 
 
-def load_eval_results(results_dir: Path) -> pd.DataFrame:
-    csv_files = list(results_dir.glob("eval_*.csv"))
+def load_eval_results(eval_dir: Path) -> pd.DataFrame:
+    """Load deprecated eval_*.csv files from an explicit directory.
+
+    These files come from run_concurrent_eval.py (now deprecated).
+    TTFT values in them are wall-clock synthetic, not CUDA-event measurements.
+    Pass --eval-dir to use this function; it is never called by default.
+    """
+    csv_files = list(eval_dir.glob("eval_*.csv"))
     if not csv_files:
-        raise FileNotFoundError(f"No eval_*.csv files in {results_dir}")
+        raise FileNotFoundError(
+            f"No eval_*.csv files in {eval_dir}\n"
+            "  These files are produced by the deprecated run_concurrent_eval.py.\n"
+            "  See stage3_hm_eval/deprecated/ for context."
+        )
 
     dfs = []
     for f in csv_files:
         df = pd.read_csv(f)
-        # CSV already has 'model' and 'policy' columns written by save_results()
         dfs.append(df)
 
     return pd.concat(dfs, ignore_index=True)
@@ -314,7 +333,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Plot Stage 3 results")
     parser.add_argument(
         "--results-dir", type=Path,
-        default=Path(__file__).parent.parent / "results" / "stage3"
+        default=Path(__file__).parent.parent / "results" / "stage3",
+        help="Directory containing sm_timeline_*.csv (from coexec_microbench.py)",
     )
     parser.add_argument("--model", default=None)
     parser.add_argument(
@@ -325,27 +345,49 @@ def parse_args():
         "--compare-policies", nargs=2, default=["A", "C"],
         help="Two policy keys to compare in Figure 2 timeline"
     )
+    parser.add_argument(
+        "--eval-dir", type=Path, default=None,
+        help=(
+            "Directory containing deprecated eval_*.csv files "
+            "(from run_concurrent_eval.py). "
+            "Required only for legacy Fig 1/3; not read by default. "
+            "TTFT in these files is wall-clock synthetic."
+        ),
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
 
-    print(f"Loading Stage 3 results from {args.results_dir} …")
-    df = load_eval_results(args.results_dir)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     timelines = load_sm_timelines(args.results_dir)
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-
-    models = [args.model] if args.model else df["model"].unique().tolist()
-
-    for model in models:
-        print(f"\nGenerating figures for {model} …")
-        plot_ttft_tpot(df, args.output_dir, model_filter=model)
-        plot_sm_timeline(
-            timelines, args.output_dir, model,
-            compare_policies=tuple(args.compare_policies)
+    # Load deprecated eval CSVs only if --eval-dir is explicitly provided.
+    df = None
+    if args.eval_dir is not None:
+        print(
+            f"\n  NOTE: loading deprecated eval_*.csv from {args.eval_dir}.\n"
+            "  TTFT values are wall-clock synthetic — see deprecation caveats.\n"
         )
-        plot_throughput_improvement(df, args.output_dir, model_filter=model)
+        df = load_eval_results(args.eval_dir)
+
+    if timelines:
+        models = [args.model] if args.model else sorted({m for (m, _) in timelines})
+        for model in models:
+            print(f"\nGenerating SM timeline for {model} …")
+            plot_sm_timeline(
+                timelines, args.output_dir, model,
+                compare_policies=tuple(args.compare_policies)
+            )
+    else:
+        print(f"  No sm_timeline_*.csv found in {args.results_dir}. Skipping timeline figures.")
+
+    if df is not None:
+        models_eval = [args.model] if args.model else df["model"].unique().tolist()
+        for model in models_eval:
+            print(f"\nGenerating legacy eval figures for {model} …")
+            plot_ttft_tpot(df, args.output_dir, model_filter=model)
+            plot_throughput_improvement(df, args.output_dir, model_filter=model)
 
     print("\nDone.")
