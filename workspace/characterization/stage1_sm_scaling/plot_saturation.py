@@ -215,39 +215,116 @@ def plot_scaling_curves(
 # Figure 2: Free SM Zone
 # ---------------------------------------------------------------------------
 
-def plot_free_sm_zone(
+def _compute_free_sm_records(
     df: pd.DataFrame,
-    output_dir: Path,
     model_name: str,
-) -> None:
-    # Prefer ssm_triton (production kernel), fall back to generic ssm or ssm_torch
+) -> tuple[str | None, int, list[dict]]:
+    """Compute free-SM zone records for model_name using chunked SSM data.
+
+    Prefers ssm_chunked (S0.2 primary) over other SSM types.
+    Returns (ssm_type, total_sm, records).  records is empty when no SSM data.
+    """
     ssm_type = next(
         (t for t in _SSM_TYPES if t in df["layer_type"].values),
         None,
     )
     if ssm_type is None:
-        print(f"  No SSM data for {model_name}")
-        return
+        return None, 0, []
+
     df_ssm = df[(df["model_name"] == model_name) & (df["layer_type"] == ssm_type)]
     if df_ssm.empty:
+        return ssm_type, 0, []
+
+    total_sm = int(df_ssm["sm_count"].max())
+    records  = []
+    for (sl, bs), grp in df_ssm.groupby(["seq_len", "batch_size"]):
+        sat_sm  = find_saturation_sm(grp)
+        free_sm = total_sm - sat_sm
+        records.append({
+            "model_name":    model_name,
+            "ssm_type":      ssm_type,
+            "seq_len":       int(sl),
+            "batch_size":    int(bs),
+            "total_sm":      total_sm,
+            "saturation_sm": sat_sm,
+            "free_sm":       free_sm,
+            "sat_ratio":     round(sat_sm / total_sm, 4),
+            "free_ratio":    round(free_sm / total_sm, 4),
+            "label":         f"seq={sl}\nbs={bs}",
+        })
+    return ssm_type, total_sm, records
+
+
+def save_free_sm_csv(
+    records: list[dict],
+    output_dir: Path,
+    model_name: str,
+    tag: str = "",
+    decode_csv: Path | None = None,
+) -> Path | None:
+    """Save free-SM zone data as CSV for G1-gate input (S1.3).
+
+    Columns: model_name, ssm_type, seq_len, batch_size, total_sm,
+             saturation_sm, free_sm, sat_ratio, free_ratio
+    If decode_csv exists, merges decode_sm_sensitivity into the table.
+
+    Returns path to written CSV, or None if records is empty.
+    """
+    if not records:
+        return None
+
+    import csv as _csv
+
+    fieldnames = [
+        "model_name", "ssm_type", "seq_len", "batch_size",
+        "total_sm", "saturation_sm", "free_sm", "sat_ratio", "free_ratio",
+    ]
+    out_records = [{k: r[k] for k in fieldnames if k in r} for r in records]
+
+    # Optionally merge decode sensitivity (run_decode_sm_sweep.py output)
+    if decode_csv and decode_csv.exists():
+        dec_df = pd.read_csv(decode_csv)
+        if "decode_sm_sensitivity" in dec_df.columns:
+            # One sensitivity value per (batch_size, layer_type) — pick SSM decode
+            for lt in ("ssm_decode", "ssm"):
+                ssm_sens = dec_df[dec_df["layer_type"] == lt]
+                if not ssm_sens.empty:
+                    sens_map = (
+                        ssm_sens.groupby("batch_size")["decode_sm_sensitivity"]
+                        .mean()
+                        .to_dict()
+                    )
+                    for r in out_records:
+                        r["decode_sm_sensitivity"] = round(
+                            sens_map.get(r["batch_size"], float("nan")), 4
+                        )
+                    fieldnames.append("decode_sm_sensitivity")
+                    print(f"  Merged decode sensitivity from {decode_csv.name}")
+                    break
+
+    tag_part = f"_{tag}" if tag else ""
+    out_path = output_dir / f"free_sm_zone_{model_name}{tag_part}.csv"
+    with open(out_path, "w", newline="") as f:
+        writer = _csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore", restval="")
+        writer.writeheader()
+        writer.writerows(out_records)
+    print(f"  Free-SM zone CSV: {out_path}  ({len(out_records)} rows)")
+    return out_path
+
+
+def plot_free_sm_zone(
+    df: pd.DataFrame,
+    output_dir: Path,
+    model_name: str,
+) -> None:
+    ssm_type, total_sm, records = _compute_free_sm_records(df, model_name)
+
+    if not records:
         print(f"  No SSM data for {model_name}")
         return
 
-    total_sm = df_ssm["sm_count"].max()
-    records = []
-
-    for (sl, bs), grp in df_ssm.groupby(["seq_len", "batch_size"]):
-        sat_sm = find_saturation_sm(grp)
-        free_sm = total_sm - sat_sm
-        records.append({
-            "seq_len": sl,
-            "batch_size": bs,
-            "saturation_sm": sat_sm,
-            "free_sm": free_sm,
-            "sat_ratio": sat_sm / total_sm,
-            "free_ratio": free_sm / total_sm,
-            "label": f"seq={sl}\nbs={bs}",
-        })
+    # Save CSV for G1-gate (S1.3)
+    save_free_sm_csv(records, output_dir, model_name)
 
     rec_df = pd.DataFrame(records).sort_values(["seq_len", "batch_size"])
 
@@ -255,11 +332,11 @@ def plot_free_sm_zone(
     x = np.arange(len(rec_df))
     width = 0.6
 
-    bars_sat = ax.bar(x, rec_df["saturation_sm"], width,
-                      label=f"SSM saturation SM", color="#2196F3", alpha=0.8)
-    bars_free = ax.bar(x, rec_df["free_sm"], width,
-                       bottom=rec_df["saturation_sm"],
-                       label="Free SM (decode budget)", color="#FF9800", alpha=0.8)
+    ax.bar(x, rec_df["saturation_sm"], width,
+           label="SSM saturation SM  [ssm_chunked, primary]", color="#2196F3", alpha=0.8)
+    ax.bar(x, rec_df["free_sm"], width,
+           bottom=rec_df["saturation_sm"],
+           label="Free SM (decode budget)", color="#FF9800", alpha=0.8)
 
     # Annotate free SM fraction
     for i, row in rec_df.iterrows():
@@ -281,8 +358,9 @@ def plot_free_sm_zone(
     ax.set_ylim(0, total_sm * 1.15)
     ax.set_title(
         f"Free SM Zone — {model_name}  [{LAYER_LABELS.get(ssm_type, ssm_type)}]\n"
-        f"(Free SM = SMs available for decode during SSM prefill)",
-        fontsize=11, fontweight="bold"
+        f"Primary SSM curve: ssm_chunked (Triton, direct measurement)\n"
+        f"Free SM = SMs available for decode during prefill  →  G1-gate input",
+        fontsize=10, fontweight="bold"
     )
     ax.legend(loc="upper right")
     ax.grid(axis="y", alpha=0.3)
@@ -509,7 +587,7 @@ def load_results(results_dir: Path, show_analytical: bool = False) -> pd.DataFra
                 # ncu profiles use the Triton SSD path → tag as ssm_triton
                 ndf["layer_type"] = "ssm_triton" if raw_lt == "ssm" else raw_lt
             if "model_name" not in ndf.columns:
-                for known in ("zamba2", "falcon_h1"):
+                for known in ("zamba2", "falcon_h1", "nemotron_h"):
                     if f"_{known}_" in f.name or f.name.endswith(f"_{known}.csv"):
                         ndf["model_name"] = known
                         break
@@ -561,6 +639,14 @@ def parse_args():
             "paths for cross-validation.  By default only ssm_chunked (primary) is shown."
         ),
     )
+    parser.add_argument(
+        "--decode-dir", type=Path, default=None,
+        help=(
+            "Directory containing decode_sm_{model}_{tag}.csv from "
+            "run_decode_sm_sweep.py.  When provided, decode_sm_sensitivity is "
+            "merged into the free_sm_zone CSV for G1-gate input (S1.3)."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -576,8 +662,32 @@ if __name__ == "__main__":
 
     for model in models:
         print(f"\nPlotting {model} …")
-        # Fig 2: one per model (SSM saturation, independent of batch_size axis)
+
+        # Fig 2: Free SM Zone + save CSV for G1-gate input (S1.3)
+        # The figure uses ssm_chunked as the primary SSM curve (S0.2).
+        # save_free_sm_csv is called inside plot_free_sm_zone.
         plot_free_sm_zone(df, args.output_dir, model)
+
+        # If decode sweep results are available, merge decode sensitivity into
+        # a separate enhanced G1-gate CSV (free_sm_zone_{model}_g1.csv).
+        if args.decode_dir is not None:
+            # Detect device tag from data (use most common sm_count)
+            tag = ""
+            decode_csv = None
+            if "device_tag" in df.columns:
+                tag = df["device_tag"].mode().iat[0] if not df["device_tag"].isna().all() else ""
+            for candidate in (args.decode_dir / f"decode_sm_{model}_{tag}.csv",
+                              *sorted(args.decode_dir.glob(f"decode_sm_{model}_*.csv"))):
+                if Path(candidate).exists():
+                    decode_csv = Path(candidate)
+                    break
+            if decode_csv:
+                _, _, records = _compute_free_sm_records(df, model)
+                save_free_sm_csv(records, args.output_dir, model,
+                                 tag="g1", decode_csv=decode_csv)
+            else:
+                print(f"  No decode CSV found in {args.decode_dir} for {model} — "
+                      f"run run_decode_sm_sweep.py first")
 
         for bs in batch_sizes:
             print(f"  batch_size={bs}")

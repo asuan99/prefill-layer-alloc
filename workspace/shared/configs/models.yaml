@@ -24,6 +24,28 @@ zamba2:
   mlp:
     intermediate_size: 14336
 
+nemotron_h:
+  full_name: "Nemotron-H-8B-Base"
+  hf_repo: "nvidia/Nemotron-H-8B-Base"
+  hidden_size: 4096
+  num_layers: 32            # TODO: verify from HF model card
+  # SSM (Mamba-2) layers — values approximate; verify from config.json
+  ssm:
+    n_heads: 128            # TODO: verify; 128 × 32 = 4096 = hidden_size (head_dim=32)
+    head_dim: 32            # TODO: verify
+    d_state: 128            # TODO: verify
+    chunk_size: 256
+    expand: 2
+    n_groups: 1             # TODO: verify
+    ssm_layer_fraction: 0.75  # TODO: verify (~24/32 layers SSM)
+  attention:
+    num_heads: 32           # TODO: verify
+    num_kv_heads: 8         # GQA; TODO: verify
+    head_dim: 128           # 32 × 128 = 4096
+    attn_layer_fraction: 0.25  # TODO: verify (~8/32 layers Attn)
+  mlp:
+    intermediate_size: 16384  # TODO: verify
+
 falcon_h1:
   full_name: "Falcon-H1-7B-Instruct"
   hf_repo: "tiiuae/Falcon-H1-7B-Instruct"
