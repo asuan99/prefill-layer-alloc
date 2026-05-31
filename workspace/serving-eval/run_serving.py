@@ -45,11 +45,9 @@ sys.path.insert(0, _here)
 
 import argparse
 import asyncio
-import csv
 import json
 import signal
 import subprocess
-import threading
 import time
 import urllib.error
 import urllib.request
@@ -315,99 +313,9 @@ def run_load_client(
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# NVML background monitor (device-level aggregate, S0.4 policy)
+# NVML background monitor — delegated to src/nvml_monitor.py (S0.4 policy)
 # ---------------------------------------------------------------------------
-
-class _NVMLMonitor:
-    """Background-thread NVML poller for device-level aggregate metrics.
-
-    Tracks: sm_util_pct, mem_util_pct, memory_used_mb, power_w.
-    NVML is ONLY used for device-level aggregates here — NOT per-layer util.
-    (~6 Hz sampling; sub-ms kernels are invisible at this resolution.)
-    """
-
-    def __init__(self, device_id: int = 0, interval_ms: int = 100):
-        self._device_id   = device_id
-        self._interval_ms = interval_ms
-        self._records: list[dict] = []
-        self._lock        = threading.Lock()
-        self._stop_event  = threading.Event()
-        self._thread: Optional[threading.Thread] = None
-        self._t0_ms: float = 0.0
-
-        try:
-            import pynvml as _nvml
-            _nvml.nvmlInit()
-            self._handle = _nvml.nvmlDeviceGetHandleByIndex(device_id)
-            self._nvml   = _nvml
-            self._ok     = True
-        except Exception as exc:
-            print(f"  NVML unavailable: {exc} — GPU metrics will not be recorded.")
-            self._ok = False
-
-    def start(self) -> None:
-        if not self._ok:
-            return
-        self._t0_ms = time.perf_counter_ns() / 1e6
-        self._stop_event.clear()
-        self._thread = threading.Thread(target=self._poll, daemon=True)
-        self._thread.start()
-
-    def _poll(self) -> None:
-        nvml = self._nvml
-        handle = self._handle
-        while not self._stop_event.is_set():
-            ts = time.perf_counter_ns() / 1e6 - self._t0_ms
-            try:
-                util    = nvml.nvmlDeviceGetUtilizationRates(handle)
-                mem     = nvml.nvmlDeviceGetMemoryInfo(handle)
-                try:
-                    pwr = nvml.nvmlDeviceGetPowerUsage(handle) / 1000.0
-                except nvml.NVMLError:
-                    pwr = float("nan")
-                row = {
-                    "timestamp_ms":  round(ts, 1),
-                    "sm_util_pct":   util.gpu,
-                    "mem_util_pct":  util.memory,
-                    "memory_used_mb": mem.used / (1024 ** 2),
-                    "power_w":       pwr,
-                }
-                with self._lock:
-                    self._records.append(row)
-            except Exception:
-                pass
-            self._stop_event.wait(timeout=self._interval_ms / 1000.0)
-
-    def stop(self) -> list[dict]:
-        self._stop_event.set()
-        if self._thread is not None:
-            self._thread.join(timeout=5.0)
-        with self._lock:
-            return list(self._records)
-
-
-def save_nvml_csv(records: list[dict], path: Path) -> None:
-    if not records:
-        return
-    fieldnames = ["timestamp_ms", "sm_util_pct", "mem_util_pct", "memory_used_mb", "power_w"]
-    with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(records)
-    print(f"  NVML CSV: {path}  ({len(records)} samples, "
-          f"{records[-1]['timestamp_ms'] / 1000:.1f}s)")
-
-
-def _nvml_summary(records: list[dict]) -> dict:
-    if not records:
-        return {}
-    import statistics
-    sm = [r["sm_util_pct"] for r in records]
-    return {
-        "sm_util_mean":   round(statistics.mean(sm), 1),
-        "sm_util_median": round(statistics.median(sm), 1),
-        "sm_util_p95":    round(sorted(sm)[int(len(sm) * 0.95)], 1),
-    }
+from src.nvml_monitor import _NVMLMonitor, save_nvml_csv, _nvml_summary  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -501,7 +409,7 @@ def main() -> None:
 
     # Load trace
     print(f"\n  Trace: {args.trace}  (n={n_req})")
-    from _load_trace import load_sharegpt, load_longbench_subset, make_smoke_trace
+    from src.trace import load_sharegpt, load_longbench_subset, make_smoke_trace
     if not is_full_run or args.trace == "smoke":
         prompts = make_smoke_trace(n_req)
     elif args.trace == "sharegpt":
