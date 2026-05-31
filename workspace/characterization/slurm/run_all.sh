@@ -5,7 +5,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --time=36:00:00
+#SBATCH --time=48:00:00
 #SBATCH --comment=pytorch
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/pipeline_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/pipeline_%j.err
@@ -32,7 +32,7 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="/scratch/$USER/whlee/prefill-layer-alloc"
 cd "$REPO_ROOT"
 
 MODEL=${1:-zamba2}
@@ -98,13 +98,13 @@ run_stage1() {
 
     # 1. wave-model 합성 (전체 SM 직접 측정 → wave scaling 합성)
     step "SSM prefill SM scaling sweep — wave-model analytical  ($model)"
-    run_py stage1_sm_scaling/run_ssm_prefill_sweep.py \
+    run_py workspace/stage1_sm_scaling/run_ssm_prefill_sweep.py \
         --model "$model" --device "$device" --skip-verify
 
     # 2. chunked prefill 직접 측정 (cooperative barrier 우회, Green Context 실측)
     #    prefill_chunk_tokens ∈ {256,512,1024,2048,4096} × sm_counts × seq_lens × batch_sizes
     step "SSM chunked prefill SM sweep — direct measurement  ($model)"
-    run_py stage1_sm_scaling/run_chunked_ssm_sweep.py \
+    run_py workspace/stage1_sm_scaling/run_chunked_ssm_sweep.py \
         --model "$model" --device "$device" \
         --prefill-chunk-tokens 256 512 1024 2048 4096 \
         --sm-counts            14 27 40 54 68 81 94 108 \
@@ -117,7 +117,7 @@ run_stage1() {
     #    SKIP_TORCH_SCAN=1 로 건너뛸 수 있음
     if [[ "${SKIP_TORCH_SCAN:-0}" != "1" ]]; then
         step "SSM prefill SM scaling sweep — torch scan validation  ($model)"
-        run_py stage1_sm_scaling/run_ssm_prefill_sweep.py \
+        run_py workspace/stage1_sm_scaling/run_ssm_prefill_sweep.py \
             --model "$model" --device "$device" \
             --force-pytorch-scan --skip-verify
     else
@@ -126,11 +126,11 @@ run_stage1() {
 
     # 4. Attention / MLP sweep
     step "Attention prefill SM scaling sweep  ($model)"
-    run_py stage1_sm_scaling/run_attn_prefill_sweep.py \
+    run_py workspace/stage1_sm_scaling/run_attn_prefill_sweep.py \
         --model "$model" --device "$device"
 
     step "MLP prefill SM scaling sweep  ($model)"
-    run_py stage1_sm_scaling/run_mlp_prefill_sweep.py \
+    run_py workspace/stage1_sm_scaling/run_mlp_prefill_sweep.py \
         --model "$model" --device "$device"
 
     # 5. Analysis + Plots
@@ -145,20 +145,20 @@ run_stage1() {
         local wave_csv
         wave_csv=$(ls results/stage1/ssm_scaling_${model}_*.csv 2>/dev/null \
                    | grep -v torchscan | sort | tail -1 || true)
-        run_py_optional stage1_sm_scaling/analyze_chunk_size.py \
+        run_py_optional workspace/stage1_sm_scaling/analyze_chunk_size.py \
             --csv "$chunked_csv" \
             ${wave_csv:+--wave-csv "$wave_csv"}
     fi
 
-    run_py_optional stage1_sm_scaling/plot_saturation.py --model "$model"
-    run_py_optional stage1_sm_scaling/plot_srm.py        --model "$model"
-    run_py_optional stage1_sm_scaling/plot_sm_split.py   --model "$model"
+    run_py_optional workspace/stage1_sm_scaling/plot_saturation.py --model "$model"
+    run_py_optional workspace/stage1_sm_scaling/plot_srm.py        --model "$model"
+    run_py_optional workspace/stage1_sm_scaling/plot_sm_split.py   --model "$model"
 
     if [ -n "$chunked_csv" ]; then
-        run_py_optional stage1_sm_scaling/plot_compare_modules.py \
+        run_py_optional workspace/stage1_sm_scaling/plot_compare_modules.py \
             --model "$model" --ssm-chunked-csv "$chunked_csv"
     else
-        run_py_optional stage1_sm_scaling/plot_compare_modules.py --model "$model"
+        run_py_optional workspace/stage1_sm_scaling/plot_compare_modules.py --model "$model"
     fi
 
     echo ""
@@ -173,12 +173,12 @@ run_stage2() {
     _T_STAGE_START=$(date +%s)
 
     step "Layer latency baseline  ($model)"
-    run_py stage2_overhead/measure_layer_latency.py \
+    run_py workspace/stage2_overhead/measure_layer_latency.py \
         --model "$model" --device "$device"
 
     if [ "$skip_ctx" = "0" ]; then
         step "Green Context stream-switch overhead  (hardware, device=$device)"
-        run_py stage2_overhead/measure_ctx_switch_latency.py \
+        run_py workspace/stage2_overhead/measure_ctx_switch_latency.py \
             --device "$device" \
             --n-warmup  50 \
             --n-measure 200
@@ -188,7 +188,7 @@ run_stage2() {
     fi
 
     step "Decision matrix  (stage1 saturation + stage2 overhead)"
-    run_py stage2_overhead/compute_decision_matrix.py \
+    run_py workspace/stage2_overhead/compute_decision_matrix.py \
         --stage1-dir results/stage1 \
         --stage2-dir results/stage2
 
@@ -197,21 +197,51 @@ run_stage2() {
 }
 
 run_stage3() {
+    # Phase 2: 실측 concurrent execution + PROJECTION 분석
+    # (run_concurrent_eval.py 순차 시뮬레이션 → DEPRECATED → coexec_microbench.py 대체)
     local model=$1 device=$2
-    banner "Stage 3 · Concurrent Prefill+Decode Eval  |  model=$model  device=$device"
+    banner "Phase 2 · Co-Exec + Projection  |  model=$model  device=$device"
     _T_STAGE_START=$(date +%s)
 
-    step "Concurrent eval — policies A, B, C  ($model)"
-    run_py stage3_hm_eval/run_concurrent_eval.py \
-        --model "$model" --device "$device" \
-        --policy all
+    # S2.2: 진짜 동시 실행 overlap 측정 (Green Context 두 partition)
+    step "S2.2: Co-execution microbench — real concurrent overlap  ($model)"
+    run_py workspace/stage3_hm_eval/coexec_microbench.py \
+        --model        "$model" \
+        --device       "$device" \
+        --sm-splits    0.3 0.4 0.5 0.6 0.7 \
+        --seq-lens     1024 2048 4096 \
+        --batch-sizes  1 4 \
+        --context-lens 1024 4096 \
+        --n-warmup     5 \
+        --n-measure    20 \
+        --output-dir   results/stage3
 
-    step "Stage 3 plots  ($model)"
-    run_py_optional stage3_hm_eval/plot_results.py \
+    # S2.3: PROJECTION 분석 (측정값과 구분 필수)
+    step "S2.3: Projection analysis — PROJECTION only  ($model)"
+    local free_sm_csv coexec_csv stage2_json
+    free_sm_csv=$(ls results/stage1/free_sm_zone_${model}_*.csv 2>/dev/null \
+                  | sort | tail -1 || true)
+    coexec_csv=$(ls  results/stage3/coexec_${model}_*.csv 2>/dev/null \
+                  | sort | tail -1 || true)
+    stage2_json="results/stage2/decision_matrix.json"
+
+    local proj_args=(--model "$model" --output-dir results/stage3)
+    [ -n "$free_sm_csv" ] && proj_args+=(--free-sm-csv "$free_sm_csv")
+    [ -n "$coexec_csv"  ] && proj_args+=(--coexec-csv  "$coexec_csv")
+    [ -f "$stage2_json" ] && proj_args+=(--stage2-json "$stage2_json")
+    [[ -z "$free_sm_csv" || -z "$coexec_csv" ]] && proj_args+=(--demo)
+
+    run_py_optional workspace/stage3_hm_eval/projection_analysis.py "${proj_args[@]}"
+
+    # SM timeline plot
+    step "Stage 3 timeline plots  ($model)"
+    run_py_optional workspace/stage3_hm_eval/plot_results.py \
         --results-dir results/stage3 --model "$model"
 
     echo ""
-    echo "  Stage 3 done  ($(elapsed))  → results/stage3/"
+    echo "  Phase 2 done  ($(elapsed))  → results/stage3/"
+    echo "  coexec CSV    : $(ls results/stage3/coexec_${model}_*.csv 2>/dev/null | tail -1 || echo N/A)"
+    echo "  projection    : $(ls results/stage3/projection_*_${model}.png 2>/dev/null | head -2 || echo N/A)"
 }
 
 # ── main ─────────────────────────────────────────────────────────────────────
