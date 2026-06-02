@@ -452,16 +452,37 @@ def measure_concurrent(
 # ---------------------------------------------------------------------------
 
 def _cooperative_safe(batch, chunk_tok, n_heads, ssd_chunk, sm_count) -> bool:
+    """Check cooperative-kernel grid.sync() safety.
+
+    mamba_chunk_scan_combined uses grid.sync() only when nchunks_per_call > 1
+    (inter-chunk SSM state propagation). With nchunks=1 each head is independent
+    — no grid.sync() is issued, so n_blocks > sm_count is harmless (GPU schedules
+    extra blocks in subsequent waves without blocking).
+
+    With nchunks > 1 and n_blocks > sm_count, blocks at the grid.sync() barrier
+    prevent later waves from being scheduled → deadlock.
+    """
     nchunks = max(1, chunk_tok // ssd_chunk)
+    if nchunks == 1:
+        # Single-chunk call: no inter-chunk grid.sync() → always safe
+        return True
     return batch * nchunks * n_heads <= sm_count
 
 
 def _choose_chunk_tokens(model_cfg: dict, sm_count: int, batch: int) -> int:
-    """Choose the largest prefill_chunk_tokens that keeps cooperative-safe."""
+    """Choose prefill_chunk_tokens that avoids cooperative deadlock.
+
+    Prefers ssd_chunk (nchunks=1 per call) when n_heads > sm_count,
+    since nchunks=1 never triggers inter-chunk grid.sync().
+    For models where n_heads ≤ sm_count // batch, use larger chunks.
+    """
     ssd_chunk = model_cfg["chunk_size"]
     n_heads   = model_cfg["n_heads"]
-    # max nchunks_per_call = sm_count // (batch * n_heads)
-    max_nchunks = max(1, sm_count // max(1, batch * n_heads))
+    # Max nchunks such that batch * nchunks * n_heads ≤ sm_count
+    max_nchunks = sm_count // max(1, batch * n_heads)
+    if max_nchunks < 1:
+        # n_heads > sm_count even for 1 chunk: use nchunks=1 (safe, no grid.sync)
+        return ssd_chunk
     return max_nchunks * ssd_chunk
 
 
@@ -491,25 +512,16 @@ def run_sweep(
     for seq_len in seq_lens:
         for batch_size in batch_sizes:
             for context_len in context_lens:
-                chunk_tok = _choose_chunk_tokens(model_cfg, total_sm, batch_size)
-                chunk_tok = max(model_cfg["chunk_size"], chunk_tok)
+                # chunk_tok = ssd_chunk (nchunks=1 per kernel call).
+                # nchunks=1 이면 커널 내부 inter-chunk grid.sync() 없으므로
+                # n_blocks > sm_count 여도 deadlock 없이 실행 가능.
+                # (원본 chunked sweep도 cooperative_safe=False로 정상 완료됨)
+                chunk_tok = model_cfg["chunk_size"]
 
                 decode_fn   = _build_decode_fn(model_cfg, batch_size, context_len, device)
                 prefill_fn, prefill_meta = _build_prefill_fn(
                     model_cfg, seq_len, batch_size, chunk_tok, device
                 )
-
-                coop_safe = _cooperative_safe(
-                    batch_size, chunk_tok, model_cfg["n_heads"],
-                    model_cfg["chunk_size"], total_sm
-                )
-                if not coop_safe:
-                    print(
-                        f"  [WARN] seq={seq_len} bs={batch_size} chunk={chunk_tok}: "
-                        f"n_blocks={prefill_meta['n_blocks_per_call']} > sm={total_sm} "
-                        f"— cooperative deadlock risk. Skipping."
-                    )
-                    continue
 
                 print(
                     f"\n  seq={seq_len} bs={batch_size} ctx={context_len} "

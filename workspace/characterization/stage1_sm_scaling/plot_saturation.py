@@ -540,22 +540,31 @@ def load_results(results_dir: Path, show_analytical: bool = False) -> pd.DataFra
     dfs = []
     for f in latency_files:
         df = pd.read_csv(f)
+        # Tag layer_type from filename when not present in CSV
         if "layer_type" not in df.columns:
             for lt in ["ssm", "attn", "mlp"]:
                 if lt in f.stem:
                     df["layer_type"] = lt
                     break
+
         # ssm_chunked CSVs may use "model" instead of "model_name"
         if "model_name" not in df.columns and "model" in df.columns:
             df = df.rename(columns={"model": "model_name"})
+
         # Tag layer_type for chunked-Triton CSVs (primary)
         if f.stem.startswith("ssm_chunked"):
             df["layer_type"] = "ssm_chunked"
         # Distinguish ssm_triton (analytical) vs ssm_torch (pytorch scan)
-        elif "_torchscan" in f.stem:
+        elif "_torchscan" in f.stem and "layer_type" in df.columns:
             df["layer_type"] = df["layer_type"].replace({"ssm": "ssm_torch"})
-        elif f.stem.startswith("ssm_"):
+        elif f.stem.startswith("ssm_") and "layer_type" in df.columns:
             df["layer_type"] = df["layer_type"].replace({"ssm": "ssm_triton"})
+
+        # Guard: skip files that couldn't be tagged (e.g. free_sm_zone_*.csv,
+        # decision CSV outputs that landed in the same directory)
+        if "layer_type" not in df.columns:
+            print(f"  Skipping unrecognised CSV (no layer_type): {f.name}")
+            continue
 
         # Filter analytical/torch paths unless --show-analytical
         if not show_analytical and df["layer_type"].isin(_ANALYTICAL_SSM_TYPES).any():
