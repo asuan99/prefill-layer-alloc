@@ -34,7 +34,24 @@ import json
 import glob
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+
+
+# ---------------------------------------------------------------------------
+# JSON encoder: numpy 스칼라를 Python 기본 타입으로 변환
+# pandas CSV 로드 시 int 컬럼이 numpy int64 로 반환되므로 json.dump 전에
+# 이 encoder 를 반드시 사용한다.
+# ---------------------------------------------------------------------------
+class _NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
 
 from shared.loaders import get_model_config
 
@@ -75,7 +92,7 @@ def load_stage1_saturation(stage1_dir: Path) -> dict:
             tps = grp["normalized_throughput"].values
             total_sm = grp["sm_count"].max()
 
-            sat_sm = total_sm  # default: no saturation
+            sat_sm = int(total_sm)  # default: no saturation; explicit int() prevents numpy int64 leak
             for i in range(1, len(sm_ratios)):
                 delta_sm = sm_ratios[i] - sm_ratios[i - 1]
                 delta_tp = tps[i] - tps[i - 1]
@@ -351,10 +368,11 @@ if __name__ == "__main__":
     output_dir = args.stage2_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # JSON output
+    # JSON output — _NumpyEncoder 로 numpy int64/float64 직렬화 보장
     out_json = output_dir / "decision_matrix.json"
     with open(out_json, "w") as f:
-        json.dump({"dominant_strategy": dominant, "rows": rows}, f, indent=2)
+        json.dump({"dominant_strategy": dominant, "rows": rows}, f,
+                  indent=2, cls=_NumpyEncoder)
     print(f"\nSaved: {out_json}")
 
     # HTML output
