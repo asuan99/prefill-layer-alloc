@@ -54,7 +54,8 @@ echo "   GPU          = $(nvidia-smi --query-gpu=name --format=csv,noheader | he
 echo "   started      = $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================================="
 echo " ※ characterization/.venv 와 분리된 환경"
-echo "   mamba-ssm / triton 은 이 venv 에 설치하지 말 것"
+echo "   mamba-ssm / causal-conv1d 는 vLLM 의존성으로 자동 설치됨 (수동 설치 불필요)"
+echo "   characterization/.venv 의 커스텀 버전(Green Context 패치)과 혼용 금지"
 echo "=================================================================="
 
 # ── [0] uv 설치 확인 및 설치 ─────────────────────────────────────────────────

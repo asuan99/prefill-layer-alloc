@@ -2,8 +2,10 @@
 # serving-eval/setup_env.sh — self-contained venv for vLLM V1 serving evaluation.
 #
 # Intentionally SEPARATE from characterization/.venv:
-#   - characterization/ needs mamba-ssm + triton (custom kernels)
-#   - serving-eval/    needs vLLM + transformers (production inference stack)
+#   - characterization/ : mamba-ssm custom build (Green Context patch, profiling)
+#   - serving-eval/     : vLLM + transformers (production inference stack)
+#     vLLM installs mamba-ssm and causal-conv1d automatically as dependencies;
+#     do NOT manually install them or mix with characterization's custom versions.
 #   Do NOT activate both venvs in the same shell.
 #
 # Usage:

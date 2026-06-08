@@ -34,7 +34,7 @@
 #SBATCH -p amd_a100nv_8
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:0
 #SBATCH --time=00:15:00
 #SBATCH --comment=pytorch
@@ -44,6 +44,7 @@
 set -euo pipefail
 
 module load conda/pytorch_2.9.1_cuda13 2>/dev/null || true
+module load cuda/13.0.1                 2>/dev/null || true
 module load gcc/15.2.0                 2>/dev/null || true
 
 REPO_ROOT="/scratch/$USER/whlee/prefill-layer-alloc"

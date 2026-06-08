@@ -34,9 +34,9 @@
 #SBATCH -p amd_a100nv_8
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --time=03:00:00
+#SBATCH --time=12:00:00
 #SBATCH --comment=pytorch
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/se_all_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/se_all_%j.err
