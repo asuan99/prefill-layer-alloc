@@ -67,8 +67,11 @@ N_REQUESTS=${N_REQUESTS:-200}
 CONCURRENCY=${CONCURRENCY:-8}
 
 # HuggingFace Hub 설정
-# 클러스터 인터넷 차단 시: HF_HUB_OFFLINE=1 + HF_HOME=<공유 캐시>
+# 모델 가중치가 ~/.cache/huggingface/hub/ 에 캐시돼 있으므로 오프라인 모드 사용.
+# 클러스터 compute node 는 인터넷 차단되는 경우가 많아 OFFLINE=1 이 안전.
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+export HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-1}"
+export TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-1}"
 
 echo "=================================================================="
 echo " Phase 1 S1.1: vLLM Serving + NVML Monitoring"

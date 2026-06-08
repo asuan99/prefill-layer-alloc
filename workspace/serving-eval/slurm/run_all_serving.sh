@@ -65,7 +65,14 @@ TRACE=${2:-sharegpt}
 N_REQUESTS=${N_REQUESTS:-200}
 CONCURRENCY=${CONCURRENCY:-8}
 SKIP_S1_2=${SKIP_S1_2:-0}
+
+# HuggingFace — 가중치가 로컬 캐시에 있으므로 오프라인 모드
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+export HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-1}"
+export TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-1}"
+
+# Stage 1 결과 경로 (characterization sweep 결과 위치)
+CHAR_STAGE1="$REPO_ROOT/workspace/characterization/results/stage1"
 
 _T0=$(date +%s)
 _elapsed() { local t=$(( $(date +%s) - _T0 )); printf '%dm%02ds' $(( t/60 )) $(( t%60 )); }
@@ -109,27 +116,28 @@ else
     echo ""
     echo "── [S1.2] $(date '+%H:%M:%S')  motivation figures …"
 
-    # Stage 1 결과 자동 탐색
-    STAGE1_ARGS=""
-    STAGE1_CHUNKED=$(ls results/stage1/chunked/ssm_chunked_${MODEL}_*.csv 2>/dev/null \
+    # Stage 1 결과 자동 탐색 (characterization sweep 결과 디렉토리)
+    STAGE1_CHUNKED=$(ls "$CHAR_STAGE1/chunked/ssm_chunked_${MODEL}_"*.csv 2>/dev/null \
                      | sort | tail -1 || true)
-    STAGE1_ATTN=$(ls results/stage1/attn_scaling_${MODEL}_*.csv 2>/dev/null \
+    STAGE1_ATTN=$(ls "$CHAR_STAGE1/attn_scaling_${MODEL}_"*.csv 2>/dev/null \
                   | sort | tail -1 || true)
 
     if [ -n "$STAGE1_CHUNKED" ] || [ -n "$STAGE1_ATTN" ]; then
-        STAGE1_ARGS="--stage1-dir results/stage1"
-        echo "  Stage 1 데이터 발견 → Fig B/C 실측 데이터 사용"
+        echo "  Stage 1 데이터 발견: $CHAR_STAGE1"
+        echo "  → Fig B (free-SM zone) + Fig C (roofline) 실측 데이터 사용"
+        STAGE1_ARG="--stage1-dir $CHAR_STAGE1"
     else
-        echo "  Stage 1 데이터 없음 → Fig B/C demo 데이터 사용"
-        echo "  (실측 데이터: characterization/slurm/run_stage1.sh 실행 후 재시도)"
+        echo "  Stage 1 데이터 없음 ($CHAR_STAGE1)"
+        echo "  → Fig B/C demo 데이터 사용"
+        echo "  (실측: sbatch workspace/characterization/slurm/run_stage1.sh $MODEL)"
+        STAGE1_ARG=""
     fi
 
     python workspace/serving-eval/plot_motivation.py \
         --hybrid-model "$MODEL" \
         --nvml-dir     results/serving-eval \
-        ${STAGE1_ARGS:+$STAGE1_ARGS} \
+        ${STAGE1_ARG:+$STAGE1_ARG} \
         --output-dir   results/motivation \
-        2>/dev/null \
         || {
             echo "  [warn] plot_motivation.py 실패 → --demo fallback"
             python workspace/serving-eval/plot_motivation.py \
