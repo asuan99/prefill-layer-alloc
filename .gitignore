@@ -66,6 +66,9 @@ wandb/
 *.safetensors
 checkpoints/
 
+# HuggingFace cache (모델 가중치·데이터셋, download_datasets.sh 산출물)
+hf_cache/
+
 # OS / IDE
 .DS_Store
 Thumbs.db
