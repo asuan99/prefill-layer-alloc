@@ -177,7 +177,16 @@ def _build_server_cmd(
 
 
 def _find_free_port() -> int:
-    """Bind to port 0 and let the OS assign an ephemeral free port."""
+    """Return a job-unique port, free of OS-level race conditions.
+
+    On SLURM: derives a deterministic port from SLURM_JOB_ID so every job
+    gets a stable, collision-free port without any bind/release race.
+    Off SLURM (local dev): falls back to OS-assigned ephemeral port.
+    """
+    job_id = int(os.environ.get("SLURM_JOB_ID", 0))
+    if job_id:
+        # Maps job IDs into 10000-59999 (50 000-slot range, enough for any cluster)
+        return 10000 + (job_id % 50000)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("", 0))
         return s.getsockname()[1]
@@ -185,6 +194,8 @@ def _find_free_port() -> int:
 
 def _kill_port(port: int) -> None:
     """Kill any process already listening on the given port (zombie vLLM guard)."""
+    if port == 0:
+        return
     try:
         import psutil
         for conn in psutil.net_connections(kind="inet"):
