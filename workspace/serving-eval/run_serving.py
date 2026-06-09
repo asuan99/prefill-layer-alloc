@@ -113,7 +113,7 @@ def hardware_guard(force_smoke: bool) -> tuple[dict, bool]:
 # this dict is the serving-eval fallback (no dependency on characterization/).
 _HF_REPOS: dict[str, str] = {
     "zamba2":     "Zyphra/Zamba2-7B-Instruct",
-    "nemotron_h": "nvidia/Nemotron-H-8B-Base",
+    "nemotron_h": "nvidia/Nemotron-H-8B-Base-8K",
     "falcon_h1":  "tiiuae/Falcon-H1-7B-Instruct",
 }
 
