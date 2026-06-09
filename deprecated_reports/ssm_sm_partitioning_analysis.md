@@ -1,5 +1,7 @@
 # SSM SM 분할 불가 및 PyTorch Scan 대체 불가 분석 보고서
 
+> [SUPERSEDED 2026-06-09] 이 보고서의 SSM 포화 관련 결론은 scan-only 재측정으로 정정됨. `reports/stage1_corrected_vs_hm_thesis.md` 참조.
+
 **모델**: Zamba2-7B-Instruct  
 **하드웨어**: NVIDIA A100-SXM4-80GB (108 SM, 1000 GB/s HBM)  
 **측정일**: 2026-05-08  

@@ -1,5 +1,7 @@
 # prefill-layer-alloc 프로젝트 진척 보고서
 
+> [SUPERSEDED 2026-06-09] 이 보고서의 SSM 포화 관련 결론은 scan-only 재측정으로 정정됨. `reports/stage1_corrected_vs_hm_thesis.md` 참조.
+
 > 작성일: 2026-05-15  
 > 하드웨어: NVIDIA A100-SXM4-80GB (108 SM, HBM2e ~2,000 GB/s)  
 > 대상 모델: Zamba2-7B-Instruct (81층: 68 pure SSM + 13 hybrid Attn)

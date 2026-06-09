@@ -1,5 +1,7 @@
 # 연구 문제 재정의 보고서: SM 공간 분할에서 시간 분리와 intra-layer 병렬성으로
 
+> [SUPERSEDED 2026-06-09] 이 보고서의 SSM 포화 관련 결론은 scan-only 재측정으로 정정됨. `reports/stage1_corrected_vs_hm_thesis.md` 참조.
+
 > 작성일: 2026-05-25  
 > 하드웨어: NVIDIA A100-SXM4-80GB (108 SM, HBM2e ~2,000 GB/s)  
 > 대상 모델: Zamba2-7B-Instruct, Falcon-H1-7B-Instruct  
