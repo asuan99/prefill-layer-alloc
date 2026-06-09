@@ -106,7 +106,7 @@ def load_longbench_subset(
 
     for task in tasks:
         try:
-            ds = load_dataset("THUDM/LongBench", task, split="test")
+            ds = load_dataset("THUDM/LongBench", task, split="test", trust_remote_code=True)
             for item in ds:
                 ctx = item.get("context", "") or item.get("input", "")
                 qst = item.get("input", "")

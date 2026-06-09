@@ -410,10 +410,13 @@ def main() -> None:
     # Load trace
     print(f"\n  Trace: {args.trace}  (n={n_req})")
     from src.trace import load_sharegpt, load_longbench_subset, make_smoke_trace
+    import os
+    from pathlib import Path as _Path
+    _hf_cache = _Path(os.environ["HF_DATASETS_CACHE"]) if "HF_DATASETS_CACHE" in os.environ else None
     if not is_full_run or args.trace == "smoke":
         prompts = make_smoke_trace(n_req)
     elif args.trace == "sharegpt":
-        prompts = load_sharegpt(n_samples=n_req)
+        prompts = load_sharegpt(n_samples=n_req, cache_dir=_hf_cache)
     else:
         prompts = load_longbench_subset(n_samples=n_req)
     print(f"  Loaded {len(prompts)} prompts  "

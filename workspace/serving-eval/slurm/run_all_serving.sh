@@ -66,10 +66,14 @@ N_REQUESTS=${N_REQUESTS:-200}
 CONCURRENCY=${CONCURRENCY:-8}
 SKIP_S1_2=${SKIP_S1_2:-0}
 
-# HuggingFace — 가중치가 로컬 캐시에 있으므로 오프라인 모드
+# HuggingFace — 모델 가중치는 로컬 캐시 사용, 오프라인 모드
+# 데이터셋은 $REPO_ROOT/hf_cache 에 사전 캐싱된 것을 사용
+# (사전 다운로드: bash workspace/serving-eval/slurm/download_datasets.sh)
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$REPO_ROOT/hf_cache}"
 export HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-1}"
 export TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-1}"
+export HF_DATASETS_OFFLINE="${HF_DATASETS_OFFLINE:-1}"
 
 # Stage 1 결과 경로 (characterization sweep 결과 위치)
 CHAR_STAGE1="$REPO_ROOT/workspace/characterization/results/stage1"
