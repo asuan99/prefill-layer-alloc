@@ -25,8 +25,8 @@ zamba2:
     intermediate_size: 14336
 
 nemotron_h:
-  full_name: "Nemotron-H-8B-Base"
-  hf_repo: "nvidia/Nemotron-H-8B-Base"
+  full_name: "Nemotron-H-8B-Base-8K"
+  hf_repo: "nvidia/Nemotron-H-8B-Base-8K"
   hidden_size: 4096
   num_layers: 32            # TODO: verify from HF model card
   # SSM (Mamba-2) layers — values approximate; verify from config.json

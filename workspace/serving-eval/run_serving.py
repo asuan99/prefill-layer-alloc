@@ -7,7 +7,7 @@ this is pure observation of under-utilization, which motivates SMController.
 
 Supported models (vLLM V1 hybrid support confirmed):
   zamba2     — Zyphra/Zamba2-7B-Instruct  (vLLM ≥ 0.6.3)
-  nemotron_h — nvidia/Nemotron-H-8B-Base  (vLLM ≥ 0.8.x, verify model card)
+  nemotron_h — nvidia/Nemotron-H-8B-Base-8K  (vLLM ≥ 0.8.x, verify model card)
   falcon_h1  — tiiuae/Falcon-H1-7B-Instruct (add after vLLM support confirmed)
 
 Hardware guard (two-tier):
@@ -47,6 +47,7 @@ import argparse
 import asyncio
 import json
 import signal
+import socket
 import subprocess
 import time
 import urllib.error
@@ -173,6 +174,13 @@ def _build_server_cmd(
         cmd.append("--enable-chunked-prefill")
     cmd.extend(extra_args)
     return cmd
+
+
+def _find_free_port() -> int:
+    """Bind to port 0 and let the OS assign an ephemeral free port."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
 
 
 def _kill_port(port: int) -> None:
@@ -401,7 +409,8 @@ def parse_args() -> argparse.Namespace:
                    help="Requests to send (full run).  Smoke always uses 10.")
     p.add_argument("--concurrency", type=int, default=8,
                    help="Concurrent in-flight requests")
-    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--port", type=int, default=0,
+                   help="vLLM server port (0 = auto-assign a free port)")
     p.add_argument("--max-model-len", type=int, default=8192,
                    help="vLLM max sequence length (prefill+decode combined)")
     p.add_argument("--output-dir", type=Path,
@@ -459,6 +468,10 @@ def main() -> None:
     _model_max_len = _MAX_MODEL_LEN.get(args.model)
     max_model_len  = args.max_model_len if args.max_model_len != 8192 else (_model_max_len or args.max_model_len)
 
+    # Port 0 = auto-assign. Shared nodes may have 8000 occupied by other jobs.
+    port = args.port if args.port != 0 else _find_free_port()
+    print(f"  Port:   {port}  {'(auto-assigned)' if args.port == 0 else ''}")
+
     log_path   = args.log_file or (args.output_dir / f"vllm_{args.model}.log")
     server_proc: Optional[subprocess.Popen] = None
 
@@ -471,7 +484,7 @@ def main() -> None:
         if not args.no_server:
             server_proc = launch_server(
                 hf_repo,
-                port=args.port,
+                port=port,
                 gpu_mem_util=gpu_mem_util,
                 max_model_len=max_model_len,
                 enable_chunked_prefill=args.enable_chunked_prefill,
@@ -487,7 +500,7 @@ def main() -> None:
         print(f"\n  Load client: concurrency={args.concurrency}  n_req={len(prompts)}")
         print("  (Server logs show prefill/decode token counts per request.)")
         t0      = time.perf_counter()
-        results = run_load_client(prompts, hf_repo, args.port, args.concurrency)
+        results = run_load_client(prompts, hf_repo, port, args.concurrency)
         wall_s  = time.perf_counter() - t0
 
         # Stop NVML monitoring
