@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "device": "NVIDIA A100 80GB PCIe",
+    "total_sm": 108,
+    "backend": "green_ctx",
+    "presets": [
+      14,
+      27,
+      40,
+      54,
+      68,
+      81,
+      94,
+      108
+    ],
+    "actual_sm_counts": {
+      "14": 14,
+      "27": 28,
+      "40": 40,
+      "54": 54,
+      "68": 68,
+      "81": 82,
+      "94": 94,
+      "108": 108
+    },
+    "n_warmup": 30,
+    "n_measure": 100,
+    "ssm_ratio": 0.7,
+    "attn_ratio": 0.4
+  },
+  "init_overhead": {
+    "mean_us": 13615.893,
+    "median_us": 13849.864,
+    "min_us": 12567.34,
+    "max_us": 14259.325,
+    "n_trials": 5,
+    "note": "one-time startup cost, not per-layer"
+  },
+  "cpu_swap": {
+    "ssm\u2192attn": {
+      "mean_us": 0.44154,
+      "median_us": 0.431,
+      "p99_us": 0.5511000000000001,
+      "min_us": 0.41,
+      "max_us": 0.561
+    },
+    "attn\u2192ssm": {
+      "mean_us": 0.46137,
+      "median_us": 0.461,
+      "p99_us": 0.531,
+      "min_us": 0.431,
+      "max_us": 0.531
+    },
+    "full\u2192ssm": {
+      "mean_us": 0.4531499999999999,
+      "median_us": 0.4455,
+      "p99_us": 0.5925000000000007,
+      "min_us": 0.421,
+      "max_us": 0.741
+    },
+    "ssm\u2192full": {
+      "mean_us": 0.44764999999999994,
+      "median_us": 0.441,
+      "p99_us": 0.5011000000000001,
+      "min_us": 0.421,
+      "max_us": 0.511
+    }
+  },
+  "single_transitions": {
+    "ssm\u2192attn_sync_yes": {
+      "mean_us": 5.6747700000000005,
+      "median_us": 5.5954999999999995,
+      "p99_us": 6.374600000000001,
+      "min_us": 5.17,
+      "max_us": 6.632,
+      "std_us": 0.293599824761528,
+      "include_sync": true,
+      "from_ratio": 0.7,
+      "to_ratio": 0.4
+    },
+    "ssm\u2192attn_sync_no": {
+      "mean_us": 0.8179400000000002,
+      "median_us": 0.812,
+      "p99_us": 0.9723000000000002,
+      "min_us": 0.712,
+      "max_us": 1.002,
+      "std_us": 0.05217639696261136,
+      "include_sync": false,
+      "from_ratio": 0.7,
+      "to_ratio": 0.4
+    },
+    "attn\u2192ssm_sync_yes": {
+      "mean_us": 6.3976099999999985,
+      "median_us": 5.5455000000000005,
+      "p99_us": 9.993570000000293,
+      "min_us": 5.119,
+      "max_us": 66.975,
+      "std_us": 6.123834852271899,
+      "include_sync": true,
+      "from_ratio": 0.4,
+      "to_ratio": 0.7
+    },
+    "attn\u2192ssm_sync_no": {
+      "mean_us": 0.81494,
+      "median_us": 0.821,
+      "p99_us": 0.9721000000000001,
+      "min_us": 0.702,
+      "max_us": 0.982,
+      "std_us": 0.055991217168409546,
+      "include_sync": false,
+      "from_ratio": 0.4,
+      "to_ratio": 0.7
+    },
+    "full\u2192ssm_sync_yes": {
+      "mean_us": 5.699129999999999,
+      "median_us": 5.515499999999999,
+      "p99_us": 6.527920000000034,
+      "min_us": 5.189,
+      "max_us": 13.054,
+      "std_us": 0.7934791825246583,
+      "include_sync": true,
+      "from_ratio": 1.0,
+      "to_ratio": 0.7
+    },
+    "full\u2192ssm_sync_no": {
+      "mean_us": 0.77546,
+      "median_us": 0.7715000000000001,
+      "p99_us": 0.8614100000000002,
+      "min_us": 0.681,
+      "max_us": 0.902,
+      "std_us": 0.03808370255109133,
+      "include_sync": false,
+      "from_ratio": 1.0,
+      "to_ratio": 0.7
+    },
+    "ssm\u2192full_sync_yes": {
+      "mean_us": 5.54693,
+      "median_us": 5.44,
+      "p99_us": 6.404700000000002,
+      "min_us": 5.18,
+      "max_us": 6.672,
+      "std_us": 0.2846082660429946,
+      "include_sync": true,
+      "from_ratio": 0.7,
+      "to_ratio": 1.0
+    },
+    "ssm\u2192full_sync_no": {
+      "mean_us": 0.78062,
+      "median_us": 0.762,
+      "p99_us": 0.98111,
+      "min_us": 0.701,
+      "max_us": 0.992,
+      "std_us": 0.05300825973374339,
+      "include_sync": false,
+      "from_ratio": 0.7,
+      "to_ratio": 1.0
+    }
+  },
+  "n_transitions": {
+    "n1": {
+      "n_layers": 1,
+      "total_mean_us": 824.32462,
+      "total_p99_us": 2452.5259,
+      "per_transition_mean_us": 824.32462,
+      "per_transition_p99_us": 2452.5259,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n4": {
+      "n_layers": 4,
+      "total_mean_us": 313.5827,
+      "total_p99_us": 455.2447499999998,
+      "per_transition_mean_us": 78.395675,
+      "per_transition_p99_us": 113.81118749999995,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n8": {
+      "n_layers": 8,
+      "total_mean_us": 735.0645999999999,
+      "total_p99_us": 2468.3747200000003,
+      "per_transition_mean_us": 91.88307499999999,
+      "per_transition_p99_us": 308.54684000000003,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n16": {
+      "n_layers": 16,
+      "total_mean_us": 486.62631999999996,
+      "total_p99_us": 715.03577,
+      "per_transition_mean_us": 30.414144999999998,
+      "per_transition_p99_us": 44.689735625,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n32": {
+      "n_layers": 32,
+      "total_mean_us": 1295.8945999999999,
+      "total_p99_us": 2752.09311,
+      "per_transition_mean_us": 40.496706249999995,
+      "per_transition_p99_us": 86.0029096875,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n44": {
+      "n_layers": 44,
+      "total_mean_us": 1509.3946200000003,
+      "total_p99_us": 2688.1603199999995,
+      "per_transition_mean_us": 34.30442318181819,
+      "per_transition_p99_us": 61.09455272727271,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n68": {
+      "n_layers": 68,
+      "total_mean_us": 1915.4779199999996,
+      "total_p99_us": 3086.57334,
+      "per_transition_mean_us": 28.168792941176463,
+      "per_transition_p99_us": 45.390784411764706,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n81": {
+      "n_layers": 81,
+      "total_mean_us": 2156.2023199999994,
+      "total_p99_us": 2911.8036799999995,
+      "per_transition_mean_us": 26.619781728395054,
+      "per_transition_p99_us": 35.94819358024691,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    }
+  }
+}

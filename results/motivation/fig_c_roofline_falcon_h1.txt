@@ -1,0 +1,5 @@
+Fig C: Throughput vs roofline for falcon_h1 layer types.
+Roofline bounds: analytical peak specification (compute = 312 TFLOP/s FP16, memory = 2039.04 GB/s).  NOT measured hardware counters.
+Arithmetic intensity: analytical FLOPs / bytes estimate (SSM: projection + scan; Attn: Q×K + softmax×V).
+Throughput: CUDA-event latency from Stage 1 isolated-kernel sweep (Green Context, full SM, no counter access required).
+SSM points cluster in the memory-bound region (low AI); Attn points move rightward (higher AI) at long seq_len, approaching the compute roof — evidence that SSM and Attn have fundamentally different resource profiles and free different SM budgets.

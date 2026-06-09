@@ -27,7 +27,6 @@ pip-wheel-metadata/
 .pytest_cache/
 
 # Results & data
-results/
 *.csv
 *.json
 *.pkl
@@ -82,3 +81,7 @@ Thumbs.db
 *.bak
 scratch/
 tmp/
+
+# Re-include experimental results
+!results/
+!results/**

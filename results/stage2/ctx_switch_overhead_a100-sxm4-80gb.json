@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "device": "NVIDIA A100-SXM4-80GB",
+    "total_sm": 108,
+    "backend": "green_ctx",
+    "presets": [
+      14,
+      27,
+      40,
+      54,
+      68,
+      81,
+      94,
+      108
+    ],
+    "actual_sm_counts": {
+      "14": 14,
+      "27": 28,
+      "40": 40,
+      "54": 54,
+      "68": 68,
+      "81": 82,
+      "94": 94,
+      "108": 108
+    },
+    "n_warmup": 50,
+    "n_measure": 200,
+    "ssm_ratio": 0.7,
+    "attn_ratio": 0.4
+  },
+  "init_overhead": {
+    "mean_us": 14289.0149,
+    "median_us": 14275.3875,
+    "min_us": 13644.934,
+    "max_us": 15477.96,
+    "n_trials": 10,
+    "note": "one-time startup cost, not per-layer"
+  },
+  "cpu_swap": {
+    "ssm\u2192attn": {
+      "mean_us": 0.45414499999999997,
+      "median_us": 0.431,
+      "p99_us": 0.552099999999999,
+      "min_us": 0.41,
+      "max_us": 3.346
+    },
+    "attn\u2192ssm": {
+      "mean_us": 0.455605,
+      "median_us": 0.451,
+      "p99_us": 0.5011999999999999,
+      "min_us": 0.43,
+      "max_us": 0.571
+    },
+    "full\u2192ssm": {
+      "mean_us": 0.4577549999999999,
+      "median_us": 0.46,
+      "p99_us": 0.5011999999999999,
+      "min_us": 0.43,
+      "max_us": 0.531
+    },
+    "ssm\u2192full": {
+      "mean_us": 0.45788999999999996,
+      "median_us": 0.451,
+      "p99_us": 0.5321999999999989,
+      "min_us": 0.421,
+      "max_us": 0.741
+    }
+  },
+  "single_transitions": {
+    "ssm\u2192attn_sync_yes": {
+      "mean_us": 8.002659999999999,
+      "median_us": 7.805,
+      "p99_us": 13.128799999999996,
+      "min_us": 7.504,
+      "max_us": 25.838,
+      "std_us": 1.3943851313034,
+      "include_sync": true,
+      "from_ratio": 0.7,
+      "to_ratio": 0.4
+    },
+    "ssm\u2192attn_sync_no": {
+      "mean_us": 0.8917750000000001,
+      "median_us": 0.8765000000000001,
+      "p99_us": 1.1320999999999999,
+      "min_us": 0.791,
+      "max_us": 1.153,
+      "std_us": 0.05969869659381183,
+      "include_sync": false,
+      "from_ratio": 0.7,
+      "to_ratio": 0.4
+    },
+    "attn\u2192ssm_sync_yes": {
+      "mean_us": 7.887810000000001,
+      "median_us": 7.845,
+      "p99_us": 8.626599999999998,
+      "min_us": 7.524,
+      "max_us": 8.867,
+      "std_us": 0.20751070791648324,
+      "include_sync": true,
+      "from_ratio": 0.4,
+      "to_ratio": 0.7
+    },
+    "attn\u2192ssm_sync_no": {
+      "mean_us": 0.87543,
+      "median_us": 0.872,
+      "p99_us": 1.0521999999999998,
+      "min_us": 0.791,
+      "max_us": 1.072,
+      "std_us": 0.04502282865391735,
+      "include_sync": false,
+      "from_ratio": 0.4,
+      "to_ratio": 0.7
+    },
+    "full\u2192ssm_sync_yes": {
+      "mean_us": 7.88798,
+      "median_us": 7.754,
+      "p99_us": 12.646499999999998,
+      "min_us": 7.344,
+      "max_us": 13.646,
+      "std_us": 0.7468416228357924,
+      "include_sync": true,
+      "from_ratio": 1.0,
+      "to_ratio": 0.7
+    },
+    "full\u2192ssm_sync_no": {
+      "mean_us": 0.9032800000000001,
+      "median_us": 0.901,
+      "p99_us": 1.1522099999999997,
+      "min_us": 0.802,
+      "max_us": 1.183,
+      "std_us": 0.047195355703713054,
+      "include_sync": false,
+      "from_ratio": 1.0,
+      "to_ratio": 0.7
+    },
+    "ssm\u2192full_sync_yes": {
+      "mean_us": 7.939875000000001,
+      "median_us": 7.814500000000001,
+      "p99_us": 12.775309999999998,
+      "min_us": 7.594,
+      "max_us": 12.984,
+      "std_us": 0.7162826951525493,
+      "include_sync": true,
+      "from_ratio": 0.7,
+      "to_ratio": 1.0
+    },
+    "ssm\u2192full_sync_no": {
+      "mean_us": 0.9040250000000001,
+      "median_us": 0.892,
+      "p99_us": 1.0721,
+      "min_us": 0.801,
+      "max_us": 1.153,
+      "std_us": 0.05422946039746294,
+      "include_sync": false,
+      "from_ratio": 0.7,
+      "to_ratio": 1.0
+    }
+  },
+  "n_transitions": {
+    "n1": {
+      "n_layers": 1,
+      "total_mean_us": 33.9693,
+      "total_p99_us": 39.66354000000001,
+      "per_transition_mean_us": 33.9693,
+      "per_transition_p99_us": 39.66354000000001,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n4": {
+      "n_layers": 4,
+      "total_mean_us": 100.05143,
+      "total_p99_us": 109.09818000000003,
+      "per_transition_mean_us": 25.0128575,
+      "per_transition_p99_us": 27.274545000000007,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n8": {
+      "n_layers": 8,
+      "total_mean_us": 186.47727999999998,
+      "total_p99_us": 198.06834000000003,
+      "per_transition_mean_us": 23.309659999999997,
+      "per_transition_p99_us": 24.758542500000004,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n16": {
+      "n_layers": 16,
+      "total_mean_us": 359.72893000000005,
+      "total_p99_us": 373.40243,
+      "per_transition_mean_us": 22.483058125000003,
+      "per_transition_p99_us": 23.337651875,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n32": {
+      "n_layers": 32,
+      "total_mean_us": 682.2111900000001,
+      "total_p99_us": 698.3894300000001,
+      "per_transition_mean_us": 21.319099687500003,
+      "per_transition_p99_us": 21.824669687500002,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n44": {
+      "n_layers": 44,
+      "total_mean_us": 928.8482300000001,
+      "total_p99_us": 949.21871,
+      "per_transition_mean_us": 21.11018704545455,
+      "per_transition_p99_us": 21.5731525,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n68": {
+      "n_layers": 68,
+      "total_mean_us": 1440.75627,
+      "total_p99_us": 1475.4795600000023,
+      "per_transition_mean_us": 21.187592205882353,
+      "per_transition_p99_us": 21.698228823529444,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    },
+    "n81": {
+      "n_layers": 81,
+      "total_mean_us": 1717.1079200000001,
+      "total_p99_us": 1740.4387800000002,
+      "per_transition_mean_us": 21.198863209876546,
+      "per_transition_p99_us": 21.486898518518522,
+      "ssm_ratio": 0.7,
+      "attn_ratio": 0.4
+    }
+  }
+}

@@ -1,0 +1,80 @@
+(APIServer pid=1047318) INFO 06-09 16:26:05 [utils.py:344] 
+(APIServer pid=1047318) INFO 06-09 16:26:05 [utils.py:344]        █     █     █▄   ▄█
+(APIServer pid=1047318) INFO 06-09 16:26:05 [utils.py:344]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.22.1
+(APIServer pid=1047318) INFO 06-09 16:26:05 [utils.py:344]   █▄█▀ █     █     █     █  model   Zyphra/Zamba2-7B-Instruct
+(APIServer pid=1047318) INFO 06-09 16:26:05 [utils.py:344]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=1047318) INFO 06-09 16:26:05 [utils.py:344] 
+(APIServer pid=1047318) INFO 06-09 16:26:05 [utils.py:278] non-default args: {'model': 'Zyphra/Zamba2-7B-Instruct', 'trust_remote_code': True, 'max_model_len': 8192, 'gpu_memory_utilization': 0.85, 'max_num_seqs': 64}
+(APIServer pid=1047318) INFO 06-09 16:26:05 [arg_utils.py:753] HF_HUB_OFFLINE is True, replace model_id [Zyphra/Zamba2-7B-Instruct] to model_path [/home01/ehmoon/.cache/huggingface/hub/models--Zyphra--Zamba2-7B-Instruct/snapshots/3146688c5286a3d1ac54ac287bc276b6803e193e]
+(APIServer pid=1047318) INFO 06-09 16:26:33 [model.py:617] Resolved architecture: Zamba2ForCausalLM
+(APIServer pid=1047318) INFO 06-09 16:26:33 [model.py:2087] Downcasting torch.float32 to torch.bfloat16.
+(APIServer pid=1047318) Traceback (most recent call last):
+(APIServer pid=1047318)   File "<frozen runpy>", line 198, in _run_module_as_main
+(APIServer pid=1047318)   File "<frozen runpy>", line 88, in _run_code
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 718, in <module>
+(APIServer pid=1047318)     uvloop.run(run_server(args))
+(APIServer pid=1047318)     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=1047318)     return __asyncio.run(
+(APIServer pid=1047318)            ~~~~~~~~~~~~~^
+(APIServer pid=1047318)         wrapper(),
+(APIServer pid=1047318)         ^^^^^^^^^^
+(APIServer pid=1047318)     ...<2 lines>...
+(APIServer pid=1047318)         **run_kwargs
+(APIServer pid=1047318)         ^^^^^^^^^^^^
+(APIServer pid=1047318)     )
+(APIServer pid=1047318)     ^
+(APIServer pid=1047318)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/asyncio/runners.py", line 204, in run
+(APIServer pid=1047318)     return runner.run(main)
+(APIServer pid=1047318)            ~~~~~~~~~~^^^^^^
+(APIServer pid=1047318)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/asyncio/runners.py", line 127, in run
+(APIServer pid=1047318)     return self._loop.run_until_complete(task)
+(APIServer pid=1047318)            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=1047318)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=1047318)     return await main
+(APIServer pid=1047318)            ^^^^^^^^^^
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 678, in run_server
+(APIServer pid=1047318)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 692, in run_server_worker
+(APIServer pid=1047318)     async with build_async_engine_client(
+(APIServer pid=1047318)                ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=1047318)         args,
+(APIServer pid=1047318)         ^^^^^
+(APIServer pid=1047318)         client_config=client_config,
+(APIServer pid=1047318)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1047318)     ) as engine_client:
+(APIServer pid=1047318)     ^
+(APIServer pid=1047318)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=1047318)     return await anext(self.gen)
+(APIServer pid=1047318)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 100, in build_async_engine_client
+(APIServer pid=1047318)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=1047318)                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=1047318)         engine_args,
+(APIServer pid=1047318)         ^^^^^^^^^^^^
+(APIServer pid=1047318)         usage_context=usage_context,
+(APIServer pid=1047318)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1047318)         client_config=client_config,
+(APIServer pid=1047318)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1047318)     ) as engine:
+(APIServer pid=1047318)     ^
+(APIServer pid=1047318)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=1047318)     return await anext(self.gen)
+(APIServer pid=1047318)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 124, in build_async_engine_client_from_engine_args
+(APIServer pid=1047318)     vllm_config = engine_args.create_engine_config(usage_context=usage_context)
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 1730, in create_engine_config
+(APIServer pid=1047318)     model_config = self.create_model_config()
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 1560, in create_model_config
+(APIServer pid=1047318)     return ModelConfig(
+(APIServer pid=1047318)         model=self.model,
+(APIServer pid=1047318)     ...<59 lines>...
+(APIServer pid=1047318)         renderer_num_workers=self.renderer_num_workers,
+(APIServer pid=1047318)     )
+(APIServer pid=1047318)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/pydantic/_internal/_dataclasses.py", line 121, in __init__
+(APIServer pid=1047318)     s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+(APIServer pid=1047318)     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1047318) pydantic_core._pydantic_core.ValidationError: 1 validation error for ModelConfig
+(APIServer pid=1047318)   Value error, User-specified max_model_len (8192) is greater than the derived max_model_len (max_position_embeddings=4096.0 or model_max_length=None in model's config.json). To allow overriding this maximum, set the env var VLLM_ALLOW_LONG_MAX_MODEL_LEN=1. VLLM_ALLOW_LONG_MAX_MODEL_LEN must be used with extreme caution. If the model uses relative position encoding (RoPE), positions exceeding derived_max_model_len lead to nan. If the model uses absolute position encoding, positions exceeding derived_max_model_len will cause a CUDA array out-of-bounds error. [type=value_error, input_value=ArgsKwargs((), {'model': ...nderer_num_workers': 1}), input_type=ArgsKwargs]
+(APIServer pid=1047318)     For further information visit https://errors.pydantic.dev/2.13/v/value_error

@@ -1,0 +1,45 @@
+========================================================================
+PROJECTION REPORT — zamba2
+(All values in this report are PROJECTIONS, not measurements.)
+========================================================================
+
+ASSUMPTIONS
+----------------------------------------
+1. A1: Prefill SM speedup is linear in free_sm_fraction (upper bound).
+    speedup_raw = 1 / (1 - free_sm_fraction). Real behaviour saturates
+    after SM count exceeds compute saturation; this projection is an upper bound.
+
+2. A2: Free SMs are fully reallocated to decode with zero fragmentation.
+    In reality, GPC-granular allocation rounds SM counts upward;
+    partial SMs are wasted.
+
+3. A3: Measured overlap_ratio (from coexec_microbench, single isolated kernel pair)
+    is representative of the full serving workload mixture.
+    Real workloads have variable seq_len and batch; overlap may differ.
+
+4. A4: ctx_switch_overhead is the only latency penalty per layer boundary.
+    Other serialization costs (e.g. stream synchronization, TLB flush) ignored.
+
+5. A5: SSM layer fraction is fixed (from model config). In practice,
+    layer mix during chunked prefill may vary with batch composition.
+
+STAGE 2 OVERHEAD INPUT
+----------------------------------------
+  ctx_switch_overhead_us:     12.5
+  prefill_layer_latency_ms:   2.5
+
+PROJECTION SUMMARY (green_ctx, all seq_lens)
+----------------------------------------
+  Configs where net_gain > 0 (worthwhile): 100%
+  Best PROJECTION: seq=256 sm_split=0.5 type=ssm net_gain=6.268
+
+IMPORTANT
+----------------------------------------
+  These projections assume ideal conditions (A1–A5 above).
+  Actual end-to-end gains will differ due to:
+    - Non-linear SM scaling past saturation
+    - GPC-granular SM allocation overhead
+    - Variable workload composition
+    - Thermal throttling under sustained load
+  Treat as ORDER-OF-MAGNITUDE estimates only.
+========================================================================

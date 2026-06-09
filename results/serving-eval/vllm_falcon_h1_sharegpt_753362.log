@@ -1,0 +1,123 @@
+(APIServer pid=855591) INFO 06-09 18:26:49 [utils.py:344] 
+(APIServer pid=855591) INFO 06-09 18:26:49 [utils.py:344]        █     █     █▄   ▄█
+(APIServer pid=855591) INFO 06-09 18:26:49 [utils.py:344]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.22.1
+(APIServer pid=855591) INFO 06-09 18:26:49 [utils.py:344]   █▄█▀ █     █     █     █  model   tiiuae/Falcon-H1-7B-Instruct
+(APIServer pid=855591) INFO 06-09 18:26:49 [utils.py:344]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=855591) INFO 06-09 18:26:49 [utils.py:344] 
+(APIServer pid=855591) INFO 06-09 18:26:49 [utils.py:278] non-default args: {'model': 'tiiuae/Falcon-H1-7B-Instruct', 'trust_remote_code': True, 'max_model_len': 8192, 'gpu_memory_utilization': 0.85, 'max_num_seqs': 64}
+(APIServer pid=855591) INFO 06-09 18:26:49 [arg_utils.py:753] HF_HUB_OFFLINE is True, replace model_id [tiiuae/Falcon-H1-7B-Instruct] to model_path [/home01/ehmoon/.cache/huggingface/hub/models--tiiuae--Falcon-H1-7B-Instruct/snapshots/41e72f27effbab80cd45b6e884688452253a3686]
+(APIServer pid=855591) INFO 06-09 18:27:11 [model.py:617] Resolved architecture: FalconH1ForCausalLM
+(APIServer pid=855591) INFO 06-09 18:27:11 [model.py:1752] Using max model len 8192
+(APIServer pid=855591) INFO 06-09 18:27:11 [vllm.py:977] Asynchronous scheduling is enabled.
+(APIServer pid=855591) INFO 06-09 18:27:11 [kernel.py:270] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(APIServer pid=855591) Traceback (most recent call last):
+(APIServer pid=855591)   File "<frozen runpy>", line 198, in _run_module_as_main
+(APIServer pid=855591)   File "<frozen runpy>", line 88, in _run_code
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 718, in <module>
+(APIServer pid=855591)     uvloop.run(run_server(args))
+(APIServer pid=855591)     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=855591)     return __asyncio.run(
+(APIServer pid=855591)            ~~~~~~~~~~~~~^
+(APIServer pid=855591)         wrapper(),
+(APIServer pid=855591)         ^^^^^^^^^^
+(APIServer pid=855591)     ...<2 lines>...
+(APIServer pid=855591)         **run_kwargs
+(APIServer pid=855591)         ^^^^^^^^^^^^
+(APIServer pid=855591)     )
+(APIServer pid=855591)     ^
+(APIServer pid=855591)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/asyncio/runners.py", line 204, in run
+(APIServer pid=855591)     return runner.run(main)
+(APIServer pid=855591)            ~~~~~~~~~~^^^^^^
+(APIServer pid=855591)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/asyncio/runners.py", line 127, in run
+(APIServer pid=855591)     return self._loop.run_until_complete(task)
+(APIServer pid=855591)            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=855591)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=855591)     return await main
+(APIServer pid=855591)            ^^^^^^^^^^
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 678, in run_server
+(APIServer pid=855591)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 692, in run_server_worker
+(APIServer pid=855591)     async with build_async_engine_client(
+(APIServer pid=855591)                ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=855591)         args,
+(APIServer pid=855591)         ^^^^^
+(APIServer pid=855591)         client_config=client_config,
+(APIServer pid=855591)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)     ) as engine_client:
+(APIServer pid=855591)     ^
+(APIServer pid=855591)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=855591)     return await anext(self.gen)
+(APIServer pid=855591)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 100, in build_async_engine_client
+(APIServer pid=855591)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=855591)                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=855591)         engine_args,
+(APIServer pid=855591)         ^^^^^^^^^^^^
+(APIServer pid=855591)         usage_context=usage_context,
+(APIServer pid=855591)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)         client_config=client_config,
+(APIServer pid=855591)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)     ) as engine:
+(APIServer pid=855591)     ^
+(APIServer pid=855591)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=855591)     return await anext(self.gen)
+(APIServer pid=855591)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 136, in build_async_engine_client_from_engine_args
+(APIServer pid=855591)     async_llm = AsyncLLM.from_vllm_config(
+(APIServer pid=855591)         vllm_config=vllm_config,
+(APIServer pid=855591)     ...<6 lines>...
+(APIServer pid=855591)         client_index=client_index,
+(APIServer pid=855591)     )
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/v1/engine/async_llm.py", line 217, in from_vllm_config
+(APIServer pid=855591)     return cls(
+(APIServer pid=855591)         vllm_config=vllm_config,
+(APIServer pid=855591)     ...<9 lines>...
+(APIServer pid=855591)         client_index=client_index,
+(APIServer pid=855591)     )
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/v1/engine/async_llm.py", line 132, in __init__
+(APIServer pid=855591)     self.renderer = renderer = renderer_from_config(self.vllm_config)
+(APIServer pid=855591)                                ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/renderers/registry.py", line 84, in renderer_from_config
+(APIServer pid=855591)     tokenizer = cached_tokenizer_from_config(model_config, **kwargs)
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/tokenizers/registry.py", line 268, in cached_tokenizer_from_config
+(APIServer pid=855591)     return cached_get_tokenizer(
+(APIServer pid=855591)         model_config.tokenizer,
+(APIServer pid=855591)     ...<4 lines>...
+(APIServer pid=855591)         **kwargs,
+(APIServer pid=855591)     )
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/tokenizers/registry.py", line 251, in get_tokenizer
+(APIServer pid=855591)     tokenizer = tokenizer_cls_.from_pretrained(tokenizer_name, *args, **kwargs)
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/tokenizers/hf.py", line 200, in from_pretrained
+(APIServer pid=855591)     raise e
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/tokenizers/hf.py", line 172, in from_pretrained
+(APIServer pid=855591)     tokenizer = AutoTokenizer.from_pretrained(
+(APIServer pid=855591)         path_or_repo_id,
+(APIServer pid=855591)     ...<4 lines>...
+(APIServer pid=855591)         **kwargs,
+(APIServer pid=855591)     )
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/transformers/models/auto/tokenization_auto.py", line 839, in from_pretrained
+(APIServer pid=855591)     return tokenizer_class.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+(APIServer pid=855591)            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/transformers/tokenization_utils_base.py", line 1744, in from_pretrained
+(APIServer pid=855591)     return cls._from_pretrained(
+(APIServer pid=855591)            ~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=855591)         resolved_vocab_files,
+(APIServer pid=855591)         ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=855591)     ...<9 lines>...
+(APIServer pid=855591)         **kwargs,
+(APIServer pid=855591)         ^^^^^^^^^
+(APIServer pid=855591)     )
+(APIServer pid=855591)     ^
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/transformers/tokenization_utils_base.py", line 1934, in _from_pretrained
+(APIServer pid=855591)     tokenizer = cls(*init_inputs, **init_kwargs)
+(APIServer pid=855591)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/transformers/tokenization_utils_tokenizers.py", line 376, in __init__
+(APIServer pid=855591)     raise ValueError(
+(APIServer pid=855591)     ...<5 lines>...
+(APIServer pid=855591)     )
+(APIServer pid=855591) ValueError: Couldn't instantiate the backend tokenizer from one of: 
+(APIServer pid=855591) (1) a `tokenizers` library serialization file, 
+(APIServer pid=855591) (2) a slow tokenizer instance to convert or 
+(APIServer pid=855591) (3) an equivalent slow tokenizer class to instantiate and convert. 
+(APIServer pid=855591) You need to have sentencepiece or tiktoken installed to convert a slow tokenizer to a fast one.

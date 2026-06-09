@@ -1,0 +1,5 @@
+Fig B: Free-SM zone fraction vs prefill seq_len for nemotron_h.
+free_sm_fraction = (total_SM − saturation_SM) / total_SM.
+Saturation is defined as the SM count at which throughput improvement drops below 3% per 10% SM increase.
+Measurement: CUDA event timing from Stage 1 isolated-kernel sweep (Green Context SM restriction, no hardware counters).
+Evidence for layer-type heterogeneity (Problem 5): SSM layers are memory-bandwidth bound and saturate at low SM count (large free zone), while Attention layers become compute-bound at long seq_len (small free zone). The free-zone gap between layer types justifies SMController.

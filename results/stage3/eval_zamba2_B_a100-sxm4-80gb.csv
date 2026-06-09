@@ -1,0 +1,2 @@
+model,policy,seq_len,batch_size,n_prefill,n_decode_steps,ttft_mean_ms,ttft_p99_ms,tpot_p50_ms,tpot_p99_ms,prefill_throughput_toks_per_sec,slo_violations,slo_violation_rate
+zamba2,B,1024,8,50,4050,67339.69,130388.91,0.33,0.9,15.2,0,0.0

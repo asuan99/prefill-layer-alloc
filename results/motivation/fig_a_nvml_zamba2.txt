@@ -1,0 +1,4 @@
+Fig A: Device-level GPU utilisation during vLLM serving (Sharegpt trace, concurrent requests).
+Measurement: NVML nvmlDeviceGetUtilizationRates, device-level aggregate (~10 Hz).  NOT per-layer SM utilisation.  Suitable for serving-level under-utilization evidence; per-layer claims require hardware counters.
+Lines: zamba2 (hybrid SSM+Attn) vs llama3_8b (pure-Transformer).
+Evidence: hybrid model achieves lower average GPU-util for the same workload, motivating SMController for layer-type heterogeneity exploitation.

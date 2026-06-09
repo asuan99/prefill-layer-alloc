@@ -1,0 +1,66 @@
+(APIServer pid=1304027) INFO 06-09 20:19:47 [utils.py:344] 
+(APIServer pid=1304027) INFO 06-09 20:19:47 [utils.py:344]        █     █     █▄   ▄█
+(APIServer pid=1304027) INFO 06-09 20:19:47 [utils.py:344]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.22.1
+(APIServer pid=1304027) INFO 06-09 20:19:47 [utils.py:344]   █▄█▀ █     █     █     █  model   nvidia/Nemotron-H-8B-Base
+(APIServer pid=1304027) INFO 06-09 20:19:47 [utils.py:344]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=1304027) INFO 06-09 20:19:47 [utils.py:344] 
+(APIServer pid=1304027) INFO 06-09 20:19:47 [utils.py:278] non-default args: {'model': 'nvidia/Nemotron-H-8B-Base', 'trust_remote_code': True, 'max_model_len': 8192, 'gpu_memory_utilization': 0.9, 'max_num_seqs': 64}
+(APIServer pid=1304027) Traceback (most recent call last):
+(APIServer pid=1304027)   File "<frozen runpy>", line 198, in _run_module_as_main
+(APIServer pid=1304027)   File "<frozen runpy>", line 88, in _run_code
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 718, in <module>
+(APIServer pid=1304027)     uvloop.run(run_server(args))
+(APIServer pid=1304027)     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=1304027)     return __asyncio.run(
+(APIServer pid=1304027)            ~~~~~~~~~~~~~^
+(APIServer pid=1304027)         wrapper(),
+(APIServer pid=1304027)         ^^^^^^^^^^
+(APIServer pid=1304027)     ...<2 lines>...
+(APIServer pid=1304027)         **run_kwargs
+(APIServer pid=1304027)         ^^^^^^^^^^^^
+(APIServer pid=1304027)     )
+(APIServer pid=1304027)     ^
+(APIServer pid=1304027)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/asyncio/runners.py", line 204, in run
+(APIServer pid=1304027)     return runner.run(main)
+(APIServer pid=1304027)            ~~~~~~~~~~^^^^^^
+(APIServer pid=1304027)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/asyncio/runners.py", line 127, in run
+(APIServer pid=1304027)     return self._loop.run_until_complete(task)
+(APIServer pid=1304027)            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+(APIServer pid=1304027)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=1304027)     return await main
+(APIServer pid=1304027)            ^^^^^^^^^^
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 678, in run_server
+(APIServer pid=1304027)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 692, in run_server_worker
+(APIServer pid=1304027)     async with build_async_engine_client(
+(APIServer pid=1304027)                ~~~~~~~~~~~~~~~~~~~~~~~~~^
+(APIServer pid=1304027)         args,
+(APIServer pid=1304027)         ^^^^^
+(APIServer pid=1304027)         client_config=client_config,
+(APIServer pid=1304027)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1304027)     ) as engine_client:
+(APIServer pid=1304027)     ^
+(APIServer pid=1304027)   File "/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/contextlib.py", line 214, in __aenter__
+(APIServer pid=1304027)     return await anext(self.gen)
+(APIServer pid=1304027)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/entrypoints/openai/api_server.py", line 95, in build_async_engine_client
+(APIServer pid=1304027)     engine_args = AsyncEngineArgs.from_cli_args(args)
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 1541, in from_cli_args
+(APIServer pid=1304027)     engine_args = cls(
+(APIServer pid=1304027)         **{attr: getattr(args, attr) for attr in attrs if hasattr(args, attr)}
+(APIServer pid=1304027)     )
+(APIServer pid=1304027)   File "<string>", line 213, in __init__
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/engine/arg_utils.py", line 751, in __post_init__
+(APIServer pid=1304027)     self.model = get_model_path(self.model, self.revision)
+(APIServer pid=1304027)                  ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/vllm/transformers_utils/repo_utils.py", line 220, in get_model_path
+(APIServer pid=1304027)     return snapshot_download(repo_id=model, **common_kwargs)
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_fn
+(APIServer pid=1304027)     return fn(*args, **kwargs)
+(APIServer pid=1304027)   File "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/serving-eval/.venv/lib/python3.14/site-packages/huggingface_hub/_snapshot_download.py", line 311, in snapshot_download
+(APIServer pid=1304027)     raise LocalEntryNotFoundError(
+(APIServer pid=1304027)     ...<3 lines>...
+(APIServer pid=1304027)     )
+(APIServer pid=1304027) huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local disk and outgoing traffic has been disabled. To enable repo look-ups and downloads online, pass 'local_files_only=False' as input.
