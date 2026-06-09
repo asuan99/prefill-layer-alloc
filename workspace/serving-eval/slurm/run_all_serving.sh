@@ -66,10 +66,10 @@ N_REQUESTS=${N_REQUESTS:-200}
 CONCURRENCY=${CONCURRENCY:-8}
 SKIP_S1_2=${SKIP_S1_2:-0}
 
-# HuggingFace — 모델 가중치는 로컬 캐시 사용, 오프라인 모드
-# 데이터셋은 $REPO_ROOT/hf_cache 에 사전 캐싱된 것을 사용
+# HuggingFace — 모델·데이터셋 모두 워킹 디렉터리 캐시 사용, 오프라인 모드
 # (사전 다운로드: bash workspace/serving-eval/slurm/download_datasets.sh)
-export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+export HF_HOME="${HF_HOME:-$REPO_ROOT/hf_cache}"
+export HF_HUB_CACHE="${HF_HUB_CACHE:-$REPO_ROOT/hf_cache/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$REPO_ROOT/hf_cache}"
 export HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-1}"
 export TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-1}"

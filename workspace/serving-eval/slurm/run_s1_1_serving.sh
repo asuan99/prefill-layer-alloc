@@ -67,9 +67,10 @@ N_REQUESTS=${N_REQUESTS:-200}
 CONCURRENCY=${CONCURRENCY:-8}
 
 # HuggingFace Hub 설정
-# 모델 가중치가 ~/.cache/huggingface/hub/ 에 캐시돼 있으므로 오프라인 모드 사용.
+# 모델 가중치가 $REPO_ROOT/hf_cache/hub/ 에 캐시돼 있으므로 오프라인 모드 사용.
 # 클러스터 compute node 는 인터넷 차단되는 경우가 많아 OFFLINE=1 이 안전.
-export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+export HF_HOME="${HF_HOME:-$REPO_ROOT/hf_cache}"
+export HF_HUB_CACHE="${HF_HUB_CACHE:-$REPO_ROOT/hf_cache/hub}"
 export HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-1}"
 export TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-1}"
 
