@@ -47,12 +47,19 @@ def load_sharegpt(
     except ImportError:
         raise ImportError("pip install datasets  # required for ShareGPT loading")
 
-    ds = load_dataset(
-        _SHAREGPT_HF_DATASET,
-        data_files=_SHAREGPT_HF_FILE,
-        split="train",
-        cache_dir=str(cache_dir) if cache_dir else None,
-    )
+    # Prefer a pre-downloaded raw file to avoid online/offline config-hash
+    # mismatch (datasets resolves data_files to a full Hub URL in online mode,
+    # producing a different fingerprint than the bare filename in offline mode).
+    _raw = (cache_dir / "raw" / _SHAREGPT_HF_FILE) if cache_dir else None
+    if _raw and _raw.exists():
+        ds = load_dataset("json", data_files=str(_raw), split="train")
+    else:
+        ds = load_dataset(
+            _SHAREGPT_HF_DATASET,
+            data_files=_SHAREGPT_HF_FILE,
+            split="train",
+            cache_dir=str(cache_dir) if cache_dir else None,
+        )
 
     rng = random.Random(seed)
     candidates: list[tuple[str, int]] = []
