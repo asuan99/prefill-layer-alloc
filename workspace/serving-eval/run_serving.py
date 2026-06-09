@@ -123,6 +123,14 @@ _GPU_MEM_UTIL: dict[str, float] = {
     "falcon_h1":  0.85,
 }
 
+# Per-model vLLM max_model_len.  None = let vLLM derive from model config.
+# Zamba2-7B-Instruct: max_position_embeddings=4096 in config.json.
+_MAX_MODEL_LEN: dict[str, int | None] = {
+    "zamba2":     4096,
+    "nemotron_h": None,
+    "falcon_h1":  None,
+}
+
 
 def _resolve_hf_repo(model_name: str) -> str:
     try:
@@ -424,6 +432,9 @@ def main() -> None:
 
     hf_repo      = _resolve_hf_repo(args.model)
     gpu_mem_util = _GPU_MEM_UTIL.get(args.model, 0.85)
+    # CLI flag takes precedence; fall back to per-model table, then arg default.
+    _model_max_len = _MAX_MODEL_LEN.get(args.model)
+    max_model_len  = args.max_model_len if args.max_model_len != 8192 else (_model_max_len or args.max_model_len)
 
     log_path   = args.log_file or (args.output_dir / f"vllm_{args.model}.log")
     server_proc: Optional[subprocess.Popen] = None
@@ -439,7 +450,7 @@ def main() -> None:
                 hf_repo,
                 port=args.port,
                 gpu_mem_util=gpu_mem_util,
-                max_model_len=args.max_model_len,
+                max_model_len=max_model_len,
                 enable_chunked_prefill=args.enable_chunked_prefill,
                 log_file=log_path,
             )
