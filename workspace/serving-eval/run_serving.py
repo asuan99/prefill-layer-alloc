@@ -175,6 +175,26 @@ def _build_server_cmd(
     return cmd
 
 
+def _kill_port(port: int) -> None:
+    """Kill any process already listening on the given port (zombie vLLM guard)."""
+    try:
+        import psutil
+        for conn in psutil.net_connections(kind="inet"):
+            if conn.laddr.port == port and conn.status == "LISTEN":
+                try:
+                    proc = psutil.Process(conn.pid)
+                    print(f"  [warn] Port {port} occupied by pid {conn.pid} "
+                          f"({proc.name()!r}) — killing before launch.")
+                    proc.terminate()
+                    proc.wait(timeout=10)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+    except ImportError:
+        # psutil not available: fall back to fuser
+        subprocess.run(["fuser", "-k", f"{port}/tcp"],
+                       check=False, capture_output=True)
+
+
 def launch_server(
     hf_repo: str,
     *,
@@ -183,9 +203,12 @@ def launch_server(
     max_model_len: int = 8192,
     enable_chunked_prefill: bool = False,
     extra_args: Optional[list[str]] = None,
-    startup_timeout: int = 300,
+    startup_timeout: int = 600,
     log_file: Optional[Path] = None,
 ) -> subprocess.Popen:
+    # Kill any zombie vLLM server still holding the port from a prior job.
+    _kill_port(port)
+
     cmd = _build_server_cmd(
         hf_repo, port, gpu_mem_util, max_model_len,
         enable_chunked_prefill, extra_args or [],
