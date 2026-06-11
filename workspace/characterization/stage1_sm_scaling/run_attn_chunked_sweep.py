@@ -79,8 +79,22 @@ def run_sm_level(model, sm_count, seq_lens, batch_sizes, chunk, n_warmup,
         return []
 
 
+def _assert_measurement_device() -> None:
+    """Abort if the live GPU is not the spec's canonical device (no device mixing)."""
+    import torch
+    if not torch.cuda.is_available():
+        raise SystemExit("Device guard: CUDA not available.")
+    live = spec.canonical_device(torch.cuda.get_device_name(0))
+    if live != spec.device_name():
+        raise SystemExit(
+            f"Device guard: live GPU normalises to {live!r} but sweep_spec expects "
+            f"{spec.device_name()!r}. Refusing to write mismatched-device CSVs."
+        )
+
+
 def main():
     args = parse_args()
+    _assert_measurement_device()
 
     sm_grid = spec.sm_grid()
     spec.assert_on_sm_grid(sm_grid)          # fail loudly if grid drifts

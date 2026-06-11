@@ -25,10 +25,27 @@ from pathlib import Path
 
 from shared import sweep_spec as spec
 from src.smctrl.green_ctx_controller import SMController
+from stage1_sm_scaling._mamba_compat import ensure_mamba_importable
 from stage1_sm_scaling.chunked_ssm_runner import (
     run_chunked_ssm_sweep,
     _check_initial_states_support,
 )
+
+
+def _assert_measurement_device() -> None:
+    """Abort if the live GPU is not the spec's canonical device.
+
+    Prevents writing a {spec.device_name()}-tagged CSV on the wrong GPU (e.g. the
+    A100 PCIe box), which would mix devices into the SXM4 result tree.
+    """
+    import torch
+    live = spec.canonical_device(torch.cuda.get_device_name(0))
+    if live != spec.device_name():
+        raise SystemExit(
+            f"Device guard: live GPU normalises to {live!r} but sweep_spec expects "
+            f"{spec.device_name()!r}. Refusing to write mismatched-device CSVs. "
+            f"Run on the SXM4 partition (or edit sweep_spec.device.name to measure here)."
+        )
 
 
 def parse_args():
@@ -47,6 +64,9 @@ def main():
     import torch
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA device required")
+
+    _assert_measurement_device()
+    ensure_mamba_importable()   # tolerate ABI-broken prebuilt selective_scan_cuda
 
     args = parse_args()
     sm_grid = spec.sm_grid()

@@ -312,6 +312,18 @@ two_pass는 deprecated 계열이나 검증 체크리스트가 grep 0건을 요�
 → Phase 2/3의 **코드는 완성**하여 SXM4 + 정상 mamba_ssm 환경에서 그대로 실행 가능. 합성/예측값을
 측정 컬럼에 넣는 것은 금지 원칙이라 **실측 CSV는 생성하지 않음** (해당 GPU에서 실행 필요).
 
+**SLURM 실행 경로 (`slurm/sweep_stage1_v2.sbatch`):**
+- 파티션 `amd_a100nv_8` (A100 NVLink = SXM4-80GB). PCIe 파티션(`amd_a100_4`)으로 잘못 제출해도
+  runner의 **device guard**가 `torch.cuda.get_device_name`을 정규화해 `a100_sxm4_80gb`이 아니면 abort →
+  잘못된 디바이스 데이터가 SXM4 트리에 섞이는 것을 코드 레벨에서 차단 (현 PCIe 박스에서 abort 동작 확인).
+- **mamba_ssm 블로커 해소:** prebuilt `selective_scan_cuda`가 현 torch와 ABI 불일치
+  (`undefined symbol: c10::cuda::c10_cuda_check_implementation`)라 `import mamba_ssm` 자체가 실패.
+  chunked 경로는 Triton 커널(`mamba_chunk_scan_combined`)만 쓰므로 `_mamba_compat.ensure_mamba_importable()`가
+  깨진 compiled ext를 stub 처리해 패키지 임포트를 통과시킴 (Triton 커널은 정상, `initial_states` 지원 확인).
+  sbatch는 `LD_LIBRARY_PATH`에 cuda13 `libcudart.so.13`도 추가(보조).
+- 제출: `sbatch slurm/sweep_stage1_v2.sbatch` (3모델) 또는 `sbatch slurm/sweep_stage1_v2.sbatch zamba2`.
+  산출: `results/stage1_v2/{ssm,attn}_chunked_{model}_a100_sxm4_80gb.csv` + `reports/matched_granularity_{model}.md`.
+
 ### 완료 (GPU 불필요, 본 환경에서 검증됨)
 
 - **Phase 0** 감사 9항목 (본 문서).
