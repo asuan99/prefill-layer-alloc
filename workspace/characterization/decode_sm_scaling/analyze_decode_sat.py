@@ -36,6 +36,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).parent))
+import free_zone_phase as fzp  # free-zone surface + Q1 phase diagram
+
 _here = Path(__file__).parent
 SATURATION_THRESHOLD = 0.03           # < 3% gain per 10% SM → saturated (Stage 1)
 TOTAL_SM = 108
@@ -321,7 +325,14 @@ def fig_decode_bw_split(df: pd.DataFrame, cross: pd.DataFrame, model: str,
 
 
 def write_report(models: list[str], per_model: dict, report_path: Path) -> None:
+    import os
     report_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _img(fig_path: str) -> str:
+        """Markdown image link with path relative to the report's directory."""
+        rel = os.path.relpath(fig_path, report_path.parent)
+        return f"![{Path(fig_path).name}]({rel})"
+
     lines = []
     lines.append("# Decode Saturation & KV/Weight Crossover\n")
     lines.append("모든 수치에 **measured** / **derived** 라벨을 명시한다. "
@@ -333,22 +344,36 @@ def write_report(models: list[str], per_model: dict, report_path: Path) -> None:
     for model in models:
         d = per_model.get(model, {})
         free = FREE_ZONE[model]
-        lines.append(f"\n## {model}  (free zone = {free} SM, Stage 1 정정 측정)\n")
+        lines.append(f"\n## {model}  (free zone = {free} SM @ 단일 operating point — "
+                     f"판정 1b 곡면 참조)\n")
 
         # --- Judgment 1 ---
-        lines.append("### 판정 1 — Q1 (Policy C 생사)\n")
+        lines.append("### 판정 1 — Q1 (Policy C 생사), 단일점 기준\n")
         lines.append(f"대표 serving config: layer scope, bs={REP_BATCH}, "
                      f"L={REP_CONTEXT} (decode_attn) / L=0 (decode_ssm).\n")
+        lines.append(f"> ⚠️ 아래 free_zone={free} 은 **단일 operating point 상수**다. "
+                     f"free zone 은 실제로 (batch, seq_len) 에 따라 0–94 SM 로 변하므로, "
+                     f"Q1 의 결정적 판정은 **판정 1b (phase diagram)** 를 따른다.\n")
         j1 = d.get("judgment1")
         if not j1:
             lines.append("- 미측정 (Task 1 CSV 없음)\n")
         else:
-            lines.append("| cell | sm_sat_decode (derived) | free_zone | 판정 |")
+            lines.append("| cell | sm_sat_decode (derived) | free_zone (단일점) | 판정 (단일점, 참고용) |")
             lines.append("|------|------|------|------|")
             for r in j1:
                 sm = r["sm_sat_decode"] if r["sm_sat_decode"] is not None else "미측정"
                 lines.append(f"| {r['cell']} | {sm} | {r['free_zone']} | {r['verdict']} |")
             lines.append("")
+
+        # --- Judgment 1b: free-zone surface + phase diagram (결정적) ---
+        ps = d.get("phase_section")
+        if ps:
+            lines.extend(ps)
+            for f in d.get("phase_figs", []):
+                lines.append(_img(f))
+            lines.append("")
+        else:
+            lines.append("### 판정 1b — free zone 곡면\n- 미측정 (Stage 1 chunked CSV 없음)\n")
 
         # --- Judgment 2 ---
         lines.append("### 판정 2 — Q3 가정 (a) (decode 행 BW 분리)\n")
@@ -383,11 +408,11 @@ def write_report(models: list[str], per_model: dict, report_path: Path) -> None:
                 lines.append(f"- {s}")
             lines.append("")
 
-        # figures
+        # figures (판정 2 / SM scaling)
         figs = d.get("figs", [])
         for f in figs:
             if f:
-                lines.append(f"![{Path(f).name}]({Path(f).name})")
+                lines.append(_img(f))
         lines.append("")
 
     report_path.write_text("\n".join(lines))
@@ -449,6 +474,22 @@ def analyze_model(model: str, results_dir: Path, stage1_dir: Path,
             sane.append(f"decode_attn kernel sm=108 bs={bs}: latency monotonic in L = {mono} (measured)")
             break
     d["sanity"] = sane
+
+    # free-zone surface + Q1 phase diagram (supersedes hardcoded FREE_ZONE constant)
+    surface = fzp.free_zone_surface(model, stage1_dir)
+    if not surface.empty:
+        measured_demand = fzp.load_measured_demand(model, results_dir)
+        hm = fzp.fig_free_zone_heatmap(surface, model, out_dir)
+        ph = fzp.fig_phase_diagram(surface, model, out_dir, measured_demand)
+        d["phase_section"] = fzp.build_phase_report_section(
+            model, surface, measured_demand)
+        d["phase_figs"] = [str(hm), str(ph)]
+        print(f"  free-zone phase: surface={len(surface)} cells, "
+              f"demand={'measured' if measured_demand is not None else 'parametric'}")
+    else:
+        d["phase_section"] = None
+        d["phase_figs"] = []
+        print(f"  [{model}] Stage 1 chunked CSV 없음 — 판정 1b 곡면 생략")
 
     figs = [
         fig_decode_sat(df, model, sat, out_dir),

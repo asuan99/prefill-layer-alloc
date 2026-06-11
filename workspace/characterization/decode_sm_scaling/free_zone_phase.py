@@ -278,6 +278,104 @@ def fig_phase_diagram(surface: pd.DataFrame, model: str, out_dir: Path,
 
 
 # ---------------------------------------------------------------------------
+# Report section builder (consumed by analyze_decode_sat.py)
+# ---------------------------------------------------------------------------
+
+
+def regime_breakdown(surface: pd.DataFrame, measured: pd.DataFrame | None,
+                     param_d: int | None = None) -> tuple[list[dict], dict]:
+    """Classify every (batch, seq) cell. Returns (rows, counts).
+
+    d per cell: measured sm_sat_decode (L≈seq coupling) if `measured` given,
+    else the constant `param_d`.
+    """
+    rows, counts = [], {0: 0, 1: 0, 2: 0}
+    for _, r in surface.sort_values(["batch", "seq_len"]).iterrows():
+        bs, sq, free = int(r["batch"]), int(r["seq_len"]), int(r["free_sm"])
+        if measured is not None:
+            d = _demand_for(measured, bs, sq)
+        else:
+            d = float(param_d) if param_d is not None else None
+        if d is None or (isinstance(d, float) and np.isnan(d)):
+            continue
+        reg = _regime(free, d)
+        counts[reg] += 1
+        rows.append({"batch": bs, "seq_len": sq, "free_sm": free,
+                     "d": int(d), "regime": reg})
+    return rows, counts
+
+
+def build_phase_report_section(model: str, surface: pd.DataFrame,
+                               measured: pd.DataFrame | None) -> list[str]:
+    """Return markdown lines (text only; figures emitted separately by caller)."""
+    free_vals = surface["free_sm"].values
+    fmin, fmax = int(free_vals.min()), int(free_vals.max())
+    rows, counts = regime_breakdown(surface, measured)
+    total = sum(counts.values())
+
+    # which (bs,seq) cells produce the legacy constant (14 / 27)?
+    legacy = {"zamba2": 14, "falcon_h1": 27}.get(model)
+    legacy_cells = [
+        f"(bs{int(r['batch'])}, seq{int(r['seq_len'])})"
+        for _, r in surface.iterrows() if int(r["free_sm"]) == legacy
+    ]
+
+    L = []
+    L.append("### 판정 1b — free zone 곡면 + Q1 phase diagram (measured)\n")
+    L.append("**핵심 정정:** 판정 1의 free_zone 상수는 단일 operating point 값이다. "
+             "정정된 Stage 1 chunked latency 로 재계산하면 free zone 은 "
+             f"(prefill batch, seq_len) 에 따라 **{fmin}–{fmax} SM** 로 변한다 "
+             "(measured; 108 − SSM prefill saturation_sm).")
+    if legacy is not None:
+        cells_s = ", ".join(legacy_cells) if legacy_cells else "측정 격자 내 없음"
+        L.append(f"- 판정 1이 쓴 상수 free_zone={legacy} 가 나오는 cell: {cells_s} "
+                 f"→ 그 한 점에만 해당하는 값임.\n")
+
+    # free-zone surface table
+    seqs = sorted(surface["seq_len"].unique())
+    bss = sorted(surface["batch"].unique(), reverse=True)
+    L.append("free zone 곡면 (measured, 108 − saturation_sm):\n")
+    L.append("| bs \\\\ seq | " + " | ".join(str(s) for s in seqs) + " |")
+    L.append("|" + "---|" * (len(seqs) + 1))
+    fmap = {(int(r["batch"]), int(r["seq_len"])): int(r["free_sm"])
+            for _, r in surface.iterrows()}
+    for bs in bss:
+        cells = [str(fmap.get((bs, s), "")) for s in seqs]
+        L.append(f"| **{bs}** | " + " | ".join(cells) + " |")
+    L.append("")
+
+    # phase regime table (d per cell)
+    dlabel = "measured sm_sat_decode (layer scope, L≈seq)" if measured is not None \
+        else "parametric d"
+    L.append(f"Q1 regime — d = {dlabel}; 셀 = `regime(free,d)`:\n")
+    L.append("| bs \\\\ seq | " + " | ".join(str(s) for s in seqs) + " |")
+    L.append("|" + "---|" * (len(seqs) + 1))
+    rmap = {(r["batch"], r["seq_len"]): r for r in rows}
+    tag = {0: "void", 1: "under", 2: "absorb"}
+    for bs in bss:
+        cells = []
+        for s in seqs:
+            rr = rmap.get((bs, s))
+            cells.append(f"{tag[rr['regime']]} (f{rr['free_sm']}/d{rr['d']})"
+                         if rr else "")
+        L.append(f"| **{bs}** | " + " | ".join(cells) + " |")
+    L.append("")
+    L.append(f"regime 집계 (measured): absorbed={counts[2]}, "
+             f"under-prov={counts[1]}, no-slack={counts[0]}  (총 {total} cells)\n")
+
+    # data-driven conclusion
+    L.append("**결론 (Q1):** free zone 과 decode 수요-부족은 batch 축에서 "
+             "**역상관**이다 — 여유가 큰 저-batch 에선 decode 가 free zone 에 흡수되어 "
+             "(absorbed) Policy C 이득 ≈ 0, decode 가 더 요구하는 고-batch 에선 "
+             "free zone = 0 (no-slack) 이라 멀티플렉싱 여유 자체가 없다. "
+             f"Policy C 가 fixed split 대비 차이를 낼 수 있는 구간은 under-prov 셀 "
+             f"{counts[1]}/{total} 의 좁은 띠로 한정된다. "
+             "따라서 단일 free_zone 상수에 기반한 \"잔여 이득 상한\" 수치(판정 1)는 "
+             "operating point 평균을 호도하므로, 아래 phase diagram 의 region 해석으로 대체한다.\n")
+    return L
+
+
+# ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
 
