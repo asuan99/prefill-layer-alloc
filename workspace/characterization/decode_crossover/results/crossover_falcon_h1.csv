@@ -1,0 +1,151 @@
+metric,batch,context_len,value,unit,value_kind,note
+layer_crossover_Lstar,1,,21504.0,tokens,derived,"kv_bytes(L,bs)==attn_mixer_weight_bytes"
+layer_crossover_Lstar,4,,5376.0,tokens,derived,"kv_bytes(L,bs)==attn_mixer_weight_bytes"
+layer_crossover_Lstar,8,,2688.0,tokens,derived,"kv_bytes(L,bs)==attn_mixer_weight_bytes"
+layer_crossover_Lstar,16,,1344.0,tokens,derived,"kv_bytes(L,bs)==attn_mixer_weight_bytes"
+layer_crossover_Lstar,32,,672.0,tokens,derived,"kv_bytes(L,bs)==attn_mixer_weight_bytes"
+forward_ratio_R,1,512,0.35717,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,1,1024,0.365476,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,1,2048,0.382089,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,1,4096,0.415314,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,1,8192,0.481764,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,1,16384,0.614664,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,1,32768,0.880465,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,1,65536,1.412067,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,1,131072,2.47527,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,512,0.331998,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,1024,0.360868,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,2048,0.418606,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,4096,0.534084,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,8192,0.765039,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,16384,1.22695,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,32768,2.150771,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,65536,3.998413,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,4,131072,7.693698,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,512,0.307175,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,1024,0.356323,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,2048,0.454619,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,4096,0.651211,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,8192,1.044395,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,16384,1.830762,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,32768,3.403498,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,65536,6.548969,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,8,131072,12.839911,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,512,0.274607,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,1024,0.35036,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,2048,0.501867,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,4096,0.804882,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,8192,1.41091,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,16384,2.622967,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,32768,5.047081,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,65536,9.895308,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,16,131072,19.591763,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,512,0.240193,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,1024,0.34406,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,2048,0.551794,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,4096,0.967262,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,8192,1.798198,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,16384,3.46007,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,32768,6.783815,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,65536,13.431305,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+forward_ratio_R,32,131072,26.726285,ratio_attn_over_ssm_bytes,derived,sum_attn(weight+kv)/sum_ssm(weight+state+conv)
+mixer_only_kv_over_state,1,512,0.165161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,1,1024,0.330323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,1,2048,0.660645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,1,4096,1.32129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,1,8192,2.642581,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,1,16384,5.285161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,1,32768,10.570323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,1,65536,21.140645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,1,131072,42.28129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,512,0.165161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,1024,0.330323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,2048,0.660645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,4096,1.32129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,8192,2.642581,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,16384,5.285161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,32768,10.570323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,65536,21.140645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,4,131072,42.28129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,512,0.165161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,1024,0.330323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,2048,0.660645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,4096,1.32129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,8192,2.642581,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,16384,5.285161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,32768,10.570323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,65536,21.140645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,8,131072,42.28129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,512,0.165161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,1024,0.330323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,2048,0.660645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,4096,1.32129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,8192,2.642581,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,16384,5.285161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,32768,10.570323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,65536,21.140645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,16,131072,42.28129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,512,0.165161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,1024,0.330323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,2048,0.660645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,4096,1.32129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,8192,2.642581,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,16384,5.285161,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,32768,10.570323,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,65536,21.140645,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+mixer_only_kv_over_state,32,131072,42.28129,ratio_kvbytes_over_statebytes,derived,kv_bytes/(state_bytes+conv_state_bytes); weight excluded
+per_layer_ratio_with_weight,1,512,0.35717,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,1,1024,0.365476,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,1,2048,0.382089,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,1,4096,0.415314,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,1,8192,0.481764,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,1,16384,0.614664,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,1,32768,0.880465,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,1,65536,1.412067,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,1,131072,2.47527,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,512,0.331998,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,1024,0.360868,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,2048,0.418606,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,4096,0.534084,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,8192,0.765039,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,16384,1.22695,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,32768,2.150771,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,65536,3.998413,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,4,131072,7.693698,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,512,0.307175,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,1024,0.356323,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,2048,0.454619,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,4096,0.651211,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,8192,1.044395,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,16384,1.830762,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,32768,3.403498,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,65536,6.548969,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,8,131072,12.839911,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,512,0.274607,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,1024,0.35036,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,2048,0.501867,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,4096,0.804882,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,8192,1.41091,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,16384,2.622967,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,32768,5.047081,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,65536,9.895308,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,16,131072,19.591763,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,512,0.240193,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,1024,0.34406,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,2048,0.551794,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,4096,0.967262,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,8192,1.798198,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,16384,3.46007,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,32768,6.783815,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,65536,13.431305,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+per_layer_ratio_with_weight,32,131072,26.726285,ratio_attn_over_ssm_bytes,derived,(attn_w+kv)/(ssm_w+state+conv)
+judgment_Lstar_layer,1,,21504.0,tokens,derived,in_workload(<= 32768)=True
+judgment_minL_R_ge_2,1,,101776.28,tokens,derived,smallest L with R>= 2.0; in_workload=False
+judgment_Lstar_layer,4,,5376.0,tokens,derived,in_workload(<= 32768)=True
+judgment_minL_R_ge_2,4,,30094.07,tokens,derived,smallest L with R>= 2.0; in_workload=True
+judgment_Lstar_layer,8,,2688.0,tokens,derived,in_workload(<= 32768)=True
+judgment_minL_R_ge_2,8,,18147.04,tokens,derived,smallest L with R>= 2.0; in_workload=True
+judgment_Lstar_layer,16,,1344.0,tokens,derived,in_workload(<= 32768)=True
+judgment_minL_R_ge_2,16,,12173.52,tokens,derived,smallest L with R>= 2.0; in_workload=True
+judgment_Lstar_layer,32,,672.0,tokens,derived,in_workload(<= 32768)=True
+judgment_minL_R_ge_2,32,,9186.76,tokens,derived,smallest L with R>= 2.0; in_workload=True

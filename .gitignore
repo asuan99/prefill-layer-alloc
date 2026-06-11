@@ -85,3 +85,4 @@ tmp/
 # Re-include experimental results
 !results/
 !results/**
+!**/results/**
