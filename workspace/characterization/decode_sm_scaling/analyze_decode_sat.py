@@ -38,10 +38,12 @@ import pandas as pd
 
 import sys as _sys
 _sys.path.insert(0, str(Path(__file__).parent))
+_sys.path.insert(0, str(Path(__file__).parent.parent.parent))  # workspace/ — shared.*
 import free_zone_phase as fzp  # free-zone surface + Q1 phase diagram
+from shared.sweep_spec import saturation_point as _spec_saturation_point
 
 _here = Path(__file__).parent
-SATURATION_THRESHOLD = 0.03           # < 3% gain per 10% SM → saturated (Stage 1)
+SATURATION_THRESHOLD = 0.03           # kept for back-compat; threshold now in sweep_spec.yaml
 TOTAL_SM = 108
 
 # Free zone from Stage 1 정정 측정 (SSM prefill free SM, given by task)
@@ -99,25 +101,13 @@ def load_stage1_ssm_ref(model: str, stage1_dir: Path) -> pd.DataFrame | None:
 
 
 def find_saturation_sm(group: pd.DataFrame) -> int | None:
-    """First sm_count where throughput gain < 3% per 10% SM (Stage 1 logic).
+    """First sm_count where throughput gain < 3% per 10% SM.
 
-    group must contain sm_count, sm_ratio, normalized_throughput.  Returns None
-    if fewer than 2 points (cannot judge).
+    Delegates to the single shared implementation (Phase 1). The decode CSV has
+    no ``sm_ratio`` column; saturation_point() derives it from sm_count/total_sm,
+    and reads the ``latency_per_step_ms`` column directly. Returns None for <2 points.
     """
-    group = group.sort_values("sm_ratio")
-    if len(group) < 2:
-        return None
-    sm_ratios = group["sm_ratio"].values
-    tps = group["normalized_throughput"].values
-    for i in range(1, len(sm_ratios)):
-        delta_sm = sm_ratios[i] - sm_ratios[i - 1]
-        delta_tp = tps[i] - tps[i - 1]
-        if delta_sm <= 0:
-            continue
-        gain_per_10pct = (delta_tp / delta_sm) * 0.10
-        if gain_per_10pct < SATURATION_THRESHOLD:
-            return int(group["sm_count"].iloc[i - 1])
-    return int(group["sm_count"].max())
+    return _spec_saturation_point(group)
 
 
 def compute_saturation_table(df: pd.DataFrame) -> pd.DataFrame:

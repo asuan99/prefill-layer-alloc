@@ -54,6 +54,7 @@ class _NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 from shared.loaders import get_model_config
+from shared.sweep_spec import saturation_point as _spec_saturation_point
 
 # Strategy thresholds
 THRESHOLD_LAYER_WISE = 0.05
@@ -87,21 +88,10 @@ def load_stage1_saturation(stage1_dir: Path) -> dict:
             df["normalized_throughput"] = df["throughput"] / max_tp
 
         for (model, sl, bs), grp in df.groupby(["model_name", "seq_len", "batch_size"]):
-            grp = grp.sort_values("sm_ratio")
-            sm_ratios = grp["sm_ratio"].values
-            tps = grp["normalized_throughput"].values
             total_sm = grp["sm_count"].max()
-
-            sat_sm = int(total_sm)  # default: no saturation; explicit int() prevents numpy int64 leak
-            for i in range(1, len(sm_ratios)):
-                delta_sm = sm_ratios[i] - sm_ratios[i - 1]
-                delta_tp = tps[i] - tps[i - 1]
-                if delta_sm <= 0:
-                    continue
-                gain_per_10pct = (delta_tp / delta_sm) * 0.10
-                if gain_per_10pct < 0.03:
-                    sat_sm = int(grp["sm_count"].iloc[i - 1])
-                    break
+            # Single saturation source (Phase 1). explicit int() prevents numpy int64 leak.
+            sat = _spec_saturation_point(grp)
+            sat_sm = int(sat) if sat is not None else int(total_sm)
 
             saturation[(model, sl, bs)] = {
                 "saturation_sm": sat_sm,

@@ -1,0 +1,50 @@
+# =============================================================================
+# sweep_spec.yaml — SINGLE SOURCE for sweep grids, device constants, and
+# saturation criterion.  Every runner/analyzer must read grids/constants only
+# through shared.sweep_spec.load_spec() — no sweep-grid literals elsewhere.
+#
+# NOTE on layout: the loader lives at workspace/shared/sweep_spec.py (importable
+# as `from shared.sweep_spec import ...`) rather than the prompt's literal
+# `src/sweep_spec.py`, because `shared.*` is the only import root reachable by
+# BOTH the characterization runners AND serving-eval/plot_motivation.py, which
+# the Phase-1 checklist requires to import saturation_point().  See
+# reports/sweep_consistency_audit.md.
+# =============================================================================
+
+device:
+  name: a100_sxm4_80gb          # canonical tag: UNDERSCORE. Filenames use this only.
+  total_sm: 108
+  hbm_bw_GBs: 2039              # A100-SXM4-80GB HBM2e spec-sheet value (2.039 TB/s).
+                                # Phase 0 confirmed: prior code used 2000 (rounded);
+                                # 2039 is the datasheet figure. Clears 1000/2000 mixing.
+  fp16_tflops: 312
+
+sm_grid: [14, 27, 40, 54, 68, 81, 94, 108]   # Green Context preset, 1:1.
+                                              # Requests off this grid → exception.
+
+# Common grids so 4-cell cross comparison (prefill/decode × ssm/attn) is possible.
+batch_grid: [1, 4, 8, 16, 32]
+seq_grid_prefill: [512, 2048, 4096, 8192]     # 16384 excluded (frequent OOM);
+                                              # use an extended profile if needed.
+context_grid_decode: [512, 2048, 8192, 32768]
+prefill_chunk_tokens: 512                      # serving-consistent single value.
+                                              # chunk-size sweep itself lives in a
+                                              # separate chunk_study profile.
+
+saturation:
+  criterion: marginal_tput_gain_per_10pct_sm
+  threshold: 0.03                              # shared across all analyses
+
+models:
+  zamba2:
+    hf: Zyphra/Zamba2-7B-Instruct
+    ssm_n_heads: 112
+    ssd_chunk_size: 256          # mamba_chunk_size — internal SSD chunk for n_blocks
+  falcon_h1:
+    hf: tiiuae/Falcon-H1-7B-Instruct
+    ssm_n_heads: 24
+    ssd_chunk_size: 256
+  nemotron_h:
+    hf: nvidia/Nemotron-H-8B-Base-8K
+    ssm_n_heads: 128     # confirmed from HF config.json (mamba_num_heads)
+    ssd_chunk_size: 128  # NOTE: Nemotron-H uses chunk_size=128 (not 256)

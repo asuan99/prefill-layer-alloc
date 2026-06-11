@@ -23,7 +23,8 @@ Usage:
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))  # workspace/ — shared.*
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))     # characterization/
 
 import argparse
 import glob
@@ -42,7 +43,9 @@ import seaborn as sns
 # Saturation detection
 # ---------------------------------------------------------------------------
 
-SATURATION_THRESHOLD = 0.03   # < 3% throughput gain per 10% SM → saturated
+from shared.sweep_spec import saturation_point as _spec_saturation_point
+
+SATURATION_THRESHOLD = 0.03   # kept for back-compat; threshold now lives in sweep_spec.yaml
 LAYER_COLORS = {
     "ssm_chunked": "#2196F3",  # PRIMARY — chunked Triton (run_chunked_ssm_sweep.py)
     "ssm":        "#2196F3",
@@ -80,28 +83,13 @@ def compute_throughput(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def find_saturation_sm(group: pd.DataFrame) -> int:
-    """Return SM count at which throughput gain drops below threshold.
+    """SM count at saturation — delegates to the single shared implementation.
 
-    Detection: for each step, compute marginal throughput improvement
-    relative to the previous step (as fraction of max throughput).
-    Saturation = first step where marginal improvement < 3% per 10% SM.
+    The detection logic now lives only in shared.sweep_spec.saturation_point()
+    (Phase 1). Threshold comes from sweep_spec.yaml.
     """
-    group = group.sort_values("sm_ratio")
-    sm_ratios = group["sm_ratio"].values
-    tps = group["normalized_throughput"].values
-
-    for i in range(1, len(sm_ratios)):
-        delta_sm = sm_ratios[i] - sm_ratios[i - 1]
-        delta_tp = tps[i] - tps[i - 1]
-        if delta_sm <= 0:
-            continue
-        # Normalize: throughput gain per 10% SM increase
-        gain_per_10pct = (delta_tp / delta_sm) * 0.10
-        if gain_per_10pct < SATURATION_THRESHOLD:
-            return int(group["sm_count"].iloc[i - 1])
-
-    # No saturation detected → full SM
-    return int(group["sm_count"].max())
+    sat = _spec_saturation_point(group)
+    return int(sat) if sat is not None else int(group["sm_count"].max())
 
 
 # ---------------------------------------------------------------------------

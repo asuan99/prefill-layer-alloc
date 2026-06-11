@@ -23,7 +23,7 @@ a100_80gb:
 a100_sxm4_80gb:
   name: "NVIDIA A100-SXM4-80GB"
   sm_count: 108
-  memory_bw_GBs: 2000
+  memory_bw_GBs: 2039   # HBM2e datasheet (2.039 TB/s); matches sweep_spec.hbm_bw_GBs (was 2000, rounded)
   memory_GB: 80
   compute_fp16_tflops: 312
   sm_sweep_steps: [14, 27, 40, 54, 68, 81, 94, 108]

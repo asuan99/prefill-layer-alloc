@@ -57,6 +57,7 @@ import torch
 from tqdm import tqdm
 
 from shared.loaders import get_hardware_config, device_tag
+from shared.sweep_spec import n_blocks as spec_n_blocks
 from stage1_sm_scaling.run_ssm_prefill_sweep import compute_sm_steps
 
 # Backward-compat alias
@@ -228,7 +229,11 @@ def run_sweep(
 
             if row is not None:
                 row["analytical"] = False
-                row["n_blocks"] = max(1, row["batch_size"] * row["seq_len"] // 4)
+                # Single n_blocks source (shared.sweep_spec). Replaces the old
+                # model-agnostic `batch × seq // 4` formula (Phase 0 audit item 8).
+                row["n_blocks"] = spec_n_blocks(
+                    row["model_name"], row["batch_size"], row["seq_len"]
+                )
                 all_rows.append(row)
 
     pbar.close()

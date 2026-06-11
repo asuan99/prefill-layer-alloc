@@ -72,6 +72,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+# Single saturation source (shared.sweep_spec — reachable because _workspace is on path).
+from shared.sweep_spec import saturation_point as _spec_saturation_point
+
 
 # ---------------------------------------------------------------------------
 # Shared aesthetics
@@ -97,27 +100,22 @@ plt.rcParams.update({
 # Saturation detection (duplicated from plot_saturation.py — no characterization import)
 # ---------------------------------------------------------------------------
 
-_SAT_THRESHOLD = 0.03  # < 3% throughput gain per 10% SM → saturated
-
-
 def _find_saturation_sm(grp: pd.DataFrame) -> int:
-    """Return SM count at saturation for one (layer_type, seq_len, batch_size) group."""
-    grp = grp.sort_values("sm_ratio")
-    sm_ratios = grp["sm_ratio"].values
-    tps       = (1.0 / grp["latency_ms"]).values
-    tp_max    = tps.max()
-    if tp_max <= 0:
-        return int(grp["sm_count"].max())
-    tps_norm = tps / tp_max
+    """Saturation SM for one group — delegates to the single shared implementation.
 
-    for i in range(1, len(sm_ratios)):
-        d_sm = sm_ratios[i] - sm_ratios[i - 1]
-        d_tp = tps_norm[i] - tps_norm[i - 1]
-        if d_sm <= 0:
-            continue
-        if (d_tp / d_sm) * 0.10 < _SAT_THRESHOLD:
-            return int(grp["sm_count"].iloc[i - 1])
-    return int(grp["sm_count"].max())
+    Fig B's own detection logic was removed (Phase 1): all saturation detection now
+    goes through shared.sweep_spec.saturation_point() (threshold from sweep_spec.yaml).
+    """
+    sat = _spec_saturation_point(grp)
+    return int(sat) if sat is not None else int(grp["sm_count"].max())
+
+
+def _demo_path(path: Path) -> Path:
+    """Insert a ``_DEMO`` tag before the suffix so synthetic figures never collide
+    with real-data figures in the same directory (Phase 0 audit item 9)."""
+    if path.stem.endswith("_DEMO"):
+        return path
+    return path.with_name(f"{path.stem}_DEMO{path.suffix}")
 
 
 # ---------------------------------------------------------------------------
@@ -383,9 +381,9 @@ def fig_b_free_sm_comparison(
         if not layer_data:
             print(f"  No Stage 1 data found in {stage1_dir} for {model_name}")
             print("  Run run_chunked_ssm_sweep.py and run_attn_prefill_sweep.py first.")
-            demo = True
+            # Auto-fallback must NOT overwrite the real-data filename — force _DEMO.
             fig_b_free_sm_comparison(stage1_dir, model_name, hw_tag,
-                                     output_path, batch_size, demo=True)
+                                     _demo_path(output_path), batch_size, demo=True)
             return
         _note = ""
         colors = {"ssm_chunked": _SSM_COLOR, "attn": _ATTN_COLOR,
@@ -509,7 +507,8 @@ def fig_c_roofline(
     # Attn
     attn_df = _load_latency_csv(f"attn_scaling_{model_name}_*.csv")
 
-    if demo or (ssm_df.empty and attn_df.empty):
+    used_demo = demo or (ssm_df.empty and attn_df.empty)
+    if used_demo:
         # Demo points: synthetic AI and throughput
         ssm_ai_demo  = [0.3, 0.3, 0.35, 0.4, 0.4, 0.45, 0.5]
         ssm_tfl_demo = [0.08, 0.12, 0.18, 0.22, 0.25, 0.28, 0.30]
@@ -576,7 +575,11 @@ def fig_c_roofline(
     ax.legend(fontsize=7, loc="upper left")
     ax.grid(which="both", alpha=0.2)
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    # Synthetic (auto-fallback or --demo) figures get a _DEMO filename so they
+    # never sit next to real-data figures (Phase 0 audit item 9).
+    save_path = _demo_path(output_path) if used_demo else output_path
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
+    output_path = save_path
     plt.close(fig)
     print(f"  Fig C: {output_path}")
 
@@ -738,6 +741,8 @@ def main() -> None:
                 print(f"  Fig A: --nvml-dir not set or does not exist — "
                       f"run run_serving.py --monitor-nvml first")
         out_a = args.output_dir / f"fig_a_nvml_{args.hybrid_model}.png"
+        if args.demo:
+            out_a = _demo_path(out_a)
         fig_a_nvml_utilisation(
             nvml_hybrid, nvml_baseline,
             hybrid_label=args.hybrid_model,
@@ -749,6 +754,8 @@ def main() -> None:
 
     # --- Fig B: free-SM zone comparison ---
     out_b = args.output_dir / f"fig_b_free_sm_{args.hybrid_model}.png"
+    if args.demo:
+        out_b = _demo_path(out_b)
     fig_b_free_sm_comparison(
         stage1_dir=args.stage1_dir,
         model_name=args.hybrid_model,
@@ -762,6 +769,8 @@ def main() -> None:
     # --- Fig C: roofline ---
     if not args.no_fig_c:
         out_c = args.output_dir / f"fig_c_roofline_{args.hybrid_model}.png"
+        if args.demo:
+            out_c = _demo_path(out_c)
         fig_c_roofline(
             stage1_dir=args.stage1_dir,
             model_name=args.hybrid_model,

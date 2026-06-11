@@ -28,23 +28,27 @@ nemotron_h:
   full_name: "Nemotron-H-8B-Base-8K"
   hf_repo: "nvidia/Nemotron-H-8B-Base-8K"
   hidden_size: 4096
-  num_layers: 32            # TODO: verify from HF model card
-  # SSM (Mamba-2) layers — values approximate; verify from config.json
+  num_layers: 52            # verified from HF config.json (num_hidden_layers)
+  # Sequential interleave (NOT Zamba2 shared-attn / NOT FH1 parallel-branch):
+  #   hybrid_override_pattern below — M=Mamba(24) *=Attention(4) -=FFN/MLP(24), len 52
+  layer_pattern: "M-M-M-M*-M-M-M-M-M*-M-M-M-M-M*-M-M-M-M-M*-M-M-M-M-M-"
+  # SSM (Mamba-2) layers — verified from config.json
   ssm:
-    n_heads: 128            # TODO: verify; 128 × 32 = 4096 = hidden_size (head_dim=32)
-    head_dim: 32            # TODO: verify
-    d_state: 128            # TODO: verify
-    chunk_size: 256
+    n_heads: 128            # mamba_num_heads; 128 × 64 = 8192 = expand × hidden_size
+    head_dim: 64            # mamba_head_dim
+    d_state: 128            # ssm_state_size
+    chunk_size: 128         # mamba_chunk_size — NOTE: 128 (Zamba2/FH1 use 256)
     expand: 2
-    n_groups: 1             # TODO: verify
-    ssm_layer_fraction: 0.75  # TODO: verify (~24/32 layers SSM)
+    n_groups: 8             # mamba_n_groups
+    ssm_layer_fraction: 0.4615  # 24/52 layers are Mamba mixers
   attention:
-    num_heads: 32           # TODO: verify
-    num_kv_heads: 8         # GQA; TODO: verify
-    head_dim: 128           # 32 × 128 = 4096
-    attn_layer_fraction: 0.25  # TODO: verify (~8/32 layers Attn)
+    num_heads: 32           # num_attention_heads
+    num_kv_heads: 8         # GQA (num_key_value_heads)
+    head_dim: 128           # attention_head_dim; 32 × 128 = 4096
+    attn_layer_fraction: 0.0769  # 4/52 layers are Attention mixers
   mlp:
-    intermediate_size: 16384  # TODO: verify
+    intermediate_size: 21504  # verified from config.json
+    ffn_layer_fraction: 0.4615  # 24/52 layers are standalone FFN
 
 falcon_h1:
   full_name: "Falcon-H1-7B-Instruct"
