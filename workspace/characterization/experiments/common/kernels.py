@@ -25,7 +25,6 @@ src.profiling.metrics; SM control from src.smctrl.
 
 from __future__ import annotations
 
-import math
 import os
 import sys
 
@@ -37,6 +36,7 @@ for _p in (_WORKSPACE, _CHAR):
         sys.path.insert(0, _p)
 
 from shared.loaders import get_model_config
+from experiments.common import wave_model as wm  # single source for n_blocks
 
 # Optional heavy deps — imported lazily so this module imports on CPU-only boxes.
 try:
@@ -124,7 +124,9 @@ def build_ssm_scan_fn(cfg: dict, batch: int, tokens: int, device: str = "cuda",
 
     rb, wb = ssm_scan_bytes(batch=batch, seq_len=tokens, n_heads=nH,
                             head_dim=hd, d_state=dst, n_groups=ng)
-    meta = {"n_blocks_per_call": batch * max(1, tokens // ssd) * nH, "kernel": "ssm_scan"}
+    # n_blocks via the single source (wave_model), not a local formula.
+    meta = {"n_blocks_per_call": wm.n_blocks(batch, tokens, nH, ssd),
+            "kernel": "ssm_scan"}
     return fn, rb, wb, meta
 
 
@@ -192,8 +194,11 @@ def build_attn_fn(cfg, batch, seq, context_len=0, device="cuda", dtype="bfloat16
     rb, wb = attn_bytes(batch=batch, seq_len=seq, total_kv_len=total_kv,
                         n_heads=nH, n_kv_heads=nKV, head_dim=hd,
                         hidden_size=cfg["d_model"])
+    # FlashAttn grid block count via the same single source: one CTA per
+    # (batch, attn-head, query-block of BLOCK_M≈64). wave_model.n_blocks is
+    # generic — feed it attn n_heads and chunk=BLOCK_M.
     meta = {"kernel": "attn", "context_len": context_len,
-            "n_blocks_per_call": batch * nH * math.ceil(seq / 64)}
+            "n_blocks_per_call": wm.n_blocks(batch, seq, nH, chunk=64)}
     return fn, rb, wb, meta
 
 
