@@ -73,3 +73,63 @@ falcon_h1:
   # MLP
   mlp:
     intermediate_size: 12288
+
+# ===========================================================================
+# v2 SLM main models (Zamba2-1.2B / Falcon-H1-1.5B)
+# ===========================================================================
+# ⚠️ PROVISIONAL — neither model is in hf_cache/. The values below are DERIVED
+#    from public model-card architecture relations (n_heads = expand*hidden /
+#    head_dim for Mamba-2) and family conventions carried from the 7B entries.
+#    Every uncertain field is tagged `# TODO: verify`. These feed E0's grid
+#    prediction (the load-bearing G1 input), so CONFIRM against each model's HF
+#    config.json before trusting E0/E2 grid-saturation numbers.
+#    v2 references ONLY these 1.2B/1.5B entries; the 7B entries above are kept
+#    (per the v2 spec) but unused by the v2 experiments.
+# ---------------------------------------------------------------------------
+
+zamba2_1.2b:
+  full_name: "Zamba2-1.2B"
+  hf_repo: "Zyphra/Zamba2-1.2B"
+  config_status: provisional        # TODO: verify — model not in hf_cache
+  hidden_size: 2048                 # TODO: verify against HF config.json
+  num_layers: 54                    # TODO: verify (used only by E0 overhead budget)
+  ssm:
+    # n_heads = expand(2) * hidden(2048) / head_dim(64) = 64
+    n_heads: 64                     # TODO: verify against HF config.json
+    head_dim: 64                    # Zamba2 family convention (7B uses 64)
+    d_state: 64                     # Zamba2 family convention
+    chunk_size: 256                 # Zamba2 family convention
+    expand: 2
+    n_groups: 2                     # TODO: verify
+    ssm_layer_fraction: 0.84        # TODO: verify (carried from 7B ratio)
+  attention:
+    # Zamba2 shared-attn: n_heads*head_dim = 2*hidden = 4096 → 32*128
+    num_heads: 32                   # TODO: verify against HF config.json
+    num_kv_heads: 32                # TODO: verify
+    head_dim: 128                   # TODO: verify
+    attn_layer_fraction: 0.16       # TODO: verify (carried from 7B ratio)
+  mlp:
+    intermediate_size: 8192         # TODO: verify against HF config.json
+
+falcon_h1_1.5b:
+  full_name: "Falcon-H1-1.5B"
+  hf_repo: "tiiuae/Falcon-H1-1.5B"
+  config_status: provisional        # TODO: verify — model not in hf_cache
+  hidden_size: 2048                 # TODO: verify against HF config.json
+  num_layers: 44                    # TODO: verify (Falcon-H1: all layers hybrid)
+  ssm:
+    # Falcon-H1 mamba_d_inner ~= hidden; n_heads = 2048 / head_dim(128) = 16
+    n_heads: 16                     # TODO: verify against HF config.json
+    head_dim: 128                   # Falcon-H1 family convention (7B uses 128)
+    d_state: 256                    # Falcon-H1 family convention
+    chunk_size: 256                 # Falcon-H1 family convention
+    expand: 2
+    n_groups: 1                     # Falcon-H1 family convention (7B uses 1)
+    ssm_layer_fraction: 1.0         # all layers have SSM branch (parallel)
+  attention:
+    num_heads: 8                    # TODO: verify against HF config.json
+    num_kv_heads: 2                 # TODO: verify (GQA, 7B uses 2)
+    head_dim: 128                   # TODO: verify
+    attn_layer_fraction: 1.0        # all layers have attention branch (parallel)
+  mlp:
+    intermediate_size: 8192         # TODO: verify against HF config.json

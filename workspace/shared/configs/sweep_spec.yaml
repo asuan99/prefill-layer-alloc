@@ -48,3 +48,12 @@ models:
     hf: nvidia/Nemotron-H-8B-Base-8K
     ssm_n_heads: 128     # confirmed from HF config.json (mamba_num_heads)
     ssd_chunk_size: 128  # NOTE: Nemotron-H uses chunk_size=128 (not 256)
+  # --- v2 SLM main models (PROVISIONAL — see models.yaml header; not in hf_cache) ---
+  zamba2_1.2b:
+    hf: Zyphra/Zamba2-1.2B
+    ssm_n_heads: 64      # TODO: verify against HF config.json (derived 2*2048/64)
+    ssd_chunk_size: 256  # Zamba2 family convention
+  falcon_h1_1.5b:
+    hf: tiiuae/Falcon-H1-1.5B
+    ssm_n_heads: 16      # TODO: verify against HF config.json (derived 2048/128)
+    ssd_chunk_size: 256  # Falcon-H1 family convention
