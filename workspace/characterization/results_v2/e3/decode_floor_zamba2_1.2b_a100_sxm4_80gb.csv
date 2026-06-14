@@ -1,0 +1,25 @@
+"# value_kind: derived=floor_sm_point,floor_sm_ci_low,floor_sm_ci_high,flat_region_bw_util_pct; metadata=model,config_status,layer_type,batch,context_len,n_sm_points,memory_gap"
+model__metadata,config_status__metadata,layer_type__metadata,batch__metadata,context_len__metadata,n_sm_points__metadata,memory_gap__metadata,floor_sm_point__derived,floor_sm_ci_low__derived,floor_sm_ci_high__derived,flat_region_bw_util_pct__derived
+zamba2_1.2b,verified,ssm,8,1024,8,False,54,54,54,0.012
+zamba2_1.2b,verified,ssm,8,4096,8,False,54,54,54,0.012
+zamba2_1.2b,verified,ssm,8,16384,8,False,54,54,54,0.013
+zamba2_1.2b,verified,ssm,32,1024,8,False,94,81,94,0.041
+zamba2_1.2b,verified,ssm,32,4096,8,False,94,81,94,0.041
+zamba2_1.2b,verified,ssm,32,16384,8,False,94,94,94,0.041
+zamba2_1.2b,verified,ssm,128,1024,8,False,108,108,108,0.075
+zamba2_1.2b,verified,ssm,128,4096,8,False,108,108,108,0.075
+zamba2_1.2b,verified,ssm,128,16384,8,False,108,108,108,0.075
+zamba2_1.2b,verified,ssm,256,1024,8,False,108,108,108,0.08
+zamba2_1.2b,verified,ssm,256,4096,8,False,108,108,108,0.08
+zamba2_1.2b,verified,ssm,256,16384,8,False,108,108,108,0.08
+zamba2_1.2b,verified,attn,8,1024,8,False,68,68,68,40.817
+zamba2_1.2b,verified,attn,8,4096,8,False,68,68,68,49.136
+zamba2_1.2b,verified,attn,8,16384,8,False,68,68,68,51.6
+zamba2_1.2b,verified,attn,32,1024,8,False,108,108,108,62.457
+zamba2_1.2b,verified,attn,32,4096,8,False,108,108,108,66.817
+zamba2_1.2b,verified,attn,32,16384,8,False,108,108,108,67.38
+zamba2_1.2b,verified,attn,128,1024,8,False,108,108,108,64.525
+zamba2_1.2b,verified,attn,128,4096,8,False,108,108,108,68.506
+zamba2_1.2b,verified,attn,128,16384,8,False,108,108,108,70.045
+zamba2_1.2b,verified,attn,256,1024,8,False,108,108,108,63.106
+zamba2_1.2b,verified,attn,256,4096,8,False,108,108,108,69.319

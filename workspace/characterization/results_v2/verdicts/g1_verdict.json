@@ -1,14 +1,403 @@
 {
   "gate": "G1",
-  "verdict": "NO_DATA",
+  "verdict": "GRID_MECHANISM",
   "layer_type": "ssm",
   "thresholds": {
     "bw_util_min_pct": 85.0,
     "grid_frac_of_total": 0.9,
     "total_sm": 108
   },
-  "per_model": [],
-  "recommended_action": "Run E2 (run_batch_swept_sweep.py) first.",
+  "per_model": [
+    {
+      "model": "falcon_h1_1.5b",
+      "layer_type": "ssm",
+      "verdict": "INCONCLUSIVE",
+      "groups": [
+        {
+          "chunk_granularity": "256",
+          "context_len": "0",
+          "verdict": "INCONCLUSIVE",
+          "batch_invariant": false,
+          "monotone_up": false,
+          "approaches_total": false,
+          "bw_high": false,
+          "sat_sm_by_batch": {
+            "1": 27.0,
+            "8": 54.0,
+            "32": 94.0,
+            "128": 81.0
+          },
+          "ci_by_batch": {
+            "1": [
+              27.0,
+              27.0
+            ],
+            "8": [
+              54.0,
+              68.0
+            ],
+            "32": [
+              94.0,
+              94.0
+            ],
+            "128": [
+              81.0,
+              81.0
+            ]
+          },
+          "bw_util_by_batch": {
+            "1": 0.331,
+            "8": 2.222,
+            "32": 5.599,
+            "128": 5.397
+          },
+          "grid_sat_e0_by_batch": {
+            "1": 96.0,
+            "8": 768.0,
+            "32": 3072.0,
+            "128": 12288.0
+          }
+        },
+        {
+          "chunk_granularity": "512",
+          "context_len": "0",
+          "verdict": "INCONCLUSIVE",
+          "batch_invariant": false,
+          "monotone_up": false,
+          "approaches_total": false,
+          "bw_high": false,
+          "sat_sm_by_batch": {
+            "1": 27.0,
+            "8": 94.0,
+            "32": 94.0,
+            "128": 81.0
+          },
+          "ci_by_batch": {
+            "1": [
+              27.0,
+              27.0
+            ],
+            "8": [
+              68.0,
+              94.0
+            ],
+            "32": [
+              94.0,
+              94.0
+            ],
+            "128": [
+              81.0,
+              81.0
+            ]
+          },
+          "bw_util_by_batch": {
+            "1": 0.62,
+            "8": 4.219,
+            "32": 6.319,
+            "128": 5.651
+          },
+          "grid_sat_e0_by_batch": {
+            "1": 192.0,
+            "8": 1536.0,
+            "32": 6144.0,
+            "128": 24576.0
+          }
+        }
+      ]
+    },
+    {
+      "model": "falcon_h1_3b",
+      "layer_type": "ssm",
+      "verdict": "INCONCLUSIVE",
+      "groups": [
+        {
+          "chunk_granularity": "256",
+          "context_len": "0",
+          "verdict": "INCONCLUSIVE",
+          "batch_invariant": false,
+          "monotone_up": false,
+          "approaches_total": false,
+          "bw_high": false,
+          "sat_sm_by_batch": {
+            "1": 27.0,
+            "8": 68.0,
+            "32": 94.0,
+            "128": 81.0
+          },
+          "ci_by_batch": {
+            "1": [
+              14.0,
+              27.0
+            ],
+            "8": [
+              54.0,
+              68.0
+            ],
+            "32": [
+              94.0,
+              108.0
+            ],
+            "128": [
+              81.0,
+              81.0
+            ]
+          },
+          "bw_util_by_batch": {
+            "1": 0.407,
+            "8": 2.96,
+            "32": 6.694,
+            "128": 6.867
+          },
+          "grid_sat_e0_by_batch": {
+            "1": 64.0,
+            "8": 512.0,
+            "32": 2048.0,
+            "128": 8192.0
+          }
+        },
+        {
+          "chunk_granularity": "512",
+          "context_len": "0",
+          "verdict": "INCONCLUSIVE",
+          "batch_invariant": false,
+          "monotone_up": true,
+          "approaches_total": false,
+          "bw_high": false,
+          "sat_sm_by_batch": {
+            "1": 27.0,
+            "8": 81.0,
+            "32": 81.0,
+            "128": 81.0
+          },
+          "ci_by_batch": {
+            "1": [
+              27.0,
+              27.0
+            ],
+            "8": [
+              68.0,
+              81.0
+            ],
+            "32": [
+              81.0,
+              81.0
+            ],
+            "128": [
+              81.0,
+              81.0
+            ]
+          },
+          "bw_util_by_batch": {
+            "1": 0.785,
+            "8": 5.339,
+            "32": 7.053,
+            "128": 7.349
+          },
+          "grid_sat_e0_by_batch": {
+            "1": 128.0,
+            "8": 1024.0,
+            "32": 4096.0,
+            "128": 16384.0
+          }
+        }
+      ]
+    },
+    {
+      "model": "zamba2_1.2b",
+      "layer_type": "ssm",
+      "verdict": "INCONCLUSIVE",
+      "groups": [
+        {
+          "chunk_granularity": "256",
+          "context_len": "0",
+          "verdict": "INCONCLUSIVE",
+          "batch_invariant": false,
+          "monotone_up": true,
+          "approaches_total": false,
+          "bw_high": false,
+          "sat_sm_by_batch": {
+            "1": 40.0,
+            "8": 81.0,
+            "32": 81.0,
+            "128": 81.0
+          },
+          "ci_by_batch": {
+            "1": [
+              27.0,
+              40.0
+            ],
+            "8": [
+              54.0,
+              81.0
+            ],
+            "32": [
+              81.0,
+              108.0
+            ],
+            "128": [
+              81.0,
+              81.0
+            ]
+          },
+          "bw_util_by_batch": {
+            "1": 0.411,
+            "8": 2.792,
+            "32": 7.012,
+            "128": 8.386
+          },
+          "grid_sat_e0_by_batch": {
+            "1": 64.0,
+            "8": 512.0,
+            "32": 2048.0,
+            "128": 8192.0
+          }
+        },
+        {
+          "chunk_granularity": "512",
+          "context_len": "0",
+          "verdict": "INCONCLUSIVE",
+          "batch_invariant": false,
+          "monotone_up": true,
+          "approaches_total": false,
+          "bw_high": false,
+          "sat_sm_by_batch": {
+            "1": 54.0,
+            "8": 81.0,
+            "32": 81.0,
+            "128": 81.0
+          },
+          "ci_by_batch": {
+            "1": [
+              40.0,
+              54.0
+            ],
+            "8": [
+              81.0,
+              94.0
+            ],
+            "32": [
+              81.0,
+              81.0
+            ],
+            "128": [
+              81.0,
+              81.0
+            ]
+          },
+          "bw_util_by_batch": {
+            "1": 0.812,
+            "8": 4.655,
+            "32": 8.407,
+            "128": 8.495
+          },
+          "grid_sat_e0_by_batch": {
+            "1": 128.0,
+            "8": 1024.0,
+            "32": 4096.0,
+            "128": 16384.0
+          }
+        }
+      ]
+    },
+    {
+      "model": "zamba2_2.7b",
+      "layer_type": "ssm",
+      "verdict": "GRID_MECHANISM",
+      "groups": [
+        {
+          "chunk_granularity": "256",
+          "context_len": "0",
+          "verdict": "GRID_MECHANISM",
+          "batch_invariant": false,
+          "monotone_up": true,
+          "approaches_total": true,
+          "bw_high": false,
+          "sat_sm_by_batch": {
+            "1": 27.0,
+            "8": 94.0,
+            "32": 108.0,
+            "128": 108.0
+          },
+          "ci_by_batch": {
+            "1": [
+              27.0,
+              27.0
+            ],
+            "8": [
+              81.0,
+              94.0
+            ],
+            "32": [
+              94.0,
+              108.0
+            ],
+            "128": [
+              108.0,
+              108.0
+            ]
+          },
+          "bw_util_by_batch": {
+            "1": 0.494,
+            "8": 3.507,
+            "32": 9.064,
+            "128": 12.191
+          },
+          "grid_sat_e0_by_batch": {
+            "1": 80.0,
+            "8": 640.0,
+            "32": 2560.0,
+            "128": 10240.0
+          }
+        },
+        {
+          "chunk_granularity": "512",
+          "context_len": "0",
+          "verdict": "GRID_MECHANISM",
+          "batch_invariant": false,
+          "monotone_up": true,
+          "approaches_total": true,
+          "bw_high": false,
+          "sat_sm_by_batch": {
+            "1": 27.0,
+            "8": 94.0,
+            "32": 108.0,
+            "128": 108.0
+          },
+          "ci_by_batch": {
+            "1": [
+              27.0,
+              27.0
+            ],
+            "8": [
+              94.0,
+              94.0
+            ],
+            "32": [
+              108.0,
+              108.0
+            ],
+            "128": [
+              108.0,
+              108.0
+            ]
+          },
+          "bw_util_by_batch": {
+            "1": 0.901,
+            "8": 5.86,
+            "32": 12.021,
+            "128": 12.505
+          },
+          "grid_sat_e0_by_batch": {
+            "1": 160.0,
+            "8": 1280.0,
+            "32": 5120.0,
+            "128": 20480.0
+          }
+        }
+      ]
+    }
+  ],
+  "recommended_action": "Framing rejected: SSM saturation tracks the grid (sat_sm \u2192 total_sm with batch). Recommend fallback (spatial-only Falcon split / donor decode); do NOT run E4 as the headline result.",
   "source": "E2 saturation_ci",
   "_value_kind": {
     "gate": "metadata",
