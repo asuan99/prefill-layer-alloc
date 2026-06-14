@@ -1,0 +1,313 @@
+"""
+plot_results.py — visualize the v2 results in results_v2/ (E0–E4 + verdicts).
+
+Reads the labeled CSVs (strips the `# value_kind` line and the `__measured/
+__derived/__metadata` header suffixes) and writes PNGs to results_v2/figures/.
+Every panel is guarded: if an experiment's CSVs are missing it is skipped with a
+note, so this runs at any pipeline stage (E0-only, after E2, etc.).
+
+Headline figures:
+  E0  grid_sat_sm vs batch        — predicted batch where asymmetry dies
+  E1  scan_share vs batch         — G0 (is scan the dominant component?)
+  E2  sat_sm(CI) vs batch + E0    — G1 (BW=flat vs GRID=rises toward total_sm)
+  E2  bw_util@sat vs batch        — G1 (does HBM saturate? 85% line)
+  E3  decode floor vs batch       — Memory Gap (decode as donor)
+  E4  decode inflation by type    — bandwidth interference (if E4 ran)
+
+Run with the project venv (has matplotlib/pandas):
+  source $REPO_ROOT/bin/activate
+  python experiments/viz/plot_results.py
+"""
+
+from __future__ import annotations
+
+import argparse
+import glob
+import json
+import os
+import sys
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+_here = os.path.dirname(os.path.abspath(__file__))
+_CHAR = os.path.abspath(os.path.join(_here, "..", ".."))
+
+# consistent per-model styling (size sweep)
+MODEL_ORDER = ["zamba2_1.2b", "zamba2_2.7b", "falcon_h1_1.5b", "falcon_h1_3b"]
+MODEL_COLOR = {
+    "zamba2_1.2b": "#1f77b4", "zamba2_2.7b": "#4c9be8",
+    "falcon_h1_1.5b": "#d62728", "falcon_h1_3b": "#ff9896",
+}
+TOTAL_SM = 108
+
+
+def load_csv(path: str) -> pd.DataFrame:
+    """Read a labeled CSV: skip the value_kind comment, strip __label suffixes."""
+    df = pd.read_csv(path, skiprows=1)
+    df.columns = [c.split("__")[0] for c in df.columns]
+    return df
+
+
+def _concat(pattern: str) -> pd.DataFrame:
+    files = sorted(glob.glob(pattern))
+    if not files:
+        return pd.DataFrame()
+    return pd.concat([load_csv(f) for f in files], ignore_index=True)
+
+
+def _models_in(df) -> list:
+    return [m for m in MODEL_ORDER if m in set(df.get("model", []))]
+
+
+def _save(fig, out_dir, name):
+    os.makedirs(out_dir, exist_ok=True)
+    p = os.path.join(out_dir, name)
+    fig.savefig(p, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  wrote {p}")
+    return p
+
+
+# ---------------------------------------------------------------------------
+# E0
+# ---------------------------------------------------------------------------
+
+def plot_e0(rdir, out):
+    wt = os.path.join(rdir, "e0", "wave_table_*.csv")
+    files = sorted(glob.glob(wt))
+    if not files:
+        print("E0: no wave_table — skip"); return
+    df = load_csv(files[0])
+    df = df[df["chunk_granularity"].astype(str) == "256"]
+    # grid_sat_sm vs batch (per model); one point per (model,batch) — collapse seq/sm
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for m in _models_in(df):
+        g = (df[df["model"] == m].groupby("batch")["grid_sat_sm"].first().reset_index())
+        ax.plot(g["batch"], g["grid_sat_sm"], "o-", color=MODEL_COLOR[m], label=m)
+    ax.axhline(TOTAL_SM, color="k", ls="--", lw=1, label=f"total_sm={TOTAL_SM}")
+    ax.set_xscale("log", base=2); ax.set_yscale("log", base=2)
+    ax.set_xlabel("batch"); ax.set_ylabel("grid_sat_sm  (derived)")
+    ax.set_title("E0: SSM grid saturation SM vs batch (chunk=256)\n"
+                 "above the dashed line → grid fills all SMs → asymmetry dead (GRID)")
+    ax.legend(fontsize=8); ax.grid(True, which="both", alpha=0.3)
+    _save(fig, out, "e0_grid_sat_vs_batch.png")
+
+    # temporal overhead budget bars
+    bf = sorted(glob.glob(os.path.join(rdir, "e0", "temporal_overhead_budget_*.csv")))
+    if bf:
+        b = load_csv(bf[0])
+        fig, ax = plt.subplots(figsize=(7, 4))
+        x = np.arange(len(b)); w = 0.38
+        ax.bar(x - w/2, b["per_swap_overhead_pct"], w, label="per-swap %", color="#1f77b4")
+        ax.bar(x + w/2, b["full_model_overhead_pct"], w, label="full-model %", color="#ff7f0e")
+        ax.set_xticks(x); ax.set_xticklabels(b["model"], rotation=20, ha="right", fontsize=8)
+        ax.set_ylabel("overhead % (derived)")
+        ax.set_title("E0: temporal-policy swap overhead budget\n"
+                     f"(swap≈{b['swap_us'].iloc[0]:.1f}µs measured; per-layer compute ASSUMED)")
+        ax.legend(fontsize=8); ax.grid(True, axis="y", alpha=0.3)
+        _save(fig, out, "e0_overhead_budget.png")
+
+
+# ---------------------------------------------------------------------------
+# E1 — G0
+# ---------------------------------------------------------------------------
+
+def plot_e1(rdir, out):
+    df = _concat(os.path.join(rdir, "e1", "component_sweep_*.csv"))
+    if df.empty:
+        print("E1: no component_sweep — skip"); return
+    ok = df[df["status"] == "ok"].copy()
+    # scan_share vs batch (chunk=256)
+    s = ok[(ok["chunk_granularity"].astype(str) == "256") & (ok["component"] == "scan")]
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for m in _models_in(s):
+        g = s[s["model"] == m].groupby("batch")["scan_share_pct"].mean().reset_index()
+        ax.plot(g["batch"], g["scan_share_pct"], "o-", color=MODEL_COLOR[m], label=m)
+    ax.axhline(30, color="k", ls="--", lw=1, label="G0 threshold 30%")
+    ax.set_xscale("log", base=2)
+    ax.set_xlabel("batch"); ax.set_ylabel("scan_share_pct (derived)")
+    ax.set_title("E1 / G0: SSM scan share of the layer vs batch (chunk=256)")
+    ax.set_ylim(0, 100); ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
+    _save(fig, out, "e1_scan_share_vs_batch.png")
+
+    # component latency breakdown at batch=8, chunk=256
+    sub = ok[(ok["chunk_granularity"].astype(str) == "256") & (ok["batch"] == 8)
+             & (ok["component"].isin(["in_proj", "scan", "out_proj"]))]
+    if not sub.empty:
+        comps = ["in_proj", "scan", "out_proj"]
+        models = _models_in(sub)
+        fig, ax = plt.subplots(figsize=(7, 4.5))
+        bottom = np.zeros(len(models))
+        colors = {"in_proj": "#9467bd", "scan": "#2ca02c", "out_proj": "#8c564b"}
+        for c in comps:
+            vals = [sub[(sub["model"] == m) & (sub["component"] == c)]["latency_ms"].mean()
+                    for m in models]
+            vals = np.nan_to_num(vals)
+            ax.bar(models, vals, bottom=bottom, label=c, color=colors[c])
+            bottom += vals
+        ax.set_ylabel("latency_ms (measured)")
+        ax.set_title("E1: prefill component latency breakdown (batch=8, chunk=256)")
+        ax.legend(fontsize=8); ax.tick_params(axis="x", rotation=20, labelsize=8)
+        ax.grid(True, axis="y", alpha=0.3)
+        _save(fig, out, "e1_component_breakdown.png")
+
+
+# ---------------------------------------------------------------------------
+# E2 — G1 (the headline)
+# ---------------------------------------------------------------------------
+
+def plot_e2(rdir, out):
+    ci = _concat(os.path.join(rdir, "e2", "saturation_ci_*.csv"))
+    if not ci.empty:
+        s = ci[(ci["layer_type"] == "ssm") & (ci["chunk_granularity"].astype(str) == "256")]
+        fig, ax = plt.subplots(figsize=(7.5, 5))
+        for m in _models_in(s):
+            g = s[s["model"] == m].sort_values("batch")
+            yerr = np.vstack([g["sat_sm_point"] - g["sat_sm_ci_low"],
+                              g["sat_sm_ci_high"] - g["sat_sm_point"]])
+            ax.errorbar(g["batch"], g["sat_sm_point"], yerr=yerr, fmt="o-",
+                        color=MODEL_COLOR[m], capsize=3, label=f"{m} (measured sat_sm±CI)")
+            ax.plot(g["batch"], np.minimum(g["grid_sat_sm_e0"], TOTAL_SM), ":",
+                    color=MODEL_COLOR[m], alpha=0.7,
+                    label=f"{m} (E0 grid pred, clamped)")
+        ax.axhline(TOTAL_SM, color="k", ls="--", lw=1, label=f"total_sm={TOTAL_SM}")
+        ax.set_xscale("log", base=2)
+        ax.set_xlabel("batch"); ax.set_ylabel("saturation SM")
+        ax.set_title("E2 / G1: SSM saturation SM vs batch (chunk=256)\n"
+                     "flat & batch-invariant → BW mechanism; rises toward total_sm → GRID")
+        ax.legend(fontsize=7); ax.grid(True, alpha=0.3)
+        _save(fig, out, "e2_saturation_vs_batch.png")
+
+        # bw util at saturation
+        fig, ax = plt.subplots(figsize=(7, 4.5))
+        for m in _models_in(s):
+            g = s[s["model"] == m].sort_values("batch")
+            ax.plot(g["batch"], g["bw_util_pct_at_sat"], "o-", color=MODEL_COLOR[m], label=m)
+        ax.axhline(85, color="k", ls="--", lw=1, label="BW-bound ~85%")
+        ax.set_xscale("log", base=2)
+        ax.set_xlabel("batch"); ax.set_ylabel("BW util % at saturation (measured/derived)")
+        ax.set_title("E2 / G1: HBM utilization at the saturation point (chunk=256)")
+        ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
+        _save(fig, out, "e2_bwutil_at_sat.png")
+
+    # SM-sweep saturation curves (throughput vs SM), zamba2_1.2b ssm chunk=256
+    sw = _concat(os.path.join(rdir, "e2", "sm_sweep_*.csv"))
+    if not sw.empty:
+        sw = sw[sw["status"] == "ok"].copy()
+        sub = sw[(sw["layer_type"] == "ssm") & (sw["chunk_granularity"].astype(str) == "256")]
+        for m in _models_in(sub):
+            d = sub[sub["model"] == m]
+            if d.empty:
+                continue
+            fig, ax = plt.subplots(figsize=(7, 4.5))
+            for b in sorted(d["batch"].unique()):
+                g = d[d["batch"] == b].sort_values("sm_count")
+                tput = 1.0 / g["latency_ms"]
+                ax.plot(g["sm_count"], tput / tput.max(), "o-", label=f"batch={b}")
+            ax.set_xlabel("SM count"); ax.set_ylabel("norm. throughput (1/latency)")
+            ax.set_title(f"E2: SSM SM-scaling curves — {m} (chunk=256)")
+            ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
+            _save(fig, out, f"e2_smcurve_{m}.png")
+            break  # one representative model to keep the figure set small
+
+
+# ---------------------------------------------------------------------------
+# E3 — decode floor / Memory Gap
+# ---------------------------------------------------------------------------
+
+def plot_e3(rdir, out):
+    fl = _concat(os.path.join(rdir, "e3", "decode_floor_*.csv"))
+    if fl.empty:
+        print("E3: no decode_floor — skip"); return
+    for lt, ctx in [("ssm", None), ("attn", 4096)]:
+        d = fl[fl["layer_type"] == lt]
+        if ctx is not None and "context_len" in d:
+            d = d[d["context_len"] == ctx]
+        if d.empty:
+            continue
+        fig, ax = plt.subplots(figsize=(7, 4.5))
+        for m in _models_in(d):
+            g = d[d["model"] == m].sort_values("batch")
+            g = g.groupby("batch")["floor_sm_point"].mean().reset_index()
+            ax.plot(g["batch"], g["floor_sm_point"], "o-", color=MODEL_COLOR[m], label=m)
+        ax.axhline(TOTAL_SM, color="k", ls="--", lw=1, label=f"total_sm={TOTAL_SM}")
+        ax.set_xscale("log", base=2)
+        ax.set_xlabel("decode batch"); ax.set_ylabel("decode floor SM (derived)")
+        suff = f" ctx={ctx}" if ctx else ""
+        ax.set_title(f"E3: decode SM floor vs batch — {lt}{suff}\n"
+                     "low & flat → Memory Gap → decode is a donor")
+        ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
+        _save(fig, out, f"e3_decode_floor_{lt}.png")
+
+
+# ---------------------------------------------------------------------------
+# E4 — concurrent (only if it ran)
+# ---------------------------------------------------------------------------
+
+def plot_e4(rdir, out):
+    di = _concat(os.path.join(rdir, "e4", "decode_interference_*.csv"))
+    if di.empty:
+        print("E4: no decode_interference — skip (E4 runs only if G1=BW_MECHANISM)")
+        return
+    di = di[di["status"] == "ok"]
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    models = _models_in(di); x = np.arange(len(models)); w = 0.38
+    for i, lt in enumerate(["ssm", "attn"]):
+        vals = [di[(di["model"] == m) & (di["prefill_layer_type"] == lt)]
+                ["decode_inflation_pct"].mean() for m in models]
+        ax.bar(x + (i - 0.5) * w, np.nan_to_num(vals), w, label=f"prefill={lt}")
+    ax.set_xticks(x); ax.set_xticklabels(models, rotation=20, ha="right", fontsize=8)
+    ax.set_ylabel("decode latency inflation % (derived)")
+    ax.set_title("E4: decode inflation by concurrent prefill type\n"
+                 "(SSM > Attn ⇒ bandwidth interference)")
+    ax.legend(fontsize=8); ax.grid(True, axis="y", alpha=0.3)
+    _save(fig, out, "e4_decode_interference.png")
+
+
+# ---------------------------------------------------------------------------
+# Verdict summary panel
+# ---------------------------------------------------------------------------
+
+def plot_verdicts(rdir, out):
+    lines = []
+    for g in ("g0", "g1"):
+        p = os.path.join(rdir, "verdicts", f"{g}_verdict.json")
+        if not os.path.exists(p):
+            continue
+        d = json.load(open(p))
+        lines.append(f"{d['gate']}: {d['verdict']}")
+        for m in d.get("per_model", []):
+            if isinstance(m, dict) and "model" in m:
+                lines.append(f"    {m['model']}: {m['verdict']}")
+        lines.append(f"  action: {d.get('recommended_action','')}")
+        lines.append("")
+    if not lines:
+        return
+    fig, ax = plt.subplots(figsize=(8, 0.4 * len(lines) + 1))
+    ax.axis("off")
+    ax.text(0.01, 0.99, "\n".join(lines), va="top", ha="left",
+            fontfamily="monospace", fontsize=10)
+    ax.set_title("v2 gate verdicts", loc="left", fontweight="bold")
+    _save(fig, out, "verdicts_summary.png")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Plot v2 results")
+    ap.add_argument("--results-dir", default=os.path.join(_CHAR, "results_v2"))
+    ap.add_argument("--out", default=os.path.join(_CHAR, "results_v2", "figures"))
+    args = ap.parse_args()
+    print(f"v2 visualization  (results={args.results_dir}, out={args.out})")
+    for fn in (plot_e0, plot_e1, plot_e2, plot_e3, plot_e4, plot_verdicts):
+        try:
+            fn(args.results_dir, args.out)
+        except Exception as e:  # noqa: BLE001
+            print(f"  {fn.__name__} failed: {type(e).__name__}: {e}")
+    print("done.")
+
+
+if __name__ == "__main__":
+    main()
