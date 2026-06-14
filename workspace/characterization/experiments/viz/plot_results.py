@@ -357,6 +357,69 @@ def plot_e4(rdir, out):
 
 
 # ---------------------------------------------------------------------------
+# Serving re-interpretation: prefill+decode overlap + free-SM budget vs batch
+# ---------------------------------------------------------------------------
+
+def plot_serving(rdir, out):
+    pp = _concat(os.path.join(rdir, "e4", "concurrent_pp_*.csv"))
+    di = _concat(os.path.join(rdir, "e4", "decode_interference_*.csv"))
+    fl = _concat(os.path.join(rdir, "e3", "decode_floor_*.csv"))
+    if di.empty or pp.empty:
+        print("serving: needs E4 pp+di — skip"); return
+    pp = pp[pp.status == "ok"]; di = di[di.status == "ok"]
+    models = _models_in(di)
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.6))
+
+    # Panel A: SSM-prefill + decode concurrent (50/50) vs sequential full-SM.
+    # Only ssm is a valid reconstruction: the scan ignores context_len, so its
+    # solo (pp, ctx=0) and concurrent (di, ctx=4096) prefill are the same work.
+    # (attn is excluded — pp solo_b has ctx=0 but di runs attn with ctx=4096.)
+    ax = axes[0]; x = np.arange(len(models))
+    sp = []
+    for m in models:
+        pr = pp[(pp.model == m) & (pp.budget_mode == "uniform_50_50")]
+        pf_solo = pr["solo_a_ms"].mean() if len(pr) else np.nan      # a = ssm
+        d = di[(di.model == m) & (di.budget_mode == "uniform_50_50")
+               & (di.prefill_layer_type == "ssm")]
+        if not len(d) or np.isnan(pf_solo):
+            sp.append(np.nan); continue
+        tseq = pf_solo + d.decode_solo_ms.iloc[0]
+        tconc = max(d.prefill_concurrent_ms.iloc[0], d.decode_concurrent_ms.iloc[0])
+        sp.append(tseq / tconc if tconc else np.nan)
+    bars = ax.bar(x, np.nan_to_num(sp), 0.6, color="#2ca02c")
+    for xi, v in zip(x, sp):
+        if not np.isnan(v):
+            ax.text(xi, v + 0.01, f"{v:.2f}x", ha="center", fontsize=8)
+    ax.axhline(1.0, color="k", ls="--", lw=1, label="no gain (sequential)")
+    ax.set_xticks(x); ax.set_xticklabels(models, rotation=20, ha="right", fontsize=8)
+    ax.set_ylabel("SSM-prefill+decode speedup (concurrent 50/50 ÷ sequential)")
+    ax.set_ylim(0, 1.6)
+    ax.set_title("(A) SSM-prefill + DECODE overlap — the serving scenario\n"
+                 "vs strict-sequential (upper bound; MPS/two-stream baseline TODO)", fontsize=9)
+    ax.legend(fontsize=8); ax.grid(True, axis="y", alpha=0.3)
+
+    # Panel B: decode free-SM budget (108 - floor) vs decode batch
+    ax = axes[1]
+    if not fl.empty:
+        sub = fl[(fl.layer_type == "ssm") & (fl.context_len == 4096)]
+        for m in _models_in(sub):
+            g = sub[sub.model == m].groupby("batch")["floor_sm_point"].mean().reset_index()
+            ax.plot(g.batch, TOTAL_SM - g.floor_sm_point, "o-", color=MODEL_COLOR[m], label=m)
+        ax.set_xscale("log", base=2)
+        ax.set_xlabel("decode batch (concurrent requests)")
+        ax.set_ylabel("free SM budget for prefill  (108 − decode floor)")
+        ax.set_title("(B) free-SM budget shrinks as decode batch grows\n"
+                     "large batch → decode fills all SMs → spatial-split window closes", fontsize=9)
+        ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
+    fig.suptitle("E4 re-interpreted for serving (multi-request): overlap helps at "
+                 "low/moderate decode batch; the window closes at high batch",
+                 fontweight="bold", fontsize=10)
+    fig.tight_layout(rect=[0, 0, 1, 0.93])
+    _save(fig, out, "serving_overlap_and_budget.png")
+
+
+# ---------------------------------------------------------------------------
 # Verdict summary panel
 # ---------------------------------------------------------------------------
 
@@ -389,7 +452,8 @@ def main():
     ap.add_argument("--out", default=os.path.join(_CHAR, "results_v2", "figures"))
     args = ap.parse_args()
     print(f"v2 visualization  (results={args.results_dir}, out={args.out})")
-    for fn in (plot_e0, plot_e1, plot_e2, plot_asymmetry, plot_e3, plot_e4, plot_verdicts):
+    for fn in (plot_e0, plot_e1, plot_e2, plot_asymmetry, plot_e3, plot_e4,
+               plot_serving, plot_verdicts):
         try:
             fn(args.results_dir, args.out)
         except Exception as e:  # noqa: BLE001
