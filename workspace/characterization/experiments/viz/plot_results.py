@@ -216,6 +216,60 @@ def plot_e2(rdir, out):
 
 
 # ---------------------------------------------------------------------------
+# E2 — attn vs ssm RESOURCE ASYMMETRY (the layer-alloc thesis)
+# ---------------------------------------------------------------------------
+
+def plot_asymmetry(rdir, out):
+    ci = _concat(os.path.join(rdir, "e2", "saturation_ci_*.csv"))
+    if ci.empty:
+        print("asymmetry: no E2 CI — skip"); return
+    ci = ci[ci["chunk_granularity"].astype(str) == "256"]
+    models = _models_in(ci)
+
+    # (1) sat_sm: SSM vs ATTN per model — the exploitable gap
+    fig, axes = plt.subplots(2, 2, figsize=(11, 8), sharex=True)
+    for ax, m in zip(axes.ravel(), models):
+        s = ci[(ci.model == m) & (ci.layer_type == "ssm")].sort_values("batch")
+        a = ci[(ci.model == m) & (ci.layer_type == "attn") & (ci.context_len == 0)].sort_values("batch")
+        for d, lab, c in [(s, "SSM", "#2ca02c"), (a, "Attn", "#d62728")]:
+            ye = np.vstack([d.sat_sm_point - d.sat_sm_ci_low, d.sat_sm_ci_high - d.sat_sm_point])
+            ax.errorbar(d.batch, d.sat_sm_point, yerr=ye, fmt="o-", color=c, capsize=3, label=lab)
+        # shade the asymmetry gap
+        if len(s) and len(a):
+            bm = sorted(set(s.batch) & set(a.batch))
+            sv = [s[s.batch == b].sat_sm_point.iloc[0] for b in bm]
+            av = [a[a.batch == b].sat_sm_point.iloc[0] for b in bm]
+            ax.fill_between(bm, sv, av, color="grey", alpha=0.25, label="asymmetry (free SM)")
+        ax.axhline(TOTAL_SM, color="k", ls="--", lw=0.8)
+        ax.set_xscale("log", base=2); ax.set_title(m, fontsize=10)
+        ax.set_ylabel("saturation SM"); ax.grid(True, alpha=0.3); ax.legend(fontsize=7)
+    for ax in axes[1]:
+        ax.set_xlabel("batch")
+    fig.suptitle("E2: Attn vs SSM saturation SM — resource asymmetry (chunk=256)\n"
+                 "Attn saturates at more SMs than SSM ⇒ give SSM fewer, Attn more",
+                 fontweight="bold")
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    _save(fig, out, "e2_asymmetry_satsm.png")
+
+    # (2) bw_util: the asymmetry is in the MECHANISM (grid SSM vs BW/compute Attn)
+    fig, ax = plt.subplots(figsize=(7.5, 4.8))
+    for m in models:
+        s = ci[(ci.model == m) & (ci.layer_type == "ssm")].groupby("batch")["bw_util_pct_at_sat"].mean()
+        a = ci[(ci.model == m) & (ci.layer_type == "attn") & (ci.context_len == 0)].groupby("batch")["bw_util_pct_at_sat"].mean()
+        ax.plot(s.index, s.values, "o-", color=MODEL_COLOR[m], alpha=0.9, label=f"{m} SSM")
+        ax.plot(a.index, a.values, "s--", color=MODEL_COLOR[m], alpha=0.6, label=f"{m} Attn")
+    ax.axhline(85, color="k", ls=":", lw=1, label="BW-bound ~85%")
+    ax.set_xscale("log", base=2); ax.set_yscale("log")
+    ax.set_xlabel("batch"); ax.set_ylabel("BW util % at saturation (log)")
+    ax.set_title("E2: saturation mechanism is asymmetric\n"
+                 "SSM low util (grid-limited) vs Attn high util (BW/compute-limited)\n"
+                 "[NOTE: absolute BW% unreliable — attn_bytes overcounts cached KV, "
+                 "ssm undercounts state]", fontsize=9)
+    ax.legend(fontsize=6, ncol=2); ax.grid(True, which="both", alpha=0.3)
+    _save(fig, out, "e2_mechanism_bwutil.png")
+
+
+# ---------------------------------------------------------------------------
 # E3 — decode floor / Memory Gap
 # ---------------------------------------------------------------------------
 
@@ -301,7 +355,7 @@ def main():
     ap.add_argument("--out", default=os.path.join(_CHAR, "results_v2", "figures"))
     args = ap.parse_args()
     print(f"v2 visualization  (results={args.results_dir}, out={args.out})")
-    for fn in (plot_e0, plot_e1, plot_e2, plot_e3, plot_e4, plot_verdicts):
+    for fn in (plot_e0, plot_e1, plot_e2, plot_asymmetry, plot_e3, plot_e4, plot_verdicts):
         try:
             fn(args.results_dir, args.out)
         except Exception as e:  # noqa: BLE001
