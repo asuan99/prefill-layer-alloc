@@ -86,3 +86,7 @@ tmp/
 !results/
 !results/**
 !**/results/**
+# Re-include v2 results (archived v1 lives under .../results/, already covered)
+!results_v2/
+!results_v2/**
+!**/results_v2/**

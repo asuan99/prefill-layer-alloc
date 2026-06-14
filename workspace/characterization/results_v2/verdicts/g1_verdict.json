@@ -1,0 +1,22 @@
+{
+  "gate": "G1",
+  "verdict": "NO_DATA",
+  "layer_type": "ssm",
+  "thresholds": {
+    "bw_util_min_pct": 85.0,
+    "grid_frac_of_total": 0.9,
+    "total_sm": 108
+  },
+  "per_model": [],
+  "recommended_action": "Run E2 (run_batch_swept_sweep.py) first.",
+  "source": "E2 saturation_ci",
+  "_value_kind": {
+    "gate": "metadata",
+    "verdict": "derived",
+    "layer_type": "metadata",
+    "thresholds": "metadata",
+    "per_model": "derived",
+    "recommended_action": "metadata",
+    "source": "metadata"
+  }
+}

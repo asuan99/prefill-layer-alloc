@@ -1,0 +1,16 @@
+{
+  "gate": "G0",
+  "verdict": "NO_DATA",
+  "threshold_scan_share_pct": 30.0,
+  "per_model": {},
+  "recommended_action": "Run E1 (run_component_sweep.py) first.",
+  "source": "E1 component_sweep",
+  "_value_kind": {
+    "gate": "metadata",
+    "verdict": "derived",
+    "threshold_scan_share_pct": "metadata",
+    "per_model": "derived",
+    "recommended_action": "metadata",
+    "source": "metadata"
+  }
+}
