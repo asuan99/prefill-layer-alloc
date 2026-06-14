@@ -39,7 +39,7 @@ from shared import sweep_spec as ss
 from shared.loaders import get_model_config
 from experiments.common.labels import Label, write_labeled_csv
 
-DEFAULT_MODELS = ["zamba2_1.2b", "falcon_h1_1.5b"]
+DEFAULT_MODELS = ["zamba2_1.2b", "zamba2_2.7b", "falcon_h1_1.5b", "falcon_h1_3b"]
 DEFAULT_BATCHES = [1, 8, 32, 128]
 DEFAULT_SEQ = 2048
 DEFAULT_CHUNKS = ["256", "512", "full"]

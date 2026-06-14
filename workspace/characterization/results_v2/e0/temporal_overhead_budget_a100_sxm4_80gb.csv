@@ -1,4 +1,6 @@
 "# value_kind: measured=swap_us; derived=assumed_layer_us,n_swaps_worstcase,per_swap_overhead_pct,full_model_overhead_pct; metadata=model,device,config_status,num_layers,swap_cost_source,assumption"
 model__metadata,device__metadata,config_status__metadata,num_layers__metadata,swap_cost_source__metadata,assumption__metadata,swap_us__measured,assumed_layer_us__derived,n_swaps_worstcase__derived,per_swap_overhead_pct__derived,full_model_overhead_pct__derived
-zamba2_1.2b,a100_sxm4_80gb,provisional,54,archive_v1:ctx_switch_overhead_a100_sxm4_80gb.json,per_layer_compute=0.05ms (PRE-E1 ASSUMPTION),7.832,50.0,54,15.6647,15.6647
-falcon_h1_1.5b,a100_sxm4_80gb,provisional,44,archive_v1:ctx_switch_overhead_a100_sxm4_80gb.json,per_layer_compute=0.05ms (PRE-E1 ASSUMPTION),7.832,50.0,44,15.6647,15.6647
+zamba2_1.2b,a100_sxm4_80gb,verified,38,archive_v1:ctx_switch_overhead_a100_sxm4_80gb.json,per_layer_compute=0.05ms (PRE-E1 ASSUMPTION),7.832,50.0,38,15.6647,15.6647
+zamba2_2.7b,a100_sxm4_80gb,verified,54,archive_v1:ctx_switch_overhead_a100_sxm4_80gb.json,per_layer_compute=0.05ms (PRE-E1 ASSUMPTION),7.832,50.0,54,15.6647,15.6647
+falcon_h1_1.5b,a100_sxm4_80gb,verified,24,archive_v1:ctx_switch_overhead_a100_sxm4_80gb.json,per_layer_compute=0.05ms (PRE-E1 ASSUMPTION),7.832,50.0,24,15.6647,15.6647
+falcon_h1_3b,a100_sxm4_80gb,verified,32,archive_v1:ctx_switch_overhead_a100_sxm4_80gb.json,per_layer_compute=0.05ms (PRE-E1 ASSUMPTION),7.832,50.0,32,15.6647,15.6647

@@ -75,61 +75,105 @@ falcon_h1:
     intermediate_size: 12288
 
 # ===========================================================================
-# v2 SLM main models (Zamba2-1.2B / Falcon-H1-1.5B)
+# v2 SLM / mid-size main models — size sweep
+#   Zamba2:    1.2B, 2.7B   (temporal policy family; Mamba + sparse shared-attn)
+#   Falcon-H1: 1.5B, 3B     (spatial policy family; Mamba + Attn in parallel)
 # ===========================================================================
-# ⚠️ PROVISIONAL — neither model is in hf_cache/. The values below are DERIVED
-#    from public model-card architecture relations (n_heads = expand*hidden /
-#    head_dim for Mamba-2) and family conventions carried from the 7B entries.
-#    Every uncertain field is tagged `# TODO: verify`. These feed E0's grid
-#    prediction (the load-bearing G1 input), so CONFIRM against each model's HF
-#    config.json before trusting E0/E2 grid-saturation numbers.
-#    v2 references ONLY these 1.2B/1.5B entries; the 7B entries above are kept
-#    (per the v2 spec) but unused by the v2 experiments.
+# VERIFIED — extracted from each model's HF config.json via
+#   shared/configs/fetch_hf_model_configs.py  (re-run it to refresh).
+# Notable corrections over the earlier provisional guesses:
+#   * Falcon-H1 uses mamba chunk_size = 128 (NOT 256).
+#   * Falcon-H1-1.5B has 48 mamba heads (head_dim 64), not 16.
+#   * Zamba2 mamba n_groups = 1; d_state differs per size (1.2B=128, 2.7B=64).
+# v2 references these entries; the 7B entries above are kept but unused.
 # ---------------------------------------------------------------------------
 
 zamba2_1.2b:
   full_name: "Zamba2-1.2B"
   hf_repo: "Zyphra/Zamba2-1.2B"
-  config_status: provisional        # TODO: verify — model not in hf_cache
-  hidden_size: 2048                 # TODO: verify against HF config.json
-  num_layers: 54                    # TODO: verify (used only by E0 overhead budget)
+  config_status: verified           # extracted from HF config.json
+  hidden_size: 2048
+  num_layers: 38
   ssm:
-    # n_heads = expand(2) * hidden(2048) / head_dim(64) = 64
-    n_heads: 64                     # TODO: verify against HF config.json
-    head_dim: 64                    # Zamba2 family convention (7B uses 64)
-    d_state: 64                     # Zamba2 family convention
-    chunk_size: 256                 # Zamba2 family convention
-    expand: 2
-    n_groups: 2                     # TODO: verify
-    ssm_layer_fraction: 0.84        # TODO: verify (carried from 7B ratio)
-  attention:
-    # Zamba2 shared-attn: n_heads*head_dim = 2*hidden = 4096 → 32*128
-    num_heads: 32                   # TODO: verify against HF config.json
-    num_kv_heads: 32                # TODO: verify
-    head_dim: 128                   # TODO: verify
-    attn_layer_fraction: 0.16       # TODO: verify (carried from 7B ratio)
+    n_heads: 64                     # n_mamba_heads
+    head_dim: 64                    # mamba_headdim
+    d_state: 128                    # mamba_d_state
+    chunk_size: 256                 # mamba chunk_size
+    expand: 2                       # mamba_expand
+    n_groups: 1                     # mamba_ngroups
+    ssm_layer_fraction: 0.8421      # 32/38 pure-mamba layers
+  attention:                        # shared attention in hybrid layers
+    num_heads: 32                   # num_attention_heads
+    num_kv_heads: 32                # num_key_value_heads
+    head_dim: 128                   # attention_head_dim
+    attn_layer_fraction: 0.1579     # 6/38 hybrid layers
   mlp:
-    intermediate_size: 8192         # TODO: verify against HF config.json
+    intermediate_size: 8192         # ffn_hidden_size
+
+zamba2_2.7b:
+  full_name: "Zamba2-2.7B"
+  hf_repo: "Zyphra/Zamba2-2.7B"
+  config_status: verified           # extracted from HF config.json
+  hidden_size: 2560
+  num_layers: 54
+  ssm:
+    n_heads: 80                     # n_mamba_heads
+    head_dim: 64                    # mamba_headdim
+    d_state: 64                     # mamba_d_state
+    chunk_size: 256                 # mamba chunk_size
+    expand: 2
+    n_groups: 1                     # mamba_ngroups
+    ssm_layer_fraction: 0.8333      # 45/54 pure-mamba layers
+  attention:
+    num_heads: 32
+    num_kv_heads: 32
+    head_dim: 160                   # attention_head_dim
+    attn_layer_fraction: 0.1667     # 9/54 hybrid layers
+  mlp:
+    intermediate_size: 10240        # ffn_hidden_size
 
 falcon_h1_1.5b:
-  full_name: "Falcon-H1-1.5B"
-  hf_repo: "tiiuae/Falcon-H1-1.5B"
-  config_status: provisional        # TODO: verify — model not in hf_cache
-  hidden_size: 2048                 # TODO: verify against HF config.json
-  num_layers: 44                    # TODO: verify (Falcon-H1: all layers hybrid)
+  full_name: "Falcon-H1-1.5B-Base"
+  hf_repo: "tiiuae/Falcon-H1-1.5B-Base"
+  config_status: verified           # extracted from HF config.json
+  hidden_size: 2048
+  num_layers: 24                    # all hybrid (SSM+Attn in parallel)
   ssm:
-    # Falcon-H1 mamba_d_inner ~= hidden; n_heads = 2048 / head_dim(128) = 16
-    n_heads: 16                     # TODO: verify against HF config.json
-    head_dim: 128                   # Falcon-H1 family convention (7B uses 128)
-    d_state: 256                    # Falcon-H1 family convention
-    chunk_size: 256                 # Falcon-H1 family convention
-    expand: 2
-    n_groups: 1                     # Falcon-H1 family convention (7B uses 1)
-    ssm_layer_fraction: 1.0         # all layers have SSM branch (parallel)
-  attention:
-    num_heads: 8                    # TODO: verify against HF config.json
-    num_kv_heads: 2                 # TODO: verify (GQA, 7B uses 2)
-    head_dim: 128                   # TODO: verify
-    attn_layer_fraction: 1.0        # all layers have attention branch (parallel)
+    n_heads: 48                     # mamba_n_heads
+    head_dim: 64                    # mamba_d_head
+    d_state: 256                    # mamba_d_state
+    chunk_size: 128                 # mamba_chunk_size (NOT 256)
+    expand: 2                       # mamba_expand
+    n_groups: 1                     # mamba_n_groups
+    d_ssm: 3072                     # mamba_d_ssm (= 48 × 64)
+    ssm_layer_fraction: 1.0         # SSM branch in every layer
+  attention:                        # attention branch in every layer
+    num_heads: 8                    # num_attention_heads
+    num_kv_heads: 2                 # num_key_value_heads (GQA)
+    head_dim: 128                   # head_dim
+    attn_layer_fraction: 1.0
   mlp:
-    intermediate_size: 8192         # TODO: verify against HF config.json
+    intermediate_size: 4608         # intermediate_size
+
+falcon_h1_3b:
+  full_name: "Falcon-H1-3B-Base"
+  hf_repo: "tiiuae/Falcon-H1-3B-Base"
+  config_status: verified           # extracted from HF config.json
+  hidden_size: 2560
+  num_layers: 32                    # all hybrid (SSM+Attn in parallel)
+  ssm:
+    n_heads: 32                     # mamba_n_heads
+    head_dim: 128                   # mamba_d_head
+    d_state: 256                    # mamba_d_state
+    chunk_size: 128                 # mamba_chunk_size (NOT 256)
+    expand: 2
+    n_groups: 1                     # mamba_n_groups
+    d_ssm: 4096                     # mamba_d_ssm (= 32 × 128)
+    ssm_layer_fraction: 1.0
+  attention:
+    num_heads: 10                   # num_attention_heads
+    num_kv_heads: 2                 # num_key_value_heads (GQA)
+    head_dim: 128                   # head_dim
+    attn_layer_fraction: 1.0
+  mlp:
+    intermediate_size: 6144         # intermediate_size

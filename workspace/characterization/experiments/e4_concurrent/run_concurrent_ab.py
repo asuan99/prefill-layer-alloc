@@ -194,7 +194,7 @@ def run_model(model, args, total_sm, device, out_dir: Path):
 
 def parse_args():
     p = argparse.ArgumentParser(description="E4 concurrent A/B (real concurrency)")
-    p.add_argument("--models", nargs="+", default=["falcon_h1_1.5b", "zamba2_1.2b"])
+    p.add_argument("--models", nargs="+", default=["zamba2_1.2b", "zamba2_2.7b", "falcon_h1_1.5b", "falcon_h1_3b"])
     p.add_argument("--batch", type=int, default=8)
     p.add_argument("--prefill-seq", type=int, default=2048)
     p.add_argument("--chunk", default="256")

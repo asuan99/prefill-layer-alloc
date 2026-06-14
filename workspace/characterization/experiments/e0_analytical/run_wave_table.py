@@ -23,9 +23,9 @@ Everything E0 emits is DERIVED (analytical) except metadata inputs and the
 re-used swap measurement. All block/wave math comes from the single source
 experiments/common/wave_model.py — this script never recomputes it.
 
-The SLM configs are PROVISIONAL (models not in hf_cache); each row carries a
-``config_status`` column so the provisional inputs are never mistaken for
-verified ones.
+The SLM/mid configs are VERIFIED from HF config.json (via
+shared/configs/fetch_hf_model_configs.py); each row still carries a
+``config_status`` column for provenance.
 
 Usage
 -----
@@ -59,7 +59,7 @@ from experiments.common.labels import Label, write_labeled_csv
 # Default v2 axes (prompt E0 spec). batch grid adds the high points (128) that
 # the v1 batch_grid lacked — the batch axis is what makes the grid mechanism
 # falsifiable.
-DEFAULT_MODELS = ["zamba2_1.2b", "falcon_h1_1.5b"]
+DEFAULT_MODELS = ["zamba2_1.2b", "zamba2_2.7b", "falcon_h1_1.5b", "falcon_h1_3b"]
 DEFAULT_BATCHES = [1, 8, 32, 128]
 DEFAULT_CHUNKS = ["256", "512", "full"]          # outer prefill-chunk granularity
 DEFAULT_SEQ_LENS = [2048, 8192]                  # needed to resolve chunk="full"
