@@ -1,9 +1,30 @@
 {
   "gate": "G0",
-  "verdict": "NO_DATA",
+  "verdict": "OK",
   "threshold_scan_share_pct": 30.0,
-  "per_model": {},
-  "recommended_action": "Run E1 (run_component_sweep.py) first.",
+  "per_model": {
+    "falcon_h1_1.5b": {
+      "max_scan_share_pct": 87.103,
+      "n_points": 48,
+      "g0": "OK"
+    },
+    "falcon_h1_3b": {
+      "max_scan_share_pct": 78.879,
+      "n_points": 48,
+      "g0": "OK"
+    },
+    "zamba2_1.2b": {
+      "max_scan_share_pct": 82.206,
+      "n_points": 48,
+      "g0": "OK"
+    },
+    "zamba2_2.7b": {
+      "max_scan_share_pct": 78.754,
+      "n_points": 48,
+      "g0": "OK"
+    }
+  },
+  "recommended_action": "Scan share adequate \u2192 proceed to E2.",
   "source": "E1 component_sweep",
   "_value_kind": {
     "gate": "metadata",
