@@ -1,69 +1,49 @@
 #!/bin/bash
 # =============================================================================
-# submit_size_sweep.sh — run a GPU experiment across the 4 model sizes in
+# submit_size_sweep.sh — run one GPU experiment across the 4 model sizes in
 # PARALLEL via a SLURM array (one array task per model).
 #
-#   bash experiments/slurm/submit_size_sweep.sh <e1|e2|e3|e4> [-- extra args]
+#   env -u BASH_ENV bash experiments/slurm/submit_size_sweep.sh <e1|e2|e3|e4> [-- extra]
 #
 # Array index → model:
 #   0 = zamba2_1.2b   1 = zamba2_2.7b   2 = falcon_h1_1.5b   3 = falcon_h1_3b
 #
-# Each task runs the experiment for ONE model with `--models <model>`, so the
-# four sizes run concurrently on four A100 allocations instead of looping in a
-# single long job. Inside each task the runner still does its own per-SM-level
-# subprocess isolation.
+# ⚠️ This cluster's BASH_ENV (lmod) breaks non-interactive bash, so the job is
+#    submitted as `--wrap "env -u BASH_ENV bash -c '…'"` (SLURM runs --wrap under
+#    /bin/sh, which is BASH_ENV-immune; env -u then gives a clean bash). Launch
+#    this dispatcher itself with `env -u BASH_ENV bash …`.
 #
-# E0 (analytical) and gates (adjudicate) are CPU/instant — use submit.sh for
-# those (or run them directly); they are not part of this array.
-#
-# The script self-submits: with no SLURM array context it calls `sbatch
-# --array=0-3` on itself; the array tasks then read $EXP + $SLURM_ARRAY_TASK_ID.
+# E0/gates are CPU/instant — use submit.sh (LOCAL=1) for those.
+# Overrides:  A100_PART=<gpu partition>
 # =============================================================================
-#SBATCH --job-name=v2-size-sweep
-#SBATCH --partition=amd_a100nv_8
-#SBATCH --gres=gpu:1
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=4
-#SBATCH --comment=pytorch
-#SBATCH --output=/scratch/%u/whlee/prefill-layer-alloc/logs/v2_sizesweep_%A_%a.log
-#SBATCH --error=/scratch/%u/whlee/prefill-layer-alloc/logs/v2_sizesweep_%A_%a.err
-
 set -euo pipefail
 
-MODELS=(zamba2_1.2b zamba2_2.7b falcon_h1_1.5b falcon_h1_3b)
-REPO_ROOT="/scratch/$USER/whlee/prefill-layer-alloc"
+EXP="${1:-}"; shift || true
+[ "${1:-}" = "--" ] && shift || true
+EXTRA="$*"
+
+MODELS="zamba2_1.2b zamba2_2.7b falcon_h1_1.5b falcon_h1_3b"
+REPO_ROOT="/scratch/$USER/whlee/prefill-layer-alloc"     # assumed space-free
 CHAR_DIR="$REPO_ROOT/workspace/characterization"
+A100_PART="${A100_PART:-amd_a100nv_8}"
+LOG="$REPO_ROOT/logs"; mkdir -p "$LOG"
 
-# --- dispatcher mode: not yet inside an array task → submit ourselves ---------
-if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
-  EXP="${1:-}"; shift || true
-  [ "${1:-}" = "--" ] && shift || true
-  case "$EXP" in
-    e1) T="04:00:00" ;;
-    e2) T="08:00:00" ;;   # heaviest: full SM × batch × chunk × layer, n≥30
-    e3) T="04:00:00" ;;
-    e4) T="04:00:00" ;;
-    *) echo "usage: $0 <e1|e2|e3|e4> [-- extra args]"; exit 2 ;;
-  esac
-  mkdir -p "$REPO_ROOT/logs"
-  echo "[size-sweep] submitting 4-task array for $EXP (models: ${MODELS[*]})"
-  exec sbatch --array=0-3 --time="$T" \
-       --export=ALL,EXP="$EXP",EXTRA="${*:-}" "$0"
-fi
-
-# --- array-task mode: run one model ------------------------------------------
-MODEL="${MODELS[$SLURM_ARRAY_TASK_ID]}"
 case "$EXP" in
-  e1) SCRIPT="experiments/e1_prefill_decomp/run_component_sweep.py" ;;
-  e2) SCRIPT="experiments/e2_sm_saturation/run_batch_swept_sweep.py" ;;
-  e3) SCRIPT="experiments/e3_decode_floor/run_decode_floor.py" ;;
-  e4) SCRIPT="experiments/e4_concurrent/run_concurrent_ab.py" ;;
-  *) echo "bad EXP=$EXP"; exit 2 ;;
+  e1) SCRIPT="experiments/e1_prefill_decomp/run_component_sweep.py";   T="04:00:00" ;;
+  e2) SCRIPT="experiments/e2_sm_saturation/run_batch_swept_sweep.py";  T="08:00:00" ;;
+  e3) SCRIPT="experiments/e3_decode_floor/run_decode_floor.py";        T="04:00:00" ;;
+  e4) SCRIPT="experiments/e4_concurrent/run_concurrent_ab.py";         T="04:00:00" ;;
+  *) echo "usage: $0 <e1|e2|e3|e4> [-- extra args]"; exit 2 ;;
 esac
 
-echo "=== size-sweep task $SLURM_ARRAY_TASK_ID: $EXP / $MODEL (job ${SLURM_JOB_ID:-?}) ==="
-source "$REPO_ROOT/bin/activate" 2>/dev/null || true
-cd "$CHAR_DIR"
-# shellcheck disable=SC2086
-python "$SCRIPT" --models "$MODEL" ${EXTRA:-}
+# Inner bash -c body (single-quote-safe). $SLURM_ARRAY_TASK_ID stays literal
+# because the printf format is single-quoted.
+INNER="$(printf 'MODELS=(%s); M=${MODELS[$SLURM_ARRAY_TASK_ID]}; source %s/bin/activate 2>/dev/null || true; cd %s; echo "task $SLURM_ARRAY_TASK_ID -> $M"; python %s --models $M %s' \
+  "$MODELS" "$REPO_ROOT" "$CHAR_DIR" "$SCRIPT" "$EXTRA")"
+
+echo "[size-sweep] submitting 4-task array for $EXP (models: $MODELS)"
+sbatch --array=0-3 --partition="$A100_PART" --gres=gpu:1 \
+  --job-name="v2-$EXP" --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 \
+  --time="$T" --comment=pytorch \
+  --output="$LOG/v2_${EXP}_%A_%a.log" --error="$LOG/v2_${EXP}_%A_%a.err" \
+  --wrap "env -u BASH_ENV bash -c '$INNER'"

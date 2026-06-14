@@ -48,13 +48,16 @@ case "$EXP" in
 esac
 
 # Command run on the node: activate venv (if present), cd into characterization,
-# run the experiment entry point with any extra args.
-RUNCMD="source \"$REPO_ROOT/bin/activate\" 2>/dev/null || true; \
-cd \"$CHAR_DIR\" && python \"$SCRIPT\" ${EXTRA[*]:-}"
+# run the experiment entry point with any extra args. Paths assumed space-free.
+# NOTE: this cluster's BASH_ENV (lmod) breaks non-interactive bash, so every real
+# command is launched via `env -u BASH_ENV bash -c` (SLURM runs --wrap under sh,
+# which is BASH_ENV-immune, then env -u gives a clean bash).
+RUNCMD="source $REPO_ROOT/bin/activate 2>/dev/null || true; \
+cd $CHAR_DIR && python $SCRIPT ${EXTRA[*]:-}"
 
 if [ "${LOCAL:-0}" = "1" ]; then
   echo "[submit.sh] LOCAL run: $EXP -> $SCRIPT ${EXTRA[*]:-}"
-  bash -c "$RUNCMD"
+  env -u BASH_ENV bash -c "$RUNCMD"
   exit $?
 fi
 
@@ -76,4 +79,4 @@ sbatch \
   --comment=pytorch \
   --output="$LOGDIR/v2_${EXP}_%j.log" \
   --error="$LOGDIR/v2_${EXP}_%j.err" \
-  --wrap "$RUNCMD"
+  --wrap "env -u BASH_ENV bash -c '$RUNCMD'"
