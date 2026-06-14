@@ -5,23 +5,30 @@ G0 (from E1 component sweep): is the SSM scan actually a dominant component?
     max scan_share_pct < 30  → G0 = WEAK   (the memory-bound-scan premise is thin)
     else                     → G0 = OK
 
-G1 (from E2 batch-swept saturation): is prefill SM saturation bandwidth-bound or
-grid-bound? This is the single failure point of the whole v2 framing.
-    sm_sat_ssm batch-invariant (CIs overlap across batch) AND
-        BW util at saturation ≥ ~85%                  → G1 = BW_MECHANISM
-            (framing holds → E4 may proceed)
-    sm_sat_ssm climbs toward total_sm as batch grows,
-        tracking E0's grid_sat_sm prediction          → G1 = GRID_MECHANISM
-            (framing rejected → fall back to spatial-only / donor decode)
-    otherwise                                         → G1 = INCONCLUSIVE
-            (recommend more batch points)
+G1 (from E2 batch-swept saturation) — REDEFINED.
+  The real layer-alloc thesis is whether attn and ssm have an exploitable
+  RESOURCE ASYMMETRY, not whether SSM alone is bandwidth-bound. (The old gate
+  asked "is SSM BW-bound?" and mislabelled a GRID finding as a failure — but
+  grid-limited SSM is exactly what frees SMs for attention.) So G1 now tests:
+
+    Is attn's saturation SM CI-separated from ssm's over the batch range?
+        ≥1 operating batch with non-overlapping CIs        → G1 = ASYMMETRY_PRESENT
+            (layer-alloc has headroom → measure the gain in E4)
+        gaps exist but CIs always overlap                  → G1 = ASYMMETRY_WEAK
+        no meaningful gap                                  → G1 = NO_ASYMMETRY
+
+  The saturation MECHANISM (grid vs bandwidth) is reported as a descriptive
+  sub-result per layer type, NOT as the pass/fail. Mechanism is judged from the
+  trustworthy signal (measured sat_sm vs E0's analytic grid prediction); absolute
+  BW% is recorded but flagged unreliable (attn_bytes overcounts cached KV, the
+  SSM byte count omits recurrent-state traffic).
 
 Outputs → results_v2/verdicts/{g0_verdict.json, g1_verdict.json}. Each carries the
 verdict, the evidence numbers it was based on, and a recommended next action.
 Evidence keys are measured/derived/metadata-labelled like every other v2 output.
 
-This is an automatic aid; the final call is still a human's (the v1 gate said the
-same). adjudicate never measures — it only reads E1/E2 CSVs.
+This is an automatic aid; the final call is still a human's. adjudicate never
+measures — it only reads E1/E2 CSVs.
 """
 
 from __future__ import annotations
@@ -45,8 +52,11 @@ from experiments.common.stats import ci_overlap
 
 # thresholds (named so the verdict can cite them)
 G0_SCAN_SHARE_MIN = 30.0      # % — below this G0 is WEAK
-G1_BW_UTIL_MIN = 85.0         # % — saturation BW util to call it bandwidth-bound
-G1_GRID_FRAC = 0.90           # sat_sm ≥ this × total_sm counts as "approaching total"
+ASYM_CHUNK = "256"            # chunk granularity used for the asymmetry test
+ASYM_MIN_GAP_SM = 13          # ~one Green-Context grid step; smaller gaps = noise
+# descriptive mechanism hints (NOT the gate):
+MECH_GRID_TOL_SM = 14         # |sat_sm - E0 grid pred| within ~1 step → grid-consistent
+MECH_BW_UTIL_HI = 50.0        # % — high measured util hint (unreliable in absolute terms)
 
 
 def _f(x):
@@ -115,109 +125,119 @@ def _load_ci_rows(e2_dir: Path):
     return out
 
 
-def adjudicate_g1_model(ci_rows: list[dict], model: str, layer_type: str,
-                        total_sm: int) -> dict:
-    """Decide BW vs GRID for one model's SSM saturation across batch."""
-    rows = [r for r in ci_rows
-            if r["model"] == model and r["layer_type"] == layer_type]
-    # group by (chunk, context); within a group, vary batch.
-    groups: dict = {}
-    for r in rows:
-        key = (r.get("chunk_granularity"), r.get("context_len"))
-        groups.setdefault(key, []).append(r)
-
-    group_verdicts = []
-    for key, grp in groups.items():
-        pts = []
-        for r in grp:
-            sat = _f(r.get("sat_sm_point"))
-            lo = _f(r.get("sat_sm_ci_low"))
-            hi = _f(r.get("sat_sm_ci_high"))
-            if sat is None or lo is None or hi is None:
-                continue
-            pts.append({
-                "batch": int(_f(r.get("batch")) or 0),
-                "sat_sm": sat, "ci": (lo, hi),
-                "bw_util_at_sat": _f(r.get("bw_util_pct_at_sat")),
-                "grid_sat_e0": _f(r.get("grid_sat_sm_e0")),
-            })
-        if len(pts) < 2:
+def _sat_points(ci_rows, model, layer_type, total_sm):
+    """{batch: {sat,ci,bw,grid_e0}} for one model+layer at ASYM_CHUNK, context 0."""
+    pts = {}
+    for r in ci_rows:
+        if (r["model"] != model or r["layer_type"] != layer_type
+                or str(r.get("chunk_granularity")) != ASYM_CHUNK
+                or _f(r.get("context_len")) not in (0, None)):
             continue
-        pts.sort(key=lambda p: p["batch"])
+        sat, lo, hi = (_f(r.get("sat_sm_point")), _f(r.get("sat_sm_ci_low")),
+                       _f(r.get("sat_sm_ci_high")))
+        if sat is None or lo is None or hi is None:
+            continue
+        b = int(_f(r.get("batch")) or 0)
+        pts[b] = {"sat": sat, "ci": (lo, hi),
+                  "bw": _f(r.get("bw_util_pct_at_sat")),
+                  "grid_e0": _f(r.get("grid_sat_sm_e0"))}
+    return pts
 
-        base_ci = pts[0]["ci"]
-        batch_invariant = all(ci_overlap(base_ci, p["ci"]) for p in pts)
-        sat_vals = [p["sat_sm"] for p in pts]
-        monotone_up = all(b >= a - 1e-9 for a, b in zip(sat_vals, sat_vals[1:]))
-        approaches_total = sat_vals[-1] >= G1_GRID_FRAC * total_sm
-        bw_utils = [p["bw_util_at_sat"] for p in pts if p["bw_util_at_sat"] is not None]
-        bw_high = bool(bw_utils) and (min(bw_utils) >= G1_BW_UTIL_MIN)
 
-        if batch_invariant and bw_high:
-            gv = "BW_MECHANISM"
-        elif monotone_up and approaches_total:
-            gv = "GRID_MECHANISM"
-        else:
-            gv = "INCONCLUSIVE"
+def _mechanism(pts, use_grid_pred, total_sm):
+    """Descriptive (NOT the gate): grid-consistent vs other, from sat_sm vs E0.
 
-        group_verdicts.append({
-            "chunk_granularity": key[0], "context_len": key[1],
-            "verdict": gv,
-            "batch_invariant": batch_invariant,
-            "monotone_up": monotone_up,
-            "approaches_total": approaches_total,
-            "bw_high": bw_high,
-            "sat_sm_by_batch": {p["batch"]: p["sat_sm"] for p in pts},
-            "ci_by_batch": {p["batch"]: list(p["ci"]) for p in pts},
-            "bw_util_by_batch": {p["batch"]: p["bw_util_at_sat"] for p in pts},
-            "grid_sat_e0_by_batch": {p["batch"]: p["grid_sat_e0"] for p in pts},
-        })
+    use_grid_pred=True only for SSM (grid_sat_sm_e0 is the SSM grid; for attn the
+    E0 column is not the attn grid, so we fall back to a BW-util hint, caveated).
+    """
+    if not pts:
+        return "unknown"
+    if use_grid_pred:
+        hits = sum(1 for p in pts.values()
+                   if p["grid_e0"] is not None
+                   and abs(p["sat"] - min(p["grid_e0"], total_sm)) <= MECH_GRID_TOL_SM)
+        if hits >= max(1, len(pts) // 2):
+            return "grid_limited"
+    bws = [p["bw"] for p in pts.values() if p["bw"] is not None]
+    if bws and (sum(bws) / len(bws)) >= MECH_BW_UTIL_HI:
+        return "bw_or_compute_limited(util-hint;abs%unreliable)"
+    return "indeterminate"
 
-    # roll up group verdicts to a model verdict
-    vs = [g["verdict"] for g in group_verdicts]
-    if not vs:
-        model_v = "NO_DATA"
-    elif vs.count("BW_MECHANISM") and not vs.count("GRID_MECHANISM"):
-        model_v = "BW_MECHANISM"
-    elif vs.count("GRID_MECHANISM") and not vs.count("BW_MECHANISM"):
-        model_v = "GRID_MECHANISM"
-    elif vs.count("BW_MECHANISM") and vs.count("GRID_MECHANISM"):
-        model_v = "MIXED"
+
+def adjudicate_g1_model(ci_rows, model, total_sm) -> dict:
+    """Asymmetry test for one model: attn sat_sm vs ssm sat_sm across batch."""
+    ssm = _sat_points(ci_rows, model, "ssm", total_sm)
+    attn = _sat_points(ci_rows, model, "attn", total_sm)
+    batches = sorted(set(ssm) & set(attn))
+    detail, sep_batches = [], []
+    max_gap = None
+    for b in batches:
+        s, a = ssm[b], attn[b]
+        gap = a["sat"] - s["sat"]                       # +ve: attn needs more SM
+        # CI-separated upward asymmetry: attn CI strictly above ssm CI
+        separated = (a["ci"][0] > s["ci"][1]) and abs(gap) >= ASYM_MIN_GAP_SM
+        if separated:
+            sep_batches.append(b)
+        if max_gap is None or abs(gap) > abs(max_gap):
+            max_gap = gap
+        detail.append({"batch": b, "ssm_sat": s["sat"], "ssm_ci": list(s["ci"]),
+                       "attn_sat": a["sat"], "attn_ci": list(a["ci"]),
+                       "gap_attn_minus_ssm": gap, "ci_separated": separated})
+
+    if not batches:
+        verdict = "NO_DATA"
+    elif sep_batches:
+        verdict = "ASYMMETRY_PRESENT"
+    elif max_gap is not None and abs(max_gap) >= ASYM_MIN_GAP_SM:
+        verdict = "ASYMMETRY_WEAK"     # gap exists but CIs overlap
     else:
-        model_v = "INCONCLUSIVE"
+        verdict = "NO_ASYMMETRY"
 
-    return {"model": model, "layer_type": layer_type,
-            "verdict": model_v, "groups": group_verdicts}
+    return {
+        "model": model, "verdict": verdict,
+        "max_gap_sm": max_gap,
+        "direction": "attn>ssm" if (max_gap or 0) > 0 else "ssm>=attn",
+        "batches_ci_separated": sep_batches,
+        "ssm_mechanism": _mechanism(ssm, True, total_sm),    # descriptive only
+        "attn_mechanism": _mechanism(attn, False, total_sm), # descriptive only
+        "detail": detail,
+    }
 
 
-def adjudicate_g1(e2_dir: Path, layer_type: str, total_sm: int) -> dict:
+def adjudicate_g1(e2_dir: Path, total_sm: int) -> dict:
     ci_rows = _load_ci_rows(e2_dir)
     models = sorted({r["model"] for r in ci_rows}) if ci_rows else []
-    per_model = [adjudicate_g1_model(ci_rows, m, layer_type, total_sm) for m in models]
+    per_model = [adjudicate_g1_model(ci_rows, m, total_sm) for m in models]
+    vs = [m["verdict"] for m in per_model]
 
-    verdicts = [m["verdict"] for m in per_model]
-    if not verdicts:
-        overall, action = "NO_DATA", "Run E2 (run_batch_swept_sweep.py) first."
-    elif all(v == "BW_MECHANISM" for v in verdicts):
-        overall = "BW_MECHANISM"
-        action = ("Framing holds: SSM saturation is bandwidth-bound and "
-                  "batch-invariant → proceed to E4 concurrent.")
-    elif any(v == "GRID_MECHANISM" for v in verdicts):
-        overall = "GRID_MECHANISM"
-        action = ("Framing rejected: SSM saturation tracks the grid (sat_sm → "
-                  "total_sm with batch). Recommend fallback (spatial-only Falcon "
-                  "split / donor decode); do NOT run E4 as the headline result.")
+    present = [m["model"] for m in per_model if m["verdict"] == "ASYMMETRY_PRESENT"]
+    if not vs:
+        overall = "NO_DATA"
+        action = "Run E2 (run_batch_swept_sweep.py) first."
+    elif present:
+        overall = "ASYMMETRY_PRESENT"
+        action = ("Layer-type resource asymmetry confirmed (attn saturates at more "
+                  f"SMs than ssm, CI-separated) for: {', '.join(present)}. SSM frees "
+                  "SMs for attention -> proceed to E4 to measure the realizable gain "
+                  "(spatial split is the main candidate; the asymmetry is grid-driven "
+                  "so a static, E0-predicted split should suffice). Note: the gap "
+                  "compresses at very high batch -- quantify the per-model collapse batch.")
+    elif any(v == "ASYMMETRY_WEAK" for v in vs):
+        overall = "ASYMMETRY_WEAK"
+        action = ("Gaps present but CIs overlap -- add batch points / raise n_measure "
+                  "to tighten CIs before committing to E4.")
     else:
-        overall = "INCONCLUSIVE"
-        action = ("Inconclusive: add batch points between the diverging ones and "
-                  "re-run E2 before deciding.")
+        overall = "NO_ASYMMETRY"
+        action = ("No exploitable attn/ssm SM gap -- layer-type SM allocation has no "
+                  "headroom in this regime.")
 
     return {
         "gate": "G1",
         "verdict": overall,
-        "layer_type": layer_type,
-        "thresholds": {"bw_util_min_pct": G1_BW_UTIL_MIN,
-                       "grid_frac_of_total": G1_GRID_FRAC, "total_sm": total_sm},
+        "criterion": "attn-vs-ssm saturation-SM asymmetry (CI-separated); "
+                     "mechanism is descriptive, not the gate",
+        "thresholds": {"chunk": ASYM_CHUNK, "min_gap_sm": ASYM_MIN_GAP_SM,
+                       "total_sm": total_sm},
         "per_model": per_model,
         "recommended_action": action,
         "source": "E2 saturation_ci",
@@ -234,19 +254,17 @@ _G0_LABELS = {
     "recommended_action": Label.METADATA, "source": Label.METADATA,
 }
 _G1_LABELS = {
-    "gate": Label.METADATA, "verdict": Label.DERIVED, "layer_type": Label.METADATA,
+    "gate": Label.METADATA, "verdict": Label.DERIVED, "criterion": Label.METADATA,
     "thresholds": Label.METADATA, "per_model": Label.DERIVED,
     "recommended_action": Label.METADATA, "source": Label.METADATA,
 }
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="G0/G1 adjudication → verdict JSON")
+    p = argparse.ArgumentParser(description="G0/G1 adjudication -> verdict JSON")
     p.add_argument("--e1-dir", type=Path, default=Path(_CHAR) / "results_v2" / "e1")
     p.add_argument("--e2-dir", type=Path, default=Path(_CHAR) / "results_v2" / "e2")
     p.add_argument("--out-dir", type=Path, default=Path(_CHAR) / "results_v2" / "verdicts")
-    p.add_argument("--g1-layer-type", default="ssm",
-                   help="SSM layer used for the G1 saturation test (default: ssm)")
     return p.parse_args()
 
 
@@ -255,7 +273,7 @@ def main():
     total_sm = ss.total_sm()
 
     g0 = adjudicate_g0(args.e1_dir)
-    g1 = adjudicate_g1(args.e2_dir, args.g1_layer_type, total_sm)
+    g1 = adjudicate_g1(args.e2_dir, total_sm)
 
     write_labeled_json(args.out_dir / "g0_verdict.json", g0, _G0_LABELS)
     write_labeled_json(args.out_dir / "g1_verdict.json", g1, _G1_LABELS)

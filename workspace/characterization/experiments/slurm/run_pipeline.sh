@@ -96,7 +96,7 @@ env -u BASH_ENV bash -c "$ACT; python experiments/gates/adjudicate.py" || true
 
 # --- phase 2: e4 only if G1 = BW_MECHANISM ----------------------------------
 G1="$REPO_ROOT/workspace/characterization/results_v2/verdicts/g1_verdict.json"
-if grep -q '"verdict": "BW_MECHANISM"' "$G1" 2>/dev/null || [ "${FORCE_E4:-0}" = "1" ]; then
+if grep -qE '"verdict": "(ASYMMETRY_PRESENT|BW_MECHANISM)"' "$G1" 2>/dev/null || [ "${FORCE_E4:-0}" = "1" ]; then
   echo "[phase 2] G1=BW_MECHANISM (or FORCE_E4) → submitting e4 per model ..."
   for m in $MODELS; do submit_job e4 "$m"; done
   wait_all

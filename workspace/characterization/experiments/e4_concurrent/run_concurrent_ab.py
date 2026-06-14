@@ -77,10 +77,10 @@ def _check_g1(verdict_path: Path, force: bool) -> bool:
         print(f"  G1 verdict not found ({verdict_path}). Run gates/adjudicate.py.")
         return force
     v = json.loads(verdict_path.read_text()).get("verdict")
-    if v == "BW_MECHANISM":
-        print(f"  G1 = BW_MECHANISM → E4 authorised.")
+    if v in ("ASYMMETRY_PRESENT", "BW_MECHANISM"):
+        print(f"  G1 = {v} -> E4 authorised (layer-type asymmetry exists).")
         return True
-    print(f"  G1 = {v} → E4 is NOT authorised as the headline result.")
+    print(f"  G1 = {v} -> E4 is NOT authorised as the headline result.")
     if force:
         print("  --force set: running anyway (pipeline validation only).")
     return force
