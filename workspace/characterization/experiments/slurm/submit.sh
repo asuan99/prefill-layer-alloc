@@ -17,7 +17,9 @@
 #   LOCAL=1 bash experiments/slurm/submit.sh e0
 #
 # Override partitions if your cluster differs:
-#   A100_PART=amd_a100nv_8  CPU_PART=amd_a100nv_8   (defaults; CPU uses gres=gpu:0)
+#   A100_PART=amd_a100nv_8  CPU_PART=amd_a100nv_8   (defaults)
+#   amd_a100nv_8 REQUIRES a GPU, so CPU stages (e0/gates/test) default to gpu:1.
+#   On a real CPU partition:  CPU_PART=<cpu> CPU_GRES=gpu:0 bash submit.sh gates
 # =============================================================================
 set -euo pipefail
 
@@ -59,7 +61,9 @@ fi
 if [ "$GPU" = "1" ]; then
   PART="$A100_PART"; GRES="--gres=gpu:1"
 else
-  PART="$CPU_PART";  GRES="--gres=gpu:0"
+  # amd_a100nv_8 requires a GPU; CPU stages default to gpu:1. On a real CPU
+  # partition use: CPU_PART=<cpu> CPU_GRES=gpu:0 bash submit.sh gates
+  PART="$CPU_PART";  GRES="--gres=${CPU_GRES:-gpu:1}"
 fi
 
 echo "[submit.sh] sbatch $EXP -> $SCRIPT  (part=$PART $GRES time=$T)"
