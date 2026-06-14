@@ -4,22 +4,22 @@
   "threshold_scan_share_pct": 30.0,
   "per_model": {
     "falcon_h1_1.5b": {
-      "max_scan_share_pct": 87.171,
+      "max_scan_share_pct": 87.174,
       "n_points": 48,
       "g0": "OK"
     },
     "falcon_h1_3b": {
-      "max_scan_share_pct": 80.178,
+      "max_scan_share_pct": 82.544,
       "n_points": 48,
       "g0": "OK"
     },
     "zamba2_1.2b": {
-      "max_scan_share_pct": 82.666,
+      "max_scan_share_pct": 82.834,
       "n_points": 48,
       "g0": "OK"
     },
     "zamba2_2.7b": {
-      "max_scan_share_pct": 79.047,
+      "max_scan_share_pct": 79.031,
       "n_points": 48,
       "g0": "OK"
     }

@@ -303,23 +303,57 @@ def plot_e3(rdir, out):
 # ---------------------------------------------------------------------------
 
 def plot_e4(rdir, out):
+    pp = _concat(os.path.join(rdir, "e4", "concurrent_pp_*.csv"))
     di = _concat(os.path.join(rdir, "e4", "decode_interference_*.csv"))
-    if di.empty:
-        print("E4: no decode_interference — skip (E4 runs only if G1=BW_MECHANISM)")
+    if pp.empty and di.empty:
+        print("E4: no data — skip (runs only if G1 authorizes / FORCE_E4)")
         return
-    di = di[di["status"] == "ok"]
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    models = _models_in(di); x = np.arange(len(models)); w = 0.38
-    for i, lt in enumerate(["ssm", "attn"]):
-        vals = [di[(di["model"] == m) & (di["prefill_layer_type"] == lt)]
-                ["decode_inflation_pct"].mean() for m in models]
-        ax.bar(x + (i - 0.5) * w, np.nan_to_num(vals), w, label=f"prefill={lt}")
-    ax.set_xticks(x); ax.set_xticklabels(models, rotation=20, ha="right", fontsize=8)
-    ax.set_ylabel("decode latency inflation % (derived)")
-    ax.set_title("E4: decode inflation by concurrent prefill type\n"
-                 "(SSM > Attn ⇒ bandwidth interference)")
-    ax.legend(fontsize=8); ax.grid(True, axis="y", alpha=0.3)
-    _save(fig, out, "e4_decode_interference.png")
+
+    # (1) prefill+prefill concurrent throughput: uniform vs layer-aware split
+    if not pp.empty:
+        pp = pp[pp["status"] == "ok"]
+        models = _models_in(pp); modes = sorted(pp["budget_mode"].unique())
+        fig, ax = plt.subplots(figsize=(7.5, 4.5))
+        x = np.arange(len(models)); w = 0.8 / max(1, len(modes))
+        for i, md in enumerate(modes):
+            vals = [pp[(pp.model == m) & (pp.budget_mode == md)]["throughput_gain"].mean()
+                    for m in models]
+            ax.bar(x + (i - (len(modes) - 1) / 2) * w, np.nan_to_num(vals), w, label=md)
+        ax.axhline(1.0, color="k", ls="--", lw=1, label="no gain (=1.0)")
+        ax.set_xticks(x); ax.set_xticklabels(models, rotation=20, ha="right", fontsize=8)
+        ax.set_ylabel("prefill-prefill throughput_gain (derived)")
+        ax.set_title("E4 (a): concurrent prefill throughput — uniform vs layer-aware SM split\n"
+                     ">1 = aware split helps; overlap is small (overlap_ratio≈1)")
+        ax.set_ylim(0.85, 1.15); ax.legend(fontsize=8); ax.grid(True, axis="y", alpha=0.3)
+        _save(fig, out, "e4_pp_throughput.png")
+
+    # (2) decode latency inflation by concurrent prefill TYPE, per budget mode
+    if not di.empty:
+        di = di[di["status"] == "ok"]
+        modes = sorted(set(di["budget_mode"]))
+        fig, axes = plt.subplots(1, len(modes), figsize=(6.5 * len(modes), 4.6), sharey=True)
+        if len(modes) == 1:
+            axes = [axes]
+        models = _models_in(di)
+        col = {"ssm": "#2ca02c", "attn": "#d62728"}
+        for ax, md in zip(axes, modes):
+            d = di[di["budget_mode"] == md]
+            x = np.arange(len(models)); w = 0.38
+            for i, lt in enumerate(["ssm", "attn"]):
+                vals = [d[(d.model == m) & (d.prefill_layer_type == lt)]
+                        ["decode_inflation_pct"].mean() for m in models]
+                ax.bar(x + (i - 0.5) * w, np.nan_to_num(vals), w, label=f"prefill={lt}", color=col[lt])
+            psm = d["prefill_sm"].iloc[0] if len(d) else "?"
+            dsm = d["decode_sm"].iloc[0] if len(d) else "?"
+            ax.set_xticks(x); ax.set_xticklabels(models, rotation=20, ha="right", fontsize=8)
+            ax.set_title(f"{md}\n(prefill={psm} SM / decode={dsm} SM)", fontsize=9)
+            ax.grid(True, axis="y", alpha=0.3); ax.legend(fontsize=8)
+        axes[0].set_ylabel("decode latency inflation % (derived)")
+        fig.suptitle("E4 (b): decode inflation by concurrent prefill type — "
+                     "SSM ≥ Attn ⇒ layer-type-dependent bandwidth interference",
+                     fontweight="bold", fontsize=10)
+        fig.tight_layout(rect=[0, 0, 1, 0.94])
+        _save(fig, out, "e4_decode_interference.png")
 
 
 # ---------------------------------------------------------------------------

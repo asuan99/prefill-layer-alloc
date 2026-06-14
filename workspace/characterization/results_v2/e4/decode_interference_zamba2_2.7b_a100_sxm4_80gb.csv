@@ -1,0 +1,6 @@
+"# value_kind: measured=decode_solo_ms,decode_concurrent_ms,prefill_concurrent_ms; derived=decode_inflation_pct; metadata=model,device,config_status,budget_mode,prefill_layer_type,batch,prefill_seq,chunk_granularity,context_len,prefill_sm,decode_sm,status"
+model__metadata,device__metadata,config_status__metadata,budget_mode__metadata,prefill_layer_type__metadata,batch__metadata,prefill_seq__metadata,chunk_granularity__metadata,context_len__metadata,prefill_sm__metadata,decode_sm__metadata,status__metadata,decode_solo_ms__measured,decode_concurrent_ms__measured,prefill_concurrent_ms__measured,decode_inflation_pct__derived
+zamba2_2.7b,a100_sxm4_80gb,verified,uniform_50_50,ssm,8,2048,256,4096,54,54,ok,0.6149,0.9626,0.7291,56.536
+zamba2_2.7b,a100_sxm4_80gb,verified,uniform_50_50,attn,8,2048,256,4096,54,54,ok,0.6154,0.9615,1.9538,56.24
+zamba2_2.7b,a100_sxm4_80gb,verified,aware_0.7,ssm,8,2048,256,4096,76,32,ok,0.6154,1.4838,0.6687,141.098
+zamba2_2.7b,a100_sxm4_80gb,verified,aware_0.7,attn,8,2048,256,4096,76,32,ok,0.6139,1.4797,1.3998,141.034

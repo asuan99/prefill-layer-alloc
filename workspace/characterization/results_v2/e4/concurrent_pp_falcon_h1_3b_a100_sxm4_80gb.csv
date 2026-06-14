@@ -1,0 +1,4 @@
+"# value_kind: measured=solo_a_ms,solo_b_ms,concurrent_ms; derived=overlap_ratio,throughput_gain; metadata=model,device,config_status,budget_mode,a_layer_type,b_layer_type,batch,seq,chunk_granularity,prefill_sm,other_sm,total_sm,status"
+model__metadata,device__metadata,config_status__metadata,budget_mode__metadata,a_layer_type__metadata,b_layer_type__metadata,batch__metadata,seq__metadata,chunk_granularity__metadata,prefill_sm__metadata,other_sm__metadata,total_sm__metadata,status__metadata,solo_a_ms__measured,solo_b_ms__measured,concurrent_ms__measured,overlap_ratio__derived,throughput_gain__derived
+falcon_h1_3b,a100_sxm4_80gb,verified,uniform_50_50,ssm,attn,8,2048,256,54,54,108,ok,0.5586,0.0456,0.6236,1.0322,0.9688
+falcon_h1_3b,a100_sxm4_80gb,verified,aware_0.7,ssm,attn,8,2048,256,76,32,108,ok,0.5499,0.0461,0.5873,0.9854,1.0148
