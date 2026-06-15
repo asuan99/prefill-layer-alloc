@@ -31,7 +31,7 @@ Usage
 -----
     python experiments/e0_analytical/run_wave_table.py
     python experiments/e0_analytical/run_wave_table.py --models zamba2_1.2b \\
-        --batches 1 8 32 128 --seq-lens 2048 8192 --assumed-layer-ms 0.05
+        --batches 1 2 4 8 16 32 64 128 256 512 --seq-lens 2048 8192
 """
 
 from __future__ import annotations
@@ -56,11 +56,11 @@ from shared.loaders import get_model_config
 from experiments.common import wave_model as wm
 from experiments.common.labels import Label, write_labeled_csv
 
-# Default v2 axes (prompt E0 spec). batch grid adds the high points (128) that
-# the v1 batch_grid lacked — the batch axis is what makes the grid mechanism
-# falsifiable.
+# Default v2 axes. Fine batch grid 1..512 (powers of 2) — resolves the elbow/
+# crossover regions (e.g. scan overhead floor → linear ~batch 32) and the
+# asymmetry-death threshold that the coarse {1,8,32,128} grid stepped over.
 DEFAULT_MODELS = ["zamba2_1.2b", "zamba2_2.7b", "falcon_h1_1.5b", "falcon_h1_3b"]
-DEFAULT_BATCHES = [1, 8, 32, 128]
+DEFAULT_BATCHES = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
 DEFAULT_CHUNKS = ["256", "512", "full"]          # outer prefill-chunk granularity
 DEFAULT_SEQ_LENS = [2048, 8192]                  # needed to resolve chunk="full"
 # SM sweep: Green Context preset grid from sweep_spec.

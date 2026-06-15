@@ -65,7 +65,7 @@ def main() -> None:
     p.add_argument("--sm-count", type=int, required=True)
     p.add_argument("--total-sm", type=int, required=True)
     p.add_argument("--layer-types", nargs="+", default=["ssm", "ssm_full", "attn"])
-    p.add_argument("--batches", nargs="+", type=int, default=[1, 8, 32, 128])
+    p.add_argument("--batches", nargs="+", type=int, default=[1, 2, 4, 8, 16, 32, 64, 128, 256, 512])
     p.add_argument("--chunks", nargs="+", default=["256", "512"])
     p.add_argument("--seq", type=int, default=2048)
     p.add_argument("--context-lens", nargs="+", type=int, default=[0, 4096])
