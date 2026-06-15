@@ -17,11 +17,12 @@
 #   every job runs via `--wrap "env -u BASH_ENV bash -c '…'"` (--wrap runs under
 #   /bin/sh, which is immune) and you must launch THIS script with `env -u …`.
 #
-# Flow:
+# Flow (one command re-runs the WHOLE study):
 #   E0  (inline, cpu, instant)
-#   phase 1: e1,e2,e3 × {4 models}            throttled to MAXQ
+#   phase 1: e1,e2,e3,e5 × {4 models}         throttled to MAXQ (gate-independent)
 #   gates (inline, cpu) → verdicts/{g0,g1}.json
-#   phase 2: e4 × {4 models}                  only if G1 = BW_MECHANISM
+#   phase 2: e4 × {4 models}                  only if G1 authorises (or FORCE_E4)
+#   viz   (inline, cpu) → results_v2/figures/
 #
 # Knobs: MAXQ (default 2)  POLL secs (default 30)  A100_PART  MODELS  FORCE_E4=1
 # =============================================================================
@@ -42,8 +43,9 @@ script_of() { case "$1" in
   e2) echo experiments/e2_sm_saturation/run_batch_swept_sweep.py ;;
   e3) echo experiments/e3_decode_floor/run_decode_floor.py ;;
   e4) echo experiments/e4_concurrent/run_concurrent_ab.py ;;
+  e5) echo experiments/e5_serving/run_serving_coexec.py ;;
 esac; }
-time_of() { case "$1" in e2) echo 08:00:00 ;; *) echo 04:00:00 ;; esac; }
+time_of() { case "$1" in e2|e5) echo 08:00:00 ;; *) echo 04:00:00 ;; esac; }
 
 # count OUR jobs currently in the queue (prefix v2-; -r expands any arrays)
 inflight() {
@@ -83,9 +85,9 @@ echo "[E0] inline ..."
 env -u BASH_ENV bash -c "$ACT; python experiments/e0_analytical/run_wave_table.py" \
   >/dev/null 2>&1 && echo "  E0 done" || echo "  E0 failed (non-fatal)"
 
-# --- phase 1: e1,e2,e3 per model --------------------------------------------
-echo "[phase 1] submitting e1/e2/e3 for each model (throttled) ..."
-for m in $MODELS; do for e in e1 e2 e3; do submit_job "$e" "$m"; done; done
+# --- phase 1: e1,e2,e3,e5 per model (gate-independent measurements) ----------
+echo "[phase 1] submitting e1/e2/e3/e5 for each model (throttled) ..."
+for m in $MODELS; do for e in e1 e2 e3 e5; do submit_job "$e" "$m"; done; done
 echo "[phase 1] all submitted; waiting for completion ..."
 wait_all
 echo "[phase 1] done."
@@ -105,4 +107,9 @@ else
   echo "[phase 2] skipped — G1 is not BW_MECHANISM (see $G1). Use FORCE_E4=1 to override."
 fi
 
-echo "=== pipeline complete. results in results_v2/ ; verdicts in results_v2/verdicts/ ==="
+# --- viz inline: regenerate all figures from the fresh results ---------------
+echo "[viz] generating figures ..."
+env -u BASH_ENV bash -c "$ACT; python experiments/viz/plot_results.py" \
+  >/dev/null 2>&1 && echo "  figures -> results_v2/figures/" || echo "  viz failed (non-fatal)"
+
+echo "=== pipeline complete. results in results_v2/ ; verdicts in results_v2/verdicts/ ; figures in results_v2/figures/ ==="

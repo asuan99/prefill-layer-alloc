@@ -50,7 +50,7 @@ from shared import sweep_spec as ss
 from experiments.common.labels import Label, write_labeled_csv
 
 DEFAULT_MODELS = ["zamba2_1.2b", "zamba2_2.7b", "falcon_h1_1.5b", "falcon_h1_3b"]
-DEFAULT_DECODE_BATCHES = [8, 32, 64, 128, 256]
+DEFAULT_DECODE_BATCHES = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
 DEFAULT_CONTEXTS = [4096]
 DEFAULT_FRACS = [0.5, 0.7]                 # prefill SM fraction for green_ctx split
 DEFAULT_PREFILL_LAYERS = ["ssm", "attn"]   # prefill chunk component

@@ -44,7 +44,7 @@ from experiments.common import stats
 from experiments.common.labels import Label, write_labeled_csv
 
 DEFAULT_MODELS = ["zamba2_1.2b", "zamba2_2.7b", "falcon_h1_1.5b", "falcon_h1_3b"]
-DEFAULT_BATCHES = [8, 32, 128, 256]
+DEFAULT_BATCHES = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
 DEFAULT_CONTEXTS = [1024, 4096, 16384]
 DEFAULT_LAYERS = ["ssm", "attn"]
 _WORKER = os.path.join(_here, "_e3_worker.py")
