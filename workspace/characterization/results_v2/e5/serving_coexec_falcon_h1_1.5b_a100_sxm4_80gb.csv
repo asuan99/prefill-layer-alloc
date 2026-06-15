@@ -1,0 +1,22 @@
+"# value_kind: measured=solo_prefill_ms,solo_decode_ms,prefill_stream_ms,decode_stream_ms,concurrent_ms; derived=overlap_ratio,speedup_vs_seq,decode_inflation_pct,combined_tok_per_ms; metadata=model,device,config_status,decode_batch,context_len,prefill_tokens,chunk,prefill_layer,backend,prefill_sm_frac,prefill_sm,decode_sm,status"
+model__metadata,device__metadata,config_status__metadata,decode_batch__metadata,context_len__metadata,prefill_tokens__metadata,chunk__metadata,prefill_layer__metadata,backend__metadata,prefill_sm_frac__metadata,prefill_sm__metadata,decode_sm__metadata,status__metadata,solo_prefill_ms__measured,solo_decode_ms__measured,prefill_stream_ms__measured,decode_stream_ms__measured,concurrent_ms__measured,overlap_ratio__derived,speedup_vs_seq__derived,decode_inflation_pct__derived,combined_tok_per_ms__derived
+falcon_h1_1.5b,a100_sxm4_80gb,verified,8,4096,256,256,ssm,sequential,,108,108,ok,0.5294,0.1126,0.5294,0.1126,0.642,1.0,1.0,0.0,411.1842
+falcon_h1_1.5b,a100_sxm4_80gb,verified,8,4096,256,256,ssm,two_stream,,108,108,ok,0.5294,0.1126,0.5243,0.1265,0.5243,0.8166,1.2246,12.2727,503.54
+falcon_h1_1.5b,a100_sxm4_80gb,verified,8,4096,256,256,ssm,green_ctx,0.5,54,54,ok,0.5294,0.1126,0.5299,0.1485,0.5299,0.8254,1.2116,31.8182,498.1884
+falcon_h1_1.5b,a100_sxm4_80gb,verified,8,4096,256,256,ssm,green_ctx,0.7,76,32,ok,0.5294,0.1126,0.5274,0.1915,0.5274,0.8214,1.2175,70.0,500.6068
+falcon_h1_1.5b,a100_sxm4_80gb,verified,32,4096,256,256,ssm,sequential,,108,108,ok,0.5181,0.4823,0.5181,0.4823,1.0004,1.0,1.0,0.0,287.871
+falcon_h1_1.5b,a100_sxm4_80gb,verified,32,4096,256,256,ssm,two_stream,,108,108,ok,0.5181,0.4823,0.5274,0.4977,0.5274,0.5271,1.8971,3.1847,546.1165
+falcon_h1_1.5b,a100_sxm4_80gb,verified,32,4096,256,256,ssm,green_ctx,0.5,54,54,ok,0.5181,0.4823,0.5356,0.7654,0.7654,0.7651,1.307,58.7049,376.2542
+falcon_h1_1.5b,a100_sxm4_80gb,verified,32,4096,256,256,ssm,green_ctx,0.7,76,32,ok,0.5181,0.4823,0.5432,1.1837,1.1837,1.1832,0.8452,145.4352,243.2959
+falcon_h1_1.5b,a100_sxm4_80gb,verified,64,4096,256,256,ssm,sequential,,108,108,ok,0.5222,0.7578,0.5222,0.7578,1.28,1.0,1.0,0.0,250.0
+falcon_h1_1.5b,a100_sxm4_80gb,verified,64,4096,256,256,ssm,two_stream,,108,108,ok,0.5222,0.7578,0.5315,0.7721,0.7721,0.6032,1.6578,1.8919,414.4562
+falcon_h1_1.5b,a100_sxm4_80gb,verified,64,4096,256,256,ssm,green_ctx,0.5,54,54,ok,0.5222,0.7578,0.5407,1.452,1.452,1.1344,0.8815,91.6216,220.3808
+falcon_h1_1.5b,a100_sxm4_80gb,verified,64,4096,256,256,ssm,green_ctx,0.7,76,32,ok,0.5222,0.7578,0.5402,2.2938,2.2938,1.792,0.558,202.7027,139.5089
+falcon_h1_1.5b,a100_sxm4_80gb,verified,128,4096,256,256,ssm,sequential,,108,108,ok,0.5171,1.4459,0.5171,1.4459,1.963,1.0,1.0,0.0,195.6181
+falcon_h1_1.5b,a100_sxm4_80gb,verified,128,4096,256,256,ssm,two_stream,,108,108,ok,0.5171,1.4459,0.5371,1.4935,1.4935,0.7608,1.3144,3.2932,257.1135
+falcon_h1_1.5b,a100_sxm4_80gb,verified,128,4096,256,256,ssm,green_ctx,0.5,54,54,ok,0.5171,1.4459,0.5494,2.7412,2.7412,1.3965,0.7161,89.5892,140.0822
+falcon_h1_1.5b,a100_sxm4_80gb,verified,128,4096,256,256,ssm,green_ctx,0.7,76,32,ok,0.5171,1.4459,0.5489,4.5281,4.5281,2.3067,0.4335,213.1728,84.8033
+falcon_h1_1.5b,a100_sxm4_80gb,verified,256,4096,256,256,ssm,sequential,,108,108,ok,0.5248,2.7064,0.5248,2.7064,3.2312,1.0,1.0,0.0,158.4535
+falcon_h1_1.5b,a100_sxm4_80gb,verified,256,4096,256,256,ssm,two_stream,,108,108,ok,0.5248,2.7064,0.5443,2.9373,2.9373,0.909,1.1001,8.532,174.3071
+falcon_h1_1.5b,a100_sxm4_80gb,verified,256,4096,256,256,ssm,green_ctx,0.5,54,54,ok,0.5248,2.7064,0.5473,5.4743,5.4743,1.6942,0.5903,102.2701,93.5279
+falcon_h1_1.5b,a100_sxm4_80gb,verified,256,4096,256,256,ssm,green_ctx,0.7,76,32,ok,0.5248,2.7064,0.5519,8.9984,8.9984,2.7848,0.3591,232.482,56.899
