@@ -52,6 +52,7 @@ from experiments.common.stats import ci_overlap
 
 # thresholds (named so the verdict can cite them)
 G0_SCAN_SHARE_MIN = 30.0      # % — below this G0 is WEAK
+G0_STEADY_BATCH = 32          # batches >= this define the steady (linear-regime) scan share
 ASYM_CHUNK = "256"            # chunk granularity used for the asymmetry test
 ASYM_MIN_GAP_SM = 13          # ~one Green-Context grid step; smaller gaps = noise
 # descriptive mechanism hints (NOT the gate):
@@ -76,18 +77,40 @@ def adjudicate_g0(e1_dir: Path) -> dict:
     per_model = {}
     for fp in files:
         rows, _ = read_labeled_csv(fp)
-        shares = [_f(r.get("scan_share_pct")) for r in rows]
-        shares = [s for s in shares if s is not None]
         model = rows[0]["model"] if rows else fp.stem
-        if shares:
-            mx = max(shares)
+        # scan_share is batch-dependent: it is inflated at low batch (scan has a
+        # batch-independent critical-path/launch floor while the GEMMs are tiny),
+        # then settles to a steady floor once both scale linearly (elbow ~batch 32).
+        # Report BOTH the peak and the high-batch steady share so "scan dominant"
+        # isn't read off the low-batch overhead plateau alone.
+        by_batch = {}
+        for r in rows:
+            s = _f(r.get("scan_share_pct")); b = _f(r.get("batch"))
+            if s is not None and b is not None:
+                by_batch.setdefault(int(b), []).append(s)
+        if by_batch:
+            shares = {b: sum(v) / len(v) for b, v in by_batch.items()}
+            mx = max(shares.values())
+            steady = [v for b, v in shares.items() if b >= G0_STEADY_BATCH]
+            steady_share = round(sum(steady) / len(steady), 3) if steady else None
+            if steady_share is None:
+                regime = "unknown(no high-batch points)"
+            elif steady_share >= G0_SCAN_SHARE_MIN:
+                regime = "robust"               # scan material even at serving batch
+            elif mx >= G0_SCAN_SHARE_MIN:
+                regime = "low-batch-dominant"    # scan matters only when latency-bound
+            else:
+                regime = "weak"
             per_model[model] = {
                 "max_scan_share_pct": round(mx, 3),
-                "n_points": len(shares),
+                "steady_scan_share_pct": steady_share,   # mean over batch>=G0_STEADY_BATCH
+                "scan_regime": regime,
+                "n_batches": len(shares),
                 "g0": "WEAK" if mx < G0_SCAN_SHARE_MIN else "OK",
             }
         else:
-            per_model[model] = {"max_scan_share_pct": None, "n_points": 0, "g0": "NO_DATA"}
+            per_model[model] = {"max_scan_share_pct": None, "steady_scan_share_pct": None,
+                                "scan_regime": "no_data", "n_batches": 0, "g0": "NO_DATA"}
 
     if not per_model:
         verdict = "NO_DATA"
@@ -98,7 +121,10 @@ def adjudicate_g0(e1_dir: Path) -> dict:
                   "memory-bound-scan premise before investing in E2/E4.")
     elif all(v["g0"] == "OK" for v in per_model.values()):
         verdict = "OK"
-        action = "Scan share adequate → proceed to E2."
+        regimes = {m: v.get("scan_regime") for m, v in per_model.items()}
+        action = ("Scan is a meaningful component (peak ≥ 30%) → proceed to E2. "
+                  "NOTE: scan share is batch-dependent — peak at low batch (overhead "
+                  "floor) then settles; per-model steady regime: " + str(regimes))
     else:
         verdict = "PARTIAL"
         action = "Some models lack data — complete E1 before G1."

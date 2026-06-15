@@ -55,8 +55,17 @@ Zamba2 = 시간축 sparse hybrid(대부분 Mamba, 일부 shared-attn) · Falcon-
 `grid_sat_sm = batch·⌈tokens/chunk⌉·n_heads`. batch=1에선 SSM grid가 SM을 다 못 채워 여유 존재(`asym_headroom=True`), **batch≥8부터 grid가 전 SM을 초과**(False) → "grid 메커니즘이라면 batch↑에서 비대칭이 죽는다"는 사전 예측. swap 비용은 v1 archive에서 ~7.8 µs/swap.
 ![E0 grid](../results_v2/figures/e0_grid_sat_vs_batch.png)
 
-### 4.2 E1 — prefill component 분해 → **G0 = OK**
-in_proj / scan / out_proj 분해. scan share는 batch=1에서 ~80–87%(scan 지배)지만 큰 batch에서 Zamba는 **<30%**로 떨어짐(GEMM 지배). G0(scan이 유의미한 component인가) 통과.
+### 4.2 E1 — prefill component 분해 → **G0 = OK (단, batch 의존 2-regime)**
+in_proj / scan / out_proj 분해. **scan share는 batch에 강하게 의존하며, 그 원인은 scan의 고정 overhead 바닥이다:** scan latency는 batch 1→8에서 거의 평탄(zamba 0.509→0.519 ms, ×1.02)으로 **배치-독립적 critical-path/launch overhead에 갇혀** 있고, 그동안 GEMM(in_proj+out_proj)은 batch=1의 작은 크기에서 ×5로 깨어난다 → scan share가 83%→49%→26%로 붕괴. **batch≈32가 elbow**: 여기서 scan의 throughput항(∝batch)이 고정 overhead항(~0.5 ms)을 추월(batch 32→128에서 scan ×4.3 ≈ GEMM ×4.0)해 scan도 선형 스케일을 시작하고, 이후 scan share는 모델별 **steady floor로 안정 — 0이 아니다**:
+
+| model | peak scan_share | **steady(batch≥32)** | regime |
+|---|--:|--:|---|
+| falcon_h1_1.5b | 74% | **40%** | robust |
+| falcon_h1_3b | 66% | **30%** | robust |
+| zamba2_1.2b | 68% | **28%** | low-batch-dominant |
+| zamba2_2.7b | 63% | **20%** | low-batch-dominant |
+
+따라서 **G0는 폐기되지 않았다**(peak 62–74% ≥ 30% → OK). 정정된 명제: "scan은 유의미한 memory-bound component"는 **저batch(지연 민감) regime에서 확실**하고, **고batch(throughput) regime에선 GEMM이 prefill을 지배하며 scan은 20–40%의 부차 성분**이다. (`adjudicate.py`가 peak·steady·regime을 함께 보고.) 이는 E5와도 부합한다 — 고batch에서 overlap 대상 prefill은 GEMM-heavy이고 scan은 작은 조각이라, scan에 SM을 미세 배분할 동기가 더욱 약하다.
 ![E1 G0](../results_v2/figures/e1_scan_share_vs_batch.png)
 
 ### 4.3 E2 — SM×batch 포화 sweep → **G1 = ASYMMETRY_PRESENT (재정의)**
