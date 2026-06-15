@@ -42,9 +42,10 @@ case "$EXP" in
   e2)    SCRIPT="experiments/e2_sm_saturation/run_batch_swept_sweep.py"; GPU=1; T="08:00:00" ;;
   e3)    SCRIPT="experiments/e3_decode_floor/run_decode_floor.py";    GPU=1; T="04:00:00" ;;
   e4)    SCRIPT="experiments/e4_concurrent/run_concurrent_ab.py";     GPU=1; T="04:00:00" ;;
+  e5)    SCRIPT="experiments/e5_serving/run_serving_coexec.py";       GPU=1; T="04:00:00" ;;
   gates) SCRIPT="experiments/gates/adjudicate.py";                    GPU=0; T="00:05:00" ;;
   test)  SCRIPT="experiments/e4_concurrent/test_dispatch.py";         GPU=0; T="00:05:00" ;;
-  *) echo "usage: $0 <e0|e1|e2|e3|e4|gates|test> [-- extra args]"; exit 2 ;;
+  *) echo "usage: $0 <e0|e1|e2|e3|e4|e5|gates|test> [-- extra args]"; exit 2 ;;
 esac
 
 # Command run on the node: activate venv (if present), cd into characterization,

@@ -3,7 +3,7 @@
 # submit_size_sweep.sh — run one GPU experiment across the 4 model sizes in
 # PARALLEL via a SLURM array (one array task per model).
 #
-#   env -u BASH_ENV bash experiments/slurm/submit_size_sweep.sh <e1|e2|e3|e4> [-- extra]
+#   env -u BASH_ENV bash experiments/slurm/submit_size_sweep.sh <e1|e2|e3|e4|e5> [-- extra]
 #
 # Array index → model:
 #   0 = zamba2_1.2b   1 = zamba2_2.7b   2 = falcon_h1_1.5b   3 = falcon_h1_3b
@@ -33,7 +33,8 @@ case "$EXP" in
   e2) SCRIPT="experiments/e2_sm_saturation/run_batch_swept_sweep.py";  T="08:00:00" ;;
   e3) SCRIPT="experiments/e3_decode_floor/run_decode_floor.py";        T="04:00:00" ;;
   e4) SCRIPT="experiments/e4_concurrent/run_concurrent_ab.py";         T="04:00:00" ;;
-  *) echo "usage: $0 <e1|e2|e3|e4> [-- extra args]"; exit 2 ;;
+  e5) SCRIPT="experiments/e5_serving/run_serving_coexec.py";           T="04:00:00" ;;
+  *) echo "usage: $0 <e1|e2|e3|e4|e5> [-- extra args]"; exit 2 ;;
 esac
 
 # Inner bash -c body (single-quote-safe). $SLURM_ARRAY_TASK_ID stays literal

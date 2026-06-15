@@ -420,6 +420,77 @@ def plot_serving(rdir, out):
 
 
 # ---------------------------------------------------------------------------
+# E5 — serving prefill+decode coexistence (the real serving answer)
+# ---------------------------------------------------------------------------
+
+def plot_e5(rdir, out):
+    df = _concat(os.path.join(rdir, "e5", "serving_coexec_*.csv"))
+    if df.empty:
+        print("E5: no serving_coexec — skip (run e5)"); return
+    df = df[df["status"] == "ok"].copy()
+    ctx = sorted(df["context_len"].dropna().unique())
+    ctx = ctx[len(ctx) // 2] if len(ctx) else None
+    d0 = df[df["context_len"] == ctx] if ctx is not None else df
+
+    # best green_ctx fraction per (model, decode_batch) by speedup
+    def best_gc(sub):
+        g = sub[sub["backend"] == "green_ctx"]
+        return g.loc[g["speedup_vs_seq"].idxmax()] if len(g) else None
+
+    models = _models_in(d0)
+
+    # (A) speedup vs decode_batch — sequential baseline=1; two_stream vs green_ctx
+    fig, axes = plt.subplots(2, 2, figsize=(11, 8), sharex=True)
+    for ax, m in zip(axes.ravel(), models):
+        sm = d0[d0["model"] == m]
+        batches = sorted(sm["decode_batch"].unique())
+        for backend, style in [("two_stream", "s--"), ("green_ctx", "o-")]:
+            ys = []
+            for b in batches:
+                sub = sm[(sm["decode_batch"] == b)]
+                if backend == "green_ctx":
+                    r = best_gc(sub)
+                    ys.append(r["speedup_vs_seq"] if r is not None else np.nan)
+                else:
+                    rr = sub[sub["backend"] == backend]
+                    ys.append(rr["speedup_vs_seq"].iloc[0] if len(rr) else np.nan)
+            ax.plot(batches, ys, style, label=backend + (" (best f)" if backend == "green_ctx" else ""))
+        ax.axhline(1.0, color="k", ls=":", lw=1)
+        ax.set_xscale("log", base=2); ax.set_title(m, fontsize=10)
+        ax.set_ylabel("speedup vs sequential"); ax.grid(True, alpha=0.3); ax.legend(fontsize=8)
+    for ax in axes[1]:
+        ax.set_xlabel("decode batch (concurrent requests)")
+    fig.suptitle("E5: prefill+decode overlap speedup vs decode batch\n"
+                 "1.0 = no gain; window closes as decode batch fills the GPU",
+                 fontweight="bold")
+    fig.tight_layout(rect=[0, 0, 1, 0.94])
+    _save(fig, out, "e5_speedup_vs_batch.png")
+
+    # (B) spatial-partition-SPECIFIC gain = two_stream_conc / green_ctx_conc
+    fig, ax = plt.subplots(figsize=(7.5, 4.8))
+    for m in models:
+        sm = d0[d0["model"] == m]
+        batches = sorted(sm["decode_batch"].unique())
+        ys = []
+        for b in batches:
+            sub = sm[sm["decode_batch"] == b]
+            ts = sub[sub["backend"] == "two_stream"]["concurrent_ms"]
+            r = best_gc(sub)
+            if len(ts) and r is not None and r["concurrent_ms"]:
+                ys.append(ts.iloc[0] / r["concurrent_ms"])
+            else:
+                ys.append(np.nan)
+        ax.plot(batches, ys, "o-", color=MODEL_COLOR[m], label=m)
+    ax.axhline(1.0, color="k", ls="--", lw=1, label="no spatial benefit (=two_stream)")
+    ax.set_xscale("log", base=2)
+    ax.set_xlabel("decode batch"); ax.set_ylabel("green_ctx ÷ two_stream  (>1 = partition helps)")
+    ax.set_title("E5: spatial-partition-SPECIFIC gain over MPS-like two-stream\n"
+                 "(isolates what Green Context buys beyond naive co-scheduling)")
+    ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
+    _save(fig, out, "e5_spatial_specific_gain.png")
+
+
+# ---------------------------------------------------------------------------
 # Verdict summary panel
 # ---------------------------------------------------------------------------
 
@@ -453,7 +524,7 @@ def main():
     args = ap.parse_args()
     print(f"v2 visualization  (results={args.results_dir}, out={args.out})")
     for fn in (plot_e0, plot_e1, plot_e2, plot_asymmetry, plot_e3, plot_e4,
-               plot_serving, plot_verdicts):
+               plot_serving, plot_e5, plot_verdicts):
         try:
             fn(args.results_dir, args.out)
         except Exception as e:  # noqa: BLE001
