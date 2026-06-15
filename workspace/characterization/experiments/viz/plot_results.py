@@ -464,8 +464,9 @@ def plot_e5(rdir, out):
                         fontsize=10, fontweight="bold")
         ax.set_title(f"{m}\n(two_stream speedup @ db={bmin})", fontsize=9)
     fig.suptitle("E5: prefill×decode overlap matrix (two_stream speedup vs sequential, max-overlap batch)\n"
-                 "best pairing = compute/SM-heavy prefill ⊗ BW-bound decode",
-                 fontweight="bold", fontsize=10)
+                 "overlap is set by the PREFILL row (pf=ssm = big scan ≈2x; pf=attn tiny ≈1x); "
+                 "decode type secondary",
+                 fontweight="bold", fontsize=9)
     fig.tight_layout(rect=[0, 0, 1, 0.90])
     _save(fig, out, "e5_overlap_matrix.png")
 
@@ -517,6 +518,29 @@ def plot_e5(rdir, out):
                  "(if even the best cell is ≤1, Green Context never beats naive co-scheduling)")
     ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
     _save(fig, out, "e5_spatial_specific_gain.png")
+
+    # (D) context dependence (pf=ssm): attn-decode BW∝context vs ssm-decode const
+    if len(ctxs) > 1:
+        fig, ax = plt.subplots(figsize=(7.5, 4.8))
+        for m in models:
+            sm = df[df.model == m]
+            for dl, style in [("attn", "o-"), ("ssm", "s--")]:
+                ys = []
+                for c in ctxs:
+                    r = sm[(sm.prefill_layer == "ssm") & (sm.decode_layer == dl)
+                           & (sm.decode_batch == 8) & (sm.context_len == c)
+                           & (sm.backend == "two_stream")]
+                    ys.append(float(r.speedup_vs_seq.iloc[0]) if len(r) else np.nan)
+                ax.plot(ctxs, ys, style, color=MODEL_COLOR[m],
+                        alpha=0.9 if dl == "attn" else 0.55,
+                        label=f"{m} dec={dl}")
+        ax.axhline(1.0, color="k", ls=":", lw=1)
+        ax.set_xscale("log", base=2)
+        ax.set_xlabel("decode context length"); ax.set_ylabel("two_stream speedup (pf=ssm, db=8)")
+        ax.set_title("E5: overlap vs decode context (pf=ssm)\n"
+                     "dec=ssm flat (state BW const); dec=attn peaks then decays as decode dominates")
+        ax.legend(fontsize=7, ncol=2); ax.grid(True, which="both", alpha=0.3)
+        _save(fig, out, "e5_context_dependence.png")
 
 
 # ---------------------------------------------------------------------------
