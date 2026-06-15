@@ -423,69 +423,98 @@ def plot_serving(rdir, out):
 # E5 — serving prefill+decode coexistence (the real serving answer)
 # ---------------------------------------------------------------------------
 
+_PF_ROWS = ["ssm", "attn"]            # prefill layer types (heatmap rows)
+_DEC_COLS = ["attn", "ssm"]           # decode layer types  (heatmap cols)
+_CELL_STYLE = {("ssm", "attn"): ("#2ca02c", "o-"), ("ssm", "ssm"): ("#98df8a", "o--"),
+               ("attn", "attn"): ("#d62728", "s-"), ("attn", "ssm"): ("#ff9896", "s--")}
+
+
 def plot_e5(rdir, out):
     df = _concat(os.path.join(rdir, "e5", "serving_coexec_*.csv"))
     if df.empty:
         print("E5: no serving_coexec — skip (run e5)"); return
     df = df[df["status"] == "ok"].copy()
-    ctx = sorted(df["context_len"].dropna().unique())
-    ctx = ctx[len(ctx) // 2] if len(ctx) else None
+    if "decode_layer" not in df.columns:       # back-compat with single-cell E5
+        df["decode_layer"] = "attn"
+    ctxs = sorted(df["context_len"].dropna().unique())
+    ctx = ctxs[len(ctxs) // 2] if ctxs else None
     d0 = df[df["context_len"] == ctx] if ctx is not None else df
-
-    # best green_ctx fraction per (model, decode_batch) by speedup
-    def best_gc(sub):
-        g = sub[sub["backend"] == "green_ctx"]
-        return g.loc[g["speedup_vs_seq"].idxmax()] if len(g) else None
-
     models = _models_in(d0)
 
-    # (A) speedup vs decode_batch — sequential baseline=1; two_stream vs green_ctx
+    def ts_speedup(sm, pl, dl, b):
+        r = sm[(sm.prefill_layer == pl) & (sm.decode_layer == dl)
+               & (sm.decode_batch == b) & (sm.backend == "two_stream")]
+        return float(r["speedup_vs_seq"].iloc[0]) if len(r) else np.nan
+
+    # (A) 2×2 overlap matrix per model — two_stream speedup at the smallest batch
+    fig, axes = plt.subplots(1, len(models), figsize=(4.3 * len(models), 4.2))
+    if len(models) == 1:
+        axes = [axes]
+    for ax, m in zip(axes, models):
+        sm = d0[d0.model == m]
+        bmin = min(sm.decode_batch.unique()) if len(sm) else None
+        M = np.array([[ts_speedup(sm, pl, dl, bmin) for dl in _DEC_COLS] for pl in _PF_ROWS])
+        im = ax.imshow(M, cmap="RdYlGn", vmin=0.8, vmax=2.0, aspect="auto")
+        ax.set_xticks(range(len(_DEC_COLS))); ax.set_xticklabels([f"dec={d}" for d in _DEC_COLS], fontsize=8)
+        ax.set_yticks(range(len(_PF_ROWS))); ax.set_yticklabels([f"pf={p}" for p in _PF_ROWS], fontsize=8)
+        for i in range(len(_PF_ROWS)):
+            for j in range(len(_DEC_COLS)):
+                v = M[i, j]
+                ax.text(j, i, "—" if np.isnan(v) else f"{v:.2f}x", ha="center", va="center",
+                        fontsize=10, fontweight="bold")
+        ax.set_title(f"{m}\n(two_stream speedup @ db={bmin})", fontsize=9)
+    fig.suptitle("E5: prefill×decode overlap matrix (two_stream speedup vs sequential, max-overlap batch)\n"
+                 "best pairing = compute/SM-heavy prefill ⊗ BW-bound decode",
+                 fontweight="bold", fontsize=10)
+    fig.tight_layout(rect=[0, 0, 1, 0.90])
+    _save(fig, out, "e5_overlap_matrix.png")
+
+    # (B) speedup vs batch, one line per (prefill,decode) cell, per model
     fig, axes = plt.subplots(2, 2, figsize=(11, 8), sharex=True)
     for ax, m in zip(axes.ravel(), models):
-        sm = d0[d0["model"] == m]
-        batches = sorted(sm["decode_batch"].unique())
-        for backend, style in [("two_stream", "s--"), ("green_ctx", "o-")]:
-            ys = []
-            for b in batches:
-                sub = sm[(sm["decode_batch"] == b)]
-                if backend == "green_ctx":
-                    r = best_gc(sub)
-                    ys.append(r["speedup_vs_seq"] if r is not None else np.nan)
-                else:
-                    rr = sub[sub["backend"] == backend]
-                    ys.append(rr["speedup_vs_seq"].iloc[0] if len(rr) else np.nan)
-            ax.plot(batches, ys, style, label=backend + (" (best f)" if backend == "green_ctx" else ""))
+        sm = d0[d0.model == m]
+        batches = sorted(sm.decode_batch.unique())
+        for pl in _PF_ROWS:
+            for dl in _DEC_COLS:
+                color, style = _CELL_STYLE[(pl, dl)]
+                ys = [ts_speedup(sm, pl, dl, b) for b in batches]
+                if not all(np.isnan(ys)):
+                    ax.plot(batches, ys, style, color=color, label=f"pf={pl}/dec={dl}")
         ax.axhline(1.0, color="k", ls=":", lw=1)
         ax.set_xscale("log", base=2); ax.set_title(m, fontsize=10)
-        ax.set_ylabel("speedup vs sequential"); ax.grid(True, alpha=0.3); ax.legend(fontsize=8)
+        ax.set_ylabel("two_stream speedup vs sequential"); ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=7)
     for ax in axes[1]:
-        ax.set_xlabel("decode batch (concurrent requests)")
-    fig.suptitle("E5: prefill+decode overlap speedup vs decode batch\n"
-                 "1.0 = no gain; window closes as decode batch fills the GPU",
+        ax.set_xlabel("decode batch")
+    fig.suptitle("E5: overlap speedup vs decode batch, by prefill×decode cell\n"
+                 "window closes as decode fills the GPU; cell = which pairing overlaps best",
                  fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.94])
     _save(fig, out, "e5_speedup_vs_batch.png")
 
-    # (B) spatial-partition-SPECIFIC gain = two_stream_conc / green_ctx_conc
+    # (C) spatial-partition-SPECIFIC gain (best over cells & fracs) = two_stream/green_ctx
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
     for m in models:
-        sm = d0[d0["model"] == m]
-        batches = sorted(sm["decode_batch"].unique())
+        sm = d0[d0.model == m]
+        batches = sorted(sm.decode_batch.unique())
         ys = []
         for b in batches:
-            sub = sm[sm["decode_batch"] == b]
-            ts = sub[sub["backend"] == "two_stream"]["concurrent_ms"]
-            r = best_gc(sub)
-            if len(ts) and r is not None and r["concurrent_ms"]:
-                ys.append(ts.iloc[0] / r["concurrent_ms"])
-            else:
-                ys.append(np.nan)
+            ratios = []
+            for pl in _PF_ROWS:
+                for dl in _DEC_COLS:
+                    cell = sm[(sm.prefill_layer == pl) & (sm.decode_layer == dl)
+                              & (sm.decode_batch == b)]
+                    ts = cell[cell.backend == "two_stream"]["concurrent_ms"]
+                    gc = cell[cell.backend == "green_ctx"]["concurrent_ms"]
+                    if len(ts) and len(gc) and gc.min() > 0:
+                        ratios.append(ts.iloc[0] / gc.min())   # best green over fracs
+            ys.append(max(ratios) if ratios else np.nan)        # best cell
         ax.plot(batches, ys, "o-", color=MODEL_COLOR[m], label=m)
     ax.axhline(1.0, color="k", ls="--", lw=1, label="no spatial benefit (=two_stream)")
     ax.set_xscale("log", base=2)
-    ax.set_xlabel("decode batch"); ax.set_ylabel("green_ctx ÷ two_stream  (>1 = partition helps)")
-    ax.set_title("E5: spatial-partition-SPECIFIC gain over MPS-like two-stream\n"
-                 "(isolates what Green Context buys beyond naive co-scheduling)")
+    ax.set_xlabel("decode batch"); ax.set_ylabel("BEST green_ctx ÷ two_stream  (>1 = partition helps)")
+    ax.set_title("E5: spatial-partition gain over two-stream — best over all cells/fracs\n"
+                 "(if even the best cell is ≤1, Green Context never beats naive co-scheduling)")
     ax.legend(fontsize=8); ax.grid(True, alpha=0.3)
     _save(fig, out, "e5_spatial_specific_gain.png")
 
