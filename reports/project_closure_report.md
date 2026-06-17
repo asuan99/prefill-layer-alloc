@@ -10,6 +10,8 @@
 
 > **"hybrid SSM+Attention 모델에서 layer-type(attn vs ssm) 자원 비대칭을 공간적 SM 분할(Green Context)로 활용한다"는 v2의 핵심 가설은 SLM/A100에서 포괄적으로 기각되었다. 분할은 어떤 prefill×decode 셀·batch·context에서도 단순 동시실행을 못 이긴다. 본 연구 라인은 추가 자원 투입의 한계 이득이 음(陰)이므로 중단을 권고한다.**
 
+> **(2026-06-17 추가 검토)** G1이 sat_sm 비대칭을 gate 술어로 쓴 것 자체가 잘못이라는 비판(§3.1)을 반영해도 — **종결 권고는 유지, 오히려 강화**된다. 올바른 술어(공유 하 회수 가능 slack)는 E4/E5가 이미 음성으로 측정했기 때문이다.
+
 ---
 
 ## 2. 무엇을 물었고, 무엇이 나왔나
@@ -35,6 +37,17 @@
 
 > 대조군으로 확인된 양성 축 — prefill↔decode는 (1) 별개 요청의 작업(독립 단위, KV로 깨끗한 handoff) + (2) decode가 BW-bound로 SM을 놀려 prefill이 채움(상보성) → ~2× overlap. **그러나 이 이득조차 공간 분할이 아니라 HW 공동스케줄링이 더 잘 회수한다.** 즉 "분할"이라는 메커니즘 자체가 이 문제군에서 설 자리가 없다.
 
+### 3.1 G1 술어가 잘못됐다는 비판을 반영해도 — 중단 권고 불변, 오히려 강화
+
+E2/G1이 "attn-ssm sat_sm 비대칭이 있는가"를 gate 술어로 쓴 것은 **category error**다: sat_sm 비대칭은 *격리 실행한 solo 커널*의 occupancy 속성**(a)**이고, partition 이득을 결정하는 것은 *공유 실행 하에 동적 co-schedule이 회수하지 못하는 slack(파괴적 간섭)이 있는가***(b)**이다. 둘은 독립이다 — solo 포화점은 공유 하 상호작용에 대해 아무 정보도 주지 않는다. (PD-mux 이득도 (a)가 아니라 (b)에서 나오며, PD의 sat_sm 차이는 병목-종류 차이의 *증상*이지 원인이 아니다.) `g1_verdict.json`의 *"SSM frees SMs for attention → proceed to E4"*가 바로 (a)→(b) 비약을 담은 문장이다. v2_report §1이 RQ 재설정을 "부분적 과오"라 인정한 것의 정확한 정체가 이 술어 mis-specification이다.
+
+**이 비판은 중단 권고를 약화시키지 않는다. 강화한다:**
+- **올바른 술어(b)는 이미 측정됐다.** E4/E5의 `two_stream`(동적 공유) vs `green_ctx`(정적 분할) 비교가 정확히 "공유가 남기는 회수 가능 slack이 있는가"이며, SLM 전 1576셀에서 No(`two_stream/green_ctx` < 1.0). 잘못된 술어로 진입했으나 **올바른 술어의 답까지 음성으로 확보**돼 있다.
+- 따라서 음성 결과엔 *"엉뚱한 걸 쟀으니 다시 재면 이득이 보일지 모른다"*는 escape hatch가 없다. 비대칭이 격자에 따라 약화/소멸하든 유지되든([검수 A3](review_checklist.md)) 결론과 무관 — 비대칭은 애초에 lever가 아니었고, lever였을 (b)는 이미 닫혔다.
+- 남는 유일한 미검증 영역은 **(b)가 다른 regime(7B 큰 커널 / GEMM-heavy 진짜 prefill)에서 양수가 되는가**이다. 이는 "비대칭이 scale에서 살아나는가"가 아니라 **"공유 하 파괴적 간섭이 커널이 커지면 생겨 격리가 회수하는가"**라는 올바르게 재서술된 질문이며, 이미 [추가가치 Path 1·3](additional_value_paths.md)에 잡혀 있다. 술어 비판은 이 잔여 경로를 *확장*하지 않고 *정확히 재명명*할 뿐이다.
+
+**판정:** 술어 비판 반영 후에도 — layer-type 공간 SM 분할(asymmetry 기반 thesis)은 **종결 권고 유지**. 비판은 오히려 음성 결과를 "예상된 비약의 귀결"로 격상시켜 종결 근거를 강화한다.
+
 ---
 
 ## 4. 회수 가능한 산출물 (중단 ≠ 손실)
@@ -53,9 +66,9 @@
 
 중단 보고서로 닫더라도 아래는 **검증되지 않은 채 남는다.** "분할 무용"을 무조건적 결론으로 과대주장하면 안 된다:
 
-- **7B 미검증 (가장 큰 구멍):** `models.yaml:88` "7B entries are kept but **unused**". v2_report가 "결정적"이라 부른 7B 회귀는 **한 번도 실행되지 않았다.** 큰 커널이 SM을 포화시키면 분할이 의미를 가질 *여지*는 닫지 못함. → 결론 스코프 = **"SLM/A100 한정"**.
+- **7B 미검증 (가장 큰 구멍):** `models.yaml:88` "7B entries are kept but **unused**". v2_report가 "결정적"이라 부른 7B 회귀는 **한 번도 실행되지 않았다.** 단 정확한 질문은 "비대칭이 scale에서 살아나는가"가 아니라 **"큰 커널이 공유 하 파괴적 간섭을 일으켜 격리(분할)가 그 slack을 회수하는가"(§3.1의 술어 b)**이며, 이게 SLM에서만 닫혔다. → 결론 스코프 = **"SLM/A100 한정"**.
 - **진짜 prefill 미검증:** E5는 microbench(prefill chunk=1, scan-only, decode step=1). GEMM·다중 chunk 포함 실제 prefill은 `--prefill-layer ssm_full`로만 점검 가능하며 미수행([검수 A2](review_checklist.md)).
-- **비대칭의 robustness:** matched-granularity에서 zamba 20셀 중 9셀(REDUCED 7+ELIMINATED 2)에서 비대칭 약화/소멸([검수 A3](review_checklist.md)). "비대칭 실재"는 격자 의존.
+- **비대칭의 robustness (이제 부차적):** matched-granularity에서 zamba 20셀 중 9셀(REDUCED 7+ELIMINATED 2)에서 비대칭 약화/소멸([검수 A3](review_checklist.md)). 단 §3.1에 따라 **비대칭은 애초에 lever가 아니므로 이 robustness는 결론을 좌우하지 않고, "비대칭은 서술적 사실"이라는 §4.3 sub-claim의 강도에만 영향**한다. "비대칭 실재"로 단정 금지.
 - **HW 한정:** A100-SXM4 단일 디바이스. MPS 별도 프로세스가 아닌 multi-stream 근사(§6).
 
 ---
@@ -64,7 +77,7 @@
 
 1. **본 라인(layer-type 공간 SM 분할) 종결.** 추가 분할-실험에 SXM4 자원 투입 금지. 한계 이득 음수, 메커니즘 수준에서 닫힘(§3).
 2. **종결 전 [검수 체크리스트](review_checklist.md)의 P0 5건 통과 확인** — 특히 A2(ssm_full 진짜-prefill 1회)와 C1(7B 미실행 스코프 명기). 이것만 통과하면 "SLM에서 음성 확정"으로 깨끗이 닫힌다.
-3. **단, 닫기 전 [추가가치 경로](additional_value_paths.md)를 1회 검토.** 7B 회귀(Path 1)는 *닫는 데도 필요한* 결정적 데이터점이며(음성이면 결론을 크기-무관으로 격상, 양성이면 라인 부활), 비용이 크지 않다. prefill/decode overlap 재프레이밍(Path 2)은 음성 라인을 양성 기여로 전환하는 별개 출구다.
+3. **단, 닫기 전 [추가가치 경로](additional_value_paths.md)를 1회 검토.** 7B 회귀(Path 1)는 *닫는 데도 필요한* 결정적 데이터점이며 — **올바른 술어(b)로 재서술하면 "큰 커널에서 공유 하 회수 가능 slack이 생기는가"를 묻는다**(음성이면 결론을 크기-무관으로 격상, 양성이면 라인 부활). 비용이 크지 않다. prefill/decode overlap 재프레이밍(Path 2)은 음성 라인을 양성 기여로 전환하는 별개 출구다.
 4. **v1/v2 동결:** `archive/v1_7b_saturation/` 유지. v2 산출물(results_v2, figures, verdicts) 커밋 후 동결.
 
 > **결정 트리:** 검수 P0 전부 통과 + 7B 미실행 수용 → **여기서 종결(음성 특성화로 발표).** 7B 1회라도 돌릴 여력 → `additional_value_paths.md` Path 1 먼저 → 그 결과로 최종 종결/전환.

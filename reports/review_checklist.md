@@ -22,11 +22,11 @@
 - **확인:** `--prefill-layer ssm_full`(report §6이 지목한 점검 경로)로 E5 일부 셀 재측정. 적어도 pf=ssm×dec=ssm 최고 셀과 db8/db256 양 끝.
 - **통과:** ssm_full 모드에서도 (a) green_ctx가 two_stream 못 이김, (b) overlap이 prefill 크기로 스케일, (c) window가 db↑에서 닫힘 — 세 정성 결론 유지. **이게 음성 결론의 최대 위협. 닫기 전 반드시 1회.**
 
-### A3. [P0] G1 비대칭의 robustness — granularity confound
-- **주장:** G1 = ASYMMETRY_PRESENT (attn이 ssm보다 더 많은 SM에서 포화, 4/4 모델).
-- **위험:** E2는 **SSM=chunked, Attn=full-seq 단일호출**로 측정 — audit §3이 "비대칭 결과의 confound 확정"이라 명시. matched-granularity 재측정(`reports/matched_granularity_zamba2.md`)은 zamba 20 비교셀 중 **MAINTAINED 11 / REDUCED 7 / ELIMINATED 2**, 그리고 full-seq→chunked로 attn sat_sm이 최대 **+40 SM** 이동을 보임. 즉 E2의 비대칭 일부는 granularity 아티팩트.
-- **확인:** falcon_h1·nemotron_h matched_granularity 보고서도 같은 패턴인지. G1 verdict(ASYMMETRY_PRESENT)가 matched 격자에서도 CI-분리로 유지되는 셀이 몇 개인지 명시.
-- **통과:** 두 결과 중 하나. (a) matched에서도 비대칭 유지 → G1을 matched 수치로 재서술. (b) 유지 안 됨 → **"비대칭은 서술적 사실"이라는 §5 주장조차 격자 의존**임을 보고서에 명기. *어느 쪽이든 헤드라인(분할 무용)은 안 바뀌지만, 비대칭을 "실재"로 단정하면 안 됨.*
+### A3. [P0] G1 술어 mis-specification (상위 결함) + 비대칭 robustness (부차)
+- **상위 결함(술어):** G1이 "attn-ssm **sat_sm 비대칭이 있는가**"를 gate 술어로 쓴 것 자체가 category error다. sat_sm 비대칭은 *solo 커널의 occupancy 속성(a)*이고, partition 이득을 결정하는 건 *공유 하 동적 co-schedule이 회수 못 하는 slack(b)*이며 둘은 독립. `g1_verdict.json`의 *"SSM frees SMs for attention → proceed to E4"*가 (a)→(b) 비약. → [중단 보고서 §3.1](project_closure_report.md) 참조. **이 비판을 반영해도 헤드라인(분할 무용)은 불변·강화** — 올바른 술어(b)는 E4/E5(`two_stream` vs `green_ctx`)가 이미 음성 측정했기 때문.
+- **확인(술어):** 보고서·verdict가 "비대칭 present → 분할 후보"를 *valid 추론*인 양 서술하는 곳이 남았는지 grep. 모두 "비대칭은 lever 아님(서술적 사실), 이득 판정은 E4/E5의 (b)" 로 정정됐는지.
+- **부차(robustness):** matched-granularity(`reports/matched_granularity_zamba2.md`)에서 zamba 20셀 중 **MAINTAINED 11 / REDUCED 7 / ELIMINATED 2**, full-seq→chunked로 attn sat_sm 최대 **+40 SM** 이동 → 비대칭 일부는 granularity 아티팩트(audit §3 confound). falcon_h1·nemotron_h도 같은지.
+- **통과:** (1) "비대칭→분할" 비약 서술 0건, (2) 비대칭의 robustness 여부와 무관하게 헤드라인 유지 명기. *비대칭을 "실재"로 단정 금지 — 단 §3.1에 따라 이건 §4.3 sub-claim 강도 문제일 뿐 결론 불변.*
 
 ### A4. [P0] BW 절대%에 의존한 주장 0건
 - **위험:** `ssm_scan_bytes`는 recurrent state 트래픽 누락(과소), `attn_bytes`는 L2-캐시 KV 과대계상 → attn에서 BW% >100% 발생, **절대 BW% 비신뢰** (v2_report §3, audit §4).
