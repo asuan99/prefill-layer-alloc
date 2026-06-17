@@ -10,7 +10,9 @@
 
 > **"hybrid SSM+Attention 모델에서 layer-type(attn vs ssm) 자원 비대칭을 공간적 SM 분할(Green Context)로 활용한다"는 v2의 핵심 가설은 SLM/A100에서 포괄적으로 기각되었다. 분할은 어떤 prefill×decode 셀·batch·context에서도 단순 동시실행을 못 이긴다. 본 연구 라인은 추가 자원 투입의 한계 이득이 음(陰)이므로 중단을 권고한다.**
 
-> **(2026-06-17 추가 검토)** G1이 sat_sm 비대칭을 gate 술어로 쓴 것 자체가 잘못이라는 비판(§3.1)을 반영해도 — **종결 권고는 유지, 오히려 강화**된다. 올바른 술어(공유 하 회수 가능 slack)는 E4/E5가 이미 음성으로 측정했기 때문이다.
+> **(2026-06-17 추가 검토 1)** G1이 sat_sm 비대칭을 gate 술어로 쓴 것 자체가 잘못이라는 비판(§3.1)을 반영해도 — **종결 권고는 유지, 오히려 강화**된다. 올바른 술어(공유 하 회수 가능 slack)는 E4/E5가 이미 음성으로 측정했기 때문이다.
+
+> **(2026-06-17 추가 검토 2 — scope 정정)** "분할이 동시실행을 못 이긴다"는 **우리 regime(SLM·microbench·*throughput* 지표) 한정**이다. 동일 메커니즘(prefill/decode SM 분할)이 **단일 LLM에서 이득**을 본다는 선행연구가 있다 — **MuxWise·Bullet (ASPLOS'26)**. 그들은 *SLO/latency 목적함수 + production 규모*에서 동작하며, **우리 음성을 반증하지 않지만 우리 결론의 일반화를 막는다**(§5.1). 따라서 *살아남는 강한 주장은 "분할 무용"이 아니라 메커니즘 논증(§3.1 비대칭은 lever 아님 / §3.2 compute 분할은 memory에 못 닿음)*이다.
 
 ---
 
@@ -21,7 +23,7 @@
 | E1/G0 | scan은 유의미한 component인가 | OK (peak 62–74%) — **단 고batch에선 GEMM 지배, scan 20–40%로 붕괴** | 분할 동기는 저batch에 한정 |
 | E2/G1 | attn-ssm sat_sm 비대칭이 있나 | ASYMMETRY_PRESENT (gap 13–54 SM, CI-분리) — **단 granularity 의존(§5)** | 비대칭은 "서술적 사실"이지 손잡이 아님 |
 | E4 | 비대칭을 분할로 회수하나 | prefill-prefill split +1–7%뿐; aware split은 decode를 굶겨 **+60–144% 악화** | 분할은 손해 |
-| E5 | serving 전 구간에서 분할이 동시실행을 이기나 | **단 한 셀도 못 이김** (`two_stream/green_ctx` max 0.987/0.996, 1576셀) | **가설 기각** |
+| E5 | serving 전 구간에서 (prefill/decode) 분할이 동시실행을 이기나 | **단 한 셀도 못 이김** (`two_stream/green_ctx` max 0.987/0.996, 1576셀) | 가설 기각 — **단 throughput·microbench·SLM 한정**(§5.1: MuxWise/Bullet은 SLO·production서 이득) |
 | E5 | 그럼 실이득은 어디서 오나 | prefill+decode **overlap ~2.04×**, 분할 없이 co-schedule로 공짜 | 양성 산출(§4) |
 
 ---
@@ -58,18 +60,26 @@ E2/G1이 "attn-ssm sat_sm 비대칭이 있는가"를 gate 술어로 쓴 것은 *
 
 **귀결:** 비대칭은 memory-rooted symptom인데 손에 쥔 도구는 compute에만 닿고 memory는 공유였다 → memory에 뿌리박은 비대칭을 memory-level 분리로 *변환할 경로가 물리적으로 없었다.* E4/E5 음성은 측정 실패가 아니라 이 **orthogonality의 직접 지문**이다. **메모리-실행 분리에 도달하려면 회피하려던 state 추상화를 짓는 것이 유일한 경로였다** → [추가가치 Path 5](additional_value_paths.md).
 
+> **용어 — 보고서 전체가 이 구분 위에 선다.** 현대 GPU는 여러 커널을 동시에 돌린다(Fermi+); 동시성의 단위는 커널이 아니라 **thread block**이고, 하드웨어 블록 스케줄러가 블록을 비어있는 SM(A100=108개)에 뿌린다.
+> - **`two_stream`(동적 공유):** 두 커널을 서로 다른 CUDA stream에 올리면, 스케줄러가 *빈 SM 아무 데나* 양쪽 블록을 채운다 → **work-conserving**(한쪽이 SM을 놀리면 다른 쪽이 즉시 침범). 벽 없음.
+> - **`green_ctx`(정적 분할):** 각 커널을 *고정 SM 부분집합*에 가둠(예: 54/54). A가 놀려도 B가 못 씀 → **non-work-conserving**, 경직.
+> - decode가 GPU를 못 채워(BW-bound·소수 블록) 남긴 빈 SM을 prefill이 채우는 게 overlap의 방. decode batch↑로 그 방이 차면 닫힌다.
+>
+> 그래서 정적 분할은 스케줄러의 자유를 *빼앗기만* 한다 — 이득은 동적 공유가 **파괴적 간섭**(L2 thrash, decode starvation)을 일으켜 격리가 회수할 때만 양수(§3.1 술어 b, §5.1).
+
 ---
 
 ## 4. 회수 가능한 산출물 (중단 ≠ 손실)
 
 음성 결과지만 다음은 그대로 가치가 있고, 종결과 무관하게 보존/활용 가능하다:
 
-1. **발표 가능한 음성 특성화 결과.** "SLM hybrid serving에서 layer-type SM 분할은 무용, co-schedule이 정답"은 characterization 논문/리포트로 성립. 분할을 시도하려는 후속 연구의 시간을 아껴줌. (SSM-Scope 류 ISPASS characterization 트랙과 정렬.)
+1. **메커니즘 논증 (음성 *결과*보다 이게 본체).** "분할 무용"이라는 *결과* 자체는 §5.1(MuxWise·Bullet) 때문에 standalone 기여로는 약하다 — prefill/decode 분할이 이득이라는 선행연구가 이미 있어, 우리 음성은 "SLM·microbench·throughput에선 안 됨"이라는 *경계조건*에 가깝다. **발표 가능한 본체는 결과가 아니라 메커니즘 논증이다:** (a) §3.1 — sat_sm 비대칭은 partition lever가 아니다(category error), (b) §3.2 — compute 분할(Green Context)은 memory 분리에 *원리적으로* 못 닿는다. 이 둘은 regime 무관하게 성립하며, "layer-type 비대칭으로 hybrid serving을 최적화하라"는 방향을 *왜 접어야 하는지*를 설명한다. (characterization 트랙, SSM-Scope류와 정렬.)
 2. **양성 권고 + 그 구조:** prefill+decode를 공유 SM에 **그냥 co-schedule**(MPS/multi-stream) → 저~중 decode batch에서 1.2–2.0×, 분할/aware 할당 불필요. 즉시 적용 가능한 운영 지침. 겹침의 정도는 두 축이 *따로* 지배:
    - **prefill 타입 = 천장(ceiling).** prefill이 긴 stream이라 "decode를 숨길 방"을 정함 — `pf=ssm` 1.8–2.04× vs `pf=attn` 1.06–1.43× (@db8,ctx4096). 단 메커니즘은 roofline 상보성이 아니라 **duration matching**(비슷한 길이 두 커널이 SM 풀에 함께 들어가 포개짐, occupancy 현상).
    - **decode 타입 = context 스케일링.** short-context에선 타입 무관히 다 숨지만, `dec=ssm`은 O(1) state라 1k→16k **평탄 ~2.0×**, `dec=attn`은 O(L) KV라 long-context에서 decode가 벽시간을 지배하며 **overlap 붕괴**.
    - window는 decode batch로 닫힘(2.04@db8 → 1.15@db256).
    - **함의(중요):** 이 양성 결과의 *흥미로운* 부분 — long-context serving에서 `dec=ssm`이 특별히 강하다는 점 — 조차 execution이 아니라 **memory-state 성질(O(1) state vs O(L) KV)**이 설명한다. 즉 hybrid가 serving에서 *고유하게* 좋은 지점도 뿌리는 메모리다(→ §3.2, [Path 5](additional_value_paths.md)).
+   - **⚠ "분할 불필요"의 scope 한정 (선행연구 충돌 처리, §5.1):** 위 "co-schedule이 분할을 이긴다"는 **microbench·SLM·*throughput* 기준 한정**이다. **prefill/decode 공간 multiplexing 자체는 단일 LLM에서 이득이 입증돼 있다 — MuxWise, Bullet (둘 다 ASPLOS'26).** 우리 음성은 그들을 반증하지 않는다(§5.1: 목적함수·regime이 다름). 따라서 v2_report §7.2의 "분할도 aware 할당도 불필요"는 **"layer-type 분할은 불필요"로 좁혀 적어야** 하고, prefill/decode 분할은 *generic serving에서 이미 유효한 별개 사안*으로 분리한다.
 3. **비대칭의 비-할당 용도:** kernel fusion/튜닝 신호(ssm가 작아 일찍 포화), 모델↔하드웨어 매칭, layer별 quant/offload 우선순위. (할당이 아닌 곳에서 쓰임.)
 4. **재사용 가능한 측정 프레임워크:** measured/derived/metadata 라벨 강제, bootstrap CI 포화점, subprocess 격리, BandwidthEstimator, E0 해석적 wave 예측, 게이트 자동판정(`adjudicate.py`). 다음 프로젝트의 인프라.
 5. **음성을 강하게 만든 방법론적 발견:** granularity confound(SSM chunked vs Attn full-seq)가 비대칭을 부풀린다는 점, BW 절대%가 양방향으로 비신뢰라는 점 — 후속자에게 직접적 경고.
@@ -84,13 +94,27 @@ E2/G1이 "attn-ssm sat_sm 비대칭이 있는가"를 gate 술어로 쓴 것은 *
 - **진짜 prefill 미검증:** E5는 microbench(prefill chunk=1, scan-only, decode step=1). GEMM·다중 chunk 포함 실제 prefill은 `--prefill-layer ssm_full`로만 점검 가능하며 미수행([검수 A2](review_checklist.md)).
 - **비대칭의 robustness (이제 부차적):** matched-granularity에서 zamba 20셀 중 9셀(REDUCED 7+ELIMINATED 2)에서 비대칭 약화/소멸([검수 A3](review_checklist.md)). 단 §3.1에 따라 **비대칭은 애초에 lever가 아니므로 이 robustness는 결론을 좌우하지 않고, "비대칭은 서술적 사실"이라는 §4.3 sub-claim의 강도에만 영향**한다. "비대칭 실재"로 단정 금지.
 - **HW 한정:** A100-SXM4 단일 디바이스. MPS 별도 프로세스가 아닌 multi-stream 근사(§6).
+- **metric 한정 (중요):** E5의 green_ctx-vs-two_stream 판정 지표는 **throughput overlap**(`two_stream/green_ctx`)뿐이다. **decode tail latency / SLO-goodput은 평가하지 않았다** — 그런데 *그게 바로 공간 분할이 이기는 metric*(MuxWise·Bullet의 목적함수, §5.1)이다. E5엔 `decode_inflation_pct` 컬럼이 있으므로 two_stream vs green_ctx의 decode 지연을 사후 비교 가능([검수 A5](review_checklist.md)).
+
+### 5.1 선행연구 대비 위치 — MuxWise·Bullet (ASPLOS'26)
+
+**사실(확인됨):** MuxWise, Bullet (둘 다 ASPLOS'26)은 **단일 LLM**에서 prefill과 decode를 **multiplexing으로 분리**해 이득을 본다. 즉 "prefill/decode 공간 multiplexing은 무용"이 *아니다*.
+
+**우리 결과와 충돌하는가? — 직접 맞닿지만 반증은 아니다. scope(목적함수·regime)가 다르다:**
+1. **같은 메커니즘이다 (정직히 인정).** E5의 `green_ctx@f`는 동시 실행되는 **prefill 스트림과 decode 스트림 사이에 SM을 분할**한다(CSV `prefill_sm_frac`/`prefill_sm`/`decode_sm`) — 즉 *그 자체가 prefill/decode SM 분할*이고, MuxWise·Bullet이 쓰는 것과 **같은 종류의 손잡이**다. 그래서 "다른 축이라 안 부딪힌다"는 변명은 성립하지 않는다. layer-type(attn/ssm)은 *분할 비율 f를 정하는 신호*로 들어갔을 뿐이고(원래 thesis), E5는 "layer-type으로 고른 f든 어떤 f든 동적 공유를 못 이긴다"를 보였다. **따라서 MuxWise·Bullet이 충돌하는 것은 E5 결과의 *일반화 버전*("prefill/decode 분할은 무용")이며, 이건 아래 2·3 때문에 *우리 regime 한정*으로 좁혀야 한다.** (단 *layer-type 비대칭이 유용한 분할 신호*라는 sub-claim은 MuxWise/Bullet과 무관하게 §3.1로 이미 죽었다 — 그 부분 헤드라인은 무사.)
+2. **다른 목적함수.** E5는 *throughput overlap*만 본다. 동적 공유(two_stream)는 throughput엔 work-conserving이나 **decode 지연을 보호하지 않는다**(prefill grid가 SM을 덮쳐 decode stall). 정적 분할은 decode에 보장 슬라이스를 줘 **지연/ SLO를 회수**한다 — throughput을 조금 내주고 latency를 산다. prefill/decode 분할의 이득은 이 **SLO/goodput 축**에 있고, 우리는 그 축을 안 쟀다.
+3. **다른 regime.** prefill/decode 분할이 의미를 갖는 곳은 **대형 모델·real prefill(GEMM-heavy, multi-chunk)·지속 부하**다 — 거기서 prefill이 decode를 *파괴적으로* starve하므로 격리가 회수한다(§3.1 술어 b의 *양성* 사례). E5는 **SLM·microbench(prefill chunk=1, scan-only)**라 그 간섭이 없어 못 봤다. (E4의 76/32 split은 오히려 *prefill을 편들어* decode를 굶긴 잘못된 방향 — Bullet류는 decode를 보호한다.)
+
+> ⚠ **확인 필요:** 위 2·3(목적함수·regime·격리 메커니즘)은 *왜 그들이 우리와 모순 없이 이득을 보는가*에 대한 **우리 측 reconciliation 가설**이다. MuxWise·Bullet은 ASPLOS'26(본 작성자 지식 컷오프 이후)이라 **두 논문의 실제 메커니즘은 원문 대조로 확정해야 한다.** 본 절은 "그들이 SM 분할/MPS를 쓴다"를 사실로 단정하지 않는다 — 확정된 것은 "단일 LLM prefill/decode multiplexing으로 이득"뿐.
+
+**함의(종결과 무관, 오히려 보강):** 선행연구가 분할 이득을 보인 regime(대형·real-prefill·SLO)이 *정확히 우리가 안 테스트한 영역*(7B/ssm_full, Path 1·3)임을 확인해준다 → 우리 음성의 **microbench/SLM/throughput scope를 더 분명히** 한다. 그리고 **hybrid-고유 미답 질문**을 연다: ssm-decode가 O(1)·context-평탄이라 decode 지연 특성이 Transformer와 달라, **hybrid에서 prefill/decode multiplexing 정책의 최적점이 다를 수 있다** — MuxWise/Bullet이 비운 틈([Path 2 확장](additional_value_paths.md)).
 
 ---
 
 ## 6. 권고
 
-1. **본 라인(layer-type 공간 SM 분할) 종결.** 추가 분할-실험에 SXM4 자원 투입 금지. 한계 이득 음수, 메커니즘 수준에서 닫힘(§3).
-2. **종결 전 [검수 체크리스트](review_checklist.md)의 P0 5건 통과 확인** — 특히 A2(ssm_full 진짜-prefill 1회)와 C1(7B 미실행 스코프 명기). 이것만 통과하면 "SLM에서 음성 확정"으로 깨끗이 닫힌다.
+1. **본 라인(layer-type *비대칭을 분할 신호로* 쓰는 thesis) 종결.** 추가 layer-type-aware 분할 실험에 SXM4 자원 투입 금지 — §3.1·§3.2로 메커니즘 수준에서 닫힘(regime 무관). **단 "prefill/decode 분할 일반"을 종결하는 것이 아니다** — 그건 MuxWise·Bullet(ASPLOS'26)이 SLO·production서 이득을 보인 *살아있는* 영역이며(§5.1), 우리가 종결하는 건 *그것을 layer-type 비대칭으로 모는* 특정 가설이다.
+2. **종결 전 [검수 체크리스트](review_checklist.md)의 P0 6건 통과 확인** — 특히 A2(ssm_full 진짜-prefill 1회), A5(green_ctx의 decode 지연/SLO 재평가), C1(7B 미실행 스코프 명기). 이것들이 통과해야 "SLM·throughput 한정 음성 확정"으로 깨끗이 닫힌다.
 3. **단, 닫기 전 [추가가치 경로](additional_value_paths.md)를 1회 검토.** 7B 회귀(Path 1)는 *닫는 데도 필요한* 결정적 데이터점이며 — **올바른 술어(b)로 재서술하면 "큰 커널에서 공유 하 회수 가능 slack이 생기는가"를 묻는다**(음성이면 결론을 크기-무관으로 격상, 양성이면 라인 부활). 비용이 크지 않다. prefill/decode overlap 재프레이밍(Path 2)은 음성 라인을 양성 기여로 전환하는 별개 출구다.
 4. **v1/v2 동결:** `archive/v1_7b_saturation/` 유지. v2 산출물(results_v2, figures, verdicts) 커밋 후 동결.
 5. **종결의 범위 한정 (중요).** 본 종결은 *execution-path 라인*(SM 분할/스케줄링)에 대한 것이다. §3.2에 따라 **hybrid serving의 memory-state 추상화**(이질적 footprint admission, layer-type별 evict-vs-recompute 비대칭, SSM state의 prefix/radix 공유 붕괴, offload 배치)는 **미탐색의 별개 축이며 유일하게 abstraction-worthy한 잔여 방향**이다 → [추가가치 Path 5](additional_value_paths.md). 이건 죽은 라인의 부활이 아니라 *다른 프로젝트*다. 단 novelty는 SSM state의 *lossy-fold* 성질(sliding-window KV 선례와 구분되는 지점)에 걸리며, "두 state를 결합적·비대칭적으로 추론해야 하는가"가 베팅의 핵심.

@@ -33,6 +33,12 @@
 - **확인:** 보고서·그림·verdict의 모든 메커니즘 문장이 절대 BW%가 아니라 **latency 기반 sat_sm + E0 grid 예측**에 근거하는지 grep. `attn_mechanism: "bw_or_compute_limited(util-hint;abs%unreliable)"`처럼 라벨에 불확실성이 박혀 있는지 확인.
 - **통과:** "SSM is BW-bound at X%" 같은 절대% 단정 0건. ssm 메커니즘은 verdict에서 대부분 `indeterminate`/`grid_limited`로 정직하게 남아 있어야 함.
 
+### A5. [P0] 선행연구 충돌 — green_ctx를 *SLO 지표*로 재평가
+- **사실:** E5의 `green_ctx@f`는 prefill/decode 스트림 사이 SM 분할(= MuxWise·Bullet, ASPLOS'26이 단일 LLM에서 이득 본 *같은 메커니즘*). 우리 헤드라인 "분할이 동시실행을 못 이김"은 **throughput 지표(`two_stream/green_ctx`)로만** 판정됐다 — 그런데 분할이 이기는 metric은 **decode tail latency / SLO**다(closure §5.1).
+- **위험:** throughput만 보고 "분할 무용"이라 적으면 *선행연구가 이미 반증한 일반화*를 주장하게 됨. green_ctx가 throughput은 지면서 decode 지연은 *줄였을* 수 있고, 그게 바로 분할의 존재 이유.
+- **확인:** E5 CSV의 **`decode_inflation_pct`를 backend별(two_stream vs green_ctx@f)로 비교.** green_ctx가 decode_inflation을 유의하게 낮추는 셀이 있는지. 있으면 microbench 안에서도 SLO-이득 신호가 잡힌 것.
+- **통과:** (a) 헤드라인이 "throughput 기준, SLM·microbench 한정"으로 명시 스코프됨, (b) decode_inflation 비교 결과를 보고서에 기록(분할이 latency를 사는지 여부). **이 비교 없이 "분할 무용"을 일반 주장으로 쓰지 말 것.**
+
 ---
 
 ## B. 데이터 무결성 (P1)
@@ -80,4 +86,4 @@
 4. A4(BW 절대% 의존 0건) + C1(7B 미실행 스코프) — 문서 grep, GPU 불필요.
 5. **A2(ssm_full 진짜-prefill 검증)** — 유일하게 신규 SXM4 측정 필요. 닫기/발표 직전 1회. *이 항목 결과가 "닫기" vs "추가 진행" 분기의 마지막 입력.*
 
-> A1·A2·A3·A4·C1 = P0 5건이 전부 통과해야 v2를 "음성 결과로 종결" 또는 "발표"로 확정 가능. 하나라도 흔들리면 `additional_value_paths.md`의 해당 경로로 전환.
+> A1·A2·A3·A4·A5·C1 = P0 6건이 전부 통과해야 v2를 "음성 결과로 종결" 또는 "발표"로 확정 가능. 하나라도 흔들리면 `additional_value_paths.md`의 해당 경로로 전환. (A5는 선행연구 MuxWise/Bullet과의 충돌 처리 — 헤드라인 scope 한정이 핵심.)

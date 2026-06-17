@@ -14,7 +14,7 @@
 |---|------|:--:|---|---|---|
 | **5** | **memory-state 추상화 (별개 프로젝트)** | ○ ✦ | **유일하게 abstraction-worthy한 신규 연구축** | 중~고(새 프로젝트) | execution이 닫힌 곳의 다음 층 |
 | 1 | **7B 회귀** | ◐ ✦ | 결론을 크기-무관으로 격상 **또는** 라인 부활 | 중(SXM4 E2+E5 ×2모델) | config 있음, 미실행 |
-| 2 | **prefill/decode overlap 재프레이밍** | ● | 음성 라인 → 양성 기여(논문) | 저(분석+ssm_full 검증) | 이미 ~2× 측정됨 |
+| 2 | **prefill/decode overlap 재프레이밍** | ◐ | 양성 기여 — *단 hybrid decode-지연 각도로 차별화해야*(MuxWise/Bullet) | 저(분석+ssm_full+선행연구 대조) | ~2× 측정됨, 포지셔닝 재조정 필요 |
 | 3 | **진짜-prefill(ssm_full) E5** | ● | 헤드라인 신뢰도 확정 | 저(셀 일부 재측정) | 검수 A2와 동일 |
 | 4 | **비대칭의 비-할당 용도** | ○ | 부수 기여(작은) | 저~중 | 새 RQ 필요 |
 
@@ -51,7 +51,11 @@
 
 ## Path 2 — prefill/decode overlap 재프레이밍 (음성 → 양성 출구) ●
 
-**왜.** 프로젝트의 유일한 양성 측정값을 *기여*로 전환. "layer-type 분할은 무용(음성)"과 "prefill+decode co-schedule이 분할 없이 ~2× (양성)"를 묶으면 **완결된 메시지**가 된다: *"하이브리드 serving에서 자원을 나누지 말고 겹쳐라."* 별도 큰 측정 없이 발표 단위가 선다.
+**왜.** 프로젝트의 유일한 양성 측정값을 *기여*로 전환. "layer-type 비대칭으로 분할하는 건 무용(음성)"과 "prefill+decode co-schedule이 분할 없이 ~2× (양성)"를 묶는다.
+
+> **⚠ 메시지 수정 (선행연구 충돌, closure §5.1):** "자원을 나누지 말고 겹쳐라"는 단순 슬로건은 **과일반화**다 — **MuxWise·Bullet (ASPLOS'26)**이 단일 LLM에서 prefill/decode를 *분할*해 SLO 이득을 본다. 우리 ~2×는 *throughput·microbench·SLM* 한정이고, 그들의 분할 이득은 *SLO·production*이라 층위가 다르다. 따라서 Path 2의 *정직한* 기여는 "분할하지 말라"가 아니라 ↓ 의 **hybrid-고유 각도**다.
+>
+> **hybrid-고유 미답 질문 (진짜 novelty 후보):** ssm-decode는 O(1)·context-평탄이라 decode 지연 특성이 Transformer와 *근본적으로 다르다*. MuxWise/Bullet의 prefill/decode 분할 정책(prefill이 decode를 starve하는 걸 격리)은 (추정컨대) Transformer decode의 O(L) 지연 증가를 전제한다. **hybrid에서는 dec=ssm 요청의 지연이 context에 안 자라므로, 분할/multiplexing 정책의 최적점이 달라진다** — 이게 그들이 비운 틈이고, Path 5(memory)와 serving-scheduling에서 만나는 지점.
 
 **현재 진행도(●, 측정 거의 끝).**
 - E5에 측정 완료: pf=ssm 행 1.8–2.04×(@db8,ctx4096), window 2.04(db8)→1.15(db256), dec=ssm은 context 1k→16k 평탄 ~2.0×. `results_v2/e5/serving_coexec_*.csv` 4모델.
@@ -61,10 +65,12 @@
 1. window가 닫히는 batch를 모델별로 정량화(§G1 recommended_action의 "collapse batch"). widened decode sweep(→512)로 db256 이후 곡선 확정 — **현재 PENDING 잡(770988)이 바로 이 데이터**.
 2. [검수 A2] ssm_full 진짜-prefill에서도 2× overlap이 유지되는지(GEMM 포함 시 overlap이 더/덜 되는지).
 3. dec=attn은 long context로 decode가 벽시간 지배 시 overlap↓ — balance 조건을 명문화.
+4. **선행연구 대조 (필수, 저비용):** MuxWise·Bullet (ASPLOS'26) 원문을 읽어 (a) 그들의 분할 메커니즘·목적함수(SLO? goodput?)·대상 모델(Transformer 전제인가), (b) hybrid/ssm-decode를 다루는가 확인 → 우리 기여를 "그들이 안 다룬 hybrid decode-지연 특성"으로 정확히 포지셔닝. (closer §5.1의 reconciliation 가설을 사실로 확정/수정.)
+5. **(승격 시) hybrid-aware multiplexing 정책 측정:** dec=ssm vs dec=attn 요청 혼합 부하에서 SLO 지표(decode tail latency)로 분할 정책 sweep → "hybrid에선 분할 정책이 달라야 한다"를 정량화.
 
-**예상이득.** 분할 음성 + co-schedule 양성 = characterization 논문 1편 분량. 운영 권고(MPS/multi-stream)는 즉시 실용.
+**예상이득.** "분할 음성"만으로는 약함(§5.1). **MuxWise/Bullet이 안 본 hybrid decode-지연 비대칭으로 차별화**하면 serving 기여로 성립. 운영 권고(MPS/multi-stream)는 즉시 실용.
 
-**킬-기준.** ssm_full에서 overlap이 1.2× 미만으로 무너지면 → 양성 주장 약화, Path 3 결과에 종속.
+**킬-기준.** (a) ssm_full에서 overlap 1.2× 미만 붕괴 → 양성 주장 약화, Path 3에 종속. (b) 선행연구 대조 결과 MuxWise/Bullet이 *이미 hybrid/state-type을 다룸* → 차별화 소멸, Path 2는 운영 권고로만 축소.
 
 ---
 
@@ -116,7 +122,7 @@
 
 ## 종합 권고
 
-1. **즉시(GPU 불필요):** Path 1의 E0 7B 예측 + Path 2의 widened window 분석(PENDING 잡 결과).
+1. **즉시(GPU 불필요):** ① **MuxWise·Bullet (ASPLOS'26) 원문 대조** — 모든 포지셔닝의 전제(closure §5.1·검수 A5·Path 2의 reconciliation 가설 확정). ② Path 1의 E0 7B 예측 ③ Path 2의 widened window 분석(PENDING 잡 결과) ④ [검수 A5] green_ctx의 `decode_inflation_pct` 재평가.
 2. **1회 SXM4 측정:** [검수 A2] = Path 3(ssm_full) — 닫든 계속하든 필수. 여력 되면 Path 1의 E2/E5 7B를 같은 잡 배치에 동봉.
 3. **분기:**
    - 7B·ssm_full 모두 음성 → Path 2로 **재프레이밍 후 (execution-path) 종결**(양성 기여 + 크기-무관 음성).
