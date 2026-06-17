@@ -2,8 +2,13 @@
 # =============================================================================
 # run_pipeline.sh — run the WHOLE v2 size sweep under a tight SLURM job limit.
 #
-#   tmux new -s v2            # so it survives disconnects
-#   MAXQ=2 env -u BASH_ENV bash experiments/slurm/run_pipeline.sh
+#   # survive disconnect — pick ONE:
+#   DETACH=1 MAXQ=2 env -u BASH_ENV bash experiments/slurm/run_pipeline.sh   # self-detaches, logs to file
+#   tmux new -s v2 ; MAXQ=2 env -u BASH_ENV bash experiments/slurm/run_pipeline.sh
+#
+# This is a LONG-running controller (the A100 queue serializes jobs over hours/
+# days under QOS aanv8: MaxJobs=2, MaxSubmit=4). It MUST survive logout — running
+# it bare in the login shell will be SIGHUP-killed when the session drops.
 #
 # Why a throttling babysitter (not --dependency):
 #   This QOS caps how many jobs a user may have queued (QOSMaxSubmitJobPerUser /
@@ -37,6 +42,22 @@ MAXQ="${MAXQ:-2}"
 POLL="${POLL:-30}"
 MODELS="${MODELS:-zamba2_1.2b zamba2_2.7b falcon_h1_1.5b falcon_h1_3b}"
 ACT="source $REPO_ROOT/bin/activate 2>/dev/null || true; cd $CHAR_DIR"
+
+# --- optional self-detach: survive SSH disconnect WITHOUT tmux (DETACH=1) -----
+# Re-exec under a new session (setsid) detached from the terminal, logging to a
+# file, then return the shell. Guards against re-exec loops via _V2_DETACHED.
+# Keeps BASH_ENV unset in the child (this cluster's lmod BASH_ENV breaks bash).
+if [ "${DETACH:-0}" = "1" ] && [ -z "${_V2_DETACHED:-}" ]; then
+  mkdir -p "$LOG"
+  RUNLOG="$LOG/run_pipeline_$(date +%Y%m%d_%H%M%S).log"
+  echo "[detach] launching detached pipeline; it will survive logout."
+  _V2_DETACHED=1 MAXQ="$MAXQ" POLL="$POLL" MODELS="$MODELS" A100_PART="$A100_PART" \
+    FORCE_E4="${FORCE_E4:-0}" SERIAL="${SERIAL:-0}" \
+    setsid env -u BASH_ENV bash "$0" >"$RUNLOG" 2>&1 </dev/null &
+  echo "[detach] PID $!   log: $RUNLOG"
+  echo "[detach] monitor:  tail -f $RUNLOG       stop:  kill $!  (or scancel your v2- jobs)"
+  exit 0
+fi
 
 script_of() { case "$1" in
   e1) echo experiments/e1_prefill_decomp/run_component_sweep.py ;;
