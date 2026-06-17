@@ -12,10 +12,13 @@
 
 | # | 경로 | 상태 | 예상이득 | 비용 | 한 줄 |
 |---|------|:--:|---|---|---|
+| **5** | **memory-state 추상화 (별개 프로젝트)** | ○ ✦ | **유일하게 abstraction-worthy한 신규 연구축** | 중~고(새 프로젝트) | execution이 닫힌 곳의 다음 층 |
 | 1 | **7B 회귀** | ◐ ✦ | 결론을 크기-무관으로 격상 **또는** 라인 부활 | 중(SXM4 E2+E5 ×2모델) | config 있음, 미실행 |
 | 2 | **prefill/decode overlap 재프레이밍** | ● | 음성 라인 → 양성 기여(논문) | 저(분석+ssm_full 검증) | 이미 ~2× 측정됨 |
 | 3 | **진짜-prefill(ssm_full) E5** | ● | 헤드라인 신뢰도 확정 | 저(셀 일부 재측정) | 검수 A2와 동일 |
 | 4 | **비대칭의 비-할당 용도** | ○ | 부수 기여(작은) | 저~중 | 새 RQ 필요 |
+
+> Path 1–4는 *execution-path 라인* 안/주변의 출구다. **Path 5는 그 라인이 닫힌 자리(§closure §3.2)의 한 층 아래 — memory-state 축의 신규 연구**로, 우선순위상 가장 높지만 별개 프로젝트 규모다.
 
 ---
 
@@ -91,13 +94,33 @@
 
 ---
 
+## Path 5 — hybrid serving의 memory-state 추상화 ○ ✦ (별개 프로젝트)
+
+**왜 이게 유일하게 abstraction-worthy한가.** execution-path 라인이 닫힌 이유는 [closure §3.2](project_closure_report.md): compute 분할 손잡이(Green Context/MPS)는 SM만 가르고 HBM/L2는 공유라, memory 분리의 proxy가 못 된다. attn↔ssm의 *실행* 비동일성은 **증상**이고, 그 **원인은 state 구조의 이질성**이다 — Attention KV는 **O(L)**(위치-인덱싱·append·content-addressable), SSM recurrent state는 **O(1)**(길이 무관 고정 footprint·folded). pure-Transformer serving이 한 번도 마주한 적 없는 *"한 request·한 forward pass 안에 O(L)와 O(1) state가 공존"*이 hybrid-고유의 abstraction 표면이며, **serving의 정립된 추상화는 전부 memory 쪽**이다(PagedAttention=KV 가상메모리, RadixAttention=prefix 공유, KV evict/quant). 결정적으로, [closure §4.2]가 보였듯 *유일한 양성 결과의 흥미로운 구조(dec=ssm의 long-context 평탄성)조차 이 memory 성질이 설명*한다 → 메모리가 뿌리.
+
+**hybrid-고유 추상화 후보 (generic으로 안 무너지는 것).**
+1. **이질적 footprint 기반 admission/batching.** hybrid long-context request는 KV를 *attn 레이어 몇 개만* 들고 다님 → 동일 길이 Transformer 대비 메모리 압력이 근본적으로 다름. 이를 모델링한 batch admission은 hybrid에서만 유효.
+2. **evict-vs-recompute 경제학이 layer-type마다 *반대*.** KV: 보유 비싸고(O(L)) 재생성 공짜(append). SSM state: 보유 공짜(O(1))지만 재생성 **full rescan(O(L))**. → KV에 없는 **checkpoint-frequency(state 스냅샷 주기)** 라는 새 손잡이.
+3. **prefix/radix 공유 의미론이 SSM에서 붕괴.** KV는 위치-additive라 radix-tree 분기·부분 재사용 가능. SSM state는 *lossy fold*라 prefix-끝 상태만 통째 공유 가능, 중간 evict·부분 분기 불가 → 공유 추상화 재설계.
+4. **offload/placement 계층.** small·hot·recurrent(SSM) vs large·append(KV)의 배치 프로파일 차이.
+
+**현재 진행도(○).** 아이디어 단계. 본 v2(execution-path) 데이터/코드는 직접 재사용 불가 — *다른 프로젝트*다. 단 측정 프레임워크([closure §4.4])는 재사용.
+
+**novelty calibration (과대주장 방지).** "이질적 KV footprint" 자체는 **부분 선례 있음** — sliding-window/local-global attention(Gemma2, Mistral 류)이 이미 "O(W) vs O(L) KV 혼재"를 serving에서 다룸. 단순 "두 종류 메모리 관리"는 generic으로 미끄러진다. **진짜 새로움은 SSM state의 *folded(lossy)* 성질** — windowed KV는 여전히 per-token·append·evictable이지만 SSM state는 per-token 복원·중간 evict·부분 prefix 공유가 *원리적으로 불가*. 따라서 (2)의 checkpoint/recompute 비대칭과 (3)의 공유 붕괴가 windowed attention엔 없는 hybrid-고유 표면.
+
+**다음 수(착수 시).** (a) 한 hybrid 모델에서 per-request 메모리 footprint를 layer-type별로 분해 측정(KV growth vs state 상수) → admission 모델 스케치. (b) evict-vs-recompute 비용을 layer-type별로 측정(state 재-scan vs KV 재계산) → checkpoint-frequency 손잡이의 이득 곡선.
+
+**킬-기준.** 핵심 베팅 = **"두 state를 *결합적·비대칭적으로* 추론해야만 이득이 나는가, 아니면 SSM state를 *상수 크기 여분 메모리*로 환원해도 generic 추상화가 다 잡는가."** 후자면(환원 가능) → 별건도 연구 의미 약함, 종결. 전자면(결합 필요) → 신규 프로젝트로 승격.
+
+---
+
 ## 종합 권고
 
 1. **즉시(GPU 불필요):** Path 1의 E0 7B 예측 + Path 2의 widened window 분석(PENDING 잡 결과).
 2. **1회 SXM4 측정:** [검수 A2] = Path 3(ssm_full) — 닫든 계속하든 필수. 여력 되면 Path 1의 E2/E5 7B를 같은 잡 배치에 동봉.
 3. **분기:**
-   - 7B·ssm_full 모두 음성 → Path 2로 **재프레이밍 후 종결**(양성 기여 + 크기-무관 음성).
+   - 7B·ssm_full 모두 음성 → Path 2로 **재프레이밍 후 (execution-path) 종결**(양성 기여 + 크기-무관 음성).
    - 7B에서 green_ctx 우위 셀 발견 → **Path 1을 본 연구로 승격**(라인 부활).
-4. Path 4는 종결 후 별건.
+4. **Path 5(memory-state 추상화)는 위 분기와 독립** — execution-path가 어떻게 닫히든 닫히지 않는 신규 연구축. 종결 후 별개 프로젝트로 착수 검토(킬-기준: "두 state를 결합적으로 추론해야 하는가"). Path 4는 종결 후 부수 별건.
 
-> 한 문장: **"추가 이점은 분할을 더 파는 데 있지 않고, (1) 7B로 음성을 크기-무관으로 못박거나 (2) co-schedule 양성을 기여로 전환하는 데 있다."**
+> 한 문장: **"추가 이점은 분할(execution)을 더 파는 데 있지 않고 — (1) 7B로 음성을 크기-무관으로 못박거나 (2) co-schedule 양성을 기여로 전환하거나 (3) 한 층 아래 memory-state 추상화로 내려가는 데 있다. 앞 둘은 이 라인의 마무리, 셋째는 다음 프로젝트다."**

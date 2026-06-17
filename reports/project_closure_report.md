@@ -48,6 +48,16 @@ E2/G1이 "attn-ssm sat_sm 비대칭이 있는가"를 gate 술어로 쓴 것은 *
 
 **판정:** 술어 비판 반영 후에도 — layer-type 공간 SM 분할(asymmetry 기반 thesis)은 **종결 권고 유지**. 비판은 오히려 음성 결과를 "예상된 비약의 귀결"로 격상시켜 종결 근거를 강화한다.
 
+### 3.2 더 깊은 root-cause — execution 분할은 memory 분리의 proxy가 될 수 없다
+
+"왜 우회로가 없었나"의 메커니즘. 원래 베팅은 *"execution path를 분할하면 memory abstraction을 새로 짓지 않고도 memory-execution 분리를 얻는다"*(= compute 분할이 memory 분리의 공짜 proxy)였으나, 세 층위에서 동시에 무너진다:
+
+1. **하드웨어: compute partition ⊥ memory partition.** 본 연구가 쓴 도구(Green Context, MPS active-thread%)는 **SM(연산 유닛)만 분할**한다. A100에서 **L2 캐시·HBM 대역폭은 분할되지 않고 전부 공유** — SSM/Attn에 SM을 갈라줘도 둘은 같은 HBM 파이·같은 L2에서 메모리를 빨아들인다. 실행을 갈라도 memory subsystem은 한 덩어리다. (compute+memory를 같이 자르는 유일한 기제는 **MIG**이나, GPU를 분리 인스턴스로 쪼개는 것이라 단일 forward pass가 두 슬라이스에 걸쳐 activation을 주고받을 수 없음 → layer-type intra-model 분리엔 granularity가 틀림.)
+2. **분리할 동시성 부재.** single forward pass 안에서 attn/ssm 메모리 트래픽은 시간 순차(데이터-의존 부분단계)라 동시 경쟁하는 두 스트림이 아니다 — 공간 분할로 격리할 대상이 애초에 없다. (serving에서 실제 동시 흐름은 prefill↔decode이고, 그건 generic 축이다 → §4.2.)
+3. **스택 레이어 불일치.** 원한 memory 이득은 *state lifecycle*(footprint·evict·recompute·share = 데이터 구조)인데, SM 할당은 *런타임 스케줄링* 손잡이다. 스케줄링 손잡이는 state 저장/축출/공유를 건드리지 않으므로 memory 이득을 *내려보낼* 수도, *대체*할 수도 없다.
+
+**귀결:** 비대칭은 memory-rooted symptom인데 손에 쥔 도구는 compute에만 닿고 memory는 공유였다 → memory에 뿌리박은 비대칭을 memory-level 분리로 *변환할 경로가 물리적으로 없었다.* E4/E5 음성은 측정 실패가 아니라 이 **orthogonality의 직접 지문**이다. **메모리-실행 분리에 도달하려면 회피하려던 state 추상화를 짓는 것이 유일한 경로였다** → [추가가치 Path 5](additional_value_paths.md).
+
 ---
 
 ## 4. 회수 가능한 산출물 (중단 ≠ 손실)
@@ -55,7 +65,11 @@ E2/G1이 "attn-ssm sat_sm 비대칭이 있는가"를 gate 술어로 쓴 것은 *
 음성 결과지만 다음은 그대로 가치가 있고, 종결과 무관하게 보존/활용 가능하다:
 
 1. **발표 가능한 음성 특성화 결과.** "SLM hybrid serving에서 layer-type SM 분할은 무용, co-schedule이 정답"은 characterization 논문/리포트로 성립. 분할을 시도하려는 후속 연구의 시간을 아껴줌. (SSM-Scope 류 ISPASS characterization 트랙과 정렬.)
-2. **양성 권고:** prefill+decode를 공유 SM에 **그냥 co-schedule**(MPS/multi-stream) → 저~중 decode batch에서 1.2–2.0×, 분할/aware 할당 불필요. 즉시 적용 가능한 운영 지침.
+2. **양성 권고 + 그 구조:** prefill+decode를 공유 SM에 **그냥 co-schedule**(MPS/multi-stream) → 저~중 decode batch에서 1.2–2.0×, 분할/aware 할당 불필요. 즉시 적용 가능한 운영 지침. 겹침의 정도는 두 축이 *따로* 지배:
+   - **prefill 타입 = 천장(ceiling).** prefill이 긴 stream이라 "decode를 숨길 방"을 정함 — `pf=ssm` 1.8–2.04× vs `pf=attn` 1.06–1.43× (@db8,ctx4096). 단 메커니즘은 roofline 상보성이 아니라 **duration matching**(비슷한 길이 두 커널이 SM 풀에 함께 들어가 포개짐, occupancy 현상).
+   - **decode 타입 = context 스케일링.** short-context에선 타입 무관히 다 숨지만, `dec=ssm`은 O(1) state라 1k→16k **평탄 ~2.0×**, `dec=attn`은 O(L) KV라 long-context에서 decode가 벽시간을 지배하며 **overlap 붕괴**.
+   - window는 decode batch로 닫힘(2.04@db8 → 1.15@db256).
+   - **함의(중요):** 이 양성 결과의 *흥미로운* 부분 — long-context serving에서 `dec=ssm`이 특별히 강하다는 점 — 조차 execution이 아니라 **memory-state 성질(O(1) state vs O(L) KV)**이 설명한다. 즉 hybrid가 serving에서 *고유하게* 좋은 지점도 뿌리는 메모리다(→ §3.2, [Path 5](additional_value_paths.md)).
 3. **비대칭의 비-할당 용도:** kernel fusion/튜닝 신호(ssm가 작아 일찍 포화), 모델↔하드웨어 매칭, layer별 quant/offload 우선순위. (할당이 아닌 곳에서 쓰임.)
 4. **재사용 가능한 측정 프레임워크:** measured/derived/metadata 라벨 강제, bootstrap CI 포화점, subprocess 격리, BandwidthEstimator, E0 해석적 wave 예측, 게이트 자동판정(`adjudicate.py`). 다음 프로젝트의 인프라.
 5. **음성을 강하게 만든 방법론적 발견:** granularity confound(SSM chunked vs Attn full-seq)가 비대칭을 부풀린다는 점, BW 절대%가 양방향으로 비신뢰라는 점 — 후속자에게 직접적 경고.
@@ -79,5 +93,6 @@ E2/G1이 "attn-ssm sat_sm 비대칭이 있는가"를 gate 술어로 쓴 것은 *
 2. **종결 전 [검수 체크리스트](review_checklist.md)의 P0 5건 통과 확인** — 특히 A2(ssm_full 진짜-prefill 1회)와 C1(7B 미실행 스코프 명기). 이것만 통과하면 "SLM에서 음성 확정"으로 깨끗이 닫힌다.
 3. **단, 닫기 전 [추가가치 경로](additional_value_paths.md)를 1회 검토.** 7B 회귀(Path 1)는 *닫는 데도 필요한* 결정적 데이터점이며 — **올바른 술어(b)로 재서술하면 "큰 커널에서 공유 하 회수 가능 slack이 생기는가"를 묻는다**(음성이면 결론을 크기-무관으로 격상, 양성이면 라인 부활). 비용이 크지 않다. prefill/decode overlap 재프레이밍(Path 2)은 음성 라인을 양성 기여로 전환하는 별개 출구다.
 4. **v1/v2 동결:** `archive/v1_7b_saturation/` 유지. v2 산출물(results_v2, figures, verdicts) 커밋 후 동결.
+5. **종결의 범위 한정 (중요).** 본 종결은 *execution-path 라인*(SM 분할/스케줄링)에 대한 것이다. §3.2에 따라 **hybrid serving의 memory-state 추상화**(이질적 footprint admission, layer-type별 evict-vs-recompute 비대칭, SSM state의 prefix/radix 공유 붕괴, offload 배치)는 **미탐색의 별개 축이며 유일하게 abstraction-worthy한 잔여 방향**이다 → [추가가치 Path 5](additional_value_paths.md). 이건 죽은 라인의 부활이 아니라 *다른 프로젝트*다. 단 novelty는 SSM state의 *lossy-fold* 성질(sliding-window KV 선례와 구분되는 지점)에 걸리며, "두 state를 결합적·비대칭적으로 추론해야 하는가"가 베팅의 핵심.
 
-> **결정 트리:** 검수 P0 전부 통과 + 7B 미실행 수용 → **여기서 종결(음성 특성화로 발표).** 7B 1회라도 돌릴 여력 → `additional_value_paths.md` Path 1 먼저 → 그 결과로 최종 종결/전환.
+> **결정 트리:** 검수 P0 전부 통과 + 7B 미실행 수용 → **execution-path 라인 종결(음성 특성화로 발표).** 7B 1회라도 돌릴 여력 → `additional_value_paths.md` Path 1 먼저 → 그 결과로 최종 종결/전환. **단 어느 쪽이든 memory-state 추상화(Path 5)는 닫히지 않은 별개 출구로 남는다.**
