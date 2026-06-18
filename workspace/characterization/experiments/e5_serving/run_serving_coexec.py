@@ -113,9 +113,54 @@ def _failed(meta, backend, frac, msg, schema=_SCHEMA):
     return base
 
 
+# --- decode-protective split (SLO direction): reserve decode its E3 saturation floor ---
+def _load_decode_floor(model, device, e3_dir):
+    """{(layer_type,batch,ctx)->floor_sm} from E3 decode_floor CSV (csv module, no pandas)."""
+    import csv
+    p = Path(e3_dir) / f"decode_floor_{model}_{device}.csv"
+    if not p.exists():
+        print(f"  ⚠ decode-protect: E3 floor CSV not found ({p.name}) → no protect rows")
+        return None
+    rows = list(csv.reader(open(p)))
+    if not rows:
+        return None
+    h = 1 if rows[0] and rows[0][0].lstrip().startswith("#") else 0   # skip value_kind comment
+    hdr = [c.split("__")[0] for c in rows[h]]
+    idx = {c: i for i, c in enumerate(hdr)}
+    if not all(k in idx for k in ("layer_type", "batch", "context_len", "floor_sm_point")):
+        print(f"  ⚠ decode-protect: unexpected E3 columns → no protect rows")
+        return None
+    exact, dbmax = {}, {}
+    for r in rows[h + 1:]:
+        if len(r) < len(hdr):
+            continue
+        try:
+            lt = r[idx["layer_type"]]; b = int(float(r[idx["batch"]]))
+            ctx = int(float(r[idx["context_len"]])); fl = int(float(r[idx["floor_sm_point"]]))
+        except ValueError:
+            continue
+        exact[(lt, b, ctx)] = fl
+        dbmax[(lt, b)] = max(dbmax.get((lt, b), 0), fl)   # ctx-agnostic fallback = most protective
+    return {"exact": exact, "db": dbmax}
+
+
+def _protect_prefill_sm(floor_lut, decode_layer, batch, context, total_sm):
+    """prefill SM count with decode reserved its E3 floor. (psm, dsm); psm=None if no room/data."""
+    if floor_lut is None:
+        return None, None
+    dsm = floor_lut["exact"].get((decode_layer, batch, context))
+    if dsm is None:
+        dsm = floor_lut["db"].get((decode_layer, batch))
+    if dsm is None:
+        return None, None
+    psm = total_sm - int(dsm)
+    return (psm if psm >= 1 else None), int(dsm)   # psm<1 ⇒ decode floor saturates GPU, no room
+
+
 def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_layers,
               fracs, n_warmup, n_measure, total_sm, device, out_dir: Path,
-              prefill_mode="micro", prefill_tokens=0, prefill_batch=1):
+              prefill_mode="micro", prefill_tokens=0, prefill_batch=1,
+              decode_protect=False, e3_dir=None):
     import torch
     from experiments.common import kernels as K
     from experiments.e4_concurrent._green_ctx import (
@@ -123,6 +168,7 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
 
     cfg = K.load_layer_cfg(model)
     status_meta = cfg["config_status"]
+    floor_lut = _load_decode_floor(model, device, e3_dir) if decode_protect else None
     full = (prefill_mode == "full")
     schema = _SCHEMA_FULL if full else _SCHEMA
     # multi-chunk: prefill processes `n_chunks` chunks of `chunk` tokens each.
@@ -202,6 +248,31 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
                         except Exception as e:  # noqa: BLE001
                             rows.append(_failed(meta, "green_ctx", fr, type(e).__name__, schema))
 
+                    # decode-protective split: decode reserved its E3 floor, prefill = rest
+                    if decode_protect:
+                        psm, dsm = _protect_prefill_sm(floor_lut, dl, db, ctx, total_sm)
+                        frdp = round(psm / total_sm, 3) if psm else ""
+                        if psm is None:
+                            rows.append(_failed(meta, "green_ctx_protect", frdp,
+                                                f"no_room(decode_floor={dsm})", schema))
+                        else:
+                            s_p, s_d, info = create_two_partitions(n_first_sm=psm)
+                            if s_p is None:
+                                rows.append(_failed(meta, "green_ctx_protect", frdp,
+                                                    info.get("error", "no_green_ctx")[:30], schema))
+                            else:
+                                try:
+                                    gc = measure_concurrent(prefill_fn, decode_fn, s_p, s_d,
+                                                            n_warmup, n_measure)
+                                    rows.append(_row(meta, "green_ctx_protect", frdp,
+                                                     info.get("actual_first_sm", ""),
+                                                     info.get("actual_second_sm", ""),
+                                                     solo_p, solo_d, gc["a_stream_ms"],
+                                                     gc["b_stream_ms"], gc["concurrent_ms"], "ok"))
+                                except Exception as e:  # noqa: BLE001
+                                    rows.append(_failed(meta, "green_ctx_protect", frdp,
+                                                        type(e).__name__, schema))
+
                 # per-cell quick summary at the smallest batch (max overlap regime)
                 cell = [r for r in rows if r["prefill_layer"] == pl and r["decode_layer"] == dl
                         and r["context_len"] == contexts[0] and r["backend"] == "two_stream"
@@ -238,6 +309,12 @@ def parse_args():
                         "(ceil(tokens/chunk) chunk calls). 0 = single chunk (default).")
     p.add_argument("--prefill-batch", type=int, default=1,
                    help="number of in-flight prefill sequences (default 1)")
+    # --- decode-protective split (SLO direction, A5): reserve decode its E3 floor ---
+    p.add_argument("--decode-protect", action="store_true",
+                   help="add a 'green_ctx_protect' backend: reserve decode its E3 saturation-"
+                        "floor SMs, prefill gets the rest (decode-protective / SLO-oriented split)")
+    p.add_argument("--e3-dir", type=Path, default=Path(_CHAR) / "results_v2" / "e3",
+                   help="E3 decode_floor CSV dir (used by --decode-protect)")
     p.add_argument("--dry-run", action="store_true",
                    help="print the sweep plan (no GPU, no timing) and exit")
     p.add_argument("--n-warmup", type=int, default=5)
@@ -262,9 +339,26 @@ def _print_plan(args):
     print(f"           batch={args.prefill_batch}  tokens={ptok} ({n_chunks}×{args.chunk} chunk)")
     print(f"  decode: layers={args.decode_layers}  batches={args.decode_batches}")
     print(f"  contexts={args.context_lens}  fracs(green_ctx)={args.fracs}")
-    print(f"  cells/model={n_cells}  backends/cell={2 + len(args.fracs)} (sequential,two_stream,green_ctx×{len(args.fracs)})")
+    nb = 2 + len(args.fracs) + (1 if args.decode_protect else 0)
+    print(f"  cells/model={n_cells}  backends/cell={nb} (sequential,two_stream,green_ctx×{len(args.fracs)}"
+          f"{',green_ctx_protect' if args.decode_protect else ''})")
     print(f"  models={args.models}")
     print(f"  output → serving_coexec{suffix}_<model>_<device>.csv  (microbench CSVs untouched)")
+    if args.decode_protect:
+        import glob as _g
+        m0 = args.models[0]
+        cands = _g.glob(str(args.e3_dir / f"decode_floor_{m0}_*.csv"))
+        print(f"  --decode-protect: decode reserved its E3 floor → prefill = 108 - floor:")
+        if not cands:
+            print(f"    ⚠ no E3 floor CSV for {m0} in {args.e3_dir} (would skip protect rows)")
+        else:
+            flut = _load_decode_floor(m0, os.path.basename(cands[0]).split(f"{m0}_")[1][:-4], args.e3_dir)
+            for dl in args.decode_layers:
+                cells = []
+                for db in args.decode_batches:
+                    psm, dsm = _protect_prefill_sm(flut, dl, db, args.context_lens[0], 108)
+                    cells.append(f"db{db}:dec{dsm}/pf{psm if psm else 'X'}")
+                print(f"    dec={dl} (ctx{args.context_lens[0]}): " + "  ".join(cells))
 
 
 def main():
@@ -285,7 +379,8 @@ def main():
                   args.prefill_layers, args.decode_layers, args.fracs,
                   args.n_warmup, args.n_measure, total_sm, device, args.output_dir,
                   prefill_mode=args.prefill_mode, prefill_tokens=args.prefill_tokens,
-                  prefill_batch=args.prefill_batch)
+                  prefill_batch=args.prefill_batch,
+                  decode_protect=args.decode_protect, e3_dir=args.e3_dir)
 
 
 if __name__ == "__main__":

@@ -37,7 +37,8 @@
 - **사실:** E5의 `green_ctx@f`는 prefill/decode 스트림 사이 SM 분할(= MuxWise·Bullet, ASPLOS'26이 단일 LLM에서 이득 본 *같은 메커니즘*). 우리 헤드라인 "분할이 동시실행을 못 이김"은 **throughput 지표(`two_stream/green_ctx`)로만** 판정됐다 — 그런데 분할이 이기는 metric은 **decode tail latency / SLO**다(closure §5.1).
 - **위험:** throughput만 보고 "분할 무용"이라 적으면 *선행연구가 이미 반증한 일반화*를 주장하게 됨. green_ctx가 throughput은 지면서 decode 지연은 *줄였을* 수 있고, 그게 바로 분할의 존재 이유.
 - **확인:** E5 CSV의 **`decode_inflation_pct`를 backend별(two_stream vs green_ctx@f)로 비교.** green_ctx가 decode_inflation을 유의하게 낮추는 셀이 있는지. 있으면 microbench 안에서도 SLO-이득 신호가 잡힌 것.
-- **✅ 통과 (widened 검증 §1.3, 2026-06-18) — 단 반전 주의:** green_ctx는 decode를 *보호*가 아니라 **starve**(inflation 평균 64–83%·최대 231% vs two_stream 1–3%). 즉 우리 분할은 throughput·decode-latency *양 축 모두* 열등. **그러나 우리 `f`=prefill 우대(0.5/0.7, decode_sm 32–54)가 decode를 굶긴 결과**이며, **decode-보호형 `f`(decode_sm≥floor)는 미검증** → MuxWise/Bullet의 SLO regime은 닫히지 않음. **"분할은 decode도 못 지킨다"로 일반화 금지.**
+- **✅ 통과 (widened §1.3 + real-prefill, 2026-06-18) — 단 반전 주의:** green_ctx(prefill-우대 f)는 decode를 *보호*가 아니라 **starve**(inflation 64–83%, real prefill·7B서 66–101% vs two_stream 1–10%). 즉 우리 분할은 thro승·decode-latency *양 축 모두* 열등.
+- **decode-보호형 측정 코드 구현됨(2026-06-18, `--decode-protect` + `analyze_slo_partition.py`, 설계 §4.5):** decode에 E3 floor SM 예약. **단 SLO 분석기가 이미 시사 — microbench에선 two_stream이 *양 축 우세***(decode_inflation 3.6–5.3% + throughput 1.23–1.29×)라 protective 분할이 비집을 SLO 격차가 없음. → **진짜 SLO 이득(MuxWise/Bullet)은 sustained-load/queue 현상**이고 단일셀 microbench로 재현 불가. `--decode-protect`는 *microbench엔 격차 없음을 확정*하는 용도, 결정적 검증은 **queue 시뮬레이터(별도 build)**. **"분할은 decode도 못 지킨다"로 일반화 금지 — 큐 부하 미검증.**
 
 ---
 

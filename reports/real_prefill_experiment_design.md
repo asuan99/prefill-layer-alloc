@@ -72,16 +72,33 @@ MODELS="zamba2_7b falcon_h1_7b" env -u BASH_ENV bash experiments/slurm/submit_si
 
 → C1·C3 유지 + C2 감소가 "치명적이지 않음"이면 microbench 결론을 진짜-prefill로 승격. C1에서 green_ctx가 이기는 셀이 생기면 → [Path 1/3](additional_value_paths.md)로 합류(헤드라인 재검토).
 
+### 4.5 decode-protective / SLO 방향 (A5, dynamic-partition thesis)
+
+우리가 쓴 green_ctx는 prefill-우대(f=0.5/0.7)라 decode를 굶겼다. MuxWise/Bullet 방향(= "분할비율을 동적으로, decode 보호 목적으로")을 *측정 가능*하게 하는 옵션:
+
+```bash
+# green_ctx_protect 백엔드 추가: decode에 E3 saturation-floor SM 예약, prefill=나머지
+MODELS="zamba2_7b falcon_h1_7b zamba2_2.7b" env -u BASH_ENV bash experiments/slurm/submit_size_sweep.sh e5 -- \
+    --prefill-mode full --prefill-tokens 4096 --decode-protect
+# SLO-lens 분석: decode 지연(latency) 기준으로 판정 (throughput 아님)
+python -m experiments.e5_serving.analyze_slo_partition
+```
+- `--decode-protect`: 셀별로 `decode_sm = E3 decode_floor(model,decode_layer,batch,ctx)`, `prefill_sm = 108-floor`. 고배치서 floor→108이면 prefill 자리 없음 → status=failed(`no_room`)로 정직히 기록(= decode-보호와 prefill의 구조적 상충).
+- `analyze_slo_partition.py`: backend별 `decode_inflation_pct`(SLO) + `speedup_vs_seq`(throughput), protect가 two_stream을 *양 축에서* 이기는 셀 수.
+
+> **⚠ 정직한 한계 (이미 데이터가 시사):** 단일셀 microbench에선 **two_stream이 이미 양 축 우세** — decode_inflation 3.6–5.3%(green_ctx 66–78%) *그리고* throughput 1.23–1.29×(green_ctx 0.97–1.08). 즉 *격리할 sustained contention이 없어* protective 분할이 비집을 SLO 격차가 없다. **진짜 SLO 이득(MuxWise/Bullet)은 다중 동시 prefill이 decode tail을 누르는 *요청 스트림/큐* 현상**이며, 이 microbench로는 재현 불가 — `--decode-protect`는 *그 격차가 microbench엔 없음을 확정*하는 용도이고, 결정적 검증은 **queue 시뮬레이터(별도·더 큰 build)**가 필요하다.
+
 ## 5. 알려진 단순화 (정직성 — 다음 fidelity 단계)
 
 - **multi-chunk = timing proxy.** chunk 커널을 `n_chunks`회 반복해 *연산량·duration*을 근사하나, SSM **state passing**(chunk 간 상태 전달)·attn **KV 누적 증가**(chunk i가 i-1까지 attend)는 미반영. → prefill 절대 latency는 충실, chunk 간 의존 효과는 미포착.
 - **prefill context_len=0.** prefill은 자기 프롬프트를 causal 처리(맞음). 셀의 `context_len`은 decode-side KV에만 적용(기존과 동일).
 - **여전히 full *model* forward는 아님.** 단일 layer-type(ssm_full/attn_full)의 반복이지 전체 모델(모든 레이어 interleave + embedding/LM head)은 아님. A2의 핵심(GEMM 유무·prefill 길이)은 닫되, 진짜 엔진 통합(chunked-prefill 배치 융합)은 별도 작업.
-- **green_ctx `f`는 여전히 prefill 우대(0.5/0.7).** widened §1.3이 보인 decode starvation은 full에서도 재현될 것 — decode-보호형 `f` 스윕은 [검수 A5](review_checklist.md)의 별도 항목.
+- **green_ctx `f` 정적 격자(0.5/0.7)는 prefill 우대.** decode-보호형 분할은 §4.5의 `--decode-protect`로 측정(decode=E3 floor).
 
 ## 6. 변경 파일 (브랜치 `exp/e5-real-prefill`)
 
 - `experiments/common/kernels.py` — `build_attn_qkv_proj_fn`·`build_attn_o_proj_fn`·`attn_full` dispatch(+`VALID_PREFILL_TYPES`).
-- `experiments/e5_serving/run_serving_coexec.py` — `--prefill-mode/-tokens/-batch`·`--dry-run`·`_SCHEMA_FULL`·multi-chunk·`_full` 출력 분기.
-- `experiments/e5_serving/compare_micro_vs_full.py` — **신규**. micro↔full CSV를 동일 키로 조인해 C1/C2/C3/A5 비교 출력 + per-cell `compare_micro_full_*.csv`. GPU 불필요, full 미존재 시 안내.
-- 기존 micro 경로·스키마·파일명 불변(검증: `--dry-run` micro = 기존과 동일, `py_compile` OK, 합성 full로 비교 스크립트 end-to-end OK).
+- `experiments/e5_serving/run_serving_coexec.py` — `--prefill-mode/-tokens/-batch`·`--decode-protect`(+`--e3-dir`)·`--dry-run`·`_SCHEMA_FULL`·multi-chunk·`_full` 출력 + `green_ctx_protect` 백엔드(E3 floor 예약).
+- `experiments/e5_serving/compare_micro_vs_full.py` — micro↔full 조인 비교(C1/C2/C3/A5) + per-cell CSV.
+- `experiments/e5_serving/analyze_slo_partition.py` — **신규**. backend를 `decode_inflation`(SLO)+throughput 기준으로 판정, protect가 two_stream을 양 축에서 이기는 셀 집계.
+- 기존 micro 경로·스키마·파일명 불변. 검증(GPU 없이): `py_compile` OK · `--dry-run` micro=기존동일 · `--dry-run --decode-protect`가 E3 floor→split 정확 산정(dec=attn db16+ no-room, dec=ssm floor94→pf14) · SLO 분석기 동작(현 데이터: two_stream이 양 축 우세 = microbench엔 SLO 격차 없음).
