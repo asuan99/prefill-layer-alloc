@@ -4,31 +4,31 @@
   "threshold_scan_share_pct": 30.0,
   "per_model": {
     "falcon_h1_1.5b": {
-      "max_scan_share_pct": 74.459,
-      "steady_scan_share_pct": 39.994,
+      "max_scan_share_pct": 75.131,
+      "steady_scan_share_pct": 40.216,
       "scan_regime": "robust",
-      "n_batches": 4,
+      "n_batches": 10,
       "g0": "OK"
     },
     "falcon_h1_3b": {
-      "max_scan_share_pct": 66.079,
-      "steady_scan_share_pct": 30.356,
+      "max_scan_share_pct": 65.935,
+      "steady_scan_share_pct": 30.521,
       "scan_regime": "robust",
-      "n_batches": 4,
+      "n_batches": 10,
       "g0": "OK"
     },
     "zamba2_1.2b": {
-      "max_scan_share_pct": 68.388,
-      "steady_scan_share_pct": 27.938,
+      "max_scan_share_pct": 68.046,
+      "steady_scan_share_pct": 28.774,
       "scan_regime": "low-batch-dominant",
-      "n_batches": 4,
+      "n_batches": 10,
       "g0": "OK"
     },
     "zamba2_2.7b": {
-      "max_scan_share_pct": 62.715,
-      "steady_scan_share_pct": 19.795,
+      "max_scan_share_pct": 62.92,
+      "steady_scan_share_pct": 20.308,
       "scan_regime": "low-batch-dominant",
-      "n_batches": 4,
+      "n_batches": 10,
       "g0": "OK"
     }
   },

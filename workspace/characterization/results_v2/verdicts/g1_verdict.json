@@ -11,36 +11,71 @@
     {
       "model": "falcon_h1_1.5b",
       "verdict": "ASYMMETRY_PRESENT",
-      "max_gap_sm": 27.0,
+      "max_gap_sm": 41.0,
       "direction": "attn>ssm",
       "batches_ci_separated": [
         1,
-        128
+        2,
+        32,
+        64,
+        128,
+        256,
+        512
       ],
       "ssm_mechanism": "indeterminate",
       "attn_mechanism": "bw_or_compute_limited(util-hint;abs%unreliable)",
       "detail": [
         {
           "batch": 1,
-          "ssm_sat": 27.0,
+          "ssm_sat": 14.0,
           "ssm_ci": [
-            27.0,
-            27.0
+            14.0,
+            14.0
           ],
           "attn_sat": 40.0,
           "attn_ci": [
             40.0,
             40.0
           ],
-          "gap_attn_minus_ssm": 13.0,
+          "gap_attn_minus_ssm": 26.0,
           "ci_separated": true
+        },
+        {
+          "batch": 2,
+          "ssm_sat": 27.0,
+          "ssm_ci": [
+            27.0,
+            40.0
+          ],
+          "attn_sat": 68.0,
+          "attn_ci": [
+            68.0,
+            68.0
+          ],
+          "gap_attn_minus_ssm": 41.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 4,
+          "ssm_sat": 40.0,
+          "ssm_ci": [
+            40.0,
+            54.0
+          ],
+          "attn_sat": 40.0,
+          "attn_ci": [
+            40.0,
+            40.0
+          ],
+          "gap_attn_minus_ssm": 0.0,
+          "ci_separated": false
         },
         {
           "batch": 8,
           "ssm_sat": 68.0,
           "ssm_ci": [
-            68.0,
-            68.0
+            54.0,
+            81.0
           ],
           "attn_sat": 68.0,
           "attn_ci": [
@@ -51,22 +86,82 @@
           "ci_separated": false
         },
         {
-          "batch": 32,
-          "ssm_sat": 108.0,
+          "batch": 16,
+          "ssm_sat": 81.0,
           "ssm_ci": [
             81.0,
-            108.0
+            81.0
+          ],
+          "attn_sat": 68.0,
+          "attn_ci": [
+            68.0,
+            68.0
+          ],
+          "gap_attn_minus_ssm": -13.0,
+          "ci_separated": false
+        },
+        {
+          "batch": 32,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 94.0,
+          "attn_ci": [
+            94.0,
+            94.0
+          ],
+          "gap_attn_minus_ssm": 13.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 64,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
           ],
           "attn_sat": 108.0,
           "attn_ci": [
             94.0,
             108.0
           ],
-          "gap_attn_minus_ssm": 0.0,
-          "ci_separated": false
+          "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
         },
         {
           "batch": 128,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 256,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 512,
           "ssm_sat": 81.0,
           "ssm_ci": [
             81.0,
@@ -85,30 +180,63 @@
     {
       "model": "falcon_h1_3b",
       "verdict": "ASYMMETRY_PRESENT",
-      "max_gap_sm": 27.0,
+      "max_gap_sm": 41.0,
       "direction": "attn>ssm",
       "batches_ci_separated": [
         1,
+        2,
         8,
-        128
+        128,
+        256,
+        512
       ],
       "ssm_mechanism": "indeterminate",
       "attn_mechanism": "bw_or_compute_limited(util-hint;abs%unreliable)",
       "detail": [
         {
           "batch": 1,
+          "ssm_sat": 14.0,
+          "ssm_ci": [
+            14.0,
+            14.0
+          ],
+          "attn_sat": 54.0,
+          "attn_ci": [
+            40.0,
+            54.0
+          ],
+          "gap_attn_minus_ssm": 40.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 2,
           "ssm_sat": 27.0,
           "ssm_ci": [
             27.0,
             27.0
+          ],
+          "attn_sat": 68.0,
+          "attn_ci": [
+            68.0,
+            68.0
+          ],
+          "gap_attn_minus_ssm": 41.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 4,
+          "ssm_sat": 54.0,
+          "ssm_ci": [
+            27.0,
+            54.0
           ],
           "attn_sat": 40.0,
           "attn_ci": [
             40.0,
             40.0
           ],
-          "gap_attn_minus_ssm": 13.0,
-          "ci_separated": true
+          "gap_attn_minus_ssm": -14.0,
+          "ci_separated": false
         },
         {
           "batch": 8,
@@ -123,6 +251,357 @@
             81.0
           ],
           "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 16,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            68.0,
+            108.0
+          ],
+          "attn_sat": 81.0,
+          "attn_ci": [
+            81.0,
+            81.0
+          ],
+          "gap_attn_minus_ssm": 0.0,
+          "ci_separated": false
+        },
+        {
+          "batch": 32,
+          "ssm_sat": 108.0,
+          "ssm_ci": [
+            108.0,
+            108.0
+          ],
+          "attn_sat": 94.0,
+          "attn_ci": [
+            94.0,
+            94.0
+          ],
+          "gap_attn_minus_ssm": -14.0,
+          "ci_separated": false
+        },
+        {
+          "batch": 64,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 94.0,
+          "attn_ci": [
+            81.0,
+            94.0
+          ],
+          "gap_attn_minus_ssm": 13.0,
+          "ci_separated": false
+        },
+        {
+          "batch": 128,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 94.0,
+          "attn_ci": [
+            94.0,
+            94.0
+          ],
+          "gap_attn_minus_ssm": 13.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 256,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 94.0,
+          "attn_ci": [
+            94.0,
+            94.0
+          ],
+          "gap_attn_minus_ssm": 13.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 512,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 94.0,
+          "attn_ci": [
+            94.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 13.0,
+          "ci_separated": true
+        }
+      ]
+    },
+    {
+      "model": "zamba2_1.2b",
+      "verdict": "ASYMMETRY_PRESENT",
+      "max_gap_sm": 28.0,
+      "direction": "attn>ssm",
+      "batches_ci_separated": [
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256
+      ],
+      "ssm_mechanism": "indeterminate",
+      "attn_mechanism": "bw_or_compute_limited(util-hint;abs%unreliable)",
+      "detail": [
+        {
+          "batch": 1,
+          "ssm_sat": 40.0,
+          "ssm_ci": [
+            27.0,
+            40.0
+          ],
+          "attn_sat": 40.0,
+          "attn_ci": [
+            40.0,
+            40.0
+          ],
+          "gap_attn_minus_ssm": 0.0,
+          "ci_separated": false
+        },
+        {
+          "batch": 2,
+          "ssm_sat": 40.0,
+          "ssm_ci": [
+            40.0,
+            40.0
+          ],
+          "attn_sat": 68.0,
+          "attn_ci": [
+            68.0,
+            68.0
+          ],
+          "gap_attn_minus_ssm": 28.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 4,
+          "ssm_sat": 54.0,
+          "ssm_ci": [
+            40.0,
+            54.0
+          ],
+          "attn_sat": 68.0,
+          "attn_ci": [
+            68.0,
+            68.0
+          ],
+          "gap_attn_minus_ssm": 14.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 8,
+          "ssm_sat": 68.0,
+          "ssm_ci": [
+            68.0,
+            81.0
+          ],
+          "attn_sat": 94.0,
+          "attn_ci": [
+            94.0,
+            94.0
+          ],
+          "gap_attn_minus_ssm": 26.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 16,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 32,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 64,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 128,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 256,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 27.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 512,
+          "ssm_sat": 108.0,
+          "ssm_ci": [
+            108.0,
+            108.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 0.0,
+          "ci_separated": false
+        }
+      ]
+    },
+    {
+      "model": "zamba2_2.7b",
+      "verdict": "ASYMMETRY_PRESENT",
+      "max_gap_sm": 41.0,
+      "direction": "attn>ssm",
+      "batches_ci_separated": [
+        1,
+        2,
+        8,
+        16
+      ],
+      "ssm_mechanism": "grid_limited",
+      "attn_mechanism": "bw_or_compute_limited(util-hint;abs%unreliable)",
+      "detail": [
+        {
+          "batch": 1,
+          "ssm_sat": 27.0,
+          "ssm_ci": [
+            27.0,
+            27.0
+          ],
+          "attn_sat": 68.0,
+          "attn_ci": [
+            68.0,
+            94.0
+          ],
+          "gap_attn_minus_ssm": 41.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 2,
+          "ssm_sat": 27.0,
+          "ssm_ci": [
+            27.0,
+            27.0
+          ],
+          "attn_sat": 68.0,
+          "attn_ci": [
+            68.0,
+            68.0
+          ],
+          "gap_attn_minus_ssm": 41.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 4,
+          "ssm_sat": 54.0,
+          "ssm_ci": [
+            54.0,
+            68.0
+          ],
+          "attn_sat": 68.0,
+          "attn_ci": [
+            68.0,
+            68.0
+          ],
+          "gap_attn_minus_ssm": 14.0,
+          "ci_separated": false
+        },
+        {
+          "batch": 8,
+          "ssm_sat": 81.0,
+          "ssm_ci": [
+            81.0,
+            81.0
+          ],
+          "attn_sat": 94.0,
+          "attn_ci": [
+            94.0,
+            94.0
+          ],
+          "gap_attn_minus_ssm": 13.0,
+          "ci_separated": true
+        },
+        {
+          "batch": 16,
+          "ssm_sat": 94.0,
+          "ssm_ci": [
+            81.0,
+            94.0
+          ],
+          "attn_sat": 108.0,
+          "attn_ci": [
+            108.0,
+            108.0
+          ],
+          "gap_attn_minus_ssm": 14.0,
           "ci_separated": true
         },
         {
@@ -141,155 +620,52 @@
           "ci_separated": false
         },
         {
-          "batch": 128,
-          "ssm_sat": 81.0,
+          "batch": 64,
+          "ssm_sat": 108.0,
           "ssm_ci": [
-            81.0,
-            81.0
+            108.0,
+            108.0
           ],
           "attn_sat": 94.0,
           "attn_ci": [
             94.0,
             94.0
           ],
-          "gap_attn_minus_ssm": 13.0,
-          "ci_separated": true
-        }
-      ]
-    },
-    {
-      "model": "zamba2_1.2b",
-      "verdict": "ASYMMETRY_PRESENT",
-      "max_gap_sm": 40.0,
-      "direction": "attn>ssm",
-      "batches_ci_separated": [
-        8,
-        128
-      ],
-      "ssm_mechanism": "indeterminate",
-      "attn_mechanism": "bw_or_compute_limited(util-hint;abs%unreliable)",
-      "detail": [
-        {
-          "batch": 1,
-          "ssm_sat": 27.0,
-          "ssm_ci": [
-            27.0,
-            40.0
-          ],
-          "attn_sat": 40.0,
-          "attn_ci": [
-            40.0,
-            40.0
-          ],
-          "gap_attn_minus_ssm": 13.0,
+          "gap_attn_minus_ssm": -14.0,
           "ci_separated": false
         },
         {
-          "batch": 8,
-          "ssm_sat": 68.0,
-          "ssm_ci": [
-            68.0,
-            68.0
-          ],
-          "attn_sat": 108.0,
-          "attn_ci": [
-            81.0,
-            108.0
-          ],
-          "gap_attn_minus_ssm": 40.0,
-          "ci_separated": true
-        },
-        {
-          "batch": 32,
+          "batch": 128,
           "ssm_sat": 108.0,
           "ssm_ci": [
             108.0,
             108.0
           ],
-          "attn_sat": 108.0,
+          "attn_sat": 94.0,
           "attn_ci": [
-            108.0,
-            108.0
+            94.0,
+            94.0
           ],
-          "gap_attn_minus_ssm": 0.0,
+          "gap_attn_minus_ssm": -14.0,
           "ci_separated": false
         },
         {
-          "batch": 128,
-          "ssm_sat": 81.0,
-          "ssm_ci": [
-            81.0,
-            81.0
-          ],
-          "attn_sat": 108.0,
-          "attn_ci": [
-            108.0,
-            108.0
-          ],
-          "gap_attn_minus_ssm": 27.0,
-          "ci_separated": true
-        }
-      ]
-    },
-    {
-      "model": "zamba2_2.7b",
-      "verdict": "ASYMMETRY_PRESENT",
-      "max_gap_sm": 54.0,
-      "direction": "attn>ssm",
-      "batches_ci_separated": [
-        1,
-        8
-      ],
-      "ssm_mechanism": "grid_limited",
-      "attn_mechanism": "bw_or_compute_limited(util-hint;abs%unreliable)",
-      "detail": [
-        {
-          "batch": 1,
-          "ssm_sat": 27.0,
-          "ssm_ci": [
-            27.0,
-            27.0
-          ],
-          "attn_sat": 81.0,
-          "attn_ci": [
-            68.0,
-            81.0
-          ],
-          "gap_attn_minus_ssm": 54.0,
-          "ci_separated": true
-        },
-        {
-          "batch": 8,
-          "ssm_sat": 81.0,
-          "ssm_ci": [
-            68.0,
-            81.0
-          ],
-          "attn_sat": 108.0,
-          "attn_ci": [
-            108.0,
-            108.0
-          ],
-          "gap_attn_minus_ssm": 27.0,
-          "ci_separated": true
-        },
-        {
-          "batch": 32,
+          "batch": 256,
           "ssm_sat": 108.0,
           "ssm_ci": [
-            94.0,
+            108.0,
             108.0
           ],
-          "attn_sat": 108.0,
+          "attn_sat": 94.0,
           "attn_ci": [
             94.0,
-            108.0
+            94.0
           ],
-          "gap_attn_minus_ssm": 0.0,
+          "gap_attn_minus_ssm": -14.0,
           "ci_separated": false
         },
         {
-          "batch": 128,
+          "batch": 512,
           "ssm_sat": 108.0,
           "ssm_ci": [
             108.0,

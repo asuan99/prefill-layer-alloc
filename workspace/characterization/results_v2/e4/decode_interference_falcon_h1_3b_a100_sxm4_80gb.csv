@@ -1,6 +1,6 @@
 "# value_kind: measured=decode_solo_ms,decode_concurrent_ms,prefill_concurrent_ms; derived=decode_inflation_pct; metadata=model,device,config_status,budget_mode,prefill_layer_type,batch,prefill_seq,chunk_granularity,context_len,prefill_sm,decode_sm,status"
 model__metadata,device__metadata,config_status__metadata,budget_mode__metadata,prefill_layer_type__metadata,batch__metadata,prefill_seq__metadata,chunk_granularity__metadata,context_len__metadata,prefill_sm__metadata,decode_sm__metadata,status__metadata,decode_solo_ms__measured,decode_concurrent_ms__measured,prefill_concurrent_ms__measured,decode_inflation_pct__derived
-falcon_h1_3b,a100_sxm4_80gb,verified,uniform_50_50,ssm,8,2048,256,4096,54,54,ok,0.1352,0.1782,0.6318,31.818
-falcon_h1_3b,a100_sxm4_80gb,verified,uniform_50_50,attn,8,2048,256,4096,54,54,ok,0.1352,0.1669,0.4874,23.485
-falcon_h1_3b,a100_sxm4_80gb,verified,aware_0.7,ssm,8,2048,256,4096,76,32,ok,0.1352,0.2458,0.5903,81.818
-falcon_h1_3b,a100_sxm4_80gb,verified,aware_0.7,attn,8,2048,256,4096,76,32,ok,0.1341,0.2355,0.4844,75.573
+falcon_h1_3b,a100_sxm4_80gb,verified,uniform_50_50,ssm,8,2048,256,4096,54,54,ok,0.1357,0.1792,0.638,32.075
+falcon_h1_3b,a100_sxm4_80gb,verified,uniform_50_50,attn,8,2048,256,4096,54,54,ok,0.1362,0.1679,0.4884,23.308
+falcon_h1_3b,a100_sxm4_80gb,verified,aware_0.7,ssm,8,2048,256,4096,76,32,ok,0.1352,0.2478,0.6021,83.333
+falcon_h1_3b,a100_sxm4_80gb,verified,aware_0.7,attn,8,2048,256,4096,76,32,ok,0.1357,0.2365,0.4844,74.34
