@@ -105,4 +105,21 @@ zamba2_7b·falcon_h1_7b를 **동일 그리드·full 모드**로 측정(160행/�
 
 **A5 — green_ctx는 7B서 decode를 *더* 굶긴다:** decode_inflation mean green_ctx **falcon_h1_7b 77.7% / zamba2_7b 101.1%** (two_stream 4.9% / 10.2%). → 7B에서도 분할은 decode-hostile.
 
-**해석:** Path 1이 음성으로 닫히며 §4-partition 재정의를 *지지*한다 — 분할이 의미를 갖는 건 "큰 모델"이 아니라 *특정 duration-balance 코너(2.7b)*뿐이고, 그조차 throughput-only(decode 80%+ 희생). MuxWise/Bullet식 이득은 모델 크기가 아니라 **목적함수(SLO)+스케줄링 정책(decode-보호 분할)**에서 와야 함 — 여전히 미검증(검수 A5). raw 크기 축은 7B로 닫혔다.
+**해석:** Path 1이 음성으로 닫히며 §4-partition 재정의를 *지지*한다 — 분할이 의미를 갖는 건 "큰 모델"이 아니라 *특정 duration-balance 코너(2.7b)*뿐이고, 그조차 throughput-only(decode 80%+ 희생). MuxWise/Bullet식 이득은 모델 크기가 아니라 **목적함수(SLO)+스케줄링 정책(decode-보호 분할)**에서 와야 함 → §8에서 측정.
+
+---
+
+## 8. decode-보호 분할 SLO 측정 (A5, job 776678, `e5_dp`) — microbench엔 격차 없음 확정
+
+`green_ctx_protect`(decode에 E3 floor SM 예약, prefill=나머지)를 추가해 **decode 지연(SLO)+throughput** 양 축으로 비교(`analyze_slo_partition`, decode-protect full 측정):
+
+| 모델 | two_stream infl% / thru | green_ctx infl% / thru | **green_ctx_protect infl% / thru** | protect가 ts 이기는 셀(SLO/thru/**둘다**) |
+|---|---|---|---|---|
+| falcon_h1_3b | 2.9 / 1.28 | 66.2 / 0.99 | **15.7 / 0.98** | 2 / 0 / **0** |
+| zamba2_2.7b | 5.0 / 1.14 | 87.3 / 0.94 | **18.1 / 0.83** | 3 / 0 / **0** |
+| falcon_h1_7b | 4.9 / 1.23 | 76.1 / 0.97 | **nan(no_room)** | 0 / 0 / **0** |
+| zamba2_7b | 7.5 / 1.14 | 100.5 / 0.88 | **nan(no_room)** | 0 / 0 / **0** |
+
+**(1) decode-보호는 실제로 starvation을 줄인다:** green_ctx 66–100% → protect **16–18%** inflation. 즉 reservation 메커니즘 자체는 작동(decode를 지킴). **(2) 그러나 two_stream을 못 이긴다:** two_stream이 decode 지연(2.9–7.5%)·throughput(1.14–1.28×) *양 축 모두* 더 낫다 — **wins BOTH = 0 (전 모델).** **(3) 7B는 protect 자체가 대부분 불가:** decode floor→108이라 prefill 자리 없음(`no_room`).
+
+**결론(검수 A5 닫힘 — microbench 한정):** 단일셀 microbench엔 two_stream이 이미 decode를 잘 보호해 **분할이 비집을 SLO 격차가 없다.** decode-보호 분할은 naive 분할보다 낫지만 동적 co-schedule엔 못 미친다. **MuxWise/Bullet식 SLO 이득은 *지속 부하(다중 동시 prefill이 decode tail을 누름)*에서만 가능** → 단일셀로 재현 불가, **queue 시뮬레이터([설계](queue_simulator_design.md))가 결정적 검증.** (sim용 single-chunk LUT job 776826 진행 중.)
