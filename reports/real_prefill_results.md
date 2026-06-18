@@ -1,6 +1,6 @@
 # Real-Prefill 결과 — micro vs full 비교 분석 (A2 close-out)
 
-작성일: 2026-06-18 · 브랜치 `exp/e5-real-prefill` · 측정 job **775529** (E5 full, 4모델)
+작성일: 2026-06-18 · 브랜치 `exp/e5-real-prefill` · 측정 job **775529** (E5 full, SLM 4모델) + **776326** (7B 2모델, §7)
 설정: `--prefill-mode full --prefill-tokens 4096` → prefill = **GEMM-inclusive(ssm_full/attn_full) × 16 chunk(16×256)**, prefill_batch=1. **sweep 축은 v2 widened와 동일**(40셀/모델, decode_batch {1..512}, ctx 4096, fracs {0.5,0.7}). 비교: `compare_micro_vs_full.py` → `results_v2/e5/compare_micro_full_*.csv`.
 관련: [설계](real_prefill_experiment_design.md) · [widened 검증](widened_sweep_validation.md) · [closure §5.1](project_closure_report.md) · [검수 A2](review_checklist.md)
 
@@ -74,11 +74,35 @@ two_stream은 decode를 거의 안 건드림(3.6–5.3%), green_ctx는 real pref
 1. **closure §2 표 / §4.2 / widened §1.2:** "window는 decode batch로 닫힘(2.04→1.15)"에 **"단 microbench 한정 — real prefill(job 775529)에선 저배치 1.05×로 붕괴·고배치 1.6–1.76×로 재출현, 봉우리가 이동"** 추가.
 2. **closure §1/§2 / 검수 A1·A2:** "분할 의미있는 승리 0"에 **"단 microbench 한정 — real prefill·zamba2_2.7b서 green_ctx +12.5%(throughput) 발생, 그러나 decode 80% 희생이라 SLO로는 여전히 패"** 추가. A2 = **통과(조건부)**: 정성 결론은 *재정의 후* 유지, throughput-only 헤드라인엔 대형모델 예외.
 3. **closure §5.1 강화:** MuxWise/Bullet regime이 *우리 데이터에서 실측으로 재현*됨(파괴적 간섭 회수). 단 우리 green_ctx는 decode-희생형이라 그들의 decode-보호형과 방향이 반대 — 둘 다 "real prefill·고배치에서 분할이 의미를 가진다"는 같은 결론.
-4. **추가가치 Path 1/3:** 7B 미실행이지만, 2.7b에서 이미 예외가 나왔으므로 **크기-스케일링이 실재**(분할 이득이 모델 크기와 함께 커짐) — Path 1(7B)이 더 결정적이 됨.
+4. **추가가치 Path 1/3 (§7로 갱신):** 7B 실측 완료(job 776326) → **분할 예외는 크기-스케일링이 *아니다*** — 2.7b의 +12.5%가 7B에서 *사라진다*. Path 1이 음성으로 닫힘.
 
 ## 6. 한계 (정직성)
 
 - **multi-chunk는 timing proxy** — 16회 반복 호출이라 SSM state passing·attn intra-prefill KV 누적 미반영(설계 §5). prefill 절대 latency·SM 점유는 충실하나 chunk 간 의존 효과는 미포착.
 - **prefill_batch=1**(full-C 미실행). prefill 배칭을 더하면 분할 예외가 더 커질 수 있음.
 - **green_ctx f 격자 거침**(0.5/0.7뿐). decode-보호형 f(decode_sm≥floor) 미스윕 — SLO 관점 분할의 *상한*은 미측정(검수 A5).
-- **A100-SXM4·4모델·ctx4096 고정.** 7B(Path 1)·다중 context 미검증.
+- **A100-SXM4·ctx4096 고정.** 다중 context 미검증. (7B는 §7에서 측정 완료.)
+- **7B db512 일부 OOM** — zamba2_7b 8셀 status=failed(고배치 KV). 단 분할 예외 셀(db64/256)은 정상 측정.
+
+---
+
+## 7. 7B-scale 결과 (Path 1, job 776326) — 분할 예외는 크기-스케일링이 아니다
+
+zamba2_7b·falcon_h1_7b를 **동일 그리드·full 모드**로 측정(160행/모델, db512 일부 OOM 격리). C1 `max(two_stream/green_ctx)`를 전 크기와 나란히:
+
+| 모델 | max(ts/gc) | green_ctx 승 셀 | 비고 |
+|---|--:|--:|---|
+| falcon_h1_1.5b | 0.998 | 0 | |
+| zamba2_1.2b | 0.992 | 0 | |
+| falcon_h1_3b | 1.001 | 1 | 노이즈(+0.1%) |
+| **zamba2_2.7b** | **1.125** | **2** | **+12.5%(attn×ssm×db256)** |
+| **falcon_h1_7b** | **0.993** | **0** | green_ctx 패 |
+| **zamba2_7b** | **0.989** | **0** | green_ctx 패 |
+
+**핵심:** 2.7b의 +12.5% 예외는 **7B에서 사라진다.** *같은 셀*(pf=attn×dec=ssm×db256)에서 zamba2_7b의 two_stream speedup=1.025로 green_ctx가 *못 이긴다*(OOM 아님 — db256은 측정됨). 즉 분할 이득은 **모델 크기와 함께 단조 증가하지 않는다** — 2.7b 한정의 비단조 anomaly이고, **7B(=v2 §7.4가 "결정적"이라 부른 회귀)는 분할에 음성**이다. → "큰 커널이면 분할이 의미를 갖나"라는 closure §5의 가장 큰 미검증 구멍이 **NO로 닫힌다.** 음성 헤드라인이 *결정적 스케일점에서 강화*됨.
+
+**window는 7B서도 고배치로 열린다(overlap 실재):** zamba2_7b pf=ssm×dec=ssm db1 1.05→**db512 1.87×**; falcon_h1_7b pf=attn×dec=ssm는 db64에서 **1.85×** 봉우리. → §1의 "window-opens-at-high-batch under real prefill" 7B 확증, 양성(co-schedule overlap) 결론 robust.
+
+**A5 — green_ctx는 7B서 decode를 *더* 굶긴다:** decode_inflation mean green_ctx **falcon_h1_7b 77.7% / zamba2_7b 101.1%** (two_stream 4.9% / 10.2%). → 7B에서도 분할은 decode-hostile.
+
+**해석:** Path 1이 음성으로 닫히며 §4-partition 재정의를 *지지*한다 — 분할이 의미를 갖는 건 "큰 모델"이 아니라 *특정 duration-balance 코너(2.7b)*뿐이고, 그조차 throughput-only(decode 80%+ 희생). MuxWise/Bullet식 이득은 모델 크기가 아니라 **목적함수(SLO)+스케줄링 정책(decode-보호 분할)**에서 와야 함 — 여전히 미검증(검수 A5). raw 크기 축은 7B로 닫혔다.

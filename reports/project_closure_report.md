@@ -16,6 +16,8 @@
 
 > **(2026-06-18 추가 검토 3 — real prefill로 실측 정정)** A2를 닫는 real-prefill 측정(job 775529, GEMM-inclusive·16chunk)에서 **두 결론이 정정됐다**([real-prefill 결과](real_prefill_results.md)): (1) overlap ~2×는 microbench 산물 — real prefill에선 저배치 1.05×로 붕괴, 봉우리가 고배치로 이동(window가 *닫히는* 게 아니라 *열린다*); (2) **zamba2_2.7b에서 green_ctx가 +12.5% throughput 승**(검토 2의 MuxWise/Bullet regime 실측 재현) — 단 decode 80% 희생이라 SLO론 패. → 음성 헤드라인은 **"SLO 기준 분할 불리"**로 재정의하면 real prefill에서도 유지, throughput-only로는 대형모델 예외.
 
+> **(2026-06-18 추가 검토 4 — 7B 회귀 완료, 음성)** Path 1(=v2 §7.4의 "결정적" 7B 회귀)을 real-prefill로 실측(job 776326): **zamba2_7b·falcon_h1_7b 모두 green_ctx가 two_stream을 못 이김**(max ts/gc 0.989·0.993). **2.7b의 +12.5% 예외는 7B에서 *사라진다* — 분할 이득은 모델 크기와 함께 커지지 않는다(비단조).** → "큰 커널이면 분할이 의미를 갖나"라는 가장 큰 미검증 구멍이 **NO로 닫힘**. 음성 헤드라인이 결정적 스케일점에서 *강화*된다. 남은 분할-이득 가능성은 크기 축이 아니라 *SLO 목적함수+decode-보호 분할*(검수 A5)뿐. [real_prefill_results §7](real_prefill_results.md).
+
 ---
 
 ## 2. 무엇을 물었고, 무엇이 나왔나
