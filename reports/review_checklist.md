@@ -14,7 +14,7 @@
 - **주장:** `max(two_stream/green_ctx)` = 0.987(zamba)/0.996(falcon) → Green Context가 단 한 셀도 못 이김 (v2_report §4.6-D, §7.1).
 - **위험:** 이 값이 *전체* E5 매트릭스에서 재산출된 것인지, 아니면 일부/구버전 run의 잔재인지. widened decode sweep(→512) 후에도 1.0 미만이 유지되는지.
 - **확인:** `results_v2/e5/serving_coexec_*.csv`에서 backend별 `concurrent_ms`로 ratio를 직접 재계산. zamba2_1.2b CSV는 6/17 13:03 갱신됨(widened) — 나머지 3모델(6/15)과 셀 수가 일치하는지 대조.
-- **통과:** 4모델 전부 모든 셀에서 `two_stream/green_ctx < 1.0`. db512 신규 셀 포함 위반 0건.
+- **✅ 통과 (widened 검증 §1.1, 2026-06-18):** 의미있는 승리 0. 단 db1–2 저배치에서 **노이즈 수준(≤0.4%, ≤0.002ms) 동률 3셀**(falcon3b/zamba1.2b/zamba2.7b 각 1)이 ratio≥1.0 → **주장 문구를 "한 번도 못 이김"에서 "의미있게는 못 이김"으로 정정**(전 보고서 반영 완료). 고배치선 green_ctx 최대 1.9× 패.
 
 ### A2. [P0] microbench 한계 — E5는 "진짜 prefill"이 아님
 - **주장:** "분할 무용"은 1576셀에서 일관 (v2_report §6).
@@ -37,7 +37,7 @@
 - **사실:** E5의 `green_ctx@f`는 prefill/decode 스트림 사이 SM 분할(= MuxWise·Bullet, ASPLOS'26이 단일 LLM에서 이득 본 *같은 메커니즘*). 우리 헤드라인 "분할이 동시실행을 못 이김"은 **throughput 지표(`two_stream/green_ctx`)로만** 판정됐다 — 그런데 분할이 이기는 metric은 **decode tail latency / SLO**다(closure §5.1).
 - **위험:** throughput만 보고 "분할 무용"이라 적으면 *선행연구가 이미 반증한 일반화*를 주장하게 됨. green_ctx가 throughput은 지면서 decode 지연은 *줄였을* 수 있고, 그게 바로 분할의 존재 이유.
 - **확인:** E5 CSV의 **`decode_inflation_pct`를 backend별(two_stream vs green_ctx@f)로 비교.** green_ctx가 decode_inflation을 유의하게 낮추는 셀이 있는지. 있으면 microbench 안에서도 SLO-이득 신호가 잡힌 것.
-- **통과:** (a) 헤드라인이 "throughput 기준, SLM·microbench 한정"으로 명시 스코프됨, (b) decode_inflation 비교 결과를 보고서에 기록(분할이 latency를 사는지 여부). **이 비교 없이 "분할 무용"을 일반 주장으로 쓰지 말 것.**
+- **✅ 통과 (widened 검증 §1.3, 2026-06-18) — 단 반전 주의:** green_ctx는 decode를 *보호*가 아니라 **starve**(inflation 평균 64–83%·최대 231% vs two_stream 1–3%). 즉 우리 분할은 throughput·decode-latency *양 축 모두* 열등. **그러나 우리 `f`=prefill 우대(0.5/0.7, decode_sm 32–54)가 decode를 굶긴 결과**이며, **decode-보호형 `f`(decode_sm≥floor)는 미검증** → MuxWise/Bullet의 SLO regime은 닫히지 않음. **"분할은 decode도 못 지킨다"로 일반화 금지.**
 
 ---
 

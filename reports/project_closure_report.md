@@ -8,7 +8,7 @@
 
 ## 1. 한 줄 결론
 
-> **"hybrid SSM+Attention 모델에서 layer-type(attn vs ssm) 자원 비대칭을 공간적 SM 분할(Green Context)로 활용한다"는 v2의 핵심 가설은 SLM/A100에서 포괄적으로 기각되었다. 분할은 어떤 prefill×decode 셀·batch·context에서도 단순 동시실행을 못 이긴다. 본 연구 라인은 추가 자원 투입의 한계 이득이 음(陰)이므로 중단을 권고한다.**
+> **"hybrid SSM+Attention 모델에서 layer-type(attn vs ssm) 자원 비대칭을 공간적 SM 분할(Green Context)로 활용한다"는 v2의 핵심 가설은 SLM/A100에서 포괄적으로 기각되었다. 분할은 prefill×decode 전 구간(widened b512 포함)에서 단순 동시실행을 *의미있게* 이기지 못한다(노이즈 수준 동률 외 승리 0; [widened 검증](widened_sweep_validation.md)). 본 연구 라인은 추가 자원 투입의 한계 이득이 음(陰)이므로 중단을 권고한다.**
 
 > **(2026-06-17 추가 검토 1)** G1이 sat_sm 비대칭을 gate 술어로 쓴 것 자체가 잘못이라는 비판(§3.1)을 반영해도 — **종결 권고는 유지, 오히려 강화**된다. 올바른 술어(공유 하 회수 가능 slack)는 E4/E5가 이미 음성으로 측정했기 때문이다.
 
@@ -23,7 +23,7 @@
 | E1/G0 | scan은 유의미한 component인가 | OK (peak 62–74%) — **단 고batch에선 GEMM 지배, scan 20–40%로 붕괴** | 분할 동기는 저batch에 한정 |
 | E2/G1 | attn-ssm sat_sm 비대칭이 있나 | ASYMMETRY_PRESENT (gap 13–54 SM, CI-분리) — **단 granularity 의존(§5)** | 비대칭은 "서술적 사실"이지 손잡이 아님 |
 | E4 | 비대칭을 분할로 회수하나 | prefill-prefill split +1–7%뿐; aware split은 decode를 굶겨 **+60–144% 악화** | 분할은 손해 |
-| E5 | serving 전 구간에서 (prefill/decode) 분할이 동시실행을 이기나 | **단 한 셀도 못 이김** (`two_stream/green_ctx` max 0.987/0.996, 1576셀) | 가설 기각 — **단 throughput·microbench·SLM 한정**(§5.1: MuxWise/Bullet은 SLO·production서 이득) |
+| E5 | serving 전 구간에서 (prefill/decode) 분할이 동시실행을 이기나 | **의미있는 승리 0** (widened b512: 노이즈 동률 ≤0.4%·≤0.002ms 3셀@db1–2; 고배치선 최대 1.9× 패; [widened 검증](widened_sweep_validation.md)) | 가설 기각 — **단 throughput·microbench·SLM·prefill-우대 f 한정**(§5.1: MuxWise/Bullet은 SLO·production·decode-보호서 이득) |
 | E5 | 그럼 실이득은 어디서 오나 | prefill+decode **overlap ~2.04×**, 분할 없이 co-schedule로 공짜 | 양성 산출(§4) |
 
 ---
