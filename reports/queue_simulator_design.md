@@ -89,6 +89,25 @@ E5 full CSV(`serving_coexec_full_{model}_*.csv`, decode-protect 포함시 `green
 - `run_queue_sim.py` — λ×policy 스윕 드라이버, SLO 메트릭 CSV/요약.
 - `run_sim_pipeline.sh` — **사용자 실행용** 파이프라인(아래 §10).
 
+## 11. 결과 (v0, job 776826 single-chunk LUT, 2026-06-19) — 역전 없음
+
+single-chunk LUT(tokens=256+decode-protect)로 λ×policy 스윕(SLO: ITL p99 목표 ≤1.0ms, 400 req). 대표값:
+
+| model · pair | λ(req/ms) | co_schedule SLO/ITLp99/tok·s | dynamic_protect SLO/ITLp99/tok·s |
+|---|--|--|--|
+| zamba2_2.7b attn×ssm | 0.2 | **1.00 / 0.62 / 28.3k** | 0.94 / 1.01 / 26.0k |
+| zamba2_2.7b attn×ssm | 5.0(포화) | **1.00 / 0.75 / 29.9k** | 0.93 / 1.01 / 26.6k |
+| zamba2_2.7b ssm×ssm | 5.0 | **1.00 / 0.74 / 29.7k** | 1.00 / 0.86 / 27.0k |
+| zamba2_7b attn×ssm | 5.0 | **1.00 / 0.83 / 27.9k** | = co_schedule (protect=no_room→폴백) |
+
+**결론: 세 구성·전 λ에서 `dynamic_protect`가 `co_schedule`을 SLO·throughput 어디서도 못 이긴다(역전점 0).** 고λ에선 오히려 protect가 *나쁨*(decode에 floor만 주고 prefill을 굶겨 ITL p99가 SLO를 넘고 throughput↓). 즉 **지속 부하·decode tail SLO 목적함수에서도 동적 co-schedule이 최적**이다.
+
+**왜(중요·정직):** 시뮬레이터는 *chunked-prefill*(step당 prefill 1 chunk)을 가정 → 한 step의 비용이 E5 LUT의 "1 chunk ∥ decode" 그대로다. 이 regime에선 co_schedule의 decode tail이 **이미 LUT로 bound**되므로(1 chunk만 경합) 예약이 회수할 slack이 없다. MuxWise/Bullet식 이득이 나오려면 *step당 여러 prefill chunk가 쌓여 decode tail을 누르는* 상황이 필요한데, **chunked prefill이 바로 그걸 막는 표준 기법**이다 — 즉 그 regime이면 답은 *공간 분할이 아니라 시간적 chunking*이다. 큐는 TTFT(입장 지연)를 λ↑서 폭발시키지만(전 정책 공통), decode ITL은 step-LUT로 묶이고 거기선 co_schedule이 최선.
+
+**한계:** v0 LUT=1 chunk/step. prefill 예산>1(burst)은 `--prefill-batch>1` LUT로 모델해야(미측정) — 단 그건 chunked-prefill이 회피하는 비표준 운영. zamba2_7b는 protect=no_room이라 co_schedule과 동일(폴백). 양성 역전이 나왔다면 실 MPS 엔진 확증이 다음이었으나, **음성이라 "분할은 크기·objective·부하·큐 어느 축에서도 co-schedule을 못 이긴다"가 닫힌다**(chunked-prefill 가정 하).
+
+→ 산출: `results_v2/e6/queue_sim_{model}_{pf}x{dec}.csv`.
+
 ## 10. 사용자 실행 (`run_sim_pipeline.sh`)
 
 시뮬레이터는 **single-chunk LUT**(1 chunk ∥ 1 decode step)가 필요하다 → E5 full + `--prefill-tokens 256 --decode-protect`로 생성. 이걸 제출+분석으로 묶은 사용자 실행 스크립트:

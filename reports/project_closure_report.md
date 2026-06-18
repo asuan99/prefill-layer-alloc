@@ -18,6 +18,8 @@
 
 > **(2026-06-18 추가 검토 4 — 7B 회귀 완료, 음성)** Path 1(=v2 §7.4의 "결정적" 7B 회귀)을 real-prefill로 실측(job 776326): **zamba2_7b·falcon_h1_7b 모두 green_ctx가 two_stream을 못 이김**(max ts/gc 0.989·0.993). **2.7b의 +12.5% 예외는 7B에서 *사라진다* — 분할 이득은 모델 크기와 함께 커지지 않는다(비단조).** → "큰 커널이면 분할이 의미를 갖나"라는 가장 큰 미검증 구멍이 **NO로 닫힘**. 음성 헤드라인이 결정적 스케일점에서 *강화*된다. 남은 분할-이득 가능성은 크기 축이 아니라 *SLO 목적함수+decode-보호 분할*(검수 A5)뿐. [real_prefill_results §7](real_prefill_results.md).
 
+> **(2026-06-19 추가 검토 5 — SLO·큐 축까지 음성, 마지막 구멍 닫힘)** 검토 4가 남긴 *SLO+decode-보호 분할* 가능성을 둘로 검증: **(a) microbench SLO**(job 776678): decode-보호 분할은 starvation 감소(66–100%→16–18%)하나 two_stream을 양 축 모두 못 이김(wins BOTH=0); 7B는 protect 자체 no_room. **(b) queue 시뮬레이터**(job 776826 LUT, 지속 부하): λ 전 구간·포화에서도 `dynamic_protect`가 `co_schedule`을 SLO·throughput 못 이김(역전점 0, 고λ선 오히려 나쁨). → **크기·objective·부하·큐 어느 축에서도 분할이 co-schedule을 못 이긴다**(chunked-prefill 가정 하). MuxWise/Bullet식 이득이 나오려면 *step당 multi-chunk prefill burst*가 필요한데 그건 chunked-prefill이 막는 비표준 운영이라, 그 답은 공간분할이 아니라 시간적 chunking이다. [real_prefill_results §8](real_prefill_results.md) · [queue_simulator_design §11](queue_simulator_design.md).
+
 ---
 
 ## 2. 무엇을 물었고, 무엇이 나왔나
