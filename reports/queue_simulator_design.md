@@ -87,3 +87,21 @@ E5 full CSV(`serving_coexec_full_{model}_*.csv`, decode-protect 포함시 `green
 - `workload.py` — Poisson 도착 + (prompt_len, output_len) 분포 → 요청 스트림.
 - `simulator.py` — iteration-level continuous-batching 루프(§3) + 정책.
 - `run_queue_sim.py` — λ×policy 스윕 드라이버, SLO 메트릭 CSV/요약.
+- `run_sim_pipeline.sh` — **사용자 실행용** 파이프라인(아래 §10).
+
+## 10. 사용자 실행 (`run_sim_pipeline.sh`)
+
+시뮬레이터는 **single-chunk LUT**(1 chunk ∥ 1 decode step)가 필요하다 → E5 full + `--prefill-tokens 256 --decode-protect`로 생성. 이걸 제출+분석으로 묶은 사용자 실행 스크립트:
+
+```bash
+cd workspace/characterization
+# (a) LUT 제출만
+env -u BASH_ENV bash experiments/e6_queue_sim/run_sim_pipeline.sh submit
+# (b) 잡 완료 후 분석만
+env -u BASH_ENV bash experiments/e6_queue_sim/run_sim_pipeline.sh analyze
+# (c) 제출→완료 폴링→분석 한 번에
+env -u BASH_ENV bash experiments/e6_queue_sim/run_sim_pipeline.sh auto
+```
+튜닝(env): `MODELS="zamba2_2.7b zamba2_7b"`(≤4, QOS), `PF=attn DEC=ssm`(2.7b 예외 셀), `SLO=1.0`(ms), `LAMBDAS="0.02 … 2.0"`.
+LUT → `results_v2/e5_sim/`(기존 e5/e5_dp 불간섭), sim 결과 → `results_v2/e6/queue_sim_*.csv`.
+> QOS 한도상 다른 array가 큐에 있으면 submit 실패 — 그 잡이 끝난 뒤 실행. `analyze`는 GPU 불필요.
