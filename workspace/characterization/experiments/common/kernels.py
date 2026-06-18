@@ -46,7 +46,7 @@ try:
 except Exception:                      # pragma: no cover
     _HAS_TORCH = False
 
-VALID_PREFILL_TYPES = ("ssm", "attn", "ssm_full")
+VALID_PREFILL_TYPES = ("ssm", "attn", "ssm_full", "attn_full")
 VALID_DECODE_TYPES = ("ssm", "attn")
 
 
@@ -163,6 +163,20 @@ def build_out_proj_fn(cfg, batch, tokens, device="cuda", dtype="bfloat16") -> tu
     return fn, rb, wb, {"kernel": "out_proj"}
 
 
+def build_attn_qkv_proj_fn(cfg, batch, tokens, device="cuda", dtype="bfloat16") -> tuple:
+    """attn qkv_proj GEMM: (batch*tokens, d_model) @ (d_model, (nH+2*nKV)*head_dim)."""
+    nH, nKV, hd = cfg["n_attn_heads"], cfg["n_attn_kv_heads"], cfg["attn_head_dim"]
+    fn, rb, wb = _build_gemm_fn(batch * tokens, cfg["d_model"], (nH + 2 * nKV) * hd, device, dtype)
+    return fn, rb, wb, {"kernel": "qkv_proj"}
+
+
+def build_attn_o_proj_fn(cfg, batch, tokens, device="cuda", dtype="bfloat16") -> tuple:
+    """attn o_proj GEMM: (batch*tokens, nH*head_dim) @ (nH*head_dim, d_model)."""
+    nH, hd = cfg["n_attn_heads"], cfg["attn_head_dim"]
+    fn, rb, wb = _build_gemm_fn(batch * tokens, nH * hd, cfg["d_model"], device, dtype)
+    return fn, rb, wb, {"kernel": "o_proj"}
+
+
 # ---------------------------------------------------------------------------
 # Attention (token_mixer for attn layers); context_len varies the KV grid
 # ---------------------------------------------------------------------------
@@ -227,9 +241,14 @@ def build_prefill_fn(layer_type: str, cfg: dict, batch: int, tokens: int,
     """Dispatch a prefill kernel by layer type. Returns (fn, rb, wb, meta).
 
     layer_type:
-      "ssm"      → SSM scan only (token mixer).
-      "attn"     → attention only (token mixer); context_len sets KV history.
-      "ssm_full" → in_proj + scan + out_proj (full SSM layer).
+      "ssm"       → SSM scan only (token mixer).
+      "attn"      → attention only (token mixer); context_len sets KV history.
+      "ssm_full"  → in_proj + scan + out_proj (full SSM layer; GEMM-inclusive).
+      "attn_full" → qkv_proj + SDPA + o_proj (full attention layer; GEMM-inclusive).
+
+    The "_full" variants include the projection GEMMs and therefore approximate a
+    real prefill layer (compute-bound, SM-filling) rather than the memory-bound
+    token-mixer microbench. Used by the E5 optional real-prefill mode (A2).
 
     This is the only correct place to choose the prefill kernel. Anything that
     builds prefill work MUST go through here so an "attn" config can never
@@ -243,6 +262,23 @@ def build_prefill_fn(layer_type: str, cfg: dict, batch: int, tokens: int,
 
     if layer_type == "attn":
         return build_attn_fn(cfg, batch, tokens, context_len, device, dtype)
+
+    if layer_type == "attn_full":
+        # qkv_proj + SDPA(token mixer) + o_proj into one callable.
+        qkv_fn, qkv_rb, qkv_wb, _ = build_attn_qkv_proj_fn(cfg, batch, tokens, device, dtype)
+        mix_fn, mix_rb, mix_wb, mix_meta = build_attn_fn(cfg, batch, tokens, context_len, device, dtype)
+        o_fn, o_rb, o_wb, _ = build_attn_o_proj_fn(cfg, batch, tokens, device, dtype)
+
+        def fn():
+            qkv_fn()
+            mix_fn()
+            o_fn()
+
+        rb = qkv_rb + mix_rb + o_rb
+        wb = qkv_wb + mix_wb + o_wb
+        meta = {"kernel": "attn_full", "context_len": context_len,
+                "n_blocks_per_call": mix_meta["n_blocks_per_call"]}
+        return fn, rb, wb, meta
 
     # ssm_full: compose in_proj + scan + out_proj into one callable.
     in_fn, in_rb, in_wb, _ = build_in_proj_fn(cfg, batch, tokens, device, dtype)

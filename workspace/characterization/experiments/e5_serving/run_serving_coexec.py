@@ -70,6 +70,24 @@ _SCHEMA = {
     "decode_inflation_pct": Label.DERIVED, "combined_tok_per_ms": Label.DERIVED,
 }
 
+# Optional real-prefill mode (A2) records 3 extra metadata columns and is written
+# to a separate `_full` file so the default microbench CSVs/figures are untouched.
+def _with_extra(schema):
+    out = {}
+    for k, v in schema.items():
+        out[k] = v
+        if k == "chunk":
+            out["prefill_mode"] = Label.METADATA
+            out["prefill_batch"] = Label.METADATA
+            out["n_chunks"] = Label.METADATA
+    return out
+
+
+_SCHEMA_FULL = _with_extra(_SCHEMA)
+
+# full mode maps the cell layer type to its GEMM-inclusive ("_full") kernel.
+_FULL_LAYER = {"ssm": "ssm_full", "attn": "attn_full"}
+
 
 def _row(meta, backend, frac, psm, dsm, solo_p, solo_d, pstream, dstream, conc, status):
     seq = solo_p + solo_d
@@ -87,8 +105,8 @@ def _row(meta, backend, frac, psm, dsm, solo_p, solo_d, pstream, dstream, conc, 
             "combined_tok_per_ms": rnd(comb)}
 
 
-def _failed(meta, backend, frac, msg):
-    base = dict.fromkeys(_SCHEMA, "")
+def _failed(meta, backend, frac, msg, schema=_SCHEMA):
+    base = dict.fromkeys(schema, "")
     base.update(meta)
     base.update({"backend": backend, "prefill_sm_frac": frac,
                  "prefill_sm": "", "decode_sm": "", "status": f"failed:{msg[:40]}"})
@@ -96,7 +114,8 @@ def _failed(meta, backend, frac, msg):
 
 
 def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_layers,
-              fracs, n_warmup, n_measure, total_sm, device, out_dir: Path):
+              fracs, n_warmup, n_measure, total_sm, device, out_dir: Path,
+              prefill_mode="micro", prefill_tokens=0, prefill_batch=1):
     import torch
     from experiments.common import kernels as K
     from experiments.e4_concurrent._green_ctx import (
@@ -104,11 +123,20 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
 
     cfg = K.load_layer_cfg(model)
     status_meta = cfg["config_status"]
-    ptok = chunk
+    full = (prefill_mode == "full")
+    schema = _SCHEMA_FULL if full else _SCHEMA
+    # multi-chunk: prefill processes `n_chunks` chunks of `chunk` tokens each.
+    req_tokens = prefill_tokens if (prefill_tokens and prefill_tokens > 0) else chunk
+    n_chunks = max(1, -(-req_tokens // chunk))          # ceil
+    ptok = n_chunks * chunk                              # actual prefill tokens processed
     rows = []
-    print(f"\n=== E5 serving coexec matrix: {model} ===")
+    print(f"\n=== E5 serving coexec matrix: {model}  "
+          f"[mode={prefill_mode} pf_batch={prefill_batch} tokens={ptok} n_chunks={n_chunks}] ===")
     if status_meta == "provisional":
         print(f"  ⚠ {model} provisional config")
+
+    def resolve_pf(pl):
+        return _FULL_LAYER.get(pl, pl) if full else pl
 
     def build_decode(dl, db, ctx):
         if dl == "attn":
@@ -122,8 +150,18 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
                     meta = {"model": model, "device": device, "config_status": status_meta,
                             "prefill_layer": pl, "decode_layer": dl, "decode_batch": db,
                             "context_len": ctx, "prefill_tokens": ptok, "chunk": chunk}
+                    if full:
+                        meta.update({"prefill_mode": prefill_mode,
+                                     "prefill_batch": prefill_batch, "n_chunks": n_chunks})
                     try:
-                        prefill_fn, *_ = K.build_prefill_fn(pl, cfg, batch=1, tokens=ptok)
+                        chunk_fn, *_ = K.build_prefill_fn(resolve_pf(pl), cfg,
+                                                          batch=prefill_batch, tokens=chunk)
+                        if n_chunks > 1:                 # multi-chunk prefill (timing proxy)
+                            def prefill_fn(_f=chunk_fn, _n=n_chunks):
+                                for _ in range(_n):
+                                    _f()
+                        else:
+                            prefill_fn = chunk_fn
                         decode_fn, *_ = build_decode(dl, db, ctx)
                         solo_p = time_solo(prefill_fn, n_warmup, n_measure)
                         solo_d = time_solo(decode_fn, n_warmup, n_measure)
@@ -131,7 +169,7 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
                         torch.cuda.empty_cache()
                         for bk, fr in [("sequential", ""), ("two_stream", "")] + \
                                       [("green_ctx", f) for f in fracs]:
-                            rows.append(_failed(meta, bk, fr, type(e).__name__))
+                            rows.append(_failed(meta, bk, fr, type(e).__name__, schema))
                         print(f"  pf={pl} dec={dl} ctx={ctx} db={db:>3}  FAILED: {type(e).__name__}")
                         continue
 
@@ -145,13 +183,13 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
                                          solo_p, solo_d, ts["a_stream_ms"], ts["b_stream_ms"],
                                          ts["concurrent_ms"], "ok"))
                     except Exception as e:  # noqa: BLE001
-                        rows.append(_failed(meta, "two_stream", "", type(e).__name__))
+                        rows.append(_failed(meta, "two_stream", "", type(e).__name__, schema))
 
                     for fr in fracs:
                         s_p, s_d, info = create_two_partitions(n_first_sm=max(1, round(fr * total_sm)))
                         if s_p is None:
                             rows.append(_failed(meta, "green_ctx", fr,
-                                                info.get("error", "no_green_ctx")[:30]))
+                                                info.get("error", "no_green_ctx")[:30], schema))
                             continue
                         try:
                             gc = measure_concurrent(prefill_fn, decode_fn, s_p, s_d,
@@ -162,7 +200,7 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
                                              solo_p, solo_d, gc["a_stream_ms"],
                                              gc["b_stream_ms"], gc["concurrent_ms"], "ok"))
                         except Exception as e:  # noqa: BLE001
-                            rows.append(_failed(meta, "green_ctx", fr, type(e).__name__))
+                            rows.append(_failed(meta, "green_ctx", fr, type(e).__name__, schema))
 
                 # per-cell quick summary at the smallest batch (max overlap regime)
                 cell = [r for r in rows if r["prefill_layer"] == pl and r["decode_layer"] == dl
@@ -173,8 +211,9 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
                     print(f"  pf={pl:4} dec={dl:4} ctx={contexts[0]}  two_stream speedup@db{lo['decode_batch']}"
                           f"={lo['speedup_vs_seq']}x")
 
-    out = out_dir / f"serving_coexec_{model}_{device}.csv"
-    write_labeled_csv(out, rows, _SCHEMA)
+    suffix = "_full" if full else ""           # never clobber the microbench CSVs
+    out = out_dir / f"serving_coexec{suffix}_{model}_{device}.csv"
+    write_labeled_csv(out, rows, schema)
     print(f"  wrote {len(rows)} rows -> {out}")
 
 
@@ -185,19 +224,54 @@ def parse_args():
     p.add_argument("--context-lens", nargs="+", type=int, default=DEFAULT_CONTEXTS)
     p.add_argument("--chunk", type=int, default=256, help="prefill chunk tokens")
     p.add_argument("--prefill-layers", nargs="+", default=DEFAULT_PREFILL_LAYERS,
-                   choices=["ssm", "ssm_full", "attn"])
+                   choices=["ssm", "ssm_full", "attn", "attn_full"])
     p.add_argument("--decode-layers", nargs="+", default=DEFAULT_DECODE_LAYERS,
                    choices=["attn", "ssm"])
     p.add_argument("--fracs", nargs="+", type=float, default=DEFAULT_FRACS,
                    help="green_ctx prefill SM fractions")
+    # --- optional REAL-PREFILL mode (A2): default off → identical microbench ---
+    p.add_argument("--prefill-mode", choices=["micro", "full"], default="micro",
+                   help="micro=scan/attn token-mixer only (default); "
+                        "full=GEMM-inclusive (ssm_full/attn_full), separate _full CSV")
+    p.add_argument("--prefill-tokens", type=int, default=0,
+                   help="total prefill prompt tokens; if > --chunk → multi-chunk prefill "
+                        "(ceil(tokens/chunk) chunk calls). 0 = single chunk (default).")
+    p.add_argument("--prefill-batch", type=int, default=1,
+                   help="number of in-flight prefill sequences (default 1)")
+    p.add_argument("--dry-run", action="store_true",
+                   help="print the sweep plan (no GPU, no timing) and exit")
     p.add_argument("--n-warmup", type=int, default=5)
     p.add_argument("--n-measure", type=int, default=20)
     p.add_argument("--output-dir", type=Path, default=Path(_CHAR) / "results_v2" / "e5")
     return p.parse_args()
 
 
+def _print_plan(args):
+    """GPU-free sanity print of what the sweep would run (validates control logic)."""
+    full = args.prefill_mode == "full"
+    req = args.prefill_tokens if args.prefill_tokens > 0 else args.chunk
+    n_chunks = max(1, -(-req // args.chunk))
+    ptok = n_chunks * args.chunk
+    resolve = (lambda pl: _FULL_LAYER.get(pl, pl)) if full else (lambda pl: pl)
+    suffix = "_full" if full else ""
+    n_cells = (len(args.prefill_layers) * len(args.decode_layers)
+               * len(args.context_lens) * len(args.decode_batches))
+    print(f"=== E5 DRY-RUN plan ===")
+    print(f"  mode={args.prefill_mode}  schema={'FULL(+prefill_mode,prefill_batch,n_chunks)' if full else 'micro'}")
+    print(f"  prefill: layers={args.prefill_layers} → resolved={[resolve(pl) for pl in args.prefill_layers]}")
+    print(f"           batch={args.prefill_batch}  tokens={ptok} ({n_chunks}×{args.chunk} chunk)")
+    print(f"  decode: layers={args.decode_layers}  batches={args.decode_batches}")
+    print(f"  contexts={args.context_lens}  fracs(green_ctx)={args.fracs}")
+    print(f"  cells/model={n_cells}  backends/cell={2 + len(args.fracs)} (sequential,two_stream,green_ctx×{len(args.fracs)})")
+    print(f"  models={args.models}")
+    print(f"  output → serving_coexec{suffix}_<model>_<device>.csv  (microbench CSVs untouched)")
+
+
 def main():
     args = parse_args()
+    if args.dry_run:
+        _print_plan(args)
+        return
     try:
         import torch
         if not torch.cuda.is_available():
@@ -209,7 +283,9 @@ def main():
     for m in args.models:
         run_model(m, args.decode_batches, args.context_lens, args.chunk,
                   args.prefill_layers, args.decode_layers, args.fracs,
-                  args.n_warmup, args.n_measure, total_sm, device, args.output_dir)
+                  args.n_warmup, args.n_measure, total_sm, device, args.output_dir,
+                  prefill_mode=args.prefill_mode, prefill_tokens=args.prefill_tokens,
+                  prefill_batch=args.prefill_batch)
 
 
 if __name__ == "__main__":
