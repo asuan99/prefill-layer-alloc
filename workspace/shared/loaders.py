@@ -47,21 +47,34 @@ def _make_tag(name: str) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
+# Canonical size-suffixed aliases for the 7B/8B-scale entries, so the sweep can
+# name them consistently with the SLM keys (zamba2_1.2b, falcon_h1_3b, …).
+# The targets are verified against the cached HF config.json (see models.yaml).
+_MODEL_ALIASES = {
+    "zamba2_7b": "zamba2",
+    "falcon_h1_7b": "falcon_h1",
+    "nemotron_h_8b": "nemotron_h",
+}
+
+
 def get_model_config(name: str) -> dict:
     """Return the full model config dict for *name* from ``models.yaml``.
 
     Args:
-        name: Top-level key in models.yaml (e.g. ``"zamba2"``, ``"falcon_h1"``).
+        name: Top-level key in models.yaml (e.g. ``"zamba2_1.2b"``), or a
+            size-suffixed alias for the large entries (``"zamba2_7b"``,
+            ``"falcon_h1_7b"``, ``"nemotron_h_8b"``).
 
     Raises:
         KeyError: Model not found in models.yaml.
     """
+    name = _MODEL_ALIASES.get(name, name)
     with open(_CONFIGS_DIR / "models.yaml") as f:
         all_models = yaml.safe_load(f)
     if name not in all_models:
         raise KeyError(
             f"Model {name!r} not in models.yaml.  "
-            f"Available: {sorted(all_models)}"
+            f"Available: {sorted(all_models)} (+ aliases {sorted(_MODEL_ALIASES)})"
         )
     return all_models[name]
 

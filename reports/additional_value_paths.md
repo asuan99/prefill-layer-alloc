@@ -33,8 +33,10 @@
 
 → 어느 쪽이든 가치가 높고, **닫는 데도·계속하는 데도 동일하게 필요한** 유일한 데이터점이다.
 
-**현재 진행도(◐).** config는 존재하나 미사용:
-- `shared/configs/models.yaml`: `zamba2`(Zamba2-7B, n_heads 112), `falcon_h1`(Falcon-H1-7B), `nemotron_h` 엔트리 존재. **line 88: "the 7B entries above are kept but unused."**
+**현재 진행도(◐ → 코드 준비 완료, 2026-06-18).** 실행 인프라 완비, 측정만 남음:
+- `models.yaml`의 7B/8B 엔트리(`zamba2`/`falcon_h1`/`nemotron_h`)를 **캐시 HF config.json 대비 전 필드 검증**(config_status: verified) + 별칭 `zamba2_7b`/`falcon_h1_7b`/`nemotron_h_8b`(`loaders._MODEL_ALIASES`) 추가.
+- `submit_size_sweep.sh`가 `MODELS` env override + array 자동 크기 → `MODELS="zamba2_7b falcon_h1_7b" … submit_size_sweep.sh e5 -- --prefill-mode full --prefill-tokens 4096`. (브랜치 `exp/e5-real-prefill`, 설계 [real_prefill_experiment_design §3](real_prefill_experiment_design.md). 측정은 SXM4 필요.)
+- **2.7b에서 이미 분할 예외(+12.5%, real prefill)가 났으므로** 7B는 "그 예외가 크기와 함께 커지는가"를 직접 측정 — 더 결정적.
 - E0(해석적)는 7B를 즉시 예측 가능(GPU 불필요): `grid_sat_sm = batch·⌈tokens/chunk⌉·n_heads`. 7B는 n_heads↑(112)라 grid가 SM을 더 일찍·강하게 채움 → "큰 커널이면 비대칭이 더 빨리 죽는다"가 사전 예측.
 
 **다음 수 (구체).**

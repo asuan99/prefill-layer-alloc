@@ -32,6 +32,10 @@ DEFAULT_MODELS = {
     "zamba2_2.7b":    "Zyphra/Zamba2-2.7B",
     "falcon_h1_1.5b": "tiiuae/Falcon-H1-1.5B-Base",
     "falcon_h1_3b":   "tiiuae/Falcon-H1-3B-Base",
+    # 7B-scale (Path 1 regression). nemotron_h is a different model_type (not mapped here);
+    # its entry is verified directly against the cached config.json.
+    "zamba2_7b":      "Zyphra/Zamba2-7B-Instruct",
+    "falcon_h1_7b":   "tiiuae/Falcon-H1-7B-Instruct",
 }
 
 

@@ -22,7 +22,10 @@ EXP="${1:-}"; shift || true
 [ "${1:-}" = "--" ] && shift || true
 EXTRA="$*"
 
-MODELS="zamba2_1.2b zamba2_2.7b falcon_h1_1.5b falcon_h1_3b"
+# Default = the 4 v2 SLM/mid models. Override for the 7B-scale (Path 1) sweep, e.g.
+#   MODELS="zamba2_7b falcon_h1_7b" env -u BASH_ENV bash …/submit_size_sweep.sh e5 -- …
+# The array size is derived from the model count, so any list works.
+MODELS="${MODELS:-zamba2_1.2b zamba2_2.7b falcon_h1_1.5b falcon_h1_3b}"
 REPO_ROOT="/scratch/$USER/whlee/prefill-layer-alloc"     # assumed space-free
 CHAR_DIR="$REPO_ROOT/workspace/characterization"
 A100_PART="${A100_PART:-amd_a100nv_8}"
@@ -42,8 +45,9 @@ esac
 INNER="$(printf 'MODELS=(%s); M=${MODELS[$SLURM_ARRAY_TASK_ID]}; source %s/bin/activate 2>/dev/null || true; cd %s; echo "task $SLURM_ARRAY_TASK_ID -> $M"; python %s --models $M %s' \
   "$MODELS" "$REPO_ROOT" "$CHAR_DIR" "$SCRIPT" "$EXTRA")"
 
-echo "[size-sweep] submitting 4-task array for $EXP (models: $MODELS)"
-sbatch --array=0-3 --partition="$A100_PART" --gres=gpu:1 \
+NMODELS=$(echo $MODELS | wc -w); ARRAY="0-$((NMODELS - 1))"
+echo "[size-sweep] submitting ${NMODELS}-task array (--array=$ARRAY) for $EXP (models: $MODELS)"
+sbatch --array="$ARRAY" --partition="$A100_PART" --gres=gpu:1 \
   --job-name="v2-$EXP" --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 \
   --time="$T" --comment=pytorch \
   --output="$LOG/v2_${EXP}_%A_%a.log" --error="$LOG/v2_${EXP}_%A_%a.err" \

@@ -1,6 +1,7 @@
-zamba2:
+zamba2:                          # alias: zamba2_7b (canonical size-suffixed name)
   full_name: "Zamba2-7B-Instruct"
   hf_repo: "Zyphra/Zamba2-7B-Instruct"
+  config_status: verified        # all fields confirmed vs cached HF config.json (2026-06-18)
   hidden_size: 3584
   num_layers: 81          # 68 pure Mamba + 13 hybrid (Mamba+Attn)
   # SSM (Mamba-2) layers
@@ -24,9 +25,10 @@ zamba2:
   mlp:
     intermediate_size: 14336
 
-nemotron_h:
+nemotron_h:                      # alias: nemotron_h_8b (canonical size-suffixed name)
   full_name: "Nemotron-H-8B-Base-8K"
   hf_repo: "nvidia/Nemotron-H-8B-Base-8K"
+  config_status: verified        # all fields confirmed vs cached HF config.json (2026-06-18; chunk_size=128, n_groups=8)
   hidden_size: 4096
   num_layers: 52            # verified from HF config.json (num_hidden_layers)
   # Sequential interleave (NOT Zamba2 shared-attn / NOT FH1 parallel-branch):
@@ -50,9 +52,10 @@ nemotron_h:
     intermediate_size: 21504  # verified from config.json
     ffn_layer_fraction: 0.4615  # 24/52 layers are standalone FFN
 
-falcon_h1:
+falcon_h1:                       # alias: falcon_h1_7b (canonical size-suffixed name)
   full_name: "Falcon-H1-7B-Instruct"
   hf_repo: "tiiuae/Falcon-H1-7B-Instruct"
+  config_status: verified        # all fields confirmed vs cached HF config.json (2026-06-18)
   hidden_size: 3072
   num_layers: 44          # all 44 layers are hybrid (SSM+Attn in parallel)
   # SSM (Mamba-2) branch — present in every layer
@@ -85,7 +88,12 @@ falcon_h1:
 #   * Falcon-H1 uses mamba chunk_size = 128 (NOT 256).
 #   * Falcon-H1-1.5B has 48 mamba heads (head_dim 64), not 16.
 #   * Zamba2 mamba n_groups = 1; d_state differs per size (1.2B=128, 2.7B=64).
-# v2 references these entries; the 7B entries above are kept but unused.
+#
+# 7B-scale entries above (zamba2 / falcon_h1 / nemotron_h) are now VERIFIED vs the
+# cached HF config.json and usable via the size-suffixed aliases zamba2_7b /
+# falcon_h1_7b / nemotron_h_8b (loaders._MODEL_ALIASES). They drive the Path-1
+# 7B regression: run any experiment with e.g. `--models zamba2_7b falcon_h1_7b`,
+# or `MODELS="zamba2_7b falcon_h1_7b" submit_size_sweep.sh e5 -- …`.
 # ---------------------------------------------------------------------------
 
 zamba2_1.2b:

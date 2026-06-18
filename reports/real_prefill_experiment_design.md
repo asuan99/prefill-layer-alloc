@@ -41,6 +41,18 @@ python -m experiments.e5_serving.compare_micro_vs_full
 ```
 (`submit_size_sweep.sh`는 `--` 뒤 인자를 그대로 forward → 제출 스크립트 수정 불필요.)
 
+### 7B-scale (Path 1) — 동일 인프라, `MODELS` override
+7B/8B 모델(`zamba2_7b`·`falcon_h1_7b`·`nemotron_h_8b`, 캐시 HF config.json 대비 검증, `loaders._MODEL_ALIASES`)은 **같은 코드·같은 그리드**로 돈다. `submit_size_sweep.sh`가 `MODELS` env로 모델 리스트를 받고 array 크기를 자동 계산:
+```bash
+# 7B real-prefill (실제 prefill 결과의 크기-스케일링 — 2.7b의 +12.5% 예외가 7B서 커지나)
+MODELS="zamba2_7b falcon_h1_7b" env -u BASH_ENV bash experiments/slurm/submit_size_sweep.sh e5 -- \
+    --prefill-mode full --prefill-tokens 4096
+# 비교용 micro(7B)도 필요하면:
+MODELS="zamba2_7b falcon_h1_7b" env -u BASH_ENV bash experiments/slurm/submit_size_sweep.sh e5
+# E2/E3 등 다른 실험도 동일: MODELS="…" … submit_size_sweep.sh e2 -- …
+```
+주의: 7B는 커널·KV가 커 고배치에서 OOM 가능(runner가 status=failed로 격리). decode-보호형 f를 함께 보려면 `--fracs 0.3 0.5`처럼 decode-우대 비율 추가.
+
 > **단일변수 비교를 위한 fidelity 사다리 (선택).** v2(micro)와 비교 시 변수를 하나씩 늘리려면:
 > | 단계 | 명령 추가 인자 | v2 대비 바뀌는 것 |
 > |---|---|---|
