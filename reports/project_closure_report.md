@@ -14,6 +14,8 @@
 
 > **(2026-06-17 추가 검토 2 — scope 정정)** "분할이 동시실행을 못 이긴다"는 **우리 regime(SLM·microbench·*throughput* 지표) 한정**이다. 동일 메커니즘(prefill/decode SM 분할)이 **단일 LLM에서 이득**을 본다는 선행연구가 있다 — **MuxWise·Bullet (ASPLOS'26)**. 그들은 *SLO/latency 목적함수 + production 규모*에서 동작하며, **우리 음성을 반증하지 않지만 우리 결론의 일반화를 막는다**(§5.1). 따라서 *살아남는 강한 주장은 "분할 무용"이 아니라 메커니즘 논증(§3.1 비대칭은 lever 아님 / §3.2 compute 분할은 memory에 못 닿음)*이다.
 
+> **(2026-06-18 추가 검토 3 — real prefill로 실측 정정)** A2를 닫는 real-prefill 측정(job 775529, GEMM-inclusive·16chunk)에서 **두 결론이 정정됐다**([real-prefill 결과](real_prefill_results.md)): (1) overlap ~2×는 microbench 산물 — real prefill에선 저배치 1.05×로 붕괴, 봉우리가 고배치로 이동(window가 *닫히는* 게 아니라 *열린다*); (2) **zamba2_2.7b에서 green_ctx가 +12.5% throughput 승**(검토 2의 MuxWise/Bullet regime 실측 재현) — 단 decode 80% 희생이라 SLO론 패. → 음성 헤드라인은 **"SLO 기준 분할 불리"**로 재정의하면 real prefill에서도 유지, throughput-only로는 대형모델 예외.
+
 ---
 
 ## 2. 무엇을 물었고, 무엇이 나왔나
@@ -23,8 +25,8 @@
 | E1/G0 | scan은 유의미한 component인가 | OK (peak 62–74%) — **단 고batch에선 GEMM 지배, scan 20–40%로 붕괴** | 분할 동기는 저batch에 한정 |
 | E2/G1 | attn-ssm sat_sm 비대칭이 있나 | ASYMMETRY_PRESENT (gap 13–54 SM, CI-분리) — **단 granularity 의존(§5)** | 비대칭은 "서술적 사실"이지 손잡이 아님 |
 | E4 | 비대칭을 분할로 회수하나 | prefill-prefill split +1–7%뿐; aware split은 decode를 굶겨 **+60–144% 악화** | 분할은 손해 |
-| E5 | serving 전 구간에서 (prefill/decode) 분할이 동시실행을 이기나 | **의미있는 승리 0** (widened b512: 노이즈 동률 ≤0.4%·≤0.002ms 3셀@db1–2; 고배치선 최대 1.9× 패; [widened 검증](widened_sweep_validation.md)) | 가설 기각 — **단 throughput·microbench·SLM·prefill-우대 f 한정**(§5.1: MuxWise/Bullet은 SLO·production·decode-보호서 이득) |
-| E5 | 그럼 실이득은 어디서 오나 | prefill+decode **overlap ~2.04×**, 분할 없이 co-schedule로 공짜 | 양성 산출(§4) |
+| E5 | serving 전 구간에서 (prefill/decode) 분할이 동시실행을 이기나 | microbench: **의미있는 승리 0**. **단 real prefill(job 775529)에선 zamba2_2.7b·attn-prefill·고배치서 green_ctx +12.5%**(pf=attn×dec=ssm×db256) — 그러나 decode 80% 희생(SLO로는 패). [real-prefill 결과](real_prefill_results.md) | 가설 기각을 **"SLO/decode-latency 기준"으로 재정의** — throughput-only로는 대형모델 예외(§5.1 regime 실측 재현) |
+| E5 | 그럼 실이득은 어디서 오나 | prefill+decode **overlap**: microbench ~2.04×(저배치). **단 real prefill에선 저배치 1.05×로 붕괴, 봉우리가 고배치로 이동(db512 1.6–1.76×)** — duration matching | 양성 산출(§4) — *regime이 prefill 크기에 종속* |
 
 ---
 
