@@ -127,7 +127,32 @@ single-chunk LUT(tokens=256+decode-protect)로 λ×policy 스윕(SLO: ITL p99 �
 
 **(2) 단 *조건부*다(정직):** falcon_h1_3b는 protect의 *reserved* decode ITL이 1.1ms로 SLO(1.0)를 못 맞춰 → goodput 패. 즉 분할 이득은 **"reserved decode가 SLO를 만족하는가"**에 달렸다(모델의 decode floor·비용 의존). 그리고 protect는 **TTFT를 크게 희생**(2.7b b8 λ1.0: TTFT p99 1220ms vs co_schedule 432ms — prefill 굶김). → **TTFT↔TBT↔goodput 3-way 트레이드오프**이고, 분할은 *decode-SLO가 binding이고 reserved decode가 SLO를 맞추는 큰-budget·고부하 코너*에서 이긴다.
 
-**결론(정정):** **prefill↔decode 공간 분할(decoupled, MuxWise/Bullet)은 goodput@SLO에서 co_schedule을 이긴다 — 큰 budget·고부하·decode-SLO-binding 코너에서, 단 reserved decode가 SLO를 만족하는 모델에 한해.** 이전의 "분할은 모든 축에서 음성"은 (sync 모델 + raw metric) 결함이었고 철회한다. **단 이건 attn↔ssm *layer-type* 분할(헤드라인, §3.1/§3.2/7B로 여전히 음성)이 아니라 *prefill↔decode* 분할이다 — 둘은 다른 thesis.** 한계: decoupled 모델은 *이상화*(decode 완전 독립, 오버헤드 0)라 분할 이득의 *상한*; 실 MPS/엔진 확증이 다음.
+**(3) ★ 그러나 baseline이 틀렸다 — vLLM 기본은 two_stream이 아니라 *fused mixed-batch*다.** two_stream(별도 decode 커널)은 *약한* baseline이고, vLLM/SGLang 기본은 prefill+decode를 **한 batch로 융합**(decode가 prefill GEMM에 거의 공짜 편승). `fused`를 넣으니 (2.7b b8):
+
+| λ | **fused(vLLM)** ITLp99/attain/**good** | co_schedule(two_stream) **good** | dynamic_protect **good** |
+|--|--|--|--|
+| 0.5 | 0.96 / 1.00 / **63.2k** | 11.0k | 33.5k |
+| 1.0 | 1.33 / 0.94 / **83.2k** | 8.9k | 33.6k |
+
+**fused가 goodput을 압도**(83k ≫ protect 34k ≫ two_stream 9k). decode가 융합 GEMM에 편승해 throughput↑(89k) + ITL도 mostly-SLO(0.94). → **올바른 baseline(fused) 대비 partition은 budget=8에서 *못 이긴다*. 제가 "partition 3.8× 승"이라 한 건 *약한 two_stream* 대비였을 뿐**(사용자 지적이 정확). 단 fused 모델은 *낙관적*(decode 완전 free 가정; 실제 decode-attn의 KV 읽기는 비용 있음)이라 fused goodput은 상한.
+
+**결론(2회 정정 후 — 정직):** **올바른 baseline은 vLLM *fused continuous batching*이고, 그 대비 prefill/decode 공간 분할은 budget=8에서 이득 없음(fused가 압도).** "partition이 이긴다"는 약한 two_stream baseline의 산물이었다. **단** fused의 decode ITL도 budget과 함께 자라(b8 λ1.0 ITL 1.33>SLO, attain 0.94) — 더 큰 budget에선 fused도 SLO 위반 → partition(bounded ITL)이 이길 *crossover*가 더 큰 budget에 있을 수 있음(미측정, fused 모델 낙관 보정 필요). → **baseline·budget·모델 가정에 결론이 극도로 민감**하며, 단정 가능한 건: *(i)* two_stream은 부적절한 baseline, *(ii)* fused 대비 분할은 budget=8서 음성, *(iii)* attn↔ssm *layer-type* 분할은 이 축과 무관하게 §3.1/§3.2/7B로 여전히 음성(헤드라인 불변).
+
+## 13. Baseline 분류 & layer-aware (방법론 — "무엇과 비교하나")
+
+| baseline/정책 | 무엇 | 답하는 질문 |
+|---|---|---|
+| **fused** | vLLM/SGLang 기본: prefill+decode를 한 mixed-batch로 융합(decode가 prefill GEMM 편승) | **실제 운영 대비** 이득이 있나 (← *올바른* 기준) |
+| two_stream | MPS식 두 동시 스트림, 무분할 동적 공유 | 분할 *벽*이 자유공유보다 나은가 (floor; *약함* — 별도 decode 커널) |
+| static-f | 고정 SM 분할 | 정적 분할이 값어치 있나 |
+| dynamic-agnostic | 부하-적응 분할(decode floor), layer-type 무관 | 동적 분할이 정적보다 나은가 |
+| dynamic-**layer-aware** | 분할 비율을 *prefill layer-type*으로도 조정 | **layer-type이 분할을 개선하나** (= 원래 thesis) |
+
+**핵심(사용자 지적):** vLLM/SGLang은 *fused*를 쓰지 (two_stream 아님). 분할/layer-type을 *제안*하려면 경쟁 baseline은 fused(또는 기존 PD-mux의 agnostic 분할)이지 two_stream(무분할 floor)이 아니다. §12-(3)이 fused를 넣자 분할의 외견상 이득이 사라졌다 — two_stream baseline이 부적절했음을 확인.
+
+**PD-disagg vs PD-mux:** disagg는 prefill/decode를 *다른 GPU*에(inter-GPU, 다른 문제). 우리는 intra-GPU라 비교축은 PD-mux이고, 그 안의 설계 축은 **정적 분할 vs 동적 분할**(§12의 static vs dynamic_protect가 이를 측정 — 동적이 정적을 이김).
+
+**layer-aware vs agnostic (원래 thesis) — hybrid에선 operationally ill-posed:** 하이브리드는 *모든 요청이 attn·ssm 레이어를 다 거친다* → "attn-heavy 요청 vs ssm-heavy 요청"이 없다. layer-type-aware 분할을 하려면 **한 forward 안에서 레이어마다 재분할**해야 하고(per-layer swap), 그 오버헤드는 지배적이다: 38레이어 × ~7.8µs/swap ≈ **300µs** vs prefill ~0.5ms → **~60% 오버헤드**, 그 대가로 얻는 per-phase 최적 분할의 이득은 §3.1상 ≈0(비대칭은 분할의 유효 손잡이가 아님). **∴ layer-aware는 agnostic에 *구조적으로 진다*(오버헤드>이득).** "layer/model-aware 분할"이 말이 되는 건 *서로 다른 모델*이 다른 자원을 쓰는 **multi-model 서빙**(MuxServe류)이지 intra-hybrid layer-type이 아니다. → §3.1을 *분할 위에서* 재확인: **layer-type은 PD-mux를 개선하지 못한다.**
 
 ## 10. 사용자 실행 (`run_sim_pipeline.sh`)
 

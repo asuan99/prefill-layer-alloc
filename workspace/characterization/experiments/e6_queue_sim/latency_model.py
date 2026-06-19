@@ -17,9 +17,10 @@ from __future__ import annotations
 import os
 
 _POLICY_BACKEND = {
-    "co_schedule": "two_stream",
-    "static": "green_ctx",
-    "dynamic_protect": "green_ctx_protect",
+    "fused": "two_stream",          # vLLM/SGLang default: prefill+decode in ONE mixed batch
+    "co_schedule": "two_stream",    # MPS-style: two concurrent streams, dynamic SM share
+    "static": "green_ctx",          # static SM partition (fixed f)
+    "dynamic_protect": "green_ctx_protect",  # dynamic split: decode reserved its E3 floor
 }
 
 
@@ -84,6 +85,8 @@ class LatencyModel:
             note = f"{policy}_missing→co_schedule"
         if row is None:
             return 0.0, "no_lut"
+        if prefill_active and policy == "fused":
+            return float(row.solo_prefill_ms), "fused"            # decode rides in prefill GEMM (≈free)
         if prefill_active and b == 0:
             return float(row.solo_prefill_ms), (note + "|prefill_only").lstrip("|")
         if prefill_active:

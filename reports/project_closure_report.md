@@ -20,7 +20,11 @@
 
 > **(2026-06-19 추가 검토 5 — SLO·큐 축까지 음성, 마지막 구멍 닫힘)** 검토 4가 남긴 *SLO+decode-보호 분할* 가능성을 둘로 검증: **(a) microbench SLO**(job 776678): decode-보호 분할은 starvation 감소(66–100%→16–18%)하나 two_stream을 양 축 모두 못 이김(wins BOTH=0); 7B는 protect 자체 no_room. **(b) queue 시뮬레이터**(지속 부하): **초기 음성은 모델 결함이었고, 수정 후 *역전*됐다**(사용자 2개 지적으로 발견). 결함: ① sim이 decode ITL=concurrent로 둬 partition의 decode/prefill *decoupling*을 죽임, ② raw throughput/latency로 봄(올바른 metric=goodput@SLO). **수정(decoupled 스케줄러 + goodput) 결과: prefill↔decode 공간 분할(decoupled=MuxWise/Bullet 설계)이 큰 budget·고부하·decode-SLO-binding 코너에서 co_schedule을 goodput에서 이긴다**(예: 2.7b b8 λ1.0 goodput 33.6k vs 8.9k ~3.8×; co_schedule은 raw throughput 크나 ITL 1.9>SLO라 헛것). **단 조건부**(reserved decode가 SLO 만족하는 모델만; falcon_h1_3b는 패) + **TTFT 큰 희생**. [queue_simulator_design §12](queue_simulator_design.md).
 
-> **⚠ (2026-06-19 추가 검토 5 자체-정정)** "분할이 모든 축에서 co-schedule을 못 이긴다"는 **철회.** 그건 (a)*attn↔ssm layer-type* 분할(헤드라인 — §3.1/§3.2/7B로 여전히 음성, 불변)과 (b)*prefill↔decode* 분할(MuxWise/Bullet — decoupled+goodput에선 *이긴다*)을 혼동한 것. **둘은 다른 thesis다.** 본 프로젝트가 닫는 건 (a)뿐. (b)는 우리 corrected sim이 그 이득을 재현하며 살아있다(단 sim은 이상화된 decoupled 상한 — 실엔진 확증 필요).
+> **⚠ (2026-06-19 추가 검토 5 자체-정정 ①)** "분할이 모든 축에서 co-schedule을 못 이긴다"는 **철회.** 그건 (a)*attn↔ssm layer-type* 분할(헤드라인 — §3.1/§3.2/7B로 여전히 음성, 불변)과 (b)*prefill↔decode* 분할(별개 thesis)을 혼동한 것. 본 프로젝트가 닫는 건 (a)뿐.
+
+> **⚠ (2026-06-19 추가 검토 5 자체-정정 ②, baseline)** 검토5-(b)의 "분할이 goodput으로 이긴다"는 **부적절한 baseline(two_stream) 대비였다**(사용자 지적). vLLM/SGLang 기본은 two_stream이 아니라 **fused mixed-batch**(decode가 prefill GEMM 편승)다. `fused`를 넣으니 (2.7b b8 λ1.0) **fused goodput 83k ≫ dynamic_protect 34k ≫ two_stream 9k** — **올바른 baseline 대비 prefill/decode 분할은 budget=8에서 이득 없음.** 단정 가능: *two_stream은 부적절 baseline · fused 대비 분할은 budget=8 음성 · attn↔ssm layer-type 분할은 §3.1/§3.2/7B로 여전히 음성(불변)*. (fused ITL도 budget↑서 SLO 위반 시작 → 더 큰 budget crossover 가능성은 미측정·fused 낙관 보정 필요. **결론은 baseline·budget·모델 가정에 극도로 민감**.) [queue_simulator_design §12–§13](queue_simulator_design.md).
+
+> **layer-type vs prefill/decode 분할 구분(검토 5 핵심):** *원래 thesis*(layer-type-aware 분할)는 hybrid에서 operationally ill-posed(요청마다 attn·ssm 다 거침 → per-layer 재분할 = ~60% swap 오버헤드, 이득 §3.1상 ≈0) → **layer-aware는 agnostic 분할에 구조적으로 진다**(§13). 즉 *layer-type이 PD-mux를 개선하는가 = No*. prefill/decode 분할(MuxWise/Bullet) 자체는 fused 대비 budget=8 음성이나 더 큰 budget·multi-model에선 미결 — 단 그건 layer-type thesis가 아니다.
 
 ---
 

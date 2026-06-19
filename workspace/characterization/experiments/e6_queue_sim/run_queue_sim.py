@@ -48,15 +48,17 @@ def metrics(reqs, makespan, slo_ms):
     }
 
 
-# scheduler design per policy: co_schedule = vanilla synchronized batching;
-# dynamic_protect = MuxWise/Bullet decoupled (decode on reserved SMs, ITL bounded).
-_SCHED = {"co_schedule": "sync", "dynamic_protect": "decoupled", "static": "sync"}
+# scheduler design per policy. fused = vLLM/SGLang default (one mixed batch, decode rides
+# in the prefill GEMM); co_schedule = MPS two-stream share; dynamic_protect = MuxWise/Bullet
+# decoupled (decode on reserved SMs, ITL bounded); static = fixed SM partition.
+_SCHED = {"fused": "sync", "co_schedule": "sync", "dynamic_protect": "decoupled", "static": "sync"}
 
 
 def parse_args():
     p = argparse.ArgumentParser(description="Hybrid serving queue simulator (SLO vs policy)")
     p.add_argument("--lut", required=True, help="E5 full CSV (single-chunk LUT preferred)")
-    p.add_argument("--policies", nargs="+", default=["co_schedule", "dynamic_protect", "static"])
+    p.add_argument("--policies", nargs="+",
+                   default=["fused", "co_schedule", "dynamic_protect", "static"])
     p.add_argument("--lambdas", nargs="+", type=float,
                    default=[0.02, 0.05, 0.1, 0.2, 0.5, 1.0], help="arrival rate (req/ms)")
     p.add_argument("--pf-layer", default="ssm", choices=["ssm", "attn"])
