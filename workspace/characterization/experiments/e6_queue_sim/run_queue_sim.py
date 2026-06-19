@@ -68,6 +68,9 @@ def parse_args():
     p.add_argument("--n-requests", type=int, default=500)
     p.add_argument("--prompt-lens", nargs="+", type=int, default=[512, 1024, 2048, 4096])
     p.add_argument("--output-lens", nargs="+", type=int, default=[64, 128, 256])
+    p.add_argument("--fused-decode-frac", type=float, default=1.0,
+                   help="fused step = solo_prefill + frac*solo_decode. 1.0=conservative "
+                        "(full measured decode/KV cost); 0.0=optimistic (decode free).")
     p.add_argument("--prefill-budget", type=int, default=1,
                    help="prefill chunks processed per iteration (token budget / chunk). "
                         "The --lut must be measured at prefill_batch == this value.")
@@ -81,6 +84,7 @@ def parse_args():
 def main():
     a = parse_args()
     lm = LatencyModel(a.lut)
+    lm.fused_decode_frac = a.fused_decode_frac
     model = os.path.basename(a.lut).replace("serving_coexec_full_", "").replace("serving_coexec_", "").replace(".csv", "")
     a.out_dir.mkdir(parents=True, exist_ok=True)
     rows = []

@@ -136,7 +136,16 @@ single-chunk LUT(tokens=256+decode-protect)로 λ×policy 스윕(SLO: ITL p99 �
 
 **fused가 goodput을 압도**(83k ≫ protect 34k ≫ two_stream 9k). decode가 융합 GEMM에 편승해 throughput↑(89k) + ITL도 mostly-SLO(0.94). → **올바른 baseline(fused) 대비 partition은 budget=8에서 *못 이긴다*. 제가 "partition 3.8× 승"이라 한 건 *약한 two_stream* 대비였을 뿐**(사용자 지적이 정확). 단 fused 모델은 *낙관적*(decode 완전 free 가정; 실제 decode-attn의 KV 읽기는 비용 있음)이라 fused goodput은 상한.
 
-**결론(2회 정정 후 — 정직):** **올바른 baseline은 vLLM *fused continuous batching*이고, 그 대비 prefill/decode 공간 분할은 budget=8에서 이득 없음(fused가 압도).** "partition이 이긴다"는 약한 two_stream baseline의 산물이었다. **단** fused의 decode ITL도 budget과 함께 자라(b8 λ1.0 ITL 1.33>SLO, attain 0.94) — 더 큰 budget에선 fused도 SLO 위반 → partition(bounded ITL)이 이길 *crossover*가 더 큰 budget에 있을 수 있음(미측정, fused 모델 낙관 보정 필요). → **baseline·budget·모델 가정에 결론이 극도로 민감**하며, 단정 가능한 건: *(i)* two_stream은 부적절한 baseline, *(ii)* fused 대비 분할은 budget=8서 음성, *(iii)* attn↔ssm *layer-type* 분할은 이 축과 무관하게 §3.1/§3.2/7B로 여전히 음성(헤드라인 불변).
+**(4) ★ fused 모델은 measured decode 비용에 극도로 민감 — fused-vs-partition은 *미결*.** fused step을 `solo_prefill`(decode free, frac=0)로 둔 게 §12-(3)의 "fused 압도"였다. **decode 비용은 실측돼 있다**(`solo_decode_ms`; dec=attn은 full-KV SDPA 읽기 포함). 이를 도로 더하면(frac=1, 보수) fused ITL이 SLO를 위반:
+
+| 셀 (b8, λ1) | fused frac=0(낙관) good | **fused frac=1(보수)** good | dynamic_protect good |
+|---|--|--|--|
+| dec=ssm | 83.2k | **7.4k (ITL 2.3>SLO 붕괴)** | 33.6k |
+| dec=attn | 37.6k | **0.16k (ITL 8.9 붕괴)** | 45.0k |
+
+→ **낙관 fused면 fused 승, 보수 fused면 partition 승.** 진짜 fused 비용은 그 사이(가산은 weight-load 공유를 과대계상, free는 KV 읽기를 누락)이고, **E5는 *진짜 fused 커널*(한 batch에 P+B 토큰)을 측정한 적이 없다 — prefill·decode를 별도 커널로만 쟀다.** ∴ **fused-vs-partition은 현 데이터로 미결**(bounded: 낙관 fused 승 ~ 보수 partition 승). 결정하려면 **fused mixed-batch 커널 직접 측정**(신규 실험)이 필요.
+
+**결론(누적 정정 후 — 정직):** *(i)* **two_stream은 부적절 baseline**(vLLM 기본=fused). *(ii)* **fused-vs-partition은 미결** — 결과가 fused decode-비용 모델(낙관↔보수)과 budget에 극도로 민감하며, 별도-커널 LUT로는 못 가린다(진짜 fused 커널 측정 필요). *(iii)* **attn↔ssm *layer-type* 분할은 이 모든 것과 무관하게 §3.1/§3.2/7B로 여전히 음성(헤드라인 불변).** *(iv)* 메타: 이 thread에서 결론이 useless→wins(vs two_stream)→loses(vs 낙관 fused)→미결(보수 fused)로 거듭 뒤집힘 = **PD-mux 평가가 baseline·metric·모델 가정에 병적으로 민감함**을 보여줌. 단단한 건 layer-type 음성과 "올바른 측정(진짜 fused)이 없으면 PD-mux 판정 불가"라는 *방법론적* 결론.
 
 ## 13. Baseline 분류 & layer-aware (방법론 — "무엇과 비교하나")
 

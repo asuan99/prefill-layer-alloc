@@ -38,6 +38,10 @@ class LatencyModel:
                 df[c] = pd.to_numeric(df[c], errors="coerce")
         self.path = csv_path
         self.df = df[df.status == "ok"].copy()
+        # fused step = solo_prefill + frac*solo_decode. frac=0 optimistic (decode free,
+        # wrong for dec=attn KV read); frac=1 conservative (full measured decode cost,
+        # over-counts weight-load sharing). Truth in between; a real fused kernel is unmeasured.
+        self.fused_decode_frac = 1.0
         pb = self.df["prefill_batch"].dropna() if "prefill_batch" in self.df else None
         self.prefill_batch = int(pb.mode().iloc[0]) if pb is not None and len(pb) else 1
         if "n_chunks" in df and (df["n_chunks"].dropna().max() or 0) > 1:
@@ -86,7 +90,8 @@ class LatencyModel:
         if row is None:
             return 0.0, "no_lut"
         if prefill_active and policy == "fused":
-            return float(row.solo_prefill_ms), "fused"            # decode rides in prefill GEMM (≈free)
+            # decode rides in the prefill batch; add measured decode cost (KV read) × frac
+            return float(row.solo_prefill_ms) + self.fused_decode_frac * float(row.solo_decode_ms), "fused"
         if prefill_active and b == 0:
             return float(row.solo_prefill_ms), (note + "|prefill_only").lstrip("|")
         if prefill_active:
