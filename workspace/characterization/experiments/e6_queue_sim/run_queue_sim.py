@@ -68,6 +68,9 @@ def parse_args():
     p.add_argument("--n-requests", type=int, default=500)
     p.add_argument("--prompt-lens", nargs="+", type=int, default=[512, 1024, 2048, 4096])
     p.add_argument("--output-lens", nargs="+", type=int, default=[64, 128, 256])
+    p.add_argument("--fused-lut", default=None,
+                   help="real fused-step CSV (run_fused_step output). If given, the `fused` "
+                        "policy uses MEASURED fused cost instead of the reconstruction.")
     p.add_argument("--fused-decode-frac", type=float, default=1.0,
                    help="fused step = solo_prefill + frac*solo_decode. 1.0=conservative "
                         "(full measured decode/KV cost); 0.0=optimistic (decode free).")
@@ -85,6 +88,9 @@ def main():
     a = parse_args()
     lm = LatencyModel(a.lut)
     lm.fused_decode_frac = a.fused_decode_frac
+    if a.fused_lut:
+        lm.load_fused(a.fused_lut); lm.fused_P = a.prefill_budget * a.chunk
+        print(f"  fused: MEASURED LUT {os.path.basename(a.fused_lut)} (P={lm.fused_P})")
     model = os.path.basename(a.lut).replace("serving_coexec_full_", "").replace("serving_coexec_", "").replace(".csv", "")
     a.out_dir.mkdir(parents=True, exist_ok=True)
     rows = []

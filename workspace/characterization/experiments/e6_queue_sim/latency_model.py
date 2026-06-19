@@ -42,6 +42,8 @@ class LatencyModel:
         # wrong for dec=attn KV read); frac=1 conservative (full measured decode cost,
         # over-counts weight-load sharing). Truth in between; a real fused kernel is unmeasured.
         self.fused_decode_frac = 1.0
+        self._fused = None          # measured fused-step LUT (set via load_fused)
+        self.fused_P = None         # prefill tokens/step for fused lookup (= budget*chunk)
         pb = self.df["prefill_batch"].dropna() if "prefill_batch" in self.df else None
         self.prefill_batch = int(pb.mode().iloc[0]) if pb is not None and len(pb) else 1
         if "n_chunks" in df and (df["n_chunks"].dropna().max() or 0) > 1:
@@ -64,6 +66,30 @@ class LatencyModel:
         g = self.grids.get((backend, pf, dec, ctx))
         if not g:
             return None
+        return g[_nearest(max(b, 1), list(g))]
+
+    def load_fused(self, path):
+        """Load a TRUE fused-step LUT (run_fused_step output): real (P+B)-in-one-forward cost,
+        keyed (layer_type, ctx) -> {P -> {B -> fused_ms}}. Replaces the reconstruction."""
+        import pandas as pd
+        df = pd.read_csv(path, skiprows=1)
+        df.columns = [c.split("__")[0] for c in df.columns]
+        df = df[df.status == "ok"].copy()
+        for c in ("prefill_tokens", "decode_batch", "context_len", "fused_ms"):
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+        self._fused = {}
+        for _, r in df.iterrows():
+            self._fused.setdefault((r.layer_type, int(r.context_len)), {}) \
+                       .setdefault(int(r.prefill_tokens), {})[int(r.decode_batch)] = float(r.fused_ms)
+        return self
+
+    def _fused_lookup(self, layer_type, b, ctx):
+        if not self._fused or self.fused_P is None:
+            return None
+        byP = self._fused.get((layer_type, ctx))
+        if not byP:
+            return None
+        g = byP[_nearest(self.fused_P, list(byP))]
         return g[_nearest(max(b, 1), list(g))]
 
     def streams(self, policy, pf, dec, decode_batch, ctx):
@@ -90,8 +116,11 @@ class LatencyModel:
         if row is None:
             return 0.0, "no_lut"
         if prefill_active and policy == "fused":
-            # decode rides in the prefill batch; add measured decode cost (KV read) × frac
-            return float(row.solo_prefill_ms) + self.fused_decode_frac * float(row.solo_decode_ms), "fused"
+            fm = self._fused_lookup(pf, b, ctx)           # real measured fused step if loaded
+            if fm is not None:
+                return fm, "fused_measured"
+            # else reconstruct: decode rides in prefill batch + measured decode cost × frac
+            return float(row.solo_prefill_ms) + self.fused_decode_frac * float(row.solo_decode_ms), "fused_recon"
         if prefill_active and b == 0:
             return float(row.solo_prefill_ms), (note + "|prefill_only").lstrip("|")
         if prefill_active:

@@ -37,7 +37,8 @@ case "$EXP" in
   e3) SCRIPT="experiments/e3_decode_floor/run_decode_floor.py";        T="04:00:00" ;;
   e4) SCRIPT="experiments/e4_concurrent/run_concurrent_ab.py";         T="04:00:00" ;;
   e5) SCRIPT="experiments/e5_serving/run_serving_coexec.py";           T="04:00:00" ;;
-  *) echo "usage: $0 <e1|e2|e3|e4|e5> [-- extra args]"; exit 2 ;;
+  fused) SCRIPT="experiments/e5_serving/run_fused_step.py";            T="04:00:00" ;;
+  *) echo "usage: $0 <e1|e2|e3|e4|e5|fused> [-- extra args]"; exit 2 ;;
 esac
 
 # Inner bash -c body (single-quote-safe). $SLURM_ARRAY_TASK_ID stays literal
