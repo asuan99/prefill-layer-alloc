@@ -36,13 +36,21 @@ def metrics(reqs, makespan, slo_ms):
     ttfts = [r.ttft for r in reqs if r.ttft is not None]
     itls = [v for r in reqs for v in r.itls]
     toks = sum(len(r.itls) for r in reqs)
+    thr = toks / makespan * 1000.0 if makespan else 0.0
+    attain = sum(1 for v in itls if v <= slo_ms) / len(itls) if itls else 0.0
     return {
         "n_req": len(reqs), "tokens": toks,
         "ttft_p50": round(_pct(ttfts, 50), 3), "ttft_p99": round(_pct(ttfts, 99), 3),
         "itl_p50": round(_pct(itls, 50), 4), "itl_p99": round(_pct(itls, 99), 4),
-        "throughput_tok_s": round(toks / makespan * 1000.0, 1) if makespan else 0.0,
-        "slo_attain": round(sum(1 for v in itls if v <= slo_ms) / len(itls), 4) if itls else 0.0,
+        "throughput_tok_s": round(thr, 1),
+        "slo_attain": round(attain, 4),
+        "goodput_tok_s": round(thr * attain, 1),   # SLO-meeting throughput — the real benefit metric
     }
+
+
+# scheduler design per policy: co_schedule = vanilla synchronized batching;
+# dynamic_protect = MuxWise/Bullet decoupled (decode on reserved SMs, ITL bounded).
+_SCHED = {"co_schedule": "sync", "dynamic_protect": "decoupled", "static": "sync"}
 
 
 def parse_args():
@@ -80,34 +88,37 @@ def main():
         print(f"  ⚠ LUT prefill_batch={lm.prefill_batch} ≠ --prefill-budget={a.prefill_budget} "
               f"→ step costs mismatched; use a LUT measured at prefill_batch={a.prefill_budget}")
     print(f"  backends in LUT: {lm.backends}")
-    hdr = f"{'policy':16} {'λ(req/ms)':>9} {'TTFT_p99':>9} {'ITL_p50':>8} {'ITL_p99':>8} {'tok/s':>8} {'SLO_attain':>10}"
+    hdr = (f"{'policy(sched)':22} {'λ':>6} {'ITL_p99':>8} {'SLO_att':>7} "
+           f"{'tok/s':>8} {'GOODPUT':>8}")
     print(hdr)
     for lam in a.lambdas:
         for pol in a.policies:
+            sched = _SCHED.get(pol, "sync")
             reqs = gen_requests(a.n_requests, lam, a.prompt_lens, a.output_lens, a.chunk, a.seed)
             reqs, st = simulate(reqs, pol, lm, a.pf_layer, a.dec_layer, a.ctx,
-                                a.max_batch, prefill_budget=a.prefill_budget)
+                                a.max_batch, prefill_budget=a.prefill_budget, scheduler=sched)
             m = metrics(reqs, st["makespan_ms"], a.slo_ms)
-            row = {"model": model, "policy": pol, "lambda_req_ms": lam,
+            row = {"model": model, "policy": pol, "scheduler": sched, "lambda_req_ms": lam,
                    "pf_layer": a.pf_layer, "dec_layer": a.dec_layer, "ctx": a.ctx,
-                   "slo_ms": a.slo_ms, **m, "notes": ";".join(st["notes"])}
+                   "slo_ms": a.slo_ms, "prefill_budget": a.prefill_budget,
+                   **m, "notes": ";".join(st["notes"])}
             rows.append(row)
-            print(f"{pol:16} {lam:9.3f} {m['ttft_p99']:9.2f} {m['itl_p50']:8.3f} "
-                  f"{m['itl_p99']:8.3f} {m['throughput_tok_s']:8.1f} {m['slo_attain']:10.3f}")
-        print("  " + "-" * 70)
+            print(f"{pol+'('+sched+')':22} {lam:6.2f} {m['itl_p99']:8.3f} {m['slo_attain']:7.3f} "
+                  f"{m['throughput_tok_s']:8.0f} {m['goodput_tok_s']:8.0f}")
+        print("  " + "-" * 66)
     out = a.out_dir / f"queue_sim_{model}_{a.pf_layer}x{a.dec_layer}_b{a.prefill_budget}.csv"
     with open(out, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader(); w.writerows(rows)
     print(f"wrote {len(rows)} rows -> {out}")
-    # crossover hint: where does dynamic_protect SLO-attain exceed co_schedule?
+    # crossover hint on GOODPUT (SLO-meeting throughput — the real benefit metric)
     bylam = {}
     for r in rows:
-        bylam.setdefault(r["lambda_req_ms"], {})[r["policy"]] = r["slo_attain"]
+        bylam.setdefault(r["lambda_req_ms"], {})[r["policy"]] = r["goodput_tok_s"]
     cross = [lam for lam, d in sorted(bylam.items())
-             if "dynamic_protect" in d and "co_schedule" in d and d["dynamic_protect"] > d["co_schedule"] + 1e-6]
-    print(f"  → dynamic_protect beats co_schedule on SLO_attain at λ={cross}" if cross
-          else "  → dynamic_protect never beats co_schedule on SLO_attain in this sweep")
+             if "dynamic_protect" in d and "co_schedule" in d and d["dynamic_protect"] > d["co_schedule"] * 1.01]
+    print(f"  → dynamic_protect(decoupled) beats co_schedule on GOODPUT at λ={cross}" if cross
+          else "  → dynamic_protect never beats co_schedule on GOODPUT in this sweep")
 
 
 if __name__ == "__main__":

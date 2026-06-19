@@ -61,6 +61,19 @@ class LatencyModel:
             return None
         return g[_nearest(max(b, 1), list(g))]
 
+    def streams(self, policy, pf, dec, decode_batch, ctx):
+        """(prefill_stream_ms, decode_stream_ms, solo_prefill_ms, solo_decode_ms) for the
+        backend — for the DECOUPLED scheduler (decode runs on its own SMs, decode ITL =
+        decode_stream_ms, independent of the prefill stream)."""
+        b = max(int(decode_batch), 0)
+        row = self._row(_POLICY_BACKEND[policy], pf, dec, b, ctx)
+        if row is None:
+            row = self._row("two_stream", pf, dec, b, ctx)
+        if row is None:
+            return None
+        return (float(row.prefill_stream_ms), float(row.decode_stream_ms),
+                float(row.solo_prefill_ms), float(row.solo_decode_ms))
+
     def step_ms(self, policy, pf, dec, decode_batch, ctx, prefill_active):
         """Latency of one serving iteration. Returns (ms, note); note flags fallbacks."""
         b = max(int(decode_batch), 0)

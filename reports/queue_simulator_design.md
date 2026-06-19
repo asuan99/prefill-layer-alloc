@@ -108,7 +108,26 @@ single-chunk LUT(tokens=256+decode-protect)로 λ×policy 스윕(SLO: ITL p99 �
 
 **다음(§12에서 측정):** step당 prefill budget을 키워(`--prefill-batch>1` LUT = "k chunk ∥ decode") sim에 `--prefill-budget` 파라미터로 주입 → 큰-budget에서 역전점 탐색. zamba2_7b는 protect=no_room이라 co_schedule과 동일(폴백).
 
-→ 산출: `results_v2/e6/queue_sim_{model}_{pf}x{dec}.csv`.
+→ 산출: `results_v2/e6/queue_sim_{model}_{pf}x{dec}_b{budget}.csv`.
+
+## 12. 수정된 결과 (decoupled 스케줄러 + goodput@SLO) — 분할 이득은 *실재하나 조건부*
+
+§11/이전 §12의 음성 결론은 **두 결함의 산물**이었다(둘 다 사용자 지적으로 발견): **(A)** sim이 decode ITL = `concurrent_ms`로 둬 decode를 *굶긴 prefill*에 묶음(= partition의 decoupling을 죽임). **(B)** raw throughput/latency로만 봄(올바른 metric은 SLO 만족 throughput = **goodput**). 수정: partition 정책에 **decoupled 스케줄러**(decode ITL = `decode_stream_ms`, prefill과 독립 — MuxWise/Bullet 설계) + **goodput = throughput × SLO_attain**. (budget=8 LUT = job 778147, e5_sim_b8.)
+
+핵심 표 (pf=attn×dec=ssm, SLO ITL≤1.0ms; **goodput**=SLO 만족 tok/s):
+
+| 구성 | λ | co_schedule(sync) ITLp99/attain/raw/**good** | dynamic_protect(decoupled) ITLp99/attain/raw/**good** |
+|---|--|--|--|
+| 2.7b · b1 | 5.0 | 0.75 / 1.00 / 29.8k / **29.8k** | 0.79 / 1.00 / 30.9k / **30.9k** (근소 승) |
+| **2.7b · b8** | 0.5 | 1.90 / 0.20 / 55.9k / **11.0k** | 0.71 / **1.00** / 33.5k / **33.5k** (압승) |
+| **2.7b · b8** | 1.0 | 1.90 / 0.15 / 58.3k / **8.9k** | 0.71 / **1.00** / 33.6k / **33.6k** (3.8×) |
+| fh1_3b · b8 | 0.5 | 0.95 / 1.00 / 63.2k / **63.2k** | 1.11 / 0.18 / 61.2k / **10.9k** (패) |
+
+**(1) 사용자 직관 확인 — 이득은 raw throughput이 아니라 goodput에 있다.** co_schedule이 raw throughput은 항상 큼(58k vs 33k). **그러나 큰 budget·고부하에서 co_schedule의 decode ITL이 SLO를 위반(1.9ms>1.0)** → 그 throughput은 헛것(goodput 8.9k). protect(decoupled)는 decode를 reserved SM에서 돌려 **ITL을 0.71ms로 bound** → SLO 1.0 유지 → **goodput 33.6k (~3.8× 승)**. **이게 MuxWise/Bullet 이득의 재현이다 — 이전 "분할 모든 축 음성"은 모델 결함 산물이었다(철회).**
+
+**(2) 단 *조건부*다(정직):** falcon_h1_3b는 protect의 *reserved* decode ITL이 1.1ms로 SLO(1.0)를 못 맞춰 → goodput 패. 즉 분할 이득은 **"reserved decode가 SLO를 만족하는가"**에 달렸다(모델의 decode floor·비용 의존). 그리고 protect는 **TTFT를 크게 희생**(2.7b b8 λ1.0: TTFT p99 1220ms vs co_schedule 432ms — prefill 굶김). → **TTFT↔TBT↔goodput 3-way 트레이드오프**이고, 분할은 *decode-SLO가 binding이고 reserved decode가 SLO를 맞추는 큰-budget·고부하 코너*에서 이긴다.
+
+**결론(정정):** **prefill↔decode 공간 분할(decoupled, MuxWise/Bullet)은 goodput@SLO에서 co_schedule을 이긴다 — 큰 budget·고부하·decode-SLO-binding 코너에서, 단 reserved decode가 SLO를 만족하는 모델에 한해.** 이전의 "분할은 모든 축에서 음성"은 (sync 모델 + raw metric) 결함이었고 철회한다. **단 이건 attn↔ssm *layer-type* 분할(헤드라인, §3.1/§3.2/7B로 여전히 음성)이 아니라 *prefill↔decode* 분할이다 — 둘은 다른 thesis.** 한계: decoupled 모델은 *이상화*(decode 완전 독립, 오버헤드 0)라 분할 이득의 *상한*; 실 MPS/엔진 확증이 다음.
 
 ## 10. 사용자 실행 (`run_sim_pipeline.sh`)
 
