@@ -95,7 +95,7 @@ def main():
             print(f"{pol:16} {lam:9.3f} {m['ttft_p99']:9.2f} {m['itl_p50']:8.3f} "
                   f"{m['itl_p99']:8.3f} {m['throughput_tok_s']:8.1f} {m['slo_attain']:10.3f}")
         print("  " + "-" * 70)
-    out = a.out_dir / f"queue_sim_{model}_{a.pf_layer}x{a.dec_layer}.csv"
+    out = a.out_dir / f"queue_sim_{model}_{a.pf_layer}x{a.dec_layer}_b{a.prefill_budget}.csv"
     with open(out, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader(); w.writerows(rows)
