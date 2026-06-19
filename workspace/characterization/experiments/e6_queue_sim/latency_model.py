@@ -37,6 +37,8 @@ class LatencyModel:
                 df[c] = pd.to_numeric(df[c], errors="coerce")
         self.path = csv_path
         self.df = df[df.status == "ok"].copy()
+        pb = self.df["prefill_batch"].dropna() if "prefill_batch" in self.df else None
+        self.prefill_batch = int(pb.mode().iloc[0]) if pb is not None and len(pb) else 1
         if "n_chunks" in df and (df["n_chunks"].dropna().max() or 0) > 1:
             print(f"  ⚠ LUT {os.path.basename(csv_path)} is multi-chunk "
                   f"(n_chunks={int(df['n_chunks'].dropna().max())}); simulator wants a single-chunk "

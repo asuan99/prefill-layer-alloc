@@ -11,9 +11,12 @@ from __future__ import annotations
 
 
 def simulate(reqs, policy, lm, pf_layer, dec_layer, ctx,
-             max_batch=512, prefill_first=False):
+             max_batch=512, prefill_budget=1):
     """Run the serving loop. Mutates/returns reqs with ttft, itls, done filled.
-    Returns (reqs, stats)."""
+
+    prefill_budget = chunks of prefill processed per iteration (Sarathi/vLLM token
+    budget / chunk). The step-time LUT must be measured at prefill_batch == budget
+    (k chunks ∥ decode), else step costs are wrong. Returns (reqs, stats)."""
     reqs = sorted(reqs, key=lambda r: r.arrival)
     n = len(reqs)
     ai = 0                       # next un-arrived request index
@@ -44,8 +47,8 @@ def simulate(reqs, policy, lm, pf_layer, dec_layer, ctx,
             r.itls.append(ms); r.n_output -= 1
             if r.n_output <= 0:
                 r.done = clock; decoding.remove(r); done += 1
-        if prefill is not None:                            # prefill advances one chunk
-            prefill.n_chunks -= 1
+        if prefill is not None:                            # prefill advances `budget` chunks
+            prefill.n_chunks -= prefill_budget
             if prefill.n_chunks <= 0:
                 prefill.ttft = clock - prefill.arrival
                 decoding.append(prefill); prefill = None

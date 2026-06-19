@@ -58,6 +58,9 @@ def parse_args():
     p.add_argument("--n-requests", type=int, default=500)
     p.add_argument("--prompt-lens", nargs="+", type=int, default=[512, 1024, 2048, 4096])
     p.add_argument("--output-lens", nargs="+", type=int, default=[64, 128, 256])
+    p.add_argument("--prefill-budget", type=int, default=1,
+                   help="prefill chunks processed per iteration (token budget / chunk). "
+                        "The --lut must be measured at prefill_batch == this value.")
     p.add_argument("--max-batch", type=int, default=512)
     p.add_argument("--slo-ms", type=float, default=2.0, help="ITL SLO target (ms)")
     p.add_argument("--seed", type=int, default=0)
@@ -71,14 +74,19 @@ def main():
     model = os.path.basename(a.lut).replace("serving_coexec_full_", "").replace("serving_coexec_", "").replace(".csv", "")
     a.out_dir.mkdir(parents=True, exist_ok=True)
     rows = []
-    print(f"=== queue sim: {model}  pf={a.pf_layer}×dec={a.dec_layer} ctx={a.ctx}  SLO(ITL)≤{a.slo_ms}ms ===")
+    print(f"=== queue sim: {model}  pf={a.pf_layer}×dec={a.dec_layer} ctx={a.ctx}  "
+          f"prefill_budget={a.prefill_budget} chunk/step  SLO(ITL)≤{a.slo_ms}ms ===")
+    if lm.prefill_batch != a.prefill_budget:
+        print(f"  ⚠ LUT prefill_batch={lm.prefill_batch} ≠ --prefill-budget={a.prefill_budget} "
+              f"→ step costs mismatched; use a LUT measured at prefill_batch={a.prefill_budget}")
     print(f"  backends in LUT: {lm.backends}")
     hdr = f"{'policy':16} {'λ(req/ms)':>9} {'TTFT_p99':>9} {'ITL_p50':>8} {'ITL_p99':>8} {'tok/s':>8} {'SLO_attain':>10}"
     print(hdr)
     for lam in a.lambdas:
         for pol in a.policies:
             reqs = gen_requests(a.n_requests, lam, a.prompt_lens, a.output_lens, a.chunk, a.seed)
-            reqs, st = simulate(reqs, pol, lm, a.pf_layer, a.dec_layer, a.ctx, a.max_batch)
+            reqs, st = simulate(reqs, pol, lm, a.pf_layer, a.dec_layer, a.ctx,
+                                a.max_batch, prefill_budget=a.prefill_budget)
             m = metrics(reqs, st["makespan_ms"], a.slo_ms)
             row = {"model": model, "policy": pol, "lambda_req_ms": lam,
                    "pf_layer": a.pf_layer, "dec_layer": a.dec_layer, "ctx": a.ctx,
