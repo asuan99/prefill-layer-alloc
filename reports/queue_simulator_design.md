@@ -172,6 +172,15 @@ single-chunk LUT(tokens=256+decode-protect)로 λ×policy 스윕(SLO: ITL p99 �
 | **falcon_h1_3b** | **GQA**(kv2), hd128 | 0.97ms(14%)→**0.23ms(56%) 4.1×** | **146k(SLO 1.0)** / 145k — **≈ 동률** |
 | **zamba2_2.7b** | **無GQA**(kv32), hd160 | 4.01ms(**66%**)→3.98ms(66%) **1.0×** | **45(붕괴)** / 39k — **partition 압승** |
 
+**★ 통합 framing (SLO 스윕으로 확정): partition 이득 구간 = { SLO_target < baseline(two_stream/fused)의 decode ITL }.** 그 구간에선 baseline이 decode tail로 SLO 위반→붕괴하나 partition은 ITL을 bound해 충족→goodput 승. baseline decode ITL = decode 비용 = **KV 크기 = GQA비**가 결정 → **두 모델 다 이득 구간이 *존재*하고 차이는 *문턱*뿐:**
+
+| 모델 | baseline decode ITL | partition ITL(bound) | 이득 구간(SLO) | falcon λ2 b8 검증 |
+|---|--|--|--|--|
+| **falcon_h1_3b** (GQA) | ~0.54ms | 0.157ms | **SLO ≲ 0.5ms** (좁음, 공격적 per-token SLO) | SLO0.5→partition 182k vs two_stream 85k(2.1×); SLO1.0→two_stream 승 |
+| **zamba2_2.7b** (無GQA) | ~8.8ms | 0.735ms | **SLO ≲ 8.8ms** (넓음, 사실상 모든 현실 SLO) | SLO1.0에서 이미 partition 39k vs two_stream 47(≫) |
+
+즉 **GQA 모델은 빡빡한 SLO에서만, no-GQA 모델은 느슨한 SLO에서도 partition이 이긴다.** (이전에 "falcon은 이득 없음"이라 한 건 SLO=1.0만 봐서 틀렸음 — falcon도 SLO≲0.5ms면 partition 승.)
+
 → **차이의 진짜 원인 = GQA(=KV 크기), head_dim 아님(BW 계산으로 검증).** falcon은 GQA(kv2)라 KV가 작아 vanilla decode가 **오버헤드-바운드(HBM 14%)** → flash가 오버헤드 걷어 5× 가속 → decode 싸짐 → **fused가 SLO 맞춤 → partition 이득 소멸(fused≈partition)**. zamba2는 **GQA 없음(kv32)이라 KV가 ~20× 커서 vanilla가 이미 메모리-바운드(HBM 66%)** → flash도 *같은 KV를 같은 HBM에서 읽어야* 해 **메모리 벽 못 넘음(1.0×)** → decode 본질적으로 비쌈 → **fused SLO 위반 → partition 압승**. 즉 **PD-mux 이득은 "decode가 SLO 대비 비싼가"에 달렸고, 그건 *모델의 KV 크기(GQA비)*가 결정한다**(no-GQA = 메모리-바운드 decode = 어떤 커널로도 못 줄임). "partition 승"은 *no-GQA 모델의 비싼 decode*에 대한 rescue다.
 
 **결론(production decode 실측 후 — 최종·정직):**
