@@ -160,7 +160,7 @@ def _protect_prefill_sm(floor_lut, decode_layer, batch, context, total_sm):
 def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_layers,
               fracs, n_warmup, n_measure, total_sm, device, out_dir: Path,
               prefill_mode="micro", prefill_tokens=0, prefill_batch=1,
-              decode_protect=False, e3_dir=None):
+              decode_protect=False, e3_dir=None, decode_opt=False):
     import torch
     from experiments.common import kernels as K
     from experiments.e4_concurrent._green_ctx import (
@@ -184,9 +184,11 @@ def run_model(model, decode_batches, contexts, chunk, prefill_layers, decode_lay
     def resolve_pf(pl):
         return _FULL_LAYER.get(pl, pl) if full else pl
 
+    _dec_attn = K.build_decode_attn_opt_fn if decode_opt else K.build_decode_attn_fn
+
     def build_decode(dl, db, ctx):
         if dl == "attn":
-            return K.build_decode_attn_fn(cfg, batch=db, context_len=ctx)
+            return _dec_attn(cfg, batch=db, context_len=ctx)
         return K.build_decode_ssm_fn(cfg, batch=db)        # state BW ≈ const (ctx ignored)
 
     for pl in prefill_layers:
@@ -315,6 +317,8 @@ def parse_args():
                         "floor SMs, prefill gets the rest (decode-protective / SLO-oriented split)")
     p.add_argument("--e3-dir", type=Path, default=Path(_CHAR) / "results_v2" / "e3",
                    help="E3 decode_floor CSV dir (used by --decode-protect)")
+    p.add_argument("--opt-decode", action="store_true",
+                   help="use production flash_attn_with_kvcache for attn decode (vs vanilla SDPA)")
     p.add_argument("--dry-run", action="store_true",
                    help="print the sweep plan (no GPU, no timing) and exit")
     p.add_argument("--n-warmup", type=int, default=5)
@@ -380,7 +384,8 @@ def main():
                   args.n_warmup, args.n_measure, total_sm, device, args.output_dir,
                   prefill_mode=args.prefill_mode, prefill_tokens=args.prefill_tokens,
                   prefill_batch=args.prefill_batch,
-                  decode_protect=args.decode_protect, e3_dir=args.e3_dir)
+                  decode_protect=args.decode_protect, e3_dir=args.e3_dir,
+                  decode_opt=args.opt_decode)
 
 
 if __name__ == "__main__":

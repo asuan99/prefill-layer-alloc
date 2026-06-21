@@ -226,9 +226,33 @@ def build_decode_ssm_fn(cfg, batch, device="cuda", dtype="bfloat16") -> tuple:
 
 
 def build_decode_attn_fn(cfg, batch, context_len, device="cuda", dtype="bfloat16") -> tuple:
-    """Attn decode step: 1 query token reading ``context_len`` KV (memory-bound)."""
+    """Attn decode step: 1 query token reading ``context_len`` KV (memory-bound).
+    Vanilla SDPA (math/flash fallback) — NOT a production decode kernel."""
     return build_attn_fn(cfg, batch=batch, seq=1, context_len=context_len,
                          device=device, dtype=dtype)
+
+
+def build_decode_attn_opt_fn(cfg, batch, context_len, device="cuda", dtype="bfloat16") -> tuple:
+    """PRODUCTION decode attention via flash_attn_with_kvcache (what vLLM/SGLang use):
+    optimized GQA decode over the KV cache. Same byte traffic as build_decode_attn_fn but a
+    real flash-decode kernel — for the queue-sim decode-kernel-optimization caveat."""
+    _require_torch()
+    from flash_attn import flash_attn_with_kvcache
+    from experiments.common.bw_probe import attn_bytes
+    dt = getattr(torch, dtype)
+    nH, nKV, hd = cfg["n_attn_heads"], cfg["n_attn_kv_heads"], cfg["attn_head_dim"]
+    total_kv = context_len + 1
+    # flash_attn layout: q (b, sq, nH, hd); k/v cache (b, sk, nKV, hd). GQA handled natively.
+    q = torch.randn(batch, 1, nH, hd, dtype=dt, device=device)
+    kc = torch.randn(batch, total_kv, nKV, hd, dtype=dt, device=device)
+    vc = torch.randn(batch, total_kv, nKV, hd, dtype=dt, device=device)
+
+    def fn():
+        flash_attn_with_kvcache(q, kc, vc, causal=True)
+
+    rb, wb = attn_bytes(batch=batch, seq_len=1, total_kv_len=total_kv,
+                        n_heads=nH, n_kv_heads=nKV, head_dim=hd, hidden_size=cfg["d_model"])
+    return fn, rb, wb, {"kernel": "decode_attn_opt", "context_len": context_len}
 
 
 # ---------------------------------------------------------------------------

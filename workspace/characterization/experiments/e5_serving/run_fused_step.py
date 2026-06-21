@@ -46,8 +46,9 @@ _SCHEMA = {
 }
 
 
-def _fns(K, layer_type, cfg, P, B, ctx):
+def _fns(K, layer_type, cfg, P, B, ctx, opt_decode=False):
     """Return (fused_fn, prefill_only_fn, decode_only_fn)."""
+    _dec_attn = K.build_decode_attn_opt_fn if opt_decode else K.build_decode_attn_fn
     if layer_type == "ssm":
         in_pb, *_ = K.build_in_proj_fn(cfg, 1, P + B)
         in_p, *_ = K.build_in_proj_fn(cfg, 1, P)
@@ -65,7 +66,7 @@ def _fns(K, layer_type, cfg, P, B, ctx):
         out_p, *_ = K.build_attn_o_proj_fn(cfg, 1, P)
         out_b, *_ = K.build_attn_o_proj_fn(cfg, 1, B)
         pre, *_ = K.build_attn_fn(cfg, 1, P, 0)            # prefill: causal over P
-        dec, *_ = K.build_decode_attn_fn(cfg, B, ctx)      # decode: B tokens read full KV
+        dec, *_ = _dec_attn(cfg, B, ctx)                   # decode: B tokens read full KV
 
     def fused():
         in_pb(); pre(); dec(); out_pb()
@@ -80,7 +81,7 @@ def _fns(K, layer_type, cfg, P, B, ctx):
 
 
 def run_model(model, layers, prefill_tokens, decode_batches, contexts,
-              n_warmup, n_measure, device, out_dir: Path):
+              n_warmup, n_measure, device, out_dir: Path, opt_decode=False):
     import torch
     from experiments.common import kernels as K
     from experiments.e4_concurrent._green_ctx import time_solo
@@ -97,7 +98,7 @@ def run_model(model, layers, prefill_tokens, decode_batches, contexts,
                             "layer_type": lt, "prefill_tokens": P, "decode_batch": B,
                             "context_len": ctx}
                     try:
-                        fused, p_only, d_only = _fns(K, lt, cfg, P, B, ctx)
+                        fused, p_only, d_only = _fns(K, lt, cfg, P, B, ctx, opt_decode)
                         fm = time_solo(fused, n_warmup, n_measure)
                         pm = time_solo(p_only, n_warmup, n_measure)
                         dm = time_solo(d_only, n_warmup, n_measure)
@@ -129,10 +130,13 @@ def parse_args():
     p.add_argument("--prefill-tokens", nargs="+", type=int, default=DEFAULT_PREFILL_TOKENS)
     p.add_argument("--decode-batches", nargs="+", type=int, default=DEFAULT_DECODE_BATCHES)
     p.add_argument("--context-lens", nargs="+", type=int, default=DEFAULT_CONTEXTS)
+    p.add_argument("--opt-decode", action="store_true",
+                   help="use production flash_attn_with_kvcache decode (vs vanilla SDPA) — "
+                        "closes the queue-sim decode-kernel-optimization caveat")
     p.add_argument("--n-warmup", type=int, default=5)
     p.add_argument("--n-measure", type=int, default=20)
     p.add_argument("--dry-run", action="store_true")
-    p.add_argument("--output-dir", type=Path, default=Path(_CHAR) / "results_v2" / "e5_fused")
+    p.add_argument("--output-dir", type=Path, default=None)
     return p.parse_args()
 
 
@@ -152,10 +156,11 @@ def main():
     except Exception as e:  # noqa: BLE001
         raise SystemExit(f"fused-step needs a CUDA GPU: {e}")
     device = ss.canonical_device()
-    a.output_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = a.output_dir or (Path(_CHAR) / "results_v2" / ("e5_fused_opt" if a.opt_decode else "e5_fused"))
+    out_dir.mkdir(parents=True, exist_ok=True)
     for m in a.models:
         run_model(m, a.layers, a.prefill_tokens, a.decode_batches, a.context_lens,
-                  a.n_warmup, a.n_measure, device, a.output_dir)
+                  a.n_warmup, a.n_measure, device, out_dir, a.opt_decode)
 
 
 if __name__ == "__main__":
