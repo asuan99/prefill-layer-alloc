@@ -145,7 +145,27 @@ single-chunk LUT(tokens=256+decode-protect)로 λ×policy 스윕(SLO: ITL p99 �
 
 → **낙관 fused면 fused 승, 보수 fused면 partition 승.** 진짜 fused 비용은 그 사이(가산은 weight-load 공유를 과대계상, free는 KV 읽기를 누락)이고, **E5는 *진짜 fused 커널*(한 batch에 P+B 토큰)을 측정한 적이 없다 — prefill·decode를 별도 커널로만 쟀다.** ∴ **fused-vs-partition은 현 데이터로 미결**(bounded: 낙관 fused 승 ~ 보수 partition 승). 결정하려면 **fused mixed-batch 커널 직접 측정**(신규 실험)이 필요.
 
-**결론(누적 정정 후 — 정직):** *(i)* **two_stream은 부적절 baseline**(vLLM 기본=fused). *(ii)* **fused-vs-partition은 미결** — 결과가 fused decode-비용 모델(낙관↔보수)과 budget에 극도로 민감하며, 별도-커널 LUT로는 못 가린다(진짜 fused 커널 측정 필요). *(iii)* **attn↔ssm *layer-type* 분할은 이 모든 것과 무관하게 §3.1/§3.2/7B로 여전히 음성(헤드라인 불변).** *(iv)* 메타: 이 thread에서 결론이 useless→wins(vs two_stream)→loses(vs 낙관 fused)→미결(보수 fused)로 거듭 뒤집힘 = **PD-mux 평가가 baseline·metric·모델 가정에 병적으로 민감함**을 보여줌. 단단한 건 layer-type 음성과 "올바른 측정(진짜 fused)이 없으면 PD-mux 판정 불가"라는 *방법론적* 결론.
+**(5) ★ 진짜 fused 커널 실측(job 778472, `run_fused_step`) — 미결 닫힘: fusion saving ≈ 0.** P prefill + B decode를 한 forward로 융합한 layer-step을 직접 측정(proj GEMM은 (P+B) 한 번). **결과: `fusion_saving = (prefill_only+decode_only) − fused ≈ 0`**(전 셀 0.01–0.23ms):
+
+| 셀 | fused 실측 | prefill_only+decode_only(보수) | prefill_only(낙관) |
+|---|--|--|--|
+| fh1_3b P2048 ssm B512 | 6.93 | 6.93 (=) | 0.80 |
+| 2.7b P256 attn B512 | 31.1 | 31.2 (=) | 0.26 |
+
+즉 **fused ≈ prefill+decode (보수가 맞다); decode는 fused에서 *공짜가 아니다*.** 공유되는 건 proj GEMM weight-load뿐인데 그건 총비용의 작은 조각이고 **mixer(특히 decode-attn KV 읽기)가 지배**해서 융합 절약이 거의 없다. → 내 §12-(3) 낙관 모델은 *틀렸고*, §12-(4) 보수가 실측과 일치.
+
+**실측 fused로 sim 재실행(2.7b b8, `--fused-lut`):**
+
+| layer | λ | fused(실측) ITLp99/attain/**good** | dynamic_protect **good** |
+|---|--|--|--|
+| ssm | 1.0 | 2.43 / 0.15 / **7.2k** | **34.4k (4.8×)** |
+| attn | 1.0 | 9.22 / 0.01 / **0.15k** | **45.0k (≫)** |
+
+→ **실측 fused 대비 decoupled partition이 goodput@SLO에서 이긴다**(큰 budget·고부하). fused는 decode를 iteration에 직렬화 → ITL 폭발; partition은 decode를 reserved SM서 동시 실행해 ITL bound. **fused-vs-partition 미결 = partition 승으로 닫힘**(MuxWise/Bullet 이득 실측 재현).
+
+> **⚠ 그러나 magnitude caveat (과대주장 방지):** decode 커널이 **비최적화 vanilla SDPA**(paged/FlashDecoding 아님)라 decode-attn 절대비용이 부풀려짐(B512서 9–31ms/layer). partition·fused 둘 다 같은 커널을 쓰므로 *상대 승*(직렬 vs 동시-decouple)은 유효하나 **300× 같은 배율은 과장**이다. **production paged/flash decode면 fused의 decode 비용이 급감 → fused goodput↑ → 격차가 좁아지거나 다시 뒤집힐 수 있음(미측정).**
+
+**결론(실측 후 — 정직):** *(i)* **fusion saving ≈ 0 (실측, 견고)** — vLLM 융합은 decode를 공짜로 만들지 못한다(mixer 지배). *(ii)* 그 실측 fused 대비 **decoupled partition이 큰 budget·SLO서 이긴다**(메커니즘=decode ITL bound) — *단 비최적화 decode 커널이라 magnitude 과장, production decode면 미정*. *(iii)* **two_stream은 부적절 baseline**. *(iv)* **attn↔ssm layer-type 분할은 무관하게 §3.1/§3.2/7B로 여전히 음성(헤드라인 불변).** *(v)* 메타: 결론이 useless→wins(two_stream)→loses(낙관 fused)→미결→**partition 승(실측 fused, 단 decode커널 최적화에 의존)**으로 거듭 뒤집힘 = **PD-mux 판정은 baseline·metric·커널최적화 가정에 병적 민감**. 단단한 건 *layer-type 음성* + *fusion-saving≈0 실측* + *방법론적 민감도*.
 
 ## 13. Baseline 분류 & layer-aware (방법론 — "무엇과 비교하나")
 
