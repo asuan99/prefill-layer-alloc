@@ -163,9 +163,23 @@ single-chunk LUT(tokens=256+decode-protect)로 λ×policy 스윕(SLO: ITL p99 �
 
 → **실측 fused 대비 decoupled partition이 goodput@SLO에서 이긴다**(큰 budget·고부하). fused는 decode를 iteration에 직렬화 → ITL 폭발; partition은 decode를 reserved SM서 동시 실행해 ITL bound. **fused-vs-partition 미결 = partition 승으로 닫힘**(MuxWise/Bullet 이득 실측 재현).
 
-> **⚠ 그러나 magnitude caveat (과대주장 방지):** decode 커널이 **비최적화 vanilla SDPA**(paged/FlashDecoding 아님)라 decode-attn 절대비용이 부풀려짐(B512서 9–31ms/layer). partition·fused 둘 다 같은 커널을 쓰므로 *상대 승*(직렬 vs 동시-decouple)은 유효하나 **300× 같은 배율은 과장**이다. **production paged/flash decode면 fused의 decode 비용이 급감 → fused goodput↑ → 격차가 좁아지거나 다시 뒤집힐 수 있음(미측정).**
+> **⚠ magnitude caveat:** 위는 **비최적화 vanilla SDPA** decode라 decode-attn 절대비용 부풀려짐 → §12-(6)에서 production decode로 닫음.
 
-**결론(실측 후 — 정직):** *(i)* **fusion saving ≈ 0 (실측, 견고)** — vLLM 융합은 decode를 공짜로 만들지 못한다(mixer 지배). *(ii)* 그 실측 fused 대비 **decoupled partition이 큰 budget·SLO서 이긴다**(메커니즘=decode ITL bound) — *단 비최적화 decode 커널이라 magnitude 과장, production decode면 미정*. *(iii)* **two_stream은 부적절 baseline**. *(iv)* **attn↔ssm layer-type 분할은 무관하게 §3.1/§3.2/7B로 여전히 음성(헤드라인 불변).** *(v)* 메타: 결론이 useless→wins(two_stream)→loses(낙관 fused)→미결→**partition 승(실측 fused, 단 decode커널 최적화에 의존)**으로 거듭 뒤집힘 = **PD-mux 판정은 baseline·metric·커널최적화 가정에 병적 민감**. 단단한 건 *layer-type 음성* + *fusion-saving≈0 실측* + *방법론적 민감도*.
+**(6) ★★ production decode 실측(job 783157·783158, `--opt-decode` = `flash_attn_with_kvcache`) — caveat 닫힘, 답은 *모델 의존*.** vLLM/SGLang가 쓰는 flash-decode로 fused·partition 둘 다 재측정. **decode 가속이 모델 attention 구조에 좌우됨:**
+
+| 모델 | attn 구조 | decode_only(B512) vanilla→opt | sim goodput (attn b8 λ1): **fused** / protect |
+|---|---|--|--|
+| **falcon_h1_3b** | GQA(kv2), hd128 | 7.77→**1.50ms (5.2×)** | **146k(SLO 1.0)** / 145k — **≈ 동률** |
+| **zamba2_2.7b** | full-MHA(kv32), hd160 | 3.98(B64)→**3.98 (1.0×)** | **45(붕괴)** / 39k — **partition 압승** |
+
+→ **flash가 잘 먹는 모델(GQA·flash-friendly head_dim)이면 fused decode가 싸져 fused가 SLO를 맞춤 → partition 이득 거의 소멸(fused≈partition).** **flash가 안 먹는 모델(full-MHA·head_dim 160 → flash 미지원/저속)이면 decode가 본질적으로 비싸 fused가 SLO 위반 → partition 여전히 압승.** 즉 **PD-mux 이득은 "decode가 SLO 대비 비싼가"에 전적으로 달렸고, 그건 decode 커널 + 모델 구조(GQA비·head_dim)가 결정.** "partition 승"은 *부분적으로* 느린 커널/비효율 attention 구조의 산물이었다.
+
+**결론(production decode 실측 후 — 최종·정직):**
+1. **fusion_saving ≈ 0 (실측, 견고)** — vLLM 융합은 decode를 공짜로 못 만든다(mixer 지배).
+2. **PD-mux(decoupled partition) 이득은 *조건부·모델 의존*:** decode가 SLO 대비 비싼 regime(느린 커널 OR full-MHA·flash-비친화 구조 + 큰 budget·고부하)에서만 fused/co_schedule을 이긴다. **production decode + GQA 모델(falcon)에선 fused가 충분히 좋아 PD-mux 불필요(≈동률).** full-MHA·odd-head_dim(zamba2)에선 여전히 유효.
+3. **two_stream은 부적절 baseline; attn↔ssm *layer-type* 분할은 무관하게 §3.1/§3.2/7B로 여전히 음성(헤드라인 불변).**
+4. **메타:** 결론이 useless→wins(two_stream)→loses(낙관fused)→미결→partition승(vanilla fused)→**모델 의존(prod decode)**으로 거듭 뒤집힘 = **PD-mux 판정은 baseline·metric·커널·모델구조 가정에 병적 민감.** 단단한 것: *layer-type 음성* · *fusion-saving≈0* · *"PD-mux는 decode가 SLO 대비 비싼 모델/regime의 rescue지 보편 이득 아님"*.
+
 
 ## 13. Baseline 분류 & layer-aware (방법론 — "무엇과 비교하나")
 
