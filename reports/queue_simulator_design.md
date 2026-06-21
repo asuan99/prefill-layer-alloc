@@ -222,3 +222,33 @@ env -u BASH_ENV bash experiments/e6_queue_sim/run_sim_pipeline.sh auto
 튜닝(env): `MODELS="zamba2_2.7b zamba2_7b"`(≤4, QOS), `PF=attn DEC=ssm`(2.7b 예외 셀), `SLO=1.0`(ms), `LAMBDAS="0.02 … 2.0"`.
 LUT → `results_v2/e5_sim/`(기존 e5/e5_dp 불간섭), sim 결과 → `results_v2/e6/queue_sim_*.csv`.
 > QOS 한도상 다른 array가 큐에 있으면 submit 실패 — 그 잡이 끝난 뒤 실행. `analyze`는 GPU 불필요.
+
+## 14. layer-type-AWARE PD-mux — *positive* (원래 thesis의 살아있는 형태)
+
+`run_layer_aware.py`: 하이브리드 forward = n_a attn-layer + n_s ssm-layer로 보고, 전체-모델 decode/prefill을 레이어-타입별 stream 합산으로 계산(per-type LUT=e5_sim_b8_opt). 세 정책:
+- `co_schedule`: 전 레이어 two_stream(예약 없음)
+- `agnostic_protect`: 전 레이어 decode floor 예약(싼 ssm-decode 레이어에도 SM 낭비)
+- **`layer_aware_protect`: 비싼 attn-decode 레이어만 예약, 싼 ssm 레이어는 공유(prefill에 SM 환원)**
+
+**결과 (zamba2_2.7b = 54L = 9 attn + 45 ssm, budget 8, full-model per-token SLO):**
+
+| SLO(TBT) | co_schedule | agnostic | **layer_aware** | 승 |
+|---|--|--|--|--|
+| 40ms | 7 | **629** | 242 | agnostic (좁은 band: 37.9<SLO<43.5) |
+| 50ms | 24 | 629 | **1268** | **layer_aware (2.0×)** |
+| 60ms | 126 | 629 | **1268** | **layer_aware (2.0×)** |
+| 100ms | 752 | 629 | **1268** | **layer_aware (2.0×)** |
+
+→ **SLO≥50ms에서 layer_aware가 agnostic을 2× 이긴다.** 45개 cheap ssm-decode 레이어에 SM을 낭비 예약하지 않고 prefill에 환원 → **throughput 2×·TTFT 절반**, 비싼 9개 attn-decode만 보호해 decode ITL은 여전히 SLO 충족(43 vs 38ms). **즉 "layer-type awareness가 PD-mux를 개선하는가 = YES"** — 단 조건:
+- **temporal 하이브리드 한정**(zamba2: attn/ssm *분리* 레이어). **falcon_h1은 SPATIAL**(매 레이어 attn+ssm *병렬*)이라 attn-layer/ssm-layer를 분리 예약할 수 없어 적용 불가(`attn_frac=ssm_frac=1.0`).
+- §13의 "layer-aware = per-layer 재분할 ~60% 오버헤드" 우려는 *microbench(prefill~0.5ms)* 스케일이었음. **full-model+budget8에선 레이어당 비용이 수 ms라 swap 오버헤드(~7.8µs×전이수 ≈ 0.1–0.2ms)는 ~0.4%로 무시 가능** → 이득(2×)이 압도. ∴ §13 정정: layer-aware는 *static SM 분할*로는 죽었지만 *per-layer-type 예약*으로는, *temporal 하이브리드·현실 SLO·full-model* 에서 **살아있다(positive).**
+
+**구분 정리:** layer-type 공간 *분할*(static, coupled forward) = 死(§3.1/§3.2/§13) · layer-type-aware *예약*(temporal 하이브리드, PD-mux 위에서) = **生(2× goodput, 본 §14)**.
+
+## 15. ⚠ 핵심 한계 — 실프레임워크(vLLM/SGLang) 미검증
+
+**이 §11–§14의 모든 결론은 *단일-레이어 microbench LUT로 구동되는 discrete-event 시뮬레이션*이며, 어떤 실제 서빙 프레임워크와도 대조 검증되지 않았다.**
+- `fused`("vLLM 기본") baseline은 *vLLM의 모델*이지 실측 vLLM이 아니다. fused *커널*은 측정했으나(`run_fused_step`) 그걸 sim이 *합성*한 것이고, **실제 vLLM/SGLang end-to-end serving을 돌린 적이 없다.** (vLLM·SGLang 둘 다 본 환경에 *미설치*.)
+- 게다가 `dynamic_protect`/`layer_aware_protect`(green-ctx 예약)는 **어떤 프레임워크에도 구현돼 있지 않은 연구 아이디어**다 → 직접 비교하려면 *실 엔진 프로토타입을 만들어야* 한다.
+- ∴ **§11–§14의 "PD-mux 이득 구간", "layer_aware 2× 승"은 전부 *sim 예측*이며, serving 주장으로 쓰려면 실프레임워크 검증이 선결.** 정직한 다음 단계: **(1)** 이 하이브리드들을 실제 vLLM/SGLang으로 서빙해 TTFT/TBT/throughput 측정 → sim의 fused/co_schedule 예측과 대조(일치하면 sim 신뢰, 불일치면 재보정). **(2)** 일치 시에도 partition/layer_aware는 엔진 프로토타입(green-ctx/MPS 통합)으로 확증 필요. 이건 *시스템 구현* 규모의 별도 작업.
+- 본 sim의 가치 = "어디를 측정·구현할지"의 *가설 생성*(이득이 *나타날 수 있는* 영역·조건 식별)이지, *실증*이 아니다. 이번 thread가 보인 가정 민감도(결론 6회 반전)가 그 이유를 정확히 말해준다 — **실측 없이는 PD-mux 판정 불가.**
