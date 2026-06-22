@@ -30,6 +30,8 @@
 
 > **⚠ (2026-06-21 핵심 한계 — 실프레임워크 미검증)** §검토5–6의 모든 PD-mux/layer_aware 결론은 **단일-레이어 microbench LUT 구동 *시뮬레이션*이며 실제 vLLM/SGLang과 대조 검증된 적 없다**(둘 다 미설치). `fused`는 vLLM의 *모델*이지 실측 vLLM이 아니고, partition/layer_aware는 *어떤 프레임워크에도 없는 연구 아이디어*라 직접 비교하려면 엔진 프로토타입을 만들어야 한다. ∴ 이 결론들은 *sim 예측(가설 생성)*이지 실증이 아니다 — serving 주장으로 쓰려면 **(1) 실 vLLM/SGLang으로 이 하이브리드 서빙해 sim의 fused/co_schedule 예측 검증, (2) partition/layer_aware는 green-ctx/MPS 엔진 통합으로 확증**이 선결. (이번 thread의 결론 6회 반전이 그 필요성의 증거.) [queue_simulator_design §15](queue_simulator_design.md).
 
+> **★★ (2026-06-21 검토 7 — vLLM 실측으로 (1) 수행: 검토 5의 "16× GQA wide/narrow" 반증)** vLLM 0.22.1로 두 모델을 실제 서빙(job 783863, `vllm bench serve`, in2048/out128, RR 2/8/inf) → sim의 fused baseline 대조. **검증된 것:** decode 비용 zamba2>falcon(✓), full-model decode ITL ratio z/f sim 1.3–2.0× ≈ 실측 1.2–1.6×(✓), 포화 magnitude sim ~74/36ms ≈ 실측 80/64ms(✓), TTFT 큐 동역학 정성 일치(✓). 저부하 절대값은 sim이 ~2× 과대(unfused 커널 합산). **반증된 것(핵심):** 검토 5의 *"GQA가 이득 구간 폭 결정 → zamba2 넓음 8.8ms / falcon 좁음 0.54ms, 16×"* — 그 **16×는 per-attn-layer KV 커널 비율**(B8 10.6×~B256 21.7×)이고, **full-model decode는 ssm 레이어가 지배(zamba2 45/54, falcon 매 레이어 ssm 포함)해 ~1.3×로 희석**된다(실측 확인). ∴ **이득 구간 폭의 모델 차이(wide vs narrow)는 single-layer 프레이밍의 artifact였고, 실측상 두 모델 decode ITL은 비등** → 검토 5의 "모델 의존(GQA로 갈림)" 결론을 **"decode ITL은 GQA가 아니라 모델 전체 weight/ssm-state memory traffic이 결정, GQA 효과는 ~1.3× 부차적"** 으로 정정. 반대로 **full-model sim(검토 6 §14)은 magnitude·ratio가 실측과 맞아 *검증*됨** → layer_aware §14 토대 유효. (남은 한계: partition/layer_aware는 프레임워크 구현 없어 미실증 — §15.) [vllm_validation](vllm_validation.md).
+
 ---
 
 ## 2. 무엇을 물었고, 무엇이 나왔나

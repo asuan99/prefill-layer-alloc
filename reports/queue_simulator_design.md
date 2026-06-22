@@ -252,3 +252,14 @@ LUT → `results_v2/e5_sim/`(기존 e5/e5_dp 불간섭), sim 결과 → `results
 - 게다가 `dynamic_protect`/`layer_aware_protect`(green-ctx 예약)는 **어떤 프레임워크에도 구현돼 있지 않은 연구 아이디어**다 → 직접 비교하려면 *실 엔진 프로토타입을 만들어야* 한다.
 - ∴ **§11–§14의 "PD-mux 이득 구간", "layer_aware 2× 승"은 전부 *sim 예측*이며, serving 주장으로 쓰려면 실프레임워크 검증이 선결.** 정직한 다음 단계: **(1)** 이 하이브리드들을 실제 vLLM/SGLang으로 서빙해 TTFT/TBT/throughput 측정 → sim의 fused/co_schedule 예측과 대조(일치하면 sim 신뢰, 불일치면 재보정). **(2)** 일치 시에도 partition/layer_aware는 엔진 프로토타입(green-ctx/MPS 통합)으로 확증 필요. 이건 *시스템 구현* 규모의 별도 작업.
 - 본 sim의 가치 = "어디를 측정·구현할지"의 *가설 생성*(이득이 *나타날 수 있는* 영역·조건 식별)이지, *실증*이 아니다. 이번 thread가 보인 가정 민감도(결론 6회 반전)가 그 이유를 정확히 말해준다 — **실측 없이는 PD-mux 판정 불가.**
+
+## 16. §15 (1) 수행 — vLLM 실측 검증 (sim의 GQA wide/narrow 주장 반증)
+
+§15가 선결로 꼽은 "(1) 실 vLLM/SGLang으로 fused 예측 검증"을 수행 → [vllm_validation](vllm_validation.md). 요지:
+
+- **셋업:** vLLM 0.22.1(격리 venv, abi3 wheel/py3.14), zamba2_2.7b·falcon_h1_3b 실제 서빙(`vllm bench serve`, in2048/out128, RR 2/8/inf, chunked-prefill budget 2048). (트러블슈팅: offline `.metrics`=None→online; `prometheus_fastapi_instrumentator` `_IncludedRouter.path` 크래시→`getattr` 패치.)
+- **검증됨(✓):** decode 비용 zamba2>falcon · **full-model decode ITL ratio z/f: sim 1.3–2.0× ≈ 실측 1.2–1.6×** · 포화 magnitude sim ~74/36ms ≈ 실측 80/64ms · TTFT가 RR↑에 폭증(큐 동역학). 저부하 절대값만 sim이 ~2× 과대(unfused per-layer 커널 합산).
+- **반증됨(✗, 핵심):** §12(6)/closure 검토5의 *"GQA가 이득 구간 폭 결정 → zamba2 넓음(8.8ms)/falcon 좁음(0.54ms), 16×"*. 그 **16×는 per-attn-layer KV 커널 비율**(B8 10.6×, B64 21.1×, B256 21.7×). **full-model decode는 ssm 레이어 지배(zamba2 45/54 ssm, falcon 매 레이어 ssm 포함)로 ~1.3×까지 희석** — 실측이 확인. ∴ **decode ITL을 결정하는 건 KV-read(GQA)가 아니라 모델 전체 weight·ssm-state memory traffic**이고, GQA 효과는 ~1.3× 부차적. **이득 구간 폭의 wide/narrow 모델 차이는 single-layer 프레이밍 artifact였다** — 두 모델 decode ITL은 비등.
+- **반대로 full-model sim(§14 run_layer_aware)은 magnitude·ratio가 실측과 맞아 검증** → §14 layer_aware 결과의 토대는 유효.
+- **§12(6) 정정:** "partition 이득 구간 = {SLO < baseline decode ITL}"는 유지하되, 그 ITL이 *GQA/KV크기로 모델마다 16× 갈린다*는 부분은 철회 — full-model ITL은 두 모델 비등(~1.3×), 이득 구간 폭도 유사.
+- **미실증(불변):** partition/layer_aware_protect는 vLLM에 구현 없어 직접 비교 불가 — 이번 검증은 *fused(=vLLM 기본) baseline의 현실성*만 닫았다. green-ctx/MPS 엔진 통합 프로토타입은 여전히 남은 과제(§15).
