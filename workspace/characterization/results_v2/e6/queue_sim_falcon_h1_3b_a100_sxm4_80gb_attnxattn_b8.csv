@@ -1,13 +1,4 @@
 model,policy,scheduler,lambda_req_ms,pf_layer,dec_layer,ctx,slo_ms,prefill_budget,n_req,tokens,ttft_p50,ttft_p99,itl_p50,itl_p99,throughput_tok_s,slo_attain,goodput_tok_s,notes
-falcon_h1_3b_a100_sxm4_80gb,fused,sync,0.05,attn,attn,4096,1.0,8,400,59776,0.378,0.82,0.0492,0.0502,7613.8,1.0,7613.8,fused_measured
-falcon_h1_3b_a100_sxm4_80gb,dynamic_protect,decoupled,0.05,attn,attn,4096,1.0,8,400,59776,0.445,0.997,0.0553,0.0676,7612.4,1.0,7612.4,
-falcon_h1_3b_a100_sxm4_80gb,fused,sync,0.1,attn,attn,4096,1.0,8,400,59776,0.398,1.015,0.0502,0.0502,15202.5,1.0,15202.5,fused_measured
-falcon_h1_3b_a100_sxm4_80gb,dynamic_protect,decoupled,0.1,attn,attn,4096,1.0,8,400,59776,0.482,1.228,0.0594,0.0676,15196.9,1.0,15196.9,
-falcon_h1_3b_a100_sxm4_80gb,fused,sync,0.2,attn,attn,4096,1.0,8,400,59776,0.409,1.079,0.0502,0.3768,30303.6,1.0,30303.6,fused_measured
-falcon_h1_3b_a100_sxm4_80gb,dynamic_protect,decoupled,0.2,attn,attn,4096,1.0,8,400,59776,0.613,1.437,0.0594,0.0799,30273.1,1.0,30273.1,
-falcon_h1_3b_a100_sxm4_80gb,fused,sync,0.5,attn,attn,4096,1.0,8,400,59776,0.425,1.209,0.0502,0.3881,74980.1,1.0,74980.1,fused_measured
-falcon_h1_3b_a100_sxm4_80gb,dynamic_protect,decoupled,0.5,attn,attn,4096,1.0,8,400,59776,0.624,1.629,0.0676,0.1055,74626.2,1.0,74626.2,
-falcon_h1_3b_a100_sxm4_80gb,fused,sync,1.0,attn,attn,4096,1.0,8,400,59776,0.778,2.287,0.1167,0.4413,146371.4,1.0,146371.4,fused_measured
-falcon_h1_3b_a100_sxm4_80gb,dynamic_protect,decoupled,1.0,attn,attn,4096,1.0,8,400,59776,0.849,2.543,0.1055,0.1567,144872.1,1.0,144872.1,
-falcon_h1_3b_a100_sxm4_80gb,fused,sync,5.0,attn,attn,4096,1.0,8,400,59776,102.334,251.072,0.7731,0.7731,158642.1,1.0,158642.1,fused_measured
-falcon_h1_3b_a100_sxm4_80gb,dynamic_protect,decoupled,5.0,attn,attn,4096,1.0,8,400,59776,108.32,218.916,0.1567,0.1567,183690.3,1.0,183690.3,
+falcon_h1_3b_a100_sxm4_80gb,fused,sync,2.0,attn,attn,4096,0.15,8,400,59776,47.299,137.894,0.7731,0.7731,157256.5,0.073,11483.3,fused_measured
+falcon_h1_3b_a100_sxm4_80gb,co_schedule,sync,2.0,attn,attn,4096,0.15,8,400,59776,12.014,46.481,0.5427,0.5427,207877.5,0.0958,19909.3,prefill_only
+falcon_h1_3b_a100_sxm4_80gb,dynamic_protect,decoupled,2.0,attn,attn,4096,0.15,8,400,59776,52.677,105.044,0.1567,0.1567,182212.9,0.1051,19149.2,
