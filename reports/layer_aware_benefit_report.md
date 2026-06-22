@@ -4,7 +4,7 @@
 근거 코드: `experiments/e6_queue_sim/run_layer_aware.py` · 그림: `make_layer_aware_figs.py`
 관련: [queue_simulator_design §14](queue_simulator_design.md) · [vllm_validation](vllm_validation.md) · [closure 검토 6·7](project_closure_report.md) · [7B 회귀 검증](layer_aware_7b_verification.md)
 
-> **스코프(2026-06-22 추가):** 아래 ~2× 결과는 **zamba2_2.7b(SLM)·A100 한정**이다. [7B 회귀 검증](layer_aware_7b_verification.md)에서 zamba2_7b의 측정 구조가 lever의 두 전제(싼 attn 보호·SM-민감 prefill 환원)를 부정 → **layer_aware는 7B로 스케일하지 않는다**(절대 확증은 측정 차단). 공간-분할 7B 음성([real_prefill §7](real_prefill_results.md))과 방향 일치.
+> **스코프(2026-06-22 추가):** 아래 ~2× 결과는 **zamba2_2.7b(SLM)·A100 한정**이다. [7B 회귀 검증](layer_aware_7b_verification.md)에서 zamba2_7b의 측정 구조가 lever의 두 전제(싼 attn 보호·SM-민감 prefill 환원)를 부정 → **layer_aware는 7B로 스케일하지 않는다**(잠정; 절대 확증 실측 진행 중, job 785877 @SXM4). 공간-분할 7B 음성([real_prefill §7](real_prefill_results.md))과 방향 일치.
 
 ---
 
@@ -74,7 +74,7 @@
 - **이건 sim 예측이지 실엔진 실증이 아니다.** layer_aware_protect는 어떤 프레임워크에도 구현이 없다(vLLM은 fused 단일-forward, SM 분할 API 없음). 실증 경로는 [partition_engine_design](partition_engine_design.md)의 Path C 프로토타입으로 스코핑됨.
 - sim은 저부하 decode ITL **절대값을 ~2× 과대**평가(unfused per-layer 커널 합산). 단 정책 *간 상대 비교*(2× goodput)와 *비율*은 실측과 정합하므로 결론은 견고.
 - **temporal 하이브리드 한정**(§4). spatial(falcon)엔 미적용.
-- **SLM(≤~3B) 한정 — 7B 미스케일**([7B 검증](layer_aware_7b_verification.md)). 7B는 attn-decode가 54 SM로 미포화(+67~97%)·prefill이 측정 구간서 SM-무감각(1.02×)·decode-step 지배(~51ms) → lever 전제 측정상 부재. la/agnostic 우위 2.0×(2.7b)→1.06×(7B). 절대 goodput 확증은 7B E3 floor+sub-54-SM green_ctx 실측 필요(커널 깨짐/SXM4 부재로 차단).
+- **SLM(≤~3B) 한정 — 7B 미스케일(잠정)**([7B 검증](layer_aware_7b_verification.md)). 7B는 attn-decode가 54 SM로 미포화(+67~97%)·prefill이 측정 구간서 SM-무감각(1.02×)·decode-step 지배(~51ms) → lever 전제 측정상 부재. la/agnostic 우위 2.0×(2.7b)→1.06×(7B). 절대 goodput은 7B E3 floor+E5 opt/protect **실측 진행 중**(job 785877 @amd_a100nv_8 SXM4).
 - 파티션 전환 오버헤드는 sim상 ~0.4%로 추정(레이어당 비용 수 ms 대비 swap ~7.8µs) — 실측은 Path C에서.
 
 ## 7. 결론

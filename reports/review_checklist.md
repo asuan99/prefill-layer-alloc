@@ -71,7 +71,7 @@
 - **사실:** `shared/configs/models.yaml:88` — "the 7B entries above are kept but **unused**". v2_report §1·§7.4는 7B 회귀를 "결정적(decisive) 다음 단계"라 부르지만 **한 번도 돌리지 않았다.** 모든 결론은 1.2~3B(SLM)뿐.
 - **확인:** v2_report의 모든 결론 문장에 "SLM/A100 한정" 스코프가 붙어 있는지. §7.4를 "미완의 결정적 테스트"로 명확히 표기.
 - **통과:** "hybrid serving에서 SM 분할 불필요"를 **모델 크기 무관 결론으로 쓰지 않음.** 닫기 보고서/논문은 "SLM에서 기각, 7B 미검증"으로 정직하게 한정. (→ `additional_value_paths.md` Path 1)
-- **✅ 통과(조건부) — 7B 회귀 실행됨 (2026-06-22, [layer_aware_7b_verification](layer_aware_7b_verification.md)):** (1) 공간-*분할* 7B는 [real_prefill §7](real_prefill_results.md)서 이미 음성(2.7b +12.5% 예외 소멸). (2) 살아있는 *예약*(layer_aware) 7B도 검증 — 측정상 lever 두 전제 부정(7B attn-decode 54 SM 미포화 +67~97%, prefill 54–108 SM 무감각 1.02×, decode-step 지배 ~51ms). la/agnostic 우위 2.0×(2.7b)→1.06×(7B). **단 절대 goodput 확증은 7B E3 floor+sub-54-SM green_ctx 실측 필요 → 차단**(mamba_ssm `libcudart.so.13` 깨짐, A100-SXM4 부재). **스코프는 "SLM 한정 기각·7B는 측정 차단 하에 음성 방향"으로 정직 유지.**
+- **✅ 통과(조건부) — 7B 회귀 실행됨 (2026-06-22, [layer_aware_7b_verification](layer_aware_7b_verification.md)):** (1) 공간-*분할* 7B는 [real_prefill §7](real_prefill_results.md)서 이미 음성(2.7b +12.5% 예외 소멸). (2) 살아있는 *예약*(layer_aware) 7B도 검증 — 측정상 lever 두 전제 부정(7B attn-decode 54 SM 미포화 +67~97%, prefill 54–108 SM 무감각 1.02×, decode-step 지배 ~51ms). la/agnostic 우위 2.0×(2.7b)→1.06×(7B). **절대 goodput 확증 실측 진행 중**(job 785877 @amd_a100nv_8 SXM4; `slurm/measure_7b_layer_aware.sh`: E3 floor→E5 opt/protect). *정정: 초판 "측정 차단"은 오판 — SXM4 파티션 가용, mamba_ssm은 로그인 노드만 깨짐(compute 노드 작동).* **스코프는 "SLM 한정 기각·7B 미스케일(실측 대기)"로 정직 유지.**
 
 ### C2. [P1] 양성 결과(prefill+decode overlap)의 재현성
 - **주장:** overlap ~2.04×(db8) → 1.15×(db256), 분할 없이 co-schedule로 공짜 (v2_report §4.6-C, §7.2). 이게 프로젝트의 유일한 양성 산출.
