@@ -1,0 +1,4 @@
+model,policy,lambda_req_ms,slo_ms,n_req,tokens,ttft_p50,ttft_p99,itl_p50,itl_p99,throughput_tok_s,slo_attain,goodput_tok_s
+zamba2_1.2b,co_schedule,0.5,50.0,400,59776,17263.709,37033.744,46.0196,46.0196,1301.9,1.0,1301.9
+zamba2_1.2b,agnostic_protect,0.5,50.0,400,59776,18020.731,36458.762,25.864,25.864,1375.5,1.0,1375.5
+zamba2_1.2b,layer_aware_protect,0.5,50.0,400,59776,12132.919,24725.558,29.6336,29.6336,1887.1,1.0,1887.1

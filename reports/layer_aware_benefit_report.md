@@ -54,6 +54,26 @@
 
 → **SLO ≥ ~48ms에서 layer_aware가 두 baseline을 모두 2× 이긴다**(그림 A 음영). 유일한 예외는 좁은 38–48ms band(agnostic의 더 낮은 ITL이 잠깐 유리) — 그 위 전 구간에서 layer_aware 압승. (TBT 50–100ms는 대화형 서빙의 현실적 SLO 범위.)
 
+## 3.5 크기 추세 — SLM 현상, 2.7B에서 peak (1.2B/2.7B/7B)
+
+zamba2 세 크기에서 동일 측정(E3 floor + E5 opt/protect LUT, job 793540/785877). **la/agnostic goodput 비(현실 SLO서):**
+
+![size trend](figures/layer_aware_size_trend.png)
+
+| 모델 | 구성 | co | agnostic | layer_aware | **la/agnostic** | LUT |
+|---|--|--|--|--|--|--|
+| zamba2_1.2b | 6a+32s | 1302 | 1376 | 1887 | **1.37×** | 실측(188/200) |
+| **zamba2_2.7b** | 9a+45s | 752 | 629 | 1268 | **2.02×** | 실측 |
+| zamba2_7b | 13a+68s | 171 | 150 | 159 | 1.06× | synth* |
+*(7B 실측 LUT은 ssm-decode 커널 OSError로 부분 미완 → synth 값; 자세히 [7B 검증](layer_aware_7b_verification.md))*
+
+**핵심: 이득은 단조 "작을수록 강함"이 아니라 *역-U자, 2.7B에서 peak*다.** 모든 SLM이 이득(1.2B 1.37×, 2.7B 2.0×)이나 7B는 소멸(1.06×). 해석:
+- **1.2B(1.37×)**: 모델이 작아 agnostic도 prefill을 덜 굶김(그림 B: agnostic 1376 > co 1302) → 환원할 여지가 작아 이득 축소.
+- **2.7B(2.0×, peak)**: agnostic이 prefill을 강하게 굶겨(629 < co 752) layer_aware의 환원 효과 최대 → sweet-spot.
+- **7B(1.06×)**: attn-decode 미포화·prefill SM-무감각으로 lever 자체가 부재([7B 검증 §2](layer_aware_7b_verification.md)).
+
+→ 가설 정밀화: *"layer_aware lever는 SLM 영역(≤~3B)에서 작동하며, 모델이 (a)attn-decode를 소수 SM로 싸게 보호할 수 있고 (b)prefill이 SM-예약에 충분히 민감한 mid-SLM(~2.7B)에서 가장 강하다."*
+
 ## 4. 적용 범위 — TEMPORAL 하이브리드 한정 (그림 D)
 
 ![applicability](figures/layer_aware_applicability.png)
