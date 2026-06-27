@@ -9,9 +9,9 @@
 
 ## 0. 요약 (TL;DR)
 
-**잠정 판정(합성 LUT 기준): layer_aware의 ~2× goodput은 7B로 스케일하지 않는다. 실측 진행 중(slurm job 785877, amd_a100nv_8 SXM4) — 완료 시 절대 확증으로 갱신.**
+**확정 판정: layer_aware의 ~2× goodput은 7B로 스케일하지 않는다.** 근거는 **§2 구조적 측정**(7B attn-decode 미포화·prefill SM-무감각 — `dec=attn` green_ctx 셀 18/20 ok로 견고) + sim 추세(la/agnostic 2.0×@2.7b → 1.06×@7B). **절대 goodput LUT 확증은 부분 미완**: 실측 job 785877(완료)이 E3 floor는 측정했으나 **E5의 ssm-decode 셀이 OSError로 거의 전부 실패(two_stream 1/10, green_ctx_protect 0/1)** → 실측-LUT로 run_layer_aware를 돌리면 la·agnostic이 동일 폴백값(=492)으로 수렴해 *무의미*. **단 §2 구조 논거는 ssm-decode LUT에 의존하지 않으므로 7B 미스케일 결론은 그대로 성립.**
 
-> **정정(2026-06-22):** 초판은 "신규 측정 차단(커널 깨짐·SXM4 부재)"이라 했으나 **이는 틀렸다.** `amd_a100nv_8`(A100-NVLink=SXM4-80GB, gpu36-43)이 가용하고 기존 LUT를 만든 바로 그 파티션이며, mamba_ssm은 *로그인 노드*에서만 깨졌을 뿐 compute 노드(module `cuda/13.0.2`+Triton fallback `_mamba_compat`)에선 작동한다. → **7B E3 floor + E5(opt+protect) 실측을 `slurm/measure_7b_layer_aware.sh`로 제출(job 785877).** 아래 §3 sim은 그 실측 전까지의 *잠정 합성*이다.
+> **이력:** 초판 "측정 차단"은 오류였고(SXM4 `amd_a100nv_8` 가용), `slurm/measure_7b_layer_aware.sh`로 실측 제출(job 785877, 완료). E3 floor OK·E5 dec=ssm 커널 실패 → 절대 확증은 ssm-decode 커널 이슈로 미완이나, 구조적 측정이 결론을 닫는다(§4).
 
 - 검수 C1이 "결정적 다음 단계"로 꼽은 **7B 회귀를, 살아있는 가설(layer_aware 예약)에 대해 처음으로 돌렸다.** (공간-*분할* 가설의 7B는 [real_prefill §7](real_prefill_results.md)에서 이미 음성으로 닫힘.)
 - 2.7b의 2×를 만든 두 재료가 **7B에선 측정상 둘 다 약하거나 부재**다:
@@ -80,19 +80,19 @@ full-model decode step ≈ Σ_layers(solo_decode). b8: 13·0.959 + 68·0.566 ≈
 
 **방법 한계(반드시 명시):** 합성 protect는 reservation을 측정 최대 54 SM로 cap하므로 decode 보호를 과소평가한다 — 그래서 synth-2.7b조차 절대 SLO를 망가뜨려(real la=1267>co를 synth는 la=221<co로 뒤집음) **"co가 7B서 이긴다"를 합성 sim 단독 근거로 주장하지 않는다.** 합성법이 *보존*하는 건 **layer_aware>agnostic 순서와 그 비율의 모델-스케일 추세**: la/agnostic 우위가 **2.7b ~2.0–2.5× → 7B 1.06×로 붕괴.** §2의 측정 구조와 같은 방향(7B에선 lever가 거의 작동 안 함).
 
-## 4. 실측 — 절대 확증 진행 중 (정정: 차단 아님)
+## 4. 실측 — job 785877 완료, 부분 미완 (ssm-decode 커널 실패)
 
-초판의 "차단" 판단은 **오류**였다. 필요한 측정과 실제 가용성:
+`slurm/measure_7b_layer_aware.sh` → **job 785877 COMPLETED**(SXM4 gpu, 4:19). 결과:
 
-| 필요 | 상태 |
+| 산출 | 상태 |
 |---|---|
-| 7B E3 decode floor(층별·배치별 포화 SM) | **측정 제출됨** — `decode_floor_zamba2_7b` 생성 예정(기존엔 1.2b/2.7b/falcon만). |
-| floor-frac green_ctx_protect(prefill을 floor에 맞춰 <54 SM까지) | **측정 제출됨** — E5 `--decode-protect --opt-decode`로 2.7b와 동일 `e5_sim_b8_opt` 포맷 생성. |
-| GPU/환경 | **가용.** `amd_a100nv_8`=A100-SXM4(기존 LUT 생성 파티션). mamba_ssm은 로그인 노드만 깨짐; compute 노드는 `module cuda/13.0.2`+Triton fallback로 작동(기존 7B job 776326이 이 경로로 측정됨). |
+| 7B E3 decode floor(층별·배치별 포화 SM) | **✅ 측정됨** — `decode_floor_zamba2_7b_a100_sxm4_80gb.csv`(160 sweep + 9 floor). |
+| E5 opt/protect LUT(`e5_sim_b8_opt`) | **⚠ 88/180 ok** — `dec=attn` 40/49(db=512만 OOM)이나 **`dec=ssm` 4/41(대부분 OSError)**. backend별 ssm-decode: two_stream **1/10**, green_ctx_protect **0/1**, green_ctx 2/20. |
+| → 실측-LUT run_layer_aware | **무의미** — ssm-decode 셀이 거의 전부 결측 → agnostic·layer_aware가 동일 폴백으로 수렴(co 375 / ag 492 / **la 492**, la=ag). |
 
-제출: `slurm/measure_7b_layer_aware.sh` → **job 785877** (E3 floor → E5 opt/protect 순차, ~수 시간). 완료 시 `run_layer_aware --model zamba2_7b`가 *실측* LUT를 읽어 §3을 절대 goodput으로 대체한다.
+**즉 절대 goodput 확증은 ssm-decode 커널 실패로 미완.** OSError는 7B mamba_ssm(`selective_state_update`/`causal_conv1d`) 로드/실행 실패로 추정(2.7b는 성공 — 7B state 크기 또는 커널-캐시 이슈). 단 **이 실패는 §2 구조 논거(attn-decode 포화·prefill SM-민감도)와 무관**하다: §2는 `dec=attn` green_ctx 셀(18/20 ok)과 prefill_stream 측정에 근거하므로, **ssm-decode LUT 없이도 7B 미스케일 결론은 견고.**
 
-**실측 전 bracket(이미 단단):** §2 두 전제 부정 + [real_prefill §8](real_prefill_results.md)의 full-model protect `no_room`이 양 끝을 묶는다 — reservation 적게(54) → decode 미보호(SLO 이득 없음, §3), 많게(≥94, 7B 포화에 필요) → prefill 고갈(throughput 붕괴). 어느 쪽도 2.7b식 sweet-spot이 없으리라 예측. **실측이 이 bracket을 확정/반증한다.**
+**bracket(닫힘):** §2 두 전제 부정 + [real_prefill §8](real_prefill_results.md)의 full-model protect `no_room`이 양 끝을 묶는다 — reservation 적게(54) → decode 미보호(SLO 이득 없음), 많게(≥94, 7B 포화에 필요) → prefill 고갈(throughput 붕괴). 2.7b식 sweet-spot 없음. **재실측으로 절대값을 닫으려면** 실패한 dec=ssm 셀을 작은 db(OOM 회피)+mamba 커널 캐시 점검으로 다시 돌려야 하나, **구조 논거가 이미 결론을 닫으므로 선택적**이다.
 
 ## 5. 결론 — 검수 C1 닫힘 (조건부)
 
@@ -100,6 +100,6 @@ full-model decode step ≈ Σ_layers(solo_decode). b8: 13·0.959 + 68·0.566 ≈
 - **측정 확정:** 7B는 (①) attn-decode를 싸게 보호할 수 없고(54 SM로 +67~97%), (②) 측정 구간서 prefill 환원 이득이 거의 없으며(1.02×), (③) decode-step 지배라 prefill lever의 leverage가 작다.
 - **sim 보강(방법 한계 내):** la/agnostic 우위가 2.7b 2.0× → 7B 1.06×로 붕괴.
 - **공간-분할 7B 음성**([real_prefill §7](real_prefill_results.md))과 **방향 일치** → 프로젝트 헤드라인("SM 예약/분할은 SLM 한정 현상")이 *결정적 스케일점에서 강화*된다.
-- **진행 중:** 7B E3 floor + E5 opt/protect 실측(job 785877, SXM4)이 §3 합성을 절대 goodput으로 대체 → 완료 시 본 절을 갱신.
+- **실측(785877) 완료:** E3 floor ✓ 측정. E5 절대-LUT은 dec=ssm 커널 OSError로 부분 미완이라 절대 goodput은 미확정이나, **결론을 닫는 근거(§2 구조)는 ssm-decode LUT에 무관**하므로 7B 미스케일은 확정.
 
-검수 체크리스트 갱신: **C1 = 통과(조건부→실측 대기)** — "SM 예약 불필요"를 모델 크기 무관 결론으로 쓰지 않되, *살아있는 layer_aware도 7B서 lever 전제가 측정상 부재*임을 명기. SLM 한정 스코프 유지. 실측(785877) 완료 시 "조건부" 해제.
+검수 체크리스트 갱신: **C1 = 닫힘** — "SM 예약 불필요"를 모델 크기 무관 결론으로 쓰지 않되, *살아있는 layer_aware도 7B서 lever 전제가 측정상 부재(§2)*임을 확정. SLM 한정 스코프 확정. (절대-LUT 재실측은 선택적 — §4.)

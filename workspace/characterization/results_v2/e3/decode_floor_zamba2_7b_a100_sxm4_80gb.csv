@@ -1,0 +1,11 @@
+"# value_kind: derived=floor_sm_point,floor_sm_ci_low,floor_sm_ci_high,flat_region_bw_util_pct; metadata=model,config_status,layer_type,batch,context_len,n_sm_points,memory_gap"
+model__metadata,config_status__metadata,layer_type__metadata,batch__metadata,context_len__metadata,n_sm_points__metadata,memory_gap__metadata,floor_sm_point__derived,floor_sm_ci_low__derived,floor_sm_ci_high__derived,flat_region_bw_util_pct__derived
+zamba2_7b,verified,attn,1,4096,8,False,68,68,68,41.713
+zamba2_7b,verified,attn,2,4096,8,False,68,68,68,50.388
+zamba2_7b,verified,attn,4,4096,8,False,81,81,81,63.269
+zamba2_7b,verified,attn,8,4096,8,False,68,68,68,42.148
+zamba2_7b,verified,attn,16,4096,8,False,108,108,108,57.642
+zamba2_7b,verified,attn,32,4096,8,False,108,108,108,57.541
+zamba2_7b,verified,attn,64,4096,8,False,108,108,108,59.287
+zamba2_7b,verified,attn,128,4096,8,False,108,108,108,58.76
+zamba2_7b,verified,attn,256,4096,8,False,108,108,108,58.163
