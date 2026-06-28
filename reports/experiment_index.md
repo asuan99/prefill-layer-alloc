@@ -40,6 +40,7 @@
 | 797524 | prefill_sm | prefill SM-민감도(1.2/2.7/7B) | **크기-불변**(ssm~2×·attn~7×); premise② 반증 |
 | 797630 | e5_7b | 7B E5 재실행(TRITON fix) | dec=ssm OSError 해소; 단 E3 ssm floor 여전 누락→**1.00× artifact** |
 | **797832** | re7b_e3e5 | **7B E3 ssm floor + E5 재측정** | **la/agnostic 1.82× — 7B도 스케일(반전)** |
+| **799168** | vllm-z1b7b | **z1.2b·z7b vLLM 실서빙** | size-scaling 일치; calibration 1.66/2.34×(no-GQA 크기↑서 과대↑) |
 
 ## D. 모델 × 측정 커버리지
 
@@ -49,7 +50,7 @@
 | E5 LUT(opt+protect) | ✅ | ✅ | ✅(797832) | ✅ | ✅(797630) |
 | E7 prefill SM-민감도 | ✅ | ✅ | ✅ | — | — |
 | E6 layer_aware(4-way) | ✅1.37× | ✅2.02× | ✅1.82× | N/A(spatial) | N/A(spatial) |
-| vLLM 실측 | — | ✅ | — | ✅ | — |
+| vLLM 실측 | ✅(799168) | ✅ | ✅(799168) | ✅ | — |
 
 ## E. 핵심 결론 (분석 단위)
 
@@ -62,7 +63,7 @@
 | 5 | GQA가 decode 16× 가르나 | **반증** — full-model은 ssm 지배로 ~1.3× | vLLM 783863 |
 | 6 | prefill SM-민감도 크기 의존? | **불변**(7B도 민감) | E7 797524 |
 | 7 | 7B 미스케일? | **반전: 스케일함(1.82×)** — 1.00×는 E3 ssm floor 누락 artifact | 797832 |
-| 8 | sim이 vLLM과 정량 일치? | **directional only**(zamba2 fused 1.64× 과대) → 프로토타입 필요 | framework_comparison |
+| 8 | sim이 vLLM과 정량 일치? | **directional only** — 절대 fused ITL 1.66/1.64/**2.34×** 과대(no-GQA, 크기↑서↑)·thru 0.8× 과소; **단 크기-스케일링은 일치**(decode비 1/1.5/2.6 ≈ 실측) → 정량 비교는 프로토타입 필요 | 799168 framework_comparison |
 
 ## F. 산출 보고서 (reports/)
 
@@ -80,4 +81,4 @@
 
 ## G. 그림 (reports/figures/)
 
-`summary_dashboard` · `layer_aware_result` · `layer_aware_size_trend` · `temporal_vs_spatial` · `prefill_sm_sensitivity` · `layer_aware_applicability` · `framework_comparison`
+`summary_dashboard` · `layer_aware_result` · `layer_aware_size_trend` · `temporal_vs_spatial` · `prefill_sm_sensitivity` · `layer_aware_applicability` · `framework_comparison` · `vllm_calibration`

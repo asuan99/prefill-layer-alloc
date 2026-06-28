@@ -32,12 +32,20 @@ decode ITL_p99(ms) / throughput(tok/s):
 
 ## 3. vLLM calibration (sim fused vs 실측) — 신뢰도 박기
 
-| model | sim fused ITL | vLLM p99 TPOT | ITL 비 | sim fused thru | vLLM thru | thru 비 |
+| model | sim fused ITL | vLLM p99 TPOT(sat) | ITL 비 | sim fused thru | vLLM thru | thru 비 |
 |---|--|--|--|--|--|--|
-| zamba2_2.7b | 178.8 | 109 | **1.64× 과대** | 692 | 870 | **0.80× 과소** |
+| zamba2_1.2b | 111 | 67 | 1.66× 과대 | 1121 | 1413 | 0.79× 과소 |
+| zamba2_2.7b | 178.8 | 109 | 1.64× 과대 | 692 | 870 | 0.80× 과소 |
+| zamba2_7b | 403 | 172 | **2.34× 과대** | 312 | 346 | 0.90× |
 | falcon_h1_3b | 100.7 | 92 | **1.09×** ✓ | 1236 | 1074 | 1.15× |
 
-**왜 모델-의존:** sim은 per-layer 커널을 *unfused로 합산*해 과대평가하는데, 그 과대분은 *비싼 no-GQA attn-decode*에서 가장 크다 → **zamba2(no-GQA)는 1.64× 어긋나고, falcon(GQA로 attn-decode 쌈)은 1.09×로 양호.** ∴ **sim의 절대 goodput@SLO·"layer_aware vs fused N×" 수치는 신뢰 불가**(특히 zamba2).
+*(전 zamba2 크기 + falcon 실측 — job 783863·799168. sim fused ITL은 vLLM 포화 p99 TPOT 대비.)*
+
+![calibration](figures/vllm_calibration.png)
+
+**왜 모델-의존·크기 의존:** sim은 per-layer 커널을 *unfused로 합산*해 과대평가하는데, 그 과대분은 *비싼 no-GQA attn-decode*에서 가장 크고 **레이어 수와 함께 커진다** → **zamba2 1.66×(1.2b)→1.64×(2.7b)→2.34×(7b)**, **falcon(GQA로 attn-decode 쌈)은 1.09×로 양호**. throughput은 0.79~0.90× 일관 과소. ∴ **sim의 절대 goodput@SLO·"layer_aware vs fused N×" 수치는 신뢰 불가**(zamba2, 특히 7b).
+
+**그래도 *상대 size-scaling*은 검증됨(그림 B):** sim decode_total 정규화비(1.2b 1.00 / 2.7b 1.52 / 7b 2.62) ≈ vLLM 포화 TPOT 비(1.00 / 1.63 / 2.57) — **decode 비용의 크기-스케일링은 실측과 일치.** 즉 sim은 *절대값*은 틀려도 *크기 추세*는 맞다.
 
 ## 4. *그래도* 견고한 것 — calibration-invariant 결과
 

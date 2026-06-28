@@ -66,3 +66,20 @@
 - **partition/layer_aware_protect는 vLLM에 구현이 없어 직접 비교 불가.** 이번 검증은 *fused(=vLLM 기본) baseline의 현실성*만 확인했다 — 그게 핵심 토대지만, green-ctx/MPS 예약을 실엔진에 통합한 프로토타입 없이는 PD-mux/layer_aware의 *실증*은 여전히 미완(§15).
 - 단일 (in,out)=(2048,128), 120 req, 3 rate, fp16, default Mamba2 커널("sub-optimal" 경고). 일차 검증이지 exhaustive sweep 아님.
 - SGLang은 미수행(vLLM과 동급 결론 기대; 둘 다 fused mixed-batch 기본).
+
+## 7. 전 크기 vLLM 실측 추가 (z1.2b·z7b, job 799168) — size-scaling 검증
+
+z2.7b·falcon_3b(§2)에 더해 **zamba2 1.2b·7b 실측**으로 전 크기 커버:
+
+| model | TPOT med/p99 (RR2/8/inf) | throughput(sat) |
+|---|---|---|
+| zamba2_1.2b | 5.6/22 · 26/36 · 47/67 | 1413 |
+| zamba2_2.7b | 12/22 · 66/94 · 80/109 | 870 |
+| zamba2_7b(Instruct) | 64/95 · 155/173 · 154/172 | 346 |
+| falcon_h1_3b | 8.8/19 · 41/59 · 64/92 | 1074 |
+
+**검증된 것:**
+- **decode 비용의 크기-스케일링 일치:** 포화 p99 TPOT 정규화비 z1.2b 1.00 / z2.7b 1.63 / z7b 2.57 ≈ sim decode_total 비 1.00/1.52/2.62 → **sim이 *크기에 따른 decode 증가*를 정확히 포착**(절대값은 아래대로 과대지만).
+- **z7b는 fused로 매우 느림**(TPOT 172ms·throughput 346 tok/s) → layer_aware의 decode-ITL 단축 여지가 *가장 큰* 모델.
+
+**calibration(sim fused ITL ÷ vLLM 포화 p99 TPOT):** z1.2b **1.66×** · z2.7b **1.64×** · z7b **2.34×** · falcon **1.09×**. → 과대분이 *no-GQA attn-decode*에서 크고 **모델 크기와 함께 증가**(falcon은 GQA로 양호). throughput은 0.79~0.90× 일관 과소. ∴ **sim 절대값은 모델·크기 의존적으로 어긋남 → 정량 framework 비교는 실엔진 프로토타입 필요**([framework_comparison](framework_comparison.md)). 그림: `figures/vllm_calibration.png`.
