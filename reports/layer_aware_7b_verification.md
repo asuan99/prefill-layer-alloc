@@ -9,7 +9,7 @@
 
 ## 0. 요약 (TL;DR)
 
-**확정 판정: layer_aware의 ~2× goodput은 7B로 스케일하지 않는다.** 근거(정정됨, §2): **①** 7B attn-decode를 싸게 보호 못 함(floor 68~108, +67~97% 팽창; `dec=attn` 셀 18/20 ok로 견고) + **③** decode-step 지배(~51ms)라 goodput이 decode-bound → prefill 개선이 천장 못 올림. **전제②(prefill 무감각)는 철회**: job 797524 실측으로 **7B prefill도 SM-민감(ssm 2.5×, attn 7.3× @108→14SM)** 확인 — 크기 거의 불변. 7B에서 prefill은 *민감하나 병목이 아니다*. **절대 goodput LUT 확증은 부분 미완**: job 785877이 E3 floor는 측정했으나 **E5 ssm-decode 셀이 OSError로 거의 전부 실패** → 실측-LUT run_layer_aware는 la=agnostic=492로 수렴해 *무의미*. sim 추세(synth)는 la/agnostic 2.0×@2.7b → 1.06×@7B. **결론은 ①③(ssm-decode LUT·prefill 무감각에 무관)으로 성립하나, 절대값(1.06×)은 broken/synth LUT 기반이라 미확정.**
+**확정 판정: layer_aware의 ~2× goodput은 7B로 스케일하지 않는다.** 근거(정정됨, §2): **①** 7B attn-decode를 싸게 보호 못 함(floor 68~108, +67~97% 팽창; `dec=attn` 셀 18/20 ok로 견고) + **③** decode-step 지배(~51ms)라 goodput이 decode-bound → prefill 개선이 천장 못 올림. **전제②(prefill 무감각)는 철회**: job 797524 실측으로 **7B prefill도 SM-민감(ssm 2.5×, attn 7.3× @108→14SM)** 확인 — 크기 거의 불변. 7B에서 prefill은 *민감하나 병목이 아니다*. **절대 goodput 확증 완료(job 797630):** 785877의 E5 ssm-decode OSError는 **`TRITON_CACHE_DIR`를 scratch로 옮기자 해소**(홈 캐시의 7B 커널 이슈) → 깨끗한 LUT(dec=ssm 40/50 ok)로 run_layer_aware: **la/agnostic = 정확히 1.00×**(co 334 / agnostic 495 / layer_aware 495, @SLO100). synth가 추정한 1.06×보다도 낮은 **완전 무이득**이며, **la=agnostic이 정확히 같다는 것 자체가 ③(decode-bound)의 직접 증거** — prefill에 SM을 환원해도 throughput이 1도 안 변함. 또 `pf=ssm dec=attn`이 db≥16서 `no_room(decode_floor=108)`로 실패 = **①(7B attn-decode 보호 불가)의 직접 증거**. ∴ **7B 미스케일 절대 확정.**
 
 > **이력:** 초판 "측정 차단"은 오류였고(SXM4 `amd_a100nv_8` 가용), `slurm/measure_7b_layer_aware.sh`로 실측 제출(job 785877, 완료). E3 floor OK·E5 dec=ssm 커널 실패 → 절대 확증은 ssm-decode 커널 이슈로 미완이나, 구조적 측정이 결론을 닫는다(§4).
 
@@ -81,7 +81,8 @@ full-model decode step ≈ Σ_layers(solo_decode). b8: 13·0.959 + 68·0.566 ≈
 |---|--:|--:|--:|--:|--:|
 | **real-E3 2.7b** (참값) | 752 | 629 | **1267** | 2.0× | 43.5ms |
 | synth-2.7b (f-cap) | 752 | 88 | 221 | 2.5× | 178ms |
-| **synth-7b** (f-cap) | 171 | 150 | 159 | **1.06×** | 86.5ms |
+| synth-7b (f-cap, *구버전*) | 171 | 150 | 159 | 1.06× | 86.5ms |
+| **real-7b** (job 797630, 깨끗한 LUT) | 334 | 495 | **495** | **1.00×** | 71.0ms |
 *(goodput tok/s)*
 
 **방법 한계(반드시 명시):** 합성 protect는 reservation을 측정 최대 54 SM로 cap하므로 decode 보호를 과소평가한다 — 그래서 synth-2.7b조차 절대 SLO를 망가뜨려(real la=1267>co를 synth는 la=221<co로 뒤집음) **"co가 7B서 이긴다"를 합성 sim 단독 근거로 주장하지 않는다.** 합성법이 *보존*하는 건 **layer_aware>agnostic 순서와 그 비율의 모델-스케일 추세**: la/agnostic 우위가 **2.7b ~2.0–2.5× → 7B 1.06×로 붕괴.** §2의 측정 구조와 같은 방향(7B에선 lever가 거의 작동 안 함).
@@ -104,8 +105,8 @@ full-model decode step ≈ Σ_layers(solo_decode). b8: 13·0.959 + 68·0.566 ≈
 
 원래 가설의 *살아있는* 형태(layer_aware 예약)는 **2.7b/3B(SLM)·A100서 ~2× goodput으로 살아있되, 7B로는 스케일하지 않는다**:
 - **측정 확정:** 7B는 (①) attn-decode를 싸게 보호할 수 없고(54 SM로 +67~97%), (③) decode-step 지배(~51ms)라 goodput이 decode-bound다. **(②는 정정 — 7B prefill도 SM-민감(2.5×), 단 병목이 아니라 환원해도 goodput 천장 안 오름.)**
-- **sim 보강(방법 한계 내):** la/agnostic 우위가 2.7b 2.0× → 7B 1.06×로 붕괴.
+- **실측 확정(job 797630, 깨끗한 LUT):** la/agnostic 우위가 2.7b **2.0× → 7B 1.00×**(정확히 무이득). la=agnostic 동일 = ③의 직접 증거.
 - **공간-분할 7B 음성**([real_prefill §7](real_prefill_results.md))과 **방향 일치** → 프로젝트 헤드라인("SM 예약/분할은 SLM 한정 현상")이 *결정적 스케일점에서 강화*된다.
-- **실측(785877) 완료:** E3 floor ✓ 측정. E5 절대-LUT은 dec=ssm 커널 OSError로 부분 미완이라 절대 goodput은 미확정이나, **결론을 닫는 근거(§2 구조)는 ssm-decode LUT에 무관**하므로 7B 미스케일은 확정.
+- **실측 확정(785877 E3 floor + 797630 깨끗한 E5):** OSError는 `TRITON_CACHE_DIR`=scratch로 해소(홈 캐시 7B 커널 이슈). 깨끗한 LUT서 **la/agnostic=1.00×** — premise①③를 직접 증거로 확정(no_room + la=agnostic).
 
 검수 체크리스트 갱신: **C1 = 닫힘** — "SM 예약 불필요"를 모델 크기 무관 결론으로 쓰지 않되, *살아있는 layer_aware도 7B서 lever 전제가 측정상 부재(§2)*임을 확정. SLM 한정 스코프 확정. (절대-LUT 재실측은 선택적 — §4.)

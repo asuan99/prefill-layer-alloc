@@ -20,7 +20,7 @@ _CHAR = os.path.abspath(os.path.join(_here, "..", ".."))
 DATA = [
     ("zamba2_1.2b", 1.2, 1302, 1376, 1887, "real"),
     ("zamba2_2.7b", 2.7, 752, 629, 1268, "real"),
-    ("zamba2_7b", 7.0, 171, 150, 159, "synth"),   # real E5 ssm-decode failed (OSError)
+    ("zamba2_7b", 7.0, 334, 495, 495, "real"),    # clean LUT (job 797630, TRITON_CACHE_DIR fix)
 ]
 names = [d[0].replace("zamba2_", "") for d in DATA]
 ratio = [d[4] / d[3] for d in DATA]              # la / agnostic
@@ -59,7 +59,7 @@ ax2.set_title("(B) absolute goodput by policy", fontweight="bold")
 ax2.legend(fontsize=9)
 ax2.grid(axis="y", alpha=0.3)
 
-fig.suptitle("layer_aware benefit vs model size (zamba2, temporal) -- *7B from synth LUT (real ssm-decode failed)",
+fig.suptitle("layer_aware benefit vs model size (zamba2, temporal) -- all real measured LUTs",
              fontsize=12, fontweight="bold", y=1.02)
 out = Path(_CHAR).parents[1] / "reports" / "figures"
 out.mkdir(parents=True, exist_ok=True)
