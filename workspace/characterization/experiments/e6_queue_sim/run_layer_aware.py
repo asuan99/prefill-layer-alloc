@@ -35,10 +35,15 @@ from experiments.e6_queue_sim.run_queue_sim import metrics
 
 # per-policy backend used for each layer type
 _POLICY = {
+    "fused":               {"attn": "two_stream",       "ssm": "two_stream"},   # vLLM default: prefill+decode in ONE forward (sync)
     "co_schedule":         {"attn": "two_stream",       "ssm": "two_stream"},
     "agnostic_protect":    {"attn": "green_ctx_protect", "ssm": "green_ctx_protect"},
     "layer_aware_protect": {"attn": "green_ctx_protect", "ssm": "two_stream"},
 }
+
+# fused/co_schedule = sync (decode coupled to the forward); the *_protect = decoupled (decode on reserved SMs)
+_SCHED = {"fused": "sync", "co_schedule": "decoupled",
+          "agnostic_protect": "decoupled", "layer_aware_protect": "decoupled"}
 
 
 def _nearest(b, grid):
@@ -86,9 +91,13 @@ class FullModelLM:
             ps += k * p; ds += k * d; sp += k * s_p; sd += k * s_d
         return ps, ds, sp, sd
 
-    def step_ms(self, policy, pf, dec, b, ctx, prefill_active):   # simulate sync-path compat (unused here)
+    def step_ms(self, policy, pf, dec, b, ctx, prefill_active):
+        """Sync-scheduler step time (used by `fused`). The fused mixed-batch forward runs
+        prefill(P)+decode(B) over (P+B) rows in ONE pass; measured fusion_saving≈0, so the
+        full-model step ≈ Σ_layers(solo_prefill + solo_decode) = sp + sd when prefill is in
+        the batch, else sd. Decode ITL = this step (coupled) — that's fused's disadvantage."""
         ps, ds, sp, sd = self.streams(policy, pf, dec, b, ctx)
-        return (sp + ds if prefill_active else sd), ""
+        return (sp + sd if prefill_active else sd), ""
 
 
 def main():
@@ -122,18 +131,18 @@ def main():
     rows = []
     for lam in a.lambdas:
         good = {}
-        for pol in ("co_schedule", "agnostic_protect", "layer_aware_protect"):
+        for pol in ("fused", "co_schedule", "agnostic_protect", "layer_aware_protect"):
             reqs = gen_requests(a.n_requests, lam, a.prompt_lens, a.output_lens, a.chunk, a.seed)
             reqs, st = simulate(reqs, pol, lm, "full", "full", a.ctx,
-                                prefill_budget=a.prefill_budget, scheduler="decoupled")
+                                prefill_budget=a.prefill_budget, scheduler=_SCHED[pol])
             m = metrics(reqs, st["makespan_ms"], a.slo_ms)
             good[pol] = m["goodput_tok_s"]
             rows.append({"model": a.model, "policy": pol, "lambda_req_ms": lam, "slo_ms": a.slo_ms, **m})
             print(f"{pol:22}{lam:6.2f}{m['itl_p99']:9.3f}{m['ttft_p99']:10.1f}"
                   f"{m['slo_attain']:8.3f}{m['throughput_tok_s']:9.0f}{m['goodput_tok_s']:9.0f}")
-        la, ag = good["layer_aware_protect"], good["agnostic_protect"]
-        tag = "layer_aware WINS" if la > ag * 1.01 else ("≈" if abs(la - ag) <= ag * 0.01 else "agnostic wins")
-        print(f"  → layer_aware {la:.0f} vs agnostic {ag:.0f}  [{tag}]")
+        la, fu, ag = good["layer_aware_protect"], good["fused"], good["agnostic_protect"]
+        vs = lambda x: ("—" if x == 0 else f"{la/x:.2f}x")
+        print(f"  → layer_aware {la:.0f}  vs fused(vLLM) {fu:.0f} [{vs(fu)}]  vs agnostic {ag:.0f} [{vs(ag)}]")
         print("  " + "-" * 60)
 
     out = Path(_CHAR) / "results_v2" / "e6" / f"layer_aware_{a.model}_b{a.prefill_budget}.csv"

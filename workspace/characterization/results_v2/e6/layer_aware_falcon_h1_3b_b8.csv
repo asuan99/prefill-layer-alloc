@@ -1,0 +1,5 @@
+model,policy,lambda_req_ms,slo_ms,n_req,tokens,ttft_p50,ttft_p99,itl_p50,itl_p99,throughput_tok_s,slo_attain,goodput_tok_s
+falcon_h1_3b,fused,0.05,1000.0,400,51200,12373.045,28214.347,100.7456,100.7456,1235.7,1.0,1235.7
+falcon_h1_3b,co_schedule,0.05,1000.0,400,51200,9171.687,19704.501,36.7968,36.7968,1643.7,1.0,1643.7
+falcon_h1_3b,agnostic_protect,0.05,1000.0,400,51200,12889.669,26198.413,29.264,29.264,1360.9,1.0,1360.9
+falcon_h1_3b,layer_aware_protect,0.05,1000.0,400,51200,8899.511,18721.607,34.9792,34.9792,1698.3,1.0,1698.3
