@@ -43,6 +43,10 @@ pip-wheel-metadata/
 *.svg
 *.eps
 
+# Triton kernel cache
+.triton_cache/
+**/.triton_cache/
+
 # CUDA profiling artifacts
 *.nsys-rep
 *.ncu-rep
