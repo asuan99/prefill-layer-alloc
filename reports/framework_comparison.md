@@ -28,6 +28,8 @@ decode ITL_p99(ms) / throughput(tok/s):
 
 **구조(정성):** fused(decode가 forward에 *결합*) → ITL 최대. co_schedule(2-스트림 분리) → ITL↓. *_protect(decode SM *예약*) → ITL 최소+bounded. layer_aware는 거기에 prefill 환원으로 throughput까지 최대.
 
+> **주의 — layer_aware ITL(44) > agnostic ITL(38)은 *열세가 아니다*:** 이는 *operating point(동시성)* 차이다. **같은 decode 배치에선 layer_aware ITL이 매번 *더 낮다*** (la의 ssm-decode는 two_stream으로 108 SM 전체 사용 vs agnostic의 예약 floor ~54 SM; ssm은 싸서 경합 영향 작음): b8 30.1<32.7, b32 35.9<37.9, b64 43.5<46.5. 그런데 **la는 throughput이 2×(1324 vs 644)라 동시 요청·decode 배치가 ~2× 크다** → agnostic p99=ds@b32(37.9), **layer_aware p99=ds@b64(43.5)**. decode ITL은 배치↑서 증가하므로 *더 높은 throughput 지점*의 la가 p99 ITL이 높게 보일 뿐 — 고전적 latency↔throughput 트레이드오프이고, 그 ITL(44)도 현실 SLO(≥50ms) 내라 goodput에서 이긴다.
+
 ## 3. vLLM calibration (sim fused vs 실측) — 신뢰도 박기
 
 | model | sim fused ITL | vLLM p99 TPOT | ITL 비 | sim fused thru | vLLM thru | thru 비 |
