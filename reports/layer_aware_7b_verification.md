@@ -127,3 +127,12 @@ layer_aware 예약은 **테스트한 전 크기(1.2B–7B)서 goodput 이득** �
 **구조 분석이 왜 빗나갔나(§2):** "decode-step 지배(③)" 논거는 틀렸다 — 실측상 7B는 DECODE/PREFILL 비율이 *더 낮다*(0.39 vs 2.7b 0.59), 즉 *상대적으로 prefill-heavy*. prefill이 더 무거우니 prefill lever(layer_aware)가 **더** 잘 먹히는 게 맞았다. §2는 artifact(1.00×)를 사후 합리화한 것이었다.
 
 **교훈:** 불완전 LUT는 정책을 *조용히* degenerate시킨다(에러 없이 폴백). 결론 전에 **(a) 셀단위 ok 완전성**과 **(b) 두 정책이 실제로 다른 셀을 쓰는지**를 검증해야 한다. 본 7B 회귀는 그 검증 부재로 2회 오결론했다.
+
+**전 모델 재검증(2026-06-22):** 같은 의심을 1.2B·2.7B에도 적용해 셀단위 점검 →
+| 모델 | E5 ssm green_ctx_protect | la/agnostic | 판정 |
+|---|--|--|--|
+| 1.2b | ok@전 배치(b1–512) | 1.37× | ✅ 깨끗 |
+| 2.7b | ok@전 배치(b1–512) | 2.02× | ✅ 깨끗 |
+| 7b | ok@b1–16, fail@b32+(ssm floor 108) | 1.82× | ✅ 깨끗(작동 배치대) |
+
+진단의 핵심: **degeneration은 정확히 1.00×(agnostic≡la)로 나타난다.** 1.2B/2.7B가 ≠1.00×인 것 자체가 agnostic이 실제로 다른 셀(green_ctx_protect, 전 배치 ok)을 쓴다는 증거. 7B만 ssm floor 누락으로 *전* ssm 배치가 폴백돼 1.00× 인위치를 만들었다. (attn green_ctx_protect가 세 모델 다 b16+서 fail하나, 두 정책이 attn에 *동일* 백엔드라 대칭 폴백 → 비율 무영향.) ∴ **1.2B/2.7B 재측정 불요, 7B만 artifact였고 수정 완료.**
