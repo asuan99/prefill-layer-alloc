@@ -70,7 +70,7 @@ zamba2 세 크기에서 동일 측정(E3 floor + E5 opt/protect LUT, job 793540/
 **핵심: 이득은 단조 "작을수록 강함"이 아니라 *역-U자, 2.7B에서 peak*다.** 모든 SLM이 이득(1.2B 1.37×, 2.7B 2.0×)이나 7B는 소멸(1.06×). 해석:
 - **1.2B(1.37×)**: 모델이 작아 agnostic도 prefill을 덜 굶김(그림 B: agnostic 1376 > co 1302) → 환원할 여지가 작아 이득 축소.
 - **2.7B(2.0×, peak)**: agnostic이 prefill을 강하게 굶겨(629 < co 752) layer_aware의 환원 효과 최대 → sweet-spot.
-- **7B(1.06×)**: attn-decode 미포화·prefill SM-무감각으로 lever 자체가 부재([7B 검증 §2](layer_aware_7b_verification.md)).
+- **7B(1.06×)**: attn-decode 미포화(보호 비쌈) + decode-step 지배(goodput decode-bound)로 lever 부재. (prefill은 7B도 SM-민감하나 *병목이 아님* — [7B 검증 §2.2](layer_aware_7b_verification.md).)
 
 → 가설 정밀화: *"layer_aware lever는 SLM 영역(≤~3B)에서 작동하며, 모델이 (a)attn-decode를 소수 SM로 싸게 보호할 수 있고 (b)prefill이 SM-예약에 충분히 민감한 mid-SLM(~2.7B)에서 가장 강하다."*
 
@@ -94,7 +94,7 @@ zamba2 세 크기에서 동일 측정(E3 floor + E5 opt/protect LUT, job 793540/
 - **이건 sim 예측이지 실엔진 실증이 아니다.** layer_aware_protect는 어떤 프레임워크에도 구현이 없다(vLLM은 fused 단일-forward, SM 분할 API 없음). 실증 경로는 [partition_engine_design](partition_engine_design.md)의 Path C 프로토타입으로 스코핑됨.
 - sim은 저부하 decode ITL **절대값을 ~2× 과대**평가(unfused per-layer 커널 합산). 단 정책 *간 상대 비교*(2× goodput)와 *비율*은 실측과 정합하므로 결론은 견고.
 - **temporal 하이브리드 한정**(§4). spatial(falcon)엔 미적용.
-- **SLM(≤~3B) 한정 — 7B 미스케일(확정)**([7B 검증](layer_aware_7b_verification.md)). 7B는 attn-decode가 54 SM로 미포화(+67~97%)·prefill이 측정 구간서 SM-무감각(1.02×)·decode-step 지배(~51ms) → lever 전제 측정상 부재. la/agnostic 우위 2.0×(2.7b)→1.06×(7B). 실측 job 785877 완료(E3 floor ✓; E5 ssm-decode 커널 OSError로 절대-LUT 부분 미완이나 §2 구조 논거가 결론을 닫음). **1.2B 측정 진행 중(job 793540)** — 크기 추세 완성.
+- **SLM(≤~3B) 한정 — 7B 미스케일(확정)**([7B 검증](layer_aware_7b_verification.md)). 이유는 **① attn-decode 미포화(floor 68~108, 싸게 보호 못 함) + ③ decode-step 지배(~51ms, goodput decode-bound)**. (전제② "prefill 무감각"은 job 797524로 *철회* — 7B prefill도 SM-민감 2.5×, 단 병목 아님.) la/agnostic 2.0×(2.7b)→1.06×(7B). 절대값은 broken/synth LUT 기반이라 미확정이나 방향(①③)은 견고.
 - 파티션 전환 오버헤드는 sim상 ~0.4%로 추정(레이어당 비용 수 ms 대비 swap ~7.8µs) — 실측은 Path C에서.
 
 ## 7. 결론

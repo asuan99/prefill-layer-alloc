@@ -1,0 +1,17 @@
+model,device,layer_type,n_sm_req,n_sm_actual,prefill_ms,ratio_vs_full,status
+zamba2_2.7b,a100_sxm4_80gb,ssm,14,14,1.2723,2.153,ok
+zamba2_2.7b,a100_sxm4_80gb,ssm,27,28,0.8858,1.499,ok
+zamba2_2.7b,a100_sxm4_80gb,ssm,40,40,0.7685,1.301,ok
+zamba2_2.7b,a100_sxm4_80gb,ssm,54,54,0.6922,1.172,ok
+zamba2_2.7b,a100_sxm4_80gb,ssm,68,68,0.6487,1.098,ok
+zamba2_2.7b,a100_sxm4_80gb,ssm,81,82,0.6216,1.052,ok
+zamba2_2.7b,a100_sxm4_80gb,ssm,94,94,0.6047,1.023,ok
+zamba2_2.7b,a100_sxm4_80gb,ssm,108,108,0.5908,1.0,ok
+zamba2_2.7b,a100_sxm4_80gb,attn,14,14,7.0436,6.892,ok
+zamba2_2.7b,a100_sxm4_80gb,attn,27,28,3.6413,3.563,ok
+zamba2_2.7b,a100_sxm4_80gb,attn,40,40,2.519,2.465,ok
+zamba2_2.7b,a100_sxm4_80gb,attn,54,54,1.9487,1.907,ok
+zamba2_2.7b,a100_sxm4_80gb,attn,68,68,1.5718,1.538,ok
+zamba2_2.7b,a100_sxm4_80gb,attn,81,82,1.3875,1.358,ok
+zamba2_2.7b,a100_sxm4_80gb,attn,94,94,1.2006,1.175,ok
+zamba2_2.7b,a100_sxm4_80gb,attn,108,108,1.022,1.0,ok

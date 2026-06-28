@@ -9,16 +9,16 @@
 
 ## 0. 요약 (TL;DR)
 
-**확정 판정: layer_aware의 ~2× goodput은 7B로 스케일하지 않는다.** 근거는 **§2 구조적 측정**(7B attn-decode 미포화·prefill SM-무감각 — `dec=attn` green_ctx 셀 18/20 ok로 견고) + sim 추세(la/agnostic 2.0×@2.7b → 1.06×@7B). **절대 goodput LUT 확증은 부분 미완**: 실측 job 785877(완료)이 E3 floor는 측정했으나 **E5의 ssm-decode 셀이 OSError로 거의 전부 실패(two_stream 1/10, green_ctx_protect 0/1)** → 실측-LUT로 run_layer_aware를 돌리면 la·agnostic이 동일 폴백값(=492)으로 수렴해 *무의미*. **단 §2 구조 논거는 ssm-decode LUT에 의존하지 않으므로 7B 미스케일 결론은 그대로 성립.**
+**확정 판정: layer_aware의 ~2× goodput은 7B로 스케일하지 않는다.** 근거(정정됨, §2): **①** 7B attn-decode를 싸게 보호 못 함(floor 68~108, +67~97% 팽창; `dec=attn` 셀 18/20 ok로 견고) + **③** decode-step 지배(~51ms)라 goodput이 decode-bound → prefill 개선이 천장 못 올림. **전제②(prefill 무감각)는 철회**: job 797524 실측으로 **7B prefill도 SM-민감(ssm 2.5×, attn 7.3× @108→14SM)** 확인 — 크기 거의 불변. 7B에서 prefill은 *민감하나 병목이 아니다*. **절대 goodput LUT 확증은 부분 미완**: job 785877이 E3 floor는 측정했으나 **E5 ssm-decode 셀이 OSError로 거의 전부 실패** → 실측-LUT run_layer_aware는 la=agnostic=492로 수렴해 *무의미*. sim 추세(synth)는 la/agnostic 2.0×@2.7b → 1.06×@7B. **결론은 ①③(ssm-decode LUT·prefill 무감각에 무관)으로 성립하나, 절대값(1.06×)은 broken/synth LUT 기반이라 미확정.**
 
 > **이력:** 초판 "측정 차단"은 오류였고(SXM4 `amd_a100nv_8` 가용), `slurm/measure_7b_layer_aware.sh`로 실측 제출(job 785877, 완료). E3 floor OK·E5 dec=ssm 커널 실패 → 절대 확증은 ssm-decode 커널 이슈로 미완이나, 구조적 측정이 결론을 닫는다(§4).
 
 - 검수 C1이 "결정적 다음 단계"로 꼽은 **7B 회귀를, 살아있는 가설(layer_aware 예약)에 대해 처음으로 돌렸다.** (공간-*분할* 가설의 7B는 [real_prefill §7](real_prefill_results.md)에서 이미 음성으로 닫힘.)
 - 2.7b의 2×를 만든 두 재료가 **7B에선 측정상 둘 다 약하거나 부재**다:
   1. **싼 attn 보호** — 2.7b는 attn-decode를 54 SM(저배치)~68 SM로 포화시켜 싸게 보호. **7B attn-decode는 측정 가능한 모든 배치에서 54 SM로도 포화 안 됨(+67~97% 팽창)** → 보호하려면 >54 SM 필요 → prefill 환원 여지↓.
-  2. **SM에 민감한 ssm prefill 환원** — 2.7b는 protect가 ssm prefill을 14 SM까지 굶겼다가 layer_aware가 108 SM로 환원(prefill 6.2×). **7B는 측정된 54–108 SM 구간에서 ssm prefill이 거의 무감각(8.96→8.78ms, 1.02×)** → 환원 이득 미미.
-- 더해서 **7B는 decode-step 지배**(b8서 81층 합산 ~51ms/step) → goodput 병목이 decode이고, layer_aware가 손대는 건 *prefill* 측이라 leverage가 구조적으로 작다.
-- 이 §2 구조 사실들은 **기존 7B 측정(f∈{0.5,0.7})만으로 이미 단단**하고, 진행 중 실측(전 SM-격자 floor)이 §3 sim의 합성 한계(아래)를 제거해 절대 goodput을 확정한다.
+  2. ~~SM에 민감한 prefill 환원 부재~~ → **철회(§2.2)**: job 797524 실측 결과 7B prefill도 SM-민감(ssm 2.5×, attn 7.3×)이라 이 전제는 7B에서도 성립. 미스케일을 *prefill 무감각*으로 설명하지 않는다.
+- 진짜 이유 **③ 7B는 decode-step 지배**(b8서 81층 합산 ~51ms/step) → goodput 병목이 *decode*이고, layer_aware가 개선하는 건 *prefill* 측이라 천장을 못 올린다(prefill이 민감해도 병목이 아님).
+- 결론은 **①(보호 비쌈)+③(decode 지배)** 로 성립. 단 절대값(la/agnostic 1.06×)은 §3 synth/broken LUT 기반이라 미확정 — 깨끗한 7B E5 LUT(ssm-decode OSError 수정) 재실측이 절대 확증의 선택지(§4).
 
 ---
 
@@ -33,7 +33,7 @@
 
 따라서 본 보고서는 *살아있는* 결론 한 가지 — "비싼 attn-decode 레이어만 SM 예약, 싼 ssm 레이어는 prefill에 SM 환원 → ~2× goodput" — 을 zamba2_7b(81층 = 13 attn + **68 ssm = 84% ssm**, 2.7b의 83%보다도 ssm-지배적)에서 묻는다. 메커니즘 가설대로면 ssm 비율↑이라 *더 큰* 이득이 나야 한다.
 
-## 2. 측정된 7B 구조 — lever의 두 전제가 무너진다 (sim 불필요)
+## 2. 측정된 7B 구조 — lever 전제 ①③ 부재 (②는 성립, §2.2 정정)
 
 전부 `results_v2/e5_dp/serving_coexec_full_zamba2_7b_a100_sxm4_80gb.csv`(SXM4 실측, ctx=4096)에서 직접.
 
@@ -52,16 +52,22 @@ decode를 부분 SM에 올렸을 때 solo(108 SM 단독) 대비 팽창률:
 
 대조 — **2.7b E3 floor**(decode 포화 SM, ctx=4096): attn b1=**54**, b2=54, b4/b8=68, b16=108; ssm b1=**14**, b8=54, b32=94. 즉 2.7b는 저배치 attn을 54 SM로 포화시켜 **싸게 보호**했다. 7B는 같은 54 SM가 attn-decode를 +67~97% 팽창시킨다 → **싸게 보호할 수 없다.** ([real_prefill §8](real_prefill_results.md)이 *full-model* 7B에서 protect가 `no_room`(floor→GPU 포화)이라 한 것과 같은 방향.)
 
-### 2.2 전제②(SM-민감 prefill 환원) 부정 — 측정 구간서 7B prefill 거의 무감각
+### 2.2 전제②(SM-민감 prefill 환원) — **정정: 7B prefill도 SM-민감하다(job 797524 실측)**
 
-layer_aware의 이득원 = ssm 레이어에서 prefill에 SM을 돌려줄 때의 prefill 가속. prefill_stream(ms):
+초판은 "7B prefill은 SM-무감각(1.02×)"이라 했으나 — **이는 *108→54 SM 구간만* 측정한 artifact였다.** `run_prefill_sm_sweep.py`(job 797524)로 prefill을 N-SM Green-Context 파티션에 **solo**로 14~108 SM 전 구간 측정한 결과(ratio = latency / latency@108SM):
 
-| | 108 SM(two_stream) | 54 SM(green f0.5) | 14 SM(green) | 환원 이득 |
-|---|--|--|--|--|
-| **zamba2_2.7b** ssm prefill | 0.888 | 1.483 | **5.506** | 108÷14 = **6.2×** |
-| **zamba2_7b** ssm prefill | 8.782 | 8.962 | (미측정) | 108÷54 = **1.02×** |
+![prefill SM-sensitivity](figures/prefill_sm_sensitivity.png)
 
-2.7b는 protect가 고배치서 ssm prefill을 **14 SM까지 굶기**(5.5ms) → layer_aware가 108로 환원(0.89ms)해 6.2× 회수가 2× goodput을 견인했다. **7B는 측정된 54–108 SM 구간에서 prefill이 거의 변하지 않는다**(1.02×). (정직: 7B의 <54 SM 구간은 미측정 — 거기서 7B prefill이 급락한다면 환원 이득이 커질 수 있으나, 그건 차단된 측정에 달려 있다. §4.)
+| prefill | 108→54 SM | **108→14 SM(전 구간)** |
+|---|--|--|
+| zamba2_1.2b ssm | 1.2× | **2.0×** |
+| zamba2_2.7b ssm | 1.2× | **2.2×** |
+| **zamba2_7b ssm** | **1.2×** | **2.5×** |
+| zamba2_7b attn | 2.0× | **7.3×** |
+
+→ **prefill SM-민감도는 크기 거의 불변**(ssm ~2×, attn ~7×)이고 **7B도 충분히 민감**(오히려 약간 더). "1.02×"는 *모든 모델이 평탄한* 108→54 구간만 봤기 때문 — 민감도는 **<54 SM**에서 나타나며 7B도 예외 아니다(54→14 SM: 0.78→1.58ms = 2.0×). ∴ **전제②(prefill이 SM에 민감해 환원이 이득)는 7B에서도 성립** — 7B 미스케일을 *prefill 무감각*으로 설명한 부분은 **철회**한다.
+
+**그럼 왜 7B는 여전히 미스케일인가** — 이유는 전제①·③로 좁혀진다: **①** attn-decode를 싸게 보호 못 함(§2.1, floor 68~108) → 예약이 GPU를 거의 다 먹음, **③** decode-step 지배(§2.3, ~51ms) → goodput이 *decode*에 묶여 prefill 개선(layer_aware가 주는 것)이 천장을 못 올림. 즉 7B에서 prefill은 *민감하지만 병목이 아니다* — 환원해도 decode-bound goodput이 안 오른다.
 
 ### 2.3 보강 — 7B는 decode-step 지배라 prefill lever의 leverage가 작다
 
@@ -97,7 +103,7 @@ full-model decode step ≈ Σ_layers(solo_decode). b8: 13·0.959 + 68·0.566 ≈
 ## 5. 결론 — 검수 C1 닫힘 (조건부)
 
 원래 가설의 *살아있는* 형태(layer_aware 예약)는 **2.7b/3B(SLM)·A100서 ~2× goodput으로 살아있되, 7B로는 스케일하지 않는다**:
-- **측정 확정:** 7B는 (①) attn-decode를 싸게 보호할 수 없고(54 SM로 +67~97%), (②) 측정 구간서 prefill 환원 이득이 거의 없으며(1.02×), (③) decode-step 지배라 prefill lever의 leverage가 작다.
+- **측정 확정:** 7B는 (①) attn-decode를 싸게 보호할 수 없고(54 SM로 +67~97%), (③) decode-step 지배(~51ms)라 goodput이 decode-bound다. **(②는 정정 — 7B prefill도 SM-민감(2.5×), 단 병목이 아니라 환원해도 goodput 천장 안 오름.)**
 - **sim 보강(방법 한계 내):** la/agnostic 우위가 2.7b 2.0× → 7B 1.06×로 붕괴.
 - **공간-분할 7B 음성**([real_prefill §7](real_prefill_results.md))과 **방향 일치** → 프로젝트 헤드라인("SM 예약/분할은 SLM 한정 현상")이 *결정적 스케일점에서 강화*된다.
 - **실측(785877) 완료:** E3 floor ✓ 측정. E5 절대-LUT은 dec=ssm 커널 OSError로 부분 미완이라 절대 goodput은 미확정이나, **결론을 닫는 근거(§2 구조)는 ssm-decode LUT에 무관**하므로 7B 미스케일은 확정.

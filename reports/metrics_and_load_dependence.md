@@ -17,7 +17,7 @@
 | **HBM BW util %** (flat_region) | 커널이 쓰는 HBM 대역폭 비율 | **메모리-바운드 여부**. 높으면 SM 더 줘도 안 빨라짐 | attn-decode 40–70% / **ssm-decode ~0.01%** |
 | **fusion_saving** = (prefill+decode)−fused | prefill·decode를 한 forward로 fuse 시 절약 | ≈0 ⇒ fused가 분리 실행 대비 공짜 아님 | 실측 ≈ 0 |
 | **decode inflation %** | 부분 SM에서 decode가 solo 대비 느려지는 정도 | 분할 시 decode 손해 | 7B attn@54SM: +67~97% |
-| **prefill SM-sensitivity** | SM을 더 줄 때 prefill 가속비 | **layer_aware 이득의 원천**(환원 효과) | 2.7b 6.2×(14→108SM) / 7B 1.02× |
+| **prefill SM-sensitivity** | SM을 더 줄 때 prefill 가속비 (solo, 108→14SM) | **layer_aware 이득의 원천**(환원 효과). *크기 거의 불변* | ssm ~2× / attn ~7× (1.2b/2.7b/7b 동일) |
 | **la/agnostic ratio** | layer_aware ÷ agnostic goodput | layer-type 인지의 순이득 | 1.2b 1.37× / 2.7b 2.0× / 7b 1.06× |
 
 ---
@@ -51,15 +51,16 @@ green_ctx(정적 SM 분할)가 two_stream(동적 공유)을 **1576셀 중 0번**
 | 지표 | 1.2B | 2.7B | 7B | 추세 |
 |---|--|--|--|--|
 | attn-decode floor(SM, b1) | 54 | 54 | **68** | 크기↑ → 보호 비용↑ |
-| prefill SM-sensitivity | 1.41×(@54) | **6.2×**(@14) | **1.02×** | 中에서 최대 |
+| prefill SM-sensitivity (solo, 108→14SM) | ssm 2.0× | ssm 2.2× | ssm **2.5×** | **크기 불변**(7B도 민감) |
 | full-model decode step(b8) | — | ~28ms | **~51ms** | 크기↑ → decode 지배↑ |
+| prefill SM-sensitivity (solo) | ssm 2.0× | ssm 2.2× | ssm **2.5×** | **크기 불변**(7B도 민감) |
 | co throughput | 1302 | 752 | 375 | 크기↑ → 용량↓ |
 | **la/agnostic** | 1.37× | **2.0×** | 1.06× | **역-U(2.7B peak)** |
 
-**왜 역-U인가** — layer_aware 이득 = (싼 attn 보호 가능) × (ssm서 prefill 환원 효과). 두 전제가 크기에 반대로 움직인다:
-- **7B(1.06×)**: attn-decode가 54 SM로 미포화(+67~97%, floor 68↑)라 *싸게 보호 못 함*; prefill이 측정 구간서 SM-무감각(1.02×)이라 *환원 이득 없음*; 게다가 decode-step 지배(51ms)라 prefill lever leverage 작음 → **lever 부재.**
-- **1.2B(1.37×)**: 보호는 싸지만(floor 54), 모델이 작아 agnostic이 prefill을 *덜 굶김*(goodput agnostic 1376 > co 1302) → *환원할 여지 자체가 작음* → 이득 축소.
-- **2.7B(2.0×, sweet-spot)**: 보호 싸고(저배치 floor 54) + agnostic이 prefill을 강하게 굶김(629 < co 752, 14 SM까지 → 6.2× 회수) → **환원 효과 최대.**
+**왜 역-U인가** — prefill SM-민감도는 크기 불변(위)이므로 *그게 원인은 아니다*. 이득을 가르는 건 **(a) agnostic이 prefill을 얼마나 굶기나**(=decode floor가 GPU에서 차지하는 비중)와 **(b) prefill이 goodput 병목인가**(=decode-step 지배 여부):
+- **1.2B(1.37×)**: 모델이 작아 decode floor가 GPU의 작은 비중 → agnostic이 prefill을 *덜 굶김*(agnostic 1376 > co 1302) → *환원할 여지 작음* → 이득 축소.
+- **2.7B(2.0×, sweet-spot)**: agnostic이 prefill을 강하게 굶김(629 < co 752) + prefill이 아직 goodput에 충분히 기여 → **환원 효과 최대.**
+- **7B(1.06×)**: ① attn-decode 미포화(floor 68~108)라 *싸게 보호 못 함* + ③ **decode-step 지배(51ms)라 goodput이 decode-bound** → prefill을 환원해도(7B prefill도 SM-민감하지만) goodput 천장이 안 오름. **즉 prefill이 병목이 아니라 lever 부재.**
 
 ### B. 배치 (decode_batch B = 동시 decode 요청 수)
 
