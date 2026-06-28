@@ -68,6 +68,8 @@ lever는 **두 전제**를 요구하고, 그게 아키텍처로 갈린다:
 
 vLLM 0.22.1로 zamba2_2.7b·falcon_h1_3b 실제 서빙. **검증됨:** full-model decode ITL의 *모델 간 비율*(sim 1.3~2.0× ≈ 실측 1.2~1.6×)·포화 magnitude·TTFT 큐동역학. **반증됨:** "GQA가 이득구간 폭을 16× 가른다"(per-attn-layer artifact였음) — full-model decode는 ssm 지배로 ~1.3×. **단 partition/layer_aware는 어떤 프레임워크에도 없어 *fused baseline의 현실성*만 검증**됨.
 
+**프레임워크 4-way 비교 보완**([framework_comparison](framework_comparison.md)): 비교군에 **fused(=vLLM 실baseline)를 추가**(이전엔 빠져 헤드라인이 agnostic 대비였음). fused는 decode를 prefill에 결합해 decode ITL이 layer_aware보다 **4~6× 높다**(vLLM이 TPOT 12→80ms 팽창으로 방향 확인). **단 sim 절대 calibration은 모델-의존**(zamba2 fused ITL 1.64× 과대·thru 0.8× 과소; falcon 1.09× 양호) → **"layer_aware vs vLLM N× goodput"의 *정량* 주장은 sim만으론 불가, 실엔진 프로토타입(§8) 선결.** 비교군 매핑: deployed는 fused뿐, co/agnostic/layer_aware는 연구 설계.
+
 ## 7. 방법론적 여정 & 교훈 (정직)
 
 이 프로젝트의 결론은 여러 번 뒤집혔다 — 그 자체가 결과의 신뢰성에 대한 메타-데이터다:

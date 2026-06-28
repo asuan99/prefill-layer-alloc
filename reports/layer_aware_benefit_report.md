@@ -14,6 +14,8 @@
 
 > **zamba2_2.7b(9 attn + 45 ssm), 현실적 per-token SLO(TBT ≥ 50ms)에서 `layer_aware_protect`가 layer-agnostic 예약 대비 goodput을 ~2× 개선한다.**
 
+> ⚠ **비교 기준 주의:** 위 1.37~2.02×는 **layer-agnostic 예약 대비**다(둘 다 연구 정책). *실 프레임워크(vLLM=fused) 대비*는 [framework_comparison](framework_comparison.md)에 별도 — fused는 decode를 prefill에 결합해 decode ITL이 layer_aware보다 **4~6× 높고**(vLLM이 방향 확인), 단 **sim 절대값은 모델-의존 오차(zamba2 fused 1.64× 과대)라 "vs vLLM N×"는 sim만으론 미확정** → 실엔진 프로토타입 필요.
+
 ![layer_aware result](figures/layer_aware_result.png)
 
 ## 1. 가설의 정확한 형태 — 무엇이 死이고 무엇이 生인가
