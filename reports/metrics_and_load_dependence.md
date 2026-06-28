@@ -39,8 +39,8 @@ green_ctx(정적 SM 분할)가 two_stream(동적 공유)을 **1576셀 중 0번**
 ### D5. layer-type-aware *예약*은 PD-mux를 개선하나 → **生(SLM)**
 *근거 지표*: 비싼 attn-decode 레이어만 예약, 싼 ssm 레이어는 prefill 환원 ⇒ 2.7b서 **la/agnostic 2.0× goodput**(throughput 1268 vs 629, TTFT 절반, decode ITL 43.5ms로 SLO 내). 단 temporal 하이브리드·SLM 한정.
 
-### D6. 크기 추세 → **역-U자, 2.7B peak**
-*근거 지표*: la/agnostic = 1.2b **1.37×** → 2.7b **2.0×** → 7b **1.06×**. 단조 아님(Part 3-A에서 이유).
+### D6. 크기 추세 → **1.2B–7B 전 구간 이득** (2.7B peak)
+*근거 지표*: la/agnostic = 1.2b **1.37×** → 2.7b **2.02×** → 7b **1.82×**. (7b는 E3 ssm floor 누락 artifact로 1.00×로 2회 오결론 후 정정 — Part 3-A.)
 
 ---
 
@@ -52,15 +52,16 @@ green_ctx(정적 SM 분할)가 two_stream(동적 공유)을 **1576셀 중 0번**
 |---|--|--|--|--|
 | attn-decode floor(SM, b1) | 54 | 54 | **68** | 크기↑ → 보호 비용↑ |
 | prefill SM-sensitivity (solo, 108→14SM) | ssm 2.0× | ssm 2.2× | ssm **2.5×** | **크기 불변**(7B도 민감) |
-| full-model decode step(b8) | — | ~28ms | **~51ms** | 크기↑ → decode 지배↑ |
-| prefill SM-sensitivity (solo) | ssm 2.0× | ssm 2.2× | ssm **2.5×** | **크기 불변**(7B도 민감) |
-| co throughput | 1302 | 752 | 375 | 크기↑ → 용량↓ |
-| **la/agnostic** | 1.37× | **2.0×** | 1.06× | **역-U(2.7B peak)** |
+| FULL prefill_total / decode_total (b8) | — | 48.5 / 28.5 | 126 / 49 | prefill이 2.6× vs decode 1.7× |
+| **DECODE/PREFILL 비율** | — | **0.59** | **0.39** | 7B가 *더 prefill-heavy* |
+| **ssm-decode floor SM @b8** | 54 | 54 | **68** | 크기↑ → agnostic이 prefill 더 굶김 |
+| prefill SM-sensitivity (solo) | ssm 2.0× | ssm 2.2× | ssm **2.5×** | 크기 불변(7B도 민감) |
+| **la/agnostic** | 1.37× | **2.02×** | **1.82×** | **전 구간 이득(2.7B peak)** |
 
-**왜 역-U인가** — prefill SM-민감도는 크기 불변(위)이므로 *그게 원인은 아니다*. 이득을 가르는 건 **(a) agnostic이 prefill을 얼마나 굶기나**(=decode floor가 GPU에서 차지하는 비중)와 **(b) prefill이 goodput 병목인가**(=decode-step 지배 여부):
-- **1.2B(1.37×)**: 모델이 작아 decode floor가 GPU의 작은 비중 → agnostic이 prefill을 *덜 굶김*(agnostic 1376 > co 1302) → *환원할 여지 작음* → 이득 축소.
-- **2.7B(2.0×, sweet-spot)**: agnostic이 prefill을 강하게 굶김(629 < co 752) + prefill이 아직 goodput에 충분히 기여 → **환원 효과 최대.**
-- **7B(1.06×)**: ① attn-decode 미포화(floor 68~108)라 *싸게 보호 못 함* + ③ **decode-step 지배(51ms)라 goodput이 decode-bound** → prefill을 환원해도(7B prefill도 SM-민감하지만) goodput 천장이 안 오름. **즉 prefill이 병목이 아니라 lever 부재.**
+**왜 크기별 강도가 다른가** — prefill SM-민감도는 크기 불변이므로 *그게 원인은 아니다*. 이득을 가르는 건 **agnostic이 ssm 레이어에서 prefill을 얼마나 굶기나 = ssm-decode floor**(예약 SM 비중):
+- **1.2B(1.37×)**: ssm floor 작아 agnostic이 prefill을 *덜 굶김*(1376 > co 1302) → 환원 여지 작음.
+- **2.7B(2.02×)**: ssm floor 54로 prefill 강하게 굶김(629 < co 752) → 환원 효과 큼.
+- **7B(1.82×)**: ssm floor가 *더 높아*(68) prefill 더 굶김(273 < co 337) → 환원 이득 큼. **decode-bound라서가 아니다**(7B는 오히려 prefill-heavy, DECODE/PREFILL 0.39) — 이전 "decode 지배라 lever 죽음" 설명은 *틀렸고*, 실제 1.00×는 E3 ssm floor 누락 artifact였다([7B 검증 §6](layer_aware_7b_verification.md)).
 
 ### B. 배치 (decode_batch B = 동시 decode 요청 수)
 

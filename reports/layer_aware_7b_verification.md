@@ -1,17 +1,18 @@
-# layer-aware 예약의 7B 회귀 검증 — 검수 C1 종결
+# layer-aware 예약의 7B 회귀 검증 — **반전: 7B도 스케일한다(1.82×)**
 
-작성일: 2026-06-22 · 대상: [layer_aware_benefit_report](layer_aware_benefit_report.md)의 살아있는 결론(*"temporal 하이브리드서 layer-type-aware SM 예약이 ~2× goodput"*)이 **7B 스케일에서도 성립하는가**
-근거 데이터: `results_v2/e5_dp/serving_coexec_full_zamba2_7b_*.csv`(측정), `results_v2/e6/layer_aware_zamba2_7b_b8.csv`(sim)
-스크립트: `experiments/e6_queue_sim/synth_7b_protect_lut.py`(측정→합성 LUT) · `run_layer_aware.py`
+작성일: 2026-06-22 · 대상: [layer_aware_benefit_report](layer_aware_benefit_report.md)의 결론(*"temporal 하이브리드서 layer-type-aware SM 예약이 ~2× goodput"*)이 **7B 스케일에서도 성립하는가**
+근거 데이터: `results_v2/e3/decode_floor_zamba2_7b_*.csv`(E3 floor, **job 797832서 ssm 추가**) · `results_v2/e5_sim_b8_opt/serving_coexec_full_zamba2_7b_*.csv`(E5) · `results_v2/e6/layer_aware_zamba2_7b_b8.csv`
 관련: [검수 C1](review_checklist.md) · [real_prefill §7·§8](real_prefill_results.md) · [vllm_validation](vllm_validation.md)
 
 ---
 
-## 0. 요약 (TL;DR)
+> **⚠⚠ 결론 반전 (2026-06-22, job 797832, 깨끗한 LUT):** 이전 "7B 미스케일(1.00×)" 결론은 **측정 artifact였다.** 실제는 **la/agnostic = 1.82× — 7B도 2.7b(2.0×)와 거의 같은 강도로 *스케일한다*.** 아래 §0~§5의 "미스케일" 논증(§2 구조 전제 ①③ 포함)은 **전부 폐기**한다. 자세한 인과는 §6(신규).
 
-**확정 판정: layer_aware의 ~2× goodput은 7B로 스케일하지 않는다.** 근거(정정됨, §2): **①** 7B attn-decode를 싸게 보호 못 함(floor 68~108, +67~97% 팽창; `dec=attn` 셀 18/20 ok로 견고) + **③** decode-step 지배(~51ms)라 goodput이 decode-bound → prefill 개선이 천장 못 올림. **전제②(prefill 무감각)는 철회**: job 797524 실측으로 **7B prefill도 SM-민감(ssm 2.5×, attn 7.3× @108→14SM)** 확인 — 크기 거의 불변. 7B에서 prefill은 *민감하나 병목이 아니다*. **절대 goodput 확증 완료(job 797630):** 785877의 E5 ssm-decode OSError는 **`TRITON_CACHE_DIR`를 scratch로 옮기자 해소**(홈 캐시의 7B 커널 이슈) → 깨끗한 LUT(dec=ssm 40/50 ok)로 run_layer_aware: **la/agnostic = 정확히 1.00×**(co 334 / agnostic 495 / layer_aware 495, @SLO100). synth가 추정한 1.06×보다도 낮은 **완전 무이득**이며, **la=agnostic이 정확히 같다는 것 자체가 ③(decode-bound)의 직접 증거** — prefill에 SM을 환원해도 throughput이 1도 안 변함. 또 `pf=ssm dec=attn`이 db≥16서 `no_room(decode_floor=108)`로 실패 = **①(7B attn-decode 보호 불가)의 직접 증거**. ∴ **7B 미스케일 절대 확정.**
+## 0. 요약 (TL;DR — 갱신)
 
-> **이력:** 초판 "측정 차단"은 오류였고(SXM4 `amd_a100nv_8` 가용), `slurm/measure_7b_layer_aware.sh`로 실측 제출(job 785877, 완료). E3 floor OK·E5 dec=ssm 커널 실패 → 절대 확증은 ssm-decode 커널 이슈로 미완이나, 구조적 측정이 결론을 닫는다(§4).
+**판정: layer_aware의 ~2× goodput은 7B로도 스케일한다.** 깨끗한 실측 LUT(job 797832: E3 ssm floor + E5 green_ctx_protect)로 `run_layer_aware`: **co 337 / agnostic 273 / layer_aware 496 → la/agnostic = 1.82×**(@SLO≥80ms). 2.7b와 *동일 패턴*: **agnostic(273) < co(337)** — agnostic이 ssm 레이어까지 decode 예약해 prefill을 굶김(7B ssm floor b8=68→prefill 40 SM) → layer_aware가 ssm 레이어 SM을 prefill에 환원해 역전. **크기 추세: 1.2b 1.37× / 2.7b 2.02×(peak) / 7b 1.82× — 전 구간 이득, 7B 포함.** (전제②"prefill 민감"은 job 797524서 이미 확인됨 — 그게 7B서도 lever가 사는 이유.)
+
+> **왜 이전엔 1.00×였나 (artifact 연쇄, §6):** 785877의 decode_ssm **Triton-캐시 OSError** → 7B **E3 ssm floor 미측정**(attn만 9행) → E5 green_ctx_protect가 7B ssm서 floor 못 찾아 실패 → `run_layer_aware`서 agnostic이 two_stream으로 폴백 = layer_aware와 **동일(1.00×)**. `TRITON_CACHE_DIR`=scratch fix + E3 ssm floor 재측정(job 797832)으로 해소 → 진짜 값 1.82× 드러남. **교훈: 불완전 LUT 셀이 정책을 조용히 degenerate시킨다 — 셀단위 완전성 검증 필수.**
 
 - 검수 C1이 "결정적 다음 단계"로 꼽은 **7B 회귀를, 살아있는 가설(layer_aware 예약)에 대해 처음으로 돌렸다.** (공간-*분할* 가설의 7B는 [real_prefill §7](real_prefill_results.md)에서 이미 음성으로 닫힘.)
 - 2.7b의 2×를 만든 두 재료가 **7B에선 측정상 둘 다 약하거나 부재**다:
@@ -81,8 +82,11 @@ full-model decode step ≈ Σ_layers(solo_decode). b8: 13·0.959 + 68·0.566 ≈
 |---|--:|--:|--:|--:|--:|
 | **real-E3 2.7b** (참값) | 752 | 629 | **1267** | 2.0× | 43.5ms |
 | synth-2.7b (f-cap) | 752 | 88 | 221 | 2.5× | 178ms |
-| synth-7b (f-cap, *구버전*) | 171 | 150 | 159 | 1.06× | 86.5ms |
-| **real-7b** (job 797630, 깨끗한 LUT) | 334 | 495 | **495** | **1.00×** | 71.0ms |
+| synth-7b (f-cap, *폐기*) | 171 | 150 | 159 | 1.06× | 86.5ms |
+| real-7b (797630, **E3 ssm floor 누락 artifact**) | 334 | 495 | 495 | 1.00× | 71.0ms |
+| **real-7b (797832, E3 ssm floor 포함, 진짜 값)** | 337 | 273 | **496** | **1.82×** | 70.7ms |
+
+> 위 두 real-7b 행의 차이가 artifact의 전부다: 797630은 E3 *ssm* floor가 없어 agnostic이 two_stream으로 degenerate(495=la) → 1.00×. 797832는 ssm floor를 측정해 agnostic이 제대로 ssm-decode를 예약(273, prefill 굶김) → la가 역전 → 1.82×.
 *(goodput tok/s)*
 
 **방법 한계(반드시 명시):** 합성 protect는 reservation을 측정 최대 54 SM로 cap하므로 decode 보호를 과소평가한다 — 그래서 synth-2.7b조차 절대 SLO를 망가뜨려(real la=1267>co를 synth는 la=221<co로 뒤집음) **"co가 7B서 이긴다"를 합성 sim 단독 근거로 주장하지 않는다.** 합성법이 *보존*하는 건 **layer_aware>agnostic 순서와 그 비율의 모델-스케일 추세**: la/agnostic 우위가 **2.7b ~2.0–2.5× → 7B 1.06×로 붕괴.** §2의 측정 구조와 같은 방향(7B에선 lever가 거의 작동 안 함).
@@ -101,12 +105,25 @@ full-model decode step ≈ Σ_layers(solo_decode). b8: 13·0.959 + 68·0.566 ≈
 
 **bracket(닫힘):** §2 두 전제 부정 + [real_prefill §8](real_prefill_results.md)의 full-model protect `no_room`이 양 끝을 묶는다 — reservation 적게(54) → decode 미보호(SLO 이득 없음), 많게(≥94, 7B 포화에 필요) → prefill 고갈(throughput 붕괴). 2.7b식 sweet-spot 없음. **재실측으로 절대값을 닫으려면** 실패한 dec=ssm 셀을 작은 db(OOM 회피)+mamba 커널 캐시 점검으로 다시 돌려야 하나, **구조 논거가 이미 결론을 닫으므로 선택적**이다.
 
-## 5. 결론 — 검수 C1 닫힘 (조건부)
+## 5. 결론 — 검수 C1 닫힘 (반전: 7B도 스케일)
 
-원래 가설의 *살아있는* 형태(layer_aware 예약)는 **2.7b/3B(SLM)·A100서 ~2× goodput으로 살아있되, 7B로는 스케일하지 않는다**:
-- **측정 확정:** 7B는 (①) attn-decode를 싸게 보호할 수 없고(54 SM로 +67~97%), (③) decode-step 지배(~51ms)라 goodput이 decode-bound다. **(②는 정정 — 7B prefill도 SM-민감(2.5×), 단 병목이 아니라 환원해도 goodput 천장 안 오름.)**
-- **실측 확정(job 797630, 깨끗한 LUT):** la/agnostic 우위가 2.7b **2.0× → 7B 1.00×**(정확히 무이득). la=agnostic 동일 = ③의 직접 증거.
-- **공간-분할 7B 음성**([real_prefill §7](real_prefill_results.md))과 **방향 일치** → 프로젝트 헤드라인("SM 예약/분할은 SLM 한정 현상")이 *결정적 스케일점에서 강화*된다.
-- **실측 확정(785877 E3 floor + 797630 깨끗한 E5):** OSError는 `TRITON_CACHE_DIR`=scratch로 해소(홈 캐시 7B 커널 이슈). 깨끗한 LUT서 **la/agnostic=1.00×** — premise①③를 직접 증거로 확정(no_room + la=agnostic).
+layer_aware 예약은 **테스트한 전 크기(1.2B–7B)서 goodput 이득** — la/agnostic **1.2b 1.37× / 2.7b 2.02× / 7b 1.82×**(전부 깨끗한 실측 LUT). **SLM 한정이 아니다.**
+- 7B도 2.7b와 동일 메커니즘: ssm floor가 더 높아(b8 68 vs 54) agnostic이 prefill을 *더* 굶기고(agnostic 273 < co 337), layer_aware가 ssm 레이어 SM을 환원해 역전(496). 전제②(prefill SM-민감)가 살아있어 lever가 작동.
+- ~~"7B 미스케일"~~ 은 **artifact였다**(§6): decode_ssm Triton-캐시 OSError → E3 ssm floor 누락 → green_ctx_protect degenerate → agnostic≡la=1.00×. job 797832(TRITON fix + E3 ssm floor)로 해소.
+- **단, 공간-*분할* 7B 음성**([real_prefill §7](real_prefill_results.md))은 별개로 유효 — 그건 layer-type *분할*(死)이지 *예약*(生)이 아님.
 
-검수 체크리스트 갱신: **C1 = 닫힘** — "SM 예약 불필요"를 모델 크기 무관 결론으로 쓰지 않되, *살아있는 layer_aware도 7B서 lever 전제가 측정상 부재(§2)*임을 확정. SLM 한정 스코프 확정. (절대-LUT 재실측은 선택적 — §4.)
+검수 체크리스트: **C1 = 닫힘** — layer_aware 예약은 1.2B–7B 전 구간 양성. "SLM 한정" 스코프 **철회**.
+
+## 6. 왜 결론이 두 번 뒤집혔나 — artifact 연쇄와 교훈
+
+| 시점 | 값 | 무엇이 문제였나 |
+|---|--|--|
+| 초기(synth) | 1.06× | 합성 protect(54 SM cap) — 방법 한계 |
+| 797630(real, E3 ssm 누락) | 1.00× | **E3 ssm floor 없음** → green_ctx_protect ssm 실패 → agnostic이 two_stream 폴백 = la |
+| **797832(real, E3 ssm 포함)** | **1.82×** | **깨끗 — 진짜 값** |
+
+**연쇄:** ① 785877의 decode_ssm이 홈 `~/.triton` 캐시 이슈로 OSError(zamba2_7b만 `n_groups=2`라 고유 커널) → ② E3 floor 실행이 ssm 행을 못 만듦(attn 9행만) → ③ E5 green_ctx_protect가 7B ssm서 `decode_floor=None`→no_room 실패 → ④ `run_layer_aware`의 `FullModelLM`이 ok 셀만 읽어 agnostic ssm을 two_stream으로 폴백 → ⑤ agnostic ≡ layer_aware → 1.00×. **`TRITON_CACHE_DIR`=scratch + E3 ssm floor 재측정으로 전부 해소.**
+
+**구조 분석이 왜 빗나갔나(§2):** "decode-step 지배(③)" 논거는 틀렸다 — 실측상 7B는 DECODE/PREFILL 비율이 *더 낮다*(0.39 vs 2.7b 0.59), 즉 *상대적으로 prefill-heavy*. prefill이 더 무거우니 prefill lever(layer_aware)가 **더** 잘 먹히는 게 맞았다. §2는 artifact(1.00×)를 사후 합리화한 것이었다.
+
+**교훈:** 불완전 LUT는 정책을 *조용히* degenerate시킨다(에러 없이 폴백). 결론 전에 **(a) 셀단위 ok 완전성**과 **(b) 두 정책이 실제로 다른 셀을 쓰는지**를 검증해야 한다. 본 7B 회귀는 그 검증 부재로 2회 오결론했다.

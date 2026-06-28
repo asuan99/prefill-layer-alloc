@@ -4,7 +4,7 @@
 근거 코드: `experiments/e6_queue_sim/run_layer_aware.py` · 그림: `make_layer_aware_figs.py`
 관련: [queue_simulator_design §14](queue_simulator_design.md) · [vllm_validation](vllm_validation.md) · [closure 검토 6·7](project_closure_report.md) · [7B 회귀 검증](layer_aware_7b_verification.md)
 
-> **스코프(2026-06-22):** 아래 ~2× 결과는 **zamba2_2.7b(SLM)·A100 한정**이다. [7B 회귀 검증](layer_aware_7b_verification.md): **layer_aware는 7B로 스케일하지 않는다(절대 확정, 깨끗한 실측 LUT).** la/agnostic = 2.0×@2.7b → **1.00×@7B**(job 797630). 이유 = ① attn-decode 보호 불가(no_room) + ③ decode-step 지배(la=agnostic 동일이 직접 증거). (전제②"prefill 무감각"은 job 797524로 철회 — 7B prefill도 민감, 단 병목 아님.) 공간-분할 7B 음성([real_prefill §7](real_prefill_results.md))과 방향 일치.
+> **스코프(2026-06-22, 반전):** layer_aware 이득은 **테스트한 전 크기 1.2B–7B에서 성립**(SLM 한정 아님). la/agnostic = **1.2b 1.37× / 2.7b 2.02×(peak) / 7b 1.82×**(전부 깨끗한 실측 LUT, A100). 이전 "7B 1.00× 미스케일"은 **artifact**(E3 ssm floor 누락 → agnostic이 two_stream으로 degenerate)였고, job 797832(TRITON fix + E3 ssm floor)로 **1.82×** 확인 — [7B 검증 §6](layer_aware_7b_verification.md). 단 공간-*분할* 7B 음성([real_prefill §7](real_prefill_results.md))은 별개(분할 死 vs 예약 生).
 
 ---
 
@@ -54,7 +54,7 @@
 
 → **SLO ≥ ~48ms에서 layer_aware가 두 baseline을 모두 2× 이긴다**(그림 A 음영). 유일한 예외는 좁은 38–48ms band(agnostic의 더 낮은 ITL이 잠깐 유리) — 그 위 전 구간에서 layer_aware 압승. (TBT 50–100ms는 대화형 서빙의 현실적 SLO 범위.)
 
-## 3.5 크기 추세 — SLM 현상, 2.7B에서 peak (1.2B/2.7B/7B)
+## 3.5 크기 추세 — 1.2B–7B 전 구간 이득 (2.7B peak)
 
 zamba2 세 크기에서 동일 측정(E3 floor + E5 opt/protect LUT, job 793540/785877). **la/agnostic goodput 비(현실 SLO서):**
 
@@ -64,15 +64,16 @@ zamba2 세 크기에서 동일 측정(E3 floor + E5 opt/protect LUT, job 793540/
 |---|--|--|--|--|--|--|
 | zamba2_1.2b | 6a+32s | 1302 | 1376 | 1887 | **1.37×** | 실측(188/200) |
 | **zamba2_2.7b** | 9a+45s | 752 | 629 | 1268 | **2.02×** | 실측 |
-| zamba2_7b | 13a+68s | 334 | 495 | 495 | **1.00×** | 실측(job 797630) |
-*(7B 절대 확증: 785877의 ssm-decode OSError를 `TRITON_CACHE_DIR`=scratch로 해소 → 깨끗한 LUT서 la/agnostic=1.00× — synth 추정 1.06×보다도 낮은 완전 무이득. la=agnostic 동일 자체가 decode-bound 직접 증거. [7B 검증](layer_aware_7b_verification.md))*
+| **zamba2_7b** | 13a+68s | 337 | 273 | 496 | **1.82×** | 실측(job 797832) |
+*(7B는 두 번 오측정됨: synth 1.06×, real-but-artifact 1.00×(E3 ssm floor 누락). 깨끗한 LUT(E3 ssm floor 포함)서 **1.82×**. 인과·교훈은 [7B 검증 §6](layer_aware_7b_verification.md))*
 
-**핵심: 이득은 단조 "작을수록 강함"이 아니라 *역-U자, 2.7B에서 peak*다.** 모든 SLM이 이득(1.2B 1.37×, 2.7B 2.0×)이나 7B는 완전 소멸(**1.00×**). 해석:
-- **1.2B(1.37×)**: 모델이 작아 agnostic도 prefill을 덜 굶김(그림 B: agnostic 1376 > co 1302) → 환원할 여지가 작아 이득 축소.
-- **2.7B(2.0×, peak)**: agnostic이 prefill을 강하게 굶겨(629 < co 752) layer_aware의 환원 효과 최대 → sweet-spot.
-- **7B(1.06×)**: attn-decode 미포화(보호 비쌈) + decode-step 지배(goodput decode-bound)로 lever 부재. (prefill은 7B도 SM-민감하나 *병목이 아님* — [7B 검증 §2.2](layer_aware_7b_verification.md).)
+**핵심: layer_aware는 1.2B–7B 전 구간에서 이득**(1.37× / 2.02× / 1.82×), 2.7B가 peak이나 7B도 거의 동급. 크기별 강도 차이 해석:
+강도를 가르는 건 **agnostic이 prefill을 얼마나 굶기나(=ssm-decode floor가 GPU에서 차지하는 비중)**:
+- **1.2B(1.37×)**: 모델이 작아 agnostic도 prefill을 덜 굶김(agnostic 1376 > co 1302) → 환원 여지 작아 이득 축소.
+- **2.7B(2.0×, peak)**: agnostic이 prefill을 강하게 굶김(629 < co 752, ssm floor b8=54) → 환원 효과 최대.
+- **7B(1.82×)**: ssm floor가 *더* 높아(b8=68) agnostic이 prefill을 더 굶김(273 < co 337) → layer_aware 환원 이득 큼. 2.7B와 동일 메커니즘. (전제②인 prefill SM-민감성이 7B서도 살아있어 작동 — [7B 검증 §6](layer_aware_7b_verification.md).)
 
-→ 가설 정밀화: *"layer_aware lever는 SLM 영역(≤~3B)에서 작동하며, 모델이 (a)attn-decode를 소수 SM로 싸게 보호할 수 있고 (b)prefill이 SM-예약에 충분히 민감한 mid-SLM(~2.7B)에서 가장 강하다."*
+→ 가설: *"layer_aware lever는 agnostic이 ssm-decode 예약으로 prefill을 굶기는 모든 regime에서 작동한다. 1.2B–7B 전 구간에서 성립하며, ssm floor가 GPU의 큰 비중을 차지하는 mid~large SLM(2.7–7B)에서 강하다."*
 
 ## 4. 적용 범위 — TEMPORAL 하이브리드 한정 (그림 D)
 
@@ -94,7 +95,7 @@ zamba2 세 크기에서 동일 측정(E3 floor + E5 opt/protect LUT, job 793540/
 - **이건 sim 예측이지 실엔진 실증이 아니다.** layer_aware_protect는 어떤 프레임워크에도 구현이 없다(vLLM은 fused 단일-forward, SM 분할 API 없음). 실증 경로는 [partition_engine_design](partition_engine_design.md)의 Path C 프로토타입으로 스코핑됨.
 - sim은 저부하 decode ITL **절대값을 ~2× 과대**평가(unfused per-layer 커널 합산). 단 정책 *간 상대 비교*(2× goodput)와 *비율*은 실측과 정합하므로 결론은 견고.
 - **temporal 하이브리드 한정**(§4). spatial(falcon)엔 미적용.
-- **SLM(≤~3B) 한정 — 7B 미스케일(절대 확정, 깨끗한 실측 LUT)**([7B 검증](layer_aware_7b_verification.md)). 이유는 **① attn-decode 보호 불가(no_room, floor 108) + ③ decode-step 지배(la=agnostic 정확히 동일이 직접 증거)**. (전제② "prefill 무감각"은 job 797524로 *철회* — 7B prefill도 SM-민감 2.5×, 단 병목 아님.) la/agnostic 2.0×(2.7b)→**1.00×(7B, job 797630)**.
+- **크기 스코프: 1.2B–7B 전 구간 이득(SLM 한정 아님)**. la/agnostic 1.37×/2.02×/**1.82×**. (주의: 7B는 *artifact로 2회 오결론*(1.06×, 1.00×) 후 깨끗한 LUT서 1.82× — [7B 검증 §6](layer_aware_7b_verification.md). 불완전 LUT가 정책을 조용히 degenerate시킨 사례.) 더 큰 모델(>7B)·다른 GPU는 미측정.
 - 파티션 전환 오버헤드는 sim상 ~0.4%로 추정(레이어당 비용 수 ms 대비 swap ~7.8µs) — 실측은 Path C에서.
 
 ## 7. 결론
