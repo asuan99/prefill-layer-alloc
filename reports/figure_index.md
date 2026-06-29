@@ -10,6 +10,8 @@
 |---|---|---|---|
 | **char_phase_layertype.png** | 3-panel | (A) decode latency **vs batch**(attn 급증=메모리바운드 KV×B / ssm 평탄) · (B) decode **vs 시퀀스길이**(attn **O(L)** / ssm **O(1)**) · (C) **phase×layer-type** 매트릭스(prefill 대칭·compute / decode 비대칭·memory) | "attn/ssm이 phase에 따라 어떤 차이?" |
 | **policy_scaling.png** | 2-panel | (A) **정책별 decode ITL vs batch**(fused>co>agnostic≈layer_aware, 실측) · (B) **vs 시퀀스길이**(fused/co가 context↑서 더 빨리 악화; attn O(L)) | "batch·seqlen에 따른 각 정책 실행시간?" |
+| **mechanism_schematic.png** | 도식 | 한 forward의 **SM 배분**: attn-decode 레이어는 SM 예약(~94), ssm 레이어는 decode가 ~54서 포화→나머지 prefill 환원 | "layer_aware가 *어떻게* 작동?" (S2 시스템 도식) |
+| **attn_ssm_diff.png** | 2-panel | (A) **decode SM-민감도**(attn은 SM 필요·가파름 / ssm은 ~54서 포화·평탄) · (B) **한 forward latency 구성비**(ssm 지배; attn-decode는 batch↑서 증가) | "attn/ssm 차이를 실측으로" |
 
 > 이 둘이 **E0–E7 기반 측정(배치·시퀀스·phase 의존성)을 논문 figure로 가시화** — 기존 결론 figure가 못 보여주던 부분.
 
@@ -33,6 +35,8 @@
 | 그림 | repo 경로 | 생성 스크립트 |
 |---|---|---|
 | char_phase_layertype | `reports/figures/char_phase_layertype.png` | `e6_queue_sim/make_char_phase_fig.py` |
+| mechanism_schematic | `reports/figures/mechanism_schematic.png` | `e6_queue_sim/make_mechanism_fig.py` |
+| attn_ssm_diff | `reports/figures/attn_ssm_diff.png` | `e6_queue_sim/make_attn_ssm_diff_fig.py` |
 | policy_scaling | `reports/figures/policy_scaling.png` | `e6_queue_sim/make_policy_scaling_fig.py` |
 | summary_dashboard | `reports/figures/summary_dashboard.png` | `e6_queue_sim/make_summary_fig.py` |
 | layer_aware_result | `reports/figures/layer_aware_result.png` | `e6_queue_sim/make_layer_aware_figs.py` |

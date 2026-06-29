@@ -11,7 +11,7 @@
 | § | 내용 단계 | 핵심 메시지 | 주 그림 |
 |---|---|---|---|
 | **S1** | *관찰/동기*: per-layer decode 비대칭(phase·batch·seqlen) | attn-decode=비쌈(메모리바운드·**O(L)**·batch↑서 급증) vs ssm-decode=쌈(**O(1)**·BW~0%·평탄); prefill은 phase상 대칭(compute) → 레이어·phase별 *보호 가치가 다르다* | **`char_phase_layertype`**(phase×batch×seqlen) + `temporal_vs_spatial`(per-layer 구조) |
-| **S2** | *시스템*: layer-type-aware **예약** | 비싼 attn 레이어에만 decode SM 예약, 싼 ssm은 prefill 환원 (메커니즘) | (본문 텍스트/별도 도식 — layer_aware_result의 C 패널은 제거됨) |
+| **S2** | *시스템*: layer-type-aware **예약** | 비싼 attn 레이어에만 decode SM 예약, 싼 ssm은 prefill 환원 (메커니즘) | **`mechanism_schematic`**(SM 배분 도식) + `attn_ssm_diff(A)`(SM-민감도가 근거) |
 | **S3** | *주결과*: goodput@SLO | baseline 대비 우위(연속 SLO 스윕) | `layer_aware_result(A)` |
 | **S4** | *일반성*: 크기 1.2B–7B | 전 크기 이득(1.37/2.02/1.82×) | `layer_aware_size_trend` |
 | **S5** | *적용 범위*: temporal-only | 두 전제(분리+비싼 no-GQA attn) | `temporal_vs_spatial` (+`prefill_sm_sensitivity`) |
@@ -52,7 +52,7 @@
 
 **본문 main (4–5장):**
 1. `layer_aware_result(A)` — 주결과(goodput vs SLO) ★
-2. 별도 메커니즘 도식(신규) — 작동 원리 (layer_aware_result는 A+B만)
+2. `mechanism_schematic` — 작동 원리(SM 배분 도식)
 3. `layer_aware_size_trend` — 크기 일반성
 4. `temporal_vs_spatial` — 적용범위(구조 근거) ★
 5. `framework_comparison`(축 개선) 또는 `vllm_calibration` — 프로덕션 대비/검증
