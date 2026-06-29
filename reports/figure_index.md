@@ -20,7 +20,7 @@
 | 그림 | 패널 | **무엇을 보여주나** | 뒷받침 주장 |
 |---|---|---|---|
 | **summary_dashboard.png** | 3-panel | (A) la/agnostic goodput 1.37/2.02/1.82× (zamba2 크기별) · (B) attn-decode 비용 판별자(zamba2 0.59ms vs falcon 0.056ms) · (C) vLLM sim-vs-실측 decode 비율 | 프로젝트 전체 헤드라인 1장 |
-| **layer_aware_result.png** | 3-panel | (A) **goodput vs SLO** 곡선 — SLO≥~48ms서 layer_aware 우위 음영 · (B) throughput↑/TTFT↓/ITL tradeoff 막대 · (C) **메커니즘**: 54-레이어 forward의 SM 배분(attn만 예약, ssm은 prefill 환원) | layer_aware 양성 결과 + 작동 원리 (zamba2_2.7b) |
+| **layer_aware_result.png** | 2-panel | (A) **goodput vs SLO** — 4정책(fused/co_schedule/agnostic/layer_aware) 곡선 + layer_aware 우위 음영 · (B) tradeoff: throughput 막대 + TTFT·ITL(우축 log) | layer_aware vs 전 baseline(fused=vLLM 포함) (zamba2_2.7b) |
 | **layer_aware_size_trend.png** | 2-panel | (A) **la/agnostic 비율** 1.37/2.02/1.82× (peak 2.7B) · (B) 정책별 절대 goodput(co/agnostic/layer_aware) 모델별 | layer_aware가 1.2B–7B 전 구간 이득 |
 | **temporal_vs_spatial.png** | 2-panel | (A) zamba2(temporal): 9개 *비싼* attn 스파이크 + 45개 싼 ssm (분리 가능) · (B) falcon(spatial): 매 레이어 attn(GQA로 작음)+ssm 병렬 | **왜 temporal-only인가** (per-layer decode 구조) |
 | **layer_aware_applicability.png** | 2-panel | zamba2(temporal, attn/ssm 분리→적용 ✓) vs falcon(spatial, 병렬→N/A) 레이어 배치 도식 | 적용 범위 = temporal 하이브리드 |
@@ -49,7 +49,7 @@
 
 ### A의 그림으로 답하는 핵심 질문
 - "layer_aware가 정말 이득인가?" → **layer_aware_result(A)·size_trend**
-- "어떻게 작동하나?" → **layer_aware_result(C) 메커니즘**
+- "어떻게 작동하나?" → **mechanism_schematic**
 - "왜 temporal만?" → **temporal_vs_spatial · applicability**
 - "vLLM 대비 어떤가?" → **framework_comparison · vllm_calibration**
 - "한 장 요약?" → **summary_dashboard**

@@ -25,7 +25,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-from experiments.e6_queue_sim.run_layer_aware import FullModelLM, _POLICY
+from experiments.e6_queue_sim.run_layer_aware import FullModelLM, _POLICY, _SCHED
 from experiments.e6_queue_sim.workload import gen_requests
 from experiments.e6_queue_sim.simulator import simulate
 from experiments.e6_queue_sim.run_queue_sim import metrics
@@ -35,11 +35,12 @@ MODEL = "zamba2_2.7b"
 BUDGET = 8
 LAM = 0.5
 CTX = 4096
-POLICIES = ["co_schedule", "agnostic_protect", "layer_aware_protect"]
-LABELS = {"co_schedule": "co_schedule\n(no reserve)",
+POLICIES = ["fused", "co_schedule", "agnostic_protect", "layer_aware_protect"]
+LABELS = {"fused": "fused\n(vLLM default)",
+          "co_schedule": "co_schedule\n(two-stream, no reserve)",
           "agnostic_protect": "agnostic_protect\n(reserve every layer)",
           "layer_aware_protect": "layer_aware_protect\n(reserve attn layers only)"}
-COL = {"co_schedule": "#9aa0a6", "agnostic_protect": "#e8710a", "layer_aware_protect": "#1a73e8"}
+COL = {"fused": "#c5221f", "co_schedule": "#9aa0a6", "agnostic_protect": "#e8710a", "layer_aware_protect": "#1a73e8"}
 
 cfg = get_model_config(MODEL)
 L = cfg["num_layers"]
@@ -53,7 +54,7 @@ lm = FullModelLM(lut, n_a, n_s)
 sim = {}
 for pol in POLICIES:
     reqs = gen_requests(400, LAM, [512, 1024, 2048, 4096], [64, 128, 256], 256, 0)
-    reqs, st = simulate(reqs, pol, lm, "full", "full", CTX, prefill_budget=BUDGET, scheduler="decoupled")
+    reqs, st = simulate(reqs, pol, lm, "full", "full", CTX, prefill_budget=BUDGET, scheduler=_SCHED[pol])
     sim[pol] = (reqs, st["makespan_ms"])
 
 SLO = np.arange(25, 121, 2.5)
@@ -61,8 +62,8 @@ good = {p: np.array([metrics(sim[p][0], sim[p][1], s)["goodput_tok_s"] for s in 
 # scalar summaries (ITL/throughput are SLO-independent; take at a loose SLO)
 summ = {p: metrics(sim[p][0], sim[p][1], 100.0) for p in POLICIES}
 
-fig = plt.figure(figsize=(13, 9))
-gs = fig.add_gridspec(2, 1, hspace=0.3)
+fig = plt.figure(figsize=(13, 9.5))
+gs = fig.add_gridspec(2, 1, hspace=0.5)
 
 # ---- Panel A: goodput vs SLO ----
 axA = fig.add_subplot(gs[0, 0])
@@ -84,7 +85,8 @@ if win.any():
 axA.set_xlabel("per-token SLO (TBT, ms)")
 axA.set_ylabel("goodput@SLO  (k tok/s)")
 axA.set_title("(A) goodput vs SLO -- zamba2_2.7b (9 attn + 45 ssm)", fontweight="bold")
-axA.legend(fontsize=8.5, loc="lower right", framealpha=0.95)   # lower-right is the empty band
+axA.legend(fontsize=8.3, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=4,
+           framealpha=0.95)   # below the panel (4-way legend covers data if placed inside)
 axA.grid(alpha=0.3)
 axA.set_ylim(0, 1.45)
 
@@ -96,7 +98,7 @@ x = np.arange(len(POLICIES))
 thr = [summ[p]["throughput_tok_s"] for p in POLICIES]
 ttft = [summ[p]["ttft_p99"] for p in POLICIES]          # ms
 itl = [summ[p]["itl_p99"] for p in POLICIES]            # ms
-short = {"co_schedule": "co_schedule", "agnostic_protect": "agnostic", "layer_aware_protect": "layer_aware"}
+short = {"fused": "fused", "co_schedule": "co_schedule", "agnostic_protect": "agnostic", "layer_aware_protect": "layer_aware"}
 axB.bar(x, thr, 0.6, color=[COL[p] for p in POLICIES], alpha=0.55, edgecolor="k", linewidth=0.5, zorder=1)
 for i in range(len(POLICIES)):
     axB.text(i, thr[i] + 25, f"{thr[i]:.0f}", ha="center", va="bottom", fontsize=10, fontweight="bold",
