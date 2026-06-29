@@ -84,33 +84,28 @@ if win.any():
 axA.set_xlabel("per-token SLO (TBT, ms)")
 axA.set_ylabel("goodput@SLO  (k tok/s)")
 axA.set_title("(A) goodput vs SLO -- zamba2_2.7b (9 attn + 45 ssm)", fontweight="bold")
-axA.legend(fontsize=8.5, loc="upper left", framealpha=0.95)
+axA.legend(fontsize=8.5, loc="lower right", framealpha=0.95)   # lower-right is the empty band
 axA.grid(alpha=0.3)
 axA.set_ylim(0, 1.45)
 
-# ---- Panel B: tradeoff bars ----
+# ---- Panel B: single-axis throughput bars + ITL/TTFT annotated (no twin-axis) ----
 axB = fig.add_subplot(gs[0, 1])
 x = np.arange(len(POLICIES))
-thr = [summ[p]["throughput_tok_s"] / 1000 for p in POLICIES]
+thr = [summ[p]["throughput_tok_s"] for p in POLICIES]
 ttft = [summ[p]["ttft_p99"] / 1000 for p in POLICIES]
 itl = [summ[p]["itl_p99"] for p in POLICIES]
-w = 0.62
-b = axB.bar(x, thr, w, color=[COL[p] for p in POLICIES])
-axB.set_ylabel("throughput (k tok/s)")
-axB.set_xticks(x); axB.set_xticklabels([LABELS[p] for p in POLICIES], fontsize=8)
-axB.set_title("(B) throughput up / TTFT down (ITL within SLO)", fontweight="bold")
+short = {"co_schedule": "co_schedule", "agnostic_protect": "agnostic", "layer_aware_protect": "layer_aware"}
+bars = axB.bar(x, thr, 0.62, color=[COL[p] for p in POLICIES], edgecolor="k", linewidth=0.5)
 for i, p in enumerate(POLICIES):
-    axB.text(i, thr[i] + 0.02, f"{thr[i]*1000:.0f}\ntok/s", ha="center", va="bottom", fontsize=8, fontweight="bold")
-axB.set_ylim(0, max(thr) * 1.35)
-axB2 = axB.twinx()
-axB2.plot(x, ttft, "k--o", lw=1.6, ms=6, label="TTFT p99 (s)")
-axB2.plot(x, itl, "r:s", lw=1.6, ms=6, label="ITL p99 (ms)")
-for i in range(len(POLICIES)):
-    axB2.text(i + 0.13, ttft[i], f"{ttft[i]:.0f}s", color="k", fontsize=7.5, va="center")
-    axB2.text(i + 0.13, itl[i], f"{itl[i]:.0f}ms", color="r", fontsize=7.5, va="center")
-axB2.set_ylabel("TTFT p99 (s)  /  ITL p99 (ms)")
-axB2.legend(fontsize=8, loc="upper center")
-axB2.set_ylim(0, max(max(ttft), max(itl)) * 1.25)
+    axB.text(i, thr[i] + 25, f"{thr[i]:.0f} tok/s", ha="center", va="bottom", fontsize=10, fontweight="bold")
+    axB.text(i, thr[i] * 0.5, f"ITL {itl[i]:.0f}ms\nTTFT {ttft[i]:.0f}s", ha="center", va="center",
+             fontsize=9, color="white", fontweight="bold")
+axB.set_xticks(x); axB.set_xticklabels([short[p] for p in POLICIES], fontsize=9)
+axB.set_ylabel("throughput (tok/s)")
+axB.set_ylim(0, max(thr) * 1.25)
+axB.set_title("(B) layer_aware: throughput ~2x, TTFT ~half\n(decode ITL 44ms still within a 50ms SLO)",
+              fontweight="bold")
+axB.grid(axis="y", alpha=0.3)
 
 # ---- Panel C: mechanism (per-layer SM allocation) ----
 axC = fig.add_subplot(gs[1, :])
