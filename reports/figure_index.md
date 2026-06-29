@@ -17,6 +17,21 @@
 | **framework_comparison.png** | 1-panel | 4-way **decode ITL** 막대(fused/co/agnostic/layer_aware) × 3모델 + vLLM 실측 109ms 앵커 | fused가 ITL 최대, 예약이 4–6× bound |
 | **vllm_calibration.png** | 2-panel | (A) **sim fused ITL vs vLLM 실측** (과대비 1.66/1.64/2.34×, falcon 1.09×) · (B) **decode 크기-스케일링 일치**(sim 비 ≈ 실측 비) | sim 절대값 off(no-GQA·크기↑서↑), 상대 추세 valid |
 
+### A 그림 — 파일 위치 & 생성 스크립트
+
+> 모든 그림 `prefill-layer-alloc/reports/figures/*.png` · 스크립트 `workspace/characterization/experiments/<dir>/` · 실행 `cd workspace/characterization && ../../bin/python -m experiments.<dir>.<script>`
+
+| 그림 | repo 경로 | 생성 스크립트 |
+|---|---|---|
+| summary_dashboard | `reports/figures/summary_dashboard.png` | `e6_queue_sim/make_summary_fig.py` |
+| layer_aware_result | `reports/figures/layer_aware_result.png` | `e6_queue_sim/make_layer_aware_figs.py` |
+| layer_aware_applicability | `reports/figures/layer_aware_applicability.png` | `e6_queue_sim/make_layer_aware_figs.py` |
+| layer_aware_size_trend | `reports/figures/layer_aware_size_trend.png` | `e6_queue_sim/make_size_trend_fig.py` |
+| temporal_vs_spatial | `reports/figures/temporal_vs_spatial.png` | `e6_queue_sim/make_temporal_spatial_fig.py` |
+| prefill_sm_sensitivity | `reports/figures/prefill_sm_sensitivity.png` | `e7_prefill_sm/make_prefill_sm_fig.py` |
+| framework_comparison | `reports/figures/framework_comparison.png` | `e6_queue_sim/make_framework_fig.py` |
+| vllm_calibration | `reports/figures/vllm_calibration.png` | `e6_queue_sim/make_calibration_fig.py` |
+
 ### A의 그림으로 답하는 핵심 질문
 - "layer_aware가 정말 이득인가?" → **layer_aware_result(A)·size_trend**
 - "어떻게 작동하나?" → **layer_aware_result(C) 메커니즘**

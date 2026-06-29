@@ -50,14 +50,14 @@ PD-multiplexing(prefill·decode 동시 실행) 하에서, decode가 비싼 **att
 - **S6** 프로덕션 대비: vs fused(vLLM), decode ITL 4–6× — 그림 4-way ITL 막대
 - **S7** 검증·한계: vLLM이 decode 모델 검증(상대), 절대는 directional — 그림 calibration(sim vs 실측 + 크기스케일링 중첩선)
 
-## 그림 자산 (이미 제작됨, 형태 비판 포함)
-1. goodput-vs-SLO(선+우위구간 음영) — 주결과, 형태 최적
-2. mechanism(54-레이어 SM 배분 도식) — 시스템 설명
-3. size-trend(la/agnostic 막대 + 정책별 goodput) — 크기 일반화
-4. temporal_vs_spatial(레이어별 decode 막대: temporal=비싼 attn 스파이크 분리 / spatial=병렬·GQA로 작음) — 적용범위, 형태 우수
-5. prefill_sm_sensitivity(연속 SM 스윕, 3모델 중첩선=크기불변) — 전제② 근거, 형태 최적
-6. framework_comparison(4정책 decode ITL 막대 + vLLM 앵커) — 단 fused가 y축 지배 → **log축 권고**
-7. vllm_calibration(sim vs 실측 막대 + 크기스케일링 2선중첩) — 검증
+## 그림 자산 (이미 제작됨, 파일명·형태 비판 포함)
+1. `layer_aware_result.png` (A)goodput-vs-SLO(선+우위구간 음영) — 주결과, 형태 최적 · (C)mechanism(54-레이어 SM 배분 도식) — 시스템 설명
+2. `layer_aware_size_trend.png` (la/agnostic 막대 + 정책별 goodput) — 크기 일반화
+3. `temporal_vs_spatial.png` (레이어별 decode 막대: temporal=비싼 attn 스파이크 분리 / spatial=병렬·GQA로 작음) — 적용범위, 형태 우수
+4. `prefill_sm_sensitivity.png` (연속 SM 스윕, 3모델 중첩선=크기불변) — 전제② 근거, 형태 최적
+5. `framework_comparison.png` (4정책 decode ITL 막대 + vLLM 앵커) — 단 fused가 y축 지배 → **log축 권고**
+6. `vllm_calibration.png` (sim vs 실측 막대 + 크기스케일링 2선중첩) — 검증
+7. `summary_dashboard.png`(개요 teaser)·`layer_aware_applicability.png`(적용범위 만화) — 본문 제외 권고
 - 형태 권고: throughput/TTFT/ITL을 한 패널에 막대+쌍축으로 욱여넣은 tradeoff 그림은 **분리/정규화**; 개요 dashboard·applicability 만화는 본문 제외(teaser/부록).
 - 권장 추가 그림: **1.2/2.7/7B goodput-vs-SLO 중첩 선그래프**(S3+S4 한 장 통합).
 
@@ -67,3 +67,22 @@ PD-multiplexing(prefill·decode 동시 실행) 하에서, decode가 비싼 **att
 ---
 
 (끝. 위 [붙여넣기용 프롬프트] 블록 전체를 복사해 사용. 클러스터/파일 접근이 필요한 작업—새 측정, 프로토타입 구현—은 웹에서 불가하니 이 환경에서 계속할 것.)
+
+---
+
+## 그림 자산 위치 (repo 경로) — 논문에 넣을 때·재생성 시 참조
+
+> 모든 그림: `prefill-layer-alloc/reports/figures/*.png` · 생성 스크립트: `prefill-layer-alloc/workspace/characterization/experiments/<dir>/<script>` (실행: `cd workspace/characterization && ../../bin/python -m experiments.<dir>.<script>`)
+
+| 그림 파일 | repo 경로 | 생성 스크립트 | 흐름 |
+|---|---|---|---|
+| `layer_aware_result.png` | `reports/figures/layer_aware_result.png` | `e6_queue_sim/make_layer_aware_figs.py` | S2·S3 |
+| `layer_aware_applicability.png` | `reports/figures/layer_aware_applicability.png` | `e6_queue_sim/make_layer_aware_figs.py` | (부록) |
+| `layer_aware_size_trend.png` | `reports/figures/layer_aware_size_trend.png` | `e6_queue_sim/make_size_trend_fig.py` | S4 |
+| `temporal_vs_spatial.png` | `reports/figures/temporal_vs_spatial.png` | `e6_queue_sim/make_temporal_spatial_fig.py` | S1·S5 |
+| `prefill_sm_sensitivity.png` | `reports/figures/prefill_sm_sensitivity.png` | `e7_prefill_sm/make_prefill_sm_fig.py` | S5 |
+| `framework_comparison.png` | `reports/figures/framework_comparison.png` | `e6_queue_sim/make_framework_fig.py` | S6 |
+| `vllm_calibration.png` | `reports/figures/vllm_calibration.png` | `e6_queue_sim/make_calibration_fig.py` | S7 |
+| `summary_dashboard.png` | `reports/figures/summary_dashboard.png` | `e6_queue_sim/make_summary_fig.py` | S0(teaser) |
+
+데이터 소스(그림이 읽는 LUT): `workspace/characterization/results_v2/{e3,e5_sim_b8_opt,e6,e7_prefill_sm}/*.csv`. 실측 vLLM 원천: `vllm_bench/results/real_vllm.csv` + `logs/vllm_*` (jobs 783863·799168).
