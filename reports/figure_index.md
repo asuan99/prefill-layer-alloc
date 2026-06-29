@@ -4,6 +4,15 @@
 
 ---
 
+## A0. 특성화 그래프 (신규, E3+E5 실측 반영) — *기반 메커니즘*
+
+| 그림 | 패널 | **무엇을 보여주나** | 답하는 질문 |
+|---|---|---|---|
+| **char_phase_layertype.png** | 3-panel | (A) decode latency **vs batch**(attn 급증=메모리바운드 KV×B / ssm 평탄) · (B) decode **vs 시퀀스길이**(attn **O(L)** / ssm **O(1)**) · (C) **phase×layer-type** 매트릭스(prefill 대칭·compute / decode 비대칭·memory) | "attn/ssm이 phase에 따라 어떤 차이?" |
+| **policy_scaling.png** | 2-panel | (A) **정책별 decode ITL vs batch**(fused>co>agnostic≈layer_aware, 실측) · (B) **vs 시퀀스길이**(fused/co가 context↑서 더 빨리 악화; attn O(L)) | "batch·seqlen에 따른 각 정책 실행시간?" |
+
+> 이 둘이 **E0–E7 기반 측정(배치·시퀀스·phase 의존성)을 논문 figure로 가시화** — 기존 결론 figure가 못 보여주던 부분.
+
 ## A. 결론/논문용 그래프 (reports/figures/)
 
 | 그림 | 패널 | **무엇을 보여주나** | 뒷받침 주장 |
@@ -23,6 +32,8 @@
 
 | 그림 | repo 경로 | 생성 스크립트 |
 |---|---|---|
+| char_phase_layertype | `reports/figures/char_phase_layertype.png` | `e6_queue_sim/make_char_phase_fig.py` |
+| policy_scaling | `reports/figures/policy_scaling.png` | `e6_queue_sim/make_policy_scaling_fig.py` |
 | summary_dashboard | `reports/figures/summary_dashboard.png` | `e6_queue_sim/make_summary_fig.py` |
 | layer_aware_result | `reports/figures/layer_aware_result.png` | `e6_queue_sim/make_layer_aware_figs.py` |
 | layer_aware_applicability | `reports/figures/layer_aware_applicability.png` | `e6_queue_sim/make_layer_aware_figs.py` |

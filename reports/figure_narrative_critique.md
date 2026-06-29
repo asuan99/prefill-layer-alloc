@@ -10,12 +10,12 @@
 
 | § | 내용 단계 | 핵심 메시지 | 주 그림 |
 |---|---|---|---|
-| **S1** | *관찰/동기*: per-layer decode 비대칭 | attn-decode=비쌈(메모리바운드·O(L)) vs ssm-decode=쌈(O(1)·BW~0%) → 레이어별로 *보호 가치가 다르다* | `temporal_vs_spatial`(per-layer 구조) |
+| **S1** | *관찰/동기*: per-layer decode 비대칭(phase·batch·seqlen) | attn-decode=비쌈(메모리바운드·**O(L)**·batch↑서 급증) vs ssm-decode=쌈(**O(1)**·BW~0%·평탄); prefill은 phase상 대칭(compute) → 레이어·phase별 *보호 가치가 다르다* | **`char_phase_layertype`**(phase×batch×seqlen) + `temporal_vs_spatial`(per-layer 구조) |
 | **S2** | *시스템*: layer-type-aware **예약** | 비싼 attn 레이어에만 decode SM 예약, 싼 ssm은 prefill 환원 (메커니즘) | `layer_aware_result(C)` 메커니즘 |
 | **S3** | *주결과*: goodput@SLO | baseline 대비 우위(연속 SLO 스윕) | `layer_aware_result(A)` |
 | **S4** | *일반성*: 크기 1.2B–7B | 전 크기 이득(1.37/2.02/1.82×) | `layer_aware_size_trend` |
 | **S5** | *적용 범위*: temporal-only | 두 전제(분리+비싼 no-GQA attn) | `temporal_vs_spatial` (+`prefill_sm_sensitivity`) |
-| **S6** | *프로덕션 대비*: vs fused(vLLM) | fused는 decode 결합→ITL 높음; 예약이 bound | `framework_comparison` |
+| **S6** | *프로덕션 대비*: vs fused(vLLM) | fused는 decode 결합→ITL 높음; 예약이 bound. 부하(batch·seqlen)에 따른 정책별 실행시간 스케일링 | `framework_comparison` + **`policy_scaling`**(batch·seqlen별 정책 ITL) |
 | **S7** | *검증·한계* | vLLM이 decode 모델 검증(상대), 절대는 directional | `vllm_calibration` |
 | **S0** | (선택) 개요 teaser | 1장 요약 | `summary_dashboard` |
 
