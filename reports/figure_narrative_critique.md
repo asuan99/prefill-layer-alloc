@@ -32,7 +32,7 @@
 | `layer_aware_result` (A) goodput-vs-SLO | S3 주결과 | 연속 SLO 스윕의 goodput | **선그래프 + 우위구간 음영** | ✅ **최적.** 연속 독립변수(SLO)→선이 맞고, 음영으로 우위 영역 명시. 논문 main figure감. |
 | `layer_aware_result` (B) tradeoff | S3 보조 | throughput + TTFT + ITL | **쌍축**(좌 throughput 막대, 우 **log(ms)** TTFT·ITL 선) | ✅ **정리됨.** 우축을 log(ms)로 둬 TTFT(~10⁴·⁶)·ITL(~10¹·⁸)이 ~3자릿수 분리 → 두 지표·각 정책 차이 모두 가시(이전엔 둘이 같은 선형 37–85 범위서 엉킴). |
 | ~~`layer_aware_result` (C) 메커니즘~~ | (제거됨) | — | — | layer_aware_result에서 **C 패널 제거**(A+B 세로 2패널로). S2 메커니즘은 본문 텍스트 또는 별도 도식으로 처리. |
-| `layer_aware_size_trend` | S4 | la/agnostic 비(이산 3모델)·정책별 goodput | 막대 / 그룹막대 | ✅ 이산 모델 비교엔 막대 적합. △ 3점으로 "peak" 주장은 약함 → 캡션에 *추세 아닌 3점*임을 명시. |
+| `layer_aware_size_trend` | S4 | la 우위(vs agnostic·vs fused)·4정책 goodput | 그룹막대 ×2 | ✅ 이산 모델 비교엔 막대 적합. (A) la/agnostic·la/fused 두 비율, (B) 4정책(fused 포함) 절대 goodput. △ 3점이라 캡션에 *추세 아닌 3점* 명시. |
 | `temporal_vs_spatial` | S5 핵심 | per-layer decode 구조(분리성) | **레이어별 막대** | ✅ **우수.** "비싼 attn이 *어디* 있나(분리 가능?)"를 레이어축 막대로 직접 시각화 → 적용범위 논거에 정확. |
 | `prefill_sm_sensitivity` | S5 보조(전제②) | SM별 prefill 지연비(연속) | **선그래프(3모델 중첩)** | ✅ **최적.** 연속 SM 스윕→선, 3모델 중첩으로 "겹침(크기-불변)"을 직접 보임. (역방향 x축은 사소한 가독성 흠.) |
 | `framework_comparison` | S6 | 정책별 decode ITL(이산) | 그룹막대(**log축**)+vLLM 앵커선 | ✅ **정리됨**. log y축 적용으로 fused~예약 정책 차 모두 가시; vLLM 앵커 명료. |
