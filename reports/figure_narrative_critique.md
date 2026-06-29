@@ -35,7 +35,7 @@
 | `layer_aware_size_trend` | S4 | la/agnostic 비(이산 3모델)·정책별 goodput | 막대 / 그룹막대 | ✅ 이산 모델 비교엔 막대 적합. △ 3점으로 "peak" 주장은 약함 → 캡션에 *추세 아닌 3점*임을 명시. |
 | `temporal_vs_spatial` | S5 핵심 | per-layer decode 구조(분리성) | **레이어별 막대** | ✅ **우수.** "비싼 attn이 *어디* 있나(분리 가능?)"를 레이어축 막대로 직접 시각화 → 적용범위 논거에 정확. |
 | `prefill_sm_sensitivity` | S5 보조(전제②) | SM별 prefill 지연비(연속) | **선그래프(3모델 중첩)** | ✅ **최적.** 연속 SM 스윕→선, 3모델 중첩으로 "겹침(크기-불변)"을 직접 보임. (역방향 x축은 사소한 가독성 흠.) |
-| `framework_comparison` | S6 | 정책별 decode ITL(이산) | 그룹막대+vLLM 앵커선 | ✅ 이산 정책 비교엔 막대 적합·앵커 좋음. ⚠ **fused가 y축 지배(0–400)** → 예약 정책 간 차(26 vs 30)가 안 보임. **log축 또는 broken-axis 권고.** |
+| `framework_comparison` | S6 | 정책별 decode ITL(이산) | 그룹막대(**log축**)+vLLM 앵커선 | ✅ **정리됨**. log y축 적용으로 fused~예약 정책 차 모두 가시; vLLM 앵커 명료. |
 | `vllm_calibration` (A) | S7 | sim vs 실측 ITL(이산) | 그룹막대+과대비 | ✅ 적합. |
 | `vllm_calibration` (B) | S7 핵심 | 크기-스케일링(정규화) | **선그래프(2선 중첩)** | ✅ **우수.** 두 추세(sim·실측)가 겹침을 선중첩으로 보임 = "상대 추세 일치"에 정확. |
 | `summary_dashboard` | S0 | 3개 독립 메시지 | 3-panel 혼합 | △ **슬라이드형.** 개요엔 좋으나 논문 본문 figure로는 서로 다른 3주제를 한 그림에 → 분리 추천(또는 발표/teaser 한정). |
@@ -59,7 +59,7 @@
 
 **개선 작업:**
 - ~~(B) tradeoff 패널 분리/정규화~~ → **완료**(단일축 throughput 막대 + ITL/TTFT 주석).
-- `framework_comparison` → **log y축**(fused 지배로 가려진 예약-정책 차 노출).
+- ~~`framework_comparison` log y축~~ → **완료**(fused~예약 정책 차 모두 가시).
 - `summary_dashboard`·`layer_aware_applicability` → **본문 제외**(teaser/부록).
 
 **채워야 할 공백:**
