@@ -30,7 +30,7 @@
 | 그림 | 흐름 위치 | 보여주는 지표 | 차트 형태 | **형태 적합성 (비판)** |
 |---|---|---|---|---|
 | `layer_aware_result` (A) goodput-vs-SLO | S3 주결과 | 연속 SLO 스윕의 goodput | **선그래프 + 우위구간 음영** | ✅ **최적.** 연속 독립변수(SLO)→선이 맞고, 음영으로 우위 영역 명시. 논문 main figure감. |
-| `layer_aware_result` (B) tradeoff | S3 보조 | throughput(+ITL/TTFT 주석) | 단일축 막대 | ✅ **정리됨**(쌍축 제거). throughput 막대에 ITL/TTFT를 주석으로 → 단일축 가독성 확보. |
+| `layer_aware_result` (B) tradeoff | S3 보조 | throughput + TTFT + ITL | **쌍축**(좌 throughput 막대, 우 **log(ms)** TTFT·ITL 선) | ✅ **정리됨.** 우축을 log(ms)로 둬 TTFT(~10⁴·⁶)·ITL(~10¹·⁸)이 ~3자릿수 분리 → 두 지표·각 정책 차이 모두 가시(이전엔 둘이 같은 선형 37–85 범위서 엉킴). |
 | `layer_aware_result` (C) 메커니즘 | **S2 시스템** | 레이어별 SM 배분 | 도식(레이어 막대) | ✅ 메커니즘 설명엔 도식이 적합. 시스템 절의 핵심 도식. |
 | `layer_aware_size_trend` | S4 | la/agnostic 비(이산 3모델)·정책별 goodput | 막대 / 그룹막대 | ✅ 이산 모델 비교엔 막대 적합. △ 3점으로 "peak" 주장은 약함 → 캡션에 *추세 아닌 3점*임을 명시. |
 | `temporal_vs_spatial` | S5 핵심 | per-layer decode 구조(분리성) | **레이어별 막대** | ✅ **우수.** "비싼 attn이 *어디* 있나(분리 가능?)"를 레이어축 막대로 직접 시각화 → 적용범위 논거에 정확. |
@@ -58,7 +58,7 @@
 5. `framework_comparison`(축 개선) 또는 `vllm_calibration` — 프로덕션 대비/검증
 
 **개선 작업:**
-- ~~(B) tradeoff 패널 분리/정규화~~ → **완료**(단일축 throughput 막대 + ITL/TTFT 주석).
+- (B) tradeoff 패널 → **쌍축 유지·우축 log(ms)** 로 TTFT·ITL 분리(각 정책 차이 가시화). 단일축 버전은 폐기.
 - ~~`framework_comparison` log y축~~ → **완료**(fused~예약 정책 차 모두 가시).
 - `summary_dashboard`·`layer_aware_applicability` → **본문 제외**(teaser/부록).
 

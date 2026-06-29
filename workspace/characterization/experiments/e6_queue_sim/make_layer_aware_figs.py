@@ -88,24 +88,37 @@ axA.legend(fontsize=8.5, loc="lower right", framealpha=0.95)   # lower-right is 
 axA.grid(alpha=0.3)
 axA.set_ylim(0, 1.45)
 
-# ---- Panel B: single-axis throughput bars + ITL/TTFT annotated (no twin-axis) ----
+# ---- Panel B: twin-axis tradeoff. throughput bars (left, linear) + TTFT & ITL lines
+#      (right, LOG ms) so the two latencies separate by ~3 decades and each policy
+#      difference is readable (the old linear right-axis put TTFT[s] & ITL[ms] both in 37-85). ----
 axB = fig.add_subplot(gs[0, 1])
 x = np.arange(len(POLICIES))
 thr = [summ[p]["throughput_tok_s"] for p in POLICIES]
-ttft = [summ[p]["ttft_p99"] / 1000 for p in POLICIES]
-itl = [summ[p]["itl_p99"] for p in POLICIES]
+ttft = [summ[p]["ttft_p99"] for p in POLICIES]          # ms
+itl = [summ[p]["itl_p99"] for p in POLICIES]            # ms
 short = {"co_schedule": "co_schedule", "agnostic_protect": "agnostic", "layer_aware_protect": "layer_aware"}
-bars = axB.bar(x, thr, 0.62, color=[COL[p] for p in POLICIES], edgecolor="k", linewidth=0.5)
-for i, p in enumerate(POLICIES):
-    axB.text(i, thr[i] + 25, f"{thr[i]:.0f} tok/s", ha="center", va="bottom", fontsize=10, fontweight="bold")
-    axB.text(i, thr[i] * 0.5, f"ITL {itl[i]:.0f}ms\nTTFT {ttft[i]:.0f}s", ha="center", va="center",
-             fontsize=9, color="white", fontweight="bold")
+axB.bar(x, thr, 0.6, color=[COL[p] for p in POLICIES], alpha=0.55, edgecolor="k", linewidth=0.5, zorder=1)
+for i in range(len(POLICIES)):
+    axB.text(i, thr[i] + 25, f"{thr[i]:.0f}", ha="center", va="bottom", fontsize=10, fontweight="bold",
+             color=COL[POLICIES[i]])
 axB.set_xticks(x); axB.set_xticklabels([short[p] for p in POLICIES], fontsize=9)
-axB.set_ylabel("throughput (tok/s)")
-axB.set_ylim(0, max(thr) * 1.25)
-axB.set_title("(B) layer_aware: throughput ~2x, TTFT ~half\n(decode ITL 44ms still within a 50ms SLO)",
-              fontweight="bold")
-axB.grid(axis="y", alpha=0.3)
+axB.set_ylabel("throughput (tok/s)  [bars]")
+axB.set_ylim(0, max(thr) * 1.18)
+axB.set_title("(B) tradeoff: throughput (bars) vs TTFT & decode-ITL (lines, log)", fontweight="bold")
+axB.grid(axis="y", alpha=0.25)
+
+axB2 = axB.twinx()
+axB2.set_yscale("log")
+axB2.plot(x, ttft, "--o", color="#202124", lw=1.8, ms=7, zorder=3, label="TTFT p99")
+axB2.plot(x, itl, ":s", color="#c5221f", lw=1.8, ms=7, zorder=3, label="decode ITL p99")
+for i in range(len(POLICIES)):
+    axB2.annotate(f"{ttft[i]/1000:.0f}s", (i, ttft[i]), textcoords="offset points", xytext=(0, 9),
+                  ha="center", fontsize=8.5, color="#202124", fontweight="bold")
+    axB2.annotate(f"{itl[i]:.0f}ms", (i, itl[i]), textcoords="offset points", xytext=(0, -13),
+                  ha="center", fontsize=8.5, color="#c5221f", fontweight="bold")
+axB2.set_ylabel("latency (ms, log)  [lines]")
+axB2.set_ylim(20, 5e5)
+axB2.legend(fontsize=8.5, loc="center right", framealpha=0.95)
 
 # ---- Panel C: mechanism (per-layer SM allocation) ----
 axC = fig.add_subplot(gs[1, :])
