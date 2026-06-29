@@ -77,14 +77,14 @@ if win.any():
     # annotate in the robust 2x zone (where la ~= 2*ag)
     robust = win & (la > ag * 1.8)
     if robust.any():
-        axA.text(SLO[robust].mean(), 1.33, "layer_aware best (~2x)", color="#1a73e8",
-                 ha="center", va="top", fontsize=10, fontweight="bold")
+        axA.text(0.97, 0.62, "layer_aware\nbest (~2x)", transform=axA.transAxes, color="#1a73e8",
+                 ha="right", va="center", fontsize=10, fontweight="bold")
         axA.text(SLO[robust].min(), 0.05, f"SLO >= {SLO[robust].min():.0f}ms", color="#1a73e8",
                  ha="center", va="bottom", fontsize=8)
 axA.set_xlabel("per-token SLO (TBT, ms)")
 axA.set_ylabel("goodput@SLO  (k tok/s)")
 axA.set_title("(A) goodput vs SLO -- zamba2_2.7b (9 attn + 45 ssm)", fontweight="bold")
-axA.legend(fontsize=8.5, loc="upper left", framealpha=0.9)
+axA.legend(fontsize=8.5, loc="upper left", framealpha=0.95)
 axA.grid(alpha=0.3)
 axA.set_ylim(0, 1.45)
 

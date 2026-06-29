@@ -43,7 +43,7 @@ axA.text(1.1, pa * 1.05, "attn-prefill", color=ATT, fontsize=8)
 axA.text(1.1, ps * 0.78, "ssm-prefill", color=SSM, fontsize=8)
 axA.set_xscale("log", base=2); axA.set_yscale("log")
 axA.set_xlabel("decode batch"); axA.set_ylabel("per-layer latency (ms)")
-axA.set_title("(A) decode vs batch — attn↑(memory-bound, KV×B)\nvs ssm flat; prefill chunk-fixed (점선)",
+axA.set_title("(A) decode vs batch — attn rises (memory-bound, KV x B)\nvs ssm flat; prefill chunk-fixed (dotted)",
               fontsize=10, fontweight="bold")
 axA.legend(fontsize=9); axA.grid(alpha=0.3, which="both")
 
@@ -58,9 +58,9 @@ axB.set_xscale("log", base=2); axB.set_yscale("log")
 axB.set_xlabel("sequence length (KV context)"); axB.set_ylabel("attn-decode latency (ms)")
 axB.set_title("(B) decode vs seq-len — attn O(L) (KV read)\nvs ssm O(1) (fixed state)",
               fontsize=10, fontweight="bold")
-axB.legend(fontsize=8); axB.grid(alpha=0.3, which="both")
-axB.text(0.5, 0.06, "attn ~13× across 1k→16k;  ssm flat", transform=axB.transAxes,
-         ha="center", fontsize=8.5, color="#555", bbox=dict(boxstyle="round", fc="#fff8e1", ec="#e0c060"))
+axB.legend(fontsize=8, loc="upper left"); axB.grid(alpha=0.3, which="both")
+axB.text(0.97, 0.05, "attn ~13x (1k->16k) | ssm flat", transform=axB.transAxes,
+         ha="right", va="bottom", fontsize=8.5, color="#555", bbox=dict(boxstyle="round", fc="#fff8e1", ec="#e0c060"))
 
 # (C) phase × layer-type matrix at decode batch = 64
 b = 64
@@ -74,9 +74,10 @@ for bar, h in zip(bars, hatch): bar.set_hatch(h)
 for i, v in enumerate(vals): axC.text(i, v + 0.08, f"{v:.2f}", ha="center", fontsize=9, fontweight="bold")
 axC.set_xticks(range(4)); axC.set_xticklabels(cats, fontsize=9)
 axC.set_ylabel("per-layer latency (ms)")
-axC.set_title(f"(C) phase × layer-type @batch={b}\nprefill ~symmetric (compute) · decode asymmetric (memory)",
+axC.set_ylim(0, max(vals) * 1.22)
+axC.set_title(f"(C) phase x layer-type @batch={b}\nprefill ~symmetric (compute) | decode asymmetric (memory)",
               fontsize=10, fontweight="bold")
-axC.text(0.5, 0.93, "// = prefill (compute-bound)", transform=axC.transAxes, ha="center", fontsize=8, color="#555")
+axC.text(0.02, 0.97, "hatched = prefill", transform=axC.transAxes, ha="left", va="top", fontsize=8, color="#555")
 axC.grid(axis="y", alpha=0.3)
 
 fig.suptitle("attn vs ssm execution time by PHASE and LOAD (zamba2_2.7b, A100, measured E3+E5)",

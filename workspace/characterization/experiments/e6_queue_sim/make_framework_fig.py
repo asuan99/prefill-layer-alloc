@@ -28,22 +28,24 @@ for k, pol in enumerate(POL):
     vals = [DATA[m][k] for m in models]
     ax.bar(x + (k - 1.5) * w, vals, w, label=pol, color=COL[pol], edgecolor="k", linewidth=0.4)
     for i, v in enumerate(vals):
-        ax.text(x[i] + (k - 1.5) * w, v + 4, f"{v}", ha="center", va="bottom", fontsize=7.5)
+        ax.text(x[i] + (k - 1.5) * w, v * 1.04, f"{v}", ha="center", va="bottom", fontsize=7.5)
 # vLLM anchor
 for m, v in VLLM_FUSED.items():
     i = models.index(m)
     ax.plot([i - 2 * w, i + 2 * w], [v, v], "k--", lw=1.6)
-    ax.text(i + 2 * w + 0.02, v, f"vLLM fused\nmeasured {v}ms", va="center", fontsize=8, fontweight="bold")
+    ax.text(i + 2 * w + 0.04, v, f"vLLM fused\nmeasured {v}ms", va="center", fontsize=8, fontweight="bold")
+ax.set_yscale("log")                                   # log so reservation-policy differences are visible
+ax.set_ylim(15, 600)
 ax.set_xticks(x); ax.set_xticklabels([f"zamba2 {m}" for m in models])
-ax.set_ylabel("decode ITL p99 (ms)  — SLO-critical")
+ax.set_ylabel("decode ITL p99 (ms, log)  — SLO-critical")
 ax.set_title("Framework comparison: fused (vLLM) has the highest decode ITL;\n"
-             "PD-mux reservation (agnostic/layer_aware) bounds it 4–6x lower",
+             "PD-mux reservation (agnostic/layer_aware) bounds it 4-6x lower",
              fontsize=11.5, fontweight="bold")
-ax.legend(fontsize=9.5, title="policy")
-ax.grid(axis="y", alpha=0.3)
-ax.text(0.5, 0.97, "sim absolute ITL overestimates vLLM ~1.6x for zamba2 (no-GQA); "
-        "the fused/layer_aware RATIO (4–6x) is calibration-invariant",
-        transform=ax.transAxes, ha="center", va="top", fontsize=8, color="#555",
+ax.legend(fontsize=9, title="policy", loc="upper left", ncol=2)
+ax.grid(axis="y", alpha=0.3, which="both")
+ax.text(0.5, 0.025, "sim absolute ITL overestimates vLLM ~1.6x (zamba2 no-GQA); "
+        "fused/layer_aware RATIO (4-6x) is calibration-invariant",
+        transform=ax.transAxes, ha="center", va="bottom", fontsize=7.5, color="#555",
         bbox=dict(boxstyle="round", fc="#fff8e1", ec="#e0c060"))
 out = Path(_CHAR).parents[1] / "reports" / "figures"
 out.mkdir(parents=True, exist_ok=True)

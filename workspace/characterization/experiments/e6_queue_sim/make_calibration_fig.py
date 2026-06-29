@@ -46,9 +46,10 @@ sim_dec = np.array([D[m][4] for m in zs]); sim_dec = sim_dec / sim_dec[0]
 vllm_t = np.array([D[m][1] for m in zs]); vllm_t = vllm_t / vllm_t[0]
 axB.plot(range(3), sim_dec, "-o", color=BLUE, lw=2, ms=8, label="sim decode_total")
 axB.plot(range(3), vllm_t, "-s", color=GREEN, lw=2, ms=8, label="vLLM TPOT (sat)")
-for i in range(3):
-    axB.text(i, sim_dec[i] + 0.08, f"{sim_dec[i]:.2f}", ha="center", color=BLUE, fontsize=9)
-    axB.text(i, vllm_t[i] - 0.18, f"{vllm_t[i]:.2f}", ha="center", color=GREEN, fontsize=9)
+# label only the endpoint (well-separated) to avoid overlap; lines visibly coincide elsewhere
+axB.text(2.05, sim_dec[2], f"{sim_dec[2]:.2f}", ha="left", va="bottom", color=BLUE, fontsize=10, fontweight="bold")
+axB.text(2.05, vllm_t[2], f"{vllm_t[2]:.2f}", ha="left", va="top", color=GREEN, fontsize=10, fontweight="bold")
+axB.set_xlim(-0.2, 2.5)
 axB.set_xticks(range(3)); axB.set_xticklabels(zs)
 axB.set_ylabel("decode cost, normalized to 1.2B")
 axB.set_title("(B) decode-cost SIZE-SCALING matches\n(relative trend valid even though absolute is off)",

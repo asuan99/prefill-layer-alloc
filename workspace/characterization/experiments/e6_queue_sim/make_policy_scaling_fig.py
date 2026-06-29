@@ -72,9 +72,9 @@ for pol in POLS:
 axB.set_xscale("log", base=2); axB.set_yscale("log")
 axB.set_xlabel("sequence length (KV context)"); axB.set_ylabel(f"full-model decode ITL (ms), batch={b}")
 axB.set_title("(B) policy execution time vs seq-len\n(attn-decode O(L) from E3; ssm O(1))", fontsize=11, fontweight="bold")
-axB.legend(fontsize=9); axB.grid(alpha=0.3, which="both")
-axB.text(0.5, 0.05, "context↑ → attn-decode↑ → fused/co가 더 빨리 악화\n(예약 정책은 attn만 늘어 완만)",
-         transform=axB.transAxes, ha="center", fontsize=8, color="#555",
+axB.legend(fontsize=9, loc="upper left"); axB.grid(alpha=0.3, which="both")
+axB.text(0.97, 0.04, "context up -> attn-decode up -> fused/co worsen faster",
+         transform=axB.transAxes, ha="right", va="bottom", fontsize=7.5, color="#555",
          bbox=dict(boxstyle="round", fc="#fff8e1", ec="#e0c060"))
 
 fig.suptitle("Per-policy decode ITL scaling with batch & sequence length (zamba2_2.7b, A100)",
