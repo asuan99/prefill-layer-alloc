@@ -18,7 +18,6 @@ D = {
     "z1.2b": (111, 67, 1121, 1413, 18.8),
     "z2.7b": (179, 109, 692, 870, 28.5),
     "z7b":   (403, 172, 312, 346, 49.3),
-    "f3b":   (101, 92, 1236, 1074, 18.3),
 }
 models = list(D)
 
@@ -35,8 +34,8 @@ for i, m in enumerate(models):
              ha="center", fontsize=9, fontweight="bold", color="#c5221f")
 axA.set_xticks(x); axA.set_xticklabels(models)
 axA.set_ylabel("decode ITL (ms)")
-axA.set_title("(A) sim fused OVERESTIMATES vLLM — grows with size\n"
-              "(no-GQA attn-decode; falcon GQA = well-calibrated 1.1x)", fontsize=10.5, fontweight="bold")
+axA.set_title("(A) sim fused OVERESTIMATES vLLM -- grows with size\n"
+              "(unfused per-layer sum, worst for no-GQA attn-decode)", fontsize=10.5, fontweight="bold")
 axA.legend(fontsize=9)
 axA.grid(axis="y", alpha=0.3)
 
@@ -57,7 +56,7 @@ axB.set_title("(B) decode-cost SIZE-SCALING matches\n(relative trend valid even 
 axB.legend(fontsize=9, loc="upper left")
 axB.grid(alpha=0.3)
 
-fig.suptitle("vLLM calibration of the sim (all zamba2 sizes + falcon): absolute OFF (1.6–2.3x, no-GQA), "
+fig.suptitle("vLLM calibration of the sim (zamba2 1.2/2.7/7B): absolute OFF (1.6-2.3x), "
              "relative scaling VALID", fontsize=12, fontweight="bold", y=1.03)
 out = Path(_CHAR).parents[1] / "reports" / "figures"
 out.mkdir(parents=True, exist_ok=True)

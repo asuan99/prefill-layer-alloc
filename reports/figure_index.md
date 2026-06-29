@@ -26,7 +26,7 @@
 | **layer_aware_applicability.png** | 2-panel | zamba2(temporal, attn/ssm 분리→적용 ✓) vs falcon(spatial, 병렬→N/A) 레이어 배치 도식 | 적용 범위 = temporal 하이브리드 |
 | **prefill_sm_sensitivity.png** | 2-panel | (A) ssm-prefill SM-민감도 곡선 (1.2/2.7/7B 거의 겹침) · (B) attn-prefill 곡선 — 108→14 SM 비율 | prefill SM-민감도는 **크기-불변**(7B도 민감) |
 | **framework_comparison.png** | 1-panel | 4-way **decode ITL** 막대(fused/co/agnostic/layer_aware) × 3모델 + vLLM 실측 109ms 앵커 | fused가 ITL 최대, 예약이 4–6× bound |
-| **vllm_calibration.png** | 2-panel | (A) **sim fused ITL vs vLLM 실측** (과대비 1.66/1.64/2.34×, falcon 1.09×) · (B) **decode 크기-스케일링 일치**(sim 비 ≈ 실측 비) | sim 절대값 off(no-GQA·크기↑서↑), 상대 추세 valid |
+| **vllm_calibration.png** | 2-panel | (A) **sim fused ITL vs vLLM 실측** (과대비 1.66/1.64/2.34×, zamba2) · (B) **decode 크기-스케일링 일치**(sim 비 ≈ 실측 비) | sim 절대값 off(no-GQA·크기↑서↑), 상대 추세 valid |
 
 ### A 그림 — 파일 위치 & 생성 스크립트
 
