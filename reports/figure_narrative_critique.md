@@ -11,7 +11,7 @@
 | § | 내용 단계 | 핵심 메시지 | 주 그림 |
 |---|---|---|---|
 | **S1** | *관찰/동기*: per-layer decode 비대칭(phase·batch·seqlen) | attn-decode=비쌈(메모리바운드·**O(L)**·batch↑서 급증) vs ssm-decode=쌈(**O(1)**·BW~0%·평탄); prefill은 phase상 대칭(compute) → 레이어·phase별 *보호 가치가 다르다* | **`char_phase_layertype`**(phase×batch×seqlen) + `temporal_vs_spatial`(per-layer 구조) |
-| **S2** | *시스템*: layer-type-aware **예약** | 비싼 attn 레이어에만 decode SM 예약, 싼 ssm은 prefill 환원 (메커니즘) | `layer_aware_result(C)` 메커니즘 |
+| **S2** | *시스템*: layer-type-aware **예약** | 비싼 attn 레이어에만 decode SM 예약, 싼 ssm은 prefill 환원 (메커니즘) | (본문 텍스트/별도 도식 — layer_aware_result의 C 패널은 제거됨) |
 | **S3** | *주결과*: goodput@SLO | baseline 대비 우위(연속 SLO 스윕) | `layer_aware_result(A)` |
 | **S4** | *일반성*: 크기 1.2B–7B | 전 크기 이득(1.37/2.02/1.82×) | `layer_aware_size_trend` |
 | **S5** | *적용 범위*: temporal-only | 두 전제(분리+비싼 no-GQA attn) | `temporal_vs_spatial` (+`prefill_sm_sensitivity`) |
@@ -31,7 +31,7 @@
 |---|---|---|---|---|
 | `layer_aware_result` (A) goodput-vs-SLO | S3 주결과 | 연속 SLO 스윕의 goodput | **선그래프 + 우위구간 음영** | ✅ **최적.** 연속 독립변수(SLO)→선이 맞고, 음영으로 우위 영역 명시. 논문 main figure감. |
 | `layer_aware_result` (B) tradeoff | S3 보조 | throughput + TTFT + ITL | **쌍축**(좌 throughput 막대, 우 **log(ms)** TTFT·ITL 선) | ✅ **정리됨.** 우축을 log(ms)로 둬 TTFT(~10⁴·⁶)·ITL(~10¹·⁸)이 ~3자릿수 분리 → 두 지표·각 정책 차이 모두 가시(이전엔 둘이 같은 선형 37–85 범위서 엉킴). |
-| `layer_aware_result` (C) 메커니즘 | **S2 시스템** | 레이어별 SM 배분 | 도식(레이어 막대) | ✅ 메커니즘 설명엔 도식이 적합. 시스템 절의 핵심 도식. |
+| ~~`layer_aware_result` (C) 메커니즘~~ | (제거됨) | — | — | layer_aware_result에서 **C 패널 제거**(A+B 세로 2패널로). S2 메커니즘은 본문 텍스트 또는 별도 도식으로 처리. |
 | `layer_aware_size_trend` | S4 | la/agnostic 비(이산 3모델)·정책별 goodput | 막대 / 그룹막대 | ✅ 이산 모델 비교엔 막대 적합. △ 3점으로 "peak" 주장은 약함 → 캡션에 *추세 아닌 3점*임을 명시. |
 | `temporal_vs_spatial` | S5 핵심 | per-layer decode 구조(분리성) | **레이어별 막대** | ✅ **우수.** "비싼 attn이 *어디* 있나(분리 가능?)"를 레이어축 막대로 직접 시각화 → 적용범위 논거에 정확. |
 | `prefill_sm_sensitivity` | S5 보조(전제②) | SM별 prefill 지연비(연속) | **선그래프(3모델 중첩)** | ✅ **최적.** 연속 SM 스윕→선, 3모델 중첩으로 "겹침(크기-불변)"을 직접 보임. (역방향 x축은 사소한 가독성 흠.) |
@@ -52,7 +52,7 @@
 
 **본문 main (4–5장):**
 1. `layer_aware_result(A)` — 주결과(goodput vs SLO) ★
-2. `layer_aware_result(C)` 또는 별도 메커니즘 도식 — 작동 원리
+2. 별도 메커니즘 도식(신규) — 작동 원리 (layer_aware_result는 A+B만)
 3. `layer_aware_size_trend` — 크기 일반성
 4. `temporal_vs_spatial` — 적용범위(구조 근거) ★
 5. `framework_comparison`(축 개선) 또는 `vllm_calibration` — 프로덕션 대비/검증

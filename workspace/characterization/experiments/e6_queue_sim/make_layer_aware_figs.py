@@ -61,8 +61,8 @@ good = {p: np.array([metrics(sim[p][0], sim[p][1], s)["goodput_tok_s"] for s in 
 # scalar summaries (ITL/throughput are SLO-independent; take at a loose SLO)
 summ = {p: metrics(sim[p][0], sim[p][1], 100.0) for p in POLICIES}
 
-fig = plt.figure(figsize=(15, 9))
-gs = fig.add_gridspec(2, 2, height_ratios=[1.05, 1.0], hspace=0.34, wspace=0.22)
+fig = plt.figure(figsize=(13, 9))
+gs = fig.add_gridspec(2, 1, hspace=0.3)
 
 # ---- Panel A: goodput vs SLO ----
 axA = fig.add_subplot(gs[0, 0])
@@ -91,7 +91,7 @@ axA.set_ylim(0, 1.45)
 # ---- Panel B: twin-axis tradeoff. throughput bars (left, linear) + TTFT & ITL lines
 #      (right, LOG ms) so the two latencies separate by ~3 decades and each policy
 #      difference is readable (the old linear right-axis put TTFT[s] & ITL[ms] both in 37-85). ----
-axB = fig.add_subplot(gs[0, 1])
+axB = fig.add_subplot(gs[1, 0])
 x = np.arange(len(POLICIES))
 thr = [summ[p]["throughput_tok_s"] for p in POLICIES]
 ttft = [summ[p]["ttft_p99"] for p in POLICIES]          # ms
@@ -120,34 +120,8 @@ axB2.set_ylabel("latency (ms, log)  [lines]")
 axB2.set_ylim(20, 5e5)
 axB2.legend(fontsize=8.5, loc="center right", framealpha=0.95)
 
-# ---- Panel C: mechanism (per-layer SM allocation) ----
-axC = fig.add_subplot(gs[1, :])
-axC.set_title("(C) Mechanism -- SM allocation over the 54-layer forward: protect only the expensive attn-decode, give ssm layers back to prefill",
-              fontweight="bold")
-# illustrative interleave: 9 attn positions evenly spread among 54
-attn_pos = set(np.linspace(2, L - 2, n_a).round().astype(int).tolist())
-y_ag, y_la = 1.0, 0.0
-for i in range(L):
-    is_attn = i in attn_pos
-    # agnostic: every layer reserves decode floor -> prefill throttled (hatched) everywhere
-    axC.add_patch(plt.Rectangle((i, y_ag), 0.92, 0.8, color="#e8710a", alpha=0.85 if is_attn else 0.5))
-    # layer_aware: attn layers protected (orange), ssm layers full-share -> prefill full SMs (blue)
-    axC.add_patch(plt.Rectangle((i, y_la), 0.92, 0.8,
-                                color="#e8710a" if is_attn else "#1a73e8",
-                                alpha=0.9 if is_attn else 0.7))
-axC.text(-1.5, y_ag + 0.4, "agnostic_protect", ha="right", va="center", fontsize=9, fontweight="bold")
-axC.text(-1.5, y_la + 0.4, "layer_aware_protect", ha="right", va="center", fontsize=9, fontweight="bold")
-axC.text(L + 0.5, y_ag + 0.4, "reserve decode every layer\n-> prefill always starved\n-> throughput down, TTFT up", va="center", fontsize=8)
-axC.text(L + 0.5, y_la + 0.4, "reserve 9 attn only (ITL safe)\n45 ssm -> prefill full-SM\n-> throughput 2x, TTFT half", va="center", fontsize=8)
-axC.set_xlim(-13, L + 13); axC.set_ylim(-0.4, 2.1)
-axC.axis("off")
-leg = [Patch(color="#e8710a", alpha=0.9, label="attn-decode layer = SM reserved (protect decode ITL)"),
-       Patch(color="#1a73e8", alpha=0.7, label="ssm-decode layer = SM shared (given to prefill)"),
-       Patch(color="#e8710a", alpha=0.5, label="agnostic: ssm layers reserved too (wasteful)")]
-axC.legend(handles=leg, loc="lower center", ncol=3, fontsize=8, frameon=False, bbox_to_anchor=(0.5, -0.12))
-
-fig.suptitle("Layer-type-AWARE reservation improves PD-mux (the live form of the original hypothesis) -- full-model sim",
-             fontsize=13.5, fontweight="bold", y=0.985)
+fig.suptitle("Layer-type-AWARE reservation improves PD-mux (full-model sim, zamba2_2.7b)",
+             fontsize=13.5, fontweight="bold", y=0.96)
 out = Path(_CHAR).parents[1] / "reports" / "figures"
 out.mkdir(parents=True, exist_ok=True)
 f1 = out / "layer_aware_result.png"
