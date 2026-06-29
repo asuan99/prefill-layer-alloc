@@ -40,15 +40,8 @@ axA.set_xlabel("SMs given to the decode kernel"); axA.set_ylabel("decode latency
 axA.set_title("(A) decode SM-sensitivity per layer-type\n"
               "attn-decode SM-hungry (steep) | ssm-decode saturates early (flat)",
               fontsize=11, fontweight="bold")
-axA.axvline(54, color=SSM, ls=":", lw=1.3, alpha=0.7)
-# short annotations next to their own curves (upper-left = steep attn; lower-right = flat ssm)
-axA.annotate("attn: SM-hungry\n=> RESERVE", xy=(40, 9.3), xytext=(17, 17),
-             color=ATT, fontsize=9.5, fontweight="bold", ha="left",
-             arrowprops=dict(arrowstyle="->", color=ATT))
-axA.annotate("ssm: flat after ~54 SM\n=> RELEASE to prefill", xy=(70, 0.55), xytext=(58, 0.30),
-             color=SSM, fontsize=9.5, fontweight="bold", ha="left",
-             arrowprops=dict(arrowstyle="->", color=SSM))
-axA.legend(fontsize=8.5, loc="upper right", ncol=2); axA.grid(alpha=0.3, which="both")
+axA.axvline(54, color=SSM, ls=":", lw=1.3, alpha=0.6)   # ssm saturation marker (no text)
+axA.legend(fontsize=9, loc="upper right", ncol=2); axA.grid(alpha=0.3, which="both")
 
 # (B) one-forward latency composition
 pa = e5[e5.prefill_layer == "attn"].solo_prefill_ms.median()

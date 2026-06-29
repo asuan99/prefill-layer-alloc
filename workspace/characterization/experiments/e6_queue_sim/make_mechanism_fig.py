@@ -17,12 +17,12 @@ SM = 108
 fig, ax = plt.subplots(figsize=(11, 3.2))
 
 # SM allocation per layer-type (decode reserved | prefill)
-rows = [   # (label, decode_floor_SM, decode_color, note)
-    ("attn-decode\nlayer", 94, ATT, "decode is SM-hungry -> RESERVE ~all SMs; prefill barely runs"),
-    ("ssm-decode\nlayer", 54, SSM, "decode saturates ~54 SM -> RELEASE the other ~54 to prefill"),
+rows = [   # (label, decode_floor_SM, decode_color)
+    ("attn-decode\nlayer", 94, ATT),
+    ("ssm-decode\nlayer", 54, SSM),
 ]
 yh = 0.62
-for k, (lab, floor, dc, note) in enumerate(rows):
+for k, (lab, floor, dc) in enumerate(rows):
     y = 1 - k * 1.4
     ax.add_patch(Rectangle((0, y), floor, yh, color=dc, alpha=0.9))                          # decode reserved
     ax.add_patch(Rectangle((floor, y), SM - floor, yh, color=PRE, alpha=0.55, hatch="//"))    # prefill
@@ -31,11 +31,10 @@ for k, (lab, floor, dc, note) in enumerate(rows):
     ax.text(floor + (SM - floor) / 2, y + yh / 2, f"prefill\n{SM-floor} SM", ha="center", va="center",
             color="#0a5a2a", fontsize=9.5, fontweight="bold")
     ax.text(-3, y + yh / 2, lab, ha="right", va="center", fontsize=10.5, fontweight="bold")
-    ax.text(SM + 2, y + yh / 2, note, ha="left", va="center", fontsize=9)
 ax.annotate("", xy=(54, 1.78), xytext=(94, 1.78), arrowprops=dict(arrowstyle="<->", color=PRE, lw=1.6))
 ax.text(74, 1.9, "~40 SMs reclaimed for prefill\non every ssm layer", ha="center", color="#0a5a2a",
         fontsize=8.8, fontweight="bold")
-ax.set_xlim(-26, SM + 42); ax.set_ylim(-0.55, 2.15)
+ax.set_xlim(-26, SM + 12); ax.set_ylim(-0.55, 2.15)
 ax.set_xticks([0, 27, 54, 81, 108]); ax.set_yticks([])
 ax.set_xlabel("SMs on the GPU (108 total)")
 for sp in ("top", "right", "left"):
