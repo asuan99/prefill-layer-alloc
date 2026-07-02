@@ -1,0 +1,11 @@
+# Third-party clones — DO NOT vendor. Re-clone via reports/p0_triage.md §2.
+external/
+
+# Build / JIT caches and SLURM job logs (T5 harness)
+**/.torch_ext/
+**/.triton_cache/
+*.out
+*.err
+*.zip
+
+# (root .gitignore already ignores *.json, *.log, *.png, __pycache__, *.so)
