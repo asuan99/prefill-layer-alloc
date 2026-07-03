@@ -1,0 +1,7 @@
+# P1.0 smoke pdmux config for A100 (108 SM).
+# No manual_divisions -> engine auto-computes partitions via divide_sm() using
+# the device-queried SM count (108) and cc8 arch constraints (min_per_part=4,
+# multiple=2). sm_group_num=4 => 2 auto divisions + full-prefill + full-decode.
+sm_group_num: 4
+decode_bs_divisor: 36
+split_forward_token_budget: 65536

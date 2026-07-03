@@ -84,3 +84,22 @@
 - `[measured]` check1 get_sm_available=108 ✓ (pure-python path). check2 JIT build 75.9s ✓; create_greenctx_stream_by_value(64,44,0) → actual smA=64, smB=44 (exact 108 split), streams non-null, NO fallback warning ⇒ direct cuGreenCtxStreamCreate (cuda≥12.5) path. check3 matmul on both partition streams ✓.
 - `[measured]` Pre-existing corroboration: repo results/stage2/ctx_switch_overhead_a100-sxm4-80gb.json already shows green_ctx backend, 108 SM, partitions 14..108, cpu_swap ~0.45µs on this exact A100.
 - `[derived]` ⇒ green-ctx SM-control layer (the novel mechanism risk) is EMPIRICALLY VALIDATED on A100/CUDA13. Deferred to P1: full `--enable-pdmux` server boot (needs full sglang+sgl-kernel+flashinfer build; separate effort).
+
+## P1.0 — latest-SGLang pdmux base on cluster (2026-07-02)
+
+Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluster), pins `sglang-kernel==0.4.1`, has pdmux + Mamba2/NemotronH. (v0.5.11+ bump to torch 2.11.) HEAD (torch 2.11 + kernel 0.4.4) avoided.
+- `[measured]` sgl-kernel PyPI 0.3.21 wheel is **CUDA-12** (libnvrtc.so.12) → unusable on CUDA13. cu13 wheels only exist for `sglang_kernel` 0.4.x at github.com/sgl-project/whl (`+cu130` abi3). Kernel 0.4.0 lacks `awq_marlin_moe_repack` (API drift) → must match sglang↔kernel: **v0.5.10 ↔ kernel 0.4.1+cu130** (aligned).
+- `[measured]` Isolated overlay venv `/scratch/ehmoon/whlee/sglang_engine_venv` (--system-site-packages, reuses conda torch 2.9.1+cu130 / flashinfer 0.6.10 / mamba_ssm 2.3.1 / cuda-python 13.2). sglang v0.5.10 + kernel 0.4.1+cu130 install (--no-deps), pure-python deps via constraints (freeze CUDA-13 stack). `import http_server` = OK.
+- `[measured]` **GREEN-CTX PDMUX INIT SUCCESS on A100 (job 824469)**: `PD-Multiplexing enabled with 4 stream groups, sm_counts (prefill_sm, decode_sm): [(108,0),(74,34),(54,54),(0,108)]` — device-queried 108 SM (NOT H200 132), partitions correct. Confirms pdmux+green-ctx mechanism works on A100/CUDA13. (Extends T5: now the full pdmux init path, not just the kernel.)
+- `[measured]` **BLOCKER for full serve: cluster conda is Python 3.14.** (a) torch.compile raises "not supported on Python 3.14+" (worked around via sitecustomize no-op for boot). (b) Triton 3.5.1 kernel compile dies: `AttributeError: module 'ast' has no attribute 'Num'` (ast.Num removed in py3.12). ⇒ py3.14 env cannot run sglang kernels end-to-end. **Need Python ≤3.13 env with CUDA-13 torch stack** for perf work.
+- `[derived]` The torch>2.6 green-ctx perf caveat (report §8) is ALSO surfaced by v0.5.10's own warning at boot — still an open perf risk on torch 2.9.1.
+
+## P1.0 — RESULT: PDMUX_BOOT_OK (job 826832) ✅
+
+- `[measured]` sglang **v0.5.10** + **sglang_kernel 0.4.1+cu130** + cluster torch 2.9.1+cu130/flashinfer 0.6.10/mamba_ssm 2.3.1, py3.14. Server booted healthy (40s), `PD-Multiplexing enabled with 4 stream groups, sm_counts [(108,0),(74,34),(54,54),(0,108)]` (A100 108 SM, device-queried), served a /generate end-to-end (e2e 51ms, 16 tok; gibberish text = dummy weights, pipeline OK). Evidence: `p1_0_SUCCESS_evidence/`.
+- **Patches applied (tracked; move to editable dev tree at P1.2):**
+  1. `venv .../sitecustomize.py` — py3.14 shims: restore `ast.Num`→`ast.Constant` (triton 3.5.1 code_generator.py:1172/1174; faithful to py≤3.13) + `torch.compile` no-op (sglang defaults enable_torch_compile=False → perf-neutral). Both valid for perf runs.
+  2. `venv .../sglang/srt/model_executor/model_runner.py:2402` — `getattr(forward_batch,"ngram_embedding_info",None)`: pdmux path passes ModelWorkerBatch (lacks attr) to `maybe_update_ngram_token_table` (typed ForwardBatch). No-op when ngram unused. **A genuine pdmux-path bug in v0.5.10** — candidate upstream fix.
+  3. sbatch: `PATH=$HOME/.local/bin:$PATH` (ninja for flashinfer/triton JIT); `--chunked-prefill-size -1 --disable-overlap-schedule` (pdmux requires).
+- `[measured]` Extra deps installed into venv (--no-deps + constraints freezing CUDA-13 stack): pybase64, IPython stack, pydantic(+core 2.46.4), orjson, uvicorn/uvloop, fastapi/starlette, pyzmq, openai, setproctitle, partial-json-parser, dill, sentencepiece, python-multipart, compressed-tensors, gguf, msgspec, jsonschema, xgrammar 0.2.3. (openai_harmony missing = non-fatal optional OpenAIServingResponses warning.)
+- `[derived]` py3.14 is workable via the 2 faithful shims → **no py3.12 rebuild needed**. (A py3.13 env would avoid shims if ever preferred.)
