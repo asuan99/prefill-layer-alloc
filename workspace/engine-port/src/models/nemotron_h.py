@@ -658,8 +658,10 @@ class NemotronHModel(nn.Module):
                 _mode = None
         elif _is_decode:
             _mode = _os.environ.get("PDMUX_FIXED_DECODE_SM")
-        if _mode and _mode not in ("full", "layer_aware", ""):
-            _fixed = int(_mode)
+        # mode token may be "<sm>@<ctxtag>" so the accumulator resets per (sm,ctx)
+        _sm_part = _mode.split("@")[0] if _mode else None
+        if _sm_part and _sm_part not in ("full", "layer_aware", ""):
+            _fixed = int(_sm_part)
         # reset accumulator when the swept mode changes
         if _timing and getattr(self, "_lt_mode", None) != _mode:
             self._lt_acc = {"M": 0.0, "-": 0.0, "*": 0.0}
@@ -709,9 +711,10 @@ class NemotronHModel(nn.Module):
             if self._lt_n % 30 == 0:
                 n = self._lt_n
                 tot = (self._lt_acc["M"] + self._lt_acc["-"] + self._lt_acc["*"]) / n
+                _cl = int(forward_batch.seq_lens.max().item()) if forward_batch.seq_lens is not None else -1
                 logger.warning(
-                    "NHLT mode=%s n=%d step_ms=%.3f | mamba=%.3f mlp=%.3f attn=%.3f | per-layer mamba=%.4f mlp=%.4f attn=%.4f",
-                    _mode, n, tot, self._lt_acc["M"]/n, self._lt_acc["-"]/n, self._lt_acc["*"]/n,
+                    "NHLT mode=%s ctxlen=%d n=%d step_ms=%.3f | mamba=%.3f mlp=%.3f attn=%.3f | per-layer mamba=%.4f mlp=%.4f attn=%.4f",
+                    _mode, _cl, n, tot, self._lt_acc["M"]/n, self._lt_acc["-"]/n, self._lt_acc["*"]/n,
                     self._lt_acc["M"]/n/24, self._lt_acc["-"]/n/24, self._lt_acc["*"]/n/4)
 
         if not self.pp_group.is_last_rank:

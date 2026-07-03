@@ -13,7 +13,9 @@
 - `[measured]` **attn decode는 SM-둔감** (레이어당 ~0.2ms 평탄, GQA라 memory-bound) 이며 step의 **5%** (4층뿐).
 - `[measured]` mlp는 ~44 SM 이상서 둔감, 그 아래서 민감.
 
-⇒ NemotronH서 SM을 아껴 예약할 "싸고 둔감한" 레이어는 **attn 4개뿐**이고, 다수(mamba+mlp)는 SM-민감이라 floor를 유지해야 한다. 따라서 **layer-aware의 이득은 NemotronH서 미미**하며(prefill로 환원 가능 SM이 4/52 레이어에 국한), **agnostic(전 레이어 균일 예약)이 사실상 동등하거나 우세**하다. layer-aware가 이기려면 **SM-민감 레이어 타입이 희소**해야 하는데(sim의 no-GQA attn 가정), 이는 **모델 아키텍처 의존**임이 실증됐다.
+⇒ NemotronH서 SM을 아껴 예약할 "싸고 둔감한" 레이어는 **attn 4개뿐**이고, 다수(mamba+mlp)는 SM-민감이라 floor를 유지해야 한다. 따라서 **layer-aware의 이득은 NemotronH서 미미**하며(prefill로 환원 가능 SM이 4/52 레이어에 국한), **agnostic(전 레이어 균일 예약)이 사실상 동등하거나 우세**하다.
+
+**단, 결정적 뉘앙스(§3.5): attn의 SM-민감도는 컨텍스트 길이 의존이다.** attn-decode는 O(L)이라 컨텍스트가 길어지면 무거워지고(0.30→0.45ms/층 @350→5100 tokens) **SM-둔감→SM-민감으로 뒤바뀐다**(ctx5100서 16SM 대비 full 43%↑). mamba는 O(1)이라 컨텍스트 불변. ⇒ **layer-aware 이득 = (아키텍처 GQA/no-GQA) × (컨텍스트 길이)의 2차원 함수**. "SM-민감 레이어 희소" 조건은 **긴 컨텍스트 + no-GQA(비싼 attn) + 희소 attn-층**에서 성립 — 그 체제가 layer-aware의 유일한 유리 구간이다.
 
 ---
 
@@ -62,6 +64,23 @@ sim 4-정책([framework_comparison](framework_comparison.md))을 실엔진에 �
 `[derived]` **layer_aware vs agnostic 정량:** layer_aware(mamba/mlp @64, attn @16)의 평균 prefill 환원 SM ≈ 44 + (92−44)×4/52 ≈ **47.7 SM**, decode ≈23.1ms. agnostic@64는 prefill 44 SM(전 레이어), decode 22.9ms. ⇒ **layer_aware가 환원하는 추가 SM은 ~3.7(평균) 뿐**(4/52 attn 레이어 한정) — decode 속도·prefill 환원 모두 agnostic과 사실상 동일. **layer-aware의 순이득 ≈ 0 (NemotronH).**
 
 ---
+
+## 3.5. 시퀀스 길이 의존성 — attention의 SM-민감도는 컨텍스트로 뒤바뀐다 ★★
+
+§2·§3은 **짧은 컨텍스트**(~350). 그러나 attn-decode는 매 스텝 길이 L의 KV를 읽으므로 **O(L)**, mamba는 고정 state라 **O(1)**. 컨텍스트를 스윕(프롬프트 길이 조절)해 재측정(NemotronH, GQA, flashinfer — Zamba2와 달리 백엔드 교란 없음):
+
+**GQA attention per-attn-층 decode 지연(ms):**
+| decode SM | ctx≈350 | ctx≈2140 | ctx≈5100 |
+|---|---|---|---|
+| 108(full) | 0.303 | 0.337 | **0.449** |
+| 44 | 0.272 | 0.361 | 0.490 |
+| 16 | **0.237** | 0.395 | **0.640** |
+
+`[measured]` **① attn이 컨텍스트로 무거워짐**: full-SM attn/층 0.303→0.449 (350→5100, +48%). **② attn의 SM-민감도가 컨텍스트로 뒤바뀜**: ctx350선 16SM서 *더 빠름*(0.237, memory-bound/SM-둔감) → ctx5100선 16SM서 **43% 느림**(0.640 vs 0.449, compute-bound/SM-민감). `[measured]` **③ mamba는 컨텍스트 불변**(~0.553ms/층 평탄, O(1)) + 항상 SM-민감(→1.05@16SM). `[measured]` mlp 컨텍스트 불변.
+
+⇒ **사용자 직관 실증**: attn-decode의 "싸고 SM-둔감"은 **짧은 컨텍스트 국한**. 길어지면 attn이 커지고 SM-민감해진다. 단 NemotronH(GQA)는 **긴 컨텍스트서도 mamba가 지배**(ctx5100서 mamba 13.3ms vs attn 1.8ms=8%)라 여전히 mamba가 주 예약대상. **no-GQA(Zamba2)면 attn KV 4× → 긴 컨텍스트서 attn 비중·민감도가 훨씬 커져 layer-aware(attn 예약) 이득이 커질 체제**(Zamba2 실측은 torch_native 교란·장문 CUDA오류로 불완전; mamba/층 ~0.56은 NemotronH와 일치 확인, attn 비교는 백엔드 교란).
+
+**함의: layer-aware 이득은 (아키텍처 GQA/no-GQA) × (컨텍스트 길이)의 2차원 함수.** SM-민감 레이어가 희소해야 이득 — 짧은 컨텍스트 GQA선 mamba가 다수라 이득無; **긴 컨텍스트 + no-GQA**서 attn이 비싸지되 희소(9/54)면 layer-aware가 유리할 후보.
 
 ## 4. 핵심 발견과 함의 (정직)
 

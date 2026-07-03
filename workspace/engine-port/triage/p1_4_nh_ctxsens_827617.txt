@@ -1,0 +1,9 @@
+RESULT [2026-07-03 20:25:46] NHLT mode=full@256 ctxlen=352 n=90 step_ms=25.163 | mamba=16.670 mlp=7.283 attn=1.210 | per-layer mamba=0.6946 mlp=0.3034 attn=0.3026
+RESULT [2026-07-03 20:25:53] NHLT mode=44@256 ctxlen=352 n=90 step_ms=22.107 | mamba=13.397 mlp=7.621 attn=1.088 | per-layer mamba=0.5582 mlp=0.3176 attn=0.2721
+RESULT [2026-07-03 20:26:01] NHLT mode=16@256 ctxlen=352 n=90 step_ms=41.525 | mamba=25.219 mlp=15.359 attn=0.948 | per-layer mamba=1.0508 mlp=0.6400 attn=0.2369
+RESULT [2026-07-03 20:26:26] NHLT mode=full@2048 ctxlen=2142 n=90 step_ms=21.840 | mamba=13.271 mlp=7.220 attn=1.349 | per-layer mamba=0.5530 mlp=0.3008 attn=0.3371
+RESULT [2026-07-03 20:26:35] NHLT mode=44@2048 ctxlen=2142 n=90 step_ms=22.430 | mamba=13.473 mlp=7.513 attn=1.444 | per-layer mamba=0.5614 mlp=0.3130 attn=0.3609
+RESULT [2026-07-03 20:26:46] NHLT mode=16@2048 ctxlen=2142 n=90 step_ms=42.145 | mamba=25.206 mlp=15.358 attn=1.581 | per-layer mamba=1.0503 mlp=0.6399 attn=0.3952
+RESULT [2026-07-03 20:27:00] NHLT mode=full@5000 ctxlen=5097 n=90 step_ms=22.146 | mamba=13.274 mlp=7.075 attn=1.796 | per-layer mamba=0.5531 mlp=0.2948 attn=0.4490
+RESULT [2026-07-03 20:27:14] NHLT mode=44@5000 ctxlen=5097 n=90 step_ms=22.270 | mamba=13.004 mlp=7.307 attn=1.959 | per-layer mamba=0.5418 mlp=0.3045 attn=0.4898
+RESULT [2026-07-03 20:27:29] NHLT mode=16@5000 ctxlen=5097 n=90 step_ms=43.091 | mamba=25.190 mlp=15.340 attn=2.560 | per-layer mamba=1.0496 mlp=0.6392 attn=0.6401

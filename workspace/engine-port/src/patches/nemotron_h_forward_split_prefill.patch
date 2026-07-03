@@ -1,5 +1,5 @@
---- /tmp/nh_orig.py	2026-07-03 20:04:02.596463752 +0900
-+++ /scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/models/nemotron_h.py	2026-07-03 20:01:24.000000000 +0900
+--- /tmp/nh_orig.py	2026-07-03 20:31:04.315624646 +0900
++++ /scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/models/nemotron_h.py	2026-07-03 20:23:06.000000000 +0900
 @@ -605,6 +605,21 @@
          else:
              self.norm_f = PPMissingLayer(return_tuple=True)
@@ -22,7 +22,7 @@
      def forward(
          self,
          input_ids: torch.Tensor,
-@@ -624,15 +639,80 @@
+@@ -624,15 +639,83 @@
              hidden_states = pp_proxy_tensors["hidden_states"]
              residual = pp_proxy_tensors["residual"]
  
@@ -54,8 +54,10 @@
 +                _mode = None
 +        elif _is_decode:
 +            _mode = _os.environ.get("PDMUX_FIXED_DECODE_SM")
-+        if _mode and _mode not in ("full", "layer_aware", ""):
-+            _fixed = int(_mode)
++        # mode token may be "<sm>@<ctxtag>" so the accumulator resets per (sm,ctx)
++        _sm_part = _mode.split("@")[0] if _mode else None
++        if _sm_part and _sm_part not in ("full", "layer_aware", ""):
++            _fixed = int(_sm_part)
 +        # reset accumulator when the swept mode changes
 +        if _timing and getattr(self, "_lt_mode", None) != _mode:
 +            self._lt_acc = {"M": 0.0, "-": 0.0, "*": 0.0}
@@ -105,14 +107,15 @@
 +            if self._lt_n % 30 == 0:
 +                n = self._lt_n
 +                tot = (self._lt_acc["M"] + self._lt_acc["-"] + self._lt_acc["*"]) / n
++                _cl = int(forward_batch.seq_lens.max().item()) if forward_batch.seq_lens is not None else -1
 +                logger.warning(
-+                    "NHLT mode=%s n=%d step_ms=%.3f | mamba=%.3f mlp=%.3f attn=%.3f | per-layer mamba=%.4f mlp=%.4f attn=%.4f",
-+                    _mode, n, tot, self._lt_acc["M"]/n, self._lt_acc["-"]/n, self._lt_acc["*"]/n,
++                    "NHLT mode=%s ctxlen=%d n=%d step_ms=%.3f | mamba=%.3f mlp=%.3f attn=%.3f | per-layer mamba=%.4f mlp=%.4f attn=%.4f",
++                    _mode, _cl, n, tot, self._lt_acc["M"]/n, self._lt_acc["-"]/n, self._lt_acc["*"]/n,
 +                    self._lt_acc["M"]/n/24, self._lt_acc["-"]/n/24, self._lt_acc["*"]/n/4)
  
          if not self.pp_group.is_last_rank:
              return PPProxyTensors(
-@@ -754,6 +834,40 @@
+@@ -754,6 +837,40 @@
          else:
              return hidden_states
  

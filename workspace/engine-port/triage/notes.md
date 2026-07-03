@@ -134,3 +134,9 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[derived]` ⇒ **sim의 layer-aware 전제(attn=비싼 SM-민감 희소층) 반증**: NemotronH는 mamba가 SM-민감·다수, attn은 둔감·희소. 환원가능 둔감층=attn 4/52뿐 → **layer-aware 순이득≈0, agnostic(균일예약)이 동등/우위**. 전제는 no-GQA attn 가정 의존 → 모델 아키텍처 의존 실증.
 - 구현: NemotronHModel.forward에 per-layer green-ctx 스트림 전환(`_get_gctx_decode_stream`, sgl_kernel.spatial) + 데이터-구동 예약(`PDMUX_LA_RESERVE`) + per-layer-type 타이밍 계측(env-gated). 정책 스윕 harness `triage/p1_4_nh_smsens.sbatch`(1서버 파일-스윕; bare `wait`가 서버 대기하는 버그 수정=curl PID만 wait). 원자료 `p1_4_nh_smsens_827583.txt`.
 - 한국어 보고서: `reports/p1_4_layer_aware_평가_kr.md`. 미측: 완전-충실 layer-aware 서빙(event_loop 대수술)·fused/co_schedule 동시경합 goodput·Zamba2 민감도(no-GQA attn 후보).
+
+## P1.4 후속 — 시퀀스 길이 의존성 (2026-07-03) ★★
+- `[measured]` **NemotronH(GQA/flashinfer) 컨텍스트×SM 스윕(job 827617)**: attn/층 full-SM 0.303→0.337→0.449ms (ctx≈350/2140/5100, +48%=O(L)). **attn SM-민감도 뒤바뀜**: ctx350 16SM=0.237(둔감/faster) → ctx5100 16SM=0.640 vs full 0.449(+43%, SM-민감). mamba/층 ~0.553 컨텍스트 불변(O(1))·항상 SM-민감(1.05@16). ⇒ 사용자 가설 실증: attn "싸고 SM-둔감"은 단문 국한; 장문서 무거워지고 SM-민감해짐. 단 GQA는 장문서도 mamba 지배(mamba13.3 vs attn1.8ms@ctx5100).
+- `[measured]` **Zamba2(no-GQA/torch_native) 컨텍스트×SM 스윕(job 827601, 불완전)**: mamba/층 ~0.56(NemotronH와 일치✓), attn/층 ~1.5(torch_native 교란이라 백엔드-혼재, no-GQA 순효과 분리 불가). ctx3000서 CUDA illegal memory access(torch_native+green-ctx 장문 불안정). ⇒ Zamba2는 fast head_dim-160 백엔드 확보 전까지 청정 측정 불가(open item).
+- `[derived]` **layer-aware 이득 = (GQA/no-GQA)×(컨텍스트) 2D**. 유리 구간 = 긴 컨텍스트 + no-GQA(비싼 attn) + 희소 attn-층. 보고서 §3.5 갱신.
+- harness: `triage/p1_4_nh_ctxsens.sbatch`(NemotronH ctx×SM), `p1_4_zamba2_ctxsens.sbatch`(Zamba2). NHLT/ZBLT 로그에 ctxlen 추가. 원자료 `p1_4_nh_ctxsens_827617.txt`, `p1_4_zb_ctxsens_827601.txt`.

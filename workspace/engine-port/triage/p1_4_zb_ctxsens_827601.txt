@@ -1,0 +1,9 @@
+RESULT ctx=128 [2026-07-03 20:19:57] ZBLT mode=full@128 ctxlen=220 n=90 | attn_total=15.564 mamba_total=35.752 | per-attn(9)=1.7294 per-mamba(54)=0.6621
+RESULT ctx=128 [2026-07-03 20:20:07] ZBLT mode=44@128 ctxlen=220 n=90 | attn_total=13.786 mamba_total=30.599 | per-attn(9)=1.5318 per-mamba(54)=0.5667
+RESULT ctx=128 [2026-07-03 20:20:18] ZBLT mode=16@128 ctxlen=220 n=90 | attn_total=12.918 mamba_total=30.130 | per-attn(9)=1.4353 per-mamba(54)=0.5580
+RESULT ctx=1024 [2026-07-03 20:20:30] ZBLT mode=full@1024 ctxlen=1116 n=90 | attn_total=13.921 mamba_total=30.195 | per-attn(9)=1.5468 per-mamba(54)=0.5592
+RESULT ctx=1024 [2026-07-03 20:20:41] ZBLT mode=44@1024 ctxlen=1116 n=90 | attn_total=14.068 mamba_total=30.800 | per-attn(9)=1.5631 per-mamba(54)=0.5704
+RESULT ctx=1024 
+RESULT ctx=3000 
+RESULT ctx=3000 
+RESULT ctx=3000 

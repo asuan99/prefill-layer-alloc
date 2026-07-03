@@ -43,6 +43,21 @@ from sglang.srt.model_executor.forward_batch_info import ForwardBatch
 from sglang.srt.model_loader.weight_utils import default_weight_loader
 from sglang.srt.utils import add_prefix
 
+# --- measurement instrumentation (env-gated; attn vs mamba decode timing) ---
+_ZT = {"attn": [], "mamba": [], "on": False}
+
+
+def _zt(bucket, fn):
+    if not _ZT["on"]:
+        return fn()
+    s = torch.cuda.Event(enable_timing=True)
+    e = torch.cuda.Event(enable_timing=True)
+    s.record()
+    out = fn()
+    e.record()
+    _ZT[bucket].append((s, e))
+    return out
+
 
 class Zamba2LoRA(nn.Module):
     """rank-r LoRA used inside the shared attention/MLP blocks (A: down, B: up)."""
@@ -145,7 +160,7 @@ class Zamba2Attention(nn.Module):
             k = k + self.linear_k_adapter_list[block_idx](hidden_states)
             v = v + self.linear_v_adapter_list[block_idx](hidden_states)
         # PARITY: use_mem_rope=False for 2.7B; rope omitted (add get_rope if True).
-        attn_output = self.dpa_list[block_idx].forward(q, k, v, forward_batch)
+        attn_output = _zt("attn", lambda: self.dpa_list[block_idx].forward(q, k, v, forward_batch))
         y, _ = self.o_proj(attn_output)
         return y
 
@@ -241,13 +256,13 @@ class Zamba2MambaDecoderLayer(nn.Module):
 
         output = torch.empty_like(hidden_states)
         attn_backend = forward_batch.attn_backend
-        attn_backend.linear_attn_backend.forward(
+        _zt("mamba", lambda: attn_backend.linear_attn_backend.forward(
             mixer=self.mamba,
             layer_id=self.layer_id,
             hidden_states=hidden_states,
             output=output,
             use_triton_causal_conv=True,
-        )
+        ))
         return residual + output
 
 
@@ -316,18 +331,75 @@ class Zamba2Model(nn.Module):
         self.layers = nn.ModuleList(layers)
         self.final_layernorm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+    def _get_gctx_decode_stream(self, n_sm: int):
+        if not hasattr(self, "_gctx_streams"):
+            self._gctx_streams = {}
+        if n_sm not in self._gctx_streams:
+            from sgl_kernel import spatial
+
+            dev = torch.cuda.current_device()
+            total = spatial.get_sm_available(dev)
+            other = max(4, total - n_sm)
+            sA, _sB = spatial.create_greenctx_stream_by_value(n_sm, other, dev)
+            self._gctx_streams[n_sm] = sA
+        return self._gctx_streams[n_sm]
+
     def forward(self, input_ids, positions, forward_batch, input_embeds=None):
+        import contextlib as _cl
+        import os as _os
+
         if input_embeds is None:
             hidden_states = self.embed_tokens(input_ids)
         else:
             hidden_states = input_embeds
         original_hidden_states = torch.clone(hidden_states)
-        for layer in self.layers:
-            if isinstance(layer, Zamba2HybridLayer):
-                hidden_states = layer(hidden_states, original_hidden_states, forward_batch)
-            else:
-                hidden_states = layer(hidden_states, forward_batch)
-        return self.final_layernorm(hidden_states)
+
+        # measurement: pin decode to N SMs + time attn vs mamba (env/file-gated)
+        _is_decode = forward_batch.forward_mode.is_decode()
+        _mode = None
+        _f = _os.environ.get("PDMUX_FIXED_DECODE_SM_FILE")
+        if _f and _is_decode:
+            try:
+                _mode = open(_f).read().strip()
+            except Exception:
+                _mode = None
+        # mode token is "<sm>@<ctxtag>" so the accumulator resets per (sm,ctx) combo
+        _sm_part = _mode.split("@")[0] if _mode else None
+        _fixed = int(_sm_part) if (_sm_part and _sm_part not in ("full", "")) else None
+        _timing = bool(_os.environ.get("SGLANG_ZAMBA_TIMING")) and _is_decode
+        _ctx = torch.cuda.stream(self._get_gctx_decode_stream(_fixed)) if _fixed else _cl.nullcontext()
+        if _timing:
+            _ZT["on"] = True
+            _ZT["attn"] = []
+            _ZT["mamba"] = []
+            if getattr(self, "_zt_mode", None) != _mode:
+                self._zt_acc = {"attn": 0.0, "mamba": 0.0}
+                self._zt_n = 0
+                self._zt_mode = _mode
+        with _ctx:
+            for layer in self.layers:
+                if isinstance(layer, Zamba2HybridLayer):
+                    hidden_states = layer(hidden_states, original_hidden_states, forward_batch)
+                else:
+                    hidden_states = layer(hidden_states, forward_batch)
+        out = self.final_layernorm(hidden_states)
+        if _timing:
+            _ZT["on"] = False
+            torch.cuda.synchronize()
+            for _s, _e in _ZT["attn"]:
+                self._zt_acc["attn"] += _s.elapsed_time(_e)
+            for _s, _e in _ZT["mamba"]:
+                self._zt_acc["mamba"] += _s.elapsed_time(_e)
+            self._zt_n += 1
+            if self._zt_n % 30 == 0:
+                import logging as _lg
+                n = self._zt_n
+                _lg.getLogger("sglang.srt.models.zamba2").warning(
+                    "ZBLT mode=%s ctxlen=%s n=%d | attn_total=%.3f mamba_total=%.3f | per-attn(9)=%.4f per-mamba(54)=%.4f",
+                    _mode, int(forward_batch.seq_lens.max().item()) if forward_batch.seq_lens is not None else -1,
+                    n, self._zt_acc["attn"]/n, self._zt_acc["mamba"]/n,
+                    self._zt_acc["attn"]/n/9, self._zt_acc["mamba"]/n/54)
+        return out
 
 
 class Zamba2ForCausalLM(nn.Module):
