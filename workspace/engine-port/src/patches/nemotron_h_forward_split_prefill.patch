@@ -1,0 +1,43 @@
+--- /tmp/nh_orig.py	2026-07-03 15:36:13.462750916 +0900
++++ /scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/models/nemotron_h.py	2026-07-03 15:34:14.000000000 +0900
+@@ -754,6 +754,40 @@
+         else:
+             return hidden_states
+ 
++    def forward_split_prefill(
++        self,
++        input_ids: torch.Tensor,
++        positions: torch.Tensor,
++        forward_batch: ForwardBatch,
++        split_interval,  # [start, end) 0-based
++        input_embeds: torch.Tensor = None,
++    ):
++        # PATCH (engine-port P1.3): enable pdmux split-prefill for hybrid models.
++        # Mirrors dense forward_split_prefill but threads NemotronH's (hidden, residual)
++        # pair across split windows. mamba/attn/mlp layers all take the same signature.
++        start, end = split_interval
++        model = self.model
++        if start == 0:
++            if input_embeds is None:
++                forward_batch.hidden_states = model.embed_tokens(input_ids)
++            else:
++                forward_batch.hidden_states = input_embeds
++            forward_batch.residual = None
++        for i in range(start, end):
++            forward_batch.hidden_states, forward_batch.residual = model.layers[i].forward(
++                hidden_states=forward_batch.hidden_states,
++                residual=forward_batch.residual,
++                forward_batch=forward_batch,
++            )
++        if end == self.config.num_hidden_layers:
++            hidden_states, _ = model.norm_f(
++                forward_batch.hidden_states, forward_batch.residual
++            )
++            forward_batch.hidden_states = hidden_states
++            return self.logits_processor(
++                input_ids, hidden_states, self.lm_head, forward_batch
++            )
++
+     def copy_inputs_before_cuda_graphs(self, input_buffers, **kwargs):
+         return self.mamba_cache.copy_inputs_before_cuda_graphs(input_buffers, **kwargs)
+ 
