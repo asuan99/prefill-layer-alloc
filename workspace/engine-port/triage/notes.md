@@ -128,3 +128,9 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[measured]` **pdmux-hybrid gap**: `forward_split_prefill` implemented by 14 DENSE models only; hybrids (NemotronH/Zamba2) lack it → pdmux `AttributeError`. **Fixed by adding `forward_split_prefill` to NemotronHForCausalLM** (patch in src/patches/). ⇒ **pdmux runs on NemotronH** (job 827062): green-ctx 4 groups, split-prefill through mamba/attn/mlp, "Paris" correct. First pdmux-on-hybrid.
 - Design for layer-aware (P1.3d) in `reports/p1_3_nemotronh_layer_aware.md`: split DECODE by layer-type window + per-window green-ctx partition switch (attn→floor, ssm→reclaim to prefill); eager decode on py3.14 makes per-layer stream switch easy. Policies fused/agnostic/layer_aware, NemotronH attn ids from hybrid_override_pattern.
 - Open: Zamba2 needs forward_split_prefill too; regular cuda graph on py3.14 (inductor); triton hybrid layer_id=0 bug.
+
+## P1.4 — layer-aware 정책 구현 + 4-정책 평가: 전제 반증 (2026-07-03) ★
+- `[measured]` NemotronH decode per-layer-type SM 민감도(green-ctx로 decode를 N SM 고정, 배치32, 210스텝): **mamba/층 0.589→1.547ms(108→16SM, 2.6× = SM-민감·compute-bound SSD)**, attn/층 ~0.2ms 평탄(SM-둔감·GQA memory-bound), mlp 44SM↑ 둔감. step 구성=mamba62%+mlp32%+attn5%.
+- `[derived]` ⇒ **sim의 layer-aware 전제(attn=비싼 SM-민감 희소층) 반증**: NemotronH는 mamba가 SM-민감·다수, attn은 둔감·희소. 환원가능 둔감층=attn 4/52뿐 → **layer-aware 순이득≈0, agnostic(균일예약)이 동등/우위**. 전제는 no-GQA attn 가정 의존 → 모델 아키텍처 의존 실증.
+- 구현: NemotronHModel.forward에 per-layer green-ctx 스트림 전환(`_get_gctx_decode_stream`, sgl_kernel.spatial) + 데이터-구동 예약(`PDMUX_LA_RESERVE`) + per-layer-type 타이밍 계측(env-gated). 정책 스윕 harness `triage/p1_4_nh_smsens.sbatch`(1서버 파일-스윕; bare `wait`가 서버 대기하는 버그 수정=curl PID만 wait). 원자료 `p1_4_nh_smsens_827583.txt`.
+- 한국어 보고서: `reports/p1_4_layer_aware_평가_kr.md`. 미측: 완전-충실 layer-aware 서빙(event_loop 대수술)·fused/co_schedule 동시경합 goodput·Zamba2 민감도(no-GQA attn 후보).

@@ -9,3 +9,8 @@ external/
 *.zip
 
 # (root .gitignore already ignores *.json, *.log, *.png, __pycache__, *.so)
+
+# P1.4 temp markers
+.nh_decode_sm_*
+*.jid
+.*_jid

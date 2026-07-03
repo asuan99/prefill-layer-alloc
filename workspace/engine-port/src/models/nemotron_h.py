@@ -605,6 +605,21 @@ class NemotronHModel(nn.Module):
         else:
             self.norm_f = PPMissingLayer(return_tuple=True)
 
+    def _get_gctx_decode_stream(self, n_sm: int):
+        # Cached green-ctx stream pinned to ~n_sm SMs (measurement of decode
+        # SM-sensitivity by layer type; the layer-aware premise).
+        if not hasattr(self, "_gctx_streams"):
+            self._gctx_streams = {}
+        if n_sm not in self._gctx_streams:
+            from sgl_kernel import spatial
+
+            dev = torch.cuda.current_device()
+            total = spatial.get_sm_available(dev)
+            other = max(4, total - n_sm)
+            sA, _sB = spatial.create_greenctx_stream_by_value(n_sm, other, dev)
+            self._gctx_streams[n_sm] = sA
+        return self._gctx_streams[n_sm]
+
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -624,15 +639,80 @@ class NemotronHModel(nn.Module):
             hidden_states = pp_proxy_tensors["hidden_states"]
             residual = pp_proxy_tensors["residual"]
 
-        for i in range(self.start_layer, self.end_layer):
-            layer = self.layers[i]
-            if not isinstance(layer, Layers):
-                raise ValueError(f"Unknown layer type: {type(layer)}")
-            hidden_states, residual = layer.forward(
-                hidden_states=hidden_states,
-                residual=residual,
-                forward_batch=forward_batch,
-            )
+        import contextlib as _cl
+        import os as _os
+
+        _is_decode = forward_batch.forward_mode.is_decode()
+        _timing = _os.environ.get("SGLANG_NH_LAYER_TIMING") and _is_decode
+        # Pin the decode forward to a green-ctx partition of N SMs (measurement of
+        # per-layer-type SM sensitivity — the layer-aware premise). N is read from
+        # a file (PDMUX_FIXED_DECODE_SM_FILE) each step so one server can sweep SM;
+        # "layer_aware" in that file => attn layers get full SM, others get a floor.
+        _fixed = None
+        _mode = None
+        _f = _os.environ.get("PDMUX_FIXED_DECODE_SM_FILE")
+        if _f and _is_decode:
+            try:
+                _mode = open(_f).read().strip()
+            except Exception:
+                _mode = None
+        elif _is_decode:
+            _mode = _os.environ.get("PDMUX_FIXED_DECODE_SM")
+        if _mode and _mode not in ("full", "layer_aware", ""):
+            _fixed = int(_mode)
+        # reset accumulator when the swept mode changes
+        if _timing and getattr(self, "_lt_mode", None) != _mode:
+            self._lt_acc = {"M": 0.0, "-": 0.0, "*": 0.0}
+            self._lt_n = 0
+            self._lt_mode = _mode
+        _dctx = _cl.nullcontext()
+        if _fixed is not None:
+            _dctx = torch.cuda.stream(self._get_gctx_decode_stream(_fixed))
+        if _timing:
+            _pat = self.config.hybrid_override_pattern
+            _evs = []
+        # layer_aware policy: SM-SENSITIVE layer types (measured: mamba SSD, and
+        # MLP below ~44 SM) keep full/reserved SM; SM-INSENSITIVE types release to
+        # a floor (freeing SM for concurrent prefill). Which types are sensitive is
+        # empirical & model-dependent (NemotronH: reserve "M-" = mamba+mlp, release
+        # "*" = GQA attention). PDMUX_LA_RESERVE lists the reserved pattern chars.
+        _la = _is_decode and _mode == "layer_aware"
+        _la_floor = int(_os.environ.get("PDMUX_LA_FLOOR_SM", "16"))
+        _la_reserve = _os.environ.get("PDMUX_LA_RESERVE", "M-")
+        _pat_all = self.config.hybrid_override_pattern
+        with _dctx:
+            for i in range(self.start_layer, self.end_layer):
+                layer = self.layers[i]
+                if not isinstance(layer, Layers):
+                    raise ValueError(f"Unknown layer type: {type(layer)}")
+                _lctx = _cl.nullcontext()
+                if _la and _pat_all[i] not in _la_reserve:
+                    _lctx = torch.cuda.stream(self._get_gctx_decode_stream(_la_floor))
+                if _timing:
+                    _s = torch.cuda.Event(enable_timing=True); _e = torch.cuda.Event(enable_timing=True)
+                    _s.record()
+                with _lctx:
+                    hidden_states, residual = layer.forward(
+                        hidden_states=hidden_states,
+                        residual=residual,
+                        forward_batch=forward_batch,
+                    )
+                if _timing:
+                    _e.record(); _evs.append((_pat[i], _s, _e))
+        if _timing:
+            torch.cuda.synchronize()
+            if not hasattr(self, "_lt_acc"):
+                self._lt_acc = {"M": 0.0, "-": 0.0, "*": 0.0}; self._lt_n = 0
+            for _c, _s, _e in _evs:
+                self._lt_acc[_c] = self._lt_acc.get(_c, 0.0) + _s.elapsed_time(_e)
+            self._lt_n += 1
+            if self._lt_n % 30 == 0:
+                n = self._lt_n
+                tot = (self._lt_acc["M"] + self._lt_acc["-"] + self._lt_acc["*"]) / n
+                logger.warning(
+                    "NHLT mode=%s n=%d step_ms=%.3f | mamba=%.3f mlp=%.3f attn=%.3f | per-layer mamba=%.4f mlp=%.4f attn=%.4f",
+                    _mode, n, tot, self._lt_acc["M"]/n, self._lt_acc["-"]/n, self._lt_acc["*"]/n,
+                    self._lt_acc["M"]/n/24, self._lt_acc["-"]/n/24, self._lt_acc["*"]/n/4)
 
         if not self.pp_group.is_last_rank:
             return PPProxyTensors(

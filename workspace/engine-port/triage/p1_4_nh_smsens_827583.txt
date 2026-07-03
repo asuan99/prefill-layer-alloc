@@ -1,0 +1,6 @@
+RESULT [2026-07-03 19:57:44] NHLT mode=full n=210 step_ms=22.511 | mamba=14.129 mlp=7.217 attn=1.165 | per-layer mamba=0.5887 mlp=0.3007 attn=0.2912
+RESULT [2026-07-03 19:57:53] NHLT mode=64 n=210 step_ms=22.930 | mamba=14.837 mlp=7.232 attn=0.862 | per-layer mamba=0.6182 mlp=0.3013 attn=0.2154
+RESULT [2026-07-03 19:58:01] NHLT mode=44 n=210 step_ms=24.163 | mamba=16.427 mlp=7.144 attn=0.592 | per-layer mamba=0.6844 mlp=0.2977 attn=0.1481
+RESULT [2026-07-03 19:58:10] NHLT mode=32 n=210 step_ms=29.892 | mamba=20.125 mlp=9.148 attn=0.619 | per-layer mamba=0.8385 mlp=0.3812 attn=0.1548
+RESULT [2026-07-03 19:58:25] NHLT mode=16 n=210 step_ms=53.298 | mamba=37.127 mlp=15.086 attn=1.085 | per-layer mamba=1.5470 mlp=0.6286 attn=0.2713
+RESULT [2026-07-03 19:58:39] NHLT mode=layer_aware n=210 step_ms=22.674 | mamba=16.819 mlp=4.582 attn=1.273 | per-layer mamba=0.7008 mlp=0.1909 attn=0.3182
