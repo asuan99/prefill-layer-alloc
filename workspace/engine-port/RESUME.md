@@ -32,11 +32,13 @@ sbatch workspace/engine-port/triage/p1_0_pdmux_boot.sbatch   # -> PDMUX_BOOT_OK
 ```
 pdmux flags: `--enable-pdmux --pdmux-config-path <yml> --chunked-prefill-size -1 --disable-overlap-schedule`.
 
-## Resume point — write the Zamba2 model
-Target: `sglang_engine_dev/python/sglang/srt/models/zamba2.py` (+ maybe `configs/zamba2.py`). Follow [reports/zamba2_port_plan.md](reports/zamba2_port_plan.md):
-1. Zamba2LoRA / Attention(+per-position RadixAttention) / MLP / MambaDecoderLayer / AttentionDecoderLayer / HybridLayer / Model / ForCausalLM.
-2. Build `Mamba2CacheParams` for Zamba2 (sglang MambaMixer2 needs it; vLLM passes raw dims).
-3. Weight mapping (A_log→A, Sequential 0/1 → A/B; qkv stack), register `EntryClass`.
-4. Verify: dummy boot → real Zamba2-2.7B weights (hf_cache) → **logit-parity vs vLLM** (repo `vllm_venv`) ← checkpoint.
+## Zamba2 port — STATUS: runs, all weights load; forward-parity bug remains
+Model+config written & wired (see [env/dev_tree_edits.md](env/dev_tree_edits.md); tracked copies in `src/{models,configs}/zamba2.py`). Validated:
+- ✅ dummy boot OK (job 826938): serves through 54 layers (shared-attn+LoRA+Mamba2 SSD).
+- ✅ real weights: **all 531 ckpt weights load** (loaded=527, skipped=0, missing=0); server serves.
+- ❌ output = all token 0 (empty). No NaN; scale matches vLLM. ⇒ **semantic forward bug**, not weights.
 
-Hard parts flagged in the plan §8: per-position RadixAttention KV, Mamba2CacheParams, hybrid mem-pool state shapes.
+**Resume point — logit-parity debug (P1.2c):** build an activation-parity harness — same prompt through the sglang model vs vLLM (`vllm_venv`)/HF, compare embed → each layer out → logits to localize first divergence. Candidates (notes.md P1.2c): mamba `A` (A_log vs -exp) interpretation, gated mamba `norm`, shared-attn block_idx→layer_id KV routing, residual/concat in flat-token layout. Boot with `--dtype bfloat16`.
+Then: P1.3 layer-aware pdmux (build/validate on NemotronH first — already runs), P1.4 eval.
+
+Boot test: `sbatch workspace/engine-port/triage/p1_2_zamba2_real.sbatch` (real weights) or `p1_2_zamba2_boot.sbatch` (dummy).
