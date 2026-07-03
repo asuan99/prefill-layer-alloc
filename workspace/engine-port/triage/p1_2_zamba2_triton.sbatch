@@ -23,8 +23,8 @@ PORT=31029; SRVLOG="$HERE/p1_2_server_${SLURM_JOB_ID}.log"
 echo "===== instantiate Zamba2-2.7B (dummy weights), NO pdmux, disable cuda graph ====="
 python -m sglang.launch_server \
   --model-path Zyphra/Zamba2-2.7B \
-  --trust-remote-code --dtype bfloat16 --attention-backend torch_native \
-  --disable-cuda-graph --disable-radix-cache \
+  --trust-remote-code --dtype bfloat16 \
+  --attention-backend triton --disable-cuda-graph --disable-radix-cache \
   --mem-fraction-static 0.6 --max-running-requests 8 --context-length 2048 \
   --host 127.0.0.1 --port $PORT > "$SRVLOG" 2>&1 &
 SRV=$!

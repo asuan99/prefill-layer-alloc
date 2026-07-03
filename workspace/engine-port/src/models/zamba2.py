@@ -365,8 +365,6 @@ class Zamba2ForCausalLM(nn.Module):
     def load_weights(self, weights: Iterable[tuple[str, torch.Tensor]]):
         # PARITY: HF Zamba2 weight-name remaps (verify against real checkpoint):
         #   A_log -> mamba.A ; LoRA Sequential .0.weight/.1.weight -> .A.weight/.B.weight
-        import logging as _lg
-        _log = _lg.getLogger("zamba2.load")
         params_dict = dict(self.named_parameters())
         loaded = set()
         skipped = []
@@ -393,10 +391,11 @@ class Zamba2ForCausalLM(nn.Module):
                 getattr(param, "weight_loader", default_weight_loader)(param, w)
                 loaded.add(name)
         missing = [p for p in params_dict if p not in loaded]
-        _log.warning("ZAMBA2LOAD in=%d params=%d loaded=%d skipped=%d missing=%d",
-                     n_in, len(params_dict), len(loaded), len(skipped), len(missing))
-        _log.warning("ZAMBA2LOAD skipped(ckpt) sample: %s", skipped[:12])
-        _log.warning("ZAMBA2LOAD missing(model) sample: %s", missing[:12])
+        if skipped or missing:
+            import logging as _lg
+            _lg.getLogger("sglang.srt.models.zamba2").warning(
+                "Zamba2 load: in=%d loaded=%d skipped=%d missing=%d; skipped[:6]=%s missing[:6]=%s",
+                n_in, len(loaded), len(skipped), len(missing), skipped[:6], missing[:6])
         return loaded
 
 
