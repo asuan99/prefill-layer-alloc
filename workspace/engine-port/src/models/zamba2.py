@@ -367,7 +367,8 @@ class Zamba2Model(nn.Module):
         _sm_part = _mode.split("@")[0] if _mode else None
         _fixed = int(_sm_part) if (_sm_part and _sm_part not in ("full", "")) else None
         _timing = bool(_os.environ.get("SGLANG_ZAMBA_TIMING")) and _is_decode
-        _ctx = torch.cuda.stream(self._get_gctx_decode_stream(_fixed)) if _fixed else _cl.nullcontext()
+        _gstream = self._get_gctx_decode_stream(_fixed) if _fixed else None
+        _ctx = torch.cuda.stream(_gstream) if _gstream is not None else _cl.nullcontext()
         if _timing:
             _ZT["on"] = True
             _ZT["attn"] = []
@@ -376,12 +377,17 @@ class Zamba2Model(nn.Module):
                 self._zt_acc = {"attn": 0.0, "mamba": 0.0}
                 self._zt_n = 0
                 self._zt_mode = _mode
+        _cur = torch.cuda.current_stream()
+        if _gstream is not None:
+            _gstream.wait_stream(_cur)  # green-ctx waits for embed/clone on default
         with _ctx:
             for layer in self.layers:
                 if isinstance(layer, Zamba2HybridLayer):
                     hidden_states = layer(hidden_states, original_hidden_states, forward_batch)
                 else:
                     hidden_states = layer(hidden_states, forward_batch)
+        if _gstream is not None:
+            _cur.wait_stream(_gstream)  # default waits for decode layers before norm/sampling
         out = self.final_layernorm(hidden_states)
         if _timing:
             _ZT["on"] = False

@@ -146,3 +146,9 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[measured]` **Zamba2 no-GQA 청정 측정(triton, job 830945)**: attn/층 full-SM 0.159(ctx348)→0.607(ctx2140)=~4× (GQA는 ~10%). attn SM-민감 이미 ctx348서 2.6×(0.159→0.407@16SM) vs GQA는 ctx≫2000까지 둔감. ⇒ **no-GQA는 attn이 훨씬 짧은 컨텍스트서 비싸지고 SM-민감** = layer-aware 유리 체제. ctx2140서 attn 9×0.607=5.5ms(step ~17%, 증가중)·희소(9/54).
 - `[measured]` 장문(ctx≥2048) reduced-SM(44/16) 점은 green-ctx+triton서 **device-side assert crash**(open). full-SM 컨텍스트 스케일링은 확보.
 - 보고서 §3.5/§3.6 갱신.
+
+## P1.4+++ — Zamba2 long-ctx COMPLETE (green-ctx race fixed) → layer-aware confirmed (2026-07-04)
+- `[measured]` **green-ctx race 원인 규명**: 장문+batch>1서 device-side assert = decode를 green-ctx 스트림서 실행하는데 embed/clone/sampling은 default 스트림 → cross-stream 미동기화 race(CUDA_LAUNCH_BLOCKING서 사라짐=race 확증). **수정**: Zamba2Model.forward에 `_gstream.wait_stream(cur)` / `cur.wait_stream(_gstream)` 핸드셰이크. 전 그리드 crash 없이 완료.
+- `[measured]` **Zamba2 no-GQA 완전 데이터**: attn/층 full 0.159→1.044(ctx348→4092=~7×); attn SM-민감 16SM대비 full ctx348 2.5×→ctx4092 **4.9×**(1.04→5.13). **mamba SM-둔감/inverse**(ctx4092 full 0.453 vs 16SM 0.300). ⇒ **layer-aware 두 조건 충족**(attn 민감·희소·비쌈 + mamba 둔감·다수). 계산: layer_aware decode 25.6ms+92SM환원 vs agnostic@108 33.8ms+0환원 = **layer-aware 압승**.
+- `[measured]` **모델크기 의존**: NemotronH(8B) mamba 민감(compute-bound) vs Zamba2(2.7B) mamba 둔감(memory-bound). layer-aware 유리=(no-GQA)×(장문)×(mamba 둔감한 소형/memory-bound).
+- 보고서 §3.5 완성. 원자료 `p1_4_zb_ctxsens_831012.txt`.
