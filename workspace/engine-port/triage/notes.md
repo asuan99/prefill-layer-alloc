@@ -158,3 +158,10 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[derived]` NemotronH는 mamba 민감→환원 SM 없어 layer-aware≈agnostic. Zamba2(mamba 둔감)면 환원으로 고부하 TTFT 개선 예측.
 - harness: `bench_client.py`(Poisson+streaming TTFT/TPOT+goodput@SLO), `p1_4_serving.sbatch`. 원자료 `p1_4_serving_831023.txt`. 보고서 §3.7.
 - **미완(Task2 완전판)**: layer_aware 서빙 = decode layer-type window ∥ prefill 상보 파티션 교차 event_loop(대수술). fused/agnostic는 실측 완료, layer_aware는 decode-side 근거로 예측.
+
+## P1.4 Task2b — layer_aware 서빙 실증 + event_loop 정리 (2026-07-04)
+- `[measured]` **event_loop 정리**: NemotronHModel.forward decode 루프를 race-safe로 재작성 — per-layer target 스트림(fixed-N / layer_aware reserve) + 스트림 전환마다 `wait_stream`(레이어간 data dependency + default 스트림 대비 안전). pdmux 동시 prefill서 검증(job 831067: concurrent 장문 부하 NO_CRASH, "Paris").
+- `[measured]` **3정책 서빙 실증(NemotronH, job 831070)**: 셋 다 정상. **고부하 rate10서 layer_aware 최고 goodput 1.07(15/60) vs agnostic 0.50(7/60) vs fused 0.29(4/60)**, TTFT_med 최저(1659 vs 2680 vs 2958). 기전=attn(둔감) SM 환원→prefill 병목 완화, 포화근처 TTFT가 prefill SM에 초민감. 대가: layer_aware TPOT↑(67 vs 49; per-switch wait_stream 오버헤드 포함). 저중부하 유사.
+- `[derived]` run-to-run 분산 큼(fused rate10 1.43→0.29 요동) → 1-run 강신호이나 다중run 필요. NemotronH(mamba민감)서도 고부하 이득=예상밖 긍정; Zamba2(mamba둔감)면 더 클 것.
+- harness: `p1_4_serving.sbatch`(3정책), `p1_4_la_check.sbatch`(pdmux+layer_aware 검증), `bench_client.py`. 원자료 `p1_4_serving_831070.txt`. 보고서 §3.7.
+- 미완: 완전-충실(decode window ∥ prefill 상보파티션 교차) — 현 구현은 decode per-layer 환원(prefill은 pdmux 스트림, 부분 조율). Zamba2 pdmux(forward_split_prefill+layer_aware) 포트.

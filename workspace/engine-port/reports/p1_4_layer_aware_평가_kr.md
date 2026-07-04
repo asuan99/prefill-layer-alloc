@@ -104,22 +104,26 @@ sim 4-정책([framework_comparison](framework_comparison.md))을 실엔진에 �
 - `[measured]` Zamba2는 flashinfer가 head_dim=160서 NaN([zamba2_troubleshooting](zamba2_troubleshooting.md))이라 torch_native(느림)에 갇혀 있었음. triton은 임의 head_dim 지원하나 hybrid서 init 버그(`layer_id=0 not in full attention layers` — layer0가 attn 아닐 때 layer0 KV 조회 가정).
 - `[measured]` **수정**: `layers/attention/triton_backend.py`의 v_head_dim 초기화 조건을 `hybrid_gdn_config` → **`mambaish_config`**로 확장(mamba2 hybrid=NemotronH/Zamba2도 `get_v_head_dim()` 사용, layer0 조회 회피). ⇒ **Zamba2가 triton서 정확 동작**("The capital of France is"→"Paris") + torch_native보다 빠름. 이로써 no-GQA 청정 측정 가능(§3.5).
 
-## 3.7. 서빙 goodput 실측 — fused vs agnostic(pdmux), NemotronH-8B
+## 3.7. 서빙 goodput 실측 — 3정책(fused/agnostic/**layer_aware**), NemotronH-8B
 
-end-to-end 서빙 벤치(Poisson 도착, streaming TTFT/TPOT, in=2000/out=96, SLO: TTFT≤3s·TPOT≤60ms):
+end-to-end 서빙 벤치(Poisson 도착, streaming TTFT/TPOT, in=2000/out=96, SLO: TTFT≤3s·TPOT≤60ms). layer_aware는 pdmux + per-layer green-ctx 전환(§1, race-safe `wait_stream`)으로 **실엔진 서빙서 실행**. 셋 다 출력 정상("Paris").
 
-| 정책 | rate(req/s) | TPOT_med | TPOT_p99 | TTFT_med | out_tok/s | goodput@SLO |
-|---|---|---|---|---|---|---|
-| **fused** | 3 | 52.9ms | 73.7 | 223ms | 285 | 2.18 (44/60) |
-| **agnostic** | 3 | **24.6** | **26.6** | 500 | 246 | **2.57 (60/60)** |
-| fused | 6 | 57.4 | 109 | 1015 | 392 | 1.43 |
-| agnostic | 6 | **25.5** | **26.1** | 2312 | 355 | **2.34** |
-| fused | 10 | 51.1 | 102 | 2137 | 413 | 1.43 |
-| agnostic | 10 | 26.0 | 26.2 | 5071 | 357 | 0.62 |
+| 정책 | rate | TPOT_med | TTFT_med | goodput@SLO |
+|---|---|---|---|---|
+| fused | 3 | 41.5 | 296 | 2.74 (58/60) |
+| agnostic | 3 | 38.9 | 212 | 2.59 (60/60) |
+| layer_aware | 3 | 39.9 | 213 | 2.60 (60/60) |
+| fused | 6 | 65.2 | 375 | 1.65 |
+| agnostic | 6 | 49.1 | 1758 | 1.63 |
+| layer_aware | 6 | 72.2 | 642 | 1.44 |
+| **fused** | **10** | 49.1 | 2958 | 0.29 (4/60) |
+| **agnostic** | **10** | 49.5 | 2680 | 0.50 (7/60) |
+| **layer_aware** | **10** | 67.4 | **1659** | **1.07 (15/60)** |
 
-`[measured]` **① pdmux(agnostic)가 TPOT를 반감**(25 vs 53ms)+p99 극안정(26 vs ~100ms) — decode를 예약 SM 파티션서 격리해 prefill 경합서 분리. sim의 "fused는 decode를 prefill forward에 결합→TPOT 팽창" 명제를 **실HW로 확증**. **② goodput은 저·중부하서 agnostic 우세**(rate3 60/60, rate6 38 vs 21). **③ 단 고부하서 agnostic TTFT 폭발**(rate10 5071ms) — decode 예약에 prefill이 SM 굶주림. **← 바로 여기가 layer-aware가 값하는 지점**: SM을 prefill로 환원(TTFT↓)하되 예약 decode는 유지.
-
-`[derived]` NemotronH는 mamba가 SM-민감이라 환원할 SM이 없어 layer-aware가 이 TTFT 폭발을 못 고침(=agnostic이 최선). **환원할 SM이 있는 체제 = Zamba2(mamba 둔감)** → layer-aware가 고부하 TTFT를 낮춰 goodput 우위를 고부하까지 확장할 것으로 예측(§3.5 decode-side 근거). 완전-충실 layer-aware 서빙(§6)이 이를 실측할 다음 단계.
+`[measured]` **고부하(rate10)서 layer_aware가 최고 goodput**(1.07 vs agnostic 0.50 vs fused 0.29) — **TTFT_med 최저**(1659 vs 2680 vs 2958). 기전: attn(둔감) 레이어서 SM을 prefill로 환원 → prefill 병목 완화. **포화 근처선 TTFT가 prefill SM에 초민감**이라, NemotronH의 작은 환원(4/52층)도 goodput에 큰 영향(=decode-side 평균-SM 분석이 놓치는 서빙-동역학 효과). 저·중부하선 3정책 유사.
+`[measured]` 대가: layer_aware TPOT_med↑(67 vs 49) — 일부는 SM 감소, 일부는 **구현상 per-switch `wait_stream` 오버헤드**(레이어 타입 전환마다 스트림 동기화; CUDA graph/스위치 최소화로 개선 여지).
+`[derived]` **주의**: 서빙 run-to-run 분산 큼(별도 run서 fused rate10 goodput 1.43→0.29 요동). 위는 **1-run 내 강한 신호**(TTFT 순서는 기전적으로 견고)이나 확정엔 다중 run 필요.
+`[derived]` NemotronH(mamba 민감)서도 고부하 TTFT 이득이 나온 건 예상 밖 긍정. **Zamba2(mamba 둔감)면 환원 SM이 훨씬 많아 이 이득이 더 클 것**(§3.5 decode-side + 여기 서빙-동역학 결합).
 
 ## 4. 핵심 발견과 함의 (정직)
 

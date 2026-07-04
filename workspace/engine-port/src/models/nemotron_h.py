@@ -667,40 +667,53 @@ class NemotronHModel(nn.Module):
             self._lt_acc = {"M": 0.0, "-": 0.0, "*": 0.0}
             self._lt_n = 0
             self._lt_mode = _mode
-        _dctx = _cl.nullcontext()
-        if _fixed is not None:
-            _dctx = torch.cuda.stream(self._get_gctx_decode_stream(_fixed))
-        if _timing:
-            _pat = self.config.hybrid_override_pattern
-            _evs = []
-        # layer_aware policy: SM-SENSITIVE layer types (measured: mamba SSD, and
-        # MLP below ~44 SM) keep full/reserved SM; SM-INSENSITIVE types release to
-        # a floor (freeing SM for concurrent prefill). Which types are sensitive is
-        # empirical & model-dependent (NemotronH: reserve "M-" = mamba+mlp, release
-        # "*" = GQA attention). PDMUX_LA_RESERVE lists the reserved pattern chars.
+        # Decode SM policy per layer:
+        #  - fixed-N (agnostic sweep): pin all decode layers to an N-SM partition.
+        #  - layer_aware: SM-INSENSITIVE layer types (PDMUX_LA_RESERVE lists the
+        #    RESERVED/sensitive chars, default "M-"=mamba+mlp) stay on the base
+        #    (reserved) stream; the rest (e.g. "*"=GQA attn) drop to a floor,
+        #    freeing SM to a concurrent prefill.
+        # A stream switch carries a data dependency (layer i+1 reads layer i's
+        # output), so we wait_stream at each switch — also making green-ctx decode
+        # race-safe against the default stream under pdmux serving.
+        _pat_all = self.config.hybrid_override_pattern
         _la = _is_decode and _mode == "layer_aware"
         _la_floor = int(_os.environ.get("PDMUX_LA_FLOOR_SM", "16"))
         _la_reserve = _os.environ.get("PDMUX_LA_RESERVE", "M-")
-        _pat_all = self.config.hybrid_override_pattern
-        with _dctx:
-            for i in range(self.start_layer, self.end_layer):
-                layer = self.layers[i]
-                if not isinstance(layer, Layers):
-                    raise ValueError(f"Unknown layer type: {type(layer)}")
-                _lctx = _cl.nullcontext()
-                if _la and _pat_all[i] not in _la_reserve:
-                    _lctx = torch.cuda.stream(self._get_gctx_decode_stream(_la_floor))
-                if _timing:
-                    _s = torch.cuda.Event(enable_timing=True); _e = torch.cuda.Event(enable_timing=True)
-                    _s.record()
-                with _lctx:
-                    hidden_states, residual = layer.forward(
-                        hidden_states=hidden_states,
-                        residual=residual,
-                        forward_batch=forward_batch,
-                    )
-                if _timing:
-                    _e.record(); _evs.append((_pat[i], _s, _e))
+        _base = torch.cuda.current_stream()
+
+        def _tgt(idx):
+            if _fixed is not None:
+                return self._get_gctx_decode_stream(_fixed)
+            if _la and _pat_all[idx] not in _la_reserve:
+                return self._get_gctx_decode_stream(_la_floor)
+            return _base
+
+        if _timing:
+            _pat = _pat_all
+            _evs = []
+        _prev = _base
+        for i in range(self.start_layer, self.end_layer):
+            layer = self.layers[i]
+            if not isinstance(layer, Layers):
+                raise ValueError(f"Unknown layer type: {type(layer)}")
+            _t = _tgt(i) if _is_decode else _base
+            if _t is not _prev:
+                _t.wait_stream(_prev)  # cross-stream data dependency + race safety
+            if _timing:
+                _s = torch.cuda.Event(enable_timing=True); _e = torch.cuda.Event(enable_timing=True)
+                _s.record()
+            with (torch.cuda.stream(_t) if _t is not _base else _cl.nullcontext()):
+                hidden_states, residual = layer.forward(
+                    hidden_states=hidden_states,
+                    residual=residual,
+                    forward_batch=forward_batch,
+                )
+            if _timing:
+                _e.record(); _evs.append((_pat_all[i], _s, _e))
+            _prev = _t
+        if _prev is not _base:
+            _base.wait_stream(_prev)  # final norm/sampling on base waits for decode
         if _timing:
             torch.cuda.synchronize()
             if not hasattr(self, "_lt_acc"):
