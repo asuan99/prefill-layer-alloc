@@ -15,6 +15,12 @@ external/
 *.jid
 .*_jid
 
+# P1.4-1.6 runtime scratch: per-job decode-SM mode files + bench per-request dumps
+.*_mode_*
+.zbpx_*
+.la_chk_*
+*.jsonl
+
 # keep engine-port env docs (root .gitignore ignores env/)
 !env/
 !env/**

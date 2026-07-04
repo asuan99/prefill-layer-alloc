@@ -165,3 +165,50 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[derived]` run-to-run 분산 큼(fused rate10 1.43→0.29 요동) → 1-run 강신호이나 다중run 필요. NemotronH(mamba민감)서도 고부하 이득=예상밖 긍정; Zamba2(mamba둔감)면 더 클 것.
 - harness: `p1_4_serving.sbatch`(3정책), `p1_4_la_check.sbatch`(pdmux+layer_aware 검증), `bench_client.py`. 원자료 `p1_4_serving_831070.txt`. 보고서 §3.7.
 - 미완: 완전-충실(decode window ∥ prefill 상보파티션 교차) — 현 구현은 decode per-layer 환원(prefill은 pdmux 스트림, 부분 조율). Zamba2 pdmux(forward_split_prefill+layer_aware) 포트.
+
+## P1.5 — Zamba2 pdmux 포팅 완료 (2026-07-04)
+- `[measured]` **Zamba2 pdmux 부팅 OK**: `Zamba2ForCausalLM.forward_split_prefill` 추가(SPLIT_PREFILL 활성; `forward_batch.hidden_states`+`zamba_original`=clone(embed)을 split 윈도우 간 스레딩, forward_batch가 split 호출 간 지속됨을 이용) → plain pdmux "Paris" 정확·NO_CRASH(job 831123).
+- `[measured]` **Zamba2 layer_aware OK**: `Zamba2Model.forward` decode 루프 race-safe per-layer 전환 — Zamba2HybridLayer 9개(no-GQA attn=SM민감)는 base 유지(예약), 순수-mamba ~45개(둔감)는 `PDMUX_LA_FLOOR_SM`(기본16)으로 강등(prefill에 환원). 동시 장문 부하서 "Paris"·NO_CRASH(job 831135). **환원 비율 45/54(83%) >> NemotronH 4/52(8%)** → 더 큰 goodput 이득 기대.
+- `[fix]` `_fixed` 파싱에 `_sm_part.isdigit()` 가드(안 하면 `int("layer_aware")` crash). 스윕 모드 `<sm>@<ctx>`는 여전히 파싱됨.
+- layer_aware 서빙 env: `PDMUX_FIXED_DECODE_SM_FILE=<"layer_aware" 파일>`+`PDMUX_LA_FLOOR_SM=16`(NemotronH와 달리 `PDMUX_LA_RESERVE` 불요=레이어타입으로 예약). 부팅 `--attention-backend triton`.
+- harness: `p1_4_zb_pdmux_check.sbatch {plain|layer_aware}`, `p1_4_zb_serving.sbatch`(3정책, in3000/out96, rates 6/12/20).
+- **진행중**: Zamba2 3정책 서빙(job 831139) + NemotronH 다중run(831140/831141) — 대기중.
+
+## P1.5 방법론 버그 — 포트 충돌로 첫 다중-run 오염 (2026-07-04)
+- `[measured]` **포트 충돌**: `p1_4_serving.sbatch` PORT=31099 하드코딩. 두 NemotronH run(831140/831141)이 같은 노드(gpu39)에 co-schedule → 둘 다 127.0.0.1:31099 bind 시도 → 두번째가 `[Errno 98] address already in use` → 벤치가 한 서버에 이중 부하 = 교차오염. run3 layer_aware rate10 `n_ok=11/60, tpot=0.0`(서버 죽음 아님=충돌 아티팩트).
+- `[fix]` PORT를 job-id 파생으로: NemotronH `$((31200+JOBID%600))`, Zamba2 `$((32000+JOBID%500))`(disjoint 범위). --gres=gpu:1이라 GPU는 분리되나(노드당 8개) 포트는 노드 네트워크 공유 → 파생 필수.
+- `[note]` **오직 solo run(831070)만 clean**. 831140/831141은 폐기. 831172/831173로 재측정(포트 파생). Zamba2 serving도 solo(831146/831166)라 clean.
+
+## P1.5 서빙 청정 다중-run 결과 (2026-07-05) — 이전 결론 정정
+- `[measured]` **NemotronH 3청정run**(831070 solo, 831172/831173 포트파생; bind-error 없음 확인). goodput@SLO 평균: rate3 fused2.48/agn2.72/la2.62, rate6 1.61/1.67/1.34, **rate10 0.36/1.16/1.03**. ⇒ **고부하서 pdmux(agn·la)≫fused ~3×**, **la≈agn(우위 없음)**. run별 la-vs-agn 승자 뒤바뀜(run1 la승·run5 agn승) = 무승부.
+- `[measured]` **★정정**: 이전 831070 단독 "rate10 la 1.07 vs agn 0.50 vs fused 0.29 → la 압승" 해석은 **오염**. 831140/841 동시-run 포트충돌이 agn을 억눌렀던 것. 청정선 agn 강함(1.16). NemotronH서 layer_aware는 agnostic 대비 추가 이득 **없음**(둔감층 4/52). = §2/§3 decode-side 예측대로.
+- `[measured]` **Zamba2 prefill-bound**(831166, in3600/out32, tpot_slo120ms, triton). TTFT_med: rate6 fused1953/agn5002/la3846, rate12 6134/6995/5792, rate18 7196/7092/6595. ⇒ **la가 agn보다 TTFT −7~23% 일관 낮음**(45 mamba SM 환원→prefill 가속) = **기전 확증**. 대조: NH(둔감 4/52)=la≈agn vs ZB(둔감 45/54)=la<agn ⇒ **"la 이득 ∝ 환원가능 레이어 비중"**.
+- `[measured]` **단 goodput 미전환**: ZB tpot_med 170-205ms≫SLO(triton no-cudagraph=decode-bound) → 3정책 goodput≈0(fused r6 0.50만). 작은 모델은 fused(전 108SM prefill 이미 빠름)가 최선(TTFT 1953<pdmux). **전이조건=prefill-bound + cudagraph(빠른 decode)**. la TPOT>agn(182vs171): mamba 16SM 잔여민감+per-switch wait_stream 오버헤드(스텝당 45전환).
+- `[measured]` decode-bound 참고(out96, 831146): 동일 정성(fused 최선, tpot 76-106ms). 원자료 `p1_4_zb_serving_831146.txt`/`_831166.txt`, NH `p1_4_serving_831172/173.txt`.
+
+## P1.6 — agnostic_v2 정책 추가 (사용자 요청, 2026-07-05)
+- **정의**: agnostic_v2 = 균일 예약을 **attention 레이어 기준**(싸고 SM-둔감)으로 = 전 decode 레이어를 낮은 floor `PDMUX_AGN2_SM`(기본16)에 고정. prefill 환원 최대화하나 **SM-민감 레이어 미보호**. 대조: agnostic(v1)=SM-많이쓰는 mamba 기준(높은 N, 보호적)·layer_aware=레이어별(민감 보호+둔감 환원).
+- **구현**: `models/{nemotron_h,zamba2}.py` decode forward에 `_sm_part=="agnostic_v2"`→`_fixed=PDMUX_AGN2_SM`(fixed-N `_tgt` 경로 재사용). NemotronH는 non-numeric 제외목록에 "agnostic_v2" 추가, Zamba2는 `.isdigit()` 가드가 이미 제외. `[measured]` 부팅 검증 OK: 양 모델 "Paris"·NO_CRASH(job 831534 ZB / 831535 NH).
+- **decode-side 예측(기존 스윕 데이터 재활용)**:
+  - `[measured→derived]` **NemotronH**(mamba 민감): agnostic_v2=N16→decode step **53.3ms**(vs fused 22.5·v1@64 22.9·layer_aware ~23.1). prefill 환원 **92 SM**(최대, 균일) but mamba 굶주림. **단 53.3<60 TPOT SLO** → 고부하 prefill-bound서 최저 TTFT로 **이길 가능성 있음**(불확실→실측필요).
+  - `[derived]` **Zamba2 장문**(mamba 둔감·attn 민감): agnostic_v2=N16→attn 굶주림(5.13ms/층×9)+mamba(0.30×45)= **~59.7ms** decode(vs layer_aware 22.9·fused 29.8). = **layer_aware 대비 2.6× 느림** — 민감 attn 미보호가 치명적. layer_aware에 확실히 열위.
+- **핵심 통찰**: agnostic_v2는 "환원 최대화하나 무차별" → **SM-민감 레이어가 있으면 그걸 굶긴다**. layer_aware의 가치=단순 "더 환원"이 아니라 "**선택적** 환원"임을 입증하는 대조군. agnostic_v2가 유리한 유일 체제=**모든 레이어 SM-둔감**(희귀). 긴장구도: v2=최대 prefill환원(최저 TTFT)·최악 decode(최악 TPOT) → TTFT vs TPOT 중 뭐가 binding이냐로 승부.
+- 4정책 서빙 진행중: NemotronH job 831540(port 31740), Zamba2 831541(port 32041).
+
+## P1.6 서빙 실측 — agnostic_v2 4정책 (2026-07-05)
+- `[measured]` **NemotronH 4정책 3청정run**(831540/831554/831555, 포트파생 clean). goodput@SLO 평균: rate3 fused2.63/agn2.59/**agn2 2.92**/la2.45, rate6 1.05/1.54/1.86/**la 2.10**, rate10 fused1.21/agn0.84/**agn2 1.29**/la0.84. ⇒ **agnostic_v2가 rate3·rate10 평균 최고, rate6 2위 — 어느 부하서도 최악 아님**. 기전: mamba@16 decode 53ms<60 TPOT SLO → 페널티 흡수+최대 prefill환원(92)로 TTFT 방어. 사용자 직관("attn기준=최대환원") 실증. rate6 순서(la>agn2>agn>fused) 가장 안정, rate10 분산 큼(agn2 0.36~1.80).
+- `[measured]` **Zamba2 4정책**(831541, prefill-bound). rate6 TTFT_med: fused4782/agn3928/**agn2 4427**/la1619(goodput 1.09 유일). ⇒ **agnostic_v2 열위** — no-GQA attn@16 굶주림이 decode 느리게(≈60ms)→prefill 밀림→TTFT 악화(4427>agn v1 3928, "더 환원했는데 TTFT 나빠짐"). layer_aware가 attn 보호+mamba 환원으로 최저 TTFT.
+- `[derived]` **핵심**: agnostic_v2="attn 기준 균일"=최대 prefill환원(최저 TTFT 잠재)·최악 decode(최악 TPOT). **민감층이 floor(16 SM)를 견디면(SLO 여유 흡수) v2 승(NemotronH), 못 견디면 decode·TTFT로 번져 패(Zamba2 no-GQA attn)**. layer_aware는 그 판단을 층별로 → 양 모델 안전(never worst). **⇒ layer_aware 가치=단순 "더 환원"이 아니라 "선택적 환원".**
+- 구현: `models/{nemotron_h,zamba2}.py` mode "agnostic_v2"→전층 `PDMUX_AGN2_SM`(16). 4정책 sbatch `p1_4_serving.sbatch`/`p1_4_zb_serving.sbatch`. 아티팩트(claude.ai artifact) §05에 시각화.
+
+## P1.6b — 측정 신뢰성 문제 진단 (사용자 지적, 2026-07-05)
+- `[measured]` **고레이트 goodput/TTFT 신뢰불가 근본원인 3가지**: ① **서버 포화점 ~4.3 req/s**(out_tok/s가 rate6·rate10서 동일 ~410 tok/s ÷96out) → rate6/rate10은 둘 다 포화 넘은 **과부하**(부하-지연 곡선 아님, burst-drain 노이즈). 증거: fused TTFT 비단조(run831540 r6=2378 > r10=1900ms=불가능). ② **hand-rolled `bench_client.py`가 약한 부하생성기**: 60 파이썬 스레드+blocking urllib 스트리밍 → GIL 경합이 TTFT/TPOT 측정에 클라이언트측 지연 주입. ③ **goodput@SLO=절벽 지표**(TTFT≤3s 이진): 포화근처 TTFT~2-3.4s라 미세노이즈가 다수 요청 flip → goodput 폭요동. 증거: agnostic_v2 r10 goodput 3run서 **1.71/0.36/1.80**(한 run서 최악), within-run 승자도 run별 모순(540→agn2, 554→la, 555→fused). ⇒ **rate10 정책순서 무의미. "agnostic_v2 고부하 우위"는 과대해석**(사용자 지적 타당). TTFT 공식 자체는 정상(t0=send, ttft=first_token−t0).
+- `[fix]` **`sglang.bench_serving`(공식 async 부하생성기)로 재측정**: sub-saturation rate 1-4(+6 과부하), num-prompts 120, `--random-input-len 2000 --random-output-len 96 --random-range-ratio 1.0`, `--output-details`로 per-request dump→goodput 계산. 정책당 별도 GPU job(OOM carryover 회피). 부팅 `datasets` 패키지 필요(설치, numpy 핀). harness `p1_6_bench_one.sbatch <policy>`.
+
+## P1.6c — async 청정 재측정 결과 (2026-07-05) — agnostic_v2 결론 역전
+- harness: `sglang.bench_serving`(async, `--dataset-name random-ids` offline, `--random-input-len 2000 --random-output-len 96 --random-range-ratio 1.0`, num-prompts 120, sub-saturation rate 1-4+6), 정책당 별도 GPU job(831609 fused/831610 agn/831611 agn2/831612 la). goodput은 per-request dump(`--output-details`)로 계산.
+- `[measured]` **NemotronH goodput@SLO(TTFT≤3s,TPOT≤60ms)**: rate1 0.97/0.96/0.93/0.96, rate2 1.89/1.88/**0.32**/1.88, rate3 2.22/**2.76**/**0.00**/**2.76**, rate4 1.40/**2.25**/**0.00**/1.58 (fused/agn/agn2/la).
+- `[measured]` **Median TPOT(ms)=판별자**: rate2 32/22/**72**/26, rate3 46/24/**119**/35, rate4 63/25/**191**/50. agnostic_v2 TPOT가 rate2부터 60 SLO 돌파(decode 16SM 굶주림). agn v1 평탄 22-25(decode SM 충분). §2 decode-side(16SM=53ms)를 서빙이 확증.
+- `[measured]` **Median TTFT(ms)**: rate4 684/1699/**6705**/1529. agnostic_v2 TTFT도 최악=굶긴 decode가 밀려 prefill 스케줄 막음(nominal 환원 SM이 실질 도움 안 됨).
+- `[derived]` **청정 순위: agnostic(v1)≈layer_aware>fused>agnostic_v2**. **agnostic_v2=최악**(두 모델 공히; 지배적 decode층이 SM-민감이라 굶기면 파멸). layer_aware≈agnostic(NH선 안전환원 대상 4/52뿐, 고부하 전환오버헤드로 소폭 열위). fused 저부하 양호·부하시 decode-prefill 결합으로 열위.
+- **정정 요약**: 초기 "agnostic_v2 고부하 우위"(bench_client.py 60스레드 urllib×포화초과 rate6/10×절벽 goodput)는 오측 → async·sub-saturation로 역전. **layer_aware 가치=단순 환원 아니라 민감층 보호.** 원자료 `p1_6_bench_one_831609~831612.out`.

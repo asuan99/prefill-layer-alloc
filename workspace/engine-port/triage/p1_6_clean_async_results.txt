@@ -1,0 +1,164 @@
+# NemotronH 4-policy serving — CLEAN async sglang.bench_serving (sub-saturation)
+# jobs 831609(fused) 831610(agnostic) 831611(agnostic_v2) 831612(layer_aware)
+# in2000/out96, random-ids, num-prompts120, rates 1/2/3/4/6. server saturates ~4.3 req/s.
+
+===== fused (job 831609) =====
+Median TTFT (ms):                        372.30    
+P99 TTFT (ms):                           657.92    
+Median TPOT (ms):                        32.79     
+===== fused rate=1 =====
+Successful requests:                     120       
+Request throughput (req/s):              0.97      
+Median TTFT (ms):                        299.15    
+P99 TTFT (ms):                           1237.92   
+Median TPOT (ms):                        25.39     
+===== fused rate=2 =====
+Successful requests:                     120       
+Request throughput (req/s):              1.89      
+Median TTFT (ms):                        312.32    
+P99 TTFT (ms):                           1699.02   
+Median TPOT (ms):                        31.71     
+===== fused rate=3 =====
+Successful requests:                     120       
+Request throughput (req/s):              2.77      
+Median TTFT (ms):                        468.69    
+P99 TTFT (ms):                           1863.73   
+Median TPOT (ms):                        46.33     
+===== fused rate=4 =====
+Successful requests:                     120       
+Request throughput (req/s):              3.58      
+Median TTFT (ms):                        683.91    
+P99 TTFT (ms):                           3179.96   
+Median TPOT (ms):                        62.89     
+===== fused rate=6 =====
+Successful requests:                     120       
+Request throughput (req/s):              4.13      
+Median TTFT (ms):                        3389.18   
+P99 TTFT (ms):                           10039.08  
+Median TPOT (ms):                        69.34     
+  rate=1.0 good=120/120 goodput=0.97req/s dur=124.3s
+  rate=2.0 good=120/120 goodput=1.89req/s dur=63.5s
+  rate=3.0 good=96/120 goodput=2.22req/s dur=43.3s
+  rate=4.0 good=47/120 goodput=1.40req/s dur=33.5s
+  rate=6.0 good=2/120 goodput=0.07req/s dur=29.0s
+
+===== agnostic (job 831610) =====
+Median TTFT (ms):                        462.72    
+P99 TTFT (ms):                           884.71    
+Median TPOT (ms):                        23.02     
+===== agnostic rate=1 =====
+Successful requests:                     120       
+Request throughput (req/s):              0.96      
+Median TTFT (ms):                        392.23    
+P99 TTFT (ms):                           1652.73   
+Median TPOT (ms):                        21.20     
+===== agnostic rate=2 =====
+Successful requests:                     120       
+Request throughput (req/s):              1.88      
+Median TTFT (ms):                        486.68    
+P99 TTFT (ms):                           2077.83   
+Median TPOT (ms):                        22.34     
+===== agnostic rate=3 =====
+Successful requests:                     120       
+Request throughput (req/s):              2.76      
+Median TTFT (ms):                        843.39    
+P99 TTFT (ms):                           2354.26   
+Median TPOT (ms):                        24.11     
+===== agnostic rate=4 =====
+Successful requests:                     120       
+Request throughput (req/s):              3.26      
+Median TTFT (ms):                        1699.21   
+P99 TTFT (ms):                           6164.26   
+Median TPOT (ms):                        24.49     
+===== agnostic rate=6 =====
+Successful requests:                     120       
+Request throughput (req/s):              3.43      
+Median TTFT (ms):                        6473.41   
+P99 TTFT (ms):                           13216.89  
+Median TPOT (ms):                        24.70     
+  rate=1.0 good=120/120 goodput=0.96req/s dur=124.4s
+  rate=2.0 good=120/120 goodput=1.88req/s dur=63.7s
+  rate=3.0 good=120/120 goodput=2.76req/s dur=43.5s
+  rate=4.0 good=83/120 goodput=2.25req/s dur=36.8s
+  rate=6.0 good=16/120 goodput=0.46req/s dur=35.0s
+
+===== agnostic_v2 (job 831611) =====
+Median TTFT (ms):                        692.91    
+P99 TTFT (ms):                           1273.91   
+Median TPOT (ms):                        57.33     
+===== agnostic_v2 rate=1 =====
+Successful requests:                     120       
+Request throughput (req/s):              0.95      
+Median TTFT (ms):                        459.48    
+P99 TTFT (ms):                           1794.95   
+Median TPOT (ms):                        43.30     
+===== agnostic_v2 rate=2 =====
+Successful requests:                     120       
+Request throughput (req/s):              1.83      
+Median TTFT (ms):                        689.10    
+P99 TTFT (ms):                           2909.74   
+Median TPOT (ms):                        71.86     
+===== agnostic_v2 rate=3 =====
+Successful requests:                     120       
+Request throughput (req/s):              2.27      
+Median TTFT (ms):                        1718.65   
+P99 TTFT (ms):                           8192.76   
+Median TPOT (ms):                        119.29    
+===== agnostic_v2 rate=4 =====
+Successful requests:                     120       
+Request throughput (req/s):              2.17      
+Median TTFT (ms):                        6705.43   
+P99 TTFT (ms):                           20539.08  
+Median TPOT (ms):                        191.02    
+===== agnostic_v2 rate=6 =====
+Successful requests:                     120       
+Request throughput (req/s):              2.13      
+Median TTFT (ms):                        13559.06  
+P99 TTFT (ms):                           32116.97  
+Median TPOT (ms):                        182.05    
+  rate=1.0 good=117/120 goodput=0.93req/s dur=125.9s
+  rate=2.0 good=21/120 goodput=0.32req/s dur=65.5s
+  rate=3.0 good=0/120 goodput=0.00req/s dur=52.9s
+  rate=4.0 good=0/120 goodput=0.00req/s dur=55.4s
+  rate=6.0 good=0/120 goodput=0.00req/s dur=56.3s
+
+===== layer_aware (job 831612) =====
+Median TTFT (ms):                        457.07    
+P99 TTFT (ms):                           873.93    
+Median TPOT (ms):                        27.53     
+===== layer_aware rate=1 =====
+Successful requests:                     120       
+Request throughput (req/s):              0.96      
+Median TTFT (ms):                        386.41    
+P99 TTFT (ms):                           1574.05   
+Median TPOT (ms):                        22.44     
+===== layer_aware rate=2 =====
+Successful requests:                     120       
+Request throughput (req/s):              1.88      
+Median TTFT (ms):                        463.02    
+P99 TTFT (ms):                           1929.47   
+Median TPOT (ms):                        26.31     
+===== layer_aware rate=3 =====
+Successful requests:                     120       
+Request throughput (req/s):              2.76      
+Median TTFT (ms):                        749.17    
+P99 TTFT (ms):                           2165.21   
+Median TPOT (ms):                        34.84     
+===== layer_aware rate=4 =====
+Successful requests:                     120       
+Request throughput (req/s):              3.27      
+Median TTFT (ms):                        1528.86   
+P99 TTFT (ms):                           5126.37   
+Median TPOT (ms):                        50.20     
+===== layer_aware rate=6 =====
+Successful requests:                     120       
+Request throughput (req/s):              3.15      
+Median TTFT (ms):                        7104.68   
+P99 TTFT (ms):                           16088.62  
+Median TPOT (ms):                        104.10    
+  rate=1.0 good=120/120 goodput=0.96req/s dur=124.4s
+  rate=2.0 good=120/120 goodput=1.88req/s dur=63.7s
+  rate=3.0 good=120/120 goodput=2.76req/s dur=43.5s
+  rate=4.0 good=58/120 goodput=1.58req/s dur=36.7s
+  rate=6.0 good=0/120 goodput=0.00req/s dur=38.0s
+

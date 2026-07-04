@@ -1,0 +1,17 @@
+===== NemotronH serving: fused vs agnostic vs agnostic_v2 vs layer_aware, in=2000/out=96 =====
+BENCH fused rate=3.0 n_ok=60/60 wall=21.7s out_tok/s=265.0 ttft_med=212ms ttft_p99=784ms tpot_med=44.1ms tpot_p99=63.3ms goodput@SLO=2.67req/s (58/60)
+BENCH fused rate=6.0 n_ok=60/60 wall=14.0s out_tok/s=410.8 ttft_med=942ms ttft_p99=3637ms tpot_med=68.3ms tpot_p99=102.0ms goodput@SLO=1.07req/s (15/60)
+BENCH fused rate=10.0 n_ok=60/60 wall=14.2s out_tok/s=404.6 ttft_med=2176ms ttft_p99=5425ms tpot_med=69.4ms tpot_p99=102.2ms goodput@SLO=0.84req/s (12/60)
+SANITY fused "text":" Paris.\"
+BENCH agnostic rate=3.0 n_ok=60/60 wall=24.8s out_tok/s=231.8 ttft_med=210ms ttft_p99=949ms tpot_med=37.6ms tpot_p99=54.1ms goodput@SLO=2.41req/s (60/60)
+BENCH agnostic rate=6.0 n_ok=60/60 wall=15.7s out_tok/s=366.6 ttft_med=611ms ttft_p99=2148ms tpot_med=69.5ms tpot_p99=101.9ms goodput@SLO=1.53req/s (24/60)
+BENCH agnostic rate=10.0 n_ok=60/60 wall=14.0s out_tok/s=411.1 ttft_med=2435ms ttft_p99=6761ms tpot_med=47.3ms tpot_p99=102.5ms goodput@SLO=1.00req/s (14/60)
+SANITY agnostic "text":" Paris.\"
+BENCH agnostic_v2 rate=3.0 n_ok=60/60 wall=19.4s out_tok/s=296.2 ttft_med=314ms ttft_p99=952ms tpot_med=40.4ms tpot_p99=78.1ms goodput@SLO=2.67req/s (52/60)
+BENCH agnostic_v2 rate=6.0 n_ok=60/60 wall=14.3s out_tok/s=404.1 ttft_med=777ms ttft_p99=2400ms tpot_med=64.7ms tpot_p99=102.1ms goodput@SLO=1.82req/s (26/60)
+BENCH agnostic_v2 rate=10.0 n_ok=60/60 wall=14.0s out_tok/s=411.2 ttft_med=3430ms ttft_p99=7969ms tpot_med=51.1ms tpot_p99=102.8ms goodput@SLO=0.36req/s (5/60)
+SANITY agnostic_v2 "text":" Paris.\"
+BENCH layer_aware rate=3.0 n_ok=60/60 wall=22.5s out_tok/s=256.1 ttft_med=232ms ttft_p99=650ms tpot_med=37.6ms tpot_p99=62.7ms goodput@SLO=2.53req/s (57/60)
+BENCH layer_aware rate=6.0 n_ok=60/60 wall=14.6s out_tok/s=393.6 ttft_med=1144ms ttft_p99=2999ms tpot_med=66.9ms tpot_p99=101.4ms goodput@SLO=1.71req/s (25/60)
+BENCH layer_aware rate=10.0 n_ok=60/60 wall=13.9s out_tok/s=414.4 ttft_med=2012ms ttft_p99=6127ms tpot_med=49.2ms tpot_p99=102.0ms goodput@SLO=1.08req/s (15/60)
+SANITY layer_aware "text":" Paris.\"

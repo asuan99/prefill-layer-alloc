@@ -1,0 +1,13 @@
+===== Zamba2-2.7B serving (prefill-bound): fused vs agnostic vs layer_aware, in=3600/out=32 tpot_slo=0.12s triton =====
+BENCH fused rate=6.0 n_ok=72/72 wall=19.9s out_tok/s=115.7 ttft_med=1953ms ttft_p99=6446ms tpot_med=169.0ms tpot_p99=402.1ms goodput@SLO=0.50req/s (10/72)
+BENCH fused rate=12.0 n_ok=72/72 wall=20.6s out_tok/s=111.6 ttft_med=6134ms ttft_p99=12606ms tpot_med=177.0ms tpot_p99=424.8ms goodput@SLO=0.00req/s (0/72)
+BENCH fused rate=18.0 n_ok=72/72 wall=20.6s out_tok/s=111.9 ttft_med=7196ms ttft_p99=16108ms tpot_med=177.0ms tpot_p99=423.5ms goodput@SLO=0.00req/s (0/72)
+SANITY fused "text":" Paris.\nThe capital of"
+BENCH agnostic rate=6.0 n_ok=72/72 wall=20.9s out_tok/s=110.2 ttft_med=5002ms ttft_p99=11207ms tpot_med=171.1ms tpot_p99=431.9ms goodput@SLO=0.00req/s (0/72)
+BENCH agnostic rate=12.0 n_ok=72/72 wall=20.7s out_tok/s=111.6 ttft_med=6995ms ttft_p99=14630ms tpot_med=177.3ms tpot_p99=424.8ms goodput@SLO=0.00req/s (0/72)
+BENCH agnostic rate=18.0 n_ok=72/72 wall=20.7s out_tok/s=111.3 ttft_med=7092ms ttft_p99=15294ms tpot_med=172.7ms tpot_p99=426.1ms goodput@SLO=0.00req/s (0/72)
+SANITY agnostic "text":" Paris.\nThe capital of"
+BENCH layer_aware rate=6.0 n_ok=72/72 wall=21.1s out_tok/s=109.1 ttft_med=3846ms ttft_p99=9536ms tpot_med=181.9ms tpot_p99=430.2ms goodput@SLO=0.00req/s (0/72)
+BENCH layer_aware rate=12.0 n_ok=72/72 wall=22.2s out_tok/s=103.6 ttft_med=5792ms ttft_p99=14818ms tpot_med=205.1ms tpot_p99=476.5ms goodput@SLO=0.00req/s (0/72)
+BENCH layer_aware rate=18.0 n_ok=72/72 wall=20.7s out_tok/s=111.4 ttft_med=6595ms ttft_p99=14879ms tpot_med=172.7ms tpot_p99=425.8ms goodput@SLO=0.00req/s (0/72)
+SANITY layer_aware "text":" Paris.\nThe capital of"

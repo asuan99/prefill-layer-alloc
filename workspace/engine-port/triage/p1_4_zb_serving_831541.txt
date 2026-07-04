@@ -1,0 +1,17 @@
+===== Zamba2-2.7B serving (prefill-bound): fused vs agnostic vs agnostic_v2 vs layer_aware, in=3600/out=32 tpot_slo=0.12s triton =====
+BENCH fused rate=6.0 n_ok=72/72 wall=22.5s out_tok/s=102.4 ttft_med=4782ms ttft_p99=9459ms tpot_med=180.8ms tpot_p99=477.8ms goodput@SLO=0.00req/s (0/72)
+BENCH fused rate=12.0 n_ok=72/72 wall=20.6s out_tok/s=111.9 ttft_med=5813ms ttft_p99=12331ms tpot_med=173.7ms tpot_p99=422.5ms goodput@SLO=0.00req/s (0/72)
+BENCH fused rate=18.0 n_ok=72/72 wall=20.6s out_tok/s=111.8 ttft_med=6749ms ttft_p99=14634ms tpot_med=176.0ms tpot_p99=423.0ms goodput@SLO=0.00req/s (0/72)
+SANITY fused "text":" Paris.\nThe capital of"
+BENCH agnostic rate=6.0 n_ok=72/72 wall=20.4s out_tok/s=112.8 ttft_med=3928ms ttft_p99=9295ms tpot_med=171.3ms tpot_p99=415.6ms goodput@SLO=0.00req/s (0/72)
+BENCH agnostic rate=12.0 n_ok=72/72 wall=20.6s out_tok/s=111.7 ttft_med=6420ms ttft_p99=13281ms tpot_med=176.9ms tpot_p99=423.2ms goodput@SLO=0.00req/s (0/72)
+BENCH agnostic rate=18.0 n_ok=72/72 wall=20.8s out_tok/s=110.6 ttft_med=7119ms ttft_p99=15599ms tpot_med=176.3ms tpot_p99=429.3ms goodput@SLO=0.00req/s (0/72)
+SANITY agnostic "text":" Paris.\nThe capital of"
+BENCH agnostic_v2 rate=6.0 n_ok=72/72 wall=20.9s out_tok/s=110.3 ttft_med=4427ms ttft_p99=8200ms tpot_med=179.0ms tpot_p99=429.9ms goodput@SLO=0.00req/s (0/72)
+BENCH agnostic_v2 rate=12.0 n_ok=72/72 wall=20.6s out_tok/s=111.7 ttft_med=6831ms ttft_p99=14467ms tpot_med=182.6ms tpot_p99=423.7ms goodput@SLO=0.00req/s (0/72)
+BENCH agnostic_v2 rate=18.0 n_ok=72/72 wall=20.7s out_tok/s=111.1 ttft_med=7913ms ttft_p99=15504ms tpot_med=172.7ms tpot_p99=425.9ms goodput@SLO=0.00req/s (0/72)
+SANITY agnostic_v2 "text":" Paris.\nThe capital of"
+BENCH layer_aware rate=6.0 n_ok=72/72 wall=20.2s out_tok/s=114.1 ttft_med=1619ms ttft_p99=3922ms tpot_med=167.0ms tpot_p99=415.4ms goodput@SLO=1.09req/s (22/72)
+BENCH layer_aware rate=12.0 n_ok=72/72 wall=20.5s out_tok/s=112.5 ttft_med=6206ms ttft_p99=13925ms tpot_med=182.4ms tpot_p99=419.2ms goodput@SLO=0.00req/s (0/72)
+BENCH layer_aware rate=18.0 n_ok=72/72 wall=20.7s out_tok/s=111.5 ttft_med=7279ms ttft_p99=16032ms tpot_med=177.7ms tpot_p99=424.4ms goodput@SLO=0.00req/s (0/72)
+SANITY layer_aware "text":" Paris.\nThe capital of"

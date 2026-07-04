@@ -1,0 +1,13 @@
+===== Zamba2-2.7B serving: fused vs agnostic vs layer_aware, in=3000/out=96 triton =====
+BENCH fused rate=6.0 n_ok=72/72 wall=20.9s out_tok/s=331.5 ttft_med=622ms ttft_p99=1679ms tpot_med=105.9ms tpot_p99=126.7ms goodput@SLO=0.62req/s (13/72)
+BENCH fused rate=12.0 n_ok=72/72 wall=22.3s out_tok/s=310.0 ttft_med=4012ms ttft_p99=11709ms tpot_med=75.9ms tpot_p99=142.6ms goodput@SLO=0.00req/s (0/72)
+BENCH fused rate=20.0 n_ok=72/72 wall=22.2s out_tok/s=311.1 ttft_med=5790ms ttft_p99=14564ms tpot_med=75.9ms tpot_p99=142.1ms goodput@SLO=0.00req/s (0/72)
+SANITY fused "text":" Paris.\nThe capital of"
+BENCH agnostic rate=6.0 n_ok=72/72 wall=22.1s out_tok/s=312.5 ttft_med=2861ms ttft_p99=7872ms tpot_med=84.6ms tpot_p99=142.7ms goodput@SLO=0.05req/s (1/72)
+BENCH agnostic rate=12.0 n_ok=72/72 wall=22.2s out_tok/s=311.4 ttft_med=3967ms ttft_p99=11764ms tpot_med=75.8ms tpot_p99=141.7ms goodput@SLO=0.00req/s (0/72)
+BENCH agnostic rate=20.0 n_ok=72/72 wall=22.2s out_tok/s=312.0 ttft_med=5981ms ttft_p99=14901ms tpot_med=75.8ms tpot_p99=141.6ms goodput@SLO=0.00req/s (0/72)
+SANITY agnostic "text":" Paris.\nThe capital of"
+BENCH layer_aware rate=6.0 n_ok=72/72 wall=21.1s out_tok/s=327.4 ttft_med=884ms ttft_p99=6129ms tpot_med=91.9ms tpot_p99=130.5ms goodput@SLO=0.00req/s (0/72)
+BENCH layer_aware rate=12.0 n_ok=72/72 wall=22.3s out_tok/s=310.2 ttft_med=5541ms ttft_p99=13418ms tpot_med=75.9ms tpot_p99=142.9ms goodput@SLO=0.00req/s (0/72)
+BENCH layer_aware rate=20.0 n_ok=72/72 wall=22.2s out_tok/s=311.9 ttft_med=5183ms ttft_p99=13944ms tpot_med=75.1ms tpot_p99=141.5ms goodput@SLO=0.00req/s (0/72)
+SANITY layer_aware "text":" Paris.\nThe capital of"

@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=p1_4_la_check
+#SBATCH --job-name=p1_4_zb_pdmux
 #SBATCH --partition=amd_a100nv_8
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=80G
+#SBATCH --mem=64G
 #SBATCH --time=00:20:00
 #SBATCH --comment=pytorch
 #SBATCH --output=%x_%j.out
@@ -18,16 +18,17 @@ HERE=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/triage
 export HF_HOME=/scratch/ehmoon/whlee/prefill-layer-alloc/hf_cache
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONUNBUFFERED=1
 export TRITON_CACHE_DIR="$HERE/.triton_cache"
-MODE="${1:-layer_aware}"   # layer_aware | agnostic_v2
-LAFILE="$HERE/.la_chk_${SLURM_JOB_ID}"; echo "$MODE" > "$LAFILE"
-export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_LA_RESERVE="M-" PDMUX_LA_FLOOR_SM=16 PDMUX_AGN2_SM=16
-PORT=$((31400 + SLURM_JOB_ID % 400)); SRVLOG="$HERE/p1_4_lachk_srv_${SLURM_JOB_ID}.log"
+MODE="${1:-plain}"   # plain | layer_aware | agnostic_v2
+PORT=31102; SRVLOG="$HERE/p1_4_zbpx_srv_${SLURM_JOB_ID}.log"
+LAFILE="$HERE/.zbpx_${SLURM_JOB_ID}"
+if [ "$MODE" != "plain" ]; then echo "$MODE" > "$LAFILE"; export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_LA_FLOOR_SM=16 PDMUX_AGN2_SM=16; fi
 
 python -m sglang.launch_server \
-  --model-path nvidia/Nemotron-H-8B-Base-8K --trust-remote-code --dtype bfloat16 \
+  --model-path Zyphra/Zamba2-2.7B --trust-remote-code --dtype bfloat16 \
+  --attention-backend triton \
   --enable-pdmux --pdmux-config-path "$HERE/pdmux_a100_smoke.yml" --chunked-prefill-size -1 --disable-overlap-schedule \
   --disable-cuda-graph --disable-piecewise-cuda-graph --disable-radix-cache \
-  --mem-fraction-static 0.82 --max-running-requests 48 --context-length 8192 \
+  --mem-fraction-static 0.8 --max-running-requests 32 --context-length 4096 \
   --host 127.0.0.1 --port $PORT > "$SRVLOG" 2>&1 &
 SRV=$!
 ok=0
@@ -37,18 +38,17 @@ for i in $(seq 1 150); do
 done
 grep -iE "PD-Multiplexing enabled" "$SRVLOG" | head -1
 if [ "$ok" = 1 ]; then
-  # concurrent long-context load to stress the layer_aware green-ctx switching under pdmux
-  P=$(python3 -c "print('the robot walked slowly across the red planet '*200, end='')")
+  P=$(python3 -c "print('the robot walked slowly across '*160, end='')")
   pids=""
   for r in $(seq 1 8); do
     curl -s http://127.0.0.1:$PORT/generate -H 'Content-Type: application/json' \
-      --data-binary "$(python3 -c "import json;print(json.dumps({'text':'$P','sampling_params':{'max_new_tokens':40,'temperature':0.0,'ignore_eos':True}}))")" >/dev/null 2>&1 &
+      --data-binary "$(python3 -c "import json;print(json.dumps({'text':'$P','sampling_params':{'max_new_tokens':32,'temperature':0.0,'ignore_eos':True}}))")" >/dev/null 2>&1 &
     pids="$pids $!"
   done
   wait $pids
-  echo "SANITY:"; curl -s http://127.0.0.1:$PORT/generate -H 'Content-Type: application/json' \
+  echo -n "SANITY($MODE): "; curl -s http://127.0.0.1:$PORT/generate -H 'Content-Type: application/json' \
     -d '{"text":"The capital of France is","sampling_params":{"max_new_tokens":8,"temperature":0}}' | grep -oE '"text":"[^"]*"'
-  grep -iE "assert|illegal|device-side|Scheduler hit|Traceback" "$SRVLOG" | grep -viE "OpenAIServing" | tail -3 && echo "^^ ERRORS" || echo "NO_CRASH"
-  echo "P1.4 LA_CHECK DONE"
-else echo "FAILED"; tail -20 "$SRVLOG"; fi
+  grep -iE "assert|illegal|device-side|Scheduler hit|Traceback|has no attribute|forward_split" "$SRVLOG" | grep -viE "OpenAIServing" | tail -4 && echo "^^ERRORS" || echo "NO_CRASH"
+  echo "ZB_PDMUX_${MODE}_DONE"
+else echo "FAILED"; tail -25 "$SRVLOG"; fi
 kill $SRV 2>/dev/null; sleep 2; kill -9 $SRV 2>/dev/null

@@ -1,0 +1,13 @@
+===== NemotronH serving: fused vs agnostic vs layer_aware, in=2000/out=96 =====
+BENCH fused rate=3.0 n_ok=60/60 wall=29.7s out_tok/s=193.9 ttft_med=341ms ttft_p99=1865ms tpot_med=70.1ms tpot_p99=102.8ms goodput@SLO=0.74req/s (22/60)
+BENCH fused rate=6.0 n_ok=60/60 wall=17.2s out_tok/s=334.5 ttft_med=5114ms ttft_p99=6715ms tpot_med=58.1ms tpot_p99=101.7ms goodput@SLO=0.41req/s (7/60)
+BENCH fused rate=10.0 n_ok=60/60 wall=19.8s out_tok/s=290.5 ttft_med=5615ms ttft_p99=12291ms tpot_med=62.8ms tpot_p99=102.5ms goodput@SLO=0.00req/s (0/60)
+SANITY fused "text":" Paris.\"
+BENCH agnostic rate=3.0 n_ok=60/60 wall=22.0s out_tok/s=261.7 ttft_med=419ms ttft_p99=1022ms tpot_med=61.5ms tpot_p99=102.3ms goodput@SLO=1.09req/s (24/60)
+BENCH agnostic rate=6.0 n_ok=60/60 wall=25.5s out_tok/s=226.0 ttft_med=5693ms ttft_p99=8395ms tpot_med=62.1ms tpot_p99=103.0ms goodput@SLO=0.51req/s (13/60)
+BENCH agnostic rate=10.0 n_ok=60/60 wall=20.0s out_tok/s=288.1 ttft_med=5079ms ttft_p99=12222ms tpot_med=64.4ms tpot_p99=103.0ms goodput@SLO=0.00req/s (0/60)
+SANITY agnostic "text":" Paris.\"
+BENCH layer_aware rate=3.0 n_ok=60/60 wall=21.5s out_tok/s=267.3 ttft_med=336ms ttft_p99=1147ms tpot_med=54.2ms tpot_p99=101.9ms goodput@SLO=1.72req/s (37/60)
+BENCH layer_aware rate=6.0 n_ok=60/60 wall=20.0s out_tok/s=288.4 ttft_med=3832ms ttft_p99=8100ms tpot_med=67.7ms tpot_p99=103.1ms goodput@SLO=0.80req/s (16/60)
+BENCH layer_aware rate=10.0 n_ok=60/60 wall=18.8s out_tok/s=306.2 ttft_med=5305ms ttft_p99=8102ms tpot_med=64.0ms tpot_p99=103.1ms goodput@SLO=0.32req/s (6/60)
+SANITY layer_aware "text":" Paris.\"

@@ -365,10 +365,18 @@ class Zamba2Model(nn.Module):
                 _mode = None
         # mode token is "<sm>@<ctxtag>" so the accumulator resets per (sm,ctx) combo
         _sm_part = _mode.split("@")[0] if _mode else None
-        _fixed = int(_sm_part) if (_sm_part and _sm_part not in ("full", "")) else None
+        _fixed = (
+            int(_sm_part)
+            if (_sm_part and _sm_part.isdigit())
+            else None
+        )
+        # agnostic_v2: uniform reservation sized to the (cheap) attention layer ->
+        # pin ALL decode layers to a low floor, maximizing prefill reclaim but NOT
+        # protecting the SM-sensitive layers (in long-ctx Zamba2 that's the no-GQA
+        # attn). Contrast with layer_aware, which keeps the hybrid attn at full SM.
+        if _is_decode and _sm_part == "agnostic_v2":
+            _fixed = int(_os.environ.get("PDMUX_AGN2_SM", "16"))
         _timing = bool(_os.environ.get("SGLANG_ZAMBA_TIMING")) and _is_decode
-        _gstream = self._get_gctx_decode_stream(_fixed) if _fixed else None
-        _ctx = torch.cuda.stream(_gstream) if _gstream is not None else _cl.nullcontext()
         if _timing:
             _ZT["on"] = True
             _ZT["attn"] = []
@@ -377,17 +385,36 @@ class Zamba2Model(nn.Module):
                 self._zt_acc = {"attn": 0.0, "mamba": 0.0}
                 self._zt_n = 0
                 self._zt_mode = _mode
-        _cur = torch.cuda.current_stream()
-        if _gstream is not None:
-            _gstream.wait_stream(_cur)  # green-ctx waits for embed/clone on default
-        with _ctx:
-            for layer in self.layers:
+        # decode SM policy per layer (race-safe: wait_stream at each switch carries
+        # the layer i->i+1 data dependency + safety vs the default stream):
+        #  - fixed-N: pin all decode layers to an N-SM partition.
+        #  - layer_aware (Zamba2): the 9 HYBRID layers hold the SM-sensitive
+        #    (no-GQA) attention -> keep on base (reserved); the ~45 pure-mamba
+        #    layers are SM-insensitive -> drop to a floor, freeing SM for prefill.
+        _la = _is_decode and _sm_part == "layer_aware"
+        _la_floor = int(_os.environ.get("PDMUX_LA_FLOOR_SM", "16"))
+        _base = torch.cuda.current_stream()
+
+        def _tgt(layer):
+            if _fixed is not None:
+                return self._get_gctx_decode_stream(_fixed)
+            if _la and not isinstance(layer, Zamba2HybridLayer):
+                return self._get_gctx_decode_stream(_la_floor)
+            return _base
+
+        _prev = _base
+        for layer in self.layers:
+            _t = _tgt(layer) if _is_decode else _base
+            if _t is not _prev:
+                _t.wait_stream(_prev)
+            with (torch.cuda.stream(_t) if _t is not _base else _cl.nullcontext()):
                 if isinstance(layer, Zamba2HybridLayer):
                     hidden_states = layer(hidden_states, original_hidden_states, forward_batch)
                 else:
                     hidden_states = layer(hidden_states, forward_batch)
-        if _gstream is not None:
-            _cur.wait_stream(_gstream)  # default waits for decode layers before norm/sampling
+            _prev = _t
+        if _prev is not _base:
+            _base.wait_stream(_prev)
         out = self.final_layernorm(hidden_states)
         if _timing:
             _ZT["on"] = False
@@ -439,6 +466,32 @@ class Zamba2ForCausalLM(nn.Module):
     def forward(self, input_ids, positions, forward_batch, input_embeds=None, **kwargs):
         hidden_states = self.model(input_ids, positions, forward_batch, input_embeds)
         return self.logits_processor(input_ids, hidden_states, self.lm_head, forward_batch)
+
+    def forward_split_prefill(
+        self, input_ids, positions, forward_batch, split_interval, input_embeds=None
+    ):
+        # PATCH (engine-port): enable pdmux split-prefill for Zamba2. Threads
+        # hidden_states + the constant original_hidden_states (embeddings, used by
+        # every hybrid layer's concat) across split windows via forward_batch.
+        start, end = split_interval
+        model = self.model
+        if start == 0:
+            hs = model.embed_tokens(input_ids) if input_embeds is None else input_embeds
+            forward_batch.hidden_states = hs
+            forward_batch.zamba_original = torch.clone(hs)
+        orig = forward_batch.zamba_original
+        for i in range(start, end):
+            layer = model.layers[i]
+            if isinstance(layer, Zamba2HybridLayer):
+                forward_batch.hidden_states = layer(
+                    forward_batch.hidden_states, orig, forward_batch
+                )
+            else:
+                forward_batch.hidden_states = layer(forward_batch.hidden_states, forward_batch)
+        if end == self.config.num_hidden_layers:
+            hidden = model.final_layernorm(forward_batch.hidden_states)
+            forward_batch.hidden_states = hidden
+            return self.logits_processor(input_ids, hidden, self.lm_head, forward_batch)
 
     def load_weights(self, weights: Iterable[tuple[str, torch.Tensor]]):
         # PARITY: HF Zamba2 weight-name remaps (verify against real checkpoint):

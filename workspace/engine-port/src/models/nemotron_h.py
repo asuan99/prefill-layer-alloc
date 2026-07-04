@@ -660,8 +660,14 @@ class NemotronHModel(nn.Module):
             _mode = _os.environ.get("PDMUX_FIXED_DECODE_SM")
         # mode token may be "<sm>@<ctxtag>" so the accumulator resets per (sm,ctx)
         _sm_part = _mode.split("@")[0] if _mode else None
-        if _sm_part and _sm_part not in ("full", "layer_aware", ""):
+        if _sm_part and _sm_part not in ("full", "layer_aware", "agnostic_v2", ""):
             _fixed = int(_sm_part)
+        # agnostic_v2: uniform reservation sized to the (cheap, SM-insensitive) attn
+        # layer -> pin ALL decode layers to a low floor, maximizing prefill reclaim
+        # (vs v1/agnostic which reserves for the SM-hungry mamba). Reuses fixed-N path;
+        # unlike layer_aware it does NOT protect the sensitive layers.
+        if _is_decode and _sm_part == "agnostic_v2":
+            _fixed = int(_os.environ.get("PDMUX_AGN2_SM", "16"))
         # reset accumulator when the swept mode changes
         if _timing and getattr(self, "_lt_mode", None) != _mode:
             self._lt_acc = {"M": 0.0, "-": 0.0, "*": 0.0}

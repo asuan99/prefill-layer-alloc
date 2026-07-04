@@ -41,3 +41,36 @@ Boot: `--dtype bfloat16` required (mamba conv-dtype default bf16 vs model fp16).
    NemotronH/Zamba2), so triton doesn't query layer-0 KV on models where layer 0
    isn't attention. Enables `--attention-backend triton` for Zamba2 (fast, correct;
    flashinfer NaNs on head_dim=160). Patch: `src/patches/triton_backend_mambaish_vheaddim.patch`.
+
+## P1.5 (Zamba2 pdmux port) — all inside `models/zamba2.py` (item 2 covers re-apply)
+Verified: plain + layer_aware pdmux boot OK ("Paris" correct, NO_CRASH under
+concurrent long-ctx load; jobs 831123/831135). Additions to `Zamba2ForCausalLM` /
+`Zamba2Model`:
+- `Zamba2ForCausalLM.forward_split_prefill(input_ids, positions, forward_batch,
+  split_interval, input_embeds=None)` — enables pdmux SPLIT_PREFILL on the hybrid.
+  Threads `forward_batch.hidden_states` (+ `forward_batch.zamba_original` = cloned
+  embeddings) across split windows; forward_batch persists across split calls.
+- `Zamba2Model.forward` decode loop rewritten race-safe (per-layer target stream +
+  `wait_stream` at each switch = data-dep + safety vs default stream). Modes read from
+  `PDMUX_FIXED_DECODE_SM_FILE`: numeric `<sm>@<ctx>` → pin all decode layers to N SM
+  (sweep); `layer_aware` → Zamba2HybridLayer (9, no-GQA attn, SM-sensitive) stay on
+  base/reserved, ~45 pure-mamba layers drop to `PDMUX_LA_FLOOR_SM` (default 16).
+- Fix: `_fixed` parse guards `_sm_part.isdigit()` (else `int("layer_aware")` crashes).
+Serving env for layer_aware: `PDMUX_FIXED_DECODE_SM_FILE=<file with "layer_aware">` +
+`PDMUX_LA_FLOOR_SM=16` (no `PDMUX_LA_RESERVE` — Zamba2 reserve is by layer type, not
+data-driven like NemotronH). Boot: `--attention-backend triton` (head_dim 160).
+
+## P1.6 (agnostic_v2 policy) — inside `models/{nemotron_h,zamba2}.py` (items 2/6 cover re-apply)
+New mode `agnostic_v2`: uniform decode-SM reservation **sized to the (cheap, SM-
+insensitive) attention layer** = pin ALL decode layers to a low floor
+`PDMUX_AGN2_SM` (default 16), maximizing prefill reclaim but NOT protecting the
+SM-sensitive layers. Contrast:
+- **agnostic (v1)** = reserve for the SM-hungry layer (mamba) → high uniform N, protective.
+- **agnostic_v2** = reserve for the attention layer → low uniform N, max reclaim, unprotected.
+- **layer_aware** = per-layer: reclaim on insensitive, protect on sensitive.
+Both models parse `_sm_part == "agnostic_v2"` → `_fixed = PDMUX_AGN2_SM` (reuses the
+fixed-N `_tgt` path; add `"agnostic_v2"` to NemotronH's non-numeric exclusion list —
+Zamba2's `.isdigit()` guard already excludes it). Serving env: mode file
+`agnostic_v2` + `PDMUX_AGN2_SM=16`. Harness: `p1_4_serving.sbatch`/`p1_4_zb_serving.sbatch`
+now run 4 policies; boot check `p1_4_zb_pdmux_check.sbatch agnostic_v2` /
+`p1_4_la_check.sbatch agnostic_v2`.
