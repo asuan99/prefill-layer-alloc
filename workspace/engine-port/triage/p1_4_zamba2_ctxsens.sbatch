@@ -27,7 +27,7 @@ RESULT="$HERE/p1_4_zb_ctxsens_${SLURM_JOB_ID}.txt"; : > "$RESULT"
 
 python -m sglang.launch_server \
   --model-path Zyphra/Zamba2-2.7B --trust-remote-code --dtype bfloat16 \
-  --attention-backend torch_native \
+  --attention-backend triton \
   --disable-cuda-graph --disable-piecewise-cuda-graph --disable-radix-cache \
   --mem-fraction-static 0.8 --max-running-requests 16 --context-length 4096 \
   --host 127.0.0.1 --port $PORT > "$SRVLOG" 2>&1 &
@@ -39,7 +39,7 @@ for i in $(seq 1 150); do
 done
 
 if [ "$ok" = 1 ]; then
-  for CTX in 128 1024 3000; do
+  for CTX in 64 256 2048 4000; do
     PROMPT=$(python3 -c "print('the robot walked slowly '*$((CTX/4)), end='')")
     for SM in full 44 16; do
       echo "$SM@$CTX" > "$SMFILE"

@@ -140,3 +140,9 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[measured]` **Zamba2(no-GQA/torch_native) 컨텍스트×SM 스윕(job 827601, 불완전)**: mamba/층 ~0.56(NemotronH와 일치✓), attn/층 ~1.5(torch_native 교란이라 백엔드-혼재, no-GQA 순효과 분리 불가). ctx3000서 CUDA illegal memory access(torch_native+green-ctx 장문 불안정). ⇒ Zamba2는 fast head_dim-160 백엔드 확보 전까지 청정 측정 불가(open item).
 - `[derived]` **layer-aware 이득 = (GQA/no-GQA)×(컨텍스트) 2D**. 유리 구간 = 긴 컨텍스트 + no-GQA(비싼 attn) + 희소 attn-층. 보고서 §3.5 갱신.
 - harness: `triage/p1_4_nh_ctxsens.sbatch`(NemotronH ctx×SM), `p1_4_zamba2_ctxsens.sbatch`(Zamba2). NHLT/ZBLT 로그에 ctxlen 추가. 원자료 `p1_4_nh_ctxsens_827617.txt`, `p1_4_zb_ctxsens_827601.txt`.
+
+## P1.4++ — Zamba2 fast backend (triton fix) + clean no-GQA context sweep (2026-07-04)
+- `[measured]` **triton backend hybrid 버그 수정**: triton_backend.py v_head_dim init `hybrid_gdn_config`→`mambaish_config` → Zamba2가 triton서 정확("Paris")+빠름(torch_native 탈출). NemotronH도 이제 triton 가능.
+- `[measured]` **Zamba2 no-GQA 청정 측정(triton, job 830945)**: attn/층 full-SM 0.159(ctx348)→0.607(ctx2140)=~4× (GQA는 ~10%). attn SM-민감 이미 ctx348서 2.6×(0.159→0.407@16SM) vs GQA는 ctx≫2000까지 둔감. ⇒ **no-GQA는 attn이 훨씬 짧은 컨텍스트서 비싸지고 SM-민감** = layer-aware 유리 체제. ctx2140서 attn 9×0.607=5.5ms(step ~17%, 증가중)·희소(9/54).
+- `[measured]` 장문(ctx≥2048) reduced-SM(44/16) 점은 green-ctx+triton서 **device-side assert crash**(open). full-SM 컨텍스트 스케일링은 확보.
+- 보고서 §3.5/§3.6 갱신.

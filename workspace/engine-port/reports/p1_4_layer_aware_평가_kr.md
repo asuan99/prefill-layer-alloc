@@ -78,9 +78,24 @@ sim 4-정책([framework_comparison](framework_comparison.md))을 실엔진에 �
 
 `[measured]` **① attn이 컨텍스트로 무거워짐**: full-SM attn/층 0.303→0.449 (350→5100, +48%). **② attn의 SM-민감도가 컨텍스트로 뒤바뀜**: ctx350선 16SM서 *더 빠름*(0.237, memory-bound/SM-둔감) → ctx5100선 16SM서 **43% 느림**(0.640 vs 0.449, compute-bound/SM-민감). `[measured]` **③ mamba는 컨텍스트 불변**(~0.553ms/층 평탄, O(1)) + 항상 SM-민감(→1.05@16SM). `[measured]` mlp 컨텍스트 불변.
 
-⇒ **사용자 직관 실증**: attn-decode의 "싸고 SM-둔감"은 **짧은 컨텍스트 국한**. 길어지면 attn이 커지고 SM-민감해진다. 단 NemotronH(GQA)는 **긴 컨텍스트서도 mamba가 지배**(ctx5100서 mamba 13.3ms vs attn 1.8ms=8%)라 여전히 mamba가 주 예약대상. **no-GQA(Zamba2)면 attn KV 4× → 긴 컨텍스트서 attn 비중·민감도가 훨씬 커져 layer-aware(attn 예약) 이득이 커질 체제**(Zamba2 실측은 torch_native 교란·장문 CUDA오류로 불완전; mamba/층 ~0.56은 NemotronH와 일치 확인, attn 비교는 백엔드 교란).
+⇒ **사용자 직관 실증**: attn-decode의 "싸고 SM-둔감"은 **짧은 컨텍스트 국한**. 길어지면 attn이 커지고 SM-민감해진다. 단 NemotronH(GQA)는 **긴 컨텍스트서도 mamba가 지배**(ctx5100서 mamba 13.3ms vs attn 1.8ms=8%)라 여전히 mamba가 주 예약대상.
+
+**no-GQA(Zamba2) 청정 측정 (triton 백엔드 확보 후):** flashinfer의 head_dim=160 NaN 때문에 torch_native(느림·장문 crash)에 갇혀 있던 Zamba2를 **triton 백엔드로 해방**(아래 §3.6). triton으로 재측정한 Zamba2 no-GQA attn/층(ms):
+
+| decode SM | ctx≈348 | ctx≈2140 |
+|---|---|---|
+| full(108) | 0.159 | **0.607** |
+| 44 | 0.199 | (crash) |
+| 16 | **0.407** | (crash) |
+
+`[measured]` **① no-GQA attn은 컨텍스트로 훨씬 가파르게 증가**: full-SM 0.159→0.607 (ctx348→2140, **~4×**) vs GQA(NemotronH)의 ~10%. **② no-GQA attn은 이미 ctx348서 SM-민감**(0.159→0.407 @16SM, **2.6×**) — GQA는 ctx≫2000까지 둔감이었던 것과 대조. ⇒ **no-GQA는 attn KV가 4×라, attn이 비싸지고 SM-민감해지는 지점이 GQA보다 훨씬 짧은 컨텍스트**. ctx2140서 Zamba2 attn=9×0.607=5.5ms(step의 ~17%, 증가 중)이며 SM-민감·희소(9/54층) — **이것이 layer-aware(attn 예약)가 유리할 체제**. (mamba/층 ~0.55는 NemotronH와 일치✓; Zamba2 mamba의 SM-민감도는 2.7B 소형이라 상대적으로 약해 보이나, 그렇다면 mamba 환원·attn 예약이 더 유리 — 확정엔 장문 reduced-SM 점 필요하나 green-ctx+triton 장문서 device-side assert crash = open.)
 
 **함의: layer-aware 이득은 (아키텍처 GQA/no-GQA) × (컨텍스트 길이)의 2차원 함수.** SM-민감 레이어가 희소해야 이득 — 짧은 컨텍스트 GQA선 mamba가 다수라 이득無; **긴 컨텍스트 + no-GQA**서 attn이 비싸지되 희소(9/54)면 layer-aware가 유리할 후보.
+
+## 3.6. Zamba2 fast attention 백엔드 확보 (triton 버그 수정)
+
+- `[measured]` Zamba2는 flashinfer가 head_dim=160서 NaN([zamba2_troubleshooting](zamba2_troubleshooting.md))이라 torch_native(느림)에 갇혀 있었음. triton은 임의 head_dim 지원하나 hybrid서 init 버그(`layer_id=0 not in full attention layers` — layer0가 attn 아닐 때 layer0 KV 조회 가정).
+- `[measured]` **수정**: `layers/attention/triton_backend.py`의 v_head_dim 초기화 조건을 `hybrid_gdn_config` → **`mambaish_config`**로 확장(mamba2 hybrid=NemotronH/Zamba2도 `get_v_head_dim()` 사용, layer0 조회 회피). ⇒ **Zamba2가 triton서 정확 동작**("The capital of France is"→"Paris") + torch_native보다 빠름. 이로써 no-GQA 청정 측정 가능(§3.5).
 
 ## 4. 핵심 발견과 함의 (정직)
 

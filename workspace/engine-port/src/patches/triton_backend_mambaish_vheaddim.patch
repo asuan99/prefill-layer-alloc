@@ -1,0 +1,16 @@
+--- /tmp/tb_orig.py	2026-07-04 20:20:28.259068411 +0900
++++ /scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/layers/attention/triton_backend.py	2026-07-04 20:10:57.000000000 +0900
+@@ -95,10 +95,11 @@
+             get_attention_tp_size()
+         )
+         if (
+-            model_runner.hybrid_gdn_config is not None
++            model_runner.mambaish_config is not None
+             or model_runner.kimi_linear_config is not None
+         ):
+-            # For hybrid linear models, layer_id = 0 may not be full attention
++            # For hybrid linear/mamba models, layer_id = 0 may not be full attention
++            # (PATCH engine-port: mambaish_config covers mamba2 too, not just gdn)
+             self.v_head_dim = model_runner.token_to_kv_pool.get_v_head_dim()
+         else:
+             self.v_head_dim = model_runner.token_to_kv_pool.get_value_buffer(0).shape[
