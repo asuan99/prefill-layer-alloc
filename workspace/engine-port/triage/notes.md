@@ -152,3 +152,9 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[measured]` **Zamba2 no-GQA 완전 데이터**: attn/층 full 0.159→1.044(ctx348→4092=~7×); attn SM-민감 16SM대비 full ctx348 2.5×→ctx4092 **4.9×**(1.04→5.13). **mamba SM-둔감/inverse**(ctx4092 full 0.453 vs 16SM 0.300). ⇒ **layer-aware 두 조건 충족**(attn 민감·희소·비쌈 + mamba 둔감·다수). 계산: layer_aware decode 25.6ms+92SM환원 vs agnostic@108 33.8ms+0환원 = **layer-aware 압승**.
 - `[measured]` **모델크기 의존**: NemotronH(8B) mamba 민감(compute-bound) vs Zamba2(2.7B) mamba 둔감(memory-bound). layer-aware 유리=(no-GQA)×(장문)×(mamba 둔감한 소형/memory-bound).
 - 보고서 §3.5 완성. 원자료 `p1_4_zb_ctxsens_831012.txt`.
+
+## P1.4 Task2 — 서빙 goodput 실측 (fused vs agnostic, NemotronH-8B, job 831023)
+- `[measured]` in=2000/out=96, SLO TTFT≤3s·TPOT≤60ms. **agnostic(pdmux) TPOT 반감**(25 vs 53ms)·p99 극안정(26 vs ~100). goodput: rate3 agnostic 2.57(60/60) vs fused 2.18(44/60); rate6 2.34 vs 1.43; rate10 agnostic TTFT 폭발(5071ms)→0.62 vs fused 1.43. ⇒ pdmux가 저중부하 우세, 고부하선 prefill SM 굶주림으로 TTFT 폭발=layer-aware가 값할 지점.
+- `[derived]` NemotronH는 mamba 민감→환원 SM 없어 layer-aware≈agnostic. Zamba2(mamba 둔감)면 환원으로 고부하 TTFT 개선 예측.
+- harness: `bench_client.py`(Poisson+streaming TTFT/TPOT+goodput@SLO), `p1_4_serving.sbatch`. 원자료 `p1_4_serving_831023.txt`. 보고서 §3.7.
+- **미완(Task2 완전판)**: layer_aware 서빙 = decode layer-type window ∥ prefill 상보 파티션 교차 event_loop(대수술). fused/agnostic는 실측 완료, layer_aware는 decode-side 근거로 예측.

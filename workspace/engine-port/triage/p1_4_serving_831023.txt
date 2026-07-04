@@ -1,0 +1,7 @@
+===== NemotronH serving: fused vs agnostic(pdmux), in=2000/out=96 =====
+BENCH fused rate=3.0 n_ok=60/60 wall=20.2s out_tok/s=284.9 ttft_med=223ms ttft_p99=926ms tpot_med=52.9ms tpot_p99=73.7ms goodput@SLO=2.18req/s (44/60)
+BENCH fused rate=6.0 n_ok=60/60 wall=14.7s out_tok/s=392.2 ttft_med=1015ms ttft_p99=4110ms tpot_med=57.4ms tpot_p99=109.2ms goodput@SLO=1.43req/s (21/60)
+BENCH fused rate=10.0 n_ok=60/60 wall=14.0s out_tok/s=412.5 ttft_med=2137ms ttft_p99=6207ms tpot_med=51.1ms tpot_p99=102.0ms goodput@SLO=1.43req/s (20/60)
+BENCH agnostic rate=3.0 n_ok=60/60 wall=23.4s out_tok/s=246.3 ttft_med=500ms ttft_p99=1944ms tpot_med=24.6ms tpot_p99=26.6ms goodput@SLO=2.57req/s (60/60)
+BENCH agnostic rate=6.0 n_ok=60/60 wall=16.2s out_tok/s=354.6 ttft_med=2312ms ttft_p99=5900ms tpot_med=25.5ms tpot_p99=26.1ms goodput@SLO=2.34req/s (38/60)
+BENCH agnostic rate=10.0 n_ok=60/60 wall=16.1s out_tok/s=356.9 ttft_med=5071ms ttft_p99=8310ms tpot_med=26.0ms tpot_p99=26.2ms goodput@SLO=0.62req/s (10/60)
