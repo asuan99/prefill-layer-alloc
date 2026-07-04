@@ -14,3 +14,7 @@ external/
 .nh_decode_sm_*
 *.jid
 .*_jid
+
+# keep engine-port env docs (root .gitignore ignores env/)
+!env/
+!env/**
