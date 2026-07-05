@@ -22,6 +22,7 @@ POL="${1:-fused}"
 MODEL="${2:-tiiuae/Falcon-H1-3B-Base}"
 BACKEND="${3:-flashinfer}"   # flashinfer | triton
 CTX="${4:-8192}"             # context-length (Zamba2-2.7B max = 4096)
+FLOOR="${5:-16}"            # PDMUX_LA_FLOOR_SM (isolate switching-cost A: raise floor -> starvation B->0)
 TAG=$(echo "$MODEL" | sed -E 's#.*/##' | tr 'A-Z' 'a-z' | tr -d '.')
 PORT=$((32600 + SLURM_JOB_ID % 300))
 LAFILE="$HERE/.p17mode_${SLURM_JOB_ID}"
@@ -32,7 +33,7 @@ RATES="1 2 3 4 6"; NPROMPT=120; INLEN=2000; OUTLEN=96
 
 EXTRA=""
 [ "$POL" != "fused" ] && EXTRA="--enable-pdmux --pdmux-config-path $HERE/pdmux_a100_smoke.yml --chunked-prefill-size -1 --disable-overlap-schedule"
-if [ "$POL" = "layer_aware" ]; then echo layer_aware > "$LAFILE"; export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_LA_RESERVE="M-" PDMUX_LA_FLOOR_SM=16
+if [ "$POL" = "layer_aware" ]; then echo layer_aware > "$LAFILE"; export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_LA_RESERVE="M-" PDMUX_LA_FLOOR_SM=$FLOOR
 elif [ "$POL" = "agnostic_v2" ]; then echo agnostic_v2 > "$LAFILE"; export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_AGN2_SM=16; fi
 
 python -m sglang.launch_server --model-path $MODEL --trust-remote-code --dtype bfloat16 \

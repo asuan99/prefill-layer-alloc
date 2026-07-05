@@ -1,0 +1,51 @@
+# layer-aware A(switching) vs B(starvation) isolation — PDMUX_LA_FLOOR_SM sweep
+# A = la@floor96 - agnostic (no starvation, K switches remain); B = la@floor16 - la@floor96
+===== MODEL=ibm-granite/granite-4.0-h-micro-base POLICY=agnostic (job 832639) =====
+  rate=1.0 good=120/120 goodput=1.19req/s dur=100.8s
+  rate=2.0 good=120/120 goodput=2.30req/s dur=52.1s
+  rate=3.0 good=120/120 goodput=3.35req/s dur=35.8s
+  rate=4.0 good=120/120 goodput=4.33req/s dur=27.7s
+  rate=6.0 good=120/120 goodput=5.81req/s dur=20.7s
+Median TPOT (ms):                        33.10      Median TPOT (ms):                        34.96      Median TPOT (ms):                        36.37      Median TPOT (ms):                        36.95      Median TPOT (ms):                        33.50      
+===== MODEL=ibm-granite/granite-4.0-h-micro-base POLICY=layer_aware (job 833074) =====
+  rate=1.0 good=120/120 goodput=1.19req/s dur=100.8s
+  rate=2.0 good=120/120 goodput=2.31req/s dur=52.0s
+  rate=3.0 good=120/120 goodput=3.35req/s dur=35.8s
+  rate=4.0 good=120/120 goodput=4.33req/s dur=27.7s
+  rate=6.0 good=120/120 goodput=5.83req/s dur=20.6s
+Median TPOT (ms):                        32.80      Median TPOT (ms):                        34.83      Median TPOT (ms):                        36.33      Median TPOT (ms):                        36.92      Median TPOT (ms):                        33.60      
+===== MODEL=ibm-granite/granite-4.0-h-micro-base POLICY=layer_aware (job 833075) =====
+  rate=1.0 good=120/120 goodput=1.19req/s dur=100.8s
+  rate=2.0 good=120/120 goodput=2.31req/s dur=52.1s
+  rate=3.0 good=120/120 goodput=3.35req/s dur=35.8s
+  rate=4.0 good=120/120 goodput=4.32req/s dur=27.8s
+  rate=6.0 good=43/120 goodput=1.82req/s dur=23.7s
+Median TPOT (ms):                        33.23      Median TPOT (ms):                        35.17      Median TPOT (ms):                        36.96      Median TPOT (ms):                        38.79      Median TPOT (ms):                        54.73      
+===== MODEL=ibm-granite/granite-4.0-h-micro-base POLICY=layer_aware (job 832690) =====
+  rate=1.0 good=120/120 goodput=1.19req/s dur=100.8s
+  rate=2.0 good=120/120 goodput=2.30req/s dur=52.1s
+  rate=3.0 good=120/120 goodput=3.35req/s dur=35.8s
+  rate=4.0 good=120/120 goodput=4.32req/s dur=27.8s
+  rate=6.0 good=17/120 goodput=0.71req/s dur=24.0s
+Median TPOT (ms):                        33.19      Median TPOT (ms):                        35.38      Median TPOT (ms):                        37.33      Median TPOT (ms):                        40.10      Median TPOT (ms):                        72.02      
+===== MODEL=Zyphra/Zamba2-2.7B POLICY=agnostic (job 832701) =====
+  rate=1.0 good=120/120 goodput=1.17req/s dur=102.4s
+  rate=2.0 good=120/120 goodput=2.25req/s dur=53.3s
+  rate=3.0 good=120/120 goodput=3.24req/s dur=37.0s
+  rate=4.0 good=53/120 goodput=1.80req/s dur=29.5s
+  rate=6.0 good=22/120 goodput=0.76req/s dur=28.8s
+Median TPOT (ms):                        39.96      Median TPOT (ms):                        42.51      Median TPOT (ms):                        47.83      Median TPOT (ms):                        60.49      Median TPOT (ms):                        65.30      
+===== MODEL=Zyphra/Zamba2-2.7B POLICY=layer_aware (job 833076) =====
+  rate=1.0 good=120/120 goodput=1.17req/s dur=102.5s
+  rate=2.0 good=120/120 goodput=2.24req/s dur=53.5s
+  rate=3.0 good=120/120 goodput=3.23req/s dur=37.2s
+  rate=4.0 good=41/120 goodput=1.35req/s dur=30.3s
+  rate=6.0 good=14/120 goodput=0.49req/s dur=28.6s
+Median TPOT (ms):                        41.11      Median TPOT (ms):                        43.77      Median TPOT (ms):                        49.89      Median TPOT (ms):                        61.95      Median TPOT (ms):                        68.37      
+===== MODEL=Zyphra/Zamba2-2.7B POLICY=layer_aware (job 832702) =====
+  rate=1.0 good=120/120 goodput=1.17req/s dur=102.7s
+  rate=2.0 good=74/120 goodput=1.38req/s dur=53.7s
+  rate=3.0 good=0/120 goodput=0.00req/s dur=45.1s
+  rate=4.0 good=0/120 goodput=0.00req/s dur=43.7s
+  rate=6.0 good=0/120 goodput=0.00req/s dur=46.3s
+Median TPOT (ms):                        45.86      Median TPOT (ms):                        57.85      Median TPOT (ms):                        131.29     Median TPOT (ms):                        154.29     Median TPOT (ms):                        151.27     

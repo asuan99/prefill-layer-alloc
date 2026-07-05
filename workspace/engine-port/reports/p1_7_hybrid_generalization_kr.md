@@ -72,7 +72,22 @@
 | Falcon-H1-3B | (구조적) | 단일 layer type → **layer_aware ≡ agnostic** (per-type 제어 불가) | | | |
 
 `[measured]` **layer-aware는 4모델 어디서도 agnostic 대비 이득 없음**: 저부하선 동등(rate1-2), 부하 오르면 **일관 열위→붕괴**. **Zamba2가 최악**(rate3부터 goodput 0; TPOT rate3 131ms vs agn 48, TTFT 3726). Granite도 rate6 붕괴(0.71 vs 5.81, TPOT 72 vs 34). NemotronH도 고부하 열위(1.58 vs 2.25). ★내가 "45/54 mamba 환원=대박"으로 예측한 Zamba2가 실은 **최악** — 서빙 batch서 mamba가 SM-민감이라 45층을 16SM 굶기면 decode 폭발.
-`[기전]` (1) tiny-batch "mamba 둔감"은 아티팩트(§2 교훈) — 서빙 batch선 mamba SM-민감(Granite·Zamba2 공히) → 환원=굶주림. (2) per-layer green-ctx 전환 오버헤드가 부하시 누적. ⇒ **어떤 reclaim 이득도 이 둘에 압도.** 원자료 `p1_7_bench_one_{831610,831612,832639,832690,832701,832702}.out`, `p1_7_{fh1,granite}_serving_results.txt`.
+`[기전]` 후보 2가지: (A) per-span green-ctx 전환(wait_stream 배리어) 오버헤드, (B) SM-민감 층 환원=굶주림. **§4c 분리 실증서 A≈0, B가 전량으로 판명.** 원자료 `p1_7_bench_one_{831610,831612,832639,832690,832701,832702}.out`, `p1_7_{fh1,granite}_serving_results.txt`.
+
+## 4c. A(스위칭) vs B(굶주림) 분리 — layer-aware는 starvation-bound(사망), 스위칭 무죄 (사용자 제안)
+분리 방법: layer_aware의 `PDMUX_LA_FLOOR_SM`을 sweep. **floor=96(환원 거의 無 → 스위칭 K회는 그대로, B≈0 → 순수 A)** vs floor=48 vs floor=16(A+B full). `A = la@96 − agnostic`, `B = la@16 − la@96`.
+
+`[measured]` **Granite (K≈8 전환) — TPOT(ms) r4/r6 · goodput r6:**
+| 정책 | TPOT r4 | TPOT r6 | goodput r6 |
+|---|---|---|---|
+| agnostic (스위치 0) | 36.95 | 33.50 | 5.81 |
+| **la floor=96 (A만)** | 36.92 | **33.60** | **5.83** |
+| la floor=48 | 38.79 | 54.73 | 1.82 |
+| la floor=16 (A+B) | 40.10 | 72.02 | 0.71 |
+
+`[measured]` **Zamba2 (K≈18):** agnostic r3 TPOT 47.83·gp 3.24 → **la@96(A만) 49.89·3.23**(A=+2ms/+4%) → la@16 **131.29·0.00**(B=+81ms 파국).
+
+`[결론]` ★**A(스위칭)≈0** — Granite la@96가 plain agnostic과 **정확히 동일**(33.6 vs 33.5, gp 5.83 vs 5.81); K≈8 배리어 비용 무측정. Zamba2(K≈18)서 A=+4%로 **약하게 ∝K이나 미미**. **B(굶주림)가 반증의 100%** — floor↓에 TPOT 단조↑·goodput 붕괴. ⇒ **앞서 강조한 "per-span 전환 granularity" 차이는 red herring; 스위칭은 싸다.** **거친/event-loop 재구현(=A만 축소)으로 layer-aware를 못 살림.** layer-aware는 **starvation-bound=死**: 서빙 batch서 SM-민감 층 환원=굶주림이고(§2/§4b), 어떤 구현도 이 전제를 못 고침. 원자료 `p1_7_bench_one_{833074(la96),833075(la48),833076(zb la96)}.out`.
 
 ## 5. 방법·재현
 - 계측: `models/{zamba2(기존),granitemoehybrid(신규),falcon_h1(신규)}.py` per-type CUDA-event timing + green-ctx N-pin (env-gated). dev_tree_edits.md §8/9.

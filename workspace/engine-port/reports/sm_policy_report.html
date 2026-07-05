@@ -468,7 +468,8 @@
           </tbody>
         </table>
       </div>
-      <p style="margin-top:10px"><b>layer-aware matches agnostic at light load, then loses as load rises — on every model.</b> The case predicted as the big win (Zamba2, 45/54 layers released) is the <b>worst</b>: goodput 0 from rate 3 (TPOT 131ms vs agnostic's 48). Two causes: the "insensitive" mamba is actually SM-sensitive at real batch (so releasing it starves decode), and per-layer green-ctx switching adds overhead that compounds under load. <b>The layer-aware policy is retired; agnostic (pdmux) is the recommendation.</b></p>
+      <p style="margin-top:10px"><b>layer-aware matches agnostic at light load, then loses as load rises — on every model.</b> The case predicted as the big win (Zamba2, 45/54 layers released) is the <b>worst</b>: goodput 0 from rate 3 (TPOT 131ms vs agnostic's 48).</p>
+      <p style="margin-top:8px"><b>Isolating the two suspects</b> (sweep the release floor — at floor=96 nothing is starved but the per-span green-ctx switches still fire): the switching cost is <b>~0</b> — Granite layer-aware@floor96 is identical to plain agnostic (TPOT 33.6 vs 33.5, goodput 5.83 vs 5.81); Zamba2 (more transitions) adds just +4%. The entire collapse is <b>starvation</b>: drop the floor 96 → 48 → 16 and TPOT climbs 34 → 55 → 72 (Granite) / 50 → 131 (Zamba2). So <b>a coarser, event-loop implementation can't rescue it</b> — the switching was never the problem; releasing SM from layers that are compute-bound at real batch is. <b>layer-aware is retired; agnostic (pdmux) is the recommendation.</b></p>
     </div>
 
     <p class="take" style="border:none;max-width:78ch">

@@ -258,3 +258,10 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[결론]` ★**layer-aware는 4모델 어디서도 agnostic 대비 서빙 이득 없음. 저부하=동등, 부하 오르면 열위→붕괴. 내가 "대박"으로 예측한 Zamba2(45/54 환원)가 실은 최악.** 
 - `[기전]` (1) tiny-batch "mamba 둔감"은 아티팩트 — 서빙 batch선 mamba가 SM-민감(Granite·Zamba2 공히) → 환원=decode 굶주림. (2) per-layer green-ctx 전환 오버헤드가 부하시 누적. 두 요인이 어떤 reclaim 이득도 압도.
 - `[정정]` §3.8/아티팩트 §04 "Zamba2 la가 agn 대비 TTFT −7~23% 우위"(구 client·과부하)는 **clean async서 반증**(la가 훨 열위). **layer-aware 정책 전면 폐기; 실전 권고=agnostic(pdmux v1).** 원자료 `p1_7_bench_one_{831610,831612,832639,832690,832701,832702}.out`.
+
+### P1.7f A vs B 분리 실증 (floor sweep) — layer-aware는 starvation-bound(사망), 스위칭은 무죄
+사용자 제안: switching(A) vs starvation(B) 분리. la를 PDMUX_LA_FLOOR_SM sweep — floor=96(환원無=A만) / 48 / 16(A+B full). jobs 833074/833075/833076, 기준 832639(agn)/832690(la16)/832701(zb agn)/832702(zb la16).
+- `[measured]` **Granite(K≈8) TPOT(ms) r4/r6 · goodput r6**: agnostic(0스위치) 36.95/33.50·5.81 → **la@96(A만) 36.92/33.60·5.83 = agnostic와 동일** → la@48 38.79/54.73·1.82 → la@16 40.10/72.02·0.71. ⇒ **A(스위칭)≈0**(K≈8 배리어 비용 무측정); **B(굶주림)가 floor↓ 단조로 전량 유발**.
+- `[measured]` **Zamba2(K≈18)**: agnostic r3 TPOT 47.83·goodput 3.24 → **la@96(A만) 49.89·3.23**(A=+2ms/+4%, K≈8보다 큼→A 약하게 ∝K이나 미미) → la@16 131.29·0.00(**B가 +81ms 파국**).
+- `[결론]` ★**switching cost A는 무의미(≤4%, 약하게 ∝K), starvation B가 반증의 100%.** 앞서 내가 강조한 per-span 스위칭 granularity 차이는 red herring — **스위칭은 싸다**. ⇒ **거친/event-loop 수준 재구현(=A만 줄임)으로 layer-aware를 살릴 수 없다.** layer-aware는 **근본적으로 starvation-bound=死**: 서빙 batch서 SM-민감한 층을 환원=굶주림이고, P1.7d/e대로 서빙 batch선 사실상 모든 decode 층이 민감. 어떤 구현도 이 전제를 못 고침.
+- caveat: floor=96서 gctx(96) vs pdmux _base 물리 SM 잔차 우려했으나 la@96≈agnostic 정확히 일치→잔차도 ~0(깨끗). 원자료 p1_7_bench_one_{833074,833075,833076}.out.
