@@ -17,6 +17,7 @@ external/
 
 # P1.4-1.6 runtime scratch: per-job decode-SM mode files + bench per-request dumps
 .*_mode_*
+.p17mode_*
 .zbpx_*
 .la_chk_*
 *.jsonl
