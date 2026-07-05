@@ -212,3 +212,31 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[measured]` **Median TTFT(ms)**: rate4 684/1699/**6705**/1529. agnostic_v2 TTFT도 최악=굶긴 decode가 밀려 prefill 스케줄 막음(nominal 환원 SM이 실질 도움 안 됨).
 - `[derived]` **청정 순위: agnostic(v1)≈layer_aware>fused>agnostic_v2**. **agnostic_v2=최악**(두 모델 공히; 지배적 decode층이 SM-민감이라 굶기면 파멸). layer_aware≈agnostic(NH선 안전환원 대상 4/52뿐, 고부하 전환오버헤드로 소폭 열위). fused 저부하 양호·부하시 decode-prefill 결합으로 열위.
 - **정정 요약**: 초기 "agnostic_v2 고부하 우위"(bench_client.py 60스레드 urllib×포화초과 rate6/10×절벽 goodput)는 오측 → async·sub-saturation로 역전. **layer_aware 가치=단순 환원 아니라 민감층 보호.** 원자료 `p1_6_bench_one_831609~831612.out`.
+
+## P1.7 — 추가 하이브리드 모델 (2026-07-05 실행)
+### P1.7a Zamba2 크기축 민감도 (1.2B/7B, jobs 832554/832555) — "크기 의존" 반증→"SSD config 의존"으로 정정
+- harness `p1_7_zb_smsens.sbatch <model>` (green-ctx N-sweep×ctx-sweep, ZBLT per-type timing). 둘 다 부팅·정확("Paris").
+- `[measured]` **Zamba2 mamba = 전 크기(1.2B/2.7B/7B)서 SM-둔감**(memory-bound). per-mamba(ms) full→16SM: 1.2B ctx256 0.409→0.413(flat)·ctx4000 0.385→0.273(inverse); 7B ctx256 0.949→0.828·ctx2048 0.849→0.810·ctx4000 0.756→0.810 = **평탄/역**. ★**7B(≈NemotronH-8B 크기)도 둔감** → 이전 "mamba 민감도=모델 크기 의존"(NH-8B 민감 vs ZB-2.7B 둔감)은 **크기가 아니라 SSD config(Zamba2=memory-bound vs NemotronH=compute-bound) 차이가 진짜 원인**. 크기는 교란변수.
+- `[measured]` **Zamba2 no-GQA attn = 장문서 SM-민감(O(L)), 크기 클수록 심화**. per-attn full(ms) ctx64→4000: 1.2B 0.130→0.396, 7B 0.090→1.471(7B attn이 훨 무거움). 16SM 대비 민감도 ctx4000: 1.2B 3.25×(0.396→1.287), 7B **5.1×**(1.471→7.504).
+- `[derived]` ⇒ **layer-aware 유리 체제(민감 attn 예약 / 둔감 mamba 환원)가 Zamba2 전 크기서 성립**, 대형일수록 더 유리(attn 보호가치↑, mamba는 여전히 공짜 환원). 원자료 `p1_7_zb_smsens_{12b_832554,7b_832555}.txt`.
+
+### P1.7b Falcon-H1-3B (SPATIAL hybrid) — layer-aware ≡ agnostic 경계 사례
+- `[measured]` **부팅·정확·pdmux OK**: flashinfer(head_dim128), "Paris", NO_CRASH. **`FalconH1ForCausalLM.forward_split_prefill` 추가**(residual 스레딩; src 미러+dev_tree). pdmux 4 stream group 정상.
+- `[구조]` Falcon-H1 = 32층 **전부 동일**(각 층 mamba∥attn 병렬합, `falcon_h1.py:355`). ⇒ **레이어 '타입'이 없음 → layer-aware(타입별 SM 예약) 적용 불가 = agnostic과 동일**. agnostic_v2(균일 저 floor)도 단일타입이라 그냥 fixed-N agnostic. **정책공간이 {fused, agnostic} 2개로 붕괴**.
+- `[measured]` **서빙(async, sub-saturation, jobs 832575 fused/832576 agnostic)**: goodput@SLO rate3/4/6 = fused 1.14/0.64/0.00 vs **agnostic 2.68/3.47/3.44**. TPOT(ms) fused 61/72/97(부하시 decode-prefill 결합으로 SLO 돌파) vs agnostic 42/43/41(decode 파티션 분리로 평탄). ⇒ **spatial hybrid도 pdmux(prefill/decode SM 분리) 대승**(NemotronH보다 더 깔끔; agnostic이 rate6서 3.44 유지 vs fused 0). 원자료 `p1_7_bench_one_{832575,832576}.out`.
+- `[결론]` **spatial hybrid: pdmux는 크게 이득, 그러나 layer-aware는 무의미(단일 레이어타입)**. layer-aware의 이질성 전제는 temporal 하이브리드(층 타입 구분) 전용. 이 경계가 layer-aware 프레임워크의 적용범위를 규정.
+
+### P1.7c Granite-4.0-h-micro (temporal, GQA, 36 mamba + 4 attn) — mamba 둔감 확증, "SSD config 가설" 성립
+- `[measured]` 부팅·정확("Paris"), flashinfer(head_dim64)+`--disable-piecewise-cuda-graph`. `granitemoehybrid.py`에 green-ctx pin + per-type timing 계측 추가(env-gated, GMHLT 로그; src 미러+dev_tree). job 832611.
+- `[measured]` **Granite mamba(36층) = 완전 SM-둔감**: per-mamba(ms) full/16SM at ctx64 0.841/0.860, ctx256 0.844/0.878, ctx2048 0.832/0.865, ctx4000 0.831/0.865 = **전 ctx·전 SM 평탄(~0.85)**. ⇒ Zamba2처럼 memory-bound. **NemotronH-8B(민감 2.6×)가 유일한 outlier(compute-bound SSD)** 확정. ★**mamba 민감도=SSD config별, 크기·temporal여부 무관**.
+- `[measured]` **Granite attn(4층, GQA 4:1) = SM-둔감 + ctx-불변**: per-attn full ctx64→4000 0.548→0.548(평탄!), 16SM도 ~0.58. GQA라 memory-bound + KV read 작아 O(L) 성장 거의 無 (Zamba2 no-GQA와 정반대).
+- `[derived]` ⇒ **Granite decode = 전 레이어 SM-둔감** → **agnostic_v2(전층 16SM 환원)가 최적**(굶길 민감층 없음, decode 손실 0로 prefill에 최대 환원), **layer-aware 퇴화**(보호 대상 없음). NemotronH(mamba 민감→agnostic_v2 최악)와 정반대 체제. 원자료 `p1_7_gr_smsens_832611.txt`.
+
+### P1.7 종합 — 4-모델 정책적용 분류표 (프레임워크 일반화)
+| 모델 | 아키 | mamba | attn(단/장ctx) | SM-민감 지배층 | 최적 정책 |
+|---|---|---|---|---|---|
+| NemotronH-8B | temporal GQA | **민감**2.6× | 둔감 | mamba(다수) | agnostic(전층예약); la≈agn, **agnostic_v2 최악** |
+| Zamba2 1.2/2.7/7B | temporal no-GQA | 둔감 | **장문 민감**O(L) | attn(희소) | **layer-aware 유리**(mamba환원+attn예약) |
+| Granite-4-h-micro | temporal GQA | 둔감 | 둔감(장문도 평탄) | **없음** | **agnostic_v2 최적**(전층 환원); la 퇴화 |
+| Falcon-H1-3B | **spatial** GQA | (층내 융합) | (층내 융합) | 단일타입 | layer-aware N/A; **agnostic≫fused** |
+- **드라이버**: mamba민감=SSD config(compute vs memory-bound; NH outlier)·크기무관. attn민감=(no-GQA & 장문). 정책공간=temporal(층타입有→전정책) vs spatial(단일타입→{fused,agnostic}). ⇒ **"어느 층 타입이 SM-민감이냐"가 최적 정책을 결정**: mamba민감→agnostic; attn민감(no-GQA장문)→layer-aware; 무민감→agnostic_v2; 단일타입→pdmux만.

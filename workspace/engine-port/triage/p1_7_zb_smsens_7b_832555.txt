@@ -1,0 +1,19 @@
+MODEL=Zyphra/Zamba2-7B-Instruct TAG=7b PORT=31755
+healthy
+SANITY "text":" Paris.\n\nThe capital"
+RESULT ctx=64 [2026-07-05 16:25:00] ZBLT mode=full@64 ctxlen=126 n=60 | attn_total=0.812 mamba_total=58.153 | per-attn(9)=0.0902 per-mamba(54)=1.0769
+RESULT ctx=64 [2026-07-05 16:25:11] ZBLT mode=64@64 ctxlen=126 n=60 | attn_total=0.933 mamba_total=51.728 | per-attn(9)=0.1036 per-mamba(54)=0.9579
+RESULT ctx=64 [2026-07-05 16:25:22] ZBLT mode=44@64 ctxlen=126 n=60 | attn_total=0.982 mamba_total=52.033 | per-attn(9)=0.1092 per-mamba(54)=0.9636
+RESULT ctx=64 [2026-07-05 16:25:33] ZBLT mode=16@64 ctxlen=126 n=60 | attn_total=2.121 mamba_total=47.542 | per-attn(9)=0.2357 per-mamba(54)=0.8804
+RESULT ctx=256 [2026-07-05 16:25:45] ZBLT mode=full@256 ctxlen=318 n=60 | attn_total=1.306 mamba_total=51.256 | per-attn(9)=0.1451 per-mamba(54)=0.9492
+RESULT ctx=256 [2026-07-05 16:25:55] ZBLT mode=64@256 ctxlen=318 n=60 | attn_total=1.989 mamba_total=50.562 | per-attn(9)=0.2210 per-mamba(54)=0.9363
+RESULT ctx=256 [2026-07-05 16:26:06] ZBLT mode=44@256 ctxlen=318 n=60 | attn_total=2.143 mamba_total=50.350 | per-attn(9)=0.2381 per-mamba(54)=0.9324
+RESULT ctx=256 [2026-07-05 16:26:17] ZBLT mode=16@256 ctxlen=318 n=60 | attn_total=4.963 mamba_total=44.733 | per-attn(9)=0.5514 per-mamba(54)=0.8284
+RESULT ctx=2048 [2026-07-05 16:26:34] ZBLT mode=full@2048 ctxlen=2110 n=60 | attn_total=7.006 mamba_total=45.817 | per-attn(9)=0.7785 per-mamba(54)=0.8485
+RESULT ctx=2048 [2026-07-05 16:26:46] ZBLT mode=64@2048 ctxlen=2110 n=60 | attn_total=9.251 mamba_total=45.220 | per-attn(9)=1.0278 per-mamba(54)=0.8374
+RESULT ctx=2048 [2026-07-05 16:27:00] ZBLT mode=44@2048 ctxlen=2110 n=60 | attn_total=13.279 mamba_total=42.095 | per-attn(9)=1.4754 per-mamba(54)=0.7795
+RESULT ctx=2048 [2026-07-05 16:27:15] ZBLT mode=16@2048 ctxlen=2110 n=60 | attn_total=33.591 mamba_total=43.730 | per-attn(9)=3.7323 per-mamba(54)=0.8098
+RESULT ctx=4000 [2026-07-05 16:27:34] ZBLT mode=full@4000 ctxlen=4062 n=60 | attn_total=13.242 mamba_total=40.805 | per-attn(9)=1.4713 per-mamba(54)=0.7556
+RESULT ctx=4000 [2026-07-05 16:27:50] ZBLT mode=64@4000 ctxlen=4062 n=60 | attn_total=17.579 mamba_total=38.597 | per-attn(9)=1.9532 per-mamba(54)=0.7148
+RESULT ctx=4000 [2026-07-05 16:28:06] ZBLT mode=44@4000 ctxlen=4062 n=60 | attn_total=25.595 mamba_total=32.532 | per-attn(9)=2.8439 per-mamba(54)=0.6025
+RESULT ctx=4000 [2026-07-05 16:28:25] ZBLT mode=16@4000 ctxlen=4062 n=60 | attn_total=67.531 mamba_total=43.723 | per-attn(9)=7.5035 per-mamba(54)=0.8097

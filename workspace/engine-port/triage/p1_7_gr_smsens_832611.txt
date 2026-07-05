@@ -1,0 +1,19 @@
+MODEL=ibm-granite/granite-4.0-h-micro-base PORT=32111
+healthy
+SANITY "text":" Paris. The capital of the"
+RESULT ctx=64 [2026-07-05 16:51:26] GMHLT mode=full@64 ctxlen=145 n=90 | mamba_total=30.284 attn_total=2.216 | per-mamba(36)=0.8412 per-attn(4)=0.5540
+RESULT ctx=64 [2026-07-05 16:51:34] GMHLT mode=64@64 ctxlen=144 n=90 | mamba_total=31.219 attn_total=2.313 | per-mamba(36)=0.8672 per-attn(4)=0.5782
+RESULT ctx=64 [2026-07-05 16:51:40] GMHLT mode=44@64 ctxlen=125 n=60 | mamba_total=31.218 attn_total=2.308 | per-mamba(36)=0.8672 per-attn(4)=0.5769
+RESULT ctx=64 [2026-07-05 16:51:49] GMHLT mode=16@64 ctxlen=141 n=90 | mamba_total=30.960 attn_total=2.299 | per-mamba(36)=0.8600 per-attn(4)=0.5749
+RESULT ctx=256 [2026-07-05 16:51:58] GMHLT mode=full@256 ctxlen=333 n=90 | mamba_total=30.365 attn_total=2.229 | per-mamba(36)=0.8435 per-attn(4)=0.5573
+RESULT ctx=256 [2026-07-05 16:52:06] GMHLT mode=64@256 ctxlen=333 n=90 | mamba_total=31.246 attn_total=2.344 | per-mamba(36)=0.8679 per-attn(4)=0.5859
+RESULT ctx=256 [2026-07-05 16:52:14] GMHLT mode=44@256 ctxlen=337 n=90 | mamba_total=31.080 attn_total=2.321 | per-mamba(36)=0.8633 per-attn(4)=0.5803
+RESULT ctx=256 [2026-07-05 16:52:22] GMHLT mode=16@256 ctxlen=337 n=90 | mamba_total=31.620 attn_total=2.472 | per-mamba(36)=0.8783 per-attn(4)=0.6181
+RESULT ctx=2048 [2026-07-05 16:52:31] GMHLT mode=full@2048 ctxlen=2109 n=60 | mamba_total=29.943 attn_total=2.187 | per-mamba(36)=0.8318 per-attn(4)=0.5469
+RESULT ctx=2048 [2026-07-05 16:52:39] GMHLT mode=64@2048 ctxlen=2109 n=60 | mamba_total=30.848 attn_total=2.292 | per-mamba(36)=0.8569 per-attn(4)=0.5730
+RESULT ctx=2048 [2026-07-05 16:52:47] GMHLT mode=44@2048 ctxlen=2109 n=60 | mamba_total=30.899 attn_total=2.295 | per-mamba(36)=0.8583 per-attn(4)=0.5736
+RESULT ctx=2048 [2026-07-05 16:52:55] GMHLT mode=16@2048 ctxlen=2109 n=60 | mamba_total=31.147 attn_total=2.301 | per-mamba(36)=0.8652 per-attn(4)=0.5752
+RESULT ctx=4000 [2026-07-05 16:53:05] GMHLT mode=full@4000 ctxlen=4061 n=60 | mamba_total=29.921 attn_total=2.191 | per-mamba(36)=0.8312 per-attn(4)=0.5478
+RESULT ctx=4000 [2026-07-05 16:53:14] GMHLT mode=64@4000 ctxlen=4061 n=60 | mamba_total=31.164 attn_total=2.310 | per-mamba(36)=0.8657 per-attn(4)=0.5774
+RESULT ctx=4000 [2026-07-05 16:53:22] GMHLT mode=44@4000 ctxlen=4061 n=60 | mamba_total=31.164 attn_total=2.313 | per-mamba(36)=0.8657 per-attn(4)=0.5783
+RESULT ctx=4000 [2026-07-05 16:53:31] GMHLT mode=16@4000 ctxlen=4061 n=60 | mamba_total=31.140 attn_total=2.309 | per-mamba(36)=0.8650 per-attn(4)=0.5774

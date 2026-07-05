@@ -74,3 +74,19 @@ Zamba2's `.isdigit()` guard already excludes it). Serving env: mode file
 `agnostic_v2` + `PDMUX_AGN2_SM=16`. Harness: `p1_4_serving.sbatch`/`p1_4_zb_serving.sbatch`
 now run 4 policies; boot check `p1_4_zb_pdmux_check.sbatch agnostic_v2` /
 `p1_4_la_check.sbatch agnostic_v2`.
+
+## P1.7 (additional hybrids) — edits to existing sglang model files (mirror in src/models/)
+8. `models/falcon_h1.py` — add `FalconH1ForCausalLM.forward_split_prefill` (enables
+   pdmux on the SPATIAL hybrid; threads (hidden, residual) + embedding_multiplier +
+   final_layernorm). Boot flashinfer (head_dim 128); `--disable-piecewise-cuda-graph`.
+   Copy: `src/models/falcon_h1.py`.
+9. `models/granitemoehybrid.py` — add `GraniteMoeHybridModel._get_gctx_decode_stream`
+   + green-ctx decode-SM pin & per-layer-type CUDA-event timing in `.forward` (env-gated
+   `SGLANG_GRANITE_TIMING`/`PDMUX_FIXED_DECODE_SM_FILE`, dormant by default; emits `GMHLT`
+   log). For measuring Granite Mamba2-SSD decode SM-sensitivity. Boot flashinfer + bf16 +
+   `--disable-piecewise-cuda-graph`. Copy: `src/models/granitemoehybrid.py`.
+
+Cached weights used (P1.7): tiiuae/Falcon-H1-3B-Base, Zyphra/Zamba2-{1.2B,7B-Instruct};
+downloaded ibm-granite/granite-4.0-h-micro-base (login-node internet). Harness:
+`p1_7_zb_smsens.sbatch <model>`, `p1_7_granite_smsens.sbatch`, `p1_7_bench_one.sbatch
+<policy> <model> <backend>`, `p1_7_fh1_check.sbatch <plain|pdmux> [model]`.

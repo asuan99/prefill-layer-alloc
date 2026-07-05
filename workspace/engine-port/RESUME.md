@@ -49,7 +49,17 @@ Report §3.7/§3.8/§0 updated. Key clean findings:
 - **Zamba2** (831166, prefill-bound in3600/out32): **layer_aware beats agnostic on TTFT by −7~23%** (releasing 45/54 insensitive mamba layers speeds prefill) → **mechanism confirmed** (la-edge ∝ released-fraction: NH 4/52=no edge vs ZB 45/54=edge). BUT triton-no-cudagraph decode floors TPOT at 170-205ms ≫ SLO (decode-bound), so the TTFT edge doesn't convert to goodput; small model → fused wins outright.
 - **Methodology**: serving sbatch ports must be job-id-derived (fixed).
 
+## P1.7 (2026-07-05) — generalized across 4 hybrids (see reports/p1_7_hybrid_generalization_kr.md)
+Optimal SM-reservation policy = f(which layer type is SM-sensitive). Measured taxonomy:
+NemotronH-8B (mamba sensitive → agnostic; agn_v2 worst) · Zamba2 1.2/2.7/7B (no-GQA attn
+sensitive at long ctx → layer-aware) · Granite-4-h-micro (nothing sensitive → agnostic_v2
+optimal) · Falcon-H1-3B (spatial, one layer type → layer-aware N/A, agnostic ≫ fused).
+**mamba sensitivity = SSD config (compute vs memory-bound), NOT size** — NemotronH is the
+lone compute-bound outlier; corrects the earlier "size-dependent" claim. Instrumented
+falcon_h1.py (forward_split_prefill) + granitemoehybrid.py (green-ctx+timing); dev_tree §8/9.
+
 ## Resume point / next
+- `[open]` **Granite agnostic_v2 serving** (predicted optimal — everything releasable); Falcon-H1 intra-layer attn/mamba split timing; Qwen3-Next (gated-deltanet).
 - `[open]` **Zamba2 goodput transfer**: needs a cudagraph-capable env (py3.12 rebuild, or a sglang version supporting pdmux+mamba cudagraph) so decode is fast enough that TTFT (not TPOT) binds → then Zamba2 layer_aware goodput win should materialize.
 - `[open]` **Fully-coordinated layer-aware serving** (decode layer-window ∥ prefill complementary partition) — event_loop surgery.
 - Boot tests: `sbatch triage/p1_4_zb_pdmux_check.sbatch {plain|layer_aware}` (Zamba2 pdmux), `p1_4_la_check.sbatch` (NemotronH). Serving: `p1_4_serving.sbatch` (NH), `p1_4_zb_serving.sbatch` (ZB).

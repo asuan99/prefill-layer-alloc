@@ -1,0 +1,58 @@
+# Falcon-H1-3B-Base serving (async bench_serving, sub-saturation) — fused vs agnostic
+# jobs 832575(fused) 832576(agnostic), in2000/out96 random-ids nprompts120 flashinfer
+===== POLICY=fused (job 832575) =====
+MODEL=tiiuae/Falcon-H1-3B-Base POLICY=fused boot_ok=1 backend=flashinfer port=32675
+SANITY "text":" Paris.\nThe capital of"
+===== fused rate=1 =====
+Request throughput (req/s):              0.95      
+Median TTFT (ms):                        238.33    
+Median TPOT (ms):                        43.07     
+===== fused rate=2 =====
+Request throughput (req/s):              1.85      
+Median TTFT (ms):                        258.32    
+Median TPOT (ms):                        50.02     
+===== fused rate=3 =====
+Request throughput (req/s):              2.68      
+Median TTFT (ms):                        275.84    
+Median TPOT (ms):                        60.68     
+===== fused rate=4 =====
+Request throughput (req/s):              3.47      
+Median TTFT (ms):                        310.16    
+Median TPOT (ms):                        71.57     
+===== fused rate=6 =====
+Request throughput (req/s):              4.23      
+Median TTFT (ms):                        1018.51   
+Median TPOT (ms):                        96.66     
+  rate=1.0 good=120/120 goodput=0.95req/s dur=125.9s
+  rate=2.0 good=105/120 goodput=1.62req/s dur=65.0s
+  rate=3.0 good=51/120 goodput=1.14req/s dur=44.7s
+  rate=4.0 good=22/120 goodput=0.64req/s dur=34.6s
+  rate=6.0 good=0/120 goodput=0.00req/s dur=28.4s
+===== POLICY=agnostic (job 832576) =====
+MODEL=tiiuae/Falcon-H1-3B-Base POLICY=agnostic boot_ok=1 backend=flashinfer port=32676
+SANITY "text":" Paris.\nThe capital of"
+===== agnostic rate=1 =====
+Request throughput (req/s):              0.95      
+Median TTFT (ms):                        308.47    
+Median TPOT (ms):                        37.91     
+===== agnostic rate=2 =====
+Request throughput (req/s):              1.85      
+Median TTFT (ms):                        347.99    
+Median TPOT (ms):                        40.20     
+===== agnostic rate=3 =====
+Request throughput (req/s):              2.68      
+Median TTFT (ms):                        431.41    
+Median TPOT (ms):                        41.91     
+===== agnostic rate=4 =====
+Request throughput (req/s):              3.47      
+Median TTFT (ms):                        573.49    
+Median TPOT (ms):                        42.53     
+===== agnostic rate=6 =====
+Request throughput (req/s):              4.43      
+Median TTFT (ms):                        1418.61   
+Median TPOT (ms):                        41.05     
+  rate=1.0 good=120/120 goodput=0.95req/s dur=125.8s
+  rate=2.0 good=120/120 goodput=1.85req/s dur=65.0s
+  rate=3.0 good=120/120 goodput=2.68req/s dur=44.7s
+  rate=4.0 good=120/120 goodput=3.47req/s dur=34.6s
+  rate=6.0 good=93/120 goodput=3.44req/s dur=27.1s
