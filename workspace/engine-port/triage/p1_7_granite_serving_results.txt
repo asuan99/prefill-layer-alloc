@@ -1,0 +1,83 @@
+# Granite-4.0-h-micro serving (async, sub-saturation) — DECISIVE test of agnostic_v2 (refutes decode-side prediction)
+# jobs 832638(fused) 832639(agnostic) 832640(agnostic_v2)
+===== POLICY=fused (job 832638) =====
+MODEL=ibm-granite/granite-4.0-h-micro-base POLICY=fused boot_ok=1 backend=flashinfer port=32738
+===== fused rate=1 =====
+Request throughput (req/s):              1.19      
+Median TTFT (ms):                        168.09    
+Median TPOT (ms):                        36.55     
+===== fused rate=2 =====
+Request throughput (req/s):              2.30      
+Median TTFT (ms):                        175.23    
+Median TPOT (ms):                        42.48     
+===== fused rate=3 =====
+Request throughput (req/s):              3.35      
+Median TTFT (ms):                        177.38    
+Median TPOT (ms):                        50.22     
+===== fused rate=4 =====
+Request throughput (req/s):              4.32      
+Median TTFT (ms):                        213.71    
+Median TPOT (ms):                        61.21     
+===== fused rate=6 =====
+Request throughput (req/s):              5.12      
+Median TTFT (ms):                        2417.28   
+Median TPOT (ms):                        78.35     
+  rate=1.0 good=120/120 goodput=1.19req/s dur=100.8s
+  rate=2.0 good=109/120 goodput=2.09req/s dur=52.1s
+  rate=3.0 good=99/120 goodput=2.76req/s dur=35.8s
+  rate=4.0 good=54/120 goodput=1.95req/s dur=27.8s
+  rate=6.0 good=6/120 goodput=0.26req/s dur=23.4s
+===== POLICY=agnostic (job 832639) =====
+MODEL=ibm-granite/granite-4.0-h-micro-base POLICY=agnostic boot_ok=1 backend=flashinfer port=32739
+===== agnostic rate=1 =====
+Request throughput (req/s):              1.19      
+Median TTFT (ms):                        233.85    
+Median TPOT (ms):                        33.10     
+===== agnostic rate=2 =====
+Request throughput (req/s):              2.30      
+Median TTFT (ms):                        243.82    
+Median TPOT (ms):                        34.96     
+===== agnostic rate=3 =====
+Request throughput (req/s):              3.35      
+Median TTFT (ms):                        326.14    
+Median TPOT (ms):                        36.37     
+===== agnostic rate=4 =====
+Request throughput (req/s):              4.33      
+Median TTFT (ms):                        414.92    
+Median TPOT (ms):                        36.95     
+===== agnostic rate=6 =====
+Request throughput (req/s):              5.81      
+Median TTFT (ms):                        1578.90   
+Median TPOT (ms):                        33.50     
+  rate=1.0 good=120/120 goodput=1.19req/s dur=100.8s
+  rate=2.0 good=120/120 goodput=2.30req/s dur=52.1s
+  rate=3.0 good=120/120 goodput=3.35req/s dur=35.8s
+  rate=4.0 good=120/120 goodput=4.33req/s dur=27.7s
+  rate=6.0 good=120/120 goodput=5.81req/s dur=20.7s
+===== POLICY=agnostic_v2 (job 832640) =====
+MODEL=ibm-granite/granite-4.0-h-micro-base POLICY=agnostic_v2 boot_ok=1 backend=flashinfer port=32740
+===== agnostic_v2 rate=1 =====
+Request throughput (req/s):              1.19      
+Median TTFT (ms):                        235.31    
+Median TPOT (ms):                        37.89     
+===== agnostic_v2 rate=2 =====
+Request throughput (req/s):              2.30      
+Median TTFT (ms):                        235.86    
+Median TPOT (ms):                        45.38     
+===== agnostic_v2 rate=3 =====
+Request throughput (req/s):              3.34      
+Median TTFT (ms):                        316.79    
+Median TPOT (ms):                        55.81     
+===== agnostic_v2 rate=4 =====
+Request throughput (req/s):              3.77      
+Median TTFT (ms):                        1895.11   
+Median TPOT (ms):                        105.77    
+===== agnostic_v2 rate=6 =====
+Request throughput (req/s):              3.83      
+Median TTFT (ms):                        5569.41   
+Median TPOT (ms):                        106.75    
+  rate=1.0 good=120/120 goodput=1.19req/s dur=101.0s
+  rate=2.0 good=118/120 goodput=2.26req/s dur=52.2s
+  rate=3.0 good=80/120 goodput=2.23req/s dur=35.9s
+  rate=4.0 good=0/120 goodput=0.00req/s dur=31.8s
+  rate=6.0 good=0/120 goodput=0.00req/s dur=31.3s

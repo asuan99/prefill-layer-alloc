@@ -240,3 +240,10 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 | Granite-4-h-micro | temporal GQA | 둔감 | 둔감(장문도 평탄) | **없음** | **agnostic_v2 최적**(전층 환원); la 퇴화 |
 | Falcon-H1-3B | **spatial** GQA | (층내 융합) | (층내 융합) | 단일타입 | layer-aware N/A; **agnostic≫fused** |
 - **드라이버**: mamba민감=SSD config(compute vs memory-bound; NH outlier)·크기무관. attn민감=(no-GQA & 장문). 정책공간=temporal(층타입有→전정책) vs spatial(단일타입→{fused,agnostic}). ⇒ **"어느 층 타입이 SM-민감이냐"가 최적 정책을 결정**: mamba민감→agnostic; attn민감(no-GQA장문)→layer-aware; 무민감→agnostic_v2; 단일타입→pdmux만.
+
+### P1.7d ★정정 — Granite "agnostic_v2 최적" 반증 (사용자 지적, 서빙 실증, 2026-07-05)
+- 사용자가 §2 "Granite 전층 SM-둔감→agnostic_v2 최적" 의심 → **결정적 서빙 실증**(async, granitemoehybrid.py에 forward_split_prefill+agnostic_v2 추가; jobs 832638 fused/832639 agn/832640 agn2).
+- `[measured]` **Granite Median TPOT(ms)**: rate3 fused50/agn**36**/agn2 56, rate4 61/**37**/**106**, rate6 78/**34**/**107**. **goodput@SLO rate6**: fused0.26/**agn5.81**/**agn2 0.00**. ⇒ **agnostic_v2 = 최악(부하시 TPOT 폭발 106ms), agnostic(v1) = 최고**(TPOT 평탄 34-37, goodput 5.81까지 스케일). **Granite = NemotronH형**(agnostic 최고, agn_v2 최악), "전층 둔감" 아님.
+- `[근본원인]` **decode-side 민감도 micro-timing(작은 batch)이 서빙 batch 민감도를 과소평가**. sweep은 decode batch~8이라 mamba/MLP GEMM이 latency/bw-bound→둔감으로 보임. **서빙 decode batch(≤48)선 GEMM 커져 compute-bound→16SM 굶기면 TPOT 폭발**. + per-type timing이 attn층의 co-located MLP를 포함(granularity 오차)해 attn "ctx-평탄"도 아티팩트.
+- `[교훈-강화]` **정책 주장은 반드시 서빙 실증**(P1.6c GIL-client 과부하에 이어 2번째 micro-measurement 오도). ⇒ **decode-side "둔감→환원가능" 라벨은 서빙 미검증이면 신뢰불가.** **Zamba2 layer-aware 이득도 서빙 미실증(triton decode-bound 불충분)→동일하게 의심 대상.** 
+- `[정정된 견고 결론]` **서빙 실증된 것만**: pdmux(agnostic v1)=4모델 전부 견고 승(fused 대비); **agnostic_v2=decode에 실작업 있으면 최악**(NemotronH·Granite 확증); **layer-aware=어느 모델도 서빙 이득 미확증**. 원자료 `p1_7_bench_one_{832638,832639,832640}.out`.

@@ -402,8 +402,8 @@
 
   <!-- ============ 7. GENERALIZATION ACROSS HYBRIDS (P1.7) ============ -->
   <section>
-    <div class="sec-h"><span class="sec-n mono">07</span><h2>Does it generalize? Four hybrids, one rule</h2></div>
-    <p class="sec-sub">The same per-layer-type SM-sensitivity measurement, run on three more models — Zamba2 at 1.2B/7B, IBM Granite-4.0-h-micro (temporal, GQA), and Falcon-H1 (spatial). The optimal policy is decided by <em>which layer type is SM-sensitive</em> — and that's a property of the kernels, not the model size or family.</p>
+    <div class="sec-h"><span class="sec-n mono">07</span><h2>Four hybrids — and a micro-benchmark that lied</h2></div>
+    <p class="sec-sub">The per-layer-type SM-sensitivity sweep, run on Zamba2 1.2B/7B, Granite-4.0-h-micro (temporal, GQA), and Falcon-H1 (spatial). The micro-timing tells a clean story about the <em>kernels</em> — but it's measured at tiny decode batch, and when I trusted it to predict serving policy for Granite, <b>serving refuted it</b>. Two honest layers below: what the micro-timing shows, then what serving actually does.</p>
     <div class="cardrow c2">
       <div class="fig reveal">
         <h4>Mamba sensitivity is SSD-config, not size</h4>
@@ -424,22 +424,38 @@
           <span><i style="background:var(--teal)"></i>NemotronH (GQA)</span>
           <span><i style="background:var(--co)"></i>Granite (GQA)</span>
         </div>
-        <p class="take"><b class="hot">Zamba2's no-GQA attn</b> grows steeply with context → SM-sensitive at long ctx. GQA attn (NemotronH, Granite) stays flat and cheap — Granite's is dead flat even at 4k. Only no-GQA makes attn worth reserving.</p>
+        <p class="take"><b class="hot">Zamba2's no-GQA attn</b> grows steeply with context. GQA attn (NemotronH, Granite) stays cheaper. <span style="color:var(--mut2)">Caveat: my per-layer timing lumps each attn layer's co-located MLP in, so Granite's "flat" partly hides the attention's O(L) growth — a granularity artifact.</span></p>
       </div>
+    </div>
+
+    <div class="callout reveal" style="border-color:var(--crit);background:color-mix(in srgb,var(--crit) 10%,transparent)">
+      <div class="t" style="color:var(--crit)">Serving refuted the micro-timing (Granite)</div>
+      <p>The tiny-batch sweep said Granite is "fully SM-insensitive → release all decode SM (agnostic_v2)." <b>Serving says the opposite.</b> At real decode batch the mamba/MLP GEMMs turn compute-bound, so starving them to 16 SM blows up TPOT:</p>
+      <div class="tw" style="margin-top:10px;border-color:var(--crit)">
+        <table>
+          <thead><tr><th>Granite · rate</th><th>fused</th><th>agnostic</th><th>agnostic_v2</th></tr></thead>
+          <tbody>
+            <tr><td class="rowh">TPOT ms · 4</td><td class="mono reg">61</td><td class="mono" style="color:var(--good)"><b>37</b></td><td class="mono" style="color:var(--crit)"><b>106</b></td></tr>
+            <tr><td class="rowh">TPOT ms · 6</td><td class="mono reg">78</td><td class="mono" style="color:var(--good)"><b>34</b></td><td class="mono" style="color:var(--crit)"><b>107</b></td></tr>
+            <tr><td class="rowh">goodput · 6</td><td class="mono reg">0.26</td><td class="mono" style="color:var(--good)"><b>5.81</b></td><td class="mono" style="color:var(--crit)"><b>0.00</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px"><b>Granite behaves like NemotronH: agnostic best, agnostic_v2 worst.</b> Lesson (the second time a micro-measurement misled — after the GIL-bound client at §04): SM-sensitivity is batch-dependent, and <b>policy claims must be serving-validated</b>. The "insensitive → releasable" labels below are only trustworthy where serving confirms them.</p>
     </div>
     <div class="tw reveal" style="margin-top:16px">
       <table>
-        <thead><tr><th>Model</th><th>Architecture</th><th>Mamba</th><th>Attn</th><th>SM-sensitive layer</th><th>Best policy</th></tr></thead>
+        <thead><tr><th>Model</th><th>Architecture</th><th>Mamba (micro)</th><th>Attn (micro)</th><th>Serving-validated best policy</th></tr></thead>
         <tbody>
-          <tr><td class="rowh">NemotronH-8B</td><td class="reg">temporal · GQA</td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">sensitive 2.6×</span></td><td class="reg">insensitive</td><td class="reg">mamba (majority)</td><td><b>agnostic</b> <span class="reg">(la≈agn; agn_v2 worst)</span></td></tr>
-          <tr><td class="rowh">Zamba2 1.2/2.7/7B</td><td class="reg">temporal · <b>no-GQA</b></td><td><span class="tag" style="background:var(--teal-soft);color:var(--teal)">insensitive</span></td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">O(L) sensitive</span></td><td class="reg">attn (sparse, long ctx)</td><td><b>layer-aware</b></td></tr>
-          <tr><td class="rowh">Granite-4-h-micro</td><td class="reg">temporal · GQA</td><td><span class="tag" style="background:var(--teal-soft);color:var(--teal)">insensitive</span></td><td><span class="tag" style="background:var(--teal-soft);color:var(--teal)">insensitive</span></td><td class="reg">none</td><td><b>agnostic_v2</b> <span class="reg">(release all)</span></td></tr>
-          <tr><td class="rowh">Falcon-H1-3B</td><td class="reg"><b>spatial</b> · GQA</td><td class="reg" colspan="2" style="text-align:center">mamba ∥ attn fused per layer</td><td class="reg">single type</td><td><b>agnostic</b> <span class="reg">(la N/A; ≫ fused)</span></td></tr>
+          <tr><td class="rowh">NemotronH-8B</td><td class="reg">temporal · GQA</td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">sensitive 2.6×</span></td><td class="reg">insensitive</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· la≈agn · agn_v2 worst ✓serving</span></td></tr>
+          <tr><td class="rowh">Granite-4-h-micro</td><td class="reg">temporal · GQA</td><td class="reg">micro-flat, <b>but sensitive at serving batch</b></td><td class="reg">micro-flat*</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· agn_v2 worst ✓serving (refuted the micro reading)</span></td></tr>
+          <tr><td class="rowh">Zamba2 1.2/2.7/7B</td><td class="reg">temporal · <b>no-GQA</b></td><td class="reg">micro-flat</td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">O(L) sensitive</span></td><td class="reg">layer-aware <span class="reg">— hypothesis, <b>not serving-validated</b></span></td></tr>
+          <tr><td class="rowh">Falcon-H1-3B</td><td class="reg"><b>spatial</b> · GQA</td><td class="reg" colspan="2" style="text-align:center">mamba ∥ attn fused per layer (one type)</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· la N/A · ≫ fused ✓serving</span></td></tr>
         </tbody>
       </table>
     </div>
     <p class="take" style="border:none;max-width:78ch">
-      <b>The rule.</b> Policy choice follows the sensitivity profile, not the architecture label: mamba-sensitive → reserve everything (agnostic); no-GQA attn sensitive at length → protect it selectively (layer-aware); nothing sensitive → release everything (agnostic_v2); one fused layer type → only fused-vs-agnostic exists. Two drivers underneath: mamba sensitivity is set by the SSD implementation (compute- vs memory-bound; NemotronH is the lone compute-bound case among four), and attn sensitivity by GQA (flat) vs no-GQA (O(L)). Across all four, splitting prefill from decode (pdmux) is the robust base win; the reservation policies are conditional refinements on top.
+      <b>What actually holds, once you insist on serving evidence.</b> Splitting prefill from decode (<b>pdmux / agnostic</b>) is the robust win on every hybrid measured — spatial and temporal, 3B to 8B. <b>agnostic_v2</b> (starve decode to a floor) is the <em>worst</em> wherever decode has real work, confirmed in serving on both NemotronH and Granite. And <b>layer-aware has not shown a serving goodput win on any of the four</b> — its case rests on decode-side micro-timing that, as Granite proved, doesn't survive real batch. The clean takeaways are about the kernels (mamba sensitivity = SSD implementation, not size; attn O(L) = no-GQA), but the actionable recommendation is simply: <b>use pdmux; don't over-starve decode; validate any per-layer refinement in serving before believing it.</b>
     </p>
   </section>
 </div>

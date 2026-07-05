@@ -462,6 +462,8 @@ class GraniteMoeHybridModel(nn.Module):
                 _mode = None
         _sm = _mode.split("@")[0] if _mode else None
         _fixed = int(_sm) if (_sm and _sm.isdigit()) else None
+        if _is_decode and _sm == "agnostic_v2":
+            _fixed = int(_os.environ.get("PDMUX_AGN2_SM", "16"))
         _timing = bool(_os.environ.get("SGLANG_GRANITE_TIMING")) and _is_decode
         _base = torch.cuda.current_stream()
         _evs = [] if _timing else None
@@ -607,6 +609,42 @@ class GraniteMoeHybridForCausalLM(
 
     def get_input_embeddings(self) -> nn.Embedding:
         return self.model.embed_tokens
+
+    def forward_split_prefill(
+        self,
+        input_ids: torch.Tensor,
+        positions: torch.Tensor,
+        forward_batch: ForwardBatch,
+        split_interval,  # [start, end) 0-based
+        input_embeds: torch.Tensor = None,
+    ):
+        # engine-port P1.7: enable pdmux split-prefill on Granite (temporal hybrid),
+        # to serving-validate the agnostic_v2 prediction. Threads (hidden, residual).
+        start, end = split_interval
+        model = self.model
+        if start == 0:
+            if input_embeds is None:
+                forward_batch.hidden_states = (
+                    model.embed_tokens(input_ids) * model.embedding_multiplier
+                )
+            else:
+                forward_batch.hidden_states = input_embeds * model.embedding_multiplier
+            forward_batch.residual = None
+        for i in range(start, end):
+            forward_batch.hidden_states, forward_batch.residual = model.layers[i].forward(
+                positions,
+                forward_batch.hidden_states,
+                forward_batch.residual,
+                forward_batch,
+            )
+        if end == self.config.num_hidden_layers:
+            hidden_states, _ = model.norm(
+                forward_batch.hidden_states, forward_batch.residual
+            )
+            forward_batch.hidden_states = hidden_states
+            return self.logits_processor(
+                input_ids, hidden_states, self.lm_head, forward_batch
+            )
 
     def forward(
         self,
