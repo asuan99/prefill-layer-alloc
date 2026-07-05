@@ -3,7 +3,7 @@
 작성 2026-07-05 · 대상 신규: **Zamba2-1.2B/7B**(크기축), **Falcon-H1-3B-Base**(spatial), **ibm-granite/granite-4.0-h-micro-base**(temporal GQA) · A100-80GB/CUDA13/sglang v0.5.10 · 기존 NemotronH-8B/Zamba2-2.7B([p1_4_layer_aware_평가_kr.md](p1_4_layer_aware_평가_kr.md)) 확장
 
 ## 0. 핵심 결론
-**서빙 실증된 견고 결론: pdmux(agnostic v1)는 4개 하이브리드 전부서 fused 대비 견고한 이득; agnostic_v2는 decode에 실작업 있는 모델서 최악(NemotronH·Granite 서빙 확증). layer-aware의 서빙 이득은 어느 모델도 미확증.** 또한 mamba SM-민감도 드라이버는 크기가 아니라 SSD 구현(§1).
+**서빙 실증(clean async, 4모델) 최종 결론: (1) pdmux(agnostic v1)가 4모델 전부서 최적/견고 — fused 대비 승, 정책 중 최고. (2) agnostic_v2는 decode 실작업 있으면 최악(TPOT 폭발; NemotronH·Granite). (3) ★layer-aware는 4모델 전부서 반증 — 저부하선 agnostic과 동등, 부하 오르면 열위→붕괴(Zamba2가 최악: rate3부터 goodput 0). 내가 "환원 대박"으로 예측했던 Zamba2(45/54 mamba 환원)가 실은 최악이었다.** ⇒ **실전 권고 = agnostic(pdmux); layer-aware 폐기.** mamba micro-민감도=SSD 구현(§1)은 유효 관찰이나 서빙 정책엔 무력(§6).
 
 > ⚠️ **정정(2026-07-05, 사용자 지적+서빙 실증)**: 초판은 Granite를 "전층 SM-둔감→agnostic_v2 최적"으로 판정했으나 **서빙 실증서 반증**(§2). **decode-side micro-timing(작은 batch)이 서빙 batch의 SM-민감도를 과소평가**하는 게 근본원인 — decode에 실작업 있으면 서빙 batch서 compute-bound가 되어 SM 굶기면 TPOT 폭발. ⇒ **"둔감→환원가능" 라벨은 서빙 미검증이면 신뢰 불가.**
 
@@ -55,7 +55,24 @@
 3. `[measured→반증]` **decode-side micro-timing(작은 batch)은 서빙 정책을 예측 못 함**: SM-민감도가 batch 의존(작은 batch=latency-bound=둔감, 서빙 batch=compute-bound=민감)이라 과소평가. ⇒ **"둔감→layer-aware/agnostic_v2 유리" 류 주장은 서빙 미검증이면 신뢰불가**(Granite서 반증). **Zamba2 layer-aware 이득도 서빙 미실증→유보.**
 4. `[measured]` **mamba micro-민감도 = SSD 구현(compute vs memory-bound), 크기·temporal 무관**(§1; ZB-7B≈NH크기지만 micro-둔감) — 이 관찰 자체는 유효하나, **micro-둔감이 서빙 정책상 "환원가능"을 뜻하진 않음**(Granite 교훈).
 5. `[measured]` **attn: GQA(둔감) vs no-GQA(장문 O(L) 민감)** — micro 수준 관찰. 정책 함의(no-GQA 장문서 attn 예약가치)는 서빙 미실증(Zamba2 triton decode-bound).
-6. **layer-aware의 서빙 goodput 이득은 4모델 중 어느 것도 미확증** — decode-side 정황만으로 주장했던 이득이 서빙 실증을 못 통과(NemotronH la≈agn, Granite/Zamba2 미실증). **layer-aware는 현재 "가설"; pdmux(agnostic)가 실전 권고.**
+6. **layer-aware는 4모델 전부서 서빙 반증(§4b)** — decode-side 정황으로 주장했던 이득이 clean async 실증서 전무. **layer-aware 폐기; pdmux(agnostic)가 실전 권고.**
+
+## 4b. ★layer-aware 서빙 실증 — 4모델 전면 반증 (사용자 요청)
+`p1_7_bench_one.sbatch <policy> <model>` (clean async, sub-saturation), agnostic vs layer_aware 직접 비교. Granite엔 layer_aware 추가(reserve mamba/release attn, `granitemoehybrid.py`).
+
+`[measured]` **goodput@SLO (req/s):**
+| 모델 | 정책 | rate1 | rate2 | rate3 | rate4 | rate6 |
+|---|---|---|---|---|---|---|
+| NemotronH-8B | agnostic | 0.96 | 1.88 | 2.76 | **2.25** | **0.46** |
+| | layer_aware | 0.96 | 1.88 | 2.76 | 1.58 | 0.00 |
+| Granite-4-micro | agnostic | 1.19 | 2.30 | 3.35 | 4.33 | **5.81** |
+| | layer_aware | 1.19 | 2.30 | 3.35 | 4.32 | 0.71 |
+| Zamba2-2.7B (triton) | agnostic | 1.17 | 2.25 | **3.24** | **1.80** | **0.76** |
+| | layer_aware | 1.17 | 1.38 | **0.00** | 0.00 | 0.00 |
+| Falcon-H1-3B | (구조적) | 단일 layer type → **layer_aware ≡ agnostic** (per-type 제어 불가) | | | |
+
+`[measured]` **layer-aware는 4모델 어디서도 agnostic 대비 이득 없음**: 저부하선 동등(rate1-2), 부하 오르면 **일관 열위→붕괴**. **Zamba2가 최악**(rate3부터 goodput 0; TPOT rate3 131ms vs agn 48, TTFT 3726). Granite도 rate6 붕괴(0.71 vs 5.81, TPOT 72 vs 34). NemotronH도 고부하 열위(1.58 vs 2.25). ★내가 "45/54 mamba 환원=대박"으로 예측한 Zamba2가 실은 **최악** — 서빙 batch서 mamba가 SM-민감이라 45층을 16SM 굶기면 decode 폭발.
+`[기전]` (1) tiny-batch "mamba 둔감"은 아티팩트(§2 교훈) — 서빙 batch선 mamba SM-민감(Granite·Zamba2 공히) → 환원=굶주림. (2) per-layer green-ctx 전환 오버헤드가 부하시 누적. ⇒ **어떤 reclaim 이득도 이 둘에 압도.** 원자료 `p1_7_bench_one_{831610,831612,832639,832690,832701,832702}.out`, `p1_7_{fh1,granite}_serving_results.txt`.
 
 ## 5. 방법·재현
 - 계측: `models/{zamba2(기존),granitemoehybrid(신규),falcon_h1(신규)}.py` per-type CUDA-event timing + green-ctx N-pin (env-gated). dev_tree_edits.md §8/9.

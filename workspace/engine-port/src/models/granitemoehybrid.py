@@ -464,6 +464,13 @@ class GraniteMoeHybridModel(nn.Module):
         _fixed = int(_sm) if (_sm and _sm.isdigit()) else None
         if _is_decode and _sm == "agnostic_v2":
             _fixed = int(_os.environ.get("PDMUX_AGN2_SM", "16"))
+        # layer_aware: reserve the SM-sensitive/dominant layer types on the base
+        # (full) decode partition, drop the rest to a floor. PDMUX_LA_RESERVE lists the
+        # reserved type chars ("M"=mamba, "*"=attn); default "M" (reserve mamba, release
+        # the 4 sparse attn layers) mirrors NemotronH.
+        _la = _is_decode and _sm == "layer_aware"
+        _la_floor = int(_os.environ.get("PDMUX_LA_FLOOR_SM", "16"))
+        _la_reserve = _os.environ.get("PDMUX_LA_RESERVE", "M")
         _timing = bool(_os.environ.get("SGLANG_GRANITE_TIMING")) and _is_decode
         _base = torch.cuda.current_stream()
         _evs = [] if _timing else None
@@ -474,11 +481,13 @@ class GraniteMoeHybridModel(nn.Module):
             if i in self.layers_to_capture:
                 aux_hidden_states.append(hidden_states + residual)
             layer = self.layers[i]
-            _t = (
-                self._get_gctx_decode_stream(_fixed)
-                if (_is_decode and _fixed is not None)
-                else _base
-            )
+            if _is_decode and _fixed is not None:
+                _t = self._get_gctx_decode_stream(_fixed)
+            elif _la:
+                _lc = "M" if isinstance(layer, GraniteMoeHybridMambaDecoderLayer) else "*"
+                _t = _base if _lc in _la_reserve else self._get_gctx_decode_stream(_la_floor)
+            else:
+                _t = _base
             if _t is not _prev:
                 _t.wait_stream(_prev)
             if _timing:

@@ -298,7 +298,7 @@
           <span><i style="background:var(--agn)"></i>agnostic</span>
           <span><i style="background:var(--la)"></i>layer-aware</span>
         </div>
-        <p class="take"><b class="cool">layer-aware beats agnostic on TTFT by 7–23%</b> — releasing 45 mamba layers really does speed prefill. The mechanism transfers to TTFT. <span style="color:var(--mut2)">(Zamba2 numbers are from the older client at overload rates — directionally right, a clean async re-measure is pending.)</span></p>
+        <p class="take"><s style="color:var(--mut2)">layer-aware beats agnostic on TTFT here</s> — <b class="hot">refuted.</b> These are old-client, past-saturation numbers. A clean async re-measure (§07) shows Zamba2 layer-aware is in fact the <b>worst</b> policy — goodput 0 from rate 3 (TPOT 131ms). Releasing 45 mamba layers starves an SM-sensitive decode at real batch. Disregard this panel; see §07.</p>
       </div>
     </div>
 
@@ -449,13 +449,30 @@
         <tbody>
           <tr><td class="rowh">NemotronH-8B</td><td class="reg">temporal · GQA</td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">sensitive 2.6×</span></td><td class="reg">insensitive</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· la≈agn · agn_v2 worst ✓serving</span></td></tr>
           <tr><td class="rowh">Granite-4-h-micro</td><td class="reg">temporal · GQA</td><td class="reg">micro-flat, <b>but sensitive at serving batch</b></td><td class="reg">micro-flat*</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· agn_v2 worst ✓serving (refuted the micro reading)</span></td></tr>
-          <tr><td class="rowh">Zamba2 1.2/2.7/7B</td><td class="reg">temporal · <b>no-GQA</b></td><td class="reg">micro-flat</td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">O(L) sensitive</span></td><td class="reg">layer-aware <span class="reg">— hypothesis, <b>not serving-validated</b></span></td></tr>
+          <tr><td class="rowh">Zamba2 1.2/2.7/7B</td><td class="reg">temporal · <b>no-GQA</b></td><td class="reg">micro-flat</td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">O(L) sensitive</span></td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· layer-aware <b style="color:var(--crit)">REFUTED</b> (worst: goodput 0 @rate3)</span></td></tr>
           <tr><td class="rowh">Falcon-H1-3B</td><td class="reg"><b>spatial</b> · GQA</td><td class="reg" colspan="2" style="text-align:center">mamba ∥ attn fused per layer (one type)</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· la N/A · ≫ fused ✓serving</span></td></tr>
         </tbody>
       </table>
     </div>
+    <div class="callout reveal" style="border-color:var(--crit);background:color-mix(in srgb,var(--crit) 10%,transparent)">
+      <div class="t" style="color:var(--crit)">Layer-aware, serving-validated on all four — it never wins</div>
+      <p>The whole reason this project exists was "reserve SM for sensitive layers, release it on insensitive ones." Measured directly (clean async, agnostic vs layer-aware, goodput@SLO):</p>
+      <div class="tw" style="margin-top:10px;border-color:var(--crit)">
+        <table>
+          <thead><tr><th>goodput@SLO</th><th>rate 3</th><th>rate 4</th><th>rate 6</th></tr></thead>
+          <tbody>
+            <tr><td class="rowh">NemotronH agn → la</td><td class="mono reg">2.76 → 2.76</td><td class="mono">2.25 → <b style="color:var(--crit)">1.58</b></td><td class="mono">0.46 → <b style="color:var(--crit)">0.00</b></td></tr>
+            <tr><td class="rowh">Granite agn → la</td><td class="mono reg">3.35 → 3.35</td><td class="mono reg">4.33 → 4.32</td><td class="mono">5.81 → <b style="color:var(--crit)">0.71</b></td></tr>
+            <tr><td class="rowh">Zamba2 agn → la</td><td class="mono">3.24 → <b style="color:var(--crit)">0.00</b></td><td class="mono">1.80 → <b style="color:var(--crit)">0.00</b></td><td class="mono">0.76 → <b style="color:var(--crit)">0.00</b></td></tr>
+            <tr><td class="rowh">Falcon-H1</td><td class="reg" colspan="3" style="text-align:center">one layer type → layer-aware ≡ agnostic</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px"><b>layer-aware matches agnostic at light load, then loses as load rises — on every model.</b> The case predicted as the big win (Zamba2, 45/54 layers released) is the <b>worst</b>: goodput 0 from rate 3 (TPOT 131ms vs agnostic's 48). Two causes: the "insensitive" mamba is actually SM-sensitive at real batch (so releasing it starves decode), and per-layer green-ctx switching adds overhead that compounds under load. <b>The layer-aware policy is retired; agnostic (pdmux) is the recommendation.</b></p>
+    </div>
+
     <p class="take" style="border:none;max-width:78ch">
-      <b>What actually holds, once you insist on serving evidence.</b> Splitting prefill from decode (<b>pdmux / agnostic</b>) is the robust win on every hybrid measured — spatial and temporal, 3B to 8B. <b>agnostic_v2</b> (starve decode to a floor) is the <em>worst</em> wherever decode has real work, confirmed in serving on both NemotronH and Granite. And <b>layer-aware has not shown a serving goodput win on any of the four</b> — its case rests on decode-side micro-timing that, as Granite proved, doesn't survive real batch. The clean takeaways are about the kernels (mamba sensitivity = SSD implementation, not size; attn O(L) = no-GQA), but the actionable recommendation is simply: <b>use pdmux; don't over-starve decode; validate any per-layer refinement in serving before believing it.</b>
+      <b>What actually holds, once you insist on serving evidence.</b> Splitting prefill from decode (<b>pdmux / agnostic</b>) is the robust win on every hybrid measured — spatial and temporal, 3B to 8B. <b>agnostic_v2</b> (starve decode to a floor) is the <em>worst</em> wherever decode has real work, confirmed in serving on both NemotronH and Granite. And <b>layer-aware is worse than plain agnostic on all four</b> (ties at light load, loses under it) — its case rested on decode-side micro-timing that, as Granite and Zamba2 proved, doesn't survive real batch. The clean takeaways are about the kernels (mamba sensitivity = SSD implementation, not size; attn O(L) = no-GQA), but the actionable recommendation is simply: <b>use pdmux; don't over-starve decode; validate any per-layer refinement in serving before believing it.</b>
     </p>
   </section>
 </div>

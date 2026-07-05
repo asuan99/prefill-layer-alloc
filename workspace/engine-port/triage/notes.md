@@ -247,3 +247,14 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[근본원인]` **decode-side 민감도 micro-timing(작은 batch)이 서빙 batch 민감도를 과소평가**. sweep은 decode batch~8이라 mamba/MLP GEMM이 latency/bw-bound→둔감으로 보임. **서빙 decode batch(≤48)선 GEMM 커져 compute-bound→16SM 굶기면 TPOT 폭발**. + per-type timing이 attn층의 co-located MLP를 포함(granularity 오차)해 attn "ctx-평탄"도 아티팩트.
 - `[교훈-강화]` **정책 주장은 반드시 서빙 실증**(P1.6c GIL-client 과부하에 이어 2번째 micro-measurement 오도). ⇒ **decode-side "둔감→환원가능" 라벨은 서빙 미검증이면 신뢰불가.** **Zamba2 layer-aware 이득도 서빙 미실증(triton decode-bound 불충분)→동일하게 의심 대상.** 
 - `[정정된 견고 결론]` **서빙 실증된 것만**: pdmux(agnostic v1)=4모델 전부 견고 승(fused 대비); **agnostic_v2=decode에 실작업 있으면 최악**(NemotronH·Granite 확증); **layer-aware=어느 모델도 서빙 이득 미확증**. 원자료 `p1_7_bench_one_{832638,832639,832640}.out`.
+
+### P1.7e ★layer-aware 서빙 실증 (4모델 전부, clean async) — 전면 반증
+사용자 요청: layer-aware를 4모델 서빙 실증. clean async(p1_7_bench_one, sub-saturation), agnostic vs layer_aware 직접 비교.
+- `[measured]` **goodput@SLO** (r3/r4/r6):
+  - NemotronH: agn 2.76/2.25/0.46 vs **la 2.76/1.58/0.00** (재사용 831610/831612) — la 저부하=agn, 고부하 열위.
+  - Granite: agn 3.35/4.33/**5.81** vs **la 3.35/4.32/0.71** (832639/832690; granite에 layer_aware 추가) — la 저·중부하=agn, **rate6 붕괴**(TPOT 72 vs 34).
+  - Zamba2-2.7B(triton): agn 3.24/1.80/0.76 vs **la 0.00/0.00/0.00**(rate3부터 붕괴; 832701/832702) — **la 최악**(TPOT rate3 131 vs agn 48; TTFT 3726). 45/54 mamba를 16SM 굶기니 서빙 batch서 decode 2.7× 폭발.
+  - Falcon-H1: 단일 layer type → **la ≡ agnostic**(per-type 제어 불가; 구조적).
+- `[결론]` ★**layer-aware는 4모델 어디서도 agnostic 대비 서빙 이득 없음. 저부하=동등, 부하 오르면 열위→붕괴. 내가 "대박"으로 예측한 Zamba2(45/54 환원)가 실은 최악.** 
+- `[기전]` (1) tiny-batch "mamba 둔감"은 아티팩트 — 서빙 batch선 mamba가 SM-민감(Granite·Zamba2 공히) → 환원=decode 굶주림. (2) per-layer green-ctx 전환 오버헤드가 부하시 누적. 두 요인이 어떤 reclaim 이득도 압도.
+- `[정정]` §3.8/아티팩트 §04 "Zamba2 la가 agn 대비 TTFT −7~23% 우위"(구 client·과부하)는 **clean async서 반증**(la가 훨 열위). **layer-aware 정책 전면 폐기; 실전 권고=agnostic(pdmux v1).** 원자료 `p1_7_bench_one_{831610,831612,832639,832690,832701,832702}.out`.

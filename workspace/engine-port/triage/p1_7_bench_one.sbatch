@@ -21,6 +21,7 @@ export TRITON_CACHE_DIR="$HERE/.triton_cache"
 POL="${1:-fused}"
 MODEL="${2:-tiiuae/Falcon-H1-3B-Base}"
 BACKEND="${3:-flashinfer}"   # flashinfer | triton
+CTX="${4:-8192}"             # context-length (Zamba2-2.7B max = 4096)
 TAG=$(echo "$MODEL" | sed -E 's#.*/##' | tr 'A-Z' 'a-z' | tr -d '.')
 PORT=$((32600 + SLURM_JOB_ID % 300))
 LAFILE="$HERE/.p17mode_${SLURM_JOB_ID}"
@@ -37,7 +38,7 @@ elif [ "$POL" = "agnostic_v2" ]; then echo agnostic_v2 > "$LAFILE"; export PDMUX
 python -m sglang.launch_server --model-path $MODEL --trust-remote-code --dtype bfloat16 \
   --attention-backend $BACKEND \
   --disable-cuda-graph --disable-piecewise-cuda-graph --disable-radix-cache \
-  --mem-fraction-static 0.82 --max-running-requests 48 --context-length 8192 \
+  --mem-fraction-static 0.82 --max-running-requests 48 --context-length $CTX \
   $EXTRA --host 127.0.0.1 --port $PORT > "$SRVLOG" 2>&1 &
 SRV=$!
 ok=0
