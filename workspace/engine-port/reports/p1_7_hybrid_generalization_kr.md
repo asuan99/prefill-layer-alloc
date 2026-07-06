@@ -74,7 +74,7 @@
 `[measured]` **layer-aware는 4모델 어디서도 agnostic 대비 이득 없음**: 저부하선 동등(rate1-2), 부하 오르면 **일관 열위→붕괴**. **Zamba2가 최악**(rate3부터 goodput 0; TPOT rate3 131ms vs agn 48, TTFT 3726). Granite도 rate6 붕괴(0.71 vs 5.81, TPOT 72 vs 34). NemotronH도 고부하 열위(1.58 vs 2.25). ★내가 "45/54 mamba 환원=대박"으로 예측한 Zamba2가 실은 **최악** — 서빙 batch서 mamba가 SM-민감이라 45층을 16SM 굶기면 decode 폭발.
 `[기전]` 후보 2가지: (A) per-span green-ctx 전환(wait_stream 배리어) 오버헤드, (B) SM-민감 층 환원=굶주림. **§4c 분리 실증서 A≈0, B가 전량으로 판명.** 원자료 `p1_7_bench_one_{831610,831612,832639,832690,832701,832702}.out`, `p1_7_{fh1,granite}_serving_results.txt`.
 
-## 4c. A(스위칭) vs B(굶주림) 분리 — layer-aware는 starvation-bound(사망), 스위칭 무죄 (사용자 제안)
+## 4c. 원인 규명 (사용자 지적으로 4번 교정) — 스위칭도 starvation도 아닌 **prefill 경합**, 근본은 **granularity**
 분리 방법: layer_aware의 `PDMUX_LA_FLOOR_SM`을 sweep. **floor=96(환원 거의 無 → 스위칭 K회는 그대로, B≈0 → 순수 A)** vs floor=48 vs floor=16(A+B full). `A = la@96 − agnostic`, `B = la@16 − la@96`.
 
 `[measured]` **Granite (K≈8 전환) — TPOT(ms) r4/r6 · goodput r6:**
@@ -87,7 +87,13 @@
 
 `[measured]` **Zamba2 (K≈18):** agnostic r3 TPOT 47.83·gp 3.24 → **la@96(A만) 49.89·3.23**(A=+2ms/+4%) → la@16 **131.29·0.00**(B=+81ms 파국).
 
-`[결론]` ★**A(스위칭)≈0** — Granite la@96가 plain agnostic과 **정확히 동일**(33.6 vs 33.5, gp 5.83 vs 5.81); K≈8 배리어 비용 무측정. Zamba2(K≈18)서 A=+4%로 **약하게 ∝K이나 미미**. **B(굶주림)가 반증의 100%** — floor↓에 TPOT 단조↑·goodput 붕괴. ⇒ **앞서 강조한 "per-span 전환 granularity" 차이는 red herring; 스위칭은 싸다.** **거친/event-loop 재구현(=A만 축소)으로 layer-aware를 못 살림.** layer-aware는 **starvation-bound=死**: 서빙 batch서 SM-민감 층 환원=굶주림이고(§2/§4b), 어떤 구현도 이 전제를 못 고침. 원자료 `p1_7_bench_one_{833074(la96),833075(la48),833076(zb la96)}.out`.
+`[measured] A(스위칭)≈0`: Granite la@96 = plain agnostic(33.6 vs 33.5, gp 5.83 vs 5.81). Zamba2(K≈18) +4%. per-span 전환은 쌈.
+
+`[measured] C(prefill 경합)이 진짜 원인` (결정 실험 **la_nopmx** = green-ctx 스위칭은 하되 pdmux/동시-prefill 제거, job 834486 Granite floor16): TPOT r1/r4/r6 = 37/63/**85** ms ≈ plain fused 37/61/**78**(+6~8%뿐). **같은 스위칭인데 pdmux 有선 agnostic 33.5→la 72(+115%)**. 격차 +107%p = **전부 동시 prefill과의 경합**. TTFT·throughput 동반악화가 증거. ⇒ 붕괴 = **환원 SM을 전역 풀서 임시 carving한 green-ctx가 pdmux prefill 파티션과 겹쳐 경합**(partition incoherence 구현결함), starvation 아님.
+
+`[원리] D(granularity)가 근본` (사용자 통찰): 커널은 실행 중 SM 재배정 불가. mamba 층(≈0.8ms)서 92 SM 풀어도 동시 prefill 커널(decode 층 여럿 가로지름, 이미 자기 파티션으로 실행 중)이 그 순간 창을 **못 잡음** → prefill 이득 창이 **원리적으로 없음**. **prefill/decode SM 트레이드는 분할이 prefill 커널 1개 지속시간 안정해야=대략 스텝 단위서만 성립, agnostic이 이미 거기서 최적.** layer-aware는 그 아래(층별)라 위(이득)=0·아래(경합)=비용만. 긴 환원 span도 불가(하이브리드 층 인터리빙+데이터의존 재배열 불가).
+
+`[결론 정정]` ★**layer-aware가 agnostic 못 이기는 진짜 이유 = granularity**(스위칭 A≈0·단독 starvation B 미미·경합 C가 현 붕괴·D가 근본). **coherent 재파티션으로도 못 살림** — 스텝보다 잘게 쪼개면 prefill 이득 창 자체가 안 생김. **agnostic(스텝 단위 pd-split)이 트레이드가 성립하는 유일 granularity서 이미 최적 = 실전 권고.** 원자료 `p1_7_bench_one_{833074,833075,833076,834486}.out`.
 
 ## 5. 방법·재현
 - 계측: `models/{zamba2(기존),granitemoehybrid(신규),falcon_h1(신규)}.py` per-type CUDA-event timing + green-ctx N-pin (env-gated). dev_tree_edits.md §8/9.

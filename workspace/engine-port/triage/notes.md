@@ -265,3 +265,18 @@ Base decision: **sglang v0.5.10** = last release on torch==2.9.1 (matches cluste
 - `[measured]` **Zamba2(K≈18)**: agnostic r3 TPOT 47.83·goodput 3.24 → **la@96(A만) 49.89·3.23**(A=+2ms/+4%, K≈8보다 큼→A 약하게 ∝K이나 미미) → la@16 131.29·0.00(**B가 +81ms 파국**).
 - `[결론]` ★**switching cost A는 무의미(≤4%, 약하게 ∝K), starvation B가 반증의 100%.** 앞서 내가 강조한 per-span 스위칭 granularity 차이는 red herring — **스위칭은 싸다**. ⇒ **거친/event-loop 수준 재구현(=A만 줄임)으로 layer-aware를 살릴 수 없다.** layer-aware는 **근본적으로 starvation-bound=死**: 서빙 batch서 SM-민감한 층을 환원=굶주림이고, P1.7d/e대로 서빙 batch선 사실상 모든 decode 층이 민감. 어떤 구현도 이 전제를 못 고침.
 - caveat: floor=96서 gctx(96) vs pdmux _base 물리 SM 잔차 우려했으나 la@96≈agnostic 정확히 일치→잔차도 ~0(깨끗). 원자료 p1_7_bench_one_{833074,833075,833076}.out.
+
+### P1.7g ★진짜 원인 = prefill 경합(partition incoherence), starvation 아님 (사용자 가설 확증)
+사용자 지적: "prefill에 개입 못 해 생기는 경합 아닌가? 정적 구조니 span 단위 coordinated 스케줄 가능." → **결정 실험 la_nopmx**(green-ctx 스위칭은 하되 pdmux/동시-prefill 제거, job 834486, Granite floor16).
+- `[measured]` **la_nopmx TPOT(ms) = plain fused와 거의 동일**: r1 37.3 vs 36.6, r4 63.0 vs 61.2, r6 84.6 vs 78.4 (+6~8%). ⇒ **4 attn층을 16SM 환원하는 순수 비용은 하찮음(경합 없을 때).**
+- `[대조]` 같은 스위칭인데 **pdmux 有**: agnostic 33.5 → la 72.0 (r6, +115%). **격차 +107%p = 전부 동시 prefill과의 경합.**
+- `[근본원인 확정]` layer-aware 붕괴 = **환원 SM을 전역 풀서 임시로 잘라낸 green-ctx가 pdmux prefill 파티션과 겹쳐 경합**(TTFT·throughput 동반악화가 이 증거). **partition-incoherence 구현 결함**이지 (A)스위칭도 (B)compute-starvation도 아님.
+- `[판정 정정]` **P1.7f "starvation-bound=死"는 틀림.** 정확히=현 per-layer 독립 green-ctx 구현이 경합으로 자멸. ⇒ **coordinated 재파티션**(span 경계서 pdmux 그룹 통째 전환: decode↓/prefill↑, 배타성 유지, 사전생성 그룹이라 쌈)로 경합 제거 가능 → **개념은 salvageable, 미검증**(단 이득은 prefill-bound 체제 한정; sub-saturation/TPOT-bound선 여전히 손해). 원인 3번 오진→실험으로 3번 교정(A→B→C경합). 원자료 p1_7_bench_one_834486.out.
+
+### P1.7h ★최종 종합 — layer-aware가 agnostic 못 이기는 근본 이유 = granularity (사용자 통찰)
+사용자 통찰: 커널은 실행 중 SM 재배정 불가 → mamba 층별로 SM 풀어도 동시 prefill이 실행중 커널로 못 잡음 → 이득 창이 없음.
+- **실행모델**: green-ctx SM분할은 커널 launch시 고정, 실행중 불변. decode 층 ≈0.8ms(Granite 33ms/40), prefill 커널(2000tok GEMM) ~0.5~수ms로 decode 층 여럿 가로지름.
+- **D(원리)**: mamba 층서 decode SM↓해 92 풀어도 그 92는 ~0.8ms 순간창. 동시 prefill 커널은 이미 자기 파티션으로 실행중이라 못 늘어남(원자적) → **풀린 SM을 prefill이 실효적으로 못 씀** → decode만 느려짐. **prefill 이득 창이 원리적으로 없음.**
+- **일반원리**: prefill이 이득 보려면 분할이 최소 prefill 커널 1개 지속시간 동안 안정해야 함 = 대략 **decode 스텝 단위**. **agnostic이 정확히 이 granularity서 (decode N, prefill 108−N)을 스텝 내내 안정 유지 → 트레이드가 작동하는 유일 지점서 이미 최적.** layer-aware는 그 아래(층별)라 위(prefill 이득)=0, 아래(경합+재구성)=비용만 → 무익.
+- **아키텍처 못박기**: 긴 환원 span 불가 — 하이브리드 층이 mamba 사이 섞임 + 데이터의존 재배열 불가 → 환원 span 태생적 짧음(<prefill 커널) → 이득창 없음.
+- ★**최종 정정**: P1.7g "coherent 재파티션으로 salvageable"도 틀림. **layer-aware가 agnostic 못 이기는 진짜 이유 = starvation도 경합도 아닌 granularity**(prefill/decode SM 트레이드는 스텝 단위서만 성립, agnostic이 이미 거기). **원인 4번 진화: A(스위치)→B(starvation)→C(경합)→D(granularity, 근본).** 각 단계 실험/원리로 교정.

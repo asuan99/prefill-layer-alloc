@@ -32,9 +32,10 @@ JSONL="$HERE/p1_7bench_${TAG}_${POL}_${SLURM_JOB_ID}.jsonl"; : > "$JSONL"
 RATES="1 2 3 4 6"; NPROMPT=120; INLEN=2000; OUTLEN=96
 
 EXTRA=""
-[ "$POL" != "fused" ] && EXTRA="--enable-pdmux --pdmux-config-path $HERE/pdmux_a100_smoke.yml --chunked-prefill-size -1 --disable-overlap-schedule"
+[ "$POL" != "fused" ] && [ "$POL" != "la_nopmx" ] && EXTRA="--enable-pdmux --pdmux-config-path $HERE/pdmux_a100_smoke.yml --chunked-prefill-size -1 --disable-overlap-schedule"
 if [ "$POL" = "layer_aware" ]; then echo layer_aware > "$LAFILE"; export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_LA_RESERVE="M-" PDMUX_LA_FLOOR_SM=$FLOOR
-elif [ "$POL" = "agnostic_v2" ]; then echo agnostic_v2 > "$LAFILE"; export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_AGN2_SM=16; fi
+elif [ "$POL" = "agnostic_v2" ]; then echo agnostic_v2 > "$LAFILE"; export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_AGN2_SM=16
+elif [ "$POL" = "la_nopmx" ]; then echo layer_aware > "$LAFILE"; export PDMUX_FIXED_DECODE_SM_FILE="$LAFILE" PDMUX_LA_RESERVE="M-" PDMUX_LA_FLOOR_SM=$FLOOR; fi
 
 python -m sglang.launch_server --model-path $MODEL --trust-remote-code --dtype bfloat16 \
   --attention-backend $BACKEND \

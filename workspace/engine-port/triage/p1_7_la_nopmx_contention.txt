@@ -1,0 +1,11 @@
+# la_nopmx: green-ctx switching WITHOUT pdmux (no concurrent prefill) — isolates prefill contention
+# job 834486 Granite floor16. Compare to plain fused 832638, la@16-pdmux 832690, agnostic 832639.
+===== la_nopmx (834486) =====
+  rate=1.0 good=120/120 goodput=1.19req/s dur=100.9s
+  rate=2.0 good=120/120 goodput=2.30req/s dur=52.1s
+  rate=3.0 good=101/120 goodput=2.81req/s dur=35.9s
+  rate=4.0 good=46/120 goodput=1.66req/s dur=27.8s
+  rate=6.0 good=4/120 goodput=0.16req/s dur=24.4s
+Median TPOT (ms):                        37.33      Median TPOT (ms):                        43.72      Median TPOT (ms):                        50.44      Median TPOT (ms):                        63.01      Median TPOT (ms):                        84.64      
+===== plain fused (832638) =====
+Median TPOT (ms):                        36.55      Median TPOT (ms):                        42.48      Median TPOT (ms):                        50.22      Median TPOT (ms):                        61.21      Median TPOT (ms):                        78.35      
