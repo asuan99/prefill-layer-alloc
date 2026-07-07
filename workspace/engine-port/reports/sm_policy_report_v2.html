@@ -1,0 +1,736 @@
+<title>SM Reservation Policies — Mechanism & Measurements</title>
+<style>
+  :root{
+    --bg:#eef1f4; --panel:#ffffff; --card:#f7f9fb; --hair:#dde4ea; --hair2:#e8edf1;
+    --tx:#131b23; --mut:#5c6b79; --mut2:#8493a0;
+    --amber:#c6790f; --amber-soft:#c6790f22; --teal:#158b7f; --teal-soft:#158b7f22;
+    --fused:#c0503a; --co:#7059c8; --agn:#158b7f; --agn2:#2f6f9e; --la:#c6790f;
+    --good:#1a8f5a; --warn:#c6790f; --crit:#c0503a;
+    --shadow:0 1px 2px #1420280f,0 8px 24px #14202808;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0b0f14; --panel:#111820; --card:#161f29; --hair:#28333f; --hair2:#1e2731;
+      --tx:#e8edf2; --mut:#93a3b2; --mut2:#67788a;
+      --amber:#f0a63a; --amber-soft:#f0a63a1f; --teal:#42c0b1; --teal-soft:#42c0b11f;
+      --fused:#e0705a; --co:#a794ea; --agn:#42c0b1; --agn2:#5aa6e0; --la:#f0a63a;
+      --good:#4bbd82; --warn:#f0a63a; --crit:#e0705a;
+      --shadow:0 1px 2px #0006,0 12px 32px #0007;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f4; --panel:#ffffff; --card:#f7f9fb; --hair:#dde4ea; --hair2:#e8edf1;
+    --tx:#131b23; --mut:#5c6b79; --mut2:#8493a0;
+    --amber:#c6790f; --amber-soft:#c6790f22; --teal:#158b7f; --teal-soft:#158b7f22;
+    --fused:#c0503a; --co:#7059c8; --agn:#158b7f; --agn2:#2f6f9e; --la:#c6790f;
+    --good:#1a8f5a; --warn:#c6790f; --crit:#c0503a; --shadow:0 1px 2px #1420280f,0 8px 24px #14202808;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0f14; --panel:#111820; --card:#161f29; --hair:#28333f; --hair2:#1e2731;
+    --tx:#e8edf2; --mut:#93a3b2; --mut2:#67788a;
+    --amber:#f0a63a; --amber-soft:#f0a63a1f; --teal:#42c0b1; --teal-soft:#42c0b11f;
+    --fused:#e0705a; --co:#a794ea; --agn:#42c0b1; --agn2:#5aa6e0; --la:#f0a63a;
+    --good:#4bbd82; --warn:#f0a63a; --crit:#e0705a; --shadow:0 1px 2px #0006,0 12px 32px #0007;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .mono{font-family:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 22px;}
+  a{color:var(--teal)}
+
+  /* ---- masthead ---- */
+  header.mast{border-bottom:1px solid var(--hair);background:
+    linear-gradient(180deg,var(--panel),transparent);}
+  .mast .wrap{padding-top:52px;padding-bottom:34px;}
+  .eyebrow{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mut2);
+    display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .eyebrow b{color:var(--amber);font-weight:600;letter-spacing:.22em;}
+  h1{font-size:clamp(29px,4.6vw,46px);line-height:1.05;letter-spacing:-.02em;
+    margin:20px 0 14px;text-wrap:balance;font-weight:760;}
+  h1 .g{color:var(--mut)}
+  .lede{font-size:clamp(16px,1.9vw,18.5px);color:var(--mut);max-width:64ch;margin:0;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px;}
+  .chip{font-size:12px;padding:4px 10px;border:1px solid var(--hair);border-radius:100px;
+    color:var(--mut);background:var(--card);}
+  .chip b{color:var(--tx);font-weight:600}
+
+  /* ---- thesis ---- */
+  .thesis{margin:30px 0;padding:22px 24px;border-radius:14px;background:var(--card);
+    border:1px solid var(--hair);border-left:3px solid var(--amber);box-shadow:var(--shadow);}
+  .thesis .k{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .thesis p{margin:8px 0 0;font-size:clamp(17px,2.2vw,21px);line-height:1.4;text-wrap:pretty;letter-spacing:-.01em}
+  .thesis .prop{color:var(--teal);font-weight:600}
+
+  section{padding:40px 0;border-top:1px solid var(--hair2);}
+  .sec-h{display:flex;align-items:baseline;gap:14px;margin:0 0 6px;flex-wrap:wrap}
+  .sec-n{font-size:12px;color:var(--amber);font-weight:700;letter-spacing:.05em}
+  h2{font-size:clamp(21px,2.8vw,27px);margin:0;letter-spacing:-.02em;font-weight:720;text-wrap:balance}
+  .sec-sub{color:var(--mut);margin:6px 0 26px;max-width:70ch;font-size:15.5px}
+
+  /* ---- policy cards ---- */
+  .pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media(max-width:720px){.pgrid{grid-template-columns:1fr}}
+  .pcard{background:var(--card);border:1px solid var(--hair);border-radius:14px;padding:18px 18px 16px;
+    box-shadow:var(--shadow);border-top:3px solid var(--pc);position:relative;overflow:hidden}
+  .pcard[data-p=fused]{--pc:var(--fused)} .pcard[data-p=co]{--pc:var(--co)}
+  .pcard[data-p=agn]{--pc:var(--agn)} .pcard[data-p=agn2]{--pc:var(--agn2)} .pcard[data-p=la]{--pc:var(--la)}
+  .pcard.wide{grid-column:1/-1}
+  .pcard.wide .glyph{height:48px}
+  .pcard h3{margin:0;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
+  .dot{width:9px;height:9px;border-radius:3px;background:var(--pc);flex:none}
+  .psrc{font-size:11px;color:var(--mut2);margin:2px 0 12px 18px}
+  .pcard p{margin:0 0 12px;font-size:14.3px;color:var(--mut)}
+  .pcard p b{color:var(--tx);font-weight:600}
+  .glyph{width:100%;height:60px;display:block;margin-bottom:12px}
+  .pstat{display:flex;gap:16px;border-top:1px solid var(--hair);padding-top:11px;margin-top:auto}
+  .pstat div{display:flex;flex-direction:column}
+  .pstat .v{font-size:19px;font-weight:680;letter-spacing:-.02em}
+  .pstat .l{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut2)}
+  .pcard{display:flex;flex-direction:column}
+
+  /* ---- charts ---- */
+  .cardrow{display:grid;gap:16px}
+  .c2{grid-template-columns:1fr 1fr}
+  @media(max-width:760px){.c2{grid-template-columns:1fr}}
+  .fig{background:var(--card);border:1px solid var(--hair);border-radius:14px;padding:16px 18px 14px;box-shadow:var(--shadow)}
+  .fig h4{margin:0 0 2px;font-size:15px;letter-spacing:-.01em}
+  .fig .cap{font-size:12.5px;color:var(--mut);margin:0 0 12px}
+  .fig svg{width:100%;height:auto;display:block;overflow:visible}
+  .legend{display:flex;gap:15px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--mut)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+  .swatch{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .take{font-size:13px;color:var(--mut);margin:11px 0 0;padding-top:11px;border-top:1px dashed var(--hair)}
+  .take b{color:var(--tx)} .hot{color:var(--amber);font-weight:600} .cool{color:var(--teal);font-weight:600}
+
+  /* ---- callout ---- */
+  .callout{margin-top:18px;background:var(--amber-soft);border:1px solid var(--amber);border-radius:12px;padding:15px 17px}
+  .callout .t{font-weight:680;color:var(--amber);margin-bottom:4px;text-transform:uppercase;font-size:12px;letter-spacing:.12em}
+  .callout p{margin:0;font-size:14.5px;color:var(--tx)}
+
+  /* ---- matrix table ---- */
+  .tw{overflow-x:auto;border:1px solid var(--hair);border-radius:12px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.6px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--hair2)}
+  thead th{background:var(--card);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:600;position:sticky;top:0}
+  tbody tr:last-child td{border-bottom:none}
+  td.reg{color:var(--mut)} td b{color:var(--tx)}
+  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;white-space:nowrap;
+    font-family:ui-monospace,monospace}
+  .tag.win{background:var(--teal-soft);color:var(--teal)}
+  .tag.mid{background:#8493a01e;color:var(--mut)}
+  .tag.lose{background:#c0503a1e;color:var(--crit)}
+  .rowh{font-weight:640;color:var(--tx);white-space:nowrap}
+
+  footer{padding:34px 0 60px;color:var(--mut2);font-size:12.5px;border-top:1px solid var(--hair2)}
+  footer .wrap{display:flex;flex-direction:column;gap:6px}
+  footer b{color:var(--mut)}
+  .kbd{font-family:ui-monospace,monospace;background:var(--card);border:1px solid var(--hair);
+    border-radius:5px;padding:1px 6px;font-size:12px;color:var(--tx)}
+  @media(prefers-reduced-motion:no-preference){
+    .reveal{opacity:0;transform:translateY(8px);animation:r .6s ease forwards}
+    @keyframes r{to{opacity:1;transform:none}}
+  }
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="eyebrow"><b>PD-MULTIPLEXING</b><span>SM reservation · green-context serving</span></div>
+    <h1>Four ways to split a GPU's SMs<br><span class="g">between prefill and decode</span></h1>
+    <p class="lede">A mechanism-level comparison of fused, co-schedule, agnostic, and layer-aware SM reservation for hybrid SSM+Attention models — grounded in per-layer kernel timings and multi-run serving measurements on A100.</p>
+    <div class="meta mono">
+      <span class="chip"><b>NemotronH-8B</b> · GQA · mamba 24 / mlp 24 / attn 4</span>
+      <span class="chip"><b>Zamba2-2.7B</b> · no-GQA · mamba 45 / hybrid 9</span>
+      <span class="chip">A100-80GB · CUDA13</span>
+      <span class="chip">sglang v0.5.10 · sgl_kernel.spatial</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="thesis reveal">
+    <div class="k">The one relation that governs everything</div>
+    <p>Splitting SMs between prefill and decode is easy; knowing how much each layer's decode <em>actually</em> needs is the whole game. The two uniform policies <span class="prop">guess — reserve high (protect every layer) or reserve low (reclaim from every layer)</span> — and each wins only where its guess holds. Layer-aware measures per layer instead of guessing, so it's the only policy safe on both models.</p>
+  </div>
+
+  <!-- ============ 1. THE FOUR POLICIES ============ -->
+  <section>
+    <div class="sec-h"><span class="sec-n mono">01</span><h2>Five policies, as SM allocations</h2></div>
+    <p class="sec-sub">Each glyph shows how the 108 SMs are dealt out during a <b>decode step</b> that runs concurrently with prefill. <span class="hot">Amber = held for decode</span>; <span class="cool">teal = released to prefill</span>; grey = contended / unpartitioned. Read them as a spectrum: from reserving everything (fused) through two <em>uniform</em> reservations — conservative (agnostic, sized to mamba) and aggressive (agnostic_v2, sized to attn) — to the <em>per-layer</em> choice (layer-aware).</p>
+    <div class="pgrid">
+      <div class="pcard reveal" data-p="fused">
+        <h3><span class="dot"></span>fused <span class="mono" style="font-size:12px;color:var(--mut2);font-weight:400">baseline</span></h3>
+        <div class="psrc mono">sglang default · measured</div>
+        <svg class="glyph" viewBox="0 0 300 60" data-glyph="fused" aria-hidden="true"></svg>
+        <p>Prefill and decode share one batch on all 108 SMs, <b>temporally fused</b>. Under load, decode gets welded onto the prefill forward — TTFT and TPOT fight each other.</p>
+        <div class="pstat"><div><span class="v mono">0</span><span class="l">SM to prefill</span></div><div><span class="v mono">108</span><span class="l">decode SMs</span></div></div>
+      </div>
+      <div class="pcard reveal" data-p="co">
+        <h3><span class="dot"></span>co-schedule</h3>
+        <div class="psrc mono">no reservation · not directly measured</div>
+        <svg class="glyph" viewBox="0 0 300 60" data-glyph="co" aria-hidden="true"></svg>
+        <p>Prefill and decode run as <b>separate batches sharing all SMs</b> with no partition — they free-share and <b>contend</b>. Cheaper to schedule than fused fusion, but no isolation guarantee.</p>
+        <div class="pstat"><div><span class="v mono">~</span><span class="l">SM to prefill</span></div><div><span class="v mono">contend</span><span class="l">decode SMs</span></div></div>
+      </div>
+      <div class="pcard reveal" data-p="agn">
+        <h3><span class="dot"></span>agnostic <span class="mono" style="font-size:12px;color:var(--mut2);font-weight:400">MuxWise · Bullet</span></h3>
+        <div class="psrc mono">green-ctx · measured</div>
+        <svg class="glyph" viewBox="0 0 300 60" data-glyph="agn" aria-hidden="true"></svg>
+        <p>Green contexts split SMs into <b>exclusive partitions</b>. <b>Every</b> decode layer gets a fixed N SMs; the complementary 108−N go to prefill — uniformly, regardless of layer type.</p>
+        <div class="pstat"><div><span class="v mono">44–64</span><span class="l">SM to prefill</span></div><div><span class="v mono">64–44</span><span class="l">decode SMs</span></div></div>
+      </div>
+      <div class="pcard reveal" data-p="agn2">
+        <h3><span class="dot"></span>agnostic_v2 <span class="mono" style="font-size:12px;color:var(--mut2);font-weight:400">sized to attn</span></h3>
+        <div class="psrc mono">uniform low floor · this work</div>
+        <svg class="glyph" viewBox="0 0 300 60" data-glyph="agn2" aria-hidden="true"></svg>
+        <p>The aggressive twin of agnostic: reserve for the <b>cheap attention layer</b> — pin <b>every</b> decode layer to a low floor (16). Maximal, uniform prefill reclaim, but <b>no protection</b> for whichever layer is SM-sensitive.</p>
+        <div class="pstat"><div><span class="v mono">92</span><span class="l">SM to prefill (max)</span></div><div><span class="v mono">16</span><span class="l">decode SMs (all)</span></div></div>
+      </div>
+      <div class="pcard reveal wide" data-p="la">
+        <h3><span class="dot"></span>layer-aware <span class="mono" style="font-size:12px;color:var(--mut2);font-weight:400">the synthesis</span></h3>
+        <div class="psrc mono">per-layer green-ctx · this work</div>
+        <svg class="glyph" viewBox="0 0 600 48" preserveAspectRatio="none" data-glyph="la" aria-hidden="true"></svg>
+        <p>Switches the decode stream <b>per layer by type</b>: SM-sensitive layers keep a full partition (reserved, amber); SM-insensitive layers drop to the floor (teal), <b>releasing their SMs to prefill</b>. It reclaims like agnostic_v2 <em>where that's free</em> and protects like agnostic_v1 <em>where it matters</em> — the per-layer choice the two uniform policies can't make.</p>
+        <div class="pstat"><div><span class="v mono">up to 92</span><span class="l">SM on released layers</span></div><div><span class="v mono">16 / full</span><span class="l">decode SMs, by type</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. WHY THEY DIFFER ============ -->
+  <section>
+    <div class="sec-h"><span class="sec-n mono">02</span><h2>Why the policies differ: per-layer-type SM sensitivity</h2></div>
+    <p class="sec-sub">The whole question is whether a layer's decode gets <em>slower</em> when you take its SMs away. If yes (compute-bound), you must reserve them; if no (memory-bound), you can release them for free. We measured this per layer type with green-context SM pinning.</p>
+
+    <div class="cardrow c2">
+      <div class="fig reveal">
+        <h4>NemotronH decode — ms per layer vs decode SMs</h4>
+        <p class="cap mono">batch 32 · ctx≈350 · 210-step mean</p>
+        <svg id="sens_nh" viewBox="0 0 480 300" role="img" aria-label="NemotronH per-layer decode latency versus SM count"></svg>
+        <div class="legend">
+          <span><i style="background:var(--amber)"></i>mamba (SSD)</span>
+          <span><i style="background:var(--co)"></i>mlp</span>
+          <span><i style="background:var(--teal)"></i>attn (GQA)</span>
+        </div>
+        <p class="take"><b class="hot">mamba is compute-bound</b>: 0.589 → 1.547 ms/layer as SMs fall 108→16 (<b>2.6×</b>), and it's 62% of the step. <b class="cool">attn is flat</b> (memory-bound GQA), but only 4/52 layers. Little is releasable.</p>
+      </div>
+      <div class="fig reveal">
+        <h4>Decode step composition — where the 22.5 ms goes</h4>
+        <p class="cap mono">NemotronH · full 108 SM · per decode step</p>
+        <svg id="compo" viewBox="0 0 480 300" role="img" aria-label="Decode step time composition by layer type"></svg>
+        <p class="take">The time-dominant layers (<b class="hot">mamba, 62%</b>) are exactly the SM-sensitive ones — so releasing SM would cost decode. The cheap layer (<b class="cool">attn, 5%</b>) is the only insensitive one. That misalignment is why layer-aware ≈ agnostic here.</p>
+      </div>
+    </div>
+
+    <div class="cardrow c2" style="margin-top:16px">
+      <div class="fig reveal">
+        <h4>Context flips the story — attn is O(L), mamba is O(1)</h4>
+        <p class="cap mono">full-SM ms/layer vs context length</p>
+        <svg id="ctx" viewBox="0 0 480 300" role="img" aria-label="Per-layer latency versus context length"></svg>
+        <div class="legend">
+          <span><i style="background:var(--teal)"></i>attn NemotronH (GQA)</span>
+          <span><i style="background:var(--fused)"></i>attn Zamba2 (no-GQA)</span>
+          <span><i style="background:var(--amber)"></i>mamba (either)</span>
+        </div>
+        <p class="take">Attn decode reads the whole KV each step, so it <b>grows with context</b> — Zamba2's no-GQA attn 7× from ctx348→4092. Mamba's fixed state stays flat. Long context is what makes attn expensive <em>and</em> SM-sensitive.</p>
+      </div>
+      <div class="fig reveal">
+        <h4>The SM-sensitivity flip (attn: full vs 16 SM)</h4>
+        <p class="cap mono">ratio of 16-SM latency to full-SM latency</p>
+        <svg id="flip" viewBox="0 0 480 300" role="img" aria-label="Attention SM sensitivity ratio versus context"></svg>
+        <p class="take">Below 1.0, attn is <b class="cool">faster</b> with fewer SMs (memory-bound — release it). Above 1.0 it's <b class="hot">slower</b> (compute-bound — reserve it). Zamba2's no-GQA attn crosses hard (4.9× at ctx4092); its mamba goes <em>inverse</em> — literally free to release.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. POLICY MADE VISIBLE ============ -->
+  <section>
+    <div class="sec-h"><span class="sec-n mono">03</span><h2>The policy made visible: decode-SM per layer</h2></div>
+    <p class="sec-sub">Same two policies, drawn across every layer of each model. Bar height = SMs held for that layer's decode; the <span class="cool">teal area above</span> = SMs released to prefill. Layer-aware's whole benefit <em>is</em> that teal area — and it's set by how many layers are insensitive.</p>
+    <div class="cardrow c2">
+      <div class="fig reveal">
+        <h4>NemotronH — only 4/52 layers release</h4>
+        <p class="cap mono">layer-aware reserves mamba+mlp, releases attn</p>
+        <svg id="strip_nh" viewBox="0 0 480 210" role="img" aria-label="Per-layer decode SM allocation, NemotronH"></svg>
+        <p class="take">Avg SM released to prefill: agnostic <b class="mono">44</b> · layer-aware <b class="mono">47.7</b> → <b>+3.7 SM</b>. Net benefit ≈ <b>0</b>.</p>
+      </div>
+      <div class="fig reveal">
+        <h4>Zamba2 (long ctx) — 45/54 layers release</h4>
+        <p class="cap mono">layer-aware reserves 9 hybrid attn, releases 45 mamba</p>
+        <svg id="strip_zb" viewBox="0 0 480 210" role="img" aria-label="Per-layer decode SM allocation, Zamba2"></svg>
+        <p class="take">Mamba is insensitive/inverse here, so releasing is free. Decode even <b>drops</b> (33.8→25.6 ms) while up to <b class="mono">92 SM</b> flow to prefill on the majority of layers.</p>
+      </div>
+    </div>
+    <div class="legend" style="justify-content:center;margin-top:16px">
+      <span><i style="background:var(--la);height:9px;width:9px;border-radius:2px"></i>layer-aware — held per layer</span>
+      <span><i style="background:var(--agn);height:3px;width:16px"></i>agnostic v1 — uniform reserve</span>
+      <span><i style="background:var(--agn2);height:3px;width:16px"></i>agnostic_v2 — uniform floor 16</span>
+      <span><i style="background:var(--teal-soft);border:1px solid var(--teal);height:9px;width:9px;border-radius:2px"></i>SMs freed beyond agnostic v1</span>
+    </div>
+  </section>
+
+  <!-- ============ 4. SERVING REALITY ============ -->
+  <section>
+    <div class="sec-h"><span class="sec-n mono">04</span><h2>Serving reality — does the micro-benefit survive?</h2></div>
+    <p class="sec-sub">End-to-end goodput@SLO, measured with the async <span class="mono">sglang.bench_serving</span> client swept <em>below</em> the ~4.3 req/s saturation point (where the numbers are stable). NemotronH is the clean case; Zamba2's triton backend is decode-bound.</p>
+
+    <div class="cardrow c2">
+      <div class="fig reveal">
+        <h4>NemotronH — goodput@SLO (async, sub-saturation)</h4>
+        <p class="cap mono">in2000/out96 · SLO TTFT≤3s, TPOT≤60ms</p>
+        <svg id="good_nh" viewBox="0 0 480 320" role="img" aria-label="NemotronH goodput by policy and rate"></svg>
+        <div class="legend">
+          <span><i style="background:var(--fused)"></i>fused</span>
+          <span><i style="background:var(--agn)"></i>agnostic</span>
+          <span><i style="background:var(--la)"></i>layer-aware</span>
+        </div>
+        <p class="take"><b class="hot">agnostic ≈ layer-aware</b>, both peaking ~2.76 at rate 3 and beating fused as load rises (fused's decode couples to prefill). With only 4 releasable layers on NemotronH, layer-aware adds nothing over uniform reserve — exactly as the decode-side analysis predicts.</p>
+      </div>
+      <div class="fig reveal">
+        <h4>Zamba2 — median TTFT, prefill-bound</h4>
+        <p class="cap mono">in3600/out32 · triton · lower is better</p>
+        <svg id="ttft_zb" viewBox="0 0 480 320" role="img" aria-label="Zamba2 median TTFT by policy and rate"></svg>
+        <div class="legend">
+          <span><i style="background:var(--fused)"></i>fused</span>
+          <span><i style="background:var(--agn)"></i>agnostic</span>
+          <span><i style="background:var(--la)"></i>layer-aware</span>
+        </div>
+        <p class="take"><s style="color:var(--mut2)">layer-aware beats agnostic on TTFT here</s> — <b class="hot">refuted.</b> These are old-client, past-saturation numbers. A clean async re-measure (§07) shows Zamba2 layer-aware is in fact the <b>worst</b> policy — goodput 0 from rate 3 (TPOT 131ms). Releasing 45 mamba layers starves an SM-sensitive decode at real batch. Disregard this panel; see §07.</p>
+      </div>
+    </div>
+
+    <div class="callout reveal">
+      <div class="t">The honest caveat</div>
+      <p>Zamba2's TTFT win does <b>not</b> become a goodput win here: triton without CUDA graphs floors decode TPOT at 170–205 ms ≫ any SLO, so the server is <b>decode-bound</b> and this small model's fused all-SM prefill is already fast. Converting the TTFT edge into goodput needs <b>both</b> a prefill-bound regime <b>and</b> a fast (CUDA-graph) decode. The micro-mechanism is confirmed; the end-metric is gated by the harness.</p>
+    </div>
+  </section>
+
+  <!-- ============ 5. THE AGNOSTIC_V2 QUESTION ============ -->
+  <section>
+    <div class="sec-h"><span class="sec-n mono">05</span><h2>The agnostic_v2 question — size the floor to attention</h2></div>
+    <p class="sec-sub">What if agnostic reserved for the cheap <em>attention</em> layer instead of the SM-hungry mamba — a uniform floor of 16 on every layer? Maximal prefill reclaim, zero protection. Built as a fifth policy and measured with the async <span class="mono">sglang.bench_serving</span> client below the ~4.3 req/s saturation point. The answer is unambiguous: <b>it's the worst policy.</b></p>
+    <div class="cardrow c2">
+      <div class="fig reveal">
+        <h4>NemotronH goodput@SLO — agnostic_v2 collapses</h4>
+        <p class="cap mono">async client · sub-saturation · TTFT≤3s, TPOT≤60ms</p>
+        <svg id="good_nh4" viewBox="0 0 480 320" role="img" aria-label="NemotronH 4-policy goodput"></svg>
+        <div class="legend">
+          <span><i style="background:var(--fused)"></i>fused</span>
+          <span><i style="background:var(--agn)"></i>agnostic v1</span>
+          <span><i style="background:var(--agn2)"></i>agnostic_v2</span>
+          <span><i style="background:var(--la)"></i>layer-aware</span>
+        </div>
+        <p class="take"><b class="hot">agnostic_v2 → 0 goodput by rate 3.</b> The others sustain ~2.2–2.8. agnostic v1 and layer-aware track each other (nothing safe to reclaim on NemotronH); agnostic wins the saturating rate. fused fades as its decode couples to prefill.</p>
+      </div>
+      <div class="fig reveal">
+        <h4>…because its TPOT explodes past the SLO</h4>
+        <p class="cap mono">median TPOT · the discriminator · red line = 60ms SLO</p>
+        <svg id="tpot_nh4" viewBox="0 0 480 320" role="img" aria-label="NemotronH 4-policy median TPOT"></svg>
+        <div class="legend">
+          <span><i style="background:var(--fused)"></i>fused</span>
+          <span><i style="background:var(--agn)"></i>agnostic v1</span>
+          <span><i style="background:var(--agn2)"></i>agnostic_v2</span>
+          <span><i style="background:var(--la)"></i>layer-aware</span>
+        </div>
+        <p class="take">Starving mamba to 16 SMs makes decode <b class="hot">72 → 119 → 191 ms</b> — over the 60ms SLO from rate 2. agnostic v1 stays flat at ~24ms (enough decode SMs). This is exactly the decode-side microbenchmark (§02) showing up in serving.</p>
+      </div>
+    </div>
+    <div class="callout reveal" style="border-color:var(--agn2);background:color-mix(in srgb,var(--agn2) 11%,transparent)">
+      <div class="t" style="color:var(--agn2)">The rule agnostic_v2 exposes</div>
+      <p>"Size to attention" bets the SM-sensitive layer survives 16 SMs. On both models it doesn't — NemotronH's mamba and Zamba2's long-context no-GQA attn are both SM-sensitive and time-dominant, so starving them blows up decode. And the freed SMs don't even help prefill: the slow decode backs up and blocks the pipeline, so <b>agnostic_v2 is worst on TPOT and TTFT.</b> The lesson isn't "reclaim more" — it's <b>protect the layer that needs it.</b> layer-aware makes that call per layer; agnostic_v2 makes the opposite bet blindly.</p>
+    </div>
+    <p class="take" style="max-width:76ch;border:none">
+      <b>Methodology correction.</b> An earlier draft ranked agnostic_v2 <em>best</em> at high load. That was an artifact of a hand-rolled 60-thread <span class="mono">urllib</span> client (GIL-bottlenecked) measured <em>past</em> saturation (rate 6–10), where goodput is a coin-flip at the SLO cliff. Re-measuring with the official async client below saturation reversed it. The numbers above are the trustworthy ones.
+    </p>
+  </section>
+
+  <!-- ============ 6. WHEN EACH WINS ============ -->
+  <section>
+    <div class="sec-h"><span class="sec-n mono">06</span><h2>When each policy wins</h2></div>
+    <p class="sec-sub">The decision reduces to two axes: is serving prefill-bound (does isolating prefill help?), and are the time-dominant decode layers SM-insensitive (is there anything to release?).</p>
+    <div class="tw reveal">
+      <table>
+        <thead><tr>
+          <th>Policy</th><th>Reclaimed SM</th><th>Low load</th><th>High load (prefill-bound)</th><th>Wins when…</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="rowh"><span class="tag" style="background:color-mix(in srgb,var(--fused) 15%,transparent);color:var(--fused)">fused</span></td>
+            <td class="mono reg">0</td>
+            <td><span class="tag win">strong</span></td>
+            <td><span class="tag lose">TTFT collapses</span></td>
+            <td class="reg">Small model / decode-bound; fast single-batch on all SMs.</td>
+          </tr>
+          <tr>
+            <td class="rowh"><span class="tag" style="background:color-mix(in srgb,var(--co) 15%,transparent);color:var(--co)">co-schedule</span></td>
+            <td class="mono reg">residual</td>
+            <td><span class="tag mid">~</span></td>
+            <td><span class="tag mid">contended</span></td>
+            <td class="reg">No isolation guarantee; not directly measured here.</td>
+          </tr>
+          <tr>
+            <td class="rowh"><span class="tag" style="background:color-mix(in srgb,var(--agn) 15%,transparent);color:var(--agn)">agnostic v1</span></td>
+            <td class="mono reg">44–64 (all layers)</td>
+            <td><span class="tag win">strong</span></td>
+            <td><span class="tag win">≈3× fused</span></td>
+            <td class="reg"><b>The robust default.</b> Prefill-bound serving where most decode layers are SM-sensitive (e.g. NemotronH).</td>
+          </tr>
+          <tr>
+            <td class="rowh"><span class="tag" style="background:color-mix(in srgb,var(--agn2) 15%,transparent);color:var(--agn2)">agnostic_v2</span></td>
+            <td class="mono reg">92 (all layers, max)</td>
+            <td><span class="tag mid">ok</span></td>
+            <td><span class="tag lose">TPOT blows up</span></td>
+            <td class="reg">Only if <b>every</b> decode layer tolerates 16 SMs. On both models tested the time-dominant layer is SM-sensitive, so its decode balloons past the TPOT SLO (191ms) and even hurts TTFT — the <b>worst</b> policy. Rarely the right bet.</td>
+          </tr>
+          <tr>
+            <td class="rowh"><span class="tag" style="background:color-mix(in srgb,var(--la) 15%,transparent);color:var(--la)">layer-aware</span></td>
+            <td class="mono reg">up to 92 (insensitive only)</td>
+            <td><span class="tag mid">≈ agnostic</span></td>
+            <td><span class="tag win">≥ agnostic*</span></td>
+            <td class="reg">Many time-dominant layers are SM-insensitive — <b>no-GQA + long context + memory-bound mamba</b> (Zamba2). *TTFT edge measured; goodput needs fast decode.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="take" style="border:none;max-width:76ch">
+      <b>Bottom line.</b> fused → pdmux is the large, robust win at load. Among the reservation policies, the two <em>uniform</em> ones are opposite bets: agnostic v1 bets no layer can be starved (reserve high) — right on both models tested; agnostic_v2 bets none needs protecting (reserve low) — wrong on both, so it's the worst. layer-aware doesn't bet: it reads each layer's sensitivity, matching agnostic v1 where nothing is releasable (NemotronH) and beating it where much is (Zamba2's TTFT). The real-engine port's value was measuring where those bets pay off — and catching that the first measurement, taken past saturation with a GIL-bound client, had them backwards.
+    </p>
+  </section>
+
+  <!-- ============ 7. GENERALIZATION ACROSS HYBRIDS (P1.7) ============ -->
+  <section>
+    <div class="sec-h"><span class="sec-n mono">07</span><h2>Four hybrids — and a micro-benchmark that lied</h2></div>
+    <p class="sec-sub">The per-layer-type SM-sensitivity sweep, run on Zamba2 1.2B/7B, Granite-4.0-h-micro (temporal, GQA), and Falcon-H1 (spatial). The micro-timing tells a clean story about the <em>kernels</em> — but it's measured at tiny decode batch, and when I trusted it to predict serving policy for Granite, <b>serving refuted it</b>. Two honest layers below: what the micro-timing shows, then what serving actually does.</p>
+    <div class="cardrow c2">
+      <div class="fig reveal">
+        <h4>Mamba sensitivity is SSD-config, not size</h4>
+        <p class="cap mono">per-mamba decode ms · full vs 16 SM · short ctx</p>
+        <svg id="mamba_models" viewBox="0 0 480 300" role="img" aria-label="Mamba decode latency full vs 16 SM across models"></svg>
+        <div class="legend">
+          <span><i style="background:var(--teal)"></i>full 108 SM</span>
+          <span><i style="background:var(--amber)"></i>starved 16 SM</span>
+        </div>
+        <p class="take">Only <b class="hot">NemotronH's mamba rises</b> when starved (0.59→1.55, compute-bound). Zamba2 (all sizes, incl. 7B ≈ NemotronH's size) and Granite stay flat — memory-bound. The earlier "size-dependent" reading was a confound: <b>NemotronH is the outlier</b>, not "big models."</p>
+      </div>
+      <div class="fig reveal">
+        <h4>Attn is O(L) only without GQA</h4>
+        <p class="cap mono">per-attn decode ms vs context · full SM</p>
+        <svg id="attn_models" viewBox="0 0 480 300" role="img" aria-label="Attention decode latency versus context by model"></svg>
+        <div class="legend">
+          <span><i style="background:var(--fused)"></i>Zamba2-7B (no-GQA)</span>
+          <span><i style="background:var(--teal)"></i>NemotronH (GQA)</span>
+          <span><i style="background:var(--co)"></i>Granite (GQA)</span>
+        </div>
+        <p class="take"><b class="hot">Zamba2's no-GQA attn</b> grows steeply with context. GQA attn (NemotronH, Granite) stays cheaper. <span style="color:var(--mut2)">Caveat: my per-layer timing lumps each attn layer's co-located MLP in, so Granite's "flat" partly hides the attention's O(L) growth — a granularity artifact.</span></p>
+      </div>
+    </div>
+
+    <div class="callout reveal" style="border-color:var(--crit);background:color-mix(in srgb,var(--crit) 10%,transparent)">
+      <div class="t" style="color:var(--crit)">Serving refuted the micro-timing (Granite)</div>
+      <p>The tiny-batch sweep said Granite is "fully SM-insensitive → release all decode SM (agnostic_v2)." <b>Serving says the opposite.</b> At real decode batch the mamba/MLP GEMMs turn compute-bound, so starving them to 16 SM blows up TPOT:</p>
+      <div class="tw" style="margin-top:10px;border-color:var(--crit)">
+        <table>
+          <thead><tr><th>Granite · rate</th><th>fused</th><th>agnostic</th><th>agnostic_v2</th></tr></thead>
+          <tbody>
+            <tr><td class="rowh">TPOT ms · 4</td><td class="mono reg">61</td><td class="mono" style="color:var(--good)"><b>37</b></td><td class="mono" style="color:var(--crit)"><b>106</b></td></tr>
+            <tr><td class="rowh">TPOT ms · 6</td><td class="mono reg">78</td><td class="mono" style="color:var(--good)"><b>34</b></td><td class="mono" style="color:var(--crit)"><b>107</b></td></tr>
+            <tr><td class="rowh">goodput · 6</td><td class="mono reg">0.26</td><td class="mono" style="color:var(--good)"><b>5.81</b></td><td class="mono" style="color:var(--crit)"><b>0.00</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px"><b>Granite behaves like NemotronH: agnostic best, agnostic_v2 worst.</b> Lesson (the second time a micro-measurement misled — after the GIL-bound client at §04): SM-sensitivity is batch-dependent, and <b>policy claims must be serving-validated</b>. The "insensitive → releasable" labels below are only trustworthy where serving confirms them.</p>
+    </div>
+    <div class="tw reveal" style="margin-top:16px">
+      <table>
+        <thead><tr><th>Model</th><th>Architecture</th><th>Mamba (micro)</th><th>Attn (micro)</th><th>Serving-validated best policy</th></tr></thead>
+        <tbody>
+          <tr><td class="rowh">NemotronH-8B</td><td class="reg">temporal · GQA</td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">sensitive 2.6×</span></td><td class="reg">insensitive</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· la≈agn · agn_v2 worst ✓serving</span></td></tr>
+          <tr><td class="rowh">Granite-4-h-micro</td><td class="reg">temporal · GQA</td><td class="reg">micro-flat, <b>but sensitive at serving batch</b></td><td class="reg">micro-flat*</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· agn_v2 worst ✓serving (refuted the micro reading)</span></td></tr>
+          <tr><td class="rowh">Zamba2 1.2/2.7/7B</td><td class="reg">temporal · <b>no-GQA</b></td><td class="reg">micro-flat</td><td><span class="tag" style="background:var(--amber-soft);color:var(--amber)">O(L) sensitive</span></td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· layer-aware <b style="color:var(--crit)">REFUTED</b> (worst: goodput 0 @rate3)</span></td></tr>
+          <tr><td class="rowh">Falcon-H1-3B</td><td class="reg"><b>spatial</b> · GQA</td><td class="reg" colspan="2" style="text-align:center">mamba ∥ attn fused per layer (one type)</td><td><b style="color:var(--good)">agnostic</b> <span class="reg">· la N/A · ≫ fused ✓serving</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout reveal" style="border-color:var(--crit);background:color-mix(in srgb,var(--crit) 10%,transparent)">
+      <div class="t" style="color:var(--crit)">Layer-aware, serving-validated on all four — it never wins</div>
+      <p>The whole reason this project exists was "reserve SM for sensitive layers, release it on insensitive ones." Measured directly (clean async, agnostic vs layer-aware, goodput@SLO):</p>
+      <div class="tw" style="margin-top:10px;border-color:var(--crit)">
+        <table>
+          <thead><tr><th>goodput@SLO</th><th>rate 3</th><th>rate 4</th><th>rate 6</th></tr></thead>
+          <tbody>
+            <tr><td class="rowh">NemotronH agn → la</td><td class="mono reg">2.76 → 2.76</td><td class="mono">2.25 → <b style="color:var(--crit)">1.58</b></td><td class="mono">0.46 → <b style="color:var(--crit)">0.00</b></td></tr>
+            <tr><td class="rowh">Granite agn → la</td><td class="mono reg">3.35 → 3.35</td><td class="mono reg">4.33 → 4.32</td><td class="mono">5.81 → <b style="color:var(--crit)">0.71</b></td></tr>
+            <tr><td class="rowh">Zamba2 agn → la</td><td class="mono">3.24 → <b style="color:var(--crit)">0.00</b></td><td class="mono">1.80 → <b style="color:var(--crit)">0.00</b></td><td class="mono">0.76 → <b style="color:var(--crit)">0.00</b></td></tr>
+            <tr><td class="rowh">Falcon-H1</td><td class="reg" colspan="3" style="text-align:center">one layer type → layer-aware ≡ agnostic</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px"><b>layer-aware matches agnostic at light load, then loses as load rises — on every model.</b> The case predicted as the big win (Zamba2, 45/54 layers released) is the <b>worst</b>: goodput 0 from rate 3 (TPOT 131ms vs agnostic's 48).</p>
+      <p style="margin-top:8px"><b>Chasing the cause took four passes</b> (each time an experiment overturned the last guess): (A) per-span switching overhead — <b>~0</b> (release-floor at 96 keeps the switches but no starvation → identical to agnostic). (B) compute-starvation of released layers — <b>small</b> (~8% in isolation). (C) <b>prefill contention</b> — the real collapse: run the same green-ctx switching <em>without</em> pdmux (no concurrent prefill) and it vanishes (TPOT ≈ plain fused); the +115% only appears <em>with</em> prefill, because the released decode context is carved from the global pool and overlaps prefill's partition. (D) <b>granularity — the fundamental one</b>: a per-layer window (~0.8ms) is shorter than a concurrent prefill kernel, and kernels can't rebalance SM mid-flight, so the freed SM can't actually be captured by prefill. The prefill↔decode SM trade only pays off when the split is held stable for a whole step — which is <b>exactly what agnostic already does.</b> So layer-aware can't beat agnostic at <em>any</em> implementation: below the step granularity there is no benefit window to capture, only contention to pay. <b>Retired; agnostic (pdmux) operates at the one granularity where the trade works.</b></p>
+    </div>
+
+    <p class="take" style="border:none;max-width:78ch">
+      <b>What actually holds, once you insist on serving evidence.</b> Splitting prefill from decode (<b>pdmux / agnostic</b>) is the robust win on every hybrid measured — spatial and temporal, 3B to 8B. <b>agnostic_v2</b> (starve decode to a floor) is the <em>worst</em> wherever decode has real work, confirmed in serving on both NemotronH and Granite. And <b>layer-aware is worse than plain agnostic on all four</b> (ties at light load, loses under it) — its case rested on decode-side micro-timing that, as Granite and Zamba2 proved, doesn't survive real batch. The clean takeaways are about the kernels (mamba sensitivity = SSD implementation, not size; attn O(L) = no-GQA), but the actionable recommendation is simply: <b>use pdmux; don't over-starve decode; validate any per-layer refinement in serving before believing it.</b>
+    </p>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap mono">
+    <div><b>Measurement.</b> green-context decode-SM pinning via sgl_kernel.spatial; per-layer-type CUDA-event timing. Serving via the async <b>sglang.bench_serving</b> (random-ids, sub-saturation sweep) — replacing an earlier GIL-bound 60-thread urllib client that measured past saturation.</div>
+    <div><b>Sources.</b> sensitivity 827583 · Zamba2 ctx-sweep 831012 · NemotronH clean async serving 831609/831610/831611/831612 · Zamba2 serving 831166/831146/831541.</div>
+    <div><b>Caveats.</b> py3.14 → no CUDA graph on pdmux+mamba (triton for Zamba2 head_dim 160). NemotronH serving re-measured cleanly; Zamba2 serving still from the old client (directional, async re-measure pending). co-schedule not directly measured.</div>
+    <div style="margin-top:8px;color:var(--mut)">Toggle theme with the viewer control · all charts render from measured values.</div>
+  </div>
+</footer>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const V=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function E(t,a,k){const e=document.createElementNS(NS,t);for(const n in a)e.setAttribute(n,a[n]);(k||[]).forEach(c=>e.appendChild(c));return e;}
+function T(x,y,s,a){const e=E("text",Object.assign({x:x,y:y},a||{}));e.textContent=s;return e;}
+const MONO='ui-monospace,"SF Mono",Menlo,monospace';
+
+/* ---------- policy glyphs (108-SM strips) ---------- */
+function glyph(svg){
+  const vb=(svg.getAttribute("viewBox")||"0 0 300 60").split(/\s+/).map(Number);
+  const type=svg.dataset.glyph, W=vb[2],H=vb[3], rows=3, gap=1.4;
+  const cols=Math.max(24,Math.round(W/8.3));
+  const cw=(W-(cols-1)*gap)/cols, ch=(H-(rows-1)*gap)/rows;
+  function grid(colorFn){
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+      const i=r*cols+c; svg.appendChild(E("rect",{x:c*(cw+gap),y:r*(ch+gap),width:cw,height:ch,rx:1.3,fill:colorFn(i,c,r)}));
+    }
+  }
+  const amber="var(--amber)",teal="var(--teal)",grey="var(--mut2)";
+  if(type==="fused") grid(()=>grey);
+  else if(type==="co") grid((i,c)=> (c%2? "var(--co)":grey));
+  else if(type==="agn") grid((i,c)=> c< cols*0.5 ? amber : teal);
+  else if(type==="agn2") grid((i,c)=> c< cols*0.15 ? amber : teal);  // uniform low floor -> mostly released
+  else if(type==="la"){
+    // by-layer: some rows reserved (mostly amber), most released to a thin floor (teal)
+    grid((i,c,r)=> r===1 ? (c<cols*0.5?amber:teal)   // a reserved (sensitive) layer
+                 : (c< cols*0.15 ? amber : teal));    // released (insensitive) layers -> floor 16
+  }
+}
+document.querySelectorAll("svg[data-glyph]").forEach(glyph);
+
+/* ---------- generic line chart ---------- */
+function lineChart(id,o){
+  const svg=document.getElementById(id); const W=480,H=300;
+  const m={l:52,r:14,t:14,b:44};
+  const iw=W-m.l-m.r, ih=H-m.t-m.b;
+  const xs=o.xs, xmin=o.xmin??Math.min(...xs), xmax=o.xmax??Math.max(...xs);
+  const ymin=o.ymin??0, ymax=o.ymax;
+  const X=v=>m.l+(v-xmin)/(xmax-xmin)*iw;
+  const Y=v=>m.t+ih-(v-ymin)/(ymax-ymin)*ih;
+  // grid + y ticks
+  o.yticks.forEach(v=>{
+    svg.appendChild(E("line",{x1:m.l,x2:m.l+iw,y1:Y(v),y2:Y(v),stroke:V("--hair"),"stroke-width":1}));
+    svg.appendChild(T(m.l-9,Y(v)+3.5,o.yfmt?o.yfmt(v):v,{"text-anchor":"end","font-size":11,fill:V("--mut2"),"font-family":MONO}));
+  });
+  // baseline @1.0 for flip chart
+  if(o.hline!=null){svg.appendChild(E("line",{x1:m.l,x2:m.l+iw,y1:Y(o.hline),y2:Y(o.hline),stroke:V("--mut"),"stroke-width":1.3,"stroke-dasharray":"4 4"}));}
+  // x ticks
+  (o.xticks||xs).forEach(v=>{
+    svg.appendChild(T(X(v),H-m.b+18,o.xfmt?o.xfmt(v):v,{"text-anchor":"middle","font-size":11,fill:V("--mut2"),"font-family":MONO}));
+  });
+  svg.appendChild(T(m.l+iw/2,H-6,o.xlabel,{"text-anchor":"middle","font-size":11.5,fill:V("--mut"),"letter-spacing":".04em"}));
+  svg.appendChild(T(-(m.t+ih/2),13,o.ylabel,{"text-anchor":"middle","font-size":11.5,fill:V("--mut"),transform:"rotate(-90)","letter-spacing":".04em"}));
+  // series
+  o.series.forEach(s=>{
+    const pts=s.xs? s.xs.map((x,i)=>[X(x),Y(s.ys[i])]) : xs.map((x,i)=>[X(x),Y(s.ys[i])]);
+    const d=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+    svg.appendChild(E("path",{d:d,fill:"none",stroke:V(s.color),"stroke-width":s.w||2.4,"stroke-linejoin":"round","stroke-linecap":"round","stroke-dasharray":s.dash||"none",opacity:s.op||1}));
+    pts.forEach((p,i)=>svg.appendChild(E("circle",{cx:p[0],cy:p[1],r:s.dot||3,fill:V(s.color),opacity:s.op||1})));
+    if(s.label){const lp=pts[s.labAt??pts.length-1];svg.appendChild(T(lp[0]+ (s.labDx||7), lp[1]+(s.labDy||-6), s.label,{"font-size":11,fill:V(s.color),"font-family":MONO,"font-weight":600}));}
+  });
+}
+
+lineChart("sens_nh",{
+  xs:[16,32,44,64,108], xmin:10,xmax:118, ymax:1.7, yticks:[0,0.5,1.0,1.5],
+  yfmt:v=>v.toFixed(1), xticks:[16,32,44,64,108],
+  xlabel:"decode SMs", ylabel:"ms / layer",
+  series:[
+    {color:"--amber",ys:[1.547,0.839,0.684,0.618,0.589],label:"mamba 2.6×",labAt:0,labDx:6,labDy:-8},
+    {color:"--co",ys:[0.629,0.381,0.298,0.301,0.301],label:"mlp",labAt:0,labDx:6,labDy:10},
+    {color:"--teal",ys:[0.271,0.155,0.148,0.215,0.291],label:"attn flat",labAt:4,labDx:-2,labDy:-9}
+  ]
+});
+
+/* composition stacked bar */
+(function(){
+  const svg=document.getElementById("compo"),W=480,H=300;
+  const segs=[["mamba",62,14.13,"--amber"],["mlp",32,7.22,"--co"],["attn",5,1.17,"--teal"]];
+  const bx=70,bw=120,top=26,bh=232;let y=top;
+  svg.appendChild(T(bx+bw/2,16,"22.5 ms / step",{"text-anchor":"middle","font-size":12,fill:V("--tx"),"font-family":MONO,"font-weight":600}));
+  segs.forEach(([n,pct,ms,col])=>{
+    const h=bh*pct/100;
+    svg.appendChild(E("rect",{x:bx,y:y,width:bw,height:h-2,rx:3,fill:V(col)}));
+    svg.appendChild(T(bx+bw+16,y+h/2-4,n,{"font-size":13,fill:V("--tx"),"font-weight":600}));
+    svg.appendChild(T(bx+bw+16,y+h/2+13,pct+"%  ·  "+ms.toFixed(2)+" ms",{"font-size":11.5,fill:V("--mut"),"font-family":MONO}));
+    // sensitivity tag
+    const sens = n==="attn"?["insensitive","--teal"]:["SM-sensitive","--amber"];
+    svg.appendChild(T(bx+bw+16,y+h/2+29,sens[0],{"font-size":10.5,fill:V(sens[1]),"font-family":MONO,"letter-spacing":".06em"}));
+    y+=h;
+  });
+})();
+
+lineChart("ctx",{
+  xs:[350,2140,5100], xmin:0,xmax:5500, ymax:1.15, yticks:[0,0.3,0.6,0.9],
+  yfmt:v=>v.toFixed(1), xticks:[350,2140,5100],
+  xlabel:"context length (tokens)", ylabel:"ms / layer",
+  series:[
+    {color:"--fused",xs:[348,2140,4092],ys:[0.159,0.574,1.044],label:"no-GQA 7×",labDx:-6,labDy:-9},
+    {color:"--teal",ys:[0.303,0.337,0.449],label:"GQA",labDx:6,labDy:12},
+    {color:"--amber",ys:[0.553,0.553,0.553],dash:"5 4",label:"mamba O(1)",labAt:1,labDx:-30,labDy:-9}
+  ]
+});
+
+lineChart("flip",{
+  xs:[350,2140,5100], xmin:0,xmax:5500, ymin:0, ymax:5.4, yticks:[0,1,2,3,4,5], hline:1,
+  yfmt:v=>v.toFixed(0)+"×", xticks:[350,2140,5100],
+  xlabel:"context length (tokens)", ylabel:"16-SM ÷ full-SM",
+  series:[
+    {color:"--fused",xs:[348,2140,4092],ys:[2.51,4.34,4.91],label:"Zamba2 attn",labDx:-8,labDy:-9},
+    {color:"--teal",ys:[0.78,1.17,1.43],label:"NemotronH attn",labAt:2,labDx:-4,labDy:16},
+    {color:"--amber",xs:[348,2140,4092],ys:[0.90,0.59,0.66],dash:"5 4",label:"Zamba2 mamba (inverse)",labAt:1,labDx:-6,labDy:20,op:.9}
+  ]
+});
+
+/* ---------- per-layer allocation strips ---------- */
+function strip(id,cfg){
+  const svg=document.getElementById(id),W=480,H=210;
+  const m={l:44,r:12,t:14,b:26}, iw=W-m.l-m.r, ih=H-m.t-m.b;
+  const N=cfg.n, full=108;
+  const bw=iw/N, gap=Math.min(1.2,bw*0.14);
+  const Y=v=>m.t+ih-(v/full)*ih;
+  [0,16,44,64,108].forEach(v=>{
+    svg.appendChild(E("line",{x1:m.l,x2:m.l+iw,y1:Y(v),y2:Y(v),stroke:V("--hair"),"stroke-width":v===16?1.4:1,"stroke-dasharray":v===16?"3 3":"none"}));
+    svg.appendChild(T(m.l-7,Y(v)+3.5,v,{"text-anchor":"end","font-size":10,fill:V("--mut2"),"font-family":MONO}));
+  });
+  // per layer: amber bar = SMs layer-aware holds; teal band = EXTRA SMs released vs agnostic (agn - la)
+  for(let i=0;i<N;i++){
+    const x=m.l+i*bw, sens=cfg.sensitive(i), la=sens?cfg.reserve:16;
+    if(cfg.agn>la){ // this layer frees more than uniform agnostic would
+      svg.appendChild(E("rect",{x:x,y:Y(cfg.agn),width:bw-gap,height:Y(la)-Y(cfg.agn),fill:V("--teal"),opacity:0.22}));
+    }
+    svg.appendChild(E("rect",{x:x,y:Y(la),width:bw-gap,height:m.t+ih-Y(la),fill:V("--la"),opacity:sens?0.95:0.55}));
+  }
+  // agnostic reference line (uniform reserve, v1)
+  svg.appendChild(E("line",{x1:m.l,x2:m.l+iw,y1:Y(cfg.agn),y2:Y(cfg.agn),stroke:V("--agn"),"stroke-width":2,"stroke-dasharray":"6 3"}));
+  svg.appendChild(T(m.l+iw-2,Y(cfg.agn)-6,"agnostic "+cfg.agn,{"text-anchor":"end","font-size":10.5,fill:V("--agn"),"font-family":MONO,"font-weight":600}));
+  // agnostic_v2 reference line (uniform low floor = 16, sized to attn)
+  svg.appendChild(E("line",{x1:m.l,x2:m.l+iw,y1:Y(16),y2:Y(16),stroke:V("--agn2"),"stroke-width":2,"stroke-dasharray":"2 3"}));
+  svg.appendChild(T(m.l+4,Y(16)-5,"agnostic_v2  16 (all layers)",{"text-anchor":"start","font-size":10,fill:V("--agn2"),"font-family":MONO,"font-weight":600}));
+  svg.appendChild(T(m.l+iw/2,H-5,cfg.xlabel,{"text-anchor":"middle","font-size":11,fill:V("--mut")}));
+  svg.appendChild(T(-(m.t+ih/2),12,"decode SMs",{"text-anchor":"middle","font-size":10.5,fill:V("--mut"),transform:"rotate(-90)"}));
+}
+// NemotronH: 52 layers, attn at 4 roughly-even positions (schematic order), reserve mamba+mlp @64
+strip("strip_nh",{n:52,reserve:64,agn:64,xlabel:"52 layers (attn sparse) — schematic order",
+  sensitive:i=>!([12,25,38,50].includes(i))});
+// Zamba2: 54 layers, 9 hybrid(attn) reserved @108, 45 mamba released @16
+strip("strip_zb",{n:54,reserve:108,agn:54,xlabel:"54 layers — 9 hybrid reserved, 45 mamba released",
+  sensitive:i=>((i+3)%6===0)});
+
+/* ---------- grouped bars ---------- */
+function bars(id,o){
+  const svg=document.getElementById(id),W=480,H=320;
+  const m={l:50,r:12,t:16,b:52}, iw=W-m.l-m.r, ih=H-m.t-m.b;
+  const ymax=o.ymax, Y=v=>m.t+ih-(v/ymax)*ih;
+  o.yticks.forEach(v=>{
+    svg.appendChild(E("line",{x1:m.l,x2:m.l+iw,y1:Y(v),y2:Y(v),stroke:V("--hair"),"stroke-width":1}));
+    svg.appendChild(T(m.l-8,Y(v)+3.5,o.yfmt?o.yfmt(v):v,{"text-anchor":"end","font-size":10.5,fill:V("--mut2"),"font-family":MONO}));
+  });
+  if(o.hline!=null){
+    svg.appendChild(E("line",{x1:m.l,x2:m.l+iw,y1:Y(o.hline),y2:Y(o.hline),stroke:V("--crit"),"stroke-width":1.5,"stroke-dasharray":"5 3"}));
+    svg.appendChild(T(m.l+iw-2,Y(o.hline)-4,"SLO "+o.hline+"ms",{"text-anchor":"end","font-size":10,fill:V("--crit"),"font-family":MONO,"font-weight":600}));
+  }
+  const gN=o.groups.length, gw=iw/gN, pad=gw*0.16, innerW=gw-2*pad, bN=o.series.length, bw=innerW/bN;
+  o.groups.forEach((g,gi)=>{
+    const gx=m.l+gi*gw+pad;
+    o.series.forEach((s,si)=>{
+      const x=gx+si*bw, v=g.means[si], y=Y(v);
+      svg.appendChild(E("rect",{x:x+bw*0.12,y:y,width:bw*0.76,height:m.t+ih-y,rx:2.5,fill:V(s.color),opacity:.92}));
+      if(o.valfmt) svg.appendChild(T(x+bw*0.5,y-5,o.valfmt(v),{"text-anchor":"middle","font-size":9.5,fill:V(s.color),"font-family":MONO,"font-weight":600}));
+      // run dots
+      if(g.runs){g.runs[si].forEach(rv=>svg.appendChild(E("circle",{cx:x+bw*0.5,cy:Y(rv),r:2.2,fill:V("--tx"),opacity:.5})));}
+    });
+    svg.appendChild(T(gx+innerW/2,H-m.b+18,g.label,{"text-anchor":"middle","font-size":11.5,fill:V("--tx"),"font-family":MONO,"font-weight":600}));
+    if(g.sub) svg.appendChild(T(gx+innerW/2,H-m.b+33,g.sub,{"text-anchor":"middle","font-size":10,fill:V("--mut2"),"font-family":MONO}));
+  });
+  svg.appendChild(T(-(m.t+ih/2),12,o.ylabel,{"text-anchor":"middle","font-size":11,fill:V("--mut"),transform:"rotate(-90)"}));
+}
+
+bars("good_nh",{
+  ymax:3.0, yticks:[0,1,2,3], ylabel:"goodput@SLO (req/s)", valfmt:v=>v.toFixed(2),
+  series:[{color:"--fused"},{color:"--agn"},{color:"--la"}],
+  groups:[
+    {label:"rate 1",sub:"light", means:[0.97,0.96,0.96]},
+    {label:"rate 2",sub:"", means:[1.89,1.88,1.88]},
+    {label:"rate 3",sub:"peak", means:[2.22,2.76,2.76]},
+    {label:"rate 4",sub:"saturating", means:[1.40,2.25,1.58]}
+  ]
+});
+
+bars("ttft_zb",{
+  ymax:7600, yticks:[0,2000,4000,6000], ylabel:"median TTFT (ms) — lower better",
+  yfmt:v=>(v/1000)+"s", valfmt:v=>Math.round(v),
+  series:[{color:"--fused"},{color:"--agn"},{color:"--la"}],
+  groups:[
+    {label:"rate 6",sub:"la −23%", means:[1953,5002,3846]},
+    {label:"rate 12",sub:"la −17%", means:[6134,6995,5792]},
+    {label:"rate 18",sub:"la −7%", means:[7196,7092,6595]}
+  ]
+});
+
+/* ---- section 05: agnostic_v2 — clean async bench_serving (sub-saturation) ---- */
+bars("good_nh4",{
+  ymax:3.0, yticks:[0,1,2,3], ylabel:"goodput@SLO (req/s)", valfmt:v=>v.toFixed(2),
+  series:[{color:"--fused"},{color:"--agn"},{color:"--agn2"},{color:"--la"}],
+  groups:[
+    {label:"rate 1",sub:"light", means:[0.97,0.96,0.93,0.96]},
+    {label:"rate 2",sub:"", means:[1.89,1.88,0.32,1.88]},
+    {label:"rate 3",sub:"peak", means:[2.22,2.76,0.00,2.76]},
+    {label:"rate 4",sub:"saturating", means:[1.40,2.25,0.00,1.58]}
+  ]
+});
+
+bars("tpot_nh4",{
+  ymax:210, yticks:[0,60,120,180], ylabel:"median TPOT (ms) — lower better", hline:60,
+  yfmt:v=>v, valfmt:v=>Math.round(v),
+  series:[{color:"--fused"},{color:"--agn"},{color:"--agn2"},{color:"--la"}],
+  groups:[
+    {label:"rate 1",sub:"", means:[25,21,43,22]},
+    {label:"rate 2",sub:"", means:[32,22,72,26]},
+    {label:"rate 3",sub:"", means:[46,24,119,35]},
+    {label:"rate 4",sub:"", means:[63,25,191,50]}
+  ]
+});
+
+/* ---- section 07: generalization across hybrids ---- */
+bars("mamba_models",{
+  ymax:1.7, yticks:[0,0.5,1.0,1.5], ylabel:"per-mamba decode (ms)", yfmt:v=>v.toFixed(1), valfmt:v=>v.toFixed(2),
+  series:[{color:"--teal"},{color:"--amber"}],
+  groups:[
+    {label:"NH-8B",sub:"2.6×", means:[0.589,1.547]},
+    {label:"ZB-1.2B",sub:"", means:[0.409,0.413]},
+    {label:"ZB-7B",sub:"", means:[0.949,0.828]},
+    {label:"Granite",sub:"", means:[0.844,0.878]}
+  ]
+});
+
+lineChart("attn_models",{
+  xs:[64,2140,5100], xmin:0,xmax:5300, ymin:0, ymax:1.6, yticks:[0,0.5,1.0,1.5],
+  yfmt:v=>v.toFixed(1), xticks:[64,2140,5100],
+  xlabel:"context length (tokens)", ylabel:"per-attn decode (ms)",
+  series:[
+    {color:"--fused",xs:[64,2048,4000],ys:[0.090,0.779,1.471],label:"no-GQA O(L)",labDx:-10,labDy:-8},
+    {color:"--teal",xs:[350,2140,5100],ys:[0.303,0.337,0.449],label:"GQA",labDx:6,labDy:-8},
+    {color:"--co",xs:[64,2048,4000],ys:[0.548,0.547,0.548],dash:"5 4",label:"GQA flat",labAt:1,labDx:-8,labDy:16}
+  ]
+});
+</script>

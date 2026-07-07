@@ -393,13 +393,30 @@ class Zamba2Model(nn.Module):
         #    layers are SM-insensitive -> drop to a floor, freeing SM for prefill.
         _la = _is_decode and _sm_part == "layer_aware"
         _la_floor = int(_os.environ.get("PDMUX_LA_FLOOR_SM", "16"))
+        # graduated per-type SM (this-work extension beyond the 2-level binary la):
+        # PDMUX_LA_SM_MAP="mamba:54,attn:96" pins each layer TYPE to its own decode-SM
+        # green-ctx, testing whether a per-type allocation (each type at its knee, only
+        # the surplus released) can beat uniform agnostic. Absent -> legacy binary (full/floor).
+        _la_map = {}
+        _m = _os.environ.get("PDMUX_LA_SM_MAP")
+        if _m and _la:
+            for _kv in _m.split(","):
+                if ":" in _kv:
+                    _k, _v = _kv.split(":", 1)
+                    if _v.strip().isdigit():
+                        _la_map[_k.strip().lower()] = int(_v.strip())
         _base = torch.cuda.current_stream()
 
         def _tgt(layer):
             if _fixed is not None:
                 return self._get_gctx_decode_stream(_fixed)
-            if _la and not isinstance(layer, Zamba2HybridLayer):
-                return self._get_gctx_decode_stream(_la_floor)
+            if _la:
+                _is_attn = isinstance(layer, Zamba2HybridLayer)
+                if _la_map:
+                    _n = _la_map.get("attn" if _is_attn else "mamba")
+                    return self._get_gctx_decode_stream(_n) if _n is not None else _base
+                if not _is_attn:  # legacy binary: release mamba to floor
+                    return self._get_gctx_decode_stream(_la_floor)
             return _base
 
         _prev = _base
@@ -492,6 +509,34 @@ class Zamba2ForCausalLM(nn.Module):
             hidden = model.final_layernorm(forward_batch.hidden_states)
             forward_batch.hidden_states = hidden
             return self.logits_processor(input_ids, hidden, self.lm_head, forward_batch)
+
+    # ---- coordinated per-type layer-aware (R0c/A) ----
+    # forward_split_decode runs decode layers [start,end) threading hidden state, exactly
+    # like forward_split_prefill (layers dispatch by forward_batch.forward_mode=DECODE).
+    # NO internal green-ctx switching: the coordinated event loop sets the pdmux pair
+    # (decode-half stream) per layer-type window, and runs prefill on the complementary
+    # prefill-half, so releasing an insensitive layer's SM hands prefill the exact complement.
+    def forward_split_decode(
+        self, input_ids, positions, forward_batch, split_interval, input_embeds=None
+    ):
+        return self.forward_split_prefill(
+            input_ids, positions, forward_batch, split_interval, input_embeds
+        )
+
+    def la_coord_windows(self):
+        """Maximal same-type layer runs: list of (start, end, is_attn). Zamba2 = ABAB;
+        attn windows -> decode-heavy coordinated pair (protect), mamba -> decode-light (release)."""
+        layers = self.model.layers
+        types = [isinstance(l, Zamba2HybridLayer) for l in layers]
+        windows = []
+        i, n = 0, len(types)
+        while i < n:
+            j = i
+            while j < n and types[j] == types[i]:
+                j += 1
+            windows.append((i, j, types[i]))
+            i = j
+        return windows
 
     def load_weights(self, weights: Iterable[tuple[str, torch.Tensor]]):
         # PARITY: HF Zamba2 weight-name remaps (verify against real checkpoint):

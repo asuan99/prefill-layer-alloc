@@ -1,0 +1,15 @@
+MODE=agn cfg=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/triage/pdmux_a100_smoke.yml port=34694 coord=unset job=835894
+boot_ok=1
+INTRA_DETERMINISTIC=False  n_prompts=12  n_req=72
+OUT|||The capital of France is|||' Paris.\nThe capital of the United States is Washington, D.C.\nThe capital of Canada is Ottawa'
+OUT|||Water is made of hydrogen and|||' oxygen. The hydrogen and oxygen atoms are held together by chemical bonds. The bonds are formed when the electrons in'
+OUT|||The opposite of hot is|||' cold.\nThe opposite of hot is cold.\nThe opposite of hot is cold.\nThe opposite of hot is'
+OUT|||One plus one equals|||' two.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'
+OUT|||The sun rises in the|||' east and sets in the west.\nThe sun rises in the east and sets in the west.\nThe sun'
+OUT|||Roses are red, violets are|||' blue,\nI love you, and you love me too.\n\nRoses are red, violets are'
+OUT|||L:the red planet  The capital of France is|||' Paris.\n\n# Response: The robot walked slowly across the red planet. # Instruction: Please answer the'
+OUT|||L:ed planet  Water is made of hydrogen and|||' oxygen.  Water is made of hydrogen and oxygen.  Water is made of hydrogen and oxygen.  Water'
+OUT|||L:s the red planet  The opposite of hot is|||' cold. The opposite of hot is cold. The opposite of hot is cold. The opposite of hot is cold. The'
+OUT|||L:ross the red planet  One plus one equals|||' two.  One plus one equals two.  One plus one equals two.  One plus one equals two. '
+OUT|||L:oss the red planet  The sun rises in the|||' east and sets in the west. The sun rises in the east and sets in the west. The sun rises'
+OUT|||L:e red planet  Roses are red, violets are|||" blue, I love you, but you don't know.\n\n# Response: The task is to determine whether"

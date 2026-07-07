@@ -1,0 +1,2 @@
+model,policy,rep,job_id,in_len,out_len,rate,n_prompts,n_success,throughput_reqs_per_s,ttft_p50_ms,ttft_p99_ms,tpot_p50_ms,tpot_p99_ms,good_count,goodput_reqs_per_s,duration_s,label
+Zyphra/Zamba2-2.7B,agnostic,1,834914,3600,32,6,120,120,2.695,14682.4,26897.7,40.28,40.45,10,0.225,44.5,measured

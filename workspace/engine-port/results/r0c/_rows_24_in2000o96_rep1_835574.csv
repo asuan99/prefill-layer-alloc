@@ -1,0 +1,5 @@
+Zyphra/Zamba2-2.7B,24_in2000o96,coordinated prefill:84/decode:24,1,835574,2000,96,1,120,120,1.172,282.8,636.0,40.34,45.65,120,1.172,102.4,measured
+Zyphra/Zamba2-2.7B,24_in2000o96,coordinated prefill:84/decode:24,1,835574,2000,96,2,120,120,2.250,347.6,919.9,43.87,53.55,120,2.250,53.3,measured
+Zyphra/Zamba2-2.7B,24_in2000o96,coordinated prefill:84/decode:24,1,835574,2000,96,3,120,120,3.242,507.0,1713.7,58.40,82.47,64,1.729,37.0,measured
+Zyphra/Zamba2-2.7B,24_in2000o96,coordinated prefill:84/decode:24,1,835574,2000,96,4,120,120,3.531,2854.7,6554.1,98.81,117.38,5,0.147,34.0,measured
+Zyphra/Zamba2-2.7B,24_in2000o96,coordinated prefill:84/decode:24,1,835574,2000,96,6,120,120,3.628,5254.0,13584.8,102.90,117.46,3,0.091,33.1,measured

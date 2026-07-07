@@ -82,3 +82,22 @@
 ## G. 그림 (reports/figures/)
 
 `summary_dashboard` · `layer_aware_result` · `layer_aware_size_trend` · `temporal_vs_spatial` · `prefill_sm_sensitivity` · `layer_aware_applicability` · `framework_comparison` · `vllm_calibration`
+
+## H. 실엔진 serving 재측정 (engine-port, 2026-07) — sim 결론 supersede
+
+> ⚠️ 위 §C–§G의 sim 헤드라인(la/agnostic 1.37–2.02×)은 실엔진(sglang v0.5.10) serving 측정으로 **기각**됨. 정본: [`workspace/engine-port/reports/sm_policy_report.html`](../workspace/engine-port/reports/sm_policy_report.html) (§07 4-pass 은퇴). 4개 하이브리드 전부 layer-aware ≤ agnostic.
+
+**R0a — Zamba2-2.7B clean async re-measure** (§04 prefill-bound 패널의 구 GIL-client 데이터 교체). 클라이언트 `python -m sglang.bench_serving` (async, random-ids), triton, ctx4096, in3600/out32, num-prompts 120, rates 1/2/3/4/6, SLO TTFT≤3s·TPOT≤60ms.
+
+| job | policy | rep | 조건 | 결과(goodput@SLO peak) |
+|---|---|---|---|---|
+| 834914 | agnostic | 1 | Zamba2-2.7B in3600/out32 triton | **2.07 @rate2** (최고) |
+| 834915 | fused | 1 | 〃 | 0.79 @rate1 (rate2↓ TPOT 붕괴) |
+| 834916 | layer_aware | 1 | 〃 | 0.82 @rate1 → **0 from rate2** (최악) |
+| 834927 | agnostic | 2 | 〃 (변산 반복) | **2.07 @rate2** (rep1과 동일) |
+| 834929 | fused | 2 | 〃 | 0.81 @rate1 (rep1과 동일) |
+| 834928 | layer_aware | 2 | 〃 | 0.81 @rate1 → **0 from rate2** (rep1과 동일) |
+
+- 산출: `workspace/engine-port/results/r0a/` — `r0a_summary.csv`, per-run `zamba2_async_{policy}_r{rate}_rep{n}.csv`, 서버/벤치 로그, sbatch `r0a_zamba2_bench.sbatch`.
+- 판정: **layer-aware ≤ agnostic 전 rate** (동률 이하) → 은퇴 확정(§07 정합). 구 GIL-client 산출(831146/831166/831541)은 [`triage/DEPRECATED_gil_client.md`](../workspace/engine-port/triage/DEPRECATED_gil_client.md) 참조.
+- 병행 clean async(기확보): NemotronH 831609–831612 · Zamba2 in2000/out96 832701/832702 · Granite 832639/832690 · Falcon-H1 832575/832576.

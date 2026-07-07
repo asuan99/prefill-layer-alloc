@@ -1,0 +1,41 @@
+model,label,map,rep,job_id,in_len,out_len,rate,n_prompts,n_success,throughput_reqs_per_s,ttft_p50_ms,ttft_p99_ms,tpot_p50_ms,tpot_p99_ms,good_count,goodput_reqs_per_s,duration_s,label_kind
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,1,835300,3600,32,1,120,120,1.187,413.6,5590.7,40.44,65.30,110,1.088,101.1,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,2,835332,3600,32,1,120,120,1.197,400.3,1149.9,39.99,50.37,120,1.197,100.3,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,1,835300,3600,32,2,120,120,2.341,682.0,2334.7,45.70,64.83,96,1.873,51.3,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,2,835332,3600,32,2,120,120,2.340,698.4,2332.7,45.65,64.67,96,1.872,51.3,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,1,835300,3600,32,3,120,120,3.080,3464.5,5934.1,59.99,65.24,40,1.027,39.0,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,2,835332,3600,32,3,120,120,3.069,3576.5,6044.3,59.59,63.09,52,1.330,39.1,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,1,835300,3600,32,4,120,120,3.077,7850.3,13183.3,61.61,63.34,16,0.410,39.0,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,2,835332,3600,32,4,120,120,3.071,7870.3,13234.5,61.69,63.09,17,0.435,39.1,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,1,835300,3600,32,6,120,120,3.092,11723.3,21194.0,61.46,62.90,14,0.361,38.8,measured
+Zyphra/Zamba2-2.7B,16,coordinated prefill:92/decode:16,2,835332,3600,32,6,120,120,3.088,11742.1,21225.1,61.46,62.94,14,0.360,38.9,measured
+Zyphra/Zamba2-2.7B,24,coordinated prefill:84/decode:24,1,835335,3600,32,1,120,120,1.196,427.6,1370.4,40.11,44.11,120,1.196,100.3,measured
+Zyphra/Zamba2-2.7B,24,coordinated prefill:84/decode:24,1,835335,3600,32,2,120,120,2.336,872.2,3285.9,42.74,58.14,115,2.239,51.4,measured
+Zyphra/Zamba2-2.7B,24,coordinated prefill:84/decode:24,1,835335,3600,32,3,120,120,2.947,4578.6,7543.8,41.43,44.72,48,1.179,40.7,measured
+Zyphra/Zamba2-2.7B,24,coordinated prefill:84/decode:24,1,835335,3600,32,4,120,120,2.985,8384.1,14746.2,41.36,42.67,19,0.473,40.2,measured
+Zyphra/Zamba2-2.7B,24,coordinated prefill:84/decode:24,1,835335,3600,32,6,120,120,2.969,12501.8,22771.8,41.61,41.93,12,0.297,40.4,measured
+Zyphra/Zamba2-2.7B,34,coordinated prefill:74/decode:34,1,835301,3600,32,1,120,120,1.143,477.6,1717.5,39.77,43.81,118,1.124,104.9,measured
+Zyphra/Zamba2-2.7B,34,coordinated prefill:74/decode:34,1,835301,3600,32,2,120,120,2.319,1174.8,3985.7,41.79,44.71,108,2.087,51.7,measured
+Zyphra/Zamba2-2.7B,34,coordinated prefill:74/decode:34,1,835301,3600,32,3,120,120,2.678,7006.8,11414.0,40.13,41.83,30,0.669,44.8,measured
+Zyphra/Zamba2-2.7B,34,coordinated prefill:74/decode:34,1,835301,3600,32,4,120,120,2.686,10455.6,18911.9,40.15,43.28,14,0.313,44.7,measured
+Zyphra/Zamba2-2.7B,34,coordinated prefill:74/decode:34,1,835301,3600,32,6,120,120,2.690,14710.8,26980.8,40.26,40.49,10,0.224,44.6,measured
+Zyphra/Zamba2-2.7B,54,coordinated prefill:54/decode:54,1,835302,3600,32,1,120,120,1.189,706.7,3061.8,40.74,43.57,118,1.169,100.9,measured
+Zyphra/Zamba2-2.7B,54,coordinated prefill:54/decode:54,1,835302,3600,32,2,120,120,1.984,6715.0,11199.6,40.38,52.47,34,0.562,60.5,measured
+Zyphra/Zamba2-2.7B,54,coordinated prefill:54/decode:54,1,835302,3600,32,3,120,120,2.021,13979.2,25427.3,40.83,42.42,8,0.135,59.4,measured
+Zyphra/Zamba2-2.7B,54,coordinated prefill:54/decode:54,1,835302,3600,32,4,120,120,2.022,17774.1,33563.4,40.78,40.97,6,0.101,59.3,measured
+Zyphra/Zamba2-2.7B,54,coordinated prefill:54/decode:54,1,835302,3600,32,6,120,120,2.023,22392.8,41630.4,40.81,41.09,5,0.084,59.3,measured
+Zyphra/Zamba2-2.7B,8,coordinated prefill:100/decode:8,1,835334,3600,32,1,120,120,1.197,373.8,1297.4,43.31,105.78,104,1.038,100.2,measured
+Zyphra/Zamba2-2.7B,8,coordinated prefill:100/decode:8,1,835334,3600,32,2,120,120,2.037,3812.4,9401.3,128.74,145.71,5,0.085,58.9,measured
+Zyphra/Zamba2-2.7B,8,coordinated prefill:100/decode:8,1,835334,3600,32,3,120,120,1.982,13993.2,27006.1,143.21,144.20,0,0.000,60.5,measured
+Zyphra/Zamba2-2.7B,8,coordinated prefill:100/decode:8,1,835334,3600,32,4,120,120,1.987,18220.3,34524.2,143.35,144.23,0,0.000,60.4,measured
+Zyphra/Zamba2-2.7B,8,coordinated prefill:100/decode:8,1,835334,3600,32,6,120,120,1.986,22023.6,42728.9,143.47,144.52,0,0.000,60.4,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),1,835303,3600,32,1,120,120,1.194,484.1,1583.5,40.54,44.37,120,1.194,100.5,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),2,835333,3600,32,1,120,120,1.195,475.8,1578.8,39.80,43.80,120,1.195,100.5,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),1,835303,3600,32,2,120,120,2.314,1192.6,4097.5,42.51,45.47,107,2.063,51.9,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),2,835333,3600,32,2,120,120,2.320,1183.6,4063.0,41.89,44.73,108,2.088,51.7,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),1,835303,3600,32,3,120,120,2.667,7106.7,11548.5,40.80,42.53,28,0.622,45.0,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),2,835333,3600,32,3,120,120,2.656,7364.2,11777.1,40.25,53.51,22,0.487,45.2,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),1,835303,3600,32,4,120,120,2.687,10413.8,18886.7,40.83,43.87,14,0.313,44.7,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),2,835333,3600,32,4,120,120,2.675,10541.2,19077.6,40.80,42.24,14,0.312,44.9,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),1,835303,3600,32,6,120,120,2.695,14184.1,26909.6,40.78,41.05,9,0.202,44.5,measured
+Zyphra/Zamba2-2.7B,agn,agnostic auto (34/54 dynamic),2,835333,3600,32,6,120,120,2.689,14731.9,26998.5,40.72,40.93,10,0.224,44.6,measured

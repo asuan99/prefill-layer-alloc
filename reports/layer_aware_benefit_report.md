@@ -1,5 +1,7 @@
 # layer-type-aware 자원 배분의 성능 이득 — 긍정 보고서
 
+> ⚠️ **SUPERSEDED (2026-07)**: 본 문서의 layer-aware 우위 결론(sim 예측 la/agnostic 1.37–2.02×)은 실엔진(sglang v0.5.10) serving 측정으로 **기각**되었다. 4개 하이브리드(NemotronH·Zamba2·Granite-4·Falcon-H1) 전부에서 layer-aware는 agnostic을 못 이겼고, "이상적 케이스"로 예측했던 Zamba2(45/54 환원)가 오히려 **최악**이었다(clean async serving goodput 0 from rate 2). 정본: [workspace/engine-port/reports/sm_policy_report.html](../workspace/engine-port/reports/sm_policy_report.html) (4-pass 원인 분해 §07). 본 문서는 가설·이력 계층으로만 유효.
+
 작성일: 2026-06-22 · 대상: 사용자의 원래 가설 *"layer-type을 인지한 자원 배분이 hybrid serving에서 성능 이득을 줄 수 있다"*
 근거 코드: `experiments/e6_queue_sim/run_layer_aware.py` · 그림: `make_layer_aware_figs.py`
 관련: [queue_simulator_design §14](queue_simulator_design.md) · [vllm_validation](vllm_validation.md) · [closure 검토 6·7](project_closure_report.md) · [7B 회귀 검증](layer_aware_7b_verification.md)

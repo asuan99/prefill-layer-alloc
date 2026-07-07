@@ -1,5 +1,7 @@
 # 종합 보고서 — Hybrid SSM+Attention serving에서 layer-type-aware 자원배분
 
+> ⚠️ **SUPERSEDED (2026-07)**: 본 문서의 layer-aware 우위 결론(sim 예측 la/agnostic 1.37–2.02×)은 실엔진(sglang v0.5.10) serving 측정으로 **기각**되었다. 4개 하이브리드(NemotronH·Zamba2·Granite-4·Falcon-H1) 전부에서 layer-aware는 agnostic을 못 이겼고(저부하 동률·부하시 열위), "이상적 케이스"로 예측했던 Zamba2(45/54 환원)가 오히려 **최악**이었다. 정본: [workspace/engine-port/reports/sm_policy_report.html](../workspace/engine-port/reports/sm_policy_report.html) (4-pass 원인 분해 §07). 본 문서는 가설·이력 계층으로만 유효.
+
 작성일: 2026-06-22 · 프로젝트: `prefill-layer-alloc` · GPU: A100-SXM4-80GB(108 SM)
 대상 모델: Zamba2 1.2/2.7/7B (temporal 하이브리드) · Falcon-H1 3/7B (spatial 하이브리드)
 
@@ -97,3 +99,5 @@ vLLM 0.22.1로 zamba2_2.7b·falcon_h1_3b 실제 서빙. **검증됨:** full-mode
 ## 10. 한 줄 결론
 
 > **layer-type-aware 자원배분은 — 정적 공간분할로는 死지만, PD-multiplexing 위의 타입-인지 SM *예약*으로는 生이다. "attention을 드물게-비싸게 쓰는" temporal(sequential) 하이브리드(Zamba2)에서 1.2B~7B 전구간 1.37~2.02× goodput을 주며, "attention을 어디서나-싸게(GQA) 쓰는" spatial(parallel) 하이브리드(Falcon-H1)에는 적용되지 않는다. decode 모델은 실 vLLM으로 검증됐고, 예약 정책 자체의 실엔진 실증만이 남은 과제다.**
+
+> ⚠️ **정정(2026-07, 위 "남은 과제" 완료)**: 예약 정책의 실엔진 실증이 끝났고, 결론은 **뒤집혔다** — layer-aware *예약*도 실 serving에선 生이 아니다. sglang v0.5.10에서 4개 하이브리드 전부 clean async로 측정한 결과 **layer-aware ≤ agnostic**(저부하 동률·부하시 열위), Zamba2(45/54 환원)는 **최악**. sim 1.37–2.02×는 step보다 미세한 per-layer 창을 prefill이 포착할 수 없다는 granularity 한계를 놓친 예측이었다(§07 (A)–(D)). **실전 권고 = agnostic(pdmux). 정본: [sm_policy_report.html](../workspace/engine-port/reports/sm_policy_report.html).**

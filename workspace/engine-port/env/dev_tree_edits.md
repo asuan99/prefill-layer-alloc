@@ -90,3 +90,11 @@ Cached weights used (P1.7): tiiuae/Falcon-H1-3B-Base, Zyphra/Zamba2-{1.2B,7B-Ins
 downloaded ibm-granite/granite-4.0-h-micro-base (login-node internet). Harness:
 `p1_7_zb_smsens.sbatch <model>`, `p1_7_granite_smsens.sbatch`, `p1_7_bench_one.sbatch
 <policy> <model> <backend>`, `p1_7_fh1_check.sbatch <plain|pdmux> [model]`.
+
+## R0b (graduated per-type layer-aware) — inside `models/zamba2.py` (item 2 covers re-apply)
+10. `models/zamba2.py` `Zamba2Model.forward` `_tgt`: env `PDMUX_LA_SM_MAP="mamba:54,attn:96"`
+    pins each layer TYPE to its own decode-SM green-ctx (`_get_gctx_decode_stream(N)`),
+    generalizing the 2-level binary la (full/`PDMUX_LA_FLOOR_SM`) into graduated per-type
+    allocation. Backward-compatible: unset → legacy binary behavior. Added to test whether
+    per-type allocation beats uniform agnostic (it does not — see `results/r0b/`). Copy:
+    `src/models/zamba2.py`. Harness `results/r0b/r0b_graduated_bench.sbatch <agn|la_bin|g_<mamba>_<attn>> <rep>`.

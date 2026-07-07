@@ -1,5 +1,7 @@
 # 기존 프레임워크(vLLM) 비교 보완 — 4-way 비교군 + calibration
 
+> ⚠️ **SUPERSEDED (2026-07)**: 본 문서의 4-way sim 표(layer_aware가 agnostic·fused 대비 우위)는 실엔진(sglang v0.5.10) serving 측정으로 **기각**되었다. layer-aware는 4개 하이브리드 전부에서 agnostic을 못 이겼다(§07 (D) step-granularity 하한). 정본: [workspace/engine-port/reports/sm_policy_report.html](../workspace/engine-port/reports/sm_policy_report.html). 본 문서의 vLLM-calibration/방향성 논의는 이력 계층으로만 유효.
+
 작성일: 2026-06-22 · 목적: 논문화를 위해 **fused(vLLM 실baseline)를 비교군에 포함**하고, sim을 vLLM 실측으로 **calibrate**해 비교의 신뢰도를 정직하게 박는다.
 관련: [vllm_validation](vllm_validation.md) · [layer_aware_benefit](layer_aware_benefit_report.md) · [partition_engine_design](partition_engine_design.md)
 

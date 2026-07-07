@@ -154,7 +154,7 @@
 
   <div class="thesis reveal">
     <div class="k">The one relation that governs everything</div>
-    <p>Splitting SMs between prefill and decode is easy; knowing how much each layer's decode <em>actually</em> needs is the whole game. The two uniform policies <span class="prop">guess — reserve high (protect every layer) or reserve low (reclaim from every layer)</span> — and each wins only where its guess holds. Layer-aware measures per layer instead of guessing, so it's the only policy safe on both models.</p>
+    <p>Splitting SMs between prefill and decode is easy; the catch is <em>granularity</em>. The prefill↔decode SM trade only pays off when the split is held stable for a <span class="prop">whole decode step</span> — which is exactly what the uniform pdmux policy (agnostic) already does. Going finer, per layer, was the hypothesis (layer-aware); serving refuted it on all four hybrids — below the step granularity there is no benefit window to capture, only prefill contention to pay, so <span class="prop">layer-aware never beats agnostic</span>. The actionable result: use pdmux (agnostic); don't over-starve decode.</p>
   </div>
 
   <!-- ============ 1. THE FOUR POLICIES ============ -->
@@ -191,8 +191,8 @@
         <div class="pstat"><div><span class="v mono">92</span><span class="l">SM to prefill (max)</span></div><div><span class="v mono">16</span><span class="l">decode SMs (all)</span></div></div>
       </div>
       <div class="pcard reveal wide" data-p="la">
-        <h3><span class="dot"></span>layer-aware <span class="mono" style="font-size:12px;color:var(--mut2);font-weight:400">the synthesis</span></h3>
-        <div class="psrc mono">per-layer green-ctx · this work</div>
+        <h3><span class="dot"></span>layer-aware <span class="mono" style="font-size:12px;color:var(--mut2);font-weight:400">the synthesis — retired (§07)</span></h3>
+        <div class="psrc mono">per-layer green-ctx · this work · refuted in serving</div>
         <svg class="glyph" viewBox="0 0 600 48" preserveAspectRatio="none" data-glyph="la" aria-hidden="true"></svg>
         <p>Switches the decode stream <b>per layer by type</b>: SM-sensitive layers keep a full partition (reserved, amber); SM-insensitive layers drop to the floor (teal), <b>releasing their SMs to prefill</b>. It reclaims like agnostic_v2 <em>where that's free</em> and protects like agnostic_v1 <em>where it matters</em> — the per-layer choice the two uniform policies can't make.</p>
         <div class="pstat"><div><span class="v mono">up to 92</span><span class="l">SM on released layers</span></div><div><span class="v mono">16 / full</span><span class="l">decode SMs, by type</span></div></div>
@@ -275,7 +275,7 @@
   <!-- ============ 4. SERVING REALITY ============ -->
   <section>
     <div class="sec-h"><span class="sec-n mono">04</span><h2>Serving reality — does the micro-benefit survive?</h2></div>
-    <p class="sec-sub">End-to-end goodput@SLO, measured with the async <span class="mono">sglang.bench_serving</span> client swept <em>below</em> the ~4.3 req/s saturation point (where the numbers are stable). NemotronH is the clean case; Zamba2's triton backend is decode-bound.</p>
+    <p class="sec-sub">End-to-end goodput@SLO, measured with the async <span class="mono">sglang.bench_serving</span> client swept from light load through saturation (NemotronH ~4.3 req/s, Zamba2 ~2.5). NemotronH is the clean high-batch case; Zamba2 is the prefill-bound in3600/out32 case on triton (no CUDA graph), where over-starving decode is fatal — and where the old GIL client's numbers were misleading.</p>
 
     <div class="cardrow c2">
       <div class="fig reveal">
@@ -290,21 +290,21 @@
         <p class="take"><b class="hot">agnostic ≈ layer-aware</b>, both peaking ~2.76 at rate 3 and beating fused as load rises (fused's decode couples to prefill). With only 4 releasable layers on NemotronH, layer-aware adds nothing over uniform reserve — exactly as the decode-side analysis predicts.</p>
       </div>
       <div class="fig reveal">
-        <h4>Zamba2 — median TTFT, prefill-bound</h4>
-        <p class="cap mono">in3600/out32 · triton · lower is better</p>
-        <svg id="ttft_zb" viewBox="0 0 480 320" role="img" aria-label="Zamba2 median TTFT by policy and rate"></svg>
+        <h4>Zamba2 — goodput@SLO (async, clean, prefill-bound)</h4>
+        <p class="cap mono">in3600/out32 · triton · SLO TTFT≤3s, TPOT≤60ms · 2 runs</p>
+        <svg id="good_zb" viewBox="0 0 480 320" role="img" aria-label="Zamba2 goodput by policy and rate"></svg>
         <div class="legend">
           <span><i style="background:var(--fused)"></i>fused</span>
           <span><i style="background:var(--agn)"></i>agnostic</span>
           <span><i style="background:var(--la)"></i>layer-aware</span>
         </div>
-        <p class="take"><s style="color:var(--mut2)">layer-aware beats agnostic on TTFT here</s> — <b class="hot">refuted.</b> These are old-client, past-saturation numbers. A clean async re-measure (§07) shows Zamba2 layer-aware is in fact the <b>worst</b> policy — goodput 0 from rate 3 (TPOT 131ms). Releasing 45 mamba layers starves an SM-sensitive decode at real batch. Disregard this panel; see §07.</p>
+        <p class="take"><b class="cool">agnostic wins outright</b> (peak 2.07 @ rate 2), while <b class="hot">layer-aware collapses to 0 from rate 2</b> — the <em>worst</em> policy in its own "ideal" regime (45/54 mamba released). The old-client panel had read a layer-aware <em>TTFT</em> edge here; clean async reverses even that (la TTFT p50 5.3s vs agnostic 1.2s @ rate 2). Releasing 45 mamba layers starves an SM-sensitive decode (TPOT 40→131 ms) and backs the queue up. The micro-benefit does <b>not</b> survive.</p>
       </div>
     </div>
 
     <div class="callout reveal">
-      <div class="t">The honest caveat</div>
-      <p>Zamba2's TTFT win does <b>not</b> become a goodput win here: triton without CUDA graphs floors decode TPOT at 170–205 ms ≫ any SLO, so the server is <b>decode-bound</b> and this small model's fused all-SM prefill is already fast. Converting the TTFT edge into goodput needs <b>both</b> a prefill-bound regime <b>and</b> a fast (CUDA-graph) decode. The micro-mechanism is confirmed; the end-metric is gated by the harness.</p>
+      <div class="t">The honest caveat — and what the clean client corrected</div>
+      <p>An earlier draft of this panel reported a layer-aware <b>TTFT</b> win and blamed a "170–205 ms TPOT floor" for it not converting to goodput. Both were <b>old-client artifacts</b>: the hand-rolled 60-thread GIL <span class="mono">urllib</span> client couldn't drain tokens (inflating TPOT) and it ran <em>past</em> saturation. With the async <span class="mono">sglang.bench_serving</span> client, agnostic holds TPOT ≈ 40 ms and delivers real goodput — it's <b>layer-aware and fused</b> whose TPOT blows past 130 ms, not the backend flooring everyone. Absolute TPOT is still higher than a CUDA-graph deploy would show (py3.14 → no graph on pdmux+mamba), but that shifts the numbers, not the ranking: <b>agnostic &gt; fused &gt; layer-aware</b> in this regime.</p>
     </div>
   </section>
 
@@ -389,8 +389,8 @@
             <td class="rowh"><span class="tag" style="background:color-mix(in srgb,var(--la) 15%,transparent);color:var(--la)">layer-aware</span></td>
             <td class="mono reg">up to 92 (insensitive only)</td>
             <td><span class="tag mid">≈ agnostic</span></td>
-            <td><span class="tag win">≥ agnostic*</span></td>
-            <td class="reg">Many time-dominant layers are SM-insensitive — <b>no-GQA + long context + memory-bound mamba</b> (Zamba2). *TTFT edge measured; goodput needs fast decode.</td>
+            <td><span class="tag lose">≤ agnostic — (D) granularity</span></td>
+            <td class="reg"><b>Retired.</b> Never beats agnostic on any of the four hybrids (§07). A per-layer window (~0.8 ms) is below the step granularity at which the prefill↔decode SM trade pays off, so there is no benefit to capture — only prefill contention. Ties at light load, loses under it; on Zamba2's own "ideal case" (45/54 released) it is the <b>worst</b> policy.</td>
           </tr>
         </tbody>
       </table>
@@ -469,7 +469,26 @@
         </table>
       </div>
       <p style="margin-top:10px"><b>layer-aware matches agnostic at light load, then loses as load rises — on every model.</b> The case predicted as the big win (Zamba2, 45/54 layers released) is the <b>worst</b>: goodput 0 from rate 3 (TPOT 131ms vs agnostic's 48).</p>
-      <p style="margin-top:8px"><b>Chasing the cause took four passes</b> (each time an experiment overturned the last guess): (A) per-span switching overhead — <b>~0</b> (release-floor at 96 keeps the switches but no starvation → identical to agnostic). (B) compute-starvation of released layers — <b>small</b> (~8% in isolation). (C) <b>prefill contention</b> — the real collapse: run the same green-ctx switching <em>without</em> pdmux (no concurrent prefill) and it vanishes (TPOT ≈ plain fused); the +115% only appears <em>with</em> prefill, because the released decode context is carved from the global pool and overlaps prefill's partition. (D) <b>granularity — the fundamental one</b>: a per-layer window (~0.8ms) is shorter than a concurrent prefill kernel, and kernels can't rebalance SM mid-flight, so the freed SM can't actually be captured by prefill. The prefill↔decode SM trade only pays off when the split is held stable for a whole step — which is <b>exactly what agnostic already does.</b> So layer-aware can't beat agnostic at <em>any</em> implementation: below the step granularity there is no benefit window to capture, only contention to pay. <b>Retired; agnostic (pdmux) operates at the one granularity where the trade works.</b></p>
+      <p style="margin-top:8px"><b>Chasing the cause took four passes</b> (each time an experiment overturned the last guess): (A) per-span switching overhead — <b>~0</b> (release-floor at 96 keeps the switches but no starvation → identical to agnostic). (B) compute-starvation of released layers — <b>small</b> (~8% in isolation). (C) <b>prefill contention</b> — the real collapse: run the same green-ctx switching <em>without</em> pdmux (no concurrent prefill) and it vanishes (TPOT ≈ plain fused); the +115% only appears <em>with</em> prefill, because the released decode context is carved from the global pool and overlaps prefill's partition. (D) <b>granularity — the fundamental one</b>: a per-layer window (~0.8ms) is shorter than a concurrent prefill kernel, and kernels can't rebalance SM mid-flight, so the freed SM can't actually be captured by prefill. The prefill↔decode SM trade only pays off when the split is held stable for a whole step — which is <b>exactly what agnostic already does.</b> So this per-layer form captures no benefit here: below the step granularity there is no window to exploit, only contention to pay. <b>Retired as an implementation; agnostic (pdmux) operates at the one granularity where the trade works.</b> The general per-type form (not just the binary full/floor) was then built and swept — but, crucially, with the <em>same uncoordinated green-ctx</em> as the binary policy, so it pays the same contention (C). A <b>coordinated</b> per-type reservation (prefill given the exact complement of each layer-type's decode partition) remains unbuilt and untested; the retirement is of the buildable-today form, argued — not proven — to generalize (below).</p>
+    </div>
+
+    <div class="callout reveal" style="border-color:var(--agn);background:color-mix(in srgb,var(--agn) 9%,transparent)">
+      <div class="t" style="color:var(--agn)">"Isn't the tested policy a strawman?" — the graduated form, and the coordination catch</div>
+      <p>Fair objection: the retired policy is <b>2-level</b> (SM-sensitive type → full, insensitive → floor 16), whereas the real idea is a <b>per-type graduated</b> allocation. The green-ctx layer accepts any per-type SM count, so I built it (<span class="mono">PDMUX_LA_SM_MAP</span>) and swept Zamba2 (in3600/out32, serving batch, clean async). The sweep exposed a subtler point than "no surplus": it pins decode to an <b>independent</b> green-ctx that is <em>not</em> the complement of pdmux's prefill partition — <b>the same uncoordinated flaw as the binary policy</b> (contention, pass C). The decisive control: agnostic runs decode on a <b>coordinated</b> pdmux pair (decode 34–54 SM · prefill the exclusive 74–54); the <em>same 54 decode SM</em> on an uncoordinated green-ctx costs <b>121 ms</b> TPOT vs agnostic's <b>42 ms</b>. So the "collapse below ~84 SM" below is <b>coordination overhead, not a decode-SM requirement</b>:</p>
+      <div class="tw" style="margin-top:10px;border-color:var(--agn)">
+        <table>
+          <thead><tr><th>decode SM · mamba / attn</th><th>goodput @ rate 2</th><th>TPOT @ rate 2</th><th>vs agnostic</th></tr></thead>
+          <tbody>
+            <tr><td class="rowh">agnostic — ~96, <b>dynamic</b></td><td class="mono">2.07</td><td class="mono reg">42 ms</td><td><span class="tag win">baseline</span></td></tr>
+            <tr><td class="rowh">96 / 96 · fixed</td><td class="mono">2.04</td><td class="mono reg">44 ms</td><td><span class="tag mid">≈</span></td></tr>
+            <tr><td class="rowh">84 / 84 · at the knee (prefill +24 SM)</td><td class="mono">1.96</td><td class="mono reg">45 ms</td><td><span class="tag mid">≤ — still loses</span></td></tr>
+            <tr><td class="rowh">72 / 72 · below knee</td><td class="mono" style="color:var(--crit)">0.00</td><td class="mono" style="color:var(--crit)">121 ms</td><td><span class="tag lose">starved</span></td></tr>
+            <tr><td class="rowh">54 / 84 · 40 / 84 — release mamba, protect attn</td><td class="mono" style="color:var(--crit)">0.00</td><td class="mono" style="color:var(--crit)">119 ms</td><td><span class="tag lose">starved</span></td></tr>
+            <tr><td class="rowh">54 / 16 · 72 / 16 — release attn</td><td class="mono" style="color:var(--crit)">0.00</td><td class="mono" style="color:var(--crit)">155 ms</td><td><span class="tag lose">starved</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px">The surplus the objection points to is <b>real</b> — agnostic already reclaims it, handing prefill up to <b>74 of 108 SM</b> when the decode batch is light, all coordinated. The graduated sweep only shows that a <em>second, uncoordinated</em> decode partition fights the first: below ~84 SM the two overlap enough to collapse decode; at 96 SM decode just overpowers the contention (and coincidentally matches agnostic). So this does <b>not</b> prove "no surplus" — it re-confirms pass (C): <b>the buildable per-layer form is uncoordinated and pays contention.</b> The genuine open question is a <b>coordinated</b> per-type reservation — releasing an insensitive layer's SM and handing prefill the exact complement, per window. That needs event-loop surgery (interleaving prefill chunks with decode layer-windows) and is <b>unbuilt / untested</b>; (D) argues prefill can't re-coordinate within a step, but that is an argument, not this measurement. <b>Practical call: use agnostic today — the per-type refinement is unproven, not disproven.</b> <span class="reg">(R0b — jobs 835044–835209, <span class="mono">results/r0b/</span>.)</span></p>
     </div>
 
     <p class="take" style="border:none;max-width:78ch">
@@ -481,8 +500,8 @@
 <footer>
   <div class="wrap mono">
     <div><b>Measurement.</b> green-context decode-SM pinning via sgl_kernel.spatial; per-layer-type CUDA-event timing. Serving via the async <b>sglang.bench_serving</b> (random-ids, sub-saturation sweep) — replacing an earlier GIL-bound 60-thread urllib client that measured past saturation.</div>
-    <div><b>Sources.</b> sensitivity 827583 · Zamba2 ctx-sweep 831012 · NemotronH clean async serving 831609/831610/831611/831612 · Zamba2 serving 831166/831146/831541.</div>
-    <div><b>Caveats.</b> py3.14 → no CUDA graph on pdmux+mamba (triton for Zamba2 head_dim 160). NemotronH serving re-measured cleanly; Zamba2 serving still from the old client (directional, async re-measure pending). co-schedule not directly measured.</div>
+    <div><b>Sources.</b> sensitivity 827583 · Zamba2 ctx-sweep 831012 · NemotronH clean async serving 831609/831610/831611/831612 · Zamba2 clean async serving — generalization table (in2000/out96) 832701/832702; §04 prefill-bound panel (in3600/out32) 834914/834915/834916 (+ reps 834927/834928/834929); graduated per-type / decode-SM-knee sweep (R0b) 835044–835209, results/r0b/. Superseded old-client Zamba2 serving 831166/831146/831541 (hand-rolled GIL 60-thread urllib, measured past saturation — see results/r0a DEPRECATED marker).</div>
+    <div><b>Caveats.</b> py3.14 → no CUDA graph on pdmux+mamba (triton for Zamba2 head_dim 160), so Zamba2 decode TPOT is higher than a graph-captured deploy would show — this shifts absolute numbers, not the policy ranking (with the clean async client agnostic sustains ~40 ms TPOT and real goodput here, while layer-aware and fused blow past 130 ms). Fully co-scheduled per-layer layer-aware (decode window ∥ complementary prefill partition) not built — argued moot by the granularity analysis (§07 D). co-schedule not directly measured.</div>
     <div style="margin-top:8px;color:var(--mut)">Toggle theme with the viewer control · all charts render from measured values.</div>
   </div>
 </footer>
@@ -676,14 +695,14 @@ bars("good_nh",{
   ]
 });
 
-bars("ttft_zb",{
-  ymax:7600, yticks:[0,2000,4000,6000], ylabel:"median TTFT (ms) — lower better",
-  yfmt:v=>(v/1000)+"s", valfmt:v=>Math.round(v),
+bars("good_zb",{
+  ymax:3.0, yticks:[0,1,2,3], ylabel:"goodput@SLO (req/s)", valfmt:v=>v.toFixed(2),
   series:[{color:"--fused"},{color:"--agn"},{color:"--la"}],
   groups:[
-    {label:"rate 6",sub:"la −23%", means:[1953,5002,3846]},
-    {label:"rate 12",sub:"la −17%", means:[6134,6995,5792]},
-    {label:"rate 18",sub:"la −7%", means:[7196,7092,6595]}
+    {label:"rate 1",sub:"light",      means:[0.80,1.15,0.81], runs:[[0.789,0.809],[1.109,1.195],[0.815,0.805]]},
+    {label:"rate 2",sub:"peak",       means:[0.27,2.07,0.00], runs:[[0.274,0.274],[2.065,2.066],[0.000,0.000]]},
+    {label:"rate 3",sub:"saturating", means:[0.00,0.65,0.00], runs:[[0.000,0.000],[0.669,0.624],[0.000,0.000]]},
+    {label:"rate 4",sub:"over",       means:[0.00,0.31,0.00], runs:[[0.000,0.000],[0.314,0.314],[0.000,0.000]]}
   ]
 });
 
