@@ -354,11 +354,18 @@ class Zamba2Model(nn.Module):
             hidden_states = input_embeds
         original_hidden_states = torch.clone(hidden_states)
 
-        # measurement: pin decode to N SMs + time attn vs mamba (env/file-gated)
+        # measurement: pin decode (or, in prefill-knee mode, prefill) to N SMs + time
+        # attn vs mamba (env/file-gated). SGLANG_ZAMBA_PREFILL_KNEE retargets the same
+        # pin+timing machinery at the EXTEND (prefill) forward, to answer whether prefill
+        # has an SM-insensitive layer type (a prefill-side layer-aware lever).
         _is_decode = forward_batch.forward_mode.is_decode()
+        _pk = bool(_os.environ.get("SGLANG_ZAMBA_PREFILL_KNEE"))
+        _phase = forward_batch.forward_mode.is_extend() if _pk else _is_decode
         _mode = None
-        _f = _os.environ.get("PDMUX_FIXED_DECODE_SM_FILE")
-        if _f and _is_decode:
+        _f = _os.environ.get(
+            "PDMUX_FIXED_PREFILL_SM_FILE" if _pk else "PDMUX_FIXED_DECODE_SM_FILE"
+        )
+        if _f and _phase:
             try:
                 _mode = open(_f).read().strip()
             except Exception:
@@ -376,7 +383,7 @@ class Zamba2Model(nn.Module):
         # attn). Contrast with layer_aware, which keeps the hybrid attn at full SM.
         if _is_decode and _sm_part == "agnostic_v2":
             _fixed = int(_os.environ.get("PDMUX_AGN2_SM", "16"))
-        _timing = bool(_os.environ.get("SGLANG_ZAMBA_TIMING")) and _is_decode
+        _timing = bool(_os.environ.get("SGLANG_ZAMBA_TIMING")) and _phase
         if _timing:
             _ZT["on"] = True
             _ZT["attn"] = []
@@ -421,7 +428,7 @@ class Zamba2Model(nn.Module):
 
         _prev = _base
         for layer in self.layers:
-            _t = _tgt(layer) if _is_decode else _base
+            _t = _tgt(layer) if _phase else _base
             if _t is not _prev:
                 _t.wait_stream(_prev)
             with (torch.cuda.stream(_t) if _t is not _base else _cl.nullcontext()):
@@ -441,11 +448,12 @@ class Zamba2Model(nn.Module):
             for _s, _e in _ZT["mamba"]:
                 self._zt_acc["mamba"] += _s.elapsed_time(_e)
             self._zt_n += 1
-            if self._zt_n % 30 == 0:
+            if self._zt_n % (8 if _pk else 30) == 0:  # prefill forwards are fewer than decode steps
                 import logging as _lg
                 n = self._zt_n
                 _lg.getLogger("sglang.srt.models.zamba2").warning(
-                    "ZBLT mode=%s ctxlen=%s n=%d | attn_total=%.3f mamba_total=%.3f | per-attn(9)=%.4f per-mamba(54)=%.4f",
+                    "%s mode=%s ctxlen=%s n=%d | attn_total=%.3f mamba_total=%.3f | per-attn(9)=%.4f per-mamba(54)=%.4f",
+                    ("ZBPT" if _pk else "ZBLT"),
                     _mode, int(forward_batch.seq_lens.max().item()) if forward_batch.seq_lens is not None else -1,
                     n, self._zt_acc["attn"]/n, self._zt_acc["mamba"]/n,
                     self._zt_acc["attn"]/n/9, self._zt_acc["mamba"]/n/54)

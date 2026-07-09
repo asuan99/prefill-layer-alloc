@@ -261,6 +261,22 @@ class SchedulerMultiplexMixin:
         )
         MR = self.tp_worker.model_runner
 
+        # (a) substrate-isolation variant: PDMUX_LA_COORD_OPT removes the two known
+        # implementation overheads — per-window CPU synchronize (-> GPU-side wait_stream/
+        # events) and decode SM-pinning (decode-only windows after prefill -> full-SM
+        # normal stream). Leaves the *structural* cost (prefill overlaps window 0 only).
+        coord_opt = bool(os.environ.get("PDMUX_LA_COORD_OPT"))
+        # version-4: faithful sim mechanism — prefill SLICED across mamba (release) windows
+        # via lightweight MR.forward (no run_batch), overlapping decode in EVERY release
+        # window (not just window 0). Directly attacks the single-window-overlap killer.
+        coord_v4 = bool(os.environ.get("PDMUX_LA_COORD_V4"))
+        # prefill-type-aware boundary: shift the prefill<->decode SM split by the PREFILL's
+        # current layer type (not decode's, as v4/R0d did). attn-prefill (more SM-sensitive)
+        # -> prefill-heavy partition (protect prefill); mamba-prefill -> decode-heavy (release
+        # prefill SM to decode). Prefill chunk is windowed by its type; decode is sliced across.
+        coord_pf = bool(os.environ.get("PDMUX_LA_COORD_PF"))
+        FULL = self.real_sm_group_num - 1  # normal full-SM decode stream (0,108)
+
         while True:
             with torch.cuda.stream(decode_stream):
                 set_pdmux_status(False)
@@ -302,7 +318,203 @@ class SchedulerMultiplexMixin:
                 and not wait_prefill_kernel_done
             )
 
-            if decode_active and prefill_active:
+            if decode_active and prefill_active and coord_pf:
+                # ===== prefill-type-aware boundary shift =====
+                # Window the PREFILL chunk by prefill-layer-type; the (P,D) split follows
+                # PREFILL's type: attn-prefill -> LIGHT pair (prefill 92 / decode 16, protect the
+                # more-sensitive prefill), mamba-prefill -> HEAVY pair (prefill 34 / decode 74,
+                # release prefill SM to decode). Decode (whole 54-layer step) is sliced across the
+                # prefill windows on the complementary decode-half. GPU-ordered.
+                num_layers = self.model_config.num_hidden_layers
+                decode_mwb = self.running_batch.get_model_worker_batch()
+                decode_fb = ForwardBatch.init_new(decode_mwb, MR)
+                MR.init_decode_metadata_coord(decode_fb, HEAVY)
+                if getattr(self.split_prefill_batch, "split_forward_batch", None) is None:
+                    _mwb = self.split_prefill_batch.get_model_worker_batch()
+                    self.split_prefill_batch.split_forward_batch = ForwardBatch.init_new(_mwb, MR)
+                    self.split_prefill_batch.seq_lens_cpu_cache = _mwb.seq_lens_cpu
+                pfb = self.split_prefill_batch.split_forward_batch
+                ext = self.split_prefill_batch.extend_num_tokens
+                fwd_total = (
+                    max(1, self.pdmux_config.split_forward_token_budget // ext)
+                    if ext > 0 else num_layers
+                )
+                _pf_chunk = os.environ.get("PDMUX_PF_CHUNK")  # fix #2: cap prefill layers/step
+                if _pf_chunk:                                 # (match prefill workload to its low SM)
+                    fwd_total = max(1, min(fwd_total, int(_pf_chunk)))
+                p_start = self.split_prefill_batch.split_index
+                k_total = min(fwd_total, num_layers - p_start)
+                # prefill windows (by prefill-layer-type) over the chunk [p_start, p_start+k_total)
+                pf_windows = [
+                    (max(s, p_start), min(e, p_start + k_total), a)
+                    for (s, e, a) in MR.model.la_coord_windows()
+                    if e > p_start and s < p_start + k_total
+                ]
+                n_pw = max(1, len(pf_windows))
+                # fix #1: distribute decode ∝ each window's decode-SM (more decode work in the
+                # high-decode-SM mamba windows, less in the low-SM attn windows) — match decode
+                # workload to its SM instead of the flawed even split.
+                win_dsm = [
+                    (self.sm_counts[LIGHT][1] if a else self.sm_counts[HEAVY][1])
+                    for (_s, _e, a) in pf_windows
+                ]
+                total_dsm = sum(win_dsm) or 1
+                cum_dsm = 0
+                logits_output = None
+                plog = None
+                prefill_done = True
+                prev_d = prev_p = None
+                d_done = 0
+                for wi, (ps, pe, is_attn) in enumerate(pf_windows):
+                    idx = LIGHT if is_attn else HEAVY  # prefill-attn->prefill-heavy(92); mamba->decode-heavy(74)
+                    p_s, d_s = self.stream_groups[idx][0], self.stream_groups[idx][1]
+                    with torch.cuda.stream(p_s):
+                        set_pdmux_status(True)
+                        if prev_d is not None:
+                            p_s.wait_stream(prev_d)
+                        if prev_p is not None:
+                            p_s.wait_stream(prev_p)
+                        _pout = MR.forward(pfb, split_forward_count=(pe - ps))
+                        if _pout.logits_output is not None:
+                            plog = _pout.logits_output
+                    cum_dsm += win_dsm[wi]
+                    d_target = num_layers if wi == n_pw - 1 else min(
+                        num_layers, round(num_layers * cum_dsm / total_dsm)
+                    )
+                    if d_target > d_done:
+                        with torch.cuda.stream(d_s):
+                            set_pdmux_status(False)
+                            if prev_d is not None:
+                                d_s.wait_stream(prev_d)
+                            if prev_p is not None:
+                                d_s.wait_stream(prev_p)
+                            r = MR.forward_split_decode(decode_fb, (d_done, d_target))
+                            if r is not None:
+                                logits_output = r
+                        d_done = d_target
+                    prev_d, prev_p = d_s, p_s
+                if d_done < num_layers:  # safety: finish decode
+                    d_s = self.stream_groups[HEAVY][1]
+                    with torch.cuda.stream(d_s):
+                        set_pdmux_status(False)
+                        if prev_d is not None:
+                            d_s.wait_stream(prev_d)
+                        if prev_p is not None:
+                            d_s.wait_stream(prev_p)
+                        r = MR.forward_split_decode(decode_fb, (d_done, num_layers))
+                        if r is not None:
+                            logits_output = r
+                    prev_d = d_s
+                if prev_d is not None:
+                    prev_d.synchronize()
+                if prev_p is not None:
+                    prev_p.synchronize()
+                next_ids = MR.sample(logits_output, decode_fb)
+                self.running_batch.output_ids = next_ids
+                decode_result = GenerationBatchResult(logits_output=logits_output)
+                decode_result.next_token_ids = next_ids
+                decode_done = True
+                self.split_prefill_batch.split_index = pfb.split_index
+                if pfb.split_index >= num_layers:
+                    self.split_prefill_batch.split_prefill_finished = True
+                    prefill_exe_done = (prev_p or prev_d).record_event()
+                    pf_next = MR.sample(plog, pfb) if plog is not None else None
+                    prefill_result = GenerationBatchResult(logits_output=plog)
+                    prefill_result.next_token_ids = pf_next
+                    self.split_prefill_batch.output_ids = pf_next
+                stream_idx = HEAVY
+                set_current_stream_idx(HEAVY)
+                stream_group = self.stream_groups[HEAVY]
+                prefill_stream = stream_group[0]
+                decode_stream = stream_group[1]
+            elif decode_active and prefill_active and coord_v4:
+                # ===== version-4: sim's multi-window overlap, done cheaply =====
+                # Prefill is SLICED across the mamba (release) windows via a lightweight
+                # MR.forward on a PERSISTENT split_forward_batch (NO run_batch, NO per-window
+                # get_model_worker_batch -> avoids inefficient_v1's 698ms). In each mamba window
+                # decode runs the mamba layers on the decode-half (16 SM) while prefill advances a
+                # slice on the disjoint prefill-half (92 SM); attn windows protect decode (74 SM)
+                # and pause prefill. Windows serialize on GPU (consecutive green-ctx partitions
+                # share physical SMs); within a window decode-slice ∥ prefill-slice = sim's vision.
+                num_layers = self.model_config.num_hidden_layers
+                windows = MR.model.la_coord_windows()
+                decode_mwb = self.running_batch.get_model_worker_batch()
+                decode_fb = ForwardBatch.init_new(decode_mwb, MR)
+                MR.init_decode_metadata_coord(decode_fb, HEAVY)
+                # persistent prefill forward batch (threads hidden state across windows & steps)
+                if getattr(self.split_prefill_batch, "split_forward_batch", None) is None:
+                    _mwb = self.split_prefill_batch.get_model_worker_batch()
+                    self.split_prefill_batch.split_forward_batch = ForwardBatch.init_new(_mwb, MR)
+                    self.split_prefill_batch.seq_lens_cpu_cache = _mwb.seq_lens_cpu
+                pfb = self.split_prefill_batch.split_forward_batch
+                ext = self.split_prefill_batch.extend_num_tokens
+                fwd_total = (
+                    max(1, self.pdmux_config.split_forward_token_budget // ext)
+                    if ext > 0 else num_layers
+                )
+                remaining_pf = min(fwd_total, num_layers - self.split_prefill_batch.split_index)
+                mamba_wins = sum(1 for (_s, _e, _a) in windows if not _a) or 1
+                per_win = -(-remaining_pf // mamba_wins)   # ceil divide over release windows
+                logits_output = None
+                plog = None
+                prefill_done = True
+                prev_d = prev_p = None
+                for wi, (s, e, is_attn) in enumerate(windows):
+                    idx = HEAVY if is_attn else LIGHT
+                    set_current_stream_idx(idx)
+                    p_s, d_s = self.stream_groups[idx][0], self.stream_groups[idx][1]
+                    with torch.cuda.stream(d_s):
+                        set_pdmux_status(False)
+                        if prev_d is not None:
+                            d_s.wait_stream(prev_d)     # serialize windows (shared physical SMs)
+                        if prev_p is not None:
+                            d_s.wait_stream(prev_p)
+                        r = MR.forward_split_decode(decode_fb, (s, e))
+                        if r is not None:
+                            logits_output = r
+                    k = min(per_win, remaining_pf) if (not is_attn and remaining_pf > 0) else 0
+                    if k > 0:
+                        with torch.cuda.stream(p_s):
+                            set_pdmux_status(True)
+                            if prev_d is not None:
+                                p_s.wait_stream(prev_d)
+                            if prev_p is not None:
+                                p_s.wait_stream(prev_p)
+                            _pout = MR.forward(pfb, split_forward_count=k)
+                            if _pout.logits_output is not None:
+                                plog = _pout.logits_output
+                        remaining_pf -= k
+                        prev_p = p_s
+                    prev_d = d_s
+                if prev_d is not None:
+                    prev_d.synchronize()
+                if prev_p is not None:
+                    prev_p.synchronize()
+                # sample decode (after final window)
+                next_ids = MR.sample(logits_output, decode_fb)
+                self.running_batch.output_ids = next_ids
+                decode_result = GenerationBatchResult(logits_output=logits_output)
+                decode_result.next_token_ids = next_ids
+                decode_done = True
+                # prefill completion bookkeeping (mirror baseline; steps 7-8 consume these)
+                self.split_prefill_batch.split_index = pfb.split_index
+                if pfb.split_index >= num_layers:
+                    self.split_prefill_batch.split_prefill_finished = True
+                    prefill_exe_done = (prev_p or prev_d).record_event()
+                    pf_next = MR.sample(plog, pfb) if plog is not None else None
+                    prefill_result = GenerationBatchResult(logits_output=plog)
+                    prefill_result.next_token_ids = pf_next
+                    # run_batch normally sets batch.output_ids (merge_batch cats it into the
+                    # running_batch); we bypass run_batch for prefill, so set it here — exactly
+                    # like the decode side sets self.running_batch.output_ids above.
+                    self.split_prefill_batch.output_ids = pf_next
+                # settle stream refs on HEAVY pair for steps 7-8
+                stream_idx = HEAVY
+                set_current_stream_idx(HEAVY)
+                stream_group = self.stream_groups[HEAVY]
+                prefill_stream = stream_group[0]
+                decode_stream = stream_group[1]
+            elif decode_active and prefill_active:
                 # ===== coordinated per-type windowed interleave =====
                 num_layers = self.model_config.num_hidden_layers
                 windows = MR.model.la_coord_windows()
@@ -319,15 +531,32 @@ class SchedulerMultiplexMixin:
                 )
                 logits_output = None
                 prefill_done = True
+
+                full_d = self.stream_groups[FULL][1]   # normal full-SM decode stream
+                prev_d = None                          # GPU-side window ordering (opt)
+                prefill_evt = None
                 for wi, (s, e, is_attn) in enumerate(windows):
-                    idx = HEAVY if is_attn else LIGHT
-                    set_current_stream_idx(idx)
-                    p_s, d_s = self.stream_groups[idx][0], self.stream_groups[idx][1]
+                    if coord_opt and wi > 0:
+                        # pin removal: prefill already ran in window 0, so decode-only
+                        # windows run on the full-SM (unmasked) stream instead of the
+                        # LIGHT/HEAVY sub-partition. attn backend (HEAVY) is stream-agnostic.
+                        p_s = self.stream_groups[LIGHT][0]
+                        d_s = full_d
+                    else:
+                        idx = HEAVY if is_attn else LIGHT
+                        set_current_stream_idx(idx)
+                        p_s, d_s = self.stream_groups[idx][0], self.stream_groups[idx][1]
                     with torch.cuda.stream(d_s):
                         set_pdmux_status(False)
+                        if coord_opt:
+                            if prev_d is not None:
+                                d_s.wait_stream(prev_d)      # order windows on GPU (no CPU block)
+                            if wi == 1 and prefill_evt is not None:
+                                d_s.wait_event(prefill_evt)  # full-SM decode waits prefill-tail done
                         r = MR.forward_split_decode(decode_fb, (s, e))
                         if r is not None:
                             logits_output = r
+                    prev_d = d_s
                     # advance the WHOLE prefill chunk once, in the first (mamba/LIGHT) window
                     # where prefill gets the large complementary partition (avoids 19x run_batch).
                     if wi == 0 and self.split_prefill_batch.split_index < num_layers:
@@ -336,15 +565,21 @@ class SchedulerMultiplexMixin:
                         with torch.cuda.stream(p_s):
                             set_pdmux_status(True)
                             prefill_result = self.run_batch(self.split_prefill_batch)
+
+                            if coord_opt:
+                                prefill_evt = p_s.record_event()
                         nxt = self.split_prefill_batch.split_index + k
                         if nxt >= num_layers:
                             self.split_prefill_batch.split_prefill_finished = True
                             prefill_exe_done = p_s.record_event()
                         self.split_prefill_batch.split_index = nxt
-                    d_s.synchronize()
-                    if wi == 0:
-                        p_s.synchronize()
 
+                    if not coord_opt:
+                        d_s.synchronize()
+                        if wi == 0:
+                            p_s.synchronize()
+                if coord_opt and prev_d is not None:
+                    prev_d.synchronize()                     # single final decode sync before sample
                 # sample decode (after final window)
                 next_ids = MR.sample(logits_output, decode_fb)
                 # run_batch normally sets batch.output_ids; next prepare_for_decode reads it
