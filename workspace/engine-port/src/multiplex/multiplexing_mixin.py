@@ -51,6 +51,43 @@ class SchedulerMultiplexMixin:
     def adjust_stream_groups(
         self: Scheduler,
     ) -> tuple[int, tuple[ExternalStream, ExternalStream]]:
+        if (
+            os.environ.get("PDMUX_SLO_SCHED")
+            and not self.running_batch.is_empty()
+            and self.split_prefill_batch
+        ):
+            # SLO-aware step-level split (step A): shift the prefill<->decode boundary toward
+            # whichever SLO is more at risk. TPOT signal = measured decode-iteration EMA (one
+            # token/iter, set in event_loop_pdmux); TTFT signal = prefill backlog depth. Pure SLO
+            # feedback, no layer-type -> (D)-safe (adjusts only the step split, at prefill bounds).
+            # Assumes config divisions ordered by INCREASING decode SM (idx+1 = more decode).
+            # v2: TPOT-band targeting with deadband/hysteresis (avoid v1 bang-bang overshoot &
+            # oscillation). Keep decode TPOT under SLO with margin; hand SM to prefill only when
+            # decode has real slack AND prefill is backlogged. Start decode-safe, relax toward prefill.
+            _tpot_slo = float(os.environ.get("PDMUX_TPOT_SLO_MS", "60"))
+            _qtarget = float(os.environ.get("PDMUX_QDEPTH_TARGET", "4"))
+            _hi_frac = float(os.environ.get("PDMUX_TPOT_HI", "0.85"))
+            _lo_frac = float(os.environ.get("PDMUX_TPOT_LO", "0.65"))
+            _lo, _hi = 1, self.real_sm_group_num - 2
+            _idx = getattr(self, "_slo_idx", _hi)
+            _tpot = getattr(self, "_slo_tpot_ema", 0.0)
+            _qd = len(self.waiting_queue)
+            if _tpot > _hi_frac * _tpot_slo:
+                _new = min(_hi, _idx + 1)      # TPOT tight -> more decode SM
+            elif _tpot < _lo_frac * _tpot_slo and _qd > _qtarget:
+                _new = max(_lo, _idx - 1)      # TPOT slack + prefill backlog -> more prefill SM
+            else:
+                _new = _idx                    # deadband -> hold (no oscillation)
+            if _new != _idx:
+                logger.info(
+                    "SLO-SCHED %d->%d decode_sm=%d tpot=%.1fms qd=%d",
+                    _idx, _new, self.sm_counts[_new][1], _tpot, _qd,
+                )
+            _idx = _new
+            self._slo_idx = _idx
+            set_current_stream_idx(_idx)
+            self.tp_worker.model_runner.update_decode_attn_backend(_idx)
+            return _idx, self.stream_groups[_idx]
         if not self.running_batch.is_empty() and self.split_prefill_batch:
             decode_bs = self.running_batch.batch_size()
             manual_divisions = self.pdmux_config.manual_divisions
@@ -109,7 +146,18 @@ class SchedulerMultiplexMixin:
 
         logger.debug("Starting event loop for pd multiplexing...")
 
+        import time as _time
+        _slo_on = bool(os.environ.get("PDMUX_SLO_SCHED"))
+        self._slo_last_t = _time.perf_counter()
         while True:
+            if _slo_on:
+                # measure per-iteration wall time = TPOT (one token/iter when decode active)
+                _now = _time.perf_counter()
+                _dt = (_now - self._slo_last_t) * 1000.0
+                self._slo_last_t = _now
+                if (not self.running_batch.is_empty()) and 0.0 < _dt < 1000.0:
+                    _ema = getattr(self, "_slo_tpot_ema", 0.0)
+                    self._slo_tpot_ema = (0.7 * _ema + 0.3 * _dt) if _ema else _dt
             with torch.cuda.stream(decode_stream):
                 set_pdmux_status(False)
                 recv_reqs = self.recv_requests()
@@ -260,7 +308,6 @@ class SchedulerMultiplexMixin:
             f"(mamba), HEAVY idx{HEAVY} {self.sm_counts[HEAVY]} (attn)"
         )
         MR = self.tp_worker.model_runner
-
         # (a) substrate-isolation variant: PDMUX_LA_COORD_OPT removes the two known
         # implementation overheads — per-window CPU synchronize (-> GPU-side wait_stream/
         # events) and decode SM-pinning (decode-only windows after prefill -> full-SM
@@ -531,7 +578,6 @@ class SchedulerMultiplexMixin:
                 )
                 logits_output = None
                 prefill_done = True
-
                 full_d = self.stream_groups[FULL][1]   # normal full-SM decode stream
                 prev_d = None                          # GPU-side window ordering (opt)
                 prefill_evt = None
@@ -565,7 +611,6 @@ class SchedulerMultiplexMixin:
                         with torch.cuda.stream(p_s):
                             set_pdmux_status(True)
                             prefill_result = self.run_batch(self.split_prefill_batch)
-
                             if coord_opt:
                                 prefill_evt = p_s.record_event()
                         nxt = self.split_prefill_batch.split_index + k
@@ -573,13 +618,13 @@ class SchedulerMultiplexMixin:
                             self.split_prefill_batch.split_prefill_finished = True
                             prefill_exe_done = p_s.record_event()
                         self.split_prefill_batch.split_index = nxt
-
                     if not coord_opt:
                         d_s.synchronize()
                         if wi == 0:
                             p_s.synchronize()
                 if coord_opt and prev_d is not None:
                     prev_d.synchronize()                     # single final decode sync before sample
+
                 # sample decode (after final window)
                 next_ids = MR.sample(logits_output, decode_fb)
                 # run_batch normally sets batch.output_ids; next prepare_for_decode reads it
