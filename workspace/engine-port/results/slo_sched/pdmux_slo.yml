@@ -1,0 +1,9 @@
+sm_group_num: 7
+manual_divisions:
+  - [92, 16, 0]
+  - [84, 24, 0]
+  - [74, 34, 0]
+  - [64, 44, 0]
+  - [54, 54, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
