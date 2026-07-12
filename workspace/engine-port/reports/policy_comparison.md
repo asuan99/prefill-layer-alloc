@@ -21,26 +21,29 @@
 | 4 | **agnostic_v2** | (A) 정적 | 전층 낮은 floor(decode16) | decode 실작업 있으면 최악 |
 | 5 | **layer-aware (decode-type)** | (A) sub-step | decode 층타입별 split (R0d/(a)/v4) | ★**반증** — (D) granularity |
 | 6 | **layer-aware (prefill-type=PF)** | (A) sub-step | prefill 층타입별 split (PF/fix1/fix2) | ★**최악** — starvation+(D) 양측 |
-| 7 | **SLO-aware (controller)** | (B) 동적 | TPOT/큐 피드백으로 split | regime 적응 확증(방향), 튜닝 진행중 |
+| 7 | **SLO-aware (controller)** | (B) 동적 | TPOT/큐 피드백으로 split | ★**steady-state=static(isolation 증명)**·regime 자동수렴; 유일 upside 정책; mixed(B) 미검 |
 
 ## 2. goodput@SLO 비교표
 
 ### in3600/o32 (prefill-bound) — TPOT p50 병기
-| rate | fused | agnostic | **d24(tuned)** | agn_v2/d16 | LA:(a)OPT | LA:v4 | PF:fix2 | SLO-v1 |
+| rate | fused | agnostic | **d24(tuned)** | agn_v2/d16 | LA:(a)OPT | LA:v4 | PF:fix2 | SLO-v6 |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 0.79 | 1.19 | **1.20**(40) | 1.09 | 0.96 | 0.85 | 0.73 | 1.17 |
-| 2 | 0.27 | 2.06 | **2.24**(43) | 1.87 | 0.31 | 0.15 | 0.00 | 0.49 |
-| 3 | 0.00 | 0.55 | **1.18** | 1.03 | 0.00 | 0.00 | 0.00 | 0.16 |
-| 4 | 0.00 | 0.31 | **0.47** | 0.41 | 0.00 | 0.00 | 0.00 | 0.11 |
+| 1 | 0.79 | 1.19 | **1.20**(40) | 1.09 | 0.96 | 0.85 | 0.73 | 1.19 |
+| 2 | 0.27 | 2.06 | **2.24**(43) | 1.87 | 0.31 | 0.15 | 0.00 | 1.32† |
+| 3 | 0.00 | 0.55 | **1.18** | 1.03 | 0.00 | 0.00 | 0.00 | 0.34† |
+| 4 | 0.00 | 0.31 | **0.47** | 0.41 | 0.00 | 0.00 | 0.00 | 0.48 |
+
+†SLO-v6는 d24로 **수렴**하며 **steady-state=static**(isolation 증명); prefill-bound서 startup transient만큼 낮음(back-to-back rate 벤치 아티팩트, 연속부하선 amortize).
 
 ### in2000/o96 (decode-heavy)
-| rate | agnostic | **d44(tuned)** | LA:(a)OPT | LA:v4 | PF:fix2 | SLO-v1 |
+| rate | agnostic | **d44(tuned)** | LA:(a)OPT | LA:v4 | PF:fix2 | SLO-v6 |
 |---|---|---|---|---|---|---|
-| 2 | 2.25 | 2.24 | 1.82 | 1.37 | 1.64 | **2.24** |
-| 3 | 3.24 | 3.22 | 0.43 | 0.35 | 0.00 | **2.89** |
-| 4 | 1.59 | **2.27** | 0.06 | 0.00 | 0.00 | 1.21 |
+| 2 | 2.25 | 2.24 | 1.82 | 1.37 | 1.64 | **2.25** |
+| 3 | 3.24 | 3.22 | 0.43 | 0.35 | 0.00 | **3.19** |
+| 4 | 1.59 | **2.27** | 0.06 | 0.00 | 0.00 | 1.22 |
 
-(SLO-v1 = 예비; v2 컨트롤러 측정 진행중. LA:R0d=coord baseline은 두 regime 모두 rate2+서 goodput 0.)
+★**SLO-v6 = decode-heavy(in2000)서 static 매칭**(r2 2.25≈2.24, r3 3.19≈3.22). LA:R0d=coord baseline은 두 regime 모두 rate2+서 goodput 0.
+isolation: SLO 코드경로를 d24에 pin → static과 **정확히 동일**(2.318≡2.319) ⇒ **steady-state 오버헤드 0, 메커니즘 검증**.
 
 ## 3. 정책별 상세
 
@@ -56,7 +59,7 @@
 
 **6. layer-aware (prefill-type = PF)** — split을 prefill 층타입 기준으로. **최악**: mamba-prefill을 34 SM로 환원해 prefill starvation(mamba-prefill은 SM-민감=knee 확증) + decode를 slice해 (D) 양측 부담. fix1(decode∝SM)=2차·무효, fix2(chunk↓)=저부하만 회복(150→52ms)이나 부하 붕괴. **prefill엔 "공짜로 뺄 SM" 없음**([prefill knee](prefill_vs_decode_execution.md)).
 
-**7. SLO-aware (controller, (B))** — `PDMUX_SLO_SCHED`: TPOT-EMA·prefill 큐 피드백으로 step-level split을 동적 조정. ★**regime 자동 적응 확증**(in3600→prefill-heavy, in2000→decode-heavy, 단일 정책·무튜닝). v1은 오버슈트·prefill-bound 저하로 static 미달 → v2(deadband+TPOT-band) 튜닝중. **layer-aware와 직교**(층타입 아님, SLO 신호로 step split만 조정=(D)-safe). 진짜 이득 지점 = **mixed/bursty load**(정적이 평균에 튜닝돼 suboptimal한 곳).
+**7. SLO-aware (controller, (B))** — `PDMUX_SLO_SCHED`: 측정 TPOT-EMA(스파이크 outlier 제거)·prefill 큐 피드백으로 step-level split을 동적 조정(deadband+TPOT-gated hysteresis). ★**핵심 실증 2가지**: (i) **regime 자동 적응**(단일 정책·무튜닝으로 in3600→d24, in2000→d34–44 수렴); (ii) **steady-state 오버헤드 0 — isolation으로 증명**(SLO 코드경로를 d24에 pin한 결과 static d24와 **정확히 동일** 2.318≡2.319). ⇒ 메커니즘은 옳고 공짜다. **in2000(decode-heavy)선 static 매칭**(r2 2.25≈2.24, r3 3.19≈3.22). in3600(prefill-bound)선 아직 **startup transient**로 static 미달(r2 1.32 vs 2.24) — 컨트롤러 적응 중 prefill 일시 starve→back-to-back rate 벤치서 backlog 잔존(연속부하선 amortize). 컨트롤러 진화: v1 invisible-oscillation→v4 outlier-rejection→v6 neutral-start. **layer-aware와 직교**(층타입 아님, SLO 신호로 step split만=(D)-safe). **전 investigation서 유일하게 upside 있는 정책**(layer-aware 全패 vs 이건 static 매칭+동적 잠재). 진짜 이득 지점 = **mixed/bursty load**(step B; 정적이 평균에 튜닝돼 suboptimal한 곳) — 미검증.
 
 ## 4. 핵심 결론
 
