@@ -56,6 +56,14 @@ class SchedulerMultiplexMixin:
             and not self.running_batch.is_empty()
             and self.split_prefill_batch
         ):
+            # diagnostic pin: fix the split idx (SLO code path, no dynamic adjustment) to isolate
+            # code-path overhead from the controller's dynamic switching.
+            _pin = os.environ.get("PDMUX_SLO_PIN")
+            if _pin:
+                _pidx = int(_pin)
+                set_current_stream_idx(_pidx)
+                self.tp_worker.model_runner.update_decode_attn_backend(_pidx)
+                return _pidx, self.stream_groups[_pidx]
             # SLO-aware step-level split (step A): shift the prefill<->decode boundary toward
             # whichever SLO is more at risk. TPOT signal = measured decode-iteration EMA (one
             # token/iter, set in event_loop_pdmux); TTFT signal = prefill backlog depth. Pure SLO
@@ -69,16 +77,23 @@ class SchedulerMultiplexMixin:
             _hi_frac = float(os.environ.get("PDMUX_TPOT_HI", "0.85"))
             _lo_frac = float(os.environ.get("PDMUX_TPOT_LO", "0.65"))
             _lo, _hi = 1, self.real_sm_group_num - 2
-            _idx = getattr(self, "_slo_idx", _hi)
+            _idx = getattr(self, "_slo_idx", (_lo + _hi) // 2)  # v6: start NEUTRAL (1 step from either
+            # regime optimum) not decode-heavy — a slow descent from _hi starved prefill (transient backlog).
             _tpot = getattr(self, "_slo_tpot_ema", 0.0)
             _qd = len(self.waiting_queue)
-            if _tpot > _hi_frac * _tpot_slo:
-                _new = min(_hi, _idx + 1)      # TPOT tight -> more decode SM
-            elif _tpot < _lo_frac * _tpot_slo and _qd > _qtarget:
-                _new = max(_lo, _idx - 1)      # TPOT slack + prefill backlog -> more prefill SM
+            _dwell = getattr(self, "_slo_dwell", 0)
+            if _dwell > 0:
+                self._slo_dwell = _dwell - 1     # v3: min dwell after a switch (anti-oscillation)
+                _new = _idx
+            elif _tpot > _hi_frac * _tpot_slo:
+                _new = min(_hi, _idx + 1)        # TPOT tight -> more decode SM
+            elif _tpot < _lo_frac * _tpot_slo and _qd > _qtarget:  # v5: TPOT has real margin & prefill backlog
+                _new = max(_lo, _idx - 1)        # -> more prefill SM (stops the descent before decode gets tight)
             else:
-                _new = _idx                    # deadband -> hold (no oscillation)
+                _new = _idx                      # no pressure -> hold
             if _new != _idx:
+                self._slo_dwell = int(os.environ.get("PDMUX_SLO_DWELL", "3"))
+                self._slo_skip = 2               # skip switch-drain iters in the TPOT EMA
                 logger.info(
                     "SLO-SCHED %d->%d decode_sm=%d tpot=%.1fms qd=%d",
                     _idx, _new, self.sm_counts[_new][1], _tpot, _qd,
@@ -151,12 +166,20 @@ class SchedulerMultiplexMixin:
         self._slo_last_t = _time.perf_counter()
         while True:
             if _slo_on:
-                # measure per-iteration wall time = TPOT (one token/iter when decode active)
+                # measure per-iteration wall time = TPOT (one token/iter when decode active);
+                # v3: skip the iterations right after a partition switch — the switch drains the
+                # GPU (2x synchronize) and that drain would otherwise be misread as a huge TPOT
+                # spike, which drove the v1/v2 oscillation.
                 _now = _time.perf_counter()
                 _dt = (_now - self._slo_last_t) * 1000.0
                 self._slo_last_t = _now
-                if (not self.running_batch.is_empty()) and 0.0 < _dt < 1000.0:
-                    _ema = getattr(self, "_slo_tpot_ema", 0.0)
+                _ema = getattr(self, "_slo_tpot_ema", 0.0)
+                # v4: reject outlier spikes. The adjust block does 2x synchronize (drain) at
+                # EVERY prefill boundary (frequent in prefill-bound), which shows up as a ~200ms+
+                # spike vs the true ~40ms TPOT. Accept _dt only within a band around the running
+                # EMA, else the signal is poisoned and the controller oscillates.
+                _cap = (3.0 * _ema) if _ema else 1000.0
+                if (not self.running_batch.is_empty()) and 0.0 < _dt < max(_cap, 90.0):
                     self._slo_tpot_ema = (0.7 * _ema + 0.3 * _dt) if _ema else _dt
             with torch.cuda.stream(decode_stream):
                 set_pdmux_status(False)
