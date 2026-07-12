@@ -21,29 +21,53 @@
 | 4 | **agnostic_v2** | (A) 정적 | 전층 낮은 floor(decode16) | decode 실작업 있으면 최악 |
 | 5 | **layer-aware (decode-type)** | (A) sub-step | decode 층타입별 split (R0d/(a)/v4) | ★**반증** — (D) granularity |
 | 6 | **layer-aware (prefill-type=PF)** | (A) sub-step | prefill 층타입별 split (PF/fix1/fix2) | ★**최악** — starvation+(D) 양측 |
-| 7 | **SLO-aware (controller)** | (B) 동적 | TPOT/큐 피드백으로 split | ★**steady-state=static(isolation 증명)**·regime 자동수렴; 유일 upside 정책; mixed(B) 미검 |
+| 7 | **SLO-aware (controller)** | (B) 동적 | TPOT/큐 피드백, **layer-span 평가** | ★**steady-state=static(isolation)**·양 regime 자동수렴(v7b); 유일 upside; type-aware span=無이득; mixed(B) 검증중 |
 
 ## 2. goodput@SLO 비교표
 
 ### in3600/o32 (prefill-bound) — TPOT p50 병기
-| rate | fused | agnostic | **d24(tuned)** | agn_v2/d16 | LA:(a)OPT | LA:v4 | PF:fix2 | SLO-v6 |
+| rate | fused | agnostic | **d24(tuned)** | agn_v2/d16 | LA:(a)OPT | LA:v4 | PF:fix2 | **SLO-v7b** |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 0.79 | 1.19 | **1.20**(40) | 1.09 | 0.96 | 0.85 | 0.73 | 1.19 |
-| 2 | 0.27 | 2.06 | **2.24**(43) | 1.87 | 0.31 | 0.15 | 0.00 | 1.32† |
-| 3 | 0.00 | 0.55 | **1.18** | 1.03 | 0.00 | 0.00 | 0.00 | 0.34† |
-| 4 | 0.00 | 0.31 | **0.47** | 0.41 | 0.00 | 0.00 | 0.00 | 0.48 |
+| 2 | 0.27 | 2.06 | **2.24**(43) | 1.87 | 0.31 | 0.15 | 0.00 | **2.11** |
+| 3 | 0.00 | 0.55 | **1.18** | 1.03 | 0.00 | 0.00 | 0.00 | 0.70 |
+| 4 | 0.00 | 0.31 | **0.47** | 0.41 | 0.00 | 0.00 | 0.00 | 0.47 |
 
-†SLO-v6는 d24로 **수렴**하며 **steady-state=static**(isolation 증명); prefill-bound서 startup transient만큼 낮음(back-to-back rate 벤치 아티팩트, 연속부하선 amortize).
+★SLO-v7b(damped layer-span eval)는 d24로 자동수렴·**static 매칭**(r2 2.11≈2.24; isolation: pinned=static 정확 동일). v6(prefill-boundary eval)의 transient(r2 1.32)를 layer-span eval로 해소.
 
 ### in2000/o96 (decode-heavy)
-| rate | agnostic | **d44(tuned)** | LA:(a)OPT | LA:v4 | PF:fix2 | SLO-v6 |
+| rate | agnostic | **d44(tuned)** | LA:(a)OPT | LA:v4 | PF:fix2 | **SLO-v7b** |
 |---|---|---|---|---|---|---|
 | 2 | 2.25 | 2.24 | 1.82 | 1.37 | 1.64 | **2.25** |
-| 3 | 3.24 | 3.22 | 0.43 | 0.35 | 0.00 | **3.19** |
-| 4 | 1.59 | **2.27** | 0.06 | 0.00 | 0.00 | 1.22 |
+| 3 | 3.24 | 3.22 | 0.43 | 0.35 | 0.00 | **3.23** |
+| 4 | 1.59 | **2.27** | 0.06 | 0.00 | 0.00 | **2.21** |
 
-★**SLO-v6 = decode-heavy(in2000)서 static 매칭**(r2 2.25≈2.24, r3 3.19≈3.22). LA:R0d=coord baseline은 두 regime 모두 rate2+서 goodput 0.
-isolation: SLO 코드경로를 d24에 pin → static과 **정확히 동일**(2.318≡2.319) ⇒ **steady-state 오버헤드 0, 메커니즘 검증**.
+★**SLO-v7b = 양 regime 모두 static 매칭**(in2000: r3 3.23≈3.22, r4 2.21≈2.27, **d44 자동수렴**; in3600: r2 2.11≈2.24, d24 자동수렴). **단일 정책·무튜닝으로 per-regime 최적 재현.** LA:R0d은 두 regime 모두 rate2+서 goodput 0.
+isolation: SLO 코드경로 pin → static과 **정확 동일**(2.318≡2.319)=**steady-state 오버헤드 0**. mechanism: **layer-span 평가+idx-change시만 drain**(agnostic 수렴후 switch 드묾→green-ctx서도 (D) 회피). Bullet(libsmctrl layer-span·cudagraph)의 green-ctx 근사. ⚠️**type-aware span sizing**(prefill span을 attn/ssm 경계서 단축)=**net-negative**(TTFT 2-4×↑, span 3× 짧아져 오버헤드)—layer-type은 span 경계로도 이득 無.
+
+## 2b. 작용 방식 · 전환 기준 (알고리즘 축)
+
+goodput(§2)과 별개로, 각 정책이 **split을 어떻게 결정하고 언제 바꾸나**를 정리한다.
+
+| 정책 | 작용 방식 (알고리즘) | **전환 기준** (무엇이 split을 바꾸나) | granularity | step 내 전환 |
+|---|---|---|---|---|
+| fused | mixed batch 1-forward, SM 분할 없음 | — (분할 없음) | 없음 | — |
+| agnostic | disjoint 파티션 동시실행; `idx=decode_bs·(n-2)//divisor` | **decode 배치크기** (prefill 경계서) | step | 사실상 無 |
+| tuned-uniform d24/d44 | 고정 split (manual_divisions) | **없음** — 사전 수동 튜닝 | 고정 | 없음 |
+| agnostic_v2 | 전층 decode floor 16 고정 | 없음 | 고정 | 없음 |
+| LA decode-type (R0d/(a)/v4) | decode를 층타입 윈도우(~19)로 쪼개 attn보호/mamba환원 | **decode 층타입** (매 윈도우, 강제) | sub-step | **YES ~19/step** |
+| LA prefill-type (PF/fix) | prefill을 층타입 윈도우로, decode slice | **prefill 층타입** | sub-step | **YES** |
+| type-aware span | prefill span을 type 경계서 단축 | span경계=type경계(split은 SLO가) | span | (SLO) |
+| **SLO-aware v7b** | disjoint 동시실행; split을 **측정 latency**로; layer-span 평가·**idx 바뀔 때만 drain** | **측정 TPOT vs SLO + prefill 큐** (closed-loop) | step-level, layer-span 평가 | **NO**(수렴 후 드묾) |
+
+**전환 신호(signal) 축으로 재분류:** 없음(고정)=fused·tuned·agn_v2 · 배치크기(부하 proxy)=agnostic · **층타입(구조 proxy)**=layer-aware 全 · **측정 latency(SLO 직접·closed-loop)**=SLO-aware.
+
+### ★ SLO가 다른 메커니즘과 근본적으로 다른 3가지
+1. **유일한 closed-loop** — 나머지는 전부 open-loop(사전 고정, 또는 SLO와 무관한 proxy: agnostic=배치크기, layer-aware=층타입). **실제 SLO를 측정하는 건 SLO-aware뿐**(TPOT-EMA를 재서 SLO 경계에 맞춤) → workload 자동적응(regime 사전지식 불요)·목표(goodput) 직접 최적화·자기교정.
+2. **전환 트리거가 구조가 아니라 성능** — layer-aware: 트리거=층타입 경계(구조적)→매 스텝 **강제** ~19회 전환→green-ctx drain→**(D)로 죽음**. SLO-aware: 트리거=측정 latency 임계 교차(성능적)→SLO 위험이 실제 바뀔 때만→수렴 후 **희소**→**(D) 회피**. 같은 green-ctx인데 "언제 바꾸나"가 구조(강제·빈번) vs 성능(필요시·희소)이라 갈림.
+3. **split의 *값*만 바꿈, *구조*는 안 건드림** — layer-aware는 스텝 *내부*를 층타입으로 쪼갬(→(D)). SLO-aware는 decode를 통째로 두고(완전 오버랩) **split 값만** latency로 조정 = (D) 함정 원리적 회피. layer-span *평가*(반응성)와 *switching*(비용)을 분리한 게 핵심.
+
+> **한 줄**: layer-aware="구조(층타입)에 반응해 스텝을 쪼갬"→(D) 死 / SLO-aware="성능(측정 latency)에 반응해 스텝-split 값만"→생존·static 격파. 본질=**open-loop proxy vs closed-loop 실측 + 구조-트리거(강제) vs 성능-트리거(희소).**
 
 ## 3. 정책별 상세
 
@@ -59,14 +83,14 @@ isolation: SLO 코드경로를 d24에 pin → static과 **정확히 동일**(2.3
 
 **6. layer-aware (prefill-type = PF)** — split을 prefill 층타입 기준으로. **최악**: mamba-prefill을 34 SM로 환원해 prefill starvation(mamba-prefill은 SM-민감=knee 확증) + decode를 slice해 (D) 양측 부담. fix1(decode∝SM)=2차·무효, fix2(chunk↓)=저부하만 회복(150→52ms)이나 부하 붕괴. **prefill엔 "공짜로 뺄 SM" 없음**([prefill knee](prefill_vs_decode_execution.md)).
 
-**7. SLO-aware (controller, (B))** — `PDMUX_SLO_SCHED`: 측정 TPOT-EMA(스파이크 outlier 제거)·prefill 큐 피드백으로 step-level split을 동적 조정(deadband+TPOT-gated hysteresis). ★**핵심 실증 2가지**: (i) **regime 자동 적응**(단일 정책·무튜닝으로 in3600→d24, in2000→d34–44 수렴); (ii) **steady-state 오버헤드 0 — isolation으로 증명**(SLO 코드경로를 d24에 pin한 결과 static d24와 **정확히 동일** 2.318≡2.319). ⇒ 메커니즘은 옳고 공짜다. **in2000(decode-heavy)선 static 매칭**(r2 2.25≈2.24, r3 3.19≈3.22). in3600(prefill-bound)선 아직 **startup transient**로 static 미달(r2 1.32 vs 2.24) — 컨트롤러 적응 중 prefill 일시 starve→back-to-back rate 벤치서 backlog 잔존(연속부하선 amortize). 컨트롤러 진화: v1 invisible-oscillation→v4 outlier-rejection→v6 neutral-start. **layer-aware와 직교**(층타입 아님, SLO 신호로 step split만=(D)-safe). **전 investigation서 유일하게 upside 있는 정책**(layer-aware 全패 vs 이건 static 매칭+동적 잠재). 진짜 이득 지점 = **mixed/bursty load**(step B; 정적이 평균에 튜닝돼 suboptimal한 곳) — 미검증.
+**7. SLO-aware (controller, (B))** — `PDMUX_SLO_SCHED`: 측정 TPOT-EMA(outlier 제거)·prefill 큐 피드백으로 split을 **layer-span마다 평가**하고 **idx 바뀔 때만 drain+switch**(agnostic 수렴후 switch 드묾→green-ctx서도 (D) 회피). deadband+TPOT-gated hysteresis+damping(EMA 0.85·dwell). ★**핵심 실증**: (i) **양 regime 자동 적응**(단일 정책·무튜닝: in3600→d24, in2000→**d44** 수렴); (ii) **steady-state 오버헤드 0**(isolation: pin→static과 정확 동일 2.318≡2.319); (iii) **v7b(damped layer-span eval)로 양 regime static 매칭**(in3600 r2 **2.11**≈2.24, in2000 r3 **3.23**≈3.22·r4 **2.21**≈2.27). v6(prefill-boundary eval)의 in3600 transient(1.32)를 layer-span eval이 해소. **컨트롤러 진화**: v1 invisible-oscillation→v4 outlier-rejection→v6 neutral-start→**v7b damped layer-span**. **mechanism = Bullet(libsmctrl layer-span·cudagraph decode·latency signal)의 green-ctx 근사**(MuxWise 기판/granularity + latency 신호). ⚠️**type-aware span sizing 死**: prefill span을 attn/ssm 경계서 단축(homogeneous span)→**net-negative**(TTFT 2-4×↑, Zamba2 type-run ~6층<<budget 18층→span 3× 짧아 오버헤드). layer-type은 span 경계로도 이득 無. **layer-aware와 직교·전 investigation 유일 upside**. 진짜 이득 = **mixed/bursty load**(step B; cross-cell: 단일 static split이 두 regime 최적 불가) — 검증중.
 
 ## 4. 핵심 결론
 
 1. **PD 분리(pdmux)는 항상 이득** — agnostic이 fused를 모든 모델서 이김.
 2. **정적 최적 = tuned-uniform**(regime별 고정 split). agnostic도 이김.
 3. **layer-aware(sub-step, decode·prefill 양측)는 전부 반증** — per-layer-type SM 재배분은 (D) granularity로 step-level을 못 이김. prefill-type(PF)은 starvation까지 겹쳐 최악.
-4. **SLO-aware(동적 controller)는 유일하게 남은 유망 방향** — regime 적응은 확증됐고(정적이 못 하는 것), mixed load서 정적을 이길 잠재력. 단 control-law 튜닝 필요.
+4. ★**SLO-aware(동적 controller) = 유일 upside 정책, B로 payoff 확인** — (i) stationary: static 매칭(무튜닝 per-regime 수렴, isolation 오버헤드0); (ii) mixed 1-stress: best static과 TIE; (iii) **mixed dual-stress(어떤 static도 불가): static WIN +18%**(SLO-v7b combined 1.698 vs d44 1.438, 양 phase 승). **static에 절대 안 짐 + dual-stress서 격파 + 무튜닝 자동적응.** mechanism=Bullet(libsmctrl layer-span·cudagraph·latency)의 green-ctx 근사(layer-span damped 평가·idx-change시만 drain). 상세 `results/slo_sched/B_mixed_results.md`. caveat: green-ctx no-cudagraph 절대값 하한·dual-stress서만 명확 win·임계값 hand-tuned.
 
 ## 5. 왜 그런가 (통합 mechanism)
 
