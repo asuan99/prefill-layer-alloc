@@ -47,6 +47,42 @@ class SchedulerMultiplexMixin:
             f"PD-Multiplexing enabled with {self.real_sm_group_num} stream groups, sm_counts (prefill_sm, decode_sm): {self.sm_counts}"
         )
 
+    def _slo_decide_idx(self: Scheduler) -> int:
+        """SLO-aware controller (v7): return the target split idx from the latency signal
+        (measured TPOT-EMA + prefill backlog). Called PER prefill-layer-span from the event
+        loop; the caller drains+switches only when the returned idx differs from the current
+        one (agnostic latency-adaptive rarely switches once converged -> few green-ctx drains).
+        Config divisions must be ordered by INCREASING decode SM (idx+1 = more decode SM)."""
+        _pin = os.environ.get("PDMUX_SLO_PIN")
+        if _pin:
+            return int(_pin)
+        _tpot_slo = float(os.environ.get("PDMUX_TPOT_SLO_MS", "60"))
+        _qtarget = float(os.environ.get("PDMUX_QDEPTH_TARGET", "4"))
+        _hi_frac = float(os.environ.get("PDMUX_TPOT_HI", "0.85"))
+        _lo_frac = float(os.environ.get("PDMUX_TPOT_LO", "0.65"))
+        _lo, _hi = 1, self.real_sm_group_num - 2
+        _idx = getattr(self, "_slo_idx", (_lo + _hi) // 2)  # start NEUTRAL (1 step from either optimum)
+        _tpot = getattr(self, "_slo_tpot_ema", 0.0)
+        _qd = len(self.waiting_queue)
+        _dwell = getattr(self, "_slo_dwell", 0)
+        if _dwell > 0:
+            self._slo_dwell = _dwell - 1                 # min dwell after a switch (anti-oscillation)
+            _new = _idx
+        elif _tpot > _hi_frac * _tpot_slo:
+            _new = min(_hi, _idx + 1)                    # TPOT tight -> more decode SM
+        elif _tpot < _lo_frac * _tpot_slo and _qd > _qtarget:  # TPOT has real margin & prefill backlogged
+            _new = max(_lo, _idx - 1)                    # -> more prefill SM (stop before decode gets tight)
+        else:
+            _new = _idx                                  # deadband -> hold
+        if _new != _idx:
+            self._slo_dwell = int(os.environ.get("PDMUX_SLO_DWELL", "3"))
+            logger.info(
+                "SLO-SCHED %d->%d decode_sm=%d tpot=%.1fms qd=%d",
+                _idx, _new, self.sm_counts[_new][1], _tpot, _qd,
+            )
+        self._slo_idx = _new
+        return _new
+
     # TODO(jason-fxz): This is a temporary demo
     def adjust_stream_groups(
         self: Scheduler,
@@ -56,50 +92,7 @@ class SchedulerMultiplexMixin:
             and not self.running_batch.is_empty()
             and self.split_prefill_batch
         ):
-            # diagnostic pin: fix the split idx (SLO code path, no dynamic adjustment) to isolate
-            # code-path overhead from the controller's dynamic switching.
-            _pin = os.environ.get("PDMUX_SLO_PIN")
-            if _pin:
-                _pidx = int(_pin)
-                set_current_stream_idx(_pidx)
-                self.tp_worker.model_runner.update_decode_attn_backend(_pidx)
-                return _pidx, self.stream_groups[_pidx]
-            # SLO-aware step-level split (step A): shift the prefill<->decode boundary toward
-            # whichever SLO is more at risk. TPOT signal = measured decode-iteration EMA (one
-            # token/iter, set in event_loop_pdmux); TTFT signal = prefill backlog depth. Pure SLO
-            # feedback, no layer-type -> (D)-safe (adjusts only the step split, at prefill bounds).
-            # Assumes config divisions ordered by INCREASING decode SM (idx+1 = more decode).
-            # v2: TPOT-band targeting with deadband/hysteresis (avoid v1 bang-bang overshoot &
-            # oscillation). Keep decode TPOT under SLO with margin; hand SM to prefill only when
-            # decode has real slack AND prefill is backlogged. Start decode-safe, relax toward prefill.
-            _tpot_slo = float(os.environ.get("PDMUX_TPOT_SLO_MS", "60"))
-            _qtarget = float(os.environ.get("PDMUX_QDEPTH_TARGET", "4"))
-            _hi_frac = float(os.environ.get("PDMUX_TPOT_HI", "0.85"))
-            _lo_frac = float(os.environ.get("PDMUX_TPOT_LO", "0.65"))
-            _lo, _hi = 1, self.real_sm_group_num - 2
-            _idx = getattr(self, "_slo_idx", (_lo + _hi) // 2)  # v6: start NEUTRAL (1 step from either
-            # regime optimum) not decode-heavy — a slow descent from _hi starved prefill (transient backlog).
-            _tpot = getattr(self, "_slo_tpot_ema", 0.0)
-            _qd = len(self.waiting_queue)
-            _dwell = getattr(self, "_slo_dwell", 0)
-            if _dwell > 0:
-                self._slo_dwell = _dwell - 1     # v3: min dwell after a switch (anti-oscillation)
-                _new = _idx
-            elif _tpot > _hi_frac * _tpot_slo:
-                _new = min(_hi, _idx + 1)        # TPOT tight -> more decode SM
-            elif _tpot < _lo_frac * _tpot_slo and _qd > _qtarget:  # v5: TPOT has real margin & prefill backlog
-                _new = max(_lo, _idx - 1)        # -> more prefill SM (stops the descent before decode gets tight)
-            else:
-                _new = _idx                      # no pressure -> hold
-            if _new != _idx:
-                self._slo_dwell = int(os.environ.get("PDMUX_SLO_DWELL", "3"))
-                self._slo_skip = 2               # skip switch-drain iters in the TPOT EMA
-                logger.info(
-                    "SLO-SCHED %d->%d decode_sm=%d tpot=%.1fms qd=%d",
-                    _idx, _new, self.sm_counts[_new][1], _tpot, _qd,
-                )
-            _idx = _new
-            self._slo_idx = _idx
+            _idx = self._slo_decide_idx()
             set_current_stream_idx(_idx)
             self.tp_worker.model_runner.update_decode_attn_backend(_idx)
             return _idx, self.stream_groups[_idx]
@@ -179,8 +172,9 @@ class SchedulerMultiplexMixin:
                 # spike vs the true ~40ms TPOT. Accept _dt only within a band around the running
                 # EMA, else the signal is poisoned and the controller oscillates.
                 _cap = (3.0 * _ema) if _ema else 1000.0
+                _a = float(os.environ.get("PDMUX_SLO_EMA", "0.85"))  # v7b: smoother signal (was 0.7)
                 if (not self.running_batch.is_empty()) and 0.0 < _dt < max(_cap, 90.0):
-                    self._slo_tpot_ema = (0.7 * _ema + 0.3 * _dt) if _ema else _dt
+                    self._slo_tpot_ema = (_a * _ema + (1.0 - _a) * _dt) if _ema else _dt
             with torch.cuda.stream(decode_stream):
                 set_pdmux_status(False)
                 recv_reqs = self.recv_requests()
@@ -206,7 +200,26 @@ class SchedulerMultiplexMixin:
                     self.new_token_ratio = self.init_new_token_ratio
                     self.maybe_sleep_on_idle()
 
-            if adjust_stream_group:
+            if (
+                _slo_on
+                and not self.running_batch.is_empty()
+                and self.split_prefill_batch
+                and not wait_prefill_kernel_done
+            ):
+                # v7: SLO layer-span evaluation — decide the target split EVERY prefill span,
+                # but drain+switch only when it actually changes (converged -> rare -> few drains).
+                _tgt = self._slo_decide_idx()
+                if _tgt != stream_idx:
+                    prefill_stream.synchronize()
+                    decode_stream.synchronize()
+                    set_current_stream_idx(_tgt)
+                    self.tp_worker.model_runner.update_decode_attn_backend(_tgt)
+                    stream_idx = _tgt
+                    stream_group = self.stream_groups[_tgt]
+                    prefill_stream = stream_group[0]
+                    decode_stream = stream_group[1]
+                adjust_stream_group = False
+            elif adjust_stream_group:
                 prefill_stream.synchronize()
                 decode_stream.synchronize()
                 stream_idx, stream_group = self.adjust_stream_groups()
@@ -246,6 +259,16 @@ class SchedulerMultiplexMixin:
                         self.split_prefill_batch.split_index + forward_count,
                         self.model_config.num_hidden_layers,
                     )
+                    _m = self.tp_worker.model_runner.model
+                    if os.environ.get("PDMUX_SLO_SPAN_TYPE") and hasattr(_m, "la_coord_windows"):
+                        # type-aware span sizing: cut the prefill span at the current attn/ssm
+                        # type-run boundary so each span is layer-type-HOMOGENEOUS (shorten mixed
+                        # spans). Layer-type re-enters as SPAN BOUNDARIES, not per-window SM switching.
+                        _cur = self.split_prefill_batch.split_index
+                        for _s, _e, _a in _m.la_coord_windows():
+                            if _s <= _cur < _e:
+                                next_split_index = min(next_split_index, _e)
+                                break
                     forward_count = (
                         next_split_index - self.split_prefill_batch.split_index
                     )
