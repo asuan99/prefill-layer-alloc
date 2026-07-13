@@ -1,0 +1,124 @@
+==========================================
+SLURM_JOB_ID = 847411
+SLURM_NODELIST = gpu37
+==========================================
+PROBE3 regime=in2000o96 policies=[agn d44 slo] cudagraph=ON job=847411
+########## POLICY=agn REGIME=in2000o96 cfg=pdmux_slo.yml port=38042 ##########
+agn boot_ok=1  cudagraph_captured=1
+agn SANITY "text":" Paris.\nThe capital of"
+===== agn in2000o96 rate=2 =====
+Successful requests:                     100       
+Request throughput (req/s):              2.26      
+Median TTFT (ms):                        346.29    
+P99 TTFT (ms):                           1930.88   
+Median TPOT (ms):                        13.41     
+P99 TPOT (ms):                           19.09     
+Median ITL (ms):                         12.57     
+===== agn in2000o96 rate=3 =====
+Successful requests:                     100       
+Request throughput (req/s):              3.20      
+Median TTFT (ms):                        871.33    
+P99 TTFT (ms):                           4113.48   
+Median TPOT (ms):                        17.52     
+P99 TPOT (ms):                           20.45     
+Median ITL (ms):                         17.46     
+===== agn in2000o96 rate=4 =====
+Successful requests:                     100       
+Request throughput (req/s):              3.51      
+Median TTFT (ms):                        3116.07   
+P99 TTFT (ms):                           7404.64   
+Median TPOT (ms):                        18.95     
+P99 TPOT (ms):                           20.15     
+Median ITL (ms):                         19.45     
+===== agn in2000o96 rate=6 =====
+Successful requests:                     100       
+Request throughput (req/s):              3.59      
+Median TTFT (ms):                        6452.62   
+P99 TTFT (ms):                           12891.40  
+Median TPOT (ms):                        19.89     
+P99 TPOT (ms):                           20.02     
+Median ITL (ms):                         19.67     
+########## POLICY=d44 REGIME=in2000o96 cfg=pdmux_d44.yml port=38051 ##########
+d44 boot_ok=1  cudagraph_captured=1
+d44 SANITY "text":" Paris.\nThe capital of"
+===== d44 in2000o96 rate=2 =====
+Successful requests:                     100       
+Request throughput (req/s):              2.26      
+Median TTFT (ms):                        266.86    
+P99 TTFT (ms):                           1245.14   
+Median TPOT (ms):                        13.16     
+P99 TPOT (ms):                           20.57     
+Median ITL (ms):                         11.63     
+===== d44 in2000o96 rate=3 =====
+Successful requests:                     100       
+Request throughput (req/s):              3.31      
+Median TTFT (ms):                        486.00    
+P99 TTFT (ms):                           2252.48   
+Median TPOT (ms):                        19.05     
+P99 TPOT (ms):                           28.94     
+Median ITL (ms):                         18.41     
+===== d44 in2000o96 rate=4 =====
+Successful requests:                     100       
+Request throughput (req/s):              3.95      
+Median TTFT (ms):                        985.43    
+P99 TTFT (ms):                           4285.59   
+Median TPOT (ms):                        25.93     
+P99 TPOT (ms):                           30.99     
+Median ITL (ms):                         24.76     
+===== d44 in2000o96 rate=6 =====
+Successful requests:                     100       
+Request throughput (req/s):              4.19      
+Median TTFT (ms):                        4297.89   
+P99 TTFT (ms):                           8795.07   
+Median TPOT (ms):                        28.43     
+P99 TPOT (ms):                           31.85     
+Median ITL (ms):                         24.66     
+########## POLICY=slo REGIME=in2000o96 cfg=pdmux_slo.yml port=38013 ##########
+slo boot_ok=1  cudagraph_captured=1
+slo SANITY "text":" Paris.\nThe capital of"
+===== slo in2000o96 rate=2 =====
+Successful requests:                     100       
+Request throughput (req/s):              2.27      
+Median TTFT (ms):                        230.89    
+P99 TTFT (ms):                           640.46    
+Median TPOT (ms):                        13.52     
+P99 TPOT (ms):                           25.73     
+Median ITL (ms):                         11.34     
+===== slo in2000o96 rate=3 =====
+Successful requests:                     100       
+Request throughput (req/s):              3.32      
+Median TTFT (ms):                        342.77    
+P99 TTFT (ms):                           1484.13   
+Median TPOT (ms):                        20.17     
+P99 TPOT (ms):                           41.32     
+Median ITL (ms):                         19.31     
+===== slo in2000o96 rate=4 =====
+Successful requests:                     100       
+Request throughput (req/s):              4.03      
+Median TTFT (ms):                        597.74    
+P99 TTFT (ms):                           3453.53   
+Median TPOT (ms):                        31.22     
+P99 TPOT (ms):                           41.60     
+Median ITL (ms):                         32.33     
+===== slo in2000o96 rate=6 =====
+Successful requests:                     100       
+Request throughput (req/s):              4.07      
+Median TTFT (ms):                        4344.58   
+P99 TTFT (ms):                           9500.69   
+Median TPOT (ms):                        41.60     
+P99 TPOT (ms):                           67.59     
+Median ITL (ms):                         38.70     
+--- goodput@SLO(TTFT<=3s & meanITL<=60ms) per (rate) rows, in2000o96 ---
+  rate=2 n=100 ttft50=346 good=100 gp=2.256 dur=44.3
+  rate=3 n=100 ttft50=871 good=90 gp=2.878 dur=31.3
+  rate=4 n=100 ttft50=3116 good=49 gp=1.721 dur=28.5
+  rate=6 n=100 ttft50=6453 good=19 gp=0.682 dur=27.8
+  rate=2 n=100 ttft50=267 good=100 gp=2.263 dur=44.2
+  rate=3 n=100 ttft50=486 good=100 gp=3.311 dur=30.2
+  rate=4 n=100 ttft50=985 good=81 gp=3.200 dur=25.3
+  rate=6 n=100 ttft50=4298 good=33 gp=1.383 dur=23.9
+  rate=2 n=100 ttft50=231 good=100 gp=2.266 dur=44.1
+  rate=3 n=100 ttft50=343 good=100 gp=3.323 dur=30.1
+  rate=4 n=100 ttft50=598 good=90 gp=3.626 dur=24.8
+  rate=6 n=100 ttft50=4345 good=25 gp=1.019 dur=24.5
+DONE_PROBE3_in2000o96

@@ -1,0 +1,57 @@
+==========================================
+SLURM_JOB_ID = 847296
+SLURM_NODELIST = gpu37
+==========================================
+########## VARIANT=cgOFF flags='--disable-cuda-graph --disable-piecewise-cuda-graph' port=36119 ##########
+cgOFF boot_ok=1
+--- cgOFF capture evidence ---
+[2026-07-13 11:45:44] Prefill batch, #new-seq: 1, #new-token: 7, #cached-token: 0, full token usage: 0.00, mamba usage: 0.02, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 0.00
+[2026-07-13 11:45:49] Prefill batch, #new-seq: 1, #new-token: 1, #cached-token: 0, full token usage: 0.00, mamba usage: 0.00, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 1.40
+[2026-07-13 11:45:21] Ignore import error when loading sglang.srt.models.midashenglm: No module named 'torchaudio'
+[2026-07-13 11:45:33] Can not initialize OpenAIServingResponses, error: Traceback (most recent call last):
+ModuleNotFoundError: No module named 'openai_harmony'
+2026-07-13 11:45:38,527 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+cgOFF SANITY "text":" Paris.\nThe capital of"
+===== cgOFF in2000o96 rate=2 =====
+Successful requests:                     60        
+Request throughput (req/s):              1.76      
+Median TTFT (ms):                        241.81    
+Median TPOT (ms):                        62.70     
+P99 TPOT (ms):                           142.20    
+Median ITL (ms):                         39.09     
+===== cgOFF in2000o96 rate=4 =====
+Successful requests:                     60        
+Request throughput (req/s):              3.14      
+Median TTFT (ms):                        253.82    
+Median TPOT (ms):                        82.41     
+P99 TPOT (ms):                           108.05    
+Median ITL (ms):                         40.50     
+########## VARIANT=cgON flags='' port=36096 ##########
+cgON boot_ok=1
+--- cgON capture evidence ---
+[2026-07-13 11:48:05] Capture cuda graph begin. This can take up to several minutes. avail mem=14.06 GB
+[2026-07-13 11:48:05] Capture cuda graph bs [1, 2, 4, 8, 12, 16, 24, 32, 40, 48]
+  0%|          | 0/10 [00:00<?, ?it/s]Capturing batches (bs=48 avail_mem=14.04 GB):   0%|          | 0/10 [00:00<?, ?it/s]2026-07-13 11:48:06,513 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+Capturing batches (bs=48 avail_mem=14.04 GB):  10%|█         | 1/10 [00:01<00:17,  1.99s/it]Capturing batches (bs=40 avail_mem=13.99 GB):  10%|█         | 1/10 [00:01<00:17,  1.99s/it]Capturing batches (bs=40 avail_mem=13.99 GB):  20%|██        | 2/10 [00:02<00:07,  1.12it/s]Capturing batches (bs=32 avail_mem=13.98 GB):  20%|██        | 2/10 [00:02<00:07,  1.12it/s]Capturing batches (bs=32 avail_mem=13.98 GB):  30%|███       | 3/10 [00:02<00:03,  1.85it/s]Capturing batches (bs=24 avail_mem=13.97 GB):  30%|███       | 3/10 [00:02<00:03,  1.85it/s]Capturing batches (bs=24 avail_mem=13.97 GB):  40%|████      | 4/10 [00:02<00:02,  2.68it/s]Capturing batches (bs=16 avail_mem=13.97 GB):  40%|████      | 4/10 [00:02<00:02,  2.68it/s]Capturing batches (bs=16 avail_mem=13.97 GB):  50%|█████     | 5/10 [00:02<00:01,  3.41it/s]Capturing batches (bs=12 avail_mem=13.96 GB):  50%|█████     | 5/10 [00:02<00:01,  3.41it/s]Capturing batches (bs=12 avail_mem=13.96 GB):  60%|██████    | 6/10 [00:02<00:00,  4.29it/s]Capturing batches (bs=8 avail_mem=13.96 GB):  60%|██████    | 6/10 [00:02<00:00,  4.29it/s] Capturing batches (bs=8 avail_mem=13.96 GB):  70%|███████   | 7/10 [00:02<00:00,  5.12it/s]Capturing batches (bs=4 avail_mem=13.95 GB):  70%|███████   | 7/10 [00:02<00:00,  5.12it/s]Capturing batches (bs=4 avail_mem=13.95 GB):  80%|████████  | 8/10 [00:02<00:00,  5.85it/s]Capturing batches (bs=2 avail_mem=13.94 GB):  80%|████████  | 8/10 [00:02<00:00,  5.85it/s]Capturing batches (bs=2 avail_mem=13.94 GB):  90%|█████████ | 9/10 [00:02<00:00,  6.49it/s]Capturing batches (bs=1 avail_mem=13.94 GB):  90%|█████████ | 9/10 [00:02<00:00,  6.49it/s]Capturing batches (bs=1 avail_mem=13.94 GB): 100%|██████████| 10/10 [00:03<00:00,  4.55it/s]Capturing batches (bs=1 avail_mem=13.94 GB): 100%|██████████| 10/10 [00:03<00:00,  2.99it/s]
+[2026-07-13 11:48:09] Capture cuda graph end. Time elapsed: 3.97 s. mem usage=0.13 GB. avail mem=13.93 GB.
+[2026-07-13 11:48:11] Prefill batch, #new-seq: 1, #new-token: 7, #cached-token: 0, full token usage: 0.00, mamba usage: 0.02, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 0.00
+[2026-07-13 11:48:02] Ignore import error when loading sglang.srt.models.midashenglm: No module named 'torchaudio'
+  0%|          | 0/10 [00:00<?, ?it/s]Capturing batches (bs=48 avail_mem=14.04 GB):   0%|          | 0/10 [00:00<?, ?it/s]2026-07-13 11:48:06,513 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-07-13 11:48:06] Unexpected error during package walk: cutlass.cute.experimental
+[2026-07-13 11:48:09] Can not initialize OpenAIServingResponses, error: Traceback (most recent call last):
+cgON SANITY "text":" Paris.\nThe capital of"
+===== cgON in2000o96 rate=2 =====
+Successful requests:                     60        
+Request throughput (req/s):              1.90      
+Median TTFT (ms):                        156.87    
+Median TPOT (ms):                        13.51     
+P99 TPOT (ms):                           39.10     
+Median ITL (ms):                         10.26     
+===== cgON in2000o96 rate=4 =====
+Successful requests:                     60        
+Request throughput (req/s):              3.61      
+Median TTFT (ms):                        266.76    
+Median TPOT (ms):                        54.04     
+P99 TPOT (ms):                           91.71     
+Median ITL (ms):                         26.15     
+DONE_PROBE1
