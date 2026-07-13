@@ -9,6 +9,14 @@
 
 라벨: goodput@SLO(req/s) = `#{req: TTFT≤3s ∧ mean-ITL≤60ms} / duration`. 두 regime: **in3600/o32=prefill-bound**, **in2000/o96=decode-heavy**.
 
+> **⚠️ 스코프 — 이건 full serving system 비교가 아니다.** 여기의 모든 정책은 **sglang v0.5.10 위에 얹은
+> "SM-split 결정 로직" 한 레이어**다(스케줄러·KV·PD-mux green-ctx 메커니즘·모델러너는 전부 sglang 상속).
+> Bullet/MuxWise는 프로세스 아키텍처+메커니즘+정책+cudagraph를 **공동설계한 full-system**이라 층위가 다르다.
+> 그래서 여기 결과는 **특정 기판(green-ctx drain·no-cudagraph·single-process) 위의 정책 비교**이고, 각 결론이
+> **substrate-artifact인지 fundamental인지**는 [system_vs_engine_vs_sim.md](system_vs_engine_vs_sim.md)에서 분리한다.
+> 특히 **"layer-aware 반증"(#5·#6)은 이 기판 한정 진술** — prefill-side TTFT 기전은 확증·fundamental이고,
+> 죽은 건 sub-step decode-type 전환((D))과 no-cudagraph decode wall이 가린 goodput 전환이다.
+
 ---
 
 ## 1. 전체 정책 · 한 줄 판정
