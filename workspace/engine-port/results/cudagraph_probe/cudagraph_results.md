@@ -96,6 +96,45 @@ cudagraph 환경서 goodput 전환되나") **닫힘 = NO**. 세부:
   decode를 cudagraph 표준 경로로 두고 **prefill에만** 층-예약을 하는 형태가 필요(= sub-step 아님; [[prefill-layer-alloc-status]]
   §14 "layer-type-aware 예약"). 그건 별도 설계이며 본 coord 구현과 다름.
 
+## Probe 4 — tuned decode-SM 스윕: "예약(reservation)"은 tuned로 붕괴 (closure)
+
+동기: §14 "layer-type-aware 예약"(비싼 attn-decode만 SM 보호, 싼 ssm-decode 동안 prefill에 반환)이
+cudagraph 하에서 살아나나? 스윕(in3600/o32, cgON, decode-SM 고정 8/16/24/34):
+
+| split (decode SM) | gp r2 | gp r3 | gp r4 | TPOT r2 |
+|---|---|---|---|---|
+| d08 (8) | 0.470 | 0.252 | 0.041 | **135.9** (SLO 초과) |
+| **d16 (16)** | 2.009 | **2.039** | **0.913** | 23.9 |
+| d24 (24) | **2.276** | 1.824 | 0.888 | 20.7 |
+| d34 (34) | 2.107 | 1.139 | 0.552 | 16.7 |
+
+★**가설 확증**: **cudagraph가 tuned 최적점을 작게 민다**(no-cudagraph d24 → cudagraph **d16**, rate3–4).
+attn-decode가 cudagraph로 싸져 decode를 16 SM까지 굶겨도 TPOT<SLO → prefill이 SM을 더 받아 goodput↑.
+단 **d08은 과도**(TPOT 135ms 폭발) — decode 파티션엔 floor가 있다.
+
+★★**"예약" 트랙 CLOSED**: "예약"의 lever는 순수 **decode-side per-layer**(cheap ssm-decode의 SM을
+prefill에 반환)이고, prefill 이득은 그 하류 효과일 뿐 **독립적 prefill-side lever가 없다**([prefill_knee](../prefill_knee/prefill_knee_results.md):
+prefill attn/mamba 비용비 1.2–1.4×로 너무 작아 "공짜로 뺄 둔감 prefill 층" 부재). 이 lever는 본질적으로
+**sub-step**(SM이 decode 층타입마다 변해야)이라 (D)+cudagraph 양측에 걸린다. **step-fixed로 강제하면
+(cudagraph 요구) = tuned-uniform으로 정확히 붕괴** — 그 최적이 **d16**이고, cudagraph가 "cheap ssm-decode →
+prefill" 효과를 **작은 고정 split로 이미 흡수**한다.
+
+결정적 대조 (같은 prefill-bound, cgON, rate4):
+- **step-fixed 예약 degenerate = d16: gp 0.913**
+- **sub-step 예약 실현 = lacoord: gp 0.027** (Probe 3)
+⇒ **sub-step 형태가 자기 step-fixed degenerate보다 34× 나쁘다.** 예약의 모든 이득은 tuned가 가지며,
+sub-step 세분은 순비용((D) drain + cudagraph 포기). **layer-type-aware의 마지막 살아있던 형태(§14 예약)도
+실엔진·cudagraph 하에서 死.**
+
+## 유일하게 남은 미검증 = per-window cudagraph (heroic, 별 트랙)
+
+이론상 layer-aware에 남은 단 하나의 fair-shot = **decode 층타입 창마다 별도 cudagraph를 캡처**해
+창 내부 launch 오버헤드를 없애고 **(D) drain만 남겨 격리 측정**. 그러나 (i) 창 사이 green-ctx 재분할
+drain은 그대로((a) substrate가 이미 잔차의 지배 요인으로 지목), (ii) sglang cudagraph는 full-decode-forward를
+캡처하지 실행 중 임의 층-범위 sub-graph를 캡처 안 함 → 커스텀 캡처 필요(大공수), (iii) 예상 payoff는
+낮음(위 34× 격차의 대부분이 drain). **권고: 미실행**(공수 대비 futile 예상). 실행 시에만 layer-aware 관에
+마지막 못.
+
 ## 함의 (실전)
 1. **운영점은 cudagraph-ON**: 전 정책 decode ~3–4× 빠름·goodput ~1.5–2×↑. 기존 서빙 수치는 전부 하한.
    **정책 결론(SLO=generalist·tuned=per-regime 최적·agnostic=prefill 취약·layer-aware=死)은 랭킹 불변**(cudagraph서 재확인).

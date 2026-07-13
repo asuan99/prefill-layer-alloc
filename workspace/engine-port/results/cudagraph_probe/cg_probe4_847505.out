@@ -1,0 +1,99 @@
+==========================================
+SLURM_JOB_ID = 847505
+SLURM_NODELIST = gpu37
+==========================================
+PROBE4 regime=in3600o32 configs=[d08 d16 d24 d34] cudagraph=ON job=847505
+########## SPLIT=d08 ([100, 8, 0]) REGIME=in3600o32 port=39040 ##########
+d08 boot_ok=1 cudagraph_captured=1
+===== d08 in3600o32 rate=2 =====
+Successful requests:                     100       
+Median TTFT (ms):                        2648.47   
+Median TPOT (ms):                        135.92    
+P99 TPOT (ms):                           147.63    
+Median ITL (ms):                         127.33    
+===== d08 in3600o32 rate=3 =====
+Successful requests:                     100       
+Median TTFT (ms):                        7073.08   
+Median TPOT (ms):                        139.17    
+P99 TPOT (ms):                           141.29    
+Median ITL (ms):                         147.74    
+===== d08 in3600o32 rate=4 =====
+Successful requests:                     100       
+Median TTFT (ms):                        11623.56  
+Median TPOT (ms):                        140.36    
+P99 TPOT (ms):                           141.92    
+Median ITL (ms):                         150.42    
+########## SPLIT=d16 ([92, 16, 0]) REGIME=in3600o32 port=39019 ##########
+d16 boot_ok=1 cudagraph_captured=1
+===== d16 in3600o32 rate=2 =====
+Successful requests:                     100       
+Median TTFT (ms):                        475.95    
+Median TPOT (ms):                        23.94     
+P99 TPOT (ms):                           63.26     
+Median ITL (ms):                         26.86     
+===== d16 in3600o32 rate=3 =====
+Successful requests:                     100       
+Median TTFT (ms):                        1233.79   
+Median TPOT (ms):                        52.83     
+P99 TPOT (ms):                           61.61     
+Median ITL (ms):                         52.37     
+===== d16 in3600o32 rate=4 =====
+Successful requests:                     100       
+Median TTFT (ms):                        4393.62   
+Median TPOT (ms):                        58.99     
+P99 TPOT (ms):                           65.76     
+Median ITL (ms):                         52.85     
+########## SPLIT=d24 ([84, 24, 0]) REGIME=in3600o32 port=39034 ##########
+d24 boot_ok=1 cudagraph_captured=1
+===== d24 in3600o32 rate=2 =====
+Successful requests:                     100       
+Median TTFT (ms):                        615.83    
+Median TPOT (ms):                        20.73     
+P99 TPOT (ms):                           40.10     
+Median ITL (ms):                         22.95     
+===== d24 in3600o32 rate=3 =====
+Successful requests:                     100       
+Median TTFT (ms):                        2119.40   
+Median TPOT (ms):                        31.70     
+P99 TPOT (ms):                           42.09     
+Median ITL (ms):                         31.88     
+===== d24 in3600o32 rate=4 =====
+Successful requests:                     100       
+Median TTFT (ms):                        5086.52   
+Median TPOT (ms):                        37.48     
+P99 TPOT (ms):                           37.88     
+Median ITL (ms):                         37.29     
+########## SPLIT=d34 ([74, 34, 0]) REGIME=in3600o32 port=39056 ##########
+d34 boot_ok=1 cudagraph_captured=1
+===== d34 in3600o32 rate=2 =====
+Successful requests:                     100       
+Median TTFT (ms):                        751.19    
+Median TPOT (ms):                        16.74     
+P99 TPOT (ms):                           28.61     
+Median ITL (ms):                         17.88     
+===== d34 in3600o32 rate=3 =====
+Successful requests:                     100       
+Median TTFT (ms):                        3666.41   
+Median TPOT (ms):                        28.35     
+P99 TPOT (ms):                           28.62     
+Median ITL (ms):                         28.01     
+===== d34 in3600o32 rate=4 =====
+Successful requests:                     100       
+Median TTFT (ms):                        6844.57   
+Median TPOT (ms):                        28.42     
+P99 TPOT (ms):                           28.85     
+Median ITL (ms):                         28.20     
+--- goodput@SLO rows (order = config x rate), in3600o32 ---
+  rate=2 ttft50=2648 good=24 gp=0.470
+  rate=3 ttft50=7073 good=12 gp=0.252
+  rate=4 ttft50=11624 good=2 gp=0.041
+  rate=2 ttft50=476 good=88 gp=2.009
+  rate=3 ttft50=1234 good=67 gp=2.039
+  rate=4 ttft50=4394 good=29 gp=0.913
+  rate=2 ttft50=616 good=100 gp=2.276
+  rate=3 ttft50=2119 good=62 gp=1.824
+  rate=4 ttft50=5087 good=29 gp=0.888
+  rate=2 ttft50=751 good=93 gp=2.107
+  rate=3 ttft50=3666 good=42 gp=1.139
+  rate=4 ttft50=6845 good=20 gp=0.552
+DONE_PROBE4_in3600o32
