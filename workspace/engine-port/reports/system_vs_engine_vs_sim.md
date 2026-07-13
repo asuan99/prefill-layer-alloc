@@ -119,7 +119,7 @@
 | 결론 | 근거 기전 | 분류 | full-system서 뒤집힐까? |
 |---|---|---|---|
 | **layer-TYPE-aware(decode-window) 死** — (D) granularity | green-ctx drain per ~19 windows/step | **substrate-tinged** + **fundamental 반반** | switch 비용은 싼 마스크서 사라짐(substrate). 단 "prefill에 free SM 없음"(attn·mamba prefill 둘 다 SM-민감, differential ~1.44×)은 **fundamental** → 싼 기판이어도 이득 얇을 것 |
-| **layer-aware prefill TTFT 이득** (la<agn −7~23%) | 둔감 mamba prefill SM 환원 | **fundamental (기전 확증)** | 유지. 단 **goodput 전환은 (B)cudagraph 필요** — engine서 no-cudagraph decode wall이 가림 → **full-system서 전환될 여지 open** |
+| **layer-aware prefill TTFT 이득** (la<agn −7~23%) | 둔감 mamba prefill SM 환원 | **fundamental (기전 확증)** | ★**측정됨(2026-07-13)**: prefill TTFT 우위는 유지(lacoord 697<<3025)나 **goodput 전환 실패** — cudagraph가 decode wall을 걷어도 **layer-aware는 sub-step 재분할로 cudagraph 비양립**이라 decode가 붕괴. **전환 open→CLOSED negative** |
 | **SLO-aware = 유일 upside** (static 매칭·dual-stress +18%) | latency closed-loop 동적 split | **fundamental (정책 결과)** | 유지 예상. Bullet이 같은 계열(더 좋은 기판)이라 **더 강해질** 것 |
 | **SLO 절대 magnitude(TPOT)** | no-cudagraph eager decode | **substrate 아티팩트** | full-system서 **절대값 개선**(하한일 뿐) |
 | **type-aware span sizing 死** (TTFT 2–4×↑) | span 3× 짧아 prefill 반복 오버헤드 | **substrate-tinged** | 짧은 span의 재진입 비용은 기판 의존. 단 Zamba2 type-run(~6층)이 짧다는 건 model fact |
@@ -152,9 +152,14 @@ sim이 layer-aware 이득을 예측했으나 engine이 반증한 간극은 **§2
 2. **layer-aware 최종 판정의 정직한 재진술**: "green-ctx·no-cudagraph·single-process 기판 위에서 sub-step
    decode-type 분할과 goodput 전환이 죽었다"가 정확. **prefill-side 기전은 살아있음**. Bullet-급 기판
    (libsmctrl + cudagraph + 별도 프로세스) 재현 없이 "layer-aware 자체가 죽었다"고 단정하면 과대주장.
-3. **가장 결정적 후속 실험**: **cudagraph 가능 환경**(py3.12 재빌드 또는 pdmux+mamba cudagraph 지원 버전)서
-   prefill-side layer-aware TTFT 이득이 **goodput으로 전환되는지** 재측정. (B)decode wall이 사라지면 §3의
-   최상위 open 항목이 닫힌다.
+3. ~~**가장 결정적 후속 실험**: cudagraph 환경서 prefill-side layer-aware가 goodput 전환되나~~ →
+   ★**완료·판정 negative (2026-07-13, [results/cudagraph_probe/cudagraph_results.md](../results/cudagraph_probe/cudagraph_results.md))**:
+   cudagraph는 py3.14/torch2.9+hybrid+triton+**pdmux green-ctx**서 **정상 작동**했다("불가"는 오해·수동 flag).
+   core 정책(agn/tuned/SLO)은 cudagraph로 **decode wall 넘음**(TPOT ~40→13ms, goodput ~1.5–2×↑, 랭킹 불변).
+   그러나 **layer-aware는 못 넘는다** — ★**cudagraph ⊥ sub-step layer-aware**: sub-step green-ctx 재분할은 고정
+   그래프로 캡처 불가라 coord decode가 영구 eager. ⇒ lacoord prefill TTFT는 우위(697<<3025 agn)나 decode SLO
+   붕괴(gp r4 **0.027**). **"cudagraph가 layer-aware 구제" 가설은 반증** — 오히려 격차 확대. **(B)는 한계가
+   아니라 기존 측정의 flag 선택**으로 격하(engine을 사다리 위로 이동 성공).
 4. **차선 후속**: libsmctrl(driver 문제로 BLOCKED였음)로 (A)전환 비용을 실제로 낮춰 layer-span 잦은 전환의
    (D) 아티팩트 부분을 분리 측정.
 
