@@ -448,14 +448,25 @@ class Zamba2Model(nn.Module):
             for _s, _e in _ZT["mamba"]:
                 self._zt_acc["mamba"] += _s.elapsed_time(_e)
             self._zt_n += 1
-            if self._zt_n % (8 if _pk else 30) == 0:  # prefill forwards are fewer than decode steps
+            if self._zt_n % (4 if _pk else 30) == 0:  # prefill forwards are fewer than decode steps (gate low so large-B/short-L modes still emit)
                 import logging as _lg
                 n = self._zt_n
+                # observed batch of the LAST forward (nseq=#sequences, ntok=#tokens this
+                # forward) so the (B,L) knee sweep can key results on measured, not
+                # assumed, batch (guards the tiny-batch micro artifact). timing-branch only.
+                try:
+                    _nseq = int(forward_batch.seq_lens.shape[0]) if forward_batch.seq_lens is not None else -1
+                except Exception:
+                    _nseq = -1
+                try:
+                    _ntok = int(forward_batch.input_ids.shape[0]) if getattr(forward_batch, "input_ids", None) is not None else -1
+                except Exception:
+                    _ntok = -1
                 _lg.getLogger("sglang.srt.models.zamba2").warning(
-                    "%s mode=%s ctxlen=%s n=%d | attn_total=%.3f mamba_total=%.3f | per-attn(9)=%.4f per-mamba(54)=%.4f",
+                    "%s mode=%s ctxlen=%s n=%d bs=%d ntok=%d | attn_total=%.3f mamba_total=%.3f | per-attn(9)=%.4f per-mamba(54)=%.4f",
                     ("ZBPT" if _pk else "ZBLT"),
                     _mode, int(forward_batch.seq_lens.max().item()) if forward_batch.seq_lens is not None else -1,
-                    n, self._zt_acc["attn"]/n, self._zt_acc["mamba"]/n,
+                    n, _nseq, _ntok, self._zt_acc["attn"]/n, self._zt_acc["mamba"]/n,
                     self._zt_acc["attn"]/n/9, self._zt_acc["mamba"]/n/54)
         return out
 
