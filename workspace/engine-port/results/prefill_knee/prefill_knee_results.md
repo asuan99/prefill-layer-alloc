@@ -19,7 +19,14 @@ Zamba2-2.7B, ctx3600, 60 concurrent prompts/mode, no pdmux(clean). job 837931.
 
 **decode 참고(R0c knee):** attn 3.14→17.5(5.6× @108→16)·mamba 0.36→0.53(둔감); attn/mamba 비용비 **8.7–35×**.
 
-## 판정
+## ★ 후속 (B,L) 2D 일반화 — 2026-07-13, [next_steps.md](next_steps.md) 참조
+이 문서는 **ctx3600·단일 batch** 단일점. 사용자 지적("Diff B가 L·B에 따라 열릴 수 있다")에 따라 (B,L) 격자
+스윕(L 2k–32k × B 1–48, jobs 847690/711/897): **비용비 Diff A는 L 따라 열림(attn/mamba 0.5×→9× per-layer)**
+하나 **lever인 Diff B(민감도비)는 전 격자 ≈1.0**, L↑서 1.0으로 수렴(L32k B1 = **1.01**: attn 13.09× vs mamba
+12.91× 민감). mamba SSD-prefill도 compute-bound라 SM을 attn만큼 계속 먹음 → decode-side 비대칭(mamba≈SM-free)
+prefill 미전이. **prefill-side layer-aware = 2k–32k×B1–48 전 격자 실측 死**(단일점 死를 격상). 상세·히트맵 next_steps.md.
+
+## 판정 (ctx3600 단일점 기준, 위 2D가 확장·확증)
 - **사용자 개념 맞음**: prefill 두 타입 다 SM-민감하되 **기울기 다름**(attn>mamba). flatness 불요, differential이면 됨 — 옳다.
 - **그러나 differential이 empirically 너무 작다**: attn/mamba 비용비 1.2–1.4× 내내(near-symmetric), 둘 다 compute-bound라 10×+ 민감. decode(8.7–35× + mamba 평탄)와 정반대. **"공짜로 뺄 둔감 층"이 prefill엔 없다.**
 - ⇒ mamba-prefill SM을 빼면 거의 비례해 느려짐 = **1:1 트레이드, free lunch 없음**. per-type 세분 이득=2차(작은 기울기차), (D) granularity 비용=1차 → **net 음수**. prefill-side LA는 tuned-uniform의 step-level split으로 degenerate.
