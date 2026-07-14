@@ -201,3 +201,78 @@ Step E = **binding SLO를 직접 신호로** — prefill-queue slack을 gated 2�
 - prefill-slack 예측 신호는 dirty(큐 경과는 admission 이후만 봄, 도착 burst 예측 불가) → feedforward L이 여기 보완재로 재등판 가능(E.5 선택군).
 - static d24가 이 regime서 강한 건 실측 사실 → **동적의 정당성은 "매칭 + 변동 regime서 초과"**지 stationary 압승이 아님(SLO track 원래 논지 유지).
 - 이건 layer-aware와 무관·직교(신호/스케줄링 축). [[slo-aware-scheduling-track]].
+
+> **각주 (surplus/anchor 검토, 2026-07-14)**: "prefill이 굶는(binding) 반대편 — prefill surplus 케이스의 anchor는 무엇인가"는
+> 타당한 지적(순수 error-driven 컨트롤러는 anchor 없으면 표류; 경량부하 rep3서 slo/lff 배회로 실측됨). **제안된 "layer-type 반응
+> anchor"는 부적합**: (i) prefill layer-type → Diff B(prefill)≈1((B,L) knee) = 한계 SM 가치가 layer-type 무관이라 anchor 근거
+> 자체가 없음; (ii) decode layer-type(§14 예약) → surplus라도 (D) drain·cudagraph 몰수 구조적, Probe 4서 step-fixed 상수(d16)로
+> degenerate. **올바른 anchor = tuned-static resting point(cudagraph≈d16, no-cg≈d24)** — §E.3의 anchor가 이것. 단 그 anchor의
+> *값* d16은 decode layer-type 민감도(attn-decode floor≈16·mamba-decode free, decode knee)에서 **오프라인 유도**됨 → layer-type은
+> "anchor 레벨 세팅"에서만 살고 "런타임 반응"에서는 죽음. 결론: anchor는 static, 구현은 §E대로.
+
+### E.7 ★구현·실측 (2026-07-14, jobs 849844–849968)
+
+구현: `_slo_decide_idx_binding` + `_slo_prefill_age_ms`(둘 다 `multiplexing_mixin.py`+dev 미러), env `PDMUX_SLO_MODE=binding`
+(off=v7b byte-identical), 하네스 `lff_bench.sbatch` `bind` 모드(anchor idx2=d24). 부하=이질-L 동시 2스트림.
+
+**(1) 신호 버그→수정**: 첫 bind 실행 SLO-BIND 로그 `pf_age=0ms·pfslack=1.00 항상` → prefill-slack 死 → bind가 decode-only=v7b로
+degenerate(bind≈slo). 원인=TTFT 병목인 긴 요청이 결정 시점엔 `waiting_queue`를 떠나 **진행 중 `split_prefill_batch`**에서 청킹.
+수정=`_slo_prefill_age_ms`가 waiting_queue **+ split_prefill_batch.reqs** 최고령 age를 봄. **확인(무거운 부하)**: pf_age가
+**2093→5631ms climb**, 컨트롤러가 prefill 위기에 dec_sm=16으로 반응. 신호 live.
+
+**(2) stationary 중간부하 (cudagraph, 3-rep)**: **bind(fixed) 2.948[2.52-3.16] ≈ d24 3.160** (tail 2.31/1.91 ≈ d24 2.31/2.01),
+**slo(2.933·tail 3.79/3.26) 대비 결정적 개선** — 동적이 static에 **지던 것을 대등으로** 되돌림. (이 부하선 bind는 대부분 anchor 유지=switch 0 — 아무것도 urgent 아님 → anchor 덕에 d24 복제.)
+
+**(3) 무거운 부하 (saturation, cudagraph)**: **d24 1.224 > bind 0.483/0.441 > slo 0.279.** bind>slo(flaw1 수정 확인)이나 **여전히 d24에 패.**
+로그: **pfslack·decslack 동시 음수**(-0.88,-0.54)=**양 SLO 동시 위반=포화** → binding-first가 "더 급한 쪽"을 좇다 **2↔1↔3 flip-flop 11회**
+→ green-ctx drain 폭증 → 진동 안 하는 static에 패.
+
+**두 flaw 판정**:
+- **flaw 1 (TPOT-centric, TTFT 못 봄) = 수정됨** (binding-first가 slo 이김).
+- **flaw 2 (포화 시 진동) = 신규 노출** → §F saturation-hold 필요.
+
+**★삼-regime 통합 (anchor-predictor 프레이밍 확증)**:
+
+| regime | slack 상태 | 최적 | 담당 |
+|---|---|---|---|
+| **surplus** | 둘 다 여유(+) | 정지 | **anchor** |
+| **single-binding** | 하나만 위반(−) | feasible trade | **동적(SLO-aware)** ← 유일 가치 구간 |
+| **saturation** | 둘 다 위반(−) | trade 불가 | **anchor** (thrash 금지) |
+
+⇒ **동적 제어는 "정확히 하나만 binding"인 좁은 구간에서만 static을 이기고, 양 극단(surplus·saturation)은 anchor로 fallback.**
+layer-aware=그 anchor(decode-floor)를 예측하는 오프라인 predictor([[prefill-layer-alloc-status]] Probe4 §14→d16). **anchor-predictor 역할이 오히려 더 중심적.**
+
+---
+
+## Step F — saturation-hold 규칙 (설계, 2026-07-14)
+
+### F.0 한 줄
+포화(양 SLO 동시 위반)에서 binding-first는 "더 급한 쪽"을 좇다 **진동**한다(§E.7-(3), 11 switch → drain → static에 패).
+Step F = **포화를 감지해 chase 대신 anchor에 hold** — 동적이 static 밑으로 떨어지는 마지막 결함 제거.
+
+### F.1 설계 동기 (§E.7 실측)
+- 무거운 부하 SLO-BIND 로그: `pfslack=-0.88 decslack=-0.54`(둘 다 음수) 상태서 `2↔1↔3` flip-flop 11회.
+- **포화에선 feasible trade가 없다**: prefill 주면 decode가 더 급해지고(→되돌림) 그 반대도 성립 → 무한 왕복 → 매 왕복이 green-ctx drain.
+- static d24는 **진동을 안 해서** 이김(한 split로 backlog 최대 소진). ⇒ 포화 구간의 최적 행동 = **anchor 고수**(§E.7 삼-regime 표의 saturation 행).
+
+### F.2 규칙 (기존 dual-slack에 한 분기 추가, 설계만)
+`_slo_decide_idx_binding`의 결정 트리에 **최우선 포화 가드**:
+- `both_neg = (pf_slack < 0) and (dec_slack < 0)` (또는 여유 없음: 둘 다 `< margin`) → **anchor로 drift**(chase 억제), dwell 최대.
+- 그 외엔 기존 로직(single-binding=chase 급한 쪽 / surplus=anchor drift).
+- 즉 결정 순서: **saturation→anchor** ▷ single-binding→chase ▷ surplus→anchor. (surplus·saturation이 동일하게 anchor로 수렴 = 삼-regime 표 그대로.)
+- env: `PDMUX_SLO_SAT_MARGIN`(포화 판정 여유, 기본 0=순수 위반). anchor는 §E와 동일 `PDMUX_SLO_ANCHOR_IDX`.
+
+### F.3 지표 예측
+- **Throughput**: 진동 제거(11→~0 switch) → drain 회수 → 포화서 static 수준 회복.
+- **goodput**: 포화서 **bind → anchor(d24/d16)로 우아하게 degenerate** → **d24 매칭**(더 이상 패하지 않음). single-binding 구간의 동적 이득은 유지.
+- **TTFT/TPOT**: 포화선 anchor(prefill-heavy)가 backlog 최대 소진 → 둘 다 static과 동등(포화라 둘 다 SLO 초과는 불가피, 단 static과 동률).
+
+### F.4 가설·게이트
+- **HF1**: saturation-hold 추가 후 **무거운 부하서 bind ≥ d24(≈매칭)**, 진동 switch 급감. (현재 bind 0.48 → d24 1.22 근접 목표.)
+- **HF-iso**: surplus·중간 부하선 §E.7 거동 불변(무해).
+- **HF0**: 여전히 d24에 지면 → 포화서 동적은 원리적으로 static 못 넘음(그럼 동적 가치는 single-binding·시변 regime에만, HE2로 이동).
+
+### F.5 후속 (F 이후)
+1. **anchor=d16 검증**: cudagraph 최적 anchor=layer-type 예측값 d16(Probe4). 현 d24 대신 d16 anchor로 재측정 = anchor-predictor 프레이밍의 실험적 확인.
+2. **HE2 (시변 regime)**: binding이 *교대*하는 mixed/burst(§B, 포화 아님)에서만 동적이 static 초과 가능 → 최종 payoff 검증.
+- 파일: 컨트롤러 `multiplexing_mixin.py`(`_slo_decide_idx_binding`에 가드 추가), 하네스 `lff_bench.sbatch` `bind` 모드 재사용.
