@@ -67,11 +67,15 @@ def read_knee(path):
                 mamba=[mamba[i] for i in order], n_attn=na, n_mamba=nm)
 
 
-def save(fig, name):
-    """PNG(150dpi) 렌더 후 PIL로 PDF 변환 (기존 reports/figures 관례)."""
+def save(fig, name, outdir=OUT):
+    """PNG(150dpi) 렌더 후 PIL로 PDF 변환 (기존 reports/figures 관례). outdir로 대상 변경 가능."""
     from PIL import Image
-    png = os.path.join(OUT, f"{name}.png")
-    pdf = os.path.join(OUT, f"{name}.pdf")
+    os.makedirs(outdir, exist_ok=True)
+    png = os.path.join(outdir, f"{name}.png")
+    pdf = os.path.join(outdir, f"{name}.pdf")
     fig.savefig(png, dpi=150, bbox_inches="tight")
     Image.open(png).convert("RGB").save(pdf, "PDF", resolution=150.0)
     print(f"wrote {pdf}  (+{name}.png)")
+
+
+OUT_V4 = os.path.abspath(os.path.join(WS, "..", "reports", "figures_v4"))
