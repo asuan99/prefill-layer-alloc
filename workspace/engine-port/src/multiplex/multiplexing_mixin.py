@@ -47,6 +47,25 @@ class SchedulerMultiplexMixin:
             f"PD-Multiplexing enabled with {self.real_sm_group_num} stream groups, sm_counts (prefill_sm, decode_sm): {self.sm_counts}"
         )
 
+    def _slo_context_len_signal(self: Scheduler) -> int:
+        """Step D (SKETCH): characteristic context length (tokens) of imminent prefill work =
+        feedforward signal for _slo_decide_idx. max over the current split-prefill batch and the
+        head of the waiting queue. Defensive (attrs may vary by sglang version); returns >=1."""
+        _l = 0
+        _b = getattr(self, "split_prefill_batch", None)
+        try:
+            _c = getattr(_b, "seq_lens_cpu_cache", None) if _b is not None else None
+            if _c is not None and len(_c):
+                _l = max(_l, int(max(_c)))
+        except Exception:
+            pass
+        try:
+            for _r in list(self.waiting_queue)[:32]:
+                _l = max(_l, len(_r.origin_input_ids))
+        except Exception:
+            pass
+        return _l or 1
+
     def _slo_decide_idx(self: Scheduler) -> int:
         """SLO-aware controller (v7): return the target split idx from the latency signal
         (measured TPOT-EMA + prefill backlog). Called PER prefill-layer-span from the event
@@ -61,7 +80,20 @@ class SchedulerMultiplexMixin:
         _hi_frac = float(os.environ.get("PDMUX_TPOT_HI", "0.85"))
         _lo_frac = float(os.environ.get("PDMUX_TPOT_LO", "0.65"))
         _lo, _hi = 1, self.real_sm_group_num - 2
-        _idx = getattr(self, "_slo_idx", (_lo + _hi) // 2)  # start NEUTRAL (1 step from either optimum)
+        # Step D (SKETCH, env-gated PDMUX_SLO_LFF): context-length FEEDFORWARD. attn-prefill is
+        # O(L^2) so a long-context request needs prefill SM preemptively (L known at admission,
+        # unlike the feedback TPOT/queue signals). Shift the resting split center by L; feedback
+        # still handles urgency. OFF (unset) => ff_center = neutral & deadband = hold = byte-identical to v7b.
+        _ff_center = (_lo + _hi) // 2                    # NEUTRAL (1 step from either optimum)
+        _ff_on = bool(os.environ.get("PDMUX_SLO_LFF"))
+        if _ff_on:
+            _g = float(os.environ.get("PDMUX_SLO_LFF", "1"))
+            _lref = float(os.environ.get("PDMUX_L_REF_TOK", "3600"))
+            _lsig = self._slo_context_len_signal()
+            # long L -> negative offset -> lower idx -> more prefill SM; short L -> higher idx (more decode SM)
+            _ff_center = int(round((_lo + _hi) / 2.0 - _g * (_lsig / _lref - 1.0)))
+            _ff_center = max(_lo, min(_hi, _ff_center))
+        _idx = getattr(self, "_slo_idx", _ff_center)
         _tpot = getattr(self, "_slo_tpot_ema", 0.0)
         _qd = len(self.waiting_queue)
         _dwell = getattr(self, "_slo_dwell", 0)
@@ -72,6 +104,8 @@ class SchedulerMultiplexMixin:
             _new = min(_hi, _idx + 1)                    # TPOT tight -> more decode SM
         elif _tpot < _lo_frac * _tpot_slo and _qd > _qtarget:  # TPOT has real margin & prefill backlogged
             _new = max(_lo, _idx - 1)                    # -> more prefill SM (stop before decode gets tight)
+        elif _ff_on and _idx != _ff_center:
+            _new = _idx + (1 if _idx < _ff_center else -1)   # deadband -> drift to feedforward resting point
         else:
             _new = _idx                                  # deadband -> hold
         if _new != _idx:
