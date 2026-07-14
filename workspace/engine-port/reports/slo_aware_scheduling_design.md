@@ -244,35 +244,44 @@ layer-aware=그 anchor(decode-floor)를 예측하는 오프라인 predictor([[pr
 
 ---
 
-## Step F — saturation-hold 규칙 (설계, 2026-07-14)
+## Step F — saturation-hold 규칙 (설계, 2026-07-14; predictive-hybrid로 개정)
 
 ### F.0 한 줄
 포화(양 SLO 동시 위반)에서 binding-first는 "더 급한 쪽"을 좇다 **진동**한다(§E.7-(3), 11 switch → drain → static에 패).
-Step F = **포화를 감지해 chase 대신 anchor에 hold** — 동적이 static 밑으로 떨어지는 마지막 결함 제거.
+Step F = **포화를 *예측*해 chase 대신 anchor에 hold** — 동적이 static 밑으로 떨어지는 마지막 결함 제거.
+★**개정(사용자 지적)**: 포화는 *예측 가능한* regime이므로, 트리거를 반응적 `both_neg`(진동 시작 후 감지=lagging)가 아니라
+**예측적 backlog-추세**(진동 진입 *전* 차단)로 하고, `both_neg`는 안전망으로만 둔다(hybrid).
 
-### F.1 설계 동기 (§E.7 실측)
+### F.1 설계 동기 (§E.7 실측 + 예측가능성)
 - 무거운 부하 SLO-BIND 로그: `pfslack=-0.88 decslack=-0.54`(둘 다 음수) 상태서 `2↔1↔3` flip-flop 11회.
 - **포화에선 feasible trade가 없다**: prefill 주면 decode가 더 급해지고(→되돌림) 그 반대도 성립 → 무한 왕복 → 매 왕복이 green-ctx drain.
-- static d24는 **진동을 안 해서** 이김(한 split로 backlog 최대 소진). ⇒ 포화 구간의 최적 행동 = **anchor 고수**(§E.7 삼-regime 표의 saturation 행).
+- static d24는 **진동을 안 해서** 이김(한 split로 backlog 최대 소진). ⇒ 포화 구간 최적 = **anchor 고수**(§E.7 삼-regime 표).
+- ★**포화는 예측 가능**: 포화 = "어떤 split로도 양 SLO 불가" = offered load > SLO-feasible 용량. `both_neg`는 이미 터진 뒤의 **lagging 지표**.
+  더 이른 신호 = **backlog 추세**(가장 prefill-heavy split를 줬는데도 pf_age가 자람 = 최선의 수로도 backlog 증가 = 포화)이고,
+  이는 transient double-violation(일시 스파이크)과 sustained 포화를 **구분**한다.
 
-### F.2 규칙 (기존 dual-slack에 한 분기 추가, 설계만)
-`_slo_decide_idx_binding`의 결정 트리에 **최우선 포화 가드**:
-- `both_neg = (pf_slack < 0) and (dec_slack < 0)` (또는 여유 없음: 둘 다 `< margin`) → **anchor로 drift**(chase 억제), dwell 최대.
-- 그 외엔 기존 로직(single-binding=chase 급한 쪽 / surplus=anchor drift).
-- 즉 결정 순서: **saturation→anchor** ▷ single-binding→chase ▷ surplus→anchor. (surplus·saturation이 동일하게 anchor로 수렴 = 삼-regime 표 그대로.)
-- env: `PDMUX_SLO_SAT_MARGIN`(포화 판정 여유, 기본 0=순수 위반). anchor는 §E와 동일 `PDMUX_SLO_ANCHOR_IDX`.
+### F.2 규칙 (predictive-hybrid; 설계)
+`_slo_decide_idx_binding`의 결정 트리에 **최우선 포화 가드**(2-tier):
+- **(예측, 1차) `sat_predict`**: 현재 idx가 이미 **가장 prefill-heavy(=`_lo`)** ∧ 최근 W 윈도우에서 **pf_age 단조 증가**(backlog가 최선의 split로도 자람) → 포화 예측 → **anchor로 drift, chase 억제, dwell 최대**. (idx=lo 조건이 "최선의 수를 이미 썼다"를 보장 → prefill 더 못 줌 = 포화 신호.)
+- **(반응, 2차 fallback) `both_neg`**: `pf_slack<0 ∧ dec_slack<0`(또는 둘 다 `< PDMUX_SLO_SAT_MARGIN`) → 예측이 놓친 경우 안전망으로 동일하게 anchor hold.
+- 둘 중 하나라도 참이면 **saturation-hold**; 아니면 기존 로직(single-binding=chase / surplus=anchor drift).
+- 결정 순서: **saturation(예측∨반응)→anchor** ▷ single-binding→chase ▷ surplus→anchor.
+- env: `PDMUX_SLO_SAT_WIN`(추세 윈도우 W, 기본 4), `PDMUX_SLO_SAT_MARGIN`(fallback 여유, 기본 0). anchor는 §E와 동일 `PDMUX_SLO_ANCHOR_IDX`.
+- 상태: pf_age 히스토리(최근 W개) 링버퍼를 컨트롤러 state에 유지.
 
 ### F.3 지표 예측
-- **Throughput**: 진동 제거(11→~0 switch) → drain 회수 → 포화서 static 수준 회복.
-- **goodput**: 포화서 **bind → anchor(d24/d16)로 우아하게 degenerate** → **d24 매칭**(더 이상 패하지 않음). single-binding 구간의 동적 이득은 유지.
-- **TTFT/TPOT**: 포화선 anchor(prefill-heavy)가 backlog 최대 소진 → 둘 다 static과 동등(포화라 둘 다 SLO 초과는 불가피, 단 static과 동률).
+- **Throughput**: 진동 제거(11→~0 switch) → drain 회수 → 포화서 static 수준 회복. 예측 트리거라 **진동 진입 자체를 조기 차단**(반응형보다 switch 더 적음).
+- **goodput**: 포화서 **bind → anchor(d24/d16)로 우아하게 degenerate** → **d24 매칭**. single-binding 구간의 동적 이득은 유지.
+- **TTFT/TPOT**: 포화선 anchor(prefill-heavy)가 backlog 최대 소진 → 둘 다 static과 동등(포화라 SLO 초과는 불가피, static과 동률).
 
 ### F.4 가설·게이트
-- **HF1**: saturation-hold 추가 후 **무거운 부하서 bind ≥ d24(≈매칭)**, 진동 switch 급감. (현재 bind 0.48 → d24 1.22 근접 목표.)
+- **HF1**: saturation-hold(predictive) 후 **무거운 부하서 bind ≥ d24(≈매칭)**, 진동 switch 급감. (현재 bind 0.48 → d24 1.22 근접 목표.)
 - **HF-iso**: surplus·중간 부하선 §E.7 거동 불변(무해).
-- **HF0**: 여전히 d24에 지면 → 포화서 동적은 원리적으로 static 못 넘음(그럼 동적 가치는 single-binding·시변 regime에만, HE2로 이동).
+- **HF0**: 여전히 d24에 지면 → 포화서 동적은 원리적으로 static 못 넘음(동적 가치는 single-binding·시변 regime에만, HE2로 이동).
 
-### F.5 후속 (F 이후)
-1. **anchor=d16 검증**: cudagraph 최적 anchor=layer-type 예측값 d16(Probe4). 현 d24 대신 d16 anchor로 재측정 = anchor-predictor 프레이밍의 실험적 확인.
-2. **HE2 (시변 regime)**: binding이 *교대*하는 mixed/burst(§B, 포화 아님)에서만 동적이 static 초과 가능 → 최종 payoff 검증.
-- 파일: 컨트롤러 `multiplexing_mixin.py`(`_slo_decide_idx_binding`에 가드 추가), 하네스 `lff_bench.sbatch` `bind` 모드 재사용.
+### F.5 caveat·후속
+- **burst**: 단기 도착률 예측은 burst서 부정확 → **순수 예측 위험 → hybrid 필수**(예측 놓치면 both_neg fallback). action은 어차피 "anchor 고수"뿐(admission 제어=스케줄러 몫, 우리 레버 밖)이라 예측이 바꾸는 건 **트리거(언제)**지 행동 아님.
+- **원리적 예측(옵션)**: backlog-추세 proxy 대신 λ(관측)×요청 work(L) vs service surface(knee)로 feasibility 직접 계산 가능 — 공수 큼, proxy 우선.
+- **후속1 anchor=d16 검증**: cudagraph 최적 anchor=layer-type 예측값 d16(Probe4). d24 대신 d16 anchor 재측정 = anchor-predictor 실험확인.
+- **후속2 HE2(시변 regime)**: binding이 *교대*하는 mixed/burst(§B, 포화 아님)에서만 동적이 static 초과 가능 → 최종 payoff.
+- 파일: 컨트롤러 `multiplexing_mixin.py`(`_slo_decide_idx_binding`에 2-tier 가드 + pf_age 링버퍼), 하네스 `lff_bench.sbatch` `bind` 재사용.
