@@ -66,6 +66,64 @@ class SchedulerMultiplexMixin:
             pass
         return _l or 1
 
+    def _slo_prefill_age_ms(self: Scheduler) -> float:
+        """Step E: TTFT-risk signal = age (ms) of the OLDEST prefill request that has NOT yet
+        produced its first token = max over the waiting queue AND the IN-PROGRESS split-prefill
+        batch (a long request that is admitted & chunking has left the waiting queue but is still
+        accumulating TTFT -> must be counted, else pf_age reads 0). now - wait_queue_entry_time
+        (perf_counter, same clock as TPOT signal). 0 if none."""
+        import time as _t
+        _now = _t.perf_counter()
+        _oldest = _now
+        try:
+            _cands = list(self.waiting_queue)[:64]
+            _spb = getattr(self, "split_prefill_batch", None)
+            if _spb is not None and getattr(_spb, "reqs", None):
+                _cands = _cands + list(_spb.reqs)[:64]
+            for _r in _cands:
+                _e = getattr(getattr(_r, "time_stats", None), "wait_queue_entry_time", 0.0) or 0.0
+                if _e and _e < _oldest:
+                    _oldest = _e
+        except Exception:
+            return 0.0
+        return max(0.0, (_now - _oldest) * 1000.0)
+
+    def _slo_decide_idx_binding(self: Scheduler, _tpot_slo: float, _lo: int, _hi: int) -> int:
+        """Step E (design §E): binding-signal-first dual-slack controller. Treat prefill-slack
+        (TTFT_SLO - oldest-waiting age) and decode-slack (TPOT_SLO - TPOT-EMA) as PEERS; push the
+        split toward whichever is more-binding & urgent; when both have slack, drift to a tuned-
+        static ANCHOR (resting point that already wins in stationary). Fixes the v7b flaw where the
+        prefill path was gated behind `tpot<lo` (missed TTFT-bound cudagraph regimes)."""
+        _ttft_slo = float(os.environ.get("PDMUX_TTFT_SLO_MS", "3000"))
+        _anchor = max(_lo, min(_hi, int(os.environ.get("PDMUX_SLO_ANCHOR_IDX", str((_lo + _hi) // 2)))))
+        _hi_frac = float(os.environ.get("PDMUX_TPOT_HI", "0.85"))
+        _pf_urg = float(os.environ.get("PDMUX_SLO_PF_URGENCY", "0.5"))  # prefill urgent if slack-frac below this
+        _idx = getattr(self, "_slo_idx", _anchor)
+        _tpot = getattr(self, "_slo_tpot_ema", 0.0)
+        _dwell = getattr(self, "_slo_dwell", 0)
+        _pf_age = self._slo_prefill_age_ms()
+        _dec_slack = (_tpot_slo - _tpot) / _tpot_slo           # decode headroom (fraction of SLO)
+        _pf_slack = (_ttft_slo - _pf_age) / _ttft_slo          # prefill headroom (fraction of SLO)
+        if _dwell > 0:
+            self._slo_dwell = _dwell - 1
+            _new = _idx
+        elif _pf_slack < _dec_slack and _pf_slack < _pf_urg:
+            _new = max(_lo, _idx - 1)                          # TTFT more-binding & urgent -> more prefill SM
+        elif _dec_slack < _pf_slack and _dec_slack < (1.0 - _hi_frac):
+            _new = min(_hi, _idx + 1)                          # TPOT more-binding & urgent -> more decode SM
+        elif _idx != _anchor:
+            _new = _idx + (1 if _idx < _anchor else -1)        # both slack -> drift to tuned-static anchor
+        else:
+            _new = _idx                                        # at anchor, no urgency -> hold
+        if _new != _idx:
+            self._slo_dwell = int(os.environ.get("PDMUX_SLO_DWELL", "3"))
+            logger.info(
+                "SLO-BIND %d->%d dec_sm=%d pf_age=%.0fms tpot=%.1fms pfslack=%.2f decslack=%.2f anchor=%d",
+                _idx, _new, self.sm_counts[_new][1], _pf_age, _tpot, _pf_slack, _dec_slack, _anchor,
+            )
+        self._slo_idx = _new
+        return _new
+
     def _slo_decide_idx(self: Scheduler) -> int:
         """SLO-aware controller (v7): return the target split idx from the latency signal
         (measured TPOT-EMA + prefill backlog). Called PER prefill-layer-span from the event
@@ -80,6 +138,10 @@ class SchedulerMultiplexMixin:
         _hi_frac = float(os.environ.get("PDMUX_TPOT_HI", "0.85"))
         _lo_frac = float(os.environ.get("PDMUX_TPOT_LO", "0.65"))
         _lo, _hi = 1, self.real_sm_group_num - 2
+        # Step E (env-gated PDMUX_SLO_MODE=binding): binding-signal-first dual-slack controller.
+        # Off -> the v7b path below (byte-identical).
+        if os.environ.get("PDMUX_SLO_MODE") == "binding":
+            return self._slo_decide_idx_binding(_tpot_slo, _lo, _hi)
         # Step D (SKETCH, env-gated PDMUX_SLO_LFF): context-length FEEDFORWARD. attn-prefill is
         # O(L^2) so a long-context request needs prefill SM preemptively (L known at admission,
         # unlike the feedback TPOT/queue signals). Shift the resting split center by L; feedback
