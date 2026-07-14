@@ -20,18 +20,22 @@ steps = [("agnostic\nbaseline", BASE, AGN, "measured"),
          ("engine binary\n(total)", TOTAL, LA, "measured")]
 
 fig, ax = plt.subplots(figsize=(10.5, 5.2))
-x = range(len(steps)); running = 0.0
+x = range(len(steps)); W = 0.62; HALF = W / 2
+last = len(steps) - 1
+# 각 막대의 bottom/top: baseline·total은 0부터, 증분은 누적 위에 floating
+bottoms = [0.0, BASE, BASE + A, BASE + A + B, 0.0]
+tops    = [BASE, BASE + A, BASE + A + B, BASE + A + B + C, TOTAL]
+LABEL_DY = 1.9
 for i, (lab, val, col, tag) in enumerate(steps):
-    if i == 0 or i == len(steps) - 1:      # 절대 막대 (baseline / total)
-        ax.bar(i, val, 0.62, color=col, edgecolor="white", zorder=3)
-        ax.text(i, val + 1, f"{val:.1f}", ha="center", fontsize=10, fontweight="bold")
-        running = val
-    else:                                   # 증분 막대 (floating)
-        ax.bar(i, val, 0.62, bottom=running, color=col, edgecolor="white", zorder=3)
-        ax.text(i, running + val + 1, f"+{val:.1f}", ha="center", fontsize=10, fontweight="bold")
-        ax.plot([i - 0.31, i - 0.31 - 0.07], [running, running], color="0.6", lw=0.8)
-        running += val
+    b, t = bottoms[i], tops[i]
+    ax.bar(i, t - b, W, bottom=b, color=col, edgecolor="white", zorder=3)
+    if abs(t - b) < 1e-9:                    # (A) 0-기여: 캡 마커로 표시
+        ax.plot([i - HALF, i + HALF], [t, t], color=col, lw=3.5, solid_capstyle="butt", zorder=4)
+    lbl = f"{t:.1f}" if i in (0, last) else f"+{val:.1f}"
+    ax.text(i, t + LABEL_DY, lbl, ha="center", fontsize=10, fontweight="bold")
     ax.text(i, -6.5, tag, ha="center", fontsize=7.8, color="0.35")
+    if i < last:                             # 다음 막대와 공유 레벨(=이 막대 top)을 잇는 전폭 점선
+        ax.plot([i + HALF, (i + 1) - HALF], [t, t], color="0.55", lw=1.1, ls="--", zorder=2)
 
 # (D) 근본 원인 = C 위에 브라켓 주석 (좌상단, C 막대를 가리킴)
 ax.annotate("(D) granularity — the fundamental one:\nper-layer window ~0.8 ms < concurrent prefill kernel\n"
