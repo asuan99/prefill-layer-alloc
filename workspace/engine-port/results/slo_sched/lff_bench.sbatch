@@ -42,9 +42,10 @@ OUTTOK="${OUTTOK:-64}"
 CTX=$((L_LONG + 1000))
 
 # policy env
-if [ "$MODE" = "slo" ]; then export PDMUX_SLO_SCHED=1; export PDMUX_TPOT_SLO_MS=60 PDMUX_QDEPTH_TARGET=4; unset PDMUX_SLO_LFF
-elif [ "$MODE" = "lff" ]; then export PDMUX_SLO_SCHED=1; export PDMUX_TPOT_SLO_MS=60 PDMUX_QDEPTH_TARGET=4; export PDMUX_SLO_LFF="${PDMUX_SLO_LFF:-0.75}" PDMUX_L_REF_TOK="${PDMUX_L_REF_TOK:-3600}"
-else unset PDMUX_SLO_SCHED PDMUX_SLO_LFF; fi   # agn = agnostic (decode_bs) baseline
+if [ "$MODE" = "slo" ]; then export PDMUX_SLO_SCHED=1; export PDMUX_TPOT_SLO_MS=60 PDMUX_QDEPTH_TARGET=4; unset PDMUX_SLO_LFF PDMUX_SLO_MODE
+elif [ "$MODE" = "lff" ]; then export PDMUX_SLO_SCHED=1; export PDMUX_TPOT_SLO_MS=60 PDMUX_QDEPTH_TARGET=4; export PDMUX_SLO_LFF="${PDMUX_SLO_LFF:-0.75}" PDMUX_L_REF_TOK="${PDMUX_L_REF_TOK:-3600}"; unset PDMUX_SLO_MODE
+elif [ "$MODE" = "bind" ]; then export PDMUX_SLO_SCHED=1 PDMUX_SLO_MODE=binding; export PDMUX_TPOT_SLO_MS=60 PDMUX_TTFT_SLO_MS="${PDMUX_TTFT_SLO_MS:-3000}" PDMUX_SLO_ANCHOR_IDX="${PDMUX_SLO_ANCHOR_IDX:-2}" PDMUX_SLO_PF_URGENCY="${PDMUX_SLO_PF_URGENCY:-0.5}"; unset PDMUX_SLO_LFF   # Step E binding-first (anchor idx2=d24)
+else unset PDMUX_SLO_SCHED PDMUX_SLO_LFF PDMUX_SLO_MODE; fi   # agn = agnostic (decode_bs) baseline
 
 PORT=$((35800 + SLURM_JOB_ID % 150))
 TAG="${CFGNAME}_${MODE}_rep${REP}_${SLURM_JOB_ID}"
