@@ -104,9 +104,23 @@ class SchedulerMultiplexMixin:
         _pf_age = self._slo_prefill_age_ms()
         _dec_slack = (_tpot_slo - _tpot) / _tpot_slo           # decode headroom (fraction of SLO)
         _pf_slack = (_ttft_slo - _pf_age) / _ttft_slo          # prefill headroom (fraction of SLO)
+        # Step F (predictive-hybrid saturation-hold): saturation = no split satisfies both SLOs ->
+        # chasing the more-binding side thrashes (flip-flop -> green-ctx drain), so converge to the
+        # tuned-static anchor. PREDICT it (backlog grows over a window even at MAX prefill = we've
+        # exhausted the prefill lever and still lose ground) instead of only reacting to both-slacks-
+        # negative (lagging). both_neg kept as a safety-net fallback.
+        _sat_win = max(2, int(os.environ.get("PDMUX_SLO_SAT_WIN", "4")))
+        _sat_margin = float(os.environ.get("PDMUX_SLO_SAT_MARGIN", "0"))
+        _hist = (getattr(self, "_slo_pf_hist", []) + [_pf_age])[-_sat_win:]
+        self._slo_pf_hist = _hist
+        _sat_pred = (_idx <= _lo) and (len(_hist) >= _sat_win) and (_hist[-1] > _hist[0]) and (_pf_slack < _pf_urg)
+        _sat_fb = (_pf_slack < _sat_margin) and (_dec_slack < _sat_margin)
+        _sat = _sat_pred or _sat_fb
         if _dwell > 0:
             self._slo_dwell = _dwell - 1
             _new = _idx
+        elif _sat:
+            _new = _idx + (1 if _idx < _anchor else (-1 if _idx > _anchor else 0))  # saturation -> converge to anchor (no chase)
         elif _pf_slack < _dec_slack and _pf_slack < _pf_urg:
             _new = max(_lo, _idx - 1)                          # TTFT more-binding & urgent -> more prefill SM
         elif _dec_slack < _pf_slack and _dec_slack < (1.0 - _hi_frac):
@@ -118,8 +132,8 @@ class SchedulerMultiplexMixin:
         if _new != _idx:
             self._slo_dwell = int(os.environ.get("PDMUX_SLO_DWELL", "3"))
             logger.info(
-                "SLO-BIND %d->%d dec_sm=%d pf_age=%.0fms tpot=%.1fms pfslack=%.2f decslack=%.2f anchor=%d",
-                _idx, _new, self.sm_counts[_new][1], _pf_age, _tpot, _pf_slack, _dec_slack, _anchor,
+                "SLO-BIND %d->%d dec_sm=%d pf_age=%.0fms tpot=%.1fms pfslack=%.2f decslack=%.2f sat=%d anchor=%d",
+                _idx, _new, self.sm_counts[_new][1], _pf_age, _tpot, _pf_slack, _dec_slack, int(_sat), _anchor,
             )
         self._slo_idx = _new
         return _new

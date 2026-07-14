@@ -279,6 +279,24 @@ Step F = **포화를 *예측*해 chase 대신 anchor에 hold** — 동적이 sta
 - **HF-iso**: surplus·중간 부하선 §E.7 거동 불변(무해).
 - **HF0**: 여전히 d24에 지면 → 포화서 동적은 원리적으로 static 못 넘음(동적 가치는 single-binding·시변 regime에만, HE2로 이동).
 
+### F.6 ★실측 (2026-07-14, jobs 850200–850202) — margin=0 실패, 원인=prefill-지배 포화의 flicker
+
+무거운 부하(포화, cudagraph), bind(F) `PDMUX_SLO_SAT_MARGIN=0`(기본):
+
+| | goodput | switch | 비교 |
+|---|---|---|---|
+| **bind(F) margin=0** | **0.0 / 0.822 / 0.235 (평균 0.35)** | **18** | ↓ |
+| bind-noF | 0.483 / 0.441 | 11 | — |
+| d24 (static) | **1.224** | 0 | 목표 |
+
+**HF1 실패**: bind(F)가 bind-noF보다도 **나쁨**(0.35<0.48), switch 오히려 증가(18>11). **saturation-hold가 역효과.**
+
+**로그 진단 (원인 규명, jobs 850200)**: 이 포화는 **prefill-지배** — `pf_slack=−2.35~−4.91`(극단, TTFT 10–17s)인데 **`dec_slack`이 0 근처 진동**(0.02/−0.02/0.08). fallback `_sat_fb=(pf_slack<0 ∧ dec_slack<0)`이 **dec_slack의 0 교차마다 깜빡**(9/18 sat=1) → sat=1이면 anchor 수렴, sat=0이면 prefill chase → **더 심한 flip-flop.** predictive도 idx가 anchor로 올라가면 `idx≤_lo` 깨져 미발동. **`margin=0`이 "decode가 경계에 붙어 slack≈0인 상태(줄 여유 없음)"를 포화로 못 봄.**
+
+**즉시 수정(코드 변경 無, env만)**: `PDMUX_SLO_SAT_MARGIN≈0.15` → `_sat_fb=(pf_slack<0.15 ∧ dec_slack<0.15)` = **"둘 다 15% 이내 여유(=경계)"**를 포화로 판정 → dec_slack 0.02<0.15 ✓·pf_slack≪0.15 ✓ → **안정적 sat=1 → anchor hold → 진동 정지.** margin은 이미 env 노브라 재실행만 필요.
+
+**교훈**: 포화 판정을 "둘 다 위반(<0)"으로 하면 **한쪽만 극단이고 다른쪽이 경계에 걸친 비대칭 포화**(가장 흔한 형태)를 놓친다. margin으로 "경계 근접"까지 포화에 포함해야.
+
 ### F.5 caveat·후속
 - **burst**: 단기 도착률 예측은 burst서 부정확 → **순수 예측 위험 → hybrid 필수**(예측 놓치면 both_neg fallback). action은 어차피 "anchor 고수"뿐(admission 제어=스케줄러 몫, 우리 레버 밖)이라 예측이 바꾸는 건 **트리거(언제)**지 행동 아님.
 - **원리적 예측(옵션)**: backlog-추세 proxy 대신 λ(관측)×요청 work(L) vs service surface(knee)로 feasibility 직접 계산 가능 — 공수 큼, proxy 우선.
