@@ -295,7 +295,25 @@ Step F = **포화를 *예측*해 chase 대신 anchor에 hold** — 동적이 sta
 
 **즉시 수정(코드 변경 無, env만)**: `PDMUX_SLO_SAT_MARGIN≈0.15` → `_sat_fb=(pf_slack<0.15 ∧ dec_slack<0.15)` = **"둘 다 15% 이내 여유(=경계)"**를 포화로 판정 → dec_slack 0.02<0.15 ✓·pf_slack≪0.15 ✓ → **안정적 sat=1 → anchor hold → 진동 정지.** margin은 이미 env 노브라 재실행만 필요.
 
-**교훈**: 포화 판정을 "둘 다 위반(<0)"으로 하면 **한쪽만 극단이고 다른쪽이 경계에 걸친 비대칭 포화**(가장 흔한 형태)를 놓친다. margin으로 "경계 근접"까지 포화에 포함해야.
+**교훈**: 포화 판정을 "둘 다 위반(<0)"으로 하면 **한쪽만 극단이고 다른쪽이 경계에 걸친 비대칭 포화**(가장 흔한 형태)를 놓친다.
+
+### F.7 ★Step F 종결 — 4개 파라미터화 전부 실패, 근본 원인 = split-coupled boundary signal (jobs 850200–850303)
+
+margin 수정으로 안 되어 **3개 추가 수정 시도, 전부 d24 미달:**
+
+| 수정 | goodput (heavy) | switch | 왜 실패 |
+|---|---|---|---|
+| margin=0 | 0.35 | 18 | dec_slack 0 교차 flicker |
+| margin=0.15 | 0.51 | 18 | **순환**: anchor 가면 decode 회복→sat off→chase 재개 |
+| deep=0.5 (한쪽 깊은 위반=포화) | 0.60 | 14 | pf_slack가 −0.5 경계 hover |
+| latch=20 (상태 hysteresis) | 0.47 | 6 | switch↓이나 transient chase 손상 + 여전히 dec16 방문 |
+| **기준 d24 (static)** | **1.224** | 0 | — |
+
+★★**근본 발견 (definitive)**: 포화에서 **slack이 split에 종속**(idx=lo면 decode 굶어 dec_slack<0, anchor면 회복해 >0)돼 **SLO 경계에 수렴** → *순간값* threshold는 **무엇이든(margin/deep) flicker**, latch로 눌러도 transient chase 손상 + 노이즈. ⇒ **reactive dynamic PD-split 제어는 (근)포화서 구조적으로 static보다 나쁨** — d24를 **매칭조차 못 함**(4/4 미달). 원인이 파라미터가 아니라 **패러다임**(경계-hover·split-coupled 신호에 reactive 제어 무력).
+
+**Step F 판정 = HF0 (definitive)**: 포화는 **static의 영역**. 동적은 여기서 이득 無·매칭 難. **삼-regime 표 갱신**: saturation → **static이 유일 안전해**(동적은 안전 degenerate조차 어려움). ⇒ **동적의 유일한 희망 = 비포화 single-binding·시변 regime(HE2). 포화 튜닝 종결.**
+
+(주: heavy 부하는 deep saturation — d24조차 SHORT 23/100만 통과. reps 노이즈 큼(rep별 0.30–0.83). 그러나 "bind < d24"는 4개 config·전 rep서 robust.)
 
 ### F.5 caveat·후속
 - **burst**: 단기 도착률 예측은 burst서 부정확 → **순수 예측 위험 → hybrid 필수**(예측 놓치면 both_neg fallback). action은 어차피 "anchor 고수"뿐(admission 제어=스케줄러 몫, 우리 레버 밖)이라 예측이 바꾸는 건 **트리거(언제)**지 행동 아님.

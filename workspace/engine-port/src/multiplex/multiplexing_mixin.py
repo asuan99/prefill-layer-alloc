@@ -111,15 +111,30 @@ class SchedulerMultiplexMixin:
         # negative (lagging). both_neg kept as a safety-net fallback.
         _sat_win = max(2, int(os.environ.get("PDMUX_SLO_SAT_WIN", "4")))
         _sat_margin = float(os.environ.get("PDMUX_SLO_SAT_MARGIN", "0"))
+        _sat_deep = float(os.environ.get("PDMUX_SLO_SAT_DEEP", "0.5"))
         _hist = (getattr(self, "_slo_pf_hist", []) + [_pf_age])[-_sat_win:]
         self._slo_pf_hist = _hist
         _sat_pred = (_idx <= _lo) and (len(_hist) >= _sat_win) and (_hist[-1] > _hist[0]) and (_pf_slack < _pf_urg)
-        _sat_fb = (_pf_slack < _sat_margin) and (_dec_slack < _sat_margin)
+        # saturation if EITHER constraint is DEEPLY (unrecoverably) violated -- chasing it is futile, and
+        # the split itself drives the other slack, so "both<0" flickers (idx=lo starves decode -> dec_slack<0
+        # -> hold -> idx=anchor frees decode -> dec_slack>0 -> chase prefill -> back). A deep one-sided
+        # violation is a STABLE saturation signal -> converge to anchor & stay. OR both near boundary, OR pred.
+        _sat_fb = (_pf_slack < -_sat_deep) or (_dec_slack < -_sat_deep) or ((_pf_slack < _sat_margin) and (_dec_slack < _sat_margin))
         _sat = _sat_pred or _sat_fb
+        # slacks are split-coupled and settle at the SLO boundary under saturation -> the INSTANTANEOUS
+        # _sat flickers no matter the threshold (proven: margin 0/0.15, deep 0.5 all thrash near a
+        # boundary-hovering signal). Latch the HOLD STATE (hysteresis on the regime, not the signal):
+        # once saturated, stay in hold for LATCH steps -> converge to anchor and STAY (degenerate to
+        # static under sustained saturation, so no green-ctx thrash).
+        _latch = getattr(self, "_slo_sat_latch", 0)
+        if _sat:
+            _latch = int(os.environ.get("PDMUX_SLO_SAT_LATCH", "20"))
+        self._slo_sat_latch = max(0, _latch - 1)
+        _hold = _sat or (_latch > 0)
         if _dwell > 0:
             self._slo_dwell = _dwell - 1
             _new = _idx
-        elif _sat:
+        elif _hold:
             _new = _idx + (1 if _idx < _anchor else (-1 if _idx > _anchor else 0))  # saturation -> converge to anchor (no chase)
         elif _pf_slack < _dec_slack and _pf_slack < _pf_urg:
             _new = max(_lo, _idx - 1)                          # TTFT more-binding & urgent -> more prefill SM
