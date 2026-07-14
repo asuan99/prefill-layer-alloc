@@ -109,8 +109,95 @@ cross-phase split을 L의 함수로** 정하는 것(cudagraph-safe, (D) 무관).
 - **HD-iso**: homogeneous서 SLO+LFF ≈ SLO-v7b(±ε) → 무해 확인(통과 필수).
 - **HD0(실패)**: heterogeneous서 SLO-v7b 대비 무이득 → 큐 feedback이 L을 이미 흡수 → **정직하게 sub-track 종료.**
 
+### D.7 ★결과 (2026-07-14, jobs 849105–849629) — Step D net win 아님(HD0-leaning) + 컨트롤러 오설계 발견
+
+워크로드 = 이질-L 동시 2스트림(short-flood + long-trickle). 부하 3회 조정(과부하→경량→중간). **cudagraph-ON에서 부하-보정 후 중간 부하(short4@80·long8k0.6@14), 3-rep 집계:**
+
+| mode | goodput mean[min-max] | SHORT p99[rng] | LONG p99[rng] |
+|---|---|---|---|
+| **d24 (static)** | **3.160[3.16-3.16]** | **2.31[2.2-2.4]** | **2.01[1.9-2.2]** |
+| slo (feedback) | 2.933[2.75-3.06] | 3.79[3.6-4.1] | 3.26[3.0-3.5] |
+| lff (feedforward) | 2.854[2.62-3.02] | 2.92[2.3-4.0] | 2.50[2.2-2.9] |
+
+- **HD1 반증(goodput)**: lff goodput ≤ slo, 둘 다 < d24. feedforward가 goodput 개선 못 함.
+- **부분 양성(tail)**: **lff tail < slo tail**(short 2.92<3.79·long 2.50<3.26, 3-rep robust) — feedforward가 **예측가능성(TTFT tail) 개선**은 실제로 함(당신 직관의 kernel). 단 goodput 전환 안 되고 소폭 goodput 비용.
+- ★**static d24가 두 동적을 결정적·재현성(분산0) 있게 이김.** cudagraph-ON near-boundary regime서 동적이 static에 패.
+- **regime 요약**: 경량(rep3)=전원 통과·구별 안 됨; 중간(rep5)=판별점; 과부하(rep2 no-cg·rep4)=전원 포화. dynamic은 stress마다 붕괴, static은 견고.
+
+★★**진짜 발견 = SLO 컨트롤러가 TTFT-bound(cudagraph) regime에 오설계** (`results/slo_sched/` 진단, 849258 slo 포화 로그): 주 신호가 **TPOT(decode)**인데 cudagraph regime binding은 **TTFT(prefill backlog)**. TPOT median 38.7ms(정상)로 컨트롤러는 "OK" 판단하나 실제 TTFT 6-10s로 붕괴. prefill-우선 경로(`_qd>target`)가 "`_tpot<lo`일 때만"으로 gated → 경합으로 TPOT이 lo밴드 밖이면 prefill 위기에 반응 실패, 오히려 TPOT 스파이크에 decode-heavy 오이동. agnostic은 decode_bs가 직접 decode-heavy로 몰아 최악(rep5 goodput 0.092). **∴ "static이 stress서 동적을 이김"은 컨트롤러 오설계의 반사효과.**
+
+**Step D 판정**: context-length feedforward는 **현 컨트롤러 위에서 net win 아님**(tail만 개선, goodput 무이득, static이 지배). 단 이는 **base 컨트롤러가 TTFT-bound에 오설계된 것과 confound** — 공정한 재시험은 **TTFT/queue를 직접 우선하는 컨트롤러(Step E 후보)** 위에서. → 다음 레버 = feedforward 신호가 아니라 **컨트롤러를 TTFT-binding에 맞게 재설계**(prefill-queue를 gated 아닌 1차 신호로).
+
 ### D.6 caveat
 - 이득은 **길이 이질 workload에서만**; 균질이면 고정 split로 degenerate(HD-iso가 그걸 확인).
 - SLO-v7b 큐-feedback이 긴-요청 압력을 *부분* 흡수 → **명시적 L-feedforward의 *증분*이 진짜 미지수**(lag 제거분).
 - layer-aware와 직교·부활 아님: cross-phase **스케줄링 신호**(SLO-aware 계열)지 층타입 정책 아님.
 - 파일: 하네스 `results/slo_sched/lff_bench.sbatch`, 컨트롤러 `src/multiplex/multiplexing_mixin.py`(+dev 미러).
+
+---
+
+## Step E — binding-signal-first 컨트롤러 (TTFT-aware 재설계) (설계, 2026-07-14)
+
+### E.0 한 줄
+현 컨트롤러는 **TPOT(decode) 주도**인데 cudagraph-ON 운영점의 binding은 **TTFT(prefill backlog)**다. 그래서 static d24에 진다.
+Step E = **binding SLO를 직접 신호로** — prefill-queue slack을 gated 2차가 아니라 **decode-slack과 대등한 1차 신호**로 올려,
+매 순간 *더 급한 쪽*으로 split을 민다.
+
+### E.1 설계 동기 (전부 이 세션 실측에 근거)
+
+1. **binding 이동 (측정)**: cudagraph-ON이 decode wall 제거(TPOT 41→12ms, [cudagraph_probe]) → decode ITL이 60ms SLO에 큰 여유 →
+   **binding이 decode(TPOT)에서 prefill(TTFT)로 이동**. Step D 전 라운드서 goodput ≈ TTFT-attainment(ITL은 통과).
+2. **컨트롤러가 그 이동을 못 따라감 (진단, job 849258 slo 포화)**: 포화 시 **TPOT median 38.7ms=정상**으로 컨트롤러가 "OK" 오판,
+   그동안 **실제 TTFT 6–10s로 붕괴**. `_slo_decide_idx`의 prefill-우선 경로가 `_tpot < _lo_frac` **gated** → 경합으로 TPOT이 lo밴드
+   밖이면 prefill 위기에 **반응 못 함**; 오히려 TPOT 스파이크에 `min(_hi, _idx+1)`로 **decode-heavy 오이동**(prefill 더 굶김).
+3. **그 결과 static이 이김 (3-rep, §D.7)**: d24(고정 prefill 84)는 신호를 안 보고 prefill에 커밋 → goodput 3.160[분산0]·tail 2.0–2.3.
+   동적(slo 2.933/agn 0.092/lff 2.854)은 신호 오판으로 열위·고분산. **∴ static 우위 = 컨트롤러 결함의 반사효과지 static이 본질 우월이 아님.**
+4. **오이동의 2차 피해 (측정)**: lff는 feedforward(prefill)와 feedback(TPOT 스파이크→decode)이 **충돌해 45 switch**(slo 18의 2.5×) →
+   green-ctx drain 폭증. agnostic은 decode_bs가 직접 decode-heavy로 몰아 최악(0.092). → **잘못된/과잉 switch가 throughput까지 깎음.**
+
+⇒ 문제는 **신호 선택**이다(feedforward L도, layer-type도 아님). binding(TTFT)을 1차로 보게 고치면 동적이 static을 이길 수 있는가? = Step E.
+
+### E.2 지표 × 메커니즘 지배관계 (설계의 중심)
+
+각 지표를 *무엇이 가장 많이 움직이나* + *이 세션 어디서 관측됐나*:
+
+| 지표 | 지배 메커니즘 | 방향/근거 (실측) | Step E가 거는 레버 |
+|---|---|---|---|
+| **TTFT** | **prefill SM(P_sm) + prefill 우선순위** (prefill=compute-bound·SM-민감, (B,L) knee) | P_sm↓ → TTFT 폭발: agn rep5 decode-heavy로 P 굶겨 TTFT 6.8s; d24(P84) 2.3s. no-cg 과부하선 17–57s | **prefill-queue slack을 1차 신호로** → backlog 쌓이면 즉시 P_sm↑ |
+| **TPOT** | **decode SM(D_sm) floor + cudagraph** (decode=memory-bound, 완만) | cudagraph서 TPOT ~12ms로 광범위 여유(D_sm 무관); no-cg서 ~40ms라 D 굶기면 즉시 ITL 위반(rep2 lff) | **decode-slack이 실제 위협일 때만** D 방어(cudagraph선 드묾) = 과잉 decode-이동 제거 |
+| **Throughput** | **PD overlap − green-ctx switch(drain) 비용** | 과잉 switch가 깎음: lff 45 switch로 drain 폭증→꼴찌; coordinated 42 vs 미조율 121ms(drain 크기) | **deadband+dwell 유지**, 신호가 진짜 바뀔 때만 switch(수렴 후 희소) |
+| **goodput@SLO** | **binding 제약의 attainment** = cudagraph선 **≈ TTFT-attainment**(ITL 여유) | Step D cg 라운드 전부 goodput이 TTFT로 결정(long good=TTFT<3s 여부) | binding=TTFT를 직접 최적화 → goodput = TTFT-first 제어의 직접 목표 |
+
+**핵심 통찰**: cudagraph 운영점에서 **TPOT은 대부분 non-binding**(여유 큼)인데 현 컨트롤러는 그걸 주신호로 씀 = **비-binding 지표를 좇다 binding(TTFT)을 놓침**. Step E는 신호 우선순위를 binding에 맞춘다.
+
+### E.3 설계 원리 — binding-signal-first (dual-slack)
+
+두 slack을 **대등하게** 계산하고 *더 급한 쪽*으로 split을 민다:
+- **prefill slack** = TTFT_SLO − (가장 오래 대기 중인 prefill의 큐 경과 또는 backlog-기반 예상 TTFT). 신호원: `waiting_queue` 대기시간/깊이 + split_prefill 잔여.
+- **decode slack** = TPOT_SLO − TPOT-EMA (기존 v7b 신호 재사용).
+- **제어**: `argmin(slack)`이 prefill이면 idx↓(P_sm↑), decode면 idx↑(D_sm↑), 둘 다 여유면 throughput 우선(prefill-heavy 기본, static d24 쪽). **gating 제거** — prefill-우선이 `_tpot<lo`에 종속되지 않음.
+- **안정화 유지**: EMA·deadband·dwell(§v7b) 그대로 → 과잉 switch 방지(throughput 보호).
+
+구현 지점: `_slo_decide_idx`(env `PDMUX_SLO_MODE=binding` 등으로 gate, off=v7b byte-identical). prefill-slack 신호는 `waiting_queue`의 요청별 `recv_time`/대기시간(스케줄러 인프라 존재) 활용.
+
+### E.4 각 지표에 대한 예측 (설계가 어떻게 바꾸나)
+
+- **TTFT**: backlog에 gating 없이 즉시 P_sm↑ → 붕괴(6–10s) 방지, static d24 수준(2.0–2.3)으로 수렴 기대. **주 개선 지표.**
+- **TPOT**: cudagraph 여유 덕에 D 방어 드묾 → 현재와 동등 유지(위반 없음). no-cg면 decode-slack이 자주 binding → 그때만 방어.
+- **Throughput**: 오이동(TPOT 스파이크→decode) 제거 + dwell로 switch↓ → lff의 45-switch drain 손실 회수.
+- **goodput**: binding(TTFT) 직접 최적화 → **목표: static d24를 매칭 또는 상회**(d24는 고정이라 mixed/burst·regime 변화에 약함 → 동적이 이길 여지는 그 변동에서).
+
+### E.5 비교군 · 가설 · 게이트
+
+- 비교: **d24(이겨야 할 static)** / agnostic / **slo-v7b(현 TPOT-주도)** / **binding-first(Step E)** / (선택) binding-first + L-feedforward.
+- **HE1 (핵심)**: cudagraph-ON near-boundary 이질-L에서 **binding-first가 slo-v7b를 이기고 d24를 매칭/상회**(goodput) + stress서 붕괴 안 함. 3-rep.
+- **HE2 (동적의 진짜 가치)**: **regime이 시간에 따라 바뀌는 mixed/burst**(§B)에서 binding-first가 d24를 goodput으로 이김(static은 한 점 고정이라 불가).
+- **HE0 (귀무)**: binding-first도 d24를 못 이김 → PD-split 동적 제어는 이 기판/워크로드서 static 대비 이득 無 → SLO track 종료(정직).
+- **isolation**: homogeneous·stationary에서 binding-first ≈ static(무해) 확인.
+- **재실험 재개점**: L-feedforward(Step D)를 **고친 컨트롤러 위에서** 재평가(공정 시험) — TTFT-first 위에선 feedforward가 순보탬일 수 있음.
+
+### E.6 caveat
+- Step D 학습 반영: 부하는 **near-boundary로 사전 보정**(과부하=전원 붕괴·경량=무차별). 부하 스윕 필수.
+- prefill-slack 예측 신호는 dirty(큐 경과는 admission 이후만 봄, 도착 burst 예측 불가) → feedforward L이 여기 보완재로 재등판 가능(E.5 선택군).
+- static d24가 이 regime서 강한 건 실측 사실 → **동적의 정당성은 "매칭 + 변동 regime서 초과"**지 stationary 압승이 아님(SLO track 원래 논지 유지).
+- 이건 layer-aware와 무관·직교(신호/스케줄링 축). [[slo-aware-scheduling-track]].
