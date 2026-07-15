@@ -40,7 +40,7 @@ case "$MODE" in
   d16|d24|d34|d44|d54) CFG="$OUT/pdmux_${MODE}.yml"; unset PDMUX_SLO_SCHED PDMUX_SLO_MODE ;;
   agn) CFG="$OUT/pdmux_slo.yml"; unset PDMUX_SLO_SCHED PDMUX_SLO_MODE ;;
   slo) CFG="$OUT/pdmux_slo.yml"; export PDMUX_SLO_SCHED=1 PDMUX_TPOT_SLO_MS=60 PDMUX_QDEPTH_TARGET=4; unset PDMUX_SLO_MODE ;;
-  bind) CFG="$OUT/pdmux_slo.yml"; export PDMUX_SLO_SCHED=1 PDMUX_SLO_MODE=binding PDMUX_TPOT_SLO_MS=60 \
+  bind) CFG="${SLO_CFG:-$OUT/pdmux_slo.yml}"; export PDMUX_SLO_SCHED=1 PDMUX_SLO_MODE=binding PDMUX_TPOT_SLO_MS=60 \
         PDMUX_TTFT_SLO_MS="${PDMUX_TTFT_SLO_MS:-3000}" PDMUX_SLO_ANCHOR_IDX="${PDMUX_SLO_ANCHOR_IDX:-2}" ;;
   *) echo "bad MODE=$MODE"; exit 1 ;;
 esac
@@ -80,18 +80,28 @@ else echo "BOOT FAILED"; tail -20 "$SRVLOG"|grep -viE "pynvml|Future"; fi
 kill $SRV 2>/dev/null; pkill -9 -f "launch_server.*--port $PORT" 2>/dev/null; sleep 2
 python3 - "$JA" "$JB" "$TAG" "${RATE_A}/${RATE_B}" <<'PY'
 import json,sys
+def pct(a,q):
+    if not a: return 0.0
+    a=sorted(a); return a[min(len(a)-1,int(q*len(a)))]
 def load(f):
-    g=0;dur=0
+    g=0;dur=0;tts=[];itls=[]
     for ln in open(f):
         ln=ln.strip()
         if not ln: continue
         o=json.loads(ln); tt=o.get("ttfts") or []; il=o.get("itls") or []; d=o.get("duration") or 0
-        g+=sum(1 for i,t in enumerate(tt) if t<=3.0 and ((sum(il[i])/len(il[i])) if (i<len(il) and il[i]) else 9)<=0.06)
         dur=max(dur,d)
-    return g,dur
+        for i,t in enumerate(tt):
+            m=(sum(il[i])/len(il[i])) if (i<len(il) and il[i]) else 9.0
+            tts.append(t); itls.append(m*1000.0)
+            if t<=3.0 and m<=0.06: g+=1
+    return g,dur,tts,itls
 ja,jb,tag,rate=sys.argv[1:5]
-gA,dA=load(ja); gB,dB=load(jb)
+gA,dA,ttA,ilA=load(ja); gB,dB,ttB,ilB=load(jb)
 gpA=gA/dA if dA else 0; gpB=gB/dB if dB else 0; gpC=(gA+gB)/(dA+dB) if (dA+dB) else 0
 print(f"HE2_RESULT tag={tag} rate={rate} | phaseA(prefill) gp={gpA:.3f} | phaseB(decode) gp={gpB:.3f} | COMBINED={gpC:.3f} | min-phase={min(gpA,gpB):.3f}")
+def pl(nm,tt,il):
+    return (f"HE2_PCT tag={tag} {nm} | TTFTs p50/p95/p99={pct(tt,.5):.2f}/{pct(tt,.95):.2f}/{pct(tt,.99):.2f} "
+            f"| ITLms p50/p95/p99={pct(il,.5):.1f}/{pct(il,.95):.1f}/{pct(il,.99):.1f}")
+print(pl("A",ttA,ilA)); print(pl("B",ttB,ilB))
 PY
 echo "DONE_${TAG}"

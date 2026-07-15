@@ -348,3 +348,18 @@ d24 5.913 > bind 5.618 > slo/d44 ~3.4. **동적 못 이김.** 단 bind≫slo(v7b
 3. **진짜 lever = offline 최적 static(d16) = layer-aware 예측**(Probe4: cudagraph 최적=d16=attn-decode floor). 트랙 가치는 dynamic 아니라 anchor-predictor.
 
 **SLO-aware 트랙 최종 = HE0 (goodput 이득 無, 종결).** Steps A~F(컨트롤러 진화 v1→binding-first→saturation-hold)는 "static에 안 지기"의 반복 실패였고, HE2가 "static을 이기기"의 부재를 확정. **§B의 +18%(no-cudagraph, vs d44)는 (i)비운영점 (ii)vs 최적아닌 static — 최적 static(d16 급) 대비가 아니었음.** 실전 = **layer-type이 예측한 최적 static split(cudagraph d16) 고정.** [[slo-aware-scheduling-track]], [[prefill-layer-alloc-status]].
+
+### HE2-3 — SM-step granularity 검증 (사용자 지적, 2026-07-15, jobs 852114–): coarse-grid 아티팩트 반증
+사용자 지적: 컨트롤러가 ±8~10 SM(16/24/34/44/54)로 움직여 최적서 크게 튕기는 게 dynamic 패의 원인 아닌가? granularity 실험 전무였음.
+- **green-ctx는 미세 스텝 지원**(하드웨어 한계 아님): config decode 16/18/20/22/24/28/34/44 → sm_counts 그대로 생성. 단 **sglang cudagraph capture가 >7 그룹서 IndexError**(별개 버그) → 7그룹 제한.
+- **7그룹 미세 그리드**(decode 16/18/20/22/24, ±2 SM near d16) 실측: 컨트롤러가 실제 dec_sm 16/18/20/22/24 사용(±2). 3-rep mean±std:
+
+| mode | COMBINED mean±std | phaseA |
+|---|---|---|
+| **d16-static** | **5.814 ± 0.358** | 4.914 |
+| bind-fine@d16 (±2SM) | 5.348 ± 0.727 | 4.152 |
+| bind-coarse@d16 (±8SM) | 5.286 ± 0.102 | 3.854 |
+
+- **미세 그리드가 격차 못 닫음**: bind-fine ≈ bind-coarse, 둘 다 d16-static보다 ~0.5 아래(gap>std). **step size 무관.**
+- **percentile(신규 HE2_PCT)**: bind phaseA TTFT p50/p95/p99=2.28/**8.58**/9.35s, ITL 57.9/69.9/189ms — 컨트롤러가 decode-slack에 d16 이탈→prefill 굶어 TTFT tail 폭발.
+- ★**판정**: "coarse-grid 아티팩트" 반증. 최적이 **edge(d16=최대 prefill)**라 어느 스텝이든 **이동 자체가 순손해**(잘게 나누면 중간상태로 더 자주 드리프트). dynamic 패는 granularity 무관 fundamental. 지표 std/percentile 포함해 견고성 확인.
