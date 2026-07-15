@@ -321,3 +321,30 @@ margin 수정으로 안 되어 **3개 추가 수정 시도, 전부 d24 미달:**
 - **후속1 anchor=d16 검증**: cudagraph 최적 anchor=layer-type 예측값 d16(Probe4). d24 대신 d16 anchor 재측정 = anchor-predictor 실험확인.
 - **후속2 HE2(시변 regime)**: binding이 *교대*하는 mixed/burst(§B, 포화 아님)에서만 동적이 static 초과 가능 → 최종 payoff.
 - 파일: 컨트롤러 `multiplexing_mixin.py`(`_slo_decide_idx_binding`에 2-tier 가드 + pf_age 링버퍼), 하네스 `lff_bench.sbatch` `bind` 재사용.
+
+---
+
+## HE2 — 트랙 최종 판정 (2026-07-15, jobs 850356–852093): 동적 = goodput 이득 無, 종결
+
+phase-alternating(A=in3600/o32 prefill-bound ↔ B=decode-heavy), cudagraph-ON, `he2_bench.sbatch`.
+
+### HE2-1 (phaseB=in2000/o96)
+d24 5.913 > bind 5.618 > slo/d44 ~3.4. **동적 못 이김.** 단 bind≫slo(v7b의 phaseA 붕괴 0.988→bind 4.273 수정). 진단: cudagraph가 decode 여유를 만들어 phaseB조차 TTFT-bound → 최적 split이 두 phase 동일 → 교대 없음.
+
+### ★HE2-2 (사용자 지적 반영: phaseB를 *진짜* decode-bound로, in256/o512 고동시성)
+"최적이 안 움직인다"가 workload 아티팩트인지 검증. **static 전 sweep + bind(anchor d24·d16):**
+
+| split | phaseA | phaseB | COMBINED |
+|---|---|---|---|
+| **d16 static** | **5.522** | 6.631 | **6.098** ← 최적 |
+| bind (anchor d24) | 3.755 | 6.752 | 5.243 |
+| bind (anchor d16) | 3.651 | 6.730 | 5.184 |
+| d24 | 3.427 | 6.695 | 4.836 |
+| d34 / d44 / d54 | 1.73 / 1.51 / 0.96 | ~6.7 | 4.07 / 3.84 / 3.39 |
+
+★★**결정적 3판정**:
+1. **최적점은 static이고 안 움직인다 = fundamental (workload 아티팩트 아님)**: 진짜 decode-bound phase서도 **split 무관(phaseB flat ~6.7)** → cudagraph decode robust해 binding 안 됨 → prefill-heavy(d16)가 두 phase 최적. phaseA 완전 단조(d16>d24>d34>d44>d54).
+2. **동적은 best-static(d16 6.098)에 anchor 무관하게 패**: bind(d24) 5.243·bind(d16) 5.184 모두 −14~15%. **anchor 올발라도 못 따라감** — 최적 불변인데 신호에 반응해 이탈 = 순비용(이탈+drain). "auto-tuning 운영 편의"마저 약함(bind(d16)<d16-static).
+3. **진짜 lever = offline 최적 static(d16) = layer-aware 예측**(Probe4: cudagraph 최적=d16=attn-decode floor). 트랙 가치는 dynamic 아니라 anchor-predictor.
+
+**SLO-aware 트랙 최종 = HE0 (goodput 이득 無, 종결).** Steps A~F(컨트롤러 진화 v1→binding-first→saturation-hold)는 "static에 안 지기"의 반복 실패였고, HE2가 "static을 이기기"의 부재를 확정. **§B의 +18%(no-cudagraph, vs d44)는 (i)비운영점 (ii)vs 최적아닌 static — 최적 static(d16 급) 대비가 아니었음.** 실전 = **layer-type이 예측한 최적 static split(cudagraph d16) 고정.** [[slo-aware-scheduling-track]], [[prefill-layer-alloc-status]].
