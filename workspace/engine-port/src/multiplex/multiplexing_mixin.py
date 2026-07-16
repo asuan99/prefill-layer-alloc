@@ -88,6 +88,66 @@ class SchedulerMultiplexMixin:
             return 0.0
         return max(0.0, (_now - _oldest) * 1000.0)
 
+    def _slo_knee_itl(self: Scheduler, d_sm: int) -> float:
+        """Step G: profiled decode-forward time (ms) at a given decode-SM, used for its SHAPE only.
+        Source: results/r0c/knee_result_835571.txt (Zamba2-2.7B) = 9*per-attn + 54*per-mamba.
+        ABSOLUTES DO NOT TRANSFER (profiled at ctx3600/no-cudagraph: d24=127ms vs ~29ms observed on
+        ShareGPT/cudagraph), so callers must rescale by the live TPOT at the current split."""
+        _pts = ((8, 358.4), (16, 186.3), (24, 127.4), (44, 70.7), (108, 47.7))
+        if d_sm <= _pts[0][0]:
+            return _pts[0][1]
+        if d_sm >= _pts[-1][0]:
+            return _pts[-1][1]
+        for (x0, y0), (x1, y1) in zip(_pts, _pts[1:]):
+            if x0 <= d_sm <= x1:
+                return y0 + (y1 - y0) * (d_sm - x0) / float(x1 - x0)
+        return _pts[-1][1]
+
+    def _slo_feasible(self: Scheduler, idx_cur: int, idx_new: int) -> bool:
+        """Step G feasibility gate (design: reports/realtrace_findings_and_open_branches.md §3.4).
+
+        Gates ONLY prefill-ward moves (D_sm down). Asymmetry: starving decode PROPAGATES
+        (residency up -> running batch saturates -> prefill admission blocked -> TTFT explodes =
+        the positive-feedback trap), while starving prefill does not propagate back into decode.
+
+        Two guards (both must pass):
+          (1) CONGESTION [primary, directly observable]: the decode batch must have headroom.
+              Little's law: required_concurrency = arrival_rate * output_len * ITL; when that
+              reaches max_running_requests the batch caps admission and TTFT collapses. Measured
+              on ShareGPT r8: d44 N~42 (TTFT 0.12s) / d24 N~50 (1.21s) / d16 N~57 (7.24s).
+              ** This is the guard that actually catches the trap: d16's ITL (33.5ms p50) PASSES
+              the 60ms SLO, so an ITL-only gate would let the fatal move through. **
+          (2) ITL [secondary]: predicted ITL at the candidate split stays under the TPOT SLO,
+              using the knee SHAPE rescaled by the live TPOT-EMA at the current split.
+        """
+        if idx_new >= idx_cur:
+            return True  # decode-ward or no move: cannot trigger this failure mode
+        _occ = float(os.environ.get("PDMUX_SLO_FEAS_OCC", "0.85"))
+        _mar = float(os.environ.get("PDMUX_SLO_FEAS_MARGIN", "0.9"))
+        _slo = float(os.environ.get("PDMUX_TPOT_SLO_MS", "60"))
+        # (1) congestion guard
+        try:
+            _cap = int(getattr(self, "max_running_requests", 0) or 0)
+            _bs = self.running_batch.batch_size() if self.running_batch is not None else 0
+            if _cap > 0 and _bs >= _cap * _occ:
+                self._slo_feas_refused = getattr(self, "_slo_feas_refused", 0) + 1
+                return False
+        except Exception:
+            pass
+        # (2) ITL guard (knee shape anchored to the live measurement)
+        _tpot = getattr(self, "_slo_tpot_ema", 0.0)
+        try:
+            if _tpot > 0:
+                _k_cur = self._slo_knee_itl(self.sm_counts[idx_cur][1])
+                if _k_cur > 0:
+                    _pred = _tpot * (self._slo_knee_itl(self.sm_counts[idx_new][1]) / _k_cur)
+                    if _pred > _slo * _mar:
+                        self._slo_feas_refused = getattr(self, "_slo_feas_refused", 0) + 1
+                        return False
+        except Exception:
+            pass
+        return True
+
     def _slo_decide_idx_binding(self: Scheduler, _tpot_slo: float, _lo: int, _hi: int) -> int:
         """Step E (design §E): binding-signal-first dual-slack controller. Treat prefill-slack
         (TTFT_SLO - oldest-waiting age) and decode-slack (TPOT_SLO - TPOT-EMA) as PEERS; push the
@@ -144,11 +204,27 @@ class SchedulerMultiplexMixin:
             _new = _idx + (1 if _idx < _anchor else -1)        # both slack -> drift to tuned-static anchor
         else:
             _new = _idx                                        # at anchor, no urgency -> hold
+        # Step G feasibility gate (env PDMUX_SLO_FEAS_GATE; off => byte-identical to Step E/F).
+        # Refuses a prefill-ward move whose candidate split decode cannot afford -> blocks entry
+        # into the positive-feedback trap (pf_age GROWS after moving prefill-ward, re-triggering
+        # the chase: 2800->4743ms observed). See _slo_feasible.
+        _feas = 1
+        if os.environ.get("PDMUX_SLO_FEAS_GATE") and _new != _idx:
+            if not self._slo_feasible(_idx, _new):
+                _feas = 0
+                _new = _idx  # refuse the move, hold current split
         if _new != _idx:
             self._slo_dwell = int(os.environ.get("PDMUX_SLO_DWELL", "3"))
             logger.info(
                 "SLO-BIND %d->%d dec_sm=%d pf_age=%.0fms tpot=%.1fms pfslack=%.2f decslack=%.2f sat=%d anchor=%d",
                 _idx, _new, self.sm_counts[_new][1], _pf_age, _tpot, _pf_slack, _dec_slack, int(_sat), _anchor,
+            )
+        elif _feas == 0:
+            logger.info(
+                "SLO-FEAS refused idx=%d->%d dec_sm=%d->%d pf_age=%.0fms tpot=%.1fms bs=%s refused_total=%d",
+                _idx, _new, self.sm_counts[_idx][1], self.sm_counts[max(_lo, _idx - 1)][1], _pf_age, _tpot,
+                (self.running_batch.batch_size() if self.running_batch is not None else -1),
+                getattr(self, "_slo_feas_refused", 0),
             )
         self._slo_idx = _new
         return _new
