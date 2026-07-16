@@ -111,6 +111,42 @@ d24(prefill 84, ITL p95 39.9=여유) → TTFT 1.21s. **prefill SM을 *더* 줬�
 - **switch↓ ∧ goodput → d24(6.24) 근접** ⇒ **트리거가 주원인** — "headroom 있으면 inert" 원리 확증(사용자 가설 성립).
 - **switch↓인데 goodput 여전히 미달** ⇒ **트리거는 부차** — 문제는 *언제*가 아니라 *어느 쪽으로* 움직이나 ⇒ 갈래 (b)가 주범.
 
+### 2.6 ★결과 (2026-07-16, jobs 854640/854641/854642) — 둘 다 맞았고, **양극성(bistable)** 발견
+
+`pf_urg 0.5→0.1`, **dwell=3 고정**(변수 1개). stationary ShareGPT r8, 2-rep:
+
+| rep | goodput | switch | split 체류 | TTFT p50 |
+|---|---|---|---|---|
+| **rep4** | **6.237** ✅ | **2** | d24(1)·d34(1) — **d16 미방문** | 1.16s |
+| **rep3** | **2.219** ❌ | **16** | **d16(7)**·d24(8)·d34(1) | 3.91s |
+| *d24 static (rep1/rep2)* | *6.240 / 6.317* | *0* | — | *0.84s* |
+
+**같은 설정이 실행마다 6.24↔2.22로 갈림 = bistable.**
+
+**(a) 확증**: 완화하면 rep4처럼 **switch 2회로 static 매칭**(6.237≈6.28) 가능 ⇒ tight 트리거가 불필요 churn의 원인 맞음.
+또한 **switch 2회 = overhead 사실상 0** ⇒ **(A)overhead는 문제가 아님**을 직접 증명(§1.4 프레임 확증).
+
+★★**(b)가 진짜 killer — 양성 피드백 트랩(positive-feedback trap) 발견.** rep3 로그(SLO-BIND 궤적):
+
+```
+2->1 dec_sm=16 pf_age=2800ms tpot=31.5ms pfslack=0.07   ← 트랩 진입: transient spike가 0.1 임계 넘음
+1->2 dec_sm=24 pf_age=3200ms             pfslack=-0.07  ← d16 갔는데 pf_age가 *늘어남*
+2->1 dec_sm=16 pf_age=3530ms             pfslack=-0.18  ← 또 증가
+2->1 dec_sm=16 pf_age=4146ms             pfslack=-0.38
+1->2 dec_sm=24 pf_age=4743ms             pfslack=-0.58  ← 2800→4743 단조 증가, 탈출 불가
+```
+vs **rep4**: pf_age가 ~1400ms 유지, **0.1 임계를 한 번도 안 넘음** → d16 미방문 → 6.237.
+
+**기전**: 컨트롤러는 "prefill로 이동 → pf_age↓"를 가정하나, 얽힘 때문에 **pf_age↑**(d16 → ITL>SLO → batch 정체 → admission 차단).
+⇒ **음성 피드백 설계가 양성 피드백으로 작동 → 불안정 → 양극.** 한 번 들어가면 **행동이 오류 신호를 스스로 증폭**해 못 나옴.
+**트랩 진입 순간 tpot=31.5ms**(d24서 decode 멀쩡) → 상대비교(`pf_slack<dec_slack`) 통과 → 이동 승인 → 파국. **단 하나의 transient spike가 6.24 vs 2.22를 가름.**
+
+### 2.7 두 갈래 관계 (확정)
+- **(a) 트리거 tightness** = **트랩 *진입 확률*** 결정. 완화 → 진입 드묾 → 성공할 *수도*.
+- **(b) 잘못된 행동 방향** = 트랩을 **self-reinforcing(탈출 불가)**로 만듦. **완화만으론 제거 불가**(rep3가 증명).
+⇒ **(a)는 확률만 낮춤; robust하려면 (b) 필수.** (b) 없이는 **같은 설정도 실행마다 6.24↔2.22 도박.**
+⇒ 이 트랩이 지금까지 **모든** dynamic 실패(bind-tight 21sw 4.895 / loose+dwell10 2.160 / slo 4.085 / varying bind 18sw)의 **통일적 설명**.
+
 ---
 
 ## 3. 남은 갈래 (b) — 얽힘-aware 행동 모델 (어느 쪽으로 움직이나)
@@ -139,12 +175,60 @@ d24(prefill 84, ITL p95 39.9=여유) → TTFT 1.21s. **prefill SM을 *더* 줬�
 - **decode knee는 비선형**: 24→16 SM에서 ITL이 급증(실측 39.9→61.9ms, SLO 돌파). 현재 여유는 *현재 split에서의* 여유일 뿐.
 - ⇒ 컨트롤러는 **후보 split에서의 decode 실현가능성(feasibility)을 예측하지 않는다.** 현재값만 보고 이동한다.
 
-### 3.4 시험 설계 (해야 할 것) — feasibility 게이트
-행동 **전에** 후보 split의 결과를 예측해 거부:
-- **decode knee(오프라인 계측)**로 후보 `D_sm`에서의 **ITL 예측** → `predicted_ITL(D_sm_candidate) > TPOT_SLO`면 **그 이동을 거부**.
-- 즉 규칙: *"prefill이 위급해도, decode가 그 SM을 내줄 여력이 없으면 뺏지 않는다"*. (prefill의 TTFT 문제는 decode를 굶겨서 못 푼다.)
-- ShareGPT에 적용시: d24→d16 후보의 예측 ITL(≈62ms) > 60ms → **이동 거부** → d24 유지 → **static 매칭 기대**.
-- ★**의의**: 이것이 **layer-aware/knee 데이터가 실제로 쓰이는 자리** — anchor *값* 예측이 아니라 **행동 feasibility 예측**으로. ([[prefill-layer-alloc-status]]의 decode knee가 입력.)
+### 3.4 ★설계 — knee 기반 feasibility 게이트 (설계만; 미구현)
+
+**목적**: 트랩 **진입 자체를 원천 차단**. "prefill이 위급해도 decode가 그 SM을 내줄 여력이 없으면 뺏지 않는다."
+(prefill의 TTFT 문제는 decode를 굶겨서 풀 수 없다 — §1.3 얽힘.)
+
+#### 3.4.1 게이트 규칙 (핵심 로직)
+```
+# _slo_decide_idx_binding에서 이동 결정 후, *적용 전* 검사
+if idx' < idx:                                   # prefill-ward (D_sm 감소) 이동만 게이트
+    D_cand   = sm_counts[idx'][1]
+    itl_pred = predict_ITL(D_cand, decode_bs, ctx)
+    if itl_pred > TPOT_SLO * FEAS_MARGIN:        # 예: 60ms * 0.9 = 54ms
+        REFUSE -> idx' = idx                     # 현재 split 유지
+```
+- **prefill-ward 이동만 게이트**: D_sm을 *늘리는*(decode-ward) 이동은 이 실패 모드를 못 만듦(§3.4.5 비대칭).
+- **safety margin**(0.9): 예측 오차 흡수. 보수적일수록 static에 수렴.
+
+#### 3.4.2 rep3 트랩 진입에 적용하면
+| 시점 | 현재 | 후보 | 현재 tpot | 예측 ITL(d16) | 판정 |
+|---|---|---|---|---|---|
+| trap entry | d24 | **d16** | 31.5ms (여유) | **≈62ms** (knee) | **> 54 → 거부** |
+⇒ d24 유지 → **트랩 미진입 → 결정론적 6.24**(rep4 경로 강제). **양극성 제거가 게이트의 1차 효과.**
+
+#### 3.4.3 predict_ITL 후보 (택1 또는 조합)
+| 방식 | 입력 | 장점 | 단점 |
+|---|---|---|---|
+| **(i) 오프라인 knee 테이블** ★권장 | `results/r0c/knee_result_*.txt`(SM 108/44/24/16/8별 per-attn/per-mamba ms) → ITL(D_sm) | 런타임 학습 불요·결정론적 | 모델/config별 프로파일 필요, batch·ctx 의존 보정 필요 |
+| (ii) 온라인 관측맵 | 런 중 방문한 D_sm→TPOT-EMA 히스토리 | 자동 적응 | **cold start + 닭-달걀**(d16을 *가보지 않고* 알아야 하는데 가는 게 위험) |
+| (iii) 해석적 외삽 | 관측 2점 → `ITL ≈ a + b/D_sm` 적합 | 값쌈·프로파일 최소 | 외삽 오차(knee 비선형 구간서 위험) |
+
+**권고: (i) 오프라인 knee 1차 + (iii) 온라인 보정**(현재 D_sm의 실측 TPOT로 테이블을 스케일 → batch/ctx 드리프트 흡수).
+★**의의**: 이것이 **layer-aware/decode-knee 데이터가 실제로 쓰이는 자리** — anchor *값* 예측이 아니라 **행동 feasibility 예측**.
+([[prefill-layer-alloc-status]]의 decode knee가 입력. 죽은 줄 알았던 knee가 여기서 부활.)
+
+#### 3.4.4 knobs · 구현 지점
+- env: `PDMUX_SLO_FEAS_GATE=1`(게이트 on, off면 기존과 byte-identical), `PDMUX_SLO_FEAS_MARGIN`(기본 0.9), `PDMUX_SLO_KNEE_PATH`(테이블).
+- 코드: `src/multiplex/multiplexing_mixin.py`의 `_slo_decide_idx_binding` — `_new` 확정 직후 게이트 삽입 + `_predict_itl()` 헬퍼 신규.
+- 로그: `SLO-BIND`에 `feas=refused/ok itl_pred=..` 추가 → 거부 횟수를 측정 가능하게(진입 차단 실증용).
+
+#### 3.4.5 왜 prefill-ward만 게이트하나 (비대칭)
+- **decode 굶김 → prefill 죽음**: decode 지연이 running batch를 점유 → **admission 차단** → 새 prefill이 아예 못 들어옴. **전파됨.**
+- **prefill 굶김 → decode 영향 미미**: 이미 admit된 decode 요청은 계속 진행. prefill이 느려도 decode를 막지 않음. **전파 안 됨.**
+⇒ 위험한 방향은 **prefill-ward(D_sm↓)** 하나뿐. (대칭 게이트는 불필요·과보수 위험.)
+
+#### 3.4.6 검증 계획
+- **HG1 (주)**: stationary ShareGPT r8, **≥3 rep**. 목표 = **분산 붕괴** — 현재 6.24↔2.22 양극이 **일관되게 ~6.2**로. 지표: goodput mean±std, **d16 체류=0**, `feas=refused` 횟수>0(게이트 실제 발동 증명), switch 수, TTFT/ITL p50/p95/p99.
+- **HG2**: 변화 trace(3↔12) — HI phase서 prefill-ward 드리프트 거부 → d44 쪽 유지 → **bind→d44(9.71) 근접**?
+- **HG-iso**: 저부하(rate 4)서 게이트가 과발동해 정상 이동까지 막지 않는지(무해 확인).
+- **HG0**: 여전히 미달 → 예측기 부정확 or 제3의 실패모드 → 재진단.
+
+#### 3.4.7 기대 효과와 **천장** (정직하게)
+- **얻는 것**: 트랩 제거 → **결정론적 static 매칭**(6.24), 양극성/도박 소멸. **robustness**가 산출물.
+- **못 얻는 것**: **static 초과 아님.** §1.3 비대칭(decode over-provision이 저부하서 무해) 때문에 어떤 static도 못 따라가는 구간이 실질적으로 없음 → **"goodput 이득 無" 트랙 결론 불변.**
+- ⇒ 게이트의 가치 = **성능 반전이 아니라 (1) 기전 확증(트랩이 원인이었다) + (2) 동적을 *안전하게* 만들기**(최악 2.22 → 안정 6.2).
 
 ### 3.5 판정 게이트
 - **feasibility 게이트 후 d16 excursion 소멸 → bind ≈ d24(stationary)·≈d44(varying)** ⇒ **행동모델이 주범이었음** 확정. 단 **천장은 "static 매칭"**.
