@@ -1,5 +1,10 @@
 # Session handoff — 2026-07-15 (prefill-phase multiplexing: layer-aware 死 확정 + SLO-aware 동적 트랙 종결(HE0) + 실trace 열림)
 
+> ⚠️ **부분 반증됨 — 정본은 [CONSENSUS.md](CONSENSUS.md)**. 이 문서는 **실trace 검증 이전** 시점이라 아래 주장이 틀렸다:
+> - ❌ **"cudagraph 최적 static = d16"** → **저-decode-부하 synthetic 아티팩트**. 실 trace/변화 trace선 **d16이 최하위**(8.438), 최적은 **d44 (9.649±0.039)**. 최적 split은 **부하 의존**(CONSENSUS §1-5).
+> - ❌ **"실전 = layer-predicted 최적 static(d16) 고정"** → 실전 권고는 **peak decode 부하 기준 decode-heavy static**(d44급).
+> - ✅ **유지**: layer-type 런타임 정책 全死, HE0(동적이 best-static 못 넘음) — 단 근거는 이 문서의 synthetic이 아니라 **변화 trace n≥4**(CONSENSUS §1-7).
+
 이전 핸드오프 [session_handoff_2026-07-13.md](deprecated_reports/session_handoff_2026-07-13.md)(cudagraph 재측정·layer-aware 종결)의 후속.
 이 세션 = **(1) prefill-side layer-aware를 (B,L) knee로 최종 매장 → anchor-predictor로 재정의, (2) L-feedforward(Step D) HD0,
 (3) SLO-aware 컨트롤러 재설계(Step E binding-first) + saturation-hold(Step F) 종결, (4) HE2로 "동적이 static을 이기나" 결정 —
