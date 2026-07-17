@@ -24,6 +24,18 @@ Source: knee2d_table.csv (jobs 847690/847711/847897), Zamba2-2.7B, A100-80GB, sg
 import csv, collections, math
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator, NullLocator, FuncFormatter
+
+def _fmt(v):
+    return f"{v/1000:g}k" if v >= 1000 and v % 1000 == 0 else f"{v:g}"
+
+def tick_all(ax, vals, rot=0):
+    """Tick every measured anchor (log axes otherwise drop most of them)."""
+    ax.xaxis.set_major_locator(FixedLocator(list(vals)))
+    ax.xaxis.set_minor_locator(NullLocator())
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: _fmt(v)))
+    if rot:
+        plt.setp(ax.get_xticklabels(), rotation=rot, ha="right")
 
 rows = list(csv.DictReader(open("knee2d_table.csv")))
 for r in rows:
@@ -64,6 +76,7 @@ a.annotate("crossover ≈ 3k tok\n(below: mamba costs more)", (3000, 1.5), fonts
 a.set_xlabel("sequence length L (tokens)"); a.set_ylabel("per-layer prefill time (ms)")
 a.set_title("① WHY the cost ratio moves: the two types scale differently in L\n(SM=108, B=1)", fontsize=10.5)
 a.grid(alpha=.3, which="both"); a.legend(fontsize=9, loc="upper left")
+tick_all(a, sorted(set(Ls) | {3000}))
 
 # ---- panel 2: Diff A vs L (the recalled result) ------------------------------
 a = ax[0][1]
@@ -80,6 +93,7 @@ a.set_xscale("log"); a.set_yscale("log")
 a.set_xlabel("sequence length L (tokens)"); a.set_ylabel("Diff A  =  attn / mamba  (per-layer cost)")
 a.set_title("② Diff A — the COST ratio: 0.47× → 10.1×  (21× swing)\nREAL — this was the hypothesis's motivation", fontsize=10.5)
 a.grid(alpha=.3, which="both"); a.legend(fontsize=9, title="batch", loc="upper left")
+tick_all(a, Ls)
 
 # ---- panel 3: SM speedup curves ---------------------------------------------
 a = ax[1][0]
@@ -96,6 +110,7 @@ a.annotate("only L=2000 separates:\nmamba stalls at 8.3× while\nattn reaches 11
 a.set_xlabel("SM count allocated to prefill"); a.set_ylabel("speedup vs SM=8")
 a.set_title("③ SM sensitivity: curves coincide for L ≥ 8k\n(B=1; markers = L)", fontsize=10.5)
 a.grid(alpha=.3); a.legend(fontsize=9, loc="upper left")
+tick_all(a, sorted({s for d in cell.values() for s in d}))
 
 # ---- panel 4: THE CRUX + the honest caveats ---------------------------------
 a = a4 = ax[1][1]
@@ -126,6 +141,7 @@ a.set_xlabel("sequence length L (tokens)"); a.set_ylabel("ratio (attn : mamba)")
 a.set_title("④ THE CRUX — cost differs, sensitivity does not (for L ≥ 8k)\n…but the grid stops right where the real workload starts",
             fontsize=10.5, fontweight="bold")
 a.grid(alpha=.3, which="both"); a.legend(fontsize=9, loc="lower right")
+tick_all(a, sorted(set(Ls) | {SGPT_P50, SGPT_MEAN, SGPT_P95}), rot=45)
 
 fig.tight_layout(rect=[0, 0.055, 1, 0.935])
 fig.text(0.5, 0.030,
