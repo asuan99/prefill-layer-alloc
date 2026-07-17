@@ -409,7 +409,22 @@ class SchedulerMultiplexMixin:
             ):
                 # v7: SLO layer-span evaluation — decide the target split EVERY prefill span,
                 # but drain+switch only when it actually changes (converged -> rare -> few drains).
+                # Open item (2): direct cost of RUNNING the controller on the single-process
+                # event loop. Measured here (the live path) rather than inferred from goodput,
+                # which the bench noise swamps. Microsecond means => hypothesis dead.
+                import time as _ct
+                _ct0 = _ct.perf_counter()
                 _tgt = self._slo_decide_idx()
+                _cdt = (_ct.perf_counter() - _ct0) * 1000.0
+                self._slo_ctl_n = getattr(self, "_slo_ctl_n", 0) + 1
+                self._slo_ctl_ms = getattr(self, "_slo_ctl_ms", 0.0) + _cdt
+                self._slo_ctl_max = max(getattr(self, "_slo_ctl_max", 0.0), _cdt)
+                if self._slo_ctl_n % 200 == 0:
+                    logger.info(
+                        "SLO-CTLCOST n=%d mean=%.4fms max=%.3fms cum=%.1fms",
+                        self._slo_ctl_n, self._slo_ctl_ms / self._slo_ctl_n,
+                        self._slo_ctl_max, self._slo_ctl_ms,
+                    )
                 if _tgt != stream_idx:
                     prefill_stream.synchronize()
                     decode_stream.synchronize()
