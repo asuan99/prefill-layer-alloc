@@ -76,7 +76,7 @@ for ln in open(sys.argv[1]):
     if not ln: continue
     o=json.loads(ln); tt=o.get("ttfts") or []; il=o.get("itls") or []; d=o.get("duration") or 0
     il_in=o.get("input_lens") or o.get("prompt_len") or []
-    dur=max(dur,d)
+    dur=max(dur,d)  # OK here: this file holds exactly ONE round (cf. sharegpt_vary_bench.sbatch bugfix)
     for i,t in enumerate(tt):
         m=(sum(il[i])/len(il[i])) if (i<len(il) and il[i]) else 9.0
         tts.append(t); itls.append(m*1000.0)

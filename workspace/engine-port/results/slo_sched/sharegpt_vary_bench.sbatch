@@ -85,7 +85,11 @@ def load(f):
         ln=ln.strip()
         if not ln: continue
         o=json.loads(ln); T=o.get("ttfts") or []; I=o.get("itls") or []; d=o.get("duration") or 0
-        dur=max(dur,d)
+        # BUGFIX (2026-07-17): this file holds ONE json object PER ROUND. `good` accumulates over
+        # all rounds, so the denominator must be the SUM of round durations, not the max —
+        # max() inflated every reported goodput by ~3x (= ROUNDS). Ranking was unaffected
+        # (pure scale factor), absolute values were not.
+        dur+=d
         for i,t in enumerate(T):
             m=(sum(I[i])/len(I[i])) if (i<len(I) and I[i]) else 9.0
             tt.append(t); il.append(m*1000)
