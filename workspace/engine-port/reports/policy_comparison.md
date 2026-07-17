@@ -1,5 +1,8 @@
 # PD-mux 정책 종합 비교 — SM-allocation vs Scheduler/Controller
 
+> ⚠️ **정본은 [CONSENSUS.md](CONSENSUS.md)**. 이 문서의 **goodput 수치표는 no-cudagraph·구(舊)벤치** 기준이라
+> 현재 결론과 충돌한다(특히 "최적=d16"·stationary 수치). **taxonomy·메커니즘 서술만 유효**하게 읽을 것.
+
 작성: 2026-07-09. 이 프로젝트에서 실엔진(sglang v0.5.10, Zamba2-2.7B, A100-80GB, clean async serving)으로
 측정한 **모든 PD-mux 정책**을 한자리에 비교한다. 두 패러다임:
 - **(A) SM-allocation 정책** — prefill↔decode SM split을 고정/준동적으로 정함 (fused·agnostic·tuned-uniform·agnostic_v2·layer-aware).

@@ -7,7 +7,7 @@
 잘못된 레이어에 얹혀서 생긴 substrate 아티팩트"인가**를 영역별로 분리한다.
 
 관련: [policy_comparison.md](policy_comparison.md)(정책 goodput·메커니즘), [prefill_vs_decode_execution.md](prefill_vs_decode_execution.md)(실행 knee),
-[p1_4_layer_aware_평가_kr.md](p1_4_layer_aware_평가_kr.md)(transfer 조건), `results/a_substrate/`(substrate isolation).
+[p1_4_layer_aware_평가_kr.md](deprecated_reports/p1_4_layer_aware_평가_kr.md)(transfer 조건), `results/a_substrate/`(substrate isolation).
 
 ---
 

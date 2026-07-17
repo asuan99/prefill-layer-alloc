@@ -1,6 +1,6 @@
 # Session handoff — 2026-07-15 (prefill-phase multiplexing: layer-aware 死 확정 + SLO-aware 동적 트랙 종결(HE0) + 실trace 열림)
 
-이전 핸드오프 [session_handoff_2026-07-13.md](session_handoff_2026-07-13.md)(cudagraph 재측정·layer-aware 종결)의 후속.
+이전 핸드오프 [session_handoff_2026-07-13.md](deprecated_reports/session_handoff_2026-07-13.md)(cudagraph 재측정·layer-aware 종결)의 후속.
 이 세션 = **(1) prefill-side layer-aware를 (B,L) knee로 최종 매장 → anchor-predictor로 재정의, (2) L-feedforward(Step D) HD0,
 (3) SLO-aware 컨트롤러 재설계(Step E binding-first) + saturation-hold(Step F) 종결, (4) HE2로 "동적이 static을 이기나" 결정 —
 HE0(못 이김), (5) granularity·std로 견고화, (6) 실trace(ShareGPT) 열림.**
