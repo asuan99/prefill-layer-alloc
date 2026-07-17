@@ -74,6 +74,15 @@
 
 ⇒ ★**layer-type-aware, 全형태 死**(decode-side·coordinated·prefill-side·예약).
 
+> ### ⚠️ S3 정정 (2026-07-17) — "Diff B ≈ 1.0 전 격자"는 과장이었다
+> 원자료 재검토 + 시각화([`../results/prefill_knee/diffA_vs_diffB.png`](../results/prefill_knee/diffA_vs_diffB.png), 표 [`diffA_vs_diffB_table.md`](../results/prefill_knee/diffA_vs_diffB_table.md)):
+> - **Diff A는 21× 진폭**(0.47× @L2k → 10.1× @L32k). 기전: **attn ~ L^1.68 vs mamba ~ L^0.61**, 교차점 ≈3k tok. **사용자 기억("짧으면 0.5×, 길면 2×")은 정확** — 실제로는 L=8k서 2.4×, L=32k서 10×까지 간다.
+> - ★**Diff B는 L≥8000에서만 ≈1.0**(0.96–1.04). **L=2000에선 ≈1.35**(B=1 1.38 / B=48 1.34; B=4만 0.97) — mamba가 짧은 L에서 floor에 근접해 SM을 덜 먹는다. **lever는 L↓에서 열린다.**
+> - ★**격자(L 2k–32k)가 실제 서빙 regime을 안 덮는다**: ShareGPT는 **mean 352 · p50 204 · p95 1042 tok, 98%가 L<2000**.
+>
+> **영향**: **서빙 수준 반증(S0·S2)은 무관하게 유효**(실 워크로드 직접 측정). 무너지는 건 **기전 서사**다 — **"lever가 없어서 죽었다"는 long-context 한정**이고 실 서빙 구간엔 **외삽**이다. 짧은 L에서 죽은 진짜 이유는 **(D) granularity**(S2에서 **TPOT 42→124ms**로 정량화)일 것이다.
+> **부활 가능성 낮음**: Diff B>1이어도 (D) 비용을 넘어야 하는데, 짧은 L의 절대 stakes(per-layer 1–8ms)가 그 비용보다 작다. **열린 질문**으로 남긴다(L≈200–2000 Diff B 실측).
+
 **같은 시기의 깨끗한 부수 결과(크기 추세)**: la/agnostic = **1.2B 1.37× / 2.7B 2.02× / 7B 1.82×** ⇒ **SLM 한정이 아니라 1.2B–7B 전 구간 이득**(commit `bdeca45`).
 ⚠️ 7B는 **"1.00× 미스케일"로 2회 오결론**했다가 반전 — **E3 ssm floor 누락으로 agnostic이 조용히 degenerate**한 아티팩트였다(`TRITON_CACHE_DIR` fix + 재측정 job 797832). **micro/설정 아티팩트가 결론을 뒤집은 3번째 사례.**
 
