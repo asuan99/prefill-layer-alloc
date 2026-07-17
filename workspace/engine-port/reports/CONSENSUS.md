@@ -70,13 +70,13 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | 문서 | 역할 |
 |---|---|
 | **CONSENSUS.md** (이 문서) | **정본** — 확정/철회 상태 |
+| **`research_arc.md`** | ★**연구 아크 전사** — 출발점→현재의 단계별 시작논의/촉발지표/해소지표/부정사유(수치 포함). CONSENSUS의 서사 짝 |
 | `bench_noise_root_cause.md` | ★벤치 노이즈 근본원인(메트릭 절벽)·3× 하네스 버그·HE0 구조적 이유 |
 | `realtrace_findings_and_open_branches.md` | 실 trace 검증 + 얽힘 기전 + 남은 갈래(트리거/행동모델) 상세 |
 | `slo_aware_scheduling_design.md` | SLO-aware track 설계·실측 전사(§C–§HE2-3, Step D/E/F/G) |
 | `policy_comparison.md` | 정책 taxonomy·메커니즘 (⚠️ §goodput 수치는 no-cudagraph·구벤치 — §1·§2 우선) |
 | `system_vs_engine_vs_sim.md` | fidelity ladder (sim/engine/full-system 편향 분리) |
 | `prefill_vs_decode_execution.md` | prefill/decode 실행 특성·knee 기초 |
-| `session_handoff_2026-07-15.md` | 최근 세션 흐름 |
 | `sm_policy_report.html` | layer-aware 원자료 기록(死 트랙, 이력용. §coordinated 개정 미완 = stale) |
 
 `deprecated_reports/` = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**

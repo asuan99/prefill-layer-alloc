@@ -17,3 +17,5 @@
 
 ⚠️ 특히 이 문서들의 **layer-aware "生" 서술**과 **저부하 synthetic 기반 "최적=d16" 서술**은
 `CONSENSUS.md` §1-3·§1-5에서 **반증/정정**되었다.
+
+- `session_handoff_2026-07-15.md` — **부분 반증 + 대체됨**. "cudagraph 최적 static=d16"·"실전=d16 고정"은 **저-decode-부하 synthetic 아티팩트**(실 trace서 d16 최하위, 최적은 d44). 전체 흐름은 [`../research_arc.md`](../research_arc.md)가 대체.
