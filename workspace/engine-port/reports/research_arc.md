@@ -227,6 +227,24 @@ SM 분할 = **green context**(A100 = **108 SM**), dtype **bf16**.
 
 ---
 
+## S11. ★2차 반전 — HE0가 goodput SLO 엄격도의 산물이었다 (2026-07-18)
+
+| | |
+|---|---|
+| **① 시작 논의** | (사용자) 정책들이 실제로 무엇을 입력으로 쓰나 물으며, **"workload 크기가 달라지면 SLO도 달라져야 하는데, 고정 TTFT≤3s 지점에서 계측 오류가 있는 것 아닌가"** 지적. 코드 확인 결과 정책은 sensitivity(Diff B)가 아니라 지연·batch 점유율로 돌고, goodput SLO는 workload 길이와 무관하게 고정돼 있었다 |
+| **② 촉발 지표** | 정본 벤치의 SLO(`TTFT≤3s`)가 실 ShareGPT 지연스케일(mean prefill ~112ms)의 **~27× 과대 예산**이라는 관찰 |
+| **③ 해소 지표** | ★**기존 벤치 재분석**(job 재제출 없음) — per-request `input_lens`/`ttfts`/`itls`를 재스코어해 SLO 지시함수만 교체. fixed-tight sweep(길이 무관) + 길이-정규화 + matched-average 대비. n=1이던 d24/d16/slo는 **n≥4 재측정**(jobs 859005–859059)으로 보강 |
+| **④ 판정** | ★**HE0가 조건부화됨** — sanity(fixed-3s 재현 = §S10과 정확 일치)를 통과한 뒤, **fixed-tight sweep에서 승자 교체**: `d44@{3.0…0.75s} → d34@0.5s → bind+GATE@0.335s`. **관대 SLO=static 지배, tight SLO(≲0.5s)=동적 승** |
+
+**부정 사유 = 축의 정정**: 사용자 직관은 "길이-비례 SLO"였으나, matched-average 대비(같은 ~335ms 평균예산)에서 **flat SLO(bind 2.593) ≈ 길이비례 SLO(bind 2.582)** — 둘 다 동적 승. ⇒ **반전을 만든 건 길이-비례성이 아니라 latency 엄격도**. 3s가 goodput을 사실상 *완료율*로 만들어 decode throughput(=decode-heavy static)을 이기게 했던 것.
+**기전(phase 분해)**: 반전은 HI(과부하) phase에서만 — 관대SLO=완료율 지배(decode-heavy 승) / tight SLO=first-token 반응성 지배(부하 중 prefill 저글링하는 동적 승, decode-heavy static은 prefill 굶겨 꼴찌권). ⇒ ★**§S10의 "두 regime 최적이 충돌 안 함"은 관대SLO 한정** — tight SLO선 HI 최적이 고정점이 아니라 동적이 되어 static이 표현 불가(=충돌 구간 발생).
+**강도(보수적, 사용자 지정)**: bind+GATE vs **d44 +0.073(~3σ)** / vs best-static **d34 +0.042(~1.5σ, 대등)** ⇒ "동적 압도"가 아니라 **"동적이 best-static과 대등~약우위, decode-heavy static *지배*는 반증"**.
+⇒ ★**아크에서 처음으로 동적 제어에 upside가 열린 지점** — 단 특정 SLO regime(tight) 한정이고, 이 regime용 컨트롤러 재튜닝은 미착수(CONSENSUS §5-7). 상세 [`../results/slo_sched/lengthnorm_slo_reanalysis.md`](../results/slo_sched/lengthnorm_slo_reanalysis.md).
+
+**방법론 의의**: 이 아크의 모든 goodput 결론이 **단일 자유 파라미터(SLO 임계)** 위에 서 있었는데 **한 번도 그것을 sweep하지 않았다**. 재계측 비용은 0(기존 데이터 재분석)이었다 — "확정" 결론조차 측정 설정의 암묵 가정을 명시적으로 흔들어봐야 한다는 교훈.
+
+---
+
 ## 아크 요약 — 가설은 어떻게 죽었나
 
 ```
