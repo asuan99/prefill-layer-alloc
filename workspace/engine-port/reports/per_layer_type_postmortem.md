@@ -58,6 +58,16 @@ per-layer-type SM 배분(attn 레이어와 mamba 레이어에 SM을 다르게)�
 
 ---
 
+## 1.5 그림으로 보는 깨지는 지점 — kill-chain
+
+![kill-chain](killchain.png)
+
+**[killchain.png](killchain.png)** — 두 조건이 각 regime서 어디서 깨지는지 4패널로 관측:
+- **① (C1) prefill**: Diff B가 L=256→1.42, L=512→1.22로 lever가 있다가 **L≈1024서 'no-lever' 밴드(0.9–1.1)로 붕괴** — C1 깨지는 지점(시도 D·E). 실 워크로드 mean 352 tok은 lever 구간 안.
+- **② (C1) decode**: mamba 곡선이 거의 평탄(SM-free), attn은 가파름 → **Diff B ≈ 5.7로 lever 실재**(C1 성립). 따라서 decode의 死因은 C1이 아니라 C2.
+- **③ (C2) 착취 비용**: coordinated **124ms** → 싼 전환(OPT) **85ms**(−39ms 회수) → 그러나 agnostic **43ms**에 **−42ms 잔차가 안 닫힘**(오버랩 손실+cudagraph 불가) = C2 깨지는 지점(시도 C·H).
+- **④ kill map**: regime×조건 격자 — **C1 성립 ⟺ C2 실패**가 모든 행에서 성립, 교집합 공집합.
+
 ## 2. 종합 — 왜 교집합이 공집합인가
 
 | regime | (C1) lever 존재? | (C2) 착취 가능? | 판정 |
