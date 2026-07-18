@@ -82,6 +82,11 @@
 >
 > **영향**: **서빙 수준 반증(S0·S2)은 무관하게 유효**(실 워크로드 직접 측정). 무너지는 건 **기전 서사**다 — **"lever가 없어서 죽었다"는 long-context 한정**이고 실 서빙 구간엔 **외삽**이다. 짧은 L에서 죽은 진짜 이유는 **(D) granularity**(S2에서 **TPOT 42→124ms**로 정량화)일 것이다.
 > **부활 가능성 낮음**: Diff B>1이어도 (D) 비용을 넘어야 하는데, 짧은 L의 절대 stakes(per-layer 1–8ms)가 그 비용보다 작다. **열린 질문**으로 남긴다(L≈200–2000 Diff B 실측).
+>
+> **✅ S3 열린 질문 해소 (2026-07-18)** — WIDE 스윕 L 256–32768 × B 1–16 (`../results/prefill_knee/knee2d_wide.png`, 표 `knee2d_wide_table.md`, jobs 857371/857477):
+> - **lever는 L≤512에서 실제로 열린다**(Diff B B=1: **256→1.42, 512→1.22**), L≥1024 전부 ≈1.0. **실 워크로드 mean 352 tok이 lever 구간 안**이다 — 사용자 직관 및 S3 정정 모두 **실측 확증**.
+> - ★**기전**: 타입 간 scaling 차이가 아니라 **짧은 L에서 둘 다 SM 미활용**(L256 speedup attn 5.9×/mamba 4.2×, 이상적 13× 대비). mamba는 44 SM서 포화·역행(0.85→0.93ms). ⇒ **짧은 L에선 prefill이 SM 불요**(얽힘과 정합).
+> - ★**그래도 정책은 死**: lever 절대 stakes = sub-ms/layer ≪ (D) 비용 42→124ms(S2). batch도 안 엶(bs 버킷 Diff B 0.98–1.09). ⇒ **결론 불변, "lever 부재→(D)가 삼킴"으로 기전만 정밀화.**
 
 **같은 시기의 깨끗한 부수 결과(크기 추세)**: la/agnostic = **1.2B 1.37× / 2.7B 2.02× / 7B 1.82×** ⇒ **SLM 한정이 아니라 1.2B–7B 전 구간 이득**(commit `bdeca45`).
 ⚠️ 7B는 **"1.00× 미스케일"로 2회 오결론**했다가 반전 — **E3 ssm floor 누락으로 agnostic이 조용히 degenerate**한 아티팩트였다(`TRITON_CACHE_DIR` fix + 재측정 job 797832). **micro/설정 아티팩트가 결론을 뒤집은 3번째 사례.**
@@ -161,6 +166,64 @@
 - d16만 **HI(2.737) < LO(2.861)** — 부하 하에서 유일하게 **붕괴**(얽힘 기전).
 
 **부산물(하네스 버그)**: 변화-trace 분석기가 good은 3라운드 합산·분모는 `dur=max(dur,d)` ⇒ **goodput 3× 부풀림**(수정 `f921ae8`). **순위 완전 보존**이라 정책 결론은 무사하나, 구 보고값(9.649 등) 인용 시 **÷3**.
+
+---
+
+## S-M. 서빙 수준 반증 지점 · 측정 환경 (2026-07-17 추가)
+
+이 절의 목적은 두 가지다. **(1)** 이 아크의 어떤 판정이 ***실 서빙 측정으로*** 죽었는지(=micro/sim 추론이 아닌지)를 한 곳에 못박고,
+**(2)** 그 판정들이 **어떤 환경에서** 나왔는지를 남겨 **결론의 유효 범위**를 나중에 되짚을 수 있게 한다.
+아크 전체가 "micro가 서빙을 4번 오도했다"는 교훈 위에 있으므로, **판정의 등급(서빙 vs micro)** 을 흐리면 같은 실수가 반복된다.
+
+### S-M.1 반증 지점 — 등급별
+
+| # | 반증된 주장 | 단계 | **등급** | 결정적 수치 | 환경 |
+|---|---|---|---|---|---|
+| 1 | layer-aware(decode-side)가 agnostic을 이긴다 | S0 | ★**서빙** | **agnostic 4/4 승**. Zamba2는 rate 3부터 **goodput 0** | **E1** |
+| 2 | `agnostic_v2`가 (Granite서) 최적이다 | S0 | ★**서빙** | decode에 실작업 있으면 **최악**(NemotronH·Granite). 앞선 "최적" 판정은 tiny-batch micro 아티팩트 | **E1** |
+| 3 | 조율만 하면 per-type layer-aware가 산다 | S2 | ★**서빙** | **TPOT 42 → 124ms**. `_COORD_OPT`로 **절반은 substrate**지만 **부호는 robust** | **E2** |
+| 4 | 동적(SLO-aware/binding/gate)이 best-static을 넘는다 (**HE0**) | S9·S10 | ★**서빙** | **d44 3.220±0.013 (n=4) > bind+GATE 3.132±0.019 (n=9)**, **5.4σ** | **E3-vary** |
+| 5 | (내 주장) "최적 split = d16 · 부하 무관 불변" | S9 | ★**서빙** | **d16 1.056 vs d24 6.240 (5.9×)**. 실 trace가 synthetic 결론을 뒤집음 | **E3-stat** |
+| 6 | (내 주장) 컨트롤러 CPU 오버헤드가 static 미달의 원인 | S10 | **직접 계측** | mean **32–36µs** = wall의 **0.014%** | **E3-vary** |
+| 7 | (내 주장) stationary 분산 = GPU 클럭 throttling | S10 | **서빙(재현)** | rate **3=견고 / 8=불안정 / 12=견고** ⇒ 경계 regime뿐 = 메트릭 절벽 | **E3-stat** |
+| 8 | (내 주장) §B "+18%" 이득 | S4–S8 | **자기 철회** | no-cudagraph(비운영점) + vs 비최적 static = 이중 confound | — |
+| — | | | | | |
+| 9 | ⚠️ layer-type **prefill-side / §14 예약**이 산다 | S3 | ⚠️**micro (서빙 아님)** | **Diff B ≈ 1.0** (L≥8000). **정정**: L=2000선 **≈1.35**이고 격자가 실 서빙 regime을 안 덮음 | **E4** |
+
+★**#9만 등급이 다르다**는 점이 중요하다. prefill-side의 死는 **(B,L) 격자 micro-측정**이지 서빙 판정이 아니다 —
+그리고 이 아크의 교훈 #1이 바로 **"micro는 서빙을 예측 못 한다"** 다. 다만 **#1–#5(서빙 등급)가 layer-type 정책을 이미 독립적으로 죽였으므로**
+#9가 약해져도 **결론은 바뀌지 않고, 무너지는 것은 *기전 서사*("lever가 없어서 죽었다")뿐**이다(S3 정정 참조).
+
+### S-M.2 측정 환경
+
+**공통 substrate** (전 캠페인 동일): **A100 80GB PCIe ×1**, driver **580.105.08** / CUDA 13.0, SLURM `amd_a100nv_8`(1 GPU·8 CPU·80–90G),
+torch **2.9.1+cu130**, sglang = **로컬 편집설치**(`external/sglang-latest`, 계보 v0.5.10; `__version__`은 `0.0.0` = scm 미해석이라 **버전 문자열로 식별 불가**),
+SM 분할 = **green context**(A100 = **108 SM**), dtype **bf16**.
+**`d{N}` 표기 = decode에 준 SM 수**: d16=[92,16] · d24=[84,24] · d34=[74,34] · d44=[64,44] (`prefill,decode`; 합 108).
+
+| ID | 쓰인 곳 | 모델 | 워크로드 | 엔진 플래그 | 판정 지표 |
+|---|---|---|---|---|---|
+| **E1** | S0 4-모델 실증 (#1·#2) | **4종**: `Zyphra/Zamba2-2.7B`(ctx 4096) · `nvidia/Nemotron-H-8B-Base-8K`(8192) · `tiiuae/Falcon-H1-3B-Base`(131072) · `ibm-granite/granite-4.0-h-micro-base`(131072) | **synthetic** `random-ids`, **in 2000 / out 96**, `range-ratio 1.0`(고정 길이), 120 prompts, **rate 1·2·3·4·6** | `--disable-cuda-graph --disable-piecewise-cuda-graph --disable-radix-cache`, `--mem-fraction-static 0.82`, **`--max-running-requests 48`**, `--chunked-prefill-size -1`, `--disable-overlap-schedule`, backend `flashinfer`\|`triton` | goodput@**TTFT≤3s ∧ TPOT≤60ms** |
+| **E2** | S2 coordinated la (#3) | Zamba2-2.7B 중심 | synthetic **in3600/out32**, **in2000/out96** (상보쌍) | E1과 동일 + `event_loop_pdmux_coord`, `PDMUX_LA_COORD_OPT` | TPOT · goodput |
+| **E3-stat** | stationary 실 trace (#5·#7) | **Zamba2-2.7B 단독** | **ShareGPT v3** (`--sharegpt-context-len 4000`), **rate 8 고정**, 400 prompts | ↓E3-vary와 동일(**cudagraph ON**) | goodput · TTFT/ITL p50/95/99 |
+| **E3-vary** | ★**정책 비교 정본** (#4·#6) | **Zamba2-2.7B 단독**, `--context-length 4096` | **ShareGPT v3**, **rate 3↔12 교대 3라운드**, 라운드당 200 prompts | **cudagraph ON**, `--attention-backend triton`, `--disable-radix-cache`, `--mem-fraction-static 0.82`, **`--max-running-requests 48`**, `--chunked-prefill-size -1`, `--disable-overlap-schedule`, `--enable-pdmux` + `pdmux_*.yml`(`decode_bs_divisor 36`, `split_forward_token_budget 65536`) | **TRUE goodput**(라운드 duration **합산** — `f921ae8` 이전은 3× 부풀림) + switch_count + p50/95/99 |
+| **E4** | ⚠️(B,L) knee (#9, **micro**) | Zamba2-2.7B (attn 9층 / mamba 54층) | **서빙 아님** — prefill forward **직접 계측**(CUDA event, 층 타입별). 격자 **L 2k–32k × B 1–48**, SM ∈ {full,44,24,16,8} | 서버 없이 forward 반복 | per-attn / per-mamba ms → **Diff A**(비용비) · **Diff B**(SM 민감도비) |
+
+**하네스**: `results/slo_sched/sharegpt_vary_bench.sbatch`(E3-vary, 정본) · `sharegpt_bench.sbatch`(E3-stat) · `triage/p1_7_bench_one.sbatch`(E1) · `results/prefill_knee/knee2d*.sbatch`(E4).
+
+### S-M.3 ★이 환경이 **덮지 않는** 범위 (결론의 유효 경계)
+
+| 축 | 실제로 측정된 것 | 안 덮은 것 |
+|---|---|---|
+| **컨텍스트 길이** | ShareGPT **mean 352 · p50 204 · p95 1042 tok (98%가 L<2000)**; synthetic in2000/in3600 | ★**long-context 실 trace(8k–128k)**. Diff A가 **열리는** 구간(교차점 ≈3k)이 통째로 미측정 |
+| **모델** | 정책 캠페인(E3)은 **Zamba2-2.7B 단독**. 4-모델 비교는 E1(synthetic·no-cudagraph)뿐 | 운영점(cudagraph)서의 **다-모델 재확인**. Zamba2는 **ctx 4096 상한**이라 애초에 long-context 불가 |
+| **출력 길이** | out 32/96 · ShareGPT 출력 | 긴 생성(o≥512)의 decode 지배 regime |
+| **동시성** | **`max_running_requests`=48 고정** | 이 상수가 **얽힘 기전의 축**인데 sweep한 적 없음 |
+| **하드웨어** | A100 80GB **PCIe 1장** | 멀티-GPU · H100급(SM 수·SM당 성능이 split 격자를 바꿈) |
+
+★ **"결론이 틀렸다"는 뜻이 아니다** — #1–#5는 각자의 환경에서 실 서빙으로 확정됐다. 다만 **"peak decode 부하 기준 decode-heavy static"** 권고의
+근거는 **짧은 컨텍스트 · 단일 모델 · 고정 동시성** 위에 서 있으며, 특히 **컨텍스트 축은 이 아크의 창립 동기(attn vs mamba 격차는 long-L에서 벌어진다)와 정면으로 관련**된다.
+⇒ **long-context 실 trace로의 전환 논의는 [longcontext_trace_plan.md](longcontext_trace_plan.md)** 에 별도로 둔다(이 문서는 *이미 일어난 일*의 전사이므로 계획을 섞지 않는다).
 
 ---
 

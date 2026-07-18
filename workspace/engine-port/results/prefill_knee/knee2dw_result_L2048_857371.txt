@@ -1,0 +1,27 @@
+MODEL=Zyphra/Zamba2-2.7B L=2048 ctxcap=2560 chunk=32768 target_req=128 B_LIST=1 2 4 8 16 SM_LIST=full 44 24 16 8 port=35474 job=857371_3
+boot_ok=1
+RESULT L=2048 B=1 sm=full [2026-07-17 22:13:56] ZBPT mode=full@L2048@B1 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=12.265 mamba_total=96.077 | per-attn(9)=1.3628 per-mamba(54)=1.7792
+RESULT L=2048 B=1 sm=44 [2026-07-17 22:14:52] ZBPT mode=44@L2048@B1 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=27.997 mamba_total=215.621 | per-attn(9)=3.1108 per-mamba(54)=3.9930
+RESULT L=2048 B=1 sm=24 [2026-07-17 22:16:20] ZBPT mode=24@L2048@B1 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=50.069 mamba_total=396.528 | per-attn(9)=5.5632 per-mamba(54)=7.3431
+RESULT L=2048 B=1 sm=16 [2026-07-17 22:18:24] ZBPT mode=16@L2048@B1 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=73.588 mamba_total=582.663 | per-attn(9)=8.1765 per-mamba(54)=10.7900
+RESULT L=2048 B=1 sm=8 [2026-07-17 22:22:13] ZBPT mode=8@L2048@B1 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=146.283 mamba_total=1156.946 | per-attn(9)=16.2537 per-mamba(54)=21.4249
+RESULT L=2048 B=2 sm=full [2026-07-17 22:22:40] ZBPT mode=full@L2048@B2 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=12.280 mamba_total=96.139 | per-attn(9)=1.3645 per-mamba(54)=1.7804
+RESULT L=2048 B=2 sm=44 [2026-07-17 22:23:30] ZBPT mode=44@L2048@B2 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=27.955 mamba_total=215.299 | per-attn(9)=3.1062 per-mamba(54)=3.9870
+RESULT L=2048 B=2 sm=24 [2026-07-17 22:24:52] ZBPT mode=24@L2048@B2 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=50.059 mamba_total=396.447 | per-attn(9)=5.5621 per-mamba(54)=7.3416
+RESULT L=2048 B=2 sm=16 [2026-07-17 22:26:49] ZBPT mode=16@L2048@B2 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=73.559 mamba_total=582.268 | per-attn(9)=8.1733 per-mamba(54)=10.7827
+RESULT L=2048 B=2 sm=8 [2026-07-17 22:30:32] ZBPT mode=8@L2048@B2 ctxlen=2050 n=128 bs=1 ntok=2050 | attn_total=146.232 mamba_total=1156.461 | per-attn(9)=16.2480 per-mamba(54)=21.4159
+RESULT L=2048 B=4 sm=full [2026-07-17 22:30:55] ZBPT mode=full@L2048@B4 ctxlen=2050 n=64 bs=3 ntok=6150 | attn_total=24.642 mamba_total=180.138 | per-attn(9)=2.7380 per-mamba(54)=3.3359
+RESULT L=2048 B=4 sm=44 [2026-07-17 22:31:40] ZBPT mode=44@L2048@B4 ctxlen=2050 n=64 bs=3 ntok=6150 | attn_total=56.490 mamba_total=419.403 | per-attn(9)=6.2767 per-mamba(54)=7.7667
+RESULT L=2048 B=4 sm=24 [2026-07-17 22:32:56] ZBPT mode=24@L2048@B4 ctxlen=2050 n=64 bs=3 ntok=6150 | attn_total=101.421 mamba_total=762.475 | per-attn(9)=11.2690 per-mamba(54)=14.1199
+RESULT L=2048 B=4 sm=16 [2026-07-17 22:34:48] ZBPT mode=16@L2048@B4 ctxlen=2050 n=64 bs=3 ntok=6150 | attn_total=151.091 mamba_total=1136.049 | per-attn(9)=16.7879 per-mamba(54)=21.0379
+RESULT L=2048 B=4 sm=8 [2026-07-17 22:38:23] ZBPT mode=8@L2048@B4 ctxlen=2050 n=64 bs=3 ntok=6150 | attn_total=299.114 mamba_total=2254.600 | per-attn(9)=33.2348 per-mamba(54)=41.7518
+RESULT L=2048 B=8 sm=full [2026-07-17 22:38:44] ZBPT mode=full@L2048@B8 ctxlen=2050 n=32 bs=7 ntok=14350 | attn_total=49.147 mamba_total=350.470 | per-attn(9)=5.4608 per-mamba(54)=6.4902
+RESULT L=2048 B=8 sm=44 [2026-07-17 22:39:26] ZBPT mode=44@L2048@B8 ctxlen=2050 n=32 bs=7 ntok=14350 | attn_total=112.609 mamba_total=816.249 | per-attn(9)=12.5121 per-mamba(54)=15.1157
+RESULT L=2048 B=8 sm=24 [2026-07-17 22:40:39] ZBPT mode=24@L2048@B8 ctxlen=2050 n=32 bs=7 ntok=14350 | attn_total=203.597 mamba_total=1492.648 | per-attn(9)=22.6218 per-mamba(54)=27.6416
+RESULT L=2048 B=8 sm=16 [2026-07-17 22:42:27] ZBPT mode=16@L2048@B8 ctxlen=2050 n=32 bs=7 ntok=14350 | attn_total=303.578 mamba_total=2224.132 | per-attn(9)=33.7309 per-mamba(54)=41.1876
+RESULT L=2048 B=8 sm=8 [2026-07-17 22:45:57] ZBPT mode=8@L2048@B8 ctxlen=2050 n=32 bs=7 ntok=14350 | attn_total=601.270 mamba_total=4421.837 | per-attn(9)=66.8078 per-mamba(54)=81.8859
+RESULT L=2048 B=16 sm=full [2026-07-17 22:46:16] ZBPT mode=full@L2048@B16 ctxlen=2050 n=16 bs=15 ntok=30750 | attn_total=99.401 mamba_total=694.472 | per-attn(9)=11.0445 per-mamba(54)=12.8606
+RESULT L=2048 B=16 sm=44 [2026-07-17 22:46:57] ZBPT mode=44@L2048@B16 ctxlen=2050 n=16 bs=15 ntok=30750 | attn_total=224.727 mamba_total=1614.491 | per-attn(9)=24.9696 per-mamba(54)=29.8980
+RESULT L=2048 B=16 sm=24 [2026-07-17 22:48:09] ZBPT mode=24@L2048@B16 ctxlen=2050 n=16 bs=15 ntok=30750 | attn_total=407.223 mamba_total=2952.581 | per-attn(9)=45.2470 per-mamba(54)=54.6774
+RESULT L=2048 B=16 sm=16 [2026-07-17 22:49:55] ZBPT mode=16@L2048@B16 ctxlen=2050 n=16 bs=14 ntok=28700 | attn_total=608.442 mamba_total=4411.325 | per-attn(9)=67.6047 per-mamba(54)=81.6912
+RESULT L=2048 B=16 sm=8 [2026-07-17 22:53:23] ZBPT mode=8@L2048@B16 ctxlen=2050 n=16 bs=15 ntok=30750 | attn_total=1205.057 mamba_total=8772.254 | per-attn(9)=133.8952 per-mamba(54)=162.4491
