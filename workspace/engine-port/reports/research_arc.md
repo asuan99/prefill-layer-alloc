@@ -250,6 +250,14 @@ SM 분할 = **green context**(A100 = **108 SM**), dtype **bf16**.
                                              ⇒ 두 regime의 최적이 충돌하지 않음 = 적응할 대상이 없음
 ```
 
+> ### ✅ 후속 (2026-07-18) — decode SM-민감도는 ctx 의존 (사용자 질문: "decode도 prefill과 같나?")
+> **답: 정반대 + ctx로 이동.** decode Diff B ≈ 4.0×(mamba SM-free)로 prefill(≈1.0)과 반대(`results/prefill_knee/decode_vs_prefill_sensitivity.png`). ★그리고 **decode step의 SM-usable 비율(=attn 비율)이 ctx 따라 이동**(job 858811, `results/r0c/decode_knee_vs_ctx.png`):
+> - ctx256: attn 5% → **whole-decode 민감도 1.1×(SM-free)** → 최적 decode SM knee **16**
+> - ctx1024: 28% → 4.4× → knee **44**
+> - ctx4096: 76% → 9.4× → knee **108**
+> - ctx16384: 79% → 10.5×(SM-hungry) → knee **108**
+> ⇒ **최적 decode SM은 ctx 함수**(§1-5 floor의 기전). ★단 이건 **whole-decode SM 크기 조절(offline predictor 입력)**이지 step 내부 per-layer-type 분할이 아니다 — 후자는 (D) granularity로 死 유지. prefill 쪽 "attn만 더 줄이기"도 레이어 순차 실행이라 within-prefill lever 없음(파티션 키우기=PD split=이미 §1-5).
+
 **살아남은 것**: **PD 분리 자체**(agnostic이 fused를 4모델 전부서 승), **cudagraph 운영점**, **얽힘 기전**, **비대칭**, **부하 의존 최적**.
 **실전 권고**: **peak decode 부하 기준 decode-heavy static split 고정.** 동적 제어 불요.
 **layer-aware의 유일한 잔존 형태**: **offline anchor(decode-floor) predictor** — 런타임 정책으로는 死.

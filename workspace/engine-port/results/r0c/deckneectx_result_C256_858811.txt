@@ -1,0 +1,7 @@
+MODEL=Zyphra/Zamba2-2.7B CTX=256 ctxcap=768 conc=32 port=34211 job=858811_0
+boot_ok=1
+RESULT CTX=256 sm=full [2026-07-18 16:15:51] ZBLT mode=full@256 ctxlen=288 n=30 bs=32 ntok=32 | attn_total=3.175 mamba_total=65.655 | per-attn(9)=0.3528 per-mamba(54)=1.2158
+RESULT CTX=256 sm=44 [2026-07-18 16:15:55] ZBLT mode=44@256 ctxlen=288 n=30 bs=32 ntok=32 | attn_total=5.598 mamba_total=28.057 | per-attn(9)=0.6220 per-mamba(54)=0.5196
+RESULT CTX=256 sm=24 [2026-07-18 16:16:01] ZBLT mode=24@256 ctxlen=288 n=30 bs=32 ntok=32 | attn_total=9.212 mamba_total=26.435 | per-attn(9)=1.0236 per-mamba(54)=0.4895
+RESULT CTX=256 sm=16 [2026-07-18 16:16:05] ZBLT mode=16@256 ctxlen=288 n=30 bs=32 ntok=32 | attn_total=13.641 mamba_total=28.582 | per-attn(9)=1.5156 per-mamba(54)=0.5293
+RESULT CTX=256 sm=8 [2026-07-18 16:16:11] ZBLT mode=8@256 ctxlen=288 n=30 bs=32 ntok=32 | attn_total=26.561 mamba_total=51.926 | per-attn(9)=2.9512 per-mamba(54)=0.9616
