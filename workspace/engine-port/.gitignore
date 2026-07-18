@@ -8,6 +8,11 @@ external/
 *.err
 *.zip
 
+# Python bytecode — root ignores these but `!**/results/**` re-includes under
+# results/; re-ignore here (deeper file wins) so analysis-script caches stay out.
+**/__pycache__/
+*.pyc
+
 # (root .gitignore already ignores *.json, *.log, *.png, __pycache__, *.so)
 
 # P1.4 temp markers
