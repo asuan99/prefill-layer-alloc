@@ -97,19 +97,27 @@ if len(xs1) > 1:
     a.set_title(f"① per-layer prefill time (SM=108; markers = B)\nB=1 scaling:  attn ~ $L^{{{ka:.2f}}}$   vs   mamba ~ $L^{{{km:.2f}}}$", fontsize=10.5)
 a.axvspan(min(Ls)*0.8, 2000, color=C_WARN, alpha=.13)
 a.text(min(Ls)*0.9, a.get_ylim()[1]*0.35, "region the OLD grid\nnever measured", fontsize=8.5, color="#8a5a00", fontweight="bold")
+a.set_xticks(Ls); a.set_xticklabels([str(L) for L in Ls], rotation=45, fontsize=8)
+a.get_xaxis().set_minor_formatter(plt.NullFormatter())
 a.set_xlabel("sequence length L (tokens)"); a.set_ylabel("per-layer time (ms)")
-a.grid(alpha=.3, which="both"); a.legend(fontsize=9, loc="upper left")
+a.grid(alpha=.3, which="major"); a.legend(fontsize=9, loc="upper left")
 
-# ② Diff A vs L
+# ② Diff A vs L  (every L marked on the x-axis, per user request)
 a = ax[0][1]
 for B in Bs:
     xs = [L for L in Ls if diffA(L, B)]
     if xs: a.plot(xs, [diffA(L, B) for L in xs], "o-", lw=1.8, ms=5.5, alpha=.85, label=f"B={B}")
 a.axhline(1.0, color="k", ls="--", lw=1.2)
+a.text(Ls[0]*1.02, 1.05, "equal cost", fontsize=8)
+a.axvline(3000, color="gray", ls=":", lw=1.3)
+a.annotate("crossover ≈ 3k tok", (3000, 0.13), fontsize=8, color="#444", rotation=90,
+           textcoords="offset points", xytext=(3, 0))
 a.set_xscale("log"); a.set_yscale("log")
+a.set_xticks(Ls); a.set_xticklabels([str(L) for L in Ls], rotation=45, fontsize=8)
+a.get_xaxis().set_minor_formatter(plt.NullFormatter())
 a.set_xlabel("sequence length L (tokens)"); a.set_ylabel("Diff A = attn / mamba (cost)")
-a.set_title("② Diff A — COST ratio (the hypothesis's motivation)", fontsize=10.5)
-a.grid(alpha=.3, which="both"); a.legend(fontsize=8.5, title="batch", ncol=2)
+a.set_title("② Diff A — COST ratio: 0.10× → 11.0×  (110× swing)\n(the hypothesis's motivation)", fontsize=10.5)
+a.grid(alpha=.3, which="major"); a.legend(fontsize=8.5, title="batch", ncol=2, loc="lower right")
 
 # ③ Diff B vs L — THE QUESTION. Hollow marker = requested B collapsed (bs<B): noisy, ignore.
 a = ax[1][0]
@@ -132,6 +140,8 @@ a.axvline(SG_MEAN, color="#8a5a00", ls="-.", lw=1.8)
 a.annotate(f"real workload\nmean {SG_MEAN} · p50 {SG_P50} tok\n(inside the lever zone)", (SG_MEAN, 1.33), fontsize=8.2,
            color="#8a5a00", fontweight="bold", textcoords="offset points", xytext=(6, 0))
 a.set_xscale("log")
+a.set_xticks(Ls); a.set_xticklabels([str(L) for L in Ls], rotation=45, fontsize=8)
+a.get_xaxis().set_minor_formatter(plt.NullFormatter())
 a.set_xlabel("sequence length L (tokens)"); a.set_ylabel("Diff B = attn sens / mamba sens")
 a.set_title(f"③ ★ Diff B — the LEVER (sensitivity ratio, SM {lowSM}→108)\nopens at L ≤ 512 (hollow = bs collapsed, ignore)", fontsize=10.5, fontweight="bold")
 a.grid(alpha=.3); a.legend(fontsize=8.5, title="batch", ncol=2, loc="upper right")
