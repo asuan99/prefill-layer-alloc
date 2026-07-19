@@ -1,6 +1,8 @@
 # PD-mux 정책 종합 비교 — SM-allocation vs Scheduler/Controller
 
-> ⚠️ **정본은 [CONSENSUS.md](CONSENSUS.md)**. 이 문서의 **goodput 수치표는 no-cudagraph·구(舊)벤치** 기준이라
+> ⚠️ **정본은 [CONSENSUS.md](CONSENSUS.md)**
+>
+> ★**(2026-07-19) throughput 기준 재정렬**: 정책들을 **SLO-무관 throughput(req/s)**으로 재정렬하면 스프레드 **3.4%뿐**(goodput 13.1%의 1/4). 모든 split이 GPU를 거의 동등 포화 ⇒ 이 문서의 goodput 순위표는 **SLO-attainment 효과**이지 capacity 효과가 아님. 순위 자체(d44>d34>bind+GATE>…>d16)는 양 지표서 동일. 상세 `throughput_vs_goodput.png`, CONSENSUS §1-16.. 이 문서의 **goodput 수치표는 no-cudagraph·구(舊)벤치** 기준이라
 > 현재 결론과 충돌한다(특히 "최적=d16"·stationary 수치). **taxonomy·메커니즘 서술만 유효**하게 읽을 것.
 
 작성: 2026-07-09. 이 프로젝트에서 실엔진(sglang v0.5.10, Zamba2-2.7B, A100-80GB, clean async serving)으로
