@@ -117,4 +117,6 @@ The external dev tree used for runtime validation is
 `/scratch/ehmoon/whlee/sglang_engine_dev/python`. The tracked copies under
 `workspace/engine-port/src/` are the re-application source of truth. The
 corresponding design and experiment boundary are documented in
-`reports/dual_worker_design.md`.
+`reports/dual_worker_design.md`. Submit the current R1 launcher from
+`scripts/r1_dual_worker/`; job reports and raw artifacts belong under
+`reports/r1_dual_worker/` and `results/r1_dual_worker/`, respectively.

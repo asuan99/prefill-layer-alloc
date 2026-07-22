@@ -7,8 +7,8 @@
 # editable SGLang tree, then runs five synthetic workloads for both policies.
 #
 # Usage:
-#   sbatch workspace/engine-port/triage/r1_dual_worker.sbatch
-#   sbatch workspace/engine-port/triage/r1_dual_worker_no_smi.sbatch
+#   sbatch workspace/engine-port/scripts/r1_dual_worker/r1_dual_worker.sbatch
+#   sbatch workspace/engine-port/scripts/r1_dual_worker/r1_dual_worker_no_smi.sbatch
 #   NPROMPTS=24 TRACE_EVERY=16 sbatch .../r1_dual_worker.sbatch
 
 #SBATCH --job-name=r1_dual_worker_smi
@@ -30,6 +30,7 @@ export PS1=""
 export PATH="$HOME/.local/bin:$PATH"
 
 REPO_ROOT=/scratch/ehmoon/whlee/prefill-layer-alloc
+R1_SCRIPT_PATH="${R1_SCRIPT_PATH:-$REPO_ROOT/workspace/engine-port/scripts/r1_dual_worker/r1_dual_worker.sbatch}"
 ENGINE_ROOT="$REPO_ROOT/workspace/engine-port"
 ENGINE_DEV=/scratch/ehmoon/whlee/sglang_engine_dev/python
 TRIAGE="$ENGINE_ROOT/triage"
@@ -40,9 +41,24 @@ MODEL="Zyphra/Zamba2-2.7B"
 CTX=4096
 NPROMPTS="${NPROMPTS:-48}"
 TRACE_EVERY="${TRACE_EVERY:-32}"
-PORT=$((37000 + JOB_ID % 200))
+PORT_BASE="${R1_PORT_BASE:-37000}"
+PORT_SPAN="${R1_PORT_SPAN:-20000}"
+EXPLICIT_PORT="${R1_PORT:-}"
+PORT="$EXPLICIT_PORT"
+if [[ -n "$EXPLICIT_PORT" ]]; then
+  INITIAL_PORT="$EXPLICIT_PORT"
+else
+  INITIAL_PORT=$((PORT_BASE + JOB_ID % PORT_SPAN))
+  PORT="$INITIAL_PORT"
+fi
+PORT_ATTEMPTS=0
+PORT_SOURCE="${R1_PORT:+explicit}"
+PORT_SOURCE="${PORT_SOURCE:-job_id_probe}"
+SERVER_START_ATTEMPTS="${R1_SERVER_START_ATTEMPTS:-3}"
+SUBMISSION_VARIANT="${R1_SUBMISSION_VARIANT:-direct}"
 
 source /scratch/ehmoon/whlee/sglang_engine_venv/bin/activate
+export SGLANG_ENGINE_DEV="$ENGINE_DEV"
 
 export HF_HOME="$REPO_ROOT/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -62,6 +78,80 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+port_is_free() {
+  local candidate="$1"
+  python - "$candidate" <<'PY'
+import socket
+import sys
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    sock.bind(("127.0.0.1", int(sys.argv[1])))
+except OSError:
+    raise SystemExit(1)
+finally:
+    sock.close()
+PY
+}
+
+port_diagnostics() {
+  local candidate="$1"
+  echo "[port] candidate=$candidate"
+  if command -v ss >/dev/null 2>&1; then
+    if command -v rg >/dev/null 2>&1; then
+      ss -ltnp 2>/dev/null | rg ":${candidate}\\b" || true
+    else
+      ss -ltnp 2>/dev/null | grep -E ":${candidate}([[:space:]]|$)" || true
+    fi
+  fi
+}
+
+select_initial_port() {
+  local offset candidate
+
+  if [[ -n "$EXPLICIT_PORT" ]]; then
+    if ! port_is_free "$PORT"; then
+      echo "ERROR: explicitly requested port is unavailable: $PORT"
+      port_diagnostics "$PORT"
+      return 1
+    fi
+    PORT_ATTEMPTS=1
+    return 0
+  fi
+
+  for offset in $(seq 0 31); do
+    candidate=$((PORT_BASE + (JOB_ID + offset) % PORT_SPAN))
+    if port_is_free "$candidate"; then
+      PORT="$candidate"
+      PORT_ATTEMPTS=$((offset + 1))
+      return 0
+    fi
+  done
+
+  echo "ERROR: no free port found in ${PORT_BASE}..$((PORT_BASE + PORT_SPAN - 1))"
+  return 1
+}
+
+select_next_port() {
+  local offset candidate
+  local current_offset=$((PORT - PORT_BASE))
+
+  for offset in $(seq 1 32); do
+    candidate=$((PORT_BASE + (current_offset + offset) % PORT_SPAN))
+    if port_is_free "$candidate"; then
+      PORT="$candidate"
+      PORT_ATTEMPTS=$((PORT_ATTEMPTS + 1))
+      echo "[port] retry selected port=$PORT attempt=$PORT_ATTEMPTS"
+      return 0
+    fi
+  done
+
+  echo "ERROR: no replacement port found after collision on $PORT"
+  return 1
+}
+
+select_initial_port
+
 cat > "$RUN_DIR/manifest.txt" <<EOF
 job_id=$JOB_ID
 git_commit=$(git -C "$REPO_ROOT" rev-parse HEAD)
@@ -71,8 +161,20 @@ context_length=$CTX
 max_running_requests=48
 gpu_partition=amd_a100nv_8
 port=$PORT
+initial_port=$INITIAL_PORT
+port_attempts=$PORT_ATTEMPTS
+port_source=$PORT_SOURCE
 nprompts=$NPROMPTS
 trace_every=$TRACE_EVERY
+submission_variant=$SUBMISSION_VARIANT
+r1_use_nvidia_smi=${R1_USE_NVIDIA_SMI:-1}
+slurm_job_name=${SLURM_JOB_NAME:-unknown}
+slurm_nodelist=${SLURM_JOB_NODELIST:-unknown}
+script_path=$R1_SCRIPT_PATH
+python_executable=$(command -v python)
+python_version=$(python -c 'import sys; print(sys.version.split()[0])')
+torch_version=$(python -c 'import torch; print(torch.__version__)')
+sglang_version=$(python -c 'import sglang; print(sglang.__version__)' 2>/dev/null || echo unknown)
 EOF
 
 echo "===== R1 dual-worker preflight ====="
@@ -114,32 +216,55 @@ print(f"[preflight] GPU={name}")
 assert "A100" in name, f"R1 requires A100, got {name!r}"
 PY
 
+python - <<'PY'
+import importlib.util
+import sys
+
+module = importlib.util.find_spec("openai_harmony")
+if module is None:
+    print(
+        "[preflight] WARNING openai_harmony is missing; "
+        "OpenAI Responses support is unavailable",
+        file=sys.stderr,
+    )
+else:
+    print(f"[preflight] openai_harmony={module.origin}")
+PY
+
+python - <<'PY'
+import sys
+
+import torch
+
+print(f"[preflight] python={sys.executable}")
+print(f"[preflight] python_version={sys.version.split()[0]}")
+print(f"[preflight] torch={torch.__version__}")
+PY
+
 SUMMARY="$RUN_DIR/summary.csv"
 
 start_server() {
   local policy="$1" scenario="$2" cfg="$3"
-  local server_log="$RUN_DIR/server_${scenario}_${policy}.log"
+  local server_log=""
   local trace_file="$RUN_DIR/trace_${scenario}_${policy}.jsonl"
-  : > "$server_log"
   : > "$trace_file"
 
-  echo "===== START policy=$policy scenario=$scenario cfg=$cfg port=$PORT ====="
-  if [[ "$policy" == dual ]]; then
-    PDMUX_DUAL_WORKER=1 \
-    PDMUX_DUAL_WORKER_TRACE="$trace_file" \
-    PDMUX_DUAL_WORKER_TRACE_EVERY="$TRACE_EVERY" \
-    python -m sglang.launch_server \
-      --model-path "$MODEL" --trust-remote-code --dtype bfloat16 \
-      --attention-backend triton \
-      --disable-cuda-graph --disable-piecewise-cuda-graph --disable-radix-cache \
-      --mem-fraction-static 0.82 --max-running-requests 48 \
-      --context-length "$CTX" \
-      --enable-pdmux --pdmux-config-path "$cfg" \
-      --chunked-prefill-size -1 --disable-overlap-schedule \
-      --host 127.0.0.1 --port "$PORT" > "$server_log" 2>&1 &
-  else
-    env -u PDMUX_DUAL_WORKER -u PDMUX_DUAL_WORKER_TRACE \
-      -u PDMUX_DUAL_WORKER_TRACE_EVERY \
+  local attempt
+  for attempt in $(seq 1 "$SERVER_START_ATTEMPTS"); do
+    if ! port_is_free "$PORT"; then
+      echo "SERVER_PORT_BUSY policy=$policy scenario=$scenario port=$PORT attempt=$attempt"
+      port_diagnostics "$PORT"
+      [[ -n "${R1_PORT:-}" ]] && return 1
+      select_next_port || return 1
+    fi
+
+    server_log="$RUN_DIR/server_${scenario}_${policy}_attempt${attempt}.log"
+    : > "$server_log"
+    echo "===== START policy=$policy scenario=$scenario cfg=$cfg port=$PORT attempt=$attempt ====="
+    if [[ "$policy" == dual ]]; then
+      PDMUX_DUAL_WORKER=1 \
+      PDMUX_DUAL_WORKER_TRACE="$trace_file" \
+      PDMUX_DUAL_WORKER_TRACE_EVERY="$TRACE_EVERY" \
       python -m sglang.launch_server \
         --model-path "$MODEL" --trust-remote-code --dtype bfloat16 \
         --attention-backend triton \
@@ -149,24 +274,72 @@ start_server() {
         --enable-pdmux --pdmux-config-path "$cfg" \
         --chunked-prefill-size -1 --disable-overlap-schedule \
         --host 127.0.0.1 --port "$PORT" > "$server_log" 2>&1 &
-  fi
-  SERVER_PID=$!
+    else
+      env -u PDMUX_DUAL_WORKER -u PDMUX_DUAL_WORKER_TRACE \
+        -u PDMUX_DUAL_WORKER_TRACE_EVERY \
+        python -m sglang.launch_server \
+          --model-path "$MODEL" --trust-remote-code --dtype bfloat16 \
+          --attention-backend triton \
+          --disable-cuda-graph --disable-piecewise-cuda-graph --disable-radix-cache \
+          --mem-fraction-static 0.82 --max-running-requests 48 \
+          --context-length "$CTX" \
+          --enable-pdmux --pdmux-config-path "$cfg" \
+          --chunked-prefill-size -1 --disable-overlap-schedule \
+          --host 127.0.0.1 --port "$PORT" > "$server_log" 2>&1 &
+    fi
+    SERVER_PID=$!
 
-  for _ in $(seq 1 180); do
-    if [[ "$(curl -s -o /dev/null -w '%{http_code}' \
-        "http://127.0.0.1:$PORT/health" 2>/dev/null || true)" == 200 ]]; then
-      echo "healthy policy=$policy scenario=$scenario"
-      return 0
-    fi
-    if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-      echo "SERVER_DIED policy=$policy scenario=$scenario"
-      tail -30 "$server_log"
-      return 1
-    fi
-    sleep 5
+    for _ in $(seq 1 180); do
+      if [[ "$(curl -s -o /dev/null -w '%{http_code}' \
+          "http://127.0.0.1:$PORT/health" 2>/dev/null || true)" == 200 ]]; then
+        if ! curl -fsS -o "$RUN_DIR/model_info_${scenario}_${policy}.json" \
+            "http://127.0.0.1:$PORT/model_info" >/dev/null 2>&1; then
+          echo "SERVER_MODEL_INFO_FAILED policy=$policy scenario=$scenario port=$PORT"
+          tail -50 "$server_log"
+          return 1
+        fi
+        cat > "$RUN_DIR/startup_${scenario}_${policy}.json" <<EOF
+{
+  "policy": "$policy",
+  "scenario": "$scenario",
+  "port": $PORT,
+  "pid": $SERVER_PID,
+  "server_start_attempt": $attempt,
+  "health": true,
+  "model_info": true,
+  "status": "ready",
+  "server_log": "$server_log"
+}
+EOF
+        echo "healthy policy=$policy scenario=$scenario port=$PORT attempt=$attempt"
+        {
+          echo "selected_port=$PORT"
+          echo "server_start_attempt=$attempt"
+          echo "server_log=$server_log"
+        } >> "$RUN_DIR/manifest.txt"
+        return 0
+      fi
+      if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+        wait "$SERVER_PID" 2>/dev/null || true
+        if grep -q 'address already in use' "$server_log" 2>/dev/null && [[ -z "${R1_PORT:-}" ]]; then
+          echo "SERVER_BIND_RETRY policy=$policy scenario=$scenario port=$PORT attempt=$attempt"
+          port_diagnostics "$PORT"
+          SERVER_PID=""
+          select_next_port || return 1
+          continue 2
+        fi
+        echo "SERVER_DIED policy=$policy scenario=$scenario port=$PORT attempt=$attempt"
+        tail -50 "$server_log"
+        return 1
+      fi
+      sleep 5
+    done
+    echo "SERVER_TIMEOUT policy=$policy scenario=$scenario port=$PORT attempt=$attempt"
+    tail -50 "$server_log"
+    cleanup
+    [[ -n "${R1_PORT:-}" ]] && return 1
+    select_next_port || return 1
   done
-  echo "SERVER_TIMEOUT policy=$policy scenario=$scenario"
-  tail -30 "$server_log"
   return 1
 }
 
@@ -230,7 +403,7 @@ warmup() {
     --backend sglang --model "$MODEL" --host 127.0.0.1 --port "$PORT" \
     --dataset-name random-ids --random-input-len 128 --random-output-len 16 \
     --random-range-ratio 1.0 --num-prompts 8 --request-rate 2 \
-    > "$RUN_DIR/warmup_${scenario}_${policy}.log" 2>&1 || true
+    > "$RUN_DIR/warmup_${scenario}_${policy}.log" 2>&1
 }
 
 summarize() {

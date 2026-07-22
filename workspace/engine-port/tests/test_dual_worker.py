@@ -1,16 +1,22 @@
 import importlib.util
+import os
 import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
 
-MODULE_PATH = (
-    Path(__file__).parents[1]
-    / "src"
+TRACKED_MODULE_PATH = Path(__file__).parents[1] / "src" / "multiplex" / "dual_worker.py"
+RUNTIME_MODULE_PATH = (
+    Path(os.environ["SGLANG_ENGINE_DEV"])
+    / "sglang"
+    / "srt"
     / "multiplex"
     / "dual_worker.py"
+    if os.environ.get("SGLANG_ENGINE_DEV")
+    else TRACKED_MODULE_PATH
 )
+MODULE_PATH = RUNTIME_MODULE_PATH if RUNTIME_MODULE_PATH.is_file() else TRACKED_MODULE_PATH
 SPEC = importlib.util.spec_from_file_location("dual_worker", MODULE_PATH)
 dual_worker = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -43,6 +49,40 @@ class DualWorkerTest(unittest.TestCase):
         self.assertEqual(
             coordinator.request_phase["r0"],
             dual_worker.RequestPhase.DECODE_RUNNING,
+        )
+        coordinator.complete([req])
+        self.assertEqual(
+            coordinator.request_phase["r0"], dual_worker.RequestPhase.COMPLETE
+        )
+
+    def test_phase_coordinator_prunes_requests_removed_from_scheduler(self):
+        req = SimpleNamespace(rid="r0")
+        other = SimpleNamespace(rid="r1")
+        coordinator = dual_worker.PhaseCoordinator()
+        coordinator.register_waiting(req)
+        coordinator.register_waiting(other)
+
+        coordinator.prune([req])
+
+        self.assertIn("r0", coordinator.request_phase)
+        self.assertNotIn("r1", coordinator.request_phase)
+
+    def test_observe_scheduler_marks_finished_requests_complete(self):
+        finished = SimpleNamespace(rid="done", finished=lambda: True)
+        scheduler = SimpleNamespace(
+            waiting_queue=[],
+            split_prefill_batch=None,
+            running_batch=FakeBatch(0),
+        )
+        scheduler.running_batch.reqs = [finished]
+        state = dual_worker.DualWorkerState.from_sm_counts([(0, 108)])
+
+        state.coordinator.start_decode([finished])
+        state.observe_scheduler(scheduler, stream_index=0, now=100.0)
+
+        self.assertEqual(
+            state.coordinator.request_phase["done"],
+            dual_worker.RequestPhase.COMPLETE,
         )
 
     def test_prefill_snapshot_is_not_derived_from_decode_batch_occupancy(self):

@@ -34,11 +34,14 @@
 
 ### 2.2 `workspace/engine-port` — 실제 SGLang 포팅·서빙 검증
 
-- `workspace/engine-port/triage/`: pdmux 부팅, 모델 포팅, 기초 serving harness
+- `workspace/engine-port/scripts/`: 환경 bootstrap 및 현재 실험 제출 스크립트
+- `workspace/engine-port/triage/`: 과거 pdmux 부팅·모델 포팅·기초 serving harness 재현 경로
 - `workspace/engine-port/env/`: 외부 개발 트리와 venv에 적용한 패치 기록
 - `workspace/engine-port/results/`: SLURM 로그, 정책별 결과, 재분석 스크립트
 - `workspace/engine-port/reports/`: 최신 정본, 연구 아크, postmortem, SLO 분석
 - `workspace/engine-port/RESUME.md`: 환경·패치·부팅·재현 상태
+- [`REPOSITORY_LAYOUT.md`](REPOSITORY_LAYOUT.md): 진행 보고서·결과·소스·실행 스크립트 배치 규칙
+- [`workspace/engine-port/reports/r1_dual_worker_progress.md`](workspace/engine-port/reports/r1_dual_worker_progress.md): R1 현재 실행 상태와 실패 job 기록
 
 검증 환경은 A100-SXM4-80GB(108 SM), SGLang v0.5.10, CUDA 13, torch 2.9.1, `sglang_kernel 0.4.1+cu130`이다. venv와 editable SGLang 개발 트리는 저장소 밖에 있으므로 재현 시 `RESUME.md`를 먼저 확인해야 한다.
 

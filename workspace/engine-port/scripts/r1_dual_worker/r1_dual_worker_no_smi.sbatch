@@ -16,5 +16,11 @@
 #SBATCH --error=%x_%j.err
 
 set -euo pipefail
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec env R1_USE_NVIDIA_SMI=0 bash "$SCRIPT_DIR/r1_dual_worker.sbatch"
+REPO_ROOT=/scratch/ehmoon/whlee/prefill-layer-alloc
+SCRIPT_PATH="$REPO_ROOT/workspace/engine-port/scripts/r1_dual_worker/r1_dual_worker.sbatch"
+test -f "$SCRIPT_PATH"
+exec env \
+  R1_USE_NVIDIA_SMI=0 \
+  R1_SUBMISSION_VARIANT=no_smi \
+  R1_SCRIPT_PATH="$SCRIPT_PATH" \
+  bash "$SCRIPT_PATH"

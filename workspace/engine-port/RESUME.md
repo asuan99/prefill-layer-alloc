@@ -1,4 +1,9 @@
-# engine-port — Resume / Handoff (updated 2026-07-04)
+# engine-port — Resume / Handoff (updated 2026-07-23)
+
+Current layout and artifact placement rules are documented in the repository
+root [`REPOSITORY_LAYOUT.md`](../../REPOSITORY_LAYOUT.md). New R1 launcher
+paths are under `scripts/r1_dual_worker/`; the old `triage/` paths below are
+historical P-series reproduction paths.
 
 Strategy **B** confirmed (see [reports/p0_triage.md](reports/p0_triage.md)). Through P1.5: both hybrids (NemotronH, Zamba2) run under pdmux with a working layer_aware policy; serving goodput measured.
 

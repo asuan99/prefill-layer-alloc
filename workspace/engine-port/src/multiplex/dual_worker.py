@@ -198,6 +198,13 @@ class PhaseCoordinator:
         for req in reqs:
             self.request_phase[self._rid(req)] = RequestPhase.COMPLETE
 
+    def prune(self, reqs: Iterable[Any]) -> None:
+        """Drop request metadata that is no longer owned by the scheduler."""
+        live = {self._rid(req) for req in reqs}
+        for rid in tuple(self.request_phase):
+            if rid not in live:
+                del self.request_phase[rid]
+
 
 @dataclass
 class DualWorkerState:
@@ -228,6 +235,18 @@ class DualWorkerState:
         self.decode.running_batch = getattr(scheduler, "running_batch", None)
         for req in list(scheduler.waiting_queue):
             self.coordinator.register_waiting(req)
+
+        live_reqs = list(scheduler.waiting_queue)
+        for batch in (self.prefill.active_batch, self.decode.running_batch):
+            live_reqs.extend(getattr(batch, "reqs", ()) or ())
+        finished_reqs = []
+        for req in live_reqs:
+            finished = getattr(req, "finished", None)
+            if callable(finished) and finished():
+                finished_reqs.append(req)
+        self.coordinator.complete(finished_reqs)
+        self.coordinator.prune(live_reqs)
+
         self.prefill.observe(now=now)
         self.decode.observe()
         if self.prefill.snapshot.queue_depth and self.prefill.snapshot.active_batch_size == 0:

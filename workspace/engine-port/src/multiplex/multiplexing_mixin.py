@@ -126,6 +126,12 @@ class SchedulerMultiplexMixin:
 
     def _dual_worker_complete_decode(self, batch: ScheduleBatch) -> None:
         if getattr(self, "dual_worker_enabled", False):
+            completed = []
+            for req in getattr(batch, "reqs", ()):
+                finished = getattr(req, "finished", None)
+                if callable(finished) and finished():
+                    completed.append(req)
+            self.dual_worker_state.coordinator.complete(completed)
             self.dual_worker_state.decode.finish_step()
 
     def _slo_context_len_signal(self: Scheduler) -> int:
