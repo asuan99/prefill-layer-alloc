@@ -1,0 +1,10 @@
+job_id=862456
+git_commit=b7b1f7aa058eeb03903e756eea95c1688b2b2137
+host=gpu39
+model=Zyphra/Zamba2-2.7B
+context_length=4096
+max_running_requests=48
+gpu_partition=amd_a100nv_8
+port=37056
+nprompts=48
+trace_every=32

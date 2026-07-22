@@ -1,0 +1,10 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/var/spool/slurm/d/job862456/slurm_script: line 155: 1653753 Killed                  env -u PDMUX_DUAL_WORKER -u PDMUX_DUAL_WORKER_TRACE -u PDMUX_DUAL_WORKER_TRACE_EVERY python -m sglang.launch_server --model-path "$MODEL" --trust-remote-code --dtype bfloat16 --attention-backend triton --disable-cuda-graph --disable-piecewise-cuda-graph --disable-radix-cache --mem-fraction-static 0.82 --max-running-requests 48 --context-length "$CTX" --enable-pdmux --pdmux-config-path "$cfg" --chunked-prefill-size -1 --disable-overlap-schedule --host 127.0.0.1 --port "$PORT" > "$server_log" 2>&1
