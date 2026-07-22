@@ -118,8 +118,3 @@ The external dev tree used for runtime validation is
 `workspace/engine-port/src/` are the re-application source of truth. The
 corresponding design and experiment boundary are documented in
 `reports/dual_worker_design.md`.
-
-13. Optional queue telemetry is enabled only when both
-`PDMUX_DUAL_WORKER=1` and `PDMUX_DUAL_WORKER_TRACE=<jsonl path>` are set.
-`PDMUX_DUAL_WORKER_TRACE_EVERY` controls the scheduler-sync sampling interval
-(default `32`). Unset trace variables leave the runtime path unchanged.

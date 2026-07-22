@@ -34,16 +34,13 @@
 
 set -uo pipefail   # NOT -e: the polling loops handle their own errors
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "$SCRIPT_DIR/../../../.." && pwd)"
+REPO_ROOT="/scratch/$USER/whlee/prefill-layer-alloc"     # assumed space-free
 CHAR_DIR="$REPO_ROOT/workspace/characterization"
-AGENT="$REPO_ROOT/workspace/slurm-agent/slurm_agent.py"
 A100_PART="${A100_PART:-amd_a100nv_8}"
 LOG="$REPO_ROOT/logs"; mkdir -p "$LOG"
 MAXQ="${MAXQ:-2}"
 POLL="${POLL:-30}"
 MODELS="${MODELS:-zamba2_1.2b zamba2_2.7b falcon_h1_1.5b falcon_h1_3b}"
-SLURM_USER_SELECTOR="${SLURM_AGENT_SLURM_USER:-${SLURM_USER_ID:-$(id -u)}}"
 ACT="source $REPO_ROOT/bin/activate 2>/dev/null || true; cd $CHAR_DIR"
 
 # --- optional self-detach: survive SSH disconnect WITHOUT tmux (DETACH=1) -----
@@ -74,7 +71,7 @@ time_of() { case "$1" in e2|e5) echo 08:00:00 ;; *) echo 04:00:00 ;; esac; }
 # count OUR jobs currently in the queue (prefix v2-; -r expands any arrays)
 inflight() {
   local n
-  n=$(squeue -u "$SLURM_USER_SELECTOR" -h -r -o '%80j' 2>/dev/null | grep -c '^v2-' || true)
+  n=$(squeue -u "$USER" -h -r -o '%80j' 2>/dev/null | grep -c '^v2-' || true)
   echo "${n:-0}"
 }
 wait_slot() { while [ "$(inflight)" -ge "$MAXQ" ]; do sleep "$POLL"; done; }
@@ -88,27 +85,21 @@ submit_job() {
   inner="$ACT; echo \"$exp / $model\"; python $script --models $model"
   while :; do
     wait_slot
-    out=$(python3 "$AGENT" submit -- --job-name="$name" --partition="$A100_PART" --gres=gpu:1 \
+    out=$(sbatch --parsable --job-name="$name" --partition="$A100_PART" --gres=gpu:1 \
             --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 --time="$t" --comment=pytorch \
             --output="$LOG/${name}_%j.log" --error="$LOG/${name}_%j.err" \
-            --wrap "env -u BASH_ENV bash -c '$inner'" 2>"$LOG/${name}_agent.err")
-    rc=$?
-    if [ "$rc" -eq 0 ]; then echo "  submitted $name (job $out)"; return 0; fi
-    err=$(<"$LOG/${name}_agent.err")
-    if echo "$err" | grep -qiE "limit|qos|assocmax|policy"; then
+            --wrap "env -u BASH_ENV bash -c '$inner'" 2>&1)
+    if [ $? -eq 0 ]; then echo "  submitted $name (job $out)"; return 0; fi
+    if echo "$out" | grep -qiE "limit|qos|assocmax|policy"; then
       echo "  [throttle] $name held (queue full) — retry in ${POLL}s"; sleep "$POLL"
     else
-      echo "  ERROR submitting $name: $err"; return 1
+      echo "  ERROR submitting $name: $out"; return 1
     fi
   done
 }
 
 echo "=== v2 pipeline (throttled, MAXQ=$MAXQ, poll=${POLL}s) ==="
 echo "    models: $MODELS"
-
-# Adopt jobs submitted before the agent was installed and start one shared
-# watcher. New jobs below are registered by the agent submit command.
-python3 "$AGENT" discover || echo "[slurm-agent] discover failed; continuing with new submissions"
 
 # --- E0 inline ---------------------------------------------------------------
 echo "[E0] inline ..."

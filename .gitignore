@@ -85,7 +85,6 @@ Thumbs.db
 *.bak
 scratch/
 tmp/
-.slurm-agent/
 
 # Re-include experimental results
 !results/

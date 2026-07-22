@@ -4,9 +4,7 @@ Mixin class providing multiplexing scheduling logic
 
 from __future__ import annotations
 
-import json
 import logging
-import time
 from typing import TYPE_CHECKING, Optional
 
 import torch
@@ -52,15 +50,6 @@ class SchedulerMultiplexMixin:
         self.dual_worker_enabled = os.environ.get("PDMUX_DUAL_WORKER", "0") in (
             "1", "true", "True"
         )
-        trace_path = os.environ.get("PDMUX_DUAL_WORKER_TRACE", "")
-        try:
-            trace_every = max(1, int(os.environ.get("PDMUX_DUAL_WORKER_TRACE_EVERY", "32")))
-        except ValueError:
-            trace_every = 32
-        self.dual_worker_trace_path = trace_path if self.dual_worker_enabled else ""
-        self.dual_worker_trace_every = trace_every
-        self.dual_worker_trace_count = 0
-        self.dual_worker_trace_error_logged = False
         self.dual_worker_state = DualWorkerState.from_sm_counts(self.sm_counts)
         logger.info(
             f"PD-Multiplexing enabled with {self.real_sm_group_num} stream groups, sm_counts (prefill_sm, decode_sm): {self.sm_counts}"
@@ -78,30 +67,6 @@ class SchedulerMultiplexMixin:
         self.dual_worker_state.observe_scheduler(
             self, get_current_stream_idx() if stream_idx is None else stream_idx
         )
-        self.dual_worker_trace_count += 1
-        if (
-            self.dual_worker_trace_path
-            and (
-                self.dual_worker_trace_count == 1
-                or self.dual_worker_trace_count % self.dual_worker_trace_every == 0
-            )
-        ):
-            self._write_dual_worker_trace()
-
-    def _write_dual_worker_trace(self: Scheduler) -> None:
-        """Append sampled dual-worker state without affecting the scheduler path."""
-        try:
-            payload = {
-                "timestamp_monotonic_s": time.perf_counter(),
-                "sample_index": self.dual_worker_trace_count,
-                **self.dual_worker_state.metrics(),
-            }
-            with open(self.dual_worker_trace_path, "a", encoding="utf-8") as trace_file:
-                trace_file.write(json.dumps(payload, separators=(",", ":")) + "\n")
-        except (OSError, TypeError, ValueError) as exc:
-            if not self.dual_worker_trace_error_logged:
-                logger.warning("dual-worker telemetry disabled after write failure: %s", exc)
-                self.dual_worker_trace_error_logged = True
 
     def _dual_worker_start_prefill(self, batch: ScheduleBatch) -> None:
         if getattr(self, "dual_worker_enabled", False):
