@@ -29,8 +29,10 @@ shift || true
 [ "${1:-}" = "--" ] && shift || true
 EXTRA=("$@")
 
-REPO_ROOT="/scratch/$USER/whlee/prefill-layer-alloc"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/../../../.." && pwd)"
 CHAR_DIR="$REPO_ROOT/workspace/characterization"
+AGENT="$REPO_ROOT/workspace/slurm-agent/slurm_agent.py"
 A100_PART="${A100_PART:-amd_a100nv_8}"
 CPU_PART="${CPU_PART:-amd_a100nv_8}"
 LOGDIR="$REPO_ROOT/logs"
@@ -71,7 +73,7 @@ else
 fi
 
 echo "[submit.sh] sbatch $EXP -> $SCRIPT  (part=$PART $GRES time=$T)"
-sbatch \
+python3 "$AGENT" submit -- \
   --job-name="v2-$EXP" \
   --partition="$PART" \
   $GRES \
