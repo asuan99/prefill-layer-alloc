@@ -23,6 +23,10 @@ from sglang.srt.multiplex.pdmux_context import (
     load_pdmux_config,
     set_current_stream_idx,
 )
+from sglang.srt.multiplex.dual_worker import (
+    DualWorkerState,
+    WorkerRole,
+)
 
 if TYPE_CHECKING:
     from sglang.srt.managers.schedule_batch import ScheduleBatch
@@ -43,9 +47,51 @@ class SchedulerMultiplexMixin:
         self.stream_groups = get_stream_groups()
         self.sm_counts = get_sm_counts()
         self.real_sm_group_num = len(self.stream_groups)
+        self.dual_worker_enabled = os.environ.get("PDMUX_DUAL_WORKER", "0") in (
+            "1", "true", "True"
+        )
+        self.dual_worker_state = DualWorkerState.from_sm_counts(self.sm_counts)
         logger.info(
             f"PD-Multiplexing enabled with {self.real_sm_group_num} stream groups, sm_counts (prefill_sm, decode_sm): {self.sm_counts}"
         )
+        if self.dual_worker_enabled:
+            logger.info(
+                "PD-mux dual-worker enabled: cooperative prefill/decode queues, "
+                "shared whole-phase GPU arbiter"
+            )
+
+    def _dual_worker_sync(self, stream_idx: Optional[int] = None) -> None:
+        """Refresh role-owned views without changing legacy scheduler state."""
+        if not getattr(self, "dual_worker_enabled", False):
+            return
+        self.dual_worker_state.observe_scheduler(
+            self, get_current_stream_idx() if stream_idx is None else stream_idx
+        )
+
+    def _dual_worker_start_prefill(self, batch: ScheduleBatch) -> None:
+        if getattr(self, "dual_worker_enabled", False):
+            self.dual_worker_state.prefill.active_batch = batch
+            self.dual_worker_state.coordinator.start_prefill(batch.reqs)
+
+    def _dual_worker_prefill_ready(self, batch: ScheduleBatch) -> None:
+        if getattr(self, "dual_worker_enabled", False):
+            state = self.dual_worker_state
+            state.coordinator.complete_prefill(batch.reqs)
+            state.decode.ready_queue.extend(batch.reqs)
+
+    def _dual_worker_start_decode(self, batch: ScheduleBatch) -> None:
+        if getattr(self, "dual_worker_enabled", False):
+            state = self.dual_worker_state
+            state.coordinator.start_decode(batch.reqs)
+            rids = {getattr(req, "rid", id(req)) for req in batch.reqs}
+            state.decode.ready_queue = [
+                req for req in state.decode.ready_queue
+                if getattr(req, "rid", id(req)) not in rids
+            ]
+
+    def _dual_worker_complete_decode(self, batch: ScheduleBatch) -> None:
+        if getattr(self, "dual_worker_enabled", False):
+            self.dual_worker_state.decode.finish_step()
 
     def _slo_context_len_signal(self: Scheduler) -> int:
         """Step D (SKETCH): characteristic context length (tokens) of imminent prefill work =
@@ -331,12 +377,17 @@ class SchedulerMultiplexMixin:
             return False
 
         # add new request
+        if getattr(self, "dual_worker_enabled", False):
+            self.dual_worker_state.prefill.begin_admission()
         batch = self.get_new_batch_prefill()
+        if getattr(self, "dual_worker_enabled", False):
+            self.dual_worker_state.prefill.finish_admission()
         if batch and not batch.is_empty():
             batch.forward_mode = (
                 ForwardMode.SPLIT_PREFILL
             )  # Set forward mode for split prefill
             self.split_prefill_batch = batch
+            self._dual_worker_start_prefill(batch)
             return True
         return False
 
@@ -354,6 +405,7 @@ class SchedulerMultiplexMixin:
         torch.cuda.empty_cache()
 
         logger.debug("Starting event loop for pd multiplexing...")
+        self._dual_worker_sync(stream_idx)
 
         import time as _time
         _slo_on = bool(os.environ.get("PDMUX_SLO_SCHED"))
@@ -380,6 +432,7 @@ class SchedulerMultiplexMixin:
                 set_pdmux_status(False)
                 recv_reqs = self.recv_requests()
                 self.process_input_requests(recv_reqs)
+                self._dual_worker_sync(stream_idx)
 
             with torch.cuda.stream(prefill_stream):
                 set_pdmux_status(True)
@@ -426,6 +479,8 @@ class SchedulerMultiplexMixin:
                         self._slo_ctl_max, self._slo_ctl_ms,
                     )
                 if _tgt != stream_idx:
+                    if getattr(self, "dual_worker_enabled", False):
+                        self.dual_worker_state.arbiter.active_roles.clear()
                     prefill_stream.synchronize()
                     decode_stream.synchronize()
                     set_current_stream_idx(_tgt)
@@ -436,6 +491,8 @@ class SchedulerMultiplexMixin:
                     decode_stream = stream_group[1]
                 adjust_stream_group = False
             elif adjust_stream_group:
+                if getattr(self, "dual_worker_enabled", False):
+                    self.dual_worker_state.arbiter.active_roles.clear()
                 prefill_stream.synchronize()
                 decode_stream.synchronize()
                 stream_idx, stream_group = self.adjust_stream_groups()
@@ -450,6 +507,10 @@ class SchedulerMultiplexMixin:
                 set_pdmux_status(False)
                 # process decode batch
                 if self.running_batch and not self.running_batch.is_empty():
+                    if getattr(self, "dual_worker_enabled", False):
+                        self.dual_worker_state.arbiter.select_partition(stream_idx)
+                        self.dual_worker_state.arbiter.acquire(WorkerRole.DECODE)
+                        self.dual_worker_state.decode.begin_step()
                     decode_result = self.run_batch(self.running_batch)
                     decode_done = True
                 else:
@@ -490,6 +551,9 @@ class SchedulerMultiplexMixin:
                     )
 
                     self.split_prefill_batch.split_forward_count = forward_count
+                    if getattr(self, "dual_worker_enabled", False):
+                        self.dual_worker_state.arbiter.select_partition(stream_idx)
+                        self.dual_worker_state.arbiter.acquire(WorkerRole.PREFILL)
                     prefill_result = self.run_batch(self.split_prefill_batch)
                     if next_split_index == self.model_config.num_hidden_layers:
                         self.split_prefill_batch.split_prefill_finished = True
@@ -506,6 +570,9 @@ class SchedulerMultiplexMixin:
                 decode_stream.synchronize()
                 if decode_done:
                     self.process_batch_result(self.running_batch, decode_result)
+                    self._dual_worker_complete_decode(self.running_batch)
+                    if getattr(self, "dual_worker_enabled", False):
+                        self.dual_worker_state.arbiter.release(WorkerRole.DECODE)
 
             with torch.cuda.stream(prefill_stream):
                 set_pdmux_status(True)
@@ -520,6 +587,7 @@ class SchedulerMultiplexMixin:
 
                     self.tp_cpu_group.allreduce(flags, dist.ReduceOp.SUM).wait()
                     if flags.item() == self.tp_size:
+                        self._dual_worker_prefill_ready(self.split_prefill_batch)
                         self.process_batch_result(
                             self.split_prefill_batch, prefill_result
                         )
@@ -529,8 +597,13 @@ class SchedulerMultiplexMixin:
                             self.running_batch = self.split_prefill_batch
 
                         self.split_prefill_batch = None
+                        self._dual_worker_start_decode(self.running_batch)
+                        if getattr(self, "dual_worker_enabled", False):
+                            self.dual_worker_state.arbiter.release(WorkerRole.PREFILL)
                         wait_prefill_kernel_done = False
                         adjust_stream_group = True
+
+            self._dual_worker_sync(stream_idx)
 
     @torch.inference_mode()
     def event_loop_pdmux_coord(self: Scheduler):

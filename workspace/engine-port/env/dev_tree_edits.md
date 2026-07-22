@@ -98,3 +98,23 @@ downloaded ibm-granite/granite-4.0-h-micro-base (login-node internet). Harness:
     allocation. Backward-compatible: unset → legacy binary behavior. Added to test whether
     per-type allocation beats uniform agnostic (it does not — see `results/r0b/`). Copy:
     `src/models/zamba2.py`. Harness `results/r0b/r0b_graduated_bench.sbatch <agn|la_bin|g_<mamba>_<attn>> <rep>`.
+
+## R1 (Hybrid LLM dual-worker queue ownership)
+
+11. **NEW** `multiplex/dual_worker.py` — copied from
+`src/multiplex/dual_worker.py`. Defines `PrefillWorker`,
+`DecodeWorker`, `SharedGpuArbiter`, `PhaseCoordinator`, and their composed
+`DualWorkerState`. It has no CUDA/model imports and is safe to unit-test on a
+CPU-only node.
+
+12. `multiplex/multiplexing_mixin.py` — imports the dual-worker state and
+connects it to `init_pdmux`, `update_split_prefill_batch`, and the ordinary
+`event_loop_pdmux` path. Enable with `PDMUX_DUAL_WORKER=1`; unset or `0` keeps
+the established baseline behavior. `event_loop_pdmux_coord` and all
+per-layer switching paths are intentionally unchanged.
+
+The external dev tree used for runtime validation is
+`/scratch/ehmoon/whlee/sglang_engine_dev/python`. The tracked copies under
+`workspace/engine-port/src/` are the re-application source of truth. The
+corresponding design and experiment boundary are documented in
+`reports/dual_worker_design.md`.
