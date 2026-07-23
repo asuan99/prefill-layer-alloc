@@ -8,6 +8,7 @@ import csv
 import datetime as dt
 import fcntl
 import json
+import math
 import os
 import re
 import shlex
@@ -277,6 +278,181 @@ def artifacts(meta: dict[str, Any]) -> list[dict[str, Any]]:
     return result[:300]
 
 
+def number(row: dict[str, str], key: str) -> float | None:
+    try:
+        value = float(row.get(key, ""))
+    except (TypeError, ValueError):
+        return None
+    return value if math.isfinite(value) else None
+
+
+def metric_value(value: float | None, unit: str = "") -> str:
+    if value is None:
+        return "n/a"
+    if unit == "%":
+        return f"{value:+.2f}%"
+    if unit == "ms":
+        return f"{value:.1f} ms"
+    return f"{value:.3f}"
+
+
+def change_percent(before: float | None, after: float | None) -> float | None:
+    if before is None or after is None:
+        return None
+    if before == 0:
+        if after == 0:
+            return 0.0
+        return 100.0 if after > 0 else -100.0
+    return (after - before) / abs(before) * 100.0
+
+
+def compare_metric(before: float | None, after: float | None, higher: bool) -> tuple[str, float | None]:
+    delta = change_percent(before, after)
+    if delta is None:
+        return "비교 불가", None
+    epsilon = 0.05
+    effective = delta if higher else -delta
+    if effective > epsilon:
+        return "우세", delta
+    if effective < -epsilon:
+        return "열세", delta
+    return "동률", delta
+
+
+def load_summary(meta: dict[str, Any]) -> tuple[Path | None, list[dict[str, str]]]:
+    candidates = [Path(item["path"]) for item in meta.get("artifacts", []) if Path(item["path"]).name == "summary.csv"]
+    if not candidates:
+        job_id = str(meta["job_id"])
+        for root in (REPO / "workspace", REPO / "results"):
+            if not root.exists():
+                continue
+            try:
+                candidates.extend(path for path in root.rglob("summary.csv") if f"job_{job_id}" in str(path.parent))
+            except OSError:
+                continue
+    for path in candidates:
+        try:
+            with path.open(newline="", encoding="utf-8", errors="replace") as handle:
+                rows = list(csv.DictReader(handle))
+            if rows:
+                return path, rows
+        except (OSError, csv.Error):
+            continue
+    return None, []
+
+
+def compare_rows(rows: list[dict[str, str]]) -> dict[str, Any]:
+    grouped: dict[str, dict[str, dict[str, str]]] = {}
+    for row in rows:
+        grouped.setdefault(row.get("scenario", "unknown"), {})[row.get("policy", "unknown")] = row
+    policies = sorted({row.get("policy", "unknown") for row in rows})
+    baseline = "legacy" if "legacy" in policies else (policies[0] if policies else "unknown")
+    challengers = [policy for policy in policies if policy != baseline]
+    metrics = (("throughput_req_s", "throughput", True, "req/s"), ("goodput_req_s", "goodput", True, "req/s"),
+               ("ttft_p95_ms", "TTFT p95", False, "ms"), ("itl_p95_ms", "ITL p95", False, "ms"))
+    pairs: list[dict[str, Any]] = []
+    rollup = {policy: {"scenarios": 0, "wins": 0, "losses": 0, "ties": 0, "metric_wins": {name: 0 for _, name, _, _ in metrics}, "metric_losses": {name: 0 for _, name, _, _ in metrics}} for policy in challengers}
+    # Preserve the experiment's CSV order so related conditions remain grouped
+    # in the report instead of being reordered alphabetically.
+    for scenario in grouped:
+        base = grouped[scenario].get(baseline)
+        for challenger in challengers:
+            candidate = grouped[scenario].get(challenger)
+            if not base or not candidate:
+                continue
+            results = []
+            for key, label, higher, unit in metrics:
+                relation, delta = compare_metric(number(base, key), number(candidate, key), higher)
+                results.append({"key": key, "label": label, "relation": relation, "delta": delta, "unit": unit,
+                                "before": number(base, key), "after": number(candidate, key)})
+            wins = sum(item["relation"] == "우세" for item in results)
+            losses = sum(item["relation"] == "열세" for item in results)
+            ties = len(results) - wins - losses
+            if wins >= 3 and losses == 0:
+                verdict = "개선"
+            elif losses >= 3 and wins == 0:
+                verdict = "열세"
+            elif wins == 0 and losses == 0:
+                verdict = "유지"
+            elif wins > 0 and losses == 0:
+                verdict = "부분 개선"
+            elif losses > 0 and wins == 0:
+                verdict = "부분 열세"
+            else:
+                verdict = "혼재"
+            rollup[challenger]["scenarios"] += 1
+            rollup[challenger]["wins"] += verdict in {"개선", "부분 개선"}
+            rollup[challenger]["losses"] += verdict in {"열세", "부분 열세"}
+            rollup[challenger]["ties"] += verdict in {"혼재", "유지"}
+            for item in results:
+                if item["relation"] == "우세":
+                    rollup[challenger]["metric_wins"][item["label"]] += 1
+                elif item["relation"] == "열세":
+                    rollup[challenger]["metric_losses"][item["label"]] += 1
+            pairs.append({"scenario": scenario, "baseline": baseline, "challenger": challenger,
+                          "base": base, "candidate": candidate, "metrics": results,
+                          "wins": wins, "losses": losses, "ties": ties, "verdict": verdict})
+    return {"baseline": baseline, "policies": policies, "pairs": pairs, "rollup": rollup}
+
+
+def result_report(meta: dict[str, Any], summary_path: Path, rows: list[dict[str, str]]) -> list[str]:
+    comparison = compare_rows(rows)
+    baseline = comparison["baseline"]
+    lines = [
+        "## 핵심 결과 요약", "",
+        f"비교 기준 정책은 `{baseline}`이며, 각 시나리오의 판정은 throughput·goodput·TTFT p95·ITL p95 네 지표를 함께 고려했습니다.",
+        "단일 지표의 작은 차이는 과대해석하지 않고, 시나리오별 방향이 일관된 경우에만 `개선` 또는 `열세`로 판정합니다.", "",
+        "### 정책별 종합 판정", "",
+        "| 정책 | 비교 시나리오 | 시나리오 개선 | 시나리오 열세 | 혼재/동률 | 지표별 우세 (개선 방향) | 종합 판정 |",
+        "|---|---:|---:|---:|---:|---|---|",
+    ]
+    for policy in comparison["policies"]:
+        if policy == baseline:
+            continue
+        item = comparison["rollup"].get(policy, {})
+        wins = ", ".join(f"{name} {count}회" for name, count in item.get("metric_wins", {}).items() if count) or "없음"
+        if item.get("wins", 0) > 0 and item.get("losses", 0) == 0:
+            overall = "조건부 채택 후보"
+        elif item.get("wins", 0) > item.get("losses", 0):
+            overall = "부분 개선·반복 검증 필요"
+        elif item.get("losses", 0) > item.get("wins", 0):
+            overall = "채택 보류"
+        else:
+            overall = "legacy와 유사"
+        lines.append(f"| `{policy}` | {item.get('scenarios', 0)} | {item.get('wins', 0)} | {item.get('losses', 0)} | {item.get('ties', 0)} | {wins} | **{overall}** |")
+    lines += ["", "### 시나리오별 판정 및 핵심 수치", "", "`legacy → candidate (변화율)` 형식이며, throughput/goodput은 높을수록, TTFT/ITL은 낮을수록 좋습니다.", "", "| 시나리오 | 비교 정책 | Throughput (req/s) | Goodput (req/s) | Good requests | TTFT p95 (ms) | ITL p95 (ms) | 판정 |", "|---|---|---:|---:|---:|---:|---:|---|"]
+
+    def transition(pair: dict[str, Any], key: str, unit: str) -> str:
+        before = number(pair["base"], key)
+        after = number(pair["candidate"], key)
+        delta = change_percent(before, after)
+        if before is None or after is None or delta is None:
+            return "n/a"
+        if unit == "ms":
+            return f"{before:.1f} → {after:.1f} ({delta:+.2f}%)"
+        return f"{before:.3f} → {after:.3f} ({delta:+.2f}%)"
+
+    def good_requests(pair: dict[str, Any]) -> str:
+        before = f"{pair['base'].get('good_requests', 'n/a')}/{pair['base'].get('requests', 'n/a')}"
+        after = f"{pair['candidate'].get('good_requests', 'n/a')}/{pair['candidate'].get('requests', 'n/a')}"
+        return f"{before} → {after}"
+
+    for pair in comparison["pairs"]:
+        basis = ", ".join(f"{item['label']} {item['relation']}" for item in pair["metrics"])
+        lines.append(f"| `{pair['scenario']}` | `{pair['baseline']} → {pair['challenger']}` | {transition(pair, 'throughput_req_s', 'req/s')} | {transition(pair, 'goodput_req_s', 'req/s')} | {good_requests(pair)} | {transition(pair, 'ttft_p95_ms', 'ms')} | {transition(pair, 'itl_p95_ms', 'ms')} | **{pair['verdict']}**<br>{basis} |")
+    lines += ["", "### 결과에서 얻는 시사점", ""]
+    if comparison["pairs"]:
+        lines += ["- 정책의 우열은 workload에 의존합니다. decode-heavy에서 개선이 나타나도 prefill-heavy와 overload에서 같은 효과가 보장되지 않습니다.",
+                  "- goodput은 threshold를 넘은 request 수에 민감합니다. 따라서 throughput과 goodput의 방향이 다를 때는 request 수와 TTFT/ITL 분포를 함께 확인해야 합니다.",
+                  "- trace가 없는 기준선은 queue·SM telemetry와 직접 비교할 수 없습니다. 관측성 차이를 성능 차이로 오인하지 않도록 해야 합니다."]
+    lines += ["", "### 다음 단계", "", "1. 각 정책·시나리오를 최소 3~5회 반복해 평균/중앙값과 변동성을 산출합니다.",
+              "2. legacy와 candidate 모두에 동일한 trace를 활성화해 queue depth, queue age, blocked reason, SM partition을 대칭 비교합니다.",
+              "3. `low_decode_sm`과 `overload`를 우선 재실험하고, decode-heavy 개선이 반복되는지 확인합니다.",
+              "4. LLM 서술 단계에는 이 표와 원자료 경로를 입력으로 제공하고, 표에 없는 수치나 근거를 생성하지 않도록 합니다.", "",
+              f"원자료: `{summary_path}`"]
+    return lines
+
+
 def report(meta: dict[str, Any]) -> Path:
     meta["artifacts"] = artifacts(meta)
     state = meta.get("status", "UNKNOWN")
@@ -288,16 +464,21 @@ def report(meta: dict[str, Any]) -> Path:
         f"- 실행 시간: `{acc.get('elapsed', 'unknown')}`", f"- 실행 노드: `{acc.get('nodelist', 'unknown')}`", "",
         "## 실험 목적과 근거", "",
         "목적은 SLURM 메타데이터와 제출 스크립트에서 자동 추론했습니다. 추론과 측정값은 구분해야 합니다.", "",
-        f"- job name: `{meta.get('job_name', '')}`", f"- script: `{meta.get('script') or 'unknown'}`",
+        f"- job name: `{meta.get('job_name') or meta.get('inference', {}).get('job_name', '')}`", f"- script: `{meta.get('script') or 'unknown'}`",
         f"- command: `{meta.get('sbatch_command', '')}`", "", "## 결과물", "",
     ]
-    if meta["artifacts"]:
-        lines += ["| 파일 | 크기 | 요약 |", "|---|---:|---|"]
-        lines += [f"| `{x['path']}` | {x['size']} B | {x['summary']} |" for x in meta["artifacts"]]
+    summary_path, rows = load_summary(meta)
+    if summary_path and rows:
+        lines += [f"- 요약 CSV: `{summary_path}`", f"- 분석 행 수: `{len(rows)}` (정책별 결과가 존재할 때 시나리오 단위로 비교)", ""]
+        lines += result_report(meta, summary_path, rows)
     else:
-        lines.append("결과 파일을 자동 발견하지 못했습니다.")
-    lines += ["", "## 자동 판정", "", f"- SLURM 최종 상태는 `{state}`입니다."]
-    lines += ["- 정상 종료만으로 실험 가설의 성공을 의미하지 않습니다." if state == "COMPLETED" else "- 정상 종료가 아니므로 오류 및 부분 결과를 우선 확인해야 합니다."]
+        if meta["artifacts"]:
+            lines += ["| 파일 | 크기 | 요약 |", "|---|---:|---|"]
+            lines += [f"| `{x['path']}` | {x['size']} B | {x['summary']} |" for x in meta["artifacts"]]
+        else:
+            lines.append("결과 파일을 자동 발견하지 못했습니다.")
+        lines += ["", "## 자동 판정", "", f"- SLURM 최종 상태는 `{state}`입니다."]
+        lines += ["- 정상 종료만으로 실험 가설의 성공을 의미하지 않습니다." if state == "COMPLETED" else "- 정상 종료가 아니므로 오류 및 부분 결과를 우선 확인해야 합니다."]
     path = REPORTS / f"job_{meta['job_id']}.md"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
@@ -326,8 +507,9 @@ def process_pending() -> int:
         meta["accounting"] = acc
         if state in TERMINAL:
             meta["terminal_at"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-            existing_report = REPORTS / f"job_{job_id}.md"
-            path_report = existing_report if existing_report.exists() else report(meta)
+            # Rebuild on every terminal transition so a report created before
+            # summary.csv appeared is not left as an artifact-only stub.
+            path_report = report(meta)
             meta["report"] = str(path_report)
             write_job(meta)
             log(f"job={job_id} state={state} report={path_report}")
