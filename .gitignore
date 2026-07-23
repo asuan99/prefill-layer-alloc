@@ -66,9 +66,7 @@ wandb/
 # SLURM output must live under a tracked experiment result directory.
 /*.out
 /*.err
-
-# Deprecated observer runtime (reports are copied into engine-port/reports).
-workspace/slurm-agent/
+/*.jsonl
 
 # Model weights & checkpoints
 *.pt
@@ -92,6 +90,7 @@ Thumbs.db
 *.bak
 scratch/
 tmp/
+.slurm-agent/
 
 # Re-include experimental results
 !results/

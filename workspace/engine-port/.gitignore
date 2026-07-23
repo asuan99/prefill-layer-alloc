@@ -26,12 +26,7 @@ external/
 .zbpx_*
 .la_chk_*
 *.jsonl
-
-# Keep the small R1 SLURM envelope logs with each job's tracked result record.
-!results/r1_dual_worker/
-!results/r1_dual_worker/**/
-!results/r1_dual_worker/**/slurm.out
-!results/r1_dual_worker/**/slurm.err
+*.log
 
 # keep engine-port env docs (root .gitignore ignores env/)
 !env/
