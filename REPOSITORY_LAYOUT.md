@@ -18,20 +18,26 @@
 - `workspace/serving-eval/`: serving 평가 하네스
 - `workspace/shared/`: 트랙 공통 설정
 
-## engine-port R1 예시
+## engine-port R2 canonical layout
 
-R1 dual-worker 산출물은 목적별로 다음에 모여 있다.
+논문 상태, 구현, benchmark와 raw artifact를 다음처럼 분리한다.
 
 ```text
 workspace/engine-port/
-├── src/multiplex/                 # dual-worker runtime state
-├── tests/test_dual_worker.py     # CPU-only regression tests
+├── src/multiplex/                 # dual runtime, profile, controller, telemetry
+├── benchmarks/pdmux_eval/        # workload/campaign/statistics tools
+├── tests/                         # concurrency/policy/analysis regression
 ├── scripts/
-│   ├── bootstrap/install_engine.sh
-│   └── r1_dual_worker/            # direct/no-smi SLURM launchers
-├── reports/r1_dual_worker/        # job별 자동 보고서와 진행 보고서
-└── results/r1_dual_worker/        # job별 manifest, stdout/stderr, server trace
+│   ├── bootstrap/sync_engine_tree.sh
+│   ├── r1_dual_worker/            # historical observer launchers
+│   └── r2_eval/                   # paired campaign wrappers
+├── reports/paper/                 # current claim/evidence/roadmap
+├── reports/r1_dual_worker/        # historical job reports
+├── results/r1_dual_worker/        # historical raw artifacts
+└── results/r2_eval/               # immutable R2 traces/manifests/results
 ```
+
+프로젝트 전체 현재 상태는 루트 `PROJECT_STATUS.md`가 유일한 정본이다.
 
 `triage/`와 기존 `results/<campaign>/*.sbatch`는 과거 P-series/R-series
 재현 경로이므로 이번 정리에서 일괄 이동하지 않았다. 새 실험은 `scripts/`에

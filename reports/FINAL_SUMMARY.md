@@ -1,6 +1,6 @@
 # 종합 보고서 — Hybrid SSM+Attention serving에서 layer-type-aware 자원배분
 
-> ⚠️ **SUPERSEDED (2026-07)**: 본 문서의 layer-aware 우위 결론(sim 예측 la/agnostic 1.37–2.02×)은 실엔진(sglang v0.5.10) serving 측정으로 **기각**되었다. 4개 하이브리드(NemotronH·Zamba2·Granite-4·Falcon-H1) 전부에서 layer-aware는 agnostic을 못 이겼고(저부하 동률·부하시 열위), "이상적 케이스"로 예측했던 Zamba2(45/54 환원)가 오히려 **최악**이었다. 정본: [workspace/engine-port/reports/sm_policy_report.html](../workspace/engine-port/reports/sm_policy_report.html) (4-pass 원인 분해 §07). 본 문서는 가설·이력 계층으로만 유효.
+> ⚠️ **SUPERSEDED (2026-07)**: 본 문서의 layer-aware 우위 결론(sim 예측 la/agnostic 1.37–2.02×)은 실엔진 측정으로 기각됐다. 현재 전체 정본은 [`../PROJECT_STATUS.md`](../PROJECT_STATUS.md)이며 본 문서는 가설·이력 계층으로만 유효하다.
 
 작성일: 2026-06-22 · 프로젝트: `prefill-layer-alloc` · GPU: A100-SXM4-80GB(108 SM)
 대상 모델: Zamba2 1.2/2.7/7B (temporal 하이브리드) · Falcon-H1 3/7B (spatial 하이브리드)

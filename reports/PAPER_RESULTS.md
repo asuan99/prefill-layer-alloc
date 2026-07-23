@@ -1,5 +1,9 @@
 # 최종 결과 (논문용) — Layer-type-aware resource allocation in hybrid SSM+Attention serving
 
+> **SUPERSEDED — 논문 결과로 사용 금지:** 이 문서의 layer-aware 1.37–2.02×
+> 결론은 simulation/no-CUDA-Graph 및 후속 실엔진 검증과 충돌한다. 현재 정본은
+> [`../PROJECT_STATUS.md`](../PROJECT_STATUS.md)이며 본문은 historical artifact다.
+>
 > 본 문서는 **확정된 최종 결론만** 담는다(중간 변화·수정 이력 제외). 상세·재현은 하위 보고서 참조.
 > 환경: NVIDIA A100-SXM4-80GB(108 SM). 모델: Zamba2 1.2/2.7/7B(temporal 하이브리드), Falcon-H1 3/7B(spatial 하이브리드). 측정: 단일-커널~full-model 마이크로벤치(E1–E7) + LUT-구동 큐 시뮬레이터(E6) + 실 vLLM 0.22.1 서빙.
 

@@ -1,5 +1,9 @@
 # Claude Code 세션 산출물 통합 정리
 
+> **HISTORICAL HANDOFF (2026-07-22):** R1/R2 이전 상태다. 현재 연구 방향,
+> dual-worker 판정과 실험 gate는 [`PROJECT_STATUS.md`](PROJECT_STATUS.md)를
+> 따른다.
+
 작성 기준: 2026-07-22
 범위: `prefill-layer-alloc` 저장소 내부의 연구·실험·엔진 포팅 산출물
 
