@@ -1,0 +1,8 @@
+===== BENCH policy=dual scenario=prefill_burst phase=main in=3600 out=32 rate=2 =====
+Successful requests:                     48        
+Request throughput (req/s):              2.15      
+Median TTFT (ms):                        931.51    
+P99 TTFT (ms):                           2508.53   
+Median TPOT (ms):                        41.75     
+P99 TPOT (ms):                           50.87     
+/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r1_dual_worker/job_862512/bench_prefill_burst_dual_main.jsonl

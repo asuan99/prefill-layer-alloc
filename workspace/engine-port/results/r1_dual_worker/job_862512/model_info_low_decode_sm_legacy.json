@@ -1,0 +1,1 @@
+{"model_path":"Zyphra/Zamba2-2.7B","tokenizer_path":"Zyphra/Zamba2-2.7B","is_generation":true,"preferred_sampling_params":null,"weight_version":"default","has_image_understanding":false,"has_audio_understanding":false,"model_type":"zamba2","architectures":["Zamba2ForCausalLM"]}

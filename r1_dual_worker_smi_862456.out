@@ -1,0 +1,40 @@
+==========================================
+SLURM_JOB_ID = 862456
+SLURM_NODELIST = gpu39
+==========================================
+===== R1 dual-worker preflight =====
+job=862456 host=gpu39 model=Zyphra/Zamba2-2.7B run_dir=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r1_dual_worker/job_862456
+NVIDIA A100-SXM4-80GB, 81920 MiB, 8.0
+[preflight] GPU=NVIDIA A100-SXM4-80GB
+===== START policy=legacy scenario=decode_heavy cfg=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/slo_sched/pdmux_d24.yml port=37056 =====
+SERVER_DIED policy=legacy scenario=decode_heavy
+    )
+  File "/home01/ehmoon/.local/lib/python3.14/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "/home01/ehmoon/.local/lib/python3.14/site-packages/urllib3/util/retry.py", line 535, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='127.0.0.1', port=37056): Max retries exceeded with url: /model_info (Caused by NewConnectionError("HTTPConnection(host='127.0.0.1', port=37056): Failed to establish a new connection: [Errno 111] Connection refused"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/entrypoints/http_server.py", line 1767, in _execute_server_warmup
+    res = requests.get(
+        url + "/model_info", timeout=5, headers=headers, verify=ssl_verify
+    )
+  File "/home01/ehmoon/.local/lib/python3.14/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+  File "/home01/ehmoon/.local/lib/python3.14/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home01/ehmoon/.local/lib/python3.14/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home01/ehmoon/.local/lib/python3.14/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/home01/ehmoon/.local/lib/python3.14/site-packages/requests/adapters.py", line 677, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='127.0.0.1', port=37056): Max retries exceeded with url: /model_info (Caused by NewConnectionError("HTTPConnection(host='127.0.0.1', port=37056): Failed to establish a new connection: [Errno 111] Connection refused"))
+

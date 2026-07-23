@@ -1,0 +1,8 @@
+===== BENCH policy=dual scenario=overload phase=main in=3600 out=96 rate=12 =====
+Successful requests:                     48        
+Request throughput (req/s):              2.06      
+Median TTFT (ms):                        8067.74   
+P99 TTFT (ms):                           15703.39  
+Median TPOT (ms):                        94.07     
+P99 TPOT (ms):                           117.05    
+/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r1_dual_worker/job_862512/bench_overload_dual_main.jsonl

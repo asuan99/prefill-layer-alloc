@@ -1,0 +1,11 @@
+{
+  "policy": "dual",
+  "scenario": "low_decode_sm",
+  "port": 39516,
+  "pid": 1975236,
+  "server_start_attempt": 1,
+  "health": true,
+  "model_info": true,
+  "status": "ready",
+  "server_log": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r1_dual_worker/job_862512/server_low_decode_sm_dual_attempt1.log"
+}

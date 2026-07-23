@@ -1,0 +1,8 @@
+===== BENCH policy=legacy scenario=low_decode_sm phase=main in=2000 out=96 rate=8 =====
+Successful requests:                     48        
+Request throughput (req/s):              2.99      
+Median TTFT (ms):                        4046.15   
+P99 TTFT (ms):                           7468.35   
+Median TPOT (ms):                        83.69     
+P99 TPOT (ms):                           105.04    
+/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r1_dual_worker/job_862512/bench_low_decode_sm_legacy_main.jsonl
