@@ -1,5 +1,9 @@
 # R1 dual-worker 정리 및 실행 진행 보고서
 
+> **SUPERSEDED:** 이 문서는 성공 전 진행 로그다. R1은 true dual-worker가 아니라
+> observer path였으며 최종 판정은
+> [`paper/R1_REANALYSIS.md`](paper/R1_REANALYSIS.md)를 따른다.
+
 작성 기준: 2026-07-23
 
 ## 목적

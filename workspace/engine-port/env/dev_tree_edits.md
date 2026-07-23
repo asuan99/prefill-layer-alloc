@@ -99,7 +99,14 @@ downloaded ibm-granite/granite-4.0-h-micro-base (login-node internet). Harness:
     per-type allocation beats uniform agnostic (it does not — see `results/r0b/`). Copy:
     `src/models/zamba2.py`. Harness `results/r0b/r0b_graduated_bench.sbatch <agn|la_bin|g_<mamba>_<attn>> <rep>`.
 
-## R1 (Hybrid LLM dual-worker queue ownership)
+## R1 observer와 R2 true dual-worker
+
+R1은 독립 queue/thread가 아니라 observer였으므로 architecture result로 사용하지
+않는다. R2는 `src/multiplex/{profile,controller,telemetry}.py`, 두 host-thread
+runtime, `src/patches/pdmux_thread_local_role.patch`를 추가한다. 수동 복사 대신
+`scripts/bootstrap/sync_engine_tree.sh`를 사용하며 source hash를 run manifest에
+보존한다. `PDMUX_TRUE_DUAL_WORKER=1`은 thread-local role capability가 없으면
+시작을 거부한다.
 
 11. **NEW** `multiplex/dual_worker.py` — copied from
 `src/multiplex/dual_worker.py`. Defines `PrefillWorker`,

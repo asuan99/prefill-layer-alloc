@@ -1,5 +1,10 @@
 # 실 trace 검증 결과 + 동적 컨트롤러의 남은 두 갈래
 
+> **SUPERSEDED:** branch 상태와 gate 구현 여부는 현재와 맞지 않는다. 실측
+> entanglement 이력만 유효하며 현재 판정은
+> [`../../../PROJECT_STATUS.md`](../../../PROJECT_STATUS.md)와
+> [`paper/EXPERIMENT_ROADMAP.md`](paper/EXPERIMENT_ROADMAP.md)를 따른다.
+>
 > ⚠️ **정본은 [CONSENSUS.md](CONSENSUS.md)**. 이 문서 **§2.6/§2.7의 "bimodal은 트랩 때문" 귀속은 철회**됨 —
 > static d24(switch=0)도 6.32↔3.10으로 붕괴(±1.302)하므로 분산의 상당 부분은 **시스템 노이즈**다.
 > 트랩 *기전*(pf_age 단조증가)은 유효하나 **크기 귀속 불가**. §3.4 게이트 설계·§1 실trace 정정은 유효.

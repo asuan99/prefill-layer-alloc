@@ -1,5 +1,9 @@
 # Full-system vs. engine-policy vs. queue-sim — 어디서 결과가 갈리나 (fidelity ladder)
 
+> **SUPERSEDED:** fidelity taxonomy만 유효하다. 문서 안의 no-CUDA-Graph와
+> SLO-aware positive 결론은 후속 실엔진 결과와 충돌한다. 현재 정본:
+> [`../../../PROJECT_STATUS.md`](../../../PROJECT_STATUS.md).
+
 작성: 2026-07-12. 목적: 본 프로젝트의 모든 정책 결론(특히 **layer-aware 반증**, **SLO-aware 우위**)은
 **"sglang 위에 얹은 SM-split 정책 레이어"** 라는 특정 위치에서 나왔다. 같은 정책이라도
 (a) **queue-simulation**, (b) **본 engine 실측**, (c) **Bullet/MuxWise 같은 full serving system**

@@ -1,5 +1,10 @@
 # Prefill vs Decode — 실행 관점의 차이, 그리고 layer-aware 함의
 
+> **HISTORICAL/SUPERSEDED:** characterization 출발점으로만 사용한다. prefill은
+> 항상 compute-bound, decode는 항상 memory-bound라는 식의 일반화와 미완 branch
+> 상태는 현재 주장에 사용하지 않는다. 정본:
+> [`../../../PROJECT_STATUS.md`](../../../PROJECT_STATUS.md).
+
 작성: 2026-07-08. 목적: layer-aware(per-layer-type SM 배분)가 **decode에선 반증**됐는데 **prefill 쪽은 왜 다른 질문**인지를,
 두 phase의 *실행 특성* 차이로 정초한다. prefill-knee 실험과 (있다면) prefill-coord 실험의 기반 문서.
 

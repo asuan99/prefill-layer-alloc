@@ -1,112 +1,80 @@
 # Hybrid LLM PD-mux dual-worker implementation
 
-## Scope
+최종 갱신: 2026-07-23. 현재 판정은
+[`../../../PROJECT_STATUS.md`](../../../PROJECT_STATUS.md)를 따른다.
 
-This is the first implementation step after the existing PD-mux baseline. It
-separates phase ownership inside one scheduler process and one CUDA context:
+## 두 경로의 구분
 
-```text
-PrefillWorker  ─┐
-                ├─ SharedGpuArbiter ── one selected whole-phase SM split
-DecodeWorker   ─┘
-        │
-PhaseCoordinator ─ request phase metadata only
-```
+| Mode | 구현 | 용도 |
+|---|---|---|
+| `PDMUX_DUAL_WORKER=1` | 기존 scheduler queue/batch view와 logical observer | R1 재현·observer-effect 측정 |
+| `PDMUX_TRUE_DUAL_WORKER=1` | 두 long-lived host issue thread, role task queue, explicit execution context | R2 architecture 가설 검증 |
 
-The workers are cooperative scheduler objects, not Python threads. GPU streams,
-model weights, allocators, and request lifetime remain shared with the existing
-SGLang scheduler. The implementation intentionally does not add per-layer SM
-switching or make KV-cache behavior a research metric.
+R1은 독립 worker가 아니며 `job_862512`를 architecture result로 사용하지 않는다.
+R2 코드의 존재도 Claim D의 성능 증거가 아니다.
 
-## Existing baseline pinned before new experiments
-
-The canonical baseline remains `reports/CONSENSUS.md`:
-
-- change-trace goodput: `d44 3.220±0.013`, `d34 3.171±0.025`, and
-  `bind+GATE 3.132±0.019`;
-- tight SLO-rate-8 attainment: `d44 73.2%` versus `bind+GATE 44.3%`;
-- `d16` reaches TTFT p50 `7.24s` despite assigning 92 SMs to prefill,
-  while `d24` reaches `1.21s` with 84 prefill SMs.
-
-These numbers are a reproduction gate, not a claim that dual-worker already
-improves end-to-end performance. They preserve the existing conclusion that
-TTFT/TPOT SLO attainment, rather than raw throughput alone, determines the
-policy ranking. The known failure path remains:
+## R2 ownership
 
 ```text
-decode starvation → longer ITL → decode residency/running-batch growth
-→ prefill admission delay → TTFT growth
+Request stream
+      │
+central admission / KV / split coordinator
+      │
+  ┌───┴──────────────────┐
+  │                      │
+prefill task queue    decode task queue
+prefill host thread   decode host thread
+prefill CUDA stream   decode CUDA stream
+  │      handoff event   │
+  └──────── shared GPU ──┘
 ```
 
-The dynamic controller and layer-aware results are comparison controls. The
-attention/Mamba layer profile is connected only after queue-level traces are
-available; per-layer switching is not reactivated by this patch.
+분리되는 상태:
 
-## What is implemented
+- role task queue, condition/wake-up와 host issue thread
+- prefill/decode CUDA stream activation
+- role execution context, busy time, task count와 error state
+- in-flight resource lease
 
-`multiplex/dual_worker.py` (deployed as
-`sglang/srt/multiplex/dual_worker.py`) provides:
+공유되는 상태:
 
-- `PrefillWorker`: waiting queue view, active prefill batch, chunk progress,
-  queue age, admission latency, and TTFT-side state.
-- `DecodeWorker`: decode-ready queue, running batch, step count, and TPOT/ITL-
-  side timing.
-- `SharedGpuArbiter`: a logical lease over one `(prefill SM, decode SM)` stream
-  group. Both workers may hold the same partition; a partition switch requires
-  the previous leases to be drained.
-- `PhaseCoordinator`: `PREFILL_WAITING → PREFILL_RUNNING → DECODE_READY →
-  DECODE_RUNNING → COMPLETE` request transitions.
+- process, CUDA device/context, model weights, HBM/L2
+- central request/KV/admission lifetime
+- one selected `(prefill SM, decode SM)` partition generation
+- model runner와 graph/backend cache
 
-`SchedulerMultiplexMixin.event_loop_pdmux()` records these ownership and phase
-boundaries when `PDMUX_DUAL_WORKER=1`. The legacy path remains the default, so
-the established `fused`, static `d16/d24/d34/d44`, and dynamic-controller
-baselines are not changed by this patch.
+현재 제거한 coupling은 host issue queue와 role wake-up이다. KV/admission/split
+coordination 및 물리 GPU interference는 의도적으로 공유된다.
 
-The current scheduler's allocator and admission checks are deliberately still
-the safety authority. Consequently, this patch measures whether a request is
-waiting because of scheduler/shared-batch capacity, but does not yet claim
-that GPU contention has been removed. That distinction is the required first
-experiment: queue-level blocking and SM-level interference must be reported
-separately.
+## Safety invariants
 
-## Metrics exposed by the state objects
+- 모든 role callback은 immutable `ExecutionContext`를 받는다.
+- 두 role은 같은 partition generation lease만 동시에 가질 수 있다.
+- active lease가 하나라도 있으면 split transition을 거부한다.
+- prefill 완료 event 이후에만 coordinator가 request를 decode-ready로 전환한다.
+- module-global PD-mux role은 `ContextVar` patch로 thread-local화한다.
+- patch capability가 없으면 true dual startup을 실패시킨다.
+- layer boundary에서는 split을 바꾸지 않는다.
 
-The primary experiment should collect:
+SGLang model runner/KV lifecycle의 실제 thread safety는 GPU smoke 및 soak test가
+통과하기 전까지 미확정이다. 기본 mode는 legacy다.
 
-- `prefill.snapshot.queue_depth`
-- `prefill.snapshot.queue_age_ms`
-- `prefill.snapshot.admission_latency_ms`
-- `prefill.snapshot.admission_block_reason`
-- `decode.snapshot.active_batch_size`
-- `decode.snapshot.last_tpot_ms`
-- `decode.snapshot.step_count`
-- selected stream index and `(prefill_sms, decode_sms)` from the arbiter lease
+## Telemetry
 
-TTFT, TPOT/ITL, goodput, SLO attainment, and stream overlap remain the end-to-
-end evaluation metrics. Cache state is retained only for correctness and
-memory-safety checks.
+`PDMUX_TELEMETRY_PATH`는 architecture flag와 독립적이다. 모든 baseline에서
+동일한 bounded queue와 writer thread를 사용해 scheduler thread의 file I/O를
+제거한다. phase marker, architecture, queue/batch, split, role task/busy time,
+dropped-event count를 기록한다. KV와 CUDA replay/overlap counter는 engine hook
+연결 후 추가 검증한다.
 
-## Literature boundary
+## Validation order
 
-Bullet is useful as a reference for role-local engine/scheduler ownership and
-shared coordination metadata. MuxWise is useful as a reference for keeping
-prefill/decode execution independent inside one process while sharing the GPU
-through a resource policy. Neither paper is treated as an identical runtime or
-as a requirement to reproduce cache optimizations. The present implementation
-chooses the common design point relevant to this study: independent logical
-queues with shared same-GPU whole-phase resource arbitration.
+1. legacy telemetry off/on 및 R1 observer off/on의 paired overhead
+2. one-request와 fixed D24/D44 token correctness
+3. cancellation, OOM, KV alloc/free, shutdown
+4. CUDA Graph replay와 concurrent issue
+5. 30분 deadlock/race soak
+6. legacy fixed 대 true dual fixed의 architecture experiment
 
-## Run and next step
-
-Enable the experimental state path with:
-
-```bash
-PDMUX_DUAL_WORKER=1 ...existing PD-mux launch...
-```
-
-First compare the legacy and dual-worker traces at the same static split under
-decode-heavy saturation, prefill bursts, alternating phase load, low-decode-SM
-splits, and overload. Only after queue coupling is characterized should the
-attention/Mamba profiling be connected to whole-phase SM allocation. Per-layer
-resource switching remains disabled unless measured sensitivity differential
-exceeds its window and synchronization cost.
+상세 acceptance criterion은
+[`paper/EXPERIMENT_ROADMAP.md`](paper/EXPERIMENT_ROADMAP.md)에 있다.

@@ -1,6 +1,10 @@
-# CONSENSUS — engine-port PD-mux 연구의 합의점 (정본)
+# CONSENSUS — engine-port PD-mux 연구의 합의점 (2026-07-19 historical)
 
-최종 갱신: 2026-07-19 (★★**§1-16 반증 — tight SLO로 컨트롤러를 실제 재튜닝하면 동적은 best-static에 크게 열위(§1-17). SLO 엄격도와 무관하게 decode-heavy static 지배 확정.** 2026-07-18 §1-16의 "tight→동적 우위"는 재스코어 아티팩트로 격하). 2026-07-17 (변화-trace n≥4 — HE0 견고 확정 + 게이트=auto-tuner 규명). **이 문서가 현재 확정/철회 상태의 단일 정본이다.** 개별 보고서가 이와 충돌하면 **이 문서가 우선**한다.
+> **현재 전체 정본:** [`../../../PROJECT_STATUS.md`](../../../PROJECT_STATUS.md).
+> 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
+> negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
+
+최종 갱신: 2026-07-19 (★★**§1-16 반증 — tight SLO로 컨트롤러를 실제 재튜닝하면 동적은 best-static에 크게 열위(§1-17). SLO 엄격도와 무관하게 decode-heavy static 지배 확정.** 2026-07-18 §1-16의 "tight→동적 우위"는 재스코어 아티팩트로 격하). 2026-07-17 (변화-trace n≥4 — HE0 견고 확정 + 게이트=auto-tuner 규명).
 과거 보고서는 `deprecated_reports/`로 이관(이력 보존용, 내용은 당시 시점 기준이라 현재 결론과 충돌할 수 있음).
 
 ---

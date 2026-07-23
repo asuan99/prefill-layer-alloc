@@ -1,5 +1,9 @@
 # SLO-aware dynamic PD-mux scheduling — 실험 설계 + 정적 베이스라인 (step C)
 
+> **HISTORICAL/SUPERSEDED:** 중간의 dynamic-upside 해석은 최종 varying-trace
+> 결과로 철회됐다. 현재 판정은 [`CONSENSUS.md`](CONSENSUS.md), 후속 controller
+> 설계는 [`paper/EXPERIMENT_ROADMAP.md`](paper/EXPERIMENT_ROADMAP.md)를 따른다.
+
 작성: 2026-07-09. 사용자 통찰(2026-07-09): 현 pdmux는 SM split을 **decode 배치크기(SLO-blind)**로만 조정하고,
 decode SLO(TPOT) 긴급성에 반응하는 스케줄링이 **없다**. 정적 split은 TTFT↔TPOT 트레이드의 **한 점**만 잡는다.
 → **SLO-aware 동적 스케줄러**가 binding SLO 쪽으로 SM을 밀면 정적을 이길 수 있는가? (layer-aware track과 직교; 닫힌 track 이후 첫 유망 방향.)
