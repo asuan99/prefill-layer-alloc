@@ -4,9 +4,12 @@ Mixin class providing multiplexing scheduling logic
 
 from __future__ import annotations
 
-import json
 import logging
+import atexit
 import time
+from contextlib import contextmanager
+from dataclasses import asdict
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import torch
@@ -16,6 +19,11 @@ from torch.cuda.streams import ExternalStream
 import os
 
 from sglang.srt.distributed.parallel_state import set_pdmux_status
+try:
+    from sglang.srt.distributed.parallel_state import pdmux_role_is_thread_local
+except ImportError:
+    def pdmux_role_is_thread_local() -> bool:
+        return False
 from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
 from sglang.srt.multiplex.pdmux_context import (
     get_current_stream_idx,
@@ -27,8 +35,22 @@ from sglang.srt.multiplex.pdmux_context import (
 )
 from sglang.srt.multiplex.dual_worker import (
     DualWorkerState,
+    ExecutionContext,
+    TrueDualWorkerRuntime,
     WorkerRole,
 )
+from sglang.srt.multiplex.controller import (
+    FixedPolicy,
+    GenericDynamicPolicy,
+    HybridInformedPolicy,
+    RuntimeSnapshot,
+)
+from sglang.srt.multiplex.profile import (
+    ConservativeDecodeFloorEstimator,
+    HybridModelProfileV1,
+    RuntimeEnvironment,
+)
+from sglang.srt.multiplex.telemetry import AsyncJsonlTelemetry
 
 if TYPE_CHECKING:
     from sglang.srt.managers.schedule_batch import ScheduleBatch
@@ -52,32 +74,318 @@ class SchedulerMultiplexMixin:
         self.dual_worker_enabled = os.environ.get("PDMUX_DUAL_WORKER", "0") in (
             "1", "true", "True"
         )
-        trace_path = os.environ.get("PDMUX_DUAL_WORKER_TRACE", "")
+        self.true_dual_worker_enabled = os.environ.get(
+            "PDMUX_TRUE_DUAL_WORKER", "0"
+        ) in ("1", "true", "True")
+        if self.true_dual_worker_enabled and not pdmux_role_is_thread_local():
+            raise RuntimeError(
+                "PDMUX_TRUE_DUAL_WORKER requires the thread-local PD-mux role "
+                "patch; run scripts/bootstrap/sync_engine_tree.sh"
+            )
+        trace_path = os.environ.get(
+            "PDMUX_TELEMETRY_PATH",
+            os.environ.get("PDMUX_DUAL_WORKER_TRACE", ""),
+        )
         try:
             trace_every = max(1, int(os.environ.get("PDMUX_DUAL_WORKER_TRACE_EVERY", "32")))
         except ValueError:
             trace_every = 32
-        self.dual_worker_trace_path = trace_path if self.dual_worker_enabled else ""
+        self.dual_worker_trace_path = trace_path
         self.dual_worker_trace_every = trace_every
         self.dual_worker_trace_count = 0
         self.dual_worker_trace_error_logged = False
         self.dual_worker_state = DualWorkerState.from_sm_counts(self.sm_counts)
+        self.true_dual_worker_runtime = (
+            TrueDualWorkerRuntime(self.sm_counts, self._activate_role_context)
+            if self.true_dual_worker_enabled
+            else None
+        )
+        self.pdmux_telemetry = AsyncJsonlTelemetry(
+            Path(trace_path) if trace_path else None,
+            run_id=os.environ.get("PDMUX_RUN_ID", "unlabeled"),
+            workload_id=os.environ.get("PDMUX_WORKLOAD_ID", "unlabeled"),
+        )
+        self.pdmux_experiment_phase = "startup"
+        self.r2_policy_name = os.environ.get("PDMUX_R2_POLICY", "").strip().lower()
+        self.r2_policy = self._build_r2_policy(self.r2_policy_name)
+        self.r2_admission_limited = False
         logger.info(
             f"PD-Multiplexing enabled with {self.real_sm_group_num} stream groups, sm_counts (prefill_sm, decode_sm): {self.sm_counts}"
         )
         if self.dual_worker_enabled:
             logger.info(
-                "PD-mux dual-worker enabled: cooperative prefill/decode queues, "
-                "shared whole-phase GPU arbiter"
+                "PD-mux R1 observer path enabled (not execution-state separation)"
             )
+        if self.true_dual_worker_enabled:
+            logger.info(
+                "PD-mux true dual-worker enabled: two host issue threads with "
+                "role-local streams and thread-local PD-mux role state"
+            )
+        self.pdmux_telemetry.mark_phase("startup")
+        atexit.register(self._close_pdmux_runtime)
+
+    def _build_r2_policy(self: Scheduler, name: str):
+        if not name:
+            return None
+        decode_states = tuple(
+            sorted(
+                {
+                    int(decode_sms)
+                    for _prefill_sms, decode_sms in self.sm_counts
+                    if int(decode_sms) in (16, 24, 34, 44)
+                }
+            )
+        )
+        if not decode_states:
+            raise RuntimeError(
+                "PDMUX_R2_POLICY requires stream groups with D16/D24/D34/D44 states"
+            )
+        if name == "fixed":
+            return FixedPolicy(
+                int(os.environ.get("PDMUX_R2_FIXED_DSM", str(decode_states[-1])))
+            )
+        if name == "generic":
+            return GenericDynamicPolicy(decode_states, emergency_state=108)
+        if name == "hybrid":
+            profile_path = os.environ.get("PDMUX_MODEL_PROFILE", "")
+            if not profile_path:
+                raise RuntimeError(
+                    "PDMUX_R2_POLICY=hybrid requires PDMUX_MODEL_PROFILE"
+                )
+            profile = HybridModelProfileV1.load(Path(profile_path))
+            estimator = ConservativeDecodeFloorEstimator(
+                profile,
+                allowed_decode_sms=decode_states,
+                emergency_decode_sms=108,
+                fallback_decode_sms=int(
+                    os.environ.get("PDMUX_R2_FALLBACK_DSM", "44")
+                ),
+            )
+            device_properties = torch.cuda.get_device_properties(self.gpu_id)
+            cuda_graph_enabled = not bool(
+                getattr(self.server_args, "disable_cuda_graph", False)
+            )
+            runtime_environment = RuntimeEnvironment(
+                engine_commit=os.environ.get("PDMUX_ENGINE_COMMIT", "unknown"),
+                gpu_name=device_properties.name,
+                gpu_sm_count=int(device_properties.multi_processor_count),
+                cuda_driver=str(torch.version.cuda or "unknown"),
+                attention_backend=str(
+                    getattr(self.server_args, "attention_backend", "unknown")
+                ),
+                cuda_graph=cuda_graph_enabled,
+                piecewise_cuda_graph=(
+                    cuda_graph_enabled
+                    and not bool(
+                        getattr(
+                            self.server_args,
+                            "disable_piecewise_cuda_graph",
+                            False,
+                        )
+                    )
+                ),
+            )
+            return HybridInformedPolicy(
+                estimator, runtime_environment=runtime_environment
+            )
+        raise RuntimeError(
+            f"unsupported PDMUX_R2_POLICY={name!r}; use fixed, generic or hybrid"
+        )
+
+    def _r2_runtime_snapshot(self: Scheduler) -> RuntimeSnapshot:
+        batch = getattr(self, "running_batch", None)
+        batch_size = batch.batch_size() if batch is not None else 0
+        context_lengths = []
+        remaining_output_lengths = []
+        for req in list(getattr(batch, "reqs", ()) or ()):
+            try:
+                context_lengths.append(
+                    len(getattr(req, "origin_input_ids", ()))
+                    + len(getattr(req, "output_ids", ()))
+                )
+                sampling = getattr(req, "sampling_params", None)
+                requested = int(getattr(sampling, "max_new_tokens", 0) or 0)
+                remaining_output_lengths.append(
+                    max(0, requested - len(getattr(req, "output_ids", ())))
+                )
+            except TypeError:
+                continue
+        context_lengths.sort()
+        remaining_output_lengths.sort()
+
+        def _percentile(values, fraction, default=1):
+            if not values:
+                return default
+            return values[min(len(values) - 1, int((len(values) - 1) * fraction))]
+
+        capacity = max(1, int(getattr(self, "max_running_requests", 1)))
+        kv_occupancy, _full_occupancy, _mamba_occupancy = (
+            self._r2_cache_occupancy()
+        )
+        return RuntimeSnapshot(
+            timestamp_s=time.perf_counter(),
+            decode_iterations=int(getattr(self, "_r2_decode_iterations", 0)),
+            active_decode_sequences=batch_size,
+            decode_batch_size=max(1, batch_size),
+            context_p50=_percentile(context_lengths, 0.50),
+            context_p95=_percentile(context_lengths, 0.95),
+            context_max=max(context_lengths, default=1),
+            expected_remaining_output_p90=_percentile(
+                remaining_output_lengths, 0.90, default=0
+            ),
+            prefill_queue_depth=len(self.waiting_queue),
+            oldest_prefill_age_ms=self._slo_prefill_age_ms(),
+            measured_itl_ewma_ms=float(getattr(self, "_slo_tpot_ema", 0.0)),
+            measured_itl_p95_ms=float(
+                _percentile(
+                    sorted(getattr(self, "_r2_itl_samples", ())),
+                    0.95,
+                    default=getattr(self, "_slo_tpot_ema", 0.0),
+                )
+            ),
+            itl_slo_ms=float(os.environ.get("PDMUX_TPOT_SLO_MS", "60")),
+            ttft_risk=min(
+                1.0,
+                self._slo_prefill_age_ms()
+                / max(1.0, float(os.environ.get("PDMUX_TTFT_SLO_MS", "3000"))),
+            ),
+            kv_occupancy=kv_occupancy,
+            running_batch_occupancy=min(1.0, batch_size / capacity),
+        )
+
+    def _r2_cache_occupancy(self: Scheduler):
+        def _occupancy(pool) -> float:
+            if pool is None:
+                return 0.0
+            try:
+                return max(
+                    0.0,
+                    min(
+                        1.0,
+                        1.0 - float(pool.available_size()) / max(1, int(pool.size)),
+                    ),
+                )
+            except (AttributeError, TypeError, ZeroDivisionError):
+                return 0.0
+
+        allocator = getattr(self, "token_to_kv_pool_allocator", None)
+        full = _occupancy(allocator)
+        req_pool = getattr(self, "req_to_token_pool", None)
+        mamba = _occupancy(getattr(req_pool, "mamba_pool", None))
+        return max(full, mamba), full, mamba
+
+    def _r2_decide_idx(self: Scheduler, current_idx: int) -> int:
+        snapshot = self._r2_runtime_snapshot()
+        safe = (
+            self.true_dual_worker_runtime is None
+            or self.true_dual_worker_runtime.arbiter.safe_to_switch()
+        )
+        decision = self.r2_policy.decide(
+            snapshot,
+            int(self.sm_counts[current_idx][1]),
+            safe_boundary=safe,
+        )
+        self.r2_admission_limited = decision.admission_limited
+        self.pdmux_telemetry.emit(
+            "controller_decision",
+            self.pdmux_experiment_phase,
+            policy=self.r2_policy_name,
+            current_decode_sms=decision.current_decode_sms,
+            target_decode_sms=decision.target_decode_sms,
+            reason=decision.reason,
+            predicted_itl_ms=decision.predicted_itl_ms,
+            upper_bound_itl_ms=decision.upper_bound_itl_ms,
+            confidence=decision.confidence,
+            safe=decision.safe,
+            admission_limited=decision.admission_limited,
+        )
+        if decision.target_decode_sms != decision.current_decode_sms:
+            self.pdmux_telemetry.emit(
+                "split_transition",
+                self.pdmux_experiment_phase,
+                current_decode_sms=decision.current_decode_sms,
+                target_decode_sms=decision.target_decode_sms,
+                reason=decision.reason,
+                safe=decision.safe,
+            )
+        elif not decision.safe:
+            self.pdmux_telemetry.emit(
+                "blocked_unsafe_transition",
+                self.pdmux_experiment_phase,
+                current_decode_sms=decision.current_decode_sms,
+                requested_decode_sms=(
+                    decision.requested_decode_sms or decision.target_decode_sms
+                ),
+                reason=decision.reason,
+            )
+        matches = [
+            index
+            for index, (_prefill_sms, decode_sms) in enumerate(self.sm_counts)
+            if int(decode_sms) == decision.target_decode_sms
+        ]
+        if not matches:
+            logger.warning(
+                "R2 policy requested unavailable D%d; holding D%d",
+                decision.target_decode_sms,
+                self.sm_counts[current_idx][1],
+            )
+            return current_idx
+        return matches[0]
+
+    def _close_pdmux_runtime(self: Scheduler) -> None:
+        """Best-effort shutdown for writer and role threads."""
+        telemetry = getattr(self, "pdmux_telemetry", None)
+        if telemetry is not None:
+            telemetry.close()
+        runtime = getattr(self, "true_dual_worker_runtime", None)
+        if runtime is not None:
+            try:
+                runtime.close()
+            except TimeoutError as exc:
+                logger.error("PD-mux worker shutdown timed out: %s", exc)
+
+    @contextmanager
+    def _activate_role_context(self: Scheduler, context: ExecutionContext):
+        """Activate CUDA stream and thread-local PD-mux role for one host task."""
+        if context.stream is None:
+            raise RuntimeError("true dual-worker task has no CUDA stream")
+        with torch.cuda.device(self.gpu_id), torch.cuda.stream(context.stream):
+            set_pdmux_status(context.role is WorkerRole.PREFILL)
+            yield
 
     def _dual_worker_sync(self, stream_idx: Optional[int] = None) -> None:
         """Refresh role-owned views without changing legacy scheduler state."""
-        if not getattr(self, "dual_worker_enabled", False):
+        if not (
+            getattr(self, "dual_worker_enabled", False)
+            or getattr(self, "dual_worker_trace_path", "")
+        ):
             return
         self.dual_worker_state.observe_scheduler(
             self, get_current_stream_idx() if stream_idx is None else stream_idx
         )
+        runtime = getattr(self, "true_dual_worker_runtime", None)
+        if runtime is not None:
+            runtime.register_waiting(list(self.waiting_queue))
+            live = list(self.waiting_queue)
+            for batch in (
+                getattr(self, "split_prefill_batch", None),
+                getattr(self, "running_batch", None),
+            ):
+                live.extend(getattr(batch, "reqs", ()) or ())
+            runtime.prune_to_live(live)
+        if (
+            self.pdmux_experiment_phase == "startup"
+            and (
+                len(self.waiting_queue)
+                or getattr(self, "split_prefill_batch", None) is not None
+                or (
+                    getattr(self, "running_batch", None) is not None
+                    and not self.running_batch.is_empty()
+                )
+            )
+        ):
+            self.pdmux_experiment_phase = "benchmark"
+            self.pdmux_telemetry.mark_phase("benchmark")
         self.dual_worker_trace_count += 1
         if (
             self.dual_worker_trace_path
@@ -89,16 +397,35 @@ class SchedulerMultiplexMixin:
             self._write_dual_worker_trace()
 
     def _write_dual_worker_trace(self: Scheduler) -> None:
-        """Append sampled dual-worker state without affecting the scheduler path."""
+        """Enqueue symmetric sampled state without scheduler-thread file I/O."""
         try:
             payload = {
-                "timestamp_monotonic_s": time.perf_counter(),
                 "sample_index": self.dual_worker_trace_count,
+                "architecture": (
+                    "true_dual"
+                    if getattr(self, "true_dual_worker_enabled", False)
+                    else ("r1_observer" if self.dual_worker_enabled else "legacy")
+                ),
                 **self.dual_worker_state.metrics(),
+                **asdict(self._r2_runtime_snapshot()),
             }
-            with open(self.dual_worker_trace_path, "a", encoding="utf-8") as trace_file:
-                trace_file.write(json.dumps(payload, separators=(",", ":")) + "\n")
-        except (OSError, TypeError, ValueError) as exc:
+            runtime = getattr(self, "true_dual_worker_runtime", None)
+            if runtime is not None:
+                payload.update(runtime.metrics())
+            kv_total, kv_full, kv_mamba = self._r2_cache_occupancy()
+            payload.update(
+                {
+                    "kv_total_occupancy": kv_total,
+                    "kv_full_occupancy": kv_full,
+                    "kv_mamba_occupancy": kv_mamba,
+                }
+            )
+            self.pdmux_telemetry.emit(
+                "runtime_snapshot",
+                self.pdmux_experiment_phase,
+                **payload,
+            )
+        except (OSError, TypeError, ValueError, RuntimeError) as exc:
             if not self.dual_worker_trace_error_logged:
                 logger.warning("dual-worker telemetry disabled after write failure: %s", exc)
                 self.dual_worker_trace_error_logged = True
@@ -107,12 +434,18 @@ class SchedulerMultiplexMixin:
         if getattr(self, "dual_worker_enabled", False):
             self.dual_worker_state.prefill.active_batch = batch
             self.dual_worker_state.coordinator.start_prefill(batch.reqs)
+        runtime = getattr(self, "true_dual_worker_runtime", None)
+        if runtime is not None:
+            runtime.start_prefill(batch.reqs)
 
     def _dual_worker_prefill_ready(self, batch: ScheduleBatch) -> None:
         if getattr(self, "dual_worker_enabled", False):
             state = self.dual_worker_state
             state.coordinator.complete_prefill(batch.reqs)
             state.decode.ready_queue.extend(batch.reqs)
+        runtime = getattr(self, "true_dual_worker_runtime", None)
+        if runtime is not None:
+            runtime.complete_prefill(batch.reqs)
 
     def _dual_worker_start_decode(self, batch: ScheduleBatch) -> None:
         if getattr(self, "dual_worker_enabled", False):
@@ -123,16 +456,22 @@ class SchedulerMultiplexMixin:
                 req for req in state.decode.ready_queue
                 if getattr(req, "rid", id(req)) not in rids
             ]
+        runtime = getattr(self, "true_dual_worker_runtime", None)
+        if runtime is not None:
+            runtime.start_decode(batch.reqs)
 
     def _dual_worker_complete_decode(self, batch: ScheduleBatch) -> None:
+        completed = []
+        for req in getattr(batch, "reqs", ()):
+            finished = getattr(req, "finished", None)
+            if callable(finished) and finished():
+                completed.append(req)
         if getattr(self, "dual_worker_enabled", False):
-            completed = []
-            for req in getattr(batch, "reqs", ()):
-                finished = getattr(req, "finished", None)
-                if callable(finished) and finished():
-                    completed.append(req)
             self.dual_worker_state.coordinator.complete(completed)
             self.dual_worker_state.decode.finish_step()
+        runtime = getattr(self, "true_dual_worker_runtime", None)
+        if runtime is not None:
+            runtime.complete_requests(completed)
 
     def _slo_context_len_signal(self: Scheduler) -> int:
         """Step D (SKETCH): characteristic context length (tokens) of imminent prefill work =
@@ -416,6 +755,8 @@ class SchedulerMultiplexMixin:
     def update_split_prefill_batch(self: Scheduler, sm_count: int) -> bool:
         if self.split_prefill_batch:
             return False
+        if getattr(self, "r2_admission_limited", False):
+            return False
 
         # add new request
         if getattr(self, "dual_worker_enabled", False):
@@ -449,9 +790,11 @@ class SchedulerMultiplexMixin:
         self._dual_worker_sync(stream_idx)
 
         import time as _time
-        _slo_on = bool(os.environ.get("PDMUX_SLO_SCHED"))
+        _slo_on = bool(os.environ.get("PDMUX_SLO_SCHED")) or self.r2_policy is not None
         self._slo_last_t = _time.perf_counter()
         while True:
+            decode_future = None
+            prefill_future = None
             if _slo_on:
                 # measure per-iteration wall time = TPOT (one token/iter when decode active);
                 # v3: skip the iterations right after a partition switch — the switch drains the
@@ -469,6 +812,9 @@ class SchedulerMultiplexMixin:
                 _a = float(os.environ.get("PDMUX_SLO_EMA", "0.85"))  # v7b: smoother signal (was 0.7)
                 if (not self.running_batch.is_empty()) and 0.0 < _dt < max(_cap, 90.0):
                     self._slo_tpot_ema = (_a * _ema + (1.0 - _a) * _dt) if _ema else _dt
+                    self._r2_itl_samples = (
+                        getattr(self, "_r2_itl_samples", []) + [_dt]
+                    )[-128:]
             with torch.cuda.stream(decode_stream):
                 set_pdmux_status(False)
                 recv_reqs = self.recv_requests()
@@ -508,7 +854,11 @@ class SchedulerMultiplexMixin:
                 # which the bench noise swamps. Microsecond means => hypothesis dead.
                 import time as _ct
                 _ct0 = _ct.perf_counter()
-                _tgt = self._slo_decide_idx()
+                _tgt = (
+                    self._r2_decide_idx(stream_idx)
+                    if self.r2_policy is not None
+                    else self._slo_decide_idx()
+                )
                 _cdt = (_ct.perf_counter() - _ct0) * 1000.0
                 self._slo_ctl_n = getattr(self, "_slo_ctl_n", 0) + 1
                 self._slo_ctl_ms = getattr(self, "_slo_ctl_ms", 0.0) + _cdt
@@ -524,6 +874,11 @@ class SchedulerMultiplexMixin:
                         self.dual_worker_state.arbiter.active_roles.clear()
                     prefill_stream.synchronize()
                     decode_stream.synchronize()
+                    if getattr(self, "true_dual_worker_runtime", None) is not None:
+                        if not self.true_dual_worker_runtime.arbiter.safe_to_switch():
+                            raise RuntimeError(
+                                "unsafe split transition after stream drain"
+                            )
                     set_current_stream_idx(_tgt)
                     self.tp_worker.model_runner.update_decode_attn_backend(_tgt)
                     stream_idx = _tgt
@@ -536,6 +891,11 @@ class SchedulerMultiplexMixin:
                     self.dual_worker_state.arbiter.active_roles.clear()
                 prefill_stream.synchronize()
                 decode_stream.synchronize()
+                if getattr(self, "true_dual_worker_runtime", None) is not None:
+                    if not self.true_dual_worker_runtime.arbiter.safe_to_switch():
+                        raise RuntimeError(
+                            "unsafe automatic split transition after stream drain"
+                        )
                 stream_idx, stream_group = self.adjust_stream_groups()
                 prefill_stream = stream_group[0]
                 decode_stream = stream_group[1]
@@ -548,11 +908,31 @@ class SchedulerMultiplexMixin:
                 set_pdmux_status(False)
                 # process decode batch
                 if self.running_batch and not self.running_batch.is_empty():
+                    self._r2_decode_iterations = (
+                        getattr(self, "_r2_decode_iterations", 0) + 1
+                    )
                     if getattr(self, "dual_worker_enabled", False):
                         self.dual_worker_state.arbiter.select_partition(stream_idx)
                         self.dual_worker_state.arbiter.acquire(WorkerRole.DECODE)
                         self.dual_worker_state.decode.begin_step()
-                    decode_result = self.run_batch(self.running_batch)
+                    if getattr(self, "true_dual_worker_runtime", None) is not None:
+                        self.true_dual_worker_runtime.select_partition(stream_idx)
+                        decode_batch = self.running_batch
+                        decode_future = self.true_dual_worker_runtime.submit(
+                            WorkerRole.DECODE,
+                            lambda _context, _batch=decode_batch: (
+                                self.run_batch(_batch),
+                                _context.stream.record_event(),
+                            ),
+                            stream=decode_stream,
+                            decode_backend=getattr(
+                                self.tp_worker.model_runner,
+                                "decode_attn_backend",
+                                None,
+                            ),
+                        )
+                    else:
+                        decode_result = self.run_batch(self.running_batch)
                     decode_done = True
                 else:
                     decode_done = False
@@ -595,10 +975,32 @@ class SchedulerMultiplexMixin:
                     if getattr(self, "dual_worker_enabled", False):
                         self.dual_worker_state.arbiter.select_partition(stream_idx)
                         self.dual_worker_state.arbiter.acquire(WorkerRole.PREFILL)
-                    prefill_result = self.run_batch(self.split_prefill_batch)
-                    if next_split_index == self.model_config.num_hidden_layers:
+                    prefill_is_final = (
+                        next_split_index == self.model_config.num_hidden_layers
+                    )
+                    if getattr(self, "true_dual_worker_runtime", None) is not None:
+                        self.true_dual_worker_runtime.select_partition(stream_idx)
+                        prefill_batch = self.split_prefill_batch
+
+                        def _run_prefill(
+                            _context: ExecutionContext,
+                            _batch=prefill_batch,
+                        ):
+                            _result = self.run_batch(_batch)
+                            _event = _context.stream.record_event()
+                            return _result, _event
+
+                        prefill_future = self.true_dual_worker_runtime.submit(
+                            WorkerRole.PREFILL,
+                            _run_prefill,
+                            stream=prefill_stream,
+                        )
+                    else:
+                        prefill_result = self.run_batch(self.split_prefill_batch)
+                    if prefill_is_final:
                         self.split_prefill_batch.split_prefill_finished = True
-                        prefill_exe_done = prefill_stream.record_event()
+                        if prefill_future is None:
+                            prefill_exe_done = prefill_stream.record_event()
                     self.split_prefill_batch.split_index = next_split_index
 
                 elif wait_prefill_kernel_done:
@@ -608,6 +1010,11 @@ class SchedulerMultiplexMixin:
 
             with torch.cuda.stream(decode_stream):
                 set_pdmux_status(False)
+                if decode_future is not None:
+                    decode_result, threaded_decode_event = decode_future.result()
+                    self.true_dual_worker_runtime.record_inflight_event(
+                        WorkerRole.DECODE, threaded_decode_event
+                    )
                 decode_stream.synchronize()
                 if decode_done:
                     self.process_batch_result(self.running_batch, decode_result)
@@ -617,6 +1024,13 @@ class SchedulerMultiplexMixin:
 
             with torch.cuda.stream(prefill_stream):
                 set_pdmux_status(True)
+                if prefill_future is not None:
+                    prefill_result, threaded_prefill_event = prefill_future.result()
+                    self.true_dual_worker_runtime.record_inflight_event(
+                        WorkerRole.PREFILL, threaded_prefill_event
+                    )
+                    if self.split_prefill_batch.split_prefill_finished:
+                        prefill_exe_done = threaded_prefill_event
                 if prefill_done and self.split_prefill_batch.split_prefill_finished:
                     wait_prefill_kernel_done = True
                     prefill_exe_done_flag = prefill_exe_done.query()

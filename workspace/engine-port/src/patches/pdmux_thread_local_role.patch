@@ -1,0 +1,38 @@
+--- a/sglang/srt/distributed/parallel_state.py
++++ b/sglang/srt/distributed/parallel_state.py
+@@ -23,6 +23,7 @@
+ """
+ 
+-import contextlib
++import contextlib
++import contextvars
+ import gc
+ import logging
+ import os
+@@ -1435,16 +1436,22 @@
+ # duplicate GroupCoordinator for prefill in PD-Multiplexing
+ _PDMUX_PREFILL_TP_GROUP: Optional[GroupCoordinator] = None
+ 
+-_ENABLE_PDMUX_P_TP: bool = False
++_ENABLE_PDMUX_P_TP: contextvars.ContextVar[bool] = contextvars.ContextVar(
++    "pdmux_prefill_tp_enabled", default=False
++)
+ 
+ 
+ def set_pdmux_status(enable_prefill_multiplexing: bool):
+-    global _ENABLE_PDMUX_P_TP
+-    _ENABLE_PDMUX_P_TP = enable_prefill_multiplexing
++    _ENABLE_PDMUX_P_TP.set(enable_prefill_multiplexing)
++
++
++def pdmux_role_is_thread_local() -> bool:
++    """Capability probe used by the true dual-worker integration."""
++    return True
+ 
+ 
+ def get_tp_group() -> GroupCoordinator:
+-    if _ENABLE_PDMUX_P_TP:
++    if _ENABLE_PDMUX_P_TP.get():
+         assert (
+             _PDMUX_PREFILL_TP_GROUP is not None
+         ), "tensor model parallel group for PD-Multiplexing Prefill is not initialized"

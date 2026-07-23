@@ -2,6 +2,7 @@ import importlib.util
 import os
 import sys
 import unittest
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -133,6 +134,81 @@ class DualWorkerTest(unittest.TestCase):
         decode.finish_step(now=20.004)
         self.assertAlmostEqual(decode.snapshot.last_tpot_ms, 4.0)
         self.assertEqual(decode.snapshot.step_count, 1)
+
+    def test_true_runtime_executes_on_two_named_role_threads(self):
+        runtime = dual_worker.TrueDualWorkerRuntime([(84, 24)])
+        barrier = threading.Barrier(2)
+
+        def identify(context):
+            barrier.wait(timeout=2)
+            return context.role, threading.current_thread().name
+
+        prefill = runtime.submit(dual_worker.WorkerRole.PREFILL, identify)
+        decode = runtime.submit(dual_worker.WorkerRole.DECODE, identify)
+        prefill_role, prefill_thread = prefill.result(timeout=3)
+        decode_role, decode_thread = decode.result(timeout=3)
+        runtime.close()
+
+        self.assertEqual(prefill_role, dual_worker.WorkerRole.PREFILL)
+        self.assertEqual(decode_role, dual_worker.WorkerRole.DECODE)
+        self.assertIn("prefill", prefill_thread)
+        self.assertIn("decode", decode_thread)
+        self.assertNotEqual(prefill_thread, decode_thread)
+
+    def test_true_runtime_rejects_partition_change_while_in_flight(self):
+        runtime = dual_worker.TrueDualWorkerRuntime([(0, 108), (84, 24)])
+        started = threading.Event()
+        release = threading.Event()
+
+        def hold(_context):
+            started.set()
+            release.wait(timeout=2)
+
+        future = runtime.submit(dual_worker.WorkerRole.DECODE, hold)
+        self.assertTrue(started.wait(timeout=2))
+        with self.assertRaises(RuntimeError):
+            runtime.select_partition(1)
+        release.set()
+        future.result(timeout=2)
+        runtime.select_partition(1)
+        runtime.close()
+        self.assertEqual(runtime.arbiter.stream_index, 1)
+
+    def test_gpu_completion_event_blocks_partition_change(self):
+        class FakeEvent:
+            def __init__(self):
+                self.done = False
+
+            def query(self):
+                return self.done
+
+        runtime = dual_worker.TrueDualWorkerRuntime([(0, 108), (84, 24)])
+        event = FakeEvent()
+        runtime.record_inflight_event(dual_worker.WorkerRole.DECODE, event)
+        with self.assertRaises(RuntimeError):
+            runtime.select_partition(1)
+        event.done = True
+        runtime.select_partition(1)
+        runtime.close()
+
+    def test_true_runtime_owns_request_handoff_state(self):
+        runtime = dual_worker.TrueDualWorkerRuntime([(84, 24)])
+        req = SimpleNamespace(rid="r0")
+        runtime.register_waiting([req])
+        self.assertIn("r0", runtime.prefill_waiting)
+        runtime.start_prefill([req])
+        self.assertIn("r0", runtime.prefill_active)
+        runtime.complete_prefill([req])
+        self.assertIn("r0", runtime.decode_ready)
+        runtime.start_decode([req])
+        self.assertIn("r0", runtime.decode_running)
+        runtime.complete_requests([req])
+        self.assertNotIn("r0", runtime.decode_running)
+        self.assertEqual(
+            runtime.coordinator.request_phase["r0"],
+            dual_worker.RequestPhase.COMPLETE,
+        )
+        runtime.close()
 
 
 if __name__ == "__main__":
