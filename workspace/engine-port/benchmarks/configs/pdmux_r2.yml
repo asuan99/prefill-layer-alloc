@@ -1,0 +1,10 @@
+# Canonical A100 (108 SM) whole-phase state set.
+# Stream groups also include full-prefill (108/0) and full-decode (0/108).
+sm_group_num: 6
+manual_divisions:
+  - [92, 16, 0]
+  - [84, 24, 0]
+  - [74, 34, 0]
+  - [64, 44, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
