@@ -13,7 +13,7 @@
 **(2)** 그 결과 드러난 컨트롤러의 두 결함 — **트리거(언제 움직이나)**와 **행동 모델(어느 쪽으로 움직이나)** — 을
 각각 *무슨 문제를 서술하려는 것인지*와 *어떤 실측값이 그렇게 지목하는지*로 정리.
 
-관련: [session_handoff_2026-07-15.md](../deprecated/reports/quarantine_engine_port/session_handoff_2026-07-15.md)(전체 흐름), [slo_aware_scheduling_design.md](slo_aware_scheduling_design.md)(§D~HE2-3), [policy_comparison.md](policy_comparison.md).
+관련: [session_handoff_2026-07-15.md](../handoff-report/session_handoff_2026-07-15.md)(전체 흐름), [slo_aware_scheduling_design.md](slo_aware_scheduling_design.md)(§D~HE2-3), [policy_comparison.md](policy_comparison.md).
 
 ---
 

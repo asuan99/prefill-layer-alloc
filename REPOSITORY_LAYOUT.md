@@ -98,3 +98,24 @@ deprecated/
   자체 `archive/v1_7b_saturation/ARCHIVE_NOTE.md`로 이미 v1→v2 이관을 문서화함).
 
 `reports/paper/DOCUMENT_STATUS.md`가 이 이관의 문서별 판정·경로를 관리한다.
+
+## `handoff-report/` — 세션 핸드오프 전용 아카이브 (2026-07-24 신설)
+
+`reports/`(현재 연구 정본)와는 **분리**해서 세션 간 인수인계(handoff) 기록만
+최상위 `handoff-report/`에 모은다. 핸드오프는 point-in-time 세션 기록이지
+갱신되는 연구 결론이 아니므로, 별도 관리가 관리 편의상 더 낫다고 판단했다.
+
+```text
+handoff-report/
+├── README.md                         # 목록 + 각 핸드오프 현재 상태(반증 여부 등)
+├── session_handoff_2026-07-07.md
+├── session_handoff_2026-07-13.md
+├── session_handoff_2026-07-15.md     # 부분 반증됨(README에 주석 보존)
+└── session_handoff_2026-07-24.md
+```
+
+기존 세션 핸드오프 3건은 `deprecated/reports/quarantine_engine_port/`에서,
+1건(07-24)은 다른 세션이 옛(승격 전) 스킬 경로 `workspace/engine-port/reports/`에
+잘못 저장해 되살아난 것을 여기로 옮겼다(옮긴 뒤 그 디렉터리는 다시 비워
+"예외: engine-port `reports/`의 최상위 승격" 상태로 되돌아갔다). 2026-07-24부터
+세션 핸드오프 스킬은 이 경로에 저장한다.

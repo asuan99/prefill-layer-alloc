@@ -12,10 +12,14 @@
 | `p1_7_hybrid_generalization_kr.md` | 07-06 | hybrid 일반화 — 이후 실측이 대체 |
 | `sm_policy_report_v2.html` | 07-06 | `../../../reports/sm_policy_report.html`이 대체 |
 | `r_series_status.md` | 07-07 | R-시리즈 상태 — 핸드오프가 대체 |
-| `session_handoff_2026-07-07.md` | 07-07 | 구 핸드오프 |
-| `session_handoff_2026-07-13.md` | 07-13 | 구 핸드오프 (07-15가 대체) |
 
 ⚠️ 특히 이 문서들의 **layer-aware "生" 서술**과 **저부하 synthetic 기반 "최적=d16" 서술**은
 `CONSENSUS.md` §1-3·§1-5에서 **반증/정정**되었다.
 
-- `session_handoff_2026-07-15.md` — **부분 반증 + 대체됨**. "cudagraph 최적 static=d16"·"실전=d16 고정"은 **저-decode-부하 synthetic 아티팩트**(실 trace서 d16 최하위, 최적은 d44). 전체 흐름은 [`research_arc.md`](../../../reports/research_arc.md)가 대체.
+★**2026-07-24**: `session_handoff_2026-07-07.md`·`session_handoff_2026-07-13.md`·
+`session_handoff_2026-07-15.md`는 세션 핸드오프 전용 아카이브
+[`../../../handoff-report/`](../../../handoff-report/)로 이동했다(다른 quarantine
+문서와 분리 관리). 07-15의 "부분 반증 + 대체됨" 주석(cudagraph 최적
+static=d16·실전=d16 고정은 저-decode-부하 synthetic 아티팩트, 실 trace서 d16
+최하위·최적은 d44, 전체 흐름은 research_arc.md가 대체)도 함께
+[`handoff-report/README.md`](../../../handoff-report/README.md)로 이관 보존했다.

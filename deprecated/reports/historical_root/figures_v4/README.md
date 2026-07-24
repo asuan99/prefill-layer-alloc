@@ -24,7 +24,7 @@ for f in make_f*.py; do $PY "$f"; done
 | **F5** coordination_contrast | measured | coordinated `r0c/_rows_agn_*835303` (42.5) · uncoordinated `r0b/r0b_summary.csv` g_54_54 (job **835044**, 121.8); 교차확인 `reports/r_series_status.md` §R0b | 같은 54 SM: 42 vs 121 ms (2.9×) |
 | **F6** coordinated_implementations_vs_agnostic | measured | R0d job **835918** · v4 job **837718** · (a) job **837520** · agn `r0c` 835303 | (a) 85 · v4 95 · R0d 124 vs floor 42.5 ms (전부 floor 위) |
 | **F7** window_vs_kernel_timeline | **conceptual** (라벨=measured) | `reports/prefill_vs_decode_execution.md` §4–6 (mamba window 0.36 / prefill kernel 2.2 ms) | 6× (kernel/window) |
-| **F8** switching_overhead_accumulation | **conceptual** | `reports/session_handoff_2026-07-07.md` R0d "19윈도우 파편화" | 19 switches/step, crossover ~11 |
+| **F8** switching_overhead_accumulation | **conceptual** | `handoff-report/session_handoff_2026-07-07.md` R0d "19윈도우 파편화" | 19 switches/step, crossover ~11 |
 | **F9** design_space_roadmap | **conceptual** | 없음 (개념도, 수치·job 미표기) | — |
 
 경로는 `results/*`는 `workspace/engine-port/results/` 기준, `reports/*`는 `workspace/engine-port/reports/` 기준.

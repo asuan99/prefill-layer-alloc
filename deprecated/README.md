@@ -72,3 +72,11 @@
 > 이동의 영향을 받지 않았다 — 단 `deprecated/**`의 markdown 링크 중
 > `workspace/engine-port/reports/...`를 가리키던 것들은 새 `reports/...` 경로로
 > 재보정했다.
+
+> **추가 후속(같은 날, 2026-07-24)**: `reports/quarantine_engine_port/`에 있던
+> 세션 핸드오프 3건(`session_handoff_2026-07-07.md`, `-07-13.md`, `-07-15.md`)은
+> **한 번 더** 이동해 전용 아카이브 [`../handoff-report/`](../handoff-report/)로
+> 나갔다(다른 quarantine 문서와 분리 관리). 위 §"경로 링크 갱신 범위" 3번·5번에서
+> 언급한 이 세 파일 관련 서술(자기 폴더 내 참조, 07-15의 부분 반증 주석 등)은
+> **당시(quarantine_engine_port 안에 있던 시점) 기준**이며, 07-15의 주석 본문은
+> `handoff-report/README.md`로 옮겨 보존했다.
