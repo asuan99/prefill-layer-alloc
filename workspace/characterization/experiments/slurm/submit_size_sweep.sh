@@ -29,7 +29,6 @@ MODELS="${MODELS:-zamba2_1.2b zamba2_2.7b falcon_h1_1.5b falcon_h1_3b}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/../../../.." && pwd)"
 CHAR_DIR="$REPO_ROOT/workspace/characterization"
-AGENT="$REPO_ROOT/workspace/slurm-agent/slurm_agent.py"
 A100_PART="${A100_PART:-amd_a100nv_8}"
 LOG="$REPO_ROOT/logs"; mkdir -p "$LOG"
 
@@ -50,7 +49,7 @@ INNER="$(printf 'MODELS=(%s); M=${MODELS[$SLURM_ARRAY_TASK_ID]}; source %s/bin/a
 
 NMODELS=$(echo $MODELS | wc -w); ARRAY="0-$((NMODELS - 1))"
 echo "[size-sweep] submitting ${NMODELS}-task array (--array=$ARRAY) for $EXP (models: $MODELS)"
-python3 "$AGENT" submit -- --array="$ARRAY" --partition="$A100_PART" --gres=gpu:1 \
+sbatch --parsable --array="$ARRAY" --partition="$A100_PART" --gres=gpu:1 \
   --job-name="v2-$EXP" --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 \
   --time="$T" --comment=pytorch \
   --output="$LOG/v2_${EXP}_%A_%a.log" --error="$LOG/v2_${EXP}_%A_%a.err" \

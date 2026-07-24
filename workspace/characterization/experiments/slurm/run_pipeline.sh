@@ -37,7 +37,6 @@ set -uo pipefail   # NOT -e: the polling loops handle their own errors
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/../../../.." && pwd)"
 CHAR_DIR="$REPO_ROOT/workspace/characterization"
-AGENT="$REPO_ROOT/workspace/slurm-agent/slurm_agent.py"
 A100_PART="${A100_PART:-amd_a100nv_8}"
 LOG="$REPO_ROOT/logs"; mkdir -p "$LOG"
 MAXQ="${MAXQ:-2}"
@@ -88,7 +87,7 @@ submit_job() {
   inner="$ACT; echo \"$exp / $model\"; python $script --models $model"
   while :; do
     wait_slot
-    out=$(python3 "$AGENT" submit -- --job-name="$name" --partition="$A100_PART" --gres=gpu:1 \
+    out=$(sbatch --parsable --job-name="$name" --partition="$A100_PART" --gres=gpu:1 \
             --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 --time="$t" --comment=pytorch \
             --output="$LOG/${name}_%j.log" --error="$LOG/${name}_%j.err" \
             --wrap "env -u BASH_ENV bash -c '$inner'" 2>"$LOG/${name}_agent.err")
