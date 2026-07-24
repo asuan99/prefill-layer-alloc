@@ -75,7 +75,7 @@ fixed-3s pass율(d44, input-length 버킷): `<500 86% · 500-1k 81% · 1k-2k 93%
 
 ## 한계 (정직하게)
 
-1. **여전히 Zamba2-2.7B · short-context(ShareGPT p99 2776tok).** long-context는 별개(→ [longcontext_trace_plan.md](../../reports/longcontext_trace_plan.md)).
+1. **여전히 Zamba2-2.7B · short-context(ShareGPT p99 2776tok).** long-context는 별개(→ [longcontext_trace_plan.md](../../../../reports/longcontext_trace_plan.md)).
 2. `norm` (a,b)는 d44 LO fit — 단 이는 **d44에 유리한 방향**이므로 반전을 *만든* 편향이 아님(오히려 보수적).
 3. d24/d16/slo는 **n=1**(참고값). robust 비교는 d44/d34/bind(n≥4)뿐.
 4. bind+GATE vs **d34**는 1.5σ로 미결(대등). 확실한 건 **d44 강등(3σ)** 과 **HE0 반증**.

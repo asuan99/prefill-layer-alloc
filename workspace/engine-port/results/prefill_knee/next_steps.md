@@ -8,8 +8,8 @@
   **작은 B의 아티팩트**일 수 있음.
 
 관련: [prefill_knee_results.md](prefill_knee_results.md)(ctx3600 단일점 원측정),
-[../../reports/prefill_vs_decode_execution.md](../../reports/prefill_vs_decode_execution.md)(prefill vs decode 실행),
-[../../reports/policy_comparison.md](../../reports/policy_comparison.md)(정책 종합), [../../reports/system_vs_engine_vs_sim.md](../../reports/system_vs_engine_vs_sim.md)(fidelity-ladder).
+[../../reports/prefill_vs_decode_execution.md](../../../../reports/prefill_vs_decode_execution.md)(prefill vs decode 실행),
+[../../reports/policy_comparison.md](../../../../reports/policy_comparison.md)(정책 종합), [../../reports/system_vs_engine_vs_sim.md](../../../../reports/system_vs_engine_vs_sim.md)(fidelity-ladder).
 
 ---
 

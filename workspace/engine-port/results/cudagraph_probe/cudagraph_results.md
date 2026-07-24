@@ -1,6 +1,6 @@
 # cudagraph 환경 전환 재측정 — engine 기판을 사다리 위로
 
-작성: 2026-07-13. 동기: [system_vs_engine_vs_sim.md](../../reports/system_vs_engine_vs_sim.md) §5의 "가장 결정적
+작성: 2026-07-13. 동기: [system_vs_engine_vs_sim.md](../../../../reports/system_vs_engine_vs_sim.md) §5의 "가장 결정적
 후속" = **cudagraph 가능 환경서 prefill-side layer-aware가 goodput으로 전환되는지**. 기존 전 서빙 캠페인은
 `--disable-cuda-graph`로 측정됐고(=fidelity-ladder의 "engine=lower bound·비관 기판"), 그 (B)축을 실제로 걷어낸다.
 
@@ -86,7 +86,7 @@ Probe 3가 실증: lacoord decode ITL 78ms vs agn/SLO 20ms(=cudagraph 격차 그
 
 ## fidelity-ladder 열린 항목 판정 — RESOLVED (negative)
 
-[system_vs_engine_vs_sim.md](../../reports/system_vs_engine_vs_sim.md) §3 최상위 open("prefill-side layer-aware가
+[system_vs_engine_vs_sim.md](../../../../reports/system_vs_engine_vs_sim.md) §3 최상위 open("prefill-side layer-aware가
 cudagraph 환경서 goodput 전환되나") **닫힘 = NO**. 세부:
 - **(B) decode wall은 substrate CHOICE였다**(한계 아님): core 정책은 cudagraph로 벽 넘음 → engine을 사다리
   위로(Bullet 근접) 이동 성공. **fidelity-ladder 재분류: (B)를 "artifact"→"기존 측정의 flag 선택"으로 격하.**

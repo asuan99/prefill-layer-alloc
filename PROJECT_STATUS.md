@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-23. 이 문서가 프로젝트 전체의 유일한 현재 상태
 정본이다. 이전 문서와 충돌하면 이 문서와
-[`workspace/engine-port/reports/paper/`](workspace/engine-port/reports/paper/)의
+[`reports/paper/`](reports/paper)의
 판정을 우선한다.
 
 ## 논문 방향
@@ -55,7 +55,7 @@ logical arbiter를 추가했을 뿐 동일 `event_loop_pdmux`에서 실행됐다
 따라서 “4 improved / 0 worse / 3 mixed” 판정과 decode-heavy 성능 차이의
 dual-worker 인과 귀속을 철회한다. 모든 scenario는 방향성 관측, 통계·인과
 미확정이다. 전체 수치는
-[`R1_REANALYSIS.md`](workspace/engine-port/reports/paper/R1_REANALYSIS.md)에
+[`R1_REANALYSIS.md`](reports/paper/R1_REANALYSIS.md)에
 보존한다.
 
 ## 현재 구현
@@ -96,4 +96,4 @@ GPU correctness/performance 검증 전에는 production-ready로 분류하지 �
    effect가 3% 이상이어야 Claim E를 채택한다.
 
 실험·통계·fallback의 상세 정본은
-[`EXPERIMENT_ROADMAP.md`](workspace/engine-port/reports/paper/EXPERIMENT_ROADMAP.md)다.
+[`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.

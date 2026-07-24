@@ -194,8 +194,8 @@ prefill-layer-alloc/
 │   └── plot_results.py            # Figure 1–3 (논문용)
 ├── tests/
 │   └── test_green_ctx_controller.py
-├── a100_migration_report.md       # RTX→A100 이관 시 알려진 버그 및 체크리스트
-├── green_ctx_migration_report.md  # libsmctrl→Green Contexts 교체 설계 문서
+├── a100_migration_report.md       # RTX→A100 이관 시 알려진 버그 및 체크리스트 (2026-07-24부터 ../../deprecated/reports/quarantine_root/a100_migration_report.md)
+├── green_ctx_migration_report.md  # libsmctrl→Green Contexts 교체 설계 문서 (2026-07-24부터 ../../deprecated/reports/quarantine_root/green_ctx_migration_report.md)
 └── results/
     ├── stage1/  # ssm_scaling_*.csv, attn_scaling_*.csv, fig*.png
     ├── stage2/  # ctx_switch_overhead_*.json, layer_latency_*.csv, decision_matrix.*
@@ -218,7 +218,7 @@ Policy C의 `should_run_policy_c()` 조건: `overhead_ratio < 0.05` (전환 over
 
 ## 알려진 이슈 (A100 이관 후)
 
-자세한 내용은 [`a100_migration_report.md`](a100_migration_report.md) 참조.
+자세한 내용은 [`a100_migration_report.md`](../../deprecated/reports/quarantine_root/a100_migration_report.md) 참조.
 
 | ID | 파일 | 증상 | 조치 |
 |----|------|------|------|

@@ -2,7 +2,7 @@
 
 연구 결론과 다음 실험의 정본은
 [`../../PROJECT_STATUS.md`](../../PROJECT_STATUS.md)와
-[`reports/paper/`](reports/paper/)다. 이 문서는 환경 복구만 다룬다.
+[`reports/paper/`](../../reports/paper)다. 이 문서는 환경 복구만 다룬다.
 
 ## Runtime
 

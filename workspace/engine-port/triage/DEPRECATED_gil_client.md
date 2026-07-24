@@ -41,4 +41,4 @@ cited as serving evidence. Use the clean async re-measurements instead.
 
 layer-aware ≤ agnostic on every hybrid measured; on Zamba2 in3600/out32 clean async,
 layer-aware goodput@SLO is **0 from rate 2** (agnostic sustains ~2.07 req/s at rate 2).
-Canonical write-up: `workspace/engine-port/reports/sm_policy_report.html` (§04, §07).
+Canonical write-up: `reports/sm_policy_report.html` (§04, §07).
