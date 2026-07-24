@@ -1,6 +1,6 @@
 # Document status
 
-최종 갱신: 2026-07-23. 파일은 link 보존을 위해 이동·삭제하지 않는다.
+최종 갱신: 2026-07-24. 파일은 link 보존을 위해 이동·삭제하지 않는다.
 
 ## Canonical
 
@@ -8,6 +8,7 @@
 |---|---|
 | repository root `PROJECT_STATUS.md` | 전체 현재 상태의 유일 정본 |
 | `reports/paper/*` | claim, R1, experiment, code, 문서 상태 정본 |
+| `reports/paper/venue_positioning.md` | 투고 전략 positioning. **claim/evidence 문서 아님** — CONSENSUS/CLAIM_EVIDENCE_MATRIX 판정을 인용·요약만 하며 새 증거의 근거로 쓰지 않는다 |
 
 ## Historical evidence, 유지
 

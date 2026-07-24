@@ -98,6 +98,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `system_vs_engine_vs_sim.md` | fidelity ladder (sim/engine/full-system 편향 분리) |
 | `prefill_vs_decode_execution.md` | prefill/decode 실행 특성·knee 기초 |
 | `sm_policy_report.html` | layer-aware 원자료 기록(死 트랙, 이력용. §coordinated 개정 미완 = stale) |
+| `paper/venue_positioning.md` | ★**전략 문서(2026-07-24)** — 투고 positioning. claim/evidence 아님, CONSENSUS/matrix 판정을 인용·요약만 함. 새 증거 근거로 쓰지 말 것 |
 
 `deprecated_reports/` = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 
