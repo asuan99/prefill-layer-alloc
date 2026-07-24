@@ -1,6 +1,6 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-07-23. 이 문서가 프로젝트 전체의 유일한 현재 상태
+최종 갱신: 2026-07-24. 이 문서가 프로젝트 전체의 유일한 현재 상태
 정본이다. 이전 문서와 충돌하면 이 문서와
 [`reports/paper/`](reports/paper)의
 판정을 우선한다.
@@ -75,6 +75,30 @@ GPU correctness/performance 검증 전에는 production-ready로 분류하지 �
 현재 controller의 online ITL p95는 최근 decode-iteration wall-time window의
 추정치이며 request token-level p95는 load generator에서 별도로 계산한다.
 
+### 코드 리뷰 스코프 정정 (2026-07-24)
+
+읽기 전용 코드 리뷰([`reports/r2_decoupling_review_2026-07-24.md`](reports/r2_decoupling_review_2026-07-24.md),
+engine-porter, file:line 근거)가 확인한 구조: `PDMUX_TRUE_DUAL_WORKER=1`은
+**control-plane dual-worker**다 — 두 host issue thread, role별 task queue,
+immutable `ExecutionContext`, thread-local role(ContextVar)만 분리한다.
+**data/resource plane은 전면 공유**된다: running batch(`max_running_requests`)는
+단일 scheduler 속성이고 완료된 prefill을 같은 running batch로 in-place merge하며,
+KV/mamba pool도 단일 객체, SM 파티션도 `SharedGpuArbiter`가 하나의
+`stream_index`만 추적한다(92+24=116의 별도 device pool이 아니라 ≤108 단일
+coupled index). 확정된 결과 §3의 死因 얽힘이 사는 substrate(공유
+running-batch+KV)를 이 구현은 **구성상 깰 수 없다** — 관측될 win/loss는
+host-thread overlap(control-plane)에 귀속되며, 별도 device pool disaggregation과
+hybrid mamba/SSM state transfer가 필요한 headroom에는 도달 불가하다. 이 두
+경로는 코드에 **미구현**이다(state-transfer 경로 전무, mamba conv/ssm state
+migration 스캐폴딩조차 없음). 따라서 **Claim D는 "control-plane coupling
+감소"로 범위를 축소**한다 — "얽힘을 깬다"는 프레이밍으로 쓰지 않는다. R2는 GPU
+correctness gate를 통과한 이력이 없다(`results/r2_eval/` 디렉터리 미생성,
+`architecture=true_dual` telemetry 전무). 부가로 admission
+latch(`r2_admission_limited`)에 **known-latent 버그**가 코드 근거로 확인됐다:
+split batch가 None으로 배수되면 재평가 경로가 없어 latch가 True로 고착되어
+prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사용자 결정으로
+현재 수정하지 않고 보류**한다.
+
 ## 증거 수준
 
 | Claim | 상태 |
@@ -82,7 +106,7 @@ GPU correctness/performance 검증 전에는 production-ready로 분류하지 �
 | A. composition/context/load-dependent decode demand | 부분 지지 |
 | B. layer-level reconfiguration의 critical-path 손상 | 강한 지지, 현 substrate 한정 |
 | C. decode starvation의 TTFT entanglement | running-batch 경로 강함, KV 경로 부분 |
-| D. true dual-worker가 coupling 감소 | 미검증 |
+| D. true dual-worker가 coupling 감소 (★2026-07-24 코드 리뷰로 control-plane 범위로 축소, 위 "코드 리뷰 스코프 정정" 참조) | 미검증 |
 | E. Hybrid-informed policy가 generic/static보다 우수 | 미검증 |
 
 ## 다음 실험 gate
