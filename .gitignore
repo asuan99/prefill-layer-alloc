@@ -99,3 +99,13 @@ tmp/
 !results_v2/
 !results_v2/**
 !**/results_v2/**
+
+# campaign runtime scratch (driver scripts, sentinels, jobid maps) — regenerable, not versioned
+**/results/**/.campaign_drv.sh
+**/results/**/.probe_drv.sh
+**/results/**/.probe_ids_*.txt
+**/results/**/*_DONE
+**/results/**/STAGE1A_SELECTION.txt
+**/results/**/manifest.tsv
+**/results/**/manifest_1a.tsv
+**/results/**/manifest_1b.tsv
