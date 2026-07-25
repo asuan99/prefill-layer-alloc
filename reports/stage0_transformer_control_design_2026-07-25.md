@@ -28,17 +28,37 @@ Transformer arm이 **lever-weakness 귀속 실험이자 positive control**(계�
   모델에 동일하게 걸려 **상쇄** → decode SM-민감도가 모델에서 갈리면 그 차이는 mamba 비중
   귀속. libsmctrl 이식(비-vendor·세대귀속) 없이 vendor-substrate에서 Risk 2를 닫는 축.
 
-## 2. 설계 (2-arm decode-only 스윕)
+## 2. 설계 (3-arm coupled-운영점 스윕)
+
+★**3-arm 구성 스펙트럼(사용자, 2026-07-25)**: attention 비중 단조 3점으로 hybrid를 양 끝점에
+앵커링 → "lever 세기는 mamba/attn 비중이 결정"을 정량 증명.
 
 | 인자 | 값 |
 |---|---|
-| **모델 arm** | **(H) hybrid** = Zamba2-2.7B (attn 소수 + mamba 54층) · **(T) Transformer** = 순수 attention ~3B (§5-3 확정) |
-| ctx | {4k, 8k, 16k} (+ 옵션 256/1k = short-ctx null 확인, r0c와 연속) |
-| decode-SM (green-ctx 핀) | {16, 44, 108(full)} |
-| 운영점 | ★**cudagraph-ON**, **pdmux stream-group green-ctx capture 경로**(§5 정정 — r0c in-forward 핀 아님) |
-| 부하 | **decode-only** (prefill 경합 0 → knee가 깨끗). conc 32, output 32 tok |
-| 측정 | **wall ITL** (mean + p50/p95). ZBLT 내부 per-type 분해 아님(cudagraph가 step을 캡처하므로 wall만) |
-| 고정(상쇄) | 두 arm 동일 substrate·cudagraph·conc·output·**capture 메커니즘**. **모델·ctx·decode-SM만 변동** |
+| **모델 arm** | **(M) pure Mamba2-2.7B** = 음성 대조(SSM-only, O(1) decode, KV-scan 無 → 전 ctx 평탄 예측) · **(H) hybrid Zamba2-2.7B** = 타깃(소수 shared-attn + mamba) · **(T) pure Transformer Qwen2.5-3B** = 양성 대조(all-attn, KV-scan 지배 → 급민감). attention 비중 M(0%) < H(소수) < T(100%), **M·H 동일 2.7B 크기** |
+| ctx | {4k, 8k, 16k} (+ 옵션 256/1k = short-ctx null, r0c와 연속) |
+| decode-SM (green-ctx 핀) | ★**{16, 44, 92}** (전부 active-split 유지) **+ 108(no-split, decode-gets-all) = 라벨된 reference만** (딴 regime이라 curve에 섞지 않음) |
+| 운영점 | ★**cudagraph-ON**, **pdmux green-ctx capture 경로** + ★**(A) coupled**: `--keepalive-prefill`로 prefill 상주시켜 sub-108 파티션 활성화(§5-2). 이게 실제 PD-mux 서빙 조건 |
+| 부하 | decode ITL을 재되 **coupled**(동시 prefill 상주 — sub-108 핀이 그때만 활성). conc 32, output 32 tok. d108만 keepalive off(decode-gets-all 기준) |
+| 측정 | **wall ITL** (p50/p95/p99, raw 토큰 타임스탬프). + telemetry `target_decode_sms` 히스토그램으로 **엔진이 실제 쓴 decode_sm 매 arm 검증**(핀 발동 증명) |
+| 고정(상쇄) | 3 arm 동일 substrate·cudagraph·conc·output·capture·**keepalive 조건**. **모델·ctx·decode-SM만 변동** |
+
+★**coupled confound 처리(§5-2)**: keepalive-prefill이 decode ITL에 prefill의 HBM-대역 경합을
+섞고, 이는 d와 역상관(d16→prefill 92SM)이라 SM-민감도를 부풀릴 수 있음. **그러나 3 arm이 동일
+coupled 조건 → contention은 common-mode → M/H/T 대조에서 소거.** 결정 신호를 절대 knee가 아니라
+**arm 간 상대 민감도**로 삼으면 confound에도 해석 가능(**음성 M**·**양성 T** control이 앵커).
+
+★**핀 활성화·arm dtype·d92 (2026-07-25 확정, engine-porter file:line + 실측)**:
+- **coupled 핀 실증**: Mamba2 스모크 telemetry가 `target_decode_sms {16:90}`(108 아님) → keepalive→
+  `split_prefill_batch` truthy→`_r2_decide_idx` 발동→stream_idx 핀 체인 작동 확인(multiplexing_mixin.py:844-887).
+  본 스윕은 **arm별 `PIN_CHECK`**(telemetry 지배값 ≠ d면 FAIL=arm 무효)를 내장.
+- **3-arm 전부 bf16** (Mamba2도 bf16 스모크 PASS) → dtype confound 제거(원래 fp16 우려 소거).
+- **d92 boot 블로커 우회(config-only)**: `_build_r2_policy`가 decode_sm∈{16,24,34,44}만 허용→단일 d92
+  boot RuntimeError. **두-division `[16,92,0]+[64,44,0]`**로 guard 충족(decode_states={44}) + FIXED_DSM=92
+  매칭. 엔진 편집 없음(`pdmux_d92.yml`).
+- **선행 게이트 = 핀 mini-check**(`stage0_pin_minicheck.sbatch`): M-arm ctx4k에서 d44·d92 telemetry가
+  각각 {44}·{92}를 보여야 `PIN_MINICHECK_PASS` → 그 후에만 본 스윕 제출("전부 full-108 측정" 무효 차단).
+- **d108 reference caveat**: R2 off라 controller telemetry 없음(구조적 108) → curve 아닌 라벨된 reference.
 
 ★**하네스 정정(engine-porter, §5)**: r0c의 `PDMUX_FIXED_DECODE_SM_FILE` in-forward 핀은
 cudagraph replay가 forward를 우회해 **런타임에 死**(eager 전용). 운영점 측정은 **pdmux
@@ -56,25 +76,30 @@ green-ctx capture**(`--enable-pdmux` + cudagraph-ON + `manual_divisions`에 deco
 
 | ID | arm | 예측 | 반증되면 |
 |---|---|---|---|
-| **S0-H1** | H | short-ctx(256–4k): decode ITL이 SM에 **둔감**(mamba O(1) 지배) | mamba가 실은 SM-민감 = lever 모델 자체가 틀림 |
-| **S0-H2** | H | long-ctx(16k): decode ITL이 SM에 **민감해짐**(attn 비중↑) — *단 운영점서* | 평탄 유지 = 운영점서 decode 절대 non-binding → **long-ctx 트랙 전체 死, HE0 ctx-무관 강화** |
+| **S0-M** | M | **모든 ctx**에서 decode ITL이 SM에 **평탄**(SSM O(1), KV-scan 無 → SM 더 줘도 무이득) | pure-Mamba가 SM-민감 = mamba SM-비민감성(정본 §1-3) 근본 반증 = 아크 전제 붕괴 |
+| **S0-H1** | H | short-ctx(256–4k): decode ITL이 SM에 **둔감**(mamba O(1) 지배, M에 근접) | mamba가 실은 SM-민감 = lever 모델 자체가 틀림 |
+| **S0-H2** | H | long-ctx(16k): decode ITL이 SM에 **민감해짐**(attn 비중↑, T 쪽으로 이동) — *단 운영점서* | 평탄 유지 = 운영점서 decode 절대 non-binding → **long-ctx 트랙 전체 死, HE0 ctx-무관 강화** |
 | **S0-T1** | T | **모든 ctx**에서 decode ITL이 SM에 **급민감**(attn KV-scan이 decode 항상 지배) | Transformer도 평탄 = **계측기가 binding을 못 잡음(positive control 실패)** → 하네스 무효, Stage 0 재설계 |
-| **S0-C** | H vs T | short-ctx서 **T는 민감·H는 둔감**(대조 최대) → long-ctx로 갈수록 H가 T에 수렴 | H가 short-ctx서도 T만큼 민감 = mamba SM-비민감성 반증(정본 §1-3 위협) |
+| **S0-C** | M vs H vs T | attention 비중 단조로 SM-민감도 단조: **M 평탄 < H < T 급민감**. H가 short-ctx서 M에 붙고 long-ctx서 T로 이동 | 단조 안 깨지거나 H가 양 끝점 밖 = 구성-lever 모델 반증 |
 
-★**positive control 논리**: S0-T1이 성립해야(=Transformer는 민감) S0-H1의 "H 평탄"이
-**진짜 model property**임이 선다. T도 평탄이면 계측이 눈먼 것 → null 해석 불가. 이게
-Transformer arm이 대조이자 sanity인 이유.
+★**양방향 control 논리(3-arm의 힘)**: **T(양성)** = 계측기가 binding을 탐지할 수 있음 보증(급민감).
+**M(음성)** = 계측기가 정말 둔감할 때 평탄임 보증(SSM엔 KV-scan 無). **둘 사이 H의 위치·이동이
+곧 mamba 비중의 lever 효과.** 2-arm(T만)은 "H 평탄=진짜 null" 정도만 봤으나, M 추가로 **하한
+앵커가 실측**되어 H의 절대 위치를 해석 가능. M이 안 평탄하면 아크 전제 자체가 무너지므로 M은
+가장 강한 sanity.
 
-## 4. 게이트 / 결정 규칙
+## 4. 게이트 / 결정 규칙 (3-arm, coupled)
 
-- **S0-H2 = 운영점 binding (long-ctx서 H의 ITL(SM) 기울기가 유의미)** ∧ **S0-T1 성립(positive
-  control OK)** → **게이트 통과**: long-ctx서 lever 부활 실재, L−1(SLO 정의·용량) 진행. Risk 2
-  모델-귀속 다리 확보(H는 ctx로 T에 수렴 = mamba 비중이 lever 세기를 결정).
-- **S0-H(전 ctx 평탄) ∧ S0-T1 성립** → **게이트 실패이자 강한 결과**: 운영점서 hybrid decode는
-  ctx 무관 non-binding = **동적 lever 근본 부재**, long-ctx 공간/시간 트랙 死, **HE0/벡터1이
-  ctx-무관으로 강화**(정본 반영감). positive control이 살아있으니 이건 아티팩트 아님.
-- **S0-T도 평탄(positive control 실패)** → 계측/운영점 설정 문제(cudagraph 캡처가 SM 핀을
-  무효화하는 등, §5-1) → 하네스 정정 후 재측정. **null 해석 금지.**
+전제 sanity: **S0-T1 성립(T 급민감=양성 OK) ∧ S0-M 성립(M 평탄=음성 OK)**. 이게 깨지면 계측
+무효 → 하네스 정정 후 재측정, **null 해석 금지**.
+
+- **S0-H2 = 운영점 binding (long-ctx서 H가 T 쪽으로 이동, ITL(SM) 기울기 유의)** → **게이트 통과**:
+  long-ctx서 lever 부활 실재, L−1 진행. Risk 2 모델-귀속 확보(H가 M↔T 사이를 ctx로 이동 =
+  attn 비중이 lever 세기 결정, M·T 양 끝점이 앵커).
+- **S0-H(전 ctx 평탄, M에 붙어 있음) ∧ 계측 sanity OK** → **게이트 실패이자 강한 결과**: 운영점서
+  hybrid decode는 ctx 무관 non-binding(=사실상 M처럼 거동) = **동적 lever 근본 부재**, long-ctx
+  공간/시간 트랙 死, **HE0/벡터1이 ctx-무관 강화**. 양성·음성 control이 다 살아있으니 아티팩트 아님.
+- **S0-T 또는 S0-M sanity 실패** → 계측/운영점 설정 문제(§5) → 정정 후 재측정.
 
 ## 5. 기술 리스크 (engine-porter 확인 완료 — file:line 근거)
 
