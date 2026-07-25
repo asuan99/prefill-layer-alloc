@@ -1,0 +1,7 @@
+# Stage 0 decode-SM = 44 arm. Single green-ctx division. FixedPolicy(44) target 44.
+# sm_counts = [(108,0),(64,44),(0,108)]; R2 decode_states = {44}. PDMUX_R2_FIXED_DSM=44.
+sm_group_num: 3
+manual_divisions:
+  - [64, 44, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

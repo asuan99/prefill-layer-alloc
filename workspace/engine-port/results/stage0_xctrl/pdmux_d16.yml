@@ -1,0 +1,9 @@
+# Stage 0 decode-SM = 16 arm. Single green-ctx division so FixedPolicy(16) has an
+# unambiguous target (only one sub-108 partition exists). Matches proven R2 config
+# results/slo_sched/pdmux_d16.yml. sm_counts = [(108,0),(92,16),(0,108)]; R2
+# decode_states = {16} (multiplexing_mixin.py:130-138). PDMUX_R2_FIXED_DSM=16.
+sm_group_num: 3
+manual_divisions:
+  - [92, 16, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
