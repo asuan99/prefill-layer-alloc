@@ -1,0 +1,21 @@
+# Stage 0 decode-SM = 92 arm (decode-heavy active split, prefill gets 16 SM).
+#
+# WHY TWO DIVISIONS (engine constraint, code-verified -- NOT a free choice):
+#   _build_r2_policy (multiplexing_mixin.py:130-142) derives decode_states ONLY from
+#   sm_counts entries whose decode_sm is in {16,24,34,44}, and RAISES if that set is
+#   empty. A single division [16,92,0] -> sm_counts=[(108,0),(16,92),(0,108)] has NO
+#   allowed-state member -> RuntimeError at boot. The extra [64,44,0] division is a
+#   GUARD-SATISFIER: it makes decode_states={44} so the policy builds. FixedPolicy is
+#   still constructed with PDMUX_R2_FIXED_DSM=92 (line 144-145, no membership check),
+#   and _r2_decide_idx (line 321-333) matches target_decode_sms=92 to sm_counts idx 1
+#   = (16,92). The (64,44) partition is captured (extra green-ctx decode graph) but
+#   NEVER selected (adjust_stream_groups auto/bs-threshold path is dead under the R2
+#   event-loop; _r2_decide_idx matches decode_sm exactly, so no bs-threshold drift).
+#
+# sm_counts = [(108,0),(16,92),(64,44),(0,108)];  FixedPolicy(92) -> stream_idx 1.
+sm_group_num: 4
+manual_divisions:
+  - [16, 92, 0]
+  - [64, 44, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

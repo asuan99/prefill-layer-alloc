@@ -50,6 +50,7 @@ CTX="${CTX:-4096}"
 CTXCAP=$(( CTX + 512 ))
 CONC="${CONC:-16}"
 OUTTOK="${OUTTOK:-16}"
+DTYPE="${DTYPE:-bfloat16}"
 CFG="$HERE/pdmux_smoke.yml"              # captures d16 AND d44 green-ctx graphs
 export SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1
 
@@ -65,10 +66,10 @@ export PDMUX_WORKLOAD_ID="smoke_C${CTX}"
 export PDMUX_R2_POLICY=fixed
 export PDMUX_R2_FIXED_DSM=16
 
-echo "MODEL=$MODEL CTX=$CTX cfg=$CFG port=$PORT torch=$(python -c 'import torch;print(torch.__version__)')" | tee -a "$RESULT"
+echo "MODEL=$MODEL CTX=$CTX DTYPE=$DTYPE cfg=$CFG port=$PORT torch=$(python -c 'import torch;print(torch.__version__)')" | tee -a "$RESULT"
 
 # --- boot pdmux + cudagraph ON (operating point) ---
-python -m sglang.launch_server --model-path "$MODEL" --trust-remote-code --dtype bfloat16 \
+python -m sglang.launch_server --model-path "$MODEL" --trust-remote-code --dtype "$DTYPE" \
   --attention-backend triton \
   --enable-pdmux --pdmux-config-path "$CFG" \
   --disable-piecewise-cuda-graph \
