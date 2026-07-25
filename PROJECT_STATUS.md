@@ -1,6 +1,6 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-07-24. 이 문서가 프로젝트 전체의 유일한 현재 상태
+최종 갱신: 2026-07-25 (HE0-reopen 벡터1 ill-posed 판정 추가). 이 문서가 프로젝트 전체의 유일한 현재 상태
 정본이다. 이전 문서와 충돌하면 이 문서와
 [`reports/paper/`](reports/paper)의
 판정을 우선한다.
@@ -35,6 +35,22 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
 
 KV congestion은 plausible mechanism이지만 기존 artifact에 구조화된 KV occupancy가
 없어 아직 독립적인 causal claim이 아니다.
+
+### HE0-reopen 벡터1 (disjoint conflict-regime escape hatch) — ill-posed, 미종결
+
+2026-07-24 실행·2026-07-25 판정. `reports/CONSENSUS.md` §5-8(c)("충돌 regime
+워크로드" — 동적이 이길 disjoint-feasibility escape hatch가 있는가)를 n≥4로 재검증하는
+G2.0 short-ctx 스윕(Zamba2-2.7B). 결과는 **ILL-POSED at rA5**: g2_0_full 1차 스윕이
+찾은 razor-thin real disjoint(feasible-A={d16,d44} ∩ feasible-B={d54}=∅)는 g2_0_hard
+hardening 스윕에서 재현되지 않았다 — 동일 byte-identical Phase-A 워크로드에서 d44/d54
+견고성 순위가 sweep 간 완전 반전(TTFT 3s-cliff bimodality 재확인, n=10 pool 시 둘 다
+~0.86–0.90로 통계적 구분 불가), "disjoint 소멸" 관측은 별도의 ITL-p95
+percentile-window 아티팩트였다. **escape hatch의 workload 근거는 미성립·미종결**이며
+`de-cliff` 재스윗이 pending이다(rA 추가 인하·output-길이 불변 ITL 지표·≥2-SM-step
+간극·n≥6 paired). Claim D/E와 §1-20(spatial coupling-tax, disaggregation +16%
+headroom)에는 영향 없음 — 별도 축(시간적 disjoint-feasibility)이다. 상세 verdict:
+[`workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md`](workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md),
+[`workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md).
 
 ## 철회된 가설
 
@@ -118,6 +134,10 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    1% 이하여야 한다.
 4. target applicability 영역에서 proposed가 B1/B5보다 paired CI 기준 유의하고
    effect가 3% 이상이어야 Claim E를 채택한다.
+5. HE0-reopen 벡터1 de-cliff 재스윗: Phase-A rA를 p90≪3s 확보되도록 추가 인하 +
+   output-길이 불변 ITL 지표 + ≥2-SM-step 간극 + n≥6 paired 전까지는 disjoint
+   conflict-regime escape hatch(CONSENSUS §5-8(c))에 대해 어떤 방향의 결론도 채택하지
+   않는다.
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.

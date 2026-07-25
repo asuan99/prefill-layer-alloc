@@ -1,6 +1,20 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-07-23
+최종 갱신: 2026-07-25
+
+## HE0-reopen 벡터1 (disjoint conflict-regime escape hatch) — 별도 트랙, stub
+
+이 항목은 P0–P6 Claim D/E gate 배선 밖의 별도 트랙이다(`reports/CONSENSUS.md`
+§5-8(c) 추적, `PROJECT_STATUS.md` "HE0-reopen 벡터1" 참조). 2026-07-24 G2.0
+short-ctx 스윕(Zamba2-2.7B) 결과: **ILL-POSED at rA5** — 1차 스윕(g2_0_full)이 찾은
+razor-thin disjoint(feasible-A ∩ feasible-B = ∅)가 hardening 재스윕(g2_0_hard)에서
+재현되지 않았고(TTFT 3s-cliff bimodality), "disjoint 소멸" 관측은 별도 ITL-p95
+percentile-window 아티팩트로 판명됐다. escape hatch의 workload 근거는 **미성립·
+미종결**. 후속 de-cliff 재스윗(rA 추가 인하 + output-길이 불변 ITL 지표 +
+≥2-SM-step 간극 + n≥6 paired) 전까지 이 트랙에 대한 결론은 채택하지 않는다. 이
+트랙의 결과는 Claim D/E나 §1-20(spatial coupling-tax)에 영향을 주지 않는다. 상세
+verdict: `workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md`,
+`workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md`.
 
 ## 공통 방법
 
