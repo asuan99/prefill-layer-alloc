@@ -1,6 +1,6 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-07-25 (HE0-reopen 벡터1 ill-posed 판정 추가). 이 문서가 프로젝트 전체의 유일한 현재 상태
+최종 갱신: 2026-07-25 (벡터1[G2.0 short-ctx disjoint conflict-regime]: CONFIRMED closure, scoped — narrow-rA 확증 sweep g2_0_raconf 완료). 이 문서가 프로젝트 전체의 유일한 현재 상태
 정본이다. 이전 문서와 충돌하면 이 문서와
 [`reports/paper/`](reports/paper)의
 판정을 우선한다.
@@ -36,21 +36,80 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
 KV congestion은 plausible mechanism이지만 기존 artifact에 구조화된 KV occupancy가
 없어 아직 독립적인 causal claim이 아니다.
 
-### HE0-reopen 벡터1 (disjoint conflict-regime escape hatch) — ill-posed, 미종결
+### 벡터1 (G2.0 short-ctx disjoint conflict-regime escape hatch) — CONFIRMED closure (scoped)
 
-2026-07-24 실행·2026-07-25 판정. `reports/CONSENSUS.md` §5-8(c)("충돌 regime
-워크로드" — 동적이 이길 disjoint-feasibility escape hatch가 있는가)를 n≥4로 재검증하는
-G2.0 short-ctx 스윕(Zamba2-2.7B). 결과는 **ILL-POSED at rA5**: g2_0_full 1차 스윕이
-찾은 razor-thin real disjoint(feasible-A={d16,d44} ∩ feasible-B={d54}=∅)는 g2_0_hard
-hardening 스윕에서 재현되지 않았다 — 동일 byte-identical Phase-A 워크로드에서 d44/d54
-견고성 순위가 sweep 간 완전 반전(TTFT 3s-cliff bimodality 재확인, n=10 pool 시 둘 다
-~0.86–0.90로 통계적 구분 불가), "disjoint 소멸" 관측은 별도의 ITL-p95
-percentile-window 아티팩트였다. **escape hatch의 workload 근거는 미성립·미종결**이며
-`de-cliff` 재스윗이 pending이다(rA 추가 인하·output-길이 불변 ITL 지표·≥2-SM-step
-간극·n≥6 paired). Claim D/E와 §1-20(spatial coupling-tax, disaggregation +16%
-headroom)에는 영향 없음 — 별도 축(시간적 disjoint-feasibility)이다. 상세 verdict:
+6. short-ctx band(아래 scope)에는 동적 제어가 이길 수 있는 disjoint-feasibility
+   conflict regime(어떤 static도 두 phase를 동시에 못 커버하는 워크로드)이 **없다**.
+   `reports/CONSENSUS.md` §5-8(c) 미결 갈래 (c)를 최종적으로 닫는다.
+
+실험 계열(2026-07-24 실행 시작·2026-07-25 최종 판정): `reports/CONSENSUS.md`
+§5-8(c)("충돌 regime 워크로드" — 동적이 이길 disjoint-feasibility escape hatch가
+있는가)를 n≥4로 재검증하는 G2.0 short-ctx 스윕(Zamba2-2.7B). 1차 라운드
+(g2_0_full/g2_0_hard)는 **ILL-POSED at rA5**로 판정됐다: g2_0_full이 찾은
+razor-thin real disjoint(feasible-A={d16,d44} ∩ feasible-B={d54}=∅)는 g2_0_hard
+hardening 스윕에서 재현되지 않았고(TTFT 3s-cliff bimodality, n=10 pool 시 d44/d54
+둘 다 ~0.86–0.90로 통계적 구분 불가), "disjoint 소멸" 관측은 별도의 ITL-p95
+percentile-window 아티팩트였다.
+
+**de-cliff stage-1(jobs 863880–863948) 완료**: `rA{2,3,3.5,4}×{d16,d44,d54}`를
+스캔해 `rA=2`만 clean off-cliff임을 확인(`rA≥3`은 전부 여전히 bimodal)하고
+`rA=2`를 n=6으로 확증 — 유일한 clean off-cliff 지점에서 static `d54`가 양
+phase를 동시 커버, 단 **PLAUSIBLE closure, CONFIRMED 아님**(claims-auditor 반증
+3항목: off-cliff에서도 살아있는 split→TTFT gradient·d54 배제 onset이 미측정
+전이대·"binding-A⟺on-cliff" 미증명).
+
+**narrow-rA 확증 sweep 완료 — CONFIRMED로 승격**: `g2_0_rasweep`(120 jobs,
+`rA{2.25,2.5,2.75,3.0,3.25}×{d16,d34,d44,d54}×n6`)이 off-cliff sub-band
+(rate≤2.75)에서 disjoint 부재를 재확인해 전이대를 rate 3.0–3.5로 좁혔고,
+그 창을 겨눈 **pre-registered 24-job 확증 열 `g2_0_raconf`**(rate{3.5,3.75}×
+{d44,d54}×n=6, 결정규칙: 어떤 rate서든 d54 견고히 <0.7(p90>3s, unimodal) ∧
+d44/d16 동시에 견고히 ≥0.95·off-cliff(p90<2s)면 disjoint 실재→REOPEN, 아니면
+d54가 양 phase 동시 커버하는 companion collapse면 CONFIRMED)가 **companion
+collapse로 판정**:
+
+| rate | split | frac_good mean±SD (n=6) | 비고 |
+|---|---|---|---|
+| 3.5 | d44 | 0.953 ± 0.035 | |
+| 3.5 | d54 | 0.948 ± 0.035 | failTTFT=0/6 (Phase-A도 d44와 통계적 동률) |
+| 3.75 | d44 | 0.932 ± 0.042 | |
+| 3.75 | d54 | **0.948 ± 0.062** | **d54가 d44보다 높음** |
+
+REOPEN 전제 둘 다 붕괴(d54는 어느 rate서도 <0.7이 아니고, d44도 어느 rate서도
+견고히 ≥0.95가 아님: rep 하나가 warm-up성 TTFT-blowup으로 0.844–0.875까지
+떨어짐 — 이 blowup은 **split-대칭적**이라 disjoint를 만들지 않음). d54는 Phase B의
+유일 feasible split(d44 ITL-p95 50.7ms로 50ms SLO 초과, `frac_good` 0.188;
+d54는 44.1ms, `frac_good` 1.000, SD=0)이면서 Phase A도 d44와 대등하게 커버 →
+단일 split(d54)이 양 phase를 시간축에서 커버 → **disjoint 없음, 최종 확정**.
+상세 per-rep 표·기전·caveat:
+[`workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md).
+
+★**필수 caveat(overclaim 방지)**: **magnitude는 ill-posed, 순위는 견고** —
+Phase-A frac_good≈0.95는 웜업성 TTFT/ITL tail-event(metric cliff)가 결정해
+run-length 의존이나, "d54≈d44·d54 미선-배제"라는 **순위**는 견고하다. Phase-B
+d44 0.188은 50ms 경계 바로 위라 magnitude는 fragile하나 방향(d44는 decode 못
+커버)은 견고하다.
+
+**scope 한정(필수)**: {Zamba2-2.7B, ctx4096, Phase A in2048/o32, Phase B
+in2048/o512@rB4, triton attn+mamba, disable-radix-cache, cudagraph-ON, A100
+108-SM green-context pdmux, SLO=TTFT 3s ∧ per-req ITL-p95 50ms, inter-phase
+drain된 순차 2-phase, rate_A≤3.75} — **"hybrid엔 disjoint 없음"으로 일반화
+금지**. **drain caveat**: closure는 얽힘 억제(drain) 조건 관측 = 필요조건
+bound이지 hot varying-trace(Claim C 얽힘) 실증 아님. Claim D/E와 §1-20(spatial
+coupling-tax, 92+24=116>108, disaggregation +16% headroom)에는 영향 없음 —
+시간적 disjoint(단일 static이 시간축에서 양 phase를 커버)와 공간적
+coupling-tax는 별개 축이며 "단일 static으로 충분 ⟹ coupling tax 없음"으로
+새지 않는다.
+
+**남은 방향(벡터1 종결이 열어두는 것)**: (i) **long-context**(decode floor가
+ctx 상승에 따라 올라가므로 — CONSENSUS §1-5 — 충돌이 발생할 수 있는 영역,
+미측정), (ii) **§1-20 spatial decoupling**(별도 device pool disaggregation,
++16% headroom). 두 방향 다 아직 실행되지 않았다.
+
+상세 verdict:
 [`workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md`](workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md),
-[`workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md).
+[`workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md),
+[`workspace/engine-port/results/g2_0_decliff/decliff_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_decliff/decliff_verdict_2026-07-25.md),
+[`workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md).
 
 ## 철회된 가설
 
@@ -134,10 +193,14 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    1% 이하여야 한다.
 4. target applicability 영역에서 proposed가 B1/B5보다 paired CI 기준 유의하고
    effect가 3% 이상이어야 Claim E를 채택한다.
-5. HE0-reopen 벡터1 de-cliff 재스윗: Phase-A rA를 p90≪3s 확보되도록 추가 인하 +
-   output-길이 불변 ITL 지표 + ≥2-SM-step 간극 + n≥6 paired 전까지는 disjoint
-   conflict-regime escape hatch(CONSENSUS §5-8(c))에 대해 어떤 방향의 결론도 채택하지
-   않는다.
+5. 벡터1(disjoint conflict-regime escape hatch, CONSENSUS §5-8(c)): **CONFIRMED
+   closure (scoped, 2026-07-25)** — g2_0_full → g2_0_hard → g2_0_decliff →
+   g2_0_rasweep → g2_0_raconf(pre-registered 24-job 확증 열, 결정 규칙 충족)로
+   short-ctx band(scope는 위 "벡터1" 절 참조)에 견고한 disjoint 없음을 최종
+   확정. 더 이상의 게이트 없음(트랙 종결) — 남은 방향은 (i) long-context
+   재검증(decode floor 상승 영역, 미실행), (ii) §1-20 spatial coupling-tax/
+   decoupled substrate(별도 트랙, 아래 항목 2 참조). 어느 쪽도 아직 실험
+   설계·게이트가 없다.
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
