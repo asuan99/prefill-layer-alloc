@@ -1,6 +1,8 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-07-25
+최종 갱신: 2026-07-25(벡터2 재프레이밍 — cross-substrate serving 이식
+[XS-series]을 "불필요·부적합"으로 하향 후 새 게이트 "Transformer-control on
+green-context"[TC-series]로 교체, positioning 판정)
 
 ## 벡터1 (disjoint conflict-regime escape hatch) — 별도 트랙, CONFIRMED closure (scoped, 종결)
 
@@ -52,6 +54,63 @@ decoupling(별도 device pool disaggregation, +16% headroom). 상세 verdict:
 `workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md`,
 `workspace/engine-port/results/g2_0_decliff/decliff_verdict_2026-07-25.md`,
 `workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md`.
+
+## 벡터2 (substrate-robustness 식별) — Transformer-control on green-context (2026-07-25)
+
+`reports/paper/venue_positioning.md` §0.1(2026-07-25, venue-strategist
+prior-art 조사)의 판정: 이 논문의 central negative는 substrate-robustness 축으로
+두 갈래다 — **(A) green-context 종속**(layer-aware 死·cudagraph 비양립, Claim
+B) vs **(B) mechanism-independent 후보**(lever-weakness=mamba decode
+SM-둔감·entanglement·decode 비대칭, Claim A/C).
+
+⚠️★**2026-07-25 하향·재프레이밍(사용자 지적) — cross-substrate serving 이식
+(XS0/XS1/XS2)은 불필요·부적합.** 이 절의 초판은 두 번째 substrate(libsmctrl/MPS)
+serving 이식을 "make-or-break 필수 게이트"로 걸었으나 **철회**한다. 이식은
+불필요할 뿐 아니라 부적합하다:
+
+- **MPS**: SM 파티션이 프로세스별·정적 → 런타임 동적 PD-mux 불가 +
+  단일-프로세스 `event_loop_pdmux`의 멀티-프로세스 전면 재구조화 비용이 실익
+  초과.
+- **libsmctrl**: NVIDIA 비제공 리버스-엔지니어링(per-arch SM 마스킹) →
+  하드웨어 세대·드라이버 귀속(driver-580 BLOCKED가 증거). 배포 근거에 비-vendor·
+  비-이식 의존성을 들이는 셈.
+- ★**green-context = 배포 primitive 방어**: NVIDIA 공식 fine-grained SM
+  primitive는 green-context 하나(CUDA Green Contexts 12.4+)뿐. ⇒ "libsmctrl
+  쓰면 되잖아"의 답 = "green-context가 배포 가능한 유일 vendor primitive다.
+  DuetServe/Bullet의 동적-승은 libsmctrl(세대 귀속·비-vendor) 위에서만 성립 →
+  libsmctrl에서 hybrid 동적이 이겨도 이식 불가한 research curiosity이지 배포
+  가이드라인의 반례가 아니다." 따라서 (A) layer-aware 死는 green-context-bound로
+  정직히 스코프하고, 그 스코프를 libsmctrl 비-이식성이 오히려 받쳐준다.
+
+따라서 XS0/XS1/XS2(별도 substrate serving 이식)는 **실행하지 않는다.** 대신
+Risk 2(모델 vs substrate 귀속)를 **기존 green-context 위에서** 닫는 값싼
+식별 실험 3수로 교체한다:
+
+- ★**신규 게이트 = Transformer-control on green-context**: 순수 Transformer
+  (예: Qwen/Llama)를 기존 pdmux(green-context)에 통과시켜 hybrid와 **같은
+  green-context + 같은 conjunctive-SLO**에서 대조한다. drain 비용은 두 모델에
+  동일하게 작용 → **상쇄**. 이 벡터의 ID prefix `TC`(Transformer-Control)는
+  P4 baseline ID `B0`–`B8`와 별개다.
+  - **TC0**: 순수 Transformer 모델(Qwen/Llama류)을 기존 green-context pdmux에
+    배선(모델 로딩·correctness gate).
+  - **TC1**: hybrid와 동일 워크로드/SLO/split-grid에서 reactive dynamic vs
+    decode-heavy static을 측정.
+  - **결정 규칙(사전 등록)**: **Transformer 동적-승 ∧ hybrid 동적-패 → flip은
+    substrate·메트릭 고정 하에 모델(hybrid) 귀속 확정**(Risk 2 닫힘, 진짜 식별).
+    **둘 다 동적-패 → negative는 hybrid가 아니라 메트릭(conjunctive-SLO
+    goodput)+배포-primitive(green-context) 탓으로 재프레이밍**(여전히 유효하나
+    다른 기여).
+- **보강 (실행 불필요·기존 데이터)**: (2) **lever-weakness = roofline
+  microbenchmark**(r0c SM-민감도 데이터 보유) — mamba decode SM-둔감은
+  연산강도 성질이라 primitive-robust; "libsmctrl이 고친다"는 반론은
+  drain(=(A))에만 닿고 lever(Claim A)엔 안 닿음. (3) **헤드라인 HE0는 이미
+  entanglement 귀속으로 측정 완료**(`switch_count`≈0·컨트롤러 0.014% 직접 계측
+  → 동적-패가 overhead/drain 탓 아님) → drain-아티팩트 반론은 (A)에만 닿고
+  헤드라인 무관.
+
+벡터1(disjoint conflict-regime, 시간축 disjoint-feasibility)과는 무관한 별개
+트랙. 벡터2는 이제 파티셔닝 primitive 불변성을 **cross-substrate 이식이 아니라
+green-context 위 모델-대조(+기존 microbench/telemetry)**로 식별한다.
 
 ## 공통 방법
 
@@ -142,6 +201,16 @@ GPU idle gap, stream/event overlap, graph replay, SM active, occupancy, Tensor C
 DRAM/L2를 수집한다.
 
 ### P6 — Workload
+
+★**long-context(W5 등)의 논문적 역할(2026-07-25 positioning 판정,
+`venue_positioning.md` §0.1(4))**: `longcontext_trace_plan.md`의 long-ctx
+트랙(Stage 0/L−2 → L3/L3s)은 negative→가이드라인 전환과 "언제 유효한가" 경계
+획정, 그리고 granularity 비용의 모델-composition 독립성(ctx-불변 구조적
+성질)을 보이는 데 유효하다. **substrate 귀속(Risk 2)은 long-ctx가 아니라 위
+벡터2(green-context 위 Transformer-control 대조 + roofline microbench + 기측정
+entanglement 귀속)가 닫는다** — 별도 substrate serving 이식은 불필요·부적합으로
+철회됐으므로, long-ctx가 "이식의 대체재"일 필요도 없다. 두 트랙은 서로 다른
+질문(long-ctx=ctx-regime 경계, 벡터2=primitive/모델 귀속)을 담당한다.
 
 | ID | 고정 workload |
 |---|---|

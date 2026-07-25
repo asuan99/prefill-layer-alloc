@@ -1,6 +1,6 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-07-25 (벡터1[G2.0 short-ctx disjoint conflict-regime]: CONFIRMED closure, scoped — narrow-rA 확증 sweep g2_0_raconf 완료). 이 문서가 프로젝트 전체의 유일한 현재 상태
+최종 갱신: 2026-07-25 (벡터1[G2.0 short-ctx disjoint conflict-regime]: CONFIRMED closure, scoped — narrow-rA 확증 sweep g2_0_raconf 완료; 같은 날 논문 positioning 판정[multiplexing 신규성 축 + Transformer-control 게이트, cross-substrate 이식 프레이밍 철회] "다음 실험 gate" #6 추가). 이 문서가 프로젝트 전체의 유일한 현재 상태
 정본이다. 이전 문서와 충돌하면 이 문서와
 [`reports/paper/`](reports/paper)의
 판정을 우선한다.
@@ -201,6 +201,24 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    재검증(decode floor 상승 영역, 미실행), (ii) §1-20 spatial coupling-tax/
    decoupled substrate(별도 트랙, 아래 항목 2 참조). 어느 쪽도 아직 실험
    설계·게이트가 없다.
+6. **논문 positioning(2026-07-25, venue-strategist prior-art 조사,
+   [`reports/paper/venue_positioning.md`](reports/paper/venue_positioning.md)
+   §0.1)**: 신규성 축은 disaggregation이 아니라 **co-located multiplexing**
+   (DuetServe/MuxWise/SGLang-pdmux/Nexus/Bullet 대조) — 부분적 신규성 실증,
+   방어 자산은 DuetServe(libsmctrl·Transformer서 동적 승)와의 정량적 상반.
+   negative를 (A) green-context 종속(Claim B, 헤드라인 금지) / (B)
+   mechanism-independent 후보(Claim A/C, lever-weakness·entanglement)로 분리.
+   ★**green-context = 배포 가능한 유일 vendor primitive(CUDA 12.4+)** →
+   "libsmctrl 쓰면 되잖아"는 배포 불가 research curiosity로 반박(약점 아님).
+   ⚠️**초판의 "cross-substrate serving 이식 make-or-break" 프레이밍은 철회**
+   (MPS=정적·프로세스별, libsmctrl=비-vendor·세대귀속 → 이식 불필요·부적합).
+   대신 (B)를 **기존 green-context 위에서** 닫는 vendor-substrate 3수: 새 게이트
+   = **Transformer-control 대조**(같은 green-context+SLO, drain 상쇄 → 동적
+   flip이 모델서 갈리면 hybrid 귀속 식별) + roofline lever-weakness microbench
+   (기존 r0c) + 기측정 entanglement 귀속(switch≈0). long-ctx(위 5번 (i))는
+   ctx-regime 경계용(별도 질문). 상세는
+   [`reports/paper/EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)
+   "벡터2"(TC-series) 절.
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.

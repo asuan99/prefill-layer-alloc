@@ -1,6 +1,7 @@
 # Document status
 
-최종 갱신: 2026-07-24. ★**정책 변경(2026-07-24, 사용자 승인)**: 기존 "파일은 link
+최종 갱신: 2026-07-25(아래 "Historical evidence" 표에 `spatial_decoupling_
+design_review_2026-07-25.md` 부분-supersede 항목 추가). ★**정책 변경(2026-07-24, 사용자 승인)**: 기존 "파일은 link
 보존을 위해 이동·삭제하지 않는다" 방침을 top-level 축소를 위해 **override**했다.
 아래 표에 나열된 문서 중 root `reports/*`(전체) 와 두 `deprecated_reports/`는
 `git mv`로 통합 `deprecated/`(신설) 아래로 **물리 이동**했다(내용·claim 판정은
@@ -24,6 +25,7 @@
 | `per_layer_type_postmortem.md` | layer-granular negative mechanism | context floor 절대값은 one-model/no-CG |
 | `research_arc.md` | 연구 변화 이력 | current hypothesis 정본 아님 |
 | `dual_worker_design.md` | R1 observer 설계 이력 | R2 target과 분리해서 읽어야 함 |
+| `../spatial_decoupling_design_review_2026-07-25.md` | §2(engine-porter, SGLang v0.5.10 disaggregation 기판 file:line 실현가능성)·§3·§4·§5(long-ctx 게이트 연결점)는 유효 | §1(신규성, disaggregation 축 평가)은 축 오조준으로 **부분 supersede** — `venue_positioning.md` §0.1(multiplexing 축 정정)이 대체. 문서 상단에 HISTORICAL 노트 삽입됨 |
 
 ## Superseded/stale
 

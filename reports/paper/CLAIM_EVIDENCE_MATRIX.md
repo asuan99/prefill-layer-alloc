@@ -1,6 +1,7 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-07-25
+최종 갱신: 2026-07-25(positioning 판정 추가 — 아래 "주장 제한" 마지막 항목,
+증거 등급 변경 없음)
 
 | Claim | 현재 판정 | Existing evidence | Missing evidence | Required experiment |
 |---|---|---|---|---|
@@ -14,6 +15,9 @@
 ## 주장 제한
 
 - Claim B는 A100/SGLang green-context implementation에 한정한다.
+  ★**positioning 판정(2026-07-25, `venue_positioning.md` §0.1)**: 이것은 논문의
+  negative 중 "(A) green-context 종속" 축이다 — DuetServe(libsmctrl)가 정면으로
+  우회한 비용이므로 substrate-invariant로 헤드라인화하지 말 것.
 - Claim C는 KV telemetry 전까지 “shared running-batch/capacity congestion”으로
   표현하고 KV causal chain을 확정하지 않는다.
 - Claim D는 true dual fixed가 architecture gate를 통과한 뒤에만 사용한다.
@@ -51,3 +55,28 @@
   headroom)과는 별도 축 — "단일 static으로 시간축 커버 ⟹ coupling tax 없음"으로
   새지 않는다. 상세
   [`../../workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md`](../../workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md).
+- ★**positioning 판정(2026-07-25, venue-strategist prior-art 조사 + doc-steward
+  기록, [`venue_positioning.md`](venue_positioning.md) §0.1)**: 논문 negative를
+  substrate-robustness 축으로 (A)/(B) 두 갈래로 나눠 읽는다 — **(A) green-context
+  종속**(Claim B: layer-aware 死, cudagraph 비양립, TPOT 42→124ms) vs **(B)
+  mechanism-independent 후보**(Claim A의 lever-weakness=mamba decode SM-둔감 +
+  Claim C의 entanglement/decode 비대칭). (A)는 DuetServe(libsmctrl +
+  interruption-free engine으로 이 비용을 우회하고 실제로 static을 이긴 선행)가
+  정면으로 우회한 바로 그 비용이므로 **substrate-invariant negative로
+  헤드라인화하지 않는다**(Claim B의 기존 "A100/SGLang green-context 한정" 스코프를
+  그대로 유지). ★**green-context vendor-primitive 방어**: NVIDIA 공식
+  fine-grained SM primitive는 green-context(CUDA 12.4+) 하나뿐 — libsmctrl은
+  비-vendor·arch-bound, MPS는 정적 → "libsmctrl 쓰면 되잖아"는 배포 불가한
+  research curiosity이지 배포 가이드라인의 반례가 아니다.
+  ⚠️**2026-07-25 정정(초판 철회)**: (B)의 substrate-robustness를 닫는 acceptance
+  실험을 초판은 "libsmctrl/MPS로의 cross-substrate serving 이식"으로 걸었으나,
+  그 이식은 **불필요·부적합**(MPS=정적·프로세스별, libsmctrl=비-vendor·세대귀속)
+  이므로 **철회**한다. 대신 **기존 green-context 위에서**: (1) **Transformer-
+  control 대조**(순수 Transformer를 같은 green-context+같은 conjunctive-SLO에
+  통과 → drain 상쇄 → 동적-승/패가 모델에서 갈리면 hybrid 귀속 식별) + (2)
+  **roofline lever-weakness microbench**(r0c SM-민감도, primitive-robust) +
+  (3) **기측정 entanglement 귀속**(`switch_count`≈0·컨트롤러 0.014% → 동적-패가
+  drain 탓 아님, 헤드라인 HE0 무관)으로 닫는다(`EXPERIMENT_ROADMAP.md` 벡터2/
+  TC-series). **이 판정은 등급 변경이 아니다** — Claim A는 여전히 부분 지지,
+  Claim B는 여전히 강한 지지(현 substrate 한정), Claim C는 여전히 running-batch
+  경로 강함/KV 경로 부분이다.

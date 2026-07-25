@@ -1,7 +1,18 @@
 # 투고 positioning 정리 (venue-strategist 산출물, doc-steward 기록)
 
-최종 갱신: 2026-07-24. 작성 주체: `venue-strategist` subagent, 기록 주체:
-`doc-steward` subagent.
+최종 갱신: 2026-07-25(신규성 축 정정: disaggregation→multiplexing 재조준 +
+negative 2갈래 분해 + ★cross-substrate serving 이식 "불필요·부적합"으로
+재프레이밍[초판의 make-or-break 프레이밍 철회] + green-context vendor-primitive
+방어 + Risk 2를 닫는 vendor-substrate 3수, §0.1). 작성 주체: `venue-strategist`
+subagent, 기록 주체: `doc-steward` subagent.
+
+> **2026-07-25 갱신 성격**: 이 갱신은 **새 서빙 측정이 아니라 prior-art 조사 +
+> positioning reasoning**이다. 확정 서빙 결과(`PROJECT_STATUS.md` "확정된 결과"
+> §1–5, Claim A–F 등급)는 하나도 바뀌지 않는다. §0.1은 (i) `venue_positioning.md`
+> 자신의 §1/§5(2026-07-24, disaggregation 축 신규성 평가)와 (ii)
+> `../spatial_decoupling_design_review_2026-07-25.md`의 신규성 절을
+> **supersede**한다(축이 disaggregation→multiplexing으로 잘못 조준됐던 것을
+> 정정). 아래 §0.1을 §1/§5보다 먼저 읽는다.
 
 > **이 문서는 투고 전략(positioning) 정리이며 claim/evidence 문서가 아니다.**
 > 여기 나오는 "확정/부분 지지/미검증/철회" 등급은 전부
@@ -37,6 +48,161 @@
 | C4 | decode floor의 composition/context/load 의존 | Claim A — 부분 지지 |
 | H-Arch | true dual-worker가 coupling 감소 | Claim D — 미검증 |
 | H-Policy | Hybrid-informed policy가 generic/static보다 우수 | Claim E — 미검증 |
+
+---
+
+## 0.1 ★2026-07-25 정정 — 신규성 축(disaggregation→multiplexing) + negative 2갈래 + green-context vendor-primitive 방어 + 벡터2 게이트(cross-substrate 이식 철회→Transformer-control)
+
+**계기(사용자 지적)**: `../spatial_decoupling_design_review_2026-07-25.md`와 이 문서의
+2026-07-24판 §1/§5는 신규성을 **disaggregation 축**(DistServe/vLLM-SSM-disagg/DUET
+대조)으로 평가했다. 그러나 본 논문의 실제 기여 축은 **co-located multiplexing**
+(단일 GPU에서 prefill+decode 동시 실행, green-context로 SM 시공간 분할)이지
+disaggregation(별도 엔진/GPU + KV 전이)이 아니다. 아래는 축을 바로잡은 재조사
+결과다.
+
+### (1) 신규성 재평가 (multiplexing 축) — 부분적으로 새롭다, 실증
+
+multiplexing 선행 전수 확인 결과 **전부 Transformer-centric**이고, hybrid/Mamba
+서빙 선행은 전부 **disaggregation 또는 전용 HW**다:
+
+| 선행 | 유형 | 대상 모델 | 신규성 겹침 |
+|---|---|---|---|
+| DuetServe (arXiv 2511.04791) | co-located mux, libsmctrl, adaptive SM | 표준 Transformer | multiplexing 축 정면 겹침(throughput 메트릭) |
+| MuxWise / SLO-oriented PD-Multiplexing (arXiv 2504.14489, ASPLOS'26 추정) | co-located mux, green-context, decode_bs 임계 SM-group + per-partition cudagraph | 표준 Transformer | multiplexing 축 정면 겹침(같은 기판 green-context) |
+| SGLang PD-multiplexing with GreenContext (LMSYS blog, 2025-09) | co-located mux, green-context | 표준 Transformer | 우리 substrate의 upstream 원류 |
+| Nexus (arXiv 2507.06608) | co-located mux | 표준 Transformer | multiplexing 축 겹침 |
+| Bullet (ASPLOS'26 추정, libsmctrl+MPS) | co-located mux, intra-device disaggregation | 표준 Transformer | multiplexing 축 겹침 |
+| SSM characterization (arXiv 2507.12442) | 특성화, mux 아님 | SSM/hybrid | SM-민감도는 다루나 ×mux 정책 각은 없음 |
+| vLLM v0.20.0 blog (2026-04) | **disaggregation**, mamba state 전이 | hybrid(SSM) | mux 아님 — disagg 축 |
+| DUET (DAC'26, arXiv 2603.15530) | **disaggregation** | hybrid(NemotronH/Zamba2) | mux 아님 — disagg 축 |
+
+⇒ **"hybrid(attn+SSM)에 co-located PD-mux를 적용 + mamba decode의 SM-비민감성이
+최적 정책 구조를 바꾼다(동적 lever가 구조적으로 약화되어 static이 지배한다)"는
+특성화는 mux 문헌에 공백이다. 신규성 = 부분적이나 실재한다.**
+
+방어 가능한 자산은 자명한 "mamba=memory-bound"(이미 문헌에 있음)가 아니라
+**DuetServe(Transformer·libsmctrl·throughput 메트릭에서 동적이 static을 1.3×
+이김)와의 정량적 상반**이다: 같은 아이디어(co-located adaptive SM 분할)가
+hybrid·green-context·conjunctive-SLO goodput 조건에서는 진다. "왜 같은
+아이디어가 이 substrate·이 메트릭·이 모델군에서는 실패하는가"의 기전 규명이
+이 논문이 crowded positive 문헌에 보탤 수 있는 knowledge다.
+
+⚠️ **모든 arXiv ID·학회명(ASPLOS'26/ICML'26 등)·acceptance 여부·날짜는
+venue-strategist 지식 컷오프(2026-01) 이후 다수** = **인용 전 원문 재확인
+필수**(§6 목록도 동일 caveat).
+
+### (2) ★negative의 두 갈래 — 반드시 분리해서 팔 것
+
+현재 정본(§1의 C2/C3, `CLAIM_EVIDENCE_MATRIX.md` Claim B/A/C)의 negative
+result를 substrate-robustness 축으로 분해한다:
+
+- **(A) green-context 종속 — 헤드라인으로 팔지 말 것.** layer-aware 死
+  (coordinated per-type drain, TPOT 42→124ms, 최적화 후 85ms)와 cudagraph
+  비양립(Claim B). 이것은 정확히 **DuetServe가 libsmctrl + interruption-free
+  engine으로 일부러 우회한 바로 그 비용**이다. 이 축을 substrate-invariant
+  negative로 헤드라인화하면 리뷰어의 "libsmctrl 쓰면 되잖아"로 데스크리젝트
+  위험이 크다. `CLAIM_EVIDENCE_MATRIX.md`가 이미 Claim B를 "현 substrate
+  한정"으로 스코프하고 있으며, 이 정정은 그 스코프를 이 positioning과
+  정합시킬 뿐 새 등급 변경이 아니다.
+- **(B) mechanism-independent — 방어 가능.** lever-weakness(mamba decode의
+  SM-둔감성, roofline 성질 — Claim A), entanglement(공유 running-batch+KV로
+  decode 굶김→ITL↑→admission 차단→TTFT 폭발 — Claim C), 비대칭(decode
+  과소공급=파국). 이 셋은 **파티셔닝 primitive(green-context vs libsmctrl vs
+  MPS)와 무관한 성질**이라고 주장할 수 있는 후보다. 단, 두 번째 substrate로
+  serving을 이식해 재현할 **필요는 없다**(그 이식은 불필요·부적합 — 아래 (3)) —
+  대신 아래 (3)의 vendor-substrate 3수(green-context 위 Transformer 대조 +
+  roofline + 기측정 entanglement 귀속)로 primitive 독립성을 식별한다.
+
+### (3) ★cross-substrate serving 이식은 불필요·부적합 — green-context = 배포-관련성 방어(약점 아님)
+
+⚠️**2026-07-25 하향·재프레이밍(사용자 지적)**: 이 §0.1의 초판은
+cross-substrate serving 이식(XS-series)을 "publishability make-or-break 필수"로
+과잉 프레이밍했다. **철회한다.** 두 번째 substrate로 serving을 이식하는 것은
+**불필요하며 부적합**하다:
+
+- **MPS 부적합**: SM 파티션이 **프로세스별·정적**이라 런타임 동적 PD-mux 자체가
+  불가하고, 단일-프로세스 `event_loop_pdmux`를 멀티-프로세스로 전면 재구조화하는
+  비용이 실익을 초과한다.
+- **libsmctrl 부적합**: NVIDIA가 제공하지 않는 **리버스-엔지니어링 per-arch SM
+  마스킹**이라 하드웨어 세대·드라이버에 귀속된다(driver-580 BLOCKED가 바로 그
+  증거). 논문의 배포 가이드라인 근거에 **비-vendor·비-이식 의존성**을 들이는
+  셈이다.
+
+★**green-context는 약점이 아니라 배포-관련성 방어다.** NVIDIA 공식
+fine-grained SM primitive는 **green-context 하나**(CUDA Green Contexts,
+12.4+)뿐이다. libsmctrl(비-vendor·arch-bound)·MPS(정적)는 배포 primitive가 아니다.
+⇒ 리뷰어의 "libsmctrl 쓰면 되잖아"에 대한 답 =
+
+> **green-context가 배포 가능한 유일한 vendor primitive다. DuetServe/Bullet의
+> 동적-승은 libsmctrl(세대 귀속·비-vendor) 위에서만 성립한다 → 설령
+> libsmctrl에서 hybrid 동적이 이겨도 그건 이식 불가한 research curiosity이지,
+> 배포 가이드라인의 반례가 아니다.**
+
+즉 (A) layer-aware 死는 **green-context-bound로 정직히 스코프**하되(헤드라인
+아님), libsmctrl 비-이식성이 "그럼에도 배포에는 green-context 결과가 맞다"로
+그 스코프를 오히려 받쳐준다.
+
+**그럼 Risk 2(모델 vs substrate 귀속)는 무엇으로 닫나 — cross-substrate 이식
+대신 vendor-substrate 3수**(전부 기존 green-context 위, 값쌈):
+
+1. ★**Transformer-vs-hybrid 대조를 *같은* green-context + *같은*
+   conjunctive-SLO에서**: 순수 Transformer(예: Qwen/Llama)를 기존 pdmux에
+   통과시킨다. drain 비용은 두 모델에 **동일하게 작용**하므로 **상쇄**된다.
+   동적-승/패가 모델에서 갈리면 그 flip은 substrate·메트릭 고정 하에 **모델
+   (hybrid) 귀속**으로 식별된다. 이것이 XS-series를 대체하는 새 게이트이며,
+   진짜 식별 실험이다. 정직한 리스크: Transformer도 지면 negative는 hybrid가
+   아니라 **메트릭+배포-primitive 탓**이 되지만, 그래도 다른(여전히 유효한)
+   기여다.
+2. **lever-weakness = roofline microbenchmark**(r0c의 SM-민감도 데이터 보유):
+   mamba decode의 SM-둔감성은 **연산강도(roofline) 성질**이라 partitioning
+   primitive에 robust하다. "libsmctrl이 고친다"는 반론은 drain(=(A))에만 닿고
+   **lever(=Claim A)엔 닿지 않는다**.
+3. **헤드라인 HE0는 이미 entanglement 귀속으로 측정 완료**: 정본이
+   `switch_count`≈0·컨트롤러 CPU 0.014%로 동적-패가 overhead(drain) 탓이
+   **아님**을 이미 직접 계측했다(CONSENSUS, `slo-aware-scheduling-track.md`) →
+   drain-아티팩트 반론은 layer-aware 死(=(A))에만 닿고 **헤드라인(HE0)과는
+   무관**하다.
+
+⇒ 세 수 모두 **기존 green-context 기판 위에서** Risk 2를 닫으므로, 두 번째
+substrate로의 serving 이식은 필요하지 않다. `EXPERIMENT_ROADMAP.md` "벡터2"는
+이 정정에 맞춰 XS0/XS1/XS2를 "이식 불필요·부적합" 노트로 재프레이밍하고, 새
+게이트 = **"green-context 위 Transformer-control 대조"**(위 1수)로 교체했다.
+
+### (4) long-context의 역할 = Risk 1/3 + 모델-composition 다리(substrate 다리는 (3)이 담당)
+
+`../longcontext_trace_plan.md`의 long-ctx 트랙(Stage 0/L−2 → L3/L3s)은 이번
+세션의 반대의견 검토에서 나온 세 리스크 중 둘을 닫는다: **Risk 1**(negative가
+실행가능한 가이드라인으로 이어지는가)과 **Risk 3**(negative가 언제 유효한지
+경계를 그을 수 있는가 — limiting-case 취급 방지). 또한 **Risk 2의
+모델-composition 다리**(granularity 비용이 hybrid 모델 구성에 따라 달라지는 게
+아니라 ctx-불변 구조적 성질이라는 것)를 분리해 보여준다. **Risk 2의
+substrate/모델-귀속 다리는 long-ctx가 아니라 위 (3)의 vendor-substrate 3수**
+(green-context 위 Transformer-control 대조 + roofline lever-weakness + 기측정
+entanglement 귀속)**가 닫는다** — cross-substrate serving 이식이 철회됐으므로
+long-ctx가 그 "이식의 대체재"일 필요도 없다. long-ctx와 (3)은 서로 다른
+질문(ctx-regime 경계 vs primitive/모델 귀속)을 담당한다.
+
+### (5) venue positioning 갱신
+
+- vendor-substrate 3수(위 (3): green-context 위 Transformer-control 대조 +
+  roofline lever-weakness + 기측정 entanglement 귀속) + C1(lever-weakness)
+  robust + 실행가능 가이드라인 → **MLSys가 1순위 현실권**(§4 경로 A 유지).
+  ⚠️초판이 선결 조건으로 걸었던 cross-substrate serving 이식은 **철회**한다 —
+  선결 조건이 아니며, green-context vendor-primitive 방어가 그 자리를 대신한다.
+- 위에 더해 C3/H-Policy(offline decode-floor predictor가 실제로 승리)가
+  성립하면 → ATC/EuroSys로 상향 가능(§4 경로 B).
+- OSDI/NSDI는 순수 negative로는 여전히 불가(§2 표 불변). SC는 fit이 아님(§2
+  표 불변).
+- 근거 URL(재확인 필요): DuetServe https://arxiv.org/abs/2511.04791 · MuxWise
+  https://arxiv.org/abs/2504.14489 · SGLang-pdmux LMSYS blog(2025-09) ·
+  Nexus https://arxiv.org/abs/2507.06608 · SSM-char
+  https://arxiv.org/abs/2507.12442 · vLLM hybrid-SSM-disagg blog(2026-04) ·
+  DUET https://arxiv.org/abs/2603.15530.
+
+이 갱신은 §1–§6(2026-07-24판)의 claim/evidence 인용을 바꾸지 않는다 — §1의
+"C2/C3" novelty risk 서술과 §5의 related-work 문단은 disaggregation이 아니라
+multiplexing 선행(DuetServe/MuxWise/SGLang-pdmux/Nexus/Bullet)을 1순위
+비교군으로 읽어야 한다는 점만 위로 정정한다.
 
 ---
 
@@ -208,6 +374,10 @@ substrate-artifact 반박 방어선**이다.
 - CFP: MLSys 2026/2027, HPCA 2027, ASPLOS 2027, OSDI 2027, NSDI 2027,
   EuroSys 2027 — **날짜 전부 검증 필요** (venue-strategist 지식 컷오프 2026-01
   이후 변동 가능; 이 문서 기록일 2026-07-24 기준으로도 아직 재확인 안 됨)
+- ★**2026-07-25 추가(§0.1, multiplexing 축 재조사)**: DuetServe arXiv
+  2511.04791 · Nexus arXiv 2507.06608 · SSM characterization arXiv
+  2507.12442 · vLLM v0.20.0 hybrid-SSM-disaggregation blog(2026-04) · DUET
+  (DAC'26) arXiv 2603.15530 — **전부 검증 필요**(§0.1과 동일 caveat).
 
 ---
 
