@@ -28,6 +28,20 @@ for source in \
   install -D -m 0644 "${source}" "${target}"
 done
 
+# Pure Mamba2 (state-spaces/mamba2-*) Stage 0 negative-control arm: install the
+# NEW config + model files, then apply the tracked arch-registration patch
+# (configs/__init__, hf_transformers_utils registry, server_args dispatch,
+# kv_cache_mixin cell_size==0 guard). Idempotent: grep-guard before patching.
+install -D -m 0644 "${track_root}/src/configs/mamba2.py" \
+  "${runtime_python}/sglang/srt/configs/mamba2.py"
+install -D -m 0644 "${track_root}/src/models/mamba2.py" \
+  "${runtime_python}/sglang/srt/models/mamba2.py"
+mamba2_patch="${track_root}/src/patches/mamba2_pure_ssm_arch.patch"
+if ! grep -q 'model_arch in \["Mamba2ForCausalLM"\]' \
+  "${runtime_python}/sglang/srt/server_args.py"; then
+  patch --forward --batch -p1 -d "${runtime_python}" < "${mamba2_patch}"
+fi
+
 mkdir -p "$(dirname "${manifest_path}")"
 sha256sum \
   "${runtime_python}/sglang/srt/distributed/parallel_state.py" \
@@ -36,6 +50,11 @@ sha256sum \
   "${runtime_python}/sglang/srt/multiplex/profile.py" \
   "${runtime_python}/sglang/srt/multiplex/controller.py" \
   "${runtime_python}/sglang/srt/multiplex/telemetry.py" \
+  "${runtime_python}/sglang/srt/configs/mamba2.py" \
+  "${runtime_python}/sglang/srt/models/mamba2.py" \
+  "${runtime_python}/sglang/srt/server_args.py" \
+  "${runtime_python}/sglang/srt/model_executor/model_runner_kv_cache_mixin.py" \
+  "${runtime_python}/sglang/srt/mem_cache/memory_pool.py" \
   > "${manifest_path}"
 
 echo "Synced PD-mux runtime: ${runtime_python}"

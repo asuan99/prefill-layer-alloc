@@ -127,3 +127,84 @@ corresponding design and experiment boundary are documented in
 `reports/dual_worker_design.md`. Submit the current R1 launcher from
 `scripts/r1_dual_worker/`; job reports and raw artifacts belong under
 `reports/r1_dual_worker/` and `results/r1_dual_worker/`, respectively.
+
+## Stage 0 negative-control — pure Mamba2 (state-spaces/mamba2-2.7b), 2026-07-25
+
+Goal: boot a PURE-SSM model (no attention/MLP) under the pdmux green-ctx
+cudagraph path as the decode SM-insensitivity lower-bound anchor. Native
+mamba_ssm checkpoint (single `pytorch_model.bin`, `backbone.*` keys, NO
+`architectures`/`model_type`/tokenizer in config.json).
+
+13. **NEW** `configs/mamba2.py` ← `src/configs/mamba2.py`. `Mamba2Config`
+    **subclasses NemotronHConfig** (so `model_runner.mamba2_config` /
+    `mambaish_config` isinstance gates engage with ZERO model_runner change),
+    `model_type="mamba2_ssm"` (NOT "mamba2" — transformers v5 ships a built-in
+    incompatible "mamba2" config; a distinct type avoids the suppress(ValueError)
+    registration collision). Forces `layers_block_type=["mamba"]*n_layer` and
+    sets `self.n_groups` (NemotronH.mamba2_cache_params reads it; real NemotronH
+    JSON carries it, pure-mamba wrapper does not).
+
+14. **NEW** `models/mamba2.py` ← `src/models/mamba2.py`. `Mamba2ForCausalLM`
+    **subclasses NemotronHForCausalLM**; reuses forward / forward_split_prefill /
+    cuda-graph mamba hooks. Overrides only `load_weights` for native keys:
+    `backbone.`→`model.`, `.embedding.`→`.embed_tokens.`, `mixer.A_log`→`mixer.A`
+    (a_weight_loader computes A=-exp(A_log)); `lm_head.weight` skipped (tied).
+    `EntryClass=[Mamba2ForCausalLM]`. Key-map verified vs real 2.7b .bin
+    (579 keys, 0 unmapped, 0 uncovered).
+
+15. Tracked patch `src/patches/mamba2_pure_ssm_arch.patch` (4 existing files):
+    (a) `configs/__init__.py` — import + `__all__` add `Mamba2Config`.
+    (b) `utils/hf_transformers_utils.py` — add `Mamba2Config` to the
+        `from sglang.srt.configs import (...)` block AND to `_CONFIG_REGISTRY`
+        list (so AutoConfig routes model_type "mamba2_ssm" → Mamba2Config).
+    (c) `server_args.py` — new `elif model_arch in ["Mamba2ForCausalLM"]` branch
+        calling `_handle_mamba_radix_cache(support_mamba_cache=True,
+        support_mamba_cache_extra_buffer=False, sm100_default_attention_backend=
+        "triton")`. Unlike NemotronH it does NOT forbid the triton attn backend
+        (there are zero attention layers; the full-attn sub-backend is created
+        but never dispatched to).
+    (d) `model_executor/model_runner_kv_cache_mixin.py` — **cell_size==0 guard**
+        in `profile_max_num_token`: pure-SSM has 0 attention layers ⇒
+        num_layers=0 ⇒ cell_size=0 ⇒ ZeroDivisionError at
+        `int(rest_memory*(1<<30)) // cell_size`. Guard sizes the token pool by
+        `max_mamba_cache_size * context_len` instead (per-request cost is the
+        fixed mamba state, not per-token KV).
+
+`sync_engine_tree.sh` installs files 13–14 and applies patch 15 (grep-guarded on
+the server_args branch); all four runtime files added to the SHA-256 manifest.
+
+**Converter** `scripts/models/convert_mamba2_native.py`: writes an HF-format
+wrapper dir (config.json model_type=mamba2_ssm + arch=Mamba2ForCausalLM, dims
+read from the actual .bin shapes) + symlinks `pytorch_model.bin` (NO rewrite) +
+copies the GPT-NeoX-20B tokenizer if resolvable. Built wrapper:
+`hf_cache/mamba2-2.7b-sglang/`.
+
+**Boot smoke (drop-in to stage0_smoke.sbatch):**
+`MODEL=/scratch/ehmoon/whlee/prefill-layer-alloc/hf_cache/mamba2-2.7b-sglang`
+plus `--tokenizer-path EleutherAI/gpt-neox-20b` (native repo ships no tokenizer;
+NOT in offline cache — must be provided). `--dtype float16` (checkpoint is fp16).
+
+**UNVERIFIED (GPU-only, experiment-runner):** actual boot + green-ctx cudagraph
+capture + decode replay with ZERO attention layers is not yet validated. Known
+risks beyond the cell_size guard: the full-attn sub-backend init + whole-decode
+cudagraph capture path have never run with an empty attention-layer set. If boot
+fails, fallback = NemotronH mamba-dominant config (mostly-M hybrid_override).
+
+## Stage 0 negative-control — pure Mamba2 zero-attention crash #2 (2026-07-25)
+
+Second zero-attention boot crash (after cell_size==0). `TritonAttnBackend.__init__`
+(triton_backend.py:103) probes `token_to_kv_pool.get_v_head_dim()` unconditionally
+for mambaish models; for pure-Mamba2 the `HybridLinearKVPool.full_kv_pool` has an
+empty `v_buffer` (0 full-attention layers) => `get_value_buffer(0)` IndexErrors in
+`init_attention_backend()`, before green-ctx/cudagraph capture.
+
+16. `mem_cache/memory_pool.py` — `HybridLinearKVPool.get_v_head_dim` (memory_pool.py
+    :1412) guarded: `if self.full_layer_nums == 0: return self.head_dim`. The
+    attention backend is still fully constructed (and the pdmux
+    `decode_attn_backend_group` too) but never dispatched to (zero RadixAttention
+    layers); the returned head_dim only sizes unused decode scratch buffers
+    (self.v_head_dim at triton_backend.py:290/450). NemotronH/Zamba2
+    (full_layer_nums>=1) take the unchanged branch => no hybrid regression. Only
+    other `get_v_head_dim` caller is aiter_backend.py (AMD, unused on A100).
+    Appended to `src/patches/mamba2_pure_ssm_arch.patch`; memory_pool.py added to
+    the sync SHA-256 manifest.
