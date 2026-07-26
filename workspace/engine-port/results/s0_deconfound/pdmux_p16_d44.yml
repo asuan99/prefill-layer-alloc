@@ -1,0 +1,7 @@
+# De-confound arm: prefill 16 (pinned), decode 44, 48 SM idle.
+# decode_sm=44 is in the allowed decode_states set. PDMUX_R2_FIXED_DSM=44.
+sm_group_num: 3
+manual_divisions:
+  - [16, 44, 48]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

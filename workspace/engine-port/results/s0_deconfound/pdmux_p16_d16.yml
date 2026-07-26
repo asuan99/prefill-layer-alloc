@@ -1,0 +1,12 @@
+# De-confound arm: prefill SM PINNED at 16, decode SM = 16, 76 SM idle.
+# Contrast with Stage 0 pdmux_d16.yml ([92,16,0]) which gave prefill 92: there
+# decode-SM and prefill-SM co-varied, here prefill is held constant across the
+# whole sweep so only decode-SM moves. Third element is discarded by the engine
+# (pdmux_context.py:115); the SMs it names are simply outside the parent green
+# context, i.e. idle. decode_sm=16 satisfies the _build_r2_policy decode_states
+# guard on its own. PDMUX_R2_FIXED_DSM=16.
+sm_group_num: 3
+manual_divisions:
+  - [16, 16, 76]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

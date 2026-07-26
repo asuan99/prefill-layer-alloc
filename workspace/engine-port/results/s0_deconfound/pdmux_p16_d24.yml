@@ -1,0 +1,8 @@
+# De-confound arm: prefill 16 (pinned), decode 24, 68 SM idle.
+# decode_sm=24 is in the allowed decode_states set {16,24,34,44}, so no
+# guard-satisfier division is needed. PDMUX_R2_FIXED_DSM=24.
+sm_group_num: 3
+manual_divisions:
+  - [16, 24, 68]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
