@@ -6,9 +6,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=90G
-#SBATCH --time=03:30:00
+#SBATCH --time=10:00:00
 #SBATCH --comment=pytorch
-#SBATCH --array=0-8
+#SBATCH --array=0-2
 #SBATCH --output=%x_A%a_%A.out
 #SBATCH --error=%x_A%a_%A.err
 # ============================================================================
@@ -19,12 +19,23 @@
 # The smoke ALREADY confirmed the pin path empirically: Mamba2, keepalive=2,
 # PDMUX_R2_POLICY=fixed DSM=16  ->  telemetry target_decode_sms hist {16:90}.
 #
-# 3 MODEL ARMS x 3 CTX  = 9 SLURM array tasks (arm=idx/3, ctx=idx%3):
+# QOS(aanv8) REBUDGET (2026-07-25): partition amd_a100nv_8 QOS aanv8 caps
+# MaxSubmitPU=4 (pending+running) and MaxJobsPU=2 (concurrent). The original
+# design used 9 array tasks (arm=idx/3, ctx=idx%3) which QOSMaxSubmitJobPerUserLimit
+# rejected outright. Restructured to 1 SLURM ARRAY TASK PER ARM (array=0-2, 3
+# jobs <= MaxSubmitPU=4); the CTX sweep that used to be array-indexed is now an
+# in-job bash loop, nested with the pre-existing SM_ARMS in-job loop. Each of
+# the 3 jobs now runs 1 arm x 3 ctx x 4 SM = 12 server boots sequentially.
+# All measurement logic (configs, keepalive, PIN_CHECK, REPS) is byte-identical
+# to the pre-rebudget design; only the arm/ctx dispatch mechanism moved from
+# SLURM array indexing to bash loops.
+#
+# 3 MODEL ARMS = 3 SLURM array tasks (arm=idx), ctx swept in-job:
 #   (M) pure Mamba2-2.7B  = SSM-only NEGATIVE control (predict flat vs SM)
 #   (H) hybrid Zamba2-2.7B = target (mamba + shared-attn)
 #   (T) pure Qwen2.5-3B   = all-attn POSITIVE control (predict SM-sensitive)
 #   ALL bf16 (Mamba2 bf16 smoke PASS -- dtype matched across arms).
-# CTX in {4096,8192,16384}.
+# CTX in {4096,8192,16384} (in-job loop, was array-indexed before rebudget).
 # decode-SM (x-axis of the curve): 16, 44, 92 = ACTIVE green-ctx split (coupled),
 #   + 108 = no-split decode-gets-all REFERENCE (labeled, not mixed into curve).
 #
@@ -70,20 +81,20 @@ export TRITON_CACHE_DIR="$ROOT/workspace/engine-port/triage/.triton_cache"
 bash $ROOT/workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh || {
   echo "SYNC_ENGINE_TREE_FAILED"; exit 3; }
 
-# --- arm x ctx from array index -----------------------------------------------
+# --- arm from array index; ctx swept in-job (QOS rebudget, see header) --------
 ARM_LABELS=(M H T)
 ARM_MODELS=(
   "$ROOT/hf_cache/mamba2-2.7b-sglang"   # M  pure-SSM negative control
   "Zyphra/Zamba2-2.7B"                   # H  hybrid target
   "Qwen/Qwen2.5-3B"                      # T  pure-attn positive control
 )
-CTX_LIST=(4096 8192 16384)              # optional short-ctx null: set CTX_LIST=(256 1024) via CTX_OVERRIDE
-AIDX=$(( SLURM_ARRAY_TASK_ID / 3 ))
-CIDX=$(( SLURM_ARRAY_TASK_ID % 3 ))
+CTX_LIST=(4096 8192 16384)              # optional short-ctx null: set CTX_LIST=(256 1024) via CTX_OVERRIDE_LIST
+AIDX=$SLURM_ARRAY_TASK_ID
 ARM="${ARM_LABELS[$AIDX]}"
 MODEL="${ARM_MODELS[$AIDX]}"
-CTX="${CTX_OVERRIDE:-${CTX_LIST[$CIDX]}}"
-CTXCAP=$(( CTX + 512 ))
+if [ -n "${CTX_OVERRIDE_LIST:-}" ]; then
+  read -r -a CTX_LIST <<< "$CTX_OVERRIDE_LIST"
+fi
 CONC="${CONC:-32}"
 OUTTOK="${OUTTOK:-32}"
 DTYPE="${DTYPE:-bfloat16}"            # ALL arms bf16 (dtype matched; Mamba2 bf16 verified)
@@ -96,7 +107,12 @@ SM_ARMS=(16 44 92 108)
 declare -A CFG=(   [16]="$HERE/pdmux_d16.yml" [44]="$HERE/pdmux_d44.yml" [92]="$HERE/pdmux_d92.yml" [108]="$HERE/pdmux_d16.yml" )
 declare -A KEEPA=( [16]=$KEEPA_N [44]=$KEEPA_N [92]=$KEEPA_N [108]=0 )   # d108 decode-only reference
 
-# build the ~ctx-token prompt once per array task
+# CTX sweep (QOS rebudget: this loop replaces the old array-indexed CTX dispatch;
+# per-config semantics below are unchanged from the pre-rebudget design).
+for CTX in "${CTX_LIST[@]}"; do
+CTXCAP=$(( CTX + 512 ))
+
+# build the ~ctx-token prompt once per (arm,ctx)
 PREPS=$(( CTX / 8 )); [ "$PREPS" -lt 1 ] && PREPS=1
 PF="$HERE/s0sweep_${ARM}_C${CTX}_prompt.txt"
 python3 - "$PREPS" "$PF" <<'PY'
@@ -110,7 +126,7 @@ echo "ARM=$ARM MODEL=$MODEL CTX=$CTX ctxcap=$CTXCAP conc=$CONC out=$OUTTOK dtype
 
 for D in "${SM_ARMS[@]}"; do
   cfg="${CFG[$D]}"; ka="${KEEPA[$D]}"
-  PORT=$((36000 + (${SLURM_ARRAY_JOB_ID:-0} + SLURM_ARRAY_TASK_ID * 7 + D) % 500))
+  PORT=$((36000 + (${SLURM_ARRAY_JOB_ID:-0} + SLURM_ARRAY_TASK_ID * 7 + CTX + D) % 500))
   RUNID="s0_${ARM}_C${CTX}_D${D}_${SLURM_ARRAY_JOB_ID:-local}"
   SRVLOG="$HERE/${RUNID}_srv.log"
   export PDMUX_TELEMETRY_PATH="$HERE/${RUNID}_telemetry.jsonl"; : > "$PDMUX_TELEMETRY_PATH"
@@ -171,3 +187,4 @@ PY
   kill $SRV 2>/dev/null; pkill -9 -f "launch_server.*--port $PORT" 2>/dev/null; sleep 3
 done
 echo "DONE ARM=$ARM CTX=$CTX"
+done  # CTX sweep
