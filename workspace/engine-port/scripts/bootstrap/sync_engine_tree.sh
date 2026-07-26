@@ -12,6 +12,30 @@ if [[ ! -f "${runtime_python}/sglang/srt/distributed/parallel_state.py" ]]; then
   exit 2
 fi
 
+# Serialize concurrent syncs. SLURM array tasks share one dev tree, and two of
+# them installing at once race inside `install` (it unlinks then re-creates the
+# target, so the loser hits EEXIST) and in `patch`; that surfaced as
+# `install: cannot create regular file ...: File exists` and killed job
+# 864230_0 (2026-07-26). Reproduced 7-8/10 concurrent runs without this lock,
+# 0/10 with it. /scratch is Lustre mounted with `flock` (not `localflock`), so
+# the lock is coherent across nodes.
+sync_lock="${PDMUX_SYNC_LOCK:-$(dirname "${runtime_python}")/.pdmux_sync.lock}"
+sync_lock_wait="${PDMUX_SYNC_LOCK_WAIT:-900}"
+if [[ -z "${PDMUX_SYNC_LOCK_HELD:-}" ]]; then
+  export PDMUX_SYNC_LOCK_HELD=1
+  # `status=$?` inside `if ! cmd` would read the negation (always 0) and exit
+  # 0 on a lock timeout, letting a job run against an unsynced tree.
+  status=0
+  flock --timeout "${sync_lock_wait}" "${sync_lock}" \
+    "${BASH_SOURCE[0]}" "$@" || status=$?
+  if (( status != 0 )); then
+    echo "ERROR: sync failed or lock not acquired within ${sync_lock_wait}s" \
+      "(lock ${sync_lock}, status ${status})" >&2
+    exit "${status}"
+  fi
+  exit 0
+fi
+
 patch_file="${track_root}/src/patches/pdmux_thread_local_role.patch"
 if ! grep -q "def pdmux_role_is_thread_local" \
   "${runtime_python}/sglang/srt/distributed/parallel_state.py"; then
@@ -43,6 +67,9 @@ if ! grep -q 'model_arch in \["Mamba2ForCausalLM"\]' \
 fi
 
 mkdir -p "$(dirname "${manifest_path}")"
+# Write via temp+rename so a concurrent reader never sees a truncated manifest.
+manifest_tmp="$(mktemp "${manifest_path}.XXXXXX")"
+trap 'rm -f "${manifest_tmp}"' EXIT
 sha256sum \
   "${runtime_python}/sglang/srt/distributed/parallel_state.py" \
   "${runtime_python}/sglang/srt/multiplex/dual_worker.py" \
@@ -55,7 +82,9 @@ sha256sum \
   "${runtime_python}/sglang/srt/server_args.py" \
   "${runtime_python}/sglang/srt/model_executor/model_runner_kv_cache_mixin.py" \
   "${runtime_python}/sglang/srt/mem_cache/memory_pool.py" \
-  > "${manifest_path}"
+  > "${manifest_tmp}"
+mv -f "${manifest_tmp}" "${manifest_path}"
+trap - EXIT
 
 echo "Synced PD-mux runtime: ${runtime_python}"
 echo "Hash manifest: ${manifest_path}"
