@@ -1,0 +1,114 @@
+{
+  "total_sm_available": 108,
+  "n": 4096,
+  "iters": 30,
+  "pairs": [
+    {
+      "requested": [
+        92,
+        16
+      ],
+      "sum": 108,
+      "A": {
+        "requested_sm": 92,
+        "tflops": 185.35,
+        "effective_sm_est": 90.6
+      },
+      "B": {
+        "requested_sm": 16,
+        "tflops": 36.21,
+        "effective_sm_est": 17.7
+      }
+    },
+    {
+      "requested": [
+        64,
+        44
+      ],
+      "sum": 108,
+      "A": {
+        "requested_sm": 64,
+        "tflops": 168.86,
+        "effective_sm_est": 82.6
+      },
+      "B": {
+        "requested_sm": 44,
+        "tflops": 113.7,
+        "effective_sm_est": 55.6
+      }
+    },
+    {
+      "requested": [
+        16,
+        92
+      ],
+      "sum": 108,
+      "A": {
+        "requested_sm": 16,
+        "tflops": 42.9,
+        "effective_sm_est": 21.0
+      },
+      "B": {
+        "requested_sm": 92,
+        "tflops": 226.39,
+        "effective_sm_est": 110.7
+      }
+    },
+    {
+      "requested": [
+        16,
+        44
+      ],
+      "sum": 60,
+      "A": {
+        "requested_sm": 16,
+        "tflops": 42.9,
+        "effective_sm_est": 21.0
+      },
+      "B": {
+        "requested_sm": 44,
+        "tflops": 113.83,
+        "effective_sm_est": 55.7
+      }
+    },
+    {
+      "requested": [
+        16,
+        16
+      ],
+      "sum": 32,
+      "A": {
+        "requested_sm": 16,
+        "tflops": 42.82,
+        "effective_sm_est": 20.9
+      },
+      "B": {
+        "requested_sm": 16,
+        "tflops": 42.79,
+        "effective_sm_est": 20.9
+      }
+    },
+    {
+      "requested": [
+        44,
+        16
+      ],
+      "sum": 60,
+      "A": {
+        "requested_sm": 44,
+        "tflops": 113.96,
+        "effective_sm_est": 55.7
+      },
+      "B": {
+        "requested_sm": 16,
+        "tflops": 43.02,
+        "effective_sm_est": 21.0
+      }
+    }
+  ],
+  "baseline": {
+    "tag": "baseline_default_stream",
+    "ms": 18.67,
+    "tflops": 220.85
+  }
+}
