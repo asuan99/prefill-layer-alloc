@@ -1,0 +1,350 @@
+<title>Stage 0 · decode-SM scaling</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:        #f4f5f3;
+    --surface:      #fcfcfb;
+    --ink:          #0b0b0b;
+    --ink-2:        #52514e;
+    --muted:        #898781;
+    --grid:         #e6e6df;
+    --axis:         #c9c8c0;
+    --border:       rgba(11,11,11,0.10);
+    --h: #2a78d6;   /* hybrid  (Zamba2)  */
+    --t: #c85a20;   /* transformer (Qwen) — darkened orange for light-surface contrast */
+    --m: #128063;   /* mamba (pure SSM) — darkened aqua for light-surface contrast */
+    --serious:      #c0532c;
+    --good:         #0b7a34;
+    --chip-bg:      rgba(11,11,11,0.045);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --plane:   #0d0d0d;
+      --surface: #1a1a19;
+      --ink:     #ffffff;
+      --ink-2:   #c3c2b7;
+      --muted:   #898781;
+      --grid:    #2c2c2a;
+      --axis:    #3a3a37;
+      --border:  rgba(255,255,255,0.11);
+      --h: #3987e5;
+      --t: #e07a45;
+      --m: #1fb184;
+      --serious: #e08a5c;
+      --good:    #35c464;
+      --chip-bg: rgba(255,255,255,0.06);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#3a3a37; --border:rgba(255,255,255,0.11);
+    --h:#3987e5; --t:#e07a45; --m:#1fb184; --serious:#e08a5c; --good:#35c464;
+    --chip-bg:rgba(255,255,255,0.06);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--plane);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 64px; }
+
+  .eyebrow {
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(24px, 3.4vw, 34px); line-height: 1.15; margin: 0 0 12px;
+    font-weight: 680; letter-spacing: -.015em; text-wrap: balance; max-width: 22ch;
+  }
+  .thesis { font-size: 17px; color: var(--ink-2); margin: 0 0 22px; max-width: 62ch; }
+  .thesis b { color: var(--ink); font-weight: 640; }
+
+  .verdicts { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 34px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 13px 7px 11px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface);
+    font-size: 13.5px; font-weight: 560; color: var(--ink);
+  }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .chip small { color: var(--ink-2); font-weight: 480; }
+  .dot.serious { background: var(--serious); }
+  .dot.good { background: var(--good); }
+
+  .section-label {
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin: 0 0 4px;
+  }
+  .charts-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; }
+  .legend .item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
+  .legend .swatch { width: 22px; height: 3px; border-radius: 2px; flex: none; }
+  .legend b { color: var(--ink); font-weight: 620; }
+  .legend .role { color: var(--muted); font-size: 11.5px; }
+
+  .panels {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  }
+  @media (max-width: 720px) { .panels { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 10px 6px;
+  }
+  .panel h3 {
+    margin: 2px 4px 2px; font-size: 13px; font-weight: 620; letter-spacing: .01em;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .panel h3 span { color: var(--muted); font-weight: 500; font-size: 11.5px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .ax { stroke: var(--axis); stroke-width: 1; }
+  .gl { stroke: var(--grid); stroke-width: 1; }
+  .tick { fill: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .axtitle { fill: var(--muted); font-size: 10.5px; letter-spacing: .04em; }
+  .lbl { font-size: 11px; font-weight: 640; font-variant-numeric: tabular-nums; }
+  .anno { fill: var(--ink-2); font-size: 10.5px; }
+  .anno-lead { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; fill: none; }
+
+  .reading { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 30px 0 8px; }
+  @media (max-width: 720px) { .reading { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 15px 16px;
+  }
+  .card .k { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 6px; display:flex; align-items:center; gap:7px;}
+  .card p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .card p b { color: var(--ink); font-weight: 620; }
+  .mono { font-variant-numeric: tabular-nums; }
+  .num { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .tables { margin-top: 34px; }
+  .tables h2 { font-size: 15px; font-weight: 640; margin: 0 0 12px; letter-spacing: -.01em; }
+  .tbl-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 9px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--muted); font-weight: 600; font-size: 11.5px; letter-spacing: .03em; border-bottom: 1px solid var(--border); }
+  tbody tr + tr td { border-top: 1px solid var(--grid); }
+  td.arm { font-weight: 620; color: var(--ink); }
+  .swatch-inline { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:7px; vertical-align: baseline; }
+  .ref { color: var(--muted); }
+  .hi-good { color: var(--good); font-weight: 640; }
+  .hi-bad { color: var(--serious); font-weight: 640; }
+
+  .foot { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+  .foot b { color: var(--ink-2); font-weight: 600; }
+  .foot code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: var(--chip-bg); padding: 1px 5px; border-radius: 4px; color: var(--ink-2); }
+
+  #tip {
+    position: fixed; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--ink); color: var(--surface); font-size: 12px;
+    padding: 6px 9px; border-radius: 7px; z-index: 10; white-space: nowrap;
+    font-variant-numeric: tabular-nums; box-shadow: 0 4px 14px rgba(0,0,0,.22);
+  }
+  #tip b { font-weight: 680; }
+  .pt { cursor: crosshair; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Stage 0 · A100 green-context PD-mux · hybrid LLM serving</p>
+  <h1>Decode-SM scaling at the operating point</h1>
+  <p class="thesis">The coupled sweep varies decode SM and prefill SM <b>together</b> (partition <span class="num">[108−D, D]</span>), so the falling ITL(D) curve reads like decode-SM sensitivity — but it isn't. A pure-Mamba negative control and a no-split anchor show the curve is a <b>prefill-contention artifact</b>. The one clean contrast says decode is <b>SM-insensitive</b> — for Transformer, hybrid, and pure-SSM alike, out to 16k context.</p>
+
+  <div class="verdicts">
+    <span class="chip"><span class="dot serious"></span>Coupled ITL(D) curve&nbsp;<small>CONFOUNDED (confirmed)</small></span>
+    <span class="chip"><span class="dot good"></span>Clean signal&nbsp;<small>decode SM-insensitive · non-binding</small></span>
+  </div>
+
+  <div class="charts-head">
+    <div>
+      <p class="section-label">Per-token latency vs decode SM</p>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <div class="panels" id="panels"></div>
+
+  <div class="reading">
+    <div class="card">
+      <p class="k"><span class="swatch-inline" style="background:var(--serious)"></span>Evidence 1 — the no-split anchor</p>
+      <p><b>D108</b> (108 SM, zero prefill contention) is as slow as <b>D16</b> to within 0.5% in all 9 cells, and <b>slower than D92</b>. More decode SM ≠ faster: the curve is <b>non-monotone</b> in SM, so it cannot be measuring decode-SM binding.</p>
+    </div>
+    <div class="card">
+      <p class="k"><span class="swatch-inline" style="background:var(--m)"></span>Evidence 2 — the pure-Mamba control</p>
+      <p><b>M</b> (SSM-only, O(1) recurrent decode — no KV scan) <i>cannot</i> be decode-SM-bound, yet reproduces the full <span class="num">2.46×</span> "sensitivity" curve, same shape as H. The curve is generated by something other than decode SM.</p>
+    </div>
+    <div class="card">
+      <p class="k"><span class="swatch-inline" style="background:var(--muted)"></span>Mechanism — 5× wall collapse</p>
+      <p>The one fast point, <b>D92</b>, is where prefill is starved to 16 SM. Wall-time inflates <span class="num">5.0–5.4×</span> uniformly: the run <b>serializes</b>, it doesn't accelerate. Lower ITL is de-batching, not speed.</p>
+    </div>
+    <div class="card">
+      <p class="k"><span class="swatch-inline" style="background:var(--good)"></span>Clean signal — the surviving null</p>
+      <p>The only de-confounded contrast, <b>D16 vs D108</b> (both full batch), = <b>1.00 ± 0.01</b> across 3 arms × 3 ctx. Decode is SM-insensitive from 16→108 SM. Confirms r0c; extends it to hybrid, in-situ serving, to 16k.</p>
+    </div>
+  </div>
+
+  <div class="tables">
+    <h2>ITL p50 (ms) — mean of 3 reps</h2>
+    <div class="tbl-scroll">
+      <table id="itl-table"></table>
+    </div>
+
+    <h2 style="margin-top:26px;">Ratio: co-swept &ldquo;sensitivity&rdquo; vs de-confounded contrast</h2>
+    <div class="tbl-scroll">
+      <table id="ratio-table"></table>
+    </div>
+  </div>
+
+  <p class="foot">
+    <b>Gate verdict:</b> decode is non-binding (SM-insensitive) at the operating point — long-context conflict hypotheses (H_L4 temporal, H_L5 spatial) get no decode-floor rise and collapse in this regime; HE0 / vector-1 strengthened ctx-independently.
+    &nbsp;<b>Scope:</b> {M/H/T 2.7–3B · triton · cudagraph-ON green-context PD-mux · ctx ≤ 16k · one-shot 32-conc burst}. Larger models, &gt;16k, and a fully de-confounded remeasurement (fixed prefill-SM · steady-state rate · controlled batch occupancy) are unmeasured.
+    &nbsp;<b>Data:</b> <code>results/stage0_xctrl/</code> jobs 864230 (H,T) + 864601 (M); all PIN_CHECK PASS.
+  </p>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+// ── data: p50 ITL (ms), decode-SM {16,44,92 coupled} + 108 (no-split anchor) ──
+const ARMS = [
+  { key:"H", name:"Zamba2-2.7B", role:"hybrid · target",       cvar:"--h" },
+  { key:"T", name:"Qwen2.5-3B",  role:"transformer · +control", cvar:"--t" },
+  { key:"M", name:"Mamba2-2.7B", role:"pure SSM · −control",    cvar:"--m" },
+];
+const CTX = [
+  { ctx:4096,  tag:"4k" },
+  { ctx:8192,  tag:"8k" },
+  { ctx:16384, tag:"16k" },
+];
+// itl[arm][ctx] = {16,44,92,108}
+const ITL = {
+  H:{4096:{16:45.6,44:20.4,92:13.6,108:45.5}, 8192:{16:45.4,44:20.2,92:13.3,108:45.2}, 16384:{16:46.8,44:19.8,92:13.1,108:46.7}},
+  T:{4096:{16:17.8,44:10.1,92:8.7, 108:17.8}, 8192:{16:18.4,44:11.0,92:9.6, 108:18.3}, 16384:{16:25.3,44:13.8,92:11.6,108:25.3}},
+  M:{4096:{16:19.3,44:9.9, 92:7.8, 108:19.2}, 8192:{16:17.0,44:8.8, 92:7.0, 108:16.8}, 16384:{16:16.3,44:8.2, 92:6.6, 108:16.3}},
+};
+const XS = [16,44,92];           // coupled curve
+const XA = 108;                  // anchor
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// ── legend ──
+const legend = document.getElementById("legend");
+ARMS.forEach(a=>{
+  const el=document.createElement("span"); el.className="item";
+  el.innerHTML=`<span class="swatch" style="background:var(${a.cvar})"></span><b>${a.key}</b>&nbsp;${a.name}<span class="role">&nbsp;· ${a.role}</span>`;
+  legend.appendChild(el);
+});
+
+// ── chart geometry ──
+const W=320, H=232, mL=40, mR=16, mT=16, mB=34;
+const xDomain=[8,116], yDomain=[0,50];
+const xS = x => mL + (x-xDomain[0])/(xDomain[1]-xDomain[0])*(W-mL-mR);
+const yS = y => (H-mB) - (y-yDomain[0])/(yDomain[1]-yDomain[0])*(H-mT-mB);
+const NS="http://www.w3.org/2000/svg";
+const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+
+const tip=document.getElementById("tip");
+function showTip(evt,html){ tip.innerHTML=html; tip.style.opacity=1;
+  const pad=14; let x=evt.clientX+pad, y=evt.clientY+pad;
+  if(x+tip.offsetWidth>innerWidth) x=evt.clientX-tip.offsetWidth-pad;
+  if(y+tip.offsetHeight>innerHeight) y=evt.clientY-tip.offsetHeight-pad;
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+}
+const hideTip=()=>tip.style.opacity=0;
+
+function panel(c){
+  const svg=mk("svg",{viewBox:`0 0 ${W} ${H}`,role:"img",
+    "aria-label":`ITL vs decode-SM at context ${c.tag}`});
+  // gridlines + y ticks
+  for(let v=0;v<=50;v+=10){
+    svg.appendChild(mk("line",{class:"gl",x1:mL,y1:yS(v),x2:W-mR,y2:yS(v)}));
+    const t=mk("text",{class:"tick",x:mL-6,y:yS(v)+3.5,"text-anchor":"end"});t.textContent=v;svg.appendChild(t);
+  }
+  // x axis baseline + ticks
+  svg.appendChild(mk("line",{class:"ax",x1:mL,y1:yS(0),x2:W-mR,y2:yS(0)}));
+  [16,44,92,108].forEach(x=>{
+    const t=mk("text",{class:"tick",x:xS(x),y:H-mB+15,"text-anchor":"middle"});t.textContent=x;svg.appendChild(t);
+  });
+  const xt=mk("text",{class:"axtitle",x:(mL+W-mR)/2,y:H-4,"text-anchor":"middle"});
+  xt.textContent="decode SM"; svg.appendChild(xt);
+  const yt=mk("text",{class:"axtitle",x:12,y:mT+2,"text-anchor":"start"}); yt.textContent="ITL ms"; svg.appendChild(yt);
+
+  // arms
+  ARMS.forEach(a=>{
+    const col=css(a.cvar), d=ITL[a.key][c.ctx];
+    // coupled polyline 16-44-92
+    const pts=XS.map(x=>`${xS(x)},${yS(d[x])}`).join(" ");
+    svg.appendChild(mk("polyline",{points:pts,fill:"none",stroke:col,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+    // dashed connector 92 -> 108 anchor (shows the jump back up)
+    svg.appendChild(mk("line",{x1:xS(92),y1:yS(d[92]),x2:xS(XA),y2:yS(d[XA]),stroke:col,"stroke-width":1.25,"stroke-dasharray":"3 3",opacity:.55}));
+    // coupled markers (filled)
+    XS.forEach(x=>{
+      const cx=xS(x),cy=yS(d[x]);
+      svg.appendChild(mk("circle",{cx,cy,r:3.4,fill:col,stroke:"var(--surface)","stroke-width":1.4}));
+      const hit=mk("circle",{class:"pt",cx,cy,r:11,fill:"transparent"});
+      hit.addEventListener("mousemove",e=>showTip(e,`<b>${a.key}</b> · ctx ${c.tag} · D${x}<br>ITL p50 <b>${d[x].toFixed(1)}</b> ms`));
+      hit.addEventListener("mouseleave",hideTip); svg.appendChild(hit);
+    });
+    // anchor marker (hollow ring) at 108
+    const ax=xS(XA),ay=yS(d[XA]);
+    svg.appendChild(mk("circle",{cx:ax,cy:ay,r:4.2,fill:"var(--surface)",stroke:col,"stroke-width":2}));
+    const ah=mk("circle",{class:"pt",cx:ax,cy:ay,r:11,fill:"transparent"});
+    ah.addEventListener("mousemove",e=>showTip(e,`<b>${a.key}</b> · ctx ${c.tag} · D108 (no-split ref)<br>ITL p50 <b>${d[XA].toFixed(1)}</b> ms`));
+    ah.addEventListener("mouseleave",hideTip); svg.appendChild(ah);
+    // direct label at D16 end on the 16k panel (best separation)
+    if(c.ctx===16384){
+      const lx=xS(16)+7, ly=yS(d[16])+ (a.key==="M"?11: (a.key==="T"?3:-5));
+      const tl=mk("text",{class:"lbl",x:lx,y:ly,fill:col,"text-anchor":"start"}); tl.textContent=a.key; svg.appendChild(tl);
+    }
+  });
+
+  // annotate only the 4k panel to avoid clutter
+  if(c.ctx===4096){
+    // anchor callout near H's D108 ring
+    const d=ITL.H[4096];
+    const axx=xS(XA), axy=yS(d[XA]);
+    svg.appendChild(mk("path",{class:"anno-lead",d:`M ${axx-3} ${axy+6} q -18 14 -40 12`}));
+    const a1=mk("text",{class:"anno",x:xS(44)-2,y:yS(50)+16,"text-anchor":"start"}); a1.textContent="D108: most SM,"; svg.appendChild(a1);
+    const a2=mk("text",{class:"anno",x:xS(44)-2,y:yS(50)+28,"text-anchor":"start"}); a2.textContent="yet ≈ slowest"; svg.appendChild(a2);
+  }
+  return svg;
+}
+
+const panels=document.getElementById("panels");
+CTX.forEach(c=>{
+  const box=document.createElement("div"); box.className="panel";
+  box.innerHTML=`<h3>context ${c.tag}<span>${c.ctx} tok</span></h3>`;
+  box.appendChild(panel(c)); panels.appendChild(box);
+});
+
+// ── ITL table ──
+const it=document.getElementById("itl-table");
+it.innerHTML = `<thead><tr><th>arm</th>${CTX.map(c=>`<th>${c.tag} D16</th><th>D44</th><th>D92</th><th>D108<sup>ref</sup></th>`).join("")}</tr></thead>`;
+const tb=document.createElement("tbody");
+ARMS.forEach(a=>{
+  const cells=CTX.map(c=>{const d=ITL[a.key][c.ctx];
+    return `<td>${d[16].toFixed(1)}</td><td>${d[44].toFixed(1)}</td><td>${d[92].toFixed(1)}</td><td class="ref">${d[108].toFixed(1)}</td>`;}).join("");
+  tb.innerHTML += `<tr><td class="arm"><span class="swatch-inline" style="background:var(${a.cvar})"></span>${a.key}</td>${cells}</tr>`;
+});
+it.appendChild(tb);
+
+// ── ratio table ──
+const rt=document.getElementById("ratio-table");
+rt.innerHTML = `<thead><tr><th>arm</th><th>D16/D92 · 4k</th><th>8k</th><th>16k</th><th>D16/D108 · 4k</th><th>8k</th><th>16k</th></tr></thead>`;
+const rb=document.createElement("tbody");
+ARMS.forEach(a=>{
+  const co=CTX.map(c=>{const d=ITL[a.key][c.ctx];return (d[16]/d[92]);});
+  const cl=CTX.map(c=>{const d=ITL[a.key][c.ctx];return (d[16]/d[108]);});
+  rb.innerHTML += `<tr><td class="arm"><span class="swatch-inline" style="background:var(${a.cvar})"></span>${a.key}</td>`+
+    co.map(v=>`<td class="hi-bad">${v.toFixed(2)}×</td>`).join("")+
+    cl.map(v=>`<td class="hi-good">${v.toFixed(2)}</td>`).join("")+`</tr>`;
+});
+rt.appendChild(rb);
+</script>

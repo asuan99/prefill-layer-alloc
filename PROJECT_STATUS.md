@@ -1,6 +1,12 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-07-25 (벡터1[G2.0 short-ctx disjoint conflict-regime]: CONFIRMED closure, scoped — narrow-rA 확증 sweep g2_0_raconf 완료; 같은 날 논문 positioning 판정[multiplexing 신규성 축 + Transformer-control 게이트, cross-substrate 이식 프레이밍 철회] "다음 실험 gate" #6 추가). 이 문서가 프로젝트 전체의 유일한 현재 상태
+최종 갱신: 2026-07-26 (Stage 0[long-ctx L−2 게이트]: 운영점 decode SM-무감각을
+hybrid·16k ctx까지 확장 확인 — non-binding, long-ctx 충돌 가설 이 regime서 붕괴,
+HE0/벡터1 ctx-무관으로 강화). 이전: 2026-07-25 (벡터1[G2.0 short-ctx disjoint
+conflict-regime]: CONFIRMED closure, scoped — narrow-rA 확증 sweep g2_0_raconf
+완료; 같은 날 논문 positioning 판정[multiplexing 신규성 축 + Transformer-control
+게이트, cross-substrate 이식 프레이밍 철회] "다음 실험 gate" #6 추가). 이 문서가
+프로젝트 전체의 유일한 현재 상태
 정본이다. 이전 문서와 충돌하면 이 문서와
 [`reports/paper/`](reports/paper)의
 판정을 우선한다.
@@ -101,15 +107,50 @@ coupling-tax는 별개 축이며 "단일 static으로 충분 ⟹ coupling tax �
 새지 않는다.
 
 **남은 방향(벡터1 종결이 열어두는 것)**: (i) **long-context**(decode floor가
-ctx 상승에 따라 올라가므로 — CONSENSUS §1-5 — 충돌이 발생할 수 있는 영역,
-미측정), (ii) **§1-20 spatial decoupling**(별도 device pool disaggregation,
-+16% headroom). 두 방향 다 아직 실행되지 않았다.
+ctx 상승에 따라 올라가므로 — CONSENSUS §1-5 — 충돌이 발생할 수 있는 영역).
+★**2026-07-26 갱신**: 이 방향의 전제(운영점서 decode floor가 ctx로 상승해
+binding해지는가)를 Stage 0 게이트로 검증 — **ctx≤16k에서는 상승하지 않는다**(아래
+"Stage 0" 절). (ii) **§1-20 spatial decoupling**(별도 device pool disaggregation,
++16% headroom)은 아직 실행되지 않았다.
 
 상세 verdict:
 [`workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md`](workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md),
 [`workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_hard/hardened_disjoint_verdict_2026-07-25.md),
 [`workspace/engine-port/results/g2_0_decliff/decliff_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_decliff/decliff_verdict_2026-07-25.md),
 [`workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md).
+
+### Stage 0 (long-ctx L−2 게이트, 2026-07-26) — 운영점 decode SM-무감각, hybrid·16k로 확장
+
+7. 운영점(cudagraph-ON, green-context pdmux)에서 decode ITL은 decode-SM(16→108,
+   6.75×)에 **무감각(non-binding)**하다 — pure-Transformer(Qwen2.5-3B, 양성
+   대조)·pure-Mamba(Mamba2-2.7B, 음성 대조)·hybrid(Zamba2-2.7B, 타깃) **전부**,
+   ctx {4k, 8k, **16k**} 전부에서. 유일한 de-confounded 대조 **D16 vs D108(prefill
+   경합 0인 두 점) = 1.00 ± 0.01, 3 arm × 3 ctx 전부**.
+
+실험(jobs 864230[H/T]·864601[M], `workspace/engine-port/results/stage0_xctrl/`,
+PIN_CHECK 전부 PASS): raw coupled ITL(D) 스윕(D16/D44/D92)은 **CONFOUNDED로
+판정**됐다 — D16이 D108과 9셀 전부 ≤0.5% 동일(6.75× SM 증가가 무이득), 최속점 D92는
+비단조(prefill을 16 SM으로 굶기는 지점), 그리고 **음성 대조 M**(decode가 O(1)
+recurrent라 원리상 SM-bound 불가)이 H와 동형의 "민감도"(2.4×대)를 보이는 것 자체가
+그 곡선이 decode-SM이 아니라 prefill 경합/batch-entanglement를 재고 있다는 증거다.
+D108 무경합 앵커만이 이 confound를 우회한다.
+
+**판정**: `reports/longcontext_trace_plan.md` §6이 사전 등록한 L−2 게이트의
+**"게이트 실패이자 강한 결과"** 분기가 실현됐다 — long-ctx 충돌 가설(H_L4 시간축·
+H_L5 공간축)은 이 regime에서 필요한 decode-floor 운영점 상승을 얻지 못해 **붕괴**하고,
+**HE0/벡터1(동적이 best-static을 못 넘음)은 ctx-무관으로 강화**된다. CONSENSUS의
+HE2(운영점 decode 비-binding)·r0c(no-cudagraph decode-floor micro-측정)와 정합·확장
+관계이며, 이는 **아크의 반전이 아니라 기존 결론의 강화**다.
+
+★**필수 scope**: {M/H/T 2.7–3B, triton attn+mamba, cudagraph-ON green-context
+pdmux, ctx≤16k, 이 coupled 하네스, one-shot 32-conc burst}. **더 큰 모델·>16k·다른
+substrate는 미측정.** coupled 스윕의 "민감도 magnitude"는 confound로 측정 불가하므로
+결론은 **방향(non-binding)만**이다. 완전 de-confound 재측정(prefill-SM 고정+
+steady-state rate+occupancy 통제)은 **미실행** — 사용자가 현 증거로 결론 확정을
+결정했다. ★**방법론 교훈**: coupled ITL(D) 스윕은 decode-SM과 prefill-SM(108−D)을
+공변시켜 confounded되기 쉽다 — **음성 대조**(그 축에 binding 불가능한 arm) +
+**무경합 앵커**(공변이 0으로 붕괴하는 특수점)의 조합이 이를 식별했다. 상세
+[`reports/stage0_verdict_2026-07-26.md`](reports/stage0_verdict_2026-07-26.md).
 
 ## 철회된 가설
 
@@ -178,7 +219,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
 
 | Claim | 상태 |
 |---|---|
-| A. composition/context/load-dependent decode demand | 부분 지지 |
+| A. composition/context/load-dependent decode demand (★2026-07-26 Stage 0: 운영점 decode SM-무감각을 hybrid·pure-Transformer·pure-Mamba·ctx≤16k 전부로 확장 확인 — lever-weakness 강화, 등급 불변) | 부분 지지 |
 | B. layer-level reconfiguration의 critical-path 손상 | 강한 지지, 현 substrate 한정 |
 | C. decode starvation의 TTFT entanglement | running-batch 경로 강함, KV 경로 부분 |
 | D. true dual-worker가 coupling 감소 (★2026-07-24 코드 리뷰로 control-plane 범위로 축소, 위 "코드 리뷰 스코프 정정" 참조) | 미검증 |
@@ -219,6 +260,13 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    ctx-regime 경계용(별도 질문). 상세는
    [`reports/paper/EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)
    "벡터2"(TC-series) 절.
+7. **long-context Stage 0(L−2) 게이트: 실행 완료, non-binding(2026-07-26)** —
+   `reports/longcontext_trace_plan.md` §6이 사전 등록한 make-or-break 게이트.
+   운영점서 decode SM-무감각이 hybrid·pure-Transformer·pure-Mamba 전부, ctx≤16k
+   전부에서 확인(D16≡D108). **long-ctx L−1 이상(SLO 재정의·모델 교체 baseline·
+   시간축/공간축 충돌 스윕)은 이 regime(ctx≤16k, 2.7–3B급)에서는 진행 근거
+   없음** — 게이트 설계대로 여기서 멈춘다. 남은 미측정: >16k ctx, 더 큰 모델.
+   상세 [`reports/stage0_verdict_2026-07-26.md`](reports/stage0_verdict_2026-07-26.md).
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.

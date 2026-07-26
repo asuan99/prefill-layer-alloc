@@ -1,11 +1,13 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-07-25(positioning 판정 추가 — 아래 "주장 제한" 마지막 항목,
+최종 갱신: 2026-07-26(Stage 0/long-ctx L−2 게이트 서빙 증거를 Claim A에 추가 —
+운영점 decode SM-무감각을 hybrid·pure-Transformer·pure-Mamba·ctx≤16k로 확장 확인,
+등급 변경 없음). 이전: 2026-07-25(positioning 판정 추가 — 아래 "주장 제한" 마지막 항목,
 증거 등급 변경 없음)
 
 | Claim | 현재 판정 | Existing evidence | Missing evidence | Required experiment |
 |---|---|---|---|---|
-| A. Hybrid composition, context, active load에 따라 decode demand가 변한다 | 부분 지지 | Zamba2 context knee; synthetic/ShareGPT의 best split 이동; 다중 모델 batch/context characterization | 동일 CUDA Graph 운영점의 joint surface, GQA/composition 통제, held-out accuracy | P3 full-model profile, feature ladder, leave-one-workload/model-family-out |
+| A. Hybrid composition, context, active load에 따라 decode demand가 변한다 | 부분 지지 | Zamba2 context knee; synthetic/ShareGPT의 best split 이동; 다중 모델 batch/context characterization; ★**Stage 0(2026-07-26, `../stage0_verdict_2026-07-26.md`, jobs 864230+864601)**: 운영점(cudagraph-ON, green-context pdmux) 3-arm(pure-Mamba 음성대조/hybrid/pure-Transformer 양성대조) decode-only 스윕에서 de-confounded 대조 D16 vs D108(무경합) = 1.00±0.01, 3 arm×3 ctx(4k/8k/16k) 전부 — **decode SM-무감각(lever-weakness)이 hybrid에서 pure-Transformer·pure-Mamba로, short-ctx에서 16k로 확장 확인**(raw coupled 곡선 자체는 confounded였으나 음성대조+무경합앵커로 우회) | 동일 CUDA Graph 운영점의 **joint**(prefill+decode 동시) surface(Stage 0는 decode-only라 부분 충족), GQA/composition 통제, held-out accuracy, >16k ctx·더 큰 모델 | P3 full-model profile, feature ladder, leave-one-workload/model-family-out |
 | B. layer-level reconfiguration은 ITL critical path와 CUDA Graph를 훼손한다 | 강한 지지, 현 구현 범위 한정 | coordinated TPOT 약 42→124 ms, 최적화 후 약 85 ms; sub-step drain; graph incompatibility | 다중 모델 반복과 timeline attribution | B7 반복, CUDA Graph on/off, Nsight synchronization timeline |
 | C. decode starvation은 TTFT도 악화시킨다 | running-batch 경로 강함; KV 경로 부분 | D16 TTFT 7.24 s/ITL 61.9 ms 대 D24 1.21 s/39.9 ms; admission capacity 관측 | time-aligned KV occupancy와 admission reason | D16/D24 paired replay, structured KV/full/mamba occupancy, mediation timeline |
 | D. execution-state separation은 single-worker coupling을 줄인다 (★2026-07-24 코드 리뷰로 scope 축소, 아래 "주장 제한" 참조) | 미검증 | R1은 observer라 해당 증거가 아님; 2026-07-24 읽기 전용 코드 리뷰([`../r2_decoupling_review_2026-07-24.md`](../r2_decoupling_review_2026-07-24.md), file:line 근거)로 `PDMUX_TRUE_DUAL_WORKER=1`의 구조 확인: 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이며, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter` 단일 `stream_index`, ≤108)은 **전면 공유** | 실제 두 host loop에서의 fixed-split 비교(coupled ceiling 내); GPU correctness 동치 테스트(현재 없음); admission latch(`r2_admission_limited`) stale-True 버그 수정; results/r2_eval 캠페인 실행(현재 미생성) | legacy fixed 대 true dual fixed, 동일 telemetry/seed/graph — coupled ceiling(+2%, PROJECT_STATUS/CONSENSUS §1-20) 내에서만 유의미, "얽힘 깨기"로 측정 불가(§1-4 死因의 substrate가 구성상 불변) |
@@ -14,6 +16,14 @@
 
 ## 주장 제한
 
+- Claim A의 Stage 0 서빙 증거(2026-07-26)는 {pure-Mamba2-2.7B/hybrid Zamba2-2.7B/
+  pure-Transformer Qwen2.5-3B, triton attn+mamba, cudagraph-ON green-context
+  pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc burst}에 한정한다. coupled
+  스윕은 decode-SM과 prefill-SM(108−D)을 공변시켜 confounded이므로 **magnitude는
+  측정 불가 — 결론은 방향(non-binding)만**이며, 이는 de-confounded 하위신호
+  (D16 vs D108 무경합 앵커 + 음성 대조 M)에서 도출됐다. >16k ctx·더 큰 모델·완전
+  de-confound 재측정(prefill-SM 고정+steady-state)은 **미실행**. 상세
+  [`../stage0_verdict_2026-07-26.md`](../stage0_verdict_2026-07-26.md).
 - Claim B는 A100/SGLang green-context implementation에 한정한다.
   ★**positioning 판정(2026-07-25, `venue_positioning.md` §0.1)**: 이것은 논문의
   negative 중 "(A) green-context 종속" 축이다 — DuetServe(libsmctrl)가 정면으로

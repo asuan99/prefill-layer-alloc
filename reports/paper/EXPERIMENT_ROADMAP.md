@@ -1,6 +1,7 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-07-25(벡터2 재프레이밍 — cross-substrate serving 이식
+최종 갱신: 2026-07-26(P6 long-context Stage 0/L−2 게이트 실행 완료 — non-binding,
+아래 P6 절 갱신). 이전: 2026-07-25(벡터2 재프레이밍 — cross-substrate serving 이식
 [XS-series]을 "불필요·부적합"으로 하향 후 새 게이트 "Transformer-control on
 green-context"[TC-series]로 교체, positioning 판정)
 
@@ -211,6 +212,16 @@ DRAM/L2를 수집한다.
 entanglement 귀속)가 닫는다** — 별도 substrate serving 이식은 불필요·부적합으로
 철회됐으므로, long-ctx가 "이식의 대체재"일 필요도 없다. 두 트랙은 서로 다른
 질문(long-ctx=ctx-regime 경계, 벡터2=primitive/모델 귀속)을 담당한다.
+
+★★**Stage 0(L−2) 게이트 실행 완료(2026-07-26) — non-binding**
+(`../stage0_verdict_2026-07-26.md`, jobs 864230+864601): 운영점서 decode
+SM-무감각이 hybrid·pure-Transformer·pure-Mamba 전부, ctx≤16k 전부로 확인됐다.
+이것이 바로 위 문단이 예정한 "negative→가이드라인 전환" 역할의 실현이다 —
+논문에 쓸 수 있는 것은 "long-context가 lever를 부활시킨다"가 아니라 **"lever-
+weakness(Claim A)가 ctx-불변 구조적 성질이며, ctx≤16k·2.7–3B급 regime에서는
+운영점 서빙으로 확인된다"**. `longcontext_trace_plan.md` §6 게이트 규칙대로
+L−1 이상(L0–L3/L3s)은 이 regime에서 진행 근거가 없어 보류; >16k ctx·더 큰
+모델은 미측정으로 남는다.
 
 | ID | 고정 workload |
 |---|---|
