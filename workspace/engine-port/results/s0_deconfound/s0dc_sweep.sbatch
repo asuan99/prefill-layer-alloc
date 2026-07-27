@@ -65,7 +65,7 @@ AIDX=$SLURM_ARRAY_TASK_ID
 ARM="${ARM_LABELS[$AIDX]}"
 MODEL="${ARM_MODELS[$AIDX]}"
 
-CTX="${CTX:-4096}"; CTXCAP=$(( CTX + 512 ))
+CTX="${CTX:-4096}"
 CONC="${CONC:-16}"                   # decode requests held in flight (fixed occupancy)
 OUTTOK="${OUTTOK:-512}"              # long enough that the steady window is decode, not prefill
 WARMUP_S="${WARMUP_S:-20}"
@@ -74,6 +74,13 @@ DTYPE="${DTYPE:-bfloat16}"           # all arms bf16, dtype matched
 REPS="${REPS:-4}"                    # methodology gate: n>=4 before any policy claim
 KEEPA_N="${KEEPA_N:-2}"
 export SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1
+
+# Context cap must cover prompt + completion with slack. Run 865006 inherited
+# Stage 0's CTX+512 while raising OUTTOK from 32 to 512, which left the budget
+# exactly at the boundary; the prompt tokenizes to 4097 rather than 4096, so
+# every decode request was rejected with "4609 > 4608" and the whole campaign
+# produced zero decode traffic.
+CTXCAP=$(( CTX + OUTTOK + 256 ))
 
 SM_ARMS=(16 24 44 92)
 declare -A CFG=(
@@ -92,11 +99,17 @@ open(pf, "w").write("the robot walked slowly across the red planet " * reps)
 PY
 
 RESULT="$HERE/s0dc_${ARM}_C${CTX}_${SLURM_ARRAY_JOB_ID:-local}_result.txt"; : > "$RESULT"
+FIRST_MEASUREMENT=1
 echo "ARM=$ARM MODEL=$MODEL CTX=$CTX conc=$CONC out=$OUTTOK warmup=${WARMUP_S}s measure=${MEASURE_S}s reps=$REPS keepN=$KEEPA_N dtype=$DTYPE prefill_sm=16(PINNED)" | tee -a "$RESULT"
 
 for D in "${SM_ARMS[@]}"; do
   cfg="${CFG[$D]}"
-  PORT=$((38000 + (${SLURM_ARRAY_JOB_ID:-0} + SLURM_ARRAY_TASK_ID * 11 + D) % 500))
+  # Ask the OS for a free port instead of hashing the job id: in 865006 the
+  # M arm's D=44 hit "[Errno 98] address already in use" and lost the cell,
+  # because a torn-down server's auxiliary ports had not been released yet.
+  PORT=$(python3 -c "
+import socket
+s = socket.socket(); s.bind(('127.0.0.1', 0)); print(s.getsockname()[1]); s.close()")
   RUNID="s0dc_${ARM}_C${CTX}_P16D${D}_${SLURM_ARRAY_JOB_ID:-local}"
   SRVLOG="$HERE/${RUNID}_srv.log"
   export PDMUX_TELEMETRY_PATH="$HERE/${RUNID}_telemetry.jsonl"; : > "$PDMUX_TELEMETRY_PATH"
@@ -137,7 +150,18 @@ for D in "${SM_ARMS[@]}"; do
         --warmup-s $WARMUP_S --measure-s $MEASURE_S \
         --keepalive-prefill $KEEPA_N --raw-out "$RAW" \
         --tag "${ARM}_C${CTX}_P16D${D}_r${r}" 2>>"$RESULT" | tee -a "$RESULT"
+      CLIENT_RC=${PIPESTATUS[0]}
       kill $CLKPID 2>/dev/null; wait $CLKPID 2>/dev/null
+      # Fail fast. Run 865006 spent 25 min per arm producing zero usable
+      # samples because nothing checked the client's exit status (tee had
+      # swallowed it) until the PIN_CHECK at the very end.
+      if [ "$CLIENT_RC" != 0 ] && [ "$FIRST_MEASUREMENT" = 1 ]; then
+        echo "ABORT: first measurement failed (client rc=$CLIENT_RC). Nothing" \
+             "downstream can be valid; see $RESULT." | tee -a "$RESULT"
+        kill $SRV 2>/dev/null; pkill -9 -f "launch_server.*--port $PORT" 2>/dev/null
+        exit 9
+      fi
+      FIRST_MEASUREMENT=0
       python3 - "$CLK" <<'PY' | tee -a "$RESULT"
 import statistics, sys
 try:

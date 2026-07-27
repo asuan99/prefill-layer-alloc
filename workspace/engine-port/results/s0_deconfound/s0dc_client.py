@@ -59,18 +59,31 @@ def stream_one(url, prompt, out_tokens, t0, rec_lock, records, stop_at):
         headers={"Content-Type": "application/json"},
     )
     times = []
+    last_payload = ""
     started = time.perf_counter() - t0
     with urllib.request.urlopen(req) as resp:
         for raw in resp:
-            if not raw.strip():
+            line = raw.decode("utf-8", "ignore").strip()
+            if not line:
                 continue
-            if raw.startswith(b"data:"):
-                payload = raw[5:].strip()
-                if payload == b"[DONE]":
-                    break
-                times.append(time.perf_counter() - t0)
+            if not line.startswith("data:"):
+                last_payload = line[:300]
+                continue
+            payload = line[len("data:"):].strip()
+            if payload == "[DONE]":
+                break
+            last_payload = payload[:300]
+            times.append(time.perf_counter() - t0)
     with rec_lock:
         records.append({"start_s": started, "chunk_times_s": times})
+    # A rejected request (e.g. prompt+max_new_tokens over the context cap) comes
+    # back as HTTP 200 carrying one error payload, so urlopen raises nothing and
+    # the run looks healthy while generating no tokens at all. That silently
+    # produced a whole invalid campaign (865006); treat it as the error it is.
+    if len(times) < 2:
+        raise RuntimeError(
+            f"stream produced {len(times)} chunk(s), expected {out_tokens}; "
+            f"server said: {last_payload!r}")
     return times
 
 
@@ -220,8 +233,16 @@ def main():
     }
     print(json.dumps(summary), flush=True)
     if not itls_ms:
-        print("NO_ITL_SAMPLES_IN_WINDOW", file=sys.stderr)
+        print(f"NO_ITL_SAMPLES_IN_WINDOW errors={counters['errors']} "
+              f"last_error={counters['last_error']}", file=sys.stderr)
         return 4
+    # Every request failing while the run still reports a summary is the 865006
+    # signature; surface it rather than emitting a plausible-looking record.
+    if counters["errors"] > counters["done"]:
+        print(f"MOSTLY_FAILED_REQUESTS errors={counters['errors']} "
+              f"ok={counters['done']} last_error={counters['last_error']}",
+              file=sys.stderr)
+        return 5
     return 0
 
 
