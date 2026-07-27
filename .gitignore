@@ -109,3 +109,12 @@ tmp/
 **/results/**/manifest.tsv
 **/results/**/manifest_1a.tsv
 **/results/**/manifest_1b.tsv
+
+# campaign runtime OUTPUTS — regenerable per run, provenance kept via each
+# campaign's runtime_source_manifest.sha256 + its verdict/findings doc.
+# (matches g2_0_*/stage0_xctrl practice: harness + verdict tracked, raw not)
+**/results/**/*_result.txt
+**/results/**/*_prompt.txt
+**/results/**/*_clocks.csv
+# shared default sync manifest; the per-campaign copy is the tracked one
+/workspace/engine-port/results/runtime_source_manifest.sha256

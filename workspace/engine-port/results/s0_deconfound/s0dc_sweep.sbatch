@@ -52,7 +52,11 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONUNBUFFERED=1
 export TRITON_CACHE_DIR="$ROOT/workspace/engine-port/triage/.triton_cache"
 
 # flock'd since f99fd84, so concurrent array tasks no longer race here.
-"$ROOT/workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh" || {
+# Write the hash manifest into the campaign dir (as g2_0_* does) rather than
+# the shared default path: raw outputs are not versioned, so this manifest is
+# the provenance record tying results to the exact engine sources that ran.
+"$ROOT/workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh" \
+  "$HERE/runtime_source_manifest.sha256" || {
   echo "SYNC_ENGINE_TREE_FAILED"; exit 3; }
 
 ARM_LABELS=(M H T)
