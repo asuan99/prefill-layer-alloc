@@ -61,7 +61,7 @@
   }
   h1 {
     font-size: clamp(24px, 3.4vw, 34px); line-height: 1.15; margin: 0 0 12px;
-    font-weight: 680; letter-spacing: -.015em; text-wrap: balance; max-width: 22ch;
+    font-weight: 680; letter-spacing: -.015em; text-wrap: balance; max-width: 24ch;
   }
   .thesis { font-size: 17px; color: var(--ink-2); margin: 0 0 22px; max-width: 62ch; }
   .thesis b { color: var(--ink); font-weight: 640; }
@@ -77,6 +77,22 @@
   .chip small { color: var(--ink-2); font-weight: 480; }
   .dot.serious { background: var(--serious); }
   .dot.good { background: var(--good); }
+  /* "unresolved" is deliberately not a fourth hue — a ring, so semantic colour
+     never collides with the three arm identities. */
+  .chip.open { border-style: dashed; }
+  .chip.open .dot { background: transparent; border: 2px solid var(--muted); }
+
+  .act {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    margin: 0 0 14px; padding-top: 6px;
+  }
+  .act .n {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); border: 1px solid var(--border); border-radius: 999px;
+    padding: 2px 9px; background: var(--surface); white-space: nowrap;
+  }
+  .act h2 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
+  .act p { margin: 0; font-size: 13.5px; color: var(--ink-2); flex: 1 1 320px; min-width: 240px; }
 
   .section-label {
     font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
@@ -100,9 +116,9 @@
   }
   .panel h3 {
     margin: 2px 4px 2px; font-size: 13px; font-weight: 620; letter-spacing: .01em;
-    display: flex; justify-content: space-between; align-items: baseline;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
   }
-  .panel h3 span { color: var(--muted); font-weight: 500; font-size: 11.5px; }
+  .panel h3 span { color: var(--muted); font-weight: 500; font-size: 11.5px; text-align: right; }
   svg { display: block; width: 100%; height: auto; overflow: visible; }
   .ax { stroke: var(--axis); stroke-width: 1; }
   .gl { stroke: var(--grid); stroke-width: 1; }
@@ -111,8 +127,9 @@
   .lbl { font-size: 11px; font-weight: 640; font-variant-numeric: tabular-nums; }
   .anno { fill: var(--ink-2); font-size: 10.5px; }
   .anno-lead { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; fill: none; }
+  .refline { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 4 3; }
 
-  .reading { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 30px 0 8px; }
+  .reading { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 26px 0 8px; }
   @media (max-width: 720px) { .reading { grid-template-columns: 1fr; } }
   .card {
     background: var(--surface); border: 1px solid var(--border);
@@ -121,10 +138,11 @@
   .card .k { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 6px; display:flex; align-items:center; gap:7px;}
   .card p { margin: 0; font-size: 14px; color: var(--ink-2); }
   .card p b { color: var(--ink); font-weight: 620; }
+  .card p + p { margin-top: 8px; }
   .mono { font-variant-numeric: tabular-nums; }
   .num { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
 
-  .tables { margin-top: 34px; }
+  .tables { margin-top: 30px; }
   .tables h2 { font-size: 15px; font-weight: 640; margin: 0 0 12px; letter-spacing: -.01em; }
   .tbl-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
   table { border-collapse: collapse; width: 100%; font-size: 13px; }
@@ -137,8 +155,10 @@
   .ref { color: var(--muted); }
   .hi-good { color: var(--good); font-weight: 640; }
   .hi-bad { color: var(--serious); font-weight: 640; }
+  .sd { color: var(--muted); font-size: 11.5px; }
 
-  .foot { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+  .foot { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+  .foot + .foot { margin-top: 10px; padding-top: 0; border-top: 0; }
   .foot b { color: var(--ink-2); font-weight: 600; }
   .foot code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: var(--chip-bg); padding: 1px 5px; border-radius: 4px; color: var(--ink-2); }
 
@@ -150,22 +170,30 @@
   }
   #tip b { font-weight: 680; }
   .pt { cursor: crosshair; }
+  :where(a, [tabindex]):focus-visible { outline: 2px solid var(--h); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="wrap">
-  <p class="eyebrow">Stage 0 · A100 green-context PD-mux · hybrid LLM serving</p>
-  <h1>Decode-SM scaling at the operating point</h1>
-  <p class="thesis">The coupled sweep varies decode SM and prefill SM <b>together</b> (partition <span class="num">[108−D, D]</span>), so the falling ITL(D) curve reads like decode-SM sensitivity — but it isn't. A pure-Mamba negative control and a no-split anchor show the curve is a <b>prefill-contention artifact</b>. The one clean contrast says decode is <b>SM-insensitive</b> — for Transformer, hybrid, and pure-SSM alike, out to 16k context.</p>
+  <p class="eyebrow">A100 green-context PD-mux · hybrid LLM serving · Stage 0 → de-confound</p>
+  <h1>Is decode latency actually bound by SM count?</h1>
+  <p class="thesis">Stage 0 swept decode SM and prefill SM <b>together</b> (partition <span class="num">[108−D, D]</span>), so its falling ITL(D) curve was judged a prefill-contention artifact, and the one clean contrast said decode is <b>SM-insensitive</b>. Pinning prefill at 16 SM and sweeping decode alone was meant to close that. It didn't: the flat curve <b>failed to appear</b> — and the slope shows up in the negative control too, which is either a surviving confound or evidence the control was never valid on this axis.</p>
 
   <div class="verdicts">
-    <span class="chip"><span class="dot serious"></span>Coupled ITL(D) curve&nbsp;<small>CONFOUNDED (confirmed)</small></span>
-    <span class="chip"><span class="dot good"></span>Clean signal&nbsp;<small>decode SM-insensitive · non-binding</small></span>
+    <span class="chip"><span class="dot serious"></span>Stage 0 coupled curve&nbsp;<small>CONFOUNDED (confirmed)</small></span>
+    <span class="chip open"><span class="dot"></span>De-confound run 865098&nbsp;<small>flat prediction not supported · unresolved</small></span>
+    <span class="chip open"><span class="dot"></span>&ldquo;Decode SM-insensitive&rdquo;&nbsp;<small>under review · canon unchanged</small></span>
+  </div>
+
+  <div class="act">
+    <span class="n">Act 1</span>
+    <h2>The coupled sweep</h2>
+    <p>Raising decode SM lowers prefill SM by construction, so the curve mixes two causes. Two controls show it is not measuring decode-SM binding.</p>
   </div>
 
   <div class="charts-head">
     <div>
-      <p class="section-label">Per-token latency vs decode SM</p>
+      <p class="section-label">Per-token latency vs decode SM — prefill co-swept</p>
       <div class="legend" id="legend"></div>
     </div>
   </div>
@@ -179,77 +207,91 @@
     </div>
     <div class="card">
       <p class="k"><span class="swatch-inline" style="background:var(--m)"></span>Evidence 2 — the pure-Mamba control</p>
-      <p><b>M</b> (SSM-only, O(1) recurrent decode — no KV scan) <i>cannot</i> be decode-SM-bound, yet reproduces the full <span class="num">2.46×</span> "sensitivity" curve, same shape as H. The curve is generated by something other than decode SM.</p>
+      <p><b>M</b> (SSM-only, O(1) recurrent decode — no KV scan) was taken to be immune to decode-SM binding, yet reproduces the full <span class="num">2.46×</span> curve, same shape as H. <i>Act 2 revisits whether that immunity premise holds.</i></p>
     </div>
     <div class="card">
       <p class="k"><span class="swatch-inline" style="background:var(--muted)"></span>Mechanism — 5× wall collapse</p>
       <p>The one fast point, <b>D92</b>, is where prefill is starved to 16 SM. Wall-time inflates <span class="num">5.0–5.4×</span> uniformly: the run <b>serializes</b>, it doesn't accelerate. Lower ITL is de-batching, not speed.</p>
     </div>
     <div class="card">
-      <p class="k"><span class="swatch-inline" style="background:var(--good)"></span>Clean signal — the surviving null</p>
-      <p>The only de-confounded contrast, <b>D16 vs D108</b> (both full batch), = <b>1.00 ± 0.01</b> across 3 arms × 3 ctx. Decode is SM-insensitive from 16→108 SM. Confirms r0c; extends it to hybrid, in-situ serving, to 16k.</p>
+      <p class="k"><span class="swatch-inline" style="background:var(--good)"></span>The signal Act 2 tests</p>
+      <p>The only de-confounded contrast, <b>D16 vs D108</b>, = <b>1.00 ± 0.01</b> across 3 arms × 3 ctx. Caveat since recorded: these are <b>not</b> two zero-contention points — D16 runs keepalive prefill, D108 runs none. It survives as an <i>upper bound</i>, not an equality of like with like.</p>
+    </div>
+  </div>
+
+  <div class="act" style="margin-top:34px;">
+    <span class="n">Act 2</span>
+    <h2>Prefill pinned at 16 SM, decode swept alone</h2>
+    <p>Green-context honours a partition pair summing below 108 (probe 864669), so prefill can be held fixed while only decode moves — the remainder simply idles. Run 865098, n=4, all PIN_CHECK pass.</p>
+  </div>
+
+  <div class="charts-head">
+    <div>
+      <p class="section-label">The de-confounded sweep, and what still contaminates it</p>
+    </div>
+  </div>
+
+  <div class="panels" id="panels2"></div>
+
+  <div class="reading">
+    <div class="card">
+      <p class="k"><span class="swatch-inline" style="background:var(--serious)"></span>The prediction failed</p>
+      <p>Pre-registered before the run: ITL flat across D (&lt;5% spread) in all three arms. Observed <span class="num">D16/D92</span> = <b>3.05×</b> (M), <b>8.59×</b> (H), <b>2.07×</b> (T). <b>H0 is dead.</b></p>
+    </div>
+    <div class="card">
+      <p class="k"><span class="swatch-inline" style="background:var(--muted)"></span>But H1 is not adopted</p>
+      <p>Decode <b>batch size</b> fell with D (H: <span class="num">8.44 → 3.28</span>). The closed loop fixed requests in flight, not the decode batch — prefill at 16 SM became the bottleneck, so faster decode drained its phase sooner. <b>The realized-occupancy instrument caught this</b>; asserting fixed occupancy would have let it pass as clean.</p>
+    </div>
+    <div class="card">
+      <p class="k"><span class="swatch-inline" style="background:var(--h)"></span>Slope survives matched batch</p>
+      <p>Stratifying engine telemetry so only equal batch sizes are compared leaves <b>≈2–2.7×</b> in every arm. Some bins invert (M b3 <span class="num">0.95×</span>, T b4 <span class="num">0.87×</span>) and the EWMA-to-batch pairing is approximate — <b>suggestive, not settled</b>.</p>
+    </div>
+    <div class="card">
+      <p class="k"><span class="swatch-inline" style="background:var(--m)"></span>The crux — why does the control slope?</p>
+      <p><b>(a)</b> A confound remains, and everything above is void. <b>(b)</b> The premise is wrong: <i>O(1) is in context length, not in SM count</i> — a Mamba2 decode step still does real matmul work that 16 vs 92 SMs changes.</p>
+      <p>Under <b>(b)</b>, M was never a valid control here and the slope is real — which would make Stage 0's null the artifact.</p>
     </div>
   </div>
 
   <div class="tables">
-    <h2>ITL p50 (ms) — mean of 3 reps</h2>
+    <h2>Act 2 — ITL p50 (ms), prefill pinned at 16 SM · mean ± SD of 4 reps</h2>
     <div class="tbl-scroll">
-      <table id="itl-table"></table>
+      <table id="dc-table"></table>
     </div>
 
-    <h2 style="margin-top:26px;">Ratio: co-swept &ldquo;sensitivity&rdquo; vs de-confounded contrast</h2>
+    <h2 style="margin-top:26px;">Does batch explain it? Raw ratio vs matched-batch ratio</h2>
     <div class="tbl-scroll">
-      <table id="ratio-table"></table>
+      <table id="mb-table"></table>
+    </div>
+
+    <h2 style="margin-top:26px;">Act 1 — ITL p50 (ms), coupled sweep · mean of 3 reps</h2>
+    <div class="tbl-scroll">
+      <table id="itl-table"></table>
     </div>
   </div>
 
   <p class="foot">
-    <b>Gate verdict:</b> decode is non-binding (SM-insensitive) at the operating point — long-context conflict hypotheses (H_L4 temporal, H_L5 spatial) get no decode-floor rise and collapse in this regime; HE0 / vector-1 strengthened ctx-independently.
-    &nbsp;<b>Scope:</b> {M/H/T 2.7–3B · triton · cudagraph-ON green-context PD-mux · ctx ≤ 16k · one-shot 32-conc burst}. Larger models, &gt;16k, and a fully de-confounded remeasurement (fixed prefill-SM · steady-state rate · controlled batch occupancy) are unmeasured.
-    &nbsp;<b>Data:</b> <code>results/stage0_xctrl/</code> jobs 864230 (H,T) + 864601 (M); all PIN_CHECK PASS.
+    <b>Status:</b> canon is deliberately unchanged. The design pre-registered that a non-flat outcome routes to an adversarial audit before any canonical edit, and the reconciliation hypothesis below is untested.
+    &nbsp;<b>Reconciliation to check first (offline, no GPU):</b> the sub-108 decode partition is only active while a prefill is in flight, and Stage 0's PIN_CHECK verified the policy <i>target</i>, not how long the partition was actually active — if Stage 0's D16 spent much of its time on the full stream, it would look like D108 for reasons unrelated to SM insensitivity. Recomputable from existing <code>stage0_xctrl/</code> telemetry.
+  </p>
+  <p class="foot">
+    <b>Scope:</b> {M/H/T 2.7–3B · triton · cudagraph-ON green-context PD-mux · ctx 4k (Act 2) / ≤16k (Act 1)}. Larger models and &gt;16k are unmeasured. Act 2's arms differ in active SM total (32 vs 108), and idle-SM boost headroom flatters the low-D arms — biasing <i>toward</i> under-estimating sensitivity, so the observed slope reads as a lower bound.
+    &nbsp;<b>Data:</b> <code>results/stage0_xctrl/</code> jobs 864230 + 864601; <code>results/s0_deconfound/</code> jobs 864669 (probe) + 865098. Run 865006 was discarded — a context off-by-one rejected every decode request.
   </p>
 </div>
 
 <div id="tip" role="status" aria-live="polite"></div>
 
 <script>
-// ── data: p50 ITL (ms), decode-SM {16,44,92 coupled} + 108 (no-split anchor) ──
+// ── shared ──────────────────────────────────────────────────────────────────
 const ARMS = [
-  { key:"H", name:"Zamba2-2.7B", role:"hybrid · target",       cvar:"--h" },
+  { key:"H", name:"Zamba2-2.7B", role:"hybrid · target",        cvar:"--h" },
   { key:"T", name:"Qwen2.5-3B",  role:"transformer · +control", cvar:"--t" },
   { key:"M", name:"Mamba2-2.7B", role:"pure SSM · −control",    cvar:"--m" },
 ];
-const CTX = [
-  { ctx:4096,  tag:"4k" },
-  { ctx:8192,  tag:"8k" },
-  { ctx:16384, tag:"16k" },
-];
-// itl[arm][ctx] = {16,44,92,108}
-const ITL = {
-  H:{4096:{16:45.6,44:20.4,92:13.6,108:45.5}, 8192:{16:45.4,44:20.2,92:13.3,108:45.2}, 16384:{16:46.8,44:19.8,92:13.1,108:46.7}},
-  T:{4096:{16:17.8,44:10.1,92:8.7, 108:17.8}, 8192:{16:18.4,44:11.0,92:9.6, 108:18.3}, 16384:{16:25.3,44:13.8,92:11.6,108:25.3}},
-  M:{4096:{16:19.3,44:9.9, 92:7.8, 108:19.2}, 8192:{16:17.0,44:8.8, 92:7.0, 108:16.8}, 16384:{16:16.3,44:8.2, 92:6.6, 108:16.3}},
-};
-const XS = [16,44,92];           // coupled curve
-const XA = 108;                  // anchor
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-
-// ── legend ──
-const legend = document.getElementById("legend");
-ARMS.forEach(a=>{
-  const el=document.createElement("span"); el.className="item";
-  el.innerHTML=`<span class="swatch" style="background:var(${a.cvar})"></span><b>${a.key}</b>&nbsp;${a.name}<span class="role">&nbsp;· ${a.role}</span>`;
-  legend.appendChild(el);
-});
-
-// ── chart geometry ──
-const W=320, H=232, mL=40, mR=16, mT=16, mB=34;
-const xDomain=[8,116], yDomain=[0,50];
-const xS = x => mL + (x-xDomain[0])/(xDomain[1]-xDomain[0])*(W-mL-mR);
-const yS = y => (H-mB) - (y-yDomain[0])/(yDomain[1]-yDomain[0])*(H-mT-mB);
 const NS="http://www.w3.org/2000/svg";
 const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
-
 const tip=document.getElementById("tip");
 function showTip(evt,html){ tip.innerHTML=html; tip.style.opacity=1;
   const pad=14; let x=evt.clientX+pad, y=evt.clientY+pad;
@@ -258,65 +300,97 @@ function showTip(evt,html){ tip.innerHTML=html; tip.style.opacity=1;
   tip.style.left=x+"px"; tip.style.top=y+"px";
 }
 const hideTip=()=>tip.style.opacity=0;
+function hit(svg,cx,cy,html){
+  const e=mk("circle",{class:"pt",cx,cy,r:11,fill:"transparent"});
+  e.addEventListener("mousemove",ev=>showTip(ev,html));
+  e.addEventListener("mouseleave",hideTip); svg.appendChild(e); return e;
+}
+
+// ── ACT 1 data: coupled sweep, p50 ITL (ms) ────────────────────────────────
+const CTX = [ {ctx:4096,tag:"4k"}, {ctx:8192,tag:"8k"}, {ctx:16384,tag:"16k"} ];
+const ITL = {
+  H:{4096:{16:45.6,44:20.4,92:13.6,108:45.5}, 8192:{16:45.4,44:20.2,92:13.3,108:45.2}, 16384:{16:46.8,44:19.8,92:13.1,108:46.7}},
+  T:{4096:{16:17.8,44:10.1,92:8.7, 108:17.8}, 8192:{16:18.4,44:11.0,92:9.6, 108:18.3}, 16384:{16:25.3,44:13.8,92:11.6,108:25.3}},
+  M:{4096:{16:19.3,44:9.9, 92:7.8, 108:19.2}, 8192:{16:17.0,44:8.8, 92:7.0, 108:16.8}, 16384:{16:16.3,44:8.2, 92:6.6, 108:16.3}},
+};
+const XS=[16,44,92], XA=108;
+
+// ── ACT 2 data: run 865098, prefill pinned at 16 SM ────────────────────────
+const DS=[16,24,44,92];
+const DC = {            // ITL p50 ms, mean & SD over n=4
+  H:{16:[113.55,10.56], 24:[70.19,0.84], 44:[26.87,0.69], 92:[13.22,0.50]},
+  T:{16:[17.71,0.01],   24:[12.92,0.00], 44:[9.62,0.00],  92:[8.55,0.00]},
+  M:{16:[22.96,0.02],   24:[13.23,0.01], 44:[9.13,0.01],  92:[7.54,0.01]},
+};
+const BATCH = {         // decode_running_batch_size, mean (engine telemetry)
+  H:{16:8.44,24:8.53,44:5.44,92:3.28},
+  T:{16:8.34,24:6.42,44:4.78,92:3.82},
+  M:{16:5.45,24:3.54,44:3.21,92:3.18},
+};
+// D16/D92 ratio: raw, and at a matched decode batch (largest-n overlapping bin)
+const RATIO = {
+  H:{raw:8.59, matched:2.67, bin:"batch 1"},
+  T:{raw:2.07, matched:2.04, bin:"batch 7"},
+  M:{raw:3.05, matched:2.37, bin:"batch 4"},
+};
+const MATCHED = [       // per-bin medians of measured_itl_ewma_ms
+  {arm:"M", b:1, v:{16:15.4,24:11.6,44:7.5,92:6.4}},
+  {arm:"M", b:2, v:{16:15.8,24:11.7,44:8.1,92:6.8}},
+  {arm:"M", b:4, v:{16:18.0,24:13.2,44:9.2,92:7.6}},
+  {arm:"H", b:1, v:{16:25.7,24:19.4,44:12.2,92:9.6}},
+  {arm:"T", b:5, v:{16:16.5,24:12.8,44:9.6,92:8.7}},
+  {arm:"T", b:7, v:{16:17.9,24:12.9,44:9.7,92:8.8}},
+];
+
+// ── legend ──
+const legend=document.getElementById("legend");
+ARMS.forEach(a=>{
+  const el=document.createElement("span"); el.className="item";
+  el.innerHTML=`<span class="swatch" style="background:var(${a.cvar})"></span><b>${a.key}</b>&nbsp;${a.name}<span class="role">&nbsp;· ${a.role}</span>`;
+  legend.appendChild(el);
+});
+
+// ── ACT 1 panels (linear y) ────────────────────────────────────────────────
+const W=320,H=232,mL=40,mR=16,mT=16,mB=34;
+const xS = x => mL + (x-8)/(116-8)*(W-mL-mR);
+const yS = y => (H-mB) - (y-0)/(50-0)*(H-mT-mB);
 
 function panel(c){
-  const svg=mk("svg",{viewBox:`0 0 ${W} ${H}`,role:"img",
-    "aria-label":`ITL vs decode-SM at context ${c.tag}`});
-  // gridlines + y ticks
+  const svg=mk("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":`ITL vs decode-SM at context ${c.tag}`});
   for(let v=0;v<=50;v+=10){
     svg.appendChild(mk("line",{class:"gl",x1:mL,y1:yS(v),x2:W-mR,y2:yS(v)}));
     const t=mk("text",{class:"tick",x:mL-6,y:yS(v)+3.5,"text-anchor":"end"});t.textContent=v;svg.appendChild(t);
   }
-  // x axis baseline + ticks
   svg.appendChild(mk("line",{class:"ax",x1:mL,y1:yS(0),x2:W-mR,y2:yS(0)}));
   [16,44,92,108].forEach(x=>{
     const t=mk("text",{class:"tick",x:xS(x),y:H-mB+15,"text-anchor":"middle"});t.textContent=x;svg.appendChild(t);
   });
-  const xt=mk("text",{class:"axtitle",x:(mL+W-mR)/2,y:H-4,"text-anchor":"middle"});
-  xt.textContent="decode SM"; svg.appendChild(xt);
+  const xt=mk("text",{class:"axtitle",x:(mL+W-mR)/2,y:H-4,"text-anchor":"middle"}); xt.textContent="decode SM"; svg.appendChild(xt);
   const yt=mk("text",{class:"axtitle",x:12,y:mT+2,"text-anchor":"start"}); yt.textContent="ITL ms"; svg.appendChild(yt);
 
-  // arms
   ARMS.forEach(a=>{
     const col=css(a.cvar), d=ITL[a.key][c.ctx];
-    // coupled polyline 16-44-92
-    const pts=XS.map(x=>`${xS(x)},${yS(d[x])}`).join(" ");
-    svg.appendChild(mk("polyline",{points:pts,fill:"none",stroke:col,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
-    // dashed connector 92 -> 108 anchor (shows the jump back up)
+    svg.appendChild(mk("polyline",{points:XS.map(x=>`${xS(x)},${yS(d[x])}`).join(" "),fill:"none",stroke:col,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
     svg.appendChild(mk("line",{x1:xS(92),y1:yS(d[92]),x2:xS(XA),y2:yS(d[XA]),stroke:col,"stroke-width":1.25,"stroke-dasharray":"3 3",opacity:.55}));
-    // coupled markers (filled)
     XS.forEach(x=>{
-      const cx=xS(x),cy=yS(d[x]);
-      svg.appendChild(mk("circle",{cx,cy,r:3.4,fill:col,stroke:"var(--surface)","stroke-width":1.4}));
-      const hit=mk("circle",{class:"pt",cx,cy,r:11,fill:"transparent"});
-      hit.addEventListener("mousemove",e=>showTip(e,`<b>${a.key}</b> · ctx ${c.tag} · D${x}<br>ITL p50 <b>${d[x].toFixed(1)}</b> ms`));
-      hit.addEventListener("mouseleave",hideTip); svg.appendChild(hit);
+      svg.appendChild(mk("circle",{cx:xS(x),cy:yS(d[x]),r:3.4,fill:col,stroke:"var(--surface)","stroke-width":1.4}));
+      hit(svg,xS(x),yS(d[x]),`<b>${a.key}</b> · ctx ${c.tag} · D${x}<br>ITL p50 <b>${d[x].toFixed(1)}</b> ms`);
     });
-    // anchor marker (hollow ring) at 108
-    const ax=xS(XA),ay=yS(d[XA]);
-    svg.appendChild(mk("circle",{cx:ax,cy:ay,r:4.2,fill:"var(--surface)",stroke:col,"stroke-width":2}));
-    const ah=mk("circle",{class:"pt",cx:ax,cy:ay,r:11,fill:"transparent"});
-    ah.addEventListener("mousemove",e=>showTip(e,`<b>${a.key}</b> · ctx ${c.tag} · D108 (no-split ref)<br>ITL p50 <b>${d[XA].toFixed(1)}</b> ms`));
-    ah.addEventListener("mouseleave",hideTip); svg.appendChild(ah);
-    // direct label at D16 end on the 16k panel (best separation)
+    svg.appendChild(mk("circle",{cx:xS(XA),cy:yS(d[XA]),r:4.2,fill:"var(--surface)",stroke:col,"stroke-width":2}));
+    hit(svg,xS(XA),yS(d[XA]),`<b>${a.key}</b> · ctx ${c.tag} · D108 (no-split ref)<br>ITL p50 <b>${d[XA].toFixed(1)}</b> ms`);
     if(c.ctx===16384){
-      const lx=xS(16)+7, ly=yS(d[16])+ (a.key==="M"?11: (a.key==="T"?3:-5));
-      const tl=mk("text",{class:"lbl",x:lx,y:ly,fill:col,"text-anchor":"start"}); tl.textContent=a.key; svg.appendChild(tl);
+      const ly=yS(d[16])+(a.key==="M"?11:(a.key==="T"?3:-5));
+      const tl=mk("text",{class:"lbl",x:xS(16)+7,y:ly,fill:col,"text-anchor":"start"}); tl.textContent=a.key; svg.appendChild(tl);
     }
   });
-
-  // annotate only the 4k panel to avoid clutter
   if(c.ctx===4096){
-    // anchor callout near H's D108 ring
     const d=ITL.H[4096];
-    const axx=xS(XA), axy=yS(d[XA]);
-    svg.appendChild(mk("path",{class:"anno-lead",d:`M ${axx-3} ${axy+6} q -18 14 -40 12`}));
+    svg.appendChild(mk("path",{class:"anno-lead",d:`M ${xS(XA)-3} ${yS(d[XA])+6} q -18 14 -40 12`}));
     const a1=mk("text",{class:"anno",x:xS(44)-2,y:yS(50)+16,"text-anchor":"start"}); a1.textContent="D108: most SM,"; svg.appendChild(a1);
     const a2=mk("text",{class:"anno",x:xS(44)-2,y:yS(50)+28,"text-anchor":"start"}); a2.textContent="yet ≈ slowest"; svg.appendChild(a2);
   }
   return svg;
 }
-
 const panels=document.getElementById("panels");
 CTX.forEach(c=>{
   const box=document.createElement("div"); box.className="panel";
@@ -324,27 +398,132 @@ CTX.forEach(c=>{
   box.appendChild(panel(c)); panels.appendChild(box);
 });
 
-// ── ITL table ──
+// ── ACT 2 panel A: ITL vs decode SM, log y (the claim is about ratios) ─────
+const lx = x => mL + (Math.log10(x)-Math.log10(13))/(Math.log10(105)-Math.log10(13))*(W-mL-mR);
+const ly = y => (H-mB) - (Math.log10(y)-Math.log10(6))/(Math.log10(130)-Math.log10(6))*(H-mT-mB);
+
+function panelDC(){
+  const svg=mk("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"ITL vs decode SM with prefill pinned at 16 SM, log scale"});
+  [6,10,20,50,100].forEach(v=>{
+    svg.appendChild(mk("line",{class:"gl",x1:mL,y1:ly(v),x2:W-mR,y2:ly(v)}));
+    const t=mk("text",{class:"tick",x:mL-6,y:ly(v)+3.5,"text-anchor":"end"});t.textContent=v;svg.appendChild(t);
+  });
+  svg.appendChild(mk("line",{class:"ax",x1:mL,y1:ly(6),x2:W-mR,y2:ly(6)}));
+  DS.forEach(x=>{const t=mk("text",{class:"tick",x:lx(x),y:H-mB+15,"text-anchor":"middle"});t.textContent=x;svg.appendChild(t);});
+  const xt=mk("text",{class:"axtitle",x:(mL+W-mR)/2,y:H-4,"text-anchor":"middle"}); xt.textContent="decode SM (prefill fixed 16)"; svg.appendChild(xt);
+  const yt=mk("text",{class:"axtitle",x:12,y:mT+2,"text-anchor":"start"}); yt.textContent="ITL ms · log"; svg.appendChild(yt);
+
+  ARMS.forEach(a=>{
+    const col=css(a.cvar), d=DC[a.key];
+    svg.appendChild(mk("polyline",{points:DS.map(x=>`${lx(x)},${ly(d[x][0])}`).join(" "),fill:"none",stroke:col,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+    DS.forEach(x=>{
+      svg.appendChild(mk("circle",{cx:lx(x),cy:ly(d[x][0]),r:3.4,fill:col,stroke:"var(--surface)","stroke-width":1.4}));
+      hit(svg,lx(x),ly(d[x][0]),`<b>${a.key}</b> · D${x} · prefill 16<br>ITL p50 <b>${d[x][0].toFixed(2)}</b> ± ${d[x][1].toFixed(2)} ms`);
+    });
+    const tl=mk("text",{class:"lbl",x:lx(16)+7,y:ly(d[16][0])+(a.key==="H"?-6:(a.key==="M"?-5:11)),fill:col,"text-anchor":"start"});
+    tl.textContent=a.key; svg.appendChild(tl);
+  });
+  return svg;
+}
+
+// ── ACT 2 panel B: the surviving confound — decode batch fell with D ───────
+const bY = y => (H-mB) - (y-0)/(10-0)*(H-mT-mB);
+function panelBatch(){
+  const svg=mk("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"decode batch size vs decode SM"});
+  for(let v=0;v<=10;v+=2){
+    svg.appendChild(mk("line",{class:"gl",x1:mL,y1:bY(v),x2:W-mR,y2:bY(v)}));
+    const t=mk("text",{class:"tick",x:mL-6,y:bY(v)+3.5,"text-anchor":"end"});t.textContent=v;svg.appendChild(t);
+  }
+  svg.appendChild(mk("line",{class:"ax",x1:mL,y1:bY(0),x2:W-mR,y2:bY(0)}));
+  DS.forEach(x=>{const t=mk("text",{class:"tick",x:lx(x),y:H-mB+15,"text-anchor":"middle"});t.textContent=x;svg.appendChild(t);});
+  const xt=mk("text",{class:"axtitle",x:(mL+W-mR)/2,y:H-4,"text-anchor":"middle"}); xt.textContent="decode SM"; svg.appendChild(xt);
+  const yt=mk("text",{class:"axtitle",x:12,y:mT+2,"text-anchor":"start"}); yt.textContent="decode batch"; svg.appendChild(yt);
+  ARMS.forEach(a=>{
+    const col=css(a.cvar), d=BATCH[a.key];
+    svg.appendChild(mk("polyline",{points:DS.map(x=>`${lx(x)},${bY(d[x])}`).join(" "),fill:"none",stroke:col,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+    DS.forEach(x=>{
+      svg.appendChild(mk("circle",{cx:lx(x),cy:bY(d[x]),r:3.4,fill:col,stroke:"var(--surface)","stroke-width":1.4}));
+      hit(svg,lx(x),bY(d[x]),`<b>${a.key}</b> · D${x}<br>decode batch <b>${d[x].toFixed(2)}</b>`);
+    });
+  });
+  const a1=mk("text",{class:"anno",x:mL+6,y:mT+10,"text-anchor":"start"}); a1.textContent="batch falls as D rises"; svg.appendChild(a1);
+  const a2=mk("text",{class:"anno",x:mL+6,y:mT+22,"text-anchor":"start"}); a2.textContent="→ ITL(D) still contaminated"; svg.appendChild(a2);
+  return svg;
+}
+
+// ── ACT 2 panel C: raw vs matched-batch ratio, against 1.0 = no sensitivity ─
+function panelRatio(){
+  const svg=mk("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"D16 over D92 ratio, raw versus matched batch"});
+  const yMax=9, rY = y => (H-mB) - (y-0)/(yMax-0)*(H-mT-mB);
+  for(let v=0;v<=yMax;v+=3){
+    svg.appendChild(mk("line",{class:"gl",x1:mL,y1:rY(v),x2:W-mR,y2:rY(v)}));
+    const t=mk("text",{class:"tick",x:mL-6,y:rY(v)+3.5,"text-anchor":"end"});t.textContent=v+"×";svg.appendChild(t);
+  }
+  svg.appendChild(mk("line",{class:"ax",x1:mL,y1:rY(0),x2:W-mR,y2:rY(0)}));
+  // 1.0 = no sensitivity at all
+  svg.appendChild(mk("line",{class:"refline",x1:mL,y1:rY(1),x2:W-mR,y2:rY(1)}));
+  const rl=mk("text",{class:"anno",x:W-mR,y:rY(1)-5,"text-anchor":"end"}); rl.textContent="1.0 = no sensitivity"; svg.appendChild(rl);
+
+  const band=(W-mL-mR)/ARMS.length, bw=(band-14)/2 - 1;   // 2px surface gap between the pair
+  ARMS.forEach((a,i)=>{
+    const col=css(a.cvar), r=RATIO[a.key], x0=mL+i*band+7;
+    [["raw",r.raw,1],["matched",r.matched,.42]].forEach(([k,v,op],j)=>{
+      const x=x0+j*(bw+2), y=rY(v), h=rY(0)-y;
+      svg.appendChild(mk("rect",{x,y,width:bw,height:h,rx:4,fill:col,opacity:op,stroke:"var(--surface)","stroke-width":1}));
+      const e=mk("rect",{class:"pt",x:x-3,y:y-8,width:bw+6,height:h+10,fill:"transparent"});
+      e.addEventListener("mousemove",ev=>showTip(ev,`<b>${a.key}</b> · D16/D92 ${k}<br><b>${v.toFixed(2)}×</b>${k==="matched"?" at "+r.bin:""}`));
+      e.addEventListener("mouseleave",hideTip); svg.appendChild(e);
+      const lab=mk("text",{class:"lbl",x:x+bw/2,y:y-4,"text-anchor":"middle",fill:col}); lab.textContent=v.toFixed(2)+"×"; svg.appendChild(lab);
+    });
+    const nm=mk("text",{class:"tick",x:x0+bw+1,y:H-mB+15,"text-anchor":"middle"}); nm.textContent=a.key; svg.appendChild(nm);
+  });
+  const yt=mk("text",{class:"axtitle",x:12,y:mT+2,"text-anchor":"start"}); yt.textContent="D16 / D92"; svg.appendChild(yt);
+  const k1=mk("text",{class:"anno",x:mL+2,y:mT+10,"text-anchor":"start"}); k1.textContent="solid = raw · pale = matched batch"; svg.appendChild(k1);
+  return svg;
+}
+
+const p2=document.getElementById("panels2");
+[["ITL vs decode SM","prefill pinned · log y",panelDC],
+ ["What still co-varies","decode batch vs D",panelBatch],
+ ["Does batch explain it?","raw vs matched-batch",panelRatio]].forEach(([t,s,fn])=>{
+  const box=document.createElement("div"); box.className="panel";
+  box.innerHTML=`<h3>${t}<span>${s}</span></h3>`;
+  box.appendChild(fn()); p2.appendChild(box);
+});
+
+// ── Act 2 table ──
+const dt=document.getElementById("dc-table");
+dt.innerHTML=`<thead><tr><th>arm</th>${DS.map(d=>`<th>D${d}</th>`).join("")}<th>D16/D92</th><th>batch D16→D92</th></tr></thead>`;
+const dtb=document.createElement("tbody");
+ARMS.forEach(a=>{
+  const d=DC[a.key];
+  const cells=DS.map(x=>`<td>${d[x][0].toFixed(2)} <span class="sd">±${d[x][1].toFixed(2)}</span></td>`).join("");
+  dtb.innerHTML+=`<tr><td class="arm"><span class="swatch-inline" style="background:var(${a.cvar})"></span>${a.key}</td>${cells}`+
+    `<td class="hi-bad">${RATIO[a.key].raw.toFixed(2)}×</td>`+
+    `<td class="ref">${BATCH[a.key][16].toFixed(2)} → ${BATCH[a.key][92].toFixed(2)}</td></tr>`;
+});
+dt.appendChild(dtb);
+
+// ── matched-batch table ──
+const mt=document.getElementById("mb-table");
+mt.innerHTML=`<thead><tr><th>arm · batch</th>${DS.map(d=>`<th>D${d}</th>`).join("")}<th>D16/D92</th></tr></thead>`;
+const mtb=document.createElement("tbody");
+MATCHED.forEach(r=>{
+  const arm=ARMS.find(a=>a.key===r.arm);
+  const cells=DS.map(x=>`<td>${r.v[x].toFixed(1)}</td>`).join("");
+  mtb.innerHTML+=`<tr><td class="arm"><span class="swatch-inline" style="background:var(${arm.cvar})"></span>${r.arm} · batch ${r.b}</td>${cells}`+
+    `<td class="hi-bad">${(r.v[16]/r.v[92]).toFixed(2)}×</td></tr>`;
+});
+mt.appendChild(mtb);
+
+// ── Act 1 table ──
 const it=document.getElementById("itl-table");
-it.innerHTML = `<thead><tr><th>arm</th>${CTX.map(c=>`<th>${c.tag} D16</th><th>D44</th><th>D92</th><th>D108<sup>ref</sup></th>`).join("")}</tr></thead>`;
+it.innerHTML=`<thead><tr><th>arm</th>${CTX.map(c=>`<th>${c.tag} D16</th><th>D44</th><th>D92</th><th>D108<sup>ref</sup></th>`).join("")}</tr></thead>`;
 const tb=document.createElement("tbody");
 ARMS.forEach(a=>{
   const cells=CTX.map(c=>{const d=ITL[a.key][c.ctx];
     return `<td>${d[16].toFixed(1)}</td><td>${d[44].toFixed(1)}</td><td>${d[92].toFixed(1)}</td><td class="ref">${d[108].toFixed(1)}</td>`;}).join("");
-  tb.innerHTML += `<tr><td class="arm"><span class="swatch-inline" style="background:var(${a.cvar})"></span>${a.key}</td>${cells}</tr>`;
+  tb.innerHTML+=`<tr><td class="arm"><span class="swatch-inline" style="background:var(${a.cvar})"></span>${a.key}</td>${cells}</tr>`;
 });
 it.appendChild(tb);
-
-// ── ratio table ──
-const rt=document.getElementById("ratio-table");
-rt.innerHTML = `<thead><tr><th>arm</th><th>D16/D92 · 4k</th><th>8k</th><th>16k</th><th>D16/D108 · 4k</th><th>8k</th><th>16k</th></tr></thead>`;
-const rb=document.createElement("tbody");
-ARMS.forEach(a=>{
-  const co=CTX.map(c=>{const d=ITL[a.key][c.ctx];return (d[16]/d[92]);});
-  const cl=CTX.map(c=>{const d=ITL[a.key][c.ctx];return (d[16]/d[108]);});
-  rb.innerHTML += `<tr><td class="arm"><span class="swatch-inline" style="background:var(${a.cvar})"></span>${a.key}</td>`+
-    co.map(v=>`<td class="hi-bad">${v.toFixed(2)}×</td>`).join("")+
-    cl.map(v=>`<td class="hi-good">${v.toFixed(2)}</td>`).join("")+`</tr>`;
-});
-rt.appendChild(rb);
 </script>
