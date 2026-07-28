@@ -1,0 +1,10 @@
+# Coupled arm: prefill 16 / decode 92. Second division is the decode_states
+# guard-satisfier only (92 is not in {16,24,34,44}); FixedPolicy(92) matches
+# sm_counts idx 1 exactly, so the guard partition is never selected.
+# sm_counts = [(108,0),(16,92),(64,44),(0,108)]; FIXED_DSM=92 -> idx 1.
+sm_group_num: 4
+manual_divisions:
+  - [16, 92, 0]
+  - [64, 44, 48]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

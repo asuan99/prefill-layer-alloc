@@ -1,0 +1,7 @@
+# Coupled arm: prefill 64 / decode 44.
+# sm_counts = [(108,0),(64,44),(0,108)]; decode_states={44}; FIXED_DSM=44 -> idx 1.
+sm_group_num: 3
+manual_divisions:
+  - [64, 44, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

@@ -1,0 +1,17 @@
+# De-confound arm: prefill 16 (pinned), decode 92, 0 SM idle.
+#
+# decode_sm=92 is NOT in the allowed decode_states set {16,24,34,44}, so
+# _build_r2_policy (multiplexing_mixin.py:130-142) would raise at boot with a
+# single division. The second division is a GUARD-SATISFIER only: it makes
+# decode_states={44} so the policy builds, while FixedPolicy(92) still matches
+# sm_counts idx 1 = (16,92) exactly. Same trick as Stage 0 pdmux_d92.yml, but
+# the guard division here also pins prefill to 16, so prefill SM is unchanged
+# even in the (never selected) fallback partition.
+#
+# sm_counts = [(108,0),(16,92),(16,44),(0,108)]; FixedPolicy(92) -> idx 1.
+sm_group_num: 4
+manual_divisions:
+  - [16, 92, 0]
+  - [16, 44, 48]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

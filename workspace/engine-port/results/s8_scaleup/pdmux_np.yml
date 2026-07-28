@@ -1,0 +1,19 @@
+# NO-PARTITION reference (the Stage 0 "D108 anchor" done correctly).
+#
+# Stage 0 gave the D108 cell pdmux_d16.yml with the R2 policy OFF. With the
+# policy off the legacy adjust_stream_groups path runs, and manual_divisions
+# [92,16,**0**] has threshold 0, so `decode_bs >= 0` is always true and the
+# engine pinned stream_idx 1 = (92,16): the "108 SM anchor" actually ran decode
+# at 16 SM in 82-97% of decode-active samples (PARTITION_RESIDENCY_STAGE0.md).
+#
+# Here the policy stays ON and targets 108 explicitly. sm_counts =
+# [(108,0),(64,44),(0,108)]; _r2_decide_idx matches decode_sms==108 to idx 2,
+# which pdmux_context.initialize_stream_groups builds from PLAIN torch streams
+# (green contexts exist only for the middle divisions) -> genuinely unpartitioned
+# full-GPU decode. The [64,44] division exists solely to satisfy the
+# _build_r2_policy decode_states guard and is never selected.
+sm_group_num: 3
+manual_divisions:
+  - [64, 44, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
