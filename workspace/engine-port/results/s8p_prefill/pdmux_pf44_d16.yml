@@ -1,0 +1,7 @@
+# Prefill-SM sweep, cell p44: prefill SM 44, decode SM 16 (fixed), 48 idle.
+# decode=16 alone satisfies the decode_states guard; PDMUX_R2_FIXED_DSM=16.
+sm_group_num: 3
+manual_divisions:
+  - [44, 16, 48]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

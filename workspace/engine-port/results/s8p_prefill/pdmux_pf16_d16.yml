@@ -1,0 +1,16 @@
+# Prefill-SM sweep, cell p16: prefill SM PINNED at 16 (mirrors s8_scaleup's own
+# pdmux_p16_d16.yml -- same values, copied here so this campaign is
+# self-contained and does not depend on a sibling directory).
+# decode SM = 16 (fixed across every cell in this campaign), 76 SM idle.
+# Third element of manual_divisions is the legacy adjust_stream_groups
+# decode_bs threshold (pdmux_context.py discards it for the green-ctx split
+# itself; multiplexing_mixin.py:731 reads it back for the pre-R2 fallback
+# path). decode=16 satisfies the _build_r2_policy decode_states guard on its
+# own (16 in {16,24,34,44}), so PDMUX_R2_FIXED_DSM=16 needs no
+# guard-satisfier division -- same reasoning as s8_scaleup's deconf arm, just
+# with prefill and decode's roles in the sweep swapped.
+sm_group_num: 3
+manual_divisions:
+  - [16, 16, 76]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

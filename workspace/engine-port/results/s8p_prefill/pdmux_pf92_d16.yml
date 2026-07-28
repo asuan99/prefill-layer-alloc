@@ -1,0 +1,12 @@
+# Prefill-SM sweep, cell p92: prefill SM 92, decode SM 16 (fixed), 0 idle.
+# Same VALUES as s8_scaleup's pdmux_c_d16.yml (that campaign's "coupled d16"
+# cell), copied here for self-containment. Unlike s8's d92 DECODE cells, no
+# guard-satisfier division is needed: decode is fixed at 16 SM in every cell
+# of THIS campaign, and 16 is already in the allowed decode_states set
+# {16,24,34,44}, so a single division suffices regardless of how large
+# prefill_sm is. PDMUX_R2_FIXED_DSM=16.
+sm_group_num: 3
+manual_divisions:
+  - [92, 16, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
