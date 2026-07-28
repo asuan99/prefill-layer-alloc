@@ -115,6 +115,7 @@ tmp/
 # (matches g2_0_*/stage0_xctrl practice: harness + verdict tracked, raw not)
 **/results/**/*_result.txt
 **/results/**/*_prompt.txt
+**/results/**/*_prompt_[0-9]*.txt
 **/results/**/*_clocks.csv
 # shared default sync manifest; the per-campaign copy is the tracked one
 /workspace/engine-port/results/runtime_source_manifest.sha256

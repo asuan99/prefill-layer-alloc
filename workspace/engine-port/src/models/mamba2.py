@@ -67,6 +67,11 @@ class Mamba2ForCausalLM(NemotronHForCausalLM):
             # --- native mamba_ssm -> sglang key remap ---
             if name.startswith("backbone."):
                 name = "model." + name[len("backbone.") :]
+            # state-spaces native uses `backbone.embedding.`; the transformers
+            # Mamba2ForCausalLM export (mistralai/Mamba-Codestral-7B-v0.1, the
+            # 7B pure-SSM arm) uses `backbone.embeddings.`. Without the plural
+            # form the tensor is silently dropped -> random embeddings.
+            name = name.replace(".embeddings.", ".embed_tokens.")
             name = name.replace(".embedding.", ".embed_tokens.")
             name = name.replace("mixer.A_log", "mixer.A")
 
