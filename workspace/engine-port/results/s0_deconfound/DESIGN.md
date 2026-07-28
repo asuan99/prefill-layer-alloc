@@ -21,6 +21,19 @@ Stage 0는 이 곡선을 **CONFOUNDED로 판정**하고, 대신 공변이 0으�
 
 ### 1.1 D16 vs D108 앵커의 정확한 성격 (재인용 시 필수)
 
+> ★★★**무효(2026-07-28, claims-auditor C1 CONFIRMED).** 아래 표와 그 결론
+> ("등가는 SM 축소가 비용을 안 냈다는 상한 논증으로 유효")은 **틀렸다** — D108은
+> "경합 있음"조차 아니라 **실제로는 decode 16 SM 자체였다**(legacy auto-path가
+> `manual_divisions=[92,16,0]`의 threshold=0을 오독해 항상 stream_idx
+> 1=(92,16)을 선택; realized telemetry 재집계로 decode-active 샘플의 79–96%가
+> (92,16); `D108/D16` 클라이언트 서명 0.992–1.001인데 D92가 D16보다 3.4–3.6×
+> 빠름 — 108 SM이 92 SM보다 느릴 수 없으므로 D108이 D16과 동일 조건이었음이
+> telemetry 없이도 확인됨). 상세는
+> [`PARTITION_RESIDENCY_STAGE0.md`](PARTITION_RESIDENCY_STAGE0.md),
+> [`../../../PROJECT_STATUS.md`](../../../PROJECT_STATUS.md) "Stage 0" 절,
+> [`../../../reports/CONSENSUS.md`](../../../reports/CONSENSUS.md) §1-21. 이
+> 표는 이력 보존용으로만 남긴다 — **재인용 금지**.
+
 하네스(`stage0_pdmux_capture.sbatch:106-108`) 확인 결과 두 점은
 **"prefill 경합이 0인 두 점"이 아니다**:
 

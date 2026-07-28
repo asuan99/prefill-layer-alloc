@@ -1,5 +1,18 @@
 # Stage 0 (long-ctx L−2) 게이트 — 최종 판정 (2026-07-26)
 
+> ★★★**HISTORICAL / 2026-07-28 판정2·판정3 철회.** claims-auditor가
+> `workspace/engine-port/results/s0_deconfound/DESIGN.md` §5 사전등록 게이트를
+> 집행해 **C1 CONFIRMED**: 아래 §3의 "D108 무경합 앵커"는 실제로는 decode
+> 16 SM이었다(legacy auto-path 코드 버그로 `manual_divisions=[92,16,0]`의
+> threshold=0이 항상 stream_idx 1=(92,16) 선택 + realized telemetry 79–96%
+> (92,16) 동거 + `D108/D16` 클라이언트 서명 0.992–1.001인데 D92가 3.4–3.6×
+> 빠름 = 108이 92보다 느릴 수 없다는 물리적 모순). **판정 1(CONFOUNDED)만
+> 생존**하고 판정 2(NULL)·판정 3(게이트 non-binding)은 철회됐다. §5의 "3중
+> 삼각검증" 서술도 무효(무경합 앵커·음성대조 모두 실제로는 고장 상태였다).
+> **현재 정본은 [`PROJECT_STATUS.md`](../PROJECT_STATUS.md) "Stage 0" 절과
+> [`CONSENSUS.md`](CONSENSUS.md) §1-21이다** — 이 문서는 원 판정의 이력
+> 보존용으로 남기며, 아래 본문은 철회 전 시점 그대로 유지한다.
+
 작성: 2026-07-26 (doc-steward, result-analyst rigorous 판정 기록). 사용자 결정: 아래
 증거로 결론 확정(완전 de-confound 재측정은 실행하지 않음 — §4에 명시).
 

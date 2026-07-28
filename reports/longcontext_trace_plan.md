@@ -1,37 +1,48 @@
 # 실 trace를 **long-context로 전환**하는 문제 — 논의와 계획
 
-발의: 사용자, 2026-07-17. 작성: 같은 날. ★**개정: 2026-07-25**(§0.5 신설 + §4.3 SLO 교정 + §6 L−2/L3s + §2 H_L5 — 벡터1 short-ctx 종결·r0c decode-floor grounding·시간/공간 분리·운영점 게이트 반영). ★★**개정: 2026-07-26**(§0.6 신설 — **L−2(Stage 0) 게이트 실행 완료·결과 기록**: non-binding, ctx≤16k. L−1 이상은 여전히 계획 미실행).
+발의: 사용자, 2026-07-17. 작성: 같은 날. ★**개정: 2026-07-25**(§0.5 신설 + §4.3 SLO 교정 + §6 L−2/L3s + §2 H_L5 — 벡터1 short-ctx 종결·r0c decode-floor grounding·시간/공간 분리·운영점 게이트 반영). ★★**개정: 2026-07-26**(§0.6 신설 — **L−2(Stage 0) 게이트 실행 완료·결과 기록**: non-binding, ctx≤16k. L−1 이상은 여전히 계획 미실행). ★★★**개정: 2026-07-28**(§0.6/H_L4/H_L5/L−2 행 **철회** — claims-auditor 감사(C1 CONFIRMED)로 Stage 0의 D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어, L−2가 "실행 완료·non-binding"이 아니라 **"게이트 미실행"**으로 정정됨. L−1 이상은 "게이트 실패로 보류"가 아니라 다시 계획 단계).
 계기: *"motivation으로 attn과 mamba가 차이가 난다는 지점은 **long-sequence에서 심화**되는데, 실 trace에도 그런 데이터셋들이 존재할 것이고, 그에 따라 **실행의 범위가 달라질 수 있는** 가능성이 있다."*
 
-관련: [CONSENSUS.md](CONSENSUS.md)(정본) · [research_arc.md §S-M](research_arc.md)(반증 지점·측정 환경·유효 경계) · [realtrace_findings_and_open_branches.md](realtrace_findings_and_open_branches.md)(얽힘 기전) · [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)(L−2 최종 판정, 신규).
-**이 문서는 계획이다 — 단 §0.6·§6의 L−2 행은 예외로, 2026-07-26에 실행·확정됐다.** L−1 이상 단계의 수치는 여전히 측정된 것이 아니다 — 확정 결론은 CONSENSUS/PROJECT_STATUS에만 쓴다.
+관련: [CONSENSUS.md](CONSENSUS.md)(정본) · [research_arc.md §S-M](research_arc.md)(반증 지점·측정 환경·유효 경계) · [realtrace_findings_and_open_branches.md](realtrace_findings_and_open_branches.md)(얽힘 기전) · [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)(L−2 원 판정, ★★★2026-07-28 claims-auditor 감사로 철회 — 아래 §0.6 참조).
+**이 문서는 계획이다.** §0.6·§6의 L−2 행은 2026-07-26엔 "예외 — 실행·확정됐다"고 기록했으나, ★★★**2026-07-28 claims-auditor 감사(C1 CONFIRMED)로 그 근거(D108 무경합 앵커)가 무효 확인**되어 L−2도 **게이트 미실행**으로 되돌아갔다 — 이 문서 전체가 다시 계획 단계다. L−1 이상 단계의 수치는 여전히 측정된 것이 아니다 — 확정 결론은 CONSENSUS/PROJECT_STATUS에만 쓴다.
 
 ---
 
-## 0.6 ★갱신 (2026-07-26) — L−2(Stage 0) 게이트 실행 완료: non-binding
+## 0.6 ★갱신 (2026-07-26) — L−2(Stage 0) 게이트 실행: non-binding — ★★★2026-07-28 철회(C1 CONFIRMED)
 
 `stage0_verdict_2026-07-26.md`(3-arm coupled-운영점 스윕, jobs 864230+864601,
 `stage0_transformer_control_design_2026-07-25.md`의 사전 등록 설계)가 §6의 L−2 게이트를
-닫았다. **결과 = 게이트 실패(§6 표의 "게이트 실패이자 강한 결과" 분기 실현)**:
+닫았다고 기록했다. **결과 = 게이트 실패(§6 표의 "게이트 실패이자 강한 결과" 분기 실현)**:
 운영점(cudagraph-ON)에서 decode ITL은 decode-SM(16→108)에 **무감각**이다 —
 pure-Transformer(T)·pure-Mamba(M, 음성 대조)·hybrid(H) 전부, ctx {4k,8k,16k} 전부에서
 (de-confounded 대조 D16 vs D108 = 1.00±0.01). raw coupled 곡선 자체는
 confounded(prefill 경합/entanglement 아티팩트)였으나, 음성 대조 M + 무경합 앵커 D108의
-삼각검증으로 이 confound를 우회해 clean null을 얻었다.
+삼각검증으로 이 confound를 우회해 clean null을 얻었다 — **고 봤다.**
 
-⇒ §0.5(D)가 예고한 대로 **(B)~(C)의 6.5× 微측정 민감도가 운영점서 사라진다** →
-**long-ctx 충돌 가설(H_L4 시간축·H_L5 공간축, 아래 §2) 이 regime서 붕괴, 벡터1/HE0가
-ctx-무관으로 강화**된다. §6 게이트 규칙대로 **L−1 이상(SLO 정의 확정·모델 교체
-baseline·시간축/공간축 충돌 스윕)은 ctx≤16k·2.7–3B급 regime에서는 진행 근거가 없어
-여기서 멈춘다.**
+★★★**철회(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)**: 위
+"무경합 앵커 D108"은 **실제로는 decode 16 SM이었다**(3중 독립 증거 — 코드 기전
+`src/multiplex/multiplexing_mixin.py:725-742`의 threshold=0 오독, realized
+telemetry 79–96% (92,16) 동거, `D108/D16` 클라이언트 서명 0.992–1.001인데 D92가
+3.4–3.6× 빠름). "D16 vs D108 = 1.00±0.01"은 **동일 조건의 반복측정**이었다. "음성
+대조 M + 무경합 앵커의 삼각검증"이라는 위 서술도 **거짓** — 무경합 앵커는 고장,
+음성 대조 M의 전제("decode O(1) recurrent라 SM-bound 불가")도 틀렸다(그 O(1)은
+context 길이에 대한 것이지 SM 수에 대한 것이 아니었다 — `../PROJECT_STATUS.md`
+"8B decode-SM 민감도" C2 참조). raw coupled 곡선이 CONFOUNDED라는 진단(위 문단의
+"raw coupled 곡선 자체는 confounded")만 생존한다.
 
-★**scope 한정(필수)**: 위 판정은 {M/H/T 2.7–3B, triton attn+mamba, cudagraph-ON
-green-context pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc burst}에 한정한다.
-**>16k ctx·더 큰 모델은 미측정**이며, 이 방향은 닫히지 않고 남아 있다. 또한 coupled
-스윕의 confound 때문에 "magnitude"(민감도가 정확히 얼마나 약한가)는 측정 불가 —
-결론은 **방향(non-binding)만**이다. 완전 de-confound 재측정(prefill-SM 고정 +
-steady-state rate + occupancy 통제)은 **미실행**(사용자가 현 증거로 결론 확정을
-결정). 상세는 [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md).
+⇒ §0.5(D)가 예고한 "(B)~(C)의 6.5× 微측정 민감도가 운영점서 사라진다 → long-ctx
+충돌 가설(H_L4 시간축·H_L5 공간축, 아래 §2) 이 regime서 붕괴, 벡터1/HE0가
+ctx-무관으로 강화된다"는 판정도 **철회**한다 — 근거(D108 앵커)가 무효이므로.
+**§6 게이트 규칙이 예정한 "L−1 이상은 여기서 멈춘다"는 "게이트 실패로 멈춘 것"이
+아니라 "게이트가 아무것도 측정하지 못해 미실행 상태로 남은 것"**이다(재개 권고
+아님, 판정 부재라는 뜻).
+
+★**scope 한정(필수, 원 판정 참고용)**: 위 판정은 {M/H/T 2.7–3B, triton attn+mamba,
+cudagraph-ON green-context pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc
+burst}에 한정하려 했다. 상세는
+[stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)(원 판정, 위 항목들로
+철회됨) · `../workspace/engine-port/results/s0_deconfound/
+PARTITION_RESIDENCY_STAGE0.md`(C1 근거) · `../PROJECT_STATUS.md` "Stage 0" 절.
 
 ---
 
@@ -110,8 +121,8 @@ S0/S2/S9/S10의 서빙 반증은 각자의 환경에서 유효하지만(→ [res
 | **H_L1** | long-context서 **최적 static이 prefill-heavy(d16 쪽)로 이동** | 부하항 ↓(출력 짧음) → 모델 floor 지배 | "최적 = 부하 함수" 모델(CONSENSUS §1-5)이 틀렸거나 KV 병목이 새 항을 추가 |
 | **H_L2** | **PD-mux(agnostic) 이득 자체는 유지 또는 확대** | prefill이 길어져 overlap 기회↑ | PD 분리(§1-1)마저 L 의존 |
 | **H_L3** | **layer-type 정책은 여전히 死**(더 확실히) | Diff B가 long-L서 ≈1.0 | (거의 불가) Diff B≈1.0인데 이득이 나면 = 내 lever 모델 자체가 틀림 |
-| **H_L4** (시간축) | ★**혼합(long-doc ↔ chat) trace에서만 두 regime의 최적이 *충돌*** | HE0의 구조적 근거가 "충돌 없음"이므로 | 충돌시켜도 동적이 지면 ⇒ **시간축 동적 트랙 완전 종결**. ★**반증(전제, 2026-07-26, Stage 0 L−2, jobs 864230+864601)**: 이 가설이 기대는 ctx-의존 decode floor 상승이 **ctx≤16k 운영점서 관측되지 않음**(D16≡D108) → 충돌을 만들 재료(floor↑) 자체가 이 regime엔 없어 H_L4는 **전제 단계에서 붕괴**(범위: ctx≤16k, >16k는 미검증) |
-| ★**H_L5** (공간축, 2026-07-25 신설) | **long-ctx서 decode floor↑ → feasible-A ∩ feasible-B = ∅ (공간 충돌 90+90>108) → decoupled-oracle headroom이 short-ctx +16%를 크게 상회** | §0.5-B/C: decode floor가 ctx로 near-108까지 상승(r0c 微측정) + §1-20 증폭 | ★**전제 Stage 0(L−2)**: 운영점서 decode가 non-binding이면 floor 안 오름 → H_L5 붕괴. 또는 binding이어도 headroom이 안 열리면 §1-20이 long-ctx서도 닫힘. ★★**반증 실현(2026-07-26, Stage 0 L−2, jobs 864230+864601, [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md))**: 정확히 이 전제 분기가 발생 — 운영점서 decode는 ctx≤16k까지 non-binding(D16≡D108, hybrid·Transformer·Mamba 전부) → **H_L5 이 regime서 붕괴**(>16k는 미검증, 붕괴 아님) |
+| **H_L4** (시간축) | ★**혼합(long-doc ↔ chat) trace에서만 두 regime의 최적이 *충돌*** | HE0의 구조적 근거가 "충돌 없음"이므로 | 충돌시켜도 동적이 지면 ⇒ **시간축 동적 트랙 완전 종결**. ★**반증(전제, 2026-07-26, Stage 0 L−2, jobs 864230+864601) — ★★★2026-07-28 이 반증도 철회(C1 CONFIRMED)**: 이 가설이 기대는 ctx-의존 decode floor 상승이 "ctx≤16k 운영점서 관측되지 않음(D16≡D108)"이라고 봤으나, 근거인 D108 앵커가 실은 decode 16 SM이었음이 확인돼 무효. H_L4는 **다시 미검증**(전제도 반증도 안 됨) |
+| ★**H_L5** (공간축, 2026-07-25 신설) | **long-ctx서 decode floor↑ → feasible-A ∩ feasible-B = ∅ (공간 충돌 90+90>108) → decoupled-oracle headroom이 short-ctx +16%를 크게 상회** | §0.5-B/C: decode floor가 ctx로 near-108까지 상승(r0c 微측정) + §1-20 증폭 | ★**전제 Stage 0(L−2)**: 운영점서 decode가 non-binding이면 floor 안 오름 → H_L5 붕괴. 또는 binding이어도 headroom이 안 열리면 §1-20이 long-ctx서도 닫힘. ★★**반증 실현(2026-07-26, Stage 0 L−2, jobs 864230+864601, [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)) — ★★★2026-07-28 철회(C1 CONFIRMED)**: "운영점서 decode가 ctx≤16k까지 non-binding(D16≡D108)"이라는 관측이 D108 앵커 무효로 근거를 잃어, "정확히 이 전제 분기가 발생했다"는 판정을 철회한다. H_L5는 **다시 미검증**(붕괴도 실증도 안 됨) |
 
 ★**진짜 목표는 이제 둘**: **H_L4(시간축 동적)** 과 **★H_L5(공간축 decoupling)**. 벡터1 종결(2026-07-25)로 short-ctx 시간축이 닫혔으니 무게중심은 **H_L5**로 이동. 나머지는 그 전제(특히 **L−2 운영점 binding**)를 까는 작업이다.
 
@@ -192,7 +203,7 @@ A100 80GB · `mem-fraction-static 0.82`에서 **ctx 32k × running 48**은 KV가
 
 | 단계 | 내용 | 게이트 (통과 못 하면 중단) |
 |---|---|---|
-| ★**L−2 (Stage 0)** — ★★**완료(2026-07-26), 게이트 실패(non-binding)** | **운영점 decode-SM 민감도 vs ctx**: cudagraph-ON, **decode-only** 부하, ctx ∈ {4k, 8k, 16k} × decode-SM ∈ {16, 44, 92, 108-ref}, **ITL 측정**, 3-arm(M 음성대조/H 타깃/T 양성대조), jobs 864230+864601 | ★**make-or-break**: long-ctx decode가 운영점서 **SM-binding하나**(ITL이 decode-SM에 단조 급민감)? **평탄 → 微측정 6.5×가 운영점서 사라짐 → (B)~(C) 붕괴 = long-ctx 충돌 가설 死, 벡터1/HE0가 ctx-무관 강화. 여기서 멈춘다.** binding 확인 → L−1. ★★**실현된 결과 = 평탄**(D16≡D108, 3 arm×3 ctx 전부) → **이 분기(중단)가 확정 실현됨**. raw 곡선은 confounded였으나 음성대조+무경합앵커 삼각검증으로 clean null 확인. scope=ctx≤16k·2.7–3B급, >16k·큰 모델 미측정. 상세 [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md) |
+| ★**L−2 (Stage 0)** — ★★★**게이트 미실행(2026-07-28 정정)** — 원 기록 "완료(2026-07-26), 게이트 실패(non-binding)"는 철회 | **운영점 decode-SM 민감도 vs ctx**: cudagraph-ON, **decode-only** 부하, ctx ∈ {4k, 8k, 16k} × decode-SM ∈ {16, 44, 92, 108-ref}, **ITL 측정**, 3-arm(M 음성대조/H 타깃/T 양성대조), jobs 864230+864601 | ★**make-or-break**: long-ctx decode가 운영점서 **SM-binding하나**(ITL이 decode-SM에 단조 급민감)? **평탄 → 微측정 6.5×가 운영점서 사라짐 → (B)~(C) 붕괴 = long-ctx 충돌 가설 死, 벡터1/HE0가 ctx-무관 강화. 여기서 멈춘다.** binding 확인 → L−1. 원래 "실현된 결과 = 평탄(D16≡D108, 3 arm×3 ctx 전부)"이라 기록했으나 ★★★**철회(2026-07-28, claims-auditor 감사, C1 CONFIRMED)**: D108 앵커가 실은 decode 16 SM이었고("음성대조+무경합앵커 삼각검증"도 두 기구 모두 고장), raw 곡선의 CONFOUNDED 진단만 생존한다. **이 게이트는 SM-binding 여부를 측정한 적이 없다** — make-or-break 질문은 다시 열려 있다. 상세 [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)(원 판정, 철회됨) |
 | **L−1** — ★**게이트 미충족, 보류(2026-07-26)** | **SLO 정의 확정**(§4.3: 절대 class SLO + slowdown 진단, **prefill_floor 실측**) + **용량 먼저 측정**(각 config의 최대 처리율) | 절벽 밖 rate 대역이 존재하는가. **L−2가 중단 분기로 실현돼 이 단계는 ctx≤16k regime에서 진행 근거 없음** — >16k·큰 모델로 L−2를 재시도하기 전까지 보류 |
 | **L0** | ★**모델 교체 baseline**: `granite-4.0-h-micro`로 **E3-vary(ShareGPT rate 3↔12)를 그대로 복제**, static sweep d16–d54, **n≥4** | **HE0가 모델을 넘어 재현되나**(decode-heavy static이 최선?). 재현 안 되면 → 그 자체가 큰 발견이고, 이후 long-context 해석의 기준이 통째로 바뀜 |
 | **L1** | **`random` long**: in ∈ {2k, 8k, 32k} × out 96, **static sweep** (동적 없음) | **H_L1 검증**: 최적 static이 prefill-heavy로 이동하나? **Diff A가 열리는데 최적이 안 움직이면** = 비용비는 split 결정에 무관하다는 강한 증거 |
@@ -203,11 +214,14 @@ A100 80GB · `mem-fraction-static 0.82`에서 **ctx 32k × running 48**은 KV가
 
 ★**"이길 수도 있는" 실험은 이제 둘**: **L3(시간축, 동적)** 과 **L3s(공간축, decoupling/§1-20)**. 벡터1 종결로 short-ctx 시간축은 닫혔으므로, long-ctx의 무게중심은 **L3s(공간)** 로 기운다(사용자 관심사). L−2·L0–L2는 전부 *전제 검증*이며 결과가 어느 쪽이든 **CONSENSUS 권고 범위를 한정**한다. **전 단계는 L−2(운영점 binding) 게이트에 조건부** — 그게 죽으면 L−1 이하 전부 무의미.
 
-★★**(2026-07-26) 실현**: L−2가 정확히 이 죽는 분기로 실현됐다(non-binding,
-[stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)) — **L−1·L0·L1·L2·L3·L3s
-전부 ctx≤16k·2.7–3B급 regime에서는 무의미(보류)**, 위 문서 설계가 정확히 예정한 대로.
-이 표의 "판정 시 발견"이 아니라 "게이트 설계대로 조기 정지"이므로 이후 단계 재개는
-**>16k ctx 또는 더 큰 모델로 L−2를 다시 통과시킨 뒤에만** 정당화된다.
+★★**(2026-07-26) 실현, ★★★2026-07-28 철회(C1 CONFIRMED)**: 2026-07-26엔 L−2가
+정확히 이 죽는 분기로 실현됐다(non-binding,
+[stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md))고 기록했으나, 근거인
+D108 앵커가 실은 decode 16 SM이었음이 claims-auditor 감사로 확인돼 이 판정을
+철회한다. **L−1·L0·L1·L2·L3·L3s의 상태는 "게이트 설계대로 조기 정지(보류)"가
+아니라 "게이트가 아무것도 측정하지 못한 게이트 미실행"**이다 — 판정 이전
+상태이며, 이후 단계 재개를 권고하지도 금지하지도 않는다(단지 판정이 없다는
+뜻). L−2 자체를 다시 통과시키는 것이 여전히 다음 단계다.
 
 ---
 

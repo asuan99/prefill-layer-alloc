@@ -1,8 +1,21 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-07-26 (Stage 0[long-ctx L−2 게이트]: 운영점 decode SM-무감각을
-hybrid·16k ctx까지 확장 확인 — non-binding, long-ctx 충돌 가설 이 regime서 붕괴,
-HE0/벡터1 ctx-무관으로 강화). 이전: 2026-07-25 (벡터1[G2.0 short-ctx disjoint
+최종 갱신: 2026-07-28 (★★claims-auditor가 사전등록 게이트(`workspace/engine-port/
+results/s0_deconfound/DESIGN.md` §5)를 집행 — **부분 GO**. **C1 CONFIRMED**:
+Stage 0(2026-07-26)이 인용한 "D108 무경합 앵커"는 코드 버그로 **실제로는 decode
+16 SM**이었음이 3중 독립 증거(코드 기전·telemetry 재집계·클라이언트 시그니처)로
+확인 ⇒ Stage 0 판정2(NULL)·판정3(게이트 non-binding)을 **철회**, 판정1(raw ITL(D)
+스윕 = CONFOUNDED)만 생존, long-ctx L−1 이상은 "게이트 실패로 보류"가 아니라
+**"게이트 미실행"**으로 복원. **C2 CONFIRMED(scoped)**: prefill을 16 SM에 고정한
+채 decode-SM만 올리면 ITL이 **2.36–2.91× 개선**(4 arm, 모델-무관) — 측정 노트로
+정본 진입하되 **정책 이득이 아님**(프론티어 `[108−D,D]` 미측정). **C2b("hybrid
+급락=Zamba2 성질") NOT-YET-SUPPORTED**로 강등. **Claim A 등급 변경 없음**(부분
+지지), **HE0/HE2/§1-5/§1-7 철회 안 함** — 대신 긴장 2건을 열린 항목으로 기록.
+상세는 아래 "Stage 0" 절·"8B decode-SM 민감도 측정 노트" 절·"열린 긴장" 절·
+"다음 실험 gate"). 이전: 2026-07-26 (Stage 0[long-ctx L−2 게이트]: 운영점 decode
+SM-무감각을 hybrid·16k ctx까지 확장 확인 — non-binding, long-ctx 충돌 가설 이
+regime서 붕괴, HE0/벡터1 ctx-무관으로 강화 — ★★2026-07-28 이 판정의 핵심 근거가
+철회됨, 위 참조). 2026-07-25 (벡터1[G2.0 short-ctx disjoint
 conflict-regime]: CONFIRMED closure, scoped — narrow-rA 확증 sweep g2_0_raconf
 완료; 같은 날 논문 positioning 판정[multiplexing 신규성 축 + Transformer-control
 게이트, cross-substrate 이식 프레이밍 철회] "다음 실험 gate" #6 추가). 이 문서가
@@ -108,10 +121,13 @@ coupling-tax는 별개 축이며 "단일 static으로 충분 ⟹ coupling tax �
 
 **남은 방향(벡터1 종결이 열어두는 것)**: (i) **long-context**(decode floor가
 ctx 상승에 따라 올라가므로 — CONSENSUS §1-5 — 충돌이 발생할 수 있는 영역).
-★**2026-07-26 갱신**: 이 방향의 전제(운영점서 decode floor가 ctx로 상승해
-binding해지는가)를 Stage 0 게이트로 검증 — **ctx≤16k에서는 상승하지 않는다**(아래
-"Stage 0" 절). (ii) **§1-20 spatial decoupling**(별도 device pool disaggregation,
-+16% headroom)은 아직 실행되지 않았다.
+★**2026-07-26 갱신, ★★2026-07-28 철회**: 2026-07-26엔 이 방향의 전제(운영점서
+decode floor가 ctx로 상승해 binding해지는가)를 Stage 0 게이트가 "ctx≤16k에서는
+상승하지 않는다"로 닫았다고 봤으나, **그 근거(D108 무경합 앵커)가 2026-07-28
+claims-auditor 감사(C1)로 무효 확인**됐다(아래 "Stage 0" 절). ⇒ **이 전제는 다시
+미검증으로 되돌아간다** — "게이트 실패로 보류"가 아니라 "게이트 미실행". (ii)
+**§1-20 spatial decoupling**(별도 device pool disaggregation, +16% headroom)은
+아직 실행되지 않았다.
 
 상세 verdict:
 [`workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md`](workspace/engine-port/results/g2_0_full/disjoint_verdict_2026-07-24.md),
@@ -119,7 +135,7 @@ binding해지는가)를 Stage 0 게이트로 검증 — **ctx≤16k에서는 상
 [`workspace/engine-port/results/g2_0_decliff/decliff_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_decliff/decliff_verdict_2026-07-25.md),
 [`workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md`](workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md).
 
-### Stage 0 (long-ctx L−2 게이트, 2026-07-26) — 운영점 decode SM-무감각, hybrid·16k로 확장
+### Stage 0 (long-ctx L−2 게이트, 2026-07-26) — ★★반증(2026-07-28, claims-auditor C1 CONFIRMED)
 
 7. 운영점(cudagraph-ON, green-context pdmux)에서 decode ITL은 decode-SM(16→108,
    6.75×)에 **무감각(non-binding)**하다 — pure-Transformer(Qwen2.5-3B, 양성
@@ -135,22 +151,100 @@ recurrent라 원리상 SM-bound 불가)이 H와 동형의 "민감도"(2.4×대)�
 그 곡선이 decode-SM이 아니라 prefill 경합/batch-entanglement를 재고 있다는 증거다.
 D108 무경합 앵커만이 이 confound를 우회한다.
 
-**판정**: `reports/longcontext_trace_plan.md` §6이 사전 등록한 L−2 게이트의
-**"게이트 실패이자 강한 결과"** 분기가 실현됐다 — long-ctx 충돌 가설(H_L4 시간축·
-H_L5 공간축)은 이 regime에서 필요한 decode-floor 운영점 상승을 얻지 못해 **붕괴**하고,
-**HE0/벡터1(동적이 best-static을 못 넘음)은 ctx-무관으로 강화**된다. CONSENSUS의
-HE2(운영점 decode 비-binding)·r0c(no-cudagraph decode-floor micro-측정)와 정합·확장
-관계이며, 이는 **아크의 반전이 아니라 기존 결론의 강화**다.
+★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)**: 위
+"D108 무경합 앵커"는 **실제로는 decode 16 SM이었다** — 3중 독립 증거: (i)
+**코드 기전** — `manual_divisions=[92,16,0]`의 세 번째 값 0이 legacy auto-path의
+threshold로 읽혀 `decode_bs>=0`이 항상 참이 되고 그 결과 **항상 stream_idx
+1=(92,16)이 선택**된다(`src/multiplex/multiplexing_mixin.py:725-742`); (ii)
+**realized telemetry 재집계** — decode-active 샘플의 **79–96%가 (92,16)**
+파티션에서 돌았다(9/9 셀); (iii) **telemetry와 독립인 클라이언트 서명** —
+`D108/D16 = 0.992–1.001`(9/9 셀)인데 D92는 D16보다 3.4–3.6× 빠르므로, 108 SM이
+92 SM보다 느릴 수 없다는 물리로부터 telemetry 없이도 D108이 실은 D16과 동일
+조건이었음이 확인된다. ⇒ **"D16 vs D108 = 1.00±0.01"은 동일 조건의 반복측정**이었다.
 
-★**필수 scope**: {M/H/T 2.7–3B, triton attn+mamba, cudagraph-ON green-context
-pdmux, ctx≤16k, 이 coupled 하네스, one-shot 32-conc burst}. **더 큰 모델·>16k·다른
-substrate는 미측정.** coupled 스윕의 "민감도 magnitude"는 confound로 측정 불가하므로
-결론은 **방향(non-binding)만**이다. 완전 de-confound 재측정(prefill-SM 고정+
-steady-state rate+occupancy 통제)은 **미실행** — 사용자가 현 증거로 결론 확정을
-결정했다. ★**방법론 교훈**: coupled ITL(D) 스윕은 decode-SM과 prefill-SM(108−D)을
-공변시켜 confounded되기 쉽다 — **음성 대조**(그 축에 binding 불가능한 arm) +
-**무경합 앵커**(공변이 0으로 붕괴하는 특수점)의 조합이 이를 식별했다. 상세
-[`reports/stage0_verdict_2026-07-26.md`](reports/stage0_verdict_2026-07-26.md).
+**판정2(NULL, "decode SM-무감각")·판정3(게이트 non-binding, "long-ctx 충돌
+가설 붕괴·HE0/벡터1 ctx-무관 강화")를 철회한다. 판정1(raw ITL(D) 스윕 =
+CONFOUNDED)만 생존**한다(prefill=108−D 공변은 설계상 사실이라 D108 앵커의
+유효성과 무관하게 참). ★**"3중 삼각검증" 표현도 철회** — 무경합 앵커는
+고장, 음성 대조 M의 전제("decode O(1) recurrent라 SM-bound 불가")도 **틀렸다**
+(그 O(1)은 context 길이에 대한 것이지 SM 수에 대한 것이 아니었다 — 아래 "8B
+decode-SM 민감도 측정 노트" C2 참조), de-batch 논거는 미감사 — 1/3만 남는다.
+D16/D44/D92 각 division의 **pin 자체**(controller 지정값이 realized로도 그
+값이었다는 것)는 유효함이 유지된다 — 무효화되는 것은 **D108 앵커 하나뿐**이다.
+
+**연쇄 반영**: `reports/CONSENSUS.md` §1-21 판정2/판정3, `reports/
+longcontext_trace_plan.md` §0.6·H_L4·H_L5·L−2 행, `reports/paper/
+CLAIM_EVIDENCE_MATRIX.md` Claim A의 Stage 0 evidence 인용, `workspace/
+engine-port/results/s0_deconfound/DESIGN.md` §1.1의 "D108: keepalive 0 →
+prefill 경합 없음" 표(거짓 — 실제로는 82–96%가 (92,16) 동거; 이 문서가 "재인용
+시 필수"로 지정했으므로 정본 재인용 시 반드시 무효 표시)도 함께 철회한다.
+**long-ctx 트랙은 "게이트 실패로 보류"가 아니라 "게이트 미실행"으로 복원**한다
+— L−2가 실은 아무것도 측정하지 않았으므로 L−1 이상이 멈출 근거가 사라졌다
+(재개하라는 뜻은 아니다 — 판정이 없다는 뜻).
+
+상세 [`reports/stage0_verdict_2026-07-26.md`](reports/stage0_verdict_2026-07-26.md)
+(원 판정, 위 항목들로 철회됨), `workspace/engine-port/results/s0_deconfound/
+PARTITION_RESIDENCY_STAGE0.md`(C1 근거), `workspace/engine-port/results/
+s0_deconfound/DESIGN.md`(재측정 설계 — §1.1 표만 무효, 나머지 유효).
+
+### 8B decode-SM 민감도 측정 노트 (scoped, 2026-07-28) — C2 CONFIRMED(scoped)/C2b NOT-YET-SUPPORTED
+
+claims-auditor 판정(사전등록 게이트, `workspace/engine-port/results/
+s0_deconfound/DESIGN.md` §5): 아래 측정은 **정책 결론이 아니라 레버 존재를
+확립하는 측정 노트**로만 정본에 진입한다. scope 문구는 축약하지 않고 그대로
+인용한다.
+
+> {Mamba-Codestral-7.3B / Zamba2-7B / Nemotron-H-8B / Qwen2.5-7B, A100 80GB TP1,
+> cudagraph-ON green-context pdmux, `--disable-overlap-schedule
+> --chunked-prefill-size -1 --disable-radix-cache`, max-running-requests 48,
+> **ctx1024**, conc16 closed-loop, out512, n=4 rep} 조건에서, **prefill을 16
+> SM에 고정한 채** decode 파티션만 16→92 SM으로 올리면 decode ITL p50이
+> **2.36–2.91×**(4 arm, rep 간 sd 0.01–0.07) 개선된다. 이는 **decode 측
+> 등량곡선**이며 `[prefill,decode,idle]=[16,16,76]…[16,92,0]`로 저-D 셀이
+> SM을 일부러 놀린다 — **정책 비교가 아니다.** 실제 정책은
+> `prefill_SM+decode_SM ≤ 108`을 받으므로 판단 대상은 프론티어 **ITL(D) vs
+> TTFT(108−D)**이고 **그것은 미측정**이다. 정본의 실패 기전(얽힘: decode
+> 굶김→ITL↑→batch 정체→prefill admission 차단→TTFT 폭발)은 decode-ITL
+> 지표에 원리상 보이지 않는다. ⇒ **레버의 존재만 확립하며, 레버를 움직여
+> SLO goodput이 나아진다는 근거가 아니다(게이트 #1). HE0(동적 < best
+> static)를 되살리지 않는다** — HE0의 死因은 레버 부재가 아니라 positioning
+> + 얽힘이었으므로 바뀌는 것은 negative의 **설명**뿐이다. **SM16→SM108(=np)
+> 비율은 인용 금지**(분할 자체가 없어 prefill 할당·동시상태·SM clock이
+> 함께 바뀜: prefill_active_bs 0.6–0.8 vs 4.5–6.7, clock 1293–1396 vs
+> 1396–1403 MHz). ctx는 1024만 귀속 측정됐다(ctx4096은 엔진측 ITL-EWMA
+> 프록시로 Ha8 3.46→3.57×, M8 2.56×로 유지 관찰 — **보조 증거**; 8k/16k
+> prefill-고정은 미측정). Nemotron-H는 flashinfer, 나머지는 triton(측정
+> offset +2.3%, n=1 스모크).
+
+**C2 인용 규율**: 구간(2.36–2.91×)으로 인용, 단일 소수점 금지(bin 선택으로
+점추정이 ±0.1 이동: Hs8 2.58 vs 2.67). **C2b("hybrid 급락=Zamba2 additive
+성질", Hs8/M8=0.86)는 NOT-YET-SUPPORTED** — 모델간 절대비교(파라미터·형상·
+tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) + 제시
+기전(weight-traffic 추정)에 Hs8 데이터가 아예 없고 방향도 반대라 강등한다.
+인용 시 scope 문구: "「Hs8/M8=0.86, Ha8/M8=1.57–1.69」는 모델간 절대비용의
+**통제되지 않은 관찰**이다(파라미터 수·형상·tokenizer·backend 동시 상이).
+아키텍처 계열(additive vs substitutive)에 대한 **기전 주장으로 쓰지 않는다.**"
+
+상세 [`workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`](workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md)
+(§6에 (a)"레버 존재≠정책 이득" (b)"HE0를 되살리지 않는다" 명시, §3 retraction을
+"SM108이 근소하게 빠르다"에서 "비교 불가"로 강화 — 2026-07-28 doc-steward 반영).
+
+## 열린 긴장 (2026-07-28, claims-auditor 지정 — HE2/§1-5/§1-7/HE0 철회 아님)
+
+- **긴장 A (HE2 vs C2)**: C2가 맞는데 왜 HE2(운영점서 decode 최적 split=static·
+  불변, 동적이 anchor 무관 패)는 평탄했나? 유력 가설 = HE2는
+  `prefill+decode≤108` 예산 제약 하에서 D를 움직였으므로 decode 이득이 prefill
+  손실+얽힘으로 상쇄된다 — **레버는 있으나 예산 제약 하 net-positive가 아닐 수
+  있다**는 뜻. **이것은 가설이며 미측정**이고, 정확히 아래 E1(프론티어 실험)의
+  대상이다.
+- **긴장 B (r0c 부분 복권)**: `reports/CONSENSUS.md` §1-5가 r0c의 no-cudagraph
+  decode-knee(ctx256 1.1×→ctx16k 10.5×)를 "운영점 magnitude는 열린 질문"으로
+  강등했는데, C2(cudagraph-ON 서빙, ctx1024, 2.36–2.91×)가 그 곡선 위에 앉는다
+  ⇒ "열린 질문"이 일부 닫히는 **방향**이다. **"정합"까지만 쓴다 — "확증"으로
+  쓰지 않는다.**
+- **진행 중 캠페인**: `results/s8p_prefill/`(prefill 축 SM 민감도, 2026-07-28
+  제출 중) — 아직 결과 없음, 상태만 기록. 결과가 나오면 이 절과 아래 "다음
+  실험 gate"를 갱신한다.
 
 ## 철회된 가설
 
@@ -160,6 +254,10 @@ steady-state rate+occupancy 통제)은 **미실행** — 사용자가 현 증거
 - 과거 simulation/no-CUDA-Graph 결과의 1.37–2.02× layer-aware goodput 향상이
   현재 real-engine 논문 결과다.
 - R1 `PDMUX_DUAL_WORKER=1`이 독립 worker architecture를 구현했다.
+- ★**(2026-07-28) Stage 0 "운영점 decode SM-무감각(non-binding), ctx≤16k·
+  hybrid 전부"** — D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어
+  (C1 CONFIRMED, 코드/telemetry/클라이언트 서명 3중 증거) 철회. 상세는 위
+  "Stage 0" 절.
 
 ## R1 판정
 
@@ -219,7 +317,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
 
 | Claim | 상태 |
 |---|---|
-| A. composition/context/load-dependent decode demand (★2026-07-26 Stage 0: 운영점 decode SM-무감각을 hybrid·pure-Transformer·pure-Mamba·ctx≤16k 전부로 확장 확인 — lever-weakness 강화, 등급 불변) | 부분 지지 |
+| A. composition/context/load-dependent decode demand (★2026-07-26 Stage 0의 "운영점 decode SM-무감각" rider는 ★★2026-07-28 claims-auditor 감사(C1 CONFIRMED, D108 앵커 무효)로 철회 — 대신 C2(scoped): prefill 16 SM 고정 시 decode ITL SM16→SM92 2.36–2.91×, 4 arm 모델-무관, "8B decode-SM 민감도 측정 노트" 참조. 등급 변경 없음 — 레버 존재만 확립, 정책 이득 근거 아님) | 부분 지지 |
 | B. layer-level reconfiguration의 critical-path 손상 | 강한 지지, 현 substrate 한정 |
 | C. decode starvation의 TTFT entanglement | running-batch 경로 강함, KV 경로 부분 |
 | D. true dual-worker가 coupling 감소 (★2026-07-24 코드 리뷰로 control-plane 범위로 축소, 위 "코드 리뷰 스코프 정정" 참조) | 미검증 |
@@ -260,13 +358,52 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    ctx-regime 경계용(별도 질문). 상세는
    [`reports/paper/EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)
    "벡터2"(TC-series) 절.
-7. **long-context Stage 0(L−2) 게이트: 실행 완료, non-binding(2026-07-26)** —
-   `reports/longcontext_trace_plan.md` §6이 사전 등록한 make-or-break 게이트.
-   운영점서 decode SM-무감각이 hybrid·pure-Transformer·pure-Mamba 전부, ctx≤16k
-   전부에서 확인(D16≡D108). **long-ctx L−1 이상(SLO 재정의·모델 교체 baseline·
-   시간축/공간축 충돌 스윕)은 이 regime(ctx≤16k, 2.7–3B급)에서는 진행 근거
-   없음** — 게이트 설계대로 여기서 멈춘다. 남은 미측정: >16k ctx, 더 큰 모델.
-   상세 [`reports/stage0_verdict_2026-07-26.md`](reports/stage0_verdict_2026-07-26.md).
+7. **long-context Stage 0(L−2) 게이트: ★★철회(2026-07-28, C1 CONFIRMED)** —
+   2026-07-26엔 "실행 완료, non-binding"으로 기록했으나, 근거였던 D108 무경합
+   앵커가 실은 decode 16 SM이었음이 확인돼(위 "Stage 0" 절) 판정2/판정3이
+   철회됐다. **L−2 게이트는 사실상 아무것도 측정하지 않았다** — 따라서
+   L−1 이상(SLO 재정의·모델 교체 baseline·시간축/공간축 충돌 스윕)은 "게이트
+   실패로 보류"가 아니라 **"게이트 미실행"**으로 되돌아간다(재개 권고 아님,
+   판정 부재라는 뜻). 상세
+   [`reports/stage0_verdict_2026-07-26.md`](reports/stage0_verdict_2026-07-26.md)
+   (원 판정, 철회됨).
+8. **8B decode-SM 프론티어 실험 E1 (2026-07-28, claims-auditor 지정, 미실행)**
+   — 위 "8B decode-SM 민감도 측정 노트"(C2)가 확립한 레버가 예산 제약 하에서
+   net-positive인지 판정하는 gate. 설계: `[108−D, D]`(D∈{16,24,44,54,92}) +
+   best-static 대조, 4 arm, **offered-rate 고정**(closed-loop 금지), 용량 선측정
+   후 off-cliff rate 선택, **n≥4**, paired bootstrap, TTFT p50/p95/p99 + request-내부
+   token-ITL p95 + conjunctive goodput 보고. **사전등록 게이트 2개**: realized
+   파티션 점유율 ≥0.80, 파티션 활성률 ≥0.60. **사전등록 결정규칙**: 어떤 D가
+   best static을 conjunctive goodput에서 ≥3% 이기고 paired CI가 0을 배제하면
+   채택, 아니면 C2는 "ITL 레버는 있으나 예산 제약 하 net-negative"로 확정한다.
+   병행 게이트:
+   - **E2**: ctx∈{1024,4096,16384}로 확장, t0 패치된
+     `workspace/engine-port/results/s8_scaleup/s0dc_client.py` 사용.
+   - **E3**: duty-cycle 2수준(짧은 keepalive vs 긴 keepalive) 설계상 종결 —
+     추가 실행 불필요, "짧은 prefill을 자주" 규율만 준수.
+   - **E4**: C2b("hybrid 급락=Zamba2 성질")는 현존 체크포인트로 통제된 비교가
+     불가능하므로 — 파라미터·형상·tokenizer가 동시에 다름 — **주장 폐기가
+     정직한 수순**이다(추가 실험으로 구제하지 않는다).
+   진행 중: `results/s8p_prefill/`(prefill 축 SM 민감도, 2026-07-28 제출 중,
+   아직 결과 없음).
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
+
+## 방법론 게이트 (신규, 2026-07-28)
+
+Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목.
+`CLAUDE.md`의 기존 8개 게이트에 추가로, 이 정본에 등재한다.
+
+1. **pin은 policy target이 아니라 realized 파티션으로 검증한다.** telemetry의
+   `runtime_snapshot`이 보고하는 `(prefill_sms, decode_sms)`(코드 근거
+   `dual_worker.py:608`)를 매 실험에서 재집계해 controller가 지정한 값과
+   실제로 일치하는지 확인한다 — 검증 비용은 0이며, 이걸 생략해서 Stage 0의
+   D108 앵커가 실은 D16임을 놓쳤다.
+2. **파티션 활성률을 사전등록 게이트로 삼는다.** green-context 분할은
+   split-prefill 동거 중에만 유효하고, 비면 legacy `adjust_stream_groups`가
+   무분할로 되돌아간다 — 활성률이 낮으면 셀 평균이 목표 파티션과 무분할의
+   혼합이 된다. 실험 전에 최소 활성률(예: ≥0.60)을 정해두고 미달 셀은 폐기한다.
+3. **keepalive는 짧은 prefill을 자주 넣는 방향으로 설계한다.** 긴 keepalive는
+   활성률을 오히려 떨어뜨린다(실측: 0.66–0.93 → 0.32–0.63) — 긴 prefill
+   윈도우 동안 decode가 진행되지 않아 시간적으로 분리되기 때문이다.

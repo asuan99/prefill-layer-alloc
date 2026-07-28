@@ -1,13 +1,19 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-07-26(Stage 0/long-ctx L−2 게이트 서빙 증거를 Claim A에 추가 —
+최종 갱신: 2026-07-28(★★★claims-auditor 사전등록 게이트 집행 — Stage 0의 Claim A
+서빙 증거[D16≡D108 non-binding]를 **철회**(C1 CONFIRMED: D108 앵커가 실은 decode
+16 SM). 대신 8B decode-SM 민감도 측정 노트[C2, scoped: prefill 16 SM 고정 시 SM16→
+SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hybrid
+급락=Zamba2 성질"]는 NOT-YET-SUPPORTED. **등급 변경 없음**[부분 지지] — 레버 존재
+확립일 뿐 정책 이득 근거 아님, 프론티어 실험[E1] 전엔 등급 불변). 이전: 2026-07-26
+(Stage 0/long-ctx L−2 게이트 서빙 증거를 Claim A에 추가 —
 운영점 decode SM-무감각을 hybrid·pure-Transformer·pure-Mamba·ctx≤16k로 확장 확인,
-등급 변경 없음). 이전: 2026-07-25(positioning 판정 추가 — 아래 "주장 제한" 마지막 항목,
+등급 변경 없음 — ★2026-07-28 이 증거 철회, 위 참조). 2026-07-25(positioning 판정 추가 — 아래 "주장 제한" 마지막 항목,
 증거 등급 변경 없음)
 
 | Claim | 현재 판정 | Existing evidence | Missing evidence | Required experiment |
 |---|---|---|---|---|
-| A. Hybrid composition, context, active load에 따라 decode demand가 변한다 | 부분 지지 | Zamba2 context knee; synthetic/ShareGPT의 best split 이동; 다중 모델 batch/context characterization; ★**Stage 0(2026-07-26, `../stage0_verdict_2026-07-26.md`, jobs 864230+864601)**: 운영점(cudagraph-ON, green-context pdmux) 3-arm(pure-Mamba 음성대조/hybrid/pure-Transformer 양성대조) decode-only 스윕에서 de-confounded 대조 D16 vs D108(무경합) = 1.00±0.01, 3 arm×3 ctx(4k/8k/16k) 전부 — **decode SM-무감각(lever-weakness)이 hybrid에서 pure-Transformer·pure-Mamba로, short-ctx에서 16k로 확장 확인**(raw coupled 곡선 자체는 confounded였으나 음성대조+무경합앵커로 우회) | 동일 CUDA Graph 운영점의 **joint**(prefill+decode 동시) surface(Stage 0는 decode-only라 부분 충족), GQA/composition 통제, held-out accuracy, >16k ctx·더 큰 모델 | P3 full-model profile, feature ladder, leave-one-workload/model-family-out |
+| A. Hybrid composition, context, active load에 따라 decode demand가 변한다 | 부분 지지 | Zamba2 context knee; synthetic/ShareGPT의 best split 이동; 다중 모델 batch/context characterization; ★**Stage 0(2026-07-26, `../stage0_verdict_2026-07-26.md`, jobs 864230+864601)**: 운영점(cudagraph-ON, green-context pdmux) 3-arm(pure-Mamba 음성대조/hybrid/pure-Transformer 양성대조) decode-only 스윕에서 de-confounded 대조 D16 vs D108(무경합) = 1.00±0.01, 3 arm×3 ctx(4k/8k/16k) 전부 — decode SM-무감각(lever-weakness)이 hybrid에서 pure-Transformer·pure-Mamba로, short-ctx에서 16k로 확장 확인(raw coupled 곡선 자체는 confounded였으나 음성대조+무경합앵커로 우회했다고 주장됨). ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)**: 이 증거가 인용한 D108(무경합 앵커)은 실제로는 decode 16 SM이었다(코드 버그+telemetry+클라이언트 서명 3중 증거, 상세는 `../../PROJECT_STATUS.md` "Stage 0" 절). "D16 vs D108=1.00±0.01"은 동일 조건 반복측정이었다. **대신 ★★C2(scoped, 2026-07-28, `../../workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`, jobs 865289–865533)**: prefill을 16 SM에 고정한 채 decode-SM만 16→92로 올리면 decode ITL p50이 **2.36–2.91×**(4 arm: pure-Mamba2-7.3B/pure-Transformer-7B/additive·substitutive hybrid-7-8B, ctx1024, n=4) 개선 — **decode SM 민감도가 실재하고 모델-무관**임을 확인(Stage 0의 "SM-무감각" 전제와 정반대 방향). 단 이것은 **decode 측 등량곡선**(저-D 셀이 SM 일부러 idle, `prefill+decode≤108` 예산 제약 없음)이라 **레버 존재만 확립하며 정책 이득 근거가 아니다**(프론티어 ITL(D) vs TTFT(108−D) 미측정, `../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"·"열린 긴장" 참조) | 동일 CUDA Graph 운영점의 **joint**(prefill+decode 동시) surface, GQA/composition 통제, held-out accuracy, >16k ctx, **프론티어(예산 제약 하 net-positive 여부, E1 미실행)** | P3 full-model profile, feature ladder, leave-one-workload/model-family-out, E1(8B 프론티어 `[108−D,D]` 스윕) |
 | B. layer-level reconfiguration은 ITL critical path와 CUDA Graph를 훼손한다 | 강한 지지, 현 구현 범위 한정 | coordinated TPOT 약 42→124 ms, 최적화 후 약 85 ms; sub-step drain; graph incompatibility | 다중 모델 반복과 timeline attribution | B7 반복, CUDA Graph on/off, Nsight synchronization timeline |
 | C. decode starvation은 TTFT도 악화시킨다 | running-batch 경로 강함; KV 경로 부분 | D16 TTFT 7.24 s/ITL 61.9 ms 대 D24 1.21 s/39.9 ms; admission capacity 관측 | time-aligned KV occupancy와 admission reason | D16/D24 paired replay, structured KV/full/mamba occupancy, mediation timeline |
 | D. execution-state separation은 single-worker coupling을 줄인다 (★2026-07-24 코드 리뷰로 scope 축소, 아래 "주장 제한" 참조) | 미검증 | R1은 observer라 해당 증거가 아님; 2026-07-24 읽기 전용 코드 리뷰([`../r2_decoupling_review_2026-07-24.md`](../r2_decoupling_review_2026-07-24.md), file:line 근거)로 `PDMUX_TRUE_DUAL_WORKER=1`의 구조 확인: 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이며, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter` 단일 `stream_index`, ≤108)은 **전면 공유** | 실제 두 host loop에서의 fixed-split 비교(coupled ceiling 내); GPU correctness 동치 테스트(현재 없음); admission latch(`r2_admission_limited`) stale-True 버그 수정; results/r2_eval 캠페인 실행(현재 미생성) | legacy fixed 대 true dual fixed, 동일 telemetry/seed/graph — coupled ceiling(+2%, PROJECT_STATUS/CONSENSUS §1-20) 내에서만 유의미, "얽힘 깨기"로 측정 불가(§1-4 死因의 substrate가 구성상 불변) |
@@ -16,13 +22,26 @@
 
 ## 주장 제한
 
-- Claim A의 Stage 0 서빙 증거(2026-07-26)는 {pure-Mamba2-2.7B/hybrid Zamba2-2.7B/
-  pure-Transformer Qwen2.5-3B, triton attn+mamba, cudagraph-ON green-context
-  pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc burst}에 한정한다. coupled
-  스윕은 decode-SM과 prefill-SM(108−D)을 공변시켜 confounded이므로 **magnitude는
-  측정 불가 — 결론은 방향(non-binding)만**이며, 이는 de-confounded 하위신호
-  (D16 vs D108 무경합 앵커 + 음성 대조 M)에서 도출됐다. >16k ctx·더 큰 모델·완전
-  de-confound 재측정(prefill-SM 고정+steady-state)은 **미실행**. 상세
+- ★★★**철회(2026-07-28, claims-auditor 감사, C1 CONFIRMED)**: Claim A의 Stage 0
+  서빙 증거(2026-07-26, {pure-Mamba2-2.7B/hybrid Zamba2-2.7B/pure-Transformer
+  Qwen2.5-3B, triton attn+mamba, cudagraph-ON green-context pdmux, ctx≤16k,
+  coupled 하네스, one-shot 32-conc burst}에 한정하려던 "decode SM-무감각
+  (non-binding)" 결론)는 근거였던 D16 vs D108 de-confounded 대조 자체가
+  무효(D108은 실제로는 decode 16 SM)라 **전량 철회**한다. 상세는
+  `../PROJECT_STATUS.md` "Stage 0" 절.
+- **대신 C2(scoped, 2026-07-28)**: {Mamba-Codestral-7.3B/Zamba2-7B/
+  Nemotron-H-8B/Qwen2.5-7B, A100 80GB TP1, cudagraph-ON green-context pdmux,
+  `--disable-overlap-schedule --chunked-prefill-size -1 --disable-radix-cache`,
+  max-running-requests 48, ctx1024, conc16 closed-loop, out512, n=4 rep}에서
+  prefill을 16 SM에 고정한 채 decode-SM만 16→92로 올리면 decode ITL p50이
+  **2.36–2.91×**(4 arm, 모델-무관) 개선된다 — 이는 **decode 측 등량곡선**(저-D
+  셀이 SM을 일부러 idle, `prefill+decode≤108` 예산 제약 없음)이라 **레버
+  존재만 확립**하며 정책(SLO goodput) 이득 근거가 아니다(프론티어 ITL(D) vs
+  TTFT(108−D) 미측정). ctx1024만 귀속 측정, ctx4096은 엔진측 ITL-EWMA
+  프록시로 유지 관찰(보조 증거)뿐, 8k/16k는 미측정. **C2b("hybrid 급락=
+  Zamba2 additive 성질")는 NOT-YET-SUPPORTED** — 모델간 절대비교가 통제되지
+  않아 기전 주장으로 쓰지 않는다. 전문은 `../PROJECT_STATUS.md` "8B
+  decode-SM 민감도 측정 노트" 절, 상세
   [`../stage0_verdict_2026-07-26.md`](../stage0_verdict_2026-07-26.md).
 - Claim B는 A100/SGLang green-context implementation에 한정한다.
   ★**positioning 판정(2026-07-25, `venue_positioning.md` §0.1)**: 이것은 논문의

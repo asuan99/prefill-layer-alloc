@@ -4,10 +4,23 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-07-26 (★★**Stage 0(long-ctx L−2 게이트)**: 운영점 decode
+최종 갱신: 2026-07-28 (★★★claims-auditor가 `workspace/engine-port/results/
+s0_deconfound/DESIGN.md` §5 사전등록 게이트를 집행 — **부분 GO**. **C1
+CONFIRMED**: §1-21이 인용한 Stage 0 D108 무경합 앵커는 코드 버그로 실제로는
+decode 16 SM이었음을 3중 독립 증거로 확인 → §1-21 판정2(NULL)·판정3(게이트
+non-binding)을 **철회**, 판정1(CONFOUNDED)만 생존, §5-6 long-ctx open item을
+"게이트 실패로 보류"에서 **"게이트 미실행"**으로 복원. §3-9(방법론 교훈)는
+정정이 아니라 **재작성**(무경합 앵커·음성대조 모두 고장났던 사실을 반영). **C2
+CONFIRMED(scoped)**: prefill 16 SM 고정 시 decode ITL SM16→SM92 2.36–2.91×,
+4 arm 모델-무관(8B 측정 노트, `../PROJECT_STATUS.md` "8B decode-SM 민감도"
+절). **C2b("hybrid 급락=Zamba2 성질") NOT-YET-SUPPORTED로 강등.** §1·§1-5·
+§1-7·HE0/HE2는 **철회하지 않는다** — 긴장 2건(HE2 vs C2, r0c 부분 복권)을
+열린 항목으로 기록. 상세는 아래 §1-21·§3-9·§5-6, `../PROJECT_STATUS.md`).
+이전: 2026-07-26 (★★**Stage 0(long-ctx L−2 게이트)**: 운영점 decode
 SM-무감각을 hybrid·pure-Transformer·pure-Mamba·ctx≤16k 전부로 확장 확인 —
-non-binding, long-ctx 충돌 가설 이 regime서 붕괴, HE0/벡터1 ctx-무관으로 강화.
-상세 §1-21). 이전: 2026-07-19 (★★**§1-16 반증 — tight SLO로 컨트롤러를 실제 재튜닝하면 동적은 best-static에 크게 열위(§1-17). SLO 엄격도와 무관하게 decode-heavy static 지배 확정.** 2026-07-18 §1-16의 "tight→동적 우위"는 재스코어 아티팩트로 격하). 2026-07-17 (변화-trace n≥4 — HE0 견고 확정 + 게이트=auto-tuner 규명).
+non-binding, long-ctx 충돌 가설 이 regime서 붕괴, HE0/벡터1 ctx-무관으로 강화 —
+★★★2026-07-28 이 판정의 핵심 근거가 철회됨, 위 참조. 상세 §1-21). 2026-07-19
+(★★**§1-16 반증 — tight SLO로 컨트롤러를 실제 재튜닝하면 동적은 best-static에 크게 열위(§1-17). SLO 엄격도와 무관하게 decode-heavy static 지배 확정.** 2026-07-18 §1-16의 "tight→동적 우위"는 재스코어 아티팩트로 격하). 2026-07-17 (변화-trace n≥4 — HE0 견고 확정 + 게이트=auto-tuner 규명).
 과거 보고서는 `deprecated_reports/`로 이관(이력 보존용, 내용은 당시 시점 기준이라 현재 결론과 충돌할 수 있음). ★**2026-07-24**: 저장소 전체 격리처를 단일 `deprecated/`로 통합하면서 이 디렉터리는 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)로 물리 이동했다(내용·판정 불변, 경로만 변경). ★**2026-07-24 스코프 정정(claims-auditor 감사, doc-steward)**: §5-7의 "⇒ 동적 제어 트랙 완전 종결" 표현이 [`../PROJECT_STATUS.md`](../PROJECT_STATUS.md)(Claim D/E = 미검증) 및 §1-20(decoupled substrate에 +16% headroom 실재)과 모순돼 **overclaim으로 범위 축소**. §1-7·§1-17(single-worker·SM-split·reactive 제어, n≥4)의 확정성은 불변. 상세는 §5-7·§5-8. ★★**2026-07-24 구조적 정정 추가(engine-porter 코드 리뷰, 읽기전용, [`r2_decoupling_review_2026-07-24.md`](r2_decoupling_review_2026-07-24.md))**: §5-8(a)가 §1-20의 decoupled substrate 후보로 언급했던 `PDMUX_TRUE_DUAL_WORKER=1`은 file:line 근거로 **control-plane dual-worker(호스트 스레드/큐/role만 분리)일 뿐, running batch/KV/SM은 전면 공유**로 확인됨 — decoupled substrate에 **해당하지 않는다**. 상세는 §5-8(a). ★**2026-07-25 §5-8(c) 업데이트**: HE0-reopen 벡터1(G2.0 disjoint 스윕, n≥4 재시도)이 (c)의 underpowered 상태를 부분적으로 검증 — **ILL-POSED at rA5 판정**(escape hatch 근거로 "지지 안 됨"이나 "종결"도 아님, §1-20과는 무관한 별도 축). 상세는 §5-8(c). ★**2026-07-25 §5-8(c) 추가 업데이트(de-cliff stage-1, 실험 2026-07-24~25·기록 2026-07-25)**: rA5 절벽을 벗어난 rA2에서 disjoint를 찾지 못함(`d54`가 양 phase 동시 커버) — **PLAUSIBLE closure이나 CONFIRMED 아님**(claims-auditor 반증 3항목 + narrow-rA 확증 sweep 선행 필수). 한 눈금 전진이지 종결 아님. 상세는 §5-8(c). ★★**2026-07-25 §5-8(c) 최종 업데이트(narrow-rA 확증, `g2_0_rasweep`+`g2_0_raconf`)**: g2_0_rasweep(120 job, off-cliff sub-band rate≤2.75서 disjoint 재확인 없음)이 전이대를 rate 3.0–3.5로 좁혔고, claims-auditor pre-registered 24-job 확증 열 `g2_0_raconf`(rate{3.5,3.75}×{d44,d54}×n6)가 결정 규칙을 충족 — **companion collapse**(rate3.5: d44 0.953±0.035≈d54 0.948±0.035; rate3.75: d44 0.932±0.042<**d54 0.948±0.062**, REOPEN 전제 양쪽 붕괴). **벡터1(short-ctx disjoint) = CONFIRMED closure(scoped)로 종결** — PROJECT_STATUS "벡터1" 절·`g2_0_raconf/raconf_final_verdict_2026-07-25.md` 참조. §5-8(c)의 미결 갈래 (c)는 이제 닫혔다(scope=short-ctx drained; long-ctx·§1-20 spatial decoupling은 별도 미결).
 
 ---
@@ -39,7 +52,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | 11 | ★**게이트의 가치 = 성능이 아니라 견고성 (트랩 방지)** | **유효 벤치(d44 ±0.013 = 노이즈 없음이 증명된 벤치)에서**: no-gate **2.934±0.306, 1/4 붕괴(2.405, sw=10)** vs gate **3.132±0.019 (n=9), 0/9 붕괴, 분산 16× 타이트**. ⇒ **그 붕괴는 시스템 노이즈가 아니라 컨트롤러 탓**(§2-1 부분 복권). 단 **게이트는 동적을 *안전*하게 만들 뿐 static은 여전히 못 이김** |
 | 12 | ★**컨트롤러 CPU 오버헤드 = 死 (직접 계측)** | `SLO-CTLCOST`(v7 이벤트루프 활성 경로 계측): **mean 32–36µs, max 267µs, 누적 ~34ms / ≥1000 call**. 최악의 단일 호출조차 **decode 한 step(ITL p50 ~30ms)의 0.9%**, 누적은 **wall clock의 0.014%**. ⇒ "컨트롤러가 도는 것만으로 이벤트 루프를 지연시킨다"는 가설 **명시적 반증**. 과거 "bind가 switch=0인데 static 미달"은 CPU 비용이 아니라 **§5-4 시스템 노이즈** 탓 |
 
-| 21 | ★★**Stage 0(long-ctx L−2 게이트, 2026-07-26) — 운영점 decode SM-무감각, hybrid·16k로 확장** | 3-arm coupled-운영점 스윕(M=pure Mamba2-2.7B 음성대조·H=Zamba2-2.7B hybrid·T=Qwen2.5-3B 양성대조, ctx{4k,8k,16k}, decode-SM{16,44,92}+108-ref, jobs 864230+864601, PIN_CHECK 전부 PASS). **판정1(CONFOUNDED, CONFIRMED)**: raw ITL(D16/D44/D92) 곡선은 decode-SM binding이 아니라 prefill 경합/entanglement 아티팩트 — D108(무경합 앵커)이 D16과 9셀 전부 ≤0.5% 동일(비단조 최속점 D92=prefill 16SM 굶김 지점), **음성 대조 M**(decode O(1) recurrent라 SM-bound 불가)이 H와 동형의 "민감도"(2.4×대)를 보이는 것 자체가 곡선=confound의 증거. **판정2(NULL, CONFIRMED)**: 유일 de-confounded 대조 **D16 vs D108 = 1.00±0.01, 3 arm×3 ctx 전부** ⇒ **운영점 decode는 16→108 SM에 무감각, pure-Transformer·pure-Mamba·hybrid 전부, 16k ctx까지**(r0c mamba SM-불변을 hybrid·서빙 in-situ·16k로 확장). **판정3**: `longcontext_trace_plan.md` §6 사전등록 게이트의 "게이트 실패이자 강한 결과" 분기 실현 — H_L4(시간축)·H_L5(공간축) 이 regime서 붕괴, **HE0/벡터1이 ctx-무관으로 강화**(반전 아니라 강화). ★scope 한정(필수): {M/H/T 2.7–3B, triton, cudagraph-ON green-context pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc burst} — 더 큰 모델·>16k·완전 de-confound 재측정(prefill-SM 고정+steady-state)은 **미실행**(사용자가 현 증거로 결론 확정 결정), 결론은 magnitude 아니라 **방향(non-binding)만**. 상세 [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md) |
+| 21 | ★★**Stage 0(long-ctx L−2 게이트, 2026-07-26) — ★★★2026-07-28 판정2/판정3 철회(C1 CONFIRMED), 판정1만 생존** | 3-arm coupled-운영점 스윕(M=pure Mamba2-2.7B 음성대조·H=Zamba2-2.7B hybrid·T=Qwen2.5-3B 양성대조, ctx{4k,8k,16k}, decode-SM{16,44,92}+108-ref, jobs 864230+864601, PIN_CHECK 전부 PASS). **판정1(CONFOUNDED, CONFIRMED, 생존)**: raw ITL(D16/D44/D92) 곡선은 decode-SM binding이 아니라 prefill 경합/entanglement 아티팩트 — 이는 prefill=108−D가 항상 공변하는 설계상 사실이라 D108 앵커의 유효성과 무관하게 참이다. 원 **판정2(NULL, CONFIRMED)**: 유일 de-confounded 대조 D16 vs D108 = 1.00±0.01, 3 arm×3 ctx 전부 ⇒ 운영점 decode는 16→108 SM에 무감각. 원 **판정3**: long-ctx 충돌 가설 붕괴, HE0/벡터1이 ctx-무관으로 강화. ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)** — 판정2·판정3 철회: "D108(무경합 앵커)"은 **실제로는 decode 16 SM**이었다. 3중 독립 증거: (i) 코드 기전 — `manual_divisions=[92,16,0]`의 세 번째 값 0이 legacy auto-path threshold로 읽혀 `decode_bs>=0`이 항상 참 → 항상 stream_idx 1=(92,16) 선택(`src/multiplex/multiplexing_mixin.py:725-742`); (ii) realized telemetry 재집계 — decode-active 샘플의 79–96%가 (92,16)(9/9 셀); (iii) telemetry와 독립인 클라이언트 서명 — D108/D16=0.992–1.001(9/9 셀)인데 D92는 3.4–3.6× 빠름(108이 92보다 느릴 수 없음). ⇒ "D16 vs D108=1.00±0.01"은 **동일 조건 반복측정**. ★**"3중 삼각검증" 표현도 철회** — 무경합 앵커는 고장, 음성 대조 M의 전제("decode O(1) recurrent라 SM-bound 불가")도 틀렸음이 확인됨(context 길이의 O(1)이지 SM 수의 O(1)이 아니었다 — `../PROJECT_STATUS.md` "8B decode-SM 민감도" C2 참조), de-batch 논거는 미감사 — 1/3만 남는다. D16/D44/D92의 **pin 자체**는 realized 기준 유효함 유지. **HE0/HE2/§1-5/§1-7은 철회하지 않는다** — 대신 §5-6이 "게이트 미실행"으로 복원되고, 열린 긴장 2건(HE2 vs C2, r0c 부분 복권)이 `../PROJECT_STATUS.md`에 기록된다. ★scope 한정(필수, 판정1엔 여전히 적용): {M/H/T 2.7–3B, triton, cudagraph-ON green-context pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc burst}. 상세 [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md)(원 판정, 위 항목들로 철회됨), `../workspace/engine-port/results/s0_deconfound/PARTITION_RESIDENCY_STAGE0.md`(C1 근거) |
 
 | 13 | ★★**HE0의 구조적 이유 — 두 regime의 최적이 *충돌하지 않는다*** | **TRUE per-phase goodput**: 정책간 spread가 **LO(rate 3) 0.067 (2.3%) vs HI(rate 12) 1.187 (43%)** ⇒ **차별의 ~95%가 과부하 phase에서 발생**. LO는 split에 **무관심**(prefill-heavy 극단 d16 2.861 ≈ decode-heavy 극단 d44 2.858 = 구분 불가) ⇒ **LO엔 쫓아갈 최적점이 없고, HI의 최적은 LO에서도 공짜**(§1-6 비대칭의 정량 확인). ⇒ **"항상 HI 최적"=decode-heavy static이 정의상 최선**이고 동적은 과도만 지불. **동적이 이기려면 regime 간 최적이 *충돌*해야 하는데 이 워크로드엔 그 구간이 없다**. ⚠️**정정 이력**: 2026-07-18(§1-16)엔 "이 논증은 관대 SLO 한정, tight선 HI 최적이 동적"이라 봤으나, **§1-17(직접 재튜닝)이 반증** — tight SLO에서도 HI 최적은 **고정 decode-heavy(d44)**이고 동적은 얽힘 트랩으로 열위. ⇒ **이 논증은 tight SLO에서도 성립**(SLO 엄격도 무관) |
 | 14 | ★**stationary r8의 "시스템 노이즈" = 메트릭 절벽 (외인성 아님)** | 워크로드 4런 전부 동일(fingerprint), 하부 섭동은 **thru 3%·ITL 8%**뿐인데 goodput 2× — **r8이 TTFT≈SLO(3s) 경계에 앉아** 3% 결손이 TTFT 평탄역을 1.5s→3.7s로 밀어 임계선을 넘김. **3=견고/8=불안정/12=견고** ⇒ 경계 regime만 불안정. 상세 [bench_noise_root_cause.md](bench_noise_root_cause.md) |
@@ -85,10 +98,39 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 9. ★**coupled 스윕은 반대편 축을 공변시켜 confound되기 쉽다**(2026-07-26,
    Stage 0). decode-SM을 낮추며 동시에 prefill-SM을 높이는(또는 그 역) 하네스는
    관측 곡선이 스윕 축 자체의 효과인지 반대쪽에서 늘어난 경합/de-batch의 효과인지
-   구분 못 한다. **음성 대조**(그 축에 원리상 binding 불가능한 arm)와 **무경합
-   앵커**(공변이 0으로 붕괴하는 특수점)의 조합이 confound를 identify한다 —
-   "정책/측정 주장에는 음성 대조가 필수"라는 교훈. 상세
-   [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md) §5.
+   구분 못 한다. 이 결론 자체는 유효하다(§1-21 판정1, 생존). ★★★**재작성
+   (2026-07-28, claims-auditor 감사 후) — 아래 문장은 정정이 아니라 대체다.**
+   원래 여기 있던 "음성 대조 + 무경합 앵커의 조합이 confound를 identify했다"는
+   서술은 **거짓이었다** — Stage 0에서 그 두 기구는 **둘 다 고장 나 있었다**:
+   "무경합 앵커"(D108)는 실제로는 decode 16 SM이었고(코드 버그로 legacy
+   auto-path가 항상 (92,16) 선택), "음성 대조"(pure-Mamba M)의 전제 자체가
+   틀렸다("decode는 O(1) recurrent라 SM-bound 불가"의 O(1)은 context 길이에
+   대한 것이지 SM 수에 대한 것이 아니었다 — 8B 재측정에서 M도 T·H와 동일 밴드로
+   SM-민감했다). 이 확산에서 얻는 교훈 3개로 대체한다:
+   - **pin은 policy target이 아니라 realized 파티션으로 검증한다**
+     (`runtime_snapshot`의 `(prefill_sms, decode_sms)`, `dual_worker.py:608`).
+     비용 0. Stage 0은 controller가 지정한 값(target)만 확인하고 실제로
+     선택된 stream_index(realized)를 확인하지 않아 D108이 D16이었음을
+     놓쳤다.
+   - **음성대조는 그 축에 binding 불가능함이 독립 입증된 뒤에만 음성대조다.**
+     "Mamba decode는 O(1)"이라는 직관을 검증 없이 음성 대조의 자격으로 썼다가,
+     그 O(1)이 다른 축(context 길이)에 대한 것이었음이 드러나며 대조 자체가
+     무효화됐다.
+   - **"policy OFF = 중립 기준선"은 legacy fallback 경로 때문에 조용히
+     깨진다.** `PDMUX_R2_POLICY`가 unset이면 legacy `adjust_stream_groups`가
+     `manual_divisions`의 threshold 필드(0)를 조건문으로 오독해 의도한 값과
+     다른 파티션을 고른다 — "정책을 껐다"가 "분할을 안 했다"를 뜻하지 않는다.
+   상세 [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md) §5(원
+   교훈, 철회됨), `../workspace/engine-port/results/s0_deconfound/
+   PARTITION_RESIDENCY_STAGE0.md`(재작성 근거).
+10. ★★**(2026-07-28) pin은 realized로 검증한다.** 위 항목 9의 첫 소항목과 동일 —
+    `PROJECT_STATUS.md` "방법론 게이트(신규)" 참조.
+11. ★★**(2026-07-28) 파티션 활성률을 사전등록 게이트로 삼는다.** green-context
+    분할은 split-prefill 동거 중에만 유효하고, 비면 무분할로 되돌아간다 —
+    최소 활성률(예: ≥0.60)을 실험 전에 정하고 미달 셀은 폐기한다.
+12. ★★**(2026-07-28) keepalive는 짧은 prefill을 자주.** 긴 keepalive는 활성률을
+    오히려 떨어뜨린다(실측 0.66–0.93 → 0.32–0.63) — 긴 prefill 윈도우 동안
+    decode가 진행되지 않아 시간적으로 분리된다.
 
 ---
 
@@ -99,8 +141,8 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | **CONSENSUS.md** (이 문서) | **정본** — 확정/철회 상태 |
 | **`per_layer_type_postmortem.md`** | ★**per-layer-type 구제 시도→기각 kill-chain**(시도 A–H, 두 조건 C1 lever·C2 착취 관점) |
 | **`research_arc.md`** | ★**연구 아크 전사** — 출발점→현재의 단계별 시작논의/촉발지표/해소지표/부정사유(수치 포함). CONSENSUS의 서사 짝. **§S-M = 서빙 수준 반증 지점(등급별) · 측정 환경(E1–E4) · 결론의 유효 경계** |
-| **`longcontext_trace_plan.md`** | ★**계획 문서**(L−1 이상은 측정 전) — 실 trace를 long-context로 전환하는 문제. 동기(Diff A는 L≥3k서 열림) vs 정직한 반론(Diff B는 long-L서 닫힘) · 하드 블로커(Zamba2 ctx 4096 / goodput SLO 붕괴) · 단계 L0–L3. **L−2(Stage 0) 게이트만 실행·확정**(2026-07-26, non-binding — 아래 `stage0_verdict_2026-07-26.md` 참조), 그 이상은 여전히 계획 |
-| **`stage0_verdict_2026-07-26.md`** | ★**Stage 0(long-ctx L−2) 최종 판정** — 운영점 decode SM-무감각을 hybrid·pure-Transformer·pure-Mamba·ctx≤16k로 확장 확인(§1-21). coupled 스윕 confound 진단 + de-confounded D16≡D108 null 결과 |
+| **`longcontext_trace_plan.md`** | ★**계획 문서**(L−1 이상은 측정 전) — 실 trace를 long-context로 전환하는 문제. 동기(Diff A는 L≥3k서 열림) vs 정직한 반론(Diff B는 long-L서 닫힘) · 하드 블로커(Zamba2 ctx 4096 / goodput SLO 붕괴) · 단계 L0–L3. ★★★**L−2(Stage 0) 게이트는 2026-07-26 non-binding으로 "실행·확정"됐다고 기록했으나 2026-07-28 claims-auditor 감사(C1 CONFIRMED)로 무효 — 게이트는 사실상 미실행이었다**(아래 `stage0_verdict_2026-07-26.md` 참조), L−1 이상은 "게이트 실패로 보류"가 아니라 "게이트 미실행" |
+| **`stage0_verdict_2026-07-26.md`** | ★★★**Stage 0(long-ctx L−2) 원 판정 — 2026-07-28 판정2/판정3 철회(C1 CONFIRMED, §1-21)**. coupled 스윕 confound 진단(판정1)만 생존, "de-confounded D16≡D108 null" 결과는 D108 앵커가 실은 decode 16 SM이었음이 확인돼 무효. 이력 보존용, 새 분석 근거로 재인용 금지(단독으로는) — 재인용 시 §1-21 전문과 병기 |
 | `results/slo_sched/lengthnorm_slo_reanalysis.md` | ★**길이-정규화/tight SLO 재계측**(§1-16) — HE0가 SLO 엄격도 의존임을 기존 벤치 재분석으로 확정. 스크립트 `reanalyze_lengthnorm_slo.py` |
 | **`serving_slo_survey.md`** | ★**실 서빙 SLO 관행 조사**(§1-16 후속) — 프로덕션 인터랙티브 TTFT(chat 300/voice 150/code 100/RAG 400ms)가 전부 tight regime; 우리 3s=batch async. DistServe SLO-scale sweep=표준. goodput 메트릭 비판 |
 | **`interactive_slo_retune_plan.md`** | ★**tight-SLO 컨트롤러 재튜닝 + P90-attainment 직접 측정**(§1-17) — §9에 최종 결과(HT0 확정, d44≫동적). 하네스 `results/slo_sched/interactive_bench.sbatch` |
@@ -129,14 +171,17 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 7. ✅**완료·종결 (2026-07-19)**: **tight-SLO 서브트랙.** (b) SLO 관행 조사(`serving_slo_survey.md`): 인터랙티브 주류(chat/voice/code, TTFT 100–400ms)가 tight regime. (a) **컨트롤러 재튜닝 직접 측정**([interactive_slo_retune_plan.md](interactive_slo_retune_plan.md) §9, jobs 860415–860514): chat(300/50)으로 컨트롤러 실제 재튜닝 → **§1-17 = HT0 확정**(d44 73.2%≫bind+GATE 44.3%, 10σ). ★**§1-16의 "tight 동적 우위"는 재스코어 아티팩트로 반증** — 재스코어는 컨트롤러 *행동*을 못 봤다(방법론 교훈: SLO를 목적함수로 바꾸는 실험은 반드시 컨트롤러를 그 SLO로 재튜닝해 직접 측정). code(100ms)는 HT-neg(무경쟁 66%, 물리 불가). ⇒ **single-worker·SM-split·reactive 동적 제어(SLO-aware/binding-first/feasibility-gate)는 관대(3s, §1-7, n≥4)·tight(chat 300/50, §1-17, n=4) SLO 양쪽에서 best-static을 못 넘는다 — 이 범위는 확정, 반증 실패.**
    ★**정정(2026-07-24, claims-auditor 감사)**: 위 "⇒ 동적 제어 트랙 완전 종결"이라는 이전 표현은 **overclaim이라 철회**(취소선 아님, 이 정정으로 대체) — [`../PROJECT_STATUS.md`](../PROJECT_STATUS.md)는 "완전 종결"을 말하지 않으며 Claim D(true dual-worker coupling 감소)·Claim E(Hybrid-informed policy)를 **미검증**으로 명시적으로 열어둔다. §1-20(oracle 분해)도 canon 스스로 disaggregation ceiling +16%가 decoupled substrate엔 열려 있다고 정량화해 "완전 종결"과 정합하지 않았다. **종결된 것은 위 좁은 범위(single-worker·SM-split·reactive)뿐**이며, 미결 항목은 §5-8 참조.
 6. ★**long-context 실 trace로의 전환** (사용자 발의 2026-07-17) — **계획 단계**. 근거: **모든 서빙 반증이 short-context**(ShareGPT 98%가 L<2k)이고 창립 동기의 Diff A는 **L≈3k에서 교차해 열린다** ⇒ 결론의 **유효 경계**가 컨텍스트 축에서 미확인. 단 **layer-aware 부활 경로 아님**(Diff B는 long-L서 ≈1.0으로 닫힘). 실제 stake = **최적 static 위치 · 얽힘 병목의 KV 재편 · HE0 반전(혼합 trace에서만 가능)**. 블로커: **Zamba2-2.7B ctx 4096**(모델 교체 필수 → 전 baseline 재측정) · **goodput SLO가 long prefill서 붕괴**(전 정책 0). 상세·단계 게이트 [longcontext_trace_plan.md](longcontext_trace_plan.md).
-   ★★**Stage 0(L−2) 게이트 실행 완료 — non-binding, 2026-07-26**(§1-21,
-   [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md)): 이 항목이
-   전제하는 "decode floor가 ctx로 상승해 운영점서 binding해진다"는 **ctx≤16k에서는
-   반증**됐다 — D16≡D108(1.00±0.01)이 pure-Transformer·pure-Mamba·hybrid 전부에서
-   성립. `longcontext_trace_plan.md` §6의 사전 등록 게이트 규칙대로 **L−1 이상
-   (모델 교체 baseline·SLO 재정의·시간축/공간축 충돌 스윕)은 이 regime에서
-   진행 근거가 없어 멈춘다**. 남은 미측정: **>16k ctx, 더 큰 모델** — 이 항목은
-   그 범위로 좁혀져 여전히 열려 있다.
+   ★★**Stage 0(L−2) 게이트 실행 — non-binding, 2026-07-26 (★★★2026-07-28
+   철회, C1 CONFIRMED)**(§1-21, [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md)):
+   2026-07-26엔 이 항목이 전제하는 "decode floor가 ctx로 상승해 운영점서
+   binding해진다"가 **ctx≤16k에서는 반증**됐다고 봤으나(D16≡D108(1.00±0.01)),
+   근거였던 D108 앵커가 실은 decode 16 SM이었음이 claims-auditor 감사(C1
+   CONFIRMED, §1-21)로 확인돼 이 판정을 **철회**한다. **L−2 게이트는 사실상
+   아무것도 측정하지 않았다** — 따라서 `longcontext_trace_plan.md` §6의 게이트
+   규칙이 예정한 "L−1 이상은 진행 근거 없어 멈춘다"는 **"게이트 실패"가 아니라
+   "게이트 미실행"**으로 정정한다(재개 권고 아님, 판정 부재라는 뜻). 이 항목
+   (long-context 실 trace 전환)은 **판정 이전 상태로 되돌아가 여전히 열려
+   있다** — 남은 미측정은 ctx≤16k을 포함한 전 구간(L−2 재시도부터).
 8. ★**미결(종결 아님, 2026-07-24 스코프 정정으로 신설)**: §5-7의 "완전 종결"은 아래 세 갈래를 배제하지 않는다.
    - **(a) dual-worker(decoupled) 동적** — [`../PROJECT_STATUS.md`](../PROJECT_STATUS.md) Claim D("역할별 queue/host issue loop/CUDA stream을 실제로 분리하면 single-worker control-plane coupling을 줄일 수 있다")는 **서빙 측정 0건**(증거 수준 "미검증"). §1-20이 정량화한 **+16% disaggregation ceiling**(92 prefill SM + 24 decode SM = 116 > 108 = 단일-GPU coupling tax로 불가능)은 **별도 디바이스 풀 + hybrid state transfer를 갖춘 decoupled substrate에만 열려 있다**. ★★**정정(2026-07-24, engine-porter 코드 리뷰, 읽기전용, [`r2_decoupling_review_2026-07-24.md`](r2_decoupling_review_2026-07-24.md))**: `PDMUX_TRUE_DUAL_WORKER=1`는 이 decoupled substrate에 **해당하지 않는다** — file:line 근거로 확인한바 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이고, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter`의 단일 `stream_index`)은 **전면 공유**된다(92+24=116의 별도 device pool이 아니라 ≤108 단일 coupled index). §1-4 死因 얽힘(공유 running-batch+KV)의 substrate가 불변이므로 이 구현은 **구성상 +16% headroom에 도달 불가**하며 coupled ceiling(+2%, §1-20) 위에 앉아 있다. state-transfer 경로·mamba conv/ssm state migration은 **코드에 전무**(스캐폴딩조차 없음). ⇒ **Claim D는 "control-plane coupling 감소"로만 유의미하게 측정 가능**, "얽힘 깨기"로 팔 수 없다. 부가: admission latch(`r2_admission_limited`)에 **known-latent stale-True 버그** 확인 — split batch가 None으로 배수되면 재평가 경로가 없어 latch가 True로 고착되어 prefill admission을 영구 차단할 수 있다(clear 경로 부재). **사용자 결정으로 현재 수정하지 않고 보류.** R2는 GPU correctness gate를 통과한 이력이 없다(`results/r2_eval/` 디렉터리 미생성, `architecture=true_dual` telemetry 전무). 이 headroom이 (다른 substrate에서) 실현되는지는 여전히 미검증. 게이트는 PROJECT_STATUS "다음 실험 gate" §2 참조.
    - **(b) 비-SM-split lever** — §1-4 얽힘의 死因은 **공유 running-batch capacity·KV**(SM 분할 자체가 아님). admission-control 또는 KV-aware한 lever로 이 死因을 직접 겨냥하는 시도는 **구현조차 되지 않았다**. 지금까지 종결된 것은 전부 *SM-split* 기반 컨트롤러(SLO-aware/binding-first/feasibility-gate)뿐.
@@ -203,10 +248,12 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
    **rate_A≤3.75**} 한정, "hybrid엔 disjoint 없음"으로 일반화 금지). §1-20
    방화벽 불변(시간적 disjoint와 공간적 coupling-tax는 별개 축). **남은
    방향**: long-context(decode floor 상승 영역, §1-5) 재검증, §1-20 spatial
-   decoupling. ★**2026-07-26 갱신**: 전자는 Stage 0(L−2) 게이트로 부분 실행됨
-   — ctx≤16k에서는 decode floor가 운영점서 상승하지 않아(§1-21) **이 항목도
-   ctx-무관으로 강화되는 방향**(disjoint 없음이 long-ctx로도 재확인될 가능성이
-   높아짐), 단 >16k·큰 모델은 미측정이라 최종 확정 아님. §1-20 spatial
-   decoupling은 여전히 미실행. 상세
+   decoupling. ★**2026-07-26 갱신, ★★★2026-07-28 철회**: 2026-07-26엔 전자가
+   Stage 0(L−2) 게이트로 부분 실행돼 "ctx≤16k에서는 decode floor가 운영점서
+   상승하지 않아(§1-21) 이 항목도 ctx-무관으로 강화되는 방향"이라고 봤으나,
+   그 근거(D108 무경합 앵커)가 claims-auditor 감사(C1 CONFIRMED, §1-21)로
+   무효 확인돼 **철회**한다. **이 항목은 다시 미검증**(Stage 0이 "게이트
+   실패"가 아니라 "게이트 미실행"이었으므로 강화도 약화도 아니고 원점).
+   §1-20 spatial decoupling은 여전히 미실행. 상세
    [`../workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md`](../workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md),
    [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md).

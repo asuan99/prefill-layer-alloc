@@ -1,7 +1,11 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-07-26(P6 long-context Stage 0/L−2 게이트 실행 완료 — non-binding,
-아래 P6 절 갱신). 이전: 2026-07-25(벡터2 재프레이밍 — cross-substrate serving 이식
+최종 갱신: 2026-07-28(★★★claims-auditor 감사 — P6의 Stage 0/L−2 게이트 판정
+[non-binding]을 **철회**(C1 CONFIRMED: D108 앵커가 실은 decode 16 SM). L−2는
+"실행 완료"가 아니라 "게이트 미실행"으로 정정. 대신 8B decode-SM 민감도 측정
+노트[C2, scoped]와 그 프론티어 게이트 E1–E4를 추가 — 아래 P6 절 갱신). 이전:
+2026-07-26(P6 long-context Stage 0/L−2 게이트 실행 완료 — non-binding,
+아래 P6 절 갱신 — ★2026-07-28 철회, 위 참조). 2026-07-25(벡터2 재프레이밍 — cross-substrate serving 이식
 [XS-series]을 "불필요·부적합"으로 하향 후 새 게이트 "Transformer-control on
 green-context"[TC-series]로 교체, positioning 판정)
 
@@ -213,15 +217,29 @@ entanglement 귀속)가 닫는다** — 별도 substrate serving 이식은 불�
 철회됐으므로, long-ctx가 "이식의 대체재"일 필요도 없다. 두 트랙은 서로 다른
 질문(long-ctx=ctx-regime 경계, 벡터2=primitive/모델 귀속)을 담당한다.
 
-★★**Stage 0(L−2) 게이트 실행 완료(2026-07-26) — non-binding**
-(`../stage0_verdict_2026-07-26.md`, jobs 864230+864601): 운영점서 decode
-SM-무감각이 hybrid·pure-Transformer·pure-Mamba 전부, ctx≤16k 전부로 확인됐다.
-이것이 바로 위 문단이 예정한 "negative→가이드라인 전환" 역할의 실현이다 —
-논문에 쓸 수 있는 것은 "long-context가 lever를 부활시킨다"가 아니라 **"lever-
-weakness(Claim A)가 ctx-불변 구조적 성질이며, ctx≤16k·2.7–3B급 regime에서는
-운영점 서빙으로 확인된다"**. `longcontext_trace_plan.md` §6 게이트 규칙대로
-L−1 이상(L0–L3/L3s)은 이 regime에서 진행 근거가 없어 보류; >16k ctx·더 큰
-모델은 미측정으로 남는다.
+★★**Stage 0(L−2) 게이트 실행(2026-07-26) — non-binding, ★★★2026-07-28 철회
+(claims-auditor 감사, C1 CONFIRMED)**
+(`../stage0_verdict_2026-07-26.md`, jobs 864230+864601): 2026-07-26엔 운영점서
+decode SM-무감각이 hybrid·pure-Transformer·pure-Mamba 전부, ctx≤16k 전부로
+확인됐다고 기록했으나, 근거였던 "D108 무경합 앵커"가 실은 decode 16 SM이었음이
+3중 독립 증거(코드 기전·telemetry 재집계·클라이언트 서명)로 확인돼 **판정을
+철회**한다. **L−2는 SM-binding 여부를 측정한 적이 없다** — "negative→가이드라인
+전환" 역할은 실현되지 않았고, `longcontext_trace_plan.md` §6의 L−1 이상은
+"게이트 실패로 보류"가 아니라 **"게이트 미실행"**이다.
+
+★★**대신(2026-07-28) 8B decode-SM 민감도 측정 노트 — C2 CONFIRMED(scoped)**
+(`../../workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`,
+jobs 865289–865533): prefill을 16 SM에 고정한 채 decode-SM만 16→92로 올리면
+decode ITL이 **2.36–2.91×**(4 arm, 모델-무관) 개선된다 — Stage 0가 주장하던
+"SM-무감각"과 정반대 방향. 단 이는 **decode 측 등량곡선**(예산 제약
+`prefill+decode≤108` 없음)이라 **레버 존재만 확립**하며 정책 이득 근거가
+아니다. **claims-auditor가 지정한 프론티어 게이트 E1**(`[108−D,D]` 스윕,
+D∈{16,24,44,54,92}+best-static 대조, 4 arm, offered-rate 고정, n≥4, 사전등록
+파티션 점유율≥0.80·활성률≥0.60 게이트, 결정규칙: best static 대비 conjunctive
+goodput ≥3% 개선 & paired CI가 0 배제)가 이 레버가 예산 제약 하 net-positive인지
+판정한다 — 병행 게이트 E2(ctx 확장)·E3(duty-cycle, 설계상 종결)·E4(C2b는 통제
+불가하므로 주장 폐기). 상세 `../PROJECT_STATUS.md` "8B decode-SM 민감도 측정
+노트"·"열린 긴장"·"다음 실험 gate" #8.
 
 | ID | 고정 workload |
 |---|---|
