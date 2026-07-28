@@ -4,6 +4,7 @@ external/
 # Build / JIT caches and SLURM job logs (T5 harness)
 **/.torch_ext/
 **/.triton_cache/
+**/.triton_cache*/
 *.out
 *.err
 *.zip
