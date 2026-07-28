@@ -1,0 +1,12 @@
+# E1 frontier cell D=16: prefill=92 SM / decode=16 SM (decode-starved extreme).
+# Budget-constrained: prefill_SM + decode_SM == 108 (no idle SM), unlike the
+# s8_scaleup/s8p_prefill equi-load curves which leave SM idle on purpose.
+# decode_sms=16 is in the allowed decode_states set {16,24,34,44} for
+# _build_r2_policy (multiplexing_mixin.py:130-142), so no guard-satisfier
+# division is needed. PDMUX_R2_POLICY=fixed PDMUX_R2_FIXED_DSM=16.
+# sm_counts = [(108,0),(92,16),(0,108)]; FixedPolicy(16) -> idx 1.
+sm_group_num: 3
+manual_divisions:
+  - [92, 16, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

@@ -1,0 +1,15 @@
+# E1 frontier cell D=54: prefill=54 SM / decode=54 SM (the symmetric split;
+# also g2_0's "d54" state, the arm that finally covered both regimes in the
+# vector-1 short-ctx closure). decode_sms=54 is NOT in the allowed
+# decode_states set {16,24,34,44}, so _build_r2_policy would raise at boot
+# with a single division -- the second row below is a GUARD-SATISFIER ONLY
+# (never selected; FixedPolicy(54) matches sm_counts idx 1 == (54,54)
+# exactly). Guard row reused verbatim from s8_scaleup/pdmux_c_d92.yml, which
+# is the validated precedent for this trick (same guard row, same reasoning).
+# sm_counts = [(108,0),(54,54),(64,44),(0,108)]; FixedPolicy(54) -> idx 1.
+sm_group_num: 4
+manual_divisions:
+  - [54, 54, 0]
+  - [64, 44, 48]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

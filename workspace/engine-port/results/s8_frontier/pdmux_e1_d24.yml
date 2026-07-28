@@ -1,0 +1,8 @@
+# E1 frontier cell D=24: prefill=84 SM / decode=24 SM.
+# decode_sms=24 is in the allowed decode_states set, no guard division needed.
+# sm_counts = [(108,0),(84,24),(0,108)]; FixedPolicy(24) -> idx 1.
+sm_group_num: 3
+manual_divisions:
+  - [84, 24, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

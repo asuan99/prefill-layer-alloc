@@ -1,0 +1,13 @@
+# E1 frontier cell D=44: prefill=64 SM / decode=44 SM. This is the value
+# repeatedly identified as the robust best-static default in the 2.7B
+# CONSENSUS work (decode-heavy static under peak decode load) -- included
+# here as the natural prior expectation for "best static" at 8B too, though
+# the campaign's decision rule (DESIGN.md) determines best-static empirically
+# from the measured grid, not by assuming this cell wins.
+# decode_sms=44 is in the allowed decode_states set, no guard division needed.
+# sm_counts = [(108,0),(64,44),(0,108)]; FixedPolicy(44) -> idx 1.
+sm_group_num: 3
+manual_divisions:
+  - [64, 44, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

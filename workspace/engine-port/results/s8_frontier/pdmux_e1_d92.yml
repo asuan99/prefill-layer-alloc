@@ -1,0 +1,27 @@
+# E1 frontier cell D=92: prefill=16 SM / decode=92 SM (prefill-starved
+# extreme -- the mirror of D16). decode_sms=92 is NOT in the allowed
+# decode_states set {16,24,34,44}, so the second row is a GUARD-SATISFIER
+# ONLY (never selected; FixedPolicy(92) matches sm_counts idx 1 == (16,92)
+# exactly). Identical in content to s8_scaleup/pdmux_c_d92.yml -- kept as a
+# self-contained copy in this campaign directory per the s8p_prefill
+# reproducibility convention (values documented in-file rather than
+# symlinked).
+# sm_counts = [(108,0),(16,92),(64,44),(0,108)]; FixedPolicy(92) -> idx 1.
+#
+# RISK (see DESIGN.md): this is the prefill-starved cell (prefill=16 SM
+# only). Prefill admission blocking is a known-latent bug
+# (reports/r2_decoupling_review_2026-07-24.md #4) but it is scoped to
+# CoarseGrainedController.stabilize() (generic/hybrid dynamic policies) --
+# FixedPolicy.decide() never sets admission_limited (controller.py:80-94
+# omits the kwarg, dataclass default False), so that specific latch bug
+# cannot fire under PDMUX_R2_POLICY=fixed. The remaining, unrelated risk is
+# the documented one: green-ctx split reverts to unpartitioned (0,108)
+# whenever split_prefill_batch AND running_batch are BOTH empty
+# (multiplexing_mixin.py adjust_stream_groups) -- covered by the partition
+# activity-rate gate (DESIGN.md sec 5, gate 2), not by this config.
+sm_group_num: 4
+manual_divisions:
+  - [16, 92, 0]
+  - [64, 44, 48]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
