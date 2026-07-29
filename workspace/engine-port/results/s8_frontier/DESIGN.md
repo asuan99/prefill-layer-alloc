@@ -127,7 +127,8 @@ Zamba2-7B's native `max_position_embeddings=4096` — see §9 risk 3).
 below) — the scan must output BOTH distributions per cell, not just an
 elbow.** `e1_capacity_scan.sbatch` boots each (arm, D-cell) once and fires
 short ShareGPT probes at `RATES="1 2 3 4 6 8 12 16"` (req/s, 20s-target
-duration each via `NP = max(15, ceil(rate*20))`, `PROBE_TARGET_S` tunable),
+duration each via `NP = max(45, ceil(rate*20))` (`NP_MIN` raised 15→45
+2026-07-29, §4.2.3), `PROBE_TARGET_S` tunable),
 printing, per (cell, rate): raw **TTFT p50/p95/p99** AND the
 **request-internal token-ITL p95 distribution's own p50/p95** (already
 implemented in the script's `CAPSCAN` line — this was already computed, the
@@ -163,6 +164,171 @@ The scan's per-probe settle is a fixed 5s sleep, **not** `e1_sweep.sbatch`'s
 full running==0/queued==0 drain-detection loop — acceptable because scan
 output is never cited directly (elbow-location only), documented deviation
 per this task's "note deviations" instruction.
+
+### 4.2.1 ★★REVISED 2026-07-29 (coordinator directive, smoke 866868) —
+    `achieved_rps` was tail-diluted and unreliable; split into
+    `arrival_rps` / `completion_rps`, elbow-finding reassigned to TTFT/ITL
+    trend
+
+**Diagnosis.** 866868 (T8, d44, rates 2/8, `PROBE_TARGET_S=10` override)
+showed `achieved_rps` values (1.50 at rate=2, 3.40 at rate=8) far below
+nominal, and — the decisive tell — **TTFT p50 at rate=2 (210ms) was HIGHER
+than at rate=8 (99ms)**, a physical impossibility for a monotonic capacity
+curve. Root cause: `dur` (the denominator of the old `achieved_rps`) is
+bench_serving's own completion-based duration — first-request-dispatch to
+last-request-FULL-COMPLETION, including that last request's entire decode
+generation. For a SHORT probe (arrival window ~10s target) this "drain
+tail" is a large, non-shrinking fraction of the measured window
+(rate=2: dur=13.3s for a ~10s arrival window, ~3.3s pure tail; rate=8:
+dur=23.6s, ~13.6s tail — WORSE at higher rate because queueing under load
+extends the tail further), so `n/dur` conflates "is the server saturated"
+with "how much did this specific short probe's trailing generation happen
+to cost" — exactly the confound the coordinator flagged (cannot distinguish
+saturation from an artifact of too few requests).
+
+**Fix — two numbers, not one, neither used alone for elbow-finding:**
+- **`arrival_rps`**: reconstructed via replaying `sglang.bench_serving`'s
+  own seeded arrival-time RNG (`np.random.seed(args.seed)` +
+  `np.random.exponential(1/rate)` per `get_request()`,
+  `bench_serving.py:948`; verified exact for THIS configuration —
+  `--dataset-name sharegpt` sampling only calls Python's stdlib
+  `random.shuffle` (`sglang/benchmark/datasets/sharegpt.py:98`), never
+  `np.random`, so the `np.random` stream is untouched between
+  `np.random.seed()` (`bench_serving.py:1706`) and `get_request()`'s first
+  draw — see the inline scorer's comment for the FRAGILITY caveat: this
+  reconstruction silently desyncs if the dataset/backend changes to one
+  that DOES consume `np.random` during prep, or if `--seed` is ever
+  overridden per-probe). This answers "did the client actually dispatch
+  requests on schedule" — a VALIDITY check, not a capacity signal (an
+  open-loop client dispatches unconditionally, so `arrival_rps` will track
+  the nominal rate closely whenever the realized Poisson draw isn't
+  unusually far from its mean).
+- **`completion_rps`** (renamed from `achieved_rps`, same `n/dur`
+  computation as before, kept for continuity): still tail-diluted for short
+  probes, printed with an explicit caveat, not to be read alone.
+- **Elbow-finding is reassigned to the TTFT/ITL percentile TREND across
+  rates** (both already printed, and now warmup-corrected per §4.2.2) —
+  standard practice for open-loop capacity probing: throughput alone is a
+  poor saturation signal in a short, finite-duration open-loop test (a
+  saturating queue needs time to visibly build; latency degrades sooner and
+  more reliably). This is a change in HOW the already-printed TTFT/ITL
+  numbers are used, not a new measurement.
+- **Every rate is now probed at ≥2 seeds** (`SEEDS`, default `"1 2"`, §4.5
+  item 4) and a `CAPSCAN_SEED_DIVERGENCE` line reports the relative
+  difference in TTFT p50 and `arrival_rps` between them, flagged if TTFT
+  p50 differs by >25% (a judgment-call threshold, not data-derived) — a
+  rate flagged this way is an unstable region for off-cliff siting and
+  should not be picked as `RATE_LO`/`RATE_HI` even if its single-seed
+  numbers looked clean.
+
+**Retrospective recomputation on the EXISTING 866868 data** (no GPU needed,
+per the coordinator's ask) — how far apart do the two rate definitions run:
+
+| rate | NP | dur (s) | arrival_span_s (reconstructed) | `arrival_rps` | `completion_rps` (old `achieved_rps`) |
+|---|---|---|---|---|---|
+| 2 | 20 | 13.3 | 5.5 | **3.45** | 1.50 |
+| 8 | 80 | 23.6 | 8.8 | **8.96** | 3.40 |
+
+`arrival_rps` at rate=8 (8.96) tracks nominal closely (+12%); at rate=2
+(3.45) it deviates sharply (+72%) — the MAGNITUDE is explained by realized
+Poisson variance at small n (with only 19 usable inter-arrival draws,
+NP=20, the relative standard deviation of the arrival span is
+`1/sqrt(19)`≈23%, derivation in §4.2.3, so a +72% draw is an unlucky but
+plausible ~1.7σ outcome, not evidence of a broken client). **★★But the
+coordinator's follow-up (2026-07-29) identified a SEPARATE, more serious
+problem this framing alone misses: `--seed` was never overridden
+(`e1_capacity_scan.sbatch`/`e1_sweep.sbatch` both call `sglang.bench_serving`
+without a `--seed` flag, so its implicit default, `seed=1`, applied to
+EVERY probe/rep/cell/arm in the entire campaign) — meaning this +72% draw
+is not noise that would average out across reps, it is the SAME FIXED draw
+on every rep. §4.5 has the full diagnosis and fix (seed varies by rep,
+matched across cells/arms) — this table's numbers, and every prior smoke's
+numbers, reflect exactly ONE (non-representative, per this table) workload
+realization repeated, not a sample from the realization distribution.**
+This independently corroborates requirement (3)'s premise (small NP at low
+rate is the dominant noise source WITHIN a realization) using a mechanism
+distinct from either the tail-dilution diagnosis above or the §5.2
+concurrency-diagnostic bug — but §4.5's finding is the more consequential
+one: NP alone cannot fix a problem that is about realization-to-realization
+variance never being sampled at all.
+
+### 4.2.2 ★★NEW 2026-07-29 — warmup discard (pre-registered)
+
+866868's TTFT reversal (210ms at rate=2 vs 99ms at rate=8) is explained by
+a cold-start transient: the FIRST few real probe requests at a
+freshly-booted cell are slower (triton/cudagraph/cache warmup residue not
+fully cleared by bench_serving's own built-in single `--warmup-requests 1`
+request), and at rate=2's small NP=20 this transient dominates the whole
+sample's p50. **Pre-registered fix** (mirrors `s0dc_client.py`'s
+`--warmup-s` convention): discard the first `WARMUP_N =
+ceil(WARMUP_S * rate)` DISPATCH-order requests (index into the `ttfts`/
+`itls` arrays, which `asyncio.gather` returns in dispatch order regardless
+of completion order — no RNG replay needed for this specific trim) from
+TTFT/ITL percentile computation only (still counted toward `n`/`errs` for
+admission/error-rate diagnostics). `WARMUP_S` default **3s**, scaling with
+rate exactly like `PROBE_TARGET_S`/`NP` so the discarded FRACTION of a
+probe stays roughly constant across rates (≈30% at the default settings —
+acceptable for a short scan probe, would be reconsidered for a longer
+main-sweep-style measurement).
+
+**Retrospective recomputation, same 866868 data, `WARMUP_S=3`:**
+
+| rate | warmup_n | n_steady | TTFT p50 pre-fix | **TTFT p50 post-warmup-discard** |
+|---|---|---|---|---|
+| 2 | 6 | 14 | 210ms | **87ms** |
+| 8 | 24 | 56 | 99ms | **92ms** |
+
+The reversal is resolved (87ms < 92ms, now monotonic in the expected
+direction) — strong confirmation the warmup transient, not a genuine
+capacity artifact, was driving the original inversion.
+
+### 4.2.3 ★★NEW 2026-07-29 — `NP_MIN` raised 15→45 (rate-independent
+    variance floor)
+
+The relative standard deviation of a Poisson arrival span over `n` draws is
+`std/mean = (sqrt(n)/rate) / (n/rate) = 1/sqrt(n)` — **rate cancels out**,
+so the sample-count floor needed for a given relative-precision target is
+the SAME at every rate, not something `PROBE_TARGET_S` (a duration target)
+alone can guarantee at low rates. `1/sqrt(45) ≈ 0.149` (~15% relative std)
+was chosen as the target; `NP_MIN` raised from 15 to **45** accordingly.
+Only the lowest 1-2 `RATES` values are affected in practice (`NP =
+max(NP_MIN, ceil(rate*PROBE_TARGET_S))` — the `PROBE_TARGET_S` term already
+dominates once `rate*PROBE_TARGET_S > 45`, e.g. rate≥3 at the default
+`PROBE_TARGET_S=20`), so this raises probe cost only where the noise
+problem is actually concentrated.
+
+### 4.2.4 ★★NEW 2026-07-29 — per-cell `concurrent_time_frac` varies
+    substantially and MUST be reported per cell, not just checked for "low"
+
+866868's d44 cell (prefill=64 SM) measured `concurrent_time_frac=0.0566`
+(5.66%, time-weighted per §5.2's fix) — an order of magnitude BELOW d92's
+25–40% (§5.2), and comparable to d16's ~1% low end. **This is a real,
+cell-dependent asymmetry, not noise**: d44's 64-SM prefill allocation is
+fast enough that individual prefill windows are short, giving less
+wall-clock opportunity to overlap with a concurrent decode step, the SAME
+mechanism §9.7 already established for d16 (92 SM, fastest, ~1%) vs d92
+(16 SM, slowest, 25–40%) — d44 sits at an intermediate SM allocation and
+(so far, n=1 cell measured at this depth) an intermediate-to-low
+concurrency value, consistent with a monotonic SM→concurrency relationship
+across the grid, though this is only 3 of 5 cells measured so far (d16,
+d44, d92; d24/d54 unmeasured) and should not yet be treated as a confirmed
+monotonic trend.
+
+**Consequence for interpretation, not just measurement**: because
+`concurrent_time_frac` differs substantially by cell, **cells in the D-grid
+are not all "equally multiplexed" when compared against each other** — a
+low-D cell (small decode SM, large prefill SM, fast prefill) is
+structurally exercised in the co-resident regime for LESS of its own
+wall-clock than a high-D cell is. This is not a defect to fix (the whole
+D-grid, by construction, spans exactly this SM-allocation range) but it
+**must be reported per cell alongside any D-comparison result** — a
+citation that compares D44's goodput to D92's without also reporting their
+respective `concurrent_time_frac` values would silently compare a
+"lightly-multiplexed" cell against a "heavily-multiplexed" one as if they
+were measured under equivalent conditions. `e1_analyze.py`'s "MANDATORY
+DIAGNOSTIC" section already prints this per (arm, cell) — this subsection
+formalizes the requirement that it be read and cited, not skipped, for
+every result table in the main sweep's write-up.
 
 ### 4.3 SLO selection — ★★REVISED 2026-07-28 (coordinator directive, pre-registered
     BEFORE any E1 data is seen — §4.3.1 below explains why 150ms, this
@@ -298,6 +464,96 @@ Per-arm, not pooled-across-arms — a lever that is net-positive for one
 architecture and net-negative for another is itself a finding, not noise to
 average away.
 
+### 4.5 ★★NEW 2026-07-29 (coordinator directive, after 867008's `arrival_rps`
+    diagnosis) — SEED POLICY: rep = workload realization, cell/arm = matched
+
+**Bug found**: `e1_capacity_scan.sbatch`/`e1_sweep.sbatch` never passed
+`--seed` to `sglang.bench_serving`, so every probe/rep/cell/arm in the whole
+campaign silently used the SAME implicit default (`seed=1`) — bit-identical
+arrival sequences AND bit-identical ShareGPT prompt samples (`random.seed`/
+`np.random.seed(args.seed)` govern both, `bench_serving.py:1705-1706`) every
+single time. The tell: 866868's reconstructed `arrival_rps` at rate=2 was
++72% off nominal — large enough to matter, but (per gate #3's own logic:
+`bench_noise_root_cause.md`) NOT obviously anomalous on its own (a ~1.7σ
+draw at n=19). **The problem is that this specific draw is not noise that
+averages out across reps — it is the SAME fixed draw on every rep**, so any
+rep-level statistic (including the paired-bootstrap CI the decision rule,
+§4.4, depends on) was blind to workload variation entirely; it could only
+ever reflect run-to-run ENGINE noise (clock jitter, GC pauses, scheduling),
+never "would a different but equally-plausible arrival pattern / prompt
+sample change the answer." A CI that is structurally too narrow can promote
+a result that only holds for one specific (and, per the arrival-rps
+diagnosis, possibly non-representative) workload realization into "CI
+excludes 0" — exactly the failure mode gate #3 exists to prevent, but
+gate #3's own historical justification (`CONSENSUS.md` §1-14: "4 runs, same
+workload fingerprint, so noise isn't a workload artifact") is being
+**inverted** here: THAT finding was used to rule OUT workload variation as
+an explanation for noisy goodput; HERE, because the comparison itself is a
+goodput-based SLO indicator function (sensitive to exactly where the
+metric-cliff boundary falls, gate #6), an accidentally-fixed single workload
+realization is a live risk to the DECISION RULE's own validity, not
+reassurance about it.
+
+**Pre-registered fix (implemented in both sbatch scripts, `e1_sweep.sbatch`
+§ "SEED POLICY" comment, `e1_capacity_scan.sbatch` `$SEEDS`):**
+
+> **Seed varies BY REP, is FIXED across cells and arms for the same rep
+> index.** `e1_sweep.sbatch`: `--seed $((BASE_SEED + rep))` for BOTH the LO
+> and HI phase of a rep (`BASE_SEED` default 100). Rep 1 of D16/T8 uses the
+> SAME seed as rep 1 of D92/T8 and rep 1 of D16/Hs8 — every cell/arm in the
+> campaign sees the identical SET of 4 (or `REPS`) workload realizations,
+> just possibly in a different D-cell context — this is what keeps
+> cross-cell comparisons workload-MATCHED (paired), the precondition the
+> paired bootstrap in §4.4 already assumed but the implementation did not
+> actually guarantee before this fix (it accidentally satisfied the pairing
+> condition in the DEGENERATE way of using the SAME single realization for
+> everything, rather than the intended way of using matched-but-varying
+> realizations). `e1_capacity_scan.sbatch`: every rate is probed at
+> `SEEDS` (default `"1 2"`, ≥2 required) — §4.2.1 already established
+> single-realization elbow-siting is fragile; this makes that check
+> mechanical (`CAPSCAN_SEED_DIVERGENCE`, see §4.2.1/item 4 below).
+
+**Consequence for CI interpretation (item 3 — must be read alongside ANY
+cited CI from this campaign, present or past)**: post-fix, a rep-wise
+paired-bootstrap CI reflects BOTH engine noise AND workload realization
+variation. This is the scientifically correct scope for the CI (it is
+supposed to answer "would this conclusion hold under a different but
+equally valid run", and workload realization is one of the things that
+legitimately varies between runs) — but it also means **narrow CIs
+observed elsewhere in this project's SIBLING campaigns that did NOT vary
+seed across reps should NOT be read as evidence of high confidence**. In
+particular: `s8p_prefill`'s reported rep-to-rep spread (sd 0.01–0.9% per
+the coordinator's own framing) was very likely measured this same way
+(closed-loop `s0dc_client.py`-family clients don't take a `--seed` at all,
+a DIFFERENT but related exposure — no seed argument means no run-to-run
+workload variation is possible by construction, an even more direct version
+of this same category of confound). This DESIGN.md does not audit that
+campaign's files (out of scope, avoid duplicating result-analyst's work,
+per the 866868 message's own instruction) — flagged here only so E1's own
+citations are not read as "E1 is less reliable than its narrower-CI
+siblings"; the narrower CIs are more likely UNDER-covering their true
+uncertainty, not more precise.
+
+**Validation (item 2, CPU-only, no GPU/server needed)**: called
+`sglang.bench_serving.get_request()` directly (dummy inputs, no real
+requests) and measured ACTUAL `asyncio`-scheduled wall-clock dispatch times
+against this harness's manual RNG-replay reconstruction, for `seed ∈ {1, 2,
+7}` × `rate ∈ {2, 8}` (6 combinations): max absolute error 2–70ms out of
+several seconds of total span (consistent with ordinary event-loop
+scheduling jitter, not a reconstruction error) — confirms the replay
+mechanism (§4.2.1) generalizes correctly to non-default seeds, not just the
+one value (`seed=1`) every prior probe happened to use. This closes the
+"does the replay still work" question the coordinator raised as a
+precondition for trusting `arrival_rps` post-fix.
+
+**Item 5 — rate labeling**: any report/plot keyed on "rate" from this
+campaign (capacity scan or main sweep) should use the RECONSTRUCTED
+`arrival_rps`, not the nominal `--request-rate` value, as the x-axis/label
+of record. Nominal rate is kept as a human-readable reference only (what
+was REQUESTED, not what was REALIZED) — `e1_capacity_scan.sbatch`'s
+`CAPSCAN` line now prints `arrival_rps` first, `nominal_rate` second, per
+this policy (§4.2.1).
+
 ## 5. Pre-registered gates (telemetry-based, auto-judged, cite-blocking) —
    ★★REVISED 2026-07-28 (coordinator directive, after smoke job 865832
    exposed a gate-definition bug — full investigation in §5.1)
@@ -340,23 +596,27 @@ re-implementations that could silently drift):
 
 **MANDATORY DIAGNOSTIC (always reported, NOT gate-blocking on its own — no
 principled threshold exists yet, coordinator: "그게 낮으면 D 축 자체가
-약해지므로 결과 해석에 필수"): `concurrent_frac_of_bench`** = fraction of
-ALL benchmark-phase snapshots in the window where prefill AND decode are
-BOTH simultaneously active. This answers "how much of the experiment's
-wall-clock actually exercised the prefill/decode SM-contention the D-axis
-is about" — a cell can pass the pin gate (partition correctly realized
-whenever prefill happens to be active) while still having a tiny
-`concurrent_frac_of_bench` (partition rarely mattered because prefill was
-rarely active at all, e.g. an open-loop workload at low offered rate). Any
-citation of a result from a cell **must** report this number alongside it,
-per the coordinator's instruction — see §5.1/§9.7 for the empirical values
-found in the 865832 smoke (both cells were `concurrency_low`, i.e.
-`concurrent_frac_of_bench < 0.01`, despite the pin gate passing for d92).
-Also reported for context: `prefill_active_frac_of_bench` (how much
-wall-clock time has prefill in flight at all, gating population for #1
-above) and `co_resident_frac_of_prefill_active` (conditional on the PRIMARY
-population, what fraction of it also had decode active — a different,
-narrower framing than the mandatory diagnostic's ALL-snapshots denominator).
+약해지므로 결과 해석에 필수"): `concurrent_time_frac`** = ★★TIME-WEIGHTED
+(2026-07-29 fix — see §5.2, this quantity was itself count-based and badly
+biased until this revision, a SEPARATE bug from §5.1's pin-gate fix) share
+of the window's wall-clock where prefill AND decode are BOTH simultaneously
+active. This answers "how much of the experiment's wall-clock actually
+exercised the prefill/decode SM-contention the D-axis is about" — a cell
+can pass the pin gate (partition correctly realized whenever prefill
+happens to be active) while still having a low `concurrent_time_frac`
+(partition rarely mattered because prefill was rarely active at all, e.g.
+an open-loop workload at low offered rate). Any citation of a result from a
+cell **must** report this number alongside it, per the coordinator's
+instruction — see §5.2/§9.7 for the corrected empirical values (866066: 25%
+and 40% for d92 LO/HI, NOT the ~1.5% the count-based version had reported).
+Also reported for context: `prefill_active_time_frac` (how much wall-clock
+time has prefill in flight at all, time-weighted) and
+`co_resident_frac_of_prefill_active` (conditional on the PRIMARY
+population — an event-count proportion, deliberately NOT time-weighted,
+see §5.2 for why that is correct for THIS specific quantity). The retired
+count-based numbers are still computed and printed as
+`*_frac_count_based`, for audit-trail only — **do not use them to argue
+low concurrency**, see §5.2.
 
 The PRIMARY gate is evaluated **per rep, per phase** (LO window and HI
 window separately, using the `[t0,t1]` monotonic brackets
@@ -405,6 +665,16 @@ needed, per the coordinator's ask), conditioning strictly on
 | d16 | (92,16) | 40,806 | **1** | 1.000 (n=1, UNDERPOWERED) | 1 | 0.0000245 |
 | d92 | (16,92) | 26,820 | **41** | **0.976** (PASS, n≥20) | 40 | 0.00149 |
 
+★**Retroactive note (added 2026-07-29, §5.2):** the `concurrent_frac_of_bench`
+column above is the RETIRED count-based quantity computed at the time of
+this diagnosis (2026-07-28) — it is now known to badly understate true
+wall-clock concurrency (§5.2). These specific 865832 (NP=20) values were
+never re-verified time-weighted; do not read them as "concurrency was
+negligible" — by the same mechanism found at 866066, true concurrency here
+was very likely tens-of-× higher than shown. Kept as-is for the historical
+record of the pin-gate (§5.1's actual subject) investigation, which is
+unaffected by this caveat.
+
 For comparison, the ORIGINAL (retired) `engaged = prefill_active OR
 decode_active` population for d16 was 130 samples of which only 4 (3%)
 matched target — but 125 of those 130 (96%) were legitimately decode-only
@@ -442,6 +712,151 @@ was kept since the corrected `e1_pin_check.py`/`e1_analyze.py` now
 reproduce these exact numbers when re-run against the same telemetry (see
 §5 above for the corrected code, and §9.7 for what this implies about the
 main-sweep design).
+
+### 5.2 ★★Diagnosis of the 866066 (NP=150) concurrency-diagnostic bug
+    (2026-07-29) — a SECOND, DIFFERENT bug in `concurrent_frac_of_bench`,
+    and RETRACTION of the "D-axis barely exercised / ill-posed" conclusion
+
+**Result of the §8.1 diagnostic smoke (866066, NP=150).** The §5.1 pin-gate
+fix works as intended: d92 now has n=118–242 prefill-active samples with
+pin 0.968–1.000 (clean PASS); d16 has n=12, correctly flagged
+`UNDERPOWERED` (not a false "wrong SM" — the fast-92-SM-prefill sampling
+problem §5.1/§9.7 anticipated is real and did not resolve at NP=150,
+addressed further below).
+
+**But the coordinator caught a second, independent bug in
+`concurrent_frac_of_bench` itself**, using an arithmetic cross-check: at
+T8/d92 (866066, rate≈2 over a ~79s LO window, 150 requests, median TTFT
+234.99ms), `sum(median_ttft × n_requests) / window ≈ 44%` — yet the
+(then-current) `prefill_active_frac_of_bench` reported only **0.0152**, a
+~29× discrepancy. d16 showed a ~240× discrepancy in the same direction. The
+mismatch ratio DIFFERING by cell (29× vs 240×, not a constant factor) ruled
+out a simple constant-scale bug and pointed at something duration-
+dependent.
+
+**Root cause — confirmed via file:line (coordinator's requirement #3):**
+`runtime_snapshot` is written from `_dual_worker_sync`
+(`multiplexing_mixin.py:356`), called from EXACTLY ONE place inside
+`event_loop_pdmux`'s outer `while True:` loop body per pass (lines 790 and
+1061 — twice per outer iteration, both unconditional on what work that
+iteration did), incrementing `dual_worker_trace_count` each time
+(`multiplexing_mixin.py:389`) and writing a trace row only on a
+count-based subsample — `dual_worker_trace_count == 1 or
+dual_worker_trace_count % dual_worker_trace_every == 0`
+(`multiplexing_mixin.py:391-395`), with `dual_worker_trace_every` defaulting
+to 32 (`multiplexing_mixin.py:90-95`, `PDMUX_DUAL_WORKER_TRACE_EVERY` env
+override). **This subsampling cadence is EVENT-LOOP-ITERATION-based, not
+wall-clock-based, and — critically — it is applied by the exact same
+counter/modulo rule regardless of whether the iteration was a prefill step
+or a decode step** (requirement #3's "같은 규칙" question: yes, same rule,
+but that is exactly why the bias exists) — an outer-loop pass that does one
+prefill forward (16 SM: ~235ms wall-clock this run; 92 SM: a few ms) and an
+outer-loop pass that does one decode step (~11-12ms ITL this run) each
+contribute the SAME ~1-2 increments to `dual_worker_trace_count`,
+REGARDLESS of how long they took. So "fraction of SAMPLES with property X"
+silently measures "fraction of EVENT-LOOP ITERATIONS with X", which
+underweights long-duration states (prefill, especially at low SM) relative
+to short-duration ones (decode steps) by roughly their duration ratio —
+observed empirically as tens-of-× in both directions of the cell asymmetry
+above (d92's slower, 16-SM prefill windows are longer, so this
+UNDERSTATEMENT is somewhat less severe there than at d16's fast 92-SM
+prefill windows, matching the 29× vs 240× asymmetry qualitatively).
+
+**Time-weighted recomputation (requirement #1), from the EXACT SAME
+866066 telemetry, using the same `[t0,t1]` windows `e1_sweep.sbatch`
+already records in `<RUNID>_rounds.jsonl`** — each snapshot's state is
+held from its own `timestamp_monotonic_s` to the next snapshot's (capped to
+the window's `t1` for the final in-window row; for an unbounded whole-file
+check the trailing duration of the very last row is simply dropped, one
+row's negligible weight out of thousands — see `e1_pin_check.py`'s
+`compute_gates` for the exact implementation):
+
+| cell/phase | window (s) | n_prefill_active | pin_frac | `prefill_active_time_frac` (NEW, correct) | `concurrent_time_frac` (NEW) | `prefill_active_frac_count_based` (OLD, retired) |
+|---|---|---|---|---|---|---|
+| d92 LO (rate 2) | 95.06 | 124 | 0.968 | **0.248** | **0.248** | 0.0152 |
+| d92 HI (rate 4) | 59.22 | 118 | 1.000 | **0.398** | **0.398** | 0.0154 |
+| d16 LO (rate 2) | 113.92 | 10 | (underpowered) | **0.0129** | 0.0102 | 0.0006 |
+
+The time-weighted numbers are **~16–26× higher** than the retired
+count-based ones for these three windows, matching the coordinator's
+arithmetic mismatch in direction and (given the naive TTFT-sum bound is a
+loose UPPER bound expected to overshoot, especially under queueing) in
+rough order of magnitude.
+
+**Requirement #2, independent client-side cross-check**, computed
+precisely (not just the back-of-envelope in the coordinator's message) from
+the `_rep1_{lo,hi}.jsonl` `ttfts`/`duration` fields directly (bench_serving
+does not record per-request absolute arrival timestamps, so an exact
+interval reconstruction is not possible from this file alone — `sum(ttfts)
+/ duration` is used instead, which is a valid but LOOSE upper bound: it is
+exact only if no two requests' TTFT-windows overlap, and overlapping
+requests inflate the sum above the true union-of-intervals occupancy):
+
+| phase | n | duration (s) | sum(ttft) (s) | naive upper bound = sum(ttft)/duration |
+|---|---|---|---|---|
+| d92 LO | 150 | 79.06 | 49.54 | **63%** |
+| d92 HI | 150 | 43.13 | 110.19 | **255%** (loose — heavy queueing under-rate-4 congestion on a 16-SM prefill cell, TTFTs overlap heavily, sum exceeds the window) |
+| d16 LO | 150 | 79.00 | 10.09 | **13%** |
+
+These loose upper bounds and the time-weighted telemetry numbers agree on
+the THING THAT MATTERS — true occupancy is **tens of percent, not ~1%** —
+even though the two methods do not (and should not be expected to) match
+exactly. Three independent signals (telemetry time-weighting, client-side
+TTFT-sum bound, and the coordinator's own back-of-envelope) now triangulate
+on the same conclusion.
+
+**★★RETRACTION: the previous conclusion ("D-axis barely exercised even
+where pin passes, structural tension resembling vector-1's ILL-POSED
+finding," written into the earlier version of §9.7) was ITSELF the
+artifact, not a real finding.** True prefill/decode concurrency at 866066
+was 25–40% for d92 (not ~0.15–1.5%) — a substantial, well-exercised
+overlap regime, not a negligible one. d16 remains genuinely low-concurrency
+(~1%) even after the fix, but that is a real, mechanistically-understood
+asymmetry (92-SM prefill finishes so fast there is little wall-clock in
+which to overlap with anything, at this rate) rather than a red flag about
+the campaign's viability. See §9.7 for the full corrected risk framing.
+
+**Requirement #4 — does `s8p_prefill/prefill_pin_check.py` have the SAME
+bug?** No — **and this is a meaningful distinction, not a technicality.**
+`concurrent_frac_of_bench`'s bug was specifically about using a
+snapshot-COUNT ratio to answer an ABSOLUTE WALL-CLOCK-SHARE question ("how
+much of total time did X happen"). `prefill_pin_check.py`'s PRIMARY output
+(`frac = realized[expect] / n`, both counted over the SAME prefill-active
+population) is a CONDITIONAL EVENT PROPORTION ("of the times prefill was
+active, what fraction were at the target SM") — the semantically correct
+unit for that question is REQUESTS/EVENTS, not wall-clock time, since the
+downstream client-side latency analysis is itself computed per request, not
+per unit time. So `prefill_pin_check.py`'s pin fraction (and E1's own
+now-fixed PRIMARY gate, which uses the identical conditional-proportion
+design) are NOT vulnerable to the §5.2 bug in the way `concurrent_frac_of_bench`
+was.
+
+A **read-only** check of `s8p_prefill`'s own 865973/865974 telemetry (T8
+arm, cells p44/p92 — chosen because both FAILed near the 0.665–0.80
+boundary the coordinator flagged; no files modified, this does not
+duplicate result-analyst's work, it only characterizes bias direction/size
+as asked) found something else worth flagging to them: the "wrong SM"
+samples are **100% anti-correlated with co-residency** (p44: 0/165 "wrong"
+samples had `decode_running_batch_size>0`, vs 619/619 "right" samples that
+did; p92: 0/163 vs 490/490) and recur **periodically roughly every ~14s
+across the ENTIRE ~335s window** (not clustered at startup) — consistent
+with `s8p_prefill`'s own documented risk (`DESIGN.md` §7: "probe 간 짧은
+간극에서 `split_prefill_batch`가 일시적으로 비어" / the keepalive
+background decode load occasionally, periodically draining to empty across
+its `decode_conc` workers, at which point the engine correctly falls back
+to a non-target stream for that instant). This looks like a REAL,
+recurring keepalive-decode-duty-cycle gap, not a measurement artifact of
+either the §5.1 or §5.2 kind — i.e., **the marginal FAILs in
+865973/865974 most likely reflect a genuine, periodic partition-reversion
+problem tied to their keepalive design, not a gate-definition bug**. One
+residual, unresolved nuance worth flagging to result-analyst (not resolved
+here, to avoid duplicating their analysis): each ~14s gap produces a
+cluster of ~7-8 consecutive "wrong" samples (24 gaps × ~7 ≈ matches the
+observed n_wrong almost exactly), so the reported sample-level fraction
+(0.79, 0.75, etc.) is better read as "share of PREFILL-ACTIVE WALL-CLOCK
+TIME at target" than "share of DISTINCT PROBE REQUESTS at target" — these
+could differ somewhat if de-duplicated at the episode level, a possible
+but not yet attempted refinement.
 
 ## 6. Deviations from the precedent recipes (documented per task instructions)
 
@@ -602,6 +1017,86 @@ likely), remedy 1 (longer/targeted prefill windows) or 3 (CI-based gate,
 §9.7) needs to be applied before the main sweep, and this must be resolved
 before submitting the real capacity scan for D16/D24-type cells.
 
+### 8.2 866066 result (2026-07-29) — pin-gate fix confirmed working; a
+    SECOND, unrelated bug found in the concurrency diagnostic and fixed
+    (no new job submitted for this round — diagnosed entirely from existing
+    telemetry, per coordinator instruction, GPU not needed)
+
+Job **866066 completed**. The §5.1 pin-gate fix behaves exactly as
+intended: d92 (n=118–242 prefill-active samples) PASSES cleanly (pin
+0.968–1.000); d16 (n=10–12) is correctly flagged `UNDERPOWERED` — NP=20→150
+(7.5×) scaled d16's count roughly proportionally (1→10-12) but did not
+clear the 20-sample floor, confirming §9.7's prediction (see §9.7's
+"remains a live, unresolved risk" for what this implies going forward).
+
+**But the coordinator independently caught a second bug**, this time in
+the `concurrent_frac_of_bench` mandatory diagnostic, via an arithmetic
+cross-check against client-side TTFT/duration numbers (a ~29–240×
+mismatch, differing by cell, ruling out a simple constant-scale error).
+Full investigation in §5.2: **confirmed** — `concurrent_frac_of_bench` was
+itself snapshot-COUNT-based (event-loop-iteration counts, not wall-clock
+time), and understated true concurrency by ~16–26× at this job's cells.
+Fixed by time-weighting (§5.2, `e1_pin_check.py`'s `compute_gates`).
+**This required retracting §9.7's prior conclusion** that the D-axis might
+be only weakly exercised (structurally resembling vector-1's ILL-POSED
+finding) — that conclusion was itself downstream of the now-fixed bug; the
+corrected numbers show 25–40% genuine concurrency for d92, a
+well-exercised regime. See §9.7 for the retraction and the (separate, still
+real) d16 `UNDERPOWERED` risk that survives this correction.
+
+No new smoke was submitted for this round — both the pin-gate re-check and
+the concurrency-diagnostic bug diagnosis were done entirely by re-reading
+866066's existing telemetry with corrected code, exactly as the
+coordinator's "GPU 불요" instruction anticipated.
+
+### 8.3 866868 result (2026-07-29) — capacity-scan smoke: pipeline/gates
+    confirmed working (pin PASS frac=0.955 n=22, time-weighted concurrency
+    correctly separated from the count-based audit-trail number), but the
+    scan's own `achieved_rps`/warmup/NP design had THREE further bugs, now
+    fixed in `e1_capacity_scan.sbatch` (§4.2.1–4.2.3) — one more smoke
+    submitted to validate the fix end-to-end
+
+Job **866868 completed** (`e1_capacity_scan.sbatch`, T8, cell d44, rates
+2/8, `PROBE_TARGET_S=10` override). Confirms the §5/§5.2 gate fixes
+generalize beyond the two cells (d16/d92) they were diagnosed on: pin gate
+PASS (frac=0.955, n=22, comfortably over the 20-floor), time-weighted
+`concurrent_time_frac=0.0566` correctly reported as the mandatory
+diagnostic with the count-based `concurrent_frac_count_based=0.0008`
+clearly separated as audit-trail-only — exactly the intended behavior.
+
+But the scan's OWN primary output (the rate/throughput numbers meant to
+locate the capacity elbow) had three further, distinct problems, all
+diagnosed from the existing 866868 artifacts without GPU (§4.2.1–4.2.3):
+(1) `achieved_rps` tail-diluted by completion time, confounding "saturated"
+with "probe too short"; (2) a cold-start TTFT reversal (rate=2 SLOWER than
+rate=4) traced to no warmup discard; (3) `NP` too small at low rates
+(rate-independent Poisson relative-variance floor, not fixed by
+`PROBE_TARGET_S` alone). All three are fixed in the current
+`e1_capacity_scan.sbatch` (`arrival_rps`/`completion_rps` split, warmup
+discard, `NP_MIN` 15→45).
+
+**Follow-up smoke submitted** (per coordinator's explicit authorization,
+"스모크 규모 재제출은 허용한다") to validate the fix end-to-end with a live
+run rather than only the retrospective recomputation:
+```bash
+sbatch --export=ALL,ARM_IDS="3",CELLS="d44",RATES="2 8",PROBE_TARGET_S=10 \
+  workspace/engine-port/results/s8_frontier/e1_capacity_scan.sbatch
+```
+Same arm/cell/rates as 866868 for direct comparability; `NP_MIN` and
+`WARMUP_S` now use the new code's defaults (45 and 3s respectively).
+Checks per requirement (4): (i) TTFT trend monotonic non-decreasing with
+rate, (ii) `arrival_rps` ≈ nominal rate at the low end (validity check —
+`completion_rps` is not expected to equal nominal, that was never the
+claim), (iii) `n_prefill_active` clears the 20-floor with more margin than
+866868's borderline 22.
+
+**Submitted 2026-07-29: job `867008` (`e1capscan`, PENDING at submission
+time)** — this validation smoke, and only this, was submitted by this
+agent per the coordinator's explicit authorization. Still smoke-scale
+(1 arm, 1 cell, 2 rates) — not the full capacity scan (all cells/arms),
+which remains held per the coordinator's "전 arm 본 스캔은 위 (4)가
+깨끗해질 때까지 계속 보류" instruction.
+
 ## 9. Risks identified while building this harness
 
 ### 9.1 Off-cliff bands may differ by arm AND by cell within an arm (highest risk)
@@ -696,75 +1191,127 @@ prior FINDINGS numbers transfer to this campaign's rate/workload. If M8/D16
 is flagged, M8's headline must be reported as the full {50,60,80}ms ladder,
 not the 60ms point value, per §4.3.4.
 
-### 9.7 Concurrency tension (§5.1's Hypothesis A confirmed the GATE bug, but
-    the milder structural risk behind Hypothesis B is real and MUST be
-    watched at main-sweep scale)
+### 9.7 ★★★RETRACTED (2026-07-29): "concurrency tension resembling vector-1's
+    ILL-POSED finding" was a MEASUREMENT ARTIFACT, not a real risk —
+    superseded by §5.2
 
-§5.1 ruled out Hypothesis B in its literal form (no evidence of genuine
-partition reversion under load — when prefill was caught active, it was
-almost always at target). But the `concurrent_frac_of_bench` diagnostic the
-same investigation produced shows a **milder, still-real version of the
-same underlying tension the coordinator asked to watch for**: even d92,
-which PASSED the pin gate cleanly (97.6%, n=41), had
-`concurrent_frac_of_bench = 0.00149` — only ~0.15% of ALL benchmark
-snapshots showed prefill and decode simultaneously active. d16's number was
-smaller still (0.0000245, but underpowered so barely interpretable). **This
-is exactly gate #6 (off-cliff, hence low-rate) in tension with the D-axis
-needing genuine prefill/decode concurrency to be tested at all** — the
-same structural shape as vector-1's ILL-POSED finding, surfaced here before
-the main sweep rather than after, which is the fortunate outcome the
-coordinator noted.
+**This subsection previously argued** (from 865832's count-based
+`concurrent_frac_of_bench`, ~0.0015–0.00002) that the D-axis might be only
+weakly exercised even where the pin gate passes, structurally resembling
+vector-1's ILL-POSED closure. **That argument is retracted.** §5.2 found
+`concurrent_frac_of_bench` was itself count-based (event-loop-iteration
+counts, not wall-clock time) and understated true concurrency by ~16–26×;
+the corrected, time-weighted `concurrent_time_frac` at 866066 (NP=150) is
+**25% (d92 LO) and 40% (d92 HI)** — a substantial, well-exercised overlap
+regime, independently corroborated by a client-side TTFT-sum upper bound
+(63%/255%-loose) computed directly from the same job's raw request data.
+**There is no evidence of an off-cliff-vs-concurrency conflict for d92.**
+Retracting this honestly (per the coordinator's explicit instruction) is
+the correct call even though it reverses yesterday's own risk assessment —
+see §5.2 for the full diagnosis, mechanism (file:line), and cross-checks.
 
-**Is this smoke-scale-specific, or a genuine risk for the main sweep too?**
-Not fully resolved by the numbers in hand. Two mechanisms pull in opposite
-directions:
-- NP=20→150 (7.5×) should scale the ABSOLUTE prefill-active sample count
-  roughly proportionally (each of the NP requests independently has some
-  fixed catch probability at a given SM allocation and 2ms-scale telemetry
-  sampling grain — see the timing analysis in §5.1's raw-telemetry read,
-  median inter-sample delta ≈2ms) — so d16 might reach ~7 samples at NP=150
-  (7.5×1), likely **still under the 20-sample floor**. d92 would scale from
-  41→~300, comfortably over.
-- The MAIN sweep's actual `RATE_LO`/`RATE_HI` (chosen from the capacity
-  scan, §4.2) are unknown yet and could be higher than the smoke's 2–4
-  req/s, which would increase the number of REQUESTS overlapping in flight
-  at once — this could raise `concurrent_frac_of_bench` independently of
-  NP, since more simultaneous in-flight requests means decode is more
-  likely to have work queued whenever a NEW prefill is admitted.
+**d16 remains genuinely low-concurrency** (`concurrent_time_frac` ≈0.01,
+still small after the fix) — but this is now understood as a REAL,
+mechanistically-explained asymmetry (92-SM prefill finishes so fast, a few
+ms per request at this workload, that there is little wall-clock in which
+to overlap with a concurrent decode step) rather than a red flag requiring
+remediation. It is a property of that specific cell (largest prefill SM
+allocation in the grid → fastest prefill → least overlap opportunity at a
+given rate), not a symptom of the campaign's rate/NP choices being wrong.
 
-**Remediation candidates (per coordinator's request, not yet applied —
-requires the larger-NP diagnostic smoke below to decide between them):**
+**What DOES remain a live, unresolved risk from the original §9.7
+(distinct from the retracted concurrency-tension framing): d16's
+`n_prefill_active` sample count for the PRIMARY pin gate is still
+UNDERPOWERED at NP=150 (n=10–12, still under the 20-sample floor)**, even
+though NP scaled 7.5× from the original smoke's n=1. This is the SAME
+issue §5.1 first flagged, now confirmed empirically at main-sweep NP rather
+than merely estimated. The remediation candidates identified there remain
+valid and are NOT retracted:
 1. **Longer prompts widen the prefill window itself**, giving each
    individual prefill event more telemetry samples regardless of NP/rate
-   (the coordinator's suggestion). This campaign already uses ShareGPT's
-   natural length distribution (§4.1) rather than a fixed short prompt, so
-   part of this is already true; a targeted test would compare
-   `concurrent_frac_of_bench` for shorter vs longer `--sharegpt-context-len`
-   caps, or (mirroring `s8p_prefill`'s explicit L-controlled probes) switch
-   the D16/D24 cells specifically to a `random-ids` dataset with a
-   deliberately long fixed input length instead of ShareGPT's natural mix.
-2. **Increase NP** (brute-force more trials) — cheap to try (already the
-   plan for the main sweep, NP=150 vs smoke's 20) but §5.1's own math
-   suggests this alone may not clear the 20-sample floor for the fastest
-   (D16/D24) cells specifically, only for slower ones (D92 already clears
-   it at smoke scale).
+   (mirroring `s8p_prefill`'s explicit L-controlled probes — switch D16/D24
+   specifically to a `random-ids` dataset with a deliberately long fixed
+   input length instead of ShareGPT's natural mix, at least for a
+   discriminating check).
+2. **Increase NP further** — already tried 20→150 (7.5×), d16 went from
+   n=1 to n=10–12 (roughly the expected ~7.5× scaling, consistent with
+   §9.7's own prediction) but did not clear the 20-sample floor; a further
+   increase (e.g. NP=300) is a plausible next step but cost scales
+   linearly and this is the SLOWEST cell type to boot/measure per §7.
 3. **A confidence-interval-based gate instead of a hard sample-count floor**
-   (e.g. require a Wilson/Clopper-Pearson 95% lower bound ≥ some pin
-   threshold, rather than `n >= 20`) would degrade more gracefully at small
-   n than a hard floor, but does not fix the underlying problem that a
-   genuinely tiny population is a genuinely weak test regardless of how the
-   interval is computed — this is a measurement-reporting refinement, not a
-   fix for low concurrency itself.
-4. Not yet considered: raising the telemetry sampling RATE itself
-   (`dual_worker_trace_every`, an engine-side constant) so each prefill
-   window — however brief — is more likely to be caught. This is an
-   engine-porter-scoped change, out of reach for a harness-only build.
+   (e.g. Wilson/Clopper-Pearson 95% lower bound ≥ pin threshold) would
+   degrade more gracefully at small n, but does not fix the underlying
+   small-population problem, only how it is reported.
+4. Raising the telemetry sampling rate itself (`dual_worker_trace_every`,
+   `multiplexing_mixin.py:90-95`) is an engine-porter-scoped change, out of
+   reach for a harness-only build.
 
-**Action taken (authorized by coordinator, §8 update): a diagnostic
-resubmission of the smoke at NP=150 (matching the main sweep's own NP,
-same 2 cells, REPS=1, same RATE_LO=2/RATE_HI=4) to directly measure whether
-NP alone resolves the undersampling for D16, before committing to remedy 1
-or 3 above.** See §8 for the exact command and job id once submitted.
+**Recommendation going forward**: D16/D24 (the largest-prefill-SM cells)
+should be treated as at-risk for `UNDERPOWERED` pin-gate failures in the
+main sweep specifically due to brief prefill windows, independent of the
+(now-resolved) concurrency-diagnostic question. If the capacity scan or
+main sweep reproduces this, remedy 1 (targeted longer-input probes for
+those specific cells) is the most promising lever, since remedy 2 (more
+NP) has already been shown insufficient by itself at a 7.5× step.
+
+### 9.8 ★NEW 2026-07-29 — D16's `n_prefill_active` floor: decision needed
+    before the main sweep (options only, no default chosen here — user's
+    call, per coordinator instruction)
+
+**Status**: d16's PRIMARY pin gate remains `UNDERPOWERED` at NP=150
+(n=10–12 vs floor 20, 866066), confirmed a real, physical property of that
+cell (92-SM prefill windows are simply too brief to be caught reliably by
+the event-loop-iteration-cadence telemetry, §5.2), not a harness bug. Fixing
+this AFTER seeing main-sweep data would be a pre-registration violation
+(the coordinator's own framing) — so the choice must be made now, before
+the main sweep, even though none of the options is free of tradeoffs.
+Three candidates, presented without a recommendation (user's decision):
+
+**(a) Widen the window for D16/D24 specifically** (longer prompts and/or a
+higher rate for just those cells, e.g. switching to a `random-ids` dataset
+with a deliberately long fixed input length, mirroring `s8p_prefill`'s
+L-controlled probe design). *Pro*: attacks the root cause (brief prefill
+windows) directly, keeps the gate/floor as-is so D16 is judged by the SAME
+standard as every other cell. *Con*: breaks the "single-variable" workload
+design (§4.1 — every OTHER cell would still use natural ShareGPT-length
+prefill, only D16/D24 would use an artificially lengthened one), so a
+result for D16 would carry a workload-composition caveat other cells don't
+have; requires new config/prompt plumbing not yet built.
+
+**(b) Redefine the sample-size floor on a time-weighted basis** instead of
+a raw prefill-active COUNT (e.g., require the time-weighted
+`prefill_active_time_frac` × window duration to exceed some minimum
+WALL-CLOCK seconds of prefill-active time, rather than `n_prefill_active
+>= 20`). *Pro*: directly measures the thing that actually matters
+(how much genuine wall-clock evidence supports the pin_frac estimate) and
+would treat a cell with FEW but LONG prefill events as adequately powered
+even if the raw event count is low — which is arguably the more honest
+statistic given §5.2 established that events, not counts, are the right
+unit for time-based claims (though pin_frac itself is deliberately an
+EVENT-conditional proportion, not a time-weighted one, per §5.2's discussion
+of why that is the correct choice for THAT specific quantity — this option
+would need its own careful justification for why a TIME threshold is
+appropriate for a COUNT-based proportion's power, not just an assertion).
+*Con*: introduces a second, harder-to-intuit threshold family (seconds
+instead of a plain sample count) and does not actually fix the low
+information content of a genuinely tiny population — a handful of long
+events is still a handful of independent observations for the purpose of
+estimating a PROPORTION (event count, not their duration, governs the
+proportion's own statistical power) — this option's honesty benefit is
+more about reporting than about actually resolving underpowering.
+
+**(c) Report D16 as `UNDERPOWERED` and drop it from the cited grid**,
+keeping D∈{24,44,54,92} as the main sweep's citeable set, with D16 kept
+"as-run" only (per the existing dropped-rep convention, §5) — extending the
+same treatment already applied automatically to any individual failing
+rep to the entire cell. *Pro*: zero additional harness work, fully
+consistent with the existing gate philosophy (discard, don't paper over),
+and does not compromise any OTHER cell's result. *Con*: D16 is the
+decode-most-starved extreme of the grid (§0/§2) — dropping it narrows the
+frontier's span exactly at the end where C2's decode-SM lever is
+theoretically most binding, potentially the single most informative point
+for testing tension A; losing it weakens the campaign's ability to answer
+its own motivating question at one end of the trade-off space.
 
 ## 10. Artifact mapping
 
