@@ -23,13 +23,26 @@ duration) and:
      discard, don't average away). The OLD second gate ("partition activity
      rate >= 0.60") is RETIRED as a hard gate -- it was measuring how often
      the OR-population was non-idle, which conflated the same problem. Its
-     replacement is the `concurrent_frac_of_bench` MANDATORY DIAGNOSTIC
+     replacement is the `concurrent_time_frac` MANDATORY DIAGNOSTIC
      (reported per rep and per cell below, never gate-blocking on its own
-     since no principled threshold exists yet): the fraction of ALL
-     benchmark-phase snapshots where prefill and decode are BOTH
-     simultaneously active. A low value means the D-axis tradeoff was only
+     since no principled threshold exists yet): the TIME-WEIGHTED fraction
+     of the window where prefill and decode are BOTH simultaneously active.
+     ★★RE-REVISED 2026-07-29 (coordinator directive, smoke 866066): this
+     diagnostic was ITSELF count-based until this revision (a SEPARATE bug
+     from the 2026-07-28 pin-gate fix) -- runtime_snapshot is emitted per
+     EVENT-LOOP ITERATION, and a 235ms prefill iteration counts the same as
+     an 11ms decode iteration, so count-based ratios silently underweight
+     long prefill windows. Fixed to time-weight each snapshot by the
+     interval to the next one (e1_pin_check.py module docstring bug #2 has
+     the full mechanism + numbers). The retracted conclusion from the
+     count-based version ("D-axis barely exercised, tension mirrors vector-1
+     ILL-POSED") was the ARTIFACT -- true concurrency at 866066 was 25-40%
+     for d92, not the previously-reported ~1.5%. See DESIGN.md sec 9.7
+     (2026-07-29 revision) for the full retraction and re-analysis. A low
+     `concurrent_time_frac` value STILL means the D-axis tradeoff was only
      weakly exercised even where the pin gate passes -- this MUST be cited
-     alongside any result from a low-concurrency cell.
+     alongside any result from a low-concurrency cell -- but "low" must now
+     be read off the corrected number, not the retired count-based one.
   2. Computes CONJUNCTIVE goodput per request: TTFT <= SLO_TTFT_MS AND that
      request's OWN token-ITL p95 <= SLO_ITL_P95_MS (gate #4 -- mean-ITL is
      secondary only). PRIMARY ITL-p95 SLO = 60ms (DESIGN.md sec 4.3.1,
@@ -402,7 +415,7 @@ def main():
                 rep=rep, gates_pass=gates_pass,
                 pin_lo=g_lo["pin_frac"], pin_hi=g_hi["pin_frac"],
                 n_prefill_active_lo=g_lo["n_prefill_active"], n_prefill_active_hi=g_hi["n_prefill_active"],
-                concurrent_frac_lo=g_lo["concurrent_frac_of_bench"], concurrent_frac_hi=g_hi["concurrent_frac_of_bench"],
+                concurrent_frac_lo=g_lo["concurrent_time_frac"], concurrent_frac_hi=g_hi["concurrent_time_frac"],
                 admission_blocked_lo=g_lo["admission_blocked_frac"],
                 admission_blocked_hi=g_hi["admission_blocked_frac"],
                 n_lo=len(reqs_lo), n_hi=len(reqs_hi),
@@ -437,22 +450,25 @@ def main():
                   f"n_lo={r['n_lo']} n_hi={r['n_hi']} "
                   f"pin(lo/hi)={r['pin_lo']:.2f}/{r['pin_hi']:.2f} "
                   f"n_prefill_active(lo/hi)={r['n_prefill_active_lo']}/{r['n_prefill_active_hi']} "
-                  f"concurrent_frac(lo/hi)={r['concurrent_frac_lo']:.4f}/{r['concurrent_frac_hi']:.4f} "
+                  f"concurrent_time_frac(lo/hi)={r['concurrent_frac_lo']:.4f}/{r['concurrent_frac_hi']:.4f} "
                   f"admission_blocked(lo/hi)={r['admission_blocked_lo']:.2f}/{r['admission_blocked_hi']:.2f}")
 
     print()
-    print("=== MANDATORY DIAGNOSTIC: D-axis concurrency exercised (coordinator 2026-07-28) ===")
-    print("(concurrent_frac_of_bench = share of ALL benchmark snapshots with prefill AND "
-          "decode simultaneously active -- how much of wall-clock actually tested the D-axis "
-          "tradeoff. LOW values weaken interpretation of a passing pin gate at that cell -- "
-          "cite this number alongside any result.)")
+    print("=== MANDATORY DIAGNOSTIC: D-axis concurrency exercised (coordinator 2026-07-28, "
+          "TIME-WEIGHTED fix 2026-07-29 -- e1_pin_check.py module docstring bug #2) ===")
+    print("(concurrent_time_frac = TIME-WEIGHTED share of the window with prefill AND decode "
+          "simultaneously active -- how much of wall-clock actually tested the D-axis tradeoff. "
+          "This was count-based (snapshots-per-iteration, not time) before 2026-07-29 and badly "
+          "understated true concurrency (~15-30x at 866066) -- see DESIGN.md sec 9.7. LOW values "
+          "weaken interpretation of a passing pin gate at that cell -- cite this number alongside "
+          "any result.)")
     for (arm, cell), recs in sorted(by_cell.items()):
         cl = [r["concurrent_frac_lo"] for r in recs]
         ch = [r["concurrent_frac_hi"] for r in recs]
         npl = [r["n_prefill_active_lo"] for r in recs]
         nph = [r["n_prefill_active_hi"] for r in recs]
-        low_flag = "  <-- LOW CONCURRENCY" if (cl and st.fmean(cl) < 0.01) or (ch and st.fmean(ch) < 0.01) else ""
-        print(f"  {arm}/{cell}: concurrent_frac mean(lo/hi)={st.fmean(cl):.4f}/{st.fmean(ch):.4f} "
+        low_flag = "  <-- LOW CONCURRENCY" if (cl and st.fmean(cl) < 0.05) or (ch and st.fmean(ch) < 0.05) else ""
+        print(f"  {arm}/{cell}: concurrent_time_frac mean(lo/hi)={st.fmean(cl):.4f}/{st.fmean(ch):.4f} "
               f"n_prefill_active mean(lo/hi)={st.fmean(npl):.1f}/{st.fmean(nph):.1f}{low_flag}")
 
     print()
