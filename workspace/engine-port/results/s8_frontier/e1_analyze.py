@@ -144,6 +144,56 @@ def _percentile(xs, q):
     return ys[lo] + (ys[hi] - ys[lo]) * (pos - lo)
 
 
+def _percentile_nearest(xs, q):
+    """★2026-07-31, bug #9 (claims-auditor). e1_capacity_scan.sbatch's inline
+    summary uses a DIFFERENT percentile estimator than _percentile() above:
+
+        a = sorted(a); return a[min(len(a) - 1, int(q * len(a)))]
+
+    On the small post-warmup populations a capacity-scan probe leaves
+    (n_steady = 30-60) the two disagree by far more than the 15% margin the
+    sec 4.3.3 siting rule is enforced at. The auditor's worked example, same
+    33 samples (d24, r4, s1): nearest-rank 234.8ms vs interpolated 175.7ms =
+    **33%**. At q=0.95, n=33, nearest-rank picks index 31 -- the 2nd largest
+    value, effectively p97 -- so it tracks the tail's single largest outlier.
+
+    This is NOT cosmetic: at the 3000ms TTFT candidate, d92 (r4, s1) is
+    2374ms interpolated (-> "binds nowhere") but 2680ms nearest-rank
+    (-> 11% margin violation). The pre-registered verdict flips with the
+    estimator.
+
+    Neither estimator is being declared correct here, and the sbatch is
+    deliberately NOT changed (jobs 870295-870297 were already submitted with
+    the same inline helper T8's 867231 used -- SLURM snapshots the script at
+    submit time, so changing it now would silently split the arm comparison
+    across two estimators). Instead both are computed and any disagreement
+    beyond the gate's own margin is flagged, so the estimator sensitivity is
+    visible in the report rather than deciding it invisibly."""
+    if not xs:
+        return float("nan")
+    ys = sorted(xs)
+    return ys[min(len(ys) - 1, int(q * len(ys)))]
+
+
+def _percentile_boot_ci(xs, q, n_boot=2000, seed=12345):
+    """Bootstrap 95% CI for a percentile. ★2026-07-31 (claims-auditor, C-B/C):
+    a capacity-scan probe leaves n_steady = 30-60 samples, so a p95 rests on
+    ~2 order statistics; the auditor measured d16 (r4, s1) TTFT p95 = 135ms
+    with CI [89, 226] (+/-60%). Enforcing sec 4.3.3's 15% margin rule on a
+    point estimate that wide is not a test. Reported alongside, NOT used to
+    change the pre-registered rule -- the rule still reads the point
+    estimate; this only makes its precision visible."""
+    if len(xs) < 3:
+        return (float("nan"), float("nan"))
+    rnd = random.Random(seed)
+    n = len(xs)
+    reps = []
+    for _ in range(n_boot):
+        reps.append(_percentile([xs[rnd.randrange(n)] for _ in range(n)], q))
+    reps.sort()
+    return (reps[int(0.025 * len(reps))], reps[min(len(reps) - 1, int(0.975 * len(reps)))])
+
+
 def cliff_hazard(p95_ms, slo_ms, margin=CLIFF_MARGIN):
     """DESIGN.md sec 4.3.4: a cell's measured ITL-p95 is a CLIFF HAZARD for a
     candidate SLO if it falls within +/-margin (relative) of the SLO -- rep
@@ -329,24 +379,65 @@ def run_capscan_mode(args):
     #   HIGH on TTFT -- directly biasing the sec 4.3.3 margin test, which is
     #   evaluated against TTFT p95.
     #
-    # Seeds are reported SEPARATELY, not pooled. At a given NOMINAL rate the two
-    # seeds are not two draws at one operating point: bench_serving scales one
-    # fixed normalized exponential sequence by the rate, so seed 2's realized
-    # arrival_rps runs a constant 1.366x above seed 1's at every rate <=6
-    # (arrival_rps_reldiff = 0.268, IDENTICAL across all five cells -- it is a
-    # property of the arrival draw, not of the partition). Pooling would average
-    # two different offered loads; siting an SLO on that mixture is exactly the
-    # aggregation-unit error gate #4 forbids.
+    # Seeds are reported SEPARATELY, not pooled -- but ★the 2026-07-31 rationale
+    # first written here was REFUTED by claims-auditor the same day and is
+    # replaced. It said: "bench_serving scales one fixed normalized exponential
+    # sequence by the rate, so seed 2's realized arrival_rps runs a constant
+    # 1.366x above seed 1's; arrival_rps_reldiff = 0.268 is IDENTICAL across all
+    # five cells, hence a property of the arrival draw, not the partition."
+    # That reasoning is circular and two of its predictions fail:
+    #   - `arrival_rps` is not measured, it is REGENERATED from the seed
+    #     (e1_capacity_scan.sbatch:200-207 replays np.random.exponential), so it
+    #     is a deterministic function of (seed, n) alone. "Identical across all
+    #     five cells" is an IDENTITY -- it cannot depend on the cell -- and
+    #     carries no information about the server. Likewise "constant across
+    #     rates 1-4" only says NP_MIN=45 pinned n at 45 for all four.
+    #   - It predicts no divergence where arrival matches, and divergence with
+    #     the sign of offered load. Both fail: at rate 8 arrival_rps_reldiff is
+    #     0.023 yet d92's TTFT p50 still splits 3269 vs 6699 (0.512); at rates
+    #     12/16 the sign REVERSES -- the seed with the HIGHER arrival rate has
+    #     the LOWER TTFT in every cell (d16 103->76, d24 93->55, d44 113->77,
+    #     d54 149->91).
+    # The actual mechanism is that --seed changes the PROMPT SET, not just the
+    # timing: sglang.bench_serving:1705 calls random.seed(args.seed) as well as
+    # np.random.seed(), and benchmark/datasets/sharegpt.py:98 consumes that
+    # stdlib stream in random.shuffle(dataset). Measured offered input-tok/s
+    # ratio (seed2/seed1, post-warmup, d16): 1.86 at rate 1, 2.31 at rate 6,
+    # 0.77 at rate 12, 0.83 at rate 16 -- the sign flip above lands exactly
+    # where the prompt-length ratio crosses 1. DESIGN.md sec 4.2.1 checked only
+    # the forward direction (shuffle does not perturb the np.random stream, so
+    # arrival replay stays exact) and missed the reverse.
+    # ⇒ The two seeds are two DIFFERENT WORKLOADS -- timing and content both --
+    # so pooling them averages two workloads, not two draws of one. The
+    # no-pooling decision stands; only its justification changed. It also
+    # follows that an n=2 seed mean is not an estimate of anything, which is
+    # why per-seed reports are printed rather than a mean.
     pat = re.compile(
         r"e1cap_(?P<arm>\w+?)_(?P<cell>d16|d24|d44|d54|d92)_(?P<job>\d+)"
         r"_r(?P<rate>[0-9.]+)(?:_s(?P<seed>\d+))?\.jsonl$"
     )
+    # ★2026-07-31 bug #7b (claims-auditor): the regex captured `job` but never
+    # USED it, so probes from different jobs merged into one (arm, cell) key and
+    # a 3.5-minute leftover smoke could still emit a fully-formed arm-level
+    # verdict -- at --capscan-rate 2, e1cap_T8_d44_866868_r2.jsonl printed
+    # "ITL-NONBINDING: TRUE (worst cell d44=16.0ms)" under a seed=0 heading.
+    # Same class as bug #7, just narrower. Default now: use the single NEWEST
+    # job id present and say out loud which jobs were dropped.
+    all_jobs = set()
+    for fn in os.listdir(args.capscan_dir):
+        m = pat.search(fn)
+        if m:
+            all_jobs.add(m["job"])
+    want_job = args.capscan_job or (max(all_jobs, key=int) if all_jobs else None)
+    dropped = sorted(all_jobs - {want_job}, key=int) if want_job else []
+
     by_seed = collections.defaultdict(lambda: ({}, {}))
+    raw = collections.defaultdict(dict)
     found = collections.defaultdict(list)
     used = []
     for fn in sorted(os.listdir(args.capscan_dir)):
         m = pat.search(fn)
-        if not m:
+        if not m or m["job"] != want_job:
             continue
         arm, cell, rate = m["arm"], m["cell"], float(m["rate"])
         seed = int(m["seed"]) if m["seed"] else 0
@@ -358,17 +449,21 @@ def run_capscan_mode(args):
         kept = [r for r in reqs[n_warm:] if r["success"]]
         if not kept:
             continue
+        tt = [r["ttft_s"] * 1000.0 for r in kept]
+        il = [r["itl_p95_ms"] for r in kept if r["itl_p95_ms"] == r["itl_p95_ms"]]
         t95, i95 = by_seed[seed]
-        t95[(arm, cell)] = _percentile([r["ttft_s"] * 1000.0 for r in kept], 0.95)
-        i95[(arm, cell)] = _percentile(
-            [r["itl_p95_ms"] for r in kept if r["itl_p95_ms"] == r["itl_p95_ms"]], 0.95)
+        t95[(arm, cell)] = _percentile(tt, 0.95)
+        i95[(arm, cell)] = _percentile(il, 0.95)
+        raw[seed][(arm, cell)] = (tt, il)
         used.append(f"{fn} (n={len(reqs)}, warmup_discard={n_warm}, kept={len(kept)})")
     if not by_seed:
         avail = {k: sorted(v) for k, v in found.items()}
-        print(f"no capacity-scan probes at rate={args.capscan_rate} under {args.capscan_dir}. "
-              f"Available (arm,cell)->rates: {avail}")
+        print(f"no capacity-scan probes at rate={args.capscan_rate} under {args.capscan_dir} "
+              f"for job={want_job}. Available (arm,cell)->rates: {avail}")
         return
     print(f"=== capacity-scan SLO siting @ rate={args.capscan_rate} req/s ({args.capscan_dir}) ===")
+    print(f"job={want_job}" + (f"   [DROPPED other jobs in this dir: {dropped} "
+                               f"-- override with --capscan-job]" if dropped else ""))
     print(f"--- probe files actually used ({len(used)}) "
           f"[bug #7: this list was silently empty-and-substituted before 2026-07-31] ---")
     for u in used:
@@ -376,8 +471,24 @@ def run_capscan_mode(args):
     for seed in sorted(by_seed):
         t95, i95 = by_seed[seed]
         print(f"\n########## seed={seed} "
-              f"(seeds are NOT pooled -- different realized arrival_rps, see the "
-              f"comment in run_capscan_mode) ##########")
+              f"(seeds are NOT pooled -- DIFFERENT PROMPT SETS, not just different "
+              f"arrival timing; see the comment in run_capscan_mode) ##########")
+        print("  --- estimator sensitivity + precision (bug #9 / power, "
+              "2026-07-31 claims-auditor; the pre-registered rule below still "
+              "reads the interpolated point estimate) ---")
+        print(f"    {'cell':>5} {'TTFTp95 interp':>15} {'nearest-rank':>13} {'disagree':>9} "
+              f"{'boot95 CI':>22} | {'ITLp95 interp':>14} {'nearest':>8} {'disagree':>9}")
+        for (arm, cell) in sorted(raw[seed]):
+            tt, il = raw[seed][(arm, cell)]
+            ti, tn = _percentile(tt, 0.95), _percentile_nearest(tt, 0.95)
+            ii, inr = _percentile(il, 0.95), _percentile_nearest(il, 0.95)
+            td = abs(tn - ti) / ti if ti else float("nan")
+            idg = abs(inr - ii) / ii if ii else float("nan")
+            lo, hi = _percentile_boot_ci(tt, 0.95)
+            fl = "  <-- ESTIMATOR DISAGREEMENT > gate margin (15%)" if (
+                td > TTFT_MARGIN or idg > CLIFF_MARGIN) else ""
+            print(f"    {cell:>5} {ti:15.1f} {tn:13.1f} {td:8.1%} "
+                  f"{f'[{lo:.0f}, {hi:.0f}]':>22} | {ii:14.1f} {inr:8.1f} {idg:8.1%}{fl}")
         print_slo_siting_report(t95, i95, args.itl_ladder_ms, args.ttft_slo_ms)
 
 
@@ -408,6 +519,12 @@ def main():
                           "--capscan-rate. No goodput/decision rule in this mode.")
     ap.add_argument("--capscan-rate", type=float, default=None,
                      help="candidate rate (req/s) to site SLOs at, required with --capscan-dir")
+    ap.add_argument("--capscan-job", default=None,
+                     help="scan mode: restrict to this SLURM job id. Default = the newest "
+                          "job id present in --capscan-dir, with the dropped ones named in "
+                          "the header (2026-07-31 bug #7b: probes from different jobs used "
+                          "to merge into one (arm,cell) key, letting a leftover smoke emit "
+                          "an arm-level verdict).")
     ap.add_argument("--capscan-warmup-s", type=float, default=3.0,
                      help="scan mode: pre-registered warmup discard (DESIGN.md sec 4.2.2) -- "
                           "drop the first ceil(this*rate) DISPATCH-ORDER requests of each probe. "
