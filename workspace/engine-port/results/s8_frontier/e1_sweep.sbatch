@@ -103,12 +103,13 @@ if [ -z "${RATE_LO:-}" ] || [ -z "${RATE_HI:-}" ]; then
 fi
 NP="${NP:-150}"                    # prompts per phase per rep
 REPS="${REPS:-4}"                  # methodology gate: n>=4
-PIN_GATE="${PIN_GATE:-0.80}"        # min realized-pin frac among PREFILL-ACTIVE samples
-                                    # (2026-07-28 revision -- e1_pin_check.py docstring;
-                                    # NOT the retired engaged=OR population)
-MIN_N_PREFILL_ACTIVE="${MIN_N_PREFILL_ACTIVE:-20}"  # min prefill-active sample count for
-                                    # the pin gate to be informative (865832 smoke found
-                                    # n=1 trivially satisfies a frac threshold otherwise)
+PIN_GATE="${PIN_GATE:-0.80}"        # min episode-cluster-bootstrap 95% lower bound of
+                                    # the TIME-WEIGHTED pin fraction (2026-07-30 revision,
+                                    # bug #6 -- e1_pin_check.py docstring/DESIGN.md sec 5.5;
+                                    # supersedes the 2026-07-29 episode-count-based gate
+                                    # (bug #4/#5, DESIGN.md sec 5.1-5.4), which is retained
+                                    # but rescoped to a non-gating per-request latency
+                                    # attribution diagnostic only)
 # BASE_SEED: ★★NEW 2026-07-29 (coordinator directive, after 867008's
 # arrival_rps diagnosis exposed that --seed was NEVER overridden, so every
 # rep/cell/arm shared bit-identical workload realizations -- rep-level
@@ -119,6 +120,22 @@ MIN_N_PREFILL_ACTIVE="${MIN_N_PREFILL_ACTIVE:-20}"  # min prefill-active sample 
 # sec 4.4) but DIFFERENT across reps (so n>=4 reps span n>=4 distinct
 # arrival sequences + ShareGPT prompt samples, not 4 replays of one).
 BASE_SEED="${BASE_SEED:-100}"
+
+# ★★NEW 2026-07-29 (engine-porter's PDMUX_TRACE_FORCE_PREFILL patch +
+# coordinator directive, DESIGN.md sec 4.7): forces an extra telemetry
+# snapshot whenever prefill is in flight, fixing bug #4/#5's root cause
+# (fast-prefill cells like D16 producing ~0 informative episodes because
+# ordinary subsampling almost never lands a sample inside their brief
+# prefill window). Default OFF (byte-identical output when off, per
+# engine-porter's own CPU regression). MUST be applied IDENTICALLY to ALL
+# 5 cells -- turning it on for only some cells would confound the D-axis
+# comparison with a measurement-density difference, not just partition
+# behavior. PRE-REGISTERED HERE, NOT YET ENABLED FOR THE MAIN SWEEP: do
+# not flip this to 1 (nor submit e1_sweep.sbatch at all) until the
+# observer-effect gate (job 867298, engine-porter's paired OFF/ON
+# overhead comparison) has passed -- see DESIGN.md sec 4.7.
+E1_TRACE_FORCE_PREFILL="${E1_TRACE_FORCE_PREFILL:-0}"
+export PDMUX_TRACE_FORCE_PREFILL="$E1_TRACE_FORCE_PREFILL"
 
 if [ "${SMOKE_CELLS:-}" = "1" ]; then
   # Smoke-test subset (DESIGN.md sec 8): the two extremes only.
@@ -232,11 +249,16 @@ print(json.dumps({'rep': $r, 'seed': $SEED, 'np': $NP,
         break
       fi
       FIRST_MEASUREMENT=0
+      # e1_pin_check.py CLI signature as of the 2026-07-30 bug #6 revision
+      # (time-weighted PRIMARY gate): <telemetry> <expect_d> [min_lower95]
+      # [raw_jsonl seed rate] --t0 --t1 -- min_lower95 is now the 3rd
+      # positional (was raw_jsonl in the bug #4/#5 era), do not reorder
+      # without re-checking e1_pin_check.py's main().
       echo "E1_PIN_CHECK_LO rep=$r:" | tee -a "$RESULT"
-      python3 "$HERE/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" "$PIN_GATE" "$MIN_N_PREFILL_ACTIVE" \
+      python3 "$HERE/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" "$PIN_GATE" "$JLO" "$SEED" "$RATE_LO" \
         --t0 "$T0_LO" --t1 "$T1_LO" | tee -a "$RESULT"
       echo "E1_PIN_CHECK_HI rep=$r:" | tee -a "$RESULT"
-      python3 "$HERE/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" "$PIN_GATE" "$MIN_N_PREFILL_ACTIVE" \
+      python3 "$HERE/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" "$PIN_GATE" "$JHI" "$SEED" "$RATE_HI" \
         --t0 "$T0_HI" --t1 "$T1_HI" | tee -a "$RESULT"
     done
     kill $CLKPID 2>/dev/null; wait $CLKPID 2>/dev/null
@@ -249,8 +271,9 @@ try:
 except Exception as exc:
     print(f"CLOCKS unavailable: {exc}")
 PY
-    echo "E1_PIN_CHECK_CELL (whole telemetry file, informational):" | tee -a "$RESULT"
-    python3 "$HERE/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" "$PIN_GATE" "$MIN_N_PREFILL_ACTIVE" | tee -a "$RESULT"
+    echo "E1_PIN_CHECK_CELL (whole telemetry file, concurrency-diagnostic only -- spans " \
+         "multiple reps/rates/seeds, no single episode reconstruction applies):" | tee -a "$RESULT"
+    python3 "$HERE/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" | tee -a "$RESULT"
   else
     echo "BOOT_FAILED cell=$NAME" | tee -a "$RESULT"
     grep -viE "pynvml|Future" "$SRVLOG" | tail -25 | tee -a "$RESULT"

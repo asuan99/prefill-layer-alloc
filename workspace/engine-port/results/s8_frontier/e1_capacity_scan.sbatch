@@ -299,7 +299,7 @@ if len(rows) >= 2:
 PY
       fi
     done   # RATES
-    python3 "$HERE/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" "${PIN_GATE:-0.80}" | tee -a "$RESULT"
+    python3 "$HERE/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" | tee -a "$RESULT"
   else
     echo "BOOT_FAILED cell=$NAME" | tee -a "$RESULT"
     grep -viE "pynvml|Future" "$SRVLOG" | tail -25 | tee -a "$RESULT"
