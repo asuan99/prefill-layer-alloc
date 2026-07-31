@@ -13,9 +13,15 @@ session_handoff_2026-07-29.md` §10에 기록돼 있다. 없는 것은 별도 FI
 관측자 효과 게이트 = **조건부 통과**(d92에서만 `itl_p95 +2.00%` t95 [+0.78,+3.21] —
 결정 지표 위 비대칭 교란) ⇒ **본 스윕은 `PDMUX_TRACE_FORCE_PREFILL=0`, pin 검증만
 별도 ON 런으로 분리**(사전등록: `results/s8_frontier/DESIGN.md` §4.7.1).
-⚠️**T8 용량 스캔은 §4.2/§9.1의 사전등록 escalation 분기를 발동시켰다** — 5셀
-동시 off-cliff rate가 존재하지 않는다(d16/d24 knee≈14–16, d44/d54≈18–25, **d92≈3**
-req/s). 사전등록대로 "그 자체가 발견"으로 기록하고 arm 스윕 제출 전 escalate 대상.
+⚠️**T8 용량 스캔 = ITL 축이 전 구간 non-binding**(claims-auditor 2026-07-31
+확정, 아래 "열린 긴장"). ★**이 절의 2026-07-31 초판이 쓴 "5셀 동시 off-cliff rate
+부재 = §4.2/§9.1 escalation 발동"은 부정확해 철회** — rate≲2에서는 d92 포함 전 셀이
+plateau 위에 있어 §4.2가 정의한 "D16과 D92 안전대 비중첩"은 엄밀히는 발동하지 않았다.
+실제 명제는 **"공통 off-cliff band(≲2–3 req/s)가 ITL 항이 조금이라도 움직이는 영역과
+완전히 분리돼 있다"**이다. knee 수치도 정정(첫 교차 기준): d16 12.6 / d24 16.0 /
+d44 16.0 / d54 **8.45** / d92 **2.80** req/s(초판의 4.10은 "임계 아래 마지막 점"을
+쓴 값이며 곡선이 단조가 아니라 두 정의가 크게 갈린다). **견고한 것은 d92 knee가
+나머지보다 3배 이상 낮다는 순서**(세 임계 × 두 x축에서 불변).
 ★신규 방법론 게이트(집계 단위 선확정 — "방법론 게이트"
 절 #4) + green-context auto-revert 실현-배분 관측 사실(`reports/CONSENSUS.md`
 §1-22) 등재. 상세는 아래 "열린 긴장"·"다음 실험 gate"·"방법론 게이트" 절).
@@ -289,13 +295,44 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
     옛 인자 순서 때문에 전부 크래시해 **pin 데이터가 없다**(paired summary는
     별도 분석기 산출이라 무영향). 인자 순서는 **2026-07-31 수정 완료**.
   - ⚠️★**T8 용량 스캔은 §4.2/§9.1이 사전등록한 escalation 분기를 발동시켰다.**
-    5셀이 **동시에** off-cliff인 rate가 존재하지 않는다 — knee(TTFT p50 폭주
-    개시, 양 seed를 realized `arrival_rps` 축에 pooling): d16·d24 ≈14–16 /
-    d44·d54 ≈18–25 / **d92 ≈3** req/s. d92(prefill 16 SM)의 안전대와 d16
-    (prefill 92 SM)의 안전대가 **겹치지 않는다**. 사전등록 규칙은 "셀별로 다른
-    rate를 골라 우회하지 말 것(그러면 D 비교가 rate 비교와 교락) — 그 자체를
-    발견으로 기록하고 arm 스윕 제출 전 escalate"이다. **미해결 상태로 다음
-    액션의 전제**. 상세 = 아래 "열린 긴장".
+    ★**2026-07-31 claims-auditor가 이 항목의 초판을 정정** — "5셀 동시
+    off-cliff rate 부재"는 부정확하다(rate≲2에서 d92 포함 전 셀이 plateau 위).
+    knee(첫 교차, plateau 2×): d16 12.6 / d24 16.0 / d44 16.0 / d54 **8.45** /
+    d92 **2.80** req/s. **견고한 것은 d92 knee가 나머지보다 3배 이상 낮다는
+    순서**(세 임계 × 두 x축 불변, 기전도 확실: 저부하 TTFT plateau가 181 vs
+    47–62ms이므로 같은 rate에서 ρ가 3–4배). 실제로 성립하는 명제는 **"공통
+    off-cliff band(≲2–3 req/s)가 ITL 항이 움직이는 영역과 완전히 분리돼
+    있다"**이며, 셀별로 다른 rate를 골라 우회하는 것은 §4.2가 금지한 rate-교락
+    이므로 여전히 불가하다. 상세 = 아래 "열린 긴장".
+  - ★★**T8의 ITL 항은 전 rate·전 사다리 룽에서 non-binding**(claims-auditor
+    2026-07-31, C-E CONFIRMED). 요청 단위 직접 집계로 rate 1–32 전 구간에서
+    `ITL-p95 ≤ 50ms`를 요청의 **≥93%**가 통과한다. ⇒ T8에서는 **어떤 결과가
+    나와도 C2 판정 불가**(§4.3.4가 사전등록한 `ITL-NONBINDING` 취급). ⚠️단
+    **"그러므로 E1의 판정력이 M8/Ha8/Hs8에 걸린다"는 NOT-YET-SUPPORTED** —
+    같은 batch cap이 그 arm들에도 걸려 같은 계단 구조가 생기고, Ha8은 외삽상
+    d16 ≈149ms로 **전 룽 초과**(모든 셀에서 구속 ⇒ conjunctive goodput 전멸
+    ⇒ 역시 판정 불가) 가능성이 있다. §4.3.4에 대칭 플래그
+    **`ITL-ALWAYS-BINDING`이 없다** = 미등록 실패 모드(신설 필요).
+  - ★★**미등록 하네스 상수가 ITL 축을 단독 결정한다 — `--max-running-requests
+    48`**(`e1_capacity_scan.sbatch:143`, `e1_sweep.sbatch:178`). `DESIGN.md`에
+    **단 한 번도 등장하지 않는다**(grep 0건). 증거: telemetry의
+    `decode_running_batch_size`가 d16/d24/d44/d54 전부 정확히 48에서 절단
+    (d92만 38 — prefill admission이 먼저 막혀 cap 미도달 ⇒ **d92의 ITL은 다른
+    셀과 비교 불가**), 그 시점 `kv_occupancy = 0.024`(2.4%, 자원 강제 아님),
+    d16 ITL-p95가 rate 12→32에서 50.2–50.6ms로 완전 평탄. ⇒ 셀별 ITL "천장"
+    {d16 50.6 / d24 37.9 / d44 26.2 / d54 23.9 / d92 19.1}은 **모델 성질이
+    아니라 설정 성질**이며, "60ms 도달 불가"의 scope가 달라진다.
+  - ★★★**decode 측 realized-partition duty cycle이 D와 공변한다**(Stage 0
+    C1과 같은 종, 이번엔 decode 축). `decode_sms`를 decode-active 구간에서
+    시간가중하면 **라벨 D SM에서 보낸 시간 비율 = d16 0.110 / d24 0.112 /
+    d44 0.166 / d54 0.201 / d92 0.518** — 나머지는 무분할 108 SM이다. 즉
+    **D 축이 "decode SM 양"과 "그 제한이 걸리는 시간 비율" 두 변수를 동시에
+    움직인다.** 사전등록 `E1_PIN_GATE`는 **prefill 측만** 검사하므로 이걸 못
+    잡는다(`D=16(P92) pin_frac=0.950`은 prefill이 92 SM인지의 지표). 배치·
+    파티션을 동시에 맞추면(b=48, `decode_sms==target`) d16 28.8 / d24 22.2 /
+    d44 19.4 / d54 18.4ms로 **d16이 27% 더 느리다**(혼합 집계의 22.6보다 큼).
+    ⇒ **decode 측 duty-cycle 게이트 신설 필요**(수치 자체도 스냅샷 샘플링
+    기반 1차 근사라 엔진측 누적 시간으로 재측정 대상).
   사전등록 SLO·결정 규칙은 아래 "다음 실험 gate" #8 참조.
 
 ## 철회된 가설
@@ -462,12 +499,14 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    job 모두 in-job 분석이 완료돼 있다(위 "8B decode-SM 민감도 측정 노트" 절의
    정정 참조) — 관측자 효과 게이트 **조건부 통과**(본 스윕 force-trace OFF,
    pin 검증만 분리: `DESIGN.md` §4.7.1), 용량 스캔은 **§4.2/§9.1 escalation
-   분기 발동**(5셀 동시 off-cliff rate 부재: d16·d24 knee≈14–16 / d44·d54≈18–25
-   / d92≈3 req/s). 남은 전제는 이 escalation의 해소이지 두 job의 재실행이
+   분기 재정의**(knee 첫 교차: d16 12.6 / d24 16.0 / d44 16.0 / d54 8.45 /
+   d92 2.80 req/s; 성립 명제 = "공통 off-cliff band ≲2–3 req/s가 ITL 항이
+   움직이는 영역과 분리"). 남은 전제는 이 해소이지 두 job의 재실행이
    아니다 — 본 스윕은 (i) 867231 용량 스캔 분석으로 SLO 사다리 확정, (ii) 867298
    분석으로 관측자 효과 게이트 통과 여부(=`PDMUX_TRACE_FORCE_PREFILL` 점화
    여부) 확정 — **(i)(ii) 모두 2026-07-31 완료**. ⇒ **다음 액션은 (iii)
-   escalation 해소**(5셀 동시 off-cliff rate 부재를 어떻게 처리할지 결정)이며,
+   escalation 해소**(공통 off-cliff band와 ITL 구속 영역의 분리를 어떻게
+   처리할지 결정)이며,
    나머지 3 arm(M8/Ha8/Hs8) 용량 스캔은 그 결정이 스캔 설계를 바꿀 수 있으므로
    그 뒤에 제출한다.
 
