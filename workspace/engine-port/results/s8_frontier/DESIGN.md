@@ -554,45 +554,173 @@ was REQUESTED, not what was REALIZED) — `e1_capacity_scan.sbatch`'s
 `CAPSCAN` line now prints `arrival_rps` first, `nominal_rate` second, per
 this policy (§4.2.1).
 
+### 4.6 ★★NEW 2026-07-29 (coordinator directive) — low-rate arrival deviation
+    is x-axis scatter, not error; two-stage scan; per-rep elbow-margin
+    enforcement
+
+**Reframing (coordinator, superseding §4.2.1's earlier framing of the
++72%/+12% deviation as primarily a "small-n noise" concern to fix with
+bigger `NP`)**: `arrival_rps` is a MEASURED quantity — it deviating from
+nominal is x-axis scatter, not a measurement error, and inflating `NP`
+further (already tried once, §4.2.3) is not the right response to scatter.
+Two things make this non-threatening for the MAIN sweep specifically: (i)
+§4.5's seed policy means every cell/arm shares the SAME set of workload
+realizations for a given rep index, so scatter in the realized arrival
+rate is common to all cells being paired-compared in that rep and cancels
+in the paired-bootstrap decision rule (§4.4); (ii) the only thing that
+actually threatens validity is **picking an off-cliff rate that turns out
+not to be off-cliff for some rep's specific realization** — a single,
+narrower risk than "arrival scatter" broadly.
+
+**Two-stage capacity scan** (mirrors vector-1's `g2_0_rasweep` precedent —
+coarse locate, then densify around the transition, not a single flat
+sweep): Stage 1 uses the CURRENT `RATES` ladder (broad, sparse) to locate
+where the TTFT/ITL percentile trend visibly bends (or where errors start
+appearing) — per §4.2.1, throughput numbers are not the elbow signal,
+latency trend is. Stage 2 re-scans ONLY the neighborhood of that
+transition at finer rate granularity, the same "coarse-then-dense" pattern
+`g2_0_rasweep`/`g2_0_raconf` used to narrow vector-1's transition band from
+a broad sweep down to rate 3.0-3.5. §7's time budget already assumed a
+single flat scan; §11 (time-budget note) is updated to reflect the 2-stage
+cost.
+
+**Per-rep elbow-margin enforcement (pre-registered NOW, before any main-sweep
+data exists)**: once a cell/arm's elbow-onset rate is identified from the
+2-stage scan, `e1_analyze.py --elbow-onset-rate-lo`/`--elbow-onset-rate-hi`
+reconstructs EACH rep's own REALIZED `arrival_rps` (same seeded-RNG replay,
+§4.5/§5.3 — a rep's specific seed can, by chance, realize a rate closer to
+the elbow than the nominal `RATE_LO`/`RATE_HI` choice would suggest, exactly
+the kind of scatter this section is about) and EXCLUDES (reports as-run,
+never silently averages in) any rep whose realized rate is not ≥15%
+(`ELBOW_MARGIN`) below the onset — this is gate #6 enforced at the
+individual-rep level, not just at the one-time `RATE_LO`/`RATE_HI`
+selection step. Checked BEFORE the goodput/decision-rule computation, so an
+excluded rep never reaches `by_cell` even if it also passed the pin gate.
+
+### 4.7 ★★NEW 2026-07-29 — `PDMUX_TRACE_FORCE_PREFILL` pre-registration
+    (engine-porter's patch): uniform across all 5 cells, gated on the
+    observer-effect check, asymmetric perturbation direction CORRECTED
+
+**What it is**: engine-porter's patch forces an extra telemetry snapshot
+whenever prefill is in flight — directly targeting bug #4/#5's root cause
+(ordinary event-loop-iteration subsampling almost never lands a sample
+inside a fast cell's brief prefill window, §5.3/§5.4). Default **OFF**,
+byte-identical output when off (engine-porter's own CPU regression, 28
+tests PASS), manifest `b0c92f2a…`.
+
+**Pre-registered rule: identical across all 5 cells, no partial
+application.** `e1_sweep.sbatch` exports `PDMUX_TRACE_FORCE_PREFILL`
+globally (once, before the arm/cell loop, `E1_TRACE_FORCE_PREFILL` env
+var defaulting to `0`) so every cell in a given sweep invocation gets the
+SAME setting — turning it on for only some cells (e.g. only the ones that
+need the extra samples) would confound the D-axis comparison with a
+measurement-DENSITY difference between cells, on top of whatever genuine
+partition difference exists. **Not yet enabled for any real run**: the
+default is `0`, and per the coordinator's explicit instruction, this flag
+must not be set to `1` for a real `e1_sweep.sbatch` submission until
+engine-porter's observer-effect gate (job `867298`, a paired OFF/ON
+overhead comparison, `results/e1_traceforce/tfgate_analyze.py`) has passed.
+
+**★Corrected 2026-07-29 — the perturbation asymmetry runs OPPOSITE to
+this agent's own earlier expectation, and is NOT a constant across
+cells.** This agent's prior framing implicitly assumed a fast-prefill cell
+(D16) would see the LARGEST relative increase in emitted telemetry volume
+(since it needs the most help). **Corrected direction (coordinator,
+engine-porter's own measurement)**: forced-emission VOLUME is proportional
+to the number of scheduler-loop SYNC CALLS while prefill is in flight, and
+a SLOWER prefill (D92, 16 SM) occupies far MORE such calls per request than
+a fast one (D16, 92 SM) — so the perturbation is LARGEST at the
+slow-prefill end of the grid, not the fast end. Measured/projected: **D16
++1.2% (~2 emissions/s) · D44 +2.2% · D92 +28.5% (~44/s)**; on a
+scheduler-wall-clock basis this is smaller in absolute terms (D16 ≲0.02%,
+D92 ≲0.3%, median 33-45µs per emission) but **the asymmetry itself is the
+point** — it means the observer effect is NOT a constant across the D-grid,
+it runs ALONG the frontier and is LARGEST at exactly the cell (D92) that
+already has the most citeable evidence and SMALLEST at the cell (D16) that
+most needs the help. This must be read alongside any cross-cell comparison
+once the flag is on: a D92-vs-D16 result cannot assume the measurement
+apparatus perturbed both cells equally, even though the perturbation is
+small in absolute (wall-clock) terms at both ends.
+
 ## 5. Pre-registered gates (telemetry-based, auto-judged, cite-blocking) —
-   ★★REVISED 2026-07-28 (coordinator directive, after smoke job 865832
-   exposed a gate-definition bug — full investigation in §5.1)
+   ★★★RE-REVISED 2026-07-30 (coordinator directive, a SIXTH distinct bug
+   in this same gate lineage, full investigation in §5.5 — supersedes the
+   "PRIMARY = episode gate" framing below, which was itself only just
+   fixed in §5.4; history in §5.1/§5.2/§5.3/§5.4)
 
-Implemented in `e1_pin_check.py` (`compute_gates`/`gate_verdict`, imported
-directly by `e1_analyze.py` — the sbatch's own stdout gate lines and the
-analyzer's citeability filter are **the same code path**, not two
-re-implementations that could silently drift):
+**★ 2026-07-30 update, read this before the rest of §5**: the PRIMARY,
+cite-blocking gate is now `compute_time_weighted_pin_gate`/
+`time_weighted_gate_verdict` (episode-cluster-bootstrap 95% lower bound of
+the TIME-WEIGHTED pin fraction ≥ 0.80, over ALL prefill-active snapshots,
+not just the ones inside a request bracket) — see §5.5 for the full
+diagnosis. The episode-based gate described in points 1-2 immediately below
+(`compute_episode_gate`/`episode_gate_verdict`, §5.4's fix) is **RETAINED,
+UNCHANGED, but RESCOPED to a non-gating, per-request LATENCY-ATTRIBUTION
+diagnostic only** — it is no longer what a cell's citeability is decided
+on. `compute_concurrency_diagnostic` (the `concurrent_time_frac` mandatory
+diagnostic) is unaffected by this revision, it was already time-weighted
+(§5.2) and answers a different question again (§5.3 point 4).
 
-1. **PRIMARY, cite-blocking gate — realized partition pin ≥ 0.80, among
-   PREFILL-ACTIVE samples only.** Among `runtime_snapshot` samples with
-   `prefill_active_batch_size > 0` (decode state irrelevant to this
-   condition — mirrors `s8p_prefill/prefill_pin_check.py:51,56-58,67`
-   exactly), the fraction whose REALIZED `(prefill_sms, decode_sms)` pair
-   equals the cell's target `(108-D, D)` must be ≥ `min_pin_frac` (0.80)
-   **and** the prefill-active population itself must have
-   ≥ `min_n_prefill_active` samples (default 20 — added 2026-07-28; a tiny
-   population, e.g. n=1, can trivially satisfy a fraction threshold at
-   either 0% or 100% without being informative, exactly what happened to
-   the T8/d16 smoke cell). A cell/rep failing on sample size fails with the
-   distinct reason `UNDERPOWERED`, never conflated with `wrong SM`. Judged
-   on realized telemetry fields (`dual_worker.py:608/622-623`), never on
-   policy target/`controller_decision` — that distinction is exactly what
-   made Stage 0's D108 anchor silently invalid
-   (`results/s0_deconfound/PARTITION_RESIDENCY_STAGE0.md`).
-2. **RETIRED as a hard gate (2026-07-28) — "partition activity rate ≥
-   0.60."** The original definition conditioned on `engaged =
-   prefill_active_batch_size>0 OR decode_running_batch_size>0`, which
-   §5.1 found conflates two different things: genuine reversion-on-idle
-   (both queues empty) and CORRECT, BY-DESIGN full-GPU-to-decode behavior
-   whenever decode has work but prefill does not
-   (`multiplexing_mixin.py`'s stream-selection: `elif not
-   self.running_batch.is_empty(): set_current_stream_idx(<last group>)` —
-   decode-only windows are SUPPOSED to show the unpartitioned `(0,108)`
-   stream, not the target split; that is not a failure to fix). This gate
-   is retired rather than "loosened" per the coordinator's explicit
-   instruction not to relax it into meaninglessness — its replacement is
-   the mandatory diagnostic below, which measures the thing that actually
-   matters and does not pretend to have a validated pass/fail threshold.
+Implemented in `e1_pin_check.py` (`compute_time_weighted_pin_gate`/
+`time_weighted_gate_verdict` for the PRIMARY gate, `compute_episode_gate`/
+`episode_gate_verdict` for the non-gating latency-attribution diagnostic,
+`compute_concurrency_diagnostic` for the mandatory concurrency diagnostic —
+all imported directly by `e1_analyze.py` so the sbatch's own stdout gate
+lines and the analyzer's citeability filter are **the same code path**, not
+two re-implementations that could silently drift):
+
+1. **(SUPERSEDED as of §5.5 — kept for the record of §5.4's fix, no
+   longer what gates citeability) EPISODE-based realized-partition pin,
+   Clopper-Pearson 95% lower bound ≥ 0.80.** §5.1's fix (condition on
+   `prefill_active_batch_size > 0` SNAPSHOTS) was itself found wrong at the
+   unit level (§5.3): `--chunked-prefill-size -1` means one request's whole
+   prefill is ONE event-loop iteration, so it produces at most one telemetry
+   snapshot before subsampling — counting snapshots undercounts prefill
+   EPISODES regardless of their duration (unlike §5.2's bug, this is not
+   about duration-weighting, it is about counting the wrong OBJECT).
+   Replaced with EPISODE accounting, **ported from
+   `s8p_prefill/s8p_analyze.py`'s interval-bracketing technique** (per
+   coordinator instruction, not a new technique): reconstruct each
+   request's `[admission, first-token]` interval via the same seeded-RNG
+   arrival replay `e1_capacity_scan.sbatch` uses for `arrival_rps`
+   (validated for any seed, §4.5), anchored so the reconstructed LAST
+   request's completion time lands exactly at the phase's own measured end
+   (`T1_LO`/`T1_HI`) — validated against 866066 to ~0.1s out of a ~95s
+   window (cross-checked against `bench_serving`'s own reported `duration`
+   field). Bisect each interval against the telemetry timeline; ACCEPT only
+   if the realized `prefill_sms` immediately before admission equals the
+   realized `prefill_sms` immediately after first-token, within a `GUARD`
+   (3.0s, matching `s8p_prefill`'s own value) proximity to both endpoints —
+   this is the literal ported algorithm. Among accepted episodes, exclude
+   **vacuous-idle** brackets (both endpoints show
+   `prefill_active_batch_size==0` — internally consistent but zero positive
+   evidence the target partition ran for that specific request; an
+   empirically NECESSARY refinement found while validating the port, not
+   present in the literal s8p_prefill script — see §5.3 for why omitting it
+   gives an outright WRONG answer, not merely a conservative one). Among the
+   remaining **informative** episodes, `pin_frac` = fraction at the cell's
+   target `prefill_sms`. The gate criterion is the **Clopper-Pearson exact
+   95% one-sided lower bound of `pin_frac` ≥ 0.80** — this single rule
+   replaces BOTH the old `pin_frac >= threshold` check AND the old separate
+   `n >= min_n_prefill_active` (magic number 20) floor: a small or noisy
+   informative sample now automatically widens the CI and fails the SAME
+   lower-bound test a genuinely-wrong-SM sample would fail, so there is no
+   longer a distinct `UNDERPOWERED` reason code — a cell with zero
+   informative episodes (D16, §5.3) fails with an explicit "no informative
+   episodes" message instead.
+2. **(also superseded as a gate input, retained as diagnostic)
+   `acceptance_rate` (= n_accepted / n_total, matching the literal ported
+   check) and `informative_rate` (= n_informative / n_total, after the
+   vacuous-idle exclusion) MUST be reported alongside every episode-gate
+   attribution** — `s8p_prefill`'s own campaign saw 54-73% acceptance
+   depending on L; a low rate here is itself diagnostic, independent of
+   whether the accepted/informative episodes hit the target SM.
+3. **RETIRED as a hard gate (2026-07-28, unchanged by this revision) —
+   "partition activity rate ≥ 0.60."** The original definition conditioned
+   on `engaged = prefill_active_batch_size>0 OR decode_running_batch_size>0`,
+   which §5.1 found conflates genuine reversion-on-idle with CORRECT,
+   BY-DESIGN full-GPU-to-decode behavior. Retired rather than "loosened,"
+   replaced by the mandatory diagnostic below.
 
 **MANDATORY DIAGNOSTIC (always reported, NOT gate-blocking on its own — no
 principled threshold exists yet, coordinator: "그게 낮으면 D 축 자체가
@@ -609,17 +737,19 @@ an open-loop workload at low offered rate). Any citation of a result from a
 cell **must** report this number alongside it, per the coordinator's
 instruction — see §5.2/§9.7 for the corrected empirical values (866066: 25%
 and 40% for d92 LO/HI, NOT the ~1.5% the count-based version had reported).
-Also reported for context: `prefill_active_time_frac` (how much wall-clock
-time has prefill in flight at all, time-weighted) and
-`co_resident_frac_of_prefill_active` (conditional on the PRIMARY
-population — an event-count proportion, deliberately NOT time-weighted,
-see §5.2 for why that is correct for THIS specific quantity). The retired
-count-based numbers are still computed and printed as
-`*_frac_count_based`, for audit-trail only — **do not use them to argue
-low concurrency**, see §5.2.
+Also reported for context: `prefill_active_time_frac`/`decode_active_time_frac`
+(how much wall-clock time has prefill/decode in flight at all,
+time-weighted). This diagnostic is computed by `compute_concurrency_diagnostic()`,
+a function SEPARATE from BOTH the (now-primary) time-weighted pin gate
+(`compute_time_weighted_pin_gate()`) and the (now-attribution-only)
+episode-based check (`compute_episode_gate()`) -- none of the three share
+fields or a denominator, by design (§5.3 point 4/§5.5: they answer
+genuinely different questions — an occupancy time share, a per-request
+event-conditional proportion, and an aggregate time-weighted pin fraction,
+respectively).
 
-The PRIMARY gate is evaluated **per rep, per phase** (LO window and HI
-window separately, using the `[t0,t1]` monotonic brackets
+The PRIMARY (time-weighted) gate is evaluated **per rep, per phase** (LO
+window and HI window separately, using the `[t0,t1]` monotonic brackets
 `e1_sweep.sbatch` writes to `<RUNID>_rounds.jsonl`) — a rep is only
 included in the citeable sample if **both phases pass** it. This is
 per-rep filtering, not cell-level averaging, consistent with the "n≥4, no
@@ -857,6 +987,355 @@ observed n_wrong almost exactly), so the reported sample-level fraction
 TIME at target" than "share of DISTINCT PROBE REQUESTS at target" — these
 could differ somewhat if de-duplicated at the episode level, a possible
 but not yet attempted refinement.
+
+### 5.3 ★★★A FOURTH bug in the same lineage (2026-07-29, coordinator
+    re-diagnosis) — snapshot-COUNT was the wrong OBJECT for the pin gate,
+    not just the wrong population (§5.1) or the wrong weighting (§5.2);
+    fixed by porting `s8p_prefill`'s episode bracketing
+
+**Diagnosis.** §5.1's fix conditioned the pin gate on `runtime_snapshot`
+rows with `prefill_active_batch_size > 0` — correct POPULATION (bug #1),
+but never validated as the correct UNIT. `--chunked-prefill-size -1` means
+one request's entire prefill runs as ONE forward pass inside ONE event-loop
+iteration (`event_loop_pdmux`'s `while True:` body, `multiplexing_mixin.py`)
+— so a prefill EPISODE, however long its wall-clock duration, produces AT
+MOST one `_dual_worker_sync` call with `prefill_active_batch_size>0`, and
+`dual_worker_trace_every=32` subsampling then discards most of even that
+single opportunity. Meanwhile idle/decode-only iterations fire at ~200-280Hz
+(measured: 208s → 57,993 snapshots at 866868's scale). Empirically:
+**150 real requests produced only ~10-40 `prefill_active_batch_size>0`
+snapshots depending on cell** — roughly 1/4 to 1/15 of episodes captured
+at all, and NONE of D16's (the fastest-prefill cell) ever showed up this
+way even once across NP=150 (§9.7/§9.8). This is a FOURTH distinct
+manifestation of the same underlying class of error this session has now
+hit repeatedly (target-vs-realized → §5.1's OR-population →
+§5.2's count-vs-time → this section's snapshot-vs-episode) — snapshot
+COUNTS were never validated as a stand-in for EPISODE counts, and for a
+single-forward-pass-per-request engine they systematically are not one.
+
+**Fix — episode accounting, ported (not reinvented) from
+`s8p_prefill/s8p_analyze.py`'s interval-bracketing technique**, which
+passed on all 16 (arm, cell) combinations in that campaign this same way:
+
+1. **Reconstruct each request's `[admission, first-token]` interval.**
+   `sglang.bench_serving`'s output jsonl has no per-request absolute
+   timestamps, so this campaign's own §4.5 seeded-RNG arrival replay is
+   reused: `arrival_rel[i]` (request i's dispatch time relative to the
+   first) from `np.random.exponential(1/rate)` draws, `completion_rel[i] =
+   arrival_rel[i] + ttft[i] + sum(itls[i])`. **Anchoring**: unlike
+   `e1_capacity_scan.sbatch`'s own use of this replay (which only needs
+   RELATIVE timing for `arrival_rps`), the pin gate needs ABSOLUTE times to
+   bisect against telemetry — anchored so the reconstructed LAST request's
+   completion lands exactly at the phase's own measured end (`T1_LO`/
+   `T1_HI`, already recorded in `<RUNID>_rounds.jsonl`): `T0_abs = T1_anchor
+   - max(completion_rel)`. **Validated** against 866066's real data: this
+   implies a ~16.1s gap between the wrapper's own `T0_LO` (captured just
+   before the `bench_serving` subprocess launches) and the reconstructed
+   anchor — and `bench_serving`'s OWN reported `duration` field (79.06s)
+   vs the wrapper's `T1_LO - T0_LO` (95.06s) independently gives the SAME
+   ~16.0s gap (server-readiness-check + `--warmup-requests` overhead) to
+   within 0.1s. Two independent computations agreeing to ~0.1% is strong
+   evidence the anchor is correct, not an artifact.
+2. **Bisect + bracket, verbatim from `s8p_prefill/s8p_analyze.py`**: for
+   each request's interval `[a, b]`, find the telemetry snapshot
+   immediately before `a` (`ii`) and immediately after `b` (`jj`). Accept
+   only if `psm[ii] == psm[jj]` (realized `prefill_sms` agrees at both
+   ends) AND both are within `GUARD=3.0s` of `a`/`b` respectively — same
+   algorithm, same GUARD value as the ported campaign.
+3. **★Necessary addition found during validation, NOT in the literal
+   port: exclude "vacuous-idle" brackets.** Applying step 2 literally (no
+   further filter) to 866066's D92 LO phase gives `pin_frac=0.233` (FAIL)
+   — directly contradicting the independently-established ~0.97-1.00
+   realized pin for that exact cell/window (§5.1's own fix, and the
+   client-side TTFT evidence in §5.1). Root cause: 78 of D92's 103
+   "accepted" brackets have `prefill_active_batch_size==0` at BOTH `ii` and
+   `jj` — the bracket is internally consistent (both endpoints agree) but
+   neither endpoint ever observed prefill actually running; this happens
+   when an episode is short enough to complete entirely between two
+   idle-looking snapshots, and it defaults to the non-target
+   `prefill_sms=0` fallback value, which the literal algorithm then
+   (wrongly) counts as evidence AGAINST the target. Excluding these 78
+   brackets (`n_vacuous_idle`) leaves 24 **informative** episodes, all 24
+   at the target `prefill_sms=16` — `pin_frac=1.000`, matching §5.1 exactly.
+   This exclusion is reported transparently (`n_vacuous_idle`,
+   `n_informative`, both histograms) rather than silently applied, per this
+   session's established discipline of not hiding a refinement inside an
+   unlabeled number.
+4. **Gate criterion — Clopper-Pearson 95% one-sided lower bound ≥ 0.80,
+   over informative episodes**, replacing the old two-part
+   `pin_frac>=threshold AND n>=min_n` check (§5.1's `MIN_N_PREFILL_ACTIVE`
+   floor is retired, no magic number 20 any more): `scipy.stats.beta.ppf(0.05,
+   k, n-k+1)` for `k` target-matching informative episodes of `n` total. A
+   small `n` widens this bound automatically and fails the SAME criterion a
+   genuinely-wrong-SM sample would fail — e.g. 866868's T8/D92 LO round
+   (n_informative=8, pin_frac=1.000 point estimate) still correctly FAILS at
+   `lower95=0.688 < 0.80`, because 8 perfect observations are not yet enough
+   absolute evidence at 95% confidence — exactly the intended behavior.
+
+**D16's status, definitively (not merely "underpowered" — a real, telemetry-
+invisible-at-this-density cell)**: re-run with the corrected, informative-
+only method, D16 (866066, NP=150) has **0 informative episodes out of 138
+accepted brackets — ALL 138 were vacuous-idle**. This is stronger and more
+specific than §5.1/§9.7's earlier finding (`n_prefill_active=10-12`
+snapshot count) — it says the 92-SM prefill window is so brief that, across
+150 real requests, NOT ONE bracket-consistent episode ever coincided with a
+snapshot showing prefill genuinely active on either side. §9.8 (below)
+finalizes what to do about this with the coordinator's own guidance.
+
+★★★**RETRACTED BY §5.4 BELOW — §5.3's own "definitively" framing was
+itself premature.** §5.3 read the realized partition at the bracket
+ENDPOINTS, which are by construction outside the request's own prefill
+window — so of course they never showed the target for a fast cell. §5.4
+fixes this (read from INSIDE the bracket instead) and the "0 informative,
+definitively telemetry-invisible" conclusion above does not survive it:
+D16 does have informative episodes once read correctly, just very few.
+Kept here, retracted rather than deleted, as a record of how many times
+this same class of error recurred in one session (see §5.4's own history
+list).
+
+### 5.4 ★★★A FIFTH bug (2026-07-29, coordinator + engine-porter
+    re-diagnosis, while validating `PDMUX_TRACE_FORCE_PREFILL`) — the
+    episode gate read the realized partition at the bracket ENDPOINTS,
+    which are OUTSIDE the prefill window by construction; fixed by reading
+    INSIDE the bracket instead
+
+**Diagnosis.** §5.3's episode gate accepts a bracket via the endpoints
+`ii` (last snapshot at/before admission `a`) and `jj` (first snapshot
+at/after first-token `b`), and — this is the bug — ALSO read the realized
+`prefill_sms` FROM those same two points. Both `ii` and `jj` are, by
+construction, outside `(a, b)`: `ii` is whatever the runtime looked like
+just BEFORE this request was admitted, `jj` just AFTER it finished. For a
+fast-prefill cell, the runtime's auto-partition between requests is the
+idle fallback (`(0,108)` or `(108,0)`, §5.1), so the endpoints structurally
+can never see the target partition regardless of how well-pinned the
+ACTUAL prefill computation was — confirmed directly: 866066 D16's
+endpoint histogram over 150 accepted brackets was `P0:143(95%),
+P92:4(3%), P108:3(2%)` — essentially never the P92 target, no matter how
+much sampling density is added, because the endpoints are the wrong two
+instants to look at, not because the samples are too sparse.
+
+A read-only diagnostic engine-porter built while validating their
+`PDMUX_TRACE_FORCE_PREFILL` patch (`results/e1_traceforce/tfgate_inside_bracket.py`
+— imports `e1_pin_check`, does not modify it) asked the complementary
+question: within `(a, b)` itself, are there any `prefill_active_batch_size>0`
+snapshots, and what do THEY show? Run against the SAME 866066 telemetry
+this DESIGN.md already uses: **D16 — 1 of 150 episodes has an inside-bracket
+active snapshot, showing `P108` (NOT the target, pin_frac=0.000 on that
+single sample); D92 (control) — 49 of 150, ALL showing `P16` (the target,
+pin_frac=1.000, matching §5.1/§5.3's independent evidence exactly)**.
+Re-running `tfgate_inside_bracket.py` (verbatim, unmodified) against the
+identical files this agent already had on disk reproduced these exact
+numbers, confirming the finding is a real property of the endpoint-reading
+bug, not an artifact of a different dataset.
+
+**Fix, implemented in `e1_pin_check.compute_episode_gate`**: the bracket
+endpoints (`ii`, `jj`, GUARD proximity check, ported from
+`s8p_prefill/s8p_analyze.py`) are now used ONLY to confirm the interval's
+own boundaries are close to real telemetry (a timing sanity check) — NOT
+to read the realized partition. The old `psm[ii]==psm[jj]` consistency
+requirement is DROPPED (it was a proxy that only made sense when reads
+came from the endpoints themselves). The realized partition is now read
+from snapshots STRICTLY INSIDE `(a, b)` with `prefill_active_batch_size>0`
+(`lo = bisect.bisect_right(ts, a)`, `hi = bisect.bisect_left(ts, b)`, same
+indexing as `tfgate_inside_bracket.py`); a bracket with no such snapshot is
+`n_vacuous_idle` (unchanged semantics, re-scoped from "endpoints agree and
+are idle" to "nothing found inside"); if multiple inside-active snapshots
+disagree on `prefill_sms` (not expected under a static config), the
+chronologically first is used and the disagreement is counted
+(`n_inconsistent_partition`), never silently resolved.
+
+**Validation (requirement 2 — reproduce the D92 control) — done, with an
+honest caveat about the exact count.** Re-running the fixed
+`compute_episode_gate` against the SAME 866066 D92 telemetry this
+DESIGN.md already used gives **`n_informative=49`, `pin_frac=1.000`**,
+EXACTLY matching `tfgate_inside_bracket.py`'s own count on the identical
+files (cross-validated by running that unmodified reference script
+directly against this agent's own telemetry files, byte-for-byte the same
+inputs). `pin_frac=1.000` (the accuracy criterion) is reproduced exactly.
+The SPECIFIC counts in the coordinator's message (D16: 2 informative, both
+P92; D92: 44 informative) do not match what this agent's own 866066 files
+give (D16: 1 informative, P108; D92: 49 informative, all P16) — but since
+running the coordinator's OWN unmodified diagnostic script against this
+agent's OWN files reproduces this agent's numbers exactly, the discrepancy
+is a DATA PROVENANCE mismatch (the coordinator's cited numbers most likely
+came from a different telemetry capture — a different rep, phase, or job
+— not from `e1_T8_d16_866066_rep1_lo.jsonl`/`e1_T8_d92_866066_rep1_lo.jsonl`
+specifically), not a bug in either implementation. **This is flagged
+rather than silently reconciled**: it means, on the ONE dataset available
+to verify against, D16 STILL fails the pin gate after this fix (n=1,
+showing the non-target `P108`) — a materially different, and less
+optimistic, outcome than "d16's evidence already exists and is 2/2
+correct" for THIS specific data. Whether a genuinely well-pinned D16
+episode is discoverable in general remains to be seen once
+`PDMUX_TRACE_FORCE_PREFILL` actually multiplies the sampling density in a
+NEW run (§4.7) — this fix makes the gate capable of finding it if it is
+there; it does not manufacture evidence where none exists in already-collected data.
+
+**`admission_blocked_frac` fix (requirement 3)**: also count-based, and
+also biased once `PDMUX_TRACE_FORCE_PREFILL` is on — every FORCED record
+is, by construction, `prefill_active_batch_size>0` at the moment it fires,
+which is mutually exclusive with `prefill_admission_blocked`
+(`dual_worker.py:590-599`). Counting forced records in the denominator
+mechanically dilutes this fraction, and does so MORE for cells where
+forcing adds proportionally more records (§4.7's asymmetry — D92 far more
+than D16), a CELL-DEPENDENT bias that would corrupt any cross-cell
+comparison once the flag is on. Fixed: `compute_concurrency_diagnostic`
+now computes `admission_blocked_frac` only over samples with
+`trace_forced != True` (a no-op with the flag off or on pre-patch
+telemetry, since that field is then always absent/false — verified: this
+agent's 866066 re-test after the fix reproduced the exact same
+`admission_blocked_frac=0.001` as before the fix). The time-weighted
+concurrency fractions (`*_time_frac`) are NOT filtered this way — forcing
+only adds resolution to a genuinely time-weighted quantity, it does not
+mechanically bias it the way a blocked/not-blocked COUNT ratio is biased
+by an always-not-blocked-by-construction extra population.
+
+### 5.5 ★★★A SIXTH bug (2026-07-30, coordinator re-diagnosis from raw
+    866066 telemetry) — the episode-bracket approach (§5.3/§5.4), even
+    fully fixed, answers the wrong question FOR A GATE; replaced the
+    PRIMARY gate with a time-weighted estimator over ALL prefill-active
+    samples
+
+**Diagnosis.** §5.4 fixed the episode gate to read the realized partition
+from INSIDE each request's `(a,b)` bracket rather than at its endpoints —
+correct for what that gate is FOR (attributing a specific request's latency
+to the partition that was actually in effect while it ran), but the
+coordinator's own hand-aggregation of the full 866066 D16 telemetry file
+(32,145 total snapshots) found that this is not the same question as "was
+the runtime pinned to the target partition." Direct count: D16 had exactly
+**12 prefill-active snapshots in the entire file — 7 at the target `P92`,
+5 at the idle-fallback `P108`** — count-fraction 7/12 = 0.583, matching
+§5.4's episode-gate output on the nose (both are conditioning on the same
+tiny population, just accessed two different ways: one per-snapshot, one
+per-request-bracket). But **TIME-weighting those same 12 snapshots** (each
+weighted by the wall-clock gap to the next snapshot, exactly
+`compute_concurrency_diagnostic`'s existing technique from §5.2) flips the
+answer: the 5 fallback snapshots are systematically SHORTER-duration than
+the 7 target ones (the runtime reverts to full-GPU decode only in the
+brief windows between back-to-back prefills, then repartitions as soon as
+the next one is admitted), giving **1.719s of 1.719+0.311=2.030s at the
+target = 84.7% time-weighted pin**, not 58.3%. D92 control: 47.091s of
+47.144s = 99.9%, matching every prior measurement of that cell exactly (it
+was never in question).
+
+**Why the episode gate can never answer the aggregate question it was
+being asked to answer, even fixed.** A gate's job is "what fraction of
+this cell's prefill-serving TIME ran at the target partition" — an
+aggregate, denominator-is-wall-clock question. The episode gate's
+denominator is "how many REQUESTS have any inside-bracket evidence at
+all" — for a fast cell like D16 that is a tiny, request-count-limited
+sample by construction (one request's whole prefill is one iteration,
+§5.3), and discarding all but a handful of brackets to get a clean
+per-request attribution is *correct behavior for attribution* and *the
+wrong entry to gate on*, because it throws away exactly the duration
+information (which snapshots were long vs short) that decides the
+aggregate answer. Two estimators were being asked to do each other's job:
+the episode gate (built for per-request latency attribution, correctly
+data-starved by design) was being read as if it were the aggregate
+occupancy gate, while the real aggregate answer was sitting one time-weighting
+step away, in the same 12 samples, the whole time.
+
+**Fix, implemented as `e1_pin_check.compute_time_weighted_pin_gate`
+(NEW function, PRIMARY gate) + `time_weighted_gate_verdict`**: build
+"prefill episodes" as maximal contiguous runs of
+`prefill_active_batch_size>0` telemetry snapshots (not per-request
+brackets — a purely engine-observable segmentation, needs no RNG-replay
+reconstruction of the workload at all), each contributing
+`(t_total_seconds, t_at_target_seconds)` via the same time-weighting as
+`compute_concurrency_diagnostic`. The pooled `pin_frac = sum(t_at_target) /
+sum(t_total)` over ALL such episodes in the window is the point estimate.
+**Uncertainty**: Clopper-Pearson (§5.3/§5.4) is for i.i.d. Bernoulli trials
+and is the WRONG tool here — the underlying observations are
+autocorrelated durations within episodes, not independent coin flips, so
+its lower bound would be systematically too narrow (overconfident). Fixed
+per the coordinator's explicit instruction: **episode-level cluster
+bootstrap** — resample whole episodes (not individual snapshots) with
+replacement, `n_boot=10000`, recompute the pooled time-weighted `pin_frac`
+each draw, report the 2.5th percentile as `pin_frac_lower95`. This
+correctly treats each PREFILL EPISODE (not each snapshot, not each
+request) as the unit of independent evidence, and is reported alongside
+**`n_episodes`** (the effective sample size the coordinator asked to have
+reported honestly) so a low-n cell's wide bootstrap CI is visible rather
+than hidden behind a point estimate. `n_episodes ∈ {0, 1}` is handled as a
+special case (0: "no prefill-active time in this window, cannot judge";
+1: point estimate reported but flagged `[UNRELIABLE: bootstrap CI not
+meaningful]`, since a bootstrap of a single cluster cannot estimate
+between-cluster variance).
+
+**Validation against the coordinator's own hand-derived numbers** (whole-file
+866066, no LO/HI windowing, i.e. the same population the coordinator
+aggregated by hand): `python3 e1_pin_check.py e1_T8_d16_866066_telemetry.jsonl 16 0.80`
+→ `pin_frac=0.847, n_episodes=8, pin_frac_lower95=0.554` → **FAILS** the
+0.80 gate (0.554 < 0.80) — an honest failure due to LOW STATISTICAL POWER
+at only 8 independent prefill episodes in the whole file, not due to a
+bad point estimate (0.847 is itself comfortably above 0.80) and not due to
+zero evidence (§5.3's now-doubly-retracted framing). `python3
+e1_pin_check.py e1_T8_d92_866066_telemetry.jsonl 92 0.80` →
+`pin_frac=0.999, n_episodes=75, pin_frac_lower95=0.996` → **PASSES**. Both
+numbers match the coordinator's cited 0.847/0.999 point estimates exactly.
+(Note: `e1_analyze.py`'s own per-rep table applies this same gate
+separately to each LO/HI *sub-window* of a rep, so its printed `n_episodes`
+and `pin_frac` for D16 will differ from — and typically be smaller/noisier
+than — these whole-file numbers; this is expected windowing, not a
+discrepancy.)
+
+**Role of the retained episode-bracket gate (§5.4), rescoped per explicit
+instruction not to alter its already-correct fix**: `compute_episode_gate`/
+`episode_gate_verdict` remain **exactly as fixed in §5.4** (bracket, GUARD,
+inside-bracket read, vacuous-idle exclusion — no code changed) but are no
+longer imported by `e1_analyze.py`'s citeability filter. They are now
+printed purely as an **informational, non-gating latency-attribution
+diagnostic** (labeled `E1_EPISODE_ATTRIBUTION` in `e1_pin_check.py`'s CLI
+output) — useful for answering "was THIS SPECIFIC slow/fast request
+plausibly served under the target partition," never for deciding whether a
+cell/rep is citeable.
+
+**★ Requirement 3 (pre-registered here, do not walk back without updating
+this file): D16's non-pin time is a REAL POLICY BEHAVIOR, not a bug, and
+must be reported as a first-class result, not hidden.** The runtime's own
+scheduler auto-reverts to a full-GPU (`108/0` or `0/108`) partition
+whenever decode's running batch drains to empty between the sparse arrivals
+a fast-prefill cell produces (this is correct, intended behavior of the
+underlying auto-partition fallback, not a defect in the harness or the
+engine — see §12/§9.7 for the mechanism). Concretely for D16 (866066,
+whole file): **85% of prefill-active wall-clock time ran at the TARGET
+`[92,16]` partition, 15% ran un-partitioned at the idle-fallback `P108`**
+(`realized_hist = {92: 1.719s, 108: 0.311s}` out of `t_prefill_active_total
+= 2.030s`). **The main sweep MUST report, per cell, per rep, per phase,
+the full time-weighted `realized_hist` breakdown** (already wired into
+`e1_analyze.py`'s per-rep print block as "realized partition split
+LO:/HI:") and describe results using "target D=16, realized target
+85%/auto-partition 15%" language, never bare "D=16" — a cell label like
+`[92,16]` names a TARGET configuration, not a guaranteed realized one.
+
+**★ Requirement 4 (pre-registered): this exposure is asymmetric across the
+grid, and the asymmetry is itself a result, not noise.** D92's control
+cell has effectively 0% exposure to auto-partition reversion (99.9%/0.1%
+in the same file) because decode's running batch rarely empties at that
+end of the frontier. The fast-prefill, low-decode-SM end of the grid (D16,
+and to a lesser extent D24) is structurally the MOST exposed to this
+effect, because that is precisely where inter-arrival gaps are long enough
+relative to prefill duration for decode to drain and the runtime to
+auto-revert before the next admission. This is the SAME root mechanism as
+the concurrency asymmetry already documented in §4.2.4/§9.7 (d16
+1.3%/d44 4.9%/d92 25-40% `concurrent_time_frac`) — one root cause
+(prefill-rich cells see long idle gaps between rare, fast prefill bursts)
+produces two visible symptoms (low concurrency exercise AND exposure to
+un-partitioned auto-revert time). **Net effect on interpretation**: the
+15% auto-partition exposure at D16 runs at `108/0`, i.e. prefill gets MORE
+SM than its 92-SM target during that time, which — if it materially
+speeds up D16's prefill — biases D16's measured TTFT to look BETTER than
+a "genuinely always-92-SM" D16 would, i.e. it favors the
+prefill-SM-rich end of the frontier, not the decode-SM-rich end.
+Structurally similar to Stage 0's D108-anchor failure (`stage0-deconfound-contested`
+memory entry — a cell label not matching its realized partition) but a
+**different root cause**: Stage 0's was a static config-pinning bug,
+this is the runtime's own dynamic, by-design idle-fallback policy
+reasserting itself between sparse arrivals — it cannot be "fixed" by a
+harness change, only measured, reported, and (if it materially affects a
+citeable conclusion) mitigated by a workload change (e.g. shorter
+inter-arrival times at D16 specifically, discussed as a live option in
+§9.8).
 
 ## 6. Deviations from the precedent recipes (documented per task instructions)
 
@@ -1097,6 +1576,48 @@ agent per the coordinator's explicit authorization. Still smoke-scale
 which remains held per the coordinator's "전 arm 본 스캔은 위 (4)가
 깨끗해질 때까지 계속 보류" instruction.
 
+### 8.4 867034 validation passed (coordinator-confirmed) → seed-policy and
+    d16/low-rate methodology decisions implemented (§4.5/§4.6/§5.3/§9.8) →
+    STAGE-1 full capacity scan submitted (T8, all 5 cells)
+
+The coordinator confirmed a follow-on validation job (`867034`) passed:
+TTFT monotonicity recovered (57→86ms / 60→70ms across the two rates
+checked), the `arrival_rps`-led label works, and `CAPSCAN_SEED_DIVERGENCE`
+correctly caught a real instability (rate≈8: arrival rate differed only
+2.2% between the two seeds, but TTFT p50 differed 18.3% — flagged per
+§4.2.1's >25%(*) threshold discussion, reported as informative even where
+not flagged outright). Both open items from the prior round were then
+resolved with directions, not left as options (§4.5 seed policy adopted
+as pre-registered rule; §4.6/§5.3/§9.8 for the d16/episode-accounting
+resolution, including the honest finding that D16 remains uncitable even
+under the corrected method).
+
+**Time budget for the requested full capacity scan (item C)**, computed
+before submitting, per the coordinator's explicit request:
+`RATES="1 2 3 4 6 8 12 16 24 32"` (extended upward from the prior 2-point
+smoke specifically to find where TTFT/ITL clearly bend or errors appear,
+per instruction — no a priori upper bound was fixed, this ladder is
+STAGE 1 of the two-stage protocol, §4.6; if no elbow appears by rate=32
+that fact will be reported and the ladder extended further, not silently
+capped), `SEEDS="1 2"`, `PROBE_TARGET_S=8` (reduced from the default 20 to
+bound `NP` growth at the high end of this wider ladder while still
+respecting the `NP_MIN=45` floor at the low end, §4.2.3) → `NP` per rate =
+{45,45,45,45,48,64,96,128,192,256}, **1,928 requests per cell (both
+seeds), 9,640 total for 5 cells**. Exact wall-clock is unknown until
+capacity is known (that is what this scan measures), but bounded by the
+job's `--time=05:00:00` override (bumped from the script's default 3h given
+the wider ladder and 5-cell scope); boot cost ~3-10 min/cell × 5 cells is
+the other major component (§9.4).
+
+**Submitted 2026-07-29: job `867231`** (`ARM_IDS="3"` = T8, all 5 cells,
+the above ladder/seeds/PROBE_TARGET_S) — **stage 1 only**, per the
+coordinator's explicit two-stage instruction ("T8부터 5셀 전부를 돌려 ...
+2단계로 갈 거면 1단계 결과를 보고하고 멈춰라"): this validates the rate
+range and the new episode gate at full campaign scale (150-256 requests/
+probe vs the smokes' 20-150) before extending to the other 3 arms, which
+remain **not submitted** pending this job's results and the user's
+go-ahead.
+
 ## 9. Risks identified while building this harness
 
 ### 9.1 Off-cliff bands may differ by arm AND by cell within an arm (highest risk)
@@ -1254,64 +1775,70 @@ main sweep reproduces this, remedy 1 (targeted longer-input probes for
 those specific cells) is the most promising lever, since remedy 2 (more
 NP) has already been shown insufficient by itself at a 7.5× step.
 
-### 9.8 ★NEW 2026-07-29 — D16's `n_prefill_active` floor: decision needed
-    before the main sweep (options only, no default chosen here — user's
-    call, per coordinator instruction)
+### 9.8 ★★★RESOLVED-AS-DIAGNOSIS, STILL HINGES ON `PDMUX_TRACE_FORCE_PREFILL`
+    FOR CITEABILITY (2026-07-30, FOURTH revision, after §5.5's
+    time-weighted gate) — D16 is genuinely 85% pinned by TIME, but fails
+    the gate on LOW STATISTICAL POWER (n_episodes=8), not on zero or
+    wrong-direction evidence
 
-**Status**: d16's PRIMARY pin gate remains `UNDERPOWERED` at NP=150
-(n=10–12 vs floor 20, 866066), confirmed a real, physical property of that
-cell (92-SM prefill windows are simply too brief to be caught reliably by
-the event-loop-iteration-cadence telemetry, §5.2), not a harness bug. Fixing
-this AFTER seeing main-sweep data would be a pre-registration violation
-(the coordinator's own framing) — so the choice must be made now, before
-the main sweep, even though none of the options is free of tradeoffs.
-Three candidates, presented without a recommendation (user's decision):
+**This section's history is itself informative, once more**: "D16 is
+UNDERPOWERED, pick a/b/c" (original) → "0 informative episodes, uncitable"
+(§5.3, retracted) → "1 inside-bracket sample, showing the WRONG partition"
+(§5.4, also superseded) → **§5.5 shows all three were answering a
+per-request attribution question with a request-count-starved estimator,
+when the actual gate question is an aggregate time-weighted one that the
+SAME underlying telemetry answers much better**: D16's whole-file 866066
+evidence is **12 prefill-active snapshots, time-weighted to 85% at the
+target `P92`** (`pin_frac=0.847`), from **8 independent prefill episodes**.
+The point estimate is good — 0.847 clears the 0.80 bar with room to spare —
+but the honest episode-cluster-bootstrap lower95 on only 8 clusters is
+**0.554**, which FAILS the 0.80 gate. This is a **materially different, and
+more informative, failure mode** than any prior framing: not "no evidence,"
+not "evidence points the wrong way," but **"the evidence we have is
+plausibly good, we just don't have enough of it to say so at 95%
+confidence."**
 
-**(a) Widen the window for D16/D24 specifically** (longer prompts and/or a
-higher rate for just those cells, e.g. switching to a `random-ids` dataset
-with a deliberately long fixed input length, mirroring `s8p_prefill`'s
-L-controlled probe design). *Pro*: attacks the root cause (brief prefill
-windows) directly, keeps the gate/floor as-is so D16 is judged by the SAME
-standard as every other cell. *Con*: breaks the "single-variable" workload
-design (§4.1 — every OTHER cell would still use natural ShareGPT-length
-prefill, only D16/D24 would use an artificially lengthened one), so a
-result for D16 would carry a workload-composition caveat other cells don't
-have; requires new config/prompt plumbing not yet built.
+**Why this is not yet resolved, and what would resolve it**: the root
+cause (D16's 92-SM prefill computation is fast enough that ordinary
+telemetry subsampling rarely lands ANY sample while prefill is active) is
+exactly what engine-porter's `PDMUX_TRACE_FORCE_PREFILL` patch targets
+(§4.7/§12) — forcing an extra snapshot whenever prefill is in flight should
+multiply D16's available prefill-active evidence roughly 30× per the
+projected emission-rate numbers (§4.7/§12), which under the NOW-CORRECT
+time-weighted estimator should directly translate into more independent
+episodes and a tighter bootstrap CI (unlike the old episode-bracket
+approach, where more snapshots only tightened brackets around a
+request-count-limited population — see §5.5's "wrong question" diagnosis
+for why this matters). **This has not been tested yet** —
+`PDMUX_TRACE_FORCE_PREFILL` requires a live GPU run to produce new
+telemetry, and per §4.7/§12/the coordinator's explicit instruction, no such
+run happens before the observer-effect gate (job 867298) passes. So D16's
+citeability is an OPEN EMPIRICAL QUESTION contingent on that gate and a
+subsequent forced-sampling run — but it is now a QUANTIFIED open question
+(need enough additional independent prefill episodes to shrink the
+bootstrap CI from ±0.29 to within 0.05 of the 0.847 point estimate), not a
+qualitative one.
 
-**(b) Redefine the sample-size floor on a time-weighted basis** instead of
-a raw prefill-active COUNT (e.g., require the time-weighted
-`prefill_active_time_frac` × window duration to exceed some minimum
-WALL-CLOCK seconds of prefill-active time, rather than `n_prefill_active
->= 20`). *Pro*: directly measures the thing that actually matters
-(how much genuine wall-clock evidence supports the pin_frac estimate) and
-would treat a cell with FEW but LONG prefill events as adequately powered
-even if the raw event count is low — which is arguably the more honest
-statistic given §5.2 established that events, not counts, are the right
-unit for time-based claims (though pin_frac itself is deliberately an
-EVENT-conditional proportion, not a time-weighted one, per §5.2's discussion
-of why that is the correct choice for THAT specific quantity — this option
-would need its own careful justification for why a TIME threshold is
-appropriate for a COUNT-based proportion's power, not just an assertion).
-*Con*: introduces a second, harder-to-intuit threshold family (seconds
-instead of a plain sample count) and does not actually fix the low
-information content of a genuinely tiny population — a handful of long
-events is still a handful of independent observations for the purpose of
-estimating a PROPORTION (event count, not their duration, governs the
-proportion's own statistical power) — this option's honesty benefit is
-more about reporting than about actually resolving underpowering.
-
-**(c) Report D16 as `UNDERPOWERED` and drop it from the cited grid**,
-keeping D∈{24,44,54,92} as the main sweep's citeable set, with D16 kept
-"as-run" only (per the existing dropped-rep convention, §5) — extending the
-same treatment already applied automatically to any individual failing
-rep to the entire cell. *Pro*: zero additional harness work, fully
-consistent with the existing gate philosophy (discard, don't paper over),
-and does not compromise any OTHER cell's result. *Con*: D16 is the
-decode-most-starved extreme of the grid (§0/§2) — dropping it narrows the
-frontier's span exactly at the end where C2's decode-SM lever is
-theoretically most binding, potentially the single most informative point
-for testing tension A; losing it weakens the campaign's ability to answer
-its own motivating question at one end of the trade-off space.
+**What this means for the main sweep, concretely**:
+1. Do not decide D16's fate (cite / exclude / workload-specific remedy)
+   until a real `PDMUX_TRACE_FORCE_PREFILL=1` run's D16 telemetry has
+   actually been checked against `compute_time_weighted_pin_gate`. If that
+   run still gives too few independent prefill episodes to clear the
+   bootstrap bound, the old menu's remaining live options
+   (workload-specific shorter inter-arrival time for D16 only to produce
+   more prefill episodes per unit wall-clock, or accept D16 as
+   as-run-only/excluded) apply exactly as previously described.
+2. **Independently of whether the gate ultimately passes**, §5.5's
+   requirements 3-4 apply regardless: D16's realized-partition split
+   (currently 85% target / 15% auto-partition fallback, whole-file 866066)
+   MUST be reported as a first-class per-cell, per-rep, per-phase number
+   in the main sweep's results, described as "target D=16, realized
+   target 85%/auto-partition 15%" (or whatever the actual PDMUX_TRACE_FORCE_PREFILL=1
+   run measures), never as bare "D=16" — this is a real, asymmetric,
+   frontier-position-dependent property of the runtime's own auto-partition
+   fallback policy (§5.5 req. 4), not an artifact that forced-sampling
+   removes; forced sampling only lets us MEASURE it with enough power to
+   gate on it, it does not change the underlying 85/15 split itself.
 
 ## 10. Artifact mapping
 
@@ -1378,3 +1905,83 @@ shorter or longer ShareGPT cap to shift where TTFT sits) — which WOULD add
 GPU time, but only if the siting check fails, and only for the specific arm
 it fails for. This is a risk to watch during the capacity-scan stage, not a
 committed cost.
+
+## 12. `PDMUX_TRACE_FORCE_PREFILL` — engine-side fix for the d16 telemetry
+   blind spot, and what it does to count-based statistics
+   (added 2026-07-29 by engine-porter; engine patch only, harness unchanged)
+
+**The blind spot.** `runtime_snapshot` emission is a pure COUNT subsample of
+`_dual_worker_sync` calls (`multiplexing_mixin.py`: emit when
+`trace_count == 1 or trace_count % PDMUX_DUAL_WORKER_TRACE_EVERY == 0`,
+default 32). The PD-mux event loop keeps spinning when idle at several
+kHz, while a prefill-in-flight iteration is a handful of (slow) sync calls,
+so the sampled population is dominated by idle iterations. Measured on this
+campaign's own telemetry: E1/T8/d44 prefill was active **4.9% of wall time
+but 0.07% of sampled snapshots** (a ~70× under-representation), and d16
+(`[92,16]`, the fastest prefill in the grid) produced 12 prefill-active
+snapshots in 181s — which is why §9.8's episode gate found 138/138 brackets
+vacuous. The bias runs in the direction of the experiment: the more SM
+prefill gets, the less observable it is, so the frontier's decode-starved
+end is the least verifiable end.
+
+**The fix (engine).** With `PDMUX_TRACE_FORCE_PREFILL=1`, a sync whose
+`split_prefill_batch is not None` emits regardless of the subsample grid.
+Default is **OFF**, so past campaigns and any run that does not opt in keep
+writing byte-identical records (the extra `trace_forced` field is written
+only when the flag is on). The scheduled grid itself is untouched in both
+modes — `dual_worker_trace_count` still advances once per sync — so forced
+records are strictly ADDITIONAL, never a shift or a replacement.
+(Bookkeeping: this patch shifts the `multiplexing_mixin.py` line numbers
+cited in §5.3/§9.8 — the emission gate is now at `:399-437` and the flag is
+read at `:97-106`. Installed hash is in this directory's
+`runtime_source_manifest.sha256`; the flag is delivered through
+`src/multiplex/multiplexing_mixin.py` + `sync_engine_tree.sh`, not through a
+separate `src/patches/*.patch`, because that file is one of the tracked
+sources the sync script installs wholesale.)
+
+**★ What this does to count-based statistics.** In force mode the emitted
+population is deliberately OVER-sampled on prefill-in-flight syncs.
+Therefore any statistic of the form "fraction of snapshots" is biased
+toward prefill and is **not comparable across the flag**:
+- `concurrent_frac_count_based` / `prefill_active_frac_count_based`
+  (`e1_pin_check.py`, already retained for audit trail ONLY) — will read
+  much higher in force mode, for a reason that has nothing to do with the
+  run's actual behaviour.
+- `admission_blocked_frac` (same file) is also count-based, and is biased
+  the OTHER way: by construction a blocked sample has
+  `prefill_active_batch_size == 0`, so every forced record lands in the
+  denominator and never the numerator, **diluting** the reported blocked
+  fraction. If that number is ever read across a flag boundary, recompute
+  it over `trace_forced != true` records only.
+- Recovery recipe: filtering to `trace_forced != true` reproduces the
+  legacy population EXACTLY (it is precisely `sample_index == 1 or
+  sample_index % trace_every == 0`), so any count statistic can be made
+  comparable again after the fact. Nothing is lost, but nothing is
+  automatically comparable either.
+
+**What is NOT affected.** The two things this campaign actually gates on:
+- **Time-weighted** diagnostics (`compute_concurrency_diagnostic` weights
+  each snapshot by the gap to the next one) are unbiased under denser
+  sampling — a finer partition only makes the Riemann sum of the same
+  occupancy function more accurate. Denser sampling can only move the
+  time-weighted numbers toward the truth, never away from it.
+- **Episode-based** gates (`compute_episode_gate`) count requests, not
+  snapshots; extra snapshots only tighten the `[ii, jj]` bracket around
+  each episode.
+This is why the campaign's 2026-07-29 move off count-based accounting (§5,
+§5.3) is what makes this patch safe to use at all.
+
+**Cost and its asymmetry (must be respected when arms are compared).** The
+added emission volume is bounded by the number of prefill-in-flight sync
+calls, which is a per-cell property. Projected from this campaign's own
+pre-patch telemetry (prefill-active snapshots × `trace_every`):
+`d16` +1.2% emitted records (~2/s), `d44` +2.2% (~6/s), `d92` +28.5%
+(~44/s). Measured cost of one emission on the scheduler thread (CPU
+microbench, batch 8–48): median 33–45 µs, mean 47–63 µs, i.e. ≲0.02% of
+scheduler wall time at d16 and ≲0.3% at d92. The point to keep in mind is
+not the magnitude but the **shape**: the observer load is smallest at the
+prefill-rich cells and largest at the prefill-poor ones, i.e. it varies
+along the very axis the frontier compares. Keep the flag set to the SAME
+value for every cell of a comparison, and treat the measured bound (see
+`results/e1_traceforce/`) as the floor of resolvable effects, not as
+"zero".
