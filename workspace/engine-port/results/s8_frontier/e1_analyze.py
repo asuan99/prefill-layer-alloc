@@ -106,6 +106,7 @@ import argparse
 import collections
 import glob
 import json
+import math
 import os
 import random
 import re
@@ -308,30 +309,76 @@ def run_capscan_mode(args):
     the SLO-siting diagnostics at a candidate rate, before any main-sweep
     data exists. No goodput/decision rule here -- a capacity-scan probe has
     no LO/HI round structure to sum durations over."""
+    # ★★2026-07-31 -- TWO defects fixed here, both in the population-selection
+    # lineage that PROJECT_STATUS.md's methodology gate #4 ("fix the aggregation
+    # unit first, then argue it matches the estimand") was promoted for.
+    #
+    # bug #7: this regex predated the 2026-07-29 seed policy (commit 58792b6,
+    #   DESIGN.md sec 4.5) and had no `_s<seed>` group, so against job 867231's
+    #   output it matched NOTHING and silently fell back to the leftover
+    #   pre-seed smoke files (866868/867034 -- d44 only, rates 2 and 8, ~3.5
+    #   minutes). It then printed a fully-formed, confident verdict
+    #   ("ITL-NONBINDING: TRUE, worst cell d44=16.8ms") computed from one stale
+    #   cell of a smoke test, with no indication that 100 of the 100 real probes
+    #   had been skipped. Silent population substitution, not a crash.
+    # bug #8: no warmup discard. DESIGN.md sec 4.2.2 pre-registers dropping the
+    #   first ceil(WARMUP_S*rate) DISPATCH-ORDER requests (866868 measured TTFT
+    #   p50 at rate 2 HIGHER than at rate 4 purely from cold start). The sbatch
+    #   applies it when it prints its own CAPSCAN lines; this path did not, so
+    #   the analyzer's percentiles disagreed with the scan's own summary and ran
+    #   HIGH on TTFT -- directly biasing the sec 4.3.3 margin test, which is
+    #   evaluated against TTFT p95.
+    #
+    # Seeds are reported SEPARATELY, not pooled. At a given NOMINAL rate the two
+    # seeds are not two draws at one operating point: bench_serving scales one
+    # fixed normalized exponential sequence by the rate, so seed 2's realized
+    # arrival_rps runs a constant 1.366x above seed 1's at every rate <=6
+    # (arrival_rps_reldiff = 0.268, IDENTICAL across all five cells -- it is a
+    # property of the arrival draw, not of the partition). Pooling would average
+    # two different offered loads; siting an SLO on that mixture is exactly the
+    # aggregation-unit error gate #4 forbids.
     pat = re.compile(
-        r"e1cap_(?P<arm>\w+?)_(?P<cell>d16|d24|d44|d54|d92)_(?P<job>\d+)_r(?P<rate>[0-9.]+)\.jsonl$"
+        r"e1cap_(?P<arm>\w+?)_(?P<cell>d16|d24|d44|d54|d92)_(?P<job>\d+)"
+        r"_r(?P<rate>[0-9.]+)(?:_s(?P<seed>\d+))?\.jsonl$"
     )
-    ttft_p95, itl_p95 = {}, {}
+    by_seed = collections.defaultdict(lambda: ({}, {}))
     found = collections.defaultdict(list)
+    used = []
     for fn in sorted(os.listdir(args.capscan_dir)):
         m = pat.search(fn)
         if not m:
             continue
         arm, cell, rate = m["arm"], m["cell"], float(m["rate"])
+        seed = int(m["seed"]) if m["seed"] else 0
         found[(arm, cell)].append(rate)
         if abs(rate - args.capscan_rate) > 1e-9:
             continue
         reqs, _dur = load_phase_requests(os.path.join(args.capscan_dir, fn))
-        ttft_p95[(arm, cell)] = _percentile([r["ttft_s"] * 1000.0 for r in reqs if r["success"]], 0.95)
-        itl_p95[(arm, cell)] = _percentile(
-            [r["itl_p95_ms"] for r in reqs if r["success"] and r["itl_p95_ms"] == r["itl_p95_ms"]], 0.95)
-    if not ttft_p95:
+        n_warm = math.ceil(args.capscan_warmup_s * rate)
+        kept = [r for r in reqs[n_warm:] if r["success"]]
+        if not kept:
+            continue
+        t95, i95 = by_seed[seed]
+        t95[(arm, cell)] = _percentile([r["ttft_s"] * 1000.0 for r in kept], 0.95)
+        i95[(arm, cell)] = _percentile(
+            [r["itl_p95_ms"] for r in kept if r["itl_p95_ms"] == r["itl_p95_ms"]], 0.95)
+        used.append(f"{fn} (n={len(reqs)}, warmup_discard={n_warm}, kept={len(kept)})")
+    if not by_seed:
         avail = {k: sorted(v) for k, v in found.items()}
         print(f"no capacity-scan probes at rate={args.capscan_rate} under {args.capscan_dir}. "
               f"Available (arm,cell)->rates: {avail}")
         return
     print(f"=== capacity-scan SLO siting @ rate={args.capscan_rate} req/s ({args.capscan_dir}) ===")
-    print_slo_siting_report(ttft_p95, itl_p95, args.itl_ladder_ms, args.ttft_slo_ms)
+    print(f"--- probe files actually used ({len(used)}) "
+          f"[bug #7: this list was silently empty-and-substituted before 2026-07-31] ---")
+    for u in used:
+        print(f"    {u}")
+    for seed in sorted(by_seed):
+        t95, i95 = by_seed[seed]
+        print(f"\n########## seed={seed} "
+              f"(seeds are NOT pooled -- different realized arrival_rps, see the "
+              f"comment in run_capscan_mode) ##########")
+        print_slo_siting_report(t95, i95, args.itl_ladder_ms, args.ttft_slo_ms)
 
 
 def main():
@@ -361,6 +408,12 @@ def main():
                           "--capscan-rate. No goodput/decision rule in this mode.")
     ap.add_argument("--capscan-rate", type=float, default=None,
                      help="candidate rate (req/s) to site SLOs at, required with --capscan-dir")
+    ap.add_argument("--capscan-warmup-s", type=float, default=3.0,
+                     help="scan mode: pre-registered warmup discard (DESIGN.md sec 4.2.2) -- "
+                          "drop the first ceil(this*rate) DISPATCH-ORDER requests of each probe. "
+                          "Default 3.0 matches e1_capacity_scan.sbatch's WARMUP_S, so the "
+                          "analyzer's percentiles agree with the scan's own CAPSCAN lines "
+                          "(they did not before the 2026-07-31 bug #8 fix).")
     ap.add_argument("--elbow-onset-rate-lo", type=float, default=None,
                      help="pre-registered LO-phase elbow-onset arrival_rps from the capacity "
                           "scan (DESIGN.md sec 4.6, item B.3) -- if given, any rep whose "
