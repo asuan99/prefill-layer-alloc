@@ -10,6 +10,14 @@ SOURCE = Path(__file__).parents[1] / "src" / "multiplex"
 
 
 def load(name):
+    # NOTE: the bare name is load-bearing -- controller.py's CPU-only fallback
+    # does `from profile import ...` (controller.py:17), so this registration
+    # must stay `sys.modules["profile"]`.  Side effect: it SHADOWS the stdlib
+    # `profile` module for the rest of the interpreter, which breaks a later
+    # `import sglang` in the same `unittest discover` run
+    # (sglang.utils -> IPython -> cProfile -> `import profile`).  Test modules
+    # that import the installed runtime must drop the shadow first; see
+    # test_trace_force_prefill.py.
     spec = importlib.util.spec_from_file_location(name, SOURCE / f"{name}.py")
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None

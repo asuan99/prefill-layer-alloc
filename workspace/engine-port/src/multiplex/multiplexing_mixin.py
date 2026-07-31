@@ -94,6 +94,16 @@ class SchedulerMultiplexMixin:
         self.dual_worker_trace_every = trace_every
         self.dual_worker_trace_count = 0
         self.dual_worker_trace_error_logged = False
+        # PDMUX_TRACE_FORCE_PREFILL=1 (default OFF): additionally emit a
+        # runtime_snapshot on EVERY sync while a prefill batch is in flight,
+        # bypassing the count subsampling below.  Default OFF so telemetry from
+        # past campaigns stays comparable event-for-event; see
+        # `_dual_worker_sync` for why the pure-count grid is blind to fast
+        # prefill cells and what the forced samples do (and do not) change.
+        self.dual_worker_trace_force_prefill = os.environ.get(
+            "PDMUX_TRACE_FORCE_PREFILL", "0"
+        ) in ("1", "true", "True")
+        self.dual_worker_trace_forced_count = 0
         self.dual_worker_state = DualWorkerState.from_sm_counts(self.sm_counts)
         self.true_dual_worker_runtime = (
             TrueDualWorkerRuntime(self.sm_counts, self._activate_role_context)
@@ -387,16 +397,46 @@ class SchedulerMultiplexMixin:
             self.pdmux_experiment_phase = "benchmark"
             self.pdmux_telemetry.mark_phase("benchmark")
         self.dual_worker_trace_count += 1
-        if (
-            self.dual_worker_trace_path
-            and (
+        # The scheduled grid is a pure COUNT subsample of sync calls.  The event
+        # loop keeps spinning when idle, so a cell whose prefill is fast (large
+        # prefill SM share, e.g. [92,16]) occupies very few sync calls and can
+        # miss the grid entirely: measured on E1/T8/d44, prefill was active
+        # 4.9% of wall time but only 0.07% of *sampled* snapshots.  That bias is
+        # systematic in the direction of the experiment (the more SM prefill
+        # gets, the less observable it is), so partition-pin verification is
+        # impossible at exactly one end of the frontier.  With
+        # PDMUX_TRACE_FORCE_PREFILL=1 every prefill-in-flight sync also emits.
+        # OBSERVATION ONLY: nothing below this line feeds scheduling, partition
+        # selection or batch composition, and `dual_worker_trace_count` still
+        # advances once per sync either way, so the scheduled grid (and hence
+        # the pre-patch record set) is bit-for-bit unchanged -- forced records
+        # are strictly ADDITIONAL and are tagged `trace_forced=true`.
+        #
+        # CAVEAT for consumers: in force mode the emitted population is
+        # deliberately OVER-sampled on prefill-in-flight syncs, so any
+        # "fraction of snapshots" statistic (the `*_frac_count_based` audit
+        # values in results/s8_frontier/e1_pin_check.py) is biased toward
+        # prefill and is NOT comparable across the flag.  TIME-WEIGHTED
+        # statistics (weight each snapshot by the gap to the next one) and
+        # per-episode gates are unaffected -- denser sampling only makes the
+        # Riemann sum more accurate.  Recompute a legacy-comparable count
+        # statistic by filtering to `trace_forced != true`.
+        if self.dual_worker_trace_path:
+            scheduled = (
                 self.dual_worker_trace_count == 1
                 or self.dual_worker_trace_count % self.dual_worker_trace_every == 0
             )
-        ):
-            self._write_dual_worker_trace()
+            forced = (
+                not scheduled
+                and getattr(self, "dual_worker_trace_force_prefill", False)
+                and getattr(self, "split_prefill_batch", None) is not None
+            )
+            if scheduled or forced:
+                if forced:
+                    self.dual_worker_trace_forced_count += 1
+                self._write_dual_worker_trace(forced=forced)
 
-    def _write_dual_worker_trace(self: Scheduler) -> None:
+    def _write_dual_worker_trace(self: Scheduler, forced: bool = False) -> None:
         """Enqueue symmetric sampled state without scheduler-thread file I/O."""
         try:
             payload = {
@@ -420,6 +460,13 @@ class SchedulerMultiplexMixin:
                     "kv_mamba_occupancy": kv_mamba,
                 }
             )
+            if getattr(self, "dual_worker_trace_force_prefill", False):
+                # Emitted ONLY in force mode, so a run with the flag off writes
+                # byte-identical records to a pre-patch run.  In force mode,
+                # `trace_forced=false` is exactly the legacy scheduled-grid
+                # population (sample_index == 1 or % trace_every == 0) and
+                # `trace_forced=true` is the additional prefill-in-flight one.
+                payload["trace_forced"] = forced
             self.pdmux_telemetry.emit(
                 "runtime_snapshot",
                 self.pdmux_experiment_phase,
