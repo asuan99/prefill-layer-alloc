@@ -4,7 +4,14 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-07-28 (★★★claims-auditor가 `workspace/engine-port/results/
+최종 갱신: 2026-07-29 (진행 상태 갱신만, 결론 개정 아님 — §3에 항목13
+"집계 단위를 먼저 정하고 추정 대상과 맞는지 논증하라" 신설(9·10번을 특수
+사례로 흡수) + §1에 항목22 "green-context 분할은 decode가 비면 무분할로
+auto-revert — 셀 라벨은 목표이지 실현 배분 아님" 신설(관측 사실, 성능 판정
+아님). `results/s8p_prefill/`(prefill 축 SM 민감도) 완료·claims-auditor 미통과
+(정본 인용 금지 유지), `results/s8_frontier/`(E1) 하네스 구축 완료·본 스윕
+미실행. 상세는 `../PROJECT_STATUS.md`). 이전: 2026-07-28 (★★★claims-auditor가
+`workspace/engine-port/results/
 s0_deconfound/DESIGN.md` §5 사전등록 게이트를 집행 — **부분 GO**. **C1
 CONFIRMED**: §1-21이 인용한 Stage 0 D108 무경합 앵커는 코드 버그로 실제로는
 decode 16 SM이었음을 3중 독립 증거로 확인 → §1-21 판정2(NULL)·판정3(게이트
@@ -53,6 +60,8 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | 12 | ★**컨트롤러 CPU 오버헤드 = 死 (직접 계측)** | `SLO-CTLCOST`(v7 이벤트루프 활성 경로 계측): **mean 32–36µs, max 267µs, 누적 ~34ms / ≥1000 call**. 최악의 단일 호출조차 **decode 한 step(ITL p50 ~30ms)의 0.9%**, 누적은 **wall clock의 0.014%**. ⇒ "컨트롤러가 도는 것만으로 이벤트 루프를 지연시킨다"는 가설 **명시적 반증**. 과거 "bind가 switch=0인데 static 미달"은 CPU 비용이 아니라 **§5-4 시스템 노이즈** 탓 |
 
 | 21 | ★★**Stage 0(long-ctx L−2 게이트, 2026-07-26) — ★★★2026-07-28 판정2/판정3 철회(C1 CONFIRMED), 판정1만 생존** | 3-arm coupled-운영점 스윕(M=pure Mamba2-2.7B 음성대조·H=Zamba2-2.7B hybrid·T=Qwen2.5-3B 양성대조, ctx{4k,8k,16k}, decode-SM{16,44,92}+108-ref, jobs 864230+864601, PIN_CHECK 전부 PASS). **판정1(CONFOUNDED, CONFIRMED, 생존)**: raw ITL(D16/D44/D92) 곡선은 decode-SM binding이 아니라 prefill 경합/entanglement 아티팩트 — 이는 prefill=108−D가 항상 공변하는 설계상 사실이라 D108 앵커의 유효성과 무관하게 참이다. 원 **판정2(NULL, CONFIRMED)**: 유일 de-confounded 대조 D16 vs D108 = 1.00±0.01, 3 arm×3 ctx 전부 ⇒ 운영점 decode는 16→108 SM에 무감각. 원 **판정3**: long-ctx 충돌 가설 붕괴, HE0/벡터1이 ctx-무관으로 강화. ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)** — 판정2·판정3 철회: "D108(무경합 앵커)"은 **실제로는 decode 16 SM**이었다. 3중 독립 증거: (i) 코드 기전 — `manual_divisions=[92,16,0]`의 세 번째 값 0이 legacy auto-path threshold로 읽혀 `decode_bs>=0`이 항상 참 → 항상 stream_idx 1=(92,16) 선택(`src/multiplex/multiplexing_mixin.py:725-742`); (ii) realized telemetry 재집계 — decode-active 샘플의 79–96%가 (92,16)(9/9 셀); (iii) telemetry와 독립인 클라이언트 서명 — D108/D16=0.992–1.001(9/9 셀)인데 D92는 3.4–3.6× 빠름(108이 92보다 느릴 수 없음). ⇒ "D16 vs D108=1.00±0.01"은 **동일 조건 반복측정**. ★**"3중 삼각검증" 표현도 철회** — 무경합 앵커는 고장, 음성 대조 M의 전제("decode O(1) recurrent라 SM-bound 불가")도 틀렸음이 확인됨(context 길이의 O(1)이지 SM 수의 O(1)이 아니었다 — `../PROJECT_STATUS.md` "8B decode-SM 민감도" C2 참조), de-batch 논거는 미감사 — 1/3만 남는다. D16/D44/D92의 **pin 자체**는 realized 기준 유효함 유지. **HE0/HE2/§1-5/§1-7은 철회하지 않는다** — 대신 §5-6이 "게이트 미실행"으로 복원되고, 열린 긴장 2건(HE2 vs C2, r0c 부분 복권)이 `../PROJECT_STATUS.md`에 기록된다. ★scope 한정(필수, 판정1엔 여전히 적용): {M/H/T 2.7–3B, triton, cudagraph-ON green-context pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc burst}. 상세 [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md)(원 판정, 위 항목들로 철회됨), `../workspace/engine-port/results/s0_deconfound/PARTITION_RESIDENCY_STAGE0.md`(C1 근거) |
+
+| 22 | **green-context 분할은 decode가 비면 무분할로 auto-revert한다 — 관측 사실, 성능 판정 아님(2026-07-29)** | 코드: `multiplexing_mixin.py:726,745-748`. 결과적으로 **셀 라벨 `[P,D]`는 목표(target)이지 실현(realized) 배분이 아니다**. 실측(`results/s8_frontier/` job 866066, T8, 시간가중 직접 집계): 목표 `[92,16]`(=d16) 셀은 prefill-active 시간의 **85%만** target `(92,16)`에서 돌고 **15%는 무분할 `(108,0)`**에서 돌았다(2.030s 중 0.311s); 목표 `[16,92]`(=d92) 셀은 **100%** target에서 돌았다(47.144s 중 47.091s, 무분할 0.053s=0%). 이 비대칭은 **prefill이 빠른 셀일수록 크다**(같은 뿌리에서 셀별 동시성도 갈린다: 시간가중 `concurrent_time_frac` d16 ~1.3% / d44 4.9% / d92 25–40%, prefill에 SM을 많이 줄수록 prefill이 빨리 끝나 decode와 덜 겹친다). ⇒ **파티션 스윕 결과는 목표 배분이 아니라 실현 배분의 시간가중 분포와 함께 보고해야 한다**(§3-11의 활성률 게이트와 결합). Stage 0(§1-21)의 D108 앵커 실패와 **같은 구조**(라벨 vs 실현)이나 **원인은 다르다** — 그건 legacy auto-path의 threshold 오독이라는 설정 버그, 이건 **정책이 설계대로 동작한 결과**(decode-empty 시 무분할 fallback은 의도된 경로) |
 
 | 13 | ★★**HE0의 구조적 이유 — 두 regime의 최적이 *충돌하지 않는다*** | **TRUE per-phase goodput**: 정책간 spread가 **LO(rate 3) 0.067 (2.3%) vs HI(rate 12) 1.187 (43%)** ⇒ **차별의 ~95%가 과부하 phase에서 발생**. LO는 split에 **무관심**(prefill-heavy 극단 d16 2.861 ≈ decode-heavy 극단 d44 2.858 = 구분 불가) ⇒ **LO엔 쫓아갈 최적점이 없고, HI의 최적은 LO에서도 공짜**(§1-6 비대칭의 정량 확인). ⇒ **"항상 HI 최적"=decode-heavy static이 정의상 최선**이고 동적은 과도만 지불. **동적이 이기려면 regime 간 최적이 *충돌*해야 하는데 이 워크로드엔 그 구간이 없다**. ⚠️**정정 이력**: 2026-07-18(§1-16)엔 "이 논증은 관대 SLO 한정, tight선 HI 최적이 동적"이라 봤으나, **§1-17(직접 재튜닝)이 반증** — tight SLO에서도 HI 최적은 **고정 decode-heavy(d44)**이고 동적은 얽힘 트랩으로 열위. ⇒ **이 논증은 tight SLO에서도 성립**(SLO 엄격도 무관) |
 | 14 | ★**stationary r8의 "시스템 노이즈" = 메트릭 절벽 (외인성 아님)** | 워크로드 4런 전부 동일(fingerprint), 하부 섭동은 **thru 3%·ITL 8%**뿐인데 goodput 2× — **r8이 TTFT≈SLO(3s) 경계에 앉아** 3% 결손이 TTFT 평탄역을 1.5s→3.7s로 밀어 임계선을 넘김. **3=견고/8=불안정/12=견고** ⇒ 경계 regime만 불안정. 상세 [bench_noise_root_cause.md](bench_noise_root_cause.md) |
@@ -124,13 +133,42 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
    교훈, 철회됨), `../workspace/engine-port/results/s0_deconfound/
    PARTITION_RESIDENCY_STAGE0.md`(재작성 근거).
 10. ★★**(2026-07-28) pin은 realized로 검증한다.** 위 항목 9의 첫 소항목과 동일 —
-    `PROJECT_STATUS.md` "방법론 게이트(신규)" 참조.
+    `PROJECT_STATUS.md` "방법론 게이트(신규)" 참조. ★**아래 13번의 특수
+    사례**(target-vs-realized 집계 단위 불일치)로 재분류(2026-07-29).
 11. ★★**(2026-07-28) 파티션 활성률을 사전등록 게이트로 삼는다.** green-context
     분할은 split-prefill 동거 중에만 유효하고, 비면 무분할로 되돌아간다 —
-    최소 활성률(예: ≥0.60)을 실험 전에 정하고 미달 셀은 폐기한다.
+    최소 활성률(예: ≥0.60)을 실험 전에 정하고 미달 셀은 폐기한다. ★**정정
+    필요(2026-07-29)**: 이 활성률은 **시간가중**으로 재정의해야 한다 — 아래
+    13번 참조. 스냅샷 **개수** 기반 활성률은 실제값을 최대 16–26× 과소평가할
+    수 있다(`results/s8_frontier/` 실측: 동시성 0.015 → 시간가중 0.25–0.40).
 12. ★★**(2026-07-28) keepalive는 짧은 prefill을 자주.** 긴 keepalive는 활성률을
     오히려 떨어뜨린다(실측 0.66–0.93 → 0.32–0.63) — 긴 prefill 윈도우 동안
     decode가 진행되지 않아 시간적으로 분리된다.
+13. ★★★**(2026-07-29) 집계 단위를 먼저 정하고, 그 단위가 추정 대상과 맞는지
+    논증하라.** 위 9번(coupled 스윕 confound)·10번(pin은 realized로 검증)의
+    상위 개념 — 그 둘을 이 원칙의 특수 사례로 흡수하되 문구는 지우지 않는다.
+    `results/s8_frontier/`(E1 프론티어) 하네스 구축 중 **집계 단위가 답을
+    5번 바꿨고 전부 반대 결론을 낼 뻔했다**:
+    1. **target vs realized 파티션**(Stage 0 무효화, 위 §1-21).
+    2. **게이트 모집단** `prefill_active OR decode_active` vs 조건부 — 설계상
+       정상인 decode-only 무분할 윈도우를 pin 실패로 셈: pin **0.029 FAIL →
+       0.976 PASS**.
+    3. **스냅샷 개수 가중 vs 시간 가중** — `runtime_snapshot`이 이벤트루프
+       iteration당 발화해 235ms prefill 스텝과 11ms decode 스텝이 같은 무게를
+       가짐: 동시성 **0.015 → 0.25–0.40**(16–26×).
+    4. **drain 꼬리 포함 duration vs 도착 구간만의 duration** —
+       `achieved_rps` **3.40 → arrival_rps 8.96**.
+    5. **스냅샷 vs 에피소드**, 그리고 그 안에서 다시 **개수 vs 시간** —
+       d16 pin_frac **0.583 → 0.847**.
+
+    **따름정리**: 하나의 추정량으로 두 질문에 답하지 마라. "그 파티션에서
+    실행됐는가"(게이트)는 **시간 가중**으로 답하고, "이 요청의 지연은 어느
+    파티션 것인가"(귀속)는 **요청별 bracket**으로 답한다. 후자는 전자의
+    데이터를 대부분 버리므로(대부분의 스냅샷이 요청 경계 안쪽이 아니라
+    사이에 놓임) **게이트에 쓰면 검정력이 무너진다**(예: d16 요청-bracket
+    귀속 n_episodes=8, lower95=0.554 → FAIL — 사유는 검정력 부족이지 잘못된
+    SM 아님). 상세 `../workspace/engine-port/results/s8_frontier/` 하네스
+    설계 문서(결함 5종 수정 기록).
 
 ---
 

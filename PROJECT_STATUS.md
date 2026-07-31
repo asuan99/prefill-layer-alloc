@@ -1,6 +1,26 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-07-28 (★★claims-auditor가 사전등록 게이트(`workspace/engine-port/
+최종 갱신: 2026-07-31 (진행 상태 갱신만, 결론 개정 아님 — `results/s8p_prefill/`
+**완료**[claims-auditor 미통과, 정본 인용 금지 유지]·`results/s8_frontier/`(E1)
+하네스 구축 완료·본 스윕 미실행. 하네스 전제 job 867231(T8 용량 스캔)·867298
+(관측자 효과 게이트)은 2026-07-29 세션 핸드오프에는 PENDING으로 기록됐으나
+★**2026-07-31 `sacct` 재확인 결과 둘 다 2026-07-29 21:15–22:41에 이미
+COMPLETED**(핸드오프의 예측이 backfill로 빗나감). ★**2026-07-31 정정**: 같은 날
+앞선 갱신은 "분석/판정 파일 0건"이라고 적었으나 **오기** — 두 job 모두 **분석이
+job 안에서 이미 실행**되어 결과가 `e1cap_T8_867231_result.txt`·
+`tfgate_T8_867298_result.txt`에 있고, 판정은 `handoff-report/
+session_handoff_2026-07-29.md` §10에 기록돼 있다. 없는 것은 별도 FINDINGS 문서뿐이다.
+관측자 효과 게이트 = **조건부 통과**(d92에서만 `itl_p95 +2.00%` t95 [+0.78,+3.21] —
+결정 지표 위 비대칭 교란) ⇒ **본 스윕은 `PDMUX_TRACE_FORCE_PREFILL=0`, pin 검증만
+별도 ON 런으로 분리**(사전등록: `results/s8_frontier/DESIGN.md` §4.7.1).
+⚠️**T8 용량 스캔은 §4.2/§9.1의 사전등록 escalation 분기를 발동시켰다** — 5셀
+동시 off-cliff rate가 존재하지 않는다(d16/d24 knee≈14–16, d44/d54≈18–25, **d92≈3**
+req/s). 사전등록대로 "그 자체가 발견"으로 기록하고 arm 스윕 제출 전 escalate 대상.
+★신규 방법론 게이트(집계 단위 선확정 — "방법론 게이트"
+절 #4) + green-context auto-revert 실현-배분 관측 사실(`reports/CONSENSUS.md`
+§1-22) 등재. 상세는 아래 "열린 긴장"·"다음 실험 gate"·"방법론 게이트" 절).
+이전: 2026-07-28 (★★claims-auditor가
+사전등록 게이트(`workspace/engine-port/
 results/s0_deconfound/DESIGN.md` §5)를 집행 — **부분 GO**. **C1 CONFIRMED**:
 Stage 0(2026-07-26)이 인용한 "D108 무경합 앵커"는 코드 버그로 **실제로는 decode
 16 SM**이었음이 3중 독립 증거(코드 기전·telemetry 재집계·클라이언트 시그니처)로
@@ -242,9 +262,41 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
   강등했는데, C2(cudagraph-ON 서빙, ctx1024, 2.36–2.91×)가 그 곡선 위에 앉는다
   ⇒ "열린 질문"이 일부 닫히는 **방향**이다. **"정합"까지만 쓴다 — "확증"으로
   쓰지 않는다.**
-- **진행 중 캠페인**: `results/s8p_prefill/`(prefill 축 SM 민감도, 2026-07-28
-  제출 중) — 아직 결과 없음, 상태만 기록. 결과가 나오면 이 절과 아래 "다음
-  실험 gate"를 갱신한다.
+- **`results/s8p_prefill/`(prefill 축 SM 민감도) — 완료(2026-07-29), 정본 인용
+  금지 유지**(claims-auditor 미통과). 판정서
+  [`FINDINGS_PREFILL_2026-07-29.md`](workspace/engine-port/results/s8p_prefill/FINDINGS_PREFILL_2026-07-29.md).
+  한 줄 요약(등급어 없이 REAL scoped·미감사로만 인용): "prefill 축 SM 민감도 =
+  기울기 비 **4.74–5.16×**, 탄력도 ε **0.89–0.94**, 4 arm 모델-무관". 아래
+  "다음 실험 gate" #8에 claims-auditor 반증 축과 함께 기록.
+- **`results/s8_frontier/`(E1 8B 프론티어) — 하네스 구축 완료, 본 스윕
+  미실행**. 용량 스캔(job **867231**, T8, 5셀)·관측자 효과 게이트(job
+  **867298**, `results/e1_traceforce/`)는 세션 핸드오프(2026-07-29) 작성
+  시점엔 PENDING으로 기록됐으나, ★**2026-07-31 doc-steward 갱신 시 `sacct`
+  재확인 — 둘 다 COMPLETED**(867231: 2026-07-29 21:15:25–22:41:31 / 867298:
+  21:16:56–21:50:21). ★**2026-07-31 정정** — 같은 날 앞선 갱신의 "분석/판정
+  파일 0건"은 **오기**다. 두 job 모두 **분석 단계가 job 스크립트 안에서 이미
+  실행**되어 결과가 `e1cap_T8_867231_result.txt`(100 probe)·
+  `tfgate_T8_867298_result.txt`(`=== PAIRED SUMMARY ===`)에 있고, 판정은
+  [`handoff-report/session_handoff_2026-07-29.md`](handoff-report/session_handoff_2026-07-29.md)
+  §10에 기록돼 있다. 부재한 것은 별도 FINDINGS 문서뿐이며, **재실행은 불필요**하다.
+  - **관측자 효과 게이트 = 조건부 통과.** d16은 전 지표 t95 CI가 0을 포함,
+    d92만 `itl_p95` **+2.00%** [+0.78, +3.21] · `itl_p99` −1.28% · `itl_mean`
+    +0.56%가 0을 배제. 교란의 크기(≤2%)보다 **위치**가 문제 — 하필 결정 규칙이
+    임계하는 ITL-p95이고 D-격자의 한쪽 끝에서만 난다. ⇒ **본 스윕은
+    `PDMUX_TRACE_FORCE_PREFILL=0`(기본값)으로 돌리고, pin 검증은 같은 arm/cell/
+    rate/seed의 짧은 ON 런으로 분리**한다(사전등록 = `results/s8_frontier/
+    DESIGN.md` §4.7.1). ⚠️ 그 job의 `PIN_CHECK`는 `traceforce_gate.sbatch`의
+    옛 인자 순서 때문에 전부 크래시해 **pin 데이터가 없다**(paired summary는
+    별도 분석기 산출이라 무영향). 인자 순서는 **2026-07-31 수정 완료**.
+  - ⚠️★**T8 용량 스캔은 §4.2/§9.1이 사전등록한 escalation 분기를 발동시켰다.**
+    5셀이 **동시에** off-cliff인 rate가 존재하지 않는다 — knee(TTFT p50 폭주
+    개시, 양 seed를 realized `arrival_rps` 축에 pooling): d16·d24 ≈14–16 /
+    d44·d54 ≈18–25 / **d92 ≈3** req/s. d92(prefill 16 SM)의 안전대와 d16
+    (prefill 92 SM)의 안전대가 **겹치지 않는다**. 사전등록 규칙은 "셀별로 다른
+    rate를 골라 우회하지 말 것(그러면 D 비교가 rate 비교와 교락) — 그 자체를
+    발견으로 기록하고 arm 스윕 제출 전 escalate"이다. **미해결 상태로 다음
+    액션의 전제**. 상세 = 아래 "열린 긴장".
+  사전등록 SLO·결정 규칙은 아래 "다음 실험 gate" #8 참조.
 
 ## 철회된 가설
 
@@ -367,16 +419,25 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    판정 부재라는 뜻). 상세
    [`reports/stage0_verdict_2026-07-26.md`](reports/stage0_verdict_2026-07-26.md)
    (원 판정, 철회됨).
-8. **8B decode-SM 프론티어 실험 E1 (2026-07-28, claims-auditor 지정, 미실행)**
-   — 위 "8B decode-SM 민감도 측정 노트"(C2)가 확립한 레버가 예산 제약 하에서
-   net-positive인지 판정하는 gate. 설계: `[108−D, D]`(D∈{16,24,44,54,92}) +
-   best-static 대조, 4 arm, **offered-rate 고정**(closed-loop 금지), 용량 선측정
-   후 off-cliff rate 선택, **n≥4**, paired bootstrap, TTFT p50/p95/p99 + request-내부
-   token-ITL p95 + conjunctive goodput 보고. **사전등록 게이트 2개**: realized
-   파티션 점유율 ≥0.80, 파티션 활성률 ≥0.60. **사전등록 결정규칙**: 어떤 D가
-   best static을 conjunctive goodput에서 ≥3% 이기고 paired CI가 0을 배제하면
-   채택, 아니면 C2는 "ITL 레버는 있으나 예산 제약 하 net-negative"로 확정한다.
-   병행 게이트:
+8. **8B decode-SM 프론티어 실험 E1 (2026-07-28 지정, 2026-07-29 하네스 구축
+   완료·본 스윕 미실행)** — 위 "8B decode-SM 민감도 측정 노트"(C2)가 확립한
+   레버가 예산 제약 하에서 net-positive인지 판정하는 gate. 설계: `[108−D,
+   D]`(D∈{16,24,44,54,92}) + best-static 대조, 4 arm, **offered-rate 고정**
+   (closed-loop 금지), 용량 선측정 후 off-cliff rate 선택, **n≥4**, paired
+   bootstrap, TTFT p50/p95/p99 + request-내부 token-ITL p95 + conjunctive
+   goodput 보고. **사전등록 게이트 2개**: realized 파티션 점유율 ≥0.80, 파티션
+   활성률 ≥0.60(2026-07-29 시간가중으로 정정 — 아래 "방법론 게이트" #4 참조).
+   **사전등록 결정규칙**: 어떤 D가 best static을 conjunctive goodput에서 ≥3%
+   이기고 paired CI가 0을 배제하면 채택, 아니면 C2는 "ITL 레버는 있으나 예산
+   제약 하 net-negative"로 확정한다. **사전등록 SLO(2026-07-29, 사용자 지적으로
+   개정)**: 1차 **ITL-p95 = 60ms 고정**(근거는 데이터 적합이 아니라
+   `serving_slo_survey.md` chat-class + §1-17 선례), 사다리 {50,60,80}ms
+   민감도 병기. 초안의 150ms는 8B 측정 ITL p50이 전 arm·전 D에서 그 아래라
+   ITL 항이 non-binding해져 conjunctive goodput이 TTFT-only로 붕괴시키므로
+   폐기됨. TTFT SLO는 ≥1 셀에서 binding + 모든 셀 p95로부터 ≥15% 마진, 없으면
+   "TTFT 축 ill-posed"로 보고한다. **게이트 #8(동적 컨트롤러 규율의 재스코어
+   금지)은 전 셀 `FixedPolicy`인 E1의 사전등록 사다리 재스코어에는 적용되지
+   않음**을 명시.
    - **E2**: ctx∈{1024,4096,16384}로 확장, t0 패치된
      `workspace/engine-port/results/s8_scaleup/s0dc_client.py` 사용.
    - **E3**: duty-cycle 2수준(짧은 keepalive vs 긴 keepalive) 설계상 종결 —
@@ -384,26 +445,78 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    - **E4**: C2b("hybrid 급락=Zamba2 성질")는 현존 체크포인트로 통제된 비교가
      불가능하므로 — 파라미터·형상·tokenizer가 동시에 다름 — **주장 폐기가
      정직한 수순**이다(추가 실험으로 구제하지 않는다).
-   진행 중: `results/s8p_prefill/`(prefill 축 SM 민감도, 2026-07-28 제출 중,
-   아직 결과 없음).
+   **완료**: `results/s8p_prefill/`(prefill 축 SM 민감도) — 2026-07-29 판정,
+   정본 인용 금지 유지(claims-auditor 미통과). 요약: 기울기 비 4.74–5.16×,
+   탄력도 ε 0.89–0.94, 4 arm 모델-무관(REAL scoped, 미감사). claims-auditor
+   반증 대상(위 "열린 긴장" 참조): 게이트 미달 5셀의 strict 재귀속 충분성·
+   곡률 크기가 attention FLOP 예측의 5배(기전 미상)·두 게이트가 동일 사건이라
+   사전등록 강도가 1개분인 것·`--probe-conc 2` 사전등록 미실행.
+   **진행 중(2026-07-29 신규)**: `results/s8_frontier/` 하네스 구축 완료(양축
+   판정기·분석기·config 5, seed-per-rep·rep-고정-per-cell 정책), 측정 방법론
+   결함 5종(집계 단위) 발견·수정 완료. 하네스 전제 job **867231**(T8 5셀 용량
+   스캔, `RATES="1 2 3 4 6 8 12 16 24 32"`×2 seed)·**867298**(`results/
+   e1_traceforce/` 관측자 효과 게이트, ABBA n=4)은 세션 핸드오프(2026-07-29)
+   시점 PENDING으로 기록됐으나 ★**2026-07-31 doc-steward 갱신 시 `sacct` 재확인
+   — 둘 다 COMPLETED**(867231: 21:15:25–22:41:31 / 867298: 21:16:56–21:50:21,
+   둘 다 2026-07-29). ★**2026-07-31 정정: "분석/판정 파일 0건"은 오기**이며 두
+   job 모두 in-job 분석이 완료돼 있다(위 "8B decode-SM 민감도 측정 노트" 절의
+   정정 참조) — 관측자 효과 게이트 **조건부 통과**(본 스윕 force-trace OFF,
+   pin 검증만 분리: `DESIGN.md` §4.7.1), 용량 스캔은 **§4.2/§9.1 escalation
+   분기 발동**(5셀 동시 off-cliff rate 부재: d16·d24 knee≈14–16 / d44·d54≈18–25
+   / d92≈3 req/s). 남은 전제는 이 escalation의 해소이지 두 job의 재실행이
+   아니다 — 본 스윕은 (i) 867231 용량 스캔 분석으로 SLO 사다리 확정, (ii) 867298
+   분석으로 관측자 효과 게이트 통과 여부(=`PDMUX_TRACE_FORCE_PREFILL` 점화
+   여부) 확정 — **(i)(ii) 모두 2026-07-31 완료**. ⇒ **다음 액션은 (iii)
+   escalation 해소**(5셀 동시 off-cliff rate 부재를 어떻게 처리할지 결정)이며,
+   나머지 3 arm(M8/Ha8/Hs8) 용량 스캔은 그 결정이 스캔 설계를 바꿀 수 있으므로
+   그 뒤에 제출한다.
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
-## 방법론 게이트 (신규, 2026-07-28)
+## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4 추가)
 
-Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목.
+Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3).
 `CLAUDE.md`의 기존 8개 게이트에 추가로, 이 정본에 등재한다.
 
 1. **pin은 policy target이 아니라 realized 파티션으로 검증한다.** telemetry의
    `runtime_snapshot`이 보고하는 `(prefill_sms, decode_sms)`(코드 근거
    `dual_worker.py:608`)를 매 실험에서 재집계해 controller가 지정한 값과
    실제로 일치하는지 확인한다 — 검증 비용은 0이며, 이걸 생략해서 Stage 0의
-   D108 앵커가 실은 D16임을 놓쳤다.
+   D108 앵커가 실은 D16임을 놓쳤다. ★**아래 4번의 특수 사례**(target-vs-realized
+   집계 단위 불일치)로 재분류.
 2. **파티션 활성률을 사전등록 게이트로 삼는다.** green-context 분할은
    split-prefill 동거 중에만 유효하고, 비면 legacy `adjust_stream_groups`가
    무분할로 되돌아간다 — 활성률이 낮으면 셀 평균이 목표 파티션과 무분할의
    혼합이 된다. 실험 전에 최소 활성률(예: ≥0.60)을 정해두고 미달 셀은 폐기한다.
+   ★**2026-07-29 정정 필요**: 이 활성률은 반드시 **시간가중**으로 재정의한다
+   (아래 4번 참조) — 스냅샷 **개수** 기반 활성률은 실제값을 16–26× 과소평가할
+   수 있다(E1 하네스에서 실측).
 3. **keepalive는 짧은 prefill을 자주 넣는 방향으로 설계한다.** 긴 keepalive는
    활성률을 오히려 떨어뜨린다(실측: 0.66–0.93 → 0.32–0.63) — 긴 prefill
    윈도우 동안 decode가 진행되지 않아 시간적으로 분리되기 때문이다.
+4. ★★**(2026-07-29) 집계 단위를 먼저 정하고, 그 단위가 추정 대상과 맞는지
+   논증하라.** 위 1–3번을 포괄하는 상위 원칙(1번을 특수 사례로 흡수, 지우지
+   않음). `results/s8_frontier/` 하네스 구축 중 **집계 단위가 답을 5번 바꿨고
+   전부 반대 결론을 낼 뻔했다**:
+   1. target vs realized 파티션(위 1번, Stage 0 무효화의 원인).
+   2. 게이트 모집단 `prefill_active OR decode_active` vs 조건부 —
+      설계상 정상인 decode-only 무분할 윈도우를 pin 실패로 셈: pin **0.029
+      FAIL → 0.976 PASS**.
+   3. 스냅샷 **개수** 가중 vs **시간** 가중 — `runtime_snapshot`이 이벤트루프
+      iteration당 발화해 235ms prefill 스텝과 11ms decode 스텝이 같은 무게를
+      가짐: 동시성 **0.015 → 0.25–0.40**(16–26×).
+   4. drain 꼬리를 포함한 duration vs 도착 구간만의 duration —
+      `achieved_rps` **3.40 → arrival_rps 8.96**.
+   5. 스냅샷 vs 에피소드, 그리고 그 안에서 다시 개수 vs 시간 —
+      d16 pin_frac **0.583 → 0.847**.
+
+   **따름정리**: 하나의 추정량으로 두 질문에 답하지 마라. "그 파티션에서
+   실행됐는가"(게이트, 예: 파티션 점유율/활성률)는 **시간 가중**으로 답해야
+   하고, "이 요청의 지연은 어느 파티션 것인가"(귀속)는 **요청별 bracket**으로
+   답해야 한다. 후자는 전자의 데이터를 대부분 버리므로(대부분의 스냅샷이
+   요청 경계 안쪽이 아니라 사이에 놓임) **게이트에 쓰면 검정력이 무너진다**
+   (예: d16 요청-bracket 귀속 n_episodes=8, lower95=0.554 → FAIL — 이유는
+   검정력 부족이지 잘못된 SM이 아니다). 상세
+   [`workspace/engine-port/results/s8_frontier/`](workspace/engine-port/results/s8_frontier/)
+   설계 문서(하네스 내 결함 5종 수정 기록).
