@@ -6,43 +6,34 @@ Per (arm, D-cell, rep, phase[lo/hi]) this reads the sglang.bench_serving
 duration) and:
 
   1. Applies the PRIMARY, cite-blocking realized-pin gate
-     (e1_pin_check.compute_gates/gate_verdict, SAME code the sbatch's own
-     per-round E1_PIN_CHECK_LO/HI stdout lines use) to the rep's [t0, t1]
-     window recorded in <RUNID>_rounds.jsonl. ★★REVISED 2026-07-28
-     (coordinator directive, after smoke job 865832 exposed a gate-
-     definition bug -- see e1_pin_check.py's module docstring for the full
-     mechanism): the gate now conditions on `prefill_active_batch_size > 0`
-     ONLY (mirrors s8p_prefill/prefill_pin_check.py exactly), not the old
-     `engaged = prefill_active OR decode_active` population, which diluted
-     the realized-pin fraction with decode-only windows that are SUPPOSED
-     to show the unpartitioned (0,108) stream (correct engine behavior, not
-     a pin failure). A rep/phase failing this gate (wrong SM, OR
-     "UNDERPOWERED" if the prefill-active population itself is too small to
-     be informative, default floor 20 samples) is excluded from the cited
-     sample (kept in the "as-run" dump for transparency, methodology gate:
-     discard, don't average away). The OLD second gate ("partition activity
-     rate >= 0.60") is RETIRED as a hard gate -- it was measuring how often
-     the OR-population was non-idle, which conflated the same problem. Its
-     replacement is the `concurrent_time_frac` MANDATORY DIAGNOSTIC
-     (reported per rep and per cell below, never gate-blocking on its own
-     since no principled threshold exists yet): the TIME-WEIGHTED fraction
-     of the window where prefill and decode are BOTH simultaneously active.
-     ★★RE-REVISED 2026-07-29 (coordinator directive, smoke 866066): this
-     diagnostic was ITSELF count-based until this revision (a SEPARATE bug
-     from the 2026-07-28 pin-gate fix) -- runtime_snapshot is emitted per
-     EVENT-LOOP ITERATION, and a 235ms prefill iteration counts the same as
-     an 11ms decode iteration, so count-based ratios silently underweight
-     long prefill windows. Fixed to time-weight each snapshot by the
-     interval to the next one (e1_pin_check.py module docstring bug #2 has
-     the full mechanism + numbers). The retracted conclusion from the
-     count-based version ("D-axis barely exercised, tension mirrors vector-1
-     ILL-POSED") was the ARTIFACT -- true concurrency at 866066 was 25-40%
-     for d92, not the previously-reported ~1.5%. See DESIGN.md sec 9.7
-     (2026-07-29 revision) for the full retraction and re-analysis. A low
-     `concurrent_time_frac` value STILL means the D-axis tradeoff was only
-     weakly exercised even where the pin gate passes -- this MUST be cited
-     alongside any result from a low-concurrency cell -- but "low" must now
-     be read off the corrected number, not the retired count-based one.
+     (e1_pin_check.compute_time_weighted_pin_gate/time_weighted_gate_verdict,
+     SAME code the sbatch's own per-round E1_PIN_CHECK_LO/HI stdout lines
+     use) to each rep/phase. ★★★RE-REVISED 2026-07-30 (coordinator's own
+     hand-aggregation of raw telemetry -- e1_pin_check.py's module docstring
+     has the full history #1-#6): the 2026-07-29 episode-bracket gate
+     (bugs #4/#5) was itself answering the WRONG QUESTION -- it throws away
+     most prefill-active evidence to get PER-REQUEST attribution (which
+     phase served THIS request's TTFT), but the GATE only needs the
+     AGGREGATE answer ("what fraction of prefill WORK ran at target"),
+     which should use ALL prefill-active samples, TIME-weighted (the same
+     insight as bug #2, re-applied to a different quantity). Coordinator's
+     manual count on 866066 D16 (32,145 total snapshots, only 12 prefill-
+     active: 7 at target P92, 5 at the P108 auto-partition fallback) gives
+     COUNT fraction 7/12=0.583, but TIME-weighting those SAME 12 snapshots
+     gives 0.847 -- the 5 fallback snapshots occupy disproportionately
+     SHORT durations. The gate criterion is now an episode-level (cluster)
+     BOOTSTRAP 95% lower bound of the time-weighted pin fraction >= 0.80
+     (NOT Clopper-Pearson, which assumes iid Bernoulli trials that
+     serially-correlated time-weighted snapshots are not); `n_episodes`
+     (maximal contiguous prefill-active runs, NOT a snapshot count or a
+     bracketed-request count) is the effective sample size reported
+     alongside every verdict. `compute_episode_gate` (the 2026-07-29
+     bracket) is RETAINED but RESCOPED to per-request latency attribution
+     only -- not used for gating any more, see e1_pin_check.py's docstring
+     bug #6. The MANDATORY CONCURRENCY DIAGNOSTIC (`concurrent_time_frac`,
+     time-weighted since bug #2) is genuinely unaffected by this revision
+     -- it always answered a time-SHARE question, correctly, and continues
+     to.
   2. Computes CONJUNCTIVE goodput per request: TTFT <= SLO_TTFT_MS AND that
      request's OWN token-ITL p95 <= SLO_ITL_P95_MS (gate #4 -- mean-ITL is
      secondary only). PRIMARY ITL-p95 SLO = 60ms (DESIGN.md sec 4.3.1,
@@ -123,12 +114,23 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from e1_pin_check import compute_gates, gate_verdict, DEFAULT_MIN_N_PREFILL_ACTIVE  # noqa: E402
+from e1_pin_check import (  # noqa: E402
+    compute_concurrency_diagnostic,
+    compute_time_weighted_pin_gate,
+    time_weighted_gate_verdict,
+    reconstruct_arrival_and_completion,
+)
 
 CELL_D = {"d16": 16, "d24": 24, "d44": 44, "d54": 54, "d92": 92}
 DEFAULT_ITL_LADDER_MS = (50.0, 60.0, 80.0)
 CLIFF_MARGIN = 0.15   # DESIGN.md sec 4.3.4
 TTFT_MARGIN = 0.15    # DESIGN.md sec 4.3.3
+ELBOW_MARGIN = 0.15   # DESIGN.md sec 4.6 (item B.3): pre-registered post-hoc
+                       # rep-exclusion margin -- a rep's REALIZED arrival_rps
+                       # must sit >=15% below the capacity scan's elbow-onset
+                       # rate, or it is reported and excluded (gate #6
+                       # enforcement at the per-rep level, not just at
+                       # RATE_LO/RATE_HI selection time).
 
 
 def _percentile(xs, q):
@@ -211,6 +213,21 @@ def load_phase_requests(path):
             p95 = _percentile(itls_ms, 0.95) if itls_ms else float("nan")
             reqs.append(dict(ttft_s=t, itl_p95_ms=p95, success=success))
     return reqs, dur
+
+
+def load_raw_arrays(path):
+    """Same file as load_phase_requests, but returns the raw ttfts/itls/errors
+    arrays in DISPATCH order (as sglang.bench_serving's asyncio.gather
+    preserves), needed by e1_pin_check.compute_episode_gate's RNG-replay
+    reconstruction (which indexes requests by dispatch order, not
+    completion order)."""
+    for line in open(path):
+        line = line.strip()
+        if not line:
+            continue
+        o = json.loads(line)
+        return o.get("ttfts") or [], o.get("itls") or [], o.get("errors") or []
+    return [], [], []
 
 
 def conjunctive_good(reqs, ttft_slo_ms, itl_p95_slo_ms):
@@ -332,14 +349,9 @@ def main():
                      help="pre-registered sensitivity ladder, comma-separated ms values "
                           "(DESIGN.md sec 4.3.1/4.3.4)")
     ap.add_argument("--pin-gate", type=float, default=0.80,
-                     help="min realized-pin fraction among PREFILL-ACTIVE samples "
-                          "(DESIGN.md sec 5 rev. 2026-07-28 -- NOT the old engaged=OR "
-                          "population, see e1_pin_check.py module docstring)")
-    ap.add_argument("--min-n-prefill-active", type=int,
-                     default=DEFAULT_MIN_N_PREFILL_ACTIVE,
-                     help="min prefill-active sample count for the pin gate to be "
-                          "informative (2026-07-28: added after 865832 showed n=1 can "
-                          "trivially satisfy a frac threshold)")
+                     help="min episode-bootstrap 95%% lower bound of the TIME-WEIGHTED pin "
+                          "fraction (DESIGN.md sec 5 rev. 2026-07-30, bug #6 -- see "
+                          "e1_pin_check.py module docstring for the full history)")
     ap.add_argument("--win-margin", type=float, default=0.03,
                      help="decision-rule margin (default 3%%, DESIGN.md sec 4.4)")
     ap.add_argument("--capscan-dir", default=None,
@@ -349,6 +361,13 @@ def main():
                           "--capscan-rate. No goodput/decision rule in this mode.")
     ap.add_argument("--capscan-rate", type=float, default=None,
                      help="candidate rate (req/s) to site SLOs at, required with --capscan-dir")
+    ap.add_argument("--elbow-onset-rate-lo", type=float, default=None,
+                     help="pre-registered LO-phase elbow-onset arrival_rps from the capacity "
+                          "scan (DESIGN.md sec 4.6, item B.3) -- if given, any rep whose "
+                          "REALIZED (reconstructed) arrival_rps is within ELBOW_MARGIN of this "
+                          "value is reported and EXCLUDED. No default: skipped if not provided.")
+    ap.add_argument("--elbow-onset-rate-hi", type=float, default=None,
+                     help="same as --elbow-onset-rate-lo, for the HI phase")
     args = ap.parse_args()
     args.itl_ladder_ms = sorted(float(x) for x in args.itl_ladder_ms.split(","))
 
@@ -374,6 +393,7 @@ def main():
     # (arm, cell) -> list of per-rep dicts
     by_cell = collections.defaultdict(list)
     as_run_dropped = []
+    as_run_elbow_excluded = []
 
     for g, tpath in cells:
         arm, cell, job = g["arm"], g["cell"], g["job"]
@@ -389,16 +409,12 @@ def main():
                 continue
             rd = json.loads(line)
             rep = rd["rep"]
+            # rounds.jsonl written before the 2026-07-29 seed-policy fix
+            # (DESIGN.md sec 4.5) has no "seed" key -- those runs implicitly
+            # used sglang.bench_serving's own default (seed=1), so that is
+            # the correct fallback, not an arbitrary guess.
+            seed = rd.get("seed", 1)
             lo_win, hi_win = rd["lo"], rd["hi"]
-            g_lo = compute_gates(tpath, want_d, lo_win["t0"], lo_win["t1"])
-            g_hi = compute_gates(tpath, want_d, hi_win["t0"], hi_win["t1"])
-            v_lo = gate_verdict(g_lo, args.pin_gate, args.min_n_prefill_active)
-            v_hi = gate_verdict(g_hi, args.pin_gate, args.min_n_prefill_active)
-            # PRIMARY, cite-blocking criterion (DESIGN.md sec 5, 2026-07-28
-            # revision): pin_pass only. concurrency_low is a MANDATORY
-            # diagnostic (reported below and per-rep, see rec below) but not
-            # gate-blocking -- no principled threshold exists yet.
-            gates_pass = v_lo["pin_pass"] and v_hi["pin_pass"]
 
             jlo = f"{stem}_rep{rep}_lo.jsonl"
             jhi = f"{stem}_rep{rep}_hi.jsonl"
@@ -406,6 +422,46 @@ def main():
                 continue
             reqs_lo, dur_lo = load_phase_requests(jlo)
             reqs_hi, dur_hi = load_phase_requests(jhi)
+            ttfts_lo_raw, itls_lo_raw, errors_lo_raw = load_raw_arrays(jlo)
+            ttfts_hi_raw, itls_hi_raw, errors_hi_raw = load_raw_arrays(jhi)
+
+            conc_lo = compute_concurrency_diagnostic(tpath, lo_win["t0"], lo_win["t1"])
+            conc_hi = compute_concurrency_diagnostic(tpath, hi_win["t0"], hi_win["t1"])
+            # PRIMARY, cite-blocking gate (DESIGN.md sec 5, 2026-07-30
+            # revision, bug #6): TIME-WEIGHTED pin fraction over ALL
+            # prefill-active time, episode-level bootstrap lower bound.
+            # Needs only telemetry + window -- no seed/rate/ttfts, unlike
+            # the retired (now latency-attribution-only) episode bracket.
+            g_lo = compute_time_weighted_pin_gate(tpath, want_d, lo_win["t0"], lo_win["t1"])
+            g_hi = compute_time_weighted_pin_gate(tpath, want_d, hi_win["t0"], hi_win["t1"])
+            v_lo = time_weighted_gate_verdict(g_lo, args.pin_gate)
+            v_hi = time_weighted_gate_verdict(g_hi, args.pin_gate)
+            # PRIMARY, cite-blocking criterion: pin_pass (time-weighted,
+            # episode-bootstrap lower bound) only. concurrent_time_frac is a
+            # MANDATORY diagnostic (reported below and per-rep) but not
+            # gate-blocking -- no principled threshold exists yet.
+            gates_pass = v_lo["pin_pass"] and v_hi["pin_pass"]
+
+            # DESIGN.md sec 4.6 item B.3: pre-registered post-hoc elbow-
+            # margin check. A rep's REALIZED (reconstructed, not nominal --
+            # item B.1/B.5) arrival_rps must sit >=ELBOW_MARGIN below the
+            # capacity scan's elbow-onset rate for that phase, or gate #6
+            # is violated for THIS rep specifically even if RATE_LO/RATE_HI
+            # were chosen correctly on average. Skipped (arrival_rps_lo/hi
+            # still computed and reported) if the onset rates were not given.
+            arrival_rel_lo, _ = reconstruct_arrival_and_completion(seed, lo_win["rate"], ttfts_lo_raw, itls_lo_raw)
+            arrival_rel_hi, _ = reconstruct_arrival_and_completion(seed, hi_win["rate"], ttfts_hi_raw, itls_hi_raw)
+            arrival_rps_lo = ((len(ttfts_lo_raw) - 1) / arrival_rel_lo[-1]) if len(ttfts_lo_raw) > 1 and arrival_rel_lo[-1] else float("nan")
+            arrival_rps_hi = ((len(ttfts_hi_raw) - 1) / arrival_rel_hi[-1]) if len(ttfts_hi_raw) > 1 and arrival_rel_hi[-1] else float("nan")
+            elbow_violation_lo = (args.elbow_onset_rate_lo is not None and arrival_rps_lo == arrival_rps_lo
+                                   and arrival_rps_lo > args.elbow_onset_rate_lo * (1.0 - ELBOW_MARGIN))
+            elbow_violation_hi = (args.elbow_onset_rate_hi is not None and arrival_rps_hi == arrival_rps_hi
+                                   and arrival_rps_hi > args.elbow_onset_rate_hi * (1.0 - ELBOW_MARGIN))
+            if elbow_violation_lo or elbow_violation_hi:
+                as_run_elbow_excluded.append((arm, cell, rep, arrival_rps_lo, arrival_rps_hi,
+                                               elbow_violation_lo, elbow_violation_hi))
+                continue  # excluded per item B.3, not counted toward n>=4 even if pin gate passed
+
             good_lo = conjunctive_good(reqs_lo, args.ttft_slo_ms, args.itl_p95_slo_ms)
             good_hi = conjunctive_good(reqs_hi, args.ttft_slo_ms, args.itl_p95_slo_ms)
             dur_sum = dur_lo + dur_hi  # gate #7: sum, never max()
@@ -413,11 +469,15 @@ def main():
 
             rec = dict(
                 rep=rep, gates_pass=gates_pass,
+                arrival_rps_lo=arrival_rps_lo, arrival_rps_hi=arrival_rps_hi,
                 pin_lo=g_lo["pin_frac"], pin_hi=g_hi["pin_frac"],
-                n_prefill_active_lo=g_lo["n_prefill_active"], n_prefill_active_hi=g_hi["n_prefill_active"],
-                concurrent_frac_lo=g_lo["concurrent_time_frac"], concurrent_frac_hi=g_hi["concurrent_time_frac"],
-                admission_blocked_lo=g_lo["admission_blocked_frac"],
-                admission_blocked_hi=g_hi["admission_blocked_frac"],
+                pin_lower95_lo=g_lo["pin_frac_lower95"], pin_lower95_hi=g_hi["pin_frac_lower95"],
+                n_episodes_lo=g_lo["n_episodes"], n_episodes_hi=g_hi["n_episodes"],
+                realized_hist_lo=g_lo["realized_hist"], realized_hist_hi=g_hi["realized_hist"],
+                t_prefill_active_lo=g_lo["t_prefill_active_total_s"], t_prefill_active_hi=g_hi["t_prefill_active_total_s"],
+                concurrent_frac_lo=conc_lo["concurrent_time_frac"], concurrent_frac_hi=conc_hi["concurrent_time_frac"],
+                admission_blocked_lo=conc_lo["admission_blocked_frac"],
+                admission_blocked_hi=conc_hi["admission_blocked_frac"],
                 n_lo=len(reqs_lo), n_hi=len(reqs_hi),
                 good_lo=good_lo, good_hi=good_hi, dur_lo=dur_lo, dur_hi=dur_hi,
                 gp_combined=gp_combined,
@@ -435,9 +495,21 @@ def main():
         print("=== reps dropped by pre-registered PIN gate (as-run only, not cited) ===")
         for arm, cell, rep, v_lo, v_hi, g_lo, g_hi in as_run_dropped:
             print(f"  {arm}/{cell} rep{rep}: LO(pin_pass={v_lo['pin_pass']}, "
-                  f"reason='{v_lo['reason']}', n_prefill_active={g_lo['n_prefill_active']}) "
+                  f"reason='{v_lo['reason']}', n_episodes={g_lo['n_episodes']}, "
+                  f"pin_frac={g_lo['pin_frac']:.3f}) "
                   f"HI(pin_pass={v_hi['pin_pass']}, reason='{v_hi['reason']}', "
-                  f"n_prefill_active={g_hi['n_prefill_active']})")
+                  f"n_episodes={g_hi['n_episodes']}, pin_frac={g_hi['pin_frac']:.3f})")
+        print()
+
+    if as_run_elbow_excluded:
+        print("=== reps EXCLUDED by the pre-registered elbow-margin check (DESIGN.md sec 4.6 "
+              "item B.3 -- as-run only, not cited, checked BEFORE goodput so a rep that also "
+              "would have passed the pin gate is still excluded here) ===")
+        for arm, cell, rep, arps_lo, arps_hi, viol_lo, viol_hi in as_run_elbow_excluded:
+            print(f"  {arm}/{cell} rep{rep}: arrival_rps(lo/hi)={arps_lo:.2f}/{arps_hi:.2f} "
+                  f"violation(lo/hi)={viol_lo}/{viol_hi} "
+                  f"(onset_rate(lo/hi)={args.elbow_onset_rate_lo}/{args.elbow_onset_rate_hi}, "
+                  f"margin={ELBOW_MARGIN})")
         print()
 
     print(f"=== per-rep summary (gate-passing reps only, TTFT_SLO={args.ttft_slo_ms}ms "
@@ -448,14 +520,30 @@ def main():
             print(f"    rep{r['rep']}: gp_combined={r['gp_combined']:.4f} "
                   f"(good={r['good_lo']}+{r['good_hi']} dur={r['dur_lo']:.1f}+{r['dur_hi']:.1f}s) "
                   f"n_lo={r['n_lo']} n_hi={r['n_hi']} "
+                  f"arrival_rps(lo/hi)={r['arrival_rps_lo']:.2f}/{r['arrival_rps_hi']:.2f} "
+                  "[TRUSTED x-axis label, item B.1/B.5 -- nominal rate is reference only] "
                   f"pin(lo/hi)={r['pin_lo']:.2f}/{r['pin_hi']:.2f} "
-                  f"n_prefill_active(lo/hi)={r['n_prefill_active_lo']}/{r['n_prefill_active_hi']} "
+                  f"pin_lower95(lo/hi)={r['pin_lower95_lo']:.2f}/{r['pin_lower95_hi']:.2f} "
+                  f"n_episodes(lo/hi)={r['n_episodes_lo']}/{r['n_episodes_hi']} "
                   f"concurrent_time_frac(lo/hi)={r['concurrent_frac_lo']:.4f}/{r['concurrent_frac_hi']:.4f} "
                   f"admission_blocked(lo/hi)={r['admission_blocked_lo']:.2f}/{r['admission_blocked_hi']:.2f}")
+            # DESIGN.md sec 4.8 item 3 (coordinator 2026-07-30): the realized
+            # TIME-WEIGHTED partition split (target vs auto-partition
+            # fallback) is a FIRST-CLASS result, not a footnote -- report it
+            # per rep so "target D=16, realized target/auto-partition split"
+            # is always available, never just the target label alone.
+            hist_lo = ", ".join(f"P{p}:{t_:.2f}s({t_/r['t_prefill_active_lo']*100:.0f}%)"
+                                 for p, t_ in sorted(r["realized_hist_lo"].items(), key=lambda kv: -kv[1])) \
+                if r["t_prefill_active_lo"] else "(no prefill-active time)"
+            hist_hi = ", ".join(f"P{p}:{t_:.2f}s({t_/r['t_prefill_active_hi']*100:.0f}%)"
+                                 for p, t_ in sorted(r["realized_hist_hi"].items(), key=lambda kv: -kv[1])) \
+                if r["t_prefill_active_hi"] else "(no prefill-active time)"
+            print(f"      realized partition split LO: [{hist_lo}]  HI: [{hist_hi}]")
 
     print()
-    print("=== MANDATORY DIAGNOSTIC: D-axis concurrency exercised (coordinator 2026-07-28, "
-          "TIME-WEIGHTED fix 2026-07-29 -- e1_pin_check.py module docstring bug #2) ===")
+    print("=== MANDATORY DIAGNOSTIC: D-axis concurrency exercised (bug #2, time-weighted since "
+          "2026-07-29, genuinely unaffected by the 2026-07-30 gate revision, bug #6 -- these are "
+          "different quantities, see DESIGN.md sec 5) ===")
     print("(concurrent_time_frac = TIME-WEIGHTED share of the window with prefill AND decode "
           "simultaneously active -- how much of wall-clock actually tested the D-axis tradeoff. "
           "This was count-based (snapshots-per-iteration, not time) before 2026-07-29 and badly "
@@ -465,11 +553,11 @@ def main():
     for (arm, cell), recs in sorted(by_cell.items()):
         cl = [r["concurrent_frac_lo"] for r in recs]
         ch = [r["concurrent_frac_hi"] for r in recs]
-        npl = [r["n_prefill_active_lo"] for r in recs]
-        nph = [r["n_prefill_active_hi"] for r in recs]
+        nel_ = [r["n_episodes_lo"] for r in recs]
+        neh_ = [r["n_episodes_hi"] for r in recs]
         low_flag = "  <-- LOW CONCURRENCY" if (cl and st.fmean(cl) < 0.05) or (ch and st.fmean(ch) < 0.05) else ""
         print(f"  {arm}/{cell}: concurrent_time_frac mean(lo/hi)={st.fmean(cl):.4f}/{st.fmean(ch):.4f} "
-              f"n_prefill_active mean(lo/hi)={st.fmean(npl):.1f}/{st.fmean(nph):.1f}{low_flag}")
+              f"n_episodes mean(lo/hi)={st.fmean(nel_):.1f}/{st.fmean(neh_):.1f}{low_flag}")
 
     print()
     print("=== per-cell TTFT/ITL percentiles (rep-pooled requests, descriptive only -- "
