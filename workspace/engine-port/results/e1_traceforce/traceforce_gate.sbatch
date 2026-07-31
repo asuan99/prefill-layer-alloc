@@ -162,7 +162,14 @@ print(json.dumps({
 PY
       tail -1 "$PROBES" | tee -a "$RESULT"
       echo "PIN_CHECK cell=$NAME force=$FLAG boot=$BOOT seed=$SEED:" | tee -a "$RESULT"
-      python3 "$FRONTIER/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" "$JOUT" "$SEED" "$RATE" 0.80 \
+      # e1_pin_check.py CLI signature as of the 2026-07-30 bug #6 revision
+      # (time-weighted PRIMARY gate): <telemetry> <expect_d> [min_lower95]
+      # [raw_jsonl seed rate] --t0 --t1.  min_lower95 is the 3rd positional
+      # (it was raw_jsonl in the bug #4/#5 era); this call site kept the stale
+      # order and so every PIN_CHECK in job 867298 died in float(argv[2]) on a
+      # path string.  Mirror e1_sweep.sbatch:258 -- do not reorder without
+      # re-checking e1_pin_check.py's main().
+      python3 "$FRONTIER/e1_pin_check.py" "$PDMUX_TELEMETRY_PATH" "$DSM" 0.80 "$JOUT" "$SEED" "$RATE" \
         --t0 "$T0" --t1 "$T1" 2>&1 | tee -a "$RESULT"
       sleep 5
     done

@@ -642,6 +642,82 @@ once the flag is on: a D92-vs-D16 result cannot assume the measurement
 apparatus perturbed both cells equally, even though the perturbation is
 small in absolute (wall-clock) terms at both ends.
 
+### 4.7.1 ★★★SUPERSEDES the §4.7 application rule (2026-07-31, after job
+    867298 landed) — MEASUREMENT AND VERIFICATION ARE SEPARATED; the main
+    sweep runs `PDMUX_TRACE_FORCE_PREFILL=0`
+
+**Gate outcome (job `867298`, ABBA boot order OFF/ON/ON/OFF, n=4 per
+condition, paired, `tfgate_T8_867298_result.txt` §`=== PAIRED SUMMARY ===`):
+CONDITIONAL PASS — an asymmetric perturbation was detected and it lands on
+the decision metric.**
+
+| cell | telemetry volume | metrics whose t95 CI excludes 0 |
+|---|---|---|
+| d16 = `[92,16]` | +9.3% | **none** (all metrics) |
+| d92 = `[16,92]` | +41.7% | **`itl_p95` +2.00%** [+0.78, +3.21] · `itl_p99` −1.28% · `itl_mean` +0.56% |
+
+TTFT includes 0 at both cells; `output_throughput` +0.02%.
+
+**The problem is not the magnitude, it is the coincidence of location.** The
+one metric that moves significantly is `itl_p95` — the exact quantity the
+§4.4 decision rule thresholds against the pre-registered 60 ms ITL SLO — and
+it moves at **only one end of the D-grid** (d92, the decode-heavy end),
+in the direction predicted by §4.7's corrected asymmetry. A +2.0% shift in
+`itl_p95` is small against the ≥3% conjunctive-goodput decision margin, but
+it is not small against a conjunctive goodput that is a **threshold
+indicator**: near the SLO boundary a 2% shift in the percentile moves
+requests across the pass/fail line, which is precisely the metric-cliff
+failure mode this project has already been burned by (`CLAUDE.md` gate #6,
+`reports/bench_noise_root_cause.md`). The p95 (+2.00%) / p99 (−1.28%) sign
+disagreement further suggests a mix of a real micro-effect and
+multiple-comparison noise (3 of 18 tests significant), so the safe reading is
+"an effect exists at d92 and its size is not reliably estimated."
+
+**Pre-registered resolution — split the two jobs the flag was serving.** A
+pin check answers *"does this configuration actually place prefill on the
+target partition?"* That is **a property of the configuration, not of a
+particular performance run**. It therefore does not have to be measured
+inside the run whose numbers decide the campaign.
+
+1. **Main sweep (`e1_sweep.sbatch`): `E1_TRACE_FORCE_PREFILL=0`, unchanged
+   default.** No forced emission touches any number that feeds §4.4. This
+   supersedes §4.7's "identical across all 5 cells" rule only in the sense
+   that the uniform value is now pinned to OFF; the prohibition on *partial*
+   application (some cells on, some off) stands unchanged and is in fact
+   strengthened, since the asymmetry is now measured rather than projected.
+2. **Pin verification: separate short per-cell runs with
+   `PDMUX_TRACE_FORCE_PREFILL=1`**, at the **same arm, cell, rate, and seed
+   policy** as the main sweep. Same rate matters: §6/`CONSENSUS.md` §1-22
+   established that the realized target/auto-revert mixture is itself
+   rate-dependent, so a pin run at a different rate does not verify the
+   sweep's realized allocation. These runs produce the ≥0.80 time-weighted
+   `pin_frac` evidence for the §5 gate; they contribute **no** latency or
+   goodput numbers.
+3. **The §5 pin gate is evaluated on the verification runs, and the sweep's
+   own OFF-mode telemetry is reported alongside as a consistency check** (it
+   is the same population, just sparsely sampled — §5.5's `trace_forced !=
+   true` filter makes the two directly comparable). A disagreement between
+   them is itself a finding and blocks citation.
+
+**Consequence accepted**: the d16 statistical-power problem that motivated
+the patch (§9.8 — `n_episodes = 8`, `lower95 = 0.554`) is now solved in the
+verification runs rather than in the sweep, so the sweep's own d16 telemetry
+will remain sparse. This is the correct trade: sparse pin evidence in the
+sweep is a *power* deficiency that the verification run repairs, whereas a
+perturbed `itl_p95` in the sweep would be a *bias* on the decision metric,
+which nothing downstream can repair.
+
+⚠️ **Job 867298 produced no pin data.** Every `PIN_CHECK` invocation in that
+job crashed: `traceforce_gate.sbatch`'s call site carried the pre-bug-#6
+positional order (`… "$DSM" "$JOUT" "$SEED" "$RATE" 0.80`) while
+`e1_pin_check.py`'s `main()` reads `min_lower95` as `argv[2]`, so every call
+died in `float()` on a path string. The paired OFF/ON summary above is
+unaffected (it is computed by `tfgate_analyze.py` from the probe records, not
+by `e1_pin_check.py`). **Fixed 2026-07-31** — the call site now mirrors
+`e1_sweep.sbatch:258`. The gate verdict above therefore rests on the paired
+latency/volume comparison only; it does **not** include a pin check, and does
+not need one, since the pin question is now handled by item 2 above.
+
 ## 5. Pre-registered gates (telemetry-based, auto-judged, cite-blocking) —
    ★★★RE-REVISED 2026-07-30 (coordinator directive, a SIXTH distinct bug
    in this same gate lineage, full investigation in §5.5 — supersedes the
