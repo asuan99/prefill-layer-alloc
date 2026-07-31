@@ -441,6 +441,175 @@ main-sweep data):**
   siting rule for a given arm — reported per-arm, not silently substituted
   with a "close enough" value.
 
+### 4.3.5 ★★★NEW 2026-07-31 — the symmetric hole, the ITL staircase, and the
+    on-cliff cell exclusion rule (PRE-REGISTERED BEFORE THE M8/Ha8/Hs8
+    CAPACITY SCANS LAND — jobs 870295/870296/870297 were queued and
+    unstarted when this was written)
+
+Three pre-registrations, all forced by claims-auditor's 2026-07-31 audit of
+job 867231. **Timing matters for their validity**: no capacity-scan data
+exists yet for M8, Ha8 or Hs8, so these rules are fixed in advance for those
+arms. T8's data does exist — but T8 is *already* classified `ITL-NONBINDING`
+by the pre-existing §4.3.4 flag, and **none of the rules below can change
+T8's verdict**, which is what keeps them from being rules fitted to T8.
+
+**(a-1) `ITL-ALWAYS-BINDING` — the missing mirror of `ITL-NONBINDING`.**
+
+§4.3.4 flags the case where every cell's ITL-p95 sits ≥15% *below* the
+ladder's lowest rung: the ITL term is constant across D, so conjunctive
+goodput degenerates to TTFT-only and a "no D wins" result must not be read as
+lever-negative. The mirror case — every cell's ITL-p95 *above* the ladder's
+highest rung — has the identical structure (ITL constant across D) and the
+identical misreading risk, and was not covered.
+
+The two are **not symmetric in consequence**, which is why a label alone is
+insufficient:
+
+| | `ITL-NONBINDING` (all pass) | `ITL-ALWAYS-BINDING` (all fail) |
+|---|---|---|
+| conjunctive goodput | reduces to TTFT-only | **0 in every cell** |
+| a comparison still exists? | yes, degenerate (TTFT ranking) | **no** |
+| paired bootstrap | works | 0 vs 0 → zero variance, degenerate CI |
+| §4.4's "≥3% margin" | applies | **0/0, undefined** |
+
+⇒ `e1_analyze.py` must carry a **numeric guard**: when best-static's combined
+goodput is 0 (or all cells' are equal within float tolerance), the decision
+rule does not run and reports `ITL-ALWAYS-BINDING / DEGENERATE` instead. Left
+unguarded it would divide by zero or, worse, emit a confident verdict from a
+vacuous comparison — the failure mode this campaign has now hit twice in one
+day (bug #7's stale-file verdict, and the pre-fix capscan report).
+
+**Is the risk real?** From `FINDINGS_8B_2026-07-28.md` §2's batch-12 ITL p50
+scaled by T8's own batch-12→48 factor (×1.66) — an extrapolation, not a
+measurement, and the factor is derived from one arm so it is not guaranteed
+to transfer:
+
+| arm | ≈d16 | ≈d92 | vs ladder {50,60,80} |
+|---|---|---|---|
+| T8 | 50 | 21 | all below → `ITL-NONBINDING` (measured, confirmed) |
+| Hs8 | 67 | 26 | crosses → decidable |
+| M8 | 97 | 33 | crosses → decidable |
+| **Ha8** | **149** | ~52 | d16 above every rung, other end near 50 → **borderline** |
+
+Only Ha8 is at risk and probably still crosses. The scans settle it.
+
+**(a-2) Per-rung 4-way classification replaces the two binary flags.**
+
+The deeper finding is that on this substrate the ITL axis is **not a
+continuum**. Because `--max-running-requests` truncates the decode batch (see
+§4.3.6), each cell's per-request ITL-p95 distribution is a near-deterministic
+spike, and the axis is effectively a staircase of ~5 constants — for T8,
+{15, 24, 26, 37, 50} ms. Measured consequence at rate 16, d16:
+`frac(ITL ≤ 48) = 0.34/0.29` but `frac(ITL ≤ 50) = 0.94/0.99` — **moving the
+SLO by 4% triples the ITL goodput.** "Binding" is therefore not a smooth
+property; the answer is determined by which constants the rung falls between.
+
+Every rung `r` is classified by one quantity, its relative distance to the
+nearest cell, `m = min_cells |ITL_p95(cell) − r| / r`:
+
+| condition | classification |
+|---|---|
+| every cell ≥15% below `r` | `ITL-NONBINDING` |
+| every cell above `r` | `ITL-ALWAYS-BINDING` (new) |
+| `m < 15%` | `CLIFF HAZARD` (existing) |
+| otherwise | **`DISCRIMINATING`** |
+
+**Pre-registered: a headline result may only be reported from a rung
+classified `DISCRIMINATING` for that arm.** All rungs are still reported. This
+derives all three flags from a single quantity and removes the freedom to
+pick a rung after seeing which one is favourable.
+
+⚠️ **Accepted in advance**: the 60 ms primary rung may be non-`DISCRIMINATING`
+for every arm, in which case **E1 produces no headline at its pre-registered
+primary SLO.** That is a result, not a failure, and it is exactly the state
+§4.3.1 already describes as "a design failure, not a null result" — to be
+reported as such rather than repaired by moving the SLO.
+
+**(b) On-cliff cell exclusion (the d92 problem).**
+
+d92 = `[16, 92]` is simultaneously the *most* faithful cell (decode duty cycle
+0.52 vs d16's 0.11, §4.3.6) and the *least* comparable one:
+
+| | d92 | others |
+|---|---|---|
+| low-load TTFT plateau | 181–196 ms | 47–66 ms (ρ 3–4× higher at equal rate) |
+| capacity knee | **2.80 req/s** | 12.6–16 |
+| max decode batch | **38** (prefill admission binds first) | 48 (the cap) |
+
+The batch difference is decisive: step time depends on batch, so **d92's ITL
+is not the same quantity as the other cells' ITL**. Raising
+`--max-running-requests` does not fix it — d92 never reaches the cap.
+
+Pre-registered rule:
+
+> A cell whose capacity-scan knee lies **below the chosen operating rate** is
+> **excluded from the best-static argmax**. Excluded cells report their full
+> percentiles and the exclusion is named in every table in which they appear.
+> **The operating rate stays common to all cells** — excluding a cell is not
+> the same as giving it its own rate, which §4.2 forbids as a rate-confound.
+
+This is a mechanical function of the measured knee, not a post-hoc choice.
+Two consequences are accepted in advance rather than discovered later:
+
+1. **The excluded cell may differ by arm.** T8 loses its prefill-starved end
+   (d92, knee 2.80; likely d54, knee 8.45). M8/Ha8, whose decode is 2–3×
+   slower, will plausibly lose the *decode*-starved end (d16) instead. Then
+   "which D won" is answered on a different grid per arm, so **cross-arm
+   comparison of the winning D cannot be a headline.** This is a physical fact
+   about differing feasible regions, not a defect of the rule.
+2. ★★ **E1 may be structurally unable to answer C2.** If the rule removes the
+   decode-rich end for every arm, then E1's feasible operating region and C2's
+   lever (established as the D16↔D92 contrast) live in **disjoint regions**.
+   The honest verdict is then *"E1 as designed cannot reach this question"* —
+   **not** "the lever is net-negative". This is a design-level finding and the
+   four queued jobs settle it **before** the main sweep spends GPU time.
+
+### 4.3.6 ★★NEW 2026-07-31 — `--max-running-requests 48` is an unregistered
+    constant that sets the ITL axis, and the decode-side duty cycle is
+    unmeasured by the pre-registered gates
+
+Recorded here because §4.3.4/§4.3.5's verdicts are all downstream of it.
+
+`--max-running-requests 48` is set in `e1_capacity_scan.sbatch:143` and
+`e1_sweep.sbatch:178` and appears **nowhere else in this document** (grep 0
+hits before this revision). Evidence that it, not the model, sets the ITL
+ceilings (`decode_duty_check.py` on 867231, reproducing the auditor
+independently):
+
+- `decode_running_batch_size` truncates at exactly **48** in d16/d24/d44/d54
+  (d92 reaches only 38 — prefill admission binds first).
+- `kv_occupancy` at that truncation is **0.024** — memory is ~40× from
+  binding, so this is a config cap, not a resource limit.
+- d16's ITL-p95 is **flat at 50.2–50.6 ms from rate 12 to 32**; an open queue
+  would keep climbing with the batch.
+
+⇒ The per-cell "ceilings" {d16 50.6, d24 37.9, d44 26.2, d54 23.9, d92 19.1
+ms} are a **harness property**. `batchcap.sbatch` (job 870301) tests this
+directly with cap ∈ {48, 96, 192} and a pre-registered three-way decision.
+Until it lands, every ITL conclusion in this campaign carries the scope
+`max_running_requests=48`.
+
+Separately, the **decode-side realized-partition duty cycle covaries with D**:
+time-weighted, cells sit at their labelled decode SM only 0.110 (d16), 0.112
+(d24), 0.166 (d44), 0.201 (d54), 0.518 (d92) of decode-active time; the rest
+runs unpartitioned at 108 SM (`CONSENSUS.md` §1-22 auto-revert). **The D axis
+therefore moves two variables at once** — the SM limit, and the fraction of
+time it is in force — and the second increases monotonically with the first.
+§5's pre-registered pin gate checks the **prefill** side only and is
+structurally blind to this: `D=16 (P92) pin_frac=0.950` is a statement about
+prefill sitting at 92 SM. `decode_duty_check.py` reports it per cell.
+
+It is deliberately **not** made cite-blocking: §5 pre-registered exactly two
+gates, and adding a third threshold after seeing 867231's data would be
+choosing a gate from the data — the very move §4.3.3's siting rule exists to
+prevent. It is reported and escalated. (On 867231 a 0.80 threshold would fail
+**every** cell including d92, which is itself the finding.) The 11–52% figures
+are first-order: they come from the same `runtime_snapshot` sampling the pin
+gate uses, so they are themselves a re-measurement target for an engine-side
+accumulated per-partition timer. What is **not** sampling-sensitive is the
+ordering and its monotone covariation with D — which is what makes it a
+confound rather than a rounding error.
+
 None of this changes the workload/rate grid (§4.2) or adds GPU time — it is
 purely how the already-collected TTFT/ITL distributions are read, so it has
 no effect on the time budget (§7 unchanged; see also §11 for the explicit

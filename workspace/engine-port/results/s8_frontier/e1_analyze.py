@@ -221,6 +221,126 @@ def itl_nonbinding_flag(per_cell_p95, lowest_rung, margin=CLIFF_MARGIN):
     return flag, worst_cell, worst_p95
 
 
+def itl_always_binding_flag(per_cell_p95, highest_rung):
+    """★NEW 2026-07-31, DESIGN.md sec 4.3.5(a-1) -- the missing mirror of
+    itl_nonbinding_flag(). An arm is ITL-ALWAYS-BINDING if EVERY cell's
+    ITL-p95 sits ABOVE the ladder's highest rung: the ITL term is then a
+    constant across D just as in the nonbinding case, and "no D beats
+    best-static" is equally uninformative about the lever.
+
+    The two cases are NOT symmetric in consequence, which is why this needs
+    a numeric guard downstream and not just a label: nonbinding reduces
+    conjunctive goodput to TTFT-only (a degenerate but well-defined
+    comparison), whereas always-binding drives it to 0 in every cell -- zero
+    variance, a degenerate paired-bootstrap CI, and sec 4.4's ">=3% margin"
+    becomes 0/0. See degenerate_goodput_guard().
+
+    Returns (flag, best_cell, best_p95): the cell CLOSEST to passing, i.e.
+    the one that would bind last."""
+    vals = {c: v for c, v in per_cell_p95.items() if v == v}
+    if not vals:
+        return False, None, float("nan")
+    best_cell = min(vals, key=lambda c: vals[c])
+    best_p95 = vals[best_cell]
+    return best_p95 > highest_rung, best_cell, best_p95
+
+
+def classify_rung(per_cell_p95, rung, margin=CLIFF_MARGIN):
+    """★NEW 2026-07-31, DESIGN.md sec 4.3.5(a-2). Replaces the two binary
+    flags with a 4-way classification of a single ladder rung, all derived
+    from ONE quantity: m = min over cells of |ITL_p95(cell) - rung| / rung.
+
+    Motivation: on this substrate the ITL axis is not a continuum. The decode
+    batch truncates at --max-running-requests (sec 4.3.6), so each cell's
+    per-request ITL-p95 distribution is a near-deterministic spike and the
+    axis is a staircase of ~5 constants (T8: {15,24,26,37,50}ms). Measured at
+    rate 16, d16: frac(ITL<=48) = 0.34/0.29 but frac(ITL<=50) = 0.94/0.99 --
+    a 4% move in the SLO triples the goodput. "Binding" is thus decided by
+    which constants the rung falls between, not by a smooth margin.
+
+    Returns (label, m, detail) with label in:
+      ITL-NONBINDING      every cell >=margin BELOW the rung
+      ITL-ALWAYS-BINDING  every cell ABOVE the rung
+      CLIFF-HAZARD        some cell within +/-margin of the rung
+      DISCRIMINATING      none of the above -- the rung actually separates
+                          cells with room to spare
+
+    PRE-REGISTERED (sec 4.3.5): a headline may be reported ONLY from a rung
+    classified DISCRIMINATING for that arm. Every rung is still printed."""
+    vals = {c: v for c, v in per_cell_p95.items() if v == v}
+    if not vals or not rung:
+        return "NO-DATA", float("nan"), {}
+    m = min(abs(v - rung) / rung for v in vals.values())
+    n_above = sum(1 for v in vals.values() if v > rung)
+    detail = dict(m=m, n_cells=len(vals), n_above=n_above,
+                  min_cell=min(vals, key=lambda c: vals[c]),
+                  max_cell=max(vals, key=lambda c: vals[c]),
+                  min_p95=min(vals.values()), max_p95=max(vals.values()))
+    # Order matters: the two "constant across D" cases are checked first,
+    # because a rung that every cell clears (or fails) is uninformative even
+    # if some cell happens to sit close to it.
+    if max(vals.values()) <= rung * (1.0 - margin):
+        return "ITL-NONBINDING", m, detail
+    if n_above == len(vals):
+        return "ITL-ALWAYS-BINDING", m, detail
+    if m <= margin:
+        return "CLIFF-HAZARD", m, detail
+    return "DISCRIMINATING", m, detail
+
+
+def degenerate_goodput_guard(per_cell_goodput, tol=1e-9):
+    """★NEW 2026-07-31, DESIGN.md sec 4.3.5(a-1) numeric guard. sec 4.4's
+    decision rule divides by best-static's combined goodput and asks for a
+    >=3% margin; both are undefined when every cell is 0 (the
+    ITL-ALWAYS-BINDING case) and meaningless when every cell is identical
+    (any case where the SLO terms are constant across D). Returns
+    (is_degenerate, reason). Callers must NOT run the decision rule when this
+    is True -- report the degeneracy instead. Emitting a confident verdict
+    from a vacuous comparison is the exact failure this campaign hit twice on
+    2026-07-31 (bug #7's stale-file verdict; the pre-fix capscan report)."""
+    vals = [v for v in per_cell_goodput.values() if v == v]
+    if not vals:
+        return True, "no gate-passing cells -- nothing to compare"
+    if max(vals) <= tol:
+        return True, ("every cell's combined goodput is 0 -- the conjunctive SLO "
+                      "is failed everywhere, so the D comparison is vacuous "
+                      "(expected under ITL-ALWAYS-BINDING, sec 4.3.5)")
+    if (max(vals) - min(vals)) <= tol * max(1.0, abs(max(vals))):
+        return True, ("every cell's combined goodput is identical -- the SLO terms "
+                      "are constant across D, so the D comparison carries no "
+                      "information (sec 4.3.5)")
+    return False, ""
+
+
+def excluded_on_cliff_cells(per_cell_knee_rps, operating_rate_rps):
+    """★NEW 2026-07-31, DESIGN.md sec 4.3.5(b) -- the on-cliff exclusion rule.
+
+    > A cell whose capacity-scan knee lies BELOW the chosen operating rate is
+    > excluded from the best-static argmax. Excluded cells still report their
+    > full percentiles and the exclusion is named in every table. The
+    > operating rate stays COMMON to all cells -- excluding a cell is not the
+    > same as giving it its own rate, which sec 4.2 forbids as a
+    > rate-confound.
+
+    A mechanical function of the measured knee, fixed before the M8/Ha8/Hs8
+    scans landed, so it is not a post-hoc choice.
+
+    Two consequences accepted in advance (sec 4.3.5(b)): the excluded cell may
+    differ by arm (T8 loses its prefill-starved end; slower-decode arms will
+    plausibly lose d16 instead), so cross-arm comparison of the winning D
+    cannot be a headline; and if the decode-rich end is excluded for every
+    arm, E1's feasible region and C2's lever are disjoint -- the verdict is
+    then "E1 as designed cannot reach this question", NOT "the lever is
+    net-negative"."""
+    excluded = {}
+    for cell, knee in sorted(per_cell_knee_rps.items()):
+        if knee != knee:
+            continue
+        if knee < operating_rate_rps:
+            excluded[cell] = knee
+    return excluded
+
+
 def ttft_site_check(per_cell_p95, candidate_slo_ms, margin=TTFT_MARGIN):
     """DESIGN.md sec 4.3.3 pre-registered TTFT-SLO siting rule: candidate
     SLO must (i) bind (p95 > SLO) in >=1 cell and (ii) have >=margin relative
@@ -317,24 +437,43 @@ def print_slo_siting_report(per_arm_cell_ttft_p95, per_arm_cell_itl_p95,
     called from main-sweep mode or --capscan-dir scan mode. Inputs are
     {(arm, cell): p95_ms} dicts. Returns the set of arms flagged
     ITL-NONBINDING (at the ladder's lowest rung) so main()'s decision-rule
-    section can suppress the lever-negative conclusion for them."""
-    lowest_rung = min(itl_ladder)
+    section can suppress the lever-negative conclusion for them.
+
+    ★2026-07-31 (sec 4.3.5(a-2)): each rung now also carries a 4-way
+    classification from classify_rung(), and the arm-level
+    ITL-ALWAYS-BINDING mirror flag is reported. A headline may be taken ONLY
+    from a rung classified DISCRIMINATING -- printed explicitly per arm so a
+    later reader cannot quietly promote a CLIFF-HAZARD rung."""
+    lowest_rung, highest_rung = min(itl_ladder), max(itl_ladder)
     arms = sorted({a for a, _ in per_arm_cell_itl_p95})
     print()
-    print(f"=== SLO SITING DIAGNOSTICS (DESIGN.md sec 4.3.4, ITL ladder "
+    print(f"=== SLO SITING DIAGNOSTICS (DESIGN.md sec 4.3.4/4.3.5, ITL ladder "
           f"{list(itl_ladder)}ms, TTFT candidate {ttft_candidate}ms) ===")
     nonbinding_arms = set()
     for arm in arms:
         cells_itl = {c: v for (a, c), v in per_arm_cell_itl_p95.items() if a == arm}
         cells_ttft = {c: v for (a, c), v in per_arm_cell_ttft_p95.items() if a == arm}
         print(f"  {arm}:")
+        usable = []
         for rung in itl_ladder:
             hazards = [c for c, v in sorted(cells_itl.items())
                        if cliff_hazard(v, rung)]
             detail = ", ".join(f"{c}={v:.1f}ms" for c, v in sorted(cells_itl.items()))
+            label, m, _d = classify_rung(cells_itl, rung)
+            if label == "DISCRIMINATING":
+                usable.append(rung)
             flag = f"  <-- CLIFF HAZARD at cells {hazards}" if hazards else ""
             print(f"    ITL-p95 ladder rung {rung:.0f}ms: [{detail}]{flag}")
+            print(f"        rung class = {label}"
+                  + (f"  (nearest cell is {m:.1%} away)" if m == m else ""))
+        print(f"    HEADLINE-ELIGIBLE RUNGS (sec 4.3.5(a-2): DISCRIMINATING only) = "
+              f"{[f'{r:.0f}ms' for r in usable] if usable else 'NONE'}"
+              + ("" if usable else
+                 "  <-- no rung on the pre-registered ladder separates this arm's "
+                 "cells with margin; per sec 4.3.1 this is a design failure to "
+                 "REPORT, not to repair by moving the SLO"))
         nb_flag, worst_cell, worst_p95 = itl_nonbinding_flag(cells_itl, lowest_rung)
+        ab_flag, best_cell, best_p95 = itl_always_binding_flag(cells_itl, highest_rung)
         if nb_flag:
             nonbinding_arms.add(arm)
             print(f"    ITL-NONBINDING: TRUE (worst cell {worst_cell}={worst_p95:.1f}ms, "
@@ -344,6 +483,17 @@ def print_slo_siting_report(per_arm_cell_ttft_p95, per_arm_cell_itl_p95,
         else:
             print(f"    ITL-NONBINDING: false (worst cell {worst_cell}="
                   f"{worst_p95:.1f}ms, within reach of the {lowest_rung:.0f}ms rung)")
+        if ab_flag:
+            nonbinding_arms.add(arm)   # same suppression of the lever-negative reading
+            print(f"    ★ITL-ALWAYS-BINDING: TRUE (even the best cell {best_cell}="
+                  f"{best_p95:.1f}ms is above the {highest_rung:.0f}ms highest rung) "
+                  "-- the ITL term is constant across D here too, so conjunctive "
+                  "goodput is 0 everywhere and the D comparison is VACUOUS, not "
+                  "lever-negative. sec 4.4's margin rule is undefined in this state; "
+                  "degenerate_goodput_guard() blocks it.")
+        else:
+            print(f"    ITL-ALWAYS-BINDING: false (best cell {best_cell}="
+                  f"{best_p95:.1f}ms is at/below the {highest_rung:.0f}ms highest rung)")
         if ttft_candidate is not None and cells_ttft:
             site = ttft_site_check(cells_ttft, ttft_candidate)
             detail = ", ".join(f"{c}={v:.0f}ms" for c, v in sorted(cells_ttft.items()))
@@ -519,6 +669,17 @@ def main():
                           "--capscan-rate. No goodput/decision rule in this mode.")
     ap.add_argument("--capscan-rate", type=float, default=None,
                      help="candidate rate (req/s) to site SLOs at, required with --capscan-dir")
+    ap.add_argument("--cell-knee-rps", default=None,
+                     help="sec 4.3.5(b) on-cliff exclusion: comma-separated "
+                          "<cell>=<knee_rps> from the capacity scan, e.g. "
+                          "\"d16=12.6,d24=16.0,d44=16.0,d54=8.45,d92=2.80\". Any cell whose "
+                          "knee is BELOW --operating-rate-rps is dropped from the best-static "
+                          "argmax (its percentiles are still reported). Requires "
+                          "--operating-rate-rps; omit both to disable the rule.")
+    ap.add_argument("--operating-rate-rps", type=float, default=None,
+                     help="sec 4.3.5(b): the sweep's COMMON offered rate, against which each "
+                          "cell's knee is compared. Common to all cells by construction -- "
+                          "sec 4.2 forbids a per-cell rate.")
     ap.add_argument("--capscan-job", default=None,
                      help="scan mode: restrict to this SLURM job id. Default = the newest "
                           "job id present in --capscan-dir, with the dropped ones named in "
@@ -772,6 +933,49 @@ def main():
         if not citeable:
             print(f"  {arm}: no cell has n>=4 gate-passing reps -- NO CITEABLE VERDICT")
             continue
+
+        # ★2026-07-31, DESIGN.md sec 4.3.5(b): on-cliff cells are dropped from
+        # the argmax by the pre-registered knee rule, but their numbers are
+        # still printed above and named here. The operating rate stays common
+        # to all cells -- this is an exclusion, not a per-cell rate.
+        excluded = {}
+        if args.cell_knee_rps and args.operating_rate_rps:
+            knees = {}
+            for tok in args.cell_knee_rps.split(","):
+                if not tok.strip():
+                    continue
+                k, v = tok.split("=")
+                knees[k.strip()] = float(v)
+            excluded = excluded_on_cliff_cells(
+                {c: knees[c] for c in citeable if c in knees}, args.operating_rate_rps)
+            if excluded:
+                print(f"  {arm}: EXCLUDED from best-static argmax (sec 4.3.5(b), knee below "
+                      f"operating rate {args.operating_rate_rps} req/s): "
+                      + ", ".join(f"{c} (knee {k:.2f})" for c, k in sorted(excluded.items()))
+                      + "  -- their percentiles are reported above and this exclusion must "
+                        "be named in every table they appear in")
+                citeable = {c: s for c, s in citeable.items() if c not in excluded}
+            if not citeable:
+                print(f"  {arm}: every cell was excluded as on-cliff -- NO CITEABLE VERDICT. "
+                      "Per sec 4.3.5(b) consequence 2, if this holds for every arm then E1's "
+                      "feasible region and C2's lever are DISJOINT: report 'E1 as designed "
+                      "cannot reach this question', NOT 'the lever is net-negative'.")
+                continue
+
+        # ★2026-07-31, DESIGN.md sec 4.3.5(a-1) numeric guard: sec 4.4 divides
+        # by best-static's goodput and asks for a >=3% margin. Both are
+        # undefined when every cell is 0 (ITL-ALWAYS-BINDING) and meaningless
+        # when every cell is identical. Emitting a verdict anyway would be a
+        # confident answer from a vacuous comparison.
+        degen, degen_why = degenerate_goodput_guard({c: s["mean"] for c, s in citeable.items()})
+        if degen:
+            print(f"  {arm}: ★DEGENERATE -- decision rule NOT run. {degen_why}")
+            print(f"    This is NOT evidence about the decode-SM lever in either direction. "
+                  f"If the arm is also flagged ITL-ALWAYS-BINDING above, the ladder "
+                  f"{list(args.itl_ladder_ms)}ms never admitted a single request for this arm "
+                  f"and the experiment did not test the lever (sec 4.3.5(a-1)).")
+            continue
+
         best_cell = max(citeable, key=lambda c: citeable[c]["mean"])
         best_mean = citeable[best_cell]["mean"]
         nb_tag = "  [ITL-NONBINDING -- see sec 4.3.4 caveat below]" if arm in nonbinding_arms else ""
