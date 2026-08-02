@@ -1,6 +1,6 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-02(진행 상태 갱신만, 게이트 정의 변경 없음 — P6에
+최종 갱신: 2026-08-02 rev2(★P6의 E1 "설계 위험 3중" 중 (b)(c)를 claims-auditor 회부 결과로 **정정**하고, E1 대신 제출된 M3 Transformer-control 대조[job 872077]를 기록. 게이트 정의 변경 없음. 이전 rev1: 진행 상태 갱신만 — P6에
 "E1 상태(2026-08-02)" 추가: 전제 실험 4건 완료(2026-08-01, **claims-auditor
 미통과 = 인용 금지**), **본 스윕 미제출**, 설계 위험 3중으로 E1이 사전등록
 분기 "설계상 이 질문에 도달할 수 없다"로 갈 위험, 선행 사전등록
@@ -256,15 +256,30 @@ claims-auditor 미통과 = 미검증, 인용 금지**이며 수치는 `../PROJEC
 as-run 설정에서 **네 arm 전부 헤드라인 룽 없음**, (b) 그 as-run 설정
 (`--max-running-requests 48`)이 ITL·TTFT 두 축을 반대 방향으로 왜곡함이
 직접 실험으로 드러남, (c) on-cliff 제외 규칙(d92 knee 2.80, 전 arm)이 **어떤
-동작점에서도 decode-rich 끝을 제거** — C2 레버가 사는 끝. ⇒ **E1은
-`results/s8_frontier/DESIGN.md` §4.3.5(b)가 사전등록한 "설계상 이 질문에
-도달할 수 없다" 분기로 갈 위험이 높다**(실패가 아니라 미리 적어둔 분기).
-그 경우 **긴장 A(HE2 vs C2)는 E1으로 닫히지 않으며**, Claim A의
-"프론티어(예산 제약 하 net-positive)" Missing evidence도 채워지지 않는다.
-**선행 필수(사전등록 대상)**: `--max-mamba-cache-size`를 전 arm 공통 상수로
-명시 고정해 cap을 순수 admission 손잡이로 되돌리는 것 — SSM 포함 arm에서
-cap이 mamba state pool 크기까지 움직이기 때문이다(`../CONSENSUS.md` §1-23,
-코드 사실).
+동작점에서도 decode-rich 끝을 제거** — C2 레버가 사는 끝.
+
+> ★★★**정정(2026-08-02, claims-auditor 회부 + M1/M2/M4 후속) — 위 세 다리 중
+> 둘이 무너졌고, 그래서 "설계상 도달 불가" 종결은 정당화되지 않는다.**
+> - **(c) 기각.** C2 측정(`s8_scaleup/FINDINGS_8B_2026-07-28.md` §2)에서
+>   SM16→44 구간이 log-range의 **75–81%**를 차지한다 ⇒ d92 하나 제외는 레버가
+>   사는 끝이 아니라 **마지막 15–25%**만 자른다. 게다가 "공통 knee 2.80"
+>   자체가 철회됐다(knee의 치역이 probe 격자뿐이라 일치가 부분 강제 —
+>   살아남는 건 **순서**뿐, `results/s8_frontier/DESIGN.md` §4.3.7).
+> - **(b) 운영구간 밖.** cap 왜곡은 rate 16에서만 관측됐고, 운영대역(≤2.80)
+>   실측 동시성은 12–44 < cap 48이라 **cap이 구속할 수 없다** ⇒ E1에 적용 안 됨.
+> - **(a)만 생존**하되 arm×룽 표는 **rate-confound로 폐기**(T8만 rate 12).
+>   공통 rate로 재계산하면 `HEADLINE-ELIGIBLE RUNGS = NONE`은 **유지**된다
+>   (두 estimand × 두 seed 전부).
+>
+> ⇒ **(A) 제출도 (B) 종결도 시기상조**로 판정하고, 대신 **M3
+> Transformer-control 대조**를 사전등록·제출했다(job **872077**, §4.3.8(c)).
+> M3는 goodput 이득이 아니라 **"ITL 축이 D에 반응하기는 하는가"**를 묻는다 —
+> 그 질문이 긍정이어야 프론티어 질문이 성립하기 때문이다. 오프라인 예비값:
+> blocking 제거 후 d16→d54 기울기가 T8 2.03× 대 Ha8 1.03×/0.89×.
+> **선행 필수 정정**: `--max-mamba-cache-size`는 **전 arm 공통 절대상수가
+> 아니라 `= cap` 규칙**으로 고정해야 한다 — slot당 비용이 arm마다 달라
+> (M8 0.255 / Ha8 0.141 / Hs8 0.096 GB) 절대상수는 arm마다 다른 메모리 분할을
+> 강제하는 **새 cross-arm 교락**이 된다(`../CONSENSUS.md` §1-23 따름정리 정정).
 
 | ID | 고정 workload |
 |---|---|
