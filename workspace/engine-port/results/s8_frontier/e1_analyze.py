@@ -133,6 +133,19 @@ ELBOW_MARGIN = 0.15   # DESIGN.md sec 4.6 (item B.3): pre-registered post-hoc
                        # enforcement at the per-rep level, not just at
                        # RATE_LO/RATE_HI selection time).
 
+# ★NEW 2026-08-02, DESIGN.md sec 4.3.7 -- the knee estimator's parameters,
+# PRE-REGISTERED here as named constants rather than left implicit in a
+# hand-computed handoff table (see knee_rps()). The point estimate uses
+# (KNEE_PLATEAU_N, KNEE_MULT); the GRID is reported beside it always, because
+# the on-cliff exclusion rule (sec 4.3.5(b)) gates the whole sweep on it.
+KNEE_PLATEAU_N = 3     # plateau = mean TTFT-p50 of the 3 lowest-arrival probes
+KNEE_MULT = 2.0        # knee = first probe exceeding 2x plateau
+KNEE_PLATEAU_GRID = (2, 3, 4)
+KNEE_MULT_GRID = (1.5, 2.0, 3.0)
+KNEE_FRAGILE_MARGIN = 0.05   # a crossing point clearing threshold by less than
+                             # this is flagged FRAGILE: it is one probe's noise
+                             # from moving to the next grid point.
+
 
 def _percentile(xs, q):
     if not xs:
@@ -339,6 +352,71 @@ def excluded_on_cliff_cells(per_cell_knee_rps, operating_rate_rps):
         if knee < operating_rate_rps:
             excluded[cell] = knee
     return excluded
+
+
+def knee_rps(points, plateau_n=KNEE_PLATEAU_N, mult=KNEE_MULT):
+    """★NEW 2026-08-02, DESIGN.md sec 4.3.7 -- the capacity-scan KNEE, finally
+    as CODE.
+
+    Why this exists. excluded_on_cliff_cells() above calls itself "a mechanical
+    function of the measured knee, fixed before the M8/Ha8/Hs8 scans landed",
+    but until now the knee ITSELF was computed BY HAND: it appears only in a
+    handoff table, in no script and in no pre-registration. The 2026-08-02
+    claims-auditor had to REVERSE-ENGINEER the definition from the 20 published
+    numbers to audit it. A gating quantity that lives outside version control
+    is not mechanical -- it is a free parameter, and this campaign has already
+    been burned twice by free parameters chosen after seeing data (bug #9's
+    estimator, sec 4.3.6's unregistered cap).
+
+    Definition (the reverse-engineered one, which reproduces all 20 published
+    cells exactly -- see the SENSITIVITY block, so it is being FIXED here, not
+    invented):
+        points   [(arrival_rps, ttft_p50_ms)], one entry per (rate, seed)
+                 probe, x = the RNG-replay realized arrival rate
+                 (e1_capacity_scan.sbatch:200-207), NOT the target rate.
+        plateau  mean TTFT-p50 over the `plateau_n` LOWEST-arrival_rps points.
+        knee     the arrival_rps of the FIRST point (ascending) whose TTFT-p50
+                 exceeds `mult` x plateau. NaN if the curve never crosses.
+
+    ★ The knee's RANGE IS THE PROBE GRID. It can only ever return one of the
+    ~10 realized rates the scan actually visited, so two arms landing on the
+    same value is much weaker evidence than 3-significant-figure agreement
+    looks -- the support forces ties. Any claim of the form "the knee is
+    COMMON across arms" must be made against knee_sensitivity() below, not
+    against a single (plateau_n, mult).
+
+    Returns (knee, detail) where detail names the crossing point and, most
+    importantly, `margin` = how far past the threshold that single point sits.
+    A knee set by a point that clears threshold by ~2% is one probe's noise
+    away from moving to the next grid point."""
+    pts = sorted(((x, y) for x, y in points if x == x and y == y), key=lambda p: p[0])
+    if len(pts) < plateau_n + 1:
+        return float("nan"), dict(reason=f"need >{plateau_n} points, have {len(pts)}")
+    plateau = sum(y for _, y in pts[:plateau_n]) / plateau_n
+    thresh = mult * plateau
+    for x, y in pts[plateau_n:]:
+        if y > thresh:
+            return x, dict(plateau_ms=plateau, thresh_ms=thresh, crossing_ttft_ms=y,
+                           margin=(y - thresh) / thresh, n_points=len(pts),
+                           fragile=((y - thresh) / thresh < KNEE_FRAGILE_MARGIN))
+    return float("nan"), dict(plateau_ms=plateau, thresh_ms=thresh, n_points=len(pts),
+                              reason="never crosses -- no knee within the probe grid")
+
+
+def knee_sensitivity(points, plateau_ns=KNEE_PLATEAU_GRID, mults=KNEE_MULT_GRID):
+    """★NEW 2026-08-02, DESIGN.md sec 4.3.7. Runs knee_rps() over the
+    pre-registered (plateau_n, mult) grid and returns {(plateau_n, mult): knee}
+    plus the SET of distinct knees. Report this beside every knee. A cell whose
+    knee set has one element is robust to the estimator; a cell whose knee set
+    spans a factor of 2 is not, and any exclusion decision resting on it is a
+    coin flip dressed as a rule."""
+    out = {}
+    for pn in plateau_ns:
+        for mu in mults:
+            out[(pn, mu)] = knee_rps(points, plateau_n=pn, mult=mu)[0]
+    vals = sorted({v for v in out.values() if v == v})
+    spread = (max(vals) / min(vals)) if len(vals) > 1 and min(vals) > 0 else 1.0
+    return out, vals, spread
 
 
 def ttft_site_check(per_cell_p95, candidate_slo_ms, margin=TTFT_MARGIN):
@@ -642,6 +720,191 @@ def run_capscan_mode(args):
         print_slo_siting_report(t95, i95, args.itl_ladder_ms, args.ttft_slo_ms)
 
 
+CAPSCAN_PAT = re.compile(
+    r"e1cap_(?P<arm>\w+?)_(?P<cell>d16|d24|d44|d54|d92)_(?P<job>\d+)"
+    r"_r(?P<rate>[0-9.]+)(?:_s(?P<seed>\d+))?\.jsonl$"
+)
+
+
+def _replay_arrival_rps(rate, npc, seed):
+    """RNG replay of the realized arrival rate, identical to
+    e1_capacity_scan.sbatch:200-207. ★It is a deterministic function of
+    (rate, npc, seed) ALONE -- it measures the client's draw, not the server
+    (2026-07-31 claims-auditor, C-A). Used here only as the knee curve's
+    x-axis, which is exactly what it is entitled to be."""
+    import numpy as np
+    np.random.seed(seed)
+    intervals = [np.random.exponential(1.0 / rate) for _ in range(npc)]
+    arrival = np.cumsum([0.0] + intervals[:-1])
+    span = float(arrival[-1]) if npc > 1 else float("nan")
+    return (npc - 1) / span if span else float("nan")
+
+
+def _capscan_probes(capscan_dir, job, warmup_s):
+    """Walk every probe of one job. Returns {(arm,cell): [probe dicts]}."""
+    out = collections.defaultdict(list)
+    for fn in sorted(os.listdir(capscan_dir)):
+        m = CAPSCAN_PAT.search(fn)
+        if not m or m["job"] != job:
+            continue
+        rate = float(m["rate"])
+        seed = int(m["seed"]) if m["seed"] else 0
+        path = os.path.join(capscan_dir, fn)
+        reqs, _dur = load_phase_requests(path)
+        n_warm = math.ceil(warmup_s * rate)
+        kept = [r for r in reqs[n_warm:] if r["success"]]
+        if not kept:
+            continue
+        tt = [r["ttft_s"] * 1000.0 for r in kept]
+        il = [r["itl_p95_ms"] for r in kept if r["itl_p95_ms"] == r["itl_p95_ms"]]
+        out[(m["arm"], m["cell"])].append(dict(
+            rate=rate, seed=seed, file=fn, n=len(reqs), kept=len(kept),
+            arrival_rps=_replay_arrival_rps(rate, len(reqs), seed),
+            ttft_p50_near=_percentile_nearest(tt, 0.50),
+            ttft_p50_interp=_percentile(tt, 0.50),
+            ttft_p95=_percentile(tt, 0.95),
+            itl_p95=_percentile(il, 0.95), itl=il, ttft=tt))
+    return out
+
+
+def run_kneescan_mode(args):
+    """★NEW 2026-08-02 (M1), DESIGN.md sec 4.3.7. Computes every cell's knee
+    IN CODE, with the pre-registered estimator grid beside it, and names the
+    single probe that sets each knee. Replaces the hand-computed handoff
+    table that sec 4.3.5(b)'s exclusion rule was silently resting on."""
+    jobs = args.capscan_job.split(",") if args.capscan_job else []
+    if not jobs:
+        print("--capscan-job is required for --knee-scan (comma-separated, one per arm)")
+        return
+    print("=== capacity-scan KNEE, in code (DESIGN.md sec 4.3.7, M1 2026-08-02) ===")
+    print(f"point estimate: plateau_n={KNEE_PLATEAU_N} mult={KNEE_MULT}   "
+          f"grid: plateau_n in {KNEE_PLATEAU_GRID} x mult in {KNEE_MULT_GRID}")
+    print("x-axis = RNG-replay realized arrival_rps; y = TTFT-p50 (nearest-rank, "
+          "matching e1_capacity_scan.sbatch's own CAPSCAN lines).")
+    print("★ the knee's RANGE is the probe grid -- cross-arm ties are partly "
+          "forced by the support, not only by the physics.\n")
+    for job in jobs:
+        probes = _capscan_probes(args.capscan_dir, job, args.capscan_warmup_s)
+        if not probes:
+            print(f"job={job}: no probes found under {args.capscan_dir}")
+            continue
+        arm = sorted({a for a, _ in probes})[0]
+        print(f"--- arm={arm} job={job} ---")
+        print(f"  {'cell':>5} {'knee':>7} {'set by probe':>22} {'margin':>8} "
+              f"{'plateau':>9} {'thresh':>9} {'grid knee set':>34} {'spread':>7}")
+        for (a, cell) in sorted(probes, key=lambda k: CELL_D[k[1]]):
+            pts = [(p["arrival_rps"], p["ttft_p50_near"]) for p in probes[(a, cell)]]
+            k, det = knee_rps(pts)
+            sens, vals, spread = knee_sensitivity(pts)
+            who = "-"
+            for p in sorted(probes[(a, cell)], key=lambda p: p["arrival_rps"]):
+                if abs(p["arrival_rps"] - k) < 1e-9:
+                    who = f"r{p['rate']:g} s{p['seed']} {p['ttft_p50_near']:.0f}ms"
+            flag = "  <-- FRAGILE" if det.get("fragile") else ""
+            ks = "{" + ",".join(f"{v:.2f}" for v in vals) + "}" if vals else "{never}"
+            print(f"  {cell:>5} {k:7.2f} {who:>22} {det.get('margin', float('nan')):7.1%} "
+                  f"{det.get('plateau_ms', float('nan')):8.0f}m {det.get('thresh_ms', float('nan')):8.0f}m "
+                  f"{ks:>34} {spread:6.2f}x{flag}")
+        # ★ORDERING robustness. sec 4.3.5(b) excludes cells whose knee is below
+        # the operating rate -- so what the rule consumes is the ORDER of the
+        # knees and the gap to the next cell, NOT the knee's absolute value.
+        # The absolute value is estimator- and grid-dependent (see the spread
+        # column); the order may not be. Report it separately so a claim can
+        # rest on the robust part.
+        cells_sorted = sorted(probes, key=lambda k: CELL_D[k[1]])
+        per_variant = {}
+        for pn in KNEE_PLATEAU_GRID:
+            for mu in KNEE_MULT_GRID:
+                kk = {}
+                for (a, cell) in cells_sorted:
+                    pts = [(p["arrival_rps"], p["ttft_p50_near"]) for p in probes[(a, cell)]]
+                    v = knee_rps(pts, plateau_n=pn, mult=mu)[0]
+                    if v == v:
+                        kk[cell] = v
+                if kk:
+                    lo_cell = min(kk, key=lambda c: kk[c])
+                    rest = sorted(v for c, v in kk.items() if c != lo_cell)
+                    ratio = (rest[0] / kk[lo_cell]) if rest and kk[lo_cell] else float("nan")
+                    per_variant[(pn, mu)] = (lo_cell, kk[lo_cell], ratio)
+        lows = collections.Counter(v[0] for v in per_variant.values())
+        ratios = [v[2] for v in per_variant.values() if v[2] == v[2]]
+        print(f"  ORDER over the {len(per_variant)}-variant grid: lowest-knee cell = "
+              f"{dict(lows)}  |  gap to next cell: min {min(ratios):.2f}x "
+              f"max {max(ratios):.2f}x")
+        print(f"  => the EXCLUSION-relevant statement (which cell falls first) is "
+              f"{'ROBUST' if len(lows) == 1 else 'NOT robust'} to the estimator; "
+              f"its absolute rate is not.")
+        print()
+
+
+def run_common_rate_mode(args):
+    """★NEW 2026-08-02 (M1), DESIGN.md sec 4.3.7. Rung classification for
+    EVERY arm at ONE common rate.
+
+    This exists because the 2026-08-02 audit found the published 4-arm rung
+    table had been assembled arm-by-arm at DIFFERENT rates (T8 at 12, the
+    others at 2). sec 4.3.5(b) pre-registers the opposite in as many words:
+    "The operating rate stays COMMON to all cells -- ... which sec 4.2 forbids
+    as a rate-confound." Running run_capscan_mode() once per arm makes that
+    error easy and invisible; this mode makes the rate a single argument for
+    all arms and prints it in the header of every row.
+
+    It also prints, per cell, the bootstrap CI of the ITL-p95 the label was
+    computed from, and marks a label UNPOWERED when that CI is wider than the
+    15% classification margin -- i.e. when the label would change under
+    resampling. A label is not a measurement if its CI spans the boundary."""
+    jobs = args.capscan_job.split(",") if args.capscan_job else []
+    if not jobs:
+        print("--capscan-job is required for --common-rate (comma-separated, one per arm)")
+        return
+    rate = args.capscan_rate
+    print(f"=== 4-arm rung classification at ONE COMMON rate = {rate} req/s "
+          f"(M1 2026-08-02, DESIGN.md sec 4.3.5(b) rate-confound rule) ===")
+    print(f"ladder = {args.itl_ladder_ms} ms   classification margin = {CLIFF_MARGIN:.0%}   "
+          f"warmup discard = {args.capscan_warmup_s}s\n")
+    for job in jobs:
+        probes = _capscan_probes(args.capscan_dir, job, args.capscan_warmup_s)
+        if not probes:
+            print(f"job={job}: no probes under {args.capscan_dir}")
+            continue
+        arm = sorted({a for a, _ in probes})[0]
+        by_seed = collections.defaultdict(dict)
+        ci_by_seed = collections.defaultdict(dict)
+        for (a, cell), plist in probes.items():
+            for p in plist:
+                if abs(p["rate"] - rate) > 1e-9:
+                    continue
+                by_seed[p["seed"]][cell] = p["itl_p95"]
+                ci_by_seed[p["seed"]][cell] = _percentile_boot_ci(p["itl"], 0.95)
+        if not by_seed:
+            print(f"--- arm={arm} job={job}: NO probe at rate={rate} ---\n")
+            continue
+        for seed in sorted(by_seed):
+            per_cell = by_seed[seed]
+            print(f"--- arm={arm} job={job} seed={seed} rate={rate} ---")
+            print(f"  per-cell ITL-p95 (ms) and its bootstrap 95% CI:")
+            for cell in sorted(per_cell, key=lambda c: CELL_D[c]):
+                lo, hi = ci_by_seed[seed][cell]
+                w = (hi - lo) / per_cell[cell] if per_cell[cell] else float("nan")
+                mark = "  <-- CI wider than the 15% margin" if w > CLIFF_MARGIN else ""
+                print(f"    {cell:>5} {per_cell[cell]:8.1f}  [{lo:7.1f}, {hi:7.1f}]  "
+                      f"width={w:6.1%}{mark}")
+            for rung in args.itl_ladder_ms:
+                label, m, det = classify_rung(per_cell, rung)
+                # a label is UNPOWERED if any cell's CI crosses the rung while
+                # the point estimate puts it on one side
+                unpowered = []
+                for cell, v in per_cell.items():
+                    lo, hi = ci_by_seed[seed][cell]
+                    if lo <= rung <= hi:
+                        unpowered.append(cell)
+                u = f"   UNPOWERED (CI of {unpowered} straddles the rung)" if unpowered else ""
+                print(f"  rung {rung:5.0f}ms -> {label:20s} m={m:6.1%} "
+                      f"(min {det.get('min_cell')}={det.get('min_p95', float('nan')):.1f}, "
+                      f"max {det.get('max_cell')}={det.get('max_p95', float('nan')):.1f}){u}")
+            print()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir", default=HERE)
@@ -692,6 +955,19 @@ def main():
                           "Default 3.0 matches e1_capacity_scan.sbatch's WARMUP_S, so the "
                           "analyzer's percentiles agree with the scan's own CAPSCAN lines "
                           "(they did not before the 2026-07-31 bug #8 fix).")
+    ap.add_argument("--knee-scan", action="store_true",
+                     help="★M1 2026-08-02: compute every cell's capacity-scan KNEE in code "
+                          "(DESIGN.md sec 4.3.7) with the pre-registered (plateau_n, mult) "
+                          "grid beside it. Until now the knee -- which sec 4.3.5(b)'s "
+                          "exclusion rule gates the whole sweep on -- existed only as a "
+                          "hand-computed handoff table, in no script. Needs --capscan-dir "
+                          "and --capscan-job (comma-separated, one job per arm).")
+    ap.add_argument("--common-rate", action="store_true",
+                     help="★M1 2026-08-02: rung classification for EVERY arm at ONE common "
+                          "--capscan-rate. The published 4-arm rung table was assembled "
+                          "arm-by-arm at DIFFERENT rates (T8 at 12, others at 2), which "
+                          "sec 4.3.5(b) forbids as a rate-confound. Also flags labels whose "
+                          "bootstrap CI straddles the rung (UNPOWERED).")
     ap.add_argument("--elbow-onset-rate-lo", type=float, default=None,
                      help="pre-registered LO-phase elbow-onset arrival_rps from the capacity "
                           "scan (DESIGN.md sec 4.6, item B.3) -- if given, any rep whose "
@@ -701,6 +977,20 @@ def main():
                      help="same as --elbow-onset-rate-lo, for the HI phase")
     args = ap.parse_args()
     args.itl_ladder_ms = sorted(float(x) for x in args.itl_ladder_ms.split(","))
+
+    if args.knee_scan:
+        if not args.capscan_dir:
+            print("--knee-scan requires --capscan-dir")
+            return
+        run_kneescan_mode(args)
+        return
+
+    if args.common_rate:
+        if not args.capscan_dir or args.capscan_rate is None:
+            print("--common-rate requires --capscan-dir and --capscan-rate")
+            return
+        run_common_rate_mode(args)
+        return
 
     if args.capscan_dir:
         if args.capscan_rate is None:

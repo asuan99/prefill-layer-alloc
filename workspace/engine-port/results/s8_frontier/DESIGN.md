@@ -615,6 +615,291 @@ purely how the already-collected TTFT/ITL distributions are read, so it has
 no effect on the time budget (§7 unchanged; see also §11 for the explicit
 before/after note the coordinator asked for).
 
+### 4.3.7 ★★NEW 2026-08-02 — the knee estimator becomes code; the rung table
+    must be built at ONE common rate; and the ITL estimand is chosen here,
+    before the sweep (M1 + M2, zero GPU time)
+
+Written after the 2026-08-02 claims-auditor referral, which returned
+**2 REFUTED / 2 NOT-YET-SUPPORTED / 1 CONFIRMED** on the 2026-08-01 claims.
+Two of its findings are defects in *this document's* machinery rather than in
+any measurement, and both are fixed here.
+
+**(a) The knee is now `e1_analyze.py:knee_rps()`, with pre-registered
+parameters.** §4.3.5(b) calls its exclusion rule "a mechanical function of the
+measured knee, fixed before the M8/Ha8/Hs8 scans landed". That was true of the
+*rule* and false of the *input*: the knee itself was hand-computed, lived only
+in a handoff table, and appeared in no script and in no pre-registration — the
+auditor had to reverse-engineer its definition from the 20 published numbers in
+order to audit it. A quantity that gates the whole sweep cannot sit outside
+version control. Pre-registered here:
+
+    plateau = mean TTFT-p50 over the 3 lowest-arrival_rps probes
+    knee    = arrival_rps of the first probe exceeding 2.0 x plateau
+    x-axis  = RNG-replay realized arrival_rps, one point per (rate, seed)
+    y-axis  = TTFT-p50, nearest-rank (matching the sbatch's own CAPSCAN lines)
+
+`KNEE_PLATEAU_N=3`, `KNEE_MULT=2.0`, grid `(2,3,4) x (1.5,2.0,3.0)`. This is a
+*fixing*, not an invention: the codified estimator reproduces all 20 published
+cells **exactly**, so nothing was tuned to taste.
+
+Three consequences, all now printed by `--knee-scan`:
+
+1. **The knee's range is the probe grid.** It can only return one of the ~10
+   realized rates actually visited, so cross-arm agreement is partly forced by
+   the support. "The knee is a common 2.80 across all four arms" is therefore
+   **retired as a claim**: over the 9-variant grid the d92 knee set is
+   T8 {2.80, 4.20}, M8 {2.05, 2.80, 3.08}, Ha8 {2.05, 2.80, 3.08, 4.10},
+   Hs8 {2.05, 2.80, 4.10}. Same failure family as `arrival_rps` and
+   `kv_mamba_occupancy` (`PROJECT_STATUS.md` gate #6): a number whose support
+   guarantees the agreement.
+2. **What the exclusion rule actually consumes is the ORDER**, not the value.
+   That part is robust: d92 is the first cell to fall in **9/9** variants for
+   T8, M8 and Hs8, and 8/9 for Ha8 (the ninth is a tie with d54, not a
+   reversal), with a gap to the next cell of 1.00–5.73x. **Claims must be made
+   on the order; the absolute rate may not be quoted without its grid.**
+3. **Three knees are FRAGILE** — set by a single probe clearing threshold by
+   <5%: Hs8 d16 (2.3%), Hs8 d44 (3.2%), Ha8 d54 (3.4%). ★The 2026-08-01
+   handoff attributed Hs8 d16's fragility to the `arr=12.61 seed=1` outlier;
+   that is **wrong and the outlier is irrelevant to it** — the knee is set by
+   `r8 seed=2` at 172ms against a 169ms threshold, and deleting the outlier
+   leaves the knee at 9.09 unchanged.
+
+**(b) The rung table must be built at ONE rate for all arms —
+`e1_analyze.py --common-rate`.** §4.3.5(b) already pre-registers "the operating
+rate stays COMMON to all cells — ... which §4.2 forbids as a rate-confound",
+but the published 4-arm rung table violated it: M8/Ha8/Hs8 were classified at
+rate 2 and **T8 at rate 12**. Running `--capscan-rate` once per arm made this
+easy and invisible; the new mode takes one rate for all arms and prints it in
+every header. **Pre-registered common rate = 2 req/s**, chosen by a rule that
+does not look at ITL: it is the highest probe rate at which every non-d92 cell
+of every arm is off-cliff under **all 9** knee variants (the binding constraint
+is Ha8 d54, min knee 3.08). d92 is excluded at this rate under every variant.
+
+**(c) The ITL estimand — decided now, on data, before the sweep
+(`estimand_check.py`).** The auditor argued the registered per-request ITL-p95
+is not decode step time but "worst stall a short request sat through". Measured
+at the common rate over 40 probes, the picture is **real but localized**, and
+two parts of the stated mechanism do not hold:
+
+| | measured |
+|---|---|
+| `output_len <= 20` | 15.4–25.6% of requests |
+| requests whose per-request ITL-p95 **is** their max ITL | **0.0–5.1%** (the interpolating percentile rarely returns the max — this part of the argument does not hold literally) |
+| probes with a server-wide stall (>=3 requests sharing one max, that max >5x the probe's typical ITL) | **17/40**, and **0/10 in T8** |
+| A/B (registered estimand / per-request-median estimand) | 1.11x – **22.59x** |
+
+The corruption concentrates in **d92** (A/C = 4–19x) and in M8's mid cells at
+seed 1 — i.e. **mostly in the cell the on-cliff rule already excludes**. For
+the non-excluded cells of T8, Ha8 and Hs8, A and C agree within a few percent,
+so Ha8's ITL-ALWAYS-BINDING is **not** a stall artifact.
+
+Decision, pre-registered: **keep A (per-request ITL-p95) as the SLO term** —
+it is CLAUDE.md gate #4 and swapping it would be an unforced estimand change —
+and additionally report **C (`output_len >= 40` only)** and the **stall counter**
+for every cell, with the rule that *any headline whose label differs between A
+and C is reported as estimand-sensitive and may not be a headline*. Measured
+label instability under the swap: **4/24** (M8 s1 at 50/80ms, M8 s2 at 80ms,
+Hs8 s1 at 50ms).
+
+**(d) What survives all three corrections.** Rebuilt at the common rate, with
+d92 excluded, under **both** estimands and **both** seeds: **no arm has a
+DISCRIMINATING rung at 50, 60 or 80 ms.** `HEADLINE-ELIGIBLE RUNGS = NONE`
+therefore stands — but it now stands on a rate-clean, estimand-robust,
+code-reproducible basis, whereas the arm x rung *table* published on 2026-08-01
+does not survive and is superseded by `--common-rate` output. Note this is a
+statement about **where the ladder sits**, not about the lever.
+
+None of this adds GPU time (§7 unchanged).
+
+### 4.3.8 ★★★NEW 2026-08-02 — M4 closed offline (the stalls are monolithic
+    prefill, and that is structural); M5 retired as vacuous; M3 re-scoped
+    into the Transformer-control contrast. **This is the pre-registration
+    for `e1_m3_control.sbatch`.**
+
+#### (a) M4 — CLOSED with zero GPU. The stall is prefill, not a mystery.
+
+Reconstructing absolute token-emission times (arrival replay + TTFT + cumulative
+ITL) and locating each probe's single largest ITL shows: in **16 of 17** stall
+probes a request was **mid-prefill for the entire stall**, and in almost all of
+them that request carried the probe's **longest prompt** (2469–2776 tokens).
+The stall size is monotone in D for a fixed prompt — Ha8 seed 1: d24 167.7ms →
+d44 225.6 → d54 263.6 → **d92 865.6** — exactly as prefill SM = 108 − D shrinks.
+
+★ The 2026-08-01 handoff's guess (`--chunked-prefill-size -1` lets one long
+prompt occupy the prefill window) was **right**, and the 2026-08-02 auditor's
+REFUTED verdict on it used the wrong test: it checked the max ITL of the long
+request *itself*, but a request being prefilled is not yet decoding, so it
+cannot observe its own stall — the already-decoding requests do. Restore the
+mechanism; keep the auditor's separate, correct finding that this outlier does
+not set the Hs8 d16 knee (§4.3.7(3)).
+
+★★ **It is not fixable and not a bug.** `server_args.py:6130` asserts
+`chunked_prefill_size == -1` whenever `enable_pdmux` is set ("PD-Multiplexing
+is not compatible with chunked prefill"). Un-chunked prefill is a *precondition*
+of the substrate under study, so this belongs in the **(A) green-context-
+dependent** bucket of `reports/paper/venue_positioning.md` §0.1 — a cost of the
+one deployable vendor primitive, not a property of hybrid models.
+
+**Pre-registered consequence — the ITL decomposition.** Because the blocking
+term grows with D while the decode term (C2) shrinks with D, the registered ITL
+statistic mixes two opposite-signed effects. From now on every cell reports
+both, and the pair is fixed here so it cannot be chosen later:
+
+    A_all   p95 across requests of per-request ITL-p95, all ITLs  [SLO term,
+            unchanged -- CLAUDE.md gate #4]
+    A_free  same, dropping every ITL whose interval overlaps the prefill
+            window (arrival -> first token) of a request with
+            input_len >= PREFILL_BLOCK_TOK
+
+`PREFILL_BLOCK_TOK = 1024`, fixed now. **Known limitation, stated in advance:**
+at d92 prefill holds only 16 SM, so prompts *below* the threshold also block,
+and `A_free` stays contaminated there. `A_free` is therefore interpreted **only
+over d16–d54**, never at d92.
+
+#### (b) M5 — RETIRED as an experiment; replaced by an assertion (M6 folded in)
+
+The proposed cap TOST would have been run at the operating rate, where measured
+max concurrency is **12–30** (44 at Ha8 d92) against a cap of 48. A cap that
+cannot bind cannot produce a non-equivalence, so the test is **guaranteed to
+pass** — the same vacuous-statistic failure as `arrival_rps` and
+`kv_mamba_occupancy` (gate #6). Spending 0.5 GPU-h on it would buy a foregone
+conclusion.
+
+Replaced, at zero GPU cost, by three pre-registered items:
+
+1. `--max-running-requests` **48, kept unchanged** — ★a 96 was drafted and
+   rejected. The only requirement on the cap is that it cannot bind, and at the
+   common rate measured max concurrency is 12–30 (44 at Ha8 d92, not run in M3),
+   which 48 already clears with ~60% headroom. Raising it to 96 would **double
+   the SSM state pool on Ha8** (0.141 GB/slot: 6.78 → 13.5 GB), and that memory
+   comes out of the attention KV pool — already only 52% subscribed on that arm.
+   That is a memory-split confound purchased for no benefit; the fix for the
+   double-knob problem is item 2, not a larger cap. **and**
+2. `--max-mamba-cache-size` set **explicitly and equal to the cap** — an
+   arm-common *rule*, deliberately **not** an arm-common absolute constant:
+   per-slot cost is M8 0.255 / Ha8 0.141 / Hs8 0.096 GB, so a shared absolute
+   pool would force a *different* memory split on each arm, a new cross-arm
+   confound. This also breaks the `kv_mamba_occupancy` identity
+   (`model_runner_kv_cache_mixin.py:223-230`) by taking the explicit branch at
+   `:218`, so mamba occupancy becomes an independent signal for the first time.
+3. A per-probe **assertion**: realized `max_concurrent_requests < 0.8 x cap`,
+   and each arm's `#KV tokens` / `kv_full_occupancy p99` printed. Violation is
+   an escalation, not a silent footnote.
+
+#### (c) M3 — re-scoped to the Transformer-control contrast (the only GPU job)
+
+The original M3 ("is Ha8's ITL-ALWAYS-BINDING powered?") is already answered by
+the CI at the common rate: Ha8's best cell is 90.4ms with a lower bound of
+88.0 > 80ms. The question worth GPU is the one M4 exposed. Offline, over
+d16→d54 with blocking removed, the decode-SM response splits by arm:
+
+| arm | `A_free`(d16)/`A_free`(d54) | seeds |
+|---|---|---|
+| T8 | **2.03x** monotone | 1, 2 agree |
+| Hs8 | 1.56x | agree |
+| M8 | 1.39x / 0.87x | **disagree** |
+| Ha8 | **1.03x / 0.89x** | agree — no response |
+
+This is Tension A (HE2 vs C2) at its sharpest: C2 measured 2.36–2.91x on **all
+four arms** at batch=1, yet at serving concurrency T8 keeps ~2x and Ha8 shows
+none. ★ The two are **not the same configuration** — C2 pinned prefill at 16 SM
+and swept decode alone (pure elasticity), whereas every E1 cell is
+**complementary** (D + P = 108), so raising D necessarily starves prefill. That
+difference is not a flaw in either; it is precisely the content of C2's
+pre-registered branch *"the lever exists but is net-negative under the budget
+constraint"*.
+
+**Design.** Arms **T8 (positive control) + Ha8**; cells **d16, d24, d44, d54**
+(d92 excluded from the argmax by §4.3.5(b) and unreadable for `A_free` by (a),
+so not run); **one common rate = 2 req/s** (§4.3.7(b)); **8 blocks x 1 seed**;
+`NP_MIN = 200`. Measured cost ≈ **3.5 h** (boot 26 s median / 59 s p90 and probe
+tail 15 s median, both measured from the 2026-08-01 logs, not assumed).
+
+- ★★ **A BLOCK, not a seed, is the replication unit — and the first draft of
+  this design got that wrong.** `g` pairs d16 with d54, and a static split
+  cannot change without a reboot (`multiplex/multiplexing_mixin.py:155`), so the
+  two cells of `g` **always come from different boots**: boot-to-boot variance
+  does not cancel in `g`, it enters it directly. Seeds sharing a boot are
+  therefore not independent replicates of `g`. The draft's "4 seeds in 2
+  boot-pairs" had `n_independent = 2`, which tolerates `sd(g) <= 0.021` — it
+  could never have fired. This is the same pseudo-replication the auditor found
+  in batch-cap, reproduced inside the fix for it.
+  A **block** = one fresh boot of every cell, run at one seed (seed = block
+  index, so workload and boot vary together); `n_independent = BLOCKS`.
+- **How many blocks.** The binding side is the test arm's upper bound against
+  `G_FLAT = 1.15` (gap 0.19 from the offline `g = 0.96`):
+
+  | blocks | tolerable `sd(g)` |
+  |---|---|
+  | 2 | 0.021 |
+  | 4 | 0.119 |
+  | 6 | 0.181 |
+  | **8** | **0.227** |
+
+  Observed `sd(g)` across this campaign (from 2 seeds, so itself unstable):
+  T8 0.102, Hs8 0.037, Ha8 0.104, **M8 0.223** — M8's `g` moved 1.387 → 1.071
+  between two seeds. **8 blocks is the smallest value covering that worst case.**
+- **`NP_MIN` 300 → 200 pays for blocks 2 → 8.** This moves power from *within* a
+  cell to *between* independent replicates, and the verdict's CI depends only on
+  the latter. 200 still leaves ~194 post-warmup requests — 5x the 39 that made
+  the §4.3.7 per-cell labels UNPOWERED — so the per-cell reliability the extra
+  100 requests would have bought is not the binding constraint. `NP_MIN`, not
+  `PROBE_TARGET_S`, remains the knob: at rate <= 5 the probe size is
+  `max(NP_MIN, PROBE_TARGET_S x rate)`, so 8 → 20 would change nothing.
+- **Counterbalancing.** Odd blocks run the cells forward, even blocks reversed,
+  so cell is crossed with boot/time order rather than confounded with it.
+- ★ **The interval is a t-interval, not the percentile bootstrap** used
+  elsewhere in this campaign. Simulated coverage of a nominal 95% interval
+  (4000 trials): n=4 → bootstrap **79.8%** (width 1.52) vs t 94.5% (2.93);
+  n=6 → 85.0% vs 95.0%; n=8 → 89.0% (1.24) vs 95.7% (1.63). At these n the
+  percentile bootstrap is about half the width it should be, so "the CIs are
+  disjoint" would fire far too easily — on the rule that decides the campaign.
+  The bootstrap is still printed, and is not read by the verdict.
+- **Guard:** `m3_analyze.py` refuses a verdict below **6** independent blocks,
+  because at fewer a null is indistinguishable from insufficient replication.
+- **In-run off-cliff assertion, replacing a capacity re-scan.** The knees in
+  §4.3.7 were measured at cap 48; this job changes the cap. Rather than re-run
+  the scan, each cell asserts in-run that rate 2 is still on the plateau: TTFT-p50
+  must be <= 2 x the cell's §4.3.7 plateau. Failure escalates and voids that cell.
+
+**Decision rule, pre-registered** (in code: `m3_analyze.py`, written before the
+job runs — §4.3.7(a) is the lesson being applied). Let
+`g(arm, block) = A_free(d16)/A_free(d54)`, paired **within block**, with a
+**block-clustered t-interval** over the 8 blocks.
+
+| outcome | verdict |
+|---|---|
+| T8 `g >= 1.5` **and** Ha8 `g <= 1.15`, CIs disjoint | the ITL-lever asymmetry is **attributable to the arm** — the defensive asset against DuetServe's Transformer result. E1 proceeds, reporting per-arm. |
+| **both** `g >= 1.5` | the lever is present at serving concurrency in both — proceed to the E1 main sweep **(A)**, ladder re-sited by the measured `A_free` range. |
+| **both** `g <= 1.15` | the lever is absent at serving concurrency on this substrate → close E1 as **(B)**, with the correct reason: *the ITL term of conjunctive goodput is not a function of the decode-SM lever here* — **not** "the exclusion rule deletes the lever", which §4.3.7 and the C2 log-range both refute. |
+| anything else (incl. seed disagreement, as M8 already shows) | **no verdict**; report and stop. Do not re-cut the thresholds after seeing the data. |
+
+Scope stated in advance: one rate, one context regime, two arms, `A_free` valid
+only over d16–d54. **This job cannot and does not decide whether the lever pays
+off in goodput** — it decides whether the ITL axis responds to D at all, which
+is a precondition for that question being askable.
+
+#### (d) What is deliberately NOT re-run
+
+- **Capacity scans (867231, 870295–297).** Their knees survive as an *order*
+  (§4.3.7(2)), which is all §4.3.5(b) consumes, and the cap change cannot move
+  the low-rate end where the binding knee (d92) sits. Covered by the in-run
+  assertion above instead.
+- **batch-cap (870301).** It was run at rate 16, ~5.7x above the common
+  off-cliff band, so it answers a question outside E1's operating region. Its
+  claim was already NOT-YET-SUPPORTED/REFUTED (§(b)); it is **retired**, not
+  repeated.
+- **s8_scaleup C2.** Audited and scoped; the prefill-pinned configuration is a
+  *feature* of that measurement, now explicitly contrasted above.
+
+#### (e) What MUST be re-run
+
+- **The pin check.** Job 867298's `PIN_CHECK` crashed on an argument-order bug,
+  so no pin data exists for any of this. §4.7.1 already requires it as a
+  **separate short trace-force-ON run**, never inside a measurement sweep — the
+  observer-effect gate found `PDMUX_TRACE_FORCE_PREFILL` moves d92's `itl_p95`
+  by +2.0% [+0.78, +3.21], and ITL-p95 is exactly what M3 measures.
+
 ### 4.4 Decision rule (pre-registered — do not change without updating this file)
 
 > For each arm, let best-static = the D cell (of the 5 measured) with the

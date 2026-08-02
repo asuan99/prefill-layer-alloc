@@ -1,0 +1,247 @@
+# M1/M2 raw output — generated 2026-08-02
+
+## M1a: knee, in code
+```
+=== capacity-scan KNEE, in code (DESIGN.md sec 4.3.7, M1 2026-08-02) ===
+point estimate: plateau_n=3 mult=2.0   grid: plateau_n in (2, 3, 4) x mult in (1.5, 2.0, 3.0)
+x-axis = RNG-replay realized arrival_rps; y = TTFT-p50 (nearest-rank, matching e1_capacity_scan.sbatch's own CAPSCAN lines).
+★ the knee's RANGE is the probe grid -- cross-arm ties are partly forced by the support, not only by the physics.
+
+--- arm=T8 job=867231 ---
+   cell    knee           set by probe   margin   plateau    thresh                      grid knee set  spread
+    d16   12.61           r12 s1 103ms    7.8%       48m       96m                 {9.30,12.61,16.04}   1.72x
+    d24   16.04           r16 s1 207ms   94.7%       53m      107m                      {12.61,16.04}   1.27x
+    d44   16.04           r16 s1 225ms   96.6%       57m      114m                      {12.61,16.04}   1.27x
+    d54    8.45            r6 s2 143ms   12.0%       64m      127m                       {8.45,16.04}   1.90x
+    d92    2.80            r2 s2 620ms   71.3%      181m      362m                        {2.80,4.20}   1.50x
+  ORDER over the 9-variant grid: lowest-knee cell = {'d92': 9}  |  gap to next cell: min 2.01x max 5.73x
+  => the EXCLUSION-relevant statement (which cell falls first) is ROBUST to the estimator; its absolute rate is not.
+
+--- arm=M8 job=870295 ---
+   cell    knee           set by probe   margin   plateau    thresh                      grid knee set  spread
+    d16    5.60            r4 s2 276ms    8.2%      128m      255m                        {5.60,8.45}   1.51x
+    d24    5.60            r4 s2 315ms   34.5%      117m      234m                   {4.20,5.60,8.45}   2.01x
+    d44    5.60            r4 s2 386ms   38.7%      139m      278m              {4.10,4.20,5.60,8.45}   2.06x
+    d54    4.20            r3 s2 392ms   17.5%      167m      334m              {4.10,4.20,5.60,8.45}   2.06x
+    d92    2.80           r2 s2 3977ms   40.1%     1420m     2839m                   {2.05,2.80,3.08}   1.50x
+  ORDER over the 9-variant grid: lowest-knee cell = {'d92': 9}  |  gap to next cell: min 1.33x max 2.74x
+  => the EXCLUSION-relevant statement (which cell falls first) is ROBUST to the estimator; its absolute rate is not.
+
+--- arm=Ha8 job=870296 ---
+   cell    knee           set by probe   margin   plateau    thresh                      grid knee set  spread
+    d16    5.60            r4 s2 360ms   18.3%      152m      305m                   {4.20,5.60,8.45}   2.01x
+    d24    5.60            r4 s2 381ms   17.3%      162m      325m                        {5.60,8.45}   1.51x
+    d44    4.20            r3 s2 367ms    6.4%      172m      345m              {4.10,4.20,5.60,8.45}   2.06x
+    d54    3.08            r3 s1 398ms    3.4%      193m      385m                   {3.08,4.20,5.60}   1.82x  <-- FRAGILE
+    d92    2.80           r2 s2 5973ms   26.2%     2366m     4731m              {2.05,2.80,3.08,4.10}   2.00x
+  ORDER over the 9-variant grid: lowest-knee cell = {'d92': 8, 'd54': 1}  |  gap to next cell: min 1.00x max 2.00x
+  => the EXCLUSION-relevant statement (which cell falls first) is NOT robust to the estimator; its absolute rate is not.
+
+--- arm=Hs8 job=870297 ---
+   cell    knee           set by probe   margin   plateau    thresh                      grid knee set  spread
+    d16    9.09            r8 s2 172ms    2.3%       84m      169m                       {9.09,12.61}   1.39x  <-- FRAGILE
+    d24   12.61           r12 s1 353ms  140.7%       73m      147m                  {8.45,9.09,12.61}   1.49x
+    d44    9.09            r8 s2 180ms    3.2%       87m      174m                  {8.45,9.09,12.61}   1.49x  <-- FRAGILE
+    d54    8.45            r6 s2 245ms   31.9%       93m      186m                        {8.45,9.09}   1.08x
+    d92    2.80           r2 s2 1830ms   85.4%      494m      987m                   {2.05,2.80,4.10}   2.00x
+  ORDER over the 9-variant grid: lowest-knee cell = {'d92': 9}  |  gap to next cell: min 2.06x max 4.12x
+  => the EXCLUSION-relevant statement (which cell falls first) is ROBUST to the estimator; its absolute rate is not.
+
+```
+
+## M1b: rung classification at ONE common rate (2 req/s)
+```
+=== 4-arm rung classification at ONE COMMON rate = 2.0 req/s (M1 2026-08-02, DESIGN.md sec 4.3.5(b) rate-confound rule) ===
+ladder = [50.0, 60.0, 80.0] ms   classification margin = 15%   warmup discard = 3.0s
+
+--- arm=T8 job=867231 seed=1 rate=2.0 ---
+  per-cell ITL-p95 (ms) and its bootstrap 95% CI:
+      d16     31.0  [   27.9,    32.1]  width= 13.6%
+      d24     22.7  [   21.7,    24.3]  width= 11.2%
+      d44     16.4  [   15.2,    17.8]  width= 15.6%  <-- CI wider than the 15% margin
+      d54     15.3  [   14.7,    18.3]  width= 23.6%  <-- CI wider than the 15% margin
+      d92     13.6  [   13.0,    15.6]  width= 19.6%  <-- CI wider than the 15% margin
+  rung    50ms -> ITL-NONBINDING       m= 38.0% (min d92=13.6, max d16=31.0)
+  rung    60ms -> ITL-NONBINDING       m= 48.4% (min d92=13.6, max d16=31.0)
+  rung    80ms -> ITL-NONBINDING       m= 61.3% (min d92=13.6, max d16=31.0)
+
+--- arm=T8 job=867231 seed=2 rate=2.0 ---
+  per-cell ITL-p95 (ms) and its bootstrap 95% CI:
+      d16     32.1  [   31.5,    32.8]  width=  4.1%
+      d24     23.7  [   23.2,    24.2]  width=  4.3%
+      d44     16.1  [   15.9,    16.2]  width=  2.0%
+      d54     15.8  [   15.4,    16.0]  width=  3.9%
+      d92     14.1  [   13.0,    16.2]  width= 22.3%  <-- CI wider than the 15% margin
+  rung    50ms -> ITL-NONBINDING       m= 35.8% (min d92=14.1, max d16=32.1)
+  rung    60ms -> ITL-NONBINDING       m= 46.5% (min d92=14.1, max d16=32.1)
+  rung    80ms -> ITL-NONBINDING       m= 59.9% (min d92=14.1, max d16=32.1)
+
+--- arm=M8 job=870295 seed=1 rate=2.0 ---
+  per-cell ITL-p95 (ms) and its bootstrap 95% CI:
+      d16     71.0  [   63.2,    74.8]  width= 16.4%  <-- CI wider than the 15% margin
+      d24     62.3  [   45.5,    62.5]  width= 27.2%  <-- CI wider than the 15% margin
+      d44     63.1  [   33.7,    66.1]  width= 51.4%  <-- CI wider than the 15% margin
+      d54     51.2  [   33.1,    64.1]  width= 60.5%  <-- CI wider than the 15% margin
+      d92    464.8  [   87.9,   554.2]  width=100.3%  <-- CI wider than the 15% margin
+  rung    50ms -> ITL-ALWAYS-BINDING   m=  2.4% (min d54=51.2, max d92=464.8)   UNPOWERED (CI of ['d24', 'd44', 'd54'] straddles the rung)
+  rung    60ms -> CLIFF-HAZARD         m=  3.9% (min d54=51.2, max d92=464.8)   UNPOWERED (CI of ['d24', 'd44', 'd54'] straddles the rung)
+  rung    80ms -> CLIFF-HAZARD         m= 11.3% (min d54=51.2, max d92=464.8)
+
+--- arm=M8 job=870295 seed=2 rate=2.0 ---
+  per-cell ITL-p95 (ms) and its bootstrap 95% CI:
+      d16     66.7  [   63.6,    68.1]  width=  6.7%
+      d24     62.2  [   61.7,    63.0]  width=  2.1%
+      d44     62.9  [   62.4,    63.1]  width=  1.2%
+      d54     76.4  [   63.8,    83.3]  width= 25.5%  <-- CI wider than the 15% margin
+      d92    412.4  [  184.1,   475.5]  width= 70.6%  <-- CI wider than the 15% margin
+  rung    50ms -> ITL-ALWAYS-BINDING   m= 24.4% (min d24=62.2, max d92=412.4)
+  rung    60ms -> ITL-ALWAYS-BINDING   m=  3.7% (min d24=62.2, max d92=412.4)
+  rung    80ms -> CLIFF-HAZARD         m=  4.5% (min d24=62.2, max d92=412.4)   UNPOWERED (CI of ['d54'] straddles the rung)
+
+--- arm=Ha8 job=870296 seed=1 rate=2.0 ---
+  per-cell ITL-p95 (ms) and its bootstrap 95% CI:
+      d16     92.5  [   91.0,    96.8]  width=  6.3%
+      d24     90.7  [   89.2,    99.6]  width= 11.5%
+      d44     90.4  [   88.0,   101.0]  width= 14.4%
+      d54     92.6  [   88.7,   109.0]  width= 21.9%  <-- CI wider than the 15% margin
+      d92    700.5  [  348.0,   796.4]  width= 64.0%  <-- CI wider than the 15% margin
+  rung    50ms -> ITL-ALWAYS-BINDING   m= 80.7% (min d44=90.4, max d92=700.5)
+  rung    60ms -> ITL-ALWAYS-BINDING   m= 50.6% (min d44=90.4, max d92=700.5)
+  rung    80ms -> ITL-ALWAYS-BINDING   m= 13.0% (min d44=90.4, max d92=700.5)
+
+--- arm=Ha8 job=870296 seed=2 rate=2.0 ---
+  per-cell ITL-p95 (ms) and its bootstrap 95% CI:
+      d16     97.4  [   94.7,    97.9]  width=  3.3%
+      d24    100.2  [   90.4,   111.2]  width= 20.7%  <-- CI wider than the 15% margin
+      d44    139.5  [   91.6,   159.9]  width= 49.0%  <-- CI wider than the 15% margin
+      d54    144.1  [   89.3,   246.2]  width=108.9%  <-- CI wider than the 15% margin
+      d92    782.4  [  604.2,   832.0]  width= 29.1%  <-- CI wider than the 15% margin
+  rung    50ms -> ITL-ALWAYS-BINDING   m= 94.8% (min d16=97.4, max d92=782.4)
+  rung    60ms -> ITL-ALWAYS-BINDING   m= 62.4% (min d16=97.4, max d92=782.4)
+  rung    80ms -> ITL-ALWAYS-BINDING   m= 21.8% (min d16=97.4, max d92=782.4)
+
+--- arm=Hs8 job=870297 seed=1 rate=2.0 ---
+  per-cell ITL-p95 (ms) and its bootstrap 95% CI:
+      d16     42.8  [   35.3,    46.2]  width= 25.6%  <-- CI wider than the 15% margin
+      d24     30.9  [   29.4,    31.6]  width=  7.2%
+      d44     21.4  [   20.6,    31.3]  width= 50.0%  <-- CI wider than the 15% margin
+      d54     27.4  [   19.2,    31.6]  width= 45.1%  <-- CI wider than the 15% margin
+      d92     18.8  [   15.7,    28.3]  width= 67.3%  <-- CI wider than the 15% margin
+  rung    50ms -> CLIFF-HAZARD         m= 14.3% (min d92=18.8, max d16=42.8)
+  rung    60ms -> ITL-NONBINDING       m= 28.6% (min d92=18.8, max d16=42.8)
+  rung    80ms -> ITL-NONBINDING       m= 46.4% (min d92=18.8, max d16=42.8)
+
+--- arm=Hs8 job=870297 seed=2 rate=2.0 ---
+  per-cell ITL-p95 (ms) and its bootstrap 95% CI:
+      d16     45.1  [   43.4,    45.1]  width=  3.9%
+      d24     32.4  [   31.3,    33.9]  width=  8.0%
+      d44     31.6  [   30.7,    32.0]  width=  3.9%
+      d54     31.4  [   30.8,    31.5]  width=  2.3%
+      d92     25.7  [   16.3,    36.2]  width= 77.0%  <-- CI wider than the 15% margin
+  rung    50ms -> CLIFF-HAZARD         m=  9.9% (min d92=25.7, max d16=45.1)
+  rung    60ms -> ITL-NONBINDING       m= 24.9% (min d92=25.7, max d16=45.1)
+  rung    80ms -> ITL-NONBINDING       m= 43.7% (min d92=25.7, max d16=45.1)
+
+```
+
+## M2: estimand diagnostic
+```
+=== M2 estimand diagnostic (2026-08-02) -- ESTIMAND SELECTION ONLY ===
+gate #8: nothing here is a performance claim or a cell ranking.
+
+A = p95 across requests of per-request ITL-p95   [AS PRE-REGISTERED]
+B = p95 across requests of per-request MEDIAN ITL
+C = A, restricted to requests with output_len >= 40
+D = p95 across requests of per-request ITL-p90
+
+ arm  cell sd   n  short  p95=max  stall(ms)  shared |       A       B       C       D  med(A)   A/B
+ Ha8   d16  1  39  23.1%     0.0%      111.5      13 |    92.5    31.4    91.2    91.3    32.4  2.95
+ Ha8   d16  2  39  20.5%     5.1%      110.5      18 |    97.4    37.2    97.5    93.0    90.7  2.62
+ Ha8   d24  1  39  23.1%     0.0%      167.7       3 |    90.7    31.4    89.4    88.9    59.1  2.89  <-- SERVER-WIDE STALL
+ Ha8   d24  2  39  20.5%     5.1%      159.8      15 |   100.2    60.0    90.5    91.0    77.9  1.67  <-- SERVER-WIDE STALL
+ Ha8   d44  1  39  23.1%     0.0%      225.6       3 |    90.4    35.4    88.4    87.6    42.2  2.55  <-- SERVER-WIDE STALL
+ Ha8   d44  2  39  20.5%     5.1%      237.3      15 |   139.5    44.9    89.7   106.2    74.2  3.11  <-- SERVER-WIDE STALL
+ Ha8   d54  1  39  23.1%     0.0%      263.6       3 |    92.6    39.7    88.8    89.7    41.7  2.33  <-- SERVER-WIDE STALL
+ Ha8   d54  2  39  20.5%     5.1%      277.5      15 |   144.1    38.2    89.3    97.8    73.8  3.78  <-- SERVER-WIDE STALL
+ Ha8   d92  1  39  23.1%     0.0%      865.6       4 |   700.5    59.1   100.2   647.2    34.7 11.86  <-- SERVER-WIDE STALL
+ Ha8   d92  2  39  20.5%     5.1%      907.1      14 |   782.4    34.6   379.8   490.2    34.4 22.59  <-- SERVER-WIDE STALL
+ Hs8   d16  1  39  23.1%     2.6%       47.2      10 |    42.8    14.1    42.0    42.4    14.4  3.04
+ Hs8   d16  2  38  18.4%     2.6%       47.9      17 |    45.1    14.1    44.8    44.1    35.7  3.20
+ Hs8   d24  1  39  23.1%     2.6%       35.0      18 |    30.9    14.2    30.6    29.8    14.5  2.18
+ Hs8   d24  2  38  18.4%     2.6%       35.3      24 |    32.4    14.2    32.1    31.9    29.2  2.29
+ Hs8   d44  1  39  23.1%     2.6%      148.4       6 |    21.4    14.2    20.7    21.0    16.6  1.51  <-- SERVER-WIDE STALL
+ Hs8   d44  2  38  18.4%     2.6%      237.7       7 |    31.6    14.9    31.3    31.0    20.7  2.12  <-- SERVER-WIDE STALL
+ Hs8   d54  1  39  23.1%     2.6%       32.7      28 |    27.4    17.8    19.2    23.6    17.3  1.54
+ Hs8   d54  2  38  18.4%     2.6%       32.8      32 |    31.4    18.4    31.1    31.0    19.1  1.70
+ Hs8   d92  1  39  23.1%     2.6%       37.5       6 |    18.8    15.3    15.5    15.7    15.4  1.23
+ Hs8   d92  2  38  18.4%     2.6%       36.8       8 |    25.7    15.6    15.9    19.5    15.7  1.65
+  M8   d16  1  39  23.1%     0.0%      230.3       8 |    71.0    20.0    63.3    68.3    20.4  3.55  <-- SERVER-WIDE STALL
+  M8   d16  2  38  18.4%     2.6%       73.0      13 |    66.7    19.9    64.9    64.2    61.9  3.35
+  M8   d24  1  39  23.1%     0.0%       73.8      14 |    62.3    19.9    45.3    45.9    23.5  3.13
+  M8   d24  2  38  18.4%     2.6%       81.8      10 |    62.2    23.2    61.9    50.8    45.2  2.69
+  M8   d44  1  39  23.1%     0.0%      147.4       6 |    63.1    21.0    32.1    37.6    28.5  3.00  <-- SERVER-WIDE STALL
+  M8   d44  2  38  18.4%     2.6%      128.1      10 |    62.9    28.6    62.8    61.5    29.8  2.20  <-- SERVER-WIDE STALL
+  M8   d54  1  39  23.1%     0.0%      186.3       6 |    51.2    24.1    26.8    27.7    26.1  2.12  <-- SERVER-WIDE STALL
+  M8   d54  2  38  18.4%     2.6%      155.2      10 |    76.4    26.3    63.8    58.9    28.0  2.91  <-- SERVER-WIDE STALL
+  M8   d92  1  39  23.1%     0.0%      682.3       7 |   464.8    24.4    48.3   366.4    24.5 19.06  <-- SERVER-WIDE STALL
+  M8   d92  2  38  18.4%     2.6%      799.2      13 |   412.4    21.0    22.1   113.4    21.7 19.62  <-- SERVER-WIDE STALL
+  T8   d16  1  39  25.6%     0.0%       34.6      23 |    31.0    11.5    30.8    23.3    11.5  2.69
+  T8   d16  2  39  15.4%     0.0%       36.7      21 |    32.1    11.5    31.6    31.3    12.6  2.79
+  T8   d24  1  39  25.6%     0.0%       27.3      21 |    22.7    11.5    22.7    18.7    11.6  1.98
+  T8   d24  2  39  15.4%     0.0%       27.6      26 |    23.7    11.4    23.3    23.0    21.3  2.07
+  T8   d44  1  39  25.6%     0.0%      395.8       2 |    16.4    11.7    15.2    15.2    12.4  1.40
+  T8   d44  2  39  15.4%     0.0%       21.0      25 |    16.1    11.6    16.1    15.5    15.3  1.39
+  T8   d54  1  39  25.6%     0.0%      146.5       2 |    15.3    12.3    14.7    14.6    13.7  1.24
+  T8   d54  2  39  15.4%     0.0%       21.2      15 |    15.8    12.4    15.7    14.9    14.6  1.27
+  T8   d92  1  39  25.6%     0.0%       18.1      23 |    13.6    12.3    13.1    12.8    12.3  1.11
+  T8   d92  2  39  15.4%     0.0%       18.6      25 |    14.1    12.6    13.0    13.2    12.8  1.12
+
+--- what sets A: (per-request ITL-p95 ms, that request's output_len) for the 5 requests at the top of the A distribution ---
+   Ha8   d16 s1: [(96.1, 35), (96.8, 3)]
+   Ha8   d16 s2: [(97.5, 151), (97.9, 99)]
+   Ha8   d24 s1: [(90.8, 19), (99.6, 35)]
+   Ha8   d24 s2: [(103.0, 10), (111.2, 21)]
+   Ha8   d44 s1: [(98.9, 10), (101.0, 35)]
+   Ha8   d44 s2: [(157.8, 3), (159.9, 21)]
+   Ha8   d54 s1: [(108.4, 10), (109.0, 35)]
+   Ha8   d54 s2: [(180.0, 36), (246.2, 21)]
+   Ha8   d92 s1: [(779.7, 10), (796.4, 6)]
+   Ha8   d92 s2: [(810.6, 10), (832.0, 21)]
+   Hs8   d16 s1: [(43.6, 35), (46.2, 2)]
+   Hs8   d16 s2: [(45.1, 40), (45.1, 27)]
+   Hs8   d24 s1: [(31.3, 35), (31.6, 18)]
+   Hs8   d24 s2: [(32.9, 2), (33.9, 27)]
+   Hs8   d44 s1: [(27.4, 9), (31.3, 18)]
+   Hs8   d44 s2: [(31.6, 36), (32.0, 27)]
+   Hs8   d54 s1: [(31.0, 2), (31.6, 18)]
+   Hs8   d54 s2: [(31.4, 2), (31.5, 36)]
+   Hs8   d92 s1: [(20.0, 16), (28.3, 25)]
+   Hs8   d92 s2: [(29.6, 8), (36.2, 2)]
+    M8   d16 s1: [(73.3, 3), (74.8, 35)]
+    M8   d16 s2: [(67.3, 36), (68.1, 32)]
+    M8   d24 s1: [(62.3, 19), (62.5, 35)]
+    M8   d24 s2: [(62.6, 36), (63.0, 21)]
+    M8   d44 s1: [(63.3, 113), (66.1, 35)]
+    M8   d44 s2: [(62.9, 32), (63.1, 36)]
+    M8   d54 s1: [(63.2, 113), (64.1, 3)]
+    M8   d54 s2: [(77.5, 21), (83.3, 3)]
+    M8   d92 s1: [(531.0, 3), (554.2, 10)]
+    M8   d92 s2: [(417.9, 25), (475.5, 10)]
+    T8   d16 s1: [(31.9, 34), (32.1, 13)]
+    T8   d16 s2: [(32.7, 35), (32.8, 26)]
+    T8   d24 s1: [(23.1, 34), (24.3, 13)]
+    T8   d24 s2: [(23.8, 26), (24.2, 35)]
+    T8   d44 s1: [(17.1, 8), (17.8, 13)]
+    T8   d44 s2: [(16.1, 78), (16.2, 35)]
+    T8   d54 s1: [(15.9, 8), (18.3, 13)]
+    T8   d54 s2: [(15.9, 35), (16.0, 78)]
+    T8   d92 s1: [(14.0, 13), (15.6, 3)]
+    T8   d92 s2: [(15.5, 7), (16.2, 7)]
+
+--- summary over 40 probes at rate 2.0 ---
+  output_len <= 20:                 15.4% - 25.6%
+  requests whose ITL-p95 IS their max ITL: 0.0% - 5.1%
+  probes with a server-wide stall (>= 3 requests sharing one max AND that max > 5x the probe's typical ITL): 17/40
+  max/typical ITL ratio across probes: 1.6x - 42.0x
+  A/B ratio (tail-sensitivity of the registered estimand): 1.11x - 22.59x
+```
