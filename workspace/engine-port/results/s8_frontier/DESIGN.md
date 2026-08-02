@@ -892,13 +892,33 @@ is a precondition for that question being askable.
 - **s8_scaleup C2.** Audited and scoped; the prefill-pinned configuration is a
   *feature* of that measurement, now explicitly contrasted above.
 
-#### (e) What MUST be re-run
+#### (e) The pin check — ★REVISED 2026-08-02: no GPU job needed after all
 
-- **The pin check.** Job 867298's `PIN_CHECK` crashed on an argument-order bug,
-  so no pin data exists for any of this. §4.7.1 already requires it as a
-  **separate short trace-force-ON run**, never inside a measurement sweep — the
-  observer-effect gate found `PDMUX_TRACE_FORCE_PREFILL` moves d92's `itl_p95`
-  by +2.0% [+0.78, +3.21], and ITL-p95 is exactly what M3 measures.
+The first version of this subsection said the pin check "MUST be re-run" as a
+**separate short trace-force-ON run**, because job 867298's `PIN_CHECK` crashed
+on an argument-order bug and left no pin data. That requirement was wrong on
+its own terms, and is replaced by `m3_pin_check.sh` (zero GPU):
+
+1. **The time-weighted pin gate does not need `PDMUX_TRACE_FORCE_PREFILL`.**
+   `e1_capacity_scan.sbatch` never sets it (engine default `"0"`,
+   `multiplex/multiplexing_mixin.py:104`) and still produced **passing** gates
+   on every cell M3 uses — T8 d16/d24/d44 `pin_frac` 0.950–0.985, Ha8
+   d16/d24/d44/d54 0.994–1.000, `n_episodes` 31–144. Trace-force only adds
+   prefill-active samples; it was never a precondition. So pin data does exist.
+2. **Forcing it would inject the exact observer effect §4.7.1 exists to keep
+   out of an ITL measurement** (+2.0% [+0.78, +3.21] on d92's `itl_p95`).
+3. **But the capacity-scan gates alone do not certify the operating point**:
+   they aggregate over *all* probe rates, and `CONSENSUS.md` §1-22 shows
+   green-context reverts to no-split when decode is empty — which is *more*
+   likely at low rate. What is actually needed is a **rate-2-only** gate.
+4. **M3's own telemetry is exactly that.** Each `e1m3_<arm>_<cell>_<block>`
+   file holds a single rate-2 probe, so the whole-file gate *is* the
+   rate-restricted gate — no window arguments, no episode reconstruction, no
+   second run, and trace-force stays OFF.
+
+`m3_pin_check.sh <job>` is **cite-blocking and must be run before reading the
+verdict**: any cell failing it is VOIDED exactly like the in-run gates, and if a
+voided cell is an arm's d16 or d54 then that arm has no `g`.
 
 ### 4.4 Decision rule (pre-registered — do not change without updating this file)
 
