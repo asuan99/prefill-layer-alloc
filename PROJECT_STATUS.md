@@ -1,6 +1,18 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-07-31 (진행 상태 갱신만, 결론 개정 아님 — `results/s8p_prefill/`
+최종 갱신: 2026-08-02 (진행 상태 갱신만, 결론 개정 아님 — 2026-08-01에 실행된
+E1 전제 실험 4건(jobs **870295**=M8 / **870296**=Ha8 / **870297**=Hs8 용량
+스캔, **870301**=T8 batch-cap)의 결과를 **상태로만** 기록. ⚠️**이 4건은 전부
+claims-auditor 미통과 = 정본·논문 인용 금지**이며 등급어는 **미검증**이다
+(아래 "열린 긴장"의 `results/s8_frontier/` 절). 새로 확정으로 올린 것은
+**소스 읽기로 검증되는 코드 사실 2건뿐**(`--max-running-requests`가 arm
+계열마다 다른 손잡이 · `kv_mamba_occupancy=1.0`은 항등식 — "방법론 게이트"
+#5)이고, 여기서 **방법론 게이트 #6**("항등식을 증거로 쓰지 마라")을 신설했다.
+이 세션에 세웠다가 claims-auditor에 반증돼 **철회한 6건**은 "철회된 가설"
+절에 기록. E1 본 스윕은 **미제출**(설계 위험 3중, "다음 실험 gate" #8).
+세션 전문은
+[`handoff-report/session_handoff_2026-08-02.md`](handoff-report/session_handoff_2026-08-02.md)).
+이전: 2026-07-31 (진행 상태 갱신만, 결론 개정 아님 — `results/s8p_prefill/`
 **완료**[claims-auditor 미통과, 정본 인용 금지 유지]·`results/s8_frontier/`(E1)
 하네스 구축 완료·본 스윕 미실행. 하네스 전제 job 867231(T8 용량 스캔)·867298
 (관측자 효과 게이트)은 2026-07-29 세션 핸드오프에는 PENDING으로 기록됐으나
@@ -80,6 +92,21 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
 
 KV congestion은 plausible mechanism이지만 기존 artifact에 구조화된 KV occupancy가
 없어 아직 독립적인 causal claim이 아니다.
+
+★**갱신(2026-08-02) — occupancy 데이터는 생겼으나 de-confound가 안 된 상태다.**
+`results/s8_frontier/`(2026-08-01, 미감사)에서 처음으로 arm별 occupancy가
+기록됐다. 그러나 hybrid arm에서 관측된 `kv_mamba_occupancy = 1.0000`은
+**메모리 구속의 증거가 아니라 항등식**이다 — 이 캠페인의 설정
+(`--disable-radix-cache` ∧ `--max-running-requests 48`)이
+`sglang/srt/model_executor/model_runner_kv_cache_mixin.py:223-229`의 분기를
+타서 `max_mamba_cache_size = max_running_requests`가 되므로 pool 크기 = cap
+이고, batch가 cap에 닿으면 정의상 1.0이다(코드 사실, "방법론 게이트" #5).
+⇒ **이 데이터로 hybrid에서 "메모리 vs 스케줄링" 중 무엇이 구속적인지 판정
+불가.** 이 regime(ctx 4k ShareGPT)에서 지지되는 것은 좁다: **attention
+KV(`kv_full_occupancy`)는 어느 arm에서도 구속 근처에 없었다** — T8 0.032 /
+M8 0.145 / Ha8 0.279 / Hs8 0.011(2026-08-01 캠페인 관측치, **claims-auditor
+미통과 = 인용 금지**). Claim C의 등급은 변경 없음(running-batch 경로 강함,
+KV 경로 부분).
 
 ### 벡터1 (G2.0 short-ctx disjoint conflict-regime escape hatch) — CONFIRMED closure (scoped)
 
@@ -275,7 +302,11 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
   기울기 비 **4.74–5.16×**, 탄력도 ε **0.89–0.94**, 4 arm 모델-무관". 아래
   "다음 실험 gate" #8에 claims-auditor 반증 축과 함께 기록.
 - **`results/s8_frontier/`(E1 8B 프론티어) — 하네스 구축 완료, 본 스윕
-  미실행**. 용량 스캔(job **867231**, T8, 5셀)·관측자 효과 게이트(job
+  미실행**. ★**2026-08-02 갱신**: 2026-08-01에 나머지 3 arm 용량 스캔
+  (870295/870296/870297)과 T8 batch-cap 실험(870301)이 완료됐고, 그 결과가
+  **E1 설계 자체에 대한 판정**으로 이어졌다(아래 "2026-08-01 실험 4건" 소절).
+  **본 스윕은 여전히 미제출**이다. 용량 스캔(job **867231**, T8,
+  5셀)·관측자 효과 게이트(job
   **867298**, `results/e1_traceforce/`)는 세션 핸드오프(2026-07-29) 작성
   시점엔 PENDING으로 기록됐으나, ★**2026-07-31 doc-steward 갱신 시 `sacct`
   재확인 — 둘 다 COMPLETED**(867231: 2026-07-29 21:15:25–22:41:31 / 867298:
@@ -313,15 +344,25 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
     d16 ≈149ms로 **전 룽 초과**(모든 셀에서 구속 ⇒ conjunctive goodput 전멸
     ⇒ 역시 판정 불가) 가능성이 있다. §4.3.4에 대칭 플래그
     **`ITL-ALWAYS-BINDING`이 없다** = 미등록 실패 모드(신설 필요).
+    ★**2026-08-02 후속**: 플래그는 2026-07-31에 `DESIGN.md` §4.3.5(a-1)로
+    **신설·사전등록**됐고, 2026-08-01 스캔에서 **Ha8이 전 룽
+    `ITL-ALWAYS-BINDING`으로 실제 발동**했다(위 "2026-08-01 실험 4건" (3),
+    **미감사**) — 위 "판정력이 M8/Ha8/Hs8에 걸린다"는 그만큼 부분 반대
+    증거를 얻었다(철회 기록은 "철회된 가설" 절).
   - ★★**미등록 하네스 상수가 ITL 축을 단독 결정한다 — `--max-running-requests
     48`**(`e1_capacity_scan.sbatch:143`, `e1_sweep.sbatch:178`). `DESIGN.md`에
     **단 한 번도 등장하지 않는다**(grep 0건). 증거: telemetry의
     `decode_running_batch_size`가 d16/d24/d44/d54 전부 정확히 48에서 절단
     (d92만 38 — prefill admission이 먼저 막혀 cap 미도달 ⇒ **d92의 ITL은 다른
-    셀과 비교 불가**), 그 시점 `kv_occupancy = 0.024`(2.4%, 자원 강제 아님),
+    셀과 비교 불가**), 그 시점 `kv_occupancy = 0.024`(2.4%, 자원 강제 아님 —
+    ⚠️**T8 한정 관측**이며 "메모리는 어느 arm에서도 구속하지 않는다"로
+    일반화 금지: hybrid arm의 mamba pool은 cap과 항등이라 별개 문제다,
+    "방법론 게이트" #5),
     d16 ITL-p95가 rate 12→32에서 50.2–50.6ms로 완전 평탄. ⇒ 셀별 ITL "천장"
     {d16 50.6 / d24 37.9 / d44 26.2 / d54 23.9 / d92 19.1}은 **모델 성질이
-    아니라 설정 성질**이며, "60ms 도달 불가"의 scope가 달라진다.
+    아니라 설정 성질**이며(★2026-08-01 batch-cap 실험이 T8 2셀에서 이를 직접
+    시험 — 위 "2026-08-01 실험 4건" (1), **미감사**), "60ms 도달 불가"의
+    scope가 달라진다.
   - ★★★**decode 측 realized-partition duty cycle이 D와 공변한다**(Stage 0
     C1과 같은 종, 이번엔 decode 축). `decode_sms`를 decode-active 구간에서
     시간가중하면 **라벨 D SM에서 보낸 시간 비율 = d16 0.110 / d24 0.112 /
@@ -335,6 +376,64 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
     기반 1차 근사라 엔진측 누적 시간으로 재측정 대상).
   사전등록 SLO·결정 규칙은 아래 "다음 실험 gate" #8 참조.
 
+  #### 2026-08-01 실험 4건 — ⚠️**전부 claims-auditor 미통과, 등급 = 미검증, 정본·논문 인용 금지**
+
+  아래는 **상태 기록**이며 "확정된 결과"가 아니다. 원자료 =
+  `workspace/engine-port/results/s8_frontier/`. 4 job 전부 COMPLETED,
+  probe 오류 0(870295/870296/870297 각 100 probe, 870301 24 probe).
+  판정서는 아직 없다(`e1bcap_T8_870301_result.txt` 등 in-job 분석 산출물만
+  존재). 반증 대상 목록은 `handoff-report/session_handoff_2026-08-02.md`
+  "열린 항목" 1번.
+
+  - **(1) batch-cap 실험(job 870301, T8 × {d16,d44} × cap{48,96,192} × 4
+    seed) — 미검증**. 셀별 ITL "천장"은 **모델 성질이 아니라 설정 성질**로
+    보인다: d16 ITL-p95가 cap 48→96→192에서 **49.7 → 59.0 → 62.0 ms**,
+    seed-paired Δ(48→192) = **+12.2 ± 0.7 ms**(4/4 seed), d44는 **+1.3 ±
+    0.7**. decode batch가 48 → 60–75로 자란 뒤 cap 192에서도 그 자리에서
+    정지 ⇒ **cap 48만 실제로 구속**하고 96 이상은 도착·서비스율이 정하는
+    자연 평형. ⚠️**scope: T8(순수 Transformer) 2셀만 측정 — 이 문구 없이
+    인용 금지**(hybrid 이전 불가, 사유는 "방법론 게이트" #5). 부수 관측:
+    같은 d16에서 TTFT-p50이 cap 48일 때 **612 ± 273 ms**인데 cap을 풀면
+    **114 ± 11 ms**로 내려간다 ⇒ **cap 48이 TTFT를 5.4× 악화**시키고 있었고,
+    같은 설정이 ITL은 좋아 보이게 만들었다. cap이 숨은 admission control로
+    작동해 **두 축을 반대 방향으로 동시에 왜곡**한 것이다.
+  - **(2) 4-arm 용량 knee(jobs 870295/870296/870297 + 기존 867231) —
+    미검증**. 첫 교차 기준 knee(req/s):
+
+    | arm | d16 | d24 | d44 | d54 | **d92** | 구속 셀 |
+    |---|---|---|---|---|---|---|
+    | T8 | 12.6 | 16.0 | 16.0 | 8.45 | **2.80** | d92 |
+    | M8 | 5.60 | 5.60 | 5.60 | 4.20 | **2.80** | d92 |
+    | Ha8 | 5.60 | 5.60 | 4.20 | 3.08 | **2.80** | d92 |
+    | Hs8 | 9.09* | 12.6 | 9.09 | 8.45 | **2.80** | d92 |
+
+    **d92가 네 arm 전부에서 구속 셀**이고 knee가 2.80으로 일치 ⇒ 공통
+    off-cliff 상한 2.80 req/s. ★**기존 `results/s8_frontier/DESIGN.md`
+    §4.3.5(b)에 *추측으로* 적어둔 "느린 decode arm(M8/Ha8)은 반대로 d16을
+    먼저 잃을 것"은 지지되지 않는다** — 모델과 무관하게 d92의 prefill 16
+    SM이 먼저 무너진다(사전등록에 추측으로 표시해둔 덕에 손해 없음).
+    `*` Hs8 d16의 9.09는 견고하지 않다(한 점이 임계를 2% 초과하고 다음
+    점이 회귀; 같은 셀 `arr=12.61 seed=1`에 미조사 이상치 1건).
+  - **(3) 룽 분류 — 미검증**. 사전등록 사다리 {50, 60, 80} ms가 **네 arm
+    전부에서 `HEADLINE-ELIGIBLE RUNGS = NONE`**이다(T8/Hs8 = 50ms
+    CLIFF-HAZARD·60/80ms NONBINDING; M8 = 50ms ALWAYS-BINDING·60/80ms
+    CLIFF-HAZARD; **Ha8 = 전 룽 `ITL-ALWAYS-BINDING`**). 2026-07-31에
+    신설한 `ITL-ALWAYS-BINDING` 플래그가 **등록 몇 시간 뒤 Ha8에서 실제로
+    발동**했다 — 없었다면 Ha8의 conjunctive goodput 0이 "어떤 D도 못 이김
+    = 레버 net-negative"로 오독됐을 것이다(`degenerate_goodput_guard()`가
+    결정 규칙을 차단).
+  - **(4) E1 설계 위험(미검증, 판정 아님)**: (a) 사전등록 사다리가 as-run
+    설정에서 **네 arm 전부 판정 불가**, (b) 그 as-run 설정 자체가
+    **왜곡으로 증명됨**(cap 48, 위 (1)), (c) 제외 규칙(d92 knee 2.80, 전
+    arm)이 **어떤 동작점에서도 decode-rich 끝을 제거** — C2의 레버가 사는
+    바로 그 끝. ⇒ **E1이 `DESIGN.md` §4.3.5(b)가 사전등록해둔 분기
+    "E1 as designed cannot reach this question"(설계상 이 질문에 도달할 수
+    없다)으로 갈 위험이 높다.** 이는 **실패가 아니라 미리 적어둔 분기**이며,
+    본 스윕에 GPU를 쓰기 전에 알아낸 것이다. 본 스윕 **미제출**.
+  - ⚠️**as-run 상수 경고**: `PROBE_TARGET_S`는 문서화된 20이 아니라 **8**로
+    867231·870295–297·870301이 전부 돌았다. **비교 런을 추가할 때 반드시
+    8로 맞출 것**(현재는 submit 라인에 명시돼 있다).
+
 ## 철회된 가설
 
 - attention/SSM layer별 static resource partition이 보편적으로 유리하다.
@@ -347,6 +446,30 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
   hybrid 전부"** — D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어
   (C1 CONFIRMED, 코드/telemetry/클라이언트 서명 3중 증거) 철회. 상세는 위
   "Stage 0" 절.
+- ★**(2026-08-02) E1 하네스 세션에서 세웠다가 claims-auditor에 반증돼 철회한
+  6건**(전부 2026-07-31~08-01 세션 내부 주장, 정본에 확정으로 오른 적은
+  없다 — 되살아나지 않도록 여기 보이게 남긴다):
+  - **"seed divergence = 도착 draw의 성질"**(C-A **REFUTED**) — 근거로 든
+    `arrival_rps`가 측정값이 아니라 seed로부터 RNG replay로 재생성된 값
+    (`e1_capacity_scan.sbatch:200-207`)이라 `(seed, n)`만의 결정론적 함수 ⇒
+    "5셀 전부 동일"은 **항등식**이고 서버 정보량 0. 진짜 기전은
+    `bench_serving.py:1705`의 `random.seed()`를 `datasets/sharegpt.py:98`의
+    `random.shuffle`이 소비해 **seed가 프롬프트 집합 자체를 바꾸는 것**.
+    seed 비-pooling 결정은 유지, **이유만 교체**(두 seed = 서로 다른 워크로드).
+  - **"ITL 구속 rate ⟂ d92 off-cliff(배타성)"**(C-D **REFUTED**) — T8은
+    rate 1–32 전 구간·전 룽에서 요청의 ≥93%가 ITL을 통과해 "ITL 구속 rate"가
+    **공집합** ⇒ 배타성 명제가 **공허참**.
+  - **"그러므로 E1의 판정력이 M8/Ha8/Hs8에 걸린다"**(**NOT-YET-SUPPORTED**) —
+    2026-08-01 룽 분류에서 Ha8이 **전 룽 ITL-ALWAYS-BINDING**으로 나와 부분
+    반대 증거가 생겼다.
+  - **"cap↑이 T8·Hs8의 사다리를 살리고 M8·Ha8을 악화시킨다"** — **철회**.
+    cap은 hybrid에서 admission이 아니라 **다른 손잡이**다("방법론 게이트" #5).
+  - **"메모리는 한 번도 구속하지 않음"** — **scope 오류로 철회**. batch-cap은
+    **T8 하나만** 측정했다.
+  - **knee 수치·framing 정정**(이미 커밋 `d1f157a`로 정본 반영, 중복 확인만):
+    d92 4.10 → **2.80**, d54 14 → **8.45**; "5셀 동시 off-cliff rate 부재"는
+    부정확 → 성립 명제는 **"공통 off-cliff band(≲2–3 req/s)가 ITL 항이
+    움직이는 영역과 분리돼 있다"**.
 
 ## R1 판정
 
@@ -509,13 +632,48 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    처리할지 결정)이며,
    나머지 3 arm(M8/Ha8/Hs8) 용량 스캔은 그 결정이 스캔 설계를 바꿀 수 있으므로
    그 뒤에 제출한다.
+   - ★**2026-08-02 상태 갱신 — 위 "그 뒤에 제출한다"는 이미 집행됐다.**
+     2026-08-01에 3 arm 용량 스캔(jobs **870295**=M8 / **870296**=Ha8 /
+     **870297**=Hs8, 각 100 probe, 오류 0)과 T8 batch-cap 실험(job
+     **870301**, {d16,d44}×cap{48,96,192}×4 seed, 24 probe, 오류 0)이
+     완료됐다. 결과 요약·수치는 위 "열린 긴장"의 **"2026-08-01 실험 4건"**
+     소절에 있으며 ⚠️**전부 claims-auditor 미통과 = 미검증, 인용 금지**다.
+     ⚠️단 위 (iii) **escalation 해소는 선행되지 않았다** — 3 arm 스캔은
+     그 결정 전에 제출됐고, 결과는 escalation을 **더 넓혔다**(d92 knee 2.80이
+     네 arm 전부에서 구속 ⇒ 공통 off-cliff 상한이 arm-무관하게 2.80).
+     escalation 해소는 여전히 **열린 항목**이다.
+   - ★**본 스윕은 미제출이며, 그 판단 근거는 세 가지가 동시에 성립하기
+     때문이다**: (a) 사전등록 사다리 {50,60,80}ms가 as-run 설정에서 **네 arm
+     전부 판정 불가**(HEADLINE-ELIGIBLE RUNGS = NONE), (b) 그 as-run 설정
+     자체가 **왜곡으로 증명됨**(`--max-running-requests 48`이 ITL·TTFT 두
+     축을 반대 방향으로 왜곡), (c) 제외 규칙(d92 knee 2.80, 전 arm)이 **어떤
+     동작점에서도 decode-rich 끝을 제거** — C2 레버가 사는 끝. ⇒ **E1은
+     `results/s8_frontier/DESIGN.md` §4.3.5(b)가 사전등록한 "설계상 이 질문에
+     도달할 수 없다" 분기로 갈 위험이 높다.** 이는 실패가 아니라 **미리
+     적어둔 분기**이다. 긴장 A(HE2 vs C2)는 이 경우 E1으로 닫히지 않는다.
+   - **다음 액션 후보(미결정, 사전등록 필요)**: (i) `--max-mamba-cache-size`를
+     전 arm 공통 상수로 명시 고정해 cap을 순수 admission 손잡이로 되돌리기
+     (E1 correctness에 필요, "방법론 게이트" #5), (ii) cap을 데이터 독립적
+     규칙("batch가 cap-bound가 아닌 최소 cap")으로 사전등록 파라미터 승격
+     — 단 (i)이 선행해야 하고 **arm별 cap 튜닝은 손잡이만 바꾼 SLO 쇼핑이라
+     명시적으로 금지**, (iii) 2026-08-01 결과 4건의 claims-auditor 회부.
+   - **하네스 결함·사전등록(전부 커밋 완료)**: 버그 #7/#7b/#8/#9 +
+     `traceforce` `PIN_CHECK` 인자순서 수정, `DESIGN.md`
+     §4.3.5(`ITL-ALWAYS-BINDING`·룽 4분류·on-cliff 셀 제외)·§4.3.6(미등록
+     cap 상수·decode duty cycle)·§4.7.1(force-trace를 pin 검증 전용으로
+     분리) 사전등록, `results/s8_frontier/decode_duty_check.py` 신설
+     (prefill 게이트와 구조적으로 동일한 시간가중 추정량; **의도적으로
+     cite-blocking 게이트가 아님** — §5가 게이트 2개를 사전등록한 뒤 데이터를
+     보고 세 번째 임계를 더하면 게이트를 데이터에서 고르는 것이 된다).
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
-## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4 추가)
+## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4 추가, 2026-08-02 #5·#6 추가)
 
-Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3).
+Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3),
+E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠페인에서 나온
+코드 사실 1건(5)과 메타 교훈 1건(6).
 `CLAUDE.md`의 기존 8개 게이트에 추가로, 이 정본에 등재한다.
 
 1. **pin은 policy target이 아니라 realized 파티션으로 검증한다.** telemetry의
@@ -559,3 +717,33 @@ Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3
    검정력 부족이지 잘못된 SM이 아니다). 상세
    [`workspace/engine-port/results/s8_frontier/`](workspace/engine-port/results/s8_frontier/)
    설계 문서(하네스 내 결함 5종 수정 기록).
+5. ★★**(2026-08-02, 코드 사실 — 성능 주장 아님) `--max-running-requests`는
+   arm 계열마다 다른 손잡이다.** 근거:
+   `sglang/srt/model_executor/model_runner_kv_cache_mixin.py:223-229` —
+   `disable_radix_cache ∧ max_running_requests is not None`이면
+   `max_mamba_cache_size = max_running_requests`로 설정된다(그 앞 분기
+   `:218-222`는 `--max-mamba-cache-size`가 명시된 경우, 뒤의 `else`는 가용
+   메모리 ratio 기반). E1/s8 계열 캠페인이 정확히 그 조건이므로 **SSM을
+   포함한 arm(M8/Ha8/Hs8)에서 cap은 admission과 mamba state pool 크기를
+   동시에** 움직이고, **T8(순수 Transformer)에서는 admission만** 움직인다.
+   ⇒ (i) **T8에서 잰 cap 효과는 hybrid로 이전 불가**, (ii) cap을 실험
+   파라미터로 쓰려면 `--max-mamba-cache-size`를 전 arm 공통 상수로 **명시
+   고정**해 두 축을 분리해야 한다.
+   **따름정리 — `kv_mamba_occupancy = 1.0`은 메모리 구속의 증거가 아니라
+   항등식이다**(pool 크기 = cap이므로 batch가 cap에 닿으면 정의상 1.0).
+   hybrid arm에서 관측된 1.0을 "hybrid는 메모리가 구속한다"의 근거로 쓰지
+   않는다. 위 "확정된 결과"의 KV congestion 항목과 함께 읽을 것.
+6. ★★★**(2026-08-02) "이 양이 내가 재려는 것과 논리적으로 독립인가"를 먼저
+   물어라 — 항등식을 증거로 쓰지 마라.** 위 4번(집계 단위 선확정)과 같은
+   뿌리이나 실패 모드가 다르므로 별도 항목으로 둔다. 2026-07-31~08-01
+   세션에서 철회된 주장 8건 중 **3건이 정의·항등식을 증거로 착각**한
+   것이었다:
+   1. `arrival_rps`는 seed로부터 RNG replay로 재생성된 값이라 "5셀 전부
+      동일"이 **항등식**(서버에 대한 정보량 0).
+   2. `kv_mamba_occupancy = 1.0`은 pool 크기가 cap과 같아서 생기는
+      **항등식**(위 5번).
+   3. "ITL 구속 rate ⟂ d92 off-cliff"는 ITL 구속 rate가 **공집합**이라
+      **공허참**.
+   나머지 3건은 **한 arm/셀에서 잰 것을 일반화**한 것이다(batch-cap =
+   T8 2셀만). ⇒ 새 지표를 증거로 올리기 전에 **그 지표가 실험 설정으로부터
+   해석적으로 결정되는 값이 아닌지** 먼저 확인한다.

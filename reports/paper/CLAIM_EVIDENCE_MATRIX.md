@@ -1,6 +1,14 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-07-28(★★★claims-auditor 사전등록 게이트 집행 — Stage 0의 Claim A
+최종 갱신: 2026-08-02(**등급 변경 없음** — 2026-08-01 실행된 E1 전제 실험
+4건(jobs 870295/870296/870297 용량 스캔, 870301 batch-cap)은 **전부
+claims-auditor 미통과**라 evidence로 올리지 않는다. 반영한 것은 (i) Claim A
+Missing evidence에 **E1 설계 위험**(as-run 설계로는 프론티어 질문에 도달
+못 할 수 있음, 미검증) 표시, (ii) Claim C의 KV 갈래에 **occupancy 데이터는
+생겼으나 de-confound 안 됨**(`kv_mamba_occupancy=1.0`은 항등식) 표시,
+(iii) "주장 제한"에 그 항등식 규율 추가. 상세는
+`../../PROJECT_STATUS.md` "열린 긴장"·"방법론 게이트" #5/#6). 이전:
+2026-07-28(★★★claims-auditor 사전등록 게이트 집행 — Stage 0의 Claim A
 서빙 증거[D16≡D108 non-binding]를 **철회**(C1 CONFIRMED: D108 앵커가 실은 decode
 16 SM). 대신 8B decode-SM 민감도 측정 노트[C2, scoped: prefill 16 SM 고정 시 SM16→
 SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hybrid
@@ -13,9 +21,9 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
 
 | Claim | 현재 판정 | Existing evidence | Missing evidence | Required experiment |
 |---|---|---|---|---|
-| A. Hybrid composition, context, active load에 따라 decode demand가 변한다 | 부분 지지 | Zamba2 context knee; synthetic/ShareGPT의 best split 이동; 다중 모델 batch/context characterization; ★**Stage 0(2026-07-26, `../stage0_verdict_2026-07-26.md`, jobs 864230+864601)**: 운영점(cudagraph-ON, green-context pdmux) 3-arm(pure-Mamba 음성대조/hybrid/pure-Transformer 양성대조) decode-only 스윕에서 de-confounded 대조 D16 vs D108(무경합) = 1.00±0.01, 3 arm×3 ctx(4k/8k/16k) 전부 — decode SM-무감각(lever-weakness)이 hybrid에서 pure-Transformer·pure-Mamba로, short-ctx에서 16k로 확장 확인(raw coupled 곡선 자체는 confounded였으나 음성대조+무경합앵커로 우회했다고 주장됨). ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)**: 이 증거가 인용한 D108(무경합 앵커)은 실제로는 decode 16 SM이었다(코드 버그+telemetry+클라이언트 서명 3중 증거, 상세는 `../../PROJECT_STATUS.md` "Stage 0" 절). "D16 vs D108=1.00±0.01"은 동일 조건 반복측정이었다. **대신 ★★C2(scoped, 2026-07-28, `../../workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`, jobs 865289–865533)**: prefill을 16 SM에 고정한 채 decode-SM만 16→92로 올리면 decode ITL p50이 **2.36–2.91×**(4 arm: pure-Mamba2-7.3B/pure-Transformer-7B/additive·substitutive hybrid-7-8B, ctx1024, n=4) 개선 — **decode SM 민감도가 실재하고 모델-무관**임을 확인(Stage 0의 "SM-무감각" 전제와 정반대 방향). 단 이것은 **decode 측 등량곡선**(저-D 셀이 SM 일부러 idle, `prefill+decode≤108` 예산 제약 없음)이라 **레버 존재만 확립하며 정책 이득 근거가 아니다**(프론티어 ITL(D) vs TTFT(108−D) 미측정, `../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"·"열린 긴장" 참조) | 동일 CUDA Graph 운영점의 **joint**(prefill+decode 동시) surface, GQA/composition 통제, held-out accuracy, >16k ctx, **프론티어(예산 제약 하 net-positive 여부, E1 미실행)** | P3 full-model profile, feature ladder, leave-one-workload/model-family-out, E1(8B 프론티어 `[108−D,D]` 스윕) |
+| A. Hybrid composition, context, active load에 따라 decode demand가 변한다 | 부분 지지 | Zamba2 context knee; synthetic/ShareGPT의 best split 이동; 다중 모델 batch/context characterization; ★**Stage 0(2026-07-26, `../stage0_verdict_2026-07-26.md`, jobs 864230+864601)**: 운영점(cudagraph-ON, green-context pdmux) 3-arm(pure-Mamba 음성대조/hybrid/pure-Transformer 양성대조) decode-only 스윕에서 de-confounded 대조 D16 vs D108(무경합) = 1.00±0.01, 3 arm×3 ctx(4k/8k/16k) 전부 — decode SM-무감각(lever-weakness)이 hybrid에서 pure-Transformer·pure-Mamba로, short-ctx에서 16k로 확장 확인(raw coupled 곡선 자체는 confounded였으나 음성대조+무경합앵커로 우회했다고 주장됨). ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)**: 이 증거가 인용한 D108(무경합 앵커)은 실제로는 decode 16 SM이었다(코드 버그+telemetry+클라이언트 서명 3중 증거, 상세는 `../../PROJECT_STATUS.md` "Stage 0" 절). "D16 vs D108=1.00±0.01"은 동일 조건 반복측정이었다. **대신 ★★C2(scoped, 2026-07-28, `../../workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`, jobs 865289–865533)**: prefill을 16 SM에 고정한 채 decode-SM만 16→92로 올리면 decode ITL p50이 **2.36–2.91×**(4 arm: pure-Mamba2-7.3B/pure-Transformer-7B/additive·substitutive hybrid-7-8B, ctx1024, n=4) 개선 — **decode SM 민감도가 실재하고 모델-무관**임을 확인(Stage 0의 "SM-무감각" 전제와 정반대 방향). 단 이것은 **decode 측 등량곡선**(저-D 셀이 SM 일부러 idle, `prefill+decode≤108` 예산 제약 없음)이라 **레버 존재만 확립하며 정책 이득 근거가 아니다**(프론티어 ITL(D) vs TTFT(108−D) 미측정, `../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"·"열린 긴장" 참조) | 동일 CUDA Graph 운영점의 **joint**(prefill+decode 동시) surface, GQA/composition 통제, held-out accuracy, >16k ctx, **프론티어(예산 제약 하 net-positive 여부, E1 미실행)**. ★**2026-08-02 추가 — E1 설계 위험(미검증)**: 2026-08-01 전제 실험(미감사, 인용 금지)에서 사전등록 사다리 {50,60,80}ms가 네 arm 전부 판정 불가이고 on-cliff 제외 규칙이 전 arm에서 decode-rich 끝을 제거해, **E1이 as-run 설계로는 이 Missing evidence에 도달하지 못할 수 있다**(`DESIGN.md` §4.3.5(b)의 사전등록 분기). 그 경우 이 칸은 E1으로 채워지지 않는다 | P3 full-model profile, feature ladder, leave-one-workload/model-family-out, E1(8B 프론티어 `[108−D,D]` 스윕 — **본 스윕 미제출**, 선행 사전등록 필요: `--max-mamba-cache-size` 공통 상수 고정) |
 | B. layer-level reconfiguration은 ITL critical path와 CUDA Graph를 훼손한다 | 강한 지지, 현 구현 범위 한정 | coordinated TPOT 약 42→124 ms, 최적화 후 약 85 ms; sub-step drain; graph incompatibility | 다중 모델 반복과 timeline attribution | B7 반복, CUDA Graph on/off, Nsight synchronization timeline |
-| C. decode starvation은 TTFT도 악화시킨다 | running-batch 경로 강함; KV 경로 부분 | D16 TTFT 7.24 s/ITL 61.9 ms 대 D24 1.21 s/39.9 ms; admission capacity 관측 | time-aligned KV occupancy와 admission reason | D16/D24 paired replay, structured KV/full/mamba occupancy, mediation timeline |
+| C. decode starvation은 TTFT도 악화시킨다 | running-batch 경로 강함; KV 경로 부분 (★2026-08-02 등급 불변) | D16 TTFT 7.24 s/ITL 61.9 ms 대 D24 1.21 s/39.9 ms; admission capacity 관측 | time-aligned KV occupancy와 admission reason. ★**2026-08-02**: occupancy 데이터 자체는 `results/s8_frontier/`(2026-08-01)에서 처음 생겼으나 **de-confound가 안 됐다** — hybrid arm의 `kv_mamba_occupancy=1.0`은 pool 크기가 `--max-running-requests`와 같아서 생기는 **항등식**이고(`model_runner_kv_cache_mixin.py:223-229`), 그 캠페인은 **claims-auditor 미통과(인용 금지)**다. 남은 Missing evidence는 그대로 | D16/D24 paired replay, structured KV/full/mamba occupancy(**`--max-mamba-cache-size`를 cap과 분리해 고정한 뒤에**), mediation timeline |
 | D. execution-state separation은 single-worker coupling을 줄인다 (★2026-07-24 코드 리뷰로 scope 축소, 아래 "주장 제한" 참조) | 미검증 | R1은 observer라 해당 증거가 아님; 2026-07-24 읽기 전용 코드 리뷰([`../r2_decoupling_review_2026-07-24.md`](../r2_decoupling_review_2026-07-24.md), file:line 근거)로 `PDMUX_TRUE_DUAL_WORKER=1`의 구조 확인: 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이며, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter` 단일 `stream_index`, ≤108)은 **전면 공유** | 실제 두 host loop에서의 fixed-split 비교(coupled ceiling 내); GPU correctness 동치 테스트(현재 없음); admission latch(`r2_admission_limited`) stale-True 버그 수정; results/r2_eval 캠페인 실행(현재 미생성) | legacy fixed 대 true dual fixed, 동일 telemetry/seed/graph — coupled ceiling(+2%, PROJECT_STATUS/CONSENSUS §1-20) 내에서만 유의미, "얽힘 깨기"로 측정 불가(§1-4 死因의 substrate가 구성상 불변) |
 | E. Hybrid-informed decode floor가 generic/global static보다 높은 SLO goodput을 낸다 | 미검증 핵심 가설 | 없음 | architecture control, generic policy, static/oracle, profile generalization | B0–B8, P4 profile ablation, W1–W9 및 real trace |
 | F. short-ctx conflict-regime 워크로드에는 동적 제어가 이길 수 있는 disjoint-feasibility escape hatch(어떤 static도 두 phase 동시 SLO를 못 만족하는 워크로드)가 있다 | **강한 지지(범위 한정) — CONFIRMED closure, scoped negative(2026-07-25)**: escape hatch **없음**을 확정 | `g2_0_full`(n=4, razor-thin real disjoint 최초 관측)→`g2_0_hard`(n=6–10, claims-auditor 재채점, ILL-POSED at rA5)→`g2_0_decliff`(rA2 n=6, PLAUSIBLE closure)→`g2_0_rasweep`(120 job, off-cliff band rate≤2.75 disjoint 재확인 없음)→`g2_0_raconf`(pre-registered 24-job 확증 열, rate{3.5,3.75}×{d44,d54}×n6, companion-collapse 결정규칙 충족: rate3.5 d44 0.953±0.035≈d54 0.948±0.035; rate3.75 d54 0.948±0.062>d44 0.932±0.042) | long-context(decode floor 상승 영역, CONSENSUS §1-5) 재검증; hot varying-trace(drain 아닌 entangled 조건)에서의 직접 실증 | long-context G2.0-style disjoint sweep(모델/ctx 교체 필요); §1-20 spatial coupling-tax와 결합한 재검토 |
@@ -49,6 +57,17 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   우회한 비용이므로 substrate-invariant로 헤드라인화하지 말 것.
 - Claim C는 KV telemetry 전까지 “shared running-batch/capacity congestion”으로
   표현하고 KV causal chain을 확정하지 않는다.
+  ★**추가 규율(2026-08-02, 코드 사실)**: `kv_mamba_occupancy = 1.0`을 KV
+  causal chain의 증거로 **쓰지 않는다**. `disable_radix_cache ∧
+  max_running_requests` 조건에서는 `max_mamba_cache_size =
+  max_running_requests`이므로(`sglang/srt/model_executor/
+  model_runner_kv_cache_mixin.py:223-229`) pool 크기 = cap이고 batch가 cap에
+  닿으면 그 값은 **정의상 1.0**이다. 같은 이유로 **`--max-running-requests`는
+  arm 계열마다 다른 손잡이**다(T8=admission만 / SSM 포함 arm=admission +
+  mamba state pool) — cap을 바꾼 실험 결과를 arm 계열 간에 이전하지 않는다.
+  KV 경로를 측정하려면 `--max-mamba-cache-size`를 전 arm 공통 상수로 명시
+  고정해 두 축을 분리해야 한다. `../CONSENSUS.md` §1-23·§3-14,
+  `../../PROJECT_STATUS.md` "방법론 게이트" #5/#6.
 - Claim D는 true dual fixed가 architecture gate를 통과한 뒤에만 사용한다.
   ★**2026-07-24 코드 리뷰 정정**(engine-porter, 읽기 전용,
   [`../r2_decoupling_review_2026-07-24.md`](../r2_decoupling_review_2026-07-24.md)):

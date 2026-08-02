@@ -1,6 +1,11 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-07-28(★★★claims-auditor 감사 — P6의 Stage 0/L−2 게이트 판정
+최종 갱신: 2026-08-02(진행 상태 갱신만, 게이트 정의 변경 없음 — P6에
+"E1 상태(2026-08-02)" 추가: 전제 실험 4건 완료(2026-08-01, **claims-auditor
+미통과 = 인용 금지**), **본 스윕 미제출**, 설계 위험 3중으로 E1이 사전등록
+분기 "설계상 이 질문에 도달할 수 없다"로 갈 위험, 선행 사전등록
+`--max-mamba-cache-size` 공통 상수 고정). 이전:
+2026-07-28(★★★claims-auditor 감사 — P6의 Stage 0/L−2 게이트 판정
 [non-binding]을 **철회**(C1 CONFIRMED: D108 앵커가 실은 decode 16 SM). L−2는
 "실행 완료"가 아니라 "게이트 미실행"으로 정정. 대신 8B decode-SM 민감도 측정
 노트[C2, scoped]와 그 프론티어 게이트 E1–E4를 추가 — 아래 P6 절 갱신). 이전:
@@ -240,6 +245,26 @@ goodput ≥3% 개선 & paired CI가 0 배제)가 이 레버가 예산 제약 하
 판정한다 — 병행 게이트 E2(ctx 확장)·E3(duty-cycle, 설계상 종결)·E4(C2b는 통제
 불가하므로 주장 폐기). 상세 `../PROJECT_STATUS.md` "8B decode-SM 민감도 측정
 노트"·"열린 긴장"·"다음 실험 gate" #8.
+
+★★**E1 상태(2026-08-02) — 본 스윕 미제출, 설계 위험 3중**. 2026-08-01에 전제
+실험 4건이 완료됐다(jobs **870295**=M8/**870296**=Ha8/**870297**=Hs8 용량
+스캔 각 100 probe, **870301**=T8 batch-cap 24 probe, 전부 오류 0; 원자료
+`../../workspace/engine-port/results/s8_frontier/`). ⚠️**이 4건은 전부
+claims-auditor 미통과 = 미검증, 인용 금지**이며 수치는 `../PROJECT_STATUS.md`
+"열린 긴장"의 "2026-08-01 실험 4건" 소절에만 둔다. 로드맵 차원에서 기록할
+것은 **판정이 아니라 설계 위험**이다: (a) 사전등록 사다리 {50,60,80}ms가
+as-run 설정에서 **네 arm 전부 헤드라인 룽 없음**, (b) 그 as-run 설정
+(`--max-running-requests 48`)이 ITL·TTFT 두 축을 반대 방향으로 왜곡함이
+직접 실험으로 드러남, (c) on-cliff 제외 규칙(d92 knee 2.80, 전 arm)이 **어떤
+동작점에서도 decode-rich 끝을 제거** — C2 레버가 사는 끝. ⇒ **E1은
+`results/s8_frontier/DESIGN.md` §4.3.5(b)가 사전등록한 "설계상 이 질문에
+도달할 수 없다" 분기로 갈 위험이 높다**(실패가 아니라 미리 적어둔 분기).
+그 경우 **긴장 A(HE2 vs C2)는 E1으로 닫히지 않으며**, Claim A의
+"프론티어(예산 제약 하 net-positive)" Missing evidence도 채워지지 않는다.
+**선행 필수(사전등록 대상)**: `--max-mamba-cache-size`를 전 arm 공통 상수로
+명시 고정해 cap을 순수 admission 손잡이로 되돌리는 것 — SSM 포함 arm에서
+cap이 mamba state pool 크기까지 움직이기 때문이다(`../CONSENSUS.md` §1-23,
+코드 사실).
 
 | ID | 고정 workload |
 |---|---|

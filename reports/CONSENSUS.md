@@ -4,7 +4,17 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-07-29 (진행 상태 갱신만, 결론 개정 아님 — §3에 항목13
+최종 갱신: 2026-08-02 (진행 상태 갱신만, 결론 개정 아님 — §1에 항목23
+"`--max-running-requests`는 arm 계열마다 다른 손잡이 · `kv_mamba_occupancy=1.0`
+은 항등식" 신설(**소스 읽기로 검증되는 코드 사실**, 성능 판정 아님) + §3에
+항목14 "항등식을 증거로 쓰지 마라 — 이 양이 재려는 것과 논리적으로 독립인가"
+신설(13번과 같은 뿌리, 실패 모드는 다름). 2026-08-01 실행된 E1 전제 실험
+4건(jobs 870295/870296/870297 용량 스캔, 870301 batch-cap)은 **전부
+claims-auditor 미통과 = 이 문서에 결론으로 올리지 않는다** — 상태 기록은
+`../PROJECT_STATUS.md` "열린 긴장"의 "2026-08-01 실험 4건" 소절에만 있고
+**인용 금지**다. §1-4 얽힘의 KV 갈래는 등급 불변(occupancy 데이터는 생겼으나
+de-confound 안 됨 — `../PROJECT_STATUS.md` "확정된 결과" KV 항목).
+이전: 2026-07-29 (진행 상태 갱신만, 결론 개정 아님 — §3에 항목13
 "집계 단위를 먼저 정하고 추정 대상과 맞는지 논증하라" 신설(9·10번을 특수
 사례로 흡수) + §1에 항목22 "green-context 분할은 decode가 비면 무분할로
 auto-revert — 셀 라벨은 목표이지 실현 배분 아님" 신설(관측 사실, 성능 판정
@@ -62,6 +72,8 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | 21 | ★★**Stage 0(long-ctx L−2 게이트, 2026-07-26) — ★★★2026-07-28 판정2/판정3 철회(C1 CONFIRMED), 판정1만 생존** | 3-arm coupled-운영점 스윕(M=pure Mamba2-2.7B 음성대조·H=Zamba2-2.7B hybrid·T=Qwen2.5-3B 양성대조, ctx{4k,8k,16k}, decode-SM{16,44,92}+108-ref, jobs 864230+864601, PIN_CHECK 전부 PASS). **판정1(CONFOUNDED, CONFIRMED, 생존)**: raw ITL(D16/D44/D92) 곡선은 decode-SM binding이 아니라 prefill 경합/entanglement 아티팩트 — 이는 prefill=108−D가 항상 공변하는 설계상 사실이라 D108 앵커의 유효성과 무관하게 참이다. 원 **판정2(NULL, CONFIRMED)**: 유일 de-confounded 대조 D16 vs D108 = 1.00±0.01, 3 arm×3 ctx 전부 ⇒ 운영점 decode는 16→108 SM에 무감각. 원 **판정3**: long-ctx 충돌 가설 붕괴, HE0/벡터1이 ctx-무관으로 강화. ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)** — 판정2·판정3 철회: "D108(무경합 앵커)"은 **실제로는 decode 16 SM**이었다. 3중 독립 증거: (i) 코드 기전 — `manual_divisions=[92,16,0]`의 세 번째 값 0이 legacy auto-path threshold로 읽혀 `decode_bs>=0`이 항상 참 → 항상 stream_idx 1=(92,16) 선택(`src/multiplex/multiplexing_mixin.py:725-742`); (ii) realized telemetry 재집계 — decode-active 샘플의 79–96%가 (92,16)(9/9 셀); (iii) telemetry와 독립인 클라이언트 서명 — D108/D16=0.992–1.001(9/9 셀)인데 D92는 3.4–3.6× 빠름(108이 92보다 느릴 수 없음). ⇒ "D16 vs D108=1.00±0.01"은 **동일 조건 반복측정**. ★**"3중 삼각검증" 표현도 철회** — 무경합 앵커는 고장, 음성 대조 M의 전제("decode O(1) recurrent라 SM-bound 불가")도 틀렸음이 확인됨(context 길이의 O(1)이지 SM 수의 O(1)이 아니었다 — `../PROJECT_STATUS.md` "8B decode-SM 민감도" C2 참조), de-batch 논거는 미감사 — 1/3만 남는다. D16/D44/D92의 **pin 자체**는 realized 기준 유효함 유지. **HE0/HE2/§1-5/§1-7은 철회하지 않는다** — 대신 §5-6이 "게이트 미실행"으로 복원되고, 열린 긴장 2건(HE2 vs C2, r0c 부분 복권)이 `../PROJECT_STATUS.md`에 기록된다. ★scope 한정(필수, 판정1엔 여전히 적용): {M/H/T 2.7–3B, triton, cudagraph-ON green-context pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc burst}. 상세 [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md)(원 판정, 위 항목들로 철회됨), `../workspace/engine-port/results/s0_deconfound/PARTITION_RESIDENCY_STAGE0.md`(C1 근거) |
 
 | 22 | **green-context 분할은 decode가 비면 무분할로 auto-revert한다 — 관측 사실, 성능 판정 아님(2026-07-29)** | 코드: `multiplexing_mixin.py:726,745-748`. 결과적으로 **셀 라벨 `[P,D]`는 목표(target)이지 실현(realized) 배분이 아니다**. 실측(`results/s8_frontier/` job 866066, T8, 시간가중 직접 집계): 목표 `[92,16]`(=d16) 셀은 prefill-active 시간의 **85%만** target `(92,16)`에서 돌고 **15%는 무분할 `(108,0)`**에서 돌았다(2.030s 중 0.311s); 목표 `[16,92]`(=d92) 셀은 **100%** target에서 돌았다(47.144s 중 47.091s, 무분할 0.053s=0%). 이 비대칭은 **prefill이 빠른 셀일수록 크다**(같은 뿌리에서 셀별 동시성도 갈린다: 시간가중 `concurrent_time_frac` d16 ~1.3% / d44 4.9% / d92 25–40%, prefill에 SM을 많이 줄수록 prefill이 빨리 끝나 decode와 덜 겹친다). ⇒ **파티션 스윕 결과는 목표 배분이 아니라 실현 배분의 시간가중 분포와 함께 보고해야 한다**(§3-11의 활성률 게이트와 결합). Stage 0(§1-21)의 D108 앵커 실패와 **같은 구조**(라벨 vs 실현)이나 **원인은 다르다** — 그건 legacy auto-path의 threshold 오독이라는 설정 버그, 이건 **정책이 설계대로 동작한 결과**(decode-empty 시 무분할 fallback은 의도된 경로) |
+
+| 23 | ★★**(2026-08-02, 코드 사실) `--max-running-requests`는 arm 계열마다 다른 손잡이이고, `kv_mamba_occupancy=1.0`은 항등식이다 — 성능 판정 아님** | 코드: `sglang/srt/model_executor/model_runner_kv_cache_mixin.py:223-229`. `disable_radix_cache ∧ max_running_requests is not None`이면 **`max_mamba_cache_size = max_running_requests`**(앞 분기 `:218-222`는 `--max-mamba-cache-size` 명시 시, 뒤 `else`는 가용 메모리 ratio 기반 — 이 분기는 s8/E1 계열에서 한 번도 타지 않았다). E1/s8 캠페인이 정확히 그 조건이므로 **SSM 포함 arm(M8/Ha8/Hs8)에서 cap은 admission + mamba state pool 크기를 동시에** 움직이고, **T8(순수 Transformer)에서는 admission만** 움직인다. ⇒ (i) **T8에서 잰 cap 효과는 hybrid로 이전 불가**, (ii) cap을 실험 파라미터로 쓰려면 `--max-mamba-cache-size`를 전 arm 공통 상수로 명시 고정해 두 축을 분리해야 한다. **따름정리**: pool 크기 = cap이므로 batch가 cap에 닿으면 `kv_mamba_occupancy`는 **정의상 1.0** — 이 값을 "hybrid는 메모리가 구속한다"의 근거로 쓸 수 없다(§3-14의 사례 2). §1-4 얽힘의 KV 갈래 등급은 **불변**: 이 regime(ctx 4k ShareGPT)에서 지지되는 것은 좁게 "attention KV(`kv_full_occupancy`)가 어느 arm에서도 구속 근처에 없었다"뿐이며 그 관측치 자체는 **claims-auditor 미통과(인용 금지)**다(`../PROJECT_STATUS.md` "확정된 결과" KV 항목·"방법론 게이트" #5) |
 
 | 13 | ★★**HE0의 구조적 이유 — 두 regime의 최적이 *충돌하지 않는다*** | **TRUE per-phase goodput**: 정책간 spread가 **LO(rate 3) 0.067 (2.3%) vs HI(rate 12) 1.187 (43%)** ⇒ **차별의 ~95%가 과부하 phase에서 발생**. LO는 split에 **무관심**(prefill-heavy 극단 d16 2.861 ≈ decode-heavy 극단 d44 2.858 = 구분 불가) ⇒ **LO엔 쫓아갈 최적점이 없고, HI의 최적은 LO에서도 공짜**(§1-6 비대칭의 정량 확인). ⇒ **"항상 HI 최적"=decode-heavy static이 정의상 최선**이고 동적은 과도만 지불. **동적이 이기려면 regime 간 최적이 *충돌*해야 하는데 이 워크로드엔 그 구간이 없다**. ⚠️**정정 이력**: 2026-07-18(§1-16)엔 "이 논증은 관대 SLO 한정, tight선 HI 최적이 동적"이라 봤으나, **§1-17(직접 재튜닝)이 반증** — tight SLO에서도 HI 최적은 **고정 decode-heavy(d44)**이고 동적은 얽힘 트랩으로 열위. ⇒ **이 논증은 tight SLO에서도 성립**(SLO 엄격도 무관) |
 | 14 | ★**stationary r8의 "시스템 노이즈" = 메트릭 절벽 (외인성 아님)** | 워크로드 4런 전부 동일(fingerprint), 하부 섭동은 **thru 3%·ITL 8%**뿐인데 goodput 2× — **r8이 TTFT≈SLO(3s) 경계에 앉아** 3% 결손이 TTFT 평탄역을 1.5s→3.7s로 밀어 임계선을 넘김. **3=견고/8=불안정/12=견고** ⇒ 경계 regime만 불안정. 상세 [bench_noise_root_cause.md](bench_noise_root_cause.md) |
@@ -169,6 +181,23 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     귀속 n_episodes=8, lower95=0.554 → FAIL — 사유는 검정력 부족이지 잘못된
     SM 아님). 상세 `../workspace/engine-port/results/s8_frontier/` 하네스
     설계 문서(결함 5종 수정 기록).
+14. ★★★**(2026-08-02) "이 양이 내가 재려는 것과 논리적으로 독립인가"를 먼저
+    물어라 — 항등식을 증거로 쓰지 마라.** 13번(집계 단위 선확정)과 같은
+    뿌리이나 실패 모드가 다르므로 별도 항목으로 둔다: 13번은 *같은 양을 어떻게
+    세는가*의 문제이고, 이것은 *그 양이 애초에 답을 담고 있는가*의 문제다.
+    2026-07-31~08-01 세션에서 철회된 주장 8건 중 **3건이 정의·항등식을 증거로
+    착각**한 것이었다:
+    1. `arrival_rps`는 seed로부터 RNG replay로 **재생성된** 값
+       (`e1_capacity_scan.sbatch:200-207`)이라 `(seed, n)`만의 결정론적
+       함수 — "5셀 전부 동일"은 **항등식**이고 서버에 대한 정보량이 0이다.
+    2. `kv_mamba_occupancy = 1.0`은 pool 크기가 `--max-running-requests`와
+       같아서 생기는 **항등식**(§1-23).
+    3. "ITL 구속 rate ⟂ d92 off-cliff"는 ITL 구속 rate가 **공집합**이라
+       **공허참**(T8은 전 구간·전 룽에서 요청의 ≥93%가 ITL 통과).
+    나머지 3건은 **한 arm/셀에서 잰 것을 일반화**한 것이었다(batch-cap은 T8
+    2셀만 측정). ⇒ 새 지표를 증거로 올리기 전에 **그 지표가 실험 설정으로부터
+    해석적으로 결정되는 값이 아닌지** 먼저 확인한다. `../PROJECT_STATUS.md`
+    "방법론 게이트" #6과 동일 항목.
 
 ---
 
