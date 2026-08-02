@@ -378,6 +378,42 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
 
   #### 2026-08-01 실험 4건 — ⚠️**전부 claims-auditor 미통과, 등급 = 미검증, 정본·논문 인용 금지**
 
+  > ★★**2026-08-02 감사 완료 — 아래 절의 상당수가 이미 철회·대체됐다. 이 절을
+  > 인용하기 전에 반드시 이 박스를 먼저 읽을 것.** claims-auditor 회부 결과
+  > **2 REFUTED / 2 NOT-YET-SUPPORTED / 1 CONFIRMED**, 후속 M1/M2/M4로 다음이
+  > 확정됐다(정본 = `results/s8_frontier/DESIGN.md` §4.3.7–§4.3.8 +
+  > `FINDINGS_M1_M2_2026-08-02.md`):
+  >
+  > - **(1) "천장 = 설정 성질" → NOT-YET-SUPPORTED.** 1 arm·2셀에서 모델 변이
+  >   0인 설계로 "모델 성질이 아니다"를 결론할 수 없고, d44의 +1.3ms도 실은
+  >   CI가 0을 배제한다(=설정×셀 상호작용). 더구나 **rate 16 = 공통 off-cliff
+  >   대역의 5.7배**라 E1 운영구간 밖이다. **재실험하지 않고 폐기.**
+  > - **(2) "cap 96 ≈ 192" → REFUTED.** `frac(ITL≤60)` −0.091[−0.166,−0.016],
+  >   TTFT p50 +6.75ms 모두 0 배제. d44 cap96 행은 누락이 아니라 미보고이고
+  >   넣으면 비단조.
+  > - **(3) mamba pool 항등식 → CONFIRMED**(코드 분기 + 서버 로그
+  >   `max_mamba_cache_size: 48` + telemetry의 1/48 양자화, 3방향 독립).
+  >   단 "1.0000 = 포화"는 **max 통계**였고 실제로는 스냅샷의 0.006–0.08%.
+  > - **(4) "HEADLINE NONE = cap 아티팩트" → REFUTED.** 운영대역 실측 동시성
+  >   12–44 < cap 48 ⇒ **cap이 구속할 수 없다**. 다만 결론 자체
+  >   (`HEADLINE-ELIGIBLE RUNGS = NONE`)는 **살아남았다** — 공통 rate·두
+  >   estimand·두 seed 전부에서 재확인. **arm×룽 표는 rate-confound로 폐기**
+  >   (T8만 rate 12, 나머지 rate 2 — §4.3.5(b) 명시 위반), `--common-rate`
+  >   출력으로 대체.
+  > - **(5) knee — "네 arm 공통 2.80" 철회.** knee의 치역이 probe 격자뿐이라
+  >   일치가 부분적으로 강제된다(게이트 #6). 9-변형 집합은 arm마다 다름.
+  >   **살아남는 것은 순서**(d92가 먼저 무너짐: T8/M8/Hs8 9/9, Ha8 8/9).
+  >   Hs8 d16 knee 9.09의 취약성은 실재하나 **원인 귀속이 틀렸다** — 그
+  >   이상치를 지워도 knee 불변.
+  > - **(6) stall 원인 규명(M4, GPU 0).** 17개 stall probe 중 **16개**에서
+  >   최장 프롬프트의 **monolithic prefill**이 stall 전 구간을 덮는다. 크기는
+  >   prefill SM = 108−D 이므로 **D에 단조**. `enable_pdmux`가
+  >   `chunked_prefill_size == -1`을 하드 assert하므로 **기판 구조이지 버그가
+  >   아니다**(venue positioning의 (A) green-context 종속 버킷).
+  >
+  > E1 본 스윕은 여전히 미제출이며, 대신 **M3 Transformer-control 대조**를
+  > 사전등록·제출했다(job **872077**, §4.3.8(c)).
+
   아래는 **상태 기록**이며 "확정된 결과"가 아니다. 원자료 =
   `workspace/engine-port/results/s8_frontier/`. 4 job 전부 COMPLETED,
   probe 오류 0(870295/870296/870297 각 100 probe, 870301 24 probe).
