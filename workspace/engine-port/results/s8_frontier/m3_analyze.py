@@ -73,6 +73,33 @@ PROBE = re.compile(
 )
 
 
+def load_pin(dirpath, job):
+    """★2026-08-02 (job 872077 postmortem). Read m3_pin_check.sh's output and
+    return {(arm, cell, block): passed}.
+
+    This wiring was MISSING when 872077 landed, and the omission produced
+    exactly the failure this campaign keeps paying for: the pin gate voided
+    d16 -- g's numerator -- on both arms, and this analyzer, knowing nothing
+    about it, printed a confident "ASYMMETRY ATTRIBUTABLE TO THE ARM" anyway.
+    A cite-blocking gate that the deciding script cannot see is not a gate.
+
+    Absence is NOT treated as success: with no pin file the verdict is refused,
+    because "the gate was never run" and "the gate passed" must never look the
+    same (PROJECT_STATUS.md methodology gate #4's lineage -- silent population
+    substitution)."""
+    path = os.path.join(dirpath, f"m3_pin_{job}.txt")
+    if not os.path.exists(path):
+        return None
+    pat = re.compile(r"\s+e1m3_(\w+?)_(d\d+)_(b\d+)_\d+\s+D=\d+\(P\d+\)"
+                     r".*?(PASS|FAIL).*?pin_frac=([\d.]+)")
+    out = {}
+    for line in open(path):
+        m = pat.match(line)
+        if m:
+            out[(m[1], m[2], m[3])] = (m[4] == "PASS", float(m[5]))
+    return out or None
+
+
 def load(dirpath, job):
     rows = []
     for fn in sorted(glob.glob(os.path.join(dirpath, f"e1m3_*_{job}_result.txt"))):
@@ -142,6 +169,29 @@ def main():
                   f"ttft_p50={r['ttft_p50']:.0f} vs 2x plateau {2*r['plateau']:.0f})")
     print(f"  voided cells: {sorted(voided) if voided else 'none'}")
 
+    # --- ★the pin gate, sec 4.3.8(e) -- cite-blocking, and now actually read --
+    pin = load_pin(a.dir, a.job)
+    pin_void_blocks = set()
+    if pin is None:
+        print(f"\n=== PIN GATE (sec 4.3.8(e)) ===\n"
+              f"  MISSING: no m3_pin_{a.job}.txt under {a.dir}.\n"
+              f"  Run  ./m3_pin_check.sh {a.job}  first. The verdict is REFUSED --\n"
+              f"  'not run' must never read the same as 'passed'.")
+        pin_missing = True
+    else:
+        pin_missing = False
+        nfail = sum(1 for v in pin.values() if not v[0])
+        print(f"\n=== PIN GATE (sec 4.3.8(e)): {len(pin)-nfail}/{len(pin)} PASS ===")
+        percell = collections.defaultdict(lambda: [0, 0])
+        for (arm, cell, blk), (ok, pf) in pin.items():
+            percell[(arm, cell)][0 if ok else 1] += 1
+            if not ok:
+                pin_void_blocks.add((arm, cell, blk))
+        for k in sorted(percell, key=lambda k: (k[0], int(k[1][1:]))):
+            p, f = percell[k]
+            mark = "   <-- cell has unpinned blocks" if f else ""
+            print(f"    {k[0]:>4} {k[1]:>5}  {p}/{p+f} PASS{mark}")
+
     # --- per-cell summary ----------------------------------------------------
     by = collections.defaultdict(list)
     for r in rows:
@@ -176,9 +226,19 @@ def main():
         den = {r["block"]: r["A_free"] for r in rows
                if r["arm"] == arm and r["cell"] == DEN_CELL}
         blocks = sorted(set(num) & set(den))
+        # ★sec 4.3.8(e): a block whose d16 OR d54 did not hold its target
+        # partition cannot contribute a g -- the label is not the realized
+        # allocation there (the Stage-0 lesson, CONSENSUS 1-21/1-22).
+        dropped = [b for b in blocks
+                   if (arm, NUM_CELL, b) in pin_void_blocks
+                   or (arm, DEN_CELL, b) in pin_void_blocks]
+        blocks = [b for b in blocks if b not in dropped]
+        if dropped:
+            print(f"  {arm:>4}  pin-voided blocks dropped: {dropped} "
+                  f"({len(blocks)} of {len(blocks)+len(dropped)} remain)")
         gs = [num[b] / den[b] for b in blocks if den[b]]
         if not gs:
-            print(f"  {arm}: no paired blocks")
+            print(f"  {arm}: no paired blocks survive the pin gate")
             continue
         lo, hi = t_ci(gs)
         blo, bhi = boot_ci(gs)
@@ -195,6 +255,9 @@ def main():
           f"lever g>={G_LEVER}, flat g<={G_FLAT}) ===")
     if CONTROL_ARM not in g_by_arm or TEST_ARM not in g_by_arm:
         print("  NO VERDICT -- both arms are required and at least one is missing/voided.")
+        return
+    if pin_missing:
+        print("  NO VERDICT -- the sec 4.3.8(e) pin gate was never run for this job.")
         return
     (gc, cl, ch, gcs), (gt, tl, th, gts) = g_by_arm[CONTROL_ARM], g_by_arm[TEST_ARM]
     n_indep = min(len(gcs), len(gts))

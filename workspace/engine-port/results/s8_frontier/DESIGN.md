@@ -879,6 +879,53 @@ only over d16–d54. **This job cannot and does not decide whether the lever pay
 off in goodput** — it decides whether the ITL axis responds to D at all, which
 is a precondition for that question being askable.
 
+★**Recorded inconsistency, NOT resolved retroactively (2026-08-02, after
+872077).** The rule above is written on **point estimates** ("T8 `g >= 1.5` and
+Ha8 `g <= 1.15`, CIs disjoint") and `m3_analyze.py` implements exactly that.
+The blocks-vs-seeds power calculation earlier in this section instead framed the
+test-arm side as *upper bound* `< 1.15`. On 872077 the two readings disagree —
+Ha8's t-CI upper bound is 1.190 — so the point-estimate rule would fire and the
+upper-bound rule would not. **Neither is being adopted post hoc**: the
+discrepancy is recorded here, both readings must be reported together for any
+future job, and whichever is adopted must be fixed in a revision that predates
+the data it judges. (Moot for 872077, which is voided by (e) regardless.)
+
+#### (f) ★OUTCOME of job 872077 (2026-08-02) — NO VERDICT, and why that is a result
+
+Clean execution: 64/64 probes, zero errors, all three in-run gates PASS,
+`n_keep=194`, 3h01m. **The pin gate (e) then voided 19 of 64 cell-blocks, `g`'s
+numerator among them** — T8 d16 2/8 PASS, Ha8 d16 5/8; d54 8/8 on both arms.
+Per (e) both arms lose `g`, so **there is no verdict**, and on the surviving
+pin-passing blocks `n_indep` is 2 (T8) and 5 (Ha8), below the guard of 6.
+
+Two things this exposed, both now fixed or recorded:
+
+1. **The gate was cite-blocking but not machine-readable.** `m3_analyze.py` did
+   not read the pin output and printed a confident
+   "ASYMMETRY ATTRIBUTABLE TO THE ARM" over voided cells. Now wired
+   (`load_pin()`), with **absence of the pin file refusing the verdict** —
+   "not run" must never read the same as "passed".
+2. **The failure is substantive, not a power artifact.** 15 of the 19 failures
+   have `pin_frac < 0.90`; T8 d16 runs as low as 0.61, i.e. **20–40% of
+   prefill-active time executed at P108 (no split) instead of the target P92**.
+   The pattern is systematic — worse the *larger* the prefill partition
+   (d16, d24) and worse on the *faster-prefill* arm (T8) — the same direction
+   as `CONSENSUS.md` §1-22's auto-revert asymmetry, though the mechanism is not
+   independently verified here. Prefill-active time totals only 1.5–7 s inside
+   a ~200 s probe, so episodes are few (6–34) on top of the genuine unpinning.
+
+⇒ **The open question is now realizability, not policy**: is there any
+`(D, rate)` region where a *low-D* cell actually holds its target partition? If
+not, "d16" is not an operating point on this substrate at this load, which is
+the same class of error as Stage 0's D108 (label ≠ realized) — caught by a gate
+this time rather than after publication. Measured by `m3r_realizability.sbatch`
+(diagnostic only: no SLO, no goodput, no decision rule).
+
+Direction-of-bias note, **not usable to rescue the verdict**: unsplit execution
+gives decode 108 SM where the label says 16, so `A_free(d16)` is biased *low*
+and `g` therefore *under*-estimated — more so on T8, which pins worse. That
+would enlarge the asymmetry, not create it. It remains an untested inference.
+
 #### (d) What is deliberately NOT re-run
 
 - **Capacity scans (867231, 870295–297).** Their knees survive as an *order*
