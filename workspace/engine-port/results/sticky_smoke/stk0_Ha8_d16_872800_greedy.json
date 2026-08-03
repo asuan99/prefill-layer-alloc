@@ -1,0 +1,8 @@
+[
+ " Paris.\n\nThe capital of France is Paris.\n\nThe capital of France is Paris.\n\nThe capital of France is Paris.\n\nThe capital of France is Paris.\n\nThe capital of France is Paris.\n",
+ "The sum of 17 and 25 is 42.",
+ " there lived a little girl named Lily. She loved to play with her friends and explore the world around her. One day, she found a beautiful shell on the beach. She picked it up and showed it to her mom. \"Look,",
+ "    if n < 0:\n        raise ValueError(\"n must be a non-negative integer\")\n    if n == 0:\n        return 0\n    elif n == 0:\n        return 0\n",
+ "",
+ "\n\nFrench:\n# Response: Le temps est agréable aujourd'hui.\n\nExplanation: In this sentence, \"The weather is nice today\" is translated to \"Le temps est bon aujour"
+]

@@ -119,6 +119,7 @@ class SchedulerMultiplexMixin:
         self.r2_policy_name = os.environ.get("PDMUX_R2_POLICY", "").strip().lower()
         self.r2_policy = self._build_r2_policy(self.r2_policy_name)
         self.r2_admission_limited = False
+        self._init_sticky_partition()
         logger.info(
             f"PD-Multiplexing enabled with {self.real_sm_group_num} stream groups, sm_counts (prefill_sm, decode_sm): {self.sm_counts}"
         )
@@ -200,6 +201,107 @@ class SchedulerMultiplexMixin:
             )
         raise RuntimeError(
             f"unsupported PDMUX_R2_POLICY={name!r}; use fixed, generic or hybrid"
+        )
+
+    # ------------------------------------------------------------------
+    # PDMUX_STICKY_PARTITION (default OFF)
+    # ------------------------------------------------------------------
+    # WHAT IT CHANGES.  `initialize_stream_groups` always appends a plain
+    # (non-green-context) group labelled (0, total_sm) after the real
+    # divisions, and `adjust_stream_groups` falls back to it whenever decode
+    # is busy but no prefill batch is in flight.  Because a prefill batch is
+    # in flight only for a small fraction of the run, the cell's decode
+    # division was realized over only 4-19% of decode-active time in job
+    # 872077 (T8 d16 0.038 -> d54 0.093, Ha8 0.104 -> 0.187); the remaining
+    # 81-96% ran unpartitioned at 108 SM.  A cell label was therefore a
+    # TARGET, not an allocation -- the decode-axis analogue of the Stage 0
+    # D108 error -- and the dilution factor differed per cell, so it was a
+    # confound INSIDE any estimand built from those cells.
+    #
+    # With the flag ON, "decode is busy" alone keeps the target division, so
+    # decode runs at D SM continuously and prefill SM may sit idle.  That is
+    # the budget-constrained quantity C2 measured directly (prefill pinned,
+    # decode continuously at D).
+    #
+    # WHAT IT DOES NOT CHANGE.  The flag decides only WHICH stream group is
+    # current; it adds no switch point, removes no drain, and does not touch
+    # batching, admission or telemetry emission.  CUDA graphs are captured
+    # per stream-group index (cuda_graph_runner.capture, key
+    # f"{stream_idx}_{bs}"), so holding a division index replays a captured
+    # graph exactly as the fallback index did -- no eager fallback.
+    #
+    # DEFAULT-OFF GUARANTEE.  Every predicate added below short-circuits on
+    # `self.sticky_partition_enabled` being False, leaving the pre-patch
+    # branch and the pre-patch value in every case; see
+    # tests/test_sticky_partition.py, which asserts OFF equivalence against a
+    # re-implementation of the pre-patch selector.
+    def _init_sticky_partition(self: Scheduler) -> None:
+        self.sticky_partition_enabled = os.environ.get(
+            "PDMUX_STICKY_PARTITION", "0"
+        ) in ("1", "true", "True")
+        # Resolved target index for a FixedPolicy run (None => fall back to
+        # the engine's own decode-batch-size selector, unchanged).
+        self._sticky_fixed_idx: Optional[int] = None
+        if not self.sticky_partition_enabled:
+            return
+
+        # Undefined combinations are REJECTED rather than silently given some
+        # behaviour, because each of them owns the partition index through a
+        # path this flag does not touch.
+        if os.environ.get("PDMUX_LA_COORD"):
+            raise RuntimeError(
+                "PDMUX_STICKY_PARTITION is not defined for the coordinated "
+                "per-layer-type event loop (PDMUX_LA_COORD); that loop selects "
+                "stream indices itself and is a documented negative result"
+            )
+        if os.environ.get("PDMUX_SLO_SCHED"):
+            raise RuntimeError(
+                "PDMUX_STICKY_PARTITION with PDMUX_SLO_SCHED is undefined: the "
+                "SLO controller only decides on prefill spans, and extending "
+                "its decisions into decode-only spans changes its dynamics"
+            )
+        if os.environ.get("PDMUX_FIXED_DECODE_SM_FILE"):
+            raise RuntimeError(
+                "PDMUX_STICKY_PARTITION with PDMUX_FIXED_DECODE_SM_FILE is "
+                "undefined: the model-side per-layer decode pin picks its own "
+                "streams inside the forward pass"
+            )
+        if self.r2_policy_name not in ("", "fixed"):
+            raise RuntimeError(
+                "PDMUX_STICKY_PARTITION is only defined for "
+                f"PDMUX_R2_POLICY in (unset, fixed); got {self.r2_policy_name!r}"
+            )
+        if self.real_sm_group_num < 3:
+            raise RuntimeError(
+                "PDMUX_STICKY_PARTITION requires at least one green-context "
+                f"division; got {self.real_sm_group_num} stream groups"
+            )
+
+        if isinstance(self.r2_policy, FixedPolicy):
+            target_d = int(self.r2_policy.decode_sms)
+            matches = [
+                index
+                for index, (_prefill_sms, decode_sms) in enumerate(self.sm_counts)
+                if int(decode_sms) == target_d
+            ]
+            # Index 0 is the plain prefill-only group and the last index is the
+            # plain unpartitioned group; neither is a green-context division,
+            # so neither is a legal sticky target.
+            divisions = [
+                index for index in matches if 1 <= index <= self.real_sm_group_num - 2
+            ]
+            if not divisions:
+                raise RuntimeError(
+                    f"PDMUX_STICKY_PARTITION: no green-context division with "
+                    f"decode_sms={target_d} in sm_counts={self.sm_counts}"
+                )
+            self._sticky_fixed_idx = divisions[0]
+
+        logger.info(
+            "PD-mux sticky partition ENABLED: decode holds its division while "
+            "decode is busy (fixed target index=%s); the unpartitioned "
+            "(0, total_sm) group is used only when the decode batch is empty",
+            self._sticky_fixed_idx,
         )
 
     def _r2_runtime_snapshot(self: Scheduler) -> RuntimeSnapshot:
@@ -770,28 +872,54 @@ class SchedulerMultiplexMixin:
             set_current_stream_idx(_idx)
             self.tp_worker.model_runner.update_decode_attn_backend(_idx)
             return _idx, self.stream_groups[_idx]
-        if not self.running_batch.is_empty() and self.split_prefill_batch:
-            decode_bs = self.running_batch.batch_size()
-            manual_divisions = self.pdmux_config.manual_divisions
-            if manual_divisions:
-                for i in range(len(manual_divisions)):
-                    _, _, threshold = manual_divisions[i]
-                    if decode_bs >= threshold:
-                        stream_idx = i + 1
+        # PDMUX_STICKY_PARTITION (default OFF, see `_init_sticky_partition`):
+        # with the flag ON, "decode busy" alone takes this branch, so decode
+        # keeps its green-context division while prefill is idle instead of
+        # falling back to the plain unpartitioned group below.  With the flag
+        # OFF `self.sticky_partition_enabled` is False and the disjunction
+        # collapses to the pre-patch `and self.split_prefill_batch`.
+        if not self.running_batch.is_empty() and (
+            self.split_prefill_batch or self.sticky_partition_enabled
+        ):
+            if self.sticky_partition_enabled and self._sticky_fixed_idx is not None:
+                # Under PDMUX_R2_POLICY=fixed the target is a constant, and it
+                # is the constant the v7 controller block installs on prefill
+                # spans (`_r2_decide_idx`).  Using it here makes the whole run
+                # sit on ONE division: without it, a config carrying a
+                # guard-satisfier row (e.g. pdmux_e1_d54.yml) would drift to the
+                # guard row whenever decode_bs crossed its threshold.
+                stream_idx = self._sticky_fixed_idx
             else:
-                stream_idx = max(
-                    1,
-                    min(
-                        self.real_sm_group_num - 2,
-                        decode_bs
-                        * (self.real_sm_group_num - 2)
-                        // self.pdmux_config.decode_bs_divisor,
-                    ),
-                )
+                decode_bs = self.running_batch.batch_size()
+                manual_divisions = self.pdmux_config.manual_divisions
+                if manual_divisions:
+                    for i in range(len(manual_divisions)):
+                        _, _, threshold = manual_divisions[i]
+                        if decode_bs >= threshold:
+                            stream_idx = i + 1
+                else:
+                    stream_idx = max(
+                        1,
+                        min(
+                            self.real_sm_group_num - 2,
+                            decode_bs
+                            * (self.real_sm_group_num - 2)
+                            // self.pdmux_config.decode_bs_divisor,
+                        ),
+                    )
             set_current_stream_idx(stream_idx)
         elif not self.running_batch.is_empty():
             set_current_stream_idx(self.real_sm_group_num - 1)
         else:
+            # Decode batch EMPTY.  Sticky deliberately does NOT hold the
+            # division here: there is no decode work to protect, holding it
+            # would strand D SM that prefill could use, and the decode-active
+            # time weighting of E1_DECODE_REALIZED gives this interval zero
+            # weight either way -- so holding it could only alter the prefill
+            # axis without being able to improve the gate it exists to serve.
+            # This is also the state the `stream_idx > 0 and
+            # running_batch.is_empty()` trigger in `event_loop_pdmux` exists to
+            # reach, so leaving both alone keeps the two consistent.
             set_current_stream_idx(0)
 
         stream_idx = get_current_stream_idx()
@@ -879,6 +1007,12 @@ class SchedulerMultiplexMixin:
             with torch.cuda.stream(decode_stream):
                 set_pdmux_status(False)
                 self.running_batch = self.update_running_batch(self.running_batch)
+                # Second half of the fallback mechanism.  This fires only once
+                # the decode batch has gone EMPTY, and all it does is make
+                # `adjust_stream_groups` run so the index can be released to 0
+                # (full-SM prefill).  PDMUX_STICKY_PARTITION deliberately
+                # leaves it as-is -- see the decode-empty note in
+                # `adjust_stream_groups` -- so the two stay consistent.
                 adjust_stream_group = adjust_stream_group or (
                     stream_idx > 0 and self.running_batch.is_empty()
                 )
