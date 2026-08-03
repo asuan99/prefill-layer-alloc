@@ -879,16 +879,33 @@ only over d16–d54. **This job cannot and does not decide whether the lever pay
 off in goodput** — it decides whether the ITL axis responds to D at all, which
 is a precondition for that question being askable.
 
-★**Recorded inconsistency, NOT resolved retroactively (2026-08-02, after
-872077).** The rule above is written on **point estimates** ("T8 `g >= 1.5` and
-Ha8 `g <= 1.15`, CIs disjoint") and `m3_analyze.py` implements exactly that.
-The blocks-vs-seeds power calculation earlier in this section instead framed the
-test-arm side as *upper bound* `< 1.15`. On 872077 the two readings disagree —
-Ha8's t-CI upper bound is 1.190 — so the point-estimate rule would fire and the
-upper-bound rule would not. **Neither is being adopted post hoc**: the
-discrepancy is recorded here, both readings must be reported together for any
-future job, and whichever is adopted must be fixed in a revision that predates
-the data it judges. (Moot for 872077, which is voided by (e) regardless.)
+★**Recorded inconsistency (2026-08-02) — RESOLVED FORWARD-ONLY 2026-08-03.**
+The rule above is written on **point estimates** ("T8 `g >= 1.5` and Ha8
+`g <= 1.15`, CIs disjoint") and `m3_analyze.py` implemented exactly that. The
+blocks-vs-seeds power calculation earlier in this section instead framed the
+test-arm side as *upper bound* `< 1.15`. On 872077 the two disagree — Ha8's
+t-CI upper bound is 1.190 — so the deciding rule was ambiguous exactly where it
+mattered.
+
+**Resolution, pre-registered 2026-08-03 and binding only on jobs submitted
+after this revision:**
+
+> **RULE_BOUNDS** — each arm is judged on the CI bound **facing** its
+> threshold: control arm needs **lower** bound ≥ `G_LEVER`, test arm needs
+> **upper** bound ≤ `G_FLAT`, plus disjoint CIs.
+
+Rationale: the test arm's half is an **acceptance of a null** ("Ha8 does not
+respond"), and a null accepted on a point estimate alone is not evidence.
+Bound-facing-threshold makes both halves symmetric and makes the null actually
+evidenced. ★Note the direction: **RULE_BOUNDS does not fire on 872077** while
+RULE_POINT does — the stricter rule is the one that cuts against the earlier
+apparent result, which is why it can be adopted honestly and why it binds
+**only going forward**.
+
+For 872077 and any other job predating this revision, `m3_analyze.py` prints
+**both** readings and, when they disagree, returns **NO VERDICT** — because
+"the deciding rule was ambiguous where it mattered" is the truthful verdict for
+such a job. Neither reading may be adopted for it after the fact.
 
 #### (f) ★OUTCOME of job 872077 (2026-08-02) — NO VERDICT, and why that is a result
 
@@ -1031,6 +1048,89 @@ compute one from it.
 now narrower and more honest: not "d16 does not hold its partition" — that was
 never measured — but **"the pin gate had 2–34 samples, so the cells were never
 certified either way."** Whether M3 must be re-run depends on rev2's answer.
+
+#### (h) ★★★2026-08-03, claims-auditor — THE PIN GATE WAS AN IDENTITY.
+    (e), (f) and (g) are superseded; so is M3R rev2's reason for existing.
+
+**Verified independently over 120 telemetry files and 77,688 prefill-active
+snapshots (jobs 872077 + 872236 + 872497), zero violations in either
+direction:**
+
+```
+prefill_sms != target   <=>   decode_running_batch_size == 0
+    off-target & decode-empty : 50,328
+    on-target  & decode-busy  : 27,360
+    violations (both ways)    :      0
+```
+
+`multiplex/multiplexing_mixin.py:773,792-794` drops to the unsplit partition
+**by design** when the decode batch is empty, and `CONSENSUS.md` §1-22 already
+records that fallback as *"the policy working as designed"*. So
+`compute_time_weighted_pin_gate` never measured partition control — its
+"pin_frac" is *the share of prefill-in-flight time during which decode happened
+to be non-empty*. **Methodology gate #6 (do not use an identity as evidence),
+committed by the very gate written to enforce correctness.**
+
+**Corollary, from the same table:** the conditional pin fraction is
+`27,360 / 27,360 = 1.000` exactly. **The partition is fully realized wherever
+the question is well posed.** Re-scored, job 872077 is **64/64 PASS** and its
+`n_indep = 8` on both arms is restored.
+
+**What (e)/(f)/(g) got wrong.**
+- (f)'s "19/64 voided, and 15 of them with `pin_frac < 0.90`" — those were
+  decode-empty intervals, not unpinned ones.
+- (g)'s "the instrument had 2–34 samples" — a real problem for *rev1*, but the
+  numbers quoted for M3 were **rev1's** (2–39); M3's own `n_pa_snapshots` are
+  **4–130**. A canonical section described M3's invalidity using another job's
+  sample sizes.
+- (g)'s premise that trace-force was needed at all. The auditor's SCHED-only
+  decomposition (keep only `trace_forced != true` records in rev2, i.e. apply
+  the OFF estimator to the ON system) puts the **system** effect of trace-force
+  at **mean +0.001, sign 4+/2−** — the apparent improvement was the estimator's
+  mesh, not the engine. **rev2 answered a question that did not need asking.**
+- `MIN_PA_SNAPSHOTS` is **the complement of the estimand**: most prefill-active
+  snapshots are the off-target decode-empty spin, so a *well-pinned* probe has
+  *fewer* of them and gets flagged UNMEASURABLE. All 20 UNMEASURABLE probes in
+  rev2 fell on the two highest-pin seeds; the two lowest-pin seeds had none.
+  A gate built to prevent gate #6 violated gate #6 in reverse.
+
+**★The finding that replaces them — the decode axis was never gated at all.**
+`E1_DECODE_REALIZED`, time-weighted over decode-**active** time, job 872077
+(n=8 blocks/cell, independently recomputed):
+
+| arm | d16 | d24 | d44 | d54 |
+|---|---|---|---|---|
+| T8 | **0.038** | 0.047 | 0.082 | 0.093 |
+| Ha8 | 0.104 | 0.110 | 0.148 | 0.187 |
+
+The cell's decode split is realized over **4–19% of decode work time**; the
+other 81–96% runs **unsplit at 108 SM**. Two consequences that must accompany
+any reading of `g`:
+
+1. **The E1 grid does not deliver a sustained decode-SM allocation**, so it is
+   not measuring the quantity C2 measured (C2 pinned prefill and ran decode at
+   D continuously). Tension A cannot be closed by `g` without this factor.
+2. **The dilution varies by cell** (T8 0.038 → 0.093, Ha8 0.104 → 0.187), so
+   `g = A_free(d16)/A_free(d54)` moves the SM *level* and the *engagement rate*
+   together — **a confound inside `g` itself**.
+
+This is the decode-side analogue of Stage 0's D108 error (label ≠ what ran),
+and unlike Stage 0 there was **no gate here at all**. §1-22 required realized
+distributions to be reported for partition sweeps; that was applied to the
+prefill axis only.
+
+**Job 872077's standing, final.** All gates pass, `n_indep = 8` on both arms,
+`T8 g = 1.837 [1.666, 2.009]`, `Ha8 g = 1.068 [0.947, 1.190]`. The verdict is
+**still NO VERDICT — but now for exactly one reason**: RULE_POINT fires and
+RULE_BOUNDS does not (Ha8 upper 1.190 > 1.15), and per (c) a job predating the
+2026-08-03 fix cannot have either reading adopted for it. **A re-run under
+RULE_BOUNDS would settle it**, and the open quantity is whether Ha8's upper
+bound falls below 1.15 with more blocks. Any such re-run must report the
+decode-realization table beside `g`.
+
+**Not re-run, and why:** M3's pin question is answered (conditional pin =
+1.000, three jobs). rev2 (872497) is retained as data but its stated purpose is
+withdrawn. `MIN_PA_SNAPSHOTS` is withdrawn as a gate.
 
 ### 4.4 Decision rule (pre-registered — do not change without updating this file)
 

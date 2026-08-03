@@ -90,13 +90,27 @@ def load_pin(dirpath, job):
     path = os.path.join(dirpath, f"m3_pin_{job}.txt")
     if not os.path.exists(path):
         return None
-    pat = re.compile(r"\s+e1m3_(\w+?)_(d\d+)_(b\d+)_\d+\s+D=\d+\(P\d+\)"
-                     r".*?(PASS|FAIL).*?pin_frac=([\d.]+)")
-    out = {}
-    for line in open(path):
-        m = pat.match(line)
+    # ★2026-08-03: two formats. The CURRENT one is the conditional gate
+    # (sec 4.3.8(h)); the LEGACY one is the identity gate that scored the
+    # designed decode-empty auto-revert as a failure. Prefer conditional when
+    # present, fall back to legacy, and say which was used -- silently reading
+    # whichever matched is how the wrong gate voided M3 in the first place.
+    cond = re.compile(r"\s+e1m3_(\w+?)_(d\d+)_(b\d+)_\d+\s+COND_PIN=([\d.]+)\s*->\s*(PASS|FAIL)")
+    legacy = re.compile(r"\s+e1m3_(\w+?)_(d\d+)_(b\d+)_\d+\s+D=\d+\(P\d+\)"
+                        r".*?(PASS|FAIL).*?pin_frac=([\d.]+)")
+    out, mode = {}, None
+    text = open(path).read().splitlines()
+    for line in text:
+        m = cond.match(line)
         if m:
-            out[(m[1], m[2], m[3])] = (m[4] == "PASS", float(m[5]))
+            out[(m[1], m[2], m[3])] = (m[5] == "PASS", float(m[4])); mode = "CONDITIONAL"
+    if not out:
+        for line in text:
+            m = legacy.match(line)
+            if m:
+                out[(m[1], m[2], m[3])] = (m[4] == "PASS", float(m[5])); mode = "LEGACY(identity)"
+    if out:
+        print(f"  [pin gate parsed from {os.path.basename(path)}: {mode}]")
     return out or None
 
 
@@ -269,6 +283,49 @@ def main():
               f"indistinguishable from insufficient replication.")
         return
     disjoint = (ch < tl) or (th < cl)
+
+    # ★★2026-08-03 -- RESOLVING THE PRE-REGISTRATION INCONSISTENCY (sec 4.3.8(c)).
+    #
+    # sec 4.3.8(c)'s rule TEXT is on point estimates ("T8 g>=1.5 and Ha8
+    # g<=1.15, CIs disjoint") and that is what the code below implements. The
+    # SAME section's power calculation instead framed the test-arm side as an
+    # UPPER BOUND below 1.15. On 872077 the two disagree (Ha8's t-CI upper
+    # bound is 1.190), so the campaign's deciding rule was ambiguous exactly
+    # where it mattered.
+    #
+    # It cannot be resolved for 872077 without choosing a rule after seeing the
+    # data, so BOTH readings are printed for that job and NEITHER is adopted.
+    # For every FUTURE job the rule is fixed here, before that data exists:
+    #
+    #   RULE_BOUNDS (pre-registered 2026-08-03, effective for jobs after this
+    #   commit): each arm is judged on the CI bound FACING its threshold --
+    #   control arm needs lower bound >= G_LEVER, test arm needs upper bound
+    #   <= G_FLAT -- plus disjoint CIs.
+    #
+    # Rationale, and note it cuts AGAINST the earlier apparent result: the test
+    # arm's side is the ACCEPTANCE OF A NULL ("Ha8 does not respond"), and a
+    # null accepted on a point estimate alone is not evidence. Requiring the
+    # bound facing the threshold makes both halves symmetric and makes the null
+    # actually evidenced. Under RULE_BOUNDS 872077 would NOT fire -- which is
+    # why adopting it now for 872077 would be indistinguishable from picking
+    # the answer, and why it binds only going forward.
+    bounds_fires = (cl >= G_LEVER) and (th <= G_FLAT) and disjoint
+    point_fires = (gc >= G_LEVER) and (gt <= G_FLAT) and disjoint
+    print(f"  [RULE_POINT  -- sec 4.3.8(c) text]   "
+          f"{CONTROL_ARM} g={gc:.3f}>={G_LEVER}? {gc >= G_LEVER}; "
+          f"{TEST_ARM} g={gt:.3f}<={G_FLAT}? {gt <= G_FLAT}; disjoint? {disjoint} "
+          f"=> {'FIRES' if point_fires else 'does not fire'}")
+    print(f"  [RULE_BOUNDS -- pre-registered 2026-08-03, FUTURE jobs only]   "
+          f"{CONTROL_ARM} lower={cl:.3f}>={G_LEVER}? {cl >= G_LEVER}; "
+          f"{TEST_ARM} upper={th:.3f}<={G_FLAT}? {th <= G_FLAT}; disjoint? {disjoint} "
+          f"=> {'FIRES' if bounds_fires else 'does not fire'}")
+    if point_fires != bounds_fires:
+        print(f"  ⇒ THE TWO READINGS DISAGREE. For a job predating the "
+              f"2026-08-03 fix, that is itself the verdict: NO VERDICT, because "
+              f"the deciding rule was ambiguous where it mattered. Neither "
+              f"reading may be adopted for it after the fact.")
+        return
+
     if gc >= G_LEVER and gt <= G_FLAT and disjoint:
         v = (f"ASYMMETRY ATTRIBUTABLE TO THE ARM. {CONTROL_ARM} responds "
               f"(g={gc:.2f}), {TEST_ARM} does not (g={gt:.2f}), CIs disjoint. "

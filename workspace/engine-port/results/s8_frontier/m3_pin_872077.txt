@@ -1,0 +1,333 @@
+=== M3 PIN GATES (rate-2 only, trace-force OFF) job=872077 ===
+★2026-08-03: THREE numbers per cell now. The legacy gate is kept because
+  every prior report was scored on it, but it is an IDENTITY -- verified
+  over 120 files / 77,688 prefill-active snapshots, ZERO violations of
+     prefill_sms != target  <=>  decode_running_batch_size == 0
+  -- so it scores the DESIGNED decode-empty auto-revert
+  (multiplexing_mixin.py:773,792-794; CONSENSUS 1-22) as a failure.
+  COND_PIN is the gate that asks the pin question (population restricted
+  to prefill-active AND decode-busy). DECODE_REALIZED is the axis that
+  was never gated at all. Re-scoring 872077 with COND_PIN is POST HOC
+  and flagged as such; COND_PIN_MIN=0.99 binds forward.
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d16_b1_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=3, n_pa_snapshots=4, min_lower95=0.8)
+                                   decode_realized: 0.1272 (t_decode_active=113.6s)  hist: D108:99.18s(87%), D16:14.45s(13%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d16_b2_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=9, n_pa_snapshots=9, min_lower95=0.8)
+                                   decode_realized: 0.1237 (t_decode_active=99.7s)  hist: D108:87.35s(88%), D16:12.34s(12%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d16_b3_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=5, n_pa_snapshots=5, min_lower95=0.8)
+                                   decode_realized: 0.1068 (t_decode_active=109.3s)  hist: D108:97.67s(89%), D16:11.67s(11%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d16_b4_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=6, n_pa_snapshots=6, min_lower95=0.8)
+                                   decode_realized: 0.0902 (t_decode_active=119.1s)  hist: D108:108.15s(91%), D16:10.75s(9%), D0:0.18s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d16_b5_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=7, n_pa_snapshots=7, min_lower95=0.8)
+                                   decode_realized: 0.0828 (t_decode_active=125.0s)  hist: D108:114.70s(92%), D16:10.35s(8%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d16_b6_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.561 < 0.8 (point estimate 0.842, n_episodes=8) (pin_frac=0.842, lower95=0.561, n_episodes=8, n_pa_snapshots=116, min_lower95=0.8)
+                                   decode_realized: 0.0967 (t_decode_active=111.8s)  hist: D108:100.97s(90%), D16:10.80s(10%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d16_b7_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.239 < 0.8 (point estimate 0.706, n_episodes=5) (pin_frac=0.706, lower95=0.239, n_episodes=5, n_pa_snapshots=6, min_lower95=0.8)
+                                   decode_realized: 0.0875 (t_decode_active=110.7s)  hist: D108:100.97s(91%), D16:9.69s(9%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d16_b8_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.662 < 0.8 (point estimate 0.904, n_episodes=7) (pin_frac=0.904, lower95=0.662, n_episodes=7, n_pa_snapshots=58, min_lower95=0.8)
+                                   decode_realized: 0.1180 (t_decode_active=114.0s)  hist: D108:100.55s(88%), D16:13.46s(12%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d24_b1_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=8, n_pa_snapshots=9, min_lower95=0.8)
+                                   decode_realized: 0.1221 (t_decode_active=113.6s)  hist: D108:99.71s(88%), D24:13.87s(12%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d24_b2_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=10, n_pa_snapshots=11, min_lower95=0.8)
+                                   decode_realized: 0.1511 (t_decode_active=98.1s)  hist: D108:83.29s(85%), D24:14.82s(15%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d24_b3_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=9, n_pa_snapshots=11, min_lower95=0.8)
+                                   decode_realized: 0.1347 (t_decode_active=109.5s)  hist: D108:94.77s(87%), D24:14.75s(13%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d24_b4_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=7, n_pa_snapshots=7, min_lower95=0.8)
+                                   decode_realized: 0.0711 (t_decode_active=119.0s)  hist: D108:110.22s(93%), D24:8.46s(7%), D0:0.32s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d24_b5_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=9, n_pa_snapshots=9, min_lower95=0.8)
+                                   decode_realized: 0.0900 (t_decode_active=124.6s)  hist: D108:113.40s(91%), D24:11.21s(9%), D0:0.00s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d24_b6_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.758 < 0.8 (point estimate 0.916, n_episodes=12) (pin_frac=0.916, lower95=0.758, n_episodes=12, n_pa_snapshots=122, min_lower95=0.8)
+                                   decode_realized: 0.0965 (t_decode_active=113.0s)  hist: D108:102.10s(90%), D24:10.90s(10%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d24_b7_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=9, n_pa_snapshots=10, min_lower95=0.8)
+                                   decode_realized: 0.1035 (t_decode_active=110.3s)  hist: D108:98.67s(89%), D24:11.41s(10%), D0:0.18s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d24_b8_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.960, lower95=0.869, n_episodes=11, n_pa_snapshots=63, min_lower95=0.8)
+                                   decode_realized: 0.1114 (t_decode_active=113.7s)  hist: D108:101.06s(89%), D24:12.67s(11%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d44_b1_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=15, n_pa_snapshots=16, min_lower95=0.8)
+                                   decode_realized: 0.1367 (t_decode_active=113.8s)  hist: D108:98.25s(86%), D44:15.56s(14%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d44_b2_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=12, n_pa_snapshots=15, min_lower95=0.8)
+                                   decode_realized: 0.1938 (t_decode_active=98.0s)  hist: D108:78.98s(81%), D44:18.98s(19%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d44_b3_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=15, n_pa_snapshots=15, min_lower95=0.8)
+                                   decode_realized: 0.1758 (t_decode_active=109.8s)  hist: D108:90.17s(82%), D44:19.30s(18%), D0:0.31s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d44_b4_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=14, n_pa_snapshots=16, min_lower95=0.8)
+                                   decode_realized: 0.1071 (t_decode_active=118.8s)  hist: D108:106.05s(89%), D44:12.72s(11%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d44_b5_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=20, n_pa_snapshots=20, min_lower95=0.8)
+                                   decode_realized: 0.1312 (t_decode_active=125.3s)  hist: D108:108.86s(87%), D44:16.44s(13%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d44_b6_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.940, lower95=0.834, n_episodes=17, n_pa_snapshots=125, min_lower95=0.8)
+                                   decode_realized: 0.1383 (t_decode_active=111.5s)  hist: D108:96.08s(86%), D44:15.42s(14%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d44_b7_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=8, n_pa_snapshots=10, min_lower95=0.8)
+                                   decode_realized: 0.1234 (t_decode_active=110.6s)  hist: D108:96.97s(88%), D44:13.65s(12%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d44_b8_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.960, lower95=0.877, n_episodes=16, n_pa_snapshots=68, min_lower95=0.8)
+                                   decode_realized: 0.1805 (t_decode_active=113.6s)  hist: D108:93.13s(82%), D44:20.50s(18%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d54_b1_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=17, n_pa_snapshots=21, min_lower95=0.8)
+                                   decode_realized: 0.2071 (t_decode_active=113.8s)  hist: D108:90.22s(79%), D54:23.56s(21%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d54_b2_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=16, n_pa_snapshots=24, min_lower95=0.8)
+                                   decode_realized: 0.2645 (t_decode_active=99.1s)  hist: D108:72.88s(74%), D54:26.20s(26%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d54_b3_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.985, lower95=0.950, n_episodes=27, n_pa_snapshots=31, min_lower95=0.8)
+                                   decode_realized: 0.2374 (t_decode_active=109.6s)  hist: D108:83.57s(76%), D54:26.02s(24%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d54_b4_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=21, n_pa_snapshots=24, min_lower95=0.8)
+                                   decode_realized: 0.1595 (t_decode_active=118.8s)  hist: D108:99.81s(84%), D54:18.94s(16%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d54_b5_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=22, n_pa_snapshots=23, min_lower95=0.8)
+                                   decode_realized: 0.1584 (t_decode_active=126.5s)  hist: D108:106.44s(84%), D54:20.03s(16%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d54_b6_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.934, lower95=0.820, n_episodes=17, n_pa_snapshots=130, min_lower95=0.8)
+                                   decode_realized: 0.1739 (t_decode_active=111.6s)  hist: D108:92.19s(83%), D54:19.40s(17%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d54_b7_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=11, n_pa_snapshots=12, min_lower95=0.8)
+                                   decode_realized: 0.1135 (t_decode_active=110.6s)  hist: D108:98.02s(89%), D54:12.55s(11%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_Ha8_d54_b8_872077         COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.979, lower95=0.933, n_episodes=18, n_pa_snapshots=72, min_lower95=0.8)
+                                   decode_realized: 0.1829 (t_decode_active=114.1s)  hist: D108:92.83s(81%), D54:20.87s(18%), D0:0.38s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d16_b1_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.593 < 0.8 (point estimate 0.867, n_episodes=8) (pin_frac=0.867, lower95=0.593, n_episodes=8, n_pa_snapshots=12, min_lower95=0.8)
+                                   decode_realized: 0.0310 (t_decode_active=101.0s)  hist: D108:97.85s(97%), D16:3.13s(3%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d16_b2_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.187 < 0.8 (point estimate 0.630, n_episodes=6) (pin_frac=0.630, lower95=0.187, n_episodes=6, n_pa_snapshots=23, min_lower95=0.8)
+                                   decode_realized: 0.0529 (t_decode_active=86.6s)  hist: D108:81.98s(95%), D16:4.58s(5%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d16_b3_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=1.000, lower95=1.000, n_episodes=4, n_pa_snapshots=4, min_lower95=0.8)
+                                   decode_realized: 0.0263 (t_decode_active=96.8s)  hist: D108:94.22s(97%), D16:2.55s(3%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d16_b4_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.997, lower95=0.973, n_episodes=4, n_pa_snapshots=4, min_lower95=0.8)
+                                   decode_realized: 0.0321 (t_decode_active=111.2s)  hist: D108:107.62s(97%), D16:3.56s(3%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d16_b5_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.363 < 0.8 (point estimate 0.766, n_episodes=7) (pin_frac=0.766, lower95=0.363, n_episodes=7, n_pa_snapshots=35, min_lower95=0.8)
+                                   decode_realized: 0.0249 (t_decode_active=112.2s)  hist: D108:109.43s(98%), D16:2.80s(2%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d16_b6_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.406 < 0.8 (point estimate 0.730, n_episodes=9) (pin_frac=0.730, lower95=0.406, n_episodes=9, n_pa_snapshots=84, min_lower95=0.8)
+                                   decode_realized: 0.0527 (t_decode_active=100.4s)  hist: D108:95.14s(95%), D16:5.30s(5%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d16_b7_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.000 < 0.8 (point estimate 0.657, n_episodes=3) (pin_frac=0.657, lower95=0.000, n_episodes=3, n_pa_snapshots=4, min_lower95=0.8)
+                                   decode_realized: 0.0373 (t_decode_active=98.9s)  hist: D108:95.19s(96%), D16:3.69s(4%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d16_b8_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=16(P92) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.295 < 0.8 (point estimate 0.611, n_episodes=12) (pin_frac=0.611, lower95=0.295, n_episodes=12, n_pa_snapshots=56, min_lower95=0.8)
+                                   decode_realized: 0.0468 (t_decode_active=99.5s)  hist: D108:94.86s(95%), D16:4.66s(5%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d24_b1_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.950, lower95=0.860, n_episodes=16, n_pa_snapshots=20, min_lower95=0.8)
+                                   decode_realized: 0.0530 (t_decode_active=100.9s)  hist: D108:95.45s(95%), D24:5.35s(5%), D0:0.11s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d24_b2_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.747 < 0.8 (point estimate 0.897, n_episodes=14) (pin_frac=0.897, lower95=0.747, n_episodes=14, n_pa_snapshots=31, min_lower95=0.8)
+                                   decode_realized: 0.0592 (t_decode_active=86.8s)  hist: D108:81.63s(94%), D24:5.13s(6%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d24_b3_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.743 < 0.8 (point estimate 0.899, n_episodes=10) (pin_frac=0.899, lower95=0.743, n_episodes=10, n_pa_snapshots=11, min_lower95=0.8)
+                                   decode_realized: 0.0382 (t_decode_active=96.5s)  hist: D108:92.78s(96%), D24:3.69s(4%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d24_b4_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.780 < 0.8 (point estimate 0.921, n_episodes=16) (pin_frac=0.921, lower95=0.780, n_episodes=16, n_pa_snapshots=16, min_lower95=0.8)
+                                   decode_realized: 0.0394 (t_decode_active=110.9s)  hist: D108:106.56s(96%), D24:4.37s(4%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d24_b5_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.645 < 0.8 (point estimate 0.856, n_episodes=13) (pin_frac=0.856, lower95=0.645, n_episodes=13, n_pa_snapshots=40, min_lower95=0.8)
+                                   decode_realized: 0.0423 (t_decode_active=112.2s)  hist: D108:107.43s(96%), D24:4.75s(4%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d24_b6_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.759 < 0.8 (point estimate 0.912, n_episodes=13) (pin_frac=0.912, lower95=0.759, n_episodes=13, n_pa_snapshots=75, min_lower95=0.8)
+                                   decode_realized: 0.0474 (t_decode_active=99.2s)  hist: D108:94.33s(95%), D24:4.70s(5%), D0:0.17s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d24_b7_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.574 < 0.8 (point estimate 0.844, n_episodes=8) (pin_frac=0.844, lower95=0.574, n_episodes=8, n_pa_snapshots=9, min_lower95=0.8)
+                                   decode_realized: 0.0464 (t_decode_active=98.4s)  hist: D108:93.85s(95%), D24:4.57s(5%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d24_b8_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=24(P84) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.685 < 0.8 (point estimate 0.852, n_episodes=18) (pin_frac=0.852, lower95=0.685, n_episodes=18, n_pa_snapshots=56, min_lower95=0.8)
+                                   decode_realized: 0.0510 (t_decode_active=99.6s)  hist: D108:94.54s(95%), D24:5.08s(5%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d44_b1_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.977, lower95=0.931, n_episodes=40, n_pa_snapshots=46, min_lower95=0.8)
+                                   decode_realized: 0.0964 (t_decode_active=101.2s)  hist: D108:91.46s(90%), D44:9.75s(10%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d44_b2_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.932, lower95=0.841, n_episodes=31, n_pa_snapshots=53, min_lower95=0.8)
+                                   decode_realized: 0.0905 (t_decode_active=86.6s)  hist: D108:78.76s(91%), D44:7.84s(9%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d44_b3_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.956, lower95=0.882, n_episodes=30, n_pa_snapshots=42, min_lower95=0.8)
+                                   decode_realized: 0.1028 (t_decode_active=96.5s)  hist: D108:86.60s(90%), D44:9.92s(10%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d44_b4_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.948, lower95=0.866, n_episodes=30, n_pa_snapshots=32, min_lower95=0.8)
+                                   decode_realized: 0.0734 (t_decode_active=110.8s)  hist: D108:102.69s(93%), D44:8.14s(7%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d44_b5_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.752 < 0.8 (point estimate 0.883, n_episodes=24) (pin_frac=0.883, lower95=0.752, n_episodes=24, n_pa_snapshots=53, min_lower95=0.8)
+                                   decode_realized: 0.0588 (t_decode_active=112.0s)  hist: D108:105.45s(94%), D44:6.58s(6%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d44_b6_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.948, lower95=0.859, n_episodes=25, n_pa_snapshots=96, min_lower95=0.8)
+                                   decode_realized: 0.0762 (t_decode_active=99.2s)  hist: D108:91.66s(92%), D44:7.56s(8%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d44_b7_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.939, lower95=0.837, n_episodes=24, n_pa_snapshots=26, min_lower95=0.8)
+                                   decode_realized: 0.0728 (t_decode_active=98.3s)  hist: D108:91.18s(93%), D44:7.16s(7%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d44_b8_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=44(P64) [TIME-WEIGHTED, bug #6]: FAIL -> pin_frac_lower95=0.767 < 0.8 (point estimate 0.876, n_episodes=31) (pin_frac=0.876, lower95=0.767, n_episodes=31, n_pa_snapshots=74, min_lower95=0.8)
+                                   decode_realized: 0.0813 (t_decode_active=99.3s)  hist: D108:91.27s(92%), D44:8.08s(8%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d54_b1_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.988, lower95=0.967, n_episodes=40, n_pa_snapshots=47, min_lower95=0.8)
+                                   decode_realized: 0.1044 (t_decode_active=101.0s)  hist: D108:90.42s(90%), D54:10.54s(10%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d54_b2_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.953, lower95=0.889, n_episodes=41, n_pa_snapshots=67, min_lower95=0.8)
+                                   decode_realized: 0.1222 (t_decode_active=86.9s)  hist: D108:76.10s(88%), D54:10.61s(12%), D0:0.17s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d54_b3_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.972, lower95=0.919, n_episodes=35, n_pa_snapshots=50, min_lower95=0.8)
+                                   decode_realized: 0.0956 (t_decode_active=96.2s)  hist: D108:87.03s(90%), D54:9.20s(10%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d54_b4_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.971, lower95=0.907, n_episodes=28, n_pa_snapshots=30, min_lower95=0.8)
+                                   decode_realized: 0.0655 (t_decode_active=111.2s)  hist: D108:103.96s(93%), D54:7.28s(7%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d54_b5_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.933, lower95=0.838, n_episodes=33, n_pa_snapshots=61, min_lower95=0.8)
+                                   decode_realized: 0.0728 (t_decode_active=112.5s)  hist: D108:104.18s(93%), D54:8.19s(7%), D0:0.11s(0%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d54_b6_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.946, lower95=0.855, n_episodes=30, n_pa_snapshots=98, min_lower95=0.8)
+                                   decode_realized: 0.0856 (t_decode_active=99.2s)  hist: D108:90.68s(91%), D54:8.49s(9%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d54_b7_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.946, lower95=0.859, n_episodes=32, n_pa_snapshots=37, min_lower95=0.8)
+                                   decode_realized: 0.0841 (t_decode_active=98.3s)  hist: D108:89.99s(92%), D54:8.26s(8%)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  e1m3_T8_d54_b8_872077          COND_PIN=1.0000 -> PASS
+                                   legacy: D=54(P54) [TIME-WEIGHTED, bug #6]: PASS (pin_frac=0.937, lower95=0.875, n_episodes=43, n_pa_snapshots=93, min_lower95=0.8)
+                                   decode_realized: 0.1097 (t_decode_active=99.4s)  hist: D108:88.51s(89%), D54:10.91s(11%)
+--- COND_PIN: 64 PASS / 0 FAIL (threshold 0.99) ---
+all cells held their target partition whenever the question was well posed.

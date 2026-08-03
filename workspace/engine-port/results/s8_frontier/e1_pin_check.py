@@ -350,6 +350,119 @@ def compute_time_weighted_pin_gate(telemetry_path, expect_d, t0=None, t1=None,
     )
 
 
+def compute_conditional_pin_gate(telemetry_path, expect_d, t0=None, t1=None):
+    """★★NEW 2026-08-03 -- THE PIN GATE THAT ACTUALLY ASKS THE PIN QUESTION.
+
+    compute_time_weighted_pin_gate() above is an IDENTITY, not a measurement.
+    Verified over 120 telemetry files / 77,688 prefill-active snapshots (jobs
+    872077 + 872236 + 872497), with ZERO violations in either direction:
+
+        prefill_sms != target   <=>   decode_running_batch_size == 0
+
+    That is not a control failure; `multiplex/multiplexing_mixin.py:773,792-794`
+    drops to the unsplit partition BY DESIGN when the decode batch is empty,
+    and `reports/CONSENSUS.md` sec 1-22 already records that fallback as "the
+    policy working as designed". So the old gate scores an intended code path
+    as a failure, and its "pin_frac" is really "the share of prefill-in-flight
+    time during which decode happened to be non-empty" -- methodology gate #6
+    (do not use an identity as evidence).
+
+    This function restricts the population to snapshots where BOTH engines have
+    work (prefill_active > 0 AND decode_running > 0), which is the only regime
+    in which "did prefill run on its target partition?" is even a question. On
+    all three jobs the answer is 1.000 exactly (27,360 / 27,360) -- the
+    partition control is fully realized wherever it is meaningful.
+
+    Returns the same shape as the old gate plus `n_concurrent_snapshots`."""
+    expect_p = D_TO_PREFILL.get(expect_d)
+    if expect_p is None:
+        raise ValueError(f"unknown D={expect_d}, not in {sorted(D_TO_PREFILL)}")
+    rows = []
+    for line in open(telemetry_path):
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        if e.get("event") != "runtime_snapshot" or e.get("phase") != "benchmark":
+            continue
+        ts = e.get("timestamp_monotonic_s")
+        if ts is None or (t0 is not None and ts < t0) or (t1 is not None and ts > t1):
+            continue
+        rows.append((ts, e.get("prefill_sms"), e.get("prefill_active_batch_size", 0),
+                     e.get("decode_running_batch_size", 0)))
+    rows.sort(key=lambda r: r[0])
+    t_tot = t_targ = 0.0
+    n_conc = 0
+    for i, (ts, psm, pab, drb) in enumerate(rows):
+        if i + 1 >= len(rows):
+            break
+        if pab > 0 and drb > 0:
+            dt = max(0.0, rows[i + 1][0] - ts)
+            t_tot += dt
+            n_conc += 1
+            if psm == expect_p:
+                t_targ += dt
+    return dict(expect_p=expect_p, expect_d=expect_d,
+                n_concurrent_snapshots=n_conc,
+                t_concurrent_s=t_tot,
+                cond_pin_frac=(t_targ / t_tot) if t_tot else float("nan"))
+
+
+def compute_decode_realized(telemetry_path, expect_d, t0=None, t1=None):
+    """★★NEW 2026-08-03 -- THE GATE THAT WAS MISSING ENTIRELY.
+
+    CONSENSUS sec 1-22 established that a cell label is a TARGET, not a
+    realized allocation, and required partition sweeps to report the realized
+    time-weighted distribution. That was applied to the PREFILL axis only. The
+    decode axis was never gated, and it is where the campaign's estimand lives.
+
+    Measured over job 872077's full telemetry (time-weighted over
+    decode-ACTIVE time, n=8 blocks per cell):
+
+        T8   d16 0.038  d24 0.047  d44 0.082  d54 0.092
+        Ha8  d16 0.104  d24 0.110  d44 0.148  d54 0.187
+
+    i.e. the cell's decode split is realized over only 4-19% of decode work
+    time; the other 81-96% runs unsplit at 108 SM. Two consequences that any
+    reader of `g` needs:
+      - the E1 grid does NOT deliver a sustained decode-SM allocation, so it is
+        not measuring the same physical quantity C2 measured (C2 pinned prefill
+        and ran decode at D continuously);
+      - the dilution factor VARIES BY CELL (T8 0.038 -> 0.092, Ha8 0.104 ->
+        0.187), so g = A_free(d16)/A_free(d54) moves the SM level and the
+        engagement rate together. That is a confound inside g itself.
+
+    This is the decode-side analogue of the Stage 0 D108 error (label != what
+    ran), and unlike Stage 0 there was no gate here at all."""
+    rows = []
+    for line in open(telemetry_path):
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        if e.get("event") != "runtime_snapshot" or e.get("phase") != "benchmark":
+            continue
+        ts = e.get("timestamp_monotonic_s")
+        if ts is None or (t0 is not None and ts < t0) or (t1 is not None and ts > t1):
+            continue
+        rows.append((ts, e.get("decode_sms"), e.get("decode_running_batch_size", 0)))
+    rows.sort(key=lambda r: r[0])
+    t_tot = t_targ = 0.0
+    hist = {}
+    for i, (ts, dsm, drb) in enumerate(rows):
+        if i + 1 >= len(rows):
+            break
+        if drb > 0:
+            dt = max(0.0, rows[i + 1][0] - ts)
+            t_tot += dt
+            hist[dsm] = hist.get(dsm, 0.0) + dt
+            if dsm == expect_d:
+                t_targ += dt
+    return dict(expect_d=expect_d, t_decode_active_s=t_tot,
+                decode_realized_frac=(t_targ / t_tot) if t_tot else float("nan"),
+                decode_hist=hist)
+
+
 def time_weighted_gate_verdict(g, min_lower95=0.80):
     """PRIMARY, cite-blocking criterion (2026-07-30 revision): the
     episode-bootstrap 95% lower bound of the TIME-WEIGHTED pin fraction
@@ -618,6 +731,26 @@ def main():
           f"n_episodes={g['n_episodes']}, n_pa_snapshots={g['n_pa_snapshots']}, "
           f"min_lower95={min_lower95})"
           + (v.get('reliability_note', '') if v['pin_pass'] else ''))
+
+    # ★★2026-08-03: the two gates that replace the identity above. Printed
+    # ALONGSIDE it, never instead of it -- the old gate's number is what every
+    # prior report was scored on, so removing it would make those reports
+    # unreproducible (methodology gate #8: re-scoring is for estimand
+    # selection, and the original must stay visible).
+    c = compute_conditional_pin_gate(telemetry_path, expect_d, t0, t1)
+    print(f"E1_COND_PIN D={expect_d}(P{c['expect_p']}) [population = prefill-active "
+          f"AND decode-busy, the only regime where the pin question is well posed]: "
+          f"cond_pin_frac={c['cond_pin_frac']:.4f} "
+          f"(n_concurrent_snapshots={c['n_concurrent_snapshots']}, "
+          f"t_concurrent={c['t_concurrent_s']:.3f}s)")
+    dr = compute_decode_realized(telemetry_path, expect_d, t0, t1)
+    dh = ", ".join(f"D{k}:{v:.2f}s({v/dr['t_decode_active_s']*100:.0f}%)"
+                    for k, v in sorted(dr["decode_hist"].items(),
+                                       key=lambda kv: -kv[1])[:4]) \
+        if dr["t_decode_active_s"] else "(none)"
+    print(f"E1_DECODE_REALIZED D={expect_d}: frac(decode_sms==D) over decode-active "
+          f"time = {dr['decode_realized_frac']:.4f} "
+          f"(t_decode_active={dr['t_decode_active_s']:.1f}s)  hist: {dh}")
 
     # --- OPTIONAL, non-gating: per-request latency-attribution diagnostic
     # (compute_episode_gate, rescoped 2026-07-30 -- NOT the pin gate any
