@@ -1,6 +1,28 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-03(같은 세션 3차 속행 — doc-steward 기록. C2 →
+최종 갱신: 2026-08-03(같은 세션 4차 속행 — doc-steward 기록, **상태 기록
+· 성능 판정 0건 · GPU 런(S2)은 별도 제출 중·결과 없음**. 3차 속행이 연
+§0의 이분법((i)/(ii))이 **유지 불가**로 판정됐다 — `split_frac≥0.90`이
+D 파티션 실행 토큰을 순수하지도 완전하지도 않게 잡는다는 **세 번째 후보
+(iii)**가 실측으로 문서화됨(claims-auditor 자기감사 재프레이밍 +
+result-analyst 독립 재현 `S0R_REPLICATION_2026-08-03.md`: 행 1·3 재현,
+행 2 순서만, 행 5(클럭) 미발화, ★행 4(음성대조)가 UNSPLIT도 같은 슬로우
+모드를 가짐을 보여 강한 형태를 죽임 — 살아남는 건 농축 2.33–3.24×뿐).
+남은 두 읽기는 **오프라인 분리 불가**, S2가 인과 시험. **철회 3건**
+(메인 세션이 같은 날 앞서 씀): "§0 stands as written"·"aggregation-
+invariant"·"11.09는 집계 단위 미기록"(**틀림** — 산출자는
+`m3_conditional.report_conditional` [3] `sp_p50=11.0905`,
+`m3_conditional.py:158-161,251-262,316-329`에 문서화). **재사용 계측
+결함 2건**: `c2_anchor.py` 표 [5]가 M8 전체·Ha8 d16을 조용히 누락
+(측정 부재 아니라 텔레메트리 앵커 부재) · mode estimator 60ms 상한이
+arm-이식 불가. **게이트 정의(3.4.4 결정규칙) 변경 없음.**
+`G_LEVER`/`G_FLAT`는 여전히 UNDETERMINED. 상세
+`../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(4차)"
+소절, `../CONSENSUS.md` §1-30·§3-18·§3-19,
+`../../workspace/engine-port/results/s8_frontier/DESIGN.md` §4.3.15,
+사전등록 3건(`PREREG_S0_AXIS_2026-08-03.md`·`PREREG_S0R_MODE_2026-08-03.md`·
+`PREREG_S2_STICKY_ITL_2026-08-03.md`). 이전(같은 세션 3차 속행 —
+doc-steward 기록. C2 →
 `G_LEVER`/`G_FLAT` 앵커 도출 시도(`c2_anchor.py`)를 claims-auditor가
 감사해 **경로 폐기**(주장 1만 CONFIRMED, 2–5 REFUTED/NOT-YET-SUPPORTED).
 **`G_LEVER`/`G_FLAT`는 여전히 UNDETERMINED**, 다음 시도는 감사자 발안
@@ -388,6 +410,48 @@ as-run 설정에서 **네 arm 전부 헤드라인 룽 없음**, (b) 그 as-run �
 > 승인 주체일 수 없다). 상세 `../CONSENSUS.md` §1-28·§1-29,
 > `../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(3차)"
 > 소절, `DESIGN.md` §4.3.13–4.3.14.
+>
+> ★★★**(2026-08-03, 같은 세션 4차 속행) §0의 이분법이 유지 불가로 판정
+> — 세 번째 후보 (iii) 실측 문서화, 오프라인 분리 불가, GPU(S2) 별도
+> 제출 중·결과 없음. 성능 판정 0건.** §0은 (i) 872077의 `decode_sms==16`
+> 이 실제 16-SM 실행이 아니다 / (ii) C2의 28–31ms가 셀 배치 성질이다 중
+> 하나가 거짓이라는 이분법이었다. claims-auditor가 `FINDINGS_S0_AXIS_
+> 2026-08-03.md`를 감사하며(자기감사, 방법론 교훈 12) 이 이분법이
+> "`split_frac≥0.90`이 D 파티션 실행 토큰을 올바로 분리한다"는 전제 위에
+> 서 있고 그 전제가 T8 세 공유 셀 전부에서 깨진다는 재프레이밍을 냈다 —
+> E1 SPLIT 모집단이 이봉이고 윗봉이 C2 셀별 p50과 1–2% 일치, 아랫봉은
+> 같은 job UNSPLIT과 통계적으로 동일. **독립 재현**(result-analyst,
+> `S0R_REPLICATION_2026-08-03.md`, claims-auditor도 사전등록 세션도
+> 아님, 감사된 `m3_conditional.py` 프리미티브만 프리미티브별 재사용
+> 선언·생산자 자체에 gate 대조): 행 1·3 재현, 행 2는 순서만(d24−d16
+> 미해결), **행 5(클럭 lag) 미발화**(최적 δ=+0.10s서도 slow share
+> 11.4%). ★**행 4(음성대조)가 강한 형태를 죽였다**: 같은 estimator를
+> UNSPLIT(108 SM)에 적용하면 T8 전 셀에서 동일한 슬로우 모드가 나타나고
+> 그 위치가 셀을 따라간다(33.88→22.12→15.62→14.12ms, D 16→24→44→54;
+> d16 슬로우 토큰 8,893개 중 7,903개=88.9%가 UNSPLIT 라벨) ⇒ SPLIT은
+> 배타가 아니라 **농축**(2.33–3.24×). ⇒ **세 번째 후보 (iii)**: 두
+> job은 같은 축이나 라벨이 순수하지도 완전하지도 않다 — §0은 이제
+> 3지선다이며 오프라인으로 분리 불가. 남은 두 읽기(셀 수준 현상 vs 클럭
+> 오프셋 누출)는 **S2**(GPU, `PREREG_S2_STICKY_ITL_2026-08-03.md`, 별도
+> 제출 중, 결과 없음)만이 인과적으로 분리 가능. **철회 3건**(메인
+> 세션이 같은 날 앞서 씀, `FINDINGS_S0_AXIS_2026-08-03.md` 배너와
+> 동일): "§0 stands as written"·"aggregation-invariant"·"11.09는 집계
+> 단위 미기록"(**틀림** — 산출자는 `m3_conditional.report_conditional`
+> [3] `sp_p50=11.0905`, n=11,124, `a_free_only=True`,
+> `m3_conditional.py:158-161,251-262,316-329`에 문서화, 없는 건 stdout
+> 저장분뿐). **재사용 계측 결함 2건**: `c2_anchor.py` 표 [5]가 M8 전체·
+> Ha8 d16을 조용히 누락(`meta`가 `t0_monotonic_s` 분기 안에서만 채워짐,
+> `c2_anchor.py:181-187` — Ha8 d16은 돌았다, `itl_ms_p50=112.84`
+> n=5200, 빠진 건 텔레메트리 앵커뿐) · mode estimator 60ms 상한은
+> arm-이식 불가(Ha8은 토큰의 0.16%만 창 안). **증거 수준**: 강한
+> 형태(레버=D-SM 실행)는 **채택 불가**(음성대조 반증), 약한 형태(이봉·
+> 농축)는 **재현됨(독립성 부분적** — 추정량은 감사자 제안, 사전등록은
+> 메인 세션, 실행만 독립**)**. 게이트 S1(§4.3.13)은 "부분 실현" 분기가
+> 없어 **현 상태로 실행 불가**(4번째 분기 필요). `G_LEVER`/`G_FLAT`는
+> §4.3.12(d) 그대로 **UNDETERMINED 유지**(이번 회차로도 미해소).
+> **게이트 정의(3.4.4 결정규칙) 변경 없음.** 상세 `../CONSENSUS.md`
+> §1-30·§3-18·§3-19, `../../PROJECT_STATUS.md` "8B decode-SM 프론티어"
+> "2026-08-03(4차)" 소절, `DESIGN.md` §4.3.15.
 
 | ID | 고정 workload |
 |---|---|

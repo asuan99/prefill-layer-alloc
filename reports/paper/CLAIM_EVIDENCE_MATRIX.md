@@ -1,6 +1,24 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-03(**등급 변경 없음** — 같은 세션 3차 속행: C2 →
+최종 갱신: 2026-08-03(**등급 변경 없음, 성능 판정 0건 — 같은 세션 4차
+속행: 상태 기록. GPU 런(S2)은 별도 제출 중이고 결과 없음.** 3차 속행이
+연 §0의 이분법((i)/(ii))이 **유지 불가**임이 확인됐다 — `split_frac≥0.90`이
+D 파티션 실행 토큰을 순수하지도 완전하지도 않게 잡는다는 **세 번째 후보
+(iii)**가 실측으로 문서화됐다(claims-auditor 재프레이밍[자기감사] +
+result-analyst 독립 재현 `S0R_REPLICATION_2026-08-03.md`: 행 1·3 재현,
+행 2는 순서만, 행 5(클럭) 미발화, ★행 4(음성대조)가 UNSPLIT도 같은 슬로우
+모드를 가짐을 보여 강한 형태를 죽임 — 살아남는 건 농축 2.33–3.24×뿐).
+남은 두 읽기는 **오프라인 분리 불가**, S2(GPU, 별도 제출 중·결과 없음)가
+인과 시험. **철회 3건**(메인 세션이 같은 날 앞서 씀): "§0 stands as
+written"·"aggregation-invariant"·"11.09는 집계 단위 미기록"(**틀림** —
+산출자는 `m3_conditional.report_conditional` [3] `sp_p50=11.0905`,
+`m3_conditional.py:158-161,251-262,316-329`에 문서화). **재사용 계측
+결함 2건**: `c2_anchor.py` 표 [5]가 M8 전체·Ha8 d16을 조용히 누락(측정
+부재 아니라 텔레메트리 앵커 부재) · mode estimator 60ms 상한이 arm-이식
+불가. `G_LEVER`/`G_FLAT`는 여전히 UNDETERMINED. 상세
+`../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(4차)" 소절,
+`../CONSENSUS.md` §1-30·§3-18·§3-19, `results/s8_frontier/DESIGN.md`
+§4.3.15. 이전(같은 세션 3차 속행): C2 →
 `G_LEVER` 앵커 도출 시도(`c2_anchor.py`)를 claims-auditor가 감사 — 주장 1만
 생존, 2–5 REFUTED/NOT-YET-SUPPORTED. `G_LEVER`/`G_FLAT`는 여전히
 UNDETERMINED. ★**신규 최상위 열린 항목**: 같은 arm·서버 플래그·매칭 batch에서
@@ -118,6 +136,24 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   해소 전까지 이는 872077·sticky 결과 전체가 딛고 선 층이다. 인용 시
   "C2와 E1 격자가 같은 물리량을 잰다"고 전제하지 말 것. 상세
   `results/s8_frontier/DESIGN.md` §4.3.13, `../CONSENSUS.md` §1-28.
+- ★★★**(2026-08-03, 같은 세션 4차 속행) 위 항목의 이분법이 유지 불가로
+  판정 — 인용 문구를 3지선다로 갱신, 여전히 인용 시 "C2와 E1 격자가 같은
+  물리량을 잰다"고 전제하지 말 것.** claims-auditor 재프레이밍(자기감사,
+  UNAUDITED로 출발) + result-analyst 독립 재현(`S0R_REPLICATION_
+  2026-08-03.md`, 부분 독립 — 추정량=감사자 제안, 사전등록=메인 세션,
+  실행만 독립)이 **세 번째 후보 (iii)**를 실측으로 문서화했다: 872077의
+  E1 SPLIT 모집단은 이봉이고 윗봉이 C2 셀별 p50과 1–2% 일치, 아랫봉은
+  같은 job UNSPLIT과 통계적으로 동일 — `split_frac≥0.90`은 D 파티션
+  실행 토큰을 배타적으로도 완전하게도 잡지 못하고 **농축**만 한다
+  (2.33–3.24×). 감사자 재프레이밍의 **강한 형태**(레버=D-SM 실행 식별)는
+  음성대조(같은 estimator를 UNSPLIT에 적용, d16 슬로우 토큰의 88.9%가
+  UNSPLIT 라벨)로 **채택 불가**하나, **약한 형태**(이봉·농축)는 재현됐다.
+  ⇒ **인용 시**: §0을 (i)/(ii) 이분이 아니라 (i)/(ii)/(iii) 3지선다로
+  쓰고, 어느 쪽도 오프라인으로 판정되지 않았다고 쓸 것. **성능 판정
+  0건** — GPU 런(S2, `PREREG_S2_STICKY_ITL_2026-08-03.md`)이 별도 제출
+  중이나 결과 없음. `G_LEVER`/`G_FLAT`는 UNDETERMINED 그대로. 상세
+  `results/s8_frontier/DESIGN.md` §4.3.15, `../CONSENSUS.md` §1-30·
+  §3-18·§3-19.
 - Claim B는 A100/SGLang green-context implementation에 한정한다.
   ★**positioning 판정(2026-07-25, `venue_positioning.md` §0.1)**: 이것은 논문의
   negative 중 "(A) green-context 종속" 축이다 — DuetServe(libsmctrl)가 정면으로

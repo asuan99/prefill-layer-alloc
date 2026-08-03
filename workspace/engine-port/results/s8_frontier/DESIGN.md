@@ -1896,6 +1896,217 @@ auditor's separate 1290 MHz throttling observation on `np` (§4.3.13's claim
 3) — split cells here sit flat at 1396-1410 MHz, consistent with but not
 independent confirmation of that finding.
 
+### 4.3.15 [doc-steward record, 2026-08-03, fourth continuation session] —
+    §0's dichotomy is not sustainable; a third, unresolved candidate is now
+    measured; two reusable instrumentation defects found; GPU test (S2)
+    submitted separately, **no results yet**
+
+> **Status record, not a performance verdict.** Everything below is
+> diagnostic/offline. **No throughput, latency, goodput, or `g` value is
+> claimed in this subsection.** `G_LEVER`/`G_FLAT` remain UNDETERMINED per
+> §4.3.12(d), unchanged by this round. Sources (all under
+> `results/s8_frontier/`, this session): pre-registration
+> [`PREREG_S0_AXIS_2026-08-03.md`](PREREG_S0_AXIS_2026-08-03.md), script
+> [`s0_axis_check.py`](s0_axis_check.py) + raw output
+> [`S0_AXIS_CHECK_2026-08-03.txt`](S0_AXIS_CHECK_2026-08-03.txt), findings
+> [`FINDINGS_S0_AXIS_2026-08-03.md`](FINDINGS_S0_AXIS_2026-08-03.md) (carries
+> its own RETRACTION BANNER), replication pre-registration
+> [`PREREG_S0R_MODE_2026-08-03.md`](PREREG_S0R_MODE_2026-08-03.md), independent
+> replication [`S0R_REPLICATION_2026-08-03.md`](S0R_REPLICATION_2026-08-03.md)
+> (result-analyst, independent execution — not claims-auditor, not the
+> session that wrote the pre-registrations), and the next-gate
+> pre-registration
+> [`PREREG_S2_STICKY_ITL_2026-08-03.md`](PREREG_S2_STICKY_ITL_2026-08-03.md).
+
+**(a) §0's dichotomy — a third candidate is documented, offline separation
+is impossible, the choice is not reduced.** §0 (above) posed a strict
+either/or: (i) 872077's `decode_sms==16` is not a real 16-SM hardware
+execution, or (ii) C2's 28-31ms is a cell-composition property. A same-day
+audit of `FINDINGS_S0_AXIS_2026-08-03.md` found that this dichotomy assumes
+`split_frac >= 0.90` correctly isolates D-partition-executed tokens on the
+E1 side, and that assumption does not hold: E1's SPLIT population (T8, all
+three shared cells) is **bimodal** — its upper mode reproduces C2's
+per-cell SPLIT p50 to within 1-2% (d16 0.992 / d24 0.991 / d44 1.013), and
+its lower mode is statistically identical to the **same job's UNSPLIT**
+population (d16 ratio 1.011). This reframing was **self-audited** (the
+auditor produced diagnosis and reframing in the same turn — methodology
+lesson 12) and was therefore replicated independently before any canon
+change: **result-analyst**, not claims-auditor and not the session that
+wrote the pre-registration, ran `PREREG_S0R_MODE_2026-08-03.md`'s five
+falsifier rows against raw telemetry, reusing only the audited
+`m3_conditional.py` primitives (declared per-primitive) and writing its own
+C2 reader and mode estimator from scratch, gated against the *producers*
+(`m3_conditional.label_probe` element-wise, and `s0dc_client`'s own recorded
+per-rep summary, 20/20 exact) rather than against another analysis script.
+
+Rows 1 and 3 **replicate** (upper mode / C2 p50 ratio 0.992/0.991/1.013,
+flat in D; fast mode / UNSPLIT ratio 1.000-1.023). Row 2 (slow-share rising
+monotonically in D) **replicates in ordering only** — the d24-d16 step is
+**not resolved beyond block scatter** (paired Δ = +2.37 ± 3.52 pp, n=8,
+t=1.90 < t_crit 2.365); the audit's quoted *levels* (8.95/13.60/23.62/29.38%)
+turned out to come from a different population
+(`a_free_only=False`) than the one the same pre-registration fixed
+(`a_free_only=True`, giving 6.82/9.48/17.68/22.55%) — an inconsistency
+**inside the pre-registration itself**, now recorded, with the direction of
+row 2 unaffected either way. Row 5 (a systematic clock-lag offset would make
+the "impurity" collapse to a base rate everywhere and a shifted realignment
+would push slow-share to >=90%) **does not fire**: the best lag (δ=+0.10s)
+raises slow share only to 11.4% (d16) / 27.0% (d44), far short of 90%, and at
+at |delta| >= 0.25s the contrast collapses to the UNSPLIT background (2.7-3.1%) —
+evidence the label carries *real* timing information, not pure clock noise,
+while also being fragile at the 0.05s scale.
+
+**Row 4 (negative control) is the load-bearing result — it fired
+substantively, and it is what changes the top open item.** The same mode
+estimator applied to the **UNSPLIT (108 SM) population** shows the identical
+slow mode at **every** T8 cell, its location tracking the cell exactly
+(33.88 -> 22.12 -> 15.62 -> 14.12 ms as D goes 16 -> 24 -> 44 -> 54; at d54
+the SPLIT and UNSPLIT slow modes are numerically identical, 14.12 = 14.12).
+The pre-registered falsifier ("a ~31ms mode at ~9% share") does not fire at
+d16/d24/d44 in its literal, share-based form (UNSPLIT share is 2.71/3.28/
+4.84%, below the 5% threshold; it does fire at d54, 5.61%) — but the
+*substance* the falsifier was written to protect against is confirmed: of
+d16's 8,893 slow tokens, **7,903 (88.9%) carry the UNSPLIT label** and only
+759 (8.5%) carry SPLIT. Enrichment (slow-token rate inside a class versus
+the population base rate) is **2.33-3.24x for SPLIT and 0.78-0.93x for
+UNSPLIT** across d16-d54 — i.e. `split_frac >= 0.90` **concentrates** the
+slow mode, it does not **isolate** it. Neither purity (~93% of SPLIT tokens
+sit at the fast mode) nor completeness (SPLIT captures 8.5% of the job's
+slow tokens at d16) holds.
+
+⇒ A **third candidate** is now measured, alongside (i) and (ii): **(iii)**
+both jobs sit on the same axis, 872077 *does* contain genuine D-SM-cost
+decode, but the label `split_frac >= 0.90` neither purely nor completely
+isolates it — some of that cost leaks into the class recorded as UNSPLIT.
+**§0's strict either/or is no longer tenable as stated; it is now
+three-way, and the three-way split cannot be resolved offline.** Two
+readings of the row-4 result survive and are **explicitly not separable
+without a GPU measurement**: (a) the slow mode is a cell-level phenomenon
+present regardless of the *realized* partition, or (b) it is genuine
+D-execution leaking into the UNSPLIT class through a systematic clock
+offset (consistent with row 5's lag-sensitivity, though row 5 also shows
+the contrast is not pure clock noise). The prefill-overlap column cannot
+arbitrate between (a)/(b) either — it is computed from the same
+(possibly-shifted) clock, so a mislabelled token is mislabelled on both
+fields at once. **This is a second dilution layer, nested inside the
+already-recorded time-level dilution** (`E1_DECODE_REALIZED` 4-19%,
+`CONSENSUS.md` §1-25) — and it is in the same family as Stage 0's
+target-vs-realized confusion (§1-21) and §1-26(B)'s estimand
+non-identification. **S2** (`PREREG_S2_STICKY_ITL_2026-08-03.md`), the
+sticky grid, is submitted separately as the causal test and **has no
+results in this record**.
+
+**(b) Retractions — three sentences withdrawn, matching
+`FINDINGS_S0_AXIS_2026-08-03.md`'s own banner.** All three were written by
+the main session in this campaign, in the same turn as the run, and are
+withdrawn here so they cannot be re-cited:
+
+1. "§0 stands as written" — over-read. What the first check showed is only
+   that E1's p50 is ≈11ms under three nearby aggregations; it did not, and
+   could not, adjudicate §0's (i)/(ii).
+2. "aggregation-invariant" — the correct statement is that the population is
+   **dominated by a single mode at ~11.06ms, hence insensitive to
+   aggregation choice**. Agreement across aggregations establishes **mode
+   dominance, not estimand identification** — a different, weaker claim.
+3. "11.09ms has no recorded aggregation unit" — **false, and the retraction
+   corrects a factual error, not a judgment call.** Its producer is
+   `m3_conditional.report_conditional` report [3], T8 d16 `sp_p50` =
+   **11.0905** (n=11,124, `a_free_only=True`), documented at
+   `m3_conditional.py:158-161,251-262,316-329`. Only the *stdout* of the
+   command that produced it (`python3 m3_conditional.py --job 872077 --only
+   conditional`) was never saved to a file. **A stored artifact not existing
+   and an estimand not being documented in code are different failure
+   modes** — do not conflate "I do not have the saved output" with "the
+   estimator that produced this number is undocumented."
+
+**(c) Two reusable instrumentation defects, recorded so they are not
+repeated.**
+
+1. ★`c2_anchor.py`'s table [5] ("UNCONDITIONED CELL SUMMARY") **silently
+   drops M8 entirely and Ha8's d16 cell** — not because those cells were not
+   measured, but because the script's `meta` dict is populated only inside
+   the branch that requires `"t0_monotonic_s" in s` (`c2_anchor.py:181-187`,
+   i.e. only when a client `t0` anchor exists), while table [5] itself does
+   not need an anchor to report an unconditioned cell summary. This is the
+   defect §4.3.13 already flagged in prose ("An arm with no anchor yields
+   zero rows, which is an absent measurement, not a measured zero") now
+   traced to the exact lines. 865493's client-`t0` anchor coverage, restated
+   precisely: **T8 and Hs8 have all 5 cells; Ha8 is missing d16; M8 has
+   none at all.** Concretely, the Ha8 d16 replicate **did run** (server-side
+   telemetry gives `itl_ms_p50 = 112.84ms`, n=5,200) — what is missing is
+   only the client-side anchor needed to bin it by C2's convention, not the
+   measurement itself. Anywhere a "cell summary" table from this script is
+   cited, its blanks must be read as **anchor-absent**, not **zero-valued**.
+2. The mode estimator's window, `(1.15 x p50, 60] ms`, is **not
+   arm-portable**. It was fixed for T8 (SPLIT p50 ~= 11ms) and is
+   effectively censoring for Ha8 (SPLIT p50 ~= 31.7ms): only **0.16%** of
+   Ha8 d16 SPLIT tokens (47 of ~29,000) fall inside the window, against a
+   `share_above`-style measure of 15.7%. Ha8's slow mass, **including the
+   unexplained ~87ms spike** that has been an open sub-item since the C2
+   campaign, sits **above the ceiling by construction** — the estimator
+   cannot see it, mechanically, regardless of what is true about Ha8. A
+   ceiling stated in units of p50 (not an absolute ms value) would avoid
+   this; S0-R correctly declined to retune it after the fact (that would be
+   post-hoc adjustment), so the defect is recorded, not silently patched.
+
+**(d) Methodology gates/lessons (continuing the numbered lists in
+`CONSENSUS.md` §3 and `PROJECT_STATUS.md` "방법론 게이트").**
+
+- **A gate that copies the code it is meant to validate is close to a
+  tautology.** `s0_axis_check.py`'s gate 1 re-implemented
+  `m3_conditional.label_probe`'s labelling loop and compared it against
+  itself on the same inputs — the one genuinely new quantity it added
+  (`wmean`, the mean-batch field) was never checked against anything. Gate
+  2 called `c2_anchor.collect`, the very function that produced the disputed
+  28.79ms number, to "verify" that number — circular by construction. The
+  fix demonstrated by S0-R's gate G-B: validate against the **producer**
+  (here, `s0dc_client`'s own recorded per-rep summary), not against another
+  analysis script that shares the code path under test — 20/20 anchored
+  reps matched exactly.
+- ★**Run the same estimator on the complement class as a negative
+  control.** Three passes over this material (the original C2->G_LEVER
+  audit, the first §0 axis check, and this session's own first framing)
+  all missed what a one-line addition caught: apply the identical mode
+  estimator to the UNSPLIT population and see whether the "SPLIT-specific"
+  signal is actually specific. This shares a root with the existing lesson
+  about gates counting an estimand's complement (`CONSENSUS.md` §3 item 9,
+  `PROJECT_STATUS.md` gate #7) but runs in the **opposite direction**: item
+  9 is about a gate *accidentally* failing because it counted the
+  complement; this is about **deliberately** measuring the complement to
+  test whether a label is exclusive — and it succeeded where three prior
+  passes did not.
+- Do not conflate "no stored output exists" with "the estimator is
+  undocumented" (see (b).3 above) — a specific, reusable instance of citing
+  absence-of-artifact as if it were absence-of-definition.
+
+**(e) Evidence level, stated precisely (no overclaim).**
+
+- The auditor's original reframing, in its **strong form** ("the slow mode
+  identifies D-SM execution, so `split_frac >= 0.90` simply mislabels most
+  of it") is **not adopted** — S0-R's negative control (row 4) refutes that
+  strong reading, because the same mode is present, at the same magnitude
+  and cell-tracking location, in the class that is *not* SPLIT.
+- The **weak form** — the SPLIT population is bimodal, its upper mode
+  matches C2's per-cell p50 within 1-2%, its lower mode matches the same
+  job's UNSPLIT population, and the slow mode is enriched 2.33-3.24x in
+  SPLIT without being confined to it — is **replicated, but independence is
+  only partial**: the mode estimator is the auditor's proposal, the
+  falsifiers (rows 4 and 5) and the pre-registration are the main session's,
+  and only the **execution** (S0R_REPLICATION_2026-08-03.md) is independent
+  of both. **This scope qualifier must travel with any citation.**
+- §0's (i)/(ii) choice (now (i)/(ii)/(iii)) remains **unadjudicated**. This
+  subsection changes what the open item *is* (a three-way split, not a
+  binary one), not its resolution.
+- Auditor-proposed **gate S1** (§4.3.13 "Remaining paths") is **not
+  runnable as written**: its three-way verdict table (workload/batch
+  attribution vs cell-composition property vs label-not-realized) has **no
+  branch for "partially realized"**, which is exactly the outcome this
+  session's evidence points toward. A fourth branch is required before S1
+  is submitted.
+- **`G_LEVER`/`G_FLAT` remain UNDETERMINED per §4.3.12(d)** — this round
+  neither resolves nor further constrains them; nothing here licenses any
+  numeric value for either.
+
 ### 4.4 Decision rule (pre-registered — do not change without updating this file)
 
 > For each arm, let best-static = the D cell (of the 5 measured) with the

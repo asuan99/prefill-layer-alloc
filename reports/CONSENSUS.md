@@ -4,8 +4,41 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-03 rev6 (★★★§1-28/§1-29 신설[같은 날 3차 속행, doc-steward
-기록]: `c2_anchor.py`로 시도한 C2→`G_LEVER` 앵커 도출을 claims-auditor가 감사 —
+최종 갱신: 2026-08-03 rev7 (★★★§1-30 신설[같은 날 4차 속행, doc-steward
+기록 — **성능 판정 0건, GPU 런은 별도 제출 중·결과 없음**]: §1-28 §0의
+이분법((i)/(ii))이 **유지 불가**임이 확인됐다. E1 SPLIT 모집단이 이봉이고
+윗봉이 C2 셀별 p50과 1–2% 일치, 아랫봉은 같은 job UNSPLIT과 통계적으로
+동일이라는 감사자 재프레이밍(자기감사, 방법론 교훈 12)을 result-analyst가
+독립 실행으로 재검증(`S0R_REPLICATION_2026-08-03.md`) — 행 1·3 재현, 행
+2는 순서만(d24−d16 미해결), **행 5(클럭) 미발화**(최적 δ=+0.10s서도 slow
+share 11.4%). ★**행 4(음성대조)가 강한 형태를 죽였다**: UNSPLIT(108 SM)
+클래스도 전 셀에서 이봉이고 느린 봉 위치가 셀을 따라간다(d16 8,893개 중
+7,903개=88.9%가 UNSPLIT 라벨) ⇒ SPLIT은 배타가 아니라 **농축**(2.33–
+3.24×). **세 번째 후보 (iii)**이 실측으로 문서화됐다: 두 job은 같은
+축이나 `split_frac≥0.90`이 D 파티션 실행 토큰을 순수하지도 완전하지도
+않게 잡는다. 남은 두 읽기(셀 수준 현상 vs 클럭 오프셋 누출)는 **오프라인
+분리 불가** — S2(GPU, 별도 제출 중, 결과 없음)가 인과 시험. **철회 3건**
+(메인 세션이 같은 날 앞서 씀): "§0 stands as written"·"aggregation-
+invariant"·"11.09는 집계 단위 미기록"(**틀림** — 산출자는
+`m3_conditional.report_conditional` [3] `sp_p50=11.0905`,
+`m3_conditional.py:158-161,251-262,316-329`에 문서화, 없는 것은 stdout
+저장분뿐). **재사용 계측 결함 2건**: `c2_anchor.py` 표 [5]가 M8 전체·
+Ha8 d16을 조용히 누락(`meta`가 `t0_monotonic_s` 분기 안에서만 채워짐,
+c2_anchor.py:181-187 — Ha8 d16은 **돌았다**, `itl_ms_p50=112.84` n=5200,
+빠진 건 텔레메트리 앵커뿐) · mode estimator 60ms 상한은 arm-이식 불가
+(Ha8은 토큰의 0.16%만 창 안). **증거 수준**: 강한 형태(레버=D-SM 실행)는
+**채택 불가**(음성대조 반증), 약한 형태(이봉·농축 2.33–3.24×)는
+**재현됨(독립성 부분적** — 추정량=감사자 제안, 사전등록=메인 세션,
+실행만 독립**)**. §0의 (i)/(ii)는 **여전히 미판정**(이제 3지선다).
+게이트 S1(§4.3.13)은 "부분 실현" 분기가 없어 **현 상태로 실행 불가**.
+`G_LEVER`/`G_FLAT`는 §4.3.12(d) 그대로 UNDETERMINED. 상세
+`../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(4차)" 소절,
+`results/s8_frontier/DESIGN.md` §4.3.15, 사전등록 3건(`PREREG_S0_AXIS_
+2026-08-03.md`·`PREREG_S0R_MODE_2026-08-03.md`·
+`PREREG_S2_STICKY_ITL_2026-08-03.md`), 재현 판정
+`S0R_REPLICATION_2026-08-03.md`]. 이전 rev6(★★★§1-28/§1-29 신설[같은 날
+3차 속행, doc-steward 기록]: `c2_anchor.py`로 시도한 C2→`G_LEVER` 앵커
+도출을 claims-auditor가 감사 —
 **주장 1만 생존, 2–5 전부 REFUTED/NOT-YET-SUPPORTED**. ★**§0 신규 결정적 발견**:
 같은 arm·같은 서버 플래그·매칭 batch에서 C2 865493과 872077(E1 격자)의 "decode
 16 SM" per-token ITL p50이 **2.6× 다름**(28.79ms vs 11.09ms) — 872077의
@@ -130,6 +163,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 
 | 28 | ★★★**(2026-08-03, 같은 날 3차 속행, claims-auditor) C2 → `G_LEVER` 앵커 경로 = 폐기, `G_LEVER`/`G_FLAT`는 §4.3.12(d)대로 UNDETERMINED 유지** | `c2_anchor.py`(신규, 미추적)로 시도한 5개 주장을 감사 — **주장 1(realized 검증)만 CONFIRMED, 2–5 전부 REFUTED/NOT-YET-SUPPORTED**. **★§0 결정적 발견(신규, 최상위 열린 항목)**: 같은 arm·같은 서버 플래그(`s8_sweep.sbatch:141-146` vs `e1_m3_control.sbatch:212-218`)·매칭 batch에서 "decode 16 SM" per-token ITL p50이 **2.6× 다르다**(C2 865493 SPLIT bin5 **28.79ms** ≈ `FINDINGS_8B` §2 28.48ms, vs **872077(E1 격자) d16 11.09ms**) ⇒ 둘 중 하나가 거짓: (i) 872077의 `decode_sms==16`이 실제 16-SM 하드웨어 실행이 아니다(`DESIGN.md` §4.3.11이 명시적으로 미검증으로 남긴 잔여층 — green context 생성이 하드웨어 SM 부여를 보장하는지 재프로브 안 함), 또는 (ii) C2의 28–31ms가 decode-SM 비용이 아니라 그 셀 배치(`[16,16,76-idle]`+상시 keepalive prefill 동거)의 성질이다. **어느 쪽이든 C2 비를 E1 격자로 이식 불가** — confound #1의 실측 대 실측 재현. **872077 전체와 이번 세션 sticky 결과가 딛고 선 바닥**이므로 최우선 열린 항목으로 기록. **주장 1** — CONFIRMED이나 서술 2건 정정 필수: (a) "파티션 활성률 0.66–0.93"은 `realized_pin_check.py`의 **스냅샷 개수 가중**이지 시간가중 all-busy(**0.803–0.958**)가 아님(방법론 게이트 #4 위반, 이 감사 한 건에서 3회), (b) 108 SM 시간은 warmup이 아니라 **창 밖 drain 전용**(warmup도 @D≈1.000, 기전은 오히려 강해짐). **구조적 함의(신규)**: in-window residency와 UNSPLIT 표본은 구성상 여집합 ⇒ `E1_DECODE_REALIZED≥0.90`을 통과하는 런엔 **음성대조가 정의상 존재할 수 없다**(865493 UNSPLIT n=0, sticky ON smoke D108 0초) — §4.3.12(e)(i) 확장 필요. **주장 2**(primary p95→p50) — 관측 CONFIRMED·기전 REFUTED(오염원은 monolithic prefill이 아니라 **파티션 전환 인접 구간**, 사건의 83–87%가 전환 0.5s 이내)·**처방 REFUTED 3중**(①같은 배제를 SPLIT에 적용해도 ≤2%만 이동 ②오염 기전이 sticky ON서 소멸 ③872077 실측 `T8 sp_p50=0.996[0.990,1.002]`로 p50 전환 시 양성대조조차 1.00이 돼 어떤 `G_LEVER>1`도 발화 불가=**캠페인을 구조적 NO VERDICT로 확정**하는 처방, 게다가 같은 p95 음성대조가 872077에서 반대 방향으로 깨짐) ⇒ **primary=`p95(SPLIT)` 유지, p50은 secondary, 전환-근접은 진단**. **주장 3**(편향=하한) NOT-YET-SUPPORTED(가산/곱셈 미식별 + 증거가 항을 0으로 만듦 — C2 분할 셀 전부 1410MHz 고정, 클럭 하락은 무분할 np뿐이라 **E1/sticky가 낼 throttling 비용을 C2는 안 냄**=반대 방향 경고). **주장 4**(`G_LEVER=1.41`) REFUTED(끝점 선택만으로 [1.41,2.40] 전 구간 도달 가능, 2.02는 게이트-FAIL job 4셀 포함, 1.41이 872077 T8 CI 하한 1.227을 가로지름). **주장 5**(`G_FLAT=1.25`) 방법 PLAUSIBLE·숫자 REFUTED(LOO 8개 실측 t95 반폭 0.303⇒1.30인데 Ha8 점추정 1.340>1.30로 자기 데이터서 뒤집힘, sticky가 사후 sd를 낮춰 사전-sticky 기반 임계는 관대해지는 방향=귀무 오수용 편향). `n_indep=1`(865493↔865533은 keepalive 설정이 달라 replicate 아님=**세 번째 pseudo-replication**). **regime 매칭 정정**: 872077의 12.8=concurrency, C2의 12.7=decode batch — 단위 맞추면 T8 2.8× 어긋나고 Ha8이 잘 맞음(앞선 서술과 정반대). **남은 경로(계획만, 미실행)**: `G_LEVER`는 (α)sticky 파일럿 T8 양성대조 효과크기 또는 (β)arm 간 대비 `g_T8/g_Ha8`(batch-매칭 rate 필요) — **둘 다 감사자 발안이라 독립 사전등록 필요**; `G_FLAT`는 사후-sticky sd 측정 후 TOST 동등성 마진(역시 독립 사전등록); 감사자 제안 게이트 S1(≈1 GPU-시간, T8 sticky ON d16+d54 C2복제 vs E1복제 2 block, 3갈래 판정) 미실행. 상세 `results/s8_frontier/DESIGN.md` §4.3.13 |
 | 29 | ★★**(2026-08-03, 같은 날 3차 속행) D=54 앵커 측정 취소(jobs 872920/872921) — keepalive 재현성 결함[코드/로그로 직접 검증, 미감사] + C2 high-residency=워크로드 장치 산물[독립 수렴, AUDITED]** | 기록 `results/s8_scaleup/NOTES_D54_ANCHOR_2026-08-03.md`(미추적 신규) + 하네스 4파일(미추적, `s8_sweep_d54.sbatch`·`pdmux_p16_d54.yml`·`d54_block_ratio.py`·`runtime_source_manifest_d54.sha256`) — **취소됐으나 설계(d16+d54 동일 캠페인, 4 block, 셀 순서 block 패리티 교대)는 재사용 가능**. **B-1[미감사, 코드·로그로 직접 검증]**: `s8_keepalive_prompt_224.txt`가 **1793 토큰**인데 `CTXCAP=1792` ⇒ 모든 keepalive가 HTTP 400. **865493은 byte-identical한 같은 파일로 `keepalive_errors=0`**이었고 두 srv.log 모두 `CTXCAP=1792` 동일 출력 ⇒ **2026-07-27 이후 엔진 트리 churn으로 context-length 거부가 엄격해졌거나 off-by-one이 이동**(원인 미규명, 자명한 수정 `KEEPA_REPS≤223` 미적용) — **s8_scaleup 캠페인 전체의 재현 불가 요인**이므로 인용 시 경고 필수. 결과: co-residency ~90–100%→**31–34%** 붕괴, 측정된 전 셀 `REALIZED_PIN` FAIL(T8 blk1 d16 0.316/d54 0.628, Hs8 d16 0.342/d54 0.577). **B-2[AUDITED — 독립 수렴]**: sticky OFF는 prefill in-flight일 때만 목표 분할을 유지(`_init_sticky_partition` docstring, `multiplexing_mixin.py:206-231`) ⇒ **C2의 높은 residency는 decode 파티션 제어가 아니라 keepalive 포화라는 워크로드 장치의 산물**. 세 경로 독립 도달: (A) 코드 읽기 (B) keepalive 사망 시 실측 붕괴(위 B-1) (C) 이번 run block-1 telemetry 교차표(`prefill_active>0` @D=**0.975–0.996**, @108=**0.000**, 4파일 — §1-28의 감사자 0.943–0.996/0.0000과 같은 모양이나 **다른 대조**(워크로드 장치 실패 전후)로 도달). ⇒ §1-26(B) estimand 미식별이 **C2에도 그대로 상속**됨 — C2 앵커가 죽는 **세 번째 이유**(§0 축 불일치·estimand 미식별 상속에 이어). 한계: 이 캠페인은 **np(무분할) 셀을 안 돌려** §1-28 주장3의 "np만 1290MHz 하락" 관측을 확증 못 함(분할 셀은 1396–1410MHz 평평, 일관은 하나 독립 확인은 아님). 상세 `results/s8_frontier/DESIGN.md` §4.3.14 |
+| 30 | ★★★**(2026-08-03, 같은 날 4차 속행) §1-28 §0의 이분법이 유지 불가 — 세 번째 후보가 실측으로 문서화됨, 오프라인 분리 불가, GPU(S2) 대기 — 성능 판정 0건** | §0은 (i) 872077의 `decode_sms==16`이 실제 16-SM 실행이 아니다 / (ii) C2의 28–31ms가 셀 배치 성질이다 중 하나가 거짓이라고 적었다. claims-auditor가 `FINDINGS_S0_AXIS_2026-08-03.md`를 감사하며(자기감사, 방법론 교훈 12) 이 이분법이 "E1의 `split_frac≥0.90`이 D 파티션 실행 토큰을 올바로 분리한다"는 전제 위에 서 있으며, T8의 세 공유 셀 전부에서 그 전제가 깨진다는 재프레이밍을 냈다 — E1 SPLIT 모집단은 **이봉**이고, 윗봉이 C2 셀별 SPLIT p50과 **1–2% 일치**(d16 0.992/d24 0.991/d44 1.013), 아랫봉은 **같은 job의 UNSPLIT과 통계적으로 동일**(d16 비 1.011). **독립 재현(result-analyst, `S0R_REPLICATION_2026-08-03.md`)**: claims-auditor도 아니고 사전등록을 쓴 세션도 아닌 분석자가 감사된 `m3_conditional.py` 프리미티브만 재사용 선언하고 자체 C2 리더·mode estimator를 새로 작성, 생산자 자체(`label_probe` element-wise, `s0dc_client`의 자기 기록 20/20 정확)에 대조해 실행 — 행 1·3 **재현**(윗봉/C2 비 0.992–1.013 flat, 빠른봉/UNSPLIT 비 1.000–1.023), 행 2(슬로우-쉐어가 D에 단조 증가)는 **순서만 재현**(d24−d16 스텝이 block scatter 안에서 미해결, Δ=+2.37±3.52pp n=8, t=1.90<t_crit 2.365; 감사자가 인용한 수준값 8.95/13.60/23.62/29.38%는 사전등록이 고정한 모집단(`a_free_only=True`)이 아니라 `False` 모집단에서 나온 것 — **사전등록 자체의 내부 불일치**, 방향은 불변), **행 5(클럭 lag sweep)는 발화하지 않음**(최적 δ=+0.10s에서도 slow share d16 11.4%/d44 27.0%, 90% 문턱에 크게 못 미침; δ 절대값≥0.25s에선 UNSPLIT 배경(2.7–3.1%)으로 수렴 — 라벨이 순수 클럭 잡음은 아니되 0.05s 스케일에서 취약함을 동시에 보임). ★**행 4(음성대조)가 강한 형태를 죽였다 — 이 회차의 핵심 결과.** 같은 mode estimator를 **UNSPLIT(108 SM) 모집단**에 적용하면 T8 전 셀에서 동일한 슬로우 모드가 나타나고 그 위치가 셀을 정확히 따라간다(33.88→22.12→15.62→14.12ms, D=16→24→44→54; d54에서는 SPLIT·UNSPLIT 슬로우 모드가 수치까지 동일, 14.12=14.12). 사전등록 falsifier("~31ms 모드가 ~9% 점유")는 d16/d24/d44에서 문자 그대로는 발화 안 함(UNSPLIT share 2.71/3.28/4.84%, 5% 미만 — d54는 5.61%로 발화)이지만 **그 falsifier가 지키려던 실질은 확인된다**: d16의 슬로우 토큰 8,893개 중 **7,903개(88.9%)가 UNSPLIT 라벨**이고 SPLIT은 759개(8.5%)뿐이다. 농축(클래스 내 슬로우 비율/모집단 base rate)은 **SPLIT 2.33–3.24×, UNSPLIT 0.78–0.93×**(d16–d54 전 구간) — `split_frac≥0.90`은 슬로우 모드를 **격리**하는 게 아니라 **농축**시킨다. 순도(SPLIT 토큰의 ~93%가 빠른 모드)도 완전성(SPLIT이 그 job 슬로우 토큰의 8.5%만 포획)도 성립하지 않는다. ⇒ **세 번째 후보 (iii)**: 두 job은 같은 축이나 라벨이 순수하지도 완전하지도 않다 — **§0은 더 이상 이분이 아니라 3지선다이며, 오프라인으로 분리 불가**. 살아남는 두 읽기(셀 수준 현상 vs 클럭 오프셋 누출)는 S2(GPU, 별도 제출 중, 결과 없음)만이 인과적으로 분리 가능 — prefill-overlap 컬럼도 같은(어쩌면 shift된) 클럭에서 계산되므로 arbitrate 불가. **이 층은 §1-25가 이미 기록한 시간 층 희석(`E1_DECODE_REALIZED` 4–19%) 안쪽의 두 번째 층**이고, §1-21(target-vs-realized)·§1-26(B)(estimand 미식별)와 같은 계열이다. **철회 3건**(메인 세션이 같은 날 앞서 씀, `FINDINGS_S0_AXIS_2026-08-03.md` 배너와 동일): "§0 stands as written"(과잉 해석 — 보인 건 3개 인접 집계에서 p50≈11ms뿐), "aggregation-invariant"(정확한 문장은 "11.06ms 단일 모드가 지배적이라 집계 선택에 둔감" — mode dominance이지 estimand identification 아님), "11.09는 집계 단위 미기록"(**틀림** — 산출자는 `m3_conditional.report_conditional` 리포트 [3] `sp_p50=11.0905`, n=11,124, `a_free_only=True`, `m3_conditional.py:158-161,251-262,316-329`에 문서화됨; 없는 것은 그 stdout 저장분뿐 — "저장된 출력이 없다"와 "추정량이 미기록"은 다른 실패 모드다). **재사용 가치 있는 계측 결함 2건**: ★`c2_anchor.py` 표 [5] "UNCONDITIONED CELL SUMMARY"가 **M8 전체와 Ha8 d16을 조용히 누락**(`meta`가 `"t0_monotonic_s" in s` 분기 안에서만 채워지는데, `c2_anchor.py:181-187`, 표 [5]는 앵커가 필요 없음에도) — 865493 앵커 현황은 T8·Hs8=5셀 전부/Ha8=d16 없음/M8=전무이고, **Ha8 d16 rep은 실제로 돌았다**(`itl_ms_p50=112.84`, n=5,200) — "측정 부재"가 아니라 "텔레메트리 앵커 부재"; mode estimator의 60ms 상한은 **arm-이식 불가**(Ha8은 토큰의 0.16%만 창 안, 미해명 ~87ms 스파이크가 구조상 상한 위). **방법론 교훈(§3 신규, 아래 참조)**: 자기가 검증하려는 코드를 복사한 게이트는 항등식에 가깝다(S0 gate 1이 `label_probe`를 복사해 자기 자신과 대조, `wmean`은 무대조) · 여집합 클래스에 음성대조를 걸어라(행 4가 세 차례 놓친 것을 한 줄로 잡음, §3 항목 9와 뿌리는 같고 방향 반대). **증거 수준**: 강한 형태(레버=D-SM 실행 식별)는 **채택 불가**(음성대조 반증), 약한 형태(이봉·윗봉 일치·아랫봉=UNSPLIT·농축 2.33–3.24×)는 **재현됨(독립성 부분적 — 추정량은 감사자 제안, 사전등록은 메인 세션, 실행만 독립, 인용 시 이 스코프 문구 동반 필수)**. §0의 (i)/(ii)는 **여전히 미판정**. 게이트 S1(§4.3.13)은 "부분 실현" 분기가 없어 **현 상태로 실행 불가**(4번째 분기 필요). `G_LEVER`/`G_FLAT`는 §4.3.12(d)대로 **UNDETERMINED 유지**(이번 회차로도 미해소). 상세 `../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(4차)" 소절, `results/s8_frontier/DESIGN.md` §4.3.15, 사전등록 `PREREG_S0_AXIS_2026-08-03.md`·`PREREG_S0R_MODE_2026-08-03.md`·`PREREG_S2_STICKY_ITL_2026-08-03.md`, 재현 판정 `S0R_REPLICATION_2026-08-03.md` |
 
 | 13 | ★★**HE0의 구조적 이유 — 두 regime의 최적이 *충돌하지 않는다*** | **TRUE per-phase goodput**: 정책간 spread가 **LO(rate 3) 0.067 (2.3%) vs HI(rate 12) 1.187 (43%)** ⇒ **차별의 ~95%가 과부하 phase에서 발생**. LO는 split에 **무관심**(prefill-heavy 극단 d16 2.861 ≈ decode-heavy 극단 d44 2.858 = 구분 불가) ⇒ **LO엔 쫓아갈 최적점이 없고, HI의 최적은 LO에서도 공짜**(§1-6 비대칭의 정량 확인). ⇒ **"항상 HI 최적"=decode-heavy static이 정의상 최선**이고 동적은 과도만 지불. **동적이 이기려면 regime 간 최적이 *충돌*해야 하는데 이 워크로드엔 그 구간이 없다**. ⚠️**정정 이력**: 2026-07-18(§1-16)엔 "이 논증은 관대 SLO 한정, tight선 HI 최적이 동적"이라 봤으나, **§1-17(직접 재튜닝)이 반증** — tight SLO에서도 HI 최적은 **고정 decode-heavy(d44)**이고 동적은 얽힘 트랩으로 열위. ⇒ **이 논증은 tight SLO에서도 성립**(SLO 엄격도 무관) |
 | 14 | ★**stationary r8의 "시스템 노이즈" = 메트릭 절벽 (외인성 아님)** | 워크로드 4런 전부 동일(fingerprint), 하부 섭동은 **thru 3%·ITL 8%**뿐인데 goodput 2× — **r8이 TTFT≈SLO(3s) 경계에 앉아** 3% 결손이 TTFT 평탄역을 1.5s→3.7s로 밀어 임계선을 넘김. **3=견고/8=불안정/12=견고** ⇒ 경계 regime만 불안정. 상세 [bench_noise_root_cause.md](bench_noise_root_cause.md) |
@@ -290,6 +324,27 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     비교점으로 쓸지"가 그 자체로 숨은 자유도다. §4.3.10(3)이 이미 다른
     맥락(blocking 임계 스윕)에서 거부한 것과 같은 종류의 논거가 문턱값
     선택에서 재등장한 사례로 기록한다.
+18. ★★★**(2026-08-03, 같은 날 4차 속행) 자기가 검증하려는 코드를 복사한
+    게이트는 항등식에 가깝다 — 대조는 생산자에 걸어라.** `s0_axis_check.py`의
+    gate 1은 `m3_conditional.label_probe`의 라벨링 루프를 복사해 같은
+    입력에 대조했다 — 정작 새로 넣은 값(`wmean`, 평균 batch 필드)은 무엇과도
+    대조되지 않았다. gate 2는 28.79ms를 만든 바로 그 함수(`c2_anchor.collect`)를
+    호출해 그 값을 "검증"했다 — 구조적으로 순환이다. `S0R_REPLICATION_
+    2026-08-03.md`의 gate G-B가 대안을 보여준다: 같은 코드 경로를 공유하는
+    다른 분석 스크립트가 아니라 **생산자 자체**(`s0dc_client`의 자기 기록
+    per-rep summary)에 대조해 20/20 정확히 일치시켰다. ⇒ 게이트를 쓸 때는
+    "이 게이트가 재검증 대상 코드를 그대로 복사했는가"를 먼저 묻는다.
+19. ★★★**(2026-08-03, 같은 날 4차 속행) 여집합 클래스에 음성대조를 걸어라 —
+    항목 9와 뿌리는 같고 방향은 반대.** 이 자료를 세 차례(원 C2→`G_LEVER`
+    감사, 첫 §0 axis check, 이 세션 자신의 첫 프레이밍) 통과했지만 아무도
+    "같은 mode estimator를 UNSPLIT(여집합)에도 적용해본다"는 한 줄을 하지
+    않았다 — `PREREG_S0R_MODE_2026-08-03.md`의 행 4가 그것을 했고, SPLIT의
+    "특이적" 슬로우 모드가 실은 UNSPLIT에도 같은 위치·크기로 존재함을
+    드러내 §1-28 §0의 강한 재프레이밍을 죽였다. 항목 9(게이트가 여집합을
+    세는 바람에 *실수로* 실패)와 같은 뿌리이나 방향이 반대다: 이번엔
+    여집합을 **일부러** 재서 라벨의 배타성을 검정했고, 그 검정이
+    **성공**했다(세 차례의 앞선 통과가 놓친 것을 잡음). 상세 §1-30,
+    `DESIGN.md` §4.3.15(c)–(d).
 
 ---
 
@@ -305,7 +360,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `results/slo_sched/lengthnorm_slo_reanalysis.md` | ★**길이-정규화/tight SLO 재계측**(§1-16) — HE0가 SLO 엄격도 의존임을 기존 벤치 재분석으로 확정. 스크립트 `reanalyze_lengthnorm_slo.py` |
 | **`serving_slo_survey.md`** | ★**실 서빙 SLO 관행 조사**(§1-16 후속) — 프로덕션 인터랙티브 TTFT(chat 300/voice 150/code 100/RAG 400ms)가 전부 tight regime; 우리 3s=batch async. DistServe SLO-scale sweep=표준. goodput 메트릭 비판 |
 | **`interactive_slo_retune_plan.md`** | ★**tight-SLO 컨트롤러 재튜닝 + P90-attainment 직접 측정**(§1-17) — §9에 최종 결과(HT0 확정, d44≫동적). 하네스 `results/slo_sched/interactive_bench.sbatch` |
-| `../../workspace/engine-port/results/s8_frontier/DESIGN.md` | ★★**E1 프론티어 하네스 설계·전사**(§4.3.1–4.3.14) — 사전등록·버그 수정·게이트 이력의 정본. §4.3.9=`g` 격자 한정 은퇴, §4.3.10=`A_free` 대체 조건부 추정량[AUDITED, blocking 스윕만 UNAUDITED], §4.3.11=`PDMUX_STICKY_PARTITION` 구현 사실, §4.3.12=sticky 런 사전등록(`G_LEVER`/`G_FLAT` 미결정), §4.3.13=C2→`G_LEVER` 앵커 경로 폐기[AUDITED, §0 신규 최상위 열린 항목], §4.3.14=D=54 측정 취소+keepalive 재현성 결함[일부 미감사]+C2 residency 워크로드 장치 산물[AUDITED] |
+| `../../workspace/engine-port/results/s8_frontier/DESIGN.md` | ★★**E1 프론티어 하네스 설계·전사**(§4.3.1–4.3.15) — 사전등록·버그 수정·게이트 이력의 정본. §4.3.9=`g` 격자 한정 은퇴, §4.3.10=`A_free` 대체 조건부 추정량[AUDITED, blocking 스윕만 UNAUDITED], §4.3.11=`PDMUX_STICKY_PARTITION` 구현 사실, §4.3.12=sticky 런 사전등록(`G_LEVER`/`G_FLAT` 미결정), §4.3.13=C2→`G_LEVER` 앵커 경로 폐기[AUDITED, §0 신규 최상위 열린 항목], §4.3.14=D=54 측정 취소+keepalive 재현성 결함[일부 미감사]+C2 residency 워크로드 장치 산물[AUDITED], §4.3.15=§0 이분법 유지 불가·세 번째 후보 실측 문서화[감사자 재프레이밍 UNAUDITED, result-analyst 독립 재현 PARTIAL INDEPENDENCE, 성능 판정 0건, S2(GPU) 대기] |
 | `../../workspace/engine-port/results/s8_scaleup/NOTES_D54_ANCHOR_2026-08-03.md` | ★**D=54 앵커 취소 기록**(미추적) — keepalive 토큰 초과로 인한 s8_scaleup 재현성 결함[미감사, 코드/로그 직접 검증] + C2 high-residency=워크로드 장치 산물 독립 수렴 3경로[AUDITED]. 상세는 `DESIGN.md` §4.3.14·CONSENSUS §1-29 |
 | `bench_noise_root_cause.md` | ★벤치 노이즈 근본원인(메트릭 절벽)·3× 하네스 버그·HE0 구조적 이유 |
 | `realtrace_findings_and_open_branches.md` | 실 trace 검증 + 얽힘 기전 + 남은 갈래(트리거/행동모델) 상세 |
@@ -418,14 +473,21 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
    §1-20 spatial decoupling은 여전히 미실행. 상세
    [`../workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md`](../workspace/engine-port/results/g2_0_raconf/raconf_final_verdict_2026-07-25.md),
    [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md).
-9. ★★★**(2026-08-03, 신설) 최우선 — §1-28 §0의 2.6× 모순을 어떻게 가를 것인가.**
-   `DESIGN.md` §4.3.11이 명시적으로 미검증으로 남긴 잔여층("green context를
-   `(92,16)`으로 만들면 하드웨어가 실제로 그 SM 수를 부여했는가")이 이제
-   **872077 전체와 이번 세션의 sticky 결과가 딛고 선 바닥**이다. 세 갈래 중
-   "872077 d16 라벨 미실현"이 참이면 **Stage 0급 정정**이다. 미결 선택지(사용자
-   결정 대기): (1) 하드웨어 SM 부여 직접 검증부터(engine-porter, GPU 소량,
-   권고) — (2) 감사자 제안 게이트 S1 전체(§1-28 "남은 경로" 참조) — (3) (1)→(2)
-   순차. **`G_LEVER`/`G_FLAT` 사전등록**은 §4.3.12(d) 그대로 UNDETERMINED
-   유지(§1-28의 시도로 해소되지 않음) — 다음 시도는 감사자 발안 (α)/(β)에 대한
+9. ★★★**(2026-08-03, 신설, ★★★같은 날 4차 속행 갱신) 최우선 — §1-28 §0의
+   이분법을 어떻게 가를 것인가 — 이제 3지선다, 오프라인 분리 불가, S2(GPU)
+   대기.** `DESIGN.md` §4.3.11이 명시적으로 미검증으로 남긴 잔여층("green
+   context를 `(92,16)`으로 만들면 하드웨어가 실제로 그 SM 수를 부여했는가")이
+   여전히 **872077 전체와 sticky 결과가 딛고 선 바닥**이다. ★**4차 속행에서
+   세 번째 후보 (iii)이 실측으로 문서화됐다**(§1-30): 두 job은 같은 축이나
+   `split_frac≥0.90`이 D 파티션 실행 토큰을 순수하지도 완전하지도 않게
+   잡는다(E1 SPLIT 모집단이 이봉, 윗봉=C2 p50과 1–2% 일치, 아랫봉=같은
+   job UNSPLIT, 슬로우 토큰의 88.9%가 UNSPLIT 라벨) — result-analyst의
+   독립 재현(`S0R_REPLICATION_2026-08-03.md`)이 재확인. 남은 두 읽기(셀
+   수준 현상 vs 클럭 오프셋 누출)는 **오프라인으로 분리 불가**이고, S2(GPU,
+   `PREREG_S2_STICKY_ITL_2026-08-03.md`, 별도 제출 중·결과 없음)가 인과
+   시험이다. 감사자 제안 **게이트 S1은 현 상태로 실행 불가**(3갈래 판정에
+   "부분 실현" 분기가 없음 — 4번째 분기 추가 필요, `DESIGN.md` §4.3.15(e)).
+   **`G_LEVER`/`G_FLAT` 사전등록**은 §4.3.12(d) 그대로 UNDETERMINED
+   유지(4차 속행으로도 해소되지 않음) — 다음 시도는 감사자 발안 (α)/(β)에 대한
    **독립 사전등록**이 선행돼야 한다(감사자가 자기 발안의 승인 주체일 수
-   없다). 상세 `DESIGN.md` §4.3.13–4.3.14.
+   없다). 상세 `DESIGN.md` §4.3.13–4.3.15, §1-30.
