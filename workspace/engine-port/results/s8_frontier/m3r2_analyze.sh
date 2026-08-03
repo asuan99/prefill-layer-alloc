@@ -65,8 +65,18 @@ for k in sorted(by, key=lambda k: (k[0], int(k[1][1:]), k[2])):
         which = ("SEED (workload)" if sv > 2 * bv else
                  "BOOT (server state)" if bv > 2 * sv else "neither dominates")
         print(f"    spread of seed-means {sv:.5f} vs boot-means {bv:.5f}  =>  {which}")
-    nfail = sum(1 for r in cells.values() if not r["ok"])
-    print(f"    {len(cells)-nfail}/{len(cells)} PASS"
+    # ★2026-08-03: UNMEASURABLE probes must NOT be counted as PASS. The first
+    # version of this line did exactly that -- all 20 of them -- reprinting the
+    # "not measured looks like passed" defect that e1_pin_check.py and
+    # m3_analyze.py were both just fixed for. A probe below the snapshot floor
+    # is reported in its own bucket and excluded from the PASS denominator.
+    unm_here = sum(1 for (b, s) in cells
+                   if (k[0], k[1], k[2], b, s) in unmeasurable)
+    judged = {(b, s): r for (b, s), r in cells.items()
+              if (k[0], k[1], k[2], b, s) not in unmeasurable}
+    nfail = sum(1 for r in judged.values() if not r["ok"])
+    print(f"    {len(judged)-nfail}/{len(judged)} PASS among JUDGED probes"
+          + (f";  {unm_here}/{len(cells)} UNMEASURABLE (excluded)" if unm_here else "")
           + ("   <-- target NOT held in some probes" if nfail else ""))
 
 print("\n--- what this can and cannot say (pre-registered) ---")
