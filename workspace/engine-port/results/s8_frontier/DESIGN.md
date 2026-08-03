@@ -967,6 +967,71 @@ its own terms, and is replaced by `m3_pin_check.sh` (zero GPU):
 verdict**: any cell failing it is VOIDED exactly like the in-run gates, and if a
 voided cell is an arm's d16 or d54 then that arm has no `g`.
 
+#### (g) ★★2026-08-03 — the pin gate's instrument was inadequate, (e) was wrong,
+    and M3R rev1 could not answer. Pre-registration for `m3r2_pinforce.sbatch`.
+
+**The correction.** Subsection (e) removed §4.7.1's separate trace-force-ON pin
+run, arguing "the gate does not need `PDMUX_TRACE_FORCE_PREFILL` — the capacity
+scans passed without it". **That argument was wrong**, and job 872236's own
+telemetry shows why: the capacity scans pooled **eight rates** into one file,
+while a single-rate probe does not. Measured, trace-force OFF:
+
+| cell | total snapshots | prefill-active |
+|---|---|---|
+| Ha8 d16 rate 2 | 10,558 | **2** |
+| T8 d16 rate 2 | 10,993 | **8** |
+| Ha8 d54 rate 2 | 9,906 | 16 |
+| T8 d54 rate 2 | 10,921 | 28 |
+
+So the gate that voided M3 (f), and the gate that then "passed" Ha8 d16 at
+`lower95=1.000` in rev1, were both computed from **2–28 samples**. Neither job
+measured realizability. §4.7.1's original requirement is **restored**: pin
+measurement gets trace-force ON, in a job that emits **no ITL number at all**,
+which is what makes the +2.0% observer effect irrelevant there.
+
+**Two reporting bugs fixed in `e1_pin_check.py` (2026-08-03).** The
+`[UNRELIABLE: only n_episodes=…]` note rode on `reason`, and `reason` prints
+only on FAIL — so an unreliable **PASS was silent**. And `n_pa_snapshots`, the
+gate's actual sample size, was computed but never printed. Both now always
+appear. This is the same "not-measured looks like passed" failure the analyzer
+wiring in (e) fixed one layer up.
+
+**rev1's second defect: seed and boot were confounded.** M3 ran
+`seed == block == boot`, so "seeds 6,7,8 failed" cannot separate a workload
+effect from a server-state effect. rev1 then used a **single seed (1)** — which
+had *passed* in M3 on both arms — and so sampled none of the failing region,
+while its header asserted the variation was "an engine behaviour, not a
+workload effect". M3's own per-block numbers refute that assertion.
+
+**rev2 design.** Arms T8 + Ha8; `(cell,rate)` ∈ {d16:2, d16:6, d24:2, d54:2}
+(d16 = the voided cell at the operating rate *and* under rev1's load
+hypothesis; d24 = also voided on T8; d54 = the control that never failed);
+**3 boots × 4 seeds, the same seeds inside every boot** — crossed, so seed and
+boot are separable for the first time. Trace-force ON; one telemetry file per
+**boot**, windowed per probe with `--t0/--t1`.
+★The window clock is `time.perf_counter()` to match `telemetry.py:23` exactly.
+Both resolve to `clock_gettime(CLOCK_MONOTONIC)` here (verified 2026-08-03),
+but `traceforce_gate.sbatch` paired `monotonic()` against `perf_counter()` and
+its pin checks all crashed, so that pairing was never validated end-to-end.
+
+**Instrument sanity gate, pre-registered:** a probe leaving fewer than
+`MIN_PA_SNAPSHOTS = 200` prefill-active snapshots is reported
+**UNMEASURABLE** — neither passed nor failed. rev2's whole premise is that
+sample size was the binding constraint, so sample size must itself be gated,
+or rev2 repeats rev1's mistake with a larger number attached.
+
+**Stated in advance — what rev2 cannot do.** The seeds {1,6,7,8} were chosen to
+span M3's observed pass (1) and fail (6,7,8) blocks for Ha8 d16. That is a
+**targeted replication, not a random sample**, so rev2 can say whether the
+variation is seed-indexed or boot-indexed and whether M3's failures reproduce,
+but it **cannot estimate an unconditional failure rate over workloads**. Do not
+compute one from it.
+
+**Consequence for M3.** Job 872077's verdict stays void, but the *reason* is
+now narrower and more honest: not "d16 does not hold its partition" — that was
+never measured — but **"the pin gate had 2–34 samples, so the cells were never
+certified either way."** Whether M3 must be re-run depends on rev2's answer.
+
 ### 4.4 Decision rule (pre-registered — do not change without updating this file)
 
 > For each arm, let best-static = the D cell (of the 5 measured) with the

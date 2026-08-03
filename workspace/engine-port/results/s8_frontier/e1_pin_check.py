@@ -305,6 +305,7 @@ def compute_time_weighted_pin_gate(telemetry_path, expect_d, t0=None, t1=None,
         episodes.append((cur_total, cur_target))
 
     n_episodes = len(episodes)
+    n_pa_snapshots = sum(1 for _ts, _psm, pab in rows if pab > 0)
     t_prefill_active_total = sum(e[0] for e in episodes)
     t_target = sum(e[1] for e in episodes)
     pin_frac = (t_target / t_prefill_active_total) if t_prefill_active_total else float("nan")
@@ -339,6 +340,13 @@ def compute_time_weighted_pin_gate(telemetry_path, expect_d, t0=None, t1=None,
         n_episodes=n_episodes, t_prefill_active_total_s=t_prefill_active_total,
         t_target_s=t_target, pin_frac=pin_frac, pin_frac_lower95=pin_frac_lower95,
         bootstrap_reliable=bootstrap_reliable, realized_hist=realized_hist,
+        # ★2026-08-03: the RAW prefill-active snapshot count. It was computed
+        # here all along and never reported, which hid the gate's actual sample
+        # size: with PDMUX_TRACE_FORCE_PREFILL=0 a single-rate probe leaves
+        # 2-28 prefill-active snapshots out of ~10,000 (job 872236, measured).
+        # The capacity scans looked healthy only because they pooled EIGHT
+        # rates into one telemetry file. Report it next to n_episodes always.
+        n_pa_snapshots=n_pa_snapshots,
     )
 
 
@@ -356,7 +364,7 @@ def time_weighted_gate_verdict(g, min_lower95=0.80):
     pin_pass = g["pin_frac_lower95"] >= min_lower95
     reliability_note = "" if g["bootstrap_reliable"] else \
         f"  [UNRELIABLE: only n_episodes={g['n_episodes']}, bootstrap CI not meaningful]"
-    return dict(pin_pass=pin_pass,
+    return dict(pin_pass=pin_pass, reliability_note=reliability_note,
                  reason=("" if pin_pass else
                          f"pin_frac_lower95={g['pin_frac_lower95']:.3f} < {min_lower95} "
                          f"(point estimate {g['pin_frac']:.3f}, n_episodes={g['n_episodes']})")
@@ -594,10 +602,22 @@ def main():
         if g["t_prefill_active_total_s"] else "(none)"
     print(f"E1_REALIZED_hist(TIME-WEIGHTED over prefill-active time, PRIMARY/gate-determining, "
           f"total={g['t_prefill_active_total_s']:.3f}s): {dist}")
+    # ★2026-08-03: two reporting bugs fixed together.
+    #  (a) the [UNRELIABLE: n_episodes=...] note rode on `reason`, and `reason`
+    #      is printed only on FAIL -- so an unreliable PASS was SILENT. Job
+    #      872236's Ha8 d16 r2 passed with lower95=1.000 off a SINGLE episode
+    #      and nothing said so. That is the same "not-measured looks like
+    #      passed" failure this campaign keeps paying for.
+    #  (b) n_pa_snapshots (the raw prefill-active sample count) was never
+    #      printed. With PDMUX_TRACE_FORCE_PREFILL=0 a single-rate probe leaves
+    #      2-28 of them out of ~10,000 snapshots, so the gate can rest on a
+    #      handful of samples while looking authoritative.
     print(f"E1_PIN_GATE D={expect_d}(P{g['expect_p']}) [TIME-WEIGHTED, bug #6]: "
           f"{'PASS' if v['pin_pass'] else 'FAIL -> ' + v['reason']} "
           f"(pin_frac={g['pin_frac']:.3f}, lower95={g['pin_frac_lower95']:.3f}, "
-          f"n_episodes={g['n_episodes']}, min_lower95={min_lower95})")
+          f"n_episodes={g['n_episodes']}, n_pa_snapshots={g['n_pa_snapshots']}, "
+          f"min_lower95={min_lower95})"
+          + (v.get('reliability_note', '') if v['pin_pass'] else ''))
 
     # --- OPTIONAL, non-gating: per-request latency-attribution diagnostic
     # (compute_episode_gate, rescoped 2026-07-30 -- NOT the pin gate any
