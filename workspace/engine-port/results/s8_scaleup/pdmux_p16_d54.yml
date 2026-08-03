@@ -1,0 +1,24 @@
+# De-confound arm: prefill 16 (pinned), decode 54, 38 SM idle.
+#
+# decode_sm=54 is NOT in the allowed decode_states set {16,24,34,44}
+# (multiplexing_mixin.py:_build_r2_policy hardcodes membership test against
+# that fixed tuple), so a single division would make decode_states empty and
+# _build_r2_policy would raise "PDMUX_R2_POLICY requires stream groups with
+# D16/D24/D34/D44 states" at boot. The second division is a GUARD-SATISFIER
+# only (same trick as pdmux_p16_d92.yml): it makes decode_states={44} so the
+# policy builds, while FixedPolicy(54) still matches sm_counts idx 1 = (16,54)
+# exactly via _r2_decide_idx's exact-match search (multiplexing_mixin.py:433-436).
+# The guard division also pins prefill to 16, so prefill SM is unchanged even
+# in the (never selected) fallback partition.
+#
+# sm_counts = [(108,0),(16,54),(16,44),(0,108)]; FixedPolicy(54) -> idx 1.
+# Added 2026-08-03 for the sticky G_LEVER anchor de-confound (results/s8_scaleup
+# had {16,24,44,92} but not the sticky-grid endpoint 54); see
+# results/s8_scaleup/d54_block_ratio.py and c2_anchor.py for the analysis this
+# cell feeds.
+sm_group_num: 4
+manual_divisions:
+  - [16, 54, 38]
+  - [16, 44, 48]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
