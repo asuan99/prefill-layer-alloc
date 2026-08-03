@@ -1,0 +1,89 @@
+==============================================================================
+s0_axis_check -- DESIGN.md sec 4.3.13 sec 0, one bin-conditional estimand
+unit = ITL interval (per token) | label = REALIZED, duration-weighted,
+SPLIT >= 0.9 | bin = round(duration-weighted mean decode batch)
+primary stat = p50 (sec 0's own statistic; the sticky campaign primary
+is p95 and is NOT changed by this file) | DIAGNOSTIC ONLY
+==============================================================================
+
+[GATE 1] E1 labelling == m3_conditional.label_probe : PASS (asserted element-wise for every block)
+[GATE 2] C2 T8 d16 bin-5 SPLIT p50 = 28.79 ms (target 28.79 +-0.05) : PASS
+
+[A] PER-BIN SPLIT per-token ITL, both jobs, cell d16
+    bins with n < 50 are printed as UNDERPOWERED, never dropped
+ arm  bin |   C2 p50   C2 p95    C2 n |   E1 p50   E1 p95    E1 n |  r(p50)  r(p95)
+  T8    1 |    29.98    30.76    1485 |    10.68    32.54     110 |   2.808   0.945
+  T8    2 |    27.36    27.92      31 |    10.70    30.53     337 |   2.557   0.915  UNDERPOWERED
+  T8    3 |      nan      nan       0 |    10.68    29.34     949 |     nan     nan  UNDERPOWERED
+  T8    4 |    28.76    30.84     399 |    10.91    31.01    1219 |   2.636   0.995
+  T8    5 |    28.79    30.74    2007 |    11.00    31.71    1720 |   2.618   0.969
+  T8    6 |      nan      nan       0 |    11.16    31.60    1663 |     nan     nan  UNDERPOWERED
+  T8    7 |      nan      nan       0 |    11.19    31.85    1765 |     nan     nan  UNDERPOWERED
+  T8    8 |      nan      nan       0 |    11.10    31.17    1160 |     nan     nan  UNDERPOWERED
+  T8    9 |      nan      nan       0 |    11.18    30.35    1986 |     nan     nan  UNDERPOWERED
+  T8   10 |      nan      nan       0 |    11.17    30.76     542 |     nan     nan  UNDERPOWERED
+  T8   11 |    28.88    31.67      80 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+  T8   12 |    30.20    30.98    2552 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+  T8   15 |    30.67    31.46    5584 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+  T8   16 |    31.18    32.62   73126 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+  T8   17 |    30.94    32.31     832 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+  T8   18 |    31.09    32.56    1024 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+  T8   20 |    31.22    33.13    1325 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+  T8   22 |    31.18    32.81    1535 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+  T8   23 |    30.93    32.72     766 |      nan      nan       0 |     nan     nan  UNDERPOWERED
+
+ Ha8    2 |      nan      nan       0 |    78.75  1943.16      38 |     nan     nan  UNDERPOWERED
+ Ha8    3 |      nan      nan       0 |    25.14    87.54      24 |     nan     nan  UNDERPOWERED
+ Ha8    4 |      nan      nan       0 |    25.17    25.79       4 |     nan     nan  UNDERPOWERED
+ Ha8    6 |      nan      nan       0 |    24.77   113.80      31 |     nan     nan  UNDERPOWERED
+ Ha8    7 |      nan      nan       0 |   268.00   268.26       4 |     nan     nan  UNDERPOWERED
+ Ha8    8 |      nan      nan       0 |   268.31   268.32       2 |     nan     nan  UNDERPOWERED
+ Ha8    9 |      nan      nan       0 |    70.15   156.63     418 |     nan     nan  UNDERPOWERED
+ Ha8   10 |      nan      nan       0 |    26.63    88.93     533 |     nan     nan  UNDERPOWERED
+ Ha8   11 |      nan      nan       0 |    27.98    90.47     909 |     nan     nan  UNDERPOWERED
+ Ha8   12 |      nan      nan       0 |    28.57    90.39    1074 |     nan     nan  UNDERPOWERED
+ Ha8   13 |      nan      nan       0 |    29.35    97.97    1891 |     nan     nan  UNDERPOWERED
+ Ha8   14 |      nan      nan       0 |    29.40    97.48    2160 |     nan     nan  UNDERPOWERED
+ Ha8   15 |      nan      nan       0 |    29.53    90.56    1770 |     nan     nan  UNDERPOWERED
+ Ha8   16 |      nan      nan       0 |    30.89   101.95    2413 |     nan     nan  UNDERPOWERED
+ Ha8   17 |      nan      nan       0 |    31.34   106.14    3239 |     nan     nan  UNDERPOWERED
+ Ha8   18 |      nan      nan       0 |    31.97   110.12    1501 |     nan     nan  UNDERPOWERED
+ Ha8   19 |      nan      nan       0 |    31.62   109.28    2353 |     nan     nan  UNDERPOWERED
+ Ha8   20 |      nan      nan       0 |    32.60   124.13    1530 |     nan     nan  UNDERPOWERED
+ Ha8   21 |      nan      nan       0 |    31.43   105.19    3165 |     nan     nan  UNDERPOWERED
+ Ha8   22 |      nan      nan       0 |    32.21   107.33    2206 |     nan     nan  UNDERPOWERED
+ Ha8   23 |      nan      nan       0 |    32.96   112.12    1066 |     nan     nan  UNDERPOWERED
+ Ha8   24 |      nan      nan       0 |    32.62   111.56    2091 |     nan     nan  UNDERPOWERED
+ Ha8   25 |      nan      nan       0 |    31.98    33.36     677 |     nan     nan  UNDERPOWERED
+ Ha8   27 |      nan      nan       0 |    34.87   126.72     866 |     nan     nan  UNDERPOWERED
+ Ha8   30 |      nan      nan       0 |    35.87   138.51     914 |     nan     nan  UNDERPOWERED
+ Ha8   35 |      nan      nan       0 |    35.46   134.88     489 |     nan     nan  UNDERPOWERED
+
+[B] PRE-REGISTERED READOUTS (PREREG sec 5)
+  T8: E1 bin-5 p50 = 11.00 ms | E1 pooled-SPLIT p50 = 11.10 ms (mean batch 6.29, n=1720)
+       vs sec 0's 11.09 ms: bin-5 conditional differs by   0.8%  -> R1 (within 15%)
+       vs sec 0's 11.09 ms: pooled differs by   0.1%  -> R1 (within 15%)
+  Ha8: C2 side NOT RECONSTRUCTIBLE -- job 865493 has no client t0 anchor for this arm/d16 (absent measurement, not a measured zero). Cross-job readout skipped.
+  Ha8: E1 bin-5 p50 = nan ms | E1 pooled-SPLIT p50 = 31.76 ms (mean batch 18.63, n=0)
+
+  [R3] ratio trend across shared bins (n >= 50):
+    T8: bins [1, 4, 5] r(p50) ['2.81', '2.64', '2.62'] | OLS slope -0.050/bin
+
+[C] POPULATION DESCRIPTIVES (PREREG sec 6.3 -- reported, NOT controls)
+    'C2 n_tot = 0' means the anchor is absent, not that no tokens ran
+ arm |  C2 n_tot  C2 SPLIT share  C2 pref@busy  C2 realized@D |  E1 SPLIT share  E1 pref|SPLIT  E1 realized@D   align_r
+  T8 |     90971           0.998         0.904          0.958 |           0.037          0.245         0.0380 0.88-1.00
+ Ha8 |         0             nan         0.825          0.865 |           0.090          0.356         0.1041 1.00-1.00
+
+==============================================================================
+DIAGNOSTIC ONLY.  This check cannot adjudicate sec 0's (i) vs (ii):
+  (i) 872077's decode_sms==16 is not a real 16-SM hardware execution
+  (ii) C2's 28-31ms is a property of the [16,16,76-idle] + saturated-
+       keepalive cell composition
+Both remain open regardless of any number above.  The sec 4.3.11
+residual (green-context creation vs hardware SM grant, IN ENGINE
+CONTEXT) is untouched -- job 864669 answered only the isolated API
+layer.  Separating (i)/(ii) needs a direct measurement (engine-context
+SM-grant probe, or gate S1).  Result goes to claims-auditor before any
+canon edit: this script and its pre-registration share an author.
+==============================================================================
