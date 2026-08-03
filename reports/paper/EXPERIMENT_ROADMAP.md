@@ -1,6 +1,29 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-02 rev2(★P6의 E1 "설계 위험 3중" 중 (b)(c)를 claims-auditor 회부 결과로 **정정**하고, E1 대신 제출된 M3 Transformer-control 대조[job 872077]를 기록. 게이트 정의 변경 없음. 이전 rev1: 진행 상태 갱신만 — P6에
+최종 갱신: 2026-08-03(같은 세션 2차 속행 — doc-steward 기록. (I)
+claims-auditor가 §1-26/여기 아래 기록된 `g` 은퇴의 근거였던 `A_free`
+결함을 대체하는 **조건부 per-token 추정량**(`m3_conditional.py`)으로
+estimand를 이관[AUDITED, blocking-threshold 스윕만 UNAUDITED — 감사자
+자기산출 자기감사]. (II) engine-porter가 `PDMUX_STICKY_PARTITION`
+구현·correctness gate 통과[구현 사실, **구현 완료 ≠ 성능 주장 성립**] —
+CPU 회귀 40 tests + sticky 단위 테스트 12 + GPU smoke(job 872800)
+byte-identical 출력. sticky 격자 런은 **여전히 미제출**, 제출 전
+`G_LEVER`/`G_FLAT` 사전등록이 미결 열린 항목. **게이트 정의(3.4.4 결정규칙)
+변경 없음.** 상세 `../../PROJECT_STATUS.md` "8B decode-SM 프론티어"
+"2026-08-03(2차)" 소절, `../CONSENSUS.md` §1-27,
+`../../workspace/engine-port/results/s8_frontier/DESIGN.md`
+§4.3.10–4.3.12. 이전(같은 날 1차 속행) — job **872077**(M3)의 NO VERDICT
+사유가 "CI 폭 부족"에서 **"estimand 미식별"**로 확장됨을 P6에 기록. 기판이
+prefill 비-in-flight 시 항상 무분할로 되돌아가므로 이 격자에서는
+"decode가 D SM에서 돌았다"⟺"prefill이 동시 in-flight였다"가 같은 사건이라
+`g=A_free(d16)/A_free(d54)`는 **이 격자 한정 은퇴**(sticky-partition
+기판 수정 전 인용 금지, 블록 증설 재실행 선행 금지). 메인 세션이 세운
+"decode 실현 4–19%가 `g`를 attenuate했다"는 보정 가설도 claims-auditor에
+**REFUTED**. 다음 gate = `PDMUX_STICKY_PARTITION` 구현 → sticky 격자
+1회(872077 대조) → 사전등록 판별 예측(T8≈1.85·Ha8≈0.92 vs Ha8≈1.6).
+게이트 정의(3.4.4 결정규칙) 변경 없음. 상세 `../../PROJECT_STATUS.md`
+"8B decode-SM 프론티어" "2026-08-03" 소절, `../CONSENSUS.md` §1-26. 이전
+rev2: ★P6의 E1 "설계 위험 3중" 중 (b)(c)를 claims-auditor 회부 결과로 **정정**하고, E1 대신 제출된 M3 Transformer-control 대조[job 872077]를 기록. 게이트 정의 변경 없음. 이전 rev1: 진행 상태 갱신만 — P6에
 "E1 상태(2026-08-02)" 추가: 전제 실험 4건 완료(2026-08-01, **claims-auditor
 미통과 = 인용 금지**), **본 스윕 미제출**, 설계 위험 3중으로 E1이 사전등록
 분기 "설계상 이 질문에 도달할 수 없다"로 갈 위험, 선행 사전등록
@@ -280,6 +303,49 @@ as-run 설정에서 **네 arm 전부 헤드라인 룽 없음**, (b) 그 as-run �
 > 아니라 `= cap` 규칙**으로 고정해야 한다 — slot당 비용이 arm마다 달라
 > (M8 0.255 / Ha8 0.141 / Hs8 0.096 GB) 절대상수는 arm마다 다른 메모리 분할을
 > 강제하는 **새 cross-arm 교락**이 된다(`../CONSENSUS.md` §1-23 따름정리 정정).
+>
+> ★★★**정정(2026-08-03, claims-auditor, 같은 세션 속행) — M3(872077)의
+> NO VERDICT 사유가 "CI 폭 부족"에서 "estimand 미식별"로 확장됐다.** 코드
+> 사실: `pdmux_context.py:initialize_stream_groups`가 마지막에 무조건
+> `(0,108)` 무분할 그룹을 덧붙이고 prefill이 비-in-flight면 그리로 되돌아간다
+> (`multiplexing_mixin.py:773,792-794`) ⇒ 이 격자에서는 **"decode가 D SM에서
+> 돌았다"와 "prefill이 동시 in-flight였다"가 같은 사건**이다. §1-24(ITL 꼬리
+> =monolithic prefill, 크기가 108−D에 단조)와 결합하면 `g`는 사전에
+> **"decode-SM 탄력도 라벨을 단 prefill-SM 탄력도"**일 것이 예상되고, 실측
+> (UNSPLIT-only 부분집합만으로 T8 헤드라인 재현)이 그와 일치한다. **이는 n을
+> 늘려도 해결되지 않는 설계 결함**이라 `g = A_free(d16)/A_free(d54)`는 **이
+> 격자 한정 은퇴**(sticky-partition 기판 수정 전 인용 금지), 블록 8→12–16
+> 증설 재실행은 **선행 금지**. 동시에 메인 세션이 세운 "decode 실현 4–19%가
+> `g`를 attenuate했다"는 보정 가설도 **REFUTED**(control-arm reductio: T8에
+> 같은 보정 적용 시 corrected g 21–29×로 C2를 10배 위반; de-engagement 직접
+> 실험에서 w=0에도 g 1–11%만 이동; "A(108) 셀 무관" 가정이 UNSPLIT-only
+> 부분집합 분해로 반증). ⚠️"Ha8에 레버가 없다"는 CONFIRMED 아님 — **긴장
+> A(HE2 vs C2)는 전혀 닫히지 않았다.** 다음 gate: `PDMUX_STICKY_PARTITION`
+> 구현(engine-porter, correctness gate) → sticky 격자 1회(872077 동일 설계
+> 8 block, non-sticky 대조로 872077 사용) → 사전등록 판별 예측(prefill
+> 주도라면 T8≈1.85·Ha8≈0.92로 하강, 희석 가설이 옳았다면 Ha8≈1.6로 상승 —
+> CI 비중첩이라 8 block으로 구분 가능) → `E1_DECODE_REALIZED≥0.90`이
+> sticky에서는 **진짜 게이트**(더 이상 항등식 아님). 상세 `../CONSENSUS.md`
+> §1-26, `../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03"
+> 소절, `../../workspace/engine-port/results/s8_frontier/DESIGN.md` §4.3.9.
+>
+> ★★**(2026-08-03, 같은 세션 2차 속행) 위 두 다음-gate가 모두 진행됐다 —
+> estimand 이관 완료, 구현 완료, 런은 아직 미제출.** claims-auditor가
+> `A_free`를 대체하는 **조건부 per-token 추정량**(`m3_conditional.py`,
+> `DESIGN.md` §4.3.10)을 만들었다[AUDITED, blocking-threshold 스윕만
+> UNAUDITED]. engine-porter가 `PDMUX_STICKY_PARTITION`을 구현했고(`DESIGN.md`
+> §4.3.11) correctness gate 전부 PASS(CPU 회귀 40 tests + sticky 단위
+> 테스트 12 + GPU smoke job 872800, 6개 고정 프롬프트 OFF/ON greedy 출력
+> byte-identical) — **구현 완료 ≠ 성능 주장 성립**이며, realized 관측(n=1)
+> `E1_DECODE_REALIZED` OFF 0.0839 → **ON 1.0000**(사전등록 게이트 ≥0.90
+> 초과)만 기록됐다. **sticky 격자 런은 여전히 미제출** — `DESIGN.md`
+> §4.3.12가 사전등록한 4개 게이트·primary 통계량은 확정했으나
+> **`G_LEVER`/`G_FLAT`는 미결정으로 남겨 두었다**(기존 1.5/1.15는 `A_free`
+> 스케일이라 새 추정량에 그대로 이전 불가 — C2 측정범위[2.36–2.91×]에
+> 묶는 안이 논거는 있으나 E1의 D 범위[16→54]가 좁고 상보적[P+D=108]이라
+> 확정 전 별도 사전등록 필요). 판별 예측(위 문단)은 불변. 상세
+> `../CONSENSUS.md` §1-27, `../../PROJECT_STATUS.md` "8B decode-SM
+> 프론티어" "2026-08-03(2차)" 소절, `DESIGN.md` §4.3.10–4.3.12.
 
 | ID | 고정 workload |
 |---|---|

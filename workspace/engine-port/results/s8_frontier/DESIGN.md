@@ -1119,18 +1119,530 @@ and unlike Stage 0 there was **no gate here at all**. §1-22 required realized
 distributions to be reported for partition sweeps; that was applied to the
 prefill axis only.
 
-**Job 872077's standing, final.** All gates pass, `n_indep = 8` on both arms,
-`T8 g = 1.837 [1.666, 2.009]`, `Ha8 g = 1.068 [0.947, 1.190]`. The verdict is
-**still NO VERDICT — but now for exactly one reason**: RULE_POINT fires and
-RULE_BOUNDS does not (Ha8 upper 1.190 > 1.15), and per (c) a job predating the
-2026-08-03 fix cannot have either reading adopted for it. **A re-run under
-RULE_BOUNDS would settle it**, and the open quantity is whether Ha8's upper
-bound falls below 1.15 with more blocks. Any such re-run must report the
-decode-realization table beside `g`.
+**Job 872077's standing, as of 2026-08-02.** All gates pass, `n_indep = 8` on
+both arms, `T8 g = 1.837 [1.666, 2.009]`, `Ha8 g = 1.068 [0.947, 1.190]`. The
+verdict is **still NO VERDICT — but now for exactly one reason**: RULE_POINT
+fires and RULE_BOUNDS does not (Ha8 upper 1.190 > 1.15), and per (c) a job
+predating the 2026-08-03 fix cannot have either reading adopted for it.
+
+★★★**SUPERSEDED, 2026-08-03 (same day, continued session) — §4.3.9 below.**
+The sentence that used to sit here ("a re-run under RULE_BOUNDS would settle
+it, and the open quantity is whether Ha8's upper bound falls below 1.15 with
+more blocks") is **now wrong**. It assumed the only defect was CI width. §4.3.9
+shows the defect is structural: on this grid "decode ran at D SM" and "prefill
+was in flight" are the same event, so no amount of blocking resolves it — more
+blocks would still be estimating a quantity that conflates decode-SM
+elasticity with prefill-SM elasticity. Do not re-run under the current grid.
+Any future re-run must report the decode-realization table beside `g` **and**
+run on a sticky-partition substrate (§4.3.9).
 
 **Not re-run, and why:** M3's pin question is answered (conditional pin =
 1.000, three jobs). rev2 (872497) is retained as data but its stated purpose is
 withdrawn. `MIN_PA_SNAPSHOTS` is withdrawn as a gate.
+
+### 4.3.9 ★★★2026-08-03, same day, continued session — `g` retires on this
+    grid: the "dilution attenuation" hypothesis REFUTED, the NO VERDICT reason
+    widened to "estimand not identified", `A_free`'s own flaws, and an
+    uncontrolled confound between arms. Source discipline: (a)-(d) below are
+    **[AUDITED]** (claims-auditor independently re-analyzed the 872077 raw
+    data — telemetry 64 files + bench 64 files — and these readings are
+    citable in canon). (e) is **[UNAUDITED]** (result-analyst output,
+    claims-auditor has not reviewed it; not citable in canon except the one
+    item marked otherwise).
+
+#### (a) The "dilution attenuation" argument — REFUTED
+
+The main session, working from §4.3.8(h)'s `E1_DECODE_REALIZED` table (4-19%),
+argued: `A_free(dD) = w_D * A(D) + (1 - w_D) * A(108)` is a mixture, and the
+dilution attenuates `g` toward 1. Back-solving for Ha8's "true" split-only
+response gave a corrected `g` of roughly 1.62-1.70 — which would have made
+Ha8's NO VERDICT an engagement artifact rather than a genuine flat response.
+
+**Verdict: REFUTED.** Three independent lines of evidence, run entirely from
+872077's existing telemetry (no new GPU time):
+
+1. **Control-arm reductio.** Apply the identical correction formula to T8.
+   Corrected `g` comes out to **21-29x** (for `A(108) in {12,14,15}` ms,
+   `b in {0,2}` ms), a **10x violation** of the pre-registered C2 measurement
+   (2.36-2.91x over the wider 16-92 SM range) on the narrower 16-54 SM range.
+   The model requires T8 d16's split-conditional ITL p95 to be 352-360ms; the
+   measured value is **30.67ms**.
+2. **De-engagement experiment.** Re-sample the split-labeled ITL tokens from
+   the same cell's unsplit distribution to lower engagement by a factor `f`
+   applied to `w`. Measured change in `A_free`: **1-11% only** (Ha8 d16
+   113.51 -> 112.29, -1.1%; Ha8 d54 107.45 -> 95.74, -10.9%; T8 d16
+   28.31 -> 26.97, -4.7%; T8 d54 15.38 -> 15.02, -2.3%). At `w = 0` (all
+   engagement removed), `g` is Ha8 1.173 / T8 1.796 — the headline survives
+   almost unchanged.
+3. **The core assumption "`A(108)` is cell-invariant" is violated in the
+   data.** Applying the `A_free` decomposition to sub-populations: Ha8 ALL
+   1.068 [0.947, 1.190] / **SPLIT-only 0.920 [0.842, 0.998]** (CI excludes 1,
+   **opposite sign**) / UNSPLIT-only 1.146 [0.997, 1.296]. T8 ALL 1.837 /
+   SPLIT-only 1.847 [1.641, 2.053] / **UNSPLIT-only 1.795 [1.589, 2.001]** —
+   the entire T8 headline effect **reproduces in the sub-population where the
+   decode-SM contrast is zero by construction**.
+
+Confound type: gate #1 (replacing a direct serving measurement with an
+offline arithmetic model) plus **gate #6** (dividing by `w`, a quantity
+derived from an identity, as if it were a free nuisance parameter — `w` is
+prefill duty cycle itself, see (b)).
+
+**What survives.** Low engagement itself is robust — three independent
+instruments agree (snapshot time-share 3.8-18.7%, event-driven
+`controller_decision`-based 2.7-8%, token-based). What dies is the
+**correction**, not the premise. Aggregation-unit sign is settled (time-share
+> token-share, so time-weighted engagement over-estimates: Ha8 d16 0.104 vs
+0.092, d54 0.187 vs 0.177; T8 d16 0.038 vs 0.038, d54 0.091 vs 0.087) but is
+moot — the model is already dead by (1)-(3).
+
+#### (b) 872077's standing — NO VERDICT reason widened from "rule ambiguity"
+    to "estimand not identified"
+
+Code facts (auditor-confirmed): `pdmux_context.py:initialize_stream_groups`
+hardcodes `SM_COUNTS = [(108,0)] + divisions + [(0,108)]`, and
+`multiplexing_mixin.py:773,792-794` falls back to `real_sm_group_num - 1` =
+plain `(0,108)` (not even a green context) whenever prefill is not in flight.
+Therefore, on this substrate:
+
+> **"decode ran at D SM" and "prefill was in flight at the same time" are the
+> same event.**
+
+No statistic on this grid can separate the decode-SM lever from prefill
+interference. Combined with §4.3.8(a)'s M4 finding (ITL tail = monolithic
+prefill, size monotone in `108 - D`), `g` was expected in advance to be
+**"prefill-SM elasticity wearing a decode-SM-elasticity label"** — and the
+measurement matches: the effect reproduces in the UNSPLIT-only population.
+
+**This is not fixable by adding blocks.** Record:
+
+- 872077's NO VERDICT status **stands**, reason widened as above.
+- `g = A_free(d16)/A_free(d54)` **retires on this grid** — do not cite until
+  the sticky-partition substrate fix lands.
+- Expanding blocks 8 -> 12-16 on the current grid is **pre-emptively
+  disallowed**. For reference, assuming current mean/sd hold, P(Ha8 upper
+  bound <= 1.15) was n=12 43% / 16 55% / 24 75% / 32 87% / 40 93% — but sd
+  will change post-fix, so this table is **void in advance**.
+- "Ha8 has no decode-SM lever" is **not CONFIRMED** — the current data cannot
+  answer that question. **Tension A (HE2 vs C2) is not closed at all.**
+
+#### (c) `A_free`'s own defects (applies across the E1 harness, not just M3)
+
+Reading `e1_m3_control.sbatch:281-306`:
+
+1. **The blocking filter does not work.** `PREFILL_BLOCK_TOK = 1024`, but only
+   4-5% of this workload's requests have input >= 1024 tokens, and their share
+   of total prefill work is only 23-26% — so **74-77% of prefill work passes
+   the filter unblocked** (only ~2% of all ITL entries are actually removed).
+   §4.3.8(a)'s monolithic-prefill stall finding therefore **contaminates
+   d16-d54, not just d92** (widening §4.3.8(a)'s original "d92 only"
+   limitation) — the requests that make up T8 d16's tail have inputs of
+   221-804 tokens, all below the threshold.
+2. **Double extreme-percentile statistics.** 27.5-29.5% of requests have
+   output <= 25 tokens, so their per-request p95 degenerates to essentially
+   the max ITL. The linear-mixture identity behind the dilution model does not
+   hold over extreme quantiles (demonstrated by the non-monotone response Ha8
+   d54 107.45 -> 101.89 -> 102.84 -> 97.75 under (a)'s de-engagement sweep).
+
+`A_free` is therefore **not a blocking-removed statistic** — it is mostly an
+extreme-tail statistic made of monolithic-prefill stall. Estimator replacement
+is a follow-up roadmap item, not attempted here.
+
+#### (d) An uncontrolled confound between arms
+
+At the common rate 2: T8 concurrency 12.8 / decode batch 4.5 / ITL p50 ~11ms
+vs Ha8 concurrency 30.6 / batch 15.8 / ~30ms. Both arms sit on an off-cliff
+plateau (0.88-1.07x plateau ratio, not a metric cliff), but decode batch size
+is a covariate that determines whether a decode step is memory- or
+compute-bound, and it is fully confounded with arm. **"Attributable to the
+arm" is not licensed on the current data** — the correct control is a rate
+chosen to match realized concurrency/decode batch, not arrival rate. This
+confound does not explain the observed *direction* (the larger-batch arm is
+the *less* responsive one), so it is recorded as an **unremoved confound**,
+not an alternative explanation. Side note: d16 has `sm_group_num: 3`, d54 has
+4 (a guard row), so the number of green contexts differs by cell, and d54's
+`decode_sms == 44` is never observed in telemetry (the guard row is never
+selected) — not a behavioral confound, but a cell-to-cell difference worth
+recording.
+
+#### (e) [UNAUDITED] result-analyst's decode-empty diagnosis
+
+Script: `m3_decode_empty.py` (re-runnable). Not claims-auditor reviewed, but
+partially convergent with (b) independently, so recorded:
+
+1. Dilution's cause is **prefill absence, not decode-empty**.
+   `E1_DECODE_REALIZED` is conditioned on decode-active time, so decode-empty
+   never enters numerator or denominator by construction. Measured
+   contribution T8 -0.0006+-0.0046 / Ha8 -0.0001+-0.0028 = 0; the
+   block-paired (d54 - d16) decomposition attributes 100% of the gradient to
+   the prefill-occupancy gradient (residual CI includes 0: T8
+   -0.0074+-0.0111, Ha8 -0.0002+-0.0198).
+2. Decode-empty within the loaded window is only **0.6-1.3%**; the raw 15-19%
+   is a **measurement-window artifact** (client warmup-to-dataset-prep gap of
+   14.9-17.7s plus a 5.2-6.2s post-drain tail). Telemetry analysis should
+   anchor the loaded window on the client-reported `duration`.
+3. Gate #6 field audit — **four dead telemetry fields**, with code citations:
+   `decode_ready_queue_depth` is identically 0 (only populated inside the
+   dual-worker guard, and 872077 runs `architecture == "legacy"`);
+   `active_decode_sequences` is identical to `decode_running_batch_size` (same
+   `running_batch.batch_size()`); `decode_idle_ratio`/`prefill_idle_ratio` are
+   identically 0.0 (declared but never assigned in `controller.py:55`);
+   `running_batch_occupancy` is identical to `min(1, drb/48)`;
+   `prefill_admission_blocked` is identical to `(pqd > 0 and pab == 0)`.
+4. Aggregation-unit (gate #5) re-confirmed: decode-empty time-share
+   0.0056-0.0127 vs count-share 0.333-0.424 (30-60x apart); the decomposition
+   ratio (prefill dominates) is robust across all three units.
+5. **Realized ceilings are a workload property and differ 3x by arm**:
+   sum(TTFT)/decode-busy-time gives T8 0.120-0.154 vs Ha8 0.381-0.558 — a
+   client-side quantity, immune to telemetry instrumentation issues, and an
+   additional axis of arm comparison confound beside (d)'s decode batch size.
+6. **UNDETERMINED**: the *magnitude* of the realization gradient. Snapshot dt
+   p95 is 195-805ms, the same order as prefill span itself, so "prefill
+   episode length" reconstructed from snapshot gaps is a sampling artifact,
+   **not citable as a physical quantity**. Also unresolved: a `t_pa`-based
+   per-request prefill-span increase (T8 d16 -> d54, +30.6ms) versus the
+   client-measured TTFT increase (mean +7.5ms, median +10.6ms) disagree —
+   resolution requires emitting prefill batch start/end events directly and
+   re-measuring.
+7. ★**This one item converges independently with the auditor and may be cited
+   as [AUDITED]**: raising load to increase engagement is **not** supported by
+   the data (decode is already ~99% busy under load; raising rate scales
+   prefill and decode proportionally, and even the cross-cell difference in
+   `w` traces to prefill slowing down at 108-D rather than to arrival rate;
+   split-eligible iteration counts are nearly cell-invariant at 194-214).
+
+#### (f) Next gate (planned, not yet run)
+
+Auditor-recommended order: 1-3 = record this section in canon (done, zero
+GPU), 4 = implement `PDMUX_STICKY_PARTITION` + correctness gate
+(engine-porter, ~0.25h), 5 = one sticky-grid run (872077's design, 8 blocks,
+~3.0h; 872077 itself serves as the non-sticky control, ~3.3 GPU-hour total),
+6 = block expansion only **after** 4 and 5.
+
+**Pre-registered discriminating prediction (the point of the sticky run):**
+
+- If the tail is prefill-driven (per §4.3.8(a)), the unsplit population
+  disappears under sticky partitioning and `g` **falls** to its
+  split-conditional value: **T8 ~= 1.85, Ha8 ~= 0.92**.
+- If argument (a) above had been right, Ha8's `g` would instead **rise**
+  toward **~1.6**.
+- The two predictions have non-overlapping CIs (Ha8 0.92 [0.84, 1.00] vs
+  1.66), so **8 blocks discriminate**.
+
+Pre-registered gate: `E1_DECODE_REALIZED >= 0.90` (every cell-block) — on the
+sticky substrate this is **no longer an identity**, so it becomes a real gate
+for the first time. Confirmed not achievable by config alone
+(`initialize_stream_groups` unconditionally appends the final unsplit group)
+— an engine change is required. engine-porter is implementing this separately;
+**implementation completion is not the same as a performance claim**.
+
+### 4.3.10 ★★2026-08-03, same day, second continuation session (doc-steward
+    recording claims-auditor's estimand handoff + engine-porter's
+    `PDMUX_STICKY_PARTITION`) — a replacement estimator for `A_free`,
+    implementation of a genuinely conditional decode partition, and forward
+    pre-registration for the first sticky-substrate run. Source discipline:
+    (I)(1)-(2) below are **[AUDITED]** (claims-auditor's own re-analysis,
+    bit-identical reproduction). **(I)(3) is an exception and is
+    [UNAUDITED]** — it is new output the auditor produced *this turn*, so it
+    is the auditor auditing itself; do not cite until an independent pass
+    confirms it. (II) is an **implementation fact** (correctness-gate class),
+    not a performance claim. (III) is a pre-registration, not a result.
+
+#### (I) A conditional per-token estimator to replace `A_free`
+
+Code: `results/s8_frontier/m3_conditional.py` (new, untracked). Every number
+below reproduces bit-identically from that one file. Run:
+`python3 m3_conditional.py --job 872077 --cache <path>.pkl`; `--only
+{align,engagement,conditional,loo,tail,overlap,deengage,thresh}` selects a
+section; labeling all 64 probes takes ~4 minutes.
+
+**(1) Definition.** Unit = one ITL interval (one emitted token); no
+per-request aggregation. Inclusion: warmup excluded (`i >=
+ceil(WARMUP_S*rate)`, index 6, `e1_m3_control.sbatch:265`), `errors[i]==""`.
+Label: for interval `[a,b]` (client clock, `a = arr[i]+ttft[i]+cumulative
+ITL`), `split_frac(a,b) = (time within [a,b] where decode_sms==D)/(b-a)`
+computed from the telemetry step function. **SPLIT := split_frac >= 0.90 /
+UNSPLIT := <= 0.10 / AMBIGUOUS := in between and excluded from both** (never
+force-classify). Observed AMBIGUOUS is 0.3-1.4%. Per-block-average label
+yield: Ha8 d16 SPLIT 3,738 / UNSPLIT 38,657 (amb 0.008); Ha8 d54 7,045/34,287
+(0.014); T8 d16 1,390/36,470 (0.003); T8 d54 3,115/34,239 (0.008). Statistic:
+per-cell-block **direct per-token quantiles** — primary `p95(SPLIT)`,
+secondary `p50(SPLIT)`, **control `p95/p50(UNSPLIT)`**, mean reported
+alongside. The UNSPLIT control population is the key safeguard: both cells
+sit at 108 SM there, so the decode-SM contrast is zero by construction — if
+the ratio there is not 1, the difference was not made by decode SM. Contrast
+`r(arm,stat,block) = stat(d16,block)/stat(d54,block)`, paired within block,
+8-block block-clustered t-interval (`TCRIT` from `m3_analyze.py:60`, keyed on
+**n** not n-1, `TCRIT[8]=2.365`; percentile bootstrap is disallowed per its
+known 79.8% coverage at n=8). Motivating measurement: T8 d16 pooled
+per-token p95 = **11.60** vs `A_free` = **28.31** (more than 2x further into
+the tail); 27.5-29.5% of requests have outlen<=25; `A_free`'s outer p95 rests
+on ~9.6 requests, the new estimator on 1,390-7,045 tokens per cell-block.
+⚠️This estimator is better-defined than `A_free`, nothing more — it is
+**not the pre-registered SLO term**. `A_all` (the registered term) is still
+reported alongside per §1-24's corollary.
+
+**(2) Client<->telemetry clock alignment and ALIGN-WEAK handling.** Procedure
+(`m3_conditional.py:align`): anchor on the first `phase_marker(phase ==
+"benchmark")`, replay `replay_arrivals(seed, rate, n)` bit-identically to
+`e1_m3_control.sbatch:284-287` (`np.random.seed` -> `exponential(1/rate)` ->
+`cumsum`), build the client in-flight step function, maximize Pearson r
+against telemetry `decode_running_batch_size` (coarse `L in [-5,60) step
+0.5s`, then fine `+-0.5 step 0.02s`). The lag is large (13.9-35.9s) because
+the `benchmark` marker fires on the server's first-seen request — the *warm-up*
+request in `bench_serving` (`multiplexing_mixin.py:386-398`) — and dataset
+tokenization then further delays the actual probe start. **The marker is a
+search anchor, not the probe boundary**, so `load_telemetry` must **not**
+filter on `phase == "benchmark"`. Self-correction: the prior report's "one
+weakly-aligned probe (T8 d16 b1, r=0.882)" was a 24-probe spot check; the full
+64-probe scan finds **two** (adding T8 d16 b6, r=0.930). **All reported
+numbers above were already computed over the full 8 blocks, so nothing
+changes** — only the description of that count changes. Rule:
+`ALIGN_R_MIN=0.95`; below it, flag ALIGN-WEAK and report both the
+included and excluded version — never drop silently. Reasons: (a) `r` is
+paired within block, so excluding one probe drops the whole block
+(`n_indep` 8 -> 7, re-losing exactly what §4.3.8(h) recovered); (b)
+misalignment randomizes labels, pulling both sub-populations toward pooled —
+it can only weaken separation, not manufacture it (conservative bias); (c)
+measured LOO (`sp_p95` ratio): T8 full 1.688 -> drop b1 **1.822**, drop b6
+1.640 — dropping the weakest block makes the contrast *larger*, not smaller.
+Ha8 full 1.340, LOO range 1.219-1.375 (every Ha8 probe has r >= 0.993).
+
+**(3) [UNAUDITED — the auditor's own new output this turn, self-graded;
+requires independent confirmation before canon citation] Blocking-threshold
+sweep.** `PREFILL_BLOCK_TOK` 1024 -> 512 -> 256 -> 0
+(`keep_frac / pooled-p95 / A_free-form`, ms):
+
+| arm/cell | 1024 (as-run) | 512 | 256 | 0 |
+|---|---|---|---|---|
+| Ha8 d16 | 0.979/98.66/**113.51** | 0.934/75.41/111.35 | 0.901/34.25/104.38 | 0.827/33.50/**34.63** |
+| Ha8 d54 | 0.960/88.01/**107.45** | 0.882/66.46/89.08 | 0.832/34.63/87.42 | 0.756/33.01/**35.11** |
+| T8 d16 | 0.994/11.60/**28.31** | 0.979/11.54/21.66 | 0.963/11.49/13.31 | 0.928/11.44/**11.65** |
+| T8 d54 | 0.984/14.01/**15.38** | 0.955/12.40/15.11 | 0.926/11.53/14.52 | 0.877/11.38/**11.59** |
+
+There is **no knee**, and at threshold 0 the d16-vs-d54 contrast **collapses
+in both arms** (Ha8 0.986, T8 1.005). The threshold is therefore not a free
+tuning parameter — it is **the handle that sets the answer** — and post-hoc
+selection is disallowed. Threshold 0 redefines the estimand as "ITL during a
+moment with no prefill in flight at all" and that selection correlates with
+load, i.e. a selection bias, so it is not adoptable as a replacement
+threshold. ★This table uses no telemetry and no clock alignment, so it is
+immune to the instrumentation objections against the conditional analysis
+above — that much of it is robust regardless of audit status.
+
+**Recommendation arising from (1)-(3):** retire `A_free` (not re-tune its
+threshold); keep `A_all` alongside. **Primary label = realized partition**
+(`decode_sms == D`). Secondary label = prefill overlap
+(`prefill_overlap_frac(a,b) = fraction of [a,b] where prefill_active_batch_size
+> 0`, BLOCK-FREE := <= 0.0), but its **instrumentation bias must be stated**:
+872077 ran with `PDMUX_TRACE_FORCE_PREFILL=0`, so prefill-active is severely
+under-sampled (documented case: 4.9% of wall time vs 0.07% of snapshots,
+`multiplexing_mixin.py:400-408`). Measured contradiction: the fraction of
+SPLIT-labeled tokens that come out "overlap-free" is Ha8 d16/d54 66.3%/38.8%,
+T8 76.1%/27.1% — physically impossible if SPLIT implies prefill in flight, so
+that gap is exactly the instrumentation shortfall. `decode_sms`, by contrast,
+is a **persisted state variable** read on every snapshot even during dense
+idle-spin sampling, hence robust — which is why primary uses `decode_sms`.
+
+**(4) Three places a re-implementation would diverge (also pinned in code
+comments; keep here too):**
+
+1. `replay_arrivals` is bit-identical to the sbatch (`np.random.seed` +
+   `exponential` call order).
+2. `load_telemetry` applies **no** `phase == "benchmark"` filter.
+3. `report_deengagement` allocates one `rng` for the whole nested loop, so it
+   is **loop-order dependent**. Reproducing the reported values (113.51 ->
+   112.29, etc.) requires fixing that order. If this is ever absorbed into
+   production code, switching to a `(arm,cell,block,f)`-keyed seed is the
+   right fix, but **the specific value will move by MC noise** when it does.
+
+### 4.3.11 [Implementation fact, not a performance claim] `PDMUX_STICKY_PARTITION`
+    implemented and correctness-gated (engine-porter, 2026-08-03)
+
+All changes in `src/multiplex/multiplexing_mixin.py` (+151/-17, 4 hunks; line
+numbers below are post-patch).
+
+**All five fallback paths were audited:**
+
+1. `adjust_stream_groups`:904 `elif not running_batch.is_empty():
+   set_current_stream_idx(real_sm_group_num-1)` — the **core fallback** to
+   plain `(0,108)` whenever decode is busy but prefill is absent. Guarded to
+   `if not running_batch.is_empty() and (split_prefill_batch or
+   sticky_partition_enabled)` so sticky never reaches this fallback while
+   decode is busy.
+2. :906 `else: set_current_stream_idx(0)` (decode **empty** -> plain
+   `(108,0)`) — **deliberately left unchanged** (see rationale below).
+3. `event_loop_pdmux`:1010-1012's trigger
+   (`stream_idx>0 and running_batch.is_empty()`) — unchanged, commented to
+   stay consistent with #2.
+4. `event_loop_pdmux_coord`:1309-1311 + `set_current_stream_idx(HEAVY)` at
+   :1437/1475/1524/1557/1602 + :1327 — the **combination is rejected at
+   init** with a `RuntimeError` (no half-sticky state).
+5. The SLO branch :872-880 and v7 `_tgt` :1027-1063 — unchanged (only
+   reachable during a prefill span; sticky only fills the gaps between
+   spans).
+
+**Decode-empty releases to index 0 (does not hold).** Three reasons: (a)
+`E1_DECODE_REALIZED` is decode-active-time-weighted, so this interval carries
+zero weight and holding could not improve the gate it exists to serve; (b)
+there is no decode work to protect, so holding would only strand D SM from
+prefill with no offsetting benefit; (c) it keeps fallback path #3 valid,
+keeping the two halves of the mechanism consistent. Smoke measurement:
+decode-empty snapshots land at `(0,108,0)` in both arms (OFF 10,812 / ON
+12,046) — **the two arms differ only in the decode-busy population.**
+
+**OFF is byte-identical to pre-patch.** The only change is
+`split_prefill_batch or sticky_partition_enabled`; with the flag OFF the
+right-hand disjunct is `False`, so short-circuit evaluation makes the
+predicate identical to before the patch. The original selector block moved
+inside an `else:` unchanged (byte-for-byte, including a latent
+`UnboundLocalError` corner case — deliberately not refactored into a shared
+helper). `test_off_matches_pre_patch_selector` asserts equivalence against an
+**independently re-implemented pre-patch selector** across the full grid of 3
+configs x decode_bs{0,1,4,47,48,96} x {prefill present, prefill absent}.
+Telemetry code is unchanged (no new events/fields/emission-cadence changes).
+
+**cudagraph preserved.** `cuda_graph_runner.py` keys captures by
+`f"{stream_idx}_{bs}"` and `capture()` captures **every** stream-group index,
+so pinning the division index still replays a captured graph — no eager
+fallback, the operating point is preserved.
+
+**Mode interactions — sticky ON rejects at init with `RuntimeError` against:**
+`PDMUX_LA_COORD`, `PDMUX_SLO_SCHED`, `PDMUX_FIXED_DECODE_SM_FILE`,
+`PDMUX_R2_POLICY` not in `{unset, fixed}`, `real_sm_group_num < 3`. Allowed:
+`PDMUX_R2_POLICY=fixed` (the target index is resolved at init from
+`FixedPolicy.decode_sms`, rejected if it only matches a plain group), no
+policy, `PDMUX_DUAL_WORKER`, `PDMUX_TRUE_DUAL_WORKER`. Side effect: under
+`fixed`, sticky pins the *resolved index*, not the decode-bs selector — this
+matters because `pdmux_e1_d54.yml`'s guard-satisfier row `[64,44,48]` would
+otherwise be selected once `decode_bs>=48`, landing on a **different
+partition than the cell label**
+(`test_on_with_fixed_target_ignores_the_guard_satisfier_row`).
+
+**Code confirmation that telemetry records realized, not target.**
+`_dual_worker_sync(stream_idx)` -> `observe_scheduler` ->
+`arbiter.select_partition(stream_index)` -> `metrics()` returns
+`arbiter.sm_counts[arbiter.stream_index]`. The index passed in is the same
+`CURRENT_STREAM_IDX`/loop-local variable that selects the CUDA stream and is
+reassigned at every call site — so `decode_sms` is not a label, it is **the
+SM count of the green context decode actually ran on** (which is why
+pre-patch runs showed D108 92-96% of the time instead of the cell label).
+⚠️**Unre-verified residual scope (not a claim):** whether
+`create_greenctx_stream_by_value(92,16)` causes the hardware to actually
+grant 16 SM is a layer this patch does not touch and was not re-probed here.
+
+**Correctness-gate results:** (1) CPU regression, sticky OFF, **PASS** — 40
+tests (28 existing + 12 new), `sync_engine_tree.sh` mirror/dev-tree SHA-256
+match, recorded in manifest
+(`multiplexing_mixin.py =
+59eaafb4ac61cc09ad8d28f663c495cf6a0e850435c15b873547b8a6e5a7d20a`), no sync
+script changes needed. (2) 12 sticky unit tests **PASS**
+(`tests/test_sticky_partition.py`; loads the mixin from the **installed**
+runtime, so it also asserts the sync actually ran). (3) thread-local role
+patch nominal. (4) **GPU smoke PASS** — job **872800**,
+`amd_a100nv_8`/gpu38, ~9 minutes. Ha8 = Zamba2-7B-Instruct, d16
+(`PDMUX_R2_POLICY=fixed`, `PDMUX_R2_FIXED_DSM=16`), server args copied
+verbatim from `e1_m3_control.sbatch`; the two boots differ only in
+`PDMUX_STICKY_PARTITION`. 6 fixed greedy prompts (`temperature 0`,
+`max_new_tokens 48`) issued sequentially -> **all 6 OFF/ON outputs
+byte-identical.**
+
+**★Realized observation (an observation, not a gate).** Probe = 100 ShareGPT
+prompts, rate 2, seed 1, `PDMUX_TRACE_FORCE_PREFILL=0`, existing
+`e1_pin_check.py:compute_decode_realized`.
+
+| arm | `E1_DECODE_REALIZED` | decode-active histogram |
+|---|---|---|
+| sticky OFF | **0.0839** | D108 66.7s, D16 6.1s |
+| sticky ON | **1.0000** | D16 164.3s (no D108) |
+
+OFF reproduces the existing behavior (872077 Ha8 d16 = 0.104-0.127 by the
+same estimator). ON is **1.0000, pre-registration was >=0.90, and nothing
+was tuned to hit it.** Snapshot cross-check: decode-busy snapshots land at
+`(idx1,92,16)` 139/139 for ON, `(idx2,0,108)` 146 / `(idx1,92,16)` 8 for OFF —
+ON never enters index 2. ⚠️**Caution with no interpretation attached:**
+decode-active wall time differs between arms (72.8s vs 164.3s) because the
+arms run decode on different partitions. **n=1, not repeated, not a
+performance measurement** — recorded so the realized fraction is not misread
+as a like-for-like denominator. ★**Implementation completion is not the same
+as a performance claim.** No statement about throughput, latency, goodput,
+or `g` is licensed. What this patch claims is only that
+**`E1_DECODE_REALIZED` has stopped being an identity and has become a real
+gate.**
+
+**New files:** `tests/test_sticky_partition.py`,
+`results/sticky_smoke/sticky_smoke.sbatch`,
+`results/sticky_smoke/stksmoke_Ha8_d16_872800_result.txt` + smoke artifacts
+(two telemetry.jsonl files, ~14MB each; recommend git-untracked per the
+`s8_frontier` convention). `pdmux_context.py` is unchanged (`[(108,0)] +
+divisions + [(0,108)]` retained — sticky avoids the trailing unsplit group
+rather than removing it, preserving OFF reproducibility).
+
+### 4.3.12 Pre-registration for the first sticky run — record now, leave
+    `G_LEVER`/`G_FLAT` undetermined
+
+**(a) 872077's retroactive re-analysis under the new estimator is
+DIAGNOSTIC-ONLY, not a verdict.** The estimator in §4.3.10 was **selected
+after seeing** 872077, so adopting a verdict from that data would be a
+confound (re-score vs re-tune) — the same failure mode canon has already
+been burned by once, and the same logic that made §4.3.8(c)'s RULE_BOUNDS
+forward-only. The retroactive application is usable only as **supporting
+material for the design verdict** ("estimand not identified"), never as a
+performance reading. `m3_conditional.py` prints this sentence at the end of
+every run.
+
+**(b) One fixed primary**: declare `p95(SPLIT tokens)` ratio as primary;
+p50/mean/UNSPLIT are secondary. With six statistics available, going in
+without a declared primary opens post-hoc selection (multiplicity).
+
+**(c) Four gates** — re-verify, before registering each, that it measures a
+quantity **logically independent** of the condition it is meant to pass
+(methodology gates #6/#7; do not repeat `MIN_PA_SNAPSHOTS`'s mistake of
+counting the estimand's *complement*):
+
+| Gate | Value | Rationale |
+|---|---|---|
+| `ALIGN_R_MIN` | 0.95, **flag-only** | exclusion costs `n_indep`; misalignment bias is conservative |
+| `E1_DECODE_REALIZED` | **>= 0.90** per cell-block | no longer an identity under sticky, so this is finally a real gate (smoke n=1 observed 1.0000) |
+| `AMBIG_FRAC` | pre-registered upper bound (872077 observed 0.003-0.014) | if the ambiguous band eats the sample, the estimator silently changes |
+| `MIN_N_SPLIT` | per-cell-block lower bound (872077 observed 1,390-7,045) | should rise under sticky; a fall means sticky did not take effect |
+
+**(d) ★`G_LEVER`/`G_FLAT` = UNDETERMINED. Record "undetermined", not a
+number.** The existing 1.5/1.15 thresholds are scaled for `A_free`'s
+double-extreme statistic; the new estimator is a per-token quantile on a
+**different scale** — porting the old numbers over would itself be post-hoc
+adjustment. Live argument: because the new estimator sits on the **same
+axis** as C2 (per-token ITL quantiles), anchoring `G_LEVER` to C2's measured
+range (**2.36-2.91x**, prefill fixed at 16 SM, SM16->SM92) is *in-principle*
+defensible — but E1's D range is narrower (16->54) and **complementary**
+(prefill = 108-D moves in lockstep), so C2's value cannot be transplanted
+as-is. **Record this as an open item requiring its own pre-registration
+before the sticky run is submitted**, together with the reasoning above.
+
+**(e) Two things change under sticky — pre-register now**: (i) the UNSPLIT
+sub-population shrinks toward empty or very small (that is the point) — do
+**not** require the `un_*` row as a mandatory output; report NaN when
+undefined, and base the verdict on the SPLIT series. If UNSPLIT stays large,
+sticky did not take effect, and `E1_DECODE_REALIZED` catches that first.
+(ii) the **primary population shifts to `SPLIT and BLOCK-FREE`** — pre-sticky
+the two labels are effectively redundant, post-sticky that is the **only**
+population that isolates decode SM from prefill interference. Pre-registering
+this shift now is what keeps it from being a post-hoc selection.
+
+**(f) Discriminating prediction (the final test of argument A)** — carried
+forward from §4.3.9 unchanged: if the tail is prefill-driven (§1-24) under
+sticky, Ha8 -> ~0.92 / T8 -> ~1.85; if argument A (the refuted dilution
+model) had been right, Ha8 would instead rise toward ~1.6. The CIs do not
+overlap, so **8 blocks discriminate**. Block expansion is out of scope until
+**after** this discriminating run.
+
+**(g) Open design issue (left to a human/claims-auditor decision, not
+resolved here).** If the post-sticky primary population moves to `SPLIT and
+BLOCK-FREE`, §4.7.1's force-trace prohibition becomes a **binding
+constraint** (because the prefill-overlap label's instrumentation shortfall,
+§4.3.10(1), depends on it). But §4.3.8(h)'s SCHED-only decomposition already
+re-attributed force-trace's *systemic* effect as mean +0.001ms (sign 4+/2-),
+so **whether to re-permit trace-force ON is a sticky-specific design
+question, not settled by that prior finding.** Recorded open, not decided.
 
 ### 4.4 Decision rule (pre-registered — do not change without updating this file)
 
