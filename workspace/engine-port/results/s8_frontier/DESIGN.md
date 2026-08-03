@@ -1644,6 +1644,258 @@ re-attributed force-trace's *systemic* effect as mean +0.001ms (sign 4+/2-),
 so **whether to re-permit trace-force ON is a sticky-specific design
 question, not settled by that prior finding.** Recorded open, not decided.
 
+### 4.3.13 [AUDITED, except (5) which is UNAUDITED] 2026-08-03, third
+    continuation session — the C2 -> `G_LEVER` anchor path is retired.
+    `G_LEVER`/`G_FLAT` remain UNDETERMINED (§4.3.12(d) unchanged)
+
+`c2_anchor.py` (new, untracked, script preserved for reproduction of this
+audit even though the derivation it attempted did not survive review)
+attempted to derive `G_LEVER`/`G_FLAT` from C2's measured range. claims-auditor
+reviewed five numbered claims in that script's output: **claim 1 survives,
+claims 2-5 are REFUTED or NOT-YET-SUPPORTED.** Net effect: §4.3.12(d)'s
+"UNDETERMINED" is **not resolved by this attempt** — it stays UNDETERMINED,
+and this section records why the attempt failed rather than a new number to
+replace it.
+
+#### §0. The decisive finding (new) — the premise that C2 and the E1 grid sit
+    on the same axis is empirically false
+
+Same arm, same server flags (`s8_sweep.sbatch:141-146` vs
+`e1_m3_control.sbatch:212-218`, diffed directly and confirmed identical),
+matched decode batch — and the "decode at 16 SM" per-token ITL differs
+**2.6x**:
+
+| Source | Condition | decode@16SM p50 |
+|---|---|---|
+| C2 job 865493 (SPLIT population, batch bin 5) | prefill 16, decode 16 | **28.79 ms** |
+| C2 `FINDINGS_8B_2026-07-28.md` §2, batch=4 | prefill 16, decode 16 | 28.48 ms |
+| **872077 (E1 grid), d16, decode batch ~4.5** | prefill 92, decode 16 | **11.09 ms** |
+
+One of two things is false: **(i)** 872077's `decode_sms == 16` telemetry
+field is not actually a 16-SM hardware execution — this is exactly the
+**unverified residual layer** §4.3.11 flagged explicitly ("green context
+creation is not the same claim as the hardware honoring that SM count"; the
+sticky patch changed *selection*, not this lower layer, and it was never
+re-probed) — or **(ii)** C2's 28-31ms is not the cost of decode running at 16
+SM per se, but a property of that specific cell's *composition*
+(`[16,16,76-idle]` plus a co-resident keepalive prefill stream running almost
+continuously, per §4.3.9(b)'s finding that decode-at-D and prefill-in-flight
+are the same event on this substrate). **Either way, C2's ratio cannot be
+transplanted onto the E1 grid as an anchor.** This is a measured-vs-measured
+recurrence of gate #1 (an offline model standing in for a direct
+measurement) — except here *both* sides are direct measurements, and they
+disagree. **Record this as the top open item** — everything built on 872077
+and this session's sticky results sits on top of the unresolved half of this
+question. If (i) is true, this is a Stage-0-class correction (a labeled SM
+count that does not correspond to the SM count actually granted).
+
+#### Claim 1 (realization verification) — CONFIRMED, two descriptive
+    corrections required
+
+Acyclic re-verification (no interval-set reuse — telemetry only, anchored on
+client `t0`, split into three windows): 865493's load window shows
+in-partition residency **0.989-1.000** at D and **0.000-0.007** at 108;
+warmup is also **~1.000** at D. Out-of-window drain shows **0.716-0.895** at
+108. 865533 **fails** even inside its load window (0.30-0.73 at D). Claim 1's
+conclusion (865493's high residency is real, in-window) stands.
+
+Two descriptive corrections, mandatory when citing this:
+
+1. **"Partition activity 0.66-0.93"** (`s8_scaleup/realized_pin_check.py`) is
+   a **snapshot-count-weighted** estimate filtered to `phase=="benchmark"`.
+   The **time-weighted** all-busy estimate over the same data is
+   **0.803-0.958** — a different number from a different estimator, not a
+   correction of the same one. Citing either without naming which one is
+   **methodology gate #4** (aggregation unit) violation — this single audit
+   produced **three** separate instances of exactly that mistake.
+2. **The 108-SM time is drain-only, not warm-up.** Warm-up is also
+   `~1.000` at D. The mechanism narrative gets *stronger* once corrected
+   (108-SM time is entirely explained by the documented decode-empty
+   auto-revert, §1-22), not weaker.
+
+#### Structural implication (new) — sticky runs have no possible negative
+    control
+
+In-window residency and the UNSPLIT sample are **complements by
+construction** (SPLIT + UNSPLIT + AMBIGUOUS ~= 1). Therefore **any run that
+passes `E1_DECODE_REALIZED >= 0.90` cannot contain a negative-control
+sample** — 865493's UNSPLIT population is **n=0** in-window; the sticky-ON
+smoke logged **zero seconds** at D108. §4.3.12(e)(i) already anticipated the
+UNSPLIT population shrinking under sticky; this generalizes that to a hard
+structural fact and should be stated explicitly in any future
+pre-registration (same shape as `MIN_PA_SNAPSHOTS` counting the estimand's
+complement, methodology gate #7).
+
+#### Claim 2 (primary statistic `p95` -> `p50`) — observation CONFIRMED,
+    mechanism REFUTED, prescription REFUTED (three ways)
+
+The raw observation reproduces: UNSPLIT-population d16/d54 ratios are close
+to 1 at p50 (T8 0.997, Hs8 1.002) but not at p95 (T8 1.662, Hs8 1.374) — this
+was read as evidence the p95 estimator is contaminated and p50 is the
+honest statistic.
+
+- **Mechanism REFUTED.** The `>3x median` events driving p95 are not
+  monolithic-prefill stalls (§4.3.8's M4 signature requires
+  `prefill_active > 0` at the stalled request's location; here it is
+  identically 0.0000 at 108 SM). Instead, **83-87% of these events cluster
+  within 0.5s of a partition transition.** Excluding a 0.5s buffer around
+  every transition collapses the UNSPLIT p95 ratio from 1.662 to a
+  monotone-decaying **1.041**.
+- **Prescription REFUTED, three ways.** (i) Applying the *same* exclusion to
+  SPLIT (the actual estimand) moves its p95 by **<=2%** — the contamination
+  source does not transfer to the population the estimator is built to
+  measure. (ii) The contamination mechanism (transition-adjacency) **vanishes
+  under sticky ON** by construction (no mid-run transitions once a partition
+  sticks) — so the argument for switching primaries does not survive the
+  substrate it is meant to protect. (iii) ★**Measured directly on 872077:
+  `T8 sp_p50 = 0.996 [0.990, 1.002]`** — switching to p50 makes even the
+  *positive control* indistinguishable from 1.00, which structurally forecloses
+  **any** `G_LEVER > 1` verdict from firing on this campaign; and the same
+  p95 negative control breaks in the **opposite** direction on 872077 (`T8
+  un_p95 = 0.880 [0.853, 0.907]`, `Ha8 un_p95 = 1.377 > sp_p95 1.340`).
+  Forward-only discipline does not rescue this either: RULE_BOUNDS
+  (§4.3.8(c)) was defensible only because it was **the rule that does not
+  fire on 872077**; a p50 switch is the opposite — it was proposed *after*
+  seeing 872077, and it **erases** the T8 headline (1.688 -> 0.996), which is
+  exactly the confound gate #6/#12 warns against (diagnosis and prescription
+  in the same turn).
+
+Recorded discipline: **primary stays `p95(SPLIT)`; p50 is secondary;
+transition-adjacency is a diagnostic, not a gate.**
+
+#### Claims 3-5
+
+- **Claim 3 (bias sign = a lower bound on the lever)** —
+  **NOT-YET-SUPPORTED.** (ii) additive-vs-multiplicative form is
+  **unidentified** (Hs8's ratio is roughly constant across correction, T8's
+  is neither constant difference nor constant ratio; the two jobs also change
+  keepalive length *and* count simultaneously — confound #10, unresolved).
+  (iii) the evidence **zeroes the term it was meant to lower-bound**: every
+  C2 SPLIT cell clocks at a flat **1410 MHz**; the *only* thing that drops is
+  the **unsplit (`np`) cell** (T8 median 1290 MHz, p10 1275) — meaning
+  **E1/sticky (which drives prefill=108-D plus decode=D, i.e. all 108 SM
+  simultaneously) will pay a throttling cost C2's split cells never paid**,
+  which is a warning in the **opposite direction** from "C2 is a
+  conservative lower bound" (effect on the *ratio* is unmeasured). (i)
+  (span truncation) is the only sub-claim that survives. And a lower bound
+  on the pure elasticity `X` does not, by itself, justify a threshold on the
+  E1/sticky quantity `Y` — they are not shown to be the same scale.
+- **Claim 4 (`G_LEVER = 1.41`)** — **REFUTED.** "one grid step" is post-hoc
+  justification (endpoint selection alone reaches anywhere in [1.41, 2.40]
+  depending which two of C2's grid points are chosen — exactly the "grid
+  values so no free constant" defense §4.3.10(3) already rejected in a
+  different guise). The secondary candidate 2.02 pools in 4 cells from a
+  gate-FAIL job (865533), an internal inconsistency. And **1.41 crosses
+  872077's T8 CI lower bound (1.227)** — the threshold sits exactly where
+  the verdict would flip on a decimal.
+- **Claim 5 (`G_FLAT = 1.25`)** — method **PLAUSIBLE** (not a re-score
+  violation — §4.3.8 already set block count from observed sd, so choosing a
+  detectability threshold from observed sd is the same class of move),
+  number **REFUTED.** Measured leave-one-out over the 8 available blocks
+  gives an actual t95 half-width of **0.303 => 1.30**, and **Ha8's point
+  estimate is 1.340 > 1.30** — the rule flips on its own data. Bigger
+  problem: sticky raises `n_split` by more than an order of magnitude, so
+  **post-sticky sd will fall**, and a threshold set from pre-sticky sd is
+  therefore **biased toward the lenient direction — toward accepting the
+  null** — the exact direction canon has been burned by repeatedly.
+- **`n_indep = 1`.** One boot per cell; 865493 and 865533 differ in
+  keepalive configuration, so they are not replicates of one condition — a
+  **third instance** of pseudo-replication (after batch-cap and the M3
+  draft).
+- **Regime-matching direction correction.** 872077's "12.8" is
+  **concurrency**; C2's "12.7" is **decode batch**. Matched on the correct
+  unit, **T8 is off by 2.8x** (11.2-12.7 vs decode batch 4.5) and **Ha8
+  matches well** (13.0-13.4 vs 15.8) — the **opposite** of what the earlier
+  handoff stated.
+
+#### Remaining paths (planned, not run)
+
+- **`G_LEVER`.** The C2-anchor path is retired. Two auditor-proposed
+  alternatives — **(alpha)** measure the T8 positive control's effect size
+  directly in a sticky pilot and argue from that distribution, or **(beta)**
+  drop the absolute threshold and test whether the **between-arm contrast**
+  `g_T8 / g_Ha8`'s block-paired CI excludes 1 (scale-free, but requires
+  **batch-matched rate** because of the arm confound in §4.3.9(d)). ★**Both
+  are auditor proposals, so both require independent pre-registration** — the
+  auditor cannot also be the approver of its own proposal.
+- **`G_FLAT`.** Measure sd from a post-sticky pilot, then set the threshold
+  as a **TOST equivalence margin** rather than a pure detection-power
+  threshold, and justify the margin as **practical significance** rather than
+  "resolvable given our power" (auditor proposal => independent
+  pre-registration required). Pilot blocks must not be reused in the
+  registered run.
+- **Auditor-proposed gate S1** (~1 GPU-hour, not run): T8 only, d16+d54,
+  **sticky ON**, `PDMUX_R2_POLICY=fixed`, two workloads in the **same boot
+  lineage** — (a) a C2 replica (closed-loop concurrency 16, fixed 1024/512,
+  keepalive-8) vs (b) an E1 replica (ShareGPT rate 2), 2 blocks. Three-way
+  verdict: C2 replica reproduces 2.0-2.2x + E1 replica ~1.0 =>
+  **workload/batch attribution**; both ~1.0 => **C2's 28-31ms is a cell
+  composition property** (a scoping correction to C2, not a retraction);
+  both large => **872077's d16 label was never realized** (a Stage-0-class
+  correction). Required instrumentation: per-cell SM clock, realized decode
+  batch, `prefill_active` co-residency. ⚠️ **Harness extension required** —
+  `s0dc_client.py` is a closed-loop synthetic client, E1 uses ShareGPT trace
+  replay under open-loop rate; running both against the same server in
+  sequence needs `run_cell` extended, and E1's client CLI contract has not
+  been surveyed for that.
+
+### 4.3.14 [B-1 UNAUDITED but code/log-verified; B-2 AUDITED via independent
+    convergence] 2026-08-03, third continuation session — D=54 anchor
+    measurement cancelled; a keepalive reproducibility defect; independent
+    confirmation that C2's high residency was a workload-device artifact
+
+Record: `results/s8_scaleup/NOTES_D54_ANCHOR_2026-08-03.md` (untracked, new).
+Harness files also untracked: `s8_sweep_d54.sbatch`, `pdmux_p16_d54.yml`,
+`d54_block_ratio.py`, `runtime_source_manifest_d54.sha256`. Jobs **872920**
+(T8) / **872921** (Hs8) were cancelled ~17 minutes after submission on
+explicit instruction, once the run's own gate showed the data invalid — but
+**the design itself (d16+d54 in one campaign, 4 blocks, cell order
+alternating by block parity) is unaffected and reusable.**
+
+#### B-1 [UNAUDITED, but the fact is directly code- and log-verifiable] —
+    keepalive token overflow makes `s8_scaleup` non-reproducible as-is
+
+`s8_keepalive_prompt_224.txt` tokenizes to **1793 tokens** against
+`CTXCAP = CTX + OUTTOK + 256 = 1792` — every keepalive request this run made
+was rejected with HTTP 400. **865493 used the byte-identical file** and
+reported `keepalive_done ~= 500, keepalive_errors = 0`; both srv.logs
+(865493's and this run's) print the same `CTXCAP = 1792`. Conclusion:
+**engine-tree churn since 2026-07-27 made the context-length rejection
+stricter (or moved an off-by-one)** — root cause not investigated. Trivial
+fix not applied: `KEEPA_REPS <= 223`. **This is a reproducibility hazard for
+the entire `s8_scaleup` campaign** and should be flagged wherever that
+campaign is cited.
+
+Measured consequence: co-residency collapsed from 865493's ~90-100% to
+**31-34%**, and every measured cell **fails `REALIZED_PIN`** (T8 blk1 d16
+0.316 / d54 0.628, Hs8 d16 0.342 / d54 0.577).
+
+#### B-2 [AUDITED via independent convergence] — C2's high residency was a
+    workload-device artifact, not a property of partition control
+
+Sticky OFF only holds the target division while a prefill batch is in flight
+(`_init_sticky_partition` docstring, `multiplexing_mixin.py:206-231`) — so
+**keepalive saturation was the load-bearing mechanism behind C2's physics**,
+not decode-SM control per se. Three independent routes converge on this:
+
+- **(A) code reading** — the docstring above.
+- **(B) measured collapse when keepalive died** — co-residency ~90-100% ->
+  31-34% (§B-1).
+- **(C) this run's block-1 telemetry cross-tab** — `prefill_active > 0` at
+  `decode_sms == D` = **0.975-0.996**; at 108 = **0.000** (4 files) — the
+  same shape claims-auditor reported for 865493/865533 (0.943-0.996 /
+  0.0000), but reached from a **different contrast** (before/after a
+  workload-mechanism failure, not a re-derivation of the auditor's own
+  table).
+
+This is a **third, independent reason C2 anchoring is dead** on top of §0's
+axis mismatch and §4.3.9(b)'s estimand non-identification inherited from
+this same substrate fact (`CONSENSUS.md` §1-26(B)). Honest limitation: this
+campaign ran **no `np` (unsplit) cell**, so it cannot corroborate the
+auditor's separate 1290 MHz throttling observation on `np` (§4.3.13's claim
+3) — split cells here sit flat at 1396-1410 MHz, consistent with but not
+independent confirmation of that finding.
+
 ### 4.4 Decision rule (pre-registered — do not change without updating this file)
 
 > For each arm, let best-static = the D cell (of the 5 measured) with the

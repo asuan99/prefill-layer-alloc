@@ -1,6 +1,18 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-03(**등급 변경 없음** — 같은 세션 2차 속행: (I)
+최종 갱신: 2026-08-03(**등급 변경 없음** — 같은 세션 3차 속행: C2 →
+`G_LEVER` 앵커 도출 시도(`c2_anchor.py`)를 claims-auditor가 감사 — 주장 1만
+생존, 2–5 REFUTED/NOT-YET-SUPPORTED. `G_LEVER`/`G_FLAT`는 여전히
+UNDETERMINED. ★**신규 최상위 열린 항목**: 같은 arm·서버 플래그·매칭 batch에서
+C2(865493)와 872077(E1 격자)의 "decode 16 SM" per-token ITL이 **2.6×
+다름**(28.79ms vs 11.09ms) — 872077의 `decode_sms==16` 라벨이 실제 16-SM
+하드웨어 실행인지, C2의 값이 셀 배치 성질인지 미해소. 해소 전까지 872077·
+sticky 결과 전부에 이 불확실성이 상속된다. D=54 앵커 측정(jobs 872920/872921)
+은 keepalive 재현성 결함으로 취소 — 독립 수렴으로 **C2의 높은 residency는
+decode 파티션 제어가 아니라 keepalive 워크로드 장치의 산물**임을 확인.
+상세 `../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(3차)"
+소절, `../CONSENSUS.md` §1-28·§1-29, `results/s8_frontier/DESIGN.md`
+§4.3.13–4.3.14. 이전(같은 날 2차 속행): (I)
 claims-auditor가 `A_free`를 대체하는 **조건부 per-token 추정량**
 (`m3_conditional.py`)으로 estimand를 이관[AUDITED, blocking-threshold
 스윕만 UNAUDITED — 감사자 자기산출 자기감사]; (II) engine-porter가
@@ -92,6 +104,20 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   기반 등급·인용 제한을 바꾸지 않는다 — sticky 격자 런 자체가 아직 없다.
   sticky 런 사전등록(§4.3.12)의 `G_LEVER`/`G_FLAT`는 **미결정으로 기록**됐다
   (스케일 불일치로 기존 임계 이전 불가).
+- ★★★**(2026-08-03, 같은 세션 3차 속행) C2를 `G_LEVER`/`G_FLAT` 임계로
+  쓰려던 시도(`c2_anchor.py`)는 폐기 — `G_LEVER`/`G_FLAT`는 여전히
+  UNDETERMINED.** claims-auditor 감사: 주장 1(realized 검증)만 CONFIRMED
+  (서술 2건 정정 — 활성률은 count-weighted 지표, 108 SM 시간은 drain
+  전용), 주장 2(primary p95→p50)는 관측 CONFIRMED이나 처방은 REFUTED(p50
+  전환 시 872077 T8 양성대조조차 1.00으로 무너져 캠페인을 구조적 NO
+  VERDICT로 만든다 — **primary는 `p95(SPLIT)` 유지**), 주장 3–5는
+  NOT-YET-SUPPORTED/REFUTED/REFUTED. ★**신규 최상위 열린 항목**: 같은
+  arm·서버 플래그·매칭 batch에서 C2와 872077의 "decode 16 SM" per-token
+  ITL이 **2.6× 다르다**(28.79ms vs 11.09ms) — 872077의 `decode_sms==16`이
+  실제 하드웨어 16-SM 실행인지, C2 값이 그 셀 배치의 성질인지 미해소.
+  해소 전까지 이는 872077·sticky 결과 전체가 딛고 선 층이다. 인용 시
+  "C2와 E1 격자가 같은 물리량을 잰다"고 전제하지 말 것. 상세
+  `results/s8_frontier/DESIGN.md` §4.3.13, `../CONSENSUS.md` §1-28.
 - Claim B는 A100/SGLang green-context implementation에 한정한다.
   ★**positioning 판정(2026-07-25, `venue_positioning.md` §0.1)**: 이것은 논문의
   negative 중 "(A) green-context 종속" 축이다 — DuetServe(libsmctrl)가 정면으로

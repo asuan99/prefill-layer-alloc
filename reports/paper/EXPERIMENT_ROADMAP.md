@@ -1,6 +1,21 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-03(같은 세션 2차 속행 — doc-steward 기록. (I)
+최종 갱신: 2026-08-03(같은 세션 3차 속행 — doc-steward 기록. C2 →
+`G_LEVER`/`G_FLAT` 앵커 도출 시도(`c2_anchor.py`)를 claims-auditor가
+감사해 **경로 폐기**(주장 1만 CONFIRMED, 2–5 REFUTED/NOT-YET-SUPPORTED).
+**`G_LEVER`/`G_FLAT`는 여전히 UNDETERMINED**, 다음 시도는 감사자 발안
+(α)(β)에 대한 독립 사전등록이 선행돼야 함. ★**신규 최상위 열린 항목**:
+C2(865493)와 872077(E1 격자)의 "decode 16 SM" per-token ITL이 같은 arm·
+서버 플래그·매칭 batch에서 **2.6× 다름**(28.79ms vs 11.09ms) — 872077의
+`decode_sms==16`이 실제 16-SM 하드웨어 실행인지 미검증(`DESIGN.md`
+§4.3.11의 잔여층), 또는 C2 값이 셀 배치 성질인지 미해소. **sticky 격자
+제출보다 이 모순 해소가 선행돼야 한다.** D=54 앵커 측정(jobs 872920/
+872921)은 keepalive 재현성 결함으로 취소, 독립 수렴으로 C2 high-residency
+=워크로드 장치 산물임을 확인. **게이트 정의(3.4.4 결정규칙) 변경 없음.**
+상세 `../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(3차)"
+소절, `../CONSENSUS.md` §1-28·§1-29,
+`../../workspace/engine-port/results/s8_frontier/DESIGN.md`
+§4.3.13–4.3.14. 이전(같은 날 2차 속행 — doc-steward 기록. (I)
 claims-auditor가 §1-26/여기 아래 기록된 `g` 은퇴의 근거였던 `A_free`
 결함을 대체하는 **조건부 per-token 추정량**(`m3_conditional.py`)으로
 estimand를 이관[AUDITED, blocking-threshold 스윕만 UNAUDITED — 감사자
@@ -346,6 +361,33 @@ as-run 설정에서 **네 arm 전부 헤드라인 룽 없음**, (b) 그 as-run �
 > 확정 전 별도 사전등록 필요). 판별 예측(위 문단)은 불변. 상세
 > `../CONSENSUS.md` §1-27, `../../PROJECT_STATUS.md` "8B decode-SM
 > 프론티어" "2026-08-03(2차)" 소절, `DESIGN.md` §4.3.10–4.3.12.
+>
+> ★★★**(2026-08-03, 같은 세션 3차 속행) `G_LEVER`/`G_FLAT`의 미결정을
+> C2 데이터로 닫으려던 시도 — 경로 폐기, UNDETERMINED 그대로.**
+> `c2_anchor.py`로 시도한 5개 주장을 claims-auditor가 감사: **주장
+> 1(realized 검증)만 CONFIRMED**(서술 2건 정정 필요 — 활성률은 count
+> 가중, 108 SM 시간은 drain 전용), **주장 2(primary p95→p50)는 관측
+> CONFIRMED·처방 REFUTED**(p50 전환 시 872077 T8 양성대조조차 1.00으로
+> 무너져 캠페인을 구조적 NO VERDICT로 만드는 처방이었다 — **primary는
+> `p95(SPLIT)` 유지**), **주장 3–5는 NOT-YET-SUPPORTED/REFUTED/REFUTED**
+> (`G_LEVER=1.41`은 끝점 선택만으로 [1.41,2.40] 전 구간 도달 가능해
+> REFUTED, `G_FLAT=1.25`는 LOO 실측 반폭이 1.30인데 Ha8 1.340으로
+> 자기 데이터서 뒤집혀 REFUTED). ★**§0 신규 최상위 열린 항목**: 같은
+> arm·서버 플래그·매칭 batch에서 C2(865493)와 872077의 "decode 16 SM"
+> per-token ITL이 **2.6× 다르다**(28.79ms vs 11.09ms) — 872077의
+> `decode_sms==16`이 실제 하드웨어 16-SM 실행인지(`DESIGN.md` §4.3.11의
+> 미검증 잔여층) 또는 C2 값이 셀 배치 성질인지 미해소, **872077 전체와
+> sticky 결과가 딛고 선 바닥**. **sticky 격자 제출은 이 모순 해소 이후로
+> 미룬다.** 별도로, D=54 앵커 측정(jobs 872920/872921)이 keepalive 토큰
+> 초과(재현성 결함)로 취소됐고, 독립 수렴으로 **C2의 높은 residency는
+> decode 파티션 제어가 아니라 keepalive 워크로드 장치의 산물**임이
+> 확인됐다(C2 앵커가 죽는 세 번째 이유). `G_LEVER`/`G_FLAT`는
+> **UNDETERMINED로 유지**, 다음 시도는 감사자 발안 (α) sticky 파일럿
+> 양성대조 효과크기 또는 (β) arm 간 대비 `g_T8/g_Ha8`(batch-매칭
+> rate)에 대한 **독립 사전등록**이 선행돼야 한다(감사자가 자기 발안의
+> 승인 주체일 수 없다). 상세 `../CONSENSUS.md` §1-28·§1-29,
+> `../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(3차)"
+> 소절, `DESIGN.md` §4.3.13–4.3.14.
 
 | ID | 고정 workload |
 |---|---|

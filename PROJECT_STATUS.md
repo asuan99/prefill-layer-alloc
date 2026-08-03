@@ -1,6 +1,32 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-03 (★★같은 날 2차 속행, doc-steward 기록 — 두 갈래 완료.
+최종 갱신: 2026-08-03 (★★★같은 날 3차 속행, doc-steward 기록 — 두 갈래
+완료, 둘 다 앞선 2차 속행의 일부를 정정한다. **(1) C2 → `G_LEVER` 앵커 경로
+= 폐기**(`c2_anchor.py`, claims-auditor 감사: 주장 1만 생존, 2–5 REFUTED/
+NOT-YET-SUPPORTED). **`G_LEVER`/`G_FLAT`는 §4.3.12(d) 그대로 UNDETERMINED
+유지**(이 시도로 해소 안 됨). ★**§0 신규 결정적 발견(최상위 열린 항목)**:
+같은 arm·같은 서버 플래그·매칭 batch에서 C2(865493)와 872077(E1 격자)의
+"decode 16 SM" per-token ITL p50이 **2.6× 다르다**(28.79ms vs 11.09ms) —
+872077의 `decode_sms==16`이 실제 16-SM 하드웨어 실행이 아니거나(green
+context 생성이 SM 부여를 보장하는지 미재프로브), C2의 28–31ms가 decode-SM
+비용이 아니라 그 셀 배치 성질이거나 둘 중 하나이며 **872077 전체와 sticky
+결과가 딛고 선 바닥**이다. 주장 1(realized 검증)은 CONFIRMED이나 서술 2건
+정정 필수(활성률 0.66–0.93은 count-weighted, 시간가중은 0.99+; 108 SM
+시간은 warmup 아니라 drain 전용). 주장 2(primary p95→p50)는 관측
+CONFIRMED·기전/처방 REFUTED(p50 전환은 872077 T8 양성대조조차 1.00으로
+만들어 **캠페인을 구조적 NO VERDICT로 확정**하는 처방) ⇒ **primary=
+`p95(SPLIT)` 유지**. 주장 3–5(편향=하한/`G_LEVER=1.41`/`G_FLAT=1.25`)는
+NOT-YET-SUPPORTED/REFUTED/REFUTED. **(2) D=54 앵커 측정 취소**(jobs
+872920/872921, 제출 17분 뒤 취소) — 감사가 전제를 폐기했고, 독립적으로
+**keepalive 토큰 초과**(`s8_keepalive_prompt_224.txt` 1793 tok > `CTXCAP`
+1792)로 `s8_scaleup` 캠페인 전체가 재현 불가임을 발견[미감사, 코드/로그
+직접 검증]. **독립 수렴[AUDITED]**: C2의 높은 residency는 decode 파티션
+제어가 아니라 keepalive 워크로드 장치의 산물(3경로 독립 도달) — C2 앵커가
+죽는 세 번째 이유. 취소됐으나 캠페인 설계(d16+d54, 4 block)는 재사용 가능.
+상세는 아래 "8B decode-SM 프론티어" "2026-08-03(3차)" 소절,
+`reports/CONSENSUS.md` §1-28·§1-29, `results/s8_frontier/DESIGN.md`
+§4.3.13–4.3.14, `results/s8_scaleup/NOTES_D54_ANCHOR_2026-08-03.md`. 이전
+(같은 날 2차 속행, doc-steward 기록 — 두 갈래 완료.
 **(I) claims-auditor의 추정량 이관**: 아래 1차 속행이 확인한 `A_free`
 결함을 대체하는 **조건부 per-token 추정량**(`results/s8_frontier/
 m3_conditional.py`) — 단위는 개별 ITL 구간 1개, SPLIT(`split_frac≥0.90`)/
@@ -843,6 +869,154 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
   (implementation)–§4.3.12(pre-registration), `reports/CONSENSUS.md`
   §1-27.
 
+  #### 2026-08-03 (같은 날 3차 속행) — C2 → `G_LEVER` 앵커 경로 폐기
+      [AUDITED] + D=54 측정 취소[일부 미감사, 코드/로그 직접 검증]
+
+  > `c2_anchor.py`(신규, 미추적)로 시도한 앵커 도출을 claims-auditor가
+  > 감사해 **주장 1만 생존, 2·3·4·5 전부 반증/미지지**로 판정했다.
+  > **`DESIGN.md` §4.3.12(d)의 "미결정"은 그대로 유지된다** — 이 시도는
+  > 그 항목을 닫지 못했다. 원자료·코드: `results/s8_frontier/
+  > c2_anchor.py`(§7 재현에 필요), `results/s8_scaleup/
+  > NOTES_D54_ANCHOR_2026-08-03.md`(미추적). 전문
+  > `results/s8_frontier/DESIGN.md` §4.3.13–4.3.14.
+
+  **A. §0 결정적 발견(신규, 가장 중요) — 축이 같다는 전제가 실측으로
+  거짓.** 같은 arm·같은 서버 플래그(`s8_sweep.sbatch:141-146` vs
+  `e1_m3_control.sbatch:212-218` 직접 대조로 동일 확인)·매칭 batch에서
+  **"decode 16 SM"의 per-token ITL이 2.6× 다르다**:
+
+  | 출처 | 조건 | decode@16SM p50 |
+  |---|---|---|
+  | C2 865493 (SPLIT, batch bin 5) | prefill 16, decode 16 | **28.79 ms** |
+  | C2 `FINDINGS_8B` §2 batch=4 | prefill 16, decode 16 | 28.48 ms |
+  | **872077 (E1 격자)** d16, decode batch 4.5 | prefill 92, decode 16 | **11.09 ms** |
+
+  둘 중 하나가 거짓: **(i)** 872077의 `decode_sms==16`이 실제 16-SM 실행이
+  아니다 — `DESIGN.md` **§4.3.11이 명시적으로 미검증으로 남긴 잔여
+  층**(green context 생성 → 하드웨어 SM 부여를 재프로브 안 함), 또는
+  **(ii)** C2의 28–31 ms가 decode-SM 비용이 아니라 그 셀 배치(`[16,16,
+  76-idle]` + 상시 동거 keepalive prefill)의 성질이다. ★**이 층이 이제
+  872077 전체와 이번 세션의 sticky 결과가 딛고 선 바닥**이다. (i)이 참이면
+  **Stage 0급 정정**이 된다. **최상위 열린 항목**으로 기록 — confound
+  #1(sim→serving 전이 실패)의 **실측 대 실측** 재현이자 confound #9(라벨≠
+  실현)의 변종이다.
+
+  **B. 주장 1(실현 검증) — 결론 CONFIRMED, 서술 2건은 정본 정정 대상.**
+  비순환 재검정(구간 집합을 쓰지 않고 telemetry만으로 client `t0` 기준
+  3분할): 865493 측정창 @D **0.989–1.000** / @108 0.000–0.007, warmup도
+  @D≈1.000, 창 밖 drain은 @108 0.716–0.895. 865533은 측정창에서도 @D
+  0.30–0.73 **FAIL**. **정본 정정 2건(필수)**: (1) **"파티션 활성률
+  0.66–0.93"은 `results/s8_scaleup/realized_pin_check.py`의 스냅샷
+  개수 가중 + `phase=="benchmark"` 필터 값**이다. 시간가중 all-busy는
+  0.803–0.958로 **정본 범위와 일치하지 않는다** — 인용 시 "count-weighted
+  0.66–0.93 / 측정창 시간가중 0.99+"로 병기(방법론 게이트 #4 위반 사례,
+  이 감사 한 건에서만 3회). (2) **108 SM 시간은 warmup이 아니라 창 밖
+  drain 전용**이다(warmup도 @D≈1.000). 기전 서술을 고치면 결론은 **더
+  강해진다**.
+
+  **C. 구조적 함의 — sticky 런에는 음성대조가 정의상 없다.** in-window
+  residency와 UNSPLIT 표본은 구성상 여집합(SPLIT+UNSPLIT+AMBIG ≈ 1) ⇒
+  **`E1_DECODE_REALIZED ≥ 0.90`을 통과하는 런에는 음성대조 표본이 존재할
+  수 없다**(865493 UNSPLIT n=**0**; sticky ON smoke는 D108 **0초**).
+  `DESIGN.md` §4.3.12(e)(i)를 이 사실로 확장하고, 사전등록에 명시해야
+  한다 — `MIN_PA_SNAPSHOTS`가 estimand의 여집합을 셌던 것과 같은 구조
+  (방법론 게이트 #7).
+
+  **D. 주장 2 — primary `p95` 유지, p50 전환 REFUTED.** 관측(UNSPLIT
+  집단 d16/d44 비가 p95에서 T8 1.662·Hs8 1.374, p50은 0.997–1.002)은
+  재현되나: **기전 귀속 REFUTED** — monolithic prefill stall이 아니라
+  **파티션 전환 인접 구간**(`>3×median` 사건의 83–87%가 전환 0.5s 이내,
+  배제 시 1.662→1.041 단조 감쇠; `prefill_active>0` @108 = **0.0000**이라
+  M4 서명으로 설명 불가). **처방 REFUTED, 세 겹** — ① 같은 배제를
+  SPLIT(=estimand)에 적용해도 p95는 **≤2%만** 이동(오염원이 전이 안 됨)
+  ② 오염 기전이 sticky ON에서 **소멸** ③ ★**872077 실측 `T8 sp_p50 =
+  0.996 [0.990, 1.002]`** ⇒ p50으로 바꾸면 **양성대조조차 1.00**이라 어떤
+  `G_LEVER>1`에서도 발화 불가 = 캠페인을 **구조적 NO VERDICT로 확정**하는
+  처방, 게다가 872077에서는 같은 p95 음성대조가 **반대 방향**으로 깨진다
+  (`T8 un_p95 = 0.880 [0.853, 0.907]`, `Ha8 un_p95 = 1.377 > sp_p95
+  1.340`). forward-only 구속으로도 구제 안 됨: RULE_BOUNDS가 정직할 수
+  있었던 이유는 "872077에서 발화하지 않는 쪽"이었기 때문인데, p50 전환은
+  반대로 T8 헤드라인 1.688을 0.996으로 **지우는** 방향이고 데이터를 본
+  뒤 제안됐다(confound #6/#12). ⇒ **primary = `p95(SPLIT)` 유지, p50은
+  secondary, 전환-근접 진단은 게이트가 아닌 진단으로 병기.**
+
+  **E. 주장 3·4·5.** **주장 3**(편향 부호=하한) NOT-YET-SUPPORTED —
+  (ii) 가산/곱셈 **미식별**(Hs8은 비 일정, T8은 차·비 모두 불일정; 두 job이
+  keepalive 길이·개수를 **동시 변경** = confound #10), (iii) **증거가
+  항을 0으로 만든다** — C2 분할 셀은 **전부 1410 MHz 고정**이고 클럭이
+  떨어지는 건 **무분할 np뿐**(T8 median **1290**, p10 1275) ⇒ **E1/sticky
+  (prefill 108−D + decode D = 108 전부 가동)가 낼 throttling 비용을 C2는
+  안 낸다**는 **반대 방향 경고**로 기록(비에 대한 효과는 미측정). (i)
+  span 절단만 생존. **주장 4**(`G_LEVER`=1.41) REFUTED — "한 격자 스텝"은
+  사후 정당화(끝점 선택만으로 [1.41, 2.40] 전부 도달 가능), 부차값 2.02는
+  게이트-FAIL job(865533) 4셀을 포함해 내적 비일관, 1.41이 872077 T8 CI
+  하한 1.227을 가로지른다. **주장 5**(`G_FLAT`=1.25) 방법 PLAUSIBLE(§4.3.8
+  선례와 같은 종류의 논거, re-score 저촉 아님) / **숫자 REFUTED** — LOO
+  8개 실측 시 실제 t95 반폭 0.303 ⇒ 1.30이고 **Ha8 점추정 1.340 > 1.30**
+  이라 규칙이 자기 데이터에서 뒤집힌다. 더 큰 문제: sticky가 `n_split`을
+  한 자릿수 이상 늘려 **사후 sd가 떨어지므로** 사전-sticky sd 기반
+  `G_FLAT`은 **관대해지는 방향 = 귀무 오수용** 편향(정본이 반복해 당한
+  방향). **`n_indep` = 1**(865493↔865533은 keepalive 설정이 달라
+  replicate가 아니라 다른 조건 — **세 번째 pseudo-replication**).
+  **regime 불일치 정정**: 872077의 12.8은 **concurrency**, C2의 12.7은
+  **decode batch**다 — 같은 단위로 맞추면 **T8이 2.8× 어긋나고**(11.2–
+  12.7 vs decode batch 4.5) **Ha8이 잘 맞는다**(13.0–13.4 vs 15.8, 앞선
+  서술과 정확히 반대).
+
+  **F. 남은 경로(계획으로만 기록, 미실행).** `G_LEVER`: C2 앵커 폐기.
+  감사자 대안 (α) sticky 파일럿의 T8 양성대조 실측 분포 + 효과크기 논증,
+  (β) 절대 임계 제거하고 arm 간 대비 `g_T8/g_Ha8`의 block-paired CI가
+  1을 배제하는지(스케일 자유, batch-매칭 rate 필요) — ★**둘 다 감사자
+  발안 ⇒ 독립 사전등록 필요**(감사자가 자기 발안의 승인 주체가 될 수
+  없다). `G_FLAT`: 사후-sticky 파일럿에서 sd 측정 후 결정하되, 순수 power
+  임계 대신 TOST 동등성 마진으로 바꾸고 근거를 실질 유의성으로 논증(감사자
+  발안 ⇒ 독립 사전등록). 파일럿 block은 본 런에 재사용 금지. 감사자 제안
+  **게이트 S1**(≈1 GPU-시간, 미실행): T8 단일, d16+d54, sticky ON,
+  `PDMUX_R2_POLICY=fixed`, 워크로드 2종을 같은 부팅 계열에서 — (a) C2
+  복제(폐루프 conc16, 고정 1024/512, keepalive 8) vs (b) E1 복제(ShareGPT
+  rate 2), 2 block. 판정 3갈래: C2 재현 O + E1 ~1.0 → 워크로드/batch 귀속
+  / 둘 다 ~1.0 → C2 28–31 ms가 셀 배치 성질(C2 스코프 문구 수정 사안) /
+  둘 다 큼 → 872077 d16 라벨 미실현(Stage 0급 정정). 필수 계측: 셀별 SM
+  clock, realized decode batch, `prefill_active` 동거율. ⚠️ 하네스 확장
+  필요(`s0dc_client.py`는 폐루프 합성, E1은 ShareGPT trace replay + 개루프
+  rate ⇒ 같은 서버에 두 클라이언트를 순차 투입하도록 `run_cell` 확장
+  필요, E1 클라이언트 CLI 계약 미조사).
+
+  **G. D=54 측정 취소(jobs 872920/872921) + 재현성 결함.** 기록
+  `results/s8_scaleup/NOTES_D54_ANCHOR_2026-08-03.md`(미추적 신규,
+  하네스 파일 `s8_sweep_d54.sbatch`·`pdmux_p16_d54.yml`·
+  `d54_block_ratio.py`·`runtime_source_manifest_d54.sha256`도 미추적) —
+  **취소됐으나 설계(d16+d54 동일 캠페인, 4 block, 셀 순서 block 패리티
+  교대)는 유효하므로 재사용 가능.** **G-1 [미감사, 코드·로그로 직접 검증
+  가능] keepalive 토큰 초과 = s8_scaleup 재현 불가 요인.**
+  `s8_keepalive_prompt_224.txt`가 **1793 토큰**인데 `CTXCAP = CTX+OUTTOK+
+  256 = 1792` ⇒ 모든 keepalive가 `HTTP 400`. **865493은 byte-identical한
+  같은 파일로 `keepalive_done≈500, keepalive_errors=0`**이었고 두 srv.log
+  모두 `CTXCAP=1792`를 찍는다 ⇒ **2026-07-27 이후 엔진 트리 churn으로
+  context-length 거부가 엄격해졌거나 off-by-one이 이동**(원인 미규명,
+  자명한 수정 `KEEPA_REPS ≤ 223` 미적용). ⇒ **`s8_scaleup` 캠페인 전체의
+  재현 불가 요인**이므로 해당 캠페인을 참조하는 곳에 경고를 남긴다. 결과:
+  co-residency가 865493의 ~90–100% → **31–34%** 붕괴, 측정된 전 셀
+  `REALIZED_PIN` FAIL(T8 blk1 d16 0.316 / d54 0.628, Hs8 d16 0.342 / d54
+  0.577). **G-2 [AUDITED — 독립 수렴] C2의 높은 residency는 파티션 제어가
+  아니라 워크로드 장치의 산물.** sticky OFF에서는 prefill이 in-flight일
+  때만 목표 분할이 유지되므로(`_init_sticky_partition` docstring,
+  `multiplexing_mixin.py:206-231`) **keepalive 포화가 C2 물리의 하중
+  부재**였다. 세 경로가 독립적으로 같은 결론에 도달: (A) 코드 읽기 (B)
+  keepalive 사망 시 co-residency 실측 붕괴(~90–100% → 31–34%) (C) 이번
+  run block-1 telemetry 교차표(`prefill_active>0` @`decode_sms==D` =
+  **0.975–0.996**, @108 = **0.000**(4파일) — claims-auditor가
+  865493/865533에서 낸 0.943–0.996 / 0.0000과 같은 모양이나 **다른
+  대조**(워크로드 장치 실패 전후)로 도달). ⇒ `CONSENSUS.md` §1-26(B)의
+  estimand 미식별이 **C2에도 그대로 상속**됨 — **C2 앵커가 죽은 세 번째
+  이유**(§0 축 불일치 · estimand 미식별 상속 · 물리를 떠받친 게 워크로드
+  장치). 한계(정직 기록): 이 캠페인은 **np(무분할) 셀을 안 돌려** 감사자의
+  "np만 1290 MHz 하락" 관측을 **확증하지 못한다**(분할 셀은 1396–1410 MHz
+  평평).
+
+  상세 전문 `results/s8_frontier/DESIGN.md` §4.3.13(C2 앵커 감사)–§4.3.14
+  (D=54 취소·keepalive 재현성), `reports/CONSENSUS.md` §1-28·§1-29.
+
 ## 철회된 가설
 
 - attention/SSM layer별 static resource partition이 보편적으로 유리하다.
@@ -889,6 +1063,21 @@ tokenizer 동시 상이) + backend 교차(offset 근거가 20초 스모크 n=1) 
   3중으로 반증됐다. 확정으로 오른 적 없는 이 세션 내부 주장이나, 되살아나지
   않도록 여기 보이게 남긴다. **살아남은 것**: engagement가 낮다는 §1-25의
   전제 자체는 견고 — 죽은 것은 **보정**뿐.
+- ★★★**(2026-08-03, 같은 날 3차 속행) `c2_anchor.py`의 C2→`G_LEVER`
+  앵커 도출 주장 2·3·4·5 — claims-auditor REFUTED/NOT-YET-SUPPORTED**
+  (전문은 위 "8B decode-SM 프론티어" "2026-08-03(3차)" 소절 D–E). 확정으로
+  오른 적 없는 이 세션 내부 시도이나, 되살아나지 않도록 남긴다: "primary를
+  p95→p50으로 바꿔야 한다"(처방 REFUTED — 872077 T8 양성대조가 p50에서
+  0.996으로 무너져 캠페인을 구조적 NO VERDICT로 확정하는 처방이었다),
+  "`G_LEVER`=1.41"(REFUTED — 끝점 선택만으로 [1.41,2.40] 도달 가능),
+  "`G_FLAT`=1.25"(REFUTED — LOO 실측 t95 반폭이 1.30이라 Ha8 1.340에
+  뒤집힘), "편향 부호는 하한"(NOT-YET-SUPPORTED — C2 분할 셀은 클럭 하락이
+  없고 무분할 np만 떨어져 반대 방향 경고로 재귀속). **살아남은 것**: 주장
+  1(실현 검증)만 CONFIRMED(단 서술 2건 정정 — 활성률은 count-weighted,
+  108 시간은 drain 전용). `G_LEVER`/`G_FLAT`는 여전히 UNDETERMINED. ★**§0
+  신규 발견**(C2와 872077의 "decode 16 SM" ITL이 2.6× 다름)은 이 세션
+  내부 주장이 아니라 **최상위 열린 항목**으로 별도 기록(위 "8B decode-SM
+  프론티어" 절 A).
 
 ## R1 판정
 
@@ -1091,11 +1280,25 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
      (동 소절 (II)). **다음 액션 = sticky 격자 1회 제출**(872077 동일 설계
      8 block, 872077이 non-sticky 대조) — 단 제출 전 **`G_LEVER`/`G_FLAT`
      사전등록이 미결 열린 항목**이다(동 소절 (III)(d)).
+   - ★★**상태 갱신(2026-08-03, 같은 날 3차 속행)**: 위 "다음 액션"의
+     `G_LEVER`/`G_FLAT` 미결 항목을 C2 데이터로 해소하려던 시도
+     (`c2_anchor.py`)를 claims-auditor가 감사해 **경로 자체를 폐기**했다
+     (위 "8B decode-SM 프론티어" "2026-08-03(3차)" 소절). **`G_LEVER`/
+     `G_FLAT`는 여전히 UNDETERMINED**이며, 다음 시도는 감사자 발안 (α)/(β)
+     에 대한 **독립 사전등록**이 선행돼야 한다. ★**더 시급한 선결 항목이
+     새로 생겼다**: 같은 감사가 872077의 "decode 16 SM" ITL과 C2의
+     "decode 16 SM" ITL이 **2.6× 다름**을 발견했고(§0), 이 층이
+     872077·sticky 결과 전체가 딛고 선 바닥이다 — **sticky 격자 제출보다
+     먼저 이 모순을 가려야 한다**(engine-porter의 하드웨어 SM 부여 직접
+     검증 권고, 또는 감사자 제안 게이트 S1). D=54 앵커 측정(jobs
+     872920/872921)은 이 감사와 별개로(그러나 독립 수렴하는 결론으로)
+     제출 17분 뒤 취소됐다 — 취소됐으나 캠페인 설계는 재사용 가능,
+     상세는 위 소절 G.
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
-## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가)
+## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가)
 
 Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3),
 E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠페인에서 나온
@@ -1206,3 +1409,19 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
       정본 C2 2.36–2.91×로 즉시 사망) — GPU 없이, 기존 872077 텔레메트리
       재사용만으로 수행. 상세 `CONSENSUS.md` §1-26·§3-15, `results/
       s8_frontier/DESIGN.md` §4.3.9.
+8. ★★**(2026-08-03, 같은 날 3차 속행) 끝점 선택이 임계를 정한다 — 그리고
+   진단과 처방을 같은 턴에 하면 처방은 자기가 감사한 것이다(두 번째 실증).**
+   `c2_anchor.py`의 `G_LEVER=1.41` 시도(위 "8B decode-SM 프론티어"
+   "2026-08-03(3차)" 소절 E)에서: 후보 임계가 C2 측정 격자{16,24,44,92}의
+   실측값이라는 것만으로는 자유 모수가 아니라고 주장할 수 없다 — **끝점만
+   골라도 [1.41, 2.40] 전 구간에 도달 가능**하기 때문에 "어느 두 점을
+   비교점으로 쓸지"가 그 자체로 숨은 자유도다(§4.3.10(3)이 이미 다른
+   맥락에서 거부한 논거의 재등장). ★**동시에 §7의 실패 모드가 반대 방향에서
+   재현됐다**: result-analyst가 p95 음성대조 오염을 **발견**(진단)한 뒤
+   primary를 p50으로 바꾸자는 **처방**까지 같은 분석에서 냈고,
+   claims-auditor가 그 처방만 세 겹으로 반증했다(관측은 CONFIRMED, 처방은
+   REFUTED — 위 소절 D). **규율: 진단자와 처방자를 분리하라.** ★**같은
+   회차에 성공 사례도 있었다**: 경합 가설이 공유하는 전제("SPLIT 집단이
+   decode-SM 대비를 담고 있다")를 검정 대상에 명시적으로 넣는 규율이
+   §0의 2.6× 모순을 GPU 쓰기 전에 드러냈다. 상세 `CONSENSUS.md` §3-16·
+   §3-17, `results/s8_frontier/DESIGN.md` §4.3.13.
