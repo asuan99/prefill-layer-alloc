@@ -1,0 +1,4 @@
+=== S2 pooled diagnostics (NOT a verdict; see PREREG_S2_STICKY_ITL_2026-08-03.md sec 3/3.1/4) ===
+S2_POOLED arm=T8 cell=d16 n_split_tokens=301977 n_all_tokens=301977 p50_SPLIT=28.92ms p95_SPLIT=31.69ms p50_ALL=28.92ms agree_within_5pct=True align_r_range=[0.999,1.000] n_a_free=301977 n_split_label=301977 n_unsplit_label=0 ambig_frac=0.0000
+S2_POOLED arm=T8 cell=d54 n_split_tokens=300556 n_all_tokens=300649 p50_SPLIT=12.03ms p95_SPLIT=14.21ms p50_ALL=12.03ms agree_within_5pct=True align_r_range=[0.993,0.997] n_a_free=300649 n_split_label=300556 n_unsplit_label=79 ambig_frac=0.0000
+NOTE: numbers above are DIAGNOSTIC ONLY, per-file breakdown is in the *_result.txt logs. The pre-registration's sec 4 three-way readout and any g/G_LEVER/throughput/goodput judgment are for result-analyst / claims-auditor, not this job.

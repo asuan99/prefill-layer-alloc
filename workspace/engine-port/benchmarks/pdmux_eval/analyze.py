@@ -81,6 +81,37 @@ def summarize_requests(
     }
 
 
+def request_tpot_percentiles(
+    requests: Sequence[RequestResult],
+    quantiles: Sequence[float] = (0.50, 0.95, 0.99),
+    undefined_as: float = math.inf,
+) -> Dict[str, float]:
+    """Percentiles of the PER-REQUEST TPOT (mean token-ITL), in ms.
+
+    Distinct from ``summarize_requests``'s ``token_itl_p*`` keys, which pool all
+    tokens of all requests.  The per-request aggregate is what sglang
+    ``bench_serving`` reports as TPOT and what SLO definitions of the form
+    "request TPOT <= X ms" score against, so campaigns that pre-register a
+    mean-ITL SLO need this view as well as the pooled-token view.
+
+    A request with no recorded inter-token latency has an undefined TPOT; it is
+    mapped to ``undefined_as`` (default ``inf``, i.e. treated as a violation)
+    rather than silently dropped, so the count of requests is preserved.
+    """
+    values = [
+        statistics.fmean(request.token_itl_ms) if request.token_itl_ms else undefined_as
+        for request in requests
+    ]
+    finite = [value for value in values if math.isfinite(value)]
+    return {
+        **{
+            f"tpot_p{int(q * 100)}_ms": percentile(values, q) for q in quantiles
+        },
+        "tpot_undefined_requests": float(len(values) - len(finite)),
+        "requests": float(len(values)),
+    }
+
+
 def paired_bootstrap_ci(
     baseline: Mapping[str, float],
     proposed: Mapping[str, float],
@@ -109,6 +140,90 @@ def paired_bootstrap_ci(
         "ci95_high": percentile(boot, 0.975),
         "standard_deviation": statistics.stdev(effects),
     }
+
+
+def unpaired_bootstrap_ci(
+    baseline: Sequence[float],
+    proposed: Sequence[float],
+    samples: int = 10000,
+    seed: int = 1,
+) -> Dict[str, float]:
+    """Difference-of-means CI when arms have no natural repetition pairing.
+
+    ``paired_bootstrap_ci`` is preferred whenever repetitions are matched (same
+    seed/trace slot).  Static-split arms from separate SLURM jobs have no such
+    matching, so each arm is resampled independently with the same conventions
+    (10000 samples, seed=1) rather than inventing an arbitrary pairing.
+    """
+    base = [float(value) for value in baseline]
+    prop = [float(value) for value in proposed]
+    if len(base) < 2 or len(prop) < 2:
+        raise ValueError("unpaired CI requires at least two repetitions per arm")
+    rng = random.Random(seed)
+    boot = []
+    for _ in range(samples):
+        b = statistics.fmean(rng.choice(base) for _ in base)
+        p = statistics.fmean(rng.choice(prop) for _ in prop)
+        boot.append(p - b)
+    baseline_mean = statistics.fmean(base)
+    mean_effect = statistics.fmean(prop) - baseline_mean
+    return {
+        "n_baseline": float(len(base)),
+        "n_proposed": float(len(prop)),
+        "baseline_mean": baseline_mean,
+        "baseline_sd": statistics.stdev(base),
+        "proposed_mean": statistics.fmean(prop),
+        "proposed_sd": statistics.stdev(prop),
+        "mean_effect": mean_effect,
+        "effect_percent": 100.0 * mean_effect / baseline_mean
+        if baseline_mean
+        else math.nan,
+        "ci95_low": percentile(boot, 0.025),
+        "ci95_high": percentile(boot, 0.975),
+    }
+
+
+def load_bench_serving_rounds(
+    path: Path,
+    request_slice: Tuple[float, float] = (0.0, 1.0),
+) -> Tuple[List[RequestResult], float]:
+    """Load an sglang ``bench_serving --output-details --output-file`` artifact.
+
+    The harness appends **one JSON object per round** to the same file, so the
+    benchmark duration must be the SUM of per-round durations (methodology gate
+    #7: ``max()`` inflates goodput by the round count).  ``request_slice`` keeps
+    a contiguous fraction of each round's requests in launch order, for
+    transient (warm-up / drain) sensitivity analysis.
+
+    Returns ``(requests, summed_duration_s)``.  ``request_id`` encodes
+    ``r<round>#<launch index>`` so that identical workloads across arms can be
+    matched slot-by-slot.
+    """
+    low, high = request_slice
+    requests: List[RequestResult] = []
+    duration = 0.0
+    with Path(path).open(encoding="utf-8") as handle:
+        for round_index, line in enumerate(handle):
+            line = line.strip()
+            if not line:
+                continue
+            record = json.loads(line)
+            duration += float(record.get("duration") or 0.0)
+            ttfts = record.get("ttfts") or []
+            itls = record.get("itls") or []
+            start = int(round(low * len(ttfts)))
+            stop = int(round(high * len(ttfts)))
+            for index in range(start, stop):
+                tokens = itls[index] if index < len(itls) else []
+                requests.append(
+                    RequestResult(
+                        request_id=f"r{round_index}#{index}",
+                        ttft_ms=1000.0 * float(ttfts[index]),
+                        token_itl_ms=tuple(1000.0 * float(v) for v in tokens),
+                        completion_s=math.nan,
+                    )
+                )
+    return requests, duration
 
 
 def controller_summary(events: Sequence[Mapping[str, object]]) -> Dict[str, object]:

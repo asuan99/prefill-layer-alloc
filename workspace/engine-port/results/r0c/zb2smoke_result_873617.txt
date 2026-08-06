@@ -1,0 +1,37 @@
+HEADER job=873617 model=Zyphra/Zamba2-2.7B
+HEADER prepatch_commit=6c06da8bec42c9b14a4880695be4a0426a48da37 prepatch_sha256=6ba79046499f3954b73d6ed8cb3a76add2bdd3022beff7ccca8f9fd3ecd5f21b expect=6ba79046499f3954b73d6ed8cb3a76add2bdd3022beff7ccca8f9fd3ecd5f21b
+HEADER patched_sha256=035a7d758ada757a76af4b76332dd1f8e769ea24195b2169fce8b7b7b7a1e264 (recorded, not pinned)
+ARM legacy_cg file_sha=6ba79046499f3954b73d6ed8cb3a76add2bdd3022beff7ccca8f9fd3ecd5f21b timing=0 flags=''
+ARM legacy_cg boot_ok=1 port=35349
+ARM legacy_cg gen_lines=8 gen_sha=88af69676953afd7578171cf8c78e9f3187f62aadacaf5251f08e41c60721cf8
+ARM patched_cg file_sha=035a7d758ada757a76af4b76332dd1f8e769ea24195b2169fce8b7b7b7a1e264 timing=0 flags=''
+ARM patched_cg boot_ok=1 port=35440
+ARM patched_cg gen_lines=8 gen_sha=88af69676953afd7578171cf8c78e9f3187f62aadacaf5251f08e41c60721cf8
+ARM legacy_eg file_sha=6ba79046499f3954b73d6ed8cb3a76add2bdd3022beff7ccca8f9fd3ecd5f21b timing=0 flags='--disable-cuda-graph'
+ARM legacy_eg boot_ok=1 port=35340
+ARM legacy_eg gen_lines=8 gen_sha=88af69676953afd7578171cf8c78e9f3187f62aadacaf5251f08e41c60721cf8
+ARM patched_eg file_sha=035a7d758ada757a76af4b76332dd1f8e769ea24195b2169fce8b7b7b7a1e264 timing=0 flags='--disable-cuda-graph'
+ARM patched_eg boot_ok=1 port=35343
+ARM patched_eg gen_lines=8 gen_sha=88af69676953afd7578171cf8c78e9f3187f62aadacaf5251f08e41c60721cf8
+ARM patched_tm file_sha=035a7d758ada757a76af4b76332dd1f8e769ea24195b2169fce8b7b7b7a1e264 timing=1 flags='--disable-cuda-graph'
+ARM patched_tm boot_ok=1 port=35285
+ARM patched_tm gen_lines=8 gen_sha=88af69676953afd7578171cf8c78e9f3187f62aadacaf5251f08e41c60721cf8
+GATE 3a_offpath_cudagraph_on: PASS (legacy_cg == patched_cg, byte-identical)
+GATE 3b_offpath_eager: PASS (legacy_eg == patched_eg, byte-identical)
+GATE 3c_timing_on_no_effect: PASS (patched_eg == patched_tm, byte-identical)
+GATE C: emits=49 closure_fail_lines=49 blk_max=48 blk_n_set=[8]
+GATE C(dist): closure min=0.9390 p50=0.9403 max=0.9435 n=49
+GATE C(reset): PASS
+GATE C(closure): FAIL
+   closure=0.9435 < 0.95
+   closure=0.9391 < 0.95
+   closure=0.9397 < 0.95
+   closure=0.9397 < 0.95
+   closure=0.9392 < 0.95
+   closure=0.9395 < 0.95
+   closure=0.9401 < 0.95
+   closure=0.9390 < 0.95
+   closure=0.9398 < 0.95
+   closure=0.9403 < 0.95
+SMOKE RESULT: output-equivalence gates PASS
+NOTE: this job is a correctness gate only. No timing number from it is a measurement.

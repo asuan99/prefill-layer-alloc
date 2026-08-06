@@ -1,0 +1,10 @@
+=== S2A pooled diagnostics (gate alpha; NOT a throughput/policy verdict) ===
+S2A_POOLED_TELEMETRY_PATH arm=T8 cell=d92 n_split_tokens=138588 n_all_tokens=138685 p50_SPLIT=11.26ms p95_SPLIT=12.67ms p50_ALL=11.26ms agree_within_5pct=True align_r_range=[0.954,0.988] n_a_free=138685 n_split_label=138588 n_unsplit_label=85 ambig_frac=0.0001
+S2A_POOLED_TELEMETRY_PATH_BLOCKCI arm=T8 cell=d92 per_block_p50_all=['11.25', '11.44', '11.19', '11.15'] mean=11.258 sd=0.131 t95_half_width=0.209 t95_CI=[11.049,11.467] (n=4 blocks)
+S2A_POOLED_RAW_ITLS_PATH arm=T8 cell=d92 n_itl=149664 p50=11.315ms p95=12.706ms (no a_free filter, no split_frac, no telemetry file read)
+S2A_POOLED_RAW_ITLS_PATH_BLOCKCI arm=T8 cell=d92 per_block_p50=['11.30', '11.54', '11.24', '11.19'] mean=11.317 sd=0.158 t95_half_width=0.251 t95_CI=[11.066,11.568] (n=4 blocks)
+S2A_PREREG_BAND path=telemetry_path p50=11.257ms -> INDETERMINATE (outside both pre-registered bands)
+S2A_PREREG_BAND path=raw_itls_path p50=11.315ms -> INDETERMINATE (outside both pre-registered bands)
+NOTE: bands above are a MECHANICAL restatement of the task brief's three
+pre-registered intervals, fixed before submission. No throughput / goodput /
+g / G_LEVER / G_FLAT / policy judgment is made by this job.

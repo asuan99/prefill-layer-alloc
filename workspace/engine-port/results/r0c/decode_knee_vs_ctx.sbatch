@@ -12,6 +12,16 @@
 #SBATCH --output=%x_C%a_%A.out
 #SBATCH --error=%x_C%a_%A.err
 # ============================================================================
+# SUPERSEDED 2026-08-04 by decode_knee_vs_ctx_v2.sbatch. DO NOT RERUN.
+#   Kept verbatim (apart from this banner) as the provenance of job 858811.
+#   Audit 2026-08-04 confirmed three instrumentation defects behind its numbers:
+#   asymmetric buckets, a never-reset running-mean accumulator sampled with
+#   `tail -1`, and the resulting violation of mamba's O(1)-in-ctx invariant.
+#   Its `grep "ZBLT mode="` below no longer matches: the reworked instrumentation
+#   emits ZBLT2 (deliberately, so a pre-2026-08-04 parser MISSES instead of
+#   silently reading a redefined "attn" bucket). Rerunning this file yields empty
+#   RESULT lines by design.
+# ============================================================================
 # DECODE knee vs CONTEXT LENGTH  (user question, 2026-07-18)
 #   Does the optimal decode SM shift with ctx because the attn FRACTION of a decode
 #   step shifts? decode-attn scans the KV cache (~ctx, SM-hungry); decode-mamba is a
