@@ -1,0 +1,309 @@
+
+=== [G-A] INSTRUMENT GATE: label_ext == m3_conditional.label_probe ===
+  (fields itl_ms, a_free, split_frac, prefill_overlap, req_idx compared element-wise)
+  8 probes, 312204 records compared, max abs diff = 0.000e+00  -> PASS
+
+==============================================================================
+=== [1] PRE-REGISTERED STATISTIC (PREREG_S2 sec 3): per-token p50 of SPLIT,
+===     a_free_only=True, pooled over 8 blocks; job 873015
+==============================================================================
+
+  --- T8 d16 ---
+  blk  n_SPLIT    n_all n_UNSPL  p50_SP p50_all   |d|%  p95_SP  p99_SP  mean_SP align_r
+    1    39182    39182       0   28.91   28.91   0.00   31.44   34.87    29.18  0.9995
+    2    35418    35418       0   29.20   29.20   0.00   32.67   35.69    29.54  0.9994
+    3    35519    35519       0   28.86   28.86   0.00   31.83   35.10    29.19  0.9988
+    4    37328    37328       0   28.85   28.85   0.00   31.19   34.71    29.10  0.9996
+    5    38086    38086       0   28.77   28.77   0.00   30.87   34.93    28.98  0.9995
+    6    40331    40331       0   28.90   28.90   0.00   32.21   35.35    29.27  0.9994
+    7    41306    41306       0   28.86   28.86   0.00   31.46   34.88    29.16  0.9995
+    8    34807    34807       0   28.96   28.96   0.00   31.62   35.06    29.22  0.9988
+  POOLED  n_SPLIT=301977  p50(SPLIT)=28.92 ms  p50(all)=28.92 ms  |diff|=0.000% -> agree_within_5pct=True
+  BLOCK   mean of per-block p50 = 28.914 +- 0.127 (sd, n=8), t95 CI [28.808, 29.020], half-width 0.106
+  pooled p95(SPLIT)=31.69  p99=35.04  mean=29.20  n_UNSPLIT(pooled)=0
+
+  --- T8 d54 ---
+  blk  n_SPLIT    n_all n_UNSPL  p50_SP p50_all   |d|%  p95_SP  p99_SP  mean_SP align_r
+    1    38917    38940      20   12.02   12.02   0.00   14.19   17.22    12.20  0.9963
+    2    34978    34991       8   12.24   12.24   0.00   14.49   17.51    12.42  0.9937
+    3    35476    35482       6   12.01   12.01   0.00   14.26   16.74    12.15  0.9950
+    4    37119    37127       7   11.97   11.97   0.00   14.07   16.54    12.10  0.9941
+    5    37950    37966      14   11.96   11.96   0.00   13.95   16.66    12.11  0.9959
+    6    40257    40257       0   12.02   12.02   0.00   14.20   17.43    12.20  0.9969
+    7    41353    41353       0   11.99   11.99   0.00   14.21   17.12    12.16  0.9974
+    8    34506    34533      24   12.11   12.11   0.00   14.34   16.92    12.32  0.9929
+  POOLED  n_SPLIT=300556  p50(SPLIT)=12.03 ms  p50(all)=12.03 ms  |diff|=0.001% -> agree_within_5pct=True
+  BLOCK   mean of per-block p50 = 12.040 +- 0.091 (sd, n=8), t95 CI [11.964, 12.116], half-width 0.076
+  pooled p95(SPLIT)=14.21  p99=16.97  mean=12.20  n_UNSPLIT(pooled)=79
+
+==============================================================================
+=== [1] PRE-REGISTERED STATISTIC (PREREG_S2 sec 3): per-token p50 of SPLIT,
+===     a_free_only=True, pooled over 8 blocks; job 872077
+==============================================================================
+
+  --- T8 d16 ---
+  blk  n_SPLIT    n_all n_UNSPL  p50_SP p50_all   |d|%  p95_SP  p99_SP  mean_SP align_r
+    1     1345    39227   37768   11.06   11.01   0.46   11.83   33.94    11.87  0.8821
+    2     1455    35853   34233   11.17   11.13   0.38   32.06   35.45    12.63  0.9928
+    3      805    35815   34937   11.08   10.95   1.19   31.36   34.82    13.81  0.9958
+    4     1338    37562   36096   11.10   10.92   1.62   11.74   33.19    11.60  0.9949
+    5      904    38300   37313   11.06   10.91   1.34   30.44   33.13    12.43  0.9942
+    6     2138    40615   38267   11.03   10.97   0.55   30.41   33.09    12.42  0.9303
+    7     1550    41464   39761   11.05   10.96   0.86   30.78   33.94    12.29  0.9931
+    8     1589    35112   33388   11.11   11.03   0.75   30.85   33.95    13.01  0.9936
+  POOLED  n_SPLIT=11124  p50(SPLIT)=11.09 ms  p50(all)=10.97 ms  |diff|=1.045% -> agree_within_5pct=True
+  BLOCK   mean of per-block p50 = 11.082 +- 0.044 (sd, n=8), t95 CI [11.045, 11.119], half-width 0.037
+  pooled p95(SPLIT)=30.67  p99=34.10  mean=12.45  n_UNSPLIT(pooled)=291763
+
+  --- T8 d54 ---
+  blk  n_SPLIT    n_all n_UNSPL  p50_SP p50_all   |d|%  p95_SP  p99_SP  mean_SP align_r
+    1     3507    38974   35137   11.14   10.96   1.64   15.78   18.55    12.00  0.9953
+    2     3244    35202   31590   11.36   11.12   2.17   16.08   18.81    12.28  0.9932
+    3     2893    35528   32345   11.10   10.94   1.45   15.61   18.27    12.01  0.9942
+    4     2416    37169   34551   11.01   10.92   0.81   13.90   15.55    11.25  0.9928
+    5     2646    38025   35097   11.04   10.90   1.22   14.95   17.72    11.69  0.9942
+    6     3214    40328   36816   11.09   10.97   1.15   14.98   17.44    11.83  0.9962
+    7     3478    41403   37595   11.10   10.94   1.40   15.95   17.71    11.94  0.9965
+    8     3519    34618   30783   11.17   11.04   1.21   16.11   18.45    12.06  0.9923
+  POOLED  n_SPLIT=24917  p50(SPLIT)=11.12 ms  p50(all)=10.96 ms  |diff|=1.440% -> agree_within_5pct=True
+  BLOCK   mean of per-block p50 = 11.126 +- 0.110 (sd, n=8), t95 CI [11.034, 11.218], half-width 0.092
+  pooled p95(SPLIT)=15.60  p99=18.40  mean=11.91  n_UNSPLIT(pooled)=273914
+
+=== [9] IDENTITY AUDIT -- which statistics are forced once realized ~ 1.0? ===
+  872077 d16: n_a_free=303948  SPLIT=11124 (3.660%)  UNSPLIT=291763 (95.9911%)  AMBIG=1061 (0.3491%)   -> p50(SPLIT) vs p50(all) share 3.660% of the same tokens
+  872077 d54: n_a_free=301247  SPLIT=24917 (8.271%)  UNSPLIT=273914 (90.9267%)  AMBIG=2416 (0.8020%)   -> p50(SPLIT) vs p50(all) share 8.271% of the same tokens
+  873015 d16: n_a_free=301977  SPLIT=301977 (100.000%)  UNSPLIT=0 (0.0000%)  AMBIG=0 (0.0000%)   -> p50(SPLIT) vs p50(all) share 100.000% of the same tokens
+  873015 d54: n_a_free=300649  SPLIT=300556 (99.969%)  UNSPLIT=79 (0.0263%)  AMBIG=14 (0.0047%)   -> p50(SPLIT) vs p50(all) share 99.969% of the same tokens
+
+==============================================================================
+=== [2] BLOCK-PAIRED d16/d54 RATIOS (block = boot = replication unit,
+===     DESIGN.md sec 4.3.8).  VALUES ONLY -- G_LEVER/G_FLAT are
+===     UNDETERMINED, so NO verdict is derived from any ratio here.
+==============================================================================
+    sp_p50: r = 2.402 +- 0.008 (sd)  t95 CI [2.395, 2.408]  d16=  28.91 d54=  12.04  per-block 2.404 2.386 2.402 2.410 2.405 2.405 2.407 2.392
+    sp_p95: r = 2.227 +- 0.022 (sd)  t95 CI [2.209, 2.246]  d16=  31.66 d54=  14.21  per-block 2.216 2.254 2.232 2.217 2.213 2.268 2.213 2.206
+   sp_mean: r = 2.393 +- 0.012 (sd)  t95 CI [2.383, 2.402]  d16=  29.20 d54=  12.21  per-block 2.392 2.378 2.401 2.406 2.393 2.400 2.398 2.373
+   all_p50: r = 2.401 +- 0.008 (sd)  t95 CI [2.395, 2.408]  d16=  28.91 d54=  12.04  per-block 2.404 2.386 2.402 2.410 2.405 2.405 2.407 2.392
+   all_p95: r = 2.227 +- 0.022 (sd)  t95 CI [2.209, 2.246]  d16=  31.66 d54=  14.21  per-block 2.216 2.254 2.233 2.217 2.213 2.268 2.213 2.206
+
+=== [16] THE SAME BLOCK-PAIRED d16/d54 RATIO IN 872077 (selector NOT held) ===
+  872077  all_p50: r = 1.001 +- 0.002  t95 CI [1.000, 1.002]   d16=  10.98 d54=  10.97
+  873015  all_p50: r = 2.401 +- 0.008  t95 CI [2.395, 2.408]   d16=  28.91 d54=  12.04
+  872077  all_p95: r = 0.828 +- 0.006  t95 CI [0.823, 0.833]   d16=  11.60 d54=  14.01
+  873015  all_p95: r = 2.227 +- 0.022  t95 CI [2.209, 2.246]   d16=  31.66 d54=  14.21
+  872077   sp_p50: r = 0.996 +- 0.007  t95 CI [0.990, 1.002]   d16=  11.08 d54=  11.13
+  873015   sp_p50: r = 2.402 +- 0.008  t95 CI [2.395, 2.408]   d16=  28.91 d54=  12.04
+
+==============================================================================
+=== [3] CONFOUND DECOMPOSITION: 872077 (sticky OFF) vs 873015 (ON)
+===     Sticky ON changes the RUN, not only the measurement.  These are
+===     run descriptors, NOT a performance comparison (different code
+===     path, different realized partition, no controlled contrast).
+==============================================================================
+      job  cell |   dur_s  compl  req/s  outtok/s   conc maxconc | ttft_p50 ttft_p95 ttft_p99 |  busy_s  idle_s mean_bs |   n_tok p50_all
+   872077   d16 |   101.8  200.0  1.975     393.9   4.73    12.8 |     46.3    128.2    428.7 |   100.8    26.9    4.66 |   37994   10.98
+   873015   d16 |   110.6  200.0  1.823     363.5  10.70    22.2 |     63.2    140.9    210.5 |   110.6    31.1   10.64 |   37747   28.91
+      d16 client concurrency           ON-OFF =    +5.972 +-   0.692 t95 [  +5.394,  +6.551]   ON/OFF =  2.262 [2.208,2.316]
+      d16 mean decode batch (busy)     ON-OFF =    +5.982 +-   0.679 t95 [  +5.415,  +6.550]   ON/OFF =  2.284 [2.242,2.327]
+      d16 duration s                   ON-OFF =    +8.743 +-   2.877 t95 [  +6.338, +11.148]   ON/OFF =  1.085 [1.065,1.105]
+      d16 TTFT p50 ms                  ON-OFF =   +16.911 +-   1.434 t95 [ +15.711, +18.110]   ON/OFF =  1.366 [1.338,1.393]
+      d16 n tokens (a_free)            ON-OFF =  -246.375 +- 114.927 t95 [-342.472,-150.278]   ON/OFF =  0.993 [0.991,0.996]
+      d16 p50(all tokens) ms           ON-OFF =   +17.931 +-   0.061 t95 [ +17.881, +17.982]   ON/OFF =  2.633 [2.627,2.638]
+      d16 output tok/s                 ON-OFF =   -30.414 +-   7.176 t95 [ -36.414, -24.414]   ON/OFF =  0.922 [0.905,0.939]
+   872077   d54 |   101.4  200.0  1.983     395.6   4.59    12.9 |     56.8    173.4    291.1 |   100.6    23.5    4.50 |   37656   10.97
+   873015   d54 |   102.0  200.0  1.973     393.5   4.97    13.4 |     59.2    185.3    434.5 |   101.4    27.7    4.87 |   37581   12.04
+      d54 client concurrency           ON-OFF =    +0.386 +-   0.120 t95 [  +0.286,  +0.486]   ON/OFF =  1.083 [1.067,1.100]
+      d54 mean decode batch (busy)     ON-OFF =    +0.365 +-   0.104 t95 [  +0.278,  +0.452]   ON/OFF =  1.080 [1.066,1.095]
+      d54 duration s                   ON-OFF =    +0.540 +-   0.317 t95 [  +0.276,  +0.805]   ON/OFF =  1.005 [1.003,1.008]
+      d54 TTFT p50 ms                  ON-OFF =    +2.386 +-   1.938 t95 [  +0.765,  +4.006]   ON/OFF =  1.042 [1.013,1.070]
+      d54 n tokens (a_free)            ON-OFF =   -74.750 +-  57.450 t95 [-122.787, -26.713]   ON/OFF =  0.998 [0.997,0.999]
+      d54 p50(all tokens) ms           ON-OFF =    +1.068 +-   0.023 t95 [  +1.049,  +1.087]   ON/OFF =  1.097 [1.096,1.099]
+      d54 output tok/s                 ON-OFF =    -2.027 +-   1.033 t95 [  -2.891,  -1.163]   ON/OFF =  0.995 [0.993,0.997]
+
+=== [3b] REALIZED decode_sms RESIDENCY (time-weighted, decode-busy only) ===
+      job  cell |       D16       D54      D108   busy_s
+   872077   d16 |    0.0380    0.0000    0.9620     100.8
+   873015   d16 |    0.9990    0.0000    0.0000     110.6
+   872077   d54 |    0.0000    0.0925    0.9072     100.6
+   873015   d54 |    0.0000    0.9994    0.0000     101.4
+
+==============================================================================
+=== [11] STATE CROSS-TAB, time-weighted, pooled over 8 blocks
+===  state = (decode_busy, prefill_active) ; value = (prefill_sms, decode_sms)
+==============================================================================
+  872077 d16 (total 1017.3s):
+      dec_busy=True  pref_active=False -> (P0,D108)   76.31%    776.3s
+      dec_busy=False pref_active=False -> (P108,D0)   20.47%    208.3s
+      dec_busy=True  pref_active=False -> (P92,D16)    2.18%     22.2s
+      dec_busy=True  pref_active=True  -> (P92,D16)    0.80%      8.1s
+      dec_busy=False pref_active=True  -> (P108,D0)    0.25%      2.5s
+  873015 d16 (total 1129.4s):
+      dec_busy=True  pref_active=False -> (P92,D16)   76.76%    866.9s
+      dec_busy=False pref_active=False -> (P108,D0)   21.43%    242.0s
+      dec_busy=True  pref_active=True  -> (P92,D16)    1.52%     17.2s
+      dec_busy=False pref_active=True  -> (P108,D0)    0.22%      2.5s
+  872077 d54 (total 992.5s):
+      dec_busy=True  pref_active=False -> (P0,D108)   73.64%    730.9s
+      dec_busy=False pref_active=False -> (P108,D0)   18.67%    185.3s
+      dec_busy=True  pref_active=True  -> (P54,D54)    5.73%     56.9s
+      dec_busy=True  pref_active=False -> (P54,D54)    1.67%     16.6s
+      dec_busy=False pref_active=True  -> (P108,D0)    0.26%      2.6s
+  873015 d54 (total 1032.6s):
+      dec_busy=True  pref_active=False -> (P54,D54)   73.00%    753.9s
+      dec_busy=False pref_active=False -> (P108,D0)   21.19%    218.8s
+      dec_busy=True  pref_active=True  -> (P54,D54)    5.52%     57.0s
+      dec_busy=False pref_active=True  -> (P108,D0)    0.23%      2.4s
+
+=== [10] TTFT / ITL PERCENTILES (metric-cliff + distribution reporting) ===
+      job  cell | TTFT p50      p95      p99      max |  ITL p50      p95      p99 | E2E-ish n_err
+   872077   d16 |     46.0    131.0    236.8   3223.1 |    10.98    11.60    32.92 | 0 (all blocks)
+   873015   d16 |     63.5    142.7    216.8    390.8 |    28.91    31.66    35.07 | 0 (all blocks)
+   872077   d54 |     56.4    170.9    320.3    757.4 |    10.97    14.01    16.86 | 0 (all blocks)
+   873015   d54 |     59.1    176.9    359.6   2119.1 |    12.04    14.21    17.02 | 0 (all blocks)
+
+==============================================================================
+=== [4] DECODE BATCH DISTRIBUTION (the matching question)
+===  (a) time-weighted over decode-busy telemetry, int(batch) bins
+==============================================================================
+  872077 d16: mean=4.63 p25=3 p50=4 p75=6 p95=9  bins>=2%: 1:7.4% 2:11.5% 3:14.9% 4:16.7% 5:16.4% 6:13.4% 7:7.7% 8:6.1% 9:3.6%
+  873015 d16: mean=10.56 p25=8 p50=11 p75=13 p95=17  bins>=2%: 1:3.3% 2:2.8% 3:2.6% 5:2.5% 6:3.7% 7:4.9% 8:6.9% 9:7.9% 10:10.2% 11:9.9% 12:10.1% 13:10.1% 14:7.2% 15:5.3% 16:3.5% 17:3.5%
+  872077 d54: mean=4.48 p25=3 p50=4 p75=6 p95=9  bins>=2%: 1:7.8% 2:12.3% 3:15.9% 4:17.2% 5:17.0% 6:12.5% 7:7.3% 8:5.0% 9:3.7%
+  873015 d54: mean=4.84 p25=3 p50=5 p75=6 p95=9  bins>=2%: 1:6.2% 2:10.3% 3:13.7% 4:17.5% 5:15.9% 6:14.2% 7:9.0% 8:6.4% 9:3.4% 10:2.2%
+
+  (b) per-TOKEN mean in-interval decode batch, binned to int
+      (this is c2_anchor.py's bin definition: mean decode batch over the
+       ITL interval, int()-binned; 'bin 5' = mean_bs in [5,6))
+      job  cell    pop |       n modal |            b0            b1            b2            b3            b4            b5            b6            b7            b8            b9
+   872077   d16  SPLIT |   11124     9 |             -   0.9%/ 10.67   2.9%/ 10.69   8.6%/ 10.68  10.4%/ 10.89  14.5%/ 10.98  14.6%/ 11.16  15.3%/ 11.17  10.4%/ 11.10  17.6%/ 11.18
+   872077   d16    all |  303948     5 |   0.2%/ 10.42   1.7%/ 10.58   5.3%/ 10.57  10.3%/ 10.63  15.1%/ 10.68  18.1%/ 10.96  16.9%/ 11.04  11.2%/ 11.08  10.0%/ 11.09   6.4%/ 11.20
+   873015   d16  SPLIT |  301977    13 |             -   0.2%/ 29.58   0.5%/ 26.97   0.4%/ 27.80   0.5%/ 27.97   1.2%/ 28.21   2.1%/ 28.19   3.4%/ 28.27   5.3%/ 28.34   6.8%/ 28.56
+   873015   d16    all |  301977    13 |             -   0.2%/ 29.58   0.5%/ 26.97   0.4%/ 27.80   0.5%/ 27.97   1.2%/ 28.21   2.1%/ 28.19   3.4%/ 28.27   5.3%/ 28.34   6.8%/ 28.56
+   872077   d54  SPLIT |   24917     5 |   0.0%/    --   1.2%/ 10.73   5.5%/ 10.69   9.1%/ 10.81  15.8%/ 10.97  21.5%/ 11.12  18.5%/ 11.14  10.1%/ 11.23   6.7%/ 11.37   9.1%/ 11.24
+   872077   d54    all |  301247     5 |   0.1%/ 10.58   1.7%/ 10.59   5.6%/ 10.57  11.0%/ 10.61  15.9%/ 10.65  19.2%/ 10.96  16.5%/ 11.03  11.2%/ 11.08   8.5%/ 11.09   7.0%/ 11.22
+   873015   d54  SPLIT |  300556     6 |   0.0%/    --   1.1%/ 12.47   4.2%/ 11.99   8.6%/ 11.43  15.4%/ 11.44  16.7%/ 11.97  17.4%/ 12.05  12.9%/ 12.11  10.4%/ 12.13   6.0%/ 12.27
+   873015   d54    all |  300649     6 |   0.0%/ 12.49   1.1%/ 12.47   4.2%/ 11.99   8.6%/ 11.43  15.4%/ 11.44  16.7%/ 11.97  17.4%/ 12.05  12.9%/ 12.11  10.4%/ 12.13   6.0%/ 12.27
+      cell entries are  share-of-population / p50 ITL(ms) in that bin (p50 shown only when n>=30)
+
+==============================================================================
+=== [6] BATCH-MATCHED per-token p50, bin = int(mean in-interval decode
+===     batch).  Columns: n / p50(ms).  '--' = fewer than 100 tokens.
+=== The question: how much of 11.09 -> 28.92 survives batch matching?
+==============================================================================
+             series |           b0           b1           b2           b3           b4           b5           b6           b7           b8           b9          b10          b11          b12          b13          b14          b15          b16          b17          b18          b19          b20          b21          b22          b23          b24
+   872077 d16 SPLIT |            -   105/ 10.67   320/ 10.69   954/ 10.68  1159/ 10.89  1611/ 10.98  1620/ 11.16  1700/ 11.17  1161/ 11.10  1958/ 11.18   536/ 11.17            -            -            -            -            -            -            -            -            -            -            -            -            -            -
+   872077 d16 all   |   659/ 10.42  5226/ 10.58 16208/ 10.57 31223/ 10.63 45959/ 10.68 55048/ 10.96 51284/ 11.04 34031/ 11.08 30470/ 11.09 19531/ 11.20  9268/ 11.27  4531/ 11.21   510/ 11.45            -            -            -            -            -            -            -            -            -            -            -            -
+   873015 d16 all   |            -   576/ 29.58  1413/ 26.97  1236/ 27.80  1587/ 27.97  3476/ 28.21  6402/ 28.19 10133/ 28.27 15969/ 28.34 20566/ 28.56 28799/ 28.72 32128/ 28.77 35447/ 28.85 37674/ 28.98 28589/ 29.00 22744/ 29.04 16181/ 29.16 16615/ 29.57  8324/ 29.66  5437/ 29.73  4382/ 29.75  2255/ 29.89  1352/ 29.97   343/ 29.89   349/ 30.08
+   872077 d54 all   |   168/ 10.58  5023/ 10.59 16825/ 10.57 33004/ 10.61 47944/ 10.65 57851/ 10.96 49784/ 11.03 33803/ 11.08 25496/ 11.09 21022/ 11.22  6623/ 11.25  3191/ 11.18   513/ 11.27            -            -            -            -            -            -            -            -            -            -            -            -
+   873015 d54 all   |    78/    --  3387/ 12.47 12526/ 11.99 25870/ 11.43 46231/ 11.44 50213/ 11.97 52440/ 12.05 38726/ 12.11 31271/ 12.13 18145/ 12.27 13058/ 12.34  6126/ 12.32  1824/ 12.39   544/ 12.72   210/ 12.70            -            -            -            -            -            -            -            -            -            -
+   C2 865493 d16 SP |            -  1486/ 29.98    30/    --            -   403/ 28.73  2003/ 28.79            -            -            -            -     5/    --    75/    --  2552/ 30.20            -            -  5682/ 30.67 73091/ 31.19   833/ 30.95   960/ 31.10    83/    --  1242/ 31.21    99/    --  1491/ 31.16   711/ 30.93            -
+   C2 865493 d44 SP |            -   330/ 14.70            -            -            -  6510/ 13.78     1/    --  6571/ 13.92  2994/ 13.98 12569/ 14.29            - 14329/ 14.25            -            -    17/    -- 12120/ 14.52 105109/ 14.82   736/ 14.91   379/ 14.87  1899/ 14.79            -    16/    --   345/ 14.77  1431/ 14.86            -
+
+  Bin-matched ratios (only bins with n>=100 on BOTH sides):
+    873015 d16 / 872077 d16 (all pop)    n_bins=12  min=2.52 max=2.80 n-weighted=2.558   b1:2.80 b2:2.55 b3:2.61 b4:2.62 b5:2.57 b6:2.55 b7:2.55 b8:2.56 b9:2.55 b10:2.55 b11:2.57 b12:2.52
+    873015 d16 / C2 865493 d16 SPLIT     n_bins=11  min=0.93 max=0.99 n-weighted=0.946   b1:0.99 b4:0.97 b5:0.98 b12:0.96 b15:0.95 b16:0.93 b17:0.96 b18:0.95 b20:0.95 b22:0.96 b23:0.97
+    873015 d54 / 872077 d54 (all pop)    n_bins=12  min=1.07 max=1.18 n-weighted=1.091   b1:1.18 b2:1.13 b3:1.08 b4:1.07 b5:1.09 b6:1.09 b7:1.09 b8:1.09 b9:1.09 b10:1.10 b11:1.10 b12:1.10
+    873015 d54 / C2 865493 d44 SPLIT     n_bins= 6  min=0.85 max=0.87 n-weighted=0.865   b1:0.85 b5:0.87 b7:0.87 b8:0.87 b9:0.86 b11:0.86
+
+  ITL-vs-batch slope INSIDE each run (OLS over bins with n>=100,
+  ms per +1 decode batch) -- how much can batch alone move p50?
+    872077 d16 SPLIT: slope=+0.0668 ms/batch  intercept= 10.60  bins 1..10  p50 range 10.67-11.18
+    872077 d16 all  : slope=+0.0812 ms/batch  intercept= 10.45  bins 0..12  p50 range 10.42-11.45
+    873015 d16 all  : slope=+0.0969 ms/batch  intercept= 27.75  bins 1..24  p50 range 26.97-30.08
+    872077 d54 all  : slope=+0.0697 ms/batch  intercept= 10.51  bins 0..12  p50 range 10.57-11.27
+    873015 d54 all  : slope=+0.0625 ms/batch  intercept= 11.70  bins 1..14  p50 range 11.43-12.72
+    C2 865493 d16 SP: slope=+0.1047 ms/batch  intercept= 28.99  bins 1..23  p50 range 28.73-31.21
+    C2 865493 d44 SP: slope=+0.0412 ms/batch  intercept= 13.96  bins 1..23  p50 range 13.78-14.91
+
+=== [17] ATTRIBUTION OF 872077 d16 -> 873015 d16 (p50, all-token pop) ===
+  OFF p50 = 10.97 ms  (mean decode batch 4.66)
+  ON  p50 = 28.92 ms  (mean decode batch 10.64)
+  total change = +17.94 ms  (2.635x)
+  batch term, using the OFF run's OWN ITL-vs-batch slope (+0.0812 ms/batch) over the OFF run's measured bin range: +0.49 ms = 2.7% of the change
+  batch-matched ratio over 12 shared bins = 2.558 vs pooled 2.635  -> composition explains 4.7% of the excess over 1.0
+
+=== [15] IS THE CONCURRENCY/BATCH GROWTH DOWNSTREAM OF THE ITL CHANGE? ===
+  Little's law check: concurrency ?= arrival rate x mean E2E latency,
+  with E2E ~ TTFT + (n_out-1) x ITL.  If the ON run's higher concurrency
+  is *explained* by its slower decode, it is a consequence, not a cause.
+  872077 d16: observed concurrency   4.73  predicted from rate x (TTFT + n_out x ITL_p50)   4.44  ratio 1.066
+  873015 d16: observed concurrency  10.70  predicted from rate x (TTFT + n_out x ITL_p50)  10.58  ratio 1.011
+  872077 d54: observed concurrency   4.59  predicted from rate x (TTFT + n_out x ITL_p50)   4.47  ratio 1.027
+  873015 d54: observed concurrency   4.97  predicted from rate x (TTFT + n_out x ITL_p50)   4.88  ratio 1.019
+
+=== [14] WORKLOAD PAIRING CHECK (seed=block in both campaigns) ===
+  input_lens identical for all 16 (cell,block) pairs: True  -> the ON/OFF comparison is paired on the workload
+  n_prompts=200 input_len p50=196 p95=783 max=2897; output_len p50=137 p95=660
+
+==============================================================================
+=== [12] WHAT CAN SERVE AS A CONTROL IN THIS RUN?
+==============================================================================
+  873015 d16 UNSPLIT(108-SM) sample: n=0 per-block [0, 0, 0, 0, 0, 0, 0, 0]
+  873015 d54 UNSPLIT(108-SM) sample: n=79 per-block [20, 8, 6, 7, 14, 0, 0, 24]
+      p25/p50/p75 = 12.37 / 12.48 / 12.56 ms   min=10.41 max=15.61   (n<<100: NOT a usable control, reported for completeness)
+
+  Mass of 872077 already sitting at the S2-realized level
+    872077 d16: share of a_free tokens in [26.0,32.0] ms =  1.514%  (n=4603/303948)
+    873015 d16: share of a_free tokens in [26.0,32.0] ms = 95.368%  (n=287990/301977)
+    872077 d54: share of a_free tokens in [26.0,32.0] ms =  0.001%  (n=3/301247)
+    873015 d54: share of a_free tokens in [26.0,32.0] ms =  0.000%  (n=0/300649)
+
+  Cell-label discrimination, p50(all tokens), pooled:
+    872077: d16=10.97  d54=10.96  d16/d54=1.001
+    873015: d16=28.92  d54=12.03  d16/d54=2.404
+
+==============================================================================
+=== [13] d54 MISS FORENSICS -- post-hoc diagnostics ONLY.
+===  The pre-registered interval [13,16] is NOT revised; this asks
+===  where its two anchors came from and what they would predict if
+===  the extrapolations they skipped are put back in.
+==============================================================================
+  C2 865493 T8 pooled SPLIT p50 by cell: D16=31.12  D24=22.08  D44=14.68
+  fit ITL = a + b/D on C2's own cells: a=5.13 b=413.6  -> C2-curve extrapolation to D=54 = 12.79 ms
+  (the pre-registration used C2's D=44 value 14.68 as the anchor for a D=54 cell instead)
+  mean decode batch (busy): 873015 d54 = 4.87 vs C2 d44 = 11.20
+  873015 d54 ITL-vs-batch slope = +0.0625 ms/batch -> moving 873015 d54 to C2's batch would add +0.40 ms (12.43 ms), still below [13,16]
+  second anchor = S0-R's 872077 d54 UNSPLIT slow mode 14.12 ms: that is a
+  MODE of a bimodal 108-SM-labelled population (share_win 5.61%), not a p50;
+  872077 d54's own p50(all) is 10.97 ms and p95 14.01 ms.
+
+==============================================================================
+=== [5] C2 (865493) T8 d16 BATCH BINS vs 873015 d16 -- is 28.79 ~ 28.92
+===     a like-for-like batch match?
+==============================================================================
+  C2 865493 T8 d16 SPLIT: n=90746  pooled p50=31.12 ms
+   bin       n   share     p50     p95
+     1    1486    1.6%   29.98   30.76
+     2      30    0.0%   27.35   27.75
+     4     403    0.4%   28.73   30.84
+     5    2003    2.2%   28.79   30.74
+    10       5    0.0%   28.88   28.93
+    11      75    0.1%   28.88   31.67
+    12    2552    2.8%   30.20   30.98
+    15    5682    6.3%   30.67   31.42
+    16   73091   80.5%   31.19   32.62
+    17     833    0.9%   30.95   32.30
+    18     960    1.1%   31.10   32.61
+    19      83    0.1%   31.23   31.74
+    20    1242    1.4%   31.21   33.13
+    21      99    0.1%   31.27   31.55
+    22    1491    1.6%   31.16   32.84
+    23     711    0.8%   30.93   32.65
+  C2 resid T8 d16: busy_s=316.8 frac@D=0.958 frac@108=0.038 mean_bs_busy=12.66
+  C2 resid T8 d44: busy_s=303.2 frac@D=0.949 frac@108=0.050 mean_bs_busy=11.20
+
+=== [7] TELEMETRY SNAPSHOT CADENCE (instrument check for the bin estimator) ===
+  872077 d16 b1: n_snap=22943 gap_ms p50=1.95 p95=2.00 max=4127.6  span=149.6s
+  872077 d54 b1: n_snap=12955 gap_ms p50=1.95 p95=2.06 max=412.2  span=125.9s
+  873015 d16 b1: n_snap=25410 gap_ms p50=2.02 p95=2.09 max=4150.1  span=167.0s
+  873015 d54 b1: n_snap=12095 gap_ms p50=2.00 p95=2.39 max=397.8  span=126.0s
+
+=== [8] SERVER-ARG / CONFIG DIFF BETWEEN THE TWO JOBS (arm-equality check) ===
+  DIFF random_seed: 872077/d16=320127208  872077/d54=491398670  873015/d16=452421941  873015/d54=253929736
+  DIFF pdmux_config_path: 872077/d16=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/s8_frontier/pdmux_e1_d16.yml  872077/d54=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/s8_frontier/pdmux_e1_d54.yml  873015/d16=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/s8_frontier/pdmux_e1_d16.yml  873015/d54=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/s8_frontier/pdmux_e1_d54.yml
+  (only differing keys printed; everything else in the list is identical across all four job x cell combos)
+
+==============================================================================
+NO throughput / goodput / g / G_LEVER / G_FLAT / policy claim is made or
+licensed by anything above.  Ratios are values only.  See
+S2_ANALYSIS_2026-08-04.md for the pre-registered verdict.
+==============================================================================

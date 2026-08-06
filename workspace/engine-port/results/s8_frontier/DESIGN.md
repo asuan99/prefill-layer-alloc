@@ -2107,6 +2107,89 @@ repeated.**
   neither resolves nor further constrains them; nothing here licenses any
   numeric value for either.
 
+### 4.3.16 [claims-auditor CONFIRMED (scoped), 2026-08-05] S2 (job 873015)
+    independently replicated — §0's top open item closes behaviourally;
+    E1 remains closed for four independent reasons
+
+> **Status: closes an open item, does not open a new one.** No throughput,
+> latency, goodput, `g`, `G_LEVER`, `G_FLAT`, or decode-SM-elasticity value is
+> claimed here. Full text, the do-not-cite table, and provenance:
+> [`../s2_sticky/S2_REPLICATION_2026-08-05.md`](../s2_sticky/S2_REPLICATION_2026-08-05.md).
+> This entry is a pointer + summary, not a duplicate source of truth.
+
+Job **873015** (sticky ON, T8 d16/d54, ShareGPT rate 2, n=8 blocks, cudagraph
+ON, gpu37) was independently replicated by claims-auditor on 2026-08-05
+against result-analyst's [`S2_ANALYSIS_2026-08-04.md`](../s2_sticky/S2_ANALYSIS_2026-08-04.md).
+Primary result: pooled per-token ITL p50 = **28.92 ms** (d16, t95 [28.81,
+29.02]) / **12.04 ms** (d54, t95 [11.96, 12.12]) — the d16 value lands inside
+the pre-registered `[28,34] ms` (`PREREG_S2_STICKY_ITL_2026-08-03.md` §4 row
+1) and reproduces **without using the disputed `split_frac` label at all**.
+
+§0's dichotomy ((i) 872077's `decode_sms==16` is not a real 16-SM hardware
+execution, or (ii) C2's 28-31ms is a cell-composition property) closes
+**behaviourally, at the selector level**: (i) is refuted in its hardware
+form and confirmed in its label form (872077 d16 spent 96.2% of decode-busy
+time at D108, not D16); (ii) is disfavoured (the level reproduces without
+C2's keepalive/closed-loop apparatus, at 0.93x/5.4% faster). **The direct
+hardware-grant probe (S3) is still not done** — `decode_sms` remains a
+restatement of the selector index (`dual_worker.py:608-623`,
+`multiplexing_mixin.py:882-891`), not an independent measurement of SM
+grant.
+
+**E1 does not reopen**, for four independent reasons: (1) `G_LEVER`/`G_FLAT`
+remain UNDETERMINED (post-sticky block sd collapsed ~14x vs pre-sticky,
+creating a null-acceptance bias if thresholds are calibrated on pre-sticky
+scatter); (2) the sticky substrate answers a **different estimand** — when
+decode is busy, prefill sits idle ~77% of wall time, so this is closer to a
+single-tenant decode measurement than the co-located `[108-D,D]` budget
+question E1 asks; (3) the prefill axis is uncontrolled (TTFT p50 moved
+46.3->63.2ms at d16 with no mechanism claim); (4) no negative control exists
+(d16 UNSPLIT n=0/8 blocks, structural under `E1_DECODE_REALIZED >= 0.90`) and
+the hardware-grant layer is still unprobed. **Tension A (HE2 vs C2) is not
+resolved by this round.**
+
+Two items recorded for completeness, not adjudication: the d54 companion
+**missed** its pre-registered `[13,16] ms` interval (observed 12.03,
+attributed to a cross-cell extrapolation error in the pre-registration, not
+to a sticky confound — sign is wrong for the latter); and §4.3.12(f)'s
+discriminating prediction (T8 ~1.85) missed (observed r=2.402), but the
+discriminating arm (Ha8) was not submitted in this grid, so **the prediction
+is undetermined by design, not falsified**.
+
+★ **Methodology note — zero outcome gates fired in this run.**
+`AMBIG_FRAC`, `MIN_N_SPLIT`, and `PREREG_S2` §3.1's agreement check are all
+**identities** under sticky ON (once `E1_DECODE_REALIZED >= 0.90` passes,
+SPLIT is ~100% of the population by construction, so `p50(SPLIT) ==
+p50(all)` cannot fail). `E1_DECODE_REALIZED` is non-trivial across arms but
+a **code invariant within the ON arm** (`stream_idx = _sticky_fixed_idx`).
+None of the pre-registered gates constrained whether the readout would be
+28.92 or 11. Recorded as the **fourth recurrence of methodology gate #9**
+(`PROJECT_STATUS.md` "방법론 게이트" #9, `CONSENSUS.md` §3 item 18) — the
+third recurrence was `S2_ANALYSIS_2026-08-04.md` §3's own identity finding
+about §3.1 alone; this is a broader form (the entire run has zero outcome
+gates, not just one check).
+
+A factual correction was made to `S2_ANALYSIS_2026-08-04.md`'s "Instrument
+check" paragraph (lines 61-64): its ~2.0ms cadence figure is the
+decode-**idle** snapshot rate; the decode-**busy**-conditional cadence (the
+relevant one, since ITL intervals are drawn from decode-busy time) is
+0.177-0.465s across all four arms, driven by
+`PDMUX_DUAL_WORKER_TRACE_EVERY=32`. This independently derives the same
+~6% purity estimate S0-R's mode decomposition found by a different route
+(6.6-9%), and is the mechanistic explanation for candidate (iii). The
+original text is preserved with a correction banner, not deleted; **do not
+cite that paragraph before reading the correction**.
+
+Next gates (priority order, ~25-30 GPU-min each unless noted): **(α)** a
+sticky-ON high-D control cell (decode≈92 SM) — pre-registered prediction
+p50 -> 12-13ms; a result near 29ms would falsify this entire closure (the
+one cheap experiment that can). **(β)** one OFF block with
+`TRACE_FORCE_PREFILL=1` (~7 GPU-min) to directly test the sampling-law
+mechanism in §4. **(γ)** S3, the still-outstanding hardware-grant probe.
+**(δ)** a same-binary OFF arm (sticky flag off, one boot) — confirmatory,
+not a precondition for this closure. Full detail, the do-not-cite table, and
+provenance: [`../s2_sticky/S2_REPLICATION_2026-08-05.md`](../s2_sticky/S2_REPLICATION_2026-08-05.md).
+
 ### 4.4 Decision rule (pre-registered — do not change without updating this file)
 
 > For each arm, let best-static = the D cell (of the 5 measured) with the
