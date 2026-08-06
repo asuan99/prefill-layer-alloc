@@ -1,6 +1,32 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-05 (같은 날 4차 속행, doc-steward — ★★★**"확정된 결과"
+최종 갱신: 2026-08-06 (doc-steward — ★★★★**"확정된 결과" 1번(P1) 통계
+방법 층 정정**[claims-auditor Gate 2 설계 감사 2회 + result-analyst
+독립 재현, `workspace/engine-port/results/p1_gates/verify/`]. **새
+성능 판정 아님 — 기존 정본 수치의 통계 방법 층 정정이다.** `paired_
+bootstrap_ci`(n=5 percentile bootstrap of mean)는 실 coverage
+0.840(명목 95%의 한쪽 오류율 ≈8.0%, 원인은 n=5 자체, n=4 0.798/
+n=6 0.859/n=8 0.888)이라 소표본 판정에 부적합함이 2출처 독립
+확인됐다 — 저장소 안에 `m3_analyze.py`·`tfgate_analyze.py`가 이미
+독립으로 t-CI로 전환한 동일 진단이 있었는데 정본 라이브러리·P1
+판정서는 반영 안 함(도구 규율 실패, 신규 방법론 게이트 #14). primary를
+t-CI로 교체해 재채점: **Granite rate3(+11.7%)는 t-CI가 0을 포함
+(p=0.0515) → 인용 목록에서 제외**(미검증, 철회 아님) ⇒ **인용 가능
+정량치 4개→3개(Zamba2 rate2 +40.5%/rate3 +185.8%, Granite rate4
++27.0%)로 축소**. "임계 사다리 40–300ms 전 구간 부호 불변"도 정정 —
+부호 불변은 **T∈[40,113.0)ms뿐**이고 그 위에서 인용 4셀 중 3셀
+(Zamba2 r2, Granite r3·r4)이 술어 포화로 음전환, 끝까지 유지되는
+유일한 인용 셀은 **Zamba2 r3**. "rep 부호 5/5"도 정정 — **Granite
+rate2는 3/5**(효과의 87%가 rep2 1점), 나머지 7셀은 5/5 유지. **P1의
+방향 자체(agnostic>fused, Zamba2 r2·r3·Granite r4)는 어떤 방법으로도
+불변** — 강등되는 것은 "전 셀"·"5/5"·"사다리 전 구간"·"Granite r3
+수치"뿐. E1(`s8_frontier/e1_analyze.py:492,1286`) 사전등록 결정 규칙도
+같은 undercoverage를 상속하므로 "다음 실험 gate" #8에 제출
+선행조건으로 등재. `CLAIM_EVIDENCE_MATRIX.md`는 이 수치를 인용하는
+서술이 없어 갱신 대상 없음(대조 확인 완료). MEMORY.md·
+`slo-aware-scheduling-track.md`·`deconfound-measurement-lessons.md`에
+이 항목을 반영. 상세 `reports/CONSENSUS.md` §1-1(rev13)·§3 항목27.
+이전: 2026-08-05 (같은 날 4차 속행, doc-steward — ★★★**"확정된 결과"
 1번(P1) 갱신: P1 운영점(cudagraph-ON) 대조 감사 반영[claims-auditor
 2026-08-05, jobs 873944/873945, `results/p1_opint/`]. 새 성능 판정 아님,
 감사자 판정을 정본화만 함.** 정본 goodput 술어로 채점하면 agnostic v1이
@@ -338,6 +364,76 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
    "방법론 게이트"). 인용 금지 목록·후속 Gate 1–4·전체 scope는
    `reports/CONSENSUS.md` §1-1(전문) 참조, 판정서
    `workspace/engine-port/results/p1_opint/P1_OPINT_RESULT_2026-08-05.md`.
+
+   ★★★★**통계 방법 층 정정(2026-08-06, claims-auditor Gate 2 설계 감사
+   2회 + result-analyst 독립 재현, `workspace/engine-port/results/
+   p1_gates/verify/`). 새 성능 판정 아님 — 위 수치들의 통계 방법 층
+   정정이다.** `paired_bootstrap_ci`(`benchmarks/pdmux_eval/
+   analyze.py:115-142`)는 n=5 percentile bootstrap of the mean(BCa·
+   studentization 없음)이라 실 coverage가 **0.840**(100k trial MC)에
+   불과해 명목 95%의 한쪽 오류율이 **≈8.0%**(명목 3.2배)다 — 원인은
+   고정 seed도 정규 가정도 아니라 **n=5 그 자체**(n=4 coverage 0.798/
+   n=6 0.859/n=8 0.888). `unpaired_bootstrap_ci`도 동일 결함(n=4/arm
+   0.856). ★**저장소 안에 이미 같은 진단이 두 번 독립으로 존재했다**
+   (`results/s8_frontier/m3_analyze.py`·`results/e1_traceforce/
+   tfgate_analyze.py`가 각자 로컬로 t-CI로 전환)는데 **정본 라이브러리와
+   이 P1 판정서는 percentile bootstrap을 계속 썼다** — 통계 문제가
+   아니라 **도구 규율 실패**. primary를 t-CI로 교체해 재채점: **Granite
+   rate3(+11.7%)는 t-CI [−0.0032,+0.6132]가 0을 포함(p=0.0515)** →
+   인용 목록에서 제외(**미검증으로 재분류, 철회는 아니다** — boot CI는
+   여전히 0을 배제) ⇒ **인용 가능 정량치는 4개→3개(Zamba2 rate2
+   +40.5%/rate3 +185.8%, Granite rate4 +27.0%)로 축소**. "임계 사다리
+   40–300ms 전 구간 부호 불변"도 정정 — 부호가 유지되는 구간은
+   **T∈[40,113.0)ms뿐**이고 그 위에서 인용 가능 4셀 중 3셀(Zamba2 r2,
+   Granite r3, Granite r4)이 음으로 뒤집힌다(뒤집힘의 정체는 절벽이
+   아니라 **술어 포화** — 뒤집히는 셀은 T≥150에서 양 arm 위반 0/0,
+   그때 goodput 효과는 raw throughput 효과와 소수 4자리까지 항등,
+   ★§3-24가 REFUTED한 "검정력 0인 임계 사다리"의 재발); 부호가 끝까지
+   유지되는 유일한 인용 가능 셀은 **Zamba2 r3**. "rep 부호 5/5"도
+   정정 — **Granite rate2는 실제로 3/5**(per-rep diff −0.0026/
+   **+0.2789**/+0.0321/−0.0035/+0.0164, 효과의 87%가 rep2 한 점),
+   나머지 7셀은 5/5 유지 확인. n=5 paired 정확 부호뒤집기 순열검정의
+   두측 p 하한 = **2/32=0.0625**이므로 이 프로젝트의 n=5 paired 셀은
+   분포무가정으로 p<0.05에 원리적으로 도달 불가하다(기존 "CI가 0
+   배제"는 전부 모수 가정 의존이었다는 뜻). ★**P1의 방향 자체는
+   살아남는다**: agnostic > fused(꼬리에서)는 Zamba2 r2·r3, Granite
+   r4에서 어떤 방법으로도 유효하다 — 강등되는 것은 "전 셀"·"5/5"·
+   "사다리 전 구간"·"Granite r3 수치"뿐, 과잉 강등은 아니다. **열린
+   불일치(반영 보류)**: "Granite rate2는 경계(48ms로 내리면 소멸)"
+   문장은 방향이 반대라는 지적(임계를 내리면 오히려 커짐)이 있으나
+   "48ms" 수치의 출처가 `P1_OPINT_RESULT_2026-08-05.md`·`PREREG.md`
+   어디에도 없어 수치는 유지하고 "출처 미확인·방향 불일치 지적 있음
+   (2026-08-06), 확인 전 인용 주의" 표시만 추가한다. 신규 방법론
+   게이트 **#14**(아래 "방법론 게이트" 절, CONSENSUS §3 항목27과
+   대응 — n≤8 반복에서 `paired_bootstrap_ci`/`unpaired_bootstrap_ci`
+   구간을 판정에 쓰지 않는다, primary=t-CI) 등재 — E1
+   (`s8_frontier/e1_analyze.py:492,1286`) 사전등록 결정 규칙도 같은
+   undercoverage(net-positive 방향 편향)를 상속하므로 아래 "다음
+   실험 gate" #8에 **제출 선행조건**으로 등재. 상세 `reports/
+   CONSENSUS.md` §1-1(rev13)·§3 항목27, 원자료 `workspace/engine-port/
+   results/p1_gates/verify/`.
+
+   ★★★★★**Gate 1(job 874478, 2026-08-06) 조건부 채택**[claims-auditor 감사,
+   `workspace/engine-port/results/p1_gates/gate1/`]. **새 성능 판정 아님 —
+   진단 전용.** Zamba2-2.7B·agnostic v1·cudagraph-ON·rate{2,3}·n=1의
+   873944 텔레메트리 재현런에서, decode-busy ∧ prefill-in-flight 구간의 selector
+   라벨은 시간가중 100.00%가 `(74,34)`였다(pooled 51.9 s, 78 에피소드, 3,820 스냅샷).
+   ⚠️**이 통계는 판별력이 사실상 없다** — prefill 어드미션과 `adjust_stream_groups()`
+   사이에 telemetry sync가 없어 "pop A ∧ idx∉{1,2}"는 관측 가능한 상태가 아니다(방법론
+   게이트 #9 다섯 번째 재발). **실질 산출**: 이 격자에서 정책은 단일 분할 `(74,34)`에
+   고정됐다(`decode_running_batch_size` 최댓값 23 < 문턱 36 ⇒ `(54,54)` 0회
+   선택). duty cycle(창 시간 기준): 동시 in-flight 27–38%, decode 단독 32.2%,
+   prefill 단독 3.5%, 완전 idle 26.3%. ⇒ 위 §1-1의 "실현 파티션 미측정"은 **부분·조건부
+   해제**로 바뀐다: Zamba2 rate{2,3}·agnostic v1·cudagraph-ON의
+   decode-busy∧prefill-in-flight 구간에서 `(74,34)`(selector-level, S3
+   하드웨어 프로브 미실행) 하나만 인용 가능 — **rate 4·6과 Granite 전체는 여전히 미측정**이며, 특히
+   위 인용 가능 정량치 중 **Granite rate4 +27.0%에는 이 파티션 문장을 붙이지 않는다.** **"PD
+   분리 자체" 기전 귀속은 여전히 NOT-YET-SUPPORTED**(Gate 2 소관, Gate 1로 해소 안 됨).
+   인용 금지 목록(신규, 감사자 열거 — "측정했다"/"실행됐다" 등 항등식·S3-미실행 표현 포함 10건)· 커버리지
+   가드 논거 정정(좁은 형태만 채택: coverage 실패가 UNLOCK을 만드는 경로는 없다, 단 이 논거는 정본
+   일반 원칙으로 승격하지 않는다)·후속 Gate G1-a–d 전문은 `reports/CONSENSUS.md` §1-1
+   Gate 1 블록·§3 항목28·29 참조. 아래 "방법론 게이트" #9·#15, "다음 실험 gate"
+   #10(Gate 1 항목) 동반 갱신.
 2. 현재 A100/SGLang green-context substrate에서 layer-boundary resource
    switching은 sub-step drain과 synchronization을 일으켜 decode TPOT을 약
    `42→124 ms`로 악화시켰다. 최적화 후에도 약 `85 ms`였다.
@@ -1814,6 +1910,17 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    "TTFT 축 ill-posed"로 보고한다. **게이트 #8(동적 컨트롤러 규율의 재스코어
    금지)은 전 셀 `FixedPolicy`인 E1의 사전등록 사다리 재스코어에는 적용되지
    않음**을 명시.
+
+   ★★★★**제출 선행조건 신설(2026-08-06, 통계 방법 층 정정)**: 위 결정규칙의
+   "paired bootstrap"·`s8_frontier/e1_analyze.py:492,1286`가 구현한 자체
+   paired percentile bootstrap(seed=20260728, n≥4)은 방법론 게이트 #14가
+   확인한 것과 같은 undercoverage(n=4 coverage 0.798, 한쪽 오류율 ≈10%)를
+   가진다 — 그리고 결정규칙이 "≥3% ∧ CI 0 배제 ⇒ WINS" 단방향이라 이
+   undercoverage는 **오직 net-positive로 해소되는 방향으로만** 편향된다.
+   E1은 아직 미제출이므로, **제출 전에 이 결정규칙의 CI를 t-CI(또는 동등한
+   커버리지 보정)로 교체**하는 것을 새 선행조건으로 등재한다(engine-porter
+   구현 소관, 여기선 게이트 등재만). 상세 `reports/CONSENSUS.md` §1-1
+   (rev13)·§3 항목27.
    - **E2**: ctx∈{1024,4096,16384}로 확장, t0 패치된
      `workspace/engine-port/results/s8_scaleup/s0dc_client.py` 사용.
    - **E3**: duty-cycle 2수준(짧은 keepalive vs 긴 keepalive) 설계상 종결 —
@@ -1991,14 +2098,37 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     우선순위순)** — 위 "확정된 결과" 1번/`reports/CONSENSUS.md` §1-1의
     P1 감사(jobs 873944/873945)가 연 4개 gate. 새 성능 판정 없음, 각
     gate 자체가 판정 대상.
-    - **Gate 1 — telemetry 재현런(≈0.2 GPU-hr, 즉시 가능)**: agnostic
-      1 rep, `PDMUX_TELEMETRY_PATH` 설정, rate {2,3}. 산출 = realized
-      `(prefill_sms, decode_sms)` 시간가중 residency + split 전이 수.
-      **사전등록 판정**: decode-busy ∧ prefill in-flight 구간의
-      realized split ≥90%가 `(74,34)`/`(54,54)`면 §1-1의 파티션·기전
-      금지 문구 부분 해금, 아니면 §1-22(green-context auto-revert)가
-      지배 ⇒ 기전을 "SM 분할"이 아니라 "동시 실행 경로"로 다시 써야
-      한다.
+    - ~~**Gate 1 — telemetry 재현런**~~ → ✅**완료(2026-08-06, job
+      874478) — claims-auditor 감사, 조건부 채택[진단 전용, 새 성능
+      판정 0건].** decode-busy ∧ prefill-in-flight 구간의 시간가중
+      selector 라벨 100.00%가 `(74,34)`(`(54,54)`는 이 격자에서
+      0회 선택). §1-1의 파티션·기전 금지 문구는 **부분·조건부
+      해금**(Zamba2 rate{2,3}·agnostic v1·cudagraph-ON, selector-level
+      한정) — rate 4·6·Granite는 여전히 미측정·여전히 금지, "PD
+      분리 자체" 기전 귀속은 Gate 2 소관으로 불변. 전문
+      `CONSENSUS.md` §1-1 Gate 1 블록·§3 항목28·29, 원자료
+      `workspace/engine-port/results/p1_gates/gate1/`. 이 gate가
+      연 후속 4개:
+      - **G1-a**(≈0.2 GPU-hr, engine-porter): `multiplexing_mixin.py:
+        1005`/`:1080` 사이에 관측 전용 sync 1회 추가 ⇒ "prefill
+        in-flight ∧ stale idx"가 관측 가능해져 주 조건에 판별력이
+        생긴다. 결정량 = 어드미션-후/adjust-전 구간의 시간 비율과
+        절대 ms.
+      - **G1-b**(≈0.2 GPU-hr): 같은 하네스에 rate 4·6 창 추가.
+        결정량 = `max(decode_running_batch_size) ≥ 36` 여부 + pop A
+        시간가중 hist. **`(54,54)`가 등장하면 위 "단일 분할"
+        문장 즉시 철회.**
+      - **G1-c**: Granite(873945 복제) — Granite 전체 미측정 상태
+        해소.
+      - **G1-d**: S3 하드웨어 프로브(`%smid` 샘플링 / CUPTI) —
+        selector-level→hardware-level 격상.
+      - **하네스**: `gate1_analyze.py`에 grid-completeness 검정
+        상시화(`trace_forced==False ⟹ si==1 ∨ si%TRACE_EVERY==0`,
+        결측 수 출력) — coverage guard는 꼬리만 잡고 중간 구멍을
+        못 잡는다(이번 "유실 없음"의 실제 근거는 coverage가 아니라
+        이 검정이었다, 결측 0/22,252). engine-porter 이관:
+        `telemetry.py`의 `writer_error` 로깅 + SIGKILL 경로에서
+        미호출되는 `close()`.
     - **Gate 2 — 4-arm 분해(1 job/모델, ≈1.5 GPU-hr)**: arm =
       {`plain`, `plain+chunked-1+no-overlap`, `plain+chunked512`,
       `agnostic`} × rate **{2,3}**(+선택 4) × n=5, 동일 seed·노드·job.
@@ -2021,7 +2151,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
-## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설)
+## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응])
 
 Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3),
 E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠페인에서 나온
@@ -2186,6 +2316,24 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
    이번은 런 전체의 결과 게이트 집합이 구조적으로 공집합이라는 더 넓은
    형태다. 상세 `CONSENSUS.md` §1-31·§3-23, `workspace/engine-port/
    results/s2_sticky/S2_REPLICATION_2026-08-05.md` §7.
+   ★★★★★**다섯 번째 재발(2026-08-06, Gate 1, job 874478) — 사전등록이
+   실행 전에 "이건 항등식에 가깝다"고 자수했는데도 그 게이트로 판정을
+   냈다. 자수는 면죄가 아니다.** `PREREG_GATE1_2026-08-06.md`는 제출
+   전부터 코드를 직접 추적해 `adjust_stream_groups()`의 분기 구조상
+   "decode-busy ∧ prefill in-flight"가 곧 `idx∈{1,2}`와 사실상
+   동치임을 스스로 기록했다(§"게이트가 항등식인가"). 그런데도 그
+   조건으로 job 874478을 돌리고 시간가중 100.00%를 "실질 산출"로
+   보고했다. **이전 네 번과 다른 각도**: 이전에는 사후에(결과를 본 뒤)
+   항등식임이 드러났지만, 이번엔 **사전등록 문서 자신이 실행 전에
+   항등식 위험을 명시적으로 자백**했는데도 "그래도 돌린다"는 판단이
+   그 자백을 판정의 면책 사유로 썼다. **항등식임이 사전에 확인되면
+   게이트를 고치거나 실험을 바꿔야지, 자수만 해두고 원안대로
+   실행해서는 안 된다.** 이 job이 그나마 정보를 준 것은 주 조건이
+   아니라 여집합 두 갈래(B/C, 아래 #10)였다는 사실이 이 교훈을
+   뒷받침한다 — 판별력은 자수한 항등식 조건이 아니라 자수하지 않은
+   부분에서 나왔다. 상세 `CONSENSUS.md` §1-1(Gate 1 블록)·§3 항목28,
+   `workspace/engine-port/results/p1_gates/gate1/
+   PREREG_GATE1_2026-08-06.md` §"게이트가 항등식인가".
 10. ★★★**(2026-08-03, 같은 날 4차 속행) 여집합 클래스에 음성대조를
     걸어라 — #7과 뿌리는 같고 방향은 반대.** 이 자료를 세 차례(원
     C2→`G_LEVER` 감사, 첫 §0 axis check, 이 세션 자신의 첫 프레이밍)
@@ -2231,3 +2379,40 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     **기전 주장**("원인은 X 플래그다")은 분해 arm(각 플래그를 개별
     적용한 중간 arm) 없이는 불가하다. 상세 `CONSENSUS.md` §1-1,
     `results/p1_opint/P1_OPINT_RESULT_2026-08-05.md` §5-2.
+14. ★★★★**(2026-08-06, claims-auditor Gate 2 설계 감사 2회 +
+    result-analyst 독립 재현) n≤8 반복에서 `paired_bootstrap_ci`/
+    `unpaired_bootstrap_ci`(`benchmarks/pdmux_eval/analyze.py:115-142`)
+    의 구간을 판정에 쓰지 않는다 — primary는 t-CI, bootstrap은
+    병기만.** n=5 percentile bootstrap of the mean(BCa·studentization
+    없음)의 실 coverage는 **0.840**(100k trial MC)뿐이라 명목 95%의
+    한쪽 오류율이 **≈8.0%**(명목 3.2배)다 — 원인은 seed 고정도 정규
+    가정도 아니라 **n=5 그 자체**(n=4 coverage 0.798/n=6 0.859/n=8
+    0.888, seed를 풀어도 0.8397로 불변). `unpaired_bootstrap_ci`도
+    동일 결함(n=4/arm 0.8556, Welch t 0.9590). **n=5 paired 정확
+    부호뒤집기 순열검정의 두측 p 하한 = 2/32=0.0625**이므로 n=5
+    paired 셀은 분포무가정으로 p<0.05에 원리적으로 도달 불가하다.
+    ★**이미 저장소 안에 같은 진단이 두 번 독립으로 존재했다**
+    (`results/s8_frontier/m3_analyze.py`·`results/e1_traceforce/
+    tfgate_analyze.py`가 각자 로컬로 t-CI 채택) — 정본 라이브러리와
+    P1 판정서에는 반영되지 않고 있었다는 뜻이며, 이는 통계 문제가
+    아니라 **도구 규율 실패**다. 재채점 결과(P1 §1-1)와 E1 사전등록
+    결정 규칙 제출 선행조건은 "다음 실험 gate" #8 참조. 상세
+    `CONSENSUS.md` §1-1(rev13)·§3 항목27, 원자료 `workspace/
+    engine-port/results/p1_gates/verify/`.
+15. ★★★★★**(2026-08-06, Gate 1, job 874478, claims-auditor) 시간가중
+    step-function 추정량의 두 가지 함정 — 둘 다 이번에 실증.**
+    (i) **케이던스 불변성을 물리적 불변성의 증거로 쓰지 마라(항등식).**
+    샘플링 케이던스를 k배 성기게 하면 이벤트 수는 대략 ÷k, 행당 dt는
+    대략 ×k가 되어 시간가중 합(Σ count×dt)이 근사적으로 불변한다 —
+    `gate1_analyze.py`의 음성대조 C에서 "케이던스 8↔32에서 불변"이라는
+    관측은 이 산술 항등식의 재현일 뿐, 서버의 실제 동작이 케이던스에
+    둔감하다는 증거가 아니다. (ii) **행의 dt를 "다음 기록 행까지"로
+    주면 비인접 구간이 오염된다.** 스냅샷 간격이 서브샘플링으로
+    벌어지면 마지막 스냅샷의 "지속 시간"이 그 뒤에 일어난 다른 상태
+    전이까지 흡수한다 — pop A의 `t_total`이 이 오염으로 rate2에서
+    35.0%(8.83 s/90 스텝, 단일 최대 1282.8 ms), rate3에서 23.7%
+    부풀려졌다. `frac`(비율)은 분자·분모가 같은 오염을 공유해 상쇄
+    되므로 강건하지만, **`t_total`(절대량)은 강건하지 않다** — 절대
+    시간을 인용할 때는 오염 방향과 크기를 반드시 병기한다. 상세
+    `CONSENSUS.md` §1-1(Gate 1 블록)·§3 항목29, 원자료
+    `workspace/engine-port/results/p1_gates/gate1/gate1_analyze.py`.
