@@ -32,3 +32,18 @@ external/
 # keep engine-port env docs (root .gitignore ignores env/)
 !env/
 !env/**
+
+# p1_gates raw-dump policy (2026-08-06): raw serving artifacts follow the
+# project-wide "harness + verdict tracked, raw not" convention above (the
+# blanket *.jsonl/*.log/*.out/*.err rules already cover gate1's telemetry
+# dumps, bench_serving JSONL, and SLURM stdout/stderr, and **/.triton_cache*/
+# already covers the per-job Triton caches — see gate1_run.sbatch's own
+# "same scope discipline as m3r2_pinforce.sbatch" note). Two narrow
+# exceptions are carved back in because they are evidentiary, not raw: the
+# Gate 1 server logs are cited by line number in reports/CONSENSUS.md
+# (`gate1_srv_874478.log:32` is the partition-table citation), and the
+# verify/ logs are the reproduction output substantiating the rev13 P1
+# bootstrap-CI coverage correction — both are small, human-authored-scale
+# outputs, not multi-MB per-request telemetry.
+!results/p1_gates/gate1/gate1_srv_*.log
+!results/p1_gates/verify/*.log
