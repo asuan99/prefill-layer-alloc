@@ -1,0 +1,23 @@
+=== GATE1 window rate=2 t0=12695439.654496 t1=12695555.082137 n_rows=86404 ===
+GATE1_POP rate2_A(decode-busy AND prefill in-flight): n_snapshots=1656 n_episodes=57 t_total_s=17.542 target=[(54, 54), (74, 34)]
+GATE1_FRAC rate2_A time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate2_A (time-weighted): P74D34:17.542s(100%)
+GATE1_CADENCE rate2_A: median_sample_index_gap=1 n_gaps=1655 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+GATE1_POP rate2_B(decode-idle): n_snapshots=83927 n_episodes=21 t_total_s=66.095 target=[(108, 0)]
+GATE1_FRAC rate2_B time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate2_B (time-weighted): P108D0:66.095s(100%)
+GATE1_CADENCE rate2_B: median_sample_index_gap=8.0 n_gaps=83926 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+GATE1_POP rate2_C(decode-busy, prefill NOT in-flight): n_snapshots=821 n_episodes=73 t_total_s=31.790 target=[(0, 108)]
+GATE1_FRAC rate2_C time_weighted=0.9722 count_weighted=0.9720 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate2_C (time-weighted): P0D108:30.907s(97%), P74D34:0.748s(2%), P108D0:0.134s(0%)
+GATE1_CADENCE rate2_C: median_sample_index_gap=8.0 n_gaps=820 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+=== GATE1 window rate=3 t0=12695556.862806 t1=12695604.014174 n_rows=0 ===
+GATE1_EMPTY_WINDOW rate=3 -- no benchmark-phase runtime_snapshot rows
+=== GATE1 POOLED (sum of durations across windows, time-weighted) ===
+GATE1_POOLED_A: t_total_s=17.542 n_episodes=57 n_snapshots=1656 frac_target=1.0000 hist=P74D34:17.542s(100%)
+GATE1_POOLED_B: t_total_s=66.095 n_episodes=21 n_snapshots=83927 frac_target=1.0000 hist=P108D0:66.095s(100%)
+GATE1_POOLED_C: t_total_s=31.790 n_episodes=73 n_snapshots=821 frac_target=0.9722 hist=P0D108:30.907s(97%), P74D34:0.748s(2%), P108D0:0.134s(0%)
+GATE1_PER_RATE: [('2', 'UNLOCK-eligible'), ('3', 'UNMEASURABLE(empty window)')]
+GATE1_VERDICT: UNMEASURABLE(empty window)
+GATE1_REASON: per-rate stricter-wins rule: rate=3 verdict=UNMEASURABLE(empty window)
+GATE1_CAVEAT: PASS/UNLOCK does NOT establish hardware-level SM partitioning (selector-level only, S3 hardware probe not run). See PREREG sec '게이트가 항등식인가' for the code-path identity risk that MUST be cited alongside any use of this verdict.

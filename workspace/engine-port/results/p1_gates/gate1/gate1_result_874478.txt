@@ -1,0 +1,36 @@
+GATE1_COVERAGE rate=2: telemetry_coverage=100.00% (window=[12696857.903165,12696947.592277] span=89.68911200016737, first_row_ts=12696857.905089952, last_row_ts=12696947.591925109, missing_tail_s=0.0003518909215927124) -- ALWAYS printed regardless of pass/fail (2026-08-06 coverage-guard addendum, see module docstring)
+=== GATE1 window rate=2 t0=12696857.903165 t1=12696947.592277 n_rows=26455 ===
+GATE1_POP rate2_A(decode-busy AND prefill in-flight): n_snapshots=2010 n_episodes=57 t_total_s=25.219 target=[(54, 54), (74, 34)]
+GATE1_FRAC rate2_A time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate2_A (time-weighted): P74D34:25.219s(100%)
+GATE1_CADENCE rate2_A: median_sample_index_gap=1 n_gaps=2009 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+GATE1_POP rate2_B(decode-idle): n_snapshots=24178 n_episodes=27 t_total_s=29.252 target=[(108, 0)]
+GATE1_FRAC rate2_B time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate2_B (time-weighted): P108D0:29.252s(100%)
+GATE1_CADENCE rate2_B: median_sample_index_gap=1 n_gaps=24177 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+GATE1_POP rate2_C(decode-busy, prefill NOT in-flight): n_snapshots=267 n_episodes=73 t_total_s=35.217 target=[(0, 108)]
+GATE1_FRAC rate2_C time_weighted=0.9708 count_weighted=0.9738 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate2_C (time-weighted): P0D108:34.189s(97%), P74D34:0.893s(3%), P108D0:0.134s(0%)
+GATE1_CADENCE rate2_C: median_sample_index_gap=32.0 n_gaps=266 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+GATE1_COVERAGE rate=3: telemetry_coverage=99.99% (window=[12696949.098031,12696995.701196] span=46.60316500067711, first_row_ts=12696949.098792512, last_row_ts=12696995.699352713, missing_tail_s=0.0018432866781949997) -- ALWAYS printed regardless of pass/fail (2026-08-06 coverage-guard addendum, see module docstring)
+=== GATE1 window rate=3 t0=12696949.098031 t1=12696995.701196 n_rows=8997 ===
+GATE1_POP rate3_A(decode-busy AND prefill in-flight): n_snapshots=1810 n_episodes=21 t_total_s=26.676 target=[(54, 54), (74, 34)]
+GATE1_FRAC rate3_A time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate3_A (time-weighted): P74D34:26.676s(100%)
+GATE1_CADENCE rate3_A: median_sample_index_gap=1 n_gaps=1809 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+GATE1_POP rate3_B(decode-idle): n_snapshots=7134 n_episodes=4 t_total_s=11.306 target=[(108, 0)]
+GATE1_FRAC rate3_B time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate3_B (time-weighted): P108D0:11.306s(100%)
+GATE1_CADENCE rate3_B: median_sample_index_gap=32 n_gaps=7133 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+GATE1_POP rate3_C(decode-busy, prefill NOT in-flight): n_snapshots=53 n_episodes=21 t_total_s=8.620 target=[(0, 108)]
+GATE1_FRAC rate3_C time_weighted=0.9779 count_weighted=0.9434 (count secondary only, force-prefill biases it -- see PREREG)
+GATE1_HIST rate3_C (time-weighted): P0D108:8.430s(98%), P74D34:0.191s(2%)
+GATE1_CADENCE rate3_C: median_sample_index_gap=32.0 n_gaps=52 (event-loop iterations skipped between recorded snapshots WITHIN this population -- large values = coarse cadence, see S0/S2 sampling-cadence mechanism)
+=== GATE1 POOLED (sum of durations across windows, time-weighted) ===
+GATE1_POOLED_COVERAGE_NOTE: pooled histograms below are computed from WHATEVER rows exist per window (same as before the coverage guard) -- the coverage guard acts on the PER-RATE VERDICT (via the stricter-wins rule), not by silently dropping/reweighting pooled data. A pooled number sitting on a partial-coverage window is a biased estimate of the full window and must be read together with GATE1_VERDICT, which will already reflect any coverage failure.
+GATE1_POOLED_A: t_total_s=51.895 n_episodes=78 n_snapshots=3820 frac_target=1.0000 hist=P74D34:51.895s(100%)
+GATE1_POOLED_B: t_total_s=40.557 n_episodes=31 n_snapshots=31312 frac_target=1.0000 hist=P108D0:40.557s(100%)
+GATE1_POOLED_C: t_total_s=43.837 n_episodes=94 n_snapshots=320 frac_target=0.9722 hist=P0D108:42.619s(97%), P74D34:1.084s(2%), P108D0:0.134s(0%)
+GATE1_PER_RATE: [('2', 'UNLOCK-eligible'), ('3', 'UNLOCK-eligible')]
+GATE1_VERDICT: UNLOCK
+GATE1_CAVEAT: PASS/UNLOCK does NOT establish hardware-level SM partitioning (selector-level only, S3 hardware probe not run). See PREREG sec '게이트가 항등식인가' for the code-path identity risk that MUST be cited alongside any use of this verdict.
