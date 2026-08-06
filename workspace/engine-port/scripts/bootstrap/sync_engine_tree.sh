@@ -52,6 +52,17 @@ for source in \
   install -D -m 0644 "${source}" "${target}"
 done
 
+# Zamba2 (Zyphra/Zamba2-*): NEW config + model files (dev_tree_edits.md items 1-2).
+# Brought under sync + manifest on 2026-08-04 with the per-layer-type timing
+# rework, so the instrumentation that produces ZBLT2 lines is reproducible from
+# the tracked source instead of a manual copy. The remaining hybrids
+# (nemotron_h / falcon_h1 / granitemoehybrid) are still manual copies -- see
+# dev_tree_edits.md items 6, 8, 9.
+install -D -m 0644 "${track_root}/src/configs/zamba2.py" \
+  "${runtime_python}/sglang/srt/configs/zamba2.py"
+install -D -m 0644 "${track_root}/src/models/zamba2.py" \
+  "${runtime_python}/sglang/srt/models/zamba2.py"
+
 # Pure Mamba2 (state-spaces/mamba2-*) Stage 0 negative-control arm: install the
 # NEW config + model files, then apply the tracked arch-registration patch
 # (configs/__init__, hf_transformers_utils registry, server_args dispatch,
@@ -79,6 +90,8 @@ sha256sum \
   "${runtime_python}/sglang/srt/multiplex/telemetry.py" \
   "${runtime_python}/sglang/srt/configs/mamba2.py" \
   "${runtime_python}/sglang/srt/models/mamba2.py" \
+  "${runtime_python}/sglang/srt/configs/zamba2.py" \
+  "${runtime_python}/sglang/srt/models/zamba2.py" \
   "${runtime_python}/sglang/srt/server_args.py" \
   "${runtime_python}/sglang/srt/model_executor/model_runner_kv_cache_mixin.py" \
   "${runtime_python}/sglang/srt/mem_cache/memory_pool.py" \

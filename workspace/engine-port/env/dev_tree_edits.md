@@ -208,3 +208,58 @@ empty `v_buffer` (0 full-attention layers) => `get_value_buffer(0)` IndexErrors 
     other `get_v_head_dim` caller is aiter_backend.py (AMD, unused on A100).
     Appended to `src/patches/mamba2_pure_ssm_arch.patch`; memory_pool.py added to
     the sync SHA-256 manifest.
+
+## P5 instrumentation rework — Zamba2 per-layer-type timing (2026-08-04)
+
+Audit of job 858811 (`results/r0c/decode_knee_vs_ctx.*`) confirmed three
+**instrumentation** defects. **Model numerics unchanged** — this edit touches
+measurement only.
+
+17. `models/zamba2.py` — instrumentation rewritten (item 2 still covers re-apply,
+    and the file is now **installed by `sync_engine_tree.sh` and in the SHA-256
+    manifest**, so it is no longer a manual copy):
+    - **Buckets symmetrised.** `_ZT_BUCKETS = ("attn","mlp","other","mamba")`,
+      disjoint and covering the layer loop. `attn` = the WHOLE
+      `Zamba2Attention.forward` (qkv_proj + adapters + core + o_proj), wrapped
+      from `Zamba2AttentionDecoderLayer.forward`; `mlp` = the whole
+      `Zamba2MLP.forward`; `other` = layernorms, the concat, the hybrid
+      `.linear`, the residual adds and the output alloc; `mamba` = the whole
+      `MambaMixer2` call (**definition unchanged** => mamba numbers stay
+      comparable with 858811). Pre-fix, `attn` covered only the RadixAttention
+      core and everything else was unbucketed.
+    - **`_ZT_DIAG = ("attn_core",)`** reproduces the pre-fix `attn` definition,
+      NESTED inside `attn` and EXCLUDED from the closure sum, so old and new runs
+      can be compared directly.
+    - **Closure gate.** A separate event pair times the whole layer loop;
+      `closure = sum(_ZT_BUCKETS)/loop` is emitted per block and per mode, and a
+      `ZBLT_CLOSURE_FAIL` warning fires below `SGLANG_ZAMBA_CLOSURE_MIN`
+      (default 0.95). Deliberately NOT a timeline partition (that would be an
+      identity, cf. methodology gate on identity-valued gates).
+    - **Block accumulator.** `self._zt_blk` is reset at EVERY emit; the legacy
+      running mean (`self._zt_acc`, reset only on mode change) is KEPT and
+      emitted alongside, so pre-fix reports stay reproducible.
+    - **Shape guard.** `(bs, ntok)` is read every timed forward; a block whose
+      shape changes is emitted with `dirty=1`.
+    - **`SGLANG_ZAMBA_TIMING_EVERY`** overrides the emit period (legacy default
+      30 decode / 4 prefill forwards).
+    - **Emit tag is now `ZBLT2` / `ZBPT2`.** The `attn` bucket means something
+      different, so a pre-2026-08-04 `grep "ZBLT mode="` must MISS rather than
+      silently read a redefined quantity. Consequence: these existing harnesses
+      produce EMPTY result lines if rerun and need their grep updated first —
+      `results/r0c/decode_knee_vs_ctx.sbatch` (superseded, banner added),
+      `results/r0c/r0c_knee_isolate.sbatch`, `triage/p1_4_zamba2_ctxsens.sbatch`,
+      `triage/p1_7_zb_smsens.sbatch`, `results/prefill_knee/prefill_knee.sbatch`,
+      `results/prefill_knee/knee2d.sbatch`, `results/prefill_knee/knee2d_wide.sbatch`
+      (+ `analyze_knee2d_wide.py`).
+    - Instrumentation-OFF path short-circuits on a single `_ZT["on"]` dict read
+      per layer (no lambda allocation, statement sequence unchanged); CUDA events
+      are pooled/recycled; the layer loop is wrapped in `try/finally` so a raising
+      layer cannot leave the global timing flag set.
+
+    Harness: `results/r0c/decode_knee_vs_ctx_v2.sbatch` (randomised SM-arm order
+    from a recorded seed, one discarded warm-up round per arm, all block emits
+    kept, per-cell closure + O(1)-in-ctx negative-control record, 4 ctx x 5 SM x
+    n=3). Analyzer `results/r0c/analyze_decode_knee_vs_ctx_v2.py` refuses to print
+    a knee unless both gates pass. GPU correctness gate (prepared, unsubmitted):
+    `results/r0c/zamba2_timing_smoke.sbatch`. CPU regression:
+    `tests/test_zamba2_instrumentation.py`.

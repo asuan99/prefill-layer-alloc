@@ -43,19 +43,125 @@ from sglang.srt.model_executor.forward_batch_info import ForwardBatch
 from sglang.srt.model_loader.weight_utils import default_weight_loader
 from sglang.srt.utils import add_prefix
 
-# --- measurement instrumentation (env-gated; attn vs mamba decode timing) ---
-_ZT = {"attn": [], "mamba": [], "on": False}
+# --- measurement instrumentation (env-gated; per-layer-type decode/prefill timing) ---
+#
+# 2026-08-04 REWORK (two audited instrumentation defects in job 858811):
+#   (1) BUCKET ASYMMETRY. "attn" wrapped only the RadixAttention core while
+#       "mamba" wrapped the whole MambaMixer2 call; qkv_proj/o_proj/MLP/layernorm
+#       and the hybrid `.linear` were in NO bucket. The two buckets were therefore
+#       not comparable and their sum was far below the forward.
+#   (2) RUNNING-MEAN ACCUMULATOR. `_zt_acc` reset only on mode change, never at
+#       emit, so every emitted value carried cold-start forever (and the harness
+#       took `tail -1` = the largest n = the most cold-start-diluted sample).
+#
+# Fixes here: DISJOINT buckets that together cover the layer loop, plus a CLOSURE
+# GATE, plus block-scoped accumulation alongside the legacy running mean.
+#
+#   closure = sum(_ZT_BUCKETS spans) / (separate event pair around the whole layer loop)
+#
+# The gate is deliberately NOT a timeline partition: consecutive segments that
+# tile an interval by construction would make the ratio an identity and the gate
+# vacuous (cf. project methodology gate on identity-valued gates). Each bucket
+# span carries its OWN start/end pair, and the denominator is an INDEPENDENT pair,
+# so unbucketed work inside the loop shows up as closure < 1. Defect (1) would
+# have produced closure ~ 0.2-0.5 and been caught at the first emit.
+#
+# _ZT_DIAG buckets are NESTED inside _ZT_BUCKETS entries (diagnostic only) and are
+# excluded from the closure sum. "attn_core" reproduces the pre-2026-08-04 "attn"
+# definition so old and new reports can be compared directly.
+#
+# LIMITATIONS (unchanged from the pre-2026-08-04 version, stated here so they are
+# not rediscovered): `_ZT` is module-global, so a true-dual-worker runtime with two
+# host issue threads would interleave spans from two forwards. This path is for
+# single-worker offline composition measurement only. Closure below 1 also absorbs
+# inter-span launch gaps (eager mode, ~200 spans/forward), so the threshold must be
+# CALIBRATED against an observed run before it is treated as a defect detector --
+# a defect-1-style miss is ~0.2-0.5, event overhead is a few percent.
+_ZT_BUCKETS = ("attn", "mlp", "other", "mamba")
+_ZT_DIAG = ("attn_core",)
+_ZT = {
+    "on": False,
+    "spans": {b: [] for b in _ZT_BUCKETS + _ZT_DIAG},
+    "pool": [],
+    "pool_n": 0,
+}
+
+
+def _zt_event():
+    """Hand out a recycled cuda Event. Events are re-recorded every timed forward
+    and only read after `torch.cuda.synchronize()` inside that same forward, so
+    reuse is safe and keeps ~400 allocations/step off the measured path."""
+    pool = _ZT["pool"]
+    i = _ZT["pool_n"]
+    if i == len(pool):
+        pool.append(torch.cuda.Event(enable_timing=True))
+    _ZT["pool_n"] = i + 1
+    return pool[i]
+
+
+def _zt_reset():
+    for spans in _ZT["spans"].values():
+        spans.clear()
+    _ZT["pool_n"] = 0
+
+
+def _zt_begin(bucket):
+    """Open a span. Call sites guard with `if _ZT["on"]:` so the instrumentation-OFF
+    path costs one dict read per layer and runs the original statement sequence
+    unchanged (no lambda allocation, no extra call)."""
+    if not _ZT["on"]:
+        return None
+    s = _zt_event()
+    s.record()
+    return (bucket, s)
+
+
+def _zt_end(tok):
+    if tok is None or not _ZT["on"]:
+        return
+    e = _zt_event()
+    e.record()
+    _ZT["spans"][tok[0]].append((tok[1], e))
+
+
+def _zt_new_block():
+    """Block accumulator, reset at EVERY emit (defect (2) fix)."""
+    d = {"n": 0, "total": 0.0, "closure_min": float("inf"), "shape": None, "dirty": 0}
+    for b in _ZT_BUCKETS + _ZT_DIAG:
+        d[b] = 0.0
+    return d
+
+
+def _zt_block_update(blk, fwd, fwd_total, shape):
+    """Fold one forward into `blk`; return that forward's closure ratio.
+
+    closure counts _ZT_BUCKETS only: _ZT_DIAG spans are nested inside them and
+    would double-count. `shape` = (nseq, ntok) of this forward; a block whose
+    shape changes mid-flight is flagged `dirty` (pre-fix the LAST forward's shape
+    was reported for the whole window)."""
+    closure = (
+        sum(fwd[b] for b in _ZT_BUCKETS) / fwd_total if fwd_total > 0 else float("nan")
+    )
+    blk["n"] += 1
+    blk["total"] += fwd_total
+    for b, v in fwd.items():
+        blk[b] += v
+    if closure == closure and closure < blk["closure_min"]:  # NaN-safe
+        blk["closure_min"] = closure
+    if blk["shape"] is None:
+        blk["shape"] = shape
+    elif blk["shape"] != shape:
+        blk["dirty"] = 1
+    return closure
 
 
 def _zt(bucket, fn):
+    """Legacy callable form (kept for API compatibility); OFF path = bare call."""
     if not _ZT["on"]:
         return fn()
-    s = torch.cuda.Event(enable_timing=True)
-    e = torch.cuda.Event(enable_timing=True)
-    s.record()
+    tok = _zt_begin(bucket)
     out = fn()
-    e.record()
-    _ZT[bucket].append((s, e))
+    _zt_end(tok)
     return out
 
 
@@ -160,7 +266,13 @@ class Zamba2Attention(nn.Module):
             k = k + self.linear_k_adapter_list[block_idx](hidden_states)
             v = v + self.linear_v_adapter_list[block_idx](hidden_states)
         # PARITY: use_mem_rope=False for 2.7B; rope omitted (add get_rope if True).
-        attn_output = _zt("attn", lambda: self.dpa_list[block_idx].forward(q, k, v, forward_batch))
+        # "attn_core" is the DIAGNOSTIC (nested) bucket = exactly what pre-2026-08-04
+        # "attn" measured. The accounted "attn" bucket wraps this whole method from
+        # the caller (qkv_proj + adapters + core + o_proj).
+        _tok = _zt_begin("attn_core") if _ZT["on"] else None
+        attn_output = self.dpa_list[block_idx].forward(q, k, v, forward_batch)
+        if _tok is not None:
+            _zt_end(_tok)
         y, _ = self.o_proj(attn_output)
         return y
 
@@ -220,11 +332,28 @@ class Zamba2AttentionDecoderLayer(nn.Module):
         self.pre_ff_layernorm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def forward(self, hidden_states, original_hidden_states, block_idx, forward_batch):
+        # Buckets (disjoint): concat+input_layernorm -> "other"; the WHOLE attention
+        # module (qkv_proj, adapters, core, o_proj) -> "attn"; pre_ff_layernorm ->
+        # "other"; the whole MLP -> "mlp". MLP/layernorm are NOT attributed to attn:
+        # there is no code-level basis for calling them attention work.
+        _on = _ZT["on"]
+        _tok = _zt_begin("other") if _on else None
         hidden_states = torch.concatenate([hidden_states, original_hidden_states], dim=-1)
         hidden_states = self.input_layernorm(hidden_states)
+        if _on:
+            _zt_end(_tok)
+            _tok = _zt_begin("attn")
         hidden_states = self.self_attn(hidden_states, block_idx, forward_batch)
+        if _on:
+            _zt_end(_tok)
+            _tok = _zt_begin("other")
         hidden_states = self.pre_ff_layernorm(hidden_states)
+        if _on:
+            _zt_end(_tok)
+            _tok = _zt_begin("mlp")
         hidden_states = self.feed_forward(hidden_states, block_idx)
+        if _on:
+            _zt_end(_tok)
         return hidden_states
 
 
@@ -249,6 +378,11 @@ class Zamba2MambaDecoderLayer(nn.Module):
         self.input_layernorm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def forward(self, hidden_states, forward_batch, transformer_hidden_states=None):
+        # Buckets: residual add + input_layernorm + output alloc -> "other";
+        # the whole MambaMixer2 call -> "mamba" (definition UNCHANGED since 858811,
+        # so the mamba numbers stay directly comparable); trailing residual -> "other".
+        _on = _ZT["on"]
+        _tok = _zt_begin("other") if _on else None
         residual = hidden_states
         if transformer_hidden_states is not None:
             hidden_states = hidden_states + transformer_hidden_states
@@ -256,14 +390,23 @@ class Zamba2MambaDecoderLayer(nn.Module):
 
         output = torch.empty_like(hidden_states)
         attn_backend = forward_batch.attn_backend
-        _zt("mamba", lambda: attn_backend.linear_attn_backend.forward(
+        if _on:
+            _zt_end(_tok)
+            _tok = _zt_begin("mamba")
+        attn_backend.linear_attn_backend.forward(
             mixer=self.mamba,
             layer_id=self.layer_id,
             hidden_states=hidden_states,
             output=output,
             use_triton_causal_conv=True,
-        ))
-        return residual + output
+        )
+        if _on:
+            _zt_end(_tok)
+            _tok = _zt_begin("other")
+        out = residual + output
+        if _on:
+            _zt_end(_tok)
+        return out
 
 
 class Zamba2HybridLayer(nn.Module):
@@ -285,7 +428,11 @@ class Zamba2HybridLayer(nn.Module):
         transformer_hidden_states = self.shared_transformer(
             hidden_states, original_hidden_states, self.block_idx, forward_batch,
         )
+        # hybrid projection: its own span in "other" (not attention, not mamba).
+        _tok = _zt_begin("other") if _ZT["on"] else None
         transformer_hidden_states, _ = self.linear(transformer_hidden_states)
+        if _tok is not None:
+            _zt_end(_tok)
         return self.mamba_decoder(
             hidden_states, forward_batch, transformer_hidden_states=transformer_hidden_states,
         )
@@ -330,6 +477,17 @@ class Zamba2Model(nn.Module):
                 )
         self.layers = nn.ModuleList(layers)
         self.final_layernorm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        # measured layer counts for the per-layer divisors (2.7B: 9 attn / 54 mamba).
+        # Read from the built model instead of hard-coding 9/54, so the 1.2B/7B
+        # configs report per-layer numbers against their own counts.
+        self._zt_n_attn = sum(1 for l in layers if isinstance(l, Zamba2HybridLayer))
+        self._zt_n_mamba = len(layers)
+        self._zt_acc = {b: 0.0 for b in _ZT_BUCKETS + _ZT_DIAG}
+        self._zt_acc_total = 0.0
+        self._zt_n = 0
+        self._zt_mode = None
+        self._zt_blk = _zt_new_block()
+        self._zt_blk_idx = 0
 
     def _get_gctx_decode_stream(self, n_sm: int):
         if not hasattr(self, "_gctx_streams"):
@@ -385,13 +543,19 @@ class Zamba2Model(nn.Module):
             _fixed = int(_os.environ.get("PDMUX_AGN2_SM", "16"))
         _timing = bool(_os.environ.get("SGLANG_ZAMBA_TIMING")) and _phase
         if _timing:
+            _zt_reset()
             _ZT["on"] = True
-            _ZT["attn"] = []
-            _ZT["mamba"] = []
             if getattr(self, "_zt_mode", None) != _mode:
-                self._zt_acc = {"attn": 0.0, "mamba": 0.0}
+                # LEGACY accumulator: running mean since the last mode change,
+                # reset ONLY here. Kept (not removed) so pre-2026-08-04 reports
+                # remain reproducible; the block accumulator below is the one that
+                # is reset at every emit.
+                self._zt_acc = {b: 0.0 for b in _ZT_BUCKETS + _ZT_DIAG}
+                self._zt_acc_total = 0.0
                 self._zt_n = 0
                 self._zt_mode = _mode
+                self._zt_blk = _zt_new_block()
+                self._zt_blk_idx = 0
         # decode SM policy per layer (race-safe: wait_stream at each switch carries
         # the layer i->i+1 data dependency + safety vs the default stream):
         #  - fixed-N: pin all decode layers to an N-SM partition.
@@ -426,48 +590,130 @@ class Zamba2Model(nn.Module):
                     return self._get_gctx_decode_stream(_la_floor)
             return _base
 
+        # closure-gate denominator: an INDEPENDENT event pair around the whole layer
+        # loop (not a tiling of the bucket spans -- see the _ZT header comment).
+        _zt_tot_s = _zt_event() if _timing else None
+        if _timing:
+            _zt_tot_s.record()
         _prev = _base
-        for layer in self.layers:
-            _t = _tgt(layer) if _phase else _base
-            if _t is not _prev:
-                _t.wait_stream(_prev)
-            with (torch.cuda.stream(_t) if _t is not _base else _cl.nullcontext()):
-                if isinstance(layer, Zamba2HybridLayer):
-                    hidden_states = layer(hidden_states, original_hidden_states, forward_batch)
-                else:
-                    hidden_states = layer(hidden_states, forward_batch)
-            _prev = _t
-        if _prev is not _base:
-            _base.wait_stream(_prev)
+        try:
+            for layer in self.layers:
+                _t = _tgt(layer) if _phase else _base
+                if _t is not _prev:
+                    _t.wait_stream(_prev)
+                with (torch.cuda.stream(_t) if _t is not _base else _cl.nullcontext()):
+                    if isinstance(layer, Zamba2HybridLayer):
+                        hidden_states = layer(hidden_states, original_hidden_states, forward_batch)
+                    else:
+                        hidden_states = layer(hidden_states, forward_batch)
+                _prev = _t
+            if _prev is not _base:
+                _base.wait_stream(_prev)
+        finally:
+            # never leave the global timing flag set if a layer raised (a stale
+            # `on` would silently instrument -- and mis-bucket -- later forwards).
+            if _timing:
+                _ZT["on"] = False
+        _zt_tot_e = _zt_event() if _timing else None
+        if _timing:
+            _zt_tot_e.record()
         out = self.final_layernorm(hidden_states)
         if _timing:
-            _ZT["on"] = False
             torch.cuda.synchronize()
-            for _s, _e in _ZT["attn"]:
-                self._zt_acc["attn"] += _s.elapsed_time(_e)
-            for _s, _e in _ZT["mamba"]:
-                self._zt_acc["mamba"] += _s.elapsed_time(_e)
+            _fwd_total = _zt_tot_s.elapsed_time(_zt_tot_e)
+            _fwd = {}
+            for _b, _spans in _ZT["spans"].items():
+                _a = 0.0
+                for _s, _e in _spans:
+                    _a += _s.elapsed_time(_e)
+                _fwd[_b] = _a
+            # shape guard: .shape reads are host-side (no device sync) so they run on
+            # EVERY timed forward. Pre-fix only the LAST forward's bs/ntok was reported
+            # and silently applied to the whole accumulation window.
+            try:
+                _nseq = int(forward_batch.seq_lens.shape[0]) if forward_batch.seq_lens is not None else -1
+            except Exception:
+                _nseq = -1
+            try:
+                _ntok = int(forward_batch.input_ids.shape[0]) if getattr(forward_batch, "input_ids", None) is not None else -1
+            except Exception:
+                _ntok = -1
+
             self._zt_n += 1
-            if self._zt_n % (4 if _pk else 30) == 0:  # prefill forwards are fewer than decode steps (gate low so large-B/short-L modes still emit)
+            self._zt_acc_total += _fwd_total
+            for _b, _v in _fwd.items():
+                self._zt_acc[_b] += _v
+            _blk = self._zt_blk
+            _zt_block_update(_blk, _fwd, _fwd_total, (_nseq, _ntok))
+
+            # emit period: legacy defaults (30 decode / 4 prefill forwards) unless
+            # SGLANG_ZAMBA_TIMING_EVERY is set. Smaller blocks -> more steady-state
+            # samples per arm and a shorter warm-up straddle.
+            try:
+                _every = int(_os.environ.get("SGLANG_ZAMBA_TIMING_EVERY", "0"))
+            except ValueError:
+                _every = 0
+            if _every <= 0:
+                _every = 4 if _pk else 30
+            if self._zt_n % _every == 0:
                 import logging as _lg
+                _log = _lg.getLogger("sglang.srt.models.zamba2")
                 n = self._zt_n
-                # observed batch of the LAST forward (nseq=#sequences, ntok=#tokens this
-                # forward) so the (B,L) knee sweep can key results on measured, not
-                # assumed, batch (guards the tiny-batch micro artifact). timing-branch only.
+                bn = max(_blk["n"], 1)
+                na = max(getattr(self, "_zt_n_attn", 0), 1)
+                nm = max(getattr(self, "_zt_n_mamba", len(self.layers)), 1)
+                _blk_sum = sum(_blk[_b] for _b in _ZT_BUCKETS)
+                _blk_closure = (_blk_sum / _blk["total"]) if _blk["total"] > 0 else float("nan")
+                _cum_closure = (
+                    sum(self._zt_acc[_b] for _b in _ZT_BUCKETS) / self._zt_acc_total
+                    if self._zt_acc_total > 0 else float("nan")
+                )
+                _sh = _blk["shape"] or (-1, -1)
+                # Tag is ZBLT2/ZBPT2, NOT ZBLT/ZBPT: the "attn" bucket definition
+                # changed (now the whole attention module), so a pre-2026-08-04
+                # parser must FAIL to match rather than silently read a different
+                # quantity. attn_core_* reproduces the old definition.
+                _log.warning(
+                    "%s mode=%s ctxlen=%s n=%d bs=%d ntok=%d"
+                    " | attn_total=%.3f mamba_total=%.3f"
+                    " | per-attn(%d)=%.4f per-mamba(%d)=%.4f"
+                    " | attn_core_total=%.3f per-attn_core(%d)=%.4f closure_cum=%.4f"
+                    " || blk=%d blk_n=%d dirty=%d shape=%dx%d"
+                    " closure=%.4f closure_min=%.4f fwd_ms=%.4f"
+                    " | b_attn=%.4f b_mlp=%.4f b_other=%.4f b_mamba=%.4f b_attn_core=%.4f"
+                    " | b_per_attn=%.5f b_per_mamba=%.5f b_per_attn_core=%.5f",
+                    ("ZBPT2" if _pk else "ZBLT2"),
+                    _mode,
+                    int(forward_batch.seq_lens.max().item()) if forward_batch.seq_lens is not None else -1,
+                    n, _nseq, _ntok,
+                    # LEGACY block: running mean since the last mode change (kept).
+                    self._zt_acc["attn"] / n, self._zt_acc["mamba"] / n,
+                    na, self._zt_acc["attn"] / n / na, nm, self._zt_acc["mamba"] / n / nm,
+                    self._zt_acc["attn_core"] / n, na, self._zt_acc["attn_core"] / n / na,
+                    _cum_closure,
+                    # BLOCK block: reset at every emit (this is the steady-state read).
+                    self._zt_blk_idx, _blk["n"], _blk["dirty"], _sh[0], _sh[1],
+                    _blk_closure, _blk["closure_min"], _blk["total"] / bn,
+                    _blk["attn"] / bn, _blk["mlp"] / bn, _blk["other"] / bn,
+                    _blk["mamba"] / bn, _blk["attn_core"] / bn,
+                    _blk["attn"] / bn / na, _blk["mamba"] / bn / nm,
+                    _blk["attn_core"] / bn / na,
+                )
                 try:
-                    _nseq = int(forward_batch.seq_lens.shape[0]) if forward_batch.seq_lens is not None else -1
-                except Exception:
-                    _nseq = -1
-                try:
-                    _ntok = int(forward_batch.input_ids.shape[0]) if getattr(forward_batch, "input_ids", None) is not None else -1
-                except Exception:
-                    _ntok = -1
-                _lg.getLogger("sglang.srt.models.zamba2").warning(
-                    "%s mode=%s ctxlen=%s n=%d bs=%d ntok=%d | attn_total=%.3f mamba_total=%.3f | per-attn(9)=%.4f per-mamba(54)=%.4f",
-                    ("ZBPT" if _pk else "ZBLT"),
-                    _mode, int(forward_batch.seq_lens.max().item()) if forward_batch.seq_lens is not None else -1,
-                    n, _nseq, _ntok, self._zt_acc["attn"]/n, self._zt_acc["mamba"]/n,
-                    self._zt_acc["attn"]/n/9, self._zt_acc["mamba"]/n/54)
+                    _cmin = float(_os.environ.get("SGLANG_ZAMBA_CLOSURE_MIN", "0.95"))
+                except ValueError:
+                    _cmin = 0.95
+                if not (_blk_closure >= _cmin):
+                    _log.warning(
+                        "ZBLT_CLOSURE_FAIL mode=%s blk=%d closure=%.4f min_fwd=%.4f"
+                        " threshold=%.2f bucket_ms=%.4f loop_ms=%.4f"
+                        " -- buckets do not cover the layer loop; per-type numbers"
+                        " from this block are NOT trustworthy",
+                        _mode, self._zt_blk_idx, _blk_closure, _blk["closure_min"],
+                        _cmin, _blk_sum / bn, _blk["total"] / bn,
+                    )
+                self._zt_blk_idx += 1
+                self._zt_blk = _zt_new_block()
         return out
 
 
