@@ -1,0 +1,40 @@
+design recovery validation vs canonical paired_bootstrap_ci over 400 random datasets: max |dlo| = 4.441e-16, max |dhi| = 4.441e-16
+
+frozen (seed=1) design: empirical vs ideal multinomial shape frequencies
+  shape (2, 1, 1, 1, 0): empirical 0.3837  ideal 0.3840
+  shape (2, 2, 1, 0, 0): empirical 0.2855  ideal 0.2880
+  shape (3, 1, 1, 0, 0): empirical 0.1896  ideal 0.1920
+  shape (3, 2, 0, 0, 0): empirical 0.0686  ideal 0.0640
+  shape (1, 1, 1, 1, 1): empirical 0.0379  ideal 0.0384
+  shape (4, 1, 0, 0, 0): empirical 0.0334  ideal 0.0320
+  shape (5, 0, 0, 0, 0): empirical 0.0013  ideal 0.0016
+
+ {'label': 'A normal(0,1)', 'trials': 100000, 'coverage_bootstrap': 0.83948, 'coverage_t': 0.95009, 'mc_se': 0.0011608330181382678, 'mean_width_bootstrap': 1.4563082662148075, 'mean_width_t': 2.3330388688416237, 'width_ratio_of_means': 0.6242108889244004, 'mean_width_ratio': 0.6242166276604605}
+
+empirical pool: n=40 standardised rep-diffs, skew +0.412, excess kurtosis -0.613
+  {'label': 'B pooled empirical rep-diffs (standardised)', 'trials': 100000, 'coverage_bootstrap': 0.82539, 'coverage_t': 0.94277, 'mc_se': 0.0012005055097749448, 'mean_width_bootstrap': 1.3059618387904244, 'mean_width_t': 2.1012769718115663, 'width_ratio_of_means': 0.621508661785086, 'mean_width_ratio': 0.621197842194114}
+
+C per-cell empirical (resample from that cell's own 5 centred diffs):
+  granite-40-h-micro-base|r2   boot 0.6559  t 0.6681  width ratio 0.582
+  granite-40-h-micro-base|r3   boot 0.7648  t 0.9110  width ratio 0.609
+  granite-40-h-micro-base|r4   boot 0.7586  t 0.9093  width ratio 0.611
+  granite-40-h-micro-base|r6   boot 0.7683  t 0.9084  width ratio 0.610
+  zamba2-27b|r2                boot 0.8307  t 0.9267  width ratio 0.616
+  zamba2-27b|r3                boot 0.8136  t 0.9444  width ratio 0.614
+  zamba2-27b|r4                boot 0.6350  t 0.8570  width ratio 0.603
+  zamba2-27b|r6                boot 0.8680  t 0.9119  width ratio 0.612
+
+ {'label': 'D1 t_3', 'trials': 100000, 'coverage_bootstrap': 0.83633, 'coverage_t': 0.9627, 'mc_se': 0.0011699663717389488, 'mean_width_bootstrap': 2.1768232633793967, 'mean_width_t': 3.5153362925643012, 'width_ratio_of_means': 0.6192361362364819, 'mean_width_ratio': 0.6222106622925437} 
+ {'label': 'D2 centred lognormal', 'trials': 100000, 'coverage_bootstrap': 0.72301, 'coverage_t': 0.82174, 'mc_se': 0.0014151556094649097, 'mean_width_bootstrap': 2.3211706481437266, 'mean_width_t': 3.836648732347512, 'width_ratio_of_means': 0.6049995217371602, 'mean_width_ratio': 0.6143365454008456}
+
+fresh-seed control (design NOT frozen), normal: {'trials': 20000, 'coverage_bootstrap_freshseed': 0.8397, 'mean_width': np.float64(1.454408402163998), 'mc_se': 0.0025942620337968945}
+
+blast radius: coverage at other n (normal data, frozen seed=1 design)
+  n= 3: bootstrap 0.7481 (width 1.697)  t 0.9941 (width 13.037)  ratio 0.130
+  n= 4: bootstrap 0.8008 (width 1.525)  t 0.9774 (width 3.977)  ratio 0.383
+  n= 5: bootstrap 0.8402 (width 1.456)  t 0.9674 (width 2.674)  ratio 0.545
+  n= 6: bootstrap 0.8601 (width 1.372)  t 0.9611 (width 2.158)  ratio 0.636
+  n= 8: bootstrap 0.8872 (width 1.242)  t 0.9554 (width 1.669)  ratio 0.744
+  n=10: bootstrap 0.9023 (width 1.140)  t 0.9491 (width 1.392)  ratio 0.819
+
+wrote c1_coverage.json

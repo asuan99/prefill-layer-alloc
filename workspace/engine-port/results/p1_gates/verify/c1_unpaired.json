@@ -1,0 +1,18 @@
+{
+ "4": {
+  "coverage_unpaired_bootstrap": 0.85561,
+  "coverage_welch_t": 0.959,
+  "mean_width_bootstrap": 2.2763421726457094,
+  "mean_width_welch": 3.5548965284512746,
+  "width_ratio": 0.6403399239407455,
+  "mc_se": 0.0011114923656957794
+ },
+ "5": {
+  "coverage_unpaired_bootstrap": 0.88023,
+  "coverage_welch_t": 0.95809,
+  "mean_width_bootstrap": 2.1390668151200893,
+  "mean_width_welch": 2.9607284847805593,
+  "width_ratio": 0.7224798984830353,
+  "mc_se": 0.0010267674863375837
+ }
+}

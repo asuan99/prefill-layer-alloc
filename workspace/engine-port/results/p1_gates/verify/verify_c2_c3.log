@@ -1,0 +1,114 @@
+t_(0.975, df=4) numerically inverted = 2.776454138  (hardcoded 2.776445105)
+
+=== C-2: canonical predicate (TTFT<=3s AND per-request p95 ITL<=60ms) ===
+unit: per-rep cell goodput (good/duration); n=5 paired reps
+
+model                  rate     plain mean+-SD  agn mean     eff%              boot CI95          t CI95 (df=4)       t  boot0   t0
+granite-40-h-micro-base    2    1.9040+-0.2561    1.9683    +3.37 [ +0.0008, +0.1732] [ -0.0858, +0.2143]   1.189   True False
+granite-40-h-micro-base    3    2.6185+-0.2576    2.9235   +11.65 [ +0.1409, +0.5149] [ -0.0032, +0.6132]   2.747   True False
+granite-40-h-micro-base    4    3.1033+-0.3043    3.9426   +27.04 [ +0.4972, +1.2649] [ +0.2027, +1.4758]   3.661   True True
+granite-40-h-micro-base    6    2.0212+-0.6918    5.5566  +174.92 [ +2.6814, +4.5919] [ +1.9709, +5.1001]   6.274   True True
+zamba2-27b                2    1.3142+-0.0560    1.8466   +40.50 [ +0.4310, +0.6198] [ +0.3820, +0.6826]   9.833   True True
+zamba2-27b                3    1.0318+-0.2679    2.9495  +185.84 [ +1.4844, +2.4065] [ +1.1733, +2.6620]   7.153   True True
+zamba2-27b                4    0.5618+-0.3727    3.3764  +501.03 [ +2.1767, +3.2970] [ +1.9447, +3.6844]   8.984   True True
+zamba2-27b                6    0.2208+-0.3387    1.6210  +634.06 [ +0.9685, +1.8802] [ +0.6826, +2.1178]   5.417   True True
+
+boot/t CI width ratio on these 8 real cells: min 0.5743 max 0.6440 mean 0.6152
+
+=== C-2b: missing-ITL convention sensitivity (violation vs pass) ===
+granite-40-h-micro-base r2 missing-ITL reqs plain= 1 agn= 1 | eff% viol-conv   +3.37 t[-0.0858,+0.2143] | pass-conv   +3.37 t[-0.0858,+0.2143]
+granite-40-h-micro-base r3 missing-ITL reqs plain= 0 agn= 0 | eff% viol-conv  +11.65 t[-0.0032,+0.6132] | pass-conv  +11.65 t[-0.0032,+0.6132]
+granite-40-h-micro-base r4 missing-ITL reqs plain= 0 agn= 0 | eff% viol-conv  +27.04 t[+0.2027,+1.4758] | pass-conv  +27.04 t[+0.2027,+1.4758]
+granite-40-h-micro-base r6 missing-ITL reqs plain= 0 agn= 0 | eff% viol-conv +174.92 t[+1.9709,+5.1001] | pass-conv +174.92 t[+1.9709,+5.1001]
+zamba2-27b             r2 missing-ITL reqs plain= 6 agn= 6 | eff% viol-conv  +40.50 t[+0.3820,+0.6826] | pass-conv  +39.95 t[+0.3820,+0.6826]
+zamba2-27b             r3 missing-ITL reqs plain= 1 agn= 1 | eff% viol-conv +185.84 t[+1.1733,+2.6620] | pass-conv +184.51 t[+1.1691,+2.6565]
+zamba2-27b             r4 missing-ITL reqs plain= 4 agn= 4 | eff% viol-conv +501.03 t[+1.9447,+3.6844] | pass-conv +496.50 t[+1.9679,+3.6741]
+zamba2-27b             r6 missing-ITL reqs plain= 0 agn= 0 | eff% viol-conv +634.06 t[+0.6826,+2.1178] | pass-conv +634.06 t[+0.6826,+2.1178]
+
+=== C-3: threshold ladder -- violation counts (5 reps POOLED, 600 req/cell) ===
+model                  rate       arm T=40    T=48    T=50    T=60    T=80    T=100   T=150   T=300    |  TTFT>3s  missingITL
+granite-40-h-micro-base    2     plain   106    106    106     16      2      1      1      1   |      0       1
+granite-40-h-micro-base    2  agnostic     1      1      1      1      1      1      1      1   |      0       1
+granite-40-h-micro-base    3     plain   209    209    209     63     11      3      0      0   |      0       0
+granite-40-h-micro-base    3  agnostic     0      0      0      0      0      0      0      0   |      0       0
+granite-40-h-micro-base    4     plain   336    336    332    128     28     10      0      0   |      0       0
+granite-40-h-micro-base    4  agnostic     0      0      0      0      0      0      0      0   |      0       0
+granite-40-h-micro-base    6     plain   517    515    515    378    201    156     37      0   |      0       0
+granite-40-h-micro-base    6  agnostic     0      0      0      0      0      0      0      0   |      0       0
+zamba2-27b                2     plain   176    176    176    176     43     14      6      6   |      0       6
+zamba2-27b                2  agnostic     6      6      6      6      6      6      6      6   |      0       6
+zamba2-27b                3     plain   387    384    384    384    231    134     48      6   |      0       1
+zamba2-27b                3  agnostic    57     26     26      1      1      1      1      1   |      1       1
+zamba2-27b                4     plain   517    516    514    514    479    409    285     92   |      7       4
+zamba2-27b                4  agnostic   314    246    242     87     18     18     18     18   |     16       4
+zamba2-27b                6     plain   573    573    573    570    565    551    539    339   |    169       0
+zamba2-27b                6  agnostic   538    477    461    384    187    187    187    187   |    187       0
+
+=== C-3: paired effect at each ladder threshold (n=5 reps) ===
+model                  rate     T    plain      agn      eff%              boot CI95                 t CI95  sign bootExcl0  tExcl0   viol(p/a)
+granite-40-h-micro-base    2    40   1.5895   1.9683    +23.83 [ +0.1712, +0.7052] [ -0.0623, +0.8198]     +      True   False   106/1    
+granite-40-h-micro-base    2    48   1.5895   1.9683    +23.83 [ +0.1712, +0.7052] [ -0.0623, +0.8198]     +      True   False   106/1    
+granite-40-h-micro-base    2    50   1.5895   1.9683    +23.83 [ +0.1712, +0.7052] [ -0.0623, +0.8198]     +      True   False   106/1    
+granite-40-h-micro-base    2    60   1.9040   1.9683     +3.37 [ +0.0008, +0.1732] [ -0.0858, +0.2143]     +      True   False    16/1    
+granite-40-h-micro-base    2    80   1.9606   1.9683     +0.39 [ -0.0026, +0.0262] [ -0.0179, +0.0332]     +     False   False     2/1    
+granite-40-h-micro-base    2   100   1.9649   1.9683     +0.17 [ -0.0026, +0.0134] [ -0.0104, +0.0172]     +     False   False     1/1    
+granite-40-h-micro-base    2   150   1.9649   1.9683     +0.17 [ -0.0026, +0.0134] [ -0.0104, +0.0172]     +     False   False     1/1    
+granite-40-h-micro-base    2   300   1.9649   1.9683     +0.17 [ -0.0026, +0.0134] [ -0.0104, +0.0172]     +     False   False     1/1    
+granite-40-h-micro-base    3    40   1.8916   2.9235    +54.56 [ +0.7253, +1.3164] [ +0.5636, +1.5003]     +      True    True   209/0    
+granite-40-h-micro-base    3    48   1.8916   2.9235    +54.56 [ +0.7253, +1.3164] [ +0.5636, +1.5003]     +      True    True   209/0    
+granite-40-h-micro-base    3    50   1.8916   2.9235    +54.56 [ +0.7253, +1.3164] [ +0.5636, +1.5003]     +      True    True   209/0    
+granite-40-h-micro-base    3    60   2.6185   2.9235    +11.65 [ +0.1409, +0.5149] [ -0.0032, +0.6132]     +      True   False    63/0    
+granite-40-h-micro-base    3    80   2.8768   2.9235     +1.62 [ -0.0013, +0.1156] [ -0.0484, +0.1418]     +     False   False    11/0    
+granite-40-h-micro-base    3   100   2.9167   2.9235     +0.23 [ -0.0127, +0.0393] [ -0.0378, +0.0514]     +     False   False     3/0    
+granite-40-h-micro-base    3   150   2.9327   2.9235     -0.31 [ -0.0136, -0.0044] [ -0.0163, -0.0020]     -      True    True     0/0    
+granite-40-h-micro-base    3   300   2.9327   2.9235     -0.31 [ -0.0136, -0.0044] [ -0.0163, -0.0020]     -      True    True     0/0    
+granite-40-h-micro-base    4    40   1.7286   3.9426   +128.07 [ +1.8159, +2.6120] [ +1.5686, +2.8593]     +      True    True   336/0    
+granite-40-h-micro-base    4    48   1.7286   3.9426   +128.07 [ +1.8159, +2.6120] [ +1.5686, +2.8593]     +      True    True   336/0    
+granite-40-h-micro-base    4    50   1.7551   3.9426   +124.64 [ +1.7779, +2.5971] [ +1.5252, +2.8498]     +      True    True   332/0    
+granite-40-h-micro-base    4    60   3.1033   3.9426    +27.04 [ +0.4972, +1.2649] [ +0.2027, +1.4758]     +      True    True   128/0    
+granite-40-h-micro-base    4    80   3.7816   3.9426     +4.26 [ +0.0611, +0.3097] [ -0.0447, +0.3666]     +      True   False    28/0    
+granite-40-h-micro-base    4   100   3.9022   3.9426     +1.03 [ -0.0168, +0.1325] [ -0.0874, +0.1681]     +     False   False    10/0    
+granite-40-h-micro-base    4   150   3.9748   3.9426     -0.81 [ -0.0549, -0.0171] [ -0.0642, -0.0003]     -      True    True     0/0    
+granite-40-h-micro-base    4   300   3.9748   3.9426     -0.81 [ -0.0549, -0.0171] [ -0.0642, -0.0003]     -      True    True     0/0    
+granite-40-h-micro-base    6    40   0.7476   5.5566   +643.25 [ +4.1228, +5.5089] [ +3.6832, +5.9348]     +      True    True   517/0    
+granite-40-h-micro-base    6    48   0.7661   5.5566   +625.29 [ +4.1043, +5.5089] [ +3.6625, +5.9185]     +      True    True   515/0    
+granite-40-h-micro-base    6    50   0.7661   5.5566   +625.29 [ +4.1043, +5.5089] [ +3.6625, +5.9185]     +      True    True   515/0    
+granite-40-h-micro-base    6    60   2.0212   5.5566   +174.92 [ +2.6814, +4.5919] [ +1.9709, +5.1001]     +      True    True   378/0    
+granite-40-h-micro-base    6    80   3.6872   5.5566    +50.70 [ +0.9837, +2.7810] [ +0.4122, +3.3267]     +      True    True   201/0    
+granite-40-h-micro-base    6   100   4.1244   5.5566    +34.72 [ +0.6488, +2.2156] [ +0.1721, +2.6923]     +      True    True   156/0    
+granite-40-h-micro-base    6   150   5.2919   5.5566     +5.00 [ -0.1604, +0.9443] [ -0.6528, +1.1823]     +     False   False    37/0    
+granite-40-h-micro-base    6   300   5.7020   5.5566     -2.55 [ -0.2732, -0.0315] [ -0.3393, +0.0487]     -      True   False     0/0    
+zamba2-27b                2    40   1.3142   1.8466    +40.50 [ +0.4310, +0.6198] [ +0.3820, +0.6826]     +      True    True   176/6    
+zamba2-27b                2    48   1.3142   1.8466    +40.50 [ +0.4310, +0.6198] [ +0.3820, +0.6826]     +      True    True   176/6    
+zamba2-27b                2    50   1.3142   1.8466    +40.50 [ +0.4310, +0.6198] [ +0.3820, +0.6826]     +      True    True   176/6    
+zamba2-27b                2    60   1.3142   1.8466    +40.50 [ +0.4310, +0.6198] [ +0.3820, +0.6826]     +      True    True   176/6    
+zamba2-27b                2    80   1.7317   1.8466     +6.63 [ +0.0652, +0.1634] [ +0.0318, +0.1979]     +      True    True    43/6    
+zamba2-27b                2   100   1.8227   1.8466     +1.31 [ -0.0023, +0.0683] [ -0.0369, +0.0846]     +     False   False    14/6    
+zamba2-27b                2   150   1.8482   1.8466     -0.09 [ -0.0035, +0.0006] [ -0.0049, +0.0015]     -     False   False     6/6    
+zamba2-27b                2   300   1.8482   1.8466     -0.09 [ -0.0035, +0.0006] [ -0.0049, +0.0015]     -     False   False     6/6    
+zamba2-27b                3    40   1.0178   2.6481   +160.19 [ +1.3661, +1.8946] [ +1.1980, +2.0628]     +      True    True   387/57   
+zamba2-27b                3    48   1.0318   2.8022   +171.58 [ +1.4330, +2.0267] [ +1.2965, +2.2443]     +      True    True   384/26   
+zamba2-27b                3    50   1.0318   2.8022   +171.58 [ +1.4330, +2.0267] [ +1.2965, +2.2443]     +      True    True   384/26   
+zamba2-27b                3    60   1.0318   2.9495   +185.84 [ +1.4844, +2.4065] [ +1.1733, +2.6620]     +      True    True   384/1    
+zamba2-27b                3    80   1.7691   2.9495    +66.72 [ +0.6545, +1.8044] [ +0.3089, +2.0518]     +      True    True   231/1    
+zamba2-27b                3   100   2.2605   2.9495    +30.48 [ +0.2977, +1.1621] [ +0.0031, +1.3748]     +      True    True   134/1    
+zamba2-27b                3   150   2.6882   2.9495     +9.72 [ +0.0368, +0.6441] [ -0.2662, +0.7888]     +      True   False    48/1    
+zamba2-27b                3   300   2.9236   2.9495     +0.89 [ -0.0082, +0.0791] [ -0.0459, +0.0977]     +     False   False     6/1    
+zamba2-27b                4    40   0.5423   1.8594   +242.88 [ +0.7553, +2.1801] [ +0.1222, +2.5120]     +      True    True   517/314  
+zamba2-27b                4    48   0.5487   2.3141   +321.74 [ +1.1697, +2.6665] [ +0.5007, +3.0301]     +      True    True   516/246  
+zamba2-27b                4    50   0.5618   2.3404   +316.61 [ +1.1696, +2.6814] [ +0.5166, +3.0406]     +      True    True   514/242  
+zamba2-27b                4    60   0.5618   3.3764   +501.03 [ +2.1767, +3.2970] [ +1.9447, +3.6844]     +      True    True   514/87   
+zamba2-27b                4    80   0.7935   3.8344   +383.21 [ +2.7814, +3.3004] [ +2.6273, +3.4544]     +      True    True   479/18   
+zamba2-27b                4   100   1.2530   3.8344   +206.01 [ +2.3261, +2.8414] [ +2.1585, +3.0043]     +      True    True   409/18   
+zamba2-27b                4   150   2.0644   3.8344    +85.74 [ +1.2144, +2.2133] [ +1.0018, +2.5381]     +      True    True   285/18   
+zamba2-27b                4   300   3.3433   3.8344    +14.69 [ +0.0005, +0.9884] [ -0.3184, +1.3007]     +      True   False    92/18   
+zamba2-27b                6    40   0.1984   0.4653   +134.52 [ +0.0025, +0.5350] [ -0.1450, +0.6788]     +      True   False   573/538  
+zamba2-27b                6    48   0.1984   0.9203   +363.87 [ +0.5590, +0.9435] [ +0.4117, +1.0322]     +      True    True   573/477  
+zamba2-27b                6    50   0.1984   1.0402   +424.30 [ +0.6179, +1.1196] [ +0.4437, +1.2399]     +      True    True   573/461  
+zamba2-27b                6    60   0.2208   1.6210   +634.06 [ +0.9685, +1.8802] [ +0.6826, +2.1178]     +      True    True   570/384  
+zamba2-27b                6    80   0.2566   3.1008  +1108.41 [ +2.1479, +3.5628] [ +1.7184, +3.9699]     +      True    True   565/187  
+zamba2-27b                6   100   0.3582   3.1008   +765.64 [ +2.0468, +3.4384] [ +1.6348, +3.8504]     +      True    True   551/187  
+zamba2-27b                6   150   0.4471   3.1008   +593.60 [ +1.9734, +3.3340] [ +1.5874, +3.7200]     +      True    True   539/187  
+zamba2-27b                6   300   1.9187   3.1008    +61.61 [ +0.0356, +2.0337] [ -0.4098, +2.7740]     +      True   False   339/187  
+
+wrote /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/verify/c2_c3_results.json

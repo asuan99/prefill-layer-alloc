@@ -1,0 +1,63 @@
+=== missing-ITL forensics (empty itls array) ===
+model                  rate       arm rep  idx output_len input_len   ttft_ms
+granite-40-h-micro-base    2     plain   5   14         96      2000    1315.0
+granite-40-h-micro-base    2  agnostic   5   14         96      2000    1197.6
+zamba2-27b                2     plain   1    4         96      1999     960.2
+zamba2-27b                2     plain   1   71         96      1999    1077.3
+zamba2-27b                2     plain   2    5         96      1999    2303.8
+zamba2-27b                2     plain   4   36         96      1999    1096.1
+zamba2-27b                2     plain   5   70         96      1999    1457.9
+zamba2-27b                2     plain   5   99         96      1999    1636.2
+zamba2-27b                2  agnostic   1    4         96      1999    1111.4
+zamba2-27b                2  agnostic   1   71         96      1999    1100.0
+zamba2-27b                2  agnostic   2    5         96      1999    2201.4
+zamba2-27b                2  agnostic   4   36         96      1999    1190.8
+zamba2-27b                2  agnostic   5   70         96      1999    1540.9
+zamba2-27b                2  agnostic   5   99         96      1999    1638.1
+zamba2-27b                3     plain   5   84         96      1999    2858.2
+zamba2-27b                3  agnostic   5   84         96      1999    3146.3
+zamba2-27b                4     plain   1    3         96      1999    2898.1
+zamba2-27b                4     plain   2   21         96      1999    3059.8
+zamba2-27b                4     plain   5   41         96      1999    6764.0
+zamba2-27b                4     plain   5   82         96      1999    5920.8
+zamba2-27b                4  agnostic   1    3         96      1999    2319.1
+zamba2-27b                4  agnostic   2   21         96      1999    2695.9
+zamba2-27b                4  agnostic   5   41         96      1999    5580.4
+zamba2-27b                4  agnostic   5   82         96      1999    5073.1
+total missing-ITL requests: 24
+distinct output_len among them: [96]
+
+=== per-cell ITL-axis extremes and vacuity threshold ===
+model                  rate       arm  max req-p95-ITL(ms)  p100 of req p95 n_missing n_ttft>3s
+granite-40-h-micro-base    2     plain                80.19                          1         0
+granite-40-h-micro-base    2  agnostic                25.35                          1         0
+granite-40-h-micro-base    3     plain               113.28                          0         0
+granite-40-h-micro-base    3  agnostic                36.42                          0         0
+granite-40-h-micro-base    4     plain               126.95                          0         0
+granite-40-h-micro-base    4  agnostic                36.51                          0         0
+granite-40-h-micro-base    6     plain               207.67                          0         0
+granite-40-h-micro-base    6  agnostic                36.75                          0         0
+zamba2-27b                2     plain               113.61                          6         0
+zamba2-27b                2  agnostic                34.07                          6         0
+zamba2-27b                3     plain               301.49                          1         0
+zamba2-27b                3  agnostic                52.48                          1         1
+zamba2-27b                4     plain               435.26                          4         7
+zamba2-27b                4  agnostic                74.19                          4        16
+zamba2-27b                6     plain               673.66                          0       169
+zamba2-27b                6  agnostic                79.70                          0       187
+
+=== exact sign-flip / vacuity boundary per cell ===
+model                  rate  T_vacuous(both arms)  T_signflip sign@40 sign@300  eff%@300 boot excl0@300 t excl0@300
+granite-40-h-micro-base    2                 80.19        none       +        +     +0.17                      False
+granite-40-h-micro-base    3                113.28       113.5       +        -     -0.31                       True
+granite-40-h-micro-base    4                126.95       113.0       +        -     -0.81                       True
+granite-40-h-micro-base    6                207.67       177.0       +        -     -2.55                      False
+zamba2-27b                2                113.61       114.0       +        -     -0.09                      False
+zamba2-27b                3                301.49        none       +        +     +0.89                      False
+zamba2-27b                4                435.26        none       +        +    +14.69                      False
+zamba2-27b                6                673.66        none       +        +    +61.61                      False
+
+=== pairing integrity: input_lens identical across arms per (rate,rep)? ===
+all 40 (model,rate,rep) pairs have identical input_lens: True
+
+wrote c3_boundary.json
