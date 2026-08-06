@@ -26,6 +26,9 @@
 > **substrate-artifact인지 fundamental인지**는 [system_vs_engine_vs_sim.md](system_vs_engine_vs_sim.md)에서 분리한다.
 > 특히 **"layer-aware 반증"(#5·#6)은 이 기판 한정 진술** — prefill-side TTFT 기전은 확증·fundamental이고,
 > 죽은 건 sub-step decode-type 전환((D))과 no-cudagraph decode wall이 가린 goodput 전환이다.
+> ⚠️**#6(PF)은 substrate-scope 이상의 결함이 있다** — no-cudagraph·n=1에 더해 **변수 동시 변경**(prefill-type SM 이동+decode slicing, §3-6)까지 겹쳐
+> 이 캠페인 단독으로는 어느 방향으로도 인용 불가(등급=서빙이나 confound). "全형태 死" 결론은 #5(decode-side, confound 없음)·
+> [research_arc.md `S-M.1` #1–#5](research_arc.md)(4모델 실증+coordinated 반증, 서빙 등급)·prefill-side micro Diff B(research_arc.md #9)로 이미 독립 성립한다.
 
 ---
 
@@ -38,7 +41,7 @@
 | 3 | **tuned-uniform** (d24/d44) | (A) 정적 | regime-최적 고정 split | ★**정적 최적** — agnostic도 이김 |
 | 4 | **agnostic_v2** | (A) 정적 | 전층 낮은 floor(decode16) | decode 실작업 있으면 최악 |
 | 5 | **layer-aware (decode-type)** | (A) sub-step | decode 층타입별 split (R0d/(a)/v4) | ★**반증** — (D) granularity |
-| 6 | **layer-aware (prefill-type=PF)** | (A) sub-step | prefill 층타입별 split (PF/fix1/fix2) | ★**최악** — starvation+(D) 양측 |
+| 6 | **layer-aware (prefill-type=PF)** | (A) sub-step | prefill 층타입별 split (PF/fix1/fix2) | ★**최악**(표면) — starvation+(D) 양측, ⚠️**인용 제한**(confound, 아래 §3-6·[research_arc.md #9b](research_arc.md)) |
 | 7 | **SLO-aware (controller)** | (B) 동적 | TPOT/큐 피드백, **layer-span 평가** | ★**steady-state=static(isolation)**·양 regime 자동수렴(v7b); 유일 upside; type-aware span=無이득; mixed(B) 검증중 |
 
 ## 2. goodput@SLO 비교표
@@ -100,6 +103,7 @@ goodput(§2)과 별개로, 각 정책이 **split을 어떻게 결정하고 언�
 **5. layer-aware (decode-type)** — decode를 층타입 윈도우로 쪼개 attn 보호/mamba 환원. **4개 실현 전부 반증**: inefficient_v1 698ms · R0d 124ms · (a)OPT 85ms · v4 95ms, 전부 step-level에 패. 근본=**(D) granularity**(sub-step SM 재배분이 짧은 창서 불가; 조율 비용 > 이득). [상세 §07](sm_policy_report.html).
 
 **6. layer-aware (prefill-type = PF)** — split을 prefill 층타입 기준으로. **최악**: mamba-prefill을 34 SM로 환원해 prefill starvation(mamba-prefill은 SM-민감=knee 확증) + decode를 slice해 (D) 양측 부담. fix1(decode∝SM)=2차·무효, fix2(chunk↓)=저부하만 회복(150→52ms)이나 부하 붕괴. **prefill엔 "공짜로 뺄 SM" 없음**([prefill knee](prefill_vs_decode_execution.md)).
+⚠️**인용 제한(2026-08-04, claims-auditor)**: `pf_bench.sbatch`(jobs 838086/838087, fix1=839190/839191, fix2=839204–839207)는 **no-cudagraph**(`--disable-cuda-graph --disable-piecewise-cuda-graph` = 비운영점, 이 문서 상단 배너와 같은 하한 caveat) + **REP 기본값 1(n=1)**. 그리고 `multiplexing_mixin.py:1295,1340-1416`(`PDMUX_LA_COORD_PF`)이 **prefill-type SM 이동과 decode whole-step slicing을 동시에 변경**한다(주석 "Decode (whole 54-layer step) is sliced across the prefill windows"). ⇒ **이 캠페인은 "prefill-side layer-type이 서빙에서 죽었다"의 근거로도, 어떤 정책을 반증하는 근거로도 쓸 수 없다**(confound #2 "untuned/uncoordinated를 정책 탓으로"의 재발 위험) — 위 "최악" 판정은 *"PF를 이 구현 그대로 돌리면 이렇게 된다"*는 관측 서술이지 등급 있는 정책 판정이 아니다. 상호 참조: [research_arc.md #9b](research_arc.md).
 
 **7. SLO-aware (controller, (B))** — `PDMUX_SLO_SCHED`: 측정 TPOT-EMA(outlier 제거)·prefill 큐 피드백으로 split을 **layer-span마다 평가**하고 **idx 바뀔 때만 drain+switch**(agnostic 수렴후 switch 드묾→green-ctx서도 (D) 회피). deadband+TPOT-gated hysteresis+damping(EMA 0.85·dwell). ★**핵심 실증**: (i) **양 regime 자동 적응**(단일 정책·무튜닝: in3600→d24, in2000→**d44** 수렴); (ii) **steady-state 오버헤드 0**(isolation: pin→static과 정확 동일 2.318≡2.319); (iii) **v7b(damped layer-span eval)로 양 regime static 매칭**(in3600 r2 **2.11**≈2.24, in2000 r3 **3.23**≈3.22·r4 **2.21**≈2.27). v6(prefill-boundary eval)의 in3600 transient(1.32)를 layer-span eval이 해소. **컨트롤러 진화**: v1 invisible-oscillation→v4 outlier-rejection→v6 neutral-start→**v7b damped layer-span**. **mechanism = Bullet(libsmctrl layer-span·cudagraph decode·latency signal)의 green-ctx 근사**(MuxWise 기판/granularity + latency 신호). ⚠️**type-aware span sizing 死**: prefill span을 attn/ssm 경계서 단축(homogeneous span)→**net-negative**(TTFT 2-4×↑, Zamba2 type-run ~6층<<budget 18층→span 3× 짧아 오버헤드). layer-type은 span 경계로도 이득 無. **layer-aware와 직교·전 investigation 유일 upside**. 진짜 이득 = **mixed/bursty load**(step B; cross-cell: 단일 static split이 두 regime 최적 불가) — 검증중.
 
@@ -107,7 +111,7 @@ goodput(§2)과 별개로, 각 정책이 **split을 어떻게 결정하고 언�
 
 1. **PD 분리(pdmux)는 항상 이득** — agnostic이 fused를 모든 모델서 이김.
 2. **정적 최적 = tuned-uniform**(regime별 고정 split). agnostic도 이김.
-3. **layer-aware(sub-step, decode·prefill 양측)는 전부 반증** — per-layer-type SM 재배분은 (D) granularity로 step-level을 못 이김. prefill-type(PF)은 starvation까지 겹쳐 최악.
+3. **layer-aware(sub-step, decode·prefill 양측)는 전부 반증** — per-layer-type SM 재배분은 (D) granularity로 step-level을 못 이김. prefill-type(PF)은 starvation까지 겹쳐 최악(단 PF 자체는 confound돼 **인용 제한**, §3-6 참조 — "全형태 死" 결론은 decode-side #1–#5 서빙 등급 + prefill-side micro Diff B(research_arc.md #9)로 이미 독립 성립하며 PF에 의존하지 않는다).
 4. ★**SLO-aware(동적 controller) = 유일 upside 정책, B로 payoff 확인** — (i) stationary: static 매칭(무튜닝 per-regime 수렴, isolation 오버헤드0); (ii) mixed 1-stress: best static과 TIE; (iii) **mixed dual-stress(어떤 static도 불가): static WIN +18%**(SLO-v7b combined 1.698 vs d44 1.438, 양 phase 승). **static에 절대 안 짐 + dual-stress서 격파 + 무튜닝 자동적응.** mechanism=Bullet(libsmctrl layer-span·cudagraph·latency)의 green-ctx 근사(layer-span damped 평가·idx-change시만 drain). 상세 `results/slo_sched/B_mixed_results.md`. caveat: green-ctx no-cudagraph 절대값 하한·dual-stress서만 명확 win·임계값 hand-tuned.
 
 ## 5. 왜 그런가 (통합 mechanism)

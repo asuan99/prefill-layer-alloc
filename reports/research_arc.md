@@ -76,16 +76,16 @@
 
 > ### ⚠️ S3 정정 (2026-07-17) — "Diff B ≈ 1.0 전 격자"는 과장이었다
 > 원자료 재검토 + 시각화([`../results/prefill_knee/diffA_vs_diffB.png`](../workspace/engine-port/results/prefill_knee/diffA_vs_diffB.png), 표 [`diffA_vs_diffB_table.md`](../workspace/engine-port/results/prefill_knee/diffA_vs_diffB_table.md)):
-> - **Diff A는 21× 진폭**(0.47× @L2k → 10.1× @L32k). 기전: **attn ~ L^1.68 vs mamba ~ L^0.61**, 교차점 ≈3k tok. **사용자 기억("짧으면 0.5×, 길면 2×")은 정확** — 실제로는 L=8k서 2.4×, L=32k서 10×까지 간다.
-> - ★**Diff B는 L≥8000에서만 ≈1.0**(0.96–1.04). **L=2000에선 ≈1.35**(B=1 1.38 / B=48 1.34; B=4만 0.97) — mamba가 짧은 L에서 floor에 근접해 SM을 덜 먹는다. **lever는 L↓에서 열린다.**
+> - **Diff A는 21× 진폭**(0.47× @L2k → 10.1× @L32k). 기전: **attn ~ L^1.68 vs mamba ~ L^0.61**, 교차점 ≈3k tok. **사용자 기억("짧으면 0.5×, 길면 2×")은 정확** — 실제로는 L=8k서 2.4×, L=32k서 10×까지 간다. ★**지수 정정(2026-08-04, X2′, `workspace/engine-port/results/prefill_knee/AGGREGATE_COMPOSITION_2026-08-04.md`)**: steady OLS(ctx≥2050) **a=1.916±0.021 / b=0.954±0.008 (R²≥0.9996)**. 위 **1.68/0.61은 오염 끝점 2점 추정**이었다. "**mamba가 오히려 비쌈**"(L=2k, 0.47×)은 **단위 의존이라 판정 불가**로 표기한다(커널 집계론 ctx<17.9k까지 참, per-layer론 ctx<2.75k까지 참, 정책 단위론 ctx<13k까지 참 — 어느 단위에서도 항등식은 아니지만 "0.47×"라는 단일 수치를 단위 명시 없이 쓰지 말 것). 이하 Diff A/B는 **no-cudagraph micro** 라벨을 동반한다(`knee2d.sbatch:61` `--disable-cuda-graph`).
+> - ★**Diff B는 L≥8000에서만 ≈1.0**(0.96–1.04). **L=2000에선 ≈1.35**(B=1 1.38 / B=48 1.34; B=4만 0.97) — mamba가 짧은 L에서 floor에 근접해 SM을 덜 먹는다. **lever는 L↓에서 열린다.** ★★**REFUTED(2026-08-04, X2′)**: steady **1.0081** [1.0078, 1.0084] — 보고 1.32/1.38은 런마다 4.5% 어긋나고 steady는 두 독립 job이 0.08%로 일치한다(계측 결함 = 버킷 비대칭 + `_zt_acc` 누산기 러닝평균). **"lever는 L↓에서 열린다"는 철회한다.** B=48 행은 shape 혼합 셀이라 별도 인용 불가.
 > - ★**격자(L 2k–32k)가 실제 서빙 regime을 안 덮는다**: ShareGPT는 **mean 352 · p50 204 · p95 1042 tok, 98%가 L<2000**.
 >
 > **영향**: **서빙 수준 반증(S0·S2)은 무관하게 유효**(실 워크로드 직접 측정). 무너지는 건 **기전 서사**다 — **"lever가 없어서 죽었다"는 long-context 한정**이고 실 서빙 구간엔 **외삽**이다. 짧은 L에서 죽은 진짜 이유는 **(D) granularity**(S2에서 **TPOT 42→124ms**로 정량화)일 것이다.
 > **부활 가능성 낮음**: Diff B>1이어도 (D) 비용을 넘어야 하는데, 짧은 L의 절대 stakes(per-layer 1–8ms)가 그 비용보다 작다. **열린 질문**으로 남긴다(L≈200–2000 Diff B 실측).
 >
 > **✅ S3 열린 질문 해소 (2026-07-18)** — WIDE 스윕 L 256–32768 × B 1–16 (`../results/prefill_knee/knee2d_wide.png`, 표 `knee2d_wide_table.md`, jobs 857371/857477):
-> - **lever는 L≤512에서 실제로 열린다**(Diff B B=1: **256→1.42, 512→1.22**), L≥1024 전부 ≈1.0. **실 워크로드 mean 352 tok이 lever 구간 안**이다 — 사용자 직관 및 S3 정정 모두 **실측 확증**.
-> - ★**기전**: 타입 간 scaling 차이가 아니라 **짧은 L에서 둘 다 SM 미활용**(L256 speedup attn 5.9×/mamba 4.2×, 이상적 13× 대비). mamba는 44 SM서 포화·역행(0.85→0.93ms). ⇒ **짧은 L에선 prefill이 SM 불요**(얽힘과 정합).
+> - **lever는 L≤512에서 실제로 열린다**(Diff B B=1: **256→1.42, 512→1.22**), L≥1024 전부 ≈1.0. **실 워크로드 mean 352 tok이 lever 구간 안**이다 — 사용자 직관 및 S3 정정 모두 ~~**실측 확증**~~. ★★**강등(2026-08-04, X2′)**: "확증" 철회 — 계측 결함(버킷 비대칭 + 누산기 러닝평균) 보정 시 **L=256은 단일값 인용 금지, 밴드 [1.24, 1.34]로만**(1.42는 warm-up 편향값) / **L=512 1.198**. ★**정책 단위(모듈 전체)로 환산하면 `R_policy ≈ 1 + w_attn·(DiffB−1)`(w_attn=9.6% @L256)로 **1.032/1.031에 소멸** — 단 이는 독립 증거가 아니라 attn 비중이 작아 U-K가 구조적으로 1에 끌리는 결과다(§1-3 참조). 판정("실 워크로드 lever 구간 안") 자체는 방향 불변, magnitude만 정정.
+> - ★**기전**: 타입 간 scaling 차이가 아니라 **짧은 L에서 둘 다 SM 미활용**(L256 speedup attn 5.9×/mamba 4.2×, 이상적 13× 대비). mamba는 44 SM서 포화·역행(0.85→0.93ms, **크기 정정 2026-08-04**: 보고 9.05%는 steady **2.59%** [2.44, 2.77]로 축소 — "역행 철회"가 아니라 부호는 생존, 크기만 3.5× 축소, L=512엔 역행 없음). ⇒ **짧은 L에선 prefill이 SM 불요**(얽힘과 정합).
 > - ★**그래도 정책은 死**: lever 절대 stakes = sub-ms/layer ≪ (D) 비용 42→124ms(S2). batch도 안 엶(bs 버킷 Diff B 0.98–1.09). ⇒ **결론 불변, "lever 부재→(D)가 삼킴"으로 기전만 정밀화.**
 
 **같은 시기의 깨끗한 부수 결과(크기 추세)**: la/agnostic = **1.2B 1.37× / 2.7B 2.02× / 7B 1.82×** ⇒ **SLM 한정이 아니라 1.2B–7B 전 구간 이득**(commit `bdeca45`).
@@ -118,7 +118,7 @@
 | **① 시작 논의** | (사용자) **"tuned-fine으로 나온 최적이 d16인데, workload에 따라 최적점이 *움직이지 않는다*는 상황이 이해가 안 된다. 실제 trace나 흔한 서빙 벤치에서도 그런가?"** |
 | **② 촉발 지표** | HE2의 "최적 = d16, split-flat" 결론이 **전부 synthetic 고정-길이**(range-ratio 1.0)였다는 점 |
 | **③ 해소 지표** | **ShareGPT 실 trace**, 이어서 **시간 변화 trace**(rate 3↔12) |
-| **④ 판정** | ★**내 결론이 반증됨** — **"최적=d16·불변"은 저-decode-부하 synthetic 아티팩트**. ShareGPT에서 **d16 붕괴: 1.056 vs d24 6.240 (5.9×)**. 변화 trace에선 **최적이 실제로 이동**(HI=d44) |
+| **④ 판정** | ★**내 결론이 반증됨** — **"최적=d16·불변"은 저-decode-부하 synthetic 아티팩트**. ShareGPT에서 **d16 붕괴: 1.056 vs d24 6.240 (5.9×)**(★**인용 금지, 2026-08-04**: 6.240은 폐기 벤치 stationary r8의 n=4 중 최댓값 — 정본 §1-5는 **5.282±1.302**를 쓴다, §3 항목22). 변화 trace에선 **최적이 실제로 이동**(HI=d44) |
 
 **그러나 상위 결론은 살아남음**: **static(d44) > dynamic(bind)** — 최적이 *움직이는데도* 동적이 못 이겼다.
 
@@ -183,16 +183,21 @@
 | 2 | `agnostic_v2`가 (Granite서) 최적이다 | S0 | ★**서빙** | decode에 실작업 있으면 **최악**(NemotronH·Granite). 앞선 "최적" 판정은 tiny-batch micro 아티팩트 | **E1** |
 | 3 | 조율만 하면 per-type layer-aware가 산다 | S2 | ★**서빙** | **TPOT 42 → 124ms**. `_COORD_OPT`로 **절반은 substrate**지만 **부호는 robust** | **E2** |
 | 4 | 동적(SLO-aware/binding/gate)이 best-static을 넘는다 (**HE0**) | S9·S10 | ★**서빙** | **d44 3.220±0.013 (n=4) > bind+GATE 3.132±0.019 (n=9)**, **5.4σ** | **E3-vary** |
-| 5 | (내 주장) "최적 split = d16 · 부하 무관 불변" | S9 | ★**서빙** | **d16 1.056 vs d24 6.240 (5.9×)**. 실 trace가 synthetic 결론을 뒤집음 | **E3-stat** |
+| 5 | (내 주장) "최적 split = d16 · 부하 무관 불변" | S9 | ★**서빙** | **d16 1.056 vs d24 6.240 (5.9×)**(★인용 금지, 6.240=n=4 중 최댓값·정본은 5.282±1.302). 실 trace가 synthetic 결론을 뒤집음 | **E3-stat** |
 | 6 | (내 주장) 컨트롤러 CPU 오버헤드가 static 미달의 원인 | S10 | **직접 계측** | mean **32–36µs** = wall의 **0.014%** | **E3-vary** |
 | 7 | (내 주장) stationary 분산 = GPU 클럭 throttling | S10 | **서빙(재현)** | rate **3=견고 / 8=불안정 / 12=견고** ⇒ 경계 regime뿐 = 메트릭 절벽 | **E3-stat** |
 | 8 | (내 주장) §B "+18%" 이득 | S4–S8 | **자기 철회** | no-cudagraph(비운영점) + vs 비최적 static = 이중 confound | — |
 | — | | | | | |
 | 9 | ⚠️ layer-type **prefill-side / §14 예약**이 산다 | S3 | ⚠️**micro (서빙 아님)** | **Diff B ≈ 1.0** (L≥8000). **정정**: L=2000선 **≈1.35**이고 격자가 실 서빙 regime을 안 덮음 | **E4** |
+| 9b | ⚠️ layer-type **prefill-side(PF, SM 재배분)**가 서빙에서 산다/죽는다 | S3 附 | ⚠️**서빙이나 인용 제한(confound)** | `pf_boundary`/`_fix1`/`_fix2`(jobs 838086–839207) 표면 판정 "**최악**"(starvation+(D) 양측, [`policy_comparison.md` #6](policy_comparison.md)) — 그러나 no-cudagraph(비운영점)+**n=1**+`PDMUX_LA_COORD_PF`가 prefill-type SM 이동과 **decode whole-step slicing을 동시에 변경**(confound). ⇒ **이 캠페인만으로는 prefill-side layer-type의 死도 生도 판정 불가**(claims-auditor 2026-08-04) | **E5** |
 
-★**#9만 등급이 다르다**는 점이 중요하다. prefill-side의 死는 **(B,L) 격자 micro-측정**이지 서빙 판정이 아니다 —
-그리고 이 아크의 교훈 #1이 바로 **"micro는 서빙을 예측 못 한다"** 다. 다만 **#1–#5(서빙 등급)가 layer-type 정책을 이미 독립적으로 죽였으므로**
-#9가 약해져도 **결론은 바뀌지 않고, 무너지는 것은 *기전 서사*("lever가 없어서 죽었다")뿐**이다(S3 정정 참조).
+★**#9와 #9b 둘 다 등급이 다르다**는 점이 중요하다 — 단 사유가 서로 다르다. #9(**(B,L) knee**)는 애초에 **micro**(서빙 아님)이고,
+그리고 이 아크의 교훈 #1이 바로 **"micro는 서빙을 예측 못 한다"** 다. #9b(**PF 캠페인**)는 서버 부팅+`bench_serving`이라는 점에서 **형식은 서빙**이지만,
+no-cudagraph·n=1·**변수 동시 변경**(confound #2 "untuned/uncoordinated를 정책 탓으로"의 재발형) 때문에 **prefill-side 축을 단독으로 검정한 증거로 인용할 수 없다**
+— `policy_comparison.md` 행 6의 "★최악" 판정은 *"PF를 이 상태 그대로 구현하면 이렇게 된다"*는 사실 서술이지, *"prefill-side layer-type이 서빙에서 반증됐다"*는
+등급 판정이 아니다. 다만 **#1–#5(서빙 등급, confound 없음)가 layer-type 정책을 이미 독립적으로 죽였으므로**
+#9·#9b가 각자의 사유로 약해져도 **결론은 바뀌지 않고, 무너지는 것은 *기전 서사*("lever가 없어서 죽었다")뿐**이다(S3 정정 참조).
+`policy_comparison.md` 행 6과 이 인용 제한을 상호 참조한다.
 
 ### S-M.2 측정 환경
 
@@ -208,14 +213,16 @@ SM 분할 = **green context**(A100 = **108 SM**), dtype **bf16**.
 | **E3-stat** | stationary 실 trace (#5·#7) | **Zamba2-2.7B 단독** | **ShareGPT v3** (`--sharegpt-context-len 4000`), **rate 8 고정**, 400 prompts | ↓E3-vary와 동일(**cudagraph ON**) | goodput · TTFT/ITL p50/95/99 |
 | **E3-vary** | ★**정책 비교 정본** (#4·#6) | **Zamba2-2.7B 단독**, `--context-length 4096` | **ShareGPT v3**, **rate 3↔12 교대 3라운드**, 라운드당 200 prompts | **cudagraph ON**, `--attention-backend triton`, `--disable-radix-cache`, `--mem-fraction-static 0.82`, **`--max-running-requests 48`**, `--chunked-prefill-size -1`, `--disable-overlap-schedule`, `--enable-pdmux` + `pdmux_*.yml`(`decode_bs_divisor 36`, `split_forward_token_budget 65536`) | **TRUE goodput**(라운드 duration **합산** — `f921ae8` 이전은 3× 부풀림) + switch_count + p50/95/99 |
 | **E4** | ⚠️(B,L) knee (#9, **micro**) | Zamba2-2.7B (attn 9층 / mamba 54층) | **서빙 아님** — prefill forward **직접 계측**(CUDA event, 층 타입별). 격자 **L 2k–32k × B 1–48**, SM ∈ {full,44,24,16,8} | 서버 없이 forward 반복 | per-attn / per-mamba ms → **Diff A**(비용비) · **Diff B**(SM 민감도비) |
+| **E5** | ⚠️PF prefill-type boundary (#9b, **서빙·인용 제한**) | Zamba2-2.7B | synthetic in3600/out32, in2000/out96 (E1과 동일 `range-ratio 1.0`) | `--disable-cuda-graph --disable-piecewise-cuda-graph --disable-radix-cache`, `--mem-fraction-static 0.82`, `--max-running-requests 48`, `--chunked-prefill-size -1`, `--disable-overlap-schedule` + `PDMUX_LA_COORD_PF=1`(fix1=decode∝SM 재분배, fix2=`PDMUX_PF_CHUNK=6`) | goodput/TTFT/TPOT, **REP=1(n=1)**, no-cudagraph(비운영점) |
 
-**하네스**: `results/slo_sched/sharegpt_vary_bench.sbatch`(E3-vary, 정본) · `sharegpt_bench.sbatch`(E3-stat) · `triage/p1_7_bench_one.sbatch`(E1) · `results/prefill_knee/knee2d*.sbatch`(E4).
+**하네스**: `results/slo_sched/sharegpt_vary_bench.sbatch`(E3-vary, 정본) · `sharegpt_bench.sbatch`(E3-stat) · `triage/p1_7_bench_one.sbatch`(E1) · `results/prefill_knee/knee2d*.sbatch`(E4) · `results/pf_boundary{,_fix1,_fix2}/pf{,_fix1,_fix2}_bench.sbatch`(E5).
 
 ### S-M.3 ★이 환경이 **덮지 않는** 범위 (결론의 유효 경계)
 
 | 축 | 실제로 측정된 것 | 안 덮은 것 |
 |---|---|---|
 | **컨텍스트 길이** | ShareGPT **mean 352 · p50 204 · p95 1042 tok (98%가 L<2000)**; synthetic in2000/in3600 | ★**long-context 실 trace(8k–128k)**. Diff A가 **열리는** 구간(교차점 ≈3k)이 통째로 미측정 |
+| **입력 길이 *분포*(혼합)** — ★위 행과 다른 축(위=L의 *크기*, 이 행=L의 *분산·혼합 조성*) | **전수 확인(2026-08-04, `workspace/engine-port/results/**/*.sbatch` grep, 52개)**: `random-ids` 23개 전부 `--random-range-ratio 1.0`(고정 길이, 반례 0건); micro/커스텀 fixed-prompt-file 17개(prefill_knee·r0c·s0_deconfound·stage0_xctrl·s8_scaleup·s8p_prefill 등)도 요청당 단일 L. **자연 분포는 ShareGPT뿐**(12개: E3-stat/E3-vary·e1_capacity_scan·batchcap·traceforce_gate 등) | ★**길이 혼합비를 축으로 한 스윕** — 짧은/긴 요청을 의도적 비율로 섞은 워크로드를 축으로 돌린 캠페인 0건. 전 synthetic 캠페인이 고정 길이(range-ratio 1.0)이고, 유일한 자연 분포(ShareGPT)도 **98%가 L<2000**으로 조성이 짧은 쪽에 고정돼 있다 |
 | **모델** | 정책 캠페인(E3)은 **Zamba2-2.7B 단독**. 4-모델 비교는 E1(synthetic·no-cudagraph)뿐 | 운영점(cudagraph)서의 **다-모델 재확인**. Zamba2는 **ctx 4096 상한**이라 애초에 long-context 불가 |
 | **출력 길이** | out 32/96 · ShareGPT 출력 | 긴 생성(o≥512)의 decode 지배 regime |
 | **동시성** | **`max_running_requests`=48 고정** | 이 상수가 **얽힘 기전의 축**인데 sweep한 적 없음 |

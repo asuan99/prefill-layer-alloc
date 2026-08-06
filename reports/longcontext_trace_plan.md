@@ -92,7 +92,7 @@ long-context가 실제로 흔들 수 있는 것은 **(1) 최적 static split의 
 | | |
 |---|---|
 | **창립 동기** | hybrid의 attn 층과 mamba 층은 연산 특성이 다르다 ⇒ 다르게 다뤄야 한다 |
-| **그 차이가 켜지는 곳** | **Diff A(비용비) = attn/mamba**: `attn ~ L^1.68` vs `mamba ~ L^0.61`, **교차점 ≈3k tok**. L=2k서 **0.47×**(mamba가 오히려 비쌈) → L=8k **2.4×** → L=32k **10.1×** (`results/prefill_knee/diffA_vs_diffB_table.md`) |
+| **그 차이가 켜지는 곳** | **Diff A(비용비) = attn/mamba**: `attn ~ L^1.68` vs `mamba ~ L^0.61`, **교차점 ≈3k tok**. L=2k서 **0.47×**(mamba가 오히려 비쌈) → L=8k **2.4×** → L=32k **10.1×** (`results/prefill_knee/diffA_vs_diffB_table.md`, **no-cudagraph micro**). ★**지수 정정(2026-08-04, X2′, `AGGREGATE_COMPOSITION_2026-08-04.md`)**: steady OLS(ctx≥2050) **a=1.916±0.021 / b=0.954±0.008 (R²≥0.9996)** — 1.68/0.61은 **오염 끝점 2점 추정**. "L=2k서 mamba가 오히려 비쌈"은 **단위 의존이라 판정 불가**(집계 단위=커널/per-layer/정책 단위마다 역전 지점이 2.75k–17.9k로 달라짐), 인용 시 집계 단위를 명시할 것 |
 | **그런데 서빙 판정이 난 곳** | ShareGPT **mean 352 · p50 204 · p95 1042** (98%가 L<2000) / synthetic **in2000·in3600** ⇒ **전부 교차점 아래 = Diff A가 닫혀 있거나 역전된 구간** |
 
 ⇒ ★**"attn과 mamba가 다르다"는 전제가 실제로 성립하는 구간을 이 아크는 *서빙으로 한 번도 밟지 않았다*.**
@@ -105,8 +105,8 @@ S0/S2/S9/S10의 서빙 반증은 각자의 환경에서 유효하지만(→ [res
 이 아크는 **결과를 본 뒤 서사를 맞추다가 4번 뒤집혔다.** 그래서 **측정 전에 예측을 등록**한다.
 
 **(a) lever는 Diff A가 아니라 Diff B다 — 그리고 Diff B는 long-L에서 닫힌다.**
-실측 Diff B(=SM 민감도비): **L≥8000서 0.96–1.04**, L=32000서도 **1.01–1.04**. 반면 **L=2000서 ≈1.35**.
-⇒ **재배분할 여지는 L이 *짧을수록* 열린다.** long-context는 layer-aware 가설에 **불리한 방향**이다. **long-context 실험은 layer-aware의 재판이 아니다.**
+실측 Diff B(=SM 민감도비): **L≥8000서 0.96–1.04**, L=32000서도 **1.01–1.04**. 반면 **L=2000서 ≈1.35**(★**REFUTED, 2026-08-04, X2′**: steady **1.0081** [1.0078, 1.0084] — 보고 1.35는 계측 결함(버킷 비대칭+누산기 러닝평균) 아티팩트, `CONSENSUS.md` §1-3).
+⇒ **재배분할 여지는 L이 *짧을수록* 열린다.** long-context는 layer-aware 가설에 **불리한 방향**이다. **long-context 실험은 layer-aware의 재판이 아니다.** ★결론(long-context가 layer-aware에 불리)은 **방향 불변**(L≥8000의 ≈1.0도 steady 재계산 시 1.01–1.04 근방으로 유지) — 이 문단이 정정하는 건 L=2000 지점의 magnitude뿐이다.
 
 **(b) (D) granularity 비용은 L과 무관하게 남는다.** S2에서 **TPOT 42→124ms**로 정량화된 sub-step 재분할 비용은 구조적이며, L이 길어져도 사라지지 않는다.
 

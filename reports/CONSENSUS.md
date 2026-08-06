@@ -4,7 +4,155 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-03 rev7 (★★★§1-30 신설[같은 날 4차 속행, doc-steward
+최종 갱신: 2026-08-05 rev12 (doc-steward — ★★★**§1-1(P1) 갱신: P1 운영점
+대조(cudagraph-ON) 감사 반영 [claims-auditor 2026-08-05, jobs 873944/873945,
+`results/p1_opint/`]. 새 성능 판정 아님(감사자 판정을 정본화만 함).**
+정본 goodput 술어로 채점하면 agnostic v1이 fused를 Zamba2-2.7B·
+Granite-4.0-h-micro-base **2모델 전부·rate 2–6에서** 이기나(정상상태 셀
+한정 인용), 사전등록 mean-ITL 술어로는 Granite 부호가 뒤집힌다(단
+위반 0건=항등식이라 강등 채택 안 함) ⇒ "Zamba2 확인"·"Granite 강등"
+둘 다 등재 금지. "항상 이득" 철회(pdmux는 정상상태 decode를 5–45%
+늦춤), 기전은 3-플래그 묶음 처치라 "PD 분리 자체" 귀속 NOT-YET-
+SUPPORTED, 실현 파티션 미측정. NemotronH·Falcon-H1 미측정이라
+"4모델 전부" 문구 폐기. 신규 방법론 게이트 #12(임계 사다리+큐-성장
+검정)·#13(묶음 처치) + #6 새 사례(위반 0건 술어=항등식) 등재.
+`PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트"·"다음 실험
+gate" 동반 갱신, `CLAIM_EVIDENCE_MATRIX.md`는 이 항목을 인용한 기존
+서술이 없어 갱신 대상 없음(확인 완료). §1-1(P1) 아래 상세. 이전 rev11:
+2026-08-05 (★★★★**고-D 대조(job 873921) 판정 반영
+[claims-auditor 2026-08-05 감사 — §0 종결 CONFIRMED (scoped) 등급 불변,
+사전등록 밴드 [12,13]ms는 REFUTED, 새 성능 판정 0건]**: α(T8 d92=(P16,D92),
+sticky ON, ShareGPT rate 2, n=4 블록, cudagraph ON, gpu41)가 실행됐다.
+pooled per-token ITL p50 = **11.26ms**(telemetry-path)/**11.32ms**
+(raw-itls path), `E1_DECODE_REALIZED`=1.000/0.998/0.998/1.000, `n_err=0`.
+사전등록 3-밴드 규칙 적용 시 **INDETERMINATE**(12–13 밴드 미달·28–30
+붕괴 밴드와도 거리 큼) — **붕괴 분기는 REFUTED**, §0 종결은 유지된다.
+★**밴드 자신이 REFUTED**: [12,13]ms는 §1-31이 스스로 금지한
+**C2→sticky 이식**으로 도출됐고, α 내부 엔진측 step 회귀로 예측한 C2
+동작점(12.44–12.80)이 관측(12.875)과 0.9–3.8%만 어긋나 기록된 계통
+오프셋(−5.4%)으로 격차가 소진된다 — **워크로드 불일치**(decode-busy
+ctx_p50 중앙 1291 vs 287 tok, decode batch 11.31 vs 4.51,
+closed-loop+keepalive vs open-loop)가 원인이며 새 기전이 아니다. 대신
+α는 §0 종결을 분쟁 필드(`decode_sms`) 내부 재진술에서 **결과(outcome)
+축 앵커**로 옮긴다: block-matched ON d92/OFF d16(872077)=
+**1.0293[1.0210,1.0376]**, ON d16/OFF d16=**2.6320[2.6193,2.6447]**.
+**S3(하드웨어 부여 층)는 여전히 닫히지 않는다**(D92/D108을 0.6–2.9%밖에
+못 벌려 검정력 없음). **다음 gate 재정렬**: (δ) 같은 바이너리 OFF
+arm(10% 미만 교차-job 비교 인용의 신규 선행조건) → (β) →
+(γ), (α′) sticky ON을 C2 클라이언트로 1–2블록(γ와 병렬). **신규 방법론
+항목 §3-26**(예측 밴드도 이식 금지 규칙의 적용 대상). 정본 반영:
+`CONSENSUS.md` §1-31(이 파일)·§3-26, `PROJECT_STATUS.md` "8B
+decode-SM 프론티어" "2026-08-05(α)" 소절·"E1은 열리지 않는다"
+항목·"다음 실험 gate" #8. 원자료
+`workspace/engine-port/results/s2_sticky/s2a_pooled_873921.txt`·
+`s2a_T8_873921_result.txt`·`s2_sticky_d92.sbatch`(prereg 규칙
+:403-408, 전용 분석 md 아직 미작성). 이전 rev10: 2026-08-05 (★★**ceiling-censoring 진단(§1-13 각주의
+직접 검정) claims-auditor 감사 완료 — 새 성능 판정 0건, §1-13/HE0 판정
+자체는 불변.** result-analyst의 `CEILING_CENSORING_DIAG_2026-08-05.md`
+(UNAUDITED)를 감사 — **헤드라인 논증(§3.4 임계 사다리·§5 근거5) REFUTED**
+(T=20/30/60 세 점만으로 부호가 뒤집힌다는 서사는 검정력 0인 9-vs-9
+이벤트, 방법론 게이트 #6의 새 사례이자 §3 항목13의 6번째 재발, §3
+항목24 신설), **§3.5 후반("[55,65) split-불변 모드가 >60 질량을
+지배") REFUTED**, **§4 C2 정성 대조 REFUTED**(항목21의 3회차 재발, §3
+항목25 신설, ε 정합 요구 0.63–0.78 vs 정본 0.48–0.56), **§3.6 "gpu39
+3중 사다리" 사실오류로 폐기**(d24 rep1 실제 노드=gpu43, `sgptv_852341.
+out` 확인) — **line 89도 사실오류**(07-17 배치는 여전히 3× 버그 값,
+수정은 07-18부터, `sgptv_856889.out`/`sgptv_859005.out` 확인). **단
+각주의 결론(각주 자체) 은 REFUTED가 아니라 다른 증거로 CONFIRMED**:
+LO goodput은 이중 절단(처리량=도착률, pass=SLO 여유)이고, LO에도 ITL/
+TTFT 레버가 실재한다(요청별 ITL p95 p90 5.6 SD·중앙값 3.2 SD·TTFT p50
+3.3 SD) — 단 SLO 예산 단위로 HI의 1/14, 통계량에 따라 부호가 뒤집혀
+"어느 split이 LO에서 좋다"는 functional 없이 정의되지 않는다(§1-13
+각주 전면 교체). **§4.1/§4.2 부수 발견 중 F(HI spread=legacy scorer,
+d16 n=1, 정본 술어로는 +716%)는 허가, E(LO n 상이) 원안은 귀속 오류로
+불허하고 재작성본만 허가**(spread 0.067→0.087 재산출, "spread<rep SD"
+로 재서술, "d24 rep1 12건이 spread 전부"라는 귀속은 REFUTED — bind
+no-gate n=4가 같은 spread를 만든다). **노드 교락 방어 신규 기록**: arm
+내부 노드효과(0.05–0.33ms) vs arm효과(1.73ms)=3–19%, 완전매칭 대조
+(d34/d44 rep41-43, 같은 노드 gpu38) 부호 유지. 도구 결함 2건 기록
+(`analyze.py:183` request_slice가 분자만 자르고 duration은 안 자름 —
+engine-porter 후속 항목; duration 합산 `:180`은 코드로 확인, 옳음).
+살아남은 것(감사자가 깨려 시도했으나 못 깬 것): pass-절단 산술·워크로드
+바이트 동일성·phase 경계 청결성·duration 합산·legacy 스코어러 확인.
+`CEILING_CENSORING_DIAG_2026-08-05.md` 원문에 정정 표시 추가(보존,
+UNAUDITED→AUDITED 배너 갱신). 정본 반영: `CONSENSUS.md` §1-13·§3
+항목24·25(이 파일), `PROJECT_STATUS.md` "다음 실험 gate" #9.
+`PROJECT_STATUS.md:434-443`(C2 scope 문구)·§3 항목21과의 정합 확인
+(3회차 재발로 등재, 정본 자체는 불변). 이전 rev9: 2026-08-05 (★★★**§1-31 신설[claims-auditor CONFIRMED
+(scoped), doc-steward 기록 — §0 최상위 열린 항목 종결(behavioural), 새
+성능 판정 0건]**: S2(job 873015, sticky ON, T8 d16/d54, ShareGPT rate 2,
+n=8 블록, cudagraph ON)를 2026-08-05 독립 재현. pooled per-token ITL p50 =
+**28.92ms**(d16, t95[28.81,29.02])/**12.04ms**(d54, t95[11.96,12.12]) —
+사전등록 `[28,34]ms` 안, `split_frac` 라벨 미사용으로 재현. §1-28/§1-30
+§0의 이분법이 **behavioural하게 종결**: (i) 872077의 `decode_sms==16`
+라벨은 하드웨어 형태로 REFUTED·라벨 형태로 CONFIRMED(872077 d16이
+decode-busy 시간의 96.2%를 D108에서 보냄) / (ii) C2의 28–31ms=셀 배치
+성질은 DISFAVOURED(keepalive 없이·batch 2.6배 작게 0.93×로 재현) — 살아남는
+답 (iii)은 `split_frac≥0.90`이 D-파티션 클래스를 격리·완결 못한다는 것.
+**scope: selector-level, 하드웨어 SM 부여 직접 프로브(S3) 없음**
+(`decode_sms`는 `arbiter.sm_counts[stream_index]` 재진술).
+`E1_DECODE_REALIZED`(시간가중) = 0.9990±0.0017(d16)/0.9994±0.0008(d54),
+16/16 cell-block ≥0.995. **기전 독립 도출**: `runtime_snapshot`이
+개수-서브샘플(`TRACE_EVERY=32`)이고 decode-busy 조건부 케이던스가 4 arm
+전부 정확히 16 decode step(0.177–0.465s)이라 ITL 구간 하나가 스냅샷
+1/16개를 걸침 ⇒ 기대 순도 ≈6%, S0-R mode 분해의 6.6–9%와 일치. 배치 기여는
+세 추정 모두 2.3–4.7%뿐(노드/바이너리 상한은 d54 companion ≤1.097×) ⇒
+아티팩트 배제. ★**d54 companion은 사전등록 [13,16] 미달**(관측 12.03) —
+`PREREG_S2` §5.3에 이 조합의 규칙 없음, **인용 시 필수 동반**. `DESIGN.md`
+§4.3.12(f) 판별 예측(T8≈1.85)도 빗나갔으나(관측 2.402) 판별 arm(Ha8)이
+미제출이라 **설계상 미판정**(모형 반증 아님). ★**이 런에는 결과 게이트가
+0개**(`AMBIG_FRAC`·`MIN_N_SPLIT`·§3.1 일치검사는 sticky ON 하 항등식) —
+**방법론 게이트 #9의 네 번째 재발**(§3-23 신설). `S2_ANALYSIS_2026-08-04.md`
+의 "Instrument check" 문단(케이던스 ~2.0ms 서술)에 **정정 표시**(원문
+보존) — decode-idle 값을 decode-busy로 오인, 90–260× 오차. **E1은 이번
+회차로 열리지 않는다 — 4개 독립 사유**: `G_LEVER`/`G_FLAT` 여전히
+UNDETERMINED(post-sticky sd ~14× 붕괴로 임계 사전등록 시 null 채택 편향
+위험) / sticky 기판이 estimand를 바꿈(decode-busy 시 prefill이 벽시계
+~77% 유휴, co-located 예산 배분이 아니라 단일-테넌트 측정에 가까움) /
+prefill 축 미통제(TTFT p50 46.3→63.2ms 무기전) / 음성대조 구조적 부재(d16
+UNSPLIT n=0/8, "레버 부재"가 아니라 "이 estimand 하 정의 불가")+S3 미실행.
+**긴장 A(HE2 vs C2)는 전혀 닫히지 않았다.** C2 자체(레버 존재,
+2.36–2.91×, scoped)의 등급·수치는 **불변**(자기완결적 캠페인, 이 종결의
+영향 밖) — 바뀐 것은 "C2와 E1 격자가 같은 물리량을 재는가"라는 상위
+질문뿐이고 이제 그쪽으로 confirmed. 다음 gate: (α) sticky-ON 고-D 대조
+셀(prereg p50→12–13ms, 반증 가능한 유일 실험) / (β) OFF+`TRACE_FORCE_
+PREFILL=1` 1블록 / (γ) S3(하드웨어 층) / (δ) 같은 바이너리 OFF arm(등재
+선행조건 아님). 상세 `../PROJECT_STATUS.md` "8B decode-SM 프론티어"
+"2026-08-05" 소절, `../workspace/engine-port/results/s2_sticky/
+S2_REPLICATION_2026-08-05.md`(전문), `results/s8_frontier/DESIGN.md`
+§4.3.16]. 이전 rev8: 2026-08-04 (★★**GROUP A/B 감사 반영[claims-auditor +
+result-analyst X2′, doc-steward 기록 — 새 성능 판정 0건, 전부 등급
+강등·스코프 축소·개념 등재]**: §1-3(Diff A/B) — 계측 결함 2종(버킷
+비대칭 + 누산기 러닝평균) 확인, "WIDE 스윕으로 확증"·"L=2000선
+lever는 L↓서 열림" **철회/REFUTED**(steady L=256 밴드 [1.24,1.34]·
+L=512 1.198·L=2000 1.0081[1.0078,1.0084]), 정책 단위 환산 시 1.032/
+1.031로 소멸(비독립), §1-3 판정 자체는 불변(기전 서사만 변경). §1-5 —
+"knee=108을 floor에 대입하지 말 것" 오독 방지 각주 신설 + job 858811
+계측 결함 3건 확인(버킷 비대칭·`full`-첫-arm 편향·물리 불변량 위반)으로
+"attn 비중 5%→79%" 등 인용 금지. §1-13 — 천장 절단(ceiling censoring)
+개념 각주(LO goodput은 도착률에 절단돼 지표 무신호, 레버 부재 아님).
+§1-1(P1) — no-cudagraph 비운영점 한정·rate1 동률·cudagraph가 fused
+死因(TPOT>60ms)을 제거한다는 반대 증거 병기(검증 실험 예정). §1-17
+(positioning) — "모든 수정이 static 수렴"의 '모든'은 reactive 계열
+각주(Step D/F 온라인 feedforward는 이미 시험, offline decode-floor
+예측만 미시험). §1-20(P6, disaggregation +16%) — 정본 자신이 근거
+캠페인을 n=1~2·overload-only·underpowered로 이미 기록 ⇒ "확정"→
+"n=1~2, 미확증" 강등. §3에 항목20(층위 구분 3종: 절대≠상대 민감도·
+천장절단·baseline 상이)·21(C2→벡터1 탄력도 정합 REFUTED, 격자 이전
+금지 재실증)·22(재사용 인용 금지: "d16 1.056 vs d24 6.240"=폐기벤치
+최량rep, 집계 Diff A 교차점=U_H 가정 의존 판정불가) 신설.
+`PROJECT_STATUS.md`(확정된 결과 1·8B decode-SM 민감도 측정 노트 C2
+국소탄력도)·`reports/paper/CLAIM_EVIDENCE_MATRIX.md`(Claim A C2 부기)·
+`research_arc.md`(§S3 정정 재정정·L=2000 REFUTED·mamba 역행 크기정정
+9.05%→2.59%·Diff A 지수정정 1.916/0.954·d16 6.240 인용금지 각주)·
+`longcontext_trace_plan.md`(Diff A 지수정정)·
+`workspace/engine-port/results/prefill_knee/diffA_vs_diffB_table.md`
+(no-cudagraph micro 라벨 + L=2000 오염 표시)에 동반 반영. 근거
+`reports/layertype_dynamic_POSITIVE_2026-08-04.md`·`_NEGATIVE_
+2026-08-04.md`·`_JUNCTION_2026-08-04.md`(종합 문서, 정본 아님) +
+`workspace/engine-port/results/prefill_knee/AGGREGATE_COMPOSITION_
+2026-08-04.md`(REV.2, UNAUDITED 배너 유지)]. 이전 rev7: 2026-08-03
+(★★★§1-30 신설[같은 날 4차 속행, doc-steward
 기록 — **성능 판정 0건, GPU 런은 별도 제출 중·결과 없음**]: §1-28 §0의
 이분법((i)/(ii))이 **유지 불가**임이 확인됐다. E1 SPLIT 모집단이 이봉이고
 윗봉이 C2 셀별 p50과 1–2% 일치, 아랫봉은 같은 job UNSPLIT과 통계적으로
@@ -137,11 +285,11 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 
 | # | 결론 | 근거 |
 |---|---|---|
-| 1 | **PD 분리 자체는 항상 이득** | agnostic이 fused를 4모델 전부서 이김 |
+| 1 | ~~**PD 분리 자체는 항상 이득**~~ → ★반증/정정(2026-08-05, claims-auditor, jobs 873944/873945) **PD-mux 활성화는 운영점에서도 꼬리 SLO goodput 이득 — 술어·모델·워크로드 한정, 기전 귀속 미확립** | agnostic이 fused를 4모델 전부서 이김. ★**스코프 축소(2026-08-04, claims-auditor)**: 이 4-모델 캠페인은 **전부 `--disable-cuda-graph`**(no-cudagraph 비운영점, `triage/p1_7_bench_one.sbatch:42`)이고 **rate 1에서는 동률**(도착률 천장)이며 **운영점(cudagraph-ON) 대조는 어느 모델에서도 측정된 적 없다**. ★**반대 증거 신규**: fused의 死因은 **TPOT > 60ms 임계 초과**(Granite rate4 TPOT 61.21)인데 **cudagraph가 그 벽을 제거한다**(plain TPOT 62.70→13.51ms, rate4 82.41→**54.04ms=60ms SLO 통과**, `workspace/engine-port/results/cudagraph_probe/cudagraph_results.md` Probe 1 — Zamba2 단일모델 관측이라 Granite에 직접 이식은 아니나 死因 메커니즘이 cudagraph로 해소 가능함을 시사) ⇒ **"PD 분리 자체는 항상 이득"이 운영점에서 축소되거나 소멸할 가능성**. 검증 실험(2모델×{plain,agnostic}×cudagraph-ON×n≥4) 진행 예정, 결과 없음. 상세 [layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) §2.0. ★★★**반증/정정(2026-08-05, claims-auditor 감사, jobs 873944/873945, Zamba2-2.7B·Granite-4.0-h-micro-base, n=5 paired, 사전등록 `results/p1_opint/PREREG.md`, 판정서 `results/p1_opint/P1_OPINT_RESULT_2026-08-05.md`[claims-auditor 감사 반영본])**: 위 "축소되거나 소멸할 가능성"은 낡았다 — 운영점(cudagraph-ON) 대조가 처음 측정됐고, **소멸하지 않았으나 "확인"으로 올라가지도 않는다.** 정본 goodput 술어(게이트 #4: TTFT≤3s ∧ 요청 내부 token-ITL p95≤60ms)로 채점하면 `--enable-pdmux`(agnostic v1)가 fused(plain)를 **두 모델 전부·rate 2–6 전 셀에서** 이긴다(rep 부호 5/5, paired CI 0 배제). **인용 가능한 정량치는 두 arm이 모두 정상상태(큐 성장·런길이 표류 없음)인 셀뿐이다**: Zamba2 rate2 **+40.5%**[CI +0.431,+0.620 req/s], rate3 **+185.8%**; Granite rate3 **+11.7%**, rate4 **+27.0%**. 임계 사다리 40–300ms 전 구간 부호 불변(=metric cliff 아님, ★신규 방법론 게이트 #12: 임계 지시함수 판정은 임계 사다리와 큐-성장 검정으로 견고성을 보여라). **Zamba2 rate4·6과 Granite rate6은 한쪽 이상이 용량 위**여서 **부호만** 인용한다. Granite rate2는 경계(+3.4%, 임계 48ms로 내리면 소멸). ★**술어 의존(중요)**: 사전등록이 채택한 mean-ITL(TPOT) 술어로는 Granite에서 부호가 뒤집힌다(−0.3~−1.6%, CI 0 배제). 그러나 그 술어는 Granite rate3·4에서 **위반 요청이 0건이라 goodput ≡ throughput**(항등, ★방법론 게이트 #6의 새 사례: 판별력 0인 술어에 "차이<3%⇒강등" 규칙을 적용하면 무신호가 강등으로 둔갑한다)이고 남는 차이는 **3% 하한 미만**이다. ⇒ **"Granite에서 P1 전면 강등"은 채택하지 않는다.** 채택하는 것은 "**mean-ITL 술어는 이 regime의 Granite에서 fused의 死因을 잡지 못한다**"뿐이다. 마찬가지로 Zamba2의 사전등록-술어 유의 셀(r4·r6)은 전부 절벽 위라 **그 경로로는 "확인"이 성립하지 않는다** — ⇒ **"Zamba2 P1 운영점 확인(사전등록 지표)" / "Granite P1 전면 강등" 두 문장 모두 정본 등재 금지.** ★**"항상 이득"은 철회한다 — 비용이 실재한다**: pdmux는 정상상태 per-token decode를 **5–45% 늦추고**(중앙 token-ITL 9.67→10.50 / 22.57→29.30ms[Zamba2], 6.80→7.63 / 8.96→12.98ms[Granite]), 저부하 TTFT p50를 체계적으로 악화시키며(Zamba2 r2 0.164→0.230s), Granite raw 처리량은 **−0.3~−2.6%**(CI 0 배제)다. **이득은 꼬리, 비용은 중앙이다.** ⚠️**기전 귀속 미확립(3-플래그 + 미조율 baseline, ★신규 방법론 게이트 #13: arm 대조가 엔진 제약으로 다중 플래그를 강제하면 그것은 묶음 처치다)**: 이 엔진에서 `--enable-pdmux`는 `--chunked-prefill-size -1`·`--disable-overlap-schedule`을 **assert로 강제**하므로(`sglang/srt/server_args.py:6125-6137`) 측정된 처치는 세 플래그 **묶음**이다(`p1op_run.sbatch:55`). 또한 fused arm은 측정 대상 실패 모드에 대해 **미조율**이다 — 관측 stall은 prefill 배치 자체이고(클러스터 지속 166ms@r2→474ms@r4, 케이던스 1.1–1.9/s), `--chunked-prefill-size` 축소와 `--enable-mixed-chunk`(`sglang/srt/managers/scheduler.py:2525-2541`)가 정확히 그 축의 fused-측 레버인데 **둘 다 기본값**이다. ⇒ **"PD 분리(SM 분할) 자체가 원인"은 NOT-YET-SUPPORTED.** 현재 지지되는 것은 "**이 엔진에서 PD-mux를 켜면 기본 설정 fused보다 꼬리 SLO goodput이 좋다**"이다. ⚠️**실현 파티션 미측정**: `PDMUX_TELEMETRY_PATH` 미설정으로 realized `(prefill_sms, decode_sms)` 재집계 불가 ⇒ **파티션·동시성 기전 문장은 정본 금지**(Stage 0 D108 전례), arm 수준 대조만 유효. ⚠️**2026-08-04 반대 증거(위 Probe 1) 정정**: "cudagraph가 fused의 死因(TPOT>60ms)을 제거한다"는 **중앙값 근거**였다. 이번 측정에서 plain rate4는 중앙 TPOT 48.5ms인데도 요청의 **31%**가 mean-ITL SLO를, **86%**가 정본 술어를 위반한다. **중앙값이 SLO 아래 ⇏ 요청 통과.** cudagraph가 제거한 것은 **per-step 벽**이고 남은 것은 **blocking 벽**이다. **위생(허가)**: `boot_ok=1` 24/24, `CORRECTNESS=PASS` 24/24, 서버 로그 traceback/CUDA error 0건, **양 arm cudagraph ON**, piecewise는 **양 모델·양 arm 모두 OFF**(대칭, 교락 아님), 페어링 무결(input_lens 40/40 완전 일치), arm 순서 무작위화 로그 확인. **단 rate 순서는 미무작위화**(`p1op_run.sbatch:148` 고정 2→3→4→6, arm 대조는 paired라 무영향)이고 **n=5는 동일 job·동일 노드 반복**(CI는 노드 내 재현성이지 노드·날짜 간 재현성이 아니다). **등재 금지**: "Zamba2 P1 운영점 확인(사전등록 지표)"/"Granite P1 전면 강등"(위 사유, 양쪽 다); r4·r6 크기 **+41.8%/+398%/+501%/+634%/+174.9%**(런길이 의존 + 캠페인 간 2.2× 불일치, 2026-07-13 probe3 agnostic r4 1.721 vs 3.834); 용량 수치(plain≈4/agnostic≈5, Granite 7.5 vs 6.5)를 n=1 지시값 이상으로(Granite r8 비단조=drain-tail 아티팩트); 파티션·동시성 기전 문장·split 수치(Gate 1 해소 전); "PD 분리 자체" 기전 귀속(Gate 2 해소 전); NemotronH/Falcon-H1 확장·ShareGPT/변화-trace 확장(미측정); **2026-07-13 `cudagraph_probe` 수치(위 Probe 1)와 이 캠페인 수치의 직접 대조**(격자 간 이전 금지, 게이트 #11). **다음 gate**(우선순위순): Gate 1 telemetry 재현런(≈0.2 GPU-hr, agnostic 1 rep×rate{2,3}, realized 파티션 시간가중 residency+전이 수, 사전등록 판정: decode-busy∧prefill in-flight 구간 realized split≥90%가 (74,34)/(54,54)면 기전 문장 해금) → Gate 2 4-arm 분해(plain/plain+chunked-1+no-overlap/plain+chunked512/agnostic × rate{2,3}(+4) × n=5, 사전등록 판별: `plain+aux≈agnostic`(3% 이내)면 §1-1 **플래그 아티팩트로 붕괴**, `plain+chunk512≈agnostic`이면 §1-1을 "PD-mux는 head-of-line blocking을 없애는 여러 수단 중 하나"로 재작성 — **논문 신규성 축이 바뀐다**) → Gate 3 나머지 2모델(NemotronH·Falcon-H1) 운영점 대조("4모델 전부" 인용 전제, 안 하면 §1-1은 영구히 2모델 문장) → Gate 4 sustainable-rate n≥4 직접측정(r4/r6 크기 인용 전제, 현재 후순위). **scope(축약 금지)**: {Zamba2-2.7B(triton, ctx4096)·Granite-4.0-h-micro-base(flashinfer, ctx8192), A100 108-SM green-context, **cudagraph-ON**, `--disable-radix-cache --mem-fraction-static 0.82 --max-running-requests 48`, `random-ids` **in2000/out96**(prefill:decode 토큰비 ≈21:1), 정상상태 단일-rate 격자 {2,3,4,6}, 120 프롬프트, n=5 paired(동일 job·동일 노드), agnostic v1(`pdmux_a100_smoke.yml`, sm_group_num 4)}. **NemotronH·Falcon-H1은 운영점 미측정 ⇒ "4모델 전부"는 더 이상 쓸 수 없다.** ShareGPT·변화 trace로 확장 금지(게이트 #2). torch 2.9.1에서 pdmux는 엔진 자체 경고 대상(`server_args.py:6141-6147`). 상세 `workspace/engine-port/results/p1_opint/P1_OPINT_RESULT_2026-08-05.md`, 신규 방법론 게이트 전문은 `../PROJECT_STATUS.md` "방법론 게이트" #6 새 사례·#12·#13, gate 목록 전문은 같은 문서 "다음 실험 gate" |
 | 2 | **운영점 = cudagraph-ON** | decode wall 제거(TPOT 41→12ms), goodput ~1.5–2×↑. 기존 no-cudagraph 수치는 전부 하한 |
-| 3 | ★**layer-type 런타임 정책 全형태 死** | 근거는 **서빙 직접 측정**: 4-모델서 agnostic 4/4 승 + **coordinated per-type 구현이 TPOT 42→124ms**. **(B,L) 2D knee**: 재배분 lever **Diff B ≈ 1.0 (L≥8000, 0.96–1.04)**. ⚠️**정정(2026-07-17)**: **L=2000선 Diff B≈1.35**(B1 1.38/B48 1.34)이고 **격자가 실 서빙 regime(ShareGPT 98%가 L<2k)을 안 덮음** ⇒ **"lever 부재" 기전은 long-context 한정·짧은 L엔 외삽**. 결론은 서빙 측정이 지탱하며, 짧은 L의 死因은 **(D) granularity**로 추정. 시각화 `results/prefill_knee/diffA_vs_diffB.png`. **✅ WIDE 스윕(L 256–32768×B 1–16, 2026-07-18, jobs 857371/857477)으로 확증**: lever는 **L≤512서 실제로 열림**(Diff B 256→1.42/512→1.22), L≥1024 ≈1.0; 기전=짧은 L서 둘 다 SM 미활용(mamba 44SM 포화); **그래도 死**(stakes sub-ms/layer ≪ (D) 42→124ms, batch 무영향). `knee2d_wide.png`. decode-side는 lever 있으나 sub-step (D)drain + **cudagraph 비양립**. §14 예약도 fixed d16으로 degenerate |
+| 3 | ★**layer-type 런타임 정책 全형태 死** | 근거는 **서빙 직접 측정**: 4-모델서 agnostic 4/4 승 + **coordinated per-type 구현이 TPOT 42→124ms**. **(B,L) 2D knee**: 재배분 lever **Diff B ≈ 1.0 (L≥8000, 0.96–1.04)**. ⚠️**정정(2026-07-17)**: **L=2000선 Diff B≈1.35**(B1 1.38/B48 1.34)이고 **격자가 실 서빙 regime(ShareGPT 98%가 L<2k)을 안 덮음** ⇒ **"lever 부재" 기전은 long-context 한정·짧은 L엔 외삽**. 결론은 서빙 측정이 지탱하며, 짧은 L의 死因은 **(D) granularity**로 추정. 시각화 `results/prefill_knee/diffA_vs_diffB.png`. **✅ WIDE 스윕(L 256–32768×B 1–16, 2026-07-18, jobs 857371/857477)으로 확증**: lever는 **L≤512서 실제로 열림**(Diff B 256→1.42/512→1.22), L≥1024 ≈1.0; 기전=짧은 L서 둘 다 SM 미활용(mamba 44SM 포화); **그래도 死**(stakes sub-ms/layer ≪ (D) 42→124ms, batch 무영향). `knee2d_wide.png`. decode-side는 lever 있으나 sub-step (D)drain + **cudagraph 비양립**. §14 예약도 fixed d16으로 degenerate. ★★**강등(2026-08-04, claims-auditor+result-analyst X2′ 재집계, 4,104 ZBPT줄/285셀 블록평균 역산, `workspace/engine-port/results/prefill_knee/AGGREGATE_COMPOSITION_2026-08-04.md` REV.2, UNAUDITED 배너 유지)**: 계측 결함 2종 확인 — (1) **버킷 비대칭**(`src/models/zamba2.py:163` `_zt("attn")`=RadixAttention 코어만·qkv/o_proj/MLP 제외 vs `:259` `_zt("mamba")`=mixer 전체) (2) **누산기 러닝평균**(`:391-394` `_zt_acc`가 emit 시 리셋 안 됨 + `knee2d_wide.sbatch:120`·`decode_knee_vs_ctx.sbatch:90`의 `tail -1`). attn·mamba를 나란히 재구성하면 **둘 다 부풀려지나 attn은 mamba의 1/20~1/2뿐**(비순환 확증: 두 독립 job이 같은 셀서 보고 mamba 111.578 vs 116.648=1.0454×인데 steady 84.012 vs 83.941=1.0008×). ⇒ **"WIDE 스윕으로 확증"은 철회**: steady 재계산 **L=256은 단일값 인용 금지, 밴드 [1.24, 1.34]로만**(추정량 의존, 보고 1.42는 warm-up 편향) / **L=512 1.198**(보고 1.22). **"L=2000선 Diff B≈1.35 ⇒ lever는 L↓에서 열린다"는 REFUTED** — steady **1.0081** [1.0078, 1.0084](보고 1.32/1.38은 런 간 4.5% 불일치, steady는 두 독립 job이 0.08%로 일치); **B=48 행은 shape 혼합 셀이라 별도 인용 불가**. ★정책 단위(모듈 전체)로 환산하면 `R_policy ≈ 1 + w_attn·(DiffB−1)`(`w_attn`=attn/(attn+mamba/6), L=256서 9.6%) ⇒ **1.032/1.031로 소멸** — 단 이는 독립 증거가 아니라 `w_attn`이 작아 U-K가 구조적으로 1로 끌리는 결과다. ⚠️**n_indep=1**(WIDE는 셀당 런 1개) — 모든 CI는 **런 내 블록 정밀도이지 재현성이 아니다**. **판정 자체는 불변**: "layer-type 런타임 정책 全형태 死"는 서빙 직접 측정(4모델 agnostic 4/4 승, coordinated TPOT 42→124ms)이 지탱하며 이 강등의 영향을 받지 않는다 — 바뀌는 것은 **기전 서사**뿐이다("lever는 있었는데 (D)가 삼켰다" → "정책 단위에서 lever가 애초에 없었다", negative가 더 깨끗해짐). ★**Diff A/B를 인용하는 모든 정본 문장에 "no-cudagraph micro" 라벨 필수**(`knee2d.sbatch:61`·`knee2d_wide.sbatch:82` 둘 다 `--disable-cuda-graph`, 기존 미기재). 상세 [layertype_dynamic_NEGATIVE_2026-08-04.md](layertype_dynamic_NEGATIVE_2026-08-04.md)·[layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) |
 | 4 | ★**얽힘(entanglement)** | prefill·decode가 running batch(`max_running_requests`)·KV 공유 → **decode 굶김 → ITL↑ → batch 정체 → prefill admission 차단 → TTFT 폭발**. 실측: **d16은 prefill에 92SM(최대)를 주고도 TTFT 7.24s**, d24(84SM)는 1.21s |
-| 5 | ★**최적 split = 부하 의존 (이동함)** | `최적 D_sm = max(모델 floor[attn-decode knee], 부하항[∝ λ×output_len])`. ★**floor 자체가 ctx 의존 (2026-07-18, job 858811)**: decode step의 attn 비율이 ctx 따라 이동(ctx256=5%→ctx16k=79%)해 **whole-decode SM-민감도가 1.1×(ctx256, SM-free)→10.5×(ctx16k, SM-hungry)**, 최적 decode SM knee **16→44→108→108**. ⇒ 짧은 ctx=decode에 SM 조금·긴 ctx=많이. (per-type 분할 아님=offline predictor 입력; `results/r0c/decode_knee_vs_ctx.png`). ⚠️**단 '민감도'는 triton/no-cudagraph 마이크로벤치 값**: decode-attn은 원리상 memory-bound지만 이 커널은 **HBM 대역폭 미포화(MLP-limited)라 108 SM까지 ~선형 스케일**(효율 44→108서도 ≈1.0). **운영점(cudagraph)선 HE2가 decode non-binding으로 관측** ⇒ 운영점 magnitude는 열린 질문. `decode_attn_saturation.png`. 저-decode-부하(synthetic o32/o96)=d16 / 실 trace(ShareGPT r8)=**d24·d44**. **d16 1.056 vs d24 5.28 = 5× 격차로 노이즈(±1.3) 압도** |
+| 5 | ★**최적 split = 부하 의존 (이동함)** | `최적 D_sm = max(모델 floor[attn-decode knee], 부하항[∝ λ×output_len])`. ★**floor 자체가 ctx 의존 (2026-07-18, job 858811)**: decode step의 attn 비율이 ctx 따라 이동(ctx256=5%→ctx16k=79%)해 **whole-decode SM-민감도가 1.1×(ctx256, SM-free)→10.5×(ctx16k, SM-hungry)**, 최적 decode SM knee **16→44→108→108**. ⇒ 짧은 ctx=decode에 SM 조금·긴 ctx=많이. (per-type 분할 아님=offline predictor 입력; `results/r0c/decode_knee_vs_ctx.png`). ⚠️**단 '민감도'는 triton/no-cudagraph 마이크로벤치 값**: decode-attn은 원리상 memory-bound지만 이 커널은 **HBM 대역폭 미포화(MLP-limited)라 108 SM까지 ~선형 스케일**(효율 44→108서도 ≈1.0). **운영점(cudagraph)선 HE2가 decode non-binding으로 관측** ⇒ 운영점 magnitude는 열린 질문. `decode_attn_saturation.png`. 저-decode-부하(synthetic o32/o96)=d16 / 실 trace(ShareGPT r8)=**d24·d44**. **d16 1.056 vs d24 5.28 = 5× 격차로 노이즈(±1.3) 압도**. ★**오독 방지 각주(2026-08-04, claims-auditor)**: 이 "knee"는 **decode-only·예산 무제약 cost 곡선의 argmin**이며 예산 제약 하 최소 필요 D가 아니다 — `최적 D_sm = max(floor[knee], 부하항)`에 knee=108을 대입하면 **항상 D=108 ⇒ prefill 0 SM**이 되어 PD-mux가 성립하지 않는다(§1-5 내부 자기모순). **이 knee를 floor에 대입하지 말 것.** ★★**계측 결함 3건 확인 + 인용 금지(2026-08-04, claims-auditor, job 858811)**: (i) 위 §1-3과 동일한 버킷 비대칭(`_zt("attn")`=코어만 vs `_zt("mamba")`=mixer 전체) ⇒ "attn 비중"은 decode step의 조성이 **아니다**; (ii) `results/r0c/decode_knee_vs_ctx.sbatch:45` `SM_LIST=(full 44 24 16 8)`로 **`full`이 항상 첫 arm** ⇒ warm-up 편향이 **모든 비의 분모**에 걸림; (iii) **물리 불변량 위반** — mamba SSD decode는 ctx에 O(1)이어야 하는데 sm44에서 **1.98× 산포**, `full`(108 SM)이 sm44보다 **2.34× 느림**(ctx256 65.655 vs 28.057). ⇒ **"attn 비중 5%→79%"·"ctx256 = 1.1× SM-free"·"knee 16→44→108→108" 인용 금지.** 보정 시 ctx256 민감도 **1.140 → 2.513×**. 재측정 진행 중(계측 수정 후 4 ctx × 5 SM × n=3, 미제출). 상세 [layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) §2.4·[layertype_dynamic_JUNCTION_2026-08-04.md](layertype_dynamic_JUNCTION_2026-08-04.md) §1.1 |
 | 6 | ★**비대칭** | decode **과다공급**=저부하서 거의 무해 / **과소공급**=고부하서 파국 ⇒ **최악 phase 기준 decode-heavy static이 두 phase 모두 안전 → 지배** |
 | 7 | ★**동적이 best-static을 못 넘음 (HE0)** — **n≥4 견고, SLO 엄격도 무관 (§1-17로 tight까지 확정)** | **변화 trace**(유효 벤치). **d44 3.220±0.013 (n=4)** > **d34 3.171±0.025 (n=4)** > **bind+GATE 3.132±0.019 (n=9)** > bind no-gate 2.934±0.306 (n=4). d44↔bind+GATE 격차 **0.088 = 5.4 pooled-σ**. (n≥4: d24 3.039±0.130 / slo 2.964±0.025 / d16 2.846±0.055). ※ 전부 **TRUE goodput** — 구 보고값(9.649 등)은 하네스 3× 부풀림, `f921ae8`서 수정, **순위 불변**. ★**tight SLO(chat 300/50)로 재튜닝해도 동일**(§1-17: d44 73.2%≫bind+GATE 44.3%) — 관대 SLO 한정 아님 |
 | 8 | **switch overhead는 병목이 아님** | switch 2회로 static 매칭한 rep 존재; **slo(5sw) < bind(21sw)** ⇒ 손실은 (A)overhead 아니라 **(B)positioning** |
@@ -164,14 +312,16 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | 28 | ★★★**(2026-08-03, 같은 날 3차 속행, claims-auditor) C2 → `G_LEVER` 앵커 경로 = 폐기, `G_LEVER`/`G_FLAT`는 §4.3.12(d)대로 UNDETERMINED 유지** | `c2_anchor.py`(신규, 미추적)로 시도한 5개 주장을 감사 — **주장 1(realized 검증)만 CONFIRMED, 2–5 전부 REFUTED/NOT-YET-SUPPORTED**. **★§0 결정적 발견(신규, 최상위 열린 항목)**: 같은 arm·같은 서버 플래그(`s8_sweep.sbatch:141-146` vs `e1_m3_control.sbatch:212-218`)·매칭 batch에서 "decode 16 SM" per-token ITL p50이 **2.6× 다르다**(C2 865493 SPLIT bin5 **28.79ms** ≈ `FINDINGS_8B` §2 28.48ms, vs **872077(E1 격자) d16 11.09ms**) ⇒ 둘 중 하나가 거짓: (i) 872077의 `decode_sms==16`이 실제 16-SM 하드웨어 실행이 아니다(`DESIGN.md` §4.3.11이 명시적으로 미검증으로 남긴 잔여층 — green context 생성이 하드웨어 SM 부여를 보장하는지 재프로브 안 함), 또는 (ii) C2의 28–31ms가 decode-SM 비용이 아니라 그 셀 배치(`[16,16,76-idle]`+상시 keepalive prefill 동거)의 성질이다. **어느 쪽이든 C2 비를 E1 격자로 이식 불가** — confound #1의 실측 대 실측 재현. **872077 전체와 이번 세션 sticky 결과가 딛고 선 바닥**이므로 최우선 열린 항목으로 기록. **주장 1** — CONFIRMED이나 서술 2건 정정 필수: (a) "파티션 활성률 0.66–0.93"은 `realized_pin_check.py`의 **스냅샷 개수 가중**이지 시간가중 all-busy(**0.803–0.958**)가 아님(방법론 게이트 #4 위반, 이 감사 한 건에서 3회), (b) 108 SM 시간은 warmup이 아니라 **창 밖 drain 전용**(warmup도 @D≈1.000, 기전은 오히려 강해짐). **구조적 함의(신규)**: in-window residency와 UNSPLIT 표본은 구성상 여집합 ⇒ `E1_DECODE_REALIZED≥0.90`을 통과하는 런엔 **음성대조가 정의상 존재할 수 없다**(865493 UNSPLIT n=0, sticky ON smoke D108 0초) — §4.3.12(e)(i) 확장 필요. **주장 2**(primary p95→p50) — 관측 CONFIRMED·기전 REFUTED(오염원은 monolithic prefill이 아니라 **파티션 전환 인접 구간**, 사건의 83–87%가 전환 0.5s 이내)·**처방 REFUTED 3중**(①같은 배제를 SPLIT에 적용해도 ≤2%만 이동 ②오염 기전이 sticky ON서 소멸 ③872077 실측 `T8 sp_p50=0.996[0.990,1.002]`로 p50 전환 시 양성대조조차 1.00이 돼 어떤 `G_LEVER>1`도 발화 불가=**캠페인을 구조적 NO VERDICT로 확정**하는 처방, 게다가 같은 p95 음성대조가 872077에서 반대 방향으로 깨짐) ⇒ **primary=`p95(SPLIT)` 유지, p50은 secondary, 전환-근접은 진단**. **주장 3**(편향=하한) NOT-YET-SUPPORTED(가산/곱셈 미식별 + 증거가 항을 0으로 만듦 — C2 분할 셀 전부 1410MHz 고정, 클럭 하락은 무분할 np뿐이라 **E1/sticky가 낼 throttling 비용을 C2는 안 냄**=반대 방향 경고). **주장 4**(`G_LEVER=1.41`) REFUTED(끝점 선택만으로 [1.41,2.40] 전 구간 도달 가능, 2.02는 게이트-FAIL job 4셀 포함, 1.41이 872077 T8 CI 하한 1.227을 가로지름). **주장 5**(`G_FLAT=1.25`) 방법 PLAUSIBLE·숫자 REFUTED(LOO 8개 실측 t95 반폭 0.303⇒1.30인데 Ha8 점추정 1.340>1.30로 자기 데이터서 뒤집힘, sticky가 사후 sd를 낮춰 사전-sticky 기반 임계는 관대해지는 방향=귀무 오수용 편향). `n_indep=1`(865493↔865533은 keepalive 설정이 달라 replicate 아님=**세 번째 pseudo-replication**). **regime 매칭 정정**: 872077의 12.8=concurrency, C2의 12.7=decode batch — 단위 맞추면 T8 2.8× 어긋나고 Ha8이 잘 맞음(앞선 서술과 정반대). **남은 경로(계획만, 미실행)**: `G_LEVER`는 (α)sticky 파일럿 T8 양성대조 효과크기 또는 (β)arm 간 대비 `g_T8/g_Ha8`(batch-매칭 rate 필요) — **둘 다 감사자 발안이라 독립 사전등록 필요**; `G_FLAT`는 사후-sticky sd 측정 후 TOST 동등성 마진(역시 독립 사전등록); 감사자 제안 게이트 S1(≈1 GPU-시간, T8 sticky ON d16+d54 C2복제 vs E1복제 2 block, 3갈래 판정) 미실행. 상세 `results/s8_frontier/DESIGN.md` §4.3.13 |
 | 29 | ★★**(2026-08-03, 같은 날 3차 속행) D=54 앵커 측정 취소(jobs 872920/872921) — keepalive 재현성 결함[코드/로그로 직접 검증, 미감사] + C2 high-residency=워크로드 장치 산물[독립 수렴, AUDITED]** | 기록 `results/s8_scaleup/NOTES_D54_ANCHOR_2026-08-03.md`(미추적 신규) + 하네스 4파일(미추적, `s8_sweep_d54.sbatch`·`pdmux_p16_d54.yml`·`d54_block_ratio.py`·`runtime_source_manifest_d54.sha256`) — **취소됐으나 설계(d16+d54 동일 캠페인, 4 block, 셀 순서 block 패리티 교대)는 재사용 가능**. **B-1[미감사, 코드·로그로 직접 검증]**: `s8_keepalive_prompt_224.txt`가 **1793 토큰**인데 `CTXCAP=1792` ⇒ 모든 keepalive가 HTTP 400. **865493은 byte-identical한 같은 파일로 `keepalive_errors=0`**이었고 두 srv.log 모두 `CTXCAP=1792` 동일 출력 ⇒ **2026-07-27 이후 엔진 트리 churn으로 context-length 거부가 엄격해졌거나 off-by-one이 이동**(원인 미규명, 자명한 수정 `KEEPA_REPS≤223` 미적용) — **s8_scaleup 캠페인 전체의 재현 불가 요인**이므로 인용 시 경고 필수. 결과: co-residency ~90–100%→**31–34%** 붕괴, 측정된 전 셀 `REALIZED_PIN` FAIL(T8 blk1 d16 0.316/d54 0.628, Hs8 d16 0.342/d54 0.577). **B-2[AUDITED — 독립 수렴]**: sticky OFF는 prefill in-flight일 때만 목표 분할을 유지(`_init_sticky_partition` docstring, `multiplexing_mixin.py:206-231`) ⇒ **C2의 높은 residency는 decode 파티션 제어가 아니라 keepalive 포화라는 워크로드 장치의 산물**. 세 경로 독립 도달: (A) 코드 읽기 (B) keepalive 사망 시 실측 붕괴(위 B-1) (C) 이번 run block-1 telemetry 교차표(`prefill_active>0` @D=**0.975–0.996**, @108=**0.000**, 4파일 — §1-28의 감사자 0.943–0.996/0.0000과 같은 모양이나 **다른 대조**(워크로드 장치 실패 전후)로 도달). ⇒ §1-26(B) estimand 미식별이 **C2에도 그대로 상속**됨 — C2 앵커가 죽는 **세 번째 이유**(§0 축 불일치·estimand 미식별 상속에 이어). 한계: 이 캠페인은 **np(무분할) 셀을 안 돌려** §1-28 주장3의 "np만 1290MHz 하락" 관측을 확증 못 함(분할 셀은 1396–1410MHz 평평, 일관은 하나 독립 확인은 아님). 상세 `results/s8_frontier/DESIGN.md` §4.3.14 |
 | 30 | ★★★**(2026-08-03, 같은 날 4차 속행) §1-28 §0의 이분법이 유지 불가 — 세 번째 후보가 실측으로 문서화됨, 오프라인 분리 불가, GPU(S2) 대기 — 성능 판정 0건** | §0은 (i) 872077의 `decode_sms==16`이 실제 16-SM 실행이 아니다 / (ii) C2의 28–31ms가 셀 배치 성질이다 중 하나가 거짓이라고 적었다. claims-auditor가 `FINDINGS_S0_AXIS_2026-08-03.md`를 감사하며(자기감사, 방법론 교훈 12) 이 이분법이 "E1의 `split_frac≥0.90`이 D 파티션 실행 토큰을 올바로 분리한다"는 전제 위에 서 있으며, T8의 세 공유 셀 전부에서 그 전제가 깨진다는 재프레이밍을 냈다 — E1 SPLIT 모집단은 **이봉**이고, 윗봉이 C2 셀별 SPLIT p50과 **1–2% 일치**(d16 0.992/d24 0.991/d44 1.013), 아랫봉은 **같은 job의 UNSPLIT과 통계적으로 동일**(d16 비 1.011). **독립 재현(result-analyst, `S0R_REPLICATION_2026-08-03.md`)**: claims-auditor도 아니고 사전등록을 쓴 세션도 아닌 분석자가 감사된 `m3_conditional.py` 프리미티브만 재사용 선언하고 자체 C2 리더·mode estimator를 새로 작성, 생산자 자체(`label_probe` element-wise, `s0dc_client`의 자기 기록 20/20 정확)에 대조해 실행 — 행 1·3 **재현**(윗봉/C2 비 0.992–1.013 flat, 빠른봉/UNSPLIT 비 1.000–1.023), 행 2(슬로우-쉐어가 D에 단조 증가)는 **순서만 재현**(d24−d16 스텝이 block scatter 안에서 미해결, Δ=+2.37±3.52pp n=8, t=1.90<t_crit 2.365; 감사자가 인용한 수준값 8.95/13.60/23.62/29.38%는 사전등록이 고정한 모집단(`a_free_only=True`)이 아니라 `False` 모집단에서 나온 것 — **사전등록 자체의 내부 불일치**, 방향은 불변), **행 5(클럭 lag sweep)는 발화하지 않음**(최적 δ=+0.10s에서도 slow share d16 11.4%/d44 27.0%, 90% 문턱에 크게 못 미침; δ 절대값≥0.25s에선 UNSPLIT 배경(2.7–3.1%)으로 수렴 — 라벨이 순수 클럭 잡음은 아니되 0.05s 스케일에서 취약함을 동시에 보임). ★**행 4(음성대조)가 강한 형태를 죽였다 — 이 회차의 핵심 결과.** 같은 mode estimator를 **UNSPLIT(108 SM) 모집단**에 적용하면 T8 전 셀에서 동일한 슬로우 모드가 나타나고 그 위치가 셀을 정확히 따라간다(33.88→22.12→15.62→14.12ms, D=16→24→44→54; d54에서는 SPLIT·UNSPLIT 슬로우 모드가 수치까지 동일, 14.12=14.12). 사전등록 falsifier("~31ms 모드가 ~9% 점유")는 d16/d24/d44에서 문자 그대로는 발화 안 함(UNSPLIT share 2.71/3.28/4.84%, 5% 미만 — d54는 5.61%로 발화)이지만 **그 falsifier가 지키려던 실질은 확인된다**: d16의 슬로우 토큰 8,893개 중 **7,903개(88.9%)가 UNSPLIT 라벨**이고 SPLIT은 759개(8.5%)뿐이다. 농축(클래스 내 슬로우 비율/모집단 base rate)은 **SPLIT 2.33–3.24×, UNSPLIT 0.78–0.93×**(d16–d54 전 구간) — `split_frac≥0.90`은 슬로우 모드를 **격리**하는 게 아니라 **농축**시킨다. 순도(SPLIT 토큰의 ~93%가 빠른 모드)도 완전성(SPLIT이 그 job 슬로우 토큰의 8.5%만 포획)도 성립하지 않는다. ⇒ **세 번째 후보 (iii)**: 두 job은 같은 축이나 라벨이 순수하지도 완전하지도 않다 — **§0은 더 이상 이분이 아니라 3지선다이며, 오프라인으로 분리 불가**. 살아남는 두 읽기(셀 수준 현상 vs 클럭 오프셋 누출)는 S2(GPU, 별도 제출 중, 결과 없음)만이 인과적으로 분리 가능 — prefill-overlap 컬럼도 같은(어쩌면 shift된) 클럭에서 계산되므로 arbitrate 불가. **이 층은 §1-25가 이미 기록한 시간 층 희석(`E1_DECODE_REALIZED` 4–19%) 안쪽의 두 번째 층**이고, §1-21(target-vs-realized)·§1-26(B)(estimand 미식별)와 같은 계열이다. **철회 3건**(메인 세션이 같은 날 앞서 씀, `FINDINGS_S0_AXIS_2026-08-03.md` 배너와 동일): "§0 stands as written"(과잉 해석 — 보인 건 3개 인접 집계에서 p50≈11ms뿐), "aggregation-invariant"(정확한 문장은 "11.06ms 단일 모드가 지배적이라 집계 선택에 둔감" — mode dominance이지 estimand identification 아님), "11.09는 집계 단위 미기록"(**틀림** — 산출자는 `m3_conditional.report_conditional` 리포트 [3] `sp_p50=11.0905`, n=11,124, `a_free_only=True`, `m3_conditional.py:158-161,251-262,316-329`에 문서화됨; 없는 것은 그 stdout 저장분뿐 — "저장된 출력이 없다"와 "추정량이 미기록"은 다른 실패 모드다). **재사용 가치 있는 계측 결함 2건**: ★`c2_anchor.py` 표 [5] "UNCONDITIONED CELL SUMMARY"가 **M8 전체와 Ha8 d16을 조용히 누락**(`meta`가 `"t0_monotonic_s" in s` 분기 안에서만 채워지는데, `c2_anchor.py:181-187`, 표 [5]는 앵커가 필요 없음에도) — 865493 앵커 현황은 T8·Hs8=5셀 전부/Ha8=d16 없음/M8=전무이고, **Ha8 d16 rep은 실제로 돌았다**(`itl_ms_p50=112.84`, n=5,200) — "측정 부재"가 아니라 "텔레메트리 앵커 부재"; mode estimator의 60ms 상한은 **arm-이식 불가**(Ha8은 토큰의 0.16%만 창 안, 미해명 ~87ms 스파이크가 구조상 상한 위). **방법론 교훈(§3 신규, 아래 참조)**: 자기가 검증하려는 코드를 복사한 게이트는 항등식에 가깝다(S0 gate 1이 `label_probe`를 복사해 자기 자신과 대조, `wmean`은 무대조) · 여집합 클래스에 음성대조를 걸어라(행 4가 세 차례 놓친 것을 한 줄로 잡음, §3 항목 9와 뿌리는 같고 방향 반대). **증거 수준**: 강한 형태(레버=D-SM 실행 식별)는 **채택 불가**(음성대조 반증), 약한 형태(이봉·윗봉 일치·아랫봉=UNSPLIT·농축 2.33–3.24×)는 **재현됨(독립성 부분적 — 추정량은 감사자 제안, 사전등록은 메인 세션, 실행만 독립, 인용 시 이 스코프 문구 동반 필수)**. §0의 (i)/(ii)는 **여전히 미판정**. 게이트 S1(§4.3.13)은 "부분 실현" 분기가 없어 **현 상태로 실행 불가**(4번째 분기 필요). `G_LEVER`/`G_FLAT`는 §4.3.12(d)대로 **UNDETERMINED 유지**(이번 회차로도 미해소). 상세 `../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(4차)" 소절, `results/s8_frontier/DESIGN.md` §4.3.15, 사전등록 `PREREG_S0_AXIS_2026-08-03.md`·`PREREG_S0R_MODE_2026-08-03.md`·`PREREG_S2_STICKY_ITL_2026-08-03.md`, 재현 판정 `S0R_REPLICATION_2026-08-03.md` |
+| 31 | ★★★**(2026-08-05, claims-auditor CONFIRMED scoped) S2(job 873015) 독립 재현 — §1-28/§1-30 §0 최상위 열린 항목이 behavioural하게 종결, E1은 열리지 않음, 성능 판정 0건** | S2(sticky ON, T8 d16/d54, ShareGPT rate 2, n=8 블록, cudagraph ON, gpu37) pooled per-token ITL p50 = **28.92ms**(d16, t95[28.81,29.02])/**12.04ms**(d54, t95[11.96,12.12]) — 사전등록 `[28,34]ms` 안, `split_frac` 라벨 미사용으로 재현(`PREREG_S2_STICKY_ITL_2026-08-03.md` §4 row 1 발화). §0 이분법 종결: **(i)**(872077 `decode_sms==16`=실제 16-SM 실행 아님)은 **하드웨어 형태 REFUTED·라벨 형태 CONFIRMED**(872077 d16이 decode-busy 시간의 96.2%를 D108에서 보냄, 3.8%만 D16) — `decode_sms`는 `arbiter.sm_counts[stream_index]` 재진술(`dual_worker.py:608-623`)일 뿐 하드웨어 SM 부여 직접 프로브(S3)는 여전히 미실행. **(ii)**(C2 28–31ms=셀 배치 성질)은 **DISFAVOURED**(keepalive 없는 open-loop ShareGPT·decode batch 2.6배 작은 조건에서 C2의 0.93×=5.4% 빠르게 재현). 살아남는 답 **(iii)**: `split_frac≥0.90`이 D-파티션 클래스를 격리·완결 못함(sticky ON에선 이 문제 자체가 SPLIT≈전체 인구가 돼 무의미해짐, d16 100.000%/d54 99.969% SPLIT). `E1_DECODE_REALIZED`(시간가중) = **0.9990±0.0017**(d16)/**0.9994±0.0008**(d54), 16/16 cell-block ≥0.995(pre-patch 872077 = 0.038/0.093). **기전 독립 도출**: `runtime_snapshot`이 개수-서브샘플(`PDMUX_DUAL_WORKER_TRACE_EVERY=32`)이고 양 캠페인 모두 `PDMUX_TRACE_FORCE_PREFILL=0`이라, decode-busy 조건부 스냅샷 케이던스가 4 arm 전부 정확히 16 decode step(0.177–0.465s) — ITL 구간 하나가 스냅샷 1/16개를 걸침 ⇒ 872077 d16 SPLIT 모집단 기대 순도 ≈6%, S0-R mode 분해의 독립 경로 값 6.6–9%와 일치. **아티팩트 배제**: 배치 기여는 bin-matching 4.7%/within-run slope 2.7%/블록간 회귀 2.3–3.2% 세 추정 모두 소폭, 노드(gpu36→gpu37)·바이너리(`multiplexing_mixin.py` 1파일 차)·캠페인날짜 전역효과는 d54 companion ≤1.097×로 상한. ★**d54 companion은 사전등록 [13,16]ms 미달**(관측 12.03, CI 전체 13 미만) — `PREREG_S2` §5.3에 "primary 적중+companion 미스" 규칙 없음, 사후분석은 원인을 sticky 교란(부호 반대로 배제)이 아니라 [13,16] 구간 도출 자체의 cross-cell 외삽 오류로 귀속(C2 d44=14.68을 d54 대용 사용, C2 자체 곡선으로 직접 외삽하면 12.79로 이미 하한 미만) — **인용 시 필수 동반**. `DESIGN.md` §4.3.12(f) 판별 예측(T8≈1.85)도 관측 2.402로 빗나갔으나 **판별 arm(Ha8) 미제출**이라 **설계상 미판정**(모형 반증 아님). ★**이 런에는 결과(outcome) 게이트가 0개**: `AMBIG_FRAC`·`MIN_N_SPLIT`·`PREREG_S2` §3.1 일치검사(`p50(SPLIT)`≈`p50(all)`)는 `E1_DECODE_REALIZED≥0.90` 통과 시 SPLIT≈전체 인구가 되므로 sticky ON 하에서 항등식, `E1_DECODE_REALIZED`는 arm 간엔 비항등식이나 ON arm 안에서는 `stream_idx=_sticky_fixed_idx` 코드 불변식, `ALIGN_R`은 계측 flag — 어떤 게이트도 "28.92 vs 11" 결과를 사전 제약하지 않음. **방법론 게이트 #9의 네 번째 재발**로 §3-23에 등재(세 번째 재발은 `S2_ANALYSIS_2026-08-04.md` §3의 §3.1-only 항등식 발견, 이번은 런 전체로 확장). `S2_ANALYSIS_2026-08-04.md:61-64`의 "Instrument check" 문단(케이던스 ~2.0ms 서술)에 **정정 표시**(원문 보존, 삭제 아님) — decode-idle 값을 decode-busy로 오인, 90–260× 오차·방향도 반대. **§0 최상위 열린 항목 해제**: "미해소 3지선다"→"CONFIRMED(scoped)로 종결, 단 하드웨어 층 미프로브"로 전환. C2 자체(레버 존재, 2.36–2.91×, scoped)의 등급·수치는 **불변**(자기완결적 4-arm matched-batch 캠페인, 이 종결의 영향 밖) — 바뀐 것은 "C2와 E1/sticky 격자가 같은 물리량을 재는가"라는 상위 질문뿐(이제 그쪽으로 confirmed, 단 `G_LEVER`/`G_FLAT` 미결이라는 별개 이유로 C2→sticky 이식·앵커는 계속 금지). **E1은 4가지 독립 사유로 이번 회차에도 열리지 않는다**: (1) `G_LEVER`/`G_FLAT` 여전히 UNDETERMINED(post-sticky 블록 sd가 pre-sticky 대비 ~14× 붕괴해 pre-sticky 산포 기반 임계는 null 채택 편향), (2) sticky 기판이 estimand를 바꿈(decode-busy 시 prefill이 벽시계 ~77% 유휴 — co-located `[108−D,D]` 예산 배분이 아니라 단일-테넌트 decode 측정에 가까움), (3) prefill 축 미통제(d16 TTFT p50 46.3→63.2ms, 기전 주장 없음), (4) 음성대조 구조적 부재(d16 UNSPLIT n=0/8블록)+S3 미실행. ⇒ **긴장 A(HE2 vs C2)는 전혀 닫히지 않았다.** **(α) 고-D 대조 셀은 2026-08-05 실행됐다(job 873921, T8 d92=(P16,D92), sticky ON, ShareGPT rate 2, n=4 블록, cudagraph ON, gpu41).** 관측 pooled per-token ITL p50 = **11.26ms**(telemetry-path, per-block t95 [11.049,11.467]) / **11.32ms**(raw-itls path, t95 [11.066,11.568]), `E1_DECODE_REALIZED` = 1.000/0.998/0.998/1.000, `n_err=0`. 사전등록 규칙(`s2_sticky_d92.sbatch:403-408`) 적용 시 **INDETERMINATE**(12–13 밴드에 5.7 block-sd 미달, 28–30 붕괴 밴드에서 ~106 block-sd 이격). **붕괴 분기는 REFUTED** — §0 종결은 유지되며 등급은 **CONFIRMED (scoped) 불변**이다. ★**밴드 부검(필수 동반) — 사전등록 밴드 [12,13]은 잘못 도출됐다(REFUTED).** 앵커 C2 d92=12.88은 재계산으로 정확하나(pooled raw 12.875, n=239,659), **C2와 sticky 격자는 파티션만 같고 워크로드가 다르다**: decode-busy ctx_p50 중앙 **1291 vs 287 tok**, decode batch 평균 **11.31 vs 4.51**, closed-loop+keepalive vs open-loop. α 런 자신의 엔진측 step 회귀(`t = 10.883 + 0.0991·batch + 0.00034·ctx`, n=2,140)로 C2 동작점을 예측하면 12.44–12.80ms로 C2 관측 12.875와 잔차 0.9–3.8%이며, 여기에 이미 기록된 캠페인 계통 오프셋(−5.4%, 아래 "등재 금지"의 "28.92는 구간 중앙에서
+견고" 항목 참조)을 더하면 격차가 사실상 소진된다. ⇒ **격차는 새 기전이 아니라 통제되지 않은 워크로드 격차다.** 이 밴드는 이 항목이 스스로 금지한 **C2→sticky 이식**을 예측에 사용한 것이며, 정본이 이미 보유한 더 가까운 앵커(872077의 D108 우세 10.98, α와 블록별 byte-matched·batch 4.56·ctx 283)를 쓰면 예측은 11.0–11.4로 관측과 일치했다. **"α가 §0를 수치적으로 확증했다"는 서술 금지.** ★**α의 실질 기여(순환성 제거).** α는 §0 종결의 근거를 **분쟁 중인 필드(`decode_sms`) 내부의 시간-가중 재진술**에서 **결과(outcome) 축 앵커**로 옮긴다: 블록별 byte-matched trace·batch-matched(4.51 vs 4.56)·ctx-matched(287 vs 283) 조건에서 ON d92/OFF d16(872077) = **1.0293 [1.0210, 1.0376]**, ON d16/OFF d16 = **2.6320 [2.6193, 2.6447]**, ON d54/ON d92 = **1.0658 [1.0586, 1.0731]**. prefill 비공존 조건 엔진측 per-step은 ON d92 **11.048** vs OFF (P0,D108) **10.979**(+0.6%). 872077 d16의 진짜 D16 질량은 라벨 분할이 아니라 **client ITL의 3.43%가 [20,45]ms(중앙 31.7ms)**로 나타나며 실현 시간점유 3.5%와 일치한다. ★**872077 안에서 SPLIT p50(11.08)과 UNSPLIT p50(10.98)의 차이는 1%인데 같은 기판의 진짜 D16 vs D92 대비는 163%다 — 라벨은 사실상 아무것도 분리하지 않았다**(이것이 (iii)의 결과-축 재진술이다). 붕괴 분기는 세 다리로 독립 반증된다: α의 d92 pin(11.3) / sticky **이전** 바이너리 C2의 실현 (P16,D16) 91–96%에서 31.05ms / 872077 자신의 느린 모드 31.7ms. **동반 필수**: 이 비교는 노드(gpu36/gpu37/gpu41)·바이너리(1파일)·날짜를 건너며, **3% 이하 차이는 그 오프셋 안이므로 정밀 일치로 읽지 않는다**(같은 바이너리 OFF arm(δ) 미실행). ★**스코프(유지·강화). S3(하드웨어 부여 층)는 α로 닫히지 않는다.** α는 D92와 D108을 **0.6–2.9%**밖에 벌리지 못하므로 "하드웨어가 92 SM을 부여했다"를 검정할 **검정력이 구조적으로 없다**. α가 배제한 것은 저-SM 가설(2.63×)이지 고-SM 내부 구분이 아니다. 이 항목의 "selector-level, 하드웨어 직접 프로브 없음" 스코프 문구는 **그대로 유지**한다. **다음 gate(재정렬, 2026-08-05)**: **(δ) 같은 바이너리 OFF arm — 승격: "선행조건 아님" → "10% 미만 교차-job 비교를 인용하려면 필수".** 1블록 d92(가능하면 d16도), sticky flag만 OFF, 같은 노드·같은 날. 위 실질 기여의 1.029·1.006 비교가 딛고 선 계통 오프셋을 처음으로 측정한다. ~7 GPU-min. **(β) OFF 1블록 `PDMUX_TRACE_FORCE_PREFILL=1`** — 유지(높음), (iii)의 유일한 양적 다리 직접 검정. 밴드는 **같은 job 내부 값에서만** 뽑을 것. **(α′) 신규(~10 GPU-min)** — sticky ON d92를 **C2의 클라이언트로**(C1024 closed-loop conc16 + keepalive) 1–2블록. 사전등록 예측 **12.4–12.9ms**(α 내부 회귀에서 도출). 적중하면 "C2와 sticky 격자가 같은 물리량을 양적으로도 잰다"가 처음 성립하고 격자 이전 금지 근거 일부가 해제되며, 빗나가면 **C2 앵커는 영구 은퇴**다. **(γ) S3** — 유일하게 남은 스코프 구멍, 우선순위는 δ/β/α′ 뒤. 제출 순서 권고: **δ(7분) → β(7분) → γ, α′는 γ와 병렬**. **등재 금지**: "slow-mass 잔차 2.03×"(REFUTED, count/time-share 단위 불일치), "하드웨어가 16 SM을 부여했다"(미검증), "S2는 A/B다"/"sticky의 인과 효과"(before/after, 매니페스트 1파일 차), "음성대조 통과"(d16 UNSPLIT n=0=검정 불능), `g`/`G_LEVER`/`G_FLAT`/decode-SM 탄력도/goodput/HE0/긴장A 일체(p95비 2.227은 값+CI+"판정 없음" 동반해서만), "28.92는 구간 중앙에서 견고"(하단에서 3.3%, 자기 측정 계통 오프셋(−5.4%)과 같은 크기 여유). ★**추가(α, 2026-08-05)**: "α가 §0를 수치적으로 확증"(REFUTED, 위 밴드 부검 참조) · "11.26≈11.09는 정밀 일치"(교차-job 오프셋 안, 사후 통계량 선택) · "고-D에서 라벨 순도가 다르다"(85/138,588, n 과소) · "α가 하드웨어 층을 닫았다"(D92-D108 판별력 0.6%) · α의 TTFT 수치를 이용한 일체의 성능/프론티어 판정. ★**통제 확인(α).** 매니페스트: 873015 vs 873921 공유 11파일 해시 전부 동일 ⇒ **같은 sticky 바이너리**. 서버 인자 354키 중 차이 4개(`port`·`random_seed`·`pdmux_config_path`·`internal_states`), **양쪽 cudagraph ON**, backend triton 동일. 워크로드: 블록별 `input_lens`/`output_lens` sha256이 872077·873015·873921 전부 동일 ⇒ block-paired 성립. **미통제**: 노드(gpu36/37/41)·캠페인 날짜·클라이언트 seed 경로 ⇒ 3% 이하 비교의 허용오차 미상(δ 사유). 신규 방법론 항목은 §3-26(예측 밴드도 이식 금지 규칙의 적용 대상) 참조. 상세 `../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-05(α)" 소절, 원자료 `workspace/engine-port/results/s2_sticky/s2a_pooled_873921.txt`·`s2a_T8_873921_result.txt`·`s2_sticky_d92.sbatch`(전용 분석 md 아직 미작성), `../workspace/engine-port/results/s2_sticky/S2_REPLICATION_2026-08-05.md`(§0 종결 전문), `results/s8_frontier/DESIGN.md` §4.3.16 |
 
-| 13 | ★★**HE0의 구조적 이유 — 두 regime의 최적이 *충돌하지 않는다*** | **TRUE per-phase goodput**: 정책간 spread가 **LO(rate 3) 0.067 (2.3%) vs HI(rate 12) 1.187 (43%)** ⇒ **차별의 ~95%가 과부하 phase에서 발생**. LO는 split에 **무관심**(prefill-heavy 극단 d16 2.861 ≈ decode-heavy 극단 d44 2.858 = 구분 불가) ⇒ **LO엔 쫓아갈 최적점이 없고, HI의 최적은 LO에서도 공짜**(§1-6 비대칭의 정량 확인). ⇒ **"항상 HI 최적"=decode-heavy static이 정의상 최선**이고 동적은 과도만 지불. **동적이 이기려면 regime 간 최적이 *충돌*해야 하는데 이 워크로드엔 그 구간이 없다**. ⚠️**정정 이력**: 2026-07-18(§1-16)엔 "이 논증은 관대 SLO 한정, tight선 HI 최적이 동적"이라 봤으나, **§1-17(직접 재튜닝)이 반증** — tight SLO에서도 HI 최적은 **고정 decode-heavy(d44)**이고 동적은 얽힘 트랩으로 열위. ⇒ **이 논증은 tight SLO에서도 성립**(SLO 엄격도 무관) |
+| 13 | ★★**HE0의 구조적 이유 — 두 regime의 최적이 *충돌하지 않는다*** | **TRUE per-phase goodput**: 정책간 spread가 **LO(rate 3) 0.067 (2.3%) vs HI(rate 12) 1.187 (43%)** ⇒ **차별의 ~95%가 과부하 phase에서 발생**. LO는 split에 **무관심**(prefill-heavy 극단 d16 2.861 ≈ decode-heavy 극단 d44 2.858 = 구분 불가) ⇒ **LO엔 쫓아갈 최적점이 없고, HI의 최적은 LO에서도 공짜**(§1-6 비대칭의 정량 확인). ⇒ **"항상 HI 최적"=decode-heavy static이 정의상 최선**이고 동적은 과도만 지불. **동적이 이기려면 regime 간 최적이 *충돌*해야 하는데 이 워크로드엔 그 구간이 없다**. ⚠️**정정 이력**: 2026-07-18(§1-16)엔 "이 논증은 관대 SLO 한정, tight선 HI 최적이 동적"이라 봤으나, **§1-17(직접 재튜닝)이 반증** — tight SLO에서도 HI 최적은 **고정 decode-heavy(d44)**이고 동적은 얽힘 트랩으로 열위. ⇒ **이 논증은 tight SLO에서도 성립**(SLO 엄격도 무관). ★**각주(2026-08-05, ceiling-censoring 진단 + claims-auditor 감사 — 2026-08-04 각주 교체)**: LO goodput은 이중으로 절단돼 있다 — 처리량 인자는 도착률에(도착 span 199.0s vs duration 209.7s, `throughput ≤ 2.861` 전 arm), pass 인자는 SLO 여유에(`pass ∈ [0.973, 0.998]` 16런 전부). 후자는 런을 늘려도 남는다. **LO에 레버는 실재한다**: `요청별 ITL p95의 p90` 53.36±1.32 → 46.54±1.09 ms (**5.6 SD**, 4점 단조), 중앙값 12.183±0.131 → 13.912±0.216 (3.2 SD), `TTFT p50` 73.56 → 79.61 ms (3.3 SD). ⇒ **"LO는 split에 무관심"은 지표의 무신호이지 레버의 부재가 아니다.** ⚠️ **단 LO 레버는 SLO 예산 단위로 HI의 1/14이고 통계에 따라 부호가 뒤집힌다**(중앙값은 d16 우세, 초과질량은 T<15.5에서 d16 우세·T>15.5에서 d44 우세) — **"어느 split이 LO에서 좋다"는 functional 없이 정의되지 않는다**. §1-13의 "HI 최적이 LO에서 공짜"는 **goodput functional 한정 참**. **HE0 불변.** ⚠️**배제(진단서 원안 중 REFUTED, 인용 금지)**: T=20/30/60 임계 사다리 논증 전체(진단서 §3.4·§5 근거5) · "[55,65) split-불변 모드가 >60 질량을 지배"(§3.5 후반) · C2 정성 대조(§4 "T4 참고 대조") · "gpu39 3중 사다리"(§3.6, line 286 — d24 rep1의 실제 노드는 gpu43이지 gpu39가 아님, line 32 사실오류). 상세 정정 이력은 `workspace/engine-port/results/slo_sched/CEILING_CENSORING_DIAG_2026-08-05.md`(AUDITED, 정정 표시 포함, 원문 보존). ★**각주(2026-08-05, F — 허가)**: §1-13의 "HI spread 1.187 (43%)"은 **하네스 인라인 스코어러의 legacy mean-ITL 판정**(`sharegpt_vary_bench.sbatch:94` `m=sum(I[i])/len(I[i])`)이고 **d16은 n=1**이다. 정본 술어(요청 내 ITL p95, n=4)로는 HI d16 0.443±0.016 vs d44 3.613±0.571 = **+716%**(legacy 2.859±0.241 vs 3.924±0.046 = +37%). **순위·부호·"차별의 대부분이 HI"라는 결론은 불변, 오히려 강화**(정본 술어 n=4로 HI 몫 **97.3%**, legacy 91.9%). ⚠️ 단 정본 술어에서 HI는 rep 분산이 커져 **d34 3.405±0.478 vs d44 3.613±0.571은 분리 불가(0.4 SD)** — "+716%"는 **d16↔d44 쌍에만** 쓴다. ★**각주(2026-08-05, E — 재작성본, 진단서 원안은 귀속 오류로 불허)**: §1-13의 LO 컬럼은 **arm마다 n이 다르다**(`bench_noise_root_cause.md:74-86`: d44/d34/bind-nogate n=4, bind+GATE n=9, **d16/d24/slo n=1**). spread 0.067의 두 끝점(d16 2.861, d24 2.794)이 **둘 다 n=1**이고, "d16 2.861 ≈ d44 2.858"은 **n=1 값과 n=4 평균의 비교**다. 정본 술어 n=4 재산출: d16 2.831±0.038 / d24 2.761±0.140 / d34 2.835±0.025 / d44 2.848±0.007 ⇒ **spread 0.087 (3.1%)**, 그러나 **d24 한 arm의 rep SD(0.140)만으로 spread 전체를 삼킨다**(bind-nogate SD 0.110도 마찬가지). ⇒ **"LO는 split에 무관심"의 정량 근거는 spread 값이 아니라 "spread < rep SD"라는 부등식으로 다시 써야 한다.** 결론 불변. ⚠️ 진단서가 쓴 "spread 0.067 전부가 d24 rep1의 TTFT>3s 12건에서 나왔다"는 **REFUTED** — bind no-gate가 n=4로 2.795±0.110에 앉아 있어 d24를 지워도 spread 0.066으로 사실상 불변이다. 이 귀속을 정본에 쓰지 마라. ★**각주(2026-08-05, 노드 교락 방어)**: d16 = gpu39×1 + **gpu37×3**, d44 = gpu39×1 + **gpu38×3** ⇒ arm과 노드·날짜가 3/4 rep에서 교락(진단서의 "gpu39 3중 사다리" 방어는 사실오류로 못 씀 — 위 배제 항목 참조). arm 내부에서 노드 효과를 직접 추정하면 d16 **0.047ms** / d44 **0.33ms** vs arm 효과 **1.73ms** ⇒ 노드 효과는 arm 효과의 **3–19%**(`frac(>20)`에서는 ≤6%). 완전 매칭 대조 존재: **d34/d44 rep41-43은 같은 노드(gpu38)·같은 날·같은 rep 인덱스**로 paired 가능하며 부호 유지. |
 | 14 | ★**stationary r8의 "시스템 노이즈" = 메트릭 절벽 (외인성 아님)** | 워크로드 4런 전부 동일(fingerprint), 하부 섭동은 **thru 3%·ITL 8%**뿐인데 goodput 2× — **r8이 TTFT≈SLO(3s) 경계에 앉아** 3% 결손이 TTFT 평탄역을 1.5s→3.7s로 밀어 임계선을 넘김. **3=견고/8=불안정/12=견고** ⇒ 경계 regime만 불안정. 상세 [bench_noise_root_cause.md](bench_noise_root_cause.md) |
 
-| 20 | ★★★**Oracle 재구성(TTFT⊗ITL 분해): headroom은 +2%가 아니라 +16% — 단 그건 disaggregation 몫 (사용자 지적, 2026-07-19)** | §1-19의 "+2.1%"는 per-static oracle이라 **coupled 절충점만** 봄. **goodput을 TTFT-pass ⊗ ITL-pass로 분해**(사용자 지적)하면 진짜 headroom이 보임: phase A(양 SLO 동시 binding)서 **d16 TTFT-pass 57.8%(ITL 실패) / d24+ ITL 100%(TTFT 하락)** — **DECOUPLED oracle**(d16의 TTFT ⊗ d24의 ITL)=**57.8% = best static 49.7% 대비 +16%**. ★**그러나 그 headroom은 92 prefill SM(d16-TTFT) + 24 decode SM(100% ITL) = 116 SM > 108 요구 = coupling TAX(8 SM 초과)라 단일-GPU 불가**(+ 얽힘이 batch로 추가 결합). ⇒ **두 개의 다른 천장**: 단일-GPU **동적**=coupled ceiling **+2%**(못 이김) / **decoupling=disaggregation ceiling +16%**(별도 디바이스 풀서만). **진짜 headroom은 디바이스 간에 존재, 단일-GPU split(동적이든)엔 없음.** `oracle_corrected.png` |
+| 20 | ★★★**Oracle 재구성(TTFT⊗ITL 분해): headroom은 +2%가 아니라 +16% — 단 그건 disaggregation 몫 (사용자 지적, 2026-07-19)** | §1-19의 "+2.1%"는 per-static oracle이라 **coupled 절충점만** 봄. **goodput을 TTFT-pass ⊗ ITL-pass로 분해**(사용자 지적)하면 진짜 headroom이 보임: phase A(양 SLO 동시 binding)서 **d16 TTFT-pass 57.8%(ITL 실패) / d24+ ITL 100%(TTFT 하락)** — **DECOUPLED oracle**(d16의 TTFT ⊗ d24의 ITL)=**57.8% = best static 49.7% 대비 +16%**. ★**그러나 그 headroom은 92 prefill SM(d16-TTFT) + 24 decode SM(100% ITL) = 116 SM > 108 요구 = coupling TAX(8 SM 초과)라 단일-GPU 불가**(+ 얽힘이 batch로 추가 결합). ⇒ **두 개의 다른 천장**: 단일-GPU **동적**=coupled ceiling **+2%**(못 이김) / **decoupling=disaggregation ceiling +16%**(별도 디바이스 풀서만). **진짜 headroom은 디바이스 간에 존재, 단일-GPU split(동적이든)엔 없음.** `oracle_corrected.png`. ★★**등급 강등(2026-08-04, claims-auditor)**: 이 오라클(+16%)은 §1-19(극단 disjoint mix, jobs 860497–518)의 데이터를 그대로 재사용하는데, 정본 자신이 §5(열린 항목 (c), 아래)에서 그 캠페인을 **n=1~2·overload-only·underpowered**로 이미 기록하고 있다(§2-4 방법론 "n≥4 없이 정책 결론 금지"에 못 미침). ⇒ **"+16%"는 "확정"이 아니라 n=1~2, 미확증으로 강등한다.** 결합 가정(서로 다른 arm의 주변 pass율을 합성해 DECOUPLED oracle을 만든 것)도 별도로 미검증이다. 판정(단일-GPU와 disaggregation은 별개 천장)의 **방향**은 §1-4/§1-6 얽힘·비대칭 기전과 정합해 그대로 두나, **"+16%"라는 magnitude는 인용 시 이 caveat 동반 필수**. 상세 [layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) §2.5(P6) |
 | 19 | ★★★**disjoint-feasibility region은 존재하나 동적은 거기서도 패배 — 이유는 conjunctive SLO의 구조 (사용자 극단-도전 검증, 2026-07-19)** | 사용자 논리(어떤 static도 양 phase 두 SLO 동시충족 못 하는 workload 필연 존재)를 극단 mix(A prefill-heavy in2048/o32@8, **B decode-heavy in2048/o512@5=긴ctx라 ITL-binding**)로 실증: **median-feasibility DISJOINT 확인**(feasible-A={d16} ∩ feasible-B={d24,d34}=∅; job 860497–518). ★**그런데 동적 여전히 패배**: graded goodput서 per-phase 최적이 **인접**(A→d24, B→d34)이라 **ORACLE 동적조차 best-static +2.1%뿐**(d24가 양 phase 근최적: A 2.73=최적, B 1.01 vs 1.09), **reactive bind는 −20.6%**(오배치, 양 phase 실패). ★**깊은 이유**: conjunctive SLO(TTFT∧ITL)가 동적을 **동기부여**(d16 최고TTFT·d44 최고ITL)하는 바로 그 힘이 **각 phase 최적을 중간 compromise로 당김**(d16은 A서 ITL벽·d44는 B서 TTFT벽) → 서로 다른 phase 최적이 인접 → 단일 중간 static이 양쪽 서빙. ★**게다가 이 region은 OVERLOAD서만 존재**(전 정책 gp 0.99–1.87, 대다수 SLO 실패): 용량 이하=전부 통과(static 자명)·이상=전부 실패(static 최소손실). **동적이 유용하게 이기는 operating regime 없음.** `extreme_disjoint.png` |
 | 18 | ★★**mix-스윙 트레이스서도 동적 패배 — 최적은 좁은 중간대만 스윙 (사용자 도전 검증, 2026-07-19)** | 기존 결론은 rate만 변하는 fixed-mix 트레이스 한정이었음. **mix-스윙**(phaseA prefill-heavy in2048/o32 ⇄ phaseB decode-heavy in256/o512, static sweep+bind, job 860452–470) 실측: **최적이 d24(A)↔d34(B)로 *좁게만* 스윙**(d16↔d44 아님). ★**prefill-heavy phase를 d16이 안 이김**(d24 5.006 > d16 3.016 > d44 1.564). 기전=**goodput=TTFT-SLO ∧ ITL-SLO가 반대로 당김**: d16 최고 TTFT(1.47s)·최악 ITL(56ms, 60벽 근접); d44 반대(ITL 22ms·TTFT 3.64s로 3s 실패); **중간 d24가 둘 다 충족→승**. **단일 중간 static d24가 양 phase 근최적**(A 5.006=최적, B 2.854 vs 최적 2.870=0.6%차)이라 **combined d24 3.930 ≫ bind 3.419**. ⚠️caveat: phaseB 포화(thru 2.9<offered 5)·n=2; **어떤 static도 양 phase서 두 SLO 동시충족 불가한 극단 mix는 미검증(동적의 남은 문)**. `mixswing.png` |
-| 17 | ★★**동적이 지는 이유 = 오버헤드 아니라 *positioning* (실패 지점 규명, 2026-07-19)** | "오버헤드>이득"은 이미 반박(switch~0 §1-8, CPU 0.014% §1-12). 로그가 실패 지점을 정확히 보임: **최적=dec_sm 44(d44, throughput·goodput 양쪽 1위)인데 컨트롤러는 dec_sm 16–24(평균 22)서 진동하며 44에 절대 도달 못 함 = decode-STARVED**. 기전 = **reactive**(TPOT 스파이크 후에야 decode에 SM)+**symmetric**(두 slack 대등화)이라 decode가 잠깐 괜찮아지면 즉시 prefill로 회수 → 구조적으로 decode-heavy 최적에 누적 불가. 손실은 **switch 비용이 아니라 앉은 위치**. ★**risk/reward 18:1**: prefill-ward 이동의 LO 이득 ≤2.3%(§1-13 LO split-무관) vs HI 오배치 손실 ≤41.5% ⇒ 매 스위치가 나쁜 베팅. ★**모든 수정(anchor·비대칭 penalty·이동 중단)이 "44에 앉기"=static으로 수렴** — gate(ratchet, 34서 정지)가 best-dynamic이나 undershoot. **동적은 안 움직여 static과 *tie*가 상한, 이길 regime 없음**(§1-13). `why_dynamic_loses.png` |
+| 17 | ★★**동적이 지는 이유 = 오버헤드 아니라 *positioning* (실패 지점 규명, 2026-07-19)** | "오버헤드>이득"은 이미 반박(switch~0 §1-8, CPU 0.014% §1-12). 로그가 실패 지점을 정확히 보임: **최적=dec_sm 44(d44, throughput·goodput 양쪽 1위)인데 컨트롤러는 dec_sm 16–24(평균 22)서 진동하며 44에 절대 도달 못 함 = decode-STARVED**. 기전 = **reactive**(TPOT 스파이크 후에야 decode에 SM)+**symmetric**(두 slack 대등화)이라 decode가 잠깐 괜찮아지면 즉시 prefill로 회수 → 구조적으로 decode-heavy 최적에 누적 불가. 손실은 **switch 비용이 아니라 앉은 위치**. ★**risk/reward 18:1**: prefill-ward 이동의 LO 이득 ≤2.3%(§1-13 LO split-무관) vs HI 오배치 손실 ≤41.5% ⇒ 매 스위치가 나쁜 베팅. ★**모든 수정(anchor·비대칭 penalty·이동 중단)이 "44에 앉기"=static으로 수렴** — gate(ratchet, 34서 정지)가 best-dynamic이나 undershoot. **동적은 안 움직여 static과 *tie*가 상한, 이길 regime 없음**(§1-13). `why_dynamic_loses.png`. ★**각주(2026-08-04, claims-auditor)**: 위 "모든 수정"의 **'모든'은 reactive 계열**이다. 비-reactive는 이미 시험됐다: Step D `PDMUX_SLO_LFF`(context-length feedforward, `multiplexing_mixin.py:825-832`) = **HD0, n=3(underpowered)**, Step F `sat_predict`(포화 예측 트리거)도 시험됨. ⇒ **온라인 feedforward는 시험돼 net win 아님(n=3, n≥4 재시험 미실행). offline 모델-프로파일 기반 decode-floor 예측(Claim E)만 미시험.** 본문 정정 불필요 |
 | 16 | ★**정책 차이는 throughput이 아니라 SLO-attainment 효과 (2026-07-19)** | 같은 변화-trace 런을 **throughput(SLO-무관 req/s)**으로 재정렬: **스프레드 3.4%** (d44 3.776 > d34 3.759 > bind+GATE 3.745 > bind 3.700 > slo 3.696 > d24 3.677 > d16 3.654) vs **goodput 스프레드 13.1% (4×)**. ⇒ **모든 split이 GPU를 거의 동일하게 포화**시키고, split이 정하는 건 "몇 개 완료"가 아니라 "어느 요청이 TTFT 벽에 부딪히나"(SLO attainment 77.9–85.3%). 순위는 안 뒤집힘(d44 양쪽 1위). ★단 **d16이 양쪽 최하** — 얽힘이 raw throughput도 소량(3.4%) 깎음(decode 굶김→batch 정체→admission 차단→완료↓); d16 goodput 결손의 **~1/4는 실 throughput 손실·~3/4는 SLO attainment**. `throughput_vs_goodput.png` |
 | 15 | ★**(D) granularity = *실행시* 비용이지 *결정시* 비용 아님 (2026-07-18)** | per-layer-type SM 분할을 **offline predictor/floor로 고정해도 死**. (D)는 "누가 split을 정하나(런타임 vs offline)"가 아니라 "한 forward *안에서* 파티션이 layer 경계마다 바뀌나"의 문제 — offline 고정값이라도 실행 시 **attn↔mamba 경계마다 green-ctx 재분할 필요**(step 파편화·sync 직렬화·overlap 감소, S2서 **TPOT 42→124ms**). offline은 **결정 오버헤드만** 제거·**실행 파편화 비용은 그대로**. ⇒ **살아있는 offline 역할은 오직 whole-phase floor**(step 내내 단일 파티션, composition으로 크기만 결정 = §1-5). ★**비용 분해(2026-07-18 확인)**: green-ctx는 시작 시 `initialize_stream_groups`로 **전부 pre-created**(스위치=인덱싱; 생성비용 없음). 실제 스위치 비용 = 경계마다 `stream.synchronize()` **드레인**. 이를 GPU측 wait_stream 순서화로 교체(`PDMUX_LA_COORD_OPT`)하면 **124→85ms(갭 ~47% 회수)**나 **여전히 패배**(agnostic 42ms 평탄). **잔차 = 구조적 오버랩 손실**(monolithic prefill이 window 0만 오버랩, 윈도우수 무관·모델 독립) + **cudagraph 비양립**(step 중간 green-ctx 전환 캡처 불가→eager 강제→운영점 진입 불가). ⇒ **"싼 전환"으론 절반만 없앰; 나머지 절반은 pre-created로도 불가.** `results/a_substrate/` |
 
@@ -345,6 +495,105 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     여집합을 **일부러** 재서 라벨의 배타성을 검정했고, 그 검정이
     **성공**했다(세 차례의 앞선 통과가 놓친 것을 잡음). 상세 §1-30,
     `DESIGN.md` §4.3.15(c)–(d).
+20. ★★**(2026-08-04, claims-auditor+result-analyst X2′) 세 가지 층위 구분을
+    명시적으로 등재한다 — 이전엔 문장으로 존재하지 않았다(grep 확인).**
+    (a) **절대 민감도 ≠ 상대 민감도** — 동시에 참일 수 있다(예: C2의 절대
+    ITL 개선과 §1-13의 상대 goodput spread는 서로 다른 양이며 서로를
+    반증하지 않는다). (b) **천장 절단(ceiling censoring)** — 지표가 도착률
+    등 외적 상한에 잘려 정책 간 차이를 볼 수 없는 상태. §1-13 원자료: rate
+    3(LO)에서 199/200·200/200·200/200 통과, goodput 2.86 ≈ 도착률 3의
+    95%. *"저부하 phase의 goodput은 도착률에 절단돼 있어 정책을 구분할 수
+    없다. 따라서 §1-13의 'LO는 split에 무관심'은 지표의 무신호이지 레버의
+    부재가 아니다. LO에서 레버를 보려면 goodput이 아니라 ITL/TTFT 분포를
+    직접 봐야 한다."* 초판이 이를 "민감도≠구속"이라 불렀으나 **이름이
+    부정확**했다 — 실제 기전은 지표 절단이지 물리적 non-binding이 아니다.
+    (c) **baseline이 다르면 % 비교가 성립하지 않는다** — "PD 분리 이득"
+    (§1-1)은 **fused 대비**이고 "+2% 천장"(§1-20 coupled ceiling)은
+    **best-static 대비**다, 같은 축 위의 숫자처럼 직접 비교하지 말 것.
+    상세 [layertype_dynamic_JUNCTION_2026-08-04.md](layertype_dynamic_JUNCTION_2026-08-04.md).
+21. ★★**(2026-08-04, claims-auditor) C2 탄력도를 다른 격자로 이전하지
+    마라 — 규율의 재실증.** "C2 국소 탄력도가 벡터1(g2_0_raconf)의
+    d44→d54 전이를 예측한다"는 주장을 감사가 REFUTED: 벡터1의 d44→d54는
+    C2의 44→92 구간 안이고 그 구간 국소 ε=0.09–0.35이므로 예측
+    +1.9~7.4%인데 실측은 15.0% = **2–8× 빗나감**(끝점 풀링 ε을 동작점
+    밖에서 끌어온 산물 = 항목17의 재발). 추가로 (i) estimand
+    불일치(벡터1=요청별 token-ITL p95의 중앙값, C2=파티션×batch 매칭
+    per-token ITL p50), (ii) 변수 동시 변경(`d44=[64,44]`→`d54=[54,54]`는
+    decode+10 AND prefill−10의 합성), (iii) §0(2.6× 미해소, §1-28/§1-30)
+    격자 간 이전 금지 규율 위반. ⇒ **"C2를 다른 격자로 이전하지 마라"는
+    이미 §1-28/§1-30이 세운 규율이며, 이번 시도는 그 규율이 왜 있는지를
+    한 번 더 보여준 사례일 뿐 새 발견이 아니다.**
+22. ★★**(2026-08-04, claims-auditor+result-analyst X2′) 재사용 인용 금지
+    목록(끝점/최량-rep 선택 + 집계 단위 미정 재발).** (i) `research_arc.md`
+    S9(§1-5 서사)의 **"d16 1.056 vs d24 6.240 (5.9×)"**는 폐기 벤치
+    (stationary r8, 방법론 게이트 #2)의 n=4 중 **최댓값**이다 — 정본 §1-5는
+    **5.282±1.302**(n=4)를 쓴다. 끝점/최량 rep 선택(항목17) + 폐기 벤치
+    사용(게이트 #2)의 **이중 위반**이므로 "6.240"·"5.9×"는 인용 금지,
+    "5.282±1.302"만 인용한다(원문은 역사 기록으로 보존, 삭제하지 않음).
+    (ii) `diffA_vs_diffB_table.md`의 **집계 Diff A(≈12k–18k 교차점)·
+    "mamba 1.28× 지배" 등 집계-조성 서술은 인용 금지** — X2′ 판정:
+    미계측 GEMM(U_H) 효율 가정 하나가 교차점을 3k↔30k로 움직인다
+    (@23.9 TFLOP/s면 11,792 / @150이면 3,052 / MLP 귀속 제외 시 29,576)
+    ⇒ 판정 불가, "집계 교차점" 수치는 측정이 아니라 **명명 선택의
+    결과**다. `s_G ≈ s_M`도 자기산출·여집합 음성대조 없음 ⇒ 공허참
+    가능성 배제 못 함, 인용 금지. 상세
+    [layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) §5·
+    [layertype_dynamic_JUNCTION_2026-08-04.md](layertype_dynamic_JUNCTION_2026-08-04.md).
+23. ★★★**(2026-08-05, claims-auditor, S2 재현) 사전등록 게이트가 전부
+    통과했다는 것이 "결과가 제약됐다"를 뜻하지 않는다 — 방법론 게이트 #9의
+    네 번째 재발.** S2(job 873015)는 `AMBIG_FRAC`·`MIN_N_SPLIT`·
+    `PREREG_S2` §3.1 일치검사가 16/16 cell-block 전부 PASS했지만, 세
+    게이트 모두 `E1_DECODE_REALIZED≥0.90` 통과라는 **같은 전제조건 아래서
+    항등식**이다(그 전제가 성립하면 SPLIT이 이미 인구의 100.000%/99.969%가
+    되므로 `p50(SPLIT)=p50(all)` 검사는 실패할 수 없다). `E1_DECODE_
+    REALIZED` 자신도 arm 간(OFF vs ON)에는 정보를 담지만, **ON arm 안에서는
+    `stream_idx=_sticky_fixed_idx`라는 코드 불변식**이라 게이트로서
+    기능하지 않는다. ⇒ 이 런에는 **"28.92가 나올지 11이 나올지"를 사전에
+    제약한 게이트가 0개였다** — 관측치의 타당성과는 별개로, "사전등록
+    게이트를 전부 통과했다"는 문장을 "결과가 게이트에 의해 제약됐다"로
+    읽지 않는다. 세 번째 재발은 `S2_ANALYSIS_2026-08-04.md` §3이 §3.1
+    하나에 대해 이미 기록했다("third recurrence of methodology gate #9
+    in this campaign line") — 이번은 그보다 넓은 형태로, 런 전체의 결과
+    게이트 집합이 구조적으로 공집합임을 확인한 것이다. 상세 §1-31,
+    `../workspace/engine-port/results/s2_sticky/S2_REPLICATION_
+    2026-08-05.md` §7, `results/s8_frontier/DESIGN.md` §4.3.16.
+24. ★★**(2026-08-05, ceiling-censoring 진단 + claims-auditor 감사)
+    `frac(reqITLp95>T)`은 SLO 임계 T 근처에서 LO 판정에 쓰지 마라 —
+    방법론 게이트 #6(metric cliff)의 새 사례이자 집계 단위 교훈(항목13)의
+    6번째 재발.** LO(rate 3)에서 `frac(reqITLp95>60)`은 **2400 요청 중
+    9건 대 9건**이고(상대효과 CI [−55.6%, +55.6%] — T=20에서 측정된
+    −49.8%를 포함하므로 **검정력 0**), T=57 −38.9% → T=59 +88.2% →
+    T=61 −44.4%로 **3ms 창 안에서 부호가 널뛴다**(CDF 수직 지점). 게다가
+    그 9건의 7–8건이 **각 job 첫 라운드의 launch index ≤27** 요청이며,
+    `middle60` slice에선 **0건**이다. ⇒ 같은 임계 근처에서 부호가
+    안정적이지 않은 초과질량 지표는, 몇 건 안 되는 이벤트가 부호를 정하고
+    있다는 뜻이므로 헤드라인으로 쓰지 않는다 — §1-13에서는 요청별 ITL
+    p95의 p90/중앙값과 TTFT p50(§1-13 각주, 3.2–5.6 SD)만 인용한다.
+25. ★★**(2026-08-05, ceiling-censoring 진단 + claims-auditor 감사)
+    C2를 다른 격자로 이전하지 마라 — 항목21의 3회차 재발.** 진단서
+    (`CEILING_CENSORING_DIAG_2026-08-05.md` §4 "T4 참고 대조")의 C2 정성
+    대조("HI는 방향·자릿수 일치, LO는 방향 반대"로 caveat을 우회하려던
+    시도) 전체가 **REFUTED**다 — `PROJECT_STATUS.md`(8B decode-SM 민감도
+    절, "44 이상 구간에 이 비를 적용하지 말 것"·"C2를 다른 격자로 이전하지
+    말 것")와 이 문서 항목21의 **정면 위반**이며, 주장된 1.9–2.2×는
+    ε≈0.63–0.78을 요구하는데 정본 국소 탄력도 ε는 0.48–0.56이라
+    (44/16)^ε = **1.62–1.75**다. 항목21(2026-08-04, 벡터1 d44→d54 전이
+    예측 시도)에 이은 **3회차 재발**로 기록한다 — "C2를 다른 격자로 이전
+    하지 마라"는 규율이 세 번째로 그 필요성을 보여준 사례일 뿐 새 발견이
+    아니다. 상세 위 §1-13 각주.
+26. ★★★**(2026-08-05, α 밴드 부검) 예측 밴드도 이식 금지 규칙의 적용
+    대상이다. 밴드는 가장 가까운 기판(같은 trace·같은 batch·같은
+    client)에서 뽑아라. 자기가 금지한 이전을 자기 사전등록 예측에 쓰면,
+    실험이 성공해도 규칙은 실패한다.** §1-31이 C2→sticky 이식을 명시적으로
+    금지해 놓고, 같은 문서가 유일한 반증 실험(고-D 대조, job 873921)의
+    사전등록 밴드 [12,13]ms를 C2 점추정(d92=12.88)에서 그대로 뽑았다 —
+    정본이 이미 보유한 더 가까운 앵커(872077의 D108 우세 10.98, batch·ctx
+    byte-matched)를 썼다면 예측은 11.0–11.4로 관측(11.26/11.32)과
+    일치했을 것이다. 실험 자체는 정상 작동했다(붕괴 분기 REFUTED, §0
+    CONFIRMED (scoped) 불변) — 실패한 것은 **밴드 도출 규율**이지 실험도
+    §0 판정도 아니다. 항목1(격자 이전 confound)의 변종이자 항목8(끝점
+    선택이 임계를 정한다)의 재발: 사전등록이 사후 반증을 막지 못하는 것은
+    등록 시점의 숫자가 틀린 원천에서 나왔을 때뿐이다. 상세 §1-31.
 
 ---
 
@@ -360,9 +609,12 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `results/slo_sched/lengthnorm_slo_reanalysis.md` | ★**길이-정규화/tight SLO 재계측**(§1-16) — HE0가 SLO 엄격도 의존임을 기존 벤치 재분석으로 확정. 스크립트 `reanalyze_lengthnorm_slo.py` |
 | **`serving_slo_survey.md`** | ★**실 서빙 SLO 관행 조사**(§1-16 후속) — 프로덕션 인터랙티브 TTFT(chat 300/voice 150/code 100/RAG 400ms)가 전부 tight regime; 우리 3s=batch async. DistServe SLO-scale sweep=표준. goodput 메트릭 비판 |
 | **`interactive_slo_retune_plan.md`** | ★**tight-SLO 컨트롤러 재튜닝 + P90-attainment 직접 측정**(§1-17) — §9에 최종 결과(HT0 확정, d44≫동적). 하네스 `results/slo_sched/interactive_bench.sbatch` |
-| `../../workspace/engine-port/results/s8_frontier/DESIGN.md` | ★★**E1 프론티어 하네스 설계·전사**(§4.3.1–4.3.15) — 사전등록·버그 수정·게이트 이력의 정본. §4.3.9=`g` 격자 한정 은퇴, §4.3.10=`A_free` 대체 조건부 추정량[AUDITED, blocking 스윕만 UNAUDITED], §4.3.11=`PDMUX_STICKY_PARTITION` 구현 사실, §4.3.12=sticky 런 사전등록(`G_LEVER`/`G_FLAT` 미결정), §4.3.13=C2→`G_LEVER` 앵커 경로 폐기[AUDITED, §0 신규 최상위 열린 항목], §4.3.14=D=54 측정 취소+keepalive 재현성 결함[일부 미감사]+C2 residency 워크로드 장치 산물[AUDITED], §4.3.15=§0 이분법 유지 불가·세 번째 후보 실측 문서화[감사자 재프레이밍 UNAUDITED, result-analyst 독립 재현 PARTIAL INDEPENDENCE, 성능 판정 0건, S2(GPU) 대기] |
+| `../../workspace/engine-port/results/s8_frontier/DESIGN.md` | ★★**E1 프론티어 하네스 설계·전사**(§4.3.1–4.3.16) — 사전등록·버그 수정·게이트 이력의 정본. §4.3.9=`g` 격자 한정 은퇴, §4.3.10=`A_free` 대체 조건부 추정량[AUDITED, blocking 스윕만 UNAUDITED], §4.3.11=`PDMUX_STICKY_PARTITION` 구현 사실, §4.3.12=sticky 런 사전등록(`G_LEVER`/`G_FLAT` 미결정), §4.3.13=C2→`G_LEVER` 앵커 경로 폐기[AUDITED, §0 신규 최상위 열린 항목], §4.3.14=D=54 측정 취소+keepalive 재현성 결함[일부 미감사]+C2 residency 워크로드 장치 산물[AUDITED], §4.3.15=§0 이분법 유지 불가·세 번째 후보 실측 문서화[감사자 재프레이밍 UNAUDITED, result-analyst 독립 재현 PARTIAL INDEPENDENCE, 성능 판정 0건, S2(GPU) 대기], **§4.3.16=S2(job 873015) 독립 재현 CONFIRMED(scoped) — §0 최상위 열린 항목 behavioural 종결, E1은 4가지 독립 사유로 미개방, 성능 판정 0건[claims-auditor CONFIRMED, 2026-08-05]** |
+| `../../workspace/engine-port/results/s2_sticky/S2_REPLICATION_2026-08-05.md` | ★★★**S2(job 873015) 독립 재현 전문 — claims-auditor CONFIRMED(scoped), 2026-08-05.** §0 3지선다의 behavioural 종결(pooled ITL p50 d16 28.92ms/d54 12.04ms, 사전등록 구간 적중), 기전(스냅샷 샘플링 케이던스) 독립 도출, d54 companion 미스·§4.3.12(f) 판별예측 설계상 미판정·결과 게이트 0개(방법론 게이트 #9 네 번째 재발)·`S2_ANALYSIS_2026-08-04.md` 계측 오류 정정 기록, "등재 금지" 표 포함. **재현 스크립트는 아직 리포지토리 밖(에이전트 scratchpad)** — 이관 필요, 별도 작업 |
+| `../../workspace/engine-port/results/s2_sticky/S2_ANALYSIS_2026-08-04.md` | result-analyst의 S2 1차 분석(정본 아님, claims-auditor 재현으로 대부분 확인됨) — **61–64행 "Instrument check" 문단은 2026-08-05 정정 표시됨(원문 보존)**: 케이던스 ~2.0ms는 decode-idle 값, decode-busy 조건부는 0.177–0.465s. 정정 전 그 문단 인용 금지, 나머지 수치는 유효 |
 | `../../workspace/engine-port/results/s8_scaleup/NOTES_D54_ANCHOR_2026-08-03.md` | ★**D=54 앵커 취소 기록**(미추적) — keepalive 토큰 초과로 인한 s8_scaleup 재현성 결함[미감사, 코드/로그 직접 검증] + C2 high-residency=워크로드 장치 산물 독립 수렴 3경로[AUDITED]. 상세는 `DESIGN.md` §4.3.14·CONSENSUS §1-29 |
 | `bench_noise_root_cause.md` | ★벤치 노이즈 근본원인(메트릭 절벽)·3× 하네스 버그·HE0 구조적 이유 |
+| `../../workspace/engine-port/results/slo_sched/CEILING_CENSORING_DIAG_2026-08-05.md` | ★★**§1-13 각주 직접 검정 — claims-auditor AUDITED(2026-08-05), 정본 반영 완료.** 헤드라인 논증(§3.4 임계 사다리·§5 근거5·§3.5 "지배" 서술·§4 C2 정성 대조·§3.6 "gpu39 3중 사다리")은 REFUTED(정정 표시, 원문 보존); 각주 자신의 결론(LO 이중 절단·레버 실재)은 다른 증거로 CONFIRMED. 상세 §1-13·§3 항목24·25 |
 | `realtrace_findings_and_open_branches.md` | 실 trace 검증 + 얽힘 기전 + 남은 갈래(트리거/행동모델) 상세 |
 | `slo_aware_scheduling_design.md` | SLO-aware track 설계·실측 전사(§C–§HE2-3, Step D/E/F/G) |
 | `policy_comparison.md` | 정책 taxonomy·메커니즘 (⚠️ §goodput 수치는 no-cudagraph·구벤치 — §1·§2 우선) |
@@ -491,3 +743,19 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
    유지(4차 속행으로도 해소되지 않음) — 다음 시도는 감사자 발안 (α)/(β)에 대한
    **독립 사전등록**이 선행돼야 한다(감사자가 자기 발안의 승인 주체일 수
    없다). 상세 `DESIGN.md` §4.3.13–4.3.15, §1-30.
+
+   ★★★**종결(2026-08-05, claims-auditor CONFIRMED scoped) — 이 항목은
+   "미해소 3지선다"에서 "CONFIRMED(scoped)로 종결, 단 하드웨어 층
+   미프로브"로 상태가 바뀐다.** S2(job 873015)의 독립 재현이 §1-28/§1-30의
+   3지선다를 behavioural하게 닫았다: (i)는 하드웨어 형태 REFUTED·라벨
+   형태 CONFIRMED, (ii)는 DISFAVOURED, 살아남는 답 (iii)("라벨이 순수·
+   완전하지 않다")의 기전이 스냅샷 샘플링 케이던스(개수-서브샘플 +
+   decode-busy 조건부 1/16)에서 독립적으로 도출됐다. **`DESIGN.md`
+   §4.3.11이 남긴 하드웨어 SM 부여 프로브(S3)는 여전히 미실행** — 이
+   항목이 완전히 닫힌 것은 아니고 스코프가 축소된 것이다. **`G_LEVER`/
+   `G_FLAT`는 여전히 UNDETERMINED**이고, **E1은 4가지 독립 사유(§4.3.12(d)
+   미결·sticky 기판의 estimand 전환·prefill 축 미통제·음성대조 구조적
+   부재+S3 미실행)로 열리지 않는다** — **긴장 A(HE2 vs C2)는 전혀 닫히지
+   않았다.** 다음 gate는 (α) sticky-ON 고-D 대조 셀(반증 가능한 유일
+   실험) 우선. 상세 §1-31, `../workspace/engine-port/results/s2_sticky/
+   S2_REPLICATION_2026-08-05.md`, `DESIGN.md` §4.3.16.

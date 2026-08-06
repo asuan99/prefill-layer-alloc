@@ -1,6 +1,23 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-03(**등급 변경 없음, 성능 판정 0건 — 같은 세션 4차
+최종 갱신: 2026-08-05(**등급 변경 없음, 성능 판정 0건 — claims-auditor가
+S2(job 873015)를 독립 재현해 §0 최상위 열린 항목을 CONFIRMED (scoped)로
+종결.** pooled per-token ITL p50 = 28.92ms(d16, 사전등록 [28,34]ms 안) /
+12.04ms(d54, 사전등록 [13,16]ms 미달 — 인용 시 필수 동반). §0의 (i)/(ii)/
+(iii) 3지선다가 **behavioural하게** 닫힌다: (i)(872077 `decode_sms==16`이
+실제 16-SM 실행 아님)는 하드웨어 형태 REFUTED·라벨 형태 CONFIRMED, (ii)
+(C2 28–31ms=셀 배치 성질)는 DISFAVOURED, 살아남는 답 (iii)(`split_frac
+≥0.90`이 D-파티션 클래스를 격리·완결 못함)의 기전이 스냅샷 샘플링
+케이던스(decode-busy 조건부 1/16만 포착)에서 독립 도출됐다. **Scope:
+selector-level — 하드웨어 SM 부여 직접 프로브(S3)는 여전히 미실행.** C2
+자체(레버 존재, 2.36–2.91×, scoped)의 등급·수치는 **불변**. **E1은 4가지
+독립 사유(G_LEVER/G_FLAT UNDETERMINED·sticky 기판의 estimand 전환·prefill
+축 미통제·음성대조 구조적 부재+S3 미실행)로 열리지 않는다** — 긴장
+A(HE2 vs C2)는 전혀 닫히지 않았다. 이 런에는 결과 게이트가 0개였다(방법론
+게이트 #9 네 번째 재발). 상세는 `../../PROJECT_STATUS.md` "8B decode-SM
+프론티어" "2026-08-05" 소절, `../../workspace/engine-port/results/
+s2_sticky/S2_REPLICATION_2026-08-05.md`(전문), `../CONSENSUS.md`
+§1-31·§3-23, `results/s8_frontier/DESIGN.md` §4.3.16. 이전: 2026-08-03(**등급 변경 없음, 성능 판정 0건 — 같은 세션 4차
 속행: 상태 기록. GPU 런(S2)은 별도 제출 중이고 결과 없음.** 3차 속행이
 연 §0의 이분법((i)/(ii))이 **유지 불가**임이 확인됐다 — `split_frac≥0.90`이
 D 파티션 실행 토큰을 순수하지도 완전하지도 않게 잡는다는 **세 번째 후보
@@ -71,7 +88,7 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
 
 | Claim | 현재 판정 | Existing evidence | Missing evidence | Required experiment |
 |---|---|---|---|---|
-| A. Hybrid composition, context, active load에 따라 decode demand가 변한다 | 부분 지지 | Zamba2 context knee; synthetic/ShareGPT의 best split 이동; 다중 모델 batch/context characterization; ★**Stage 0(2026-07-26, `../stage0_verdict_2026-07-26.md`, jobs 864230+864601)**: 운영점(cudagraph-ON, green-context pdmux) 3-arm(pure-Mamba 음성대조/hybrid/pure-Transformer 양성대조) decode-only 스윕에서 de-confounded 대조 D16 vs D108(무경합) = 1.00±0.01, 3 arm×3 ctx(4k/8k/16k) 전부 — decode SM-무감각(lever-weakness)이 hybrid에서 pure-Transformer·pure-Mamba로, short-ctx에서 16k로 확장 확인(raw coupled 곡선 자체는 confounded였으나 음성대조+무경합앵커로 우회했다고 주장됨). ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)**: 이 증거가 인용한 D108(무경합 앵커)은 실제로는 decode 16 SM이었다(코드 버그+telemetry+클라이언트 서명 3중 증거, 상세는 `../../PROJECT_STATUS.md` "Stage 0" 절). "D16 vs D108=1.00±0.01"은 동일 조건 반복측정이었다. **대신 ★★C2(scoped, 2026-07-28, `../../workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`, jobs 865289–865533)**: prefill을 16 SM에 고정한 채 decode-SM만 16→92로 올리면 decode ITL p50이 **2.36–2.91×**(4 arm: pure-Mamba2-7.3B/pure-Transformer-7B/additive·substitutive hybrid-7-8B, ctx1024, n=4) 개선 — **decode SM 민감도가 실재하고 모델-무관**임을 확인(Stage 0의 "SM-무감각" 전제와 정반대 방향). 단 이것은 **decode 측 등량곡선**(저-D 셀이 SM 일부러 idle, `prefill+decode≤108` 예산 제약 없음)이라 **레버 존재만 확립하며 정책 이득 근거가 아니다**(프론티어 ITL(D) vs TTFT(108−D) 미측정, `../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"·"열린 긴장" 참조) | 동일 CUDA Graph 운영점의 **joint**(prefill+decode 동시) surface, GQA/composition 통제, held-out accuracy, >16k ctx, **프론티어(예산 제약 하 net-positive 여부, E1 미실행)**. ★**2026-08-02 추가 — E1 설계 위험(미검증)**: 2026-08-01 전제 실험(미감사, 인용 금지)에서 사전등록 사다리 {50,60,80}ms가 네 arm 전부 판정 불가. ★★**정정(2026-08-02, claims-auditor + M1/M2/M4)**: 여기 함께 적었던 "on-cliff 제외 규칙이 decode-rich 끝을 제거한다"는 **기각**한다 — C2 자신의 측정에서 SM16→44가 log-range의 **75–81%**라 d92 제외는 마지막 15–25%만 자르며, 근거였던 "공통 knee 2.80"도 철회됐다(치역=probe 격자, 살아남는 건 순서뿐; `DESIGN.md` §4.3.7). 따라서 **"E1이 설계상 도달 불가"는 아직 성립하지 않는다.** 대신 선행 게이트로 **M3 Transformer-control 대조**(job 872077, §4.3.8(c))를 제출했다: 프론티어 질문 이전에 **ITL 축이 D에 반응하는지**를 먼저 묻는다(오프라인 예비: blocking 제거 후 d16→d54 기울기 T8 2.03× 대 Ha8 ~1.0×). M3가 두 arm 모두 무반응이면 이 칸은 E1이 아니라 **"이 기판에서 conjunctive goodput의 ITL 항이 decode-SM 레버의 함수가 아니다"**로 닫힌다. ★★**정정(2026-08-03, claims-auditor)**: M3(872077)는 goodput 무반응이 아니라 **NO VERDICT — 사유가 "규칙 모호"에서 "estimand 미식별"로 확장**됐다. 이 기판(`initialize_stream_groups`가 마지막 무분할 그룹을 항상 덧붙임)에서는 "decode가 D SM에서 돌았다"⟺"prefill이 동시 in-flight였다"가 같은 사건이라, 어떤 통계도 decode-SM 탄력도와 prefill 간섭을 분리 못 한다(Claim B의 monolithic-prefill stall과 결합, `../CONSENSUS.md` §1-26). **결정량 `g`는 이 격자에서 은퇴**(sticky-partition 기판 수정 전 인용 금지). 메인 세션이 세운 "decode 실현 4–19%가 `g`를 attenuate했다"는 보정 가설도 **REFUTED**(control-arm reductio: T8 보정치 21–29×로 C2를 10배 위반). ⚠️"Ha8에 레버가 없다"는 **CONFIRMED 아님** — 긴장 A는 전혀 닫히지 않았다 | P3 full-model profile, feature ladder, leave-one-workload/model-family-out, E1(8B 프론티어 `[108−D,D]` 스윕 — **본 스윕 미제출**; 선행 게이트 M3[job 872077]는 estimand 미식별로 NO VERDICT. ★**2026-08-03(2차) 갱신**: `PDMUX_STICKY_PARTITION`이 구현 완료·correctness gate 통과(CPU 회귀 40 tests + sticky 단위 테스트 12 + GPU smoke job 872800 byte-identical 출력, `../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(2차)" 소절) — **구현 완료 ≠ 성능 주장 성립**, sticky 격자 런은 여전히 미제출(제출 전 `G_LEVER`/`G_FLAT` 사전등록이 미결). 동시에 `A_free`를 대체하는 **조건부 per-token 추정량**으로 estimand가 이관됨[AUDITED, blocking-threshold 스윕만 UNAUDITED]. 사전등록 정정: `--max-mamba-cache-size`는 공통 **절대상수**가 아니라 **`= cap` 규칙**으로 고정[slot당 비용이 arm마다 달라 절대상수는 새 교락]) |
+| A. Hybrid composition, context, active load에 따라 decode demand가 변한다 | 부분 지지 | Zamba2 context knee; synthetic/ShareGPT의 best split 이동; 다중 모델 batch/context characterization; ★**Stage 0(2026-07-26, `../stage0_verdict_2026-07-26.md`, jobs 864230+864601)**: 운영점(cudagraph-ON, green-context pdmux) 3-arm(pure-Mamba 음성대조/hybrid/pure-Transformer 양성대조) decode-only 스윕에서 de-confounded 대조 D16 vs D108(무경합) = 1.00±0.01, 3 arm×3 ctx(4k/8k/16k) 전부 — decode SM-무감각(lever-weakness)이 hybrid에서 pure-Transformer·pure-Mamba로, short-ctx에서 16k로 확장 확인(raw coupled 곡선 자체는 confounded였으나 음성대조+무경합앵커로 우회했다고 주장됨). ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)**: 이 증거가 인용한 D108(무경합 앵커)은 실제로는 decode 16 SM이었다(코드 버그+telemetry+클라이언트 서명 3중 증거, 상세는 `../../PROJECT_STATUS.md` "Stage 0" 절). "D16 vs D108=1.00±0.01"은 동일 조건 반복측정이었다. **대신 ★★C2(scoped, 2026-07-28, `../../workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`, jobs 865289–865533)**: prefill을 16 SM에 고정한 채 decode-SM만 16→92로 올리면 decode ITL p50이 **2.36–2.91×**(4 arm: pure-Mamba2-7.3B/pure-Transformer-7B/additive·substitutive hybrid-7-8B, ctx1024, n=4) 개선 — **decode SM 민감도가 실재하고 모델-무관**임을 확인(Stage 0의 "SM-무감각" 전제와 정반대 방향). 단 이것은 **decode 측 등량곡선**(저-D 셀이 SM 일부러 idle, `prefill+decode≤108` 예산 제약 없음)이라 **레버 존재만 확립하며 정책 이득 근거가 아니다**(프론티어 ITL(D) vs TTFT(108−D) 미측정, `../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"·"열린 긴장" 참조). ★**국소 탄력도 부기(2026-08-04, claims-auditor)**: 2.36–2.91×는 **16→92 끝점 비**(구간 평균 ε≈0.48–0.56)이고 **국소 탄력도는 16→24 0.77–0.88 vs 44→92 0.09–0.35로 4× 다르다 — 44 이상 구간에 이 비를 적용하지 말 것**(`../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트" 참조; 위반 사례로 "C2→벡터1 탄력도 정합" 시도가 REFUTED됨, `../CONSENSUS.md` §3 항목21) | 동일 CUDA Graph 운영점의 **joint**(prefill+decode 동시) surface, GQA/composition 통제, held-out accuracy, >16k ctx, **프론티어(예산 제약 하 net-positive 여부, E1 미실행)**. ★**2026-08-02 추가 — E1 설계 위험(미검증)**: 2026-08-01 전제 실험(미감사, 인용 금지)에서 사전등록 사다리 {50,60,80}ms가 네 arm 전부 판정 불가. ★★**정정(2026-08-02, claims-auditor + M1/M2/M4)**: 여기 함께 적었던 "on-cliff 제외 규칙이 decode-rich 끝을 제거한다"는 **기각**한다 — C2 자신의 측정에서 SM16→44가 log-range의 **75–81%**라 d92 제외는 마지막 15–25%만 자르며, 근거였던 "공통 knee 2.80"도 철회됐다(치역=probe 격자, 살아남는 건 순서뿐; `DESIGN.md` §4.3.7). 따라서 **"E1이 설계상 도달 불가"는 아직 성립하지 않는다.** 대신 선행 게이트로 **M3 Transformer-control 대조**(job 872077, §4.3.8(c))를 제출했다: 프론티어 질문 이전에 **ITL 축이 D에 반응하는지**를 먼저 묻는다(오프라인 예비: blocking 제거 후 d16→d54 기울기 T8 2.03× 대 Ha8 ~1.0×). M3가 두 arm 모두 무반응이면 이 칸은 E1이 아니라 **"이 기판에서 conjunctive goodput의 ITL 항이 decode-SM 레버의 함수가 아니다"**로 닫힌다. ★★**정정(2026-08-03, claims-auditor)**: M3(872077)는 goodput 무반응이 아니라 **NO VERDICT — 사유가 "규칙 모호"에서 "estimand 미식별"로 확장**됐다. 이 기판(`initialize_stream_groups`가 마지막 무분할 그룹을 항상 덧붙임)에서는 "decode가 D SM에서 돌았다"⟺"prefill이 동시 in-flight였다"가 같은 사건이라, 어떤 통계도 decode-SM 탄력도와 prefill 간섭을 분리 못 한다(Claim B의 monolithic-prefill stall과 결합, `../CONSENSUS.md` §1-26). **결정량 `g`는 이 격자에서 은퇴**(sticky-partition 기판 수정 전 인용 금지). 메인 세션이 세운 "decode 실현 4–19%가 `g`를 attenuate했다"는 보정 가설도 **REFUTED**(control-arm reductio: T8 보정치 21–29×로 C2를 10배 위반). ⚠️"Ha8에 레버가 없다"는 **CONFIRMED 아님** — 긴장 A는 전혀 닫히지 않았다 | P3 full-model profile, feature ladder, leave-one-workload/model-family-out, E1(8B 프론티어 `[108−D,D]` 스윕 — **본 스윕 미제출**; 선행 게이트 M3[job 872077]는 estimand 미식별로 NO VERDICT. ★**2026-08-03(2차) 갱신**: `PDMUX_STICKY_PARTITION`이 구현 완료·correctness gate 통과(CPU 회귀 40 tests + sticky 단위 테스트 12 + GPU smoke job 872800 byte-identical 출력, `../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-03(2차)" 소절) — **구현 완료 ≠ 성능 주장 성립**, sticky 격자 런은 여전히 미제출(제출 전 `G_LEVER`/`G_FLAT` 사전등록이 미결). 동시에 `A_free`를 대체하는 **조건부 per-token 추정량**으로 estimand가 이관됨[AUDITED, blocking-threshold 스윕만 UNAUDITED]. 사전등록 정정: `--max-mamba-cache-size`는 공통 **절대상수**가 아니라 **`= cap` 규칙**으로 고정[slot당 비용이 arm마다 달라 절대상수는 새 교락]) |
 | B. layer-level reconfiguration은 ITL critical path와 CUDA Graph를 훼손한다 | 강한 지지, 현 구현 범위 한정 | coordinated TPOT 약 42→124 ms, 최적화 후 약 85 ms; sub-step drain; graph incompatibility | 다중 모델 반복과 timeline attribution | B7 반복, CUDA Graph on/off, Nsight synchronization timeline |
 | C. decode starvation은 TTFT도 악화시킨다 | running-batch 경로 강함; KV 경로 부분 (★2026-08-02 등급 불변) | D16 TTFT 7.24 s/ITL 61.9 ms 대 D24 1.21 s/39.9 ms; admission capacity 관측 | time-aligned KV occupancy와 admission reason. ★**2026-08-02**: occupancy 데이터 자체는 `results/s8_frontier/`(2026-08-01)에서 처음 생겼으나 **de-confound가 안 됐다** — hybrid arm의 `kv_mamba_occupancy=1.0`은 pool 크기가 `--max-running-requests`와 같아서 생기는 **항등식**이고(`model_runner_kv_cache_mixin.py:223-229`), 그 캠페인은 **claims-auditor 미통과(인용 금지)**다. 남은 Missing evidence는 그대로 | D16/D24 paired replay, structured KV/full/mamba occupancy(**`--max-mamba-cache-size`를 `= cap` 규칙으로 명시 고정해 항등식을 깬 뒤에** — 절대상수 고정은 arm마다 메모리 분할을 다르게 만들어 새 교락이 된다), mediation timeline |
 | D. execution-state separation은 single-worker coupling을 줄인다 (★2026-07-24 코드 리뷰로 scope 축소, 아래 "주장 제한" 참조) | 미검증 | R1은 observer라 해당 증거가 아님; 2026-07-24 읽기 전용 코드 리뷰([`../r2_decoupling_review_2026-07-24.md`](../r2_decoupling_review_2026-07-24.md), file:line 근거)로 `PDMUX_TRUE_DUAL_WORKER=1`의 구조 확인: 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이며, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter` 단일 `stream_index`, ≤108)은 **전면 공유** | 실제 두 host loop에서의 fixed-split 비교(coupled ceiling 내); GPU correctness 동치 테스트(현재 없음); admission latch(`r2_admission_limited`) stale-True 버그 수정; results/r2_eval 캠페인 실행(현재 미생성) | legacy fixed 대 true dual fixed, 동일 telemetry/seed/graph — coupled ceiling(+2%, PROJECT_STATUS/CONSENSUS §1-20) 내에서만 유의미, "얽힘 깨기"로 측정 불가(§1-4 死因의 substrate가 구성상 불변) |
@@ -154,6 +171,38 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   중이나 결과 없음. `G_LEVER`/`G_FLAT`는 UNDETERMINED 그대로. 상세
   `results/s8_frontier/DESIGN.md` §4.3.15, `../CONSENSUS.md` §1-30·
   §3-18·§3-19.
+- ★★★**(2026-08-05, claims-auditor CONFIRMED scoped) 위 항목의 §0 3지선다가
+  GPU 런(S2, job 873015)의 독립 재현으로 behavioural하게 종결됐다 —
+  아래 문구로 인용 갱신, 등급은 변경 없음(부분 지지 그대로).**
+  pooled per-token ITL p50 = 28.92ms(d16, 사전등록 [28,34]ms 안, `split_frac`
+  라벨 미사용 재현) / 12.04ms(d54, 사전등록 [13,16]ms 미달 — **인용 시 필수
+  동반**). (i)("872077의 `decode_sms==16`이 실제 16-SM 실행이 아니다")는
+  **하드웨어 형태로 REFUTED·라벨 형태로 CONFIRMED**(872077 d16이
+  decode-busy 시간의 96.2%를 실제로는 D108에서 보냄); (ii)("C2의 28–31ms가
+  셀 배치 성질이다")는 **DISFAVOURED**; 살아남는 답 (iii)("`split_frac
+  ≥0.90`이 D-파티션 클래스를 격리·완결 못한다")의 기전이 스냅샷 샘플링
+  케이던스(decode-busy 조건부로 ITL 구간 1개가 스냅샷 1/16개만 걸침,
+  기대 순도 ≈6%)에서 계측으로부터 독립 도출됐다. **Scope: behavioural·
+  selector-level — 하드웨어 SM 부여 직접 프로브(S3)는 여전히 미실행**
+  (`decode_sms`는 `arbiter.sm_counts[stream_index]`의 재진술일 뿐). C2
+  자체(레버 존재, 2.36–2.91×, scoped)의 등급·수치는 **불변**(자기완결적
+  캠페인) — 바뀐 것은 "C2와 E1/sticky 격자가 같은 물리량을 재는가"라는
+  상위 질문뿐이며 이제 그쪽으로 confirmed. **이 런에는 결과 게이트가
+  0개였다**(sticky ON 하에서 사전등록 게이트 전부가 항등식 또는 코드
+  불변식 — 방법론 게이트 #9의 네 번째 재발). **E1은 여전히 열리지 않는다
+  — 4가지 독립 사유**: `G_LEVER`/`G_FLAT` UNDETERMINED / sticky 기판이
+  co-located 예산 배분이 아니라 단일-테넌트 decode 측정에 가까운 다른
+  estimand로 질문을 바꿈(decode-busy 시 prefill이 벽시계 ~77% 유휴) /
+  prefill 축 미통제(TTFT p50 46.3→63.2ms 무기전) / 음성대조 구조적
+  부재(d16 UNSPLIT n=0/8블록)+S3 미실행. ⇒ **긴장 A(HE2 vs C2)는 전혀
+  닫히지 않았다 — 인용 시 이 문구를 §0 종결과 함께 동반한다.** ⇒
+  **인용 시(갱신)**: §0을 "3지선다 미판정"이 아니라 "**CONFIRMED
+  (scoped)로 종결, 단 하드웨어 층 미프로브**"로 쓰고, d54 companion
+  미스와 E1 4-사유 미개방을 함께 쓸 것. 상세
+  `../../PROJECT_STATUS.md` "8B decode-SM 프론티어" "2026-08-05" 소절,
+  `../../workspace/engine-port/results/s2_sticky/S2_REPLICATION_
+  2026-08-05.md`(전문), `../CONSENSUS.md` §1-31·§3-23, `results/
+  s8_frontier/DESIGN.md` §4.3.16.
 - Claim B는 A100/SGLang green-context implementation에 한정한다.
   ★**positioning 판정(2026-07-25, `venue_positioning.md` §0.1)**: 이것은 논문의
   negative 중 "(A) green-context 종속" 축이다 — DuetServe(libsmctrl)가 정면으로

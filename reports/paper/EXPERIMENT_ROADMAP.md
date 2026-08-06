@@ -298,7 +298,10 @@ jobs 865289–865533): prefill을 16 SM에 고정한 채 decode-SM만 16→92로
 decode ITL이 **2.36–2.91×**(4 arm, 모델-무관) 개선된다 — Stage 0가 주장하던
 "SM-무감각"과 정반대 방향. 단 이는 **decode 측 등량곡선**(예산 제약
 `prefill+decode≤108` 없음)이라 **레버 존재만 확립**하며 정책 이득 근거가
-아니다. **claims-auditor가 지정한 프론티어 게이트 E1**(`[108−D,D]` 스윕,
+아니다. ★**국소 탄력도 부기(2026-08-04, claims-auditor)**: 이 비율은
+**16→92 끝점 비**이며 **국소 탄력도는 16→24 0.77–0.88 vs 44→92
+0.09–0.35로 4× 다르다 — 44 이상 구간에 그대로 적용하지 말 것**
+(`../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"). **claims-auditor가 지정한 프론티어 게이트 E1**(`[108−D,D]` 스윕,
 D∈{16,24,44,54,92}+best-static 대조, 4 arm, offered-rate 고정, n≥4, 사전등록
 파티션 점유율≥0.80·활성률≥0.60 게이트, 결정규칙: best static 대비 conjunctive
 goodput ≥3% 개선 & paired CI가 0 배제)가 이 레버가 예산 제약 하 net-positive인지
