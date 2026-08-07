@@ -47,3 +47,31 @@ external/
 # outputs, not multi-MB per-request telemetry.
 !results/p1_gates/gate1/gate1_srv_*.log
 !results/p1_gates/verify/*.log
+
+# Gate 2 (HOLB-probe 4-arm) raw-dump policy (2026-08-07), extending the
+# 2026-08-06 gate1 policy above to gate2. Same "harness + verdict tracked,
+# raw not" rule, evaluated file-by-file:
+#   - report/result/correctness json + txt: tracked — these ARE the G3/G4/G5
+#     verdict artifacts (g2_holb_analyze.py's scored output).
+#   - flags_*.json (`/get_server_info` realized-vs-target dumps, PREREG_GATE2
+#     section 1.2): tracked — this is the only record of the flags gate, no
+#     other file substitutes for it, and it is small (~20KB/file).
+#   - prompt_*.txt / prompt_meta_*.json: tracked — provenance for exactly
+#     which prompt produced the G3 sha256 (small, human-scale).
+#   - manifest_diff_holb_*.txt / runtime_source_manifest_holb_*.sha256:
+#     tracked — same convention as the shared sync manifest above.
+#   - *.raw.json (the raw HTTP call1/call2 responses behind the G3 sha256):
+#     NOT tracked. The sha256 + PASS/FAIL is already recorded in
+#     *_correctness_*.json; the raw response body is an intermediate
+#     scratch artifact, not cited by line number anywhere, and reproducing
+#     it means re-running the arm, not diffing a stored blob.
+#   - *_srv_*.log: already excluded by the blanket *.log rule above (no
+#     citation-by-line-number found in gate2 docs as of 2026-08-07, so no
+#     exception carved back — contrast gate1's gate1_srv_*.log, which IS
+#     cited). *.holb.jsonl / windows_*.jsonl / bench *.jsonl and
+#     .triton_cache_*/ are likewise already excluded by existing rules
+#     above; verified, no new rule needed for those.
+!results/p1_gates/gate2/*_flags_*.json
+!results/p1_gates/gate2/*_report_*.json
+!results/p1_gates/gate2/*_correctness_*.json
+results/p1_gates/gate2/*.raw.json
