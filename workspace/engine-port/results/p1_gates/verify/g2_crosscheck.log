@@ -1,0 +1,18 @@
+=== cross-check vs PREREG rev3 §4.1 quoted values ===
+Zamba2 r3 A4 tau=40  mean    mine 0.1703  prereg 0.1703  n_zero mine=1 prereg n0=0  MATCH
+Zamba2 r3 A4 tau=60  mean    mine 0.0151  prereg 0.0151  n_zero mine=3 prereg n0=3  MATCH
+Zamba2 r3 A4 tau=100 mean    mine 0.0118  prereg 0.0118  n_zero mine=4 prereg n0=4  MATCH
+Granite r4 A1 ceiling headroom mine 0.0500  prereg §5.3 quotes 0.050  MATCH
+Zamba2 r2 missing-ITL reqs   mine plain=6 agnostic=6  prereg §4.1 quotes 6 each  MATCH
+
+=== consolidated: tau=40 vs tau=60, n=5, delta=0.05 ===
+cell           |   sig40  pow40 n80_40 |   sig60  pow60 n80_60 |  d/gap40  d/gap60
+Zamba2 r2      |  0.0436  0.433      9 |  0.0345  0.700      6 |    0.063    0.063
+Zamba2 r3      |  0.1815  0.001    115 |  0.0360  0.647      7 |    0.065    0.054
+Granite r3     |  0.0587  0.174     14 |  0.0194  0.997      4 |    0.062    0.059
+Granite r4     |  0.0382  0.580      7 |  0.0323  0.767      6 |    0.055    0.054
+Granite r6     |  0.0669  0.107     17 |  0.0271  0.909      5 |    0.054    0.052
+
+min-over-5-cells power at n=5: tau=40 -> 0.001   tau=60 -> 0.647
+audit MC claimed 0.975 (implied sigma 0.0231, a tau=60-scale number)
+wrote g2_tau40_verdict.json
