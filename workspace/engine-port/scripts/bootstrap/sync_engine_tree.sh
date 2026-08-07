@@ -47,10 +47,25 @@ for source in \
   "${track_root}/src/multiplex/multiplexing_mixin.py" \
   "${track_root}/src/multiplex/profile.py" \
   "${track_root}/src/multiplex/controller.py" \
-  "${track_root}/src/multiplex/telemetry.py"; do
+  "${track_root}/src/multiplex/telemetry.py" \
+  "${track_root}/src/multiplex/holb_probe.py"; do
   target="${runtime_python}/sglang/srt/multiplex/$(basename "${source}")"
   install -D -m 0644 "${source}" "${target}"
 done
+
+# Head-of-line-blocking probe hooks in Scheduler.run_batch (2026-08-06).
+# Arm-agnostic instrumentation, DEFAULT OFF: without PDMUX_HOLB_PATH the three
+# hook sites collapse to `is not None` checks and no probe object is built.
+# Lives in scheduler.py (not the pdmux mixin) precisely so that the fused arms
+# -- event_loop_overlap and event_loop_normal -- are instrumented by the same
+# code as event_loop_pdmux; a pdmux-only hook would reproduce the Gate-1 defect
+# where the telemetry existed only on the --enable-pdmux arm.
+# See results/p1_gates/gate2/DIRECT_BLOCKING_DESIGN.md.
+holb_patch="${track_root}/src/patches/holb_probe_scheduler_hooks.patch"
+if ! grep -q "maybe_create_holb_probe" \
+  "${runtime_python}/sglang/srt/managers/scheduler.py"; then
+  patch --forward --batch -p1 -d "${runtime_python}" < "${holb_patch}"
+fi
 
 # Zamba2 (Zyphra/Zamba2-*): NEW config + model files (dev_tree_edits.md items 1-2).
 # Brought under sync + manifest on 2026-08-04 with the per-layer-type timing
@@ -88,6 +103,8 @@ sha256sum \
   "${runtime_python}/sglang/srt/multiplex/profile.py" \
   "${runtime_python}/sglang/srt/multiplex/controller.py" \
   "${runtime_python}/sglang/srt/multiplex/telemetry.py" \
+  "${runtime_python}/sglang/srt/multiplex/holb_probe.py" \
+  "${runtime_python}/sglang/srt/managers/scheduler.py" \
   "${runtime_python}/sglang/srt/configs/mamba2.py" \
   "${runtime_python}/sglang/srt/models/mamba2.py" \
   "${runtime_python}/sglang/srt/configs/zamba2.py" \

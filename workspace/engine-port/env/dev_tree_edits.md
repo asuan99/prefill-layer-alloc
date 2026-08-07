@@ -263,3 +263,28 @@ measurement only.
     a knee unless both gates pass. GPU correctness gate (prepared, unsubmitted):
     `results/r0c/zamba2_timing_smoke.sbatch`. CPU regression:
     `tests/test_zamba2_instrumentation.py`.
+
+## Gate 2 direct head-of-line-blocking probe (2026-08-06)
+
+18. **NEW** `multiplex/holb_probe.py` ← `src/multiplex/holb_probe.py`, installed by
+    `sync_engine_tree.sh` and hashed in the manifest.
+19. Tracked patch `src/patches/holb_probe_scheduler_hooks.patch` (1 existing file,
+    `managers/scheduler.py`; grep-guarded on `maybe_create_holb_probe`, idempotent):
+    - import `maybe_create_holb_probe`;
+    - class-level `Scheduler.holb_probe = None` (so `run_batch` can read the
+      attribute unconditionally);
+    - `self.holb_probe = maybe_create_holb_probe(self)` at the end of `__init__`;
+    - three `begin/end` brackets inside `run_batch`, one per forward-dispatch
+      branch: overlap generation, pdmux `forward_batch_split_prefill`, non-overlap
+      generation. All three use the ambient `torch.cuda.current_stream()`, so the
+      hook has **no arm-specific branch** -- it is the same code for
+      `event_loop_overlap`, `event_loop_normal` and `event_loop_pdmux`.
+    - **DEFAULT OFF.** Without `PDMUX_HOLB_PATH` the three sites are two
+      `is not None` checks per forward and no probe object exists.
+    - `managers/scheduler.py` enters the SHA-256 manifest for the first time with
+      this change: manifests written before 2026-08-06 simply lack that line, so
+      line-for-line comparison of the pre-existing entries (e.g. against jobs
+      873944/873945) is unaffected.
+    Design + arm-symmetry argument + known biases:
+    `results/p1_gates/gate2/DIRECT_BLOCKING_DESIGN.md`.
+    CPU regression: `tests/test_holb_probe.py`.

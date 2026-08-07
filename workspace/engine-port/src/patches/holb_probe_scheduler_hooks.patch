@@ -1,0 +1,87 @@
+--- a/sglang/srt/managers/scheduler.py
++++ b/sglang/srt/managers/scheduler.py
+@@ -186,6 +186,7 @@
+ from sglang.srt.mem_cache.session_aware_cache import SessionAwareCache
+ from sglang.srt.model_executor.forward_batch_info import ForwardMode, PPProxyTensors
+ from sglang.srt.model_loader.utils import get_resolved_model_impl
++from sglang.srt.multiplex.holb_probe import maybe_create_holb_probe
+ from sglang.srt.multiplex.multiplexing_mixin import SchedulerMultiplexMixin
+ from sglang.srt.observability.req_time_stats import (
+     real_time,
+@@ -285,6 +286,11 @@
+ ):
+     """A scheduler that manages a tensor parallel GPU worker."""
+ 
++    # Head-of-line-blocking probe (arm-agnostic, default OFF).  Class-level
++    # default so `run_batch` can read it unconditionally even on code paths
++    # that construct a Scheduler-like object without the full __init__.
++    holb_probe = None
++
+     def __init__(
+         self,
+         server_args: ServerArgs,
+@@ -432,6 +438,12 @@
+         # Init the grammar backend for constrained generation
+         self.grammar_manager = GrammarManager(self)
+ 
++        # Init head-of-line-blocking probe (arm-agnostic; default OFF).
++        # Returns None unless PDMUX_HOLB_PATH is set, in which case every
++        # `run_batch` in every event loop is bracketed by a CUDA event pair.
++        # See sglang/srt/multiplex/holb_probe.py.
++        self.holb_probe = maybe_create_holb_probe(self)
++
+         self.is_initializing = False
+ 
+     def init_model_config(self):
+@@ -2680,11 +2692,18 @@
+                 with self.forward_stream_ctx, self.record_bubble_metrics(batch):
+                     self.forward_stream.wait_stream(self.schedule_stream)
+                     self.future_map.resolve_future(model_worker_batch)
++                    _holb = (
++                        self.holb_probe.begin(batch, self.running_batch)
++                        if self.holb_probe is not None
++                        else None
++                    )
+                     with self.record_forward_metrics(batch):
+                         batch_result = self.model_worker.forward_batch_generation(
+                             model_worker_batch
+                             # here pp is not compatible with overlap
+                         )
++                    if _holb is not None:
++                        self.holb_probe.end(_holb)
+                     # FIXME(lsyin): maybe move this to forward_batch_generation
+                     batch_result.copy_done = self.device_module.Event()
+                     if batch_result.delay_sample_func is None:
+@@ -2712,7 +2731,14 @@
+                     # Current implementation strictly synchronizes the seq_lens
+                     batch.seq_lens = batch_result.next_draft_input.new_seq_lens
+             elif self.enable_pdmux and batch.forward_mode.is_split_prefill():
++                _holb = (
++                    self.holb_probe.begin(batch, self.running_batch)
++                    if self.holb_probe is not None
++                    else None
++                )
+                 batch_result = self.tp_worker.forward_batch_split_prefill(batch)
++                if _holb is not None:
++                    self.holb_probe.end(_holb)
+                 future_indices_or_next_token_ids = batch_result.next_token_ids
+             else:
+                 kwargs = (
+@@ -2720,10 +2746,17 @@
+                     if self.spec_algorithm.is_none()
+                     else {}
+                 )
++                _holb = (
++                    self.holb_probe.begin(batch, self.running_batch)
++                    if self.holb_probe is not None
++                    else None
++                )
+                 with self.record_forward_metrics(batch):
+                     batch_result = self.model_worker.forward_batch_generation(
+                         worker_batch_or_batch, **kwargs
+                     )
++                if _holb is not None:
++                    self.holb_probe.end(_holb)
+                 future_indices_or_next_token_ids = batch_result.next_token_ids
+                 self.update_cache_from_scheduler(batch, batch_result)
+ 
