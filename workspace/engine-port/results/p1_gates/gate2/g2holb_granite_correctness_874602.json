@@ -1,0 +1,4 @@
+{"arm": "plain", "result": "PASS", "sha_off": "bd4fdf1ea76c24bacf35f58960aa959f8349eca405ecfce5cb9f8fbb9ea9d097", "sha_on": "bd4fdf1ea76c24bacf35f58960aa959f8349eca405ecfce5cb9f8fbb9ea9d097", "self_repro_off": true, "self_repro_on": true}
+{"arm": "plainaux", "result": "PASS", "sha_off": "bd4fdf1ea76c24bacf35f58960aa959f8349eca405ecfce5cb9f8fbb9ea9d097", "sha_on": "bd4fdf1ea76c24bacf35f58960aa959f8349eca405ecfce5cb9f8fbb9ea9d097", "self_repro_off": true, "self_repro_on": true}
+{"arm": "chunk512", "result": "PASS", "sha_off": "bd4fdf1ea76c24bacf35f58960aa959f8349eca405ecfce5cb9f8fbb9ea9d097", "sha_on": "bd4fdf1ea76c24bacf35f58960aa959f8349eca405ecfce5cb9f8fbb9ea9d097", "self_repro_off": true, "self_repro_on": true}
+{"arm": "agnostic", "result": "PASS", "sha_off": "bd4fdf1ea76c24bacf35f58960aa959f8349eca405ecfce5cb9f8fbb9ea9d097", "sha_on": "bd4fdf1ea76c24bacf35f58960aa959f8349eca405ecfce5cb9f8fbb9ea9d097", "self_repro_off": true, "self_repro_on": true}

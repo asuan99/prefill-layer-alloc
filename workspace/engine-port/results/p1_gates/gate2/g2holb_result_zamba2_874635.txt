@@ -1,0 +1,72 @@
+======================================================================
+GATE 2 HOLB SCORING  tag=zamba2 jobid=874635
+======================================================================
+
+--- G3 correctness (probe ON/OFF byte-identical greedy output) ---
+  arm=plain      result=PASS status_off=OK status_on=OK method_off=output_ids method_on=output_ids sha_off=c6328dc580be sha_on=c6328dc580be self_repro_off=True self_repro_on=True
+  arm=plainaux   result=PASS status_off=OK status_on=OK method_off=output_ids method_on=output_ids sha_off=c6328dc580be sha_on=c6328dc580be self_repro_off=True self_repro_on=True
+  arm=chunk512   result=PASS status_off=OK status_on=OK method_off=output_ids method_on=output_ids sha_off=c6328dc580be sha_on=c6328dc580be self_repro_off=True self_repro_on=True
+  arm=agnostic   result=PASS status_off=OK status_on=OK method_off=output_ids method_on=output_ids sha_off=c6328dc580be sha_on=c6328dc580be self_repro_off=True self_repro_on=True
+  G3 STATUS = PASS
+
+--- G4 instrumentation validity + free diagnostics (per arm, per rep) ---
+  arm=plain      rep=1 G4=PASS timeline_over_host=1.000480696276305 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plain      rep=2 G4=PASS timeline_over_host=1.0003427806340477 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plain      rep=3 G4=PASS timeline_over_host=1.0004233250592716 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plain      rep=4 G4=PASS timeline_over_host=1.000421896151896 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plain      rep=5 G4=PASS timeline_over_host=1.000371458659857 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plain      stall_ms across reps: n=5 mean=14682.816 sd=749.967 cv=0.0511 values=['14160.374', '15907.416', '14147.827', '14301.722', '14896.739']
+  arm=plainaux   rep=1 G4=PASS timeline_over_host=1.0004137154167354 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plainaux   rep=2 G4=PASS timeline_over_host=1.0005688206714245 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plainaux   rep=3 G4=PASS timeline_over_host=1.0002268494002158 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plainaux   rep=4 G4=PASS timeline_over_host=1.0002238143227937 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plainaux   rep=5 G4=PASS timeline_over_host=1.0002051550859157 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=plainaux   stall_ms across reps: n=5 mean=15797.830 sd=1793.525 cv=0.1135 values=['17968.124', '17346.019', '14312.461', '13953.212', '15409.331']
+  arm=chunk512   rep=1 G4=PASS timeline_over_host=1.001603747686422 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=chunk512   rep=2 G4=PASS timeline_over_host=1.0013348667700062 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=chunk512   rep=3 G4=PASS timeline_over_host=1.001318271177488 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=chunk512   rep=4 G4=PASS timeline_over_host=1.0008910464217697 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=chunk512   rep=5 G4=PASS timeline_over_host=1.0009934624558445 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=chunk512   stall_ms across reps: n=5 mean=27716.503 sd=1539.744 cv=0.0556 values=['25717.566', '27649.094', '29920.503', '27092.758', '28202.594']
+  arm=agnostic   rep=1 G4=PASS timeline_over_host=1.0005222687447892 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=agnostic   rep=2 G4=PASS timeline_over_host=1.0001508766263199 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=agnostic   rep=3 G4=PASS timeline_over_host=1.0002206554011857 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=agnostic   rep=4 G4=PASS timeline_over_host=1.0003154136159893 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=agnostic   rep=5 G4=PASS timeline_over_host=1.0003611270659423 invalid_frac=0.00000 dropped_spans=0 n_inconsistent=0 n_errors=0
+  arm=agnostic   stall_ms across reps: n=5 mean=3587.849 sd=155.691 cv=0.0434 values=['3822.820', '3452.714', '3467.633', '3664.468', '3531.609']
+
+  G4 (ALL arm x rep PASS) = True
+
+--- G5 observer effect (paired t, n<=nrep, per arm x response var) ---
+  arm=plain      var=request_throughput   n=5 mean=   -0.24% CI95=      [-0.86%, +0.39%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=plain      var=ttft_p50             n=5 mean=   -1.69% CI95=      [-5.59%, +2.22%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=plain      var=ttft_p95             n=5 mean=  -10.13% CI95=    [-31.43%, +11.16%] verdict=FAIL reps=[1, 2, 3, 4, 5]
+  arm=plain      var=itl_p50              n=5 mean=   -1.11% CI95=      [-4.78%, +2.56%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=plain      var=itl_p95              n=5 mean=   -0.36% CI95=      [-1.06%, +0.34%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=plain      var=mean_e2e_ms          n=5 mean=   -0.51% CI95=      [-3.49%, +2.48%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=plainaux   var=request_throughput   n=5 mean=   -0.02% CI95=      [-0.05%, -0.00%] verdict=FAIL reps=[1, 2, 3, 4, 5]
+  arm=plainaux   var=ttft_p50             n=5 mean=   +2.33% CI95=     [-9.76%, +14.42%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=plainaux   var=ttft_p95             n=5 mean=  +45.40% CI95=   [-48.21%, +139.01%] verdict=FAIL reps=[1, 2, 3, 4, 5]
+  arm=plainaux   var=itl_p50              n=5 mean=   +1.56% CI95=      [-1.18%, +4.31%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=plainaux   var=itl_p95              n=5 mean= +105.07% CI95=  [-185.25%, +395.38%] verdict=FAIL reps=[1, 2, 3, 4, 5]
+  arm=plainaux   var=mean_e2e_ms          n=5 mean=  +12.43% CI95=     [-9.64%, +34.50%] verdict=FAIL reps=[1, 2, 3, 4, 5]
+  arm=chunk512   var=request_throughput   n=5 mean=   -0.31% CI95=      [-2.82%, +2.20%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=chunk512   var=ttft_p50             n=5 mean=   -8.93% CI95=    [-36.60%, +18.74%] verdict=FAIL reps=[1, 2, 3, 4, 5]
+  arm=chunk512   var=ttft_p95             n=5 mean=   +2.14% CI95=      [-5.13%, +9.40%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=chunk512   var=itl_p50              n=5 mean=   -3.42% CI95=     [-14.94%, +8.09%] verdict=FAIL reps=[1, 2, 3, 4, 5]
+  arm=chunk512   var=itl_p95              n=5 mean=   -9.92% CI95=    [-34.27%, +14.43%] verdict=FAIL reps=[1, 2, 3, 4, 5]
+  arm=chunk512   var=mean_e2e_ms          n=5 mean=   -0.58% CI95=    [-14.43%, +13.26%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=agnostic   var=request_throughput   n=5 mean=   +0.25% CI95=      [-0.48%, +0.99%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=agnostic   var=ttft_p50             n=5 mean=   +0.49% CI95=    [-15.27%, +16.25%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=agnostic   var=ttft_p95             n=5 mean=   -0.77% CI95=    [-36.95%, +35.41%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=agnostic   var=itl_p50              n=5 mean=   -1.26% CI95=     [-10.81%, +8.29%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=agnostic   var=itl_p95              n=5 mean=   -0.90% CI95=    [-19.26%, +17.45%] verdict=PASS reps=[1, 2, 3, 4, 5]
+  arm=agnostic   var=mean_e2e_ms          n=5 mean=   +0.99% CI95=    [-19.02%, +21.00%] verdict=PASS reps=[1, 2, 3, 4, 5]
+
+  G5 (ALL arm x var PASS, |effect|<3% AND CI ni 0) = False
+
+======================================================================
+SUMMARY  G3=PASS  G4=True  G5=False
+======================================================================
+
+Full report -> /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2holb_report_zamba2_874635.json
