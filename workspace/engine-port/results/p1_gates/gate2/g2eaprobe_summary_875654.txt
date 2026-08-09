@@ -1,0 +1,4 @@
+PROBE_RESULT tag=zamba2_default_mixed verdict=AVAILABLE_BUT_BURST_ERROR top=(True,8192) scheduler=(True,8192) holb=(True,8192) burst_ok=False
+PROBE_RESULT tag=zamba2_chunk512_mixed verdict=AVAILABLE_BUT_BURST_ERROR top=(True,512) scheduler=(True,512) holb=(True,512) burst_ok=False
+PROBE_RESULT tag=granite_default_mixed verdict=AVAILABLE_BUT_BURST_ERROR top=(True,8192) scheduler=(True,8192) holb=(True,8192) burst_ok=False
+PROBE_RESULT tag=granite_chunk512_mixed verdict=AVAILABLE_BUT_BURST_ERROR top=(True,512) scheduler=(True,512) holb=(True,512) burst_ok=False

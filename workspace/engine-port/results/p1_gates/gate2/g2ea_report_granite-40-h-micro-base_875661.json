@@ -1,0 +1,884 @@
+{
+  "tag": "granite-40-h-micro-base",
+  "jobid": "875661",
+  "voided_reps": [],
+  "rates": [
+    3,
+    4
+  ],
+  "designated_rate": 3,
+  "correctness_gates": [
+    {
+      "gate": "G1",
+      "arm": "plain",
+      "self_repro_status": "SELFREPRO_OK",
+      "cross_vs_plain_match": "n/a"
+    },
+    {
+      "gate": "G1",
+      "arm": "plainmix",
+      "self_repro_status": "SELFREPRO_OK",
+      "cross_vs_plain_match": "True"
+    },
+    {
+      "gate": "G1",
+      "arm": "chunk512",
+      "self_repro_status": "SELFREPRO_OK",
+      "cross_vs_plain_match": "True"
+    },
+    {
+      "gate": "G1",
+      "arm": "chunk512mix",
+      "self_repro_status": "SELFREPRO_OK",
+      "cross_vs_plain_match": "True"
+    },
+    {
+      "gate": "G1",
+      "arm": "agnostic",
+      "self_repro_status": "SELFREPRO_OK",
+      "cross_vs_plain_match": "True"
+    },
+    {
+      "gate": "G2_CONCURRENT",
+      "arm": "plainmix",
+      "n_concurrent": 16,
+      "verdict": "PASS"
+    },
+    {
+      "gate": "G2_CONCURRENT",
+      "arm": "chunk512",
+      "n_concurrent": 16,
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "G2_CONCURRENT",
+      "arm": "chunk512mix",
+      "n_concurrent": 16,
+      "verdict": "FAIL"
+    }
+  ],
+  "realized_flags": {
+    "plain": {
+      "status": "OK",
+      "source_file": "workspace/engine-port/results/p1_gates/gate2/g2ea_granite-40-h-micro-base_flags_plain_G1_875661.json",
+      "top": {
+        "enable_mixed_chunk": false,
+        "chunked_prefill_size": 8192,
+        "disable_overlap_schedule": false,
+        "piecewise_cuda_graph_max_tokens": 8192,
+        "disable_radix_cache": true
+      },
+      "scheduler": {
+        "enable_mixed_chunk": false,
+        "chunked_prefill_size": 8192,
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "max_mamba_cache_size": 48
+      },
+      "tree_cache_class_derived": "ChunkCache (derived: chunked_prefill_size is not None and disable_radix_cache, scheduler.py:771-780)"
+    },
+    "plainmix": {
+      "status": "OK",
+      "source_file": "workspace/engine-port/results/p1_gates/gate2/g2ea_granite-40-h-micro-base_flags_plainmix_G1_875661.json",
+      "top": {
+        "enable_mixed_chunk": true,
+        "chunked_prefill_size": 8192,
+        "disable_overlap_schedule": false,
+        "piecewise_cuda_graph_max_tokens": 8192,
+        "disable_radix_cache": true
+      },
+      "scheduler": {
+        "enable_mixed_chunk": true,
+        "chunked_prefill_size": 8192,
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "max_mamba_cache_size": 48
+      },
+      "tree_cache_class_derived": "ChunkCache (derived: chunked_prefill_size is not None and disable_radix_cache, scheduler.py:771-780)"
+    },
+    "chunk512": {
+      "status": "OK",
+      "source_file": "workspace/engine-port/results/p1_gates/gate2/g2ea_granite-40-h-micro-base_flags_chunk512_G1_875661.json",
+      "top": {
+        "enable_mixed_chunk": false,
+        "chunked_prefill_size": 512,
+        "disable_overlap_schedule": false,
+        "piecewise_cuda_graph_max_tokens": 512,
+        "disable_radix_cache": true
+      },
+      "scheduler": {
+        "enable_mixed_chunk": false,
+        "chunked_prefill_size": 512,
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "max_mamba_cache_size": 48
+      },
+      "tree_cache_class_derived": "ChunkCache (derived: chunked_prefill_size is not None and disable_radix_cache, scheduler.py:771-780)"
+    },
+    "chunk512mix": {
+      "status": "OK",
+      "source_file": "workspace/engine-port/results/p1_gates/gate2/g2ea_granite-40-h-micro-base_flags_chunk512mix_G1_875661.json",
+      "top": {
+        "enable_mixed_chunk": true,
+        "chunked_prefill_size": 512,
+        "disable_overlap_schedule": false,
+        "piecewise_cuda_graph_max_tokens": 512,
+        "disable_radix_cache": true
+      },
+      "scheduler": {
+        "enable_mixed_chunk": true,
+        "chunked_prefill_size": 512,
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "max_mamba_cache_size": 48
+      },
+      "tree_cache_class_derived": "ChunkCache (derived: chunked_prefill_size is not None and disable_radix_cache, scheduler.py:771-780)"
+    },
+    "agnostic": {
+      "status": "OK",
+      "source_file": "workspace/engine-port/results/p1_gates/gate2/g2ea_granite-40-h-micro-base_flags_agnostic_G1_875661.json",
+      "top": {
+        "enable_mixed_chunk": false,
+        "chunked_prefill_size": -1,
+        "disable_overlap_schedule": true,
+        "piecewise_cuda_graph_max_tokens": -1,
+        "disable_radix_cache": true
+      },
+      "scheduler": {
+        "enable_mixed_chunk": false,
+        "chunked_prefill_size": -1,
+        "disable_overlap_schedule": true,
+        "disable_radix_cache": true,
+        "max_mamba_cache_size": 48
+      },
+      "tree_cache_class_derived": "ChunkCache (derived: chunked_prefill_size is not None and disable_radix_cache, scheduler.py:771-780)"
+    }
+  },
+  "phase0_report": {
+    "plain": {
+      "F_A": [],
+      "F_B_slope": null,
+      "F_B_rate1_mult": [],
+      "F_B_flagged": false
+    },
+    "plainmix": {
+      "F_A": [],
+      "F_B_slope": null,
+      "F_B_rate1_mult": [],
+      "F_B_flagged": false
+    },
+    "chunk512": {
+      "F_A": [],
+      "F_B_slope": null,
+      "F_B_rate1_mult": [],
+      "F_B_flagged": false
+    },
+    "chunk512mix": {
+      "F_A": [],
+      "F_B_slope": null,
+      "F_B_rate1_mult": [
+        {
+          "rate": 3,
+          "multiple_of_rate1": 35.45184280788095
+        },
+        {
+          "rate": 4,
+          "multiple_of_rate1": 48.257621293409535
+        }
+      ],
+      "F_B_flagged": true
+    },
+    "agnostic": {
+      "F_A": [],
+      "F_B_slope": null,
+      "F_B_rate1_mult": [],
+      "F_B_flagged": false
+    }
+  },
+  "phase0_midcheck": {
+    "cmp1_A1m_vs_A4": {
+      "3": {
+        "status": "OK",
+        "sd_arm": 0.016666666666666663,
+        "sd_a4": 0.019245008972987525,
+        "proxy": 0.02721655269759087,
+        "underpowered": false
+      },
+      "4": {
+        "status": "OK",
+        "sd_arm": 0.016666666666666663,
+        "sd_a4": 0.0,
+        "proxy": 0.0,
+        "underpowered": true
+      }
+    },
+    "cmp2_A3m_vs_A4": {
+      "3": {
+        "status": "OK",
+        "sd_arm": 0.0,
+        "sd_a4": 0.019245008972987525,
+        "proxy": 0.02721655269759087,
+        "underpowered": false
+      },
+      "4": {
+        "status": "OK",
+        "sd_arm": 0.0,
+        "sd_a4": 0.0,
+        "proxy": 0.0,
+        "underpowered": false
+      }
+    }
+  },
+  "cells": {
+    "3": {
+      "rate": 3,
+      "primary": {
+        "cmp1_A1m_vs_A4": {
+          "label": "cmp1_A1m_vs_A4",
+          "arm_a": "plainmix",
+          "arm_b": "agnostic",
+          "n_paired": 10,
+          "diffs": [
+            0.8666666666666667,
+            0.7583333333333333,
+            0.8833333333333333,
+            0.7999999999999999,
+            0.8666666666666667,
+            0.8916666666666666,
+            0.8166666666666667,
+            0.9333333333333333,
+            0.8083333333333333,
+            0.925
+          ],
+          "tost": {
+            "n": 10,
+            "mean": 0.855,
+            "sd": 0.05722491903030264,
+            "se": 0.01809610830544704,
+            "delta": 0.05,
+            "ci90_lo": 0.8218298334761156,
+            "ci90_hi": 0.8881701665238844,
+            "p_tost": 1.0,
+            "equivalent": false,
+            "verdict": "NOT_EQUIVALENT"
+          },
+          "raw_ci": {
+            "n": 10,
+            "mean": 0.855,
+            "sd": 0.05722491903030264,
+            "se": 0.01809610830544704,
+            "ci_lo": 0.8140666030130788,
+            "ci_hi": 0.8959333969869212,
+            "degenerate": false
+          },
+          "sign_flip_p": 0.001953125,
+          "ttft_noninferior": true,
+          "ttft_ci": {
+            "n": 10,
+            "mean": -0.19241393133974802,
+            "sd": 0.08831326022175658,
+            "se": 0.02792710498958976,
+            "ci_lo": -0.25558504282620004,
+            "ci_hi": -0.129242819853296,
+            "degenerate": false
+          },
+          "cell_verdict": "Rprime4_analog(A4_superior)",
+          "citable": true,
+          "f_e_flagged": {
+            "arm_a": false,
+            "arm_b": false
+          }
+        },
+        "cmp2_A3m_vs_A4": {
+          "label": "cmp2_A3m_vs_A4",
+          "arm_a": "chunk512mix",
+          "arm_b": "agnostic",
+          "n_paired": 10,
+          "diffs": [
+            0.9416666666666667,
+            0.9249999999999999,
+            0.9583333333333333,
+            0.9249999999999999,
+            0.95,
+            0.9583333333333333,
+            0.8916666666666666,
+            0.9916666666666667,
+            0.9333333333333333,
+            0.9833333333333333
+          ],
+          "tost": {
+            "n": 10,
+            "mean": 0.9458333333333333,
+            "sd": 0.029462782549439494,
+            "se": 0.009316949906249128,
+            "delta": 0.05,
+            "ci90_lo": 0.9287553641551787,
+            "ci90_hi": 0.9629113025114879,
+            "p_tost": 1.0,
+            "equivalent": false,
+            "verdict": "NOT_EQUIVALENT"
+          },
+          "raw_ci": {
+            "n": 10,
+            "mean": 0.9458333333333333,
+            "sd": 0.029462782549439494,
+            "se": 0.009316949906249128,
+            "ci_lo": 0.9247583926453977,
+            "ci_hi": 0.9669082740212689,
+            "degenerate": false
+          },
+          "sign_flip_p": 0.001953125,
+          "ttft_noninferior": false,
+          "ttft_ci": {
+            "n": 10,
+            "mean": 136.62787828887033,
+            "sd": 24.092619565413464,
+            "se": 7.61875526266426,
+            "ci_lo": 119.39425388472378,
+            "ci_hi": 153.8615026930169,
+            "degenerate": false
+          },
+          "cell_verdict": "Rprime4_analog(A4_superior)_FLAGGED_SIGN_ONLY_MAGNITUDE_NOT_CITABLE",
+          "citable": false,
+          "f_e_flagged": {
+            "arm_a": true,
+            "arm_b": false
+          }
+        }
+      },
+      "secondary_mixed_effect": {
+        "secondary_mixed_effect_on_plain": {
+          "arm_mix": "plainmix",
+          "arm_base": "plain",
+          "n": 10,
+          "diffs": [
+            0.008333333333333304,
+            0.01666666666666672,
+            0.01666666666666672,
+            0.016666666666666607,
+            0.0,
+            0.008333333333333304,
+            0.0,
+            0.0,
+            0.01666666666666672,
+            0.01666666666666672
+          ],
+          "ci": {
+            "n": 10,
+            "mean": 0.010000000000000009,
+            "sd": 0.007657804862272361,
+            "se": 0.0024216105241892678,
+            "ci_lo": 0.0045223169942838854,
+            "ci_hi": 0.015477683005716131,
+            "degenerate": false
+          }
+        },
+        "secondary_mixed_effect_on_chunk512": {
+          "arm_mix": "chunk512mix",
+          "arm_base": "chunk512",
+          "n": 10,
+          "diffs": [
+            0.04166666666666663,
+            0.05833333333333335,
+            0.033333333333333326,
+            0.06666666666666665,
+            0.008333333333333304,
+            0.02499999999999991,
+            0.04166666666666663,
+            0.04166666666666674,
+            0.05833333333333335,
+            0.033333333333333326
+          ],
+          "ci": {
+            "n": 10,
+            "mean": 0.04083333333333332,
+            "sd": 0.017324962366125213,
+            "se": 0.005478634145365566,
+            "ci_lo": 0.028440662896516408,
+            "ci_hi": 0.05322600377015023,
+            "degenerate": false
+          }
+        }
+      },
+      "tau_ladder": {
+        "40.0": {
+          "n": 10,
+          "n_vacuous": 0,
+          "mean_diff_nonvacuous": 0.05499999999999999,
+          "sign": "+"
+        },
+        "60.0": {
+          "n": 10,
+          "n_vacuous": 0,
+          "mean_diff_nonvacuous": 0.059999999999999984,
+          "sign": "+"
+        },
+        "100.0": {
+          "n": 10,
+          "n_vacuous": 0,
+          "mean_diff_nonvacuous": 0.45416666666666666,
+          "sign": "+"
+        }
+      },
+      "secondary": {
+        "plain": {
+          "n": 10,
+          "request_throughput_mean": 2.9406806678587576,
+          "goodput_canonical_mean": 2.6530443819174105,
+          "ttft_p95_mean_ms": 280.6504630483687,
+          "request_itl_p95_p90_mean_ms": 60.66049791313706
+        },
+        "plainmix": {
+          "n": 10,
+          "request_throughput_mean": 2.938398831092665,
+          "goodput_canonical_mean": 1.8998881827605552,
+          "ttft_p95_mean_ms": 406.166296871379,
+          "request_itl_p95_p90_mean_ms": 103.78134159184994
+        },
+        "chunk512": {
+          "n": 10,
+          "request_throughput_mean": 2.9222703316247243,
+          "goodput_canonical_mean": 2.580764520972436,
+          "ttft_p95_mean_ms": 920.2994333393871,
+          "request_itl_p95_p90_mean_ms": 95.92557936348005
+        },
+        "chunk512mix": {
+          "n": 10,
+          "request_throughput_mean": 1.0704016768020412,
+          "goodput_canonical_mean": 0.023222809672794446,
+          "ttft_p95_mean_ms": 67297.87623690441,
+          "request_itl_p95_p90_mean_ms": 251.5650817397982
+        },
+        "agnostic": {
+          "n": 10,
+          "request_throughput_mean": 2.93100548685391,
+          "goodput_canonical_mean": 2.93100548685391,
+          "ttft_p95_mean_ms": 503.4960645716637,
+          "request_itl_p95_p90_mean_ms": 21.721290199086052
+        }
+      },
+      "per_arm_x60": {
+        "plain": {
+          "1": 0.9,
+          "2": 0.7916666666666666,
+          "3": 0.8833333333333333,
+          "4": 0.8333333333333334,
+          "5": 0.9,
+          "6": 0.9083333333333333,
+          "7": 0.9083333333333333,
+          "8": 0.9333333333333333,
+          "9": 0.85,
+          "10": 0.9083333333333333
+        },
+        "plainmix": {
+          "1": 0.9083333333333333,
+          "2": 0.8083333333333333,
+          "3": 0.9,
+          "4": 0.85,
+          "5": 0.9,
+          "6": 0.9166666666666666,
+          "7": 0.9083333333333333,
+          "8": 0.9333333333333333,
+          "9": 0.8666666666666667,
+          "10": 0.925
+        },
+        "chunk512": {
+          "1": 0.9416666666666667,
+          "2": 0.9166666666666666,
+          "3": 0.9416666666666667,
+          "4": 0.9083333333333333,
+          "5": 0.975,
+          "6": 0.9583333333333334,
+          "7": 0.9416666666666667,
+          "8": 0.95,
+          "9": 0.9333333333333333,
+          "10": 0.95
+        },
+        "chunk512mix": {
+          "1": 0.9833333333333333,
+          "2": 0.975,
+          "3": 0.975,
+          "4": 0.975,
+          "5": 0.9833333333333333,
+          "6": 0.9833333333333333,
+          "7": 0.9833333333333333,
+          "8": 0.9916666666666667,
+          "9": 0.9916666666666667,
+          "10": 0.9833333333333333
+        },
+        "agnostic": {
+          "1": 0.041666666666666664,
+          "2": 0.05,
+          "3": 0.016666666666666666,
+          "4": 0.05,
+          "5": 0.03333333333333333,
+          "6": 0.025,
+          "7": 0.09166666666666666,
+          "8": 0.0,
+          "9": 0.058333333333333334,
+          "10": 0.0
+        }
+      },
+      "f_e": {
+        "plain": {
+          "n": 10,
+          "rep_mean_ratio": 0.9991431719436923,
+          "flagged": false
+        },
+        "plainmix": {
+          "n": 10,
+          "rep_mean_ratio": 1.0258495435909558,
+          "flagged": false
+        },
+        "chunk512": {
+          "n": 10,
+          "rep_mean_ratio": 1.0737344588136952,
+          "flagged": false
+        },
+        "chunk512mix": {
+          "n": 10,
+          "rep_mean_ratio": 29.588159444551387,
+          "flagged": true
+        },
+        "agnostic": {
+          "n": 10,
+          "rep_mean_ratio": 0.9726345412350661,
+          "flagged": false
+        }
+      }
+    },
+    "4": {
+      "rate": 4,
+      "primary": {
+        "cmp1_A1m_vs_A4": {
+          "label": "cmp1_A1m_vs_A4",
+          "arm_a": "plainmix",
+          "arm_b": "agnostic",
+          "n_paired": 10,
+          "diffs": [
+            0.9416666666666667,
+            0.9166666666666666,
+            0.925,
+            0.9666666666666667,
+            0.975,
+            0.9666666666666667,
+            0.9833333333333333,
+            0.9333333333333333,
+            0.95,
+            0.975
+          ],
+          "tost": {
+            "n": 10,
+            "mean": 0.9533333333333334,
+            "sd": 0.023306863292670024,
+            "se": 0.007370277311900885,
+            "delta": 0.05,
+            "ci90_lo": 0.9398236150206191,
+            "ci90_hi": 0.9668430516460477,
+            "p_tost": 1.0,
+            "equivalent": false,
+            "verdict": "NOT_EQUIVALENT"
+          },
+          "raw_ci": {
+            "n": 10,
+            "mean": 0.9533333333333334,
+            "sd": 0.023306863292670024,
+            "se": 0.007370277311900885,
+            "ci_lo": 0.9366617660538136,
+            "ci_hi": 0.9700049006128532,
+            "degenerate": false
+          },
+          "sign_flip_p": 0.001953125,
+          "ttft_noninferior": false,
+          "ttft_ci": {
+            "n": 10,
+            "mean": 0.9799121489269331,
+            "sd": 1.692713263300209,
+            "se": 0.5352829337604966,
+            "ci_lo": -0.23089784723931017,
+            "ci_hi": 2.1907221450931766,
+            "degenerate": false
+          },
+          "cell_verdict": "Rprime4_analog(A4_superior)_FLAGGED_SIGN_ONLY_MAGNITUDE_NOT_CITABLE",
+          "citable": false,
+          "f_e_flagged": {
+            "arm_a": true,
+            "arm_b": false
+          }
+        },
+        "cmp2_A3m_vs_A4": {
+          "label": "cmp2_A3m_vs_A4",
+          "arm_a": "chunk512mix",
+          "arm_b": "agnostic",
+          "n_paired": 10,
+          "diffs": [
+            0.9916666666666667,
+            0.9666666666666667,
+            0.9583333333333334,
+            0.9916666666666667,
+            0.9916666666666667,
+            0.9916666666666667,
+            0.9916666666666667,
+            0.9833333333333333,
+            0.9666666666666667,
+            0.9916666666666667
+          ],
+          "tost": {
+            "n": 10,
+            "mean": 0.9825,
+            "sd": 0.013292762348894892,
+            "se": 0.004203540541783767,
+            "delta": 0.05,
+            "ci90_lo": 0.9747949101869104,
+            "ci90_hi": 0.9902050898130896,
+            "p_tost": 1.0,
+            "equivalent": false,
+            "verdict": "NOT_EQUIVALENT"
+          },
+          "raw_ci": {
+            "n": 10,
+            "mean": 0.9825,
+            "sd": 0.013292762348894892,
+            "se": 0.004203540541783767,
+            "ci_lo": 0.9729915912944852,
+            "ci_hi": 0.9920084087055149,
+            "degenerate": false
+          },
+          "sign_flip_p": 0.001953125,
+          "ttft_noninferior": false,
+          "ttft_ci": {
+            "n": 10,
+            "mean": 128.05835166949848,
+            "sd": 17.346515705361295,
+            "se": 5.485449909682395,
+            "ci_lo": 115.6502639737969,
+            "ci_hi": 140.46643936520005,
+            "degenerate": false
+          },
+          "cell_verdict": "Rprime4_analog(A4_superior)_FLAGGED_SIGN_ONLY_MAGNITUDE_NOT_CITABLE",
+          "citable": false,
+          "f_e_flagged": {
+            "arm_a": true,
+            "arm_b": false
+          }
+        }
+      },
+      "secondary_mixed_effect": {
+        "secondary_mixed_effect_on_plain": {
+          "arm_mix": "plainmix",
+          "arm_base": "plain",
+          "n": 10,
+          "diffs": [
+            0.0,
+            0.0,
+            0.008333333333333415,
+            0.01666666666666672,
+            0.016666666666666607,
+            0.025000000000000022,
+            0.016666666666666607,
+            0.033333333333333326,
+            0.016666666666666607,
+            0.008333333333333304
+          ],
+          "ci": {
+            "n": 10,
+            "mean": 0.01416666666666666,
+            "sd": 0.010430546308621431,
+            "se": 0.0032984283575105302,
+            "ci_lo": 0.006705621721977841,
+            "ci_hi": 0.02162771161135548,
+            "degenerate": false
+          }
+        },
+        "secondary_mixed_effect_on_chunk512": {
+          "arm_mix": "chunk512mix",
+          "arm_base": "chunk512",
+          "n": 10,
+          "diffs": [
+            0.008333333333333415,
+            0.0,
+            0.033333333333333326,
+            0.008333333333333415,
+            0.033333333333333326,
+            0.025000000000000022,
+            0.0,
+            0.016666666666666607,
+            -0.008333333333333304,
+            0.008333333333333415
+          ],
+          "ci": {
+            "n": 10,
+            "mean": 0.012500000000000022,
+            "sd": 0.014299486306926373,
+            "se": 0.004521894610027691,
+            "ci_lo": 0.0022714743921173845,
+            "ci_hi": 0.02272852560788266,
+            "degenerate": false
+          }
+        }
+      },
+      "tau_ladder": {
+        "40.0": {
+          "n": 10,
+          "n_vacuous": 6,
+          "mean_diff_nonvacuous": 0.04375000000000001,
+          "sign": "+"
+        },
+        "60.0": {
+          "n": 10,
+          "n_vacuous": 5,
+          "mean_diff_nonvacuous": 0.045,
+          "sign": "+"
+        },
+        "100.0": {
+          "n": 10,
+          "n_vacuous": 0,
+          "mean_diff_nonvacuous": 0.27749999999999997,
+          "sign": "+"
+        }
+      },
+      "secondary": {
+        "plain": {
+          "n": 10,
+          "request_throughput_mean": 3.978562284674562,
+          "goodput_canonical_mean": 2.953686268928477,
+          "ttft_p95_mean_ms": 313.87317034415895,
+          "request_itl_p95_p90_mean_ms": 67.78243015147746
+        },
+        "plainmix": {
+          "n": 10,
+          "request_throughput_mean": 3.836150241204534,
+          "goodput_canonical_mean": 1.1608219425666442,
+          "ttft_p95_mean_ms": 1310.9721253998578,
+          "request_itl_p95_p90_mean_ms": 280.6665274184197
+        },
+        "chunk512": {
+          "n": 10,
+          "request_throughput_mean": 3.8035313711899232,
+          "goodput_canonical_mean": 2.754506306748477,
+          "ttft_p95_mean_ms": 2048.1219527311623,
+          "request_itl_p95_p90_mean_ms": 110.65661443769932
+        },
+        "chunk512mix": {
+          "n": 10,
+          "request_throughput_mean": 1.0367063627161315,
+          "goodput_canonical_mean": 0.004380456398958154,
+          "ttft_p95_mean_ms": 80806.74176736735,
+          "request_itl_p95_p90_mean_ms": 251.84149357117712
+        },
+        "agnostic": {
+          "n": 10,
+          "request_throughput_mean": 3.9457622189343304,
+          "goodput_canonical_mean": 3.9457622189343304,
+          "ttft_p95_mean_ms": 636.726485537365,
+          "request_itl_p95_p90_mean_ms": 25.140145257115336
+        }
+      },
+      "per_arm_x60": {
+        "plain": {
+          "1": 0.9416666666666667,
+          "2": 0.9416666666666667,
+          "3": 0.95,
+          "4": 0.95,
+          "5": 0.9583333333333334,
+          "6": 0.9416666666666667,
+          "7": 0.9666666666666667,
+          "8": 0.9,
+          "9": 0.9333333333333333,
+          "10": 0.9666666666666667
+        },
+        "plainmix": {
+          "1": 0.9416666666666667,
+          "2": 0.9416666666666667,
+          "3": 0.9583333333333334,
+          "4": 0.9666666666666667,
+          "5": 0.975,
+          "6": 0.9666666666666667,
+          "7": 0.9833333333333333,
+          "8": 0.9333333333333333,
+          "9": 0.95,
+          "10": 0.975
+        },
+        "chunk512": {
+          "1": 0.9833333333333333,
+          "2": 0.9916666666666667,
+          "3": 0.9583333333333334,
+          "4": 0.9833333333333333,
+          "5": 0.9583333333333334,
+          "6": 0.9666666666666667,
+          "7": 0.9916666666666667,
+          "8": 0.9666666666666667,
+          "9": 0.975,
+          "10": 0.9833333333333333
+        },
+        "chunk512mix": {
+          "1": 0.9916666666666667,
+          "2": 0.9916666666666667,
+          "3": 0.9916666666666667,
+          "4": 0.9916666666666667,
+          "5": 0.9916666666666667,
+          "6": 0.9916666666666667,
+          "7": 0.9916666666666667,
+          "8": 0.9833333333333333,
+          "9": 0.9666666666666667,
+          "10": 0.9916666666666667
+        },
+        "agnostic": {
+          "1": 0.0,
+          "2": 0.025,
+          "3": 0.03333333333333333,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0,
+          "7": 0.0,
+          "8": 0.0,
+          "9": 0.0,
+          "10": 0.0
+        }
+      },
+      "f_e": {
+        "plain": {
+          "n": 10,
+          "rep_mean_ratio": 1.0954693757520149,
+          "flagged": false
+        },
+        "plainmix": {
+          "n": 10,
+          "rep_mean_ratio": 3.8934217908147333,
+          "flagged": true
+        },
+        "chunk512": {
+          "n": 10,
+          "rep_mean_ratio": 2.592268435898378,
+          "flagged": true
+        },
+        "chunk512mix": {
+          "n": 10,
+          "rep_mean_ratio": 13.647790719777543,
+          "flagged": true
+        },
+        "agnostic": {
+          "n": 10,
+          "rep_mean_ratio": 1.181600393183298,
+          "flagged": false
+        }
+      }
+    }
+  },
+  "holm": {
+    "cmp1_A1m_vs_A4": [
+      {
+        "cell": "granite-40-h-micro-base_r4",
+        "p_raw": 1.0,
+        "p_holm": 1.0
+      }
+    ],
+    "cmp2_A3m_vs_A4": [
+      {
+        "cell": "granite-40-h-micro-base_r4",
+        "p_raw": 1.0,
+        "p_holm": 1.0
+      }
+    ]
+  }
+}

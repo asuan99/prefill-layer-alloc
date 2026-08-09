@@ -1,0 +1,8 @@
+{
+  "model": "Zyphra/Zamba2-2.7B",
+  "target_len": 2000,
+  "vocab_size": 32000,
+  "offset": 25518,
+  "reencoded_len": 2117,
+  "generator": "bench_serving random-ids replica (sample_random_requests, random_sample=False branch)"
+}

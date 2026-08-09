@@ -1,0 +1,8 @@
+{"gate": "G1", "arm": "plain", "self_repro_status": "SELFREPRO_OK", "cross_vs_plain_match": "n/a"}
+{"gate": "G1", "arm": "plainmix", "self_repro_status": "SELFREPRO_OK", "cross_vs_plain_match": "True"}
+{"gate": "G1", "arm": "chunk512", "self_repro_status": "SELFREPRO_OK", "cross_vs_plain_match": "True"}
+{"gate": "G1", "arm": "chunk512mix", "self_repro_status": "SELFREPRO_OK", "cross_vs_plain_match": "True"}
+{"gate": "G1", "arm": "agnostic", "self_repro_status": "SELFREPRO_OK", "cross_vs_plain_match": "True"}
+{"gate": "G2_CONCURRENT", "arm": "plainmix", "n_concurrent": 16, "verdict": "PASS"}
+{"gate": "G2_CONCURRENT", "arm": "chunk512", "n_concurrent": 16, "verdict": "FAIL"}
+{"gate": "G2_CONCURRENT", "arm": "chunk512mix", "n_concurrent": 16, "verdict": "FAIL"}
