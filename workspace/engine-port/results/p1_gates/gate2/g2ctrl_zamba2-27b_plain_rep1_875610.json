@@ -1,0 +1,162 @@
+{
+  "n_concurrent": 16,
+  "self_baseline_sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+  "cross_baseline_sha": null,
+  "self": {
+    "label": "self",
+    "n": 16,
+    "n_ok": 16,
+    "n_error": 0,
+    "n_match": 16,
+    "n_mismatch": 0,
+    "verdict": "PASS",
+    "mismatches": []
+  },
+  "cross": null,
+  "results": [
+    {
+      "idx": 0,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.633581161499023
+    },
+    {
+      "idx": 1,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.632889747619629
+    },
+    {
+      "idx": 2,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.626561403274536
+    },
+    {
+      "idx": 3,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.62596082687378
+    },
+    {
+      "idx": 4,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.62651801109314
+    },
+    {
+      "idx": 5,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.627344369888306
+    },
+    {
+      "idx": 6,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.626531839370728
+    },
+    {
+      "idx": 7,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.624500751495361
+    },
+    {
+      "idx": 8,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.620140075683594
+    },
+    {
+      "idx": 9,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.620157957077026
+    },
+    {
+      "idx": 10,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.62019157409668
+    },
+    {
+      "idx": 11,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.61924695968628
+    },
+    {
+      "idx": 12,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.61393141746521
+    },
+    {
+      "idx": 13,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.611589908599854
+    },
+    {
+      "idx": 14,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.607197999954224
+    },
+    {
+      "idx": 15,
+      "status": "OK",
+      "http_code": 200,
+      "method": "output_ids",
+      "sha": "c6328dc580bea744985a6c86010804a99d07d64604b7517772ef0f980fc0506c",
+      "n_output_ids": 96,
+      "elapsed_s": 9.607317924499512
+    }
+  ]
+}
