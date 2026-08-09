@@ -1,6 +1,56 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-06 (doc-steward — ★★★★**"확정된 결과" 1번(P1) 통계
+최종 갱신: 2026-08-09 (doc-steward — ★★★★★★**"확정된 결과" 1번(P1)
+E-A(mixed-chunk 레버, jobs 875654/875657/875661) 반영 — claims-auditor
+감사 완료, 판정 조건부(문구 강한 제한).** [`workspace/engine-port/
+results/p1_gates/gate2/PREREG_G2EA_2026-08-07.md`·`g2ea_report_*.json`·
+`g2earun_8756{57,61}.out`·`g2eaprobe_875654*`]. **새 성능 판정 아님 —
+fused-측 조율 가능성에 대한 진단이다.** `--enable-mixed-chunk`는
+Zamba2-2.7B·Granite-4.0-h-micro-base×{8192,512} 4콤보 전부에서
+realized로 확인됐으나(Stage 1, job 875654), E-A(n=10 paired,
+cudagraph-ON) 사전등록 primary 두 비교×4셀=8건 전부 TOST 등가
+미발화·부호 전부 agnostic 우세(10/10, p=0.00195) ⇒ **"조율된
+fused가 pdmux를 대체한다"는 발화하지 않았다.** 유일한 인용 가능
+정량치(Granite rate3, cmp1) X_60(plainmix)−X_60(agnostic)=+0.855
+[+0.814,+0.896] 중 mixed-chunk 고유 기여분은 **1.2%(+0.010)뿐**,
+나머지 98.8%는 rev4/§1-1이 이미 확립한 untuned-fused-vs-pdmux
+격차 ⇒ **E-A의 primary는 레버를 격리하지 않는다.** 같은 셀에서
+TTFT 항은 오히려 plainmix가 19.2% 좋음("TTFT 비열등 0건"은 거짓).
+기전(신규, 서빙 직접 측정): mixed-chunk가 decode를 `ForwardMode.
+MIXED` extend 경로로 재라우팅해 MIXED step time이 병합 decode 수에
+선형 증가(Zamba2 ≈33ms/req, Granite ≈4.2ms/req) — cudagraph 가설은
+반증되고, 정본 §1 얽힘 死因의 새 트리거로 확인. G-2(재현성, 16-동시
+greedy에서 비트단위 재현성 상실)는 correctness 결함 아님, 3회 독립
+재현. ★**T2("fused 조율 소진") 주장 금지**: 정본이 지목한 두 레버는
+시험됐으나 같은 기전 축의 미시험 노브 최소 6개가 남아 "조율 공간
+소진"은 등재 금지. ★**Gate 2 본 질문("PD 분리 자체" 귀속) 전진
+없음**(A2 미제출, §1-1 NOT-YET-SUPPORTED 불변). 인용 금지 13건,
+신규 방법론 게이트 #17–19(CONSENSUS §3 항목31–33과 대응) 등재.
+⚠️상위 사전등록 `PREREG_GATE2_2026-08-06.md`는 워킹트리 미커밋
+수정 상태. `CLAIM_EVIDENCE_MATRIX.md`는 이 항목을 인용한 서술이
+없어 갱신 대상 없음(대조 확인 완료). 상세 `reports/CONSENSUS.md`
+rev16·§1-1(E-A 블록)·§3 항목31–33, "확정된 결과" 1번·"방법론
+게이트" #17–19·"다음 실험 gate" #10(E-A) 동반 갱신.
+이전: 2026-08-07 (doc-steward — ★★★★★**"확정된 결과" 1번(P1)
+Gate 1 산출 1 철회 — G1-b(job 875293) 사전등록 철회 규칙 발화**
+[experiment-runner, `workspace/engine-port/results/p1_gates/gate1/
+PREREG_G1B_2026-08-07.md`·`gate1b_result_875293.txt`]. **새 성능
+판정 아님 — Gate 1 진단 산출 1의 사실 정정.** rev14/Gate 1(job
+874478)이 정본에 올린 "이 격자에서 정책은 단일 분할 `(74,34)`에
+고정됐다"(Zamba2 rate{2,3} 한정 관측을 무제한으로 서술)는 873944의
+전 격자 `{2,3,4,6}`을 그대로 재현한 결과 **rate 6에서 `(54,54)`가
+시간가중 8.37%** 등장해 사전등록 철회 규칙(`frac((54,54))≥0.01`)이
+발화, **철회**됐다. rate 2·3·4는 여전히 pop A 시간가중 100%
+`(74,34)`(max decode_bs 9·23·18, 문턱 36 미만)라 **인용 가능 셀
+(Zamba2 r2·r3)에서는 여전히 참** — 거짓이 된 것은 격자 전체
+무제한 주장뿐(과잉 철회 아님). ⚠️rate 4(18)가 rate 3(23)보다
+낮은 비단조(원인 미해명). 신규 방법론 게이트 #16(스코프 확장은
+인접 한 점이 아니라 원 격자를 전부 재현하라, CONSENSUS §3 항목30과
+대응) 등재. `CLAIM_EVIDENCE_MATRIX.md`는 이 항목을 인용한 서술이
+없어 갱신 대상 없음(대조 확인 완료). 상세 `reports/CONSENSUS.md`
+§1-1(rev15)·§3 항목30, "확정된 결과" 1번·"방법론 게이트" #16·
+"다음 실험 gate" #10(G1-b) 동반 갱신.
+이전: 2026-08-06 (doc-steward — ★★★★**"확정된 결과" 1번(P1) 통계
 방법 층 정정**[claims-auditor Gate 2 설계 감사 2회 + result-analyst
 독립 재현, `workspace/engine-port/results/p1_gates/verify/`]. **새
 성능 판정 아님 — 기존 정본 수치의 통계 방법 층 정정이다.** `paired_
@@ -420,10 +470,19 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
    라벨은 시간가중 100.00%가 `(74,34)`였다(pooled 51.9 s, 78 에피소드, 3,820 스냅샷).
    ⚠️**이 통계는 판별력이 사실상 없다** — prefill 어드미션과 `adjust_stream_groups()`
    사이에 telemetry sync가 없어 "pop A ∧ idx∉{1,2}"는 관측 가능한 상태가 아니다(방법론
-   게이트 #9 다섯 번째 재발). **실질 산출**: 이 격자에서 정책은 단일 분할 `(74,34)`에
-   고정됐다(`decode_running_batch_size` 최댓값 23 < 문턱 36 ⇒ `(54,54)` 0회
-   선택). duty cycle(창 시간 기준): 동시 in-flight 27–38%, decode 단독 32.2%,
-   prefill 단독 3.5%, 완전 idle 26.3%. ⇒ 위 §1-1의 "실현 파티션 미측정"은 **부분·조건부
+   게이트 #9 다섯 번째 재발). ~~**실질 산출 1**: 이 격자에서 정책은 단일 분할
+   `(74,34)`에 고정됐다(`decode_running_batch_size` 최댓값 23 < 문턱 36 ⇒
+   `(54,54)` 0회 선택).~~ → ★★★★★**철회(2026-08-07, G1-b, job 875293) —
+   사전등록 철회 규칙 발화, 새 성능 판정 아님(진단 산출 1의 사실 정정).**
+   rate 2·3·4는 여전히 pop A 시간가중 100% `(74,34)`(max decode_bs 9·23·18,
+   문턱 36 미만)지만 **rate 6에서 `(54,54)`가 시간가중 8.37%** 등장해 위
+   무제한(격자 전체) 문장이 거짓임이 확인됐다 — **인용 가능 셀(Zamba2
+   r2·r3)에서는 여전히 참**, 거짓이 된 것은 격자 전체 주장뿐(과잉 철회
+   금지). ⚠️rate 4(18)가 rate 3(23)보다 낮은 비단조(원인 미해명). 상세
+   `reports/CONSENSUS.md` §1-1(rev15, "★실질 산출 1" 철회 블록)·§3 항목30.
+   **실질 산출 2**: duty cycle(창 시간 기준): 동시 in-flight 27–38%, decode
+   단독 32.2%, prefill 단독 3.5%, 완전 idle 26.3%. ⇒ 위 §1-1의 "실현 파티션
+   미측정"은 **부분·조건부
    해제**로 바뀐다: Zamba2 rate{2,3}·agnostic v1·cudagraph-ON의
    decode-busy∧prefill-in-flight 구간에서 `(74,34)`(selector-level, S3
    하드웨어 프로브 미실행) 하나만 인용 가능 — **rate 4·6과 Granite 전체는 여전히 미측정**이며, 특히
@@ -433,7 +492,71 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
    가드 논거 정정(좁은 형태만 채택: coverage 실패가 UNLOCK을 만드는 경로는 없다, 단 이 논거는 정본
    일반 원칙으로 승격하지 않는다)·후속 Gate G1-a–d 전문은 `reports/CONSENSUS.md` §1-1
    Gate 1 블록·§3 항목28·29 참조. 아래 "방법론 게이트" #9·#15, "다음 실험 gate"
-   #10(Gate 1 항목) 동반 갱신.
+   #10(Gate 1 항목) 동반 갱신. ★**G1-b(2026-08-07) 철회 후속** — 아래
+   "방법론 게이트" #16, "다음 실험 gate" #10(G1-b) 동반 갱신.
+
+   ★★★★★★**E-A(mixed-chunk 레버, jobs 875654/875657/875661,
+   2026-08-08~09) — claims-auditor 감사 완료, 판정 조건부(문구 강한
+   제한). 새 성능 판정 아님 — fused-측 조율 가능성에 대한 진단이다.**
+   `--enable-mixed-chunk`는 Zamba2-2.7B·Granite-4.0-h-micro-base×
+   {8192,512} 4콤보 전부에서 realized로 확인됐다(Stage 1, job 875654,
+   3중 증인). E-A(jobs 875657/875661, n=10 paired, cudagraph-ON, arm
+   순서 무작위)의 사전등록 primary 두 비교×4셀=**8건 전부 TOST 등가
+   미발화·부호 전부 agnostic 우세**(10/10, 분포무가정 정확 p=0.00195)
+   ⇒ **"조율된 fused가 pdmux를 대체한다"는 발화하지 않았고, 논문
+   신규성 축 전환은 없다.** ⚠️8건 중 7건은 F-E(정상상태 검정) 발화라
+   부호만 인용 가능. **유일한 인용 가능 정량치**(Granite rate3,
+   cmp1, F-E clear·G-2 무관): X_60(plainmix) − X_60(agnostic) =
+   **+0.855**[+0.814,+0.896], n=10, 부호 10/10 — 단 이 셀은 선행
+   캠페인 진단을 본 뒤의 **사후 이동**(r4→r3)이며, r4를 유지했다면
+   인용 가능 셀은 0개였다. **같은 셀에서 TTFT 항은 오히려 통과**한다
+   (plainmix가 agnostic보다 TTFT p95 19.2% 좋음 — "TTFT 비열등 0건"은
+   거짓, 1/8). **레버 격리**: +0.855 중 mixed-chunk 고유 기여분은
+   **+0.010[+0.0045,+0.0155]=1.2%**뿐(4셀 범위 1.2–10.6%), 나머지
+   98.8%는 rev4/§1-1이 이미 확립한 untuned-fused-vs-pdmux 격차
+   (+0.845) ⇒ **E-A의 primary는 mixed-chunk 레버를 격리하지
+   않는다** — X_60이 fused arm 전부 천장 근접(0.85–0.99)이라 고유
+   효과는 하향편향, HOLB 관측자 효과 잔차와 같은 자릿수라 기전 해석
+   금지. **기전(신규, 서빙 직접 측정)**: mixed-chunk ON 시 prefill과
+   병합된 decode가 `ForwardMode.MIXED` extend 경로로 재라우팅되고
+   (cudagraph 제외 경로), MIXED step 지속시간이 병합 decode 수에
+   선형(Zamba2 ≈33ms/req, Granite ≈4.2ms/req) — backlog가
+   `max_running_requests`·mamba usage를 포화시켜 admission을 막고
+   TTFT가 발산한다(정본 §1 얽힘 死因의 **새 트리거**이지 새 기전
+   아님). **cudagraph 가설은 반증**(순수 DECODE step은 양 arm 동일
+   지속시간·cuda graph True, piecewise 전 arm OFF) — rev4 §1.1의
+   "A3는 piecewise도 함께 바꾸는 ≥2-기전 묶음" 캐비어트는 **이 두
+   모델에선 런타임 실측으로 무효**(인용 금지 해제). **G-2(재현성,
+   correctness 아님)**: `--chunked-prefill-size 512` Granite가
+   16-동시 greedy에서 비트단위 재현성 상실(16 중 2 요청, 반복 단위
+   62↔322 토큰, 3회 독립 재현, 음성대조 4종 통과) — mamba state
+   이월과는 불정합, correctness 결함 아님. ★**T2("fused 조율 공간
+   소진") 주장 금지**: `reports/CONSENSUS.md:368`이 지목한 두 레버
+   (`--chunked-prefill-size`·`--enable-mixed-chunk`)는 시험됐고 둘
+   다 격차를 못 닫혔으나, 같은 기전 축의 **미시험 노브 최소 6개**
+   (`--prefill-max-requests`·`--num-continuous-decode-steps`·
+   `--chunked-prefill-size` 2048/4096·`--max-running-requests`·
+   `--schedule-conservativeness`·`--mamba-scheduler-strategy`, realized
+   값 실측)가 남아 "fused 조율 공간 소진"은 등재 금지. ★**Gate 2 본
+   질문("PD 분리 자체" 귀속) 전진 없음**: A2(`plainaux`)를 뺐으므로
+   §1-1의 NOT-YET-SUPPORTED는 불변, 875344/875346의 A2로 교차-job
+   메우는 것도 사전등록이 명시 금지. **인용 금지 13건**(런길이 의존
+   수치·F-E 발화 셀 크기·"TTFT 비열등 0건"·"조율 소진"류·"두 레버 모두
+   실패"의 E-A 귀속·cmp2 Granite 무효·"잘못된 출력" 등)·**신규 방법론
+   항목 3건**(primary뿐 아니라 모든 보고 블록에 게이트를 걸어라/과부하
+   arm과 정상 arm 비교는 시스템 상수가 아니다/사후 지정 셀 이동은
+   인용 가능성을 만들 수 있다, 아래 "방법론 게이트" #17–19)은
+   `reports/CONSENSUS.md` §1-1(E-A 블록)·§3 항목31–33 전문 참조.
+   **후속 게이트**(우선순위순): T4-1(deterministic-inference
+   재확인)→T3-1/T3-2(MIXED 배치 조성 계측·micro 스윕)→E-C(등지속가능
+   -rate 대조, T1 정식 종결)→E-D(미시험 fused 레버 스윕, T2 종결)→
+   T3-3(backend 교차)→T4-2(비퇴화 프롬프트 G-2). ⚠️상위 사전등록
+   `PREREG_GATE2_2026-08-06.md`는 **워킹트리 미커밋 수정 상태**(§14
+   addendum) — `reports/CONSENSUS.md` §4 "살아있는 문서" 표에 기록됨.
+   전문 `reports/CONSENSUS.md` rev16·§1-1(E-A 블록)·§3 항목31–33,
+   원자료 `workspace/engine-port/results/p1_gates/gate2/`
+   (`PREREG_G2EA_2026-08-07.md`·`g2ea_report_*.json`·`g2earun_8756{57,61}.
+   out`·`g2eaprobe_875654*`, 수정 금지·인용만).
 2. 현재 A100/SGLang green-context substrate에서 layer-boundary resource
    switching은 sub-step drain과 synchronization을 일으켜 decode TPOT을 약
    `42→124 ms`로 악화시켰다. 최적화 후에도 약 `85 ms`였다.
@@ -2101,25 +2224,36 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     - ~~**Gate 1 — telemetry 재현런**~~ → ✅**완료(2026-08-06, job
       874478) — claims-auditor 감사, 조건부 채택[진단 전용, 새 성능
       판정 0건].** decode-busy ∧ prefill-in-flight 구간의 시간가중
-      selector 라벨 100.00%가 `(74,34)`(`(54,54)`는 이 격자에서
-      0회 선택). §1-1의 파티션·기전 금지 문구는 **부분·조건부
-      해금**(Zamba2 rate{2,3}·agnostic v1·cudagraph-ON, selector-level
-      한정) — rate 4·6·Granite는 여전히 미측정·여전히 금지, "PD
-      분리 자체" 기전 귀속은 Gate 2 소관으로 불변. 전문
-      `CONSENSUS.md` §1-1 Gate 1 블록·§3 항목28·29, 원자료
+      selector 라벨 100.00%가 `(74,34)`. §1-1의 파티션·기전 금지
+      문구는 **부분·조건부 해금**(Zamba2 rate{2,3}·agnostic v1·
+      cudagraph-ON, selector-level 한정) — rate 4·6·Granite는 여전히
+      미측정·여전히 금지, "PD 분리 자체" 기전 귀속은 Gate 2 소관으로
+      불변. 전문 `CONSENSUS.md` §1-1 Gate 1 블록·§3 항목28·29, 원자료
       `workspace/engine-port/results/p1_gates/gate1/`. 이 gate가
       연 후속 4개:
       - **G1-a**(≈0.2 GPU-hr, engine-porter): `multiplexing_mixin.py:
         1005`/`:1080` 사이에 관측 전용 sync 1회 추가 ⇒ "prefill
         in-flight ∧ stale idx"가 관측 가능해져 주 조건에 판별력이
         생긴다. 결정량 = 어드미션-후/adjust-전 구간의 시간 비율과
-        절대 ms.
-      - **G1-b**(≈0.2 GPU-hr): 같은 하네스에 rate 4·6 창 추가.
+        절대 ms. **미착수.**
+      - ~~**G1-b**(≈0.2 GPU-hr): 같은 하네스에 rate 4·6 창 추가.
         결정량 = `max(decode_running_batch_size) ≥ 36` 여부 + pop A
-        시간가중 hist. **`(54,54)`가 등장하면 위 "단일 분할"
-        문장 즉시 철회.**
+        시간가중 hist. `(54,54)`가 등장하면 위 "단일 분할" 문장
+        즉시 철회.~~ → ✅**완료(2026-08-07, job 875293) — 철회 규칙
+        발화, 새 성능 판정 아님.** rate 2·3·4는 pop A 시간가중 100%
+        `(74,34)`(max decode_bs 9·23·18, 문턱 36 미만, 인용 가능
+        셀은 불변) — **rate 6에서만 `(54,54)`가 시간가중 8.37%**
+        (2.089s/24.974s, max decode_bs 40, pop A 에피소드 5개뿐,
+        경계 근접) 등장해 사전등록 철회 규칙 발화 ⇒ 위 "확정된
+        결과" 1번·`reports/CONSENSUS.md` §1-1(rev15)의 "이 격자에서
+        정책은 단일 분할에 고정됐다"(격자 전체 무제한 주장)를
+        **철회**. ⚠️rate 4(18)가 rate 3(23)보다 낮은 비단조(원인
+        미해명, §3 항목30). 양성대조 PASS(rate2·3이 874478 재현).
+        전문 `CONSENSUS.md` §1-1(rev15)·§3 항목30, 원자료
+        `workspace/engine-port/results/p1_gates/gate1/
+        gate1b_result_875293.txt`·`PREREG_G1B_2026-08-07.md`.
       - **G1-c**: Granite(873945 복제) — Granite 전체 미측정 상태
-        해소.
+        해소. **미착수.**
       - **G1-d**: S3 하드웨어 프로브(`%smid` 샘플링 / CUPTI) —
         selector-level→hardware-level 격상.
       - **하네스**: `gate1_analyze.py`에 grid-completeness 검정
@@ -2140,6 +2274,36 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
       수단 중 하나**"로 재작성해야 하며 **논문 신규성 축이 바뀐다**(이
       게이트의 진짜 스테이크). 부트 게이트로
       `plain+--enable-mixed-chunk` 1회 가용성 확인.
+      ★**상태 갱신(2026-08-09) — E-A(jobs 875654/875657/875661)가
+      이 Gate 2 설계의 부트 게이트(`plain+--enable-mixed-chunk`
+      가용성)와 그 레버 하나(mixed-chunk)의 효과 격리는 실행했으나,
+      **Gate 2 본 설계(A2=`plainaux` 포함 4-arm)는 여전히 미실행**
+      이고 "PD 분리 자체" 귀속(§1-1 NOT-YET-SUPPORTED)은 한 눈금도
+      전진하지 않았다.** E-A 결과: mixed-chunk 고유 기여는 유일한
+      인용 가능 셀에서 관측 격차의 1.2%뿐(범위 1.2–10.6%, 나머지는
+      기존 pdmux-vs-untuned-fused 격차) ⇒ "조율된 fused가 pdmux를
+      대체한다"는 사전등록 규칙상 발화하지 않았다(부호 10/10
+      agnostic 우세, p=0.00195) — 단 8건 중 7건이 F-E(정상상태)
+      미달이라 부호만 인용 가능. 새 기전(신규, 서빙 직접 측정):
+      mixed-chunk가 decode를 `ForwardMode.MIXED` extend 경로로
+      재라우팅해 배치 크기 비례로 ITL이 악화(cudagraph 가설은
+      반증). ★**T2("fused 조율 공간 소진") 주장 금지 확정**: 같은
+      기전 축에 미시험 노브 최소 6개가 남아 있다. 후속(T4–T3–E
+      순서, 우선순위): **T4-1**(deterministic-inference 재확인,
+      <0.5 GPU-hr) → **T3-1/T3-2**(MIXED 배치 조성 계측·micro
+      스윕, <1 GPU-hr each, 기전 확정) → **E-C**(등지속가능-rate
+      대조, ≈4 GPU-hr, T1 정식 종결) → **E-D**(미시험 fused 레버
+      스윕—`--prefill-max-requests`·`--num-continuous-decode-steps`·
+      `--chunked-prefill-size` 2048/4096·`--max-running-requests`·
+      `--schedule-conservativeness`·`--mamba-scheduler-strategy`,
+      ≈8 GPU-hr, T2 종결) → **T3-3**(backend 교차, ≈2 GPU-hr, MIXED
+      한계비용 8× 비대칭 귀속) → **T4-2**(비퇴화 프롬프트 G-2,
+      ≈1 GPU-hr). Gate 2 본 설계(A2 포함)는 이 순서 뒤에도 별도로
+      남아 있다. 인용 금지 13건·신규 방법론 게이트 #17–19는
+      `reports/CONSENSUS.md` §1-1(E-A 블록)·§3 항목31–33 참조.
+      원자료 `workspace/engine-port/results/p1_gates/gate2/`
+      (`PREREG_G2EA_2026-08-07.md`·`g2ea_report_*.json`·
+      `g2earun_8756{57,61}.out`·`g2eaprobe_875654*`).
     - **Gate 3 — 나머지 2모델(NemotronH·Falcon-H1) 운영점 대조**:
       "4모델 전부"를 다시 쓰고 싶을 때만 필요. 안 하면 §1-1은 영구히
       2모델 문장.
@@ -2151,7 +2315,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
-## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응])
+## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응], 2026-08-07 (G1-b) #16 신설[스코프 확장은 원 격자를 전부 재현하라, CONSENSUS §3 항목30과 대응], 2026-08-09 (E-A) #17–19 신설[게이트를 모든 보고 블록에 걸어라·과부하 arm 비교는 시스템 상수가 아니다·사후 지정 셀 이동, CONSENSUS §3 항목31–33과 대응])
 
 Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3),
 E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠페인에서 나온
@@ -2416,3 +2580,48 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     시간을 인용할 때는 오염 방향과 크기를 반드시 병기한다. 상세
     `CONSENSUS.md` §1-1(Gate 1 블록)·§3 항목29, 원자료
     `workspace/engine-port/results/p1_gates/gate1/gate1_analyze.py`.
+16. ★★★★★**(2026-08-07, G1-b, job 875293) 스코프가 좁은 주장을
+    확장할 때는 인접한 한 점이 아니라 원 격자를 전부 재현하라 —
+    양이 단조라는 보장이 없다.** Gate 1(rev14 §1-1)의 "단일 분할
+    고정"은 Zamba2 rate{2,3}만으로 얻은 결론이었다. `max(decode_
+    running_batch_size)`가 rate 2→3에서 9→23으로 급증해 "rate 4에서
+    이미 문턱(36) 근처"로 기대됐으나 **실제 rate 4는 18로 rate 3보다
+    낮았다**(비단조, 원인 미해명). G1-b가 **rate 4만** 돌렸다면
+    `NO_EVIDENCE`가 나와 사전등록의 "확장" 규칙이 발화하고, 정본
+    문장의 범위를 873944 전 격자(rate 2–6)로 **넓히는 반대 방향의
+    오류**를 저질렀을 것이다 — 실제로는 rate 6에서 `(54,54)`가
+    8.37% 등장해 그 확장이 거짓임이 드러났다. 873944의 `MAIN_RATES`
+    전 격자 `{2,3,4,6}`을 그대로(순서까지) 재현한 사전등록 설계가
+    이 비단조성을 놓치지 않게 막았다. ⇒ 실무 규칙: 스코프 확장
+    실험은 경계 인접 한 점이 아니라 원 캠페인의 전 격자를 재현하고,
+    중간값에 대해 단조성을 가정하지 않는다. 상세 `CONSENSUS.md`
+    §1-1(rev15)·§3 항목30, 원자료 `workspace/engine-port/results/
+    p1_gates/gate1/gate1b_result_875293.txt`·`PREREG_G1B_2026-08-07.md`.
+17. ★★★★**(2026-08-09, E-A, jobs 875654/875657/875661, claims-auditor)
+    게이트를 지표에 걸 때는 primary뿐 아니라 보고되는 모든 블록에
+    걸어라.** E-A의 F-E(정상상태 판정) 집행 수정이 사전등록 primary
+    두 비교에만 적용되고 `secondary` 블록(throughput/goodput/
+    ttft_p95/itl_p95)은 무방비였다 — 그리고 실제로 그 무방비 경로에서
+    인용이 일어났다(`g2ea_analyze.py:662-680`). 게이트를 설계할 때는
+    그 분석 스크립트가 출력하는 모든 블록을 나열하고 각각에 같은
+    정상상태 필터가 적용됐는지 확인해야 한다 — 그러지 않으면 판정
+    로직이 옳아도 우회 경로로 비정상상태 수치가 새어나간다. 상세
+    `CONSENSUS.md` §1-1(E-A 블록)·§3 항목31.
+18. ★★★★**(2026-08-09, E-A) 과부하 arm과 정상 arm을 같은 제공
+    rate에서 비교한 수치는 시스템 상수가 아니다.** E-A 8건 중 7건은
+    F-E(정상상태 검정)가 발화해 부호만 인용 가능했다 — 런길이
+    의존을 직접 실측하면 같은 셀·같은 arm 쌍의 지연차가 프롬프트
+    60→120에서 2.3–6.2× 움직이는데, 유일한 정상상태 셀(Granite
+    r3)에서는 N=60→120이 1.20×에 그친다. ⇒ 지연·처리량 격차의
+    크기를 헤드라인화하려면 먼저 정상상태를 검정하고, 아니면 부호만
+    인용하고 크기는 지속가능-rate 직접 대조(E-C)로 미룬다. 상세
+    `CONSENSUS.md` §1-1(E-A 블록)·§3 항목32.
+19. ★★★★**(2026-08-09, E-A) 사후 지정 셀 이동은 부호를 안 바꿔도
+    인용 가능성을 만들 수 있다.** E-A의 유일한 인용 가능 정량치
+    (Granite rate3 +0.855)는 사전등록 이후 선행 캠페인 진단을 본
+    뒤 r4→r3로 재지정된 셀에서 나왔다 — r4를 유지했다면 이 캠페인은
+    인용 가능 셀 0개로 끝났을 것이다(`PREREG_G2EA_2026-08-07.md`
+    §3 자기인지 위험 #2). 사후 이동이 결과의 방향을 바꾸지 않았어도,
+    그 이동 자체가 "이 캠페인에 인용 가능한 무언가가 있다"는 존재
+    명제를 만든 선택압이었다는 사실은 인용 시 반드시 병기한다. 상세
+    `CONSENSUS.md` §1-1(E-A 블록)·§3 항목33.
