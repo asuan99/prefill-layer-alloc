@@ -75,3 +75,31 @@ external/
 !results/p1_gates/gate2/*_report_*.json
 !results/p1_gates/gate2/*_correctness_*.json
 results/p1_gates/gate2/*.raw.json
+
+# G2CTRL / E-A raw-dump policy (2026-08-08), extending the 2026-08-06/07 gate2
+# policy above to the reproducibility-control campaign (g2ctrl_*, jobs
+# 875610/875611) and the mixed-chunk-lever campaign (g2ea_*/g2eaprobe_*, jobs
+# 875654/875657/875661). Checked file-by-file against the untracked set (421
+# files as of 2026-08-08) before writing anything below:
+#   - *.holb.jsonl / bench *.jsonl / *_srv_*.log / .triton_cache_{ea,probe,g2ctrl}_*/
+#     are ALREADY excluded by the extension-based rules above (*.jsonl, *.log,
+#     **/.triton_cache*/ match by suffix, not job-prefix) — confirmed none of
+#     these leaked into `git status` as untracked for the new naming.
+#   - report/correctness json, flags_*.json, prompt/prompt_meta, summary
+#     (json or txt), voided_reps txt, manifest_diff/runtime_source_manifest are
+#     likewise already trackable via root .gitignore's `!**/results/**`
+#     re-include plus the flags/report/correctness `!` rules above (both are
+#     pattern-based, not job-prefix-based) — no new `!` rule was needed for
+#     g2ctrl_*/g2ea_*/g2eaprobe_* to be tracked.
+#   - No g2ctrl_*/g2ea_*/g2eaprobe_* srv log is cited by line number anywhere
+#     in this repo as of 2026-08-08 (checked CONSENSUS.md, PROJECT_STATUS.md,
+#     PREREG_G2EA_2026-08-07.md, PREREG_G2CTRL_2026-08-07.md) — same as
+#     gate2's general rule, no exception carved back; add a narrow
+#     `!results/p1_gates/gate2/<exact-file>.log` line if a future session
+#     cites one by line number.
+#   - flags_*.json volume re-checked for the larger E-A grid (5 arm x 10 rep x
+#     2 rate): 146 files / 3.5MB for g2ea_*, 8 files / 192KB for g2ctrl_* —
+#     still small enough to keep the existing "track all" policy (still the
+#     only record of the realized-flag gate); no subsetting rule added.
+# Net effect: no new `!`/exclude line below this comment — the existing
+# extension/directory-scoped rules already generalize across job prefixes.
