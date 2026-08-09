@@ -1,0 +1,6 @@
+{"gate": "G1", "arm": "plain", "self_repro_status": "SELFREPRO_OK", "sha": "1480adfbbd7c2f0e857ddcfdb30059c22c80341b0443f087f0d7eafe7fc31102"}
+{"gate": "G1", "arm": "plainaux", "self_repro_status": "SELFREPRO_OK", "sha": "1480adfbbd7c2f0e857ddcfdb30059c22c80341b0443f087f0d7eafe7fc31102"}
+{"gate": "G1", "arm": "chunk512", "self_repro_status": "SELFREPRO_OK", "sha": "1480adfbbd7c2f0e857ddcfdb30059c22c80341b0443f087f0d7eafe7fc31102"}
+{"gate": "G1", "arm": "agnostic", "self_repro_status": "SELFREPRO_OK", "sha": "1480adfbbd7c2f0e857ddcfdb30059c22c80341b0443f087f0d7eafe7fc31102"}
+{"gate": "G1_PAIRWISE", "A1_vs_A3": "PASS", "A2_vs_A1": "PASS", "A4_self_repro": "SELFREPRO_OK"}
+{"gate": "G2_CONCURRENT", "arm": "chunk512", "n_concurrent": 16, "verdict": "FAIL"}
