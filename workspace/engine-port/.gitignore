@@ -128,3 +128,36 @@ results/p1_gates/gate2/*.raw.json
 #     artifacts exist yet (unsubmitted) — nothing to evaluate until it runs.
 # Net effect: no new `!`/exclude line below this comment — the existing
 # extension/directory-scoped rules already generalize across job prefixes.
+
+# r0c dot-scratch (2026-08-11): .deckneectx2_* is the same P1.4-1.6-style
+# runtime-scratch category as .nh_decode_sm_*/.p17mode_*/.la_chk_* above --
+# a one-line context-length/round selector marker plus the degenerate
+# repeated-text prompt body it points to, for job 873783's decode-context-
+# length sweep. Not evidentiary: the scored output for that job
+# (deckneectx2_result_C*_r1_873783.txt) is already tracked separately.
+# .zb2smoke_*/ is the raw generation-comparison scratch dir for zb2smoke job
+# 873617 (legacy-vs-patched greedy-decode text dumps + a copied patch
+# source snapshot, used to eyeball a patch before scoring) -- its verdict
+# (zb2smoke_result_873617.txt) is already tracked; the directory's contents
+# are intermediate, same "harness+verdict tracked, raw not" convention as
+# the gate2 rules above. Neither pattern deletes any file, only excludes
+# from tracking; both were verified to match zero currently-tracked paths
+# (`git ls-files | grep 'deckneectx2\|zb2smoke'` before this change listed
+# only deckneectx2_result_*/runtime_source_manifest_deckneectx2v2.sha256/
+# zb2smoke_result_873617.txt, none of which start with a dot).
+.deckneectx2_*
+.zb2smoke_*/
+
+# gate2 smoke-harness raw prompts (2026-08-11): g2_holb_smoke.sbatch
+# (tracked) is a pre-submission plumbing check only ("NO performance claim,
+# no HOLB probe telemetry scored here" per its own header comment) run as
+# jobs 874628/874631/874632. Its smoke_prompt_<tag>_<jobid>.{txt,json}
+# outputs were already excluded from tracking by explicit precedent -- see
+# commit 7cf16bd's message: "smoke jobs 874628/874631/874632 are left out
+# of this commit -- not part of this session's scope". No other artifact
+# from these three job ids is tracked either (`git ls-files | grep
+# '874628\|874631\|874632'` -> empty). This rule just makes `git status`
+# reflect that existing decision instead of leaving the files perpetually
+# untracked-but-visible; it does not delete anything and does not change
+# the decision, only encodes it.
+results/p1_gates/gate2/smoke_prompt_*
