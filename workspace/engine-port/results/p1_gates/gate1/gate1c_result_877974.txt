@@ -1,0 +1,82 @@
+G1C_COVERAGE rate=2: telemetry_coverage=100.00% (window=[10338997.872812,10339088.399679] n_rows=28038)
+G1C_MAX_DECODE_BS rate=2: max(decode_running_batch_size)=7 (threshold for (54,54) reachability = decode_bs_divisor=36)
+G1C_GRID_COMPLETENESS rate=2: expected=15836 observed_scheduled=15836 missing=0 violations=0 min_si=109472 max_si=616192 missing_sample=[]
+G1C_POP rate2_A(decode-busy AND prefill in-flight): n_snapshots=1876 n_episodes=66 t_total_s=15.573 target=[(54, 54), (74, 34)]
+G1C_FRAC rate2_A time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate2_A (time-weighted): P74D34:15.573s(100%)
+G1C_CADENCE rate2_A: median_sample_index_gap=1 n_gaps=1875
+G1C_POP rate2_B(decode-idle): n_snapshots=25825 n_episodes=32 t_total_s=38.128 target=[(108, 0)]
+G1C_FRAC rate2_B time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate2_B (time-weighted): P108D0:38.128s(100%)
+G1C_CADENCE rate2_B: median_sample_index_gap=32.0 n_gaps=25824
+G1C_POP rate2_C(decode-busy, prefill NOT in-flight): n_snapshots=337 n_episodes=87 t_total_s=36.824 target=[(0, 108)]
+G1C_FRAC rate2_C time_weighted=0.9731 count_weighted=0.9703 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate2_C (time-weighted): P0D108:35.835s(97%), P74D34:0.742s(2%), P108D0:0.248s(1%)
+G1C_CADENCE rate2_C: median_sample_index_gap=32.0 n_gaps=336
+G1C_RATE_VERDICT rate=2: MEASURED
+G1C_COVERAGE rate=3: telemetry_coverage=100.00% (window=[10339089.987251,10339142.610428] n_rows=13793)
+G1C_MAX_DECODE_BS rate=3: max(decode_running_batch_size)=10 (threshold for (54,54) reachability = decode_bs_divisor=36)
+G1C_GRID_COMPLETENESS rate=3: expected=7537 observed_scheduled=7537 missing=0 violations=0 min_si=641024 max_si=882176 missing_sample=[]
+G1C_POP rate3_A(decode-busy AND prefill in-flight): n_snapshots=2296 n_episodes=45 t_total_s=19.095 target=[(54, 54), (74, 34)]
+G1C_FRAC rate3_A time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate3_A (time-weighted): P74D34:19.095s(100%)
+G1C_CADENCE rate3_A: median_sample_index_gap=1 n_gaps=2295
+G1C_POP rate3_B(decode-idle): n_snapshots=11341 n_episodes=13 t_total_s=16.535 target=[(108, 0)]
+G1C_FRAC rate3_B time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate3_B (time-weighted): P108D0:16.535s(100%)
+G1C_CADENCE rate3_B: median_sample_index_gap=32.0 n_gaps=11340
+G1C_POP rate3_C(decode-busy, prefill NOT in-flight): n_snapshots=156 n_episodes=53 t_total_s=16.994 target=[(0, 108)]
+G1C_FRAC rate3_C time_weighted=0.9889 count_weighted=0.9808 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate3_C (time-weighted): P0D108:16.805s(99%), P74D34:0.189s(1%)
+G1C_CADENCE rate3_C: median_sample_index_gap=32 n_gaps=155
+G1C_RATE_VERDICT rate=3: MEASURED
+G1C_COVERAGE rate=4: telemetry_coverage=100.00% (window=[10339144.280109,10339190.310721] n_rows=10427)
+G1C_MAX_DECODE_BS rate=4: max(decode_running_batch_size)=10 (threshold for (54,54) reachability = decode_bs_divisor=36)
+G1C_GRID_COMPLETENESS rate=4: expected=6366 observed_scheduled=6366 missing=0 violations=0 min_si=907808 max_si=1111488 missing_sample=[]
+G1C_POP rate4_A(decode-busy AND prefill in-flight): n_snapshots=2412 n_episodes=47 t_total_s=19.705 target=[(54, 54), (74, 34)]
+G1C_FRAC rate4_A time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate4_A (time-weighted): P74D34:19.705s(100%)
+G1C_CADENCE rate4_A: median_sample_index_gap=1 n_gaps=2411
+G1C_POP rate4_B(decode-idle): n_snapshots=7892 n_episodes=6 t_total_s=13.137 target=[(108, 0)]
+G1C_FRAC rate4_B time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate4_B (time-weighted): P108D0:13.137s(100%)
+G1C_CADENCE rate4_B: median_sample_index_gap=32 n_gaps=7891
+G1C_POP rate4_C(decode-busy, prefill NOT in-flight): n_snapshots=123 n_episodes=49 t_total_s=13.187 target=[(0, 108)]
+G1C_FRAC rate4_C time_weighted=0.9032 count_weighted=0.8943 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate4_C (time-weighted): P0D108:11.910s(90%), P74D34:1.182s(9%), P108D0:0.095s(1%)
+G1C_CADENCE rate4_C: median_sample_index_gap=32.0 n_gaps=122
+G1C_RATE_VERDICT rate=4: MEASURED
+G1C_COVERAGE rate=6: telemetry_coverage=99.99% (window=[10339191.932708,10339223.325959] n_rows=8744)
+G1C_MAX_DECODE_BS rate=6: max(decode_running_batch_size)=15 (threshold for (54,54) reachability = decode_bs_divisor=36)
+G1C_GRID_COMPLETENESS rate=6: expected=5746 observed_scheduled=5746 missing=0 violations=0 min_si=1136512 max_si=1320352 missing_sample=[]
+G1C_POP rate6_A(decode-busy AND prefill in-flight): n_snapshots=2336 n_episodes=7 t_total_s=18.173 target=[(54, 54), (74, 34)]
+G1C_FRAC rate6_A time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate6_A (time-weighted): P74D34:18.173s(100%)
+G1C_CADENCE rate6_A: median_sample_index_gap=1 n_gaps=2335
+G1C_POP rate6_B(decode-idle): n_snapshots=6394 n_episodes=3 t_total_s=11.808 target=[(108, 0)]
+G1C_FRAC rate6_B time_weighted=1.0000 count_weighted=1.0000 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate6_B (time-weighted): P108D0:11.808s(100%)
+G1C_CADENCE rate6_B: median_sample_index_gap=32 n_gaps=6393
+G1C_POP rate6_C(decode-busy, prefill NOT in-flight): n_snapshots=14 n_episodes=8 t_total_s=1.411 target=[(0, 108)]
+G1C_FRAC rate6_C time_weighted=0.9746 count_weighted=0.8571 (count secondary only, force-prefill biases it -- see PREREG)
+G1C_HIST rate6_C (time-weighted): P0D108:1.375s(97%), P74D34:0.036s(3%)
+G1C_CADENCE rate6_C: median_sample_index_gap=32 n_gaps=13
+G1C_RATE_VERDICT rate=6: MEASURED
+=== G1C POSITIVE CONTROL (structural near-identity, ALL rates, pop_A_time_weighted_frac(TARGET_A) >= 0.9 expected by code audit regardless of model -- see CONSENSUS.md sec1-1 Gate 1 block) ===
+G1C_POSCTRL rate=2: pop_A_time_weighted_frac(TARGET_A)=1.0000 -> PASS
+G1C_POSCTRL rate=3: pop_A_time_weighted_frac(TARGET_A)=1.0000 -> PASS
+G1C_POSCTRL rate=4: pop_A_time_weighted_frac(TARGET_A)=1.0000 -> PASS
+G1C_POSCTRL rate=6: pop_A_time_weighted_frac(TARGET_A)=1.0000 -> PASS
+=== G1C PER-RATE PARTITION-TRAJECTORY RULE (pre-registered, PREREG_G1C_2026-08-11.md; mechanical output, not a performance judgment) ===
+G1C_RULE rate=2: max_decode_bs=7 frac_5454_time_weighted=0.0000 -> NO_EVIDENCE -- (54,54) frac=0.0000
+G1C_RULE rate=3: max_decode_bs=10 frac_5454_time_weighted=0.0000 -> NO_EVIDENCE -- (54,54) frac=0.0000
+G1C_RULE rate=4: max_decode_bs=10 frac_5454_time_weighted=0.0000 -> NO_EVIDENCE -- (54,54) frac=0.0000
+G1C_RULE rate=6: max_decode_bs=15 frac_5454_time_weighted=0.0000 -> NO_EVIDENCE -- (54,54) frac=0.0000
+=== G1C_GATE2S_PREMISE (PREREG_GATE2S_2026-08-09.md sec8.9/sec8.9.1, cells=('3', '4')) ===
+Rule (pre-registered, fixed before this job ran, NOT changed after seeing results):
+  positive control FAIL at that rate       -> UNMEASURABLE (cannot evaluate premise)
+  frac_5454 (pop A, time-weighted) >= 0.01 -> PREMISE REFUTED (same criterion as Gate 2-S's own sec8.9.1 in-job falsifier, but this job's denser forced-sampling telemetry makes any refutation higher-confidence than sec8.9.1's own sparse PDMUX_TRACE_FORCE_PREFILL=0 check could)
+  frac_5454 < 0.01 AND max_decode_bs < 36 -> PREMISE VERIFIED (upgrade from Gate 2-S's 'unverified' -- this is the label sec8.9.1 is STRUCTURALLY incapable of ever emitting, by its own one-way design)
+G1C_GATE2S_PREMISE rate=3: max_decode_bs=10 frac_5454=0.0000 < 0.01, max_decode_bs<36=True -> PREMISE VERIFIED
+G1C_GATE2S_PREMISE rate=4: max_decode_bs=10 frac_5454=0.0000 < 0.01, max_decode_bs<36=True -> PREMISE VERIFIED
+G1C_CAVEAT: selector-level, behavioural only (no hardware SM probe, S3 not run). Population C absolute fractions are NOT to be quoted per Gate 1 audit (few-snapshot, dt inflation) -- count/episode only. n=1 (diagnostic pipeline, not a performance sample) -- no TTFT/TPOT/ITL/goodput number from this job's bench_serving JSONL output may ever be quoted. See PREREG_G1C_2026-08-11.md.
