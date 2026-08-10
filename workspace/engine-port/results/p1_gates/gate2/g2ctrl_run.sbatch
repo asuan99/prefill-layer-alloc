@@ -139,14 +139,21 @@ record_flags () {  # $1=arm $2=port
     > "$OUT/g2ctrl_${TAG}_flags_${ARM}_${SLURM_JOB_ID}.json" || true
 }
 
-# capture_self_baseline PORT BASELINE_JSON RAW_DUMP -> stdout: OK|FAIL (only token)
+# capture_self_baseline PORT BASELINE_JSON RAW_DUMP
+#   -> stdout: OK | TIMEOUT | ERROR | BUILD_FAIL   (exactly one token)
+# Anything other than OK means "this arm produced NO measurement", which is a
+# different event from "this arm was measured and disagreed". The token is
+# echoed verbatim into the summary row as self_baseline_status so the analyzer
+# can tell them apart (methodology gate #21). TIMEOUT = job-876699 hang class.
 capture_self_baseline () {
   local PORT="$1" BASEJSON="$2" DUMP="$3"
   unset STATUS HTTP_CODE METHOD SHA N_OUTPUT_IDS DETAIL
   eval "$(greedy_call "$PORT" "$DUMP")"
   echo "BASELINE_CALL status=$STATUS http=${HTTP_CODE:-} method=${METHOD:-} sha=${SHA:-} n=${N_OUTPUT_IDS:-} detail=${DETAIL:-}" >&2
   if [ "$STATUS" != "OK" ]; then
-    echo FAIL
+    # Propagate the distinguishing status (TIMEOUT vs ERROR) rather than
+    # collapsing every non-OK outcome to the word "FAIL".
+    echo "$STATUS"
     return
   fi
   python3 - "$DUMP" "$BASEJSON" "$SHA" <<'PYEOF'
@@ -164,7 +171,7 @@ if sha != expect_sha:
 json.dump({"sha": sha, "output_ids": ids}, open(out_path, "w"))
 print(f"BASELINE_BUILD_OK sha={sha} n_ids={len(ids)}", file=sys.stderr)
 PYEOF
-  if [ $? -eq 0 ]; then echo OK; else echo FAIL; fi
+  if [ $? -eq 0 ]; then echo OK; else echo BUILD_FAIL; fi
 }
 
 # ==========================================================================
@@ -211,7 +218,14 @@ for ARM in $ARMS; do
   BSTATUS=$(capture_self_baseline "$PORT" "$BASEJSON" "$RAWDUMP")
   echo "arm=$ARM self-baseline build=$BSTATUS"
   if [ "$BSTATUS" != OK ]; then
-    printf '%s\n' "{\"arm\": \"$ARM\", \"boot_ok\": true, \"self_baseline_ok\": false}" >> "$SUMMARY_JSON"
+    # NO DATA for this arm. self_baseline_status distinguishes TIMEOUT (876699
+    # hang class) / ERROR / BUILD_FAIL from a measured disagreement.
+    if [ "$BSTATUS" = TIMEOUT ]; then
+      echo "arm=$ARM SELF_BASELINE_TIMEOUT -- greedy_call exceeded" \
+           "G2_GREEDY_MAX_TIME=${G2_GREEDY_MAX_TIME:-180}s. MEASUREMENT FAILURE, not a" \
+           "correctness verdict. Skipping this arm and continuing with the next one." >&2
+    fi
+    printf '%s\n' "{\"arm\": \"$ARM\", \"boot_ok\": true, \"self_baseline_ok\": false, \"self_baseline_status\": \"$BSTATUS\"}" >> "$SUMMARY_JSON"
     kill_server "$PID" "$PORT"
     continue
   fi

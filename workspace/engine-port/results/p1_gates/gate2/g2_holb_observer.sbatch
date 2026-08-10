@@ -206,9 +206,15 @@ for ARM in plain plainaux chunk512 agnostic; do
     echo "phaseA arm=$ARM probe=$ONOFF call2_status=$S2_STATUS call2_http=$S2_HTTP call2_method=$S2_METHOD call2_sha=$S2_SHA call2_detail=$S2_DETAIL"
     if [ "$S1_STATUS" != OK ] || [ "$S2_STATUS" != OK ] || [ "$S1_HTTP" != 200 ] || [ "$S2_HTTP" != 200 ]; then
       HAS_UNDETERMINED=1
-      CALL_STATUS[$ONOFF]=ERROR
+      # TIMEOUT is kept distinct from ERROR in the artifact so triage does not
+      # have to guess; both route to UNDETERMINED, never to FAIL (gate #21).
+      if [ "$S1_STATUS" = TIMEOUT ] || [ "$S2_STATUS" = TIMEOUT ]; then
+        CALL_STATUS[$ONOFF]=TIMEOUT
+      else
+        CALL_STATUS[$ONOFF]=ERROR
+      fi
       CALL_DETAIL[$ONOFF]="call1=${S1_STATUS}(http${S1_HTTP}):${S1_DETAIL} call2=${S2_STATUS}(http${S2_HTTP}):${S2_DETAIL}"
-      echo "phaseA arm=$ARM probe=$ONOFF UNDETERMINED (extraction failed or non-200, NOT a byte-mismatch): ${CALL_DETAIL[$ONOFF]}"
+      echo "phaseA arm=$ARM probe=$ONOFF UNDETERMINED (${CALL_STATUS[$ONOFF]}: call did not return in time, extraction failed, or non-200 -- NOT a byte-mismatch): ${CALL_DETAIL[$ONOFF]}"
     else
       CALL_STATUS[$ONOFF]=OK
       CALL_METHOD[$ONOFF]="$S1_METHOD"

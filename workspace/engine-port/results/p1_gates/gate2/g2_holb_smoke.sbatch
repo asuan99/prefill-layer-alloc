@@ -115,6 +115,20 @@ print(f'[$TAG] token-count deviation from target = {dev*100:.1f}% '
   echo "[$TAG] CHECK 3/3 (non-empty sha): SHA=${SHA:-<empty>}"
   if [ "$STATUS" = OK ] && [ "${HTTP_CODE:-}" = 200 ] && [ -n "${SHA:-}" ]; then
     echo "[$TAG] SMOKE_PASS: all 3 checks pass (token_count_ok, http=200, non-empty sha; method=$METHOD, sha=${SHA:0:16}...)"
+  elif [ "$STATUS" = TIMEOUT ] || [ "$STATUS" = ERROR ]; then
+    # Measurement failure, not a check failure: the call never produced a
+    # result to check. Still blocks resubmission (a harness that cannot get an
+    # answer out of the server is not ready), but it is labelled for what it
+    # is so nobody records "smoke check failed" as a correctness signal
+    # (methodology gate #21).
+    echo "[$TAG] SMOKE_UNDETERMINED ($STATUS): the greedy call produced no result to check" >&2
+    echo "[$TAG]   STATUS=$STATUS HTTP_CODE=${HTTP_CODE:-} DETAIL=${DETAIL:-}" >&2
+    if [ "$STATUS" = TIMEOUT ]; then
+      echo "[$TAG]   -> the call exceeded G2_GREEDY_MAX_TIME=${G2_GREEDY_MAX_TIME:-180}s (job-876699 hang class)." >&2
+      echo "[$TAG]   -> see $OUT/smoke_${TAG}_call_${SLURM_JOB_ID}.raw.json.status.json" >&2
+    fi
+    echo "[$TAG] do NOT resubmit the full campaign until this is measurable." >&2
+    OVERALL_OK=0
   else
     echo "[$TAG] SMOKE_FAIL: STATUS=$STATUS HTTP_CODE=${HTTP_CODE:-} SHA=${SHA:-<empty>} DETAIL=${DETAIL:-}" >&2
     echo "[$TAG] do NOT resubmit the full campaign until this passes." >&2
