@@ -4,7 +4,242 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-09 rev16 (doc-steward — ★★★★★★**E-A(mixed-chunk
+최종 갱신: 2026-08-10 rev19 (doc-steward — 같은 캠페인 계열의 세 번째
+정본 반영 건. **A(재발 카운트 갱신)·B(도구 규율)·C(설계 감사 스코프
+결론)·D(코드 사실 문구 하향) 네 갈래 — 전부 새 성능 판정 아님.**
+
+**A. 방법론 게이트 #21의 일곱 번째 재발 — 이번엔 코드가 거짓 음성을
+냈다**(engine-porter 발견, 메인 세션 사건 경위 확인): job 876699
+(T4-1, 2026-08-09~10)가 `--time=1:00:00`에서 TIMEOUT됐다 — 사이징이
+아니라 **단일 호출 스톨**(9 부팅 중 7개가 ~8분에 정상 완료, `ON +
+chunk512`의 첫 실제 multi-chunk generate(2552 토큰, 5-chunk)가
+**~52분간 무응답**, 스케줄러 로그 0줄·CUDA 에러·watchdog 미발화;
+같은 job의 `OFF + chunk512`는 동일 프롬프트를 동일 경로로 ~1초에
+완료. 서버 로그 마지막 활동 23:34:42, SLURM TIME LIMIT kill
+00:26:19 — 메인 세션이 두 시각을 직접 대조해 ~52분 간격을
+확인했다. **핵심**: 그 상태의 아티팩트에 대해 옛 `g2det_analyze.py`
+가 **`REFUTED — reduction-order is not the (sole) cause`를 반환하고
+있었다** — ON chunk512의 `n_total=0`(arm 미실행)인데 `on_clean =
+n_total > 0 and ...`이 False로 떨어져 REFUTED 분기로 통과했다.
+**52분짜리 멈춤이 실질적 음성 결과로 발표될 뻔했다.** **이것이
+재발 1–6과 다른 점**: 1–6은 라벨·해석 오류였고 사람이 문서에서
+잡았다. 이번은 **분석 코드가 거짓 음성 판정을 산출**했고, 막은
+것은 도구가 아니라 **실행자의 규율**이다(experiment-runner가
+`INCOMPLETE`로 보고, 사전등록이 열거하지 않은 조건이라며 채점을
+거부). 도구가 사람보다 관대했다. **사후 완화가 아님**: 사전등록의
+REFUTED 조건은 "ON이 **어느 rep에서든** self-mismatch ≥1"인데 rep이
+0개면 그런 관측 자체가 없다 — 옛 코드는 사전등록 규칙의 재해석이
+아니라 **버그**였다. 수정(2026-08-10) 후 `NO VERDICT (MEASUREMENT
+ABSENT)`를 반환하고, 데이터가 있을 때의 CONFIRMED/REFUTED 분기는
+5-케이스 매트릭스로 **불변** 확인됐다. ⇒ **§3 항목35(2026-08-09
+신설, 방법론 게이트 #21)의 재발 카운트를 6→7로 갱신**하고 이
+구별을 그 항목에 직접 追記한다(신규 항목 아님, 아래 §3 항목35
+개정판 참조).
+
+**B. 공유 하네스의 무한 대기(도구 규율)**: `g2_holb_phaseA_lib.sh`
+의 `greedy_call`이 **`--max-time` 없는 raw curl**이었고, 이
+디렉터리의 **모든 캠페인**(g2ctrl/g2ea/g2holb/g2det)이 이 경로를
+쓴다. 소비자 10개를 전수 확인한 결과 **4개가 타임아웃을
+`FAIL`/`SMOKE_FAIL` 계열로 채점**하고 있었다(A의 `g2det_analyze.py`
+포함, `g2_holb_phaseA_lib.sh:102-139` 주석에 사건 경위 기록됨,
+직접 확인). 수정: `--connect-timeout 10 --max-time 180`(env
+`G2_GREEDY_CONNECT_TIMEOUT`/`G2_GREEDY_MAX_TIME`로 재정의 가능),
+curl 종료코드 28을 `STATUS=TIMEOUT`으로 `STATUS=ERROR`와 구별,
+**SHA를 아예 방출하지 않아** mismatch 채점이 구조적으로 불가능,
+사이드카 `.status.json`. 기본값 180s는 **측정 근거**로 정당화됐다
+— 이 디렉터리 아카이브 응답 **n=64**(jobs 874602/874628/874633/
+874635/875344/875346/875610/875611/876699, 4 arm × 2 모델)의
+서버측 `e2e_latency`가 median 0.978s / p90 2.534s / **max 6.605s**
+(최악 관측의 27배, 중앙값의 184배) — 메인 세션이 코드 주석의
+근거 문단을 직접 대조해 확인. 정상 경로는 아카이브 64개 + 합성
+실패 9종 재생으로 **73/73 byte-identical** 검증(engine-porter
+보고, 메인 세션 미재현 — raw curl 응답 재생 스위트라 별도
+아티팩트 경로 미확인). ⇒ 새 §3 항목37·방법론 게이트 #23으로
+신설(아래) — A와 뿌리 사건은 같으나(job 876699) **레슨은
+다르다**: A는 "분석 코드가 없는 데이터에 REFUTED를 내렸다", B는
+"공유 인프라가 무경계 대기를 10개 소비자에 전파했다".
+
+**C. Gate 2-S 3라운드 설계 감사의 구조적 결론 — §1-1 귀속 스코프
+주석(대체 아님)**: `PREREG_GATE2S_2026-08-09.md`가 claims-auditor
+감사 **3회 전부 NO-GO**를 받았다(rev1→rev2: 통계층 / rev2→rev3:
+게이트 인식론 / rev3→rev4: 귀무 채택형) — 메인 세션이 파일 직접
+확인. **3연속이 같은 자리(§5.5 앵커 발화 조건)에서 죽었고**, 3차
+감사가 근본 원인을 **문서 내부 모순**으로 특정했다(파일 §0.0.B
+직접 확인): §0.1이 "두 pdmux arm 사이 등가 마진에는 외부 앵커가
+없다"고 이미 확립했는데 §5.5는 정확히 그 등가를 앵커 조건으로
+요구했다. 정량(3차 감사, §0.0.B 원문 대조): rev3 §5.3의 **암묵
+등가 마진 = 0.715 σ_D**, 이 설계의 **primary MDE = 0.995 σ_D**
+⇒ 대리 허용오차가 검출한계의 **0.72배**. 표준 처방(TOST+사전등록
+마진)은 §0.1 정면 위반이고, 마진을 MDE의 1/4로 낮추려면 **n≈64**
+(현재 10)가 필요하다. ⇒ **정본에 기록하는 명제(문구 고정)**:
+
+> **"P1 이득 중 'SM 분할 자체의 몫'을 두 pdmux arm 사이의 성능-층
+> 등가검정으로 귀속하는 경로는, 이 프로젝트의 예산 범위에서 닫히지
+> 않는다**(n≈64 필요, 현행 설계 n=10). 원리적 불가능이 아니라
+> 이 경로·이 예산에서의 불가능이다.**"**
+
+⚠️**과장 금지**: "귀속이 원리적으로 불가능하다"로 쓰지 않는다.
+이것은 **미실행 사전등록에 대한 설계 감사**이지 측정 결과가
+아니다 — 등급어를 그에 맞춘다(§1-1의 NOT-YET-SUPPORTED는
+**대체하지 않고**, 위 인용문을 스코프 주석으로 **덧붙인다** — "아직
+안 됐다"와 "이 경로로는 안 된다"는 다른 진술). **함께 기록(감사가
+깨뜨리려 시도했으나 실패한 것 = 견고한 것, §0.0.A 직접 확인)**:
+arm 구조·Δ_split estimand의 내부 타당성, T·C 드레인 대칭, 9-셀
+판정표의 저자 불리 셀 실재, 부팅 단위 프로브 근거(n_eff=10),
+예산 산술. 3차 감사 원문(파일 §0.0.A 직접 인용): **"이 캠페인이
+죽어야 할 이유는 측정 층이 아니라 귀속 층에만 있다."** rev4는
+§5.5 앵커 발화 조건 자체를 제거해 이 특정 귀속 하위목표에서
+후퇴했다(패치 없음, env 조합만 재구성) — **Gate 2-S가 폐기된
+것은 아니다.**
+
+**D. 코드 사실 문구 하향(메인 세션 자기정정)**: 메인 세션이 이
+세션 중 "`(0,108)` idx에서는 두 역할 모두 전체 108 SM에
+접근한다"고 서술했다. **검증된 것은 "green context가 아니라
+평범한 `torch.cuda.Stream` 쌍이다"까지**다(`pdmux_context.py:
+124-138`, 메인 세션 코드 직접 확인 — idx 0과 idx `len-1`은
+`torch.cuda.Stream(gpu_id)`이고 중간 division만
+`create_greenctx_stream_by_value`). green ctx 생성이 primary
+context의 SM을 깎는지는 **미측정 물리 명제**다(격리 측정 수단
+이던 P-b 프로브는 공선성 때문에 삭제됨, engine-porter 보고 —
+메인 세션 미재검증). ⇒ **전수 검색 결과(2026-08-10) 이 문구는
+canon·파생 문서 어디에도 들어가지 않았다** — 정정 대상 문구는
+없다. 향후 인용 규칙으로만 등재: **"(0,108) idx에 대해서는
+'명시적 분할이 적용되지 않는다(잔여 차감 여부는 미측정)'로만
+쓴다"** — "두 역할이 전체 108 SM에 접근한다"류의 문구 금지.
+
+상세는 §1-1(2026-08-10 세 번째 정본 반영 건 A/B/C/D 블록)·§3
+항목35(개정)·37, `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론
+게이트" #21(개정)·#23 동반 갱신. `CLAIM_EVIDENCE_MATRIX.md`는
+대조 확인 결과 이 항목을 인용한 서술이 없어 갱신 대상 없음(확인
+완료, 2026-08-10).
+이전 rev18: 2026-08-09 (doc-steward — 같은 캠페인 계열의 두 번째
+정본 반영 건. **A(재채점)·B(사실 정정)·C(도구 규율) 세 갈래 — 전부
+새 성능 판정 아님.**
+
+**A. HOLB G5 재채점(result-analyst, 2026-08-09, jobs
+874601/874602/874632/874633/874635)**: 원자료
+`workspace/engine-port/results/p1_gates/gate2/
+g2holb_g5_tost_rescore_2026-08-09.json`(72셀 전량, 3 job × 4 arm ×
+6 응답변수, n=5 paired) + `g2holb_g5_tost_rescore.py`·
+`g2holb_g5_tost_summary.py`. **판정: G5 = 미결정(UNDETERMINED),
+저장된 `G5=False`를 대체한다.** 3% 초과가 통계적으로 지지되는 셀
+**0/72**(미보정 최소 p_exceed=0.138, job별 Holm 후 최소 조정
+p=1.000 3 job 전부), 등가 입증 **29/72**, 검정력 부족 **43/72**.
+G5는 프로브 관측자 효과가 3%를 초과함을 입증하지 못했고, 3% 이내임도
+입증하지 못했다 — 저장된 `G5=False`는 귀무-채택형 연언(`PASS =
+|효과|<3% ∧ CI∋0`)의 실패를 기록한 것이지 프로브 유해성의 입증이
+아니다. **구 규칙이 노이즈를 보상했다**(874635 agnostic ttft_p95
+−0.77%±29.14%, 95% CI [−36.95,+35.41] → 구 규칙 PASS, 메인 세션
+독립 재확인) — 역방향(구 규칙 FAIL·±3% 등가 실제 입증)도 **4셀**
+발생(예: 874633 plain itl_p95 −1.15%±0.72%, p_TOST=0.0023). **설계
+층**: n=5·δ=3%·α=0.05/side에서 TOST 발화 산술 천장 SD<3.147%인데
+72셀 중 **35셀(49%)**이 그 위. 80% 검정력 필요 n 중앙값 **9**(변수별
+request_throughput 4 / itl_p50·mean_e2e_ms 7 / itl_p95 22 /
+ttft_p50 29 / **ttft_p95 89**, ⚠️SD가 df=4 추정이라 필요 n은 자릿수
+수준 의미만). **`PREREG_GATE2` §14.2의 "프로브가 무해함이 입증됐다고
+쓰지 마라"는 해제되지 않는다** — 동시에 반대 오독("3% 넘게 유해함이
+입증됐다")도 근거 없음이 확정됐다. §14.3의 귀인("주로 점추정이 3%를
+넘는 조합이 실재하기 때문")은 **부분적으로만 참**(그런 셀은 실재하나
+그중 하나도 초과가 지지되지 않는다) — 두 문장 병기 필수. **잔여
+교락**: 874602 agnostic은 5/5 rep 전부 `order='off on'`(무작위화
+불균형) ⇒ 그 arm의 등가 판정은 조건부. **등가 판정 29건은 전부
+paired-t 정규 가정 위**(n=5 분포무가정 두측 p 하한 2/32=0.0625).
+
+**B. job 874601의 `G3=False` 라벨 정정(메인 세션 원자료 직접 확인)**:
+`g2holb_report_zamba2_874601.json`은 4 arm 전부 `result:"FAIL"`이나
+`sha_off:null, sha_on:null`·`self_repro_off/on:true`다 — 출력이
+갈라진 게 아니라 sha 추출이 응답 스키마를 못 읽은 것(`KeyError:
+'text'`)이고 Phase B가 실행되지 않았다. 재실행 874633/874635는
+`method_off/on:"output_ids"`로 sha 양측 일치 → **PASS**(위 A절
+근거로 이미 사용됨). 874632는 Phase A 중 SLURM CANCELLED(데이터
+없음). ⇒ "874601 G3 실패" 라벨은 **하네스 실패**로 정정한다. **이
+프로젝트 서명 오류(측정 실패를 게이트 실패로 라벨링)의 여섯 번째
+재발**이다 — 핸드오프 2026-08-09 §1이 다섯 번(텔레메트리 드롭
+카운터 자기검열 / UNSCOREABLE을 강등으로 읽음 / HTTP 400을 G3
+FAIL로 / G5의 귀무-채택형 기준(=위 A절과 같은 사건 계열) / 프로브의
+stderr 오염)으로 셌다. **canon에 이 패턴을 다루는 기존 번호가
+없어(전수 검색 확인) §3 항목35로 신규 등재**(중복 신설 아님 — 이후
+재발은 이 항목의 카운트만 갱신).
+
+**C. E-A 커밋 산출물의 scipy 부재 폴백(engine-porter 발견 + 메인
+세션 노출범위 실측, 범위 한정)**: `g2ea_report_*.json`은 scipy 없는
+인터프리터에서 생성돼 `t_cdf()`가 Student-t가 아니라 정규 CDF로
+조용히 폴백했다(저장된 `p_tost`가 정확히 1.0인 이유,
+`g2ea_analyze.py:84-87,156-159`). **메인 세션이 노출 범위를 직접
+측정**: `raw_ci` 폭에서 역산한 임계값이 **8개 비교 전부**(2 job ×
+2 rate × 2 cmp, coordinator가 인용한 4개 포함, 전부 df=9)
+implied_t = **2.2621… = t(.975, df=9)**(하드코드 표값과 일치, 1.96
+아님) — **CI(raw_ci)는 오염되지 않았다.** 노출은 (i) `p_tost` 값
+자체(이 캠페인은 관측치가 0.05 경계에서 멀어 `NOT_EQUIVALENT`
+판정에 영향 없음)와 (ii) `t_ppf`의 경우 **df>10이거나 표에 없는
+p**에 한정된다(`t_cdf`는 표가 아예 없어 scipy 부재 시 모든 df에서
+근사값이라는 점은 (i)에 포함되되 원인 층이 다름을 기록). ⇒ **등재
+방식 = "정본 수치 정정"이 아니라 도구 규율 항목**(게이트 #14
+계열 — 통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지 않는다;
+분석 재현 시 인터프리터 환경을 아티팩트에 남겨라), §3 항목36
+신설. **과장 금지 — 이 캠페인에서 오염된 인용 수치는 없다.**
+
+상세는 §1-1(A/B/C 블록, E-A 블록 뒤)·§3 항목35·36, `PROJECT_STATUS.md`
+"확정된 결과" 1번·"방법론 게이트" #21·#22 동반 갱신. `CLAIM_EVIDENCE_
+MATRIX.md`는 대조 확인 결과 이 항목을 인용한 서술이 없어 갱신 대상
+없음(확인 완료, 2026-08-09).
+이전 rev17: 2026-08-09 (doc-steward — ★★★★★**Gate 2 rev4 본
+캠페인(jobs 875344/875346, 2026-08-07 실행, 5.86 GPU-hr) 정본 반영
+복구 — R1′/R2′ 확립.** 새 성능 판정 아님 — 이미 완료된 결과의 정본
+누락 복구다. Primary(A3=`chunk512` vs A4=`agnostic`)는 5셀
+(Zamba2 r2·r3, Granite r3·r4·r6) 전부 `Rprime4`(A4 유의 우세, TOST
+등가 미발화) — chunk512는 pdmux를 대체하지 못한다(크기 인용 가능
+셀은 F-E 스크린 통과분인 Zamba2 r2·Granite r3뿐). **Secondary —
+R1′/R2′(A2=`plainaux` vs A4)**: rev4 §1.1의 등식 A2=A4−pdmux
+(realized server_args 차이는 `enable_pdmux`·`pdmux_config_path` 두
+필드뿐)이므로 이 비교는 §1-1의 "3-플래그 묶음 처치" 교락 중 pdmux
+고유분을 분리한다. 메인 세션이 2026-08-09 원자료(`per_arm_x60`,
+paired-t n=10)로 독립 재현: Zamba2 r2 **+0.834**[+0.781,+0.887]·r3
+**+0.930**[+0.897,+0.963], Granite r3 **+0.855**[+0.816,+0.894]·r4
+**+0.944**[+0.920,+0.968](이상 부호 10/10, F-E clear), r6
+**+0.960**[+0.929,+0.991](**부호만** — agnostic 측 F-E flagged).
+sign-flip 순열 p = 2/1024 = **0.001953125**(5셀 공통 하한). A2는
+A1(`plain`)과 사실상 같고(5셀 |A1−A2|≤0.023) 그 부호는 **A4에
+불리한 핸디캡 방향** ⇒ aux 플래그(`--chunked-prefill-size -1`·
+`--disable-overlap-schedule`) 단독으로는 pdmux 이득이 재현되지
+않는다 — §1-1 "3-플래그 묶음 처치" 교락 중 이 두 플래그는 원인에서
+**배제**된다. ★**provenance(인용 시 필수 병기)**: 이 A2-vs-A4
+비교는 **사전등록 분석기 `g2_analyze.py`가 계산하지 않는다** —
+`tost_equivalence` 호출은 코드 전체 1회뿐(`:543`)이고 입력은
+A3-vs-A4뿐(`:538-539`); A2는 `:734`에 서술 문장으로만 등장한다.
+**arm·n·raw 데이터는 사전등록(rev4)이지만 이 비교 자체는 저장된
+primary 산출물(`per_arm_x60`) 위의 사후 계산**이다(코드 확인
+2026-08-09, §3 항목34 신설 — 항목33 "사후 지정 셀 이동"의 형제
+사례). ★**천장 포화(해석 제한)**: fused arm X_60 평균이
+0.72–0.99·agnostic이 0.00–0.12로 양쪽 포화 근접 ⇒ **부호는
+견고하나 크기는 포화 구간의 값**이며 E-A 블록이 이미 건 "기전
+해석 금지"가 여기도 적용된다. ★**해금 범위의 상한(overclaim
+금지)**: 해소되는 것은 §1-1의 "3-플래그 묶음 처치" 교락뿐이다.
+귀속의 상한은 **"pdmux 서브시스템 전체"**(green-context SM 분할 +
+전용 이벤트 루프 + split-prefill)이고 **"SM 분할 자체"는 여전히
+미분리**다 — `--enable-pdmux`가 A2의 `event_loop_normal()`을
+대체해 pdmux 전용 이벤트 루프를 통째로 켜기 때문이다(§1.1).
+**"PD 분리 자체가 원인"으로 승격 금지** — §1-1의
+NOT-YET-SUPPORTED 등급은 불변, Gate 2 본 질문은 한 눈금도
+전진하지 않는다. ★**감사 provenance 정정**: 세션 핸드오프
+(`handoff-report/session_handoff_2026-08-09.md` §2.5)는 이 결과를
+"[감사 완료]"로 표기했으나, 2026-08-09 저장소 전체 검색(`gate2/`
+디렉터리·전체 `*.md`)으로 이 R1′/R2′ 비교를 다루는 claims-auditor
+감사 아티팩트가 확인되지 않는다 ⇒ **"감사 완료"로 인용하지
+않는다.** 현재 등급 = **메인 세션 원자료 독립 재현 확인
+(2026-08-09), claims-auditor 감사 기록 위치 미확인.** ⚠️**부수
+정정**: `PREREG_GATE2_2026-08-06.md`(§14 addendum)는 커밋
+`c47fad0`로 반영돼 **워킹트리 클린**(2026-08-09 확인) — 아래
+rev16·§4 "살아있는 문서" 표가 기록한 "워킹트리 미커밋" 상태는
+**stale, 정정**(§11-3 감사 면제 상태는 별개로 불변 — "감사 통과
+설계"로는 여전히 인용 금지). 상세 §1-1(rev4 본 캠페인 블록, E-A
+블록 앞)·§3 항목34, 원자료 `workspace/engine-port/results/
+p1_gates/gate2/g2_report_zamba2-27b_875344.json`·
+`g2_report_granite-40-h-micro-base_875346.json`(`per_arm_x60`).
+`PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트" #20 동반
+갱신. `CLAIM_EVIDENCE_MATRIX.md`는 대조 확인 결과 이 항목을 인용한
+서술이 없어 갱신 대상 없음(확인 완료, 2026-08-09).
+이전 rev16: 2026-08-09 (doc-steward — ★★★★★★**E-A(mixed-chunk
 레버, jobs 875654/875657/875661, 2026-08-08~09) 반영 — claims-auditor
 감사 완료, 판정 조건부(문구 강한 제한). 새 성능 판정 아님 — fused-측
 조율 가능성에 대한 진단, Gate 2 본 질문("PD 분리 자체" 귀속)은
@@ -65,7 +300,9 @@ E-C(등지속가능-rate 대조, T1 정식 종결) → E-D(미시험 fused 레�
 스윕, T2 종결) → T3-3(backend 교차, 8× 비대칭 귀속) → T4-2
 (비퇴화 프롬프트 G-2). ⚠️**상위 사전등록
 `PREREG_GATE2_2026-08-06.md`는 워킹트리 미커밋 수정 상태**
-(§14 addendum) — §4 "살아있는 문서" 표 갱신. 상세 §1-1(E-A 블록,
+(§14 addendum) — §4 "살아있는 문서" 표 갱신. ★**정정(2026-08-09,
+rev17)**: 이후 커밋 `c47fad0`으로 반영돼 워킹트리 클린 확인, 위 참조.
+상세 §1-1(E-A 블록,
 이 파일)·§3 항목31–33, 원자료 `workspace/engine-port/results/
 p1_gates/gate2/`(`PREREG_G2EA_2026-08-07.md`·`g2ea_report_*.json`·
 `g2earun_8756{57,61}.out`·`g2eaprobe_875654*`, 수정 금지·인용만).
@@ -433,7 +670,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 
 | # | 결론 | 근거 |
 |---|---|---|
-| 1 | ~~**PD 분리 자체는 항상 이득**~~ → ★반증/정정(2026-08-05, claims-auditor, jobs 873944/873945) **PD-mux 활성화는 운영점에서도 꼬리 SLO goodput 이득 — 술어·모델·워크로드 한정, 기전 귀속 미확립** | agnostic이 fused를 4모델 전부서 이김. ★**스코프 축소(2026-08-04, claims-auditor)**: 이 4-모델 캠페인은 **전부 `--disable-cuda-graph`**(no-cudagraph 비운영점, `triage/p1_7_bench_one.sbatch:42`)이고 **rate 1에서는 동률**(도착률 천장)이며 **운영점(cudagraph-ON) 대조는 어느 모델에서도 측정된 적 없다**. ★**반대 증거 신규**: fused의 死因은 **TPOT > 60ms 임계 초과**(Granite rate4 TPOT 61.21)인데 **cudagraph가 그 벽을 제거한다**(plain TPOT 62.70→13.51ms, rate4 82.41→**54.04ms=60ms SLO 통과**, `workspace/engine-port/results/cudagraph_probe/cudagraph_results.md` Probe 1 — Zamba2 단일모델 관측이라 Granite에 직접 이식은 아니나 死因 메커니즘이 cudagraph로 해소 가능함을 시사) ⇒ **"PD 분리 자체는 항상 이득"이 운영점에서 축소되거나 소멸할 가능성**. 검증 실험(2모델×{plain,agnostic}×cudagraph-ON×n≥4) 진행 예정, 결과 없음. 상세 [layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) §2.0. ★★★**반증/정정(2026-08-05, claims-auditor 감사, jobs 873944/873945, Zamba2-2.7B·Granite-4.0-h-micro-base, n=5 paired, 사전등록 `results/p1_opint/PREREG.md`, 판정서 `results/p1_opint/P1_OPINT_RESULT_2026-08-05.md`[claims-auditor 감사 반영본])**: 위 "축소되거나 소멸할 가능성"은 낡았다 — 운영점(cudagraph-ON) 대조가 처음 측정됐고, **소멸하지 않았으나 "확인"으로 올라가지도 않는다.** 정본 goodput 술어(게이트 #4: TTFT≤3s ∧ 요청 내부 token-ITL p95≤60ms)로 채점하면 `--enable-pdmux`(agnostic v1)가 fused(plain)를 **두 모델 전부·rate 2–6 전 셀에서** 이긴다(rep 부호 5/5, paired CI 0 배제). **인용 가능한 정량치는 두 arm이 모두 정상상태(큐 성장·런길이 표류 없음)인 셀뿐이다**: Zamba2 rate2 **+40.5%**[CI +0.431,+0.620 req/s], rate3 **+185.8%**; Granite rate3 **+11.7%**, rate4 **+27.0%**. 임계 사다리 40–300ms 전 구간 부호 불변(=metric cliff 아님, ★신규 방법론 게이트 #12: 임계 지시함수 판정은 임계 사다리와 큐-성장 검정으로 견고성을 보여라). **Zamba2 rate4·6과 Granite rate6은 한쪽 이상이 용량 위**여서 **부호만** 인용한다. Granite rate2는 경계(+3.4%, 임계 48ms로 내리면 소멸). ★**술어 의존(중요)**: 사전등록이 채택한 mean-ITL(TPOT) 술어로는 Granite에서 부호가 뒤집힌다(−0.3~−1.6%, CI 0 배제). 그러나 그 술어는 Granite rate3·4에서 **위반 요청이 0건이라 goodput ≡ throughput**(항등, ★방법론 게이트 #6의 새 사례: 판별력 0인 술어에 "차이<3%⇒강등" 규칙을 적용하면 무신호가 강등으로 둔갑한다)이고 남는 차이는 **3% 하한 미만**이다. ⇒ **"Granite에서 P1 전면 강등"은 채택하지 않는다.** 채택하는 것은 "**mean-ITL 술어는 이 regime의 Granite에서 fused의 死因을 잡지 못한다**"뿐이다. 마찬가지로 Zamba2의 사전등록-술어 유의 셀(r4·r6)은 전부 절벽 위라 **그 경로로는 "확인"이 성립하지 않는다** — ⇒ **"Zamba2 P1 운영점 확인(사전등록 지표)" / "Granite P1 전면 강등" 두 문장 모두 정본 등재 금지.** ★**"항상 이득"은 철회한다 — 비용이 실재한다**: pdmux는 정상상태 per-token decode를 **5–45% 늦추고**(중앙 token-ITL 9.67→10.50 / 22.57→29.30ms[Zamba2], 6.80→7.63 / 8.96→12.98ms[Granite]), 저부하 TTFT p50를 체계적으로 악화시키며(Zamba2 r2 0.164→0.230s), Granite raw 처리량은 **−0.3~−2.6%**(CI 0 배제)다. **이득은 꼬리, 비용은 중앙이다.** ⚠️**기전 귀속 미확립(3-플래그 + 미조율 baseline, ★신규 방법론 게이트 #13: arm 대조가 엔진 제약으로 다중 플래그를 강제하면 그것은 묶음 처치다)**: 이 엔진에서 `--enable-pdmux`는 `--chunked-prefill-size -1`·`--disable-overlap-schedule`을 **assert로 강제**하므로(`sglang/srt/server_args.py:6125-6137`) 측정된 처치는 세 플래그 **묶음**이다(`p1op_run.sbatch:55`). 또한 fused arm은 측정 대상 실패 모드에 대해 **미조율**이다 — 관측 stall은 prefill 배치 자체이고(클러스터 지속 166ms@r2→474ms@r4, 케이던스 1.1–1.9/s), `--chunked-prefill-size` 축소와 `--enable-mixed-chunk`(`sglang/srt/managers/scheduler.py:2525-2541`)가 정확히 그 축의 fused-측 레버인데 **둘 다 기본값**이다. ⇒ **"PD 분리(SM 분할) 자체가 원인"은 NOT-YET-SUPPORTED.** 현재 지지되는 것은 "**이 엔진에서 PD-mux를 켜면 기본 설정 fused보다 꼬리 SLO goodput이 좋다**"이다. ⚠️**실현 파티션 미측정**: `PDMUX_TELEMETRY_PATH` 미설정으로 realized `(prefill_sms, decode_sms)` 재집계 불가 ⇒ **파티션·동시성 기전 문장은 정본 금지**(Stage 0 D108 전례), arm 수준 대조만 유효. ⚠️**2026-08-04 반대 증거(위 Probe 1) 정정**: "cudagraph가 fused의 死因(TPOT>60ms)을 제거한다"는 **중앙값 근거**였다. 이번 측정에서 plain rate4는 중앙 TPOT 48.5ms인데도 요청의 **31%**가 mean-ITL SLO를, **86%**가 정본 술어를 위반한다. **중앙값이 SLO 아래 ⇏ 요청 통과.** cudagraph가 제거한 것은 **per-step 벽**이고 남은 것은 **blocking 벽**이다. **위생(허가)**: `boot_ok=1` 24/24, `CORRECTNESS=PASS` 24/24, 서버 로그 traceback/CUDA error 0건, **양 arm cudagraph ON**, piecewise는 **양 모델·양 arm 모두 OFF**(대칭, 교락 아님), 페어링 무결(input_lens 40/40 완전 일치), arm 순서 무작위화 로그 확인. **단 rate 순서는 미무작위화**(`p1op_run.sbatch:148` 고정 2→3→4→6, arm 대조는 paired라 무영향)이고 **n=5는 동일 job·동일 노드 반복**(CI는 노드 내 재현성이지 노드·날짜 간 재현성이 아니다). **등재 금지**: "Zamba2 P1 운영점 확인(사전등록 지표)"/"Granite P1 전면 강등"(위 사유, 양쪽 다); r4·r6 크기 **+41.8%/+398%/+501%/+634%/+174.9%**(런길이 의존 + 캠페인 간 2.2× 불일치, 2026-07-13 probe3 agnostic r4 1.721 vs 3.834); 용량 수치(plain≈4/agnostic≈5, Granite 7.5 vs 6.5)를 n=1 지시값 이상으로(Granite r8 비단조=drain-tail 아티팩트); 파티션·동시성 기전 문장·split 수치(★2026-08-06 Gate 1로 **부분·조건부 해소** — Zamba2 rate{2,3}·decode-busy∧prefill-in-flight 구간의 selector 라벨 `(74,34)`만 인용 가능, rate 4·6·Granite는 여전히 금지, 아래 Gate 1 결과 블록 caveat 전체 필수 동반); "PD 분리 자체" 기전 귀속(Gate 1로도 해소 안 됨 — Gate 2 해소 전); NemotronH/Falcon-H1 확장·ShareGPT/변화-trace 확장(미측정); **2026-07-13 `cudagraph_probe` 수치(위 Probe 1)와 이 캠페인 수치의 직접 대조**(격자 간 이전 금지, 게이트 #11). **다음 gate**(우선순위순): ~~Gate 1 telemetry 재현런~~ → ✅**완료(2026-08-06, job 874478) — 조건부 채택**, 상세는 아래 ★★★★★ Gate 1 블록 참조(부분·조건부 해금, G1-a–d 후속 등재) → Gate 2 4-arm 분해(plain/plain+chunked-1+no-overlap/plain+chunked512/agnostic × rate{2,3}(+4) × n=5, 사전등록 판별: `plain+aux≈agnostic`(3% 이내)면 §1-1 **플래그 아티팩트로 붕괴**, `plain+chunk512≈agnostic`이면 §1-1을 "PD-mux는 head-of-line blocking을 없애는 여러 수단 중 하나"로 재작성 — **논문 신규성 축이 바뀐다**) → Gate 3 나머지 2모델(NemotronH·Falcon-H1) 운영점 대조("4모델 전부" 인용 전제, 안 하면 §1-1은 영구히 2모델 문장) → Gate 4 sustainable-rate n≥4 직접측정(r4/r6 크기 인용 전제, 현재 후순위). **scope(축약 금지)**: {Zamba2-2.7B(triton, ctx4096)·Granite-4.0-h-micro-base(flashinfer, ctx8192), A100 108-SM green-context, **cudagraph-ON**, `--disable-radix-cache --mem-fraction-static 0.82 --max-running-requests 48`, `random-ids` **in2000/out96**(prefill:decode 토큰비 ≈21:1), 정상상태 단일-rate 격자 {2,3,4,6}, 120 프롬프트, n=5 paired(동일 job·동일 노드), agnostic v1(`pdmux_a100_smoke.yml`, sm_group_num 4)}. **NemotronH·Falcon-H1은 운영점 미측정 ⇒ "4모델 전부"는 더 이상 쓸 수 없다.** ShareGPT·변화 trace로 확장 금지(게이트 #2). torch 2.9.1에서 pdmux는 엔진 자체 경고 대상(`server_args.py:6141-6147`). 상세 `workspace/engine-port/results/p1_opint/P1_OPINT_RESULT_2026-08-05.md`, 신규 방법론 게이트 전문은 `../PROJECT_STATUS.md` "방법론 게이트" #6 새 사례·#12·#13, gate 목록 전문은 같은 문서 "다음 실험 gate" ★★★★**통계 방법 층 정정(2026-08-06, claims-auditor Gate 2 설계 감사 2회 + result-analyst 독립 재현, `workspace/engine-port/results/p1_gates/verify/`) — 새 성능 판정 아님, primary를 t-CI로 교체해 재채점한 결과.** `paired_bootstrap_ci`(n=5 percentile bootstrap of mean, BCa·studentization 없음)는 실 coverage **0.840**(100k MC, 명목 95%의 한쪽 오류율 ≈8.0%=명목 3.2배, 원인은 seed·정규성이 아니라 **n=5 그 자체**)이라 소표본 판정에 부적합 — 저장소 안에 `m3_analyze.py`·`tfgate_analyze.py`가 이미 독립으로 t-CI로 전환한 동일 진단이 존재했다(도구 규율 실패, 신규 방법론 게이트 #27). t-CI로 재채점 시 **Granite rate3(+11.7%)는 t-CI [−0.0032,+0.6132]가 0을 포함(p=0.0515)** → 인용 목록에서 제외(**미검증으로 재분류, 철회 아님** — boot CI는 여전히 0 배제), ⇒ **인용 가능 정량치는 4개→3개(Zamba2 rate2 +40.5%/rate3 +185.8%, Granite rate4 +27.0%)로 축소**. "임계 사다리 40–300ms 전 구간 부호 불변(=metric cliff 아님)"도 정정 — 부호가 유지되는 구간은 **T∈[40,113.0)ms뿐**이고 그 위에서 인용 가능 4셀 중 3셀(Zamba2 r2, Granite r3, Granite r4)이 음으로 뒤집힌다(뒤집힘의 정체는 절벽이 아니라 **술어 포화** — 뒤집히는 셀은 T≥150에서 양 arm 위반 0/0, goodput≡throughput; ★§3-24가 REFUTED한 "검정력 0인 임계 사다리"의 재발), 부호가 끝까지 유지되는 유일한 인용 가능 셀은 **Zamba2 r3**. "rep 부호 5/5"도 정정 — **Granite rate2는 실제로 3/5**(per-rep diff −0.0026/**+0.2789**/+0.0321/−0.0035/+0.0164, 효과의 87%가 rep2 한 점), 나머지 7셀은 5/5 유지 확인. n=5 paired 정확 부호뒤집기 순열검정의 두측 p 하한 = **2/32=0.0625**이므로 이 프로젝트의 n=5 paired 셀은 분포무가정으로 p<0.05에 원리적으로 도달 불가(기존 "CI가 0 배제" 서술은 전부 모수 가정 의존이었다는 사실을 명시). ★**P1의 방향 자체는 살아남는다**: agnostic > fused(꼬리에서)는 Zamba2 r2·r3, Granite r4에서 어떤 방법으로도 유효하다 — 강등되는 것은 "전 셀"·"5/5"·"사다리 전 구간"·"Granite r3 수치"뿐, 과잉 강등 아님. **열린 불일치(반영 보류)**: "Granite rate2는 경계(48ms로 내리면 소멸)" 문장은 방향이 반대라는 지적(임계를 내리면 오히려 커짐, T=22→+30.35%)이 있으나 "48ms" 수치의 출처가 `P1_OPINT_RESULT_2026-08-05.md`·`PREREG.md` 어디에도 없어 수치는 유지하고 "출처 미확인·방향 불일치 지적 있음(2026-08-06), 확인 전 인용 주의" 표시만 추가한다(단 Granite rate2는 A-4 경로로 이미 사실상 무신호로 반영됨). 신규 방법론 게이트 **#27**(n≤8 반복에서 `paired_bootstrap_ci`/`unpaired_bootstrap_ci` 구간을 판정에 쓰지 않는다, primary=t-CI) 등재, E1(`s8_frontier/e1_analyze.py:492,1286`) 사전등록 결정 규칙도 같은 undercoverage(net-positive 방향 편향, n=4 coverage 0.798)를 상속하므로 `PROJECT_STATUS.md` "다음 실험 gate" #8에 **제출 선행조건**으로 등재. `CLAIM_EVIDENCE_MATRIX.md`는 이 수치를 인용하는 서술이 없어 갱신 대상 없음(대조 확인 완료). 상세 `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트" #14·§3 항목27(이 파일), 원자료 `workspace/engine-port/results/p1_gates/verify/`(스크립트·JSON·로그 전체).★★★★★**Gate 1(job 874478, 2026-08-06) 조건부 채택 — claims-auditor 감사, 새 성능 판정 0건, 진단 전용.** Zamba2-2.7B·agnostic v1·cudagraph-ON·rate{2,3}·n=1의 873944 텔레메트리 재현런에서, 엔진이 실제로 구성한 분할표는 `[(108,0),(74,34),(54,54),(0,108)]`이었고(`gate1_srv_874478.log:32`), **decode-busy ∧ prefill-in-flight 구간의 selector 라벨은 시간가중 100.00%가 `(74,34)`**였다(pooled 51.9 s, 78 에피소드, 3,820 스냅샷, 반례 0/40,062). ⚠️ **이 통계는 판별력이 사실상 없다** — `event_loop_pdmux`에서 prefill 어드미션(`multiplexing_mixin.py:1004`)과 `adjust_stream_groups()`(`:1080`) 사이에 telemetry sync가 존재하지 않으므로, "pop A ∧ idx∉{1,2}"는 **관측 가능한 상태가 아니다**(방법론 게이트 #9 다섯 번째 재발, 아래 §3 항목28). 이 문장은 "코드가 그렇게 쓰여 있고 실행도 그대로 했다"이지 "측정으로 알아냈다"가 아니다. ~~**★실질 산출 1 — 이 격자에서 정책은 단일 분할에 고정됐다**: 전 런 `decode_running_batch_size` 최댓값 **23**(문턱 `decode_bs_divisor=36`, `pdmux_a100_smoke.yml:6`) ⇒ **`(54,54)`는 0회 선택**. 인용 가능한 파티션 수치는 **`(74,34)` 하나뿐**이다.~~ → ★★★★★**철회(2026-08-07, G1-b, job 875293, 사전등록 철회 규칙 발화, 새 성능 판정 아님 — 사실 정정)**: 위 무제한(격자 전체) 문장은 거짓이다. rate **2**(max decode_bs 9)·**3**(23)·**4**(18)는 pop A 시간가중 100% `(74,34)`로 문턱 36 미만이라 **인용 가능 셀(Zamba2 r2·r3)에서는 "단일 분할"이 여전히 참**이지만, **rate 6에서만** `(54,54)`가 시간가중 **8.37%**(2.089s/24.974s, max decode_bs 40) 등장해 사전등록 철회 규칙(`frac((54,54))≥0.01`, `gate1b_analyze.py`에 하드코딩)이 발화했다 — 거짓이 된 것은 **격자 전체에 대한 무제한 주장**뿐이다(과잉 철회 금지). ⚠️**rate 4(18)가 rate 3(23)보다 낮다 — 비단조·원인 미해명**(단일 부팅 순차 실행의 순서 효과 또는 큐잉 동역학 가능성, §3 항목30). ⚠️**rate 6 경계 근접**: pop A 에피소드 5개뿐, max decode_bs 40이 문턱 36을 11%만 초과 — 정본은 Zamba2 r4·r6을 이미 "⚠용량 초과" 셀로 이미 표시 중이다. Population C 절대 수치는 Gate 1 감사 caveat 승계(인용 금지, 개수·에피소드만). `(74,34)`·`(54,54)`는 여전히 selector 라벨(하드웨어 SM 수 아님). G1-b 매니페스트는 874478과 바이트 동일 트리가 아님(HOLB 프로브 +2줄, 0줄 변경, 동등성 근거=G3). 상세 위 rev15 헤더, 원자료 `PREREG_G1B_2026-08-07.md`·`gate1b_result_875293.txt`(수정 금지·인용만). **★실질 산출 2 — duty cycle(창 시간 기준)**: prefill/decode 동시 in-flight **27–38%**(추정량 경계 오염으로 구간 제시), decode 단독 `(0,108)` 32.2%, prefill 단독 `(108,0)` 3.5%, **완전 idle 26.3%**. **필수 동반 caveat**: (a) **selector-level·behavioural**이며 하드웨어 SM 부여 프로브(S3) **미실행** — `(74,34)`는 요청값이지 실현된 하드웨어 SM 수가 아니다(Stage 0 D108 전례); (b) **Zamba2 rate{2,3} 한정** — 873944의 `MAIN_RATES`는 {2,3,4,6}이고 rate 4·6은 미측정이며 그 셀은 decode batch가 커져 `(54,54)`로 넘어갈 수 있다; (c) **Granite-4.0-h-micro-base는 전혀 미측정**; (d) n=1, 노드 gpu38(873944는 gpu41); (e) 다른 rate/워크로드/모델로의 이전 금지(게이트 #11). **⇒ §1-1의 "실현 파티션 미측정" 문구는 완전 해제가 아니라 부분·조건부 해제로 대체한다**: decode-busy∧prefill-in-flight 상태의 selector 라벨은 Zamba2 rate{2,3}·agnostic v1·cudagraph-ON에서 `(74,34)`(prefill 74 SM/decode 34 SM 요청값) 하나로 인용 가능하나 여전히 selector-level(S3 미실행)이고, **rate 4·6 셀과 Granite 전체는 여전히 미측정** — **특히 Granite rate4 +27.0%(위 인용 가능 정량치)에는 이 파티션·동시성 문장을 붙이지 않는다**(Gate 1이 그 셀을 커버하지 않음). **"PD 분리 자체" 기전 귀속은 Gate 1로 해금되지 않는다 — 여전히 NOT-YET-SUPPORTED(Gate 2 소관, 불변)**. **인용 금지(신규, 감사자 열거)**: "실현 파티션을 **측정**했다"(항등식) / "prefill 74 SM·decode 34 SM에서 **실행**됐다"(S3 미실행, green-context 반올림 미확인) / rate 4·6·Granite에 대한 파티션 문장 / "**동시성** 기전" 일반(fused arm 대응 계측이 원리적으로 부재 — `plain`은 `--enable-pdmux`가 없어 파티션 텔레메트리가 없다) / "음성대조 C의 2–3% 누출이 gate가 항등식이 아님을 보인다"(누출 10/10이 prefill-완료 전이 sync의 결정적 lag) / "**C = 0.9708/0.9779**" 수치 자체(10개 스냅샷 위, dt 4–10× 과대) / "케이던스 8↔32에서 불변"(추정량 산술 항등식: 누출 개수 ÷4 × dt ×4) / "874465 실패 원인 = bounded queue 포화"(**미확증** — grid 결측 0 + 급정지는 오히려 writer-thread 종료를 시사) / "pooled A = 51.9 s 겹침"(상한, 하한 36.7 s) / "런의 30%가 full-prefill 파티션"(그중 88%가 순수 idle). **커버리지 가드 논거 정정(부기 2, 좁은 형태만 인용)**: `PREREG_GATE1_2026-08-06.md`의 "coverage guard는 단방향으로만 더 엄격해진다"는 감사 결과 **거짓**이다 — `gate1_analyze.py:181-190`의 `severity()` 기준으로 `frac<0.90`이면 `NO_UNLOCK`이 됐을 창이 `coverage<0.98`이면 `UNMEASURABLE`로 **승격(완화)**될 수 있다. 살아남는 것은 좁은 주장뿐: **coverage 실패가 UNLOCK을 만드는 경로는 없다.** 임계 0.98도 근거 없음(관측된 두 점이 80.11%와 ~100%라 어느 값이든 결과 동일) — 이번 판정엔 무작동(`MIN_COVERAGE=0` 재실행 시 출력 동일). **이 논거는 정본 일반 원칙으로 승격하지 않는다**(이 job의 부기 텍스트에 대한 국소 정정일 뿐). **다음 gate 갱신** — Gate 1 완료(조건부 채택) → **G1-a**(≈0.2 GPU-hr, engine-porter): `multiplexing_mixin.py:1005`/`:1080` 사이 관측 전용 sync 1회 추가 ⇒ "prefill in-flight ∧ stale idx"를 관측 가능하게 해 주 조건에 판별력을 부여, 결정량=어드미션-후/adjust-전 구간의 시간 비율+절대 ms → **G1-b**: ✅**완료(2026-08-07, job 875293) — 철회 규칙 발화**(rate 6에서 `(54,54)` 시간가중 8.37% 관측, rate 4는 NO_EVIDENCE), 상세는 위 rev15 헤더·본 항목 "★실질 산출 1" 철회 블록 참조 → **G1-c**: Granite(873945 복제) → **G1-d**: S3 하드웨어 프로브(`%smid` 샘플링/CUPTI) → **하네스**: `gate1_analyze.py`에 grid-completeness 검정 상시화(`trace_forced==False ⟹ si==1 ∨ si%TRACE_EVERY==0`, 결측 수 출력, 이번 "유실 없음"의 실제 근거는 coverage가 아니라 이 검정이었음) + engine-porter 이관(`telemetry.py`의 `writer_error` 로깅, SIGKILL 경로에서 미호출되는 `close()`) → (기존, 불변) Gate 2 4-arm 분해 → Gate 3 나머지 2모델 → Gate 4 sustainable-rate. **위생 확인(전부 통과)**: 매니페스트 13파일 SHA-256이 873944와 바이트 일치, 2026-08-05 이후 변경된 `.py`가 정확히 그 13개(커버 밖 드리프트 없음), `architecture` 필드 40,062/40,062="legacy", `stream_index↔sms` 불일치 0, cudagraph ON, `CORRECTNESS=PASS`. ⚠️**노드 불일치**: Gate 1=gpu38, 873944=gpu41. 상세 `PROJECT_STATUS.md` "다음 실험 gate" #10(Gate 1 항목), 원자료 `workspace/engine-port/results/p1_gates/gate1/`(`gate1_result_874478.txt`·`PREREG_GATE1_2026-08-06.md`·`gate1_analyze.py`·`gate1_telemetry_874478.jsonl`·` ★★★★★★**E-A(mixed-chunk 레버, jobs 875654/875657/875661, 2026-08-08~09) — claims-auditor 감사 완료, 판정 조건부(문구 강한 제한). 새 성능 판정 아님 — fused-측 조율 가능성에 대한 진단이다.** 원자료 `workspace/engine-port/results/p1_gates/gate2/`(`PREREG_G2EA_2026-08-07.md`·`g2ea_report_*.json`·`g2earun_8756{57,61}.out`·`g2eaprobe_875654*`, 수정 금지·인용만). **A. 레버 실현**: Stage 1(job 875654)에서 `--enable-mixed-chunk`가 Zamba2-2.7B·Granite-4.0-h-micro-base × {8192, 512} 4콤보 전부에서 realized로 확인됐다(세 독립 증인: `/server_info` top, `internal_states[0]`, HOLB `holb_open`). 기능 스모크 8/8 정상. ⚠️프로브 스크립트의 `PROBE_RESULT` 필드는 stderr 오염 버그(`g2ea_mixed_chunk_probe.sbatch:205`의 `2>&1`)로 `AVAILABLE_BUT_BURST_ERROR`를 잘못 출력했다 — 판정은 원 burst JSON 8건 직접 재파싱에 근거한다. **B. 주 결과(부호)**: E-A(jobs 875657/875661, n=10 paired, cudagraph-ON, arm 순서 무작위, 노드 gpu42/gpu40)에서 사전등록 primary 두 비교 × 4셀 = **8건 전부 TOST 등가가 발화하지 않았고, 방향은 전부 agnostic 우세**(부호 10/10, 분포무가정 정확 p = 2/1024 = 0.00195). ⇒ 사전등록 규칙상 **"조율된 fused가 pdmux를 대체한다"는 발화하지 않았고, 논문 신규성 축 전환은 없다.** ⚠️ 8건 중 7건은 F-E 발화(비정상상태) ⇒ **부호만 인용 가능.** ⚠️ cmp2(A3m)의 Granite 두 셀은 G-2 실패로 상속된 §2.1 폐기 규칙 하 **무효**다. **C. 유일한 인용 가능 정량치**: Granite-4.0-h-micro-base rate 3, cmp1: **X_60(plainmix) − X_60(agnostic) = +0.855 [95% CI +0.814, +0.896]**, n=10 paired, 부호 10/10. 양 arm 정상상태(duration 41.0s vs ideal 40.0, 실현 throughput 2.938 vs 제공 3, F-E 1.026/0.973, 런길이 불변 검정 N=60→120에서 TTFT p95 338→406 ms = 1.20×). ⚠️ **이 셀이 지정 셀이 된 것은 선행 캠페인 진단을 본 뒤의 사후 이동(r4→r3)이며, r4를 유지했다면 이 캠페인의 인용 가능 셀은 0개였다** (`PREREG_G2EA_2026-08-07.md` §3 자기인지 위험 #2). ⚠️ **같은 셀에서 TTFT 항은 통과한다** — plainmix가 agnostic보다 TTFT p95가 **19.2% 좋다**(CI [−0.256, −0.129]). 탈락은 ITL 항에서만 일어난다. **"TTFT 비열등 0건"은 거짓**이다(1/8). **D. 레버 격리**(C와 반드시 병기 — 없으면 C가 오해를 부른다): 위 +0.855 중 mixed-chunk 기여분은 **+0.010 [+0.0045, +0.0155] = 1.2%**뿐이다. 나머지 98.8%는 untuned fused와 pdmux 사이의 기존 격차(X_60(plain) − X_60(agnostic) = +0.845 [+0.802, +0.888])이며 rev4/§1-1이 이미 확립한 양이다. 4셀 전체에서 mixed-chunk 기여분은 **1.2–10.6%**. ⇒ **E-A의 primary는 mixed-chunk 레버를 격리하지 않는다.** ⚠️ X_60은 fused arm 전부 0.85–0.99로 천장 근접(정본 §1-13 ceiling-censoring 재발) ⇒ mixed-chunk 고유효과 크기는 **하향편향**. ⚠️ 그 크기(+0.010)는 HOLB 관측자 효과 잔차(rev4 §14.3: itl_p95 arm별 −9.9%~+105%)와 **같은 자릿수**이므로 **기전 해석 금지.** **E. 기전(신규, 서빙 직접 측정)**: mixed-chunk가 켜지면 prefill과 함께 스케줄된 decode가 `ForwardMode.MIXED` extend 경로로 재라우팅된다(`schedule_batch.py:1874`; `MIXED`는 `is_cuda_graph()`에서 제외 — `forward_batch_info.py:166-173`). HOLB 실측: MIXED step 지속시간이 병합 decode 요청 수에 **선형 증가** — Zamba2 252→1,844 ms(bs 0→48, ≈33 ms/요청), Granite 129→247 ms(bs 0→24, ≈4.2 ms/요청). 순수 DECODE step은 각각 9.4 / 6.8 ms. MIXED step 하나가 running 요청 전부를 1 토큰씩만 전진시키므로 요청별 ITL이 MIXED step time과 같아지고, backlog가 자라 `max_running_requests=48`·`mamba usage 1.00`을 포화시켜 admission을 막고 TTFT가 발산한다. ⇒ **정본 §1이 동적 제어에 대해 확립한 얽힘 死因(decode 굶김→ITL↑→batch 정체→admission 차단→TTFT 폭발)의 새 트리거이지 새 기전이 아니다.** **F. cudagraph 가설 반증 + 정본 부수 정정**: "mixed 배치가 decode CUDA graph를 못 써서 decode가 eager로 떨어진다"는 **설명으로서 반증**: (i) plainmix의 남은 순수 DECODE step은 `cuda graph: True`이고 중앙 지속시간이 plain과 동일(9.5 vs 9.4 ms Zamba2, 6.9 vs 6.8 Granite); (ii) 페널티가 배치 크기 비례라 그래프 launch 오버헤드보다 두 자릿수 큼; (iii) piecewise CUDA graph는 두 모델 10개 boot 전부 런타임 비활성이라 arm 간 비대칭 아님. ⇒ 실제로 일어난 것은 "decode의 eager 강등"이 아니라 **"decode 작업의 extend 커널 경로 재라우팅"**이다. ★ **부수 정정**: rev4 §1.1의 "A3는 `piecewise_cuda_graph_max_tokens` 8192→512도 함께 바꾸는 ≥2-기전 묶음" 캐비어트는 **이 두 모델에선 런타임 실측으로 무효**다(전 arm piecewise OFF). 해당 인용 금지를 해제하되 근거를 명시하라. **G. G-2(재현성 — correctness 아님)**: `--chunked-prefill-size 512`를 건 Granite-4.0-h-micro-base(flashinfer, `enable_deterministic_inference=False`)는 16-동시 greedy 요청에서 **비트단위 재현성이 깨진다** — 16 중 2 요청이 퇴화 반복 루프의 반복 단위 한 토큰(62↔322)에서 결정론적으로 갈라진다(불일치 위치 = 정확히 주기 3의 31개 지점, 출력 길이 96 동일, 두 변종은 arm 간 바이트 동일). 3회 독립 재현(875346·875611·875661), 음성대조 `plain`·`plainaux`·`plainmix`·`agnostic` 전부 통과. **이것은 correctness 결함이 아니라 reproducibility 결함이며, 엔진은 배치 형태 간 비트 재현성을 약속하지 않는다.** mamba state 이월과는 **정합하지 않는다**(그 경우 인덱스 0부터 고정 불일치 + 전혀 다른 연속이 예상되나, 관측은 반복 구조 완전 보존). **H. 스코프(축약 금지)**: {Zamba2-2.7B(triton, ctx4096) · Granite-4.0-h-micro-base(flashinfer, ctx8192), A100 108-SM, **cudagraph-ON / piecewise-OFF**, `--disable-radix-cache --mem-fraction-static 0.82 --max-running-requests 48`, `random-ids` in2000/out96, 정상상태 단일-rate {Zamba2 2,3 / Granite 3,4}, 120 프롬프트, n=10 paired(동일 job·동일 노드), agnostic v1, HOLB 프로브 전 arm ON}. **상위 사전등록 rev4의 §11-3(3차 감사)은 면제됐다 — "감사를 통과한 설계"가 아니다**(§14.1 자백). **T2(가장 무거움) — "fused 조율 공간 소진" 주장 금지**: 정본 `CONSENSUS.md:368`의 *"…가 정확히 그 축의 fused-측 레버인데 둘 다 기본값이다"*는 **대표 레버 지목이지 완전성 주장이 아니다.** 같은 기전 축의 **미시험 노브 최소 6개**(realized 값 실측): `--prefill-max-requests`(현재 `None`=무제한, `server_args.py:3959`) · `--num-continuous-decode-steps`(현재 1, `:5559`) · `--chunked-prefill-size` 2048/4096 · `--max-running-requests`(현재 48 = 실제 포화점) · `--schedule-conservativeness`(1.0, `:4029`) · `--mamba-scheduler-strategy`(`no_buffer`, `:5082`). (+`--enable-prefill-delayer`는 적용성 미확인.) ⇒ 쓸 수 있는 최대치: *"정본이 지목한 두 레버는 시험됐고 둘 다 격차를 닫지 못했다 — 다만 fused 측 조율 공간이 소진됐다는 뜻은 아니다."* **Gate 2 본 질문 전진 없음**: A2(`plainaux`)를 뺐으므로 **"PD 분리(SM 분할) 자체" 귀속은 한 눈금도 전진하지 않았고 §1-1의 NOT-YET-SUPPORTED는 불변**이다. `PREREG_G2EA_2026-08-07.md:66-67`이 A2와의 교차-job 비교를 명시 금지했으므로 875344/875346의 A2로 메우는 것도 금지. **인용 금지 목록(13건, 정본에 그대로 등재)**: 1. "등부하에서 mixed-chunk는 지연을 N배 악화시킨다"(78×·6.2×·24–35× **전부**) — 런길이 의존 실측(N 60→120에서 2.3–6.2× 변동). 2. throughput `1.938→1.303`·`0.530`·`1.070`, TTFT p95 `28,359`·`154,601`·`67,298 ms` — 무플래그 `secondary` 블록 출신, 불안정 큐 과도상태. 3. F-E 발화 셀의 X_60 크기(cmp1 Zamba2 r2·r3, Granite r4; cmp2 전 셀). 4. **"TTFT 비열등 0건"** — 거짓(1/8, C 참조). 5. "fused 조율 레버 소진" / "T1이 닫혔다" / "조율된 fused는 pdmux를 대체할 수 없다"(일반형). 6. "두 레버 모두 실패"를 **E-A 캠페인 내부 결과로** 제시 — A3-vs-A4는 E-A 사전등록 비교가 아니다(사후 계산이며 F-E clear ∧ G-2 PASS를 동시 만족하는 셀은 **Zamba2 r2 하나**: +0.879 [+0.859, +0.899]). 7. "chunked-prefill 조율이 …" 문구 — 단 F의 정정 반영 후에는 금지 근거가 약해지므로 F를 먼저 반영할 것. 8. "chunked_prefill_size=512가 Granite에서 **잘못된 출력**을 낸다" — reproducibility ≠ correctness. 9. cmp2 Granite r3·r4의 어떤 판정도 — 상속 §2.1 폐기 규칙 미적용. 10. "mixed-chunk 붕괴는 Zamba2라는 모델의 성질" — 모델과 attention backend 동시 변경(confound #10). ⚠️ 선례 `[[scale-8b-sm-sensitivity]]`의 "hybrid 급락=Zamba2 성질" 강등과 동형. 11. "PD 분리 자체" / "pdmux 필요성 확립" / "Gate 2 전진". 12. "감사를 통과한 사전등록". 13. MIXED 한계비용 8× 비대칭(33 vs 4.2 ms)의 **원인 귀속** — 미해명으로 등재. **신규 방법론 항목(§3 항목31–33 등재)**: (31) "게이트를 지표에 걸 때는 primary뿐 아니라 보고되는 모든 블록에 걸어라." F-E 집행 수정이 primary 두 비교에만 적용되고 `secondary` 블록(throughput/goodput/ttft_p95/itl_p95)은 무방비였다 — 그리고 실제로 **그 무방비 경로에서 인용이 일어났다**(`g2ea_analyze.py:662-680`). (32) "과부하 arm과 정상 arm을 같은 제공 rate에서 비교한 수치는 시스템 상수가 아니다." 런길이 의존 실측: 프롬프트 60→120에서 지연 2.3–6.2× 변동, 정상 셀만 1.20×. ⇒ 비정상상태 셀은 부호만, 크기는 지속가능 rate 대조(E-C) 후에만. (33) "사후 지정 셀 이동은 부호를 안 바꿔도 인용 가능성을 만들 수 있다." r4→r3 이동이 없었다면 이 캠페인의 인용 가능 셀은 0개였다. **후속 게이트 등재(우선순위순, `PROJECT_STATUS.md` "다음 실험 gate")**: T4-1 deterministic-inference 재확인(<0.5 GPU-hr, 폐기 규칙 해제) → T3-1/T3-2 MIXED 배치 조성 계측·micro 스윕(<1 GPU-hr each, 기전 확정) → E-C 등지속가능-rate 대조(≈4 GPU-hr, T1 정식 종결) → E-D 미시험 fused 레버 스윕(≈8 GPU-hr, T2 종결) → T3-3 backend 교차(≈2, 8× 비대칭 귀속) → T4-2 비퇴화 프롬프트 G-2(≈1). ⚠️**상위 사전등록 `PREREG_GATE2_2026-08-06.md`가 워킹트리 미커밋 수정 상태(§14 addendum)** — §4 "살아있는 문서"에 기록. 절대날짜(2026-08-09). `results/p1_gates/` 이하 수정 금지(인용만), 커밋 금지. 상세 위 rev16 헤더, `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트" #17–19·"다음 실험 gate" #10(E-A 항목), 원자료 위 경로 |
+| 1 | ~~**PD 분리 자체는 항상 이득**~~ → ★반증/정정(2026-08-05, claims-auditor, jobs 873944/873945) **PD-mux 활성화는 운영점에서도 꼬리 SLO goodput 이득 — 술어·모델·워크로드 한정, 기전 귀속 미확립** | agnostic이 fused를 4모델 전부서 이김. ★**스코프 축소(2026-08-04, claims-auditor)**: 이 4-모델 캠페인은 **전부 `--disable-cuda-graph`**(no-cudagraph 비운영점, `triage/p1_7_bench_one.sbatch:42`)이고 **rate 1에서는 동률**(도착률 천장)이며 **운영점(cudagraph-ON) 대조는 어느 모델에서도 측정된 적 없다**. ★**반대 증거 신규**: fused의 死因은 **TPOT > 60ms 임계 초과**(Granite rate4 TPOT 61.21)인데 **cudagraph가 그 벽을 제거한다**(plain TPOT 62.70→13.51ms, rate4 82.41→**54.04ms=60ms SLO 통과**, `workspace/engine-port/results/cudagraph_probe/cudagraph_results.md` Probe 1 — Zamba2 단일모델 관측이라 Granite에 직접 이식은 아니나 死因 메커니즘이 cudagraph로 해소 가능함을 시사) ⇒ **"PD 분리 자체는 항상 이득"이 운영점에서 축소되거나 소멸할 가능성**. 검증 실험(2모델×{plain,agnostic}×cudagraph-ON×n≥4) 진행 예정, 결과 없음. 상세 [layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) §2.0. ★★★**반증/정정(2026-08-05, claims-auditor 감사, jobs 873944/873945, Zamba2-2.7B·Granite-4.0-h-micro-base, n=5 paired, 사전등록 `results/p1_opint/PREREG.md`, 판정서 `results/p1_opint/P1_OPINT_RESULT_2026-08-05.md`[claims-auditor 감사 반영본])**: 위 "축소되거나 소멸할 가능성"은 낡았다 — 운영점(cudagraph-ON) 대조가 처음 측정됐고, **소멸하지 않았으나 "확인"으로 올라가지도 않는다.** 정본 goodput 술어(게이트 #4: TTFT≤3s ∧ 요청 내부 token-ITL p95≤60ms)로 채점하면 `--enable-pdmux`(agnostic v1)가 fused(plain)를 **두 모델 전부·rate 2–6 전 셀에서** 이긴다(rep 부호 5/5, paired CI 0 배제). **인용 가능한 정량치는 두 arm이 모두 정상상태(큐 성장·런길이 표류 없음)인 셀뿐이다**: Zamba2 rate2 **+40.5%**[CI +0.431,+0.620 req/s], rate3 **+185.8%**; Granite rate3 **+11.7%**, rate4 **+27.0%**. 임계 사다리 40–300ms 전 구간 부호 불변(=metric cliff 아님, ★신규 방법론 게이트 #12: 임계 지시함수 판정은 임계 사다리와 큐-성장 검정으로 견고성을 보여라). **Zamba2 rate4·6과 Granite rate6은 한쪽 이상이 용량 위**여서 **부호만** 인용한다. Granite rate2는 경계(+3.4%, 임계 48ms로 내리면 소멸). ★**술어 의존(중요)**: 사전등록이 채택한 mean-ITL(TPOT) 술어로는 Granite에서 부호가 뒤집힌다(−0.3~−1.6%, CI 0 배제). 그러나 그 술어는 Granite rate3·4에서 **위반 요청이 0건이라 goodput ≡ throughput**(항등, ★방법론 게이트 #6의 새 사례: 판별력 0인 술어에 "차이<3%⇒강등" 규칙을 적용하면 무신호가 강등으로 둔갑한다)이고 남는 차이는 **3% 하한 미만**이다. ⇒ **"Granite에서 P1 전면 강등"은 채택하지 않는다.** 채택하는 것은 "**mean-ITL 술어는 이 regime의 Granite에서 fused의 死因을 잡지 못한다**"뿐이다. 마찬가지로 Zamba2의 사전등록-술어 유의 셀(r4·r6)은 전부 절벽 위라 **그 경로로는 "확인"이 성립하지 않는다** — ⇒ **"Zamba2 P1 운영점 확인(사전등록 지표)" / "Granite P1 전면 강등" 두 문장 모두 정본 등재 금지.** ★**"항상 이득"은 철회한다 — 비용이 실재한다**: pdmux는 정상상태 per-token decode를 **5–45% 늦추고**(중앙 token-ITL 9.67→10.50 / 22.57→29.30ms[Zamba2], 6.80→7.63 / 8.96→12.98ms[Granite]), 저부하 TTFT p50를 체계적으로 악화시키며(Zamba2 r2 0.164→0.230s), Granite raw 처리량은 **−0.3~−2.6%**(CI 0 배제)다. **이득은 꼬리, 비용은 중앙이다.** ⚠️**기전 귀속 미확립(3-플래그 + 미조율 baseline, ★신규 방법론 게이트 #13: arm 대조가 엔진 제약으로 다중 플래그를 강제하면 그것은 묶음 처치다)**: 이 엔진에서 `--enable-pdmux`는 `--chunked-prefill-size -1`·`--disable-overlap-schedule`을 **assert로 강제**하므로(`sglang/srt/server_args.py:6125-6137`) 측정된 처치는 세 플래그 **묶음**이다(`p1op_run.sbatch:55`). 또한 fused arm은 측정 대상 실패 모드에 대해 **미조율**이다 — 관측 stall은 prefill 배치 자체이고(클러스터 지속 166ms@r2→474ms@r4, 케이던스 1.1–1.9/s), `--chunked-prefill-size` 축소와 `--enable-mixed-chunk`(`sglang/srt/managers/scheduler.py:2525-2541`)가 정확히 그 축의 fused-측 레버인데 **둘 다 기본값**이다. ⇒ **"PD 분리(SM 분할) 자체가 원인"은 NOT-YET-SUPPORTED.** 현재 지지되는 것은 "**이 엔진에서 PD-mux를 켜면 기본 설정 fused보다 꼬리 SLO goodput이 좋다**"이다. ⚠️**실현 파티션 미측정**: `PDMUX_TELEMETRY_PATH` 미설정으로 realized `(prefill_sms, decode_sms)` 재집계 불가 ⇒ **파티션·동시성 기전 문장은 정본 금지**(Stage 0 D108 전례), arm 수준 대조만 유효. ⚠️**2026-08-04 반대 증거(위 Probe 1) 정정**: "cudagraph가 fused의 死因(TPOT>60ms)을 제거한다"는 **중앙값 근거**였다. 이번 측정에서 plain rate4는 중앙 TPOT 48.5ms인데도 요청의 **31%**가 mean-ITL SLO를, **86%**가 정본 술어를 위반한다. **중앙값이 SLO 아래 ⇏ 요청 통과.** cudagraph가 제거한 것은 **per-step 벽**이고 남은 것은 **blocking 벽**이다. **위생(허가)**: `boot_ok=1` 24/24, `CORRECTNESS=PASS` 24/24, 서버 로그 traceback/CUDA error 0건, **양 arm cudagraph ON**, piecewise는 **양 모델·양 arm 모두 OFF**(대칭, 교락 아님), 페어링 무결(input_lens 40/40 완전 일치), arm 순서 무작위화 로그 확인. **단 rate 순서는 미무작위화**(`p1op_run.sbatch:148` 고정 2→3→4→6, arm 대조는 paired라 무영향)이고 **n=5는 동일 job·동일 노드 반복**(CI는 노드 내 재현성이지 노드·날짜 간 재현성이 아니다). **등재 금지**: "Zamba2 P1 운영점 확인(사전등록 지표)"/"Granite P1 전면 강등"(위 사유, 양쪽 다); r4·r6 크기 **+41.8%/+398%/+501%/+634%/+174.9%**(런길이 의존 + 캠페인 간 2.2× 불일치, 2026-07-13 probe3 agnostic r4 1.721 vs 3.834); 용량 수치(plain≈4/agnostic≈5, Granite 7.5 vs 6.5)를 n=1 지시값 이상으로(Granite r8 비단조=drain-tail 아티팩트); 파티션·동시성 기전 문장·split 수치(★2026-08-06 Gate 1로 **부분·조건부 해소** — Zamba2 rate{2,3}·decode-busy∧prefill-in-flight 구간의 selector 라벨 `(74,34)`만 인용 가능, rate 4·6·Granite는 여전히 금지, 아래 Gate 1 결과 블록 caveat 전체 필수 동반); "PD 분리 자체" 기전 귀속(Gate 1로도 해소 안 됨 — Gate 2 해소 전); NemotronH/Falcon-H1 확장·ShareGPT/변화-trace 확장(미측정); **2026-07-13 `cudagraph_probe` 수치(위 Probe 1)와 이 캠페인 수치의 직접 대조**(격자 간 이전 금지, 게이트 #11). **다음 gate**(우선순위순): ~~Gate 1 telemetry 재현런~~ → ✅**완료(2026-08-06, job 874478) — 조건부 채택**, 상세는 아래 ★★★★★ Gate 1 블록 참조(부분·조건부 해금, G1-a–d 후속 등재) → Gate 2 4-arm 분해(plain/plain+chunked-1+no-overlap/plain+chunked512/agnostic × rate{2,3}(+4) × n=5, 사전등록 판별: `plain+aux≈agnostic`(3% 이내)면 §1-1 **플래그 아티팩트로 붕괴**, `plain+chunk512≈agnostic`이면 §1-1을 "PD-mux는 head-of-line blocking을 없애는 여러 수단 중 하나"로 재작성 — **논문 신규성 축이 바뀐다**) → Gate 3 나머지 2모델(NemotronH·Falcon-H1) 운영점 대조("4모델 전부" 인용 전제, 안 하면 §1-1은 영구히 2모델 문장) → Gate 4 sustainable-rate n≥4 직접측정(r4/r6 크기 인용 전제, 현재 후순위). **scope(축약 금지)**: {Zamba2-2.7B(triton, ctx4096)·Granite-4.0-h-micro-base(flashinfer, ctx8192), A100 108-SM green-context, **cudagraph-ON**, `--disable-radix-cache --mem-fraction-static 0.82 --max-running-requests 48`, `random-ids` **in2000/out96**(prefill:decode 토큰비 ≈21:1), 정상상태 단일-rate 격자 {2,3,4,6}, 120 프롬프트, n=5 paired(동일 job·동일 노드), agnostic v1(`pdmux_a100_smoke.yml`, sm_group_num 4)}. **NemotronH·Falcon-H1은 운영점 미측정 ⇒ "4모델 전부"는 더 이상 쓸 수 없다.** ShareGPT·변화 trace로 확장 금지(게이트 #2). torch 2.9.1에서 pdmux는 엔진 자체 경고 대상(`server_args.py:6141-6147`). 상세 `workspace/engine-port/results/p1_opint/P1_OPINT_RESULT_2026-08-05.md`, 신규 방법론 게이트 전문은 `../PROJECT_STATUS.md` "방법론 게이트" #6 새 사례·#12·#13, gate 목록 전문은 같은 문서 "다음 실험 gate" ★★★★**통계 방법 층 정정(2026-08-06, claims-auditor Gate 2 설계 감사 2회 + result-analyst 독립 재현, `workspace/engine-port/results/p1_gates/verify/`) — 새 성능 판정 아님, primary를 t-CI로 교체해 재채점한 결과.** `paired_bootstrap_ci`(n=5 percentile bootstrap of mean, BCa·studentization 없음)는 실 coverage **0.840**(100k MC, 명목 95%의 한쪽 오류율 ≈8.0%=명목 3.2배, 원인은 seed·정규성이 아니라 **n=5 그 자체**)이라 소표본 판정에 부적합 — 저장소 안에 `m3_analyze.py`·`tfgate_analyze.py`가 이미 독립으로 t-CI로 전환한 동일 진단이 존재했다(도구 규율 실패, 신규 방법론 게이트 #27). t-CI로 재채점 시 **Granite rate3(+11.7%)는 t-CI [−0.0032,+0.6132]가 0을 포함(p=0.0515)** → 인용 목록에서 제외(**미검증으로 재분류, 철회 아님** — boot CI는 여전히 0 배제), ⇒ **인용 가능 정량치는 4개→3개(Zamba2 rate2 +40.5%/rate3 +185.8%, Granite rate4 +27.0%)로 축소**. "임계 사다리 40–300ms 전 구간 부호 불변(=metric cliff 아님)"도 정정 — 부호가 유지되는 구간은 **T∈[40,113.0)ms뿐**이고 그 위에서 인용 가능 4셀 중 3셀(Zamba2 r2, Granite r3, Granite r4)이 음으로 뒤집힌다(뒤집힘의 정체는 절벽이 아니라 **술어 포화** — 뒤집히는 셀은 T≥150에서 양 arm 위반 0/0, goodput≡throughput; ★§3-24가 REFUTED한 "검정력 0인 임계 사다리"의 재발), 부호가 끝까지 유지되는 유일한 인용 가능 셀은 **Zamba2 r3**. "rep 부호 5/5"도 정정 — **Granite rate2는 실제로 3/5**(per-rep diff −0.0026/**+0.2789**/+0.0321/−0.0035/+0.0164, 효과의 87%가 rep2 한 점), 나머지 7셀은 5/5 유지 확인. n=5 paired 정확 부호뒤집기 순열검정의 두측 p 하한 = **2/32=0.0625**이므로 이 프로젝트의 n=5 paired 셀은 분포무가정으로 p<0.05에 원리적으로 도달 불가(기존 "CI가 0 배제" 서술은 전부 모수 가정 의존이었다는 사실을 명시). ★**P1의 방향 자체는 살아남는다**: agnostic > fused(꼬리에서)는 Zamba2 r2·r3, Granite r4에서 어떤 방법으로도 유효하다 — 강등되는 것은 "전 셀"·"5/5"·"사다리 전 구간"·"Granite r3 수치"뿐, 과잉 강등 아님. **열린 불일치(반영 보류)**: "Granite rate2는 경계(48ms로 내리면 소멸)" 문장은 방향이 반대라는 지적(임계를 내리면 오히려 커짐, T=22→+30.35%)이 있으나 "48ms" 수치의 출처가 `P1_OPINT_RESULT_2026-08-05.md`·`PREREG.md` 어디에도 없어 수치는 유지하고 "출처 미확인·방향 불일치 지적 있음(2026-08-06), 확인 전 인용 주의" 표시만 추가한다(단 Granite rate2는 A-4 경로로 이미 사실상 무신호로 반영됨). 신규 방법론 게이트 **#27**(n≤8 반복에서 `paired_bootstrap_ci`/`unpaired_bootstrap_ci` 구간을 판정에 쓰지 않는다, primary=t-CI) 등재, E1(`s8_frontier/e1_analyze.py:492,1286`) 사전등록 결정 규칙도 같은 undercoverage(net-positive 방향 편향, n=4 coverage 0.798)를 상속하므로 `PROJECT_STATUS.md` "다음 실험 gate" #8에 **제출 선행조건**으로 등재. `CLAIM_EVIDENCE_MATRIX.md`는 이 수치를 인용하는 서술이 없어 갱신 대상 없음(대조 확인 완료). 상세 `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트" #14·§3 항목27(이 파일), 원자료 `workspace/engine-port/results/p1_gates/verify/`(스크립트·JSON·로그 전체).★★★★★**Gate 1(job 874478, 2026-08-06) 조건부 채택 — claims-auditor 감사, 새 성능 판정 0건, 진단 전용.** Zamba2-2.7B·agnostic v1·cudagraph-ON·rate{2,3}·n=1의 873944 텔레메트리 재현런에서, 엔진이 실제로 구성한 분할표는 `[(108,0),(74,34),(54,54),(0,108)]`이었고(`gate1_srv_874478.log:32`), **decode-busy ∧ prefill-in-flight 구간의 selector 라벨은 시간가중 100.00%가 `(74,34)`**였다(pooled 51.9 s, 78 에피소드, 3,820 스냅샷, 반례 0/40,062). ⚠️ **이 통계는 판별력이 사실상 없다** — `event_loop_pdmux`에서 prefill 어드미션(`multiplexing_mixin.py:1004`)과 `adjust_stream_groups()`(`:1080`) 사이에 telemetry sync가 존재하지 않으므로, "pop A ∧ idx∉{1,2}"는 **관측 가능한 상태가 아니다**(방법론 게이트 #9 다섯 번째 재발, 아래 §3 항목28). 이 문장은 "코드가 그렇게 쓰여 있고 실행도 그대로 했다"이지 "측정으로 알아냈다"가 아니다. ~~**★실질 산출 1 — 이 격자에서 정책은 단일 분할에 고정됐다**: 전 런 `decode_running_batch_size` 최댓값 **23**(문턱 `decode_bs_divisor=36`, `pdmux_a100_smoke.yml:6`) ⇒ **`(54,54)`는 0회 선택**. 인용 가능한 파티션 수치는 **`(74,34)` 하나뿐**이다.~~ → ★★★★★**철회(2026-08-07, G1-b, job 875293, 사전등록 철회 규칙 발화, 새 성능 판정 아님 — 사실 정정)**: 위 무제한(격자 전체) 문장은 거짓이다. rate **2**(max decode_bs 9)·**3**(23)·**4**(18)는 pop A 시간가중 100% `(74,34)`로 문턱 36 미만이라 **인용 가능 셀(Zamba2 r2·r3)에서는 "단일 분할"이 여전히 참**이지만, **rate 6에서만** `(54,54)`가 시간가중 **8.37%**(2.089s/24.974s, max decode_bs 40) 등장해 사전등록 철회 규칙(`frac((54,54))≥0.01`, `gate1b_analyze.py`에 하드코딩)이 발화했다 — 거짓이 된 것은 **격자 전체에 대한 무제한 주장**뿐이다(과잉 철회 금지). ⚠️**rate 4(18)가 rate 3(23)보다 낮다 — 비단조·원인 미해명**(단일 부팅 순차 실행의 순서 효과 또는 큐잉 동역학 가능성, §3 항목30). ⚠️**rate 6 경계 근접**: pop A 에피소드 5개뿐, max decode_bs 40이 문턱 36을 11%만 초과 — 정본은 Zamba2 r4·r6을 이미 "⚠용량 초과" 셀로 이미 표시 중이다. Population C 절대 수치는 Gate 1 감사 caveat 승계(인용 금지, 개수·에피소드만). `(74,34)`·`(54,54)`는 여전히 selector 라벨(하드웨어 SM 수 아님). G1-b 매니페스트는 874478과 바이트 동일 트리가 아님(HOLB 프로브 +2줄, 0줄 변경, 동등성 근거=G3). 상세 위 rev15 헤더, 원자료 `PREREG_G1B_2026-08-07.md`·`gate1b_result_875293.txt`(수정 금지·인용만). **★실질 산출 2 — duty cycle(창 시간 기준)**: prefill/decode 동시 in-flight **27–38%**(추정량 경계 오염으로 구간 제시), decode 단독 `(0,108)` 32.2%, prefill 단독 `(108,0)` 3.5%, **완전 idle 26.3%**. **필수 동반 caveat**: (a) **selector-level·behavioural**이며 하드웨어 SM 부여 프로브(S3) **미실행** — `(74,34)`는 요청값이지 실현된 하드웨어 SM 수가 아니다(Stage 0 D108 전례); (b) **Zamba2 rate{2,3} 한정** — 873944의 `MAIN_RATES`는 {2,3,4,6}이고 rate 4·6은 미측정이며 그 셀은 decode batch가 커져 `(54,54)`로 넘어갈 수 있다; (c) **Granite-4.0-h-micro-base는 전혀 미측정**; (d) n=1, 노드 gpu38(873944는 gpu41); (e) 다른 rate/워크로드/모델로의 이전 금지(게이트 #11). **⇒ §1-1의 "실현 파티션 미측정" 문구는 완전 해제가 아니라 부분·조건부 해제로 대체한다**: decode-busy∧prefill-in-flight 상태의 selector 라벨은 Zamba2 rate{2,3}·agnostic v1·cudagraph-ON에서 `(74,34)`(prefill 74 SM/decode 34 SM 요청값) 하나로 인용 가능하나 여전히 selector-level(S3 미실행)이고, **rate 4·6 셀과 Granite 전체는 여전히 미측정** — **특히 Granite rate4 +27.0%(위 인용 가능 정량치)에는 이 파티션·동시성 문장을 붙이지 않는다**(Gate 1이 그 셀을 커버하지 않음). **"PD 분리 자체" 기전 귀속은 Gate 1로 해금되지 않는다 — 여전히 NOT-YET-SUPPORTED(Gate 2 소관, 불변)**. **인용 금지(신규, 감사자 열거)**: "실현 파티션을 **측정**했다"(항등식) / "prefill 74 SM·decode 34 SM에서 **실행**됐다"(S3 미실행, green-context 반올림 미확인) / rate 4·6·Granite에 대한 파티션 문장 / "**동시성** 기전" 일반(fused arm 대응 계측이 원리적으로 부재 — `plain`은 `--enable-pdmux`가 없어 파티션 텔레메트리가 없다) / "음성대조 C의 2–3% 누출이 gate가 항등식이 아님을 보인다"(누출 10/10이 prefill-완료 전이 sync의 결정적 lag) / "**C = 0.9708/0.9779**" 수치 자체(10개 스냅샷 위, dt 4–10× 과대) / "케이던스 8↔32에서 불변"(추정량 산술 항등식: 누출 개수 ÷4 × dt ×4) / "874465 실패 원인 = bounded queue 포화"(**미확증** — grid 결측 0 + 급정지는 오히려 writer-thread 종료를 시사) / "pooled A = 51.9 s 겹침"(상한, 하한 36.7 s) / "런의 30%가 full-prefill 파티션"(그중 88%가 순수 idle). **커버리지 가드 논거 정정(부기 2, 좁은 형태만 인용)**: `PREREG_GATE1_2026-08-06.md`의 "coverage guard는 단방향으로만 더 엄격해진다"는 감사 결과 **거짓**이다 — `gate1_analyze.py:181-190`의 `severity()` 기준으로 `frac<0.90`이면 `NO_UNLOCK`이 됐을 창이 `coverage<0.98`이면 `UNMEASURABLE`로 **승격(완화)**될 수 있다. 살아남는 것은 좁은 주장뿐: **coverage 실패가 UNLOCK을 만드는 경로는 없다.** 임계 0.98도 근거 없음(관측된 두 점이 80.11%와 ~100%라 어느 값이든 결과 동일) — 이번 판정엔 무작동(`MIN_COVERAGE=0` 재실행 시 출력 동일). **이 논거는 정본 일반 원칙으로 승격하지 않는다**(이 job의 부기 텍스트에 대한 국소 정정일 뿐). **다음 gate 갱신** — Gate 1 완료(조건부 채택) → **G1-a**(≈0.2 GPU-hr, engine-porter): `multiplexing_mixin.py:1005`/`:1080` 사이 관측 전용 sync 1회 추가 ⇒ "prefill in-flight ∧ stale idx"를 관측 가능하게 해 주 조건에 판별력을 부여, 결정량=어드미션-후/adjust-전 구간의 시간 비율+절대 ms → **G1-b**: ✅**완료(2026-08-07, job 875293) — 철회 규칙 발화**(rate 6에서 `(54,54)` 시간가중 8.37% 관측, rate 4는 NO_EVIDENCE), 상세는 위 rev15 헤더·본 항목 "★실질 산출 1" 철회 블록 참조 → **G1-c**: Granite(873945 복제) → **G1-d**: S3 하드웨어 프로브(`%smid` 샘플링/CUPTI) → **하네스**: `gate1_analyze.py`에 grid-completeness 검정 상시화(`trace_forced==False ⟹ si==1 ∨ si%TRACE_EVERY==0`, 결측 수 출력, 이번 "유실 없음"의 실제 근거는 coverage가 아니라 이 검정이었음) + engine-porter 이관(`telemetry.py`의 `writer_error` 로깅, SIGKILL 경로에서 미호출되는 `close()`) → (기존, 불변) Gate 2 4-arm 분해 → Gate 3 나머지 2모델 → Gate 4 sustainable-rate. **위생 확인(전부 통과)**: 매니페스트 13파일 SHA-256이 873944와 바이트 일치, 2026-08-05 이후 변경된 `.py`가 정확히 그 13개(커버 밖 드리프트 없음), `architecture` 필드 40,062/40,062="legacy", `stream_index↔sms` 불일치 0, cudagraph ON, `CORRECTNESS=PASS`. ⚠️**노드 불일치**: Gate 1=gpu38, 873944=gpu41. 상세 `PROJECT_STATUS.md` "다음 실험 gate" #10(Gate 1 항목), 원자료 `workspace/engine-port/results/p1_gates/gate1/`(`gate1_result_874478.txt`·`PREREG_GATE1_2026-08-06.md`·`gate1_analyze.py`·`gate1_telemetry_874478.jsonl`·` ★★★★★**(2026-08-07 실행, 2026-08-09 정본 반영 복구, doc-steward) Gate 2 rev4 본 캠페인(jobs 875344/875346, 5.86 GPU-hr) — 정본 누락 복구.** 새 성능 판정 아님 — 이미 완료된 결과의 정본 반영 누락을 메운다. 원자료 `workspace/engine-port/results/p1_gates/gate2/g2_report_zamba2-27b_875344.json`·`g2_report_granite-40-h-micro-base_875346.json`(rev4 사전등록 `PREREG_GATE2_2026-08-06.md` §14 적용, arm A1=`plain`/A2=`plainaux`/A3=`chunk512`/A4=`agnostic`). **Primary(§4.1/5.2, A3 vs A4 TOST)**: 5셀(Zamba2 r2·r3, Granite r3·r4·r6) 전부 `Rprime4`(A4 유의 우세, 등가 미발화, `p_tost=1.0`) — **chunk512는 pdmux를 대체하지 못한다.** F-E(정상상태) 스크린 통과로 크기 인용 가능한 셀은 **Zamba2 r2·Granite r3 둘뿐**(나머지 3셀은 chunk512측 F-E 발화, 부호만). **Secondary — R1′/R2′(§5.2 표 마지막 행, A2=`plainaux` vs A4=`agnostic`)**: rev4 §1.1의 등식 A2=A4−pdmux(realized server_args 차이는 `enable_pdmux`·`pdmux_config_path` 두 필드뿐)이므로 이 비교는 §1-1의 "3-플래그 묶음 처치" 교락 중 pdmux 고유분을 분리한다. 메인 세션이 2026-08-09 원자료(`per_arm_x60`)에서 독립 재현(paired-t, n=10; 셀: mean(A2−A4, X_60) [95% CI], 부호, F-E(plainaux/agnostic)) — Zamba2 r2: **+0.8341** [+0.7809,+0.8872], 10/10, clear; Zamba2 r3: **+0.9297** [+0.8968,+0.9626], 10/10, clear; Granite r3: **+0.8550** [+0.8161,+0.8939], 10/10, clear; Granite r4: **+0.9442** [+0.9201,+0.9682], 10/10, clear; Granite r6: **+0.9600** [+0.9292,+0.9908], 10/10, **agnostic 측 F-E flagged — 부호만**. sign-flip 순열 p = 2/1024 = **0.001953125**(n=10 분포무가정 두측 하한, 5셀 공통). **묶음 기여 분해**: A2는 A1(`plain`)과 사실상 같고(5셀 |A1−A2|≤0.023) 그 부호는 **A4에 불리한 핸디캡 방향**이다 ⇒ `--chunked-prefill-size -1`·`--disable-overlap-schedule` 두 플래그만으로는 pdmux 이득이 재현되지 않는다 — §1-1 "3-플래그 묶음 처치" 교락 중 이 두 플래그는 **원인에서 배제**된다. ★★**provenance(인용 시 필수 동반)**: 이 A2-vs-A4 비교는 **사전등록 분석기 `g2_analyze.py`가 계산하지 않는다** — `tost_equivalence` 호출은 코드 전체에서 1회뿐(`:543`)이고 그 입력은 A3-vs-A4(`chunk512`-`agnostic`, `:538-539`)뿐이다. A2는 `:734`에 서술 문장으로만 등장한다("A1/A2/A4 data … remain valid regardless"). 즉 **arm·n·raw 데이터는 사전등록(rev4)이지만, 이 비교 자체는 저장된 primary 산출물(`per_arm_x60`) 위에서의 사후 계산**이다(코드 확인 2026-08-09). §3 항목34로 등재(항목33 "사후 지정 셀 이동"의 형제 사례). ★★**천장 포화(해석 제한)**: fused arm(plain/plainaux/chunk512) X_60 평균이 0.72–0.99(천장 근접), agnostic이 0.00–0.12(바닥 근접)이다 ⇒ **부호는 견고하나 크기는 포화 구간의 값**이며, E-A 블록이 이미 건 "기전 해석 금지"가 여기도 적용된다. ★★**해금 범위의 상한(overclaim 금지)**: 해소되는 것은 §1-1의 **"3-플래그 묶음 처치" 교락뿐**이다. 귀속의 상한은 **"pdmux 서브시스템 전체"**(green-context SM 분할 + 전용 이벤트 루프 + split-prefill)이고, **"SM 분할 자체"는 여전히 미분리**다 — `--enable-pdmux`가 A2의 `event_loop_normal()`을 대체해 pdmux 전용 이벤트 루프를 통째로 켜기 때문이다(§1.1). **"PD 분리 자체가 원인"으로 승격 금지** — §1-1의 NOT-YET-SUPPORTED 등급은 불변, Gate 2 본 질문은 한 눈금도 전진하지 않는다. ★**Granite r6**: agnostic 측 F-E flagged=true라 부호만(10/10, +), 크기 인용 금지. ★**감사 provenance(등급 정정)**: 세션 핸드오프(`handoff-report/session_handoff_2026-08-09.md` §2.5)는 이 R1′/R2′ 결과를 "[감사 완료]"로 표기했으나, 2026-08-09 저장소 전체 검색(`gate2/` 디렉터리·전체 `*.md`)으로 이 결과를 다루는 claims-auditor 감사 아티팩트가 확인되지 않는다. ⇒ **"감사 완료"로 인용하지 않는다.** 현재 등급 = **메인 세션 원자료 독립 재현 확인(2026-08-09)**, claims-auditor 감사 기록 위치 미확인.(같은 캠페인의 primary R3′/R4′와 §11-3 감사 면제 사실은 §14.1 addendum에 이미 기록돼 있고 그 부분은 인용 가능 — 감사 미확인은 이 R1′/R2′ 비교 자체에 한정된다.) 상세는 위 rev17 헤더, `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트" #20·`CLAIM_EVIDENCE_MATRIX.md`(대조 확인, 갱신 대상 없음) 동반 갱신 참조. ★★★★★★**E-A(mixed-chunk 레버, jobs 875654/875657/875661, 2026-08-08~09) — claims-auditor 감사 완료, 판정 조건부(문구 강한 제한). 새 성능 판정 아님 — fused-측 조율 가능성에 대한 진단이다.** 원자료 `workspace/engine-port/results/p1_gates/gate2/`(`PREREG_G2EA_2026-08-07.md`·`g2ea_report_*.json`·`g2earun_8756{57,61}.out`·`g2eaprobe_875654*`, 수정 금지·인용만). **A. 레버 실현**: Stage 1(job 875654)에서 `--enable-mixed-chunk`가 Zamba2-2.7B·Granite-4.0-h-micro-base × {8192, 512} 4콤보 전부에서 realized로 확인됐다(세 독립 증인: `/server_info` top, `internal_states[0]`, HOLB `holb_open`). 기능 스모크 8/8 정상. ⚠️프로브 스크립트의 `PROBE_RESULT` 필드는 stderr 오염 버그(`g2ea_mixed_chunk_probe.sbatch:205`의 `2>&1`)로 `AVAILABLE_BUT_BURST_ERROR`를 잘못 출력했다 — 판정은 원 burst JSON 8건 직접 재파싱에 근거한다. **B. 주 결과(부호)**: E-A(jobs 875657/875661, n=10 paired, cudagraph-ON, arm 순서 무작위, 노드 gpu42/gpu40)에서 사전등록 primary 두 비교 × 4셀 = **8건 전부 TOST 등가가 발화하지 않았고, 방향은 전부 agnostic 우세**(부호 10/10, 분포무가정 정확 p = 2/1024 = 0.00195). ⇒ 사전등록 규칙상 **"조율된 fused가 pdmux를 대체한다"는 발화하지 않았고, 논문 신규성 축 전환은 없다.** ⚠️ 8건 중 7건은 F-E 발화(비정상상태) ⇒ **부호만 인용 가능.** ⚠️ cmp2(A3m)의 Granite 두 셀은 G-2 실패로 상속된 §2.1 폐기 규칙 하 **무효**다. **C. 유일한 인용 가능 정량치**: Granite-4.0-h-micro-base rate 3, cmp1: **X_60(plainmix) − X_60(agnostic) = +0.855 [95% CI +0.814, +0.896]**, n=10 paired, 부호 10/10. 양 arm 정상상태(duration 41.0s vs ideal 40.0, 실현 throughput 2.938 vs 제공 3, F-E 1.026/0.973, 런길이 불변 검정 N=60→120에서 TTFT p95 338→406 ms = 1.20×). ⚠️ **이 셀이 지정 셀이 된 것은 선행 캠페인 진단을 본 뒤의 사후 이동(r4→r3)이며, r4를 유지했다면 이 캠페인의 인용 가능 셀은 0개였다** (`PREREG_G2EA_2026-08-07.md` §3 자기인지 위험 #2). ⚠️ **같은 셀에서 TTFT 항은 통과한다** — plainmix가 agnostic보다 TTFT p95가 **19.2% 좋다**(CI [−0.256, −0.129]). 탈락은 ITL 항에서만 일어난다. **"TTFT 비열등 0건"은 거짓**이다(1/8). **D. 레버 격리**(C와 반드시 병기 — 없으면 C가 오해를 부른다): 위 +0.855 중 mixed-chunk 기여분은 **+0.010 [+0.0045, +0.0155] = 1.2%**뿐이다. 나머지 98.8%는 untuned fused와 pdmux 사이의 기존 격차(X_60(plain) − X_60(agnostic) = +0.845 [+0.802, +0.888])이며 rev4/§1-1이 이미 확립한 양이다. 4셀 전체에서 mixed-chunk 기여분은 **1.2–10.6%**. ⇒ **E-A의 primary는 mixed-chunk 레버를 격리하지 않는다.** ⚠️ X_60은 fused arm 전부 0.85–0.99로 천장 근접(정본 §1-13 ceiling-censoring 재발) ⇒ mixed-chunk 고유효과 크기는 **하향편향**. ⚠️ 그 크기(+0.010)는 HOLB 관측자 효과 잔차(rev4 §14.3: itl_p95 arm별 −9.9%~+105%)와 **같은 자릿수**이므로 **기전 해석 금지.** **E. 기전(신규, 서빙 직접 측정)**: mixed-chunk가 켜지면 prefill과 함께 스케줄된 decode가 `ForwardMode.MIXED` extend 경로로 재라우팅된다(`schedule_batch.py:1874`; `MIXED`는 `is_cuda_graph()`에서 제외 — `forward_batch_info.py:166-173`). HOLB 실측: MIXED step 지속시간이 병합 decode 요청 수에 **선형 증가** — Zamba2 252→1,844 ms(bs 0→48, ≈33 ms/요청), Granite 129→247 ms(bs 0→24, ≈4.2 ms/요청). 순수 DECODE step은 각각 9.4 / 6.8 ms. MIXED step 하나가 running 요청 전부를 1 토큰씩만 전진시키므로 요청별 ITL이 MIXED step time과 같아지고, backlog가 자라 `max_running_requests=48`·`mamba usage 1.00`을 포화시켜 admission을 막고 TTFT가 발산한다. ⇒ **정본 §1이 동적 제어에 대해 확립한 얽힘 死因(decode 굶김→ITL↑→batch 정체→admission 차단→TTFT 폭발)의 새 트리거이지 새 기전이 아니다.** **F. cudagraph 가설 반증 + 정본 부수 정정**: "mixed 배치가 decode CUDA graph를 못 써서 decode가 eager로 떨어진다"는 **설명으로서 반증**: (i) plainmix의 남은 순수 DECODE step은 `cuda graph: True`이고 중앙 지속시간이 plain과 동일(9.5 vs 9.4 ms Zamba2, 6.9 vs 6.8 Granite); (ii) 페널티가 배치 크기 비례라 그래프 launch 오버헤드보다 두 자릿수 큼; (iii) piecewise CUDA graph는 두 모델 10개 boot 전부 런타임 비활성이라 arm 간 비대칭 아님. ⇒ 실제로 일어난 것은 "decode의 eager 강등"이 아니라 **"decode 작업의 extend 커널 경로 재라우팅"**이다. ★ **부수 정정**: rev4 §1.1의 "A3는 `piecewise_cuda_graph_max_tokens` 8192→512도 함께 바꾸는 ≥2-기전 묶음" 캐비어트는 **이 두 모델에선 런타임 실측으로 무효**다(전 arm piecewise OFF). 해당 인용 금지를 해제하되 근거를 명시하라. **G. G-2(재현성 — correctness 아님)**: `--chunked-prefill-size 512`를 건 Granite-4.0-h-micro-base(flashinfer, `enable_deterministic_inference=False`)는 16-동시 greedy 요청에서 **비트단위 재현성이 깨진다** — 16 중 2 요청이 퇴화 반복 루프의 반복 단위 한 토큰(62↔322)에서 결정론적으로 갈라진다(불일치 위치 = 정확히 주기 3의 31개 지점, 출력 길이 96 동일, 두 변종은 arm 간 바이트 동일). 3회 독립 재현(875346·875611·875661), 음성대조 `plain`·`plainaux`·`plainmix`·`agnostic` 전부 통과. **이것은 correctness 결함이 아니라 reproducibility 결함이며, 엔진은 배치 형태 간 비트 재현성을 약속하지 않는다.** mamba state 이월과는 **정합하지 않는다**(그 경우 인덱스 0부터 고정 불일치 + 전혀 다른 연속이 예상되나, 관측은 반복 구조 완전 보존). **H. 스코프(축약 금지)**: {Zamba2-2.7B(triton, ctx4096) · Granite-4.0-h-micro-base(flashinfer, ctx8192), A100 108-SM, **cudagraph-ON / piecewise-OFF**, `--disable-radix-cache --mem-fraction-static 0.82 --max-running-requests 48`, `random-ids` in2000/out96, 정상상태 단일-rate {Zamba2 2,3 / Granite 3,4}, 120 프롬프트, n=10 paired(동일 job·동일 노드), agnostic v1, HOLB 프로브 전 arm ON}. **상위 사전등록 rev4의 §11-3(3차 감사)은 면제됐다 — "감사를 통과한 설계"가 아니다**(§14.1 자백). **T2(가장 무거움) — "fused 조율 공간 소진" 주장 금지**: 정본 `CONSENSUS.md:368`의 *"…가 정확히 그 축의 fused-측 레버인데 둘 다 기본값이다"*는 **대표 레버 지목이지 완전성 주장이 아니다.** 같은 기전 축의 **미시험 노브 최소 6개**(realized 값 실측): `--prefill-max-requests`(현재 `None`=무제한, `server_args.py:3959`) · `--num-continuous-decode-steps`(현재 1, `:5559`) · `--chunked-prefill-size` 2048/4096 · `--max-running-requests`(현재 48 = 실제 포화점) · `--schedule-conservativeness`(1.0, `:4029`) · `--mamba-scheduler-strategy`(`no_buffer`, `:5082`). (+`--enable-prefill-delayer`는 적용성 미확인.) ⇒ 쓸 수 있는 최대치: *"정본이 지목한 두 레버는 시험됐고 둘 다 격차를 닫지 못했다 — 다만 fused 측 조율 공간이 소진됐다는 뜻은 아니다."* **Gate 2 본 질문 전진 없음**: A2(`plainaux`)를 뺐으므로 **"PD 분리(SM 분할) 자체" 귀속은 한 눈금도 전진하지 않았고 §1-1의 NOT-YET-SUPPORTED는 불변**이다. `PREREG_G2EA_2026-08-07.md:66-67`이 A2와의 교차-job 비교를 명시 금지했으므로 875344/875346의 A2로 메우는 것도 금지. **인용 금지 목록(13건, 정본에 그대로 등재)**: 1. "등부하에서 mixed-chunk는 지연을 N배 악화시킨다"(78×·6.2×·24–35× **전부**) — 런길이 의존 실측(N 60→120에서 2.3–6.2× 변동). 2. throughput `1.938→1.303`·`0.530`·`1.070`, TTFT p95 `28,359`·`154,601`·`67,298 ms` — 무플래그 `secondary` 블록 출신, 불안정 큐 과도상태. 3. F-E 발화 셀의 X_60 크기(cmp1 Zamba2 r2·r3, Granite r4; cmp2 전 셀). 4. **"TTFT 비열등 0건"** — 거짓(1/8, C 참조). 5. "fused 조율 레버 소진" / "T1이 닫혔다" / "조율된 fused는 pdmux를 대체할 수 없다"(일반형). 6. "두 레버 모두 실패"를 **E-A 캠페인 내부 결과로** 제시 — A3-vs-A4는 E-A 사전등록 비교가 아니다(사후 계산이며 F-E clear ∧ G-2 PASS를 동시 만족하는 셀은 **Zamba2 r2 하나**: +0.879 [+0.859, +0.899]). 7. "chunked-prefill 조율이 …" 문구 — 단 F의 정정 반영 후에는 금지 근거가 약해지므로 F를 먼저 반영할 것. 8. "chunked_prefill_size=512가 Granite에서 **잘못된 출력**을 낸다" — reproducibility ≠ correctness. 9. cmp2 Granite r3·r4의 어떤 판정도 — 상속 §2.1 폐기 규칙 미적용. 10. "mixed-chunk 붕괴는 Zamba2라는 모델의 성질" — 모델과 attention backend 동시 변경(confound #10). ⚠️ 선례 `[[scale-8b-sm-sensitivity]]`의 "hybrid 급락=Zamba2 성질" 강등과 동형. 11. "PD 분리 자체" / "pdmux 필요성 확립" / "Gate 2 전진". 12. "감사를 통과한 사전등록". 13. MIXED 한계비용 8× 비대칭(33 vs 4.2 ms)의 **원인 귀속** — 미해명으로 등재. **신규 방법론 항목(§3 항목31–33 등재)**: (31) "게이트를 지표에 걸 때는 primary뿐 아니라 보고되는 모든 블록에 걸어라." F-E 집행 수정이 primary 두 비교에만 적용되고 `secondary` 블록(throughput/goodput/ttft_p95/itl_p95)은 무방비였다 — 그리고 실제로 **그 무방비 경로에서 인용이 일어났다**(`g2ea_analyze.py:662-680`). (32) "과부하 arm과 정상 arm을 같은 제공 rate에서 비교한 수치는 시스템 상수가 아니다." 런길이 의존 실측: 프롬프트 60→120에서 지연 2.3–6.2× 변동, 정상 셀만 1.20×. ⇒ 비정상상태 셀은 부호만, 크기는 지속가능 rate 대조(E-C) 후에만. (33) "사후 지정 셀 이동은 부호를 안 바꿔도 인용 가능성을 만들 수 있다." r4→r3 이동이 없었다면 이 캠페인의 인용 가능 셀은 0개였다. **후속 게이트 등재(우선순위순, `PROJECT_STATUS.md` "다음 실험 gate")**: T4-1 deterministic-inference 재확인(<0.5 GPU-hr, 폐기 규칙 해제) → T3-1/T3-2 MIXED 배치 조성 계측·micro 스윕(<1 GPU-hr each, 기전 확정) → E-C 등지속가능-rate 대조(≈4 GPU-hr, T1 정식 종결) → E-D 미시험 fused 레버 스윕(≈8 GPU-hr, T2 종결) → T3-3 backend 교차(≈2, 8× 비대칭 귀속) → T4-2 비퇴화 프롬프트 G-2(≈1). ⚠️**상위 사전등록 `PREREG_GATE2_2026-08-06.md`의 §14 addendum은 커밋 `c47fad0`으로 반영돼 워킹트리 클린이다(2026-08-09 확인) — "워킹트리 미커밋" 기록은 stale, 정정.** §11-3(3차) 감사 면제 상태(§14.1)는 별개로 불변이라 "감사 통과 설계"로는 여전히 인용 금지. `results/p1_gates/` 이하 raw dump 수정 금지(인용만). 상세 위 rev17 헤더·rev16 헤더, `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트" #17–20·"다음 실험 gate" #10(E-A 항목), 원자료 위 경로. ★★★**(2026-08-09, 두 번째 정본 반영 건 — A/B/C 세 갈래, 전부 새 성능 판정 아님)** **A. HOLB G5 재채점**(result-analyst, jobs 874601/874602/874632/874633/874635, 원자료 `workspace/engine-port/results/p1_gates/gate2/g2holb_g5_tost_rescore_2026-08-09.json` 72셀 전량, 3 job × 4 arm × 6 응답변수, n=5 paired): **판정 G5 = 미결정(UNDETERMINED), 저장된 `G5=False`를 대체.** 3% 초과 통계적 지지 셀 **0/72**(미보정 최소 p_exceed=0.138, job별 Holm 후 최소 조정 p=1.000 3 job 전부), 등가 입증 **29/72**, 검정력 부족 **43/72** — G5는 관측자 효과가 3%를 넘음을 입증하지 못했고 3% 이내임도 입증하지 못했다. 저장 `G5=False`는 귀무-채택형 연언(`|효과|<3% ∧ CI∋0`)의 실패이지 프로브 유해성의 입증이 아니다. **구 규칙이 노이즈를 보상했다**(874635 agnostic ttft_p95 −0.77%±29.14%, 95% CI [−36.95,+35.41] → 구 규칙 PASS, 메인 세션 독립 재확인) — 역방향(구 규칙 FAIL·±3% 등가 실제 입증)도 **4셀**(예: 874633 plain itl_p95 −1.15%±0.72%, p_TOST=0.0023). **설계 층**: n=5·δ=3%·α=0.05/side에서 TOST 발화 산술 천장 SD<3.147%인데 72셀 중 **35셀(49%)**이 그 위, 80% 검정력 필요 n 중앙값 **9**(request_throughput 4 / itl_p50·mean_e2e_ms 7 / itl_p95 22 / ttft_p50 29 / **ttft_p95 89**, ⚠️SD가 df=4 추정이라 필요 n은 자릿수 수준 의미만). `PREREG_GATE2` §14.2의 "프로브가 무해함이 입증됐다고 쓰지 마라"는 **해제되지 않는다** — 동시에 반대 오독("3% 넘게 유해함이 입증됐다")도 근거 없음. §14.3의 귀인("주로 점추정이 3%를 넘는 조합이 실재하기 때문")은 **부분적으로만 참**(그런 셀은 실재하나 그중 하나도 초과가 지지되지 않는다) — 두 문장 병기 필수. **잔여 교락**: 874602 agnostic은 5/5 rep 전부 `order='off on'`(무작위화 불균형) ⇒ 그 arm의 등가 판정은 조건부. 등가 판정 29건은 전부 paired-t **정규 가정** 위(n=5 분포무가정 두측 p 하한 2/32=0.0625). **B. job 874601의 `G3=False` 라벨 정정**(메인 세션 원자료 직접 확인): `g2holb_report_zamba2_874601.json`은 4 arm 전부 `result:"FAIL"`이나 `sha_off:null, sha_on:null`·`self_repro_off/on:true` — 출력이 갈라진 게 아니라 sha 추출이 응답 스키마를 못 읽은 것(`KeyError:'text'`)이고 Phase B가 실행되지 않았다. 재실행 874633/874635는 `method_off/on:"output_ids"`로 sha 양측 일치 → **PASS**(위 A절 근거로 이미 사용됨). 874632는 Phase A 중 SLURM CANCELLED(데이터 없음). ⇒ "874601 G3 실패" 라벨은 **하네스 실패**로 정정. **이 프로젝트 서명 오류(측정 실패를 게이트 실패로 라벨링)의 여섯 번째 재발**(핸드오프 2026-08-09 §1이 다섯 번 — 텔레메트리 드롭 카운터 자기검열/UNSCOREABLE을 강등으로 읽음/HTTP 400을 G3 FAIL로/G5의 귀무-채택형 기준(위 A절과 같은 사건 계열)/프로브의 stderr 오염). **canon에 이 패턴을 다루는 기존 번호가 없어(전수 검색 확인) §3 항목35로 신규 등재**(중복 신설 아님 — 이후 재발은 이 항목 카운트만 갱신). **C. E-A 커밋 산출물의 scipy 부재 폴백**(engine-porter 발견 + 메인 세션 노출범위 실측, 범위 한정): `g2ea_report_*.json`은 scipy 없는 인터프리터에서 생성돼 `t_cdf()`가 Student-t가 아니라 정규 CDF로 조용히 폴백(저장 `p_tost`가 정확히 1.0인 이유, `g2ea_analyze.py:84-87,156-159`). **메인 세션이 노출 범위 직접 측정**: `raw_ci` 폭 역산 임계값이 **8개 비교 전부**(2 job×2 rate×2 cmp, coordinator 인용 4개 포함, 전부 df=9) implied_t=**2.2621…=t(.975,df=9)**(하드코드 표값과 일치, 1.96 아님) — **CI(raw_ci)는 오염되지 않았다.** 노출은 (i) `p_tost` 자체(이 캠페인은 관측치가 0.05 경계에서 멀어 판정 무영향)와 (ii) `t_ppf`의 df>10·표에 없는 p에 한정(`t_cdf`는 표가 아예 없어 scipy 부재 시 모든 df에서 근사값이라는 점은 (i)에 포함되되 원인 층이 다름을 기록). ⇒ **"정본 수치 정정"이 아니라 도구 규율 항목**(게이트 #14 계열, §3 항목36 신설). **과장 금지 — 이 캠페인에서 오염된 인용 수치는 없다.** 상세 위 rev18 헤더·§3 항목35·36, `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트" #21·#22 동반 갱신, 원자료 `workspace/engine-port/results/p1_gates/gate2/`(`g2holb_g5_tost_rescore_2026-08-09.json`·`g2holb_g5_tost_rescore.py`·`g2holb_g5_tost_summary.py`·`g2holb_report_zamba2_874601.json`, 수정 금지·인용만). ★★★**(2026-08-10, 세 번째 정본 반영 건 — A/B/C/D, 전부 새 성능 판정 아님)** **A. 방법론 게이트 #21의 일곱 번째 재발**(job 876699, T4-1): `--time=1:00:00` TIMEOUT, 원인은 사이징이 아니라 단일 호출 스톨 — `ON+chunk512` 첫 multi-chunk generate(2552 토큰, 5-chunk)가 ~52분 무응답(스케줄러 로그 0줄, CUDA 에러·watchdog 미발화; 서버 로그 마지막 활동 23:34:42, SLURM kill 00:26:19, 메인 세션이 두 시각 직접 대조), 같은 job `OFF+chunk512`는 동일 프롬프트 ~1초 완료. **핵심**: 옛 `g2det_analyze.py`가 그 아티팩트에 `REFUTED`를 반환하고 있었다 — ON chunk512 `n_total=0`(미실행)인데 `on_clean = n_total > 0 and ...`이 False로 떨어져 REFUTED로 통과, **52분 멈춤이 실질적 음성 결과로 발표될 뻔했다.** 재발 1–6과 다른 점: 1–6은 라벨·해석 오류를 사람이 잡았으나 이번은 **분석 코드가 거짓 음성을 산출**했고 막은 것은 experiment-runner의 채점 거부(`INCOMPLETE`)였다 — 도구가 사람보다 관대했다. 사후 완화 아님(사전등록 REFUTED 조건은 "ON이 어느 rep에서든 self-mismatch≥1"인데 rep 0개는 그 관측 자체가 없다 — 옛 코드는 버그였다). 수정(2026-08-10) 후 `NO VERDICT (MEASUREMENT ABSENT)` 반환, CONFIRMED/REFUTED 분기는 5-케이스 매트릭스로 불변. ⇒ **§3 항목35(가트#21)의 재발 카운트 6→7 갱신**(아래 개정판, 신규 항목 아님). **B. 공유 하네스의 무한 대기(도구 규율, 신규 §3 항목37/게이트#23)**: `g2_holb_phaseA_lib.sh`의 `greedy_call`이 `--max-time` 없는 raw curl이었고 이 디렉터리의 모든 캠페인(g2ctrl/g2ea/g2holb/g2det)이 이 경로를 쓴다 — 소비자 10개 전수 확인 결과 4개가 타임아웃을 `FAIL`/`SMOKE_FAIL` 계열로 채점 중이었다(A의 `g2det_analyze.py` 포함). 수정: `--connect-timeout 10 --max-time 180`(env 재정의 가능), `STATUS=TIMEOUT`을 `STATUS=ERROR`와 구별, SHA 미방출로 mismatch 채점 구조적 불가, 사이드카 `.status.json`. 180s는 측정 근거(이 디렉터리 아카이브 응답 n=64의 서버측 `e2e_latency` median 0.978s/p90 2.534s/max 6.605s, 최악의 27배·중앙값의 184배 — 메인 세션이 코드 주석 근거 문단 직접 대조) — 정상 경로는 아카이브 64개+합성 실패 9종 재생 73/73 byte-identical 검증(engine-porter 보고, 메인 세션 미재현). A와 뿌리 사건은 같으나(job 876699) 레슨은 다르다: A="분석 코드가 무데이터에 REFUTED", B="공유 인프라가 무경계 대기를 10개 소비자에 전파". **C. Gate 2-S 3라운드 설계 감사 — §1-1 귀속 스코프 주석(대체 아님)**: `PREREG_GATE2S_2026-08-09.md`가 claims-auditor 3회 전부 NO-GO(rev1→2 통계층/rev2→3 게이트 인식론/rev3→4 귀무 채택형, 메인 세션 파일 직접 확인) — 3연속이 같은 자리(§5.5 앵커 발화 조건)에서 죽었고 3차 감사가 근본 원인을 문서 내부 모순으로 특정(§0.1 "두 pdmux arm 사이 등가 마진에는 외부 앵커가 없다" vs §5.5가 정확히 그 등가를 앵커 조건으로 요구). 정량(§0.0.B 원문 대조): rev3 §5.3 암묵 등가 마진 = **0.715 σ_D**, primary MDE = **0.995 σ_D** ⇒ 대리 허용오차가 검출한계의 **0.72배**; 표준 처방(TOST+마진)은 §0.1 위반, 마진을 MDE 1/4로 낮추려면 **n≈64**(현재 10). ⇒ **정본 문구(고정)**: **"P1 이득 중 'SM 분할 자체의 몫'을 두 pdmux arm 사이의 성능-층 등가검정으로 귀속하는 경로는, 이 프로젝트의 예산 범위에서 닫히지 않는다(n≈64 필요, 현행 설계 n=10). 원리적 불가능이 아니라 이 경로·이 예산에서의 불가능이다."** ⚠️**과장 금지**(귀속이 원리적으로 불가능하다로 쓰지 않는다) — **이 문장은 위 §1-1의 NOT-YET-SUPPORTED를 대체하지 않고 스코프 주석으로 덧붙는다**("아직 안 됐다"≠"이 경로로는 안 된다"), 등급어는 미실행 사전등록의 설계 감사에 맞춘다(측정 결과 아님). **감사가 깨뜨리려 시도했으나 실패한 것(견고, §0.0.A 직접 확인)**: arm 구조·Δ_split estimand 내부 타당성, T·C 드레인 대칭, 9-셀 판정표의 저자 불리 셀 실재, 부팅 단위 프로브 근거(n_eff=10), 예산 산술. 3차 감사 원문: **"이 캠페인이 죽어야 할 이유는 측정 층이 아니라 귀속 층에만 있다."** rev4는 §5.5 앵커 조건 자체를 제거해 이 하위목표에서 후퇴(패치 0줄, env 재구성만) — **Gate 2-S가 폐기된 것은 아니다.** **D. 코드 사실 문구 하향(메인 세션 자기정정)**: 이 세션 중 "`(0,108)` idx에서는 두 역할 모두 전체 108 SM에 접근한다"고 서술한 바 있다. 검증된 것은 "green context가 아니라 평범한 `torch.cuda.Stream` 쌍"까지뿐(`pdmux_context.py:124-138`, 메인 세션 직접 확인 — idx 0·idx `len-1`은 `torch.cuda.Stream(gpu_id)`, 중간 division만 `create_greenctx_stream_by_value`) — green ctx 생성이 primary context SM을 깎는지는 미측정 물리 명제(격리 수단 P-b 프로브는 공선성으로 삭제됨, engine-porter 보고). **전수 검색(2026-08-10) 결과 이 문구는 canon·파생 문서 어디에도 없다** — 정정 대상 없음, 향후 인용 규칙만 등재: (0,108) idx는 "명시적 분할이 적용되지 않는다(잔여 차감 여부는 미측정)"로만 쓴다. 상세 §3 항목35(개정)·37, `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론 게이트" #21(개정)·#23, 원자료 `workspace/engine-port/results/p1_gates/gate2/`(`g2det_876699.out`·`g2det_876699.err`·`g2det_analyze.py`·`g2_holb_phaseA_lib.sh`·`PREREG_GATE2S_2026-08-09.md`, 수정 금지·인용만) |
 | 2 | **운영점 = cudagraph-ON** | decode wall 제거(TPOT 41→12ms), goodput ~1.5–2×↑. 기존 no-cudagraph 수치는 전부 하한 |
 | 3 | ★**layer-type 런타임 정책 全형태 死** | 근거는 **서빙 직접 측정**: 4-모델서 agnostic 4/4 승 + **coordinated per-type 구현이 TPOT 42→124ms**. **(B,L) 2D knee**: 재배분 lever **Diff B ≈ 1.0 (L≥8000, 0.96–1.04)**. ⚠️**정정(2026-07-17)**: **L=2000선 Diff B≈1.35**(B1 1.38/B48 1.34)이고 **격자가 실 서빙 regime(ShareGPT 98%가 L<2k)을 안 덮음** ⇒ **"lever 부재" 기전은 long-context 한정·짧은 L엔 외삽**. 결론은 서빙 측정이 지탱하며, 짧은 L의 死因은 **(D) granularity**로 추정. 시각화 `results/prefill_knee/diffA_vs_diffB.png`. **✅ WIDE 스윕(L 256–32768×B 1–16, 2026-07-18, jobs 857371/857477)으로 확증**: lever는 **L≤512서 실제로 열림**(Diff B 256→1.42/512→1.22), L≥1024 ≈1.0; 기전=짧은 L서 둘 다 SM 미활용(mamba 44SM 포화); **그래도 死**(stakes sub-ms/layer ≪ (D) 42→124ms, batch 무영향). `knee2d_wide.png`. decode-side는 lever 있으나 sub-step (D)drain + **cudagraph 비양립**. §14 예약도 fixed d16으로 degenerate. ★★**강등(2026-08-04, claims-auditor+result-analyst X2′ 재집계, 4,104 ZBPT줄/285셀 블록평균 역산, `workspace/engine-port/results/prefill_knee/AGGREGATE_COMPOSITION_2026-08-04.md` REV.2, UNAUDITED 배너 유지)**: 계측 결함 2종 확인 — (1) **버킷 비대칭**(`src/models/zamba2.py:163` `_zt("attn")`=RadixAttention 코어만·qkv/o_proj/MLP 제외 vs `:259` `_zt("mamba")`=mixer 전체) (2) **누산기 러닝평균**(`:391-394` `_zt_acc`가 emit 시 리셋 안 됨 + `knee2d_wide.sbatch:120`·`decode_knee_vs_ctx.sbatch:90`의 `tail -1`). attn·mamba를 나란히 재구성하면 **둘 다 부풀려지나 attn은 mamba의 1/20~1/2뿐**(비순환 확증: 두 독립 job이 같은 셀서 보고 mamba 111.578 vs 116.648=1.0454×인데 steady 84.012 vs 83.941=1.0008×). ⇒ **"WIDE 스윕으로 확증"은 철회**: steady 재계산 **L=256은 단일값 인용 금지, 밴드 [1.24, 1.34]로만**(추정량 의존, 보고 1.42는 warm-up 편향) / **L=512 1.198**(보고 1.22). **"L=2000선 Diff B≈1.35 ⇒ lever는 L↓에서 열린다"는 REFUTED** — steady **1.0081** [1.0078, 1.0084](보고 1.32/1.38은 런 간 4.5% 불일치, steady는 두 독립 job이 0.08%로 일치); **B=48 행은 shape 혼합 셀이라 별도 인용 불가**. ★정책 단위(모듈 전체)로 환산하면 `R_policy ≈ 1 + w_attn·(DiffB−1)`(`w_attn`=attn/(attn+mamba/6), L=256서 9.6%) ⇒ **1.032/1.031로 소멸** — 단 이는 독립 증거가 아니라 `w_attn`이 작아 U-K가 구조적으로 1로 끌리는 결과다. ⚠️**n_indep=1**(WIDE는 셀당 런 1개) — 모든 CI는 **런 내 블록 정밀도이지 재현성이 아니다**. **판정 자체는 불변**: "layer-type 런타임 정책 全형태 死"는 서빙 직접 측정(4모델 agnostic 4/4 승, coordinated TPOT 42→124ms)이 지탱하며 이 강등의 영향을 받지 않는다 — 바뀌는 것은 **기전 서사**뿐이다("lever는 있었는데 (D)가 삼켰다" → "정책 단위에서 lever가 애초에 없었다", negative가 더 깨끗해짐). ★**Diff A/B를 인용하는 모든 정본 문장에 "no-cudagraph micro" 라벨 필수**(`knee2d.sbatch:61`·`knee2d_wide.sbatch:82` 둘 다 `--disable-cuda-graph`, 기존 미기재). 상세 [layertype_dynamic_NEGATIVE_2026-08-04.md](layertype_dynamic_NEGATIVE_2026-08-04.md)·[layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) |
 | 4 | ★**얽힘(entanglement)** | prefill·decode가 running batch(`max_running_requests`)·KV 공유 → **decode 굶김 → ITL↑ → batch 정체 → prefill admission 차단 → TTFT 폭발**. 실측: **d16은 prefill에 92SM(최대)를 주고도 TTFT 7.24s**, d24(84SM)는 1.21s |
@@ -856,6 +1093,121 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     "이 캠페인에 인용 가능한 무언가가 있다"는 존재 명제를 만든
     선택압이었다는 사실은 인용 시 반드시 병기한다. 상세
     §1-1(E-A 블록) C·D.
+34. ★★★★**(2026-08-09, Gate 2 rev4 본 캠페인 R1′/R2′ 정본 반영 중
+    발견) 사전등록 분석기가 계산하지 않는 비교는, 그 arm·n·raw
+    데이터가 사전등록됐더라도 사후 비교다.** `PREREG_GATE2_2026-08-06.md`
+    (rev4) §5.2 판정표는 "R1′/R2′ — A2 vs A4에 같은 TOST/우열 검정을
+    적용"이라 적어 A2(`plainaux`)를 arm으로 사전등록했지만, 실제
+    스코어러 `g2_analyze.py`는 `tost_equivalence`를 코드 전체에서
+    **1회만** 호출하고(`:543`) 그 입력은 A3-vs-A4(`chunk512`-
+    `agnostic`, `:538-539`)뿐이다 — A2는 `:734`에 서술 문장으로만
+    등장한다("A1/A2/A4 data … remain valid regardless"). **"arm이
+    사전등록 표에 있다"와 "그 arm 쌍의 비교가 사전등록 스코어러에
+    구현돼 있다"는 다른 명제다.** 항목33("사후 지정 셀 이동")의
+    형제 사례 — 이번엔 셀이 아니라 **비교 자체**가 저장된 primary
+    산출물(`per_arm_x60`) 위에서 사후 계산됐다(메인 세션, 2026-08-09).
+    결과의 방향(A4 우세, 부호 10/10)이 바뀌지는 않았으나, 실무
+    규칙: 사전등록 판정표에 적힌 비교마다 그것을 실제로 계산하는
+    스코어러 코드 줄 번호를 대조하라 — 표에 문구가 있다고 스코어러
+    코드에도 구현이 있다고 가정하지 마라. 상세 §1-1(rev4 본 캠페인
+    블록).
+35. ★★★★**(2026-08-09, job 874601 G3 라벨 정정 — 최초 정식 등재)
+    측정 실패를 게이트 실패로 라벨링하지 마라 — 이 프로젝트의
+    서명 오류이며 이 항목까지 6회 재발했다.** `g2holb_report_
+    zamba2_874601.json`은 4 arm 전부 `result:"FAIL"`로 저장됐으나
+    실제로는 sha 추출기가 응답 스키마를 못 읽은 `KeyError:'text'`
+    (하네스 결함)였고 Phase B 자체가 실행되지 않았다 — 출력이
+    갈라졌다는 증거(정확성 반증)가 전혀 아니다. **이 패턴은 이
+    프로젝트에서 이번이 처음이 아니다** — 핸드오프
+    `session_handoff_2026-08-09.md` §1이 이미 **5회**를 서술로
+    기록했다(텔레메트리 드롭 카운터 자기검열 / `UNSCOREABLE`을
+    강등으로 읽음 / HTTP 400을 G3 FAIL로 / G5의 귀무-채택형 기준
+    (§3 항목 미부여 상태로 위 rev18 A절에서 재채점됨) / 프로브의
+    stderr 오염) — **그러나 canon(§3·"방법론 게이트")에는 이
+    패턴을 다루는 번호가 이번까지 없었다**(전수 검색 확인, 2026-08-09)
+    ⇒ 이번이 **최초 정식 등재**이며 카운트는 소급 반영해 **6**으로
+    시작한다. 실무 규칙: 게이트/correctness 스크립트가 `FAIL`을
+    반환하면, 그 전에 **하네스 자체가 데이터를 만들어냈는지**
+    (null 필드·예외·스키마 불일치)부터 확인하라 — `FAIL`이라는
+    문자열은 "가설이 거짓"과 "측정이 실패"를 구분하지 않는다.
+    상세 §1-1(2026-08-09 두 번째 정본 반영 건 B절).
+    ★**갱신(2026-08-10) — 일곱 번째 재발, 질적으로 다른 종.** job
+    876699(T4-1)에서 `--time=1:00:00` TIMEOUT의 진짜 원인은 `ON+
+    chunk512`의 첫 multi-chunk generate가 ~52분 무응답한 단일 호출
+    스톨이었다(같은 job `OFF+chunk512`는 동일 프롬프트 ~1초). **옛
+    `g2det_analyze.py`가 그 상태(ON chunk512 `n_total=0`)에 대해
+    `REFUTED — reduction-order is not the (sole) cause`를 반환하고
+    있었다**(`on_clean = n_total > 0 and ...`이 False로 떨어져
+    REFUTED 분기로 통과) — 52분짜리 하네스 스톨이 실질적 음성
+    결과로 발표될 뻔했다. **재발 1–6과의 질적 차이**: 1–6은
+    라벨·해석 오류였고 **사람이** 문서/보고 단계에서 잡았다. 이번
+    (7)은 **분석 코드 자신이 거짓 음성(REFUTED)을 산출**했고, 막은
+    것은 도구가 아니라 experiment-runner가 `INCOMPLETE`로 보고하며
+    사전등록이 열거하지 않은 조건이라고 채점을 거부한 **실행자
+    규율**이었다 — 도구가 사람보다 관대했던 최초 사례. **사후
+    완화가 아니다**: 사전등록 REFUTED 조건은 "ON이 어느 rep에서든
+    self-mismatch ≥1"인데 rep 0개면 그런 관측 자체가 없다 — 옛
+    코드는 규칙의 재해석이 아니라 **버그**였다. 수정(2026-08-10,
+    `g2det_analyze.py`)은 이 경우 `NO VERDICT (MEASUREMENT
+    ABSENT)`를 반환하도록 가드를 추가했고, 데이터가 있을 때의
+    CONFIRMED/REFUTED 분기(5-케이스 매트릭스)는 **불변**임을
+    확인했다. **재발 카운트: 6 → 7.** 상세 §1-1(2026-08-10 세 번째
+    정본 반영 건 A절), 원자료 `workspace/engine-port/results/
+    p1_gates/gate2/g2det_876699.out`·`g2det_876699.err`·
+    `g2det_analyze.py`.
+36. ★★★**(2026-08-09, engine-porter 발견 + 메인 세션 노출범위
+    실측) 통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지
+    않는다 — 분석 재현 시 인터프리터 환경을 아티팩트에 남겨라.**
+    `g2ea_analyze.py:84-87`는 `scipy` import 실패를 조용히 흡수하고
+    (`_scipy_stats=None`), `t_cdf()`(`:156-159`)는 그 경우 **모든
+    df에서** Student-t 대신 정규 CDF로 근사한다 — 커밋된
+    `g2ea_report_*.json`의 `p_tost`가 정확히 `1.0`인 것이 그 흔적
+    이다. `t_ppf()`(`:142-153`)는 df 1–10·p∈{.95,.975}에 한해서만
+    하드코드 표로 정확하고 그 밖은 무조건 `1.96`을 반환한다. 산출물
+    JSON은 이 인터프리터 상태를 **어디에도 기록하지 않는다** —
+    메인 세션이 `raw_ci` 폭을 역산해서야(implied_t = 2.2621…
+    = t(.975,df=9), 1.96이 아님) CI 자체는 df=9 표값과 일치해
+    오염되지 않았음을 사후 확인할 수 있었다. **게이트 #14 계열**
+    (n≤8 `paired_bootstrap_ci` undercoverage, §3 항목27)과 뿌리가
+    같다 — 통계 함수의 정확도가 **실행 환경(라이브러리 가용성)에
+    조건부**인데 그 조건이 산출물에 남지 않으면, 몇 달 뒤 같은
+    파이프라인을 다른 인터프리터에서 돌린 사람은 자신이 다른
+    숫자를 재현하고 있다는 것조차 모른다. 실무 규칙: 통계 계산에
+    쓰는 라이브러리가 선택적 의존성이면 (i) import 성공 여부를
+    산출 JSON에 필드로 남기고, (ii) fallback 경로가 근사임을
+    stdout에 경고로 남기고, (iii) fallback의 유효 df 범위를
+    코드 주석이 아니라 데이터로 노출하라. **이 사건 자체는 정본
+    수치를 오염시키지 않았다**(이 캠페인의 관측치가 0.05 경계에서
+    멀어 판정 불변) — 등재하는 것은 수치 정정이 아니라 이 도구
+    규율뿐이다. 상세 §1-1(2026-08-09 두 번째 정본 반영 건 C절).
+37. ★★★**(2026-08-10, engine-porter 발견 + 메인 세션 코드 직접
+    확인) 공유 하네스의 무한 대기 — 도구 규율, 항목35와 뿌리 사건은
+    같으나 레슨은 다르다.** `g2_holb_phaseA_lib.sh`의 `greedy_call`
+    이 **`--max-time` 없는 raw curl**이었고, 이 디렉터리의 **모든
+    캠페인**(g2ctrl/g2ea/g2holb/g2det)이 이 함수를 공유해서 쓴다.
+    소비자 10개를 전수 확인한 결과 **4개가 타임아웃을
+    `FAIL`/`SMOKE_FAIL` 계열로 채점**하고 있었다(항목35의 `g2det_
+    analyze.py` 포함). 수정: `--connect-timeout 10 --max-time
+    180`(env `G2_GREEDY_CONNECT_TIMEOUT`/`G2_GREEDY_MAX_TIME`로
+    재정의 가능), curl 종료코드 28을 `STATUS=TIMEOUT`으로
+    `STATUS=ERROR`와 구별, **SHA를 아예 방출하지 않아** mismatch
+    채점이 구조적으로 불가능, 사이드카 `.status.json`. 기본값 180s
+    는 **측정 근거**로 정당화됐다 — 이 디렉터리 아카이브 응답
+    **n=64**(jobs 874602/874628/874633/874635/875344/875346/
+    875610/875611/876699, 4 arm × 2 모델)의 서버측 `e2e_latency`가
+    median 0.978s / p90 2.534s / **max 6.605s**(최악 관측의 27배,
+    중앙값의 184배) — 메인 세션이 `g2_holb_phaseA_lib.sh:102-139`
+    주석의 근거 문단을 코드에서 직접 대조해 확인. 정상 경로는
+    아카이브 64개 + 합성 실패 9종 재생으로 **73/73 byte-identical**
+    검증됐다(engine-porter 보고 — 메인 세션은 이 재현 스위트 자체를
+    독립 재실행하지 않음, 근거 아티팩트 경로 미확인이라 캐비어트로
+    남긴다). **실무 규칙**: 공유 하네스 함수 하나가 여러 독립
+    캠페인의 correctness 채점 경로에 들어가면, 그 함수의 실패 모드
+    (특히 무경계 대기)는 **한 캠페인이 아니라 그 함수를 쓰는 모든
+    소비자의** 위험이다 — 소비자별로 타임아웃을 막지 말고 공유
+    지점에서 한 번 막아라. 상세 §1-1(2026-08-10 세 번째 정본 반영
+    건 B절), 원자료 `workspace/engine-port/results/p1_gates/gate2/
+    g2_holb_phaseA_lib.sh`.
 
 ---
 
@@ -888,7 +1240,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `../../workspace/engine-port/results/p1_opint/P1_OPINT_RESULT_2026-08-05.md` | P1 운영점(cudagraph-ON) 대조 판정서(jobs 873944/873945). **본문의 percentile-bootstrap CI·"임계 사다리 전 구간 부호 불변"·"rep 부호 5/5" 서술은 2026-08-06 통계 방법 층 정정(§1-1 rev13·§3 항목27)으로 갱신됨 — 재인용 시 CONSENSUS §1-1(rev13) 병기 필수**, 원 문서는 수정하지 않음(이력 보존) |
 | `../../workspace/engine-port/results/p1_gates/verify/` | ★★★★**2026-08-06 통계 방법 층 정정의 1차 산출물**(claims-auditor Gate 2 감사 2회 + result-analyst 독립 재현) — `verify_c1_coverage.py`(bootstrap coverage MC)·`verify_c2_c3.py`/`verify_c2_pvalues.py`(t-CI 재채점)·`verify_c3_boundary.py`(임계 사다리·vacuity 경계)·`verify_c1_unpaired.py`/`verify_c1_othern.py`(unpaired·타 n coverage) + `*.json`/`*.log`. **Gate 1/Gate 2가 진행 중인 디렉터리이므로 편집 금지, 인용만** |
 | `../../workspace/engine-port/results/p1_gates/gate1/` | ★★★★★**Gate 1(job 874478, 2026-08-06) 원자료 — claims-auditor 감사 완료, 조건부 채택, 새 성능 판정 0건.** `gate1_result_874478.txt`(판정 출력)·`PREREG_GATE1_2026-08-06.md`(사전등록+부기1·2)·`gate1_analyze.py`(coverage guard 포함 분석기)·`gate1_telemetry_874478.jsonl`·`gate1_srv_874478.log`(근거 인용원, `:32`가 분할표 근거). 874465(1차 시도, 절단된 창)도 같은 디렉터리에 보존(비교용). **전문은 CONSENSUS §1-1 Gate 1 블록·§3 항목28·29 — 수정 금지, 인용만.** ★★★★★**같은 디렉터리에 G1-b(job 875293, 2026-08-07) 후속 — 사전등록 철회 규칙 발화, 새 성능 판정 아님.** `PREREG_G1B_2026-08-07.md`(사전등록)·`gate1b_result_875293.txt`(판정 출력, rate{2,3,4,6}). rate6에서 `(54,54)` 시간가중 8.37% 관측 ⇒ Gate 1의 "단일 분할 고정" 문장을 **철회**(rate2·3·4 인용 가능 셀은 불변). **전문은 CONSENSUS §1-1(rev15, "★실질 산출 1" 철회 블록)·§3 항목30 — 수정 금지, 인용만** |
-| `../../workspace/engine-port/results/p1_gates/gate2/` | ★★★★★★**E-A(mixed-chunk 레버, jobs 875654/875657/875661, 2026-08-08~09) 원자료 — claims-auditor 감사 완료, 판정 조건부(문구 강한 제한), 새 성능 판정 아님(fused-측 조율 진단).** `PREREG_G2EA_2026-08-07.md`(사전등록+§14 자기인지 위험)·`g2ea_report_zamba2-27b_875657.json`/`g2ea_report_granite-40-h-micro-base_875661.json`(판정 산출)·`g2earun_875657.out`/`g2earun_875661.out`(실행 로그)·`g2eaprobe_875654*`(Stage 1 레버 실현 확인, HOLB jsonl 포함)·`g2ea_analyze.py`(분석기, `:662-680`이 방법론 게이트 #31의 근거). **전문은 CONSENSUS §1-1(E-A 블록, rev16)·§3 항목31–33 — 수정 금지, 인용만.** ⚠️**같은 디렉터리의 `PREREG_GATE2_2026-08-06.md`는 워킹트리에서 수정된(uncommitted) 상태**(§14 addendum 추가분, `git status` 확인) — "감사를 통과한 사전등록"으로 인용 금지(인용 금지 목록 항목12), G2CTRL(`PREREG_G2CTRL_2026-08-07.md`) 등 병존하는 미커밋 산출물도 동일 주의 필요 |
+| `../../workspace/engine-port/results/p1_gates/gate2/` | ★★★★★**Gate 2 rev4 본 캠페인(jobs 875344/875346, 2026-08-07) 원자료 — 메인 세션 원자료 독립 재현 확인(2026-08-09), claims-auditor 감사 기록 위치 미확인, 새 성능 판정 아님(정본 반영 복구).** `g2_report_zamba2-27b_875344.json`/`g2_report_granite-40-h-micro-base_875346.json`(`per_arm_x60` 포함 판정 산출)·`g2run_875344.out`/`g2run_875346.out`(실행 로그)·`g2_analyze.py`(분석기, `:538-543`이 primary A3-vs-A4 계산, `:734`가 A2 서술 위치 — R1′/R2′는 이 스크립트가 계산 안 함). **전문은 CONSENSUS §1-1(본 캠페인 블록, rev17)·§3 항목34 — 수정 금지, 인용만.** ★★★★★★**E-A(mixed-chunk 레버, jobs 875654/875657/875661, 2026-08-08~09) 원자료 — claims-auditor 감사 완료, 판정 조건부(문구 강한 제한), 새 성능 판정 아님(fused-측 조율 진단).** `PREREG_G2EA_2026-08-07.md`(사전등록+§14 자기인지 위험)·`g2ea_report_zamba2-27b_875657.json`/`g2ea_report_granite-40-h-micro-base_875661.json`(판정 산출)·`g2earun_875657.out`/`g2earun_875661.out`(실행 로그)·`g2eaprobe_875654*`(Stage 1 레버 실현 확인, HOLB jsonl 포함)·`g2ea_analyze.py`(분석기, `:662-680`이 방법론 게이트 #31의 근거). **전문은 CONSENSUS §1-1(E-A 블록, rev16)·§3 항목31–33 — 수정 금지, 인용만.** ⚠️**같은 디렉터리의 `PREREG_GATE2_2026-08-06.md`는 커밋 `c47fad0`으로 §14 addendum이 반영돼 워킹트리 클린이다(2026-08-09 확인 — "미커밋" 기록은 stale, 정정)** — 단 §11-3(3차) 감사는 면제된 채 제출됐다는 사실(§14.1)은 불변이라 "감사를 통과한 사전등록"으로는 여전히 인용 금지(인용 금지 목록 항목12). G2CTRL(`PREREG_G2CTRL_2026-08-07.md`)도 커밋 상태 확인됨(2026-08-09) — 동일 정정. ★★★**HOLB G5 재채점 + 874601 G3 라벨 정정(jobs 874601/874602/874632/874633/874635, 2026-08-09) — 새 성능 판정 아님.** `g2holb_g5_tost_rescore_2026-08-09.json`(72셀 전량 재채점 산출, G5=UNDETERMINED)·`g2holb_g5_tost_rescore.py`·`g2holb_g5_tost_summary.py`·`g2holb_report_zamba2_874601.json`(sha 추출 `KeyError` 하네스 결함 원자료). **전문은 CONSENSUS §1-1(rev18, 2026-08-09 두 번째 정본 반영 건 A/B절)·§3 항목35 — 수정 금지, 인용만.** ★★★**job 876699(T4-1, 2026-08-09~10) TIMEOUT 사후분석 + 공유 하네스 무한대기 수정 + Gate 2-S 설계 감사(2026-08-10) — 새 성능 판정 아님.** `g2det_876699.out`/`g2det_876699.err`(52분 스톨·SLURM TIMEOUT 원자료)·`g2det_analyze.py`(2026-08-10 수정, `on_clean` NO-VERDICT 가드)·`g2_holb_phaseA_lib.sh`(`:102-139`이 사건 경위·180s 근거 주석)·`PREREG_GATE2S_2026-08-09.md`(rev1–4, 3회 NO-GO 감사 이력, §0.0.A/B). **전문은 CONSENSUS §1-1(rev19, 2026-08-10 세 번째 정본 반영 건 A/B/C/D 블록)·§3 항목35(개정)·37 — 수정 금지, 인용만.** |
 
 `deprecated_reports/`(2026-07-24부터 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)) = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 
