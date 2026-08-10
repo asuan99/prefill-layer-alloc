@@ -1,0 +1,49 @@
+{
+  "tag": "zamba2",
+  "jobid": "874601",
+  "arms": [
+    "plain",
+    "plainaux",
+    "chunk512",
+    "agnostic"
+  ],
+  "nrep": 5,
+  "G3": {
+    "raw": {
+      "plain": {
+        "arm": "plain",
+        "result": "FAIL",
+        "sha_off": null,
+        "sha_on": null,
+        "self_repro_off": true,
+        "self_repro_on": true
+      },
+      "plainaux": {
+        "arm": "plainaux",
+        "result": "FAIL",
+        "sha_off": null,
+        "sha_on": null,
+        "self_repro_off": true,
+        "self_repro_on": true
+      },
+      "chunk512": {
+        "arm": "chunk512",
+        "result": "FAIL",
+        "sha_off": null,
+        "sha_on": null,
+        "self_repro_off": true,
+        "self_repro_on": true
+      },
+      "agnostic": {
+        "arm": "agnostic",
+        "result": "FAIL",
+        "sha_off": null,
+        "sha_on": null,
+        "self_repro_off": true,
+        "self_repro_on": true
+      }
+    },
+    "ALL_ARMS_PASS": false
+  },
+  "STOPPED_AFTER_G3_FAIL": true
+}

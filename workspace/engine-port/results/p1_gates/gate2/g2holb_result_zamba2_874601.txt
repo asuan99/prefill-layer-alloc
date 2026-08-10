@@ -1,0 +1,13 @@
+======================================================================
+GATE 2 HOLB SCORING  tag=zamba2 jobid=874601
+======================================================================
+
+--- G3 correctness (probe ON/OFF byte-identical greedy output) ---
+  arm=plain      result=FAIL sha_off=None sha_on=None self_repro_off=True self_repro_on=True
+  arm=plainaux   result=FAIL sha_off=None sha_on=None self_repro_off=True self_repro_on=True
+  arm=chunk512   result=FAIL sha_off=None sha_on=None self_repro_off=True self_repro_on=True
+  arm=agnostic   result=FAIL sha_off=None sha_on=None self_repro_off=True self_repro_on=True
+  G3 (ALL arms PASS) = False
+
+*** G3 FAILED. Per DIRECT_BLOCKING_DESIGN.md and the task instructions: STOP HERE. ***
+*** G4/G5 numbers below (if any) are NOT meaningful -- probe changes engine output. ***

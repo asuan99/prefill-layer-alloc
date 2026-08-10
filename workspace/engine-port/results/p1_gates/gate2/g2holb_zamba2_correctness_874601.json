@@ -1,0 +1,4 @@
+{"arm": "plain", "result": "FAIL", "sha_off": null, "sha_on": null, "self_repro_off": true, "self_repro_on": true}
+{"arm": "plainaux", "result": "FAIL", "sha_off": null, "sha_on": null, "self_repro_off": true, "self_repro_on": true}
+{"arm": "chunk512", "result": "FAIL", "sha_off": null, "sha_on": null, "self_repro_off": true, "self_repro_on": true}
+{"arm": "agnostic", "result": "FAIL", "sha_off": null, "sha_on": null, "self_repro_off": true, "self_repro_on": true}
