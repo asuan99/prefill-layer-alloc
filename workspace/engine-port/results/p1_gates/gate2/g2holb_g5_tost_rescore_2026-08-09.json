@@ -1,0 +1,2098 @@
+{
+  "created": "2026-08-09",
+  "kind": "RE-SCORE of existing G5 data (not a new measurement)",
+  "delta_prereg": 0.03,
+  "alpha_per_side": 0.05,
+  "n_per_cell": 5,
+  "statistic": "paired t (methodology gate #14: n<=8 -> no bootstrap)",
+  "jobs": {
+    "874602": {
+      "tag": "granite",
+      "model": "ibm-granite/granite-4.0-h-micro-base",
+      "rate": 4.0,
+      "node": "gpu39",
+      "cells": {
+        "plain/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 1.0846056559408985e-05,
+          "sd": 0.00038878685287039433,
+          "se": 0.00017387076635528217,
+          "ci95": [
+            -0.0004718965816247034,
+            0.0004935886947435214
+          ],
+          "ci90": [
+            -0.00035981977793125104,
+            0.000381511891050069
+          ],
+          "p_tost": 3.3890139498125444e-09,
+          "p_exceed": 0.999999996610986,
+          "delta_min_equivalence": 0.000381511891050069,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plain/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.007414014144892821,
+          "sd": 0.05686159001380794,
+          "se": 0.02542927611591955,
+          "ci95": [
+            -0.07801700334566081,
+            0.06318897505587517
+          ],
+          "ci90": [
+            -0.061625334711228934,
+            0.04679730642144329
+          ],
+          "p_tost": 0.21231158832181096,
+          "p_exceed": 0.787688411678189,
+          "delta_min_equivalence": 0.061625334711228934,
+          "tost_power_at_gap0_with_observed_sd": 0.0256,
+          "n_needed_for_80pct_power": 33,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plain/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.05398812900329582,
+          "sd": 0.101158527659248,
+          "se": 0.04523946886997424,
+          "ci95": [
+            -0.17959303090908374,
+            0.07161677290249212
+          ],
+          "ci90": [
+            -0.1504317453288749,
+            0.04245548732228327
+          ],
+          "p_tost": 0.6879950106863494,
+          "p_exceed": 0.3120049893136506,
+          "delta_min_equivalence": 0.1504317453288749,
+          "tost_power_at_gap0_with_observed_sd": 0.00245,
+          "n_needed_for_80pct_power": 101,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plain/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0034420037530219464,
+          "sd": 0.00774901916381277,
+          "se": 0.0034654667218467863,
+          "ci95": [
+            -0.013063681870119298,
+            0.0061796743640754066
+          ],
+          "ci90": [
+            -0.010829847847112967,
+            0.003945840341069073
+          ],
+          "p_tost": 0.000779165881775179,
+          "p_exceed": 0.9992208341182248,
+          "delta_min_equivalence": 0.010829847847112967,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plain/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.01584984492589043,
+          "sd": 0.01512936243017464,
+          "se": 0.006766056570020381,
+          "ci95": [
+            -0.0029357397194340294,
+            0.03463542957121489
+          ],
+          "ci90": [
+            0.0014256489709881665,
+            0.03027404088079269
+          ],
+          "p_tost": 0.05233577843128156,
+          "p_exceed": 0.9476642215687184,
+          "delta_min_equivalence": 0.03027404088079269,
+          "tost_power_at_gap0_with_observed_sd": 0.94665,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plain/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.010545300699132454,
+          "sd": 0.021121553505902835,
+          "se": 0.009445845885919549,
+          "ci95": [
+            -0.0367711732735465,
+            0.015680571875281595
+          ],
+          "ci90": [
+            -0.030682396895166848,
+            0.00959179549690194
+          ],
+          "p_tost": 0.0542506492900976,
+          "p_exceed": 0.9457493507099024,
+          "delta_min_equivalence": 0.030682396895166848,
+          "tost_power_at_gap0_with_observed_sd": 0.67925,
+          "n_needed_for_80pct_power": 6,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0009450628213112868,
+          "sd": 0.002191193249161236,
+          "se": 0.0009799314113926316,
+          "ci95": [
+            -0.003665788591901924,
+            0.0017756629492793503
+          ],
+          "ci90": [
+            -0.003034126451509206,
+            0.0011440008088866326
+          ],
+          "p_tost": 3.852458478004195e-06,
+          "p_exceed": 0.999996147541522,
+          "delta_min_equivalence": 0.003034126451509206,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plainaux/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.012701707953940855,
+          "sd": 0.024465098464657047,
+          "se": 0.010941124648639777,
+          "ci95": [
+            -0.04307913993001569,
+            0.01767572402213398
+          ],
+          "ci90": [
+            -0.03602650937494285,
+            0.010623093467061145
+          ],
+          "p_tost": 0.09451348823805683,
+          "p_exceed": 0.9054865117619432,
+          "delta_min_equivalence": 0.03602650937494285,
+          "tost_power_at_gap0_with_observed_sd": 0.50845,
+          "n_needed_for_80pct_power": 8,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.03662031601996115,
+          "sd": 0.044235347324202846,
+          "se": 0.019782648725046197,
+          "ci95": [
+            -0.09154575424046303,
+            0.01830512220054073
+          ],
+          "ci90": [
+            -0.07879389212947988,
+            0.005553260089557574
+          ],
+          "p_tost": 0.6226503060323376,
+          "p_exceed": 0.3773496939676623,
+          "delta_min_equivalence": 0.07879389212947988,
+          "tost_power_at_gap0_with_observed_sd": 0.0749,
+          "n_needed_for_80pct_power": 20,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.004814221961579982,
+          "sd": 0.008220663493467038,
+          "se": 0.003676392478308639,
+          "ci95": [
+            -0.005393079939606024,
+            0.015021523862765989
+          ],
+          "ci90": [
+            -0.003023283528577757,
+            0.012651727451737722
+          ],
+          "p_tost": 0.0011881819596813736,
+          "p_exceed": 0.9988118180403186,
+          "delta_min_equivalence": 0.012651727451737722,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plainaux/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.06861010776534777,
+          "sd": 0.14408254803158446,
+          "se": 0.06443567435400027,
+          "ci95": [
+            -0.2475122204256308,
+            0.11029200489493528
+          ],
+          "ci90": [
+            -0.20597709306171375,
+            0.06875687753101821
+          ],
+          "p_tost": 0.7093386811411074,
+          "p_exceed": 0.29066131885889257,
+          "delta_min_equivalence": 0.20597709306171375,
+          "tost_power_at_gap0_with_observed_sd": 0.00065,
+          "n_needed_for_80pct_power": 201,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.005411027666603543,
+          "sd": 0.01709134320478915,
+          "se": 0.007643481046537529,
+          "ci95": [
+            -0.026632733204934773,
+            0.01581067787172769
+          ],
+          "ci90": [
+            -0.02170575817201323,
+            0.010883702838806145
+          ],
+          "p_tost": 0.016186550169004277,
+          "p_exceed": 0.9838134498309957,
+          "delta_min_equivalence": 0.02170575817201323,
+          "tost_power_at_gap0_with_observed_sd": 0.8785,
+          "n_needed_for_80pct_power": 5,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "chunk512/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.00011476347476106351,
+          "sd": 0.0035142295922181285,
+          "se": 0.0015716112513482201,
+          "ci95": [
+            -0.004248728891318481,
+            0.004478255840840608
+          ],
+          "ci90": [
+            -0.0032356709207804436,
+            0.003465197870302571
+          ],
+          "p_tost": 2.2527350590973207e-05,
+          "p_exceed": 0.9999774726494091,
+          "delta_min_equivalence": 0.003465197870302571,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "chunk512/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.03136058858933664,
+          "sd": 0.08760776484052409,
+          "se": 0.039179383508045576,
+          "ci95": [
+            -0.14013999615491693,
+            0.07741881897624364
+          ],
+          "ci90": [
+            -0.11488503141122292,
+            0.05216385423254965
+          ],
+          "p_tost": 0.5130194129042902,
+          "p_exceed": 0.48698058709570974,
+          "delta_min_equivalence": 0.11488503141122292,
+          "tost_power_at_gap0_with_observed_sd": 0.00425,
+          "n_needed_for_80pct_power": 75,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0347117708356794,
+          "sd": 0.11833932726253175,
+          "se": 0.05292295603412302,
+          "ci95": [
+            -0.18164945306921826,
+            0.11222591139785948
+          ],
+          "ci90": [
+            -0.1475354045799311,
+            0.07811186290857233
+          ],
+          "p_tost": 0.5333315155049118,
+          "p_exceed": 0.46666848449508824,
+          "delta_min_equivalence": 0.1475354045799311,
+          "tost_power_at_gap0_with_observed_sd": 0.0013,
+          "n_needed_for_80pct_power": 137,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.02898255064189097,
+          "sd": 0.02430205470677045,
+          "se": 0.010868209263451488,
+          "ci95": [
+            -0.05915753705366617,
+            0.0011924357698842314
+          ],
+          "ci90": [
+            -0.052151907633305544,
+            -0.005813193650476393
+          ],
+          "p_tost": 0.46495757005472993,
+          "p_exceed": 0.5350424299452701,
+          "delta_min_equivalence": 0.052151907633305544,
+          "tost_power_at_gap0_with_observed_sd": 0.5159,
+          "n_needed_for_80pct_power": 8,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.003507241106759581,
+          "sd": 0.034867084269250226,
+          "se": 0.015593034120651416,
+          "ci95": [
+            -0.039785962152705225,
+            0.04680044436622439
+          ],
+          "ci90": [
+            -0.029734718572432935,
+            0.0367492007859521
+          ],
+          "p_tost": 0.08227263247080303,
+          "p_exceed": 0.9177273675291969,
+          "delta_min_equivalence": 0.0367492007859521,
+          "tost_power_at_gap0_with_observed_sd": 0.18605,
+          "n_needed_for_80pct_power": 13,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.009706373443018106,
+          "sd": 0.06405677525899992,
+          "se": 0.0286470607797101,
+          "ci95": [
+            -0.0892433651231479,
+            0.06983061823711167
+          ],
+          "ci90": [
+            -0.07077751790394729,
+            0.05136477101791107
+          ],
+          "p_tost": 0.2588977066489643,
+          "p_exceed": 0.7411022933510357,
+          "delta_min_equivalence": 0.07077751790394729,
+          "tost_power_at_gap0_with_observed_sd": 0.01555,
+          "n_needed_for_80pct_power": 41,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 9.717306459613327e-06,
+          "sd": 0.00041296535916632103,
+          "se": 0.00018468372308970193,
+          "ci95": [
+            -0.0005030469125224942,
+            0.0005224815254417209
+          ],
+          "ci90": [
+            -0.00038400009509600855,
+            0.00040343470801523524
+          ],
+          "p_tost": 4.313240873848537e-09,
+          "p_exceed": 0.9999999956867591,
+          "delta_min_equivalence": 0.00040343470801523524,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "agnostic/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.027780616731160435,
+          "sd": 0.09180549400336978,
+          "se": 0.04105666505989682,
+          "ci95": [
+            -0.14177219347245623,
+            0.08621096001013537
+          ],
+          "ci90": [
+            -0.1153071361963911,
+            0.05974590273407024
+          ],
+          "p_tost": 0.4797411102572051,
+          "p_exceed": 0.5202588897427949,
+          "delta_min_equivalence": 0.1153071361963911,
+          "tost_power_at_gap0_with_observed_sd": 0.0033,
+          "n_needed_for_80pct_power": 83,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.0019219803480989971,
+          "sd": 0.01924439012994066,
+          "se": 0.008606352903214664,
+          "ci95": [
+            -0.021973086043636174,
+            0.02581704673983417
+          ],
+          "ci90": [
+            -0.016425445430612213,
+            0.02026940612681021
+          ],
+          "p_tost": 0.01550415051963429,
+          "p_exceed": 0.9844958494803657,
+          "delta_min_equivalence": 0.02026940612681021,
+          "tost_power_at_gap0_with_observed_sd": 0.78125,
+          "n_needed_for_80pct_power": 6,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "agnostic/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.0008819272106284149,
+          "sd": 0.020592777204123915,
+          "se": 0.009209369934785827,
+          "ci95": [
+            -0.024687382866763415,
+            0.026451237288020246
+          ],
+          "ci90": [
+            -0.018751038488938016,
+            0.020514892910194846
+          ],
+          "p_tost": 0.017062730623715307,
+          "p_exceed": 0.9829372693762847,
+          "delta_min_equivalence": 0.020514892910194846,
+          "tost_power_at_gap0_with_observed_sd": 0.7094,
+          "n_needed_for_80pct_power": 6,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "agnostic/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.049675124511073414,
+          "sd": 0.04361803743832747,
+          "se": 0.0195065793514462,
+          "ci95": [
+            -0.004483822248401742,
+            0.10383407127054857
+          ],
+          "ci90": [
+            0.00809008600846705,
+            0.09126016301367978
+          ],
+          "p_tost": 0.8148962888543801,
+          "p_exceed": 0.18510371114561985,
+          "delta_min_equivalence": 0.09126016301367978,
+          "tost_power_at_gap0_with_observed_sd": 0.07875,
+          "n_needed_for_80pct_power": 20,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.005872441821614419,
+          "sd": 0.02012533606363831,
+          "se": 0.009000323901664659,
+          "ci95": [
+            -0.01911646342035713,
+            0.030861347063585967
+          ],
+          "ci90": [
+            -0.013314869764048318,
+            0.025059753407277154
+          ],
+          "p_tost": 0.027592970525808683,
+          "p_exceed": 0.9724070294741913,
+          "delta_min_equivalence": 0.025059753407277154,
+          "tost_power_at_gap0_with_observed_sd": 0.735,
+          "n_needed_for_80pct_power": 6,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        }
+      },
+      "holm_exceedance_significant": 0,
+      "min_holm_adj_p_exceed": 1.0
+    },
+    "874633": {
+      "tag": "granite",
+      "model": "ibm-granite/granite-4.0-h-micro-base",
+      "rate": 4.0,
+      "node": "gpu37",
+      "cells": {
+        "plain/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.00011617634641960992,
+          "sd": 0.00022439380294841683,
+          "se": 0.00010035195942447055,
+          "ci95": [
+            -0.00039479805296068876,
+            0.00016244536012146893
+          ],
+          "ci90": [
+            -0.0003301113486202498,
+            9.775865578102995e-05
+          ],
+          "p_tost": 3.8145853142879105e-10,
+          "p_exceed": 0.9999999996185415,
+          "delta_min_equivalence": 0.0003301113486202498,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plain/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.012196743942534486,
+          "sd": 0.019033997506332504,
+          "se": 0.008512262461544191,
+          "ci95": [
+            -0.03583057338804778,
+            0.011437085502978806
+          ],
+          "ci90": [
+            -0.030343583315546444,
+            0.005950095430477474
+          ],
+          "p_tost": 0.052327560541777784,
+          "p_exceed": 0.9476724394582222,
+          "delta_min_equivalence": 0.030343583315546444,
+          "tost_power_at_gap0_with_observed_sd": 0.79155,
+          "n_needed_for_80pct_power": 6,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plain/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.05990419409062034,
+          "sd": 0.09574487484675465,
+          "se": 0.042818409730910625,
+          "ci95": [
+            -0.17878715820036073,
+            0.05897877001912004
+          ],
+          "ci90": [
+            -0.1511864832710799,
+            0.031378095089839214
+          ],
+          "p_tost": 0.7382989790315932,
+          "p_exceed": 0.26170102096840675,
+          "delta_min_equivalence": 0.1511864832710799,
+          "tost_power_at_gap0_with_observed_sd": 0.00285,
+          "n_needed_for_80pct_power": 89,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plain/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -7.751589223315995e-05,
+          "sd": 0.005007168592985053,
+          "se": 0.0022392738697433107,
+          "ci95": [
+            -0.006294736867079296,
+            0.006139705082612976
+          ],
+          "ci90": [
+            -0.004851304695150677,
+            0.004696272910684357
+          ],
+          "p_tost": 9.068098831599425e-05,
+          "p_exceed": 0.999909319011684,
+          "delta_min_equivalence": 0.004851304695150677,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plain/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.011514609517021188,
+          "sd": 0.007211929754981177,
+          "se": 0.0032252730362182626,
+          "ci95": [
+            -0.02046940305135581,
+            -0.0025598159826865675
+          ],
+          "ci90": [
+            -0.018390397474309088,
+            -0.00463882155973329
+          ],
+          "p_tost": 0.002294565144440819,
+          "p_exceed": 0.9977054348555592,
+          "delta_min_equivalence": 0.018390397474309088,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plain/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0058448834730844305,
+          "sd": 0.016560106780662113,
+          "se": 0.007405904895243136,
+          "ci95": [
+            -0.026406971869042613,
+            0.01471720492287375
+          ],
+          "ci90": [
+            -0.021633138023849315,
+            0.009943371077680452
+          ],
+          "p_tost": 0.015516932853205212,
+          "p_exceed": 0.9844830671467948,
+          "delta_min_equivalence": 0.021633138023849315,
+          "tost_power_at_gap0_with_observed_sd": 0.8996,
+          "n_needed_for_80pct_power": 5,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plainaux/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.00011965499845468781,
+          "sd": 0.0004984761160474806,
+          "se": 0.00022292529612844808,
+          "ci95": [
+            -0.0004992848488059104,
+            0.0007385948457152861
+          ],
+          "ci90": [
+            -0.00035558757768766093,
+            0.0005948975745970366
+          ],
+          "p_tost": 9.290842473626284e-09,
+          "p_exceed": 0.9999999907091576,
+          "delta_min_equivalence": 0.0005948975745970366,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plainaux/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.012925755181066277,
+          "sd": 0.015543409585094849,
+          "se": 0.0069512240868787765,
+          "ci95": [
+            -0.006373936910081302,
+            0.03222544727221385
+          ],
+          "ci90": [
+            -0.0018931895495826415,
+            0.027744699911715194
+          ],
+          "p_tost": 0.034984895876189415,
+          "p_exceed": 0.9650151041238106,
+          "delta_min_equivalence": 0.027744699911715194,
+          "tost_power_at_gap0_with_observed_sd": 0.93455,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plainaux/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.01869299036037199,
+          "sd": 0.11028981934955805,
+          "se": 0.04932310665835669,
+          "ci95": [
+            -0.1556358884151151,
+            0.11824990769437112
+          ],
+          "ci90": [
+            -0.12384229678163626,
+            0.08645631606089228
+          ],
+          "p_tost": 0.4149620229762735,
+          "p_exceed": 0.5850379770237265,
+          "delta_min_equivalence": 0.12384229678163626,
+          "tost_power_at_gap0_with_observed_sd": 0.00175,
+          "n_needed_for_80pct_power": 119,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.010938327175790984,
+          "sd": 0.004710424751015431,
+          "se": 0.0021065659892336047,
+          "ci95": [
+            0.005089562346207195,
+            0.016787092005374774
+          ],
+          "ci90": [
+            0.006447451241458305,
+            0.015429203110123663
+          ],
+          "p_tost": 0.000413255815801452,
+          "p_exceed": 0.9995867441841986,
+          "delta_min_equivalence": 0.015429203110123663,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plainaux/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.017100891478514475,
+          "sd": 0.07230340709780365,
+          "se": 0.03233506665510595,
+          "ci95": [
+            -0.07267564606229883,
+            0.10687742901932777
+          ],
+          "ci90": [
+            -0.05183251645583116,
+            0.0860342994128601
+          ],
+          "p_tost": 0.35516586051526844,
+          "p_exceed": 0.6448341394847316,
+          "delta_min_equivalence": 0.0860342994128601,
+          "tost_power_at_gap0_with_observed_sd": 0.0089,
+          "n_needed_for_80pct_power": 51,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.010792826934778909,
+          "sd": 0.007561242169939748,
+          "se": 0.0033814902972646587,
+          "ci95": [
+            0.0014043047506646159,
+            0.020181349118893202
+          ],
+          "ci90": [
+            0.0035840077115605,
+            0.01800164615799732
+          ],
+          "p_tost": 0.002370804781018102,
+          "p_exceed": 0.9976291952189819,
+          "delta_min_equivalence": 0.01800164615799732,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "chunk512/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.0006768813877029017,
+          "sd": 0.002056780129780996,
+          "se": 0.0009198200369922293,
+          "ci95": [
+            -0.0018769484516670265,
+            0.00323071122707283
+          ],
+          "ci90": [
+            -0.001284034002157842,
+            0.0026377967775636454
+          ],
+          "p_tost": 2.885682465273043e-06,
+          "p_exceed": 0.9999971143175347,
+          "delta_min_equivalence": 0.0026377967775636454,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "chunk512/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0019959113253817536,
+          "sd": 0.04108509968085447,
+          "se": 0.0183738151497491,
+          "ci95": [
+            -0.053009800461711706,
+            0.0490179778109482
+          ],
+          "ci90": [
+            -0.041166070104934276,
+            0.03717424745417077
+          ],
+          "p_tost": 0.10107744731266355,
+          "p_exceed": 0.8989225526873365,
+          "delta_min_equivalence": 0.041166070104934276,
+          "tost_power_at_gap0_with_observed_sd": 0.10145,
+          "n_needed_for_80pct_power": 18,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.0029498179554036863,
+          "sd": 0.033627501267281326,
+          "se": 0.015038675749420274,
+          "ci95": [
+            -0.03880423971773099,
+            0.044703875628538364
+          ],
+          "ci90": [
+            -0.02911033461160644,
+            0.035009970522413815
+          ],
+          "p_tost": 0.07322922870033718,
+          "p_exceed": 0.9267707712996628,
+          "delta_min_equivalence": 0.035009970522413815,
+          "tost_power_at_gap0_with_observed_sd": 0.2091,
+          "n_needed_for_80pct_power": 13,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0014682393524607091,
+          "sd": 0.021793407920168078,
+          "se": 0.009746308314175625,
+          "ci95": [
+            -0.028528329365102183,
+            0.025591850660180764
+          ],
+          "ci90": [
+            -0.02224587541058472,
+            0.0193093967056633
+          ],
+          "p_tost": 0.021461602995901052,
+          "p_exceed": 0.978538397004099,
+          "delta_min_equivalence": 0.02224587541058472,
+          "tost_power_at_gap0_with_observed_sd": 0.64275,
+          "n_needed_for_80pct_power": 7,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "chunk512/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.5115222730015442,
+          "sd": 1.188754147136933,
+          "se": 0.5316270163065938,
+          "ci95": [
+            -0.9645109542138056,
+            1.987555500216894
+          ],
+          "ci90": [
+            -0.6218250732360932,
+            1.6448696192391816
+          ],
+          "p_tost": 0.7918539078476861,
+          "p_exceed": 0.20814609215231394,
+          "delta_min_equivalence": 1.6448696192391816,
+          "tost_power_at_gap0_with_observed_sd": 0.0,
+          "n_needed_for_80pct_power": null,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.012276513773267142,
+          "sd": 0.0378131561508676,
+          "se": 0.01691055751943085,
+          "ci95": [
+            -0.03467472087772238,
+            0.05922774842425666
+          ],
+          "ci90": [
+            -0.023774203929523473,
+            0.048327231476057754
+          ],
+          "p_tost": 0.17687753925170663,
+          "p_exceed": 0.8231224607482934,
+          "delta_min_equivalence": 0.048327231476057754,
+          "tost_power_at_gap0_with_observed_sd": 0.13945,
+          "n_needed_for_80pct_power": 15,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.004765689512870617,
+          "sd": 0.010248663580006557,
+          "se": 0.004583341688684203,
+          "ci95": [
+            -0.01749108610986686,
+            0.007959707084125626
+          ],
+          "ci90": [
+            -0.014536671762528992,
+            0.00500529273678776
+          ],
+          "p_tost": 0.0026541972294006344,
+          "p_exceed": 0.9973458027705994,
+          "delta_min_equivalence": 0.014536671762528992,
+          "tost_power_at_gap0_with_observed_sd": 0.99955,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "agnostic/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.006941630861288383,
+          "sd": 0.04943050696220374,
+          "se": 0.022105994745952838,
+          "ci95": [
+            -0.05443445004664051,
+            0.06831771176921728
+          ],
+          "ci90": [
+            -0.04018496299642497,
+            0.05406822471900174
+          ],
+          "p_tost": 0.1779003741541929,
+          "p_exceed": 0.8220996258458071,
+          "delta_min_equivalence": 0.05406822471900174,
+          "tost_power_at_gap0_with_observed_sd": 0.04825,
+          "n_needed_for_80pct_power": 25,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0041946976284396266,
+          "sd": 0.026726926235600707,
+          "se": 0.011952644778485148,
+          "ci95": [
+            -0.037380559717832676,
+            0.028991164460953425
+          ],
+          "ci90": [
+            -0.0296759049875572,
+            0.021286509730677944
+          ],
+          "p_tost": 0.048500949138383986,
+          "p_exceed": 0.951499050861616,
+          "delta_min_equivalence": 0.0296759049875572,
+          "tost_power_at_gap0_with_observed_sd": 0.41185,
+          "n_needed_for_80pct_power": 9,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "agnostic/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.018787514061372374,
+          "sd": 0.047633849590783574,
+          "se": 0.021302505142998522,
+          "ci95": [
+            -0.07793275019410144,
+            0.0403577220713567
+          ],
+          "ci90": [
+            -0.0642011911911807,
+            0.02662616306843595
+          ],
+          "p_tost": 0.3132411607902006,
+          "p_exceed": 0.6867588392097994,
+          "delta_min_equivalence": 0.0642011911911807,
+          "tost_power_at_gap0_with_observed_sd": 0.05625,
+          "n_needed_for_80pct_power": 23,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.02004737214629982,
+          "sd": 0.048776222354046765,
+          "se": 0.021813389773858674,
+          "ci95": [
+            -0.08061105141170133,
+            0.040516307119101695
+          ],
+          "ci90": [
+            -0.06655017703459104,
+            0.026455432741991393
+          ],
+          "p_tost": 0.3359380584824847,
+          "p_exceed": 0.6640619415175153,
+          "delta_min_equivalence": 0.06655017703459104,
+          "tost_power_at_gap0_with_observed_sd": 0.0511,
+          "n_needed_for_80pct_power": 24,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.0022646130681925466,
+          "sd": 0.012661363120781966,
+          "se": 0.005662333725175471,
+          "ci95": [
+            -0.013456545687067278,
+            0.017985771823452373
+          ],
+          "ci90": [
+            -0.009806614886931787,
+            0.014335841023316882
+          ],
+          "p_tost": 0.004027128498302711,
+          "p_exceed": 0.9959728715016973,
+          "delta_min_equivalence": 0.014335841023316882,
+          "tost_power_at_gap0_with_observed_sd": 0.9904,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        }
+      },
+      "holm_exceedance_significant": 0,
+      "min_holm_adj_p_exceed": 1.0
+    },
+    "874635": {
+      "tag": "zamba2",
+      "model": "Zyphra/Zamba2-2.7B",
+      "rate": 3.0,
+      "node": "gpu38",
+      "cells": {
+        "plain/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.002351162779335686,
+          "sd": 0.005014177286822006,
+          "se": 0.002242408252913893,
+          "ci95": [
+            -0.0085770861969936,
+            0.003874760638322228
+          ],
+          "ci90": [
+            -0.007131633606942525,
+            0.0024293080482711534
+          ],
+          "p_tost": 0.0001242979844024994,
+          "p_exceed": 0.9998757020155975,
+          "delta_min_equivalence": 0.007131633606942525,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plain/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0168621779574161,
+          "sd": 0.03142986487080466,
+          "se": 0.014055862874950371,
+          "ci95": [
+            -0.05588750963590344,
+            0.022163153721071246
+          ],
+          "ci90": [
+            -0.04682712405642711,
+            0.01310276814159491
+          ],
+          "p_tost": 0.20143245839576418,
+          "p_exceed": 0.7985675416042358,
+          "delta_min_equivalence": 0.04682712405642711,
+          "tost_power_at_gap0_with_observed_sd": 0.25965,
+          "n_needed_for_80pct_power": 11,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plain/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.10134133624849025,
+          "sd": 0.17147296350904384,
+          "se": 0.07668504054191258,
+          "ci95": [
+            -0.3142531417029778,
+            0.1115704692059973
+          ],
+          "ci90": [
+            -0.2648220934870954,
+            0.06213942099011492
+          ],
+          "p_tost": 0.7975653637629444,
+          "p_exceed": 0.20243463623705563,
+          "delta_min_equivalence": 0.2648220934870954,
+          "tost_power_at_gap0_with_observed_sd": 0.00025,
+          "n_needed_for_80pct_power": 281,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plain/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.011106188238883766,
+          "sd": 0.029575710540243026,
+          "se": 0.013226659850168087,
+          "ci95": [
+            -0.047829283237999135,
+            0.025616906760231598
+          ],
+          "ci90": [
+            -0.03930340053430033,
+            0.017091024056532792
+          ],
+          "p_tost": 0.11317674900905239,
+          "p_exceed": 0.8868232509909476,
+          "delta_min_equivalence": 0.03930340053430033,
+          "tost_power_at_gap0_with_observed_sd": 0.31175,
+          "n_needed_for_80pct_power": 10,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plain/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.003569864528158107,
+          "sd": 0.0056363718162522995,
+          "se": 0.002520662105520819,
+          "ci95": [
+            -0.010568344492888949,
+            0.0034286154365727344
+          ],
+          "ci90": [
+            -0.00894352993722803,
+            0.0018038008809118165
+          ],
+          "p_tost": 0.00023382787088865875,
+          "p_exceed": 0.9997661721291113,
+          "delta_min_equivalence": 0.00894352993722803,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plain/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.005086946333178175,
+          "sd": 0.024048550172275654,
+          "se": 0.010754838589104528,
+          "ci95": [
+            -0.034947165291089786,
+            0.024773272624733434
+          ],
+          "ci90": [
+            -0.0280146144168225,
+            0.01784072175046615
+          ],
+          "p_tost": 0.04072664653833047,
+          "p_exceed": 0.9592733534616695,
+          "delta_min_equivalence": 0.0280146144168225,
+          "tost_power_at_gap0_with_observed_sd": 0.5275,
+          "n_needed_for_80pct_power": 8,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plainaux/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.00022878858352308495,
+          "sd": 0.00018361944171917013,
+          "se": 8.211711073492505e-05,
+          "ci95": [
+            -0.00045678223367605277,
+            -7.949333701170959e-07
+          ],
+          "ci90": [
+            -0.00040384968214576453,
+            -5.372748490040536e-05
+          ],
+          "p_tost": 1.7363921411828187e-10,
+          "p_exceed": 0.9999999998263608,
+          "delta_min_equivalence": 0.00040384968214576453,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "plainaux/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.023290017940519176,
+          "sd": 0.09735688670242205,
+          "se": 0.04353932334887221,
+          "ci95": [
+            -0.09759452325508107,
+            0.14417455913611943
+          ],
+          "ci90": [
+            -0.06952914861961089,
+            0.11610918450064923
+          ],
+          "p_tost": 0.4424917614706659,
+          "p_exceed": 0.5575082385293342,
+          "delta_min_equivalence": 0.11610918450064923,
+          "tost_power_at_gap0_with_observed_sd": 0.00265,
+          "n_needed_for_80pct_power": 93,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.45397302685387675,
+          "sd": 0.7539032837787788,
+          "se": 0.3371557981979328,
+          "ci95": [
+            -0.4821215387418287,
+            1.3900675924495822
+          ],
+          "ci90": [
+            -0.2647914780257826,
+            1.172737531733536
+          ],
+          "p_tost": 0.8615080999445818,
+          "p_exceed": 0.13849190005541823,
+          "delta_min_equivalence": 1.172737531733536,
+          "tost_power_at_gap0_with_observed_sd": 0.0,
+          "n_needed_for_80pct_power": null,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.01564939317883719,
+          "sd": 0.022090278680445906,
+          "se": 0.009879072954278279,
+          "ci95": [
+            -0.011779310568960644,
+            0.04307809692663502
+          ],
+          "ci90": [
+            -0.00541127675062748,
+            0.036710063108301855
+          ],
+          "p_tost": 0.10998932677148665,
+          "p_exceed": 0.8900106732285133,
+          "delta_min_equivalence": 0.036710063108301855,
+          "tost_power_at_gap0_with_observed_sd": 0.6274,
+          "n_needed_for_80pct_power": 7,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 1.050650770986869,
+          "sd": 2.3381311647950067,
+          "se": 1.0456440449584796,
+          "ci95": [
+            -1.852522519417323,
+            3.953824061391061
+          ],
+          "ci90": [
+            -1.1785021258994641,
+            3.2798036678732023
+          ],
+          "p_tost": 0.8078570827993987,
+          "p_exceed": 0.19214291720060128,
+          "delta_min_equivalence": 3.2798036678732023,
+          "tost_power_at_gap0_with_observed_sd": 0.0,
+          "n_needed_for_80pct_power": null,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "plainaux/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.12429014665150075,
+          "sd": 0.17776287383175646,
+          "se": 0.07949797395270519,
+          "ci95": [
+            -0.09643161400262927,
+            0.34501190730563075
+          ],
+          "ci90": [
+            -0.045187353639053504,
+            0.293767646942055
+          ],
+          "p_tost": 0.849383821711163,
+          "p_exceed": 0.150616178288837,
+          "delta_min_equivalence": 0.293767646942055,
+          "tost_power_at_gap0_with_observed_sd": 0.00025,
+          "n_needed_for_80pct_power": 305,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.00305554509297565,
+          "sd": 0.020212611158781507,
+          "se": 0.009039354510761249,
+          "ci95": [
+            -0.028152816678526316,
+            0.022041726492575013
+          ],
+          "ci90": [
+            -0.022326063957209322,
+            0.01621497377125802
+          ],
+          "p_tost": 0.020353440242428356,
+          "p_exceed": 0.9796465597575716,
+          "delta_min_equivalence": 0.022326063957209322,
+          "tost_power_at_gap0_with_observed_sd": 0.73095,
+          "n_needed_for_80pct_power": 6,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "chunk512/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.08929722138788525,
+          "sd": 0.22281061940944394,
+          "se": 0.09964393822167013,
+          "ci95": [
+            -0.3659531459260726,
+            0.18735870315030206
+          ],
+          "ci90": [
+            -0.3017228308626839,
+            0.12312838808691341
+          ],
+          "p_tost": 0.7080928671672294,
+          "p_exceed": 0.2919071328327706,
+          "delta_min_equivalence": 0.3017228308626839,
+          "tost_power_at_gap0_with_observed_sd": 5e-05,
+          "n_needed_for_80pct_power": 476,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.021353900683230287,
+          "sd": 0.05852901819939313,
+          "se": 0.026174972670033075,
+          "ci95": [
+            -0.05131947406516907,
+            0.09402727543162964
+          ],
+          "ci90": [
+            -0.0344471306855676,
+            0.07715493205202817
+          ],
+          "p_tost": 0.3788676322364939,
+          "p_exceed": 0.6211323677635061,
+          "delta_min_equivalence": 0.07715493205202817,
+          "tost_power_at_gap0_with_observed_sd": 0.02305,
+          "n_needed_for_80pct_power": 34,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.034230235958163366,
+          "sd": 0.09275422581092763,
+          "se": 0.04148095082271994,
+          "ci95": [
+            -0.14939981882885453,
+            0.0809393469125278
+          ],
+          "ci90": [
+            -0.12266126766335267,
+            0.05420079574702594
+          ],
+          "p_tost": 0.5381599446396891,
+          "p_exceed": 0.4618400553603109,
+          "delta_min_equivalence": 0.12266126766335267,
+          "tost_power_at_gap0_with_observed_sd": 0.00325,
+          "n_needed_for_80pct_power": 84,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.09920439678195879,
+          "sd": 0.1961216723759396,
+          "se": 0.08770827825870872,
+          "ci95": [
+            -0.3427216166386767,
+            0.14431282307475907
+          ],
+          "ci90": [
+            -0.2861850079220305,
+            0.08777621435811293
+          ],
+          "p_tost": 0.762884289980945,
+          "p_exceed": 0.23711571001905496,
+          "delta_min_equivalence": 0.2861850079220305,
+          "tost_power_at_gap0_with_observed_sd": 0.00015,
+          "n_needed_for_80pct_power": 368,
+          "old_g5_verdict": "FAIL",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "chunk512/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.005847836395209484,
+          "sd": 0.11148924599550941,
+          "se": 0.04985950656123105,
+          "ci95": [
+            -0.14428001933471668,
+            0.13258434654429774
+          ],
+          "ci90": [
+            -0.1121406652256024,
+            0.10044499243518343
+          ],
+          "p_tost": 0.32671376417863296,
+          "p_exceed": 0.673286235821367,
+          "delta_min_equivalence": 0.1121406652256024,
+          "tost_power_at_gap0_with_observed_sd": 0.00175,
+          "n_needed_for_80pct_power": 121,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/request_throughput": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.002514663569904262,
+          "sd": 0.00591190248250401,
+          "se": 0.0026438831654457453,
+          "ci95": [
+            -0.004825932903512425,
+            0.009855260043320949
+          ],
+          "ci90": [
+            -0.003121690259774379,
+            0.008151017399582903
+          ],
+          "p_tost": 0.00024174629132939747,
+          "p_exceed": 0.9997582537086706,
+          "delta_min_equivalence": 0.008151017399582903,
+          "tost_power_at_gap0_with_observed_sd": 1.0,
+          "n_needed_for_80pct_power": 4,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "EQUIVALENT"
+        },
+        "agnostic/ttft_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.004922743357834896,
+          "sd": 0.12692365966703908,
+          "se": 0.05676198619370954,
+          "ci95": [
+            -0.15267379537099468,
+            0.1625192820866645
+          ],
+          "ci90": [
+            -0.11608511449474244,
+            0.12593060121041225
+          ],
+          "p_tost": 0.3407350869643344,
+          "p_exceed": 0.6592649130356656,
+          "delta_min_equivalence": 0.12593060121041225,
+          "tost_power_at_gap0_with_observed_sd": 0.00095,
+          "n_needed_for_80pct_power": 155,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/ttft_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.0077406016212928745,
+          "sd": 0.29138771725424734,
+          "se": 0.13031254871779707,
+          "ci95": [
+            -0.36954623965466954,
+            0.3540650364120838
+          ],
+          "ci90": [
+            -0.2855469898233635,
+            0.2700657865807778
+          ],
+          "p_tost": 0.4363306202281345,
+          "p_exceed": 0.5636693797718655,
+          "delta_min_equivalence": 0.2855469898233635,
+          "tost_power_at_gap0_with_observed_sd": 5e-05,
+          "n_needed_for_80pct_power": 807,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/itl_p50": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.012605703518248242,
+          "sd": 0.07690470388426185,
+          "se": 0.03439282913494032,
+          "ci95": [
+            -0.10809550562385736,
+            0.08288409858736087
+          ],
+          "ci90": [
+            -0.08592594578225234,
+            0.060714538745755844
+          ],
+          "p_tost": 0.319813966665907,
+          "p_exceed": 0.680186033334093,
+          "delta_min_equivalence": 0.08592594578225234,
+          "tost_power_at_gap0_with_observed_sd": 0.0071,
+          "n_needed_for_80pct_power": 58,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/itl_p95": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": -0.00901909927159116,
+          "sd": 0.14782699832028237,
+          "se": 0.06611024343077972,
+          "ci95": [
+            -0.19257056104841408,
+            0.17453236250523174
+          ],
+          "ci90": [
+            -0.1499560092727714,
+            0.13191781072958905
+          ],
+          "p_tost": 0.38342205473652113,
+          "p_exceed": 0.6165779452634789,
+          "delta_min_equivalence": 0.1499560092727714,
+          "tost_power_at_gap0_with_observed_sd": 0.00055,
+          "n_needed_for_80pct_power": 211,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        },
+        "agnostic/mean_e2e_ms": {
+          "n": 5,
+          "reps": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "mean": 0.009910553737613844,
+          "sd": 0.1611458788477917,
+          "se": 0.07206662787952153,
+          "ci95": [
+            -0.19017848248659455,
+            0.20999958996182225
+          ],
+          "ci90": [
+            -0.14372445530874264,
+            0.16354556278397034
+          ],
+          "p_tost": 0.3971227404598023,
+          "p_exceed": 0.6028772595401977,
+          "delta_min_equivalence": 0.16354556278397034,
+          "tost_power_at_gap0_with_observed_sd": 0.00035,
+          "n_needed_for_80pct_power": 251,
+          "old_g5_verdict": "PASS",
+          "rescored_verdict": "UNDETERMINED"
+        }
+      },
+      "holm_exceedance_significant": 0,
+      "min_holm_adj_p_exceed": 1.0
+    }
+  },
+  "grand_totals": {
+    "EXCEEDANCE": 0,
+    "EQUIVALENT": 29,
+    "UNDETERMINED": 43,
+    "DEGENERATE": 0
+  },
+  "sd_ceiling_for_tost_at_n5": 0.03146663247811615,
+  "headline_2026_08_09": "G5 did NOT establish that the HOLB probe's observer effect exceeds 3%, and did NOT establish that it is within 3%. UNDETERMINED: 0/72 arm x response-var cells show a statistically supported |effect| > 3% (min unadjusted p_exceed = 0.138, Holm-adjusted min p = 1.000 in all three jobs); 29/72 cells prove equivalence at +-3% by TOST; the remaining 43/72 are underpowered. At n=5 the paired-t TOST cannot fire at all once the rep-to-rep SD exceeds 3.147%, which 35/72 cells do -- median TOST power at true gap 0 given each cell's own SD is 0.286. The stored 'G5=False' records the failure of a null-acceptance conjunction, not demonstrated probe harm.",
+  "replaces_label": {
+    "old": "G5 = False",
+    "old_rule": "PASS = |point| < 3% AND 95% CI contains 0 (null-acceptance)",
+    "new": "G5 = UNDETERMINED (0 exceedance proven / 29 equivalence proven / 43 underpowered, n=5 per cell)"
+  },
+  "rollup": {
+    "cells_total": 72,
+    "exceedance_proven": 0,
+    "equivalence_proven": 29,
+    "undetermined": 43,
+    "transition_old_to_new": {
+      "PASS->UNDETERMINED": 28,
+      "PASS->EQUIVALENT": 25,
+      "FAIL->UNDETERMINED": 15,
+      "FAIL->EQUIVALENT": 4
+    },
+    "sd_ceiling_n5_pct": 3.147,
+    "cells_at_or_over_ceiling": 35,
+    "median_tost_power_gap0": 0.286,
+    "cells_power_ge_080": 23,
+    "n_for_80pct_power_by_var_median": {
+      "request_throughput": 4,
+      "itl_p50": 7,
+      "mean_e2e_ms": 7,
+      "itl_p95": 22,
+      "ttft_p50": 29,
+      "ttft_p95": 89
+    }
+  },
+  "excluded_jobs": {
+    "874601": "no G5 data. Stored G3=False is a HARNESS failure (KeyError: 'text' in the sha extraction one-liner -> sha_off=sha_on=null for all 4 arms), not evidence the probe changes engine output; Phase B never ran. Re-run 874633/874635 used method=output_ids and passed G3.",
+    "874632": "CANCELLED during Phase A (slurmstepd cancel 2026-08-06T15:06:33). No Phase-B data."
+  },
+  "residual_confound": "ON/OFF order randomised per rep x arm but not balanced at n=5; 874602/agnostic ran order='off on' in 5/5 reps, so any within-rep drift maps 1:1 onto that arm's ON-OFF diff."
+}
