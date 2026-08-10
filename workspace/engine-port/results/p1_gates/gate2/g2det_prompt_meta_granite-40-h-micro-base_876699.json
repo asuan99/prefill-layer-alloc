@@ -1,0 +1,8 @@
+{
+  "model": "ibm-granite/granite-4.0-h-micro-base",
+  "target_len": 2000,
+  "vocab_size": 100352,
+  "offset": 25070,
+  "reencoded_len": 2552,
+  "generator": "bench_serving random-ids replica (sample_random_requests, random_sample=False branch)"
+}

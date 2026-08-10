@@ -1,0 +1,11 @@
+{
+  "top.enable_deterministic_inference": true,
+  "top.disable_cuda_graph": false,
+  "top.attention_backend": "flashinfer",
+  "top.chunked_prefill_size": 512,
+  "top.sampling_backend": "pytorch",
+  "internal_states0.enable_deterministic_inference": true,
+  "internal_states0.disable_cuda_graph": false,
+  "internal_states0.chunked_prefill_size": 512,
+  "witness12_ok": true
+}

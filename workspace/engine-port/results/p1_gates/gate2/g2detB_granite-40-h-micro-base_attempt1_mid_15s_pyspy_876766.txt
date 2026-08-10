@@ -1,0 +1,1 @@
+py-spy not available in this environment (checked via 'command -v py-spy', absent) -- skipped per instruction, not installed.

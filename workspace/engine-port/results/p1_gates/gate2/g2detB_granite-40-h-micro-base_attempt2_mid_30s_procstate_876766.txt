@@ -1,0 +1,7 @@
+TIMESTAMP=2026-08-09T16:34:23Z LABEL=attempt2_mid_30s PORT=36466 MAIN_PID=285768
+main_pid_alive=1
+--- ps tree rooted near main pid (sglang/launch_server processes) ---
+ 285768       1 Sl   15.9  0.0      62 ep_poll              python -m sglang.launch_server --model-path ibm-granite/granite-4.0-h-micro-base --trust-remote-code --dtype bfloat16 --attention-backend flashinfer --disable-radix-cache --mem-fraction-static 0.82 --max-running-requests 48 --context-length 8192 --chunked-prefill-size 512 --enable-deterministic-inference --host 127.0.0.1 --port 36466
+ 285944  285768 Sl    3.0  0.0      53 pipe_read            /scratch/ehmoon/whlee/sglang_engine_venv/bin/python -c from multiprocessing.resource_tracker import main;main(30)
+ 285945  285768 Rl   98.3  0.1      53 -                    sglang::scheduler
+ 285946  285768 Sl   18.3  0.0      53 do_poll.constprop.0  sglang::detokenizer

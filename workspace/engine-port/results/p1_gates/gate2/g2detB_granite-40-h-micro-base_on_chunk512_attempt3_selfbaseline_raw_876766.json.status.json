@@ -1,0 +1,12 @@
+{
+  "STATUS": "TIMEOUT",
+  "HTTP_CODE": "000",
+  "DETAIL": "UNDETERMINED(curl_timeout rc=28 elapsed_s~61 max_time_s=60 connect_timeout_s=10): call did not return in time -- MEASUREMENT FAILURE, not a mismatch (job 876699 hang class); partial_body=''",
+  "curl_rc": 28,
+  "elapsed_s_approx": "61",
+  "max_time_s": "60",
+  "connect_timeout_s": "10",
+  "dump_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2detB_granite-40-h-micro-base_on_chunk512_attempt3_selfbaseline_raw_876766.json",
+  "wall_ts": 1786293394.2473598,
+  "note": "greedy_call measurement failure: NOT a byte-mismatch and NOT a gate failure"
+}
