@@ -71,6 +71,7 @@ export G2_GREEDY_CONNECT_TIMEOUT=10
 echo "==================== PRE-REGISTERED DECISION RULES ===================="
 sed -n '/^# ========================= PRE-REGISTERED RULES/,/^# =====================/p' "$0"
 echo "======================================================================="
+echo "§9 아티팩트 레이아웃 주: 스코어러는 §9가 개별 파일로 예시한 env/delivery/premise/kvpool/pilot/bimodality 산출을 단일 g2s_report_<tag>_<jobid>.json의 키로 통합한다. 내용 보존은 제출 전 확인됨(experiment-runner, 2026-08-10). 절차 이탈 아님."
 echo "tag=$TAG model=$MODEL ctx=$CTX backend=$BACKEND rates=[$RATES] nrep=$NREP job=$SLURM_JOB_ID"
 
 # ---------------------------------------------------------------- manifest
@@ -87,7 +88,7 @@ if [ "$N_ADD" != "2" ] || [ "$N_DEL" != "0" ]; then
 fi
 echo "MANIFEST_CHECK=PASS"
 
-python -m unittest discover -s workspace/engine-port/tests -q 2>&1 | tail -3 \
+python -m unittest discover -s workspace/engine-port/tests -v 2>&1 \
   || { echo "CPU REGRESSION FAILED" >&2; exit 5; }
 echo "CPU_REGRESSION=PASS"
 
@@ -148,11 +149,19 @@ print(f"  flags: kv_tokens={d['_kv_cache_tokens']} capture={d['_capture_s']}s/{d
 PYEOF
 }
 
-bench () {  # $1=port $2=rate $3=nprompt $4=seed $5=outfile $6=warmup
+bench () {  # $1=port $2=rate $3=nprompt $4=seed $5=outfile $6=warmup $7=row-tag
+  # --output-details is MANDATORY: without it bench_serving.py:1630 dumps only the
+  # aggregate `result` and drops `result_details` (itls/ttfts/input_lens/output_lens).
+  # The pre-registered primaries (sec4.2 alpha=ITLp95_mean, beta=pooled p99) and the
+  # sec6.4 F-series are computed from per-request `itls`/`ttfts`; the aggregate
+  # p95_itl_ms is a run-level estimand and is NOT a substitute (post-hoc metric swap).
+  # Same flag as g2_run.sbatch:345 (capscan) and g2_run.sbatch:403 (phase 1).
+  # --tag is provenance only (bench_serving.py:1551); no scorer decision reads it.
   python -m sglang.bench_serving --backend sglang --host 127.0.0.1 --port "$1" \
     --dataset-name random-ids --random-input-len 2000 --random-output-len 96 \
     --random-range-ratio 1.0 --request-rate "$2" --num-prompts "$3" --seed "$4" \
-    --warmup-requests "$6" --output-file "$5" >> "$OUT/g2s_bench_${TAG}_${SLURM_JOB_ID}.log" 2>&1
+    --warmup-requests "$6" --output-details --output-file "$5" --tag "$7" \
+    >> "$OUT/g2s_bench_${TAG}_${SLURM_JOB_ID}.log" 2>&1
 }
 
 # ======================= Phase 0a -- capscan (4 arms) ======================
@@ -164,7 +173,8 @@ for ARM in $CAPSCAN_ARMS; do
     PID=$(boot "$ARM" "$PORT" "$LOG" "$TEL"); OK=$(wait_ready "$PID" "$PORT")
     [ "$OK" = 1 ] || { echo "capscan boot FAILED arm=$ARM seed=$SEED"; tail -20 "$LOG"; kill_server "$PID" "$PORT"; continue; }
     for R in $CAPSCAN_RATES; do
-      bench "$PORT" "$R" 60 "$SEED" "$OUT/g2s_${TAG}_capscan_${ARM}_seed${SEED}_${SLURM_JOB_ID}.jsonl" 4
+      bench "$PORT" "$R" 60 "$SEED" "$OUT/g2s_${TAG}_capscan_${ARM}_seed${SEED}_${SLURM_JOB_ID}.jsonl" 4 \
+            "capscan_${ARM}_seed${SEED}_r${R}"
     done
     kill_server "$PID" "$PORT"
     echo "  capscan done arm=$ARM seed=$SEED"
@@ -182,7 +192,8 @@ if [ "$TAG" = zamba2-27b ]; then
       PID=$(boot "$ARM" "$PORT" "$LOG" "$TEL"); OK=$(wait_ready "$PID" "$PORT")
       [ "$OK" = 1 ] || { kill_server "$PID" "$PORT"; continue; }
       bench "$PORT" 3 120 $((9000 + 100*REP + 3)) \
-        "$OUT/g2s_${TAG}_pilot_${ARM}_rep${REP}_${SLURM_JOB_ID}.jsonl" 8
+        "$OUT/g2s_${TAG}_pilot_${ARM}_rep${REP}_${SLURM_JOB_ID}.jsonl" 8 \
+        "pilot_${ARM}_rep${REP}_r3"
       kill_server "$PID" "$PORT"
     done
   done
@@ -245,7 +256,8 @@ for REP in $(seq 1 $NREP); do
     for R in $RATES; do
       S0=$(wc -l < "$TEL" 2>/dev/null || echo 0)
       bench "$PORT" "$R" 120 $((9000 + 100*REP + R)) \
-        "$OUT/g2s_${TAG}_${ARM}_rep${REP}_${SLURM_JOB_ID}.jsonl" 8
+        "$OUT/g2s_${TAG}_${ARM}_rep${REP}_${SLURM_JOB_ID}.jsonl" 8 \
+        "rep${REP}_${ARM}_r${R}"
       S1=$(wc -l < "$TEL" 2>/dev/null || echo 0)
       [ $FIRST -eq 1 ] || echo "," >> "$OFF"; FIRST=0
       printf '"r%s":[%s,%s]' "$R" "$S0" "$S1" >> "$OFF"
@@ -278,7 +290,71 @@ for arm in ("plainaux","pdmux_nosplit","pdmux_split34","pdmux_split34_nosticky",
         print(f"  cell telemetry {arm} r{r}: {len(rows)} rows -> {os.path.basename(dst)}")
 PYEOF
 
+# ==========================================================================
+# SCORING.  Methodology gate #21: a scoring failure must NOT be reported as a
+# successful job, and it must be distinguishable from a MEASUREMENT failure.
+# Job 877107/877109 exited 0:0 while the scorer died on KeyError:'itls' --
+# `set -uo pipefail` without `-e` means the pipeline's status was discarded and
+# the script's exit code was the trailing `echo`.
+#
+# ★ THE COST OF MISCLASSIFYING IS ASYMMETRIC:
+#     exit 21 => somebody burns ~6.4 GPU-hr re-running the campaign
+#     exit 20 => somebody reruns the scorer on the existing files, 0 GPU-hr
+#   Job 877593 exited 21 while the measurement was PERFECT (all 5 rep files had
+#   itls/ttfts); the violations came from telemetry files a loose glob had pulled
+#   in.  Trusting that verdict would have wasted 6.4 GPU-hr.  This is the MIRROR
+#   IMAGE of gate #21 -- a SCORER failure reported as a MEASUREMENT failure -- and
+#   it happened inside the mechanism built to tell those apart.  When the evidence
+#   is ambiguous the classifier must fall to 22, not round up to 21.
+#
+#   exit 0  = MEASURED + SCORED
+#   exit 20 = MEASURED_OK / SCORING_FAILED  -> data on disk is complete (or the
+#             only bad rows are files that are not bench output); RESCORE OFFLINE
+#   exit 21 = MEASUREMENT_INCOMPLETE        -> accepted bench files really lack the
+#             required keys; a GPU re-run is required
+#   exit 22 = INDETERMINATE                 -> cannot separate the two; HUMAN
+#             JUDGMENT required.  Do NOT spend GPU on this verdict alone.
+# ==========================================================================
+echo; echo "===== PRE-SCORING MEASUREMENT PREFLIGHT (gate #21 + its mirror image) ====="
+python3 "$OUT/g2s_analyze.py" --tag "$TAG" --job "$SLURM_JOB_ID" --outdir "$OUT" \
+  --check-contract-only 2>&1 | tee "$OUT/g2s_preflight_${TAG}_${SLURM_JOB_ID}.txt"
+PREFLIGHT_RC=${PIPESTATUS[0]}
+echo "PREFLIGHT_RC=$PREFLIGHT_RC (0=MEASUREMENT_OK, 7=MEASUREMENT_INCOMPLETE[GPU],"\
+     "8=SCORER_SELECTION_DEFECT[no GPU], 9=INDETERMINATE[human])"
+
 echo; echo "===== SCORING ====="
 python3 "$OUT/g2s_analyze.py" --tag "$TAG" --job "$SLURM_JOB_ID" --outdir "$OUT" \
-  | tee "$OUT/g2s_scoreout_${TAG}_${SLURM_JOB_ID}.txt"
+  2>&1 | tee "$OUT/g2s_scoreout_${TAG}_${SLURM_JOB_ID}.txt"
+SCORE_RC=${PIPESTATUS[0]}
+
+# A scorer exit of 0 is NOT on its own a success: the scorer will happily emit a
+# report full of NaNs from an empty directory.  Success requires BOTH the scorer to
+# finish AND the preflight to certify the inventory.  If they disagree, that is a
+# contradiction to surface (22), never something to paper over with 0.
+if   [ "$SCORE_RC" = 0 ] && [ "$PREFLIGHT_RC" = 0 ]; then
+                                   STATUS=MEASURED_AND_SCORED;              RC=0
+elif [ "$SCORE_RC" = 0 ];     then STATUS=SCORED_BUT_INVENTORY_UNCERTIFIED; RC=22
+elif [ "$PREFLIGHT_RC" = 0 ]; then STATUS=MEASURED_OK_SCORING_FAILED;       RC=20
+elif [ "$PREFLIGHT_RC" = 8 ]; then STATUS=MEASURED_OK_SCORER_SELECTION_DEFECT; RC=20
+elif [ "$PREFLIGHT_RC" = 7 ]; then STATUS=MEASUREMENT_INCOMPLETE;           RC=21
+else                               STATUS=INDETERMINATE;                    RC=22
+fi
+python3 - "$OUT" "$TAG" "$SLURM_JOB_ID" "$STATUS" "$RC" "$SCORE_RC" "$PREFLIGHT_RC" <<'PYEOF'
+import json, sys
+out, tag, job, status, rc, src, prc = sys.argv[1:8]
+json.dump(dict(tag=tag, job=job, status=status, exit_code=int(rc),
+               scorer_rc=int(src), preflight_rc=int(prc),
+               rescore_offline_sufficient=status in (
+                   "MEASURED_OK_SCORING_FAILED", "MEASURED_OK_SCORER_SELECTION_DEFECT"),
+               gpu_rerun_required=(status == "MEASUREMENT_INCOMPLETE"),
+               human_judgment_required=status in (
+                   "INDETERMINATE", "SCORED_BUT_INVENTORY_UNCERTIFIED"),
+               cost_note=("exit 21 costs ~6.4 GPU-hr, exit 20/22 cost 0 -- never "
+                          "round an ambiguous case up to 21")),
+          open(f"{out}/g2s_status_{tag}_{job}.json", "w"), indent=1)
+PYEOF
+echo "CAMPAIGN_STATUS=$STATUS scorer_rc=$SCORE_RC preflight_rc=$PREFLIGHT_RC exit=$RC"
+[ "$RC" = 21 ] && echo "  -> GPU RE-RUN REQUIRED (~6.4 GPU-hr). Confirm against the preflight attribution lines before spending it."
+[ "$RC" = 22 ] && echo "  -> INDETERMINATE: human judgment required. Do NOT re-run on GPU on this verdict alone."
 echo "DONE tag=$TAG job=$SLURM_JOB_ID"
+exit "$RC"
