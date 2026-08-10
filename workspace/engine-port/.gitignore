@@ -151,13 +151,22 @@ results/p1_gates/gate2/*.raw.json
 # gate2 smoke-harness raw prompts (2026-08-11): g2_holb_smoke.sbatch
 # (tracked) is a pre-submission plumbing check only ("NO performance claim,
 # no HOLB probe telemetry scored here" per its own header comment) run as
-# jobs 874628/874631/874632. Its smoke_prompt_<tag>_<jobid>.{txt,json}
-# outputs were already excluded from tracking by explicit precedent -- see
+# jobs 874628/874631/874632. Its smoke_prompt_<tag>_<jobid>.txt prompt-body
+# dumps were already excluded from tracking by explicit precedent -- see
 # commit 7cf16bd's message: "smoke jobs 874628/874631/874632 are left out
-# of this commit -- not part of this session's scope". No other artifact
-# from these three job ids is tracked either (`git ls-files | grep
-# '874628\|874631\|874632'` -> empty). This rule just makes `git status`
-# reflect that existing decision instead of leaving the files perpetually
-# untracked-but-visible; it does not delete anything and does not change
-# the decision, only encodes it.
-results/p1_gates/gate2/smoke_prompt_*
+# of this commit -- not part of this session's scope". This rule just makes
+# `git status` reflect that existing decision instead of leaving the files
+# perpetually untracked-but-visible; it does not delete anything and does
+# not change the decision, only encodes it.
+#
+# Narrowed to *.txt only (2026-08-11, same-day follow-up): the original
+# blanket `smoke_prompt_*` also matched smoke_prompt_meta_<tag>_<jobid>.json,
+# which is now deliberately tracked (unlike the txt body) -- it is small
+# (~250B) provenance (model/target_len/vocab_size/offset/reencoded_len/
+# generator) that makes the ignored .txt prompt body reproducible, same
+# "provenance kept, raw not" role the campaign-OUTPUTS convention plays
+# elsewhere. Root .gitignore's **/results/**/smoke_prompt_*.txt (campaign
+# runtime OUTPUTS section) now generalizes this pattern project-wide; this
+# local line is redundant for gate2 specifically but kept, narrowed, for
+# history.
+results/p1_gates/gate2/smoke_prompt_*.txt

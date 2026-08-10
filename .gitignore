@@ -116,6 +116,7 @@ tmp/
 **/results/**/*_result.txt
 **/results/**/*_prompt.txt
 **/results/**/*_prompt_[0-9]*.txt
+**/results/**/smoke_prompt_*.txt
 **/results/**/*_clocks.csv
 # shared default sync manifest; the per-campaign copy is the tracked one
 /workspace/engine-port/results/runtime_source_manifest.sha256
