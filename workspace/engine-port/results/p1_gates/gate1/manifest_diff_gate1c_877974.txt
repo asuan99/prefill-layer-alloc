@@ -1,0 +1,5 @@
+=== in reference (873945) manifest, NOT matching (same path+hash) in new manifest -- nonzero means an existing tracked file's CONTENT changed (should be 0) ===
+
+=== in new manifest, NOT in reference -- new tracked files (expected: exactly holb_probe.py + scheduler.py) ===
+5b8a25accdf1d3fcf0d81f35348fc239454f5682b24c868a4334a1809d6a920d  /scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/managers/scheduler.py
+97cd7392287158523337860a334f88b1924ab272cc1d6eb6f41f083912fd1f3f  /scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/multiplex/holb_probe.py
