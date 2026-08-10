@@ -1,6 +1,12 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-11(doc-steward — **정본 동기화, rev14–rev20
+최종 갱신: 2026-08-11(doc-steward — **G1-c(job 877974) 완료 반영
+— "P1 트랙 로드맵" 절의 G1-c를 완료 항목으로 이동, 후속 E1/E2/E3
+신설, G1-a "착수 가능"으로 갱신. 새 성능 판정 아님, Gate 2-S 판정
+자체 무변경, 크기 인용 셀은 여전히 Zamba2 r2 하나(3개로 늘지
+않음).** 상세 `CLAIM_EVIDENCE_MATRIX.md` "P1 트랙" 절,
+`CONSENSUS.md` §1-1(2026-08-11 G1-c 블록, rev22)·§3 항목41–43.
+이전: 2026-08-11(doc-steward — **정본 동기화, rev14–rev20
 (2026-08-06~2026-08-11) 반영 완료. 아래 P0–P6/벡터1/벡터2 본문
 (2026-08-03 이전 작성분)은 무변경** — 그 구간은 "8B decode-SM
 프론티어"(E1/sticky/C2, Claim A 소관) 또는 "SLO-aware 동적 제어"
@@ -219,28 +225,47 @@ D/E 소관)와 별개다 — 여기서 묻는 질문은 "이 엔진에서 PD-mux
    성분만 격리한 첫 대조: ITL p95 개선 vs TTFT p95 악화(트레이드오프),
    크기 인용은 Zamba2 r2 1셀. **인용 시 `CLAIM_EVIDENCE_MATRIX.md` "P1
    트랙" 절의 제한 7건을 반드시 함께 적용.**
+7. **★G1-c**(2026-08-11, job 877974, 0.10 GPU-hr) — Granite(873945 복제)로
+   Gate 1/Gate 2-S가 Granite에 대해 남긴 "전제 미검증" 상태를 해소. Gate
+   2-S §8.9 Granite r3·r4 전제 **PREMISE VERIFIED**(max(decode_bs)=10/10
+   <36, frac((54,54))=0/0). **해제되는 것은 명명 층 하나뿐**(§5.6.1
+   `name_for()`) — **크기 인용 자격은 불변**(`g2s_analyze.py:1157-1161`
+   코드 확인: `premise`는 F-계열 gate 산출에 미입력), Granite r3·r4는
+   여전히 F-계열 발화 상태라 `SIGN ONLY, MAGNITUDE NOT CITABLE` 유지 ⇒
+   **크기 인용 가능 셀은 여전히 Zamba2 r2 하나뿐**(세션 초반 "1→3개로
+   는다" 예상은 원자료로 반증). 상세 `CLAIM_EVIDENCE_MATRIX.md` "P1 트랙"
+   절 5번·인용 제한 7건 4번(갱신).
 
 ### 다음 gate (우선순위순)
 
-1. **G1-c**(≈0.2 GPU-hr) — Granite(873945 복제)로 Gate 1/Gate 2-S가 Granite
-   에 대해 남긴 "전제 미검증" 상태를 해소. Gate 2-S confirmatory 4셀 중
-   Granite 2셀의 명명 제한(§8.9.1)을 푸는 유일한 경로. **제출됨**(job
-   877974, 2026-08-11, RUNNING) — 이 문서 갱신 시점 결과 없음, 완료 후
-   result-analyst/claims-auditor 판정 선행.
-   G1-a(관측 전용 sync 1회, `multiplexing_mixin.py:1005`/`:1080` 사이)·
-   G1-d(S3 하드웨어 프로브, 아래 항목과 통합)도 같은 그룹, 이들은 미착수.
-2. **S3 / `%smid` 직접 하드웨어 SM 프로브**(별건, 이 트랙 어떤 캠페인의
+1. **G1-c 후속 E1**(GPU 0, CPU ≈2분, 권장, ⚠️blind 아님) — Gate 2-S 자신의
+   A4 텔레메트리 슬라이스(`gate2/g2s_<tag>_telemetry_agnostic_r{3,4}_
+   <jobid>.jsonl`)에서 rate·rep별 `max(decode_bs)`를 직접 산출하는
+   addendum 사전등록+스코어러. claims-auditor가 이미 사후 산출(r3=10·
+   r4=13, rep별 [9,13])했으므로 addendum엔 "사후 인지 상태에서 등록됨"
+   명시 필수. 전제를 "복제 격자에서 이전"→"그 캠페인 그 셀에서 n=10 직접
+   검증"으로 격상. **미실행.**
+2. **G1-c 후속 E2**(GPU ≈0.7 hr, 차선) — G1-c를 Gate 2-S 부팅 구조
+   그대로(arm=agnostic, rate{3,4}, rep마다 재부팅) n=3 재실행. **미실행.**
+3. **G1-c 후속 E3**(GPU ≈0.7 hr, 선택, E1 통과 시 불필요) —
+   `PDMUX_TRACE_FORCE_PREFILL` 1 vs 0 paired로 관측자 부하 상한 직접
+   측정. **미실행.**
+4. **G1-a**(≈0.2 GPU-hr, engine-porter) — 관측 전용 sync 1회
+   (`multiplexing_mixin.py:1005`/`:1080` 사이). 관측자 혼입 회피로
+   G1-c 뒤로 순서를 미뤄뒀던 것, **2026-08-11 G1-c 완료로 착수 가능**.
+   G1-d(S3 하드웨어 프로브, 아래 항목과 통합)도 같은 그룹, 미착수.
+5. **S3 / `%smid` 직접 하드웨어 SM 프로브**(별건, 이 트랙 어떤 캠페인의
    선행조건도 아님, `PREREG_GATE2S_2026-08-09.md` §0.0.B) — "무분할(C)"의
    잔여 SM 차감 여부·selector-level→hardware-level 격상.
-3. **F-B(ii) 재설계** — Gate 2-S 인용-셀 선별 필터의 귀무 발화율이 40.1%
+6. **F-B(ii) 재설계** — Gate 2-S 인용-셀 선별 필터의 귀무 발화율이 40.1%
    (1−0.95¹⁰)임이 확인됐다(방법론 게이트 #24). 다음 사전등록에서 대체할
    것, **이번 결과에 소급 적용 금지**.
-4. **Gate 3**(≈1.5 GPU-hr/모델) — NemotronH·Falcon-H1 운영점 대조. "4모델
+7. **Gate 3**(≈1.5 GPU-hr/모델) — NemotronH·Falcon-H1 운영점 대조. "4모델
    전부"를 다시 쓰고 싶을 때만 필요, 안 하면 §1-1은 영구히 2모델 문장.
-5. **Gate 4**(sustainable-rate 직접 측정, n≥4) — r4/r6 크기·용량 주장을
+8. **Gate 4**(sustainable-rate 직접 측정, n≥4) — r4/r6 크기·용량 주장을
    인용하고 싶을 때만. 도착창 ≫ drain-tail이 되도록 프롬프트 수를 rate에
    비례(§4.2.1 관례).
-6. E-A 잔여 사다리(T3-1/T3-2/T3-3/T4-2/E-C/E-D, 우선순위·비용은
+9. E-A 잔여 사다리(T3-1/T3-2/T3-3/T4-2/E-C/E-D, 우선순위·비용은
    `PROJECT_STATUS.md` "확정된 결과" 1번 E-A 블록 참조) — fused-측 조율
    가능성 진단 계열, Gate 2 본 질문에는 직접 기여하지 않음.
 

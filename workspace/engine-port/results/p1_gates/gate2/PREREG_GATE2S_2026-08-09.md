@@ -1721,6 +1721,65 @@ prefill 동거 구간으로만 희석된다. 같은 희석이 job 872077에서 �
    정확한 정보와 함께 넘긴다.
    ⚠️ **해소 경로**: Granite에 대한 Gate 1 realized 관측(G1-c)은 §12-5의 별건이다.
 
+---
+
+#### ★ §8.9 addendum (2026-08-11, doc-steward, 사후 정오표 — 원문 미수정,
+G1-c/job 877974 반영으로 추가. 이 사전등록의 사전 고정 판정 규칙이나 위 §8.9
+표의 원문은 바꾸지 않는다, 아래만 추가)
+
+**(a) Granite r3·r4 승격**: G1-c(job 877974, 2026-08-11, 원자료
+`results/p1_gates/gate1/gate1c_result_877974.txt`)가 §8.9.1의 사전등록
+판정 규칙을 밀도 높은 독립 관측으로 재적용해, Granite r3·r4 모두
+**PREMISE VERIFIED**로 갱신한다(frac((54,54))(pop A 시간가중)=0.0000/
+0.0000 < `WITHDRAWAL_THRESHOLD`=0.01, max(decode_bs)=10/10 <
+`decode_bs_divisor`=36, 구조적 근항등식 양성대조 4 rate 전부 PASS). 위
+"병기 의무" 표의 Granite r3·r4 행 문구("전제 미검증...")는 이제
+**“전제 검증됨(G1-c, job 877974, 2026-08-11)”**으로 교체해 읽는다(원문은
+이력 보존을 위해 그대로 둔다).
+
+**(b) 이 승격이 §5.6.1 명명 제한에 미치는 영향과, 미치지 않는 영향
+(필수 구분)**: §5.6.1의 "간헐 전달(엔진 기본 궤적)"·"A4형" 명명은 이제
+Granite r3·r4에서도 허용된다. **그러나 이 문서의 §6.4 F-계열 gate와
+§9의 크기 인용 자격(`sec6.5`의 `nine_cell`/`gate_label` 산출)은 §8.9의
+`premise` 라벨과 독립적으로 산출되며(`g2s_analyze.py:1157-1161` 코드
+확인, `premise` 필드는 `results[...]` dict에 나란히 기록만 되고 어느
+산출 함수에도 입력되지 않는다), Granite r3(T′)·r4(C·T′)는 여전히
+F-계열 gate가 발화한 상태다.** 따라서 **크기 인용 자격은 이 승격으로
+바뀌지 않는다** — 이 캠페인의 크기 인용 가능 셀은 여전히 Zamba2 r2
+하나뿐이다. Granite r3·r4를 인용할 때는 반드시 `F-SERIES FIRED ⇒
+SIGN ONLY, MAGNITUDE NOT CITABLE`을 함께 적는다.
+
+**(c) Zamba2 근거표 동시 정정(경계 없는 정정, Granite 기준을 낮춘 것
+아님)**: 위 §8.9 표에서 Zamba2 r2·r3의 "(ii) realized 관측" 열이
+인용한 **"비동거 구간 `(0,108)` 98%/99%"(pop-C 시간가중 분수)는
+`gate1/PREREG_G1B_2026-08-07.md:146`이 few-snapshot dt 팽창을 이유로
+**명시적으로 인용 금지**한 양이다(Gate 1 감사 확정 caveat — 이
+사전등록 작성 당시 그 인용 금지를 놓쳤던 것). 이 addendum은 §8.9 표의
+근거란을 Zamba2·Granite 공통으로 **"`max(decode_bs)<36`" 하나**로
+좁힌다(보수적 방향): Zamba2 r2 `max(decode_bs)=9`, r3 `=23`, Granite r3
+`=10`, r4 `=10` — 넷 다 36 미만. `frac((54,54))=0`(해당하는 경우)은
+그 **코드 귀결**(`multiplexing_mixin.py:900-909`: `idx==2 ⟺
+decode_bs≥36`, 항등식)이지 별개의 독립 증거가 아니므로, 두 수치를
+독립 증거 두 개처럼 병기하지 않는다. **load-bearing 아님**(비동거
+분기 `multiplexing_mixin.py:911-912,923`은 decode_bs 비의존 코드
+항등식이라 4 셀[Zamba2 r2·r3, Granite r3·r4] 공통이므로 이 정정으로
+§8.9의 전제 판정 자체는 바뀌지 않는다) — 순수하게 인용 위생 정정이다.
+
+**(d) 새로 인용 금지된 것(result-analyst, G1-c 산출물 감사)**: G1-c
+사전등록(`gate1/PREREG_G1C_2026-08-11.md`)이 "pop A/B는 그대로 인용
+가능"이라 허용한 것 중 `t_total_s`는 경계 구간 dt가 interior의
+11–18배라 5–29% 상향 편향이므로 **인용 금지**한다(과대 허용이었음을
+사후 정정). pop C는 이 §8.9 자체가 이미 인용 금지였으므로 변경 없음.
+
+정본 반영: `reports/CONSENSUS.md` §1-1(2026-08-11 G1-c 블록,
+rev22)·§3 항목41–43, `PROJECT_STATUS.md` "확정된 결과" 1번·"방법론
+게이트" #27–29, `reports/paper/CLAIM_EVIDENCE_MATRIX.md` "P1 트랙"
+절(인용 제한 7건 4번 갱신). 이 addendum 자체는 사전등록 판정
+규칙(§8.9.1, `WITHDRAWAL_THRESHOLD`, F-계열 gate)을 **바꾸지 않는다**
+— 사후 관측 결과의 반영과 인용 위생 정정만 담는다.
+
+---
+
 #### ★ 8.9.1 rev6 신설 — **in-job 단방향 전제 반증기** (4차 감사 최우선 처방, GPU 0)
 
 **목적**: §8.9의 셀별 라벨을 **이 캠페인 자신의 데이터로 반증할 수 있게** 한다.

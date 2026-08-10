@@ -1,6 +1,10 @@
 # Document status
 
-최종 갱신: 2026-08-11(doc-steward — **정본 동기화 기록.**
+최종 갱신: 2026-08-11(doc-steward — **G1-c(job 877974) 반영으로
+`CLAIM_EVIDENCE_MATRIX.md`·`EXPERIMENT_ROADMAP.md`를
+`reports/CONSENSUS.md` rev22와 재동기화(Gate 2-S 인용 제한 7건
+중 4번 갱신, "P1 트랙" 로드맵 완료분 이동). 분류표 무변경, changelog
+기록뿐.** 이전: 2026-08-11(doc-steward — **정본 동기화 기록.**
 `CLAIM_EVIDENCE_MATRIX.md`·`EXPERIMENT_ROADMAP.md`를
 `reports/CONSENSUS.md` rev14→rev21(2026-08-06~2026-08-11) 및
 `PROJECT_STATUS.md`의 같은 구간과 대조·동기화했다. Claim A–F/

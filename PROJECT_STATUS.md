@@ -1,6 +1,26 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-11 (doc-steward — **"방법론 게이트" #26 신설**
+최종 갱신: 2026-08-11 (doc-steward — **G1-c(job 877974, 0.10
+GPU-hr) 반영 — Gate 2-S Granite r3·r4 "엔진 기본 궤적"·"A4형"
+명명 제한 조건부 해제. 새 성능 판정 아님, "크기 인용 셀이
+늘었다"도 아님(반드시 정정).** 세션 초반의 동기 서술("전제
+VERIFIED가 되면 크기 인용 가능 셀이 1→3개로 는다")은 원자료·
+코드 대조로 **반증**됐다 — 크기 인용을 막는 것은 `premise`
+라벨이 아니라 독립 산출되는 F-계열 gate이고(`g2s_analyze.py:
+1157-1161`, 유일 소비처는 `name_for()`), Granite r3(T′)·r4(C·
+T′) 모두 여전히 F-계열 발화 상태라 **`SIGN ONLY, MAGNITUDE NOT
+CITABLE`이 유지**된다. ⇒ **이번 승격이 바꾸는 것은 명명 층
+하나뿐**이고, **크기 인용 가능 셀은 여전히 Zamba2 r2 하나**다
+(불변). rev20(2026-08-11 Gate 2-S 첫 유효 결과)의 Δ=+13.95/
++24.88/+16.04/+19.11ms(4셀 Holm 후 최대 p=1.88e-06)·전 9-셀
+`S1-C` 문장은 **한 글자도 바뀌지 않는다**. 동시에
+`PREREG_GATE2S_2026-08-09.md` §8.9의 Zamba2 근거표가 Gate 1이
+인용 금지한 pop-C 시간가중 분수를 인용하고 있던 기존 정본 결함을
+사후 addendum으로 정정했고(원문 미덮어쓰기), 신규 방법론 항목
+3건(#27–29)을 등재했다. 상세는 아래 "확정된 결과" 1번·"방법론
+게이트" #27–29, `CONSENSUS.md` §1-1(2026-08-11 G1-c 블록, rev22)·
+§3 항목41–43.
+이전: 2026-08-11 (doc-steward — **"방법론 게이트" #26 신설**
 [대형 캠페인 제출 전 배관 스모크 규율, `CONSENSUS.md` §3 항목40과
 대응] — 새 성능 판정 아님. Gate 2-S 1차 실행(jobs 877107/877109,
 6.40 GPU-hr)이 하네스 결함 6건으로 사전등록 primary 0개를 낸 뒤,
@@ -1165,6 +1185,101 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
    인용만). 아래 "방법론 게이트" #9·#20(개정)·#24·#25 신설.
    `CLAIM_EVIDENCE_MATRIX.md`는 대조 확인 결과 이 항목을 인용한
    서술이 없어 갱신 대상 없음(확인 완료).
+
+   ★★★★★★★★**(2026-08-11, G1-c, job 877974, 0.10 GPU-hr) Gate 2-S
+   Granite r3·r4 명명 제한 조건부 해제 — 새 성능 판정 아님, 크기
+   인용 셀 확대 아님.** G1-c(Gate 1/G1-b의 Granite 자매 job, 873945
+   격자 {2,3,4,6} 전부 재현, `PDMUX_TRACE_FORCE_PREFILL=1`·
+   `TRACE_EVERY=32`, 원자료 `results/p1_gates/gate1/gate1c_result_
+   877974.txt`)가 §8.9 전제 판정 규칙(frac((54,54))(pop A 시간가중)
+   `<0.01` ∧ max(decode_bs)`<36` ⇒ VERIFIED)을 rate 3·4 양쪽에서
+   발화시켰다: max(decode_bs)=10/10(36 미만)·frac_5454=0.0000/
+   0.0000, 구조적 근항등식 양성대조(pop_A_time_weighted_frac
+   (TARGET_A))=1.0000이 4 rate 전부 PASS, grid-completeness 결측
+   0/expected. 트리 근거는 `results/p1_gates/gate2/
+   runtime_source_manifest_s_granite-40-h-micro-base_877757.sha256`
+   와 15/15 바이트 동일(diff 확인, 메인 세션 재확인) — 873945
+   상속(G3, 재검증 안 함) 근거뿐 아니라 877757 자신과의 직접
+   동일성으로 강화됨.
+
+   ⇒ 해제되는 것은 `PREREG_GATE2S_2026-08-09.md` §5.6.1
+   `name_for()`의 **명명 층 하나뿐**이다: Granite r3·r4에서 "간헐
+   전달(엔진 기본 궤적)"·"A4형" 명명이 허용된다. **크기 인용
+   자격은 불변**(코드 확인, `g2s_analyze.py:1157-1161` —
+   `premise` 필드는 `nine_cell`·`gate_label`(F-계열) 산출에
+   입력되지 않고 결과 dict에 나란히 기록만 됨) — Granite r3는 T′
+   F-계열 발화, r4는 C·T′ F-계열 발화 상태라 **`SIGN ONLY,
+   MAGNITUDE NOT CITABLE`이 유지**된다 ⇒ **크기 인용 가능 셀은
+   여전히 Zamba2 r2 하나뿐**(세션 초반 "1→3개로 는다" 서술은
+   원자료로 반증, 과장 정정).
+
+   **조건부 해제 필수조건 6건(하나라도 누락 시 해제 무효)**: ①
+   명명 층 한정(부호 서술·헤드라인 명명에만, 크기 인용 불변) ②
+   Granite r3·r4 인용마다 F-계열 gate 병기(`F-SERIES FIRED ⇒
+   SIGN ONLY, MAGNITUDE NOT CITABLE`, r3=T′·r4=C·T′) ③ 경험적
+   내용은 하나 — "동거 구간 realized max(decode_bs)=10(r3)/10(r4)
+   `<`문턱 36"이고 frac((54,54))=0은 그 **코드 귀결**
+   (`multiplexing_mixin.py:900-909`: idx==2 ⟺ decode_bs≥36, 항등식)
+   이지 독립 증거가 아니므로 두 수치를 독립 증거처럼 병기 금지 ④
+   증거 등급 명시(`job 877974, n=1, 873945 격자 복제,
+   PDMUX_TRACE_FORCE_PREFILL=1[관측 밀도 32배, 관측자 부하 상한
+   없음 — G5 UNDETERMINED], Gate 2-S 셀에서의 직접 관측 아님,
+   selector-level·S3 미실행`) ⑤ 트리 근거는 877757 기준(위 문단) —
+   "873945와 바이트 동일 아님(G3 상속)"만 쓰면 오도 ⑥ 아래 Zamba2
+   근거표 동시 정정.
+
+   **pop A `t_total_s` 인용 금지(신규, result-analyst)**: 경계
+   구간 dt가 interior의 11–18배라 5–29% 상향 편향 — G1-c
+   사전등록의 "A/B 그대로 인용 가능" 허용은 과대 허용이었다.
+   정직한 bracket(참고용, 크기 결론 아님): r2 [11.07,15.57]s·r3
+   [15.55,19.10]s·r4 [16.24,19.71]s·r6 [17.26,18.17]s. pop C
+   절대·상대 분수는 종전대로 인용 금지.
+
+   ⚠️**해제 후에도 금지인 문장 8건**: ①"크기 인용 가능 셀이
+   3개가 됐다"/Granite r3·r4의 Δ·CI·%·β 크기 인용 ②"전제가
+   검증됐으므로 4셀이 동질적이다"(F-계열·검정력 축 비동질성 유지)
+   ③"A4와 T′는 동일하다"(확립된 것은 인덱스 사상 동일 +
+   decode_bs<36 관측뿐, A4는 `_slo_on=False`라 EMA·
+   `controller_decision`·`_r2_decide_idx` 경로 자체가 없다)
+   ④"Granite에서 (54,54)는 도달 불가"(부하가 커지면 도달 —
+   Zamba2 r6에서 실제 발생, 게이트#16 거울상) ⑤"엔진 기본
+   궤적=물리적으로 prefill 74 SM/decode 34 SM"(selector 라벨,
+   잔여 차감 미측정, S3 미실행) ⑥"frac_5454=0과
+   max_decode_bs<36이 각각 전제를 지지한다"(항등식, ③ 재확인)
+   ⑦877974의 TTFT/TPOT/ITL/goodput 어떤 수치도 인용 금지(n=1,
+   진단 전용) ⑧"Granite에서는 G1-b식 철회가 일어나지 않는다"의
+   무제한 서술(n=1·이 격자·이 워크로드 스코프 필수, 게이트#16
+   거울상).
+
+   ★**성능 결론 불변**: `premise` 라벨은 Δ·paired t CI·Holm·
+   9-셀·F-계열 gate 산출에 미입력(코드 확인) — 위 rev20의
+   Δ=+13.95/+24.88/+16.04/+19.11ms(4셀 Holm 후 최대
+   p=1.88e-06)·9-셀 좌표 전부 `S1-C`·크기 인용 허용 셀 Zamba2 r2
+   하나 문장은 **한 글자도 바뀌지 않는다**.
+
+   ★**`PREREG_GATE2S_2026-08-09.md` §8.9 정오표(사후 addendum,
+   원문 미덮어쓰기)**: 기존 §8.9 표의 Zamba2 r2·r3 "전제 상태"
+   근거란이 **pop-C 시간가중 분수(비동거 구간 `(0,108)` 98%/99%)를
+   인용**하고 있었는데, 이 양은 `gate1/PREREG_G1B_2026-08-07.md:
+   146`이 few-snapshot dt 팽창을 이유로 **명시적으로 인용
+   금지**한 것이다(Gate 1 감사 확정) — Zamba2·Granite 양 모델
+   공통으로 §8.9 표의 근거란을 "**max(decode_bs)<36**" 하나로
+   좁힌다(보수적 방향; "Granite 기준을 낮춰 맞춘 것"이 아니라
+   기존 Zamba2 표기가 과다 인용이었던 것의 정정). load-bearing
+   아님(비동거 분기 `multiplexing_mixin.py:911-912,923`는
+   decode_bs 비의존 코드 항등식이라 A4·T′ 공통이므로 이 정정으로
+   §8.9의 판정 자체는 바뀌지 않음).
+
+   정본 반영: `reports/CONSENSUS.md` rev22·§1-1(이 블록)·§3
+   항목41(신규, 결정량의 밀도 의존성)·항목42(신규, 실험 payoff는
+   코드로 검증 후 정당화)·항목43(신규, `compute_coverage`류는
+   내부 구멍에 맹목). 아래 "방법론 게이트" #27–29 신설.
+   `CLAIM_EVIDENCE_MATRIX.md`는 대조 확인 결과 이 항목을 인용한
+   서술이 없어 갱신 대상 없음(확인 완료). 원자료 `workspace/
+   engine-port/results/p1_gates/gate1/{PREREG_G1C_2026-08-11.md,
+   gate1c_result_877974.txt, gate1c_analyze.py,
+   runtime_source_manifest_gate1c_877974.sha256,
+   manifest_diff_gate1c_877974.txt}`(수정 금지·인용만).
 2. 현재 A100/SGLang green-context substrate에서 layer-boundary resource
    switching은 sub-step drain과 synchronization을 일으켜 decode TPOT을 약
    `42→124 ms`로 악화시켰다. 최적화 후에도 약 `85 ms`였다.
@@ -2843,7 +2958,9 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
         1005`/`:1080` 사이에 관측 전용 sync 1회 추가 ⇒ "prefill
         in-flight ∧ stale idx"가 관측 가능해져 주 조건에 판별력이
         생긴다. 결정량 = 어드미션-후/adjust-전 구간의 시간 비율과
-        절대 ms. **미착수.**
+        절대 ms. **미착수 — 2026-08-11 G1-c 완료로 착수 가능**(관측자
+        혼입 회피 목적으로 G1-c 뒤로 순서를 미뤄뒀던 것, 우선순위
+        재평가는 engine-porter 소관).
       - ~~**G1-b**(≈0.2 GPU-hr): 같은 하네스에 rate 4·6 창 추가.
         결정량 = `max(decode_running_batch_size) ≥ 36` 여부 + pop A
         시간가중 hist. `(54,54)`가 등장하면 위 "단일 분할" 문장
@@ -2860,8 +2977,37 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
         전문 `CONSENSUS.md` §1-1(rev15)·§3 항목30, 원자료
         `workspace/engine-port/results/p1_gates/gate1/
         gate1b_result_875293.txt`·`PREREG_G1B_2026-08-07.md`.
-      - **G1-c**: Granite(873945 복제) — Granite 전체 미측정 상태
-        해소. **미착수.**
+      - ~~**G1-c**: Granite(873945 복제) — Granite 전체 미측정 상태
+        해소.~~ → ✅**완료(2026-08-11, job 877974, 0.10 GPU-hr) —
+        Gate 2-S Granite r3·r4 §8.9 전제 VERIFIED, 새 성능 판정
+        아님.** rate 3·4 모두 frac((54,54))(pop A 시간가중)=0.0000·
+        max(decode_bs)=10<36, 양성대조(구조적 근항등식) 4 rate
+        전부 PASS. **해제되는 것은 §5.6.1 명명 층뿐**(간헐 전달/
+        "엔진 기본 궤적"·"A4형" 명명 허용) — **크기 인용 자격은
+        불변**(코드 확인, `g2s_analyze.py:1157-1161`: `premise`는
+        Δ·CI·Holm·F-계열 gate 산출에 미입력), Granite r3·r4는
+        F-계열 발화 상태라 `SIGN ONLY, MAGNITUDE NOT CITABLE` 유지
+        — **크기 인용 가능 셀은 여전히 Zamba2 r2 하나**(세션
+        초반 "3개로 는다" 서술은 반증됨). 조건부 해제 필수조건
+        6건·해제 후 금지 문장 8건은 위 "확정된 결과" 1번·
+        `CONSENSUS.md` §1-1(2026-08-11 G1-c 블록) 참조. 원자료
+        `workspace/engine-port/results/p1_gates/gate1/
+        {PREREG_G1C_2026-08-11.md, gate1c_result_877974.txt,
+        gate1c_analyze.py}`.
+        - **후속 E1**(GPU 0, CPU ≈2분, 권장, ⚠️blind 아님) — Gate
+          2-S 자신의 셀 슬라이스 A4 텔레메트리(`gate2/g2s_<tag>_
+          telemetry_agnostic_r{3,4}_<jobid>.jsonl`)에서 rate·rep별
+          `max(decode_bs)`를 직접 산출하는 addendum 사전등록+
+          스코어러. claims-auditor가 이미 사후 산출(r3=10·r4=13,
+          rep별 [9,13])했으므로 addendum에 "사후 인지 상태에서
+          등록됨" 명시 필수. 전제를 "복제 격자에서 이전"→"그
+          캠페인 그 셀에서 n=10 직접 검증"으로 격상. **미실행.**
+        - **후속 E2**(GPU ≈0.7 hr, 차선) — G1-c를 Gate 2-S 부팅
+          구조 그대로(arm=agnostic, rate{3,4}, rep마다 재부팅)
+          n=3 재실행. **미실행.**
+        - **후속 E3**(GPU ≈0.7 hr, 선택, E1 통과 시 불필요) —
+          `PDMUX_TRACE_FORCE_PREFILL` 1 vs 0 paired로 관측자 부하
+          상한 직접 측정. **미실행.**
       - **G1-d**: S3 하드웨어 프로브(`%smid` 샘플링 / CUPTI) —
         selector-level→hardware-level 격상.
       - **하네스**: `gate1_analyze.py`에 grid-completeness 검정
@@ -2870,7 +3016,15 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
         못 잡는다(이번 "유실 없음"의 실제 근거는 coverage가 아니라
         이 검정이었다, 결측 0/22,252). engine-porter 이관:
         `telemetry.py`의 `writer_error` 로깅 + SIGKILL 경로에서
-        미호출되는 `close()`.
+        미호출되는 `close()`. ★신규(2026-08-11, G1-c 후속): (1)
+        `g2s_*_telemetry_<arm>_r<rate>_<job>.jsonl` 생성 코드에 rep
+        경계 마커 추가(현재 glob 순서가 rep1,rep10,rep2…로
+        비정렬 + 최대 1176.957s gap — 이번엔 >5s gap이 전부 pop B에
+        charge돼 무해했으나 설계가 아니라 운이다). (2)
+        `compute_coverage`(span 기반)에 최대 내부 gap 병기
+        (`gate1c_analyze.py:90-99`가 rate2 내부 2.749s=4.10% 공백을
+        "100.00%"로 보고 — 이번 판정엔 무영향, 정의가 과대진술,
+        `CONSENSUS.md` §3 항목43).
     - **Gate 2 — 4-arm 분해(1 job/모델, ≈1.5 GPU-hr)** [원 설계,
       이력 보존 — 실행판은 `PREREG_GATE2_2026-08-06.md` rev4로
       3회 개정(τ=60·n=10·5셀·Holm 보정)됐고 그 실행판이 2026-08-07
@@ -2956,7 +3110,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
-## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응], 2026-08-07 (G1-b) #16 신설[스코프 확장은 원 격자를 전부 재현하라, CONSENSUS §3 항목30과 대응], 2026-08-09 (E-A) #17–19 신설[게이트를 모든 보고 블록에 걸어라·과부하 arm 비교는 시스템 상수가 아니다·사후 지정 셀 이동, CONSENSUS §3 항목31–33과 대응]·(Gate 2 rev4 본 캠페인 R1′/R2′ 정본 반영 복구) #20 신설[사전등록 분석기가 계산하지 않는 비교는 사후 비교다, CONSENSUS §3 항목34와 대응], 2026-08-09 (HOLB G5 재채점·874601 라벨 정정·scipy 폴백) #21 신설[측정 실패를 게이트 실패로 라벨링 마라 — 6번째 재발, 최초 정식 등재, CONSENSUS §3 항목35와 대응]·#22 신설[통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지 않는다, CONSENSUS §3 항목36과 대응], 2026-08-10 (job 876699 T4-1 TIMEOUT 사후분석·공유 하네스 무한대기 수정) #21에 일곱 번째 재발 追記[이번엔 분석 코드가 거짓 음성(REFUTED)을 산출, CONSENSUS §3 항목35 개정과 대응]·#23 신설[공유 하네스 함수의 무경계 대기는 그 함수를 쓰는 모든 소비자의 위험이다, CONSENSUS §3 항목37과 대응], 2026-08-11 (Gate 2-S 첫 유효 결과, jobs 877756/877757, claims-auditor 적대 감사) #9에 여섯 번째 재발 追記[형식상 두 게이트가 같은 정보를 잼, CONSENSUS §3 항목18 개정과 대응]·#20에 새 사례 追記["식별자 수입 ≠ 거동 수입", CONSENSUS §3 항목34 개정과 대응]·#24 신설[any() over n reps 스크린의 귀무 발화율 1−(1−α)ⁿ, CONSENSUS §3 항목38과 대응]·#25 신설[사전등록이 명시한 진단 필드가 산출되지 않을 수 있다, CONSENSUS §3 항목39와 대응], 2026-08-11 (Gate 2-S 1차 실행 실패 후속, doc-steward) #26 신설[대형 캠페인 제출 전 배관 스모크 규율 — 0.11 GPU-hr 스모크(job 877593)가 6.40 GPU-hr 오판(jobs 877107/877109) 재발을 막음, CONSENSUS §3 항목40과 대응])
+## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응], 2026-08-07 (G1-b) #16 신설[스코프 확장은 원 격자를 전부 재현하라, CONSENSUS §3 항목30과 대응], 2026-08-09 (E-A) #17–19 신설[게이트를 모든 보고 블록에 걸어라·과부하 arm 비교는 시스템 상수가 아니다·사후 지정 셀 이동, CONSENSUS §3 항목31–33과 대응]·(Gate 2 rev4 본 캠페인 R1′/R2′ 정본 반영 복구) #20 신설[사전등록 분석기가 계산하지 않는 비교는 사후 비교다, CONSENSUS §3 항목34와 대응], 2026-08-09 (HOLB G5 재채점·874601 라벨 정정·scipy 폴백) #21 신설[측정 실패를 게이트 실패로 라벨링 마라 — 6번째 재발, 최초 정식 등재, CONSENSUS §3 항목35와 대응]·#22 신설[통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지 않는다, CONSENSUS §3 항목36과 대응], 2026-08-10 (job 876699 T4-1 TIMEOUT 사후분석·공유 하네스 무한대기 수정) #21에 일곱 번째 재발 追記[이번엔 분석 코드가 거짓 음성(REFUTED)을 산출, CONSENSUS §3 항목35 개정과 대응]·#23 신설[공유 하네스 함수의 무경계 대기는 그 함수를 쓰는 모든 소비자의 위험이다, CONSENSUS §3 항목37과 대응], 2026-08-11 (Gate 2-S 첫 유효 결과, jobs 877756/877757, claims-auditor 적대 감사) #9에 여섯 번째 재발 追記[형식상 두 게이트가 같은 정보를 잼, CONSENSUS §3 항목18 개정과 대응]·#20에 새 사례 追記["식별자 수입 ≠ 거동 수입", CONSENSUS §3 항목34 개정과 대응]·#24 신설[any() over n reps 스크린의 귀무 발화율 1−(1−α)ⁿ, CONSENSUS §3 항목38과 대응]·#25 신설[사전등록이 명시한 진단 필드가 산출되지 않을 수 있다, CONSENSUS §3 항목39와 대응], 2026-08-11 (Gate 2-S 1차 실행 실패 후속, doc-steward) #26 신설[대형 캠페인 제출 전 배관 스모크 규율 — 0.11 GPU-hr 스모크(job 877593)가 6.40 GPU-hr 오판(jobs 877107/877109) 재발을 막음, CONSENSUS §3 항목40과 대응], 2026-08-11 (G1-c, job 877974) #27 신설[결정량의 밀도 의존성을 먼저 따져라, CONSENSUS §3 항목41과 대응]·#28 신설[실험이 무엇을 풀어주는지가 코드 사실인지 추정인지 실행 전에 구별하라, CONSENSUS §3 항목42와 대응]·#29 신설[`compute_coverage`류는 내부 구멍에 맹목이다, CONSENSUS §3 항목43과 대응])
 
 Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3),
 E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠페인에서 나온
@@ -3455,3 +3609,40 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     engine-port/results/p1_gates/gate2/g2ssmoke_verdict_877593.txt`·
     `g2ssmoke_877593.out`·`g2ssmoke_manifest_877593.txt`·
     `g2ssmoke_scoreout_zamba2-27b_877593.txt`(수정 금지·인용만).
+27. ★★**(2026-08-11, G1-c, job 877974) 결정량의 밀도 의존성을 먼저
+    따져라 — "sparse 텔레메트리로는 낼 수 없다"는 주장은 어느
+    통계량에 대한 것인지 먼저 밝혀야 한다.** §8.9.1의 in-job
+    반증기가 VERIFIED를 못 내는 것은 설계상 단방향이기 때문만이
+    아니라 실제로 밀도(`PDMUX_TRACE_FORCE_PREFILL=0`, ~1/32)에도
+    의존했다. 그런데 `max(decode_bs)`는 스케줄 그리드를 population과
+    무관하게 표본추출하므로 sparse 텔레메트리에서도 나온다 — Gate
+    2-S 자신의 A4 원자료(877756/877757)에서 사후 산출한 값이
+    r3=10·r4=13(rep별 [9,13], claims-auditor 산출)이었다. 즉 "전제
+    검증의 경험적 절반(`max_decode_bs<36`)은 새 GPU 캠페인 없이 이미
+    지불돼 있었다" — G1-c가 실제로 추가한 것은 `frac((54,54))`의
+    고밀도 직접 관측과 양성대조뿐이다. 실무 규칙: "이 라벨은 오직
+    새 캠페인만 낼 수 있다"는 서술은 반드시 어느 통계량에 대해
+    참인지 한정하라. 상세 `CONSENSUS.md` §1-1(2026-08-11 G1-c
+    블록)·§3 항목41.
+28. ★**(2026-08-11, G1-c) 실험이 무엇을 풀어주는지가 코드 사실인지
+    추정인지, 실행 전에 코드로 확인한 뒤 정당화하라.** 이번 세션
+    초기 동기 서술("전제가 VERIFIED되면 Gate 2-S 크기 인용 셀이
+    1→3개로 는다")은 실행 후 원자료·코드 대조로 반증됐다 — 크기
+    인용을 막는 것은 `premise` 라벨이 아니라 독립 산출되는 F-계열
+    gate였다(`g2s_analyze.py:1157-1161`). 실험 자체는 0.10 GPU-hr로
+    저렴해 피해가 작았지만 원칙은 비용 규모와 무관하다: 실험을
+    정당화하는 문장이 "이 실험이 풀어줄 것"이라고 서술하는 대상은
+    실행 전에 산출 코드와 직접 대조해 코드 사실인지 서술자의
+    추정인지를 구별해야 한다. 상세 `CONSENSUS.md` §1-1(2026-08-11
+    G1-c 블록)·§3 항목42.
+29. **(2026-08-11, G1-c, engine-porter 이관 대기) `compute_coverage`
+    류(span 기반) 지표는 내부 구멍에 맹목이다.** `gate1c_analyze.py:
+    90-99`가 rate별 창의 첫·마지막 스냅샷만으로
+    "coverage=100.00%"를 냈으나 실제로는 창 내부에 유의한 공백이
+    존재했다(예: rate2 내부 최대 gap 2.749s = 창의 4.10%). 이번
+    판정에는 영향이 없었다(양성대조·grid-completeness가 독립적으로
+    결측 0을 확인) — 무해했던 것은 우연이지 정의의 방어력이 아니다.
+    실무 규칙: span 기반 coverage를 보고할 때는 최대 내부 gap을
+    함께 병기하라. `pdmux_eval/analyze.py`로 이 지표를 이관할 때
+    반영할 것. 상세 `CONSENSUS.md` §1-1(2026-08-11 G1-c 블록)·§3
+    항목43.
