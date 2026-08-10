@@ -31,6 +31,22 @@ citing magnitudes from a mixed-chunk-participating arm:
     2026-08-07); this script verifies the two preconditions live and reports
     the derived class name with that provenance made explicit, it does not
     assume the conclusion.
+  FIX #7 (2026-08-09) gate enforcement on EVERY reported block: FIX #1 above
+    enforced F-E on the PRIMARY cell verdict only. Every other block that
+    prints a number (per-arm X_60, secondary_mixed_effect CI, tau ladder,
+    per-arm secondary throughput/goodput/TTFT-p95/request-ITL, the Holm table,
+    the Phase 0 capscan rows and the section-6 mid-check SDs) computed no gate
+    at all, and a magnitude was in fact quoted out of the per-arm secondary
+    block for an F-E-flagged arm. Every such block now carries an explicit
+    `[GATE: ...]` label and a `gate` record in the JSON. This is methodology
+    gate #17 / CONSENSUS section 3 item 31. It is DISPLAY ENFORCEMENT ONLY: no
+    number is deleted, no verdict is recomputed, and every pre-existing field
+    (cell_verdict / citable / tost / raw_ci / ttft_ci / holm p-values /
+    underpowered) keeps byte-identical values -- verified by re-running both
+    875657 and 875661 before and after and diffing. See the FIX #7 block
+    comment above `GateBook` for the two-citability-fields caveat and for why
+    G-2 is surfaced as `arm_discard_candidate` rather than folded into
+    magnitude citability.
 
 Primary estimands (PREREG_G2EA, TWO comparisons, both against A4=agnostic):
   cmp1: X_60(plainmix)     vs X_60(agnostic)   ("does bare mixed-chunk alone replace pdmux")
@@ -285,6 +301,218 @@ def holm_adjust(pvals: List[Tuple[str, float]]) -> List[Tuple[str, float, float]
 
 
 # ---------------------------------------------------------------------------
+# FIX #7 (2026-08-09): GATE ENFORCEMENT ON *EVERY* REPORTED BLOCK
+#
+# Why this section exists. FIX #1 above wired F-E into the PRIMARY cell verdict
+# only. Every other block that prints a number -- the per-arm X_60 line, the
+# secondary_mixed_effect CI, the tau ladder, the per-arm secondary summary
+# (throughput / goodput / TTFT p95 / request-ITL p90), the Holm table, and the
+# Phase 0 capscan rows -- printed magnitudes derived from F-E-flagged arms with
+# NO gate marking at all. A magnitude was in fact quoted through the per-arm
+# secondary block. PREREG_GATE2_2026-08-06 sec3 states the consequence of a
+# flag as a property of the ARM ("그 arm이 참여하는 비교는 크기 인용 금지, 부호만
+# 보고"), so it binds every block printing a number derived from that arm, not
+# just the pre-registered primary comparison. This is methodology gate #17 /
+# CONSENSUS sec3 item 31: "게이트는 primary뿐 아니라 보고되는 모든 블록에 걸어라."
+#
+# SCOPE OF THIS SECTION -- DISPLAY ENFORCEMENT, NOT RE-SCORING:
+#   * It NEVER deletes, suppresses, re-scores or re-verdicts a number. The
+#     number is still printed and still persisted; an explicit label is
+#     attached next to it (information preserved, citation status stated).
+#   * No pre-registered decision rule is changed. In particular `cell_verdict`,
+#     `citable`, `tost`, `raw_ci`, `ttft_ci`, `holm`, `underpowered` and every
+#     other pre-existing field keep byte-identical values; this section only
+#     ADDS `gate` records / label suffixes.
+#   * Two DISTINCT citability fields therefore coexist and must not be
+#     conflated:
+#       - `citable` (pre-existing, primary only) = PREREG_G2EA sec7.1 item 1,
+#         i.e. F-E of the two participating arms ONLY.
+#       - `gate.magnitude_citable` (new, every block) = conjunction over every
+#         pre-registered magnitude gate applicable to the arms in that block
+#         (F-E on scored runs, F-A/F-B on capscan). On the 875657/875661
+#         artifacts these two agree everywhere (F-B fires only on arms F-E
+#         already fired on), so nothing changes hands; they are kept separate
+#         so that a future divergence is visible rather than silent.
+#   * G-2 is reported as `arm_discard_candidate`, NOT folded into
+#     magnitude_citable: PREREG_GATE2 sec2.1's consequence of a G-2 mismatch is
+#     "불일치 ⇒ A3 폐기" (discard the ARM), which is a scoping decision for
+#     result-analyst/claims-auditor, not a magnitude-citation rule this scorer
+#     may apply on its own.
+# ---------------------------------------------------------------------------
+
+def index_correctness(records: List[dict]) -> Dict[str, Dict[str, Any]]:
+    """arm -> {G1_self, G1_cross, G2, G2_n_concurrent} from the correctness jsonl."""
+    idx: Dict[str, Dict[str, Any]] = {}
+    for rec in records or []:
+        arm = rec.get("arm")
+        if not arm:
+            continue
+        e = idx.setdefault(arm, {})
+        gate = rec.get("gate")
+        if gate == "G1":
+            e["G1_self"] = rec.get("self_repro_status")
+            e["G1_cross"] = rec.get("cross_vs_plain_match")
+        elif gate == "G2_CONCURRENT":
+            e["G2"] = rec.get("verdict")
+            e["G2_n_concurrent"] = rec.get("n_concurrent")
+    return idx
+
+
+def _gate_fmt(parts: List[str]) -> str:
+    """Label appended to a printed magnitude. Empty string when every gate
+    applicable to that block is clear -- so an un-gated line stays byte-for-byte
+    what it was before FIX #7 (that identity is what makes the primary-output
+    diff proof meaningful)."""
+    return ("  [GATE: " + " | ".join(parts) + "]") if parts else ""
+
+
+class GateBook:
+    """Single place that decides which pre-registered gate labels a printed
+    magnitude carries. Constructed from the correctness artifact; Phase 0
+    (F-A/F-B) and the sec6 mid-check are attached as they are computed."""
+
+    def __init__(self, correctness_records: List[dict]) -> None:
+        self.correctness = index_correctness(correctness_records)
+        self.phase0: Dict[str, Any] = {}
+        self.midcheck: Dict[str, Any] = {}
+
+    # -- individual gates ---------------------------------------------------
+    def _fe(self, f_e: Optional[Dict[str, Any]], arms: List[str]) -> Tuple[List[str], List[str]]:
+        fired, undet = [], []
+        for a in arms:
+            fl = ((f_e or {}).get(a) or {}).get("flagged")
+            if fl is True:
+                fired.append(a)
+            elif fl is None:
+                undet.append(a)
+        return fired, undet
+
+    def _g2(self, arms: List[str]) -> Tuple[List[str], List[str]]:
+        fail, undet = [], []
+        for a in arms:
+            v = (self.correctness.get(a) or {}).get("G2")
+            if v is None:
+                continue  # gate not run for this arm (prereg runs G-2 on 3 arms)
+            sv = str(v).upper()
+            if sv == "PASS":
+                continue
+            if sv == "FAIL":
+                fail.append(a)
+            else:
+                undet.append(f"{a}={v}")
+        return fail, undet
+
+    def _g1(self, arms: List[str]) -> List[str]:
+        fail = []
+        for a in arms:
+            e = self.correctness.get(a) or {}
+            if not e:
+                continue
+            if e.get("G1_self") not in (None, "SELFREPRO_OK"):
+                fail.append(f"{a}:self={e.get('G1_self')}")
+            xc = e.get("G1_cross")
+            if xc not in (None, "n/a", "True", True):
+                fail.append(f"{a}:cross={xc}")
+        return fail
+
+    def _fa(self, arms: List[str], rate: Optional[int]) -> List[str]:
+        out = []
+        for a in arms:
+            rep = self.phase0.get(a) or {}
+            hits = [f for f in (rep.get("F_A") or [])
+                    if rate is None or f.get("rate") == rate]
+            if hits:
+                out.append(a)
+        return out
+
+    def _fb(self, arms: List[str], rate: Optional[int]) -> List[str]:
+        out = []
+        for a in arms:
+            rep = self.phase0.get(a) or {}
+            if not rep.get("F_B_flagged"):
+                continue
+            mults = rep.get("F_B_rate1_mult") or []
+            slope = (rep.get("F_B_slope") or {}).get("ci_excludes_0")
+            if rate is None or slope or any(m.get("rate") == rate for m in mults):
+                out.append(a)
+        return out
+
+    def _underpowered(self, comparison: Optional[str], rate: Optional[int]) -> Optional[bool]:
+        if comparison is None or rate is None:
+            return None
+        cell = ((self.midcheck.get(comparison) or {}).get(rate)) or {}
+        if cell.get("status") != "OK":
+            return None
+        return bool(cell.get("underpowered"))
+
+    # -- composite records --------------------------------------------------
+    def _record(self, arms: List[str], rate: Optional[int], comparison: Optional[str],
+                dataset: str, f_e: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        fe_fired, fe_undet = ([], []) if dataset != "scored" else self._fe(f_e, arms)
+        fa = self._fa(arms, rate)
+        fb = self._fb(arms, rate)
+        g2_fail, g2_undet = self._g2(arms)
+        g1_fail = self._g1(arms)
+        under = self._underpowered(comparison, rate)
+
+        parts: List[str] = []
+        if fe_fired:
+            parts.append("F-E FIRED(%s) => SIGN ONLY, MAGNITUDE NOT CITABLE" % ",".join(fe_fired))
+        if fe_undet:
+            parts.append("F-E UNDETERMINED(%s) => gate not evaluable" % ",".join(fe_undet))
+        if dataset == "capscan" and fa:
+            parts.append("F-A SATURATION(%s) => MAGNITUDE NOT CITABLE" % ",".join(fa))
+        elif fa:
+            parts.append("F-A SATURATION@capscan(%s) => MAGNITUDE NOT CITABLE" % ",".join(fa))
+        if dataset == "capscan" and fb:
+            parts.append("F-B TTFT-RUNAWAY(%s) => MAGNITUDE NOT CITABLE" % ",".join(fb))
+        elif fb:
+            parts.append("F-B TTFT-RUNAWAY@capscan(%s) => MAGNITUDE NOT CITABLE" % ",".join(fb))
+        if g2_fail:
+            parts.append("G-2 CONCURRENT FAIL(%s) => PREREG_GATE2 sec2.1 inherited "
+                         "discard rule applies to this arm (retraction candidate); "
+                         "this scorer does NOT re-score" % ",".join(g2_fail))
+        if g2_undet:
+            parts.append("G-2 UNDETERMINED(%s)" % ",".join(g2_undet))
+        if g1_fail:
+            parts.append("G-1 FAIL(%s)" % ",".join(g1_fail))
+        if under:
+            parts.append("PHASE0-MIDCHECK UNDERPOWERED => PREREG_G2EA sec6 forbids an "
+                         "equivalence (Rprime3_analog) verdict in this cell")
+
+        return {
+            "arms": list(arms),
+            "rate": rate,
+            "comparison": comparison,
+            "dataset": dataset,
+            "f_e_fired": fe_fired,
+            "f_e_undetermined": fe_undet,
+            "f_a_flagged": fa,
+            "f_b_flagged": fb,
+            "g2_concurrent_fail": g2_fail,
+            "g2_concurrent_undetermined": g2_undet,
+            "g1_fail": g1_fail,
+            "midcheck_underpowered": under,
+            "magnitude_citable": not (fe_fired or fa or fb),
+            "arm_discard_candidate": bool(g2_fail),
+            "label": _gate_fmt(parts),
+        }
+
+    def scored(self, f_e: Optional[Dict[str, Any]], arms: List[str],
+               rate: Optional[int] = None, comparison: Optional[str] = None) -> Dict[str, Any]:
+        """Gate record for a block computed from the Phase 1 SCORED runs."""
+        return self._record(arms, rate, comparison, "scored", f_e)
+
+    def capscan(self, arms: List[str], rate: Optional[int] = None,
+                comparison: Optional[str] = None) -> Dict[str, Any]:
+        """Gate record for a block computed from the Phase 0 CAPSCAN runs.
+        F-E is deliberately NOT applied here: PREREG_GATE2 sec3 requires F-A/F-B
+        to be computed on capscan and F-E on the scored runs, and forbids mixing
+        the two datasets ('혼용 금지')."""
+        return self._record(arms, rate, comparison, "capscan", None)
+
+
+# ---------------------------------------------------------------------------
 # realized flags (FIX #3/#6)
 # ---------------------------------------------------------------------------
 
@@ -378,6 +606,12 @@ def phase0_report(dirpath: str, tag: str, jobid: str, main_rates: List[int]) -> 
         print(f"  --- arm={arm} ---")
         arm_report: Dict[str, Any] = {"F_A": [], "F_B_slope": None, "F_B_rate1_mult": []}
         ttft_by_rate_seed: Dict[int, Dict[int, float]] = {}
+        # FIX #7: the per-(rate,seed) rows below print magnitudes (ttft_p50,
+        # req_thpt) that the ARM-LEVEL F-B verdict gates, but F-B is only known
+        # after the whole scan has been walked. Buffer the rows, then emit them
+        # with the F-B label attached. Print ORDER is unchanged (rows, then the
+        # F-B summary line) and an F-B-clear row is byte-identical to before.
+        row_lines: List[Tuple[int, str]] = []
         for rate in SCAN_RATES:
             for seed in (7, 17, 27):
                 row = data.get((seed, rate))
@@ -391,9 +625,10 @@ def phase0_report(dirpath: str, tag: str, jobid: str, main_rates: List[int]) -> 
                     arm_report["F_A"].append({"rate": rate, "seed": seed, "ratio": ratio})
                 ttft_by_rate_seed.setdefault(rate, {})[seed] = row.get("median_ttft_ms")
                 if rate in main_rates:
-                    print(f"  rate={rate} seed={seed} compl/total={n_completed}/{n_total} "
+                    row_lines.append((rate,
+                          f"  rate={rate} seed={seed} compl/total={n_completed}/{n_total} "
                           f"ttft_p50={(row.get('median_ttft_ms') or float('nan')):.1f}ms "
-                          f"req_thpt={(row.get('request_throughput') or float('nan')):.3f} F-A={flagA}")
+                          f"req_thpt={(row.get('request_throughput') or float('nan')):.3f} F-A={flagA}"))
         rate1_vals = list(ttft_by_rate_seed.get(1, {}).values())
         rate1_mean = statistics.mean(rate1_vals) if rate1_vals else None
         fb_flags = []
@@ -426,13 +661,23 @@ def phase0_report(dirpath: str, tag: str, jobid: str, main_rates: List[int]) -> 
         arm_report["F_B_rate1_mult"] = fb_flags
         fb_flagged = bool(fb_flags) or bool(slope_ci_excludes_0)
         arm_report["F_B_flagged"] = fb_flagged
+        # FIX #7: emit the buffered capscan rows with their own gate label.
+        one_arm = GateBook([])
+        one_arm.phase0 = {arm: arm_report}
+        row_gates: Dict[int, Dict[str, Any]] = {}
+        for rate, line in row_lines:
+            if rate not in row_gates:
+                row_gates[rate] = one_arm.capscan([arm], rate=rate)
+            print(line + row_gates[rate]["label"])
+        arm_report["magnitude_gate_by_rate"] = {r: g for r, g in row_gates.items()}
         print(f"  F-B (global): rate1_mult>4.0 flags={fb_flags} slope_ci_excludes_0={slope_ci_excludes_0} "
               f"-> {'FLAGGED' if fb_flagged else 'clear'}")
         report[arm] = arm_report
     return report
 
 
-def phase0_midcheck(dirpath: str, tag: str, jobid: str, main_rates: List[int]) -> Dict[str, Any]:
+def phase0_midcheck(dirpath: str, tag: str, jobid: str, main_rates: List[int],
+                     gates: Optional["GateBook"] = None) -> Dict[str, Any]:
     """PREREG_G2EA / rev4 section 5.1.1 analog: for BOTH primary comparisons,
     compare the mixed/chunk arm's capscan X_60 SD against sqrt(2)*SD(A4)."""
     print(f"\n=== Phase 0 mid-check (variance proxy, both primary comparisons): tag={tag} jobid={jobid} ===")
@@ -462,10 +707,18 @@ def phase0_midcheck(dirpath: str, tag: str, jobid: str, main_rates: List[int]) -
             sd4 = statistics.stdev(xb)
             proxy = math.sqrt(2) * sd4
             underpowered = sda > 2 * proxy
+            # FIX #7: these SDs are capscan magnitudes from the two participating
+            # arms, so the capscan gates (F-A/F-B) that flag those arms bind here
+            # too. Display-only: `underpowered` itself is untouched.
+            grec = (gates.capscan([arm_a, arm_b], rate=rate, comparison=label)
+                    if gates is not None else None)
             print(f"  {label} rate={rate}: SD(arm)={sda:.4f} sqrt2*SD(A4)={proxy:.4f} "
-                  f"2x_proxy={2*proxy:.4f} -> {'UNDERPOWERED' if underpowered else 'OK'}")
+                  f"2x_proxy={2*proxy:.4f} -> {'UNDERPOWERED' if underpowered else 'OK'}"
+                  f"{(grec or {}).get('label', '')}")
             out[label][rate] = {"status": "OK", "sd_arm": sda, "sd_a4": sd4, "proxy": proxy,
                                  "underpowered": underpowered}
+            if grec is not None:
+                out[label][rate]["gate"] = grec
     return out
 
 
@@ -528,20 +781,29 @@ def phase1_fE(dirpath: str, tag: str, jobid: str, rate: int, voided: set) -> Dic
 
 def compare_arms(dirpath: str, tag: str, jobid: str, rate: int, voided: set,
                   per_arm_rows: Dict[str, Dict[int, dict]], per_arm_x60: Dict[str, Dict[int, float]],
-                  arm_a: str, arm_b: str, label: str, f_e: Dict[str, Any]) -> Dict[str, Any]:
+                  arm_a: str, arm_b: str, label: str, f_e: Dict[str, Any],
+                  gates: Optional["GateBook"] = None) -> Dict[str, Any]:
     """Generic 2-arm TOST/superiority comparison, direction = X(arm_a) - X(arm_b).
     ci_lo>0 (arm_a worse, i.e. higher violation rate) -> arm_b superior ("Rprime4"-analog).
     ci_hi<0 (arm_a better) -> arm_a superior."""
+    # FIX #7: the gate label is resolved BEFORE any magnitude is printed, so that
+    # every magnitude line of this block carries it (rev-EA resolved F-E only at
+    # the end, in the verdict line, leaving the four magnitude lines above it
+    # quotable in isolation). The verdict/citability computation further down is
+    # untouched.
+    grec = (gates.scored(f_e, [arm_a, arm_b], rate=rate, comparison=label)
+            if gates is not None else None)
+    glab = (grec or {}).get("label", "")
     common_reps = sorted(set(per_arm_x60[arm_a]) & set(per_arm_x60[arm_b]))
     diffs = [per_arm_x60[arm_a][r] - per_arm_x60[arm_b][r] for r in common_reps]
     print(f"  [{label}] paired {arm_a}-{arm_b} X_60 diffs (n={len(diffs)}, reps={common_reps}): "
-          f"{['%.4f' % d for d in diffs]}")
+          f"{['%.4f' % d for d in diffs]}{glab}")
     tost = tost_equivalence(diffs, DELTA)
     raw_ci = paired_t_ci_twosided(diffs)
     perm_p = sign_flip_permutation_p(diffs) if diffs else None
-    print(f"  [{label}] TOST(delta={DELTA}): {tost}")
-    print(f"  [{label}] raw paired-t 95% CI: {raw_ci}")
-    print(f"  [{label}] sign-flip permutation p: {perm_p}")
+    print(f"  [{label}] TOST(delta={DELTA}): {tost}{glab}")
+    print(f"  [{label}] raw paired-t 95% CI: {raw_ci}{glab}")
+    print(f"  [{label}] sign-flip permutation p: {perm_p}{glab}")
 
     b_superior = False  # arm_b (normally A4) superior
     a_superior = False
@@ -561,7 +823,7 @@ def compare_arms(dirpath: str, tag: str, jobid: str, rate: int, voided: set,
     ttft_ci = paired_t_ci_twosided(ttft_diffs) if ttft_diffs else {"n": 0}
     ttft_noninferior = ttft_ci.get("ci_hi") is not None and ttft_ci["ci_hi"] <= 0.10
     print(f"  [{label}] TTFT p95 relative diff ({arm_a}-{arm_b})/{arm_b}, n={len(ttft_diffs)}: {ttft_ci} "
-          f"-> noninferior(upper<=+10%)={ttft_noninferior}")
+          f"-> noninferior(upper<=+10%)={ttft_noninferior}{glab}")
 
     if tost.get("verdict") == "DEGENERATE-T":
         verdict = "DEGENERATE-T"
@@ -583,12 +845,15 @@ def compare_arms(dirpath: str, tag: str, jobid: str, rate: int, voided: set,
     if flagged:
         verdict = verdict + "_FLAGGED_SIGN_ONLY_MAGNITUDE_NOT_CITABLE"
     print(f"  [{label}] CELL VERDICT (mechanical, pre-Holm) = {verdict}  "
-          f"(F-E flagged: {arm_a}={fe_a} {arm_b}={fe_b} -> citable={citable})")
+          f"(F-E flagged: {arm_a}={fe_a} {arm_b}={fe_b} -> citable={citable}){glab}")
 
-    return {"label": label, "arm_a": arm_a, "arm_b": arm_b, "n_paired": len(diffs), "diffs": diffs,
-            "tost": tost, "raw_ci": raw_ci, "sign_flip_p": perm_p, "ttft_noninferior": ttft_noninferior,
-            "ttft_ci": ttft_ci, "cell_verdict": verdict, "citable": citable,
-            "f_e_flagged": {"arm_a": fe_a, "arm_b": fe_b}}
+    out = {"label": label, "arm_a": arm_a, "arm_b": arm_b, "n_paired": len(diffs), "diffs": diffs,
+           "tost": tost, "raw_ci": raw_ci, "sign_flip_p": perm_p, "ttft_noninferior": ttft_noninferior,
+           "ttft_ci": ttft_ci, "cell_verdict": verdict, "citable": citable,
+           "f_e_flagged": {"arm_a": fe_a, "arm_b": fe_b}}
+    if grec is not None:
+        out["gate"] = grec  # FIX #7: additive; `cell_verdict`/`citable` unchanged
+    return out
 
 
 def secondary_mixed_effect(per_arm_x60: Dict[str, Dict[int, float]], arm_mix: str, arm_base: str) -> Dict[str, Any]:
@@ -599,10 +864,11 @@ def secondary_mixed_effect(per_arm_x60: Dict[str, Dict[int, float]], arm_mix: st
 
 
 def phase1_cell_report(dirpath: str, tag: str, jobid: str, rate: int, voided: set,
-                        f_e: Dict[str, Any]) -> Dict[str, Any]:
+                        f_e: Dict[str, Any], gates: Optional["GateBook"] = None) -> Dict[str, Any]:
     print(f"\n--- rate={rate} ---")
     per_arm_rows: Dict[str, Dict[int, dict]] = {a: phase1_load(dirpath, tag, jobid, a, rate, voided) for a in ARMS}
     per_arm_x60: Dict[str, Dict[int, float]] = {}
+    per_arm_gate: Dict[str, Any] = {}
     for arm in ARMS:
         xs = {}
         n_missing_total = 0
@@ -613,23 +879,34 @@ def phase1_cell_report(dirpath: str, tag: str, jobid: str, rate: int, voided: se
             n_missing_total += r["n_missing_itl"]
         per_arm_x60[arm] = xs
         vals = list(xs.values())
+        # FIX #7: the per-arm X_60 mean IS the primary estimand's per-arm level.
+        # rev-EA printed it with no gate marking whatsoever.
+        grec = gates.scored(f_e, [arm], rate=rate) if gates is not None else None
+        if grec is not None:
+            per_arm_gate[arm] = grec
         if vals:
             print(f"  arm={arm:12s} n={len(vals):2d} X_60 mean={statistics.mean(vals):.4f} "
                   f"reps={sorted(xs.keys())} n_missing_itl_total={n_missing_total} "
-                  f"values={['%.4f' % v for v in vals]}")
+                  f"values={['%.4f' % v for v in vals]}{(grec or {}).get('label', '')}")
         else:
             print(f"  arm={arm:12s} NO DATA")
 
     primary: Dict[str, Any] = {}
     for arm_a, arm_b, label in PRIMARY_COMPARISONS:
         primary[label] = compare_arms(dirpath, tag, jobid, rate, voided, per_arm_rows, per_arm_x60,
-                                       arm_a, arm_b, label, f_e)
+                                       arm_a, arm_b, label, f_e, gates)
 
     secondary_mix: Dict[str, Any] = {}
     for arm_mix, arm_base, label in SECONDARY_MIXED_EFFECT:
         s = secondary_mixed_effect(per_arm_x60, arm_mix, arm_base)
         secondary_mix[label] = s
-        print(f"  [{label}] {arm_mix}-{arm_base} X_60 diff: n={s['n']} ci={s['ci']}")
+        # FIX #7: descriptive-only does NOT mean gate-free -- this CI is a
+        # magnitude built from the same scored runs F-E gates.
+        grec = gates.scored(f_e, [arm_mix, arm_base], rate=rate) if gates is not None else None
+        print(f"  [{label}] {arm_mix}-{arm_base} X_60 diff: n={s['n']} ci={s['ci']}"
+              f"{(grec or {}).get('label', '')}")
+        if grec is not None:
+            s["gate"] = grec
 
     # tau ladder Delta_chunk = X_tau(chunk512) - X_tau(plain), VACUOUS-screened
     # (FIX #5: ceiling threshold lowered 0.99 -> VACUOUS_CEILING=0.95)
@@ -657,8 +934,18 @@ def phase1_cell_report(dirpath: str, tag: str, jobid: str, rate: int, voided: se
         ladder[tau] = {"n": len(d), "n_vacuous": n_vacuous,
                         "mean_diff_nonvacuous": (statistics.mean(non_vacuous_d) if non_vacuous_d else None),
                         "sign": sign}
-    print(f"  tau ladder Delta_chunk=X_tau(chunk512)-X_tau(plain) sign (VACUOUS-screened, ceiling>={VACUOUS_CEILING}): {ladder}")
+    # FIX #7: the ladder is a magnitude over the plain/chunk512 arms; VACUOUS was
+    # the only screen it carried, F-E/G-2 were never consulted.
+    ladder_gate = gates.scored(f_e, ["chunk512", "plain"], rate=rate) if gates is not None else None
+    print(f"  tau ladder Delta_chunk=X_tau(chunk512)-X_tau(plain) sign (VACUOUS-screened, "
+          f"ceiling>={VACUOUS_CEILING}): {ladder}{(ladder_gate or {}).get('label', '')}")
+    if ladder_gate is not None:
+        for tau in ladder:  # attach after printing so the printed dict is unchanged
+            ladder[tau]["gate"] = ladder_gate
 
+    # FIX #7 -- THIS IS THE BLOCK THE 2026-08-09 MIS-CITATION CAME THROUGH.
+    # rev-EA computed F-E and never consulted it here, so an F-E-flagged arm's
+    # goodput / TTFT p95 / request-ITL magnitudes printed clean.
     secondary: Dict[str, Any] = {}
     for arm in ARMS:
         rows = per_arm_rows[arm]
@@ -677,11 +964,18 @@ def phase1_cell_report(dirpath: str, tag: str, jobid: str, rate: int, voided: se
             "ttft_p95_mean_ms": statistics.mean(ttft95) if ttft95 else None,
             "request_itl_p95_p90_mean_ms": statistics.mean(reqitl_p90) if reqitl_p90 else None,
         }
-        print(f"  secondary arm={arm:12s} {secondary[arm]}")
+        grec = per_arm_gate.get(arm)
+        print(f"  secondary arm={arm:12s} {secondary[arm]}{(grec or {}).get('label', '')}")
+        if grec is not None:
+            secondary[arm]["gate"] = grec  # after printing: printed dict unchanged
 
-    return {"rate": rate, "primary": primary, "secondary_mixed_effect": secondary_mix,
-            "tau_ladder": ladder, "secondary": secondary, "per_arm_x60": per_arm_x60,
-            "f_e": f_e}
+    out = {"rate": rate, "primary": primary, "secondary_mixed_effect": secondary_mix,
+           "tau_ladder": ladder, "secondary": secondary, "per_arm_x60": per_arm_x60,
+           "f_e": f_e}
+    if gates is not None:
+        out["per_arm_gate"] = per_arm_gate
+        out["tau_ladder_gate"] = ladder_gate
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -712,38 +1006,61 @@ def main() -> int:
     else:
         print(f"\n*** NO correctness-gate artifact found at {corr_path} ***")
 
+    # FIX #7: one GateBook, consulted by every block that prints a magnitude.
+    gates = GateBook(correctness_records)
+    _g2_fail_arms = sorted(a for a, e in gates.correctness.items()
+                           if str(e.get("G2", "")).upper() == "FAIL")
+    if _g2_fail_arms:
+        print(f"  *** G-2 CONCURRENT FAIL arms: {_g2_fail_arms} -- PREREG_GATE2 sec2.1's "
+              f"inherited rule ('불일치 => A3 폐기') applies to these arms. Every block below "
+              f"that reports a number from them is labelled accordingly. This scorer does NOT "
+              f"act on the rule (arm discard / retraction is result-analyst + claims-auditor's "
+              f"call); it only refuses to print those numbers unlabelled. ***")
+
     flags_report = realized_flags_report(args.dir, args.tag, args.jobid)
     phase0_rep = phase0_report(args.dir, args.tag, args.jobid, args.rates)
-    midcheck_rep = phase0_midcheck(args.dir, args.tag, args.jobid, args.rates)
+    gates.phase0 = phase0_rep
+    midcheck_rep = phase0_midcheck(args.dir, args.tag, args.jobid, args.rates, gates)
+    gates.midcheck = midcheck_rep
 
     print(f"\n=== Phase 1 primary (n<={NREP_MAIN} paired, tag={args.tag} jobid={args.jobid}) ===")
     cell_results = {}
     for rate in args.rates:
         f_e = phase1_fE(args.dir, args.tag, args.jobid, rate, voided)
         print(f"  F-E (scored-run tercile TTFT-p50 ratio, threshold 1.7): {f_e}")
-        cell_results[rate] = phase1_cell_report(args.dir, args.tag, args.jobid, rate, voided, f_e)
+        cell_results[rate] = phase1_cell_report(args.dir, args.tag, args.jobid, rate, voided, f_e, gates)
 
     print("\n=== Holm correction across replication cells (within THIS job's own rates; "
           "designated cell stands alone; cross-job family reconciliation is a manual step) ===")
     holm_out: Dict[str, Any] = {}
     for arm_a, arm_b, label in PRIMARY_COMPARISONS:
         repl_pvals = []
+        repl_rate_by_label: Dict[str, int] = {}
         for rate, res in cell_results.items():
             if rate == args.designated_rate:
                 continue
             p = res["primary"][label]["tost"].get("p_tost")
             if p is not None:
                 repl_pvals.append((f"{args.tag}_r{rate}", p))
+                repl_rate_by_label[f"{args.tag}_r{rate}"] = rate
         if repl_pvals:
             adjusted = holm_adjust(repl_pvals)
             holm_out[label] = [{"cell": lab, "p_raw": praw, "p_holm": padj} for lab, praw, padj in adjusted]
-            for lab, praw, padj in adjusted:
+            # FIX #7: the Holm table reports p-values per cell; the cell's own
+            # gate record decides whether that cell's numbers may be quoted.
+            for i, (lab, praw, padj) in enumerate(adjusted):
+                cell_rate = repl_rate_by_label.get(lab)
+                cg = ((cell_results.get(cell_rate) or {}).get("primary", {})
+                      .get(label, {}) or {}).get("gate")
                 print(f"  [{label}] {lab}: p_raw={praw:.4f} p_holm={padj:.4f} -> "
-                      f"{'PASS(<0.05)' if padj < 0.05 else 'fail'}")
+                      f"{'PASS(<0.05)' if padj < 0.05 else 'fail'}{(cg or {}).get('label', '')}")
+                if cg is not None:
+                    holm_out[label][i]["gate"] = cg
         if args.designated_rate is not None and args.designated_rate in cell_results:
             d = cell_results[args.designated_rate]["primary"][label]
             print(f"  [{label}] DESIGNATED cell rate={args.designated_rate}: verdict={d['cell_verdict']} "
-                  f"citable={d['citable']} (single-cell, no multiplicity correction)")
+                  f"citable={d['citable']} (single-cell, no multiplicity correction)"
+                  f"{(d.get('gate') or {}).get('label', '')}")
 
     out_json = os.path.join(args.dir, f"g2ea_report_{args.tag}_{args.jobid}.json")
     with open(out_json, "w") as f:
