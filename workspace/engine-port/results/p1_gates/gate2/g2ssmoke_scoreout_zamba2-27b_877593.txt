@@ -1,0 +1,5 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+
+INPUT CONTRACT VIOLATION: row missing ['itls', 'ttfts', 'mean_itl_ms', 'request_rate', 'duration', 'completed'] in g2s_zamba2-27b_telemetry_agnostic_rep1_877593.jsonl:1 (present keys: 8) -- these keys come from bench_serving `result_details`, which is merged ONLY under `--output-details` (bench_serving.py:1630). The bench invocation almost certainly omitted that flag. `p95_itl_ms` is NOT a substitute: it is a run-level pooled estimand, not the pre-registered per-request ITLp95_mean.
+This is a MEASUREMENT-side failure (harness produced unscoreable rows), not a scorer bug.  Do NOT substitute an aggregate metric.

@@ -1,0 +1,97 @@
+Gate 2-S main campaign -- RE-RUN after --output-details fix (experiment-runner, 2026-08-10)
+==============================================================================================
+
+WHY THIS IS A RE-RUN
+----------------------
+First run (877107/877109, see g2s_submit_command_877107_877109.txt) completed
+measurement (exit 0:0) but produced ZERO scoreable primaries: g2s_run.sbatch's
+bench() call had no --output-details, so bench_serving.py:1630 dropped
+result_details (itls/ttfts/input_lens/output_lens) from every dumped row.
+engine-porter applied 4 fixes (g2s_run.sbatch / g2s_analyze.py /
+g2s_selftest.py, all GPU-0 until the smoke below) plus 2 more found BY the
+smoke (defect E: scorer rep-glob swallowing telemetry files; defect F:
+preflight misclassifying a scoring-defect as MEASUREMENT_INCOMPLETE instead
+of MEASURED_OK_SCORING_FAILED, the expensive-direction misclassification).
+
+Validated end-to-end before this re-run:
+  - g2ssmoke_run.sbatch (job 877593, ~10 min GPU smoke, NOT the prereg
+    campaign, artifacts g2ssmoke_*/g2s_*_877593.* -- never cite) confirmed
+    real bench output now carries itls/ttfts with per-request array length
+    matching completed count (5/5 arms), and g2s_analyze.py ran to rc=0 with
+    19/19 sec6.5 blocks present.
+  - g2s_selftest.py (CPU-only, re-run just now against the current working
+    tree): ALL CHECKS PASSED, including (0g) static check that all 3 bench()
+    call sites (capscan L176, pilot L194, Phase 1 L258) carry --output-details,
+    (0h)-(0j) the new file-selection/cost-asymmetry/empty-inventory
+    regressions, (7) 19/19 block manifest, (8) F-A dead-gate fix.
+  - CPU regression: `python -m unittest discover -s workspace/engine-port/tests
+    -v` -- 140 tests, OK (re-run just now, standalone, matching what the job
+    itself also runs).
+  - git status: exactly 3 modified files under
+    workspace/engine-port/results/p1_gates/gate2/ --
+    g2s_run.sbatch / g2s_analyze.py / g2s_selftest.py.
+    PREREG_GATE2S_2026-08-09.md is untouched (git status clean for that file).
+
+WORKING DIRECTORY AT SUBMISSION TIME
+-------------------------------------
+/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2
+
+(same reason as the first run: g2s_run.sbatch's #SBATCH --output/--error are
+relative paths with no --chdir directive; submitting from anywhere else would
+scatter g2s_<jobid>.out/.err away from the rest of this campaign's artifacts.)
+
+ENVIRONMENT LOADED BEFORE SUBMISSION
+--------------------------------------
+module load conda/pytorch_2.9.1_cuda13 cuda/13.0.2 gcc/15.2.0
+source /scratch/ehmoon/whlee/sglang_engine_venv/bin/activate
+
+WHY CPU OPTIONS ARE SUPPLIED ON THE CLI, NOT IN THE SCRIPT (unchanged from
+the first run): 파티션이 CPU 옵션 명시를 강제하므로 sbatch 내부 지시자가 아니라
+CLI로 공급했다(2026-08-10). 사전등록 내용이 아니라 SLURM 인프라 요건이며,
+스크립트를 수정하지 않은 이유는 실행본과 커밋본(+승인된 3개 파일의 미커밋
+수정)을 일치시키기 위함이다.
+
+JOB 1 -- Zamba2-2.7B
+---------------------
+Command (run first, no --exclude -- establishes the node to exclude from job 2):
+
+    G2S_TAG=zamba2-27b sbatch --nodes=1 --ntasks-per-node=1 --cpus-per-task=8 --mem=64G g2s_run.sbatch
+
+Result: Submitted batch job 877756
+Node (confirmed via `squeue -j 877756 -o "%N"` once RUNNING): gpu37
+Start: 2026-08-10T19:55:32
+
+JOB 2 -- Granite-4.0-h-micro-base
+-----------------------------------
+Command (run after job 1 was RUNNING with a confirmed node, per
+PREREG_GATE2S sec10 "두 job은 다른 노드에 배정"):
+
+    G2S_TAG=granite-40-h-micro-base sbatch --nodes=1 --ntasks-per-node=1 --cpus-per-task=8 --mem=64G --exclude=gpu37 g2s_run.sbatch
+
+Result: Submitted batch job 877757
+Node (confirmed via `squeue -j 877757 -o "%N"` once RUNNING): gpu38
+Start: 2026-08-10T19:56:03
+
+SUMMARY TABLE
+--------------
+| job id | G2S_TAG                  | model                                | node  | --exclude   |
+|--------|---------------------------|---------------------------------------|-------|-------------|
+| 877756 | zamba2-27b                | Zyphra/Zamba2-2.7B                    | gpu37 | (none)      |
+| 877757 | granite-40-h-micro-base   | ibm-granite/granite-4.0-h-micro-base  | gpu38 | gpu37       |
+
+NOTES
+------
+- gpu38, not gpu41 as in the first run -- node assignment depends on cluster
+  occupancy at submission time and is not itself a deviation from anything;
+  the only pre-registered constraint (sec10) is "different node from job 1",
+  satisfied.
+- The manifest gate inside g2s_run.sbatch will independently re-verify the
+  873944-baseline +2/-0 drift for this specific job/node at runtime; that is
+  not duplicated here.
+- exit-code contract to watch for on completion (g2s_run.sbatch, gate #21):
+    0  = MEASURED_AND_SCORED
+    20 = MEASURED_OK_SCORING_FAILED  -> rescore offline, GPU-0, do NOT re-run
+    21 = MEASUREMENT_INCOMPLETE      -> GPU re-run required
+    22 = attribution ambiguous       -> human judgment (new since the smoke's
+         defect-F fix; not yet exercised on a real Phase-1-scale run)
+  See g2s_status_<tag>_<jobid>.json (each job) for the machine-readable record.

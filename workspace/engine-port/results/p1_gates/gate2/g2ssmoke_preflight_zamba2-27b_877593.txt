@@ -1,0 +1,19 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+---- MEASUREMENT INVENTORY (pre-scoring, no decision rule) ----
+  cell plainaux                 r2: n_reps= 1 / 10
+  cell plainaux                 r3: n_reps= 0 / 10
+  cell pdmux_nosplit            r2: n_reps= 1 / 10
+  cell pdmux_nosplit            r3: n_reps= 0 / 10
+  cell pdmux_split34            r2: n_reps= 1 / 10
+  cell pdmux_split34            r3: n_reps= 0 / 10
+  cell pdmux_split34_nosticky   r2: n_reps= 1 / 10
+  cell pdmux_split34_nosticky   r3: n_reps= 0 / 10
+  cell agnostic                 r2: n_reps= 1 / 10
+  cell agnostic                 r3: n_reps= 0 / 10
+  files=9 rows=42501 contract_violations=42496
+---- INPUT CONTRACT VIOLATIONS (showing 3 of 42496) ----
+  row missing ['itls', 'ttfts', 'mean_itl_ms', 'request_rate', 'duration', 'completed'] in g2s_zamba2-27b_telemetry_agnostic_rep1_877593.jsonl:1 (present keys: 8) -- these keys come from bench_serving `result_details`, which is merged ONLY under `--output-details` (bench_serving.py:1630). The bench invocation almost certainly omitted that flag. `p95_itl_ms` is NOT a substitute: it is a run-level pooled estimand, not the pre-registered per-request ITLp95_mean.
+  row missing ['itls', 'ttfts', 'mean_itl_ms', 'request_rate', 'duration', 'completed'] in g2s_zamba2-27b_telemetry_agnostic_rep1_877593.jsonl:2 (present keys: 46) -- these keys come from bench_serving `result_details`, which is merged ONLY under `--output-details` (bench_serving.py:1630). The bench invocation almost certainly omitted that flag. `p95_itl_ms` is NOT a substitute: it is a run-level pooled estimand, not the pre-registered per-request ITLp95_mean.
+  row missing ['itls', 'ttfts', 'mean_itl_ms', 'request_rate', 'duration', 'completed'] in g2s_zamba2-27b_telemetry_agnostic_rep1_877593.jsonl:3 (present keys: 46) -- these keys come from bench_serving `result_details`, which is merged ONLY under `--output-details` (bench_serving.py:1630). The bench invocation almost certainly omitted that flag. `p95_itl_ms` is NOT a substitute: it is a run-level pooled estimand, not the pre-registered per-request ITLp95_mean.
+VERDICT: MEASUREMENT_INCOMPLETE -- the collected rows cannot be scored.

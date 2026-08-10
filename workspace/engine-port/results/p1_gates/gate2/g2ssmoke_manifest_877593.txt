@@ -1,0 +1,39 @@
+DO NOT CITE. DO NOT mix with 877107/877109 or any prereg re-run.
+All files below share the required g2s_ prefix (g2s_analyze.py's glob
+patterns are hard-coded to it) but carry SLURM_JOB_ID=877593,
+which is unique and never collides with a real campaign job id.
+-rw-r--r-- 1 ehmoon in0183    38694 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_bench_zamba2-27b_877593.log
+-rw-r--r-- 1 ehmoon in0183    67991 Aug 10 18:13 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_agnostic_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183    25456 Aug 10 18:13 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_flags_agnostic_877593.json
+-rw-r--r-- 1 ehmoon in0183    25456 Aug 10 18:11 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_flags_pdmux_nosplit_877593.json
+-rw-r--r-- 1 ehmoon in0183    25456 Aug 10 18:10 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_flags_pdmux_split34_877593.json
+-rw-r--r-- 1 ehmoon in0183    25456 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_flags_pdmux_split34_nosticky_877593.json
+-rw-r--r-- 1 ehmoon in0183    25248 Aug 10 18:14 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_flags_plainaux_877593.json
+-rw-r--r-- 1 ehmoon in0183    67969 Aug 10 18:12 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_pdmux_nosplit_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183    68009 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_pdmux_split34_nosticky_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183    67792 Aug 10 18:11 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_pdmux_split34_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183    67829 Aug 10 18:14 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_plainaux_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183     1339 Aug 10 18:13 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_probes_agnostic_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183     1345 Aug 10 18:11 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_probes_pdmux_nosplit_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183     1355 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_probes_pdmux_split34_nosticky_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183     1346 Aug 10 18:10 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_probes_pdmux_split34_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183     1341 Aug 10 18:14 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_probes_plainaux_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183    42291 Aug 10 18:13 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_srv_agnostic_rep1_877593.log
+-rw-r--r-- 1 ehmoon in0183    42337 Aug 10 18:12 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_srv_pdmux_nosplit_rep1_877593.log
+-rw-r--r-- 1 ehmoon in0183    42289 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_srv_pdmux_split34_nosticky_rep1_877593.log
+-rw-r--r-- 1 ehmoon in0183    41817 Aug 10 18:11 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_srv_pdmux_split34_rep1_877593.log
+-rw-r--r-- 1 ehmoon in0183    34333 Aug 10 18:14 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_srv_plainaux_rep1_877593.log
+-rw-r--r-- 1 ehmoon in0183  7908351 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_agnostic_r2_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183 11616644 Aug 10 18:13 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_agnostic_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183  7951594 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_pdmux_nosplit_r2_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183 12057785 Aug 10 18:12 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_pdmux_nosplit_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183  7849077 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_r2_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183 11986926 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183  7945120 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_pdmux_split34_r2_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183 14786470 Aug 10 18:11 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_pdmux_split34_rep1_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183        0 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_telemetry_plainaux_r2_877593.jsonl
+-rw-r--r-- 1 ehmoon in0183       19 Aug 10 18:13 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_teloffset_agnostic_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183       19 Aug 10 18:12 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_teloffset_pdmux_nosplit_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183       19 Aug 10 18:15 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_teloffset_pdmux_split34_nosticky_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183       20 Aug 10 18:11 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_teloffset_pdmux_split34_rep1_877593.json
+-rw-r--r-- 1 ehmoon in0183       13 Aug 10 18:14 /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_zamba2-27b_teloffset_plainaux_rep1_877593.json

@@ -1,0 +1,4 @@
+Gate 2-S HARNESS SMOKE verdict -- job=877593 tag=zamba2-27b (NOT the prereg campaign)
+CHECK1 (itls/ttfts present in rep jsonl, len matches completed): see stdout CHECK1_ITLS_TTFTS_PRESENT above
+CHECK2 (g2s_analyze.py rc=0 on real output, 19/19 blocks): scorer_rc=7 N_BLOCKS_IN_REPORT=ERROR:[Errno 2] No such file or directory: '/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_report_zamba2-27b_877593.json'
+CHECK3 (exit-code wiring = 0 on success path): SMOKE_STATUS=MEASUREMENT_INCOMPLETE exit=21

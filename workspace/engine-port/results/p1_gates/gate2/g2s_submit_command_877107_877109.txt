@@ -1,0 +1,81 @@
+Gate 2-S main campaign -- exact submission commands (experiment-runner, 2026-08-10)
+====================================================================================
+
+WHY THIS FILE EXISTS
+---------------------
+The partition (amd_a100nv_8) rejects any sbatch invocation that does not
+explicitly specify CPU options:
+
+    sbatch: error: [Partition: amd_a100nv_8] Job rejected: CPU options must
+    be explicitly specified (e.g. --ntasks-per-node, --ntasks, --cpus-per-task)
+
+The committed g2s_run.sbatch (958c467, PREREG_GATE2S_2026-08-09.md rev6) has
+no #SBATCH --cpus-per-task / --ntasks-per-node / --nodes directives, so
+`sbatch g2s_run.sbatch ...` alone fails outright on this partition -- it
+cannot be resubmitted from the committed file without an external CLI
+supplement. This file records exactly what was supplied, so a future
+resubmission does not have to rediscover this by trial and error.
+
+REASON THE SCRIPT WAS NOT EDITED: 파티션이 CPU 옵션 명시를 강제하므로 sbatch
+내부 지시자가 아니라 CLI로 공급했다(2026-08-10). 사전등록 내용이 아니라 SLURM
+인프라 요건이며, 스크립트를 수정하지 않은 이유는 실행본과 커밋본을 일치시키기
+위함이다.
+
+WORKING DIRECTORY AT SUBMISSION TIME
+-------------------------------------
+/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2
+
+(g2s_run.sbatch uses relative #SBATCH --output=g2s_%j.out / --error=g2s_%j.err
+with no --chdir directive; SLURM resolves those relative to the directory
+`sbatch` is invoked FROM, not the script's internal `cd "$ROOT"`. Submitting
+from anywhere else -- e.g. the repo root -- would have written g2s_<jobid>.out
+/.err to that other directory instead of alongside the rest of this
+campaign's g2s_* artifacts.)
+
+ENVIRONMENT LOADED BEFORE SUBMISSION
+--------------------------------------
+module load conda/pytorch_2.9.1_cuda13 cuda/13.0.2 gcc/15.2.0
+source /scratch/ehmoon/whlee/sglang_engine_venv/bin/activate
+
+JOB 1 -- Zamba2-2.7B
+---------------------
+Command (run first, no --exclude -- establishes the node to exclude from job 2):
+
+    G2S_TAG=zamba2-27b sbatch --nodes=1 --ntasks-per-node=1 --cpus-per-task=8 --mem=64G g2s_run.sbatch
+
+Result: Submitted batch job 877107
+Node (confirmed via `squeue -j 877107 -o "%N"` after the job left PENDING): gpu37
+
+JOB 2 -- Granite-4.0-h-micro-base
+-----------------------------------
+Command (run after job 1 had a node, per PREREG_GATE2S sec10 "두 job은 다른
+노드에 배정 -- 첫 job의 노드를 squeue로 확인 후 둘째에 --exclude"):
+
+    G2S_TAG=granite-40-h-micro-base sbatch --nodes=1 --ntasks-per-node=1 --cpus-per-task=8 --mem=64G --exclude=gpu37 g2s_run.sbatch
+
+Result: Submitted batch job 877109
+Node (confirmed via `squeue -j 877109 -o "%N"` after the job left PENDING): gpu41
+
+SUMMARY TABLE
+--------------
+| job id | G2S_TAG                  | model                                | node  | --exclude   |
+|--------|---------------------------|---------------------------------------|-------|-------------|
+| 877107 | zamba2-27b                | Zyphra/Zamba2-2.7B                    | gpu37 | (none)      |
+| 877109 | granite-40-h-micro-base   | ibm-granite/granite-4.0-h-micro-base  | gpu41 | gpu37       |
+
+NOTES
+------
+- CLI-supplied flags (--nodes=1 --ntasks-per-node=1 --cpus-per-task=8 --mem=64G)
+  match the values every other campaign script in this directory (g2ctrl_run.sbatch,
+  g2det_run.sbatch, g2detB_run.sbatch, g2_run.sbatch, g2ea_*) hardcodes into its
+  own #SBATCH header -- this is not a new/arbitrary choice, it is the
+  directory-wide convention, just supplied out-of-band here because g2s_run.sbatch
+  omits it.
+- g2s_run.sbatch itself was NOT modified for this (per coordinator instruction:
+  the running job must match the committed file byte-for-byte). The only
+  committed-file changes for this campaign are the two pre-submission-approved
+  edits (§6.3 item 1 -v fix + §9 artifact-layout note), applied and confirmed
+  live in both jobs' logs before this file was written.
+- G2S_TAG=<value> is a required positional env var read by g2s_run.sbatch itself
+  (`TAG="${G2S_TAG:?...}"`); it is not a CPU/infrastructure workaround, it is
+  part of the script's own documented interface (selects model/ctx/backend/rates).
