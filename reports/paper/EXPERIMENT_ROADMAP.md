@@ -1,6 +1,14 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-03(같은 세션 4차 속행 — doc-steward 기록, **상태 기록
+최종 갱신: 2026-08-11(doc-steward — **정본 동기화, rev14–rev20
+(2026-08-06~2026-08-11) 반영 완료. 아래 P0–P6/벡터1/벡터2 본문
+(2026-08-03 이전 작성분)은 무변경** — 그 구간은 "8B decode-SM
+프론티어"(E1/sticky/C2, Claim A 소관) 또는 "SLO-aware 동적 제어"
+(Claim D/E 소관) 로드맵이고, rev14–20이 다루는 것은 **다른 트랙**
+(PD-mux 자체 vs fused, Gate 1/Gate 2/E-A/Gate 2-S — "P1")이라
+어느 기존 절과도 겹치지 않는다. 이 문서에 P1 로드맵이 지금까지
+없었으므로 **신규 "P1 트랙 로드맵" 절(벡터2 뒤)을 신설**해 다음
+gate 대기열을 이관했다.** 이전: 2026-08-03(같은 세션 4차 속행 — doc-steward 기록, **상태 기록
 · 성능 판정 0건 · GPU 런(S2)은 별도 제출 중·결과 없음**. 3차 속행이 연
 §0의 이분법((i)/(ii))이 **유지 불가**로 판정됐다 — `split_frac≥0.90`이
 D 파티션 실행 토큰을 순수하지도 완전하지도 않게 잡는다는 **세 번째 후보
@@ -181,6 +189,60 @@ Risk 2(모델 vs substrate 귀속)를 **기존 green-context 위에서** 닫는 
 벡터1(disjoint conflict-regime, 시간축 disjoint-feasibility)과는 무관한 별개
 트랙. 벡터2는 이제 파티셔닝 primitive 불변성을 **cross-substrate 이식이 아니라
 green-context 위 모델-대조(+기존 microbench/telemetry)**로 식별한다.
+
+## P1 트랙 로드맵 (PD-mux 자체 vs fused) — P0–P6/벡터1/벡터2 밖, 별도 트랙
+(2026-08-11 신설)
+
+벡터1·벡터2와 마찬가지로 이 트랙도 아래 "단계와 stop/go gate"(P0–P6, Claim
+D/E 소관)와 별개다 — 여기서 묻는 질문은 "이 엔진에서 PD-mux(공간 SM 분할)를
+켜는 것 자체가 fused보다 나은가, 왜 그런가"다. 정본은 `PROJECT_STATUS.md`
+"확정된 결과" 1번·"다음 실험 gate" #10, `reports/CONSENSUS.md` §1-1이며 이
+절은 다음 gate 대기열만 이관한다(전문·수치는 위 두 정본, 요약은
+`CLAIM_EVIDENCE_MATRIX.md` "P1 트랙" 절 참조).
+
+### 지금까지의 순서 (완료분)
+
+1. P1 운영점(cudagraph-ON) 대조(2026-08-05, jobs 873944/873945) — "PD 분리
+   자체는 항상 이득" 철회, "PD-mux 켜면 이득(2모델·꼬리)" 확립.
+2. **Gate 1**(2026-08-06, job 874478) → **G1-b**(2026-08-07, job 875293) —
+   selector-level 파티션 라벨, Zamba2 rate{2,3} 조건부 해금.
+3. **Gate 2 rev4**(2026-08-07, jobs 875344/875346) — chunk512 vs pdmux(부정),
+   R1′/R2′(aux 플래그 배제, 2026-08-09 정본 반영 복구).
+4. **E-A**(2026-08-08~09, jobs 875654/875657/875661) — mixed-chunk 레버 진단
+   (고유 기여 1.2%, "fused 조율 소진" 주장 금지).
+5. **Gate 2-S 설계**(2026-08-09~10, `PREREG_GATE2S_2026-08-09.md`) —
+   claims-auditor 감사 4회(NO-GO×3 → GO-with-changes). 1차 실행(jobs
+   877107/877109)은 하네스 결함 6건으로 primary 0개, 배관 스모크(job
+   877593, 0.11 GPU-hr)가 재발 방지(`PROJECT_STATUS.md` "방법론 게이트"
+   #26).
+6. **★Gate 2-S 첫 유효 결과**(2026-08-11, jobs 877756/877757) — SM 분할
+   성분만 격리한 첫 대조: ITL p95 개선 vs TTFT p95 악화(트레이드오프),
+   크기 인용은 Zamba2 r2 1셀. **인용 시 `CLAIM_EVIDENCE_MATRIX.md` "P1
+   트랙" 절의 제한 7건을 반드시 함께 적용.**
+
+### 다음 gate (우선순위순)
+
+1. **G1-c**(≈0.2 GPU-hr) — Granite(873945 복제)로 Gate 1/Gate 2-S가 Granite
+   에 대해 남긴 "전제 미검증" 상태를 해소. Gate 2-S confirmatory 4셀 중
+   Granite 2셀의 명명 제한(§8.9.1)을 푸는 유일한 경로. **제출됨**(job
+   877974, 2026-08-11, RUNNING) — 이 문서 갱신 시점 결과 없음, 완료 후
+   result-analyst/claims-auditor 판정 선행.
+   G1-a(관측 전용 sync 1회, `multiplexing_mixin.py:1005`/`:1080` 사이)·
+   G1-d(S3 하드웨어 프로브, 아래 항목과 통합)도 같은 그룹, 이들은 미착수.
+2. **S3 / `%smid` 직접 하드웨어 SM 프로브**(별건, 이 트랙 어떤 캠페인의
+   선행조건도 아님, `PREREG_GATE2S_2026-08-09.md` §0.0.B) — "무분할(C)"의
+   잔여 SM 차감 여부·selector-level→hardware-level 격상.
+3. **F-B(ii) 재설계** — Gate 2-S 인용-셀 선별 필터의 귀무 발화율이 40.1%
+   (1−0.95¹⁰)임이 확인됐다(방법론 게이트 #24). 다음 사전등록에서 대체할
+   것, **이번 결과에 소급 적용 금지**.
+4. **Gate 3**(≈1.5 GPU-hr/모델) — NemotronH·Falcon-H1 운영점 대조. "4모델
+   전부"를 다시 쓰고 싶을 때만 필요, 안 하면 §1-1은 영구히 2모델 문장.
+5. **Gate 4**(sustainable-rate 직접 측정, n≥4) — r4/r6 크기·용량 주장을
+   인용하고 싶을 때만. 도착창 ≫ drain-tail이 되도록 프롬프트 수를 rate에
+   비례(§4.2.1 관례).
+6. E-A 잔여 사다리(T3-1/T3-2/T3-3/T4-2/E-C/E-D, 우선순위·비용은
+   `PROJECT_STATUS.md` "확정된 결과" 1번 E-A 블록 참조) — fused-측 조율
+   가능성 진단 계열, Gate 2 본 질문에는 직접 기여하지 않음.
 
 ## 공통 방법
 

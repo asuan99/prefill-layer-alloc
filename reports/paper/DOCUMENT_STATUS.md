@@ -1,6 +1,16 @@
 # Document status
 
-최종 갱신: 2026-07-25(아래 "Historical evidence" 표에 `spatial_decoupling_
+최종 갱신: 2026-08-11(doc-steward — **정본 동기화 기록.**
+`CLAIM_EVIDENCE_MATRIX.md`·`EXPERIMENT_ROADMAP.md`를
+`reports/CONSENSUS.md` rev14→rev21(2026-08-06~2026-08-11) 및
+`PROJECT_STATUS.md`의 같은 구간과 대조·동기화했다. Claim A–F/
+P0–P6·벡터1·벡터2 기존 본문은 무변경(그 구간이 인용되지 않음,
+`CONSENSUS.md` rev14–20 changelog가 매 rev 확인) — 두 문서에
+지금까지 없었던 **"P1 트랙"**(PD-mux 자체 vs fused, Gate 1/Gate
+2/E-A/Gate 2-S) 절을 신설해 현재 판정과 2026-08-11 Gate 2-S 인용
+제한 7건을 이관했다. `DOCUMENT_STATUS.md`(이 문서) 자체의 "Canonical/
+Historical/Superseded" 분류는 이 동기화로 바뀌지 않는다(구조는
+그대로 정확) — 갱신은 changelog 기록뿐. 이전: 2026-07-25(아래 "Historical evidence" 표에 `spatial_decoupling_
 design_review_2026-07-25.md` 부분-supersede 항목 추가). ★**정책 변경(2026-07-24, 사용자 승인)**: 기존 "파일은 link
 보존을 위해 이동·삭제하지 않는다" 방침을 top-level 축소를 위해 **override**했다.
 아래 표에 나열된 문서 중 root `reports/*`(전체) 와 두 `deprecated_reports/`는

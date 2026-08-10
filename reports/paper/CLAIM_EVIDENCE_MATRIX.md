@@ -1,6 +1,18 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-05(**등급 변경 없음, 성능 판정 0건 — claims-auditor가
+최종 갱신: 2026-08-11(doc-steward — **정본 동기화, rev14–rev20
+(2026-08-06~2026-08-11) 반영 완료. Claim A–F 행 자체는 무변경** —
+`reports/CONSENSUS.md` rev14–rev20의 changelog가 매 rev마다 "이
+항목을 인용한 서술이 없어 갱신 대상 없음"을 독립적으로 확인했다
+(Gate 1/G1-b/Gate 2 rev4/E-A/HOLB G5/T4-1/Gate 2-S는 아래 Claim
+A–F 어디에도 속하지 않는 별도 연구 질문 — "layer-type/8B-decode-SM
+정책 이득" A–F가 아니라 "PD-mux[공간 SM 분할] 자체가 fused를 이기는
+원인이 무엇인가"). 이 문서에 그 트랙 전체가 지금까지 없었으므로
+**신규 "P1 트랙" 절(표 끝, 새 행 G + 상세 절)을 신설**해 현재
+정본(`PROJECT_STATUS.md` "확정된 결과" 1번, `CONSENSUS.md` §1-1)과
+2026-08-11 Gate 2-S 결과의 인용 제한 7건을 이관했다. 아래 Claim
+A–F 본문(2026-08-05 이전 작성분)은 **그대로 정본** — 이 구간
+갱신으로 등급이 바뀐 Claim은 없다.** 이전: 2026-08-05(**등급 변경 없음, 성능 판정 0건 — claims-auditor가
 S2(job 873015)를 독립 재현해 §0 최상위 열린 항목을 CONFIRMED (scoped)로
 종결.** pooled per-token ITL p50 = 28.92ms(d16, 사전등록 [28,34]ms 안) /
 12.04ms(d54, 사전등록 [13,16]ms 미달 — 인용 시 필수 동반). §0의 (i)/(ii)/
@@ -94,6 +106,7 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
 | D. execution-state separation은 single-worker coupling을 줄인다 (★2026-07-24 코드 리뷰로 scope 축소, 아래 "주장 제한" 참조) | 미검증 | R1은 observer라 해당 증거가 아님; 2026-07-24 읽기 전용 코드 리뷰([`../r2_decoupling_review_2026-07-24.md`](../r2_decoupling_review_2026-07-24.md), file:line 근거)로 `PDMUX_TRUE_DUAL_WORKER=1`의 구조 확인: 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이며, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter` 단일 `stream_index`, ≤108)은 **전면 공유** | 실제 두 host loop에서의 fixed-split 비교(coupled ceiling 내); GPU correctness 동치 테스트(현재 없음); admission latch(`r2_admission_limited`) stale-True 버그 수정; results/r2_eval 캠페인 실행(현재 미생성) | legacy fixed 대 true dual fixed, 동일 telemetry/seed/graph — coupled ceiling(+2%, PROJECT_STATUS/CONSENSUS §1-20) 내에서만 유의미, "얽힘 깨기"로 측정 불가(§1-4 死因의 substrate가 구성상 불변) |
 | E. Hybrid-informed decode floor가 generic/global static보다 높은 SLO goodput을 낸다 | 미검증 핵심 가설 | 없음 | architecture control, generic policy, static/oracle, profile generalization | B0–B8, P4 profile ablation, W1–W9 및 real trace |
 | F. short-ctx conflict-regime 워크로드에는 동적 제어가 이길 수 있는 disjoint-feasibility escape hatch(어떤 static도 두 phase 동시 SLO를 못 만족하는 워크로드)가 있다 | **강한 지지(범위 한정) — CONFIRMED closure, scoped negative(2026-07-25)**: escape hatch **없음**을 확정 | `g2_0_full`(n=4, razor-thin real disjoint 최초 관측)→`g2_0_hard`(n=6–10, claims-auditor 재채점, ILL-POSED at rA5)→`g2_0_decliff`(rA2 n=6, PLAUSIBLE closure)→`g2_0_rasweep`(120 job, off-cliff band rate≤2.75 disjoint 재확인 없음)→`g2_0_raconf`(pre-registered 24-job 확증 열, rate{3.5,3.75}×{d44,d54}×n6, companion-collapse 결정규칙 충족: rate3.5 d44 0.953±0.035≈d54 0.948±0.035; rate3.75 d54 0.948±0.062>d44 0.932±0.042) | long-context(decode floor 상승 영역, CONSENSUS §1-5) 재검증; hot varying-trace(drain 아닌 entangled 조건)에서의 직접 실증 | long-context G2.0-style disjoint sweep(모델/ctx 교체 필요); §1-20 spatial coupling-tax와 결합한 재검토 |
+| G. PD-mux(공간 SM 분할) **활성화 자체**가 fused 대비 SLO goodput 이득의 원인이다(Claim A–F 밖, 별도 트랙 "P1" — 상세는 아래 "P1 트랙" 절) | **부분 지지(모델·워크로드 한정)** — "PD-mux를 켜면 이득이 난다"는 2모델서 지지; **"SM 분할 자체"·"PD 분리 자체"가 원인이라는 좁은 형태는 여전히 NOT-YET-SUPPORTED** | P1 운영점 대조(2026-08-05, jobs 873944/873945, cudagraph-ON, n=5 paired, 2026-08-06 통계 정정 후 인용 가능 3점: Zamba2 rate2 +40.5%/rate3 +185.8%, Granite rate4 +27.0%). Gate 1/G1-b(2026-08-06/07, selector-level 파티션 라벨, Zamba2 rate{2,3} 조건부 해금). Gate 2 rev4(2026-08-07, chunk512는 pdmux를 대체 못함)+R1′/R2′(aux 두 플래그를 원인에서 배제, 귀속 상한="pdmux 서브시스템 전체"). E-A(2026-08-08~09, mixed-chunk 레버 고유 기여 1.2%, 격차 대부분 미조율 fused 탓). **Gate 2-S(2026-08-11, jobs 877756/877757)** — SM 분할만 무력화한 대조 arm으로 처음 "SM 분할" 성분 하나를 격리: 요청-내부 ITL p95 평균이 4셀 전부 개선(꼬리 한정)·TTFT p95는 4셀 전부 악화. **인용 시 아래 "P1 트랙" 절의 제한 7건을 반드시 함께 적용** | G1-c(Granite realized 파티션 관측, **제출됨** — job 877974, 2026-08-11, RUNNING/결과 없음, 이 문서 갱신 시점 기준), S3/`%smid` 하드웨어 SM 프로브(미실행), Gate 3(NemotronH·Falcon-H1 운영점 대조, 미착수), Gate 4(sustainable-rate 직접 측정, 미착수), F-B(ii) 재설계(현 인용-셀 선별 필터의 귀무 발화율 40.1%) | 아래 "P1 트랙" 절, `PROJECT_STATUS.md` "다음 실험 gate" #10 |
 
 ## 주장 제한
 
@@ -280,3 +293,125 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   TC-series). **이 판정은 등급 변경이 아니다** — Claim A는 여전히 부분 지지,
   Claim B는 여전히 강한 지지(현 substrate 한정), Claim C는 여전히 running-batch
   경로 강함/KV 경로 부분이다.
+
+## P1 트랙 (PD-mux 자체 vs fused) — Claim A–F 밖, 별도 트랙 (2026-08-11 신설)
+
+이 절은 Claim A–F(layer-type/8B decode-SM 정책 이득 트랙)와 **다른 연구
+질문**을 다룬다 — "이 엔진에서 PD-mux(공간 SM 분할)를 켜는 것 자체가
+fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJECT_STATUS.md`
+"확정된 결과" 1번과 `CONSENSUS.md` §1-1이 유일한 상위 정본이며, 이 절은
+그 판정을 요약·이관할 뿐 새로 판정하지 않는다. 최종 갱신 시점 =
+`CONSENSUS.md` rev20 내용 기준(2026-08-11, Gate 2-S 첫 유효 결과
+jobs 877756/877757 반영 완료) — rev21은 방법론 게이트#26(배관
+스모크) 추가뿐이라 이 절의 P1 트랙 내용에는 영향 없다.
+
+### 현재 판정 (요약, 전문은 `PROJECT_STATUS.md` "확정된 결과" 1번)
+
+- **PD-mux 활성화는 운영점(cudagraph-ON)에서도 꼬리 SLO goodput 이득 —
+  술어·모델·워크로드 한정, 기전 귀속 미확립.** 정본 goodput 술어(TTFT≤3s
+  ∧ 요청 내부 token-ITL p95≤60ms)로 채점하면 `--enable-pdmux`(agnostic
+  v1)가 fused(plain)를 **Zamba2·Granite 2모델·rate 2–6 정상상태 셀에서**
+  이긴다(2026-08-05, jobs 873944/873945, n=5 paired). **2026-08-06 통계
+  방법 층 정정 후 인용 가능한 정량치는 3개뿐**: Zamba2 rate2 **+40.5%**,
+  rate3 **+185.8%**, Granite rate4 **+27.0%**(Granite rate3 +11.7%는
+  t-CI가 0을 포함해 미검증으로 강등). 이득은 **꼬리에 있고 비용은
+  중앙에 있다** — pdmux는 정상상태 per-token decode를 5–45% 늦추고
+  Granite raw 처리량은 −0.3~−2.6%다. **기전은 3-플래그 묶음 처치**
+  (`--enable-pdmux`가 `--chunked-prefill-size -1`·`--disable-overlap-
+  schedule`을 assert로 강제)이고 fused arm은 미조율 baseline이라 **"PD
+  분리 자체가 원인"은 NOT-YET-SUPPORTED** — 지지되는 것은 "이 엔진에서
+  PD-mux를 켜면 기본 설정 fused보다 꼬리 SLO goodput이 좋다"뿐이다.
+  NemotronH·Falcon-H1은 운영점 미측정이라 "4모델 전부"는 쓸 수 없다
+  (scope는 2모델).
+
+### Existing evidence (날짜순)
+
+1. **Gate 1 / G1-b**(2026-08-06 job 874478, 2026-08-07 job 875293) —
+   selector-level 파티션 라벨 관측. decode-busy∧prefill-in-flight
+   구간의 시간가중 라벨이 Zamba2 rate{2,3}·agnostic v1·cudagraph-ON에서
+   `(74,34)` 100%(단 이 조건 자체가 코드상 항등식에 가까워 판별력 낮음,
+   방법론 게이트 #9). rate 6에서만 `(54,54)`가 시간가중 8.37% 등장해
+   "이 격자에서 정책은 단일 분할에 고정" 문장을 철회(인용 가능 셀
+   Zamba2 r2·r3는 불변). rate 4·6·Granite 전체는 여전히 미측정 —
+   Granite rate4 +27.0% 셀에는 파티션 문장을 붙이지 않는다.
+2. **Gate 2 rev4**(2026-08-07, jobs 875344/875346, 5.86 GPU-hr) —
+   4/5-arm 분해. Primary(chunk512 vs agnostic): 5셀 전부 agnostic 유의
+   우세(chunk512는 pdmux를 대체 못함, 크기 인용은 Zamba2 r2·Granite
+   r3뿐). Secondary R1′/R2′(plainaux vs agnostic, 2026-08-09 정본 반영
+   복구): aux 두 플래그(`--chunked-prefill-size -1`·`--disable-overlap-
+   schedule`)만으로는 pdmux 이득이 재현되지 않는다 — 이 두 플래그는
+   **원인에서 배제**된다. **귀속 상한은 "pdmux 서브시스템 전체"이고
+   "SM 분할 자체"는 여전히 미분리**(`--enable-pdmux`가 이벤트 루프
+   전체를 교체하기 때문).
+3. **E-A**(2026-08-08~09, jobs 875654/875657/875661) — mixed-chunk
+   레버 진단. `--enable-mixed-chunk`는 realized 확인됐으나 사전등록
+   primary 8건 전부 TOST 등가 미발화·부호 전부 agnostic 우세 ⇒ "조율된
+   fused가 pdmux를 대체한다"는 발화하지 않음. 유일한 인용 가능 셀에서
+   mixed-chunk 고유 기여는 관측 격차의 **1.2%뿐**(나머지는 기존
+   untuned-fused-vs-pdmux 격차) — "fused 조율 공간 소진" 주장은 미시험
+   노브 6개 잔존으로 금지.
+4. **★Gate 2-S**(2026-08-11, jobs 877756/877757, 6.35 GPU-hr, claims-
+   auditor 적대 감사 "조건부 등재 가") — 처음으로 "SM 분할" 성분 하나만
+   무력화한 대조 arm(패치 0줄, env 조합만)을 얻었다. 이 엔진·이 격자
+   (Zamba2-2.7B r{2,3} triton / Granite-4.0-h-micro-base r{3,4}
+   flashinfer, in2000/out96, cudagraph ON, n=10 paired)에서 pdmux
+   서브시스템·이벤트 루프·split-prefill을 고정한 채 SM만 `(74,34)`로
+   분할하면 **요청-내부 ITL p95 평균(α)이 4셀 전부 감소**(Δ =
+   +13.95/+24.88/+16.04/+19.11 ms, 4셀 Holm 후 최대 보정 p=1.88e-06)
+   하고 **같은 4셀에서 TTFT p95는 악화**(−183~−536 ms) — 9-셀 표 좌표
+   16블록 전부 트레이드오프(`S1-C`). **이 결과를 인용할 때는 아래
+   "Gate 2-S 인용 제한 7건"을 반드시 함께 적용한다.**
+
+### ★ Gate 2-S 인용 제한 7건 (반드시 함께 인용 — 다음 세션이 사전등록
+문서를 안 읽고 이 표만 보고 인용할 위험을 막기 위한 것)
+
+1. **"§1-1 격차의 성분·기여분·몫" 서술 금지.** "PD 분리 자체가 원인"으로의
+   승격도 금지. 위 §1-1의 NOT-YET-SUPPORTED는 대체되지 않는다.
+2. **SLO goodput·용량·fused 대비 우열에 대해 아무 말도 하지 않는다**
+   (같은 job에서 미조율 fused A2가 요청 p95 ITL에서 C를 이기는 셀이
+   있고 TTFT p95는 4셀 전부 A2가 우수하다 — 부호만, 크기 인용 금지).
+3. **크기 인용 허용 셀은 Zamba2 r2 하나뿐**이고, 인용 시 α **−38.8%**
+   [−41.6,−36.0]와 TTFT p95 **+51.5%**[+35.8,+67.2]를 **반드시 함께**
+   적는다(부호 규약 = T′ 대 C, 음수 = 분할 우수).
+4. **명명 제한**: Zamba2 r2·r3만 "`FixedPolicy(34)`·sticky OFF = 엔진
+   기본 궤적" 명명 허용(전제 검증됨, Gate 1 rev15/job 875293).
+   **Granite r3·r4는 전제 미검증(G1-c 결과 없음)이라 금지** —
+   "`FixedPolicy(34)`·sticky OFF 구성"으로만 부른다(G1-c는 job
+   877974로 제출·실행 중, 2026-08-11 — 완료·판정 전까지 이 금지는
+   불변).
+5. **효과는 꼬리 한정**(같은 대비의 요청-내부 q≤0.7 분위수는 4셀 전부
+   반대 부호로 유의) — "분할이 ITL을 개선한다"를 꼬리 한정 없이 쓰지
+   않는다.
+6. **dose 외삽 전면 금지**(처치 실현율 35–40%뿐이고, 100% 실현 arm(T,
+   sticky ON)의 효과가 오히려 더 작은 용량-반응 역단조).
+7. **인용 금지 6건**: ① `component_share`(Fieller 비, 코드 자신이
+   "항등식, 결과 아님"이라 표시) ② 두 report json의 `headline.text`
+   문자열(m=2 Holm을 "4셀 Holm 후"로 인쇄하는 거짓 provenance)
+   ③ 꼬리 한정 없는 "ITL 개선" 서술 ④ Δ^cont(secondary)의 헤드라인
+   승격(T는 mean e2e가 최대 +41% 악화) ⑤ T′의 F-B disjunct (i) 미평가
+   누락 ⑥ 인용 셀(Zamba2 r2)이 지정 셀이 아니라 구조적 저용량 복제
+   셀이며 그 선별 필터의 귀무 발화율이 **40.1%**(1−0.95¹⁰)임을 밝히지
+   않는 것.
+
+### Missing evidence / Required experiment
+
+- **G1-c**(Granite realized 파티션 관측) — Gate 2-S confirmatory 4셀 중
+  Granite 2셀의 전제("A4와 T′의 파티션 궤적이 코드상 동일")를 검증하는
+  유일한 경로. **제출됨**(job 877974, 2026-08-11, RUNNING) — 이 문서
+  갱신 시점 결과 없음, 완료 후 result-analyst/claims-auditor 판정을
+  거쳐야 인용 가능.
+- **S3 / `%smid` 직접 하드웨어 SM 프로브**(미실행, 별건으로 등재) —
+  "무분할(C)"의 잔여 SM 차감 여부·물리적 내용이 여전히 미측정.
+- **Gate 3**(NemotronH·Falcon-H1 운영점 대조, 미착수) — "4모델 전부"를
+  다시 쓰려면 필요.
+- **Gate 4**(sustainable-rate 직접 측정 n≥4, 미착수) — r4/r6 크기·용량
+  주장을 인용하려면 필요.
+- **F-B(ii) 재설계**(귀무 발화율 40.1%인 현 인용-셀 선별 필터의 대체) —
+  이번 결과에 소급 적용 금지, 다음 사전등록에서만.
+
+원자료·전문: `reports/CONSENSUS.md` §1-1(rev14–rev20)·§3 항목28–40,
+`PROJECT_STATUS.md` "확정된 결과" 1번·"다음 실험 gate" #10·"방법론
+게이트" #9·#15–#26, `workspace/engine-port/results/p1_gates/`
+(`gate1/`·`gate2/`[E-A·Gate 2-S 원자료 포함] 하위 디렉터리, 수정
+금지·인용만), `workspace/engine-port/results/p1_gates/gate2/
+PREREG_GATE2S_2026-08-09.md` §5.
