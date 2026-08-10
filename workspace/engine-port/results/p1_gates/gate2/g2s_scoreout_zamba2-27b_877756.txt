@@ -1,0 +1,272 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  [load_reps] excluded 56 glob match(es) that are not bench output: g2s_zamba2-27b_pilot_pdmux_nosplit_rep1_877756.jsonl (parsed arm 'pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output), g2s_zamba2-27b_pilot_pdmux_nosplit_rep2_877756.jsonl (parsed arm 'pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output), g2s_zamba2-27b_pilot_pdmux_nosplit_rep3_877756.jsonl (parsed arm 'pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output), g2s_zamba2-27b_pilot_pdmux_nosplit_rep4_877756.jsonl (parsed arm 'pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output), g2s_zamba2-27b_pilot_pdmux_split34_rep1_877756.jsonl (parsed arm 'pilot_pdmux_split34' is not one of the sec2 arms -- not bench output), g2s_zamba2-27b_pilot_pdmux_split34_rep2_877756.jsonl (parsed arm 'pilot_pdmux_split34' is not one of the sec2 arms -- not bench output) ...
+==============================================================================
+Gate 2-S scorer -- zamba2-27b job=877756 -- PREREG rev6 (canonical)
+PRE-REGISTERED DECISION RULES (echoed before any number):
+  primary-alpha=ITLp95_mean  primary-beta=pooled_p99  (JOINT, no substitution)
+  verdict test = paired t 95% CI (bootstrap FORBIDDEN, gate #14)
+  Holm p source = ALPHA ONLY (sec5.6c);  F1=confirmatory(C-T'), F2=secondary(C-T)
+  claim printed ONLY after Holm (sec5.6d); 9-cell axis = UNCORRECTED coordinate
+  sec8.9.1 falsifier is ONE-WAY: states = {refuted, unchanged}; 'verified' unreachable
+  any-claim error rate across the two families ~= 0.10 (sec5.6b)
+==============================================================================
+
+[sec12-2 SECTION->LINE MAP] 36 pre-registered rules, resolved by anchor at runtime
+  sec2 arm set                             L71
+  sec3 cells + n=10                        L74
+  sec3.1 designated cell                   L78
+  sec4.2 primary-alpha ITLp95_mean         L356
+  sec4.2 primary-beta pooled p99           L357
+  sec4.2 nearest-rank FIXED                L211
+  sec6.3-9 unit assert                     L260
+  input contract (harness<->scorer)        L244
+  sec12-4 duration SUM not max             L339
+  sec4.1.3 unstable_frac                   L386
+  sec5.1 paired t (bootstrap FORBIDDEN)    L408
+  sec5.1 DEGENERATE-T                      L416
+  sec3.4c MDE %                            L458
+  sec11.1#3 sign = POINT ESTIMATE          L472
+  sec5.2.1 nine-cell table                 L484
+  sec5.2.1 applier                         L498
+  sec5.6b Holm                             L515
+  sec5.6c Holm p source = ALPHA ONLY       L1184
+  sec5.6d claim ONLY after Holm            L1200
+  sec5.6.1 headline combos                 L697
+  sec6.4 F-series                          L531
+  sec6.4 F-A completed/total               L555
+  sec6.4 `total` = attempted count         L379
+  sec6.4.1 F-B disjunct(i) unevaluated     L575
+  gate#17 gate label                       L610
+  sec4.4 Fieller + suppression             L771
+  sec6.2.1(2) P-carve TOST                 L810
+  sec5.2.2/7.2 controller/split counts     L830
+  sec4.5 FRAGILE-TO-METRIC                 L739
+  sec4.5 CONVENTION-SENSITIVE              L753
+  sec6.5 block list                        L99
+  sec6.5 per-block stamps                  L181
+  sec8.9 cell-wise premise labels          L84
+  sec8.9.1 falsifier (ONE-WAY)             L634
+  sec8.9.1 WITHDRAWAL_THRESHOLD            L60
+  sec8.9.1 monotone downgrade only         L686
+  unresolved/ambiguous anchors: none
+
+[sec6.5 BLOCK MANIFEST] 19 blocks
+  block                          mag  phase            computed@  F-gate@ 
+  confirm_A4like_itl             True Phase 1          1149       1155    
+  confirm_A4like_ttft            True Phase 1          1149       1155    
+  secondary_cont_itl             True Phase 1          1149       1155    
+  secondary_cont_ttft            True Phase 1          1149       1155    
+  descriptive_conc_itl           True Phase 1          1238       1237    
+  descriptive_conc_ttft          True Phase 1          1242       1237    
+  descriptive_A4_minus_Tprime    True Phase 1          1254       1255    
+  metric_sensitivity             True Phase 1          1218       1222    
+  tau_ladder                     True Phase 1          1276       1283    
+  component_share                True Phase 1          1305       1317    
+  descriptive                    True Phase 1          1345       1351    
+  switch_and_drain               True Phase 1          1386       1389    
+  delivery_rate                  True Phase 1          1424       1427    
+  probe_pos                      True Phase 1          1471       1472    
+  probe_carve                    True Phase 1          1513       1514    
+  mde                            True Phase 0 + Phase 1 1564       1569    
+  kv_pool                        True Phase 1          1592       1593    
+  bimodality                     True Phase 1          1618       1620    
+  premise_falsifier              False Phase 1          1130       None    
+  blocks not computed: none
+  magnitude blocks with no F-series gate line (gate #17): none
+
+[premise_falsifier r2] NOT REFUTED (frac(idx2)=0.0000 < 0.01). sec8.9.1: this is NOT evidence of absence -- PDMUX_TRACE_FORCE_PREFILL=0 gives ~1/32 of G1B pop-A density. NO UPGRADE PATH EXISTS -- state stays 'unchanged'.
+  label: verified -> verified   (one-way; no 'verified' path)
+
+[premise_falsifier r3] NOT REFUTED (frac(idx2)=0.0000 < 0.01). sec8.9.1: this is NOT evidence of absence -- PDMUX_TRACE_FORCE_PREFILL=0 gives ~1/32 of G1B pop-A density. NO UPGRADE PATH EXISTS -- state stays 'unchanged'.
+  label: verified -> verified   (one-way; no 'verified' path)
+
+[confirm_A4like_itl] alpha_ITLp95_mean r2  Δ=+13.947 CI[+11.025,+16.868] p=1.88e-06 -> axis + (S1-C) premise=verified  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[confirm_A4like_ttft] TTFTp95 r2  Δ=-203.1ms CI[-261.6,-144.6] -> axis -  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[confirm_A4like_itl] alpha_ITLp95_mean r3  Δ=+24.878 CI[+21.048,+28.708] p=1.349e-07 -> axis + (S1-C) premise=verified  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[confirm_A4like_ttft] TTFTp95 r3  Δ=-536.1ms CI[-726.4,-345.8] -> axis -  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[confirm_A4like_itl] beta_pooled_p99 r2  Δ=+19.002 CI[+11.299,+26.705] p=0.0003429 -> axis + (S1-C) premise=verified  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[confirm_A4like_ttft] TTFTp95 r2  Δ=-203.1ms CI[-261.6,-144.6] -> axis -  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[confirm_A4like_itl] beta_pooled_p99 r3  Δ=+44.014 CI[+41.525,+46.503] p=1.897e-11 -> axis + (S1-C) premise=verified  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[confirm_A4like_ttft] TTFTp95 r3  Δ=-536.1ms CI[-726.4,-345.8] -> axis -  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[secondary_cont_itl] alpha_ITLp95_mean r2  Δ=+9.018 CI[+6.210,+11.826] p=4.745e-05 -> axis + (S1-C) premise=verified  [GATE: clear]
+[secondary_cont_ttft] TTFTp95 r2  Δ=-204.0ms CI[-263.9,-144.0] -> axis -  [GATE: clear]
+
+[secondary_cont_itl] alpha_ITLp95_mean r3  Δ=+19.826 CI[+16.143,+23.510] p=6.804e-07 -> axis + (S1-C) premise=verified  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[secondary_cont_ttft] TTFTp95 r3  Δ=-532.8ms CI[-701.4,-364.3] -> axis -  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[secondary_cont_itl] beta_pooled_p99 r2  Δ=+18.450 CI[+11.091,+25.809] p=0.0003052 -> axis + (S1-C) premise=verified  [GATE: clear]
+[secondary_cont_ttft] TTFTp95 r2  Δ=-204.0ms CI[-263.9,-144.0] -> axis -  [GATE: clear]
+
+[secondary_cont_itl] beta_pooled_p99 r3  Δ=+41.081 CI[+38.837,+43.326] p=1.396e-11 -> axis + (S1-C) premise=verified  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[secondary_cont_ttft] TTFTp95 r3  Δ=-532.8ms CI[-701.4,-364.3] -> axis -  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[HOLM confirm_A4like] PARTIAL family: 2 of 4 pre-registered cells (this job only; p source = ALPHA only, sec5.6c)
+  sec5.6 last bullet: the full 4-cell Holm family spans BOTH job reports and must be reassembled BY HAND (methodology gate #11 -- no cross-job automation).
+  r2: p_alpha=1.88e-06 holm_reject=True axis=+ -> claim printable: True
+  r3: p_alpha=1.349e-07 holm_reject=True axis=+ -> claim printable: True
+
+[HOLM secondary_cont] PARTIAL family: 2 of 4 pre-registered cells (this job only; p source = ALPHA only, sec5.6c)
+  sec5.6 last bullet: the full 4-cell Holm family spans BOTH job reports and must be reassembled BY HAND (methodology gate #11 -- no cross-job automation).
+  r2: p_alpha=4.745e-05 holm_reject=True axis=+ -> claim printable: True
+  r3: p_alpha=6.804e-07 holm_reject=True axis=+ -> claim printable: True
+
+[HEADLINE COMBO-1]
+  이 격자에서 SM 분할은 **간헐 전달(엔진 기본 궤적)에서도, 연속 전달에서도** ITL을 [방향]시킨다. confirmatory는 4셀 Holm 후 [('zamba2-27b', 2.0), ('zamba2-27b', 3.0)]이며, 연속 전달 결과는 secondary다. [모든 조합 공통] 이 결과를 sec1-1 A4-vs-fused 격차의 성분·기여분·분해로 해석하지 않는다(sec5.5).
+
+[metric_sensitivity] confirm_A4like r2 tags=['none']  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[metric_sensitivity] confirm_A4like r3 tags=['none']  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[metric_sensitivity] secondary_cont r2 tags=['none']  [GATE: clear]
+
+[metric_sensitivity] secondary_cont r3 tags=['none']  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[descriptive_conc_itl] r2 Δ(A2-C)=-12.274 CI[-17.347,-7.201] -- SIGN ONLY, MAGNITUDE CITATION FORBIDDEN (sec4.3.1)  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[descriptive_conc_ttft] r2 Δ(A2-C) TTFTp95=-51.2ms CI[-95.6,-6.8] axis=- -- SIGN ONLY, MAGNITUDE CITATION FORBIDDEN (sec4.3.1: A2 is an intentionally untuned arm, observer asymmetry has NO magnitude bound [G5 UNDETERMINED], 4-flag bundle, KV pool differs 0.031%)  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[descriptive_A4_minus_Tprime] A4_minus_Tprime r2 Δ=-0.140 CI[-0.314,+0.035] -- 대리 성립의 증거가 아니라 controller-path·telemetry 비대칭의 상한 부재를 반영한다 (sec5.3)  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[descriptive_A4_minus_Tprime] A4_minus_T r2 Δ=-5.068 CI[-5.540,-4.597] -- 대리 성립의 증거가 아니라 controller-path·telemetry 비대칭의 상한 부재를 반영한다 (sec5.3)  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[descriptive_conc_itl] r3 Δ(A2-C)=+28.850 CI[+5.710,+51.990] -- SIGN ONLY, MAGNITUDE CITATION FORBIDDEN (sec4.3.1)  [GATE: F-SERIES FIRED(plainaux@r3,pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[descriptive_conc_ttft] r3 Δ(A2-C) TTFTp95=-61.8ms CI[-116.3,-7.3] axis=- -- SIGN ONLY, MAGNITUDE CITATION FORBIDDEN (sec4.3.1: A2 is an intentionally untuned arm, observer asymmetry has NO magnitude bound [G5 UNDETERMINED], 4-flag bundle, KV pool differs 0.031%)  [GATE: F-SERIES FIRED(plainaux@r3,pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[descriptive_A4_minus_Tprime] A4_minus_Tprime r3 Δ=-0.280 CI[-0.460,-0.099] -- 대리 성립의 증거가 아니라 controller-path·telemetry 비대칭의 상한 부재를 반영한다 (sec5.3)  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[descriptive_A4_minus_Tprime] A4_minus_T r3 Δ=-5.331 CI[-5.823,-4.840] -- 대리 성립의 증거가 아니라 controller-path·telemetry 비대칭의 상한 부재를 반영한다 (sec5.3)  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[tau_ladder] plainaux r2 n=10 X40=0.8687 X60=0.8687 X100=0.8687  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[tau_ladder] pdmux_nosplit r2 n=10 X40=0.8476 X60=0.1922 X100=0.0327  [GATE: clear]
+
+[tau_ladder] pdmux_split34 r2 n=10 X40=0.0680 X60=0.0345 X100=0.0126  [GATE: clear]
+
+[tau_ladder] pdmux_split34_nosticky r2 n=10 X40=0.0504 X60=0.0436 X100=0.0310  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[tau_ladder] agnostic r2 n=10 X40=0.0470 X60=0.0403 X100=0.0294  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[tau_ladder] plainaux r3 n=10 X40=0.9456 X60=0.9456 X100=0.9456  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[tau_ladder] pdmux_nosplit r3 n=10 X40=0.9439 X60=0.5474 X100=0.0851  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[tau_ladder] pdmux_split34 r3 n=10 X40=0.3201 X60=0.0417 X100=0.0025  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[tau_ladder] pdmux_split34_nosticky r3 n=10 X40=0.2440 X60=0.0283 X100=0.0083  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[tau_ladder] agnostic r3 n=10 X40=0.2315 X60=0.0101 X100=0.0101  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[tau_ladder] confirm_A4like X40 r2 Δ=+0.7973 CI[+0.7689,+0.8257] axis=+  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[tau_ladder] confirm_A4like X60 r2 Δ=+0.1486 CI[+0.0929,+0.2043] axis=+  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[tau_ladder] confirm_A4like X100 r2 Δ=+0.0016 CI[-0.0240,+0.0273] axis=0  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[tau_ladder] confirm_A4like X40 r3 Δ=+0.6999 CI[+0.5920,+0.8078] axis=+  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[tau_ladder] confirm_A4like X60 r3 Δ=+0.5190 CI[+0.4365,+0.6016] axis=+  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[tau_ladder] confirm_A4like X100 r3 Δ=+0.0768 CI[-0.0129,+0.1664] axis=0  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+[tau_ladder] secondary_cont X40 r2 Δ=+0.7796 CI[+0.7392,+0.8200] axis=+  [GATE: clear]
+[tau_ladder] secondary_cont X60 r2 Δ=+0.1577 CI[+0.1011,+0.2143] axis=+  [GATE: clear]
+[tau_ladder] secondary_cont X100 r2 Δ=+0.0200 CI[-0.0071,+0.0472] axis=0  [GATE: clear]
+[tau_ladder] secondary_cont X40 r3 Δ=+0.6238 CI[+0.4779,+0.7697] axis=+  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[tau_ladder] secondary_cont X60 r3 Δ=+0.5057 CI[+0.4329,+0.5785] axis=+  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+[tau_ladder] secondary_cont X100 r3 Δ=+0.0826 CI[-0.0036,+0.1688] axis=0  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[component_share] r2 identity:true  SUPPRESSED (denominator NOT separated from 0 at 95% (Fieller a<=0) -> unbounded interval; sec4.4 rev4 caveat says do not carry the ratio at all) -- sec4.4 rev4: if the denominator is near zero the ratio is not carried at all  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[component_share] r3 identity:true  share(Δ_split)=+0.4073 Fieller95[+0.3050,+0.7444] -- DESCRIPTIVE ONLY, NO VERDICT USES THIS (sec4.4)  [GATE: F-SERIES FIRED(plainaux@r3,pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[descriptive] plainaux r2 n=10 TTFTp50=157.4ms ITLp50=10.61ms throughput=1.936 completed/total=1.0000  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[descriptive] pdmux_nosplit r2 n=10 TTFTp50=180.3ms ITLp50=10.74ms throughput=1.936 completed/total=1.0000  [GATE: clear]
+
+[descriptive] pdmux_split34 r2 n=10 TTFTp50=247.9ms ITLp50=19.77ms throughput=1.911 completed/total=1.0000  [GATE: clear]
+
+[descriptive] pdmux_split34_nosticky r2 n=10 TTFTp50=242.5ms ITLp50=10.96ms throughput=1.935 completed/total=1.0000  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[descriptive] agnostic r2 n=10 TTFTp50=239.4ms ITLp50=10.96ms throughput=1.935 completed/total=1.0000  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[descriptive] plainaux r3 n=10 TTFTp50=176.6ms ITLp50=14.76ms throughput=2.953 completed/total=1.0000  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[descriptive] pdmux_nosplit r3 n=10 TTFTp50=242.6ms ITLp50=15.16ms throughput=2.952 completed/total=1.0000  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[descriptive] pdmux_split34 r3 n=10 TTFTp50=409.9ms ITLp50=28.13ms throughput=2.875 completed/total=1.0000  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[descriptive] pdmux_split34_nosticky r3 n=10 TTFTp50=392.4ms ITLp50=17.17ms throughput=2.944 completed/total=1.0000  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[descriptive] agnostic r3 n=10 TTFTp50=391.9ms ITLp50=17.17ms throughput=2.944 completed/total=1.0000  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[switch_and_drain] plainaux r2 N/A -- no telemetry for this arm (plainaux runs without PDMUX_TELEMETRY_PATH by design, sec2)  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[switch_and_drain] pdmux_nosplit r2 controller_decision=2245 split_transition=41 residency(decode-active)={idx0=0.0090, idx3=0.9910}  [GATE: clear]
+
+[switch_and_drain] pdmux_split34 r2 controller_decision=2440 split_transition=24 residency(decode-active)={idx0=0.0043, idx1=0.9957}  [GATE: clear]
+
+[switch_and_drain] pdmux_split34_nosticky r2 controller_decision=2263 split_transition=648 residency(decode-active)={idx0=0.0027, idx1=0.3548, idx3=0.6426}  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[switch_and_drain] agnostic r2 controller_decision=0 split_transition=0 residency(decode-active)={idx0=0.0028, idx1=0.3546, idx3=0.6427}  [A4 runs with NO R2 policy, so `_r2_decide_idx` never runs and neither event is emitted. This is a STRUCTURAL ABSENCE, not a measured zero.]  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[switch_and_drain] plainaux r3 N/A -- no telemetry for this arm (plainaux runs without PDMUX_TELEMETRY_PATH by design, sec2)  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[switch_and_drain] pdmux_nosplit r3 controller_decision=2424 split_transition=28 residency(decode-active)={idx0=0.0020, idx3=0.9980}  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[switch_and_drain] pdmux_split34 r3 controller_decision=2506 split_transition=13 residency(decode-active)={idx0=0.0023, idx1=0.9977}  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[switch_and_drain] pdmux_split34_nosticky r3 controller_decision=2432 split_transition=398 residency(decode-active)={idx0=0.0040, idx1=0.5483, idx3=0.4477}  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[switch_and_drain] agnostic r3 controller_decision=0 split_transition=0 residency(decode-active)={idx0=0.0003, idx1=0.5414, idx3=0.4582}  [A4 runs with NO R2 policy, so `_r2_decide_idx` never runs and neither event is emitted. This is a STRUCTURAL ABSENCE, not a measured zero.]  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[delivery_rate] plainaux r2 N/A -- no telemetry by design  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[delivery_rate] pdmux_nosplit r2 {idx0=0.0090, idx3=0.9910}  [sanity: frac(idx in {0,3})=1.0000 vs invariant 1.0000 -> holds]  [GATE: clear]
+
+[delivery_rate] pdmux_split34 r2 {idx0=0.0043, idx1=0.9957}  [sanity: frac_T vs identity 1.0000 -> +0.0043; deviation is a cadence-PHASE artifact candidate, NOT treatment loss, NOT a gate]  [GATE: clear]
+
+[delivery_rate] pdmux_split34_nosticky r2 {idx0=0.0027, idx1=0.3548, idx3=0.6426}  [live delivery rate frac=0.3548; DESCRIPTIVE ONLY, no threshold]  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[delivery_rate] agnostic r2 {idx0=0.0028, idx1=0.3546, idx3=0.6427}  [live delivery rate frac=0.3546; DESCRIPTIVE ONLY, no threshold]  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[delivery_rate] plainaux r3 N/A -- no telemetry by design  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[delivery_rate] pdmux_nosplit r3 {idx0=0.0020, idx3=0.9980}  [sanity: frac(idx in {0,3})=1.0000 vs invariant 1.0000 -> holds]  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[delivery_rate] pdmux_split34 r3 {idx0=0.0023, idx1=0.9977}  [sanity: frac_T vs identity 1.0000 -> +0.0023; deviation is a cadence-PHASE artifact candidate, NOT treatment loss, NOT a gate]  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[delivery_rate] pdmux_split34_nosticky r3 {idx0=0.0040, idx1=0.5483, idx3=0.4477}  [live delivery rate frac=0.5483; DESCRIPTIVE ONLY, no threshold]  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[delivery_rate] agnostic r3 {idx0=0.0003, idx1=0.5414, idx3=0.4582}  [live delivery rate frac=0.5414; DESCRIPTIVE ONLY, no threshold]  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[probe_pos] T(idx1=34SM) - C(idx3=108SM) n_boots=10 Δ=+4.574ms CI[+3.784,+5.364] -> OK -- SANITY CHECK, not an anchor condition (sec6.2.1(1))  [GATE: clear]
+  internal epsilon(34->108) = 0.2826 -- valid ONLY at these two endpoints of this campaign; no SM-unit detection floor is derived.
+
+[probe_carve] C - A2 n_boots=10 Δ=+0.387ms 90%CI[-0.501,+1.275] δ=±0.573ms (5%) -> TOST NOT-EQUIVALENT -- NO CAMPAIGN VETO; the confound (event_loop_normal vs event_loop_pdmux) is NOT isolated  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[mde] confirm_A4like alpha_ITLp95_mean r2 n=10 MDE=18.9% of ref mean 21.479  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[mde] confirm_A4like beta_pooled_p99 r2 n=10 MDE=30.2% of ref mean 35.431  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[mde] confirm_A4like alpha_ITLp95_mean r3 n=10 MDE=17.3% of ref mean 30.741  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[mde] confirm_A4like beta_pooled_p99 r3 n=10 MDE=8.1% of ref mean 42.879  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]
+
+[mde] secondary_cont alpha_ITLp95_mean r2 n=10 MDE=14.8% of ref mean 26.407  [GATE: clear]
+
+[mde] secondary_cont beta_pooled_p99 r2 n=10 MDE=28.4% of ref mean 35.983  [GATE: clear]
+
+[mde] secondary_cont alpha_ITLp95_mean r3 n=10 MDE=14.3% of ref mean 35.793  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[mde] secondary_cont beta_pooled_p99 r3 n=10 MDE=6.8% of ref mean 45.812  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]
+
+[mde] sigma_D sources: pilot sd=3.9416143357104687 (n=4, df=3, sigma 95% CI ~ [0.57x,3.73x] MANDATORY) | capscan paired sd=1.2087034459847328 (n=3, df=2, state on every citation) | no UNDERPOWERED threshold
+
+[kv_pool] PASS -- tokens(T)==tokens(C)==327536
+  plainaux                 kv_tokens=327637 capture=3.92s/0.13GB
+  pdmux_nosplit            kv_tokens=327536 capture=7.61s/0.52GB
+  pdmux_split34            kv_tokens=327536 capture=7.66s/0.52GB
+  pdmux_split34_nosticky   kv_tokens=327536 capture=7.87s/0.52GB
+  agnostic                 kv_tokens=327536 capture=7.15s/0.52GB
+    [GATE: clear]
+
+[bimodality] 18 rows (c in 0.25/0.40/0.50, per-rep median+max; provenance=phase1_scored; DIAGNOSTIC ONLY -- no decision depends on it; F-series label attached per gate #17)
+
+[design_conformance] CONFORMANT to sec3 (n=10 x both rates).
+
+[sec6.5 COMPLETENESS] 19/19 declared blocks present in the report json; absent=none
+
+wrote /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/p1_gates/gate2/g2s_report_zamba2-27b_877756.json

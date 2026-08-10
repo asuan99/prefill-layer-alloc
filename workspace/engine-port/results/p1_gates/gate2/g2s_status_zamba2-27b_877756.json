@@ -1,0 +1,12 @@
+{
+ "tag": "zamba2-27b",
+ "job": "877756",
+ "status": "MEASURED_AND_SCORED",
+ "exit_code": 0,
+ "scorer_rc": 0,
+ "preflight_rc": 0,
+ "rescore_offline_sufficient": false,
+ "gpu_rerun_required": false,
+ "human_judgment_required": false,
+ "cost_note": "exit 21 costs ~6.4 GPU-hr, exit 20/22 cost 0 -- never round an ambiguous case up to 21"
+}

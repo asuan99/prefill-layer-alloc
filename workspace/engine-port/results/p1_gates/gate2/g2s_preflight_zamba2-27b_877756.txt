@@ -1,0 +1,72 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+---- MEASUREMENT INVENTORY (pre-scoring, no decision rule) ----
+  glob matched 106 rep-shaped file(s): accepted 50, excluded 56
+    EXCLUDED g2s_zamba2-27b_pilot_pdmux_nosplit_rep1_877756.jsonl  <- parsed arm 'pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_pilot_pdmux_nosplit_rep2_877756.jsonl  <- parsed arm 'pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_pilot_pdmux_nosplit_rep3_877756.jsonl  <- parsed arm 'pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_pilot_pdmux_nosplit_rep4_877756.jsonl  <- parsed arm 'pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_pilot_pdmux_split34_rep1_877756.jsonl  <- parsed arm 'pilot_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_pilot_pdmux_split34_rep2_877756.jsonl  <- parsed arm 'pilot_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_pilot_pdmux_split34_rep3_877756.jsonl  <- parsed arm 'pilot_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_pilot_pdmux_split34_rep4_877756.jsonl  <- parsed arm 'pilot_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep10_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep1_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep2_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep3_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep4_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep5_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep6_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep7_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep8_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_agnostic_rep9_877756.jsonl  <- parsed arm 'telemetry_agnostic' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep10_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep1_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep2_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep3_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep4_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep5_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep6_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep7_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep8_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_nosplit_rep9_877756.jsonl  <- parsed arm 'telemetry_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep10_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep1_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep2_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep3_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep4_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep5_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep6_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep7_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep8_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_nosticky_rep9_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34_nosticky' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep10_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep1_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep2_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep3_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep4_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep5_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep6_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep7_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep8_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pdmux_split34_rep9_877756.jsonl  <- parsed arm 'telemetry_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pilot_pdmux_nosplit_rep1_877756.jsonl  <- parsed arm 'telemetry_pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pilot_pdmux_nosplit_rep2_877756.jsonl  <- parsed arm 'telemetry_pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pilot_pdmux_nosplit_rep3_877756.jsonl  <- parsed arm 'telemetry_pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pilot_pdmux_nosplit_rep4_877756.jsonl  <- parsed arm 'telemetry_pilot_pdmux_nosplit' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pilot_pdmux_split34_rep1_877756.jsonl  <- parsed arm 'telemetry_pilot_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pilot_pdmux_split34_rep2_877756.jsonl  <- parsed arm 'telemetry_pilot_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pilot_pdmux_split34_rep3_877756.jsonl  <- parsed arm 'telemetry_pilot_pdmux_split34' is not one of the sec2 arms -- not bench output
+    EXCLUDED g2s_zamba2-27b_telemetry_pilot_pdmux_split34_rep4_877756.jsonl  <- parsed arm 'telemetry_pilot_pdmux_split34' is not one of the sec2 arms -- not bench output
+  cell plainaux                 r2: n_reps=10 / 10
+  cell plainaux                 r3: n_reps=10 / 10
+  cell pdmux_nosplit            r2: n_reps=10 / 10
+  cell pdmux_nosplit            r3: n_reps=10 / 10
+  cell pdmux_split34            r2: n_reps=10 / 10
+  cell pdmux_split34            r3: n_reps=10 / 10
+  cell pdmux_split34_nosticky   r2: n_reps=10 / 10
+  cell pdmux_split34_nosticky   r3: n_reps=10 / 10
+  cell agnostic                 r2: n_reps=10 / 10
+  cell agnostic                 r3: n_reps=10 / 10
+  files=62 rows=160 contract_violations=0 cells_with_data=10/10
+VERDICT: MEASUREMENT_OK -- every row satisfies the scorer input contract.

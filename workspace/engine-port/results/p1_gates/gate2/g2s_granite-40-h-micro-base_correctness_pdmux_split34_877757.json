@@ -1,0 +1,18 @@
+{
+ "arm": "pdmux_split34",
+ "n_concurrent": 16,
+ "prereg": "rev6 sec6.3",
+ "G1": {
+  "status": "OK",
+  "http": 200,
+  "sha": "ab9ce81e19ba4f08c9141b8b15a0e37452920c59d451db157a3b359a1834c760"
+ },
+ "G2": {
+  "n_ok": 16,
+  "n_match": 16,
+  "n_mismatch": 0,
+  "n_undetermined": 0,
+  "details": []
+ },
+ "verdict": "PASS"
+}

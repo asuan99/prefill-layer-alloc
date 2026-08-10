@@ -1,0 +1,2695 @@
+{
+ "tag": "granite-40-h-micro-base",
+ "job": "877757",
+ "prereg": "rev6",
+ "blocks": [
+  "confirm_A4like_itl",
+  "confirm_A4like_ttft",
+  "secondary_cont_itl",
+  "secondary_cont_ttft",
+  "descriptive_conc_itl",
+  "descriptive_conc_ttft",
+  "descriptive_A4_minus_Tprime",
+  "metric_sensitivity",
+  "tau_ladder",
+  "component_share",
+  "descriptive",
+  "switch_and_drain",
+  "delivery_rate",
+  "probe_pos",
+  "probe_carve",
+  "mde",
+  "kv_pool",
+  "bimodality",
+  "premise_falsifier"
+ ],
+ "n_blocks": 19,
+ "block_manifest": {
+  "confirm_A4like_itl": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1149,
+   "f_series_gate_line": 1155,
+   "gate_required": true
+  },
+  "confirm_A4like_ttft": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1149,
+   "f_series_gate_line": 1155,
+   "gate_required": true
+  },
+  "secondary_cont_itl": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1149,
+   "f_series_gate_line": 1155,
+   "gate_required": true
+  },
+  "secondary_cont_ttft": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1149,
+   "f_series_gate_line": 1155,
+   "gate_required": true
+  },
+  "descriptive_conc_itl": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1238,
+   "f_series_gate_line": 1237,
+   "gate_required": true
+  },
+  "descriptive_conc_ttft": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1242,
+   "f_series_gate_line": 1237,
+   "gate_required": true
+  },
+  "descriptive_A4_minus_Tprime": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1254,
+   "f_series_gate_line": 1255,
+   "gate_required": true
+  },
+  "metric_sensitivity": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1218,
+   "f_series_gate_line": 1222,
+   "gate_required": true
+  },
+  "tau_ladder": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1276,
+   "f_series_gate_line": 1283,
+   "gate_required": true
+  },
+  "component_share": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1305,
+   "f_series_gate_line": 1317,
+   "gate_required": true
+  },
+  "descriptive": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1345,
+   "f_series_gate_line": 1351,
+   "gate_required": true
+  },
+  "switch_and_drain": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1386,
+   "f_series_gate_line": 1389,
+   "gate_required": true
+  },
+  "delivery_rate": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1424,
+   "f_series_gate_line": 1427,
+   "gate_required": true
+  },
+  "probe_pos": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1471,
+   "f_series_gate_line": 1472,
+   "gate_required": true
+  },
+  "probe_carve": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1513,
+   "f_series_gate_line": 1514,
+   "gate_required": true
+  },
+  "mde": {
+   "emits_magnitude": true,
+   "phase": "Phase 0 + Phase 1",
+   "computed_at_line": 1564,
+   "f_series_gate_line": 1569,
+   "gate_required": true
+  },
+  "kv_pool": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1592,
+   "f_series_gate_line": 1593,
+   "gate_required": true
+  },
+  "bimodality": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1618,
+   "f_series_gate_line": 1620,
+   "gate_required": true
+  },
+  "premise_falsifier": {
+   "emits_magnitude": false,
+   "phase": "Phase 1",
+   "computed_at_line": 1130,
+   "f_series_gate_line": null,
+   "gate_required": false
+  }
+ },
+ "section_line_map": {
+  "sec2 arm set": {
+   "anchor": "^ARMS = \\(",
+   "lines": [
+    71
+   ],
+   "ok": true,
+   "line": 71
+  },
+  "sec3 cells + n=10": {
+   "anchor": "^CELLS = \\{",
+   "lines": [
+    74
+   ],
+   "ok": true,
+   "line": 74
+  },
+  "sec3.1 designated cell": {
+   "anchor": "^DESIGNATED = ",
+   "lines": [
+    78
+   ],
+   "ok": true,
+   "line": 78
+  },
+  "sec4.2 primary-alpha ITLp95_mean": {
+   "anchor": "\"alpha_ITLp95_mean\": sum\\(per_req_p95\\)",
+   "lines": [
+    356
+   ],
+   "ok": true,
+   "line": 356
+  },
+  "sec4.2 primary-beta pooled p99": {
+   "anchor": "\"beta_pooled_p99\": p_linear\\(pooled",
+   "lines": [
+    357
+   ],
+   "ok": true,
+   "line": 357
+  },
+  "sec4.2 nearest-rank FIXED": {
+   "anchor": "^def p_nearest\\(",
+   "lines": [
+    211
+   ],
+   "ok": true,
+   "line": 211
+  },
+  "sec6.3-9 unit assert": {
+   "anchor": "^def assert_units\\(",
+   "lines": [
+    260
+   ],
+   "ok": true,
+   "line": 260
+  },
+  "input contract (harness<->scorer)": {
+   "anchor": "^def check_row_contract\\(",
+   "lines": [
+    244
+   ],
+   "ok": true,
+   "line": 244
+  },
+  "sec12-4 duration SUM not max": {
+   "anchor": "dur_sum\\[\\(arm, rep\\)\\] \\+= float",
+   "lines": [
+    339
+   ],
+   "ok": true,
+   "line": 339
+  },
+  "sec4.1.3 unstable_frac": {
+   "anchor": "^def unstable_frac\\(",
+   "lines": [
+    386
+   ],
+   "ok": true,
+   "line": 386
+  },
+  "sec5.1 paired t (bootstrap FORBIDDEN)": {
+   "anchor": "^def paired_t\\(",
+   "lines": [
+    408
+   ],
+   "ok": true,
+   "line": 408
+  },
+  "sec5.1 DEGENERATE-T": {
+   "anchor": "# sec5\\.1 DEGENERATE-T",
+   "lines": [
+    416
+   ],
+   "ok": true,
+   "line": 416
+  },
+  "sec3.4c MDE %": {
+   "anchor": "^def mde_pct\\(",
+   "lines": [
+    458
+   ],
+   "ok": true,
+   "line": 458
+  },
+  "sec11.1#3 sign = POINT ESTIMATE": {
+   "anchor": "^def axis_state\\(",
+   "lines": [
+    472
+   ],
+   "ok": true,
+   "line": 472
+  },
+  "sec5.2.1 nine-cell table": {
+   "anchor": "^NINE_CELL = \\{",
+   "lines": [
+    484
+   ],
+   "ok": true,
+   "line": 484
+  },
+  "sec5.2.1 applier": {
+   "anchor": "^def nine_cell\\(",
+   "lines": [
+    498
+   ],
+   "ok": true,
+   "line": 498
+  },
+  "sec5.6b Holm": {
+   "anchor": "^def holm\\(",
+   "lines": [
+    515
+   ],
+   "ok": true,
+   "line": 515
+  },
+  "sec5.6c Holm p source = ALPHA ONLY": {
+   "anchor": "partial=True, p_source=\"alpha_ITLp95_mean\"\\)",
+   "lines": [
+    1184
+   ],
+   "ok": true,
+   "line": 1184
+  },
+  "sec5.6d claim ONLY after Holm": {
+   "anchor": "^    conf_fired = \\[\\(tag, r\\) for r in rates",
+   "lines": [
+    1200
+   ],
+   "ok": true,
+   "line": 1200
+  },
+  "sec5.6.1 headline combos": {
+   "anchor": "^def headline\\(",
+   "lines": [
+    697
+   ],
+   "ok": true,
+   "line": 697
+  },
+  "sec6.4 F-series": {
+   "anchor": "^def f_series\\(",
+   "lines": [
+    531
+   ],
+   "ok": true,
+   "line": 531
+  },
+  "sec6.4 F-A completed/total": {
+   "anchor": "^            tot = _total_requests\\(row\\)",
+   "lines": [
+    555
+   ],
+   "ok": true,
+   "line": 555
+  },
+  "sec6.4 `total` = attempted count": {
+   "anchor": "^def _total_requests\\(",
+   "lines": [
+    379
+   ],
+   "ok": true,
+   "line": 379
+  },
+  "sec6.4.1 F-B disjunct(i) unevaluated": {
+   "anchor": "out\\[\"F_B_i_evaluated\"\\] = False",
+   "lines": [
+    575
+   ],
+   "ok": true,
+   "line": 575
+  },
+  "gate#17 gate label": {
+   "anchor": "^def gate_label\\(",
+   "lines": [
+    610
+   ],
+   "ok": true,
+   "line": 610
+  },
+  "sec4.4 Fieller + suppression": {
+   "anchor": "^def fieller_ratio\\(",
+   "lines": [
+    771
+   ],
+   "ok": true,
+   "line": 771
+  },
+  "sec6.2.1(2) P-carve TOST": {
+   "anchor": "^def tost\\(",
+   "lines": [
+    810
+   ],
+   "ok": true,
+   "line": 810
+  },
+  "sec5.2.2/7.2 controller/split counts": {
+   "anchor": "^def telemetry_summary\\(",
+   "lines": [
+    830
+   ],
+   "ok": true,
+   "line": 830
+  },
+  "sec4.5 FRAGILE-TO-METRIC": {
+   "anchor": "^def sensitivity\\(",
+   "lines": [
+    739
+   ],
+   "ok": true,
+   "line": 739
+  },
+  "sec4.5 CONVENTION-SENSITIVE": {
+   "anchor": "^def convention_sensitive\\(",
+   "lines": [
+    753
+   ],
+   "ok": true,
+   "line": 753
+  },
+  "sec6.5 block list": {
+   "anchor": "^BLOCKS: List\\[",
+   "lines": [
+    99
+   ],
+   "ok": true,
+   "line": 99
+  },
+  "sec6.5 per-block stamps": {
+   "anchor": "^def block_manifest\\(",
+   "lines": [
+    181
+   ],
+   "ok": true,
+   "line": 181
+  },
+  "sec8.9 cell-wise premise labels": {
+   "anchor": "^PREMISE_LABEL = \\{",
+   "lines": [
+    84
+   ],
+   "ok": true,
+   "line": 84
+  },
+  "sec8.9.1 falsifier (ONE-WAY)": {
+   "anchor": "^def falsifier\\(",
+   "lines": [
+    634
+   ],
+   "ok": true,
+   "line": 634
+  },
+  "sec8.9.1 WITHDRAWAL_THRESHOLD": {
+   "anchor": "^WITHDRAWAL_THRESHOLD = ",
+   "lines": [
+    60
+   ],
+   "ok": true,
+   "line": 60
+  },
+  "sec8.9.1 monotone downgrade only": {
+   "anchor": "^def apply_falsifier\\(",
+   "lines": [
+    686
+   ],
+   "ok": true,
+   "line": 686
+  }
+ },
+ "f_series": {
+  "plainaux@3.0": {
+   "arm": "plainaux",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 0.9941676615099284,
+   "F_E": false,
+   "flagged": true
+  },
+  "plainaux@4.0": {
+   "arm": "plainaux",
+   "rate": 4.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.0570707962226893,
+   "F_E": false,
+   "flagged": true
+  },
+  "pdmux_nosplit@3.0": {
+   "arm": "pdmux_nosplit",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": false,
+   "F_B": false,
+   "F_E_ratio": 1.0007226046998574,
+   "F_E": false,
+   "flagged": false
+  },
+  "pdmux_nosplit@4.0": {
+   "arm": "pdmux_nosplit",
+   "rate": 4.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.137529792235079,
+   "F_E": false,
+   "flagged": true
+  },
+  "pdmux_split34@3.0": {
+   "arm": "pdmux_split34",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 0.9978201458571221,
+   "F_E": false,
+   "flagged": true
+  },
+  "pdmux_split34@4.0": {
+   "arm": "pdmux_split34",
+   "rate": 4.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.1850214552234815,
+   "F_E": false,
+   "flagged": true
+  },
+  "pdmux_split34_nosticky@3.0": {
+   "arm": "pdmux_split34_nosticky",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": null,
+   "F_B_i_evaluated": false,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.0038697143662416,
+   "F_E": false,
+   "flagged": true
+  },
+  "pdmux_split34_nosticky@4.0": {
+   "arm": "pdmux_split34_nosticky",
+   "rate": 4.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": null,
+   "F_B_i_evaluated": false,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.1892396279339783,
+   "F_E": false,
+   "flagged": true
+  },
+  "agnostic@3.0": {
+   "arm": "agnostic",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 0.9991896019680784,
+   "F_E": false,
+   "flagged": true
+  },
+  "agnostic@4.0": {
+   "arm": "agnostic",
+   "rate": 4.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.177799063934418,
+   "F_E": false,
+   "flagged": true
+  }
+ },
+ "premise_falsifier": {
+  "r3": {
+   "state": "unchanged",
+   "verdict": "NOT REFUTED (frac(idx2)=0.0000 < 0.01). sec8.9.1: this is NOT evidence of absence -- PDMUX_TRACE_FORCE_PREFILL=0 gives ~1/32 of G1B pop-A density. NO UPGRADE PATH EXISTS -- state stays 'unchanged'.",
+   "frac": {
+    "1": 1.0
+   },
+   "n_episodes": 369,
+   "t_total_s_NOT_FOR_CITATION": 138.9657161924988,
+   "label_before": "unverified",
+   "label_after": "unverified"
+  },
+  "r4": {
+   "state": "unchanged",
+   "verdict": "NOT REFUTED (frac(idx2)=0.0000 < 0.01). sec8.9.1: this is NOT evidence of absence -- PDMUX_TRACE_FORCE_PREFILL=0 gives ~1/32 of G1B pop-A density. NO UPGRADE PATH EXISTS -- state stays 'unchanged'.",
+   "frac": {
+    "1": 1.0
+   },
+   "n_episodes": 297,
+   "t_total_s_NOT_FOR_CITATION": 154.65205294638872,
+   "label_before": "unverified",
+   "label_after": "unverified"
+  }
+ },
+ "premise_labels": {
+  "granite-40-h-micro-base@3.0": "unverified",
+  "granite-40-h-micro-base@4.0": "unverified"
+ },
+ "primary_contrasts": {
+  "confirm_A4like|alpha_ITLp95_mean|r3": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 16.042844325614475,
+    "lo": 14.989028999350868,
+    "hi": 17.09665965187808,
+    "p": 7.250227265610295e-11,
+    "degenerate": false,
+    "sd": 1.473234599551925,
+    "se": 0.465877686235016,
+    "t": 34.435743113744074
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -183.262565722689,
+    "lo": -211.84067297512735,
+    "hi": -154.68445847025066,
+    "p": 1.5088251253739626e-07,
+    "degenerate": false,
+    "sd": 39.952214913475544,
+    "se": 12.633999669512967,
+    "t": -14.50550661046152
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 9.417197120156848,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "unverified"
+  },
+  "confirm_A4like|alpha_ITLp95_mean|r4": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 19.113480357142787,
+    "lo": 17.54582781764257,
+    "hi": 20.681132896643003,
+    "p": 5.256867915351993e-10,
+    "degenerate": false,
+    "sd": 2.1915794007815017,
+    "se": 0.6930382579576546,
+    "t": 27.579257187718838
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -302.43816117756063,
+    "lo": -353.1113112759947,
+    "hi": -251.76501107912657,
+    "p": 2.805745335019468e-07,
+    "degenerate": false,
+    "sd": 70.84110102857522,
+    "se": 22.401923120439463,
+    "t": -13.500544553767206
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 11.525933937874596,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "unverified"
+  },
+  "confirm_A4like|beta_pooled_p99|r3": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 10.084702378138962,
+    "lo": 4.609660574768861,
+    "hi": 15.559744181509064,
+    "p": 0.0024242951001101375,
+    "degenerate": false,
+    "sd": 7.654112459454142,
+    "se": 2.420442883894828,
+    "t": 4.166469882532935
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -183.262565722689,
+    "lo": -211.84067297512735,
+    "hi": -154.68445847025066,
+    "p": 1.5088251253739626e-07,
+    "degenerate": false,
+    "sd": 39.952214913475544,
+    "se": 12.633999669512967,
+    "t": -14.50550661046152
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 20.6370124799551,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "unverified"
+  },
+  "confirm_A4like|beta_pooled_p99|r4": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 21.568844916298975,
+    "lo": 18.824228080114764,
+    "hi": 24.313461752483185,
+    "p": 2.561096454694326e-08,
+    "degenerate": false,
+    "sd": 3.8369763513648762,
+    "se": 1.2133584598515526,
+    "t": 17.77615241495724
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -302.43816117756063,
+    "lo": -353.1113112759947,
+    "hi": -251.76501107912657,
+    "p": 2.805745335019468e-07,
+    "degenerate": false,
+    "sd": 70.84110102857522,
+    "se": 22.401923120439463,
+    "t": -13.500544553767206
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 10.358007049829597,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "unverified"
+  },
+  "secondary_cont|alpha_ITLp95_mean|r3": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 14.234117429393033,
+    "lo": 13.179582624168706,
+    "hi": 15.28865223461736,
+    "p": 2.1229492731185697e-10,
+    "degenerate": false,
+    "sd": 1.4742404316670663,
+    "se": 0.46619575827777515,
+    "t": 30.532490218222588
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -197.9825647268444,
+    "lo": -226.94617314772384,
+    "hi": -169.01895630596496,
+    "p": 8.665576985057897e-08,
+    "degenerate": false,
+    "sd": 40.49114582989027,
+    "se": 12.804424589248203,
+    "t": -15.462043088846738
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 8.44220017418563,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "unverified"
+  },
+  "secondary_cont|alpha_ITLp95_mean|r4": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 17.02612213945637,
+    "lo": 15.489414595400634,
+    "hi": 18.562829683512106,
+    "p": 1.2315089540558294e-09,
+    "degenerate": false,
+    "sd": 2.1483182744384037,
+    "se": 0.6793578886188045,
+    "t": 25.062080568567477
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -301.22700615786005,
+    "lo": -347.8055483616144,
+    "hi": -254.6484639541057,
+    "p": 1.4023332003373013e-07,
+    "degenerate": false,
+    "sd": 65.11683618662352,
+    "se": 20.591751637380344,
+    "t": -14.628527551344424
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 10.17525788454913,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "unverified"
+  },
+  "secondary_cont|beta_pooled_p99|r3": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 10.017274376004996,
+    "lo": 4.5555268062374354,
+    "hi": 15.479021945772558,
+    "p": 0.002489245555406337,
+    "degenerate": false,
+    "sd": 7.635527111120643,
+    "se": 2.4145656807106812,
+    "t": 4.148685809638694
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -197.9825647268444,
+    "lo": -226.94617314772384,
+    "hi": -169.01895630596496,
+    "p": 8.665576985057897e-08,
+    "degenerate": false,
+    "sd": 40.49114582989027,
+    "se": 12.804424589248203,
+    "t": -15.462043088846738
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 20.549338880273666,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "unverified"
+  },
+  "secondary_cont|beta_pooled_p99|r4": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 21.56971158087253,
+    "lo": 18.688766532068186,
+    "hi": 24.45065662967687,
+    "p": 3.915149331731807e-08,
+    "degenerate": false,
+    "sd": 4.0275632926643095,
+    "se": 1.2736273425306546,
+    "t": 16.935653672458255
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -301.22700615786005,
+    "lo": -347.8055483616144,
+    "hi": -254.6484639541057,
+    "p": 1.4023332003373013e-07,
+    "degenerate": false,
+    "sd": 65.11683618662352,
+    "se": 20.591751637380344,
+    "t": -14.628527551344424
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 10.872756712377079,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "unverified"
+  }
+ },
+ "confirm_A4like_itl": {
+  "confirm_A4like|alpha_ITLp95_mean|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 16.042844325614475,
+    "lo": 14.989028999350868,
+    "hi": 17.09665965187808,
+    "p": 7.250227265610295e-11,
+    "degenerate": false,
+    "sd": 1.473234599551925,
+    "se": 0.465877686235016,
+    "t": 34.435743113744074
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 9.417197120156848,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "unverified"
+  },
+  "confirm_A4like|alpha_ITLp95_mean|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 19.113480357142787,
+    "lo": 17.54582781764257,
+    "hi": 20.681132896643003,
+    "p": 5.256867915351993e-10,
+    "degenerate": false,
+    "sd": 2.1915794007815017,
+    "se": 0.6930382579576546,
+    "t": 27.579257187718838
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 11.525933937874596,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "unverified"
+  },
+  "confirm_A4like|beta_pooled_p99|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 10.084702378138962,
+    "lo": 4.609660574768861,
+    "hi": 15.559744181509064,
+    "p": 0.0024242951001101375,
+    "degenerate": false,
+    "sd": 7.654112459454142,
+    "se": 2.420442883894828,
+    "t": 4.166469882532935
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 20.6370124799551,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "unverified"
+  },
+  "confirm_A4like|beta_pooled_p99|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 21.568844916298975,
+    "lo": 18.824228080114764,
+    "hi": 24.313461752483185,
+    "p": 2.561096454694326e-08,
+    "degenerate": false,
+    "sd": 3.8369763513648762,
+    "se": 1.2133584598515526,
+    "t": 17.77615241495724
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 10.358007049829597,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "unverified"
+  }
+ },
+ "confirm_A4like_ttft": {
+  "confirm_A4like|alpha_ITLp95_mean|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -183.262565722689,
+    "lo": -211.84067297512735,
+    "hi": -154.68445847025066,
+    "p": 1.5088251253739626e-07,
+    "degenerate": false,
+    "sd": 39.952214913475544,
+    "se": 12.633999669512967,
+    "t": -14.50550661046152
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|alpha_ITLp95_mean|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -302.43816117756063,
+    "lo": -353.1113112759947,
+    "hi": -251.76501107912657,
+    "p": 2.805745335019468e-07,
+    "degenerate": false,
+    "sd": 70.84110102857522,
+    "se": 22.401923120439463,
+    "t": -13.500544553767206
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|beta_pooled_p99|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -183.262565722689,
+    "lo": -211.84067297512735,
+    "hi": -154.68445847025066,
+    "p": 1.5088251253739626e-07,
+    "degenerate": false,
+    "sd": 39.952214913475544,
+    "se": 12.633999669512967,
+    "t": -14.50550661046152
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|beta_pooled_p99|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -302.43816117756063,
+    "lo": -353.1113112759947,
+    "hi": -251.76501107912657,
+    "p": 2.805745335019468e-07,
+    "degenerate": false,
+    "sd": 70.84110102857522,
+    "se": 22.401923120439463,
+    "t": -13.500544553767206
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  }
+ },
+ "secondary_cont_itl": {
+  "secondary_cont|alpha_ITLp95_mean|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 14.234117429393033,
+    "lo": 13.179582624168706,
+    "hi": 15.28865223461736,
+    "p": 2.1229492731185697e-10,
+    "degenerate": false,
+    "sd": 1.4742404316670663,
+    "se": 0.46619575827777515,
+    "t": 30.532490218222588
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 8.44220017418563,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "unverified"
+  },
+  "secondary_cont|alpha_ITLp95_mean|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 17.02612213945637,
+    "lo": 15.489414595400634,
+    "hi": 18.562829683512106,
+    "p": 1.2315089540558294e-09,
+    "degenerate": false,
+    "sd": 2.1483182744384037,
+    "se": 0.6793578886188045,
+    "t": 25.062080568567477
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 10.17525788454913,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "unverified"
+  },
+  "secondary_cont|beta_pooled_p99|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 10.017274376004996,
+    "lo": 4.5555268062374354,
+    "hi": 15.479021945772558,
+    "p": 0.002489245555406337,
+    "degenerate": false,
+    "sd": 7.635527111120643,
+    "se": 2.4145656807106812,
+    "t": 4.148685809638694
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 20.549338880273666,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "unverified"
+  },
+  "secondary_cont|beta_pooled_p99|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 21.56971158087253,
+    "lo": 18.688766532068186,
+    "hi": 24.45065662967687,
+    "p": 3.915149331731807e-08,
+    "degenerate": false,
+    "sd": 4.0275632926643095,
+    "se": 1.2736273425306546,
+    "t": 16.935653672458255
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 10.872756712377079,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "unverified"
+  }
+ },
+ "secondary_cont_ttft": {
+  "secondary_cont|alpha_ITLp95_mean|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -197.9825647268444,
+    "lo": -226.94617314772384,
+    "hi": -169.01895630596496,
+    "p": 8.665576985057897e-08,
+    "degenerate": false,
+    "sd": 40.49114582989027,
+    "se": 12.804424589248203,
+    "t": -15.462043088846738
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|alpha_ITLp95_mean|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -301.22700615786005,
+    "lo": -347.8055483616144,
+    "hi": -254.6484639541057,
+    "p": 1.4023332003373013e-07,
+    "degenerate": false,
+    "sd": 65.11683618662352,
+    "se": 20.591751637380344,
+    "t": -14.628527551344424
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|beta_pooled_p99|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -197.9825647268444,
+    "lo": -226.94617314772384,
+    "hi": -169.01895630596496,
+    "p": 8.665576985057897e-08,
+    "degenerate": false,
+    "sd": 40.49114582989027,
+    "se": 12.804424589248203,
+    "t": -15.462043088846738
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|beta_pooled_p99|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -301.22700615786005,
+    "lo": -347.8055483616144,
+    "hi": -254.6484639541057,
+    "p": 1.4023332003373013e-07,
+    "degenerate": false,
+    "sd": 65.11683618662352,
+    "se": 20.591751637380344,
+    "t": -14.628527551344424
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "holm": {
+  "confirm_A4like": {
+   "_family": {
+    "size_this_job": 2,
+    "size_preregistered": 4,
+    "partial": true,
+    "p_source": "alpha_ITLp95_mean"
+   },
+   "r3": {
+    "p_alpha": 7.250227265610295e-11,
+    "holm_reject": true,
+    "axis": "+"
+   },
+   "r4": {
+    "p_alpha": 5.256867915351993e-10,
+    "holm_reject": true,
+    "axis": "+"
+   }
+  },
+  "secondary_cont": {
+   "_family": {
+    "size_this_job": 2,
+    "size_preregistered": 4,
+    "partial": true,
+    "p_source": "alpha_ITLp95_mean"
+   },
+   "r3": {
+    "p_alpha": 2.1229492731185697e-10,
+    "holm_reject": true,
+    "axis": "+"
+   },
+   "r4": {
+    "p_alpha": 1.2315089540558294e-09,
+    "holm_reject": true,
+    "axis": "+"
+   }
+  }
+ },
+ "headline": {
+  "code": "COMBO-1",
+  "text": "\uc774 \uaca9\uc790\uc5d0\uc11c SM \ubd84\ud560\uc740 **`FixedPolicy(34)`\u00b7sticky OFF \uad6c\uc131\uc5d0\uc11c\ub3c4, \uc5f0\uc18d \uc804\ub2ec\uc5d0\uc11c\ub3c4** ITL\uc744 [\ubc29\ud5a5]\uc2dc\ud0a8\ub2e4. confirmatory\ub294 4\uc140 Holm \ud6c4 [('granite-40-h-micro-base', 3.0), ('granite-40-h-micro-base', 4.0)]\uc774\uba70, \uc5f0\uc18d \uc804\ub2ec \uacb0\uacfc\ub294 secondary\ub2e4. \u2605 **\uc804\uc81c \ubbf8\uac80\uc99d/\ubc18\uc99d \uc140\uc5d0\uc11c\ub9cc \ubc1c\ud654** -- \uc774 \ubb38\uc7a5\uc744 \ud5e4\ub4dc\ub77c\uc778\uc5d0 \ubc18\ub4dc\uc2dc \ud3ec\ud568\ud55c\ub2e4(sec5.6(f)). [\ubaa8\ub4e0 \uc870\ud569 \uacf5\ud1b5] \uc774 \uacb0\uacfc\ub97c sec1-1 A4-vs-fused \uaca9\ucc28\uc758 \uc131\ubd84\u00b7\uae30\uc5ec\ubd84\u00b7\ubd84\ud574\ub85c \ud574\uc11d\ud558\uc9c0 \uc54a\ub294\ub2e4(sec5.5).",
+  "confirmatory_fired": [
+   [
+    "granite-40-h-micro-base",
+    3.0
+   ],
+   [
+    "granite-40-h-micro-base",
+    4.0
+   ]
+  ],
+  "secondary_fired": [
+   [
+    "granite-40-h-micro-base",
+    3.0
+   ],
+   [
+    "granite-40-h-micro-base",
+    4.0
+   ]
+  ]
+ },
+ "metric_sensitivity": {
+  "confirm_A4like|r3": {
+   "tags": [],
+   "nearest": {
+    "alpha_ITLp95_mean": 16.042844325614475,
+    "med_ITLp95": 23.931772727519274,
+    "ITLp95p90": 13.490689359605309,
+    "beta_pooled_p99": 10.084702378138962,
+    "pooled_p95": 23.75264488160611,
+    "mean_ITL": 1.298444827930466
+   },
+   "linear": {
+    "alpha_ITLp95_mean": 16.6719140187682,
+    "med_ITLp95": 23.758171014487743,
+    "ITLp95p90": 23.47008553892376,
+    "beta_pooled_p99": 10.084702378138962,
+    "pooled_p95": 23.75264488160611,
+    "mean_ITL": 1.298444827930466
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|r4": {
+   "tags": [],
+   "nearest": {
+    "alpha_ITLp95_mean": 19.113480357142787,
+    "med_ITLp95": 22.918211575597525,
+    "ITLp95p90": 20.584351532161257,
+    "beta_pooled_p99": 21.568844916298975,
+    "pooled_p95": 23.93486589193344,
+    "mean_ITL": 2.4775995883457282
+   },
+   "linear": {
+    "alpha_ITLp95_mean": 20.688711398125943,
+    "med_ITLp95": 23.31694423221052,
+    "ITLp95p90": 27.140017033554653,
+    "beta_pooled_p99": 21.568844916298975,
+    "pooled_p95": 23.93486589193344,
+    "mean_ITL": 2.4775995883457282
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "secondary_cont|r3": {
+   "tags": [],
+   "nearest": {
+    "alpha_ITLp95_mean": 14.234117429393033,
+    "med_ITLp95": 22.611273545771837,
+    "ITLp95p90": 9.81863647699356,
+    "beta_pooled_p99": 10.017274376004996,
+    "pooled_p95": 23.075960176065557,
+    "mean_ITL": -0.8888071867569411
+   },
+   "linear": {
+    "alpha_ITLp95_mean": 15.257172895750656,
+    "med_ITLp95": 23.022904288955036,
+    "ITLp95p90": 20.696863668039484,
+    "beta_pooled_p99": 10.017274376004996,
+    "pooled_p95": 23.075960176065557,
+    "mean_ITL": -0.8888071867569411
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|r4": {
+   "tags": [],
+   "nearest": {
+    "alpha_ITLp95_mean": 17.02612213945637,
+    "med_ITLp95": 20.421882066875696,
+    "ITLp95p90": 17.483676448464415,
+    "beta_pooled_p99": 21.56971158087253,
+    "pooled_p95": 22.594897663220763,
+    "mean_ITL": 0.6744684609130465
+   },
+   "linear": {
+    "alpha_ITLp95_mean": 18.990935325234513,
+    "med_ITLp95": 21.50968803092838,
+    "ITLp95p90": 22.51906575914476,
+    "beta_pooled_p99": 21.56971158087253,
+    "pooled_p95": 22.594897663220763,
+    "mean_ITL": 0.6744684609130465
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "descriptive_contrasts": {
+  "conc|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -9.639943324339887,
+    "lo": -13.481996286800882,
+    "hi": -5.797890361878892,
+    "p": 0.00030359787092295486,
+    "degenerate": false,
+    "sd": 5.371192861350198,
+    "se": 1.6985203193903606,
+    "t": -5.675494849422757
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -31.547723589465,
+    "lo": -49.80407875136294,
+    "hi": -13.291368427567068,
+    "p": 0.0035711149528529535,
+    "degenerate": false,
+    "sd": 25.522397915371137,
+    "se": 8.070890876170616,
+    "t": -3.9088279191842332
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  },
+  "A4_minus_Tprime|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -0.2017884282395242,
+    "lo": -0.379559654112818,
+    "hi": -0.024017202366230422,
+    "p": 0.030306879853246916,
+    "degenerate": false,
+    "sd": 0.24852430424397165,
+    "se": 0.07859028553196011,
+    "t": -2.5676001413363414
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "A4_minus_T|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -2.0105153244609637,
+    "lo": -2.4969349016068554,
+    "hi": -1.5240957473150718,
+    "p": 6.245150801867168e-06,
+    "degenerate": false,
+    "sd": 0.6800149258519026,
+    "se": 0.21503960086025284,
+    "t": -9.349511980202807
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "conc|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 4.314352289463082,
+    "lo": -4.046891385865527,
+    "hi": 12.675595964791691,
+    "p": 0.2731306938599053,
+    "degenerate": false,
+    "sd": 11.68902479474616,
+    "se": 3.6963941977580057,
+    "t": 1.1671786229076677
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -33.65479551255704,
+    "lo": -45.536464664118476,
+    "hi": -21.773126360995597,
+    "p": 0.00012423087856609975,
+    "degenerate": false,
+    "sd": 16.610582194294658,
+    "se": 5.252727299540865,
+    "t": -6.407108839535371
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r4,pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  },
+  "A4_minus_Tprime|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -0.44524018963177986,
+    "lo": -0.7002415628466776,
+    "hi": -0.19023881641688217,
+    "p": 0.003357145919524822,
+    "degenerate": false,
+    "sd": 0.3564921069096951,
+    "se": 0.11273270257068863,
+    "t": -3.9495211192386135
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "A4_minus_T|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -2.532598407318195,
+    "lo": -2.9000495184315205,
+    "hi": -2.1651472962048692,
+    "p": 8.063499495043376e-08,
+    "degenerate": false,
+    "sd": 0.5136969230228643,
+    "se": 0.16244523037724393,
+    "t": -15.590475641770354
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "descriptive_conc_itl": {
+  "conc|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -9.639943324339887,
+    "lo": -13.481996286800882,
+    "hi": -5.797890361878892,
+    "p": 0.00030359787092295486,
+    "degenerate": false,
+    "sd": 5.371192861350198,
+    "se": 1.6985203193903606,
+    "t": -5.675494849422757
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  },
+  "conc|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 4.314352289463082,
+    "lo": -4.046891385865527,
+    "hi": 12.675595964791691,
+    "p": 0.2731306938599053,
+    "degenerate": false,
+    "sd": 11.68902479474616,
+    "se": 3.6963941977580057,
+    "t": 1.1671786229076677
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r4,pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  }
+ },
+ "descriptive_conc_ttft": {
+  "conc|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -31.547723589465,
+    "lo": -49.80407875136294,
+    "hi": -13.291368427567068,
+    "p": 0.0035711149528529535,
+    "degenerate": false,
+    "sd": 25.522397915371137,
+    "se": 8.070890876170616,
+    "t": -3.9088279191842332
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  },
+  "conc|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -33.65479551255704,
+    "lo": -45.536464664118476,
+    "hi": -21.773126360995597,
+    "p": 0.00012423087856609975,
+    "degenerate": false,
+    "sd": 16.610582194294658,
+    "se": 5.252727299540865,
+    "t": -6.407108839535371
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r4,pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  }
+ },
+ "descriptive_A4_minus_Tprime": {
+  "A4_minus_Tprime|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -0.2017884282395242,
+    "lo": -0.379559654112818,
+    "hi": -0.024017202366230422,
+    "p": 0.030306879853246916,
+    "degenerate": false,
+    "sd": 0.24852430424397165,
+    "se": 0.07859028553196011,
+    "t": -2.5676001413363414
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "A4_minus_T|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -2.0105153244609637,
+    "lo": -2.4969349016068554,
+    "hi": -1.5240957473150718,
+    "p": 6.245150801867168e-06,
+    "degenerate": false,
+    "sd": 0.6800149258519026,
+    "se": 0.21503960086025284,
+    "t": -9.349511980202807
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "A4_minus_Tprime|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -0.44524018963177986,
+    "lo": -0.7002415628466776,
+    "hi": -0.19023881641688217,
+    "p": 0.003357145919524822,
+    "degenerate": false,
+    "sd": 0.3564921069096951,
+    "se": 0.11273270257068863,
+    "t": -3.9495211192386135
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "A4_minus_T|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -2.532598407318195,
+    "lo": -2.9000495184315205,
+    "hi": -2.1651472962048692,
+    "p": 8.063499495043376e-08,
+    "degenerate": false,
+    "sd": 0.5136969230228643,
+    "se": 0.16244523037724393,
+    "t": -15.590475641770354
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "tau_ladder": {
+  "plainaux|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.9,
+    "X60": 0.9,
+    "X100": 0.9
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_nosplit|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.3575,
+    "X60": 0.08166666666666667,
+    "X100": 0.0008333333333333333
+   },
+   "gate": "  [GATE: clear]"
+  },
+  "pdmux_split34|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.10416666666666667,
+    "X60": 0.01916666666666667,
+    "X100": 0.0125
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34_nosticky|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.08833333333333333,
+    "X60": 0.020833333333333332,
+    "X100": 0.004166666666666667
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.1,
+    "X60": 0.025833333333333333,
+    "X100": 0.018333333333333333
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "plainaux|r4": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.955,
+    "X60": 0.955,
+    "X100": 0.955
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_nosplit|r4": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.6141666666666666,
+    "X60": 0.22416666666666668,
+    "X100": 0.0
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34|r4": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.06666666666666667,
+    "X60": 0.0016666666666666666,
+    "X100": 0.0
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34_nosticky|r4": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.08583333333333333,
+    "X60": 0.008333333333333333,
+    "X100": 0.0025
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r4": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.07333333333333333,
+    "X60": 0.007500000000000001,
+    "X100": 0.0025
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "confirm_A4like|X40|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.26916666666666667,
+    "lo": 0.20184110917423542,
+    "hi": 0.3364922241590979,
+    "p": 8.208095073546217e-06,
+    "degenerate": false,
+    "sd": 0.09412117878722245,
+    "se": 0.02976373010275475,
+    "t": 9.043445352360395
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X60|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.060833333333333336,
+    "lo": 0.010327682686873764,
+    "hi": 0.11133898397979292,
+    "p": 0.02343276553094398,
+    "degenerate": false,
+    "sd": 0.07060693667178063,
+    "se": 0.022327873849009538,
+    "t": 2.724546624757641
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X100|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -0.003333333333333333,
+    "lo": -0.013148213759389363,
+    "hi": 0.006481547092722696,
+    "p": 0.46203600455080296,
+    "degenerate": false,
+    "sd": 0.013721210039142742,
+    "se": 0.004339027597725919,
+    "t": -0.7682212795973759
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X40|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 0.5283333333333333,
+    "lo": 0.44094303104907906,
+    "hi": 0.6157236356175876,
+    "p": 2.5113045667640606e-07,
+    "degenerate": false,
+    "sd": 0.1221717067324752,
+    "se": 0.03863408589047491,
+    "t": 13.675316010611033
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X60|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 0.21583333333333332,
+    "lo": 0.1286578857035996,
+    "hi": 0.30300878096306705,
+    "p": 0.00033411325511428563,
+    "degenerate": false,
+    "sd": 0.12187133976776543,
+    "se": 0.03853910151623948,
+    "t": 5.6003727342316525
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X100|r4": {
+   "ci": {
+    "n": 10,
+    "mean": -0.0025,
+    "lo": -0.008155,
+    "hi": 0.0031550000000000003,
+    "p": 0.3434363961123756,
+    "degenerate": false,
+    "sd": 0.00790569415042095,
+    "se": 0.0025,
+    "t": -1.0
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "secondary_cont|X40|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.2533333333333333,
+    "lo": 0.16076552311353343,
+    "hi": 0.3459011435531332,
+    "p": 0.0001606910911488957,
+    "degenerate": false,
+    "sd": 0.12940986662633924,
+    "se": 0.04092299302378421,
+    "t": 6.190488882035032
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|X60|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.0625,
+    "lo": -0.0015930799913514704,
+    "hi": 0.12659307999135147,
+    "p": 0.05482166107254382,
+    "degenerate": false,
+    "sd": 0.08960217286827396,
+    "se": 0.028334694956388802,
+    "t": 2.2057763493200313
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|X100|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -0.011666666666666667,
+    "lo": -0.03470174715997802,
+    "hi": 0.011368413826644686,
+    "p": 0.28149103034799283,
+    "degenerate": false,
+    "sd": 0.03220305943597653,
+    "se": 0.01018350154434631,
+    "t": -1.1456439237389602
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|X40|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 0.5475,
+    "lo": 0.4601616666666667,
+    "hi": 0.6348383333333333,
+    "p": 1.8365552509679663e-07,
+    "degenerate": false,
+    "sd": 0.12209905410094572,
+    "se": 0.038611111111111096,
+    "t": 14.179856115107919
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|X60|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 0.2225,
+    "lo": 0.13843238123391385,
+    "hi": 0.3065676187660862,
+    "p": 0.0002058095380832667,
+    "degenerate": false,
+    "sd": 0.11752659273543159,
+    "se": 0.037165171868296265,
+    "t": 5.986787866567181
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|X100|r4": {
+   "ci": {
+    "n": 10,
+    "mean": 0.0,
+    "lo": 0.0,
+    "hi": 0.0,
+    "p": NaN,
+    "degenerate": true
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "component_share": {
+  "r3": {
+   "identity": true,
+   "emitted": true,
+   "suppress_reasons": [],
+   "identity_statement": "Delta_split + Delta_conc === ITLp95_mean(A2) - ITLp95_mean(T); the shares summing to 1 is arithmetic, not a result (sec4.4, gate #6)",
+   "used_for_verdict": false,
+   "ci_split": {
+    "n": 10,
+    "mean": 14.234117429393033,
+    "lo": 13.179582624168706,
+    "hi": 15.28865223461736,
+    "p": 2.1229492731185697e-10,
+    "degenerate": false,
+    "sd": 1.4742404316670663,
+    "se": 0.46619575827777515,
+    "t": 30.532490218222588
+   },
+   "ci_conc": {
+    "n": 10,
+    "mean": -9.639943324339887,
+    "lo": -13.481996286800882,
+    "hi": -5.797890361878892,
+    "p": 0.00030359787092295486,
+    "degenerate": false,
+    "sd": 5.371192861350198,
+    "se": 1.6985203193903606,
+    "t": -5.675494849422757
+   },
+   "ci_denominator": {
+    "n": 10,
+    "mean": 4.5941741050531455,
+    "lo": 1.3555768113345668,
+    "hi": 7.832771398771724,
+    "p": 0.010679401697285587,
+    "degenerate": false,
+    "sd": 4.527561393549086,
+    "se": 1.431740624986109,
+    "t": 3.2088033439001697
+   },
+   "fieller": {
+    "ok": true,
+    "identity": true,
+    "point": 3.0982973443990476,
+    "lo": 1.7459203660155405,
+    "hi": 10.869431882695702,
+    "denominator_mean": 4.5941741050531455,
+    "numerator_mean": 14.234117429393033
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "r4": {
+   "identity": true,
+   "emitted": false,
+   "suppress_reasons": [
+    "a component CI contains 0 (contrast unresolved)"
+   ],
+   "identity_statement": "Delta_split + Delta_conc === ITLp95_mean(A2) - ITLp95_mean(T); the shares summing to 1 is arithmetic, not a result (sec4.4, gate #6)",
+   "used_for_verdict": false,
+   "ci_split": {
+    "n": 10,
+    "mean": 17.02612213945637,
+    "lo": 15.489414595400634,
+    "hi": 18.562829683512106,
+    "p": 1.2315089540558294e-09,
+    "degenerate": false,
+    "sd": 2.1483182744384037,
+    "se": 0.6793578886188045,
+    "t": 25.062080568567477
+   },
+   "ci_conc": {
+    "n": 10,
+    "mean": 4.314352289463082,
+    "lo": -4.046891385865527,
+    "hi": 12.675595964791691,
+    "p": 0.2731306938599053,
+    "degenerate": false,
+    "sd": 11.68902479474616,
+    "se": 3.6963941977580057,
+    "t": 1.1671786229076677
+   },
+   "ci_denominator": {
+    "n": 10,
+    "mean": 21.340474428919453,
+    "lo": 12.152291895549098,
+    "hi": 30.52865696228981,
+    "p": 0.000525094124444943,
+    "degenerate": false,
+    "sd": 12.8450859252106,
+    "se": 4.061972826423676,
+    "t": 5.253721612832271
+   },
+   "fieller": {
+    "ok": false,
+    "reason": null
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r4,pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "descriptive": {
+  "plainaux|r3": {
+   "n_reps": 10,
+   "TTFTp50": 118.89744866639376,
+   "ITLp50": 7.9844011925160885,
+   "throughput": 2.9370248839729904,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_nosplit|r3": {
+   "n_reps": 10,
+   "TTFTp50": 134.30477883666754,
+   "ITLp50": 8.142757602036,
+   "throughput": 2.9350720885103234,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: clear]"
+  },
+  "pdmux_split34|r3": {
+   "n_reps": 10,
+   "TTFTp50": 181.67862920090556,
+   "ITLp50": 11.549826338887215,
+   "throughput": 2.9140507671141473,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34_nosticky|r3": {
+   "n_reps": 10,
+   "TTFTp50": 176.98617856949568,
+   "ITLp50": 8.296456094831228,
+   "throughput": 2.9316955458811176,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r3": {
+   "n_reps": 10,
+   "TTFTp50": 178.84299894794822,
+   "ITLp50": 8.283213898539543,
+   "throughput": 2.931788762951664,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "plainaux|r4": {
+   "n_reps": 10,
+   "TTFTp50": 120.51775949075818,
+   "ITLp50": 8.448655158281326,
+   "throughput": 3.971481368825975,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_nosplit|r4": {
+   "n_reps": 10,
+   "TTFTp50": 139.5892882719636,
+   "ITLp50": 8.658927492797375,
+   "throughput": 3.9654104495382407,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34|r4": {
+   "n_reps": 10,
+   "TTFTp50": 243.33343096077442,
+   "ITLp50": 12.139483727514744,
+   "throughput": 3.909107087487321,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34_nosticky|r4": {
+   "n_reps": 10,
+   "TTFTp50": 237.25250335410237,
+   "ITLp50": 10.211313050240278,
+   "throughput": 3.946708382896443,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r4": {
+   "n_reps": 10,
+   "TTFTp50": 236.18172081187367,
+   "ITLp50": 10.186231974512339,
+   "throughput": 3.946422925349272,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "switch_and_drain": {
+  "cells": {
+   "plainaux|r3": {
+    "available": false,
+    "na_reason": "no telemetry for this arm (plainaux runs without PDMUX_TELEMETRY_PATH by design, sec2)",
+    "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_nosplit|r3": {
+    "available": true,
+    "controller_decision": 2206,
+    "split_transition": 42,
+    "residency_frac_decode_active": {
+     "0": 0.0015550038459594946,
+     "3": 0.9984449961540405
+    },
+    "n_snapshots": 77496,
+    "switch_count_NOT_FOR_SOLE_CITATION": 242,
+    "gate": "  [GATE: clear]"
+   },
+   "pdmux_split34|r3": {
+    "available": true,
+    "controller_decision": 2262,
+    "split_transition": 33,
+    "residency_frac_decode_active": {
+     "0": 0.001958100117103434,
+     "1": 0.9980418998828966
+    },
+    "n_snapshots": 65673,
+    "switch_count_NOT_FOR_SOLE_CITATION": 126,
+    "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_split34_nosticky|r3": {
+    "available": true,
+    "controller_decision": 2190,
+    "split_transition": 582,
+    "residency_frac_decode_active": {
+     "0": 0.005688984806208943,
+     "1": 0.40491306755574014,
+     "3": 0.589397947638051
+    },
+    "n_snapshots": 74668,
+    "switch_count_NOT_FOR_SOLE_CITATION": 949,
+    "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+   },
+   "agnostic|r3": {
+    "available": true,
+    "controller_decision": 0,
+    "split_transition": 0,
+    "residency_frac_decode_active": {
+     "0": 0.00325457705684816,
+     "1": 0.3979761879603041,
+     "3": 0.5987692349828477
+    },
+    "n_snapshots": 76928,
+    "switch_count_NOT_FOR_SOLE_CITATION": 927,
+    "a4_note": "A4 runs with NO R2 policy, so `_r2_decide_idx` never runs and neither event is emitted. This is a STRUCTURAL ABSENCE, not a measured zero.",
+    "gate": "  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "plainaux|r4": {
+    "available": false,
+    "na_reason": "no telemetry for this arm (plainaux runs without PDMUX_TELEMETRY_PATH by design, sec2)",
+    "gate": "  [GATE: F-SERIES FIRED(plainaux@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_nosplit|r4": {
+    "available": true,
+    "controller_decision": 2288,
+    "split_transition": 33,
+    "residency_frac_decode_active": {
+     "0": 0.0046429548582002786,
+     "3": 0.9953570451417997
+    },
+    "n_snapshots": 63599,
+    "switch_count_NOT_FOR_SOLE_CITATION": 114,
+    "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_split34|r4": {
+    "available": true,
+    "controller_decision": 2230,
+    "split_transition": 24,
+    "residency_frac_decode_active": {
+     "0": 0.0006657354980683943,
+     "1": 0.9993342645019316
+    },
+    "n_snapshots": 58802,
+    "switch_count_NOT_FOR_SOLE_CITATION": 64,
+    "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_split34_nosticky|r4": {
+    "available": true,
+    "controller_decision": 2214,
+    "split_transition": 457,
+    "residency_frac_decode_active": {
+     "0": 0.0016516315017714473,
+     "1": 0.5598311136108809,
+     "3": 0.4385172548873476
+    },
+    "n_snapshots": 61585,
+    "switch_count_NOT_FOR_SOLE_CITATION": 673,
+    "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+   },
+   "agnostic|r4": {
+    "available": true,
+    "controller_decision": 0,
+    "split_transition": 0,
+    "residency_frac_decode_active": {
+     "0": 0.0027828720533551185,
+     "1": 0.5482782146759423,
+     "3": 0.4489389132707026
+    },
+    "n_snapshots": 63616,
+    "switch_count_NOT_FOR_SOLE_CITATION": 654,
+    "a4_note": "A4 runs with NO R2 policy, so `_r2_decide_idx` never runs and neither event is emitted. This is a STRUCTURAL ABSENCE, not a measured zero.",
+    "gate": "  [GATE: F-SERIES FIRED(agnostic@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   }
+  },
+  "notes": [
+   "sec7.2: quantities used are `controller_decision` and `split_transition` (multiplexing_mixin.py:401-422), which are emitted with NO cadence.",
+   "sec7.2: `switch_count` (stream_index changes in runtime_snapshot) is a PDMUX_DUAL_WORKER_TRACE_EVERY=32 subsample whose miss bias is ARM-DEPENDENT (T dwells longer under sticky) -- SOLE CITATION FORBIDDEN. It is printed only so the prohibition travels with it.",
+   "sec7.2: transitions taken through the `adjust_stream_groups` path are recorded by NO event (multiplexing_mixin.py:1084-1086 is logger.debug, 0 occurrences across 96+ server logs). --log-level debug is NOT added (it would change arm flags vs the preceding campaigns).",
+   "sec5.2.2: these quantities are reported on S1/S2/S3 alike and EXCULPATE NO VERDICT in any direction."
+  ]
+ },
+ "delivery_rate": {
+  "plainaux|r3": {
+   "available": false,
+   "prereg_status": "no pdmux telemetry by design",
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "na_reason": "no telemetry for this arm (by design)"
+  },
+  "pdmux_nosplit|r3": {
+   "available": true,
+   "frac": {
+    "0": 0.0015550038459594946,
+    "3": 0.9984449961540405
+   },
+   "frac_idx1": 0.0,
+   "frac_idx0_or_3": 1.0,
+   "prereg_status": "sec6.1.1 CODE INVARIANT (idx0 and idx3 are the same physical state) -- sanity check, not a gate, not evidence of no-split",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: clear]",
+   "sanity_invariant_holds": true
+  },
+  "pdmux_split34|r3": {
+   "available": true,
+   "frac": {
+    "0": 0.001958100117103434,
+    "1": 0.9980418998828966
+   },
+   "frac_idx1": 0.9980418998828966,
+   "frac_idx0_or_3": 0.001958100117103434,
+   "prereg_status": "sec6.1.2 CODE IDENTITY (sticky ON) -- sanity check, not a gate",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sanity_identity_deviation": 0.0019581001171034007
+  },
+  "pdmux_split34_nosticky|r3": {
+   "available": true,
+   "frac": {
+    "0": 0.005688984806208943,
+    "1": 0.40491306755574014,
+    "3": 0.589397947638051
+   },
+   "frac_idx1": 0.40491306755574014,
+   "frac_idx0_or_3": 0.5950869324442599,
+   "prereg_status": "sec6.1.2 rev4 LIVE DELIVERY RATE -- descriptive only, no threshold",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r3": {
+   "available": true,
+   "frac": {
+    "0": 0.00325457705684816,
+    "1": 0.3979761879603041,
+    "3": 0.5987692349828477
+   },
+   "frac_idx1": 0.3979761879603041,
+   "frac_idx0_or_3": 0.6020238120396959,
+   "prereg_status": "sec6.1.2 rev4 LIVE DELIVERY RATE -- descriptive only, no threshold",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "plainaux|r4": {
+   "available": false,
+   "prereg_status": "no pdmux telemetry by design",
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "na_reason": "no telemetry for this arm (by design)"
+  },
+  "pdmux_nosplit|r4": {
+   "available": true,
+   "frac": {
+    "0": 0.0046429548582002786,
+    "3": 0.9953570451417997
+   },
+   "frac_idx1": 0.0,
+   "frac_idx0_or_3": 1.0,
+   "prereg_status": "sec6.1.1 CODE INVARIANT (idx0 and idx3 are the same physical state) -- sanity check, not a gate, not evidence of no-split",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sanity_invariant_holds": true
+  },
+  "pdmux_split34|r4": {
+   "available": true,
+   "frac": {
+    "0": 0.0006657354980683943,
+    "1": 0.9993342645019316
+   },
+   "frac_idx1": 0.9993342645019316,
+   "frac_idx0_or_3": 0.0006657354980683943,
+   "prereg_status": "sec6.1.2 CODE IDENTITY (sticky ON) -- sanity check, not a gate",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sanity_identity_deviation": 0.000665735498068365
+  },
+  "pdmux_split34_nosticky|r4": {
+   "available": true,
+   "frac": {
+    "0": 0.0016516315017714473,
+    "1": 0.5598311136108809,
+    "3": 0.4385172548873476
+   },
+   "frac_idx1": 0.5598311136108809,
+   "frac_idx0_or_3": 0.44016888638911905,
+   "prereg_status": "sec6.1.2 rev4 LIVE DELIVERY RATE -- descriptive only, no threshold",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r4": {
+   "available": true,
+   "frac": {
+    "0": 0.0027828720533551185,
+    "1": 0.5482782146759423,
+    "3": 0.4489389132707026
+   },
+   "frac_idx1": 0.5482782146759423,
+   "frac_idx0_or_3": 0.45172178532405777,
+   "prereg_status": "sec6.1.2 rev4 LIVE DELIVERY RATE -- descriptive only, no threshold",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "probe_pos": {
+  "role": "HARNESS SANITY CHECK -- not an anchor condition (sec6.2.1(1), rev4)",
+  "ci": {
+   "n": 10,
+   "mean": 3.710431582111073,
+   "lo": 3.1677247998603835,
+   "hi": 4.253138364361762,
+   "p": 8.650846221686433e-08,
+   "degenerate": false,
+   "sd": 0.7587044798997439,
+   "se": 0.23992342274566292,
+   "t": 15.465066060033717
+  },
+  "n_boots": 10,
+  "verdict": "OK",
+  "undetermined_reason": null,
+  "internal_epsilon_34_to_108": 0.2782632611540546,
+  "epsilon_scope": "valid ONLY at these two endpoints of THIS campaign; pooled two-point elasticity, transfer outside this operating point is forbidden (sec6.2.1 rev3 change 3)",
+  "caveats": [
+   "sec6.2.1 rev4: micro-regime caveat -- measured at 8 concurrent requests, input 128 / output 128 (canonical confound #7 regime). The result does NOT transfer to the serving operating point (in2000/out96, rate 2-4).",
+   "sec6.2.1 rev3 change 3: the detection floor is NOT converted to SM units. The 15-60 SM band was an 8B/44-92 SM import and is deleted (CONSENSUS sec3 items 21/25/26)."
+  ],
+  "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+ },
+ "probe_carve": {
+  "state": "EQUIVALENT",
+  "undetermined_reason": null,
+  "tost": {
+   "n": 10,
+   "mean": 0.09215016094014405,
+   "lo": -0.03820678763008617,
+   "hi": 0.22250710951037428,
+   "delta": 0.4844505530892043,
+   "margin_frac": 0.05,
+   "equivalent": true,
+   "degenerate": false
+  },
+  "n_boots": 10,
+  "margin": 0.05,
+  "ci_level": "two-sided 90%",
+  "campaign_veto": "NONE (sec6.2.1(2))",
+  "confound": "A2 runs event_loop_normal and C runs event_loop_pdmux, so loop overhead is mixed in. An equivalence result means the CONJUNCTION 'no SM carve AND no loop overhead' is within 5% -- it does NOT isolate SM carving.",
+  "caveats": [
+   "sec6.2.1 rev4: micro-regime caveat -- measured at 8 concurrent requests, input 128 / output 128 (canonical confound #7 regime). The result does NOT transfer to the serving operating point (in2000/out96, rate 2-4).",
+   "sec6.2.1 rev3 change 3: the detection floor is NOT converted to SM units. The 15-60 SM band was an 8B/44-92 SM import and is deleted (CONSENSUS sec3 items 21/25/26)."
+  ],
+  "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+ },
+ "mde": {
+  "confirm_A4like|alpha_ITLp95_mean|r3": {
+   "mde_pct": 9.417197120156848,
+   "n": 10,
+   "ref_mean": 15.558613720349967,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 9.4% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "confirm_A4like|beta_pooled_p99|r3": {
+   "mde_pct": 20.6370124799551,
+   "n": 10,
+   "ref_mean": 36.88660302571952,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 20.6% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "confirm_A4like|alpha_ITLp95_mean|r4": {
+   "mde_pct": 11.525933937874596,
+   "n": 10,
+   "ref_mean": 18.91044433383892,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 11.5% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "confirm_A4like|beta_pooled_p99|r4": {
+   "mde_pct": 10.358007049829597,
+   "n": 10,
+   "ref_mean": 36.841183230280876,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 10.4% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "secondary_cont|alpha_ITLp95_mean|r3": {
+   "mde_pct": 8.44220017418563,
+   "n": 10,
+   "ref_mean": 17.367340616571408,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 8.4% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "secondary_cont|beta_pooled_p99|r3": {
+   "mde_pct": 20.549338880273666,
+   "n": 10,
+   "ref_mean": 36.95403102785349,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 20.5% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "secondary_cont|alpha_ITLp95_mean|r4": {
+   "mde_pct": 10.17525788454913,
+   "n": 10,
+   "ref_mean": 20.997802551525336,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 10.2% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "secondary_cont|beta_pooled_p99|r4": {
+   "mde_pct": 10.872756712377079,
+   "n": 10,
+   "ref_mean": 36.840316565707326,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4,pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 10.9% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "_sigma_D_sources": {
+   "pilot_sd_alpha": null,
+   "pilot_n": 0,
+   "pilot_caveat": "designated cell Zamba2 r3, T/C, n=4 -> df=3; sigma 95% CI ~ [0.57x, 3.73x]. sec3.4(a) makes stating this MANDATORY with every MDE.",
+   "capscan_paired_sd_alpha": 0.5288075516744889,
+   "capscan_n": 3,
+   "capscan_caveat": "auxiliary only, PAIRED on shared seeds (never a sqrt(2) single-arm proxy); n=3 -> df=2, which must be stated on every citation (sec3.4(b)).",
+   "underpowered_threshold": "NONE -- rev2 removed it (sec3.4(c))"
+  }
+ },
+ "kv_pool": {
+  "state": "PASS",
+  "message": "tokens(T)==tokens(C)==7228106",
+  "per_arm": {
+   "agnostic": {
+    "kv_cache_tokens": 7228106,
+    "capture_s": 6.62,
+    "capture_gb": 0.85
+   },
+   "pdmux_nosplit": {
+    "kv_cache_tokens": 7228106,
+    "capture_s": 7.95,
+    "capture_gb": 0.85
+   },
+   "pdmux_split34": {
+    "kv_cache_tokens": 7228106,
+    "capture_s": 6.55,
+    "capture_gb": 0.85
+   },
+   "pdmux_split34_nosticky": {
+    "kv_cache_tokens": 7228106,
+    "capture_s": 6.67,
+    "capture_gb": 0.85
+   },
+   "plainaux": {
+    "kv_cache_tokens": 7230374,
+    "capture_s": 3.64,
+    "capture_gb": 0.23
+   }
+  },
+  "delta_split_magnitude_citable": true,
+  "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+ },
+ "bimodality": {
+  "pdmux_split34|r3|c0.25": {
+   "per_rep_median": 0.37916666666666665,
+   "per_rep_max": 0.475,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r3|c0.4": {
+   "per_rep_median": 0.2875,
+   "per_rep_max": 0.39166666666666666,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r3|c0.5": {
+   "per_rep_median": 0.24583333333333335,
+   "per_rep_max": 0.3416666666666667,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r4|c0.25": {
+   "per_rep_median": 0.44166666666666665,
+   "per_rep_max": 0.49166666666666664,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r4|c0.4": {
+   "per_rep_median": 0.36250000000000004,
+   "per_rep_max": 0.45,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r4|c0.5": {
+   "per_rep_median": 0.275,
+   "per_rep_max": 0.38333333333333336,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r3|c0.25": {
+   "per_rep_median": 0.27083333333333337,
+   "per_rep_max": 0.35,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r3|c0.4": {
+   "per_rep_median": 0.2,
+   "per_rep_max": 0.275,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r3|c0.5": {
+   "per_rep_median": 0.175,
+   "per_rep_max": 0.21666666666666667,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r4|c0.25": {
+   "per_rep_median": 0.36666666666666664,
+   "per_rep_max": 0.49166666666666664,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r4|c0.4": {
+   "per_rep_median": 0.33333333333333337,
+   "per_rep_max": 0.44166666666666665,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r4|c0.5": {
+   "per_rep_median": 0.27083333333333337,
+   "per_rep_max": 0.3416666666666667,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r3|c0.25": {
+   "per_rep_median": 0.17083333333333334,
+   "per_rep_max": 0.2833333333333333,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r3|c0.4": {
+   "per_rep_median": 0.0875,
+   "per_rep_max": 0.16666666666666666,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r3|c0.5": {
+   "per_rep_median": 0.05416666666666667,
+   "per_rep_max": 0.10833333333333334,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r4|c0.25": {
+   "per_rep_median": 0.12083333333333333,
+   "per_rep_max": 0.225,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r4|c0.4": {
+   "per_rep_median": 0.05416666666666667,
+   "per_rep_max": 0.125,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r4|c0.5": {
+   "per_rep_median": 0.04166666666666667,
+   "per_rep_max": 0.08333333333333333,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r4) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  }
+ },
+ "design_conformance": {
+  "prereg_requires": "sec3: n=10 paired reps in each of the cells, both rates",
+  "realized_reps_per_cell": {
+   "plainaux@r3": 10,
+   "plainaux@r4": 10,
+   "pdmux_nosplit@r3": 10,
+   "pdmux_nosplit@r4": 10,
+   "pdmux_split34@r3": 10,
+   "pdmux_split34@r4": 10,
+   "pdmux_split34_nosticky@r3": 10,
+   "pdmux_split34_nosticky@r4": 10,
+   "agnostic@r3": 10,
+   "agnostic@r4": 10
+  },
+  "cells_below_n10": {},
+  "conformant": true,
+  "usable_for": "pre-registered analysis"
+ },
+ "block_completeness": {
+  "n_declared": 19,
+  "n_in_report": 19,
+  "absent": []
+ }
+}

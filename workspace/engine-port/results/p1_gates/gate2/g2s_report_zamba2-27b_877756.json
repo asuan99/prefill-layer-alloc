@@ -1,0 +1,2698 @@
+{
+ "tag": "zamba2-27b",
+ "job": "877756",
+ "prereg": "rev6",
+ "blocks": [
+  "confirm_A4like_itl",
+  "confirm_A4like_ttft",
+  "secondary_cont_itl",
+  "secondary_cont_ttft",
+  "descriptive_conc_itl",
+  "descriptive_conc_ttft",
+  "descriptive_A4_minus_Tprime",
+  "metric_sensitivity",
+  "tau_ladder",
+  "component_share",
+  "descriptive",
+  "switch_and_drain",
+  "delivery_rate",
+  "probe_pos",
+  "probe_carve",
+  "mde",
+  "kv_pool",
+  "bimodality",
+  "premise_falsifier"
+ ],
+ "n_blocks": 19,
+ "block_manifest": {
+  "confirm_A4like_itl": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1149,
+   "f_series_gate_line": 1155,
+   "gate_required": true
+  },
+  "confirm_A4like_ttft": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1149,
+   "f_series_gate_line": 1155,
+   "gate_required": true
+  },
+  "secondary_cont_itl": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1149,
+   "f_series_gate_line": 1155,
+   "gate_required": true
+  },
+  "secondary_cont_ttft": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1149,
+   "f_series_gate_line": 1155,
+   "gate_required": true
+  },
+  "descriptive_conc_itl": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1238,
+   "f_series_gate_line": 1237,
+   "gate_required": true
+  },
+  "descriptive_conc_ttft": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1242,
+   "f_series_gate_line": 1237,
+   "gate_required": true
+  },
+  "descriptive_A4_minus_Tprime": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1254,
+   "f_series_gate_line": 1255,
+   "gate_required": true
+  },
+  "metric_sensitivity": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1218,
+   "f_series_gate_line": 1222,
+   "gate_required": true
+  },
+  "tau_ladder": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1276,
+   "f_series_gate_line": 1283,
+   "gate_required": true
+  },
+  "component_share": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1305,
+   "f_series_gate_line": 1317,
+   "gate_required": true
+  },
+  "descriptive": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1345,
+   "f_series_gate_line": 1351,
+   "gate_required": true
+  },
+  "switch_and_drain": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1386,
+   "f_series_gate_line": 1389,
+   "gate_required": true
+  },
+  "delivery_rate": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1424,
+   "f_series_gate_line": 1427,
+   "gate_required": true
+  },
+  "probe_pos": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1471,
+   "f_series_gate_line": 1472,
+   "gate_required": true
+  },
+  "probe_carve": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1513,
+   "f_series_gate_line": 1514,
+   "gate_required": true
+  },
+  "mde": {
+   "emits_magnitude": true,
+   "phase": "Phase 0 + Phase 1",
+   "computed_at_line": 1564,
+   "f_series_gate_line": 1569,
+   "gate_required": true
+  },
+  "kv_pool": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1592,
+   "f_series_gate_line": 1593,
+   "gate_required": true
+  },
+  "bimodality": {
+   "emits_magnitude": true,
+   "phase": "Phase 1",
+   "computed_at_line": 1618,
+   "f_series_gate_line": 1620,
+   "gate_required": true
+  },
+  "premise_falsifier": {
+   "emits_magnitude": false,
+   "phase": "Phase 1",
+   "computed_at_line": 1130,
+   "f_series_gate_line": null,
+   "gate_required": false
+  }
+ },
+ "section_line_map": {
+  "sec2 arm set": {
+   "anchor": "^ARMS = \\(",
+   "lines": [
+    71
+   ],
+   "ok": true,
+   "line": 71
+  },
+  "sec3 cells + n=10": {
+   "anchor": "^CELLS = \\{",
+   "lines": [
+    74
+   ],
+   "ok": true,
+   "line": 74
+  },
+  "sec3.1 designated cell": {
+   "anchor": "^DESIGNATED = ",
+   "lines": [
+    78
+   ],
+   "ok": true,
+   "line": 78
+  },
+  "sec4.2 primary-alpha ITLp95_mean": {
+   "anchor": "\"alpha_ITLp95_mean\": sum\\(per_req_p95\\)",
+   "lines": [
+    356
+   ],
+   "ok": true,
+   "line": 356
+  },
+  "sec4.2 primary-beta pooled p99": {
+   "anchor": "\"beta_pooled_p99\": p_linear\\(pooled",
+   "lines": [
+    357
+   ],
+   "ok": true,
+   "line": 357
+  },
+  "sec4.2 nearest-rank FIXED": {
+   "anchor": "^def p_nearest\\(",
+   "lines": [
+    211
+   ],
+   "ok": true,
+   "line": 211
+  },
+  "sec6.3-9 unit assert": {
+   "anchor": "^def assert_units\\(",
+   "lines": [
+    260
+   ],
+   "ok": true,
+   "line": 260
+  },
+  "input contract (harness<->scorer)": {
+   "anchor": "^def check_row_contract\\(",
+   "lines": [
+    244
+   ],
+   "ok": true,
+   "line": 244
+  },
+  "sec12-4 duration SUM not max": {
+   "anchor": "dur_sum\\[\\(arm, rep\\)\\] \\+= float",
+   "lines": [
+    339
+   ],
+   "ok": true,
+   "line": 339
+  },
+  "sec4.1.3 unstable_frac": {
+   "anchor": "^def unstable_frac\\(",
+   "lines": [
+    386
+   ],
+   "ok": true,
+   "line": 386
+  },
+  "sec5.1 paired t (bootstrap FORBIDDEN)": {
+   "anchor": "^def paired_t\\(",
+   "lines": [
+    408
+   ],
+   "ok": true,
+   "line": 408
+  },
+  "sec5.1 DEGENERATE-T": {
+   "anchor": "# sec5\\.1 DEGENERATE-T",
+   "lines": [
+    416
+   ],
+   "ok": true,
+   "line": 416
+  },
+  "sec3.4c MDE %": {
+   "anchor": "^def mde_pct\\(",
+   "lines": [
+    458
+   ],
+   "ok": true,
+   "line": 458
+  },
+  "sec11.1#3 sign = POINT ESTIMATE": {
+   "anchor": "^def axis_state\\(",
+   "lines": [
+    472
+   ],
+   "ok": true,
+   "line": 472
+  },
+  "sec5.2.1 nine-cell table": {
+   "anchor": "^NINE_CELL = \\{",
+   "lines": [
+    484
+   ],
+   "ok": true,
+   "line": 484
+  },
+  "sec5.2.1 applier": {
+   "anchor": "^def nine_cell\\(",
+   "lines": [
+    498
+   ],
+   "ok": true,
+   "line": 498
+  },
+  "sec5.6b Holm": {
+   "anchor": "^def holm\\(",
+   "lines": [
+    515
+   ],
+   "ok": true,
+   "line": 515
+  },
+  "sec5.6c Holm p source = ALPHA ONLY": {
+   "anchor": "partial=True, p_source=\"alpha_ITLp95_mean\"\\)",
+   "lines": [
+    1184
+   ],
+   "ok": true,
+   "line": 1184
+  },
+  "sec5.6d claim ONLY after Holm": {
+   "anchor": "^    conf_fired = \\[\\(tag, r\\) for r in rates",
+   "lines": [
+    1200
+   ],
+   "ok": true,
+   "line": 1200
+  },
+  "sec5.6.1 headline combos": {
+   "anchor": "^def headline\\(",
+   "lines": [
+    697
+   ],
+   "ok": true,
+   "line": 697
+  },
+  "sec6.4 F-series": {
+   "anchor": "^def f_series\\(",
+   "lines": [
+    531
+   ],
+   "ok": true,
+   "line": 531
+  },
+  "sec6.4 F-A completed/total": {
+   "anchor": "^            tot = _total_requests\\(row\\)",
+   "lines": [
+    555
+   ],
+   "ok": true,
+   "line": 555
+  },
+  "sec6.4 `total` = attempted count": {
+   "anchor": "^def _total_requests\\(",
+   "lines": [
+    379
+   ],
+   "ok": true,
+   "line": 379
+  },
+  "sec6.4.1 F-B disjunct(i) unevaluated": {
+   "anchor": "out\\[\"F_B_i_evaluated\"\\] = False",
+   "lines": [
+    575
+   ],
+   "ok": true,
+   "line": 575
+  },
+  "gate#17 gate label": {
+   "anchor": "^def gate_label\\(",
+   "lines": [
+    610
+   ],
+   "ok": true,
+   "line": 610
+  },
+  "sec4.4 Fieller + suppression": {
+   "anchor": "^def fieller_ratio\\(",
+   "lines": [
+    771
+   ],
+   "ok": true,
+   "line": 771
+  },
+  "sec6.2.1(2) P-carve TOST": {
+   "anchor": "^def tost\\(",
+   "lines": [
+    810
+   ],
+   "ok": true,
+   "line": 810
+  },
+  "sec5.2.2/7.2 controller/split counts": {
+   "anchor": "^def telemetry_summary\\(",
+   "lines": [
+    830
+   ],
+   "ok": true,
+   "line": 830
+  },
+  "sec4.5 FRAGILE-TO-METRIC": {
+   "anchor": "^def sensitivity\\(",
+   "lines": [
+    739
+   ],
+   "ok": true,
+   "line": 739
+  },
+  "sec4.5 CONVENTION-SENSITIVE": {
+   "anchor": "^def convention_sensitive\\(",
+   "lines": [
+    753
+   ],
+   "ok": true,
+   "line": 753
+  },
+  "sec6.5 block list": {
+   "anchor": "^BLOCKS: List\\[",
+   "lines": [
+    99
+   ],
+   "ok": true,
+   "line": 99
+  },
+  "sec6.5 per-block stamps": {
+   "anchor": "^def block_manifest\\(",
+   "lines": [
+    181
+   ],
+   "ok": true,
+   "line": 181
+  },
+  "sec8.9 cell-wise premise labels": {
+   "anchor": "^PREMISE_LABEL = \\{",
+   "lines": [
+    84
+   ],
+   "ok": true,
+   "line": 84
+  },
+  "sec8.9.1 falsifier (ONE-WAY)": {
+   "anchor": "^def falsifier\\(",
+   "lines": [
+    634
+   ],
+   "ok": true,
+   "line": 634
+  },
+  "sec8.9.1 WITHDRAWAL_THRESHOLD": {
+   "anchor": "^WITHDRAWAL_THRESHOLD = ",
+   "lines": [
+    60
+   ],
+   "ok": true,
+   "line": 60
+  },
+  "sec8.9.1 monotone downgrade only": {
+   "anchor": "^def apply_falsifier\\(",
+   "lines": [
+    686
+   ],
+   "ok": true,
+   "line": 686
+  }
+ },
+ "f_series": {
+  "plainaux@2.0": {
+   "arm": "plainaux",
+   "rate": 2.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 0.9937753208727523,
+   "F_E": false,
+   "flagged": true
+  },
+  "plainaux@3.0": {
+   "arm": "plainaux",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.0217610202577563,
+   "F_E": false,
+   "flagged": true
+  },
+  "pdmux_nosplit@2.0": {
+   "arm": "pdmux_nosplit",
+   "rate": 2.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": false,
+   "F_B": false,
+   "F_E_ratio": 0.999729116223212,
+   "F_E": false,
+   "flagged": false
+  },
+  "pdmux_nosplit@3.0": {
+   "arm": "pdmux_nosplit",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 0.9987368118579873,
+   "F_E": false,
+   "flagged": true
+  },
+  "pdmux_split34@2.0": {
+   "arm": "pdmux_split34",
+   "rate": 2.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": false,
+   "F_B": false,
+   "F_E_ratio": 0.9982515721541532,
+   "F_E": false,
+   "flagged": false
+  },
+  "pdmux_split34@3.0": {
+   "arm": "pdmux_split34",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.128476950189042,
+   "F_E": false,
+   "flagged": true
+  },
+  "pdmux_split34_nosticky@2.0": {
+   "arm": "pdmux_split34_nosticky",
+   "rate": 2.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": null,
+   "F_B_i_evaluated": false,
+   "F_B_ii": false,
+   "F_B": false,
+   "F_E_ratio": 0.9851502059817749,
+   "F_E": false,
+   "flagged": false
+  },
+  "pdmux_split34_nosticky@3.0": {
+   "arm": "pdmux_split34_nosticky",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": null,
+   "F_B_i_evaluated": false,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.1456738429991842,
+   "F_E": false,
+   "flagged": true
+  },
+  "agnostic@2.0": {
+   "arm": "agnostic",
+   "rate": 2.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 0.9939762476227377,
+   "F_E": false,
+   "flagged": true
+  },
+  "agnostic@3.0": {
+   "arm": "agnostic",
+   "rate": 3.0,
+   "F_A": false,
+   "F_A_completed_over_total": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "F_B_i": false,
+   "F_B_i_evaluated": true,
+   "F_B_ii": true,
+   "F_B": true,
+   "F_E_ratio": 1.1415147901407587,
+   "F_E": false,
+   "flagged": true
+  }
+ },
+ "premise_falsifier": {
+  "r2": {
+   "state": "unchanged",
+   "verdict": "NOT REFUTED (frac(idx2)=0.0000 < 0.01). sec8.9.1: this is NOT evidence of absence -- PDMUX_TRACE_FORCE_PREFILL=0 gives ~1/32 of G1B pop-A density. NO UPGRADE PATH EXISTS -- state stays 'unchanged'.",
+   "frac": {
+    "1": 1.0
+   },
+   "n_episodes": 427,
+   "t_total_s_NOT_FOR_CITATION": 179.07576356828213,
+   "label_before": "verified",
+   "label_after": "verified"
+  },
+  "r3": {
+   "state": "unchanged",
+   "verdict": "NOT REFUTED (frac(idx2)=0.0000 < 0.01). sec8.9.1: this is NOT evidence of absence -- PDMUX_TRACE_FORCE_PREFILL=0 gives ~1/32 of G1B pop-A density. NO UPGRADE PATH EXISTS -- state stays 'unchanged'.",
+   "frac": {
+    "1": 1.0
+   },
+   "n_episodes": 253,
+   "t_total_s_NOT_FOR_CITATION": 204.73013081774116,
+   "label_before": "verified",
+   "label_after": "verified"
+  }
+ },
+ "premise_labels": {
+  "zamba2-27b@2.0": "verified",
+  "zamba2-27b@3.0": "verified"
+ },
+ "primary_contrasts": {
+  "confirm_A4like|alpha_ITLp95_mean|r2": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 13.946504623035153,
+    "lo": 11.025299378483897,
+    "hi": 16.86770986758641,
+    "p": 1.8800344893511526e-06,
+    "degenerate": false,
+    "sd": 4.083847075866998,
+    "se": 1.2914258375558165,
+    "t": 10.799307414687197
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -203.0837528314442,
+    "lo": -261.5834393563615,
+    "hi": -144.5840663065269,
+    "p": 2.5672108870944518e-05,
+    "degenerate": false,
+    "sd": 81.78260469699345,
+    "se": 25.861930382368392,
+    "t": -7.852613854760757
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 18.909724288846892,
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "verified"
+  },
+  "confirm_A4like|alpha_ITLp95_mean|r3": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 24.87793920435983,
+    "lo": 21.048360423103585,
+    "hi": 28.707517985616075,
+    "p": 1.3486401355894145e-07,
+    "degenerate": false,
+    "sd": 5.353753946870676,
+    "se": 1.6930056504227426,
+    "t": 14.69453997282751
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -536.1118519026786,
+    "lo": -726.378909521602,
+    "hi": -345.84479428375516,
+    "p": 0.00012922711086951684,
+    "degenerate": false,
+    "sd": 265.9934861955312,
+    "se": 84.11452591464345,
+    "t": -6.373594169058346
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 17.32056471882282,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "verified"
+  },
+  "confirm_A4like|beta_pooled_p99|r2": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 19.002370085567165,
+    "lo": 11.299440304867455,
+    "hi": 26.705299866266877,
+    "p": 0.000342893095079191,
+    "degenerate": false,
+    "sd": 10.768701486893196,
+    "se": 3.405362414102436,
+    "t": 5.580131502853769
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -203.0837528314442,
+    "lo": -261.5834393563615,
+    "hi": -144.5840663065269,
+    "p": 2.5672108870944518e-05,
+    "degenerate": false,
+    "sd": 81.78260469699345,
+    "se": 25.861930382368392,
+    "t": -7.852613854760757
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 30.227540130773395,
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "verified"
+  },
+  "confirm_A4like|beta_pooled_p99|r3": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 44.01430524140598,
+    "lo": 41.525460089907256,
+    "hi": 46.5031503929047,
+    "p": 1.8971814549311646e-11,
+    "degenerate": false,
+    "sd": 3.4794073484539365,
+    "se": 1.1002852128641578,
+    "t": 40.00263270541656
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -536.1118519026786,
+    "lo": -726.378909521602,
+    "hi": -345.84479428375516,
+    "p": 0.00012922711086951684,
+    "degenerate": false,
+    "sd": 265.9934861955312,
+    "se": 84.11452591464345,
+    "t": -6.373594169058346
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 8.070229993931674,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "verified"
+  },
+  "secondary_cont|alpha_ITLp95_mean|r2": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 9.017603784429577,
+    "lo": 6.209517462364708,
+    "hi": 11.825690106494445,
+    "p": 4.74453233907185e-05,
+    "degenerate": false,
+    "sd": 3.9257067392087186,
+    "se": 1.2414174721772184,
+    "t": 7.26395752156956
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -203.95705039612955,
+    "lo": -263.87915307779036,
+    "hi": -144.03494771446876,
+    "p": 3.0025297408702234e-05,
+    "degenerate": false,
+    "sd": 83.77114352808651,
+    "se": 26.490761574562686,
+    "t": -7.699176553382894
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 14.78468417730621,
+   "gate": "  [GATE: clear]",
+   "premise": "verified"
+  },
+  "secondary_cont|alpha_ITLp95_mean|r3": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 19.826219150743555,
+    "lo": 16.142790417880654,
+    "hi": 23.509647883606455,
+    "p": 6.80434825033925e-07,
+    "degenerate": false,
+    "sd": 5.1494360719516665,
+    "se": 1.6283946652797965,
+    "t": 12.175315710296156
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -532.8285506274551,
+    "lo": -701.4045718540681,
+    "hi": -364.25252940084215,
+    "p": 5.368464578376401e-05,
+    "degenerate": false,
+    "sd": 235.66940139919924,
+    "se": 74.52520832299423,
+    "t": -7.149641881149289
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 14.308248023972546,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "verified"
+  },
+  "secondary_cont|beta_pooled_p99|r2": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 18.45022841170423,
+    "lo": 11.091322432807207,
+    "hi": 25.809134390601255,
+    "p": 0.00030522744074877383,
+    "degenerate": false,
+    "sd": 10.287755959480803,
+    "se": 3.2532740843930252,
+    "t": 5.67128004990903
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -203.95705039612955,
+    "lo": -263.87915307779036,
+    "hi": -144.03494771446876,
+    "p": 3.0025297408702234e-05,
+    "degenerate": false,
+    "sd": 83.77114352808651,
+    "se": 26.490761574562686,
+    "t": -7.699176553382894
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 28.434422929998558,
+   "gate": "  [GATE: clear]",
+   "premise": "verified"
+  },
+  "secondary_cont|beta_pooled_p99|r3": {
+   "ci_itl": {
+    "n": 10,
+    "mean": 41.08132360875608,
+    "lo": 38.836553563598635,
+    "hi": 43.326093653913524,
+    "p": 1.3959749712962547e-11,
+    "degenerate": false,
+    "sd": 3.1381901706527673,
+    "se": 0.9923828670015239,
+    "t": 41.39664737752168
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -532.8285506274551,
+    "lo": -701.4045718540681,
+    "hi": -364.25252940084215,
+    "p": 5.368464578376401e-05,
+    "degenerate": false,
+    "sd": 235.66940139919924,
+    "se": 74.52520832299423,
+    "t": -7.149641881149289
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 6.8127925857705565,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "verified"
+  }
+ },
+ "confirm_A4like_itl": {
+  "confirm_A4like|alpha_ITLp95_mean|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 13.946504623035153,
+    "lo": 11.025299378483897,
+    "hi": 16.86770986758641,
+    "p": 1.8800344893511526e-06,
+    "degenerate": false,
+    "sd": 4.083847075866998,
+    "se": 1.2914258375558165,
+    "t": 10.799307414687197
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 18.909724288846892,
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "verified"
+  },
+  "confirm_A4like|alpha_ITLp95_mean|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 24.87793920435983,
+    "lo": 21.048360423103585,
+    "hi": 28.707517985616075,
+    "p": 1.3486401355894145e-07,
+    "degenerate": false,
+    "sd": 5.353753946870676,
+    "se": 1.6930056504227426,
+    "t": 14.69453997282751
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 17.32056471882282,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "verified"
+  },
+  "confirm_A4like|beta_pooled_p99|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 19.002370085567165,
+    "lo": 11.299440304867455,
+    "hi": 26.705299866266877,
+    "p": 0.000342893095079191,
+    "degenerate": false,
+    "sd": 10.768701486893196,
+    "se": 3.405362414102436,
+    "t": 5.580131502853769
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 30.227540130773395,
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "verified"
+  },
+  "confirm_A4like|beta_pooled_p99|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 44.01430524140598,
+    "lo": 41.525460089907256,
+    "hi": 46.5031503929047,
+    "p": 1.8971814549311646e-11,
+    "degenerate": false,
+    "sd": 3.4794073484539365,
+    "se": 1.1002852128641578,
+    "t": 40.00263270541656
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 8.070229993931674,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "premise": "verified"
+  }
+ },
+ "confirm_A4like_ttft": {
+  "confirm_A4like|alpha_ITLp95_mean|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -203.0837528314442,
+    "lo": -261.5834393563615,
+    "hi": -144.5840663065269,
+    "p": 2.5672108870944518e-05,
+    "degenerate": false,
+    "sd": 81.78260469699345,
+    "se": 25.861930382368392,
+    "t": -7.852613854760757
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|alpha_ITLp95_mean|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -536.1118519026786,
+    "lo": -726.378909521602,
+    "hi": -345.84479428375516,
+    "p": 0.00012922711086951684,
+    "degenerate": false,
+    "sd": 265.9934861955312,
+    "se": 84.11452591464345,
+    "t": -6.373594169058346
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|beta_pooled_p99|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -203.0837528314442,
+    "lo": -261.5834393563615,
+    "hi": -144.5840663065269,
+    "p": 2.5672108870944518e-05,
+    "degenerate": false,
+    "sd": 81.78260469699345,
+    "se": 25.861930382368392,
+    "t": -7.852613854760757
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|beta_pooled_p99|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -536.1118519026786,
+    "lo": -726.378909521602,
+    "hi": -345.84479428375516,
+    "p": 0.00012922711086951684,
+    "degenerate": false,
+    "sd": 265.9934861955312,
+    "se": 84.11452591464345,
+    "t": -6.373594169058346
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  }
+ },
+ "secondary_cont_itl": {
+  "secondary_cont|alpha_ITLp95_mean|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 9.017603784429577,
+    "lo": 6.209517462364708,
+    "hi": 11.825690106494445,
+    "p": 4.74453233907185e-05,
+    "degenerate": false,
+    "sd": 3.9257067392087186,
+    "se": 1.2414174721772184,
+    "t": 7.26395752156956
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 14.78468417730621,
+   "gate": "  [GATE: clear]",
+   "premise": "verified"
+  },
+  "secondary_cont|alpha_ITLp95_mean|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 19.826219150743555,
+    "lo": 16.142790417880654,
+    "hi": 23.509647883606455,
+    "p": 6.80434825033925e-07,
+    "degenerate": false,
+    "sd": 5.1494360719516665,
+    "se": 1.6283946652797965,
+    "t": 12.175315710296156
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 14.308248023972546,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "verified"
+  },
+  "secondary_cont|beta_pooled_p99|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 18.45022841170423,
+    "lo": 11.091322432807207,
+    "hi": 25.809134390601255,
+    "p": 0.00030522744074877383,
+    "degenerate": false,
+    "sd": 10.287755959480803,
+    "se": 3.2532740843930252,
+    "t": 5.67128004990903
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 28.434422929998558,
+   "gate": "  [GATE: clear]",
+   "premise": "verified"
+  },
+  "secondary_cont|beta_pooled_p99|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 41.08132360875608,
+    "lo": 38.836553563598635,
+    "hi": 43.326093653913524,
+    "p": 1.3959749712962547e-11,
+    "degenerate": false,
+    "sd": 3.1381901706527673,
+    "se": 0.9923828670015239,
+    "t": 41.39664737752168
+   },
+   "nine_cell": {
+    "itl_axis": "+",
+    "ttft_axis": "-",
+    "code": "S1-C",
+    "text": "\ud2b8\ub808\uc774\ub4dc\uc624\ud504: \ubd84\ud560\uc740 ITL\uc744 \uac1c\uc120\ud558\uace0 TTFT\ub97c \uc545\ud654\uc2dc\ud0a8\ub2e4 -- \ub450 \ud06c\uae30\ub97c \ubc18\ub4dc\uc2dc \ud568\uaed8 \uc778\uc6a9\ud55c\ub2e4. \ubc1c\ud654\uc774\uc9c0 \uc2e4\ud328\uac00 \uc544\ub2c8\ub2e4.",
+    "uncorrected": true,
+    "licences_claim": false
+   },
+   "mde_pct": 6.8127925857705565,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "premise": "verified"
+  }
+ },
+ "secondary_cont_ttft": {
+  "secondary_cont|alpha_ITLp95_mean|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -203.95705039612955,
+    "lo": -263.87915307779036,
+    "hi": -144.03494771446876,
+    "p": 3.0025297408702234e-05,
+    "degenerate": false,
+    "sd": 83.77114352808651,
+    "se": 26.490761574562686,
+    "t": -7.699176553382894
+   },
+   "axis": "-",
+   "gate": "  [GATE: clear]"
+  },
+  "secondary_cont|alpha_ITLp95_mean|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -532.8285506274551,
+    "lo": -701.4045718540681,
+    "hi": -364.25252940084215,
+    "p": 5.368464578376401e-05,
+    "degenerate": false,
+    "sd": 235.66940139919924,
+    "se": 74.52520832299423,
+    "t": -7.149641881149289
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|beta_pooled_p99|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -203.95705039612955,
+    "lo": -263.87915307779036,
+    "hi": -144.03494771446876,
+    "p": 3.0025297408702234e-05,
+    "degenerate": false,
+    "sd": 83.77114352808651,
+    "se": 26.490761574562686,
+    "t": -7.699176553382894
+   },
+   "axis": "-",
+   "gate": "  [GATE: clear]"
+  },
+  "secondary_cont|beta_pooled_p99|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -532.8285506274551,
+    "lo": -701.4045718540681,
+    "hi": -364.25252940084215,
+    "p": 5.368464578376401e-05,
+    "degenerate": false,
+    "sd": 235.66940139919924,
+    "se": 74.52520832299423,
+    "t": -7.149641881149289
+   },
+   "axis": "-",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "holm": {
+  "confirm_A4like": {
+   "_family": {
+    "size_this_job": 2,
+    "size_preregistered": 4,
+    "partial": true,
+    "p_source": "alpha_ITLp95_mean"
+   },
+   "r2": {
+    "p_alpha": 1.8800344893511526e-06,
+    "holm_reject": true,
+    "axis": "+"
+   },
+   "r3": {
+    "p_alpha": 1.3486401355894145e-07,
+    "holm_reject": true,
+    "axis": "+"
+   }
+  },
+  "secondary_cont": {
+   "_family": {
+    "size_this_job": 2,
+    "size_preregistered": 4,
+    "partial": true,
+    "p_source": "alpha_ITLp95_mean"
+   },
+   "r2": {
+    "p_alpha": 4.74453233907185e-05,
+    "holm_reject": true,
+    "axis": "+"
+   },
+   "r3": {
+    "p_alpha": 6.80434825033925e-07,
+    "holm_reject": true,
+    "axis": "+"
+   }
+  }
+ },
+ "headline": {
+  "code": "COMBO-1",
+  "text": "\uc774 \uaca9\uc790\uc5d0\uc11c SM \ubd84\ud560\uc740 **\uac04\ud5d0 \uc804\ub2ec(\uc5d4\uc9c4 \uae30\ubcf8 \uada4\uc801)\uc5d0\uc11c\ub3c4, \uc5f0\uc18d \uc804\ub2ec\uc5d0\uc11c\ub3c4** ITL\uc744 [\ubc29\ud5a5]\uc2dc\ud0a8\ub2e4. confirmatory\ub294 4\uc140 Holm \ud6c4 [('zamba2-27b', 2.0), ('zamba2-27b', 3.0)]\uc774\uba70, \uc5f0\uc18d \uc804\ub2ec \uacb0\uacfc\ub294 secondary\ub2e4. [\ubaa8\ub4e0 \uc870\ud569 \uacf5\ud1b5] \uc774 \uacb0\uacfc\ub97c sec1-1 A4-vs-fused \uaca9\ucc28\uc758 \uc131\ubd84\u00b7\uae30\uc5ec\ubd84\u00b7\ubd84\ud574\ub85c \ud574\uc11d\ud558\uc9c0 \uc54a\ub294\ub2e4(sec5.5).",
+  "confirmatory_fired": [
+   [
+    "zamba2-27b",
+    2.0
+   ],
+   [
+    "zamba2-27b",
+    3.0
+   ]
+  ],
+  "secondary_fired": [
+   [
+    "zamba2-27b",
+    2.0
+   ],
+   [
+    "zamba2-27b",
+    3.0
+   ]
+  ]
+ },
+ "metric_sensitivity": {
+  "confirm_A4like|r2": {
+   "tags": [],
+   "nearest": {
+    "alpha_ITLp95_mean": 13.946504623035153,
+    "med_ITLp95": 20.72488898411393,
+    "ITLp95p90": 22.010113038122654,
+    "beta_pooled_p99": 19.002370085567165,
+    "pooled_p95": 17.414157344028357,
+    "mean_ITL": 1.052758637416043
+   },
+   "linear": {
+    "alpha_ITLp95_mean": 13.516243884904432,
+    "med_ITLp95": 20.61441001482308,
+    "ITLp95p90": 22.744884019717578,
+    "beta_pooled_p99": 19.002370085567165,
+    "pooled_p95": 17.414157344028357,
+    "mean_ITL": 1.052758637416043
+   },
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|r3": {
+   "tags": [],
+   "nearest": {
+    "alpha_ITLp95_mean": 24.87793920435983,
+    "med_ITLp95": 24.28061878308654,
+    "ITLp95p90": 41.93178853020072,
+    "beta_pooled_p99": 44.01430524140598,
+    "pooled_p95": 26.023925682529807,
+    "mean_ITL": 3.283757870398746
+   },
+   "linear": {
+    "alpha_ITLp95_mean": 24.49471970631533,
+    "med_ITLp95": 24.2679475620389,
+    "ITLp95p90": 40.63955798745156,
+    "beta_pooled_p99": 44.01430524140598,
+    "pooled_p95": 26.023925682529807,
+    "mean_ITL": 3.283757870398746
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "secondary_cont|r2": {
+   "tags": [],
+   "nearest": {
+    "alpha_ITLp95_mean": 9.017603784429577,
+    "med_ITLp95": 15.351133979856968,
+    "ITLp95p90": 17.54486920312047,
+    "beta_pooled_p99": 18.45022841170423,
+    "pooled_p95": 14.764425586909056,
+    "mean_ITL": -5.954242726656935
+   },
+   "linear": {
+    "alpha_ITLp95_mean": 8.938160468296356,
+    "med_ITLp95": 15.436610886827111,
+    "ITLp95p90": 19.597168134525425,
+    "beta_pooled_p99": 18.45022841170423,
+    "pooled_p95": 14.764425586909056,
+    "mean_ITL": -5.954242726656935
+   },
+   "gate": "  [GATE: clear]"
+  },
+  "secondary_cont|r3": {
+   "tags": [],
+   "nearest": {
+    "alpha_ITLp95_mean": 19.826219150743555,
+    "med_ITLp95": 19.605229422450066,
+    "ITLp95p90": 39.18108772486448,
+    "beta_pooled_p99": 41.08132360875608,
+    "pooled_p95": 22.487705145031214,
+    "mean_ITL": -5.735072987070011
+   },
+   "linear": {
+    "alpha_ITLp95_mean": 19.339243729422357,
+    "med_ITLp95": 19.609893327578902,
+    "ITLp95p90": 37.69020351208747,
+    "beta_pooled_p99": 41.08132360875608,
+    "pooled_p95": 22.487705145031214,
+    "mean_ITL": -5.735072987070011
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "descriptive_contrasts": {
+  "conc|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -12.274067146311271,
+    "lo": -17.347168560732882,
+    "hi": -7.200965731889659,
+    "p": 0.0003938384046123869,
+    "degenerate": false,
+    "sd": 7.092199500704718,
+    "se": 2.242750404253586,
+    "t": -5.47277446613424
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -51.21615431271486,
+    "lo": -95.595079166222,
+    "hi": -6.83722945920772,
+    "p": 0.028247837855863496,
+    "degenerate": false,
+    "sd": 62.04176951659457,
+    "se": 19.619330173964254,
+    "t": -2.6104945407708686
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  },
+  "A4_minus_Tprime|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -0.13957340782391156,
+    "lo": -0.3136791140579783,
+    "hi": 0.03453229841015523,
+    "p": 0.10318514298703894,
+    "degenerate": false,
+    "sd": 0.24339990509806717,
+    "se": 0.07696980823787214,
+    "t": -1.813352677098603
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "A4_minus_T|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -5.06847424642949,
+    "lo": -5.539517905226334,
+    "hi": -4.597430587632647,
+    "p": 1.5969863105731243e-09,
+    "degenerate": false,
+    "sd": 0.658519380714958,
+    "se": 0.20824211264228273,
+    "t": -24.339333586843168
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "conc|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 28.850252977685095,
+    "lo": 5.710022463977072,
+    "hi": 51.99048349139312,
+    "p": 0.020041602698568764,
+    "degenerate": false,
+    "sd": 32.350059241664695,
+    "se": 10.229986964503988,
+    "t": 2.8201651749694023
+   },
+   "ci_ttft": {
+    "n": 10,
+    "mean": -61.81513971649112,
+    "lo": -116.28100983324885,
+    "hi": -7.349269599733383,
+    "p": 0.03032580899484117,
+    "degenerate": false,
+    "sd": 76.1433263978141,
+    "se": 24.078634003871677,
+    "t": -2.567219540217758
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3,pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  },
+  "A4_minus_Tprime|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -0.2796724016649005,
+    "lo": -0.4600111011662183,
+    "hi": -0.09933370216358267,
+    "p": 0.006639994853996667,
+    "degenerate": false,
+    "sd": 0.25211363426031647,
+    "se": 0.079725331344526,
+    "t": -3.5079490664807755
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "A4_minus_T|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -5.331392455281177,
+    "lo": -5.823150463291776,
+    "hi": -4.839634447270579,
+    "p": 1.4936227287791832e-09,
+    "degenerate": false,
+    "sd": 0.6874780561188408,
+    "se": 0.21739964987205937,
+    "t": -24.52346385294882
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "descriptive_conc_itl": {
+  "conc|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -12.274067146311271,
+    "lo": -17.347168560732882,
+    "hi": -7.200965731889659,
+    "p": 0.0003938384046123869,
+    "degenerate": false,
+    "sd": 7.092199500704718,
+    "se": 2.242750404253586,
+    "t": -5.47277446613424
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  },
+  "conc|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 28.850252977685095,
+    "lo": 5.710022463977072,
+    "hi": 51.99048349139312,
+    "p": 0.020041602698568764,
+    "degenerate": false,
+    "sd": 32.350059241664695,
+    "se": 10.229986964503988,
+    "t": 2.8201651749694023
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3,pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  }
+ },
+ "descriptive_conc_ttft": {
+  "conc|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -51.21615431271486,
+    "lo": -95.595079166222,
+    "hi": -6.83722945920772,
+    "p": 0.028247837855863496,
+    "degenerate": false,
+    "sd": 62.04176951659457,
+    "se": 19.619330173964254,
+    "t": -2.6104945407708686
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  },
+  "conc|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -61.81513971649112,
+    "lo": -116.28100983324885,
+    "hi": -7.349269599733383,
+    "p": 0.03032580899484117,
+    "degenerate": false,
+    "sd": 76.1433263978141,
+    "se": 24.078634003871677,
+    "t": -2.567219540217758
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3,pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "magnitude_citation": "FORBIDDEN (sec4.3.1)"
+  }
+ },
+ "descriptive_A4_minus_Tprime": {
+  "A4_minus_Tprime|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -0.13957340782391156,
+    "lo": -0.3136791140579783,
+    "hi": 0.03453229841015523,
+    "p": 0.10318514298703894,
+    "degenerate": false,
+    "sd": 0.24339990509806717,
+    "se": 0.07696980823787214,
+    "t": -1.813352677098603
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "A4_minus_T|r2": {
+   "ci": {
+    "n": 10,
+    "mean": -5.06847424642949,
+    "lo": -5.539517905226334,
+    "hi": -4.597430587632647,
+    "p": 1.5969863105731243e-09,
+    "degenerate": false,
+    "sd": 0.658519380714958,
+    "se": 0.20824211264228273,
+    "t": -24.339333586843168
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "A4_minus_Tprime|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -0.2796724016649005,
+    "lo": -0.4600111011662183,
+    "hi": -0.09933370216358267,
+    "p": 0.006639994853996667,
+    "degenerate": false,
+    "sd": 0.25211363426031647,
+    "se": 0.079725331344526,
+    "t": -3.5079490664807755
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "A4_minus_T|r3": {
+   "ci": {
+    "n": 10,
+    "mean": -5.331392455281177,
+    "lo": -5.823150463291776,
+    "hi": -4.839634447270579,
+    "p": 1.4936227287791832e-09,
+    "degenerate": false,
+    "sd": 0.6874780561188408,
+    "se": 0.21739964987205937,
+    "t": -24.52346385294882
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "tau_ladder": {
+  "plainaux|r2": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.8686966481507857,
+    "X60": 0.8686966481507857,
+    "X100": 0.8686966481507857
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_nosplit|r2": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.84764492237573,
+    "X60": 0.19221252907942837,
+    "X100": 0.03268254759530931
+   },
+   "gate": "  [GATE: clear]"
+  },
+  "pdmux_split34|r2": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.06803518017376442,
+    "X60": 0.03449793476712719,
+    "X100": 0.012641124246308692
+   },
+   "gate": "  [GATE: clear]"
+  },
+  "pdmux_split34_nosticky|r2": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.050358329772587,
+    "X60": 0.043649646299197646,
+    "X100": 0.03103688933200399
+   },
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r2": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.0470327113896406,
+    "X60": 0.040337796135403316,
+    "X100": 0.029419954422446944
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "plainaux|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.9455916469151763,
+    "X60": 0.9455916469151763,
+    "X100": 0.9455916469151763
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_nosplit|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.9438752424046541,
+    "X60": 0.5473712561947857,
+    "X100": 0.08510611937082525
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.3200745169862817,
+    "X60": 0.04166666666666667,
+    "X100": 0.0025
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34_nosticky|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.24398656898656898,
+    "X60": 0.028333333333333335,
+    "X100": 0.008333333333333333
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r3": {
+   "n_reps": 10,
+   "mean": {
+    "X40": 0.231486568986569,
+    "X60": 0.010084033613445379,
+    "X100": 0.010084033613445379
+   },
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "confirm_A4like|X40|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 0.7972865926031429,
+    "lo": 0.7688508234840881,
+    "hi": 0.8257223617221978,
+    "p": 3.038933791875773e-13,
+    "degenerate": false,
+    "sd": 0.039753226098538146,
+    "se": 0.012571073881102976,
+    "t": 63.42231380897665
+   },
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X60|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 0.14856288278023072,
+    "lo": 0.09285353413334602,
+    "hi": 0.20427223142711542,
+    "p": 0.00019467470636144968,
+    "degenerate": false,
+    "sd": 0.07788171029556809,
+    "se": 0.024628359260338063,
+    "t": 6.032187577329967
+   },
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X100|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 0.001645658263305321,
+    "lo": -0.0239834734705822,
+    "hi": 0.02727478999719284,
+    "p": 0.8877189762134905,
+    "degenerate": false,
+    "sd": 0.0358295449741755,
+    "se": 0.011330296964583342,
+    "t": 0.1452440539245688
+   },
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X40|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.6998886734180851,
+    "lo": 0.5919935130633922,
+    "hi": 0.8077838337727781,
+    "p": 1.3658873080452146e-07,
+    "degenerate": false,
+    "sd": 0.15083751336424872,
+    "se": 0.04769900988271131,
+    "t": 14.673023090816033
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X60|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.5190379228614523,
+    "lo": 0.4364994180399729,
+    "hi": 0.6015764276829317,
+    "p": 1.7873570113736777e-07,
+    "degenerate": false,
+    "sd": 0.11538889031859614,
+    "se": 0.0364891710086116,
+    "t": 14.224437237528832
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "confirm_A4like|X100|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.07677278603749191,
+    "lo": -0.01289040930471462,
+    "hi": 0.16643598137969845,
+    "p": 0.08474273405757607,
+    "degenerate": false,
+    "sd": 0.1253492128956557,
+    "se": 0.03963890156596221,
+    "t": 1.9368040738902925
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "secondary_cont|X40|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 0.7796097422019655,
+    "lo": 0.7392454185289543,
+    "hi": 0.8199740658749768,
+    "p": 8.613177077217322e-12,
+    "degenerate": false,
+    "sd": 0.05642935411979186,
+    "se": 0.01784452859107483,
+    "t": 43.68900743009246
+   },
+   "gate": "  [GATE: clear]"
+  },
+  "secondary_cont|X60|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 0.1577145943123012,
+    "lo": 0.10108453698209549,
+    "hi": 0.2143446516425069,
+    "p": 0.0001410400851956314,
+    "degenerate": false,
+    "sd": 0.07916886171059422,
+    "se": 0.025035392276837185,
+    "t": 6.299665392430027
+   },
+   "gate": "  [GATE: clear]"
+  },
+  "secondary_cont|X100|r2": {
+   "ci": {
+    "n": 10,
+    "mean": 0.020041423349000616,
+    "lo": -0.007132640543263593,
+    "hi": 0.04721548724126483,
+    "p": 0.12960685176791367,
+    "degenerate": false,
+    "sd": 0.03798936126547096,
+    "se": 0.012013290845386475,
+    "t": 1.6682708848839054
+   },
+   "gate": "  [GATE: clear]"
+  },
+  "secondary_cont|X40|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.6238007254183724,
+    "lo": 0.4778983806880401,
+    "hi": 0.7697030701487046,
+    "p": 4.723371056822839e-06,
+    "degenerate": false,
+    "sd": 0.20397158501631987,
+    "se": 0.06450147866062436,
+    "t": 9.671107366398694
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|X60|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.5057045895281189,
+    "lo": 0.43288627894598214,
+    "hi": 0.5785229001102556,
+    "p": 7.548701683402035e-08,
+    "degenerate": false,
+    "sd": 0.10180005163797252,
+    "se": 0.03219200290987479,
+    "t": 15.709012916776164
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "secondary_cont|X100|r3": {
+   "ci": {
+    "n": 10,
+    "mean": 0.08260611937082525,
+    "lo": -0.003579870472167887,
+    "hi": 0.16879210921381838,
+    "p": 0.05829887209752497,
+    "degenerate": false,
+    "sd": 0.12048807705570118,
+    "se": 0.038101675438989006,
+    "t": 2.1680442767693977
+   },
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "component_share": {
+  "r2": {
+   "identity": true,
+   "emitted": false,
+   "suppress_reasons": [
+    "denominator NOT separated from 0 at 95% (Fieller a<=0) -> unbounded interval; sec4.4 rev4 caveat says do not carry the ratio at all"
+   ],
+   "identity_statement": "Delta_split + Delta_conc === ITLp95_mean(A2) - ITLp95_mean(T); the shares summing to 1 is arithmetic, not a result (sec4.4, gate #6)",
+   "used_for_verdict": false,
+   "ci_split": {
+    "n": 10,
+    "mean": 9.017603784429577,
+    "lo": 6.209517462364708,
+    "hi": 11.825690106494445,
+    "p": 4.74453233907185e-05,
+    "degenerate": false,
+    "sd": 3.9257067392087186,
+    "se": 1.2414174721772184,
+    "t": 7.26395752156956
+   },
+   "ci_conc": {
+    "n": 10,
+    "mean": -12.274067146311271,
+    "lo": -17.347168560732882,
+    "hi": -7.200965731889659,
+    "p": 0.0003938384046123869,
+    "degenerate": false,
+    "sd": 7.092199500704718,
+    "se": 2.242750404253586,
+    "t": -5.47277446613424
+   },
+   "ci_denominator": {
+    "n": 10,
+    "mean": -3.2564633618816954,
+    "lo": -10.40797311474871,
+    "hi": 3.8950463909853195,
+    "p": 0.3298902825040179,
+    "degenerate": false,
+    "sd": 9.997815883274823,
+    "se": 3.1615869818156566,
+    "t": -1.0300091000537814
+   },
+   "fieller": {
+    "ok": false,
+    "reason": "denominator NOT separated from 0 at 95% (Fieller a<=0) -> unbounded interval; sec4.4 rev4 caveat says do not carry the ratio at all"
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "r3": {
+   "identity": true,
+   "emitted": true,
+   "suppress_reasons": [],
+   "identity_statement": "Delta_split + Delta_conc === ITLp95_mean(A2) - ITLp95_mean(T); the shares summing to 1 is arithmetic, not a result (sec4.4, gate #6)",
+   "used_for_verdict": false,
+   "ci_split": {
+    "n": 10,
+    "mean": 19.826219150743555,
+    "lo": 16.142790417880654,
+    "hi": 23.509647883606455,
+    "p": 6.80434825033925e-07,
+    "degenerate": false,
+    "sd": 5.1494360719516665,
+    "se": 1.6283946652797965,
+    "t": 12.175315710296156
+   },
+   "ci_conc": {
+    "n": 10,
+    "mean": 28.850252977685095,
+    "lo": 5.710022463977072,
+    "hi": 51.99048349139312,
+    "p": 0.020041602698568764,
+    "degenerate": false,
+    "sd": 32.350059241664695,
+    "se": 10.229986964503988,
+    "t": 2.8201651749694023
+   },
+   "ci_denominator": {
+    "n": 10,
+    "mean": 48.67647212842865,
+    "lo": 22.25697300361986,
+    "hi": 75.09597125323744,
+    "p": 0.0024201916456253266,
+    "degenerate": false,
+    "sd": 36.93447916676432,
+    "se": 11.679707835901322,
+    "t": 4.167610424192797
+   },
+   "fieller": {
+    "ok": true,
+    "identity": true,
+    "point": 0.407305999876774,
+    "lo": 0.3050106543238411,
+    "hi": 0.7444353458435897,
+    "denominator_mean": 48.67647212842865,
+    "numerator_mean": 19.826219150743555
+   },
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3,pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "descriptive": {
+  "plainaux|r2": {
+   "n_reps": 10,
+   "TTFTp50": 157.3599942959845,
+   "ITLp50": 10.606862138956785,
+   "throughput": 1.9364567964009265,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_nosplit|r2": {
+   "n_reps": 10,
+   "TTFTp50": 180.33048901706934,
+   "ITLp50": 10.744791105389595,
+   "throughput": 1.9362418356405537,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: clear]"
+  },
+  "pdmux_split34|r2": {
+   "n_reps": 10,
+   "TTFTp50": 247.93489519506693,
+   "ITLp50": 19.76537248119712,
+   "throughput": 1.911118380229576,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: clear]"
+  },
+  "pdmux_split34_nosticky|r2": {
+   "n_reps": 10,
+   "TTFTp50": 242.49957613646984,
+   "ITLp50": 10.960858687758446,
+   "throughput": 1.9346637244125648,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r2": {
+   "n_reps": 10,
+   "TTFTp50": 239.43565813824534,
+   "ITLp50": 10.95958799123764,
+   "throughput": 1.9346140848935411,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "plainaux|r3": {
+   "n_reps": 10,
+   "TTFTp50": 176.55409835278988,
+   "ITLp50": 14.760201424360275,
+   "throughput": 2.952607914140462,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_nosplit|r3": {
+   "n_reps": 10,
+   "TTFTp50": 242.60456673800945,
+   "ITLp50": 15.161596052348614,
+   "throughput": 2.951861922709546,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34|r3": {
+   "n_reps": 10,
+   "TTFTp50": 409.8978933878243,
+   "ITLp50": 28.132883831858635,
+   "throughput": 2.8749003641236794,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "pdmux_split34_nosticky|r3": {
+   "n_reps": 10,
+   "TTFTp50": 392.42619862779975,
+   "ITLp50": 17.17119598761201,
+   "throughput": 2.9444022094176345,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r3": {
+   "n_reps": 10,
+   "TTFTp50": 391.9381393119693,
+   "ITLp50": 17.169286590069532,
+   "throughput": 2.9444462282018837,
+   "completed_over_total": 1.0,
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "switch_and_drain": {
+  "cells": {
+   "plainaux|r2": {
+    "available": false,
+    "na_reason": "no telemetry for this arm (plainaux runs without PDMUX_TELEMETRY_PATH by design, sec2)",
+    "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_nosplit|r2": {
+    "available": true,
+    "controller_decision": 2245,
+    "split_transition": 41,
+    "residency_frac_decode_active": {
+     "0": 0.008956363585855663,
+     "3": 0.9910436364141444
+    },
+    "n_snapshots": 94354,
+    "switch_count_NOT_FOR_SOLE_CITATION": 316,
+    "gate": "  [GATE: clear]"
+   },
+   "pdmux_split34|r2": {
+    "available": true,
+    "controller_decision": 2440,
+    "split_transition": 24,
+    "residency_frac_decode_active": {
+     "0": 0.0043412638837595045,
+     "1": 0.9956587361162405
+    },
+    "n_snapshots": 66400,
+    "switch_count_NOT_FOR_SOLE_CITATION": 126,
+    "gate": "  [GATE: clear]"
+   },
+   "pdmux_split34_nosticky|r2": {
+    "available": true,
+    "controller_decision": 2263,
+    "split_transition": 648,
+    "residency_frac_decode_active": {
+     "0": 0.0026531688320362693,
+     "1": 0.3547760428529908,
+     "3": 0.6425707883149729
+    },
+    "n_snapshots": 90785,
+    "switch_count_NOT_FOR_SOLE_CITATION": 1160,
+    "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+   },
+   "agnostic|r2": {
+    "available": true,
+    "controller_decision": 0,
+    "split_transition": 0,
+    "residency_frac_decode_active": {
+     "0": 0.0027778324454226905,
+     "1": 0.35456697370523116,
+     "3": 0.6426551938493461
+    },
+    "n_snapshots": 93312,
+    "switch_count_NOT_FOR_SOLE_CITATION": 1130,
+    "a4_note": "A4 runs with NO R2 policy, so `_r2_decide_idx` never runs and neither event is emitted. This is a STRUCTURAL ABSENCE, not a measured zero.",
+    "gate": "  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "plainaux|r3": {
+    "available": false,
+    "na_reason": "no telemetry for this arm (plainaux runs without PDMUX_TELEMETRY_PATH by design, sec2)",
+    "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_nosplit|r3": {
+    "available": true,
+    "controller_decision": 2424,
+    "split_transition": 28,
+    "residency_frac_decode_active": {
+     "0": 0.0019598241791373427,
+     "3": 0.9980401758208627
+    },
+    "n_snapshots": 63340,
+    "switch_count_NOT_FOR_SOLE_CITATION": 136,
+    "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_split34|r3": {
+    "available": true,
+    "controller_decision": 2506,
+    "split_transition": 13,
+    "residency_frac_decode_active": {
+     "0": 0.0023126255549609526,
+     "1": 0.9976873744450391
+    },
+    "n_snapshots": 55977,
+    "switch_count_NOT_FOR_SOLE_CITATION": 48,
+    "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   },
+   "pdmux_split34_nosticky|r3": {
+    "available": true,
+    "controller_decision": 2432,
+    "split_transition": 398,
+    "residency_frac_decode_active": {
+     "0": 0.003983986186586678,
+     "1": 0.5483470193818758,
+     "3": 0.44766899443153746
+    },
+    "n_snapshots": 61682,
+    "switch_count_NOT_FOR_SOLE_CITATION": 589,
+    "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+   },
+   "agnostic|r3": {
+    "available": true,
+    "controller_decision": 0,
+    "split_transition": 0,
+    "residency_frac_decode_active": {
+     "0": 0.0003314162857884082,
+     "1": 0.5414340270749206,
+     "3": 0.458234556639291
+    },
+    "n_snapshots": 64000,
+    "switch_count_NOT_FOR_SOLE_CITATION": 585,
+    "a4_note": "A4 runs with NO R2 policy, so `_r2_decide_idx` never runs and neither event is emitted. This is a STRUCTURAL ABSENCE, not a measured zero.",
+    "gate": "  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+   }
+  },
+  "notes": [
+   "sec7.2: quantities used are `controller_decision` and `split_transition` (multiplexing_mixin.py:401-422), which are emitted with NO cadence.",
+   "sec7.2: `switch_count` (stream_index changes in runtime_snapshot) is a PDMUX_DUAL_WORKER_TRACE_EVERY=32 subsample whose miss bias is ARM-DEPENDENT (T dwells longer under sticky) -- SOLE CITATION FORBIDDEN. It is printed only so the prohibition travels with it.",
+   "sec7.2: transitions taken through the `adjust_stream_groups` path are recorded by NO event (multiplexing_mixin.py:1084-1086 is logger.debug, 0 occurrences across 96+ server logs). --log-level debug is NOT added (it would change arm flags vs the preceding campaigns).",
+   "sec5.2.2: these quantities are reported on S1/S2/S3 alike and EXCULPATE NO VERDICT in any direction."
+  ]
+ },
+ "delivery_rate": {
+  "plainaux|r2": {
+   "available": false,
+   "prereg_status": "no pdmux telemetry by design",
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "na_reason": "no telemetry for this arm (by design)"
+  },
+  "pdmux_nosplit|r2": {
+   "available": true,
+   "frac": {
+    "0": 0.008956363585855663,
+    "3": 0.9910436364141444
+   },
+   "frac_idx1": 0.0,
+   "frac_idx0_or_3": 1.0,
+   "prereg_status": "sec6.1.1 CODE INVARIANT (idx0 and idx3 are the same physical state) -- sanity check, not a gate, not evidence of no-split",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: clear]",
+   "sanity_invariant_holds": true
+  },
+  "pdmux_split34|r2": {
+   "available": true,
+   "frac": {
+    "0": 0.0043412638837595045,
+    "1": 0.9956587361162405
+   },
+   "frac_idx1": 0.9956587361162405,
+   "frac_idx0_or_3": 0.0043412638837595045,
+   "prereg_status": "sec6.1.2 CODE IDENTITY (sticky ON) -- sanity check, not a gate",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: clear]",
+   "sanity_identity_deviation": 0.00434126388375955
+  },
+  "pdmux_split34_nosticky|r2": {
+   "available": true,
+   "frac": {
+    "0": 0.0026531688320362693,
+    "1": 0.3547760428529908,
+    "3": 0.6425707883149729
+   },
+   "frac_idx1": 0.3547760428529908,
+   "frac_idx0_or_3": 0.6452239571470092,
+   "prereg_status": "sec6.1.2 rev4 LIVE DELIVERY RATE -- descriptive only, no threshold",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r2": {
+   "available": true,
+   "frac": {
+    "0": 0.0027778324454226905,
+    "1": 0.35456697370523116,
+    "3": 0.6426551938493461
+   },
+   "frac_idx1": 0.35456697370523116,
+   "frac_idx0_or_3": 0.6454330262947688,
+   "prereg_status": "sec6.1.2 rev4 LIVE DELIVERY RATE -- descriptive only, no threshold",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  },
+  "plainaux|r3": {
+   "available": false,
+   "prereg_status": "no pdmux telemetry by design",
+   "gate": "  [GATE: F-SERIES FIRED(plainaux@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "na_reason": "no telemetry for this arm (by design)"
+  },
+  "pdmux_nosplit|r3": {
+   "available": true,
+   "frac": {
+    "0": 0.0019598241791373427,
+    "3": 0.9980401758208627
+   },
+   "frac_idx1": 0.0,
+   "frac_idx0_or_3": 1.0,
+   "prereg_status": "sec6.1.1 CODE INVARIANT (idx0 and idx3 are the same physical state) -- sanity check, not a gate, not evidence of no-split",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sanity_invariant_holds": true
+  },
+  "pdmux_split34|r3": {
+   "available": true,
+   "frac": {
+    "0": 0.0023126255549609526,
+    "1": 0.9976873744450391
+   },
+   "frac_idx1": 0.9976873744450391,
+   "frac_idx0_or_3": 0.0023126255549609526,
+   "prereg_status": "sec6.1.2 CODE IDENTITY (sticky ON) -- sanity check, not a gate",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sanity_identity_deviation": 0.002312625554960923
+  },
+  "pdmux_split34_nosticky|r3": {
+   "available": true,
+   "frac": {
+    "0": 0.003983986186586678,
+    "1": 0.5483470193818758,
+    "3": 0.44766899443153746
+   },
+   "frac_idx1": 0.5483470193818758,
+   "frac_idx0_or_3": 0.45165298061812414,
+   "prereg_status": "sec6.1.2 rev4 LIVE DELIVERY RATE -- descriptive only, no threshold",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]"
+  },
+  "agnostic|r3": {
+   "available": true,
+   "frac": {
+    "0": 0.0003314162857884082,
+    "1": 0.5414340270749206,
+    "3": 0.458234556639291
+   },
+   "frac_idx1": 0.5414340270749206,
+   "frac_idx0_or_3": 0.45856597292507945,
+   "prereg_status": "sec6.1.2 rev4 LIVE DELIVERY RATE -- descriptive only, no threshold",
+   "threshold": "NONE (sec6.1.2 rev4)",
+   "gate": "  [GATE: F-SERIES FIRED(agnostic@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+  }
+ },
+ "probe_pos": {
+  "role": "HARNESS SANITY CHECK -- not an anchor condition (sec6.2.1(1), rev4)",
+  "ci": {
+   "n": 10,
+   "mean": 4.573885383685743,
+   "lo": 3.783765570876128,
+   "hi": 5.364005196495359,
+   "p": 3.649075429602911e-07,
+   "degenerate": false,
+   "sd": 1.1045880782070154,
+   "se": 0.34930142034023676,
+   "t": 13.094379574038244
+  },
+  "n_boots": 10,
+  "verdict": "OK",
+  "undetermined_reason": null,
+  "internal_epsilon_34_to_108": 0.28261178547074506,
+  "epsilon_scope": "valid ONLY at these two endpoints of THIS campaign; pooled two-point elasticity, transfer outside this operating point is forbidden (sec6.2.1 rev3 change 3)",
+  "caveats": [
+   "sec6.2.1 rev4: micro-regime caveat -- measured at 8 concurrent requests, input 128 / output 128 (canonical confound #7 regime). The result does NOT transfer to the serving operating point (in2000/out96, rate 2-4).",
+   "sec6.2.1 rev3 change 3: the detection floor is NOT converted to SM units. The 15-60 SM band was an 8B/44-92 SM import and is deleted (CONSENSUS sec3 items 21/25/26)."
+  ],
+  "gate": "  [GATE: clear]"
+ },
+ "probe_carve": {
+  "state": "NOT-EQUIVALENT",
+  "undetermined_reason": null,
+  "tost": {
+   "n": 10,
+   "mean": 0.38731123768086506,
+   "lo": -0.5005227995900481,
+   "hi": 1.2751452749517782,
+   "delta": 0.5726548230026182,
+   "margin_frac": 0.05,
+   "equivalent": false,
+   "degenerate": false
+  },
+  "n_boots": 10,
+  "margin": 0.05,
+  "ci_level": "two-sided 90%",
+  "campaign_veto": "NONE (sec6.2.1(2))",
+  "confound": "A2 runs event_loop_normal and C runs event_loop_pdmux, so loop overhead is mixed in. An equivalence result means the CONJUNCTION 'no SM carve AND no loop overhead' is within 5% -- it does NOT isolate SM carving.",
+  "caveats": [
+   "sec6.2.1 rev4: micro-regime caveat -- measured at 8 concurrent requests, input 128 / output 128 (canonical confound #7 regime). The result does NOT transfer to the serving operating point (in2000/out96, rate 2-4).",
+   "sec6.2.1 rev3 change 3: the detection floor is NOT converted to SM units. The 15-60 SM band was an 8B/44-92 SM import and is deleted (CONSENSUS sec3 items 21/25/26)."
+  ],
+  "gate": "  [GATE: F-SERIES FIRED(plainaux@r2) => SIGN ONLY, MAGNITUDE NOT CITABLE]"
+ },
+ "mde": {
+  "confirm_A4like|alpha_ITLp95_mean|r2": {
+   "mde_pct": 18.909724288846892,
+   "n": 10,
+   "ref_mean": 21.478548270048385,
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 18.9% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "confirm_A4like|beta_pooled_p99|r2": {
+   "mde_pct": 30.227540130773395,
+   "n": 10,
+   "ref_mean": 35.43081820756197,
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 30.2% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "confirm_A4like|alpha_ITLp95_mean|r3": {
+   "mde_pct": 17.32056471882282,
+   "n": 10,
+   "ref_mean": 30.74093054710402,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 17.3% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "confirm_A4like|beta_pooled_p99|r3": {
+   "mde_pct": 8.070229993931674,
+   "n": 10,
+   "ref_mean": 42.878542458638556,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 8.1% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "secondary_cont|alpha_ITLp95_mean|r2": {
+   "mde_pct": 14.78468417730621,
+   "n": 10,
+   "ref_mean": 26.407449108653964,
+   "gate": "  [GATE: clear]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 14.8% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "secondary_cont|beta_pooled_p99|r2": {
+   "mde_pct": 28.434422929998558,
+   "n": 10,
+   "ref_mean": 35.982959881424904,
+   "gate": "  [GATE: clear]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 28.4% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "secondary_cont|alpha_ITLp95_mean|r3": {
+   "mde_pct": 14.308248023972546,
+   "n": 10,
+   "ref_mean": 35.7926506007203,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 14.3% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "secondary_cont|beta_pooled_p99|r3": {
+   "mde_pct": 6.8127925857705565,
+   "n": 10,
+   "ref_mean": 45.81152409128846,
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3,pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "sentence": "\uc774 \uc124\uacc4\ub294 \ucc28\uc774\uac00 6.8% \ubbf8\ub9cc\uc778 \uacbd\uc6b0\ub97c \ubc30\uc81c\ud560 \uc218 \uc5c6\ub2e4."
+  },
+  "_sigma_D_sources": {
+   "pilot_sd_alpha": 3.9416143357104687,
+   "pilot_n": 4,
+   "pilot_caveat": "designated cell Zamba2 r3, T/C, n=4 -> df=3; sigma 95% CI ~ [0.57x, 3.73x]. sec3.4(a) makes stating this MANDATORY with every MDE.",
+   "capscan_paired_sd_alpha": 1.2087034459847328,
+   "capscan_n": 3,
+   "capscan_caveat": "auxiliary only, PAIRED on shared seeds (never a sqrt(2) single-arm proxy); n=3 -> df=2, which must be stated on every citation (sec3.4(b)).",
+   "underpowered_threshold": "NONE -- rev2 removed it (sec3.4(c))"
+  }
+ },
+ "kv_pool": {
+  "state": "PASS",
+  "message": "tokens(T)==tokens(C)==327536",
+  "per_arm": {
+   "agnostic": {
+    "kv_cache_tokens": 327536,
+    "capture_s": 7.15,
+    "capture_gb": 0.52
+   },
+   "pdmux_nosplit": {
+    "kv_cache_tokens": 327536,
+    "capture_s": 7.61,
+    "capture_gb": 0.52
+   },
+   "pdmux_split34": {
+    "kv_cache_tokens": 327536,
+    "capture_s": 7.66,
+    "capture_gb": 0.52
+   },
+   "pdmux_split34_nosticky": {
+    "kv_cache_tokens": 327536,
+    "capture_s": 7.87,
+    "capture_gb": 0.52
+   },
+   "plainaux": {
+    "kv_cache_tokens": 327637,
+    "capture_s": 3.92,
+    "capture_gb": 0.13
+   }
+  },
+  "delta_split_magnitude_citable": true,
+  "gate": "  [GATE: clear]"
+ },
+ "bimodality": {
+  "pdmux_split34|r2|c0.25": {
+   "per_rep_median": 0.2184873949579832,
+   "per_rep_max": 0.2833333333333333,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r2|c0.4": {
+   "per_rep_median": 0.041841736694677875,
+   "per_rep_max": 0.11864406779661017,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r2|c0.5": {
+   "per_rep_median": 0.008333333333333333,
+   "per_rep_max": 0.03389830508474576,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r3|c0.25": {
+   "per_rep_median": 0.02927170868347339,
+   "per_rep_max": 0.15,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r3|c0.4": {
+   "per_rep_median": 0.0,
+   "per_rep_max": 0.008403361344537815,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34|r3|c0.5": {
+   "per_rep_median": 0.0,
+   "per_rep_max": 0.008403361344537815,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r2|c0.25": {
+   "per_rep_median": 0.2457627118644068,
+   "per_rep_max": 0.35,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r2|c0.4": {
+   "per_rep_median": 0.07983193277310924,
+   "per_rep_max": 0.175,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r2|c0.5": {
+   "per_rep_median": 0.05063381284717277,
+   "per_rep_max": 0.15,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r3|c0.25": {
+   "per_rep_median": 0.12083333333333333,
+   "per_rep_max": 0.20512820512820512,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r3|c0.4": {
+   "per_rep_median": 0.025105042016806724,
+   "per_rep_max": 0.08547008547008547,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_split34_nosticky|r3|c0.5": {
+   "per_rep_median": 0.016666666666666666,
+   "per_rep_max": 0.05982905982905983,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_split34_nosticky@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE | F-B disjunct(i) UNEVALUATED(pdmux_split34_nosticky) [sec8.6]]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r2|c0.25": {
+   "per_rep_median": 0.30254237288135594,
+   "per_rep_max": 0.37815126050420167,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r2|c0.4": {
+   "per_rep_median": 0.2658097137159949,
+   "per_rep_max": 0.33613445378151263,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r2|c0.5": {
+   "per_rep_median": 0.22781655034895315,
+   "per_rep_max": 0.2711864406779661,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: clear]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r3|c0.25": {
+   "per_rep_median": 0.2,
+   "per_rep_max": 0.27350427350427353,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r3|c0.4": {
+   "per_rep_median": 0.09621848739495799,
+   "per_rep_max": 0.18803418803418803,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  },
+  "pdmux_nosplit|r3|c0.5": {
+   "per_rep_median": 0.0711484593837535,
+   "per_rep_max": 0.175,
+   "n_reps": 10,
+   "provenance": "phase1_scored",
+   "gate": "  [GATE: F-SERIES FIRED(pdmux_nosplit@r3) => SIGN ONLY, MAGNITUDE NOT CITABLE]",
+   "role": "DIAGNOSTIC ONLY (sec4.1.3) -- no threshold, no decision"
+  }
+ },
+ "design_conformance": {
+  "prereg_requires": "sec3: n=10 paired reps in each of the cells, both rates",
+  "realized_reps_per_cell": {
+   "plainaux@r2": 10,
+   "plainaux@r3": 10,
+   "pdmux_nosplit@r2": 10,
+   "pdmux_nosplit@r3": 10,
+   "pdmux_split34@r2": 10,
+   "pdmux_split34@r3": 10,
+   "pdmux_split34_nosticky@r2": 10,
+   "pdmux_split34_nosticky@r3": 10,
+   "agnostic@r2": 10,
+   "agnostic@r3": 10
+  },
+  "cells_below_n10": {},
+  "conformant": true,
+  "usable_for": "pre-registered analysis"
+ },
+ "block_completeness": {
+  "n_declared": 19,
+  "n_in_report": 19,
+  "absent": []
+ }
+}
