@@ -103,3 +103,28 @@ results/p1_gates/gate2/*.raw.json
 #     only record of the realized-flag gate); no subsetting rule added.
 # Net effect: no new `!`/exclude line below this comment — the existing
 # extension/directory-scoped rules already generalize across job prefixes.
+
+# g2det/g2detB (T4-1 determinism reconfirmation, jobs 876699/876766) and g2s
+# (Gate 2-S, unsubmitted) raw-dump policy (2026-08-10), extending the 2026-08-
+# 06/07/08 gate1/gate2/g2ctrl/E-A policy above to these two new naming
+# families. Checked file-by-file against the untracked set (~230 files as of
+# 2026-08-10) before writing anything below:
+#   - g2det_*/g2detB_*: no *.jsonl, *.log, *.raw.json, or *_srv_*.log present
+#     among the new files (verified) — everything else (summary/flags/
+#     correctness-equivalent selfbaseline+raw json, prompt/prompt_meta,
+#     nvidiasmi/procstate/pyspy diagnostic .txt snapshots, .status.json
+#     measurement-failure sidecars, manifest_diff/runtime_source_manifest) is
+#     small (<=24KB/file) and already trackable via root .gitignore's
+#     `!**/results/**` re-include — no job-prefix-specific rule needed.
+#     `*_selfbaseline_raw_*.json` looks like the excluded gate2 `*.raw.json`
+#     class but is NOT the same thing and is NOT excluded: it does not match
+#     the `*.raw.json` suffix pattern (the "raw" token is mid-filename, not a
+#     `.raw.json` extension), and unlike the gate1/gate2 call1/call2 raw HTTP
+#     bodies it is the ONLY record of that self-baseline response's
+#     `meta_info.e2e_latency`, which g2_holb_phaseA_lib.sh's greedy_call
+#     bounded-timeout comment cites in aggregate (n=64 across jobs) — kept
+#     tracked deliberately, not by omission.
+#   - g2s_*: only harness source (.py/.sbatch) present so far, no raw
+#     artifacts exist yet (unsubmitted) — nothing to evaluate until it runs.
+# Net effect: no new `!`/exclude line below this comment — the existing
+# extension/directory-scoped rules already generalize across job prefixes.
