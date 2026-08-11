@@ -1,6 +1,12 @@
 # Document status
 
-최종 갱신: 2026-08-11(doc-steward — **G1-c(job 877974) 반영으로
+최종 갱신: 2026-08-11(doc-steward — **E1 addendum(jobs 877756/
+877757 재집계) 반영으로 `CLAIM_EVIDENCE_MATRIX.md`·
+`EXPERIMENT_ROADMAP.md`를 `reports/CONSENSUS.md` rev23과
+재동기화(Gate 2-S 전제 4셀 전부 `VERIFIED_AT_SAMPLED_INSTANTS` —
+등급 하향된 조건부 채택, "P1 트랙" 로드맵 완료분 이동 + 후속
+E1-a/b/c/d 신설). 분류표 무변경, changelog 기록뿐.** 이전:
+2026-08-11(doc-steward — **G1-c(job 877974) 반영으로
 `CLAIM_EVIDENCE_MATRIX.md`·`EXPERIMENT_ROADMAP.md`를
 `reports/CONSENSUS.md` rev22와 재동기화(Gate 2-S 인용 제한 7건
 중 4번 갱신, "P1 트랙" 로드맵 완료분 이동). 분류표 무변경, changelog

@@ -1,6 +1,18 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-11(doc-steward — **G1-c(job 877974) 반영 —
+최종 갱신: 2026-08-11(doc-steward — **E1 addendum(jobs
+877756/877757 재집계, GPU 0) 반영 — 4셀 전부 `VERIFIED_AT_
+SAMPLED_INSTANTS`, 판정=등급 하향된 조건부 채택(승격 아님). 새
+성능 판정 아님, Claim A–F 무변경, Claim G(부분 지지) 등급
+무변경.** E1이 스스로 주장한 "밀도 페널티를 피했다"는
+claims-auditor 감사로 **반증**됐다 — 결정 관련 pop-A 관측 수는
+G1-b/G1-c 대비 오히려 5–6× 적다(1,279·1,496 vs 6,402·8,920).
+실질 우위는 반복수(n=1→10)·셀 일치뿐, **밀도 우위가 아니다**(E1이
+G1-c를 "대체"하지 않는다 — 서로 다른 축). ⚠️크기 인용 셀은
+여전히 Zamba2 r2 하나(3번 항목 불변). 상세는 아래 "P1 트랙"
+절·`CONSENSUS.md` §1-1(2026-08-11 E1 addendum 블록, rev23)·§3
+항목44·45.
+이전: 2026-08-11(doc-steward — **G1-c(job 877974) 반영 —
 Gate 2-S "P1 트랙" 절 인용 제한 7건 중 4번(Granite r3·r4 명명
 금지)을 조건부 해제로 갱신. 새 성능 판정 아님, Claim A–F 무변경,
 Claim G(부분 지지) 등급 무변경.** ⚠️크기 인용 셀은 여전히 Zamba2
@@ -114,7 +126,7 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
 | D. execution-state separation은 single-worker coupling을 줄인다 (★2026-07-24 코드 리뷰로 scope 축소, 아래 "주장 제한" 참조) | 미검증 | R1은 observer라 해당 증거가 아님; 2026-07-24 읽기 전용 코드 리뷰([`../r2_decoupling_review_2026-07-24.md`](../r2_decoupling_review_2026-07-24.md), file:line 근거)로 `PDMUX_TRUE_DUAL_WORKER=1`의 구조 확인: 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이며, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter` 단일 `stream_index`, ≤108)은 **전면 공유** | 실제 두 host loop에서의 fixed-split 비교(coupled ceiling 내); GPU correctness 동치 테스트(현재 없음); admission latch(`r2_admission_limited`) stale-True 버그 수정; results/r2_eval 캠페인 실행(현재 미생성) | legacy fixed 대 true dual fixed, 동일 telemetry/seed/graph — coupled ceiling(+2%, PROJECT_STATUS/CONSENSUS §1-20) 내에서만 유의미, "얽힘 깨기"로 측정 불가(§1-4 死因의 substrate가 구성상 불변) |
 | E. Hybrid-informed decode floor가 generic/global static보다 높은 SLO goodput을 낸다 | 미검증 핵심 가설 | 없음 | architecture control, generic policy, static/oracle, profile generalization | B0–B8, P4 profile ablation, W1–W9 및 real trace |
 | F. short-ctx conflict-regime 워크로드에는 동적 제어가 이길 수 있는 disjoint-feasibility escape hatch(어떤 static도 두 phase 동시 SLO를 못 만족하는 워크로드)가 있다 | **강한 지지(범위 한정) — CONFIRMED closure, scoped negative(2026-07-25)**: escape hatch **없음**을 확정 | `g2_0_full`(n=4, razor-thin real disjoint 최초 관측)→`g2_0_hard`(n=6–10, claims-auditor 재채점, ILL-POSED at rA5)→`g2_0_decliff`(rA2 n=6, PLAUSIBLE closure)→`g2_0_rasweep`(120 job, off-cliff band rate≤2.75 disjoint 재확인 없음)→`g2_0_raconf`(pre-registered 24-job 확증 열, rate{3.5,3.75}×{d44,d54}×n6, companion-collapse 결정규칙 충족: rate3.5 d44 0.953±0.035≈d54 0.948±0.035; rate3.75 d54 0.948±0.062>d44 0.932±0.042) | long-context(decode floor 상승 영역, CONSENSUS §1-5) 재검증; hot varying-trace(drain 아닌 entangled 조건)에서의 직접 실증 | long-context G2.0-style disjoint sweep(모델/ctx 교체 필요); §1-20 spatial coupling-tax와 결합한 재검토 |
-| G. PD-mux(공간 SM 분할) **활성화 자체**가 fused 대비 SLO goodput 이득의 원인이다(Claim A–F 밖, 별도 트랙 "P1" — 상세는 아래 "P1 트랙" 절) | **부분 지지(모델·워크로드 한정)** — "PD-mux를 켜면 이득이 난다"는 2모델서 지지; **"SM 분할 자체"·"PD 분리 자체"가 원인이라는 좁은 형태는 여전히 NOT-YET-SUPPORTED** | P1 운영점 대조(2026-08-05, jobs 873944/873945, cudagraph-ON, n=5 paired, 2026-08-06 통계 정정 후 인용 가능 3점: Zamba2 rate2 +40.5%/rate3 +185.8%, Granite rate4 +27.0%). Gate 1/G1-b(2026-08-06/07, selector-level 파티션 라벨, Zamba2 rate{2,3} 조건부 해금). Gate 2 rev4(2026-08-07, chunk512는 pdmux를 대체 못함)+R1′/R2′(aux 두 플래그를 원인에서 배제, 귀속 상한="pdmux 서브시스템 전체"). E-A(2026-08-08~09, mixed-chunk 레버 고유 기여 1.2%, 격차 대부분 미조율 fused 탓). **Gate 2-S(2026-08-11, jobs 877756/877757)** — SM 분할만 무력화한 대조 arm으로 처음 "SM 분할" 성분 하나를 격리: 요청-내부 ITL p95 평균이 4셀 전부 개선(꼬리 한정)·TTFT p95는 4셀 전부 악화. **★G1-c(2026-08-11, job 877974, 0.10 GPU-hr)** — Gate 2-S Granite r3·r4의 §8.9 전제(realized 파티션 궤적이 `(74,34)` 하나로 유지)가 VERIFIED로 승격(max(decode_bs)=10/10<36, frac((54,54))=0/0). **해제되는 것은 명명 층 하나뿐**(Granite r3·r4에서 "엔진 기본 궤적"·"A4형" 명명 허용) — **크기 인용 자격은 불변**(코드 확인, `g2s_analyze.py:1157-1161`: `premise`는 F-계열 gate 산출에 미입력, Granite r3·r4는 F-계열 발화 상태라 `SIGN ONLY, MAGNITUDE NOT CITABLE` 유지) — **인용 시 아래 "P1 트랙" 절의 제한 7건(4번 갱신)을 반드시 함께 적용** | S3/`%smid` 하드웨어 SM 프로브(미실행), Gate 3(NemotronH·Falcon-H1 운영점 대조, 미착수), Gate 4(sustainable-rate 직접 측정, 미착수), F-B(ii) 재설계(현 인용-셀 선별 필터의 귀무 발화율 40.1%), G1-c 후속 E1(GPU 0, 권장, 미실행)·E2·E3 | 아래 "P1 트랙" 절, `PROJECT_STATUS.md` "다음 실험 gate" #10 |
+| G. PD-mux(공간 SM 분할) **활성화 자체**가 fused 대비 SLO goodput 이득의 원인이다(Claim A–F 밖, 별도 트랙 "P1" — 상세는 아래 "P1 트랙" 절) | **부분 지지(모델·워크로드 한정)** — "PD-mux를 켜면 이득이 난다"는 2모델서 지지; **"SM 분할 자체"·"PD 분리 자체"가 원인이라는 좁은 형태는 여전히 NOT-YET-SUPPORTED** | P1 운영점 대조(2026-08-05, jobs 873944/873945, cudagraph-ON, n=5 paired, 2026-08-06 통계 정정 후 인용 가능 3점: Zamba2 rate2 +40.5%/rate3 +185.8%, Granite rate4 +27.0%). Gate 1/G1-b(2026-08-06/07, selector-level 파티션 라벨, Zamba2 rate{2,3} 조건부 해금). Gate 2 rev4(2026-08-07, chunk512는 pdmux를 대체 못함)+R1′/R2′(aux 두 플래그를 원인에서 배제, 귀속 상한="pdmux 서브시스템 전체"). E-A(2026-08-08~09, mixed-chunk 레버 고유 기여 1.2%, 격차 대부분 미조율 fused 탓). **Gate 2-S(2026-08-11, jobs 877756/877757)** — SM 분할만 무력화한 대조 arm으로 처음 "SM 분할" 성분 하나를 격리: 요청-내부 ITL p95 평균이 4셀 전부 개선(꼬리 한정)·TTFT p95는 4셀 전부 악화. **★G1-c(2026-08-11, job 877974, 0.10 GPU-hr)** — Gate 2-S Granite r3·r4의 §8.9 전제(realized 파티션 궤적이 `(74,34)` 하나로 유지)가 VERIFIED로 승격(max(decode_bs)=10/10<36, frac((54,54))=0/0). **해제되는 것은 명명 층 하나뿐**(Granite r3·r4에서 "엔진 기본 궤적"·"A4형" 명명 허용) — **크기 인용 자격은 불변**(코드 확인, `g2s_analyze.py:1157-1161`: `premise`는 F-계열 gate 산출에 미입력, Granite r3·r4는 F-계열 발화 상태라 `SIGN ONLY, MAGNITUDE NOT CITABLE` 유지). **★E1 addendum(2026-08-11, jobs 877756/877757 재집계, GPU 0)** — §8.9 전제를 Gate 2-S 자신의 셀에서 n=10 직접 산출(4셀 전부 `VERIFIED_AT_SAMPLED_INSTANTS`: Zamba2 r2=14·r3=23, Granite r3=10·r4=13, 문턱 36) — **등급 하향된 조건부 채택**(승격 아님, E1이 스스로 주장한 밀도 우위는 반증됨: 결정 관련 pop-A 관측 수가 G1-b/G1-c 대비 5–6× 적음). Zamba2 r3는 적대적 bound(q=1e-6)에서 이미 37≥36으로 문턱 미배제인 유일한 셀. **인용 시 아래 "P1 트랙" 절의 제한 7건(4번 갱신)을 반드시 함께 적용** | S3/`%smid` 하드웨어 SM 프로브(미실행), Gate 3(NemotronH·Falcon-H1 운영점 대조, 미착수), Gate 4(sustainable-rate 직접 측정, 미착수), F-B(ii) 재설계(현 인용-셀 선별 필터의 귀무 발화율 40.1%), E1 후속 E1-a·**E1-b(★결정적)**·**E1-c(★필수)**·E1-d(전부 미실행) | 아래 "P1 트랙" 절, `PROJECT_STATUS.md` "다음 실험 gate" #10 |
 
 ## 주장 제한
 
@@ -309,10 +321,11 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
 fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJECT_STATUS.md`
 "확정된 결과" 1번과 `CONSENSUS.md` §1-1이 유일한 상위 정본이며, 이 절은
 그 판정을 요약·이관할 뿐 새로 판정하지 않는다. 최종 갱신 시점 =
-`CONSENSUS.md` rev22 내용 기준(2026-08-11, G1-c/job 877974 반영
-완료 — Gate 2-S 인용 제한 7건 중 4번[Granite r3·r4 명명 금지]을
-조건부 해제로 갱신) — rev21은 방법론 게이트#26(배관 스모크)
-추가뿐이라 영향 없었다.
+`CONSENSUS.md` rev23 내용 기준(2026-08-11, E1 addendum/jobs
+877756·877757 반영 완료 — 4셀 전부 `VERIFIED_AT_SAMPLED_INSTANTS`,
+판정=등급 하향된 조건부 채택. E1의 "밀도 페널티 회피" 자체
+주장은 반증됨) — rev22는 G1-c 반영으로 Gate 2-S 인용 제한 7건
+중 4번(Granite r3·r4 명명 금지)을 조건부 해제로 갱신했다.
 
 ### 현재 판정 (요약, 전문은 `PROJECT_STATUS.md` "확정된 결과" 1번)
 
@@ -385,6 +398,24 @@ fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJ
    MAGNITUDE NOT CITABLE` 유지) ⇒ **크기 인용 가능 셀은 여전히
    Zamba2 r2 하나뿐**(세션 초기 "1→3개로 는다" 예상은 반증됨).
    4번 아래 갱신 참조.
+6. **★E1 addendum**(2026-08-11, jobs 877756/877757 재집계, GPU
+   증분 0) — Gate 2-S §8.9 전제를 **그 캠페인 자신의 셀에서 n=10
+   직접** 산출한 pooled `max(decode_running_batch_size)`(threshold
+   36)로 재검증: Zamba2 r2=**14**(여유22)·r3=**23**(여유13),
+   Granite r3=**10**(여유26)·r4=**13**(여유23), 4셀 전부
+   `VERIFIED_AT_SAMPLED_INSTANTS`. **등급 하향된 조건부 채택 —
+   승격이 아니다.** E1이 §2.5에서 스스로 주장한 "G1-b/G1-c보다
+   밀도 페널티를 덜 받는다"는 claims-auditor 감사로 **반증**됐다
+   — 결정 관련 pop-A 관측 수는 오히려 G1-b/G1-c 대비 5–6× 적다
+   (1,279·1,496 vs 6,402·8,920). E1의 실질 우위는 **밀도가 아니라
+   반복수(n=1→10)와 셀 일치**뿐이며, **E1이 G1-c를 대체하지
+   않는다**(서로 다른 축의 증거). 적대적 bound(`in-system+
+   Poisson(λdt)`, q=1e-9)에서 25/41/24/27 — **Zamba2 r3는 q=1e-6
+   에서 이미 37≥36으로 문턱을 배제하지 못하는 유일한 셀**. 성능
+   결론(Δ·Holm·9-셀 `S1-C`·크기 인용 셀 Zamba2 r2 하나)은 한
+   글자도 안 바뀐다(`premise` 코드 미입력 확인). 채택 조건 7개·
+   금지 문장·강제 병기 문구는 `CONSENSUS.md` §1-1(2026-08-11 E1
+   addendum 블록) 전문 참조.
 
 ### ★ Gate 2-S 인용 제한 7건 (반드시 함께 인용 — 다음 세션이 사전등록
 문서를 안 읽고 이 표만 보고 인용할 위험을 막기 위한 것)
@@ -397,16 +428,27 @@ fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJ
 3. **크기 인용 허용 셀은 Zamba2 r2 하나뿐**이고, 인용 시 α **−38.8%**
    [−41.6,−36.0]와 TTFT p95 **+51.5%**[+35.8,+67.2]를 **반드시 함께**
    적는다(부호 규약 = T′ 대 C, 음수 = 분할 우수).
-4. **명명 제한(2026-08-11 G1-c로 조건부 갱신)**: Zamba2 r2·r3는
-   "`FixedPolicy(34)`·sticky OFF = 엔진 기본 궤적" 명명 허용(전제
-   검증됨, Gate 1 rev15/job 875293). **Granite r3·r4도 이제 같은
-   명명이 조건부 허용된다**(전제 VERIFIED, G1-c/job 877974) — 단
-   **크기 인용 자격은 별개**이고 불변이다: Granite r3(T′)·r4(C·T′)
-   모두 F-계열 gate 발화 상태라 인용 시 매번 `F-SERIES FIRED ⇒
-   SIGN ONLY, MAGNITUDE NOT CITABLE`을 병기해야 하며, **크기 인용
-   가능 셀은 여전히 위 3번의 Zamba2 r2 하나뿐**이다. 필수조건 6건·
-   해제 후에도 금지인 문장 8건은 `CONSENSUS.md` §1-1(2026-08-11
-   G1-c 블록) 전문 참조 — 그중 특히: "간헐 전달(엔진 기본 궤적)"·
+4. **명명 제한(2026-08-11 G1-c로 조건부 갱신, 같은 날 E1
+   addendum으로 증거 등급 갱신)**: Zamba2 r2·r3는
+   "`FixedPolicy(34)`·sticky OFF = 엔진 기본 궤적" 명명 허용.
+   **Granite r3·r4도 같은 명명이 조건부 허용된다** — 단 **크기
+   인용 자격은 별개**이고 불변이다: Granite r3(T′)·r4(C·T′) 모두
+   F-계열 gate 발화 상태라 인용 시 매번 `F-SERIES FIRED ⇒ SIGN
+   ONLY, MAGNITUDE NOT CITABLE`을 병기해야 하며, **크기 인용 가능
+   셀은 여전히 위 3번의 Zamba2 r2 하나뿐**이다. **증거 등급(2026-
+   08-11 E1 addendum 갱신)**: (i) `job 877974(G1-c), n=1, 873945
+   격자 복제, FORCE_PREFILL=1 — pop-A 밀도 높음(8,920)`; (ii)
+   `job 877757(Gate 2-S 자신, E1 addendum), n=10, 그 셀·A4 직접
+   관측, FORCE_PREFILL=0 — pop-A 밀도 낮음(1,496=(i)의 1/6)`.
+   **두 관측은 서로를 대체하지 않는다** — (i)은 밀도, (ii)는
+   반복수·셀 일치를 준다. 어느 쪽도 "샘플되지 않은 순간"을
+   배제하지 않으며, 판정은 `VERIFIED_AT_SAMPLED_INSTANTS` 등급이다.
+   (ii)는 (i)의 값을 Granite r4에서 10→13으로 상향 정정한다(n=1
+   max는 pooled max의 구조적 하한). selector-level·S3 미실행
+   불변. ⚠️구 등급 문구("Gate 2-S 셀에서의 직접 관측 아님")는
+   **이제 금지 문장으로 전환**(E1 채택 이후). 필수조건 6건·해제
+   후에도 금지인 문장 8건은 `CONSENSUS.md` §1-1(2026-08-11 G1-c
+   블록) 전문 참조 — 그중 특히: "간헐 전달(엔진 기본 궤적)"·
    "A4형"은 **부호 서술·헤드라인 명명에만** 쓸 수 있고 Δ·CI·%·β
    같은 **크기 값에는 절대 쓸 수 없다**. 같은 회차에
    `PREREG_GATE2S_2026-08-09.md` §8.9의 Zamba2 근거표가 Gate 1이
@@ -430,14 +472,18 @@ fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJ
 ### Missing evidence / Required experiment
 
 - ~~**G1-c**(Granite realized 파티션 관측)~~ → ✅**완료(2026-08-11,
-  job 877974) — 위 5번·"인용 제한 7건" 4번 참조.** 남는 것은 그
-  결과의 후속뿐: **E1**(GPU 0, CPU ≈2분, 권장, ⚠️blind 아님 — Gate
-  2-S 자신의 A4 텔레메트리 슬라이스에서 셀별 n=10 직접
-  `max(decode_bs)` 검증, claims-auditor가 이미 사후 산출(r3=10·
-  r4=13)했으므로 addendum엔 "사후 인지 상태에서 등록됨" 명시
-  필수) → **E2**(GPU ≈0.7 hr, Gate 2-S 부팅구조로 n=3 재실행) →
-  **E3**(GPU ≈0.7 hr, `PDMUX_TRACE_FORCE_PREFILL` 관측자 부하 상한
-  직접 측정, E1 통과 시 불필요). 전부 **미실행**.
+  job 877974) — 위 5번·"인용 제한 7건" 4번 참조.**
+- ~~**E1**(Gate 2-S 자신의 A4 텔레메트리 슬라이스에서 셀별 n=10
+  직접 `max(decode_bs)` 검증)~~ → ✅**완료(2026-08-11, jobs
+  877756/877757, GPU 0) — 채택, 등급 하향된 조건부 채택(4셀
+  전부). 위 6번 참조.** 남는 것은 그 결과의 후속뿐:
+  **E1-a**(GPU 0, bound 사전등록 후 4셀×5arm×capscan 전체 적용)
+  → **E1-b**(★결정적, ≈0.3–0.5 GPU-hr, Gate 2-S 4셀 A4를
+  `FORCE_PREFILL=1`·n≥4로 재실행 — 구 "E2"의 상위 설계) →
+  **E1-c**(★필수, ≈0.2 GPU-hr, 양성대조: Zamba2 A4 rate6·n≥4·
+  force=1, 문턱을 가로지르는 구간) → **E1-d**(Zamba2 r3 여유 13
+  정면 검정, E1-b에 포함 가능). 전부 **미실행**. (구 "E3"는 E1
+  채택으로 불필요 확정, 관측자-효과 잔여 질문은 E1-b가 부분 흡수.)
 - **S3 / `%smid` 직접 하드웨어 SM 프로브**(미실행, 별건으로 등재) —
   "무분할(C)"의 잔여 SM 차감 여부·물리적 내용이 여전히 미측정.
 - **Gate 3**(NemotronH·Falcon-H1 운영점 대조, 미착수) — "4모델 전부"를
@@ -447,9 +493,9 @@ fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJ
 - **F-B(ii) 재설계**(귀무 발화율 40.1%인 현 인용-셀 선별 필터의 대체) —
   이번 결과에 소급 적용 금지, 다음 사전등록에서만.
 
-원자료·전문: `reports/CONSENSUS.md` §1-1(rev14–rev20)·§3 항목28–40,
+원자료·전문: `reports/CONSENSUS.md` §1-1(rev14–rev23)·§3 항목28–45,
 `PROJECT_STATUS.md` "확정된 결과" 1번·"다음 실험 gate" #10·"방법론
-게이트" #9·#15–#26, `workspace/engine-port/results/p1_gates/`
+게이트" #9·#15–#31, `workspace/engine-port/results/p1_gates/`
 (`gate1/`·`gate2/`[E-A·Gate 2-S 원자료 포함] 하위 디렉터리, 수정
 금지·인용만), `workspace/engine-port/results/p1_gates/gate2/
 PREREG_GATE2S_2026-08-09.md` §5.
