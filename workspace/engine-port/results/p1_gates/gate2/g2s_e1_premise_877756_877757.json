@@ -1,0 +1,1425 @@
+{
+ "prereg": "PREREG_G2S_E1_ADDENDUM_2026-08-11.md",
+ "blind": false,
+ "post_hoc_known_values": {
+  "granite-40-h-micro-base r3": 10,
+  "granite-40-h-micro-base r4": 13,
+  "granite rep-wise range": [
+   9,
+   13
+  ]
+ },
+ "threshold": 36,
+ "trace_every": 32,
+ "producer_rules": "gate1/gate1b_analyze.py (imported, not copied)",
+ "cells": {
+  "zamba2-27b|r2": {
+   "tag": "zamba2-27b",
+   "job": "877756",
+   "rate": "2",
+   "arm": "agnostic",
+   "threshold": 36,
+   "trace_every": 32,
+   "cell_file": "g2s_zamba2-27b_telemetry_agnostic_r2_877756.jsonl",
+   "per_rep": [
+    {
+     "rep": "1",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep1_877756.jsonl",
+     "offset": [
+      2432,
+      14848
+     ],
+     "n_lines": 12416,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 10740232.181583965,
+     "t_last": 10740319.844458353,
+     "integrity": {
+      "n_lines": 12416,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 12416,
+      "n_benchmark_phase": 12416,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "2",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep2_877756.jsonl",
+     "offset": [
+      2560,
+      12032
+     ],
+     "n_lines": 9472,
+     "max_decode_bs": 8,
+     "headroom": 28,
+     "below_threshold": true,
+     "t_first": 10740580.091610616,
+     "t_last": 10740653.569918811,
+     "integrity": {
+      "n_lines": 9472,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 9472,
+      "n_benchmark_phase": 9472,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "3",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep3_877756.jsonl",
+     "offset": [
+      2688,
+      11776
+     ],
+     "n_lines": 9088,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 10741773.380930593,
+     "t_last": 10741847.962197084,
+     "integrity": {
+      "n_lines": 9088,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 9088,
+      "n_benchmark_phase": 9088,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "4",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep4_877756.jsonl",
+     "offset": [
+      2048,
+      10112
+     ],
+     "n_lines": 8064,
+     "max_decode_bs": 10,
+     "headroom": 26,
+     "below_threshold": true,
+     "t_first": 10742637.125376826,
+     "t_last": 10742711.104348743,
+     "integrity": {
+      "n_lines": 8064,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 8064,
+      "n_benchmark_phase": 8064,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "5",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep5_877756.jsonl",
+     "offset": [
+      2560,
+      12416
+     ],
+     "n_lines": 9856,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 10742992.476948304,
+     "t_last": 10743070.64303478,
+     "integrity": {
+      "n_lines": 9856,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 9856,
+      "n_benchmark_phase": 9856,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "6",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep6_877756.jsonl",
+     "offset": [
+      2816,
+      11904
+     ],
+     "n_lines": 9088,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 10744426.28971348,
+     "t_last": 10744504.577379132,
+     "integrity": {
+      "n_lines": 9088,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 9088,
+      "n_benchmark_phase": 9088,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "7",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep7_877756.jsonl",
+     "offset": [
+      2432,
+      11520
+     ],
+     "n_lines": 9088,
+     "max_decode_bs": 8,
+     "headroom": 28,
+     "below_threshold": true,
+     "t_first": 10744974.761755047,
+     "t_last": 10745048.502278415,
+     "integrity": {
+      "n_lines": 9088,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 9088,
+      "n_benchmark_phase": 9088,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "8",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep8_877756.jsonl",
+     "offset": [
+      2560,
+      11648
+     ],
+     "n_lines": 9088,
+     "max_decode_bs": 8,
+     "headroom": 28,
+     "below_threshold": true,
+     "t_first": 10745664.119940383,
+     "t_last": 10745740.098088235,
+     "integrity": {
+      "n_lines": 9088,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 9088,
+      "n_benchmark_phase": 9088,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "9",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep9_877756.jsonl",
+     "offset": [
+      2304,
+      9856
+     ],
+     "n_lines": 7552,
+     "max_decode_bs": 14,
+     "headroom": 22,
+     "below_threshold": true,
+     "t_first": 10746485.572343975,
+     "t_last": 10746547.101047928,
+     "integrity": {
+      "n_lines": 7552,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7552,
+      "n_benchmark_phase": 7552,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "10",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep10_877756.jsonl",
+     "offset": [
+      2944,
+      12544
+     ],
+     "n_lines": 9600,
+     "max_decode_bs": 8,
+     "headroom": 28,
+     "below_threshold": true,
+     "t_first": 10747788.7002504,
+     "t_last": 10747866.074418684,
+     "integrity": {
+      "n_lines": 9600,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 9600,
+      "n_benchmark_phase": 9600,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    }
+   ],
+   "pooled_max_decode_bs": 14,
+   "pooled_max_from_reps": 14,
+   "headroom": 22,
+   "cell_integrity": {
+    "n_lines": 93312,
+    "n_parse_fail": 0,
+    "n_runtime_snapshot": 93312,
+    "n_benchmark_phase": 93312,
+    "dropped_events_max": 0,
+    "n_rows_with_dropped": 0,
+    "sample_index_inversions": 9,
+    "sample_index_duplicates": 80512,
+    "sample_index_gap_median": 32.0,
+    "sample_index_gap_max": 32
+   },
+   "chronological_rep_order": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10"
+   ],
+   "inter_boot_gaps_s_DESCRIPTIVE": [
+    {
+     "after_rep": "1",
+     "before_rep": "2",
+     "gap_s": 260.247
+    },
+    {
+     "after_rep": "2",
+     "before_rep": "3",
+     "gap_s": 1119.811
+    },
+    {
+     "after_rep": "3",
+     "before_rep": "4",
+     "gap_s": 789.163
+    },
+    {
+     "after_rep": "4",
+     "before_rep": "5",
+     "gap_s": 281.373
+    },
+    {
+     "after_rep": "5",
+     "before_rep": "6",
+     "gap_s": 1355.647
+    },
+    {
+     "after_rep": "6",
+     "before_rep": "7",
+     "gap_s": 470.184
+    },
+    {
+     "after_rep": "7",
+     "before_rep": "8",
+     "gap_s": 615.618
+    },
+    {
+     "after_rep": "8",
+     "before_rep": "9",
+     "gap_s": 745.474
+    },
+    {
+     "after_rep": "9",
+     "before_rep": "10",
+     "gap_s": 1241.599
+    }
+   ],
+   "n_boundaries": 9,
+   "integrity_failures": [],
+   "I3_slice_sum_lines": 93312,
+   "I7_all_rows_runtime_snapshot_benchmark": true,
+   "cell_file_sample_index_inversions_EXPECTED_n_reps_minus_1": 9,
+   "state": "VERIFIED_AT_SAMPLED_INSTANTS",
+   "reason": "pooled max(decode_bs)=14 < 36 (headroom 22); n=10 reps, arm A4, THIS campaign's own cell.  Sampled at TRACE_EVERY=32 -- observed max is a LOWER BOUND on the true max (prereg sec2.5), so this is 'never at any sampled instant', NOT 'never'."
+  },
+  "zamba2-27b|r3": {
+   "tag": "zamba2-27b",
+   "job": "877756",
+   "rate": "3",
+   "arm": "agnostic",
+   "threshold": 36,
+   "trace_every": 32,
+   "cell_file": "g2s_zamba2-27b_telemetry_agnostic_r3_877756.jsonl",
+   "per_rep": [
+    {
+     "rep": "1",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep1_877756.jsonl",
+     "offset": [
+      14848,
+      20736
+     ],
+     "n_lines": 5888,
+     "max_decode_bs": 23,
+     "headroom": 13,
+     "below_threshold": true,
+     "t_first": 10740319.846449727,
+     "t_last": 10740366.886485454,
+     "integrity": {
+      "n_lines": 5888,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 5888,
+      "n_benchmark_phase": 5888,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "2",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep2_877756.jsonl",
+     "offset": [
+      12160,
+      18176
+     ],
+     "n_lines": 6016,
+     "max_decode_bs": 16,
+     "headroom": 20,
+     "below_threshold": true,
+     "t_first": 10740653.826213788,
+     "t_last": 10740709.267962936,
+     "integrity": {
+      "n_lines": 6016,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6016,
+      "n_benchmark_phase": 6016,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "3",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep3_877756.jsonl",
+     "offset": [
+      11776,
+      18304
+     ],
+     "n_lines": 6528,
+     "max_decode_bs": 12,
+     "headroom": 24,
+     "below_threshold": true,
+     "t_first": 10741847.964244813,
+     "t_last": 10741902.015086845,
+     "integrity": {
+      "n_lines": 6528,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6528,
+      "n_benchmark_phase": 6528,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "4",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep4_877756.jsonl",
+     "offset": [
+      10112,
+      17024
+     ],
+     "n_lines": 6912,
+     "max_decode_bs": 11,
+     "headroom": 25,
+     "below_threshold": true,
+     "t_first": 10742711.106315872,
+     "t_last": 10742770.314443208,
+     "integrity": {
+      "n_lines": 6912,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6912,
+      "n_benchmark_phase": 6912,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "5",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep5_877756.jsonl",
+     "offset": [
+      12544,
+      18560
+     ],
+     "n_lines": 6016,
+     "max_decode_bs": 15,
+     "headroom": 21,
+     "below_threshold": true,
+     "t_first": 10743070.89402503,
+     "t_last": 10743124.861231148,
+     "integrity": {
+      "n_lines": 6016,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6016,
+      "n_benchmark_phase": 6016,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "6",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep6_877756.jsonl",
+     "offset": [
+      11904,
+      19456
+     ],
+     "n_lines": 7552,
+     "max_decode_bs": 17,
+     "headroom": 19,
+     "below_threshold": true,
+     "t_first": 10744504.579403026,
+     "t_last": 10744569.00260882,
+     "integrity": {
+      "n_lines": 7552,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7552,
+      "n_benchmark_phase": 7552,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "7",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep7_877756.jsonl",
+     "offset": [
+      11520,
+      18304
+     ],
+     "n_lines": 6784,
+     "max_decode_bs": 14,
+     "headroom": 22,
+     "below_threshold": true,
+     "t_first": 10745048.50414099,
+     "t_last": 10745106.531960912,
+     "integrity": {
+      "n_lines": 6784,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6784,
+      "n_benchmark_phase": 6784,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "8",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep8_877756.jsonl",
+     "offset": [
+      11648,
+      17280
+     ],
+     "n_lines": 5632,
+     "max_decode_bs": 23,
+     "headroom": 13,
+     "below_threshold": true,
+     "t_first": 10745740.100124022,
+     "t_last": 10745785.578198574,
+     "integrity": {
+      "n_lines": 5632,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 5632,
+      "n_benchmark_phase": 5632,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "9",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep9_877756.jsonl",
+     "offset": [
+      9856,
+      16256
+     ],
+     "n_lines": 6400,
+     "max_decode_bs": 16,
+     "headroom": 20,
+     "below_threshold": true,
+     "t_first": 10746547.103143485,
+     "t_last": 10746600.773722032,
+     "integrity": {
+      "n_lines": 6400,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6400,
+      "n_benchmark_phase": 6400,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "10",
+     "boot_file": "g2s_zamba2-27b_telemetry_agnostic_rep10_877756.jsonl",
+     "offset": [
+      12544,
+      18816
+     ],
+     "n_lines": 6272,
+     "max_decode_bs": 14,
+     "headroom": 22,
+     "below_threshold": true,
+     "t_first": 10747866.076452348,
+     "t_last": 10747918.279239994,
+     "integrity": {
+      "n_lines": 6272,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6272,
+      "n_benchmark_phase": 6272,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    }
+   ],
+   "pooled_max_decode_bs": 23,
+   "pooled_max_from_reps": 23,
+   "headroom": 13,
+   "cell_integrity": {
+    "n_lines": 64000,
+    "n_parse_fail": 0,
+    "n_runtime_snapshot": 64000,
+    "n_benchmark_phase": 64000,
+    "dropped_events_max": 0,
+    "n_rows_with_dropped": 0,
+    "sample_index_inversions": 9,
+    "sample_index_duplicates": 53120,
+    "sample_index_gap_median": 32.0,
+    "sample_index_gap_max": 32
+   },
+   "chronological_rep_order": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10"
+   ],
+   "inter_boot_gaps_s_DESCRIPTIVE": [
+    {
+     "after_rep": "1",
+     "before_rep": "2",
+     "gap_s": 286.94
+    },
+    {
+     "after_rep": "2",
+     "before_rep": "3",
+     "gap_s": 1138.696
+    },
+    {
+     "after_rep": "3",
+     "before_rep": "4",
+     "gap_s": 809.091
+    },
+    {
+     "after_rep": "4",
+     "before_rep": "5",
+     "gap_s": 300.58
+    },
+    {
+     "after_rep": "5",
+     "before_rep": "6",
+     "gap_s": 1379.718
+    },
+    {
+     "after_rep": "6",
+     "before_rep": "7",
+     "gap_s": 479.502
+    },
+    {
+     "after_rep": "7",
+     "before_rep": "8",
+     "gap_s": 633.568
+    },
+    {
+     "after_rep": "8",
+     "before_rep": "9",
+     "gap_s": 761.525
+    },
+    {
+     "after_rep": "9",
+     "before_rep": "10",
+     "gap_s": 1265.303
+    }
+   ],
+   "n_boundaries": 9,
+   "integrity_failures": [],
+   "I3_slice_sum_lines": 64000,
+   "I7_all_rows_runtime_snapshot_benchmark": true,
+   "cell_file_sample_index_inversions_EXPECTED_n_reps_minus_1": 9,
+   "state": "VERIFIED_AT_SAMPLED_INSTANTS",
+   "reason": "pooled max(decode_bs)=23 < 36 (headroom 13); n=10 reps, arm A4, THIS campaign's own cell.  Sampled at TRACE_EVERY=32 -- observed max is a LOWER BOUND on the true max (prereg sec2.5), so this is 'never at any sampled instant', NOT 'never'."
+  },
+  "granite-40-h-micro-base|r3": {
+   "tag": "granite-40-h-micro-base",
+   "job": "877757",
+   "rate": "3",
+   "arm": "agnostic",
+   "threshold": 36,
+   "trace_every": 32,
+   "cell_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_r3_877757.jsonl",
+   "per_rep": [
+    {
+     "rep": "1",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep1_877757.jsonl",
+     "offset": [
+      2560,
+      10240
+     ],
+     "n_lines": 7680,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 13078330.47862946,
+     "t_last": 13078382.725024069,
+     "integrity": {
+      "n_lines": 7680,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7680,
+      "n_benchmark_phase": 7680,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "2",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep2_877757.jsonl",
+     "offset": [
+      2688,
+      10752
+     ],
+     "n_lines": 8064,
+     "max_decode_bs": 10,
+     "headroom": 26,
+     "below_threshold": true,
+     "t_first": 13079173.794959037,
+     "t_last": 13079231.203300975,
+     "integrity": {
+      "n_lines": 8064,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 8064,
+      "n_benchmark_phase": 8064,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "3",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep3_877757.jsonl",
+     "offset": [
+      2048,
+      9472
+     ],
+     "n_lines": 7424,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 13079734.535632566,
+     "t_last": 13079787.23841536,
+     "integrity": {
+      "n_lines": 7424,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7424,
+      "n_benchmark_phase": 7424,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "4",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep4_877757.jsonl",
+     "offset": [
+      1920,
+      10752
+     ],
+     "n_lines": 8832,
+     "max_decode_bs": 8,
+     "headroom": 28,
+     "below_threshold": true,
+     "t_first": 13080701.345920287,
+     "t_last": 13080759.405287035,
+     "integrity": {
+      "n_lines": 8832,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 8832,
+      "n_benchmark_phase": 8832,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "5",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep5_877757.jsonl",
+     "offset": [
+      2432,
+      9344
+     ],
+     "n_lines": 6912,
+     "max_decode_bs": 10,
+     "headroom": 26,
+     "below_threshold": true,
+     "t_first": 13081262.29763942,
+     "t_last": 13081312.57334514,
+     "integrity": {
+      "n_lines": 6912,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6912,
+      "n_benchmark_phase": 6912,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "6",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep6_877757.jsonl",
+     "offset": [
+      2560,
+      10112
+     ],
+     "n_lines": 7552,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 13081666.187239178,
+     "t_last": 13081719.484690588,
+     "integrity": {
+      "n_lines": 7552,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7552,
+      "n_benchmark_phase": 7552,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "7",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep7_877757.jsonl",
+     "offset": [
+      2048,
+      9856
+     ],
+     "n_lines": 7808,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 13082896.44153194,
+     "t_last": 13082950.125690594,
+     "integrity": {
+      "n_lines": 7808,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7808,
+      "n_benchmark_phase": 7808,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "8",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep8_877757.jsonl",
+     "offset": [
+      2432,
+      9856
+     ],
+     "n_lines": 7424,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 13083454.9681577,
+     "t_last": 13083506.491968688,
+     "integrity": {
+      "n_lines": 7424,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7424,
+      "n_benchmark_phase": 7424,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "9",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep9_877757.jsonl",
+     "offset": [
+      2048,
+      9856
+     ],
+     "n_lines": 7808,
+     "max_decode_bs": 8,
+     "headroom": 28,
+     "below_threshold": true,
+     "t_first": 13083874.00738102,
+     "t_last": 13083929.278042432,
+     "integrity": {
+      "n_lines": 7808,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7808,
+      "n_benchmark_phase": 7808,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "10",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep10_877757.jsonl",
+     "offset": [
+      2560,
+      9984
+     ],
+     "n_lines": 7424,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 13084708.323136488,
+     "t_last": 13084761.804097988,
+     "integrity": {
+      "n_lines": 7424,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 7424,
+      "n_benchmark_phase": 7424,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    }
+   ],
+   "pooled_max_decode_bs": 10,
+   "pooled_max_from_reps": 10,
+   "headroom": 26,
+   "cell_integrity": {
+    "n_lines": 76928,
+    "n_parse_fail": 0,
+    "n_runtime_snapshot": 76928,
+    "n_benchmark_phase": 76928,
+    "dropped_events_max": 0,
+    "n_rows_with_dropped": 0,
+    "sample_index_inversions": 9,
+    "sample_index_duplicates": 68096,
+    "sample_index_gap_median": 32.0,
+    "sample_index_gap_max": 32
+   },
+   "chronological_rep_order": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10"
+   ],
+   "inter_boot_gaps_s_DESCRIPTIVE": [
+    {
+     "after_rep": "1",
+     "before_rep": "2",
+     "gap_s": 791.07
+    },
+    {
+     "after_rep": "2",
+     "before_rep": "3",
+     "gap_s": 503.332
+    },
+    {
+     "after_rep": "3",
+     "before_rep": "4",
+     "gap_s": 914.108
+    },
+    {
+     "after_rep": "4",
+     "before_rep": "5",
+     "gap_s": 502.892
+    },
+    {
+     "after_rep": "5",
+     "before_rep": "6",
+     "gap_s": 353.614
+    },
+    {
+     "after_rep": "6",
+     "before_rep": "7",
+     "gap_s": 1176.957
+    },
+    {
+     "after_rep": "7",
+     "before_rep": "8",
+     "gap_s": 504.842
+    },
+    {
+     "after_rep": "8",
+     "before_rep": "9",
+     "gap_s": 367.515
+    },
+    {
+     "after_rep": "9",
+     "before_rep": "10",
+     "gap_s": 779.045
+    }
+   ],
+   "n_boundaries": 9,
+   "integrity_failures": [],
+   "I3_slice_sum_lines": 76928,
+   "I7_all_rows_runtime_snapshot_benchmark": true,
+   "cell_file_sample_index_inversions_EXPECTED_n_reps_minus_1": 9,
+   "state": "VERIFIED_AT_SAMPLED_INSTANTS",
+   "reason": "pooled max(decode_bs)=10 < 36 (headroom 26); n=10 reps, arm A4, THIS campaign's own cell.  Sampled at TRACE_EVERY=32 -- observed max is a LOWER BOUND on the true max (prereg sec2.5), so this is 'never at any sampled instant', NOT 'never'."
+  },
+  "granite-40-h-micro-base|r4": {
+   "tag": "granite-40-h-micro-base",
+   "job": "877757",
+   "rate": "4",
+   "arm": "agnostic",
+   "threshold": 36,
+   "trace_every": 32,
+   "cell_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_r4_877757.jsonl",
+   "per_rep": [
+    {
+     "rep": "1",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep1_877757.jsonl",
+     "offset": [
+      10240,
+      16768
+     ],
+     "n_lines": 6528,
+     "max_decode_bs": 10,
+     "headroom": 26,
+     "below_threshold": true,
+     "t_first": 13078382.727028508,
+     "t_last": 13078428.767424176,
+     "integrity": {
+      "n_lines": 6528,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6528,
+      "n_benchmark_phase": 6528,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "2",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep2_877757.jsonl",
+     "offset": [
+      10752,
+      17408
+     ],
+     "n_lines": 6656,
+     "max_decode_bs": 9,
+     "headroom": 27,
+     "below_threshold": true,
+     "t_first": 13079231.205325477,
+     "t_last": 13079274.17849022,
+     "integrity": {
+      "n_lines": 6656,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6656,
+      "n_benchmark_phase": 6656,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "3",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep3_877757.jsonl",
+     "offset": [
+      9472,
+      15744
+     ],
+     "n_lines": 6272,
+     "max_decode_bs": 13,
+     "headroom": 23,
+     "below_threshold": true,
+     "t_first": 13079787.240564369,
+     "t_last": 13079826.876778213,
+     "integrity": {
+      "n_lines": 6272,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6272,
+      "n_benchmark_phase": 6272,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "4",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep4_877757.jsonl",
+     "offset": [
+      10752,
+      17152
+     ],
+     "n_lines": 6400,
+     "max_decode_bs": 10,
+     "headroom": 26,
+     "below_threshold": true,
+     "t_first": 13080759.407276217,
+     "t_last": 13080803.827635689,
+     "integrity": {
+      "n_lines": 6400,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6400,
+      "n_benchmark_phase": 6400,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "5",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep5_877757.jsonl",
+     "offset": [
+      9344,
+      15744
+     ],
+     "n_lines": 6400,
+     "max_decode_bs": 12,
+     "headroom": 24,
+     "below_threshold": true,
+     "t_first": 13081312.575292032,
+     "t_last": 13081355.34295562,
+     "integrity": {
+      "n_lines": 6400,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6400,
+      "n_benchmark_phase": 6400,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "6",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep6_877757.jsonl",
+     "offset": [
+      10240,
+      17152
+     ],
+     "n_lines": 6912,
+     "max_decode_bs": 10,
+     "headroom": 26,
+     "below_threshold": true,
+     "t_first": 13081719.744271096,
+     "t_last": 13081763.69004872,
+     "integrity": {
+      "n_lines": 6912,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6912,
+      "n_benchmark_phase": 6912,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "7",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep7_877757.jsonl",
+     "offset": [
+      9856,
+      16128
+     ],
+     "n_lines": 6272,
+     "max_decode_bs": 11,
+     "headroom": 25,
+     "below_threshold": true,
+     "t_first": 13082950.12767656,
+     "t_last": 13082990.648712492,
+     "integrity": {
+      "n_lines": 6272,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6272,
+      "n_benchmark_phase": 6272,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "8",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep8_877757.jsonl",
+     "offset": [
+      9856,
+      16128
+     ],
+     "n_lines": 6272,
+     "max_decode_bs": 10,
+     "headroom": 26,
+     "below_threshold": true,
+     "t_first": 13083506.494046906,
+     "t_last": 13083553.31665144,
+     "integrity": {
+      "n_lines": 6272,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6272,
+      "n_benchmark_phase": 6272,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "9",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep9_877757.jsonl",
+     "offset": [
+      9856,
+      15872
+     ],
+     "n_lines": 6016,
+     "max_decode_bs": 11,
+     "headroom": 25,
+     "below_threshold": true,
+     "t_first": 13083929.28006716,
+     "t_last": 13083970.800919876,
+     "integrity": {
+      "n_lines": 6016,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 6016,
+      "n_benchmark_phase": 6016,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    },
+    {
+     "rep": "10",
+     "boot_file": "g2s_granite-40-h-micro-base_telemetry_agnostic_rep10_877757.jsonl",
+     "offset": [
+      10112,
+      16000
+     ],
+     "n_lines": 5888,
+     "max_decode_bs": 11,
+     "headroom": 25,
+     "below_threshold": true,
+     "t_first": 13084762.061781272,
+     "t_last": 13084804.472142316,
+     "integrity": {
+      "n_lines": 5888,
+      "n_parse_fail": 0,
+      "n_runtime_snapshot": 5888,
+      "n_benchmark_phase": 5888,
+      "dropped_events_max": 0,
+      "n_rows_with_dropped": 0,
+      "sample_index_inversions": 0,
+      "sample_index_duplicates": 0,
+      "sample_index_gap_median": 32,
+      "sample_index_gap_max": 32
+     }
+    }
+   ],
+   "pooled_max_decode_bs": 13,
+   "pooled_max_from_reps": 13,
+   "headroom": 23,
+   "cell_integrity": {
+    "n_lines": 63616,
+    "n_parse_fail": 0,
+    "n_runtime_snapshot": 63616,
+    "n_benchmark_phase": 63616,
+    "dropped_events_max": 0,
+    "n_rows_with_dropped": 0,
+    "sample_index_inversions": 9,
+    "sample_index_duplicates": 55552,
+    "sample_index_gap_median": 32.0,
+    "sample_index_gap_max": 32
+   },
+   "chronological_rep_order": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10"
+   ],
+   "inter_boot_gaps_s_DESCRIPTIVE": [
+    {
+     "after_rep": "1",
+     "before_rep": "2",
+     "gap_s": 802.438
+    },
+    {
+     "after_rep": "2",
+     "before_rep": "3",
+     "gap_s": 513.062
+    },
+    {
+     "after_rep": "3",
+     "before_rep": "4",
+     "gap_s": 932.53
+    },
+    {
+     "after_rep": "4",
+     "before_rep": "5",
+     "gap_s": 508.748
+    },
+    {
+     "after_rep": "5",
+     "before_rep": "6",
+     "gap_s": 364.401
+    },
+    {
+     "after_rep": "6",
+     "before_rep": "7",
+     "gap_s": 1186.438
+    },
+    {
+     "after_rep": "7",
+     "before_rep": "8",
+     "gap_s": 515.845
+    },
+    {
+     "after_rep": "8",
+     "before_rep": "9",
+     "gap_s": 375.963
+    },
+    {
+     "after_rep": "9",
+     "before_rep": "10",
+     "gap_s": 791.261
+    }
+   ],
+   "n_boundaries": 9,
+   "integrity_failures": [],
+   "I3_slice_sum_lines": 63616,
+   "I7_all_rows_runtime_snapshot_benchmark": true,
+   "cell_file_sample_index_inversions_EXPECTED_n_reps_minus_1": 9,
+   "state": "VERIFIED_AT_SAMPLED_INSTANTS",
+   "reason": "pooled max(decode_bs)=13 < 36 (headroom 23); n=10 reps, arm A4, THIS campaign's own cell.  Sampled at TRACE_EVERY=32 -- observed max is a LOWER BOUND on the true max (prereg sec2.5), so this is 'never at any sampled instant', NOT 'never'."
+  }
+ }
+}
