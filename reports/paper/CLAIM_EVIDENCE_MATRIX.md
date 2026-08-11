@@ -1,6 +1,17 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-11(doc-steward — **E1 addendum(jobs
+최종 갱신: 2026-08-11(doc-steward — **트래픽·roofline 진단
+(`../../workspace/engine-port/results/s8_scaleup/
+TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`, result-analyst, GPU 0)
+반영 — Claim A의 C2/C2b 인용문에 정정+스코프 주석 추가. 새 성능
+판정 아님, Claim A 등급(부분 지지) 무변경, Claim B–G 무변경.**
+C2b가 인용하던 weight-traffic 수치가 실은 3B급 다른 캠페인+기준
+혼합이었음이 확정돼 C2b가 더 약화(되살리지 않음); "4 arm
+모델-무관"에 측정점(B≈9–12·L≈1.0–1.5k) 스코프 주석 추가; 고-SM
+평탄화를 HBM 포화로 서술하는 것 신규 금지. 상세는 위 Claim A 행
+추가 문단·`../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"·
+`../CONSENSUS.md` rev24.
+이전: 2026-08-11(doc-steward — **E1 addendum(jobs
 877756/877757 재집계, GPU 0) 반영 — 4셀 전부 `VERIFIED_AT_
 SAMPLED_INSTANTS`, 판정=등급 하향된 조건부 채택(승격 아님). 새
 성능 판정 아님, Claim A–F 무변경, Claim G(부분 지지) 등급
@@ -151,6 +162,15 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   않아 기전 주장으로 쓰지 않는다. 전문은 `../PROJECT_STATUS.md` "8B
   decode-SM 민감도 측정 노트" 절, 상세
   [`../stage0_verdict_2026-07-26.md`](../stage0_verdict_2026-07-26.md).
+  ★**정정/추가(2026-08-11, 트래픽·roofline 진단, GPU 0 — 새 성능 판정 아님,
+  등급 불변)**: C2b가 인용하던 weight-traffic 수치(M 5.40/T 6.17/H 7.66 GB,
+  H/M=1.42)는 실은 **3B급 다른 캠페인의 것 + 기준 혼합**이었음이 확정돼
+  C2b가 **더 약화**된다(되살리지 않음). "4 arm, 모델-무관"의 원인이
+  아키텍처 동질성이 아니라 이 측정점(B≈9–12·L≈1.0–1.5k)의 weight-sweep
+  지배임이 규명됨 — B/L 확장 이식 금지. SM92에서도 achieved_BW가 사양의
+  48–61%뿐이라 **고-SM 평탄화를 HBM 포화로 서술 금지**. 전문
+  `../../workspace/engine-port/results/s8_scaleup/
+  TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`.
 - ★★★**(2026-08-03) `g = A_free(d16)/A_free(d54)`(job 872077, M3
   Transformer-control 대조)는 인용 금지 — 이 격자에서 estimand 미식별.**
   `../CONSENSUS.md` §1-26. C2와 달리 E1/M3 격자는 prefill과 decode SM이

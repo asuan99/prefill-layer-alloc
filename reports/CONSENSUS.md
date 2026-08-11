@@ -4,7 +4,36 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-11 rev23 (doc-steward — **E1 addendum(Gate 2-S
+최종 갱신: 2026-08-11 rev24 (doc-steward — **트래픽·roofline 진단
+(`../workspace/engine-port/results/s8_scaleup/
+TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`, result-analyst, GPU 0 —
+기존 아티팩트+모델 config 계산만) 정본 반영. 새 성능 판정 0건,
+C2("decode SM 민감도 2.36–2.91×, scoped")의 등급·수치 불변 —
+기존 주장이 더 약화되고 스코프가 더 좁아지는 방향.** 계기는
+사용자가 "4 arm이 왜 비슷한 SM 민감도인가/hybrid는 KV가 적을
+텐데/mamba 층을 제대로 재나/A100 대역폭이 weight traffic으로
+제한된다는 게 납득 안 된다"고 제기한 반박이며, 그중 2건이 계산으로
+확인되고 메인 세션의 "교차점(L\*) 가설"은 반증됐다. **핵심**: (1)
+`FINDINGS_8B_2026-07-28.md` §2.1의 "1차 weight-traffic 추정(M
+5.40/T 6.17/H 7.66 GB, H/M=1.42)"이 실은 **3B급 다른 캠페인의
+수치**이고 기준(체크포인트 바이트 vs 호출-인지 트래픽)도 혼합돼
+있었음을 체크포인트 실측 3자리 일치로 확정 — 이미 NOT-YET-
+SUPPORTED인 C2b(hybrid 급락=Zamba2 성질)를 **더 약화**(되살리지
+않음). (2) "decode SM 민감도는 모델-무관"의 원인이 아키텍처
+동질성이 아니라 이 측정점(B≈9–12·L≈1.0–1.5k)에서 스텝 트래픽의
+68–94%가 weight-sweep이기 때문임을 규명 — B/L 확장 이식 금지.
+★**"hybrid는 KV가 적다"는 통념은 이 격자에서 거짓**(per-seq 캐시
+Ha8 601 MiB > M8 260 > Hs8 117 > T8 70 MiB, Ha8이 T8의 8.6×). (3)
+SM92에서도 achieved_BW가 사양 대역폭(A100 80GB **PCIe** 1935
+GB/s — SXM 2039 아님)의 48–61%뿐이라 **고-SM 평탄화를 HBM 포화로
+서술하는 것 금지**(진짜 원인 미식별); decode 축(AI≈8.2,
+memory-bound) 결론을 prefill 축(AI≈1035, compute-bound)으로
+이식 금지. 신규 방법론 항목 2건(§3 항목18에 일곱 번째 재발
+追記[roofline 탄력도 정합=항등식, 산출자 자수]·항목46 신설[타
+캠페인 보조 수치는 기준 검증 후 수입]). 상세 `../PROJECT_STATUS.md`
+"8B decode-SM 민감도 측정 노트"·"방법론 게이트" #9·#32, §3
+항목18·46, `FINDINGS_8B_2026-07-28.md` §7.
+이전 rev23: 2026-08-11 (doc-steward — **E1 addendum(Gate 2-S
 전제 결정량, jobs 877756/877757 재집계, GPU 0) 정본 반영 —
 claims-auditor 적대 감사 완료, 4셀 전부 `VERIFIED_AT_SAMPLED_
 INSTANTS`. 판정 = 승격이 아니라 등급 하향된 조건부 채택.** E1이
@@ -1050,6 +1079,19 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     캠페인은 telemetry 100%가 benchmark phase라 수치 결과에는 영향이
     없었으나(우연), 주석이 실제 코드 계통과 다르다 — engine-porter
     이관 대기(코드 미수정).
+    ★★★**일곱 번째 재발(2026-08-11, 트래픽·roofline 진단, result-analyst
+    자수) — 게이트가 아니라 "확증 서술"이 항등식이었다.** `s8_scaleup`
+    decode-SM 스윕의 스텝 트래픽(`bytes_step`)은 SM 파티션과 무관하게
+    config·체크포인트만으로 정의되므로 achieved_BW = bytes_step/ITL은
+    **정의상** `|ε_BW| ≡ |ε_ITL|`이다. roofline 역산의 국소 탄력도
+    (16→24 0.83–0.90, 44→92 0.16–0.41)가 C2의 기존 ITL 탄력도(16→24
+    0.77–0.88, 44→92 0.09–0.35)와 "정합"한 것은 **독립 확증이 아니라
+    항등식** — roofline이 실제로 더한 정보는 **절대 수준**(achieved_BW가
+    사양 대역폭의 48–61%)뿐이다. 6번째 재발까지는 전부 사후 감사가
+    잡았으나, 이번엔 진단을 산출한 result-analyst 자신이 실행 중
+    문서 안에서 자수했다(`TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`
+    §6.4). 상세 `../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"
+    C-4·"방법론 게이트" #9(일곱 번째 재발).
 19. ★★★**(2026-08-03, 같은 날 4차 속행) 여집합 클래스에 음성대조를 걸어라 —
     항목 9와 뿌리는 같고 방향은 반대.** 이 자료를 세 차례(원 C2→`G_LEVER`
     감사, 첫 §0 axis check, 이 세션 자신의 첫 프레이밍) 통과했지만 아무도
@@ -1547,6 +1589,24 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     구별하고, 후자를 전자로 오인해 채택 근거로 쓰지 않는다. 상세
     §1-1(2026-08-11 E1 addendum 블록), `PROJECT_STATUS.md` "방법론
     게이트" #31.
+46. ★★**(2026-08-11, 트래픽·roofline 진단, result-analyst) 다른
+    캠페인·다른 스케일에서 수입한 보조 수치는 기준(basis)이 같은지
+    검증하라 — 항목34("사전등록 표의 비교 문구와 스코어러 구현은
+    다른 명제다")의 숫자 층 변형.** `workspace/engine-port/results/
+    s8_scaleup/FINDINGS_8B_2026-07-28.md` §2.1의 "1차 weight-traffic
+    추정(M 5.40/T 6.17/H 7.66 GB, H/M=1.42)"은 2026-07-28·2026-08-04
+    두 차례 감사를 통과했으나, 실은 **7-8B 캠페인 문서에 3B급 모델
+    (state-spaces/mamba2-2.7b, Qwen2.5-3B, Zyphra/Zamba2-2.7B)의
+    수치가 섞여 들어와 있었다** — 체크포인트 파일 크기·safetensors
+    텐서 합을 실측 대조해 3자리까지 정확히 일치시켜 출처를 확정.
+    게다가 M·T는 체크포인트 바이트인데 H만 호출-인지(shared block
+    재독출 곱한) 트래픽이라 **기준까지 혼합**돼 1.42×가 만들어졌다
+    (같은 3B 격자·같은 기준이면 0.985). 실무 규칙: 보조 수치를
+    논증에 수입할 때는 (i) 어느 캠페인·어느 모델 스케일의 것인지
+    (ii) 무슨 기준으로 낸 것인지를 수치 옆에 명시하고, 같은 문서
+    안의 다른 수치와 기준이 다르면 비율을 만들기 전에 통일하라.
+    상세 `PROJECT_STATUS.md` "방법론 게이트" #32, `TRAFFIC_ROOFLINE_
+    DIAGNOSTIC_2026-08-11.md` §7.
 
 ---
 
