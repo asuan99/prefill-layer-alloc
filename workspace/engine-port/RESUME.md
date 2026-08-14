@@ -41,6 +41,24 @@ python -m unittest discover -s workspace/engine-port/tests -v
 True dual은 thread-local role capability가 없으면 fail-fast한다. GPU correctness
 gate를 통과하기 전에는 기본값을 켜지 않는다.
 
+## SLURM `--comment` (제출 필수)
+
+2026-08-12 18:00 KST 이후 뉴론은 응용 분야·프로그램명이 없는 job을 **제출 거부**한다.
+모든 job script는 `#SBATCH` 블록 안(첫 실행 라인 위)에 아래를 갖는다:
+
+```bash
+#SBATCH --comment="field=efficientai;appl=pytorch"
+```
+
+`field=efficientai`(Efficient & Scalable AI Systems) · `appl=pytorch`(SGLang은
+`showappl` 목록에 없어 PyTorch 기반으로 신고 — `vllm`은 다른 엔진이라 쓰지 않는다).
+인터랙티브는 `salloc ... --comment="field=efficientai;appl=pytorch"`. 저장소 내
+`.sbatch`는 2026-08-14에 전부(97개) 적용됐고, 검사·정정은:
+
+```bash
+python3 workspace/engine-port/scripts/bootstrap/check_sbatch_comment.py [--fix]
+```
+
 ## R2 campaign
 
 ```bash
