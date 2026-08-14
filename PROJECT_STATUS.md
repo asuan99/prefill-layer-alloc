@@ -1,6 +1,62 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-11 (doc-steward — **트래픽·roofline 진단 반영
+최종 갱신: 2026-08-14 (doc-steward, 2차 — **정본 정정 1건 + 신규 결과
+등재 1건. 새 성능 판정 0건. 기존 결론은 뒤집히지 않는다(오히려 강화
+방향).** **(A) 하드웨어 오식별 정정**: `TRAFFIC_ROOFLINE_DIAGNOSTIC_
+2026-08-11.md`가 `nvidia-smi -q`를 **로그인 노드(glogin01, `A100 80GB
+PCIe`)**에서 읽었으나 실제 캠페인(jobs 865289/865533)은 **컴퓨트
+노드**(gpu36/38/40, `sacct` 확인)에서 돌았고 컴퓨트 노드는 **SXM4**다
+(job 882374, gpu43, `torch.cuda.get_device_name()`=`NVIDIA
+A100-SXM4-80GB` 직접 관측; `s8_scaleup/` job 아티팩트 전체에 `"A100
+80GB PCIe"` 문자열 0건 — 하드웨어 식별이 측정이 일어나지 않은 기계에서
+읽혔다). 정정: 사양 BW 1935→2039 GB/s, achieved_BW 비율
+48–61%→45.4–57.7%, ridge 161→153 FLOP/byte, decode AI 5.1%→5.4%.
+**어떤 판정도 안 뒤집힘 — 오히려 강화**(비율이 더 낮아져 "고-SM
+평탄화≠HBM 포화" 근거 강해짐). 방법론 게이트 #32에 새 사례 追記
+(하드웨어 식별 층 재발 — #32를 만든 문서 자신이 같은 종류 오류를 두
+번 냄). **(B) 신규 결과 등재**: E-3 realized SM count 프로브(사전등록
+`workspace/engine-port/results/smsplit_realized/
+PREREG_SMSPLIT_REALIZED_2026-08-14.md`, GPU 비용 ≈0) — `(74,34)`·
+`(54,54)`·C2 스윕 5지점 전 7지점에서 green-context 원시함수의 realized
+반환값이 요청값과 **정확히 일치**(Δ=0), glogin01·컴퓨트 노드(job
+882374) 두 하드웨어에서 레코드 완전 일치, 판정
+`REQUEST_EQUALS_DRIVER_REPORTED_PARTITION`. **드라이버 자기보고**이지
+하드웨어 실행 층이 아니므로 §1-1 Gate 1 블록의 기존 인용 금지("실현
+파티션을 측정했다" 등)는 **그대로 유지**, `%smid`의 SM id 집합
+disjointness 질문은 전진 0, 성능·정책 주장 0건. 부수 함의: `%smid` R0
+§0.1의 `log(108/34)` 분모 정정 payoff는 정정 대상 없음이 확인(34는
+요청값=드라이버 보고값). 상세 아래 "확정된 결과" 1번(E-3 블록)·"8B
+decode-SM 민감도 측정 노트"·"방법론 게이트" #32(追記), `CONSENSUS.md`
+rev26·§1-1(E-3 블록)·§3 항목46(追記), `TRAFFIC_ROOFLINE_DIAGNOSTIC_
+2026-08-11.md` §11·`FINDINGS_8B_2026-07-28.md` §7 C-5·`workspace/
+engine-port/results/smsplit_realized/PREREG_SMSPLIT_REALIZED_
+2026-08-14.md`(addendum 2)·`workspace/engine-port/RESUME.md`.
+이전: 2026-08-14 (doc-steward — **문서 층 정리, 새 성능 판정
+0건.** Δ·p값·크기 인용 셀·등급은 한 글자도 바뀌지 않는다. (A) 방법론
+게이트 #26에 追記 — 발동 조건("캠페인" 단수)이 <1 GPU-hr 조각으로
+쪼개면 회피됨을 2026-08-11 세션의 GPU 실험 4건 검토(P1/E1-b·c/
+`%smid` P1+P2/G1-a, 합 ≈1.15–1.65 GPU-hr, 개별로는 전부 문턱 아래)에서
+확인, 트리거를 "한 배치로 제출되는 신규/변경 코드 공유 캠페인들의
+합"으로 개정 권고. (B) 신규 방법론 게이트 #33 — `sync_engine_tree.sh`가
+sha256 해시하는 파일은 정확히 **15개**뿐이고, `pdmux_context.py`
+(`(74,34)` 등 파티션 기대값의 출처)·`sgl_kernel/spatial.py`(green-ctx
+원시함수)는 매니페스트 밖, `src/patches/`의 패치 5개 중 2개는 코드
+전체에서 미적용 확인 ⇒ "매니페스트 N/N sha 일치" 재현성 주장의 범위를
+그 15파일로 명시적으로 좁힌다(기존 판정 뒤집기 아님, 커버 밖 드리프트
+증거도 없음). (C) 방법론 게이트 #9·#25 본문에 **섹션 헤더가 이미
+명시했던 追記 2건이 누락**돼 있던 정본 결함(핸드오프가 1건이라 했으나
+실제 2건)을 `CONSENSUS.md` §3 항목18·39 원문 대조로 복원. (D)
+`workspace/engine-port/RESUME.md`의 CPU 회귀 지시(루트가 아니라
+`workspace/engine-port/RESUME.md`임)에 노드 구분·소요 시간(로그인
+노드 140 tests OK/73초, 대부분이 scheduler import 70.6초 — "컴퓨트
+노드 필수"는 재현 안 됨, 7분 stall은 Lustre 콜드캐시 추정) +
+`g2s_run.sbatch:91`이 이미 컴퓨트 노드에서 전체 회귀를 차단 게이트로
+돈다는 사실을 반영. (E) 2026-08-14 커밋 `31b3e96`/`86179ec`(KISTI
+`--comment` 정책 전 저장소 적용 + conformance checker)를 이 문서에
+신규 "운영 규약" 절로 등재(`RESUME.md`에는 이미 있었음). 상세 아래
+"운영 규약"·"방법론 게이트" #9·#25·#26·#33, `CONSENSUS.md` rev25·§3
+항목47·48.
+이전: 2026-08-11 (doc-steward — **트래픽·roofline 진단 반영
 (`workspace/engine-port/results/s8_scaleup/
 TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`, result-analyst, GPU 0 —
 기존 아티팩트+모델 config 계산만). 새 성능 판정 0건, C2("decode
@@ -1410,6 +1466,44 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
    p1_gates/gate2/{PREREG_G2S_E1_ADDENDUM_2026-08-11.md,
    g2s_e1_premise.py, g2s_e1_premise_877756_877757.json}`
    (수정 금지·인용만).
+
+   ★★★**(2026-08-14, E-3 realized SM count 프로브, GPU 비용 ≈0 —
+   glogin01 무비용 + job 882374) 드라이버가 요청 SM 개수를 반올림
+   없이 그대로 보고한다 — 새 성능 판정 아님, 위 Gate 1 블록의 인용
+   금지는 그대로 유지된다.** 사전등록 `workspace/engine-port/
+   results/smsplit_realized/PREREG_SMSPLIT_REALIZED_2026-08-14.md`
+   (§0–§6 + addendum 1·2). `pdmux_context.divide_sm()`을 직접
+   호출해 얻은 `(74,34)`·`(54,54)`·C2 스윕 5지점(92/16, 84/24,
+   64/44, 54/54, 16/92) 전 7지점에서, `torch.ops.sgl_kernel.
+   create_greenctx_stream_by_value`의 realized 반환값이 요청값과
+   **정확히 일치**했다(Δ=0, `realized_sum=108` 전 대상,
+   `n_returned=4`) — 로그인 노드(glogin01, `NVIDIA A100 80GB
+   PCIe`)와 컴퓨트 노드(job 882374, gpu43, `NVIDIA
+   A100-SXM4-80GB`) 두 하드웨어에서 레코드가 완전히 동일. 판정
+   문자열 `REQUEST_EQUALS_DRIVER_REPORTED_PARTITION`. **허용
+   문장**: "드라이버가 보고하는 green-context 파티션은 이 격자에서
+   요청값과 일치하며 반올림이 없다(드라이버 자기보고 층)."
+   **금지(전부 유지)**: 이것은 **드라이버 자기보고**이지 "실현
+   파티션을 측정했다"/"prefill 74 SM·decode 34 SM에서 실행됐다"가
+   아니다 — 위 Gate 1 블록의 인용 금지는 **그대로 유지**된다(S3
+   하드웨어 실행 층·`%smid`의 SM id 집합 disjointness는 여전히
+   미측정). 기존 캠페인 판정문(873944/874478/875293/877974/
+   877756/877757)에 사후 부착 금지, Gate 2 본 질문("PD 분리 자체"
+   귀속)은 한 눈금도 전진하지 않는다. **부수 함의**: `%smid` R0
+   사전등록 §0.1의 payoff 항목 1(`g2s_analyze.py:1488`의
+   `log(108.0/34.0)` 분모 정정)은 **정정 대상이 없음이
+   확인**됐다(34는 요청값이자 드라이버 보고 realized 값). `%smid`
+   F2의 "다섯 번째 세계"(disjoint ∧ ∪⊊D)는 **개수 층에서는
+   관측되지 않는다**(`realized_sum=108` 전 대상, id 집합 층은
+   여전히 미측정). ★**부수 발견(방법론 게이트 #32 새 사례로도
+   등재)**: 이 프로브가 `glogin01`(A100 80GB **PCIe**)과 컴퓨트
+   노드(A100 **SXM4**)의 하드웨어 SKU가 다름을 직접 관측해, 아래
+   "8B decode-SM 민감도 측정 노트"의 트래픽·roofline 하드웨어
+   정정(2026-08-14)의 결정적 근거가 됐다. 정본 `reports/
+   CONSENSUS.md` rev26·§1-1(이 블록, E-3)·§3 항목46(追記), 원자료
+   `workspace/engine-port/results/smsplit_realized/
+   {smsplit_realized_glogin01_2026-08-14.json,
+   smsplit_realized_882374.json}`(수정 금지·인용만).
 2. 현재 A100/SGLang green-context substrate에서 layer-boundary resource
    switching은 sub-step drain과 synchronization을 일으켜 decode TPOT을 약
    `42→124 ms`로 악화시켰다. 최적화 후에도 약 `85 ms`였다.
@@ -1644,6 +1738,30 @@ achieved_BW(계산 트래픽÷측정 ITL)는 사양 대역폭(A100 80GB **PCIe**
 compute-bound이므로 **이 decode 결론을 prefill 축(`s8p_prefill`)으로 이식 금지**
 (기존 이식 금지 목록에 사유 1건 추가). C2 자체의 등급·수치(2.36–2.91×, scoped)는
 **불변**.
+
+★★★**정정(2026-08-14, doc-steward, E-3 realized SM count 프로브의 부수 발견 —
+방법론 게이트 #32의 하드웨어 층 재발, 새 성능 판정 아님, 위 2026-08-11 진단의
+등급·"고-SM 평탄화를 HBM 포화로 서술 금지" 판정은 불변·오히려 강화)**: 위
+2026-08-11 진단(`TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`)이 `nvidia-smi -q`로
+읽은 하드웨어(`A100 80GB PCIe`, 사양 BW 1935 GB/s)는 **로그인 노드
+(glogin01)에서 읽은 값**이었다 — 그러나 이 캠페인(jobs 865289/865533)은
+**컴퓨트 노드**(gpu36/gpu38/gpu40, `sacct` 확인)에서 돌았고 컴퓨트 노드는
+**SXM4**다(job 882374가 gpu43에서 `torch.cuda.get_device_name()` =
+`NVIDIA A100-SXM4-80GB` 직접 관측, `scontrol show node`로 gpu36·gpu40·gpu43
+동일 feature `A100-80GB_8,hwperf` 확인 — 파티션 동질). `s8_scaleup/` job
+아티팩트(`*.out *.log *.err *.json *.jsonl`) 전체에 `"A100 80GB PCIe"` 문자열은
+**0건**이다 — 하드웨어 식별이 측정이 일어나지 않은 기계에서 읽혀 들어온
+것. **정정**: 사양 BW **1935→2039 GB/s**(SXM4 mem clock 1593 MHz), achieved_BW
+비율 **48–61%→45.4–57.7%**(×0.949), ridge point **161→153** FLOP/byte,
+decode AI≈8.2는 ridge의 **5.1%→5.4%**. **어떤 판정도 뒤집히지 않는다** —
+"고-SM 평탄화를 HBM 포화로 서술 금지"의 근거는 비율이 더 낮아져 **더
+강해지고**, "compute-bound 아님"도 불변. ⚠️SXM4는 400W TDP+NVLink(PCIe는
+300W) — 전력·열 특성이 다르므로 향후 평탄화 원인(wave quantization/층
+직렬 지연/점유율/cudagraph 직렬화) 분석에서 PCIe 특성을 전제하면 오도된다
+(현재 문서는 전력 근거를 쓴 곳이 없어 **깨지는 주장 없음**). 상세
+`TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md` §11(addendum), `FINDINGS_8B_
+2026-07-28.md` §7 C-5(addendum), `reports/CONSENSUS.md` rev26·§3 항목46
+(追記), "방법론 게이트" #32(追記) 아래.
 
 상세 [`workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`](workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md)
 (§6에 (a)"레버 존재≠정책 이득" (b)"HE0를 되살리지 않는다" 명시, §3 retraction을
@@ -3304,7 +3422,36 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
-## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응], 2026-08-07 (G1-b) #16 신설[스코프 확장은 원 격자를 전부 재현하라, CONSENSUS §3 항목30과 대응], 2026-08-09 (E-A) #17–19 신설[게이트를 모든 보고 블록에 걸어라·과부하 arm 비교는 시스템 상수가 아니다·사후 지정 셀 이동, CONSENSUS §3 항목31–33과 대응]·(Gate 2 rev4 본 캠페인 R1′/R2′ 정본 반영 복구) #20 신설[사전등록 분석기가 계산하지 않는 비교는 사후 비교다, CONSENSUS §3 항목34와 대응], 2026-08-09 (HOLB G5 재채점·874601 라벨 정정·scipy 폴백) #21 신설[측정 실패를 게이트 실패로 라벨링 마라 — 6번째 재발, 최초 정식 등재, CONSENSUS §3 항목35와 대응]·#22 신설[통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지 않는다, CONSENSUS §3 항목36과 대응], 2026-08-10 (job 876699 T4-1 TIMEOUT 사후분석·공유 하네스 무한대기 수정) #21에 일곱 번째 재발 追記[이번엔 분석 코드가 거짓 음성(REFUTED)을 산출, CONSENSUS §3 항목35 개정과 대응]·#23 신설[공유 하네스 함수의 무경계 대기는 그 함수를 쓰는 모든 소비자의 위험이다, CONSENSUS §3 항목37과 대응], 2026-08-11 (Gate 2-S 첫 유효 결과, jobs 877756/877757, claims-auditor 적대 감사) #9에 여섯 번째 재발 追記[형식상 두 게이트가 같은 정보를 잼, CONSENSUS §3 항목18 개정과 대응]·#20에 새 사례 追記["식별자 수입 ≠ 거동 수입", CONSENSUS §3 항목34 개정과 대응]·#24 신설[any() over n reps 스크린의 귀무 발화율 1−(1−α)ⁿ, CONSENSUS §3 항목38과 대응]·#25 신설[사전등록이 명시한 진단 필드가 산출되지 않을 수 있다, CONSENSUS §3 항목39와 대응], 2026-08-11 (Gate 2-S 1차 실행 실패 후속, doc-steward) #26 신설[대형 캠페인 제출 전 배관 스모크 규율 — 0.11 GPU-hr 스모크(job 877593)가 6.40 GPU-hr 오판(jobs 877107/877109) 재발을 막음, CONSENSUS §3 항목40과 대응], 2026-08-11 (G1-c, job 877974) #27 신설[결정량의 밀도 의존성을 먼저 따져라, CONSENSUS §3 항목41과 대응]·#28 신설[실험이 무엇을 풀어주는지가 코드 사실인지 추정인지 실행 전에 구별하라, CONSENSUS §3 항목42와 대응]·#29 신설[`compute_coverage`류는 내부 구멍에 맹목이다, CONSENSUS §3 항목43과 대응], 2026-08-11 (E1 addendum, jobs 877756/877757, claims-auditor 적대 감사) #25에 여덟 번째 재발 追記[직전 회차 등재 직후 재발, CONSENSUS §3 항목39 追記와 대응]·#9에 별건 사례 追記[`falsifier()` docstring이 "IMPORTED"라 적었으나 인라인 복사·phase 필터 미적용, CONSENSUS §3 항목18 追記와 대응]·#30 신설[부정 선언문("NO UPGRADE PATH EXISTS") 옆의 새 통계량은 자기인지 자백만으로 재감사를 면제받지 않는다, CONSENSUS §3 항목44와 대응]·#31 신설[bound는 확률모델의 꼬리 분위수여야 하고 인접 관측 최대 차이(점추정)와 구별하라, CONSENSUS §3 항목45와 대응], 2026-08-11(트래픽·roofline 진단, result-analyst, GPU 0) #9에 일곱 번째 재발 追記[서술자 자수 — roofline 탄력도 정합은 항등식, CONSENSUS §3 항목18 追記와 대응]·#32 신설[다른 캠페인·다른 스케일의 보조 수치는 기준(basis) 검증 후 수입하라, CONSENSUS §3 항목46과 대응])
+## 운영 규약 (SLURM 제출, 2026-08-14 신설)
+
+**2026-08-12 18:00 KST 이후 뉴론은 `--comment="field=<field>;appl=<program>"`이
+없는 job 제출을 거부한다.** 이 프로젝트 값은 `field=efficientai`(Efficient &
+Scalable AI Systems) · `appl=pytorch`(SGLang은 `showappl` 목록에 없어 PyTorch
+기반으로 신고 — `vllm`은 다른 엔진이라 쓰지 않는다). 필수 조건:
+
+- 지시문은 **`#SBATCH` 블록 안, 첫 실행 라인보다 위**에 있어야 유효하다 —
+  Slurm은 첫 비주석 실행 라인 이후의 `#SBATCH`를 무시하므로, 그 아래 있는
+  줄은 `grep`엔 걸려도 제출은 거부된다.
+- **CLI에서 `--comment`를 덮어쓰지 말 것** — script directive가 있어도 CLI
+  인자가 이를 무효화해 거부로 이어진다. 인터랙티브는
+  `salloc --partition=amd_a100nv_8 --gres=gpu:1
+  --comment="field=efficientai;appl=pytorch"`.
+- 새로 만드는 job script도 같은 형식을 따른다.
+- 검사·자동 수정: `python3 workspace/engine-port/scripts/bootstrap/
+  check_sbatch_comment.py [--fix]`(내용 기반 스캔 — `*.sbatch` glob이 아니라
+  `^#SBATCH`로 스크립트를 찾아 `.sh`로 저장된 job script도 잡는다. 첫 실행
+  라인 아래 지시문은 `UNPARSED`로 별도 분류).
+- 2026-08-14 커밋 `31b3e96`(97 `.sbatch` + 26 `.sh` + `.tmp` 1 + CLI 4경로
+  `submit.sh`/`run_pipeline.sh`/`submit_size_sweep.sh`/`interact_scheduler.sh`
+  전부 적용)·`86179ec`(conformance checker 추가)로 저장소 전체(124개 job
+  제출 경로) 적용 완료. **역사적 `PREREG_*.md`는 옛 형식(`--comment=pytorch`)을
+  그대로 인용하며 의도적으로 손대지 않는다**(그 시점에 사전등록된 그대로를
+  기록하는 것이 목적, 커밋 메시지가 이를 명시).
+
+전문·환경 셋업은 [`RESUME.md`](workspace/engine-port/RESUME.md) "SLURM
+`--comment` (제출 필수)" 참조.
+
+## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응], 2026-08-07 (G1-b) #16 신설[스코프 확장은 원 격자를 전부 재현하라, CONSENSUS §3 항목30과 대응], 2026-08-09 (E-A) #17–19 신설[게이트를 모든 보고 블록에 걸어라·과부하 arm 비교는 시스템 상수가 아니다·사후 지정 셀 이동, CONSENSUS §3 항목31–33과 대응]·(Gate 2 rev4 본 캠페인 R1′/R2′ 정본 반영 복구) #20 신설[사전등록 분석기가 계산하지 않는 비교는 사후 비교다, CONSENSUS §3 항목34와 대응], 2026-08-09 (HOLB G5 재채점·874601 라벨 정정·scipy 폴백) #21 신설[측정 실패를 게이트 실패로 라벨링 마라 — 6번째 재발, 최초 정식 등재, CONSENSUS §3 항목35와 대응]·#22 신설[통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지 않는다, CONSENSUS §3 항목36과 대응], 2026-08-10 (job 876699 T4-1 TIMEOUT 사후분석·공유 하네스 무한대기 수정) #21에 일곱 번째 재발 追記[이번엔 분석 코드가 거짓 음성(REFUTED)을 산출, CONSENSUS §3 항목35 개정과 대응]·#23 신설[공유 하네스 함수의 무경계 대기는 그 함수를 쓰는 모든 소비자의 위험이다, CONSENSUS §3 항목37과 대응], 2026-08-11 (Gate 2-S 첫 유효 결과, jobs 877756/877757, claims-auditor 적대 감사) #9에 여섯 번째 재발 追記[형식상 두 게이트가 같은 정보를 잼, CONSENSUS §3 항목18 개정과 대응]·#20에 새 사례 追記["식별자 수입 ≠ 거동 수입", CONSENSUS §3 항목34 개정과 대응]·#24 신설[any() over n reps 스크린의 귀무 발화율 1−(1−α)ⁿ, CONSENSUS §3 항목38과 대응]·#25 신설[사전등록이 명시한 진단 필드가 산출되지 않을 수 있다, CONSENSUS §3 항목39와 대응], 2026-08-11 (Gate 2-S 1차 실행 실패 후속, doc-steward) #26 신설[대형 캠페인 제출 전 배관 스모크 규율 — 0.11 GPU-hr 스모크(job 877593)가 6.40 GPU-hr 오판(jobs 877107/877109) 재발을 막음, CONSENSUS §3 항목40과 대응], 2026-08-11 (G1-c, job 877974) #27 신설[결정량의 밀도 의존성을 먼저 따져라, CONSENSUS §3 항목41과 대응]·#28 신설[실험이 무엇을 풀어주는지가 코드 사실인지 추정인지 실행 전에 구별하라, CONSENSUS §3 항목42와 대응]·#29 신설[`compute_coverage`류는 내부 구멍에 맹목이다, CONSENSUS §3 항목43과 대응], 2026-08-11 (E1 addendum, jobs 877756/877757, claims-auditor 적대 감사) #25에 여덟 번째 재발 追記[직전 회차 등재 직후 재발, CONSENSUS §3 항목39 追記와 대응]·#9에 별건 사례 追記[`falsifier()` docstring이 "IMPORTED"라 적었으나 인라인 복사·phase 필터 미적용, CONSENSUS §3 항목18 追記와 대응]·#30 신설[부정 선언문("NO UPGRADE PATH EXISTS") 옆의 새 통계량은 자기인지 자백만으로 재감사를 면제받지 않는다, CONSENSUS §3 항목44와 대응]·#31 신설[bound는 확률모델의 꼬리 분위수여야 하고 인접 관측 최대 차이(점추정)와 구별하라, CONSENSUS §3 항목45와 대응], 2026-08-11(트래픽·roofline 진단, result-analyst, GPU 0) #9에 일곱 번째 재발 追記[서술자 자수 — roofline 탄력도 정합은 항등식, CONSENSUS §3 항목18 追記와 대응]·#32 신설[다른 캠페인·다른 스케일의 보조 수치는 기준(basis) 검증 후 수입하라, CONSENSUS §3 항목46과 대응], 2026-08-14 (doc-steward, 문서 층 정리 — 새 성능 판정 0건) #9·#25 본문에 헤더가 이미 명시했던 追記 2건이 누락돼 있던 것을 CONSENSUS §3 항목18·39 원문 대조로 복원·#26에 追記[발동 조건을 "캠페인 하나"에서 "한 배치로 제출되는 신규/변경 코드 공유 캠페인들의 합"으로 개정 권고, CONSENSUS §3 항목47과 대응]·#33 신설[매니페스트 N/N sha 일치는 런타임 바이트 동일함을 함의하지 않는다 — 재현성 주장 범위를 매니페스트가 실제로 덮는 15파일로 한정, CONSENSUS §3 항목48과 대응], 2026-08-14 (E-3 realized SM count 프로브의 부수 발견, doc-steward, 2차) #32에 새 사례 追記[하드웨어 식별 층 재발 — glogin01(PCIe)에서 읽은 하드웨어를 컴퓨트 노드(SXM4) 캠페인에 잘못 귀속, CONSENSUS §3 항목46 追記와 대응])
 
 Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3),
 E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠페인에서 나온
@@ -3508,6 +3655,18 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
    사후 감사가 잡았으나, 이번은 산출자 자신이 실행 중 인지했다는 점이
    다르다. 상세 `CONSENSUS.md` §3 항목18(추가 追記), 아래 "8B decode-SM
    민감도 측정 노트" C-4.
+   ★**[본문 복구: 2026-08-14, doc-steward — 이 섹션 헤더(위)는
+   이미 "#9에 별건 사례 追記"를 명시하고 있었으나 본문에 실제
+   텍스트가 누락돼 있었다. `CONSENSUS.md` §3 항목18을 정본으로
+   삼아 원문 그대로 복원한다. 새 성능 판정 아님.]**
+   ★**별건 사례(2026-08-11, E1 addendum, claims-auditor — E1 자신의
+   책임 아님)**: `g2s_analyze.py:640-660`의 `falsifier()` docstring이
+   "Rules IMPORTED from gate1b_analyze.py"라 적었으나 실제로는 pop-A
+   분류 규칙을 **인라인 복사**했고, 생산자(`gate1b_analyze.py`)가
+   적용하는 `phase=="benchmark"` 필터를 **적용하지 않는다**. 이
+   캠페인은 telemetry 100%가 benchmark phase라 수치 결과에는 영향이
+   없었으나(우연), 주석이 실제 코드 계통과 다르다 — engine-porter
+   이관 대기(코드 미수정). 상세 `CONSENSUS.md` §3 항목18(별건 追記).
 10. ★★★**(2026-08-03, 같은 날 4차 속행) 여집합 클래스에 음성대조를
     걸어라 — #7과 뿌리는 같고 방향은 반대.** 이 자료를 세 차례(원
     C2→`G_LEVER` 감사, 첫 §0 axis check, 이 세션 자신의 첫 프레이밍)
@@ -3785,6 +3944,19 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     — 채점 전에 산출물 스키마를 사전등록 문서와 직접 대조하고,
     빠진 필드는 산출 경로의 결함으로 기록하라. 상세 `CONSENSUS.md`
     §1-1(2026-08-11 Gate 2-S 블록)·§3 항목39.
+    ★**[본문 복구: 2026-08-14, doc-steward — 이 섹션 헤더(위)는
+    이미 "#25에 여덟 번째 재발 追記"를 명시하고 있었으나 본문에
+    실제 텍스트가 누락돼 있었다. `CONSENSUS.md` §3 항목39를
+    정본으로 삼아 원문 그대로 복원한다. 새 성능 판정 아님.]**
+    ★**여덟 번째 재발(2026-08-11, E1 addendum, 직전 회차 등재
+    직후)**: `PREREG_G2S_E1_ADDENDUM_2026-08-11.md` §4가 명시한
+    서술 전용 진단("rep 경계에 인접한 행이 pop A인 건수")이
+    산출되지 않았다 — `g2s_e1_premise.py:28` docstring은 `classify()`
+    를 수입 목록에 적었으나 실제 코드에서 한 번도 호출되지 않는다.
+    판정에는 영향이 없었으나(그 진단은 서술 전용이지 판정 입력이
+    아님), 같은 서명이 바로 앞 회차(항목39 자신)에 정식 등재된
+    직후 재발했다는 사실은 이 실패 모드가 "안다고 없어지지 않는다"는
+    걸 보여준다. 상세 `CONSENSUS.md` §3 항목39(追記).
 26. ★★★**(2026-08-11, Gate 2-S 1차 실행 실패 후속) 대형 캠페인
     제출 전 배관 스모크를 규율로 등재한다 — 스모크의 PASS는 성능
     판정에 아무 정보도 주지 않는다.** Gate 2-S 1차 실행(jobs
@@ -3816,6 +3988,28 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     engine-port/results/p1_gates/gate2/g2ssmoke_verdict_877593.txt`·
     `g2ssmoke_877593.out`·`g2ssmoke_manifest_877593.txt`·
     `g2ssmoke_scoreout_zamba2-27b_877593.txt`(수정 금지·인용만).
+    ★**追記(2026-08-14, doc-steward — 2026-08-11 세션이 검토만 하고
+    미제출한 4건에서 나온 규율 개정, 새 측정 아님) 트리거 주어가
+    단수 "캠페인"이면 <1 GPU-hr 조각으로 쪼개 회피할 수 있다.**
+    2026-08-11 세션이 준비했다가 사전등록 부재로 제출하지 않은 GPU
+    실험 4건(P1 · E1-b/E1-c · `%smid` P1+P2 · G1-a)은 개별 예상
+    비용이 각각 0.1–0.7 GPU-hr로 문턱(≥1 GPU-hr) 아래이지만 **합은
+    ≈1.15–1.65 GPU-hr**로 문턱을 넘는다 — 트리거가 캠페인 단위인 채로
+    있으면 넷 다 스모크 없이 통과한다. 이 넷은 서로 독립이 아니다:
+    같은 매니페스트 트립와이어(`g2s_run.sbatch:81-89`의
+    `added==2 ∧ removed==0`, `gate1b_run.sbatch`·`gate1c_run.sbatch`의
+    `N_CHANGED==0 ∧ N_ADDED==2`)를 공유하고, "트리 무변경 상태에서
+    셋 동시 제출이 코드 사실로 안전"하다는 사실 자체가 이 넷을 한
+    묶음으로 묶는 근거였다(`handoff-report/
+    session_handoff_2026-08-13.md` §2.5 "GPU 실험 4건 실행 준비
+    검토"). **개정**: 발동 조건의 트리거 단위를 "캠페인 하나"에서
+    **"한 배치로 제출되는, 신규/변경 코드를 공유하는 캠페인들의
+    합"**으로 바꾼다 — 그 합이 ≥1 GPU-hr이면, 배치 안에서
+    하네스·스코어러에 신규/변경분이 있는 캠페인마다 최소 rep
+    스모크를 선행한다(직전 감사 통과 캠페인과 diff 0인 캠페인은
+    기존 면제 유지). 원 게이트 #26 본문(위)은 대체하지 않고 이
+    追記로 보완한다 — 이 개정을 적용해 실제로 스모크를 새로 돌린
+    사례는 아직 없다. 상세 `CONSENSUS.md` §3 항목47.
 27. ★★**(2026-08-11, G1-c, job 877974) 결정량의 밀도 의존성을 먼저
     따져라 — "sparse 텔레메트리로는 낼 수 없다"는 주장은 어느
     통계량에 대한 것인지 먼저 밝혀야 한다.** §8.9.1의 in-job
@@ -3899,3 +4093,70 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     비율을 만들기 전에 통일하라. 상세 `CONSENSUS.md` §3 항목46,
     `workspace/engine-port/results/s8_scaleup/
     TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md` §7.
+    ★**새 사례(2026-08-14, doc-steward, E-3 realized SM count 프로브의
+    부수 발견) — 이번엔 숫자 층이 아니라 하드웨어 식별 층이고, #32를
+    만든 바로 그 문서가 같은 종류의 오류를 두 번 냈다.** 위 §2.1
+    수치 혼입을 잡아낸 바로 그 `TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`
+    가 `nvidia-smi -q`로 하드웨어를 식별한 노드(로그인 노드 glogin01,
+    `A100 80GB PCIe`)가 실제 측정이 실행된 노드(컴퓨트 노드 gpu36/
+    gpu38/gpu40, SXM4)와 **달랐다** — `s8_scaleup/` job 아티팩트
+    전체에 `"A100 80GB PCIe"` 문자열이 **0건**(job 882374로 컴퓨트
+    노드가 `NVIDIA A100-SXM4-80GB`임을 직접 확인, `scontrol show
+    node`로 gpu36·gpu40·gpu43 동일 feature 확인). 정정: 사양 BW
+    1935→2039 GB/s, achieved_BW 비율 48–61%→45.4–57.7%, ridge
+    161→153 FLOP/byte — 어떤 판정도 뒤집히지 않으나(오히려 강화)
+    출처 층이 하나 더 있음을 보여준다. 실무 규칙 추가: **하드웨어
+    사양을 인용할 때는 측정이 실제로 실행된 노드에서 읽어 job
+    아티팩트에 기록하라** — 로그인 노드와 컴퓨트 노드가 다른
+    SKU일 수 있다(이 클러스터가 실제로 그렇다: glogin01=PCIe,
+    gpu36–43=SXM4). 상세 `CONSENSUS.md` §3 항목46(追記),
+    `TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md` §11(addendum).
+33. ★★★**(2026-08-14, doc-steward, 코드 직접 확인 — 새 측정 아님)
+    "매니페스트 N/N sha 일치"는 런타임이 바이트 동일함을 함의하지
+    않는다 — 매니페스트가 실제로 덮는 범위를 먼저 확인하라.**
+    `sync_engine_tree.sh`는 정확히 **15개 파일만** sha256으로
+    해시한다(`:99-115`). 그 밖에서 런타임 거동에 관여하는 것으로
+    확인된 것: (i) `sglang/srt/multiplex/pdmux_context.py` —
+    `(74,34)` 등 파티션 기대값을 만드는 `divide_sm()`이 여기
+    있고 `multiplexing_mixin.py:28`가 이 파일을 import하지만, sync는
+    이 파일을 **설치도 해시도 하지 않는다**(dev 트리 mtime
+    2026-04-06, sync가 만지는 형제 파일들의 2026-08-11과 불일치;
+    저장소 `src/multiplex/`에 이 파일 자체가 없다). (ii)
+    `sgl_kernel/spatial.py`(green-context 생성 원시함수) — dev
+    트리(`sglang_engine_dev`)에는 아예 없고 venv 사이트패키지
+    (`sglang_engine_venv/lib/python3.14/site-packages/sgl_kernel/`)
+    에만 있다 — sync의 관할 밖. (iii) `src/patches/`의 패치 5개 중
+    sync가 참조하는 것은 3개뿐(`pdmux_thread_local_role.patch`
+    `:39`·`holb_probe_scheduler_hooks.patch`:`64`·
+    `mamba2_pure_ssm_arch.patch`:`89`); `nemotron_h_forward_split_
+    prefill.patch`·`triton_backend_mambaish_vheaddim.patch`는
+    저장소 전체 검색으로도 **어느 실행 경로에서도 적용되지
+    않는다**(`env/dev_tree_edits.md` 항목6:35·항목7:43 자신의
+    서술도 이 두 patch를 "Full method" 참고용으로만 가리킬 뿐 sync
+    대상으로 적지 않는다 — self-consistent). (iv)
+    `env/dev_tree_edits.md` 항목 3·4·5·7(`hf_transformers_utils.py`
+    레지스트리·`configs/__init__.py`·`model_runner.py`·
+    `triton_backend.py`의 Zamba2/v_head_dim 관련 수동 편집)은
+    sync가 재적용도 해시도 하지 않는 **수동 편집**이고, 항목 6·8·9
+    (`models/{nemotron_h,falcon_h1,granitemoehybrid}.py`)는 sync
+    스크립트 자신의 주석(`:73-75` "still manual copies")이 명시적
+    으로 자백하며 해시 목록에도 없다.
+    ⇒ **재현성 주장의 범위를 좁힌다**: "매니페스트 N/N sha 일치"가
+    보증하는 것은 그 매니페스트가 나열한 **정확히 그 파일들**의
+    바이트 동일성뿐이다 — 캠페인 간 "동등한 코드에서 실행됐다"는
+    주장(Gate 1/`gate1b`/`gate1c`/Gate 2-S 트립와이어가 근거로
+    쓰는 "13/13"·"15/15 sha 바이트 동일")은 이 15파일 범위로
+    한정해서 읽는다. **과잉 강등 금지 — 두 가지 구별 필수**:
+    (a) 이것은 **기존 성능 판정을 뒤집지 않는다**. 지금까지의
+    캠페인 사이에 실제로 커버 밖 드리프트가 있었다는 증거는
+    없다(그런 주장도 하지 않는다) — 좁아지는 것은 "매니페스트가
+    무엇을 증명하는가"라는 **주장의 범위**뿐이다. (b) "패치 2개가
+    sync 경로에서 미적용"은 "그 기능이 런타임에 없다"를 함의하지
+    않는다 — `nemotron_h.py`/`falcon_h1.py`처럼 해당 변경이 수동
+    편집으로 이미 트리에 반영돼 있을 수 있다(사실 `dev_tree_edits.md`
+    항목6·7이 정확히 그렇다고 기록한다). 확인된 것은 오직 "sync
+    스크립트가 그것을 보장하지 않는다"까지다. 상세 `CONSENSUS.md`
+    §3 항목48, 원자료 `workspace/engine-port/scripts/bootstrap/
+    sync_engine_tree.sh`(`:39-116`)·`workspace/engine-port/env/
+    dev_tree_edits.md`(항목 3–9)·`handoff-report/
+    session_handoff_2026-08-13.md` §4 "정본 등재 후보 2건".

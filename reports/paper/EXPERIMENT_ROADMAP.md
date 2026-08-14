@@ -1,6 +1,12 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-11(doc-steward — **E1 addendum(jobs
+최종 갱신: 2026-08-14(doc-steward — **E-3 realized SM count 프로브
+(GPU 비용 ≈0) 반영 — "S3/`%smid`" 로드맵 항목의 §0.1 payoff 1건이
+정정 대상 없음으로 확인(추가 追記). 새 성능 판정 아님, 이 항목의
+필요성·우선순위 불변(SM id 집합 disjointness는 여전히 열려있음).**
+상세 `CLAIM_EVIDENCE_MATRIX.md` "P1 트랙" 절 항목7, `CONSENSUS.md`
+rev26·§1-1(2026-08-14 E-3 블록).
+이전: 2026-08-11(doc-steward — **E1 addendum(jobs
 877756/877757 재집계, GPU 0) 완료 반영 — "P1 트랙 로드맵" 절의
 G1-c 후속 E1을 완료 항목으로 이동, 후속 E1-a/E1-b(★결정적)/
 E1-c(★필수)/E1-d 신설(구 E2/E3는 E1-b/불필요로 흡수). 새 성능
@@ -283,7 +289,12 @@ D/E 소관)와 별개다 — 여기서 묻는 질문은 "이 엔진에서 PD-mux
    G1-d(S3 하드웨어 프로브, 아래 항목과 통합)도 같은 그룹, 미착수.
 6. **S3 / `%smid` 직접 하드웨어 SM 프로브**(별건, 이 트랙 어떤 캠페인의
    선행조건도 아님, `PREREG_GATE2S_2026-08-09.md` §0.0.B) — "무분할(C)"의
-   잔여 SM 차감 여부·selector-level→hardware-level 격상.
+   잔여 SM 차감 여부·selector-level→hardware-level 격상. ★2026-08-14
+   (E-3 realized SM count 프로브, GPU 비용 ≈0)이 §0.1의 payoff 항목 1
+   (`log(108/34)` 분모 정정)이 정정 대상 없음을 확인했다(34는 요청값이자
+   드라이버 보고 realized 값) — **이 항목 자체의 우선순위·필요성은
+   불변**(SM id 집합 disjointness는 여전히 개수 층 프로브가 못 여는
+   질문). `%smid` 재설계 시 §0.1 재작성 필요.
 7. **F-B(ii) 재설계** — Gate 2-S 인용-셀 선별 필터의 귀무 발화율이 40.1%
    (1−0.95¹⁰)임이 확인됐다(방법론 게이트 #24). 다음 사전등록에서 대체할
    것, **이번 결과에 소급 적용 금지**.

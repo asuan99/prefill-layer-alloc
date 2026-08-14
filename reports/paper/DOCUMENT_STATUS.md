@@ -1,6 +1,9 @@
 # Document status
 
-최종 갱신: 2026-08-11(doc-steward — **E1 addendum(jobs 877756/
+최종 갱신: 2026-08-14(doc-steward — **정본 정정 1건(하드웨어 오식별) +
+신규 결과 등재 1건(E-3) 반영으로 `CLAIM_EVIDENCE_MATRIX.md`를
+`reports/CONSENSUS.md` rev26과 재동기화(Claim A 각주 정정 + "P1 트랙"
+항목7 신설). 분류표 무변경, changelog 기록뿐.** 이전: 2026-08-11(doc-steward — **E1 addendum(jobs 877756/
 877757 재집계) 반영으로 `CLAIM_EVIDENCE_MATRIX.md`·
 `EXPERIMENT_ROADMAP.md`를 `reports/CONSENSUS.md` rev23과
 재동기화(Gate 2-S 전제 4셀 전부 `VERIFIED_AT_SAMPLED_INSTANTS` —

@@ -1,6 +1,15 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-11(doc-steward — **트래픽·roofline 진단
+최종 갱신: 2026-08-14(doc-steward — **정본 정정 1건(하드웨어 오식별,
+Claim A 각주) + 신규 결과 등재 1건(E-3, Claim G/P1 트랙 항목7). 새 성능
+판정 0건, 등급 무변경.** (A) Claim A 행의 roofline 각주가 인용하던
+`nvidia-smi -q` 하드웨어(`A100 80GB PCIe`, 1935 GB/s)는 **로그인 노드
+에서 읽은 값**이었음이 드러나 정정(사양 BW 1935→2039 GB/s, achieved_BW
+비율 48–61%→45.4–57.7%) — 결론 불변, 오히려 강화. (B) P1 트랙 "Existing
+evidence" 항목7 신설: E-3 realized SM count 프로브(드라이버가 요청 SM
+개수를 반올림 없이 보고, 새 성능 판정 아님, Gate 1 인용 금지 불변).
+상세 위 Claim A 행 각주·"P1 트랙" 절 항목7, `../CONSENSUS.md` rev26.
+이전: 2026-08-11(doc-steward — **트래픽·roofline 진단
 (`../../workspace/engine-port/results/s8_scaleup/
 TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`, result-analyst, GPU 0)
 반영 — Claim A의 C2/C2b 인용문에 정정+스코프 주석 추가. 새 성능
@@ -168,7 +177,10 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   C2b가 **더 약화**된다(되살리지 않음). "4 arm, 모델-무관"의 원인이
   아키텍처 동질성이 아니라 이 측정점(B≈9–12·L≈1.0–1.5k)의 weight-sweep
   지배임이 규명됨 — B/L 확장 이식 금지. SM92에서도 achieved_BW가 사양의
-  48–61%뿐이라 **고-SM 평탄화를 HBM 포화로 서술 금지**. 전문
+  48–61%[★2026-08-14 정정: 하드웨어가 로그인 노드(PCIe)에서 오식별돼
+  있었음이 드러나 **45.4–57.7%**로 정정, 결론 불변·오히려 강화 — 상세
+  `TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md` §11]뿐이라 **고-SM 평탄화를
+  HBM 포화로 서술 금지**. 전문
   `../../workspace/engine-port/results/s8_scaleup/
   TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`.
 - ★★★**(2026-08-03) `g = A_free(d16)/A_free(d54)`(job 872077, M3
@@ -436,6 +448,22 @@ fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJ
    글자도 안 바뀐다(`premise` 코드 미입력 확인). 채택 조건 7개·
    금지 문장·강제 병기 문구는 `CONSENSUS.md` §1-1(2026-08-11 E1
    addendum 블록) 전문 참조.
+7. **★E-3 realized SM count 프로브**(2026-08-14, GPU 비용 ≈0 —
+   glogin01 무비용 + job 882374) — `(74,34)`·`(54,54)`를 만드는
+   green-context 원시함수(`torch.ops.sgl_kernel.
+   create_greenctx_stream_by_value`)의 **realized 반환값**이 요청값과
+   전 7지점(`(74,34)`·`(54,54)`·C2 스윕 5지점)에서 **정확히 일치**함을
+   두 하드웨어(glogin01=PCIe, 컴퓨트 노드=SXM4)에서 확인
+   (`REQUEST_EQUALS_DRIVER_REPORTED_PARTITION`). **드라이버가 요청 SM
+   개수를 반올림 없이 그대로 보고한다** — 단 이는 **드라이버
+   자기보고**일 뿐 "실현 파티션을 측정했다"가 아니며, 위 1번(Gate 1)의
+   기존 인용 금지는 **그대로 유지**된다. **P1/Gate 2 본 질문에는 한
+   눈금도 전진하지 않는다.** 부수 발견: 이 프로브가 glogin01(PCIe)과
+   컴퓨트 노드(SXM4)의 하드웨어 SKU 차이를 드러내, `TRAFFIC_
+   ROOFLINE_DIAGNOSTIC_2026-08-11.md`의 하드웨어 오식별 정정(§11,
+   Claim A 각주 참조)의 근거가 됐다. 상세 `CONSENSUS.md`
+   §1-1(2026-08-14 E-3 블록), `workspace/engine-port/results/
+   smsplit_realized/PREREG_SMSPLIT_REALIZED_2026-08-14.md`.
 
 ### ★ Gate 2-S 인용 제한 7건 (반드시 함께 인용 — 다음 세션이 사전등록
 문서를 안 읽고 이 표만 보고 인용할 위험을 막기 위한 것)
