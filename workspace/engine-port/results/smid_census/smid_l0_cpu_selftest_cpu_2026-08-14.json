@@ -1,0 +1,60 @@
+{
+  "kind": "smid_l0_cpu_selftest",
+  "tag": "cpu_2026-08-14",
+  "utc": "2026-08-14T07:15:35Z",
+  "host": "glogin01",
+  "gpu_used": false,
+  "triton_version": "3.5.1",
+  "python": "3.14.2",
+  "cuobjdump": "/apps/cuda/13.0.2/bin/cuobjdump",
+  "asm_keys": [
+    "cubin",
+    "llir",
+    "ptx",
+    "source",
+    "ttgir",
+    "ttir"
+  ],
+  "ptx_smid_sites": 1,
+  "ptx_nsmid_sites": 1,
+  "ptx_globaltimer_sites": 2,
+  "spin_loop_has_back_edge": true,
+  "cubin_bytes": 6504,
+  "census_res_usage": {
+    "stdout": "\nResource usage:\n Common:\n  GLOBAL:0\n Function census_kernel:\n  REG:20 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:416 TEXTURE:0 SURFACE:0 SAMPLER:0\n",
+    "returncode": 0,
+    "reg": 20,
+    "stack": 0,
+    "shared": 0,
+    "local": 0
+  },
+  "toy_baseline_res_usage": {
+    "stdout": "\nResource usage:\n Common:\n  GLOBAL:0\n Function toy_base:\n  REG:8 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:384 TEXTURE:0 SURFACE:0 SAMPLER:0\n",
+    "returncode": 0,
+    "reg": 8,
+    "stack": 0,
+    "shared": 0,
+    "local": 0
+  },
+  "toy_instrumented_res_usage": {
+    "stdout": "\nResource usage:\n Common:\n  GLOBAL:0\n Function toy_instr:\n  REG:12 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:384 TEXTURE:0 SURFACE:0 SAMPLER:0\n",
+    "returncode": 0,
+    "reg": 12,
+    "stack": 0,
+    "shared": 0,
+    "local": 0
+  },
+  "toy_reg_delta": 4,
+  "toy_shared_local_stack_unchanged": true,
+  "toy_reg_delta_scope": "TOY KERNEL ONLY. This delta bounds nothing about any production kernel; per prereg sec7 the L2 occupancy argument requires measuring the delta on the target kernel itself with its campaign constants. Methodology gate #32: do not import this number into another context.",
+  "checks": {
+    "cubin_built_without_gpu": true,
+    "smid_site_present": true,
+    "nsmid_site_present": true,
+    "globaltimer_two_sites": true,
+    "spin_not_hoisted": true,
+    "toy_pair_measured": true
+  },
+  "result": "PASS",
+  "result_scope": "PLUMBING ONLY. A PASS licenses no physical, performance or delivery statement whatsoever (methodology gate #26: a smoke PASS carries no information about any result)."
+}
