@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=80G
 #SBATCH --time=01:00:00
-#SBATCH --comment=pytorch
+#SBATCH --comment="field=efficientai;appl=pytorch"
 #SBATCH --output=slurm/logs/prefill_sm_%j.out
 #SBATCH --error=slurm/logs/prefill_sm_%j.err
 set -euo pipefail

@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --time=00:20:00
-#SBATCH --comment=pytorch
+#SBATCH --comment="field=efficientai;appl=pytorch"
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/phase0_pytest_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/phase0_pytest_%j.err
 

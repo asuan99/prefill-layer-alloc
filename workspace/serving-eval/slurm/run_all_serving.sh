@@ -37,7 +37,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
 #SBATCH --time=12:00:00
-#SBATCH --comment=pytorch
+#SBATCH --comment="field=efficientai;appl=pytorch"
 #SBATCH -o /scratch/%u/whlee/prefill-layer-alloc/logs/se_all_%j.log
 #SBATCH -e /scratch/%u/whlee/prefill-layer-alloc/logs/se_all_%j.err
 

@@ -88,7 +88,8 @@ submit_job() {
   while :; do
     wait_slot
     out=$(sbatch --parsable --job-name="$name" --partition="$A100_PART" --gres=gpu:1 \
-            --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 --time="$t" --comment=pytorch \
+            --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 --time="$t" \
+            --comment="field=efficientai;appl=pytorch" \
             --output="$LOG/${name}_%j.log" --error="$LOG/${name}_%j.err" \
             --wrap "env -u BASH_ENV bash -c '$inner'" 2>"$LOG/${name}_agent.err")
     rc=$?

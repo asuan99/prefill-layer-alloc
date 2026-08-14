@@ -2,7 +2,7 @@
 #SBATCH --job-name=g2s
 #SBATCH --partition=amd_a100nv_8
 #SBATCH --gres=gpu:1
-#SBATCH --comment=pytorch
+#SBATCH --comment="field=efficientai;appl=pytorch"
 #SBATCH --time=06:00:00
 #SBATCH --output=g2s_%j.out
 #SBATCH --error=g2s_%j.err

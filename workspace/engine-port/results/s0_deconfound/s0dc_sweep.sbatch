@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=90G
 #SBATCH --time=08:00:00
-#SBATCH --comment=pytorch
+#SBATCH --comment="field=efficientai;appl=pytorch"
 #SBATCH --array=0-2
 #SBATCH --output=%x_%A_%a.out
 #SBATCH --error=%x_%A_%a.err

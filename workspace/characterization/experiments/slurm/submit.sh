@@ -78,7 +78,7 @@ sbatch --parsable \
   $GRES \
   --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 \
   --time="$T" \
-  --comment=pytorch \
+  --comment="field=efficientai;appl=pytorch" \
   --output="$LOGDIR/v2_${EXP}_%j.log" \
   --error="$LOGDIR/v2_${EXP}_%j.err" \
   --wrap "env -u BASH_ENV bash -c '$RUNCMD'"

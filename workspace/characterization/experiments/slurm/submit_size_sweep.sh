@@ -51,6 +51,6 @@ NMODELS=$(echo $MODELS | wc -w); ARRAY="0-$((NMODELS - 1))"
 echo "[size-sweep] submitting ${NMODELS}-task array (--array=$ARRAY) for $EXP (models: $MODELS)"
 sbatch --parsable --array="$ARRAY" --partition="$A100_PART" --gres=gpu:1 \
   --job-name="v2-$EXP" --nodes=1 --ntasks-per-node=1 --cpus-per-task=4 \
-  --time="$T" --comment=pytorch \
+  --time="$T" --comment="field=efficientai;appl=pytorch" \
   --output="$LOG/v2_${EXP}_%A_%a.log" --error="$LOG/v2_${EXP}_%A_%a.err" \
   --wrap "env -u BASH_ENV bash -c '$INNER'"

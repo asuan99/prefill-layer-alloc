@@ -141,7 +141,7 @@ while true; do
         --cpus-per-task   16
         --gres       gpu:1
         --time       "$TIME_LIMIT"
-        --comment    pytorch
+        --comment    "field=efficientai;appl=pytorch"
     )
 
     # salloc 안에서 실행할 명령 (환경 설정 + 스크립트)

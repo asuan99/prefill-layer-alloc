@@ -9,7 +9,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=12:00:00
-#SBATCH --comment=pytorch
+#SBATCH --comment="field=efficientai;appl=pytorch"
 #SBATCH --output=slurm/logs/stage1v2_%j.out
 #SBATCH --error=slurm/logs/stage1v2_%j.err
 # Usage:

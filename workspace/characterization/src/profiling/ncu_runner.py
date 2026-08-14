@@ -527,8 +527,8 @@ class NCURunner:
                 "    1. Submit via SLURM: sbatch slurm/run_ncu_profile.sh\n"
                 "       (SLURM jobs on the gpu partition may have counter access)\n"
                 "    2. Ask admin to set: NVreg_RestrictProfilingToAdminUsers=0\n"
-                "    3. Interactive access: srun --gres=gpu:1 --comment=pytorch "
-                "--pty bash, then retry\n"
+                "    3. Interactive access: srun --gres=gpu:1 "
+                '--comment="field=efficientai;appl=pytorch" --pty bash, then retry\n'
                 f"  ncu stdout: {proc.stdout[:300]}"
             )
         if proc.returncode != 0:

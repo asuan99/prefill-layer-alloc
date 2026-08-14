@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=02:30:00
-#SBATCH --comment=pytorch
+#SBATCH --comment="field=efficientai;appl=pytorch"
 #SBATCH --output=%x_%j.out
 #SBATCH --error=%x_%j.err
 # P1 operating-point (cudagraph-ON) contrast: plain (fused) vs agnostic (pdmux v1).
