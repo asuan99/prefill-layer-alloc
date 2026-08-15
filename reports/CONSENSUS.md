@@ -4,7 +4,22 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-14 rev28 (doc-steward — **새 성능 판정 0건 — E-1a
+최종 갱신: 2026-08-15 rev29 (doc-steward — **새 성능 판정 0건 · 정책 주장
+0건 — 세션 종료 정본 반영 4건, 기존 Δ·p값·크기 인용 셀(Zamba2 r2 단일)·
+등급은 한 글자도 안 바뀐다.** (A) keepalive 오염이 §3 항목50 caveat(ii)를
+구체화(addendum, §3 항목28과 대응 — 새 사실 아니라 기전 특정)+
+`NOTES_D54_ANCHOR_2026-08-03.md`/`PROJECT_STATUS.md` G-1의 "byte-identical/
+engine-tree churn" 서술에 dated 정정(mtime 증거로 865493이 그 파일을 쓸 수
+없었음을 확인). (B) decode batch 도달성의 구조적 폐쇄를 실험 게이트로
+등재(§3 항목51, **claims-auditor 산출·메인 세션은 T8 행 하나만 재확인**,
+provenance 명시). (C) ncu/nsys 도구 사실 4건으로 "커널 단위 측정 0건"에
+운영점·green-ctx 스코프 주석(§3 항목52). (D) 방법론 게이트 #35·#36
+신설(§3 항목53). 상세는 이 문서 §3 항목50(追記)·51·52·53(신설),
+`PROJECT_STATUS.md` "다음 실험 gate" #12(신설)·"8B decode-SM 민감도 측정
+노트"(스코프 주석 추가)·"방법론 게이트" #35·#36, 메모리
+`deconfound-measurement-lessons.md` 항목35·36·`scale-8b-sm-sensitivity.md`,
+원자료 `handoff-report/session_handoff_2026-08-15.md`. 이전 rev28:
+2026-08-14 (doc-steward — **새 성능 판정 0건 — E-1a
 Tier 2 처리(claims-auditor 판정 T2-1 조건부 채택 §3 항목50·T2-2 보류
 [사전등록 addendum]·T2-3/T2-4 기각[T2-4는 §1-25 追記로 재확인만])
 + RESUME.md push 프레이밍 정정, 기존 Δ·p값·크기 인용 셀(Zamba2 r2
@@ -1925,6 +1940,109 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     PREREG_E1_BSWEEP_REGIME_2026-08-14.md`(2026-08-14 addendum, 사전등록
     자체는 여전히 미제출)·`E1A_ARTIFACT_ERRATA_2026-08-14.md`(아티팩트
     결함 4건, engine-porter/result-analyst 이관).
+
+    ★★**(2026-08-15 addendum, doc-steward — caveat 정확화, 등급·수치
+    변경 아님) caveat(ii) "job축 교락"의 정체 확인.** job **865533**은
+    keepalive 프롬프트(`s8_keepalive_prompt_224.txt`, 1793 토큰 >
+    컨텍스트 상한 1792)가 Ha8 arm **전 5셀**에서 사실상 100% 거부돼
+    (d16 23,662·d24 23,689·d44 23,705·d92 23,729·np 23,675건/셀,
+    `s8_deconf_Ha8_C1024_d{16,24,44,92,np}_865533_srv.log`, 메인 세션
+    직접 재확인) **prefill 동거가 죽은 런**이다(`CO_RESIDENT_frac` d44:
+    865533 **0.349** vs 865493 **0.662**,
+    `s8_deconf_Ha8_C1024_865{493,533}_result.txt:68`). caveat(ii)의
+    "job축 교락"은 곧 **"동거 정상(865493) vs keepalive-사망(865533)"의
+    교락**이라는 구체적 형태다 — 동거는 §1-1·§1-26이 이미 확립한 대로
+    green-context 파티션이 **실현되는 조건 그 자체**다. 이것은 새
+    사실이 아니라 §3 **항목28**(2026-08-03)의 "`n_indep=1`
+    (865493↔865533은 keepalive 설정이 달라 replicate 아님)" 판정의
+    **기전을 특정**한 것이다(당시는 "설정이 다르다"까지, 이번에
+    1793>1792 토큰 초과라는 정확한 원인·크기 확인) — `k`·`b` 비식별
+    판정 자체는 이 발견으로 **강화**되며 **등급 변경 아님**.
+    ⚠️**별건 dated 정정(원문 미덮어쓰기)**: `results/s8_scaleup/
+    NOTES_D54_ANCHOR_2026-08-03.md` Finding 1과 이를 그대로 복제한
+    `PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트" G-1의
+    "byte-identical to the one 865493 used"·"engine-tree churn between
+    2026-07-27 and today[08-03]" 서술 — 865493의 전 20개 arm/cell
+    srv.log 중 최종 파일은 **2026-07-27 23:05:55**에 끝나는데
+    `s8_keepalive_prompt_224.txt`의 파일시스템 mtime은 그보다 **47분
+    뒤인 23:53:11**이다(메인 세션 직접 확인) ⇒ **865493은 그 시각의
+    파일을 쓸 수 없다**(job이 이미 종료). 865533(865493 종료 직후
+    같은 날 밤 실행, Ha8 d44 srv.log 종료 2026-07-28 00:53:25)이
+    이미 같은 붕괴를 보이므로, 깨짐 시점은 08-03이 아니라 **늦어도
+    2026-07-27 23:53경**이다(원인 자체는 여전히 미규명). 두 문서
+    모두에 addendum 필요 — `NOTES_D54_ANCHOR_2026-08-03.md`에는
+    별도 addendum 절로, `PROJECT_STATUS.md` G-1에는 인접 정정
+    문단으로 추가(아래 참조). 상세 `PROJECT_STATUS.md` "다음 실험
+    gate" #12, `handoff-report/session_handoff_2026-08-15.md` §2.7.
+51. ★★**(2026-08-15, doc-steward 등재 — claims-auditor 산출, 메인
+    세션 미재현[provenance 명시]) decode batch 도달성의 구조적 폐쇄 —
+    실험 게이트로 등재, 성능 판정 아님.** ctx4096 텔레메트리 전수
+    재집계: prefill 16 SM 고정 + `--chunked-prefill-size -1` 격자에서
+    SM92 셀의 max(decode_bs)가 T8 4·M8 4·Hs8 4·Ha8 12로 무너진다
+    (SM44는 T8 8·M8 8·Hs8 6·Ha8 16) — SM92에서 B≥9 도달률은 T8·
+    M8·Hs8 **0.0%**, Ha8 **3.0%**뿐. ⚠️**provenance**: 메인 세션이
+    독립 확인한 것은 이 중 **T8 행 하나**뿐(`workspace/engine-port/
+    results/bsweep_regime/PREREG_E1_REV3_2026-08-15.md:150` "T8은
+    d92에서 B가 4를 넘은 적이 없다[d44는 8]") — M8·Hs8·Ha8 행과
+    도달률 %는 재현하지 않았다. 제시된 기전: prefill SM을 고정하면
+    prefill 서비스율 `λ`가 상한이 되고 Little's law
+    (`B_decode=λ·T_decode`)로 동시성을 올려도 B가 오르지 않는다
+    (출력 토큰↑ 레버는 Zamba2 `max_position_embeddings=4096`이 막음).
+    **등재 명제(앞으로의 모든 B축 설계에 적용)**: 이 기판(prefill SM
+    고정·unchunked)에서는 decode batch를 제공 동시성으로 임의로
+    끌어올릴 수 없다. E-1 계열 rev1–rev3(2026-08-15, 死因표)이 이
+    제약으로 닫혔다 — rev4는 prefill SM을 풀거나 다른 B 통제 수단이
+    선행돼야 한다. 상세 `PROJECT_STATUS.md` "다음 실험 gate" #12,
+    `handoff-report/session_handoff_2026-08-15.md` §2.8·§4.2.
+52. ★**(2026-08-15, doc-steward 등재 — 메인 세션이 벤더 문서·메트릭
+    DB·아카이브 로그로 직접 확인) ncu/nsys 도구 사실 4건 — "커널
+    단위 측정 0건"에 운영점·green-ctx 스코프 주석, 성능 판정 아님.**
+    (1) `launch__waves_per_multiprocessor` 메트릭 설명(`ncu
+    --query-metrics-collection launch --chip ga100`, 설치본
+    2025.3.1.0, 드라이버 580.105.08, 메인 세션 직접 재확인): "When
+    using green contexts, this metric is scaled with the number of
+    SMs used by the green context." — green ctx 하에서도 wave 지표를
+    그대로 쓸 수 있다(요건 ncu 2024.3+/드라이버 560+, 충족). (2)
+    `nsys profile --help`(설치본 2025.3.1.0, 메인 세션 직접 재확인)의
+    `--cuda-graph-trace` 기본값은 `graph`이고 "node activities will
+    not be collected" — **운영점(cudagraph-ON)에서 커널 노드를 보려면
+    `=node` 명시가 필요**. (3) `--exclusive`는 ncu 요구사항이 아니다
+    — 직렬화 락은 per-device, GPU는 `--gres=gpu:1`로 이미 할당되며
+    카운터 게이트 `hwperf`는 A100 노드 전체의 기본 feature(`sinfo`:
+    `gpu[30-33,36-43] A100-80GB_8,hwperf`, 메인 세션 직접 재확인),
+    아카이브 ncu 로그에 `ERR_NVGPUCTRPERM` **0건**(메인 세션 직접
+    재확인). (4) 선행 ncu 시도가 **이미 있다** —
+    `workspace/characterization/src/profiling/ncu_runner.py` +
+    아카이브 **8 job**(`logs/archived/ncu_{717984,720116,724102,
+    726120,727029,729105,735985,735986}.*`), `error code 9`
+    **1,986건** + 메트릭 정규식 실패 **1,920건**(메인 세션 직접
+    재확인). `_ncu_target.py:73-74`가 "ncu profiling always runs at
+    full GPU"라 명시하고 wave를 해석적으로 계산 ⇒ **green context
+    하에서 잰 적이 없다**. ⇒ `PROJECT_STATUS.md` "8B decode-SM 민감도
+    측정 노트"의 "커널 단위 측정이 0건이라 미식별"에 **"운영점·
+    green-ctx 한정으로 참이며, full-GPU 합성 커널 프로파일링은
+    2026년 초 시도돼 대량 실패했다"** 스코프 주석을 단다 — "미실행"과
+    "시도했으나 실패"는 다른 명제다. 상세 `PROJECT_STATUS.md` "8B
+    decode-SM 민감도 측정 노트", `handoff-report/session_handoff_
+    2026-08-15.md` §2.9.
+53. ★**(2026-08-15, doc-steward 등재 — E-1 rev1–rev3+kernel_mech 4회
+    설계 전부 감사 차단에서 도출, 새 실험 아님) 방법론 게이트 #35·
+    #36 신설.** **#35 "개정판에서 손잡이 값을 유지한 채 유도 서사만
+    바꾸지 마라."** rev2의 `δ=0.0610/3=0.0203`이 rev3에서 "오차예산"
+    유도로 갈아 끼워졌으나 숫자는 `δ=0.020`(반올림)으로 그대로였다
+    (`workspace/engine-port/results/bsweep_regime/PREREG_E1_REV2_
+    2026-08-15.md:202`·`PREREG_E1_REV3_2026-08-15.md:194`, 메인 세션
+    직접 재확인) — 그 0.0610 자체가 §3 항목50이 지금 오염원으로
+    특정한 A의 앵커다. **#36 "타당성은 도구 문서·메트릭 DB로 확인한
+    뒤 설계하라."** kernel_mech §3이 항목52(1)이 반증한(즉 존재하지
+    않는) green-context wave-분모 오염을 피하려 수제 카운터 층으로
+    내려가 `wave_eff≡1` 항등식을 만들었다(방법론 게이트 #9 여덟
+    번째 재발) — 확인 비용은 로그인 노드 명령 1줄, GPU 0이었다.
+    메모리 `deconfound-measurement-lessons.md` 항목35·36과 대응.
+    상세 `PROJECT_STATUS.md` "방법론 게이트" #35·#36,
+    `workspace/engine-port/results/bsweep_regime/PREREG_E1_REV{2,3}_
+    2026-08-15.md`(미커밋), `workspace/engine-port/results/
+    kernel_mech/`(미커밋).
 
 ---
 

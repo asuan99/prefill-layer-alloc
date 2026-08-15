@@ -1802,6 +1802,27 @@ decode AI≈8.2는 ridge의 **5.1%→5.4%**. **어떤 판정도 뒤집히지 않
 2026-07-28.md` §7 C-5(addendum), `reports/CONSENSUS.md` rev26·§3 항목46
 (追記), "방법론 게이트" #32(追記) 아래.
 
+★**스코프 주석(2026-08-15, doc-steward — 메인 세션이 벤더 문서·메트릭 DB·
+아카이브 로그로 직접 확인, 새 성능 판정 아님)**: 위 문단 "진짜 원인(wave
+quantization/층 직렬 사슬/커널 점유율/cudagraph 직렬화)은 커널 단위 측정이
+0건이라 미식별"은 **운영점·green-ctx 한정으로만 참**이다. (1)
+`launch__waves_per_multiprocessor`는 green context 하에서도 "scaled with
+the number of SMs used by the green context"로 그대로 쓸 수 있다(ncu
+2025.3.1.0/드라이버 580.105.08 요건 충족, `ncu --query-metrics-collection
+launch --chip ga100`). (2) `nsys --cuda-graph-trace` 기본값 `graph`는
+"node activities will not be collected" — 운영점(cudagraph-ON)에서 커널
+노드를 보려면 `=node` 명시가 필요할 뿐 원리적 불가가 아니다. (3)
+`--exclusive`는 ncu 요구사항이 아니다(직렬화 락은 per-device, `hwperf`는
+A100 노드 전체 기본 feature). (4) 선행 ncu 시도가 **이미 있다**
+(`workspace/characterization/src/profiling/ncu_runner.py` + 아카이브 8
+job, `error code 9` 1,986건 + 메트릭 정규식 실패 1,920건) — 단
+`_ncu_target.py:73-74`가 "ncu profiling always runs at full GPU"라
+명시해 **green context 하에서 잰 적은 없다**. ⇒ "커널 단위 측정 0건"은
+"미실행"이 아니라 "**full-GPU 합성 커널 프로파일링은 2026년 초 시도돼
+대량 실패했고, green-ctx·운영점 하의 커널 프로파일링은 시도된 적 없다**"로
+정정해서 읽는다. 상세 `reports/CONSENSUS.md` §3 항목52, `handoff-report/
+session_handoff_2026-08-15.md` §2.9.
+
 상세 [`workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`](workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md)
 (§6에 (a)"레버 존재≠정책 이득" (b)"HE0를 되살리지 않는다" 명시, §3 retraction을
 "SM108이 근소하게 빠르다"에서 "비교 불가"로 강화 — 2026-07-28 doc-steward 반영;
@@ -2461,7 +2482,28 @@ results/s8_scaleup/TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`](workspace/engine-
   재현 불가 요인**이므로 해당 캠페인을 참조하는 곳에 경고를 남긴다. 결과:
   co-residency가 865493의 ~90–100% → **31–34%** 붕괴, 측정된 전 셀
   `REALIZED_PIN` FAIL(T8 blk1 d16 0.316 / d54 0.628, Hs8 d16 0.342 / d54
-  0.577). **G-2 [AUDITED — 독립 수렴] C2의 높은 residency는 파티션 제어가
+  0.577).
+
+  ⚠️**dated 정정(2026-08-15, doc-steward — 메인 세션 mtime 직접 확인, 원문
+  미덮어쓰기, 새 성능 판정 아님)**: 위 "865493은 byte-identical한 같은
+  파일로 성공"·"2026-07-27 이후 엔진 트리 churn"은 두 가지가 틀렸다.
+  (1) **865493은 이 파일을 쓸 수 없다** — 865493의 전 20개 arm/cell
+  srv.log 중 최종 파일은 **2026-07-27 23:05:55**에 끝나는데
+  `s8_keepalive_prompt_224.txt`의 파일시스템 mtime은 그보다 **47분 뒤인
+  23:53:11**이다(job이 이미 종료된 뒤). (2) **깨짐은 08-03이 아니라 이미
+  07-27 밤에 있었다** — 같은 밤 865493 종료 직후 실행된 **865533**의
+  Ha8 arm이 **전 5셀**(d16/d24/d44/d92/np)에서 이미 같은 컨텍스트-초과
+  거부를 셀당 23,662–23,729건 냈다(`s8_deconf_Ha8_C1024_d*_865533_
+  srv.log`, `CO_RESIDENT_frac` 붕괴 0.662→0.349). ⇒ "07-27~08-03 사이
+  churn" 가설은 시점을 08-03으로 오귀속한다 — 근거는 늦어도 **07-27
+  23:53경**부터 이미 있었다(원인 자체는 여전히 미규명). **865493과
+  865533은 같은 캠페인의 반복측정(replicate)이 아니다** — keepalive
+  실현 조건이 다른 별개 런이며, 이 사실은 §3 항목28(2026-08-03)이
+  이미 "n_indep=1"로 등재해 둔 것이다. 상세 `reports/CONSENSUS.md` §3
+  항목50 addendum(2026-08-15), `NOTES_D54_ANCHOR_2026-08-03.md`
+  addendum(원문 보존, 신설 예정).
+
+  **G-2 [AUDITED — 독립 수렴] C2의 높은 residency는 파티션 제어가
   아니라 워크로드 장치의 산물.** sticky OFF에서는 prefill이 in-flight일
   때만 목표 분할이 유지되므로(`_init_sticky_partition` docstring,
   `multiplexing_mixin.py:206-231`) **keepalive 포화가 C2 물리의 하중
@@ -3507,6 +3549,37 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     마커 — 은 이번 세션에서도 **여전히 미해결**임을 확인만 함, 코드
     미수정.)
 
+12. ★★**(2026-08-15, doc-steward 등재 — claims-auditor 산출, 메인 세션은
+    일부만 재확인[아래 명시] — 새 실험 아님) decode batch 도달성의 구조적
+    폐쇄 — 앞으로의 모든 B축 설계에 적용되는 제약.** ctx4096 텔레메트리
+    전수 재집계: prefill 16 SM 고정 + `--chunked-prefill-size -1` 격자에서
+    SM92 셀의 max(decode_bs)가 T8 4·M8 4·Hs8 4·Ha8 12로 무너진다(SM44는
+    T8 8·M8 8·Hs8 6·Ha8 16) — SM92에서 B≥9 도달률은 T8·M8·Hs8 **0.0%**,
+    Ha8 **3.0%**뿐.
+
+    | arm | d44 maxB | d92 maxB | d92에서 B≥9 |
+    |---|---|---|---|
+    | T8 | 8 | 4(p10=p90=4) | 0.0% |
+    | M8 | 8 | 4 | 0.0% |
+    | Hs8 | 6 | 4 | 0.0% |
+    | Ha8 | 16 | 12 | 3.0% |
+
+    ⚠️**provenance**: 메인 세션이 독립 확인한 것은 이 중 **T8 행 하나**뿐
+    (`workspace/engine-port/results/bsweep_regime/PREREG_E1_REV3_
+    2026-08-15.md:150` "T8은 d92에서 B가 4를 넘은 적이 없다[d44는 8]") —
+    M8·Hs8·Ha8 행과 도달률 %는 재현하지 않았다. 기전(메모리 아님 — T8 KV
+    풀 910,624 tok로 충분): prefill SM을 고정하면 prefill 서비스율 `λ`가
+    상한이 되고 Little's law(`B_decode=λ·T_decode`)로 동시성을 올려도 B가
+    오르지 않는다(출력 토큰↑ 레버는 Zamba2 `max_position_embeddings=4096`이
+    막음). **등재 명제**: 이 기판(prefill SM 고정·unchunked)에서는 decode
+    batch를 제공 동시성으로 임의로 끌어올릴 수 없다 — 목표 B가 도달
+    가능한지를 **프로브로 먼저 확인**한 뒤에만 격자를 설계한다(rev2·rev3의
+    §3.3 도달성 프로브가 이 교훈을 반영). E-1 계열 rev1–rev3(死因표는
+    "방법론 게이트" #35 참조)이 이 제약으로 이 기판에서는 닫혔다 —
+    rev4는 prefill SM을 풀거나 다른 B 통제 수단이 먼저 필요하다. 상세
+    `reports/CONSENSUS.md` §3 항목51, `handoff-report/session_handoff_
+    2026-08-15.md` §2.8·§4.2.
+
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
@@ -3539,7 +3612,7 @@ Scalable AI Systems) · `appl=pytorch`(SGLang은 `showappl` 목록에 없어 PyT
 전문·환경 셋업은 [`RESUME.md`](workspace/engine-port/RESUME.md) "SLURM
 `--comment` (제출 필수)" 참조.
 
-## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응], 2026-08-07 (G1-b) #16 신설[스코프 확장은 원 격자를 전부 재현하라, CONSENSUS §3 항목30과 대응], 2026-08-09 (E-A) #17–19 신설[게이트를 모든 보고 블록에 걸어라·과부하 arm 비교는 시스템 상수가 아니다·사후 지정 셀 이동, CONSENSUS §3 항목31–33과 대응]·(Gate 2 rev4 본 캠페인 R1′/R2′ 정본 반영 복구) #20 신설[사전등록 분석기가 계산하지 않는 비교는 사후 비교다, CONSENSUS §3 항목34와 대응], 2026-08-09 (HOLB G5 재채점·874601 라벨 정정·scipy 폴백) #21 신설[측정 실패를 게이트 실패로 라벨링 마라 — 6번째 재발, 최초 정식 등재, CONSENSUS §3 항목35와 대응]·#22 신설[통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지 않는다, CONSENSUS §3 항목36과 대응], 2026-08-10 (job 876699 T4-1 TIMEOUT 사후분석·공유 하네스 무한대기 수정) #21에 일곱 번째 재발 追記[이번엔 분석 코드가 거짓 음성(REFUTED)을 산출, CONSENSUS §3 항목35 개정과 대응]·#23 신설[공유 하네스 함수의 무경계 대기는 그 함수를 쓰는 모든 소비자의 위험이다, CONSENSUS §3 항목37과 대응], 2026-08-11 (Gate 2-S 첫 유효 결과, jobs 877756/877757, claims-auditor 적대 감사) #9에 여섯 번째 재발 追記[형식상 두 게이트가 같은 정보를 잼, CONSENSUS §3 항목18 개정과 대응]·#20에 새 사례 追記["식별자 수입 ≠ 거동 수입", CONSENSUS §3 항목34 개정과 대응]·#24 신설[any() over n reps 스크린의 귀무 발화율 1−(1−α)ⁿ, CONSENSUS §3 항목38과 대응]·#25 신설[사전등록이 명시한 진단 필드가 산출되지 않을 수 있다, CONSENSUS §3 항목39와 대응], 2026-08-11 (Gate 2-S 1차 실행 실패 후속, doc-steward) #26 신설[대형 캠페인 제출 전 배관 스모크 규율 — 0.11 GPU-hr 스모크(job 877593)가 6.40 GPU-hr 오판(jobs 877107/877109) 재발을 막음, CONSENSUS §3 항목40과 대응], 2026-08-11 (G1-c, job 877974) #27 신설[결정량의 밀도 의존성을 먼저 따져라, CONSENSUS §3 항목41과 대응]·#28 신설[실험이 무엇을 풀어주는지가 코드 사실인지 추정인지 실행 전에 구별하라, CONSENSUS §3 항목42와 대응]·#29 신설[`compute_coverage`류는 내부 구멍에 맹목이다, CONSENSUS §3 항목43과 대응], 2026-08-11 (E1 addendum, jobs 877756/877757, claims-auditor 적대 감사) #25에 여덟 번째 재발 追記[직전 회차 등재 직후 재발, CONSENSUS §3 항목39 追記와 대응]·#9에 별건 사례 追記[`falsifier()` docstring이 "IMPORTED"라 적었으나 인라인 복사·phase 필터 미적용, CONSENSUS §3 항목18 追記와 대응]·#30 신설[부정 선언문("NO UPGRADE PATH EXISTS") 옆의 새 통계량은 자기인지 자백만으로 재감사를 면제받지 않는다, CONSENSUS §3 항목44와 대응]·#31 신설[bound는 확률모델의 꼬리 분위수여야 하고 인접 관측 최대 차이(점추정)와 구별하라, CONSENSUS §3 항목45와 대응], 2026-08-11(트래픽·roofline 진단, result-analyst, GPU 0) #9에 일곱 번째 재발 追記[서술자 자수 — roofline 탄력도 정합은 항등식, CONSENSUS §3 항목18 追記와 대응]·#32 신설[다른 캠페인·다른 스케일의 보조 수치는 기준(basis) 검증 후 수입하라, CONSENSUS §3 항목46과 대응], 2026-08-14 (doc-steward, 문서 층 정리 — 새 성능 판정 0건) #9·#25 본문에 헤더가 이미 명시했던 追記 2건이 누락돼 있던 것을 CONSENSUS §3 항목18·39 원문 대조로 복원·#26에 追記[발동 조건을 "캠페인 하나"에서 "한 배치로 제출되는 신규/변경 코드 공유 캠페인들의 합"으로 개정 권고, CONSENSUS §3 항목47과 대응]·#33 신설[매니페스트 N/N sha 일치는 런타임 바이트 동일함을 함의하지 않는다 — 재현성 주장 범위를 매니페스트가 실제로 덮는 15파일로 한정, CONSENSUS §3 항목48과 대응], 2026-08-14 (E-3 realized SM count 프로브의 부수 발견, doc-steward, 2차) #32에 새 사례 追記[하드웨어 식별 층 재발 — glogin01(PCIe)에서 읽은 하드웨어를 컴퓨트 노드(SXM4) 캠페인에 잘못 귀속, CONSENSUS §3 항목46 追記와 대응], 2026-08-14 (4건 사전등록 감사 종합, doc-steward, 3차) #32에 새 사례 追記[C2 sd_rep(ε)를 basis 미검증 수입값에서 E-1a 원자료 직접측정값으로 교체 — 실패가 아니라 성공 사례, CONSENSUS §3 항목46 追記와 대응]·#34 신설[사전등록은 규칙 먼저 감사받고 하네스는 그 다음 별도로 감사받아라 — 2단 규율, LTSM P1·E1-b/c·%smid R0·E-1 4건 동시 발견, CONSENSUS §3 항목49와 대응])
+## 방법론 게이트 (2026-07-28 신설, 2026-07-29 #4, 2026-08-02 #5·#6, 2026-08-03 #7 추가·#6 사례 추가·(3차 속행) #8 추가·(4차 속행) #9·#10 추가, 2026-08-05 #9 네 번째 재발 기록·#11 추가·(P1 운영점 대조 감사) #6 새 사례 추가·#12·#13 신설, 2026-08-06 #14 신설[통계 방법 층 정정, CONSENSUS §3 항목27과 대응]·(Gate 1) #9 다섯 번째 재발 기록·#15 신설[시간가중 step-function 추정량의 두 함정, CONSENSUS §3 항목28·29와 대응], 2026-08-07 (G1-b) #16 신설[스코프 확장은 원 격자를 전부 재현하라, CONSENSUS §3 항목30과 대응], 2026-08-09 (E-A) #17–19 신설[게이트를 모든 보고 블록에 걸어라·과부하 arm 비교는 시스템 상수가 아니다·사후 지정 셀 이동, CONSENSUS §3 항목31–33과 대응]·(Gate 2 rev4 본 캠페인 R1′/R2′ 정본 반영 복구) #20 신설[사전등록 분석기가 계산하지 않는 비교는 사후 비교다, CONSENSUS §3 항목34와 대응], 2026-08-09 (HOLB G5 재채점·874601 라벨 정정·scipy 폴백) #21 신설[측정 실패를 게이트 실패로 라벨링 마라 — 6번째 재발, 최초 정식 등재, CONSENSUS §3 항목35와 대응]·#22 신설[통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지 않는다, CONSENSUS §3 항목36과 대응], 2026-08-10 (job 876699 T4-1 TIMEOUT 사후분석·공유 하네스 무한대기 수정) #21에 일곱 번째 재발 追記[이번엔 분석 코드가 거짓 음성(REFUTED)을 산출, CONSENSUS §3 항목35 개정과 대응]·#23 신설[공유 하네스 함수의 무경계 대기는 그 함수를 쓰는 모든 소비자의 위험이다, CONSENSUS §3 항목37과 대응], 2026-08-11 (Gate 2-S 첫 유효 결과, jobs 877756/877757, claims-auditor 적대 감사) #9에 여섯 번째 재발 追記[형식상 두 게이트가 같은 정보를 잼, CONSENSUS §3 항목18 개정과 대응]·#20에 새 사례 追記["식별자 수입 ≠ 거동 수입", CONSENSUS §3 항목34 개정과 대응]·#24 신설[any() over n reps 스크린의 귀무 발화율 1−(1−α)ⁿ, CONSENSUS §3 항목38과 대응]·#25 신설[사전등록이 명시한 진단 필드가 산출되지 않을 수 있다, CONSENSUS §3 항목39와 대응], 2026-08-11 (Gate 2-S 1차 실행 실패 후속, doc-steward) #26 신설[대형 캠페인 제출 전 배관 스모크 규율 — 0.11 GPU-hr 스모크(job 877593)가 6.40 GPU-hr 오판(jobs 877107/877109) 재발을 막음, CONSENSUS §3 항목40과 대응], 2026-08-11 (G1-c, job 877974) #27 신설[결정량의 밀도 의존성을 먼저 따져라, CONSENSUS §3 항목41과 대응]·#28 신설[실험이 무엇을 풀어주는지가 코드 사실인지 추정인지 실행 전에 구별하라, CONSENSUS §3 항목42와 대응]·#29 신설[`compute_coverage`류는 내부 구멍에 맹목이다, CONSENSUS §3 항목43과 대응], 2026-08-11 (E1 addendum, jobs 877756/877757, claims-auditor 적대 감사) #25에 여덟 번째 재발 追記[직전 회차 등재 직후 재발, CONSENSUS §3 항목39 追記와 대응]·#9에 별건 사례 追記[`falsifier()` docstring이 "IMPORTED"라 적었으나 인라인 복사·phase 필터 미적용, CONSENSUS §3 항목18 追記와 대응]·#30 신설[부정 선언문("NO UPGRADE PATH EXISTS") 옆의 새 통계량은 자기인지 자백만으로 재감사를 면제받지 않는다, CONSENSUS §3 항목44와 대응]·#31 신설[bound는 확률모델의 꼬리 분위수여야 하고 인접 관측 최대 차이(점추정)와 구별하라, CONSENSUS §3 항목45와 대응], 2026-08-11(트래픽·roofline 진단, result-analyst, GPU 0) #9에 일곱 번째 재발 追記[서술자 자수 — roofline 탄력도 정합은 항등식, CONSENSUS §3 항목18 追記와 대응]·#32 신설[다른 캠페인·다른 스케일의 보조 수치는 기준(basis) 검증 후 수입하라, CONSENSUS §3 항목46과 대응], 2026-08-14 (doc-steward, 문서 층 정리 — 새 성능 판정 0건) #9·#25 본문에 헤더가 이미 명시했던 追記 2건이 누락돼 있던 것을 CONSENSUS §3 항목18·39 원문 대조로 복원·#26에 追記[발동 조건을 "캠페인 하나"에서 "한 배치로 제출되는 신규/변경 코드 공유 캠페인들의 합"으로 개정 권고, CONSENSUS §3 항목47과 대응]·#33 신설[매니페스트 N/N sha 일치는 런타임 바이트 동일함을 함의하지 않는다 — 재현성 주장 범위를 매니페스트가 실제로 덮는 15파일로 한정, CONSENSUS §3 항목48과 대응], 2026-08-14 (E-3 realized SM count 프로브의 부수 발견, doc-steward, 2차) #32에 새 사례 追記[하드웨어 식별 층 재발 — glogin01(PCIe)에서 읽은 하드웨어를 컴퓨트 노드(SXM4) 캠페인에 잘못 귀속, CONSENSUS §3 항목46 追記와 대응], 2026-08-14 (4건 사전등록 감사 종합, doc-steward, 3차) #32에 새 사례 追記[C2 sd_rep(ε)를 basis 미검증 수입값에서 E-1a 원자료 직접측정값으로 교체 — 실패가 아니라 성공 사례, CONSENSUS §3 항목46 追記와 대응]·#34 신설[사전등록은 규칙 먼저 감사받고 하네스는 그 다음 별도로 감사받아라 — 2단 규율, LTSM P1·E1-b/c·%smid R0·E-1 4건 동시 발견, CONSENSUS §3 항목49와 대응], 2026-08-15 (doc-steward, E-1 rev1–rev3 + kernel_mech 4회 설계 전부 감사 차단에서 도출) #35 신설[개정판에서 손잡이 값을 유지한 채 유도 서사만 바꾸지 마라 — rev2 δ=0.0610/3=0.0203이 rev3에서 "오차예산" 유도로 갈아 끼워졌으나 숫자는 δ=0.020(반올림)으로 그대로였음, CONSENSUS §3 항목53과 대응]·#36 신설[타당성은 도구 문서·메트릭 DB로 확인한 뒤 설계하라 — kernel_mech §3이 존재하지 않는 green-context wave-분모 오염을 피하려다 `wave_eff≡1` 항등식을 만듦(#9 여덟 번째 재발), 확인 비용은 로그인 노드 명령 1줄·GPU 0, CONSENSUS §3 항목53과 대응])
 
 Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3),
 E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠페인에서 나온
@@ -4278,3 +4351,40 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     `CONSENSUS.md` §3 항목49, `PROJECT_STATUS.md` "다음 실험 gate"
     #11(4건 레지스트리), 메모리 `deconfound-measurement-lessons.md`
     항목34.
+35. ★**(2026-08-15, doc-steward, E-1 rev1–rev3+kernel_mech 4회 설계
+    전부 감사 차단에서 도출) 개정판에서 손잡이 값을 유지한 채 유도
+    서사만 바꾸지 마라.** rev2가 등가-분기 마진 `δ=0.0610/3=0.0203`을
+    썼고, 감사가 그 유도를 반증하자 rev3는 유도를 "오차예산"(측정
+    잔차+L 부작용 채널 상한 합)으로 완전히 갈아 끼웠다 — 그런데 결과
+    숫자는 `δ=0.020`(0.0203의 반올림)으로 **그대로**였다
+    (`workspace/engine-port/results/bsweep_regime/PREREG_E1_REV2_
+    2026-08-15.md:202`·`PREREG_E1_REV3_2026-08-15.md:194`). 유도가
+    바뀌었는데 숫자가 안 바뀌는 것 자체는 우연일 수 있으나, 이 경우
+    그 숫자(0.0610)의 **출처**가 바로 §3 항목50이 지금 오염원(job축
+    교락 = keepalive 사망)으로 특정한 그 `S(16)−S(9)` 앵커였다 —
+    유도를 바꾸는 작업이 앵커 자체의 타당성 재검증으로 이어지지
+    않았다. 실무 규칙: 개정에서 유도/서사를 바꿀 때는 결과 숫자가
+    안 바뀌었다면 **그것이 우연인지, 숫자가 바뀐 유도로도 재검증되지
+    않은 채 이월된 것인지**를 명시적으로 구분해 기록한다. 상세
+    `CONSENSUS.md` §3 항목53, `handoff-report/session_handoff_
+    2026-08-15.md` §2.6·§4.
+36. ★**(2026-08-15, doc-steward, kernel_mech 설계 감사 차단에서
+    도출) 타당성은 도구 문서·메트릭 DB로 확인한 뒤 설계하라 — 확인
+    비용이 로그인 노드 명령 1줄일 때도 생략될 수 있다.**
+    `kernel_mech` §3은 "green context 하에서 wave 지표 분모가 전체
+    108 SM으로 고정돼 오염된다"는 함정을 **가장 중요한 함정**이라
+    부르며 이를 피하려고 수제 카운터 층으로 내려갔고, 거기서
+    `wave_eff≡1` 항등식을 만들었다(방법론 게이트 #9 여덟 번째 재발).
+    그런데 `ncu --query-metrics-collection launch --chip ga100`을
+    실행해 `launch__waves_per_multiprocessor`의 설명문을 읽으면
+    "When using green contexts, this metric is scaled with the
+    number of SMs used by the green context"라고 **명시**돼 있다 —
+    그 오염은 이 툴체인(ncu 2025.3.1.0)에 **존재하지 않는다**. 설계
+    §0은 "도구 층 확인(GPU 0)" 표까지 갖췄으나 **버전 문자열만**
+    확인하고 메트릭 설명문은 읽지 않았다. 실무 규칙: 새 계측 설계가
+    "도구의 알려진 한계를 피한다"고 주장할 때는 그 한계의 근거를
+    **그 도구 자신의 문서/메트릭 DB에서 직접 인용**해 §0에 병기한다
+    (버전 번호 확인만으로는 부족하다) — 확인 비용이 GPU 0·명령
+    1줄이라는 사실이 생략을 정당화하지 않는다. 상세 `CONSENSUS.md`
+    §3 항목52·53, `handoff-report/session_handoff_2026-08-15.md`
+    §2.9·§4.

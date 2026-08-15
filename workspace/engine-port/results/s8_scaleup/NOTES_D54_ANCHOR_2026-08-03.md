@@ -171,3 +171,48 @@ filename stems; nothing was deleted or overwritten.
 - S1 (sticky-ON, dual-workload, claims-auditor's proposed design) — not
   submitted; awaiting user decision.
 - Any performance or policy interpretation of the numbers above.
+
+---
+
+## Addendum (2026-08-15, doc-steward — dated correction, original text above
+preserved unmodified; no performance/policy claim)
+
+Two claims in Finding 1 above do not survive a direct timestamp check the
+main session ran this session:
+
+1. **"`s8_keepalive_prompt_224.txt` ... byte-identical to the one 865493
+   used ... already existed on disk and was reused, not regenerated"** —
+   `stat` on the file shows filesystem mtime **2026-07-27 23:53:11**. Job
+   865493's own srv.log set (all 20 arm/cell files) finishes at
+   **23:05:55** the same day — **47 minutes before** that mtime. 865493's
+   process had already exited by the time this file's current content was
+   last written, so 865493 cannot be the run that produced the byte-content
+   this note (and 872920/872921) later encountered. Whether the file
+   changed content at 23:53:11 or was merely touched with unchanged
+   content is **not established either way** by this check alone.
+2. **"most consistent with engine-tree churn between 2026-07-27 and today
+   [2026-08-03]"** — this mislocates *when* the break appeared, not
+   necessarily *why*. Job **865533** (a separate `s8_scaleup` campaign
+   sweep, not part of this note's own 872920/872921 run) started shortly
+   after 865493 finished and had **already** hit the identical rejection
+   in its Ha8 arm across all 5 cells that same night/early morning:
+   `s8_deconf_Ha8_C1024_d{16,24,44,92,np}_865533_srv.log` show
+   23,662 / 23,689 / 23,705 / 23,729 / 23,675 rejections of
+   `"is longer than the model's context length (1792 tokens)"`
+   respectively (Ha8 d44 srv.log ends **2026-07-28 00:53:25**). So the
+   break was present by **2026-07-27 ~23:53** at the latest, not
+   introduced gradually over the following week as the "churn between
+   07-27 and 08-03" phrasing implies. Root cause is **still not
+   investigated** — this addendum narrows the window, it does not explain
+   the mechanism.
+
+**Consequence for reuse of this campaign's data**: 865493 and 865533
+cannot be treated as replicate/repeated measurements of the same
+condition — one has a working keepalive device (prefill co-residency
+realized) and the other does not (co-residency collapses, e.g. Ha8 d44
+`CO_RESIDENT_frac` 0.662 vs 0.349). This is not a new finding — it
+restates, with the specific mechanism and magnitude now identified, what
+`reports/CONSENSUS.md` §3 item 28 (2026-08-03) already registered as
+`n_indep=1` for this job pair. See `CONSENSUS.md` §3 item 50 addendum
+(2026-08-15) and `PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트" G-1
+addendum (2026-08-15) for the canonical registration.
