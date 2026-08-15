@@ -4,7 +4,70 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-14 rev26 (doc-steward — **새 성능 판정 0건 —
+최종 갱신: 2026-08-14 rev28 (doc-steward — **새 성능 판정 0건 — E-1a
+Tier 2 처리(claims-auditor 판정 T2-1 조건부 채택 §3 항목50·T2-2 보류
+[사전등록 addendum]·T2-3/T2-4 기각[T2-4는 §1-25 追記로 재확인만])
++ RESUME.md push 프레이밍 정정, 기존 Δ·p값·크기 인용 셀(Zamba2 r2
+단일)·등급은 한 글자도 안 바뀐다.** 상세는 이 문서 §3 항목50(신설)·
+§1-25(追記), `PROJECT_STATUS.md` "다음 실험 gate" #11(레지스트리 자체는
+불변, T2 시리즈는 그 NO-GO 판정을 뒤집지 않는다), `workspace/engine-port/
+results/bsweep_regime/PREREG_E1_BSWEEP_REGIME_2026-08-14.md`(addendum,
+사전등록 자체는 여전히 미제출)·`E1A_ARTIFACT_ERRATA_2026-08-14.md`(신설)·
+`workspace/engine-port/RESUME.md`(Git push 이력 절 정정, CONSENSUS
+비대상). 이전 rev27: 2026-08-14 (doc-steward
+— **새 성능 판정 0건 — 정본 결함 정정 2건 + Tier 1 등재 5건, 기존
+Δ·p값·크기 인용 셀(Zamba2 r2 단일)·등급은 한 글자도 안 바뀐다.**
+**(A) ε 표기 정정** —
+`PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"의 "C2 구간 평균
+ε≈0.48–0.56"이 변환식(`ε=log(ratio)/log(92/16)`)과 불일치했다(정답
+[0.491,0.611]). 2026-08-14 E-1a(`workspace/engine-port/results/
+bsweep_regime/e1a_preanalysis_2026-08-14.json`)의 원자료 직접
+재산출(T8 0.492·Hs8 0.543·Ha8 0.599·M8 0.610)이 변환식 재계산과
+일치해 **ε≈0.49–0.61로 정정**한다. 옛 값은 오히려 **인용 금지된
+SM16/SM108 열**(비 2.60–2.96×, `FINDINGS_8B_2026-07-28.md` §2)을
+`log(108/16)`로 변환한 [0.488,0.568]과 더 가까워 **claims-auditor
+가설(인용 금지 열의 수치 혼입)이 지지된다.** ITL 비 2.36–2.91×(C2
+CONFIRMED scoped) 자체는 **불변** — 바뀐 것은 파생 ε 표기뿐이다.
+같은 정정을 `reports/paper/CLAIM_EVIDENCE_MATRIX.md`의 동일 인용에도
+반영(Tier 2 전파, 원문 미덮어쓰기·괄호 addendum). **(B) Ha8 B-라벨
+정정** — `TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md` §3.4의 Ha8 행이
+`B` 열에 9를 적으면서 `B×KV`/`B×2·state`는 **B=12로 계산돼 있었다**
+(검산: `5.734=12×0.4779`, B=9라면 4.301이어야 함). 행 라벨(B=9,
+§5·§6.1·§6.5와 일치하는 실제 측정 B)로 재계산하면 Ha8 weight share는
+70.1%가 아니라 **75.80%**다. §6.1의 Ha8 924 GB/s는 이미 **올바른
+B=9 트래픽(29.10 GB)**을 쓰고 있어 **영향 없음**(총 31.449 GB로
+계산하면 998.7 GB/s가 나와 다르다) — §3.4와 §6.1이 서로 다른 B를
+쓰고 있던 **문서 내부 불일치**였다. 헤드라인 "스텝 트래픽 68–94%가
+weight"(하한 M8 68.6%)·achieved_BW 하한 45.4%(=924/2039, rev26)·
+그 밖의 어떤 판정도 **불변**. §12(신규 addendum)로 원문 미덮어쓰기
+정정. **(C) Tier 1 등재 5건**: (1) **방법론 게이트 #34(신설, §3
+항목49)** — "규칙 먼저 감사, 하네스는 그 다음" 2단 규율: 2026-08-14
+사전등록 4건(LTSM P1·E1-b/c·`%smid` R0·E-1) 감사 결과 3 NO-GO·1
+CONDITIONAL-GO, 차단 결함이 예외 없이 하네스/스코어러 구현 층이었고
+셋(LTSM P1·E1-b/c·E-1)은 **도구 자신이 거짓 음성/양성을 산출**했다
+— E-1은 메인 세션 자신이 작성해 같은 결함을 냈다는 점에서 개인
+부주의가 아니라 **구조적 실패 모드**임을 보인다(메모리
+`deconfound-measurement-lessons.md` 항목34와 대응). (2)
+`PROJECT_STATUS.md` "다음 실험 gate" #11에 **미제출·감사 차단
+사전등록 4건 레지스트리** 등재(목적=다음 세션의 재제출 방지, "가설
+반증"으로 오독 금지). (3) engine-porter 이관 신규 3건 — `sgl_kernel/
+spatial.py`(venv본) 래퍼가 `res[2]/res[3]`(realized SM 수)를 버림
+(C++ `greenctx_stream.cu:84-97`은 반환), `smid_l0_census.py:410`
+(`census_kernel.cache[dev]`, 존재하지 않는 속성 추정)이 죽은 코드에
+`:523/:529` 가드가 `None`을 fail-open, `g2s_e1b_premise.py:295-333`이
+`M<36`에서 `frac`을 조회하지 않음 — 기존 이관 4건은 여전히 미해결임을
+재확인만(코드 미수정). (4) **C2 `sd_rep(ε)` 실측값으로 수입값 교체**
+(방법론 게이트 #32의 새 사례, §3 항목46 追記) — "rep 간 sd 0.01–0.07"을
+E-1a 원자료 직접측정(44→92: Ha8 **0.0102**·T8 **0.0083**)으로
+대체한다, ITL 수준 rep CV는 0.2–0.7%. (5) `%smid` R0 §0.1 payoff
+항목1(`log(108/34)` 분모 정정)은 **정정 대상 없음이 이미 rev26에
+반영**돼 있음을 재확인(중복 등재 안 함). 상세 `PROJECT_STATUS.md`
+"8B decode-SM 민감도 측정 노트"·"다음 실험 gate" #11·"방법론 게이트"
+#32(追記)·#34(신설), §3 항목46(追記)·49(이 문서), `reports/paper/
+CLAIM_EVIDENCE_MATRIX.md`, `TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`
+§12(addendum), `workspace/engine-port/RESUME.md`(운영 사실 — git push
+이력·병렬 세션·PAT 노출, CONSENSUS 비대상이라 여기엔 판정 없음).
+이전 rev26: 2026-08-14 (doc-steward — **새 성능 판정 0건 —
 정본 정정 1건 + 신규 결과 등재 1건, 기존 결론은 뒤집히지 않는다(오히려
 강화 방향).** **(A) 하드웨어 오식별 정정** —
 `workspace/engine-port/results/s8_scaleup/TRAFFIC_ROOFLINE_DIAGNOSTIC_
@@ -974,7 +1037,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 
 | 23 | ★★**(2026-08-02, 코드 사실) `--max-running-requests`는 arm 계열마다 다른 손잡이이고, `kv_mamba_occupancy=1.0`은 항등식이다 — 성능 판정 아님** | 코드: `sglang/srt/model_executor/model_runner_kv_cache_mixin.py:223-229`. `disable_radix_cache ∧ max_running_requests is not None`이면 **`max_mamba_cache_size = max_running_requests`**(앞 분기 `:218-222`는 `--max-mamba-cache-size` 명시 시, 뒤 `else`는 가용 메모리 ratio 기반 — 이 분기는 s8/E1 계열에서 한 번도 타지 않았다). E1/s8 캠페인이 정확히 그 조건이므로 **SSM 포함 arm(M8/Ha8/Hs8)에서 cap은 admission + mamba state pool 크기를 동시에** 움직이고, **T8(순수 Transformer)에서는 admission만** 움직인다. ⇒ (i) **T8에서 잰 cap 효과는 hybrid로 이전 불가**, (ii) cap을 실험 파라미터로 쓰려면 `--max-mamba-cache-size`를 명시 고정해 두 축을 분리해야 한다. ★**정정(2026-08-02, M5 재설계)**: 그 고정은 **전 arm 공통 절대상수가 아니라 `= cap` 규칙**이어야 한다 — slot당 SSM state 비용이 arm마다 달라(M8 0.255 / Ha8 0.141 / Hs8 0.096 GB) 공통 절대상수는 arm마다 다른 메모리 분할을 강제하는 **새 cross-arm 교락**이 된다(특히 Ha8의 attention KV pool은 이미 48×ctx의 52%만 잡혀 있어 mamba pool 증가분이 곧장 거기서 나온다). 명시 고정은 `:218` 분기를 타므로 항등식을 깨는 목적은 `= cap`으로도 완전히 달성된다. **따름정리**: pool 크기 = cap이므로 batch가 cap에 닿으면 `kv_mamba_occupancy`는 **정의상 1.0** — 이 값을 "hybrid는 메모리가 구속한다"의 근거로 쓸 수 없다(§3-14의 사례 2). §1-4 얽힘의 KV 갈래 등급은 **불변**: 이 regime(ctx 4k ShareGPT)에서 지지되는 것은 좁게 "attention KV(`kv_full_occupancy`)가 어느 arm에서도 구속 근처에 없었다"뿐이며 그 관측치 자체는 **claims-auditor 미통과(인용 금지)**다(`../PROJECT_STATUS.md` "확정된 결과" KV 항목·"방법론 게이트" #5) |
 | 24 | ★★**(2026-08-02, M4 — GPU 0) 이 기판의 ITL 꼬리는 decode step time이 아니라 *monolithic prefill이 decode를 멈춘 시간*이 지배한다 — 그리고 그건 구조적이다** | 절대 토큰-방출 시각 재구성(arrival replay + TTFT + 누적 ITL) 결과, rate 2에서 stall probe **17개 중 16개**에서 어떤 요청이 **stall 전 구간 동안 prefill 중**이었고 그 요청은 거의 항상 그 probe의 **최장 프롬프트**(2469–2776 tok)였다. 크기는 고정 프롬프트에서 D에 **단조**(Ha8 seed1: d24 167.7 → d44 225.6 → d54 263.6 → **d92 865.6 ms**) — prefill SM = 108−D 가 줄기 때문. ⇒ **conjunctive goodput의 ITL 항은 decode-SM 레버와 반대 부호로 움직이는 항을 내장하고 있다.** ★**고칠 수 없다**: `server_args.py:6130`이 `enable_pdmux`일 때 `chunked_prefill_size == -1`을 **하드 assert**한다("PD-Multiplexing is not compatible with chunked prefill") ⇒ un-chunked prefill은 연구 대상 기판의 **전제**이지 설정 실수가 아니며, `venue_positioning.md` §0.1의 **(A) green-context 종속** 버킷에 속한다(DuetServe가 libsmctrl로 우회한 바로 그 비용 계열). **따름정리**: ITL 보고는 `A_all`(등록 SLO 항)과 `A_free`(≥1024 tok prefill 창과 겹치는 ITL 제외)를 **병기**한다. `A_free`는 d92에서는 여전히 오염(prefill 16 SM이라 짧은 프롬프트도 막음)이라 **d16–d54에서만 해석**한다. 사전등록 = `results/s8_frontier/DESIGN.md` §4.3.8(a). ⚠️2026-08-01 핸드오프의 기전 추측이 **옳았고** 2026-08-02 감사자의 REFUTED는 **틀린 검정**을 썼다 — prefill 중인 요청은 아직 decode를 안 하므로 자기 stall을 볼 수 없고, 그 요청의 max ITL이 작은 것은 가설과 모순이 아니다 |
-| 25 | ★★★**(2026-08-03, claims-auditor + 독립 재현) decode 축은 라벨이 4–19%만 실현된다 — 그리고 기존 pin 게이트는 항등식이었다** | **(a) pin 게이트 = 항등식.** telemetry 120파일·prefill-active 스냅샷 **77,688개**에서 `prefill_sms ≠ target ⟺ decode_running_batch_size == 0`이 **양방향 위반 0건**(off-target∧decode-empty 50,328 / on-target∧decode-busy 27,360). `multiplex/multiplexing_mixin.py:773,792-794`가 decode batch가 비면 **설계대로** 무분할로 떨어뜨리므로(§1-22가 이미 '의도된 경로'로 기록), `e1_pin_check.py`의 시간가중 pin 게이트는 파티션 제어가 아니라 **'prefill in-flight 중 decode가 안 비어 있던 시간 몫'**을 잰다 ⇒ **방법론 게이트 #6 위반**(정확성을 강제하려고 만든 게이트가 저질렀다). 따름정리로 **조건부 pin = 27,360/27,360 = 1.000 정확** — **파티션은 질문이 성립하는 곳에서 완전 실현**(job 872077 재채점 64/64 PASS). **(b) 정작 게이트가 없던 축 = decode.** decode-active 시간 중 `decode_sms == D` 비율(872077, n=8/셀): T8 d16 **0.038**/d24 0.047/d44 0.082/d54 0.093, Ha8 d16 0.104/d24 0.110/d44 0.148/d54 0.187 ⇒ **셀 라벨의 decode 분할은 decode 작업시간의 4–19%만 실현되고 81–96%는 무분할 108 SM**. ⇒ (i) E1 격자는 **지속적 decode-SM 배분을 주지 않으므로** C2가 잰 물리량(prefill 16 고정·decode 연속 D)과 **다른 양**이다 — 긴장 A를 이 격자의 비(比)로 닫을 수 없다; (ii) 희석 계수가 **셀마다 다르다**(T8 0.038→0.093, Ha8 0.104→0.187) ⇒ `A_free(d16)/A_free(d54)`는 SM 수준과 **분할 engagement 비율을 동시에 움직인다 = 추정량 내부 교락**. **Stage 0 D108(라벨≠실현, §1-21)의 decode 축 판본**이며, §1-22가 요구한 실현분포 보고가 prefill 축에만 적용돼 있었다. 신규 게이트 `E1_COND_PIN`·`E1_DECODE_REALIZED`(`e1_pin_check.py`, 2026-08-03)로 코드화, 상세 `results/s8_frontier/DESIGN.md` §4.3.8(h) |
+| 25 | ★★★**(2026-08-03, claims-auditor + 독립 재현) decode 축은 라벨이 4–19%만 실현된다 — 그리고 기존 pin 게이트는 항등식이었다** | **(a) pin 게이트 = 항등식.** telemetry 120파일·prefill-active 스냅샷 **77,688개**에서 `prefill_sms ≠ target ⟺ decode_running_batch_size == 0`이 **양방향 위반 0건**(off-target∧decode-empty 50,328 / on-target∧decode-busy 27,360). `multiplex/multiplexing_mixin.py:773,792-794`가 decode batch가 비면 **설계대로** 무분할로 떨어뜨리므로(§1-22가 이미 '의도된 경로'로 기록), `e1_pin_check.py`의 시간가중 pin 게이트는 파티션 제어가 아니라 **'prefill in-flight 중 decode가 안 비어 있던 시간 몫'**을 잰다 ⇒ **방법론 게이트 #6 위반**(정확성을 강제하려고 만든 게이트가 저질렀다). 따름정리로 **조건부 pin = 27,360/27,360 = 1.000 정확** — **파티션은 질문이 성립하는 곳에서 완전 실현**(job 872077 재채점 64/64 PASS). **(b) 정작 게이트가 없던 축 = decode.** decode-active 시간 중 `decode_sms == D` 비율(872077, n=8/셀): T8 d16 **0.038**/d24 0.047/d44 0.082/d54 0.093, Ha8 d16 0.104/d24 0.110/d44 0.148/d54 0.187 ⇒ **셀 라벨의 decode 분할은 decode 작업시간의 4–19%만 실현되고 81–96%는 무분할 108 SM**. ⇒ (i) E1 격자는 **지속적 decode-SM 배분을 주지 않으므로** C2가 잰 물리량(prefill 16 고정·decode 연속 D)과 **다른 양**이다 — 긴장 A를 이 격자의 비(比)로 닫을 수 없다; (ii) 희석 계수가 **셀마다 다르다**(T8 0.038→0.093, Ha8 0.104→0.187) ⇒ `A_free(d16)/A_free(d54)`는 SM 수준과 **분할 engagement 비율을 동시에 움직인다 = 추정량 내부 교락**. **Stage 0 D108(라벨≠실현, §1-21)의 decode 축 판본**이며, §1-22가 요구한 실현분포 보고가 prefill 축에만 적용돼 있었다. 신규 게이트 `E1_COND_PIN`·`E1_DECODE_REALIZED`(`e1_pin_check.py`, 2026-08-03)로 코드화, 상세 `results/s8_frontier/DESIGN.md` §4.3.8(h). ★追記(2026-08-14, E-1a Tier 2 T2-4, claims-auditor 기각 — **재확인, 새 발견 아님**): decode 축의 대응 항등식(`decode_sms≠108 ⟺ split_prefill_batch is not None ⟺ prefill_active_batch_size>0`, `src/multiplex/multiplexing_mixin.py:881-923`이 분기 술어이고 `:209-219`가 이를 스스로 문서화)도 코드로 재확인됐다 — 위 (a)의 prefill 축 항등식과 표리(表裏) 관계일 뿐이며 정책 판정에 영향 없음 |
 
 | 26 | ★★★**(2026-08-03, claims-auditor, 같은 날 §1-25 속행) `g`는 이 격자에서 은퇴한다 — 희석-보정 가설 REFUTED, NO VERDICT 사유가 "estimand 미식별"로 확장, `A_free` 자체가 결함, arm 비교에 미제거 교락** | **(A) 희석 attenuation 가설 REFUTED.** 메인 세션이 세운 모형("`E1_DECODE_REALIZED` 4–19% ⇒ `A_free(dD)=w_D·A(D)+(1−w_D)·A(108)` 혼합, 보정 시 Ha8 g≈1.62–1.70")을 3중으로 반증: (i) **control-arm reductio** — 같은 보정식을 T8에 적용하면 corrected g **21–29×**(C2의 2.36–2.91×를 10배 위반, 요구 ITL p95 352–360ms 대 실측 30.67ms); (ii) **de-engagement 직접 실험**(같은 셀 unsplit 분포에서 engagement를 낮춤) — `A_free` 변화 **1–11%뿐**, w=0에서도 g 거의 그대로(Ha8 1.173/T8 1.796); (iii) 핵심 가정 "`A(108)` 셀 무관"이 실측 위반 — Ha8 SPLIT-only 0.920[0.842,0.998](CI가 1 배제, 부호 반대), **T8 헤드라인은 UNSPLIT-only(decode SM 대비가 정의상 0인 부분집합)에서 그대로 재현**(1.795[1.589,2.001] ≈ ALL 1.837). 죽은 것은 보정이지 §1-25가 확립한 "engagement가 낮다"는 전제 자체가 아니다(세 계측기 교차확인으로 견고). **(B) 872077 NO VERDICT 사유 확장.** 코드 사실: `pdmux_context.py:initialize_stream_groups`가 `SM_COUNTS=[(108,0)]+divisions+[(0,108)]`를 하드코딩하고 `multiplexing_mixin.py:773,792-794`가 prefill 비-in-flight 시 무조건 `(0,108)`로 되돌린다 — 즉 이 기판에서 **"decode가 D SM에서 돌았다"⟺"prefill이 동시에 in-flight였다"는 같은 사건**이다. §1-24(ITL 꼬리=monolithic prefill, 크기가 108−D에 단조)와 결합하면 `g`는 사전에 **"decode-SM 탄력도 라벨을 단 prefill-SM 탄력도"**일 것이 예상되고, 실측이 그와 일치(UNSPLIT-only에서 T8 헤드라인 재현)한다 — **n으로 해결되지 않는 설계 결함**. `g = A_free(d16)/A_free(d54)`는 **이 격자 한정 은퇴**(sticky-partition 기판 수정 전 인용 금지), 블록 8→12–16 증설 재실행은 **선행 금지**. ⚠️"Ha8에 decode-SM 레버가 없다"는 CONFIRMED 아님 — 현 데이터는 그 질문에 답하지 못한다, 긴장 A(HE2 vs C2)는 전혀 닫히지 않았다. **(C) `A_free` 추정량 자체의 결함.** `e1_m3_control.sbatch:281-306`: `PREFILL_BLOCK_TOK=1024` 필터가 이 워크로드 요청의 4–5%만 걸러 prefill 작업의 **74–77%가 필터를 통과**(제거되는 ITL은 전체의 ~2%뿐) ⇒ §1-24가 확정한 monolithic-prefill stall이 **d16–d54까지 오염 범위 확장**(§1-24 원문의 "d92만 오염" 한정을 넓힘). 요청의 27.5–29.5%가 output≤25 토큰이라 내부 p95가 사실상 max ITL로 퇴화 — 평균의 선형 혼합 항등식이 극단 분위수에 성립하지 않음(비단조 응답으로 실증). `A_free`는 blocking-제거본이 아니라 대부분 monolithic-prefill stall로 이루어진 극단꼬리 통계다. **(D) arm 비교의 미제거 교락.** 공통 rate 2에서 T8 conc 12.8/decode batch 4.5/ITL p50 ~11ms 대 Ha8 conc 30.6/batch 15.8/~30ms — 양 arm 모두 off-cliff 평탄역(metric cliff 아님)이나 decode batch size가 memory/compute-bound 여부를 결정하는 공변량이라 arm과 완전 교락 ⇒ "attributable to the arm" 문구는 **현재 허용 안 됨**(통제는 realized concurrency/decode batch를 맞춘 rate여야 함); 이 교락은 관측 *방향*을 설명하지 않으므로(batch 큰 쪽이 오히려 무반응) 대안 설명이 아니라 **미제거 교락**으로만 기록. 부수: d16은 `sm_group_num:3`, d54는 4(guard row)로 셀마다 green context 수가 다르고 d54의 `decode_sms==44`는 telemetry에 미관측(guard row 미선택) — 행동 교락 아니나 셀 간 차이. `DESIGN.md` §4.3.8(h)의 "A re-run under RULE_BOUNDS would settle it"은 **이제 틀렸다** — sticky partition 구현 전 재실행은 같은 estimand-미식별 문제를 반복한다. 다음 gate: `PDMUX_STICKY_PARTITION` 구현(engine-porter, correctness gate) → sticky 격자 1회(872077 대조 8 block) → 사전등록 판별 예측(T8≈1.85·Ha8≈0.92 vs Ha8≈1.6, CI 비중첩) → `E1_DECODE_REALIZED≥0.90`이 sticky에서는 항등식이 아닌 **진짜 게이트**. 상세 `results/s8_frontier/DESIGN.md` §4.3.9. **부수(UNAUDITED, 인용 금지 — result-analyst 산출, claims-auditor 미통과)**: `m3_decode_empty.py` 분석이 §1-25의 희석이 decode-empty가 아니라 **prefill 부재**(decode-active 시간에 조건부라 decode-empty는 정의상 분자·분모에 안 들어감)로 나온다고 보고하며, 죽은 telemetry 필드 4개(`decode_ready_queue_depth`·`active_decode_sequences`·`decode_idle_ratio`/`prefill_idle_ratio`)를 코드 근거로 식별한다 — **claims-auditor 미통과이나 부하를 올려 engagement를 높이는 방향이 지지되지 않는다는 결론만은 감사자와 독립적으로 수렴해 그 좁은 항목만 AUDITED로 인용 가능**(rate를 올리면 prefill·decode가 비례해 늘고 split-eligible iteration 수는 셀 무관 194–214로 거의 일정) |
 | 27 | ★★**(2026-08-03, 같은 날 2차 속행) `A_free` 대체 추정량으로 estimand 이관 완료[AUDITED, (3)만 예외] + `PDMUX_STICKY_PARTITION` 구현·correctness gate 통과[구현 사실, 성능 판정 아님]** | **(I) 조건부 per-token 추정량**(`m3_conditional.py`, §1-26의 `A_free` 결함을 대체). 단위 = 개별 ITL 구간 1개(요청별 집계 없음), 라벨 `split_frac(a,b)≥0.90`(SPLIT)/`≤0.10`(UNSPLIT)/사이는 양쪽에서 배제(AMBIGUOUS 0.3–1.4%), 통계량은 셀-블록별 **직접 분위수**(primary `p95(SPLIT)`, control `p95/p50(UNSPLIT)` — 두 셀 모두 108 SM이라 대비가 정의상 0). **[AUDITED]**: T8 d16 pooled per-token p95 **11.60**(`A_free`는 28.31, 2배 이상 바깥 꼬리 — 요청의 27.5–29.5%가 outlen≤25라 `A_free`가 사실상 max ITL로 퇴화, `A_free`는 요청 ~9.6개에 얹히는 반면 새 추정량은 셀-블록당 1,390–7,045 토큰). client↔telemetry 시계정렬은 `phase=="benchmark"` 필터 **금지**(그 마커는 warm-up 요청에 발화, 실제 probe 시작이 아님); `ALIGN_R_MIN=0.95` 미달은 flag-only(조용히 배제 금지) — 배제하면 오히려 대비가 커짐(LOO 실측, T8 1.688→1.822). **[UNAUDITED — 감사자가 이번 턴에 새로 생산해 자기 산출을 자기가 감사한 형태, 별도 확증 전 인용 금지]**: `PREFILL_BLOCK_TOK` 스윕(1024→512→256→0)에 **무릎이 없고** 임계 0에서 d16-vs-d54 대비가 두 arm 모두 소멸(0.986/1.005) — 임계는 자유 모수가 아니라 답을 정하는 손잡이. 권고: **`A_free` 은퇴**, `A_all` 유지 병기, **primary 라벨 = realized partition**(`decode_sms==D`, persisted state variable이라 견고); secondary(prefill overlap) 라벨은 872077이 `PDMUX_TRACE_FORCE_PREFILL=0`이라 **계측 결손**(SPLIT 라벨 토큰 중 "overlap-free"로 나오는 비율 Ha8 66.3/38.8%·T8 76.1/27.1% — 물리적으로 불가능해야 할 값, 곧 계측 과소표집의 증거). **(II) `PDMUX_STICKY_PARTITION`**(`multiplexing_mixin.py` +151/−17): decode-busy 시 무분할 fallback을 우회(`if not running_batch.is_empty() and (split_prefill_batch or sticky_partition_enabled)`), **decode-empty 시엔 의도적으로 index 0 release**(hold 아님 — 보호할 decode 작업이 없고 `E1_DECODE_REALIZED`가 decode-active 가중이라 가중치 0). OFF는 short-circuit으로 **패치 전과 byte-identical**(독립 재구현 pre-patch selector와 전 격자 동등성 테스트로 확인). cudagraph 보존(스트림별 캡처 유지, eager fallback 없음). `PDMUX_LA_COORD`/`PDMUX_SLO_SCHED`/`PDMUX_FIXED_DECODE_SM_FILE`/비-`fixed` `PDMUX_R2_POLICY`와의 조합은 init `RuntimeError`로 거부(반쪽 sticky 방지). **correctness gate 전부 PASS**: CPU 회귀(40 tests, sync manifest SHA-256 일치) + sticky 단위 테스트 12건 + **GPU smoke(job 872800, Ha8 d16)**: 고정 프롬프트 6개 greedy 출력이 OFF/ON **byte-identical**. **realized 관측(게이트 아님, n=1)**: sticky OFF `E1_DECODE_REALIZED=0.0839`(기존 동작 재현) vs **ON=1.0000**(사전등록 ≥0.90 초과, 튜닝한 것 없음) — decode-busy 스냅샷이 ON에서 `(idx1,92,16)` 139/139, OFF에서 무분할 진입 146회. **구현 완료 ≠ 성능 주장 성립** — throughput/latency/goodput/`g` 그 무엇도 주장되지 않는다. **(III) sticky 런 사전등록**: 872077 소급 재분석은 **DIAGNOSTIC 전용**(re-score 금지, 설계 판정의 근거로만), primary 통계량 1개(`p95(SPLIT)` 비) 선언, 게이트 4종(`ALIGN_R_MIN`·`E1_DECODE_REALIZED≥0.90`·`AMBIG_FRAC` 상한·`MIN_N_SPLIT` 하한), **★`G_LEVER`/`G_FLAT`는 미결정으로 기록**(기존 1.5/1.15는 `A_free` 스케일이라 그대로 이전 불가 — C2 측정범위(2.36–2.91×)에 묶는 안이 논거는 있으나 E1은 D 범위가 좁고 상보적(P+D=108)이라 그대로 못 씀, sticky 런 제출 전 별도 사전등록 필요), sticky 후 primary 모집단이 `SPLIT ∧ BLOCK-FREE`로 이동함을 미리 등록, trace-force ON 재허용 여부는 **열린 설계 쟁점**으로 미결정 기록. 판별 예측(§4.3.9 승계) 불변: prefill 주도면 T8≈1.85·Ha8≈0.92, 희석 가설이 옳았다면 Ha8≈1.6(CI 비중첩, 8 block으로 구분 가능). 상세 `results/s8_frontier/DESIGN.md` §4.3.10–4.3.12 |
@@ -1714,6 +1777,18 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     그렇다: glogin01=PCIe, gpu36–43=SXM4). 상세 `PROJECT_STATUS.md`
     "방법론 게이트" #32(追記), `TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`
     §11(addendum).
+    ★**새 사례 2(2026-08-14, E-1a, B-4) — 이번엔 basis 미검증 수입이
+    맞았던 사례(성공 사례로 등재).** C2 caveat이 인용해 온 "rep 간
+    sd 0.01–0.07"은 basis(어느 캠페인·어느 쌍인지)가 적혀 있지 않은
+    수입값이었다. 2026-08-14 E-1a가 원자료(`bsweep_regime/
+    e1a_preanalysis_2026-08-14.json`의 `T3_sd_eps`)에서 **직접
+    측정**해 `sd_rep(ε, 44→92)` = Ha8 0.0102·T8 0.0083(ITL 수준 rep
+    CV 0.2–0.7%)로 대체했다 — 44→92 쌍·Ha8/T8 2 arm·이 격자
+    한정이라고 스코프도 함께 명시. 실무 규칙(강화): basis를 모르는
+    수입값을 발견하면 **금지만 하지 말고, 가능하면 그 자리에서
+    직접 재측정해 대체**하라 — 이번엔 GPU 비용 없이(기존
+    캠페인 원자료 재분석) 가능했다. 상세 `PROJECT_STATUS.md` "8B
+    decode-SM 민감도 측정 노트"(rep 분산 실측값 단락).
 47. ★★★**(2026-08-14, doc-steward, 2026-08-11 세션의 GPU 실험 4건
     검토 재해석 — 새 측정 아님, 규율 개정 권고) 게이트의 발동 조건
     주어가 단수 "캠페인"이면 <1 GPU-hr 조각으로 쪼개 회피할 수
@@ -1797,6 +1872,59 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     dev_tree_edits.md`(항목 3–9)·
     `handoff-report/session_handoff_2026-08-13.md` §4 "정본 등재
     후보 2건".
+49. ★★★**(2026-08-14, doc-steward, 4건 사전등록 감사 결과 종합 —
+    새 실험 아님) 사전등록은 규칙과 하네스를 한 번에 감사받으면
+    안 된다 — 규칙 먼저 감사받고, 통과한 규칙에 대고 지은 하네스를
+    다시 감사받아라.** 2026-08-14 하루에 사전등록 **4건**(LTSM P1 ·
+    Gate 2-S E1-b/c · `%smid` R0 · E-1)이 감사를 받아 **3건 NO-GO,
+    1건 CONDITIONAL-GO**가 났다. 넷 다 차단 결함이 **예외 없이
+    스코어러·하네스 구현 층**이었고(결정 규칙 자체의 하자가 아니라),
+    **GPU 0으로 발견 가능**했다. 더 나쁘게는 셋(LTSM P1·E1-b/c·E-1)에서
+    **코드 자신이 잘못된 라벨을 산출**했다 — 사람이 사후에 오독한 것이
+    아니라 도구가 실행 중 거짓 음성/양성을 냈다(항목35의 6·7번째
+    재발과 같은 부류지만, 이번엔 **4건이 같은 날 동시에** 나타나
+    패턴이 개별 사고가 아님을 보여준다). ★**개인 부주의가 아니라는
+    증거**: 이 넷 중 E-1(`bsweep_regime/PREREG_E1_BSWEEP_REGIME_
+    2026-08-14.md`)은 **메인 세션 자신이 작성**했고, 다른 세 건과
+    **같은 종류의 결함**(하네스 배선 부재·수치 basis 미검증)을
+    냈다 — 특정 에이전트나 특정 작성자의 습관이 아니라 "규칙과
+    구현을 한 사전등록 문서에 같이 적으면 감사가 규칙 층에서 소진돼
+    구현 층 결함이 새어나간다"는 **구조적 실패 모드**다. 실무 규칙:
+    사전등록을 두 단계로 나눠 감사한다 — **(i) 결정 규칙만 먼저
+    감사**(입력·임계값·판정 로직이 사전에 명시한 질문에 답하는가),
+    **(ii) 통과한 규칙에 맞춰 하네스/스코어러를 구현한 뒤 그 구현을
+    별도로 다시 감사**(GPU 0 스모크로 각 분기가 실제로 발화하는지
+    확인). 한 번에 제출하면 감사자가 규칙의 타당성에 주의를 쓰는
+    동안 구현 버그가 나란히 통과한다. 메모리
+    `deconfound-measurement-lessons.md` 항목34와 대응. 상세
+    `PROJECT_STATUS.md` "다음 실험 gate" #11(4건 레지스트리)·"방법론
+    게이트" #34.
+50. `POST-HOC · NOT BLIND · NOT PRE-REGISTERED · PRODUCER-INCOMPLETE.`
+    ★★**(2026-08-14, E-1a Tier 2 T2-1, claims-auditor 조건부 채택 —
+    §1-1 성능 절에는 반영하지 않는다, 새 정책 주장 아님)** 사후 회귀
+    `S(B)=k+b·Δw`(`Δw`=T8−Ha8 weight-traffic share 차)의 절편 `|k|`는
+    12개 적합 전부에서 **[0.051, 0.082]**이고 B=1 포함 여부로 부호가
+    뒤집힌다(전체 −0.0574 ↔ B=1 제외 +0.0661). 반드시 다음을 병기:
+    (i) B=1은 과도(transient)가 아니라 동거 prefill이 최대인
+    정상상태라 `k`를 arm 상수 오프셋으로 해석 금지 — 조성/간섭 항의
+    흡수항이다; (ii) Ha8 arm은 B축이 job축과 완전 교락(B=7·9는 job
+    865533 전용, B=15·16은 job 865493 위주) ⇒ `k`·`b`가 캠페인 효과와
+    분리 안 됨; (iii) job 간 sd(log ITL)=0.0052(n=20, 두 job이 공존하는
+    셀에서만 추정 가능)는 회귀가 쓰는 Ha8 10개 B-포인트 중 **8개
+    (B=2,6,7,8,9,10,13,16)에서는 추정 자체가 불가**(그 셀엔 job이
+    하나뿐)— 남은 2개(B=1,15)만 부분적으로 이중job; (iv) 이 추정량은
+    사전등록이 요구한 paired가 아니라 독립표본(Welch) t다; (v)
+    "4개 적합 중 3" 류 요약은 어느 4개인지 명시 없이 인용 금지(12개
+    k-CI 중 0을 포함하는 것은 7개). ★**weight 서사는 방향 불문 전면
+    금지**: `Δw`는 `log B`·`√B`와 강공선(r≥0.978, 실측 r(log
+    B)=0.9996·r(√B)=0.9999; 사전등록 계획 격자 {9,12,24,40,48}에서도
+    r(log B)=0.998) ⇒ 이 설계는 "weight share가 원인"과 "B에 단조인
+    임의의 원인"을 판별하지 못한다 — **지지도 반증도 금지**(직교
+    조작 설계만 답한다, 예: 같은 B에서 L만 바꿔 조성 `c`를 움직이는
+    설계). 상세 `workspace/engine-port/results/bsweep_regime/
+    PREREG_E1_BSWEEP_REGIME_2026-08-14.md`(2026-08-14 addendum, 사전등록
+    자체는 여전히 미제출)·`E1A_ARTIFACT_ERRATA_2026-08-14.md`(아티팩트
+    결함 4건, engine-porter/result-analyst 이관).
 
 ---
 

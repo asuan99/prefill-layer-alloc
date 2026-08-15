@@ -1,6 +1,11 @@
 # Document status
 
-최종 갱신: 2026-08-14(doc-steward — **정본 정정 1건(하드웨어 오식별) +
+최종 갱신: 2026-08-14(doc-steward, 2차 — **정본 결함 정정 반영(A-1)으로
+`CLAIM_EVIDENCE_MATRIX.md` Claim A 각주의 "구간 평균 ε≈0.48–0.56"을
+`reports/CONSENSUS.md` rev27과 재동기화(변환식·E-1a 원자료 직접측정과
+일치하는 ε≈0.49–0.61로 정정, ITL 비 2.36–2.91× 자체는 불변, 원문
+미덮어쓰기·괄호 정정). 새 성능 판정 아님, 분류표 무변경, changelog
+기록뿐.** 이전: 2026-08-14(doc-steward — **정본 정정 1건(하드웨어 오식별) +
 신규 결과 등재 1건(E-3) 반영으로 `CLAIM_EVIDENCE_MATRIX.md`를
 `reports/CONSENSUS.md` rev26과 재동기화(Claim A 각주 정정 + "P1 트랙"
 항목7 신설). 분류표 무변경, changelog 기록뿐.** 이전: 2026-08-11(doc-steward — **E1 addendum(jobs 877756/
