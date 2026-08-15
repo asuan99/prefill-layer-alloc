@@ -310,7 +310,8 @@ C2 = dict(
     grade="CONFIRMED (scoped)",
     scope=("4 arms at 7-8B, A100 TP1, cudagraph-ON, --disable-overlap-schedule "
            "--chunked-prefill-size -1 --disable-radix-cache, cap 48, ctx1024, "
-           "conc16, out512, n=4"),
+           "conc16, out512, n_indep=1 per leg (the former 'n=4' was "
+           "pseudo-replication -- rep1-4 share one server boot, auditor 2026-08-15)"),
     unit="decode ITL p50 (ms)",
     sm=[16, 24, 44, 92, 108],
     # batch=1, partition- and batch-matched intervals. None = cell too sparse.
@@ -320,18 +321,42 @@ C2 = dict(
         "Hs8  Nemotron-H-8B (substitutive)":     [32.86, 23.91, 16.63, 13.37, 11.91],
         "T8   Qwen2.5-7B (pure Transformer)":    [29.93, 21.17, 14.64, 12.09, 10.75],
     },
-    headline={  # clean prefill-fixed slice, SM16/SM92
+    # prefill-fixed slice, SM16/SM92. NOT a "clean" slice -- see headline_provenance.
+    headline={
         "M8": (58.44, 20.09, 2.91), "Ha8": (89.80, 31.49, 2.85),
         "Hs8": (40.63, 15.73, 2.58), "T8": (30.20, 12.77, 2.36),
     },
+    # Job composition of the 4 headline cells (result-analyst + claims-auditor
+    # 2026-08-15). 3 of 4 arms are ONE job on both legs; batch is NOT matched
+    # across arms, so 2.36-2.91x is a list of heterogeneous estimators.
+    headline_provenance={
+        "M8":  "job 865533 both legs, batch 12",
+        "Ha8": "job 865533 both legs, batch 9 (= its own reachable max, not 12)",
+        "Hs8": "job 865533 both legs, batch 12",
+        "T8":  "SM92 leg 100% job 865533; SM16 leg 865493 61% / 865533 39%, batch 12",
+    },
     # MANDATORY rider added by claims-auditor 2026-08-04.
     local_elasticity={"16->24": (0.77, 0.88), "44->92": (0.09, 0.35)},
+    # MANDATORY rider added by claims-auditor 2026-08-15. Grade is UNCHANGED
+    # (CONFIRMED scoped); these are citation suspensions, not a demotion.
+    suspended_citations=(
+        "(a) per-arm epsilon and any arm-to-arm ranking/gap. The canon order "
+        "T8 .492 < Hs8 .543 < Ha8 .599 < M8 .610 is a slice artifact: at b=1, "
+        "the one batch common to all 4 arms, the order fully REVERSES to "
+        "Ha8 .480 < Hs8 .514 < M8 .515 < T8 .518 and the spread collapses "
+        "0.118 -> 0.038. Consumer to check before reuse: E-1a T6_PC1_anchor_check.",
+        "(b) any CI on the clean-run recompute, and any 'n=4' label -- "
+        "n_indep=1 per leg (single server boot).",
+    ),
     citation_rule=("Cite the range only. SM16->SM108 is BANNED (that cell removes the "
                    "split entirely, moving prefill too). Iso-curve: establishes the "
                    "lever's existence, NOT a policy gain, and does NOT revive HE0. "
                    "2.36-2.91x is an ENDPOINT ratio -- local elasticity differs 4x "
                    "between 16->24 and 44->92, so do NOT apply it above D=44. "
-                   "Do not transplant to another grid."),
+                   "Do not transplant to another grid. 2026-08-15: also honour "
+                   "suspended_citations and state headline_provenance when quoting "
+                   "the range; the surviving claim is 'lever exists, 2.3-2.9x band, "
+                   "all 4 arms', NOT the per-arm ordering."),
 )
 
 # Mirror campaign on the prefill axis -- decode pinned at 16 SM.
