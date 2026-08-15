@@ -216,3 +216,44 @@ restates, with the specific mechanism and magnitude now identified, what
 `n_indep=1` for this job pair. See `CONSENSUS.md` §3 item 50 addendum
 (2026-08-15) and `PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트" G-1
 addendum (2026-08-15) for the canonical registration.
+
+---
+
+## Addendum 2 (2026-08-15, doc-steward — dated correction of the scope
+of Addendum 1 point 2 above; original text preserved unmodified; new
+GPU spend 0; not a performance/policy claim; source =
+`workspace/engine-port/results/s8_scaleup/
+AUDIT_C2_HEADLINE_JOB_COMPOSITION_2026-08-15.md` §3.2,
+result-analyst)
+
+Addendum 1 point 2 above says job 865533's keepalive-overflow rejection
+hit **"its Ha8 arm across all 5 cells"**. This scoping is **too narrow**.
+A same-day follow-up audit (`AUDIT_C2_HEADLINE_JOB_COMPOSITION_
+2026-08-15.md`, produced to answer a different question — the job
+provenance of the `FINDINGS_8B_2026-07-28.md` headline ratios — and not
+a re-investigation of this note) checked all four arms of job 865533 and
+found the identical collapse in **every one of the 20 arm/cell
+combinations**, not just Ha8's five:
+
+| arm | d16 | d24 | d44 | d92 | np |
+|---|---|---|---|---|---|
+| Ha8 | 23,662 | 23,689 | 23,705 | 23,729 | 23,675 |
+| Hs8 | 23,404 | 23,425 | 23,472 | 23,443 | 23,417 |
+| M8  | 23,741 | 23,608 | 23,727 | 23,731 | 23,692 |
+| T8  | 23,413 | 23,413 | 23,409 | 23,431 | 23,419 |
+
+(rejection counts of `"is longer than the model's context length (1792
+tokens)"` per cell, from the corresponding `s8_deconf_{arm}_C1024_d*_
+865533_srv.log` files). Client-side confirmation (first rep, d16): all
+four arms of 865533 report `keepalive_done=0, keepalive_errors≈
+5,880–5,943`; all four arms of 865493 report `keepalive_done=199–528,
+keepalive_errors=0`.
+
+**This is a scope error caught one day after it was registered** — the
+2026-08-15 canonical entries this file points to (`CONSENSUS.md` §3
+item 50 addendum, `PROJECT_STATUS.md` G-1 addendum) were themselves
+corrected for the same reason on the same calendar day (see their own
+"addendum2"/"追記2"). Nothing about the underlying finding changes: job
+865533 is still keepalive-dead, 865493 and 865533 are still not
+replicates (`n_indep=1`, §3 item 28 unchanged), and no performance or
+policy conclusion is affected — only "which arm(s)" was wrong.

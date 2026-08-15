@@ -1,6 +1,47 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-14 (doc-steward, 2차 — **정본 정정 1건 + 신규 결과
+최종 갱신: 2026-08-15 (doc-steward — **새 성능 판정 0건 · 정책 주장
+0건 — result-analyst의 C2 헤드라인 job 구성 감사를 claims-auditor가
+적대 검증 완료(반증 3건 포함). 등급 무변경(CONFIRMED scoped),
+인용 정지 2건 신설.** (A) 같은 날 앞선 addendum(G-1) 자신의 서술
+오류 정정 — job 865533의 keepalive 붕괴를 "Ha8 arm 한정"으로
+적었으나 원자료는 **4 arm(Ha8·Hs8·M8·T8) 전 20셀 전부**임(G-1
+追記2, claims-auditor 검증 대상 아님, 그대로 유지). (B) C2
+헤드라인(2.36–2.91×, 4 arm) job provenance 감사 — **claims-auditor
+적대 검증 완료**. 생존(반증 실패, 인용 가능): 헤드라인 4셀 중
+3셀(Ha8·M8·Hs8)은 양 다리 100% job 865533 단독, T8도 SM92 다리는
+865533 단독(원인=`t0_monotonic_s` 하네스 결손, keepalive 붕괴
+아님); 58 매칭 셀의 조건부 ITL 차 −0.18%±0.62%(최대 2.20%)는
+3중 추가 반증 시도에서도 생존. **반증됨**: "깨끗한 런 단독 재계산
+T8 2.388×·Hs8 2.687×를 CI·n=4와 함께 인용 가능" — T8 b16의
+865493/d16 rep1–4가 실은 **서버 부팅 1회**(다리당 `n_indep=1`, rep는
+의사반복)라 CI는 실제로 ≈2배 넓다; "Ha8은 b12가 양 다리 0건이라
+FINDINGS 지침을 구조적으로 만족 불가" — 귀속 오류, SM92 다리는
+오히려 깨끗한 런(865493)이 b16까지 도달(33,344건). **신규 발견**:
+arm별 ε 순서는 슬라이스 산물 — 4 arm 공통 batch(b=1)에서는 순서가
+완전히 뒤집힌다(폭 0.118→0.038). **판정 = 등급 CONFIRMED(scoped)
+유지 + 인용 정지 2건 신설**(arm별 ε·순위 / 깨끗한 셀 CI·"n=4"
+표기, "8B decode-SM 민감도 측정 노트" 재정정). (C) "다음 실험
+gate" #12의 "수치는 ctx4096 한정, 기전은 ctx-무관" 서술은
+**claims-auditor 독립 재집계로 반증**됨 — ctx1024(SM92 max bs
+865493 21/23/21/23·865533 16)가 그 기전의 반례다. **정정된 명제**:
+B-폐쇄는 **λ(L)이 작을 때만 구속**(regime-의존, ctx-무관 아님,
+재정정). 상세 위 "8B decode-SM 민감도 측정 노트"(재정정)·"다음
+실험 gate" #12(재정정)·G-1(追記2), `reports/CONSENSUS.md` rev30·§3
+항목50 追記2·51 追記(재정정)·54(신설, 재정정), `workspace/
+engine-port/results/s8_scaleup/
+AUDIT_C2_HEADLINE_JOB_COMPOSITION_2026-08-15.md`(1차 산출,
+result-analyst — 반증 3항목 포함 원문 보존), claims-auditor 적대
+검증(원자료 파일 위치 미확정, 다음 세션 편입 요망). ⚠️provenance:
+B/C는 result-analyst(1차)+claims-auditor(적대 검증) 산출, 메인
+세션 독립 재확인 없음.
+⚠️**이 상단 changelog의 공백 기록**: 2026-08-14(2차) 이후 같은 날
+(2026-08-15, commit `2e2ddc1`)에 이미 G-1 addendum·"다음 실험 gate"
+#12(신설)·ncu/nsys 스코프 주석·방법론 게이트 #35·#36이 본문에
+반영됐으나 이 상단 헤더에는 별도 항목으로 기록되지 않았다(내용은
+`reports/CONSENSUS.md` rev29 changelog 참조) — 누락을 여기 짚어
+두고, 이번 갱신부터 다시 매 반영을 상단에 기록한다.
+이전: 2026-08-14 (doc-steward, 2차 — **정본 정정 1건 + 신규 결과
 등재 1건. 새 성능 판정 0건. 기존 결론은 뒤집히지 않는다(오히려 강화
 방향).** **(A) 하드웨어 오식별 정정**: `TRAFFIC_ROOFLINE_DIAGNOSTIC_
 2026-08-11.md`가 `nvidia-smi -q`를 **로그인 노드(glogin01, `A100 80GB
@@ -1823,6 +1864,85 @@ job, `error code 9` 1,986건 + 메트릭 정규식 실패 1,920건) — 단
 정정해서 읽는다. 상세 `reports/CONSENSUS.md` §3 항목52, `handoff-report/
 session_handoff_2026-08-15.md` §2.9.
 
+`ADVERSARIAL AUDIT COMPLETE (2026-08-15) — claims-auditor 판정: 등급
+유지 + 인용 정지 2건 신설.`
+★★★**(2026-08-15, result-analyst 1차 산출 + claims-auditor 적대
+검증 — 새 성능 판정·정책 주장 아님, 등급 CONFIRMED(scoped) 유지)**:
+헤드라인 "2.36–2.91×" 4셀의 job 구성을 원자료에서 직접 재구성했고,
+claims-auditor가 그 산출을 적대 검증해 **일부는 확증, 일부는
+반증**했다.
+
+**생존(반증 시도 실패, 인용 가능)**: **3셀(Ha8·M8·Hs8)은 양 다리
+모두 job 865533 단독, T8도 SM92 다리는 865533 단독**(SM16 다리만
+865493 61%+865533 39%) — 1차 원인은 keepalive 붕괴가 아니라
+**하네스 결손**(865493은 M8 전 5셀·Ha8 d16 셀에 `t0_monotonic_s`가
+없어 귀속 구간 0건). 같은 `(arm, 실현SM, decode batch)`를 채운
+58개 매칭 셀에서 조건부 ITL 차 **−0.18%±0.62%(SD), 최대 2.20%**는
+claims-auditor의 3중 추가 반증 시도(헤드라인-다리만 재집계·`tok_idx`
+매칭·동거 prefill 강도 `pf_bs` 매칭)에서도 살아남았다(각각 ≤0.58%·
+≤0.2%·≤1%). 독립 스크립트 재실행 결과는 저장소 JSON과 byte-identical.
+
+**반증됨(REFUTED)**: (i) "깨끗한 런(865493) 단독 재계산 T8
+2.388×[2.379,2.397]·Hs8 2.687×[2.686,2.689](양 다리 4 rep)를 CI·
+n=4와 함께 인용 가능" — **T8 b16의 865493/d16 rep1–4는 실은 서버
+부팅 1회**(다리당 `n_indep=1`, rep1–4는 의사반복)라 보고된 CI는
+토큰/rep 내부 잡음만 잡은 것이고, rep 간 변동을 t(3)로 반영하면
+**≈[2.368,2.408](±0.85%), 약 2배 넓다** — "양 다리 4 rep = 게이트
+n≥4 충족"은 거짓. ⇒ 점추정 T8≈2.388×·Hs8≈2.687×는 `n_indep=1`
+명시 하에서만 인용 가능, CI·"n=4"·"게이트 충족" 표기는 **인용
+정지**. (ii) "Ha8은 b12 슬라이스가 양 다리 모두 0건이라 문서 자신의
+'batch 12–16 대표값' 지침을 구조적으로 만족할 수 없다" — 귀속
+오류. Ha8 SM16 다리는 job 865533(붕괴 런)에서 최대 b11까지만
+관측되고 865493(깨끗한 런)은 d16 셀 자체에 t0 결손이 있어 대응
+데이터가 없지만, **SM92 다리는 오히려 865493(깨끗한 런)이 batch=16
+까지 도달한다**(33,344건, 전부 865493). 즉 도달 불가는 구조적
+제약이 아니라 (a) 865533의 낮은 batch 상한 + (b) 865493 SM16
+다리의 t0 결손의 조합이다 — "865533에서 미도달, 865493은 SM92에서
+b16 도달"로만 서술한다. (iii) **게이트 #12 ctx 스코프 서술**("수치는
+ctx4096 한정, 기전은 ctx-무관") — REFUTED, 아래 "다음 실험 gate"
+#12 재정정 참조.
+
+**신규 인용 정지(claims-auditor가 추가로 확인)**: **(a) arm별 ε 및
+arm 간 순위/격차 인용 정지** — 헤드라인 슬라이스의 ε(=ln(ratio)/
+ln(5.75)) 순서 T8 .492 < Hs8 .543 < Ha8 .599 < M8 .610은 **슬라이스
+선택의 산물**이다. 4 arm 공통 batch(b=1)에서는 **Ha8 .480 < Hs8
+.514 < M8 .515 < T8 .518**로 순서가 완전히 뒤집히고 폭이
+0.118→0.038로 좁아진다 — `FINDINGS_8B_2026-07-28.md` §2.1 자신이
+"Ha8의 SM 민감도는 오히려 최저(2.54–2.75×)"라 적어 헤드라인
+순서와 모순한다. ⚠️하방 소비자 추적 필요(미확인): `bsweep_regime/`
+E-1a의 `T6_PC1`, `reports/figures/canon.py:308-335`. **(b) 깨끗한
+셀 CI·"n=4" 표기 인용 정지**(위 (i) 참조). 추가로 **이질적 batch
+추출 규칙** 확인: T8/M8/Hs8은 b12, Ha8은 자신의 최댓값 b9를 쓴다
+— "2.36–2.91×"는 매칭 비교가 아니라 이질적 규칙의 나열이다. b12
+매칭 3 arm(T8/M8/Hs8, 헤드라인과 동일)의 범위는 2.366–2.909(23%
+폭). **4 arm 공통 batch(b=1)의 2.31–2.48은 "수렴 확증"으로 과잉
+해석 금지** — b=1은 weight-sweep 트래픽 지배 지점(§7 C-2)이라
+arm 간 근접이 준-항등에 가깝다. **realized-SM 조건화 자체가
+동거율을 구성상 ≈1로 강제**하므로(green-ctx는 동거 중에만 실현)
+58개 매칭 셀은 붕괴 경로가 조건화로 이미 제거된 잔차다 — 조건화가
+안 걸린 SM108 셀에서는 실제로 −2.2%/−1.26%가 관측된다. 58셀 중
+헤드라인 다리(SM16/SM92) 자체는 17개뿐(M8 0, Ha8-SM16 0).
+
+**종합 판정(claims-auditor, 2026-08-15)**: **등급 CONFIRMED(scoped)
+유지 + 인용 정지 2건 신설**(arm별 ε·순위 / 깨끗한 셀 CI·"n=4" 표기).
+"레버 존재, 2.3–2.9× 대역, 4 arm 전부"는 그대로 인용 가능. **해소
+실험(등재, 미실행)**: keepalive ≤1792 토큰 + 4 arm × {d16,d92} ×
+독립 서버 부팅 4회씩(rep 아님) + concurrency 계단으로 b≥12 강제 —
+job-불변성·batch 매칭·`n_indep≥4`를 한 설계로 동시 해소. **Stage 0
+D108 전례와 다르다**: Stage 0은 라벨 오류(§1-21), 이번은 라벨이
+맞고 교락이 직접 측정됐다 — 같은 유형으로 인용 금지.
+
+⚠️**provenance(최종)**: "감사 대기"가 아니라 **claims-auditor 적대
+감사 완료(2026-08-15)** 상태다. 산출 주체는 **result-analyst(1차)
++ claims-auditor(적대 검증)**이고 **메인 세션 독립 재확인 없음**.
+상세 `workspace/engine-port/results/s8_scaleup/
+AUDIT_C2_HEADLINE_JOB_COMPOSITION_2026-08-15.md`(1차, 위 반증
+3항목 포함 원문 보존), claims-auditor 적대 검증(원자료 파일 위치
+미확정, 다음 세션 편입 요망), `reports/CONSENSUS.md` §3
+항목54(신설, 재정정), `FINDINGS_8B_2026-07-28.md` §8(신설,
+재정정), `reports/paper/CLAIM_EVIDENCE_MATRIX.md`(Claim A 각주,
+재정정).
+
 상세 [`workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md`](workspace/engine-port/results/s8_scaleup/FINDINGS_8B_2026-07-28.md)
 (§6에 (a)"레버 존재≠정책 이득" (b)"HE0를 되살리지 않는다" 명시, §3 retraction을
 "SM108이 근소하게 빠르다"에서 "비교 불가"로 강화 — 2026-07-28 doc-steward 반영;
@@ -2502,6 +2622,21 @@ results/s8_scaleup/TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`](workspace/engine-
   이미 "n_indep=1"로 등재해 둔 것이다. 상세 `reports/CONSENSUS.md` §3
   항목50 addendum(2026-08-15), `NOTES_D54_ANCHOR_2026-08-03.md`
   addendum(원문 보존, 신설 예정).
+
+  ⚠️**dated 정정2(2026-08-15, doc-steward — result-analyst
+  `AUDIT_C2_HEADLINE_JOB_COMPOSITION_2026-08-15.md` §3.2 반영, 원문
+  미덮어쓰기, 새 성능 판정 아님)**: 바로 위 문단(같은 날 등재)이 job
+  865533의 keepalive 붕괴를 **"Ha8 arm이 전 5셀에서"**로 적었다.
+  원자료 재확인 결과 **4 arm(Ha8·Hs8·M8·T8) 전 20셀 전부**가 같은
+  붕괴를 보인다: srv.log 거부 건수/셀 — Ha8 23,662–23,729·Hs8
+  23,404–23,472·M8 23,608–23,741·T8 23,409–23,431, 클라이언트
+  확증(첫 rep, d16) 865533은 4 arm 전부 `keepalive_done=0,
+  keepalive_errors≈5,880–5,943`(865493은 4 arm 전부 `keepalive_done=
+  199–528, keepalive_errors=0`). **어제 등재한 서술이 바로 다음
+  감사에서 범위 오류로 드러난 사례** — 판정 함의는 없음(865533이
+  keepalive-사망이라는 사실·`n_indep=1`·G-1의 등급은 전부 불변, 바뀌는
+  것은 "어느 arm이"의 범위뿐). 상세 `reports/CONSENSUS.md` §3
+  항목50 追記2, `NOTES_D54_ANCHOR_2026-08-03.md` Addendum 2.
 
   **G-2 [AUDITED — 독립 수렴] C2의 높은 residency는 파티션 제어가
   아니라 워크로드 장치의 산물.** sticky OFF에서는 prefill이 in-flight일
@@ -3551,7 +3686,9 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
 
 12. ★★**(2026-08-15, doc-steward 등재 — claims-auditor 산출, 메인 세션은
     일부만 재확인[아래 명시] — 새 실험 아님) decode batch 도달성의 구조적
-    폐쇄 — 앞으로의 모든 B축 설계에 적용되는 제약.** ctx4096 텔레메트리
+    폐쇄(ctx4096 격자에서 관측 — ★2026-08-15 재정정: regime-의존, "ctx-무관
+    기전" 아님, 아래 재정정 참조) — B축 설계 시 λ(L)이 작은 격자에
+    적용되는 제약.** ctx4096 텔레메트리
     전수 재집계: prefill 16 SM 고정 + `--chunked-prefill-size -1` 격자에서
     SM92 셀의 max(decode_bs)가 T8 4·M8 4·Hs8 4·Ha8 12로 무너진다(SM44는
     T8 8·M8 8·Hs8 6·Ha8 16) — SM92에서 B≥9 도달률은 T8·M8·Hs8 **0.0%**,
@@ -3579,6 +3716,31 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     rev4는 prefill SM을 풀거나 다른 B 통제 수단이 먼저 필요하다. 상세
     `reports/CONSENSUS.md` §3 항목51, `handoff-report/session_handoff_
     2026-08-15.md` §2.8·§4.2.
+
+    ★★**(2026-08-15 재정정, doc-steward — result-analyst 1차 addendum을
+    claims-auditor가 적대 검증해 반증, 등재 명제 자체가 수정됨) "기전은
+    ctx-무관"은 REFUTED — ctx1024가 반례다.** result-analyst의 원
+    addendum은 "위 표(max(decode_bs)=T8/M8/Hs8 4·Ha8 12)는 ctx4096
+    격자의 값이지만 기전(prefill SM 고정 → λ 상한 → Little's law)은
+    ctx-무관"이라 적었으나, claims-auditor의 독립 재집계가 이를
+    **반증**했다: **ctx1024(job 865493/865533, C2의 헤드라인 격자)의
+    SM92 실현 스냅샷 max(decode_bs)는 865493 21/23/21/23, 865533
+    (전 arm) 16**으로 ctx4096의 4(T8/M8/Hs8)/12(Ha8)보다 훨씬 높다 —
+    같은 "prefill 16 SM 고정" 기판에서 ctx만 바뀌었는데 폐쇄가
+    사실상 풀린다는 것은 "기전이 ctx와 무관하게 항상 구속한다"는
+    서술의 **반례**다. **정정된 명제**: B-폐쇄는 **λ(L)이 작을
+    때만 구속한다** — `λ(L)`은 prefill 서비스율이고 프롬프트 길이
+    L의 함수다. ctx4096(L 길다)처럼 prefill이 느려 λ가 작으면
+    Little's law 상한이 낮게 걸려 폐쇄가 강하게 구속하고,
+    ctx1024(L 짧다)처럼 prefill이 빨라 λ가 크면 상한이 실질적으로
+    안 걸린다. ctx4096에서 관측된 폐쇄 자체는 유효하나, "그 기전이
+    ctx에 무관하게 보편적으로 적용된다"는 일반화는 **철회**한다.
+    구체적 수치(4/4/4/12, 도달률 %)도 여전히 ctx4096 한정이며
+    다른 (B,L) 격자로 이식 금지(게이트 #31). 상세 `workspace/
+    engine-port/results/s8_scaleup/
+    AUDIT_C2_HEADLINE_JOB_COMPOSITION_2026-08-15.md` §8 항목3(1차,
+    반증됨), claims-auditor 적대 검증(원자료 파일 위치 미확정),
+    `reports/CONSENSUS.md` §3 항목51 追記(재정정).
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
