@@ -83,6 +83,14 @@ K9_ADAPTIVE_EXTRA_BLOCKS = 2     # only when upper gap >= delta AND blocks
 K10_PIN_FRAC_NEVER_DISCARDS = True   # add. A-1: co-residency fraction NEVER
                                  # discards an arm.  The ONLY discard criterion
                                  # is realized-probe ``exact is not True``.
+K11_UPPER_ARM_MIN_SM = 44        # prereg addendum C (2026-08-17): sec6's
+                                 # "upper arms" is PINNED at decode SM >= 44,
+                                 # not a floating top-half and NOT the
+                                 # contending set.  On the 7-arm campaign grid
+                                 # this equals top-half-by-SM exactly; pinning
+                                 # matters because a floating top-half loses
+                                 # d44 as soon as one LOWER arm is discarded
+                                 # by H3'-a.
 
 TTFT_SLO_MS = 3000.0             # canonical secondary predicate thresholds
 ITL_SLO_MS = 60.0
@@ -485,13 +493,33 @@ def _saturation_gap(grid: Sequence[BootRecord], contenders: Sequence[str]) -> Di
     def spread(arms: Sequence[str]) -> float:
         vals = [means[a] for a in arms if a in means and math.isfinite(means[a])]
         return (max(vals) - min(vals)) if len(vals) >= 2 else math.nan
+    finite = [a for a in sorted(means, key=arm_sm) if math.isfinite(means[a])]
     all_arms = sorted(means, key=arm_sm)
     top_half = all_arms[len(all_arms) // 2:]
+    # ---- K11 (prereg addendum C, 2026-08-17) ------------------------------
+    # sec6's "upper arms" is PINNED BY SM VALUE, not by a floating top-half and
+    # not by the contending set.  Fallback chain, pre-registered: SM >= 44 ->
+    # top-half of the surviving arms -> ITL_SATURATED is UNDEFINED.
+    # `contenders` is REFUTED as the primary (it is derived from the very block
+    # argmin whose failure ITL_SATURATED is supposed to explain, and it can be
+    # nan by construction) and survives only as a DIAGNOSTIC field.
+    upper = [a for a in finite if arm_sm(a) >= K11_UPPER_ARM_MIN_SM]
+    if len(upper) >= 2:
+        basis = "pinned_sm_ge_%d" % K11_UPPER_ARM_MIN_SM
+    else:
+        upper = finite[len(finite) // 2:]
+        basis = "fallback_top_half_of_surviving"
+        if len(upper) < 2:
+            basis = "undefined_fewer_than_2_upper_arms"
     return {
-        "primary_definition": "contending arms (win >= 1 block)",
+        "primary_definition": ("upper arms U = decode SM >= %d (K11, prereg "
+                               "addendum C)" % K11_UPPER_ARM_MIN_SM),
+        "upper_arms": list(upper),
+        "upper_arm_basis": basis,
+        "gap_upper_ms": spread(upper),          # <- the one the verdict reads
         "contenders": list(contenders),
-        "gap_contenders_ms": spread(contenders),
-        "gap_top_half_by_sm_ms": spread(top_half),
+        "gap_contenders_ms": spread(contenders),   # diagnostic only
+        "gap_top_half_by_sm_ms": spread(top_half),  # diagnostic only
         "top_half_arms": top_half,
         "delta_ms": K7_DELTA_MS,
     }
@@ -585,12 +613,14 @@ def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
         flags.append({"verdict": "TRUNCATED_LOW",
                       "why": f"D_ttft = S_min = {s_min}: delta >= 0 is forced, "
                              f"so delta > 0 is NOT read as a tax"})
-    gap = saturation["gap_contenders_ms"]
+    gap = saturation["gap_upper_ms"]        # K11 (prereg addendum C)
     if not donor_itl["identified"]:
         if math.isfinite(gap) and gap < K7_DELTA_MS:
             flags.append({"verdict": "ITL_SATURATED",
-                          "why": f"ITL donor unidentified and contender spread "
-                                 f"{gap:.3f} ms < delta {K7_DELTA_MS} ms -- "
+                          "why": f"ITL donor unidentified and UPPER-arm spread "
+                                 f"{gap:.3f} ms < delta {K7_DELTA_MS} ms over "
+                                 f"{saturation['upper_arms']} "
+                                 f"({saturation['upper_arm_basis']}) -- "
                                  f"non-identification is SATURATION, not noise "
                                  f"(informative negative)"})
         else:
@@ -669,7 +699,7 @@ def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
 
     # sec6 adaptive rule -- pre-declared, never chosen after seeing the data
     if verdict in ("UNIDENTIFIED", "ITL_SATURATED"):
-        gap = saturation["gap_contenders_ms"]
+        gap = saturation["gap_upper_ms"]     # K11 (prereg addendum C)
         blocks_disagree = len({w for w in donor_itl["rank_rule"]["per_block"].values()
                                if w}) > 1
         if math.isfinite(gap) and gap < K7_DELTA_MS:
@@ -1469,9 +1499,16 @@ def main() -> None:
                   "K9": K9_ADAPTIVE_EXTRA_BLOCKS,
                   "K10_pin_never_discards": K10_PIN_FRAC_NEVER_DISCARDS},
         "spec_ambiguities": [
-            "sec6 ITL_SATURATED says 'upper arms' without defining the set; "
-            "registered here as the CONTENDING set (arms winning >= 1 block), "
-            "with the top-half-by-SM alternative reported alongside",
+            "RESOLVED 2026-08-17 (prereg addendum C, claims-auditor single-"
+            "question audit, decided BEFORE any block-1 artifact existed): "
+            "sec6's 'upper arms' = K11, pinned at decode SM >= 44 (== top-half"
+            "-by-SM on the 7-arm campaign grid).  The CONTENDING set is "
+            "REFUTED as primary -- it is derived from the block argmin whose "
+            "failure ITL_SATURATED explains, it is nan by construction when "
+            "the winner is unanimous, and on the old 4-arm LO grid it fires "
+            "ITL_SATURATED on the two BOTTOM arms (gap 0.069) while printing "
+            "'saturated at the upper end' (true upper gap 0.944).  "
+            "gap_contenders_ms / gap_top_half_by_sm_ms remain as DIAGNOSTICS.",
             "sec7 PC-D calls phase-B D_ttft=d34 'interior', but d34 is the "
             "BOTTOM boundary of the g2_0_hard grid {34..74}; under the literal "
             "S_min rule that cell is TRUNCATED_LOW.  Both are emitted: "

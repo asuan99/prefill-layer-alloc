@@ -1,0 +1,302 @@
+{
+  "K7_delta_ms": 1.0,
+  "analyzer_sha256": "c60bf16880d228632dc41b9d895dac3e3c5a0f17e41a0f79a5a2fd857828295c",
+  "bootstrap_used": 2000,
+  "scenarios": {
+    "monotone_0.4ms_sd1.8_rho0": {
+      "P_gap_contenders_is_nan": 0.0225,
+      "P_verdicts_agree(C vs top-half)": 0.74,
+      "mu": {
+        "d16": 58.0,
+        "d24": 57.6,
+        "d34": 57.2,
+        "d44": 56.8,
+        "d54": 56.4,
+        "d64": 56.0,
+        "d74": 55.6
+      },
+      "n_blocks": 4,
+      "n_contenders_hist": {
+        "1": 9,
+        "2": 103,
+        "3": 203,
+        "4": 85
+      },
+      "rates": {
+        "contenders": {
+          "ADD_2_BLOCKS": 0.6025,
+          "IDENTIFIED": 0.1125,
+          "ITL_SATURATED": 0.285,
+          "NONE": 0.1125,
+          "NO_MORE_BLOCKS": 0.285,
+          "UNIDENTIFIED": 0.6025
+        },
+        "pinned_sm_ge_44": {
+          "ADD_2_BLOCKS": 0.7675,
+          "IDENTIFIED": 0.1125,
+          "ITL_SATURATED": 0.12,
+          "NONE": 0.1125,
+          "NO_MORE_BLOCKS": 0.12,
+          "UNIDENTIFIED": 0.7675
+        },
+        "top_half_by_sm": {
+          "ADD_2_BLOCKS": 0.7675,
+          "IDENTIFIED": 0.1125,
+          "ITL_SATURATED": 0.12,
+          "NONE": 0.1125,
+          "NO_MORE_BLOCKS": 0.12,
+          "UNIDENTIFIED": 0.7675
+        }
+      },
+      "rho": 0.0,
+      "sigma_ms": 1.8,
+      "sims": 400
+    },
+    "monotone_1ms_sd1.8_rho0": {
+      "P_gap_contenders_is_nan": 0.1075,
+      "P_verdicts_agree(C vs top-half)": 0.7275,
+      "mu": {
+        "d16": 58.0,
+        "d24": 57.0,
+        "d34": 56.0,
+        "d44": 55.0,
+        "d54": 54.0,
+        "d64": 53.0,
+        "d74": 52.0
+      },
+      "n_blocks": 4,
+      "n_contenders_hist": {
+        "1": 43,
+        "2": 210,
+        "3": 132,
+        "4": 15
+      },
+      "rates": {
+        "contenders": {
+          "ADD_2_BLOCKS": 0.3775,
+          "IDENTIFIED": 0.345,
+          "ITL_SATURATED": 0.2775,
+          "NONE": 0.345,
+          "NO_MORE_BLOCKS": 0.2775,
+          "UNIDENTIFIED": 0.3775
+        },
+        "pinned_sm_ge_44": {
+          "ADD_2_BLOCKS": 0.645,
+          "IDENTIFIED": 0.345,
+          "ITL_SATURATED": 0.01,
+          "NONE": 0.345,
+          "NO_MORE_BLOCKS": 0.01,
+          "UNIDENTIFIED": 0.645
+        },
+        "top_half_by_sm": {
+          "ADD_2_BLOCKS": 0.645,
+          "IDENTIFIED": 0.345,
+          "ITL_SATURATED": 0.01,
+          "NONE": 0.345,
+          "NO_MORE_BLOCKS": 0.01,
+          "UNIDENTIFIED": 0.645
+        }
+      },
+      "rho": 0.0,
+      "sigma_ms": 1.8,
+      "sims": 400
+    },
+    "true_tie_sd1.0_rho0": {
+      "P_gap_contenders_is_nan": 0.0025,
+      "P_verdicts_agree(C vs top-half)": 0.625,
+      "mu": {
+        "d16": 58.0,
+        "d24": 58.0,
+        "d34": 58.0,
+        "d44": 58.0,
+        "d54": 58.0,
+        "d64": 58.0,
+        "d74": 58.0
+      },
+      "n_blocks": 4,
+      "n_contenders_hist": {
+        "1": 1,
+        "2": 50,
+        "3": 205,
+        "4": 144
+      },
+      "rates": {
+        "contenders": {
+          "ADD_2_BLOCKS": 0.1875,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.7675,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.7675,
+          "UNIDENTIFIED": 0.1875
+        },
+        "pinned_sm_ge_44": {
+          "ADD_2_BLOCKS": 0.4625,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.4925,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.4925,
+          "UNIDENTIFIED": 0.4625
+        },
+        "top_half_by_sm": {
+          "ADD_2_BLOCKS": 0.4625,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.4925,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.4925,
+          "UNIDENTIFIED": 0.4625
+        }
+      },
+      "rho": 0.0,
+      "sigma_ms": 1.0,
+      "sims": 400
+    },
+    "true_tie_sd1.8_rho0": {
+      "P_gap_contenders_is_nan": 0.0025,
+      "P_verdicts_agree(C vs top-half)": 0.6475,
+      "mu": {
+        "d16": 58.0,
+        "d24": 58.0,
+        "d34": 58.0,
+        "d44": 58.0,
+        "d54": 58.0,
+        "d64": 58.0,
+        "d74": 58.0
+      },
+      "n_blocks": 4,
+      "n_contenders_hist": {
+        "1": 1,
+        "2": 50,
+        "3": 205,
+        "4": 144
+      },
+      "rates": {
+        "contenders": {
+          "ADD_2_BLOCKS": 0.6125,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.3425,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.3425,
+          "UNIDENTIFIED": 0.6125
+        },
+        "pinned_sm_ge_44": {
+          "ADD_2_BLOCKS": 0.825,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.13,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.13,
+          "UNIDENTIFIED": 0.825
+        },
+        "top_half_by_sm": {
+          "ADD_2_BLOCKS": 0.825,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.13,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.13,
+          "UNIDENTIFIED": 0.825
+        }
+      },
+      "rho": 0.0,
+      "sigma_ms": 1.8,
+      "sims": 400
+    },
+    "true_tie_sd1.8_rho0.5": {
+      "P_gap_contenders_is_nan": 0.0025,
+      "P_verdicts_agree(C vs top-half)": 0.5375,
+      "mu": {
+        "d16": 58.0,
+        "d24": 58.0,
+        "d34": 58.0,
+        "d44": 58.0,
+        "d54": 58.0,
+        "d64": 58.0,
+        "d74": 58.0
+      },
+      "n_blocks": 4,
+      "n_contenders_hist": {
+        "1": 1,
+        "2": 50,
+        "3": 205,
+        "4": 144
+      },
+      "rates": {
+        "contenders": {
+          "ADD_2_BLOCKS": 0.35,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.605,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.605,
+          "UNIDENTIFIED": 0.35
+        },
+        "pinned_sm_ge_44": {
+          "ADD_2_BLOCKS": 0.6975,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.2575,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.2575,
+          "UNIDENTIFIED": 0.6975
+        },
+        "top_half_by_sm": {
+          "ADD_2_BLOCKS": 0.6975,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.2575,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.2575,
+          "UNIDENTIFIED": 0.6975
+        }
+      },
+      "rho": 0.5,
+      "sigma_ms": 1.8,
+      "sims": 400
+    },
+    "true_tie_sd3.0_rho0": {
+      "P_gap_contenders_is_nan": 0.0025,
+      "P_verdicts_agree(C vs top-half)": 0.865,
+      "mu": {
+        "d16": 58.0,
+        "d24": 58.0,
+        "d34": 58.0,
+        "d44": 58.0,
+        "d54": 58.0,
+        "d64": 58.0,
+        "d74": 58.0
+      },
+      "n_blocks": 4,
+      "n_contenders_hist": {
+        "1": 1,
+        "2": 50,
+        "3": 205,
+        "4": 144
+      },
+      "rates": {
+        "contenders": {
+          "ADD_2_BLOCKS": 0.8275,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.1275,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.1275,
+          "UNIDENTIFIED": 0.8275
+        },
+        "pinned_sm_ge_44": {
+          "ADD_2_BLOCKS": 0.9375,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.0175,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.0175,
+          "UNIDENTIFIED": 0.9375
+        },
+        "top_half_by_sm": {
+          "ADD_2_BLOCKS": 0.9375,
+          "IDENTIFIED": 0.045,
+          "ITL_SATURATED": 0.0175,
+          "NONE": 0.045,
+          "NO_MORE_BLOCKS": 0.0175,
+          "UNIDENTIFIED": 0.9375
+        }
+      },
+      "rho": 0.0,
+      "sigma_ms": 3.0,
+      "sims": 400
+    }
+  },
+  "seed": 20260816
+}
