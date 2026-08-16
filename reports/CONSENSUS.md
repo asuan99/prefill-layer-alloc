@@ -4,7 +4,43 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-16 rev34 (doc-steward — **R1·R2 재분석 정본 승격
+최종 갱신: 2026-08-16 rev35 (doc-steward — **gate #16 사전등록 규칙→
+하네스 2단 감사 완주 반영(`workspace/engine-port/results/slo_sched/
+PREREG_G16_RULES_REV3_2026-08-16.md` rev3+addendum A+B) + engine-porter
+이관 1건 해소(`he2_bench.sbatch:92`, 커밋 `dadb851`) + 방법론 게이트
+2건. 새 성능 판정 0건 · 등급 변경 0건 · GPU 지출 0 · job 제출 0
+(스모크 미제출).**
+(1) **G16 사전등록 자체는 rev31 관례에 따라 `PROJECT_STATUS.md` "다음
+실험 gate" #11 레지스트리에만 등재**(CONSENSUS 신규 항목 없음) — 규칙
+감사 GO → 하네스 감사 NO-GO(4개 사유, `PIN_GATE=0.80`이 7 arm 전부
+배제·H3 검출이 항등식 포함) → addendum A 수정 10/10 → 재감사 GO →
+addendum B 수정 5/5, **미제출**(≈4.0–5.5 GPU-hr, 스모크 0.2–0.35).
+결정량 재정식화(`Δ_SLO` 단일 60ms 점 → 사다리 함수, 아래 §3 항목60
+(ii) 참조) 결과 payoff는 ITL SLO≲58.6ms 구간에만 존재함이 도출됐다.
+★**"gate #16을 닫았다"고 쓰지 말 것** — 닫는 것은 R2 결정량②(§1-32)의
+**재정식화판**이고, 원문 문턱 판본은 **rate 축**(gate #16 이차 표적)에
+남는다(rev3 §1 C1). (2) **`he2_bench.sbatch:92` 게이트 #7 버그 잔존분
+해소**(커밋 `dadb851`, `dur=max(dur,d)`→`dur+=d`) — rev34가 "engine-
+porter 이관 목록에 추가"라 적었던 항목이 이번 세션에 실제로 수정됨.
+과거 `HE2_RESULT` 라인 영구 인용 금지는 **불변**, 정본 §1-19/§1-20
+숫자는 이미 `sum(dur)` 독립 재계산으로 무사 확인돼 재확인 불요(§1-19
+문구 갱신). (3) **방법론 게이트 2건**(둘 다 아래 §3): (a) 게이트 #9
+**열한 번째 재발**(항목60) — 감사 대상이 아니라 **검증하는 쪽**
+(메인 세션의 독립 검증 스크립트·claims-auditor 자신의 1차 권고 자기
+반증)에서도 항등식이 재발. (b) **신규 #41 — telemetry는 공짜
+관찰자가 아니다**(항목61) — `observe_scheduler`가 모든 sync마다
+실행돼 `--disable-overlap-schedule`에서 임계경로 비용을 지불하고,
+2026-07-15/18 sgptv 격자(HE0/HE2 헤드라인 다수의 근거)는 telemetry
+없이 돌아 telemetry-ON 캠페인과의 절대값 직접 비교가 빌드 드리프트+
+계측 오버헤드의 합이 됨 ⇒ ⚠️**기존 "긴장 A(HE2 vs C2)"가 정확히 이
+패턴(telemetry OFF vs ON)이며 그 미통제 인자 목록에 telemetry 유무가
+없었음을 목록으로만 등재**(정정은 다음 세션). (4) 부수: 커밋
+`17fcac3`(제목 `gate #16 dynamic-vs-static grid harness`)은 G16이
+dynamic-vs-static 실험이 아니므로(그건 HE0 트랙, rev3 §10-7이 명시
+분리) 제목 오류 — 본문은 정확, history 재작성 안 함, `PROJECT_STATUS.md`
+"다음 실험 gate" #11 G16 행에 문서 층 정정 메모만 남김. 상세
+`handoff-report/session_handoff_2026-08-16.md` §14–19.** 이전
+rev34: 2026-08-16 (doc-steward — **R1·R2 재분석 정본 승격
 (`workspace/engine-port/results/slo_sched/ORACLE_REANALYSIS_2026-08-16.md`
 rev2 = result-analyst 산출 + claims-auditor 적대 감사, GPU 0 · 새 서빙
 실험 0건). 새 성능 판정 0건 · 등급 상향 0건 · 등재 내역 = provenance
@@ -1226,7 +1262,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | 14 | ★**stationary r8의 "시스템 노이즈" = 메트릭 절벽 (외인성 아님)** | 워크로드 4런 전부 동일(fingerprint), 하부 섭동은 **thru 3%·ITL 8%**뿐인데 goodput 2× — **r8이 TTFT≈SLO(3s) 경계에 앉아** 3% 결손이 TTFT 평탄역을 1.5s→3.7s로 밀어 임계선을 넘김. **3=견고/8=불안정/12=견고** ⇒ 경계 regime만 불안정. 상세 [bench_noise_root_cause.md](bench_noise_root_cause.md) |
 
 | 20 | ★★★**Oracle 재구성(TTFT⊗ITL 분해): headroom은 +2%가 아니라 +16% — 단 그건 disaggregation 몫 (사용자 지적, 2026-07-19)** | §1-19의 "+2.1%"는 per-static oracle이라 **coupled 절충점만** 봄. **goodput을 TTFT-pass ⊗ ITL-pass로 분해**(사용자 지적)하면 진짜 headroom이 보임: phase A(양 SLO 동시 binding)서 **d16 TTFT-pass 57.8%(ITL 실패) / d24+ ITL 100%(TTFT 하락)** — **DECOUPLED oracle**(d16의 TTFT ⊗ d24의 ITL)=**57.8% = best static 49.7% 대비 +16%**. ★**그러나 그 headroom은 92 prefill SM(d16-TTFT) + 24 decode SM(100% ITL) = 116 SM > 108 요구 = coupling TAX(8 SM 초과)라 단일-GPU 불가**(+ 얽힘이 batch로 추가 결합). ⇒ **두 개의 다른 천장**: 단일-GPU **동적**=coupled ceiling **+2%**(못 이김) / **decoupling=disaggregation ceiling +16%**(별도 디바이스 풀서만). **진짜 headroom은 디바이스 간에 존재, 단일-GPU split(동적이든)엔 없음.** `oracle_corrected.png`. ★★**등급 강등(2026-08-04, claims-auditor)**: 이 오라클(+16%)은 §1-19(극단 disjoint mix, jobs 860497–518)의 데이터를 그대로 재사용하는데, 정본 자신이 §5(열린 항목 (c), 아래)에서 그 캠페인을 **n=1~2·overload-only·underpowered**로 이미 기록하고 있다(§2-4 방법론 "n≥4 없이 정책 결론 금지"에 못 미침). ⇒ **"+16%"는 "확정"이 아니라 n=1~2, 미확증으로 강등한다.** 결합 가정(서로 다른 arm의 주변 pass율을 합성해 DECOUPLED oracle을 만든 것)도 별도로 미검증이다. 판정(단일-GPU와 disaggregation은 별개 천장)의 **방향**은 §1-4/§1-6 얽힘·비대칭 기전과 정합해 그대로 두나, **"+16%"라는 magnitude는 인용 시 이 caveat 동반 필수**. ★★**R1 rev2 확정(2026-08-16, result-analyst 독립 재현 + claims-auditor 적대 감사)**: 정본술어(p95)로 재채점해도 **+16.54%**로 견딘다(legacy 재현 +16.23%, §1-20 자기 술어와 정합). ⚠️단 **ITL 도너가 d24/d34 완전 동률(99.7396%)** — d34를 택하면 SM 합은 **126**(108 초과폭 8→18)이라 **"116"은 tie-break 의존**이며 애초에 대수적 재진술이다(§1-32 결정량② 참조). ★**절벽 위 크기 요동(rev2 신설, 등재 금지 대상)**: TTFT 임계 3000ms ±10%(2700–3300ms, 15ms 스텝 41점)를 훑으면 이득이 **+0.00%(2715/2745/2760/2775/2790ms)~+19.75%(3270ms, 3300ms는 +19.42%)로 비단조 요동**하며, 구조(TTFT도너 d16/ITL도너 d24/SM=116)는 41점 중 **39점만 불변**(2760·2775ms에서 TTFT도너가 d24로 붕괴해 SM=108) — **"+16.2%"라는 크기 자체를 단독 헤드라인 숫자로 인용하지 말 것**, §1-32의 sgptv HI(+1.67%)와의 "+16.2% vs +1.67%" 크기 대조도 **성립하지 않는다**(he2 쪽이 요동 범위 자체가 0~20%). 인용 가능한 것은 **구조 대조**뿐: he2 A는 두 도너가 격자 반대 끝(d16 vs d24+)에, sgptv HI는 같은 끝(d44 근방)에 있다. 상세 [layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) §2.5(P6), `../workspace/engine-port/results/slo_sched/ORACLE_REANALYSIS_2026-08-16.md` §2-3 |
-| 19 | ★★★**disjoint-feasibility region은 존재하나 동적은 거기서도 패배 — 이유는 conjunctive SLO의 구조 (사용자 극단-도전 검증, 2026-07-19)** | 사용자 논리(어떤 static도 양 phase 두 SLO 동시충족 못 하는 workload 필연 존재)를 극단 mix(A prefill-heavy in2048/o32@8, **B decode-heavy in2048/o512@5=긴ctx라 ITL-binding**)로 실증: **median-feasibility DISJOINT 확인**(feasible-A={d16} ∩ feasible-B={d24,d34}=∅; job 860497–518). ★**그런데 동적 여전히 패배**: graded goodput서 per-phase 최적이 **인접**(A→d24, B→d34)이라 **ORACLE 동적조차 best-static +2.1%뿐**(d24가 양 phase 근최적: A 2.73=최적, B 1.01 vs 1.09), **reactive bind는 −20.6%**(오배치, 양 phase 실패). ★**깊은 이유**: conjunctive SLO(TTFT∧ITL)가 동적을 **동기부여**(d16 최고TTFT·d44 최고ITL)하는 바로 그 힘이 **각 phase 최적을 중간 compromise로 당김**(d16은 A서 ITL벽·d44는 B서 TTFT벽) → 서로 다른 phase 최적이 인접 → 단일 중간 static이 양쪽 서빙. ★**게다가 이 region은 OVERLOAD서만 존재**(전 정책 gp 0.99–1.87, 대다수 SLO 실패): 용량 이하=전부 통과(static 자명)·이상=전부 실패(static 최소손실). **동적이 유용하게 이기는 operating regime 없음.** `extreme_disjoint.png`. ★★**강등 배너 추가(doc-steward, 2026-08-16, §1-20과 같은 근거로 소급 적용)**: 이 행의 "+2.1%"도 §1-20의 "+16%"와 **같은 캠페인**(jobs 860497–518)이며 **같은 n=1~2·overload-only** 조건이다 — §2-4 방법론("n≥4 없이 정책 결론 금지")에 못 미치고, 이미 §5-8(c)가 이 캠페인을 underpowered로 기록하고 있었으나 이 행 자체엔 배너가 없었다. 추가로 **claims-auditor 1차 재계산(독립 재확인 전, `PRIZE_SIZE_ARGUMENT_2026-08-16.md` §2.4)이 "+2.1%"가 집계 단위(phase 무가중 평균 vs 하네스 자신의 pooled trace-level, +5.9~6.1%)와 술어(legacy mean-ITL vs 정본 goodput p95 술어)에 이중으로 의존하며, 정본 술어로 재채점하면 phase B가 전 arm 0.0%가 돼 오라클 자체가 미정의됨을 보였다** — 숫자는 **아직 정본으로 승격하지 않는다**(선행 재분석 R1, `../PROJECT_STATUS.md` "다음 실험 gate" #14). 정본 숫자 교체는 R1 완료 후. ★★**R1 완료(2026-08-16, result-analyst 독립 재현 + claims-auditor 적대 감사, `ORACLE_REANALYSIS_2026-08-16.md` rev2) — 재현 확정, 등급 상향 아님**: phase-mean **+2.28%/+2.35%**(정본 "+2.1%"과 정합 — "+2.1%"은 반올림 2자리 값끼리 계산한 결과였음이 확인됨) vs 하네스 자신이 정의한 pooled trace-level `gpC=(g_A+g_B)/(d_A+d_B)` **+5.88%/+6.12%**(phase B duration이 pooled 가중치의 ~78%를 먹기 때문에 갈림). **정본 goodput 술어(TTFT≤3s ∧ 요청-내부 token-ITL p95≤60ms)로 재채점하면 phase B는 5 arm×2 rep 전부 joint 0/192로 완전분리 — 오라클 자체가 미정의**(TTFT-pass 요청 중 최소 ITL-p95 106.1–106.3ms, ITL-p95-pass 요청 중 최소 TTFT 14.73/14.75s). ⚠️★**하네스 결함 발견(같은 재현) — `he2_bench.sbatch:92`가 아직 `dur=max(dur,d)`**(게이트 #7 버그 잔존, `sharegpt_vary_bench.sbatch:92`만 `dur+=d`로 수정됨) ⇒ **`he2_*.out`의 `HE2_RESULT` 라인은 정확히 약 3× 부풀려져 있다**(예: `he2_860498.out` d24 rep81 A `gp=8.125` vs 참값 2.717) — **`HE2_RESULT` 라인 인용 영구 금지**. 단 **정본 §1-19/§1-20 숫자 자체는 `sum(dur)` 기준 독립 재계산으로 무사함이 확인됐다**(공표 2자리까지 재현: A `[2.03,2.73,1.86,1.23]`, B `[0.28,1.01,1.09,0.74]`, bind combined 1.485). `n_indep`=2·overload-only(phase A offered 8/s vs achieved 4.39–5.52/s=1.45–1.82×, phase B offered 5/s vs 1.35–1.59/s=3.14–3.70×)·arm×node 부분교락(d34/bind rep82만 gpu42, 나머지 8/10 job은 gpu40) 불변. `he2_bench.sbatch:92` 수정은 engine-porter 이관 목록에 등재(재실행 계획 시 선행). 상세 `../workspace/engine-port/results/slo_sched/ORACLE_REANALYSIS_2026-08-16.md` §2 |
+| 19 | ★★★**disjoint-feasibility region은 존재하나 동적은 거기서도 패배 — 이유는 conjunctive SLO의 구조 (사용자 극단-도전 검증, 2026-07-19)** | 사용자 논리(어떤 static도 양 phase 두 SLO 동시충족 못 하는 workload 필연 존재)를 극단 mix(A prefill-heavy in2048/o32@8, **B decode-heavy in2048/o512@5=긴ctx라 ITL-binding**)로 실증: **median-feasibility DISJOINT 확인**(feasible-A={d16} ∩ feasible-B={d24,d34}=∅; job 860497–518). ★**그런데 동적 여전히 패배**: graded goodput서 per-phase 최적이 **인접**(A→d24, B→d34)이라 **ORACLE 동적조차 best-static +2.1%뿐**(d24가 양 phase 근최적: A 2.73=최적, B 1.01 vs 1.09), **reactive bind는 −20.6%**(오배치, 양 phase 실패). ★**깊은 이유**: conjunctive SLO(TTFT∧ITL)가 동적을 **동기부여**(d16 최고TTFT·d44 최고ITL)하는 바로 그 힘이 **각 phase 최적을 중간 compromise로 당김**(d16은 A서 ITL벽·d44는 B서 TTFT벽) → 서로 다른 phase 최적이 인접 → 단일 중간 static이 양쪽 서빙. ★**게다가 이 region은 OVERLOAD서만 존재**(전 정책 gp 0.99–1.87, 대다수 SLO 실패): 용량 이하=전부 통과(static 자명)·이상=전부 실패(static 최소손실). **동적이 유용하게 이기는 operating regime 없음.** `extreme_disjoint.png`. ★★**강등 배너 추가(doc-steward, 2026-08-16, §1-20과 같은 근거로 소급 적용)**: 이 행의 "+2.1%"도 §1-20의 "+16%"와 **같은 캠페인**(jobs 860497–518)이며 **같은 n=1~2·overload-only** 조건이다 — §2-4 방법론("n≥4 없이 정책 결론 금지")에 못 미치고, 이미 §5-8(c)가 이 캠페인을 underpowered로 기록하고 있었으나 이 행 자체엔 배너가 없었다. 추가로 **claims-auditor 1차 재계산(독립 재확인 전, `PRIZE_SIZE_ARGUMENT_2026-08-16.md` §2.4)이 "+2.1%"가 집계 단위(phase 무가중 평균 vs 하네스 자신의 pooled trace-level, +5.9~6.1%)와 술어(legacy mean-ITL vs 정본 goodput p95 술어)에 이중으로 의존하며, 정본 술어로 재채점하면 phase B가 전 arm 0.0%가 돼 오라클 자체가 미정의됨을 보였다** — 숫자는 **아직 정본으로 승격하지 않는다**(선행 재분석 R1, `../PROJECT_STATUS.md` "다음 실험 gate" #14). 정본 숫자 교체는 R1 완료 후. ★★**R1 완료(2026-08-16, result-analyst 독립 재현 + claims-auditor 적대 감사, `ORACLE_REANALYSIS_2026-08-16.md` rev2) — 재현 확정, 등급 상향 아님**: phase-mean **+2.28%/+2.35%**(정본 "+2.1%"과 정합 — "+2.1%"은 반올림 2자리 값끼리 계산한 결과였음이 확인됨) vs 하네스 자신이 정의한 pooled trace-level `gpC=(g_A+g_B)/(d_A+d_B)` **+5.88%/+6.12%**(phase B duration이 pooled 가중치의 ~78%를 먹기 때문에 갈림). **정본 goodput 술어(TTFT≤3s ∧ 요청-내부 token-ITL p95≤60ms)로 재채점하면 phase B는 5 arm×2 rep 전부 joint 0/192로 완전분리 — 오라클 자체가 미정의**(TTFT-pass 요청 중 최소 ITL-p95 106.1–106.3ms, ITL-p95-pass 요청 중 최소 TTFT 14.73/14.75s). ⚠️★**하네스 결함 발견(같은 재현) — `he2_bench.sbatch:92`가 아직 `dur=max(dur,d)`**(게이트 #7 버그 잔존, `sharegpt_vary_bench.sbatch:92`만 `dur+=d`로 수정됨) ⇒ **`he2_*.out`의 `HE2_RESULT` 라인은 정확히 약 3× 부풀려져 있다**(예: `he2_860498.out` d24 rep81 A `gp=8.125` vs 참값 2.717) — **`HE2_RESULT` 라인 인용 영구 금지**. 단 **정본 §1-19/§1-20 숫자 자체는 `sum(dur)` 기준 독립 재계산으로 무사함이 확인됐다**(공표 2자리까지 재현: A `[2.03,2.73,1.86,1.23]`, B `[0.28,1.01,1.09,0.74]`, bind combined 1.485). `n_indep`=2·overload-only(phase A offered 8/s vs achieved 4.39–5.52/s=1.45–1.82×, phase B offered 5/s vs 1.35–1.59/s=3.14–3.70×)·arm×node 부분교락(d34/bind rep82만 gpu42, 나머지 8/10 job은 gpu40) 불변. ★★**해소(2026-08-16, 커밋 `dadb851`)**: `he2_bench.sbatch:92`가 `dur+=d`로 수정됨(engine-porter 이관 완료) — 과거 `HE2_RESULT` 라인 인용 영구 금지는 **불변**(과거 로그 자체는 오염된 채 남음), 이 §1-19/§1-20 숫자 자체는 위 `sum(dur)` 독립 재계산으로 이미 무사함을 확인했으므로 재실행·재확인 불요. 상세 `../workspace/engine-port/results/slo_sched/ORACLE_REANALYSIS_2026-08-16.md` §2 |
 | 18 | ★★**mix-스윙 트레이스서도 동적 패배 — 최적은 좁은 중간대만 스윙 (사용자 도전 검증, 2026-07-19)** | 기존 결론은 rate만 변하는 fixed-mix 트레이스 한정이었음. **mix-스윙**(phaseA prefill-heavy in2048/o32 ⇄ phaseB decode-heavy in256/o512, static sweep+bind, job 860452–470) 실측: **최적이 d24(A)↔d34(B)로 *좁게만* 스윙**(d16↔d44 아님). ★**prefill-heavy phase를 d16이 안 이김**(d24 5.006 > d16 3.016 > d44 1.564). 기전=**goodput=TTFT-SLO ∧ ITL-SLO가 반대로 당김**: d16 최고 TTFT(1.47s)·최악 ITL(56ms, 60벽 근접); d44 반대(ITL 22ms·TTFT 3.64s로 3s 실패); **중간 d24가 둘 다 충족→승**. **단일 중간 static d24가 양 phase 근최적**(A 5.006=최적, B 2.854 vs 최적 2.870=0.6%차)이라 **combined d24 3.930 ≫ bind 3.419**. ⚠️caveat: phaseB 포화(thru 2.9<offered 5)·n=2; **어떤 static도 양 phase서 두 SLO 동시충족 불가한 극단 mix는 미검증(동적의 남은 문)**. `mixswing.png` |
 | 17 | ★★**동적이 지는 이유 = 오버헤드 아니라 *positioning* (실패 지점 규명, 2026-07-19)** | "오버헤드>이득"은 이미 반박(switch~0 §1-8, CPU 0.014% §1-12). 로그가 실패 지점을 정확히 보임: **최적=dec_sm 44(d44, throughput·goodput 양쪽 1위)인데 컨트롤러는 dec_sm 16–24(평균 22)서 진동하며 44에 절대 도달 못 함 = decode-STARVED**. 기전 = **reactive**(TPOT 스파이크 후에야 decode에 SM)+**symmetric**(두 slack 대등화)이라 decode가 잠깐 괜찮아지면 즉시 prefill로 회수 → 구조적으로 decode-heavy 최적에 누적 불가. 손실은 **switch 비용이 아니라 앉은 위치**. ★**risk/reward 18:1**: prefill-ward 이동의 LO 이득 ≤2.3%(§1-13 LO split-무관) vs HI 오배치 손실 ≤41.5% ⇒ 매 스위치가 나쁜 베팅. ★**모든 수정(anchor·비대칭 penalty·이동 중단)이 "44에 앉기"=static으로 수렴** — gate(ratchet, 34서 정지)가 best-dynamic이나 undershoot. **동적은 안 움직여 static과 *tie*가 상한, 이길 regime 없음**(§1-13). `why_dynamic_loses.png`. ★★**스코프 부착(doc-steward, 2026-08-16)**: 이 "상한·이길 regime 없음"이 확정하는 것은 **달성된**(observed) 정책 계열 — single-worker·SM-split·reactive 제어(HE0) — 뿐이다. **달성 가능한 천장**(어떤 lever로도 못 넘는 이론적 상한)은 다른 명제이며 별도로 확정된 바 없다(§5-8(a)(b)가 dual-worker·non-SM-split lever를 열린 항목으로 유지). 두 명제를 같은 문장으로 혼동하지 말 것(§3 항목57, `PRIZE_SIZE_ARGUMENT_2026-08-16.md` §3). ★**각주(2026-08-04, claims-auditor)**: 위 "모든 수정"의 **'모든'은 reactive 계열**이다. 비-reactive는 이미 시험됐다: Step D `PDMUX_SLO_LFF`(context-length feedforward, `multiplexing_mixin.py:825-832`) = **HD0, n=3(underpowered)**, Step F `sat_predict`(포화 예측 트리거)도 시험됨. ⇒ **온라인 feedforward는 시험돼 net win 아님(n=3, n≥4 재시험 미실행). offline 모델-프로파일 기반 decode-floor 예측(Claim E)만 미시험.** 본문 정정 불필요 |
 | 16 | ★**정책 차이는 throughput이 아니라 SLO-attainment 효과 (2026-07-19)** | 같은 변화-trace 런을 **throughput(SLO-무관 req/s)**으로 재정렬: **스프레드 3.4%** (d44 3.776 > d34 3.759 > bind+GATE 3.745 > bind 3.700 > slo 3.696 > d24 3.677 > d16 3.654) vs **goodput 스프레드 13.1% (4×)**. ⇒ **모든 split이 GPU를 거의 동일하게 포화**시키고, split이 정하는 건 "몇 개 완료"가 아니라 "어느 요청이 TTFT 벽에 부딪히나"(SLO attainment 77.9–85.3%). 순위는 안 뒤집힘(d44 양쪽 1위). ★단 **d16이 양쪽 최하** — 얽힘이 raw throughput도 소량(3.4%) 깎음(decode 굶김→batch 정체→admission 차단→완료↓); d16 goodput 결손의 **~1/4는 실 throughput 손실·~3/4는 SLO attainment**. `throughput_vs_goodput.png` |
@@ -2658,6 +2694,61 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     `../workspace/engine-port/results/slo_sched/
     ORACLE_REANALYSIS_2026-08-16.md` §3-4, `PROJECT_STATUS.md`
     "방법론 게이트" #40.
+
+60. ★★★**(2026-08-16, gate #16 사전등록 2단 감사 — 방법론 게이트 #9
+    열한 번째 재발, 새 성능 판정 아님, GPU 0) 게이트 #9는 감사
+    대상이 아니라 검증하는 쪽에서도 재발한다.** 두 사례가 같은
+    감사 라운드에 나왔다. **(i) 메인 세션(검증자)**: `g16_arm_order.
+    py --verify`의 "모든 arm 평균 위치 3.000000 PASS"를 **독립 검증
+    근거로 사용자에게 보고**했으나, 역순쌍으로 만든 **어떤** 순열
+    조합에서도 항상 성립하는 항등식이었다(모듈 자신의 docstring이
+    자인, claims-auditor가 정정). **(ii) 감사 자신**: claims-auditor가
+    1차 감사에서 `Δ_SLO` 단일 60ms 점 결정량을 대체안으로 권고했고
+    메인 세션이 rev2에서 채택했으나, 후속 산출에서 감사 스스로 그
+    권고를 반증했다 — `S_itl`이 58.65/58.85/60.20ms 위의 거의 평탄한
+    곡선 위 **문턱 지시함수**라 "확인 카탈로그 #5(metric cliff)"가
+    새 결정량에 그대로 재발했고, rev3에서 사다리 함수로 교체됐다
+    (C2→C2′). 이전까지 게이트 #9의 재발은 전부 **생산자**(사전등록·
+    분석 코드·산출 문서 저자) 쪽이었다(#40=열 번째가 가장 최근
+    사례) — 이번 둘은 **검증자·감사자** 쪽에서 나온 첫 사례다.
+    실무 규칙: "독립 검증 PASS"·"감사가 권고한 대체 결정량"도
+    데이터와 무관하게 항상 참이 되는 극단 사례가 있는지 먼저
+    점검하라 — 검증·감사라는 역할 자체가 게이트 #9 면역을 주지
+    않는다. 상세 `workspace/engine-port/results/slo_sched/
+    PREREG_G16_RULES_REV3_2026-08-16.md` addendum A-4,
+    `handoff-report/session_handoff_2026-08-16.md` §15.6,
+    `PROJECT_STATUS.md` "방법론 게이트" #9(열한 번째 재발).
+
+61. ★★**(2026-08-16, gate #16 사전등록 재감사, claims-auditor 신규
+    결함 N7 — 새 성능 판정 아님, GPU 0) telemetry는 공짜 관찰자가
+    아니다.** `multiplexing_mixin.py:470-473`을 통과하면
+    `dual_worker.py:566-602 observe_scheduler`가 **모든 sync마다**
+    실행된다(쓰기만 1/32 서브샘플) — 비용은 `O(waiting_queue +
+    batch)` 파이썬 작업이고, 스케줄러 스레드가 임계경로인
+    `--disable-overlap-schedule`에서는 이 오버헤드가 그대로 지연에
+    얹힌다. ★**2026-07-15/18 sgptv 격자(HE0/HE2 다수 헤드라인의
+    근거, §1-13·§1-19·§1-20·§1-32)는 telemetry 없이 돌았다**
+    (`sharegpt_vary_bench.sbatch`·`he2_bench.sbatch`에
+    `PDMUX_TELEMETRY_PATH` 미설정) — telemetry가 켜진 캠페인(G16
+    신규 하네스 등)과의 **절대값 직접 비교는 빌드 드리프트 + 계측
+    오버헤드의 합**이라 분리 불가하다. G16 **내부** 비교(전 arm
+    동일 계측)는 이 결함의 영향 밖이나, 절대값을 07-15/18과 직접
+    비교하는 것은 금지된다. ⚠️**기존 결과 스코프 영향 가능(정정
+    아님, doc-steward 목록만 등재) — "긴장 A(HE2 vs C2)"가 정확히 이
+    패턴이다**: HE2 쪽 하네스(`he2_bench.sbatch`·
+    `sharegpt_vary_bench.sbatch`, §1-13·§1-19·§1-20 근거)는 telemetry
+    OFF, C2/S2/sticky/Gate 1·2-S 쪽 하네스(`s8_scaleup/*`·
+    `s2_sticky/*`·`p1_gates/*`)는 telemetry ON이며, 이미 §3 항목31이
+    기록한 "캠페인 계통 오프셋 −5.4%"(S2/α 분석)의 미통제 인자
+    목록(노드·바이너리·날짜·워크로드)에 **telemetry 유무는 없다** —
+    이 오프셋의 일부 또는 전부가 계측 오버헤드일 가능성은 아직
+    검토된 적이 없다. 다음 세션 result-analyst/claims-auditor 판단
+    대상이며, 이번 세션엔 정정하지 않는다(GPU 0·doc-steward 스코프
+    밖). 분리하려면 telemetry-OFF 대조 부팅 n≥2(≈0.3 GPU-hr)가
+    필요하다. 상세 `workspace/engine-port/results/slo_sched/
+    PREREG_G16_RULES_REV3_2026-08-16.md` addendum B-2(N7),
+    `handoff-report/session_handoff_2026-08-16.md` §15.5,
+    `PROJECT_STATUS.md` "방법론 게이트" #41.
 
 ---
 
