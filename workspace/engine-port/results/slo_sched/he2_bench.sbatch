@@ -89,7 +89,16 @@ def load(f):
         ln=ln.strip()
         if not ln: continue
         o=json.loads(ln); tt=o.get("ttfts") or []; il=o.get("itls") or []; d=o.get("duration") or 0
-        dur=max(dur,d)
+        # BUGFIX (2026-08-16, methodology gate #7): this file holds ONE json object PER ROUND and
+        # `g` accumulates over ALL rounds, so the denominator must be the SUM of per-round
+        # durations, not the max — max() inflated every HE2_RESULT goodput by ~ROUNDS (measured
+        # 2.95-3.00x). The identical fix landed in sharegpt_vary_bench.sbatch on 2026-07-17 but was
+        # never propagated here; ORACLE_REANALYSIS_2026-08-16.md found it still live.
+        # Ranking is unaffected (pure scale factor); absolute values were not.
+        # NOTE: HE2_RESULT lines in *pre-2026-08-16* he2_*.out artifacts remain PERMANENTLY
+        # UNCITABLE (CONSENSUS.md rev34 §1-19). The canonical +2.1%/+16% numbers are unaffected —
+        # they were re-derived from the jsonl with sum(dur) (ORACLE_REANALYSIS §2).
+        dur+=d
         for i,t in enumerate(tt):
             m=(sum(il[i])/len(il[i])) if (i<len(il) and il[i]) else 9.0
             tts.append(t); itls.append(m*1000.0)
