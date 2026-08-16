@@ -1,0 +1,7 @@
+TIMESTAMP=2026-08-16T12:50:41Z LABEL=d64_boot1_post NODE=gpu40 JOB=884292
+--- squeue on this node (partition amd_a100nv_8, all users/states) ---
+     JOBID PARTITION                 NAME    STATE       TIME NODELIST     USER
+    884292 amd_a100n              g16grid  RUNNING       6:10 gpu40   ehmoon
+--- nvidia-smi compute-apps on this node ---
+pid, process_name, used_gpu_memory [MiB]
+3994381, sglang::scheduler, 68678 MiB

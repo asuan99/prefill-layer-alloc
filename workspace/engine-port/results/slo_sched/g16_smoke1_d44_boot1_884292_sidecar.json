@@ -1,0 +1,44 @@
+{
+  "CUDA_VISIBLE_DEVICES": "0",
+  "NP": 40,
+  "ROUNDS": 1,
+  "arm": "d44",
+  "block": "smoke1",
+  "boot": 1,
+  "exact": true,
+  "fields_rc": {
+    "hi": 0,
+    "lo": 0
+  },
+  "git_commit": "a35daa03fc67df50cc943c4edc90e2a8a8887493",
+  "gpu_uuid": "GPU-94efac99-67ea-0003-28c2-d02fa8ce6e8b",
+  "harness_sha256": {
+    "g16_arm_order.py": "6cc4fa51ae9617781a20874b1c79ac9ac1f4c32db8beabfdb6087f5e76239567",
+    "g16_assert.py": "5ff957bf44a5736b4a81b98535993f3c8ab15770ff367fa0b9cec69bbdce0717",
+    "g16_grid.sbatch": "ce68de9857565653c018cf79c75db279787f355091ee16d65ee4f9460f0cccf3"
+  },
+  "manifest_sha": "4b6cf5dc487ac2fae35f1ea767c50ad72b2c9c892af08f415d976924fa9ce701",
+  "mode": "smoke",
+  "node": "gpu40",
+  "realized_a": 64,
+  "realized_b": 44,
+  "rounds": [
+    {
+      "phase": "LO",
+      "round": 1,
+      "t_end": 389169.59985113,
+      "t_start": 389136.153061982
+    },
+    {
+      "phase": "HI",
+      "round": 1,
+      "t_end": 389199.837776813,
+      "t_start": 389171.194263286
+    }
+  ],
+  "status": "completed",
+  "t_boot0": 389101.898668324,
+  "t_boot1": 389201.441983766,
+  "t_healthy": 389134.566415488,
+  "telem_rc": 0
+}
