@@ -1,6 +1,9 @@
 # Document status
 
-최종 갱신: 2026-08-14(doc-steward, 2차 — **정본 결함 정정 반영(A-1)으로
+최종 갱신: 2026-08-16(3차, doc-steward — **R1(he2 재채점) 재분석 완료
+반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim D 행을 `reports/CONSENSUS.md`
+rev34·§1-19와 재동기화(집계·술어별 확정 수치 등재, 등급 무변경). 새
+성능 판정 아님, 분류표 무변경, changelog 기록뿐.** 이전: 2026-08-14(doc-steward, 2차 — **정본 결함 정정 반영(A-1)으로
 `CLAIM_EVIDENCE_MATRIX.md` Claim A 각주의 "구간 평균 ε≈0.48–0.56"을
 `reports/CONSENSUS.md` rev27과 재동기화(변환식·E-1a 원자료 직접측정과
 일치하는 ε≈0.49–0.61로 정정, ITL 비 2.36–2.91× 자체는 불변, 원문
