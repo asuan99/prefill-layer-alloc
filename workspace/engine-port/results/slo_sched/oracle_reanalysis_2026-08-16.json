@@ -1,0 +1,5960 @@
+{
+  "title": "R1/R2 oracle re-analysis (2026-08-16, rev2 post-audit) -- NOT CANONICAL",
+  "generated_by": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/slo_sched/oracle_reanalysis_2026_08_16.py",
+  "slo": {
+    "ttft_slo_ms": 3000.0,
+    "itl_slo_ms": 60.0,
+    "source": "he2_bench.sbatch:96 / sharegpt_vary_bench.sbatch:96 (`t<=3.0 and m<=0.06`)"
+  },
+  "predicate": {
+    "canonical": "TTFT<=SLO AND per-request token-ITL p95<=SLO (analyze.RequestResult.passes)",
+    "legacy_secondary": "analyze.RequestResult.passes_legacy_mean"
+  },
+  "positive_control": {
+    "all_passed": true,
+    "n_controls_total": 48,
+    "headline_paths": [
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ],
+        "state": "covered",
+        "reason": ""
+      },
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "joint_pass_frac"
+        ],
+        "state": "acknowledged_gap",
+        "reason": "Algebraic transform of `slo_goodput_req_s` (covered independently by PC4) via the file-read constants `requests` and `duration_s`; not independently anchored to any published pass-rate."
+      },
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "ttft_pass_frac"
+        ],
+        "state": "covered",
+        "reason": ""
+      },
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "itl_p95_pass_frac"
+        ],
+        "state": "acknowledged_gap",
+        "reason": "NO INDEPENDENT CONTROL EXISTS. No canonical document publishes a bare per-request-ITL-p95 PASS RATE. PC6 is an ALGEBRAIC IDENTITY with PC4 (proven in `identity_proof`), so it adds zero evidence. This is the quantity that SELECTS the ITL donor of the decoupled oracle, and its operating range in sgptv HI (18-93%) is entirely uncontrolled."
+      },
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ],
+        "state": "covered",
+        "reason": ""
+      },
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_joint_pass_frac"
+        ],
+        "state": "covered",
+        "reason": ""
+      },
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_itl_mean_pass_frac"
+        ],
+        "state": "covered",
+        "reason": ""
+      },
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "req_itl_p95_p90_ms"
+        ],
+        "state": "covered",
+        "reason": ""
+      },
+      {
+        "path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "ttft_p50_ms"
+        ],
+        "state": "covered",
+        "reason": ""
+      }
+    ],
+    "n_independent_controls": 47,
+    "n_identity_controls": 1,
+    "reported_but_uncontrolled_slo_settings": [
+      [
+        1000.0,
+        60.0
+      ],
+      [
+        2000.0,
+        60.0
+      ],
+      [
+        2700.0,
+        60.0
+      ],
+      [
+        2715.0,
+        60.0
+      ],
+      [
+        2730.0,
+        60.0
+      ],
+      [
+        2745.0,
+        60.0
+      ],
+      [
+        2760.0,
+        60.0
+      ],
+      [
+        2775.0,
+        60.0
+      ],
+      [
+        2790.0,
+        60.0
+      ],
+      [
+        2805.0,
+        60.0
+      ],
+      [
+        2820.0,
+        60.0
+      ],
+      [
+        2835.0,
+        60.0
+      ],
+      [
+        2850.0,
+        60.0
+      ],
+      [
+        2865.0,
+        60.0
+      ],
+      [
+        2880.0,
+        60.0
+      ],
+      [
+        2895.0,
+        60.0
+      ],
+      [
+        2910.0,
+        60.0
+      ],
+      [
+        2925.0,
+        60.0
+      ],
+      [
+        2940.0,
+        60.0
+      ],
+      [
+        2955.0,
+        60.0
+      ],
+      [
+        2970.0,
+        60.0
+      ],
+      [
+        2985.0,
+        60.0
+      ],
+      [
+        3000.0,
+        40.0
+      ],
+      [
+        3000.0,
+        50.0
+      ],
+      [
+        3000.0,
+        55.0
+      ],
+      [
+        3000.0,
+        70.0
+      ],
+      [
+        3000.0,
+        80.0
+      ],
+      [
+        3015.0,
+        60.0
+      ],
+      [
+        3030.0,
+        60.0
+      ],
+      [
+        3045.0,
+        60.0
+      ],
+      [
+        3060.0,
+        60.0
+      ],
+      [
+        3075.0,
+        60.0
+      ],
+      [
+        3090.0,
+        60.0
+      ],
+      [
+        3105.0,
+        60.0
+      ],
+      [
+        3120.0,
+        60.0
+      ],
+      [
+        3135.0,
+        60.0
+      ],
+      [
+        3150.0,
+        60.0
+      ],
+      [
+        3165.0,
+        60.0
+      ],
+      [
+        3180.0,
+        60.0
+      ],
+      [
+        3195.0,
+        60.0
+      ],
+      [
+        3210.0,
+        60.0
+      ],
+      [
+        3225.0,
+        60.0
+      ],
+      [
+        3240.0,
+        60.0
+      ],
+      [
+        3255.0,
+        60.0
+      ],
+      [
+        3270.0,
+        60.0
+      ],
+      [
+        3285.0,
+        60.0
+      ],
+      [
+        3300.0,
+        60.0
+      ],
+      [
+        4000.0,
+        60.0
+      ],
+      [
+        5000.0,
+        60.0
+      ],
+      [
+        6000.0,
+        60.0
+      ],
+      [
+        7000.0,
+        60.0
+      ],
+      [
+        10000.0,
+        60.0
+      ]
+    ],
+    "reported_but_uncontrolled_note": "The threshold ladders and sensitivity sweeps call score_run at SLO settings no positive control ever exercised; their outputs are diagnostics, not controlled measurements.",
+    "controls": [
+      {
+        "name": "PC1 he2 phase A legacy goodput d16",
+        "independent": true,
+        "canonical_target": 2.03,
+        "observed": 2.027783,
+        "abs_error": 0.002217,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-19 / reports/plot_extreme_disjoint.py A_gp (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC1 he2 phase B legacy goodput d16",
+        "independent": true,
+        "canonical_target": 0.28,
+        "observed": 0.281733,
+        "abs_error": 0.001733,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-19 / reports/plot_extreme_disjoint.py B_gp (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC1 he2 phase A legacy goodput d24",
+        "independent": true,
+        "canonical_target": 2.73,
+        "observed": 2.731637,
+        "abs_error": 0.001637,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-19 / reports/plot_extreme_disjoint.py A_gp (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC1 he2 phase B legacy goodput d24",
+        "independent": true,
+        "canonical_target": 1.01,
+        "observed": 1.007193,
+        "abs_error": 0.002807,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-19 / reports/plot_extreme_disjoint.py B_gp (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC1 he2 phase A legacy goodput d34",
+        "independent": true,
+        "canonical_target": 1.86,
+        "observed": 1.860213,
+        "abs_error": 0.000213,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-19 / reports/plot_extreme_disjoint.py A_gp (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC1 he2 phase B legacy goodput d34",
+        "independent": true,
+        "canonical_target": 1.09,
+        "observed": 1.093795,
+        "abs_error": 0.003795,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-19 / reports/plot_extreme_disjoint.py B_gp (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC1 he2 phase A legacy goodput d44",
+        "independent": true,
+        "canonical_target": 1.23,
+        "observed": 1.234886,
+        "abs_error": 0.004886,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-19 / reports/plot_extreme_disjoint.py A_gp (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC1 he2 phase B legacy goodput d44",
+        "independent": true,
+        "canonical_target": 0.74,
+        "observed": 0.736705,
+        "abs_error": 0.003295,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-19 / reports/plot_extreme_disjoint.py B_gp (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC1 he2 reactive-bind unweighted combined",
+        "independent": true,
+        "canonical_target": 1.485,
+        "observed": 1.484895,
+        "abs_error": 0.000105,
+        "tolerance": 0.005,
+        "passed": true,
+        "target_source": "reports/plot_extreme_disjoint.py bind_comb (2026-07-19)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC2 he2 A TTFT-pass% d16",
+        "independent": true,
+        "canonical_target": 57.8,
+        "observed": 57.8125,
+        "abs_error": 0.0125,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py tp",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "ttft_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A ITL-pass%(legacy mean) d16",
+        "independent": true,
+        "canonical_target": 54.2,
+        "observed": 54.166667,
+        "abs_error": 0.033333,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py ip",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_itl_mean_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A BOTH%(legacy) d16",
+        "independent": true,
+        "canonical_target": 36.7,
+        "observed": 36.71875,
+        "abs_error": 0.01875,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py both",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_joint_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A TTFT-pass% d24",
+        "independent": true,
+        "canonical_target": 49.7,
+        "observed": 49.739583,
+        "abs_error": 0.039583,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py tp",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "ttft_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A ITL-pass%(legacy mean) d24",
+        "independent": true,
+        "canonical_target": 100.0,
+        "observed": 100.0,
+        "abs_error": 0.0,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py ip",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_itl_mean_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A BOTH%(legacy) d24",
+        "independent": true,
+        "canonical_target": 49.7,
+        "observed": 49.739583,
+        "abs_error": 0.039583,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py both",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_joint_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A TTFT-pass% d34",
+        "independent": true,
+        "canonical_target": 37.5,
+        "observed": 37.5,
+        "abs_error": 0.0,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py tp",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "ttft_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A ITL-pass%(legacy mean) d34",
+        "independent": true,
+        "canonical_target": 100.0,
+        "observed": 100.0,
+        "abs_error": 0.0,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py ip",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_itl_mean_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A BOTH%(legacy) d34",
+        "independent": true,
+        "canonical_target": 37.5,
+        "observed": 37.5,
+        "abs_error": 0.0,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py both",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_joint_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A TTFT-pass% d44",
+        "independent": true,
+        "canonical_target": 28.1,
+        "observed": 28.125,
+        "abs_error": 0.025,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py tp",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "ttft_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A ITL-pass%(legacy mean) d44",
+        "independent": true,
+        "canonical_target": 100.0,
+        "observed": 100.0,
+        "abs_error": 0.0,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py ip",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_itl_mean_pass_frac"
+        ]
+      },
+      {
+        "name": "PC2 he2 A BOTH%(legacy) d44",
+        "independent": true,
+        "canonical_target": 28.1,
+        "observed": 28.125,
+        "abs_error": 0.025,
+        "tolerance": 0.06,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-20 / reports/plot_oracle_corrected.py both",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_joint_pass_frac"
+        ]
+      },
+      {
+        "name": "PC3 sgptv pooled legacy combined d44",
+        "independent": true,
+        "canonical_target": 3.22,
+        "observed": 3.220227,
+        "abs_error": 0.000227,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-7 / reports/bench_noise_root_cause.md:74-86 (2026-07-17)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_good"
+        ]
+      },
+      {
+        "name": "PC3 sgptv pooled legacy combined d34",
+        "independent": true,
+        "canonical_target": 3.171,
+        "observed": 3.171185,
+        "abs_error": 0.000185,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-7 / reports/bench_noise_root_cause.md:74-86 (2026-07-17)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_good"
+        ]
+      },
+      {
+        "name": "PC3 sgptv pooled legacy combined slo",
+        "independent": true,
+        "canonical_target": 2.964,
+        "observed": 2.964437,
+        "abs_error": 0.000437,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-7 / reports/bench_noise_root_cause.md:74-86 (2026-07-17)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_good"
+        ]
+      },
+      {
+        "name": "PC3 sgptv LO legacy goodput d44",
+        "independent": true,
+        "canonical_target": 2.858,
+        "observed": 2.857933,
+        "abs_error": 6.7e-05,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "reports/bench_noise_root_cause.md section 5 (2026-07-17)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC3 sgptv HI legacy goodput d44",
+        "independent": true,
+        "canonical_target": 3.924,
+        "observed": 3.924055,
+        "abs_error": 5.5e-05,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "reports/bench_noise_root_cause.md section 5 (2026-07-17)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC3 sgptv LO legacy goodput d34",
+        "independent": true,
+        "canonical_target": 2.852,
+        "observed": 2.851808,
+        "abs_error": 0.000192,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "reports/bench_noise_root_cause.md section 5 (2026-07-17)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC3 sgptv HI legacy goodput d34",
+        "independent": true,
+        "canonical_target": 3.785,
+        "observed": 3.785339,
+        "abs_error": 0.000339,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "reports/bench_noise_root_cause.md section 5 (2026-07-17)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv LO canonical goodput d16 (mean)",
+        "independent": true,
+        "canonical_target": 2.831,
+        "observed": 2.831354,
+        "abs_error": 0.000354,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv LO canonical goodput d16 (SD)",
+        "independent": true,
+        "canonical_target": 0.038,
+        "observed": 0.038136,
+        "abs_error": 0.000136,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv LO canonical goodput d24 (mean)",
+        "independent": true,
+        "canonical_target": 2.761,
+        "observed": 2.761439,
+        "abs_error": 0.000439,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv LO canonical goodput d24 (SD)",
+        "independent": true,
+        "canonical_target": 0.14,
+        "observed": 0.14046,
+        "abs_error": 0.00046,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv LO canonical goodput d34 (mean)",
+        "independent": true,
+        "canonical_target": 2.835,
+        "observed": 2.835131,
+        "abs_error": 0.000131,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv LO canonical goodput d34 (SD)",
+        "independent": true,
+        "canonical_target": 0.025,
+        "observed": 0.025304,
+        "abs_error": 0.000304,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv LO canonical goodput d44 (mean)",
+        "independent": true,
+        "canonical_target": 2.848,
+        "observed": 2.848399,
+        "abs_error": 0.000399,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv LO canonical goodput d44 (SD)",
+        "independent": true,
+        "canonical_target": 0.007,
+        "observed": 0.006866,
+        "abs_error": 0.000134,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv HI canonical goodput d16 (mean)",
+        "independent": true,
+        "canonical_target": 0.443,
+        "observed": 0.443307,
+        "abs_error": 0.000307,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote F (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv HI canonical goodput d16 (SD)",
+        "independent": true,
+        "canonical_target": 0.016,
+        "observed": 0.016082,
+        "abs_error": 8.2e-05,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote F (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv HI canonical goodput d34 (mean)",
+        "independent": true,
+        "canonical_target": 3.405,
+        "observed": 3.404529,
+        "abs_error": 0.000471,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote F (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv HI canonical goodput d34 (SD)",
+        "independent": true,
+        "canonical_target": 0.478,
+        "observed": 0.478055,
+        "abs_error": 5.5e-05,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote F (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv HI canonical goodput d44 (mean)",
+        "independent": true,
+        "canonical_target": 3.613,
+        "observed": 3.612531,
+        "abs_error": 0.000469,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote F (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv HI canonical goodput d44 (SD)",
+        "independent": true,
+        "canonical_target": 0.571,
+        "observed": 0.571338,
+        "abs_error": 0.000338,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote F (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "slo_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC4 sgptv HI legacy goodput d16",
+        "independent": true,
+        "canonical_target": 2.859,
+        "observed": 2.858505,
+        "abs_error": 0.000495,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote F (2026-08-05)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "legacy_mean_itl_goodput_req_s"
+        ]
+      },
+      {
+        "name": "PC5 sgptv LO per-request ITL p95 -> p90 d16",
+        "independent": true,
+        "canonical_target": 53.36,
+        "observed": 53.357523,
+        "abs_error": 0.002477,
+        "tolerance": 0.02,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote (2026-08-05, ceiling-censoring)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "req_itl_p95_p90_ms"
+        ]
+      },
+      {
+        "name": "PC5 sgptv LO TTFT p50 d16",
+        "independent": true,
+        "canonical_target": 73.56,
+        "observed": 73.561066,
+        "abs_error": 0.001066,
+        "tolerance": 0.02,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote (2026-08-05, ceiling-censoring)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "ttft_p50_ms"
+        ]
+      },
+      {
+        "name": "PC5 sgptv LO per-request ITL p95 -> p90 d44",
+        "independent": true,
+        "canonical_target": 46.54,
+        "observed": 46.53769,
+        "abs_error": 0.00231,
+        "tolerance": 0.02,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote (2026-08-05, ceiling-censoring)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "req_itl_p95_p90_ms"
+        ]
+      },
+      {
+        "name": "PC5 sgptv LO TTFT p50 d44",
+        "independent": true,
+        "canonical_target": 79.61,
+        "observed": 79.609219,
+        "abs_error": 0.000781,
+        "tolerance": 0.02,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote (2026-08-05, ceiling-censoring)",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "ttft_p50_ms"
+        ]
+      },
+      {
+        "name": "PC6 [IDENTITY, NOT INDEPENDENT] sgptv LO ITL-p95 marginal d16",
+        "independent": false,
+        "canonical_target": 2.831,
+        "observed": 2.831354,
+        "abs_error": 0.000354,
+        "tolerance": 0.0015,
+        "passed": true,
+        "target_source": "CONSENSUS.md 1-13 footnote E -- but see `identity_proof`: in these cells ttft_pass_frac == 1.000 exactly and score_run computes `good` and `itl_p95_pass_count` from the SAME subexpression, so the two are bit-identical in 8/8 reps. PC4 passing makes PC6 incapable of failing. ZERO evidence.",
+        "exercised_path": [
+          "score_run",
+          [
+            3000.0,
+            60.0
+          ],
+          "itl_p95_pass_frac"
+        ]
+      }
+    ]
+  },
+  "cross_grid_discriminant": {
+    "overload_is_NOT_a_discriminant": {
+      "he2_phase_A": [
+        1.448486357384051,
+        1.822662863259514
+      ],
+      "he2_phase_B": [
+        3.1443159080906,
+        3.6986779486566475
+      ],
+      "sgptv_HI": [
+        2.1469690239056947,
+        2.3548852234333753
+      ],
+      "note": "both grids are overloaded, so 'overload' cannot explain why the TTFT argmax flips ends between them."
+    },
+    "rank_law": {
+      "he2_phaseA": {
+        "order_by_ttft_pass": [
+          "d16",
+          "d24",
+          "d34",
+          "d44"
+        ],
+        "order_by_achieved_throughput": [
+          "d16",
+          "d24",
+          "d34",
+          "d44"
+        ],
+        "orders_agree": true,
+        "arms": {
+          "d16": {
+            "ttft_pass_percent": 57.8125,
+            "achieved_req_s": 5.522419553210236
+          },
+          "d24": {
+            "ttft_pass_percent": 49.739583333333336,
+            "achieved_req_s": 5.491874805243565
+          },
+          "d34": {
+            "ttft_pass_percent": 37.5,
+            "achieved_req_s": 4.960688968794294
+          },
+          "d44": {
+            "ttft_pass_percent": 28.125,
+            "achieved_req_s": 4.390706698460907
+          }
+        }
+      },
+      "sgptv_HI": {
+        "order_by_ttft_pass": [
+          "d44",
+          "d34",
+          "d24",
+          "d16"
+        ],
+        "order_by_achieved_throughput": [
+          "d44",
+          "d34",
+          "d24",
+          "d16"
+        ],
+        "orders_agree": true,
+        "arms": {
+          "d16": {
+            "ttft_pass_percent": 57.08333333333333,
+            "achieved_req_s": 5.1149518853709575
+          },
+          "d24": {
+            "ttft_pass_percent": 66.375,
+            "achieved_req_s": 5.413186035806044
+          },
+          "d34": {
+            "ttft_pass_percent": 68.91666666666667,
+            "achieved_req_s": 5.492209677589307
+          },
+          "d44": {
+            "ttft_pass_percent": 70.70833333333333,
+            "achieved_req_s": 5.556080747033905
+          }
+        }
+      },
+      "arms_in_agreement": 8,
+      "arms_total": 8
+    },
+    "prefill_decode_token_ratio": {
+      "he2_phase_A": 63.96875,
+      "sgptv": 1.4411516379601486,
+      "ratio_of_ratios": 44.387244419708246,
+      "note": "proposed discriminant: which side of the split buys throughput. The TTFT-pass ordering equals the achieved-throughput ordering in every arm of both grids, and the throughput-maximising split follows the per-request prefill:decode work ratio."
+    },
+    "scope_label_warning": "Do NOT label the difference between these two grids a 'regime'. At least five axes differ simultaneously (dataset, output length, prefill:decode work ratio, arrival rate, node/date, n). The defensible label is 'prefill:decode work-ratio dependence', and even that is a 2-point comparison."
+  },
+  "R1_he2": {
+    "campaign": "he2 EXTREME mix-swing, jobs 860497-860518, rA8B5",
+    "workload": {
+      "phase_A": "random-ids in2048/o32 @ rate 8",
+      "phase_B": "random-ids in2048/o512 @ rate 5",
+      "requests_per_arm_phase": 192,
+      "rounds_per_file": 3,
+      "prefill_decode_token_ratio_phase_A": 63.96875
+    },
+    "provenance": [
+      {
+        "arm": "d16",
+        "rep": "rep81",
+        "job": "860497",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu40",
+        "finished": "2026-07-19 18:18"
+      },
+      {
+        "arm": "d16",
+        "rep": "rep82",
+        "job": "860504",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu40",
+        "finished": "2026-07-19 18:41"
+      },
+      {
+        "arm": "d24",
+        "rep": "rep81",
+        "job": "860498",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu40",
+        "finished": "2026-07-19 18:23"
+      },
+      {
+        "arm": "d24",
+        "rep": "rep82",
+        "job": "860507",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu40",
+        "finished": "2026-07-19 18:51"
+      },
+      {
+        "arm": "d34",
+        "rep": "rep81",
+        "job": "860501",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu40",
+        "finished": "2026-07-19 18:27"
+      },
+      {
+        "arm": "d34",
+        "rep": "rep82",
+        "job": "860510",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu42",
+        "finished": "2026-07-19 18:56"
+      },
+      {
+        "arm": "d44",
+        "rep": "rep81",
+        "job": "860502",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu40",
+        "finished": "2026-07-19 18:32"
+      },
+      {
+        "arm": "d44",
+        "rep": "rep82",
+        "job": "860517",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu40",
+        "finished": "2026-07-19 19:10"
+      },
+      {
+        "arm": "bind",
+        "rep": "rep81",
+        "job": "860503",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu40",
+        "finished": "2026-07-19 18:36"
+      },
+      {
+        "arm": "bind",
+        "rep": "rep82",
+        "job": "860518",
+        "phase_A_and_B_share_boot": true,
+        "node": "gpu42",
+        "finished": "2026-07-19 19:11"
+      }
+    ],
+    "A_pipeline": {
+      "denominators": {
+        "d16_rep81_A": {
+          "summed_duration_s": 34.771066796034575,
+          "requests": 192.0
+        },
+        "d16_rep81_B": {
+          "summed_duration_s": 142.02923322841525,
+          "requests": 192.0
+        },
+        "d16_rep82_A": {
+          "summed_duration_s": 34.76367257721722,
+          "requests": 192.0
+        },
+        "d16_rep82_B": {
+          "summed_duration_s": 141.93022921308875,
+          "requests": 192.0
+        },
+        "d24_rep81_A": {
+          "summed_duration_s": 34.96498075500131,
+          "requests": 192.0
+        },
+        "d24_rep81_B": {
+          "summed_duration_s": 128.09025330282748,
+          "requests": 192.0
+        },
+        "d24_rep82_A": {
+          "summed_duration_s": 34.956497659906745,
+          "requests": 192.0
+        },
+        "d24_rep82_B": {
+          "summed_duration_s": 128.06714307516813,
+          "requests": 192.0
+        },
+        "d34_rep81_A": {
+          "summed_duration_s": 38.77221557870507,
+          "requests": 192.0
+        },
+        "d34_rep81_B": {
+          "summed_duration_s": 121.79179829545319,
+          "requests": 192.0
+        },
+        "d34_rep82_A": {
+          "summed_duration_s": 38.63662432320416,
+          "requests": 192.0
+        },
+        "d34_rep82_B": {
+          "summed_duration_s": 121.39885275252163,
+          "requests": 192.0
+        },
+        "d44_rep81_A": {
+          "summed_duration_s": 43.74390871822834,
+          "requests": 192.0
+        },
+        "d44_rep81_B": {
+          "summed_duration_s": 120.74173087067902,
+          "requests": 192.0
+        },
+        "d44_rep82_A": {
+          "summed_duration_s": 43.71354919113219,
+          "requests": 192.0
+        },
+        "d44_rep82_B": {
+          "summed_duration_s": 120.87626818008721,
+          "requests": 192.0
+        },
+        "bind_rep81_A": {
+          "summed_duration_s": 35.19510209560394,
+          "requests": 192.0
+        },
+        "bind_rep81_B": {
+          "summed_duration_s": 129.30080245994031,
+          "requests": 192.0
+        },
+        "bind_rep82_A": {
+          "summed_duration_s": 35.347236858680844,
+          "requests": 192.0
+        },
+        "bind_rep82_B": {
+          "summed_duration_s": 131.05613920465112,
+          "requests": 192.0
+        }
+      },
+      "note": "duration = sum over 3 round records (gate #7). NB the he2 harness's own inline scorer (he2_bench.sbatch:92) still uses max(dur,d), so HE2_RESULT lines in he2_*.out are 3x inflated and must not be quoted."
+    },
+    "B_aggregation": {
+      "rep81": {
+        "per_phase_optimum": {
+          "A": "d24",
+          "B": "d34"
+        },
+        "unweighted_per_phase_mean": {
+          "best_static": "d24",
+          "best_static_value": 1.8620533003060618,
+          "oracle": 1.9045158849149604,
+          "oracle_effect_percent": 2.2804172470207495,
+          "reactive_bind": 1.4844643656334267,
+          "bind_effect_percent": -20.278094864984354
+        },
+        "pooled_trace_level": {
+          "best_static": "d24",
+          "best_static_value": 1.3737676149700089,
+          "oracle": 1.454482551766484,
+          "oracle_effect_percent": 5.875443263978619,
+          "reactive_bind": 1.08209380945345,
+          "bind_effect_percent": -21.231669922785777
+        }
+      },
+      "rep82": {
+        "per_phase_optimum": {
+          "A": "d24",
+          "B": "d34"
+        },
+        "unweighted_per_phase_mean": {
+          "best_static": "d24",
+          "best_static_value": 1.8767773361196483,
+          "oracle": 1.9209163981120043,
+          "oracle_effect_percent": 2.3518539542690897,
+          "reactive_bind": 1.4853247018889357,
+          "bind_effect_percent": -20.857702546646518
+        },
+        "pooled_trace_level": {
+          "best_static": "d24",
+          "best_static_value": 1.380167925249818,
+          "oracle": 1.464612495804923,
+          "oracle_effect_percent": 6.118427258756931,
+          "reactive_bind": 1.021613888021714,
+          "bind_effect_percent": -25.97901535519337
+        }
+      }
+    },
+    "C_canonical_predicate_rescore": {
+      "A": {
+        "d16": {
+          "ttft_pass_percent": [
+            57.291666666666664,
+            58.333333333333336
+          ],
+          "itl_mean_pass_percent": [
+            50.0,
+            58.333333333333336
+          ],
+          "itl_p95_pass_percent": [
+            25.0,
+            26.041666666666668
+          ],
+          "joint_pass_percent": [
+            19.791666666666664,
+            19.270833333333336
+          ],
+          "slo_goodput_req_s": [
+            1.092862644189383,
+            1.0643294352118706
+          ]
+        },
+        "d24": {
+          "ttft_pass_percent": [
+            49.47916666666667,
+            50.0
+          ],
+          "itl_mean_pass_percent": [
+            100.0,
+            100.0
+          ],
+          "itl_p95_pass_percent": [
+            99.47916666666666,
+            100.0
+          ],
+          "joint_pass_percent": [
+            48.95833333333333,
+            50.0
+          ],
+          "slo_goodput_req_s": [
+            2.688404168120541,
+            2.746270548439609
+          ]
+        },
+        "d34": {
+          "ttft_pass_percent": [
+            38.02083333333333,
+            36.97916666666667
+          ],
+          "itl_mean_pass_percent": [
+            100.0,
+            100.0
+          ],
+          "itl_p95_pass_percent": [
+            99.47916666666666,
+            100.0
+          ],
+          "joint_pass_percent": [
+            37.5,
+            36.97916666666667
+          ],
+          "slo_goodput_req_s": [
+            1.85699988833098,
+            1.8376346599555085
+          ]
+        },
+        "d44": {
+          "ttft_pass_percent": [
+            28.125,
+            28.125
+          ],
+          "itl_mean_pass_percent": [
+            100.0,
+            100.0
+          ],
+          "itl_p95_pass_percent": [
+            99.47916666666666,
+            99.47916666666666
+          ],
+          "joint_pass_percent": [
+            27.604166666666668,
+            27.604166666666668
+          ],
+          "slo_goodput_req_s": [
+            1.2115972612642774,
+            1.2124387285110145
+          ]
+        },
+        "bind": {
+          "ttft_pass_percent": [
+            49.47916666666667,
+            48.4375
+          ],
+          "itl_mean_pass_percent": [
+            87.5,
+            83.33333333333334
+          ],
+          "itl_p95_pass_percent": [
+            50.0,
+            50.0
+          ],
+          "joint_pass_percent": [
+            21.875,
+            24.479166666666664
+          ],
+          "slo_goodput_req_s": [
+            1.193347866584141,
+            1.3296654612044274
+          ]
+        }
+      },
+      "B": {
+        "d16": {
+          "ttft_pass_percent": [
+            45.3125,
+            45.3125
+          ],
+          "itl_mean_pass_percent": [
+            75.0,
+            76.04166666666666
+          ],
+          "itl_p95_pass_percent": [
+            20.3125,
+            20.3125
+          ],
+          "joint_pass_percent": [
+            0.0,
+            0.0
+          ],
+          "slo_goodput_req_s": [
+            0.0,
+            0.0
+          ]
+        },
+        "d24": {
+          "ttft_pass_percent": [
+            67.1875,
+            67.1875
+          ],
+          "itl_mean_pass_percent": [
+            100.0,
+            100.0
+          ],
+          "itl_p95_pass_percent": [
+            20.3125,
+            20.3125
+          ],
+          "joint_pass_percent": [
+            0.0,
+            0.0
+          ],
+          "slo_goodput_req_s": [
+            0.0,
+            0.0
+          ]
+        },
+        "d34": {
+          "ttft_pass_percent": [
+            69.27083333333334,
+            69.27083333333334
+          ],
+          "itl_mean_pass_percent": [
+            100.0,
+            100.0
+          ],
+          "itl_p95_pass_percent": [
+            20.3125,
+            20.3125
+          ],
+          "joint_pass_percent": [
+            0.0,
+            0.0
+          ],
+          "slo_goodput_req_s": [
+            0.0,
+            0.0
+          ]
+        },
+        "d44": {
+          "ttft_pass_percent": [
+            46.875,
+            45.83333333333333
+          ],
+          "itl_mean_pass_percent": [
+            100.0,
+            100.0
+          ],
+          "itl_p95_pass_percent": [
+            14.0625,
+            14.0625
+          ],
+          "joint_pass_percent": [
+            0.0,
+            0.0
+          ],
+          "slo_goodput_req_s": [
+            0.0,
+            0.0
+          ]
+        },
+        "bind": {
+          "ttft_pass_percent": [
+            52.604166666666664,
+            46.35416666666667
+          ],
+          "itl_mean_pass_percent": [
+            100.0,
+            100.0
+          ],
+          "itl_p95_pass_percent": [
+            20.3125,
+            20.3125
+          ],
+          "joint_pass_percent": [
+            0.0,
+            0.0
+          ],
+          "slo_goodput_req_s": [
+            0.0,
+            0.0
+          ]
+        }
+      }
+    },
+    "D_decomposition": {
+      "legacy_predicate": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "itl_donor_ties": [
+          "d24",
+          "d34",
+          "d44"
+        ],
+        "oracle_pass_percent": 57.8125,
+        "best_static": "d24",
+        "best_static_pass_percent": 49.739583333333336,
+        "effect_percent": 16.230366492146597,
+        "sm_demand": 116,
+        "sm_demand_over_tie_set": [
+          116,
+          126,
+          136
+        ]
+      },
+      "canonical_predicate": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "itl_donor_ties": [
+          "d24",
+          "d34"
+        ],
+        "oracle_pass_percent": 57.66194661458333,
+        "best_static": "d24",
+        "best_static_pass_percent": 49.479166666666664,
+        "effect_percent": 16.537828947368418,
+        "sm_demand": 116,
+        "sm_demand_over_tie_set": [
+          116,
+          126
+        ]
+      },
+      "marginals_percent": {
+        "ttft_pass": {
+          "d16": 57.8125,
+          "d24": 49.739583333333336,
+          "d34": 37.5,
+          "d44": 28.125
+        },
+        "itl_mean_pass": {
+          "d16": 54.16666666666667,
+          "d24": 100.0,
+          "d34": 100.0,
+          "d44": 100.0
+        },
+        "itl_p95_pass": {
+          "d16": 25.520833333333336,
+          "d24": 99.73958333333333,
+          "d34": 99.73958333333333,
+          "d44": 99.47916666666666
+        },
+        "joint_legacy": {
+          "d16": 36.71875,
+          "d24": 49.739583333333336,
+          "d34": 37.5,
+          "d44": 28.125
+        },
+        "joint_canonical": {
+          "d16": 19.53125,
+          "d24": 49.479166666666664,
+          "d34": 37.239583333333336,
+          "d44": 27.604166666666668
+        }
+      },
+      "sm_identity_note": "sum = (108 - D_ttft) + D_itl > 108  <=>  D_itl > D_ttft. Here the TTFT argmax is d16 (D=16), the LEAST decode-heavy arm, so any ITL donor with D>16 forces >108 algebraically. The 116 is therefore a restatement of 'the TTFT argmax sits at the prefill-heavy end', not an independent finding."
+    },
+    "D_ttft_threshold_ladder": {
+      "2700ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 3.409090909090917
+      },
+      "2715ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 0.0
+      },
+      "2730ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 0.5464480874316946
+      },
+      "2745ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 0.0
+      },
+      "2760ms": {
+        "ttft_donor": "d24",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 108,
+        "effect_percent": 0.0
+      },
+      "2775ms": {
+        "ttft_donor": "d24",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 108,
+        "effect_percent": 0.0
+      },
+      "2790ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 0.0
+      },
+      "2805ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 1.6129032258064502
+      },
+      "2820ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 4.8387096774193505
+      },
+      "2835ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 5.913978494623651
+      },
+      "2850ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 8.064516129032251
+      },
+      "2865ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 8.064516129032251
+      },
+      "2880ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 10.215053763440874
+      },
+      "2895ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 10.752688172043023
+      },
+      "2910ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 13.440860215053775
+      },
+      "2925ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 13.978494623655902
+      },
+      "2940ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 15.053763440860202
+      },
+      "2955ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 14.438502673796783
+      },
+      "2970ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 14.814814814814836
+      },
+      "2985ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 14.659685863874339
+      },
+      "3000ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 16.230366492146597
+      },
+      "3015ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 17.70833333333335
+      },
+      "3030ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 14.141414141414167
+      },
+      "3045ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 14.356435643564346
+      },
+      "3060ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 14.146341463414625
+      },
+      "3075ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 11.320754716981106
+      },
+      "3090ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 11.214953271028039
+      },
+      "3105ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 13.551401869158862
+      },
+      "3120ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 14.814814814814792
+      },
+      "3135ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 17.12962962962965
+      },
+      "3150ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 16.5137614678899
+      },
+      "3165ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 15.909090909090917
+      },
+      "3180ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 15.17857142857142
+      },
+      "3195ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 16.44444444444444
+      },
+      "3210ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 17.90393013100435
+      },
+      "3225ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 18.181818181818187
+      },
+      "3240ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 19.742489270386287
+      },
+      "3255ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 19.574468085106368
+      },
+      "3270ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 19.747899159663863
+      },
+      "3285ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 19.58333333333333
+      },
+      "3300ms": {
+        "ttft_donor": "d16",
+        "itl_donor": "d24",
+        "best_static": "d24",
+        "sm_demand": 116,
+        "effect_percent": 19.4214876033058
+      },
+      "_summary": {
+        "grid": "TTFT SLO 2700-3300 ms (=3000 +/-10%) in 15 ms steps, ITL 60 ms, legacy predicate",
+        "effect_percent_min": 0.0,
+        "effect_percent_max": 19.747899159663863,
+        "effect_percent_at_operating_point": 16.230366492146597,
+        "monotone": false,
+        "structure_invariant_cells": 39,
+        "structure_flip_cells": [
+          "2760ms",
+          "2775ms"
+        ]
+      }
+    },
+    "E_separation_phase_B": {
+      "d16_rep81": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 148.7681981176138,
+        "min_ttft_among_itl_p95_pass_s": 18.135483702644706,
+        "ttft_pass_percent": 45.3125,
+        "itl_p95_pass_percent": 20.3125
+      },
+      "d16_rep82": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 148.32759015262127,
+        "min_ttft_among_itl_p95_pass_s": 18.109554989263415,
+        "ttft_pass_percent": 45.3125,
+        "itl_p95_pass_percent": 20.3125
+      },
+      "d24_rep81": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 106.258688494563,
+        "min_ttft_among_itl_p95_pass_s": 14.728546308353543,
+        "ttft_pass_percent": 67.1875,
+        "itl_p95_pass_percent": 20.3125
+      },
+      "d24_rep82": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 106.1086941510438,
+        "min_ttft_among_itl_p95_pass_s": 14.745494419708848,
+        "ttft_pass_percent": 67.1875,
+        "itl_p95_pass_percent": 20.3125
+      },
+      "d34_rep81": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 80.25805316865444,
+        "min_ttft_among_itl_p95_pass_s": 12.631630353629589,
+        "ttft_pass_percent": 69.27083333333334,
+        "itl_p95_pass_percent": 20.3125
+      },
+      "d34_rep82": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 79.61674686521292,
+        "min_ttft_among_itl_p95_pass_s": 12.563109131529927,
+        "ttft_pass_percent": 69.27083333333334,
+        "itl_p95_pass_percent": 20.3125
+      },
+      "d44_rep81": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 63.35178390145302,
+        "min_ttft_among_itl_p95_pass_s": 13.574882380664349,
+        "ttft_pass_percent": 46.875,
+        "itl_p95_pass_percent": 14.0625
+      },
+      "d44_rep82": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 63.67920637130736,
+        "min_ttft_among_itl_p95_pass_s": 13.591608952730894,
+        "ttft_pass_percent": 45.83333333333333,
+        "itl_p95_pass_percent": 14.0625
+      },
+      "bind_rep81": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 62.025398015975945,
+        "min_ttft_among_itl_p95_pass_s": 14.945066161453724,
+        "ttft_pass_percent": 52.604166666666664,
+        "itl_p95_pass_percent": 20.3125
+      },
+      "bind_rep82": {
+        "joint_pass_count_canonical": 0.0,
+        "min_itl_p95_among_ttft_pass_ms": 65.20711183547971,
+        "min_ttft_among_itl_p95_pass_s": 14.947878630831838,
+        "ttft_pass_percent": 46.35416666666667,
+        "itl_p95_pass_percent": 20.3125
+      }
+    },
+    "E_combination_assumption": {
+      "A": {
+        "d16": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 54.16666666666667,
+            "product_of_marginals_percent": 31.336805555555557,
+            "actual_joint_percent": 36.71875,
+            "error_percent": -14.657210401891241,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 25.520833333333336,
+            "product_of_marginals_percent": 14.756944444444445,
+            "actual_joint_percent": 19.53125,
+            "error_percent": -24.444444444444446,
+            "identically_zero_error": false
+          }
+        },
+        "d24": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 100.0,
+            "product_of_marginals_percent": 49.739583333333336,
+            "actual_joint_percent": 49.739583333333336,
+            "error_percent": 0.0,
+            "identically_zero_error": true
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 99.73958333333333,
+            "product_of_marginals_percent": 49.61073133680556,
+            "actual_joint_percent": 49.479166666666664,
+            "error_percent": 0.265899122807034,
+            "identically_zero_error": false
+          }
+        },
+        "d34": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 100.0,
+            "product_of_marginals_percent": 37.5,
+            "actual_joint_percent": 37.5,
+            "error_percent": 0.0,
+            "identically_zero_error": true
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 99.73958333333333,
+            "product_of_marginals_percent": 37.40098741319444,
+            "actual_joint_percent": 37.239583333333336,
+            "error_percent": 0.43342074592072066,
+            "identically_zero_error": false
+          }
+        },
+        "d44": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 100.0,
+            "product_of_marginals_percent": 28.125,
+            "actual_joint_percent": 28.125,
+            "error_percent": 0.0,
+            "identically_zero_error": true
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 99.47916666666666,
+            "product_of_marginals_percent": 27.978515625,
+            "actual_joint_percent": 27.604166666666668,
+            "error_percent": 1.3561320754716943,
+            "identically_zero_error": false
+          }
+        },
+        "bind": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 85.41666666666667,
+            "product_of_marginals_percent": 41.829427083333336,
+            "actual_joint_percent": 41.145833333333336,
+            "error_percent": 1.661392405063289,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 50.0,
+            "product_of_marginals_percent": 24.479166666666668,
+            "actual_joint_percent": 23.177083333333332,
+            "error_percent": 5.617977528089901,
+            "identically_zero_error": false
+          }
+        }
+      },
+      "B": {
+        "d16": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 75.52083333333333,
+            "product_of_marginals_percent": 34.220377604166664,
+            "actual_joint_percent": 20.833333333333332,
+            "error_percent": 64.2578125,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 20.3125,
+            "product_of_marginals_percent": 9.2041015625,
+            "actual_joint_percent": 0.0,
+            "error_percent": Infinity,
+            "identically_zero_error": false
+          }
+        },
+        "d24": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 100.0,
+            "product_of_marginals_percent": 67.1875,
+            "actual_joint_percent": 67.1875,
+            "error_percent": 0.0,
+            "identically_zero_error": true
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 20.3125,
+            "product_of_marginals_percent": 13.6474609375,
+            "actual_joint_percent": 0.0,
+            "error_percent": Infinity,
+            "identically_zero_error": false
+          }
+        },
+        "d34": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 100.0,
+            "product_of_marginals_percent": 69.27083333333334,
+            "actual_joint_percent": 69.27083333333334,
+            "error_percent": 0.0,
+            "identically_zero_error": true
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 20.3125,
+            "product_of_marginals_percent": 14.070638020833334,
+            "actual_joint_percent": 0.0,
+            "error_percent": Infinity,
+            "identically_zero_error": false
+          }
+        },
+        "d44": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 100.0,
+            "product_of_marginals_percent": 46.354166666666664,
+            "actual_joint_percent": 46.354166666666664,
+            "error_percent": 0.0,
+            "identically_zero_error": true
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 14.0625,
+            "product_of_marginals_percent": 6.5185546875,
+            "actual_joint_percent": 0.0,
+            "error_percent": Infinity,
+            "identically_zero_error": false
+          }
+        },
+        "bind": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 100.0,
+            "product_of_marginals_percent": 49.479166666666664,
+            "actual_joint_percent": 49.479166666666664,
+            "error_percent": 0.0,
+            "identically_zero_error": true
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 20.3125,
+            "product_of_marginals_percent": 10.050455729166666,
+            "actual_joint_percent": 0.0,
+            "error_percent": Infinity,
+            "identically_zero_error": false
+          }
+        }
+      },
+      "note": "`identically_zero_error` marks cells where the ITL marginal is exactly 100%, so the product CANNOT differ from the joint -- those cells carry no information about the (x) assumption."
+    },
+    "percentiles": {
+      "d16_rep81_A": {
+        "ttft_p50_ms": 2817.2661401331425,
+        "ttft_p95_ms": 3876.252324040979,
+        "ttft_p99_ms": 4131.898311842234,
+        "token_itl_p50_ms": 50.4612373188138,
+        "token_itl_p95_ms": 84.04622338712215,
+        "token_itl_p99_ms": 85.55256815627217,
+        "throughput_req_s": 5.521832307483198
+      },
+      "d16_rep81_B": {
+        "ttft_p50_ms": 3165.212457999587,
+        "ttft_p95_ms": 23500.641073472798,
+        "ttft_p99_ms": 24779.66512605548,
+        "token_itl_p50_ms": 40.23636318743229,
+        "token_itl_p95_ms": 186.5264095366001,
+        "token_itl_p99_ms": 222.36385621130466,
+        "throughput_req_s": 1.3518343768794443
+      },
+      "d16_rep82_A": {
+        "ttft_p50_ms": 2815.0597801432014,
+        "ttft_p95_ms": 3870.9433618932962,
+        "ttft_p99_ms": 4219.296803157777,
+        "token_itl_p50_ms": 50.37997383624315,
+        "token_itl_p95_ms": 83.87991292402148,
+        "token_itl_p99_ms": 85.54956091567874,
+        "throughput_req_s": 5.523006798937274
+      },
+      "d16_rep82_B": {
+        "ttft_p50_ms": 3165.0814358145,
+        "ttft_p95_ms": 23444.242393784225,
+        "ttft_p99_ms": 24767.86308845505,
+        "token_itl_p50_ms": 40.28001148253679,
+        "token_itl_p95_ms": 186.61513729020953,
+        "token_itl_p99_ms": 222.40856094285846,
+        "throughput_req_s": 1.3527773545108446
+      },
+      "d24_rep81_A": {
+        "ttft_p50_ms": 3012.061062268913,
+        "ttft_p95_ms": 3968.210604041815,
+        "ttft_p99_ms": 4313.745410982519,
+        "token_itl_p50_ms": 35.56182514876127,
+        "token_itl_p95_ms": 37.21911087632179,
+        "token_itl_p99_ms": 38.70604148134589,
+        "throughput_req_s": 5.491208513607913
+      },
+      "d24_rep81_B": {
+        "ttft_p50_ms": 2073.893381282687,
+        "ttft_p95_ms": 18865.53726764396,
+        "ttft_p99_ms": 20146.762137115,
+        "token_itl_p50_ms": 40.32578598707914,
+        "token_itl_p95_ms": 126.94077799096704,
+        "token_itl_p99_ms": 153.66626819595695,
+        "throughput_req_s": 1.4989430893393492
+      },
+      "d24_rep82_A": {
+        "ttft_p50_ms": 2998.616867698729,
+        "ttft_p95_ms": 3977.9501946642995,
+        "ttft_p99_ms": 4318.396060895175,
+        "token_itl_p50_ms": 35.588682629168034,
+        "token_itl_p95_ms": 37.459346279501915,
+        "token_itl_p99_ms": 38.64143190905452,
+        "throughput_req_s": 5.492541096879218
+      },
+      "d24_rep82_B": {
+        "ttft_p50_ms": 2075.274328701198,
+        "ttft_p95_ms": 18861.55663440004,
+        "ttft_p99_ms": 20157.913510557264,
+        "token_itl_p50_ms": 40.22868536412716,
+        "token_itl_p95_ms": 126.96907725185154,
+        "token_itl_p99_ms": 154.01445375755432,
+        "throughput_req_s": 1.4992135796088377
+      },
+      "d34_rep81_A": {
+        "ttft_p50_ms": 3741.4130102843046,
+        "ttft_p95_ms": 5116.558549553156,
+        "ttft_p99_ms": 5475.957918353379,
+        "token_itl_p50_ms": 27.038916014134884,
+        "token_itl_p95_ms": 28.928497247397896,
+        "token_itl_p99_ms": 32.073993403464556,
+        "throughput_req_s": 4.9519997022159465
+      },
+      "d34_rep81_B": {
+        "ttft_p50_ms": 2382.1592424064875,
+        "ttft_p95_ms": 16482.87666309625,
+        "ttft_p99_ms": 17576.55431928113,
+        "token_itl_p50_ms": 40.37668462842703,
+        "token_itl_p95_ms": 99.22280050814152,
+        "token_itl_p99_ms": 111.98105875402689,
+        "throughput_req_s": 1.5764608346961888
+      },
+      "d34_rep82_A": {
+        "ttft_p50_ms": 3746.8816228210926,
+        "ttft_p95_ms": 5069.41309357062,
+        "ttft_p99_ms": 5412.182302065194,
+        "token_itl_p50_ms": 26.88125055283308,
+        "token_itl_p95_ms": 28.44098601490259,
+        "token_itl_p99_ms": 30.335051473230124,
+        "throughput_req_s": 4.969378235372642
+      },
+      "d34_rep82_B": {
+        "ttft_p50_ms": 2323.5774785280228,
+        "ttft_p95_ms": 16357.276441249996,
+        "ttft_p99_ms": 17528.478723429143,
+        "token_itl_p50_ms": 40.344296023249626,
+        "token_itl_p95_ms": 97.34901506453753,
+        "token_itl_p99_ms": 111.2851382791996,
+        "throughput_req_s": 1.5815635456737203
+      },
+      "d44_rep81_A": {
+        "ttft_p50_ms": 4670.36307323724,
+        "ttft_p95_ms": 6674.936468806117,
+        "ttft_p99_ms": 6869.760384261608,
+        "token_itl_p50_ms": 22.14542217552662,
+        "token_itl_p95_ms": 23.67989905178547,
+        "token_itl_p99_ms": 25.71442242711782,
+        "throughput_req_s": 4.389182531372477
+      },
+      "d44_rep81_B": {
+        "ttft_p50_ms": 3190.095765516162,
+        "ttft_p95_ms": 15791.127180773765,
+        "ttft_p99_ms": 17361.979893259704,
+        "token_itl_p50_ms": 40.36092106252909,
+        "token_itl_p95_ms": 82.97817772254348,
+        "token_itl_p99_ms": 85.95762016251686,
+        "throughput_req_s": 1.5901710089417425
+      },
+      "d44_rep82_A": {
+        "ttft_p50_ms": 4665.7981825992465,
+        "ttft_p95_ms": 6669.335827045142,
+        "ttft_p99_ms": 6862.621810752898,
+        "token_itl_p50_ms": 22.158492356538773,
+        "token_itl_p95_ms": 23.706700187176466,
+        "token_itl_p99_ms": 25.57970218360424,
+        "throughput_req_s": 4.392230865549336
+      },
+      "d44_rep82_B": {
+        "ttft_p50_ms": 3197.588645853102,
+        "ttft_p95_ms": 15848.313209507614,
+        "ttft_p99_ms": 17397.512870430946,
+        "token_itl_p50_ms": 40.383629500865936,
+        "token_itl_p95_ms": 83.201714605093,
+        "token_itl_p99_ms": 86.13027684390545,
+        "throughput_req_s": 1.588401121996497
+      },
+      "bind_rep81_A": {
+        "ttft_p50_ms": 3025.004018098116,
+        "ttft_p95_ms": 4032.8975412063296,
+        "ttft_p99_ms": 4320.468280538917,
+        "token_itl_p50_ms": 35.779526457190514,
+        "token_itl_p95_ms": 61.16676349192858,
+        "token_itl_p99_ms": 242.8321081586182,
+        "throughput_req_s": 5.455304532956074
+      },
+      "bind_rep81_B": {
+        "ttft_p50_ms": 2882.9020727425814,
+        "ttft_p95_ms": 19374.773094337434,
+        "ttft_p99_ms": 20395.481475517154,
+        "token_itl_p50_ms": 40.26427865028381,
+        "token_itl_p95_ms": 111.95525163784582,
+        "token_itl_p99_ms": 154.82614355161786,
+        "throughput_req_s": 1.4849095778774073
+      },
+      "bind_rep82_A": {
+        "ttft_p50_ms": 3012.8799686208367,
+        "ttft_p95_ms": 4080.2365137264132,
+        "ttft_p99_ms": 4409.117923676968,
+        "token_itl_p50_ms": 35.48534773290157,
+        "token_itl_p95_ms": 62.34542923048138,
+        "token_itl_p99_ms": 347.2193216904998,
+        "throughput_req_s": 5.4318248627925545
+      },
+      "bind_rep82_B": {
+        "ttft_p50_ms": 3306.126218289137,
+        "ttft_p95_ms": 20212.06509657204,
+        "ttft_p99_ms": 21154.319367799908,
+        "token_itl_p50_ms": 40.25513958185911,
+        "token_itl_p95_ms": 142.41589680314064,
+        "token_itl_p99_ms": 154.5688535645604,
+        "throughput_req_s": 1.4650210296534205
+      }
+    },
+    "overload": {
+      "A": {
+        "offered_req_s": 8.0,
+        "achieved_req_s_min": 4.389182531372477,
+        "achieved_req_s_max": 5.523006798937274,
+        "overload_factor_range": [
+          1.448486357384051,
+          1.822662863259514
+        ]
+      },
+      "B": {
+        "offered_req_s": 5.0,
+        "achieved_req_s_min": 1.3518343768794443,
+        "achieved_req_s_max": 1.5901710089417425,
+        "overload_factor_range": [
+          3.1443159080906,
+          3.6986779486566475
+        ]
+      }
+    },
+    "cliff_diagnostic": {
+      "d16_rep81_A": {
+        "ttft_mass_within_band_of_slo": 0.2708333333333333,
+        "itl_p95_mass_within_band_of_slo": 0.026041666666666668,
+        "itl_mean_mass_within_band_of_slo": 0.3489583333333333,
+        "ttft_median_over_slo": 0.9390887133777142,
+        "itl_p95_median_over_slo": 1.394616129497687,
+        "band": 0.1
+      },
+      "d16_rep81_B": {
+        "ttft_mass_within_band_of_slo": 0.078125,
+        "itl_p95_mass_within_band_of_slo": 0.0,
+        "itl_mean_mass_within_band_of_slo": 0.5520833333333334,
+        "ttft_median_over_slo": 1.0550708193331957,
+        "itl_p95_median_over_slo": 3.545322292484343,
+        "band": 0.1
+      },
+      "d16_rep82_A": {
+        "ttft_mass_within_band_of_slo": 0.2864583333333333,
+        "itl_p95_mass_within_band_of_slo": 0.057291666666666664,
+        "itl_mean_mass_within_band_of_slo": 0.3385416666666667,
+        "ttft_median_over_slo": 0.9383532600477338,
+        "itl_p95_median_over_slo": 1.3948516997819145,
+        "band": 0.1
+      },
+      "d16_rep82_B": {
+        "ttft_mass_within_band_of_slo": 0.078125,
+        "itl_p95_mass_within_band_of_slo": 0.0,
+        "itl_mean_mass_within_band_of_slo": 0.5520833333333334,
+        "ttft_median_over_slo": 1.0550271452714999,
+        "itl_p95_median_over_slo": 3.575819583299259,
+        "band": 0.1
+      },
+      "d24_rep81_A": {
+        "ttft_mass_within_band_of_slo": 0.16666666666666666,
+        "itl_p95_mass_within_band_of_slo": 0.005208333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 1.0040203540896375,
+        "itl_p95_median_over_slo": 0.6175608839839697,
+        "band": 0.1
+      },
+      "d24_rep81_B": {
+        "ttft_mass_within_band_of_slo": 0.09375,
+        "itl_p95_mass_within_band_of_slo": 0.0,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.6912977937608957,
+        "itl_p95_median_over_slo": 2.4600863456726074,
+        "band": 0.1
+      },
+      "d24_rep82_A": {
+        "ttft_mass_within_band_of_slo": 0.17708333333333334,
+        "itl_p95_mass_within_band_of_slo": 0.005208333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.9995389558995763,
+        "itl_p95_median_over_slo": 0.6222022324800491,
+        "band": 0.1
+      },
+      "d24_rep82_B": {
+        "ttft_mass_within_band_of_slo": 0.09375,
+        "itl_p95_mass_within_band_of_slo": 0.0,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.6917581095670661,
+        "itl_p95_median_over_slo": 2.4654026376083493,
+        "band": 0.1
+      },
+      "d34_rep81_A": {
+        "ttft_mass_within_band_of_slo": 0.10416666666666667,
+        "itl_p95_mass_within_band_of_slo": 0.0,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 1.2471376700947683,
+        "itl_p95_median_over_slo": 0.47752201401938993,
+        "band": 0.1
+      },
+      "d34_rep81_B": {
+        "ttft_mass_within_band_of_slo": 0.109375,
+        "itl_p95_mass_within_band_of_slo": 0.0,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.7940530808021625,
+        "itl_p95_median_over_slo": 1.7945081538831194,
+        "band": 0.1
+      },
+      "d34_rep82_A": {
+        "ttft_mass_within_band_of_slo": 0.10416666666666667,
+        "itl_p95_mass_within_band_of_slo": 0.0,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 1.2489605409403641,
+        "itl_p95_median_over_slo": 0.47265496881057817,
+        "band": 0.1
+      },
+      "d34_rep82_B": {
+        "ttft_mass_within_band_of_slo": 0.109375,
+        "itl_p95_mass_within_band_of_slo": 0.0,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.7745258261760076,
+        "itl_p95_median_over_slo": 1.788516032199065,
+        "band": 0.1
+      },
+      "d44_rep81_A": {
+        "ttft_mass_within_band_of_slo": 0.057291666666666664,
+        "itl_p95_mass_within_band_of_slo": 0.005208333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 1.55678769107908,
+        "itl_p95_median_over_slo": 0.39296673455586034,
+        "band": 0.1
+      },
+      "d44_rep81_B": {
+        "ttft_mass_within_band_of_slo": 0.171875,
+        "itl_p95_mass_within_band_of_slo": 0.041666666666666664,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 1.063365255172054,
+        "itl_p95_median_over_slo": 1.3936126527066033,
+        "band": 0.1
+      },
+      "d44_rep82_A": {
+        "ttft_mass_within_band_of_slo": 0.06770833333333333,
+        "itl_p95_mass_within_band_of_slo": 0.005208333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 1.5552660608664155,
+        "itl_p95_median_over_slo": 0.3926347630719344,
+        "band": 0.1
+      },
+      "d44_rep82_B": {
+        "ttft_mass_within_band_of_slo": 0.16145833333333334,
+        "itl_p95_mass_within_band_of_slo": 0.03125,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 1.065862881951034,
+        "itl_p95_median_over_slo": 1.3984489487484097,
+        "band": 0.1
+      },
+      "bind_rep81_A": {
+        "ttft_mass_within_band_of_slo": 0.15104166666666666,
+        "itl_p95_mass_within_band_of_slo": 0.125,
+        "itl_mean_mass_within_band_of_slo": 0.16666666666666666,
+        "ttft_median_over_slo": 1.008334672699372,
+        "itl_p95_median_over_slo": 1.030278766217331,
+        "band": 0.1
+      },
+      "bind_rep81_B": {
+        "ttft_mass_within_band_of_slo": 0.16145833333333334,
+        "itl_p95_mass_within_band_of_slo": 0.03125,
+        "itl_mean_mass_within_band_of_slo": 0.08854166666666667,
+        "ttft_median_over_slo": 0.9609673575808605,
+        "itl_p95_median_over_slo": 2.420174105403324,
+        "band": 0.1
+      },
+      "bind_rep82_A": {
+        "ttft_mass_within_band_of_slo": 0.16145833333333334,
+        "itl_p95_mass_within_band_of_slo": 0.16145833333333334,
+        "itl_mean_mass_within_band_of_slo": 0.2864583333333333,
+        "ttft_median_over_slo": 1.0042933228736122,
+        "itl_p95_median_over_slo": 1.0959595519428451,
+        "band": 0.1
+      },
+      "bind_rep82_B": {
+        "ttft_mass_within_band_of_slo": 0.07291666666666667,
+        "itl_p95_mass_within_band_of_slo": 0.005208333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.203125,
+        "ttft_median_over_slo": 1.1020420727630456,
+        "itl_p95_median_over_slo": 2.467338585605224,
+        "band": 0.1
+      }
+    },
+    "controller": {
+      "bind_rep81": {
+        "split_transition_log_lines": 72,
+        "residency_and_dwell": "NOT COMPUTABLE -- he2_bench.sbatch collects no PDMUX_TELEMETRY_PATH runtime_snapshot stream, so analyze.controller_summary cannot be run"
+      },
+      "bind_rep82": {
+        "split_transition_log_lines": 60,
+        "residency_and_dwell": "NOT COMPUTABLE -- he2_bench.sbatch collects no PDMUX_TELEMETRY_PATH runtime_snapshot stream, so analyze.controller_summary cannot be run"
+      }
+    }
+  },
+  "R2_sgptv": {
+    "campaign": "sgptv rate-swing ShareGPT (LO rate 3 / HI rate 12), n=4 per arm",
+    "workload": {
+      "dataset": "ShareGPT V3, sharegpt-context-len 4000",
+      "requests_per_phase_run": 600,
+      "rounds_per_file": 3,
+      "identical_across_all_runs": true,
+      "prefill_decode_token_ratio": 1.4411516379601486
+    },
+    "provenance": [
+      {
+        "arm": "d16",
+        "rep": "rep1",
+        "job": "852340",
+        "phases_share_boot": true,
+        "node": "gpu39",
+        "finished": "2026-07-15 17:19"
+      },
+      {
+        "arm": "d16",
+        "rep": "rep44",
+        "job": "859008",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:34"
+      },
+      {
+        "arm": "d16",
+        "rep": "rep45",
+        "job": "859025",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:42"
+      },
+      {
+        "arm": "d16",
+        "rep": "rep46",
+        "job": "859026",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:42"
+      },
+      {
+        "arm": "d24",
+        "rep": "rep1",
+        "job": "852341",
+        "phases_share_boot": true,
+        "node": "gpu43",
+        "finished": "2026-07-15 17:27"
+      },
+      {
+        "arm": "d24",
+        "rep": "rep44",
+        "job": "859005",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:26"
+      },
+      {
+        "arm": "d24",
+        "rep": "rep45",
+        "job": "859006",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:27"
+      },
+      {
+        "arm": "d24",
+        "rep": "rep46",
+        "job": "859007",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:34"
+      },
+      {
+        "arm": "d34",
+        "rep": "rep41",
+        "job": "856892",
+        "phases_share_boot": true,
+        "node": "gpu38",
+        "finished": "2026-07-17 16:59"
+      },
+      {
+        "arm": "d34",
+        "rep": "rep42",
+        "job": "856917",
+        "phases_share_boot": true,
+        "node": "gpu38",
+        "finished": "2026-07-17 17:06"
+      },
+      {
+        "arm": "d34",
+        "rep": "rep43",
+        "job": "856918",
+        "phases_share_boot": true,
+        "node": "gpu38",
+        "finished": "2026-07-17 17:06"
+      },
+      {
+        "arm": "d34",
+        "rep": "rep44",
+        "job": "856929",
+        "phases_share_boot": true,
+        "node": "gpu38",
+        "finished": "2026-07-17 17:14"
+      },
+      {
+        "arm": "d44",
+        "rep": "rep1",
+        "job": "852342",
+        "phases_share_boot": true,
+        "node": "gpu39",
+        "finished": "2026-07-15 17:26"
+      },
+      {
+        "arm": "d44",
+        "rep": "rep41",
+        "job": "856889",
+        "phases_share_boot": true,
+        "node": "gpu38",
+        "finished": "2026-07-17 16:51"
+      },
+      {
+        "arm": "d44",
+        "rep": "rep42",
+        "job": "856890",
+        "phases_share_boot": true,
+        "node": "gpu38",
+        "finished": "2026-07-17 16:51"
+      },
+      {
+        "arm": "d44",
+        "rep": "rep43",
+        "job": "856891",
+        "phases_share_boot": true,
+        "node": "gpu38",
+        "finished": "2026-07-17 16:59"
+      },
+      {
+        "arm": "slo",
+        "rep": "rep1",
+        "job": "852343",
+        "phases_share_boot": true,
+        "node": "gpu39",
+        "finished": "2026-07-15 17:34"
+      },
+      {
+        "arm": "slo",
+        "rep": "rep44",
+        "job": "859037",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:50"
+      },
+      {
+        "arm": "slo",
+        "rep": "rep45",
+        "job": "859038",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:50"
+      },
+      {
+        "arm": "slo",
+        "rep": "rep46",
+        "job": "859059",
+        "phases_share_boot": true,
+        "node": "gpu37",
+        "finished": "2026-07-18 18:57"
+      }
+    ],
+    "identity_proof_pc6": [
+      {
+        "cell": "d16_rep1_LO",
+        "ttft_pass_frac": 1.0,
+        "good": 597.0,
+        "itl_p95_pass_count": 597.0,
+        "bit_identical": true
+      },
+      {
+        "cell": "d16_rep44_LO",
+        "ttft_pass_frac": 1.0,
+        "good": 599.0,
+        "itl_p95_pass_count": 599.0,
+        "bit_identical": true
+      },
+      {
+        "cell": "d16_rep45_LO",
+        "ttft_pass_frac": 1.0,
+        "good": 597.0,
+        "itl_p95_pass_count": 597.0,
+        "bit_identical": true
+      },
+      {
+        "cell": "d16_rep46_LO",
+        "ttft_pass_frac": 1.0,
+        "good": 598.0,
+        "itl_p95_pass_count": 598.0,
+        "bit_identical": true
+      },
+      {
+        "cell": "slo_rep1_LO",
+        "ttft_pass_frac": 1.0,
+        "good": 599.0,
+        "itl_p95_pass_count": 599.0,
+        "bit_identical": true
+      },
+      {
+        "cell": "slo_rep44_LO",
+        "ttft_pass_frac": 1.0,
+        "good": 599.0,
+        "itl_p95_pass_count": 599.0,
+        "bit_identical": true
+      },
+      {
+        "cell": "slo_rep45_LO",
+        "ttft_pass_frac": 1.0,
+        "good": 598.0,
+        "itl_p95_pass_count": 598.0,
+        "bit_identical": true
+      },
+      {
+        "cell": "slo_rep46_LO",
+        "ttft_pass_frac": 1.0,
+        "good": 599.0,
+        "itl_p95_pass_count": 599.0,
+        "bit_identical": true
+      }
+    ],
+    "per_phase": {
+      "Lo": {
+        "label": "LO (rate 3)",
+        "arms": {
+          "d16": {
+            "ttft_pass_percent": {
+              "n": 4.0,
+              "mean": 100.0,
+              "sd": 0.0,
+              "t95_low": 100.0,
+              "t95_high": 100.0,
+              "values": [
+                100.0,
+                100.0,
+                100.0,
+                100.0
+              ]
+            },
+            "itl_p95_pass_percent": {
+              "n": 4.0,
+              "mean": 99.625,
+              "sd": 0.1595711846260547,
+              "t95_low": 99.37112224525994,
+              "t95_high": 99.87887775474006,
+              "values": [
+                99.5,
+                99.83333333333333,
+                99.5,
+                99.66666666666667
+              ]
+            },
+            "joint_pass_percent": {
+              "n": 4.0,
+              "mean": 99.625,
+              "sd": 0.1595711846260547,
+              "t95_low": 99.37112224525994,
+              "t95_high": 99.87887775474006,
+              "values": [
+                99.5,
+                99.83333333333333,
+                99.5,
+                99.66666666666667
+              ]
+            },
+            "slo_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.831354465100712,
+              "sd": 0.03813591466786942,
+              "t95_low": 2.770680224864132,
+              "t95_high": 2.892028705337292,
+              "values": [
+                2.8468806867384764,
+                2.8553771420614247,
+                2.7744125992529356,
+                2.84874743235001
+              ]
+            },
+            "legacy_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.8408281995515496,
+              "sd": 0.03809976876063206,
+              "t95_low": 2.780211467453384,
+              "t95_high": 2.9014449316497153,
+              "values": [
+                2.8611866198376648,
+                2.8601440488094405,
+                2.783707113823297,
+                2.8582750157357957
+              ]
+            },
+            "duration_s": {
+              "n": 4.0,
+              "mean": 211.145087598823,
+              "sd": 2.691848514370102,
+              "t95_low": 206.8623566124602,
+              "t95_high": 215.42781858518583,
+              "values": [
+                209.70320350304246,
+                209.77964387834072,
+                215.18068370968103,
+                209.91681930422783
+              ]
+            },
+            "throughput_req_s": {
+              "n": 4.0,
+              "mean": 2.8419900138728447,
+              "sd": 0.03577737704877561,
+              "t95_low": 2.785068206988243,
+              "t95_high": 2.8989118207574465,
+              "values": [
+                2.8611866198376648,
+                2.8601440488094405,
+                2.788354371108478,
+                2.8582750157357957
+              ]
+            },
+            "ttft_p50_ms": {
+              "n": 4.0,
+              "mean": 73.5610662959516,
+              "sd": 1.951654474682335,
+              "t95_low": 70.45598402673201,
+              "t95_high": 76.6661485651712,
+              "values": [
+                70.73594257235527,
+                75.18383953720331,
+                73.95090628415346,
+                74.37357679009438
+              ]
+            },
+            "ttft_p95_ms": {
+              "n": 4.0,
+              "mean": 169.1516450606286,
+              "sd": 18.696689433393477,
+              "t95_low": 139.40521217209957,
+              "t95_high": 198.89807794915762,
+              "values": [
+                197.18540497124184,
+                160.42177099734545,
+                159.12809278815976,
+                159.87131148576736
+              ]
+            },
+            "ttft_p99_ms": {
+              "n": 4.0,
+              "mean": 418.53998657781614,
+              "sd": 317.01033527749377,
+              "t95_low": -85.82345684867641,
+              "t95_high": 922.9034300043087,
+              "values": [
+                894.0339152887457,
+                255.78147040680045,
+                261.919235996902,
+                262.4253246188164
+              ]
+            },
+            "token_itl_p50_ms": {
+              "n": 4.0,
+              "mean": 10.878820903599262,
+              "sd": 0.041842730567408074,
+              "t95_low": 10.812249119266516,
+              "t95_high": 10.945392687932008,
+              "values": [
+                10.89574582874775,
+                10.899629443883896,
+                10.816244408488274,
+                10.90366393327713
+              ]
+            },
+            "token_itl_p95_ms": {
+              "n": 4.0,
+              "mean": 12.980712251737675,
+              "sd": 0.4218895900688446,
+              "t95_low": 12.309485913938143,
+              "t95_high": 13.651938589537206,
+              "values": [
+                13.516127504408358,
+                13.050631433725318,
+                12.50599939376106,
+                12.850090675055966
+              ]
+            },
+            "token_itl_p99_ms": {
+              "n": 4.0,
+              "mean": 58.256233585998416,
+              "sd": 1.0446969120900713,
+              "t95_low": 56.59412079886311,
+              "t95_high": 59.91834637313372,
+              "values": [
+                56.726872473955154,
+                58.847952112555504,
+                58.45532178878784,
+                58.994787968695164
+              ]
+            }
+          },
+          "d24": {
+            "ttft_pass_percent": {
+              "n": 4.0,
+              "mean": 99.5,
+              "sd": 1.0,
+              "t95_low": 97.909,
+              "t95_high": 101.091,
+              "values": [
+                98.0,
+                100.0,
+                100.0,
+                100.0
+              ]
+            },
+            "itl_p95_pass_percent": {
+              "n": 4.0,
+              "mean": 99.625,
+              "sd": 0.20971762320196652,
+              "t95_low": 99.29133926148567,
+              "t95_high": 99.95866073851433,
+              "values": [
+                99.33333333333333,
+                99.66666666666667,
+                99.66666666666667,
+                99.83333333333333
+              ]
+            },
+            "joint_pass_percent": {
+              "n": 4.0,
+              "mean": 99.125,
+              "sd": 1.1970256348008426,
+              "t95_low": 97.22053221503187,
+              "t95_high": 101.02946778496813,
+              "values": [
+                97.33333333333334,
+                99.66666666666667,
+                99.66666666666667,
+                99.83333333333333
+              ]
+            },
+            "slo_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.761438847666164,
+              "sd": 0.14045995492242339,
+              "t95_low": 2.5379670593845884,
+              "t95_high": 2.9849106359477395,
+              "values": [
+                2.784321845959445,
+                2.8487757105951546,
+                2.5563932163874896,
+                2.8562646177225677
+              ]
+            },
+            "legacy_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.7641905226562775,
+              "sd": 0.15032175034581424,
+              "t95_low": 2.525028617856087,
+              "t95_high": 3.003352427456468,
+              "values": [
+                2.7938571947469772,
+                2.8583033885570113,
+                2.543568501255111,
+                2.8610330060660107
+              ]
+            },
+            "duration_s": {
+              "n": 4.0,
+              "mean": 215.82459752168506,
+              "sd": 12.066138525189094,
+              "t95_low": 196.62737112810922,
+              "t95_high": 235.0218239152609,
+              "values": [
+                209.74586714804173,
+                209.91473557427526,
+                233.92332453653216,
+                209.7144628278911
+              ]
+            },
+            "throughput_req_s": {
+              "n": 4.0,
+              "mean": 2.786221014339617,
+              "sd": 0.1475235279561897,
+              "t95_low": 2.551511081361319,
+              "t95_high": 3.0209309473179147,
+              "values": [
+                2.8606046362597035,
+                2.8583033885570113,
+                2.564943026475742,
+                2.8610330060660107
+              ]
+            },
+            "ttft_p50_ms": {
+              "n": 4.0,
+              "mean": 74.37792746350169,
+              "sd": 1.0405069944397871,
+              "t95_low": 72.722480835348,
+              "t95_high": 76.03337409165539,
+              "values": [
+                75.93793794512749,
+                73.89973197132349,
+                73.85281473398209,
+                73.8212252035737
+              ]
+            },
+            "ttft_p95_ms": {
+              "n": 4.0,
+              "mean": 450.1069545047348,
+              "sd": 498.6894074041985,
+              "t95_low": -343.30789267534504,
+              "t95_high": 1243.5218016848146,
+              "values": [
+                1197.6362300105359,
+                222.1106208860874,
+                203.2592767849562,
+                177.4216903373597
+              ]
+            },
+            "ttft_p99_ms": {
+              "n": 4.0,
+              "mean": 1449.2938697990028,
+              "sd": 1680.4869971945982,
+              "t95_low": -1224.360942737603,
+              "t95_high": 4122.948682335608,
+              "values": [
+                3970.023790616542,
+                609.5983346179128,
+                610.0833648629487,
+                607.4699890986078
+              ]
+            },
+            "token_itl_p50_ms": {
+              "n": 4.0,
+              "mean": 10.89455746114254,
+              "sd": 0.063437783474664,
+              "t95_low": 10.79362794763435,
+              "t95_high": 10.99548697465073,
+              "values": [
+                10.973919183015823,
+                10.872552171349525,
+                10.823184624314308,
+                10.908573865890503
+              ]
+            },
+            "token_itl_p95_ms": {
+              "n": 4.0,
+              "mean": 20.277130696922498,
+              "sd": 0.6056792990949829,
+              "t95_low": 19.31349493206238,
+              "t95_high": 21.240766461782616,
+              "values": [
+                21.028145216405377,
+                20.180525444447923,
+                19.554286636412126,
+                20.345565490424562
+              ]
+            },
+            "token_itl_p99_ms": {
+              "n": 4.0,
+              "mean": 58.26826979406178,
+              "sd": 0.4758182598807258,
+              "t95_low": 57.511242942591544,
+              "t95_high": 59.025296645532016,
+              "values": [
+                57.91746109724045,
+                57.963075712323196,
+                58.24425622820854,
+                58.94828613847494
+              ]
+            }
+          },
+          "d34": {
+            "ttft_pass_percent": {
+              "n": 4.0,
+              "mean": 99.83333333333333,
+              "sd": 0.3333333333333357,
+              "t95_low": 99.303,
+              "t95_high": 100.36366666666666,
+              "values": [
+                100.0,
+                99.33333333333333,
+                100.0,
+                100.0
+              ]
+            },
+            "itl_p95_pass_percent": {
+              "n": 4.0,
+              "mean": 99.375,
+              "sd": 0.5989960736902169,
+              "t95_low": 98.42199724675886,
+              "t95_high": 100.32800275324114,
+              "values": [
+                99.66666666666667,
+                98.5,
+                99.83333333333333,
+                99.5
+              ]
+            },
+            "joint_pass_percent": {
+              "n": 4.0,
+              "mean": 99.20833333333334,
+              "sd": 0.9267126287562326,
+              "t95_low": 97.73393354098218,
+              "t95_high": 100.6827331256845,
+              "values": [
+                99.66666666666667,
+                97.83333333333334,
+                99.83333333333333,
+                99.5
+              ]
+            },
+            "slo_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.8351309697063076,
+              "sd": 0.02530382321350156,
+              "t95_low": 2.794872586973627,
+              "t95_high": 2.8753893524389884,
+              "values": [
+                2.8391163579859606,
+                2.798729633504214,
+                2.8565597180721447,
+                2.846118169262911
+              ]
+            },
+            "legacy_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.851808264138834,
+              "sd": 0.01151954298808045,
+              "t95_low": 2.833480671244798,
+              "t95_high": 2.87013585703287,
+              "values": [
+                2.8486117304206964,
+                2.836872456448053,
+                2.861328599070596,
+                2.860420270615991
+              ]
+            },
+            "duration_s": {
+              "n": 4.0,
+              "mean": 209.95477889897302,
+              "sd": 0.4502810186823363,
+              "t95_low": 209.23838179824943,
+              "t95_high": 210.6711759996966,
+              "values": [
+                210.62891568988562,
+                209.73801576718688,
+                209.6927980221808,
+                209.75938611663878
+              ]
+            },
+            "throughput_req_s": {
+              "n": 4.0,
+              "mean": 2.857768080223809,
+              "sd": 0.0061159673484670034,
+              "t95_low": 2.848037576172398,
+              "t95_high": 2.86749858427522,
+              "values": [
+                2.8486117304206964,
+                2.860711720787953,
+                2.861328599070596,
+                2.860420270615991
+              ]
+            },
+            "ttft_p50_ms": {
+              "n": 4.0,
+              "mean": 79.14280006662011,
+              "sd": 2.194851580832469,
+              "t95_low": 75.65079120151566,
+              "t95_high": 82.63480893172456,
+              "values": [
+                78.44472210854292,
+                81.93608373403549,
+                76.68675296008587,
+                79.50364146381617
+              ]
+            },
+            "ttft_p95_ms": {
+              "n": 4.0,
+              "mean": 215.05104810930783,
+              "sd": 98.04319483923648,
+              "t95_low": 59.0643251200826,
+              "t95_high": 371.0377710985331,
+              "values": [
+                164.15096335113043,
+                362.0821275748312,
+                165.00273281708357,
+                168.96836869418618
+              ]
+            },
+            "ttft_p99_ms": {
+              "n": 4.0,
+              "mean": 931.1595116788519,
+              "sd": 1281.5906419675234,
+              "t95_low": -1107.8511996914779,
+              "t95_high": 2970.170223049182,
+              "values": [
+                273.70192218571856,
+                2853.255394361913,
+                321.9233699329197,
+                275.7573602348561
+              ]
+            },
+            "token_itl_p50_ms": {
+              "n": 4.0,
+              "mean": 10.935697006061673,
+              "sd": 0.09642637686034472,
+              "t95_low": 10.782282640476865,
+              "t95_high": 11.089111371646482,
+              "values": [
+                10.892540216445923,
+                11.078380979597569,
+                10.866958647966385,
+                10.904908180236816
+              ]
+            },
+            "token_itl_p95_ms": {
+              "n": 4.0,
+              "mean": 18.058239598758526,
+              "sd": 0.814581812941468,
+              "t95_low": 16.76223993436865,
+              "t95_high": 19.3542392631484,
+              "values": [
+                17.69860256463288,
+                19.279072713106927,
+                17.623836547136296,
+                17.631446570157998
+              ]
+            },
+            "token_itl_p99_ms": {
+              "n": 4.0,
+              "mean": 58.88873420190066,
+              "sd": 0.8668795603418993,
+              "t95_low": 57.5095288213967,
+              "t95_high": 60.26793958240462,
+              "values": [
+                59.20926559716463,
+                59.24890702590346,
+                57.60225933045149,
+                59.494504854083075
+              ]
+            }
+          },
+          "d44": {
+            "ttft_pass_percent": {
+              "n": 4.0,
+              "mean": 99.95833333333333,
+              "sd": 0.0833333333333357,
+              "t95_low": 99.82574999999999,
+              "t95_high": 100.09091666666667,
+              "values": [
+                100.0,
+                99.83333333333333,
+                100.0,
+                100.0
+              ]
+            },
+            "itl_p95_pass_percent": {
+              "n": 4.0,
+              "mean": 99.625,
+              "sd": 0.1595711846260547,
+              "t95_low": 99.37112224525994,
+              "t95_high": 99.87887775474006,
+              "values": [
+                99.83333333333333,
+                99.5,
+                99.5,
+                99.66666666666667
+              ]
+            },
+            "joint_pass_percent": {
+              "n": 4.0,
+              "mean": 99.58333333333333,
+              "sd": 0.2151657414559682,
+              "t95_low": 99.24100463867688,
+              "t95_high": 99.92566202798977,
+              "values": [
+                99.83333333333333,
+                99.33333333333333,
+                99.5,
+                99.66666666666667
+              ]
+            },
+            "slo_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.8483989881715703,
+              "sd": 0.006866168442730562,
+              "t95_low": 2.837474914179186,
+              "t95_high": 2.8593230621639547,
+              "values": [
+                2.8562571985050136,
+                2.840064703783652,
+                2.8463889462304612,
+                2.8508851041671543
+              ]
+            },
+            "legacy_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.8579332354860014,
+              "sd": 0.0055642583804685,
+              "t95_low": 2.849080500402676,
+              "t95_high": 2.866785970569327,
+              "values": [
+                2.861025574462451,
+                2.8495951222527247,
+                2.86069240827182,
+                2.8604198369570106
+              ]
+            },
+            "duration_s": {
+              "n": 4.0,
+              "mean": 209.7670577513054,
+              "sd": 0.0609778144117606,
+              "t95_low": 209.67004204857628,
+              "t95_high": 209.86407345403452,
+              "values": [
+                209.71500756777823,
+                209.85437381267548,
+                209.7394317071885,
+                209.7594179175794
+              ]
+            },
+            "throughput_req_s": {
+              "n": 4.0,
+              "mean": 2.86031584010327,
+              "sd": 0.0008312950557791739,
+              "t95_low": 2.8589932496695254,
+              "t95_high": 2.8616384305370146,
+              "values": [
+                2.861025574462451,
+                2.8591255407217977,
+                2.86069240827182,
+                2.8604198369570106
+              ]
+            },
+            "ttft_p50_ms": {
+              "n": 4.0,
+              "mean": 79.60921921767294,
+              "sd": 1.958828236902939,
+              "t95_low": 76.49272349276036,
+              "t95_high": 82.72571494258553,
+              "values": [
+                76.8295032903552,
+                81.42884075641632,
+                80.01087512820959,
+                80.16765769571066
+              ]
+            },
+            "ttft_p95_ms": {
+              "n": 4.0,
+              "mean": 203.0480125220492,
+              "sd": 47.14500555522,
+              "t95_low": 128.04030868369415,
+              "t95_high": 278.05571636040423,
+              "values": [
+                177.233474701643,
+                273.6956005915998,
+                182.28699127212164,
+                178.97598352283237
+              ]
+            },
+            "ttft_p99_ms": {
+              "n": 4.0,
+              "mean": 859.3771832622584,
+              "sd": 1032.3220684912528,
+              "t95_low": -783.0472277073249,
+              "t95_high": 2501.8015942318416,
+              "values": [
+                323.4220343641932,
+                2407.3767974413927,
+                379.8014277033508,
+                326.908473540097
+              ]
+            },
+            "token_itl_p50_ms": {
+              "n": 4.0,
+              "mean": 10.89641498401761,
+              "sd": 0.04666119151555204,
+              "t95_low": 10.822177028316368,
+              "t95_high": 10.970652939718853,
+              "values": [
+                10.845452547073364,
+                10.956399142742157,
+                10.904066264629364,
+                10.879741981625557
+              ]
+            },
+            "token_itl_p95_ms": {
+              "n": 4.0,
+              "mean": 15.730864135548469,
+              "sd": 0.057724871615552446,
+              "t95_low": 15.639023864808125,
+              "t95_high": 15.822704406288812,
+              "values": [
+                15.651692636311047,
+                15.73083959519863,
+                15.787671878933905,
+                15.753252431750294
+              ]
+            },
+            "token_itl_p99_ms": {
+              "n": 4.0,
+              "mean": 58.64090399816632,
+              "sd": 1.1681454765947084,
+              "t95_low": 56.78238454490414,
+              "t95_high": 60.499423451428505,
+              "values": [
+                57.01661977916956,
+                58.6236384510994,
+                59.693790301680565,
+                59.22956746071577
+              ]
+            }
+          }
+        },
+        "per_rep_argmax": {
+          "ttft": [
+            "d16",
+            "d16",
+            "d16",
+            "d16"
+          ],
+          "itl_p95": [
+            "d44",
+            "d16",
+            "d34",
+            "d24"
+          ],
+          "joint": [
+            "d44",
+            "d16",
+            "d34",
+            "d24"
+          ]
+        },
+        "decoupled_oracle": {
+          "ttft_donor": "d16",
+          "itl_donor": "d16",
+          "best_static": "d16",
+          "sm_demand": 108,
+          "oracle_pass_percent": 99.625,
+          "best_static_pass_percent": 99.625,
+          "effect_percent": 0.0,
+          "donors_coincide_point_estimate": true,
+          "effect_percent_boot_p2.5": 0.0,
+          "effect_percent_boot_p97.5": 0.08368200836819106,
+          "effect_percent_paired_within_donor_arm": {
+            "n": 4.0,
+            "mean": 0.0,
+            "sd": 0.0,
+            "t95_low": 0.0,
+            "t95_high": 0.0,
+            "values": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "bootstrap_ttft_donor_tally": {
+            "d16": 10000
+          },
+          "bootstrap_itl_donor_tally": {
+            "d24": 3351,
+            "d16": 3278,
+            "d34": 1135,
+            "d44": 2236
+          },
+          "bootstrap_sm_demand_tally": {
+            "108": 3278,
+            "116": 3351,
+            "126": 1135,
+            "136": 2236
+          },
+          "bootstrap_fraction_sm_over_108": 0.6722,
+          "jackknife": {
+            "drop_rep_index_0": {
+              "ttft_donor": "d16",
+              "itl_donor": "d24",
+              "best_static": "d24",
+              "sm_demand": 116,
+              "oracle_pass_percent": 99.72222222222223,
+              "best_static_pass_percent": 99.72222222222223,
+              "effect_percent": 0.0
+            },
+            "drop_rep_index_1": {
+              "ttft_donor": "d16",
+              "itl_donor": "d34",
+              "best_static": "d34",
+              "sm_demand": 126,
+              "oracle_pass_percent": 99.66666666666667,
+              "best_static_pass_percent": 99.66666666666667,
+              "effect_percent": 0.0
+            },
+            "drop_rep_index_2": {
+              "ttft_donor": "d16",
+              "itl_donor": "d16",
+              "best_static": "d16",
+              "sm_demand": 108,
+              "oracle_pass_percent": 99.66666666666667,
+              "best_static_pass_percent": 99.66666666666667,
+              "effect_percent": 0.0
+            },
+            "drop_rep_index_3": {
+              "ttft_donor": "d16",
+              "itl_donor": "d16",
+              "best_static": "d16",
+              "sm_demand": 108,
+              "oracle_pass_percent": 99.6111111111111,
+              "best_static_pass_percent": 99.6111111111111,
+              "effect_percent": 0.0
+            }
+          },
+          "node_day_matched_subset": {
+            "ttft_donor": "d44",
+            "itl_donor": "d44",
+            "best_static": "d44",
+            "sm_demand": 108,
+            "oracle_pass_percent": 99.50024691358024,
+            "best_static_pass_percent": 99.5,
+            "effect_percent": 0.00024815435200054026,
+            "subset": "gpu38 / 2026-07-17 only (d34 x4, d44 x3); d16/d24 have no gpu38 reps, so they are absent from this comparison"
+          },
+          "boot_samples": 10000,
+          "boot_seed": 1
+        }
+      },
+      "Hi": {
+        "label": "HI (rate 12)",
+        "arms": {
+          "d16": {
+            "ttft_pass_percent": {
+              "n": 4.0,
+              "mean": 57.083333333333336,
+              "sd": 4.683501380931275,
+              "t95_low": 49.631882636271676,
+              "t95_high": 64.53478403039499,
+              "values": [
+                55.00000000000001,
+                56.333333333333336,
+                63.83333333333333,
+                53.166666666666664
+              ]
+            },
+            "itl_p95_pass_percent": {
+              "n": 4.0,
+              "mean": 18.291666666666668,
+              "sd": 0.7978559231302813,
+              "t95_low": 17.02227789296639,
+              "t95_high": 19.561055440366946,
+              "values": [
+                17.166666666666668,
+                18.333333333333332,
+                19.0,
+                18.666666666666668
+              ]
+            },
+            "joint_pass_percent": {
+              "n": 4.0,
+              "mean": 8.666666666666666,
+              "sd": 0.3042903097250928,
+              "t95_low": 8.182540783894044,
+              "t95_high": 9.150792549439288,
+              "values": [
+                8.333333333333332,
+                8.5,
+                9.0,
+                8.833333333333334
+              ]
+            },
+            "slo_goodput_req_s": {
+              "n": 4.0,
+              "mean": 0.44330721804261564,
+              "sd": 0.016082048410611973,
+              "t95_low": 0.417720679021332,
+              "t95_high": 0.4688937570638993,
+              "values": [
+                0.4250708442932726,
+                0.43613765355768347,
+                0.4618922791359369,
+                0.4501280951835696
+              ]
+            },
+            "legacy_goodput_req_s": {
+              "n": 4.0,
+              "mean": 2.8585052370013746,
+              "sd": 0.24102616169061455,
+              "t95_low": 2.475032613751607,
+              "t95_high": 3.241977860251142,
+              "values": [
+                2.7374562372486753,
+                2.8477223261707567,
+                3.1990317110526,
+                2.6498106735334663
+              ]
+            },
+            "duration_s": {
+              "n": 4.0,
+              "mean": 117.30441164970398,
+              "sd": 0.4431474987807676,
+              "t95_low": 116.59936397914377,
+              "t95_high": 118.00945932026418,
+              "values": [
+                117.62745121493936,
+                116.93555826693773,
+                116.91037594527006,
+                117.74426117166877
+              ]
+            },
+            "throughput_req_s": {
+              "n": 4.0,
+              "mean": 5.1149518853709575,
+              "sd": 0.019320975838898625,
+              "t95_low": 5.08421221281127,
+              "t95_high": 5.145691557930645,
+              "values": [
+                5.1008501315192705,
+                5.131031218325688,
+                5.132136434843743,
+                5.095789756795128
+              ]
+            },
+            "ttft_p50_ms": {
+              "n": 4.0,
+              "mean": 1792.397543322295,
+              "sd": 741.258123168352,
+              "t95_low": 613.0558693614471,
+              "t95_high": 2971.739217283143,
+              "values": [
+                2166.1236518993974,
+                2095.0966961681843,
+                683.3680514246225,
+                2225.0017737969756
+              ]
+            },
+            "ttft_p95_ms": {
+              "n": 4.0,
+              "mean": 9439.322264399374,
+              "sd": 399.1653563936721,
+              "t95_low": 8804.250182377042,
+              "t95_high": 10074.394346421706,
+              "values": [
+                9702.185339853168,
+                9466.633564606307,
+                8866.417675372195,
+                9722.052477765828
+              ]
+            },
+            "ttft_p99_ms": {
+              "n": 4.0,
+              "mean": 10054.374586651102,
+              "sd": 135.88879240811434,
+              "t95_low": 9838.175517929792,
+              "t95_high": 10270.573655372411,
+              "values": [
+                10139.185218214989,
+                9899.965079240501,
+                9984.435896985233,
+                10193.912152163684
+              ]
+            },
+            "token_itl_p50_ms": {
+              "n": 4.0,
+              "mean": 19.88971675746143,
+              "sd": 0.14467032299669927,
+              "t95_low": 19.65954627357368,
+              "t95_high": 20.119887241349176,
+              "values": [
+                19.96064092963934,
+                19.940865226089954,
+                19.674260169267654,
+                19.983100704848766
+              ]
+            },
+            "token_itl_p95_ms": {
+              "n": 4.0,
+              "mean": 85.18133307807148,
+              "sd": 0.5677901878636108,
+              "t95_low": 84.27797888918047,
+              "t95_high": 86.08468726696248,
+              "values": [
+                85.35104971379042,
+                85.48320466652513,
+                84.33889690786599,
+                85.55218102410436
+              ]
+            },
+            "token_itl_p99_ms": {
+              "n": 4.0,
+              "mean": 87.77222776785493,
+              "sd": 0.257180352393795,
+              "t95_low": 87.3630538271964,
+              "t95_high": 88.18140170851346,
+              "values": [
+                87.5417304597795,
+                88.09463253244759,
+                87.59002450853586,
+                87.86252357065678
+              ]
+            }
+          },
+          "d24": {
+            "ttft_pass_percent": {
+              "n": 4.0,
+              "mean": 66.375,
+              "sd": 1.2573855886395835,
+              "t95_low": 64.37449952847442,
+              "t95_high": 68.37550047152558,
+              "values": [
+                66.83333333333333,
+                67.16666666666666,
+                64.5,
+                67.0
+              ]
+            },
+            "itl_p95_pass_percent": {
+              "n": 4.0,
+              "mean": 46.166666666666664,
+              "sd": 4.335469558917039,
+              "t95_low": 39.26893459842965,
+              "t95_high": 53.064398734903676,
+              "values": [
+                49.0,
+                45.83333333333333,
+                49.666666666666664,
+                40.166666666666664
+              ]
+            },
+            "joint_pass_percent": {
+              "n": 4.0,
+              "mean": 23.083333333333336,
+              "sd": 3.1046560016995266,
+              "t95_low": 18.143825634629387,
+              "t95_high": 28.022841032037284,
+              "values": [
+                26.5,
+                23.833333333333336,
+                23.0,
+                19.0
+              ]
+            },
+            "slo_goodput_req_s": {
+              "n": 4.0,
+              "mean": 1.2496442706046773,
+              "sd": 0.16940939133594107,
+              "t95_low": 0.9801139289891951,
+              "t95_high": 1.5191746122201595,
+              "values": [
+                1.4378361896136134,
+                1.2946208391963046,
+                1.2366837782104605,
+                1.029436275398331
+              ]
+            },
+            "legacy_goodput_req_s": {
+              "n": 4.0,
+              "mean": 3.5730683584874963,
+              "sd": 0.12413290201760213,
+              "t95_low": 3.3755729113774913,
+              "t95_high": 3.7705638055975013,
+              "values": [
+                3.6262409561953395,
+                3.6484769104623127,
+                3.3874381750982177,
+                3.630117392194115
+              ]
+            },
+            "duration_s": {
+              "n": 4.0,
+              "mean": 110.84221433009952,
+              "sd": 0.5109961431225847,
+              "t95_low": 110.0292194663915,
+              "t95_high": 111.65520919380755,
+              "values": [
+                110.58283353038132,
+                110.45705095306039,
+                111.58875246159732,
+                110.74022037535906
+              ]
+            },
+            "throughput_req_s": {
+              "n": 4.0,
+              "mean": 5.413186035806044,
+              "sd": 0.024858132431334043,
+              "t95_low": 5.373636747107792,
+              "t95_high": 5.452735324504296,
+              "values": [
+                5.425796941938164,
+                5.431975549075403,
+                5.3768859922193935,
+                5.418085659991216
+              ]
+            },
+            "ttft_p50_ms": {
+              "n": 4.0,
+              "mean": 1409.4569508451968,
+              "sd": 225.19061342272687,
+              "t95_low": 1051.1786848896384,
+              "t95_high": 1767.7352168007553,
+              "values": [
+                1309.1663960367441,
+                1299.4459932669997,
+                1746.8343935906887,
+                1282.3810204863548
+              ]
+            },
+            "ttft_p95_ms": {
+              "n": 4.0,
+              "mean": 9488.469151477328,
+              "sd": 4043.462899690615,
+              "t95_low": 3055.31967806956,
+              "t95_high": 15921.618624885095,
+              "values": [
+                7487.186075747013,
+                7408.743580430745,
+                15553.341032378372,
+                7504.605917353183
+              ]
+            },
+            "ttft_p99_ms": {
+              "n": 4.0,
+              "mean": 10283.916321783327,
+              "sd": 4852.534720530197,
+              "t95_low": 2563.5335814197833,
+              "t95_high": 18004.29906214687,
+              "values": [
+                7847.8701017051935,
+                7816.9671049527815,
+                17562.495865207165,
+                7908.332215268165
+              ]
+            },
+            "token_itl_p50_ms": {
+              "n": 4.0,
+              "mean": 19.984773360192776,
+              "sd": 0.07471160744052684,
+              "t95_low": 19.865907192754896,
+              "t95_high": 20.103639527630655,
+              "values": [
+                20.02193219959736,
+                20.005952566862106,
+                19.874319434165955,
+                20.036889240145683
+              ]
+            },
+            "token_itl_p95_ms": {
+              "n": 4.0,
+              "mean": 61.19888750836253,
+              "sd": 0.04971666614378207,
+              "t95_low": 61.11978829252777,
+              "t95_high": 61.27798672419729,
+              "values": [
+                61.188742704689496,
+                61.22943125665188,
+                61.133139207959175,
+                61.24423686414957
+              ]
+            },
+            "token_itl_p99_ms": {
+              "n": 4.0,
+              "mean": 63.01490677054972,
+              "sd": 0.07773634858742894,
+              "t95_low": 62.891228239947125,
+              "t95_high": 63.13858530115232,
+              "values": [
+                63.04457698017359,
+                63.08206032961607,
+                62.903046179562836,
+                63.029943592846394
+              ]
+            }
+          },
+          "d34": {
+            "ttft_pass_percent": {
+              "n": 4.0,
+              "mean": 68.91666666666667,
+              "sd": 0.8333333333333328,
+              "t95_low": 67.59083333333334,
+              "t95_high": 70.2425,
+              "values": [
+                70.0,
+                68.0,
+                69.0,
+                68.66666666666667
+              ]
+            },
+            "itl_p95_pass_percent": {
+              "n": 4.0,
+              "mean": 92.125,
+              "sd": 8.762689211778667,
+              "t95_low": 78.18356146406015,
+              "t95_high": 106.06643853593985,
+              "values": [
+                97.83333333333334,
+                90.33333333333333,
+                99.83333333333333,
+                80.5
+              ]
+            },
+            "joint_pass_percent": {
+              "n": 4.0,
+              "mean": 61.95833333333333,
+              "sd": 8.37475815018404,
+              "t95_low": 48.634093116390524,
+              "t95_high": 75.28257355027614,
+              "values": [
+                68.16666666666666,
+                59.833333333333336,
+                68.83333333333333,
+                51.0
+              ]
+            },
+            "slo_goodput_req_s": {
+              "n": 4.0,
+              "mean": 3.404528790486041,
+              "sd": 0.47805470387709664,
+              "t95_low": 2.6439437566175803,
+              "t95_high": 4.165113824354502,
+              "values": [
+                3.773280411823421,
+                3.2426219532428573,
+                3.802117842998112,
+                2.8000949538797735
+              ]
+            },
+            "legacy_goodput_req_s": {
+              "n": 4.0,
+              "mean": 3.7853392360094946,
+              "sd": 0.07943819803243188,
+              "t95_low": 3.6589530629398954,
+              "t95_high": 3.911725409079094,
+              "values": [
+                3.8747622810900655,
+                3.685208236554556,
+                3.8113239394702627,
+                3.7700624869230936
+              ]
+            },
+            "duration_s": {
+              "n": 4.0,
+              "mean": 109.25307540316135,
+              "sd": 1.043463525696225,
+              "t95_low": 107.59292493377865,
+              "t95_high": 110.91322587254405,
+              "values": [
+                108.39374638535082,
+                110.71287531405687,
+                108.62367160990834,
+                109.28200830332935
+              ]
+            },
+            "throughput_req_s": {
+              "n": 4.0,
+              "mean": 5.492209677589307,
+              "sd": 0.05213226727700937,
+              "t95_low": 5.409267240351586,
+              "t95_high": 5.575152114827029,
+              "values": [
+                5.535374687271522,
+                5.419423877286112,
+                5.523657883290236,
+                5.4903822625093595
+              ]
+            },
+            "ttft_p50_ms": {
+              "n": 4.0,
+              "mean": 1211.4975759759545,
+              "sd": 53.503444193316355,
+              "t95_low": 1126.3735962643882,
+              "t95_high": 1296.6215556875209,
+              "values": [
+                1135.0345574319363,
+                1258.0261286348104,
+                1234.4748051837087,
+                1218.4548126533628
+              ]
+            },
+            "ttft_p95_ms": {
+              "n": 4.0,
+              "mean": 7014.023522497154,
+              "sd": 108.71634285585606,
+              "t95_low": 6841.055821013487,
+              "t95_high": 7186.991223980821,
+              "values": [
+                7019.324348121881,
+                7112.564306426792,
+                6861.286536417901,
+                7062.918899022043
+              ]
+            },
+            "ttft_p99_ms": {
+              "n": 4.0,
+              "mean": 7774.954336434603,
+              "sd": 905.4766558712075,
+              "t95_low": 6334.340976943511,
+              "t95_high": 9215.567695925694,
+              "values": [
+                9117.572694309056,
+                7484.118130709976,
+                7150.749167446047,
+                7347.377353273332
+              ]
+            },
+            "token_itl_p50_ms": {
+              "n": 4.0,
+              "mean": 19.998942501842976,
+              "sd": 0.09191997570306934,
+              "t95_low": 19.852697820499394,
+              "t95_high": 20.145187183186557,
+              "values": [
+                19.86159849911928,
+                20.045033656060696,
+                20.05448192358017,
+                20.034655928611755
+              ]
+            },
+            "token_itl_p95_ms": {
+              "n": 4.0,
+              "mean": 58.9307778282091,
+              "sd": 0.8291509358560416,
+              "t95_low": 57.61159868926214,
+              "t95_high": 60.249956967156066,
+              "values": [
+                59.053414687514305,
+                59.34722786769271,
+                57.73153118789196,
+                59.590937569737434
+              ]
+            },
+            "token_itl_p99_ms": {
+              "n": 4.0,
+              "mean": 59.86853456124663,
+              "sd": 1.010595303615773,
+              "t95_low": 58.26067743319394,
+              "t95_high": 61.47639168929933,
+              "values": [
+                59.989377558231354,
+                60.352158434689045,
+                58.41897305101156,
+                60.713629201054566
+              ]
+            }
+          },
+          "d44": {
+            "ttft_pass_percent": {
+              "n": 4.0,
+              "mean": 70.70833333333334,
+              "sd": 0.5989960736902146,
+              "t95_low": 69.7553305800922,
+              "t95_high": 71.66133608657448,
+              "values": [
+                71.16666666666667,
+                70.83333333333334,
+                69.83333333333334,
+                71.0
+              ]
+            },
+            "itl_p95_pass_percent": {
+              "n": 4.0,
+              "mean": 93.45833333333333,
+              "sd": 11.106700513487178,
+              "t95_low": 75.78757281637523,
+              "t95_high": 111.12909385029143,
+              "values": [
+                99.66666666666667,
+                99.33333333333333,
+                76.83333333333333,
+                98.0
+              ]
+            },
+            "joint_pass_percent": {
+              "n": 4.0,
+              "mean": 65.0,
+              "sd": 10.134283581176508,
+              "t95_low": 48.876354822348176,
+              "t95_high": 81.12364517765182,
+              "values": [
+                70.83333333333334,
+                70.16666666666667,
+                49.833333333333336,
+                69.16666666666667
+              ]
+            },
+            "slo_goodput_req_s": {
+              "n": 4.0,
+              "mean": 3.612530640108266,
+              "sd": 0.5713378676252832,
+              "t95_low": 2.7035320927164403,
+              "t95_high": 4.521529187500091,
+              "values": [
+                3.9590696956293683,
+                3.902533176445572,
+                2.7592376531526193,
+                3.8292820352055044
+              ]
+            },
+            "legacy_goodput_req_s": {
+              "n": 4.0,
+              "mean": 3.924055176754864,
+              "sd": 0.04554102772685034,
+              "t95_low": 3.851599401641445,
+              "t95_high": 3.996510951868283,
+              "values": [
+                3.977700611844095,
+                3.930342201455873,
+                3.8666240022439715,
+                3.9215538914755164
+              ]
+            },
+            "duration_s": {
+              "n": 4.0,
+              "mean": 107.99144258489832,
+              "sd": 0.48711436140817527,
+              "t95_low": 107.21644363589792,
+              "t95_high": 108.76644153389873,
+              "values": [
+                107.34845119528472,
+                107.8786472696811,
+                108.36326463520527,
+                108.3754072394222
+              ]
+            },
+            "throughput_req_s": {
+              "n": 4.0,
+              "mean": 5.556080747033905,
+              "sd": 0.025113932448288967,
+              "t95_low": 5.516124480508677,
+              "t95_high": 5.596037013559132,
+              "values": [
+                5.5892748644179315,
+                5.561805002060198,
+                5.536931745456761,
+                5.536311376200729
+              ]
+            },
+            "ttft_p50_ms": {
+              "n": 4.0,
+              "mean": 1111.280309036374,
+              "sd": 83.40072026097761,
+              "t95_low": 978.5897631011587,
+              "t95_high": 1243.9708549715895,
+              "values": [
+                1026.032173074782,
+                1220.2223101630807,
+                1126.366037875414,
+                1072.50071503222
+              ]
+            },
+            "ttft_p95_ms": {
+              "n": 4.0,
+              "mean": 6704.684863332659,
+              "sd": 162.60224131061798,
+              "t95_low": 6445.984697407466,
+              "t95_high": 6963.385029257852,
+              "values": [
+                6478.0374192632735,
+                6695.2804090455165,
+                6822.1151552163055,
+                6823.306469805539
+              ]
+            },
+            "ttft_p99_ms": {
+              "n": 4.0,
+              "mean": 6989.016576744616,
+              "sd": 146.08252608313373,
+              "t95_low": 6756.599277746351,
+              "t95_high": 7221.433875742881,
+              "values": [
+                6800.354811325669,
+                6948.183572608978,
+                7118.3549295552075,
+                7089.17299348861
+              ]
+            },
+            "token_itl_p50_ms": {
+              "n": 4.0,
+              "mean": 20.093300379812717,
+              "sd": 0.027845567978449733,
+              "t95_low": 20.048998081159002,
+              "t95_high": 20.137602678466433,
+              "values": [
+                20.05997486412525,
+                20.081376656889915,
+                20.110944285988808,
+                20.120905712246895
+              ]
+            },
+            "token_itl_p95_ms": {
+              "n": 4.0,
+              "mean": 58.713830285705626,
+              "sd": 1.045341231754333,
+              "t95_low": 57.05069238598448,
+              "t95_high": 60.37696818542677,
+              "values": [
+                57.209992315620184,
+                58.812050241976976,
+                59.514511842280626,
+                59.31876674294472
+              ]
+            },
+            "token_itl_p99_ms": {
+              "n": 4.0,
+              "mean": 59.58406453952194,
+              "sd": 1.1341872986858683,
+              "t95_low": 57.779572547312725,
+              "t95_high": 61.388556531731155,
+              "values": [
+                58.028853330761194,
+                59.52516810968518,
+                60.650270879268646,
+                60.13196583837274
+              ]
+            }
+          }
+        },
+        "per_rep_argmax": {
+          "ttft": [
+            "d44",
+            "d44",
+            "d44",
+            "d44"
+          ],
+          "itl_p95": [
+            "d44",
+            "d44",
+            "d34",
+            "d44"
+          ],
+          "joint": [
+            "d44",
+            "d44",
+            "d34",
+            "d44"
+          ]
+        },
+        "decoupled_oracle": {
+          "ttft_donor": "d44",
+          "itl_donor": "d44",
+          "best_static": "d44",
+          "sm_demand": 108,
+          "oracle_pass_percent": 66.08282986111111,
+          "best_static_pass_percent": 65.0,
+          "effect_percent": 1.6658920940170852,
+          "donors_coincide_point_estimate": true,
+          "effect_percent_boot_p2.5": 0.20567375886522132,
+          "effect_percent_boot_p97.5": 5.637091162143348,
+          "effect_percent_paired_within_donor_arm": {
+            "n": 4.0,
+            "mean": 2.169962085926663,
+            "sd": 3.671416536207387,
+            "t95_low": -3.67126162317929,
+            "t95_high": 8.011185795032617,
+            "values": [
+              0.1356862745097942,
+              0.27711797307996555,
+              7.669453734671117,
+              0.5975903614457767
+            ]
+          },
+          "bootstrap_ttft_donor_tally": {
+            "d44": 10000
+          },
+          "bootstrap_itl_donor_tally": {
+            "d44": 6028,
+            "d34": 3972
+          },
+          "bootstrap_sm_demand_tally": {
+            "98": 3972,
+            "108": 6028
+          },
+          "bootstrap_fraction_sm_over_108": 0.0,
+          "jackknife": {
+            "drop_rep_index_0": {
+              "ttft_donor": "d44",
+              "itl_donor": "d44",
+              "best_static": "d44",
+              "sm_demand": 108,
+              "oracle_pass_percent": 64.47993827160494,
+              "best_static_pass_percent": 63.05555555555556,
+              "effect_percent": 2.258932941752323
+            },
+            "drop_rep_index_1": {
+              "ttft_donor": "d44",
+              "itl_donor": "d34",
+              "best_static": "d44",
+              "sm_demand": 98,
+              "oracle_pass_percent": 65.52370370370372,
+              "best_static_pass_percent": 63.27777777777778,
+              "effect_percent": 3.5493122622183293
+            },
+            "drop_rep_index_2": {
+              "ttft_donor": "d44",
+              "itl_donor": "d44",
+              "best_static": "d44",
+              "sm_demand": 108,
+              "oracle_pass_percent": 70.28999999999999,
+              "best_static_pass_percent": 70.05555555555554,
+              "effect_percent": 0.334655035685949
+            },
+            "drop_rep_index_3": {
+              "ttft_donor": "d44",
+              "itl_donor": "d34",
+              "best_static": "d34",
+              "sm_demand": 98,
+              "oracle_pass_percent": 67.78666666666665,
+              "best_static_pass_percent": 65.61111111111111,
+              "effect_percent": 3.3158340389500163
+            }
+          },
+          "node_day_matched_subset": {
+            "ttft_donor": "d44",
+            "itl_donor": "d34",
+            "best_static": "d44",
+            "sm_demand": 98,
+            "oracle_pass_percent": 64.99930555555555,
+            "best_static_pass_percent": 63.05555555555556,
+            "effect_percent": 3.0825991189427526,
+            "subset": "gpu38 / 2026-07-17 only (d34 x4, d44 x3); d16/d24 have no gpu38 reps, so they are absent from this comparison"
+          },
+          "boot_samples": 10000,
+          "boot_seed": 1
+        }
+      }
+    },
+    "sm_demand_is_an_identity": {
+      "algebra": "sum = (108 - D_ttft) + D_itl > 108  <=>  D_itl > D_ttft",
+      "grid_max_decode_sm": 44,
+      "HI_ttft_donor": "d44",
+      "HI_ttft_donor_bootstrap_tally": {
+        "d44": 10000
+      },
+      "verdict": "ZERO POWER in HI. The TTFT argmax is d44 = the most decode-heavy arm in the MEASURED grid (10000/10000 bootstrap draws), so D_itl <= 44 = D_ttft holds with probability 1 by construction and 'sum <= 108' cannot fail. 'HI never exceeds 108' is a restatement of 'the TTFT argmax sits at the decode-heavy grid boundary', NOT evidence that the 1-20 coupling tax is absent. Deciding that needs arms beyond d44 (d54/d64), which this campaign never ran.",
+      "LO_note": "LO is NOT even nominally consistent with a 108 point estimate: the ITL argmax is pure ceiling noise (one different arm per rep) and 67.2% of bootstrap draws exceed 108. LO supports no statement about the SM sum in either direction.",
+      "already_known": "This identity is written down in reports/PRIZE_SIZE_ARGUMENT_2026-08-16.md section 2.3(2). rev1 of this analysis failed to apply a diagnostic the repository already owned -- methodology gate #18."
+    },
+    "arm_comparisons_unpaired_bootstrap": {
+      "Lo_slo_goodput_req_s_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 2.8351309697063076,
+        "baseline_sd": 0.02530382321350156,
+        "proposed_mean": 2.8483989881715703,
+        "proposed_sd": 0.006866168442730562,
+        "mean_effect": 0.01326801846526271,
+        "effect_percent": 0.4679860862525568,
+        "ci95_low": -0.005550342698266153,
+        "ci95_high": 0.03806025775491939,
+        "comparison": "Lo slo_goodput_req_s: d44 vs d34",
+        "conservative_t95_on_difference": [
+          -0.028446161052523733,
+          0.05498219798304915
+        ]
+      },
+      "Lo_slo_goodput_req_s_d44_vs_d24": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 2.761438847666164,
+        "baseline_sd": 0.14045995492242339,
+        "proposed_mean": 2.8483989881715703,
+        "proposed_sd": 0.006866168442730562,
+        "mean_effect": 0.08696014050540635,
+        "effect_percent": 3.1490880407835538,
+        "ci95_low": -0.004954049301313379,
+        "ci95_high": 0.22025364813980305,
+        "comparison": "Lo slo_goodput_req_s: d44 vs d24",
+        "conservative_t95_on_difference": [
+          -0.1367784917205828,
+          0.31069877273139546
+        ]
+      },
+      "Lo_slo_goodput_req_s_d44_vs_d16": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 2.831354465100712,
+        "baseline_sd": 0.03813591466786942,
+        "proposed_mean": 2.8483989881715703,
+        "proposed_sd": 0.006866168442730562,
+        "mean_effect": 0.017044523070858464,
+        "effect_percent": 0.6019918481048323,
+        "ci95_low": -0.007244736311603717,
+        "ci95_high": 0.05532631382821451,
+        "comparison": "Lo slo_goodput_req_s: d44 vs d16",
+        "conservative_t95_on_difference": [
+          -0.04460528488405199,
+          0.07869433102576892
+        ]
+      },
+      "Lo_ttft_pass_percent_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 99.83333333333333,
+        "baseline_sd": 0.3333333333333357,
+        "proposed_mean": 99.95833333333333,
+        "proposed_sd": 0.0833333333333357,
+        "mean_effect": 0.125,
+        "effect_percent": 0.12520868113522537,
+        "ci95_low": -0.08333333333334281,
+        "ci95_high": 0.4583333333333286,
+        "comparison": "Lo ttft_pass_percent: d44 vs d34",
+        "conservative_t95_on_difference": [
+          -0.42165508752981273,
+          0.6716550875298127
+        ]
+      },
+      "Lo_ttft_pass_percent_d44_vs_d24": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 99.5,
+        "baseline_sd": 1.0,
+        "proposed_mean": 99.95833333333333,
+        "proposed_sd": 0.0833333333333357,
+        "mean_effect": 0.4583333333333286,
+        "effect_percent": 0.46063651591289306,
+        "ci95_low": -0.08333333333334281,
+        "ci95_high": 1.4583333333333286,
+        "comparison": "Lo ttft_pass_percent: d44 vs d24",
+        "conservative_t95_on_difference": [
+          -1.13818141457155,
+          2.054848081238207
+        ]
+      },
+      "Lo_ttft_pass_percent_d44_vs_d16": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 100.0,
+        "baseline_sd": 0.0,
+        "proposed_mean": 99.95833333333333,
+        "proposed_sd": 0.0833333333333357,
+        "mean_effect": -0.041666666666671404,
+        "effect_percent": -0.041666666666671404,
+        "ci95_low": -0.125,
+        "ci95_high": 0.0,
+        "comparison": "Lo ttft_pass_percent: d44 vs d16",
+        "conservative_t95_on_difference": [
+          -0.1742500000000085,
+          0.0909166666666657
+        ]
+      },
+      "Lo_itl_p95_pass_percent_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 99.375,
+        "baseline_sd": 0.5989960736902169,
+        "proposed_mean": 99.625,
+        "proposed_sd": 0.1595711846260547,
+        "mean_effect": 0.25,
+        "effect_percent": 0.25157232704402516,
+        "ci95_low": -0.1666666666666714,
+        "ci95_high": 0.8333333333333286,
+        "comparison": "Lo itl_p95_pass_percent: d44 vs d34",
+        "conservative_t95_on_difference": [
+          -0.736239404017622,
+          1.236239404017622
+        ]
+      },
+      "Lo_itl_p95_pass_percent_d44_vs_d24": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 99.625,
+        "baseline_sd": 0.20971762320196652,
+        "proposed_mean": 99.625,
+        "proposed_sd": 0.1595711846260547,
+        "mean_effect": 0.0,
+        "effect_percent": 0.0,
+        "ci95_low": -0.2083333333333286,
+        "ci95_high": 0.25,
+        "comparison": "Lo itl_p95_pass_percent: d44 vs d24",
+        "conservative_t95_on_difference": [
+          -0.4192653131106576,
+          0.4192653131106576
+        ]
+      },
+      "Lo_itl_p95_pass_percent_d44_vs_d16": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 99.625,
+        "baseline_sd": 0.1595711846260547,
+        "proposed_mean": 99.625,
+        "proposed_sd": 0.1595711846260547,
+        "mean_effect": 0.0,
+        "effect_percent": 0.0,
+        "ci95_low": -0.20833333333331475,
+        "ci95_high": 0.20833333333331475,
+        "comparison": "Lo itl_p95_pass_percent: d44 vs d16",
+        "conservative_t95_on_difference": [
+          -0.35903736393821334,
+          0.35903736393821334
+        ]
+      },
+      "Lo_joint_pass_percent_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 99.20833333333334,
+        "baseline_sd": 0.9267126287562326,
+        "proposed_mean": 99.58333333333333,
+        "proposed_sd": 0.2151657414559682,
+        "mean_effect": 0.3749999999999858,
+        "effect_percent": 0.3779924401511826,
+        "ci95_low": -0.25,
+        "ci95_high": 1.2916666666666714,
+        "comparison": "Lo joint_pass_percent: d44 vs d34",
+        "conservative_t95_on_difference": [
+          -1.138619398286898,
+          1.8886193982868695
+        ]
+      },
+      "Lo_joint_pass_percent_d44_vs_d24": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 99.125,
+        "baseline_sd": 1.1970256348008426,
+        "proposed_mean": 99.58333333333333,
+        "proposed_sd": 0.2151657414559682,
+        "mean_effect": 0.4583333333333286,
+        "effect_percent": 0.46237915090373627,
+        "ci95_low": -0.2916666666666714,
+        "ci95_high": 1.6666666666666572,
+        "comparison": "Lo joint_pass_percent: d44 vs d24",
+        "conservative_t95_on_difference": [
+          -1.4766567129373602,
+          2.393323379604017
+        ]
+      },
+      "Lo_joint_pass_percent_d44_vs_d16": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 99.625,
+        "baseline_sd": 0.1595711846260547,
+        "proposed_mean": 99.58333333333333,
+        "proposed_sd": 0.2151657414559682,
+        "mean_effect": -0.041666666666671404,
+        "effect_percent": -0.041823504809707805,
+        "ci95_low": -0.2916666666666572,
+        "ci95_high": 0.1666666666666714,
+        "comparison": "Lo joint_pass_percent: d44 vs d16",
+        "conservative_t95_on_difference": [
+          -0.46786245446499813,
+          0.3845291211316553
+        ]
+      },
+      "Hi_slo_goodput_req_s_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 3.404528790486041,
+        "baseline_sd": 0.47805470387709664,
+        "proposed_mean": 3.612530640108266,
+        "proposed_sd": 0.5713378676252832,
+        "mean_effect": 0.2080018496222249,
+        "effect_percent": 6.109563537940588,
+        "ci95_low": -0.4609923681257384,
+        "ci95_high": 0.7983015564325435,
+        "comparison": "Hi slo_goodput_req_s: d44 vs d34",
+        "conservative_t95_on_difference": [
+          -0.9772272222896721,
+          1.3932309215341219
+        ]
+      },
+      "Hi_slo_goodput_req_s_d44_vs_d24": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 1.2496442706046773,
+        "baseline_sd": 0.16940939133594107,
+        "proposed_mean": 3.612530640108266,
+        "proposed_sd": 0.5713378676252832,
+        "mean_effect": 2.3628863695035887,
+        "effect_percent": 189.0847199547625,
+        "ci95_low": 1.79541726337118,
+        "ci95_high": 2.7612460541139856,
+        "comparison": "Hi slo_goodput_req_s: d44 vs d24",
+        "conservative_t95_on_difference": [
+          1.4147698343604622,
+          3.311002904646715
+        ]
+      },
+      "Hi_slo_goodput_req_s_d44_vs_d16": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 0.44330721804261564,
+        "baseline_sd": 0.016082048410611973,
+        "proposed_mean": 3.612530640108266,
+        "proposed_sd": 0.5713378676252832,
+        "mean_effect": 3.1692234220656506,
+        "effect_percent": 714.9045386761534,
+        "ci95_low": 2.6015799722612525,
+        "ci95_high": 3.491866424661758,
+        "comparison": "Hi slo_goodput_req_s: d44 vs d16",
+        "conservative_t95_on_difference": [
+          2.2598648403501995,
+          4.078582003781102
+        ]
+      },
+      "Hi_ttft_pass_percent_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 68.91666666666667,
+        "baseline_sd": 0.8333333333333328,
+        "proposed_mean": 70.70833333333334,
+        "proposed_sd": 0.5989960736902146,
+        "mean_effect": 1.7916666666666714,
+        "effect_percent": 2.5997581620314456,
+        "ci95_low": 0.9166666666666714,
+        "ci95_high": 2.625,
+        "comparison": "Hi ttft_pass_percent: d44 vs d34",
+        "conservative_t95_on_difference": [
+          0.15886285865330452,
+          3.4244704746800383
+        ]
+      },
+      "Hi_ttft_pass_percent_d44_vs_d24": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 66.375,
+        "baseline_sd": 1.2573855886395835,
+        "proposed_mean": 70.70833333333334,
+        "proposed_sd": 0.5989960736902146,
+        "mean_effect": 4.333333333333343,
+        "effect_percent": 6.5285624607658646,
+        "ci95_low": 3.333333333333343,
+        "ci95_high": 5.583333333333343,
+        "comparison": "Hi ttft_pass_percent: d44 vs d24",
+        "conservative_t95_on_difference": [
+          2.1174325268306617,
+          6.549234139836024
+        ]
+      },
+      "Hi_ttft_pass_percent_d44_vs_d16": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 57.083333333333336,
+        "baseline_sd": 4.683501380931275,
+        "proposed_mean": 70.70833333333334,
+        "proposed_sd": 0.5989960736902146,
+        "mean_effect": 13.625000000000007,
+        "effect_percent": 23.868613138686143,
+        "ci95_low": 9.041666666666671,
+        "ci95_high": 16.876041666666666,
+        "comparison": "Hi ttft_pass_percent: d44 vs d16",
+        "conservative_t95_on_difference": [
+          6.112854385168926,
+          21.137145614831088
+        ]
+      },
+      "Hi_itl_p95_pass_percent_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 92.125,
+        "baseline_sd": 8.762689211778667,
+        "proposed_mean": 93.45833333333333,
+        "proposed_sd": 11.106700513487178,
+        "mean_effect": 1.3333333333333286,
+        "effect_percent": 1.4473089099954721,
+        "ci95_low": -10.958333333333343,
+        "ci95_high": 12.542708333333309,
+        "comparison": "Hi itl_p95_pass_percent: d44 vs d34",
+        "conservative_t95_on_difference": [
+          -21.174875962367523,
+          23.84154262903418
+        ]
+      },
+      "Hi_itl_p95_pass_percent_d44_vs_d24": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 46.166666666666664,
+        "baseline_sd": 4.335469558917039,
+        "proposed_mean": 93.45833333333333,
+        "proposed_sd": 11.106700513487178,
+        "mean_effect": 47.291666666666664,
+        "effect_percent": 102.43682310469313,
+        "ci95_low": 36.291666666666664,
+        "ci95_high": 55.625000000000014,
+        "comparison": "Hi itl_p95_pass_percent: d44 vs d24",
+        "conservative_t95_on_difference": [
+          28.322362912103863,
+          66.26097042122947
+        ]
+      },
+      "Hi_itl_p95_pass_percent_d44_vs_d16": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 18.291666666666668,
+        "baseline_sd": 0.7978559231302813,
+        "proposed_mean": 93.45833333333333,
+        "proposed_sd": 11.106700513487178,
+        "mean_effect": 75.16666666666666,
+        "effect_percent": 410.93394077448744,
+        "ci95_low": 64.08333333333333,
+        "ci95_high": 81.37500000000001,
+        "comparison": "Hi itl_p95_pass_percent: d44 vs d16",
+        "conservative_t95_on_difference": [
+          57.4503711987512,
+          92.88296213458212
+        ]
+      },
+      "Hi_joint_pass_percent_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 61.95833333333333,
+        "baseline_sd": 8.37475815018404,
+        "proposed_mean": 65.0,
+        "proposed_sd": 10.134283581176508,
+        "mean_effect": 3.0416666666666714,
+        "effect_percent": 4.909213180901151,
+        "ci95_low": -8.583333333333329,
+        "ci95_high": 13.586458333333297,
+        "comparison": "Hi joint_pass_percent: d44 vs d34",
+        "conservative_t95_on_difference": [
+          -17.87500876643242,
+          23.958342099765762
+        ]
+      },
+      "Hi_joint_pass_percent_d44_vs_d24": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 23.083333333333336,
+        "baseline_sd": 3.1046560016995266,
+        "proposed_mean": 65.0,
+        "proposed_sd": 10.134283581176508,
+        "mean_effect": 41.916666666666664,
+        "effect_percent": 181.58844765342957,
+        "ci95_low": 31.833333333333336,
+        "ci95_high": 49.0,
+        "comparison": "Hi joint_pass_percent: d44 vs d24",
+        "conservative_t95_on_difference": [
+          25.05337309392796,
+          58.77996023940537
+        ]
+      },
+      "Hi_joint_pass_percent_d44_vs_d16": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 8.666666666666666,
+        "baseline_sd": 0.3042903097250928,
+        "proposed_mean": 65.0,
+        "proposed_sd": 10.134283581176508,
+        "mean_effect": 56.333333333333336,
+        "effect_percent": 650.0000000000001,
+        "ci95_low": 46.25,
+        "ci95_high": 61.87500000000001,
+        "comparison": "Hi joint_pass_percent: d44 vs d16",
+        "conservative_t95_on_difference": [
+          40.202421651559575,
+          72.4642450151071
+        ]
+      },
+      "pooled_canonical_d44_vs_d34": {
+        "n_baseline": 4.0,
+        "n_proposed": 4.0,
+        "baseline_mean": 3.029546427778173,
+        "baseline_sd": 0.16753338803847465,
+        "proposed_mean": 3.1078307089772186,
+        "proposed_sd": 0.19499315769620712,
+        "mean_effect": 0.0782842811990454,
+        "effect_percent": 2.584026456279067,
+        "ci95_low": -0.15293277295820928,
+        "ci95_high": 0.2816309548425884,
+        "comparison": "pooled canonical: d44 vs d34",
+        "conservative_t95_on_difference": [
+          -0.3307288887136323,
+          0.4872974511117231
+        ]
+      }
+    },
+    "pooled_trace_level": {
+      "aggregation": "gpC = (good_LO + good_HI) / (dur_LO + dur_HI)",
+      "best_static": "d44",
+      "best_static_canonical_goodput": {
+        "n": 4.0,
+        "mean": 3.1078307089772186,
+        "sd": 0.19499315769620712,
+        "t95_low": 2.797596595082553,
+        "t95_high": 3.418064822871884,
+        "values": [
+          3.2296373855090654,
+          3.2008004598816724,
+          2.8167004250588916,
+          3.184184565459245
+        ]
+      },
+      "all_arms": {
+        "d16": {
+          "n": 4.0,
+          "mean": 1.9783024167598788,
+          "sd": 0.013223137428126067,
+          "t95_low": 1.9572644051117303,
+          "t95_high": 1.9993404284080274,
+          "values": [
+            1.9765945861606993,
+            1.9895003223969006,
+            1.960305708549942,
+            1.9868090499319735
+          ]
+        },
+        "d24": {
+          "n": 4.0,
+          "mean": 2.246891334174466,
+          "sd": 0.08895201366446703,
+          "t95_low": 2.105368680434299,
+          "t95_high": 2.388413987914633,
+          "values": [
+            2.319492441440317,
+            2.3129377528279145,
+            2.1301715598322906,
+            2.2249635825973426
+          ]
+        },
+        "d34": {
+          "n": 4.0,
+          "mean": 3.029546427778173,
+          "sd": 0.16753338803847465,
+          "t95_low": 2.76300080740896,
+          "t95_high": 3.2960920481473863,
+          "values": [
+            3.156515569926863,
+            2.9520904023954206,
+            3.179226011050172,
+            2.830353727740237
+          ]
+        },
+        "d44": {
+          "n": 4.0,
+          "mean": 3.1078307089772186,
+          "sd": 0.19499315769620712,
+          "t95_low": 2.797596595082553,
+          "t95_high": 3.418064822871884,
+          "values": [
+            3.2296373855090654,
+            3.2008004598816724,
+            2.8167004250588916,
+            3.184184565459245
+          ]
+        }
+      },
+      "decoupled_oracle_goodput_req_s": 3.1154283046014695,
+      "effect_percent": 0.24446619960041271,
+      "donor_note": {
+        "LO": {
+          "ttft": "d16",
+          "itl": "d16"
+        },
+        "HI": {
+          "ttft": "d44",
+          "itl": "d44"
+        },
+        "duration_basis": "donor arm's own summed duration per phase"
+      }
+    },
+    "threshold_ladder_statics_only": {
+      "ttft2000ms_itl60ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d16",
+          "best_static": "d16",
+          "sm_demand": 108,
+          "effect_percent": 0.0,
+          "best_static_joint_pass_percent": 99.625,
+          "itl_marginal_percent": {
+            "d16": 99.625,
+            "d24": 99.625,
+            "d34": 99.375,
+            "d44": 99.625
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 99.20833333333333,
+            "d34": 99.41666666666666,
+            "d44": 99.58333333333333
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d44",
+          "itl_donor": "d44",
+          "best_static": "d44",
+          "sm_demand": 108,
+          "effect_percent": 2.386119535001252,
+          "best_static_joint_pass_percent": 54.95833333333333,
+          "itl_marginal_percent": {
+            "d16": 18.291666666666668,
+            "d24": 46.166666666666664,
+            "d34": 92.125,
+            "d44": 93.45833333333333
+          },
+          "ttft_marginal_percent": {
+            "d16": 51.125,
+            "d24": 54.37500000000001,
+            "d34": 57.70833333333334,
+            "d44": 60.20833333333333
+          }
+        }
+      },
+      "ttft3000ms_itl40ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d44",
+          "best_static": "d44",
+          "sm_demand": 136,
+          "effect_percent": 0.04703668861711918,
+          "best_static_joint_pass_percent": 88.58333333333334,
+          "itl_marginal_percent": {
+            "d16": 85.625,
+            "d24": 87.70833333333333,
+            "d34": 87.58333333333333,
+            "d44": 88.625
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 99.5,
+            "d34": 99.83333333333333,
+            "d44": 99.95833333333333
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d44",
+          "itl_donor": "d34",
+          "best_static": "d34",
+          "sm_demand": 98,
+          "effect_percent": 86.99724517906336,
+          "best_static_joint_pass_percent": 5.041666666666666,
+          "itl_marginal_percent": {
+            "d16": 10.5,
+            "d24": 11.0,
+            "d34": 13.333333333333334,
+            "d44": 12.833333333333332
+          },
+          "ttft_marginal_percent": {
+            "d16": 57.08333333333333,
+            "d24": 66.375,
+            "d34": 68.91666666666667,
+            "d44": 70.70833333333333
+          }
+        }
+      },
+      "ttft3000ms_itl50ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d44",
+          "best_static": "d44",
+          "sm_demand": 136,
+          "effect_percent": 0.04553734061929493,
+          "best_static_joint_pass_percent": 91.5,
+          "itl_marginal_percent": {
+            "d16": 87.83333333333334,
+            "d24": 89.16666666666666,
+            "d34": 89.16666666666667,
+            "d44": 91.54166666666667
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 99.5,
+            "d34": 99.83333333333333,
+            "d44": 99.95833333333333
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d44",
+          "itl_donor": "d34",
+          "best_static": "d34",
+          "sm_demand": 98,
+          "effect_percent": 78.56850282485874,
+          "best_static_joint_pass_percent": 7.375,
+          "itl_marginal_percent": {
+            "d16": 12.041666666666668,
+            "d24": 13.083333333333332,
+            "d34": 18.625,
+            "d44": 15.833333333333332
+          },
+          "ttft_marginal_percent": {
+            "d16": 57.08333333333333,
+            "d24": 66.375,
+            "d34": 68.91666666666667,
+            "d44": 70.70833333333333
+          }
+        }
+      },
+      "ttft3000ms_itl55ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d44",
+          "best_static": "d44",
+          "sm_demand": 136,
+          "effect_percent": 0.04416961130742081,
+          "best_static_joint_pass_percent": 94.33333333333334,
+          "itl_marginal_percent": {
+            "d16": 91.25,
+            "d24": 92.875,
+            "d34": 92.66666666666666,
+            "d44": 94.375
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 99.5,
+            "d34": 99.83333333333333,
+            "d44": 99.95833333333333
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d44",
+          "itl_donor": "d34",
+          "best_static": "d34",
+          "sm_demand": 98,
+          "effect_percent": 64.43022798742138,
+          "best_static_joint_pass_percent": 8.833333333333334,
+          "itl_marginal_percent": {
+            "d16": 12.916666666666664,
+            "d24": 14.416666666666666,
+            "d34": 20.541666666666668,
+            "d44": 18.708333333333332
+          },
+          "ttft_marginal_percent": {
+            "d16": 57.08333333333333,
+            "d24": 66.375,
+            "d34": 68.91666666666667,
+            "d44": 70.70833333333333
+          }
+        }
+      },
+      "ttft3000ms_itl60ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d16",
+          "best_static": "d16",
+          "sm_demand": 108,
+          "effect_percent": 0.0,
+          "best_static_joint_pass_percent": 99.625,
+          "itl_marginal_percent": {
+            "d16": 99.625,
+            "d24": 99.625,
+            "d34": 99.375,
+            "d44": 99.625
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 99.5,
+            "d34": 99.83333333333333,
+            "d44": 99.95833333333333
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d44",
+          "itl_donor": "d44",
+          "best_static": "d44",
+          "sm_demand": 108,
+          "effect_percent": 1.6658920940170852,
+          "best_static_joint_pass_percent": 65.0,
+          "itl_marginal_percent": {
+            "d16": 18.291666666666668,
+            "d24": 46.166666666666664,
+            "d34": 92.125,
+            "d44": 93.45833333333333
+          },
+          "ttft_marginal_percent": {
+            "d16": 57.08333333333333,
+            "d24": 66.375,
+            "d34": 68.91666666666667,
+            "d44": 70.70833333333333
+          }
+        }
+      },
+      "ttft3000ms_itl70ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d34",
+          "best_static": "d44",
+          "sm_demand": 126,
+          "effect_percent": 0.08347245409014992,
+          "best_static_joint_pass_percent": 99.83333333333333,
+          "itl_marginal_percent": {
+            "d16": 99.75,
+            "d24": 99.66666666666667,
+            "d34": 99.91666666666667,
+            "d44": 99.875
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 99.5,
+            "d34": 99.83333333333333,
+            "d44": 99.95833333333333
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d44",
+          "itl_donor": "d24",
+          "best_static": "d44",
+          "sm_demand": 88,
+          "effect_percent": 0.1736316933412363,
+          "best_static_joint_pass_percent": 70.29166666666666,
+          "itl_marginal_percent": {
+            "d16": 21.000000000000004,
+            "d24": 99.58333333333333,
+            "d34": 99.58333333333333,
+            "d44": 99.58333333333333
+          },
+          "ttft_marginal_percent": {
+            "d16": 57.08333333333333,
+            "d24": 66.375,
+            "d34": 68.91666666666667,
+            "d44": 70.70833333333333
+          }
+        }
+      },
+      "ttft3000ms_itl80ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d34",
+          "best_static": "d16",
+          "sm_demand": 126,
+          "effect_percent": 0.12515644555695093,
+          "best_static_joint_pass_percent": 99.875,
+          "itl_marginal_percent": {
+            "d16": 99.875,
+            "d24": 99.75,
+            "d34": 100.0,
+            "d44": 99.91666666666667
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 99.5,
+            "d34": 99.83333333333333,
+            "d44": 99.95833333333333
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d44",
+          "itl_donor": "d24",
+          "best_static": "d44",
+          "sm_demand": 88,
+          "effect_percent": 0.36562006319114104,
+          "best_static_joint_pass_percent": 70.33333333333334,
+          "itl_marginal_percent": {
+            "d16": 32.208333333333336,
+            "d24": 99.83333333333333,
+            "d34": 99.58333333333333,
+            "d44": 99.62500000000001
+          },
+          "ttft_marginal_percent": {
+            "d16": 57.08333333333333,
+            "d24": 66.375,
+            "d34": 68.91666666666667,
+            "d44": 70.70833333333333
+          }
+        }
+      },
+      "ttft5000ms_itl60ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d16",
+          "best_static": "d16",
+          "sm_demand": 108,
+          "effect_percent": 0.0,
+          "best_static_joint_pass_percent": 99.625,
+          "itl_marginal_percent": {
+            "d16": 99.625,
+            "d24": 99.625,
+            "d34": 99.375,
+            "d44": 99.625
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 99.95833333333333,
+            "d34": 100.0,
+            "d44": 100.0
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d44",
+          "itl_donor": "d44",
+          "best_static": "d44",
+          "sm_demand": 108,
+          "effect_percent": 1.1295377324749722,
+          "best_static_joint_pass_percent": 77.66666666666666,
+          "itl_marginal_percent": {
+            "d16": 18.291666666666668,
+            "d24": 46.166666666666664,
+            "d34": 92.125,
+            "d44": 93.45833333333333
+          },
+          "ttft_marginal_percent": {
+            "d16": 71.16666666666667,
+            "d24": 78.70833333333334,
+            "d34": 82.83333333333334,
+            "d44": 84.04166666666667
+          }
+        }
+      },
+      "ttft10000ms_itl60ms": {
+        "Lo": {
+          "ttft_donor": "d16",
+          "itl_donor": "d16",
+          "best_static": "d16",
+          "sm_demand": 108,
+          "effect_percent": 0.0,
+          "best_static_joint_pass_percent": 99.625,
+          "itl_marginal_percent": {
+            "d16": 99.625,
+            "d24": 99.625,
+            "d34": 99.375,
+            "d44": 99.625
+          },
+          "ttft_marginal_percent": {
+            "d16": 100.0,
+            "d24": 100.0,
+            "d34": 100.0,
+            "d44": 100.0
+          }
+        },
+        "Hi": {
+          "ttft_donor": "d34",
+          "itl_donor": "d44",
+          "best_static": "d44",
+          "sm_demand": 118,
+          "effect_percent": 0.0,
+          "best_static_joint_pass_percent": 93.45833333333333,
+          "itl_marginal_percent": {
+            "d16": 18.291666666666668,
+            "d24": 46.166666666666664,
+            "d34": 92.125,
+            "d44": 93.45833333333333
+          },
+          "ttft_marginal_percent": {
+            "d16": 98.5,
+            "d24": 97.79166666666667,
+            "d34": 100.0,
+            "d44": 100.0
+          }
+        }
+      }
+    },
+    "hi_ttft_argmax_ladder": {
+      "1000ms": {
+        "argmax": "d44",
+        "ttft_pass_percent": {
+          "d16": 47.541666666666664,
+          "d24": 47.458333333333336,
+          "d34": 49.45833333333333,
+          "d44": 49.875
+        }
+      },
+      "2000ms": {
+        "argmax": "d44",
+        "ttft_pass_percent": {
+          "d16": 51.125,
+          "d24": 54.37500000000001,
+          "d34": 57.70833333333334,
+          "d44": 60.20833333333333
+        }
+      },
+      "3000ms": {
+        "argmax": "d44",
+        "ttft_pass_percent": {
+          "d16": 57.08333333333333,
+          "d24": 66.375,
+          "d34": 68.91666666666667,
+          "d44": 70.70833333333333
+        }
+      },
+      "4000ms": {
+        "argmax": "d44",
+        "ttft_pass_percent": {
+          "d16": 65.125,
+          "d24": 72.0,
+          "d34": 74.25,
+          "d44": 75.08333333333333
+        }
+      },
+      "5000ms": {
+        "argmax": "d44",
+        "ttft_pass_percent": {
+          "d16": 71.16666666666667,
+          "d24": 78.70833333333334,
+          "d34": 82.83333333333334,
+          "d44": 84.04166666666667
+        }
+      },
+      "6000ms": {
+        "argmax": "d44",
+        "ttft_pass_percent": {
+          "d16": 76.625,
+          "d24": 84.29166666666667,
+          "d34": 88.20833333333333,
+          "d44": 91.04166666666667
+        }
+      },
+      "7000ms": {
+        "argmax": "d44",
+        "ttft_pass_percent": {
+          "d16": 83.41666666666667,
+          "d24": 90.41666666666667,
+          "d34": 94.83333333333334,
+          "d44": 98.66666666666667
+        }
+      }
+    },
+    "cliff_diagnostic": {
+      "d16_rep1_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.07,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.023578647524118423,
+        "itl_p95_median_over_slo": 0.20246318696687618,
+        "band": 0.1
+      },
+      "d16_rep1_Hi": {
+        "ttft_mass_within_band_of_slo": 0.08666666666666667,
+        "itl_p95_mass_within_band_of_slo": 0.07666666666666666,
+        "itl_mean_mass_within_band_of_slo": 0.01,
+        "ttft_median_over_slo": 0.7220412172997991,
+        "itl_p95_median_over_slo": 1.3972613440516095,
+        "band": 0.1
+      },
+      "d16_rep44_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.10166666666666667,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.025061279845734436,
+        "itl_p95_median_over_slo": 0.2047187089920044,
+        "band": 0.1
+      },
+      "d16_rep44_Hi": {
+        "ttft_mass_within_band_of_slo": 0.09,
+        "itl_p95_mass_within_band_of_slo": 0.07833333333333334,
+        "itl_mean_mass_within_band_of_slo": 0.006666666666666667,
+        "ttft_median_over_slo": 0.6983655653893948,
+        "itl_p95_median_over_slo": 1.4011599814208846,
+        "band": 0.1
+      },
+      "d16_rep45_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.09166666666666666,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.02465030209471782,
+        "itl_p95_median_over_slo": 0.20021610039596757,
+        "band": 0.1
+      },
+      "d16_rep45_Hi": {
+        "ttft_mass_within_band_of_slo": 0.07333333333333333,
+        "itl_p95_mass_within_band_of_slo": 0.07666666666666666,
+        "itl_mean_mass_within_band_of_slo": 0.015,
+        "ttft_median_over_slo": 0.22778935047487417,
+        "itl_p95_median_over_slo": 1.3752662887175877,
+        "band": 0.1
+      },
+      "d16_rep46_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.105,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.024791192263364792,
+        "itl_p95_median_over_slo": 0.2048085513524711,
+        "band": 0.1
+      },
+      "d16_rep46_Hi": {
+        "ttft_mass_within_band_of_slo": 0.08,
+        "itl_p95_mass_within_band_of_slo": 0.08166666666666667,
+        "itl_mean_mass_within_band_of_slo": 0.01,
+        "ttft_median_over_slo": 0.7416672579323252,
+        "itl_p95_median_over_slo": 1.3977852161042392,
+        "band": 0.1
+      },
+      "d24_rep1_Lo": {
+        "ttft_mass_within_band_of_slo": 0.006666666666666667,
+        "itl_p95_mass_within_band_of_slo": 0.06333333333333334,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.025312645981709164,
+        "itl_p95_median_over_slo": 0.20734311391909918,
+        "band": 0.1
+      },
+      "d24_rep1_Hi": {
+        "ttft_mass_within_band_of_slo": 0.051666666666666666,
+        "itl_p95_mass_within_band_of_slo": 0.8733333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.4363887986789147,
+        "itl_p95_median_over_slo": 1.001421866628031,
+        "band": 0.1
+      },
+      "d24_rep44_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.07666666666666666,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.024633243990441162,
+        "itl_p95_median_over_slo": 0.20340999277929464,
+        "band": 0.1
+      },
+      "d24_rep44_Hi": {
+        "ttft_mass_within_band_of_slo": 0.04833333333333333,
+        "itl_p95_mass_within_band_of_slo": 0.8716666666666667,
+        "itl_mean_mass_within_band_of_slo": 0.006666666666666667,
+        "ttft_median_over_slo": 0.43314866442233324,
+        "itl_p95_median_over_slo": 1.0067158378660679,
+        "band": 0.1
+      },
+      "d24_rep45_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.07833333333333334,
+        "itl_mean_mass_within_band_of_slo": 0.005,
+        "ttft_median_over_slo": 0.024617604911327362,
+        "itl_p95_median_over_slo": 0.20277961622923588,
+        "band": 0.1
+      },
+      "d24_rep45_Hi": {
+        "ttft_mass_within_band_of_slo": 0.06166666666666667,
+        "itl_p95_mass_within_band_of_slo": 0.8033333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.021666666666666667,
+        "ttft_median_over_slo": 0.5822781311968962,
+        "itl_p95_median_over_slo": 1.000434752398481,
+        "band": 0.1
+      },
+      "d24_rep46_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.08,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.024607075067857902,
+        "itl_p95_median_over_slo": 0.203281690677007,
+        "band": 0.1
+      },
+      "d24_rep46_Hi": {
+        "ttft_mass_within_band_of_slo": 0.045,
+        "itl_p95_mass_within_band_of_slo": 0.865,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.42746034016211826,
+        "itl_p95_median_over_slo": 1.004984313622117,
+        "band": 0.1
+      },
+      "d34_rep41_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.08,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.02614824070284764,
+        "itl_p95_median_over_slo": 0.20604109236349663,
+        "band": 0.1
+      },
+      "d34_rep41_Hi": {
+        "ttft_mass_within_band_of_slo": 0.041666666666666664,
+        "itl_p95_mass_within_band_of_slo": 0.7383333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.3783448524773121,
+        "itl_p95_median_over_slo": 0.9822576291238269,
+        "band": 0.1
+      },
+      "d34_rep42_Lo": {
+        "ttft_mass_within_band_of_slo": 0.006666666666666667,
+        "itl_p95_mass_within_band_of_slo": 0.08833333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.027312027911345165,
+        "itl_p95_median_over_slo": 0.24238043930381567,
+        "band": 0.1
+      },
+      "d34_rep42_Hi": {
+        "ttft_mass_within_band_of_slo": 0.041666666666666664,
+        "itl_p95_mass_within_band_of_slo": 0.8166666666666667,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.41934204287827015,
+        "itl_p95_median_over_slo": 0.9870613909636935,
+        "band": 0.1
+      },
+      "d34_rep43_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.07,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.02556225098669529,
+        "itl_p95_median_over_slo": 0.20754962616289643,
+        "band": 0.1
+      },
+      "d34_rep43_Hi": {
+        "ttft_mass_within_band_of_slo": 0.04,
+        "itl_p95_mass_within_band_of_slo": 0.8,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.4114916017279029,
+        "itl_p95_median_over_slo": 0.9608899095716575,
+        "band": 0.1
+      },
+      "d34_rep44_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.08333333333333333,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.026501213821272056,
+        "itl_p95_median_over_slo": 0.20857835731779537,
+        "band": 0.1
+      },
+      "d34_rep44_Hi": {
+        "ttft_mass_within_band_of_slo": 0.045,
+        "itl_p95_mass_within_band_of_slo": 0.83,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.40615160421778757,
+        "itl_p95_median_over_slo": 0.9931085165590048,
+        "band": 0.1
+      },
+      "d44_rep1_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.045,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.0256098344301184,
+        "itl_p95_median_over_slo": 0.2277566608972845,
+        "band": 0.1
+      },
+      "d44_rep1_Hi": {
+        "ttft_mass_within_band_of_slo": 0.02666666666666667,
+        "itl_p95_mass_within_band_of_slo": 0.8116666666666666,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.34201072435826063,
+        "itl_p95_median_over_slo": 0.9539693702633182,
+        "band": 0.1
+      },
+      "d44_rep41_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0033333333333333335,
+        "itl_p95_mass_within_band_of_slo": 0.056666666666666664,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.02714294691880544,
+        "itl_p95_median_over_slo": 0.2365476405248049,
+        "band": 0.1
+      },
+      "d44_rep41_Hi": {
+        "ttft_mass_within_band_of_slo": 0.04,
+        "itl_p95_mass_within_band_of_slo": 0.8183333333333334,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.4067407700543602,
+        "itl_p95_median_over_slo": 0.9791919216513634,
+        "band": 0.1
+      },
+      "d44_rep42_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.075,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.026670291709403198,
+        "itl_p95_median_over_slo": 0.23162220371887002,
+        "band": 0.1
+      },
+      "d44_rep42_Hi": {
+        "ttft_mass_within_band_of_slo": 0.041666666666666664,
+        "itl_p95_mass_within_band_of_slo": 0.835,
+        "itl_mean_mass_within_band_of_slo": 0.0,
+        "ttft_median_over_slo": 0.3754553459584713,
+        "itl_p95_median_over_slo": 0.9890124356995026,
+        "band": 0.1
+      },
+      "d44_rep43_Lo": {
+        "ttft_mass_within_band_of_slo": 0.0,
+        "itl_p95_mass_within_band_of_slo": 0.07,
+        "itl_mean_mass_within_band_of_slo": 0.0033333333333333335,
+        "ttft_median_over_slo": 0.026722552565236885,
+        "itl_p95_median_over_slo": 0.2315466385334727,
+        "band": 0.1
+      },
+      "d44_rep43_Hi": {
+        "ttft_mass_within_band_of_slo": 0.045,
+        "itl_p95_mass_within_band_of_slo": 0.825,
+        "itl_mean_mass_within_band_of_slo": 0.0016666666666666668,
+        "ttft_median_over_slo": 0.3575002383440733,
+        "itl_p95_median_over_slo": 0.9876134052562217,
+        "band": 0.1
+      }
+    },
+    "combination_assumption": {
+      "Lo": {
+        "d16": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 99.95833333333333,
+            "product_of_marginals_percent": 99.95833333333333,
+            "actual_joint_percent": 99.95833333333333,
+            "error_percent": 0.0,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 99.625,
+            "product_of_marginals_percent": 99.625,
+            "actual_joint_percent": 99.625,
+            "error_percent": 0.0,
+            "identically_zero_error": false
+          }
+        },
+        "d24": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 99.70833333333333,
+            "product_of_marginals_percent": 99.21,
+            "actual_joint_percent": 99.20833333333333,
+            "error_percent": 0.001679966400680577,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 99.625,
+            "product_of_marginals_percent": 99.12833333333333,
+            "actual_joint_percent": 99.125,
+            "error_percent": 0.0033627574611116984,
+            "identically_zero_error": false
+          }
+        },
+        "d34": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 99.95833333333333,
+            "product_of_marginals_percent": 99.79194444444444,
+            "actual_joint_percent": 99.79166666666667,
+            "error_percent": 0.0002783576896314699,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 99.375,
+            "product_of_marginals_percent": 99.21083333333334,
+            "actual_joint_percent": 99.20833333333333,
+            "error_percent": 0.0025199496010097633,
+            "identically_zero_error": false
+          }
+        },
+        "d44": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 99.95833333333333,
+            "product_of_marginals_percent": 99.91673611111112,
+            "actual_joint_percent": 99.91666666666667,
+            "error_percent": 6.950236308700397e-05,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 99.625,
+            "product_of_marginals_percent": 99.58354166666666,
+            "actual_joint_percent": 99.58333333333333,
+            "error_percent": 0.00020920502090682191,
+            "identically_zero_error": false
+          }
+        }
+      },
+      "Hi": {
+        "d16": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 98.5,
+            "product_of_marginals_percent": 56.22319444444444,
+            "actual_joint_percent": 55.875,
+            "error_percent": 0.6231667909520233,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 18.291666666666668,
+            "product_of_marginals_percent": 10.455555555555556,
+            "actual_joint_percent": 8.666666666666668,
+            "error_percent": 20.641025641025635,
+            "identically_zero_error": false
+          }
+        },
+        "d24": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 99.375,
+            "product_of_marginals_percent": 65.971875,
+            "actual_joint_percent": 66.0,
+            "error_percent": -0.042613636363642016,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 46.166666666666664,
+            "product_of_marginals_percent": 30.619930555555552,
+            "actual_joint_percent": 23.083333333333332,
+            "error_percent": 32.64951865222623,
+            "identically_zero_error": false
+          }
+        },
+        "d34": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 99.875,
+            "product_of_marginals_percent": 68.82916666666667,
+            "actual_joint_percent": 68.91666666666667,
+            "error_percent": -0.1269649334945666,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 92.125,
+            "product_of_marginals_percent": 63.517916666666665,
+            "actual_joint_percent": 61.958333333333336,
+            "error_percent": 2.5171486213853234,
+            "identically_zero_error": false
+          }
+        },
+        "d44": {
+          "legacy_mean_itl": {
+            "itl_marginal_percent": 99.91666666666667,
+            "product_of_marginals_percent": 70.64923611111111,
+            "actual_joint_percent": 70.625,
+            "error_percent": 0.03431661750246118,
+            "identically_zero_error": false
+          },
+          "canonical_p95": {
+            "itl_marginal_percent": 93.45833333333333,
+            "product_of_marginals_percent": 66.13145833333334,
+            "actual_joint_percent": 65.0,
+            "error_percent": 1.7407051282051222,
+            "identically_zero_error": false
+          }
+        }
+      },
+      "note": "`identically_zero_error` marks cells where the ITL marginal is exactly 100%, so the product CANNOT differ from the joint -- those cells carry no information about the (x) assumption."
+    },
+    "overload": {
+      "Lo": {
+        "offered_req_s": 3.0,
+        "achieved_req_s_min": 2.564943026475742,
+        "achieved_req_s_max": 2.8614791172976166,
+        "overload_factor_range": [
+          1.0484088392835111,
+          1.1696166226826608
+        ]
+      },
+      "Hi": {
+        "offered_req_s": 12.0,
+        "achieved_req_s_min": 5.095789756795128,
+        "achieved_req_s_max": 5.5892748644179315,
+        "overload_factor_range": [
+          2.1469690239056947,
+          2.3548852234333753
+        ]
+      }
+    },
+    "controller": {
+      "slo_rep1": {
+        "split_transition_log_lines": 18,
+        "residency_and_dwell": "NOT COMPUTABLE -- sharegpt_vary_bench.sbatch records no runtime_snapshot telemetry stream"
+      },
+      "slo_rep44": {
+        "split_transition_log_lines": 14,
+        "residency_and_dwell": "NOT COMPUTABLE -- sharegpt_vary_bench.sbatch records no runtime_snapshot telemetry stream"
+      },
+      "slo_rep45": {
+        "split_transition_log_lines": 14,
+        "residency_and_dwell": "NOT COMPUTABLE -- sharegpt_vary_bench.sbatch records no runtime_snapshot telemetry stream"
+      },
+      "slo_rep46": {
+        "split_transition_log_lines": 14,
+        "residency_and_dwell": "NOT COMPUTABLE -- sharegpt_vary_bench.sbatch records no runtime_snapshot telemetry stream"
+      }
+    }
+  }
+}
