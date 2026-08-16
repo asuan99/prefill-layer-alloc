@@ -403,6 +403,53 @@ def s_itl(arm_means_itl: Mapping[str, float], slo: float) -> Optional[int]:
     return None
 
 
+def s_itl_upward_closed(arm_means_itl: Mapping[str, float], slo: float) -> Optional[int]:
+    """``min{s : EVERY arm with decode SM >= s meets the SLO}``.
+
+    S6 (audit): ``S_itl`` reads as a "sufficient point" only if ``M_itl`` is
+    monotone in decode SM.  g2_0_hard phase A is NOT monotone
+    (22.74/18.25/18.41/19.15/18.95), so plain ``S_itl`` can return a point above
+    which some arm still violates the SLO.  Both are reported.
+    """
+    arms = sorted(arm_means_itl, key=arm_sm)
+    for index, arm in enumerate(arms):
+        if all(arm_means_itl[a] <= slo for a in arms[index:]):
+            return arm_sm(arm)
+    return None
+
+
+def s_itl_exact_transitions(arm_means_itl: Mapping[str, float]) -> List[Dict[str, object]]:
+    """EXACT SLO breakpoints of ``S_itl`` -- the left-to-right running minima.
+
+    S1 (audit): the K8 ladder steps 1 ms, but the ``S_itl`` bands can be far
+    narrower (0.203 ms on the old grid), so the ladder alone SKIPS whole bands
+    -- including ``S_itl = 44``, which sits in exactly the tight-SLO region
+    sec4-1 identifies as this campaign's only SLO-related payoff.  The exact
+    breakpoints cost nothing and are reported alongside the ladder.
+    """
+    arms = sorted(arm_means_itl, key=arm_sm)
+    records: List[Dict[str, object]] = []
+    running = math.inf
+    for arm in arms:
+        value = arm_means_itl[arm]
+        if value < running:
+            running = value
+            records.append({"threshold_ms": value, "S_itl": arm_sm(arm), "arm": arm})
+    records.sort(key=lambda r: r["threshold_ms"])
+    bands: List[Dict[str, object]] = []
+    if records:
+        bands.append({"slo_lo_ms": None, "slo_hi_ms": records[0]["threshold_ms"],
+                      "S_itl": None, "verdict": "S_ITL_UNREACHED"})
+    for index, record in enumerate(records):
+        upper = (records[index + 1]["threshold_ms"]
+                 if index + 1 < len(records) else None)
+        bands.append({"slo_lo_ms": record["threshold_ms"], "slo_hi_ms": upper,
+                      "S_itl": record["S_itl"], "arm": record["arm"],
+                      "band_width_ms": (upper - record["threshold_ms"])
+                      if upper is not None else None})
+    return bands
+
+
 def _forced_cell(d_ttft: Optional[int], d_itl: Optional[int],
                  s_min: int, s_max: int) -> Dict[str, object]:
     """sec3 forced-cell table: which entries are algebraically forced."""
@@ -450,6 +497,37 @@ def _saturation_gap(grid: Sequence[BootRecord], contenders: Sequence[str]) -> Di
     }
 
 
+def _grid_hygiene(grid: Sequence[BootRecord]) -> Dict[str, object]:
+    """F3 (audit): arm x block incidence, imbalance, and block sufficiency.
+
+    ``_arm_means`` averages whatever is present and the bootstrap fills a
+    missing arm with ``inf``, so an arm that lost boots is STRUCTURALLY
+    penalised by the rank rule while nothing in the output says so.  H5 plans
+    for failed boots, so this is not a hypothetical.
+    """
+    arms = sorted({r.arm for r in grid}, key=arm_sm)
+    blocks = sorted({r.block for r in grid})
+    incidence = {arm: {block: sum(1 for r in grid if r.arm == arm and r.block == block)
+                       for block in blocks} for arm in arms}
+    counts = {arm: sum(incidence[arm].values()) for arm in arms}
+    balanced = len({tuple(sorted(incidence[a].items())) for a in arms}) == 1
+    missing = [(a, b) for a in arms for b in blocks if incidence[a][b] == 0]
+    flags: List[str] = []
+    if not balanced:
+        flags.append("UNBALANCED_GRID: arms do not appear in the same blocks -- "
+                     "the rank rule structurally penalises the arm with fewer "
+                     "blocks, and the bootstrap fills its gaps with inf")
+    if len(blocks) < K5_BLOCKS:
+        flags.append(f"INSUFFICIENT_BLOCKS: {len(blocks)} < K5 = {K5_BLOCKS}.  "
+                     f"A non-identification here is SAMPLE SHORTAGE, not the "
+                     f"pre-declared 'informative negative' result -- do not "
+                     f"label it UNIDENTIFIED/ITL_SATURATED as an outcome")
+    return {"arms": arms, "blocks": blocks, "incidence": incidence,
+            "boots_per_arm": counts, "balanced": balanced,
+            "missing_cells": missing, "flags": flags,
+            "sufficient_blocks": len(blocks) >= K5_BLOCKS}
+
+
 def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
     """Full sec6 decision for one phase of one grid."""
     arms = sorted({r.arm for r in grid}, key=arm_sm)
@@ -466,9 +544,22 @@ def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
         {w for w in donor_itl["rank_rule"]["per_block"].values() if w}, key=arm_sm)
     saturation = _saturation_gap(grid, contenders)
 
-    d_ttft = donor_ttft["decode_sm"]
-    d_itl = donor_itl["decode_sm"]
+    # ---- F1 (audit) --------------------------------------------------------
+    # sec4 DEFINES D_ttft / D_itl as the bare argmin of the arm means
+    # ("D_ttft = decode SM of argmin_a mean_b M_ttft").  sec6 does NOT redefine
+    # the symbols -- it makes identification a CONDITION OF THE VERDICT
+    # ("donor identified AND the decision quantity > 0").  An earlier version of
+    # this analyzer set the symbols to None whenever K1 failed, which (a) broke
+    # its own PC-C control and (b) silently emptied the sec3 forced-cell table
+    # in exactly the most likely outcome (non-identification).  The symbols are
+    # therefore the bare argmin, ALWAYS defined, and identification rides
+    # alongside as a citation gate.
+    d_ttft_arm, ttft_tied = _argmin_arm(means_ttft)
+    d_itl_arm, itl_tied = _argmin_arm(means_itl)
+    d_ttft = arm_sm(d_ttft_arm) if d_ttft_arm else None
+    d_itl = arm_sm(d_itl_arm) if d_itl_arm else None
     delta = (d_itl - d_ttft) if (d_ttft is not None and d_itl is not None) else None
+    delta_citable = bool(donor_ttft["identified"] and donor_itl["identified"])
 
     # ---- verdict for the Delta channel (primary-B) -------------------------
     sign_verdict: Optional[str] = None
@@ -544,8 +635,11 @@ def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
                 rung_verdict = "NO_TAX"
             else:
                 rung_verdict = "NEGATIVE_INTERIOR"
+        closed = s_itl_upward_closed(means_itl, float(slo))
         ladder.append({"slo_ms": slo, "S_itl": point, "delta_slo": delta_slo,
-                       "verdict": rung_verdict})
+                       "verdict": rung_verdict,
+                       "S_itl_upward_closed": closed,
+                       "monotonicity_violated": closed != point})
 
     # sign-change intervals -- the REGISTRABLE object (never the 60 ms point)
     intervals: List[Dict[str, object]] = []
@@ -606,22 +700,35 @@ def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
         },
         "D_ttft": donor_ttft,
         "D_itl": donor_itl,
+        "D_ttft_arm": d_ttft_arm,
+        "D_itl_arm": d_itl_arm,
         "delta": delta,
+        "delta_citable": delta_citable,
+        "ties": {"M_ttft_tied": ttft_tied, "M_itl_tied": itl_tied,
+                 "warning": "a tie was broken by the pre-registered rule "
+                            "(smaller decode SM wins).  ORACLE R1 already "
+                            "recorded a tie-break-dependent headline ('116'), "
+                            "so a tied donor is never cited as identified."},
         "verdict": verdict,
         "verdict_flags": flags,
-        "bare_argmin_NOT_A_DONOR": {
-            "M_ttft": _argmin_arm(means_ttft)[0],
-            "M_itl": _argmin_arm(means_itl)[0],
-            "warning": "plain argmin of the arm means WITHOUT the K1 "
-                       "identification gate.  Reported only so that targets "
-                       "phrased as bare argmins remain checkable -- it is NOT "
-                       "a donor and must never be registered as one.",
-        },
+        "symbol_convention": (
+            "D_ttft / D_itl / delta / forced_cell are sec4's BARE ARGMIN and "
+            "are always defined.  sec6 identification (K1) is a CITATION GATE "
+            "carried in 'delta_citable' and in the verdict -- not part of the "
+            "symbol definition."),
         "sign_verdict": sign_verdict,
         "forced_cell": forced,
         "saturation": saturation,
         "delta_slo_ladder": ladder,
         "delta_slo_intervals": intervals,
+        "s_itl_exact_bands": s_itl_exact_transitions(means_itl),
+        "s_itl_ladder_resolution_warning": (
+            "the K8 ladder steps 1 ms; 's_itl_exact_bands' below shows the true "
+            "breakpoints.  Any band narrower than 1 ms is INVISIBLE to the "
+            "ladder -- on the old grid the S_itl=44 band (0.203 ms) vanishes "
+            "entirely, and that band sits in the tight-SLO region sec4-1 calls "
+            "this campaign's only SLO-related payoff.  Cite the exact bands."),
+        "grid_hygiene": _grid_hygiene(grid),
         "operating_point": {
             "slo_ms": OPERATING_POINT_SLO_MS, **op,
             "MANDATORY_BAND": DELTA_SLO_60_BAND,
@@ -638,6 +745,30 @@ def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
             "percentile CI is never cited on its own; t(n-1) accompanies it",
             "Delta / Delta_SLO are discrete lattice values: report the donor / "
             "sufficient-point SELECTION DISTRIBUTION, not a CI",
+            # --- added after the analyzer audit (7 missing guards) ----------
+            "sec10-7: this says NOTHING about HE0.  A positive coupling tax "
+            "does NOT revive dynamic control -- 'achieved dynamic is worse "
+            "than best static' and 'the achievable ceiling' are separate "
+            "propositions (gate #38).  No policy-ranking change.",
+            "sec10-9(a): the location statistic CANNOT in principle produce a "
+            "magnitude comparable to sec1-20 '+16%' or sec1-32 '+1.67%'",
+            "sec6: TRUNCATED / ITL_SATURATED / S_ITL_UNREACHED / UNIDENTIFIED "
+            "are RESULTS, not failures.  This tool's exit code 2 and the word "
+            "'GATE' refer to POSITIVE-CONTROL failure only -- never relabel a "
+            "verdict as a failed measurement (gate #21, reverse direction)",
+            "sec10-2: HI is 2.15-2.35x overloaded and threshold-goodput is "
+            "ill-posed there; the goodput / pass-rate side outputs inherit "
+            "that caveat",
+            "sec10-5/6: Zamba2-2.7B, ctx4096, ShareGPT, and only TWO points on "
+            "the work-ratio axis -- no slope or functional-form claims, no "
+            "transplant to 8B or other models",
+            "NEVER write 'gate #16 is closed'.  What closes is the "
+            "RE-FORMULATED decision quantity 2; the threshold version stays on "
+            "the rate axis (rev3 sec1 C1)",
+            "add. A-3: agreement between the primary and the drift-corrected "
+            "donor does NOT mean 'no drift'.  A symmetric CURVATURE component "
+            "moves both estimators the same way, so DRIFT_DISAGREEMENT is "
+            "blind exactly where A-3-2 says 4 blocks cannot balance",
         ],
     }
 
@@ -708,6 +839,11 @@ def load_campaign_grid(directory: Path, phase: str, *,
     suffix = "_LO.jsonl" if phase == "LO" else "_HI.jsonl"
     records: List[BootRecord] = []
     rejected: List[Dict[str, object]] = []
+    arms_failing_exact: set = set()
+
+    def arm_of(run_id: str) -> str:
+        found = re.search(r"_(d\d+)_boot\d+_", run_id + "_")
+        return found.group(1) if found else ""
     for path in sorted(directory.glob(f"g16_*{suffix}")):
         run_id = path.name[: -len(suffix)]
         match = re.match(r"^g16_(?P<block>[^_]+)_(?P<arm>d\d+)_boot(?P<boot>\d+)_",
@@ -736,6 +872,10 @@ def load_campaign_grid(directory: Path, phase: str, *,
                              "fields_rc": fields_rc})
             continue
         if sidecar.get("exact") is not True:
+            # H3'-a says deactivate the ARM, not the boot.  Rejecting only the
+            # boot would leave an UNBALANCED grid, which the rank rule then
+            # penalises silently (see _grid_hygiene).
+            arms_failing_exact.add(arm_of(run_id))
             rejected.append({"path": path.name, "why": "H3'-a exact is not True",
                              "realized_a": sidecar.get("realized_a"),
                              "realized_b": sidecar.get("realized_b")})
@@ -756,7 +896,20 @@ def load_campaign_grid(directory: Path, phase: str, *,
             est=_headline_estimands(path), t_boot0=sidecar.get("t_boot0"),
             exact=sidecar.get("exact"), status=sidecar.get("status"),
             residency_fraction=residency, split_transitions=transitions))
-    return records, {"n_adopted": len(records), "rejected": rejected}
+    if arms_failing_exact:
+        records = [r for r in records if r.arm not in arms_failing_exact]
+    missing_summary = [Path(r.path).name for r in records
+                       if r.residency_fraction in (None, {})]
+    return records, {
+        "n_adopted": len(records),
+        "rejected": rejected,
+        "arms_deactivated_by_exact": sorted(arms_failing_exact),
+        "boots_without_controller_summary": missing_summary,
+        "residency_warning": (
+            "add. A-2's conditional-label baseline is MISSING for these boots "
+            "-- report the arm labels as unqualified 'nominal split' only with "
+            "that gap stated" if missing_summary else None),
+    }
 
 
 def load_legacy_grid(directory: Path, pattern: str, arms: Sequence[str],
@@ -883,35 +1036,37 @@ def run_controls(slo_dir: Path, g20h_dir: Path) -> Dict[str, object]:
         {"name": "truncation logic fires (TRUNCATED among verdict flags)",
          "got": sorted(flags), "want": "TRUNCATED present",
          "pass": "TRUNCATED" in flags},
-        {"name": "D_itl == d44 as a BARE ARGMIN (the form the target is "
-                 "phrased in)",
-         "got": pc_c_decision["bare_argmin_NOT_A_DONOR"]["M_itl"], "want": "d44",
-         "pass": pc_c_decision["bare_argmin_NOT_A_DONOR"]["M_itl"] == "d44"},
-        {"name": "D_itl == d44 as an IDENTIFIED DONOR under K1 "
-                 "(what sec6 actually requires)",
-         "got": f'identified={pc_c_decision["D_itl"]["identified"]} '
-                f'bootstrap={pc_c_decision["D_itl"]["bootstrap_rule"]["fraction"]:.4f} '
-                f'< {K1_BOOTSTRAP_MIN_FRAC}',
-         "want": "identified=True", "pass": pc_c_decision["D_itl"]["identified"]},
+        {"name": "D_itl == d44 (sec4 estimator, the form the target is phrased "
+                 "in: 'the primary estimator ALSO gives D_ttft=d44 . D_itl=d44')",
+         "got": pc_c_decision["D_itl_arm"], "want": "d44",
+         "pass": pc_c_decision["D_itl_arm"] == "d44"},
     ]
     pc_c = {
         "decision": pc_c_decision,
         "target_as_written": {"D_ttft": 44, "D_itl": 44, "verdict": "TRUNCATED"},
         "subclaims": subclaims,
         "passed": all(s["pass"] for s in subclaims),
-        "TARGET_TEXT_MISMATCH": (
-            "The sec7 PC-C target says 'D_ttft=d44 . D_itl=d44'.  D_itl=d44 "
-            "holds as a BARE ARGMIN but NOT as an identified donor: the K1 "
-            "bootstrap gives d44 ~0.64 / d34 ~0.36, below the 0.80 gate.  That "
-            "is not an analyzer defect -- it REPRODUCES the canon: "
-            "ORACLE sec3-4 reports d44 6028 / d34 3972 on the same grid, and "
-            "ORACLE sec3-3 registration-ban #1 states that the only citable "
-            "claim is 'the ITL donor is NOT identified between d44 and d34' "
-            "(CONSENSUS sec1-13 footnote F says the same: 'inseparable').  So "
-            "the PC-C target was phrased with the argmin estimator WITHOUT "
-            "sec6's own identification gate.  Label: GATE MIS-SPECIFICATION, "
-            "NOT measurement failure (lesson 21).  Route to claims-auditor "
-            "before any registration."),
+        # NOT a control -- reported so the non-identification is visible.
+        "diagnostic_identification_gate": {
+            "D_itl_identified": pc_c_decision["D_itl"]["identified"],
+            "bootstrap_fraction": pc_c_decision["D_itl"]["bootstrap_rule"]["fraction"],
+            "threshold": K1_BOOTSTRAP_MIN_FRAC,
+            "reading": (
+                "sec4's estimator gives d44, and sec7's PC-C target is scoped "
+                "to the estimator ('the primary estimator ALSO gives ...'), so "
+                "the control PASSES.  Separately, the K1 citation gate does "
+                "NOT identify an ITL donor on this grid.  That non-"
+                "identification agrees with the canon's conclusion -- ORACLE "
+                "sec3-3 registration-ban #1 and CONSENSUS sec1-13 footnote F "
+                "both say the d44/d34 ITL donor is inseparable.  CAUTION: "
+                "ORACLE sec3-4's 6028/3972 is the THRESHOLD-PREDICATE donor, a "
+                "DIFFERENT estimator from this location-statistic one (which "
+                "gives ~0.64/0.36).  Both land near 60/40, but 'the numbers "
+                "match' is NOT evidence that the same path was executed -- "
+                "that inference is the exact genre of gate #9 / CONSENSUS "
+                "sec3 item 39.  The agreeing thing is the CONCLUSION, not the "
+                "estimator."),
+        },
     }
     if not pc_c["passed"]:
         failures.append("PC-C")
@@ -955,8 +1110,13 @@ def run_controls(slo_dir: Path, g20h_dir: Path) -> Dict[str, object]:
                   and b["operating_point"]["verdict"] == "ITL_UNCONSTRAINED")},
         {"name": "phase A D_ttft == d34 (interior argmin, non-monotone row)",
          "got": a["D_ttft"]["arm"], "want": "d34", "pass": a["D_ttft"]["arm"] == "d34"},
-        {"name": "phase A D_itl UNIDENTIFIED (overlapping arms)",
-         "got": f'identified={a["D_itl"]["identified"]} verdict={a["verdict"]}',
+        {"name": "phase A D_itl NOT IDENTIFIED (overlapping arms) -- NB this "
+                 "resolves to ITL_SATURATED, NOT to UNIDENTIFIED.  sec7's "
+                 "claim that PC-D exercises the UNIDENTIFIED path (and the "
+                 "notes' '4 of 9 verdicts') is WRONG: UNIDENTIFIED is reached "
+                 "only by synthetic fixtures.",
+         "got": f'identified={a["D_itl"]["identified"]} verdict={a["verdict"]} '
+                f'flags={[f["verdict"] for f in a["verdict_flags"]]}',
          "want": "identified=False", "pass": a["D_itl"]["identified"] is False},
     ]
     for check in pc_d["verdict_path_checks"]:
@@ -1224,6 +1384,15 @@ def run_campaign(directory: Path, *, include_smoke: bool = False) -> Dict[str, o
                     "band_mass_max": band_max_itl,
                     "routing": "DIAGNOSTIC_ONLY" if band_max_itl > K2_BAND_MASS_MAX else "citable"},
             "aggregation": "max over donor-candidate arms (C8)",
+            "tie_warning": "pass fractions are DISCRETE (multiples of 1/n), so "
+                           "exact ties are realistic here; the argmax below "
+                           "breaks ties by smaller decode SM.  ORACLE R1 "
+                           "already recorded a tie-break-dependent headline "
+                           "('116') -- check for ties before citing.",
+            "ttft_tied": sorted(a for a, v in pass_ttft.items()
+                                if v == max(pass_ttft.values())),
+            "itl_tied": sorted(a for a, v in pass_itl.items()
+                               if v == max(pass_itl.values())),
             "note": "if primary and secondary disagree, THAT is the registered "
                     "result; neither is chosen post hoc (sec4)",
         }
@@ -1255,6 +1424,16 @@ def run_campaign(directory: Path, *, include_smoke: bool = False) -> Dict[str, o
     return out
 
 
+def _self_sha256() -> str:
+    """F4 (audit): H9/A-5(i) hash the harness but NOT the file that computes
+    the decision quantity.  Every report therefore carries the analyzer's own
+    digest, so a pre-registered analyzer cannot be silently edited after seeing
+    the data (gate #19).
+    """
+    import hashlib
+    return hashlib.sha256(Path(__file__).resolve().read_bytes()).hexdigest()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--campaign", action="store_true")
@@ -1276,6 +1455,8 @@ def main() -> None:
     report: Dict[str, object] = {
         "spec": "PREREG_G16_RULES_REV3_2026-08-16.md (rev3 is the only valid "
                 "revision)",
+        "analyzer_sha256": _self_sha256(),
+        "analyzer_path": str(Path(__file__).resolve()),
         "scope": NOMINAL_SPLIT_SCOPE,
         "frame": HEADLINE_FRAME,
         "knobs": {"K1_blocks": K1_BLOCK_ARGMIN_MIN, "K1_bootstrap": K1_BOOTSTRAP_MIN_FRAC,
@@ -1311,10 +1492,28 @@ def main() -> None:
     if args.self_test:
         report["verdict_reachability"] = verdict_reachability()
         report["donor_rule_calibration"] = calibrate_donor_rule(sims=args.calib_sims)
+    controls_failed = False
     if args.controls:
         report["positive_controls"] = run_controls(args.slo_dir, args.g20h_dir)
+        controls_failed = not report["positive_controls"]["all_passed"]
     if args.campaign:
-        report["campaign"] = run_campaign(args.slo_dir, include_smoke=args.include_smoke)
+        campaign = run_campaign(args.slo_dir, include_smoke=args.include_smoke)
+        if controls_failed:
+            # sec7: "if a positive control FAILS, no new numbers may be
+            # reported."  Writing them to the file and merely exiting 2 does
+            # not implement that -- the numbers are then on disk to be quoted.
+            report["campaign"] = {
+                "SUPPRESSED": True,
+                "why": "a positive control failed; sec7 forbids reporting new "
+                       "numbers.  Fix the control, then re-run.",
+                "failures": report["positive_controls"]["failures"],
+            }
+        else:
+            report["campaign"] = campaign
+        if not args.controls:
+            report["campaign"]["UNCONTROLLED_WARNING"] = (
+                "run with --controls: campaign numbers reported without the "
+                "sec7 positive controls having been executed in this run")
 
     text = json.dumps(report, indent=2, sort_keys=True, default=str)
     if args.out:
