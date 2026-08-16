@@ -1,0 +1,138 @@
+{
+ "pooled_865493+865533": {
+  "Ha8": {
+   "itl_p50_sm16": null,
+   "n_sm16": 0,
+   "n_boots_sm16": 0,
+   "itl_p50_sm92": 36.081744357943535,
+   "n_sm92": 33344,
+   "n_boots_sm92": 1,
+   "ratio": null
+  },
+  "Hs8": {
+   "itl_p50_sm16": 44.033149257302284,
+   "n_sm16": 55887,
+   "n_boots_sm16": 1,
+   "itl_p50_sm92": 16.38596411794424,
+   "n_sm92": 94208,
+   "n_boots_sm92": 1,
+   "ratio": 2.687247997149076
+  },
+  "M8": {
+   "itl_p50_sm16": null,
+   "n_sm16": 0,
+   "n_boots_sm16": 0,
+   "itl_p50_sm92": null,
+   "n_sm92": 0,
+   "n_boots_sm92": 0,
+   "ratio": null
+  },
+  "T8": {
+   "itl_p50_sm16": 31.162765808403492,
+   "n_sm16": 83616,
+   "n_boots_sm16": 1,
+   "itl_p50_sm92": 13.04954756051302,
+   "n_sm92": 124000,
+   "n_boots_sm92": 1,
+   "ratio": 2.388034195354002
+  }
+ },
+ "865493_only": {
+  "Ha8": {
+   "itl_p50_sm16": null,
+   "n_sm16": 0,
+   "n_boots_sm16": 0,
+   "itl_p50_sm92": 36.081744357943535,
+   "n_sm92": 33344,
+   "n_boots_sm92": 1,
+   "ratio": null
+  },
+  "Hs8": {
+   "itl_p50_sm16": 44.033149257302284,
+   "n_sm16": 55887,
+   "n_boots_sm16": 1,
+   "itl_p50_sm92": 16.38596411794424,
+   "n_sm92": 94208,
+   "n_boots_sm92": 1,
+   "ratio": 2.687247997149076
+  },
+  "M8": {
+   "itl_p50_sm16": null,
+   "n_sm16": 0,
+   "n_boots_sm16": 0,
+   "itl_p50_sm92": null,
+   "n_sm92": 0,
+   "n_boots_sm92": 0,
+   "ratio": null
+  },
+  "T8": {
+   "itl_p50_sm16": 31.162765808403492,
+   "n_sm16": 83616,
+   "n_boots_sm16": 1,
+   "itl_p50_sm92": 13.04954756051302,
+   "n_sm92": 124000,
+   "n_boots_sm92": 1,
+   "ratio": 2.388034195354002
+  }
+ },
+ "865533_only": {
+  "Ha8": {
+   "itl_p50_sm16": null,
+   "n_sm16": 0,
+   "n_boots_sm16": 0,
+   "itl_p50_sm92": null,
+   "n_sm92": 0,
+   "n_boots_sm92": 0,
+   "ratio": null
+  },
+  "Hs8": {
+   "itl_p50_sm16": null,
+   "n_sm16": 0,
+   "n_boots_sm16": 0,
+   "itl_p50_sm92": null,
+   "n_sm92": 0,
+   "n_boots_sm92": 0,
+   "ratio": null
+  },
+  "M8": {
+   "itl_p50_sm16": null,
+   "n_sm16": 0,
+   "n_boots_sm16": 0,
+   "itl_p50_sm92": null,
+   "n_sm92": 0,
+   "n_boots_sm92": 0,
+   "ratio": null
+  },
+  "T8": {
+   "itl_p50_sm16": null,
+   "n_sm16": 0,
+   "n_boots_sm16": 0,
+   "itl_p50_sm92": null,
+   "n_sm92": 0,
+   "n_boots_sm92": 0,
+   "ratio": null
+  }
+ },
+ "_verdict": {
+  "T8@pooled_865493+865533": {
+   "target": 2.388,
+   "got": 2.388034195354002,
+   "match_3dp": true
+  },
+  "T8@865493_only": {
+   "target": 2.388,
+   "got": 2.388034195354002,
+   "match_3dp": true
+  },
+  "Hs8@pooled_865493+865533": {
+   "target": 2.687,
+   "got": 2.687247997149076,
+   "match_3dp": true
+  },
+  "Hs8@865493_only": {
+   "target": 2.687,
+   "got": 2.687247997149076,
+   "match_3dp": true
+  }
+ }
+}

@@ -196,10 +196,11 @@ KEEPA_TOKEN_LIMIT=$(( CTXCAP - 256 ))   # H2 regression-guard threshold
 # deterministic from KEEPA_REPS so regenerating with the same rep count
 # reproduces it byte-for-byte). SMOKE_FORCE_BAD_KEEPALIVE deliberately picks
 # the historical F4 value instead, to exercise the H2 abort path.
+KEEPA_REPS_C6=32          # the ONE value that satisfies C6; used to police the label
 if [ "$SMOKE" = 1 ] && [ "$SMOKE_FORCE_BAD_KEEPALIVE" = 1 ]; then
   KEEPA_REPS="${KEEPA_REPS:-224}"
 else
-  KEEPA_REPS="${KEEPA_REPS:-32}"
+  KEEPA_REPS="${KEEPA_REPS:-$KEEPA_REPS_C6}"
 fi
 
 if [ "$SMOKE" = 1 ]; then
@@ -450,10 +451,20 @@ for AIDX in $ARM_IDS; do
   MODEL="${ARM_MODELS[$AIDX]}"
   BACKEND="${ARM_BACKENDS[$AIDX]}"
   RESULT="$HERE/s8c2r_${ARM}_C${CTX}_${JOBTAG}_result.txt"; : > "$RESULT"
+  # The C6 provenance note describes KEEPA_REPS=32 (job 865493's actual setting).
+  # SMOKE_FORCE_BAD_KEEPALIVE deliberately substitutes the corrupt historical value
+  # 224, so the note must NOT travel with that value -- a label that says
+  # "replicates 865493" next to 224 is exactly the class of lying label this
+  # project has been burned by. Emit the note only when it is true.
+  if [ "$KEEPA_REPS" = "$KEEPA_REPS_C6" ]; then
+    KEEPA_NOTE="(C6: replicates job 865493's actual keepalive setting)"
+  else
+    KEEPA_NOTE="(C6 VIOLATED: KEEPA_REPS=$KEEPA_REPS is NOT 865493's setting ($KEEPA_REPS_C6) -- not a valid C2-R measurement)"
+  fi
   echo "C2R-rev2 ARM=$ARM MODEL=$MODEL BACKEND=$BACKEND CTX=$CTX CTXCAP=$CTXCAP" \
        "conc=$CONC out=$OUTTOK warmup=${WARMUP_S}s measure=${MEASURE_S}s" \
        "BOOTS=$BOOTS REPS_PER_BOOT=$REPS_PER_BOOT KEEPA_N=$KEEPA_N KEEPA_REPS=$KEEPA_REPS" \
-       "(C6: replicates job 865493's actual keepalive setting)" \
+       "$KEEPA_NOTE" \
        "SMOKE=$SMOKE SMOKE_FORCE_BAD_KEEPALIVE=$SMOKE_FORCE_BAD_KEEPALIVE" | tee -a "$RESULT"
 
   # ---- H2: arm-specific keepalive prompt + pre-boot tokenizer assert ----
