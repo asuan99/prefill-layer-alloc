@@ -469,10 +469,723 @@ def bslope() -> dict:
             "total_gaps_to_explain": gaps}
 
 
+# ==========================================================================
+# rev2 (2026-08-16) -- claims-auditor findings F1-F6 + recommendation C-g.
+#
+# The rev1 design was audited NO-GO.  Nothing below changes an estimand or a
+# measurement; it changes the *decision rule layer* that the audit refuted:
+#
+#   F2  MS_B <= MS_W must be a MEASUREMENT FAILURE, never a PASS (the rev1 rule
+#       auto-passes on a degenerate sigma_hat=0, i.e. it declares "job axis
+#       controlled" exactly when boot noise swallowed the job signal).  The
+#       Satterthwaite upper bound is replaced by an exact-F pivot whose coverage
+#       is simulated here rather than asserted.
+#   F3  every (k, m) row carries a simulated P(pass) and a simulated coverage;
+#       the acceptance line is P(pass) >= 0.8 AND coverage >= 0.93.
+#   F4  sigma_boot is the MEASURED per-boot-pair SD of r (`r_boot_rel_sd_pct`,
+#       already computed by bootvar()), not the independence-assuming delta
+#       method (`unpaired_rel_sd_per_boot_pct`) rev1 used.
+#   F5  the prior is a BAND over three defensible cell subsets, not one point.
+#   F6  the per-arm gap is wired from bslope(); rev1's main() left power() at
+#       its 5.1 default so the JSON never produced the doc's Ha8 numbers.
+#   C-g alternating the conc step INSIDE a boot makes Delta_batch a within-boot
+#       paired contrast and cancels the sigma_boot term outright.
+#
+# Positive controls (methodology gate #9 -- a control must run the SAME branch
+# as the headline, and must be able to FAIL): see `_rev2_positive_controls`.
+# ==========================================================================
+import random  # noqa: E402  (rev2 addition, kept next to its users)
+
+MC_N = 20000
+MC_SEED = 20260816
+# Acceptance line, pre-registered here (methodology gate #37: an adversarial
+# audit gets a single question AND its pass mark).
+ACCEPT_P_PASS = 0.80
+ACCEPT_COVERAGE = 0.93
+# Audit values this script must reproduce independently (it does not import the
+# audit code -- `audit_g13_independent_2026-08-16/` exists to stay independent).
+AUDIT_TARGETS = {
+    "sd_paired_pct": {"M8": 0.0371, "Ha8": 1.5684},
+    "rho_leg": {"M8": 0.800, "Ha8": -0.767},
+    "cover_satterthwaite_Ha8_k4m3": 0.638,
+    "cover_exactF_Ha8_k4m3": 0.970,
+}
+
+
+def _betacf(a: float, b: float, x: float) -> float:
+    """Continued fraction for the incomplete beta (Lentz).  No scipy here."""
+    tiny = 1e-300
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c = 1.0
+    d = 1.0 - qab * x / qap
+    if abs(d) < tiny:
+        d = tiny
+    d = 1.0 / d
+    h = d
+    for m in range(1, 300):
+        m2 = 2 * m
+        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+        d = 1.0 + aa * d
+        if abs(d) < tiny:
+            d = tiny
+        c = 1.0 + aa / c
+        if abs(c) < tiny:
+            c = tiny
+        d = 1.0 / d
+        h *= d * c
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        d = 1.0 + aa * d
+        if abs(d) < tiny:
+            d = tiny
+        c = 1.0 + aa / c
+        if abs(c) < tiny:
+            c = tiny
+        d = 1.0 / d
+        delt = d * c
+        h *= delt
+        if abs(delt - 1.0) < 1e-14:
+            break
+    return h
+
+
+def _betai(a: float, b: float, x: float) -> float:
+    """Regularized incomplete beta I_x(a, b)."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    lbeta = (math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+             + a * math.log(x) + b * math.log(1.0 - x))
+    front = math.exp(lbeta)
+    if x < (a + 1.0) / (a + b + 2.0):
+        return front * _betacf(a, b, x) / a
+    return 1.0 - front * _betacf(b, a, 1.0 - x) / b
+
+
+def _f_cdf(f: float, d1: float, d2: float) -> float:
+    if f <= 0:
+        return 0.0
+    return _betai(d1 / 2.0, d2 / 2.0, d1 * f / (d1 * f + d2))
+
+
+def _f_quantile(p: float, d1: float, d2: float) -> float:
+    """F_{p, d1, d2} by bisection on the CDF."""
+    lo, hi = 1e-12, 1.0
+    while _f_cdf(hi, d1, d2) < p and hi < 1e12:
+        hi *= 2.0
+    for _ in range(300):
+        mid = 0.5 * (lo + hi)
+        if _f_cdf(mid, d1, d2) < p:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+# ---- F4: the measured per-boot-pair dispersion, and the leg correlation ----
+def pairsd() -> dict:
+    """F4.  sigma_boot must be the SD of r actually realized per boot-pair.
+
+    rev1 used `hypot(relSD(leg16), relSD(leg92))`, which assumes the two legs
+    are independent within a boot-pair.  They are not: bootvar() already
+    measured the paired quantity and the two disagree by 0.61x (M8) and 1.32x
+    (Ha8) because the leg correlation is strongly positive for one arm and
+    strongly negative for the other.  rho_leg is pre-registered as a REPORTING
+    AXIS (audit F1) because it is what decides whether the ratio structure
+    cancels a common-mode job effect or amplifies it.
+    """
+    bv = bootvar()
+    out = {"note": ("sigma_boot(r) = measured SD of the per-boot-pair ratio; "
+                    "rev1 used the independence-assuming delta method"),
+           "arms": {}}
+    for arm in ("M8", "Ha8"):
+        a = bv["arms"][arm]
+        v16, v92 = a["leg_sm16_boot_medians_ms"], a["leg_sm92_boot_medians_ms"]
+        n = len(v16)
+        m16, m92 = st.fmean(v16), st.fmean(v92)
+        cov = sum((x - m16) * (y - m92) for x, y in zip(v16, v92)) / (n - 1)
+        rho = cov / (st.stdev(v16) * st.stdev(v92))
+        out["arms"][arm] = {
+            "n_boot_pairs": n,
+            "sigma_boot_paired_pct": a["r_boot_rel_sd_pct"],       # ADOPTED
+            "sigma_boot_unpaired_delta_pct": a["unpaired_rel_sd_per_boot_pct"],
+            "paired_over_unpaired": (a["r_boot_rel_sd_pct"]
+                                     / a["unpaired_rel_sd_per_boot_pct"]),
+            "rho_leg": rho,
+            "per_boot_r": a["block_paired_r"],
+        }
+    return out
+
+
+# ---- F5: the prior is a band, not a point --------------------------------
+def priorband() -> dict:
+    """F5.  Three defensible readings of the ONLY cross-job contrast that exists.
+
+    All three come from the same 865493-vs-865533 pair (df=1 either way), but
+    they differ in which cells are admissible:
+
+      leg     : all 40 matched split-leg cells      -> 0.41%
+      ratio   : the 3 cells where r exists in both  -> 0.57%   (rev1's point)
+      ratio15 : b>=15 only, i.e. the batch regime the campaign will actually
+                run in                              -> 0.95%
+
+    The third one matters: rev1's headline row (M8 k=4, m=3) is a PASS at 0.57%
+    and a FAIL at 0.95%.  Choosing the prior after seeing that would be a
+    post-hoc knob (methodology gate #19), so the band is registered up front and
+    every power row is reported at all three.
+    """
+    pr = prior()
+    rc = pr["ratio_cells"]
+    hi = [c for c in rc if int(c["b"][1:]) >= 15]
+    rms = lambda xs: math.sqrt(sum(x * x for x in xs) / len(xs))  # noqa: E731
+    band = {
+        "leg_all_cells": {"pct": pr["sigma_job_hat_leg_pct_from_rms"],
+                          "n_cells": pr["n_matched_split_cells"], "df": 1},
+        "ratio_all_cells": {"pct": pr["sigma_job_hat_ratio_pct_from_rms"],
+                            "n_cells": len(rc), "df": 1,
+                            "cells": [f"{c['arm']}/{c['b']}" for c in rc]},
+        "ratio_b_ge_15": {"pct": (rms([c["pct_diff"] for c in hi]) / math.sqrt(2)
+                                  if hi else None),
+                          "n_cells": len(hi), "df": 1,
+                          "cells": [f"{c['arm']}/{c['b']}" for c in hi]},
+    }
+    vals = [v["pct"] for v in band.values() if v["pct"] is not None]
+    band["band_pct"] = [min(vals), max(vals)]
+    band["ratio_of_extremes"] = max(vals) / min(vals)
+    band["warning"] = ("every entry is df=1 and confounded job x node x "
+                       "keepalive-regime (prior()'s note); the band is a "
+                       "sensitivity range, NOT a variance estimate")
+    return band
+
+
+# ---- F2/F3: the decision rule, and what it actually does ------------------
+def _ub_exact_f(msb: float, msw: float, m: int,
+                fq_lo: float, chi_w: float, df_w: int) -> float:
+    """95% upper bound on sigma_job via the exact-F pivot.
+
+    theta = sigma_job^2 / sigma_boot^2 is bounded by ((MS_B/MS_W)/F_{.05}) - 1)/m
+    and sigma_boot^2 by MS_W*df_W/chi2_{.05,df_W}; the product bounds
+    sigma_job^2.  Conservative by construction (two 95% bounds multiplied) --
+    which is the point: the audit measured the rev1 Satterthwaite bound at 0.638
+    coverage for Ha8 k=4/m=3, i.e. it was not a 95% bound at all.
+    """
+    theta = ((msb / msw) / fq_lo - 1.0) / m
+    return math.sqrt(max(0.0, theta) * msw * df_w / chi_w)
+
+
+def _oc(k: int, m: int, sigma_boot: float, sigma_job: float, gap: float,
+        n: int = MC_N, seed: int = MC_SEED, sat_prior: float = None) -> dict:
+    """Monte-Carlo operating characteristics of the rev2 decision rule.
+
+    Draws the two mean squares from their exact sampling distributions and
+    applies the rule verbatim, including the F2 guard.  Reports the guard rate
+    separately so a design cannot buy P(pass) with degenerate draws.
+    """
+    rnd = random.Random(seed + 1000 * k + m)
+    df_b, df_w = k - 1, k * (m - 1)
+    fq_lo = _f_quantile(0.05, df_b, df_w)
+    chi_w = _chi2_lower(0.05, df_w)
+    # The Satterthwaite multiplier is a DESIGN constant: it is fixed by the
+    # registered prior, not by the data.  `sat_prior` lets the caller register
+    # it at one prior and then evaluate coverage at every prior in the band --
+    # which is the only way to find out whether that registered constant is
+    # still a 95% bound when the truth sits elsewhere in the band.
+    sj_reg = sigma_job if sat_prior is None else sat_prior
+    df_eff = max(1.0, 2 * sj_reg ** 4 / ((2.0 / m ** 2) * (
+        (m * sj_reg ** 2 + sigma_boot ** 2) ** 2 / df_b
+        + sigma_boot ** 4 / (k * (m - 1)))))
+    mult_sat = math.sqrt(df_eff / _chi2_lower(0.05, df_eff))
+    ev_b = m * sigma_job ** 2 + sigma_boot ** 2
+    n_fail = n_pass = n_cov = n_cov_claim = n_claim = n_pass_sat = n_cov_sat = 0
+    n_pass_sat_guarded = 0
+    ubs = []
+    for _ in range(n):
+        msb = ev_b * rnd.gammavariate(df_b / 2.0, 2.0) / df_b
+        msw = sigma_boot ** 2 * rnd.gammavariate(df_w / 2.0, 2.0) / df_w
+        # --- rev1 rule, kept only so the two can be compared on one draw set
+        v = (msb - msw) / m
+        ub_sat = math.sqrt(max(0.0, v)) * mult_sat
+        # NOTE: rev1 counted a pass here even when msb <= msw (ub_sat == 0),
+        # which is finding F2.  `p_pass` below is the UNGUARDED rev1 rule, kept
+        # verbatim so PC5 reproduces the audit; `p_pass_guarded` is the same
+        # bound under the F2 guard, which is what rev2 would actually adopt.
+        if gap >= 3 * ub_sat:
+            n_pass_sat += 1
+            if msb > msw:
+                n_pass_sat_guarded += 1
+        if ub_sat >= sigma_job:
+            n_cov_sat += 1
+        # --- rev2 rule
+        ub = _ub_exact_f(msb, msw, m, fq_lo, chi_w, df_w)
+        ubs.append(ub)
+        if msb <= msw:                      # F2 guard: MEASUREMENT FAILURE
+            n_fail += 1
+        else:
+            n_claim += 1
+            if gap >= 3 * ub:
+                n_pass += 1
+            if ub >= sigma_job:
+                n_cov_claim += 1
+        if ub >= sigma_job:
+            n_cov += 1
+    ubs.sort()
+    return {
+        "p_measurement_failure": n_fail / n,
+        "p_pass": n_pass / n,                       # unconditional; F2-guarded
+        "coverage": n_cov / n,
+        "coverage_given_claim": (n_cov_claim / n_claim) if n_claim else None,
+        "ub_median_pct": ubs[n // 2],
+        "ub_p90_pct": ubs[int(0.9 * n)],
+        "mc_se_p_pass": math.sqrt(max(n_pass / n * (1 - n_pass / n), 1e-12) / n),
+        "rev1_satterthwaite": {"p_pass": n_pass_sat / n, "coverage": n_cov_sat / n,
+                               "p_pass_guarded": n_pass_sat_guarded / n,
+                               "registered_at_prior_pct": sj_reg},
+        "n_mc": n,
+    }
+
+
+def power2() -> dict:
+    """F2/F3/F6.  The rev1 table, rebuilt with the rule the audit demands.
+
+    Every row: its OWN arm gap (F6), the MEASURED paired sigma_boot (F4), all
+    three priors (F5), and simulated P(pass)/coverage instead of an asserted
+    3-sigma tick (F2/F3).
+    """
+    ps = pairsd()
+    band = priorband()
+    gaps = bslope()["total_gaps_to_explain"]
+    priors = {k: v["pct"] for k, v in band.items()
+              if isinstance(v, dict) and v.get("pct") is not None}
+    plans = {
+        "M8": [(4, 3, 60), (6, 3, 60), (8, 3, 60), (12, 3, 60)],
+        "Ha8": [(4, 3, 60), (6, 3, 60), (6, 6, 60), (8, 12, 60), (12, 6, 60),
+                (6, 3, 240), (4, 3, 240), (6, 3, 480)],
+    }
+    rows = []
+    for arm, plan in plans.items():
+        gap = gaps[arm]["pct_gap"]
+        sb60_paired = ps["arms"][arm]["sigma_boot_paired_pct"]
+        sb60_doc = ps["arms"][arm]["sigma_boot_unpaired_delta_pct"]
+        for (k, m, win) in plan:
+            # window scaling is an ASSUMPTION (sigma_boot ~ 1/sqrt(T)), flagged
+            # as such; S0(a) is the measurement that decides whether it holds.
+            scale = math.sqrt(60.0 / win)
+            boots = k * m * 2
+            sec_per_boot = 144.0 + (win - 60.0)      # measured 144 s at 60 s
+            for pname, sj in sorted(priors.items()):
+                for sbname, sb0 in (("paired_measured", sb60_paired),
+                                    ("rev1_delta_method", sb60_doc)):
+                    oc = _oc(k, m, sb0 * scale, sj, gap)
+                    rows.append({
+                        "arm": arm, "k_job": k, "m_bootpair": m,
+                        "measure_window_s": win, "n_boots": boots,
+                        "gpu_hr": round(boots * sec_per_boot / 3600.0, 3),
+                        "gap_pct": gap, "prior": pname, "sigma_job_prior_pct": sj,
+                        "sigma_boot_source": sbname,
+                        "sigma_boot_pct": sb0 * scale,
+                        "window_scaling_assumed": win != 60,
+                        **oc,
+                        "ACCEPT": (oc["p_pass"] >= ACCEPT_P_PASS
+                                   and oc["coverage"] >= ACCEPT_COVERAGE),
+                    })
+    # A plan is only adoptable if it passes at EVERY prior in the band (F5).
+    robust = {}
+    for arm in plans:
+        for (k, m, win) in plans[arm]:
+            sel = [r for r in rows
+                   if r["arm"] == arm and r["k_job"] == k and r["m_bootpair"] == m
+                   and r["measure_window_s"] == win
+                   and r["sigma_boot_source"] == "paired_measured"]
+            robust[f"{arm}/k{k}/m{m}/{win}s"] = {
+                "accept_at_all_priors": all(r["ACCEPT"] for r in sel),
+                "accept_count": sum(r["ACCEPT"] for r in sel),
+                "n_priors": len(sel),
+                "gpu_hr": sel[0]["gpu_hr"] if sel else None,
+                "worst_p_pass": min((r["p_pass"] for r in sel), default=None),
+                "worst_coverage": min((r["coverage"] for r in sel), default=None),
+                "max_p_measurement_failure": max(
+                    (r["p_measurement_failure"] for r in sel), default=None),
+            }
+    return {"acceptance_rule": {
+                "p_pass_min": ACCEPT_P_PASS, "coverage_min": ACCEPT_COVERAGE,
+                "verdict_on_MSB_le_MSW": "MEASUREMENT_FAILURE (never PASS)",
+                "upper_bound": "exact-F pivot (Satterthwaite reported alongside)"},
+            "rows": rows, "robust_at_all_priors": robust}
+
+
+REGISTERED_SAT_PRIOR = 0.5688257172317233   # priorband()["ratio_all_cells"]
+
+
+def _eval_plan(k, m, sb, priors, gap, n, seed=MC_SEED):
+    """Evaluate BOTH bounds over the whole prior band and pick by the
+    pre-registered rule below.
+
+    Bound-selection rule (registered BEFORE any data; it depends only on
+    (k, m, sigma_boot, prior band), all of which are pre-data):
+
+        adopt the Satterthwaite bound IF its simulated coverage is >= 0.93 at
+        EVERY prior in the band; otherwise adopt the exact-F pivot.
+        Either way the F2 guard applies: MS_B <= MS_W is a measurement failure.
+
+    Why this is not a post-hoc knob: it is a function of the design, evaluated
+    by simulation, fixed at pre-registration time.  Why it matters: the audit
+    demonstrated the Satterthwaite bound's failure on Ha8 (coverage 0.638), and
+    rev2's first draft over-corrected by forcing every arm onto the exact-F
+    pivot -- whose coverage is 0.99, i.e. it buys safety M8 does not need and
+    charges M8 ~10 GPU-hr for it.
+    """
+    ocs = [_oc(k, m, sb, sj, gap, n=n, seed=seed,
+               sat_prior=REGISTERED_SAT_PRIOR) for sj in priors]
+    sat_ok = all(o["rev1_satterthwaite"]["coverage"] >= ACCEPT_COVERAGE
+                 for o in ocs)
+    if sat_ok:
+        chosen = "satterthwaite_registered"
+        acc = all(o["rev1_satterthwaite"]["p_pass_guarded"] >= ACCEPT_P_PASS
+                  for o in ocs)
+        worst_p = min(o["rev1_satterthwaite"]["p_pass_guarded"] for o in ocs)
+        worst_c = min(o["rev1_satterthwaite"]["coverage"] for o in ocs)
+    else:
+        chosen = "exact_F_pivot"
+        acc = all(o["p_pass"] >= ACCEPT_P_PASS
+                  and o["coverage"] >= ACCEPT_COVERAGE for o in ocs)
+        worst_p = min(o["p_pass"] for o in ocs)
+        worst_c = min(o["coverage"] for o in ocs)
+    return {"bound": chosen, "accept": acc, "worst_p_pass": worst_p,
+            "worst_coverage": worst_c,
+            "max_p_measurement_failure": max(o["p_measurement_failure"]
+                                             for o in ocs),
+            "per_prior": ocs}
+
+
+def plan_search_v2(n: int = 8000) -> dict:
+    """Cheapest adoptable plan under the registered bound-selection rule."""
+    ps = pairsd()
+    band = priorband()
+    gaps = bslope()["total_gaps_to_explain"]
+    priors = sorted(v["pct"] for v in band.values()
+                    if isinstance(v, dict) and v.get("pct") is not None)
+    out = {"priors_pct": priors,
+           "bound_selection_rule": _eval_plan.__doc__.strip().split("\n\n")[1].strip(),
+           "registered_sat_prior_pct": REGISTERED_SAT_PRIOR, "arms": {}}
+    for arm in ("M8", "Ha8"):
+        gap = gaps[arm]["pct_gap"]
+        sb60 = ps["arms"][arm]["sigma_boot_paired_pct"]
+        feasible = []
+        for win in (60, 120, 240):
+            sb = sb60 * math.sqrt(60.0 / win)
+            sec = 144.0 + (win - 60.0)
+            for k in (4, 6, 8, 10, 12, 16, 20, 24):
+                for m in (3, 6, 9, 12):
+                    ev = _eval_plan(k, m, sb, priors, gap, n)
+                    if ev["accept"]:
+                        feasible.append({
+                            "k_job": k, "m_bootpair": m, "measure_window_s": win,
+                            "n_boots": k * m * 2, "bound": ev["bound"],
+                            "gpu_hr": round(k * m * 2 * sec / 3600.0, 3),
+                            "window_scaling_assumed": win != 60,
+                            "worst_p_pass": ev["worst_p_pass"],
+                            "worst_coverage": ev["worst_coverage"],
+                            "max_p_measurement_failure":
+                                ev["max_p_measurement_failure"]})
+        feasible.sort(key=lambda r: r["gpu_hr"])
+        # The sweep runs at n=8000, so its argmin is a noisy winner: the cheapest
+        # plan is, by construction, the one whose MC error pushed it over the
+        # line.  Walk UP the cost-sorted list at full MC on a different seed and
+        # adopt the first plan that still accepts.  Every rejected step is kept
+        # in `rejected_on_confirmation` -- a design that silently dropped them
+        # would be reporting a boundary plan as if it had margin.
+        confirmed, rejected = None, []
+        for cand in feasible[:8]:
+            sb = sb60 * math.sqrt(60.0 / cand["measure_window_s"])
+            e = _eval_plan(cand["k_job"], cand["m_bootpair"], sb, priors, gap,
+                           MC_N, seed=MC_SEED + 991)
+            rec = {**cand, "confirm_bound": e["bound"],
+                   "confirm_worst_p_pass": e["worst_p_pass"],
+                   "confirm_worst_coverage": e["worst_coverage"],
+                   "confirm_max_p_measurement_failure":
+                       e["max_p_measurement_failure"]}
+            if e["accept"]:
+                confirmed = rec
+                break
+            rejected.append(rec)
+        # Fallback that does NOT rest on the unverified sigma_boot ~ 1/sqrt(T)
+        # assumption.  If the adopted plan needs a longer window, this is what
+        # the campaign costs when S0(a) says the assumption fails.
+        fb = None
+        for cand in [f for f in feasible if not f["window_scaling_assumed"]][:8]:
+            e = _eval_plan(cand["k_job"], cand["m_bootpair"], sb60, priors, gap,
+                           MC_N, seed=MC_SEED + 991)
+            if e["accept"]:
+                fb = {**cand, "confirm_worst_p_pass": e["worst_p_pass"],
+                      "confirm_worst_coverage": e["worst_coverage"],
+                      "confirm_max_p_measurement_failure":
+                          e["max_p_measurement_failure"]}
+                break
+        out["arms"][arm] = {
+            "gap_pct": gap, "sigma_boot_60s_pct": sb60,
+            "n_feasible_in_sweep": len(feasible),
+            "cheapest_in_sweep": feasible[0] if feasible else None,
+            "rejected_on_confirmation": rejected,
+            "ADOPTED": confirmed,
+            "fallback_60s_window_no_assumption": fb,
+        }
+    both = [v["ADOPTED"]["gpu_hr"] for v in out["arms"].values() if v["ADOPTED"]]
+    out["total_gpu_hr_both_arms"] = round(sum(both), 2) if len(both) == 2 else None
+    return out
+
+
+def plan_search(n: int = 8000) -> dict:
+    """Cheapest (k, m, window) that ACCEPTS at every prior in the band.
+
+    power2() evaluates the rev1 menu; this searches outside it, because the
+    rev1 menu turns out to contain no adoptable plan once the F2 guard, the
+    exact-F bound and the F5 band are all applied at once.  Coarse MC (n=8000)
+    for the sweep; the winner is re-run at full MC_N so the reported numbers
+    are not the ones the search optimised over (a search over noisy estimates
+    biases the winner upward -- re-running on a fresh seed removes that).
+    """
+    ps = pairsd()
+    band = priorband()
+    gaps = bslope()["total_gaps_to_explain"]
+    priors = sorted(v["pct"] for v in band.values()
+                    if isinstance(v, dict) and v.get("pct") is not None)
+    out = {"priors_pct": priors, "arms": {},
+           "search_note": ("winner re-evaluated at n=%d with a different seed "
+                           "to undo winner's-curse from the sweep" % MC_N)}
+    for arm in ("M8", "Ha8"):
+        gap = gaps[arm]["pct_gap"]
+        sb60 = ps["arms"][arm]["sigma_boot_paired_pct"]
+        feasible = []
+        for win in (60, 120, 240):
+            sb = sb60 * math.sqrt(60.0 / win)
+            sec = 144.0 + (win - 60.0)
+            for k in (4, 6, 8, 10, 12, 16, 20, 24):
+                for m in (3, 6, 9, 12):
+                    ocs = [_oc(k, m, sb, sj, gap, n=n) for sj in priors]
+                    if all(o["p_pass"] >= ACCEPT_P_PASS
+                           and o["coverage"] >= ACCEPT_COVERAGE for o in ocs):
+                        feasible.append({
+                            "k_job": k, "m_bootpair": m, "measure_window_s": win,
+                            "n_boots": k * m * 2,
+                            "gpu_hr": round(k * m * 2 * sec / 3600.0, 3),
+                            "window_scaling_assumed": win != 60,
+                        })
+        feasible.sort(key=lambda r: r["gpu_hr"])
+        best = feasible[0] if feasible else None
+        conf = None
+        if best:
+            sb = sb60 * math.sqrt(60.0 / best["measure_window_s"])
+            conf = [{"prior_pct": sj,
+                     **{kk: vv for kk, vv in
+                        _oc(best["k_job"], best["m_bootpair"], sb, sj, gap,
+                            n=MC_N, seed=MC_SEED + 991).items()
+                        if kk in ("p_pass", "coverage", "p_measurement_failure",
+                                  "ub_median_pct")}}
+                    for sj in priors]
+        out["arms"][arm] = {
+            "gap_pct": gap, "sigma_boot_60s_pct": sb60,
+            "n_feasible": len(feasible),
+            "cheapest": best,
+            "cheapest_confirmation_fresh_seed": conf,
+            "confirmed": bool(conf) and all(
+                c["p_pass"] >= ACCEPT_P_PASS and c["coverage"] >= ACCEPT_COVERAGE
+                for c in conf),
+            "next_cheapest": feasible[1:4],
+        }
+    both = [v["cheapest"]["gpu_hr"] for v in out["arms"].values() if v["cheapest"]]
+    out["total_gpu_hr_both_arms"] = round(sum(both), 2) if len(both) == 2 else None
+    return out
+
+
+# ---- F5 second half: two-stage sequential ---------------------------------
+def seq2(k1: int = 4, k2: int = 4, m: int = 3, n: int = MC_N) -> dict:
+    """F5.  Pre-registered 2-stage design: k1 jobs, then k1+k2 if unresolved.
+
+    Stopping rule fixed HERE, before any data: stop at stage 1 only if the
+    stage-1 estimate is non-degenerate AND already passes.  A degenerate draw
+    (MS_B <= MS_W) never stops the design -- that is the F2 guard applied to
+    the sequential layer, where it matters most, because the cheap way to "win"
+    a sequential design is to stop early on a lucky degenerate estimate.
+
+    The MC below is the honest cost of that: selection inflates the final
+    coverage error, so coverage is reported for the SEQUENTIAL procedure, not
+    for its stages.
+    """
+    ps = pairsd()
+    band = priorband()
+    gaps = bslope()["total_gaps_to_explain"]
+    out = {"design": {"k_stage1": k1, "k_stage2_added": k2, "m_bootpair": m,
+                      "stop_rule": ("stage 1 stops iff MS_B > MS_W and "
+                                    "gap >= 3*UB_exactF; otherwise escalate")},
+           "rows": []}
+    for arm in ("M8", "Ha8"):
+        gap = gaps[arm]["pct_gap"]
+        sb = ps["arms"][arm]["sigma_boot_paired_pct"]
+        for pname, pv in sorted(band.items()):
+            if not isinstance(pv, dict) or pv.get("pct") is None:
+                continue
+            sj = pv["pct"]
+            rnd = random.Random(MC_SEED + 7)
+            kk = k1 + k2
+            # Stage-1 and pooled quantiles depend only on (k1, k2, m), so they
+            # are hoisted out of the MC loop.  df_B pools as (k1-1)+(k2-1) and
+            # df_W as (k1+k2)(m-1) -- the pooled design has ONE fewer df_B than
+            # a single k1+k2 job run, because each stage estimates its own mean.
+            fq1, cw1 = (_f_quantile(0.05, k1 - 1, k1 * (m - 1)),
+                        _chi2_lower(0.05, k1 * (m - 1)))
+            db = (k1 - 1) + (k2 - 1)
+            dw = k1 * (m - 1) + k2 * (m - 1)
+            fq2, cw2 = _f_quantile(0.05, db, dw), _chi2_lower(0.05, dw)
+            ev = m * sj ** 2 + sb ** 2
+            stop1 = passes = covers = 0
+            cost = 0.0
+            for _ in range(n):
+                # stage 1
+                msb1 = ev * rnd.gammavariate((k1 - 1) / 2.0, 2.0) / (k1 - 1)
+                msw1 = sb ** 2 * rnd.gammavariate(k1 * (m - 1) / 2.0, 2.0) / (k1 * (m - 1))
+                ub1 = _ub_exact_f(msb1, msw1, m, fq1, cw1, k1 * (m - 1))
+                if msb1 > msw1 and gap >= 3 * ub1:
+                    stop1 += 1
+                    passes += 1
+                    covers += (ub1 >= sj)
+                    cost += k1 * m * 2
+                    continue
+                # stage 2: the extra jobs are fresh draws; the pooled mean
+                # squares are the df-weighted combination.
+                msb2 = ev * rnd.gammavariate((k2 - 1) / 2.0, 2.0) / (k2 - 1)
+                msw2 = sb ** 2 * rnd.gammavariate(k2 * (m - 1) / 2.0, 2.0) / (k2 * (m - 1))
+                msb = ((k1 - 1) * msb1 + (k2 - 1) * msb2) / db
+                msw = (k1 * (m - 1) * msw1 + k2 * (m - 1) * msw2) / dw
+                ub = _ub_exact_f(msb, msw, m, fq2, cw2, dw)
+                cost += kk * m * 2
+                if msb > msw and gap >= 3 * ub:
+                    passes += 1
+                covers += (ub >= sj)
+            out["rows"].append({
+                "arm": arm, "prior": pname, "sigma_job_prior_pct": sj,
+                "sigma_boot_pct": sb, "gap_pct": gap,
+                "p_stop_at_stage1": stop1 / n,
+                "p_pass_overall": passes / n,
+                "coverage_sequential": covers / n,
+                "expected_boots": cost / n,
+                "expected_gpu_hr": cost / n * 144.0 / 3600.0,
+                "ACCEPT": (passes / n >= ACCEPT_P_PASS
+                           and covers / n >= ACCEPT_COVERAGE),
+                "n_mc": n,
+            })
+    return out
+
+
+# ---- C-g: alternate the conc step INSIDE a boot ---------------------------
+def paired_conc() -> dict:
+    """Audit recommendation C-g, quantified.
+
+    Today `s8_c2r.sbatch` fixes `--conc` for a whole boot, so Delta_batch =
+    r(b_hi) - r(b_lo) is a BETWEEN-boot contrast and carries sigma_boot twice.
+    Alternating the conc step inside one boot makes it a within-boot paired
+    contrast; the boot effect cancels to the extent it is common to both steps.
+
+    What this function can and cannot say (honesty gate): the cancellation
+    factor depends on the within-boot residual, which HAS NOT BEEN MEASURED --
+    that is exactly S0(a) (add a within-boot half-split reporting axis to
+    `s8_c2r_score.py`, reusing its own bracket logic; re-deriving the estimand
+    here would violate the no-new-estimand rule and gate #9).  So we report the
+    ceiling (perfect cancellation) and the floor (none), and the boots needed
+    for a target SE under each.
+    """
+    ps = pairsd()
+    out = {"lever": "alternate --conc within a boot (s8_c2r.sbatch:303)",
+           "unmeasured_input": ("within-boot residual SD of r; S0(a) measures it "
+                                "via a half-split axis in s8_c2r_score.py"),
+           "arms": {}}
+    for arm in ("M8", "Ha8"):
+        sb = ps["arms"][arm]["sigma_boot_paired_pct"]
+        # between-boot contrast: SE = sb*sqrt(2/n_pairs); within-boot: SE =
+        # sb_within*sqrt(2/n_pairs) with sb_within <= sb (equality = no
+        # cancellation at all).
+        need = lambda se_target, s: math.ceil(2 * (s / se_target) ** 2)  # noqa: E731
+        out["arms"][arm] = {
+            "sigma_boot_between_pct": sb,
+            "boots_for_se_0p5pct_between": need(0.5, sb) * 2,
+            "boots_for_se_0p5pct_within_if_half_cancels": need(0.5, sb / 2) * 2,
+            "boots_for_se_0p5pct_within_if_full_cancels": (
+                "bounded by the within-boot residual, unmeasured -- see S0(a)"),
+            "note": ("the between-boot number is what a conc-fixed design pays; "
+                     "the middle row is the illustrative half-cancellation case, "
+                     "NOT a prediction"),
+        }
+    return out
+
+
+def _rev2_positive_controls() -> dict:
+    """Controls that can actually FAIL (gate #9, gate #44 -- an empty control set
+    must not be able to pass).
+
+    PC3  the paired sigma_boot and rho_leg reproduce the audit's independent
+         reimplementation (`indep_audit.py`) to 3 dp.
+    PC4  the F quantile reproduces TABLE values (a real external check).  The
+         reciprocal identity F_{p,d1,d2} = 1/F_{1-p,d2,d1} is reported too but
+         labelled for what it is: an identity, which validates the inversion and
+         NOTHING about the CDF (gate #9 -- an identity is not evidence).
+    PC5  the MC reproduces the audit's coverage numbers for the one cell the
+         audit published (Ha8 k=4/m=3): 0.638 Satterthwaite, 0.970 exact-F.
+    """
+    ps = pairsd()
+    checks = []
+    for arm in ("M8", "Ha8"):
+        got_sd = ps["arms"][arm]["sigma_boot_paired_pct"]
+        got_rho = ps["arms"][arm]["rho_leg"]
+        checks.append({"id": f"PC3/{arm}/sigma_boot_paired",
+                       "target": AUDIT_TARGETS["sd_paired_pct"][arm],
+                       "got": round(got_sd, 4),
+                       "ok": abs(round(got_sd, 4)
+                                 - AUDIT_TARGETS["sd_paired_pct"][arm]) <= 5e-4})
+        checks.append({"id": f"PC3/{arm}/rho_leg",
+                       "target": AUDIT_TARGETS["rho_leg"][arm],
+                       "got": round(got_rho, 3),
+                       "ok": abs(round(got_rho, 3)
+                                 - AUDIT_TARGETS["rho_leg"][arm]) <= 5e-4})
+    # PC4 -- external table values for F_{0.95, d1, d2}
+    for (d1, d2, ref) in ((3, 8, 4.0662), (5, 10, 3.3258), (10, 20, 2.3479),
+                          (1, 1, 161.448), (2, 30, 3.3158)):
+        got = _f_quantile(0.95, d1, d2)
+        checks.append({"id": f"PC4/table/F0.95({d1},{d2})", "target": ref,
+                       "got": round(got, 4), "ok": abs(got - ref) < 5e-3})
+    idc = _f_quantile(0.05, 8, 3) * _f_quantile(0.95, 3, 8)
+    identity = {"id": "PC4/identity/F05(8,3)*F95(3,8)", "target": 1.0,
+                "got": round(idc, 6), "ok": abs(idc - 1.0) < 1e-6,
+                "IS_AN_IDENTITY": ("validates the inversion only; it cannot "
+                                   "detect a wrong CDF (gate #9)")}
+    # PC5 -- reproduce the audit's published coverage cell
+    oc = _oc(4, 3, 1.1924, 0.5688, 9.196, n=40000)
+    checks.append({"id": "PC5/cover_satterthwaite/Ha8_k4m3",
+                   "target": AUDIT_TARGETS["cover_satterthwaite_Ha8_k4m3"],
+                   "got": round(oc["rev1_satterthwaite"]["coverage"], 3),
+                   "ok": abs(oc["rev1_satterthwaite"]["coverage"]
+                             - AUDIT_TARGETS["cover_satterthwaite_Ha8_k4m3"]) < 0.012})
+    checks.append({"id": "PC5/cover_exactF/Ha8_k4m3",
+                   "target": AUDIT_TARGETS["cover_exactF_Ha8_k4m3"],
+                   "got": round(oc["coverage"], 3),
+                   "ok": abs(oc["coverage"]
+                             - AUDIT_TARGETS["cover_exactF_Ha8_k4m3"]) < 0.012})
+    if not checks:                       # gate #44: an empty control set FAILS
+        return {"checks": [], "all_pass": False,
+                "error": "empty positive-control set is not a pass"}
+    return {"checks": checks, "identity_only": identity,
+            "n_checks": len(checks),
+            "all_pass": all(c["ok"] for c in checks),
+            "note": ("PC5 uses the rev1 sigma_boot/prior on purpose -- it is "
+                     "reproducing the AUDIT's published cell, not the rev2 "
+                     "design point")}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["bootvar", "reach", "power", "prior",
-                                    "bslope", "all"])
+                                    "bslope", "all",
+                                    "pairsd", "priorband", "power2", "seq2",
+                                    "paired_conc", "controls", "plan_search",
+                                    "rev2"])
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     res = {}
@@ -491,9 +1204,45 @@ def main():
         sb = (bv["arms"]["M8"]["unpaired_rel_sd_per_boot_pct"],
               bv["arms"]["Ha8"]["unpaired_rel_sd_per_boot_pct"])
         pr = res.get("prior") or prior()
+        gp = bslope()["total_gaps_to_explain"]
+        # rev2 F6: rev1's main() never passed target_pct, so the JSON silently
+        # computed BOTH arms at 5.1% and could not produce the doc's Ha8 rows.
+        # The per-arm run is emitted alongside the legacy call so the rev1
+        # artifact stays reproducible and the defect stays visible.
         res["power"] = power(sigma_boot_pct=sb,
                              sigma_job_prior_pct=pr["sigma_job_hat_ratio_pct_from_rms"])
         res["power"]["stat_backend"] = "builtin incomplete-gamma bisection (no scipy)"
+        res["power"]["F6_defect"] = (
+            "this call uses target_gap_pct=5.1 for BOTH arms (rev1 behaviour, "
+            "kept for reproducibility); Ha8's own gap is "
+            f"{gp['Ha8']['pct_gap']:.3f}% -- see power_per_arm below")
+        res["power_per_arm"] = {
+            arm: power(sigma_boot_pct=sb, target_pct=gp[arm]["pct_gap"],
+                       sigma_job_prior_pct=pr["sigma_job_hat_ratio_pct_from_rms"])
+            for arm in ("M8", "Ha8")}
+    # ---- rev2 (audit F1-F6 + C-g) ----------------------------------------
+    if a.cmd in ("controls", "rev2"):
+        res["positive_controls"] = _rev2_positive_controls()
+    if a.cmd in ("pairsd", "rev2"):
+        res["pairsd"] = pairsd()
+    if a.cmd in ("priorband", "rev2"):
+        res["priorband"] = priorband()
+    if a.cmd in ("power2", "rev2"):
+        res["power2"] = power2()
+    if a.cmd in ("plan_search", "rev2"):
+        res["plan_search_exactF_only"] = plan_search()
+        res["plan_search"] = plan_search_v2()
+    if a.cmd in ("seq2", "rev2"):
+        res["seq2"] = seq2()
+    if a.cmd in ("paired_conc", "rev2"):
+        res["paired_conc"] = paired_conc()
+    if a.cmd == "rev2":
+        pc = res["positive_controls"]
+        res["REV2_CONTROLS"] = "PASS" if pc["all_pass"] else "FAIL"
+        if not pc["all_pass"]:
+            # gate #42: a gate must not label its own failure a success, and the
+            # overall verdict must actually REFERENCE every check.
+            res["REV2_FAILED_CHECKS"] = [c for c in pc["checks"] if not c["ok"]]
     txt = json.dumps(res, indent=2, sort_keys=False, default=str)
     if a.out:
         open(os.path.join(HERE, a.out), "w").write(txt)
