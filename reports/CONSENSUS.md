@@ -4,7 +4,47 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-16 rev35 (doc-steward — **gate #16 사전등록 규칙→
+최종 갱신: 2026-08-16 rev36 (doc-steward, 세션4 — **G16 스모크 2회
+통과 + 하네스 결함 2건 해소 + 사전등록 분석기 `g16_analyze.py` 작성·
+감사[조건부 GO]·반영 + 블록 1(job 884336) 제출[PENDING] + 등급 변화
+후보 1건(H18 PLAUSIBLE→CONFIRMED, 설계 속성) + 정본 자신의 인용 결함
+1건 정정(ncu/CUPTI, §3 항목52 追記(5)) + 설계 감사 2건 NO-GO(gate #13·
+kernel_mech rev2) + 방법론 게이트 3건 신설(§3 항목62–64). 새 성능
+판정 0건 · 캠페인 등급 변경 0건 · GPU 0.272 GPU-hr(스모크 2회) ·
+job 제출 1건(884336, PENDING).**
+(1) **G16 진행상황은 rev31 관례에 따라 `PROJECT_STATUS.md` "다음
+실험 gate" #11 레지스트리에만 등재**(CONSENSUS 신규 항목 없음) —
+스모크 2회(884292→하네스 결함 2건 발견→`37cf6b8` 수정→884320
+`G16_SMOKE_OVERALL=PASS`), 분석기 작성(커밋 `4f05dce`)→claims-auditor
+조건부 GO→반영(F1–F4/S1/S6, 커밋 `8311d6c`), 블록 1 제출·PENDING.
+★기존 배너 불변: **"gate #16을 닫았다"고 쓰지 말 것**(재정식화판만
+닫음, rate 축 원문 문턱 판본 잔존). (2) **H18 PLAUSIBLE→CONFIRMED**
+(addendum B-3 승격 조건 충족 — arm별 `boot_s` 884292
+32.7/32.7/32.7초·884320 32.8/32.7/32.8초로 위치-0 arm이 cold-cache
+페널티를 안 문다. 하네스 설계 속성이지 성능 판정 아님, PROJECT_STATUS.md
+등재). (3) ★★**정본 자신의 인용 결함 정정**(kernel_mech rev2 감사
+F3에서 발견, §3 항목52 追記(5)) — 정본이 `_ncu_target.py:73-74`
+("ncu profiling always runs at full GPU")만 인용하고 그 **다섯 줄
+위(68-71)**의 CUPTI×green-context 비호환 사유를 인용하지 않아 왔다.
+참이면 kernel_mech Stage B는 이 기판에서 구성상 불가하나, `error
+code 9`엔 저장소가 3가지 경합 귀속을 갖고 있어 **아직 미확인
+리스크로만 등재**(판별기 = Stage 0′ P1 프로브, 발화 시 라벨은
+`UNAVAILABLE (CUPTI×GREEN-CONTEXT)`). (4) **설계 감사 2건 NO-GO**
+(GPU 0, PROJECT_STATUS.md 레지스트리 등재, CONSENSUS 신규 항목 없음
+— C2-R rev1/G16 registry-only 관례를 따름): **gate #13** job/node축
+설계(`DESIGN_G13_JOB_BATCH_2026-08-16.md`) — 지정 1차 결정량
+"between-job SD of r은 부분 항등식"·"Ha8 검정력≈0" 둘 다 REFUTED,
+UB95 규칙이 부팅 잡음을 job 축 통제로 오판. **kernel_mech rev2**
+(`DESIGN_KERNEL_MECH_REV2_2026-08-16.md`) — `wave_eff`가 ncu
+메트릭이 아닌 수제 유도를 되살림(게이트 #36 死因 재생)·§3.2 부호
+반대로 위험구간 통과·`ncu --pid` 존재하지 않는 옵션. 둘 다
+**"닫혔다"고 쓰지 말 것**. (5) **방법론 게이트 3건 신설**(전부
+아래 §3): #42(항목62) 게이트가 자기 실패를 성공으로 라벨링(교훈
+항목21의 거울상) · #43(항목63) 분석기가 사전등록 기호를 조용히
+재정의하면 자기 대조를 깨고 중심 산출물을 침묵시킴(+메인 세션
+오진 1건 기록) · #44(항목64) 양성대조의 빈 서명 구멍. 상세
+`handoff-report/session_handoff_2026-08-16.md` §4-0–4-7.
+이전 rev35: 2026-08-16 (doc-steward — **gate #16 사전등록 규칙→
 하네스 2단 감사 완주 반영(`workspace/engine-port/results/slo_sched/
 PREREG_G16_RULES_REV3_2026-08-16.md` rev3+addendum A+B) + engine-porter
 이관 1건 해소(`he2_bench.sbatch:92`, 커밋 `dadb851`) + 방법론 게이트
@@ -2316,6 +2356,43 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     "시도했으나 실패"는 다른 명제다. 상세 `PROJECT_STATUS.md` "8B
     decode-SM 민감도 측정 노트", `handoff-report/session_handoff_
     2026-08-15.md` §2.9.
+
+    ★★★**追記(5) (2026-08-16, doc-steward 등재 — kernel_mech rev2 설계
+    감사[claims-auditor, 판정 NO-GO] F3에서 발견, 새 성능 판정 아님)
+    정본 자신의 인용 결함 — 위 (4)가 인용한 문장의 다섯 줄 위를
+    누락했다.** 위 (4)가 인용한 "ncu profiling always runs at full
+    GPU"(`_ncu_target.py:73-74`)는 **그 이유가 다섯 줄 위(68-71)에
+    적혀 있는데 정본이 지금까지 그 이유를 인용하지 않았다**:
+
+    > ```
+    > # Do NOT call smctrl.set_sm_count() here.
+    > # CUPTI (the API ncu uses for hardware counter collection) is incompatible with
+    > # CUDA Green Contexts. Restricting SMs via Green Context while ncu is attached
+    > # causes "Failed to prepare kernel for profiling / Unknown Error on device 0."
+    > ```
+    > (`workspace/characterization/src/profiling/_ncu_target.py:68-71`,
+    > 메인 세션 직접 재확인)
+
+    "ncu는 full-GPU에서만 돈다"는 *design intent*(결과)이고, 위
+    인용이 그 *원인*(CUPTI×green-context 비호환)이다. **참이면
+    kernel_mech Stage B(green-context 하 커널 단위 프로파일링)는
+    이 기판에서 구성상 불가**하다 — 이 정정은 위 (1)–(4)가 세운
+    "green-ctx·운영점 하의 커널 프로파일링은 시도된 적 없다"는
+    결론을 뒤집지 않는다(그건 여전히 참이다), 다만 "시도하면
+    될 것이다"로 읽는 것을 막는다.
+
+    ★★**단, 아직 미확인 리스크로만 등재한다** — 같은 `error code 9`
+    (위 (4)의 1,986건)에 저장소가 **3가지 경합 귀속**을 갖고 있다:
+    (a) 메트릭 이름 불일치(`run_ncu_profile.py:213`) (b) cuda12 타겟
+    (`run_ncu_profile.sh:37-41`) (c) CUPTI×green-context(이 문단).
+    판별기는 **Stage 0′ P1 프로브**(kernel_mech rev2 §8, ≈GPU 0)이며
+    아직 실행되지 않았다. 발화 시 라벨은 **`UNAVAILABLE (CUPTI×
+    GREEN-CONTEXT)` = 도구 한계**이지 게이트 실패도 기전 증거도
+    아니다(방법론 게이트 #21). 상세 `PROJECT_STATUS.md` "8B
+    decode-SM 민감도 측정 노트" 정정 배너, `workspace/engine-port/
+    results/kernel_mech/DESIGN_KERNEL_MECH_REV2_2026-08-16.md` F3,
+    `handoff-report/session_handoff_2026-08-16.md` §4-4(b).
+
 53. ★**(2026-08-15, doc-steward 등재 — E-1 rev1–rev3+kernel_mech 4회
     설계 전부 감사 차단에서 도출, 새 실험 아님) 방법론 게이트 #35·
     #36 신설.** **#35 "개정판에서 손잡이 값을 유지한 채 유도 서사만
@@ -2749,6 +2826,76 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     PREREG_G16_RULES_REV3_2026-08-16.md` addendum B-2(N7),
     `handoff-report/session_handoff_2026-08-16.md` §15.5,
     `PROJECT_STATUS.md` "방법론 게이트" #41.
+
+62. ★★**(2026-08-16, 세션4, doc-steward 등재 — G16 스모크 884292
+    하네스 감사에서 발견, 방법론 게이트 #21의 거울상, GPU 0·새 성능
+    판정 아님) 게이트가 자기 실패를 성공으로 라벨링할 수 있다.**
+    §3 항목35(교훈 항목21, "측정 실패를 게이트 실패로 라벨링 마라")는
+    코드가 **성공한 측정을 실패로** 오라벨한 사례들이었다. 이번은
+    그 **거울상**이다: G16 스모크 체커 `9_H2_COUNT_AND_RESIDENCY`가
+    `controller_summary.json`을 못 열면 `except Exception:
+    print("{}")`로 삼키고 **PASS를 찍었고**, `G16_SMOKE_OVERALL`
+    논리곱이 **item 9를 아예 참조하지 않았다** ⇒ 884292가
+    `residency_fraction={}`(측정이 사실상 전무한 상태)를 출력하면서
+    `do submit`을 말할 수 있었다. 이 경로는 addendum A-2가 요구하는
+    "arm 라벨 = 동거 구간의 명목 split" 조건부 라벨의 **크기 기준선을
+    캠페인 내내 비워 놓을 수 있는** 종류의 결함이었다.
+    반영(커밋 `37cf6b8`): `9a`(스냅샷 카운트)/`9b`(residency)로
+    분리해 파일 부재·파싱실패·키 부재·빈 dict·퇴화 전부 FAIL로 판정,
+    `OVERALL` 논리곱에 편입. 검증: 신규 `g16_smoke9_check.py`(8케이스)의
+    case H가 **실제 884292 아티팩트에 새 게이트를 걸어 PASS→FAIL로
+    뒤집는 것**을 양성대조로 사용. 실무 규칙: 게이트/스모크 체커
+    작성 시 (i) 예외를 삼키는 모든 `except` 블록이 FAIL로 귀결하는지,
+    (ii) 전체 판정의 논리곱/논리합이 **정의된 모든 item을 실제로
+    참조하는지**를 별도로 assert하라. 상세 `PROJECT_STATUS.md`
+    "방법론 게이트" #42, `handoff-report/session_handoff_2026-08-16.md`
+    §4-2.
+
+63. ★★**(2026-08-16, 세션4, doc-steward 등재 — G16 사전등록 분석기
+    `g16_analyze.py` 감사, claims-auditor F1, GPU 0·새 성능 판정
+    아님) 분석기가 사전등록 기호를 조용히 재정의하면 자기 대조를
+    깨고 중심 산출물을 침묵시킨다.** `g16_analyze.py` 최초 구현이
+    §4가 bare argmin으로 **정의**한 `D_itl`을 §6의 K1 식별 게이트를
+    통과할 때만 값을 돌려주는 것으로 **조용히 재정의**했다 — §6은
+    식별을 판정의 *조건*으로만 얹을 뿐 §4 기호를 재정의하지 않았는데도.
+    부작용: (a) 자기 양성대조 **PC-C가 깨짐**(§7 원문 "1차 추정량으로도
+    `D_ttft=d44·D_itl=d44`"가 추정량에 스코프를 명시했는데, 재정의판
+    분석기는 미식별 시 `Δ=None`을 돌려줘 이 표적을 통과 못함).
+    (b) 미식별 시 `forced_cell='undetermined'`가 돼 **§3 강제표(설계의
+    중심 산출물)가 가장 개연적인 결과에서 자동 침묵**했다. 반영(F1,
+    커밋 `8311d6c`) = bare argmin 복원 + K1을 `delta_citable`/verdict의
+    **인용 게이트**로 분리 → PC-C 5/5 통과·§3 강제표 복원.
+    ★**메인 세션 오진 1건 기록**(재발 방지용): 이 결함을 처음
+    발견했을 때 *"PC-C 표적이 §6 게이트를 통과 못 하므로 **사전등록
+    텍스트 결함**"*이라 보고했는데 **절반 틀렸다** — 사전등록 §4·§7은
+    문제 없었고, 결함은 **분석기가 §4 기호를 게이트-조건부로 재정의한
+    것**이었다. 근거로 든 문장도 estimand를 혼동했다("ORACLE §3-4
+    재현"이 실은 문턱술어 도너(0.595/0.405)와 위치통계량 도너
+    (0.638/0.362)의 우연한 근접값 비교였다 — 게이트 #9/§3 항목39가
+    지목한 바로 그 추론 패턴, "숫자가 맞으니 같은 경로"). 일치하는
+    것은 **결론**(d44/d34 비식별)이지 추정량이 아니다. 실무 규칙:
+    분석기 감사에서 "결과가 사전등록 문구와 다르다"를 발견하면
+    **먼저 분석기가 그 문구의 기호를 실제로 그대로 구현했는지 확인**
+    하고 나서 사전등록 결함으로 보고하라. 상세 `PROJECT_STATUS.md`
+    "방법론 게이트" #43, `handoff-report/session_handoff_2026-08-16.md`
+    §4-3.
+
+64. ★**(2026-08-16, 세션4, doc-steward 등재 — G16 사전등록 분석기 PC-B
+    감사, 방법론 게이트 #9 계열, GPU 0·새 성능 판정 아님) 양성대조의
+    빈 서명 구멍.** `g16_analyze.py`의 최초 PC-B(양성대조) 구현이
+    실제로 **빈 서명 집합으로도 통과**할 수 있었다 — 대조가
+    estimand를 아예 실행하지 않아도 "통과"를 찍을 수 있는 구조였다
+    (방법론 게이트 #9 아홉 번째 재발·§3 항목56(C)의 C2-R 양성대조가
+    다른 코드 경로를 타면서도 표적값을 재현했던 사례와 같은 계열의
+    취약점). 반영: (a) 서명을 **런타임에 실제 인자·분기로부터 기록**
+    하도록 바꾸고, (b) **"빈 서명 집합은 통과 불가"** 규칙을 추가하고,
+    (c) **`PC-B-neg`**(kwargs 하나만 바꿔 비교가 실제로 차이를
+    잡아내는지 확인하는 음성 방향 대조)를 신설했다. 실무 규칙:
+    양성대조 설계 시 "표적값 일치"만이 아니라 (i) 서명이 비어 있지
+    않은지, (ii) 인자를 바꾸면 대조가 실제로 반응하는지(음성 대조)를
+    함께 assert하라 — 이 둘이 없으면 양성대조가 항상 통과하는 항등식
+    으로 퇴화할 수 있다. 상세 `PROJECT_STATUS.md` "방법론 게이트" #44,
+    `handoff-report/session_handoff_2026-08-16.md` §4-3.
 
 ---
 
