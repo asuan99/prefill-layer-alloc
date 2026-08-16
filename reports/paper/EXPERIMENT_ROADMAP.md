@@ -1,6 +1,14 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-14(doc-steward — **E-3 realized SM count 프로브
+최종 갱신: 2026-08-16(doc-steward — **"상금 크기" 논증 감사가 찾은 인용정지
+전파 결손 정정, 새 성능 판정 0건.** 아래 §"8B decode-SM 민감도 측정 노트"의
+국소 ε 밴드(16→24 0.77–0.88 vs 44→92 0.09–0.35)에 **인용정지 (a) 표기**
+부착 — 이 밴드는 arm별 국소 탄력도의 min/max이므로 인용정지 (a)(arm별
+ε·arm 간 순위/격차, `CONSENSUS.md` §3 항목54)의 숫자 인용과 동치다.
+생존 범위는 격자 **내부** 정성 서술("고-SM 구간에서 국소 탄력도가 뚜렷이
+낮다")뿐, arm 라벨·숫자는 인용 금지. 상세 `PRIZE_SIZE_ARGUMENT_2026-08-16.md`
+§6, `CONSENSUS.md` rev33.
+이전: 2026-08-14(doc-steward — **E-3 realized SM count 프로브
 (GPU 비용 ≈0) 반영 — "S3/`%smid`" 로드맵 항목의 §0.1 payoff 1건이
 정정 대상 없음으로 확인(추가 追記). 새 성능 판정 아님, 이 항목의
 필요성·우선순위 불변(SM id 집합 disjointness는 여전히 열려있음).**
@@ -426,7 +434,12 @@ decode ITL이 **2.36–2.91×**(4 arm, 모델-무관) 개선된다 — Stage 0�
 아니다. ★**국소 탄력도 부기(2026-08-04, claims-auditor)**: 이 비율은
 **16→92 끝점 비**이며 **국소 탄력도는 16→24 0.77–0.88 vs 44→92
 0.09–0.35로 4× 다르다 — 44 이상 구간에 그대로 적용하지 말 것**
-(`../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"). **claims-auditor가 지정한 프론티어 게이트 E1**(`[108−D,D]` 스윕,
+(`../../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"). ⚠️**인용정지
+(a) 표기(doc-steward, 2026-08-16)** — 이 arm별 국소 ε 밴드(0.09–0.35)는
+**인용정지 (a)**(arm별 ε·arm 간 순위/격차, `../CONSENSUS.md` §3 항목54)의
+숫자 인용과 동치다. arm 라벨·숫자 없이 정성 서술("고-SM 구간이 저-SM
+구간보다 국소 탄력도가 뚜렷이 낮다")만 인용 가능. 상세
+`../PRIZE_SIZE_ARGUMENT_2026-08-16.md` §6. **claims-auditor가 지정한 프론티어 게이트 E1**(`[108−D,D]` 스윕,
 D∈{16,24,44,54,92}+best-static 대조, 4 arm, offered-rate 고정, n≥4, 사전등록
 파티션 점유율≥0.80·활성률≥0.60 게이트, 결정규칙: best static 대비 conjunctive
 goodput ≥3% 개선 & paired CI가 0 배제)가 이 레버가 예산 제약 하 net-positive인지

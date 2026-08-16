@@ -6,6 +6,16 @@ negative 2갈래 분해 + ★cross-substrate serving 이식 "불필요·부적�
 방어 + Risk 2를 닫는 vendor-substrate 3수, §0.1). 작성 주체: `venue-strategist`
 subagent, 기록 주체: `doc-steward` subagent.
 
+> ⚠️**2026-08-16 doc-steward 인용금지 전파(내용 재해석 없음, 새 서빙 측정
+> 아님)**: 이 문서가 인용하는 "d16 TTFT 7.24s vs d24 1.21s"(아래 §0.1
+> 대조표 직후·"C3" 항목)는 2026-08-04 `layertype_dynamic_
+> POSITIVE_2026-08-04.md:159`가 **폐기 벤치 n=1이라 magnitude 인용
+> 금지**로 지정한 수치다(방향만 변화 trace n≥4가 지지). 2026-07-24
+> 대조 당시엔 이 인용금지가 아직 존재하지 않아 "모순 없음" 판정이
+> 정확했다 — 지금 이 문서를 재인용할 때는 아래 두 지점에 추가된
+> 인용금지 각주를 함께 읽을 것. 상세 `../CONSENSUS.md` §1-4·rev33,
+> `../PRIZE_SIZE_ARGUMENT_2026-08-16.md` §7.
+
 > **2026-07-25 갱신 성격**: 이 갱신은 **새 서빙 측정이 아니라 prior-art 조사 +
 > positioning reasoning**이다. 확정 서빙 결과(`PROJECT_STATUS.md` "확정된 결과"
 > §1–5, Claim A–F 등급)는 하나도 바뀌지 않는다. §0.1은 (i) `venue_positioning.md`
@@ -35,6 +45,13 @@ subagent, 기록 주체: `doc-steward` subagent.
 §1-17 10σ, d16 TTFT 7.24s vs d24 1.21s, disaggregation headroom +16%/116 SM)와
 등급어(부분 지지/강한 지지(범위 한정)/미검증)는 CONSENSUS/matrix 표기와 정확히 일치한다.
 증거 수준을 낮추거나 높이는 재해석은 없다.
+
+> ⚠️**dated 정정(2026-08-16, doc-steward)**: 위 "모순 없음" 판정은
+> 2026-07-24 시점 기준으로 정확하다 — "d16 TTFT 7.24s vs d24 1.21s"의
+> 인용금지는 그 열흘 뒤인 2026-08-04에야 생겼다(폐기 벤치 n=1,
+> `../CONSENSUS.md` §1-4). **지금** 이 수치를 재인용할 때는 그 인용금지
+> (방향만 유효, magnitude 인용 금지)를 함께 적용할 것 — 이 문단 자체는
+> 이력 그대로 보존한다.
 
 **용어 대응(이 문서 한정, 새 claim ID 아님)**: 이 문서는 가독성을 위해 C1–C4 레이블을
 쓰지만 이는 `CLAIM_EVIDENCE_MATRIX.md`의 공식 Claim A–E와 다른 문서 전용 축약이다.
@@ -231,7 +248,8 @@ top-tier systems(OSDI/NSDI/SOSP)는 불가, architecture(ASPLOS/ISCA/MICRO/HPCA)
 - **C3**: 단일-GPU reactive dynamic이 decode-heavy static 못 넘음 — 기전
   (entanglement·asymmetry·positioning). 근거 = HE0 5.4σ(관대 3s SLO, CONSENSUS
   §1-7), §1-17 10σ(tight chat 300/50ms); d16 TTFT 7.24s vs d24 1.21s(CONSENSUS
-  §1-4). 한계 = 선행과 정면 긴장(Bullet/MuxWise는 dynamic 승리를 주장) → **"shared
+  §1-4, ⚠️**인용금지 2026-08-04 — 폐기 벤치 n=1, magnitude 인용 금지·방향만
+  유효, doc-steward 전파 2026-08-16**). 한계 = 선행과 정면 긴장(Bullet/MuxWise는 dynamic 승리를 주장) → **"shared
   running-batch coupling 하의 reactive single-worker"로 scoping을 좁혀야
   substrate-artifact 반박을 막을 수 있다**.
 - **C4** (Claim A, 부분 지지): decode floor는 composition·context·load 의존
