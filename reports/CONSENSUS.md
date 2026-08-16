@@ -4,7 +4,37 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-16 rev31 (doc-steward — **새 성능 판정 0건 · 정책 주장
+최종 갱신: 2026-08-16 rev32 (doc-steward — **C2-R 캠페인 결과 등재:
+M8·Ha8의 신규 점추정 2건 등재, 기존 값 교체 아님(대체값일 뿐 심판이
+아니다) · C2 등급 무변경(CONFIRMED scoped) · 인용정지 (a)(arm별 ε·순위)·
+(b)(깨끗한 셀 CI·"n=4") 둘 다 유효(해제 0건) · 기존 Δ·p값·크기 인용 셀
+(Zamba2 r2 단일)은 한 글자도 안 바뀐다.** 사전등록 `PREREG_C2R_RULES_REV2_
+2026-08-15.md`(rev2 GO) 집행 결과(jobs 883574=M8·883575=Ha8, 각 12부팅) —
+result-analyst 분석 + claims-auditor 적대 감사 완료, 메인 세션은 운영
+지표(부팅 성공·H7·실현률)만 직접 확인. **정본 인용 문구(claims-auditor
+지정, 그대로 채택)**: "`r_M8(16) = 3.058`, `r_Ha8(16) = 3.114`(ctx1024,
+realized SM16/SM92, `decode_bs=16`, job 883574/883575, gpu43, 1시간,
+`n_indep=6` 부팅). 동반 구간은 **within-job 부팅 구간이며 재현
+불확실성이 아니다** — 보수적으로 **t(5) [3.056, 3.060] · [3.077,
+3.155]**를 쓰고, **job/node/날짜 축은 미측정(n=1)**임을 병기한다."
+★**percentile 부트스트랩 CI는 정본 본문에 쓰지 않는다** — 감사자 실측상
+**일관되게 과소피복**(M8 1.36×·Ha8 1.55× 더 좁음), 원자료 JSON 포인터로만
+남긴다. seed∈{1,2,3,99} SD 변동 ≤1.5%(부트스트랩 seed는 결과를 만들지
+않음)이나 이는 **재표집 잡음**만 배제할 뿐 **재표집되는 모집단**(boot
+단위, job/node/day 축 부재)의 문제는 그대로다. (2) Ha8은 실현률 0.80에
+12/12 미달(arm의 성질로 보임, 감사 N5 미해결). (3) ★★★양성대조가
+**항등식**이었다(방법론 게이트 #9 **아홉 번째 재발**) — 대조는
+헤드라인이 안 쓰는 코드 경로만 실행했고 표적값 자체가 같은 루프의 또
+다른 복사본 산출물, 공백을 메운 것은 claims-auditor의 독립 재구현
+— 단 ★그 재구현 코드(`indep.py`·`legacy.py`)는 **스크래치에만 있고
+저장소에 없다**(재현 경로 미보존, 2026-08-14 E-1a errata와 동형).
+(4) 엔진 빌드 정정 — 865493 대비 매니페스트 11→15 파일, hot path 3종
+추가(`scheduler.py`·`holb_probe.py`·`zamba2.py`). (5) guard 고원 —
+채택 구간이 전부 미관측 창 안이라 (16,16)은 보간. **등재 금지**:
+"C2-R이 2.36–2.91×보다 위"(범주 오류, batch/job 분해 불가)· 인용정지
+(b) 해제(범주 오류, T8·Hs8 미재측정)·N1/N2 해결(교차-job 대조 0건,
+미해결)·C2 등급 변경. 상세 §3 항목56(신설)·18(追記). 이전
+rev31: 2026-08-16 (doc-steward — **새 성능 판정 0건 · 정책 주장
 0건 · 기존 Δ·p값·크기 인용 셀(Zamba2 r2 단일)·등급은 한 글자도 안 바뀐다
 — 등재 3건뿐: (a) C2-R 사전등록(rev1 NO-GO/rev2 GO)을 `PROJECT_STATUS.md`
 "다음 실험 gate" #11 레지스트리에 추가(CONSENSUS 신규 항목 없음, 레지스트리는
@@ -1323,6 +1353,21 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     문서 안에서 자수했다(`TRAFFIC_ROOFLINE_DIAGNOSTIC_2026-08-11.md`
     §6.4). 상세 `../PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"
     C-4·"방법론 게이트" #9(일곱 번째 재발).
+    ★★★**아홉 번째 재발(2026-08-16, C2-R 캠페인, claims-auditor 적대
+    감사) — 이번엔 "양성대조" 자체가 항등식이었다.** `s8_c2r_score.py`의
+    `cmd_poscontrol`(:270)이 대조에 쓴 코드 경로(`discover("legacy",...)`
+    → `score(...)`의 기본값 `keep_slack=False`)는 헤드라인이 실제로
+    쓰는 경로(`cmd_c2r`:333, `discover("c2r",...)` →
+    `score(..., keep_slack=True)`)와 **다르다** — 대조는 헤드라인
+    경로를 **한 번도 실행하지 않았다.** 게다가 대조의 표적값(T8
+    2.388·Hs8 2.687) 자체가 `s8_batch_matched.py` 루프의 또 다른
+    verbatim 복사본(`audit_c2_job_composition.py`)의 산출물이다 —
+    "독립 검증"이 세 번째 복사본이 첫 번째 복사본과 일치하는지를 잰
+    것에 가깝다. 배제된 오류는 전사(transcription)·t0 조인·pooling
+    로직뿐이며, 실제로 남은 공백(헤드라인 경로 자체의 검증)을 메운
+    것은 이 대조가 아니라 **claims-auditor의 독립 재구현**(해당 코드
+    미import, 새 스크립트로 3.057990/3.114061 및 24개 부팅의 n·median
+    전부 재현)이다. 상세 §3 항목56(C).
 19. ★★★**(2026-08-03, 같은 날 4차 속행) 여집합 클래스에 음성대조를 걸어라 —
     항목 9와 뿌리는 같고 방향은 반대.** 이 자료를 세 차례(원 C2→`G_LEVER`
     감사, 첫 §0 axis check, 이 세션 자신의 첫 프레이밍) 통과했지만 아무도
@@ -2336,6 +2381,139 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     미완료 상태로 등재한다. 메모리 `deconfound-measurement-
     lessons.md` 항목38과 대응. 상세 `PROJECT_STATUS.md` "방법론
     게이트" #37, `handoff-report/session_handoff_2026-08-16.md` §4-1.
+56. `C2-R CAMPAIGN COMPLETE (2026-08-16) — jobs 883574(M8)/883575(Ha8),
+    result-analyst 분석 + claims-auditor 적대 감사 완료.`
+    ★★★**(2026-08-16, doc-steward 등재 — result-analyst 산출 +
+    claims-auditor 적대 검증, 메인 세션은 운영 지표만 직접 확인) M8·Ha8의
+    신규 점추정 2건 등재, 기존 값 교체 아님 — C2 등급 무변경
+    (CONFIRMED scoped), 인용정지 (a)(b) 둘 다 유효.** 사전등록
+    `PREREG_C2R_RULES_REV2_2026-08-15.md`(rev1 NO-GO 5표적 → rev2 GO,
+    §3 항목55/방법론 게이트#37 참조) 집행 결과.
+
+    **(A) 점추정·구간(등재 가능 범위 한정) — ★정본 인용 문구
+    (claims-auditor 지정, 그대로 채택, percentile CI를 t(5)로 대체)**:
+
+    > `r_M8(16) = 3.058`, `r_Ha8(16) = 3.114` (ctx1024, realized
+    > SM16/SM92, `decode_bs=16`, job 883574/883575, gpu43, 1시간,
+    > `n_indep=6` 부팅). 동반 구간은 **within-job 부팅 구간이며 재현
+    > 불확실성이 아니다** — 보수적으로 **t(5) [3.056, 3.060] · [3.077,
+    > 3.155]**를 쓰고, **job/node/날짜 축은 미측정(n=1)**임을 병기한다.
+
+    ★**percentile 부트스트랩 CI([3.0566,3.0595]/[3.0848,3.1354])는
+    정본 본문에 쓰지 않는다** — claims-auditor 실측 결과 이 값들이
+    **일관되게 과소피복**한다(부팅-평균 비의 t(5) 구간 대비 M8
+    1.36×·Ha8 1.55× 더 좁음). percentile 값은 **원자료 JSON
+    (`C2R_RESULTS_2026-08-16.json`)에 있다는 포인터로만** 남긴다.
+    **최외곽 통계 단위는 boot이지 job/node/day가 아니다** —
+    between-job SD는 **미측정**이다.
+
+    **(A′) seed 민감도(등재 가능, 짧게)**: `seed∈{1,2,3,99}`에서 M8
+    CI95 [3.0566,3.0595/6]·Ha8 CI95 [3.0843–3.0850,3.1354–3.1356], SD
+    변동 ≤1.5% ⇒ **부트스트랩 seed는 결과를 만들지 않는다**(사전등록
+    seed=1 선택은 무해). ⚠️**이것을 "CI가 견고하다"로 읽지 마라** —
+    seed 안정성은 **재표집 잡음**만 배제할 뿐, 문제는 **재표집되는
+    모집단**이다(최외곽 단위가 boot이고 job/node/day 축이 통째로
+    빠져 있다). "seed에 안정적"과 "population을 대표한다"는 다른
+    명제이며, 이 구분은 방법론 게이트 #9(항등식/자기확인) 계열의
+    오독을 막기 위한 것이다.
+
+    **(B) D3 사실(보고 전용, 게이트 아님)**: Ha8은 실현률 0.80에 12/12
+    셀 전부 미달한다(d16 0.508–0.765, d92 0.735–0.792). 865493의
+    Ha8(.682/.760)도 같은 대역 ⇒ **캠페인 결함이 아니라 arm의 성질로
+    보인다.** 감사 N5("실현률 80%+ 조건에서의 비")는 **여전히 미해결**.
+
+    **(C) ★★★양성대조가 항등식이었다 — 방법론 게이트 #9 아홉 번째
+    재발(§3 항목18 追記 참조).** `s8_c2r_score.py`의 `cmd_poscontrol`
+    (:270)이 `score(discover("legacy", jobs=jobs))`를 **`keep_slack`
+    인자 없이** 호출한다 — `score()`/`_intervals()`의 기본값은
+    `keep_slack=False`인데, 헤드라인 경로 `cmd_c2r`(:333)은
+    `score(discover("c2r", jobs=jobs), keep_slack=True)`를 쓴다. 즉
+    대조는 **legacy 분기 + `keep_slack=False`** 코드 경로만 실행했고
+    **헤드라인이 실제로 쓰는 c2r 분기 + `keep_slack=True` 경로는 한
+    번도 실행하지 않았다.** 게다가 대조의 표적값(T8 2.388·Hs8 2.687)
+    자체가 `s8_batch_matched.py`의 또 다른 verbatim 복사본
+    (`audit_c2_job_composition.py`)의 산출물이다 — 즉 "독립 검증"이
+    같은 estimand 루프의 세 번째 복사본이 첫 번째 복사본과 일치하는지를
+    확인한 것에 가깝다. **배제된 오류는 전사(transcription)·t0 조인·
+    pooling 로직뿐**이며, 그 공백(헤드라인 경로 자체의 검증)을 실제로
+    메운 것은 이 대조가 아니라 **claims-auditor의 독립 재구현**이다
+    (해당 코드를 import하지 않고 새로 짠 스크립트가 3.057990/3.114061
+    및 24개 부팅의 n·median을 전부 재현) — 이 provenance를 정확히
+    적을 것.
+
+    **(C′) ★provenance errata — 재현 경로가 저장소에 없다.**
+    claims-auditor의 독립 재구현 스크립트(`indep.py`·`legacy.py`)는
+    **스크래치에만 있고 저장소에는 없다** — "claims-auditor가
+    3.057990/3.114061을 독립 재현했다"는 사실 자체는 성립하지만,
+    **그 재현 경로가 저장소에 보존돼 있지 않다.** 2026-08-14 E-1a의
+    `VERDICT`/`T6_PC1` 미산출 전례(`E1A_ARTIFACT_ERRATA_2026-08-14.md`)와
+    같은 형태다 — **헤드라인 경로를 검증한 것은 저장소 밖 재구현이며,
+    그 코드는 보존되지 않았다.**
+
+    **(D) ★엔진 빌드 정정**: 865493(정본 헤드라인 앵커) 대비
+    `runtime_source_manifest*.sha256`가 **11→15 파일**로 늘었고, 추가
+    3종이 hot path다 — `scheduler.py`(HOLB hook을 `run_batch` 3경로에
+    삽입, 커밋 `4e4e01d`, 2026-08-07) · `holb_probe.py` ·
+    **`zamba2.py`**(= Ha8 자신의 forward, 커밋 `7de5336`, 2026-08-06).
+    865493 시점 해시는 **무증명**. ⇒ **"C2-R과 865493의 차이는 플래그
+    2개뿐"이라는 서술은 거짓**이며, 두 캠페인을 섞는 모든 비교(아래
+    (F) 포함)의 각주에 이 3파일을 명시할 것.
+
+    **(E) guard 고원 — C2 전반에 적용되는 estimand 성질.** `r`은
+    guard∈[2.5,∞)에서 불변(Ha8 3.1141→3.1133→3.1132), M8은
+    guard∈[1.0,3.0]에서 완전 무감이다. 진짜 한계는 반대쪽이다 —
+    **guard≤0.75면 셀이 빈다.** 정본 estimand의 채택 구간
+    (`GUARD=3.0`)이 전부 **0.7–6.3초 미관측 창 안**에 있다 ⇒
+    **(16,16) 점 자체가 관측이 아니라 보간**이다. 이는 C2-R만의
+    성질이 아니라 정본 estimand(`GUARD=3.0`, `s8_batch_matched.py`
+    이래 전 C2 캠페인 공통)의 성질이므로, C2를 인용할 때 전반적으로
+    병기한다.
+
+    **(F) 전-구간 강건성**: 조건화(guard/batch 등) 없이 계산해도
+    `r_M8=3.055`(−0.1%)·`r_Ha8=3.106`(−0.3%) — 위 점추정과 사실상
+    같다.
+
+    **[등재 금지 — claims-auditor가 명시적으로 막음]**
+
+    - ❌ **"C2-R 값이 정본 2.36–2.91×보다 위"** — **범주 오류.** C2-R의
+      d16 다리는 `b∈{1,15,16}`에만 존재하고 **M8 b12·Ha8 b9가 통째로
+      없어** batch/job 분해가 불가능하다. 단조성도 국소 위반 4건(M8
+      865533 b11 2.9309>b12 2.9091; C2-R b15 3.0719>b16 3.0580).
+      ⇒ 새 값은 기존 값을 **대체가 아니라 병기**한다 — "위/아래"
+      서술 금지.
+    - ❌ **인용정지 (b) 해제** — **범주 오류.** (b)는
+      `PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트"·
+      `CONSENSUS.md`의 **T8·Hs8 깨끗한 셀**(CI·"n=4" 표기) 인용에
+      걸린 것이고, C2-R은 T8·Hs8을 재측정하지 않았다(사전등록 §1 —
+      애초에 재측정할 이유가 없음). 새로 생긴 것은 **M8·Ha8의 새 인용
+      대상**뿐이다. **(b)는 그대로 유효.**
+    - ❌ **N1/N2 해결** — b=1 증거는 준-항등 체제(§7 C-2, weight-sweep
+      지배) · 대조 상대가 붕괴 job 865533 · 셀이 분모 다리일 뿐이며,
+      헤드라인 SM16 다리는 두 arm 다 교차-job 대조 **0건**이다.
+      검정력도 분해능 ≈1%(§6.1의 b=1·SM92 재현 폭) = M8 CI의 약
+      20배. **N1/N2는 여전히 미해결.**
+    - ❌ **C2 등급 변경** — **CONFIRMED(scoped) 그대로.**
+
+    **(G) 다음 실험 gate(신설, `PROJECT_STATUS.md` "다음 실험 gate"
+    #13)**: (1) job/node 축 — 동일 커밋·15파일 매니페스트로 ≥4 job×
+    ≥3 노드×≥2 날짜, arm M8·Ha8, d16/d92, b16, job당 3부팅(다리당
+    12). 1차 결정량 = **between-job SD of r**. **이게 없으면 어떤 CI도
+    인용 불가.** (2) batch vs job 분해 — 한 job 안에서 conc 계단
+    (4/8/12/16)으로 b=9·12·16을 공존시켜 within-job `r(b)`를 얻은 뒤
+    865533의 b9/b12와 대조. **이 둘 전에는 "3.06 vs 2.91"에 어떤
+    판정도 내리지 않는다.**
+
+    ⚠️★**provenance**: 캠페인 jobs **883574**(M8)·**883575**(Ha8, 각
+    12 부팅) · 스모크 **883351/883545/883563** · 분석
+    **result-analyst** · 적대 감사 **claims-auditor** · **메인 세션은
+    운영 지표(부팅 성공·H7·실현률)만 직접 확인**, 점추정·CI 산출은
+    독립 재현하지 않았다. 상세 `workspace/engine-port/results/
+    s8_scaleup/C2R_RESULTS_2026-08-16.md`(+ `C2R_RESULTS_2026-08-16.json`·
+    `C2R_SENSITIVITY_2026-08-16.json`·`C2R_GUARDSCAN_2026-08-16.json`·
+    `C2R_POSCONTROL_2026-08-16.json`), `PREREG_C2R_RULES_REV2_
+    2026-08-15.md`, `PROJECT_STATUS.md` "8B decode-SM 민감도 측정
+    노트"(2026-08-16 addendum)·"다음 실험 gate" #11(갱신)·#13(신설),
+    `handoff-report/session_handoff_2026-08-16.md`.
 
 ---
 
