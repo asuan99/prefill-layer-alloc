@@ -100,7 +100,30 @@ source /scratch/ehmoon/whlee/sglang_engine_venv/bin/activate
 ROOT=/scratch/ehmoon/whlee/prefill-layer-alloc
 HERE=$ROOT/workspace/engine-port/results/slo_sched
 SMSPLIT_PROBE_DIR=$ROOT/workspace/engine-port/results/smsplit_realized
-PDMUX_EVAL_DIR=$ROOT/workspace/engine-port/benchmarks
+# --- N3-collateral fix (2026-08-16, post-smoke-884292) --------------------
+# NAME IS LOAD-BEARING: this must NOT start with `PDMUX_`. It is a HARNESS-
+# INTERNAL sys.path directory, not a PD-mux runtime env var, but the N3
+# blanket hygiene loop below (`unset "${!PDMUX_@}" "${!SGLANG_ZAMBA_@}"`, in
+# the per-arm loop) matches by PREFIX, so the old name `PDMUX_EVAL_DIR` was
+# wiped on EVERY arm iteration. Under `set -u` that made the H3'-b heredoc's
+# `sys.path.insert(0, "$G16_EVAL_DIR")` an unbound-variable error that killed
+# the heredoc BEFORE python started -> CTRLSUMMARY_RC=1, no
+# `*_controller_summary.json`, and `residency_fraction={}` for every arm
+# (observed 3/3 arms in smoke job 884292: `.err` "line 673: PDMUX_EVAL_DIR:
+# unbound variable" x3, `.out` CONTROLLER_SUMMARY_JSON_MISSING x3). That
+# output is exactly what addendum A-2 needs quantified (arm labels are
+# conditional on the co-resident window; H3'-b's per-arm residency_fraction
+# is its size baseline), and the FULL 7-arm x 4-block path executes the same
+# code, so this was a campaign-wide silent loss, not a smoke-only artifact.
+# Fixed at the root (rename out of the runtime namespace) rather than by
+# adding a 4th name to the re-export list below, so that N3's "unset EVERY
+# PDMUX_*/SGLANG_ZAMBA_*" invariant stays intact and un-weakened.
+# Namespace audit at fix time: `PDMUX_EVAL_DIR` was the ONLY harness-internal
+# variable in this file matching either prefix (all shell assignments
+# enumerated; the only other PDMUX_* names assigned here are the 3 the
+# campaign deliberately re-exports, and there are no SGLANG_ZAMBA_* ones).
+# g16_n3_dryrun_check.py now enforces that invariant statically.
+G16_EVAL_DIR=$ROOT/workspace/engine-port/benchmarks
 export HF_HOME=$ROOT/hf_cache
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONUNBUFFERED=1
 JOBTAG="${SLURM_JOB_ID:-local}"
@@ -412,7 +435,8 @@ BOOTS_FAILED=0
 FAILED_ARMS=""
 PIN_FAILED_ARMS=""
 D74_WALLTIME_S=""; D74_BOOT_S=""; D74_BENCH_S=""
-SMOKE1=""; SMOKE2=""; SMOKE2B=""; SMOKE3=""; SMOKE4=""
+SMOKE1=""; SMOKE2=""; SMOKE2B=""; SMOKE3=""; SMOKE4=""; SMOKE7=""
+SMOKE9=""; SMOKE9A=""; SMOKE9B=""; SMOKE10=""
 
 # --- H18 warm-up (addendum A-3-3/A-6/A-7): throwaway warm-up boot, ONCE per
 # block/job, using this block's FIRST arm's config. Not counted as a boot for
@@ -522,6 +546,20 @@ for ARM in $ARM_ORDER; do
   # chasing individual names one audit at a time. `${!PREFIX@}` safely
   # expands to zero words (no error under `set -u`) when nothing matches, so
   # this is a no-op on a clean submitting shell.
+  # --- COLLATERAL INVARIANT (2026-08-16, post-smoke-884292) ---------------
+  # This loop matches by PREFIX and runs on EVERY arm iteration, so it also
+  # deletes HARNESS-INTERNAL variables that merely happen to be named
+  # PDMUX_*/SGLANG_ZAMBA_*, whether or not the runtime ever reads them.
+  # Smoke 884292 lost H3'-b (controller_summary / residency_fraction) on 3/3
+  # arms exactly this way -- see the G16_EVAL_DIR comment near the top of
+  # this file for the full mechanism. INVARIANT: no harness-internal shell
+  # variable in this script may be named PDMUX_*/SGLANG_ZAMBA_*; the only
+  # names in that namespace are the 3 re-exported below. Enforced statically
+  # by g16_n3_dryrun_check.py (checks C and D), which also fails on any
+  # `$PDMUX_x`/`$SGLANG_ZAMBA_x` dereference outside those 3 names. Do NOT
+  # "fix" a future collateral casualty by adding a 4th re-export -- rename
+  # the harness variable out of the runtime namespace instead, so N3's
+  # "unset EVERY PDMUX_*/SGLANG_ZAMBA_*" hygiene stays un-weakened.
   for _pv in "${!PDMUX_@}" "${!SGLANG_ZAMBA_@}"; do
     unset "$_pv"
   done
@@ -672,7 +710,7 @@ PYEOF
   # quantified per arm.
   python3 - "$PDMUX_TELEMETRY_PATH" "$CTRLSUMMARY_JSON" <<PYEOF
 import json, sys
-sys.path.insert(0, "$PDMUX_EVAL_DIR")
+sys.path.insert(0, "$G16_EVAL_DIR")
 from pdmux_eval.analyze import controller_summary
 telem_path, out_path = sys.argv[1], sys.argv[2]
 events = []
@@ -763,11 +801,36 @@ PYEOF
     echo "G16_SMOKE_CHECK 2_REALIZED_PROBE_EXACT_D74=$SMOKE2 file=$REALPROBE_JSON"
     echo "G16_SMOKE_CHECK 3_FIELD_ASSERT=$SMOKE3"
     echo "G16_SMOKE_CHECK 4_FILENAME_CONVENTION=$SMOKE4 run_id=$RUNID"
-    echo "G16_SMOKE_CHECK 7_D74_WALLTIME=PASS seconds=$D74_WALLTIME_S"
-    # A-7 item 9: report the H2' count + the H3'-b time-weighted residency
-    # actually observed, so the campaign's dwell expectations are on record
-    # (informational -- non-gating, this is a baseline measurement, not a
-    # threshold check).
+    # 7/10: the label is DERIVED from whether the value was actually recorded
+    # (same defect class as #9 below -- a hardcoded `=PASS` next to an empty
+    # value is a gate labelling a measurement failure as a success). The
+    # block-level G16_SMOKE_OVERALL condition already required `-n` on all
+    # three of these, so this changes the LABEL only, never the verdict.
+    [ -n "$D74_WALLTIME_S" ] && SMOKE7=PASS || SMOKE7=FAIL
+    if [ -n "$D74_BOOT_S" ] && [ -n "$D74_BENCH_S" ]; then SMOKE10=PASS; else SMOKE10=FAIL; fi
+    echo "G16_SMOKE_CHECK 7_D74_WALLTIME=$SMOKE7 seconds=$D74_WALLTIME_S"
+    # G16_SMOKE9_BLOCK_START (regression-test extraction marker -- keep this
+    # and its closing counterpart below in place; g16_smoke9_check.py sources
+    # the text between them verbatim and drives it against synthetic and REAL
+    # artifacts. Do not remove/rename without updating that test.)
+    # --- A-7 item 9 (rewritten 2026-08-16, post-smoke-884292) -------------
+    # rev3 sec9's list is headed "통과 조건(전부 만족해야 본 캠페인 제출)" and
+    # A-7 is titled "스모크 통과 조건 추가", so (9) IS a pass condition: the
+    # campaign's dwell expectation is SET here, which requires the value to
+    # exist. The pre-fix version printed a hardcoded `=PASS` and swallowed a
+    # missing/unreadable controller_summary.json in `except Exception: print
+    # ("{}")`, so smoke 884292 printed
+    # `9_H2_COUNT_AND_RESIDENCY=PASS ... residency_fraction={}` -- a gate
+    # labelling its own measurement failure as a success (methodology gate #9
+    # / lessons item 21, mirror image). No rule text changed here: this makes
+    # the checker actually DECIDE the condition the prereg already stated.
+    # Reported as TWO independent sub-conditions (9a count, 9b residency) so
+    # the log alone identifies which half broke.
+    #
+    # 9a is a deliberate SECOND, independent count of the same quantity
+    # g16_assert.py's runtime_snapshots (check #1 / TELEM_RC) computes -- a
+    # different code path over the same file, so agreement is evidence, not an
+    # identity. If 9a and #1 ever disagree, one of the two readers is wrong.
     SMOKE9_COUNT=$(python3 - "$PDMUX_TELEMETRY_PATH" <<'PYEOF'
 import json, sys
 n = 0
@@ -785,19 +848,76 @@ with open(sys.argv[1]) as fh:
 print(n)
 PYEOF
 )
-    SMOKE9_RESIDENCY=$(python3 - "$CTRLSUMMARY_JSON" <<'PYEOF'
+    SMOKE9_COUNT_RC=$?
+    case "$SMOKE9_COUNT" in
+      ''|*[!0-9]*) SMOKE9A=FAIL; SMOKE9_COUNT="${SMOKE9_COUNT:-<no_output>}" ;;
+      *) if [ "$SMOKE9_COUNT_RC" -eq 0 ] && [ "$SMOKE9_COUNT" -ge "$MIN_SNAPSHOTS" ]; then
+           SMOKE9A=PASS
+         else
+           SMOKE9A=FAIL
+         fi ;;
+    esac
+    # 9b: FAIL on missing file / unreadable JSON / absent-or-empty
+    # residency_fraction. NOTE the key can be legitimately ABSENT (not just
+    # empty): pdmux_eval.analyze.controller_summary's no-snapshot early return
+    # omits `residency_fraction` entirely, so `.get(..., {})` alone cannot
+    # distinguish "no data" from "measured {}" -- both are failures here, but
+    # the reason token says which. This is smoke-only and MUST NOT be copied
+    # into the per-arm loop as an arm gate: H3'-b is RECORD ONLY and never
+    # disables an arm at any value (A-1/K10).
+    SMOKE9_RES_OUT=$(python3 - "$CTRLSUMMARY_JSON" <<'PYEOF'
 import json, sys
+
+path = sys.argv[1]
+frac = {}
+total = 0.0
 try:
-    with open(sys.argv[1]) as fh:
-        d = json.load(fh)
-    print(json.dumps(d.get("residency_fraction", {})))
-except Exception:
-    print("{}")
+    with open(path) as fh:
+        summary = json.load(fh)
+except FileNotFoundError:
+    reason = "summary_json_missing"
+except (OSError, ValueError) as exc:  # ValueError covers json.JSONDecodeError
+    reason = "summary_json_unreadable:" + type(exc).__name__
+else:
+    if not isinstance(summary, dict):
+        reason = "summary_json_not_an_object"
+    elif "residency_fraction" not in summary:
+        reason = "residency_fraction_key_absent"
+    else:
+        raw = summary.get("residency_fraction")
+        if not isinstance(raw, dict):
+            reason = "residency_fraction_not_a_dict"
+        elif not raw:
+            reason = "residency_fraction_empty"
+        else:
+            frac = raw
+            try:
+                total = sum(float(v) for v in raw.values())
+            except (TypeError, ValueError):
+                total = float("nan")
+            reason = "ok" if total > 0.0 else "residency_fraction_degenerate_zero_total"
+print(reason)
+print("%.6f" % total)
+print(json.dumps(frac, sort_keys=True))
+sys.exit(0 if reason == "ok" else 1)
 PYEOF
 )
-    echo "G16_SMOKE_CHECK 9_H2_COUNT_AND_RESIDENCY=PASS" \
-      "runtime_snapshot_benchmark_count=$SMOKE9_COUNT residency_fraction=$SMOKE9_RESIDENCY"
-    echo "G16_SMOKE_CHECK 10_D74_BOOT_BENCH_SPLIT=PASS boot_s=$D74_BOOT_S bench_s=$D74_BENCH_S"
+    SMOKE9B_RC=$?
+    readarray -t _s9 <<< "$SMOKE9_RES_OUT"
+    SMOKE9_REASON="${_s9[0]-}"; [ -n "$SMOKE9_REASON" ] || SMOKE9_REASON="no_output"
+    SMOKE9_RES_SUM="${_s9[1]-}"; [ -n "$SMOKE9_RES_SUM" ] || SMOKE9_RES_SUM="n/a"
+    SMOKE9_RESIDENCY="${_s9[2]-}"; [ -n "$SMOKE9_RESIDENCY" ] || SMOKE9_RESIDENCY="{}"
+    if [ "$SMOKE9B_RC" -eq 0 ] && [ "$SMOKE9_REASON" = ok ]; then SMOKE9B=PASS; else SMOKE9B=FAIL; fi
+    if [ "$SMOKE9A" = PASS ] && [ "$SMOKE9B" = PASS ]; then SMOKE9=PASS; else SMOKE9=FAIL; fi
+    echo "G16_SMOKE_CHECK 9a_H2_SNAPSHOT_COUNT=$SMOKE9A" \
+      "runtime_snapshot_benchmark_count=$SMOKE9_COUNT min=$MIN_SNAPSHOTS" \
+      "recount_rc=$SMOKE9_COUNT_RC assert_telem_rc=$TELEM_RC"
+    echo "G16_SMOKE_CHECK 9b_H3B_RESIDENCY=$SMOKE9B reason=$SMOKE9_REASON" \
+      "residency_sum=$SMOKE9_RES_SUM residency_fraction=$SMOKE9_RESIDENCY" \
+      "ctrlsummary_rc=$CTRLSUMMARY_RC file=$CTRLSUMMARY_JSON"
+    echo "G16_SMOKE_CHECK 9_H2_COUNT_AND_RESIDENCY=$SMOKE9 (9a=$SMOKE9A 9b=$SMOKE9B)"
+    # G16_SMOKE9_BLOCK_END
+    echo "G16_SMOKE_CHECK 10_D74_BOOT_BENCH_SPLIT=$SMOKE10 boot_s=$D74_BOOT_S bench_s=$D74_BENCH_S"
   fi
 done
 
@@ -809,10 +929,20 @@ if [ "$SMOKE" = "1" ]; then
   if [ -s "$MANIFEST" ] && [ "$GIT_COMMIT" != "unknown" ]; then SMOKE6=PASS; else SMOKE6=FAIL; fi
   echo "G16_SMOKE_CHECK 5_BOOTS_FAILED=$SMOKE5 value=$BOOTS_FAILED"
   echo "G16_SMOKE_CHECK 6_MANIFEST_COMMIT=$SMOKE6 manifest=$MANIFEST commit=$GIT_COMMIT"
+  # SMOKE7/SMOKE10 are exactly the pre-fix `-n "$D74_WALLTIME_S"` /
+  # `-n "$D74_BOOT_S" && -n "$D74_BENCH_S"` tests, hoisted into named
+  # variables so the per-check line and the overall verdict cannot disagree.
+  # SMOKE9 is NEW in the overall condition: pre-fix, item 9 was printed as a
+  # hardcoded PASS and was absent from this conjunction, so a smoke run with
+  # `residency_fraction={}` still reported G16_SMOKE_OVERALL=PASS (884292).
+  # rev3 sec9 heads its list "전부 만족해야 본 캠페인 제출" and A-7 adds
+  # (8)(9)(10) to it -- the conjunction now matches that rule text.
+  echo "G16_SMOKE_TALLY 1=$SMOKE1 2=$SMOKE2 2b/8b=$SMOKE2B 3=$SMOKE3 4=$SMOKE4" \
+    "5=$SMOKE5 6=$SMOKE6 7=$SMOKE7 9=$SMOKE9 (9a=$SMOKE9A 9b=$SMOKE9B) 10=$SMOKE10"
   if [ "$SMOKE1" = PASS ] && [ "$SMOKE2" = PASS ] && [ "$SMOKE2B" = PASS ] \
      && [ "$SMOKE3" = PASS ] && [ "$SMOKE4" = PASS ] && [ "$SMOKE5" = PASS ] \
-     && [ "$SMOKE6" = PASS ] && [ -n "$D74_WALLTIME_S" ] && [ -n "$D74_BOOT_S" ] \
-     && [ -n "$D74_BENCH_S" ]; then
+     && [ "$SMOKE6" = PASS ] && [ "$SMOKE7" = PASS ] && [ "$SMOKE9" = PASS ] \
+     && [ "$SMOKE10" = PASS ]; then
     echo "G16_SMOKE_OVERALL=PASS (sec9 conditions 1-7 + addendum A-7 items 8/9/10 satisfied)"
   else
     echo "G16_SMOKE_OVERALL=FAIL (>=1 condition not satisfied -- do NOT submit the full campaign)"
