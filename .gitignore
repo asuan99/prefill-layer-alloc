@@ -120,3 +120,6 @@ tmp/
 **/results/**/*_clocks.csv
 # shared default sync manifest; the per-campaign copy is the tracked one
 /workspace/engine-port/results/runtime_source_manifest.sha256
+
+# transient job-monitoring logs (results/, not artifacts)
+*_poll.log
