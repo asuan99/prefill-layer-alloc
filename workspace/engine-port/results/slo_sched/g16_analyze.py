@@ -215,6 +215,13 @@ class BootRecord:
     status: Optional[str] = None
     residency_fraction: Optional[Dict[str, float]] = None
     split_transitions: Optional[int] = None
+    # addendum E-2(3)/D-4: placement provenance must travel with every report.
+    # Missing exactly this is what produced C2 citation-stop (b).
+    node: Optional[str] = None
+    gpu_uuid: Optional[str] = None
+    git_commit: Optional[str] = None
+    manifest_sha: Optional[str] = None
+    boot_s: Optional[float] = None
 
 
 def boot_estimands(
@@ -504,12 +511,19 @@ def _forced_cell(d_ttft: Optional[int], d_itl: Optional[int],
 
 
 def _saturation_gap(grid: Sequence[BootRecord], contenders: Sequence[str]) -> Dict[str, object]:
-    """Max spread of ``mean_b M_itl`` over the CONTENDING arms.
+    """Max spread of ``mean_b M_itl`` over the UPPER arms (K11).
 
-    sec6 says "upper arms" without defining the set.  Pre-registered here as
-    the contending set (arms that win at least one block), with the top-half-by-
-    SM alternative reported ALONGSIDE so the choice is auditable rather than
-    silent.  Flagged in ``spec_ambiguities``.
+    sec6 said "upper arms" without defining the set.  Prereg addendum C
+    (2026-08-17) pins it: U = arms with decode SM >= K11_UPPER_ARM_MIN_SM,
+    falling back to the top-half of the surviving arms and then to "undefined".
+    ``gap_upper_ms`` is what the verdict and the K9 adaptive rule read.
+
+    The CONTENDING set (arms winning >= 1 block) was REFUTED as the primary --
+    it is derived from the block argmin whose failure ITL_SATURATED is meant to
+    explain, it is nan whenever the winner is unanimous, and it can fire
+    ITL_SATURATED on the grid's BOTTOM arms.  ``gap_contenders_ms`` and
+    ``gap_top_half_by_sm_ms`` remain as DIAGNOSTICS and are never read by a
+    verdict.
     """
     means = _arm_means(grid, "M_itl")
     def spread(arms: Sequence[str]) -> float:
@@ -688,8 +702,17 @@ def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
             else:
                 rung_verdict = "NEGATIVE_INTERIOR"
         closed = s_itl_upward_closed(means_itl, float(slo))
+        # addendum E-2(1): sec6 defines TAX_POSITIVE / NO_TAX /
+        # NEGATIVE_INTERIOR as "donor identified AND ...", but the rung label
+        # is computed from the bare argmin and carries no such conjunct, so a
+        # rung can read TAX_POSITIVE on a grid whose donor is unidentified.
+        # The label and delta_slo are UNCHANGED (gate #19); `citable` is added
+        # so the conjunct travels with the number.
         ladder.append({"slo_ms": slo, "S_itl": point, "delta_slo": delta_slo,
                        "verdict": rung_verdict,
+                       "citable": bool(donor_ttft["identified"]),
+                       "block_verdict_flags": sorted({f["verdict"]
+                                                      for f in flags}),
                        "S_itl_upward_closed": closed,
                        "monotonicity_violated": closed != point})
 
@@ -783,6 +806,9 @@ def decide(grid: Sequence[BootRecord], *, label: str) -> Dict[str, object]:
         "grid_hygiene": _grid_hygiene(grid),
         "operating_point": {
             "slo_ms": OPERATING_POINT_SLO_MS, **op,
+            # addendum E-2(1): same missing conjunct as the ladder rungs.
+            "citable": bool(donor_ttft["identified"]),
+            "block_verdict_flags": sorted({f["verdict"] for f in flags}),
             "MANDATORY_BAND": DELTA_SLO_60_BAND,
             "warning": "the 60 ms point estimate is NEVER cited without this "
                        "band (C2'); the registrable object is the sign-change "
@@ -947,7 +973,11 @@ def load_campaign_grid(directory: Path, phase: str, *,
             boot=int(match.group("boot")), phase=phase, path=str(path),
             est=_headline_estimands(path), t_boot0=sidecar.get("t_boot0"),
             exact=sidecar.get("exact"), status=sidecar.get("status"),
-            residency_fraction=residency, split_transitions=transitions))
+            residency_fraction=residency, split_transitions=transitions,
+            node=sidecar.get("node"), gpu_uuid=sidecar.get("gpu_uuid"),
+            git_commit=sidecar.get("git_commit"),
+            manifest_sha=sidecar.get("manifest_sha"),
+            boot_s=sidecar.get("boot_s")))
     if arms_failing_exact:
         records = [r for r in records if r.arm not in arms_failing_exact]
     missing_summary = [Path(r.path).name for r in records
@@ -1418,10 +1448,40 @@ def run_campaign(directory: Path, *, include_smoke: bool = False) -> Dict[str, o
                             "goodput_req_s", "throughput_req_s",
                             "band_mass_ttft", "band_mass_itl")}
                 for arm in sorted({r.arm for r in grid}, key=arm_sm)},
-            "residency_fraction_by_arm": {
+            # addendum E-2(2): this used to be keyed by ARM, so 21 of 28 boots
+            # were silently overwritten (28 records -> 7 entries) even though
+            # A-2's conditional label and D-4 both need the per-boot values.
+            # Keyed by artifact name now; the arm-keyed view is kept for
+            # backward reading but explicitly marked lossy.
+            "residency_fraction_by_boot": {
+                Path(r.path).name: r.residency_fraction
+                for r in grid if r.residency_fraction},
+            "residency_fraction_by_arm_LOSSY_LAST_BOOT_WINS": {
                 r.arm: r.residency_fraction for r in grid if r.residency_fraction},
             "split_transitions_by_boot": {
                 Path(r.path).name: r.split_transitions for r in grid},
+            # addendum D-4 / E-2(3): block-level placement table.  Two blocks
+            # of this campaign ran CONCURRENTLY on one node, so node, GPU and
+            # concurrency must be readable from any report that quotes a
+            # number, not recoverable only from sidecars.
+            "placement_by_block": {
+                b: {
+                    "nodes": sorted({r.node for r in grid
+                                     if r.block == b and r.node}),
+                    "gpu_uuids": sorted({r.gpu_uuid for r in grid
+                                         if r.block == b and r.gpu_uuid}),
+                    "git_commits": sorted({r.git_commit for r in grid
+                                           if r.block == b and r.git_commit}),
+                    "manifest_shas": sorted({r.manifest_sha for r in grid
+                                             if r.block == b and r.manifest_sha}),
+                    "t_boot0_range": [
+                        min(v), max(v)] if (v := [r.t_boot0 for r in grid
+                                                  if r.block == b
+                                                  and r.t_boot0 is not None]) else None,
+                    "boot_s_by_arm": {r.arm: r.boot_s for r in grid
+                                      if r.block == b and r.boot_s is not None},
+                }
+                for b in sorted({r.block for r in grid})},
         }
         # secondary: canonical threshold donors + K2 cliff routing
         band_max_ttft = max(v["band_mass_ttft"] for v in decision["side_outputs"]["per_arm"].values())
