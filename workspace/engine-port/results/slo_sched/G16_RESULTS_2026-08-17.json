@@ -1,0 +1,6058 @@
+{
+  "analyzer_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/slo_sched/g16_analyze.py",
+  "analyzer_sha256": "2c9626f2b36e930336004d73e7b4986798fd557bb73d377048de8a58c719cad0",
+  "campaign": {
+    "ACKNOWLEDGED_CONTROL_GAPS": [
+      "the block-bootstrap DONOR-SELECTION statistic has no canonical control (unpaired_bootstrap_ci is a difference-of-means tool); synthetic calibration below is the substitute (sec7)",
+      "node/date remain a RECORDING axis only (SLURM placement) -- 'node axis unmeasured' accompanies every primary result (sec5)",
+      "telemetry is not a free observer: the 2026-07-15/18 grid ran WITHOUT instrumentation, so M_ttft/M_itl absolute values are NOT compared to it (add. B-2 / N7)"
+    ],
+    "HI": {
+      "D_itl": {
+        "arm": null,
+        "bootstrap_rule": {
+          "distribution": {
+            "d34": 0.2426,
+            "d44": 0.1261,
+            "d54": 0.1198,
+            "d64": 0.5115
+          },
+          "fraction": 0.5115,
+          "passes": false,
+          "tied_fraction": 0.0,
+          "winner": "d64"
+        },
+        "decode_sm": null,
+        "identified": false,
+        "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+        "rank_rule": {
+          "blocks_won": 1,
+          "n_blocks": 4,
+          "n_blocks_tied": 0,
+          "passes": false,
+          "per_block": {
+            "blk1": "d64",
+            "blk2": "d34",
+            "blk3": "d44",
+            "blk4": "d54"
+          },
+          "per_block_tied": {
+            "blk1": false,
+            "blk2": false,
+            "blk3": false,
+            "blk4": false
+          },
+          "winner": "d34"
+        },
+        "rules_agree": false
+      },
+      "D_itl_arm": "d64",
+      "D_ttft": {
+        "arm": "d44",
+        "bootstrap_rule": {
+          "distribution": {
+            "d44": 1.0
+          },
+          "fraction": 1.0,
+          "passes": true,
+          "tied_fraction": 0.0,
+          "winner": "d44"
+        },
+        "decode_sm": 44,
+        "identified": true,
+        "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+        "rank_rule": {
+          "blocks_won": 4,
+          "n_blocks": 4,
+          "n_blocks_tied": 0,
+          "passes": true,
+          "per_block": {
+            "blk1": "d44",
+            "blk2": "d44",
+            "blk3": "d44",
+            "blk4": "d44"
+          },
+          "per_block_tied": {
+            "blk1": false,
+            "blk2": false,
+            "blk3": false,
+            "blk4": false
+          },
+          "winner": "d44"
+        },
+        "rules_agree": true
+      },
+      "D_ttft_arm": "d44",
+      "S_max": 74,
+      "S_min": 16,
+      "adaptive_rule": {
+        "action": "NO_MORE_BLOCKS",
+        "reason": "upper gap < delta => ITL_SATURATED is final"
+      },
+      "arm_means": {
+        "M_itl": {
+          "d16": 83.9518207754736,
+          "d24": 60.461157167083,
+          "d34": 58.6249601929012,
+          "d44": 58.691897523385705,
+          "d54": 58.79313033328799,
+          "d64": 58.53296699424391,
+          "d74": 59.16719261695107
+        },
+        "M_ttft": {
+          "d16": 2227.867683119257,
+          "d24": 1279.510113003198,
+          "d34": 1218.146103368781,
+          "d44": 1089.7577961077332,
+          "d54": 1188.5974127435475,
+          "d64": 1189.8556881205877,
+          "d74": 1875.5858354925294
+        }
+      },
+      "arm_t_ci": {
+        "M_itl": {
+          "d16": {
+            "hi": 84.11043920527408,
+            "lo": 83.79320234567314,
+            "mean": 83.9518207754736,
+            "n": 4.0,
+            "sd": 0.0996973160279469,
+            "t_crit": 3.182
+          },
+          "d24": {
+            "hi": 61.06081817259084,
+            "lo": 59.86149616157516,
+            "mean": 60.461157167083,
+            "n": 4.0,
+            "sd": 0.37690823727708395,
+            "t_crit": 3.182
+          },
+          "d34": {
+            "hi": 59.39505860859622,
+            "lo": 57.854861777206175,
+            "mean": 58.6249601929012,
+            "n": 4.0,
+            "sd": 0.48403420219674653,
+            "t_crit": 3.182
+          },
+          "d44": {
+            "hi": 59.956411323843774,
+            "lo": 57.42738372292764,
+            "mean": 58.691897523385705,
+            "n": 4.0,
+            "sd": 0.7947918293262531,
+            "t_crit": 3.182
+          },
+          "d54": {
+            "hi": 59.82226231347432,
+            "lo": 57.76399835310166,
+            "mean": 58.79313033328799,
+            "n": 4.0,
+            "sd": 0.6468459963458995,
+            "t_crit": 3.182
+          },
+          "d64": {
+            "hi": 59.60278140966834,
+            "lo": 57.463152578819475,
+            "mean": 58.53296699424391,
+            "n": 4.0,
+            "sd": 0.6724163516181199,
+            "t_crit": 3.182
+          },
+          "d74": {
+            "hi": 61.38329866393606,
+            "lo": 56.95108656996608,
+            "mean": 59.16719261695107,
+            "n": 4.0,
+            "sd": 1.392901349456309,
+            "t_crit": 3.182
+          }
+        },
+        "M_ttft": {
+          "d16": {
+            "hi": 2378.076282185583,
+            "lo": 2077.659084052931,
+            "mean": 2227.867683119257,
+            "n": 4.0,
+            "sd": 94.41143875947574,
+            "t_crit": 3.182
+          },
+          "d24": {
+            "hi": 1297.8708081057,
+            "lo": 1261.149417900696,
+            "mean": 1279.510113003198,
+            "n": 4.0,
+            "sd": 11.540348901635479,
+            "t_crit": 3.182
+          },
+          "d34": {
+            "hi": 1249.796351102417,
+            "lo": 1186.495855635145,
+            "mean": 1218.146103368781,
+            "n": 4.0,
+            "sd": 19.893304672304243,
+            "t_crit": 3.182
+          },
+          "d44": {
+            "hi": 1134.1729387969222,
+            "lo": 1045.3426534185442,
+            "mean": 1089.7577961077332,
+            "n": 4.0,
+            "sd": 27.91649446209237,
+            "t_crit": 3.182
+          },
+          "d54": {
+            "hi": 1258.1078342084818,
+            "lo": 1119.0869912786131,
+            "mean": 1188.5974127435475,
+            "n": 4.0,
+            "sd": 43.689768362623646,
+            "t_crit": 3.182
+          },
+          "d64": {
+            "hi": 1199.249689042629,
+            "lo": 1180.4616871985465,
+            "mean": 1189.8556881205877,
+            "n": 4.0,
+            "sd": 5.904463181672605,
+            "t_crit": 3.182
+          },
+          "d74": {
+            "hi": 1978.885913443431,
+            "lo": 1772.2857575416278,
+            "mean": 1875.5858354925294,
+            "n": 4.0,
+            "sd": 64.92776741100035,
+            "t_crit": 3.182
+          }
+        }
+      },
+      "arms": [
+        "d16",
+        "d24",
+        "d34",
+        "d44",
+        "d54",
+        "d64",
+        "d74"
+      ],
+      "byproduct_block_paired": {
+        "definition": "M_itl(d44) - M_itl(S_max)  [sec6 pre-registered]",
+        "s_max_arm": "d74",
+        "value_ms": -0.47529509356536437
+      },
+      "citation_guards": [
+        "Delta must never be a standalone headline (C2: the location statistic does not saturate, so D_itl = S_max may be a priori)",
+        "TRUNCATED is never written as 'no tax'",
+        "percentile CI is never cited on its own; t(n-1) accompanies it",
+        "Delta / Delta_SLO are discrete lattice values: report the donor / sufficient-point SELECTION DISTRIBUTION, not a CI",
+        "sec10-7: this says NOTHING about HE0.  A positive coupling tax does NOT revive dynamic control -- 'achieved dynamic is worse than best static' and 'the achievable ceiling' are separate propositions (gate #38).  No policy-ranking change.",
+        "sec10-9(a): the location statistic CANNOT in principle produce a magnitude comparable to sec1-20 '+16%' or sec1-32 '+1.67%'",
+        "sec6: TRUNCATED / ITL_SATURATED / S_ITL_UNREACHED / UNIDENTIFIED are RESULTS, not failures.  This tool's exit code 2 and the word 'GATE' refer to POSITIVE-CONTROL failure only -- never relabel a verdict as a failed measurement (gate #21, reverse direction)",
+        "sec10-2: HI is 2.15-2.35x overloaded and threshold-goodput is ill-posed there; the goodput / pass-rate side outputs inherit that caveat",
+        "sec10-5/6: Zamba2-2.7B, ctx4096, ShareGPT, and only TWO points on the work-ratio axis -- no slope or functional-form claims, no transplant to 8B or other models",
+        "NEVER write 'gate #16 is closed'.  What closes is the RE-FORMULATED decision quantity 2; the threshold version stays on the rate axis (rev3 sec1 C1)",
+        "add. A-3: agreement between the primary and the drift-corrected donor does NOT mean 'no drift'.  A symmetric CURVATURE component moves both estimators the same way, so DRIFT_DISAGREEMENT is blind exactly where A-3-2 says 4 blocks cannot balance"
+      ],
+      "delta": 20,
+      "delta_citable": false,
+      "delta_slo_intervals": [
+        {
+          "S_itl": null,
+          "delta_slo": null,
+          "slo_hi_ms": 58,
+          "slo_lo_ms": 45,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": 34,
+          "delta_slo": -10,
+          "slo_hi_ms": 60,
+          "slo_lo_ms": 59,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "delta_slo": -20,
+          "slo_hi_ms": 80,
+          "slo_lo_ms": 61,
+          "verdict": "NEGATIVE_INTERIOR"
+        }
+      ],
+      "delta_slo_ladder": [
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 45,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 46,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 47,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 48,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 49,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 50,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 51,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 52,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 53,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 54,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 55,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 56,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 57,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": null,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": null,
+          "monotonicity_violated": false,
+          "slo_ms": 58,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": 34,
+          "S_itl_upward_closed": null,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -10,
+          "monotonicity_violated": true,
+          "slo_ms": 59,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 34,
+          "S_itl_upward_closed": 34,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -10,
+          "monotonicity_violated": false,
+          "slo_ms": 60,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 61,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 62,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 63,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 64,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 65,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 66,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 67,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 68,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 69,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 70,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 71,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 72,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 73,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 74,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 75,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 76,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 77,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 78,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 79,
+          "verdict": "NEGATIVE_INTERIOR"
+        },
+        {
+          "S_itl": 24,
+          "S_itl_upward_closed": 24,
+          "block_verdict_flags": [
+            "ITL_SATURATED"
+          ],
+          "citable": true,
+          "delta_slo": -20,
+          "monotonicity_violated": false,
+          "slo_ms": 80,
+          "verdict": "NEGATIVE_INTERIOR"
+        }
+      ],
+      "drift_corrected": {
+        "M_itl": {
+          "argmin_arm": "d64",
+          "argmin_tied": false,
+          "corrected_arm_means": {
+            "d16": 83.95091653249342,
+            "d24": 60.46077963609287,
+            "d34": 58.62470331080918,
+            "d44": 58.69192082718783,
+            "d54": 58.79349063684698,
+            "d64": 58.5334498860683,
+            "d74": 59.167864773827894
+          },
+          "note": "reported ALONGSIDE the primary; a donor disagreement between the two is itself a registered result (add. A-3)",
+          "slope_per_s": -6.842346970172947e-05
+        },
+        "M_ttft": {
+          "argmin_arm": "d44",
+          "argmin_tied": false,
+          "corrected_arm_means": {
+            "d16": 2227.8293882996513,
+            "d24": 1279.4941245117423,
+            "d34": 1218.135224375425,
+            "d44": 1089.758783027088,
+            "d54": 1188.6126716508295,
+            "d64": 1189.8761386584515,
+            "d74": 1875.614301432447
+          },
+          "note": "reported ALONGSIDE the primary; a donor disagreement between the two is itself a registered result (add. A-3)",
+          "slope_per_s": -0.0028977437331129596
+        }
+      },
+      "forced_cell": {
+        "cell": "D_itl=interior x D_ttft=interior",
+        "reading": "sign and size both data",
+        "sign_forced": false
+      },
+      "frame": "does the split that ITL requires differ from the THROUGHPUT-OPTIMAL split? (closes the re-formulated decision quantity 2; the threshold version remains on the rate axis)",
+      "grid_hygiene": {
+        "arms": [
+          "d16",
+          "d24",
+          "d34",
+          "d44",
+          "d54",
+          "d64",
+          "d74"
+        ],
+        "balanced": true,
+        "blocks": [
+          "blk1",
+          "blk2",
+          "blk3",
+          "blk4"
+        ],
+        "boots_per_arm": {
+          "d16": 4,
+          "d24": 4,
+          "d34": 4,
+          "d44": 4,
+          "d54": 4,
+          "d64": 4,
+          "d74": 4
+        },
+        "flags": [],
+        "incidence": {
+          "d16": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d24": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d34": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d44": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d54": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d64": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d74": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          }
+        },
+        "missing_cells": [],
+        "sufficient_blocks": true
+      },
+      "label": "G16 campaign HI",
+      "operating_point": {
+        "MANDATORY_BAND": "[+0.34%, -1.92%]",
+        "S_itl": 34,
+        "S_itl_upward_closed": 34,
+        "block_verdict_flags": [
+          "ITL_SATURATED"
+        ],
+        "citable": true,
+        "delta_slo": -10,
+        "monotonicity_violated": false,
+        "slo_ms": 60,
+        "verdict": "NEGATIVE_INTERIOR",
+        "warning": "the 60 ms point estimate is NEVER cited without this band (C2'); the registrable object is the sign-change interval, not this point"
+      },
+      "provenance": {
+        "arms_deactivated_by_exact": [],
+        "boots_without_controller_summary": [],
+        "n_adopted": 28,
+        "rejected": [
+          {
+            "path": "g16_smoke1_d44_boot1_884292_HI.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d44_boot1_884320_HI.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d64_boot1_884292_HI.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d64_boot1_884320_HI.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d74_boot1_884292_HI.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d74_boot1_884320_HI.jsonl",
+            "why": "smoke artifact (H17)"
+          }
+        ],
+        "residency_warning": null
+      },
+      "s_itl_exact_bands": [
+        {
+          "S_itl": null,
+          "slo_hi_ms": 58.53296699424391,
+          "slo_lo_ms": null,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": 64,
+          "arm": "d64",
+          "band_width_ms": 0.09199319865729194,
+          "slo_hi_ms": 58.6249601929012,
+          "slo_lo_ms": 58.53296699424391
+        },
+        {
+          "S_itl": 34,
+          "arm": "d34",
+          "band_width_ms": 1.836196974181803,
+          "slo_hi_ms": 60.461157167083,
+          "slo_lo_ms": 58.6249601929012
+        },
+        {
+          "S_itl": 24,
+          "arm": "d24",
+          "band_width_ms": 23.490663608390605,
+          "slo_hi_ms": 83.9518207754736,
+          "slo_lo_ms": 60.461157167083
+        },
+        {
+          "S_itl": 16,
+          "arm": "d16",
+          "band_width_ms": null,
+          "slo_hi_ms": null,
+          "slo_lo_ms": 83.9518207754736
+        }
+      ],
+      "s_itl_ladder_resolution_warning": "the K8 ladder steps 1 ms; 's_itl_exact_bands' below shows the true breakpoints.  Any band narrower than 1 ms is INVISIBLE to the ladder -- on the old grid the S_itl=44 band (0.203 ms) vanishes entirely, and that band sits in the tight-SLO region sec4-1 calls this campaign's only SLO-related payoff.  Cite the exact bands.",
+      "saturation": {
+        "contenders": [
+          "d34",
+          "d44",
+          "d54",
+          "d64"
+        ],
+        "delta_ms": 1.0,
+        "gap_contenders_ms": 0.26016333904408384,
+        "gap_top_half_by_sm_ms": 0.634225622707163,
+        "gap_upper_ms": 0.634225622707163,
+        "primary_definition": "upper arms U = decode SM >= 44 (K11, prereg addendum C)",
+        "top_half_arms": [
+          "d44",
+          "d54",
+          "d64",
+          "d74"
+        ],
+        "upper_arm_basis": "pinned_sm_ge_44",
+        "upper_arms": [
+          "d44",
+          "d54",
+          "d64",
+          "d74"
+        ]
+      },
+      "scope": "nominal split of the co-resident interval (53-68% of decode-active samples run at (0,108); arm labels are conditional, not unconditional)",
+      "secondary_threshold_donors": {
+        "aggregation": "max over donor-candidate arms (C8)",
+        "itl": {
+          "argmax": "d34",
+          "band_mass_max": 0.8783333333333333,
+          "routing": "DIAGNOSTIC_ONLY"
+        },
+        "itl_tied": [
+          "d34"
+        ],
+        "note": "if primary and secondary disagree, THAT is the registered result; neither is chosen post hoc (sec4)",
+        "tie_warning": "pass fractions are DISCRETE (multiples of 1/n), so exact ties are realistic here; the argmax below breaks ties by smaller decode SM.  ORACLE R1 already recorded a tie-break-dependent headline ('116') -- check for ties before citing.",
+        "ttft": {
+          "argmax": "d64",
+          "band_mass_max": 0.07875,
+          "routing": "citable"
+        },
+        "ttft_tied": [
+          "d64"
+        ]
+      },
+      "side_outputs": {
+        "per_arm": {
+          "d16": {
+            "band_mass_itl": 0.07875,
+            "band_mass_ttft": 0.07875,
+            "goodput_req_s": 0.385598661725423,
+            "itl_p95_pass_pct": 16.75,
+            "joint_pass_pct": 7.583333333333334,
+            "throughput_req_s": 5.083997838586624,
+            "ttft_pass_pct": 53.708333333333336
+          },
+          "d24": {
+            "band_mass_itl": 0.8783333333333333,
+            "band_mass_ttft": 0.04958333333333333,
+            "goodput_req_s": 1.2023983962528157,
+            "itl_p95_pass_pct": 41.66666666666667,
+            "joint_pass_pct": 22.25,
+            "throughput_req_s": 5.400946393924573,
+            "ttft_pass_pct": 67.0
+          },
+          "d34": {
+            "band_mass_itl": 0.805,
+            "band_mass_ttft": 0.05291666666666667,
+            "goodput_req_s": 3.6997811814672517,
+            "itl_p95_pass_pct": 98.83333333333333,
+            "joint_pass_pct": 67.45833333333333,
+            "throughput_req_s": 5.484382226809643,
+            "ttft_pass_pct": 68.45833333333333
+          },
+          "d44": {
+            "band_mass_itl": 0.8166666666666667,
+            "band_mass_ttft": 0.04041666666666666,
+            "goodput_req_s": 3.797272118352196,
+            "itl_p95_pass_pct": 97.875,
+            "joint_pass_pct": 68.58333333333333,
+            "throughput_req_s": 5.536114270331531,
+            "ttft_pass_pct": 70.45833333333333
+          },
+          "d54": {
+            "band_mass_itl": 0.7949999999999999,
+            "band_mass_ttft": 0.020416666666666666,
+            "goodput_req_s": 3.5821353995384833,
+            "itl_p95_pass_pct": 91.54166666666667,
+            "joint_pass_pct": 64.25,
+            "throughput_req_s": 5.571891093667303,
+            "ttft_pass_pct": 70.91666666666667
+          },
+          "d64": {
+            "band_mass_itl": 0.7604166666666666,
+            "band_mass_ttft": 0.03125,
+            "goodput_req_s": 3.775210673969794,
+            "itl_p95_pass_pct": 95.70833333333333,
+            "joint_pass_pct": 67.29166666666667,
+            "throughput_req_s": 5.609641533872811,
+            "ttft_pass_pct": 71.08333333333334
+          },
+          "d74": {
+            "band_mass_itl": 0.58875,
+            "band_mass_ttft": 0.04666666666666667,
+            "goodput_req_s": 3.1308961426430173,
+            "itl_p95_pass_pct": 84.125,
+            "joint_pass_pct": 56.666666666666664,
+            "throughput_req_s": 5.509613386335361,
+            "ttft_pass_pct": 66.625
+          }
+        },
+        "placement_by_block": {
+          "blk1": {
+            "boot_s_by_arm": {
+              "d16": 37.881971773982514,
+              "d24": 32.81081960001029,
+              "d34": 32.78203815803863,
+              "d44": 32.80203805101337,
+              "d54": 32.87774447596166,
+              "d64": 32.78177463897737,
+              "d74": 32.85969271999784
+            },
+            "git_commits": [
+              "a02490ad062dc632e0019868f9252d71fdc405d1"
+            ],
+            "gpu_uuids": [
+              "GPU-7c0b448e-9a0c-82c2-5e36-f900f8b6a648"
+            ],
+            "manifest_shas": [
+              "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c"
+            ],
+            "nodes": [
+              "gpu42"
+            ],
+            "t_boot0_range": [
+              414267.958398821,
+              417241.660985886
+            ]
+          },
+          "blk2": {
+            "boot_s_by_arm": {
+              "d16": 32.65813817095477,
+              "d24": 32.66142761800438,
+              "d34": 32.697870453004725,
+              "d44": 32.67483064404223,
+              "d54": 32.674202237976715,
+              "d64": 32.67947120103054,
+              "d74": 32.74562562594656
+            },
+            "git_commits": [
+              "a02490ad062dc632e0019868f9252d71fdc405d1"
+            ],
+            "gpu_uuids": [
+              "GPU-707234ca-38ce-fbc5-e31f-041d0d8f7c99"
+            ],
+            "manifest_shas": [
+              "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c"
+            ],
+            "nodes": [
+              "gpu41"
+            ],
+            "t_boot0_range": [
+              424526.939291783,
+              427416.3325233
+            ]
+          },
+          "blk3": {
+            "boot_s_by_arm": {
+              "d16": 32.67487936303951,
+              "d24": 32.678451028012205,
+              "d34": 32.77798407402588,
+              "d44": 32.70456892601214,
+              "d54": 32.65871781500755,
+              "d64": 32.67830894404324,
+              "d74": 32.716435447044205
+            },
+            "git_commits": [
+              "a02490ad062dc632e0019868f9252d71fdc405d1"
+            ],
+            "gpu_uuids": [
+              "GPU-68c8ef3b-e041-a357-eae6-77e1cdccac05"
+            ],
+            "manifest_shas": [
+              "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c"
+            ],
+            "nodes": [
+              "gpu41"
+            ],
+            "t_boot0_range": [
+              424526.957183629,
+              427426.954188439
+            ]
+          },
+          "blk4": {
+            "boot_s_by_arm": {
+              "d16": 32.68291104002856,
+              "d24": 32.63651838799706,
+              "d34": 32.67743789695669,
+              "d44": 32.63641643099254,
+              "d54": 32.64714122895384,
+              "d64": 32.719343975011725,
+              "d74": 32.69579964800505
+            },
+            "git_commits": [
+              "a02490ad062dc632e0019868f9252d71fdc405d1"
+            ],
+            "gpu_uuids": [
+              "GPU-707234ca-38ce-fbc5-e31f-041d0d8f7c99"
+            ],
+            "manifest_shas": [
+              "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c"
+            ],
+            "nodes": [
+              "gpu41"
+            ],
+            "t_boot0_range": [
+              428005.193302165,
+              430894.063998581
+            ]
+          }
+        },
+        "residency_fraction_by_arm_LOSSY_LAST_BOOT_WINS": {
+          "d16": {
+            "0": 0.25518499076935003,
+            "108": 0.6655177709993061,
+            "16": 0.07929723823134394
+          },
+          "d24": {
+            "0": 0.2604717487508513,
+            "108": 0.6533603446565263,
+            "24": 0.0861679065926225
+          },
+          "d34": {
+            "0": 0.25817705459115264,
+            "108": 0.6529741566423901,
+            "34": 0.08884878876645726
+          },
+          "d44": {
+            "0": 0.25948893775005877,
+            "108": 0.6425325782651817,
+            "44": 0.09797848398475947
+          },
+          "d54": {
+            "0": 0.26559195508510924,
+            "108": 0.6116294792507215,
+            "54": 0.12277856566416925
+          },
+          "d64": {
+            "0": 0.25976620082635304,
+            "108": 0.5752543410008559,
+            "64": 0.16497945817279108
+          },
+          "d74": {
+            "0": 0.2598943243132052,
+            "108": 0.5268275786574358,
+            "74": 0.213278097029359
+          }
+        },
+        "residency_fraction_by_boot": {
+          "g16_blk1_d16_boot1_884336_HI.jsonl": {
+            "0": 0.274090430434435,
+            "108": 0.6474591508394013,
+            "16": 0.07845041872616369
+          },
+          "g16_blk1_d24_boot1_884336_HI.jsonl": {
+            "0": 0.2728936080590014,
+            "108": 0.6466902811712495,
+            "24": 0.08041611076974903
+          },
+          "g16_blk1_d34_boot1_884336_HI.jsonl": {
+            "0": 0.27685469443458954,
+            "108": 0.637157844232211,
+            "34": 0.08598746133319947
+          },
+          "g16_blk1_d44_boot1_884336_HI.jsonl": {
+            "0": 0.2755238573279348,
+            "108": 0.6303966520867267,
+            "44": 0.0940794905853385
+          },
+          "g16_blk1_d54_boot1_884336_HI.jsonl": {
+            "0": 0.27522637408013045,
+            "108": 0.6104534194685948,
+            "54": 0.1143202064512748
+          },
+          "g16_blk1_d64_boot1_884336_HI.jsonl": {
+            "0": 0.27897296269806776,
+            "108": 0.5641318347702963,
+            "64": 0.15689520253163597
+          },
+          "g16_blk1_d74_boot1_884336_HI.jsonl": {
+            "0": 0.2741115500171241,
+            "108": 0.5303298480348193,
+            "74": 0.19555860194805655
+          },
+          "g16_blk2_d16_boot1_884410_HI.jsonl": {
+            "0": 0.2553644670498935,
+            "108": 0.6700960995380277,
+            "16": 0.0745394334120787
+          },
+          "g16_blk2_d24_boot1_884410_HI.jsonl": {
+            "0": 0.2590206572550675,
+            "108": 0.6560395484809524,
+            "24": 0.08493979426398013
+          },
+          "g16_blk2_d34_boot1_884410_HI.jsonl": {
+            "0": 0.2593860094220298,
+            "108": 0.6504601407134399,
+            "34": 0.09015384986453022
+          },
+          "g16_blk2_d44_boot1_884410_HI.jsonl": {
+            "0": 0.2592098383214016,
+            "108": 0.6367610880321554,
+            "44": 0.104029073646443
+          },
+          "g16_blk2_d54_boot1_884410_HI.jsonl": {
+            "0": 0.26236298962785287,
+            "108": 0.6197085265256221,
+            "54": 0.11792848384652499
+          },
+          "g16_blk2_d64_boot1_884410_HI.jsonl": {
+            "0": 0.2622750122558775,
+            "108": 0.5873651205637943,
+            "64": 0.15035986718032815
+          },
+          "g16_blk2_d74_boot1_884410_HI.jsonl": {
+            "0": 0.2629322949609152,
+            "108": 0.5339032526186477,
+            "74": 0.2031644524204371
+          },
+          "g16_blk3_d16_boot1_884411_HI.jsonl": {
+            "0": 0.25487189426130513,
+            "108": 0.6707603076384894,
+            "16": 0.0743677981002055
+          },
+          "g16_blk3_d24_boot1_884411_HI.jsonl": {
+            "0": 0.2585868658158753,
+            "108": 0.6653557615375404,
+            "24": 0.07605737264658431
+          },
+          "g16_blk3_d34_boot1_884411_HI.jsonl": {
+            "0": 0.26017982956346586,
+            "108": 0.6515486989064876,
+            "34": 0.08827147153004655
+          },
+          "g16_blk3_d44_boot1_884411_HI.jsonl": {
+            "0": 0.2647384160373423,
+            "108": 0.6207396816045226,
+            "44": 0.11452190235813513
+          },
+          "g16_blk3_d54_boot1_884411_HI.jsonl": {
+            "0": 0.2614891907428161,
+            "108": 0.6220105132186067,
+            "54": 0.11650029603857723
+          },
+          "g16_blk3_d64_boot1_884411_HI.jsonl": {
+            "0": 0.2625132523128771,
+            "108": 0.5824630971219653,
+            "64": 0.15502365056515766
+          },
+          "g16_blk3_d74_boot1_884411_HI.jsonl": {
+            "0": 0.25881238663328576,
+            "108": 0.5420594266137718,
+            "74": 0.1991281867529424
+          },
+          "g16_blk4_d16_boot1_884412_HI.jsonl": {
+            "0": 0.25518499076935003,
+            "108": 0.6655177709993061,
+            "16": 0.07929723823134394
+          },
+          "g16_blk4_d24_boot1_884412_HI.jsonl": {
+            "0": 0.2604717487508513,
+            "108": 0.6533603446565263,
+            "24": 0.0861679065926225
+          },
+          "g16_blk4_d34_boot1_884412_HI.jsonl": {
+            "0": 0.25817705459115264,
+            "108": 0.6529741566423901,
+            "34": 0.08884878876645726
+          },
+          "g16_blk4_d44_boot1_884412_HI.jsonl": {
+            "0": 0.25948893775005877,
+            "108": 0.6425325782651817,
+            "44": 0.09797848398475947
+          },
+          "g16_blk4_d54_boot1_884412_HI.jsonl": {
+            "0": 0.26559195508510924,
+            "108": 0.6116294792507215,
+            "54": 0.12277856566416925
+          },
+          "g16_blk4_d64_boot1_884412_HI.jsonl": {
+            "0": 0.25976620082635304,
+            "108": 0.5752543410008559,
+            "64": 0.16497945817279108
+          },
+          "g16_blk4_d74_boot1_884412_HI.jsonl": {
+            "0": 0.2598943243132052,
+            "108": 0.5268275786574358,
+            "74": 0.213278097029359
+          }
+        },
+        "split_transitions_by_boot": {
+          "g16_blk1_d16_boot1_884336_HI.jsonl": 162,
+          "g16_blk1_d24_boot1_884336_HI.jsonl": 197,
+          "g16_blk1_d34_boot1_884336_HI.jsonl": 215,
+          "g16_blk1_d44_boot1_884336_HI.jsonl": 212,
+          "g16_blk1_d54_boot1_884336_HI.jsonl": 235,
+          "g16_blk1_d64_boot1_884336_HI.jsonl": 290,
+          "g16_blk1_d74_boot1_884336_HI.jsonl": 304,
+          "g16_blk2_d16_boot1_884410_HI.jsonl": 172,
+          "g16_blk2_d24_boot1_884410_HI.jsonl": 194,
+          "g16_blk2_d34_boot1_884410_HI.jsonl": 199,
+          "g16_blk2_d44_boot1_884410_HI.jsonl": 239,
+          "g16_blk2_d54_boot1_884410_HI.jsonl": 247,
+          "g16_blk2_d64_boot1_884410_HI.jsonl": 274,
+          "g16_blk2_d74_boot1_884410_HI.jsonl": 297,
+          "g16_blk3_d16_boot1_884411_HI.jsonl": 188,
+          "g16_blk3_d24_boot1_884411_HI.jsonl": 187,
+          "g16_blk3_d34_boot1_884411_HI.jsonl": 195,
+          "g16_blk3_d44_boot1_884411_HI.jsonl": 239,
+          "g16_blk3_d54_boot1_884411_HI.jsonl": 239,
+          "g16_blk3_d64_boot1_884411_HI.jsonl": 280,
+          "g16_blk3_d74_boot1_884411_HI.jsonl": 321,
+          "g16_blk4_d16_boot1_884412_HI.jsonl": 169,
+          "g16_blk4_d24_boot1_884412_HI.jsonl": 204,
+          "g16_blk4_d34_boot1_884412_HI.jsonl": 195,
+          "g16_blk4_d44_boot1_884412_HI.jsonl": 231,
+          "g16_blk4_d54_boot1_884412_HI.jsonl": 240,
+          "g16_blk4_d64_boot1_884412_HI.jsonl": 303,
+          "g16_blk4_d74_boot1_884412_HI.jsonl": 320
+        }
+      },
+      "sign_verdict": "TAX_POSITIVE",
+      "symbol_convention": "D_ttft / D_itl / delta / forced_cell are sec4's BARE ARGMIN and are always defined.  sec6 identification (K1) is a CITATION GATE carried in 'delta_citable' and in the verdict -- not part of the symbol definition.",
+      "throughput_rank_law": {
+        "citation_ban": "this agreement is structurally near-forced in an overloaded closed-budget FCFS queue -- NEVER cite it as independent mechanistic evidence (sec3-1, gate #9)",
+        "identical": false,
+        "throughput_rank": [
+          "d64",
+          "d54",
+          "d44",
+          "d74",
+          "d34",
+          "d24",
+          "d16"
+        ],
+        "ttft_pass_rank": [
+          "d64",
+          "d54",
+          "d44",
+          "d34",
+          "d24",
+          "d74",
+          "d16"
+        ]
+      },
+      "ties": {
+        "M_itl_tied": false,
+        "M_ttft_tied": false,
+        "warning": "a tie was broken by the pre-registered rule (smaller decode SM wins).  ORACLE R1 already recorded a tie-break-dependent headline ('116'), so a tied donor is never cited as identified."
+      },
+      "verdict": "ITL_SATURATED",
+      "verdict_flags": [
+        {
+          "verdict": "ITL_SATURATED",
+          "why": "ITL donor unidentified and UPPER-arm spread 0.634 ms < delta 1.0 ms over ['d44', 'd54', 'd64', 'd74'] (pinned_sm_ge_44) -- non-identification is SATURATION, not noise (informative negative)"
+        }
+      ]
+    },
+    "LO": {
+      "D_itl": {
+        "arm": null,
+        "bootstrap_rule": {
+          "distribution": {
+            "d16": 0.1907,
+            "d24": 0.8093
+          },
+          "fraction": 0.8093,
+          "passes": true,
+          "tied_fraction": 0.0,
+          "winner": "d24"
+        },
+        "decode_sm": null,
+        "identified": false,
+        "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+        "rank_rule": {
+          "blocks_won": 2,
+          "n_blocks": 4,
+          "n_blocks_tied": 0,
+          "passes": false,
+          "per_block": {
+            "blk1": "d24",
+            "blk2": "d24",
+            "blk3": "d16",
+            "blk4": "d16"
+          },
+          "per_block_tied": {
+            "blk1": false,
+            "blk2": false,
+            "blk3": false,
+            "blk4": false
+          },
+          "winner": "d16"
+        },
+        "rules_agree": false
+      },
+      "D_itl_arm": "d24",
+      "D_ttft": {
+        "arm": null,
+        "bootstrap_rule": {
+          "distribution": {
+            "d16": 0.259,
+            "d24": 0.741
+          },
+          "fraction": 0.741,
+          "passes": false,
+          "tied_fraction": 0.0,
+          "winner": "d24"
+        },
+        "decode_sm": null,
+        "identified": false,
+        "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+        "rank_rule": {
+          "blocks_won": 3,
+          "n_blocks": 4,
+          "n_blocks_tied": 0,
+          "passes": true,
+          "per_block": {
+            "blk1": "d24",
+            "blk2": "d24",
+            "blk3": "d24",
+            "blk4": "d16"
+          },
+          "per_block_tied": {
+            "blk1": false,
+            "blk2": false,
+            "blk3": false,
+            "blk4": false
+          },
+          "winner": "d24"
+        },
+        "rules_agree": true
+      },
+      "D_ttft_arm": "d24",
+      "S_max": 74,
+      "S_min": 16,
+      "adaptive_rule": {
+        "action": "NO_MORE_BLOCKS",
+        "reason": "upper gap < delta => ITL_SATURATED is final"
+      },
+      "arm_means": {
+        "M_itl": {
+          "d16": 12.304249663066,
+          "d24": 12.272667444631224,
+          "d34": 12.579298065247713,
+          "d44": 14.25078775610018,
+          "d54": 14.478035600404834,
+          "d64": 14.19040480031981,
+          "d74": 14.494376442235078
+        },
+        "M_ttft": {
+          "d16": 75.12091912212782,
+          "d24": 74.42539561452577,
+          "d34": 77.86040812788997,
+          "d44": 79.30102762475144,
+          "d54": 87.70702537731268,
+          "d64": 94.99982074339641,
+          "d74": 123.28386488661636
+        }
+      },
+      "arm_t_ci": {
+        "M_itl": {
+          "d16": {
+            "hi": 12.630814144306312,
+            "lo": 11.97768518182569,
+            "mean": 12.304249663066,
+            "n": 4.0,
+            "sd": 0.20525737350113812,
+            "t_crit": 3.182
+          },
+          "d24": {
+            "hi": 12.519976774152742,
+            "lo": 12.025358115109707,
+            "mean": 12.272667444631224,
+            "n": 4.0,
+            "sd": 0.15544269611660372,
+            "t_crit": 3.182
+          },
+          "d34": {
+            "hi": 12.922121594878632,
+            "lo": 12.236474535616793,
+            "mean": 12.579298065247713,
+            "n": 4.0,
+            "sd": 0.21547676281013128,
+            "t_crit": 3.182
+          },
+          "d44": {
+            "hi": 14.467223229789084,
+            "lo": 14.034352282411277,
+            "mean": 14.25078775610018,
+            "n": 4.0,
+            "sd": 0.13603738132552054,
+            "t_crit": 3.182
+          },
+          "d54": {
+            "hi": 14.517602802547474,
+            "lo": 14.438468398262193,
+            "mean": 14.478035600404834,
+            "n": 4.0,
+            "sd": 0.024869391667279098,
+            "t_crit": 3.182
+          },
+          "d64": {
+            "hi": 14.270536256541693,
+            "lo": 14.110273344097926,
+            "mean": 14.19040480031981,
+            "n": 4.0,
+            "sd": 0.050365465884275484,
+            "t_crit": 3.182
+          },
+          "d74": {
+            "hi": 14.88858379844002,
+            "lo": 14.100169086030135,
+            "mean": 14.494376442235078,
+            "n": 4.0,
+            "sd": 0.2477733225675314,
+            "t_crit": 3.182
+          }
+        },
+        "M_ttft": {
+          "d16": {
+            "hi": 79.72159370927179,
+            "lo": 70.52024453498385,
+            "mean": 75.12091912212782,
+            "n": 4.0,
+            "sd": 2.8916873583557337,
+            "t_crit": 3.182
+          },
+          "d24": {
+            "hi": 77.97025296913843,
+            "lo": 70.88053825991311,
+            "mean": 74.42539561452577,
+            "n": 4.0,
+            "sd": 2.2280687332574898,
+            "t_crit": 3.182
+          },
+          "d34": {
+            "hi": 79.99865735150212,
+            "lo": 75.72215890427782,
+            "mean": 77.86040812788997,
+            "n": 4.0,
+            "sd": 1.3439655710950054,
+            "t_crit": 3.182
+          },
+          "d44": {
+            "hi": 80.26376966806458,
+            "lo": 78.3382855814383,
+            "mean": 79.30102762475144,
+            "n": 4.0,
+            "sd": 0.6051175633646382,
+            "t_crit": 3.182
+          },
+          "d54": {
+            "hi": 90.43005870958113,
+            "lo": 84.98399204504422,
+            "mean": 87.70702537731268,
+            "n": 4.0,
+            "sd": 1.7115231503887263,
+            "t_crit": 3.182
+          },
+          "d64": {
+            "hi": 95.60006728749599,
+            "lo": 94.39957419929684,
+            "mean": 94.99982074339641,
+            "n": 4.0,
+            "sd": 0.37727626907578393,
+            "t_crit": 3.182
+          },
+          "d74": {
+            "hi": 126.79906955401611,
+            "lo": 119.7686602192166,
+            "mean": 123.28386488661636,
+            "n": 4.0,
+            "sd": 2.2094309663103426,
+            "t_crit": 3.182
+          }
+        }
+      },
+      "arms": [
+        "d16",
+        "d24",
+        "d34",
+        "d44",
+        "d54",
+        "d64",
+        "d74"
+      ],
+      "byproduct_block_paired": {
+        "definition": "M_itl(d44) - M_itl(S_max)  [sec6 pre-registered]",
+        "s_max_arm": "d74",
+        "value_ms": -0.24358868613489726
+      },
+      "citation_guards": [
+        "Delta must never be a standalone headline (C2: the location statistic does not saturate, so D_itl = S_max may be a priori)",
+        "TRUNCATED is never written as 'no tax'",
+        "percentile CI is never cited on its own; t(n-1) accompanies it",
+        "Delta / Delta_SLO are discrete lattice values: report the donor / sufficient-point SELECTION DISTRIBUTION, not a CI",
+        "sec10-7: this says NOTHING about HE0.  A positive coupling tax does NOT revive dynamic control -- 'achieved dynamic is worse than best static' and 'the achievable ceiling' are separate propositions (gate #38).  No policy-ranking change.",
+        "sec10-9(a): the location statistic CANNOT in principle produce a magnitude comparable to sec1-20 '+16%' or sec1-32 '+1.67%'",
+        "sec6: TRUNCATED / ITL_SATURATED / S_ITL_UNREACHED / UNIDENTIFIED are RESULTS, not failures.  This tool's exit code 2 and the word 'GATE' refer to POSITIVE-CONTROL failure only -- never relabel a verdict as a failed measurement (gate #21, reverse direction)",
+        "sec10-2: HI is 2.15-2.35x overloaded and threshold-goodput is ill-posed there; the goodput / pass-rate side outputs inherit that caveat",
+        "sec10-5/6: Zamba2-2.7B, ctx4096, ShareGPT, and only TWO points on the work-ratio axis -- no slope or functional-form claims, no transplant to 8B or other models",
+        "NEVER write 'gate #16 is closed'.  What closes is the RE-FORMULATED decision quantity 2; the threshold version stays on the rate axis (rev3 sec1 C1)",
+        "add. A-3: agreement between the primary and the drift-corrected donor does NOT mean 'no drift'.  A symmetric CURVATURE component moves both estimators the same way, so DRIFT_DISAGREEMENT is blind exactly where A-3-2 says 4 blocks cannot balance"
+      ],
+      "delta": 0,
+      "delta_citable": false,
+      "delta_slo_intervals": [
+        {
+          "S_itl": 16,
+          "delta_slo": -8,
+          "slo_hi_ms": 80,
+          "slo_lo_ms": 45,
+          "verdict": "ITL_UNCONSTRAINED"
+        }
+      ],
+      "delta_slo_ladder": [
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 45,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 46,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 47,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 48,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 49,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 50,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 51,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 52,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 53,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 54,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 55,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 56,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 57,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 58,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 59,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 60,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 61,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 62,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 63,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 64,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 65,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 66,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 67,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 68,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 69,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 70,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 71,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 72,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 73,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 74,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 75,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 76,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 77,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 78,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 79,
+          "verdict": "ITL_UNCONSTRAINED"
+        },
+        {
+          "S_itl": 16,
+          "S_itl_upward_closed": 16,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "UNIDENTIFIED"
+          ],
+          "citable": false,
+          "delta_slo": -8,
+          "monotonicity_violated": false,
+          "slo_ms": 80,
+          "verdict": "ITL_UNCONSTRAINED"
+        }
+      ],
+      "drift_corrected": {
+        "M_itl": {
+          "argmin_arm": "d24",
+          "argmin_tied": false,
+          "corrected_arm_means": {
+            "d16": 12.303975272388438,
+            "d24": 12.272552883626657,
+            "d34": 12.579220114903805,
+            "d44": 14.250794827591134,
+            "d54": 14.47814493378076,
+            "d64": 14.190551332853419,
+            "d74": 14.49458040686063
+          },
+          "note": "reported ALONGSIDE the primary; a donor disagreement between the two is itself a registered result (add. A-3)",
+          "slope_per_s": -2.0762961531477796e-05
+        },
+        "M_ttft": {
+          "argmin_arm": "d24",
+          "argmin_tied": false,
+          "corrected_arm_means": {
+            "d16": 75.11850091409208,
+            "d24": 74.42438598714233,
+            "d34": 77.85972115065844,
+            "d44": 79.30108994587839,
+            "d54": 87.70798893354785,
+            "d64": 95.0011121362142,
+            "d74": 123.28566242908718
+          },
+          "note": "reported ALONGSIDE the primary; a donor disagreement between the two is itself a registered result (add. A-3)",
+          "slope_per_s": -0.00018298420656008644
+        }
+      },
+      "forced_cell": {
+        "cell": "D_itl=interior x D_ttft=interior",
+        "reading": "sign and size both data",
+        "sign_forced": false
+      },
+      "frame": "does the split that ITL requires differ from the THROUGHPUT-OPTIMAL split? (closes the re-formulated decision quantity 2; the threshold version remains on the rate axis)",
+      "grid_hygiene": {
+        "arms": [
+          "d16",
+          "d24",
+          "d34",
+          "d44",
+          "d54",
+          "d64",
+          "d74"
+        ],
+        "balanced": true,
+        "blocks": [
+          "blk1",
+          "blk2",
+          "blk3",
+          "blk4"
+        ],
+        "boots_per_arm": {
+          "d16": 4,
+          "d24": 4,
+          "d34": 4,
+          "d44": 4,
+          "d54": 4,
+          "d64": 4,
+          "d74": 4
+        },
+        "flags": [],
+        "incidence": {
+          "d16": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d24": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d34": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d44": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d54": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d64": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          },
+          "d74": {
+            "blk1": 1,
+            "blk2": 1,
+            "blk3": 1,
+            "blk4": 1
+          }
+        },
+        "missing_cells": [],
+        "sufficient_blocks": true
+      },
+      "label": "G16 campaign LO",
+      "operating_point": {
+        "MANDATORY_BAND": "[+0.34%, -1.92%]",
+        "S_itl": 16,
+        "S_itl_upward_closed": 16,
+        "block_verdict_flags": [
+          "ITL_SATURATED",
+          "UNIDENTIFIED"
+        ],
+        "citable": false,
+        "delta_slo": -8,
+        "monotonicity_violated": false,
+        "slo_ms": 60,
+        "verdict": "ITL_UNCONSTRAINED",
+        "warning": "the 60 ms point estimate is NEVER cited without this band (C2'); the registrable object is the sign-change interval, not this point"
+      },
+      "provenance": {
+        "arms_deactivated_by_exact": [],
+        "boots_without_controller_summary": [],
+        "n_adopted": 28,
+        "rejected": [
+          {
+            "path": "g16_smoke1_d44_boot1_884292_LO.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d44_boot1_884320_LO.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d64_boot1_884292_LO.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d64_boot1_884320_LO.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d74_boot1_884292_LO.jsonl",
+            "why": "smoke artifact (H17)"
+          },
+          {
+            "path": "g16_smoke1_d74_boot1_884320_LO.jsonl",
+            "why": "smoke artifact (H17)"
+          }
+        ],
+        "residency_warning": null
+      },
+      "s_itl_exact_bands": [
+        {
+          "S_itl": null,
+          "slo_hi_ms": 12.272667444631224,
+          "slo_lo_ms": null,
+          "verdict": "S_ITL_UNREACHED"
+        },
+        {
+          "S_itl": 24,
+          "arm": "d24",
+          "band_width_ms": 0.031582218434776266,
+          "slo_hi_ms": 12.304249663066,
+          "slo_lo_ms": 12.272667444631224
+        },
+        {
+          "S_itl": 16,
+          "arm": "d16",
+          "band_width_ms": null,
+          "slo_hi_ms": null,
+          "slo_lo_ms": 12.304249663066
+        }
+      ],
+      "s_itl_ladder_resolution_warning": "the K8 ladder steps 1 ms; 's_itl_exact_bands' below shows the true breakpoints.  Any band narrower than 1 ms is INVISIBLE to the ladder -- on the old grid the S_itl=44 band (0.203 ms) vanishes entirely, and that band sits in the tight-SLO region sec4-1 calls this campaign's only SLO-related payoff.  Cite the exact bands.",
+      "saturation": {
+        "contenders": [
+          "d16",
+          "d24"
+        ],
+        "delta_ms": 1.0,
+        "gap_contenders_ms": 0.031582218434776266,
+        "gap_top_half_by_sm_ms": 0.30397164191526826,
+        "gap_upper_ms": 0.30397164191526826,
+        "primary_definition": "upper arms U = decode SM >= 44 (K11, prereg addendum C)",
+        "top_half_arms": [
+          "d44",
+          "d54",
+          "d64",
+          "d74"
+        ],
+        "upper_arm_basis": "pinned_sm_ge_44",
+        "upper_arms": [
+          "d44",
+          "d54",
+          "d64",
+          "d74"
+        ]
+      },
+      "scope": "nominal split of the co-resident interval (53-68% of decode-active samples run at (0,108); arm labels are conditional, not unconditional)",
+      "secondary_threshold_donors": {
+        "aggregation": "max over donor-candidate arms (C8)",
+        "itl": {
+          "argmax": "d64",
+          "band_mass_max": 0.09541666666666666,
+          "routing": "citable"
+        },
+        "itl_tied": [
+          "d64"
+        ],
+        "note": "if primary and secondary disagree, THAT is the registered result; neither is chosen post hoc (sec4)",
+        "tie_warning": "pass fractions are DISCRETE (multiples of 1/n), so exact ties are realistic here; the argmax below breaks ties by smaller decode SM.  ORACLE R1 already recorded a tie-break-dependent headline ('116') -- check for ties before citing.",
+        "ttft": {
+          "argmax": "d16",
+          "band_mass_max": 0.0004166666666666667,
+          "routing": "citable"
+        },
+        "ttft_tied": [
+          "d16",
+          "d24",
+          "d34",
+          "d44",
+          "d54",
+          "d64",
+          "d74"
+        ]
+      },
+      "side_outputs": {
+        "per_arm": {
+          "d16": {
+            "band_mass_itl": 0.09541666666666666,
+            "band_mass_ttft": 0.0,
+            "goodput_req_s": 2.839892658120848,
+            "itl_p95_pass_pct": 99.33333333333333,
+            "joint_pass_pct": 99.33333333333333,
+            "throughput_req_s": 2.858943348019397,
+            "ttft_pass_pct": 100.0
+          },
+          "d24": {
+            "band_mass_itl": 0.0725,
+            "band_mass_ttft": 0.0,
+            "goodput_req_s": 2.8494572261317144,
+            "itl_p95_pass_pct": 99.66666666666666,
+            "joint_pass_pct": 99.66666666666666,
+            "throughput_req_s": 2.858985144295089,
+            "ttft_pass_pct": 100.0
+          },
+          "d34": {
+            "band_mass_itl": 0.07666666666666666,
+            "band_mass_ttft": 0.0,
+            "goodput_req_s": 2.849837863810007,
+            "itl_p95_pass_pct": 99.66666666666667,
+            "joint_pass_pct": 99.66666666666667,
+            "throughput_req_s": 2.859369972281237,
+            "ttft_pass_pct": 100.0
+          },
+          "d44": {
+            "band_mass_itl": 0.06625,
+            "band_mass_ttft": 0.0,
+            "goodput_req_s": 2.8510684808229354,
+            "itl_p95_pass_pct": 99.70833333333333,
+            "joint_pass_pct": 99.70833333333333,
+            "throughput_req_s": 2.859407887078516,
+            "ttft_pass_pct": 100.0
+          },
+          "d54": {
+            "band_mass_itl": 0.06625,
+            "band_mass_ttft": 0.0,
+            "goodput_req_s": 2.842299184073791,
+            "itl_p95_pass_pct": 99.41666666666667,
+            "joint_pass_pct": 99.41666666666667,
+            "throughput_req_s": 2.8589707059944027,
+            "ttft_pass_pct": 100.0
+          },
+          "d64": {
+            "band_mass_itl": 0.07208333333333333,
+            "band_mass_ttft": 0.0,
+            "goodput_req_s": 2.8499083808564847,
+            "itl_p95_pass_pct": 99.70833333333334,
+            "joint_pass_pct": 99.70833333333334,
+            "throughput_req_s": 2.858244801054604,
+            "ttft_pass_pct": 100.0
+          },
+          "d74": {
+            "band_mass_itl": 0.05416666666666667,
+            "band_mass_ttft": 0.0004166666666666667,
+            "goodput_req_s": 2.8152152421870005,
+            "itl_p95_pass_pct": 98.58333333333333,
+            "joint_pass_pct": 98.58333333333333,
+            "throughput_req_s": 2.855646192529642,
+            "ttft_pass_pct": 100.0
+          }
+        },
+        "placement_by_block": {
+          "blk1": {
+            "boot_s_by_arm": {
+              "d16": 37.881971773982514,
+              "d24": 32.81081960001029,
+              "d34": 32.78203815803863,
+              "d44": 32.80203805101337,
+              "d54": 32.87774447596166,
+              "d64": 32.78177463897737,
+              "d74": 32.85969271999784
+            },
+            "git_commits": [
+              "a02490ad062dc632e0019868f9252d71fdc405d1"
+            ],
+            "gpu_uuids": [
+              "GPU-7c0b448e-9a0c-82c2-5e36-f900f8b6a648"
+            ],
+            "manifest_shas": [
+              "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c"
+            ],
+            "nodes": [
+              "gpu42"
+            ],
+            "t_boot0_range": [
+              414267.958398821,
+              417241.660985886
+            ]
+          },
+          "blk2": {
+            "boot_s_by_arm": {
+              "d16": 32.65813817095477,
+              "d24": 32.66142761800438,
+              "d34": 32.697870453004725,
+              "d44": 32.67483064404223,
+              "d54": 32.674202237976715,
+              "d64": 32.67947120103054,
+              "d74": 32.74562562594656
+            },
+            "git_commits": [
+              "a02490ad062dc632e0019868f9252d71fdc405d1"
+            ],
+            "gpu_uuids": [
+              "GPU-707234ca-38ce-fbc5-e31f-041d0d8f7c99"
+            ],
+            "manifest_shas": [
+              "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c"
+            ],
+            "nodes": [
+              "gpu41"
+            ],
+            "t_boot0_range": [
+              424526.939291783,
+              427416.3325233
+            ]
+          },
+          "blk3": {
+            "boot_s_by_arm": {
+              "d16": 32.67487936303951,
+              "d24": 32.678451028012205,
+              "d34": 32.77798407402588,
+              "d44": 32.70456892601214,
+              "d54": 32.65871781500755,
+              "d64": 32.67830894404324,
+              "d74": 32.716435447044205
+            },
+            "git_commits": [
+              "a02490ad062dc632e0019868f9252d71fdc405d1"
+            ],
+            "gpu_uuids": [
+              "GPU-68c8ef3b-e041-a357-eae6-77e1cdccac05"
+            ],
+            "manifest_shas": [
+              "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c"
+            ],
+            "nodes": [
+              "gpu41"
+            ],
+            "t_boot0_range": [
+              424526.957183629,
+              427426.954188439
+            ]
+          },
+          "blk4": {
+            "boot_s_by_arm": {
+              "d16": 32.68291104002856,
+              "d24": 32.63651838799706,
+              "d34": 32.67743789695669,
+              "d44": 32.63641643099254,
+              "d54": 32.64714122895384,
+              "d64": 32.719343975011725,
+              "d74": 32.69579964800505
+            },
+            "git_commits": [
+              "a02490ad062dc632e0019868f9252d71fdc405d1"
+            ],
+            "gpu_uuids": [
+              "GPU-707234ca-38ce-fbc5-e31f-041d0d8f7c99"
+            ],
+            "manifest_shas": [
+              "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c"
+            ],
+            "nodes": [
+              "gpu41"
+            ],
+            "t_boot0_range": [
+              428005.193302165,
+              430894.063998581
+            ]
+          }
+        },
+        "residency_fraction_by_arm_LOSSY_LAST_BOOT_WINS": {
+          "d16": {
+            "0": 0.25518499076935003,
+            "108": 0.6655177709993061,
+            "16": 0.07929723823134394
+          },
+          "d24": {
+            "0": 0.2604717487508513,
+            "108": 0.6533603446565263,
+            "24": 0.0861679065926225
+          },
+          "d34": {
+            "0": 0.25817705459115264,
+            "108": 0.6529741566423901,
+            "34": 0.08884878876645726
+          },
+          "d44": {
+            "0": 0.25948893775005877,
+            "108": 0.6425325782651817,
+            "44": 0.09797848398475947
+          },
+          "d54": {
+            "0": 0.26559195508510924,
+            "108": 0.6116294792507215,
+            "54": 0.12277856566416925
+          },
+          "d64": {
+            "0": 0.25976620082635304,
+            "108": 0.5752543410008559,
+            "64": 0.16497945817279108
+          },
+          "d74": {
+            "0": 0.2598943243132052,
+            "108": 0.5268275786574358,
+            "74": 0.213278097029359
+          }
+        },
+        "residency_fraction_by_boot": {
+          "g16_blk1_d16_boot1_884336_LO.jsonl": {
+            "0": 0.274090430434435,
+            "108": 0.6474591508394013,
+            "16": 0.07845041872616369
+          },
+          "g16_blk1_d24_boot1_884336_LO.jsonl": {
+            "0": 0.2728936080590014,
+            "108": 0.6466902811712495,
+            "24": 0.08041611076974903
+          },
+          "g16_blk1_d34_boot1_884336_LO.jsonl": {
+            "0": 0.27685469443458954,
+            "108": 0.637157844232211,
+            "34": 0.08598746133319947
+          },
+          "g16_blk1_d44_boot1_884336_LO.jsonl": {
+            "0": 0.2755238573279348,
+            "108": 0.6303966520867267,
+            "44": 0.0940794905853385
+          },
+          "g16_blk1_d54_boot1_884336_LO.jsonl": {
+            "0": 0.27522637408013045,
+            "108": 0.6104534194685948,
+            "54": 0.1143202064512748
+          },
+          "g16_blk1_d64_boot1_884336_LO.jsonl": {
+            "0": 0.27897296269806776,
+            "108": 0.5641318347702963,
+            "64": 0.15689520253163597
+          },
+          "g16_blk1_d74_boot1_884336_LO.jsonl": {
+            "0": 0.2741115500171241,
+            "108": 0.5303298480348193,
+            "74": 0.19555860194805655
+          },
+          "g16_blk2_d16_boot1_884410_LO.jsonl": {
+            "0": 0.2553644670498935,
+            "108": 0.6700960995380277,
+            "16": 0.0745394334120787
+          },
+          "g16_blk2_d24_boot1_884410_LO.jsonl": {
+            "0": 0.2590206572550675,
+            "108": 0.6560395484809524,
+            "24": 0.08493979426398013
+          },
+          "g16_blk2_d34_boot1_884410_LO.jsonl": {
+            "0": 0.2593860094220298,
+            "108": 0.6504601407134399,
+            "34": 0.09015384986453022
+          },
+          "g16_blk2_d44_boot1_884410_LO.jsonl": {
+            "0": 0.2592098383214016,
+            "108": 0.6367610880321554,
+            "44": 0.104029073646443
+          },
+          "g16_blk2_d54_boot1_884410_LO.jsonl": {
+            "0": 0.26236298962785287,
+            "108": 0.6197085265256221,
+            "54": 0.11792848384652499
+          },
+          "g16_blk2_d64_boot1_884410_LO.jsonl": {
+            "0": 0.2622750122558775,
+            "108": 0.5873651205637943,
+            "64": 0.15035986718032815
+          },
+          "g16_blk2_d74_boot1_884410_LO.jsonl": {
+            "0": 0.2629322949609152,
+            "108": 0.5339032526186477,
+            "74": 0.2031644524204371
+          },
+          "g16_blk3_d16_boot1_884411_LO.jsonl": {
+            "0": 0.25487189426130513,
+            "108": 0.6707603076384894,
+            "16": 0.0743677981002055
+          },
+          "g16_blk3_d24_boot1_884411_LO.jsonl": {
+            "0": 0.2585868658158753,
+            "108": 0.6653557615375404,
+            "24": 0.07605737264658431
+          },
+          "g16_blk3_d34_boot1_884411_LO.jsonl": {
+            "0": 0.26017982956346586,
+            "108": 0.6515486989064876,
+            "34": 0.08827147153004655
+          },
+          "g16_blk3_d44_boot1_884411_LO.jsonl": {
+            "0": 0.2647384160373423,
+            "108": 0.6207396816045226,
+            "44": 0.11452190235813513
+          },
+          "g16_blk3_d54_boot1_884411_LO.jsonl": {
+            "0": 0.2614891907428161,
+            "108": 0.6220105132186067,
+            "54": 0.11650029603857723
+          },
+          "g16_blk3_d64_boot1_884411_LO.jsonl": {
+            "0": 0.2625132523128771,
+            "108": 0.5824630971219653,
+            "64": 0.15502365056515766
+          },
+          "g16_blk3_d74_boot1_884411_LO.jsonl": {
+            "0": 0.25881238663328576,
+            "108": 0.5420594266137718,
+            "74": 0.1991281867529424
+          },
+          "g16_blk4_d16_boot1_884412_LO.jsonl": {
+            "0": 0.25518499076935003,
+            "108": 0.6655177709993061,
+            "16": 0.07929723823134394
+          },
+          "g16_blk4_d24_boot1_884412_LO.jsonl": {
+            "0": 0.2604717487508513,
+            "108": 0.6533603446565263,
+            "24": 0.0861679065926225
+          },
+          "g16_blk4_d34_boot1_884412_LO.jsonl": {
+            "0": 0.25817705459115264,
+            "108": 0.6529741566423901,
+            "34": 0.08884878876645726
+          },
+          "g16_blk4_d44_boot1_884412_LO.jsonl": {
+            "0": 0.25948893775005877,
+            "108": 0.6425325782651817,
+            "44": 0.09797848398475947
+          },
+          "g16_blk4_d54_boot1_884412_LO.jsonl": {
+            "0": 0.26559195508510924,
+            "108": 0.6116294792507215,
+            "54": 0.12277856566416925
+          },
+          "g16_blk4_d64_boot1_884412_LO.jsonl": {
+            "0": 0.25976620082635304,
+            "108": 0.5752543410008559,
+            "64": 0.16497945817279108
+          },
+          "g16_blk4_d74_boot1_884412_LO.jsonl": {
+            "0": 0.2598943243132052,
+            "108": 0.5268275786574358,
+            "74": 0.213278097029359
+          }
+        },
+        "split_transitions_by_boot": {
+          "g16_blk1_d16_boot1_884336_LO.jsonl": 162,
+          "g16_blk1_d24_boot1_884336_LO.jsonl": 197,
+          "g16_blk1_d34_boot1_884336_LO.jsonl": 215,
+          "g16_blk1_d44_boot1_884336_LO.jsonl": 212,
+          "g16_blk1_d54_boot1_884336_LO.jsonl": 235,
+          "g16_blk1_d64_boot1_884336_LO.jsonl": 290,
+          "g16_blk1_d74_boot1_884336_LO.jsonl": 304,
+          "g16_blk2_d16_boot1_884410_LO.jsonl": 172,
+          "g16_blk2_d24_boot1_884410_LO.jsonl": 194,
+          "g16_blk2_d34_boot1_884410_LO.jsonl": 199,
+          "g16_blk2_d44_boot1_884410_LO.jsonl": 239,
+          "g16_blk2_d54_boot1_884410_LO.jsonl": 247,
+          "g16_blk2_d64_boot1_884410_LO.jsonl": 274,
+          "g16_blk2_d74_boot1_884410_LO.jsonl": 297,
+          "g16_blk3_d16_boot1_884411_LO.jsonl": 188,
+          "g16_blk3_d24_boot1_884411_LO.jsonl": 187,
+          "g16_blk3_d34_boot1_884411_LO.jsonl": 195,
+          "g16_blk3_d44_boot1_884411_LO.jsonl": 239,
+          "g16_blk3_d54_boot1_884411_LO.jsonl": 239,
+          "g16_blk3_d64_boot1_884411_LO.jsonl": 280,
+          "g16_blk3_d74_boot1_884411_LO.jsonl": 321,
+          "g16_blk4_d16_boot1_884412_LO.jsonl": 169,
+          "g16_blk4_d24_boot1_884412_LO.jsonl": 204,
+          "g16_blk4_d34_boot1_884412_LO.jsonl": 195,
+          "g16_blk4_d44_boot1_884412_LO.jsonl": 231,
+          "g16_blk4_d54_boot1_884412_LO.jsonl": 240,
+          "g16_blk4_d64_boot1_884412_LO.jsonl": 303,
+          "g16_blk4_d74_boot1_884412_LO.jsonl": 320
+        }
+      },
+      "sign_verdict": "NO_TAX",
+      "symbol_convention": "D_ttft / D_itl / delta / forced_cell are sec4's BARE ARGMIN and are always defined.  sec6 identification (K1) is a CITATION GATE carried in 'delta_citable' and in the verdict -- not part of the symbol definition.",
+      "throughput_rank_law": {
+        "citation_ban": "this agreement is structurally near-forced in an overloaded closed-budget FCFS queue -- NEVER cite it as independent mechanistic evidence (sec3-1, gate #9)",
+        "identical": false,
+        "throughput_rank": [
+          "d44",
+          "d34",
+          "d24",
+          "d54",
+          "d16",
+          "d64",
+          "d74"
+        ],
+        "ttft_pass_rank": [
+          "d16",
+          "d24",
+          "d34",
+          "d44",
+          "d54",
+          "d64",
+          "d74"
+        ]
+      },
+      "ties": {
+        "M_itl_tied": false,
+        "M_ttft_tied": false,
+        "warning": "a tie was broken by the pre-registered rule (smaller decode SM wins).  ORACLE R1 already recorded a tie-break-dependent headline ('116'), so a tied donor is never cited as identified."
+      },
+      "verdict": "ITL_SATURATED",
+      "verdict_flags": [
+        {
+          "verdict": "ITL_SATURATED",
+          "why": "ITL donor unidentified and UPPER-arm spread 0.304 ms < delta 1.0 ms over ['d44', 'd54', 'd64', 'd74'] (pinned_sm_ge_44) -- non-identification is SATURATION, not noise (informative negative)"
+        },
+        {
+          "verdict": "UNIDENTIFIED",
+          "why": "TTFT donor fails K1"
+        }
+      ]
+    },
+    "frame": "does the split that ITL requires differ from the THROUGHPUT-OPTIMAL split? (closes the re-formulated decision quantity 2; the threshold version remains on the rate axis)",
+    "scope": "nominal split of the co-resident interval (53-68% of decode-active samples run at (0,108); arm labels are conditional, not unconditional)"
+  },
+  "frame": "does the split that ITL requires differ from the THROUGHPUT-OPTIMAL split? (closes the re-formulated decision quantity 2; the threshold version remains on the rate axis)",
+  "knobs": {
+    "K10_pin_never_discards": true,
+    "K1_blocks": 3,
+    "K1_bootstrap": 0.8,
+    "K2_band": 0.1,
+    "K2_band_max": 0.25,
+    "K3": [
+      10000,
+      1
+    ],
+    "K4": "d74",
+    "K5": 4,
+    "K6": [
+      3,
+      12,
+      200,
+      3
+    ],
+    "K7_delta_ms": 1.0,
+    "K8_ladder": [
+      45,
+      80,
+      1
+    ],
+    "K9": 2
+  },
+  "positive_controls": {
+    "PC_A": {
+      "checks": [
+        {
+          "arm": "d16",
+          "got": 100.0,
+          "metric": "ttft_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 100.0
+        },
+        {
+          "arm": "d16",
+          "got": 99.625,
+          "metric": "itl_p95_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.625
+        },
+        {
+          "arm": "d16",
+          "got": 99.625,
+          "metric": "joint_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.625
+        },
+        {
+          "arm": "d16",
+          "got": 2.831354465100712,
+          "metric": "goodput_req_s",
+          "pass": true,
+          "phase": "LO",
+          "want": 2.831
+        },
+        {
+          "arm": "d24",
+          "got": 99.5,
+          "metric": "ttft_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.5
+        },
+        {
+          "arm": "d24",
+          "got": 99.625,
+          "metric": "itl_p95_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.625
+        },
+        {
+          "arm": "d24",
+          "got": 99.125,
+          "metric": "joint_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.125
+        },
+        {
+          "arm": "d24",
+          "got": 2.761438847666164,
+          "metric": "goodput_req_s",
+          "pass": true,
+          "phase": "LO",
+          "want": 2.761
+        },
+        {
+          "arm": "d34",
+          "got": 99.83333333333333,
+          "metric": "ttft_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.833
+        },
+        {
+          "arm": "d34",
+          "got": 99.375,
+          "metric": "itl_p95_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.375
+        },
+        {
+          "arm": "d34",
+          "got": 99.20833333333333,
+          "metric": "joint_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.208
+        },
+        {
+          "arm": "d34",
+          "got": 2.8351309697063076,
+          "metric": "goodput_req_s",
+          "pass": true,
+          "phase": "LO",
+          "want": 2.835
+        },
+        {
+          "arm": "d44",
+          "got": 99.95833333333333,
+          "metric": "ttft_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.958
+        },
+        {
+          "arm": "d44",
+          "got": 99.625,
+          "metric": "itl_p95_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.625
+        },
+        {
+          "arm": "d44",
+          "got": 99.58333333333333,
+          "metric": "joint_pass_pct",
+          "pass": true,
+          "phase": "LO",
+          "want": 99.583
+        },
+        {
+          "arm": "d44",
+          "got": 2.8483989881715703,
+          "metric": "goodput_req_s",
+          "pass": true,
+          "phase": "LO",
+          "want": 2.848
+        },
+        {
+          "arm": "d16",
+          "got": 57.083333333333336,
+          "metric": "ttft_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 57.083
+        },
+        {
+          "arm": "d16",
+          "got": 18.291666666666668,
+          "metric": "itl_p95_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 18.292
+        },
+        {
+          "arm": "d16",
+          "got": 8.666666666666668,
+          "metric": "joint_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 8.667
+        },
+        {
+          "arm": "d16",
+          "got": 0.44330721804261564,
+          "metric": "goodput_req_s",
+          "pass": true,
+          "phase": "HI",
+          "want": 0.443
+        },
+        {
+          "arm": "d24",
+          "got": 66.375,
+          "metric": "ttft_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 66.375
+        },
+        {
+          "arm": "d24",
+          "got": 46.166666666666664,
+          "metric": "itl_p95_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 46.167
+        },
+        {
+          "arm": "d24",
+          "got": 23.083333333333332,
+          "metric": "joint_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 23.083
+        },
+        {
+          "arm": "d24",
+          "got": 1.2496442706046773,
+          "metric": "goodput_req_s",
+          "pass": true,
+          "phase": "HI",
+          "want": 1.25
+        },
+        {
+          "arm": "d34",
+          "got": 68.91666666666667,
+          "metric": "ttft_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 68.917
+        },
+        {
+          "arm": "d34",
+          "got": 92.125,
+          "metric": "itl_p95_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 92.125
+        },
+        {
+          "arm": "d34",
+          "got": 61.958333333333336,
+          "metric": "joint_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 61.958
+        },
+        {
+          "arm": "d34",
+          "got": 3.404528790486041,
+          "metric": "goodput_req_s",
+          "pass": true,
+          "phase": "HI",
+          "want": 3.405
+        },
+        {
+          "arm": "d44",
+          "got": 70.70833333333333,
+          "metric": "ttft_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 70.708
+        },
+        {
+          "arm": "d44",
+          "got": 93.45833333333333,
+          "metric": "itl_p95_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 93.458
+        },
+        {
+          "arm": "d44",
+          "got": 65.0,
+          "metric": "joint_pass_pct",
+          "pass": true,
+          "phase": "HI",
+          "want": 65.0
+        },
+        {
+          "arm": "d44",
+          "got": 3.612530640108266,
+          "metric": "goodput_req_s",
+          "pass": true,
+          "phase": "HI",
+          "want": 3.613
+        }
+      ],
+      "passed": true
+    },
+    "PC_B": {
+      "headline_signature": [
+        {
+          "branch": {
+            "duration": "summed_over_rounds",
+            "empty_itl_branch": "not_taken",
+            "goodput": "pdmux_eval.analyze.summarize_requests",
+            "loader": "pdmux_eval.analyze.load_bench_serving_rounds",
+            "median": "statistics.median",
+            "multi_round": true,
+            "p95": "pdmux_eval.analyze.percentile(linear_interp)",
+            "predicate": "pdmux_eval.analyze.RequestResult.passes"
+          },
+          "function": "g16_analyze.boot_estimands",
+          "kwargs": {
+            "empty_itl_policy": "inf",
+            "itl_quantile": 0.95,
+            "itl_slo_ms": 60.0,
+            "request_slice": [
+              0.0,
+              1.0
+            ],
+            "ttft_slo_ms": 3000.0
+          }
+        }
+      ],
+      "negative_control": {
+        "description": "same function, itl_slo_ms 60 -> 55; the signature comparison MUST report a difference",
+        "difference_detected": true,
+        "passed": true
+      },
+      "passed": true,
+      "per_control": {
+        "PC-A/PC-E": {
+          "matches_headline": true,
+          "signatures": [
+            {
+              "branch": {
+                "duration": "summed_over_rounds",
+                "empty_itl_branch": "not_taken",
+                "goodput": "pdmux_eval.analyze.summarize_requests",
+                "loader": "pdmux_eval.analyze.load_bench_serving_rounds",
+                "median": "statistics.median",
+                "multi_round": true,
+                "p95": "pdmux_eval.analyze.percentile(linear_interp)",
+                "predicate": "pdmux_eval.analyze.RequestResult.passes"
+              },
+              "function": "g16_analyze.boot_estimands",
+              "kwargs": {
+                "empty_itl_policy": "inf",
+                "itl_quantile": 0.95,
+                "itl_slo_ms": 60.0,
+                "request_slice": [
+                  0.0,
+                  1.0
+                ],
+                "ttft_slo_ms": 3000.0
+              }
+            }
+          ]
+        },
+        "PC-C": {
+          "matches_headline": true,
+          "signatures": [
+            {
+              "branch": {
+                "duration": "summed_over_rounds",
+                "empty_itl_branch": "not_taken",
+                "goodput": "pdmux_eval.analyze.summarize_requests",
+                "loader": "pdmux_eval.analyze.load_bench_serving_rounds",
+                "median": "statistics.median",
+                "multi_round": true,
+                "p95": "pdmux_eval.analyze.percentile(linear_interp)",
+                "predicate": "pdmux_eval.analyze.RequestResult.passes"
+              },
+              "function": "g16_analyze.boot_estimands",
+              "kwargs": {
+                "empty_itl_policy": "inf",
+                "itl_quantile": 0.95,
+                "itl_slo_ms": 60.0,
+                "request_slice": [
+                  0.0,
+                  1.0
+                ],
+                "ttft_slo_ms": 3000.0
+              }
+            }
+          ]
+        },
+        "PC-D": {
+          "matches_headline": true,
+          "signatures": [
+            {
+              "branch": {
+                "duration": "summed_over_rounds",
+                "empty_itl_branch": "not_taken",
+                "goodput": "pdmux_eval.analyze.summarize_requests",
+                "loader": "pdmux_eval.analyze.load_bench_serving_rounds",
+                "median": "statistics.median",
+                "multi_round": false,
+                "p95": "pdmux_eval.analyze.percentile(linear_interp)",
+                "predicate": "pdmux_eval.analyze.RequestResult.passes"
+              },
+              "function": "g16_analyze.boot_estimands",
+              "kwargs": {
+                "empty_itl_policy": "inf",
+                "itl_quantile": 0.95,
+                "itl_slo_ms": 60.0,
+                "request_slice": [
+                  0.0,
+                  1.0
+                ],
+                "ttft_slo_ms": 3000.0
+              }
+            }
+          ]
+        }
+      }
+    },
+    "PC_C": {
+      "decision": {
+        "D_itl": {
+          "arm": null,
+          "bootstrap_rule": {
+            "distribution": {
+              "d34": 0.3619,
+              "d44": 0.6381
+            },
+            "fraction": 0.6381,
+            "passes": false,
+            "tied_fraction": 0.0,
+            "winner": "d44"
+          },
+          "decode_sm": null,
+          "identified": false,
+          "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+          "rank_rule": {
+            "blocks_won": 3,
+            "n_blocks": 4,
+            "n_blocks_tied": 0,
+            "passes": true,
+            "per_block": {
+              "pseudo1": "d44",
+              "pseudo2": "d44",
+              "pseudo3": "d34",
+              "pseudo4": "d44"
+            },
+            "per_block_tied": {
+              "pseudo1": false,
+              "pseudo2": false,
+              "pseudo3": false,
+              "pseudo4": false
+            },
+            "winner": "d44"
+          },
+          "rules_agree": true
+        },
+        "D_itl_arm": "d44",
+        "D_ttft": {
+          "arm": "d44",
+          "bootstrap_rule": {
+            "distribution": {
+              "d16": 0.048,
+              "d44": 0.952
+            },
+            "fraction": 0.952,
+            "passes": true,
+            "tied_fraction": 0.0,
+            "winner": "d44"
+          },
+          "decode_sm": 44,
+          "identified": true,
+          "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+          "rank_rule": {
+            "blocks_won": 3,
+            "n_blocks": 4,
+            "n_blocks_tied": 0,
+            "passes": true,
+            "per_block": {
+              "pseudo1": "d44",
+              "pseudo2": "d44",
+              "pseudo3": "d16",
+              "pseudo4": "d44"
+            },
+            "per_block_tied": {
+              "pseudo1": false,
+              "pseudo2": false,
+              "pseudo3": false,
+              "pseudo4": false
+            },
+            "winner": "d44"
+          },
+          "rules_agree": true
+        },
+        "D_ttft_arm": "d44",
+        "S_max": 44,
+        "S_min": 16,
+        "adaptive_rule": {
+          "action": "NO_MORE_BLOCKS",
+          "reason": "upper gap < delta => ITL_SATURATED is final"
+        },
+        "arm_means": {
+          "M_itl": {
+            "d16": 83.57209245441481,
+            "d24": 60.20335155772045,
+            "d34": 58.84976169327274,
+            "d44": 58.64680699305609
+          },
+          "M_ttft": {
+            "d16": 1792.397543322295,
+            "d24": 1409.4569508451968,
+            "d34": 1211.4975759759545,
+            "d44": 1111.280309036374
+          }
+        },
+        "arm_t_ci": {
+          "M_itl": {
+            "d16": {
+              "hi": 84.70435386834617,
+              "lo": 82.43983104048345,
+              "mean": 83.57209245441481,
+              "n": 4.0,
+              "sd": 0.7116665078135511,
+              "t_crit": 3.182
+            },
+            "d24": {
+              "hi": 60.48551118830014,
+              "lo": 59.92119192714077,
+              "mean": 60.20335155772045,
+              "n": 4.0,
+              "sd": 0.17734734794449253,
+              "t_crit": 3.182
+            },
+            "d34": {
+              "hi": 60.18760732057848,
+              "lo": 57.511916065967,
+              "mean": 58.84976169327274,
+              "n": 4.0,
+              "sd": 0.8408834866786549,
+              "t_crit": 3.182
+            },
+            "d44": {
+              "hi": 60.197220564872175,
+              "lo": 57.09639342124,
+              "mean": 58.64680699305609,
+              "n": 4.0,
+              "sd": 0.9744899885707629,
+              "t_crit": 3.182
+            }
+          },
+          "M_ttft": {
+            "d16": {
+              "hi": 2971.739217283143,
+              "lo": 613.0558693614471,
+              "mean": 1792.397543322295,
+              "n": 4.0,
+              "sd": 741.258123168352,
+              "t_crit": 3.182
+            },
+            "d24": {
+              "hi": 1767.7352168007553,
+              "lo": 1051.1786848896384,
+              "mean": 1409.4569508451968,
+              "n": 4.0,
+              "sd": 225.19061342272687,
+              "t_crit": 3.182
+            },
+            "d34": {
+              "hi": 1296.6215556875209,
+              "lo": 1126.3735962643882,
+              "mean": 1211.4975759759545,
+              "n": 4.0,
+              "sd": 53.503444193316355,
+              "t_crit": 3.182
+            },
+            "d44": {
+              "hi": 1243.9708549715895,
+              "lo": 978.5897631011587,
+              "mean": 1111.280309036374,
+              "n": 4.0,
+              "sd": 83.40072026097761,
+              "t_crit": 3.182
+            }
+          }
+        },
+        "arms": [
+          "d16",
+          "d24",
+          "d34",
+          "d44"
+        ],
+        "byproduct_block_paired": {
+          "definition": "M_itl(d44) - M_itl(S_max)  [sec6 pre-registered]",
+          "s_max_arm": "d44",
+          "value_ms": 0.0
+        },
+        "citation_guards": [
+          "Delta must never be a standalone headline (C2: the location statistic does not saturate, so D_itl = S_max may be a priori)",
+          "TRUNCATED is never written as 'no tax'",
+          "percentile CI is never cited on its own; t(n-1) accompanies it",
+          "Delta / Delta_SLO are discrete lattice values: report the donor / sufficient-point SELECTION DISTRIBUTION, not a CI",
+          "sec10-7: this says NOTHING about HE0.  A positive coupling tax does NOT revive dynamic control -- 'achieved dynamic is worse than best static' and 'the achievable ceiling' are separate propositions (gate #38).  No policy-ranking change.",
+          "sec10-9(a): the location statistic CANNOT in principle produce a magnitude comparable to sec1-20 '+16%' or sec1-32 '+1.67%'",
+          "sec6: TRUNCATED / ITL_SATURATED / S_ITL_UNREACHED / UNIDENTIFIED are RESULTS, not failures.  This tool's exit code 2 and the word 'GATE' refer to POSITIVE-CONTROL failure only -- never relabel a verdict as a failed measurement (gate #21, reverse direction)",
+          "sec10-2: HI is 2.15-2.35x overloaded and threshold-goodput is ill-posed there; the goodput / pass-rate side outputs inherit that caveat",
+          "sec10-5/6: Zamba2-2.7B, ctx4096, ShareGPT, and only TWO points on the work-ratio axis -- no slope or functional-form claims, no transplant to 8B or other models",
+          "NEVER write 'gate #16 is closed'.  What closes is the RE-FORMULATED decision quantity 2; the threshold version stays on the rate axis (rev3 sec1 C1)",
+          "add. A-3: agreement between the primary and the drift-corrected donor does NOT mean 'no drift'.  A symmetric CURVATURE component moves both estimators the same way, so DRIFT_DISAGREEMENT is blind exactly where A-3-2 says 4 blocks cannot balance"
+        ],
+        "delta": 0,
+        "delta_citable": false,
+        "delta_slo_intervals": [
+          {
+            "S_itl": null,
+            "delta_slo": null,
+            "slo_hi_ms": 58,
+            "slo_lo_ms": 45,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": 34,
+            "delta_slo": -10,
+            "slo_hi_ms": 60,
+            "slo_lo_ms": 59,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "delta_slo": -20,
+            "slo_hi_ms": 80,
+            "slo_lo_ms": 61,
+            "verdict": "TRUNCATED"
+          }
+        ],
+        "delta_slo_ladder": [
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 45,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 46,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 47,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 48,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 49,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 50,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 51,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 52,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 53,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 54,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 55,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 56,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 57,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": null,
+            "S_itl_upward_closed": null,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": null,
+            "monotonicity_violated": false,
+            "slo_ms": 58,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": 34,
+            "S_itl_upward_closed": 34,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -10,
+            "monotonicity_violated": false,
+            "slo_ms": 59,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 34,
+            "S_itl_upward_closed": 34,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -10,
+            "monotonicity_violated": false,
+            "slo_ms": 60,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 61,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 62,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 63,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 64,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 65,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 66,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 67,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 68,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 69,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 70,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 71,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 72,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 73,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 74,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 75,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 76,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 77,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 78,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 79,
+            "verdict": "TRUNCATED"
+          },
+          {
+            "S_itl": 24,
+            "S_itl_upward_closed": 24,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED"
+            ],
+            "citable": true,
+            "delta_slo": -20,
+            "monotonicity_violated": false,
+            "slo_ms": 80,
+            "verdict": "TRUNCATED"
+          }
+        ],
+        "forced_cell": {
+          "cell": "D_itl=S_max x D_ttft=S_max",
+          "reading": "delta == 0",
+          "sign_forced": true
+        },
+        "frame": "does the split that ITL requires differ from the THROUGHPUT-OPTIMAL split? (closes the re-formulated decision quantity 2; the threshold version remains on the rate axis)",
+        "grid_hygiene": {
+          "arms": [
+            "d16",
+            "d24",
+            "d34",
+            "d44"
+          ],
+          "balanced": true,
+          "blocks": [
+            "pseudo1",
+            "pseudo2",
+            "pseudo3",
+            "pseudo4"
+          ],
+          "boots_per_arm": {
+            "d16": 4,
+            "d24": 4,
+            "d34": 4,
+            "d44": 4
+          },
+          "flags": [],
+          "incidence": {
+            "d16": {
+              "pseudo1": 1,
+              "pseudo2": 1,
+              "pseudo3": 1,
+              "pseudo4": 1
+            },
+            "d24": {
+              "pseudo1": 1,
+              "pseudo2": 1,
+              "pseudo3": 1,
+              "pseudo4": 1
+            },
+            "d34": {
+              "pseudo1": 1,
+              "pseudo2": 1,
+              "pseudo3": 1,
+              "pseudo4": 1
+            },
+            "d44": {
+              "pseudo1": 1,
+              "pseudo2": 1,
+              "pseudo3": 1,
+              "pseudo4": 1
+            }
+          },
+          "missing_cells": [],
+          "sufficient_blocks": true
+        },
+        "label": "PC-C sgptv HI (old 4-arm)",
+        "operating_point": {
+          "MANDATORY_BAND": "[+0.34%, -1.92%]",
+          "S_itl": 34,
+          "S_itl_upward_closed": 34,
+          "block_verdict_flags": [
+            "ITL_SATURATED",
+            "TRUNCATED"
+          ],
+          "citable": true,
+          "delta_slo": -10,
+          "monotonicity_violated": false,
+          "slo_ms": 60,
+          "verdict": "TRUNCATED",
+          "warning": "the 60 ms point estimate is NEVER cited without this band (C2'); the registrable object is the sign-change interval, not this point"
+        },
+        "s_itl_exact_bands": [
+          {
+            "S_itl": null,
+            "slo_hi_ms": 58.64680699305609,
+            "slo_lo_ms": null,
+            "verdict": "S_ITL_UNREACHED"
+          },
+          {
+            "S_itl": 44,
+            "arm": "d44",
+            "band_width_ms": 0.20295470021665096,
+            "slo_hi_ms": 58.84976169327274,
+            "slo_lo_ms": 58.64680699305609
+          },
+          {
+            "S_itl": 34,
+            "arm": "d34",
+            "band_width_ms": 1.353589864447713,
+            "slo_hi_ms": 60.20335155772045,
+            "slo_lo_ms": 58.84976169327274
+          },
+          {
+            "S_itl": 24,
+            "arm": "d24",
+            "band_width_ms": 23.368740896694362,
+            "slo_hi_ms": 83.57209245441481,
+            "slo_lo_ms": 60.20335155772045
+          },
+          {
+            "S_itl": 16,
+            "arm": "d16",
+            "band_width_ms": null,
+            "slo_hi_ms": null,
+            "slo_lo_ms": 83.57209245441481
+          }
+        ],
+        "s_itl_ladder_resolution_warning": "the K8 ladder steps 1 ms; 's_itl_exact_bands' below shows the true breakpoints.  Any band narrower than 1 ms is INVISIBLE to the ladder -- on the old grid the S_itl=44 band (0.203 ms) vanishes entirely, and that band sits in the tight-SLO region sec4-1 calls this campaign's only SLO-related payoff.  Cite the exact bands.",
+        "saturation": {
+          "contenders": [
+            "d34",
+            "d44"
+          ],
+          "delta_ms": 1.0,
+          "gap_contenders_ms": 0.20295470021665096,
+          "gap_top_half_by_sm_ms": 0.20295470021665096,
+          "gap_upper_ms": 0.20295470021665096,
+          "primary_definition": "upper arms U = decode SM >= 44 (K11, prereg addendum C)",
+          "top_half_arms": [
+            "d34",
+            "d44"
+          ],
+          "upper_arm_basis": "fallback_top_half_of_surviving",
+          "upper_arms": [
+            "d34",
+            "d44"
+          ]
+        },
+        "scope": "nominal split of the co-resident interval (53-68% of decode-active samples run at (0,108); arm labels are conditional, not unconditional)",
+        "sign_verdict": "NO_TAX",
+        "symbol_convention": "D_ttft / D_itl / delta / forced_cell are sec4's BARE ARGMIN and are always defined.  sec6 identification (K1) is a CITATION GATE carried in 'delta_citable' and in the verdict -- not part of the symbol definition.",
+        "ties": {
+          "M_itl_tied": false,
+          "M_ttft_tied": false,
+          "warning": "a tie was broken by the pre-registered rule (smaller decode SM wins).  ORACLE R1 already recorded a tie-break-dependent headline ('116'), so a tied donor is never cited as identified."
+        },
+        "verdict": "ITL_SATURATED",
+        "verdict_flags": [
+          {
+            "verdict": "TRUNCATED",
+            "why": "D_ttft = S_max = 44: decision quantity 2 stays undetermined; NEVER read as 'no tax'"
+          },
+          {
+            "verdict": "ITL_SATURATED",
+            "why": "ITL donor unidentified and UPPER-arm spread 0.203 ms < delta 1.0 ms over ['d34', 'd44'] (fallback_top_half_of_surviving) -- non-identification is SATURATION, not noise (informative negative)"
+          }
+        ]
+      },
+      "diagnostic_identification_gate": {
+        "D_itl_identified": false,
+        "bootstrap_fraction": 0.6381,
+        "reading": "sec4's estimator gives d44, and sec7's PC-C target is scoped to the estimator ('the primary estimator ALSO gives ...'), so the control PASSES.  Separately, the K1 citation gate does NOT identify an ITL donor on this grid.  That non-identification agrees with the canon's conclusion -- ORACLE sec3-3 registration-ban #1 and CONSENSUS sec1-13 footnote F both say the d44/d34 ITL donor is inseparable.  CAUTION: ORACLE sec3-4's 6028/3972 is the THRESHOLD-PREDICATE donor, a DIFFERENT estimator from this location-statistic one (which gives ~0.64/0.36).  Both land near 60/40, but 'the numbers match' is NOT evidence that the same path was executed -- that inference is the exact genre of gate #9 / CONSENSUS sec3 item 39.  The agreeing thing is the CONCLUSION, not the estimator.",
+        "threshold": 0.8
+      },
+      "passed": true,
+      "subclaims": [
+        {
+          "got": 44,
+          "name": "D_ttft == 44 (== S_max of the old grid)",
+          "pass": true,
+          "want": 44
+        },
+        {
+          "got": [
+            "ITL_SATURATED",
+            "TRUNCATED"
+          ],
+          "name": "truncation logic fires (TRUNCATED among verdict flags)",
+          "pass": true,
+          "want": "TRUNCATED present"
+        },
+        {
+          "got": "d44",
+          "name": "D_itl == d44 (sec4 estimator, the form the target is phrased in: 'the primary estimator ALSO gives D_ttft=d44 . D_itl=d44')",
+          "pass": true,
+          "want": "d44"
+        }
+      ],
+      "target_as_written": {
+        "D_itl": 44,
+        "D_ttft": 44,
+        "verdict": "TRUNCATED"
+      }
+    },
+    "PC_D": {
+      "checks": [
+        {
+          "arm": "d34",
+          "got": 778.9399239700288,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "A",
+          "want": 779
+        },
+        {
+          "arm": "d44",
+          "got": 1910.1549815386534,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "A",
+          "want": 1910
+        },
+        {
+          "arm": "d54",
+          "got": 1952.4464684072882,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "A",
+          "want": 1952
+        },
+        {
+          "arm": "d64",
+          "got": 4913.995431736112,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "A",
+          "want": 4914
+        },
+        {
+          "arm": "d74",
+          "got": 6986.569580854848,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "A",
+          "want": 6987
+        },
+        {
+          "arm": "d34",
+          "got": 22.73518347647041,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "A",
+          "want": 22.74
+        },
+        {
+          "arm": "d44",
+          "got": 18.249840126372874,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "A",
+          "want": 18.25
+        },
+        {
+          "arm": "d54",
+          "got": 18.40790279675275,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "A",
+          "want": 18.41
+        },
+        {
+          "arm": "d64",
+          "got": 19.151760265231133,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "A",
+          "want": 19.15
+        },
+        {
+          "arm": "d74",
+          "got": 18.9452808117494,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "A",
+          "want": 18.95
+        },
+        {
+          "arm": "d34",
+          "got": 382.95285287313163,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "B",
+          "want": 383
+        },
+        {
+          "arm": "d44",
+          "got": 553.1252548098564,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "B",
+          "want": 553
+        },
+        {
+          "arm": "d54",
+          "got": 870.2597424853593,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "B",
+          "want": 870
+        },
+        {
+          "arm": "d64",
+          "got": 1863.1613941397518,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "B",
+          "want": 1863
+        },
+        {
+          "arm": "d74",
+          "got": 5476.873398059979,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "B",
+          "want": 5477
+        },
+        {
+          "arm": "d34",
+          "got": 48.136787791736424,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "B",
+          "want": 48.14
+        },
+        {
+          "arm": "d44",
+          "got": 42.15000178664923,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "B",
+          "want": 42.15
+        },
+        {
+          "arm": "d54",
+          "got": 40.45676800888031,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "B",
+          "want": 40.46
+        },
+        {
+          "arm": "d64",
+          "got": 36.41414858866483,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "B",
+          "want": 36.41
+        },
+        {
+          "arm": "d74",
+          "got": 33.0862068105489,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "B",
+          "want": 33.09
+        }
+      ],
+      "passed": true,
+      "phases": {
+        "A": {
+          "D_itl": {
+            "arm": null,
+            "bootstrap_rule": {
+              "distribution": {
+                "d44": 0.6285,
+                "d54": 0.3715
+              },
+              "fraction": 0.6285,
+              "passes": false,
+              "tied_fraction": 0.0,
+              "winner": "d44"
+            },
+            "decode_sm": null,
+            "identified": false,
+            "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+            "rank_rule": {
+              "blocks_won": 3,
+              "n_blocks": 4,
+              "n_blocks_tied": 0,
+              "passes": true,
+              "per_block": {
+                "pseudo1": "d54",
+                "pseudo2": "d44",
+                "pseudo3": "d44",
+                "pseudo4": "d44"
+              },
+              "per_block_tied": {
+                "pseudo1": false,
+                "pseudo2": false,
+                "pseudo3": false,
+                "pseudo4": false
+              },
+              "winner": "d44"
+            },
+            "rules_agree": true
+          },
+          "D_itl_arm": "d44",
+          "D_ttft": {
+            "arm": "d34",
+            "bootstrap_rule": {
+              "distribution": {
+                "d34": 1.0
+              },
+              "fraction": 1.0,
+              "passes": true,
+              "tied_fraction": 0.0,
+              "winner": "d34"
+            },
+            "decode_sm": 34,
+            "identified": true,
+            "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+            "rank_rule": {
+              "blocks_won": 4,
+              "n_blocks": 4,
+              "n_blocks_tied": 0,
+              "passes": true,
+              "per_block": {
+                "pseudo1": "d34",
+                "pseudo2": "d34",
+                "pseudo3": "d34",
+                "pseudo4": "d34"
+              },
+              "per_block_tied": {
+                "pseudo1": false,
+                "pseudo2": false,
+                "pseudo3": false,
+                "pseudo4": false
+              },
+              "winner": "d34"
+            },
+            "rules_agree": true
+          },
+          "D_ttft_arm": "d34",
+          "S_max": 74,
+          "S_min": 34,
+          "adaptive_rule": {
+            "action": "NO_MORE_BLOCKS",
+            "reason": "upper gap < delta => ITL_SATURATED is final"
+          },
+          "arm_means": {
+            "M_itl": {
+              "d34": 22.73518347647041,
+              "d44": 18.249840126372874,
+              "d54": 18.40790279675275,
+              "d64": 19.151760265231133,
+              "d74": 18.9452808117494
+            },
+            "M_ttft": {
+              "d34": 778.9399239700288,
+              "d44": 1910.1549815386534,
+              "d54": 1952.4464684072882,
+              "d64": 4913.995431736112,
+              "d74": 6986.569580854848
+            }
+          },
+          "arm_t_ci": {
+            "M_itl": {
+              "d34": {
+                "hi": 22.952206632425565,
+                "lo": 22.518160320515257,
+                "mean": 22.73518347647041,
+                "n": 4.0,
+                "sd": 0.13640676049978323,
+                "t_crit": 3.182
+              },
+              "d44": {
+                "hi": 23.849935493778567,
+                "lo": 12.64974475896718,
+                "mean": 18.249840126372874,
+                "n": 4.0,
+                "sd": 3.5198588104372686,
+                "t_crit": 3.182
+              },
+              "d54": {
+                "hi": 19.51705213378619,
+                "lo": 17.29875345971931,
+                "mean": 18.40790279675275,
+                "n": 4.0,
+                "sd": 0.6971397467212073,
+                "t_crit": 3.182
+              },
+              "d64": {
+                "hi": 19.298928495476275,
+                "lo": 19.00459203498599,
+                "mean": 19.151760265231133,
+                "n": 4.0,
+                "sd": 0.09250045898500582,
+                "t_crit": 3.182
+              },
+              "d74": {
+                "hi": 19.058221647161393,
+                "lo": 18.832339976337405,
+                "mean": 18.9452808117494,
+                "n": 4.0,
+                "sd": 0.0709873258403474,
+                "t_crit": 3.182
+              }
+            },
+            "M_ttft": {
+              "d34": {
+                "hi": 1149.5549088794478,
+                "lo": 408.32493906060984,
+                "mean": 778.9399239700288,
+                "n": 4.0,
+                "sd": 232.94467938995533,
+                "t_crit": 3.182
+              },
+              "d44": {
+                "hi": 3880.105535715149,
+                "lo": -59.79557263784227,
+                "mean": 1910.1549815386534,
+                "n": 4.0,
+                "sd": 1238.1838806891865,
+                "t_crit": 3.182
+              },
+              "d54": {
+                "hi": 2107.5844641641247,
+                "lo": 1797.308472650452,
+                "mean": 1952.4464684072882,
+                "n": 4.0,
+                "sd": 97.50973963346091,
+                "t_crit": 3.182
+              },
+              "d64": {
+                "hi": 8222.842286502937,
+                "lo": 1605.1485769692858,
+                "mean": 4913.995431736112,
+                "n": 4.0,
+                "sd": 2079.7277528389855,
+                "t_crit": 3.182
+              },
+              "d74": {
+                "hi": 7358.6374443845,
+                "lo": 6614.501717325196,
+                "mean": 6986.569580854848,
+                "n": 4.0,
+                "sd": 233.85786519776957,
+                "t_crit": 3.182
+              }
+            }
+          },
+          "arms": [
+            "d34",
+            "d44",
+            "d54",
+            "d64",
+            "d74"
+          ],
+          "byproduct_block_paired": {
+            "definition": "M_itl(d44) - M_itl(S_max)  [sec6 pre-registered]",
+            "s_max_arm": "d74",
+            "value_ms": -0.6954406853765249
+          },
+          "citation_guards": [
+            "Delta must never be a standalone headline (C2: the location statistic does not saturate, so D_itl = S_max may be a priori)",
+            "TRUNCATED is never written as 'no tax'",
+            "percentile CI is never cited on its own; t(n-1) accompanies it",
+            "Delta / Delta_SLO are discrete lattice values: report the donor / sufficient-point SELECTION DISTRIBUTION, not a CI",
+            "sec10-7: this says NOTHING about HE0.  A positive coupling tax does NOT revive dynamic control -- 'achieved dynamic is worse than best static' and 'the achievable ceiling' are separate propositions (gate #38).  No policy-ranking change.",
+            "sec10-9(a): the location statistic CANNOT in principle produce a magnitude comparable to sec1-20 '+16%' or sec1-32 '+1.67%'",
+            "sec6: TRUNCATED / ITL_SATURATED / S_ITL_UNREACHED / UNIDENTIFIED are RESULTS, not failures.  This tool's exit code 2 and the word 'GATE' refer to POSITIVE-CONTROL failure only -- never relabel a verdict as a failed measurement (gate #21, reverse direction)",
+            "sec10-2: HI is 2.15-2.35x overloaded and threshold-goodput is ill-posed there; the goodput / pass-rate side outputs inherit that caveat",
+            "sec10-5/6: Zamba2-2.7B, ctx4096, ShareGPT, and only TWO points on the work-ratio axis -- no slope or functional-form claims, no transplant to 8B or other models",
+            "NEVER write 'gate #16 is closed'.  What closes is the RE-FORMULATED decision quantity 2; the threshold version stays on the rate axis (rev3 sec1 C1)",
+            "add. A-3: agreement between the primary and the drift-corrected donor does NOT mean 'no drift'.  A symmetric CURVATURE component moves both estimators the same way, so DRIFT_DISAGREEMENT is blind exactly where A-3-2 says 4 blocks cannot balance"
+          ],
+          "delta": 10,
+          "delta_citable": false,
+          "delta_slo_intervals": [
+            {
+              "S_itl": 34,
+              "delta_slo": 0,
+              "slo_hi_ms": 80,
+              "slo_lo_ms": 45,
+              "verdict": "ITL_UNCONSTRAINED"
+            }
+          ],
+          "delta_slo_ladder": [
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 45,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 46,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 47,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 48,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 49,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 50,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 51,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 52,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 53,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 54,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 55,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 56,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 57,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 58,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 59,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 60,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 61,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 62,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 63,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 64,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 65,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 66,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 67,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 68,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 69,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 70,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 71,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 72,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 73,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 74,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 75,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 76,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 77,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 78,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 79,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "ITL_SATURATED",
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 80,
+              "verdict": "ITL_UNCONSTRAINED"
+            }
+          ],
+          "forced_cell": {
+            "cell": "D_itl=interior x D_ttft=S_min",
+            "reading": "delta >= 0 FORCED (sign inflated)",
+            "sign_forced": true
+          },
+          "frame": "does the split that ITL requires differ from the THROUGHPUT-OPTIMAL split? (closes the re-formulated decision quantity 2; the threshold version remains on the rate axis)",
+          "grid_hygiene": {
+            "arms": [
+              "d34",
+              "d44",
+              "d54",
+              "d64",
+              "d74"
+            ],
+            "balanced": true,
+            "blocks": [
+              "pseudo1",
+              "pseudo2",
+              "pseudo3",
+              "pseudo4"
+            ],
+            "boots_per_arm": {
+              "d34": 4,
+              "d44": 4,
+              "d54": 4,
+              "d64": 4,
+              "d74": 4
+            },
+            "flags": [],
+            "incidence": {
+              "d34": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              },
+              "d44": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              },
+              "d54": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              },
+              "d64": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              },
+              "d74": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              }
+            },
+            "missing_cells": [],
+            "sufficient_blocks": true
+          },
+          "label": "PC-D g2_0_hard phase A",
+          "operating_point": {
+            "MANDATORY_BAND": "[+0.34%, -1.92%]",
+            "S_itl": 34,
+            "S_itl_upward_closed": 34,
+            "block_verdict_flags": [
+              "ITL_SATURATED",
+              "TRUNCATED_LOW"
+            ],
+            "citable": true,
+            "delta_slo": 0,
+            "monotonicity_violated": false,
+            "slo_ms": 60,
+            "verdict": "ITL_UNCONSTRAINED",
+            "warning": "the 60 ms point estimate is NEVER cited without this band (C2'); the registrable object is the sign-change interval, not this point"
+          },
+          "s_itl_exact_bands": [
+            {
+              "S_itl": null,
+              "slo_hi_ms": 18.249840126372874,
+              "slo_lo_ms": null,
+              "verdict": "S_ITL_UNREACHED"
+            },
+            {
+              "S_itl": 44,
+              "arm": "d44",
+              "band_width_ms": 4.485343350097537,
+              "slo_hi_ms": 22.73518347647041,
+              "slo_lo_ms": 18.249840126372874
+            },
+            {
+              "S_itl": 34,
+              "arm": "d34",
+              "band_width_ms": null,
+              "slo_hi_ms": null,
+              "slo_lo_ms": 22.73518347647041
+            }
+          ],
+          "s_itl_ladder_resolution_warning": "the K8 ladder steps 1 ms; 's_itl_exact_bands' below shows the true breakpoints.  Any band narrower than 1 ms is INVISIBLE to the ladder -- on the old grid the S_itl=44 band (0.203 ms) vanishes entirely, and that band sits in the tight-SLO region sec4-1 calls this campaign's only SLO-related payoff.  Cite the exact bands.",
+          "saturation": {
+            "contenders": [
+              "d44",
+              "d54"
+            ],
+            "delta_ms": 1.0,
+            "gap_contenders_ms": 0.1580626703798771,
+            "gap_top_half_by_sm_ms": 0.7438574684783816,
+            "gap_upper_ms": 0.9019201388582587,
+            "primary_definition": "upper arms U = decode SM >= 44 (K11, prereg addendum C)",
+            "top_half_arms": [
+              "d54",
+              "d64",
+              "d74"
+            ],
+            "upper_arm_basis": "pinned_sm_ge_44",
+            "upper_arms": [
+              "d44",
+              "d54",
+              "d64",
+              "d74"
+            ]
+          },
+          "scope": "nominal split of the co-resident interval (53-68% of decode-active samples run at (0,108); arm labels are conditional, not unconditional)",
+          "sign_verdict": "TAX_POSITIVE",
+          "symbol_convention": "D_ttft / D_itl / delta / forced_cell are sec4's BARE ARGMIN and are always defined.  sec6 identification (K1) is a CITATION GATE carried in 'delta_citable' and in the verdict -- not part of the symbol definition.",
+          "ties": {
+            "M_itl_tied": false,
+            "M_ttft_tied": false,
+            "warning": "a tie was broken by the pre-registered rule (smaller decode SM wins).  ORACLE R1 already recorded a tie-break-dependent headline ('116'), so a tied donor is never cited as identified."
+          },
+          "verdict": "ITL_SATURATED",
+          "verdict_flags": [
+            {
+              "verdict": "TRUNCATED_LOW",
+              "why": "D_ttft = S_min = 34: delta >= 0 is forced, so delta > 0 is NOT read as a tax"
+            },
+            {
+              "verdict": "ITL_SATURATED",
+              "why": "ITL donor unidentified and UPPER-arm spread 0.902 ms < delta 1.0 ms over ['d44', 'd54', 'd64', 'd74'] (pinned_sm_ge_44) -- non-identification is SATURATION, not noise (informative negative)"
+            }
+          ]
+        },
+        "B": {
+          "D_itl": {
+            "arm": "d74",
+            "bootstrap_rule": {
+              "distribution": {
+                "d74": 1.0
+              },
+              "fraction": 1.0,
+              "passes": true,
+              "tied_fraction": 0.0,
+              "winner": "d74"
+            },
+            "decode_sm": 74,
+            "identified": true,
+            "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+            "rank_rule": {
+              "blocks_won": 4,
+              "n_blocks": 4,
+              "n_blocks_tied": 0,
+              "passes": true,
+              "per_block": {
+                "pseudo1": "d74",
+                "pseudo2": "d74",
+                "pseudo3": "d74",
+                "pseudo4": "d74"
+              },
+              "per_block_tied": {
+                "pseudo1": false,
+                "pseudo2": false,
+                "pseudo3": false,
+                "pseudo4": false
+              },
+              "winner": "d74"
+            },
+            "rules_agree": true
+          },
+          "D_itl_arm": "d74",
+          "D_ttft": {
+            "arm": "d34",
+            "bootstrap_rule": {
+              "distribution": {
+                "d34": 1.0
+              },
+              "fraction": 1.0,
+              "passes": true,
+              "tied_fraction": 0.0,
+              "winner": "d34"
+            },
+            "decode_sm": 34,
+            "identified": true,
+            "note": "rank and bootstrap rules are highly correlated (sec6/C7) -- NOT two independent pieces of evidence",
+            "rank_rule": {
+              "blocks_won": 4,
+              "n_blocks": 4,
+              "n_blocks_tied": 0,
+              "passes": true,
+              "per_block": {
+                "pseudo1": "d34",
+                "pseudo2": "d34",
+                "pseudo3": "d34",
+                "pseudo4": "d34"
+              },
+              "per_block_tied": {
+                "pseudo1": false,
+                "pseudo2": false,
+                "pseudo3": false,
+                "pseudo4": false
+              },
+              "winner": "d34"
+            },
+            "rules_agree": true
+          },
+          "D_ttft_arm": "d34",
+          "S_max": 74,
+          "S_min": 34,
+          "adaptive_rule": {
+            "action": "NONE",
+            "reason": "donor identified"
+          },
+          "arm_means": {
+            "M_itl": {
+              "d34": 48.136787791736424,
+              "d44": 42.15000178664923,
+              "d54": 40.45676800888031,
+              "d64": 36.41414858866483,
+              "d74": 33.0862068105489
+            },
+            "M_ttft": {
+              "d34": 382.95285287313163,
+              "d44": 553.1252548098564,
+              "d54": 870.2597424853593,
+              "d64": 1863.1613941397518,
+              "d74": 5476.873398059979
+            }
+          },
+          "arm_t_ci": {
+            "M_itl": {
+              "d34": {
+                "hi": 48.37348261923242,
+                "lo": 47.90009296424043,
+                "mean": 48.136787791736424,
+                "n": 4.0,
+                "sd": 0.14877110464864654,
+                "t_crit": 3.182
+              },
+              "d44": {
+                "hi": 42.20093072977863,
+                "lo": 42.09907284351983,
+                "mean": 42.15000178664923,
+                "n": 4.0,
+                "sd": 0.03201064935851681,
+                "t_crit": 3.182
+              },
+              "d54": {
+                "hi": 42.08793746496223,
+                "lo": 38.82559855279839,
+                "mean": 40.45676800888031,
+                "n": 4.0,
+                "sd": 1.0252479296555146,
+                "t_crit": 3.182
+              },
+              "d64": {
+                "hi": 36.43380338952985,
+                "lo": 36.39449378779981,
+                "mean": 36.41414858866483,
+                "n": 4.0,
+                "sd": 0.012353740329991888,
+                "t_crit": 3.182
+              },
+              "d74": {
+                "hi": 34.87290597492015,
+                "lo": 31.299507646177656,
+                "mean": 33.0862068105489,
+                "n": 4.0,
+                "sd": 1.1230038745262396,
+                "t_crit": 3.182
+              }
+            },
+            "M_ttft": {
+              "d34": {
+                "hi": 410.85258189658384,
+                "lo": 355.0531238496794,
+                "mean": 382.95285287313163,
+                "n": 4.0,
+                "sd": 17.53597047357146,
+                "t_crit": 3.182
+              },
+              "d44": {
+                "hi": 597.3407615482909,
+                "lo": 508.909748071422,
+                "mean": 553.1252548098564,
+                "n": 4.0,
+                "sd": 27.79101617752008,
+                "t_crit": 3.182
+              },
+              "d54": {
+                "hi": 978.1926785348572,
+                "lo": 762.3268064358614,
+                "mean": 870.2597424853593,
+                "n": 4.0,
+                "sd": 67.83968324921301,
+                "t_crit": 3.182
+              },
+              "d64": {
+                "hi": 1887.974965604856,
+                "lo": 1838.3478226746477,
+                "mean": 1863.1613941397518,
+                "n": 4.0,
+                "sd": 15.596210851731124,
+                "t_crit": 3.182
+              },
+              "d74": {
+                "hi": 8220.599549893086,
+                "lo": 2733.1472462268725,
+                "mean": 5476.873398059979,
+                "n": 4.0,
+                "sd": 1724.5293223338194,
+                "t_crit": 3.182
+              }
+            }
+          },
+          "arms": [
+            "d34",
+            "d44",
+            "d54",
+            "d64",
+            "d74"
+          ],
+          "byproduct_block_paired": {
+            "definition": "M_itl(d44) - M_itl(S_max)  [sec6 pre-registered]",
+            "s_max_arm": "d74",
+            "value_ms": 9.063794976100326
+          },
+          "citation_guards": [
+            "Delta must never be a standalone headline (C2: the location statistic does not saturate, so D_itl = S_max may be a priori)",
+            "TRUNCATED is never written as 'no tax'",
+            "percentile CI is never cited on its own; t(n-1) accompanies it",
+            "Delta / Delta_SLO are discrete lattice values: report the donor / sufficient-point SELECTION DISTRIBUTION, not a CI",
+            "sec10-7: this says NOTHING about HE0.  A positive coupling tax does NOT revive dynamic control -- 'achieved dynamic is worse than best static' and 'the achievable ceiling' are separate propositions (gate #38).  No policy-ranking change.",
+            "sec10-9(a): the location statistic CANNOT in principle produce a magnitude comparable to sec1-20 '+16%' or sec1-32 '+1.67%'",
+            "sec6: TRUNCATED / ITL_SATURATED / S_ITL_UNREACHED / UNIDENTIFIED are RESULTS, not failures.  This tool's exit code 2 and the word 'GATE' refer to POSITIVE-CONTROL failure only -- never relabel a verdict as a failed measurement (gate #21, reverse direction)",
+            "sec10-2: HI is 2.15-2.35x overloaded and threshold-goodput is ill-posed there; the goodput / pass-rate side outputs inherit that caveat",
+            "sec10-5/6: Zamba2-2.7B, ctx4096, ShareGPT, and only TWO points on the work-ratio axis -- no slope or functional-form claims, no transplant to 8B or other models",
+            "NEVER write 'gate #16 is closed'.  What closes is the RE-FORMULATED decision quantity 2; the threshold version stays on the rate axis (rev3 sec1 C1)",
+            "add. A-3: agreement between the primary and the drift-corrected donor does NOT mean 'no drift'.  A symmetric CURVATURE component moves both estimators the same way, so DRIFT_DISAGREEMENT is blind exactly where A-3-2 says 4 blocks cannot balance"
+          ],
+          "delta": 40,
+          "delta_citable": true,
+          "delta_slo_intervals": [
+            {
+              "S_itl": 44,
+              "delta_slo": 10,
+              "slo_hi_ms": 48,
+              "slo_lo_ms": 45,
+              "verdict": "TRUNCATED_LOW"
+            },
+            {
+              "S_itl": 34,
+              "delta_slo": 0,
+              "slo_hi_ms": 80,
+              "slo_lo_ms": 49,
+              "verdict": "ITL_UNCONSTRAINED"
+            }
+          ],
+          "delta_slo_ladder": [
+            {
+              "S_itl": 44,
+              "S_itl_upward_closed": 44,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 10,
+              "monotonicity_violated": false,
+              "slo_ms": 45,
+              "verdict": "TRUNCATED_LOW"
+            },
+            {
+              "S_itl": 44,
+              "S_itl_upward_closed": 44,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 10,
+              "monotonicity_violated": false,
+              "slo_ms": 46,
+              "verdict": "TRUNCATED_LOW"
+            },
+            {
+              "S_itl": 44,
+              "S_itl_upward_closed": 44,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 10,
+              "monotonicity_violated": false,
+              "slo_ms": 47,
+              "verdict": "TRUNCATED_LOW"
+            },
+            {
+              "S_itl": 44,
+              "S_itl_upward_closed": 44,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 10,
+              "monotonicity_violated": false,
+              "slo_ms": 48,
+              "verdict": "TRUNCATED_LOW"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 49,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 50,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 51,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 52,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 53,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 54,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 55,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 56,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 57,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 58,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 59,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 60,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 61,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 62,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 63,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 64,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 65,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 66,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 67,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 68,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 69,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 70,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 71,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 72,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 73,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 74,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 75,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 76,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 77,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 78,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 79,
+              "verdict": "ITL_UNCONSTRAINED"
+            },
+            {
+              "S_itl": 34,
+              "S_itl_upward_closed": 34,
+              "block_verdict_flags": [
+                "TRUNCATED_LOW"
+              ],
+              "citable": true,
+              "delta_slo": 0,
+              "monotonicity_violated": false,
+              "slo_ms": 80,
+              "verdict": "ITL_UNCONSTRAINED"
+            }
+          ],
+          "forced_cell": {
+            "cell": "D_itl=S_max x D_ttft=S_min",
+            "reading": "delta > 0 FORCED (sign inflated)",
+            "sign_forced": true
+          },
+          "frame": "does the split that ITL requires differ from the THROUGHPUT-OPTIMAL split? (closes the re-formulated decision quantity 2; the threshold version remains on the rate axis)",
+          "grid_hygiene": {
+            "arms": [
+              "d34",
+              "d44",
+              "d54",
+              "d64",
+              "d74"
+            ],
+            "balanced": true,
+            "blocks": [
+              "pseudo1",
+              "pseudo2",
+              "pseudo3",
+              "pseudo4"
+            ],
+            "boots_per_arm": {
+              "d34": 4,
+              "d44": 4,
+              "d54": 4,
+              "d64": 4,
+              "d74": 4
+            },
+            "flags": [],
+            "incidence": {
+              "d34": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              },
+              "d44": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              },
+              "d54": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              },
+              "d64": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              },
+              "d74": {
+                "pseudo1": 1,
+                "pseudo2": 1,
+                "pseudo3": 1,
+                "pseudo4": 1
+              }
+            },
+            "missing_cells": [],
+            "sufficient_blocks": true
+          },
+          "label": "PC-D g2_0_hard phase B",
+          "operating_point": {
+            "MANDATORY_BAND": "[+0.34%, -1.92%]",
+            "S_itl": 34,
+            "S_itl_upward_closed": 34,
+            "block_verdict_flags": [
+              "TRUNCATED_LOW"
+            ],
+            "citable": true,
+            "delta_slo": 0,
+            "monotonicity_violated": false,
+            "slo_ms": 60,
+            "verdict": "ITL_UNCONSTRAINED",
+            "warning": "the 60 ms point estimate is NEVER cited without this band (C2'); the registrable object is the sign-change interval, not this point"
+          },
+          "s_itl_exact_bands": [
+            {
+              "S_itl": null,
+              "slo_hi_ms": 33.0862068105489,
+              "slo_lo_ms": null,
+              "verdict": "S_ITL_UNREACHED"
+            },
+            {
+              "S_itl": 74,
+              "arm": "d74",
+              "band_width_ms": 3.327941778115928,
+              "slo_hi_ms": 36.41414858866483,
+              "slo_lo_ms": 33.0862068105489
+            },
+            {
+              "S_itl": 64,
+              "arm": "d64",
+              "band_width_ms": 4.04261942021548,
+              "slo_hi_ms": 40.45676800888031,
+              "slo_lo_ms": 36.41414858866483
+            },
+            {
+              "S_itl": 54,
+              "arm": "d54",
+              "band_width_ms": 1.693233777768917,
+              "slo_hi_ms": 42.15000178664923,
+              "slo_lo_ms": 40.45676800888031
+            },
+            {
+              "S_itl": 44,
+              "arm": "d44",
+              "band_width_ms": 5.986786005087197,
+              "slo_hi_ms": 48.136787791736424,
+              "slo_lo_ms": 42.15000178664923
+            },
+            {
+              "S_itl": 34,
+              "arm": "d34",
+              "band_width_ms": null,
+              "slo_hi_ms": null,
+              "slo_lo_ms": 48.136787791736424
+            }
+          ],
+          "s_itl_ladder_resolution_warning": "the K8 ladder steps 1 ms; 's_itl_exact_bands' below shows the true breakpoints.  Any band narrower than 1 ms is INVISIBLE to the ladder -- on the old grid the S_itl=44 band (0.203 ms) vanishes entirely, and that band sits in the tight-SLO region sec4-1 calls this campaign's only SLO-related payoff.  Cite the exact bands.",
+          "saturation": {
+            "contenders": [
+              "d74"
+            ],
+            "delta_ms": 1.0,
+            "gap_contenders_ms": NaN,
+            "gap_top_half_by_sm_ms": 7.3705611983314085,
+            "gap_upper_ms": 9.063794976100326,
+            "primary_definition": "upper arms U = decode SM >= 44 (K11, prereg addendum C)",
+            "top_half_arms": [
+              "d54",
+              "d64",
+              "d74"
+            ],
+            "upper_arm_basis": "pinned_sm_ge_44",
+            "upper_arms": [
+              "d44",
+              "d54",
+              "d64",
+              "d74"
+            ]
+          },
+          "scope": "nominal split of the co-resident interval (53-68% of decode-active samples run at (0,108); arm labels are conditional, not unconditional)",
+          "sign_verdict": "TAX_POSITIVE",
+          "symbol_convention": "D_ttft / D_itl / delta / forced_cell are sec4's BARE ARGMIN and are always defined.  sec6 identification (K1) is a CITATION GATE carried in 'delta_citable' and in the verdict -- not part of the symbol definition.",
+          "ties": {
+            "M_itl_tied": false,
+            "M_ttft_tied": false,
+            "warning": "a tie was broken by the pre-registered rule (smaller decode SM wins).  ORACLE R1 already recorded a tie-break-dependent headline ('116'), so a tied donor is never cited as identified."
+          },
+          "verdict": "TRUNCATED_LOW",
+          "verdict_flags": [
+            {
+              "verdict": "TRUNCATED_LOW",
+              "why": "D_ttft = S_min = 34: delta >= 0 is forced, so delta > 0 is NOT read as a tax"
+            }
+          ]
+        }
+      },
+      "verdict_path_checks": [
+        {
+          "got": "d34",
+          "name": "phase B D_ttft == d34",
+          "pass": true,
+          "want": "d34"
+        },
+        {
+          "got": "d74",
+          "name": "phase B D_itl == d74 (upper boundary)",
+          "pass": true,
+          "want": "d74"
+        },
+        {
+          "got": "TAX_POSITIVE (delta=40)",
+          "name": "phase B sign channel == TAX_POSITIVE (delta = +40)",
+          "pass": true,
+          "want": "TAX_POSITIVE (delta=40)"
+        },
+        {
+          "got": "S_itl=34 delta_slo=0 ITL_UNCONSTRAINED",
+          "name": "phase B Delta_SLO(60): S_itl == 34 == S_min => ITL_UNCONSTRAINED, 0",
+          "pass": true,
+          "want": "S_itl=34 delta_slo=0 ITL_UNCONSTRAINED"
+        },
+        {
+          "got": "d34",
+          "name": "phase A D_ttft == d34 (interior argmin, non-monotone row)",
+          "pass": true,
+          "want": "d34"
+        },
+        {
+          "got": "identified=False verdict=ITL_SATURATED flags=['TRUNCATED_LOW', 'ITL_SATURATED']",
+          "name": "phase A D_itl NOT IDENTIFIED (overlapping arms) -- NB this resolves to ITL_SATURATED, NOT to UNIDENTIFIED.  sec7's claim that PC-D exercises the UNIDENTIFIED path (and the notes' '4 of 9 verdicts') is WRONG: UNIDENTIFIED is reached only by synthetic fixtures.",
+          "pass": true,
+          "want": "identified=False"
+        }
+      ],
+      "workload_caveat": "g2_0_hard is a DIFFERENT workload (random-ids in2048, o32/o1024, NPROMPT=32, ROUNDS=1).  This control exercises the CODE PATH; it does not transplant results (sec7)."
+    },
+    "PC_E": {
+      "checks": [
+        {
+          "arm": "d16",
+          "got": 83.57209245441481,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "HI",
+          "want": 83.572
+        },
+        {
+          "arm": "d24",
+          "got": 60.20335155772045,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "HI",
+          "want": 60.203
+        },
+        {
+          "arm": "d34",
+          "got": 58.84976169327274,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "HI",
+          "want": 58.85
+        },
+        {
+          "arm": "d44",
+          "got": 58.64680699305609,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "HI",
+          "want": 58.647
+        },
+        {
+          "arm": "d16",
+          "got": 1792.397543322295,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "HI",
+          "want": 1792.4
+        },
+        {
+          "arm": "d24",
+          "got": 1409.4569508451968,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "HI",
+          "want": 1409.5
+        },
+        {
+          "arm": "d34",
+          "got": 1211.4975759759545,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "HI",
+          "want": 1211.5
+        },
+        {
+          "arm": "d44",
+          "got": 1111.280309036374,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "HI",
+          "want": 1111.3
+        },
+        {
+          "arm": "d16",
+          "got": 12.183098215609789,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "LO",
+          "want": 12.183
+        },
+        {
+          "arm": "d24",
+          "got": 12.252216204069551,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "LO",
+          "want": 12.252
+        },
+        {
+          "arm": "d34",
+          "got": 12.968242727220062,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "LO",
+          "want": 12.968
+        },
+        {
+          "arm": "d44",
+          "got": 13.912097155116482,
+          "metric": "M_itl",
+          "pass": true,
+          "phase": "LO",
+          "want": 13.912
+        },
+        {
+          "arm": "d16",
+          "got": 73.5610662959516,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "LO",
+          "want": 73.6
+        },
+        {
+          "arm": "d24",
+          "got": 74.37792746350169,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "LO",
+          "want": 74.4
+        },
+        {
+          "arm": "d34",
+          "got": 79.14280006662011,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "LO",
+          "want": 79.1
+        },
+        {
+          "arm": "d44",
+          "got": 79.60921921767294,
+          "metric": "M_ttft",
+          "pass": true,
+          "phase": "LO",
+          "want": 79.6
+        }
+      ],
+      "passed": true
+    },
+    "all_passed": true,
+    "failures": [],
+    "gate": "sec7: if a positive control FAILS, no new numbers may be reported.",
+    "scope": "nominal split of the co-resident interval (53-68% of decode-active samples run at (0,108); arm labels are conditional, not unconditional)"
+  },
+  "scope": "nominal split of the co-resident interval (53-68% of decode-active samples run at (0,108); arm labels are conditional, not unconditional)",
+  "spec": "PREREG_G16_RULES_REV3_2026-08-16.md (rev3 is the only valid revision)",
+  "spec_ambiguities": [
+    "RESOLVED 2026-08-17 (prereg addendum C, claims-auditor single-question audit, decided BEFORE any block-1 artifact existed): sec6's 'upper arms' = K11, pinned at decode SM >= 44 (== top-half-by-SM on the 7-arm campaign grid).  The CONTENDING set is REFUTED as primary -- it is derived from the block argmin whose failure ITL_SATURATED explains, it is nan by construction when the winner is unanimous, and on the old 4-arm LO grid it fires ITL_SATURATED on the two BOTTOM arms (gap 0.069) while printing 'saturated at the upper end' (true upper gap 0.944).  gap_contenders_ms / gap_top_half_by_sm_ms remain as DIAGNOSTICS.",
+    "sec7 PC-D calls phase-B D_ttft=d34 'interior', but d34 is the BOTTOM boundary of the g2_0_hard grid {34..74}; under the literal S_min rule that cell is TRUNCATED_LOW.  Both are emitted: 'verdict' (dominant caveat) and 'sign_verdict' (TAX_POSITIVE, delta=+40).  This is a pre-registration text ambiguity, NOT a measurement failure -- route to claims-auditor before registering",
+    "sec7 PC-C target 'D_itl = d44' holds only as a BARE ARGMIN; under sec6's own K1 gate the ITL donor is NOT identified on the old grid (bootstrap d44 ~0.64 / d34 ~0.36 < 0.80), which REPRODUCES ORACLE sec3-4 (6028/3972) and sec3-3 registration-ban #1.  The target was phrased with the estimator but without the identification gate",
+    "sec6 lists nine verdicts with no precedence rule and they are not mutually exclusive (TRUNCATED and ITL_SATURATED co-hold on the old grid).  A dominant 'verdict' plus complete 'verdict_flags' are both emitted so no pre-declared result is dropped"
+  ]
+}

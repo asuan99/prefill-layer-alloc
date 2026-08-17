@@ -977,7 +977,12 @@ def load_campaign_grid(directory: Path, phase: str, *,
             node=sidecar.get("node"), gpu_uuid=sidecar.get("gpu_uuid"),
             git_commit=sidecar.get("git_commit"),
             manifest_sha=sidecar.get("manifest_sha"),
-            boot_s=sidecar.get("boot_s")))
+            # sidecars record t_boot0/t_healthy, not boot_s; E-2(3) asks for
+            # the duration, and E-3 registers a blk1/d16 boot-time anomaly
+            # that cannot be reported without it.
+            boot_s=((sidecar["t_healthy"] - sidecar["t_boot0"])
+                    if sidecar.get("t_healthy") is not None
+                    and sidecar.get("t_boot0") is not None else None)))
     if arms_failing_exact:
         records = [r for r in records if r.arm not in arms_failing_exact]
     missing_summary = [Path(r.path).name for r in records
