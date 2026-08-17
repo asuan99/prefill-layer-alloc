@@ -1,0 +1,68 @@
+{
+  "CUDA_VISIBLE_DEVICES": "0",
+  "NP": 200,
+  "ROUNDS": 3,
+  "arm": "d16",
+  "block": "blk2",
+  "boot": 1,
+  "exact": true,
+  "fields_rc": {
+    "hi": 0,
+    "lo": 0
+  },
+  "git_commit": "a02490ad062dc632e0019868f9252d71fdc405d1",
+  "gpu_uuid": "GPU-707234ca-38ce-fbc5-e31f-041d0d8f7c99",
+  "harness_sha256": {
+    "g16_arm_order.py": "6cc4fa51ae9617781a20874b1c79ac9ac1f4c32db8beabfdb6087f5e76239567",
+    "g16_assert.py": "5ff957bf44a5736b4a81b98535993f3c8ab15770ff367fa0b9cec69bbdce0717",
+    "g16_grid.sbatch": "e75a6f3758f57c3ce65ffcd4853281183c4a455e1ac8fc94f0ed753e647506a8"
+  },
+  "manifest_sha": "79413d03abe9516d55524da7588c78dbc670e9f45e284cc3e63d4e76d1d5959c",
+  "mode": "full",
+  "node": "gpu41",
+  "realized_a": 92,
+  "realized_b": 16,
+  "rounds": [
+    {
+      "phase": "LO",
+      "round": 1,
+      "t_end": 427535.75171402,
+      "t_start": 427450.521033558
+    },
+    {
+      "phase": "HI",
+      "round": 1,
+      "t_end": 427591.785994158,
+      "t_start": 427537.349944964
+    },
+    {
+      "phase": "LO",
+      "round": 2,
+      "t_end": 427678.56303568,
+      "t_start": 427593.312981174
+    },
+    {
+      "phase": "HI",
+      "round": 2,
+      "t_end": 427734.978468373,
+      "t_start": 427680.141469156
+    },
+    {
+      "phase": "LO",
+      "round": 3,
+      "t_end": 427821.947088937,
+      "t_start": 427736.584345057
+    },
+    {
+      "phase": "HI",
+      "round": 3,
+      "t_end": 427877.82991352,
+      "t_start": 427823.558818997
+    }
+  ],
+  "status": "completed",
+  "t_boot0": 427416.3325233,
+  "t_boot1": 427879.404188631,
+  "t_healthy": 427448.990661471,
+  "telem_rc": 0
+}

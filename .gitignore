@@ -123,3 +123,4 @@ tmp/
 
 # transient job-monitoring logs (results/, not artifacts)
 *_poll.log
+*_rounds.jsonl.tmp

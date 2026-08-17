@@ -1,0 +1,6 @@
+TIMESTAMP=2026-08-16T23:51:27Z LABEL=d24_boot1_pre NODE=gpu41 JOB=884412
+--- squeue on this node (partition amd_a100nv_8, all users/states) ---
+     JOBID PARTITION                 NAME    STATE       TIME NODELIST     USER
+    884412 amd_a100n              g16grid  RUNNING      17:27 gpu41   ehmoon
+--- nvidia-smi compute-apps on this node ---
+pid, process_name, used_gpu_memory [MiB]

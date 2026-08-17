@@ -1,0 +1,14 @@
+{
+  "arm_decode_sm": 54,
+  "delta_a": 0,
+  "delta_b": 0,
+  "exact": true,
+  "n_returned": 4,
+  "realized_a": 54,
+  "realized_b": 54,
+  "realized_sum": 108,
+  "requested_a": 54,
+  "requested_b": 54,
+  "requested_sum": 108,
+  "unassigned_vs_request": 0
+}
