@@ -1,0 +1,299 @@
+============================================================================================================
+TABLE 1 -- UNIFIED DENOMINATOR.  'W' = share of the window in which the arm's NOMINAL split (108-D, D)
+           is the realized partition.  FULL campaign, n=4 boots/arm, mean ± SD [t(3) 95% CI] (min-max), %
+============================================================================================================
+
+[A  count / decode-active   <- ADDENDUM A-2's OWN DENOMINATOR (realized_pin_check)]
+  arm   mean ± SD  [t(3) CI]  (min-max)  %                  
+  d16   6.20 ± 0.18  [5.92, 6.48]  (5.95–6.36)              
+  d24   7.14 ± 0.38  [6.53, 7.75]  (6.72–7.64)              
+  d34   8.11 ± 0.21  [7.77, 8.44]  (7.85–8.37)              
+  d44   9.72 ± 0.83  [8.41, 11.04]  (9.09–10.89)            
+  d54   11.66 ± 0.45  [10.94, 12.38]  (11.26–12.27)         
+  d64   15.97 ± 0.62  [14.98, 16.96]  (15.20–16.70)         
+  d74   21.80 ± 0.78  [20.55, 23.05]  (21.08–22.91)         
+
+[B  count / all bench snaps]
+  arm   mean ± SD  [t(3) CI]  (min-max)  %                  
+  d16   0.15 ± 0.01  [0.14, 0.16]  (0.14–0.16)              
+  d24   0.18 ± 0.01  [0.16, 0.19]  (0.17–0.19)              
+  d34   0.20 ± 0.00  [0.19, 0.20]  (0.19–0.20)              
+  d44   0.24 ± 0.02  [0.21, 0.28]  (0.22–0.27)              
+  d54   0.29 ± 0.01  [0.26, 0.31]  (0.27–0.30)              
+  d64   0.40 ± 0.03  [0.36, 0.44]  (0.37–0.43)              
+  d74   0.54 ± 0.03  [0.49, 0.59]  (0.50–0.59)              
+
+[C  time  / all bench span  <- controller_summary, the FULL number in the handoff]
+  arm   mean ± SD  [t(3) CI]  (min-max)  %                  
+  d16   7.67 ± 0.26  [7.26, 8.08]  (7.44–7.93)              
+  d24   8.19 ± 0.46  [7.46, 8.92]  (7.61–8.62)              
+  d34   8.83 ± 0.17  [8.55, 9.11]  (8.60–9.02)              
+  d44   10.27 ± 0.89  [8.85, 11.68]  (9.41–11.45)           
+  d54   11.79 ± 0.36  [11.22, 12.36]  (11.43–12.28)         
+  d64   15.68 ± 0.61  [14.71, 16.65]  (15.04–16.50)         
+  d74   20.28 ± 0.77  [19.06, 21.50]  (19.56–21.33)         
+
+[D  time  / decode-active]
+  arm   mean ± SD  [t(3) CI]  (min-max)  %                  
+  d16   10.36 ± 0.43  [9.68, 11.04]  (9.98–10.81)           
+  d24   11.10 ± 0.62  [10.11, 12.10]  (10.24–11.65)         
+  d34   11.99 ± 0.12  [11.80, 12.18]  (11.89–12.16)         
+  d44   13.95 ± 1.17  [12.09, 15.82]  (12.98–15.58)         
+  d54   16.05 ± 0.44  [15.35, 16.75]  (15.75–16.69)         
+  d64   21.36 ± 0.83  [20.04, 22.68]  (20.38–22.27)         
+  d74   27.54 ± 0.91  [26.10, 28.99]  (26.85–28.82)         
+
+============================================================================================================
+TABLE 2 -- the three quoted numbers, ON THE SAME DENOMINATOR (A-2's: count / decode-active)
+============================================================================================================
+  source                             denominator                        nominal-split share %     
+  addendum A-2 (as written)          count / decode-active              32-47  (= 100 - 53..68)      <- baseline, 26 files, provenance NOT in repo
+  G16 smoke NP=40 R=1 d44            count / decode-active                6.44 (n=2: 6.76, 6.12)
+  G16 smoke NP=40 R=1 d64            count / decode-active               10.40 (n=2: 9.82, 10.98)
+  G16 smoke NP=40 R=1 d74            count / decode-active               15.52 (n=2: 15.57, 15.48)
+  G16 FULL NP=200 R=3 d16            count / decode-active              6.20 ± 0.18  [5.92, 6.48]  (5.95–6.36)
+  G16 FULL NP=200 R=3 d24            count / decode-active              7.14 ± 0.38  [6.53, 7.75]  (6.72–7.64)
+  G16 FULL NP=200 R=3 d34            count / decode-active              8.11 ± 0.21  [7.77, 8.44]  (7.85–8.37)
+  G16 FULL NP=200 R=3 d44            count / decode-active              9.72 ± 0.83  [8.41, 11.04]  (9.09–10.89)
+  G16 FULL NP=200 R=3 d54            count / decode-active              11.66 ± 0.45  [10.94, 12.38]  (11.26–12.27)
+  G16 FULL NP=200 R=3 d64            count / decode-active              15.97 ± 0.62  [14.98, 16.96]  (15.20–16.70)
+  G16 FULL NP=200 R=3 d74            count / decode-active              21.80 ± 0.78  [20.55, 23.05]  (21.08–22.91)
+  G16 FULL all 28 boots (RANGE only  count / decode-active              5.95 – 22.91   (pooling ACROSS arms is not an
+    -- arms are not exchangeable)                                       estimate: the arm axis IS the trend)
+
+  -- and the SAME three on the E-TIM denominator (time / whole benchmark span) --
+  G16 smoke d44                      time / all bench span                4.57 (n=2: 4.61, 4.52)
+  G16 smoke d64                      time / all bench span                6.13 (n=2: 5.60, 6.66)
+  G16 smoke d74                      time / all bench span                8.08 (n=2: 8.02, 8.15)
+  G16 FULL d16                       time / all bench span              7.67 ± 0.26  [7.26, 8.08]  (7.44–7.93)
+  G16 FULL d24                       time / all bench span              8.19 ± 0.46  [7.46, 8.92]  (7.61–8.62)
+  G16 FULL d34                       time / all bench span              8.83 ± 0.17  [8.55, 9.11]  (8.60–9.02)
+  G16 FULL d44                       time / all bench span              10.27 ± 0.89  [8.85, 11.68]  (9.41–11.45)
+  G16 FULL d54                       time / all bench span              11.79 ± 0.36  [11.22, 12.36]  (11.43–12.28)
+  G16 FULL d64                       time / all bench span              15.68 ± 0.61  [14.71, 16.65]  (15.04–16.50)
+  G16 FULL d74                       time / all bench span              20.28 ± 0.77  [19.06, 21.50]  (19.56–21.33)
+
+============================================================================================================
+TABLE 3 -- WINDOW RESTRICTION: whole benchmark span vs the 6 pre-registered round windows (LO / HI)
+           (the whole-span denominator includes inter-round idle, which is all state-0)
+============================================================================================================
+
+[W_tim_all]   arm   whole span                     LO windows                     HI windows                    
+        d16   7.67 ± 0.26  [7.26, 8.08]  (7.44–7.93) 4.91 ± 0.69  [3.82, 6.01]  (4.24–5.59) 12.98 ± 1.36  [10.82, 15.13]  (11.57–14.76)
+        d24   8.19 ± 0.46  [7.46, 8.92]  (7.61–8.62) 4.81 ± 0.41  [4.17, 5.46]  (4.36–5.33) 14.76 ± 1.39  [12.55, 16.96]  (13.07–16.40)
+        d34   8.83 ± 0.17  [8.55, 9.11]  (8.60–9.02) 5.48 ± 0.40  [4.84, 6.12]  (4.91–5.83) 15.52 ± 0.96  [14.00, 17.04]  (14.51–16.61)
+        d44   10.27 ± 0.89  [8.85, 11.68]  (9.41–11.45) 6.61 ± 0.52  [5.77, 7.44]  (6.05–7.31) 17.70 ± 1.69  [15.02, 20.39]  (16.16–19.87)
+        d54   11.79 ± 0.36  [11.22, 12.36]  (11.43–12.28) 8.37 ± 0.59  [7.44, 9.31]  (7.79–9.06) 19.06 ± 0.37  [18.46, 19.65]  (18.58–19.41)
+        d64   15.68 ± 0.61  [14.71, 16.65]  (15.04–16.50) 11.23 ± 0.79  [9.97, 12.48]  (10.62–12.34) 25.26 ± 0.74  [24.09, 26.43]  (24.48–26.00)
+        d74   20.28 ± 0.77  [19.06, 21.50]  (19.56–21.33) 15.80 ± 1.05  [14.13, 17.47]  (14.94–17.33) 30.41 ± 0.79  [29.15, 31.66]  (29.54–31.14)
+
+[W_cnt_da]   arm   whole span                     LO windows                     HI windows                    
+        d16   6.20 ± 0.18  [5.92, 6.48]  (5.95–6.36) 4.80 ± 0.56  [3.91, 5.70]  (4.34–5.60) 10.27 ± 1.38  [8.07, 12.46]  (8.56–11.94)
+        d24   7.14 ± 0.38  [6.53, 7.75]  (6.72–7.64) 5.16 ± 0.43  [4.47, 5.85]  (4.70–5.74) 12.95 ± 1.27  [10.93, 14.97]  (11.26–14.33)
+        d34   8.11 ± 0.21  [7.77, 8.44]  (7.85–8.37) 5.88 ± 0.45  [5.16, 6.59]  (5.28–6.34) 14.57 ± 0.63  [13.57, 15.57]  (13.93–15.34)
+        d44   9.72 ± 0.83  [8.41, 11.04]  (9.09–10.89) 7.14 ± 0.52  [6.32, 7.96]  (6.68–7.88) 17.21 ± 1.79  [14.37, 20.06]  (15.72–19.67)
+        d54   11.66 ± 0.45  [10.94, 12.38]  (11.26–12.27) 8.99 ± 0.59  [8.05, 9.93]  (8.47–9.73) 19.31 ± 0.22  [18.95, 19.67]  (19.02–19.51)
+        d64   15.97 ± 0.62  [14.98, 16.96]  (15.20–16.70) 12.14 ± 0.72  [10.99, 13.29]  (11.46–13.14) 26.86 ± 1.03  [25.21, 28.50]  (25.81–28.27)
+        d74   21.80 ± 0.78  [20.55, 23.05]  (21.08–22.91) 17.14 ± 0.94  [15.65, 18.63]  (16.37–18.49) 34.37 ± 0.81  [33.09, 35.66]  (33.59–35.16)
+
+============================================================================================================
+TABLE 4 -- RATIO DECOMPOSITION (is the monotone rise numerator- or denominator-driven?)
+           seconds at the nominal split vs total benchmark span, per arm (n=4)
+============================================================================================================
+  arm   sec at nominal split         total bench span (s)         decode-active span (s)      
+  d16   34.0 ± 1.4  [31.8, 36.2]  (32.8–35.5) 443.1 ± 6.1  [433.4, 452.7]  (439.2–452.1) 327.9 ± 0.5  [327.0, 328.8]  (327.2–328.4)
+  d24   35.6 ± 2.0  [32.5, 38.8]  (32.9–37.3) 435.1 ± 4.9  [427.3, 442.8]  (432.3–442.4) 320.9 ± 0.6  [320.0, 321.9]  (320.3–321.7)
+  d34   38.3 ± 0.4  [37.7, 38.8]  (38.0–38.8) 433.5 ± 5.6  [424.5, 442.4]  (430.1–441.9) 319.2 ± 0.4  [318.7, 319.8]  (318.9–319.6)
+  d44   44.4 ± 3.7  [38.6, 50.2]  (41.4–49.5) 432.9 ± 4.8  [425.3, 440.4]  (429.7–439.8) 318.4 ± 0.5  [317.6, 319.2]  (317.7–318.8)
+  d54   51.0 ± 1.4  [48.8, 53.2]  (50.0–53.0) 432.4 ± 4.4  [425.4, 439.4]  (429.3–438.9) 317.6 ± 0.6  [316.6, 318.6]  (317.0–318.5)
+  d64   67.7 ± 2.6  [63.6, 71.8]  (64.6–70.5) 431.6 ± 5.5  [422.9, 440.3]  (427.3–439.6) 316.9 ± 0.2  [316.5, 317.3]  (316.5–317.1)
+  d74   87.9 ± 2.7  [83.6, 92.2]  (85.6–91.8) 433.5 ± 6.1  [423.9, 443.1]  (429.9–442.5) 319.1 ± 1.5  [316.7, 321.4]  (317.9–321.2)
+
+============================================================================================================
+IDENTITY CHECKS (gate #40 -- run BEFORE any of the above is quoted)
+============================================================================================================
+IC-1  Is '53-68% at (0,108)' a SECOND fact, or 1 - (nominal share)?
+      states present in the 3-group config: 0 (unpartitioned/idle), D (nominal), 108 (unpartitioned).
+      decode-active samples landing on raw state 0: 18 / 39861 = 0.0452%
+      -> realized_pin_check bins raw 0 into the 108 bin, so among decode-active samples
+         share(108 bin) + share(D) = 1 EXACTLY (max residual 0.00e+00).
+      -> VERDICT: the two phrasings are ONE number. '53-68% at (0,108)' and '32-47% at the
+         nominal split' must never be cited as independent corroboration.
+
+IC-2  Is 'time/decode-active > time/all' a finding or an identity?
+      the nominal split state is reachable only with a non-empty decode batch
+      (multiplexing_mixin.py:882-923), so T_D^decode-active == T_D and the denominator
+      only shrinks -> W_tim_da >= W_tim_all is ALGEBRAICALLY FORCED.  observed: True (28/28)
+      -> VERDICT: identity.  Report it as a denominator restatement, NOT as evidence.
+
+IC-3  Is 'residency is monotone in decode SM' forced?
+      NOT forced: numerator (T_D) and denominator (T_total) both move with D (TABLE 4).
+      strict monotone increase in W_tim_all across all 7 arms, per block: 4/4 blocks
+      -> VERDICT: empirical, not algebraic.  But it is ALSO predicted a priori by
+         multiplexing_mixin.py:504-511 (prefill SM = 108-D shrinks -> prefill spans lengthen),
+         and addendum A-1 already registered it.  This is a CONFIRMATION, not a discovery.
+
+IC-4  Does the count axis carry a bias with the SAME sign as the trend?
+      yes -- multiplexing_mixin.py:504-511 documents that prefill-in-flight syncs are
+      under-sampled in the COUNT grid, more so at large prefill SM (= small D).
+      -> the count axis alone cannot establish the trend.  The TIME axis is the
+         bias-corrected one; both agree here, which is the meaningful check.
+
+============================================================================================================
+TASK 4 -- PLACEMENT / BLOCK DEPENDENCE of residency  (n_indep(placement) = 3)
+           blk1 = gpu42 solo | blk2+blk3 = gpu41 concurrent pair | blk4 = gpu41 solo
+============================================================================================================
+
+  W_tim_all (%) by arm x block
+  arm       blk1     blk2     blk3     blk4   arm mean   max-min
+  d16       7.85     7.45     7.44     7.93       7.67      0.49
+  d24       8.04     8.49     7.61     8.62       8.19      1.01
+  d34       8.60     9.02     8.83     8.88       8.83      0.42
+  d44       9.41    10.40    11.45     9.80      10.27      2.04
+  d54      11.43    11.79    11.65    12.28      11.79      0.85
+  d64      15.69    15.04    15.50    16.50      15.68      1.46
+  d74      19.56    20.32    19.91    21.33      20.28      1.77
+
+  block main effect, PAIRED WITHIN ARM (7 arms = 7 pairs; every block contains all 7 arms
+  and all 7 positions, so block means are composition-balanced by design):
+    blk1: relative deviation from arm mean = -2.43 ± 3.32  [-5.49, 0.64]  (-8.35–2.33)   (t(6) CI, n=7 arms)
+    blk2: relative deviation from arm mean = 0.07 ± 2.73  [-2.45, 2.59]  (-4.12–3.72)   (t(6) CI, n=7 arms)
+    blk3: relative deviation from arm mean = -0.39 ± 5.75  [-5.71, 4.93]  (-7.13–11.56)   (t(6) CI, n=7 arms)
+    blk4: relative deviation from arm mean = 2.75 ± 3.61  [-0.59, 6.09]  (-4.55–5.22)   (t(6) CI, n=7 arms)
+
+  placement contrasts (paired across the 7 arms):
+    blk4 - mean(blk2,blk3)   same node gpu41, solo vs concurrent  [+ time]  +2.91 ± 6.70 %  [-3.29, +9.11]  CI includes 0
+    blk1 - mean(blk2,blk3,blk4)  gpu42 vs gpu41  [+ first-in-time]  -3.24 ± 4.42 %  [-7.33, +0.85]  CI includes 0
+    blk2 - blk3              same node, same wall-clock, different GPU  +0.46 ± 6.32 %  [-5.39, +6.30]  CI includes 0
+
+  block x arm INTERACTION probe (addendum E-3's residual threat):
+    per-block relative deviation, spread across arms (SD over the 7 arms):
+    blk1: SD across arms = 3.32 %  (range -8.35 .. +2.33)
+    blk2: SD across arms = 2.73 %  (range -4.12 .. +3.72)
+    blk3: SD across arms = 5.75 %  (range -7.13 .. +11.56)
+    blk4: SD across arms = 3.61 %  (range -4.55 .. +5.22)
+    arm rank order of W_tim_all, per block:
+    blk1: d16 < d24 < d34 < d44 < d54 < d64 < d74
+    blk2: d16 < d24 < d34 < d44 < d54 < d64 < d74
+    blk3: d16 < d24 < d34 < d44 < d54 < d64 < d74
+    blk4: d16 < d24 < d34 < d44 < d54 < d64 < d74
+
+============================================================================================================
+TASK 3 -- what the arm-dependence does to gap_upper  (M_itl, gap_upper read-only from the report)
+============================================================================================================
+
+[LO]  gap_upper = M_itl(d74) - M_itl(d64) = 0.3040 ms  (delta = 1.0 ms, verdict ITL_SATURATED)
+  arm   M_itl (ms) mean ± SD       w = W_tim_all in-phase (%)     w = W_cnt_da in-phase (%)     
+  d44     14.251 ± 0.136           6.61 ± 0.52  [5.77, 7.44]  (6.05–7.31) 7.14 ± 0.52  [6.32, 7.96]  (6.68–7.88)
+  d54     14.478 ± 0.025           8.37 ± 0.59  [7.44, 9.31]  (7.79–9.06) 8.99 ± 0.59  [8.05, 9.93]  (8.47–9.73)
+  d64     14.190 ± 0.050           11.23 ± 0.79  [9.97, 12.48]  (10.62–12.34) 12.14 ± 0.72  [10.99, 13.29]  (11.46–13.14)
+  d74     14.494 ± 0.248           15.80 ± 1.05  [14.13, 17.47]  (14.94–17.33) 17.14 ± 0.94  [15.65, 18.63]  (16.37–18.49)
+  paired exposure contrast  w(d74) - w(d64) = +4.57 ± 0.39 pp [t(3) +3.96, +5.19]  n=4 blocks
+  mean exposure over U: w_bar = 10.50%   -> dilution factor 1/w_bar = 9.5x
+     delta = 1.0 ms on this MIXTURE scale corresponds to 9.5 ms on the co-resident-conditional scale
+  SUFFICIENCY CHECK: a single ARM-INDEPENDENT co-residency ITL penalty of Delta = gap/(w_diff) = 6.6 ms
+     reproduces the observed gap_upper EXACTLY through unequal exposure alone (zero difference in the conditional means).
+     (7.7 .. 5.9 ms over the t(3) CI of the exposure contrast)
+  ordering by exposure w : d44 < d54 < d64 < d74
+  ordering by M_itl      : d64 < d44 < d54 < d74   -> pure-exposure model REFUTED (conditional means are not equal across U)
+
+[HI]  gap_upper = M_itl(d74) - M_itl(d64) = 0.6342 ms  (delta = 1.0 ms, verdict ITL_SATURATED)
+  arm   M_itl (ms) mean ± SD       w = W_tim_all in-phase (%)     w = W_cnt_da in-phase (%)     
+  d44     58.692 ± 0.795           17.70 ± 1.69  [15.02, 20.39]  (16.16–19.87) 17.21 ± 1.79  [14.37, 20.06]  (15.72–19.67)
+  d54     58.793 ± 0.647           19.06 ± 0.37  [18.46, 19.65]  (18.58–19.41) 19.31 ± 0.22  [18.95, 19.67]  (19.02–19.51)
+  d64     58.533 ± 0.672           25.26 ± 0.74  [24.09, 26.43]  (24.48–26.00) 26.86 ± 1.03  [25.21, 28.50]  (25.81–28.27)
+  d74     59.167 ± 1.393           30.41 ± 0.79  [29.15, 31.66]  (29.54–31.14) 34.37 ± 0.81  [33.09, 35.66]  (33.59–35.16)
+  paired exposure contrast  w(d74) - w(d64) = +5.15 ± 1.27 pp [t(3) +3.12, +7.17]  n=4 blocks
+  mean exposure over U: w_bar = 23.11%   -> dilution factor 1/w_bar = 4.3x
+     delta = 1.0 ms on this MIXTURE scale corresponds to 4.3 ms on the co-resident-conditional scale
+  SUFFICIENCY CHECK: a single ARM-INDEPENDENT co-residency ITL penalty of Delta = gap/(w_diff) = 12.3 ms
+     reproduces the observed gap_upper EXACTLY through unequal exposure alone (zero difference in the conditional means).
+     (20.3 .. 8.8 ms over the t(3) CI of the exposure contrast)
+  ordering by exposure w : d44 < d54 < d64 < d74
+  ordering by M_itl      : d64 < d44 < d54 < d74   -> pure-exposure model REFUTED (conditional means are not equal across U)
+
+============================================================================================================
+TABLE 5 -- BRACKET for the A-2 conditional-label size, and the pre-registered headline axis
+           A-2 names its vehicle explicitly: "H3'-b's time-weighted residency, reported per arm"
+           => the HEADLINE axis is W_tim_all (controller_summary).  The rest is the bracket.
+============================================================================================================
+  arm   HEADLINE W_tim_all %   LO window %    HI window %    HI, decode-active %  sec at split  
+  d16   7.67±0.26              4.91±0.69      12.98±1.36     18.12±1.86           34.0±1.4 s
+  d24   8.19±0.46              4.81±0.41      14.76±1.39     21.02±1.98           35.6±2.0 s
+  d34   8.83±0.17              5.48±0.40      15.52±0.96     22.15±1.15           38.3±0.4 s
+  d44   10.27±0.89             6.61±0.52      17.70±1.69     25.35±2.39           44.4±3.7 s
+  d54   11.79±0.36             8.37±0.59      19.06±0.37     27.43±0.51           51.0±1.4 s
+  d64   15.68±0.61             11.23±0.79     25.26±0.74     36.39±1.54           67.7±2.6 s
+  d74   20.28±0.77             15.80±1.05     30.41±0.79     43.45±0.96           87.9±2.7 s
+
+  span across the 7 arms: 7.67% (d16) -> 20.28% (d74)  = 2.65x
+  every one of the 28 boots lies in [7.44%, 21.33%]
+
+============================================================================================================
+MEASUREMENT CAVEAT -- time resolution of the residency estimator
+============================================================================================================
+  arm   mean dwell at split (ms)   mean inter-sample gap INSIDE   ratio   
+        = T_D / (transitions/2)    the split state (ms)          
+  d16        395.1 ±  38.6               389.6 ±  19.7           1.01
+  d24        364.4 ±  11.3               350.2 ±   9.2           1.04
+  d34        381.5 ±  18.7               332.3 ±   9.4           1.15
+  d44        385.8 ±  21.6               319.0 ±   1.9           1.21
+  d54        424.4 ±  13.3               306.7 ±   5.0           1.38
+  d64        472.1 ±   4.9               295.9 ±   2.9           1.60
+  d74        566.6 ±  23.8               283.7 ±   6.7           2.00
+  -> a co-residency span is only ~1-2 emitted snapshots long.  The 1/32 count subsample
+     therefore MISSES split spans that open and close between two emitted rows, and the
+     E-TIM rule attributes that time to the PRECEDING state (state 0 / 108).
+  -> DIRECTION: W is a LOWER bound on the true co-resident time share.  The bias is larger
+     at small D (shorter prefill spans), i.e. it works AGAINST the reported monotone trend,
+     so the trend is not created by it -- but the LEVEL (7.7-20.3%) may be understated.
+
+============================================================================================================
+SUPPORTING: decode-active time as a share of the benchmark span (explains axis C vs D)
+============================================================================================================
+  FULL   n=28  decode-active time / benchmark span = 73.64 ± 0.73 %  (72.10-74.51)
+  smoke  n= 6  decode-active time / benchmark span = 40.24 ± 0.27 %  (39.86-40.62)
+
+============================================================================================================
+SUPPORTING -- WHY residency rises with D (mechanism check, not a decision quantity)
+           prefill work is byte-identical across all 28 boots and both phases:
+           204,828 input tokens / 600 completed requests per phase (verified from the
+           LO/HI artifacts), so seconds-at-the-split is a clean prefill-occupancy probe.
+============================================================================================================
+  arm   prefill SM  sec at split (n=4)     sec x prefill_SM (SM*s)   
+  d16        92         34.0 ±  1.4           3125 ±  127
+  d24        84         35.6 ±  2.0           2993 ±  165
+  d34        74         38.3 ±  0.4           2832 ±   26
+  d44        64         44.4 ±  3.7           2843 ±  234
+  d54        54         51.0 ±  1.4           2752 ±   74
+  d64        44         67.7 ±  2.6           2978 ±  114
+  d74        34         87.9 ±  2.7           2988 ±   92
+  -> product across the 7 arms: 2752-3125 SM*s (spread 13.5%) while prefill SM spans 34-92 (2.71x)
+  -> prefill throughput is ~LINEAR in SM over 34-92 SM here; the residency trend is that
+     linearity, not a scheduler artefact.  NOT an identity: sublinear/saturating scaling
+     would have produced a product rising with D.  (The resolution bias of the estimator
+     is larger at small D, so the true product is if anything slightly SUPER-linear at
+     small D -- i.e. the check is conservative in the direction that matters.)
+
+============================================================================================================
+TABLE 6 -- THE TWO CANONICAL CO-RESIDENCY OBSERVABLES DISAGREE, AND THE DISAGREEMENT IS
+           ITSELF MONOTONE IN D.  Both come from realized_pin_check.py, same denominator
+           (count / decode-active).  'split state' = realized partition is (108-D, D);
+           'CO_RESIDENT' = a prefill batch is in flight (prefill_active_batch_size > 0).
+============================================================================================================
+  arm   split-state share %    CO_RESIDENT_frac %     ratio CO/split
+  d16       6.20 ± 0.18            1.80 ± 0.26            0.29
+  d24       7.14 ± 0.38            2.61 ± 0.16            0.37
+  d34       8.11 ± 0.21            4.03 ± 0.46            0.50
+  d44       9.72 ± 0.83            5.27 ± 0.32            0.54
+  d54      11.66 ± 0.45            7.70 ± 0.27            0.66
+  d64      15.97 ± 0.62           12.06 ± 0.52            0.76
+  d74      21.80 ± 0.78           18.29 ± 0.68            0.84
+  -> the ratio runs 0.29 (d16) -> 0.84 (d74): at small D a majority of the split-state time
+     carries NO in-flight prefill batch.  ANY statement of the A-2 scope size must name
+     WHICH observable it uses; the two differ by up to 3.4x and the gap is arm-dependent.
+  -> A-2/A-1's imported baselines used BOTH: '53-68% at (0,108)' is the split-state
+     observable (32-47% nominal); '0.582 -> 0.818' (A-1, s8 grid) is CO_RESIDENT.
+     G16 measures 6.2-21.8% and 1.8-18.3% respectively -- the imported CO_RESIDENT
+     baseline is off by 3-32x on its own axis (lesson item 31: verify the basis of
+     auxiliary numbers imported from another campaign/scale).
