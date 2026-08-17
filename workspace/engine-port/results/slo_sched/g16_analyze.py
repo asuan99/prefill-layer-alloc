@@ -12,7 +12,17 @@ are superseded).  This file implements, verbatim:
   * sec11     knob registry K1..K10 as module constants
   * add. A-2  every reported split quantity is labelled "nominal split of the
               CO-RESIDENT interval" (53-68% of decode-active samples run at
-              (0,108); the arm label is conditional, not unconditional)
+              (0,108); the arm label is conditional, not unconditional).
+              NOTE (doc-steward, 2026-08-17, lesson item 41 backprop): the
+              "53-68%" figure is A-2's OWN baseline from a different campaign
+              (26 telemetry files) whose selection script is not preserved in
+              this repo -- it is NOT reproducible from this repo and is NOT a
+              G16 measurement.  G16's own measured co-residence window is
+              7.67%(d16) .. 20.28%(d74) time-weighted (a different campaign,
+              different denominator/window -- see G16_RESULTS_2026-08-17.md
+              sec2.3 and residency_scope_2026-08-17/).  Kept verbatim here
+              only because it is the literal addendum A-2 wording this module
+              implements; treat it as an imported quotation, not a comparator.
   * add. A-3  drift-corrected variant computed ALONGSIDE the primary (never
               instead of it); a donor disagreement between the two is itself
               a registered result
@@ -96,9 +106,27 @@ TTFT_SLO_MS = 3000.0             # canonical secondary predicate thresholds
 ITL_SLO_MS = 60.0
 OPERATING_POINT_SLO_MS = 60.0
 # add. B-2 / N7 band that MUST accompany any 60 ms point estimate of Delta_SLO
+# STALE (doc-steward, 2026-08-17, lesson item 41 backprop): this is the OLD
+# 4-arm subgrid's hardcoded band from PREREG rev2 sec1.3.  G16_RESULTS_
+# 2026-08-17.md sec1.3 found the CAMPAIGN's actual band around the 60 ms rung
+# is [+0.77%, -2.29%] (a different, wider band on the real 7-arm grid) and
+# flags this exact string as "MANDATORY_BAND ... stale constant -- quoting it
+# verbatim is wrong".  NOT changed here: this is a pre-registered constant
+# (gate #19 -- no post-hoc knob edits); any campaign consuming this field
+# must additionally quote the sec1.3 real band, not just this string.
 DELTA_SLO_60_BAND = "[+0.34%, -1.92%]"
 
 # add. A-2: mandatory scope prefix for every split-valued headline.
+# NOTE (doc-steward, 2026-08-17, lesson item 41 backprop): "53-68%" here is
+# addendum A-2's own imported baseline (a different campaign, selection
+# script not preserved in this repo -- NOT reproducible, NOT a G16
+# measurement; see the sec14 docstring note above and
+# residency_scope_2026-08-17/README.txt "UNRESOLVED").  G16's own measured
+# co-residence window (time-weighted) is 7.67%(d16) .. 20.28%(d74) -- see
+# G16_RESULTS_2026-08-17.md sec2.3.  This string is kept byte-for-byte
+# because it is what PREREG addendum A-2 literally specifies as the label
+# text this module must emit; it is a quotation of the spec, not a verified
+# figure, and must not be cited as a G16 result.
 NOMINAL_SPLIT_SCOPE = (
     "nominal split of the co-resident interval "
     "(53-68% of decode-active samples run at (0,108); arm labels are "
