@@ -353,13 +353,25 @@ def identify_donor(grid: Sequence[BootRecord], key: str) -> Dict[str, object]:
     """
     blocks = sorted({r.block for r in grid})
     per_block: Dict[str, Optional[str]] = {}
+    per_block_tied: Dict[str, bool] = {}
     for block in blocks:
         subset = [r for r in grid if r.block == block]
-        winner, _tied = _argmin_arm(_arm_means(subset, key))
+        winner, tied = _argmin_arm(_arm_means(subset, key))
         per_block[block] = winner
+        per_block_tied[block] = tied
+    # ---- prereg addendum C-5(1) / C-9(2), fixed 2026-08-17 ----------------
+    # A win produced by the tie-break is NOT evidence of a donor.  Both call
+    # sites used to discard `_argmin_arm`'s `tied`, so a PERFECTLY SATURATED
+    # grid -- every arm equal, the strongest possible case for ITL_SATURATED --
+    # handed every block to the smallest-SM arm, scored rank 4/4 and bootstrap
+    # 1.000, and reported `identified` with `delta_citable`.  The most
+    # saturated data could not reach the saturation verdict.
+    # Ties now contribute NOTHING instead of contributing to d16; the
+    # deterministic tie-break is kept for REPORTING the per-block winner.
+    # This can only ever lower `identified`, never create one.
     counts: Dict[str, int] = {}
-    for winner in per_block.values():
-        if winner:
+    for block, winner in per_block.items():
+        if winner and not per_block_tied[block]:
             counts[winner] = counts.get(winner, 0) + 1
     rank_arm = max(counts, key=lambda a: (counts[a], -arm_sm(a))) if counts else None
     rank_ok = bool(rank_arm) and counts.get(rank_arm, 0) >= K1_BLOCK_ARGMIN_MIN
@@ -371,6 +383,7 @@ def identify_donor(grid: Sequence[BootRecord], key: str) -> Dict[str, object]:
             [r for r in grid if r.block == block], key)
     rng = random.Random(K3_BOOTSTRAP_SEED)
     freq: Dict[str, int] = {}
+    n_boot_tied = 0
     for _ in range(K3_BOOTSTRAP_SAMPLES):
         picked = [by_block_arm[rng.choice(blocks)] for _ in blocks]
         arms = sorted({a for sample in picked for a in sample})
@@ -378,8 +391,10 @@ def identify_donor(grid: Sequence[BootRecord], key: str) -> Dict[str, object]:
         for arm in arms:
             vals = [s[arm] for s in picked if arm in s]
             means[arm] = statistics.fmean(vals) if vals else math.inf
-        winner, _tied = _argmin_arm(means)
-        if winner:
+        winner, tied = _argmin_arm(means)
+        if tied:                      # addendum C-5(1): ties are not evidence
+            n_boot_tied += 1
+        elif winner:
             freq[winner] = freq.get(winner, 0) + 1
     boot_arm = max(freq, key=lambda a: (freq[a], -arm_sm(a))) if freq else None
     boot_frac = freq.get(boot_arm, 0) / K3_BOOTSTRAP_SAMPLES if boot_arm else 0.0
@@ -392,9 +407,16 @@ def identify_donor(grid: Sequence[BootRecord], key: str) -> Dict[str, object]:
         "decode_sm": arm_sm(rank_arm) if identified and rank_arm else None,
         "rank_rule": {"winner": rank_arm, "blocks_won": counts.get(rank_arm, 0)
                       if rank_arm else 0, "n_blocks": len(blocks),
-                      "passes": rank_ok, "per_block": per_block},
+                      "passes": rank_ok, "per_block": per_block,
+                      # addendum C-5(1): tied blocks are reported (the winner
+                      # shown is the tie-broken one) but counted as zero
+                      # evidence, so blocks_won can be < the number of blocks
+                      # this arm "won".
+                      "per_block_tied": per_block_tied,
+                      "n_blocks_tied": sum(1 for t in per_block_tied.values() if t)},
         "bootstrap_rule": {"winner": boot_arm, "fraction": boot_frac,
                            "passes": boot_ok,
+                           "tied_fraction": n_boot_tied / K3_BOOTSTRAP_SAMPLES,
                            "distribution": {a: freq[a] / K3_BOOTSTRAP_SAMPLES
                                             for a in sorted(freq, key=arm_sm)}},
         "rules_agree": rank_arm == boot_arm,
