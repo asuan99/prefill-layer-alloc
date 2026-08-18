@@ -62,18 +62,50 @@ K9는 이미 `NO_MORE_BLOCKS`를 냈다(양 phase, `gap_upper < δ`). 그것을 
 
 ---
 
-## 3. 레버 — `PDMUX_STICKY_PARTITION`
+## 3. 레버 — `PDMUX_STICKY_PARTITION` (기전 확정, 2026-08-17)
 
-`addendum A-1`이 이미 이 손잡이의 효과를 기록해 두었다(노출 분율을 1.0 쪽으로 밀어 올림).
-**⚠️ 실행 전 확인 필수(코드 사실 vs 추정 구별, 게이트 #28)**:
-1. 이 env가 **현 엔진 트리(`manifest 79413d03`)에 실제로 배선돼 있는가** — grep으로 확인.
-2. 켰을 때 **`residency_fraction`이 실제로 1.0에 근접하는가** — 프로브로 측정.
-3. 켰을 때 **`M_ttft`가 붕괴하지 않는가** — sticky는 prefill 기아를 만들 수 있다.
-   붕괴하면 이 레버는 **T1에 쓸 수 없다**(`D_ttft`가 이동하면 `Δ_SLO`의 다른 쪽 끝이 바뀐다).
+`adjust_stream_groups`(`src/multiplex/multiplexing_mixin.py:862-925`)가 매 스케줄 시점에
+stream index를 고른다. `sm_group_num: 3`인 이 격자에서:
 
-★**3번이 이 설계의 판별기다.** sticky가 `D_ttft`를 옮기면 T1은 이 레버로 못 푼다.
+| index | 의미 |
+|---|---|
+| 0 | prefill-only (decode 배치가 **빔**) |
+| 1 | **green-context 분할** = 이 arm의 명목 split `(108−D, D)` |
+| 2 | **미분할**(unpartitioned) — decode가 **GPU 전체 108 SM** 사용 |
 
----
+```
+decode 있음 ∧ (split_prefill_batch ∨ sticky)  → index 1   (분할 ON)
+decode 있음 ∧ 그 외                            → index 2   (미분할 108 SM)
+decode 없음                                     → index 0
+```
+
+- **OFF(기본 — G16이 돈 상태)**: 분할은 **prefill이 실제로 동거 중일 때만** 켜진다.
+  prefill이 비는 순간 decode는 **미분할(108 SM)로 떨어진다.**
+- **ON**: *"decode가 바쁘다"만으로* 분할 분기를 탄다 ⇒ **prefill이 없어도 decode가 D SM에 머문다.**
+
+★★**그래서 sticky는 "노출만 올리는" 레버가 아니라 혼합의 성분 자체를 바꾼다.**
+OFF에서 혼합의 unsplit 성분 `U(a)`는 대부분 **decode가 108 SM을 쓰는 시간**이다.
+ON에서는 그 성분이 **decode가 D SM을 쓰는 시간**으로 대체된다.
+⇒ **`M_itl^ON`은 `w→1`인 혼합이 아니라 조건부량 `S(a)` 자체에 가깝다.** 레버가 표적에 맞다.
+
+★**예측(반증 대상, 단정 아님)**: sticky ON은 **작은 D arm에서 ITL을 악화**시킬 것이다
+(decode-only 구간이 108 SM을 잃으므로). **이것은 교락이 아니라 드러내려던 조건부 효과 자체다.**
+그러나 그 결과 **스케일이 바뀌므로 δ를 그대로 쓰면 안 된다**(§4의 게이트 #35 항목).
+
+★**sticky는 decode 배치가 비면 분할을 유지하지 않는다**(index 0). 코드가 이유를 주석으로
+적어 뒀다 — *"보호할 decode 작업이 없고, 유지하면 prefill이 쓸 D SM을 놀리게 되며,
+decode-active 시간가중에서 이 구간은 어차피 가중치 0"*. ⇒ **노출 `w`의 상한은 1이 아니다**
+(decode-empty 구간이 분모에 남는다). S1의 P1 합격선 0.60은 이 사실과 정합한다.
+
+⚠️★**config 의존 위험 1건(현 yml에서는 도달 불가)**: `_sticky_fixed_idx`가 `None`일 때
+(= G16처럼 `PDMUX_R2_POLICY` unset) else-분기가 `manual_divisions`의 `threshold`를 훑는데,
+**어느 threshold도 만족 못 하면 `stream_idx`가 미할당**된다. 현 arm yml은 전부
+`threshold = 0`(`[92,16,0]`·`[64,44,0]` …)이라 `decode_bs >= 0`이 **항상 참** ⇒ 도달 불가.
+★**G17이 yml을 건드리면 재확인 필수** — sticky ON은 `split_prefill_batch` 없이도 이 분기를
+타므로 **OFF보다 이 경로를 훨씬 자주 통과**한다.
+
+⚠️★**sticky ON은 운영점이 아니다** — 실서빙에서 decode-only 구간에 GPU 절반을 노는 것은
+손해이며 **코드 주석 자신이 그렇게 적고 있다**. **측정 도구로만 쓴다**(§5-5).
 
 ## 4. 단계 설계
 
@@ -182,8 +214,52 @@ G16 스모크가 검증한 것은 `sticky` **미설정** 경로뿐이다.
 > "포화 확인"으로 오라벨되지 않을 것(게이트 #21) (iv) sticky ON 성능이 정책 권고로 새지
 > 않을 것. **그 외 발견은 NO-GO가 아니라 caveat로 접수한다.**
 
-## 8. 상태
+## 8. 상태 · 빌드 동일성 제약의 **정확한 범위**
 
-**미제출 · 미감사 · 하네스 미작성. S0만 완료(GPU 0).** 선행: ~~S0~~ → §7 규칙층 감사 → S1 → 하네스 재감사 → S2.
-**⚠️ 이 사이에 엔진 트리를 건드리지 마라** — G16과의 빌드 동일성(`manifest 79413d03`)이
-ON/OFF 대조를 G16 결과에 접붙일 수 있는 유일한 근거다(S-6 telemetry 대조와 같은 창).
+**미제출 · 미감사 · 하네스 미작성. S0만 완료(GPU 0).**
+선행: ~~S0~~ → §7 규칙층 감사 → S1 → 하네스 재감사 → S2.
+
+### 8.1 ⚠️초판 문구 정정 (2026-08-17)
+
+초판은 *"이 사이에 엔진 트리를 건드리지 마라"* 라고 적었다. **G17에 대해서는 과장이었다.**
+
+G17의 1차 결정량은 `gap_upper^ON` vs `gap_upper^OFF`이고 **S2가 두 다리를 같은 캠페인에서
+돌린다** ⇒ **빌드가 내부에서 통제된다.** 애초에 그렇게 설계한 이유가 사전등록 **H14**다 —
+sticky-ON은 정의상 G16과 다른 구성이라 **G16의 OFF arm과 직접 비교가 이미 금지**돼 있다.
+
+**빌드 동일성이 실제로 필요한 곳(부수적)**:
+1. G16의 노출 실측치(d64 `w = 0.157`)를 **S1의 P1 합격선 기준**으로 쓰는 것
+2. 결과를 *"G16의 **그** 비식별을 설명한다"* 로 서술하는 것(일반적 비식별이 아니라)
+3. G16 OFF 다리를 **교차 확인 앵커**로 쓰는 것
+
+⇒ **편의·교차검증이지 하중이 아니다.** 빌드가 바뀌면 위 3개를 포기하거나 bridging control로 산다.
+
+### 8.2 "엔진 트리 불변"이 실제로 뜻하는 것
+
+G16의 `manifest_sha = 79413d03`은 **엔진 트리 전체의 해시가 아니라 18개 파일 목록 파일의 해시**다
+(각 job이 `sync_engine_tree.sh`를 스스로 실행해 job-local 매니페스트를 쓴다,
+`g16_grid.sbatch:198-200`; 4 job 전부 동일 값 확인).
+
+- **엔진 15**: `parallel_state` · `multiplex/{dual_worker,multiplexing_mixin,profile,controller,telemetry,holb_probe}` · `managers/scheduler` · `{configs,models}/{mamba2,zamba2}` · `server_args` · `model_runner_kv_cache_mixin` · `memory_pool`
+- **하네스 3**: `g16_grid.sbatch` · `g16_assert.py` · `g16_arm_order.py`
+
+⇒ 제약은 dev tree가 아니라 **git 안의 `workspace/engine-port/src/**` + 저 하네스 3개**에 걸린다
+(각 job이 `src/`에서 다시 설치하므로).
+⇒ ★**`g16_analyze.py`는 매니페스트 밖**이다 — 분석·문서·사전등록 작업은 이 제약과 **무관**하다.
+⇒ **보증 범위는 18개 파일뿐**이다(교훈 항목32). `pdmux_context.py`·sglang 나머지·venv·
+torch/CUDA는 인증 밖이며 **"매니페스트 동일 ≠ 런타임 바이트 동일"**.
+
+### 8.3 S-6와의 차이
+
+**S-6은 빌드 동일성이 하중을 받는다.** S-6도 OFF/ON을 같은 캠페인에서 돌리므로 **내부
+타당성은 빌드 무관**이지만, 그 결과(telemetry 오버헤드 Δ)를 **G16·정본 수치에서 빼려면**
+같은 빌드에서 잰 Δ여야 한다. 빌드가 바뀌면 "다른 엔진의 오버헤드"를 측정한 게 된다.
+⇒ **내부 타당성 ≠ 이식 가능성.** 제약이 걸리는 건 후자다.
+
+### 8.4 부수 발견 (별건, G16 결과에 영향 없음)
+
+저장소 루트 `workspace/engine-port/results/runtime_source_manifest.sha256`는
+**13개 파일 · mtime 2026-08-04 · sha `25d961fd`** 로, 현행 sync 스크립트가 해싱하는 18개와
+다르고 `holb_probe.py`·`scheduler.py`가 빠져 있다. **G16은 이 파일을 쓰지 않았으므로
+(job-local 매니페스트 사용) 결과에 영향 없다.** 다만 이 루트 파일을 **"현재 트리 상태"로
+인용하면 틀린다** — 2026-08-04 스냅샷이다.
