@@ -1,0 +1,13 @@
+# 인용금지 레지스트리 — 정본이 금지한 수치·문구를 새 문서가 다시 쓰는 것을 막는다.
+# 등재만으로는 전파되지 않는다는 것이 2026-08-18에 실증됐다(등재 다음 날 위반). [CS-OK]
+# 형식: PATTERN <TAB> SOURCE <TAB> WHY
+# PATTERN은 Python re. 정본 문서 자신은 검사 대상에서 제외된다(금지를 서술해야 하므로).
+33\.04	CONSENSUS §33 승격금지(vii)	split-state decode batch 절대값, 재현 경로 없음
+20\.39	CONSENSUS §33 승격금지(vii)	동상
+19\.49	CONSENSUS §33 승격금지(vii)	동상
+7\.24\s*s	CONSENSUS §1-4	magnitude 인용금지
+\[\+0\.34%,\s*−1\.92%\]	CONSENSUS §33 승격금지(viii)	분석기 MANDATORY_BAND는 구 격자 하드코딩 상수
+1\.26[–-]1\.33×	CORESIDENCY_L_AXIS §0	오염 job(865533) 평균 산물, REFUTED
+2\.0[–-]2\.65×	CONSENSUS §1-33	서로 다른 arm 집합을 한 범위로 합친 오기
+# 제거된 규칙: '처리량 최적 split' · 'gate #16/13을 닫았' — 사전등록이 estimand를
+# 정의할 때 쓰는 문구라 추가 줄에서도 정당한 경우가 많다. 이건 감사의 몫으로 남긴다.
