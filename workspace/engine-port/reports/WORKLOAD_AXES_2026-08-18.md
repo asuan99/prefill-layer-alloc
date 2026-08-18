@@ -1,7 +1,13 @@
 # 워크로드 축 정의와 실측 앵커 — "길다/짧다"를 어느 축으로 말하는가
 
 2026-08-18 · 메인 세션 · GPU 지출 **0**(기존 아티팩트 재집계) · 새 성능 판정 **0건** ·
-등급 변경 **0건** · **정본 아님**(claims-auditor 미실행)
+등급 변경 **0건** · **정본 아님**
+
+> ★★**rev2 (2026-08-18) — claims-auditor 적대 감사 반영.** 판정: **W-1 부분 REFUTED**(공식의
+> 분모가 `L`이 아니라 배치 합 `E`, 고-`L` 행은 도달 불가) · **W-2 조건부**(상한만) ·
+> **W-3 REFUTED**(세 숫자 전부 실측과 불일치) · **W-4 CONFIRMED**(창 라벨 정정 필요) ·
+> **W-5 CONFIRMED(조건부)**.
+> ★**정본 위반 1건 발견·삭제**: `CONSENSUS.md` §33 승격금지 (vii)의 "33.04"를 인용했다(§2 참조).
 
 > **왜 이 문서가 필요한가**: 이 프로젝트와 문헌 양쪽에서 prefill/decode의 "길다·짧다"가
 > **서로 다른 축**으로 쓰이고 있고, 그 축이 명시되지 않아 모순처럼 보이는 진술들이 생긴다
@@ -23,7 +29,7 @@
 | 축 | 정의 | 왜 다른가 |
 |---|---|---|
 | ① **토큰 수** | `input_len` vs `output_len` 절댓값 | 가장 흔히 인용되나 시간과 직결되지 않음 |
-| ② **순차 forward step 수** | ★**이 엔진**: prefill = `⌈n_layers / max(1, budget//L)⌉` (`n_layers`에서 포화) · decode = `output_len` | decode는 **autoregressive라 병렬화 불가** — 배치는 step의 *폭*만 넓히고 *개수*는 못 줄인다 |
+| ② **순차 forward step 수** | ★**이 엔진**: prefill = `⌈n_layers / max(1, budget//E)⌉`, **`E` = 배치의 extend 토큰 합**(요청당 `L` 아님) · decode = `output_len` | decode는 **autoregressive라 병렬화 불가** — 배치는 step의 *폭*만 넓히고 *개수*는 못 줄인다 |
 | ③ **연산량(FLOPs)** | prefill `O(L²)`attn + `O(L·d²)` · decode `O(out·d²)` | `L`이 커지면 `L²` 항이 지배 |
 | ④ **병목 성격** | prefill compute-bound · decode memory-BW-bound | 축 자체가 다름 (이 저장소의 roofline 측정과 대응, **8B 격자 한정 · 이식 금지**) |
 
@@ -53,10 +59,18 @@ next_split_index = min(split_index + forward_count, num_hidden_layers)
 | 32,768 | 2 | **27** | **20** |
 | ≥65,536 | 1 | **54**(포화) | **40**(포화) |
 
-★★**구조적 귀결: 이 엔진에서 축 ②는 `output_len < n_layers`(≤40–54)일 때만 뒤집힌다.**
-`L`을 아무리 키워도 요청당 prefill step은 40–54에서 멈춘다.
-⇒ **vLLM(budget 8192)·Sarathi(2048)의 토큰-청크 축② 논의를 그대로 이식할 수 없다.**
-gate #5(i) 설계의 **하드 제약**이다.
+★**구조적 상한은 참**이다(`next_split_index = min(..., num_hidden_layers)`): 요청당 prefill
+step ≤ `n_layers`.
+
+⚠️★**그러나 위 표의 고-`L` 행은 철회한다**(claims-auditor). 두 가지 때문이다:
+1. 분모가 요청당 `L`이 아니라 **배치 합 `E`** 다.
+2. **`max_prefill_tokens = 16384`가 `E`의 상한**이므로 `forward_count ≥ 4` ⇒ 배치당 forward
+   **≤ 14**, **`n_layers` 포화(54/40)는 이 운영점에서 원리상 도달 불가**다.
+   실측 배치당 forward 히스토그램(G16 d44) = **{1: 3784, 2: 149, 3: 75, 4: 12}** — 최대 **4**.
+
+⇒ *"`output_len < n_layers`일 때만 뒤집힌다"* 도 **배치 크기 1의 극한 진술**이라 철회한다.
+배치가 커지면 prefill·decode가 **양쪽 다** 요청당 상각된다(실측: 요청당 prefill forward 0.81,
+decode forward 9.65). **승격 가능한 것은 상한 진술뿐이다.**
 ⇒ **이 프로젝트 문서에서는 축을 붙여 쓴다**: `decode-step-dominated` / `prefill-token-dominated`
 같은 형태. 맨 "길다"는 금지.
 
@@ -76,15 +90,30 @@ gate #5(i) 설계의 **하드 제약**이다.
 | 입력 토큰 | 68,276 → 요청당 **341** |
 | 출력 토큰 | 47,376 → 요청당 **237** |
 | **축 ①** | **prefill이 decode의 1.44배** |
-| decode forward | ≈ **1,450**회 (mean ITL 25.0 ms ⇒ 40 step/s × 36.3 s) |
-| prefill forward | ≈ **200**회 (341 토큰 < budget 65536 ⇒ 요청당 1 chunk) |
-| **축 ②** | ★**decode가 prefill의 약 7배** |
-| 배치당 토큰(유도) | 32.7 |
+| ~~decode forward ≈1,450~~ | ★**철회** → 실측 **1,943**/HI 라운드(엔진 카운터 `decode_iterations`). 1,450은 **mean ITL(25.0ms)로 유도한 값**인데 **median(20.16ms)을 썼어야** 했다 — mean은 꼬리 stall에 부풀려져 있다 |
+| ~~prefill forward ≈200~~ | ★**철회** → 실측 **165.5 ± 2.3**/HI 라운드. "요청당 1 chunk" 논증은 `extend_num_tokens`가 **배치 합**(`schedule_batch.py:1570`)이라 애초에 무효 |
+| **축 ②** | ~~약 7배~~ → ★**11.7배**(1943/165.5). **문서가 38% 과소평가**했다 |
+| ~~배치당 토큰 32.7~~ | ★**철회** → **24.38**(=47,376/1,943, 시간평균 B 24.20과 정합) |
 
-**교차 검증**: 유도값 32.7이 claims-auditor가 독립 재구성한 split-state decode batch
-**33.04 ± 0.86**과 일치한다(다른 경로·다른 코드).
+⚠️**위 실측치는 claims-auditor 산출**(`audit_workload_axes_2026-08-18/w3_*.py`)이며 메인 세션은
+`decode_iterations` 카운터의 **존재와 부팅 누적값(22,877)만** 확인했다. 라운드 분해는 미재현.
 
-### 2.1 그 결과 나온 체류 분포 (HI, arm당 4부팅 평균, 시간가중)
+~~**교차 검증**: 유도값 32.7이 ... split-state decode batch와 일치~~
+★★**철회(2026-08-18, claims-auditor 지적). 이 문장은 `CONSENSUS.md` §33 승격금지 (vii)
+—"split 상태 decode batch 절대값 33.04/20.39/19.49(재현 경로 없음)"— 을 직접 위반했다.**
+정본에 그 금지를 올린 **다음 날** 내가 쓴 문서에서 위반했다 ⇒ **교훈 항목41/게이트 #39
+(인용금지의 원 아티팩트·소비처 역전파 실패)의 12번째 재발.**
+게다가 "일치"도 성립하지 않는다: 32.7은 *무조건부* 토큰/decode-forward이고 33.04는
+*split 상태 조건부* 평균 배치로 **estimand가 다르며**, 감사 재계산상 두 양은 HI에서 1.46×
+차이난다(24.20 vs 35.43). ⇒ **두 오차가 우연히 만난 수비학이었다.**
+
+### 2.1 그 결과 나온 체류 분포 (★**whole-span**(LO+HI 합산), arm당 4부팅, 시간가중)
+
+⚠️★**창 라벨 정정(감사 지적)**: 초판은 이 표를 "(HI, …)"라 적었으나 값 7.67/10.27/20.28은
+**whole-span `W_tim_all`** 이다. **HI 창 값은 12.98 / 17.70 / 30.41%**로 다르다.
+`CONSENSUS` §33(5)가 요구하는 3항(분모·**창**·arm집합) 중 **창이 거짓이었다.**
+그리고 10.27%를 워크로드 특성치로 쓸 때는 그것이 rate 3(70s×3)과 rate 12(36s×3) + 라운드간
+idle을 합친 **LO 지배 혼합값**임을 병기해야 한다.
 
 | arm | `decode_sms=0`(decode 비었음) | **= 명목 D**(분할 ON) | `=108`(decode 바쁨·미분할) |
 |---|---|---|---|
