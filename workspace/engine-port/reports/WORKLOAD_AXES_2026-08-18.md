@@ -23,12 +23,40 @@
 | 축 | 정의 | 왜 다른가 |
 |---|---|---|
 | ① **토큰 수** | `input_len` vs `output_len` 절댓값 | 가장 흔히 인용되나 시간과 직결되지 않음 |
-| ② **순차 forward step 수** | prefill ≈ ⌈L/chunk⌉ · decode = `output_len` | decode는 **autoregressive라 병렬화 불가** — 배치는 step의 *폭*만 넓히고 *개수*는 못 줄인다 |
+| ② **순차 forward step 수** | ★**이 엔진**: prefill = `⌈n_layers / max(1, budget//L)⌉` (`n_layers`에서 포화) · decode = `output_len` | decode는 **autoregressive라 병렬화 불가** — 배치는 step의 *폭*만 넓히고 *개수*는 못 줄인다 |
 | ③ **연산량(FLOPs)** | prefill `O(L²)`attn + `O(L·d²)` · decode `O(out·d²)` | `L`이 커지면 `L²` 항이 지배 |
 | ④ **병목 성격** | prefill compute-bound · decode memory-BW-bound | 축 자체가 다름 (이 저장소의 roofline 측정과 대응, **8B 격자 한정 · 이식 금지**) |
 
 ★**①과 ②는 `L`에 따라 부호가 뒤집힌다.** 그래서 "long-context = prefill-heavy"와
 "chat 워크로드 = decode가 길다"가 **동시에 참일 수 있다.**
+
+### ★★축 ② 정정 (2026-08-18, venue-strategist 지적 → 메인 세션 코드 확인)
+
+**초판이 축 ②를 `⌈L/chunk⌉`(토큰 청크 기반)로 적은 것은 이 엔진에서 틀렸다.**
+`multiplexing_mixin.py:1128-1140`의 실제 회계는 **레이어 기반**이다:
+
+```python
+forward_count  = max(1, split_forward_token_budget // extend_num_tokens)   # budget=65536
+next_split_index = min(split_index + forward_count, num_hidden_layers)
+```
+
+⇒ `forward_count`는 **한 forward가 전진하는 레이어 수**이고, prefill은
+`num_hidden_layers`를 다 지날 때까지 쪼개진다:
+
+| L | 층/forward | prefill forward (54층) | (40층) |
+|---|---|---|---|
+| **341**(우리 앵커) | 192 | **1** ✔(200요청→200step 관측과 일치) | 1 |
+| 1,155 | 56 | 1 | 1 |
+| 2,048 | 32 | 2 | 2 |
+| 7,059 | 9 | 6 | 5 |
+| 12,035 | 5 | 11 | 8 |
+| 32,768 | 2 | **27** | **20** |
+| ≥65,536 | 1 | **54**(포화) | **40**(포화) |
+
+★★**구조적 귀결: 이 엔진에서 축 ②는 `output_len < n_layers`(≤40–54)일 때만 뒤집힌다.**
+`L`을 아무리 키워도 요청당 prefill step은 40–54에서 멈춘다.
+⇒ **vLLM(budget 8192)·Sarathi(2048)의 토큰-청크 축② 논의를 그대로 이식할 수 없다.**
+gate #5(i) 설계의 **하드 제약**이다.
 ⇒ **이 프로젝트 문서에서는 축을 붙여 쓴다**: `decode-step-dominated` / `prefill-token-dominated`
 같은 형태. 맨 "길다"는 금지.
 
@@ -76,10 +104,23 @@ split-prefill 기계는 계속 돌므로 fused와 동일하지 않다.
 
 ## 3. 왜 이게 용어 문제가 아닌가
 
-노출 `w`(동거 시간 분율)는 **정책 파라미터가 아니라 워크로드 함수**다 —
-대략 `w ~ (요청당 prefill 시간 × 도착률) / (요청당 decode 시간 × 동시성)`.
+노출 `w`(동거 시간 분율)는 **워크로드와 정책 양쪽의 함수**다 —
+대략 `w ~ (요청당 prefill 시간 × 도착률) / (요청당 decode 시간 × 동시성)`이고,
+prefill 시간은 `108−D`에 의존하므로 **arm도 `w`를 움직인다.**
 
-⇒ **우리 `w = 7.7–20.3%`는 "ShareGPT L≈341"의 성질이지 PD-mux의 성질이 아니다.**
+### ★★귀속 정정 (2026-08-18, venue-strategist 지적)
+
+**"7.7–20.3%"를 워크로드 성질로 인용하면 안 된다.** G16에서 워크로드·rate는
+**전 arm 동일**(ShareGPT NP=200·ROUNDS=3)이고 변한 것은 **decode SM뿐**이다.
+⇒ 그 스프레드는 **arm(정책) 성질이며 내생적**이다(§3.2: `D`↑ → prefill SM↓ → 동거 시간↑).
+
+| 인용 목적 | 써야 할 값 |
+|---|---|
+| **워크로드 특성치**(문헌 대조 등) | ★**운영점 d44의 `10.27 ± 0.89%`** 단일값 |
+| 정책 민감도 | "7.67–20.28%" — **arm 밴드**라고 명시 |
+| 어느 경우든 | 분모 **`time / all bench span`** 병기 (denominator 4종이 `residency_scope_2026-08-17/tables_2026-08-17.txt`에 있음) |
+
+⇒ **우리 `w(d44) ≈ 10.3%`는 "ShareGPT L≈341 × d44"의 성질**이지 PD-mux 자체의 성질이 아니다.
 이 프로젝트의 모든 `w`·`gap_upper`·PD-mux 이득 진술이 **단일 워크로드 점에 묶여 있다**
 (4모델 캠페인 전부 ShareGPT).
 
