@@ -502,6 +502,9 @@ MC_SEED = 20260816
 # audit gets a single question AND its pass mark).
 ACCEPT_P_PASS = 0.80
 ACCEPT_COVERAGE = 0.93
+# rev3: registered floor on the positive-control set, so that the gate #44
+# "an empty control set is not a pass" branch is REACHABLE (rev2's was not).
+MIN_POSITIVE_CONTROLS = 8
 # Audit values this script must reproduce independently (it does not import the
 # audit code -- `audit_g13_independent_2026-08-16/` exists to stay independent).
 AUDIT_TARGETS = {
@@ -617,6 +620,78 @@ def pairsd() -> dict:
     return out
 
 
+# ---- rev3 REPAIR (audit 2026-08-19, death cause B) ------------------------
+# Boots that the SOURCE campaign (C2-R) had already named and quarantined.  A
+# design that inherits C2-R's per-boot medians inherits this list too; rev2 did
+# not, and so let one off-spec boot set the entire Ha8 cost.
+C2R_NAMED_EXCLUSION = ("Ha8/d16/883575/blk2", "Ha8/d16/883575/blk5")
+
+
+def sigma_boot_band() -> dict:
+    """rev3.  sigma_boot is an n=6 ESTIMATE and must get the same band
+    treatment sigma_job got in F5.  rev2 gave sigma_job three priors and
+    sigma_boot a single point -- an asymmetry that mattered, because on the Ha8
+    arm sigma_boot is the dominant cost driver (it alone decided 5.40 vs 8.64).
+
+    Two facts the band has to carry:
+
+    1. JACKKNIFE.  Dropping one boot moves Ha8's sigma_boot by 2.46x
+       (1.5684% -> 0.6373%) while every other boot moves it 0.90-0.98x.  The
+       whole of rho_leg = -0.767 lives in that one boot as well (-> -0.009).
+       M8 is robust (0.89-1.30x over all six).
+    2. THAT BOOT IS ALREADY QUARANTINED.  `C2R_SENSITIVITY_2026-08-16.json`
+       lists `Ha8/d16/883575/blk5` in `named_exclusion.excluded`; C2-R
+       diagnosed it off-spec (realization 0.508 vs 0.750-0.765,
+       co_resident_frac_both 0.9359 -- the only cell below 1.0 in 24).
+       C2-R survived it because C2-R took a POINT estimate (jackknife
+       |delta| <= 0.43%).  rev2 took a VARIANCE from the same data, and a
+       variance from n=6 is not robust to one outlier.
+
+    The band is registered as a SENSITIVITY RANGE, not an estimate:
+        lo   = jackknife minimum   (what sigma_boot is if the quarantined boot
+                                    is excluded by a pre-registered filter)
+        mid  = full-sample         (rev2's adopted value; keeps every boot)
+        hi   = two-sided 95% chi2 upper on the full-sample estimate
+    A plan is adoptable only if it accepts across this band as well as the
+    sigma_job band.  `hi` is deliberately punitive: it is what "we do not know
+    sigma_boot to better than n=6" actually costs.
+    """
+    ps = pairsd()
+    out = {"note": ("sigma_boot is an n=6 estimate; rev2 treated it as known. "
+                    "Registered as a band for the same reason sigma_job is "
+                    "(audit F5, applied symmetrically)."),
+           "c2r_named_exclusion": list(C2R_NAMED_EXCLUSION), "arms": {}}
+    for arm in ("M8", "Ha8"):
+        r = ps["arms"][arm]["per_boot_r"]
+        n = len(r)
+        full = st.stdev(r) / st.fmean(r) * 100.0
+        jack = []
+        for i in range(n):
+            sub = [x for j, x in enumerate(r) if j != i]
+            jack.append({"dropped_index": i,
+                         "dropped_label": f"{arm}/blk{i + 1}",
+                         "sigma_boot_pct": st.stdev(sub) / st.fmean(sub) * 100.0})
+        lo = min(j["sigma_boot_pct"] for j in jack)
+        most_influential = min(jack, key=lambda j: j["sigma_boot_pct"])
+        df = n - 1
+        ci_lo = full * math.sqrt(df / _chi2_lower(0.975, df))
+        ci_hi = full * math.sqrt(df / _chi2_lower(0.025, df))
+        out["arms"][arm] = {
+            "n_boot_pairs": n,
+            "sigma_boot_full_pct": full,
+            "jackknife": jack,
+            "jackknife_min_pct": lo,
+            "jackknife_max_ratio": full / lo,
+            "most_influential_boot": most_influential["dropped_label"],
+            "most_influential_is_in_c2r_named_exclusion": (
+                most_influential["dropped_label"] == f"{arm}/blk5"
+                and arm == "Ha8"),
+            "chi2_ci95_pct": [ci_lo, ci_hi],
+            "BAND_PCT": {"lo_jackknife": lo, "mid_full": full, "hi_chi2_upper": ci_hi},
+        }
+    return out
+
+
 # ---- F5: the prior is a band, not a point --------------------------------
 def priorband() -> dict:
     """F5.  Three defensible readings of the ONLY cross-job contrast that exists.
@@ -698,6 +773,7 @@ def _oc(k: int, m: int, sigma_boot: float, sigma_job: float, gap: float,
     ev_b = m * sigma_job ** 2 + sigma_boot ** 2
     n_fail = n_pass = n_cov = n_cov_claim = n_claim = n_pass_sat = n_cov_sat = 0
     n_pass_sat_guarded = 0
+    n_guard_rev2 = 0            # rev3 diagnostic: how often rev2's threshold fired
     ubs = []
     for _ in range(n):
         msb = ev_b * rnd.gammavariate(df_b / 2.0, 2.0) / df_b
@@ -718,7 +794,22 @@ def _oc(k: int, m: int, sigma_boot: float, sigma_job: float, gap: float,
         # --- rev2 rule
         ub = _ub_exact_f(msb, msw, m, fq_lo, chi_w, df_w)
         ubs.append(ub)
-        if msb <= msw:                      # F2 guard: MEASUREMENT FAILURE
+        # --- rev3 REPAIR (audit 2026-08-19, death cause A) -------------------
+        # rev2 guarded the exact-F branch at `msb <= msw`.  That is the wrong
+        # threshold.  The exact-F bound degenerates when
+        #     theta = ((MS_B/MS_W)/F_.05 - 1)/m  <=  0   <=>   MS_B/MS_W <= F_.05
+        # and F_.05(df_B, df_W) < 1 for every plan here (0.3405 at (9,20),
+        # 0.4472 at (15,32), 0.4067 at (11,96)).  So rev2 declared
+        # MEASUREMENT_FAILURE over the whole interval (F_.05, 1], where the
+        # bound is positive, finite and covering -- labelling a good
+        # measurement as a failed one (methodology gate #21, reverse direction).
+        # Each bound is now guarded at ITS OWN degeneracy point:
+        #     Satterthwaite : MS_B <= MS_W          (UB == 0 -> automatic PASS,
+        #                                            so F2 is exactly right here)
+        #     exact-F       : MS_B <= F_.05 * MS_W  (theta <= 0 -> UB == 0)
+        if msb <= msw:
+            n_guard_rev2 += 1               # diagnostic only, not the rule
+        if msb <= fq_lo * msw:              # rev3 guard: exact-F's own degeneracy
             n_fail += 1
         else:
             n_claim += 1
@@ -730,7 +821,9 @@ def _oc(k: int, m: int, sigma_boot: float, sigma_job: float, gap: float,
             n_cov += 1
     ubs.sort()
     return {
-        "p_measurement_failure": n_fail / n,
+        "p_measurement_failure": n_fail / n,        # rev3 guard (exact-F own)
+        "p_guard_rev2_msb_le_msw": n_guard_rev2 / n,   # what rev2 would have
+        "guard_threshold_ratio": fq_lo,             # F_.05(df_B, df_W)
         "p_pass": n_pass / n,                       # unconditional; F2-guarded
         "coverage": n_cov / n,
         "coverage_given_claim": (n_cov_claim / n_claim) if n_claim else None,
@@ -775,7 +868,13 @@ def power2() -> dict:
             for pname, sj in sorted(priors.items()):
                 for sbname, sb0 in (("paired_measured", sb60_paired),
                                     ("rev1_delta_method", sb60_doc)):
-                    oc = _oc(k, m, sb0 * scale, sj, gap)
+                    # rev3 REPAIR (death cause C): register the Satterthwaite
+                    # multiplier at the REGISTERED prior, exactly as
+                    # _eval_plan does.  rev2 called _oc without sat_prior here,
+                    # so power2's Satterthwaite column was registered at the
+                    # true prior -- a quantity the campaign cannot know.
+                    oc = _oc(k, m, sb0 * scale, sj, gap,
+                             sat_prior=REGISTERED_SAT_PRIOR)
                     rows.append({
                         "arm": arm, "k_job": k, "m_bootpair": m,
                         "measure_window_s": win, "n_boots": boots,
@@ -785,6 +884,15 @@ def power2() -> dict:
                         "sigma_boot_pct": sb0 * scale,
                         "window_scaling_assumed": win != 60,
                         **oc,
+                        # rev3 REPAIR (death cause C): the row used to report
+                        # ONLY the exact-F column while the registered rule may
+                        # pick Satterthwaite.  Both are now printed side by
+                        # side, and ACCEPT_registered is the one that matches
+                        # the rule this design pre-registers.
+                        "p_pass_satterthwaite_guarded":
+                            oc["rev1_satterthwaite"]["p_pass_guarded"],
+                        "coverage_satterthwaite":
+                            oc["rev1_satterthwaite"]["coverage"],
                         "ACCEPT": (oc["p_pass"] >= ACCEPT_P_PASS
                                    and oc["coverage"] >= ACCEPT_COVERAGE),
                     })
@@ -796,6 +904,11 @@ def power2() -> dict:
                    if r["arm"] == arm and r["k_job"] == k and r["m_bootpair"] == m
                    and r["measure_window_s"] == win
                    and r["sigma_boot_source"] == "paired_measured"]
+            # rev3 REPAIR (death cause C): evaluate the plan under the rule the
+            # design actually pre-registers, not under a hard-wired exact-F.
+            sb60 = ps["arms"][arm]["sigma_boot_paired_pct"]
+            ev = _eval_plan(k, m, sb60 * math.sqrt(60.0 / win),
+                            sorted(priors.values()), gaps[arm]["pct_gap"], MC_N)
             robust[f"{arm}/k{k}/m{m}/{win}s"] = {
                 "accept_at_all_priors": all(r["ACCEPT"] for r in sel),
                 "accept_count": sum(r["ACCEPT"] for r in sel),
@@ -805,11 +918,27 @@ def power2() -> dict:
                 "worst_coverage": min((r["coverage"] for r in sel), default=None),
                 "max_p_measurement_failure": max(
                     (r["p_measurement_failure"] for r in sel), default=None),
+                "REGISTERED_RULE": {
+                    "bound": ev["bound"], "accept": ev["accept"],
+                    "worst_p_pass": ev["worst_p_pass"],
+                    "worst_coverage": ev["worst_coverage"],
+                    "note": ("this is the plan's operating characteristic under "
+                             "the pre-registered bound-selection rule; the "
+                             "exact-F columns above are diagnostic only"),
+                },
             }
     return {"acceptance_rule": {
                 "p_pass_min": ACCEPT_P_PASS, "coverage_min": ACCEPT_COVERAGE,
-                "verdict_on_MSB_le_MSW": "MEASUREMENT_FAILURE (never PASS)",
-                "upper_bound": "exact-F pivot (Satterthwaite reported alongside)"},
+                "verdict_on_degenerate_draw": (
+                    "MEASUREMENT_FAILURE (never PASS), guarded at each bound's "
+                    "OWN degeneracy point: Satterthwaite at MS_B <= MS_W, "
+                    "exact-F at MS_B <= F_.05(df_B,df_W)*MS_W  [rev3 repair]"),
+                "upper_bound": (
+                    "pre-registered SELECTION rule (see _eval_plan): "
+                    "Satterthwaite if its simulated coverage >= 0.93 at every "
+                    "prior in the band, else exact-F pivot.  rev2 printed "
+                    "exact-F unconditionally in this table, which is NOT the "
+                    "registered rule -- see REGISTERED_RULE per plan.")},
             "rows": rows, "robust_at_all_priors": robust}
 
 
@@ -931,6 +1060,101 @@ def plan_search_v2(n: int = 8000) -> dict:
         }
     both = [v["ADOPTED"]["gpu_hr"] for v in out["arms"].values() if v["ADOPTED"]]
     out["total_gpu_hr_both_arms"] = round(sum(both), 2) if len(both) == 2 else None
+    return out
+
+
+def plan_search_v3(n: int = 8000) -> dict:
+    """rev3.  Same search as v2, but adoptable now means adoptable across the
+    sigma_boot band too (death cause B), under the repaired guard (death
+    cause A).
+
+    Reported per sigma_boot band point rather than collapsed to one number, so
+    the pre-registration can state explicitly WHICH band point it is buying and
+    what the other two would cost.  Nothing here picks that for you: choosing
+    the band point after seeing the costs would be the post-hoc knob F5 exists
+    to prevent.
+    """
+    ps = pairsd()
+    band = priorband()
+    sbb = sigma_boot_band()
+    gaps = bslope()["total_gaps_to_explain"]
+    priors = sorted(v["pct"] for v in band.values()
+                    if isinstance(v, dict) and v.get("pct") is not None)
+    out = {"priors_pct": priors,
+           "guard": ("rev3: each bound guarded at its own degeneracy point "
+                     "(exact-F at MS_B <= F_.05*MS_W, Satterthwaite at "
+                     "MS_B <= MS_W)"),
+           "registered_sat_prior_pct": REGISTERED_SAT_PRIOR, "arms": {}}
+    for arm in ("M8", "Ha8"):
+        gap = gaps[arm]["pct_gap"]
+        per_band = {}
+        for bname, sb60 in sbb["arms"][arm]["BAND_PCT"].items():
+            feasible = []
+            for win in (60, 120, 240):
+                sb = sb60 * math.sqrt(60.0 / win)
+                sec = 144.0 + (win - 60.0)
+                for k in (4, 6, 8, 10, 12, 16, 20, 24):
+                    for m in (3, 6, 9, 12):
+                        ev = _eval_plan(k, m, sb, priors, gap, n)
+                        if ev["accept"]:
+                            feasible.append({
+                                "k_job": k, "m_bootpair": m,
+                                "measure_window_s": win, "n_boots": k * m * 2,
+                                "bound": ev["bound"],
+                                "gpu_hr": round(k * m * 2 * sec / 3600.0, 3),
+                                "window_scaling_assumed": win != 60,
+                                "worst_p_pass": ev["worst_p_pass"],
+                                "worst_coverage": ev["worst_coverage"],
+                                "max_p_measurement_failure":
+                                    ev["max_p_measurement_failure"]})
+            feasible.sort(key=lambda r: r["gpu_hr"])
+            confirmed, rejected = None, []
+            for cand in feasible[:8]:
+                sb = sb60 * math.sqrt(60.0 / cand["measure_window_s"])
+                e = _eval_plan(cand["k_job"], cand["m_bootpair"], sb, priors,
+                               gap, MC_N, seed=MC_SEED + 991)
+                rec = {**cand, "confirm_bound": e["bound"],
+                       "confirm_worst_p_pass": e["worst_p_pass"],
+                       "confirm_worst_coverage": e["worst_coverage"],
+                       "confirm_max_p_measurement_failure":
+                           e["max_p_measurement_failure"]}
+                if e["accept"]:
+                    confirmed = rec
+                    break
+                rejected.append(rec)
+            # The 60 s plan matters on its own: if it exists, the campaign does
+            # not need the unverified sigma_boot ~ 1/sqrt(T) window scaling at
+            # all, and S0(a) leaves the critical path.
+            no_assume = None
+            for cand in [f for f in feasible if not f["window_scaling_assumed"]][:8]:
+                e = _eval_plan(cand["k_job"], cand["m_bootpair"], sb60, priors,
+                               gap, MC_N, seed=MC_SEED + 991)
+                if e["accept"]:
+                    no_assume = {**cand, "confirm_worst_p_pass": e["worst_p_pass"],
+                                 "confirm_worst_coverage": e["worst_coverage"],
+                                 "confirm_max_p_measurement_failure":
+                                     e["max_p_measurement_failure"]}
+                    break
+            per_band[bname] = {
+                "sigma_boot_60s_pct": sb60,
+                "n_feasible_in_sweep": len(feasible),
+                "rejected_on_confirmation": rejected,
+                "ADOPTED": confirmed,
+                "cheapest_60s_no_window_assumption": no_assume,
+            }
+        out["arms"][arm] = {"gap_pct": gap, "per_sigma_boot_band": per_band}
+    # Totals per band point, using the 60 s (assumption-free) plan where one
+    # exists -- that is the plan rev3 recommends registering.
+    tot = {}
+    for bname in ("lo_jackknife", "mid_full", "hi_chi2_upper"):
+        vals = []
+        for arm in ("M8", "Ha8"):
+            e = out["arms"][arm]["per_sigma_boot_band"][bname]
+            pick = e["cheapest_60s_no_window_assumption"] or e["ADOPTED"]
+            vals.append(pick["gpu_hr"] if pick else None)
+        tot[bname] = (round(sum(vals), 2) if all(v is not None for v in vals)
+                      else None)
+    out["total_gpu_hr_both_arms_60s_by_band"] = tot
     return out
 
 
@@ -1117,6 +1341,160 @@ def paired_conc() -> dict:
     return out
 
 
+def _rev3_extra_controls() -> list:
+    """rev3.  Controls the audit found MISSING from rev2 (its finding on
+    criterion 3).
+
+    PC6  `_chi2_lower` against EXTERNAL table values.  rev2 had NO control on
+         this function at all, yet the whole M8 bound is
+         sqrt(df_eff / _chi2_lower(0.05, df_eff)) -- 42% of the campaign budget
+         resting on an unchecked special function.  rev1 claimed a 6-digit
+         check but neither the code nor the JSON contains one (a reproduction
+         path that does not exist is not a control).
+    PC7  the ADOPTED plan's own operating characteristic, recomputed from a
+         different seed.  rev2's only MC control (PC5) was on a cell that is
+         not any adopted plan.
+    PC8  the rev3 guard repair, stated as a falsifiable inequality:
+         F_.05(df_B, df_W) must be < 1 for every plan in the search grid --
+         that is exactly why rev2's `MS_B <= MS_W` threshold discarded a live
+         region.  If this were >= 1 anywhere the repair would be wrong there.
+    """
+    checks = []
+    # PC6 -- external chi-square table values (Abramowitz & Stegun / NIST)
+    for (nu, p, ref) in ((5, 0.025, 0.8312), (5, 0.05, 1.1455),
+                         (5, 0.975, 12.8325), (1, 0.05, 0.003932),
+                         (10, 0.05, 3.9403), (32, 0.05, 20.072),
+                         (96, 0.05, 74.397)):
+        got = _chi2_lower(p, nu)
+        tol = max(5e-3, abs(ref) * 2e-3)
+        checks.append({"id": f"PC6/table/chi2_{p}({nu})", "target": ref,
+                       "got": round(got, 5), "ok": abs(got - ref) < tol})
+    # PC7 -- adopted-plan OC, fresh seed.  Ha8 k=12/m=3/60s under the repaired
+    # guard at the mid band point; must land where plan_search_v3 puts it.
+    oc = _oc(12, 3, 1.5684, 0.4112, 9.196, n=40000, seed=MC_SEED + 4242,
+             sat_prior=REGISTERED_SAT_PRIOR)
+    checks.append({"id": "PC7/adopted_plan_oc/Ha8_k12m3_60s",
+                   "target": ">=0.80 p_pass and >=0.93 coverage",
+                   "got": {"p_pass": round(oc["p_pass"], 3),
+                           "coverage": round(oc["coverage"], 3),
+                           "p_measurement_failure":
+                               round(oc["p_measurement_failure"], 3)},
+                   "ok": (oc["p_pass"] >= ACCEPT_P_PASS
+                          and oc["coverage"] >= ACCEPT_COVERAGE)})
+    # PC8 -- the repair's own precondition, falsifiable
+    bad = []
+    for k in (4, 6, 8, 10, 12, 16, 20, 24):
+        for m in (3, 6, 9, 12):
+            f05 = _f_quantile(0.05, k - 1, k * (m - 1))
+            if not (f05 < 1.0):
+                bad.append({"k": k, "m": m, "F05": f05})
+    checks.append({"id": "PC8/guard_repair_precondition/F05_lt_1_everywhere",
+                   "target": "F_.05(df_B,df_W) < 1 for all (k,m) in the grid",
+                   "got": {"n_violations": len(bad), "violations": bad[:5]},
+                   "ok": not bad})
+    return checks
+
+
+def _finalize_controls(checks: list, identity: dict = None) -> dict:
+    """gate #44: a control set that is empty -- or below the registered floor --
+    must FAIL rather than vacuously pass.
+
+    rev3 REPAIR (audit criterion 3): in rev2 this logic sat inline inside
+    `_rev2_positive_controls`, where `checks` was filled unconditionally by the
+    loops above it.  The branch was therefore UNREACHABLE and proved nothing
+    about itself (gate #9, weak recurrence: a defence that cannot be exercised
+    is not a defence).  Pulling it out makes it callable -- and the self-test
+    S1 now actually calls it with a short set and requires a FAIL.
+    """
+    if not checks or len(checks) < MIN_POSITIVE_CONTROLS:
+        return {"checks": checks, "n_checks": len(checks), "all_pass": False,
+                "error": ("positive-control set below the registered minimum "
+                          "(%d < %d) -- not a pass"
+                          % (len(checks), MIN_POSITIVE_CONTROLS))}
+    out = {"checks": checks, "n_checks": len(checks),
+           "all_pass": all(c["ok"] for c in checks),
+           "note": ("PC5 uses the rev1 sigma_boot/prior on purpose -- it is "
+                    "reproducing the AUDIT's published cell, not the rev2 "
+                    "design point")}
+    if identity is not None:
+        out["identity_only"] = identity
+    return out
+
+
+def _rev3_selftest() -> dict:
+    """rev3.  Tests of the REPAIRS themselves, each able to fail.
+
+    S1  the gate #44 branch is REACHABLE: hand it a short control set and it
+        must return all_pass=False with an error.  (In rev2 no input could
+        reach that branch, so it never demonstrated anything.)
+    S2  the guard repair changes what it is supposed to change and nothing
+        else: at the Ha8 adopted basis the rev2 threshold fires far more often
+        than the true degeneracy, and P(pass) rises accordingly.
+    S3  the repaired guard is never LOOSER than the true degeneracy point --
+        a draw with theta <= 0 must always be counted as a measurement failure,
+        because there the bound is 0 and would auto-PASS.
+    S4  Satterthwaite keeps rev2's guard: for that bound MS_B <= MS_W IS the
+        degeneracy point, so the repair must not have moved it.
+    """
+    checks = []
+    # S1 -- reachability of the gate #44 branch: CALL it, do not assert about it
+    empty = _finalize_controls([])
+    short = _finalize_controls([{"id": "probe", "ok": True}])
+    full = _finalize_controls([{"id": f"probe{i}", "ok": True}
+                               for i in range(MIN_POSITIVE_CONTROLS)])
+    checks.append({"id": "S1/gate44_branch_reachable",
+                   "target": ("empty and below-floor sets must FAIL; a set at "
+                              "the floor must be able to pass"),
+                   "got": {"empty_all_pass": empty["all_pass"],
+                           "short_all_pass": short["all_pass"],
+                           "at_floor_all_pass": full["all_pass"],
+                           "floor": MIN_POSITIVE_CONTROLS},
+                   "ok": (empty["all_pass"] is False
+                          and short["all_pass"] is False
+                          and full["all_pass"] is True)})
+    # S2 -- the repair moves the guard, in the right direction and size
+    oc = _oc(10, 3, 0.7842, 0.4112, 9.196, n=20000)
+    checks.append({"id": "S2/guard_repair_effect/Ha8_k10m3",
+                   "target": "rev2 guard rate >> rev3 guard rate, F_.05 < 1",
+                   "got": {"rev2_rate": round(oc["p_guard_rev2_msb_le_msw"], 4),
+                           "rev3_rate": round(oc["p_measurement_failure"], 4),
+                           "F05": round(oc["guard_threshold_ratio"], 4)},
+                   "ok": (oc["p_guard_rev2_msb_le_msw"]
+                          > oc["p_measurement_failure"]
+                          and oc["guard_threshold_ratio"] < 1.0)})
+    # S3 -- no degenerate draw can escape the guard (would auto-PASS if it did)
+    rnd = random.Random(7)
+    escapes = 0
+    for k, m in ((10, 3), (16, 3), (12, 9)):
+        df_b, df_w = k - 1, k * (m - 1)
+        fq_lo = _f_quantile(0.05, df_b, df_w)
+        chi_w = _chi2_lower(0.05, df_w)
+        for _ in range(20000):
+            msb = rnd.gammavariate(df_b / 2.0, 2.0) / df_b
+            msw = rnd.gammavariate(df_w / 2.0, 2.0) / df_w
+            ub = _ub_exact_f(msb, msw, m, fq_lo, chi_w, df_w)
+            if ub <= 0.0 and not (msb <= fq_lo * msw):
+                escapes += 1
+    checks.append({"id": "S3/no_degenerate_draw_escapes_guard",
+                   "target": "0 draws with UB==0 outside the guard",
+                   "got": {"escapes": escapes},
+                   "ok": escapes == 0})
+    # S4 -- Satterthwaite's guard is unchanged (MS_B <= MS_W is correct there)
+    ok_sat = True
+    for _ in range(20000):
+        msb = rnd.gammavariate(4.5, 2.0) / 9.0
+        msw = rnd.gammavariate(10.0, 2.0) / 20.0
+        v = (msb - msw) / 3.0
+        if math.sqrt(max(0.0, v)) == 0.0 and msb > msw:
+            ok_sat = False
+            break
+    checks.append({"id": "S4/satterthwaite_guard_unmoved",
+                   "target": "UB_sat == 0 iff MS_B <= MS_W",
+                   "got": {"consistent": ok_sat}, "ok": ok_sat})
+    return {"checks": checks, "n_checks": len(checks),
+            "all_pass": all(c["ok"] for c in checks)}
+
+
 def _rev2_positive_controls() -> dict:
     """Controls that can actually FAIL (gate #9, gate #44 -- an empty control set
     must not be able to pass).
@@ -1131,7 +1509,7 @@ def _rev2_positive_controls() -> dict:
          audit published (Ha8 k=4/m=3): 0.638 Satterthwaite, 0.970 exact-F.
     """
     ps = pairsd()
-    checks = []
+    checks = _rev3_extra_controls()
     for arm in ("M8", "Ha8"):
         got_sd = ps["arms"][arm]["sigma_boot_paired_pct"]
         got_rho = ps["arms"][arm]["rho_leg"]
@@ -1168,15 +1546,7 @@ def _rev2_positive_controls() -> dict:
                    "got": round(oc["coverage"], 3),
                    "ok": abs(oc["coverage"]
                              - AUDIT_TARGETS["cover_exactF_Ha8_k4m3"]) < 0.012})
-    if not checks:                       # gate #44: an empty control set FAILS
-        return {"checks": [], "all_pass": False,
-                "error": "empty positive-control set is not a pass"}
-    return {"checks": checks, "identity_only": identity,
-            "n_checks": len(checks),
-            "all_pass": all(c["ok"] for c in checks),
-            "note": ("PC5 uses the rev1 sigma_boot/prior on purpose -- it is "
-                     "reproducing the AUDIT's published cell, not the rev2 "
-                     "design point")}
+    return _finalize_controls(checks, identity)
 
 
 def main():
@@ -1185,7 +1555,9 @@ def main():
                                     "bslope", "all",
                                     "pairsd", "priorband", "power2", "seq2",
                                     "paired_conc", "controls", "plan_search",
-                                    "rev2"])
+                                    "rev2",
+                                    "sigma_boot_band", "plan_search_v3", "rev3",
+                                    "selftest"])
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     res = {}
@@ -1236,7 +1608,45 @@ def main():
         res["seq2"] = seq2()
     if a.cmd in ("paired_conc", "rev2"):
         res["paired_conc"] = paired_conc()
+    # ---- rev3 (audit 2026-08-19: death causes A/B/C + criteria 3/4/5) -----
+    if a.cmd in ("controls", "rev3"):
+        res["positive_controls"] = _rev2_positive_controls()
+    if a.cmd in ("sigma_boot_band", "rev3"):
+        res["sigma_boot_band"] = sigma_boot_band()
+    if a.cmd in ("pairsd", "rev3"):
+        res["pairsd"] = pairsd()
+    if a.cmd in ("priorband", "rev3"):
+        res["priorband"] = priorband()
+    if a.cmd in ("power2", "rev3"):
+        res["power2"] = power2()
+    if a.cmd in ("plan_search_v3", "rev3"):
+        res["plan_search_v3"] = plan_search_v3()
+    if a.cmd == "selftest":
+        res["selftest"] = _rev3_selftest()
+    if a.cmd == "rev3":
+        res["selftest"] = _rev3_selftest()
+        pc = res["positive_controls"]
+        res["REV3_CONTROLS"] = "PASS" if pc["all_pass"] else "FAIL"
+        res["REV3_SELFTEST"] = ("PASS" if res["selftest"]["all_pass"]
+                                else "FAIL")
+        if not pc["all_pass"]:
+            res["REV3_FAILED_CHECKS"] = [c for c in pc["checks"] if not c["ok"]]
+        if not res["selftest"]["all_pass"]:
+            res["REV3_FAILED_SELFTESTS"] = [c for c in res["selftest"]["checks"]
+                                            if not c["ok"]]
     if a.cmd == "rev2":
+        # rev3 REPAIR NOTICE: `_oc` (the guard) and `power2` (the bound) were
+        # repaired on 2026-08-19 after the rule-layer audit.  Both are SHARED
+        # with the rev2 path, so this subcommand no longer reproduces the
+        # rev2-of-record.  The artifact of record for rev2 is the stored
+        # DESIGN_G13_STATS_REV2_2026-08-17.json, kept unmodified; git history
+        # holds the pre-repair source.  Re-running `rev2` today yields rev2's
+        # LAYOUT with rev3's REPAIRED numbers -- do not cite it as rev2.
+        res["REV2_REPRODUCTION_WARNING"] = (
+            "NOT the rev2-of-record: _oc/power2 were repaired 2026-08-19 "
+            "(death causes A and C) and are shared with this path. Cite "
+            "DESIGN_G13_STATS_REV2_2026-08-17.json for rev2, or "
+            "DESIGN_G13_STATS_REV3_2026-08-19.json for the repaired design.")
         pc = res["positive_controls"]
         res["REV2_CONTROLS"] = "PASS" if pc["all_pass"] else "FAIL"
         if not pc["all_pass"]:
