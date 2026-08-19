@@ -505,6 +505,15 @@ ACCEPT_COVERAGE = 0.93
 # rev3: registered floor on the positive-control set, so that the gate #44
 # "an empty control set is not a pass" branch is REACHABLE (rev2's was not).
 MIN_POSITIVE_CONTROLS = 8
+# Re-audit verdict (2026-08-19, section D): register the CHI-SQUARE UPPER band
+# point.  Only that plan's collapse sigma_boot (3.892%) covers the whole n=6
+# two-sided CI [0.979%, 3.847%]; mid's collapse point is 1.652%, i.e. 5% of
+# headroom over the point estimate, and lo's is 1.164%, barely above the CI
+# floor.  Over-estimating the design prior costs money only -- the campaign's
+# own MS_W re-measures sigma_boot -- while under-estimating voids the campaign.
+REGISTERED_SIGMA_BOOT_BAND_POINT = "hi_chi2_upper"
+REGISTERED_PLAN_M8 = (16, 3, 60)     # k, m, window_s
+REGISTERED_PLAN_HA8 = (16, 6, 60)
 # Audit values this script must reproduce independently (it does not import the
 # audit code -- `audit_g13_independent_2026-08-16/` exists to stay independent).
 AUDIT_TARGETS = {
@@ -648,13 +657,23 @@ def sigma_boot_band() -> dict:
        variance from n=6 is not robust to one outlier.
 
     The band is registered as a SENSITIVITY RANGE, not an estimate:
-        lo   = jackknife minimum   (what sigma_boot is if the quarantined boot
-                                    is excluded by a pre-registered filter)
+        lo   = jackknife MINIMUM -- the smallest sigma_boot obtainable by
+               dropping any ONE boot.  B4 (re-audit): this is NOT "the value
+               under a pre-registered filter".  C2-R's named_exclusion holds
+               TWO boots (blk2 and blk5); dropping both gives 0.7232%, and
+               dropping blk2 alone RAISES sigma_boot to 1.742%.  `lo` is
+               therefore the most optimistic data-dependent choice available,
+               and the re-audit ruled it NOT registrable on that ground
+               (its collapse point, 1.164%, sits just above the CI floor).
+               Reported as a sensitivity only.
         mid  = full-sample         (rev2's adopted value; keeps every boot)
         hi   = two-sided 95% chi2 upper on the full-sample estimate
-    A plan is adoptable only if it accepts across this band as well as the
-    sigma_job band.  `hi` is deliberately punitive: it is what "we do not know
-    sigma_boot to better than n=6" actually costs.
+    B6 (re-audit): the code does NOT require acceptance across the whole
+    sigma_boot band -- `plan_search_v3` searches each band point INDEPENDENTLY
+    and the pre-registration then buys ONE of them (see
+    REGISTERED_SIGMA_BOOT_BAND_POINT).  `hi` is deliberately punitive: it is
+    what "we do not know sigma_boot to better than n=6" actually costs, and
+    the re-audit ruled it the point to register.
     """
     ps = pairsd()
     out = {"note": ("sigma_boot is an n=6 estimate; rev2 treated it as known. "
@@ -683,9 +702,22 @@ def sigma_boot_band() -> dict:
             "jackknife_min_pct": lo,
             "jackknife_max_ratio": full / lo,
             "most_influential_boot": most_influential["dropped_label"],
-            "most_influential_is_in_c2r_named_exclusion": (
-                most_influential["dropped_label"] == f"{arm}/blk5"
-                and arm == "Ha8"),
+            # B4: query the list, do not hard-wire the answer.  The labels
+            # here are `<arm>/blk<i>`; C2R_NAMED_EXCLUSION entries are full
+            # run ids `<arm>/<leg>/<job>/blk<i>`, so match on (arm, blk).
+            "most_influential_in_c2r_named_exclusion": any(
+                e.split("/")[0] == arm
+                and e.split("/")[-1] == most_influential["dropped_label"].split("/")[-1]
+                for e in C2R_NAMED_EXCLUSION),
+            "c2r_named_exclusion_for_this_arm": [
+                e for e in C2R_NAMED_EXCLUSION if e.split("/")[0] == arm],
+            "sigma_boot_excluding_all_named_pct": (
+                (lambda keep: st.stdev(keep) / st.fmean(keep) * 100.0
+                 if len(keep) >= 2 else None)(
+                    [x for i, x in enumerate(r)
+                     if not any(e.split("/")[0] == arm
+                                and e.split("/")[-1] == f"blk{i + 1}"
+                                for e in C2R_NAMED_EXCLUSION)])),
             "chi2_ci95_pct": [ci_lo, ci_hi],
             "BAND_PCT": {"lo_jackknife": lo, "mid_full": full, "hi_chi2_upper": ci_hi},
         }
@@ -979,10 +1011,19 @@ def _eval_plan(k, m, sb, priors, gap, n, seed=MC_SEED):
                   and o["coverage"] >= ACCEPT_COVERAGE for o in ocs)
         worst_p = min(o["p_pass"] for o in ocs)
         worst_c = min(o["coverage"] for o in ocs)
+    # B5 (re-audit): report the guard rate belonging to the SELECTED bound.
+    # rev3 changed the guard's meaning to "each bound at its own degeneracy
+    # point", so `p_measurement_failure` (exact-F's) is the wrong field to
+    # quote when Satterthwaite was chosen -- there the guard is
+    # `p_guard_rev2_msb_le_msw`, which is Satterthwaite's OWN degeneracy point.
+    fail_key = ("p_guard_rev2_msb_le_msw" if chosen == "satterthwaite_registered"
+                else "p_measurement_failure")
     return {"bound": chosen, "accept": acc, "worst_p_pass": worst_p,
             "worst_coverage": worst_c,
-            "max_p_measurement_failure": max(o["p_measurement_failure"]
-                                             for o in ocs),
+            "max_p_measurement_failure": max(o[fail_key] for o in ocs),
+            "measurement_failure_field": fail_key,
+            "max_p_measurement_failure_exact_f": max(
+                o["p_measurement_failure"] for o in ocs),
             "per_prior": ocs}
 
 
@@ -1064,9 +1105,12 @@ def plan_search_v2(n: int = 8000) -> dict:
 
 
 def plan_search_v3(n: int = 8000) -> dict:
-    """rev3.  Same search as v2, but adoptable now means adoptable across the
-    sigma_boot band too (death cause B), under the repaired guard (death
-    cause A).
+    """rev3.  Same search as v2, run SEPARATELY at each sigma_boot band point
+    (death cause B), under the repaired guard (death cause A).
+
+    B6 (re-audit): "adoptable across the band" would be a different and
+    stronger rule; this function does not implement it.  Each band point gets
+    its own cheapest plan, and the pre-registration buys one point.
 
     Reported per sigma_boot band point rather than collapsed to one number, so
     the pre-registration can state explicitly WHICH band point it is buying and
@@ -1268,7 +1312,7 @@ def seq2(k1: int = 4, k2: int = 4, m: int = 3, n: int = MC_N) -> dict:
                 msb1 = ev * rnd.gammavariate((k1 - 1) / 2.0, 2.0) / (k1 - 1)
                 msw1 = sb ** 2 * rnd.gammavariate(k1 * (m - 1) / 2.0, 2.0) / (k1 * (m - 1))
                 ub1 = _ub_exact_f(msb1, msw1, m, fq1, cw1, k1 * (m - 1))
-                if msb1 > msw1 and gap >= 3 * ub1:
+                if msb1 > fq1 * msw1 and gap >= 3 * ub1:   # rev3 guard (B1)
                     stop1 += 1
                     passes += 1
                     covers += (ub1 >= sj)
@@ -1282,7 +1326,7 @@ def seq2(k1: int = 4, k2: int = 4, m: int = 3, n: int = MC_N) -> dict:
                 msw = (k1 * (m - 1) * msw1 + k2 * (m - 1) * msw2) / dw
                 ub = _ub_exact_f(msb, msw, m, fq2, cw2, dw)
                 cost += kk * m * 2
-                if msb > msw and gap >= 3 * ub:
+                if msb > fq2 * msw and gap >= 3 * ub:      # rev3 guard (B1)
                     passes += 1
                 covers += (ub >= sj)
             out["rows"].append({
@@ -1369,30 +1413,69 @@ def _rev3_extra_controls() -> list:
         tol = max(5e-3, abs(ref) * 2e-3)
         checks.append({"id": f"PC6/table/chi2_{p}({nu})", "target": ref,
                        "got": round(got, 5), "ok": abs(got - ref) < tol})
-    # PC7 -- adopted-plan OC, fresh seed.  Ha8 k=12/m=3/60s under the repaired
-    # guard at the mid band point; must land where plan_search_v3 puts it.
-    oc = _oc(12, 3, 1.5684, 0.4112, 9.196, n=40000, seed=MC_SEED + 4242,
+    # PC7 -- adopted-plan OC, fresh seed, at the BINDING corner.
+    # B8 (re-audit): rev3 evaluated this at prior 0.4112 and sigma_boot 1.5684
+    # -- the plan's EASIEST point (p_pass 0.968), so it could not fail.  The
+    # binding corner is the worst prior (0.9542) at the REGISTERED band point
+    # (hi_chi2_upper), which is where the acceptance decision actually lives.
+    sbb = sigma_boot_band()
+    sb_reg = sbb["arms"]["Ha8"]["BAND_PCT"][REGISTERED_SIGMA_BOOT_BAND_POINT]
+    gap_ha8 = bslope()["total_gaps_to_explain"]["Ha8"]["pct_gap"]
+    band = priorband()
+    prior_worst = max(v["pct"] for v in band.values()
+                      if isinstance(v, dict) and v.get("pct") is not None)
+    oc = _oc(REGISTERED_PLAN_HA8[0], REGISTERED_PLAN_HA8[1], sb_reg,
+             prior_worst, gap_ha8, n=40000, seed=MC_SEED + 4242,
              sat_prior=REGISTERED_SAT_PRIOR)
-    checks.append({"id": "PC7/adopted_plan_oc/Ha8_k12m3_60s",
-                   "target": ">=0.80 p_pass and >=0.93 coverage",
+    checks.append({"id": "PC7/adopted_plan_oc_at_binding_corner/Ha8",
+                   "target": (">=%.2f p_pass and >=%.2f coverage at prior %.4f, "
+                              "sigma_boot %.4f (band point %s), plan k=%d m=%d"
+                              % (ACCEPT_P_PASS, ACCEPT_COVERAGE, prior_worst,
+                                 sb_reg, REGISTERED_SIGMA_BOOT_BAND_POINT,
+                                 REGISTERED_PLAN_HA8[0], REGISTERED_PLAN_HA8[1])),
                    "got": {"p_pass": round(oc["p_pass"], 3),
                            "coverage": round(oc["coverage"], 3),
                            "p_measurement_failure":
                                round(oc["p_measurement_failure"], 3)},
                    "ok": (oc["p_pass"] >= ACCEPT_P_PASS
                           and oc["coverage"] >= ACCEPT_COVERAGE)})
-    # PC8 -- the repair's own precondition, falsifiable
-    bad = []
-    for k in (4, 6, 8, 10, 12, 16, 20, 24):
-        for m in (3, 6, 9, 12):
-            f05 = _f_quantile(0.05, k - 1, k * (m - 1))
-            if not (f05 < 1.0):
-                bad.append({"k": k, "m": m, "F05": f05})
-    checks.append({"id": "PC8/guard_repair_precondition/F05_lt_1_everywhere",
-                   "target": "F_.05(df_B,df_W) < 1 for all (k,m) in the grid",
-                   "got": {"n_violations": len(bad), "violations": bad[:5]},
-                   "ok": not bad})
+    # PC8 was REMOVED from the pass set by the 2026-08-19 re-audit.
+    #   "F_.05(d1,d2) < 1 for every (k,m)" is a THEOREM, not a control:
+    #   F_.05(d1,d2) = 1/F_.95(d2,d1) and F_.95 > 1 always, so it cannot fail
+    #   anywhere on any grid.  It was in `all_pass`, i.e. an identity was being
+    #   counted as evidence -- methodology gate #9, 13th recurrence, and the
+    #   very error rev2 got right by isolating its own F-inversion identity.
+    #   The claim rev3 wrote next to it ("if it were >= 1 the repair would be
+    #   wrong there") is also FALSE: the guard `msb <= fq_lo*msw` is exactly
+    #   the degeneracy point whatever the size of F_.05.  It survives as a
+    #   labelled identity only.  See `_rev3_identities()`.
     return checks
+
+
+def _rev3_identities() -> list:
+    """Statements that are TRUE BY CONSTRUCTION and therefore prove nothing.
+
+    Kept visible (rev2's own good practice) but never counted in `all_pass`.
+    """
+    f05 = {f"({k - 1},{k * (m - 1)})": _f_quantile(0.05, k - 1, k * (m - 1))
+           for k in (4, 12, 24) for m in (3, 12)}
+    return [
+        {"id": "IDENT/F05_lt_1_everywhere",
+         "statement": "F_.05(d1,d2) < 1 for all df",
+         "why_identity": ("F_.05(d1,d2) = 1/F_.95(d2,d1) and F_.95 > 1 always; "
+                          "no grid can violate it"),
+         "sample_values": f05},
+        {"id": "IDENT/exact_f_ub_zero_iff_guarded",
+         "statement": "UB_exactF <= 0  <=>  MS_B <= F_.05*MS_W",
+         "why_identity": ("_ub_exact_f returns sqrt(max(0, theta)*...), so the "
+                          "equivalence is the definition of max(0, .) -- it "
+                          "cannot detect a typo in _oc's guard line")},
+        {"id": "IDENT/satterthwaite_ub_zero_iff_msb_le_msw",
+         "statement": "UB_sat == 0  <=>  MS_B <= MS_W",
+         "why_identity": ("sqrt(max(0,(MS_B-MS_W)/m)) == 0 iff MS_B <= MS_W; "
+                          "restating max(0,.) says nothing about whether _oc "
+                          "still guards the Satterthwaite branch there")},
+    ]
 
 
 def _finalize_controls(checks: list, identity: dict = None) -> dict:
@@ -1462,35 +1545,40 @@ def _rev3_selftest() -> dict:
                    "ok": (oc["p_guard_rev2_msb_le_msw"]
                           > oc["p_measurement_failure"]
                           and oc["guard_threshold_ratio"] < 1.0)})
-    # S3 -- no degenerate draw can escape the guard (would auto-PASS if it did)
-    rnd = random.Random(7)
-    escapes = 0
-    for k, m in ((10, 3), (16, 3), (12, 9)):
-        df_b, df_w = k - 1, k * (m - 1)
-        fq_lo = _f_quantile(0.05, df_b, df_w)
-        chi_w = _chi2_lower(0.05, df_w)
-        for _ in range(20000):
-            msb = rnd.gammavariate(df_b / 2.0, 2.0) / df_b
-            msw = rnd.gammavariate(df_w / 2.0, 2.0) / df_w
-            ub = _ub_exact_f(msb, msw, m, fq_lo, chi_w, df_w)
-            if ub <= 0.0 and not (msb <= fq_lo * msw):
-                escapes += 1
-    checks.append({"id": "S3/no_degenerate_draw_escapes_guard",
-                   "target": "0 draws with UB==0 outside the guard",
-                   "got": {"escapes": escapes},
-                   "ok": escapes == 0})
-    # S4 -- Satterthwaite's guard is unchanged (MS_B <= MS_W is correct there)
-    ok_sat = True
-    for _ in range(20000):
-        msb = rnd.gammavariate(4.5, 2.0) / 9.0
-        msw = rnd.gammavariate(10.0, 2.0) / 20.0
-        v = (msb - msw) / 3.0
-        if math.sqrt(max(0.0, v)) == 0.0 and msb > msw:
-            ok_sat = False
-            break
-    checks.append({"id": "S4/satterthwaite_guard_unmoved",
-                   "target": "UB_sat == 0 iff MS_B <= MS_W",
-                   "got": {"consistent": ok_sat}, "ok": ok_sat})
+    # S3 (rebuilt after re-audit) -- the guard rate that _oc ACTUALLY produces
+    # must equal the analytic 5% tail of F(df_B, df_W).
+    #
+    # rev3's first S3 was an identity: it re-implemented `msb <= fq_lo*msw` and
+    # checked that UB<=0 agreed with it, which max(0,.) guarantees.  Worse, it
+    # never called _oc, so a typo in the real guard line was invisible to it.
+    # This version calls _oc and compares against a route _oc does not use:
+    # at sigma_job = 0 the ratio MS_B/MS_W is exactly F(df_B, df_W), so the
+    # guard must fire with probability 0.05 by the DEFINITION of the 0.05
+    # quantile.  Revert the guard to `msb <= msw` and this reads ~0.4-0.5.
+    for (k, m) in ((10, 3), (16, 3), (12, 9)):
+        oc0 = _oc(k, m, 1.0, 0.0, 9.196, n=40000, seed=MC_SEED + 77)
+        got = oc0["p_measurement_failure"]
+        se = math.sqrt(0.05 * 0.95 / 40000)
+        checks.append({"id": f"S3/guard_rate_matches_F_tail/k{k}m{m}",
+                       "target": "P(guard fires | sigma_job=0) == 0.05 +- 4se",
+                       "got": {"observed": round(got, 4),
+                               "expected": 0.05, "se": round(se, 5)},
+                       "ok": abs(got - 0.05) <= 4 * se})
+    # S4 (rebuilt) -- the Satterthwaite branch must STILL guard at MS_B <= MS_W.
+    # rev3's first S4 restated max(0,.) and never looked at _oc's Satterthwaite
+    # counter at all.  At sigma_job = 0 that guard must fire with probability
+    # P(F(df_B,df_W) <= 1), which _f_cdf gives independently of the MC.
+    for (k, m) in ((10, 3), (16, 3)):
+        oc0 = _oc(k, m, 1.0, 0.0, 9.196, n=40000, seed=MC_SEED + 78)
+        expect = _f_cdf(1.0, k - 1, k * (m - 1))
+        got = oc0["p_guard_rev2_msb_le_msw"]
+        se = math.sqrt(max(expect * (1 - expect), 1e-9) / 40000)
+        checks.append({"id": f"S4/satterthwaite_guard_unmoved/k{k}m{m}",
+                       "target": "P(MS_B<=MS_W | sigma_job=0) == F_cdf(1) +- 4se",
+                       "got": {"observed": round(got, 4),
+                               "expected": round(expect, 4),
+                               "se": round(se, 5)},
+                       "ok": abs(got - expect) <= 4 * se})
     return {"checks": checks, "n_checks": len(checks),
             "all_pass": all(c["ok"] for c in checks)}
 
@@ -1559,6 +1647,8 @@ def main():
                                     "sigma_boot_band", "plan_search_v3", "rev3",
                                     "selftest"])
     ap.add_argument("--out", default=None)
+    ap.add_argument("--force", action="store_true",
+                    help="allow --out to overwrite an existing file (B7)")
     a = ap.parse_args()
     res = {}
     if a.cmd in ("bootvar", "all"):
@@ -1621,6 +1711,14 @@ def main():
         res["power2"] = power2()
     if a.cmd in ("plan_search_v3", "rev3"):
         res["plan_search_v3"] = plan_search_v3()
+    if a.cmd == "rev3":
+        # B1 (re-audit): sec 2.4 justifies "no extra blocks" by citing seq2,
+        # so seq2 must be IN this artifact -- and must be the repaired one.
+        res["seq2"] = seq2()
+        # B2: the discarded identities stay VISIBLE and labelled, never counted.
+        # (A helper that is defined but never emitted is the same dead-code
+        # pattern the re-audit flagged in C2R_NAMED_EXCLUSION -- so wire it.)
+        res["identities_not_counted"] = _rev3_identities()
     if a.cmd == "selftest":
         res["selftest"] = _rev3_selftest()
     if a.cmd == "rev3":
@@ -1655,7 +1753,22 @@ def main():
             res["REV2_FAILED_CHECKS"] = [c for c in pc["checks"] if not c["ok"]]
     txt = json.dumps(res, indent=2, sort_keys=False, default=str)
     if a.out:
-        open(os.path.join(HERE, a.out), "w").write(txt)
+        # B7 (re-audit): rev2's own doc prints
+        #   `design_g13_stats.py rev2 --out DESIGN_G13_STATS_REV2_2026-08-17.json`
+        # as its reproduction path.  Since rev3 repaired _oc/power2/seq2, which
+        # the rev2 path SHARES, following that instruction would overwrite the
+        # committed rev2-of-record with repaired numbers -- and the only
+        # warning would sit inside the file just destroyed.  Refuse instead.
+        dest = os.path.join(HERE, a.out)
+        if os.path.exists(dest) and not a.force:
+            sys.stderr.write(
+                "REFUSING to overwrite an existing artifact: %s\n"
+                "  rev3 repaired _oc/power2/seq2, which the rev2 path shares, so\n"
+                "  re-running an old command would replace a committed record\n"
+                "  with repaired numbers. Write to a NEW filename, or pass\n"
+                "  --force if you truly intend to replace it.\n" % dest)
+            raise SystemExit(2)
+        open(dest, "w").write(txt)
     print(txt)
 
 

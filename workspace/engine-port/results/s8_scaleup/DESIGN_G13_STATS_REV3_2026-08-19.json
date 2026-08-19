@@ -44,21 +44,12 @@
         "ok": true
       },
       {
-        "id": "PC7/adopted_plan_oc/Ha8_k12m3_60s",
-        "target": ">=0.80 p_pass and >=0.93 coverage",
+        "id": "PC7/adopted_plan_oc_at_binding_corner/Ha8",
+        "target": ">=0.80 p_pass and >=0.93 coverage at prior 0.9542, sigma_boot 3.8467 (band point hi_chi2_upper), plan k=16 m=6",
         "got": {
-          "p_pass": 0.971,
-          "coverage": 0.965,
-          "p_measurement_failure": 0.025
-        },
-        "ok": true
-      },
-      {
-        "id": "PC8/guard_repair_precondition/F05_lt_1_everywhere",
-        "target": "F_.05(df_B,df_W) < 1 for all (k,m) in the grid",
-        "got": {
-          "n_violations": 0,
-          "violations": []
+          "p_pass": 0.81,
+          "coverage": 0.962,
+          "p_measurement_failure": 0.013
         },
         "ok": true
       },
@@ -129,7 +120,7 @@
         "ok": true
       }
     ],
-    "n_checks": 20,
+    "n_checks": 19,
     "all_pass": true,
     "note": "PC5 uses the rev1 sigma_boot/prior on purpose -- it is reproducing the AUDIT's published cell, not the rev2 design point",
     "identity_only": {
@@ -185,7 +176,9 @@
         "jackknife_min_pct": 0.028620524045803297,
         "jackknife_max_ratio": 1.2966468481234155,
         "most_influential_boot": "M8/blk5",
-        "most_influential_is_in_c2r_named_exclusion": false,
+        "most_influential_in_c2r_named_exclusion": false,
+        "c2r_named_exclusion_for_this_arm": [],
+        "sigma_boot_excluding_all_named_pct": 0.03711071229563127,
         "chi2_ci95_pct": [
           0.02316480358446386,
           0.09101825210125652
@@ -234,7 +227,12 @@
         "jackknife_min_pct": 0.6372955230917884,
         "jackknife_max_ratio": 2.461051367038987,
         "most_influential_boot": "Ha8/blk5",
-        "most_influential_is_in_c2r_named_exclusion": true,
+        "most_influential_in_c2r_named_exclusion": true,
+        "c2r_named_exclusion_for_this_arm": [
+          "Ha8/d16/883575/blk2",
+          "Ha8/d16/883575/blk5"
+        ],
+        "sigma_boot_excluding_all_named_pct": 0.7232246693789423,
         "chi2_ci95_pct": [
           0.9790184537100682,
           3.8467215189913606
@@ -3169,6 +3167,125 @@
       "hi_chi2_upper": 11.52
     }
   },
+  "seq2": {
+    "design": {
+      "k_stage1": 4,
+      "k_stage2_added": 4,
+      "m_bootpair": 3,
+      "stop_rule": "stage 1 stops iff MS_B > MS_W and gap >= 3*UB_exactF; otherwise escalate"
+    },
+    "rows": [
+      {
+        "arm": "M8",
+        "prior": "leg_all_cells",
+        "sigma_job_prior_pct": 0.4112116243493124,
+        "sigma_boot_pct": 0.03711071229563127,
+        "gap_pct": 5.118078721051833,
+        "p_stop_at_stage1": 0.4236,
+        "p_pass_overall": 0.96085,
+        "coverage_sequential": 0.9904,
+        "expected_boots": 37.8336,
+        "expected_gpu_hr": 1.5133439999999998,
+        "ACCEPT": true,
+        "n_mc": 20000
+      },
+      {
+        "arm": "M8",
+        "prior": "ratio_all_cells",
+        "sigma_job_prior_pct": 0.5688257172317233,
+        "sigma_boot_pct": 0.03711071229563127,
+        "gap_pct": 5.118078721051833,
+        "p_stop_at_stage1": 0.20725,
+        "p_pass_overall": 0.6865,
+        "coverage_sequential": 0.99055,
+        "expected_boots": 43.026,
+        "expected_gpu_hr": 1.7210400000000001,
+        "ACCEPT": false,
+        "n_mc": 20000
+      },
+      {
+        "arm": "M8",
+        "prior": "ratio_b_ge_15",
+        "sigma_job_prior_pct": 0.9542421310736675,
+        "sigma_boot_pct": 0.03711071229563127,
+        "gap_pct": 5.118078721051833,
+        "p_stop_at_stage1": 0.05545,
+        "p_pass_overall": 0.1499,
+        "coverage_sequential": 0.98795,
+        "expected_boots": 46.6692,
+        "expected_gpu_hr": 1.8667679999999998,
+        "ACCEPT": false,
+        "n_mc": 20000
+      },
+      {
+        "arm": "Ha8",
+        "prior": "leg_all_cells",
+        "sigma_job_prior_pct": 0.4112116243493124,
+        "sigma_boot_pct": 1.568417018312872,
+        "gap_pct": 9.196344025266857,
+        "p_stop_at_stage1": 0.2537,
+        "p_pass_overall": 0.7954,
+        "coverage_sequential": 0.98365,
+        "expected_boots": 41.9112,
+        "expected_gpu_hr": 1.6764480000000002,
+        "ACCEPT": false,
+        "n_mc": 20000
+      },
+      {
+        "arm": "Ha8",
+        "prior": "ratio_all_cells",
+        "sigma_job_prior_pct": 0.5688257172317233,
+        "sigma_boot_pct": 1.568417018312872,
+        "gap_pct": 9.196344025266857,
+        "p_stop_at_stage1": 0.21255,
+        "p_pass_overall": 0.7191,
+        "coverage_sequential": 0.9836,
+        "expected_boots": 42.8988,
+        "expected_gpu_hr": 1.715952,
+        "ACCEPT": false,
+        "n_mc": 20000
+      },
+      {
+        "arm": "Ha8",
+        "prior": "ratio_b_ge_15",
+        "sigma_job_prior_pct": 0.9542421310736675,
+        "sigma_boot_pct": 1.568417018312872,
+        "gap_pct": 9.196344025266857,
+        "p_stop_at_stage1": 0.1301,
+        "p_pass_overall": 0.46555,
+        "coverage_sequential": 0.98425,
+        "expected_boots": 44.8776,
+        "expected_gpu_hr": 1.7951040000000003,
+        "ACCEPT": false,
+        "n_mc": 20000
+      }
+    ]
+  },
+  "identities_not_counted": [
+    {
+      "id": "IDENT/F05_lt_1_everywhere",
+      "statement": "F_.05(d1,d2) < 1 for all df",
+      "why_identity": "F_.05(d1,d2) = 1/F_.95(d2,d1) and F_.95 > 1 always; no grid can violate it",
+      "sample_values": {
+        "(3,8)": 0.113055177034152,
+        "(3,44)": 0.1164371481778029,
+        "(11,24)": 0.38329249202130466,
+        "(11,132)": 0.4091440834913149,
+        "(23,48)": 0.52917598028341,
+        "(23,264)": 0.5608979883305785
+      }
+    },
+    {
+      "id": "IDENT/exact_f_ub_zero_iff_guarded",
+      "statement": "UB_exactF <= 0  <=>  MS_B <= F_.05*MS_W",
+      "why_identity": "_ub_exact_f returns sqrt(max(0, theta)*...), so the equivalence is the definition of max(0, .) -- it cannot detect a typo in _oc's guard line"
+    },
+    {
+      "id": "IDENT/satterthwaite_ub_zero_iff_msb_le_msw",
+      "statement": "UB_sat == 0  <=>  MS_B <= MS_W",
+      "why_identity": "sqrt(max(0,(MS_B-MS_W)/m)) == 0 iff MS_B <= MS_W; restating max(0,.) says nothing about whether _oc still guards the Satterthwaite branch there"
+    }
+  ],
   "selftest": {
     "checks": [
       {
@@ -3193,23 +3310,57 @@
         "ok": true
       },
       {
-        "id": "S3/no_degenerate_draw_escapes_guard",
-        "target": "0 draws with UB==0 outside the guard",
+        "id": "S3/guard_rate_matches_F_tail/k10m3",
+        "target": "P(guard fires | sigma_job=0) == 0.05 +- 4se",
         "got": {
-          "escapes": 0
+          "observed": 0.0511,
+          "expected": 0.05,
+          "se": 0.00109
         },
         "ok": true
       },
       {
-        "id": "S4/satterthwaite_guard_unmoved",
-        "target": "UB_sat == 0 iff MS_B <= MS_W",
+        "id": "S3/guard_rate_matches_F_tail/k16m3",
+        "target": "P(guard fires | sigma_job=0) == 0.05 +- 4se",
         "got": {
-          "consistent": true
+          "observed": 0.0534,
+          "expected": 0.05,
+          "se": 0.00109
+        },
+        "ok": true
+      },
+      {
+        "id": "S3/guard_rate_matches_F_tail/k12m9",
+        "target": "P(guard fires | sigma_job=0) == 0.05 +- 4se",
+        "got": {
+          "observed": 0.0513,
+          "expected": 0.05,
+          "se": 0.00109
+        },
+        "ok": true
+      },
+      {
+        "id": "S4/satterthwaite_guard_unmoved/k10m3",
+        "target": "P(MS_B<=MS_W | sigma_job=0) == F_cdf(1) +- 4se",
+        "got": {
+          "observed": 0.5297,
+          "expected": 0.5289,
+          "se": 0.0025
+        },
+        "ok": true
+      },
+      {
+        "id": "S4/satterthwaite_guard_unmoved/k16m3",
+        "target": "P(MS_B<=MS_W | sigma_job=0) == F_cdf(1) +- 4se",
+        "got": {
+          "observed": 0.5183,
+          "expected": 0.5214,
+          "se": 0.0025
         },
         "ok": true
       }
     ],
-    "n_checks": 4,
+    "n_checks": 7,
     "all_pass": true
   },
   "REV3_CONTROLS": "PASS",
