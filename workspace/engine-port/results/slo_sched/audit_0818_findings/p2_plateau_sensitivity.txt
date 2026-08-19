@@ -1,0 +1,59 @@
+### g2_0_full: plateau membership vs threshold, three aggregations
+
+ phase A
+  mean(all 4 reps)   : d16= 95.31  d24= 80.47  d34= 63.28  d44= 96.88  d54= 85.16
+      thr= 3 pp -> width 2/5  ['d16', 'd44']
+      thr= 5 pp -> width 2/5  ['d16', 'd44']
+      thr= 7 pp -> width 2/5  ['d16', 'd44']
+      thr=10 pp -> width 2/5  ['d16', 'd44']
+  median(all 4 reps) : d16= 96.88  d24= 93.75  d34= 62.50  d44= 96.88  d54= 95.31
+      thr= 3 pp -> width 3/5  ['d16', 'd44', 'd54']
+      thr= 5 pp -> width 4/5  ['d16', 'd24', 'd44', 'd54']
+      thr= 7 pp -> width 4/5  ['d16', 'd24', 'd44', 'd54']
+      thr=10 pp -> width 4/5  ['d16', 'd24', 'd44', 'd54']
+  mean(non-anom reps): d16= 95.31  d24= 94.79  d34= 93.75  d44= 96.88  d54= 96.88
+      thr= 3 pp -> width 4/5  ['d16', 'd24', 'd44', 'd54']
+      thr= 5 pp -> width 5/5  ['d16', 'd24', 'd34', 'd44', 'd54']
+      thr= 7 pp -> width 5/5  ['d16', 'd24', 'd34', 'd44', 'd54']
+      thr=10 pp -> width 5/5  ['d16', 'd24', 'd34', 'd44', 'd54']
+
+ phase B
+  mean(all 4 reps)   : d16= 40.62  d24= 34.38  d34= 42.19  d44=100.00  d54=100.00
+      thr= 3 pp -> width 2/5  ['d44', 'd54']
+      thr= 5 pp -> width 2/5  ['d44', 'd54']
+      thr= 7 pp -> width 2/5  ['d44', 'd54']
+      thr=10 pp -> width 2/5  ['d44', 'd54']
+  median(all 4 reps) : d16= 40.62  d24= 34.38  d34= 42.19  d44=100.00  d54=100.00
+      thr= 3 pp -> width 2/5  ['d44', 'd54']
+      thr= 5 pp -> width 2/5  ['d44', 'd54']
+      thr= 7 pp -> width 2/5  ['d44', 'd54']
+      thr=10 pp -> width 2/5  ['d44', 'd54']
+  mean(non-anom reps): d16= 40.62  d24= 34.38  d34= 42.19  d44=100.00  d54=100.00
+      thr= 3 pp -> width 2/5  ['d44', 'd54']
+      thr= 5 pp -> width 2/5  ['d44', 'd54']
+      thr= 7 pp -> width 2/5  ['d44', 'd54']
+      thr=10 pp -> width 2/5  ['d44', 'd54']
+
+### rep-level uncertainty: bootstrap over reps, P(arm is in the 5pp plateau)
+  phase A: d16=0.923  d24=0.303  d34=0.053  d44=1.000  d54=0.314
+  phase B: d16=0.000  d24=0.000  d34=0.000  d44=1.000  d54=1.000
+
+### which arms are pairwise SEPARABLE at n=4 (t(3), unpaired Welch-ish)?
+  phase A: pairs whose 95% CI on the difference EXCLUDES 0
+     NONE
+  phase B: pairs whose 95% CI on the difference EXCLUDES 0
+     d16-d24 (both SD=0, diff=-6.25); d16-d44 (both SD=0, diff=+59.38); d16-d54 (both SD=0, diff=+59.38); d24-d44 (both SD=0, diff=+65.62); d24-d54 (both SD=0, diff=+65.62); d34-d44 (+26.2,+89.4); d34-d54 (+26.2,+89.4)
+
+### decliff plateau, same treatment (n_rep=15 pooled over rateA)
+  phase A mean: d16= 92.08  d44= 93.96  d54= 90.21
+  phase A mean(non-anom): d16= 95.98  d44= 97.14  d54= 96.56
+     thr= 3 -> all-reps 2/3 ['d16', 'd44'] | non-anom 3/3 ['d16', 'd44', 'd54']
+     thr= 5 -> all-reps 3/3 ['d16', 'd44', 'd54'] | non-anom 3/3 ['d16', 'd44', 'd54']
+     thr= 7 -> all-reps 3/3 ['d16', 'd44', 'd54'] | non-anom 3/3 ['d16', 'd44', 'd54']
+     thr=10 -> all-reps 3/3 ['d16', 'd44', 'd54'] | non-anom 3/3 ['d16', 'd44', 'd54']
+  phase B mean: d16= 40.62  d44= 97.92  d54=100.00
+  phase B mean(non-anom): d16= 40.62  d44=100.00  d54=100.00
+     thr= 3 -> all-reps 2/3 ['d44', 'd54'] | non-anom 2/3 ['d44', 'd54']
+     thr= 5 -> all-reps 2/3 ['d44', 'd54'] | non-anom 2/3 ['d44', 'd54']
+     thr= 7 -> all-reps 2/3 ['d44', 'd54'] | non-anom 2/3 ['d44', 'd54']
+     thr=10 -> all-reps 2/3 ['d44', 'd54'] | non-anom 2/3 ['d44', 'd54']

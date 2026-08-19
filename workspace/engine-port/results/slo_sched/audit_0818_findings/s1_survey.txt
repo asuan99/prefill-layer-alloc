@@ -1,0 +1,73 @@
+### FULL ENUMERATION (all bench jsonl in each results/<dir>)
+  campaign               files    n_req     p50   fail%   band%
+  a_substrate                2     1200  124.16   94.42    0.00
+  cudagraph_probe            3     3600   30.25   22.31    4.39
+  e1_traceforce             24     2160   12.71    1.16    0.00
+  g2_0_decliff              90     2880   33.06   12.19    0.90
+  g2_0_full                 40     1280   34.20   20.86    8.12
+  g2_0_hard                 72     2304   32.53    2.17    0.26
+  g2_0_pre                  14      448   36.84   31.03    4.02
+  g2_0_raconf               48     1536   32.48    1.82    0.20
+  g2_0_rasweep             238     7616   32.70   15.89    9.97
+  p1_gates                 503   125260   24.89   25.72    4.53
+  p1_opint                  24    11760   24.98   27.36    5.77
+  pf_boundary                2     1200  166.61   95.08    0.00
+  pf_boundary_fix1           2     1200  165.53   95.75    0.00
+  pf_boundary_fix2           2     1200  163.74   91.17    4.33
+  r0a                        6     3600  114.05   55.19   13.72
+  r0b                        8     4800  197.78   72.65    6.44
+  r0c                       15     9000   56.71   44.53   22.59
+  r0d_coord_la               4     2400  164.12   94.54    0.04
+  r1_dual_worker            12      576  103.30   60.76   18.92
+  s2_sticky                 20     4000   14.67    0.75    0.05
+  s8_frontier              629    74832   35.38   37.07    6.21
+  slo_sched                441   146568   56.85   22.88   41.89
+  sticky_smoke               2      200  104.77   84.50    1.00
+  v4_multiwin                2     1200  136.40   94.25    0.00
+
+### slo_sched split by sub-campaign prefix (it is NOT G16-only)
+  prefix                 files    n_req     p50   fail%   band%
+  iact                      77    30800   58.05   13.24   70.95
+  g16                       68    34080   33.40   12.59   36.99
+  lffLong                   46      744   57.01   42.47   14.52
+  lffShort                  46     4200   61.48   51.55   15.31
+  he2B                      41     6552   57.09   35.06   20.57
+  he2A                      41     6864   37.76   30.00    5.68
+  sgptvLo                   33    19800   12.32    0.44    7.96
+  sgptvHi                   33    19800   59.71   45.83   67.53
+  jl                        22    13200   47.38   27.14   22.42
+  sgpt                      22     8800   60.75   61.82   71.12
+  mixA                       6      864   42.81    0.69   19.68
+  mixB                       6      864   48.18   16.20   13.19
+
+### G16 4-block only, by phase
+  g16 HI: files=28 n=16800 p50=58.82 fail%=24.79 band%=67.47
+  g16 LO: files=28 n=16800 p50=13.94 fail%=0.56 band%=7.19
+  g16 LO+HI: files=56 n=33600 p50=34.19 fail%=12.67 band%=37.33
+
+### RESAMPLING robustness: 12 random files/dir, 2000 seeds
+  campaign                band%p05      p50      p95     full  P(band>25%)
+  a_substrate                 0.00     0.00     0.00     0.00        0.000
+  cudagraph_probe             4.39     4.39     4.39     4.39        0.000
+  e1_traceforce               0.00     0.00     0.00     0.00        0.000
+  g2_0_decliff                0.00     0.52     3.39     0.90        0.000
+  g2_0_full                   0.26     7.03    19.01     8.12        0.003
+  g2_0_hard                   0.00     0.00     1.04     0.26        0.000
+  g2_0_pre                    0.78     4.69     4.69     4.02        0.000
+  g2_0_raconf                 0.00     0.26     0.52     0.20        0.000
+  g2_0_rasweep                0.26     8.33    21.61     9.97        0.038
+  p1_gates                    1.65     4.29     7.78     4.53        0.000
+  p1_opint                    3.65     5.69     7.94     5.77        0.000
+  pf_boundary                 0.00     0.00     0.00     0.00        0.000
+  pf_boundary_fix1            0.00     0.00     0.00     0.00        0.000
+  pf_boundary_fix2            4.33     4.33     4.33     4.33        0.000
+  r0a                        13.72    13.72    13.72    13.72        0.000
+  r0b                         6.44     6.44     6.44     6.44        0.000
+  r0c                        21.22    22.60    24.14    22.59        0.005
+  r0d_coord_la                0.04     0.04     0.04     0.04        0.000
+  r1_dual_worker             18.92    18.92    18.92    18.92        0.000
+  s2_sticky                   0.00     0.04     0.08     0.05        0.000
+  s8_frontier                 0.69     4.02    18.13     6.21        0.008
+  slo_sched                  22.25    42.38    61.85    41.89        0.919
+  sticky_smoke                1.00     1.00     1.00     1.00        0.000
+  v4_multiwin                 0.00     0.00     0.00     0.00        0.000

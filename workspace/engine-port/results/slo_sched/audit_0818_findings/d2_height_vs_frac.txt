@@ -1,0 +1,43 @@
+arm     pass%  frac>45 (per-req mean)  stall_h p50  P(req frac>5%)  P(p95 in stall band)
+d16     16.75                  0.2216       83.468           90.08                 89.50
+d24     41.67                  0.2306       59.789           92.42                 91.08
+d34     98.83                  0.1547       58.447           86.38                 84.83
+d44     97.88                  0.1542       58.683           88.00                 85.12
+d54     91.54                  0.1444       58.873           86.17                 83.17
+d64     95.71                  0.1258       58.520           81.42                 79.46
+d74     84.12                  0.0912       59.220           65.17                 61.88
+
+  r(pass%, stall FRACTION) = -0.7970
+  r(pass%, stall HEIGHT)   = -0.8182
+  plateau only: r(pass,frac)=+0.8772  r(pass,height)=-0.9479
+
+  COUNTERFACTUAL: hold the height at each arm's value and give every arm
+  d34's stall fraction -- does the pass rate move?  (p95 is in the stall
+  band whenever per-request frac>5%, which holds for:
+    d16: 90.1% of requests
+    d24: 92.4% of requests
+    d34: 86.4% of requests
+    d44: 88.0% of requests
+    d54: 86.2% of requests
+    d64: 81.4% of requests
+    d74: 65.2% of requests
+
+### D-1 sec3.3: shadow price of tightening theta 60 -> 58.5 (joint, HI pooled)
+  (per-arm, not pooled)
+    d16 theta=60.0: joint=  7.58%    d16 theta=58.5: joint=  4.88%
+    d24 theta=60.0: joint= 22.25%    d24 theta=58.5: joint= 14.75%
+    d34 theta=60.0: joint= 67.46%    d34 theta=58.5: joint= 30.54%
+    d44 theta=60.0: joint= 68.58%    d44 theta=58.5: joint= 27.58%
+    d54 theta=60.0: joint= 64.25%    d54 theta=58.5: joint= 27.38%
+    d64 theta=60.0: joint= 67.29%    d64 theta=58.5: joint= 36.46%
+    d74 theta=60.0: joint= 56.67%    d74 theta=58.5: joint= 34.04%
+
+### D-1 sec3.4: d74 ITL pass per block
+  d34 blk1: itl_pass= 97.00%  p50= 59.296
+  d34 blk2: itl_pass= 99.50%  p50= 58.658
+  d34 blk3: itl_pass= 99.50%  p50= 58.229
+  d34 blk4: itl_pass= 99.33%  p50= 58.317
+  d74 blk1: itl_pass= 42.33%  p50= 61.224
+  d74 blk2: itl_pass= 96.50%  p50= 58.796
+  d74 blk3: itl_pass= 98.83%  p50= 58.203
+  d74 blk4: itl_pass= 98.83%  p50= 58.445

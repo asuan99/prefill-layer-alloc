@@ -1,0 +1,13 @@
+### decliff: out-ONLY contrast (both legs at rate 4, L=2048, same job/server)
+  out=32  @rate4: d16= 77.08+-34.28(n=3)  d44= 83.33+-18.04(n=3)  d54= 78.12+-24.41(n=3)   plateau(5pp)=['d44']  width 1/3
+  out=512 @rate4: d16= 40.62+-0.00(n=3)  d44= 95.83+-7.22(n=3)  d54=100.00+-0.00(n=3)   plateau(5pp)=['d44', 'd54']  width 2/3
+
+### the same contrast in g2_0_full is CONFOUNDED (out 32->512 AND rate 5->4)
+    g2_0_full A: random_output_len=32,  request_rate=5.0
+    g2_0_full B: random_output_len=512, request_rate=4.0
+
+### decliff phase A by rate (the campaign's own de-cliff selection kept ONLY rate 2)
+  rateA=2.0: d16= 96.88(n=6,anom=0)  d44= 97.40(n=6,anom=0)  d54= 97.40(n=6,anom=0)  plateau=['d16', 'd44', 'd54']
+  rateA=3.0: d16= 93.75(n=3,anom=0)  d44= 97.92(n=3,anom=1)  d54= 93.75(n=3,anom=2)  plateau=['d16', 'd44', 'd54']
+  rateA=3.5: d16= 95.83(n=3,anom=0)  d44= 93.75(n=3,anom=1)  d54= 84.38(n=3,anom=2)  plateau=['d16', 'd44']
+  rateA=4.0: d16= 77.08(n=3,anom=1)  d44= 83.33(n=3,anom=1)  d54= 78.12(n=3,anom=1)  plateau=['d44']

@@ -1,0 +1,44 @@
+### g2_0_hard phase A (in2048/o32 @ rA5) -- INDEPENDENT REPLICATION
+file                                            joint%   ttft%  ttft_p50    dur
+g20hA_d34_rep1_rA5B4_OB1024_863628.jsonl         96.88  100.00     900.6   8.00
+g20hA_d34_rep2_rA5B4_OB1024_863663.jsonl         87.50   90.62    1045.0   9.69
+g20hA_d34_rep3_rA5B4_OB1024_863648.jsonl         96.88  100.00     616.6   8.00
+g20hA_d34_rep4_rA5B4_OB1024_863638.jsonl         96.88  100.00     553.5   8.00
+g20hA_d44_rep1_rA5B4_OB1024_863655.jsonl          0.00    6.25    3761.6  10.68
+g20hA_d44_rep2_rA5B4_OB1024_863669.jsonl         96.88  100.00    1195.0   8.42
+g20hA_d44_rep3_rA5B4_OB1024_863657.jsonl         96.88  100.00    1256.7   8.43
+g20hA_d44_rep4_rA5B4_OB1024_863667.jsonl         84.38   87.50    1427.4  10.56
+g20hA_d44_rep5_rA5B4_OB512_863630.jsonl          96.88  100.00    1102.3   8.28
+g20hA_d44_rep6_rA5B4_OB512_863645.jsonl          96.88  100.00    1226.3   8.40
+g20hA_d54_rep1_rA5B4_OB1024_863646.jsonl         93.75   96.88    1899.3   9.35
+g20hA_d54_rep2_rA5B4_OB1024_863636.jsonl         93.75   96.88    1882.7   9.36
+g20hA_d54_rep3_rA5B4_OB1024_863625.jsonl         93.75   96.88    2095.4   9.47
+g20hA_d54_rep4_rA5B4_OB1024_863661.jsonl         93.75   96.88    1932.4   9.38
+g20hA_d54_rep5_rA5B4_OB512_863626.jsonl          93.75   96.88    1920.4   9.37
+g20hA_d54_rep6_rA5B4_OB512_863670.jsonl          93.75   96.88    1924.4   9.37
+g20hA_d64_rep1_rA5B4_OB1024_863658.jsonl         31.25   34.38    3457.1  13.37
+g20hA_d64_rep2_rA5B4_OB1024_863650.jsonl          3.12    6.25    7746.4  15.63
+g20hA_d64_rep3_rA5B4_OB1024_863623.jsonl         31.25   34.38    3255.5  12.91
+g20hA_d64_rep4_rA5B4_OB1024_863654.jsonl          0.00    6.25    5196.9  12.98
+g20hA_d74_rep1_rA5B4_OB1024_863656.jsonl          6.25    6.25    7170.5  15.96
+g20hA_d74_rep2_rA5B4_OB1024_863639.jsonl          6.25    6.25    6652.2  16.63
+g20hA_d74_rep3_rA5B4_OB1024_863633.jsonl          6.25    6.25    7121.4  15.91
+g20hA_d74_rep4_rA5B4_OB1024_863641.jsonl          6.25    6.25    7002.3  15.80
+
+  d34: n=4 mean= 94.53 sd=  4.69 vals=[np.float64(96.9), np.float64(87.5), np.float64(96.9), np.float64(96.9)]
+  d44: n=6 mean= 78.65 sd= 38.85 vals=[np.float64(0.0), np.float64(96.9), np.float64(96.9), np.float64(84.4), np.float64(96.9), np.float64(96.9)]
+  d54: n=6 mean= 93.75 sd=  0.00 vals=[np.float64(93.8), np.float64(93.8), np.float64(93.8), np.float64(93.8), np.float64(93.8), np.float64(93.8)]
+  d64: n=4 mean= 16.41 sd= 17.19 vals=[np.float64(31.2), np.float64(3.1), np.float64(31.2), np.float64(0.0)]
+  d74: n=4 mean=  6.25 sd=  0.00 vals=[np.float64(6.2), np.float64(6.2), np.float64(6.2), np.float64(6.2)]
+
+### d34 vs d44 phase A rA5, g2_0_full ALONE vs g2_0_hard ALONE vs POOLED
+  g2_0_full : d34= 63.28(n=4) d44= 96.88(n=4)  d44-d34=+33.59  CI=[-22.56,+89.75]  includes 0
+              d34 vals=[np.float64(34.4), np.float64(90.6), np.float64(96.9), np.float64(31.2)]  d44 vals=[np.float64(96.9), np.float64(96.9), np.float64(96.9), np.float64(96.9)]
+  g2_0_hard : d34= 94.53(n=4) d44= 78.65(n=6)  d44-d34=-15.89  CI=[-57.11,+25.34]  includes 0
+              d34 vals=[np.float64(96.9), np.float64(87.5), np.float64(96.9), np.float64(96.9)]  d44 vals=[np.float64(0.0), np.float64(96.9), np.float64(96.9), np.float64(84.4), np.float64(96.9), np.float64(96.9)]
+  pooled    : d34= 78.91(n=8) d44= 85.94(n=10)  d44-d34= +7.03  CI=[-20.38,+34.44]  includes 0
+              d34 vals=[np.float64(34.4), np.float64(90.6), np.float64(96.9), np.float64(31.2), np.float64(96.9), np.float64(87.5), np.float64(96.9), np.float64(96.9)]  d44 vals=[np.float64(96.9), np.float64(96.9), np.float64(96.9), np.float64(96.9), np.float64(0.0), np.float64(96.9), np.float64(96.9), np.float64(84.4), np.float64(96.9), np.float64(96.9)]
+
+### the SIGN FLIP the 2026-07-25 hardened verdict recorded (d44 vs d54, phase A rA5)
+  g2_0_full: d44=96.88 d54=85.16 -> winner=d44
+  g2_0_hard: d44=78.65 d54=93.75 -> winner=d54

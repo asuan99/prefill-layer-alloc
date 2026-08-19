@@ -1,0 +1,32 @@
+### Phase A, g2_0_full, n_req=32/cell, n_rep=4, canonical (3000ms, 60ms)
+  d16: mean= 95.31 sd=  5.98 t3-CI=[  85.79, 104.83] vals=[np.float64(100.0), np.float64(87.5), np.float64(93.75), np.float64(100.0)]
+  d24: mean= 80.47 sd= 28.68 t3-CI=[  34.83, 126.10] vals=[np.float64(93.75), np.float64(96.875), np.float64(93.75), np.float64(37.5)]
+  d34: mean= 63.28 sd= 35.30 t3-CI=[   7.12, 119.44] vals=[np.float64(34.375), np.float64(90.625), np.float64(96.875), np.float64(31.25)]
+  d44: mean= 96.88 sd=  0.00 t3-CI=[  96.88,  96.88] vals=[np.float64(96.875), np.float64(96.875), np.float64(96.875), np.float64(96.875)]
+  d54: mean= 85.16 sd= 21.40 t3-CI=[  51.10, 119.21] vals=[np.float64(53.125), np.float64(96.875), np.float64(93.75), np.float64(96.875)]
+
+### d34 vs d44 (the 33.6 pp valley)
+  paired-by-rep-INDEX: mean_diff=33.59 sd=35.30 t(3)=1.903 CI=[-22.56,89.75]  diffs=[np.float64(62.5), np.float64(6.25), np.float64(0.0), np.float64(65.625)]
+  Welch: t=1.903 df=3.00 CI=[-22.56,89.75]
+  exact 2-sided permutation p = 10/70 = 0.1429
+  sign test on rep-index pairs: 3 positive, 1 ties of 4 -> p >= 0.25 (min attainable with n=4)
+
+### run-level anomaly incidence (defined by TTFT pass < 100%, an arm-independent symptom)
+  d16: ttft_pass% = [100.0, 100.0, 100.0, 100.0]  ttft_p50 = [304, 312, 337, 336]  dur = [7.91, 7.9, 7.9, 7.91]
+  d24: ttft_pass% = [100.0, 100.0, 100.0, 53.1]  ttft_p50 = [395, 550, 403, 1328]  dur = [7.92, 7.91, 7.92, 11.19]
+  d34: ttft_pass% = [40.6, 100.0, 100.0, 40.6]  ttft_p50 = [3063, 592, 589, 3385]  dur = [9.57, 8.0, 8.0, 10.38]
+  d44: ttft_pass% = [100.0, 100.0, 100.0, 100.0]  ttft_p50 = [1106, 1094, 1270, 1096]  dur = [8.29, 8.27, 8.43, 8.29]
+  d54: ttft_pass% = [56.2, 100.0, 96.9, 100.0]  ttft_p50 = [2895, 1837, 1893, 1993]  dur = [12.31, 9.32, 9.36, 9.45]
+  total anomalous runs = 5 / 20
+  P(one prespecified arm draws >=2 of the 4 anomalies) = 0.1620
+  P(at least one of 5 arms draws >=2)  ~ 0.5868 (indep. approx.)
+
+### the two non-anomalous d34 reps vs d44
+  d34 non-anomalous reps: [90.625, 96.875]  vs d44 all reps: [96.875, 96.875, 96.875, 96.875]
+
+### mechanism check: is the phase-A landscape monotone in the sub-metrics?
+  d16: (non-anomalous reps only) ttft_p50=   322.5 ms  itl_p50= 44.08 ms  n=4
+  d24: (non-anomalous reps only) ttft_p50=   449.4 ms  itl_p50= 33.81 ms  n=3
+  d34: (non-anomalous reps only) ttft_p50=   590.3 ms  itl_p50= 22.81 ms  n=2
+  d44: (non-anomalous reps only) ttft_p50=  1141.9 ms  itl_p50= 17.10 ms  n=4
+  d54: (non-anomalous reps only) ttft_p50=  1915.1 ms  itl_p50= 18.20 ms  n=2
