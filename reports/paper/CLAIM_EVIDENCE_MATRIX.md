@@ -1,6 +1,19 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-17(doc-steward — **G16 캠페인 완료 반영(4블록,
+최종 갱신: 2026-08-19(doc-steward — gate #13 rev2 규칙층 NO-GO →
+rev3 재감사 GO-with-caveats(등록 11.52 GPU-hr, 미제출) + gate #16
+이차 표적(rate 축) 규칙층 발견 반영. **이 세션의 반영 사항은 전부
+규칙층/설계층 판정이고 어느 것도 데이터 캠페인을 실행하지 않았다
+— Claim A/D/G 등급 변경 0건 · 새 인용 셀 0건 · 새 성능 판정 0건.**
+Claim A 각주의 "job/node 축·batch vs job 분해 전에는 '3.06 vs 2.91'
+판정 금지"는 **불변**(gate #13 rev3도 그 분해를 완주하지 못함 —
+batch⊗regime 앨리어스 + 노드·날짜 축 미배선, 아래 각주 참조). Claim
+D/G의 gate #16 caveat도 **불변**(rate 축 원문 문턱 판본은 여전히
+무판정, rate↓가 목표 (i) 과부하 이탈엔 맞고 목표 (ii) `Δ`/`D_itl`
+식별엔 반대 방향임을 이번 세션이 추가로 확인). 상세
+`../../PROJECT_STATUS.md` "다음 실험 gate" #13·#16·#17(갱신)·#11
+레지스트리, `../CONSENSUS.md` rev39·§3 항목70.
+이전: 2026-08-17(doc-steward — **G16 캠페인 완료 반영(4블록,
 jobs 884336/884410/884411/884412), claims-auditor 적대 감사
 `G16_RESULTS_2026-08-17.md` rev2. 새 성능 판정 0건 · Claim D 등급
 무변경(미검증).** Claim D 각주에 "R2 결정량②(§1-32)의 재정식화판이
