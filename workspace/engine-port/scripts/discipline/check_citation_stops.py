@@ -24,6 +24,12 @@ import re, sys, os, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 REG = os.path.join(HERE, "citation_stops.tsv")
 OK_MARK = "[CS-OK]"          # 이 마커가 줄에 있으면 면제(의식적 인정 강제)
+# 경로 면제 — 이 디렉터리들은 금지 수치를 **다루는 것이 존재 이유**다.
+#   audit_*/  : 감사 재현 코드. 금지 수치를 계산·반증하는 것이 임무다.
+#   discipline/: 이 도구 자신과 레지스트리.
+# ⚠️이 목록을 넓히면 검사가 무력해진다. 1차 설계가 전체 스캔으로 30건 오탐을 내
+#   못 쓰게 된 전례가 있으므로, 최소로 유지하고 넓힐 땐 근거를 남긴다.
+EXEMPT_PATHS = ("/audit_", "scripts/discipline/")
 
 def load():
     rules = []
@@ -68,6 +74,8 @@ def main():
     for path, i, line in src:
         n += 1
         if OK_MARK in line:
+            continue
+        if path and any(e in path.replace(os.sep, "/") for e in EXEMPT_PATHS):
             continue
         for rx, s, why in rules:
             if rx.search(line):
