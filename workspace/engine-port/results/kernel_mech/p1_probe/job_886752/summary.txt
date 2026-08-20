@@ -1,0 +1,10 @@
+=== P1 SUMMARY (non-exclusive twin of job 886718) ===
+greenctx exit=1  control exit=1
+P1_VERDICT=PERMISSION_BLOCKED (non-exclusive allocation)
+  -- GPU performance counter permission signature observed in the
+     greenctx run of this non-exclusive job. This is an allocation
+     confound, NOT a CUPTI x Green-Context observation.
+  ★ THIS LEG SAYS NOTHING ABOUT P1. Wait for job 886718
+    (exclusive + --constrain=hwperf) for the actual answer --
+    do not cite this leg's outcome as UNAVAILABLE or AVAILABLE.
+=== done ===

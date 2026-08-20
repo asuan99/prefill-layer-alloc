@@ -1,0 +1,5 @@
+=== P1 SUMMARY ===
+greenctx exit=9  control exit=0
+P1_VERDICT=UNAVAILABLE (CUPTI x GREEN-CONTEXT)
+  -- documented failure signature observed in greenctx run.
+=== done ===
