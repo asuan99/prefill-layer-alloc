@@ -1,0 +1,54 @@
+==========================================
+SLURM_JOB_ID = 886752
+SLURM_NODELIST = gpu40
+==========================================
+=== P1 probe [non-exclusive twin] (kernel_mech Stage 0, item 1) | job=886752 | node=gpu40 ===
+GPU        : NVIDIA A100-SXM4-80GB, 580.105.08
+ncu path   : /apps/cuda/13.0.2/bin/ncu
+ncu version: Version 2025.3.1.0 (build 36398880) (public-release)
+torch cuda : 13.0
+NCU_PYTHON : /scratch/ehmoon/whlee/sglang_engine_venv/bin/python
+target     : /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/kernel_mech/p1_probe/p1_greenctx_target.py
+
+############################################################
+# greenctx
+############################################################
+exit code: 1
+--- stdout tail ---
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 3314409 (/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/bin/python3.14)
+==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM
+[p1] mode=greenctx backend=green_ctx available=True total_sm=108 requested_sm=16 realized_sm=16
+[p1] kernel=bf16_matmul dim=4096 n_warmup=10 n_measure=3
+[p1] DONE
+==PROF== Disconnected from process 3314409
+--- stderr tail ---
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+
+############################################################
+# control
+############################################################
+exit code: 1
+--- stdout tail ---
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 3315120 (/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/bin/python3.14)
+==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM
+[p1] mode=full backend=none(control) sm_count=full_gpu
+[p1] kernel=bf16_matmul dim=4096 n_warmup=10 n_measure=3
+[p1] DONE
+==PROF== Disconnected from process 3315120
+--- stderr tail ---
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+
+=== P1 SUMMARY (non-exclusive twin of job 886718) ===
+greenctx exit=1  control exit=1
+P1_VERDICT=PERMISSION_BLOCKED (non-exclusive allocation)
+  -- GPU performance counter permission signature observed in the
+     greenctx run of this non-exclusive job. This is an allocation
+     confound, NOT a CUPTI x Green-Context observation.
+  ★ THIS LEG SAYS NOTHING ABOUT P1. Wait for job 886718
+    (exclusive + --constrain=hwperf) for the actual answer --
+    do not cite this leg's outcome as UNAVAILABLE or AVAILABLE.
+=== done ===

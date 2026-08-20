@@ -1,0 +1,7 @@
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 3314409 (/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/bin/python3.14)
+==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM
+[p1] mode=greenctx backend=green_ctx available=True total_sm=108 requested_sm=16 realized_sm=16
+[p1] kernel=bf16_matmul dim=4096 n_warmup=10 n_measure=3
+[p1] DONE
+==PROF== Disconnected from process 3314409
