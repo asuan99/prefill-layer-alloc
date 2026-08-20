@@ -137,7 +137,8 @@ def _seq_oc(k1: int, k2: int, m: int, sigma_boot: float, sigma_job: float,
             gap: float, n: int, seed: int,
             bound: str = "exact_F_pivot",
             mutate_stage1_guard: bool = False,
-            mutate_stop_on_any_pass: bool = False) -> dict:
+            mutate_stop_on_any_pass: bool = False,
+            mutate_pooled_sat_mult: float = 1.0) -> dict:
     """Monte-Carlo operating characteristic of the 2-stage sequential design.
 
     `bound` is the registered bound-selection rule's OUTPUT, not a free knob --
@@ -165,7 +166,7 @@ def _seq_oc(k1: int, k2: int, m: int, sigma_boot: float, sigma_job: float,
         df_w2 = k1 * (m - 1) + k2 * (m - 1)
         fq2 = G._f_quantile(0.05, df_b2, df_w2)
         cw2 = G._chi2_lower(0.05, df_w2)
-        mult2 = _sat_mult(df_b2, df_w2, m, sigma_boot, G.REGISTERED_SAT_PRIOR)
+        mult2 = _sat_mult(df_b2, df_w2, m, sigma_boot, G.REGISTERED_SAT_PRIOR) * mutate_pooled_sat_mult
 
     stop1 = passes = covers = undet = 0
     boots_total = 0.0
@@ -462,6 +463,53 @@ def selfcheck() -> dict:
         "audited_oc": [ref5["p_pass_guarded"], ref5["coverage"]],
         "abs_diff": [dp5, dc5], "tolerance_5se": tol,
         "ok": dp5 <= tol and dc5 <= tol,
+    })
+
+    # SC6 -- the POOLED-stage Satterthwaite multiplier had ZERO controls, and a
+    # x1.7 corruption of it flips the adopted M8 plan from ACCEPT to REJECT while
+    # SC1-SC5 all pass (claims-auditor mutation M5, 2026-08-20).  That is rev3's
+    # own PC6 finding recurring verbatim, in the very slot SC5's docstring
+    # promised to close.
+    #
+    # It must be evaluated at the CONSTRAINING CORNER (worst prior), not at the
+    # design prior: at the design prior P(stop at stage 1) = 0.993, so the pooled
+    # stage is essentially never exercised and the check is inert -- the first
+    # draft of SC6 failed exactly that way, which is the check doing its job.
+    #
+    # Two-sided, because the two corruptions fail differently: inflating the
+    # multiplier widens the bound and costs POWER, deflating it narrows the bound
+    # and costs COVERAGE.  A one-sided check would miss half the failure space.
+    # As in SC1/SC3 the SIGN of each response is structural; the magnitudes, and
+    # the fact that both handles reach the registered plan at all, are not.
+    k6, kk6, m6 = 8, 6, 3                       # the adopted M8 sequential plan
+    sb6 = sbb["arms"]["M8"]["BAND_PCT"][G.REGISTERED_SIGMA_BOOT_BAND_POINT]
+    gap6, sj6 = gaps["M8"]["pct_gap"], max(priors)
+    kw = dict(bound="satterthwaite_registered")
+    base6 = _seq_oc(k6, kk6, m6, sb6, sj6, gap6, G.MC_N, SEED_CONFIRM, **kw)
+    inf6 = _seq_oc(k6, kk6, m6, sb6, sj6, gap6, G.MC_N, SEED_CONFIRM,
+                   mutate_pooled_sat_mult=1.7, **kw)
+    def6 = _seq_oc(k6, kk6, m6, sb6, sj6, gap6, G.MC_N, SEED_CONFIRM,
+                   mutate_pooled_sat_mult=0.6, **kw)
+    d_pow = base6["p_pass_overall"] - inf6["p_pass_overall"]
+    se6 = max(base6["mc_se_p_pass"], 1e-9)
+    checks.append({
+        "id": "SC6", "kind": "mutation (two-sided)",
+        "what": ("pooled-stage Satterthwaite multiplier, at the CONSTRAINING corner: "
+                 "inflation must cost power, deflation must cost coverage, and the "
+                 "un-mutated plan must satisfy both registered floors"),
+        "sign_is_structural": ("a wider bound passes less often and a narrower one "
+                               "covers less often; the magnitudes are the content"),
+        "cell": f"M8 k1={k6} k2={kk6} m={m6} sigma_job={sj6:.4f} (worst prior)",
+        "p_stop_at_stage1": base6["p_stop_at_stage1"],
+        "base": [base6["p_pass_overall"], base6["coverage_sequential"]],
+        "inflated_x1.7": [inf6["p_pass_overall"], inf6["coverage_sequential"]],
+        "deflated_x0.6": [def6["p_pass_overall"], def6["coverage_sequential"]],
+        "delta_power": d_pow, "threshold_power": 5 * se6,
+        "floors": [G.ACCEPT_P_PASS, G.ACCEPT_COVERAGE],
+        "ok": (d_pow > 5 * se6                                        # inflation is live
+               and def6["coverage_sequential"] < G.ACCEPT_COVERAGE    # deflation is live
+               and base6["p_pass_overall"] >= G.ACCEPT_P_PASS         # plan itself holds
+               and base6["coverage_sequential"] >= G.ACCEPT_COVERAGE),
     })
 
     return {"checks": checks, "all_pass": all(c["ok"] for c in checks),
