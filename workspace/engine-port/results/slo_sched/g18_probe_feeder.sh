@@ -12,9 +12,13 @@ MAX_TOTAL=4
 POLL_S="${POLL_S:-300}"
 
 [ -f "$STATE" ] || printf 'idx\ttag\trlo\trhi\tjobid\tsubmitted_utc\n' > "$STATE"
-TAGS=(r35x40rep1 r45x50rep1 r35x40rep2 r45x50rep2)   # interleaved: both rate
-RLOS=(3.5        4.5        3.5        4.5)          # pairs get a replicate
-RHIS=(4.0        5.0        4.0        5.0)          # before either gets two
+# rev2 (claims-auditor 2026-08-20): the arm grid is back to all seven, and the
+# Stage-1 ladder is the DENSE TOP of the interval (4.25, 4.75 against a 5.084
+# minimum-arm capacity), not four equally spaced points.  One boot covers both
+# rates via the harness's own two-phase round, so n=2 blocks is 2 jobs.
+TAGS=(r425x475rep1 r425x475rep2)
+RLOS=(4.25         4.25)
+RHIS=(4.75         4.75)
 TOTAL=${#TAGS[@]}
 
 n_done()     { awk 'NR>1' "$STATE" | wc -l; }
@@ -27,8 +31,11 @@ while :; do
   slots=$(( MAX_TOTAL - $(n_in_queue) ))
   while [ "$slots" -gt 0 ] && [ "$d" -lt "$TOTAL" ]; do
     t=${TAGS[$d]}; lo=${RLOS[$d]}; hi=${RHIS[$d]}
+    # counterbalance the visiting order across replicates exactly as G16 does
+    ao=$(python3 "$HERE/g16_arm_order.py" $(( d + 1 )))
     out=$(sbatch --parsable --job-name="g18p-${t}" \
-          --export=ALL,G18_PROBE=1,G16_RLO="$lo",G16_RHI="$hi" "$SB" "$t" 2>&1)
+          --export=ALL,G18_PROBE=1,G16_RLO="$lo",G16_RHI="$hi",G18_ARMS="$ao" \
+          "$SB" "$t" 2>&1)
     if [[ "$out" =~ ^[0-9]+$ ]]; then
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$d" "$t" "$lo" "$hi" "$out" \
              "$(date -u +%FT%TZ)" >> "$STATE"

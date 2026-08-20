@@ -161,7 +161,11 @@ if [ "$PROBE" = "1" ]; then
   # own pattern) from ever picking probe artifacts up as G16 data.
   BLOCK_IDX="${1:?BLOCK_IDX required for the probe too (replicate index)}"
   BLOCK_TAG="g18p${BLOCK_IDX}"
-  ARM_ORDER="${G18_ARMS:-d16 d44 d64}"
+  # rev2: the full seven-arm grid is the DEFAULT.  The decision quantity is
+  # max-min over arms, so dropping arms shrinks it mechanically -- the audit
+  # measured 1.261% -> 0.393% for a three-arm subset, and the predecessor
+  # design had already registered "no grid shrinking" as G17's death cause.
+  ARM_ORDER="${G18_ARMS:-$(python3 "$HERE/g16_arm_order.py" 1)}"
   N_EXPECT_ARMS=$(echo "$ARM_ORDER" | wc -w)
   NP="${NP:-200}"; ROUNDS="${ROUNDS:-3}"
   MIN_SNAPSHOTS=20
