@@ -157,8 +157,8 @@ if [ "$PROBE" = "1" ]; then
   # Separate from FULL on purpose: FULL's H15 assert pins the 7-arm grid and
   # the (3, 12) rates because K6/PC-A depend on them.  The probe changes the
   # rate on purpose, so it must NOT masquerade as a FULL block -- it gets its
-  # own BLOCK_TAG, which also keeps `g16_blk*` globs (and g18_rate_window.py's
-  # own pattern) from ever picking probe artifacts up as G16 data.
+  # own BLOCK_TAG.  ⚠️A BLOCK_TAG alone does NOT keep the canonical analyzer
+  # away -- see the RUNPREFIX note below; that is what actually protects canon.
   BLOCK_IDX="${1:?BLOCK_IDX required for the probe too (replicate index)}"
   BLOCK_TAG="g18p${BLOCK_IDX}"
   # rev2: the full seven-arm grid is the DEFAULT.  The decision quantity is
@@ -549,7 +549,14 @@ for ARM in $ARM_ORDER; do
   # arm (n_indep comes from the 4 separate block JOBS, not from within-job
   # repetition -- s8_sweep.sbatch:130-186's defect was reps inside one boot).
   BOOT_IDX=1
-  RUNID="g16_${BLOCK_TAG}_${ARM}_boot${BOOT_IDX}_${JOBTAG}"
+  # rev2 audit (2026-08-20): the canonical analyzer globs `g16_*` and its regex
+  # `^g16_(?P<block>[^_]+)_(?P<arm>d\d+)_boot(\d+)_` MATCHES a probe run id, and
+  # its only mode filter is `mode == "smoke"` -- so a completed probe boot would
+  # be silently adopted as an extra G16 block.  The tag alone does NOT protect
+  # canon (the earlier comment here claiming it did was false).  The real fix is
+  # to drop the `g16_` prefix on the probe path, which no `g16_*` glob can match.
+  RUNPREFIX=g16; [ "$PROBE" = "1" ] && RUNPREFIX=g18probe
+  RUNID="${RUNPREFIX}_${BLOCK_TAG}_${ARM}_boot${BOOT_IDX}_${JOBTAG}"
   SRVLOG="$HERE/${RUNID}_srv.log"
   JLO="$HERE/${RUNID}_LO.jsonl"; JHI="$HERE/${RUNID}_HI.jsonl"
   : > "$JLO"; : > "$JHI"
