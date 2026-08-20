@@ -170,3 +170,4 @@ results/p1_gates/gate2/*.raw.json
 # local line is redundant for gate2 specifically but kept, narrowed, for
 # history.
 results/p1_gates/gate2/smoke_prompt_*.txt
+results/s8_scaleup/.s0a_cells_cache.pkl

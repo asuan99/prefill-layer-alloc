@@ -1,0 +1,134 @@
+{
+  "what": "lag-resolved within-boot variogram of r",
+  "gpu_spend": 0,
+  "n_bins_per_boot": 8,
+  "is_a_gate": false,
+  "arms": {
+    "M8": {
+      "sigma_boot_between_pct": 0.03711071229563127,
+      "n_boot_pairs_used": 6,
+      "variogram": [
+        {
+          "lag_bins": 1,
+          "n_pairs": 42,
+          "sd_paired_at_lag_pct": 0.1300746948717239,
+          "sampling_term_pct": 0.04078388652945289,
+          "sd_noise_removed_pct": 0.12351558948377646,
+          "vs_sigma_boot": 3.5050444150875677
+        },
+        {
+          "lag_bins": 2,
+          "n_pairs": 36,
+          "sd_paired_at_lag_pct": 0.14669713839669565,
+          "sampling_term_pct": 0.04100951831671664,
+          "sd_noise_removed_pct": 0.14084839303737248,
+          "vs_sigma_boot": 3.95295938348144
+        },
+        {
+          "lag_bins": 3,
+          "n_pairs": 30,
+          "sd_paired_at_lag_pct": 0.12240894177068903,
+          "sampling_term_pct": 0.040686699325723365,
+          "sd_noise_removed_pct": 0.11544930282768329,
+          "vs_sigma_boot": 3.2984799859284624
+        },
+        {
+          "lag_bins": 4,
+          "n_pairs": 24,
+          "sd_paired_at_lag_pct": 0.10220729624795258,
+          "sampling_term_pct": 0.04053873976843074,
+          "sd_noise_removed_pct": 0.09382399471512706,
+          "vs_sigma_boot": 2.7541184182547904
+        },
+        {
+          "lag_bins": 5,
+          "n_pairs": 18,
+          "sd_paired_at_lag_pct": 0.13459740625171557,
+          "sampling_term_pct": 0.04029093308256542,
+          "sd_noise_removed_pct": 0.12842547442398491,
+          "vs_sigma_boot": 3.6269151930980477
+        },
+        {
+          "lag_bins": 6,
+          "n_pairs": 12,
+          "sd_paired_at_lag_pct": 0.1828791770818237,
+          "sampling_term_pct": 0.03909240220737068,
+          "sd_noise_removed_pct": 0.17865211305714296,
+          "vs_sigma_boot": 4.927934975350838
+        },
+        {
+          "lag_bins": 7,
+          "n_pairs": 6,
+          "sd_paired_at_lag_pct": 0.15416699064160427,
+          "sampling_term_pct": 0.03877934466915817,
+          "sd_noise_removed_pct": 0.14920999775658175,
+          "vs_sigma_boot": 4.154244990327309
+        }
+      ],
+      "reading": "sd_paired_at_lag < sigma_boot means a within-boot paired contrast at that lag is quieter than a between-boot one; >= means C-g buys nothing at that lag"
+    },
+    "Ha8": {
+      "sigma_boot_between_pct": 1.568417018312872,
+      "n_boot_pairs_used": 6,
+      "variogram": [
+        {
+          "lag_bins": 1,
+          "n_pairs": 42,
+          "sd_paired_at_lag_pct": 2.1023004311022966,
+          "sampling_term_pct": 0.09894844577153274,
+          "sd_noise_removed_pct": 2.0999705492440364,
+          "vs_sigma_boot": 1.3403963401032952
+        },
+        {
+          "lag_bins": 2,
+          "n_pairs": 36,
+          "sd_paired_at_lag_pct": 3.1013231962824275,
+          "sampling_term_pct": 0.09935103642599402,
+          "sd_noise_removed_pct": 3.0997314301985153,
+          "vs_sigma_boot": 1.9773588019457253
+        },
+        {
+          "lag_bins": 3,
+          "n_pairs": 30,
+          "sd_paired_at_lag_pct": 3.5822928313841698,
+          "sampling_term_pct": 0.10664653015671371,
+          "sd_noise_removed_pct": 3.580705020996835,
+          "vs_sigma_boot": 2.2840180829187893
+        },
+        {
+          "lag_bins": 4,
+          "n_pairs": 24,
+          "sd_paired_at_lag_pct": 4.113661810618419,
+          "sampling_term_pct": 0.10950571988385088,
+          "sd_noise_removed_pct": 4.1122040306207,
+          "vs_sigma_boot": 2.6228112565645567
+        },
+        {
+          "lag_bins": 5,
+          "n_pairs": 18,
+          "sd_paired_at_lag_pct": 4.850404014955983,
+          "sampling_term_pct": 0.11411194726511487,
+          "sd_noise_removed_pct": 4.849061514539952,
+          "vs_sigma_boot": 3.092547427324849
+        },
+        {
+          "lag_bins": 6,
+          "n_pairs": 12,
+          "sd_paired_at_lag_pct": 5.805728593215523,
+          "sampling_term_pct": 0.13547739823440694,
+          "sd_noise_removed_pct": 5.804147687012101,
+          "vs_sigma_boot": 3.7016485573847433
+        },
+        {
+          "lag_bins": 7,
+          "n_pairs": 6,
+          "sd_paired_at_lag_pct": 6.445397529460376,
+          "sampling_term_pct": 0.1655187513668153,
+          "sd_noise_removed_pct": 6.443271906083111,
+          "vs_sigma_boot": 4.1094922168044405
+        }
+      ],
+      "reading": "sd_paired_at_lag < sigma_boot means a within-boot paired contrast at that lag is quieter than a between-boot one; >= means C-g buys nothing at that lag"
+    }
+  }
+}

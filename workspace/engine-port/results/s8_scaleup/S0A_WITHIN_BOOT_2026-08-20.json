@@ -1,0 +1,259 @@
+{
+  "what": "S0(a): within-boot half-split residual of r",
+  "gpu_spend": 0,
+  "is_a_gate": false,
+  "guard_s": 3.0,
+  "batch": 16,
+  "estimand": "unchanged -- s8_c2r_score bracket logic, verbatim",
+  "arms": {
+    "M8": {
+      "n_boot_pairs": 6,
+      "sigma_boot_between_pct_recomputed": 0.03711071229563127,
+      "sigma_boot_between_pct_design_input": 0.03711071229563127,
+      "within_boot_halfsplit_sd_pct_raw": 0.06055680905887934,
+      "halfsplit_sampling_sd_pct": 0.019150736143817373,
+      "within_boot_temporal_residual_pct_noise_removed": 0.057448902761875774,
+      "ratio_raw_over_between": 1.6317878400304429,
+      "ratio_residual_over_between": 1.5480409619795616,
+      "boots_scaling_vs_between_contrast_raw": 2.6627315548712183,
+      "per_block": [
+        {
+          "blk": 1,
+          "r_early": 3.0595103511478343,
+          "r_late": 3.0581363536328086,
+          "n_early": [
+            1504,
+            8944
+          ],
+          "n_late": [
+            1280,
+            8672
+          ],
+          "sd_within_pct": 0.031762637075754996,
+          "sd_sampling_pct": 0.01951677795762946,
+          "r_full_boot": 3.0587820835342
+        },
+        {
+          "blk": 2,
+          "r_early": 3.0608250797802135,
+          "r_late": 3.0580908860964477,
+          "n_early": [
+            3824,
+            7152
+          ],
+          "n_late": [
+            3552,
+            7136
+          ],
+          "sd_within_pct": 0.06319311805064683,
+          "sd_sampling_pct": 0.012233700998485279,
+          "r_full_boot": 3.0594838471274417
+        },
+        {
+          "blk": 3,
+          "r_early": 3.057233085523714,
+          "r_late": 3.057079613538867,
+          "n_early": [
+            1520,
+            7920
+          ],
+          "n_late": [
+            1520,
+            7648
+          ],
+          "sd_within_pct": 0.0035497393263511515,
+          "sd_sampling_pct": 0.02220732459171916,
+          "r_full_boot": 3.0572232279020244
+        },
+        {
+          "blk": 4,
+          "r_early": 3.0620363157430868,
+          "r_late": 3.056498126697331,
+          "n_early": [
+            3839,
+            7408
+          ],
+          "n_late": [
+            3824,
+            7392
+          ],
+          "sd_within_pct": 0.1280074850141777,
+          "sd_sampling_pct": 0.020283478782399205,
+          "r_full_boot": 3.05913282904328
+        },
+        {
+          "blk": 5,
+          "r_early": 3.057004756917863,
+          "r_late": 3.056164660813756,
+          "n_early": [
+            1775,
+            8944
+          ],
+          "n_late": [
+            1520,
+            8928
+          ],
+          "sd_within_pct": 0.019434686378540917,
+          "sd_sampling_pct": 0.01834957178870356,
+          "r_full_boot": 3.056578243253706
+        },
+        {
+          "blk": 6,
+          "r_early": 3.058652169989242,
+          "r_late": 3.0580044054392963,
+          "n_early": [
+            1775,
+            8960
+          ],
+          "n_late": [
+            1520,
+            8928
+          ],
+          "sd_within_pct": 0.014976767135136413,
+          "sd_sampling_pct": 0.0207037326409063,
+          "r_full_boot": 3.0583319137839355
+        }
+      ],
+      "caveats": [
+        "half-split uses the LARGEST within-boot lag -> upper bound on the residual an alternating design carries -> lower bound on cancellation",
+        "each within-pair SD is n=2 (|diff|/sqrt2); the pooled figure is an RMS over 6 such pairs, i.e. df=6, not a precise variance",
+        "noise-removed column subtracts an interval-bootstrap sampling term; it is reported BESIDE the raw number, never instead of it"
+      ]
+    },
+    "Ha8": {
+      "n_boot_pairs": 6,
+      "sigma_boot_between_pct_recomputed": 1.568417018312872,
+      "sigma_boot_between_pct_design_input": 1.568417018312872,
+      "within_boot_halfsplit_sd_pct_raw": 2.6474726633791783,
+      "halfsplit_sampling_sd_pct": 0.10289903945449017,
+      "within_boot_temporal_residual_pct_noise_removed": 2.6454722245790796,
+      "ratio_raw_over_between": 1.6879902681922145,
+      "ratio_residual_over_between": 1.6867148173543687,
+      "boots_scaling_vs_between_contrast_raw": 2.8493111455116242,
+      "per_block": [
+        {
+          "blk": 1,
+          "r_early": 3.06783035908788,
+          "r_late": 3.159501006714066,
+          "n_early": [
+            2130,
+            3840
+          ],
+          "n_late": [
+            1888,
+            3808
+          ],
+          "sd_within_pct": 2.081820695401227,
+          "sd_sampling_pct": 0.072090581315926,
+          "r_full_boot": 3.157812191126045
+        },
+        {
+          "blk": 2,
+          "r_early": 3.0398936845330593,
+          "r_late": 3.127925979505553,
+          "n_early": [
+            2032,
+            3824
+          ],
+          "n_late": [
+            2016,
+            3568
+          ],
+          "sd_within_pct": 2.0184842011968067,
+          "sd_sampling_pct": 0.044944552441978126,
+          "r_full_boot": 3.1282414654327404
+        },
+        {
+          "blk": 3,
+          "r_early": 3.0319282642025884,
+          "r_late": 3.100301710978537,
+          "n_early": [
+            1888,
+            3824
+          ],
+          "n_late": [
+            1664,
+            3808
+          ],
+          "sd_within_pct": 1.5768269638955488,
+          "sd_sampling_pct": 0.08396134082928443,
+          "r_full_boot": 3.1114912427091013
+        },
+        {
+          "blk": 4,
+          "r_early": 3.0222747857293206,
+          "r_late": 3.14967396080502,
+          "n_early": [
+            1680,
+            5135
+          ],
+          "n_late": [
+            1664,
+            5088
+          ],
+          "sd_within_pct": 2.919169432966643,
+          "sd_sampling_pct": 0.19817992449340407,
+          "r_full_boot": 3.1229404194549026
+        },
+        {
+          "blk": 5,
+          "r_early": 2.9503535495311226,
+          "r_late": 3.131481314064125,
+          "n_early": [
+            2032,
+            4080
+          ],
+          "n_late": [
+            1960,
+            4048
+          ],
+          "sd_within_pct": 4.211777315069494,
+          "sd_sampling_pct": 0.06614160023314242,
+          "r_full_boot": 3.023314358047352
+        },
+        {
+          "blk": 6,
+          "r_early": 3.041229360878463,
+          "r_late": 3.137942897480334,
+          "n_early": [
+            1696,
+            3824
+          ],
+          "n_late": [
+            1664,
+            3552
+          ],
+          "sd_within_pct": 2.213461438017262,
+          "sd_sampling_pct": 0.07491801323980142,
+          "r_full_boot": 3.1532365951477366
+        }
+      ],
+      "caveats": [
+        "half-split uses the LARGEST within-boot lag -> upper bound on the residual an alternating design carries -> lower bound on cancellation",
+        "each within-pair SD is n=2 (|diff|/sqrt2); the pooled figure is an RMS over 6 such pairs, i.e. df=6, not a precise variance",
+        "noise-removed column subtracts an interval-bootstrap sampling term; it is reported BESIDE the raw number, never instead of it"
+      ]
+    }
+  },
+  "positive_controls": [
+    {
+      "id": "PC1",
+      "what": "per-boot medians match the committed C2R JSON exactly",
+      "n_mismatch": 0,
+      "mismatches": [],
+      "ok": true
+    },
+    {
+      "id": "PC2",
+      "what": "between-boot SD of r matches design_g13_stats.pairsd()",
+      "abs_diff_pct_points": [
+        0.0,
+        0.0
+      ],
+      "tolerance": 0.001,
+      "ok": true
+    }
+  ],
+  "CONTROLS": "PASS",
+  "VERDICT_TYPE": "measurement with uncertainty -- NOT a gate, NOT a pass/fail, NOT pre-registered, NOT audited"
+}
