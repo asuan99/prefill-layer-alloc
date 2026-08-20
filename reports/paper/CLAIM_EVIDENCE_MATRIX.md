@@ -1,6 +1,21 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-19(doc-steward — gate #13 rev2 규칙층 NO-GO →
+최종 갱신: 2026-08-20(doc-steward — P1 프로브 판정(job 886718,
+`UNAVAILABLE (CUPTI×GREEN-CONTEXT)`) 반영. **이 트랙(kernel_mech —
+C2/Claim A가 인용하는 고-SM decode 평탄화의 커널 단위 기전 판별)은
+Claim A/B–G 어느 행에도 인용 가능한 크기·부호를 아직 산출하지
+않았으므로 등급 변경 0건.** 도구 타당성 판정(green-context 스트림
+위 커널은 이 기판에서 ncu로 프로파일 불가, 두 겹 대조로 귀속 확인)
+⇒ `kernel_mech` rev3는 Stage A(nsys)만 남고 Stage B(ncu)는 폐기 —
+이는 Claim A 각주가 아직 미측정으로 남겨 둔 "고-SM 평탄화 진짜
+원인"(wave quantization/층 직렬 사슬/커널 점유율/cudagraph 직렬화)
+질문의 **탐색 도구가 좁혀진 것**이지 그 질문에 답이 나온 것은
+아니다. **새 성능 판정 0건 · Claim A–G 등급 변경 0건 · 새 인용 셀
+0건 · GPU 지출 0.032 GPU-hr.** 상세 `../../PROJECT_STATUS.md` "8B
+decode-SM 민감도 측정 노트" 실증 확정 배너·"다음 실험 gate" #11
+레지스트리 kernel_mech P1 프로브 행, `../CONSENSUS.md` §3 항목52
+追記(6).
+이전: 2026-08-19(doc-steward — gate #13 rev2 규칙층 NO-GO →
 rev3 재감사 GO-with-caveats(등록 11.52 GPU-hr, 미제출) + gate #16
 이차 표적(rate 축) 규칙층 발견 반영. **이 세션의 반영 사항은 전부
 규칙층/설계층 판정이고 어느 것도 데이터 캠페인을 실행하지 않았다

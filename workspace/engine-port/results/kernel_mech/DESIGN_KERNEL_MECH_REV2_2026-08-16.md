@@ -1,5 +1,40 @@
 # 설계 rev2 — 고-SM 평탄화의 기전 판별 (nsys + ncu, sticky 2×2)
 
+> ★★★**결과 배너(2026-08-20, doc-steward 등재 — P1 프로브 job 886718
+> 결과 반영, 도구 타당성 판정, 새 성능 판정 아님).** 이 문서(rev2)는
+> **2026-08-16 claims-auditor 감사에서 이미 NO-GO**였다(기준1
+> REFUTED·기준2 PLAUSIBLE·기준3 REFUTED — F1 `wave_eff`가 ncu 메트릭이
+> 아닌 수제 유도를 되살림·F2 §3.2 축퇴 대수 부호 반대로 위험구간
+> 통과·F3 아래·F4 `ncu --pid` 미존재 옵션·F5 클럭 정책 충돌, 상세
+> `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리 kernel_mech
+> rev2 행). GO 경로는 "문서 수정 8건 + **Stage 0′ 4프로브**"였다.
+>
+> **그 Stage 0′ 4프로브 중 F3(§9 아래·CUPTI×green-context)를 판별하는
+> 프로브가 2026-08-20 실행됐다(job 886718) — 판정
+> `UNAVAILABLE (CUPTI×GREEN-CONTEXT)`.** greenctx 다리는 문서화된
+> 시그니처(`Failed to prepare kernel for profiling`/`Unknown Error on
+> device 0`/exit 9)로 정확히 실패했고, control(full GPU, 같은 GEMM)은
+> 에러 0건으로 성공했다. ★같은 프로세스 안에서 green ctx **밖** 커널은
+> 성공하고 green ctx **위** 커널만 실패해(두 겹 대조) 귀속이 깨끗하다.
+>
+> ⇒ **§7 Stage B(아래, ncu 커널 내부 카운터를 SM 제한 하에서 수집)는
+> 이 기판에서 구성상 불가로 확정됐다 — 폐기.** rev3는 **Stage A
+> 전용**으로 재작성한다(GO 경로였던 "문서 수정 8건" 중 Stage B 대상
+> 최소 5건이 적용 대상 소멸 — 메트릭 교체·부착 구조 재작성·클럭 제어
+> 이관 등, 아래 §4.4·§7 Stage B·§9 참조). Stage A(nsys 타임라인,
+> §7 아래)는 **영향받지 않는다** — ncu가 아니라 nsys를 쓰고 green
+> context에 카운터 부착을 시도하지 않는다.
+>
+> ★**서술 한계**: 도구 타당성 판정이지 성능 판정이 아니다. 깨진 것은
+> 프로파일링이지 green context 실행이 아니다(`realized_sm=16` 정상
+> 실현). 내부 기전(CUPTI 비호환 대 스트림/컨텍스트 처리 다른 층)은
+> 미분리. 스코프는 A100-SXM4-80GB·driver 580.105.08·ncu 2025.3.1.0·
+> CUDA 13.0.2·이 클러스터 한정(이식 금지). 상세
+> `results/kernel_mech/p1_probe/P1_VERDICT_2026-08-20.md`,
+> `P1_886752_REVIEW_2026-08-20.md`, `reports/CONSENSUS.md` §3 항목52
+> 追記(6), `PROJECT_STATUS.md` "8B decode-SM 민감도 측정 노트" 실증
+> 확정 배너·"다음 실험 gate" #17 2026-08-20 갱신.
+
 **작성 2026-08-16, experiment-runner. GPU 지출 0(전부 로그인 노드 `ncu`/`nsys`
 명령 + 코드 읽기). 미제출 · 사전등록 아님(설계 문서). 성능 판정 0건 · 정책
 주장 0건.** 3세션 연속 이월 항목(2026-08-15 rev1 설계 → 감사 "설계 재작성"
@@ -416,7 +451,9 @@ prefill이 이 구간엔 없다). 따라서 셀 A는 warm-fill 단계에서 결�
   아님 — Stage A는 nsys만이므로 wave는 Stage B), A−B/A−C 시간차(후보
   (v) 조준).
 
-### Stage B — ncu 커널 내부 (GPU ≈2.5–4hr, exclusive 불필요, 큐 대기 김)
+### Stage B — ★**폐기(2026-08-20, P1 프로브 job 886718 —
+`UNAVAILABLE (CUPTI×GREEN-CONTEXT)`, 상세 문서 상단 결과 배너)** —
+ncu 커널 내부 (GPU ≈2.5–4hr, exclusive 불필요, 큐 대기 김)
 
 - Stage A가 `waves≥2`를 확인한 SM 점(§7-0-4 조건부) + `KERNEL_DOMINATED`
   로 판정된 구간만 대상 — Stage A `GAP_DOMINATED`면 그 (arm,D)는 Stage
@@ -445,6 +482,12 @@ prefill이 이 구간엔 없다). 따라서 셀 A는 warm-fill 단계에서 결�
 부팅). 감사가 어림한 "≈7–12 GPU-hr"(S5) 범위 **안쪽**이며 상향 편향은
 없다 — 단 이 재추정 자체는 **Stage 0 실측으로 아직 검증되지 않았다**
 (캡처·분석 준비 시간이 부팅보다 클 수 있어 하방보다는 상방 리스크가 큼).
+
+★**2026-08-20 갱신(문서 상단 결과 배너 참조)**: Stage B가 폐기되면서
+위 표의 Stage B 행(≈2.5–4.0hr)과 그것이 포함된 합계 두 값이 **더 이상
+rev3의 예산이 아니다** — rev3 예산은 **Stage 0(이미 집행, ≈0.032
+GPU-hr) + Stage A(≈2.0–2.7hr)뿐**이다. 이 표 자체는 rev2 원문 그대로
+보존(이력용, 재작성 안 함).
 
 **게이트 #26(대형 캠페인 제출 전 배관 스모크) 발동 여부**: 이 캠페인은
 (a) 신규 코드(§5.2 워크로드 클라이언트, nsys/ncu 래퍼 하네스)를 쓰고

@@ -4,7 +4,27 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-19 rev39 (doc-steward — **gate #13 rev2 규칙층
+최종 갱신: 2026-08-20 rev40 (doc-steward — **P1 프로브 판정 반영:
+`UNAVAILABLE (CUPTI×GREEN-CONTEXT)`**(job 886718, `--exclusive
+--constrain=hwperf`, node gpu38, 1분55초, 동반 프로브 886752 포함
+**GPU 지출 0.032 GPU-hr**). §3 항목52에 追記(6) 신설 — "미확인
+리스크"였던 CUPTI×green-context 귀속이 **두 겹 대조**(다리 간:
+greenctx exit=9/control exit=0 같은 GEMM 정상 수집·다리 내부: 같은
+프로세스에서 green ctx 밖 RNG 커널만 성공)로 관측 근거를 얻어
+**실증됨**으로 갱신됐다(단 내부 기전 미분리·A100-SXM4-80GB/driver
+580.105.08/ncu 2025.3.1.0/CUDA 13.0.2/이 클러스터 한정, 이식 금지).
+⇒ **Stage B(ncu 커널 내부 카운터를 SM 제한 하에서 수집)는 이 기판에서
+구성상 불가로 확정 → `kernel_mech` rev3는 Stage A 전용으로 범위
+축소**(4세션 이월의 실질 원인 해소). ★★★**이것은 "성능" 판정이
+아니라 "도구 타당성" 판정이다** — 깨진 것은 프로파일링이지 green
+context 실행이 아니다(`realized_sm=16`으로 정상 실현). **새 성능
+판정 0건 · 등급 변경 0건 · 정책 순위 변경 0건 · GPU 지출 0.032
+GPU-hr.** 상세 `workspace/engine-port/results/kernel_mech/p1_probe/
+P1_VERDICT_2026-08-20.md`(동반 프로브 검토 `P1_886752_REVIEW_
+2026-08-20.md`), `PROJECT_STATUS.md` "8B decode-SM 민감도 측정
+노트"(실증 확정 배너)·"다음 실험 gate" #11 레지스트리(kernel_mech
+P1 프로브 행 신설)·#17(kernel_mech rev3 스코프 확정).
+이전 rev39: 2026-08-19 (doc-steward — **gate #13 rev2 규칙층
 NO-GO(死因 3건) → rev3 재감사 GO-with-caveats(등록 11.52 GPU-hr,
 미제출·여전히 사전등록 아님) 반영 + gate #16 이차 표적(rate 축)
 규칙층 발견(rate↓는 목표 (i) 과부하 이탈엔 옳으나 목표 (ii)
@@ -2454,6 +2474,70 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     decode-SM 민감도 측정 노트" 정정 배너, `workspace/engine-port/
     results/kernel_mech/DESIGN_KERNEL_MECH_REV2_2026-08-16.md` F3,
     `handoff-report/session_handoff_2026-08-16.md` §4-4(b).
+
+    ★★★★**追記(6) (2026-08-20, 메인 세션 — P1 프로브 job 886718
+    실행 결과, 새 성능 판정 아님, 도구 타당성 판정) 위 追記(5)의
+    "판별기"가 실행됐다: `UNAVAILABLE (CUPTI×GREEN-CONTEXT)`.**
+    `--exclusive --constrain=hwperf`, node gpu38, 1분55초
+    (`COMPLETED 0:0`, 동반 프로브 886752 포함 GPU 지출 0.032
+    GPU-hr). greenctx 다리에서 위 追記(4)가 인용한 시그니처
+    (`Failed to prepare kernel for profiling` / `Unknown Error on
+    device 0` / exit 9)가 **정확히** 재현됐다. **두 겹의 대조**로
+    (c) 귀속이 (a)·(b)로부터 깨끗이 분리된다: (i) **다리 간** —
+    control(같은 GEMM `ampere_bf16_s16816gemm_bf16_128x256_ldg8_
+    f2f_stages_64x3_nn`, full GPU)은 에러 0건·60행 정상 수집. (ii)
+    ★**다리 내부** — 같은 프로세스·같은 ncu 호출에서 green ctx
+    **밖**(`set_sm_count()` 이전 launch)의 RNG 커널
+    (`distribution_elementwise_grid_stride_kernel`)은 8행 성공
+    수집됐고, green ctx **위** GEMM만 실패했다 — job·노드·할당·권한
+    (control 성공이 `ERR_NVGPUCTRPERM` 부재를 확증)·ncu 호출·메트릭·
+    클럭 정책(`--clock-control none`)·타깃 스크립트·커널·차원이
+    전부 동일한 채 유일한 변인은 "커널이 green-context 스트림
+    위인가"뿐이었다. ⇒ **(c) CUPTI×green-context가 이 구성에 한해
+    관측 근거를 얻었다** — `_ncu_target.py:68-71`은 더 이상 코드
+    작성자의 주장이 아니다.
+
+    ★**지킬 서술 한계(overclaim 금지)**: (1) 이건 **도구 타당성
+    판정이지 성능 판정이 아니다**. (2) 깨진 것은 **프로파일링이지
+    green context 실행이 아니다** — `realized_sm=16`으로 정상
+    실현됐고 커널도 실행됐다(동반 프로브 886752는 `DONE`까지
+    완주). (3) **내부 기전은 미분리**다 — 관측은 "green-context
+    스트림 위 커널의 프로파일링이 실패한다"까지이고, 그 실패가
+    CUPTI 비호환인지 스트림/컨텍스트 처리의 다른 층인지는 이
+    프로브가 가르지 않는다. `UNAVAILABLE (CUPTI×GREEN-CONTEXT)`
+    라벨은 하네스가 붙인 이름이다. (4) **스코프 한정** —
+    A100-SXM4-80GB·driver 580.105.08·ncu 2025.3.1.0·CUDA 13.0.2·
+    이 클러스터(`amd_a100nv_8`) 한정, 다른 버전·기판으로 이식
+    금지. (5) 위 (a)·(b) 경합 귀속(메트릭 이름 불일치·cuda12 타겟)은
+    **여전히 유효** — 옛 `workspace/characterization/` 아카이브
+    8-job 배치(전부 full GPU, cuda12 venv 불일치)를 설명하는
+    것으로 남는다. 이번 P1은 모듈을 표준화한 동일-툴킷 구성에서
+    green-context만 격리했으므로 (a)·(b)를 반증하지 않는다 — 서로
+    다른 실패 배치에 대한 설명이다.
+
+    **함의**: (i) ⇒ **`kernel_mech` rev3는 Stage B를 폐기하고
+    Stage A 전용으로 범위를 좁힌다** — GO 경로였던 "문서 수정 8건"
+    중 Stage B 대상 최소 5건(메트릭 교체·부착 구조 재작성·클럭
+    제어 이관 등)이 적용 대상 소멸(4세션 이월의 실질 원인 해소).
+    (ii) **트리의 wave 수치는 이 기판에서 원리상 측정일 수 없다**
+    — kernel_mech rev2 감사 F1(`wave_eff`는 ncu 메트릭이 아님/폐기
+    선언한 수제 유도를 1차 결정량으로 되살림)을 독립적으로
+    뒷받침한다. (iii) 부수 확정 — 선례 스크립트 `run_ncu_profile.sh:
+    15-17`의 권한 근거("SLURM job 환경이 카운터를 켜준다 — batch면
+    interactive와 달리 열린다")는 **불충분**하다: 동반 프로브
+    886752(non-exclusive **batch**)가 `ERR_NVGPUCTRPERM`을 받았다
+    — 실제 구분선은 **exclusive(+hwperf)**다. 아카이브 ncu 로그
+    8건 전수 재확인: `ERR_NVGPUCTRPERM` 0건은 전부 exclusive+hwperf
+    계열이고, 그중 실제 데이터를 수집한 유일한 성공 사례
+    (`ncu_729105`, 88행)에도 green/`set_sm_count`/`--sm-counts`
+    언급이 **0건**이다 — ⇒ **이 저장소는 green context 하에서
+    카운터를 수집한 적이 한 번도 없었다**(P1이 재탕이 아니라 진짜
+    미해결 질문이었다는 확인). 상세 `PROJECT_STATUS.md` "8B
+    decode-SM 민감도 측정 노트" 실증 확정 배너(2026-08-20)·"다음
+    실험 gate" #11 레지스트리 kernel_mech P1 프로브 행·#17
+    2026-08-20 갱신, `workspace/engine-port/results/kernel_mech/
+    p1_probe/P1_VERDICT_2026-08-20.md`,
+    `P1_886752_REVIEW_2026-08-20.md`.
 
 53. ★**(2026-08-15, doc-steward 등재 — E-1 rev1–rev3+kernel_mech 4회
     설계 전부 감사 차단에서 도출, 새 실험 아님) 방법론 게이트 #35·

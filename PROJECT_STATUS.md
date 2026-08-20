@@ -1,6 +1,39 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-19 (doc-steward — **gate #13 rev2 규칙층 NO-GO(死因
+최종 갱신: 2026-08-20 (doc-steward — **P1 프로브 판정 반영:
+`UNAVAILABLE (CUPTI×GREEN-CONTEXT)`**(job **886718**, `--exclusive
+--constrain=hwperf`, node gpu38, 1분55초, `COMPLETED 0:0` — 동반
+프로브 job 886752 포함 **GPU 지출 0.032 GPU-hr**). greenctx 다리에서
+문서화된 시그니처(`Failed to prepare kernel for profiling` / `Unknown
+Error on device 0` / exit 9)가 **정확히** 재현됐고, **두 겹 대조**로
+귀속이 깨끗하다 — (a) **다리 간**: greenctx exit=9 / control(full GPU)
+exit=0·에러 0건·같은 GEMM(`ampere_bf16_...`) 정상 수집(60행). (b)
+★**다리 내부**: 같은 프로세스·같은 ncu 호출에서 green ctx **밖**
+RNG 커널은 수집 성공(8행)하고 green ctx **위** GEMM만 실패 — 변인은
+"커널이 green-context 스트림 위인가" 하나뿐(job·노드·권한·ncu 호출·
+메트릭·클럭 정책·타깃·커널·차원 전부 동일). ⇒ **Stage B(ncu 커널
+내부 카운터를 SM 제한 하에서 수집)는 이 기판에서 구성상 불가 확정
+→ `kernel_mech` rev3는 Stage A 전용으로 범위 축소**(rev2 감사가
+지정한 "문서 수정 8건" 중 Stage B 대상 최소 5건이 적용 대상 소멸,
+4세션 이월의 실질 원인 해소). ★**`_ncu_target.py:68-71`의 CUPTI×
+green-context 비호환 주석 — 정본이 지금까지 "미확인 리스크"로만
+등재해 온 것이 이제 관측 근거로 뒷받침돼 실증됨으로 갱신한다**(단
+아래 서술 한계 참조 — 내부 기전 미분리, A100-SXM4-80GB·driver
+580.105.08·ncu 2025.3.1.0·CUDA 13.0.2·이 클러스터 한정, 다른
+기판으로 이식 금지). 부수 확정: 선례 스크립트 `run_ncu_profile.sh:
+15-17`의 권한 근거 문장("batch면 권한이 열린다")이 **불충분**함을
+동반 프로브(job 886752, non-exclusive batch가 `ERR_NVGPUCTRPERM`로
+거부됨)로 실측 — 실제 구분선은 **exclusive(+hwperf)**. ★★★**이것은
+"성능 판정"이 아니라 "도구 타당성 판정"이다** — 깨진 것은
+프로파일링이지 green context 실행이 아니다(`realized_sm=16`으로
+정상 실현, 886752는 `DONE`까지 완주). **새 성능 판정 0건 · 등급
+변경 0건 · 정책 순위 변경 0건 · GPU 지출 0.032 GPU-hr.** 상세
+`workspace/engine-port/results/kernel_mech/p1_probe/
+P1_VERDICT_2026-08-20.md`(동반 프로브 검토 `P1_886752_REVIEW_
+2026-08-20.md`, 원자료 `job_{886718,886752}/`), 아래 "8B decode-SM
+민감도 측정 노트"(갱신)·"다음 실험 gate" #11 레지스트리(kernel_mech
+행 갱신)·#17(kernel_mech rev3 스코프 확정).
+이전: 2026-08-19 (doc-steward — **gate #13 rev2 규칙층 NO-GO(死因
 3건) → rev3 재감사 GO-with-caveats(등록 11.52 GPU-hr, 미제출·여전히
 사전등록 아님) + gate #16 이차 표적(rate 축) 규칙층 발견(rate↓는 목표
 (i) 과부하 이탈엔 옳으나 목표 (ii) `D_itl`/`Δ` 식별엔 반대 방향 —
@@ -2034,7 +2067,9 @@ full-GPU에서만 돈다"는 *결과*(design intent)이고, 위 인용이 그 *�
 green-context 비호환)이다. **이것이 참이면 kernel_mech Stage B(green-ctx 하
 커널 단위 프로파일링)는 이 기판에서 구성상 불가**하다.
 
-★★**단, 아직 미확인 리스크로만 등재한다** — 같은 `error code 9`
+★★**단, 아직 미확인 리스크로만 등재한다**(★2026-08-20 갱신 — 이 문단의
+"미확인" 판정은 P1 프로브로 **실증 쪽으로 좁혀졌다**, 단정 아님. 아래
+배너 참조) — 같은 `error code 9`
 (1,986건, 아카이브 8 job)에 저장소가 **3가지 경합 귀속**을 갖고 있다: (a)
 메트릭 이름 불일치(`run_ncu_profile.py:213`) (b) cuda12 타겟
 (`run_ncu_profile.sh:37-41`) (c) CUPTI×green-context(이 문단). 판별기는
@@ -2044,6 +2079,54 @@ green-context 비호환)이다. **이것이 참이면 kernel_mech Stage B(green-
 마라"). 상세 `reports/CONSENSUS.md` §3 항목52 追記(5),
 `workspace/engine-port/results/kernel_mech/DESIGN_KERNEL_MECH_REV2_
 2026-08-16.md` F3, `handoff-report/session_handoff_2026-08-16.md` §4-4(b).
+
+★★★★**실증 확정 배너(2026-08-20, doc-steward 등재 — P1 프로브 job
+886718 결과 반영, 새 성능 판정 아님, 도구 타당성 판정)**: 바로 위
+문단이 "판별기"로 지정한 Stage 0′ P1 프로브가 **실행됐다**
+(`--exclusive --constrain=hwperf`, node gpu38, 1분55초). 결과는
+**정확히 (c)** — greenctx 다리에서 문서화된 시그니처(`Failed to
+prepare kernel for profiling` / `Unknown Error on device 0` / exit
+9)가 그대로 재현됐고, **두 겹 대조**로 귀속이 깨끗하다: (a) **다리
+간** — control(같은 GEMM, full GPU)은 에러 0건·60행 정상 수집. (b)
+★**다리 내부** — 같은 프로세스·같은 ncu 호출에서 green ctx **밖**
+RNG 커널(8행)은 성공하고 green ctx **위** GEMM만 실패, 나머지 변수는
+전부 동일(job·노드·권한·ncu 호출·메트릭·클럭 정책·타깃·커널·차원).
+⇒ **(c) CUPTI×green-context가 이 구성에 한해 관측 근거를 얻었다** —
+`_ncu_target.py:68-71`은 더 이상 "코드 작성자의 주장"이 아니다.
+
+★**그럼에도 지킬 서술 한계(overclaim 금지)**: (i) **성능 판정이
+아니라 도구 타당성 판정**이다. (ii) 깨진 것은 **프로파일링이지
+green context 실행이 아니다** — `realized_sm=16`으로 정상
+실현됐고 커널도 실행됐다(동반 프로브 886752는 `DONE`까지 완주). (iii)
+**내부 기전은 미분리** — 관측은 "green-context 스트림 위 커널의
+프로파일링이 실패한다"까지이고, `UNAVAILABLE (CUPTI×GREEN-CONTEXT)`
+라벨은 하네스가 붙인 이름이지 CUPTI 비호환 대 스트림/컨텍스트 처리
+다른 층을 이 프로브가 갈랐다는 뜻은 아니다. (iv) **스코프 한정** —
+A100-SXM4-80GB·driver 580.105.08·ncu 2025.3.1.0·CUDA 13.0.2·이
+클러스터(`amd_a100nv_8`) 한정, 다른 버전·기판으로 이식 금지. (v) (a)·
+(b) 경합 귀속(메트릭 이름 불일치·cuda12 타겟)은 **저장소의 다른
+아카이브 배치**(옛 `workspace/characterization/` 트랙, full-GPU,
+cuda12 venv 불일치)를 설명하는 것으로 남는다 — 이번 P1은 **모듈을
+표준화한 동일-툴킷 구성**에서 순수 green-context 원인만 격리했으므로
+(a)·(b)와 모순되지 않는다(서로 다른 실패 배치를 설명).
+
+⇒ **`kernel_mech` rev3는 Stage B를 폐기하고 Stage A 전용으로 범위를
+좁힌다**(GO 경로였던 "문서 수정 8건" 중 Stage B 대상 최소 5건이
+적용 대상 소멸). ★**트리의 wave 수치는 이 기판에서 원리상 측정일 수
+없다**는 kernel_mech rev2 감사 F1(`wave_eff`는 ncu 메트릭이 아님)을
+독립적으로 뒷받침한다. 부수 확정: 선례 스크립트 `run_ncu_profile.sh:
+15-17`의 권한 근거("batch면 권한이 열린다")는 **불충분**함이
+실측으로 드러났다 — 동반 프로브 886752(non-exclusive batch)가
+`ERR_NVGPUCTRPERM`을 받았고, 아카이브 ncu 로그 8건 전수 조사 결과
+`ERR_NVGPUCTRPERM` 0건은 전부 `--exclusive --constrain=hwperf`
+계열이었다(실제 구분선 = exclusive+hwperf) — 그리고 그 8건 중
+실제 데이터를 수집한 유일한 성공 사례(`ncu_729105`, 88행)조차
+**green context 언급이 0건**이라 이 저장소는 **green context 하에서
+카운터를 수집한 적이 한 번도 없었다**(P1이 진짜 미해결 질문이었다는
+확인). 상세 `workspace/engine-port/results/kernel_mech/p1_probe/
+P1_VERDICT_2026-08-20.md`, `P1_886752_REVIEW_2026-08-20.md`,
+`reports/CONSENSUS.md` §3 항목52 追記(6), "다음 실험 gate" #11
+레지스트리(kernel_mech 행 갱신)·#17(kernel_mech rev3 스코프 확정).
 
 `ADVERSARIAL AUDIT COMPLETE (2026-08-15) — claims-auditor 판정: 등급
 유지 + 인용 정지 2건 신설.`
@@ -4056,6 +4139,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     | ★G13 rev2 (`workspace/engine-port/results/s8_scaleup/DESIGN_G13_JOB_BATCH_REV2_2026-08-17.md`, ★**SUPERSEDED 배너 부착** — rev3를 읽어라) | ★**규칙층 NO-GO**(2026-08-19, claims-auditor, 게이트 #34 1단) | 死因 3건: (A) F2 가드 문턱이 틀렸다 — exact-F 상한의 실제 퇴화점은 `MS_B ≤ MS_W`가 아니라 `MS_B ≤ F₀.₀₅(df_B,df_W)·MS_W`(이 격자에서 `F₀.₀₅`=0.34–0.45)인데, 상한이 양수·유한·피복 정상인 `MS_B/MS_W∈(0.34,1.0]` 구간을 통째로 "측정 실패"로 버렸다(**방법론 게이트 #21의 역방향 재발**). (B) Ha8의 `σ_boot=1.5684%`가 부팅 1개(blk5, 잭나이프 2.46×, 나머지 5개는 0.90–0.98×)의 산물이고 그 부팅은 `C2R_SENSITIVITY_2026-08-16.json`의 `named_exclusion`에 **이미 등재**돼 있었다(**교훈 #31의 내부 재발** — σ_job엔 밴드 3중화, σ_boot엔 민감도 0건인 비대칭). (C) `power2()`가 exact-F를 하드와이어해 §0 헤드라인이 사전등록 규칙(피복 조건부 Satterthwaite/exact-F 선택)의 작동 특성이 아니었다. 상세 `DESIGN_G13_JOB_BATCH_REV3_2026-08-19.md` §1, "다음 실험 gate" #17 |
     | ★★G13 rev3 (`workspace/engine-port/results/s8_scaleup/DESIGN_G13_JOB_BATCH_REV3_2026-08-19.md`) | ★★**GO-with-caveats**(2026-08-19 재감사) — **미제출**(등록 = **11.52 GPU-hr**), **여전히 사전등록 아님**(하네스층 감사 미실시) | 死因 A/B/C 전부 규칙층에서 수리(GPU 0). 수리 후 **전 밴드·전 arm에서 채택 계획의 창이 60 s**가 돼 `σ_boot ∝ 1/√T` 가정이 소멸하고 S0(a)가 임계경로 밖으로 나갔다(재감사 CONFIRMED). ★**밴드 점 판정 = `hi_chi2_upper`**(M8 3.84+Ha8 7.68=**11.52 GPU-hr**) — `mid`(6.72)의 붕괴 σ_boot 1.652%는 점추정 1.568%에서 여유 5%뿐이고 n=6 CI [0.979,3.847]% 대부분에서 무너져 P(pass) 0.21로 `UNDETERMINED` 위험(비대칭: prior 과대추정은 비용만, 과소추정은 캠페인 무효). ★재감사가 메인 세션 수리에서 blocking 4건(B1–B4)을 잡았다: B1 `seq2()`가 死因 A 미수리 상태로 §2.4가 인용(수리 후 Ha8 0.795/0.719/0.466, 인용값 "<0.4"는 2배 stale) · B2 **항등식 3건**(구 PC8·구 S3·구 S4)을 `all_pass`에 편입(**교훈 #9 열세 번째 재발**, `_oc` 실호출 + **변이 테스트**로 반증 가능한 검사로 재작성해 해소) · B3 PC5가 가드 수리에 원리상 무감인데 "수리 검증 증거"로 오독 · B4 `named_exclusion`이 실제로는 부팅 2개(`blk2`,`blk5`)인데 1개로 서술. 전부 수리 완료(커밋 `dee6c80`·`75e7ba3`). ★**이 캠페인은 어느 밴드 점을 사든 gate #13을 닫지 못한다**(batch⊗regime 앨리어스 — healthy 체제 b12=**0**/3064 vs collapsed **58**/1173 + 정본 #13(1)의 **노드·날짜 축 미배선**, job 축만). 산출 `DESIGN_G13_STATS_REV3_2026-08-19.json`. **"gate #13을 닫았다"고 쓰지 말 것 — 불변.** 상세 `DESIGN_G13_JOB_BATCH_REV3_2026-08-19.md` §2.2.1·§4.1·§5, "다음 실험 gate" #17 |
     | ★kernel_mech rev2 (`workspace/engine-port/results/kernel_mech/DESIGN_KERNEL_MECH_REV2_2026-08-16.md`) | ★**NO-GO**(2026-08-16, claims-auditor — 기준1 REFUTED·기준2 PLAUSIBLE·기준3 REFUTED) | F1 `wave_eff`가 ncu 메트릭이 아님(ga100 `--query-metrics` 확인) — 폐기 선언한 수제 유도를 1차 결정량으로 되살림(게이트 #36 死因이 이름만 바꿔 생존). F2 §3.2 축퇴 대수 부호가 반대라 게이트가 위험구간(D=16)을 정확히 통과시킴(게이트 오설정). F3 ★★`_ncu_target.py:68-71`의 CUPTI×green-context 비호환 문장 발견 — 정본이 그 다섯 줄 아래(73-74)만 인용해온 결함 발견(위 "8B decode-SM 민감도 측정 노트" 정정 배너 참조, 참이면 Stage B 전체가 이 기판에서 구성상 불가하나 error code 9는 3가지 경합 귀속이 있어 미확인 리스크로만 등재). F4 `ncu --pid` 부착 옵션이 존재하지 않아 §9-2 재발방지 구조 실행 불가. F5 ncu 기본값 `--clock-control base`가 후보(vi)를 클럭 핀으로 박고 직렬화가 후보(v)의 동거를 소멸시킴. 기준3: provenance 12건이 아니라 감사 출처 11+rev2 자작 1, 재구성이 제약 3건을 느슨화 방향으로 떨어뜨림. GO 경로 = 문서 수정 8건 + Stage 0′ 4프로브(≈40–50분). 상세 `handoff-report/session_handoff_2026-08-16.md` §4-4(b) |
+    | ★★kernel_mech P1 프로브 (`workspace/engine-port/results/kernel_mech/p1_probe/p1_greenctx_ncu.sbatch`, 결과 `P1_VERDICT_2026-08-20.md`) | ★★**`UNAVAILABLE (CUPTI×GREEN-CONTEXT)`**(2026-08-20, 메인 세션, job 886718 — 도구 타당성 판정, 성능 판정 아님) — F3의 "미확인 리스크"를 해소 | greenctx 다리: 문서화된 시그니처(exit 9) 정확히 재현. **두 겹 대조**로 귀속 확정 — (a) 다리 간: control(full GPU, 같은 GEMM)은 에러 0건·60행 정상 수집. (b) 다리 내부: 같은 프로세스에서 green ctx 밖 RNG 커널(8행)은 성공, green ctx 위 GEMM만 실패 — 변인은 "green-context 스트림 위인가" 하나뿐. ⇒ **Stage B(SM 제한 하 ncu 커널 내부 카운터) 구성상 불가 확정 → kernel_mech rev3는 Stage A 전용으로 범위 축소**(문서 수정 8건 중 Stage B 대상 최소 5건 적용 대상 소멸). 동반 프로브 886752(non-exclusive)가 `ERR_NVGPUCTRPERM`으로 실패 → 선례 스크립트 `run_ncu_profile.sh:15-17`의 권한 근거("batch면 열린다")가 불충분함을 반증, 실제 구분선은 exclusive+hwperf. GPU 0.032 GPU-hr(886718+886752). ★서술 한계: 성능 판정 아님·green context 실행 자체는 정상(`realized_sm=16`)·내부 기전 미분리·A100-SXM4-80GB/driver 580.105.08/ncu 2025.3.1.0/CUDA 13.0.2/이 클러스터 한정. 상세 `P1_VERDICT_2026-08-20.md`, `P1_886752_REVIEW_2026-08-20.md`, `reports/CONSENSUS.md` §3 항목52 追記(6) |
     | ★★G17 payoff 밴드 (`workspace/engine-port/results/slo_sched/DESIGN_G17_PAYOFF_BAND_2026-08-17.md`) | ★★**규칙층 NO-GO**(2026-08-18, claims-auditor, gate #34 stage 1 — `audit_g17_rules_2026-08-18/` a1–a8) | 死因 3건: (a) `a1_restricted_grid.py` — 제안한 S2 격자 `U={d44,d54,d64,d74}`에서 `D_ttft=44=S_min(U)`가 **양 phase 모두** §3의 `FORCED`(`Δ≥0`) 셀을 재생산 — 결정량이 데이터 관측 전에 격자 선택만으로 부호 강제(같은 4블록을 원 7-arm 격자로 두면 `P(부호>0)` HI 0.632, `U`로 좁히면 0.875 — 격자가 판정을 만든다). (b) sticky 레버 estimand가 **동거(co-residency) 시간이 아니라 단독-at-D 시간(`S_solo`)만** 재는 것으로 확인(`a6_estimand_structure.py`) — 손잡이가 설계 의도와 다른 양을 조작. (c) `M_itl`(요청별 token-ITL p95의 중앙값) estimand가 **이봉 분포에서 검열**됨 — `U` 위 p95는 0.341ms인데 요청별 평균은 2.062ms로 대표성이 없다(`a6`·`a8`). `K1` 순위 규칙도 블록 수 N이 늘수록 식별 확률이 **떨어지는 반직관 성질**(`a2_block_power.py`) 발견. ★**"gate #16을 닫았다"고 쓰지 말 것**(불변, G17은 §1-32/§1-33 재정식화판을 더 좁힌 하위 시도). 상세 `handoff-report/session_handoff_2026-08-18.md` |
     | ★★E-B1 shadow price (`workspace/engine-port/reports/DESIGN_EB1_SHADOW_PRICE_2026-08-18.md`) | ★★**규칙층 NO-GO**(2026-08-18, gate #34 stage 1 감사 — `audit_eb1_rules_2026-08-18/` window_exists 등 7스크립트) | 死因: **판정 가능 창이 대수로 공집합**. `max_running_requests=48`이 모든 28부팅에서 decode 배치를 하드캡해 HI(12 req/s)가 이미 포화(최악) ITL 분포를 관측하는데, 포화 시 ITL-p95 실패율 `q=P(ITLp95>60\|saturated)`가 arm별 ≈0.01–0.10(d34 최저)로 **거의 전부 5% 미만** — `window_exists.py`가 "어떤 rate에서도 조정 가능 창 진입 불가"(`ITL_AXIS_FEASIBLE_AT_ANY_RATE=False`, 다수 arm)를 산출. rate를 낮추면 포화 모집단이 희석돼 `q`가 더 내려갈 뿐이라 구제 불가능. 상세 `handoff-report/session_handoff_2026-08-18.md` |
 
@@ -4392,7 +4476,9 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     "이차 표적(HI rate 하향)은 미실행 — 원문 문턱 판본은 rate 축에
     열려 있다"고 적어 두었는데 이 항목이 그것을 빠뜨렸다. ★**후보는
     4개다**: (i) **gate #13 rev3**(아래) · (ii) **kernel_mech rev3**
-    (문서 8건 미수정, 상태 불변) · (iii) **gate #16 rate 축**(위
+    (문서 8건 미수정 — ★2026-08-20 갱신, "상태 불변"이라는 이 문구는
+    더 이상 참이 아니다: P1 프로브가 범위를 Stage A 전용으로 확정했다,
+    아래 참조) · (iii) **gate #16 rate 축**(위
     "다음 실험 gate" #16 2026-08-19 갱신 — 목표 (i) 과부하 이탈만
     표적, `Δ`/`D_itl` 식별은 명시 배제, 규칙층 초안·재감사 전) ·
     (iv) **S-6 telemetry 대조**(위 (e), `n` 확정 선행).
@@ -4444,6 +4530,31 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     금지** — 이 세션 전 캠페인·전 재분석에 동적 arm 0개.
     `results/slo_sched/`는 12캠페인 447파일 혼합(오인 금지 불변).
     인용정지 전부 유효.
+
+    ★★★★**2026-08-20 갱신(doc-steward — P1 프로브 job 886718 결과
+    반영, GPU 지출 0.032 GPU-hr, 새 성능 판정 0건) 후보 (ii) kernel_mech
+    rev3의 범위가 정해졌다 — "문서 8건 미수정, 상태 불변"은 더 이상
+    맞지 않는다.** `Stage 0′ P1 프로브`(위 두 항목이 판별기로 지정해
+    둔 그것)가 실행됐고 판정은 **`UNAVAILABLE (CUPTI×GREEN-CONTEXT)`**
+    — greenctx 다리가 문서화된 시그니처(exit 9)로 정확히 실패하고
+    control(full GPU, 같은 GEMM)은 에러 0건으로 성공했으며, ★같은
+    프로세스 안에서 green ctx 밖 커널은 성공·green ctx 위 커널만
+    실패해 귀속이 깨끗하다. ⇒ **Stage B(SM 제한 하 ncu 커널 내부
+    카운터 수집)는 이 기판에서 구성상 불가로 확정** — rev2 감사가
+    지정한 "문서 수정 8건" 중 Stage B 대상 최소 5건이 적용 대상
+    소멸해 **rev3는 Stage A 전용으로 재작성하면 되고 작업량이 크게
+    준다**(4세션 이월의 실질 원인 해소). ★이 발견은 gate #13·gate #16
+    어느 쪽도 닫지 않는다(그 둘은 이 P1과 독립) — **후보는 여전히 4개**,
+    다만 (ii)의 실행 계획이 좁아졌다. ★★서술 한계: 이건 **도구 타당성
+    판정이지 성능 판정이 아니다**, green context 실행 자체는 정상
+    (`realized_sm=16`), 내부 기전(CUPTI 대 다른 층)은 미분리, 스코프는
+    A100-SXM4-80GB·driver 580.105.08·ncu 2025.3.1.0·CUDA 13.0.2·이
+    클러스터 한정(이식 금지). 상세 위 "8B decode-SM 민감도 측정 노트"
+    실증 확정 배너, "다음 실험 gate" #11 레지스트리 kernel_mech P1
+    프로브 행, `workspace/engine-port/results/kernel_mech/p1_probe/
+    P1_VERDICT_2026-08-20.md`, `reports/CONSENSUS.md` §3 항목52
+    追記(6). ★**"gate #16을 닫았다"·"gate #13을 닫았다" 금지 — 둘 다
+    여전히 불변**(이 발견은 그 둘과 무관).
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
