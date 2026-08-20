@@ -1,0 +1,246 @@
+{
+  "what": "gate #16 rate axis -- capacity/power window",
+  "gpu_spend": 0,
+  "n_boot_files": 56,
+  "offered": {
+    "LO": 3.0,
+    "HI": 12.0
+  },
+  "ttft_slo_ms": 3000.0,
+  "itl_slo_ms": 60.0,
+  "phases": {
+    "LO": {
+      "offered_req_s": 3.0,
+      "per_arm": {
+        "d16": {
+          "throughput_mean": 2.858943348019397,
+          "throughput_sd": 0.0011473893355973303,
+          "goodput_mean": 2.839892658120848,
+          "goodput_sd": 0.032897984800931764,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 99.33333333333333,
+          "band_mass_ttft_mean": 0.0,
+          "band_mass_itl_mean": 0.09541666666666666,
+          "ttft_p95_ms_mean": 170.47929887630733,
+          "itl_p95_ms_mean": 13.196189369773482
+        },
+        "d24": {
+          "throughput_mean": 2.858985144295089,
+          "throughput_sd": 0.0012250286175639288,
+          "goodput_mean": 2.8494572261317144,
+          "goodput_sd": 0.010377865180891796,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 99.66666666666666,
+          "band_mass_ttft_mean": 0.0,
+          "band_mass_itl_mean": 0.0725,
+          "ttft_p95_ms_mean": 157.0178501176996,
+          "itl_p95_ms_mean": 20.19686539424582
+        },
+        "d34": {
+          "throughput_mean": 2.859369972281237,
+          "throughput_sd": 0.0010554866754173835,
+          "goodput_mean": 2.849837863810007,
+          "goodput_sd": 0.0030978469678653153,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 99.66666666666667,
+          "band_mass_ttft_mean": 0.0,
+          "band_mass_itl_mean": 0.07666666666666666,
+          "ttft_p95_ms_mean": 182.50136818242015,
+          "itl_p95_ms_mean": 17.87424759968416
+        },
+        "d44": {
+          "throughput_mean": 2.859407887078516,
+          "throughput_sd": 0.0006306301609964011,
+          "goodput_mean": 2.8510684808229354,
+          "goodput_sd": 0.005026190892674075,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 99.70833333333333,
+          "band_mass_ttft_mean": 0.0,
+          "band_mass_itl_mean": 0.06625,
+          "ttft_p95_ms_mean": 182.11946296578387,
+          "itl_p95_ms_mean": 15.924588746565856
+        },
+        "d54": {
+          "throughput_mean": 2.8589707059944027,
+          "throughput_sd": 0.0012689506223668148,
+          "goodput_mean": 2.842299184073791,
+          "goodput_sd": 0.018858274917146096,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 99.41666666666667,
+          "band_mass_ttft_mean": 0.0,
+          "band_mass_itl_mean": 0.06625,
+          "ttft_p95_ms_mean": 230.39727602299516,
+          "itl_p95_ms_mean": 15.347275622480081
+        },
+        "d64": {
+          "throughput_mean": 2.858244801054604,
+          "throughput_sd": 0.00034266196367859126,
+          "goodput_mean": 2.8499083808564847,
+          "goodput_sd": 0.002599437290838456,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 99.70833333333334,
+          "band_mass_ttft_mean": 0.0,
+          "band_mass_itl_mean": 0.07208333333333333,
+          "ttft_p95_ms_mean": 309.0880508076223,
+          "itl_p95_ms_mean": 14.824353068252092
+        },
+        "d74": {
+          "throughput_mean": 2.855646192529642,
+          "throughput_sd": 0.00175584604141545,
+          "goodput_mean": 2.8152152421870005,
+          "goodput_sd": 0.0540451175834445,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 98.58333333333333,
+          "band_mass_ttft_mean": 0.0004166666666666667,
+          "band_mass_itl_mean": 0.05416666666666667,
+          "ttft_p95_ms_mean": 478.12895128299635,
+          "itl_p95_ms_mean": 14.766184573818464
+        }
+      },
+      "capacity_proxy_min_arm": 2.855646192529642,
+      "capacity_proxy_min_arm_name": "d74",
+      "capacity_proxy_max_arm": 2.859407887078516,
+      "goodput_arm_spread": 0.035853238635934925,
+      "goodput_pooled_between_boot_sd": 0.025377445222337043,
+      "spread_over_sd": 1.41279937053621,
+      "offered_over_achieved": 1.049497917506775
+    },
+    "HI": {
+      "offered_req_s": 12.0,
+      "per_arm": {
+        "d16": {
+          "throughput_mean": 5.083997838586624,
+          "throughput_sd": 0.014425655966016459,
+          "goodput_mean": 0.385598661725423,
+          "goodput_sd": 0.06485514194087755,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 7.583333333333334,
+          "band_mass_ttft_mean": 0.07875,
+          "band_mass_itl_mean": 0.07875,
+          "ttft_p95_ms_mean": 9766.280545167683,
+          "itl_p95_ms_mean": 85.58758552317158
+        },
+        "d24": {
+          "throughput_mean": 5.400946393924573,
+          "throughput_sd": 0.016181808776514615,
+          "goodput_mean": 1.2023983962528157,
+          "goodput_sd": 0.31173162401291477,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 22.25,
+          "band_mass_ttft_mean": 0.04958333333333333,
+          "band_mass_itl_mean": 0.8783333333333333,
+          "ttft_p95_ms_mean": 7535.7363372859245,
+          "itl_p95_ms_mean": 61.36631651752395
+        },
+        "d34": {
+          "throughput_mean": 5.484382226809643,
+          "throughput_sd": 0.01566419903311252,
+          "goodput_mean": 3.6997811814672517,
+          "goodput_sd": 0.08514377338809033,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 67.45833333333333,
+          "band_mass_ttft_mean": 0.05291666666666667,
+          "band_mass_itl_mean": 0.805,
+          "ttft_p95_ms_mean": 7041.481103633123,
+          "itl_p95_ms_mean": 58.68435088705155
+        },
+        "d44": {
+          "throughput_mean": 5.536114270331531,
+          "throughput_sd": 0.015019092283869414,
+          "goodput_mean": 3.797272118352196,
+          "goodput_sd": 0.2402557201313186,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 68.58333333333333,
+          "band_mass_ttft_mean": 0.04041666666666666,
+          "band_mass_itl_mean": 0.8166666666666667,
+          "ttft_p95_ms_mean": 6783.432805745542,
+          "itl_p95_ms_mean": 58.700203902844805
+        },
+        "d54": {
+          "throughput_mean": 5.571891093667303,
+          "throughput_sd": 0.02686130753046094,
+          "goodput_mean": 3.5821353995384833,
+          "goodput_sd": 0.6383777048734748,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 64.25,
+          "band_mass_ttft_mean": 0.020416666666666666,
+          "band_mass_itl_mean": 0.7949999999999999,
+          "ttft_p95_ms_mean": 6540.908810485416,
+          "itl_p95_ms_mean": 58.94239621266024
+        },
+        "d64": {
+          "throughput_mean": 5.609641533872811,
+          "throughput_sd": 0.011277130089349807,
+          "goodput_mean": 3.775210673969794,
+          "goodput_sd": 0.37724057014952994,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 67.29166666666667,
+          "band_mass_ttft_mean": 0.03125,
+          "band_mass_itl_mean": 0.7604166666666666,
+          "ttft_p95_ms_mean": 6484.15083128275,
+          "itl_p95_ms_mean": 58.62193879656843
+        },
+        "d74": {
+          "throughput_mean": 5.509613386335361,
+          "throughput_sd": 0.06877811419090948,
+          "goodput_mean": 3.1308961426430173,
+          "goodput_sd": 0.982423196909241,
+          "n_boots": 4,
+          "joint_pass_pct_mean": 56.666666666666664,
+          "band_mass_ttft_mean": 0.04666666666666667,
+          "band_mass_itl_mean": 0.58875,
+          "ttft_p95_ms_mean": 7116.479865353903,
+          "itl_p95_ms_mean": 59.49630599934608
+        }
+      },
+      "capacity_proxy_min_arm": 5.083997838586624,
+      "capacity_proxy_min_arm_name": "d16",
+      "capacity_proxy_max_arm": 5.609641533872811,
+      "goodput_arm_spread": 3.4116734566267732,
+      "goodput_pooled_between_boot_sd": 0.4900942981742133,
+      "spread_over_sd": 6.961259229777918,
+      "offered_over_achieved": 2.1991493785562723
+    }
+  },
+  "window": {
+    "upper_bound_req_s": 5.083997838586624,
+    "upper_bound_arm": "d16",
+    "lower_bound_evidence": {
+      "lo_goodput_arm_spread": 0.035853238635934925,
+      "lo_pooled_between_boot_sd": 0.025377445222337043,
+      "lo_spread_over_sd": 1.41279937053621,
+      "boots_per_arm_for_80pct_power_at_LO_sized_spread": 7.855703309795242,
+      "n_boots_available_per_arm_in_G16": 4
+    },
+    "cliff_margin_LO": {
+      "d16": {
+        "band_mass_ttft": 0.0,
+        "band_mass_itl": 0.09541666666666666
+      },
+      "d24": {
+        "band_mass_ttft": 0.0,
+        "band_mass_itl": 0.0725
+      },
+      "d34": {
+        "band_mass_ttft": 0.0,
+        "band_mass_itl": 0.07666666666666666
+      },
+      "d44": {
+        "band_mass_ttft": 0.0,
+        "band_mass_itl": 0.06625
+      },
+      "d54": {
+        "band_mass_ttft": 0.0,
+        "band_mass_itl": 0.06625
+      },
+      "d64": {
+        "band_mass_ttft": 0.0,
+        "band_mass_itl": 0.07208333333333333
+      },
+      "d74": {
+        "band_mass_ttft": 0.0004166666666666667,
+        "band_mass_itl": 0.05416666666666667
+      }
+    }
+  }
+}
