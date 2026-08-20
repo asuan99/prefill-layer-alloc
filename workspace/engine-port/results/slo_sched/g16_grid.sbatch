@@ -141,10 +141,40 @@ export TRITON_CACHE_DIR="$ROOT/workspace/engine-port/triage/.triton_cache_g16_${
 
 MODEL=Zyphra/Zamba2-2.7B; CTX=4096
 SGPT="$ROOT/hf_cache/raw/ShareGPT_V3_unfiltered_cleaned_split.json"
-RLO=3; RHI=12
+# G18 rate-axis probe (2026-08-20): the two rates are env-wired with the G16
+# values as DEFAULTS, so every existing FULL/SMOKE invocation is byte-identical
+# in behaviour.  DESIGN_G18_RATE_AXIS_2026-08-19.md sec4 asked for exactly this
+# ("`RHI=\"${G16_RHI:-12}\"` 형태의 env 배선만 추가하면 되고").
+RLO="${G16_RLO:-3}"; RHI="${G16_RHI:-12}"
 
 SMOKE="${G16_SMOKE:-0}"
-if [ "$SMOKE" = "1" ]; then
+PROBE="${G18_PROBE:-0}"
+if [ "$SMOKE" = "1" ] && [ "$PROBE" = "1" ]; then
+  echo "G18_PROBE and G16_SMOKE are mutually exclusive"; exit 1
+fi
+if [ "$PROBE" = "1" ]; then
+  # ---- G18 rate-axis probe mode --------------------------------------------
+  # Separate from FULL on purpose: FULL's H15 assert pins the 7-arm grid and
+  # the (3, 12) rates because K6/PC-A depend on them.  The probe changes the
+  # rate on purpose, so it must NOT masquerade as a FULL block -- it gets its
+  # own BLOCK_TAG, which also keeps `g16_blk*` globs (and g18_rate_window.py's
+  # own pattern) from ever picking probe artifacts up as G16 data.
+  BLOCK_IDX="${1:?BLOCK_IDX required for the probe too (replicate index)}"
+  BLOCK_TAG="g18p${BLOCK_IDX}"
+  ARM_ORDER="${G18_ARMS:-d16 d44 d64}"
+  N_EXPECT_ARMS=$(echo "$ARM_ORDER" | wc -w)
+  NP="${NP:-200}"; ROUNDS="${ROUNDS:-3}"
+  MIN_SNAPSHOTS=20
+  MODE_TAG="g18probe"
+  if [ "$NP" != "200" ] || [ "$ROUNDS" != "3" ]; then
+    echo "G18_PROBE requires NP=200 ROUNDS=3 (workload identity with G16) but got" \
+      "NP=$NP ROUNDS=$ROUNDS -- refusing to run"; exit 1
+  fi
+  : "${G16_RLO:?G18_PROBE requires an explicit G16_RLO}"
+  : "${G16_RHI:?G18_PROBE requires an explicit G16_RHI}"
+  echo "G18_MODE=PROBE block_tag=$BLOCK_TAG arms=[$ARM_ORDER] RLO=$RLO RHI=$RHI" \
+       "NP=$NP ROUNDS=$ROUNDS"
+elif [ "$SMOKE" = "1" ]; then
   # sec9 smoke spec + addendum A-7 item 8: 3 arms (d44, d64, d74) -- d64 was
   # added because BOTH (44,64) and (34,74) are outside E-3's directly-
   # verified set, so d74 alone was not enough to exercise H3'-a on both.
