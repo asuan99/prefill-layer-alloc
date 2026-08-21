@@ -2991,11 +2991,23 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     이 오프셋의 일부 또는 전부가 계측 오버헤드일 가능성은 아직
     검토된 적이 없다. 다음 세션 result-analyst/claims-auditor 판단
     대상이며, 이번 세션엔 정정하지 않는다(GPU 0·doc-steward 스코프
-    밖). 분리하려면 telemetry-OFF 대조 부팅 n≥2(≈0.3 GPU-hr)가
-    필요하다. 상세 `workspace/engine-port/results/slo_sched/
-    PREREG_G16_RULES_REV3_2026-08-16.md` addendum B-2(N7),
-    `handoff-report/session_handoff_2026-08-16.md` §15.5,
-    `PROJECT_STATUS.md` "방법론 게이트" #41.
+    밖). 분리하려면 telemetry-OFF 대조 부팅이 필요하다. ★★**정정
+    (2026-08-21, doc-steward — S-6 검정력 계산,
+    `workspace/engine-port/results/slo_sched/S6_POWER_2026-08-21.md`,
+    GPU 0·새 성능 판정 0건)**: 위 "n≥2(≈0.3 GPU-hr)"는 **반증**됐다
+    — 필요한 n은 δ와 사전값의 함수이며, 이 격자의 구속 셀(HI
+    `M_ttft`)에서 최소 **5쌍**(δ=5.4% 참조값, 점추정)~**18쌍**(보수
+    사전값 UB95)이고, 부팅 단가는 실측 **0.1272 GPU-hr/부팅**
+    (457.8s — B-2가 적은 값의 2배). ★단 **S-6 설계 자체는 규칙층
+    감사 `NO-GO`**(死因 4건, 전부 GPU 0의 문면 수리로 해소 가능하며
+    하네스 착수 전에 잡힘)이지 **계측 축 분리가 불가능하다는
+    반증이 아니다**(방법론 게이트 #21과 혼동 금지 — 이건 설계
+    반려이지 측정 실패도 실험 방향 반증도 아니다). **등록된 n은
+    아직 없다.** 상세 `workspace/engine-port/results/slo_sched/
+    PREREG_G16_RULES_REV3_2026-08-16.md` addendum B-2(N7, 정정 표시
+    병기), `handoff-report/session_handoff_2026-08-16.md` §15.5,
+    `PROJECT_STATUS.md` "방법론 게이트" #41(2026-08-21 정정)·"다음
+    실험 gate" #17 2026-08-21 갱신(2차).
 
 62. ★★**(2026-08-16, 세션4, doc-steward 등재 — G16 스모크 884292
     하네스 감사에서 발견, 방법론 게이트 #21의 거울상, GPU 0·새 성능
@@ -3136,6 +3148,15 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     신규 문서 작성 행위**가 각자 독립된 실패 지점이다. 상세
     `workspace/engine-port/scripts/discipline/citation_stops.tsv`,
     `PROJECT_STATUS.md` "방법론 게이트" #47.
+    ★추가 사례(2026-08-21, doc-steward — **위반 아님, 선제 정정이라
+    재발로 신규 등재하지 않음**): `S6_POWER_2026-08-21.md`가
+    반증한 B-2의 "n≥2(≈0.3 GPU-hr)"가 세 곳(`CONSENSUS.md` §3
+    항목61·`PROJECT_STATUS.md` 방법론 게이트 #41·원 사전등록
+    `PREREG_G16_RULES_REV3_2026-08-16.md:587`)에 2026-08-16부터
+    그대로 남아 있었다는 사실 자체가 이 항목이 경고한 패턴(정본
+    등재는 전파를 보장하지 않는다)의 거울상이다 — 다만 이번엔 그
+    stale 값이 **새 문서에 실제로 잘못 인용되기 전에** 잡혀 세 곳을
+    동시에 정정했다.
 
 68. ★★**(2026-08-18, 메인 세션 자기정정, GPU 0·새 성능 판정 아님)
     결과 디렉터리 이름을 캠페인 이름으로 오인하지 마라.**
@@ -3333,6 +3354,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `../../workspace/engine-port/results/s8_scaleup/S0A_VERDICT_2026-08-20.md` | ★★**S0(a) 부팅 내부 잔차 측정 — rev2(2026-08-21 doc-steward 등재, claims-auditor 감사 REFUTED로 초판 결론 철회).** *"C-g의 전제가 성립하지 않는다"*는 **철회**, 비용 정합 재판정 결과는 **"C-g 이득은 교대 속도의 함수"**(부팅당 8구간 교대는 승, 4·2구간은 패). `r`이 창 의존량임을 신규 등재(Ha8 30s 3.025 vs 60s 3.116, 정본 채택구간 밖). ★**게이트가 아니다**·gate #13 불변(S0(a)는 임계경로 밖). 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #17(2026-08-21 갱신)·"방법론 게이트" #53(신설) |
 | `../../workspace/engine-port/results/slo_sched/{PREREG_G18_PROBE_2026-08-20.md,G18_RATE_VALUE_2026-08-20.md}` | ★**gate #16 rate-축 내부 구간 프로브 — 2026-08-21 doc-steward 등재, 트랙 보류(HOLD).** rev1 규칙층 REFUTED → rev2 NO-GO(새 死因 5건) → 사용자 결정으로 보류(gate #13 완주 후 재개 판단). ★**정본 오염 경로 발견·수리**(`g16_analyze.py:953` 글롭 매치, 실제 오염 0건) — `G18_RATE_VALUE_2026-08-20.md` §6이 그 대응. `G18_PROBE_STOP` 존재, 피더 재기동 금지. **gate #16 불변**(닫히지 않음). 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #17(2026-08-21 갱신)·"방법론 게이트" #54(신설) |
 | `../../workspace/engine-port/results/kernel_mech/DESIGN_KERNEL_MECH_REV3_2026-08-20.md` | ★**kernel_mech rev3(Stage A 전용) — §3 차단 2건 설계 본문 수리(2026-08-21 doc-steward 등재).** §3.1 셀 라벨을 realized로 판정(시간가중 조건+혼합구간 폐기) · §3.2 `gap_frac` 항등식 가드(union 정의+변이 테스트). 후보 (vi) 클럭 2차 강등. ★**이 수리 자체는 미감사**(다음 세션 재감사 대상, 사전등록으로 아직 안 넘어감). Stage B 폐기(P1 프로브, 2026-08-20)는 불변. 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #17(2026-08-21 갱신) |
+| `../../workspace/engine-port/results/slo_sched/S6_POWER_2026-08-21.md` | ★**S-6 telemetry-OFF 대조 검정력 계산 — 규칙층 입력, claims-auditor 감사 `NO-GO`(2026-08-21), 등록 `n` 없음, 정본 등재 완료(doc-steward, 같은 날).** `PREREG_G16_RULES_REV3_2026-08-16.md` addendum B-2의 "n≥2(≈0.3 GPU-hr)"를 **반증**(필요 n은 δ·사전값의 함수, 구속 셀 HI `M_ttft`에서 5–18쌍, 부팅 단가 실측 0.1272 GPU-hr) — 대체 단일값은 등재 금지, 함수 형태로만 인용. 死因 4건(OFF 다리가 하네스·분석기에서 구조적으로 탈락·비오염 논증이 이름 약속뿐[교훈 #57 재발]·estimand 단위 불일치[절대 ms vs 상대 %]·pooling 판단 근거가 귀무분포 없는 범위통계량) 전부 GPU 0의 문면 수리로 해소 가능, 하네스 착수 **전**에 잡힘(설계 반려이지 계측 축 분리 자체의 반증 아님). **payoff는 1 arm(d44) 공통 시프트 크기로 축소**(he2/sgptv 계열 절대값 이식 불가, arm×telemetry 교호작용은 1 arm으로 측정 불가). 원자료 `S6_POWER_2026-08-21.json`, 스크립트 `s6_power.py`, 커밋 `ace05b8`. 정본 반영 = §3 항목61(정정)·67(追記)·`PROJECT_STATUS.md` "방법론 게이트" #41(정정)·"다음 실험 gate" #17(2026-08-21 갱신 2차) |
 
 `deprecated_reports/`(2026-07-24부터 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)) = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 
