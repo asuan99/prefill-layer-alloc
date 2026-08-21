@@ -1,0 +1,42 @@
+{
+ "guard_s": 3.0,
+ "batch": 16,
+ "ratios": {
+  "Ha8": {
+   "r": 3.1229116172088855,
+   "n_pooled_sm16": 341614,
+   "n_pooled_sm92": 747090,
+   "n_boots_sm16": 96,
+   "n_boots_sm92": 96,
+   "d1_pass": true
+  },
+  "M8": {
+   "r": 3.061358571827169,
+   "n_pooled_sm16": 327125,
+   "n_pooled_sm92": 725552,
+   "n_boots_sm16": 48,
+   "n_boots_sm92": 48,
+   "d1_pass": true
+  }
+ },
+ "bootstrap": {
+  "Ha8": {
+   "draws": 10000,
+   "seed": 1,
+   "ci95_low": 3.1165965774684232,
+   "ci95_high": 3.128974921722564,
+   "boot_sd": 0.0031625112438373646,
+   "n_clusters_num": 96,
+   "n_clusters_den": 96
+  },
+  "M8": {
+   "draws": 10000,
+   "seed": 1,
+   "ci95_low": 3.059192933781046,
+   "ci95_high": 3.0635489916187626,
+   "boot_sd": 0.0011084819128622573,
+   "n_clusters_num": 48,
+   "n_clusters_den": 48
+  }
+ }
+}

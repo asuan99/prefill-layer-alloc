@@ -1,0 +1,99 @@
+{
+  "analyzer_sha256": "01448211ca9335be4aff06ab9a81d5446c8adcaf26d417a2f643e175ac775b50",
+  "registered_plan": {
+    "M8": {
+      "k": 16,
+      "m": 3,
+      "window_s": 60,
+      "bound": "satterthwaite_registered"
+    },
+    "Ha8": {
+      "k": 16,
+      "m": 6,
+      "window_s": 60,
+      "bound": "exact_F_pivot"
+    }
+  },
+  "registered_sigma_boot_band_point": "hi_chi2_upper",
+  "rule": "DESIGN_G13_JOB_BATCH_REV3_2026-08-19.md sec2.1, verbatim",
+  "forbidden": [
+    "gate #13 is closed",
+    "performance claim",
+    "policy implication",
+    "arm ranking",
+    "node/day decomposition"
+  ],
+  "positive_controls": [
+    {
+      "id": "PC-A/M8",
+      "what": "sqrt(MS_W) on the committed C2-R job reproduces pairsd() sigma_boot",
+      "recomputed_pct": 0.03711071229563127,
+      "design_input_pct": 0.03711071229563127,
+      "abs_diff": 0.0,
+      "tolerance": 1e-06,
+      "ok": true
+    },
+    {
+      "id": "PC-A/Ha8",
+      "what": "sqrt(MS_W) on the committed C2-R job reproduces pairsd() sigma_boot",
+      "recomputed_pct": 1.568417018312872,
+      "design_input_pct": 1.568417018312872,
+      "abs_diff": 0.0,
+      "tolerance": 1e-06,
+      "ok": true
+    },
+    {
+      "id": "PC-B",
+      "what": "design_g13_stats control set (bound helpers)",
+      "all_pass": true,
+      "n": 19,
+      "ok": true
+    }
+  ],
+  "CONTROLS": "PASS",
+  "inventory": {
+    "Ha8": {
+      "n_jobs": 16,
+      "boot_pairs_per_job": {
+        "888215": 6,
+        "888217": 6,
+        "888345": 6,
+        "888382": 6,
+        "888412": 6,
+        "888444": 6,
+        "888463": 6,
+        "888477": 6,
+        "888484": 6,
+        "888504": 6,
+        "888510": 6,
+        "888513": 6,
+        "888520": 6,
+        "888525": 6,
+        "888528": 6,
+        "888559": 6
+      }
+    },
+    "M8": {
+      "n_jobs": 16,
+      "boot_pairs_per_job": {
+        "888123": 3,
+        "888216": 3,
+        "888218": 3,
+        "888354": 3,
+        "888383": 3,
+        "888427": 3,
+        "888445": 3,
+        "888474": 3,
+        "888478": 3,
+        "888496": 3,
+        "888505": 3,
+        "888512": 3,
+        "888514": 3,
+        "888521": 3,
+        "888526": 3,
+        "888540": 3
+      }
+    }
+  },
+  "BLINDED": "REFUSED: --unblind requested but PREREG still says AUDIT_STATUS: PENDING"
+}
