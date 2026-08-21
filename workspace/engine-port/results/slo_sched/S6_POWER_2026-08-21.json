@@ -1,0 +1,1058 @@
+{
+  "frame": "S-6 sample-size calculation. Rules-layer input, NOT a pre-registration and NOT a performance verdict. GPU 0.",
+  "prior_source": {
+    "campaign": "G16 (jobs 884336/884410/884411/884412), 4 blocks",
+    "loader": "g16_analyze.load_campaign_grid (unmodified)",
+    "analyzer_sha256": "bac783be5ba40974b279a2c8f5ee486d62091b3a4f9000fee5c051e899e5b9ec",
+    "estimands": "g16_analyze.boot_estimands -- prereg sec4 M_ttft/M_itl",
+    "caveat": "all G16 boots are telemetry=ON; the OFF leg's variance is unobserved and assumed equal -- unverifiable pre-hoc"
+  },
+  "quantile_backend": "scipy",
+  "phases": {
+    "LO": {
+      "n_adopted_boots": 28,
+      "arms": [
+        "d16",
+        "d24",
+        "d34",
+        "d44",
+        "d54",
+        "d64",
+        "d74"
+      ],
+      "M_ttft": {
+        "assurance_P_halfwidth_le_delta": {
+          "delta_3.0pct": {
+            "n3": {
+              "sigma_true=point": 0.7141788849495916,
+              "sigma_true=ub95": 0.13660486904539842,
+              "sigma_true=pooled_point": 0.13746222981125478
+            },
+            "n4": {
+              "sigma_true=point": 0.9727243841818344,
+              "sigma_true=ub95": 0.21663235992459418,
+              "sigma_true=pooled_point": 0.21838753766854904
+            },
+            "n5": {
+              "sigma_true=point": 0.9995121114927221,
+              "sigma_true=ub95": 0.32861954617257166,
+              "sigma_true=pooled_point": 0.3315033749541248
+            },
+            "n6": {
+              "sigma_true=point": 0.999998554470719,
+              "sigma_true=ub95": 0.467034193173974,
+              "sigma_true=pooled_point": 0.47097452166844417
+            },
+            "n8": {
+              "sigma_true=point": 0.9999999999999534,
+              "sigma_true=ub95": 0.7528896410126538,
+              "sigma_true=pooled_point": 0.7571921831274021
+            },
+            "n10": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9318790163369942,
+              "sigma_true=pooled_point": 0.9341338838948677
+            },
+            "n12": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9899091961378207,
+              "sigma_true=pooled_point": 0.9904596490062775
+            },
+            "n16": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9999734430961388,
+              "sigma_true=pooled_point": 0.9999764534498773
+            },
+            "n20": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9999999967936811,
+              "sigma_true=pooled_point": 0.9999999974018459
+            }
+          },
+          "delta_5.4pct": {
+            "n3": {
+              "sigma_true=point": 0.9827119678425712,
+              "sigma_true=ub95": 0.378674628284394,
+              "sigma_true=pooled_point": 0.380671430401338
+            },
+            "n4": {
+              "sigma_true=point": 0.9999983795764037,
+              "sigma_true=ub95": 0.6765794272665306,
+              "sigma_true=pooled_point": 0.679641366310604
+            },
+            "n5": {
+              "sigma_true=point": 0.9999999999997384,
+              "sigma_true=ub95": 0.8934407806978355,
+              "sigma_true=pooled_point": 0.8955951882463491
+            },
+            "n6": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9795492400853172,
+              "sigma_true=pooled_point": 0.980279572588277
+            },
+            "n8": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9998783457076085,
+              "sigma_true=pooled_point": 0.9998881233053555
+            },
+            "n10": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9999999473429766,
+              "sigma_true=pooled_point": 0.9999999547700885
+            },
+            "n12": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9999999999985384,
+              "sigma_true=pooled_point": 0.9999999999988515
+            },
+            "n16": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 1.0,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n20": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 1.0,
+              "sigma_true=pooled_point": 1.0
+            }
+          }
+        },
+        "variance_components": {
+          "balanced": true,
+          "n_arms": 7,
+          "n_blocks": 4,
+          "sd_block_pct": 1.4277749529470287,
+          "sd_resid_pct": 1.6896488844285917,
+          "sd_total_within_arm_pct": 2.212115428478739,
+          "rho_block_share": 0.4165853071477286,
+          "ms_blk_over_ms_res": 5.998326551869163,
+          "df_block": 3,
+          "df_resid": 18,
+          "note": "a shared block component is present; pairing within a block would cancel it, but only if the OFF/ON pair really is adjacent on one node in one window"
+        },
+        "arm_d44": {
+          "n": 4,
+          "mean": 79.30102762475144,
+          "sd": 0.6051175633646382,
+          "cv_pct": 0.7630639620813298,
+          "df": 3
+        },
+        "arm_d44_cv_ub95_pct": 2.228153288990777,
+        "pooled_within_arm": {
+          "cv_pct": 2.220655772979733,
+          "df": 21,
+          "per_arm_cv_pct": {
+            "d16": 3.849376967359217,
+            "d24": 2.9936941750332227,
+            "d34": 1.7261219192268664,
+            "d44": 0.7630639620813298,
+            "d54": 1.9514094144976541,
+            "d64": 0.39713366417273893,
+            "d74": 1.7921493362836627
+          },
+          "hetero_ratio_max_min": 9.692900186081621
+        },
+        "pooled_cv_ub95_pct": 2.988991774315642,
+        "required_n": {
+          "delta_2.0pct": {
+            "arm_point": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 1.7171452398928535
+            },
+            "arm_ub95": {
+              "n_pairs": 13,
+              "n_boots": 26,
+              "half_width_pct": 1.904181366467327
+            },
+            "pooled_point": {
+              "n_pairs": 12,
+              "n_boots": 24,
+              "half_width_pct": 1.9953667560357935
+            },
+            "pooled_ub95": {
+              "n_pairs": 20,
+              "n_boots": 40,
+              "half_width_pct": 1.9783309229519392
+            }
+          },
+          "delta_3.0pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 2.6807209534931236
+            },
+            "arm_ub95": {
+              "n_pairs": 7,
+              "n_boots": 14,
+              "half_width_pct": 2.914267195212116
+            },
+            "pooled_point": {
+              "n_pairs": 7,
+              "n_boots": 14,
+              "half_width_pct": 2.9044609735914935
+            },
+            "pooled_ub95": {
+              "n_pairs": 11,
+              "n_boots": 22,
+              "half_width_pct": 2.839786083641669
+            }
+          },
+          "delta_5.4pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 2.6807209534931236
+            },
+            "arm_ub95": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 5.014078771989398
+            },
+            "pooled_point": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 4.997206891558473
+            },
+            "pooled_ub95": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 5.248603995661313
+            }
+          },
+          "delta_8.0pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 2.6807209534931236
+            },
+            "arm_ub95": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 7.827728088612798
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 7.8013885557967875
+            },
+            "pooled_ub95": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 6.726215956189996
+            }
+          },
+          "delta_10.0pct": {
+            "arm_point": {
+              "n_pairs": 2,
+              "n_boots": 4,
+              "half_width_pct": 9.695646929002018
+            },
+            "arm_ub95": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 7.827728088612798
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 7.8013885557967875
+            },
+            "pooled_ub95": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 6.726215956189996
+            }
+          }
+        }
+      },
+      "M_itl": {
+        "assurance_P_halfwidth_le_delta": {
+          "delta_3.0pct": {
+            "n3": {
+              "sigma_true=point": 0.5507806328235048,
+              "sigma_true=ub95": 0.08958459515639157,
+              "sigma_true=pooled_point": 0.36321660644825043
+            },
+            "n4": {
+              "sigma_true=point": 0.8809131291284857,
+              "sigma_true=ub95": 0.12356018297440924,
+              "sigma_true=pooled_point": 0.6523431398439856
+            },
+            "n5": {
+              "sigma_true=point": 0.9877694630611883,
+              "sigma_true=ub95": 0.17382772188196138,
+              "sigma_true=pooled_point": 0.8755798120368119
+            },
+            "n6": {
+              "sigma_true=point": 0.9995643926006453,
+              "sigma_true=ub95": 0.2431132685264407,
+              "sigma_true=pooled_point": 0.9730514342783804
+            },
+            "n8": {
+              "sigma_true=point": 0.9999999815483168,
+              "sigma_true=ub95": 0.43677834277146044,
+              "sigma_true=pooled_point": 0.9997701330049658
+            },
+            "n10": {
+              "sigma_true=point": 0.999999999999993,
+              "sigma_true=ub95": 0.6643592568031347,
+              "sigma_true=pooled_point": 0.9999998327389583
+            },
+            "n12": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.8505572132611492,
+              "sigma_true=pooled_point": 0.9999999999908518
+            },
+            "n16": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9900555766770714,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n20": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9998791432056862,
+              "sigma_true=pooled_point": 1.0
+            }
+          },
+          "delta_5.4pct": {
+            "n3": {
+              "sigma_true=point": 0.9251890020072356,
+              "sigma_true=ub95": 0.26220399982777803,
+              "sigma_true=pooled_point": 0.7682961755721626
+            },
+            "n4": {
+              "sigma_true=point": 0.9997209942809409,
+              "sigma_true=ub95": 0.472637936312382,
+              "sigma_true=pooled_point": 0.9864844969979323
+            },
+            "n5": {
+              "sigma_true=point": 0.9999999789416553,
+              "sigma_true=ub95": 0.6989502631762424,
+              "sigma_true=pooled_point": 0.9998952484263934
+            },
+            "n6": {
+              "sigma_true=point": 0.9999999999999711,
+              "sigma_true=ub95": 0.870161179805869,
+              "sigma_true=pooled_point": 0.9999999047653672
+            },
+            "n8": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.991141529285185,
+              "sigma_true=pooled_point": 0.9999999999999999
+            },
+            "n10": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9998665842279201,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n12": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9999996085896724,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n16": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9999999999999809,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n20": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 1.0,
+              "sigma_true=pooled_point": 1.0
+            }
+          }
+        },
+        "variance_components": {
+          "balanced": true,
+          "n_arms": 7,
+          "n_blocks": 4,
+          "sd_block_pct": 0.8529594694640303,
+          "sd_resid_pct": 0.9337556529554715,
+          "sd_total_within_arm_pct": 1.2646894780833193,
+          "rho_block_share": 0.4548717644379856,
+          "ms_blk_over_ms_res": 6.841015275576698,
+          "df_block": 3,
+          "df_resid": 18,
+          "note": "a shared block component is present; pairing within a block would cancel it, but only if the OFF/ON pair really is adjacent on one node in one window"
+        },
+        "arm_d44": {
+          "n": 4,
+          "mean": 14.25078775610018,
+          "sd": 0.13603738132552054,
+          "cv_pct": 0.9545955188848314,
+          "df": 3
+        },
+        "arm_d44_cv_ub95_pct": 2.7874270713264186,
+        "pooled_within_arm": {
+          "cv_pct": 1.2711170549671384,
+          "df": 21,
+          "per_arm_cv_pct": {
+            "d16": 1.6681827752346794,
+            "d24": 1.2665762909154958,
+            "d34": 1.712947429121023,
+            "d44": 0.9545955188848314,
+            "d54": 0.17177324571976949,
+            "d64": 0.3549262095972089,
+            "d74": 1.7094445114972052
+          },
+          "hetero_ratio_max_min": 9.972143344811228
+        },
+        "pooled_cv_ub95_pct": 1.710917318982322,
+        "required_n": {
+          "delta_2.0pct": {
+            "arm_point": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 1.6762487932260923
+            },
+            "arm_ub95": {
+              "n_pairs": 18,
+              "n_boots": 36,
+              "half_width_pct": 1.9603190190529254
+            },
+            "pooled_point": {
+              "n_pairs": 6,
+              "n_boots": 12,
+              "half_width_pct": 1.886498016217181
+            },
+            "pooled_ub95": {
+              "n_pairs": 9,
+              "n_boots": 18,
+              "half_width_pct": 1.8598711055328792
+            }
+          },
+          "delta_3.0pct": {
+            "arm_point": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 2.1481543261525804
+            },
+            "arm_ub95": {
+              "n_pairs": 10,
+              "n_boots": 20,
+              "half_width_pct": 2.8199492048668158
+            },
+            "pooled_point": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 2.8604320328926844
+            },
+            "pooled_ub95": {
+              "n_pairs": 6,
+              "n_boots": 12,
+              "half_width_pct": 2.539217073328633
+            }
+          },
+          "delta_5.4pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 3.353590703727222
+            },
+            "arm_ub95": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 4.894660798298133
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.46556290549821
+            },
+            "pooled_ub95": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 3.850127480961559
+            }
+          },
+          "delta_8.0pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 3.353590703727222
+            },
+            "arm_ub95": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 6.27262898646298
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.46556290549821
+            },
+            "pooled_ub95": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 6.0106257595760315
+            }
+          },
+          "delta_10.0pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 3.353590703727222
+            },
+            "arm_ub95": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 9.792513508379106
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.46556290549821
+            },
+            "pooled_ub95": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 6.0106257595760315
+            }
+          }
+        }
+      },
+      "cost_basis_s": {
+        "boot_s_mean": 32.899019984788275,
+        "boot_s_max": 37.881971773982514,
+        "bench_duration_s_mean": 209.89964703217888,
+        "n": 28
+      }
+    },
+    "HI": {
+      "n_adopted_boots": 28,
+      "arms": [
+        "d16",
+        "d24",
+        "d34",
+        "d44",
+        "d54",
+        "d64",
+        "d74"
+      ],
+      "M_ttft": {
+        "assurance_P_halfwidth_le_delta": {
+          "delta_3.0pct": {
+            "n3": {
+              "sigma_true=point": 0.10517027441517413,
+              "sigma_true=ub95": 0.012948045552701895,
+              "sigma_true=pooled_point": 0.09061109622572677
+            },
+            "n4": {
+              "sigma_true=point": 0.15351899526054835,
+              "sigma_true=ub95": 0.007603262232220205,
+              "sigma_true=pooled_point": 0.12549620679850046
+            },
+            "n5": {
+              "sigma_true=point": 0.22369779058693723,
+              "sigma_true=ub95": 0.005078134672849355,
+              "sigma_true=pooled_point": 0.17703331322428206
+            },
+            "n6": {
+              "sigma_true=point": 0.31746358147762965,
+              "sigma_true=ub95": 0.003763999819440436,
+              "sigma_true=pooled_point": 0.24793109054242315
+            },
+            "n8": {
+              "sigma_true=point": 0.5572214827092538,
+              "sigma_true=ub95": 0.00261221078718716,
+              "sigma_true=pooled_point": 0.445024048235502
+            },
+            "n10": {
+              "sigma_true=point": 0.7900526820271071,
+              "sigma_true=ub95": 0.0022667732954865308,
+              "sigma_true=pooled_point": 0.6739003760982727
+            },
+            "n12": {
+              "sigma_true=point": 0.9330101768900505,
+              "sigma_true=ub95": 0.00229744197024814,
+              "sigma_true=pooled_point": 0.8577921736155667
+            },
+            "n16": {
+              "sigma_true=point": 0.9983598374092777,
+              "sigma_true=ub95": 0.003197334777306241,
+              "sigma_true=pooled_point": 0.99111692454311
+            },
+            "n20": {
+              "sigma_true=point": 0.9999953280807261,
+              "sigma_true=ub95": 0.0056608019462024315,
+              "sigma_true=pooled_point": 0.9999016029998705
+            }
+          },
+          "delta_5.4pct": {
+            "n3": {
+              "sigma_true=point": 0.30234790223276337,
+              "sigma_true=ub95": 0.04134654583888686,
+              "sigma_true=pooled_point": 0.2648958605974388
+            },
+            "n4": {
+              "sigma_true=point": 0.5481653751022996,
+              "sigma_true=ub95": 0.04162271548073695,
+              "sigma_true=pooled_point": 0.4778491394142727
+            },
+            "n5": {
+              "sigma_true=point": 0.7825454989874892,
+              "sigma_true=ub95": 0.04575082167542674,
+              "sigma_true=pooled_point": 0.70514050826581
+            },
+            "n6": {
+              "sigma_true=point": 0.9271876150407324,
+              "sigma_true=ub95": 0.05350243924725547,
+              "sigma_true=pooled_point": 0.8748661750689026
+            },
+            "n8": {
+              "sigma_true=point": 0.9977012641700465,
+              "sigma_true=ub95": 0.08138775416942853,
+              "sigma_true=pooled_point": 0.9918741139183475
+            },
+            "n10": {
+              "sigma_true=point": 0.9999888300722626,
+              "sigma_true=ub95": 0.13093820309006377,
+              "sigma_true=pooled_point": 0.9998862248194348
+            },
+            "n12": {
+              "sigma_true=point": 0.9999999926381911,
+              "sigma_true=ub95": 0.2090834449958229,
+              "sigma_true=pooled_point": 0.9999996969401803
+            },
+            "n16": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.45660840627821325,
+              "sigma_true=pooled_point": 0.9999999999999887
+            },
+            "n20": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.7447108949862435,
+              "sigma_true=pooled_point": 1.0
+            }
+          }
+        },
+        "variance_components": {
+          "balanced": true,
+          "n_arms": 7,
+          "n_blocks": 4,
+          "sd_block_pct": 0.6456477977426935,
+          "sd_resid_pct": 2.699934423019624,
+          "sd_total_within_arm_pct": 2.77605961163234,
+          "rho_block_share": 0.05409209133227776,
+          "ms_blk_over_ms_res": 1.4002975721592728,
+          "df_block": 3,
+          "df_resid": 18,
+          "note": "a shared block component is present; pairing within a block would cancel it, but only if the OFF/ON pair really is adjacent on one node in one window"
+        },
+        "arm_d44": {
+          "n": 4,
+          "mean": 1089.7577961077332,
+          "sd": 27.91649446209237,
+          "cv_pct": 2.561715507959766,
+          "df": 3
+        },
+        "arm_d44_cv_ub95_pct": 7.480231170858081,
+        "pooled_within_arm": {
+          "cv_pct": 2.7708239281809917,
+          "df": 21,
+          "per_arm_cv_pct": {
+            "d16": 4.237748923548703,
+            "d24": 0.9019349502872304,
+            "d34": 1.633080351961833,
+            "d44": 2.561715507959766,
+            "d54": 3.675741499535821,
+            "d64": 0.49623355509598643,
+            "d74": 3.461732658796194
+          },
+          "hetero_ratio_max_min": 8.539827426077617
+        },
+        "pooled_cv_ub95_pct": 3.7295154117006524,
+        "required_n": {
+          "delta_2.0pct": {
+            "arm_point": {
+              "n_pairs": 16,
+              "n_boots": 32,
+              "half_width_pct": 1.9304606816709995
+            },
+            "arm_ub95": {
+              "n_pairs": 110,
+              "n_boots": 220,
+              "half_width_pct": 1.9990801246960943
+            },
+            "pooled_point": {
+              "n_pairs": 18,
+              "n_boots": 36,
+              "half_width_pct": 1.9486424957031858
+            },
+            "pooled_ub95": {
+              "n_pairs": 30,
+              "n_boots": 60,
+              "half_width_pct": 1.9694676658680437
+            }
+          },
+          "delta_3.0pct": {
+            "arm_point": {
+              "n_pairs": 9,
+              "n_boots": 18,
+              "half_width_pct": 2.784740443614085
+            },
+            "arm_ub95": {
+              "n_pairs": 51,
+              "n_boots": 102,
+              "half_width_pct": 2.975291674303353
+            },
+            "pooled_point": {
+              "n_pairs": 10,
+              "n_boots": 20,
+              "half_width_pct": 2.803152345572141
+            },
+            "pooled_ub95": {
+              "n_pairs": 15,
+              "n_boots": 30,
+              "half_width_pct": 2.9208273049168336
+            }
+          },
+          "delta_5.4pct": {
+            "arm_point": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 4.498316243745314
+            },
+            "arm_ub95": {
+              "n_pairs": 18,
+              "n_boots": 36,
+              "half_width_pct": 5.260636083356909
+            },
+            "pooled_point": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 4.86550604310528
+            },
+            "pooled_ub95": {
+              "n_pairs": 7,
+              "n_boots": 14,
+              "half_width_pct": 4.8779428561129885
+            }
+          },
+          "delta_8.0pct": {
+            "arm_point": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 5.7647036277988635
+            },
+            "arm_ub95": {
+              "n_pairs": 10,
+              "n_boots": 20,
+              "half_width_pct": 7.567506306969866
+            },
+            "pooled_point": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 6.235266445920946
+            },
+            "pooled_ub95": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 6.548947260389941
+            }
+          },
+          "delta_10.0pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 8.999565934610464
+            },
+            "arm_ub95": {
+              "n_pairs": 7,
+              "n_boots": 14,
+              "half_width_pct": 9.78361426996285
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 9.734184985561187
+            },
+            "pooled_ub95": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 8.392638041562027
+            }
+          }
+        }
+      },
+      "M_itl": {
+        "assurance_P_halfwidth_le_delta": {
+          "delta_3.0pct": {
+            "n3": {
+              "sigma_true=point": 0.32810881992634544,
+              "sigma_true=ub95": 0.04556741945987407,
+              "sigma_true=pooled_point": 0.37152086710281124
+            },
+            "n4": {
+              "sigma_true=point": 0.593893641696568,
+              "sigma_true=ub95": 0.04785803893013842,
+              "sigma_true=pooled_point": 0.6654799875361539
+            },
+            "n5": {
+              "sigma_true=point": 0.8266139374620577,
+              "sigma_true=ub95": 0.054552444331178465,
+              "sigma_true=pooled_point": 0.8854391259893498
+            },
+            "n6": {
+              "sigma_true=point": 0.95134324418766,
+              "sigma_true=ub95": 0.06575187777535714,
+              "sigma_true=pooled_point": 0.976735361903131
+            },
+            "n8": {
+              "sigma_true=point": 0.9990983997279783,
+              "sigma_true=ub95": 0.10433810197500994,
+              "sigma_true=pooled_point": 0.9998362476293895
+            },
+            "n10": {
+              "sigma_true=point": 0.9999979834795473,
+              "sigma_true=ub95": 0.17109730960704322,
+              "sigma_true=pooled_point": 0.9999999096836938
+            },
+            "n12": {
+              "sigma_true=point": 0.9999999995203898,
+              "sigma_true=ub95": 0.2726271593753611,
+              "sigma_true=pooled_point": 0.9999999999965603
+            },
+            "n16": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.5631676615557237,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n20": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.8382974749974637,
+              "sigma_true=pooled_point": 1.0
+            }
+          },
+          "delta_5.4pct": {
+            "n3": {
+              "sigma_true=point": 0.7242925090305903,
+              "sigma_true=ub95": 0.14024515982174407,
+              "sigma_true=pooled_point": 0.7779440601451968
+            },
+            "n4": {
+              "sigma_true=point": 0.9758058037269031,
+              "sigma_true=ub95": 0.22409324813231088,
+              "sigma_true=pooled_point": 0.9882883612120422
+            },
+            "n5": {
+              "sigma_true=point": 0.9996247794293169,
+              "sigma_true=ub95": 0.3408586074977689,
+              "sigma_true=pooled_point": 0.9999234787973746
+            },
+            "n6": {
+              "sigma_true=point": 0.9999990914957727,
+              "sigma_true=ub95": 0.48368609033065074,
+              "sigma_true=pooled_point": 0.9999999453167233
+            },
+            "n8": {
+              "sigma_true=point": 0.9999999999999836,
+              "sigma_true=ub95": 0.770778363226419,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n10": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9410102719524758,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n12": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9920596473922039,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n16": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9999841075930557,
+              "sigma_true=pooled_point": 1.0
+            },
+            "n20": {
+              "sigma_true=point": 1.0,
+              "sigma_true=ub95": 0.9999999986923801,
+              "sigma_true=pooled_point": 1.0
+            }
+          }
+        },
+        "variance_components": {
+          "balanced": true,
+          "n_arms": 7,
+          "n_blocks": 4,
+          "sd_block_pct": 0.7838580648100582,
+          "sd_resid_pct": 0.9695359185736854,
+          "sd_total_within_arm_pct": 1.2467691699638266,
+          "rho_block_share": 0.3952780996117021,
+          "ms_blk_over_ms_res": 5.575568861496882,
+          "df_block": 3,
+          "df_resid": 18,
+          "note": "a shared block component is present; pairing within a block would cancel it, but only if the OFF/ON pair really is adjacent on one node in one window"
+        },
+        "arm_d44": {
+          "n": 4,
+          "mean": 58.691897523385705,
+          "sd": 0.7947918293262531,
+          "cv_pct": 1.3541764074156395,
+          "df": 3
+        },
+        "arm_d44_cv_ub95_pct": 3.9542066799051323,
+        "pooled_within_arm": {
+          "cv_pct": 1.2530256420493522,
+          "df": 21,
+          "per_arm_cv_pct": {
+            "d16": 0.11875539459064754,
+            "d24": 0.6233890566062221,
+            "d34": 0.825645255201994,
+            "d44": 1.3541764074156395,
+            "d54": 1.1002067634076336,
+            "d64": 1.1487822780011216,
+            "d74": 2.354178536869181
+          },
+          "hetero_ratio_max_min": 19.823760806690814
+        },
+        "pooled_cv_ub95_pct": 1.686566365964308,
+        "required_n": {
+          "delta_2.0pct": {
+            "arm_point": {
+              "n_pairs": 7,
+              "n_boots": 14,
+              "half_width_pct": 1.7711671365523947
+            },
+            "arm_ub95": {
+              "n_pairs": 33,
+              "n_boots": 66,
+              "half_width_pct": 1.9828698566060883
+            },
+            "pooled_point": {
+              "n_pairs": 6,
+              "n_boots": 12,
+              "half_width_pct": 1.8596480778526518
+            },
+            "pooled_ub95": {
+              "n_pairs": 8,
+              "n_boots": 16,
+              "half_width_pct": 1.9940478654399565
+            }
+          },
+          "delta_3.0pct": {
+            "arm_point": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 2.377904069146977
+            },
+            "arm_ub95": {
+              "n_pairs": 16,
+              "n_boots": 32,
+              "half_width_pct": 2.979815869107652
+            },
+            "pooled_point": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 2.8197203951815046
+            },
+            "pooled_ub95": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 2.9615735457736494
+            }
+          },
+          "delta_5.4pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.757358819807862
+            },
+            "arm_ub95": {
+              "n_pairs": 7,
+              "n_boots": 14,
+              "half_width_pct": 5.171823171805054
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.402005940293455
+            },
+            "pooled_ub95": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 3.7953298163625324
+            }
+          },
+          "delta_8.0pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.757358819807862
+            },
+            "arm_ub95": {
+              "n_pairs": 5,
+              "n_boots": 10,
+              "half_width_pct": 6.943500199016965
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.402005940293455
+            },
+            "pooled_ub95": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 5.925078396266062
+            }
+          },
+          "delta_10.0pct": {
+            "arm_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.757358819807862
+            },
+            "arm_ub95": {
+              "n_pairs": 4,
+              "n_boots": 8,
+              "half_width_pct": 8.898267400063547
+            },
+            "pooled_point": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 4.402005940293455
+            },
+            "pooled_ub95": {
+              "n_pairs": 3,
+              "n_boots": 6,
+              "half_width_pct": 5.925078396266062
+            }
+          }
+        }
+      },
+      "cost_basis_s": {
+        "boot_s_mean": 32.899019984788275,
+        "boot_s_max": 37.881971773982514,
+        "bench_duration_s_mean": 110.06432647828271,
+        "n": 28
+      }
+    }
+  },
+  "cost_basis": {
+    "n_boots": 28,
+    "job_elapsed_s_sacct": {
+      "884336": 3674,
+      "884410": 3526,
+      "884411": 3525,
+      "884412": 3446
+    },
+    "job_overhead_s": {
+      "884336": 408.6978742379579,
+      "884410": 340.5911452409928,
+      "884411": 338.9572536138585,
+      "884412": 264.897485952999
+    },
+    "job_overhead_s_mean": 338.285939761452,
+    "boot_slot_s_mean": 457.7805800340783,
+    "boot_slot_s_max": 478.2898407839821,
+    "boot_slot_s_min": 449.9076701080194,
+    "per_job_boot_sum_s": {
+      "884336": 3265.302125762042,
+      "884410": 3185.408854759007,
+      "884411": 3186.0427463861415,
+      "884412": 3181.102514047001
+    }
+  }
+}
