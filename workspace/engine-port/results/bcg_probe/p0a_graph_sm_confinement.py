@@ -88,6 +88,26 @@ granules, chosen before the run and not adjustable afterwards).
   it does NOT mean confinement was lost.
 
 ------------------------------------------------------------------------------
+★2026-08-21 DEAD-CODE REPAIR -- P1's INPUT, not P1 itself
+------------------------------------------------------------------------------
+P1 reads two fields of the raw artefact. Until this repair `run()` filled them
+with an inline copy of the 2026-08-14 census read-out, which looked the
+compiled kernel up under `JITFunction.cache` -- an attribute Triton 3.5.1 does
+not have (measured on this venv: `hasattr` is False). The lookup therefore
+raised on every launch, both fields were written as None, and P1 -- correctly
+fail-closed -- would have stopped EVERY GPU run at UNDETERMINED (MEASUREMENT
+ABSENT). The probe could not have produced any verdict; the job was waste.
+
+The repair deletes that copy and binds the census's own writer,
+`smid_l0_census._record_runtime_ptx` (repaired and mutation-tested in that
+file on 2026-08-21), as a module-level name here. NOTHING in the decision
+matrix, TOL, or the P1/P2/P3/P4/NOCAP guards is touched: P1's condition and
+text are byte-identical, it merely now receives data instead of None. The
+self-test gained the R1-R3 read-out battery and `--selftest-mutants` gained
+`dead_runtime_ptx_readout`, which puts the dead body back and demands that R1
+and R2 FAIL under it (methodology lesson #53).
+
+------------------------------------------------------------------------------
 WHAT THIS PROBE DOES NOT ANSWER (mandatory)
 ------------------------------------------------------------------------------
   * Nothing about kernel efficiency, occupancy, wave quantization, or the
@@ -105,7 +125,7 @@ Usage:
 """
 
 import argparse
-import hashlib
+import hashlib  # noqa: F401 -- used by the pre-repair mutant body below
 import json
 import os
 import platform
@@ -125,6 +145,15 @@ V_LOST = "CONFINEMENT_LOST_THROUGH_GRAPH_REPLAY"
 V_UNDET = CEN.V_UNDET  # "UNDETERMINED (MEASUREMENT ABSENT)"
 V_OUTSIDE = CEN.V_AMBIG  # "UNDETERMINED (OUTCOME OUTSIDE PRE-REGISTERED MATRIX)"
 V_NOCAP = "UNDETERMINED (GRAPH CAPTURE UNAVAILABLE ON GREEN STREAM)"
+
+# P1's input. This is the census's own writer, NOT a copy of it -- a second
+# copy of that read-out is exactly how this probe inherited the 2026-08-14
+# dead path (methodology gate #9: put the work on the producer). It is bound
+# as a module-level name, rather than called through CEN inside run(), so
+# that (a) the CPU battery below can exercise the very object run() calls
+# without a GPU, and (b) a source mutant can swap the dead body back in and
+# prove this line is load-bearing.
+_record_runtime_ptx = CEN._record_runtime_ptx
 
 
 # ==========================================================================
@@ -246,16 +275,12 @@ def run(outdir, tag, spin_ns):
     # Runtime instrument check on the object that actually ran (P1). The CPU
     # self-test inspects AOT-compiled PTX; the JIT specialises differently, so
     # the PTX that ran is not guaranteed to be the PTX that was inspected.
-    try:
-        cached = list(census_kernel.cache[dev].values())[0]
-        rt_ptx = cached.asm["ptx"]
-        rep["runtime_ptx_smid_sites"] = rt_ptx.count("%smid")
-        rep["runtime_spin_back_edge"] = CEN._spin_loop_has_back_edge(rt_ptx)
-        rep["runtime_ptx_sha256"] = hashlib.sha256(rt_ptx.encode()).hexdigest()
-    except Exception as e:  # noqa: BLE001
-        rep["runtime_ptx_smid_sites"] = None
-        rep["runtime_spin_back_edge"] = None
-        rep["runtime_ptx_error"] = repr(e)
+    # It never raises: on any failure both fields stay None and P1 stops with
+    # MEASUREMENT ABSENT. It covers the variants cached at THIS point (the
+    # eager_plain leg has run, so the census kernel is compiled); variants that
+    # a later leg might add are not re-checked. The PTX it dumps is tagged
+    # `p0a_` so it can never be mistaken for an R0 census artefact.
+    _record_runtime_ptx(rep, census_kernel, dev, outdir, f"p0a_{tag}")
 
     rep["graph_plain"] = _leg_graph(census_kernel, plain, spin_ns, dev)
 
@@ -454,6 +479,18 @@ def selftest_analyzer():
     ck("NOCAP is disjoint from every substantive verdict",
        score(_synth(None))["verdict"] not in (V_PRESERVED, V_LOST, V_OUTSIDE))
 
+    print("-- runtime-instrument read-out (P1's INPUT; the census's own writer)")
+    try:
+        census = _readout_fixture()
+    except Exception as e:  # noqa: BLE001
+        print(f"  [SKIP] R1-R3: the AOT fixture could not be built ({e!r}); "
+              "THIS RUN DOES NOT VALIDATE THE RUNTIME-PTX READ-OUT")
+    else:
+        for name, status, detail in _readout_checks(globals(), census):
+            print(f"  [{'PASS' if status == 'ok' else 'FAIL'}] {name}"
+                  + (f"  <{status}> {detail}" if status != "ok" else ""))
+            ok[0] = ok[0] and status == "ok"
+
     print("ALL PASS" if ok[0] else "FAILURES PRESENT")
     return 0 if ok[0] else 1
 
@@ -524,8 +561,214 @@ def selftest_mutants():
                  "  <-- GUARD NOT LOAD-BEARING / CHECK IS AN IDENTITY"))
         ok[0] = ok[0] and good
         _ = m_synth
+
+    # --- read-out mutant (2026-08-21 repair). Named checks, named expected
+    #     failures. Unmutated source must pass the same battery first: a
+    #     mutant harness whose baseline is broken proves nothing.
+    print("-- runtime-instrument read-out mutant (P1's INPUT)")
+    try:
+        census = _readout_fixture()
+    except Exception as e:  # noqa: BLE001
+        print(f"  [FAIL] the AOT fixture could not be built ({e!r}); the "
+              "read-out mutant CANNOT BE JUDGED -- counted as a failure, not "
+              "skipped (an unjudgeable guard is an unguarded one)")
+        ok[0] = False
+    else:
+        base = _readout_checks(globals(), census)
+        bad = [(n.split()[0], s, d) for n, s, d in base if s != "ok"]
+        print(f"  [{'PASS' if not bad else 'FAIL'}] unmutated source passes the "
+              f"R battery ({len(base) - len(bad)}/{len(base)})"
+              + (f"  {bad}" if bad else ""))
+        ok[0] = ok[0] and not bad
+        ok[0] = _run_named_mutants(src, census) and ok[0]
+
     print("MUTANTS ALL PASS" if ok[0] else "MUTANT FAILURES PRESENT")
     return 0 if ok[0] else 1
+
+
+# ==========================================================================
+# 5. Runtime-instrument read-out (P1's INPUT) -- CPU-testable, mutation-tested
+# ==========================================================================
+# The 2026-08-14 read-out this probe inherited, restored verbatim by the mutant
+# below. Held as a string so the intact module can never execute it.
+_PRE_REPAIR_RUNTIME_PTX = '''def _record_runtime_ptx(rep, kernel, device, outdir, tag):
+    """2026-08-14 dead path: `JITFunction` has no `.cache` attribute in triton
+    3.5.1, so this raises on every call and writes None into both P1 fields."""
+    try:
+        cached = list(kernel.cache[device].values())[0]
+        rt_ptx = cached.asm["ptx"]
+        rep["runtime_ptx_smid_sites"] = rt_ptx.count("%smid")
+        rep["runtime_spin_back_edge"] = CEN._spin_loop_has_back_edge(rt_ptx)
+        rep["runtime_ptx_sha256"] = hashlib.sha256(rt_ptx.encode()).hexdigest()
+    except Exception as e:  # noqa: BLE001
+        rep["runtime_ptx_smid_sites"] = None
+        rep["runtime_spin_back_edge"] = None
+        rep["runtime_ptx_error"] = repr(e)
+    return rep
+'''
+
+R1 = "R1 read-out fills the P1 fields from the kernel that actually ran"
+R2 = "R2 a filled read-out lets the scorer reach a substantive verdict"
+R3 = "R3 nothing compiled -> fields None, P1 stops (fail-closed, unchanged)"
+
+_FIXTURE = []
+
+
+def _readout_fixture():
+    """One REAL CompiledKernel of the census kernel, built with NO GPU.
+
+    Built by the census's own ahead-of-time fixture path, so this battery
+    exercises the producer instead of a re-compilation of it. Memoised because
+    `--selftest-analyzer` runs the battery twice (analyzer, then mutants).
+    Raises if triton cannot compile here; each caller decides what that means.
+    """
+    if not _FIXTURE:
+        _FIXTURE.append(CEN._extractor_fixtures()[0])
+    return _FIXTURE[0]
+
+
+def _readout_checks(ns, census):
+    """R1-R3 against `ns`'s read-out: does P1 actually receive data?
+
+    `ns` is a module namespace -- `globals()` for the intact file, or an exec'd
+    mutant. The check bodies themselves always come from the intact file, so a
+    mutant cannot weaken its own examiner. Returns [(name, status, detail)]
+    with status in ok/fail/raised; `raised` is NOT a pass anywhere.
+    """
+    import tempfile
+    rec, score_fn = ns["_record_runtime_ptx"], ns["score"]
+    res = []
+
+    def ck(name, fn):
+        try:
+            good = bool(fn())
+        except Exception as e:  # noqa: BLE001
+            res.append((name, "raised", repr(e)))
+            return
+        res.append((name, "ok" if good else "fail", ""))
+
+    def readout(kernel):
+        """Run the read-out into a fresh rep; report the files it wrote too."""
+        with tempfile.TemporaryDirectory() as td:
+            rep = {}
+            rec(rep, kernel, 0, td, "t")
+            return rep, sorted(os.listdir(td))
+
+    def scored(rep):
+        """Feed the measured P1 fields into the UNCHANGED scorer."""
+        raw = dict(_synth(34))
+        raw["runtime_ptx_smid_sites"] = rep.get("runtime_ptx_smid_sites")
+        raw["runtime_spin_back_edge"] = rep.get("runtime_spin_back_edge")
+        return score_fn(raw)["verdict"]
+
+    def loaded():
+        # A compiled census kernel sitting where a real JIT launch leaves it.
+        return CEN._inject(CEN._kernels()[0], 0, [census])
+
+    def r1():
+        rep, files = readout(loaded())
+        return (rep.get("runtime_ptx_smid_sites") == 1
+                and rep.get("runtime_spin_back_edge") is True
+                and not rep.get("runtime_ptx_error")
+                and files == ["smid_runtime_t.ptx"])
+
+    def r2():
+        rep, _ = readout(loaded())
+        return scored(rep) == V_PRESERVED
+
+    def r3():
+        rep, files = readout(CEN._kernels()[0])   # nothing ever compiled
+        return (files == []
+                and rep.get("runtime_ptx_smid_sites") is None
+                and rep.get("runtime_spin_back_edge") is None
+                and bool(rep.get("runtime_ptx_error"))
+                and scored(rep) == V_UNDET)
+
+    ck(R1, r1)
+    ck(R2, r2)
+    ck(R3, r3)
+    return res
+
+
+def _mut_dead_readout(src):
+    """Undo the repair: bring back the read-out that reads a missing attribute.
+
+    The anchor is the module-level binding of the census writer, assembled here
+    from two pieces so that this line is not itself a second occurrence of the
+    string it searches for (the count assertion would then always fail).
+    """
+    anchor = "_record_runtime_ptx = CEN." + "_record_runtime_ptx"
+    n = src.count(anchor)
+    if n != 1:
+        raise AssertionError(f"binding occurs {n} times, expected 1")
+    return src.replace(anchor, _PRE_REPAIR_RUNTIME_PTX, 1)
+
+
+def _mut_drop_p1_guard(src):
+    """Delete the P1 guard -- the guard this repair does NOT change.
+
+    Without it R3 ("an empty read-out still stops the scorer") could not fail
+    under any mutant, i.e. it would be an identity rather than evidence
+    (methodology lesson #53). The guard in the shipping file is untouched: the
+    deletion happens in a COPY. The anchor is assembled from two pieces so this
+    function is not itself a second occurrence of the line it searches for.
+    """
+    needle = ('    if not raw.get("runtime_ptx_smid_sites") or not '
+              'raw.get("runtime_spin_back_edge"):')
+    n = src.count(needle)
+    if n != 1:
+        raise AssertionError(f"P1 guard occurs {n} times, expected 1")
+    i = src.index(needle)
+    return src[:i] + src[src.index("\n\n", i):]
+
+
+# name -> (source mutation, the checks that MUST fail under it)
+READOUT_MUTANTS = {
+    "dead_runtime_ptx_readout": (_mut_dead_readout, {R1, R2}),
+    "drop_P1_guard": (_mut_drop_p1_guard, {R3}),
+}
+
+
+def _run_named_mutants(src, census):
+    """Named-check mutant harness (the census's shape, stricter than the
+    verdict-flip loop above): the mutant must break EXACTLY the checks that
+    claim to cover it. A check that dies with some other exception counts
+    AGAINST the mutant -- a crash is not a detection."""
+    ok = True
+    for name, (mutate, expected) in READOUT_MUTANTS.items():
+        try:
+            mutated = mutate(src)
+        except AssertionError as e:
+            print(f"  [FAIL] mutant {name}: anchor not found ({e}) -- the "
+                  "harness is stale, it is not testing this file")
+            ok = False
+            continue
+        if mutated == src:
+            print(f"  [FAIL] mutant {name}: source unchanged -- no mutation")
+            ok = False
+            continue
+        ns = {"__name__": "_mutant", "__file__": os.path.abspath(__file__)}
+        try:
+            exec(compile(mutated, f"<mutant:{name}>", "exec"), ns)
+        except Exception as e:  # noqa: BLE001
+            print(f"  [FAIL] mutant {name}: did not compile/exec ({e!r})")
+            ok = False
+            continue
+        status = {n: s for n, s, _ in _readout_checks(ns, census)}
+        raised = sorted(n.split()[0] for n, s in status.items() if s == "raised")
+        failed = {n for n, s in status.items() if s == "fail"}
+        missing = sorted(n.split()[0] for n in expected - failed)
+        extra = sorted(n.split()[0] for n in failed - expected)
+        good = not raised and not missing and not extra
+        ids = " ".join(sorted(n.split()[0] for n in failed)) or "(none)"
+        print(f"  [{'PASS' if good else 'FAIL'}] mutant {name}: "
+              f"{len(failed)}/{len(status)} checks FAIL -> {ids}"
+              + (f"; MISSING (should have failed, passed instead) {missing}"
+                 if missing else "")
+              + (f"; RAISED {raised}" if raised else "")
+              + (f"; UNEXPECTED failures {extra}" if extra else ""))
+        ok = ok and good
+    return ok
 
 
 def main():
