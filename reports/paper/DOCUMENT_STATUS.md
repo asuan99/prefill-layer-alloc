@@ -1,6 +1,11 @@
 # Document status
 
-최종 갱신: 2026-08-16(3차, doc-steward — **R1(he2 재채점) 재분석 완료
+최종 갱신: 2026-08-21(doc-steward — **gate #13 job-축 캠페인 완주(양
+arm `PASS`) 반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim A 각주의
+"job/node/day 축 부재"를 `reports/CONSENSUS.md` rev41·§3 항목71과
+재동기화(job 축만 갱신, batch·node(≥3)·day(≥3) 축 부재는 그대로,
+등급·인용정지 (a)(b) 무변경). 새 성능 판정 0건, 분류표 무변경,
+changelog 기록뿐.** 이전: 2026-08-16(3차, doc-steward — **R1(he2 재채점) 재분석 완료
 반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim D 행을 `reports/CONSENSUS.md`
 rev34·§1-19와 재동기화(집계·술어별 확정 수치 등재, 등급 무변경). 새
 성능 판정 아님, 분류표 무변경, changelog 기록뿐.** 이전: 2026-08-14(doc-steward, 2차 — **정본 결함 정정 반영(A-1)으로

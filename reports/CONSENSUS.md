@@ -4,7 +4,25 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-20 rev40 (doc-steward — **P1 프로브 판정 반영:
+최종 갱신: 2026-08-21 rev41 (doc-steward — ★**gate #13 job-축 캠페인
+완주 + 양 arm `PASS`**(등록 11.52 GPU-hr, 실측 11.66 GPU-hr) 반영 +
+S0(a) 초판 결론 **철회**(claims-auditor REFUTED) + G18 rate-축 프로브
+**트랙 보류(HOLD)** + kernel_mech rev3 차단 2건 설계 본문 수리 +
+rev40 자신의 P1 판정 과잉 인용 정정[아래 追記(6) 참조]). §3 항목
+71–74 신설(블라인딩 자기인용 자기거부 · 부분 격자 확장 산물 ·
+비용 비정합 대조 · 태그가 오염을 못 막음). §4에 신규 living-doc
+행 4개(G13_RESULTS·S0A_VERDICT·G18 HOLD 문서·kernel_mech rev3).
+★★쓸 수 없는 문장 불변: **"gate #13을 닫았다"**(865533 batch⊗regime
+앨리어스 불변) · **`Δ_batch`를 측정했다**(배치 축 없음, `CONC=16`
+단일) · `grand_mean_r`(M8 3.0613·Ha8 3.1229) arm 비교·2.91/3.058/
+3.114 대조. σ_alloc은 2노드·계수 0.400·유효 df≈1로만 표집(정본
+gate #13(1)의 ≥3노드 부분 미충족 확정). 부수: 비용 상수 144s/부팅이
+실측 145.8s로 검증돼 rev3 §6-8 미해결 항목 해소. **새 성능 판정
+0건**(gate #13은 분산 측정) · 결론 철회 1건(S0(a)) · 등급 변경
+0건 · 정책 순위 변경 0건 · GPU 지출(세션 합계) 11.72 GPU-hr(캠페인
+11.66 + 취소 프로브 0.06). 상세 `PROJECT_STATUS.md` 최상단 배너,
+`handoff-report/session_handoff_2026-08-21.md`.
+이전 rev40: 2026-08-20 (doc-steward — **P1 프로브 판정 반영:
 `UNAVAILABLE (CUPTI×GREEN-CONTEXT)`**(job 886718, `--exclusive
 --constrain=hwperf`, node gpu38, 1분55초, 동반 프로브 886752 포함
 **GPU 지출 0.032 GPU-hr**). §3 항목52에 追記(6) 신설 — "미확인
@@ -2492,10 +2510,16 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     수집됐고, green ctx **위** GEMM만 실패했다 — job·노드·할당·권한
     (control 성공이 `ERR_NVGPUCTRPERM` 부재를 확증)·ncu 호출·메트릭·
     클럭 정책(`--clock-control none`)·타깃 스크립트·커널·차원이
-    전부 동일한 채 유일한 변인은 "커널이 green-context 스트림
-    위인가"뿐이었다. ⇒ **(c) CUPTI×green-context가 이 구성에 한해
-    관측 근거를 얻었다** — `_ncu_target.py:68-71`은 더 이상 코드
-    작성자의 주장이 아니다.
+    전부 동일했다. ★★2026-08-21 정정(doc-steward, 원문 P1_VERDICT §2
+    대조): 원문 표현은 **"두 겹의 대조가 같은 방향을 가리킨다"**
+    이지 "변인은 하나뿐"이 아니다 — 다리 간(i) 대조는 `realized_sm`
+    16 vs 108도 함께 바뀌고, 다리 내부(ii) 대조는 커널 종류 자체가
+    다르다(RNG 초기화 vs GEMM)라서 어느 쪽도 변인을 하나로 완전히
+    좁히지 못한다("유일한 변인은 … 뿐이었다"는 이 배너의 과잉
+    인용이었다, `PROJECT_STATUS.md`에도 동일 과잉이 있어 함께 정정
+    했다). ⇒ **(c) CUPTI×green-context가 이 구성에 한해 관측 근거를
+    얻었다** — `_ncu_target.py:68-71`은 더 이상 코드 작성자의
+    주장이 아니다.
 
     ★**지킬 서술 한계(overclaim 금지)**: (1) 이건 **도구 타당성
     판정이지 성능 판정이 아니다**. (2) 깨진 것은 **프로파일링이지
@@ -3210,6 +3234,66 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     §4.1·§6, `DESIGN_G13_JOB_BATCH_REV2_2026-08-17.md`(재현성 지뢰
     경고 배너), `PROJECT_STATUS.md` "방법론 게이트" #50.
 
+71. ★★**(2026-08-21, gate #13 캠페인 해제 절차, 메인 세션, GPU 0·새
+    성능 판정 아님) 블라인딩 감시 문자열을 설명하는 문서가 그 문자열
+    자체를 인용하면 자기 자신을 건다.** `g13_analyze.py --unblind`는
+    `PREREG_G13_2026-08-20.md`에 `AUDIT_STATUS: PENDING` 감시 문자열이
+    있으면 거부하도록 짜여 있었는데, 첫 해제 시도에서 그 문서 §2가
+    블라인딩 기전을 **설명하며 감시 문자열을 그대로 인용**해 자기
+    자신을 걸었다. **fail-closed 방향**이라 안전했다 — 거짓 unblind를
+    허용하는 실패가 아니라 정당한 unblind를 거부하는 실패였다. 해소:
+    분석기 SHA(`01448211…`)를 지키기 위해 문서 쪽 인용을 우회
+    서술로 재작성. 증거 `G13_ANALYSIS_2026-08-21_REFUSED.json` 보존.
+    실무 규칙: 자동화된 감시 문자열을 설명 목적으로 문서에 적을
+    때는 감시기가 검색하는 정확한 형태로 인용하지 말 것(paraphrase).
+    상세 `workspace/engine-port/results/s8_scaleup/G13_RESULTS_
+    2026-08-21.md` §5, `PROJECT_STATUS.md` "방법론 게이트" #51.
+
+72. ★**(2026-08-21, seq3 8티어 확장, 메인 세션) 격자를 한 점만 넓히고
+    멈추면 그 자체가 격자 산물이다.** seq3 결론("sequential은 예약액을
+    못 낮춘다")은 감사가 8티어×2arm×2m으로 깨뜨리려다 실패해 생존
+    했으나, 메인 세션이 격자를 **k=14 한 점만** 추가하고 멈춘 탓에
+    최저가(**k=13/3.12**, 총액 **10.80** — 인용값 11.04는 stale)와
+    격자 산물 크기(**0.72** — 인용값 0.48은 stale, m축까지 넓히면
+    1.76)가 부정확하게 인용됐다. 방법론 게이트 #16(스코프 확장은
+    원 격자를 전부 재현하라, 2026-08-07)의 재발이지만 이번엔 "확장을
+    아예 안 함"이 아니라 **"확장을 부분적으로만 하고 멈춤"** 이라는
+    새 형태다. 실무 규칙: 격자를 넓히는 실험은 넓힌 축의 전 범위를
+    스윕하거나, 못 하면 그 사실 자체를 결과에 명시하라(부분 확장에서
+    나온 최저가·산포 인용 금지). 상세 `handoff-report/session_
+    handoff_2026-08-21.md` §2.3, `PROJECT_STATUS.md` "방법론 게이트" #52.
+
+73. ★**(2026-08-21, S0(a) 감사, claims-auditor) 비용 정합 없이 두
+    대조를 견주면 분모가 틀린다.** S0(a) 초판이 *"C-g의 전제가
+    성립하지 않는다"*고 결론 낸 판정선은 **1 부팅쌍짜리** half-split
+    대조를 **2 부팅쌍짜리**가 필요한 부팅-간 대조의 SD와 직접
+    비교했다 — 같은 예산(부팅쌍 N개)에서 두 설계의 SE가 다른
+    상수(`s_alt/√N` 대 `2σ_boot/√N`)로 스케일한다는 사실을 놓쳤다.
+    비용 정합 판정선(`s_alt` 대 `2σ_boot`)으로 재판정하면 답이
+    뒤집힌다(부팅당 8구간 교대는 이기고 4·2구간은 진다). 실무 규칙:
+    서로 다른 측정 설계를 비교하는 판정선을 세울 때는 두 설계가
+    "같은 예산에서 무엇을 추정하는가"를 먼저 대수로 적고, 그 식에서
+    분모(표준오차 스케일)가 실제로 같은지 확인하라(다르면 비용
+    정합 변환 후 비교). 상세 `workspace/engine-port/results/
+    s8_scaleup/S0A_VERDICT_2026-08-20.md` §0, `PROJECT_STATUS.md`
+    "방법론 게이트" #53.
+
+74. ★★**(2026-08-21, G18 rate-축 정본 오염 발견, 메인 세션) 태그는
+    오염을 막지 못한다 — 분석기의 glob/regex를 직접 확인해야 한다.**
+    `g18_probe_feeder.sh`가 프로브 run id에 `g16_` 접두사를 재사용
+    했는데, `g16_analyze.py:953`의 글롭+regex가 그 id를 정상 매치하고
+    mode 필터는 `smoke`만 걸러 **완주한 프로브가 G16 정본 블록으로
+    조용히 편입될 뻔했다** — "태그가 막아준다"는 메인 세션 자신의
+    주석은 코드를 확인하지 않고 쓰인 거짓이었다. 실제 오염은
+    **0건**(발견 즉시 접두사를 `g18probe_`로 바꿔 구조적으로 차단,
+    검증 완료). 실무 규칙: 이름 규칙(prefix/tag)으로 캠페인을
+    격리한다고 주장하기 전에 소비하는 분석기의 실제 매칭 코드
+    (glob 패턴·정규식)를 읽고 그 이름이 실제로 안 걸리는지 확인
+    하라 — 이름 규칙 자체는 검증되지 않은 약속일 뿐이다. 방법론
+    게이트 #48(결과 디렉터리 이름 오인)의 자매 사례. 상세
+    `workspace/engine-port/results/slo_sched/G18_RATE_VALUE_
+    2026-08-20.md` §6, `PROJECT_STATUS.md` "방법론 게이트" #54.
+
 ---
 
 ## 4. 살아있는 문서 (이것만 참조)
@@ -3245,6 +3329,10 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `../PRIZE_SIZE_ARGUMENT_2026-08-16.md` | ★**"상금 크기"(P-dyn 추가 이득) 논증 — rev3, 정본 rev32 반영본, 2026-08-16 doc-steward 등재(생성은 다른 병행 세션, GPU 지출 0).** claims-auditor 적대 감사 완료(기준1 CONFIRMED(강화)·기준2 PLAUSIBLE(조건부)·기준3 CONFIRMED). 결론 = 원 사양(C2 탄력도+도달 가능 영역+§1-20 coupling tax 조립)은 **성립 불가**(축 A는 §3 항목17·21·25가 REFUTED한 격자 이전의 4회차, C2-R 재확인으로 **원리상 영구 정지**) — 대신 §1-13 각주 E/F(n=4, 정본술어)의 **scoped 천장 진술**(LO/HI argmax 동일 static d44, 완전 예지 오라클 이득=점추정 0)을 복원. ★부수: §1-19 "+2.1%"가 claims-auditor 1차 재계산(당시 **독립 재확인 전**)으로 phase-mean/pooled 집계·legacy/정본 술어에 따라 +2.3%~+6.1%~미정의(phase B 전 arm 0%)로 갈리는 **집계·술어 산물**임이 드러남 — **이 재계산은 2026-08-16 R1(아래 `ORACLE_REANALYSIS_2026-08-16.md` 행)에서 result-analyst 독립 재현으로 확정됐다**(§1-19 참조, 등급 상향 아님). doc-steward 라우팅으로 §1-4·§1-19·§1-20 소비처(matrix·roadmap)·§5-5·§1-17에 인용금지/스코프 정정 5건 전파(이 표 항목이 그 정정을 기록한 rev). 새 성능 판정 0건·정책 순위 변경 0건. |
 | `../../workspace/engine-port/results/slo_sched/ORACLE_REANALYSIS_2026-08-16.md` | ★★**R1(he2 재채점 provenance 확정)·R2(sgptv TTFT⊗ITL 분해) — rev2, result-analyst 산출 + claims-auditor 적대 감사 완료(2026-08-16), GPU 0 · 새 서빙 실험 0건, 정본 등재 완료(doc-steward, 같은 날).** 위 `PRIZE_SIZE_ARGUMENT_2026-08-16.md` §5가 지정한 선행 재분석. **R1**: §1-19 "+2.1%" provenance 확정(phase-mean +2.28/+2.35% ↔ pooled +5.88/+6.12%, 정본술어로는 오라클 미정의) + §1-20 "+16%"가 정본술어에서도 견딤(+16.54%)이나 ITL 도너 동률로 "116"이 tie-break 의존 + TTFT 임계 ±10%에서 크기 0.00~+19.75% 요동(§1-19·§1-20 참조). **R2**: §1-32(신규) — "+16%" 크기는 sgptv rate-swing 격자에서 재현되지 않으나(최대 +5.64%) "116>108 coupling tax 없음"은 결정량이 항등식이라 등재 금지(d54/d64 미실행). **코드 결함**: `he2_bench.sbatch:92`가 게이트 #7 버그(`dur=max(dur,d)`) 잔존 — `HE2_RESULT` 라인 인용 영구 금지(정본 숫자 자체는 `sum(dur)` 독립 재계산으로 무사). rev1→rev2 사이 claims-auditor 지적 6건 + 재현 경로 결손 1건(3회차, 등재 시점에 닫힘) 반영. **새 성능 판정 0건 · 등급 상향 0건.** 스크립트 `oracle_reanalysis_2026_08_16.py`, 수치 `oracle_reanalysis_2026-08-16.json`. 정본 반영 = §1-19·§1-20·§1-32(신규)·§3 항목39(追記)·59(신설), `PROJECT_STATUS.md` "다음 실험 gate" #14–16(신설)·"방법론 게이트" #40(신설) |
 | `../../workspace/engine-port/results/slo_sched/G16_RESULTS_2026-08-17.md` | ★★★**G16 캠페인 결과(rev2, claims-auditor 적대 감사 완료, 2026-08-17) — R2 결정량②(§1-32)의 재정식화판 산출, 양 phase `ITL_SATURATED`, 정본 등재 완료(doc-steward, 같은 날).** H-1~H-8 판정·exact `Δ_SLO` band·A-2 residency 스코프 크기·`gap_upper` 비식별 구조 전문은 §1-33. 사전등록 `PREREG_G16_RULES_REV3_2026-08-16.md`(addendum C/D/E) · 수치 `G16_RESULTS_2026-08-17.json`(`analyzer_sha256=2c9626f2…`) · 감사 재현 경로 `audit_g16_results_2026-08-17/`·`audit_g16_prereg_c93_2026-08-17/`·`audit_g16_saturation_2026-08-16/`·`residency_scope_2026-08-17/`. **새 성능 판정 0건 · 정책 순위 변경 0건.** ★**"gate #16을 닫았다"고 쓰지 말 것**(원문 문턱 판본은 rate 축에 잔존). 정본 반영 = §1-33(신설)·§3 항목65·66(신설), `PROJECT_STATUS.md` "다음 실험 gate" #16(갱신)·"방법론 게이트" #45·46(신설) |
+| `../../workspace/engine-port/results/s8_scaleup/G13_RESULTS_2026-08-21.md` | ★★★**gate #13 job-축 캠페인 결과(2026-08-21, 메인 세션, 사전등록·블라인드·감사 완주) — 양 arm `PASS`(강한 지지(범위 한정)), 정본 등재 완료(doc-steward, 같은 날).** `σ̂_job`(M8 0.063%·Ha8 0.190%)이 설명 대상 격차(5.12%·9.20%)를 3×UB95 기준 각각 18.4배·4.9배 못 미친다. 사전등록 `PREREG_G13_2026-08-20.md`(§10 감사 부록) · 실행기록 `G13_CAMPAIGN_LOG_2026-08-21.md` · 원자료 `G13_ANALYSIS_2026-08-21.json`+`_REFUSED.json`(자기거부 증거). **성능 판정 0건**(분산 측정)·HE0 불변. ★**"gate #13을 닫았다"고 쓰지 말 것**(불변) · **`Δ_batch` 미측정**(배치 축 없음) · 노드 성분 계수 0.400·유효 df≈1(≥3노드 부분 미충족) · `grand_mean_r` arm 비교·2.91/3.058/3.114 대조 금지(인용정지 (a)(b) 해제 없음). 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(신설 행)·#17(2026-08-21 갱신)·"방법론 게이트" #51(신설) |
+| `../../workspace/engine-port/results/s8_scaleup/S0A_VERDICT_2026-08-20.md` | ★★**S0(a) 부팅 내부 잔차 측정 — rev2(2026-08-21 doc-steward 등재, claims-auditor 감사 REFUTED로 초판 결론 철회).** *"C-g의 전제가 성립하지 않는다"*는 **철회**, 비용 정합 재판정 결과는 **"C-g 이득은 교대 속도의 함수"**(부팅당 8구간 교대는 승, 4·2구간은 패). `r`이 창 의존량임을 신규 등재(Ha8 30s 3.025 vs 60s 3.116, 정본 채택구간 밖). ★**게이트가 아니다**·gate #13 불변(S0(a)는 임계경로 밖). 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #17(2026-08-21 갱신)·"방법론 게이트" #53(신설) |
+| `../../workspace/engine-port/results/slo_sched/{PREREG_G18_PROBE_2026-08-20.md,G18_RATE_VALUE_2026-08-20.md}` | ★**gate #16 rate-축 내부 구간 프로브 — 2026-08-21 doc-steward 등재, 트랙 보류(HOLD).** rev1 규칙층 REFUTED → rev2 NO-GO(새 死因 5건) → 사용자 결정으로 보류(gate #13 완주 후 재개 판단). ★**정본 오염 경로 발견·수리**(`g16_analyze.py:953` 글롭 매치, 실제 오염 0건) — `G18_RATE_VALUE_2026-08-20.md` §6이 그 대응. `G18_PROBE_STOP` 존재, 피더 재기동 금지. **gate #16 불변**(닫히지 않음). 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #17(2026-08-21 갱신)·"방법론 게이트" #54(신설) |
+| `../../workspace/engine-port/results/kernel_mech/DESIGN_KERNEL_MECH_REV3_2026-08-20.md` | ★**kernel_mech rev3(Stage A 전용) — §3 차단 2건 설계 본문 수리(2026-08-21 doc-steward 등재).** §3.1 셀 라벨을 realized로 판정(시간가중 조건+혼합구간 폐기) · §3.2 `gap_frac` 항등식 가드(union 정의+변이 테스트). 후보 (vi) 클럭 2차 강등. ★**이 수리 자체는 미감사**(다음 세션 재감사 대상, 사전등록으로 아직 안 넘어감). Stage B 폐기(P1 프로브, 2026-08-20)는 불변. 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #17(2026-08-21 갱신) |
 
 `deprecated_reports/`(2026-07-24부터 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)) = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 
