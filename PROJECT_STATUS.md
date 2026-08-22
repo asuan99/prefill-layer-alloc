@@ -1,6 +1,46 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-22 (doc-steward — ★★**`%smid` R0 결과 도착·정본
+최종 갱신: 2026-08-22 (2차 세션, doc-steward — ★★★**전환 비용
+재분석 6문장 정본 승격 — 메인 세션, GPU 지출 0·새 측정 0건**,
+claims-auditor 감사 `조건부 승격`(대상 `workspace/engine-port/
+results/kernel_mech/PROMOTION_DRAFT_SWITCH_2026-08-22.md`)→차단
+B1–B3 전부 해소 후 확정 문구 6문장 등재. 원 문서
+`STEP0_SWITCH_GAP_2026-08-22.md`의 헤드라인(`Δmed=0.910ms`를 "전환
+기계 비용 상한"으로)은 **감사 `REFUTED`**로 보존(인용 금지)돼 있고,
+승격된 6문장은 같은 채널을 **층화·매칭**해 다시 계산한 대조다.
+★**핵심 결과**: switch overhead에 처음으로 **device-level 상한**이
+생겼다(`s ≤ 0.04 ms/전환` · `d ≤ 0.07 ms/경계`, 가법성 가정·agnostic
+`adjust_stream_groups` 경로 한정) — 그러나 인덱스 불변 경계(n=2,039)
+의 간극 중앙값(1.81ms)이 전환 경계 두 부류 각각(`SW→PART` 1.41ms·
+`SW→FULL` 0.88ms)보다 커서 **순서관계로는 전환 귀속이 비식별**이고,
+진짜 기전은 **prefill 생애주기 경계**(admission +0.91·merge +0.45·
+둘 다+인덱스불변 +1.29·요청은퇴 +0.34 ms, 매칭 증분)다. residency
+(분할 상태 decode forward 지속시간, granite 1.53–1.66×·zamba2
+1.73–1.94×, 풀링 1.70×는 인용 금지)는 전환 귀속 상한의 **≈10³배**
+— 정본 §1-8·§1-17(positioning)과 방향 일치, **HE0 불변**. 재현
+`promotion_metrics.py`(SHA `81c9d8a250ea5b06fed4f93bd810b089b272464
+301b50386f5a445e0ef133974`), 검사 14/14+변이 3/3. 정본 반영:
+`CONSENSUS.md` rev43→**rev44**(§1-8 판정어 개정[폐기 벤치 stationary
+r8 근거 제거]·§1-12 追記·§1-15 각주 신설·§1 신규 행 34[문장2·4·5
+원문]·§3 항목9/53 追記[14번째 재발=`phase` 항등식]·항목78–80 신설)·
+`reports/paper/venue_positioning.md:178`·`CLAIM_EVIDENCE_MATRIX.md:
+512`의 `switch_count≈0` overclaim 정정·`citation_stops.tsv` 4행
+추가. 아래 "다음 실험 gate" #11 레지스트리에 switch-cost 행 신설·
+"방법론 게이트" #58–60 신설(§3 항목78/79/80과 1:1 대응). ★★**불변**:
+성능 판정 0건 · HE0 불변 · 정책 순위 0건 · Gate 2 귀속 전진 0 ·
+C2 인용정지 (a)(b) 승계 · gate #13/#16 "닫았다" 금지 유지 ·
+★**"switch-cost 트랙을 닫았다" 금지 신설** — 닫힌 것은 *"인덱스
+변경 자체가 비쌀 수 있다"* 가설뿐이고 **컨트롤러 구동 전환 경로 ·
+green→green 전환(0건 관측) · 포화 운영점**은 미측정이다(`alternate`
+엔진 패치의 값어치는 하락 — 엔진이 이미 공짜 자연 대조[인덱스
+불변 adjust 경계]를 갖고 있었다). GPU 지출 = **0** · **새 측정
+0건 · 새 성능 판정 0건 · 등급 변경 0건 · 정책 순위 변경 0건.**
+상세 `workspace/engine-port/results/kernel_mech/{PROMOTION_DRAFT_
+SWITCH_2026-08-22.md, audit_{switch_cost,step0,promotion}_2026-08-22/
+VERDICT.md, audit_kernel_mech_rev6_2026-08-22/VERDICT.md,
+PROMOTION_METRICS_2026-08-22.json}`, `reports/CONSENSUS.md` rev44.
+
+이전: 2026-08-22 (1차 세션, doc-steward — ★★**`%smid` R0 결과 도착·정본
 등재**(job **889631**, gpu40, 2026-08-22T01:44:25–01:46:04, **0.0275
 GPU-hr**, exit `0:0`, `git_head=28a972c`) — 사전등록
 `results/smid_census/PREREG_SMID_R0_2026-08-14.md` + 2026-08-21
@@ -4306,6 +4346,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     | ★★kernel_mech P1 프로브 (`workspace/engine-port/results/kernel_mech/p1_probe/p1_greenctx_ncu.sbatch`, 결과 `P1_VERDICT_2026-08-20.md`) | ★★**`UNAVAILABLE (CUPTI×GREEN-CONTEXT)`**(2026-08-20, 메인 세션, job 886718 — 도구 타당성 판정, 성능 판정 아님) — F3의 "미확인 리스크"를 해소 | greenctx 다리: 문서화된 시그니처(exit 9) 정확히 재현. **두 겹 대조**로 귀속 확정 — (a) 다리 간: control(full GPU, 같은 GEMM)은 에러 0건·60행 정상 수집. (b) 다리 내부: 같은 프로세스에서 green ctx 밖 RNG 커널(8행)은 성공, green ctx 위 GEMM만 실패 — ★2026-08-21 정정(doc-steward, 원문 대조): **두 겹의 대조가 같은 방향을 가리킨다**(다리 간 대조는 `realized_sm` 16 vs 108도 함께 바뀌고, 다리 내 대조는 커널 종류 자체가 다르다[RNG 초기화 vs GEMM] — "변인은 하나뿐"은 원문 P1_VERDICT §2보다 조인 과잉 인용이었다). ⇒ **Stage B(SM 제한 하 ncu 커널 내부 카운터) 구성상 불가 확정 → kernel_mech rev3는 Stage A 전용으로 범위 축소**(문서 수정 8건 중 Stage B 대상 최소 5건 적용 대상 소멸). 동반 프로브 886752(non-exclusive)가 `ERR_NVGPUCTRPERM`으로 실패 → 선례 스크립트 `run_ncu_profile.sh:15-17`의 권한 근거("batch면 열린다")가 불충분함을 반증, 실제 구분선은 exclusive+hwperf. GPU 0.032 GPU-hr(886718+886752). ★서술 한계: 성능 판정 아님·green context 실행 자체는 정상(`realized_sm=16`)·내부 기전 미분리·A100-SXM4-80GB/driver 580.105.08/ncu 2025.3.1.0/CUDA 13.0.2/이 클러스터 한정. 상세 `P1_VERDICT_2026-08-20.md`, `P1_886752_REVIEW_2026-08-20.md`, `reports/CONSENSUS.md` §3 항목52 追記(6) |
     | ★★G17 payoff 밴드 (`workspace/engine-port/results/slo_sched/DESIGN_G17_PAYOFF_BAND_2026-08-17.md`) | ★★**규칙층 NO-GO**(2026-08-18, claims-auditor, gate #34 stage 1 — `audit_g17_rules_2026-08-18/` a1–a8) | 死因 3건: (a) `a1_restricted_grid.py` — 제안한 S2 격자 `U={d44,d54,d64,d74}`에서 `D_ttft=44=S_min(U)`가 **양 phase 모두** §3의 `FORCED`(`Δ≥0`) 셀을 재생산 — 결정량이 데이터 관측 전에 격자 선택만으로 부호 강제(같은 4블록을 원 7-arm 격자로 두면 `P(부호>0)` HI 0.632, `U`로 좁히면 0.875 — 격자가 판정을 만든다). (b) sticky 레버 estimand가 **동거(co-residency) 시간이 아니라 단독-at-D 시간(`S_solo`)만** 재는 것으로 확인(`a6_estimand_structure.py`) — 손잡이가 설계 의도와 다른 양을 조작. (c) `M_itl`(요청별 token-ITL p95의 중앙값) estimand가 **이봉 분포에서 검열**됨 — `U` 위 p95는 0.341ms인데 요청별 평균은 2.062ms로 대표성이 없다(`a6`·`a8`). `K1` 순위 규칙도 블록 수 N이 늘수록 식별 확률이 **떨어지는 반직관 성질**(`a2_block_power.py`) 발견. ★**"gate #16을 닫았다"고 쓰지 말 것**(불변, G17은 §1-32/§1-33 재정식화판을 더 좁힌 하위 시도). 상세 `handoff-report/session_handoff_2026-08-18.md` |
     | ★★E-B1 shadow price (`workspace/engine-port/reports/DESIGN_EB1_SHADOW_PRICE_2026-08-18.md`) | ★★**규칙층 NO-GO**(2026-08-18, gate #34 stage 1 감사 — `audit_eb1_rules_2026-08-18/` window_exists 등 7스크립트) | 死因: **판정 가능 창이 대수로 공집합**. `max_running_requests=48`이 모든 28부팅에서 decode 배치를 하드캡해 HI(12 req/s)가 이미 포화(최악) ITL 분포를 관측하는데, 포화 시 ITL-p95 실패율 `q=P(ITLp95>60\|saturated)`가 arm별 ≈0.01–0.10(d34 최저)로 **거의 전부 5% 미만** — `window_exists.py`가 "어떤 rate에서도 조정 가능 창 진입 불가"(`ITL_AXIS_FEASIBLE_AT_ANY_RATE=False`, 다수 arm)를 산출. rate를 낮추면 포화 모집단이 희석돼 `q`가 더 내려갈 뿐이라 구제 불가능. 상세 `handoff-report/session_handoff_2026-08-18.md` |
+    | ★★★switch-cost 재분석(`workspace/engine-port/results/kernel_mech/{DESIGN_SWITCH_COST_2026-08-22.md, STEP0_SWITCH_GAP_2026-08-22.md, PROMOTION_DRAFT_SWITCH_2026-08-22.md}`) | ★★★**GPU 0 · Step 0 헤드라인 `REFUTED`(claims-auditor) → 승격안 rev2 `조건부 승격` → 6문장 확정 등재(2026-08-22)** | 死因 없음(설계 자체가 재분석으로 성공) — 대신 초판 헤드라인(`Δmed=0.910ms`="전환 기계 비용 상한")이 **비식별 논증으로 REFUTED**(인덱스 불변 경계가 전환 경계보다 큼), 승격안이 문장 6개(순서관계·가법 상한 `s≤0.04ms`·생애주기 기전·residency 10³배 등)로 대체·확정. **후속 캠페인 불필요 권고**(감사 원문) — `alternate` 엔진 패치 1건의 값어치가 하락한다: **엔진이 이미 공짜 자연 대조(인덱스 불변 adjust 경계)를 갖고 있었다**. 미측정 항목 3개는 원리상 남는다: 컨트롤러 구동 전환 경로·green→green 전환(0건 관측)·포화 운영점. 상세 `reports/CONSENSUS.md` §1 신규 행 34, §1-8/§1-12/§1-15. |
 
     감사 보고서(있는 것만): E1-b/c ↔
     `workspace/engine-port/results/p1_gates/gate2/AUDIT_E1B_E1C_2026-08-14.md`,
@@ -6351,3 +6392,34 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     않도록 향후 서술에서 주의). 상세 `workspace/engine-port/results/
     smid_census/smid_l0_verdict_889631.json`(`D1` 블록), `reports/
     CONSENSUS.md` §3 항목77.
+
+58. ★**(2026-08-22, 전환 비용 재분석, 메인 세션 — GPU 0) 분석층
+    라벨의 의미를 코드와 대조하지 않고 추정하지 마라.** `holb_
+    probe.py:71-72`에서 `gap_class=="strict"`의 실제 정의는
+    `pend_min > 0`(간극 내내 decode 대기)이지 문서가 서술해 온
+    "다른 스트림 forward 없음"이 아니다 — strict의 **7.16%**
+    (11,114/155,141)가 실제로는 `n_other_fw>0`이다. #56(보고
+    필드 이름이 값을 배반)의 분석층 쌍둥이 — 이번엔 필드 이름이
+    아니라 **층 라벨 이름**이 코드 정의와 다른 것을 가리켰다.
+    상세 `reports/CONSENSUS.md` §3 항목78, `workspace/engine-port/
+    results/kernel_mech/audit_step0_2026-08-22/VERDICT.md` 결함1.
+59. ★★**(2026-08-22, 전환 비용 재분석) 거의-상쇄 잔차를 상한으로
+    팔지 마라 — 잔차/최대셀 비와 독립 구현 재현 산포를 함께
+    적어라.** 가법 식별 `d+2s`가 최대 셀(1.29ms)의 **5.8%**뿐일 때,
+    그 절반값을 "상한"으로 3자리까지 표기하면 허위 정밀도가
+    된다(독립 재구현 3개 산포 ±13%, 절사평균으로 부호 반전, 20개
+    중 2개 음수). 상한 등재 시 ① 잔차/최대셀 비율 ② 독립 재구현
+    산포 ③ 아티팩트 단위 재표본 CI를 병기하고 유효숫자는 그
+    산포가 지지하는 자릿수로 절사한다. 상세 `reports/CONSENSUS.md`
+    §3 항목79, `workspace/engine-port/results/kernel_mech/
+    audit_promotion_2026-08-22/VERDICT.md` 결함5.
+60. ★★**(2026-08-22, 전환 비용 재분석) 두 분리 최빈값 또는 두
+    분리 앨리어스 군집의 풀링 중앙값은 물리량이 아니다.** 혼합비가
+    데이터 구조상 고정(모든 admission 뒤엔 반드시 merge, 48.5:51.5)
+    이면 "20/20 아티팩트 부호 동일"은 반증 통과가 아니라 항등적
+    사실이다 — 같은 함정이 모델≡노드≡job 앨리어스로 갈린 두
+    residency 군집(granite/zamba2)의 풀링값(**인용 금지**)에도 적용된다.
+    결론은 항상 모드/군집별로 다시 쓰고, 혼합비가 고정(=항등)인지
+    자유(=경험적)인지 먼저 판별하라. 상세 `reports/CONSENSUS.md`
+    §3 항목80, `workspace/engine-port/results/kernel_mech/
+    audit_promotion_2026-08-22/VERDICT.md` 결함1·2.

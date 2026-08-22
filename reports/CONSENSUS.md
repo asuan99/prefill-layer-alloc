@@ -4,7 +4,35 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-22 rev43 (doc-steward — ★★**`%smid` R0 결과 도착
+최종 갱신: 2026-08-22 rev44 (doc-steward — ★★★**전환 비용 재분석
+6문장 정본 승격 — 메인 세션, GPU 지출 0·새 측정 0건, claims-auditor
+감사 `조건부 승격`→6/6 문구 수정 완료 후 등재.** 대상
+`workspace/engine-port/results/kernel_mech/PROMOTION_DRAFT_SWITCH_
+2026-08-22.md`(rev2, 확정 문구), 감사 4건(`audit_{switch_cost,
+step0,promotion}_2026-08-22/`, `audit_kernel_mech_rev6_2026-08-22/`
+VERDICT). ★**핵심**: switch overhead에 처음으로 **device-level
+상한**이 생겼다(`s ≤ 0.04 ms/전환`·`d ≤ 0.07 ms/경계`, 가법성
+가정·agnostic `adjust_stream_groups` 경로 한정) — 단 **인덱스 불변
+경계(n=2,039)의 간극 중앙값(1.81ms)이 전환 경계 두 부류 각각(1.41·
+0.88ms)보다 커서 순서관계로는 전환 귀속이 비식별**이고, 진짜
+기전은 **prefill 생애주기 경계**(admission +0.91·merge +0.45·둘
+다+인덱스불변 +1.29·요청은퇴 +0.34 ms)다. residency(분할 상태
+decode forward 지속시간, granite 1.53–1.66×·zamba2 1.73–1.94×,
+풀링 1.70×는 인용 금지)는 전환 귀속 상한의 **≈10³배** — §1-8·
+§1-17(positioning)과 정합, **HE0 불변**. §1-8 판정어 개정(폐기
+벤치 stationary r8 근거 제거)·§1-12 追記·§1-15 각주 신설·§1 신규
+행 34(문장2·4·5 원문)·§3 항목9/53 追記(14번째 재발=`phase` 항등식)·
+항목78–80 신설(층 라벨 오독·거의-상쇄 잔차·풀링 최빈값/앨리어스
+군집). ★★**불변**: 성능 판정 0건·HE0 불변·정책 순위 0건·Gate 2
+귀속 전진 0·C2 인용정지 (a)(b) 승계·gate #13/#16 "닫았다" 금지
+유지·★**"switch-cost 트랙을 닫았다" 금지 신설**(닫힌 것은 "인덱스
+변경 자체가 비쌀 수 있다" 가설뿐 — 컨트롤러 구동 전환 경로·
+green→green 전환[0건 관측]·포화 운영점은 미측정). GPU 지출 **0**·
+**새 측정 0건·새 성능 판정 0건·등급 변경 0건·정책 순위 변경 0건.**
+상세 `PROJECT_STATUS.md` 최상단 배너, "다음 실험 gate" #11
+레지스트리 switch-cost 행(신설)·"방법론 게이트" #58–60(신설).
+
+이전 rev43: 2026-08-22 1차 세션 (doc-steward — ★★**`%smid` R0 결과 도착
 + claims-auditor 결과 감사 `CONFIRMED(scoped)` — 등재 가능(조건
 4건), 정본 승격.** job **889631**(gpu40, 2026-08-22T01:44:25–
 01:46:04, **0.0275 GPU-hr**, exit `0:0`, `git_head=28a972c`).
@@ -1411,11 +1439,11 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | 5 | ★**최적 split = 부하 의존 (이동함)** | `최적 D_sm = max(모델 floor[attn-decode knee], 부하항[∝ λ×output_len])`. ★**floor 자체가 ctx 의존 (2026-07-18, job 858811)**: decode step의 attn 비율이 ctx 따라 이동(ctx256=5%→ctx16k=79%)해 **whole-decode SM-민감도가 1.1×(ctx256, SM-free)→10.5×(ctx16k, SM-hungry)**, 최적 decode SM knee **16→44→108→108**. ⇒ 짧은 ctx=decode에 SM 조금·긴 ctx=많이. (per-type 분할 아님=offline predictor 입력; `results/r0c/decode_knee_vs_ctx.png`). ⚠️**단 '민감도'는 triton/no-cudagraph 마이크로벤치 값**: decode-attn은 원리상 memory-bound지만 이 커널은 **HBM 대역폭 미포화(MLP-limited)라 108 SM까지 ~선형 스케일**(효율 44→108서도 ≈1.0). **운영점(cudagraph)선 HE2가 decode non-binding으로 관측** ⇒ 운영점 magnitude는 열린 질문. `decode_attn_saturation.png`. 저-decode-부하(synthetic o32/o96)=d16 / 실 trace(ShareGPT r8)=**d24·d44**. **d16 1.056 vs d24 5.28 = 5× 격차로 노이즈(±1.3) 압도**. ★**오독 방지 각주(2026-08-04, claims-auditor)**: 이 "knee"는 **decode-only·예산 무제약 cost 곡선의 argmin**이며 예산 제약 하 최소 필요 D가 아니다 — `최적 D_sm = max(floor[knee], 부하항)`에 knee=108을 대입하면 **항상 D=108 ⇒ prefill 0 SM**이 되어 PD-mux가 성립하지 않는다(§1-5 내부 자기모순). **이 knee를 floor에 대입하지 말 것.** ★★**계측 결함 3건 확인 + 인용 금지(2026-08-04, claims-auditor, job 858811)**: (i) 위 §1-3과 동일한 버킷 비대칭(`_zt("attn")`=코어만 vs `_zt("mamba")`=mixer 전체) ⇒ "attn 비중"은 decode step의 조성이 **아니다**; (ii) `results/r0c/decode_knee_vs_ctx.sbatch:45` `SM_LIST=(full 44 24 16 8)`로 **`full`이 항상 첫 arm** ⇒ warm-up 편향이 **모든 비의 분모**에 걸림; (iii) **물리 불변량 위반** — mamba SSD decode는 ctx에 O(1)이어야 하는데 sm44에서 **1.98× 산포**, `full`(108 SM)이 sm44보다 **2.34× 느림**(ctx256 65.655 vs 28.057). ⇒ **"attn 비중 5%→79%"·"ctx256 = 1.1× SM-free"·"knee 16→44→108→108" 인용 금지.** 보정 시 ctx256 민감도 **1.140 → 2.513×**. 재측정 진행 중(계측 수정 후 4 ctx × 5 SM × n=3, 미제출). 상세 [layertype_dynamic_POSITIVE_2026-08-04.md](layertype_dynamic_POSITIVE_2026-08-04.md) §2.4·[layertype_dynamic_JUNCTION_2026-08-04.md](layertype_dynamic_JUNCTION_2026-08-04.md) §1.1 |
 | 6 | ★**비대칭** | decode **과다공급**=저부하서 거의 무해 / **과소공급**=고부하서 파국 ⇒ **최악 phase 기준 decode-heavy static이 두 phase 모두 안전 → 지배** |
 | 7 | ★**동적이 best-static을 못 넘음 (HE0)** — **n≥4 견고, SLO 엄격도 무관 (§1-17로 tight까지 확정)** | **변화 trace**(유효 벤치). **d44 3.220±0.013 (n=4)** > **d34 3.171±0.025 (n=4)** > **bind+GATE 3.132±0.019 (n=9)** > bind no-gate 2.934±0.306 (n=4). d44↔bind+GATE 격차 **0.088 = 5.4 pooled-σ**. (n≥4: d24 3.039±0.130 / slo 2.964±0.025 / d16 2.846±0.055). ※ 전부 **TRUE goodput** — 구 보고값(9.649 등)은 하네스 3× 부풀림, `f921ae8`서 수정, **순위 불변**. ★**tight SLO(chat 300/50)로 재튜닝해도 동일**(§1-17: d44 73.2%≫bind+GATE 44.3%) — 관대 SLO 한정 아님 |
-| 8 | **switch overhead는 병목이 아님** | switch 2회로 static 매칭한 rep 존재; **slo(5sw) < bind(21sw)** ⇒ 손실은 (A)overhead 아니라 **(B)positioning** |
+| 8 | ★**(2026-08-22 갱신) switch overhead는 병목이 아님 — 이제 device-level 상한이 있다**(`s ≤ 0.04 ms/전환`, `d ≤ 0.07 ms/경계`). ★단 **agnostic `adjust_stream_groups` 경로 · 2모델 · 이 config 한정**이며 **컨트롤러 구동 전환 경로는 미측정** | ★**근거 교체(claims-auditor C7 지정)**: 구 근거(switch 2회 rep 대조 · slo(5sw)<bind(21sw))는 **폐기 벤치**(stationary ShareGPT r8, 방법론 게이트 #2로 폐기)의 산물이라 걷어냄 — 신 근거는 agnostic 20 아티팩트 재분석 문장 1(채널은 이미 있었다) · 문장 3(가법 상한 `s≤0.04 ms/전환`·`d≤0.07 ms/경계`, §1-15 각주) · 문장 4(진짜 기전은 prefill 생애주기 경계) — §1 신규 행 34 참조. 손실은 여전히 (A)overhead 아니라 **(B)positioning**(§1-17) |
 | 9 | **§B의 +18%는 confound** | no-cudagraph(비운영점) + vs d44(최적 아닌 static) — best-static 대비가 아니었음 |
 | 10 | ★**feasibility 게이트 = 동적 제어가 아니라 "undershooting auto-tuner"** (2026-07-17 규명) | **구조**: 로그상 `2→3`(d24→d34) **1회 decode-ward 이동 후 prefill-ward 복귀를 113회 전부 거부**(`bs=47 ≥ 0.85×48` 상시 참) ⇒ **d34에 영구 고정 = one-way ratchet**. **수치**: bind+GATE **3.132 (n=9)** ≈ **d34-static 3.171** − 0.039(정착 비용). ★**그런데 틀린 static으로 수렴** — 최적은 **d44(3.220)**. 정지 규칙(decode가 더는 급하지 않음: tpot<51ms)이 **최적점 못 미쳐 발동해 ratchet이 조기 정지** |
 | 11 | ★**게이트의 가치 = 성능이 아니라 견고성 (트랩 방지)** | **유효 벤치(d44 ±0.013 = 노이즈 없음이 증명된 벤치)에서**: no-gate **2.934±0.306, 1/4 붕괴(2.405, sw=10)** vs gate **3.132±0.019 (n=9), 0/9 붕괴, 분산 16× 타이트**. ⇒ **그 붕괴는 시스템 노이즈가 아니라 컨트롤러 탓**(§2-1 부분 복권). 단 **게이트는 동적을 *안전*하게 만들 뿐 static은 여전히 못 이김** |
-| 12 | ★**컨트롤러 CPU 오버헤드 = 死 (직접 계측)** | `SLO-CTLCOST`(v7 이벤트루프 활성 경로 계측): **mean 32–36µs, max 267µs, 누적 ~34ms / ≥1000 call**. 최악의 단일 호출조차 **decode 한 step(ITL p50 ~30ms)의 0.9%**, 누적은 **wall clock의 0.014%**. ⇒ "컨트롤러가 도는 것만으로 이벤트 루프를 지연시킨다"는 가설 **명시적 반증**. 과거 "bind가 switch=0인데 static 미달"은 CPU 비용이 아니라 **§5-4 시스템 노이즈** 탓 |
+| 12 | ★**컨트롤러 CPU 오버헤드 = 死 (직접 계측)** | `SLO-CTLCOST`(v7 이벤트루프 활성 경로 계측): **mean 32–36µs, max 267µs, 누적 ~34ms / ≥1000 call**. 최악의 단일 호출조차 **decode 한 step(ITL p50 ~30ms)의 0.9%**, 누적은 **wall clock의 0.014%**. ⇒ "컨트롤러가 도는 것만으로 이벤트 루프를 지연시킨다"는 가설 **명시적 반증**. 과거 "bind가 switch=0인데 static 미달"은 CPU 비용이 아니라 **§5-4 시스템 노이즈** 탓. ★**追記(2026-08-22, 전환 비용 재분석, §1 신규 행 34)**: 그 행의 +0.91/+0.45 ms는 컨트롤러 **결정** 비용이 아니라 스케줄러 **prefill 생애주기 호스트 작업**이다(위 32–36µs와는 **다른 항** — 혼동 금지) |
 
 | 21 | ★★**Stage 0(long-ctx L−2 게이트, 2026-07-26) — ★★★2026-07-28 판정2/판정3 철회(C1 CONFIRMED), 판정1만 생존** | 3-arm coupled-운영점 스윕(M=pure Mamba2-2.7B 음성대조·H=Zamba2-2.7B hybrid·T=Qwen2.5-3B 양성대조, ctx{4k,8k,16k}, decode-SM{16,44,92}+108-ref, jobs 864230+864601, PIN_CHECK 전부 PASS). **판정1(CONFOUNDED, CONFIRMED, 생존)**: raw ITL(D16/D44/D92) 곡선은 decode-SM binding이 아니라 prefill 경합/entanglement 아티팩트 — 이는 prefill=108−D가 항상 공변하는 설계상 사실이라 D108 앵커의 유효성과 무관하게 참이다. 원 **판정2(NULL, CONFIRMED)**: 유일 de-confounded 대조 D16 vs D108 = 1.00±0.01, 3 arm×3 ctx 전부 ⇒ 운영점 decode는 16→108 SM에 무감각. 원 **판정3**: long-ctx 충돌 가설 붕괴, HE0/벡터1이 ctx-무관으로 강화. ★★★**반증(2026-07-28, claims-auditor 사전등록 게이트 집행, C1 CONFIRMED)** — 판정2·판정3 철회: "D108(무경합 앵커)"은 **실제로는 decode 16 SM**이었다. 3중 독립 증거: (i) 코드 기전 — `manual_divisions=[92,16,0]`의 세 번째 값 0이 legacy auto-path threshold로 읽혀 `decode_bs>=0`이 항상 참 → 항상 stream_idx 1=(92,16) 선택(`src/multiplex/multiplexing_mixin.py:725-742`); (ii) realized telemetry 재집계 — decode-active 샘플의 79–96%가 (92,16)(9/9 셀); (iii) telemetry와 독립인 클라이언트 서명 — D108/D16=0.992–1.001(9/9 셀)인데 D92는 3.4–3.6× 빠름(108이 92보다 느릴 수 없음). ⇒ "D16 vs D108=1.00±0.01"은 **동일 조건 반복측정**. ★**"3중 삼각검증" 표현도 철회** — 무경합 앵커는 고장, 음성 대조 M의 전제("decode O(1) recurrent라 SM-bound 불가")도 틀렸음이 확인됨(context 길이의 O(1)이지 SM 수의 O(1)이 아니었다 — `../PROJECT_STATUS.md` "8B decode-SM 민감도" C2 참조), de-batch 논거는 미감사 — 1/3만 남는다. D16/D44/D92의 **pin 자체**는 realized 기준 유효함 유지. **HE0/HE2/§1-5/§1-7은 철회하지 않는다** — 대신 §5-6이 "게이트 미실행"으로 복원되고, 열린 긴장 2건(HE2 vs C2, r0c 부분 복권)이 `../PROJECT_STATUS.md`에 기록된다. ★scope 한정(필수, 판정1엔 여전히 적용): {M/H/T 2.7–3B, triton, cudagraph-ON green-context pdmux, ctx≤16k, coupled 하네스, one-shot 32-conc burst}. 상세 [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md)(원 판정, 위 항목들로 철회됨), `../workspace/engine-port/results/s0_deconfound/PARTITION_RESIDENCY_STAGE0.md`(C1 근거) |
 
@@ -1444,10 +1472,11 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | 18 | ★★**mix-스윙 트레이스서도 동적 패배 — 최적은 좁은 중간대만 스윙 (사용자 도전 검증, 2026-07-19)** | 기존 결론은 rate만 변하는 fixed-mix 트레이스 한정이었음. **mix-스윙**(phaseA prefill-heavy in2048/o32 ⇄ phaseB decode-heavy in256/o512, static sweep+bind, job 860452–470) 실측: **최적이 d24(A)↔d34(B)로 *좁게만* 스윙**(d16↔d44 아님). ★**prefill-heavy phase를 d16이 안 이김**(d24 5.006 > d16 3.016 > d44 1.564). 기전=**goodput=TTFT-SLO ∧ ITL-SLO가 반대로 당김**: d16 최고 TTFT(1.47s)·최악 ITL(56ms, 60벽 근접); d44 반대(ITL 22ms·TTFT 3.64s로 3s 실패); **중간 d24가 둘 다 충족→승**. **단일 중간 static d24가 양 phase 근최적**(A 5.006=최적, B 2.854 vs 최적 2.870=0.6%차)이라 **combined d24 3.930 ≫ bind 3.419**. ⚠️caveat: phaseB 포화(thru 2.9<offered 5)·n=2; **어떤 static도 양 phase서 두 SLO 동시충족 불가한 극단 mix는 미검증(동적의 남은 문)**. `mixswing.png` |
 | 17 | ★★**동적이 지는 이유 = 오버헤드 아니라 *positioning* (실패 지점 규명, 2026-07-19)** | "오버헤드>이득"은 이미 반박(switch~0 §1-8, CPU 0.014% §1-12). 로그가 실패 지점을 정확히 보임: **최적=dec_sm 44(d44, throughput·goodput 양쪽 1위)인데 컨트롤러는 dec_sm 16–24(평균 22)서 진동하며 44에 절대 도달 못 함 = decode-STARVED**. 기전 = **reactive**(TPOT 스파이크 후에야 decode에 SM)+**symmetric**(두 slack 대등화)이라 decode가 잠깐 괜찮아지면 즉시 prefill로 회수 → 구조적으로 decode-heavy 최적에 누적 불가. 손실은 **switch 비용이 아니라 앉은 위치**. ★**risk/reward 18:1**: prefill-ward 이동의 LO 이득 ≤2.3%(§1-13 LO split-무관) vs HI 오배치 손실 ≤41.5% ⇒ 매 스위치가 나쁜 베팅. ★**모든 수정(anchor·비대칭 penalty·이동 중단)이 "44에 앉기"=static으로 수렴** — gate(ratchet, 34서 정지)가 best-dynamic이나 undershoot. **동적은 안 움직여 static과 *tie*가 상한, 이길 regime 없음**(§1-13). `why_dynamic_loses.png`. ★★**스코프 부착(doc-steward, 2026-08-16)**: 이 "상한·이길 regime 없음"이 확정하는 것은 **달성된**(observed) 정책 계열 — single-worker·SM-split·reactive 제어(HE0) — 뿐이다. **달성 가능한 천장**(어떤 lever로도 못 넘는 이론적 상한)은 다른 명제이며 별도로 확정된 바 없다(§5-8(a)(b)가 dual-worker·non-SM-split lever를 열린 항목으로 유지). 두 명제를 같은 문장으로 혼동하지 말 것(§3 항목57, `PRIZE_SIZE_ARGUMENT_2026-08-16.md` §3). ★**각주(2026-08-04, claims-auditor)**: 위 "모든 수정"의 **'모든'은 reactive 계열**이다. 비-reactive는 이미 시험됐다: Step D `PDMUX_SLO_LFF`(context-length feedforward, `multiplexing_mixin.py:825-832`) = **HD0, n=3(underpowered)**, Step F `sat_predict`(포화 예측 트리거)도 시험됨. ⇒ **온라인 feedforward는 시험돼 net win 아님(n=3, n≥4 재시험 미실행). offline 모델-프로파일 기반 decode-floor 예측(Claim E)만 미시험.** 본문 정정 불필요 |
 | 16 | ★**정책 차이는 throughput이 아니라 SLO-attainment 효과 (2026-07-19)** | 같은 변화-trace 런을 **throughput(SLO-무관 req/s)**으로 재정렬: **스프레드 3.4%** (d44 3.776 > d34 3.759 > bind+GATE 3.745 > bind 3.700 > slo 3.696 > d24 3.677 > d16 3.654) vs **goodput 스프레드 13.1% (4×)**. ⇒ **모든 split이 GPU를 거의 동일하게 포화**시키고, split이 정하는 건 "몇 개 완료"가 아니라 "어느 요청이 TTFT 벽에 부딪히나"(SLO attainment 77.9–85.3%). 순위는 안 뒤집힘(d44 양쪽 1위). ★단 **d16이 양쪽 최하** — 얽힘이 raw throughput도 소량(3.4%) 깎음(decode 굶김→batch 정체→admission 차단→완료↓); d16 goodput 결손의 **~1/4는 실 throughput 손실·~3/4는 SLO attainment**. `throughput_vs_goodput.png` |
-| 15 | ★**(D) granularity = *실행시* 비용이지 *결정시* 비용 아님 (2026-07-18)** | per-layer-type SM 분할을 **offline predictor/floor로 고정해도 死**. (D)는 "누가 split을 정하나(런타임 vs offline)"가 아니라 "한 forward *안에서* 파티션이 layer 경계마다 바뀌나"의 문제 — offline 고정값이라도 실행 시 **attn↔mamba 경계마다 green-ctx 재분할 필요**(step 파편화·sync 직렬화·overlap 감소, S2서 **TPOT 42→124ms**). offline은 **결정 오버헤드만** 제거·**실행 파편화 비용은 그대로**. ⇒ **살아있는 offline 역할은 오직 whole-phase floor**(step 내내 단일 파티션, composition으로 크기만 결정 = §1-5). ★**비용 분해(2026-07-18 확인)**: green-ctx는 시작 시 `initialize_stream_groups`로 **전부 pre-created**(스위치=인덱싱; 생성비용 없음). 실제 스위치 비용 = 경계마다 `stream.synchronize()` **드레인**. 이를 GPU측 wait_stream 순서화로 교체(`PDMUX_LA_COORD_OPT`)하면 **124→85ms(갭 ~47% 회수)**나 **여전히 패배**(agnostic 42ms 평탄). **잔차 = 구조적 오버랩 손실**(monolithic prefill이 window 0만 오버랩, 윈도우수 무관·모델 독립) + **cudagraph 비양립**(step 중간 green-ctx 전환 캡처 불가→eager 강제→운영점 진입 불가). ⇒ **"싼 전환"으론 절반만 없앰; 나머지 절반은 pre-created로도 불가.** `results/a_substrate/` |
+| 15 | ★**(D) granularity = *실행시* 비용이지 *결정시* 비용 아님 (2026-07-18)** | per-layer-type SM 분할을 **offline predictor/floor로 고정해도 死**. (D)는 "누가 split을 정하나(런타임 vs offline)"가 아니라 "한 forward *안에서* 파티션이 layer 경계마다 바뀌나"의 문제 — offline 고정값이라도 실행 시 **attn↔mamba 경계마다 green-ctx 재분할 필요**(step 파편화·sync 직렬화·overlap 감소, S2서 **TPOT 42→124ms**). offline은 **결정 오버헤드만** 제거·**실행 파편화 비용은 그대로**. ⇒ **살아있는 offline 역할은 오직 whole-phase floor**(step 내내 단일 파티션, composition으로 크기만 결정 = §1-5). ★**비용 분해(2026-07-18 확인)**: green-ctx는 시작 시 `initialize_stream_groups`로 **전부 pre-created**(스위치=인덱싱; 생성비용 없음). 실제 스위치 비용 = 경계마다 `stream.synchronize()` **드레인**. 이를 GPU측 wait_stream 순서화로 교체(`PDMUX_LA_COORD_OPT`)하면 **124→85ms(갭 ~47% 회수)**나 **여전히 패배**(agnostic 42ms 평탄). **잔차 = 구조적 오버랩 손실**(monolithic prefill이 window 0만 오버랩, 윈도우수 무관·모델 독립) + **cudagraph 비양립**(step 중간 green-ctx 전환 캡처 불가→eager 강제→운영점 진입 불가). ⇒ **"싼 전환"으론 절반만 없앰; 나머지 절반은 pre-created로도 불가.** `results/a_substrate/`. ★**각주(2026-08-22, 전환 비용 재분석, §1 신규 행 34 문장3)**: 이 pre-created/인덱싱 서술이 운영점 서빙에서 수치화됐다(`s ≤ 0.04 ms`). ★단 이 문단의 드레인 비용은 **eager·step 내부·layer 경계마다**의 것이고, 새 값은 **cudagraph-ON·step 경계·prefill 생애주기당 1회**다 — **이식 금지**(§1 신규 행 34 금지항목). **layer-type 死 판정 불변** |
 
 | 16 | ★**HE0는 goodput SLO 엄격도에 의존 — tight SLO에선 동적이 best-static과 대등~약우위 (2026-07-18)** | **기존 벤치 재분석**(job 재제출 없음, per-request `input_lens`/`ttfts`/`itls` 재스코어; `results/slo_sched/lengthnorm_slo_reanalysis.md`, `reanalyze_lengthnorm_slo.py`). **sanity**: fixed-3s 재현이 §1-7과 정확 일치(d44 3.220±0.013). ★**fixed-tight sweep**(길이 무관, 순수 엄격도): 승자 = **d44@{3.0,2.0,1.5,1.0,0.75s} → d34@0.5s → bind+GATE@0.335s**, 교체 임계 **TTFT 0.5–0.75s**(=실 prefill mean~112ms의 3–5×). ★**축은 길이-비례성 아니라 엄격도**: 같은 ~335ms 평균예산서 flat SLO(bind 2.593) ≈ 길이비례 SLO(bind 2.582) = 둘 다 동적 승(길이비례 여부 무영향). **n≥4 baseline**(d24/d16/slo, job 859005–859059)서도 norm-k(2/3/4) 전부 bind+GATE ①. **강도(보수적)**: bind+GATE vs **d44 +0.073(~3σ, 유의)** / vs best-static **d34 +0.042(~1.5σ, 대등)**, floor변형선 d34≈bind 무승부 ⇒ **"동적이 압도"가 아니라 "동적이 best-static과 대등~약우위, decode-heavy static 지배는 반증"**. **기전**(phase 분해): 반전은 HI(과부하) phase에서만 — 관대SLO=완료율 지배(decode throughput=decode-heavy 승) / tight SLO=first-token 반응성 지배(부하 중 prefill 저글링하는 동적 승, decode-heavy static은 prefill 굶겨 꼴찌권). **한계**: Zamba2 short-ctx·ShareGPT p99 2776tok 한정, 재분석은 3s 벤치 데이터 재스코어(인터랙티브 TTFT를 직접 attain 측정한 건 아님). ★**실무 관행 조사로 지위 강화 (2026-07-18, `serving_slo_survey.md`)**: 프로덕션 인터랙티브 TTFT P99 = **chat 300ms·voice 150ms·code 100ms·RAG 400ms** = **전부 tight regime(동적 승)**; 우리 정본 3s는 표에서 **"batch async" 행**에 정확 대응 ⇒ **"static 지배"는 배치 서빙 한정, 인터랙티브 주류는 동적 regime**. SLO를 배수로 sweep(DistServe "SLO scale")은 표준 방법론이고 "엄격할수록 구조/반응성 이점이 드러남"도 알려진 패턴(DistServe: strict→disaggregation). ⚠️★**이 "동적 우위"는 §1-17(직접 재튜닝 측정)에서 아티팩트로 반증됨 — 재스코어는 컨트롤러 *행동*을 못 봤다** |
 | 17 | ★★**§1-16 반증 — tight SLO로 컨트롤러를 *실제 재튜닝*하면 동적은 best-static에 크게 열위 (2026-07-19)** | §1-16은 3s-튜닝 컨트롤러의 궤적을 tight SLO로 *사후 재스코어*(행동 불변)한 것. 이번엔 **컨트롤러 SLO를 chat(TTFT 300/ITL 50ms)로 실제 설정**해 직접 서빙(`interactive_bench.sbatch`, jobs 860415–860514). **용량 = rate 7–8**(rate≤6 무관심·≥10 전붕괴), 판정은 경계 **rate 8, n=4 attainment%**: **d44 73.2±4.8 ≫ d34 49.6±3.9 > bind+GATE 44.3±2.7 > bind 40.6±0.4**. ★**d44 vs bind+GATE = 28.9%p ≈ 10σ**. static 단조(decode SM↑=attain↑: d16 33<d24 41<d34 50<d44 73), **동적은 2위 static(d34)도 못 넘음**. **기전**: 컨트롤러가 tight TTFT에 반응해 prefill-ward 이동(switch 24–30)→decode 굶김→§1-4 얽힘 트랩→batch 정체→TTFT 악화(bind TTFT p90 1.6s vs d44 0.44s). §1-16이 상상한 "tight→prefill 반응성 유리"가 실제론 **역효과**. bind+GATE>bind는 게이트가 trap 억제(§1-11 재확인, rep2 feas=3서 게이트 미발동→bind급 하락=반증실험). ★**결론: decode-heavy static이 관대 SLO(§1-7)뿐 아니라 tight SLO에서도 지배, 오히려 격차 더 큼(§1-4·§1-6이 tight서 더 극명). §1-16의 조건부화는 취소 — SLO 엄격도와 무관하게 static 지배.** code(100/25)는 무경쟁 66%로 HT-neg(물리 불가). 상세 [interactive_slo_retune_plan.md](interactive_slo_retune_plan.md) §9 |
+| 34 | ★★★**(2026-08-22, 전환 비용 재분석 — 메인 세션, GPU 지출 0·새 측정 0건, claims-auditor 감사 `조건부 승격`→6문장 확정 등재) switch overhead 재확인: device-level 상한 확립 + 진짜 기전은 prefill 생애주기 경계 — HE0 불변** | 입력 = `results/p1_gates/gate2/g2_*_agnostic_rep*.holb.jsonl` **20개**(agnostic `event_loop_pdmux`, 컨트롤러 미설정: `PDMUX_SLO_SCHED`·`R2_POLICY`·`STICKY` 전부 off) · 운영점(`disable_cuda_graph=false`·`enable_pdmux=true`·`disable_radix_cache=true`) · 전환 4,484 · `decode_bs` **1–23** · ★**green→green 전환 0건**(모든 adjust 경계에서 batch<18, idx2가 한 번도 선택 안 됨) · ★**모델≡노드≡job≡워크로드≡날짜가 전부 앨리어스**(Granite-4.0-h-micro-base@gpu41(job 875346)×10, Zamba2-2.7B@gpu42(job 875344)×10) — gate #13(두 노드에 같은 모델)과 **동형이 아니라 더 나쁘다** · `phase` 필터가 항등식이라 **워밍업(`WARMUP_MAIN=8`) 경계 포함** · 프로브 관측자 효과 **`UNDETERMINED`** · 건강도 20/20 통과. 재현 `promotion_metrics.py`(SHA `81c9d8a250ea5b06fed4f93bd810b089b272464301b50386f5a445e0ef133974`) → `PROMOTION_METRICS_2026-08-22.json`, 검사 14/14+변이 3/3, claims-auditor 독립 재계산 일치(근사). **문장 2(순서관계, 비식별 논증, 혼합 중앙값 사용 안 함)**: **`adjust_stream_groups()`가 실행됐으나 인덱스가 바뀌지 않은 경계**(n=2,039; 식별 = `stream_key` 불변 ∧ `decode_bs` 증가 — 이 arm에서 bs 증가는 **merge를 통해서만** 가능하고 merge는 `multiplexing_mixin.py:1240`에서 **무조건** adjust를 세운다, 코드 수준 검증 완료)의 decode 간극 중앙값 **1.81 ms** 는 **인덱스가 바뀐 두 부류 각각보다 크다** — `SW→PART` **1.41 ms**(n=2,101) · `SW→FULL` **0.88 ms**(n=2,233). ★**20/20 아티팩트에서 두 순서관계 모두 성립** (paired Δ 중앙 −0.40 ms [−0.42, −0.38] · −0.94 ms [−0.95, −0.92]). ⇒ ★**전환 경계의 간극 증가는 파티션 변경에 *유일하게* 귀속될 수 없다.** 가법성 없이 성립하는 것은 **이 순서관계뿐**이며 *"인덱스 변경 비용이 0"* 이라는 진술이 아니다. ⚠️**풀링 "전환 경계 1.35 ms"는 인용 금지** — 겹치지 않는 두 최빈값의 혼합이고 혼합비 48.5:51.5는 **구조적으로 고정**(모든 admission 뒤엔 merge)이라 **"20/20"조차 항등적**이다. **문장 4(생애주기, 거짓 이분법 제거)**: 이 arm에서 **전환 경계와 prefill 생애주기 경계는 같은 사건이다**(FULL→PART = admission, PART→FULL = merge 후 미재수락). 증분 크기를 정하는 것은 **인덱스가 바뀌었는가가 아니라 어떤 생애주기 사건이 일어났는가**다 — admission **+0.91** · merge **+0.45** · 둘 다이면서 인덱스 불변 **+1.29** · 요청 은퇴만 **+0.34**(전부 매칭 증분, 정상상태 대비). ⚠️위 네 부류가 간극을 늘리는 경계의 **전부라고 주장하지 않는다**. **문장 5(residency, ★술어 교체본)**: 엔진이 **분할 상태(target 74/34, idx 1)에 앉아 있는 동안의 decode forward 지속시간**은 무분할 상태(idx 3, plain 108 SM) 대비 **granite 1.53–1.66× · zamba2 1.73–1.94×** (`decode_bs` 매칭 후 granite 1.53–1.54 · zamba2 1.79–1.90). ★**두 군집은 겹치지 않고 모델≡노드≡job이 앨리어스이므로 풀링값(8.08→13.71 ms, 1.70×)은 인용 금지** [CS-OK] — ★**어느 아티팩트도 1.70을 내지 않는다**(매칭 후에도). ⚠️**SM 수 효과가 아니라 split-state 효과**다: PART 진입 조건이 `split_prefill_batch is not None` (`multiplexing_mixin.py:880-893`)이라 **prefill 동거가 구조적**이고(PART step 평균 `other_stream_fw_ms` **13.7–23.2 ms** vs FULL **0.2–0.6**), 74/34는 **target이지 realized 아님** (이 20개에 realized 텔레메트리 0건 — 정본 Stage 0 교훈 "pin은 realized로 검증"이 걸린다). ★**정본에 더하는 것**: C2는 *"prefill 16 SM 고정·예산 제약 없음·레버 존재만 확립"* 인 **등량곡선**인데, 이 값은 **예산 구속 프론티어(74+34=108)의 운영 서빙** 첫 관측이다 ⇒ **C2의 재진술이 아니다.** ⚠️단 **C2의 값과 대조 금지**(인용정지 (a)(b) 승계). ★**전환 귀속항과의 비교는 공통 분모로만**: residency 초과 **1.7–3.5 ms/step** vs 전환 귀속 상한 **≈0.001 ms/step** ⇒ **≈10³배**(파일별 1,616–2,984). *"두 자릿수 배수"·"82배"는 단위 불일치 산물이므로 쓰지 않는다.* ★방향은 정본 **§1-8·§1-17(positioning)** 과 일치, **HE0 불변**. ★**불변**: 성능 판정 0건 · HE0 불변 · 정책 순위 0건 · Gate 2 귀속 전진 0 · Gate 2-S 셀 1개 불변 · **C2 인용정지 (a)(b) 승계** · gate #13/#16 "닫았다" 금지 유지 · ★**"switch-cost 트랙을 닫았다" 금지**(닫힌 것은 *"인덱스 변경 자체가 비쌀 수 있다"* 가설뿐 — 컨트롤러 구동 전환 경로 · green→green 전환[0건 관측] · 포화 운영점은 미측정). ⚠️**금지**: 풀링값 `1.35`/`13.711`/`1.70×`를 물리량으로 인용 [CS-OK] · `s`를 2자리 이상으로 표기(`0.04`가 데이터가 지지하는 최대 정밀도) · `s≤0.04`를 layer-aware/§1-15(per-window 드레인) 논의로 이식 · 문장2+3을 **"전환은 공짜"**로 합성. 계보: **REFUTED된 것은 풀링 Δmed의 *인과 귀속*이고, 이 행은 같은 채널에서 층화·매칭해 다시 계산한 대조다**(원 문서 `STEP0_SWITCH_GAP_2026-08-22.md`의 헤드라인은 인용 금지 상태로 보존). 감사 판정서 `workspace/engine-port/results/kernel_mech/audit_{switch_cost,step0,promotion}_2026-08-22/VERDICT.md`. 상세 `workspace/engine-port/results/kernel_mech/PROMOTION_DRAFT_SWITCH_2026-08-22.md`(rev2, 확정 문구 출처) · `PROMOTION_METRICS_2026-08-22.json` |
 
 **실전 권고**: **peak decode 부하 기준 decode-heavy static split 고정**(이 워크로드선 d44급). 동적 불요 — **관대(3s)·tight(chat 300ms) SLO 양쪽에서 확정**(§1-7·§1-17).
 **게이트를 굳이 쓴다면**: 수동 튜닝 없이 안전한 static을 자동으로 찾는 **auto-tuner**로서만 값어치(최적에 미달; tight SLO선 trap 억제로 bind보다 낫지만 여전히 static 미달).
@@ -1505,6 +1534,11 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
    상세 [`stage0_verdict_2026-07-26.md`](stage0_verdict_2026-07-26.md) §5(원
    교훈, 철회됨), `../workspace/engine-port/results/s0_deconfound/
    PARTITION_RESIDENCY_STAGE0.md`(재작성 근거).
+   ★**追記(2026-08-22, 전환 비용 재분석, §3 항목53과 동일 재발, 14번째)**:
+   `holb_probe.py:469`의 `phase=="measure"` 필터가 **전 155,571건을 리터럴
+   `"measure"`로 방출**해 0건을 걸러내는 항등식이었다 — "워밍업 제외"라는
+   통제 서술은 거짓이었고, 워밍업(`WARMUP_MAIN=8`) 경계가 승격된 §1 신규
+   행 34(문장2–5)에 그대로 포함돼 있다. 상세 §3 항목53 追記 참조.
 10. ★★**(2026-07-28) pin은 realized로 검증한다.** 위 항목 9의 첫 소항목과 동일 —
     `PROJECT_STATUS.md` "방법론 게이트(신규)" 참조. ★**아래 13번의 특수
     사례**(target-vs-realized 집계 단위 불일치)로 재분류(2026-07-29).
@@ -2619,6 +2653,15 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     `workspace/engine-port/results/bsweep_regime/PREREG_E1_REV{2,3}_
     2026-08-15.md`(미커밋), `workspace/engine-port/results/
     kernel_mech/`(미커밋).
+    ★**追記(2026-08-22, 전환 비용 재분석 `STEP0_SWITCH_GAP_2026-08-22.md`
+    감사, claims-auditor, 게이트 #9/#53의 14번째 재발) 자기 수리를
+    검증하는 검사 계열의 자매 실패 — 이번엔 "필터"였다.**
+    `phase=="measure"` 필터가 `holb_probe.py:469`에서 **전 155,571건을
+    리터럴 `"measure"`로 방출**해 0건을 걸러내는 항등식이었다 — 문서가
+    "워밍업 제외"라 서술한 통제는 거짓이었고, `WARMUP_MAIN=8` 경계가
+    승격된 §1 신규 행 34(문장2–5)에 그대로 포함된다. 상세
+    `workspace/engine-port/results/kernel_mech/audit_step0_2026-08-22/
+    VERDICT.md` 결함2, `PROMOTION_DRAFT_SWITCH_2026-08-22.md` 문장6(b).
 54. `ADVERSARIAL AUDIT COMPLETE (2026-08-15) — claims-auditor 판정:
     등급 유지 + 인용 정지 2건 신설.`
     ★★★**(2026-08-15, result-analyst 1차 산출 + claims-auditor 적대
@@ -3428,6 +3471,48 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     검증되므로 R0 판정 자체는 흔들리지 않는다. 상세 `workspace/
     engine-port/results/smid_census/smid_l0_verdict_889631.json`
     (`D1` 블록), `PROJECT_STATUS.md` "방법론 게이트" #57.
+78. ★**(2026-08-22, 전환 비용 재분석, 메인 세션 — GPU 0) 분석층
+    라벨의 의미를 코드와 대조하지 않고 추정하지 마라(항목76의
+    쌍둥이 사례).** `holb_probe.py:71-72`에서 `gap_class=="strict"`의
+    실제 정의는 `pend_min > 0`(간극 내내 decode 대기)이지, 문서가
+    서술해 온 "다른 스트림 forward 없음"이 **아니다** — strict의
+    **7.16%**(11,114/155,141)가 실제로는 `n_other_fw>0`이다.
+    항목76이 "보고 필드 이름이 값을 배반"한 사례라면, 이건 "층
+    라벨 이름이 코드 정의와 다른 것을 가리킨" 자매 사례다 — 둘 다
+    **이름을 코드로 검증하지 않고 의미로 읽은** 게이트 #21 계열
+    실패다. 상세 `workspace/engine-port/results/kernel_mech/
+    PROMOTION_DRAFT_SWITCH_2026-08-22.md` 문장6(a), `audit_step0_
+    2026-08-22/VERDICT.md` 결함1.
+79. ★★**(2026-08-22, 전환 비용 재분석) 거의-상쇄 잔차를 상한으로
+    팔지 마라 — 잔차/최대셀 비와 독립 구현 재현 산포를 함께
+    적어라.** 가법 식별 `d+2s = (SW→PART)+(SW→FULL)−(NS→PART|bs+)`가
+    최대 셀(1.29 ms)의 **5.8%**뿐인 거의-상쇄 잔차일 때, 그 절반값
+    (`s`)을 "상한"으로 소수 셋째자리까지 표기하면 허위 정밀도가
+    된다 — 셀 값 1% 이동이 상한을 최대 15% 움직이고(독립 재구현
+    3개가 0.038/0.040/0.043를 냄, ±13%), 중심추정량을 절사평균으로
+    바꾸면 부호가 뒤집힌다(20개 아티팩트 중 2개가 음수). 상한을
+    등재할 땐 **① 잔차/최대셀 비율, ② 독립 재구현의 산포, ③ 1차
+    단위(아티팩트) 재표본 CI**를 반드시 병기하고, 유효숫자는 그
+    산포가 지지하는 자릿수로 절사한다(`s ≤ 0.04`, 소수 둘째자리
+    이상 표기 금지). 상세 `workspace/engine-port/results/kernel_mech/
+    PROMOTION_DRAFT_SWITCH_2026-08-22.md` 문장3, `audit_promotion_
+    2026-08-22/VERDICT.md` 결함5.
+80. ★★**(2026-08-22, 전환 비용 재분석) 두 분리 최빈값(또는 두 분리
+    앨리어스 군집)의 풀링 중앙값은 물리량이 아니다 — 혼합비가
+    구조적으로 고정이면 "20/20 동부호"는 항등적이다.** §1 신규 행
+    34 문장2의 풀링 "전환 경계 1.35 ms"는 겹치지 않는 두 최빈값
+    (`SW→PART` 1.41 ms, `SW→FULL` 0.88 ms)의 혼합이고, 혼합비
+    48.5:51.5는 **구조적으로 고정**(admission 뒤엔 반드시 merge)
+    이므로 "20/20 아티팩트 부호 동일"은 반증 통과가 아니라
+    **항등적 사실**이다(방법론 게이트 #6[metric cliff]과 인접).
+    같은 행 문장5의 풀링 residency("8.08→13.71 ms, 1.70×") [CS-OK]도 같은
+    함정 — granite [1.53,1.66×] · zamba2 [1.73,1.94×] 두 군집이
+    겹치지 않는데 모델≡노드≡job 완전 앨리어스라 그 분리를 모델
+    효과로도 설명하지 못한다. **결론은 항상 모드/군집별로 다시
+    쓰고, 혼합비가 데이터 구조상 고정(=항등)인지 자유(=경험적)인지
+    먼저 판별하라.** 상세 `workspace/engine-port/results/kernel_mech/
+    PROMOTION_DRAFT_SWITCH_2026-08-22.md` 문장2·5, `audit_promotion_
+    2026-08-22/VERDICT.md` 결함1·2.
 
 ---
 

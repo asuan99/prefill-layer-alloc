@@ -175,10 +175,15 @@ fine-grained SM primitive는 **green-context 하나**(CUDA Green Contexts,
    primitive에 robust하다. "libsmctrl이 고친다"는 반론은 drain(=(A))에만 닿고
    **lever(=Claim A)엔 닿지 않는다**.
 3. **헤드라인 HE0는 이미 entanglement 귀속으로 측정 완료**: 정본이
-   `switch_count`≈0·컨트롤러 CPU 0.014%로 동적-패가 overhead(drain) 탓이
-   **아님**을 이미 직접 계측했다(CONSENSUS, `slo-aware-scheduling-track.md`) →
-   drain-아티팩트 반론은 layer-aware 死(=(A))에만 닿고 **헤드라인(HE0)과는
-   무관**하다.
+   컨트롤러 CPU 0.014%(§1-12)로 동적-패가 컨트롤러 오버헤드 탓이 **아님**을
+   이미 직접 계측했다(CONSENSUS, `slo-aware-scheduling-track.md`). ★**2026-08-22
+   정정**: `switch_count`는 **5/8/18/21**이고(그 자체가 32-샘플 서브샘플·arm
+   의존 bias로 `g2s_analyze.py:1374-1377`에서 **단독 인용 금지**), 직접
+   계측된 것은 컨트롤러 CPU(§1-12)와 **agnostic `adjust_stream_groups` 경로의
+   전환/드레인 상한**(`s ≤ 0.04 ms/전환`·`d ≤ 0.07 ms/경계`, 2026-08-22,
+   CONSENSUS §1 신규 행 34)이다 — **컨트롤러 구동 전환의 드레인은 여전히
+   미측정**이다. → drain-아티팩트 반론은 layer-aware 死(=(A))에만 닿고
+   **헤드라인(HE0)과는 무관**하다는 결론 자체는 불변.
 
 ⇒ 세 수 모두 **기존 green-context 기판 위에서** Risk 2를 닫으므로, 두 번째
 substrate로의 serving 이식은 필요하지 않다. `EXPERIMENT_ROADMAP.md` "벡터2"는

@@ -509,9 +509,14 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   control 대조**(순수 Transformer를 같은 green-context+같은 conjunctive-SLO에
   통과 → drain 상쇄 → 동적-승/패가 모델에서 갈리면 hybrid 귀속 식별) + (2)
   **roofline lever-weakness microbench**(r0c SM-민감도, primitive-robust) +
-  (3) **기측정 entanglement 귀속**(`switch_count`≈0·컨트롤러 0.014% → 동적-패가
-  drain 탓 아님, 헤드라인 HE0 무관)으로 닫는다(`EXPERIMENT_ROADMAP.md` 벡터2/
-  TC-series). **이 판정은 등급 변경이 아니다** — Claim A는 여전히 부분 지지,
+  (3) **기측정 entanglement 귀속**(컨트롤러 0.014% → 동적-패가 drain 탓 아님,
+  헤드라인 HE0 무관)으로 닫는다(`EXPERIMENT_ROADMAP.md` 벡터2/TC-series).
+  ★**2026-08-22 정정**: `switch_count`는 **5/8/18/21**이고(그 자체가 32-샘플
+  서브샘플·arm 의존 bias로 `g2s_analyze.py:1374-1377`에서 **단독 인용 금지**),
+  직접 계측된 것은 컨트롤러 CPU(CONSENSUS §1-12)와 **agnostic `adjust_stream_
+  groups` 경로의 전환/드레인 상한**(`s ≤ 0.04 ms/전환`·`d ≤ 0.07 ms/경계`,
+  CONSENSUS §1 신규 행 34)이다 — **컨트롤러 구동 전환의 드레인은 여전히
+  미측정**. **이 판정은 등급 변경이 아니다**(새 인용 셀 0건) — Claim A는 여전히 부분 지지,
   Claim B는 여전히 강한 지지(현 substrate 한정), Claim C는 여전히 running-batch
   경로 강함/KV 경로 부분이다.
 
