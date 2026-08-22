@@ -1,0 +1,2595 @@
+{
+  "tool": "promotion_metrics.py",
+  "self_sha256": "81c9d8a250ea5b06fed4f93bd810b089b272464301b50386f5a445e0ef133974",
+  "generated_utc": "2026-08-22T13:29:50Z",
+  "frame": "승격안 6문장 집계 도구. GPU 0 · 새 측정 0 · 새 결정량 0 · 새 판정어 0 · 성능 판정 0건. 이 산출은 서술 통계이며, 인과 귀속은 audit_step0_2026-08-22/VERDICT.md 에서 이미 REFUTED 됐다.",
+  "citation_stops": [
+    "0.910 ms(및 어떤 단일 셀 증분)를 '전환 기계 비용' 또는 그 상한으로 인용 금지 — 어떤 술어로도.",
+    "s <= ... 는 **가법성 가정 하의 상한**이다. 인과 비용이 아니고 d(드레인+백엔드 스왑)와 분리되지 않는다.",
+    "문장 2의 순서관계는 **비식별 논증**이다(전환 경계의 간극 증가를 파티션 변경에 귀속할 수 없다). '전환이 싸다' 또는 '자유롭게 전환해도 된다'로 읽지 말 것 — HE0 불변.",
+    "모델 비교 금지: 이 20개에서 모델 == 노드 == job 완전 앨리어스(875346=gpu41=Granite x10, 875344=gpu42=Zamba2 x10), 노드 2개.",
+    "residency 수치를 정본 C2(2.36-2.91x 등)와 대조 금지 — 다른 캠페인·다른 격자(교훈 #31).",
+    "관측된 전환은 green-ctx(74/34) <-> plain full-SM(108) 뿐 — green->green 전환 0건. 'green-ctx 파티션 간 전환 비용을 쟀다'는 거짓.",
+    "절대 수준(간극 ms)을 엔진 속성으로 인용 금지 — probe-off 대조 0건, 프로브 자기 비용 미분리."
+  ],
+  "inputs": {
+    "n_artifacts_seen": 20,
+    "n_artifacts_admitted": 20,
+    "admitted": [
+      "g2_granite-40-h-micro-base_agnostic_rep10_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep1_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep2_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep3_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep4_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep5_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep6_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep7_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep8_875346.holb.jsonl",
+      "g2_granite-40-h-micro-base_agnostic_rep9_875346.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep10_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep1_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep2_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep3_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep4_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep5_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep6_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep7_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep8_875344.holb.jsonl",
+      "g2_zamba2-27b_agnostic_rep9_875344.holb.jsonl"
+    ],
+    "excluded": []
+  },
+  "conventions": {
+    "boundary": "같은 아티팩트 안의 연속한 두 holb_gap 이벤트. 착지 속성은 뒤쪽 이벤트.",
+    "landing_role": "아티팩트별 decode_dur_ms 중앙값이 큰 stream_key = PART(분할, target 74/34), 작은 쪽 = FULL(무분할 108). target 이 아니라 realized 로 식별한다.",
+    "layers": "축 W = gap_class(strict/ambiguous), 축 O = n_other_fw>0. 두 축은 별개다.",
+    "health_gate": "dropped_spans·n_errors·n_invalid_gaps·n_inconsistent_gaps·dropped_events 는 요약 이벤트들의 최댓값, timeline_over_host 는 1에서 가장 먼 값으로 게이트(허용 오차 1%). 요약 없으면 fail-closed.",
+    "primary_unit": "아티팩트(rep). 경계는 독립 반복이 아니다 -- 부트스트랩 1차 단위 = 아티팩트."
+  },
+  "health_observed": {
+    "g2_granite-40-h-micro-base_agnostic_rep10_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 21,
+      "timeline_over_host": 1.002566043940965
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep1_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 22,
+      "timeline_over_host": 1.0028976242363583
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep2_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 23,
+      "timeline_over_host": 1.0030863605655154
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep3_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 21,
+      "timeline_over_host": 1.0029230729613254
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep4_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 22,
+      "timeline_over_host": 1.002974660354743
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep5_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 20,
+      "timeline_over_host": 1.002859073914932
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep6_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 21,
+      "timeline_over_host": 1.0034813510977314
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep7_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 21,
+      "timeline_over_host": 1.0027669707947873
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep8_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 22,
+      "timeline_over_host": 1.0027713930745643
+    },
+    "g2_granite-40-h-micro-base_agnostic_rep9_875346.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 21,
+      "timeline_over_host": 1.0031705605327519
+    },
+    "g2_zamba2-27b_agnostic_rep10_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 23,
+      "timeline_over_host": 1.0032917406345643
+    },
+    "g2_zamba2-27b_agnostic_rep1_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 24,
+      "timeline_over_host": 1.0034025611801596
+    },
+    "g2_zamba2-27b_agnostic_rep2_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 22,
+      "timeline_over_host": 1.0034031227618154
+    },
+    "g2_zamba2-27b_agnostic_rep3_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 22,
+      "timeline_over_host": 1.0039399301114094
+    },
+    "g2_zamba2-27b_agnostic_rep4_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 23,
+      "timeline_over_host": 1.0028425461769515
+    },
+    "g2_zamba2-27b_agnostic_rep5_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 23,
+      "timeline_over_host": 1.0030206058889701
+    },
+    "g2_zamba2-27b_agnostic_rep6_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 25,
+      "timeline_over_host": 1.004186048510033
+    },
+    "g2_zamba2-27b_agnostic_rep7_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 23,
+      "timeline_over_host": 1.0041491305246475
+    },
+    "g2_zamba2-27b_agnostic_rep8_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 22,
+      "timeline_over_host": 1.0028472359861387
+    },
+    "g2_zamba2-27b_agnostic_rep9_875344.holb.jsonl": {
+      "dropped_spans": 0,
+      "n_errors": 0,
+      "n_invalid_gaps": 0,
+      "n_inconsistent_gaps": 0,
+      "dropped_events": 0,
+      "n_summary": 20,
+      "timeline_over_host": 1.0035578713781859
+    }
+  },
+  "scope_and_sentence6": {
+    "strict_n_other_fw_pos": 11114,
+    "strict_n": 155141,
+    "strict_frac_n_other_fw_pos": 0.07163805828246562,
+    "strict_definition": "holb_probe.py:69-73 -- strict <=> 간극 내 **모든** 관측에서 decode pending > 0. '다른 스트림 forward 없음'이 **아니다**.",
+    "ambiguous_definition": "간극 내 **어느** 관측에서 decode pending == 0 (요청 도착 유휴).",
+    "phase_values": [
+      "measure"
+    ],
+    "phase_is_identity": true,
+    "phase_note": "holb_probe.py:469 가 모든 gap 이벤트를 리터럴 \"measure\"로 방출한다 => phase 필터는 항등식(0건 제거). '워밍업 제외'는 거짓 통제였다. 이 분석에 워밍업 제외는 **적용되어 있지 않다**.",
+    "decode_bs_max": 23,
+    "n_decode_bs_gt15": 516,
+    "decode_bs_scope_note": "승격안 스코프의 'decode_bs 1-15'는 **거짓**이다: 관측 최댓값과 >15 이벤트 수를 그대로 적을 것.",
+    "n_stream_keys_per_artifact": {
+      "g2_granite-40-h-micro-base_agnostic_rep10_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep1_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep2_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep3_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep4_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep5_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep6_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep7_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep8_875346.holb.jsonl": 2,
+      "g2_granite-40-h-micro-base_agnostic_rep9_875346.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep10_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep1_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep2_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep3_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep4_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep5_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep6_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep7_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep8_875344.holb.jsonl": 2,
+      "g2_zamba2-27b_agnostic_rep9_875344.holb.jsonl": 2
+    },
+    "all_artifacts_have_exactly_two_stream_keys": true,
+    "green_to_green_note": "아티팩트당 stream_key 가 정확히 2개 = 관측된 전환은 green-ctx(74/34) <-> plain full-SM(108) 뿐. green->green 전환 0건.",
+    "n_boundary_seeded": 155551,
+    "n_boundary_unseeded": 155531,
+    "n_switch": 4484,
+    "n_strict_switch": 4334,
+    "n_ambiguous_boundary": 410,
+    "n_gap_events": 155571,
+    "gap_quantisation": {
+      "quantum_ms": 0.001024,
+      "n_boundaries_on_grid": 155550,
+      "n_boundaries": 155551,
+      "frac_on_grid": 0.9999935712403006,
+      "tolerance": "float32 eps 수준 (상대 1e-7)"
+    },
+    "first_event_rule": "seeded(기본): gap_class=='first' 이벤트(gap_ms is None)는 체인의 씨앗으로만 쓰고 경계를 만들지 않는다 -> 경계 = (gap_ms 있는 이벤트 수). unseeded: first 이벤트를 버린다 -> 아티팩트당 경계 1개가 줄어든다. 두 규약의 차이는 아티팩트당 정확히 1개(전부 정상상태 셀)이며 두 값 모두 보고한다.",
+    "boundary_convention_delta_equals_n_artifacts": true
+  },
+  "sentence2_ordering": {
+    "layer": "gap_class == strict",
+    "reading": "비식별 논증: 인덱스가 바뀌지 않은 경계가 전환 경계보다 크다면, 전환 경계의 간극 증가를 파티션 변경에 귀속할 수 없다. 인과 비용 추정 아님.",
+    "pooled_median_ms": {
+      "SW_to_PART": 1.4120960235595703,
+      "SW_to_FULL": 0.8765439987182617,
+      "NS_to_PART_bsup": 1.8135039806365967
+    },
+    "n": {
+      "SW_to_PART": 2101,
+      "SW_to_FULL": 2233,
+      "NS_to_PART_bsup": 2039
+    },
+    "per_artifact_median_ms": {
+      "NS_to_PART_bsup": [
+        1.8309119939804077,
+        1.903615951538086,
+        1.812991976737976,
+        1.8862080574035645,
+        1.8370559811592102,
+        1.806335985660553,
+        1.7914880514144897,
+        1.8042880296707153,
+        1.815551996231079,
+        1.7889280319213867,
+        1.7838079929351807,
+        1.8380800485610962,
+        1.8431999683380127,
+        1.7408000230789185,
+        1.789952039718628,
+        1.8058239817619324,
+        1.7500159740447998,
+        1.7704960107803345,
+        1.9537919759750366,
+        1.8339840173721313
+      ],
+      "SW_to_PART": [
+        1.4269440174102783,
+        1.4223359823226929,
+        1.3998080492019653,
+        1.4172159433364868,
+        1.4243839979171753,
+        1.4264320135116577,
+        1.4120960235595703,
+        1.3998080492019653,
+        1.397760033607483,
+        1.410048007965088,
+        1.4049279689788818,
+        1.418239951133728,
+        1.393664002418518,
+        1.3864959478378296,
+        1.4115840196609497,
+        1.423359990119934,
+        1.400320053100586,
+        1.3875199556350708,
+        1.4090240001678467,
+        1.4392319917678833
+      ],
+      "SW_to_FULL": [
+        0.8903679847717285,
+        0.8847360014915466,
+        0.8724480271339417,
+        0.8837119936943054,
+        0.881663978099823,
+        0.8837119936943054,
+        0.8775680065155029,
+        0.8673279881477356,
+        0.8734719753265381,
+        0.8734719753265381,
+        0.8673279881477356,
+        0.8806399703025818,
+        0.8632320165634155,
+        0.864767998456955,
+        0.886784017086029,
+        0.8714240193367004,
+        0.8565760254859924,
+        0.866815984249115,
+        0.8663039803504944,
+        0.9011200070381165
+      ]
+    },
+    "per_artifact_n": {
+      "NS_to_PART_bsup": [
+        125,
+        120,
+        134,
+        139,
+        130,
+        114,
+        126,
+        138,
+        131,
+        124,
+        83,
+        73,
+        73,
+        77,
+        75,
+        76,
+        66,
+        75,
+        69,
+        91
+      ],
+      "SW_to_PART": [
+        128,
+        108,
+        115,
+        116,
+        103,
+        114,
+        109,
+        111,
+        105,
+        122,
+        91,
+        73,
+        97,
+        101,
+        106,
+        107,
+        118,
+        102,
+        91,
+        84
+      ],
+      "SW_to_FULL": [
+        132,
+        114,
+        125,
+        124,
+        112,
+        122,
+        117,
+        118,
+        115,
+        127,
+        95,
+        82,
+        101,
+        108,
+        111,
+        112,
+        120,
+        114,
+        97,
+        87
+      ]
+    },
+    "NS_gt_SW_to_PART": {
+      "n_artifacts_holding": 20,
+      "n_artifacts_evaluated": 20,
+      "paired_delta_ms_median": -0.3993600010871887,
+      "paired_delta_ms_ci95_repboot": [
+        -0.41548794507980347,
+        -0.37964800000190735
+      ],
+      "note": "paired delta = median(SW_to_PART) - median(NS_to_PART_bsup), 아티팩트별."
+    },
+    "NS_gt_SW_to_FULL": {
+      "n_artifacts_holding": 20,
+      "n_artifacts_evaluated": 20,
+      "paired_delta_ms_median": -0.9356800019741058,
+      "paired_delta_ms_ci95_repboot": [
+        -0.9487360119819641,
+        -0.9159680306911469
+      ],
+      "note": "paired delta = median(SW_to_FULL) - median(NS_to_PART_bsup), 아티팩트별."
+    },
+    "switch_pooled_median_ms__DO_NOT_CITE": 1.351680040359497,
+    "switch_pooled_n": 4334,
+    "switch_pooled_per_artifact__DO_NOT_CITE": [
+      1.3726719617843628,
+      1.371135950088501,
+      1.3480960130691528,
+      1.3603839874267578,
+      1.07315194606781,
+      1.3614080548286438,
+      1.3603839874267578,
+      1.3547519445419312,
+      1.3301759958267212,
+      1.3649920225143433,
+      1.3593599796295166,
+      1.094655990600586,
+      1.346560001373291,
+      1.3260799646377563,
+      1.3670400381088257,
+      1.3619199991226196,
+      1.3557759523391724,
+      1.2800000309944153,
+      1.3434879779815674,
+      1.358847975730896
+    ],
+    "why_do_not_cite": "풀링 '전환' 중앙값은 착지 PART 와 착지 FULL 두 모드의 혼합이다(모드가 서로 다른 중심을 가진다) -- 혼합 중앙값은 혼합비의 함수라 어느 모드도 서술하지 않는다."
+  },
+  "sentence3_additive_upper_bound": {
+    "assumption": "★가법성 가정 하에서만 식별된다. 3셀 4미지수이므로 d(드레인+백엔드 스왑, 양쪽 공통)와 s(파티션 인덱스 변경 자체)는 분리되지 않는다. s <= (d+2s)/2 와 d <= d+2s 는 **상한**이지 비용 추정치가 아니다.",
+    "config": {
+      "steady_def": "bs_equal",
+      "match_key": "file_role_bs",
+      "min_match_n": 5,
+      "central": "median",
+      "steady_def_expr": "전환 아님 AND decode_bs 불변"
+    },
+    "n_steady": 144744,
+    "steady_median_ms": {
+      "FULL": 0.4065279960632324,
+      "PART": 0.5089280009269714
+    },
+    "cells": {
+      "SW_to_PART": {
+        "desc": "전환 · 착지 = 분할 스트림 (승격안 서술: admission)",
+        "n_in": 2101,
+        "n_used": 2100,
+        "n_dropped_unmatched": 1,
+        "n_cells": 535,
+        "matched_increment_ms": 0.9093120098114014
+      },
+      "SW_to_FULL": {
+        "desc": "전환 · 착지 = 무분할 스트림 (승격안 서술: completion+merge)",
+        "n_in": 2233,
+        "n_used": 2217,
+        "n_dropped_unmatched": 16,
+        "n_cells": 535,
+        "matched_increment_ms": 0.4505600333213806
+      },
+      "NS_to_PART_bsup": {
+        "desc": "전환 아님 · decode_bs 증가 · 착지 = 분할 스트림 (인덱스 불변)",
+        "n_in": 2039,
+        "n_used": 2027,
+        "n_dropped_unmatched": 12,
+        "n_cells": 535,
+        "matched_increment_ms": 1.2851199507713318
+      },
+      "NS_bsdown": {
+        "desc": "전환 아님 · decode_bs 감소 (요청 은퇴) -- 모형 밖 네 번째 부류",
+        "n_in": 4024,
+        "n_used": 4017,
+        "n_dropped_unmatched": 7,
+        "n_cells": 535,
+        "matched_increment_ms": 0.34304001927375793
+      }
+    },
+    "d_plus_2s_ms": 0.0747520923614502,
+    "s_upper_ms": 0.0373760461807251,
+    "d_upper_ms": 0.0747520923614502,
+    "quantisation_diagnostic": {
+      "quantum_ms": 0.001024,
+      "cell_increment_in_quanta": {
+        "SW_to_PART": 888.0000095814466,
+        "SW_to_FULL": 440.00003254041076,
+        "NS_to_PART_bsup": 1254.9999519251287,
+        "NS_bsdown": 335.00001882202923
+      },
+      "cell_increment_is_exact_multiple": {
+        "SW_to_PART": true,
+        "SW_to_FULL": true,
+        "NS_to_PART_bsup": true,
+        "NS_bsdown": true
+      },
+      "cell_increment_off_grid_quanta": {
+        "SW_to_PART": 9.581446647644043e-06,
+        "SW_to_FULL": 3.254041075706482e-05,
+        "NS_to_PART_bsup": 4.8074871301651e-05,
+        "NS_bsdown": 1.882202923297882e-05
+      },
+      "d_plus_2s_in_quanta": 73.0000901967287,
+      "d_plus_2s_is_exact_multiple": true,
+      "d_plus_2s_off_grid_quanta": 9.019672870635986e-05,
+      "note": "간극은 1.024 us 격자 위에서 관측된다. 서로 다른 설계 선택이 같은 양자 개수를 내면 그보다 잘게 적는 것은 의미가 없다. 이것은 진단이며 어떤 게이트도 이 값을 쓰지 않는다."
+    },
+    "s_upper_ms_per_artifact": [
+      0.04121597111225128,
+      -0.004607990384101868,
+      0.028928019106388092,
+      0.0014079734683036804,
+      0.02560003101825714,
+      0.047488003969192505,
+      0.04352003335952759,
+      0.029952004551887512,
+      0.028672009706497192,
+      0.03686396777629852,
+      0.035840004682540894,
+      0.017791997641324997,
+      0.02457604557275772,
+      0.055039986968040466,
+      0.06591999530792236,
+      0.047744058072566986,
+      0.05632000416517258,
+      0.041215986013412476,
+      -0.03302399814128876,
+      0.040191978216171265
+    ],
+    "s_upper_ms_ci95_repboot": [
+      0.027136020362377167,
+      0.04352003335952759
+    ],
+    "s_upper_ms_artifact_median": 0.03635198622941971,
+    "s_upper_ms_per_artifact_min": -0.03302399814128876,
+    "s_upper_ms_per_artifact_max": 0.06591999530792236,
+    "n_artifacts_with_negative_s_upper": 2,
+    "cell_increment_ms_artifact_median": {
+      "SW_to_PART": 0.9109760299324989,
+      "SW_to_FULL": 0.4503040090203285,
+      "NS_to_PART_bsup": 1.2835839837789536,
+      "NS_bsdown": 0.342272013425827
+    },
+    "d_plus_2s_ms_from_artifact_median_cells": 0.0776960551738739,
+    "s_upper_ms_from_artifact_median_cells": 0.03884802758693695,
+    "aggregation_note": "집계 순서(경계 풀링 vs 아티팩트별 후 중앙값)도 설계 선택이다. 세 값을 모두 낸다: 풀링 s_upper · 아티팩트별 s_upper 의 중앙값 · 아티팩트별 셀 값의 중앙값으로 만든 s_upper.",
+    "identity_note": "d+2s = (SW_to_PART)+(SW_to_FULL)-(NS_to_PART_bsup) 는 **정의**다. 이 식 자체를 검사로 쓰지 않는다(항등식, 교훈 #9/#53) -- 검사는 입력(매칭·착지 라벨)에 건다."
+  },
+  "sentence4_lifecycle": {
+    "note": "문장 3과 **같은 매칭 증분**이다(재계산 없음). 네 번째 부류(decode_bs 감소, 요청 은퇴)는 3셀 가법 모형 **밖**의 효과 크기를 보여주기 위한 것이다.",
+    "rows": [
+      {
+        "class": "SW_to_PART",
+        "desc": "전환 · 착지 = 분할 스트림 (승격안 서술: admission)",
+        "n_used": 2100,
+        "matched_increment_ms": 0.9093120098114014
+      },
+      {
+        "class": "SW_to_FULL",
+        "desc": "전환 · 착지 = 무분할 스트림 (승격안 서술: completion+merge)",
+        "n_used": 2217,
+        "matched_increment_ms": 0.4505600333213806
+      },
+      {
+        "class": "NS_to_PART_bsup",
+        "desc": "전환 아님 · decode_bs 증가 · 착지 = 분할 스트림 (인덱스 불변)",
+        "n_used": 2027,
+        "matched_increment_ms": 1.2851199507713318
+      },
+      {
+        "class": "NS_bsdown",
+        "desc": "전환 아님 · decode_bs 감소 (요청 은퇴) -- 모형 밖 네 번째 부류",
+        "n_used": 4017,
+        "matched_increment_ms": 0.34304001927375793
+      }
+    ]
+  },
+  "sentence5_residency": {
+    "per_artifact": [
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep10_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.24070405960083,
+        "med_dur_PART_ms": 11.308032035827637,
+        "ratio": 1.5617310060937684,
+        "bs_matched_ratio": 1.533779389460909,
+        "frac_land_PART": 0.4618262597918859,
+        "n_switch": 266,
+        "n_steps": 8553,
+        "switch_per_step": 0.03110019876066877,
+        "residency_excess_ms_per_step": 1.8783988666077267,
+        "switch_attributed_ms_per_step": 0.0011624024651084855,
+        "ratio_residency_over_switch": 1615.9625628739684,
+        "mean_other_stream_fw_ms_PART": 13.660327481137047,
+        "mean_other_stream_fw_ms_FULL": 0.26268747882068144
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep1_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.2427520751953125,
+        "med_dur_PART_ms": 11.404287815093994,
+        "ratio": 1.5745793445216691,
+        "bs_matched_ratio": 1.5330326779981158,
+        "frac_land_PART": 0.4679363548698168,
+        "n_switch": 230,
+        "n_steps": 8296,
+        "switch_per_step": 0.02772420443587271,
+        "residency_excess_ms_per_step": 1.9473338647886551,
+        "switch_attributed_ms_per_step": 0.0010362211453190419,
+        "ratio_residency_over_switch": 1879.2647434241374,
+        "mean_other_stream_fw_ms_PART": 13.747649209515327,
+        "mean_other_stream_fw_ms_FULL": 0.3153548830496438
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep2_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.222271919250488,
+        "med_dur_PART_ms": 11.23583984375,
+        "ratio": 1.5557209655595508,
+        "bs_matched_ratio": 1.5391114798889642,
+        "frac_land_PART": 0.4225873136764226,
+        "n_switch": 250,
+        "n_steps": 9191,
+        "switch_per_step": 0.0272005222500272,
+        "residency_excess_ms_per_step": 1.6960828874721037,
+        "switch_attributed_ms_per_step": 0.0010166479757568571,
+        "ratio_residency_over_switch": 1668.3089210003416,
+        "mean_other_stream_fw_ms_PART": 13.736542898643643,
+        "mean_other_stream_fw_ms_FULL": 0.29439604482296744
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep3_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.2724480628967285,
+        "med_dur_PART_ms": 11.14419174194336,
+        "ratio": 1.5323851948561673,
+        "bs_matched_ratio": 1.5346848403553452,
+        "frac_land_PART": 0.48316807442771453,
+        "n_switch": 248,
+        "n_steps": 8169,
+        "switch_per_step": 0.03035867303219488,
+        "residency_excess_ms_per_step": 1.8707029380826359,
+        "switch_attributed_ms_per_step": 0.0011346871652368495,
+        "ratio_residency_over_switch": 1648.6508311673322,
+        "mean_other_stream_fw_ms_PART": 13.754011795917643,
+        "mean_other_stream_fw_ms_FULL": 0.22205859707859893
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep4_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.24070405960083,
+        "med_dur_PART_ms": 11.116543769836426,
+        "ratio": 1.5352849223407241,
+        "bs_matched_ratio": 1.537535963742788,
+        "frac_land_PART": 0.43016328331862314,
+        "n_switch": 226,
+        "n_steps": 9064,
+        "switch_per_step": 0.02493380406001765,
+        "residency_excess_ms_per_step": 1.6672439353716448,
+        "switch_attributed_ms_per_step": 0.0009319270120083707,
+        "ratio_residency_over_switch": 1789.0284473873255,
+        "mean_other_stream_fw_ms_PART": 13.742309792893579,
+        "mean_other_stream_fw_ms_FULL": 0.2482645841674214
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep5_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.245823860168457,
+        "med_dur_PART_ms": 11.44217586517334,
+        "ratio": 1.5791407693572228,
+        "bs_matched_ratio": 1.536030460908312,
+        "frac_land_PART": 0.4804161566707466,
+        "n_switch": 246,
+        "n_steps": 8170,
+        "switch_per_step": 0.03011015911872705,
+        "residency_excess_ms_per_step": 2.0159953022820276,
+        "switch_attributed_ms_per_step": 0.0011253986977305232,
+        "ratio_residency_over_switch": 1791.3609695368225,
+        "mean_other_stream_fw_ms_PART": 13.800364766212025,
+        "mean_other_stream_fw_ms_FULL": 0.20345492817909053
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep6_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.238656044006348,
+        "med_dur_PART_ms": 11.312640190124512,
+        "ratio": 1.5628094664742977,
+        "bs_matched_ratio": 1.5349284808603398,
+        "frac_land_PART": 0.4652818991097923,
+        "n_switch": 234,
+        "n_steps": 8425,
+        "switch_per_step": 0.02777448071216617,
+        "residency_excess_ms_per_step": 1.895551080449045,
+        "switch_attributed_ms_per_step": 0.0010381002737435813,
+        "ratio_residency_over_switch": 1825.9807153439403,
+        "mean_other_stream_fw_ms_PART": 13.781784794768509,
+        "mean_other_stream_fw_ms_FULL": 0.20838729401142828
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep7_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.250944137573242,
+        "med_dur_PART_ms": 11.89631986618042,
+        "ratio": 1.6406580495546197,
+        "bs_matched_ratio": 1.5334111466400038,
+        "frac_land_PART": 0.48108703635695926,
+        "n_switch": 236,
+        "n_steps": 8169,
+        "switch_per_step": 0.02888970498224997,
+        "residency_excess_ms_per_step": 2.2348300420401777,
+        "switch_attributed_ms_per_step": 0.0010797829475640989,
+        "ratio_residency_over_switch": 2069.7030334492406,
+        "mean_other_stream_fw_ms_PART": 13.794905635843447,
+        "mean_other_stream_fw_ms_FULL": 0.22101297038825904
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep8_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.244800090789795,
+        "med_dur_PART_ms": 11.134976387023926,
+        "ratio": 1.5369611649022108,
+        "bs_matched_ratio": 1.5358837556311238,
+        "frac_land_PART": 0.4518433179723502,
+        "n_switch": 230,
+        "n_steps": 8680,
+        "switch_per_step": 0.026497695852534562,
+        "residency_excess_ms_per_step": 1.757750165187818,
+        "switch_attributed_ms_per_step": 0.0009903791038671397,
+        "ratio_residency_over_switch": 1774.8255777250545,
+        "mean_other_stream_fw_ms_PART": 13.743639745133558,
+        "mean_other_stream_fw_ms_FULL": 0.22365619295432118
+      },
+      {
+        "file": "g2_granite-40-h-micro-base_agnostic_rep9_875346.holb.jsonl",
+        "model_cluster": "granite",
+        "med_dur_FULL_ms": 7.230463981628418,
+        "med_dur_PART_ms": 12.019712448120117,
+        "ratio": 1.6623708352134108,
+        "bs_matched_ratio": 1.5386839104561891,
+        "frac_land_PART": 0.4579228486646884,
+        "n_switch": 254,
+        "n_steps": 8425,
+        "switch_per_step": 0.030148367952522254,
+        "residency_excess_ms_per_step": 2.1931063007388696,
+        "switch_attributed_ms_per_step": 0.0011268267928669644,
+        "ratio_residency_over_switch": 1946.2674428950968,
+        "mean_other_stream_fw_ms_PART": 13.998898032046526,
+        "mean_other_stream_fw_ms_FULL": 0.2742615969770451
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep10_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 8.901632308959961,
+        "med_dur_PART_ms": 17.258495330810547,
+        "ratio": 1.9388011919385801,
+        "bs_matched_ratio": 1.8480199361023426,
+        "frac_land_PART": 0.31973282996950775,
+        "n_switch": 191,
+        "n_steps": 6887,
+        "switch_per_step": 0.02773341077392188,
+        "residency_excess_ms_per_step": 2.67196346364382,
+        "switch_attributed_ms_per_step": 0.0010365652418351233,
+        "ratio_residency_over_switch": 2577.7089138291058,
+        "mean_other_stream_fw_ms_PART": 21.59499184766972,
+        "mean_other_stream_fw_ms_FULL": 0.5702302979557847
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep1_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 8.8985595703125,
+        "med_dur_PART_ms": 17.137664794921875,
+        "ratio": 1.9258920120169554,
+        "bs_matched_ratio": 1.844021116514663,
+        "frac_land_PART": 0.2964071856287425,
+        "n_switch": 166,
+        "n_steps": 7014,
+        "switch_per_step": 0.023666951810664385,
+        "residency_excess_ms_per_step": 2.4421299917255332,
+        "switch_attributed_ms_per_step": 0.0008845770838323875,
+        "ratio_residency_over_switch": 2760.7882188685276,
+        "mean_other_stream_fw_ms_PART": 22.4428779726822,
+        "mean_other_stream_fw_ms_FULL": 0.6117176809571797
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep2_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 8.910847663879395,
+        "med_dur_PART_ms": 17.092607498168945,
+        "ratio": 1.918179744835585,
+        "bs_matched_ratio": 1.8302554434752032,
+        "frac_land_PART": 0.32539908779931587,
+        "n_switch": 202,
+        "n_steps": 7016,
+        "switch_per_step": 0.02879133409350057,
+        "residency_excess_ms_per_step": 2.6623371866709014,
+        "switch_attributed_ms_per_step": 0.0010761062326833622,
+        "ratio_residency_over_switch": 2474.046804869941,
+        "mean_other_stream_fw_ms_PART": 20.840482968277332,
+        "mean_other_stream_fw_ms_FULL": 0.5672646334527437
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep3_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 8.91596794128418,
+        "med_dur_PART_ms": 17.119232177734375,
+        "ratio": 1.9200643486464428,
+        "bs_matched_ratio": 1.8408736123356408,
+        "frac_land_PART": 0.3291049030786773,
+        "n_switch": 218,
+        "n_steps": 7016,
+        "switch_per_step": 0.031071835803876853,
+        "residency_excess_ms_per_step": 2.6997344814657214,
+        "switch_attributed_ms_per_step": 0.0011613423699256087,
+        "ratio_residency_over_switch": 2324.6671708349504,
+        "mean_other_stream_fw_ms_PART": 21.014918213749716,
+        "mean_other_stream_fw_ms_FULL": 0.39383862756583654
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep4_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 8.920063972473145,
+        "med_dur_PART_ms": 15.668224334716797,
+        "ratio": 1.7565147944082156,
+        "bs_matched_ratio": 1.8188593080000472,
+        "frac_land_PART": 0.3123448726322665,
+        "n_switch": 223,
+        "n_steps": 7655,
+        "switch_per_step": 0.029131286740692357,
+        "residency_excess_ms_per_step": 2.107753288847103,
+        "switch_attributed_ms_per_step": 0.0010888123185240624,
+        "ratio_residency_over_switch": 1935.8279227629093,
+        "mean_other_stream_fw_ms_PART": 20.175634731163495,
+        "mean_other_stream_fw_ms_FULL": 0.4013025651949155
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep5_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 8.901632308959961,
+        "med_dur_PART_ms": 17.136640548706055,
+        "ratio": 1.9251121540323706,
+        "bs_matched_ratio": 1.822747982657332,
+        "frac_land_PART": 0.3109879713474794,
+        "n_switch": 224,
+        "n_steps": 7399,
+        "switch_per_step": 0.030274361400189215,
+        "residency_excess_ms_per_step": 2.5609885065084153,
+        "switch_attributed_ms_per_step": 0.0011315359297854335,
+        "ratio_residency_over_switch": 2263.2851852915005,
+        "mean_other_stream_fw_ms_PART": 20.893481931392134,
+        "mean_other_stream_fw_ms_FULL": 0.4956389016008882
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep6_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 8.895487785339355,
+        "med_dur_PART_ms": 15.401984214782715,
+        "ratio": 1.7314378465188507,
+        "bs_matched_ratio": 1.7870480163026456,
+        "frac_land_PART": 0.2809642560266002,
+        "n_switch": 242,
+        "n_steps": 8421,
+        "switch_per_step": 0.028737679610497564,
+        "residency_excess_ms_per_step": 1.828092928638284,
+        "switch_attributed_ms_per_step": 0.001074100840248839,
+        "ratio_residency_over_switch": 1701.9751406346227,
+        "mean_other_stream_fw_ms_PART": 19.923007194409408,
+        "mean_other_stream_fw_ms_FULL": 0.4935407725175878
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep7_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 9.780223846435547,
+        "med_dur_PART_ms": 17.0383358001709,
+        "ratio": 1.7421212507708204,
+        "bs_matched_ratio": 1.823254354696145,
+        "frac_land_PART": 0.32691514234630725,
+        "n_switch": 228,
+        "n_steps": 7271,
+        "switch_per_step": 0.03135744739375602,
+        "residency_excess_ms_per_step": 2.372786702520827,
+        "switch_attributed_ms_per_step": 0.0011720174018986828,
+        "ratio_residency_over_switch": 2024.5319725431405,
+        "mean_other_stream_fw_ms_PART": 20.753278360780065,
+        "mean_other_stream_fw_ms_FULL": 0.30748121388649324
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep8_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 8.90982437133789,
+        "med_dur_PART_ms": 17.25542449951172,
+        "ratio": 1.9366739208710868,
+        "bs_matched_ratio": 1.8714720521442965,
+        "frac_land_PART": 0.3449346405228758,
+        "n_switch": 194,
+        "n_steps": 6120,
+        "switch_per_step": 0.03169934640522876,
+        "residency_excess_ms_per_step": 2.8786865801593056,
+        "switch_attributed_ms_per_step": 0.0011847962351406321,
+        "ratio_residency_over_switch": 2429.689169140222,
+        "mean_other_stream_fw_ms_PART": 23.151632040612,
+        "mean_other_stream_fw_ms_FULL": 0.374150544278608
+      },
+      {
+        "file": "g2_zamba2-27b_agnostic_rep9_875344.holb.jsonl",
+        "model_cluster": "zamba2",
+        "med_dur_FULL_ms": 9.760767936706543,
+        "med_dur_PART_ms": 18.790400505065918,
+        "ratio": 1.925094483027545,
+        "bs_matched_ratio": 1.9035526167429486,
+        "frac_land_PART": 0.3875222816399287,
+        "n_switch": 176,
+        "n_steps": 5610,
+        "switch_per_step": 0.03137254901960784,
+        "residency_excess_ms_per_step": 3.4991838152608343,
+        "switch_attributed_ms_per_step": 0.0011725818409639246,
+        "ratio_residency_over_switch": 2984.1702242159226,
+        "mean_other_stream_fw_ms_PART": 22.419747571059073,
+        "mean_other_stream_fw_ms_FULL": 0.4978559269755211
+      }
+    ],
+    "common_denominator_definition": "residency_excess_ms_per_step = (med_dur_PART - med_dur_FULL) * frac_land_PART ; switch_attributed_ms_per_step = s_upper * (n_switch / n_steps). 두 항이 **같은 분모(decode step 1개)** 위에 있다. s_upper 는 문장 3의 가법성 상한이므로 이 비는 **하한 배수**다.",
+    "s_upper_used_ms": 0.0373760461807251,
+    "caveat": "이것은 decode-SM 민감도의 재진술이다. 새 레버 측정이 아니고, 정본 C2의 값(다른 모델·다른 캠페인)과 비교 금지.",
+    "ratio_range": [
+      1.5323851948561673,
+      1.9388011919385801
+    ],
+    "bs_matched_ratio_range": [
+      1.5330326779981158,
+      1.9035526167429486
+    ],
+    "ratio_residency_over_switch_range": [
+      1615.9625628739684,
+      2984.1702242159226
+    ],
+    "residency_excess_ms_per_step_range": [
+      1.6672439353716448,
+      3.4991838152608343
+    ],
+    "switch_attributed_ms_per_step_range": [
+      0.0008845770838323875,
+      0.0011847962351406321
+    ],
+    "mean_other_stream_fw_ms_PART_range": [
+      13.660327481137047,
+      23.151632040612
+    ],
+    "mean_other_stream_fw_ms_FULL_range": [
+      0.20345492817909053,
+      0.6117176809571797
+    ],
+    "by_model_cluster": {
+      "granite": {
+        "n_artifacts": 10,
+        "med_dur_FULL_ms_range": [
+          7.222271919250488,
+          7.2724480628967285
+        ],
+        "med_dur_PART_ms_range": [
+          11.116543769836426,
+          12.019712448120117
+        ],
+        "ratio_range": [
+          1.5323851948561673,
+          1.6623708352134108
+        ],
+        "bs_matched_ratio_range": [
+          1.5330326779981158,
+          1.5391114798889642
+        ],
+        "ratio_residency_over_switch_range": [
+          1615.9625628739684,
+          2069.7030334492406
+        ]
+      },
+      "zamba2": {
+        "n_artifacts": 10,
+        "med_dur_FULL_ms_range": [
+          8.895487785339355,
+          9.780223846435547
+        ],
+        "med_dur_PART_ms_range": [
+          15.401984214782715,
+          18.790400505065918
+        ],
+        "ratio_range": [
+          1.7314378465188507,
+          1.9388011919385801
+        ],
+        "bs_matched_ratio_range": [
+          1.7870480163026456,
+          1.9035526167429486
+        ],
+        "ratio_residency_over_switch_range": [
+          1701.9751406346227,
+          2984.1702242159226
+        ]
+      }
+    },
+    "model_cluster_caveat": "모델 == 노드 == job 완전 앨리어스(875346=gpu41=Granite x10 · 875344=gpu42=Zamba2 x10). 군집 간 차이를 **모델 효과로 읽지 말 것**.",
+    "pooled_med_of_artifact_medians_FULL_ms__DO_NOT_CITE": 8.083967924118042,
+    "pooled_med_of_artifact_medians_PART_ms__DO_NOT_CITE": 13.710848331451416,
+    "pooled_ratio_of_medians__DO_NOT_CITE": 1.6960542718812512,
+    "pooled_bs_matched_ratio_of_medians__DO_NOT_CITE": 1.663079748095805,
+    "pooled_event_median_FULL_ms__DO_NOT_CITE": 8.048640251159668,
+    "pooled_event_median_PART_ms__DO_NOT_CITE": 12.332032203674316,
+    "why_do_not_cite": "20개는 두 군집(각 10개)의 혼합이고 두 군집의 중심이 다르다. 풀링 중앙값은 10번째/11번째 값의 평균 = **두 군집 경계에 걸린 값**이라 어느 군집도 서술하지 않는다."
+  },
+  "sensitivity": {
+    "base_config": {
+      "min_match_n": 5,
+      "steady_def": "bs_equal",
+      "central": "median",
+      "match_key": "file_role_bs"
+    },
+    "table": [
+      {
+        "axis": "(base)",
+        "value": "min5/bs_equal/median/file_role_bs",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_equal",
+          "central": "median",
+          "match_key": "file_role_bs"
+        },
+        "n_steady": 144744,
+        "SW_to_PART_ms": 0.9093120098114014,
+        "SW_to_FULL_ms": 0.4505600333213806,
+        "NS_to_PART_bsup_ms": 1.2851199507713318,
+        "NS_bsdown_ms": 0.34304001927375793,
+        "n_used": {
+          "SW_to_PART": 2100,
+          "SW_to_FULL": 2217,
+          "NS_to_PART_bsup": 2027,
+          "NS_bsdown": 4017
+        },
+        "n_cells": 535,
+        "d_plus_2s_ms": 0.0747520923614502,
+        "s_upper_ms": 0.0373760461807251,
+        "pct_vs_base": 0.0
+      },
+      {
+        "axis": "min_match_n",
+        "value": "10",
+        "config": {
+          "min_match_n": 10,
+          "steady_def": "bs_equal",
+          "central": "median",
+          "match_key": "file_role_bs"
+        },
+        "n_steady": 144744,
+        "SW_to_PART_ms": 0.9093120098114014,
+        "SW_to_FULL_ms": 0.4505600035190582,
+        "NS_to_PART_bsup_ms": 1.2840960025787354,
+        "NS_bsdown_ms": 0.34304001927375793,
+        "n_used": {
+          "SW_to_PART": 2097,
+          "SW_to_FULL": 2207,
+          "NS_to_PART_bsup": 2001,
+          "NS_bsdown": 4010
+        },
+        "n_cells": 507,
+        "d_plus_2s_ms": 0.07577601075172424,
+        "s_upper_ms": 0.03788800537586212,
+        "pct_vs_base": 1.369752147301879
+      },
+      {
+        "axis": "min_match_n",
+        "value": "20",
+        "config": {
+          "min_match_n": 20,
+          "steady_def": "bs_equal",
+          "central": "median",
+          "match_key": "file_role_bs"
+        },
+        "n_steady": 144744,
+        "SW_to_PART_ms": 0.9093120098114014,
+        "SW_to_FULL_ms": 0.4505600035190582,
+        "NS_to_PART_bsup_ms": 1.2810240387916565,
+        "NS_bsdown_ms": 0.34304001927375793,
+        "n_used": {
+          "SW_to_PART": 2074,
+          "SW_to_FULL": 2161,
+          "NS_to_PART_bsup": 1945,
+          "NS_bsdown": 3981
+        },
+        "n_cells": 443,
+        "d_plus_2s_ms": 0.0788479745388031,
+        "s_upper_ms": 0.03942398726940155,
+        "pct_vs_base": 5.479287666688993
+      },
+      {
+        "axis": "steady_def",
+        "value": "bs_not_increased",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_not_increased",
+          "central": "median",
+          "match_key": "file_role_bs"
+        },
+        "n_steady": 148768,
+        "SW_to_PART_ms": 0.9093119651079178,
+        "SW_to_FULL_ms": 0.4505600035190582,
+        "NS_to_PART_bsup_ms": 1.2851199507713318,
+        "NS_bsdown_ms": 0.34303998947143555,
+        "n_used": {
+          "SW_to_PART": 2100,
+          "SW_to_FULL": 2217,
+          "NS_to_PART_bsup": 2027,
+          "NS_bsdown": 4019
+        },
+        "n_cells": 537,
+        "d_plus_2s_ms": 0.07475201785564423,
+        "s_upper_ms": 0.03737600892782211,
+        "pct_vs_base": -9.967052909901032e-05
+      },
+      {
+        "axis": "steady_def",
+        "value": "bs_equal_solo",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_equal_solo",
+          "central": "median",
+          "match_key": "file_role_bs"
+        },
+        "n_steady": 133986,
+        "SW_to_PART_ms": 0.9113599956035614,
+        "SW_to_FULL_ms": 0.4505600333213806,
+        "NS_to_PART_bsup_ms": 1.2851199507713318,
+        "NS_bsdown_ms": 0.34406399726867676,
+        "n_used": {
+          "SW_to_PART": 2094,
+          "SW_to_FULL": 2217,
+          "NS_to_PART_bsup": 1993,
+          "NS_bsdown": 4014
+        },
+        "n_cells": 512,
+        "d_plus_2s_ms": 0.07680007815361023,
+        "s_upper_ms": 0.038400039076805115,
+        "pct_vs_base": 2.739703635661956
+      },
+      {
+        "axis": "central",
+        "value": "trim10",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_equal",
+          "central": "trim10",
+          "match_key": "file_role_bs"
+        },
+        "n_steady": 144744,
+        "SW_to_PART_ms": 0.7643205830159822,
+        "SW_to_FULL_ms": 0.45915540196557747,
+        "NS_to_PART_bsup_ms": 1.3109838266441545,
+        "NS_bsdown_ms": 0.3474646000115823,
+        "n_used": {
+          "SW_to_PART": 2100,
+          "SW_to_FULL": 2217,
+          "NS_to_PART_bsup": 2027,
+          "NS_bsdown": 4017
+        },
+        "n_cells": 535,
+        "d_plus_2s_ms": -0.08750784166259495,
+        "s_upper_ms": -0.04375392083129748,
+        "pct_vs_base": -217.06406991187168
+      },
+      {
+        "axis": "central",
+        "value": "trim20",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_equal",
+          "central": "trim20",
+          "match_key": "file_role_bs"
+        },
+        "n_steady": 144744,
+        "SW_to_PART_ms": 0.9097222223300475,
+        "SW_to_FULL_ms": 0.45414990518484055,
+        "NS_to_PART_bsup_ms": 1.3580871097013139,
+        "NS_bsdown_ms": 0.3482201718289519,
+        "n_used": {
+          "SW_to_PART": 2100,
+          "SW_to_FULL": 2217,
+          "NS_to_PART_bsup": 2027,
+          "NS_bsdown": 4017
+        },
+        "n_cells": 535,
+        "d_plus_2s_ms": 0.005785017813574322,
+        "s_upper_ms": 0.002892508906787161,
+        "pct_vs_base": -92.26106235849304
+      },
+      {
+        "axis": "match_key",
+        "value": "role_bs",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_equal",
+          "central": "median",
+          "match_key": "role_bs"
+        },
+        "n_steady": 144744,
+        "SW_to_PART_ms": 0.9103359580039978,
+        "SW_to_FULL_ms": 0.45158401131629944,
+        "NS_to_PART_bsup_ms": 1.2871679961681366,
+        "NS_bsdown_ms": 0.34406396746635437,
+        "n_used": {
+          "SW_to_PART": 2101,
+          "SW_to_FULL": 2231,
+          "NS_to_PART_bsup": 2039,
+          "NS_bsdown": 4023
+        },
+        "n_cells": 43,
+        "d_plus_2s_ms": 0.07475197315216064,
+        "s_upper_ms": 0.03737598657608032,
+        "pct_vs_base": -0.0001594728465584165
+      },
+      {
+        "axis": "aggregation",
+        "value": "per_artifact_cell_median",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_equal",
+          "central": "median",
+          "match_key": "file_role_bs",
+          "aggregation": "per_artifact_cell_median"
+        },
+        "n_steady": 144744,
+        "SW_to_PART_ms": 0.9109760299324989,
+        "SW_to_FULL_ms": 0.4503040090203285,
+        "NS_to_PART_bsup_ms": 1.2835839837789536,
+        "NS_bsdown_ms": 0.342272013425827,
+        "n_used": {
+          "SW_to_PART": 2100,
+          "SW_to_FULL": 2217,
+          "NS_to_PART_bsup": 2027,
+          "NS_bsdown": 4017
+        },
+        "n_cells": 535,
+        "d_plus_2s_ms": 0.0776960551738739,
+        "s_upper_ms": 0.03884802758693695,
+        "pct_vs_base": 3.938301550395014
+      },
+      {
+        "axis": "aggregation",
+        "value": "per_artifact_s_median",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_equal",
+          "central": "median",
+          "match_key": "file_role_bs",
+          "aggregation": "per_artifact_s_median"
+        },
+        "n_steady": 144744,
+        "SW_to_PART_ms": NaN,
+        "SW_to_FULL_ms": NaN,
+        "NS_to_PART_bsup_ms": NaN,
+        "NS_bsdown_ms": NaN,
+        "n_used": {
+          "SW_to_PART": 2100,
+          "SW_to_FULL": 2217,
+          "NS_to_PART_bsup": 2027,
+          "NS_bsdown": 4017
+        },
+        "n_cells": 535,
+        "d_plus_2s_ms": 0.07270397245883942,
+        "s_upper_ms": 0.03635198622941971,
+        "pct_vs_base": -2.739883042614334
+      },
+      {
+        "axis": "first_event_rule",
+        "value": "unseeded",
+        "config": {
+          "min_match_n": 5,
+          "steady_def": "bs_equal",
+          "central": "median",
+          "match_key": "file_role_bs",
+          "first_event_rule": "unseeded"
+        },
+        "n_steady": 144724,
+        "SW_to_PART_ms": 0.9093120098114014,
+        "SW_to_FULL_ms": 0.4505600333213806,
+        "NS_to_PART_bsup_ms": 1.2851199507713318,
+        "NS_bsdown_ms": 0.34304001927375793,
+        "n_used": {
+          "SW_to_PART": 2100,
+          "SW_to_FULL": 2217,
+          "NS_to_PART_bsup": 2027,
+          "NS_bsdown": 4017
+        },
+        "n_cells": 535,
+        "d_plus_2s_ms": 0.0747520923614502,
+        "s_upper_ms": 0.0373760461807251,
+        "pct_vs_base": 0.0
+      }
+    ],
+    "band_all_rows": {
+      "n_rows": 11,
+      "min_ms": -0.04375392083129748,
+      "max_ms": 0.03942398726940155,
+      "absolute_span_ms": 0.08317790810069903,
+      "span_pct_of_base_abs": 222.5433575785607,
+      "any_non_positive": true
+    },
+    "band_median_estimator_only": {
+      "n_rows": 9,
+      "min_ms": 0.03635198622941971,
+      "max_ms": 0.03942398726940155,
+      "absolute_span_ms": 0.003072001039981842,
+      "span_pct_of_base_abs": 8.219170709303327,
+      "any_non_positive": false
+    },
+    "families_note": "두 밴드를 따로 낸다. (i) `band_median_estimator_only` = 중심추정량을 중앙값으로 고정한 채 매칭 최소건수·정상상태 정의·매칭 키·첫-이벤트 규약만 바꾼 행들. (ii) `band_all_rows` = 여기에 절사평균 행까지 포함. 절사평균 행은 **추정량 자체를** 바꾸므로 같은 밴드에 넣고 읽으면 안 된다 -- 그러나 숨기지도 않는다.",
+    "reading": "이 표는 **한 구현 안에서** 설계 선택을 하나씩 바꿨을 때 s 상한이 얼마나 움직이는지만 보여준다. 어느 행이 옳다는 판정은 하지 않는다. 정본 표기 자릿수는 밴드 안에서 안정한 자리까지로 제한된다."
+  },
+  "per_artifact": [
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep10_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 21,
+        "timeline_over_host": 1.002566043940965,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8554,
+      "n_boundary": 8553,
+      "n_boundary_unseeded": 8552,
+      "n_switch": 266,
+      "n_strict": 8537,
+      "n_strict_switch": 260,
+      "n_ambiguous": 16,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2407,
+        11.308
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 16,
+      "n_decode_bs_gt15": 14,
+      "strict_n_other_fw_pos": 658,
+      "med": {
+        "SW_to_PART": 1.4269440174102783,
+        "SW_to_FULL": 0.8903679847717285,
+        "NS_to_PART_bsup": 1.8309119939804077,
+        "NS_bsdown": 0.8243200182914734
+      },
+      "n": {
+        "SW_to_PART": 128,
+        "SW_to_FULL": 132,
+        "NS_to_PART_bsup": 125,
+        "NS_bsdown": 241
+      },
+      "med_switch_pooled": 1.3726719617843628,
+      "residency": {
+        "n_land_PART": 3950,
+        "n_land_FULL": 4603,
+        "frac_land_PART": 0.4618262597918859,
+        "med_dur_PART_ms": 11.308032035827637,
+        "med_dur_FULL_ms": 7.24070405960083,
+        "ratio": 1.5617310060937684,
+        "excess_ms_per_PART_step": 4.067327976226807,
+        "bs_matched_med_dur_PART_ms": 11.35357106089592,
+        "bs_matched_med_dur_FULL_ms": 7.402349476665258,
+        "bs_matched_ratio": 1.533779389460909,
+        "bs_matched_n_cells": 12,
+        "bs_matched_weight": 3200,
+        "mean_other_stream_fw_ms_PART": 13.660327481137047,
+        "mean_other_stream_fw_ms_FULL": 0.26268747882068144
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep1_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 22,
+        "timeline_over_host": 1.0028976242363583,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8297,
+      "n_boundary": 8296,
+      "n_boundary_unseeded": 8295,
+      "n_switch": 230,
+      "n_strict": 8276,
+      "n_strict_switch": 222,
+      "n_ambiguous": 20,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2428,
+        11.4043
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 16,
+      "n_decode_bs_gt15": 13,
+      "strict_n_other_fw_pos": 634,
+      "med": {
+        "SW_to_PART": 1.4223359823226929,
+        "SW_to_FULL": 0.8847360014915466,
+        "NS_to_PART_bsup": 1.903615951538086,
+        "NS_bsdown": 0.8084480166435242
+      },
+      "n": {
+        "SW_to_PART": 108,
+        "SW_to_FULL": 114,
+        "NS_to_PART_bsup": 120,
+        "NS_bsdown": 218
+      },
+      "med_switch_pooled": 1.371135950088501,
+      "residency": {
+        "n_land_PART": 3882,
+        "n_land_FULL": 4414,
+        "frac_land_PART": 0.4679363548698168,
+        "med_dur_PART_ms": 11.404287815093994,
+        "med_dur_FULL_ms": 7.2427520751953125,
+        "ratio": 1.5745793445216691,
+        "excess_ms_per_PART_step": 4.161535739898682,
+        "bs_matched_med_dur_PART_ms": 11.305464411399125,
+        "bs_matched_med_dur_FULL_ms": 7.374574967418288,
+        "bs_matched_ratio": 1.5330326779981158,
+        "bs_matched_n_cells": 12,
+        "bs_matched_weight": 3090,
+        "mean_other_stream_fw_ms_PART": 13.747649209515327,
+        "mean_other_stream_fw_ms_FULL": 0.3153548830496438
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep2_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 23,
+        "timeline_over_host": 1.0030863605655154,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 9192,
+      "n_boundary": 9191,
+      "n_boundary_unseeded": 9190,
+      "n_switch": 250,
+      "n_strict": 9166,
+      "n_strict_switch": 240,
+      "n_ambiguous": 25,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2223,
+        11.2358
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 14,
+      "n_decode_bs_gt15": 0,
+      "strict_n_other_fw_pos": 631,
+      "med": {
+        "SW_to_PART": 1.3998080492019653,
+        "SW_to_FULL": 0.8724480271339417,
+        "NS_to_PART_bsup": 1.812991976737976,
+        "NS_bsdown": 0.809984028339386
+      },
+      "n": {
+        "SW_to_PART": 115,
+        "SW_to_FULL": 125,
+        "NS_to_PART_bsup": 134,
+        "NS_bsdown": 245
+      },
+      "med_switch_pooled": 1.3480960130691528,
+      "residency": {
+        "n_land_PART": 3884,
+        "n_land_FULL": 5307,
+        "frac_land_PART": 0.4225873136764226,
+        "med_dur_PART_ms": 11.23583984375,
+        "med_dur_FULL_ms": 7.222271919250488,
+        "ratio": 1.5557209655595508,
+        "excess_ms_per_PART_step": 4.013567924499512,
+        "bs_matched_med_dur_PART_ms": 11.380680416822074,
+        "bs_matched_med_dur_FULL_ms": 7.394318452905768,
+        "bs_matched_ratio": 1.5391114798889642,
+        "bs_matched_n_cells": 10,
+        "bs_matched_weight": 3319,
+        "mean_other_stream_fw_ms_PART": 13.736542898643643,
+        "mean_other_stream_fw_ms_FULL": 0.29439604482296744
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep3_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 21,
+        "timeline_over_host": 1.0029230729613254,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8170,
+      "n_boundary": 8169,
+      "n_boundary_unseeded": 8168,
+      "n_switch": 248,
+      "n_strict": 8152,
+      "n_strict_switch": 240,
+      "n_ambiguous": 17,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2724,
+        11.1442
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 13,
+      "n_decode_bs_gt15": 0,
+      "strict_n_other_fw_pos": 645,
+      "med": {
+        "SW_to_PART": 1.4172159433364868,
+        "SW_to_FULL": 0.8837119936943054,
+        "NS_to_PART_bsup": 1.8862080574035645,
+        "NS_bsdown": 0.8294399976730347
+      },
+      "n": {
+        "SW_to_PART": 116,
+        "SW_to_FULL": 124,
+        "NS_to_PART_bsup": 139,
+        "NS_bsdown": 251
+      },
+      "med_switch_pooled": 1.3603839874267578,
+      "residency": {
+        "n_land_PART": 3947,
+        "n_land_FULL": 4222,
+        "frac_land_PART": 0.48316807442771453,
+        "med_dur_PART_ms": 11.14419174194336,
+        "med_dur_FULL_ms": 7.2724480628967285,
+        "ratio": 1.5323851948561673,
+        "excess_ms_per_PART_step": 3.871743679046631,
+        "bs_matched_med_dur_PART_ms": 11.40038076422059,
+        "bs_matched_med_dur_FULL_ms": 7.428483337061512,
+        "bs_matched_ratio": 1.5346848403553452,
+        "bs_matched_n_cells": 11,
+        "bs_matched_weight": 3492,
+        "mean_other_stream_fw_ms_PART": 13.754011795917643,
+        "mean_other_stream_fw_ms_FULL": 0.22205859707859893
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep4_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 22,
+        "timeline_over_host": 1.002974660354743,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 9065,
+      "n_boundary": 9064,
+      "n_boundary_unseeded": 9063,
+      "n_switch": 226,
+      "n_strict": 9042,
+      "n_strict_switch": 215,
+      "n_ambiguous": 22,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2407,
+        11.1165
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 13,
+      "n_decode_bs_gt15": 0,
+      "strict_n_other_fw_pos": 629,
+      "med": {
+        "SW_to_PART": 1.4243839979171753,
+        "SW_to_FULL": 0.881663978099823,
+        "NS_to_PART_bsup": 1.8370559811592102,
+        "NS_bsdown": 0.8079360127449036
+      },
+      "n": {
+        "SW_to_PART": 103,
+        "SW_to_FULL": 112,
+        "NS_to_PART_bsup": 130,
+        "NS_bsdown": 233
+      },
+      "med_switch_pooled": 1.07315194606781,
+      "residency": {
+        "n_land_PART": 3899,
+        "n_land_FULL": 5165,
+        "frac_land_PART": 0.43016328331862314,
+        "med_dur_PART_ms": 11.116543769836426,
+        "med_dur_FULL_ms": 7.24070405960083,
+        "ratio": 1.5352849223407241,
+        "excess_ms_per_PART_step": 3.8758397102355957,
+        "bs_matched_med_dur_PART_ms": 11.344992546294858,
+        "bs_matched_med_dur_FULL_ms": 7.378684345488744,
+        "bs_matched_ratio": 1.537535963742788,
+        "bs_matched_n_cells": 11,
+        "bs_matched_weight": 3362,
+        "mean_other_stream_fw_ms_PART": 13.742309792893579,
+        "mean_other_stream_fw_ms_FULL": 0.2482645841674214
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep5_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 20,
+        "timeline_over_host": 1.002859073914932,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8171,
+      "n_boundary": 8170,
+      "n_boundary_unseeded": 8169,
+      "n_switch": 246,
+      "n_strict": 8153,
+      "n_strict_switch": 236,
+      "n_ambiguous": 17,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2458,
+        11.4422
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 16,
+      "n_decode_bs_gt15": 36,
+      "strict_n_other_fw_pos": 651,
+      "med": {
+        "SW_to_PART": 1.4264320135116577,
+        "SW_to_FULL": 0.8837119936943054,
+        "NS_to_PART_bsup": 1.806335985660553,
+        "NS_bsdown": 0.822272002696991
+      },
+      "n": {
+        "SW_to_PART": 114,
+        "SW_to_FULL": 122,
+        "NS_to_PART_bsup": 114,
+        "NS_bsdown": 221
+      },
+      "med_switch_pooled": 1.3614080548286438,
+      "residency": {
+        "n_land_PART": 3925,
+        "n_land_FULL": 4245,
+        "frac_land_PART": 0.4804161566707466,
+        "med_dur_PART_ms": 11.44217586517334,
+        "med_dur_FULL_ms": 7.245823860168457,
+        "ratio": 1.5791407693572228,
+        "excess_ms_per_PART_step": 4.196352005004883,
+        "bs_matched_med_dur_PART_ms": 11.313669682173613,
+        "bs_matched_med_dur_FULL_ms": 7.365524297925329,
+        "bs_matched_ratio": 1.536030460908312,
+        "bs_matched_n_cells": 11,
+        "bs_matched_weight": 3054,
+        "mean_other_stream_fw_ms_PART": 13.800364766212025,
+        "mean_other_stream_fw_ms_FULL": 0.20345492817909053
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep6_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 21,
+        "timeline_over_host": 1.0034813510977314,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8426,
+      "n_boundary": 8425,
+      "n_boundary_unseeded": 8424,
+      "n_switch": 234,
+      "n_strict": 8408,
+      "n_strict_switch": 226,
+      "n_ambiguous": 17,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2387,
+        11.3126
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 17,
+      "n_decode_bs_gt15": 47,
+      "strict_n_other_fw_pos": 656,
+      "med": {
+        "SW_to_PART": 1.4120960235595703,
+        "SW_to_FULL": 0.8775680065155029,
+        "NS_to_PART_bsup": 1.7914880514144897,
+        "NS_bsdown": 0.8156160116195679
+      },
+      "n": {
+        "SW_to_PART": 109,
+        "SW_to_FULL": 117,
+        "NS_to_PART_bsup": 126,
+        "NS_bsdown": 228
+      },
+      "med_switch_pooled": 1.3603839874267578,
+      "residency": {
+        "n_land_PART": 3920,
+        "n_land_FULL": 4505,
+        "frac_land_PART": 0.4652818991097923,
+        "med_dur_PART_ms": 11.312640190124512,
+        "med_dur_FULL_ms": 7.238656044006348,
+        "ratio": 1.5628094664742977,
+        "excess_ms_per_PART_step": 4.073984146118164,
+        "bs_matched_med_dur_PART_ms": 11.328472047779126,
+        "bs_matched_med_dur_FULL_ms": 7.380455955465382,
+        "bs_matched_ratio": 1.5349284808603398,
+        "bs_matched_n_cells": 10,
+        "bs_matched_weight": 3148,
+        "mean_other_stream_fw_ms_PART": 13.781784794768509,
+        "mean_other_stream_fw_ms_FULL": 0.20838729401142828
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep7_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 21,
+        "timeline_over_host": 1.0027669707947873,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8170,
+      "n_boundary": 8169,
+      "n_boundary_unseeded": 8168,
+      "n_switch": 236,
+      "n_strict": 8153,
+      "n_strict_switch": 229,
+      "n_ambiguous": 16,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2509,
+        11.8963
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 16,
+      "n_decode_bs_gt15": 13,
+      "strict_n_other_fw_pos": 649,
+      "med": {
+        "SW_to_PART": 1.3998080492019653,
+        "SW_to_FULL": 0.8673279881477356,
+        "NS_to_PART_bsup": 1.8042880296707153,
+        "NS_bsdown": 0.8294399976730347
+      },
+      "n": {
+        "SW_to_PART": 111,
+        "SW_to_FULL": 118,
+        "NS_to_PART_bsup": 138,
+        "NS_bsdown": 239
+      },
+      "med_switch_pooled": 1.3547519445419312,
+      "residency": {
+        "n_land_PART": 3930,
+        "n_land_FULL": 4239,
+        "frac_land_PART": 0.48108703635695926,
+        "med_dur_PART_ms": 11.89631986618042,
+        "med_dur_FULL_ms": 7.250944137573242,
+        "ratio": 1.6406580495546197,
+        "excess_ms_per_PART_step": 4.645375728607178,
+        "bs_matched_med_dur_PART_ms": 11.349741238657383,
+        "bs_matched_med_dur_FULL_ms": 7.401629539166212,
+        "bs_matched_ratio": 1.5334111466400038,
+        "bs_matched_n_cells": 11,
+        "bs_matched_weight": 3042,
+        "mean_other_stream_fw_ms_PART": 13.794905635843447,
+        "mean_other_stream_fw_ms_FULL": 0.22101297038825904
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep8_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 22,
+        "timeline_over_host": 1.0027713930745643,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8681,
+      "n_boundary": 8680,
+      "n_boundary_unseeded": 8679,
+      "n_switch": 230,
+      "n_strict": 8660,
+      "n_strict_switch": 220,
+      "n_ambiguous": 20,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2448,
+        11.135
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 16,
+      "n_decode_bs_gt15": 15,
+      "strict_n_other_fw_pos": 635,
+      "med": {
+        "SW_to_PART": 1.397760033607483,
+        "SW_to_FULL": 0.8734719753265381,
+        "NS_to_PART_bsup": 1.815551996231079,
+        "NS_bsdown": 0.8089600205421448
+      },
+      "n": {
+        "SW_to_PART": 105,
+        "SW_to_FULL": 115,
+        "NS_to_PART_bsup": 131,
+        "NS_bsdown": 233
+      },
+      "med_switch_pooled": 1.3301759958267212,
+      "residency": {
+        "n_land_PART": 3922,
+        "n_land_FULL": 4758,
+        "frac_land_PART": 0.4518433179723502,
+        "med_dur_PART_ms": 11.134976387023926,
+        "med_dur_FULL_ms": 7.244800090789795,
+        "ratio": 1.5369611649022108,
+        "excess_ms_per_PART_step": 3.890176296234131,
+        "bs_matched_med_dur_PART_ms": 11.32808626700386,
+        "bs_matched_med_dur_FULL_ms": 7.375614349374334,
+        "bs_matched_ratio": 1.5358837556311238,
+        "bs_matched_n_cells": 10,
+        "bs_matched_weight": 3354,
+        "mean_other_stream_fw_ms_PART": 13.743639745133558,
+        "mean_other_stream_fw_ms_FULL": 0.22365619295432118
+      }
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep9_875346.holb.jsonl",
+      "model_cluster": "granite",
+      "health": {
+        "has_summary": true,
+        "n_summary": 21,
+        "timeline_over_host": 1.0031705605327519,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8426,
+      "n_boundary": 8425,
+      "n_boundary_unseeded": 8424,
+      "n_switch": 254,
+      "n_strict": 8407,
+      "n_strict_switch": 249,
+      "n_ambiguous": 18,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        7.2305,
+        12.0197
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 17,
+      "n_decode_bs_gt15": 1,
+      "strict_n_other_fw_pos": 647,
+      "med": {
+        "SW_to_PART": 1.410048007965088,
+        "SW_to_FULL": 0.8734719753265381,
+        "NS_to_PART_bsup": 1.7889280319213867,
+        "NS_bsdown": 0.8191999793052673
+      },
+      "n": {
+        "SW_to_PART": 122,
+        "SW_to_FULL": 127,
+        "NS_to_PART_bsup": 124,
+        "NS_bsdown": 235
+      },
+      "med_switch_pooled": 1.3649920225143433,
+      "residency": {
+        "n_land_PART": 3858,
+        "n_land_FULL": 4567,
+        "frac_land_PART": 0.4579228486646884,
+        "med_dur_PART_ms": 12.019712448120117,
+        "med_dur_FULL_ms": 7.230463981628418,
+        "ratio": 1.6623708352134108,
+        "excess_ms_per_PART_step": 4.789248466491699,
+        "bs_matched_med_dur_PART_ms": 11.418763208436856,
+        "bs_matched_med_dur_FULL_ms": 7.421123422972181,
+        "bs_matched_ratio": 1.5386839104561891,
+        "bs_matched_n_cells": 11,
+        "bs_matched_weight": 3007,
+        "mean_other_stream_fw_ms_PART": 13.998898032046526,
+        "mean_other_stream_fw_ms_FULL": 0.2742615969770451
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep10_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 23,
+        "timeline_over_host": 1.0032917406345643,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 6888,
+      "n_boundary": 6887,
+      "n_boundary_unseeded": 6886,
+      "n_switch": 191,
+      "n_strict": 6863,
+      "n_strict_switch": 186,
+      "n_ambiguous": 24,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        8.9016,
+        17.2585
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 14,
+      "n_decode_bs_gt15": 0,
+      "strict_n_other_fw_pos": 466,
+      "med": {
+        "SW_to_PART": 1.4049279689788818,
+        "SW_to_FULL": 0.8673279881477356,
+        "NS_to_PART_bsup": 1.7838079929351807,
+        "NS_bsdown": 0.7823359966278076
+      },
+      "n": {
+        "SW_to_PART": 91,
+        "SW_to_FULL": 95,
+        "NS_to_PART_bsup": 83,
+        "NS_bsdown": 165
+      },
+      "med_switch_pooled": 1.3593599796295166,
+      "residency": {
+        "n_land_PART": 2202,
+        "n_land_FULL": 4685,
+        "frac_land_PART": 0.31973282996950775,
+        "med_dur_PART_ms": 17.258495330810547,
+        "med_dur_FULL_ms": 8.901632308959961,
+        "ratio": 1.9388011919385801,
+        "excess_ms_per_PART_step": 8.356863021850586,
+        "bs_matched_med_dur_PART_ms": 18.497558463787595,
+        "bs_matched_med_dur_FULL_ms": 10.009393352541846,
+        "bs_matched_ratio": 1.8480199361023426,
+        "bs_matched_n_cells": 13,
+        "bs_matched_weight": 2062,
+        "mean_other_stream_fw_ms_PART": 21.59499184766972,
+        "mean_other_stream_fw_ms_FULL": 0.5702302979557847
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep1_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 24,
+        "timeline_over_host": 1.0034025611801596,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 7015,
+      "n_boundary": 7014,
+      "n_boundary_unseeded": 7013,
+      "n_switch": 166,
+      "n_strict": 6983,
+      "n_strict_switch": 155,
+      "n_ambiguous": 31,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        8.8986,
+        17.1377
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 23,
+      "n_decode_bs_gt15": 95,
+      "strict_n_other_fw_pos": 449,
+      "med": {
+        "SW_to_PART": 1.418239951133728,
+        "SW_to_FULL": 0.8806399703025818,
+        "NS_to_PART_bsup": 1.8380800485610962,
+        "NS_bsdown": 0.7802879810333252
+      },
+      "n": {
+        "SW_to_PART": 73,
+        "SW_to_FULL": 82,
+        "NS_to_PART_bsup": 73,
+        "NS_bsdown": 147
+      },
+      "med_switch_pooled": 1.094655990600586,
+      "residency": {
+        "n_land_PART": 2079,
+        "n_land_FULL": 4935,
+        "frac_land_PART": 0.2964071856287425,
+        "med_dur_PART_ms": 17.137664794921875,
+        "med_dur_FULL_ms": 8.8985595703125,
+        "ratio": 1.9258920120169554,
+        "excess_ms_per_PART_step": 8.239105224609375,
+        "bs_matched_med_dur_PART_ms": 18.36208063996247,
+        "bs_matched_med_dur_FULL_ms": 9.957630352231632,
+        "bs_matched_ratio": 1.844021116514663,
+        "bs_matched_n_cells": 13,
+        "bs_matched_weight": 1895,
+        "mean_other_stream_fw_ms_PART": 22.4428779726822,
+        "mean_other_stream_fw_ms_FULL": 0.6117176809571797
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep2_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 22,
+        "timeline_over_host": 1.0034031227618154,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 7017,
+      "n_boundary": 7016,
+      "n_boundary_unseeded": 7015,
+      "n_switch": 202,
+      "n_strict": 6993,
+      "n_strict_switch": 198,
+      "n_ambiguous": 23,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        8.9119,
+        17.0926
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 18,
+      "n_decode_bs_gt15": 14,
+      "strict_n_other_fw_pos": 466,
+      "med": {
+        "SW_to_PART": 1.393664002418518,
+        "SW_to_FULL": 0.8632320165634155,
+        "NS_to_PART_bsup": 1.8431999683380127,
+        "NS_bsdown": 0.766975998878479
+      },
+      "n": {
+        "SW_to_PART": 97,
+        "SW_to_FULL": 101,
+        "NS_to_PART_bsup": 73,
+        "NS_bsdown": 161
+      },
+      "med_switch_pooled": 1.346560001373291,
+      "residency": {
+        "n_land_PART": 2283,
+        "n_land_FULL": 4733,
+        "frac_land_PART": 0.32539908779931587,
+        "med_dur_PART_ms": 17.092607498168945,
+        "med_dur_FULL_ms": 8.910847663879395,
+        "ratio": 1.918179744835585,
+        "excess_ms_per_PART_step": 8.18175983428955,
+        "bs_matched_med_dur_PART_ms": 17.97912098335869,
+        "bs_matched_med_dur_FULL_ms": 9.823285076109801,
+        "bs_matched_ratio": 1.8302554434752032,
+        "bs_matched_n_cells": 12,
+        "bs_matched_weight": 2176,
+        "mean_other_stream_fw_ms_PART": 20.840482968277332,
+        "mean_other_stream_fw_ms_FULL": 0.5672646334527437
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep3_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 22,
+        "timeline_over_host": 1.0039399301114094,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 7017,
+      "n_boundary": 7016,
+      "n_boundary_unseeded": 7015,
+      "n_switch": 218,
+      "n_strict": 6994,
+      "n_strict_switch": 209,
+      "n_ambiguous": 22,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        8.916,
+        17.1192
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 13,
+      "n_decode_bs_gt15": 0,
+      "strict_n_other_fw_pos": 469,
+      "med": {
+        "SW_to_PART": 1.3864959478378296,
+        "SW_to_FULL": 0.864767998456955,
+        "NS_to_PART_bsup": 1.7408000230789185,
+        "NS_bsdown": 0.7700480222702026
+      },
+      "n": {
+        "SW_to_PART": 101,
+        "SW_to_FULL": 108,
+        "NS_to_PART_bsup": 77,
+        "NS_bsdown": 177
+      },
+      "med_switch_pooled": 1.3260799646377563,
+      "residency": {
+        "n_land_PART": 2309,
+        "n_land_FULL": 4707,
+        "frac_land_PART": 0.3291049030786773,
+        "med_dur_PART_ms": 17.119232177734375,
+        "med_dur_FULL_ms": 8.91596794128418,
+        "ratio": 1.9200643486464428,
+        "excess_ms_per_PART_step": 8.203264236450195,
+        "bs_matched_med_dur_PART_ms": 18.320136376714977,
+        "bs_matched_med_dur_FULL_ms": 9.951870815004503,
+        "bs_matched_ratio": 1.8408736123356408,
+        "bs_matched_n_cells": 12,
+        "bs_matched_weight": 2281,
+        "mean_other_stream_fw_ms_PART": 21.014918213749716,
+        "mean_other_stream_fw_ms_FULL": 0.39383862756583654
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep4_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 23,
+        "timeline_over_host": 1.0028425461769515,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 7656,
+      "n_boundary": 7655,
+      "n_boundary_unseeded": 7654,
+      "n_switch": 223,
+      "n_strict": 7634,
+      "n_strict_switch": 217,
+      "n_ambiguous": 21,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        8.9201,
+        15.6682
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 12,
+      "n_decode_bs_gt15": 0,
+      "strict_n_other_fw_pos": 470,
+      "med": {
+        "SW_to_PART": 1.4115840196609497,
+        "SW_to_FULL": 0.886784017086029,
+        "NS_to_PART_bsup": 1.789952039718628,
+        "NS_bsdown": 0.7618560194969177
+      },
+      "n": {
+        "SW_to_PART": 106,
+        "SW_to_FULL": 111,
+        "NS_to_PART_bsup": 75,
+        "NS_bsdown": 175
+      },
+      "med_switch_pooled": 1.3670400381088257,
+      "residency": {
+        "n_land_PART": 2391,
+        "n_land_FULL": 5264,
+        "frac_land_PART": 0.3123448726322665,
+        "med_dur_PART_ms": 15.668224334716797,
+        "med_dur_FULL_ms": 8.920063972473145,
+        "ratio": 1.7565147944082156,
+        "excess_ms_per_PART_step": 6.748160362243652,
+        "bs_matched_med_dur_PART_ms": 17.562816855377957,
+        "bs_matched_med_dur_FULL_ms": 9.65595127568685,
+        "bs_matched_ratio": 1.8188593080000472,
+        "bs_matched_n_cells": 11,
+        "bs_matched_weight": 2373,
+        "mean_other_stream_fw_ms_PART": 20.175634731163495,
+        "mean_other_stream_fw_ms_FULL": 0.4013025651949155
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep5_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 23,
+        "timeline_over_host": 1.0030206058889701,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 7400,
+      "n_boundary": 7399,
+      "n_boundary_unseeded": 7398,
+      "n_switch": 224,
+      "n_strict": 7376,
+      "n_strict_switch": 219,
+      "n_ambiguous": 23,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        8.9016,
+        17.1366
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 16,
+      "n_decode_bs_gt15": 15,
+      "strict_n_other_fw_pos": 468,
+      "med": {
+        "SW_to_PART": 1.423359990119934,
+        "SW_to_FULL": 0.8714240193367004,
+        "NS_to_PART_bsup": 1.8058239817619324,
+        "NS_bsdown": 0.7879679799079895
+      },
+      "n": {
+        "SW_to_PART": 107,
+        "SW_to_FULL": 112,
+        "NS_to_PART_bsup": 76,
+        "NS_bsdown": 176
+      },
+      "med_switch_pooled": 1.3619199991226196,
+      "residency": {
+        "n_land_PART": 2301,
+        "n_land_FULL": 5098,
+        "frac_land_PART": 0.3109879713474794,
+        "med_dur_PART_ms": 17.136640548706055,
+        "med_dur_FULL_ms": 8.901632308959961,
+        "ratio": 1.9251121540323706,
+        "excess_ms_per_PART_step": 8.235008239746094,
+        "bs_matched_med_dur_PART_ms": 17.824718063094398,
+        "bs_matched_med_dur_FULL_ms": 9.779035957076333,
+        "bs_matched_ratio": 1.822747982657332,
+        "bs_matched_n_cells": 10,
+        "bs_matched_weight": 2200,
+        "mean_other_stream_fw_ms_PART": 20.893481931392134,
+        "mean_other_stream_fw_ms_FULL": 0.4956389016008882
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep6_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 25,
+        "timeline_over_host": 1.004186048510033,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 8422,
+      "n_boundary": 8421,
+      "n_boundary_unseeded": 8420,
+      "n_switch": 242,
+      "n_strict": 8397,
+      "n_strict_switch": 238,
+      "n_ambiguous": 24,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        8.8955,
+        15.402
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 18,
+      "n_decode_bs_gt15": 39,
+      "strict_n_other_fw_pos": 462,
+      "med": {
+        "SW_to_PART": 1.400320053100586,
+        "SW_to_FULL": 0.8565760254859924,
+        "NS_to_PART_bsup": 1.7500159740447998,
+        "NS_bsdown": 0.7649279832839966
+      },
+      "n": {
+        "SW_to_PART": 118,
+        "SW_to_FULL": 120,
+        "NS_to_PART_bsup": 66,
+        "NS_bsdown": 174
+      },
+      "med_switch_pooled": 1.3557759523391724,
+      "residency": {
+        "n_land_PART": 2366,
+        "n_land_FULL": 6055,
+        "frac_land_PART": 0.2809642560266002,
+        "med_dur_PART_ms": 15.401984214782715,
+        "med_dur_FULL_ms": 8.895487785339355,
+        "ratio": 1.7314378465188507,
+        "excess_ms_per_PART_step": 6.506496429443359,
+        "bs_matched_med_dur_PART_ms": 16.68518500302879,
+        "bs_matched_med_dur_FULL_ms": 9.336730099479917,
+        "bs_matched_ratio": 1.7870480163026456,
+        "bs_matched_n_cells": 11,
+        "bs_matched_weight": 2272,
+        "mean_other_stream_fw_ms_PART": 19.923007194409408,
+        "mean_other_stream_fw_ms_FULL": 0.4935407725175878
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep7_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 23,
+        "timeline_over_host": 1.0041491305246475,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 7272,
+      "n_boundary": 7271,
+      "n_boundary_unseeded": 7270,
+      "n_switch": 228,
+      "n_strict": 7249,
+      "n_strict_switch": 216,
+      "n_ambiguous": 22,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        9.7802,
+        17.0383
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 14,
+      "n_decode_bs_gt15": 0,
+      "strict_n_other_fw_pos": 470,
+      "med": {
+        "SW_to_PART": 1.3875199556350708,
+        "SW_to_FULL": 0.866815984249115,
+        "NS_to_PART_bsup": 1.7704960107803345,
+        "NS_bsdown": 0.7628800272941589
+      },
+      "n": {
+        "SW_to_PART": 102,
+        "SW_to_FULL": 114,
+        "NS_to_PART_bsup": 75,
+        "NS_bsdown": 177
+      },
+      "med_switch_pooled": 1.2800000309944153,
+      "residency": {
+        "n_land_PART": 2377,
+        "n_land_FULL": 4894,
+        "frac_land_PART": 0.32691514234630725,
+        "med_dur_PART_ms": 17.0383358001709,
+        "med_dur_FULL_ms": 9.780223846435547,
+        "ratio": 1.7421212507708204,
+        "excess_ms_per_PART_step": 7.258111953735352,
+        "bs_matched_med_dur_PART_ms": 17.790258708968597,
+        "bs_matched_med_dur_FULL_ms": 9.757420111541945,
+        "bs_matched_ratio": 1.823254354696145,
+        "bs_matched_n_cells": 13,
+        "bs_matched_weight": 2329,
+        "mean_other_stream_fw_ms_PART": 20.753278360780065,
+        "mean_other_stream_fw_ms_FULL": 0.30748121388649324
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep8_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 22,
+        "timeline_over_host": 1.0028472359861387,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 6121,
+      "n_boundary": 6120,
+      "n_boundary_unseeded": 6119,
+      "n_switch": 194,
+      "n_strict": 6104,
+      "n_strict_switch": 188,
+      "n_ambiguous": 16,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        8.9098,
+        17.2554
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 23,
+      "n_decode_bs_gt15": 212,
+      "strict_n_other_fw_pos": 477,
+      "med": {
+        "SW_to_PART": 1.4090240001678467,
+        "SW_to_FULL": 0.8663039803504944,
+        "NS_to_PART_bsup": 1.9537919759750366,
+        "NS_bsdown": 0.7838720083236694
+      },
+      "n": {
+        "SW_to_PART": 91,
+        "SW_to_FULL": 97,
+        "NS_to_PART_bsup": 69,
+        "NS_bsdown": 156
+      },
+      "med_switch_pooled": 1.3434879779815674,
+      "residency": {
+        "n_land_PART": 2111,
+        "n_land_FULL": 4009,
+        "frac_land_PART": 0.3449346405228758,
+        "med_dur_PART_ms": 17.25542449951172,
+        "med_dur_FULL_ms": 8.90982437133789,
+        "ratio": 1.9366739208710868,
+        "excess_ms_per_PART_step": 8.345600128173828,
+        "bs_matched_med_dur_PART_ms": 19.146292247792044,
+        "bs_matched_med_dur_FULL_ms": 10.230605488259679,
+        "bs_matched_ratio": 1.8714720521442965,
+        "bs_matched_n_cells": 19,
+        "bs_matched_weight": 1924,
+        "mean_other_stream_fw_ms_PART": 23.151632040612,
+        "mean_other_stream_fw_ms_FULL": 0.374150544278608
+      }
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep9_875344.holb.jsonl",
+      "model_cluster": "zamba2",
+      "health": {
+        "has_summary": true,
+        "n_summary": 20,
+        "timeline_over_host": 1.0035578713781859,
+        "dropped_spans": 0,
+        "n_errors": 0,
+        "n_invalid_gaps": 0,
+        "n_inconsistent_gaps": 0,
+        "dropped_events": 0
+      },
+      "n_gap_events": 5611,
+      "n_boundary": 5610,
+      "n_boundary_unseeded": 5609,
+      "n_switch": 176,
+      "n_strict": 5594,
+      "n_strict_switch": 171,
+      "n_ambiguous": 16,
+      "n_stream_keys": 2,
+      "stream_key_dur_medians": [
+        9.7608,
+        18.7904
+      ],
+      "phase_values": [
+        "measure"
+      ],
+      "decode_bs_max": 16,
+      "n_decode_bs_gt15": 2,
+      "strict_n_other_fw_pos": 482,
+      "med": {
+        "SW_to_PART": 1.4392319917678833,
+        "SW_to_FULL": 0.9011200070381165,
+        "NS_to_PART_bsup": 1.8339840173721313,
+        "NS_bsdown": 0.824832022190094
+      },
+      "n": {
+        "SW_to_PART": 84,
+        "SW_to_FULL": 87,
+        "NS_to_PART_bsup": 91,
+        "NS_bsdown": 172
+      },
+      "med_switch_pooled": 1.358847975730896,
+      "residency": {
+        "n_land_PART": 2174,
+        "n_land_FULL": 3436,
+        "frac_land_PART": 0.3875222816399287,
+        "med_dur_PART_ms": 18.790400505065918,
+        "med_dur_FULL_ms": 9.760767936706543,
+        "ratio": 1.925094483027545,
+        "excess_ms_per_PART_step": 9.029632568359375,
+        "bs_matched_med_dur_PART_ms": 20.52419334299424,
+        "bs_matched_med_dur_FULL_ms": 10.782046770060878,
+        "bs_matched_ratio": 1.9035526167429486,
+        "bs_matched_n_cells": 14,
+        "bs_matched_weight": 2074,
+        "mean_other_stream_fw_ms_PART": 22.419747571059073,
+        "mean_other_stream_fw_ms_FULL": 0.4978559269755211
+      }
+    }
+  ],
+  "do_not_cite": [
+    "sentence2_ordering.switch_pooled_median_ms__DO_NOT_CITE",
+    "sentence2_ordering.switch_pooled_per_artifact__DO_NOT_CITE",
+    "sentence5_residency.pooled_med_of_artifact_medians_FULL_ms__DO_NOT_CITE",
+    "sentence5_residency.pooled_med_of_artifact_medians_PART_ms__DO_NOT_CITE",
+    "sentence5_residency.pooled_ratio_of_medians__DO_NOT_CITE",
+    "sentence5_residency.pooled_bs_matched_ratio_of_medians__DO_NOT_CITE",
+    "sentence5_residency.pooled_event_median_FULL_ms__DO_NOT_CITE",
+    "sentence5_residency.pooled_event_median_PART_ms__DO_NOT_CITE"
+  ]
+}
