@@ -34,18 +34,33 @@ PRESERVED = "CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY"
 LOST_FULL = "CONFINEMENT_LOST_THROUGH_GRAPH_REPLAY (FULL)"
 LOST_PART = "CONFINEMENT_LOST_THROUGH_GRAPH_REPLAY (PARTIAL)"
 UNSEP = "UNDER_COVERAGE_IN_GRAPH_LEG (UNSEPARATED)"   # round-3 D5 rename
-DISAGREE = "UNDETERMINED (LABEL SET DISAGREEMENT WITHIN TARGET)"  # round-3 D1(a)
+# ★round-5: DISAGREE and the union term are BOTH removed. Once P4c gates that
+#   the green pair tiles D and its halves are disjoint, every label in
+#   E = S(gg) \ S(eg) is necessarily in S(egp) -- so `E != 0` and
+#   `E_attrib != 0` coincide and DISAGREE has no world (T3 proved it dead).
+#   The coverage-miss case that DISAGREE existed for (round-3 D1(a)) is now
+#   caught EARLIER and more honestly: if the baseline missed a decode-half
+#   label, the two legs no longer account for all of D and P4c returns
+#   NOPAIR -- "we cannot do this analysis", not "the graph leg escaped".
+#   The union term (round-4 D1(a), kept as a sufficient condition per round-5
+#   F3) is likewise subsumed: deleting it changes no world. Keeping a
+#   redundant second gate on the same fact is the gate #9 shape, so it goes.
+#   ★F3's concern -- a world with |U| = 39 labelled "...WITHIN TARGET" -- is
+#   impossible now because that label no longer exists.
 ABSENT = "UNDETERMINED (MEASUREMENT ABSENT)"
 NOSAT = "UNDETERMINED (COVERAGE NOT SATURATED)"
 NOATT = "UNDETERMINED (MEASUREMENT ABSENT: GREEN CONTEXT NOT ATTACHED)"
 NODEL = "GREEN PARTITION NOT DELIVERED (RESULT)"        # P4b_hi only
 NOREAL = "UNDETERMINED (BASELINE DID NOT REALISE THE TARGET PARTITION)"  # E1
+NOPAIR = "UNDETERMINED (GREEN PAIR DID NOT TILE THE DEVICE)"          # round-5 F1
+LOST_UNREP = "CONFINEMENT_LOST_THROUGH_GRAPH_REPLAY (UNREPLICATED)"   # round-5 F4
 NULLCH = "UNDETERMINED (DECISION QUANTITY'S NULL CHANNEL OPEN)"
 NOCAP = "UNDETERMINED (GRAPH CAPTURE UNAVAILABLE ON GREEN STREAM)"
 NOREPLAY = "UNDETERMINED (GRAPH REPLAY FAILED)"
-SUBSTANTIVE = {PRESERVED, LOST_FULL, LOST_PART, UNSEP}
+SUBSTANTIVE = {PRESERVED, LOST_FULL, LOST_PART, UNSEP, LOST_UNREP}
 LABELS = SUBSTANTIVE | {ABSENT, NOSAT, NOATT, NODEL, NULLCH, NOCAP,
-                        NOREPLAY, DISAGREE, NOREAL}
+                        NOREPLAY, NOREAL, NOPAIR}
+LABELS = LABELS | {LOST_UNREP}
 
 # ★ round-3 D8: these were literals with a comment claiming "from the producer".
 #   Import them, and record loudly when the producer is unreachable -- a rule
@@ -73,7 +88,8 @@ class World:
 
     def __init__(self, S_ep, S_gp, S_eg, S_gg, S_egp=None, d_sm=34,
                  min_hits=None, saturated=None, attached=True,
-                 capture="ok", replay="ok", instrument=True):
+                 capture="ok", replay="ok", instrument=True,
+                 escape_replicated=True):
         # ★round-4 E5: a failed capture cannot leave a graph census behind.
         #   rev4's space allowed `capture="fail"` together with a populated
         #   graph leg, so 8,640 impossible worlds propped up NOCAP's
@@ -97,6 +113,8 @@ class World:
         self.capture = capture       # ok | partial | fail
         self.replay = replay         # ok | fail
         self.instrument = instrument  # P1: %smid site + spin back edge alive
+        # ★round-5 F4: did the escape show up in BOTH independent sweeps (S_A, S_B)?
+        self.escape_replicated = escape_replicated
 
 
 def score(w, guards=frozenset()):
@@ -148,6 +166,19 @@ def score(w, guards=frozenset()):
         return NOSAT
     if on("P5_gg") and not w.saturated["gg"]:
         return NOSAT
+    # ★★round-5 F1. E2 promoted S(egp) to a DECISION input and then left it with
+    #   no gate, no anchor and exactly one value in the world space. The result:
+    #   the "one noisy label -> most expensive verdict" defect that D1(a) killed
+    #   did not disappear, it MOVED to the prefill leg (a stray label there turns
+    #   coverage noise into LOST; a missing label there hides a real escape).
+    #   sec 3-B had promised this leg would "replicate R0 disjointness in this
+    #   process" and nothing ever read the replication (lesson #31).
+    if on("P5_egp") and not w.saturated["egp"]:
+        return NOSAT
+    if on("P4c") and (S["eg"] & S["egp"]):          # halves must be disjoint
+        return NOPAIR
+    if on("P4c") and (S["eg"] | S["egp"]) != D:     # ...and must tile D
+        return NOPAIR
     # --- decision -----------------------------------------------------------
     E = S["gg"] - S["eg"]          # escape
     E_rev = S["eg"] - S["gg"]      # shortfall
@@ -169,14 +200,19 @@ def score(w, guards=frozenset()):
     #   route. To claim escape we require positive evidence: the graph leg
     #   landed on a label the PREFILL half demonstrably realised.
     E_attrib = E & S["egp"]
+    # ★round-5 F3: the union term is kept as a SUFFICIENT condition, not deleted.
+    #   rev5 removed it outright, so a world with |U| = 39 > 36 was labelled
+    #   "...WITHIN TARGET" -- a label that contradicts its own data.
     if on("ATTRIB"):
         if E_attrib:
+            # ★round-5 F4: one sweep is not a replication. An escape seen in
+            #   only one of the two independent censuses does not license the
+            #   probe's most expensive verdict (immediate canon referral).
+            if on("REPL") and not w.escape_replicated:
+                return LOST_UNREP
             return LOST_FULL if S["gg"] >= D else LOST_PART
-    elif E:                        # the pre-repair (cardinality) rule
-        if len(S["eg"] | S["gg"]) > w.d_sm + GRANULARITY:
-            return LOST_FULL if S["gg"] >= D else LOST_PART
-    if E:
-        return DISAGREE
+    elif E and len(S["eg"] | S["gg"]) > w.d_sm + GRANULARITY:
+        return LOST_FULL if S["gg"] >= D else LOST_PART   # pre-repair rule
     if on("REV") and E_rev:
         return UNSEP
     return PRESERVED
@@ -218,21 +254,33 @@ def worlds():
            "ep_incomplete": (set(range(20)), set(range(20)))}   # ★round-3 D1
     ctl_sat = {"sat": (True, True), "ep_unsat": (False, True),
                "gp_unsat": (True, False)}
-    for (gn, gg), (en, eg), (cn, (ep, gp)), (sn, (sep, sgp)) in itertools.product(
-            gg_opts.items(), eg_opts.items(), ctl.items(), ctl_sat.items()):
-        # ★round-3 D8 (second instance found by this file itself): `eg` and
-        #   `gg` saturation used to move TOGETHER, so deleting either P5 half
-        #   left the other firing and T4 saw no change. A bundled axis makes a
-        #   guard look load-bearing-free when it is only redundant WITH ITS
-        #   TWIN. Vary them independently.
-        for att, cap, rep, s_eg, s_gg, ins in itertools.product(
+    # ★round-5 F1: S(egp) had exactly ONE value across the whole space, so every
+    #   gate on it was unexercised and the auditor's false-negative /
+    #   false-positive worlds lived outside the enumeration.
+    PRE = set(range(34, 108))
+    egp_opts = {"perfect": PRE, "miss1": PRE - {40}, "stray": PRE | {17},
+                "narrow": set(range(34, 60))}
+    for (gn, gg), (en, eg), (cn, (ep, gp)), (sn, (sep, sgp)), (pn, egp) in \
+            itertools.product(gg_opts.items(), eg_opts.items(), ctl.items(),
+                              ctl_sat.items(), egp_opts.items()):
+        # ★round-3 D8 (found by this file itself): `eg` and `gg` saturation used
+        #   to move TOGETHER, so deleting either P5 half left the other firing
+        #   and T4 saw no change. A bundled axis makes a guard look
+        #   load-bearing-free when it is only redundant WITH ITS TWIN.
+        # ★round-5 F1: `egp` had exactly ONE value, so every gate on it was
+        #   unexercised and the auditor's counterexample worlds lived outside
+        #   the enumeration. Vary all three independently.
+        for att, cap, rep, s_eg, s_gg, s_egp, ins, repl in itertools.product(
                 (True, False), ("ok", "fail"), ("ok", "fail"),
-                (True, False), (True, False), (True, False)):
-            name = (f"gg={gn},eg={en},ctl={cn},ctlsat={sn},att={att},"
-                    f"cap={cap},rep={rep},sat_eg={s_eg},sat_gg={s_gg},instr={ins}")
-            yield name, World(ep, gp, eg, gg, attached=att, capture=cap,
-                              replay=rep, instrument=ins,
-                              saturated={"gg": s_gg, "eg": s_eg,
+                (True, False), (True, False), (True, False),
+                (True, False), (True, False)):
+            name = (f"gg={gn},eg={en},egp={pn},ctl={cn},ctlsat={sn},att={att},"
+                    f"cap={cap},rep={rep},sat_eg={s_eg},sat_gg={s_gg},"
+                    f"sat_egp={s_egp},instr={ins},repl={repl}")
+            yield name, World(ep, gp, eg, gg, S_egp=egp, attached=att,
+                              capture=cap, replay=rep, instrument=ins,
+                              escape_replicated=repl,
+                              saturated={"gg": s_gg, "eg": s_eg, "egp": s_egp,
                                          "ep": sep, "gp": sgp})
 
 
@@ -255,9 +303,18 @@ REPAIR_WITNESSES = [
      lambda: World(FULL, FULL, GREEN, GREEN - {1, 2, 3}), {"REV"}, UNSEP, PRESERVED),
     ("★round-4 E2: a 1-label escape into the prefill half is VISIBLE",
      lambda: World(FULL, FULL, GREEN, GREEN | {40}), {"ATTRIB"},
-     LOST_PART, DISAGREE),
+     LOST_PART, PRESERVED),
     ("round-3 D1(b) two-sided P4b",
-     lambda: World(FULL, FULL, NARROW, NARROW), {"P4b_lo"}, NOREAL, PRESERVED),
+     lambda: World(FULL, FULL, NARROW, NARROW), {"P4b_lo"}, NOREAL, NOPAIR),
+    ("★round-5 F1a: a MISSING prefill label must not hide a real escape",
+     lambda: World(FULL, FULL, GREEN, GREEN | {40}, S_egp=set(range(34,108)) - {40}),
+     {"P4c"}, NOPAIR, PRESERVED),
+    ("★round-5 F1b: an unsaturated prefill leg must not be read as a partition",
+     lambda: World(FULL, FULL, GREEN, GREEN, S_egp=set(range(34, 60))),
+     {"P4c"}, NOPAIR, PRESERVED),
+    ("★round-5 F4: an unreplicated escape is not the expensive verdict",
+     lambda: World(FULL, FULL, GREEN, GREEN | {40}, escape_replicated=False),
+     {"REPL"}, LOST_UNREP, LOST_PART),
     ("★round-4 E5: a failed capture leaves no graph census",
      lambda: World(FULL, FULL, GREEN, GREEN, capture="fail"), {"CAP"},
      NOCAP, ABSENT),
@@ -321,8 +378,10 @@ def run():
     chk(not bad, f"T1 every world gets a registered label ({len(bad)} bad)")
 
     viol = [n for n, w in ws
-            if (not w.S["gg"] or not w.S["eg"] or not w.saturated["gg"]
-                or not w.saturated["eg"] or not w.attached or not w.instrument
+            if (not w.S["gg"] or not w.S["eg"] or not w.S["egp"]
+                or not w.saturated["gg"] or not w.saturated["eg"]
+                or not w.saturated["egp"]
+                or not w.attached or not w.instrument
                 or w.capture != "ok" or w.replay != "ok")
             and labels[n] in SUBSTANTIVE]
     chk(not viol, f"T2 no degenerate world reaches a substantive label "
@@ -349,7 +408,8 @@ def run():
 
     print("-- T4 mutation: each guard is load-bearing under DELETION")
     for g in ("P0", "P1", "P2", "P3", "NULL", "P4a", "P4b_hi", "P4b_lo",
-              "CAP", "REP", "P0g", "P5_eg", "P5_gg", "ATTRIB", "REV"):
+              "CAP", "REP", "P0g", "P5_eg", "P5_gg", "P5_egp", "P4c",
+              "ATTRIB", "REPL", "REV"):
         changed = sum(1 for n, w in ws if score(w, guards={g}) != labels[n])
         chk(changed > 0, f"   delete {g:7s} changes {changed} world(s)")
 
