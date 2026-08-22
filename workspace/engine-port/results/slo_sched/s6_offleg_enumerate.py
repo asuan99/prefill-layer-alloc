@@ -40,7 +40,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 # --- REGISTERED INPUTS (free parameter #1: which files are scanned) ---------
 TARGETS = ["g16_grid.sbatch", "g16_analyze.py", "g16_assert.py",
-           "g16_n3_dryrun_check.py"]
+           "g16_n3_dryrun_check.py",
+           # ★round-3 E7: `g16_arm_order.py` always emits 7 arms and is called
+           #   from the harness, but it sat OUTSIDE the scanned set -- so a
+           #   rejection path in it was invisible by construction.
+           "g16_arm_order.py"]
 
 # --- REGISTERED TOKEN SET (free parameter #2) -------------------------------
 # A site is a candidate iff its line contains one of these.
@@ -60,12 +64,26 @@ EXTRA_TRIGGERS = [
     re.compile(r"\bSMOKE\d+\w*\s*="),      # any smoke-item assignment
     re.compile(r"SMOKE_OVERALL"),           # the conjunction itself
     re.compile(r'\bcase\s+"\$RUNID"'),      # run-id literal gating
+    # ★round-3 E7: a hard `exit` is the bluntest rejection path there is, and
+    #   none of the 7 in the harness were visible. `N_EXPECT_ARMS=7` + `exit 1`
+    #   fires WITH CERTAINTY on a 1-arm campaign; the tool that promised to
+    #   catch "non-telemetry blockers" missed the loudest one.
+    re.compile(r"^\s*exit\s+\d"),
+    re.compile(r"N_EXPECT|EXPECT_ARMS|ARM_ORDER\s*="),
 ]
 
 # --- CLASSIFIERS (registered; order matters, first match wins) --------------
 CLASSIFIERS = [
-    ("SMOKE_OVERALL", re.compile(r"SMOKE_OVERALL|SMOKE\d+\w*\"?\s*=\s*PASS\s*\]\s*&&")),
-    ("SMOKE_ITEM",    re.compile(r"\bSMOKE\d+\w*=")),
+    # ★round-3: SMOKE_ITEM must be tested BEFORE SMOKE_OVERALL. With the old
+    #   order, `if [ "$SMOKE9A" = PASS ] && ...; then SMOKE9=PASS; ...` matched
+    #   the OVERALL pattern first, so the line dropped out of item collection
+    #   and SMOKE9's arm pin was silently lost. The conclusion happened to
+    #   survive, but the transitive logic's only firing on the real file was a
+    #   GHOST -- a first-match-wins classifier can delete its own evidence.
+    ("SMOKE_ITEM",    re.compile(r"\bSMOKE\d+\w*\s*=(?!=)")),
+    ("SMOKE_OVERALL", re.compile(r"SMOKE_OVERALL")),
+    ("HARD_EXIT",     re.compile(r"^\s*exit\s+\d")),
+    ("ARM_COUNT",     re.compile(r"N_EXPECT|EXPECT_ARMS|ARM_ORDER\s*=")),
     ("GATE_REJECT",   re.compile(r"ARTIFACT_OK=0|BOOTS_FAILED=|BOOTS_FAILED\+|mark_failed_artifacts")),
     ("ADOPT",         re.compile(r"adopted\s*=|telem_rc\"?\)\s*==|rejected\.append")),
     ("EXPORT",        re.compile(r"^\s*export\s|G16_TELEM_RC=|^\s*TELEM_RC=")),
@@ -307,6 +325,20 @@ def selftest():
     chk(rows["SMOKE2"]["can_ever_pass"] is True, "SMOKE2 reachable when only d44 runs")
     rows74 = {r["smoke_item"]: r for r in smoke_reachability(hits, ["d44", "d74"])}
     chk(rows74["SMOKE1"]["can_ever_pass"] is True, "SMOKE1 reachable once d74 is in the arm set")
+
+    print("-- CLASSIFY ORDER: an assignment inside a conjunction is an ITEM")
+    conj = 'if [ "$SMOKE9A" = PASS ] && [ "$SMOKE9B" = PASS ]; then SMOKE9=PASS; else SMOKE9=FAIL; fi\n'
+    ch = scan_text("synth.sbatch", conj)
+    chk(any(h["kind"] == "SMOKE_ITEM" for h in ch),
+        "`... then SMOKE9=PASS ...` classifies as SMOKE_ITEM, not SMOKE_OVERALL "
+        "(first-match-wins used to delete this line from item collection)")
+
+    print("-- HARD EXIT / ARM COUNT are visible (round-3 E7)")
+    ex = scan_text("synth.sbatch",
+                   'if [ "$N" != 7 ]; then\n  exit 1\nfi\nN_EXPECT_ARMS=7\n')
+    kinds_ex = {h["kind"] for h in ex}
+    chk("HARD_EXIT" in kinds_ex, "a bare `exit 1` is detected")
+    chk("ARM_COUNT" in kinds_ex, "`N_EXPECT_ARMS=` is detected")
 
     print("-- TRANSITIVE satisfiability (the tool must not repeat D5's blind spot)")
     trans = SYNTH + '\nif [ "$SMOKE1" = PASS ]; then SMOKE99=PASS; else SMOKE99=FAIL; fi\n'

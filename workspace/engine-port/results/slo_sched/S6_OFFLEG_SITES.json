@@ -4,13 +4,15 @@
     "g16_grid.sbatch",
     "g16_analyze.py",
     "g16_assert.py",
-    "g16_n3_dryrun_check.py"
+    "g16_n3_dryrun_check.py",
+    "g16_arm_order.py"
   ],
   "sha256": {
     "g16_grid.sbatch": "00d847ac1b7dcdeb393d4b9aa2455a88375925b2778a0889bec45749cf557a08",
     "g16_analyze.py": "bac783be5ba40974b279a2c8f5ee486d62091b3a4f9000fee5c051e899e5b9ec",
     "g16_assert.py": "5ff957bf44a5736b4a81b98535993f3c8ab15770ff367fa0b9cec69bbdce0717",
-    "g16_n3_dryrun_check.py": "789bf0ac165dbf78094c53e4a64d9ae574e7e6935315ea3c16cde9f349c49b4d"
+    "g16_n3_dryrun_check.py": "789bf0ac165dbf78094c53e4a64d9ae574e7e6935315ea3c16cde9f349c49b4d",
+    "g16_arm_order.py": "6cc4fa51ae9617781a20874b1c79ac9ac1f4c32db8beabfdb6087f5e76239567"
   },
   "registered_tokens": [
     "TELEM_RC",
@@ -27,11 +29,15 @@
   "registered_extra_triggers": [
     "\\bSMOKE\\d+\\w*\\s*=",
     "SMOKE_OVERALL",
-    "\\bcase\\s+\"\\$RUNID\""
+    "\\bcase\\s+\"\\$RUNID\"",
+    "^\\s*exit\\s+\\d",
+    "N_EXPECT|EXPECT_ARMS|ARM_ORDER\\s*="
   ],
   "registered_classifiers": [
-    "SMOKE_OVERALL",
     "SMOKE_ITEM",
+    "SMOKE_OVERALL",
+    "HARD_EXIT",
+    "ARM_COUNT",
     "GATE_REJECT",
     "ADOPT",
     "EXPORT",
@@ -40,8 +46,28 @@
   "campaign_arms": [
     "d44"
   ],
-  "n_sites": 97,
+  "n_sites": 107,
   "sites": [
+    {
+      "file": "g16_grid.sbatch",
+      "line": 168,
+      "kind": "ARM_COUNT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]"
+      ],
+      "text": "ARM_ORDER=\"${G18_ARMS:-$(python3 \"$HERE/g16_arm_order.py\" 1)}\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 169,
+      "kind": "ARM_COUNT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]"
+      ],
+      "text": "N_EXPECT_ARMS=$(echo \"$ARM_ORDER\" | wc -w)"
+    },
     {
       "file": "g16_grid.sbatch",
       "line": 171,
@@ -51,6 +77,28 @@
         "[ \"$PROBE\" = \"1\" ]"
       ],
       "text": "MIN_SNAPSHOTS=20"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 192,
+      "kind": "ARM_COUNT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]",
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "ARM_ORDER=\"d44 d64 d74\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 193,
+      "kind": "ARM_COUNT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]",
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "N_EXPECT_ARMS=3"
     },
     {
       "file": "g16_grid.sbatch",
@@ -65,6 +113,28 @@
     },
     {
       "file": "g16_grid.sbatch",
+      "line": 206,
+      "kind": "ARM_COUNT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]",
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "ARM_ORDER=\"$(python3 \"$HERE/g16_arm_order.py\" \"$BLOCK_IDX\")\" \\"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 208,
+      "kind": "ARM_COUNT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]",
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "N_EXPECT_ARMS=7"
+    },
+    {
+      "file": "g16_grid.sbatch",
       "line": 211,
       "kind": "REF",
       "arm_pinned_to": [],
@@ -73,6 +143,46 @@
         "[ \"$SMOKE\" = \"1\" ]"
       ],
       "text": "MIN_SNAPSHOTS=20"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 220,
+      "kind": "HARD_EXIT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]",
+        "[ \"$SMOKE\" = \"1\" ]",
+        "[ \"$NP\" != \"200\" ] || [ \"$ROUNDS\" != \"3\" ]"
+      ],
+      "text": "exit 1"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 225,
+      "kind": "ARM_COUNT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "if [ \"$N_GOT_ARMS\" != \"$N_EXPECT_ARMS\" ]; then"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 226,
+      "kind": "ARM_COUNT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$N_GOT_ARMS\" != \"$N_EXPECT_ARMS\" ]"
+      ],
+      "text": "echo \"ARM_ORDER_COUNT_MISMATCH got=$N_GOT_ARMS want=$N_EXPECT_ARMS order=[$ARM_ORDER]\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 227,
+      "kind": "HARD_EXIT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$N_GOT_ARMS\" != \"$N_EXPECT_ARMS\" ]"
+      ],
+      "text": "exit 1"
     },
     {
       "file": "g16_grid.sbatch",
@@ -545,7 +655,7 @@
     {
       "file": "g16_grid.sbatch",
       "line": 952,
-      "kind": "SMOKE_OVERALL",
+      "kind": "SMOKE_ITEM",
       "arm_pinned_to": [
         "d74"
       ],
@@ -1112,16 +1222,20 @@
     },
     {
       "smoke_item": "SMOKE9",
-      "arm_pins": [],
+      "arm_pins": [
+        "d74"
+      ],
       "sites": [
-        "g16_grid.sbatch:473"
+        "g16_grid.sbatch:473",
+        "g16_grid.sbatch:952",
+        "g16_grid.sbatch:952"
       ],
       "depends_on": [
         "SMOKE10",
         "SMOKE9A",
         "SMOKE9B"
       ],
-      "site_runs": true,
+      "site_runs": false,
       "can_ever_pass": false
     },
     {
