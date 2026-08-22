@@ -38,13 +38,14 @@ DISAGREE = "UNDETERMINED (LABEL SET DISAGREEMENT WITHIN TARGET)"  # round-3 D1(a
 ABSENT = "UNDETERMINED (MEASUREMENT ABSENT)"
 NOSAT = "UNDETERMINED (COVERAGE NOT SATURATED)"
 NOATT = "UNDETERMINED (MEASUREMENT ABSENT: GREEN CONTEXT NOT ATTACHED)"
-NODEL = "GREEN PARTITION NOT DELIVERED (RESULT)"
+NODEL = "GREEN PARTITION NOT DELIVERED (RESULT)"        # P4b_hi only
+NOREAL = "UNDETERMINED (BASELINE DID NOT REALISE THE TARGET PARTITION)"  # E1
 NULLCH = "UNDETERMINED (DECISION QUANTITY'S NULL CHANNEL OPEN)"
 NOCAP = "UNDETERMINED (GRAPH CAPTURE UNAVAILABLE ON GREEN STREAM)"
 NOREPLAY = "UNDETERMINED (GRAPH REPLAY FAILED)"
 SUBSTANTIVE = {PRESERVED, LOST_FULL, LOST_PART, UNSEP}
 LABELS = SUBSTANTIVE | {ABSENT, NOSAT, NOATT, NODEL, NULLCH, NOCAP,
-                        NOREPLAY, DISAGREE}
+                        NOREPLAY, DISAGREE, NOREAL}
 
 # ★ round-3 D8: these were literals with a comment claiming "from the producer".
 #   Import them, and record loudly when the producer is unreachable -- a rule
@@ -70,11 +71,21 @@ except Exception as _e:            # noqa: BLE001
 class World:
     """A world = what each leg observed + tool outcomes. Sets are label sets."""
 
-    def __init__(self, S_ep, S_gp, S_eg, S_gg, d_sm=34,
+    def __init__(self, S_ep, S_gp, S_eg, S_gg, S_egp=None, d_sm=34,
                  min_hits=None, saturated=None, attached=True,
                  capture="ok", replay="ok", instrument=True):
+        # ★round-4 E5: a failed capture cannot leave a graph census behind.
+        #   rev4's space allowed `capture="fail"` together with a populated
+        #   graph leg, so 8,640 impossible worlds propped up NOCAP's
+        #   reachability and an ordering mutant (P0g before the capture branch,
+        #   = reproducing round-2 C5) passed the whole suite.
+        if capture != "ok" or replay != "ok":
+            S_gg = set()
         self.S = {"ep": set(S_ep), "gp": set(S_gp),
-                  "eg": set(S_eg), "gg": set() if S_gg is None else set(S_gg)}
+                  "eg": set(S_eg), "gg": set() if S_gg is None else set(S_gg),
+                  # ★round-4 E2: the prefill half of the SAME green pair,
+                  #   promoted from descriptive to decision-bearing.
+                  "egp": set(range(34, 108)) if S_egp is None else set(S_egp)}
         self.d_sm = d_sm
         self.min_hits = {k: (MIN_HITS if self.S[k] else 0) for k in self.S}
         if min_hits:
@@ -101,7 +112,7 @@ def score(w, guards=frozenset()):
         return g not in guards
 
     # --- control + baseline legs -------------------------------------------
-    for leg in ("ep", "gp", "eg"):
+    for leg in ("ep", "gp", "eg", "egp"):
         if on("P0") and (not S[leg] or w.min_hits[leg] < MIN_HITS):
             return ABSENT
     if on("P1") and not w.instrument:          # round-3 D3: P1 had been lost
@@ -121,8 +132,11 @@ def score(w, guards=frozenset()):
     #   Both bounds come from the producer (d_sm, GRANULARITY).
     if on("P4b_hi") and len(S["eg"]) > w.d_sm + GRANULARITY:
         return NODEL
+    # ★round-4 E1: a baseline that saw 31 of 34 is a COVERAGE shortfall, not a
+    #   driver result. rev4 labelled it "(RESULT)" + immediate referral, which
+    #   reproduced in P4b exactly the defect D5 had just fixed elsewhere.
     if on("P4b_lo") and len(S["eg"]) < w.d_sm - GRANULARITY:
-        return NODEL
+        return NOREAL
     # --- tool outcomes, BEFORE any statement about the graph leg ------------
     if on("CAP") and w.capture != "ok":
         return NOCAP
@@ -137,16 +151,30 @@ def score(w, guards=frozenset()):
     # --- decision -----------------------------------------------------------
     E = S["gg"] - S["eg"]          # escape
     E_rev = S["eg"] - S["gg"]      # shortfall
-    U = S["eg"] | S["gg"]          # ★ round-3 D1(a): the PAIR's reach
-    # `LOST` requires the PAIR to reach outside a target-sized set. One label
-    # seen by only one leg keeps the union inside the target: that is coverage
-    # disagreement, not escape. The pre-repair rule turned it into the most
-    # expensive verdict in the probe (immediate canon-review referral).
-    if on("UNION"):
-        if len(U) > w.d_sm + GRANULARITY:
+    # ★★round-4 E2. rev4 decided `LOST` on |S(eg) u S(gg)| > d_sm + granularity,
+    #   which is a CARDINALITY rule -- the very thing sec 2.1 rejected. Its
+    #   detection threshold is `d_sm + granularity - |S(eg)|`, i.e. the DATA
+    #   sets it: at the R0 operating value |S(eg)| = 34 a real escape of 1-2
+    #   labels into the prefill half is permanently invisible.
+    #   The fix is the channel the auditor prescribed three times and this file
+    #   never adopted: ATTRIBUTE the escape. R0 established that the two halves
+    #   of a green pair are disjoint and tile D, so a label in E is either a
+    #   decode-half label the baseline missed (coverage) or a label belonging to
+    #   the COMPLEMENTARY half / outside both (escape). No threshold, no
+    #   cardinality.
+    # ★Attribution is ONE-SIDED on purpose. A label in E that neither observed
+    #   leg saw is a label the BASELINE missed (the pair tiles D, so it belongs
+    #   to one half or the other and we did not observe which) -- calling that
+    #   "escape" would re-create the round-3 D1(a) false positive by another
+    #   route. To claim escape we require positive evidence: the graph leg
+    #   landed on a label the PREFILL half demonstrably realised.
+    E_attrib = E & S["egp"]
+    if on("ATTRIB"):
+        if E_attrib:
             return LOST_FULL if S["gg"] >= D else LOST_PART
-    elif E:                        # the pre-repair rule, kept for mutation
-        return LOST_FULL if S["gg"] >= D else LOST_PART
+    elif E:                        # the pre-repair (cardinality) rule
+        if len(S["eg"] | S["gg"]) > w.d_sm + GRANULARITY:
+            return LOST_FULL if S["gg"] >= D else LOST_PART
     if E:
         return DISAGREE
     if on("REV") and E_rev:
@@ -171,13 +199,21 @@ def worlds():
         "escape_partial": WIDE, "escape_full": ALL108,
         "shifted": set(range(60, 94)),      # |S|=34 but different labels
         "miss1": MISS1,                     # ★round-3: graph missed one
+        # ★round-4 E2: the world the cardinality rule could not see. |union|=35
+        #   stays inside d_sm+granularity, so the rev4 rule scored it DISAGREE;
+        #   attribution scores it LOST because 40 belongs to the prefill half.
+        "escape1": GREEN | {40},
     }
     # ★round-3 D1: the space had NO eager_green under-coverage world, so the
     #   rule's behaviour there had never been enumerated. The audit had to
     #   construct those worlds by hand -- which is exactly the failure this
     #   file exists to prevent.
     eg_opts = {"exact": GREEN, "empty": set(), "wide_107": set(range(107)),
-               "miss1": MISS1, "narrow": NARROW}
+               "miss1": MISS1, "narrow": NARROW,
+               # ★round-4 E4: without baselines sitting just inside/outside the
+               #   +-granularity band, widening the multiplier changes no world
+               #   and the "weakening" mutant proves nothing.
+               "miss3": set(range(31)), "over3": set(range(37))}
     ctl = {"clean": (FULL, FULL), "gp_narrow": (FULL, set(range(100))),
            "ep_incomplete": (set(range(20)), set(range(20)))}   # ★round-3 D1
     ctl_sat = {"sat": (True, True), "ep_unsat": (False, True),
@@ -217,10 +253,14 @@ REPAIR_WITNESSES = [
      lambda: World(FULL, FULL, GREEN, set()), {"P0g"}, ABSENT, UNSEP),
     ("round-2 C1 symmetric difference (E_rev)",
      lambda: World(FULL, FULL, GREEN, GREEN - {1, 2, 3}), {"REV"}, UNSEP, PRESERVED),
-    ("round-3 D1(a) union-based LOST",
-     lambda: World(FULL, FULL, MISS1, GREEN), {"UNION"}, DISAGREE, LOST_PART),
+    ("★round-4 E2: a 1-label escape into the prefill half is VISIBLE",
+     lambda: World(FULL, FULL, GREEN, GREEN | {40}), {"ATTRIB"},
+     LOST_PART, DISAGREE),
     ("round-3 D1(b) two-sided P4b",
-     lambda: World(FULL, FULL, NARROW, NARROW), {"P4b_lo"}, NODEL, PRESERVED),
+     lambda: World(FULL, FULL, NARROW, NARROW), {"P4b_lo"}, NOREAL, PRESERVED),
+    ("★round-4 E5: a failed capture leaves no graph census",
+     lambda: World(FULL, FULL, GREEN, GREEN, capture="fail"), {"CAP"},
+     NOCAP, ABSENT),
     ("round-3 D3 P1 restored",
      lambda: World(FULL, FULL, GREEN, GREEN, instrument=False), {"P1"},
      ABSENT, PRESERVED),
@@ -228,11 +268,32 @@ REPAIR_WITNESSES = [
 
 # ★Guards must also be tested under WEAKENING, not only deletion (round-3 D8:
 #   the audit weakened P5 to look at `gg` only and the suite still passed).
-WEAKENINGS = [("P5 sees only the graph leg", {"P5_eg"}),
-              ("P4b upper bound only", {"P4b_lo"}),
-              ("P4b lower bound only", {"P4b_hi"}),
-              ("decision ignores the shortfall", {"REV"}),
-              ("decision ignores the union", {"UNION"})]
+# ★round-4 E4: rev4's "weakenings" were all ALIASES of existing deletions, so
+#   T4' reproduced T4's numbers exactly and proved nothing new. A real weakening
+#   keeps the guard but loosens it -- e.g. widening the granularity multiplier.
+#   The auditor showed a 1->4 multiplier (+-8, WIDER than the discarded TOL=4)
+#   passed the whole suite. Weakenings are therefore parameterised, not aliased.
+def score_weakened(w, mult=1, order_swap=False):
+    """The rule with a widened granularity, and/or P0g hoisted before capture."""
+    global GRANULARITY
+    saved = GRANULARITY
+    GRANULARITY = saved * mult
+    try:
+        if order_swap:
+            # C5's defect, reproduced deliberately: ask about the graph leg
+            # BEFORE the capture branch.
+            if not w.S["gg"] or w.min_hits["gg"] < MIN_HITS:
+                return ABSENT
+        return score(w)
+    finally:
+        GRANULARITY = saved
+
+
+WEAKENINGS = [("granularity multiplier 1 -> 2", dict(mult=2)),
+              ("granularity multiplier 1 -> 4 (wider than the discarded TOL)",
+               dict(mult=4)),
+              ("P0g hoisted before the capture branch (= round-2 C5)",
+               dict(order_swap=True))]
 
 
 def run():
@@ -288,14 +349,22 @@ def run():
 
     print("-- T4 mutation: each guard is load-bearing under DELETION")
     for g in ("P0", "P1", "P2", "P3", "NULL", "P4a", "P4b_hi", "P4b_lo",
-              "CAP", "REP", "P0g", "P5_eg", "P5_gg", "UNION", "REV"):
+              "CAP", "REP", "P0g", "P5_eg", "P5_gg", "ATTRIB", "REV"):
         changed = sum(1 for n, w in ws if score(w, guards={g}) != labels[n])
         chk(changed > 0, f"   delete {g:7s} changes {changed} world(s)")
 
-    print("-- T4' mutation: each guard is load-bearing under WEAKENING")
-    for nm, gs in WEAKENINGS:
-        changed = sum(1 for n, w in ws if score(w, guards=gs) != labels[n])
-        chk(changed > 0, f"   weaken: {nm:38s} changes {changed} world(s)")
+    print("-- T4' mutation: REAL weakenings (not deletion aliases)")
+    for nm, kw in WEAKENINGS:
+        changed = sum(1 for n, w in ws if score_weakened(w, **kw) != labels[n])
+        chk(changed > 0, f"   weaken: {nm:52s} changes {changed} world(s)")
+
+    # ★round-4 E6/T5: a witness must actually DISCRIMINATE. rev4's T5 never
+    #   asserted `want != want_mut`, so a witness whose two labels coincide
+    #   would have passed silently and claimed the repair was load-bearing.
+    print("-- T5' witnesses must discriminate")
+    for nm, wf, mut, want, want_mut in REPAIR_WITNESSES:
+        chk(want != want_mut,
+            f"   {nm[:52]:52s} labels differ ({want != want_mut})")
 
     print("ALL PASS" if ok else "RULE TOTALITY CHECK FAILED")
     return 0 if ok else 1
