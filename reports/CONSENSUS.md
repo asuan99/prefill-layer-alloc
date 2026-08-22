@@ -4,7 +4,26 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-22 rev44 (doc-steward — ★★★**전환 비용 재분석
+최종 갱신: 2026-08-23 rev45 (doc-steward — ★★★**규칙층 5라운드,
+GPU 지출 0·job 제출 0건 — P0-A·S-6·kernel_mech B6 세 항목이 전부
+게이트 #34 1단계(규칙층)에서 멈췄다.** 규칙층 적대 감사(9회,
+claims-auditor)가 **집행했으면 예산 전액을 날렸을 결함 2건**
+(S-6 E4 `set -u` 사망·F2 OFF 다리 채택률 0[3.146 GPU-hr 결정론적
+소실])과 **판정을 거짓으로 만들었을 결함 1건**(P0-A E2 합집합
+카디널리티 문턱)을 잡았다. 결과: **P0-A**는 rev6에서 규칙층
+수렴(다음은 §10 하네스층 감사[게이트 #34 2단계], 0.17 GPU-hr
+미집행) · **S-6**는 사용자 결정으로 **보류(HOLD)**(G18 선례
+형태) · **kernel_mech B6**는 판정 완료(등록안이 예산 판단
+항목 하나만 닫음, rev7 전체는 여전히 `NO-GO`). ★★**§1(확정
+결론)은 이번 세션에서 건드리지 않는다** — 새 성능 판정 0건이다.
+HE0·정책 순위·gate #13/#16 "닫았다" 금지·switch-cost "닫았다"
+금지 전부 **불변**. §3에 항목81–86 신설(`PROJECT_STATUS.md`
+"방법론 게이트" #61–66과 1:1 대응), §4에 living-doc 행 3개
+신설(P0-A·S-6·kernel_mech B6). 상세 `handoff-report/
+session_handoff_2026-08-23.md`, `PROJECT_STATUS.md` 최상단 배너·
+"다음 실험 gate" #11 레지스트리(3행 신설)·#17(2026-08-23 갱신).
+
+이전 rev44: 2026-08-22 (doc-steward — ★★★**전환 비용 재분석
 6문장 정본 승격 — 메인 세션, GPU 지출 0·새 측정 0건, claims-auditor
 감사 `조건부 승격`→6/6 문구 수정 완료 후 등재.** 대상
 `workspace/engine-port/results/kernel_mech/PROMOTION_DRAFT_SWITCH_
@@ -3514,6 +3533,102 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     PROMOTION_DRAFT_SWITCH_2026-08-22.md` 문장2·5, `audit_promotion_
     2026-08-22/VERDICT.md` 결함1·2.
 
+81. ★★★**(2026-08-23, P0-A rev1–rev6 + S-6 rev1–rev4 규칙층
+    5회 감사 각각, claims-auditor, GPU 0) 규칙을 산문으로 고정하면
+    구멍이 난다 — 결정 규칙은 코드로 고정하고 세계를 전수
+    열거하라.** P0-A는 평가 순서 결함이 2회 연속(rev4→rev5의 F1,
+    이전 F2 계열) 재발했고, S-6는 "OFF 다리를 전수 포함한다"는
+    산문 주장이 5회 연속(S6_POWER·rev1–rev4) 실패했다. 유일하게
+    통한 대응은 기계화였다 — `p0a_rule_totality.py`(516,096
+    세계·54 검사)와 `s6_offleg_enumerate.py`(자기검사 19/19,
+    4회차 감사가 `--emit` 산출물을 독립 재실행과 **바이트 동일**로
+    검증)가 그것이다. 실무 규칙: 사전등록이 "모든 경우를
+    다뤘다"고 산문으로 주장하는 지점마다 그 주장을 검증하는
+    열거기 스크립트를 짝지어라. 상세 `workspace/engine-port/
+    results/bcg_probe/audit_p0a_prereg_{rev4,rev5}_2026-08-23/
+    VERDICT.md`, `workspace/engine-port/results/slo_sched/
+    audit_s6_prereg_{rev3,rev4}_2026-08-23/VERDICT.md`,
+    `PROJECT_STATUS.md` "방법론 게이트" #61과 대응.
+
+82. ★★★**(2026-08-23, 같은 두 감사에서 동시 발견, claims-auditor,
+    GPU 0) 변경 이력표가 하지 않은 수리를 적을 수 있다 — 각 행에
+    검증 방법을 병기하라.** 같은 세션에 **두 트랙에서 동시에**
+    나온 실패다 — P0-A rev4의 이력표는 하지 않은 수리 2건을
+    했다고 적었다(5회차 감사 E6: "변이 행 제거"·"M1·M2·M5 등재"가
+    둘 다 사실과 다름). S-6 rev3도 같은 형태(E1)로 지적됐다.
+    ★S-6 rev4는 더 나쁜 변종을 냈다 — 이번엔 거짓 "수리" 라벨이
+    아니라 **차단 자체를 이력표·§9 합격기준에서 소거**했다(F1,
+    직전 3회차의 E5가 두 곳 모두에서 사라짐). 실무 규칙: 개정판
+    이력표의 각 행에 검증 방법(코드 검사명·`grep`)을 병기하고,
+    직전 회차가 지목한 차단 개수와 이번 회차 이력표의 행 개수가
+    정확히 일치하는지 별도로 대조한다. 상세 `workspace/
+    engine-port/results/bcg_probe/audit_p0a_prereg_rev5_2026-08-23/
+    VERDICT.md` "먼저 E6을 정정한다" 절, `workspace/engine-port/
+    results/slo_sched/audit_s6_prereg_rev4_2026-08-23/VERDICT.md`
+    F1, `PROJECT_STATUS.md` "방법론 게이트" #62와 대응.
+
+83. ★★**(2026-08-23, P0-A rev1→rev2, claims-auditor, GPU 0)
+    안전망을 제거하는 개정은 양쪽 끝을 모두 복원해야 한다.**
+    P0-A rev1이 `TOL`(카디널리티 허용오차 밴드)을 집합 술어로
+    바꾸며 **하한** 안전망만 복원했고, rev2가 같은 밴드의
+    **상한**도 제거돼 있었음을 다시 지적했다(C1) — "이번 수리가
+    다음 회차 최고 차단을 만든다"가 P0-A만 5회 연속. 실무 규칙:
+    대칭 설계된 안전장치(상한/하한, 양방향 게이트)를 개정할 때는
+    한쪽을 고친 diff에서 반대쪽도 같이 바뀌었는지 기계적으로
+    대조하고, 의도적으로 한쪽만 고쳤다면 문서에 그렇게 명시한다.
+    상세 `workspace/engine-port/results/bcg_probe/
+    audit_p0a_prereg_2026-08-22/VERDICT.md`(1회차, B1–B7),
+    `audit_p0a_prereg_rev2_2026-08-22/VERDICT.md`(2회차, C1),
+    `PROJECT_STATUS.md` "방법론 게이트" #63과 대응.
+
+84. ★★★**(2026-08-23, P0-A rev4→rev5, claims-auditor, GPU 0)
+    결정량으로 승격한 입력에는 게이트·앵커·열거를 함께 붙여라.**
+    rev4가 `LOST` 판별을 합집합 카디널리티에서
+    `E_attrib := E ∩ S(eager_green_prefill)`(귀속)으로 교체해
+    "1–2 라벨 실 탈출 영구 비가시화"(E2)를 고친 줄 알았으나,
+    rev5 감사(F1)는 그 결함이 **사라진 게 아니라 새로 승격된
+    입력 `S(eager_green_prefill)` 자체로 이사**했음을 확인했다 —
+    이 입력엔 게이트 0·앵커 0·세계 공간 값 1개뿐이라 1라벨
+    잡음이 여전히 최고가 판정을 만들었다. 실무 규칙: 판별 로직을
+    "카디널리티/문턱"에서 "집합 연산"으로 재정식화할 때, 그
+    연산에 새로 들어가는 모든 입력 집합이 그 자체로 게이트
+    (양성 하한)·앵커(고정 기준값)·열거(세계 공간 값 ≥2)를
+    갖는지 확인한다 — 결정량을 옮기는 것은 결함을 고치는 것이
+    아니라 옮기는 것일 수 있다. 상세 `workspace/engine-port/
+    results/bcg_probe/audit_p0a_prereg_rev5_2026-08-23/VERDICT.md`
+    F1, `PROJECT_STATUS.md` "방법론 게이트" #64와 대응.
+
+85. ★★**(2026-08-23, P0-A rev5, claims-auditor 자체 도구 실행,
+    GPU 0) 검사가 load-bearing해 보이려면 세계 공간이 그 게이트를
+    발화시킬 수 있어야 한다.** `p0a_rule_totality.py`가 스스로
+    잡은 결함 2건 — (i) 포화 축이 서로 묶여 있어 `P5`(포화
+    가드) 양쪽을 동시에 삭제해도 세계 공간에 0 변화만 생기고,
+    (ii) 삭제 변이 테스트만으로는 게이트를 **약화**시키는
+    모수화 변이를 못 잡는다는 것을 감사가 `±8` 값 변이로 실측해
+    "ALL PASS"를 냈다. 실무 규칙: 자기검사 스위트를 짤 때 (a) 각
+    게이트가 세계 공간의 어떤 부분집합을 배제하는지 계산해 크기가
+    0이 아닌지 확인하고 (b) 삭제 변이뿐 아니라 문턱을 느슨/엄격
+    하게 바꾸는 모수화 변이도 포함한다. 상세 `workspace/
+    engine-port/results/bcg_probe/audit_p0a_prereg_rev5_2026-08-23/
+    VERDICT.md` "버틴 것" 절, `PROJECT_STATUS.md` "방법론 게이트"
+    #65와 대응.
+
+86. ★★**(2026-08-23, S-6 rev1–rev4, claims-auditor, GPU 0) 포크는
+    원본의 하드와이어를 상속한다 — 매 회차 새 거부 지점이 나오면
+    아키텍처 신호다.** S-6는 7-arm G16 캠페인용 하네스
+    (`g16_grid.sbatch`/`g16_analyze.py`)를 1-arm telemetry-OFF
+    대조로 포크하려 했고, 4회차에 걸쳐 독립적인 거부 경로 7건을
+    발견했다(arm 리터럴 고정 17개·`N_EXPECT_ARMS=7`+`exit 1`·
+    `telem_rc==0` 하드코딩·`TELEM_RC` 정수 비교+소비처 9곳·
+    `${1:?}`·`exit 3`·파일명 리터럴 자기해싱). 실무 규칙: 기존
+    캠페인 하네스를 다른 arm 수·다른 축 설계로 포크할 계획이
+    있으면 착수 전에 arm 개수·이름을 하드코딩한 지점을 전수
+    grep하고, 그 개수가 회차마다 새로 늘면 "설계 반려"가 아니라
+    "포크 대 재작성" 결정의 근거로 삼는다(대가 = 기존 하네스
+    계열과의 L1 비교가능성 상실). 상세 `workspace/engine-port/
+    results/slo_sched/audit_s6_prereg_{rev2,rev3,rev4}_2026-08-23/
+    VERDICT.md`, `PROJECT_STATUS.md` "방법론 게이트" #66과 대응.
+
 ---
 
 ## 4. 살아있는 문서 (이것만 참조)
@@ -3556,6 +3671,9 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `../../workspace/engine-port/results/kernel_mech/{DESIGN_KERNEL_MECH_REV4_2026-08-21.md, DESIGN_KERNEL_MECH_REV5_2026-08-21.md}`, 감사 `audit_kernel_mech_rev5_2026-08-21/VERDICT.md` | ★★**kernel_mech rev4-lite → rev5 — 규칙층 `NO-GO` 연속(2026-08-21 2차 세션), 세 판본 통산 3연속(rev3 재감사 5건·rev4-lite 8건·rev5 7건), 전부 하네스 착수·GPU 지출 전.** rev4-lite 死因(8건, 대표): `T_step`을 NVTX(=CPU 타임라인)로 정의하고 "device-side"라 서술 · `r_K`·`gap_frac`이 `T=K+G`로 종속 · **모든 게이트를 통과하며 틀린 쪽을 지목하는 반례** · 문턱 0.85가 정본 ε 구간을 정확히 가름. rev5 死因(7건, C1–C7, 대표): ★**구조적 편향** — `S_K≥0`이라 `s>0.5 ⟺ G92>G44`가 필요조건인데 남긴 간극 후보가 SM에 비례해 커지지 않아 `GAP_DOMINATED` 도달 불가(메인 세션 재확인: `s=0.000` 케이스) · ★**엔진에 NVTX 방출이 0건**(`grep -rn nvtx workspace/engine-port/src/`)이라 하네스가 아니라 **엔진 핫패스 패치**가 필요한데 미계상. ★**감사 최심층 발견**: *"커널 안/밖"* 판정이 **반사실 선택에 의존**한다 — 대칭 반사실(`G_ideal:=G(44)·44/92`)과 비대칭 반사실이 같은 데이터에서 반대 판정(대칭이면 CE-1 반례가 뒤집힘: 0.811 ⇒ `GAP`). GO 전환 조건 ① = 두 반사실을 나란히 사전등록하고 갈리면 `COUNTERFACTUAL_SENSITIVE`를 결과로 보고. 부수: `t_launch`(후보 vii)는 cudagraph 운영점에서 항등식이라 최종 폐기. ★**rev4/rev5는 둘 다 `NO-GO` — 설계 근거로 재사용 금지.** 사용자 판단 대기(rev6/보류/종결). 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #17(2026-08-21 3차 갱신) |
 | `../../workspace/engine-port/results/smid_census/{PREREG_SMID_R0_2026-08-14.md, smid_l0_census.py, audit_smid_r0_2026-08-21/VERDICT.md, smid_l0_verdict_889631.json}` | ★★★**`%smid` R0 — 2026-08-14 `CONDITIONAL-GO(5조건)` 원문 소실 확인 → 2층 감사가 조건 재도출(`GO-with-conditions`, 차단 C1–C5, 파일로 보존) → 결함 수리 → 제출(2026-08-21) → ★결과 도착 + claims-auditor 결과 감사 `CONFIRMED(scoped)`(2026-08-22, 정본 승격).** job **889631**(gpu40, 2026-08-22, 0.0275 GPU-hr, exit `0:0`) — `GLOBALLY_CONSISTENT_LABEL`(disjoint·union=108=`|D|`·`sizes=[74,34]`=target, "물리 SM 인덱스" 아닌 "전역 일관 라벨"). R2(서술 한정, 3스코프 필수): `D\S_post=∅`(eager·idle 스트림·이 기판 한정, green ctx 생성이 도달 SM id 집합을 줄이지 않음). 수리 이력: fail-open 2건(`smid_l0_census.py` + P0-A 복사본 `p0a_graph_sm_confinement.py:249`) · C1 빈 census 공허참 PASS(§3 항목62 追記·항목75 참조) · C2 미포화 부재주장 · C3 라벨 병합 · R2 green ctx 부착 전제 무테스트(양방향 전제로 수리, 자기검사 58/58·변이 7→28). ★**아티팩트 결함 신규**: N1(`.txt` 절단으로 `stop` 등 3필드 누락)·N2(`green_ctx_attached` 필드명이 값의 부정) ⇒ **`.json`만 인용**(§3 항목76). §3 항목77(결정론적 열거≠확률 커버리지) 병기. **불변**: 성능 판정 0건·S3/G1-d 미종결·Gate 2 귀속 전진 0. 정본 반영 = §1-1(Gate 1 블록, R0 addendum)·§3 항목76·77(신설), `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(`%smid` R0 행 2026-08-22 갱신)·#17(2026-08-22 갱신)·"방법론 게이트" #42 追記·#55–57(신설) |
 | `../../workspace/engine-port/results/slo_sched/S6_POWER_2026-08-21.md` | ★**S-6 telemetry-OFF 대조 검정력 계산 — 규칙층 입력, claims-auditor 감사 `NO-GO`(2026-08-21), 등록 `n` 없음, 정본 등재 완료(doc-steward, 같은 날).** `PREREG_G16_RULES_REV3_2026-08-16.md` addendum B-2의 "n≥2(≈0.3 GPU-hr)"를 **반증**(필요 n은 δ·사전값의 함수, 구속 셀 HI `M_ttft`에서 5–18쌍, 부팅 단가 실측 0.1272 GPU-hr) — 대체 단일값은 등재 금지, 함수 형태로만 인용. 死因 4건(OFF 다리가 하네스·분석기에서 구조적으로 탈락·비오염 논증이 이름 약속뿐[교훈 #57 재발]·estimand 단위 불일치[절대 ms vs 상대 %]·pooling 판단 근거가 귀무분포 없는 범위통계량) 전부 GPU 0의 문면 수리로 해소 가능, 하네스 착수 **전**에 잡힘(설계 반려이지 계측 축 분리 자체의 반증 아님). **payoff는 1 arm(d44) 공통 시프트 크기로 축소**(he2/sgptv 계열 절대값 이식 불가, arm×telemetry 교호작용은 1 arm으로 측정 불가). 원자료 `S6_POWER_2026-08-21.json`, 스크립트 `s6_power.py`, 커밋 `ace05b8`. 정본 반영 = §3 항목61(정정)·67(追記)·`PROJECT_STATUS.md` "방법론 게이트" #41(정정)·"다음 실험 gate" #17(2026-08-21 갱신 2차) |
+| `../../workspace/engine-port/results/bcg_probe/{PREREG_P0A_2026-08-22.md, p0a_rule_totality.py, audit_p0a_prereg_{2026-08-22,rev2_2026-08-22,rev3_2026-08-23,rev4_2026-08-23,rev5_2026-08-23}/VERDICT.md}` | ★★★**P0-A(cudagraph replay가 green-context SM 한정을 전달하는가) — rev1→rev6, 규칙층 5회 감사(2026-08-22~23), 5회차 감사 권고로 규칙층 수렴, 정본 등재 완료(doc-steward, 2026-08-23).** 결정량 최종형 `E_attrib := (S(gg)\S(eg)) ∩ S(eager_green_prefill)`(카디널리티·문턱 0개). rev1→rev2: `TOL` 집합 술어 전환이 하한(1회차)·상한(2회차) 안전망을 순차로 제거. rev3: 1라벨 잡음이 최고가 판정을 만듦·`P5` 편향 서술 오류·T4가 약화 변이를 못 잡음. rev4: 이력표가 하지 않은 수리를 적음(E6). rev5: 새로 승격한 결정량 `S(eager_green_prefill)`이 게이트 0·앵커 0·열거 1값(F1)·본문이 옛 규칙 지시(F2). **rev6**이 F1–F4를 반영해 규칙층 마지막 판(§10 하네스 재작성이 선행, divergence 20건 — launch-shim·`eager_green_prefill` 레그·신규 게이트 3개·원자료 스키마 변경 3건). `P4c`(green pair 서로소∧`D` tile) 게이트 신설로 `UNDETERMINED(...WITHIN TARGET)` 라벨과 합집합 항이 구조적으로 불필요해짐. `p0a_rule_totality.py`(516,096 세계·54 검사 PASS) 신규. **등재 가능한 결과 0건**(사전등록, GPU 미집행). **금지 문장**: "구멍 C가 닫혔다"·"P0-A가 R4에 답했다"(R0 §9는 L1 전용). 정본 반영 = §3 항목81–85(신설), `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(P0-A 행 신설)·#17(2026-08-23 갱신)·"방법론 게이트" #61–65(신설) |
+| `../../workspace/engine-port/results/slo_sched/{PREREG_S6_2026-08-22.md, s6_offleg_enumerate.py, S6_OFFLEG_SITES.{json,md}, audit_s6_prereg_{rev2_2026-08-22,rev3_2026-08-23,rev4_2026-08-23}/VERDICT.md}` | ★★**S-6 telemetry-OFF 대조(1-arm 포크) — rev1→rev4, 규칙층 감사 연속 `NO-GO`(위 `S6_POWER` 행의 후속), ★2026-08-23 사용자 결정으로 트랙 보류(HOLD, §10), 정본 등재 완료(doc-steward, 같은 날).** rev1: C1–C4·V1–V8. rev2: D1–D7("C1–C4는 닫히지 않았다"). rev3: E1–E9, ★E4=실행 불가(`set -u` 사망, 재현: unset+`set -u`→`rc=127` 즉사). rev4: F1–F10, ★F2=OFF 부팅 채택률 0(`export TELEM_RC=""`로 `set -u`는 고쳐지나 `g16_grid.sbatch:802` 요구를 못 만족해 OFF 다리 100% `artifact_invalid`, 3.146 GPU-hr 결정론적 전액 소실 위험) · F1=직전 3회차 차단 E5가 이력표·§9 합격기준에서 소거(차단 자체의 소거). 근본원인: 7-arm G16 하드와이어 하네스를 1-arm으로 포크 시도, 4회차에 걸쳐 독립 거부 경로 7건. 나가면서 해소: `σ_log` 7.4698(보수) vs 7.4644는 불일치가 아니라 두 추정 경로(등록 보증 0.9273 불변). 보존물: 사전등록 4판·감사 판정서 4건·기계 열거기 `s6_offleg_enumerate.py`(자기검사 19/19, `--emit`이 감사 독립 재실행과 바이트 동일 — 포크를 버려도 재사용됨). 재개 조건 §10.4(F1–F10 전 19행·아키텍처 결정·드라이런·`TELEM_RC=0` 명시 대입+rc 소비처 9곳 전수). **금지 문장**: "S-6가 계측 축을 분리했다". 정본 반영 = §3 항목81·82·86(신설), `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(S-6 행 갱신)·#17(2026-08-23 갱신)·"방법론 게이트" #61·62·66(신설) |
+| `../../workspace/engine-port/results/kernel_mech/PREREG_B6_ELIGIBLE_WINDOW_2026-08-22.md` | ★**kernel_mech rev7의 B6(eligible-window feasibility) — 판정 완료(2026-08-22~23), 예산 판단이 걸려 있던 항목 하나만 닫음. ★rev7 전체는 여전히 `NO-GO`**(B1–B5·B7 불변, NVTX 엔진 패치 선행조건). 감사의 `P≈0.07`은 간극 하나의 확률이라 결정량이 아니었음이 판명 — 결정량(3셀 전부 ≥10창)으로 재계산하면 rev6 워크로드 그대로는 `P(3셀 전부 통과)=0.238`(전액 손실 확률 76%, 감사 경보가 옳았음). 등록안: `NP=CONC=16` batch-synchronous 라운드×5, 예측 20창/셀(요구 10의 2.0배), 추가 비용 ≤0.20 GPU-hr, 배치 등가가 확률이 아니라 구조로 성립(`ignore_eos` 기본 True). 창의 정의: maximal prefill-free run 1개=라운드 1개(20-step 창 분할 셈은 부트스트랩 분산 과소추정이므로 금지). 대가: 동거의 완전한 소멸·도착 과정 소멸·배치 축 고정. **금지 문장**: "B6가 rev7을 열었다". 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(kernel_mech B6 행 신설)·#17(2026-08-23 갱신) |
 
 `deprecated_reports/`(2026-07-24부터 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)) = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 
