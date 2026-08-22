@@ -1,0 +1,1259 @@
+{
+  "kind": "s6_offleg_enumeration",
+  "targets": [
+    "g16_grid.sbatch",
+    "g16_analyze.py",
+    "g16_assert.py",
+    "g16_n3_dryrun_check.py"
+  ],
+  "sha256": {
+    "g16_grid.sbatch": "00d847ac1b7dcdeb393d4b9aa2455a88375925b2778a0889bec45749cf557a08",
+    "g16_analyze.py": "bac783be5ba40974b279a2c8f5ee486d62091b3a4f9000fee5c051e899e5b9ec",
+    "g16_assert.py": "5ff957bf44a5736b4a81b98535993f3c8ab15770ff367fa0b9cec69bbdce0717",
+    "g16_n3_dryrun_check.py": "789bf0ac165dbf78094c53e4a64d9ae574e7e6935315ea3c16cde9f349c49b4d"
+  },
+  "registered_tokens": [
+    "TELEM_RC",
+    "telem_rc",
+    "PDMUX_TELEMETRY_PATH",
+    "telemetry_rc",
+    "MIN_SNAPSHOTS",
+    "runtime_snapshot",
+    "telemetry",
+    "ARTIFACT_OK",
+    "BOOTS_FAILED",
+    "assert_runtime_snapshots"
+  ],
+  "registered_extra_triggers": [
+    "\\bSMOKE\\d+\\w*\\s*=",
+    "SMOKE_OVERALL",
+    "\\bcase\\s+\"\\$RUNID\""
+  ],
+  "registered_classifiers": [
+    "SMOKE_OVERALL",
+    "SMOKE_ITEM",
+    "GATE_REJECT",
+    "ADOPT",
+    "EXPORT",
+    "ASSERT_FN"
+  ],
+  "campaign_arms": [
+    "d44"
+  ],
+  "n_sites": 97,
+  "sites": [
+    {
+      "file": "g16_grid.sbatch",
+      "line": 171,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]"
+      ],
+      "text": "MIN_SNAPSHOTS=20"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 196,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]",
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "MIN_SNAPSHOTS=5"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 211,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$PROBE\" = \"1\" ]",
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "MIN_SNAPSHOTS=20"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 346,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "for suffix in LO.jsonl HI.jsonl telemetry.jsonl; do"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 381,
+      "kind": "EXPORT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "G16_TELEM_RC=\"${TELEM_RC:-}\" \\"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 456,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "\"telem_rc\": _f(\"G16_TELEM_RC\", int),"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 468,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "BOOTS_FAILED=0"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 472,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "SMOKE1=\"\"; SMOKE2=\"\"; SMOKE2B=\"\"; SMOKE3=\"\"; SMOKE4=\"\"; SMOKE7=\"\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 473,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "SMOKE9=\"\"; SMOKE9A=\"\"; SMOKE9B=\"\"; SMOKE10=\"\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 540,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [
+        "case \"$ARM\""
+      ],
+      "text": "*) echo \"BAD_ARM=$ARM\"; BOOTS_FAILED=$((BOOTS_FAILED + 1)); FAILED_ARMS=\"$FAILED_ARMS $ARM\"; continue ;;"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 544,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ ! -f \"$CFG\" ]"
+      ],
+      "text": "BOOTS_FAILED=$((BOOTS_FAILED + 1)); FAILED_ARMS=\"$FAILED_ARMS $ARM\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 607,
+      "kind": "EXPORT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "export PDMUX_TELEMETRY_PATH=\"$HERE/${RUNID}_telemetry.jsonl\"; : > \"$PDMUX_TELEMETRY_PATH\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 615,
+      "kind": "EXPORT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "TELEM_RC=\"\"; FIELDS_LO_RC=\"\"; FIELDS_HI_RC=\"\"; PIN_RC=\"\"; CTRLSUMMARY_RC=\"\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 648,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$ok\" != 1 ]"
+      ],
+      "text": "BOOTS_FAILED=$((BOOTS_FAILED + 1)); FAILED_ARMS=\"$FAILED_ARMS $ARM\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 691,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$BENCH_OK\" != 1 ]"
+      ],
+      "text": "BOOTS_FAILED=$((BOOTS_FAILED + 1)); FAILED_ARMS=\"$FAILED_ARMS $ARM\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 701,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "python3 \"$HERE/g16_assert.py\" runtime_snapshots \"$PDMUX_TELEMETRY_PATH\" \"$MIN_SNAPSHOTS\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 702,
+      "kind": "EXPORT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "TELEM_RC=$?"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 752,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "python3 - \"$PDMUX_TELEMETRY_PATH\" \"$CTRLSUMMARY_JSON\" <<PYEOF"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 801,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "ARTIFACT_OK=1"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 802,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "[ \"$TELEM_RC\" -eq 0 ] || ARTIFACT_OK=0"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 803,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "[ \"$FIELDS_LO_RC\" -eq 0 ] || ARTIFACT_OK=0"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 804,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "[ \"$FIELDS_HI_RC\" -eq 0 ] || ARTIFACT_OK=0"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 807,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "\"telemetry_rc=$TELEM_RC fields_lo_rc=$FIELDS_LO_RC fields_hi_rc=$FIELDS_HI_RC\" \\"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 808,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "\"pin_rc=$PIN_RC ctrlsummary_rc=$CTRLSUMMARY_RC artifact_ok=$ARTIFACT_OK\" \\"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 809,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "\"lo=$JLO hi=$JHI telemetry=$PDMUX_TELEMETRY_PATH run_id=$RUNID\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 811,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "if [ \"$ARTIFACT_OK\" != 1 ]; then"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 812,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$ARTIFACT_OK\" != 1 ]"
+      ],
+      "text": "echo \"ARTIFACT_INVALID arm=$ARM block=$BLOCK_TAG boot=$BOOT_IDX telemetry_rc=$TELEM_RC\" \\"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 815,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$ARTIFACT_OK\" != 1 ]"
+      ],
+      "text": "BOOTS_FAILED=$((BOOTS_FAILED + 1)); FAILED_ARMS=\"$FAILED_ARMS $ARM\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 829,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d64"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d64\" ]"
+      ],
+      "text": "[ \"$PIN_RC\" -eq 0 ] && SMOKE2B=PASS || SMOKE2B=FAIL"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 837,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "[ \"$TELEM_RC\" -eq 0 ] && SMOKE1=PASS || SMOKE1=FAIL"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 838,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "[ \"$PIN_RC\" -eq 0 ] && SMOKE2=PASS || SMOKE2=FAIL"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 839,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "if [ \"$FIELDS_LO_RC\" -eq 0 ] && [ \"$FIELDS_HI_RC\" -eq 0 ]; then SMOKE3=PASS; else SMOKE3=FAIL; fi"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 840,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "case \"$RUNID\" in *smoke1_d74_boot1*) SMOKE4=PASS ;; *) SMOKE4=FAIL ;; esac"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 841,
+      "kind": "REF",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "echo \"G16_SMOKE_CHECK 1_TELEMETRY_RUNTIME_SNAPSHOTS=$SMOKE1 min=$MIN_SNAPSHOTS\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 850,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "[ -n \"$D74_WALLTIME_S\" ] && SMOKE7=PASS || SMOKE7=FAIL"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 851,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "if [ -n \"$D74_BOOT_S\" ] && [ -n \"$D74_BENCH_S\" ]; then SMOKE10=PASS; else SMOKE10=FAIL; fi"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 875,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "SMOKE9_COUNT=$(python3 - \"$PDMUX_TELEMETRY_PATH\" <<'PYEOF'"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 887,
+      "kind": "REF",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "if e.get(\"event\") == \"runtime_snapshot\" and e.get(\"phase\") == \"benchmark\" and \"decode_sms\" in e:"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 892,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "SMOKE9_COUNT_RC=$?"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 894,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]",
+        "case \"$SMOKE9_COUNT\""
+      ],
+      "text": "''|*[!0-9]*) SMOKE9A=FAIL; SMOKE9_COUNT=\"${SMOKE9_COUNT:-<no_output>}\" ;;"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 895,
+      "kind": "REF",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]",
+        "case \"$SMOKE9_COUNT\""
+      ],
+      "text": "*) if [ \"$SMOKE9_COUNT_RC\" -eq 0 ] && [ \"$SMOKE9_COUNT\" -ge \"$MIN_SNAPSHOTS\" ]; then"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 896,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]",
+        "case \"$SMOKE9_COUNT\""
+      ],
+      "text": "SMOKE9A=PASS"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 898,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]",
+        "case \"$SMOKE9_COUNT\""
+      ],
+      "text": "SMOKE9A=FAIL"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 909,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "SMOKE9_RES_OUT=$(python3 - \"$CTRLSUMMARY_JSON\" <<'PYEOF'"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 946,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "SMOKE9B_RC=$?"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 948,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "SMOKE9_REASON=\"${_s9[0]-}\"; [ -n \"$SMOKE9_REASON\" ] || SMOKE9_REASON=\"no_output\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 949,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "SMOKE9_RES_SUM=\"${_s9[1]-}\"; [ -n \"$SMOKE9_RES_SUM\" ] || SMOKE9_RES_SUM=\"n/a\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 950,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "SMOKE9_RESIDENCY=\"${_s9[2]-}\"; [ -n \"$SMOKE9_RESIDENCY\" ] || SMOKE9_RESIDENCY=\"{}\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 951,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "if [ \"$SMOKE9B_RC\" -eq 0 ] && [ \"$SMOKE9_REASON\" = ok ]; then SMOKE9B=PASS; else SMOKE9B=FAIL; fi"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 952,
+      "kind": "SMOKE_OVERALL",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "if [ \"$SMOKE9A\" = PASS ] && [ \"$SMOKE9B\" = PASS ]; then SMOKE9=PASS; else SMOKE9=FAIL; fi"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 954,
+      "kind": "REF",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "\"runtime_snapshot_benchmark_count=$SMOKE9_COUNT min=$MIN_SNAPSHOTS\" \\"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 955,
+      "kind": "REF",
+      "arm_pinned_to": [
+        "d74"
+      ],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ] && [ \"$ARM\" = \"d74\" ]"
+      ],
+      "text": "\"recount_rc=$SMOKE9_COUNT_RC assert_telem_rc=$TELEM_RC\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 965,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "echo \"G16_BLOCK_DONE block=$BLOCK_TAG arms_total=$N_GOT_ARMS BOOTS_FAILED=$BOOTS_FAILED\" \\"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 969,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "[ \"$BOOTS_FAILED\" -eq 0 ] && SMOKE5=PASS || SMOKE5=FAIL"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 970,
+      "kind": "SMOKE_ITEM",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "if [ -s \"$MANIFEST\" ] && [ \"$GIT_COMMIT\" != \"unknown\" ]; then SMOKE6=PASS; else SMOKE6=FAIL; fi"
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 971,
+      "kind": "GATE_REJECT",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "echo \"G16_SMOKE_CHECK 5_BOOTS_FAILED=$SMOKE5 value=$BOOTS_FAILED\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 987,
+      "kind": "SMOKE_OVERALL",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "echo \"G16_SMOKE_OVERALL=PASS (sec9 conditions 1-7 + addendum A-7 items 8/9/10 satisfied)\""
+    },
+    {
+      "file": "g16_grid.sbatch",
+      "line": 989,
+      "kind": "SMOKE_OVERALL",
+      "arm_pinned_to": [],
+      "guards": [
+        "[ \"$SMOKE\" = \"1\" ]"
+      ],
+      "text": "echo \"G16_SMOKE_OVERALL=FAIL (>=1 condition not satisfied -- do NOT submit the full campaign)\""
+    },
+    {
+      "file": "g16_analyze.py",
+      "line": 18,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "(26 telemetry files) whose selection script is not preserved in"
+    },
+    {
+      "file": "g16_analyze.py",
+      "line": 937,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "Adoption: ``status == 'completed' AND telem_rc == 0 AND fields_rc.lo == 0"
+    },
+    {
+      "file": "g16_analyze.py",
+      "line": 939,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "ran BEFORE the ``ARTIFACT_OK`` judgment (N1); the harness has since been"
+    },
+    {
+      "file": "g16_analyze.py",
+      "line": 971,
+      "kind": "ADOPT",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "and sidecar.get(\"telem_rc\") == 0"
+    },
+    {
+      "file": "g16_analyze.py",
+      "line": 977,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "\"telem_rc\": sidecar.get(\"telem_rc\"),"
+    },
+    {
+      "file": "g16_analyze.py",
+      "line": 1565,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "\"telemetry is not a free observer: the 2026-07-15/18 grid ran WITHOUT \""
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 5,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "telemetry file)."
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 10,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "* H2 -> H2': \"telemetry file non-empty\" (equivalent to \"did you export the"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 11,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "env var\") is replaced with \"telemetry has >= N events with"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 12,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "event=='runtime_snapshot' and phase=='benchmark' and 'decode_sms' in"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 14,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "telemetry file containing e.g. only `controller_decision` events."
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 38,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "4. telemetry with 0 runtime_snapshot(phase=benchmark, has decode_sms) events"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 58,
+      "kind": "ASSERT_FN",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "def assert_runtime_snapshots(path: str, min_count: int) -> tuple[bool, str]:"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 61,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "return False, f\"telemetry file missing: {path}\""
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 63,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "return False, f\"telemetry file empty (0 bytes): {path}\""
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 78,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "and e.get(\"event\") == \"runtime_snapshot\""
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 85,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "f\"runtime_snapshot(phase=benchmark, has decode_sms) count={n_snapshots} \""
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 86,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "f\"< min={min_count} (telemetry lines={n_lines}): {path}\""
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 89,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "f\"lines={n_lines} runtime_snapshot_benchmark_count={n_snapshots} \""
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 202,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "rs = sub.add_parser(\"runtime_snapshots\", help=\"H2' telemetry assert\")"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 217,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "if args.cmd == \"runtime_snapshots\":"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 218,
+      "kind": "ASSERT_FN",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "ok, detail = assert_runtime_snapshots(args.path, args.min_count)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 255,
+      "kind": "ASSERT_FN",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "ok, detail = assert_runtime_snapshots(\"/nonexistent/path/g16_does_not_exist.jsonl\", 1)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 256,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "check(\"runtime_snapshots missing file -> ok\", ok, False)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 261,
+      "kind": "ASSERT_FN",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "ok, detail = assert_runtime_snapshots(empty_path, 1)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 262,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "check(\"runtime_snapshots empty file -> ok\", ok, False)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 272,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "fh.write(json.dumps({\"event\": \"runtime_snapshot\", \"phase\": \"warmup\", \"decode_sms\": 44}) + \"\\n\")"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 273,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "fh.write(json.dumps({\"event\": \"runtime_snapshot\", \"phase\": \"benchmark\"}) + \"\\n\")  # no decode_sms"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 275,
+      "kind": "ASSERT_FN",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "ok, detail = assert_runtime_snapshots(no_snapshot_path, 1)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 277,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "\"SYNTHETIC#4 runtime_snapshot(phase=benchmark,decode_sms) count=0 -> ok\","
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 290,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "{\"event\": \"runtime_snapshot\", \"phase\": \"benchmark\", \"decode_sms\": 44,"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 296,
+      "kind": "ASSERT_FN",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "ok, detail = assert_runtime_snapshots(enough_path, 5)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 297,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "check(\"runtime_snapshots count=5 min=5 -> ok\", ok, True)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 298,
+      "kind": "ASSERT_FN",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "ok, detail = assert_runtime_snapshots(enough_path, 6)"
+    },
+    {
+      "file": "g16_assert.py",
+      "line": 299,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "check(\"runtime_snapshots count=5 min=6 -> ok\", ok, False)"
+    },
+    {
+      "file": "g16_n3_dryrun_check.py",
+      "line": 12,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "2. Leaves PDMUX_TELEMETRY_PATH / PDMUX_RUN_ID / PDMUX_WORKLOAD_ID set to"
+    },
+    {
+      "file": "g16_n3_dryrun_check.py",
+      "line": 57,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "GPU 0, no server/telemetry/torch dependency -- pure bash + text."
+    },
+    {
+      "file": "g16_n3_dryrun_check.py",
+      "line": 90,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "\"PDMUX_TELEMETRY_PATH\": \"/tmp/STALE_LEAKED_TELEMETRY_PATH.jsonl\","
+    },
+    {
+      "file": "g16_n3_dryrun_check.py",
+      "line": 95,
+      "kind": "REF",
+      "arm_pinned_to": [],
+      "guards": [],
+      "text": "NEEDED = {\"PDMUX_TELEMETRY_PATH\", \"PDMUX_RUN_ID\", \"PDMUX_WORKLOAD_ID\"}"
+    }
+  ],
+  "smoke_reachability": [
+    {
+      "smoke_item": "SMOKE1",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:472",
+        "g16_grid.sbatch:837",
+        "g16_grid.sbatch:837"
+      ],
+      "depends_on": [
+        "SMOKE2",
+        "SMOKE2B",
+        "SMOKE3",
+        "SMOKE4",
+        "SMOKE7"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE10",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:473",
+        "g16_grid.sbatch:851",
+        "g16_grid.sbatch:851"
+      ],
+      "depends_on": [
+        "SMOKE9",
+        "SMOKE9A",
+        "SMOKE9B"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE2",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:472",
+        "g16_grid.sbatch:838",
+        "g16_grid.sbatch:838"
+      ],
+      "depends_on": [
+        "SMOKE1",
+        "SMOKE2B",
+        "SMOKE3",
+        "SMOKE4",
+        "SMOKE7"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE2B",
+      "arm_pins": [
+        "d64"
+      ],
+      "sites": [
+        "g16_grid.sbatch:472",
+        "g16_grid.sbatch:829",
+        "g16_grid.sbatch:829"
+      ],
+      "depends_on": [
+        "SMOKE1",
+        "SMOKE2",
+        "SMOKE3",
+        "SMOKE4",
+        "SMOKE7"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE3",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:472",
+        "g16_grid.sbatch:839",
+        "g16_grid.sbatch:839"
+      ],
+      "depends_on": [
+        "SMOKE1",
+        "SMOKE2",
+        "SMOKE2B",
+        "SMOKE4",
+        "SMOKE7"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE4",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:472",
+        "g16_grid.sbatch:840",
+        "g16_grid.sbatch:840"
+      ],
+      "depends_on": [
+        "SMOKE1",
+        "SMOKE2",
+        "SMOKE2B",
+        "SMOKE3",
+        "SMOKE7"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE5",
+      "arm_pins": [],
+      "sites": [
+        "g16_grid.sbatch:969",
+        "g16_grid.sbatch:969"
+      ],
+      "depends_on": [],
+      "site_runs": true,
+      "can_ever_pass": true
+    },
+    {
+      "smoke_item": "SMOKE6",
+      "arm_pins": [],
+      "sites": [
+        "g16_grid.sbatch:970",
+        "g16_grid.sbatch:970"
+      ],
+      "depends_on": [],
+      "site_runs": true,
+      "can_ever_pass": true
+    },
+    {
+      "smoke_item": "SMOKE7",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:472",
+        "g16_grid.sbatch:850",
+        "g16_grid.sbatch:850"
+      ],
+      "depends_on": [
+        "SMOKE1",
+        "SMOKE2",
+        "SMOKE2B",
+        "SMOKE3",
+        "SMOKE4"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9",
+      "arm_pins": [],
+      "sites": [
+        "g16_grid.sbatch:473"
+      ],
+      "depends_on": [
+        "SMOKE10",
+        "SMOKE9A",
+        "SMOKE9B"
+      ],
+      "site_runs": true,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9A",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:473",
+        "g16_grid.sbatch:894",
+        "g16_grid.sbatch:896",
+        "g16_grid.sbatch:898"
+      ],
+      "depends_on": [
+        "SMOKE10",
+        "SMOKE9",
+        "SMOKE9B",
+        "SMOKE9_COUNT"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9B",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:473",
+        "g16_grid.sbatch:951",
+        "g16_grid.sbatch:951"
+      ],
+      "depends_on": [
+        "SMOKE10",
+        "SMOKE9",
+        "SMOKE9A",
+        "SMOKE9B_RC",
+        "SMOKE9_REASON"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9B_RC",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:946"
+      ],
+      "depends_on": [],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9_COUNT",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:875",
+        "g16_grid.sbatch:894"
+      ],
+      "depends_on": [
+        "SMOKE9A"
+      ],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9_COUNT_RC",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:892"
+      ],
+      "depends_on": [],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9_REASON",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:948",
+        "g16_grid.sbatch:948"
+      ],
+      "depends_on": [],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9_RESIDENCY",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:950",
+        "g16_grid.sbatch:950"
+      ],
+      "depends_on": [],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9_RES_OUT",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:909"
+      ],
+      "depends_on": [],
+      "site_runs": false,
+      "can_ever_pass": false
+    },
+    {
+      "smoke_item": "SMOKE9_RES_SUM",
+      "arm_pins": [
+        "d74"
+      ],
+      "sites": [
+        "g16_grid.sbatch:949",
+        "g16_grid.sbatch:949"
+      ],
+      "depends_on": [],
+      "site_runs": false,
+      "can_ever_pass": false
+    }
+  ],
+  "limits": "Complete only w.r.t. `registered_tokens`. A rejection site that mentions none of them is invisible. This is a scanner, not a proof."
+}
