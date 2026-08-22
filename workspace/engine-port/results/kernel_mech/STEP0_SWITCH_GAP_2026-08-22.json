@@ -1,0 +1,550 @@
+{
+  "frame": "Step 0 \uc7ac\ubd84\uc11d. GPU 0 \u00b7 \uc0c8 \uce21\uc815 0 \u00b7 \uc131\ub2a5 \ud310\uc815 0\uac74. \uc0b0\ucd9c\uc740 c\uac00 \uc544\ub2c8\ub77c c+confound\uc758 \uc0c1\ud55c(\uc804\ud658\uc774 \ucee8\ud2b8\ub864\ub7ec \uad6c\ub3d9).",
+  "n_artifacts": 20,
+  "per_artifact": [
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep10_875346.holb.jsonl",
+      "n_boundary": 8552,
+      "dropped_events": 0,
+      "n_switch": 266,
+      "strict": {
+        "n_sw": 260,
+        "n_no": 8276,
+        "med_sw": 1.3726719617843628,
+        "med_no": 0.4618239998817444,
+        "delta_med": 0.9108479619026184,
+        "mean_sw": 8.016128151691877,
+        "mean_no": 1.1774501607484609
+      },
+      "ambig": {
+        "n_sw": 6,
+        "n_no": 10,
+        "med_sw": 4038.0635375976562,
+        "med_no": 569.1724853515625,
+        "delta_med": 3468.8910522460938,
+        "mean_sw": 4135.007951100667,
+        "mean_no": 831.0339393615723
+      },
+      "top5pct_share": 0.9086656217560407,
+      "ambig_sw_residual_med": 3916.0641765594482
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep1_875346.holb.jsonl",
+      "n_boundary": 8295,
+      "dropped_events": 0,
+      "n_switch": 230,
+      "strict": {
+        "n_sw": 222,
+        "n_no": 8053,
+        "med_sw": 1.371135950088501,
+        "med_no": 0.4618239998817444,
+        "delta_med": 0.9093119502067566,
+        "mean_sw": 9.058940285766447,
+        "mean_no": 1.142224888956711
+      },
+      "ambig": {
+        "n_sw": 8,
+        "n_no": 12,
+        "med_sw": 777.2231597900391,
+        "med_no": 499.56300354003906,
+        "delta_med": 277.66015625,
+        "mean_sw": 3255.5343770980835,
+        "mean_no": 732.4426256815592
+      },
+      "top5pct_share": 0.9140210674544101,
+      "ambig_sw_residual_med": 672.9748411178589
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep2_875346.holb.jsonl",
+      "n_boundary": 9190,
+      "dropped_events": 0,
+      "n_switch": 250,
+      "strict": {
+        "n_sw": 240,
+        "n_no": 8925,
+        "med_sw": 1.3480960130691528,
+        "med_no": 0.43827199935913086,
+        "delta_med": 0.909824013710022,
+        "mean_sw": 9.172347684204578,
+        "mean_no": 1.0902003100038578
+      },
+      "ambig": {
+        "n_sw": 10,
+        "n_no": 15,
+        "med_sw": 910.3953857421875,
+        "med_no": 356.6305236816406,
+        "delta_med": 553.7648620605469,
+        "mean_sw": 2716.3736572265625,
+        "mean_no": 556.5772516886393
+      },
+      "top5pct_share": 0.9109705623715229,
+      "ambig_sw_residual_med": 805.687801361084
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep3_875346.holb.jsonl",
+      "n_boundary": 8168,
+      "dropped_events": 0,
+      "n_switch": 248,
+      "strict": {
+        "n_sw": 240,
+        "n_no": 7911,
+        "med_sw": 1.3603839874267578,
+        "med_no": 0.47308799624443054,
+        "delta_med": 0.8872959911823273,
+        "mean_sw": 9.084339147557815,
+        "mean_no": 1.206757660977323
+      },
+      "ambig": {
+        "n_sw": 8,
+        "n_no": 9,
+        "med_sw": 833.2206115722656,
+        "med_no": 647.07275390625,
+        "delta_med": 186.14785766601562,
+        "mean_sw": 3170.862590789795,
+        "mean_no": 801.6016481187609
+      },
+      "top5pct_share": 0.9095389819294519,
+      "ambig_sw_residual_med": 729.0204181671143
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep4_875346.holb.jsonl",
+      "n_boundary": 9063,
+      "dropped_events": 0,
+      "n_switch": 226,
+      "strict": {
+        "n_sw": 215,
+        "n_no": 8826,
+        "med_sw": 1.07315194606781,
+        "med_no": 0.44390399754047394,
+        "delta_med": 0.6292479485273361,
+        "mean_sw": 9.072520836286767,
+        "mean_no": 1.0951843593677317
+      },
+      "ambig": {
+        "n_sw": 11,
+        "n_no": 11,
+        "med_sw": 810.3997192382812,
+        "med_no": 801.9190063476562,
+        "delta_med": 8.480712890625,
+        "mean_sw": 2478.371342745694,
+        "mean_no": 835.3188934326172
+      },
+      "top5pct_share": 0.9119105898405558,
+      "ambig_sw_residual_med": 705.8728733062744
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep5_875346.holb.jsonl",
+      "n_boundary": 8169,
+      "dropped_events": 0,
+      "n_switch": 246,
+      "strict": {
+        "n_sw": 236,
+        "n_no": 7916,
+        "med_sw": 1.3614080548286438,
+        "med_no": 0.47308799624443054,
+        "delta_med": 0.8883200585842133,
+        "mean_sw": 8.70045074896287,
+        "mean_no": 1.1641551477137149
+      },
+      "ambig": {
+        "n_sw": 10,
+        "n_no": 7,
+        "med_sw": 900.0801086425781,
+        "med_no": 382.96063232421875,
+        "delta_med": 517.1194763183594,
+        "mean_sw": 2729.234265136719,
+        "mean_no": 737.7757764543805
+      },
+      "top5pct_share": 0.9106244697006756,
+      "ambig_sw_residual_med": 795.0986261367798
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep6_875346.holb.jsonl",
+      "n_boundary": 8424,
+      "dropped_events": 0,
+      "n_switch": 234,
+      "strict": {
+        "n_sw": 226,
+        "n_no": 8181,
+        "med_sw": 1.3603839874267578,
+        "med_no": 0.4607999920845032,
+        "delta_med": 0.8995839953422546,
+        "mean_sw": 9.157994492127832,
+        "mean_no": 1.13958583131948
+      },
+      "ambig": {
+        "n_sw": 8,
+        "n_no": 9,
+        "med_sw": 1044.5455017089844,
+        "med_no": 1117.3785400390625,
+        "delta_med": -72.83303833007812,
+        "mean_sw": 3184.9428329467773,
+        "mean_no": 987.6836107042101
+      },
+      "top5pct_share": 0.913173746009729,
+      "ambig_sw_residual_med": 939.3924789428711
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep7_875346.holb.jsonl",
+      "n_boundary": 8168,
+      "dropped_events": 0,
+      "n_switch": 236,
+      "strict": {
+        "n_sw": 229,
+        "n_no": 7923,
+        "med_sw": 1.3547519445419312,
+        "med_no": 0.46694400906562805,
+        "delta_med": 0.8878079354763031,
+        "mean_sw": 8.866561054662846,
+        "mean_no": 1.1754884110411263
+      },
+      "ambig": {
+        "n_sw": 7,
+        "n_no": 9,
+        "med_sw": 761.5364990234375,
+        "med_no": 876.5009765625,
+        "delta_med": -114.9644775390625,
+        "mean_sw": 3540.7886657714844,
+        "mean_no": 944.103628370497
+      },
+      "top5pct_share": 0.9119910013896098,
+      "ambig_sw_residual_med": 657.6752510070801
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep8_875346.holb.jsonl",
+      "n_boundary": 8679,
+      "dropped_events": 0,
+      "n_switch": 230,
+      "strict": {
+        "n_sw": 220,
+        "n_no": 8439,
+        "med_sw": 1.3301759958267212,
+        "med_no": 0.4413439929485321,
+        "delta_med": 0.8888320028781891,
+        "mean_sw": 8.933101308345794,
+        "mean_no": 1.1229511150810614
+      },
+      "ambig": {
+        "n_sw": 10,
+        "n_no": 10,
+        "med_sw": 758.9416656494141,
+        "med_no": 564.4083251953125,
+        "delta_med": 194.53334045410156,
+        "mean_sw": 2611.5837020874023,
+        "mean_no": 791.0608856201172
+      },
+      "top5pct_share": 0.9112337420232215,
+      "ambig_sw_residual_med": 653.8628835678101
+    },
+    {
+      "file": "g2_granite-40-h-micro-base_agnostic_rep9_875346.holb.jsonl",
+      "n_boundary": 8424,
+      "dropped_events": 0,
+      "n_switch": 254,
+      "strict": {
+        "n_sw": 249,
+        "n_no": 8157,
+        "med_sw": 1.3649920225143433,
+        "med_no": 0.4536319971084595,
+        "delta_med": 0.9113600254058838,
+        "mean_sw": 8.790410811881943,
+        "mean_no": 1.2261411410907006
+      },
+      "ambig": {
+        "n_sw": 5,
+        "n_no": 13,
+        "med_sw": 6695.43212890625,
+        "med_no": 452.2496032714844,
+        "delta_med": 6243.182525634766,
+        "mean_sw": 4853.683386230468,
+        "mean_no": 689.7848340548002
+      },
+      "top5pct_share": 0.9127901576173674,
+      "ambig_sw_residual_med": 6554.266563415527
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep10_875344.holb.jsonl",
+      "n_boundary": 6886,
+      "dropped_events": 0,
+      "n_switch": 191,
+      "strict": {
+        "n_sw": 186,
+        "n_no": 6676,
+        "med_sw": 1.3593599796295166,
+        "med_no": 0.4106239974498749,
+        "delta_med": 0.9487359821796417,
+        "mean_sw": 10.691049922858515,
+        "mean_no": 0.899478624620039
+      },
+      "ambig": {
+        "n_sw": 5,
+        "n_no": 19,
+        "med_sw": 519.1915283203125,
+        "med_no": 709.23876953125,
+        "delta_med": -190.0472412109375,
+        "mean_sw": 3180.4604248046876,
+        "mean_no": 749.0181097733347
+      },
+      "top5pct_share": 0.9201445136900855,
+      "ambig_sw_residual_med": 376.7285575866699
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep1_875344.holb.jsonl",
+      "n_boundary": 7013,
+      "dropped_events": 0,
+      "n_switch": 166,
+      "strict": {
+        "n_sw": 155,
+        "n_no": 6827,
+        "med_sw": 1.094655990600586,
+        "med_no": 0.40959998965263367,
+        "delta_med": 0.6850560009479523,
+        "mean_sw": 12.748826574510144,
+        "mean_no": 0.9263891167463976
+      },
+      "ambig": {
+        "n_sw": 11,
+        "n_no": 20,
+        "med_sw": 1156.90087890625,
+        "med_no": 390.5259552001953,
+        "delta_med": 766.3749237060547,
+        "mean_sw": 1970.4251292835581,
+        "mean_no": 631.616567993164
+      },
+      "top5pct_share": 0.9283517337606181,
+      "ambig_sw_residual_med": 1013.3770446777344
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep2_875344.holb.jsonl",
+      "n_boundary": 7015,
+      "dropped_events": 0,
+      "n_switch": 202,
+      "strict": {
+        "n_sw": 198,
+        "n_no": 6794,
+        "med_sw": 1.346560001373291,
+        "med_no": 0.41471999883651733,
+        "delta_med": 0.9318400025367737,
+        "mean_sw": 9.666989386081696,
+        "mean_no": 0.921430137606098
+      },
+      "ambig": {
+        "n_sw": 4,
+        "n_no": 19,
+        "med_sw": 3963.493377685547,
+        "med_no": 357.7845764160156,
+        "delta_med": 3605.7088012695312,
+        "mean_sw": 4074.6903381347656,
+        "mean_no": 676.7266885857833
+      },
+      "top5pct_share": 0.9159783722505067,
+      "ambig_sw_residual_med": 3801.093635559082
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep3_875344.holb.jsonl",
+      "n_boundary": 7015,
+      "dropped_events": 0,
+      "n_switch": 218,
+      "strict": {
+        "n_sw": 209,
+        "n_no": 6784,
+        "med_sw": 1.3260799646377563,
+        "med_no": 0.41574400663375854,
+        "delta_med": 0.9103359580039978,
+        "mean_sw": 9.054169048532914,
+        "mean_no": 0.9915657358261634
+      },
+      "ambig": {
+        "n_sw": 9,
+        "n_no": 13,
+        "med_sw": 575.5494384765625,
+        "med_no": 475.6807556152344,
+        "delta_med": 99.86868286132812,
+        "mean_sw": 2014.2204064263237,
+        "mean_no": 715.9140085073618
+      },
+      "top5pct_share": 0.9120165005106222,
+      "ambig_sw_residual_med": 434.2589454650879
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep4_875344.holb.jsonl",
+      "n_boundary": 7654,
+      "dropped_events": 0,
+      "n_switch": 223,
+      "strict": {
+        "n_sw": 217,
+        "n_no": 7416,
+        "med_sw": 1.3670400381088257,
+        "med_no": 0.41676801443099976,
+        "delta_med": 0.9502720236778259,
+        "mean_sw": 10.65175653300527,
+        "mean_no": 0.9748366755767933
+      },
+      "ambig": {
+        "n_sw": 6,
+        "n_no": 15,
+        "med_sw": 825.3199005126953,
+        "med_no": 448.62872314453125,
+        "delta_med": 376.69117736816406,
+        "mean_sw": 2809.740651448568,
+        "mean_no": 731.854702758789
+      },
+      "top5pct_share": 0.9076296388091362,
+      "ambig_sw_residual_med": 682.371545791626
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep5_875344.holb.jsonl",
+      "n_boundary": 7398,
+      "dropped_events": 0,
+      "n_switch": 224,
+      "strict": {
+        "n_sw": 219,
+        "n_no": 7156,
+        "med_sw": 1.3619199991226196,
+        "med_no": 0.4188160002231598,
+        "delta_med": 0.9431039988994598,
+        "mean_sw": 9.414628021248944,
+        "mean_no": 0.9964163981090717
+      },
+      "ambig": {
+        "n_sw": 5,
+        "n_no": 18,
+        "med_sw": 309.8685302734375,
+        "med_no": 414.5843200683594,
+        "delta_med": -104.71578979492188,
+        "mean_sw": 3088.510134887695,
+        "mean_no": 740.7833819919163
+      },
+      "top5pct_share": 0.9110954603602575,
+      "ambig_sw_residual_med": 167.5652961730957
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep6_875344.holb.jsonl",
+      "n_boundary": 8420,
+      "dropped_events": 0,
+      "n_switch": 242,
+      "strict": {
+        "n_sw": 238,
+        "n_no": 8158,
+        "med_sw": 1.3557759523391724,
+        "med_no": 0.40857601165771484,
+        "delta_med": 0.9471999406814575,
+        "mean_sw": 8.347355612686702,
+        "mean_no": 0.9666473393230994
+      },
+      "ambig": {
+        "n_sw": 4,
+        "n_no": 20,
+        "med_sw": 3536.7639923095703,
+        "med_no": 686.5663757324219,
+        "delta_med": 2850.1976165771484,
+        "mean_sw": 3894.049140930176,
+        "mean_no": 739.7310920715332
+      },
+      "top5pct_share": 0.9094014890627512,
+      "ambig_sw_residual_med": 3371.6137866973877
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep7_875344.holb.jsonl",
+      "n_boundary": 7270,
+      "dropped_events": 0,
+      "n_switch": 228,
+      "strict": {
+        "n_sw": 216,
+        "n_no": 7032,
+        "med_sw": 1.2800000309944153,
+        "med_no": 0.4116480052471161,
+        "delta_med": 0.8683520257472992,
+        "mean_sw": 8.82853004363952,
+        "mean_no": 0.9687018165273742
+      },
+      "ambig": {
+        "n_sw": 12,
+        "n_no": 10,
+        "med_sw": 606.2474365234375,
+        "med_no": 440.6963195800781,
+        "delta_med": 165.55111694335938,
+        "mean_sw": 1785.438144683838,
+        "mean_no": 621.9396179199218
+      },
+      "top5pct_share": 0.9103504851373017,
+      "ambig_sw_residual_med": 463.58631706237793
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep8_875344.holb.jsonl",
+      "n_boundary": 6119,
+      "dropped_events": 0,
+      "n_switch": 194,
+      "strict": {
+        "n_sw": 188,
+        "n_no": 5915,
+        "med_sw": 1.3434879779815674,
+        "med_no": 0.4126720130443573,
+        "delta_med": 0.9308159649372101,
+        "mean_sw": 10.559934788561883,
+        "mean_no": 0.9755846209931152
+      },
+      "ambig": {
+        "n_sw": 6,
+        "n_no": 10,
+        "med_sw": 703.6211242675781,
+        "med_no": 1061.5623474121094,
+        "delta_med": -357.94122314453125,
+        "mean_sw": 2815.840057373047,
+        "mean_no": 1075.0017593383789
+      },
+      "top5pct_share": 0.9219402564537823,
+      "ambig_sw_residual_med": 564.1205825805664
+    },
+    {
+      "file": "g2_zamba2-27b_agnostic_rep9_875344.holb.jsonl",
+      "n_boundary": 5609,
+      "dropped_events": 0,
+      "n_switch": 176,
+      "strict": {
+        "n_sw": 171,
+        "n_no": 5422,
+        "med_sw": 1.358847975730896,
+        "med_no": 0.4433920085430145,
+        "delta_med": 0.9154559671878815,
+        "mean_sw": 10.160271626815462,
+        "mean_no": 0.9781878019216886
+      },
+      "ambig": {
+        "n_sw": 5,
+        "n_no": 11,
+        "med_sw": 1145.777099609375,
+        "med_no": 495.3825378417969,
+        "delta_med": 650.3945617675781,
+        "mean_sw": 3250.0747772216796,
+        "mean_no": 844.5557361949574
+      },
+      "top5pct_share": 0.9170175891431088,
+      "ambig_sw_residual_med": 1010.9890022277832
+    }
+  ],
+  "strata": {
+    "strict": {
+      "n_artifacts": 20,
+      "med_of_med_sw": 1.3573119640350342,
+      "med_of_med_no": 0.4398079961538315,
+      "delta_med_median": 0.9100799858570099,
+      "delta_med_ci95": [
+        0.8885760307312012,
+        0.9231359660625458
+      ]
+    },
+    "ambig": {
+      "n_artifacts": 20,
+      "med_of_med_sw": 829.2702560424805,
+      "med_of_med_no": 497.47277069091797,
+      "delta_med_median": 236.09674835205078,
+      "delta_med_ci95": [
+        54.17469787597656,
+        602.0797119140625
+      ]
+    }
+  },
+  "top5pct_share_median": 0.9119507956150827,
+  "ambig_sw_residual_med_median": 717.4466457366943
+}
