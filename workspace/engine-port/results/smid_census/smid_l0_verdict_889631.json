@@ -1,0 +1,188 @@
+{
+  "kind": "smid_l0_verdict",
+  "prereg": "PREREG_SMID_R0_2026-08-14.md",
+  "R0": {
+    "verdict": "GLOBALLY_CONSISTENT_LABEL",
+    "why": "complementary green partitions are disjoint and their union equals the pre-green device id set",
+    "facts": {
+      "disjoint": true,
+      "tiles_D": true,
+      "sizes": [
+        74,
+        34
+      ],
+      "expected_sizes": [
+        74,
+        34
+      ],
+      "abs_D": 108,
+      "intersection_size": 0,
+      "union_size": 108
+    }
+  },
+  "R1": {
+    "realised": [
+      74,
+      34
+    ],
+    "target_from_divide_sm": [
+      74,
+      34
+    ],
+    "exact_match": true,
+    "reading": "realised == target",
+    "forbidden": "do not convert set cardinality into compute share",
+    "other_green_groups": {
+      "idx2": {
+        "realised": [
+          54,
+          54
+        ],
+        "target": [
+          54,
+          54
+        ],
+        "disjoint": true
+      }
+    }
+  },
+  "R2": {
+    "S_pre_size": 108,
+    "not_independent": "idx0/idx3 plain-stream censuses below are the SAME empirical content as this difference, not a second independent test (methodology gate #9, sixth recurrence: two gates named independent measuring one quantity). They are descriptive replicates.",
+    "descriptive_replicates": {
+      "idx0_prefill": 108,
+      "idx0_decode": 108,
+      "idx3_prefill": 108,
+      "idx3_decode": 108
+    },
+    "S_post_size": 108,
+    "lost_ids": [],
+    "lost_count": 0,
+    "saturated_post": true,
+    "reading": "no carve observed at this saturation level"
+  },
+  "R5": {
+    "windows": [
+      {
+        "n_blocks": 108,
+        "overlap_ns": 958176,
+        "shared_sm_ids": [],
+        "prefill_sms_in_window": 74,
+        "decode_sms_in_window": 34
+      },
+      {
+        "n_blocks": 432,
+        "overlap_ns": 960928,
+        "shared_sm_ids": [],
+        "prefill_sms_in_window": 74,
+        "decode_sms_in_window": 34
+      }
+    ],
+    "scope": "MICRO-REGIME ONLY. Two spin kernels on an idle GPU. Transfer to the serving operating point is forbidden (prereg sec8-5)."
+  },
+  "D1": {
+    "S_pre": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 108
+    },
+    "S_post": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 108
+    },
+    "idx0_prefill": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 108
+    },
+    "idx0_decode": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 108
+    },
+    "idx1_prefill": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 74
+    },
+    "idx1_decode": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 34
+    },
+    "idx2_prefill": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 54
+    },
+    "idx2_decode": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 54
+    },
+    "idx3_prefill": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 108
+    },
+    "idx3_decode": {
+      "saturated": true,
+      "why": "identical at last two grid points",
+      "union_size": 108
+    }
+  },
+  "D2": {
+    "S_pre": {
+      "min_hits": 155
+    },
+    "S_post": {
+      "min_hits": 155
+    },
+    "idx0_prefill": {
+      "min_hits": 155
+    },
+    "idx0_decode": {
+      "min_hits": 155
+    },
+    "idx1_prefill": {
+      "min_hits": 210
+    },
+    "idx1_decode": {
+      "min_hits": 473
+    },
+    "idx2_prefill": {
+      "min_hits": 310
+    },
+    "idx2_decode": {
+      "min_hits": 310
+    },
+    "idx3_prefill": {
+      "min_hits": 155
+    },
+    "idx3_decode": {
+      "min_hits": 155
+    }
+  },
+  "setup": {
+    "green_ctx_attached": {
+      "idx1_prefill": false,
+      "idx1_decode": false
+    },
+    "meaning": "false == a green context IS attached to that stream",
+    "source": "recorded per stream by run() at t7, driver read-out block",
+    "status": "premise holds for the green pair",
+    "plain_control_detached": {
+      "idx0_prefill": true,
+      "idx0_decode": true,
+      "idx3_prefill": true,
+      "idx3_decode": true,
+      "plain_pre": true
+    },
+    "control_meaning": "true == NO green context on that stream. run() builds these five without one, so they are the negative control for the read-out that the premise above depends on",
+    "control_status": "premise holds: the read-out reports at least one detached stream"
+  },
+  "stop": false,
+  "raw_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/smid_census/smid_l0_raw_889631.json",
+  "utc": "2026-08-21T16:46:04Z"
+}

@@ -1,6 +1,66 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-08-21 (doc-steward — ★**gate #13 job-축 캠페인 완주 +
+최종 갱신: 2026-08-22 (doc-steward — ★★**`%smid` R0 결과 도착·정본
+등재**(job **889631**, gpu40, 2026-08-22T01:44:25–01:46:04, **0.0275
+GPU-hr**, exit `0:0`, `git_head=28a972c`) — 사전등록
+`results/smid_census/PREREG_SMID_R0_2026-08-14.md` + 2026-08-21
+2층 감사(`GO-with-conditions`) 조건 4건 충족 후 제출된 결과를
+claims-auditor가 **`CONFIRMED(scoped)` — 등재 가능(조건 4건)**으로
+판정. ★**등재 헤드라인**: `%smid`는 이 프로세스·이 기판
+(A100-SXM4-80GB, eager, 엔진 없는 별도 프로세스)에서 green
+context를 건너는 **전역 일관 라벨**이다 — 상보 green 파티션 두
+집합이 서로소(교집합 0)·합집합이 green ctx 생성 이전 평범
+스트림 관측 id 집합과 집합으로 동일(`GLOBALLY_CONSISTENT_LABEL`,
+`stop=false`, `sizes=[74,34]`↔`divide_sm(108,(8,0),2)` target
+정확히 일치, idx2 `[54,54]`도 일치). ★**"물리 SM 인덱스"가 아니라
+"전역 일관 라벨"**(§3.4) — 카디널리티를 계산 자원 비율로 환산
+금지. **R2(기전, 서술 한정)**: 같은 스트림으로 green ctx 생성
+전/후를 재면 `D \ S_post = ∅`(양쪽 포화, `min_hits=155`) — 이
+프로세스·이 기판·**green 스트림이 유휴인 순간**에 한해 green
+context *생성 자체*가 primary context 스트림의 도달 가능 SM id
+집합을 줄이지 않았다(스코프 3개 필수: id 집합≠계산량 / 유휴 순간
+한정 / 포화≠부재 증명). ★**아티팩트 결함 2건 신규 등재**: N1
+(`.txt` 판정서가 `[:4000]` 절단으로 `stop`·`plain_control_detached`
+·`control_status` 누락, `.json` 4777B vs `.txt` 4127B, grep 0건
+확인) · N2(`setup.green_ctx_attached`의 **이름이 값의 부정** — 값
+`false`가 "green ctx가 붙어 있다"는 뜻이라 `.txt`만 읽으면
+정반대로 읽힌다) ⇒ **정본·논문은 `smid_l0_verdict_889631.json`만
+인용, `.txt`/`.out` 인용 금지**. ★★**불변 배너(전 인용 지점
+공통)**: 성능 판정 **0건** · `CONSENSUS.md` §1-1 "PD 분리 자체"
+귀속 전진 0 · Gate 2-S 크기 인용 셀 1개 불변 · §1-1 인용 금지
+그대로 · S3(`CLAIM_EVIDENCE_MATRIX.md:704`)·G1-d(이 문서
+"확정된 결과" 1번, E-3 옆)는 **닫히지 않는다**(L0 유사물만 측정,
+cudagraph-ON 운영점 전달 문장 금지) · HE0·정책 순위 불변 ·
+**gate #13/#16 "닫았다" 금지 유지**. 방법론 게이트 #56 신설
+(보고 필드 이름이 값의 부정일 수 있다 — 게이트 #21의 보고 층
+변종) · #57 신설(결정론적 열거를 확률적 커버리지 증거로 쓰지
+마라). GPU 지출 = **0.0275 GPU-hr**(이번 결과 도착분) · **새
+성능 판정 0건 · 등급 변경 0건 · 정책 순위 변경 0건**. 상세
+`workspace/engine-port/results/smid_census/{smid_l0_verdict_
+889631.json, audit_smid_r0_2026-08-21/VERDICT.md}`, 아래 "다음
+실험 gate" #11 레지스트리 `%smid` R0 행(2026-08-22 갱신)·#17
+후보 상태.
+
+이전: 2026-08-21 (2차 세션, doc-steward — ★★**kernel_mech rev3
+재감사 → rev4-lite → rev5, 세 판본 연속 규칙층 `NO-GO`**(차단
+5·8·7건, 전부 **하네스 착수·GPU 지출 전**에 규칙층에서 걸림 —
+가장 깊은 층: *"커널 안인가 밖인가"* 판정이 **반사실 선택에
+의존**한다, 대칭/비대칭 두 반사실이 같은 데이터에서 반대 판정을
+내고 둘 다 똑같이 "정의". 사용자 판단 대기: rev6 / 보류 / 종결) +
+★**`%smid` R0가 처음으로 제출됐다**(job **889631**, `amd_a100nv_8`,
+`PENDING`, ★**결과는 아직 없다** — 2026-08-14 `CONDITIONAL-GO(5조건)`
+원문이 저장소에 남지 않아 7일 만에 소실됐음을 확인, 2층 감사가
+조건을 새로 도출해 이번엔 파일로 기록[`audit_smid_r0_2026-08-21/
+VERDICT.md`], 지목 결함(fail-open 2건 + C1–C3) 수리 완료·제출).
+방법론 게이트 #42에 새 사례 追記(공허참이 PASS를 낸다) · #55
+신설(감사 산출물을 파일로 남기지 않으면 조건이 소실된다). GPU
+지출 = job 889631 하나(예상 ≈0.17 GPU-hr, `PENDING`) · **새 성능
+판정 0건 · 등급 변경 0건 · 정책 순위 변경 0건 · HE0 불변 · gate
+#13/#16 "닫았다" 금지 불변.** 상세 `handoff-report/session_handoff_
+2026-08-21b.md`, 아래 "다음 실험 gate" #17(2026-08-21 3차 갱신)·
+"방법론 게이트" #42 追記·#55(신설).
+
+이전: 2026-08-21 (1차 세션, doc-steward — ★**gate #13 job-축 캠페인 완주 +
 양 arm `PASS`**(등록 11.52 GPU-hr 대비 실측 **11.66 GPU-hr**) 반영 +
 S0(a) 초판 결론 **철회**(감사 REFUTED) + G18 rate-축 프로브 **트랙
 보류(HOLD)** + kernel_mech rev3 차단 2건 설계 본문 수리 +
@@ -1793,6 +1853,30 @@ Layer composition을 runtime scheduling boundary로 사용하지 않는다. Hybr
    `workspace/engine-port/results/smsplit_realized/
    {smsplit_realized_glogin01_2026-08-14.json,
    smsplit_realized_882374.json}`(수정 금지·인용만).
+
+   ★**`%smid` R0 결과 도착(2026-08-22, job 889631, gpu40, 0.0275
+   GPU-hr, claims-auditor `CONFIRMED(scoped)`)** — 위 E-3가 자기보고
+   층(드라이버가 요청값을 그대로 돌려줌)만 확인했던 것과 달리, R0는
+   **엔진·모델·요청 없는 별도 프로세스**에서 eager 스트림 위 `%smid`
+   census로 **id 집합 층**을 처음 쟀다: 상보 green 파티션 두 집합이
+   서로소(교집합 0)이고 합집합이 green ctx 생성 이전 평범 스트림
+   관측 id 집합과 집합으로 동일(`GLOBALLY_CONSISTENT_LABEL`,
+   `sizes=[74,34]`가 `divide_sm(108,(8,0),2)` target과 정확히 일치).
+   ★**"물리 SM 인덱스"가 아니라 "전역 일관 라벨"**이라고 읽어야
+   한다(카디널리티→계산 자원 비율 환산 금지). 같은 스트림의 green
+   ctx 생성 전/후 대조(R2)는 이 프로세스·이 기판·**green 스트림이
+   유휴인 순간**에 한해 `D \ S_post = ∅`(도달 SM id 집합이 줄지
+   않음)를 관측했다 — id 집합≠계산량·유휴 순간 한정·포화≠부재
+   증명 3개 스코프 필수. ⇒ **S3·G1-d는 여전히 닫히지 않는다**(이건
+   L0 유사물이지 서빙 중 SM id 확인이 아니고, cudagraph-ON 운영점
+   전달 문장은 금지). 아티팩트 결함 N1(`.txt` 판정서 절단으로
+   `stop`·`plain_control_detached`·`control_status` 누락)·N2
+   (`green_ctx_attached` 필드명이 값의 부정)이 있어 **`.json`만
+   인용**(`.txt`/`.out` 인용 금지). 상세 "다음 실험 gate" #11
+   레지스트리 `%smid` R0 행(2026-08-22 갱신), 원자료
+   `workspace/engine-port/results/smid_census/{smid_l0_verdict_
+   889631.json, audit_smid_r0_2026-08-21/VERDICT.md}`(수정 금지·
+   인용만), `reports/CONSENSUS.md` §1-1(이 블록, R0)·§3 항목76·77.
 2. 현재 A100/SGLang green-context substrate에서 layer-boundary resource
    switching은 sub-step drain과 synchronization을 일으켜 decode TPOT을 약
    `42→124 ms`로 악화시켰다. 최적화 후에도 약 `85 ms`였다.
@@ -4209,7 +4293,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     |---|---|---|
     | LTSM P1 (`workspace/engine-port/results/ltsm_probe/PREREG_LTSM_P1_PROBE_2026-08-14.md`) | NO-GO(9조건 중 다수 불충족) | `PDMUX_FIXED_DECODE_SM_FILE` 미export ⇒ SM 축 부재. 임계값이 문서 3곳에서 서로 다른 3값 |
     | E1-b/c (`workspace/engine-port/results/p1_gates/gate2/PREREG_G2S_E1B_E1C_2026-08-14.md`) | NO-GO(8조건 중 다수 불충족) | 스코어러 P2가 `M<36`에서 `frac`을 조회하지 않아 REFUTED 판정을 삼킴. 결정량 5개 중 4개가 발화 불가 |
-    | `%smid` R0 (`workspace/engine-port/results/smid_census/PREREG_SMID_R0_2026-08-14.md`) | CONDITIONAL-GO(5조건) | 런타임 PTX 검사가 죽은 코드(`smid_l0_census.py:410`의 `JITFunction.cache` 미존재 속성 참조) + 스코어러 fail-open(`:523/:529` 가드가 `None`을 통과) |
+    | `%smid` R0 (`workspace/engine-port/results/smid_census/PREREG_SMID_R0_2026-08-14.md`) | CONDITIONAL-GO(5조건, 2026-08-14 — ★**원문이 저장소에 남지 않아 2026-08-21 확인 시점에 7일 만에 소실**, 레지스트리 이 줄 + `handoff-report/session_handoff_2026-08-15.md:68`·`:286` 두 줄뿐, 2026-08-14 날짜 핸드오프 파일 자체가 없다) → ★**2026-08-21, 2층 감사가 조건을 추측 재구성이 아니라 새로 도출, `GO-with-conditions`(차단 C1–C5, 파일 `audit_smid_r0_2026-08-21/VERDICT.md`로 이번엔 보존)** → 지목 결함 전부 수리(아래) → **제출(job 889631, `amd_a100nv_8`)** → ★★**2026-08-22, 결과 도착(gpu40, 01:44:25–01:46:04, 0.0275 GPU-hr, exit `0:0`) — claims-auditor `CONFIRMED(scoped)`, 등재 가능(조건 4건, 메인 세션이 ③④ 처리)**: `GLOBALLY_CONSISTENT_LABEL`(disjoint·union=108=`|D|`·`sizes=[74,34]`=target=`divide_sm(108,(8,0),2)`, idx2 `[54,54]`도 일치) — "물리 SM 인덱스" 아닌 "전역 일관 라벨". R2(서술 한정, 3스코프 필수): `D\S_post=∅`(green ctx 생성이 primary 스트림 도달 SM id 집합을 줄이지 않음, eager·idle·이 기판 한정). 아티팩트 결함 N1(`.txt` `[:4000]` 절단으로 `stop`/`plain_control_detached`/`control_status` 누락)·N2(`green_ctx_attached` 필드명이 값의 부정) — **`.json`만 인용**. 불변: 성능 판정 0건·S3/G1-d 미종결·Gate 2 귀속 전진 0·HE0·gate #13/#16 "닫았다" 금지. | 2026-08-14: 런타임 PTX 검사가 죽은 코드(`smid_l0_census.py:410`의 `JITFunction.cache` 미존재 속성 참조) + 스코어러 fail-open(`:523/:529` 가드가 `None`을 통과). ★2026-08-21 신규 지목·수리: **C1** 빈 census가 공허참 3중(∅∩∅=∅⇒disjoint·∅=∅⇒tiles_D·∅→∅를 포화로 판정)으로 `GLOBALLY_CONSISTENT_LABEL`+`stop=False`를 냄(메인 세션 직접 재현 확인, 아래 "방법론 게이트" #42 追記) — 양성 하한을 포화 검사 **앞**에 둬 수리 · **C2** 미포화 `S_post`에서 부재 주장(`lost_ids`) — 대상별 게이트로 수리 · **C3** 전달 실패(결과)와 green ctx 미부착(측정 실패)을 한 라벨로 합침 — 토큰 금지 축소+화이트리스트+AST 전이 검사로 수리 · **동일 fail-open의 P0-A 복사본**(`p0a_graph_sm_confinement.py:249`) — 별건 수리, ★이걸 안 잡았으면 모든 GPU 런이 `UNDETERMINED`로 끝났을 것(0.35 GPU-hr 절약) · **재감사(R2)**: green ctx 부착 전제가 테스트 0건이라 퇴화 변이 2종이 통과 — **양방향 전제**(green 부착 ∧ plain 대조 ≥1 미부착)로 수리. 최종 하네스: 자기검사 58/58·변이 7→28. ★2026-08-22 결과 감사 caveat(판단 완료): (a) 사전등록 §0.2 항목번호 오프바이원(원문 순서 1,2,3,4,6,5) — 이후 인용은 번호 대신 문구로 할 것(권고 등재) · (b) 게이트 후보 2건은 #56·#57로 신설(아래 "방법론 게이트") · (c) `smid_l0_run.sbatch:86`이 stage 4 rc 미검사(스코어링 실패가 exit 0으로 끝날 수 있음) — engine-porter 이관 항목으로 등재(미수정). 상세 `handoff-report/session_handoff_2026-08-21b.md` §2.2, 원자료 `workspace/engine-port/results/smid_census/smid_l0_verdict_889631.json`(수정 금지·인용만, `.txt`/`.out` 인용 금지) |
     | E-1 (`workspace/engine-port/results/bsweep_regime/PREREG_E1_BSWEEP_REGIME_2026-08-14.md`) | NO-GO(F1–F9) | T8 arm에 SM 순회 훅 부재. `R≈2.1` 유도 입력 3개 오류 |
     | C2-R rev1 (`workspace/engine-port/results/s8_scaleup/PREREG_C2R_RULES_2026-08-15.md`) | NO-GO(5표적) | 결정량("단일 `b*`에서의 arm 간 순서")이 자기가 고치려던 슬라이스 아티팩트를 재생산 — 순서가 b의 함수이고 곡선이 교차(T8 b=1 꼴찌 2.476→b=16 1등 2.388). `b*` 규칙이 분모 미정의로 무이빨 문턱(E1-b/c `M<36` 동형). D3가 표적 arm에서 계산 불가. PIN 0.80을 게이트로 쓰면 3/8 탈락·Ha8 전멸 |
     | ★C2-R rev2 (`workspace/engine-port/results/s8_scaleup/PREREG_C2R_RULES_REV2_2026-08-15.md`) | ★**GO**(2026-08-15, claims-auditor, 범위 한정 — **이 표에서 유일한 GO**) → **★★실행 완료(2026-08-16, jobs 883574/883575)** | 손잡이가 아니라 결정량 자체를 교체(게이트 #35 준수): 4 arm→2 arm(M8·Ha8)·순서→arm별 비의 citability·`b*`=16 고정·PIN을 보고축으로 강등·D3 삭제·정지 (a)는 영구 정지로 포기. 하네스 `s8_c2r.sbatch`+`s8_c2r_client.py`(커밋 `19b8853`). **결과**: `r_M8(16)=3.058`·`r_Ha8(16)=3.114`(t(5) [3.056,3.060]·[3.077,3.155], within-job boot 구간·`n_indep=6`, percentile CI[3.0566,3.0595]/[3.0848,3.1354]는 과소피복이라 본문 인용 금지·원자료 포인터만), 양성대조가 항등식(방법론 게이트#9 아홉 번째 재발, 재구현 스크립트는 저장소 밖), C2 등급 무변경. 전문 `C2R_RESULTS_2026-08-16.md`, `CONSENSUS.md` §3 항목56 |
@@ -4227,11 +4311,20 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     `workspace/engine-port/results/p1_gates/gate2/AUDIT_E1B_E1C_2026-08-14.md`,
     C2-R rev1→rev2 ↔ `PREREG_C2R_RULES_REV2_2026-08-15.md` 본문(rev1
     死因 5건을 rev2가 자체 기록, 별도 감사 보고서 파일 없음). LTSM
-    P1·`%smid` R0·E-1은 별도 감사 보고서 파일 없음(판정은 각 PREREG
-    문서 자체 및 2026-08-14 세션 기록). G13·kernel_mech rev2는 별도
-    감사 보고서 파일 없음(판정은 메인 세션이 handoff §4-4에 기록,
-    claims-auditor 산출물 자체는 아직 저장소 미편입 — G13 감사 독립
-    재구현만 `audit_g13_independent_2026-08-16/`로 보존됨). G17·E-B1은
+    P1·E-1은 별도 감사 보고서 파일 없음(판정은 각 PREREG 문서 자체
+    및 2026-08-14 세션 기록). ★`%smid` R0의 **2026-08-14 판정(5조건)은
+    여전히 별도 감사 보고서 파일 없음**(그 원문이 7일 만에 소실된
+    이유이기도 하다) — 단 **2026-08-21 2층 감사부터는 파일로 남는다**
+    (`workspace/engine-port/results/smid_census/audit_smid_r0_2026-08-21/
+    VERDICT.md`, ★신규 규율 — 아래 "방법론 게이트" #55). G13·kernel_mech
+    rev2는 별도 감사 보고서 파일 없음(판정은 메인 세션이 handoff §4-4에
+    기록, claims-auditor 산출물 자체는 아직 저장소 미편입 — G13 감사
+    독립 재구현만 `audit_g13_independent_2026-08-16/`로 보존됨).
+    ★kernel_mech rev3 재감사·rev5는 파일로 남는다(`workspace/
+    engine-port/results/kernel_mech/DESIGN_KERNEL_MECH_REV3_
+    2026-08-20.md` §10-F 재감사 본문, `audit_kernel_mech_rev5_
+    2026-08-21/VERDICT.md`) — rev4-lite 판정은 rev5 문서 서두에
+    요약만 있고 별도 파일 없음. G17·E-B1은
     별도 감사 보고서 파일 없음(판정 근거는 각 감사 스크립트 세트
     `audit_g17_rules_2026-08-18/`·`audit_eb1_rules_2026-08-18/`의
     `README.txt`+`*.json` 자체, `handoff-report/session_handoff_
@@ -4746,6 +4839,110 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     원자료 `S6_POWER_2026-08-21.json`, 스크립트 `s6_power.py`, 커밋
     `ace05b8`.
 
+    ★★★★★★★**2026-08-21 갱신(3차, doc-steward — 2차 세션, GPU
+    지출 0[kernel_mech]·0[미해결, %smid R0는 job 889631 하나
+    `PENDING`], 새 성능 판정 0건) 후보 (ii) kernel_mech rev3의
+    상태가 다시 바뀐다 — "이 수리 자체는 미감사(다음 세션 재감사
+    대상)"이던 것이 재감사를 받았고, 그 뒤로도 두 판본이 더
+    나와 **세 번 연속 규칙층 `NO-GO`** 다.** 순서: **rev3 재감사**
+    (rev3 §10-F가 스스로 지목한 "이 수리 자체는 미감사" 결손을
+    실행 — `NO-GO`, 차단 **5건**: cell B 문턱 0.98이 상속 워크로드에서
+    도달 불가[실측 동거율 1.3/4.9/25–40%] · cell A 문턱이 D=16에서
+    비변별적 · realized 추정량이 편향[개수 서브샘플링] · cell D에
+    residency 검증 부재 · `gap_frac` 분모·인덱스집합 미정의) →
+    **rev4-lite**(`NO-GO`, 차단 **8건**: `T_step`을 NVTX[=CPU
+    타임라인]로 정의하고 "device-side"라 서술 · `r_K`·`gap_frac`이
+    `T=K+G`로 종속 · **모든 게이트를 통과하며 틀린 쪽을 지목하는
+    반례** · 문턱 0.85가 정본 ε 구간을 정확히 가름 · 부팅 62.5%가
+    판정 미사용) → **rev5**(`NO-GO`, 차단 **7건**: ★**구조적 편향**
+    — `S_K≥0`이라 `s>0.5`의 필요조건이 `G92>G44`인데 남긴 간극
+    후보가 SM에 비례해 커지지 않아 `GAP_DOMINATED`가 도달 불가[간극
+    일정 케이스 `s=0.000` 메인 세션 재확인] · ★엔진에 NVTX 방출이
+    **0건**[`grep -rn nvtx workspace/engine-port/src/`, 메인 세션
+    확인]이라 이 설계는 하네스가 아니라 **엔진 핫패스 패치**를
+    요구하는데 예산·상태에 미계상 · 검정력 분석 0건 · §3.4 여유
+    근거 삼중 무효 · `CONC`·`L`이 값 없이 고정 · `U_infl` 설계와
+    예산이 서로 실행 불가). **세 판본 전부 하네스 착수·GPU 지출
+    전에** 규칙층에서 걸렸다(GPU 0). ★**가장 깊은 층**(감사):
+    *"커널 안인가 밖인가"* 판정이 **반사실 선택에 의존**한다 —
+    대칭 반사실(`G_ideal := G(44)·44/92`)과 비대칭 반사실이 **같은
+    데이터에서 반대 판정**을 내고(대칭으로 바꾸면 rev5 자기검증
+    fixture는 같은 답, CE-1 반례만 뒤집힘: 0.811 ⇒ `GAP`, "정답")
+    둘 다 똑같이 "정의"다. ⇒ **감사 권고**: 두 반사실을 **나란히
+    사전등록**하고 갈리면 `COUNTERFACTUAL_SENSITIVE`를 결과로 보고
+    (GO 전환 조건 ①). ★**부수 확정 2건**(이번 세션에서 세 판본에
+    걸쳐 반복 확인): (1) **`t_launch`(후보 vii)는 cudagraph 운영점에서
+    항등식**이라 폐기됐다(rev1 死因이 이름만 바꿔 rev3에서도 생존한
+    것을 재확인 후 최종 폐기). (2) **엔진에 NVTX 방출이 0건**이라
+    이 track이 전제해 온 "하네스만 지으면 된다"가 성립하지 않는다
+    — `pdmux.decode_step` NVTX를 실제로 방출하려면 엔진 핫패스
+    패치 + manifest 갱신 + correctness gate가 선행돼야 한다(engine-porter
+    이관 대상, 미이관). ★**kernel_mech rev4/rev5는 둘 다 `NO-GO`
+    상태로 커밋돼 있다 — 설계 근거로 재사용 금지.** ⇒ **사용자
+    판단 대기**: rev6(감사 권고 ① 반영) / 트랙 보류 / 트랙 종결
+    — 다음 세션의 첫 결정 사항.
+
+    ★**후보 (iv) S-6 telemetry 대조 — 추가 상세(상태 불변,
+    `NO-GO`).** 검정력 재계산이 지정한 등록 후보의 **최종 구간
+    형태**가 확정됐다: **Stein 2단**(`X̄_N ± t_{.975,n₁−1}·S₁/√N`,
+    1단 6쌍→캡 12쌍). ★**payoff는 감사 후 이미 좁아져 있다**(위
+    2차 갱신 참조, 재확인만) — 이 격자 Δ는 he2/sgptv 절대값에서
+    뺄 수 없고(모델·워크로드·regime 축), *"오버헤드가 결정축과
+    상관"* 은 **1 arm으로 원리상 측정 불가**라 남는 것은 "공통
+    시프트의 크기" 하나뿐이다. 死因 4건 수리(전부 GPU 0)는 아직
+    실행되지 않았다 — **아직 후보일 뿐, 등록 아니다.**
+
+    ★**신규 항목 — `%smid` R0가 처음으로 제출됐다(job **889631**,
+    `amd_a100nv_8`, `PENDING`). ★결과는 아직 없다 — 다음 세션이
+    읽어야 할 것은 아래 "다음 실험 gate" #11 레지스트리 `%smid` R0
+    행이다.** 요지만: 2026-08-14 감사의 `CONDITIONAL-GO(5조건)`
+    원문이 저장소 어디에도 남지 않아 **7일 만에 소실**됐음을 이번
+    세션이 확인했다 — 등재는 레지스트리 한 줄 + 핸드오프 두 줄뿐
+    (2026-08-14 날짜 핸드오프 파일 자체가 없다). 2층 감사가 조건을
+    **추측 재구성이 아니라 새로 도출**했고, ★이번엔 그 판정서를
+    **파일로 남겼다**(`workspace/engine-port/results/smid_census/
+    audit_smid_r0_2026-08-21/VERDICT.md` — 판정어
+    `GO-with-conditions`, 차단 C1–C5). 지목된 결함(fail-open 2건
+    [`smid_l0_census.py`+P0-A 복사본] · C1 빈 census 공허참 PASS ·
+    C2 미포화 부재주장 · C3 라벨 병합) 전부 이번 세션에 수리(자기검사
+    58/58·변이 28) → 제출. ⇒ **후보 목록은 이제 사실상 0개 즉시
+    실행 가능**(kernel_mech는 사용자 판단 대기, gate #16 rate 축은
+    G18로 이미 실행돼 HOLD, S-6는 死因 수리 미착수) — `%smid` R0는
+    이 4후보 목록 밖의 별도 트랙이다. 상세 `handoff-report/
+    session_handoff_2026-08-21b.md` §2.2·§2.3, `results/kernel_mech/
+    {DESIGN_KERNEL_MECH_REV3_2026-08-20.md §10-F 재감사,
+    DESIGN_KERNEL_MECH_REV4_2026-08-21.md,
+    DESIGN_KERNEL_MECH_REV5_2026-08-21.md,
+    audit_kernel_mech_rev5_2026-08-21/VERDICT.md}`, `results/
+    slo_sched/S6_POWER_2026-08-21.md`, `results/smid_census/
+    {PREREG_SMID_R0_2026-08-14.md, audit_smid_r0_2026-08-21/
+    VERDICT.md}`. ★**gate #13·gate #16 개폐 서술 불변**(이 갱신과
+    무관) · **HE0·정책 순위·인용정지 불변** · **새 성능 판정 0건.**
+
+    ★★**2026-08-22 갱신(doc-steward — `%smid` R0 결과 도착 +
+    claims-auditor 결과 감사 `CONFIRMED(scoped)` 반영, GPU 지출
+    0.0275 GPU-hr[결과 도착분], 새 성능 판정 0건) `%smid` R0(위
+    별도 트랙)가 종결됐다 — 4후보 목록(gate #13 rev3는 이미 완주,
+    kernel_mech rev3/gate #16 rate 축/S-6는 상태 불변)에는 영향
+    없음.** 판정: `GLOBALLY_CONSISTENT_LABEL`(job 889631, 상세는
+    위 "확정된 결과" 1번 R0 addendum·"다음 실험 gate" #11
+    레지스트리 `%smid` R0 행 2026-08-22 갱신). ★**"물리 SM
+    인덱스"가 아니라 "전역 일관 라벨"** — S3·G1-d(위 참조)는
+    **닫히지 않는다**(이건 엔진 없는 별도 프로세스의 eager census,
+    cudagraph-ON 운영점 전달 문장 금지). 아티팩트 결함 N1·N2로
+    `.json`만 인용(`.txt`/`.out` 인용 금지, 아래 "방법론 게이트"
+    #56). 감사 caveat 3건 처리: (a) 사전등록 §0.2 항목번호
+    오프바이원 — 이후 문구로만 인용 권고(반영 완료, 이 문단) ·
+    (b) 게이트 후보 2건 → #56·#57 신설(아래) · (c)
+    `smid_l0_run.sbatch:86` stage 4 rc 미검사 → engine-porter
+    이관 항목 등재(미수정, 위 #11 레지스트리 행 각주). ★**불변**:
+    `CONSENSUS.md` §1-1 인용 금지·Gate 2-S 크기 인용 셀 1개·HE0·
+    정책 순위·gate #13/#16 "닫았다" 금지 전부 그대로. 상세
+    `reports/CONSENSUS.md` §1-1(R0 addendum)·§3 항목76·77·§4
+    living-doc(smid_l0_verdict_889631.json 행), `reports/paper/
+    CLAIM_EVIDENCE_MATRIX.md:704`(S3 항목, L0 유사물만 측정
+    명시).
+
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
 
@@ -4805,7 +5002,18 @@ CONSENSUS §3 항목73과 대응]·#54 신설[태그는 오염을 막지 못한�
 분석기의 glob/regex를 직접 확인해야 한다 — `g16_analyze.py:953`이
 `g16_` 접두사를 재사용한 G18 프로브 run id를 정상 매치할 뻔함(실제
 오염 0건, 접두사를 `g18probe_`로 교체해 차단), 게이트 #48의 자매
-사례, CONSENSUS §3 항목74와 대응])
+사례, CONSENSUS §3 항목74와 대응]), 2026-08-21 (2차 세션, `%smid`
+R0 2층 감사 실행에서 도출, doc-steward 신설) #55 신설[감사 산출물을
+파일로 남기지 않으면 조건이 소실된다 — 2026-08-14 `CONDITIONAL-GO
+(5조건)` 원문이 저장소 어디에도 남지 않아 7일 만에 소실됨을 확인,
+CONSENSUS §3 항목75와 대응], 2026-08-22 (doc-steward — `%smid` R0
+결과 도착 + claims-auditor 결과 감사 `CONFIRMED(scoped)` 반영) #56
+신설[보고 필드 이름이 값의 부정일 수 있다 — 게이트 #21의 보고 층
+변종, N1(`.txt` 절단으로 `stop` 등 3필드 누락)·N2(`green_ctx_
+attached`가 값의 부정), CONSENSUS §3 항목76과 대응]·#57 신설[결정론적
+열거를 확률적 커버리지 증거로 쓰지 마라 — D1 사다리가 완전균등
+(min=max=155)인 것은 재표집 증거가 아니다, CONSENSUS §3 항목77과
+대응])
 
 Stage 0/8B de-confound 감사에서 확인된 실패 모드로부터 도출된 3개 항목(1–3),
 E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠페인에서 나온
@@ -5769,6 +5977,30 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     `reports/CONSENSUS.md` §3 항목62, `handoff-report/session_handoff_
     2026-08-16.md` §4-2.
 
+    ★**(2026-08-21, 2차 세션, `%smid` R0 2층 감사에서 발견 — 극단형
+    재발) 새 사례: 관측이 0인 것 자체가 공허참으로 PASS할 수 있다.**
+    2026-08-16의 원형은 "예외를 삼켜 실패를 성공으로" 였고 이번은
+    **더 깊다** — 예외가 나지 않고 코드가 정상 종료했는데, 입력이
+    빈 집합이라 **논리식이 공허참으로 항상 참**이 된다: `%smid` R0
+    스코어러가 빈 census(전 union이 ∅)를 받으면 `∅∩∅=∅`이므로
+    `disjoint` 판정을 통과, `∅=∅`이므로 `tiles_D` 판정을 통과,
+    `_saturated`가 `∅→∅`(증가 없음)를 "포화"로 판정해 D1 하드
+    게이트까지 통과 — 그 결과 **관측 0건인 실행이
+    `GLOBALLY_CONSISTENT_LABEL`+`stop=False`를 내고 R1·R2·R5 해석이
+    개시될 수 있었다**(메인 세션 직접 재현 확인:
+    `score(_synth([0,0], dsize=0))` → `GLOBALLY_CONSISTENT_LABEL`,
+    `facts.sizes=[0,0]`). ★기존 fail-open 수리(죽은 코드 2건)가
+    **손대지 않은 자리**였다 — 서로 다른 결함이 같은 파일에 공존.
+    실무 규칙: (i) 게이트/스코어러를 설계할 때 "입력이 텅 비면 이
+    판정이 자동으로 무엇을 내는가"를 **집합 연산마다** 대수로
+    점검하라(공허참은 대개 원하는 방향으로 나온다 — 위험하다).
+    (ii) 해소는 논리를 고치는 것이 아니라 **양성 하한을 포화·일치
+    검사 앞에** 두는 순서 변경이다(관측 개수가 0이면 그 자체를
+    별도 결과로 분리, 포화 판정에 도달시키지 않는다). 상세
+    `workspace/engine-port/results/smid_census/audit_smid_r0_
+    2026-08-21/VERDICT.md` C1, `handoff-report/session_handoff_
+    2026-08-21b.md` §2.2.
+
 43. ★★**(2026-08-16, 세션4, doc-steward 등재 — G16 사전등록 분석기
     `g16_analyze.py` 감사에서 발견, claims-auditor F1) 분석기가
     사전등록 기호를 조용히 재정의하면 자기 대조를 깨고 중심 산출물을
@@ -6047,3 +6279,75 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     게이트 #48(결과 디렉터리 이름 오인)의 자매 사례. 상세
     `workspace/engine-port/results/slo_sched/G18_RATE_VALUE_
     2026-08-20.md` §6, `reports/CONSENSUS.md` §3 항목74.
+
+55. ★★**(2026-08-21, 2차 세션, `%smid` R0 2층 감사 실행에서 도출,
+    doc-steward 신설) 감사 산출물을 파일로 남기지 않으면 조건이
+    소실된다.** 2026-08-14 감사가 `%smid` R0에 낸
+    `CONDITIONAL-GO(5조건)`은 원문이 저장소 어디에도 남지 않았다 —
+    "다음 실험 gate" #11 레지스트리의 **한 줄**과
+    `handoff-report/session_handoff_2026-08-15.md`의 **두 줄**(개수와
+    결함 2건만)이 전부였고, 정작 그 판정이 나온 2026-08-14 날짜의
+    핸드오프 파일 자체가 **존재하지 않는다**. 2026-08-21에 다음
+    세션이 이 조건들을 다시 읽으려 했을 때 **7일 만에 원문이
+    소실**돼 있었다 — 2층 감사가 조건을 "복원"이 아니라 **처음부터
+    새로 도출**해야 했다(운 좋게 결론은 겹쳤으나 그것을 보장하는
+    장치가 없었다). ★이 저장소에는 같은 결손을 가진 설계가 **6건**
+    더 있다(LTSM P1·E1-b/c·E-1·G13·kernel_mech rev2·G17/E-B1 —
+    "다음 실험 gate" #11 레지스트리의 "감사 보고서(있는 것만)" 문단
+    참조, 판정어만 레지스트리에 남고 조건 원문은 없다). 실무 규칙:
+    (i) 규칙층·하네스층 감사가 차단/조건부-통과 판정을 낼 때는
+    판정 요약을 정본에 등재하는 것과 **별개로** 감사 산출물 전문을
+    파일로 저장한다(`results/<트랙>/audit_<이름>_<날짜>/VERDICT.md`
+    형식 — 이번 세션이 `%smid` R0(`audit_smid_r0_2026-08-21/
+    VERDICT.md`)·kernel_mech rev5(`audit_kernel_mech_rev5_2026-08-21/
+    VERDICT.md`)에서 이 규율을 시작했다). (ii) 그 파일 안에 **왜
+    이 파일이 존재하는지**(선행 판정의 소실 여부)를 명시해 다음
+    세션이 같은 조사를 반복하지 않게 한다. (iii) 기존 6건에 이
+    규율을 소급 적용할지는 **별건 판단 대상으로 등재**한다(이번
+    세션은 하지 않았다 — 아래 "다음 실험 gate" #11 레지스트리
+    참조). 상세 `workspace/engine-port/results/smid_census/
+    audit_smid_r0_2026-08-21/VERDICT.md`(머리말 + caveat 4),
+    `reports/CONSENSUS.md` §3 항목75, `handoff-report/
+    session_handoff_2026-08-21b.md` §2.2.
+
+56. ★★**(2026-08-22, `%smid` R0 결과 감사, claims-auditor, GPU
+    0.0275 GPU-hr) 보고 필드의 이름이 값의 부정일 수 있다 — 극성
+    필드는 이름과 값을 일치시키고 설명 문자열에 의존하지 마라
+    (설명 문자열은 잘릴 수 있다).** `smid_l0_verdict_889631.json`의
+    `setup.green_ctx_attached`는 값이 `green_ctx_is_null`이라
+    **이름이 값의 정반대**다(`false`가 "green ctx가 붙어 있다"는
+    뜻). 자매 필드 `plain_control_detached`는 정반대 규약(`true`가
+    "안 붙어 있다")을 쓴다 — 같은 판정서 안에서 극성이 필드마다
+    뒤집혀 있다. ★**합성 효과**: 이 결함이 N1(아래)과 겹치면
+    `.txt`만 읽는 독자는 *"green pair에 green ctx가 안 붙었다"* =
+    **진실의 정반대**로 읽는다. 같은 판정서의 **N1**: `.txt` 판정서가
+    `smid_l0_census.py:1381`의 `[:4000]` 절단으로 잘려 `stop`·
+    `plain_control_detached`·`control_status` 세 필드를 통째로
+    누락한다(메인 세션 확인: `.txt` 4127B vs `.json` 4777B, grep
+    0건). 실무 규칙: (i) 불린 필드 이름은 그 값이 참일 때의 의미로
+    짓는다(`green_ctx_is_null`처럼 이미 그렇게 지은 필드와 이름만
+    다른 `_attached`류를 병존시키지 않는다). (ii) 사람이 읽을
+    판정서를 별도 포맷(`.txt`)으로 파생시킬 때 절단·필드 누락을
+    자체 검사(누락 필드 목록을 `.json`과 대조)하지 않으면 그
+    파생물은 인용 금지 대상이다. ⇒ **정본·논문·후속 문서는
+    `smid_l0_verdict_889631.json`만 인용, `.txt`/`.out`은 인용
+    금지**(이번 결과에 한정, 다른 판정서의 `.txt` 파생물도 같은
+    점검 없이 인용 금지로 일반화하는 것은 별건 판단 대상). 상세
+    `workspace/engine-port/results/smid_census/{smid_l0_verdict_
+    889631.json, smid_l0_verdict_889631.txt}`, `reports/CONSENSUS.md`
+    §3 항목76.
+
+57. ★**(2026-08-22, `%smid` R0 결과 감사, claims-auditor) 결정론적
+    열거를 확률적 커버리지 증거로 쓰지 마라.** R0의 D1 하드 게이트는
+    관측 SM id 히트 분포가 그리드 점마다 완전 균등(`min_hits==
+    max_hits==155`, `S_pre`/`S_post`/idx0/idx3 전부)함을 "사다리
+    평탄"의 근거로 삼는다 — 그러나 이 스윕은 커널을 **결정론적으로
+    반복 열거**하는 설계라 균등성은 **재표집(resampling) 하에서의
+    안정성 증거가 아니다**(무작위 표본이 아니므로 신뢰구간·검정력
+    개념이 적용되지 않는다). ★**등재만**(이번 세션은 R0 판정
+    자체를 흔들지 않는다 — D1이 실제로 요구하는 것은 "그리드
+    마지막 두 점에서 동일 집합"뿐이고 이 조건은 결정론적 열거로도
+    충분히 검증된다, 단 "포화"라는 단어가 확률적 함의를 암시하지
+    않도록 향후 서술에서 주의). 상세 `workspace/engine-port/results/
+    smid_census/smid_l0_verdict_889631.json`(`D1` 블록), `reports/
+    CONSENSUS.md` §3 항목77.

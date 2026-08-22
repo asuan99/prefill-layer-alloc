@@ -1,6 +1,15 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-08-21(doc-steward — gate #13 job-축 캠페인 완주(양 arm
+최종 갱신: 2026-08-22(doc-steward — `%smid` R0 결과 도착(job 889631,
+claims-auditor `CONFIRMED(scoped)`) 반영. **S3 항목(아래 "P1 트랙"
+절, 원 위치 :695-696)에 갱신 문단 추가 — L0 유사물(엔진 없는 별도
+프로세스 eager census)만 측정됐고 S3 자신은 미종결(닫지 않음).**
+id 집합 층에서 `GLOBALLY_CONSISTENT_LABEL` 확인, "물리 SM 인덱스"
+아닌 "전역 일관 라벨". **새 인용 셀 0건·등급 변경 0건·새 성능
+판정 0건.** 상세 `CONSENSUS.md` §1-1(R0 addendum)·§3 항목76·77,
+`PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리 `%smid` R0 행
+(2026-08-22 갱신).
+이전: 2026-08-21(doc-steward — gate #13 job-축 캠페인 완주(양 arm
 `PASS`, 등록 11.52 GPU-hr·실측 11.66 GPU-hr) + S0(a) 초판 결론 철회 +
 G18 rate-축 트랙 보류 반영. **Claim A 등급(부분 지지) 무변경, 새 인용
 셀 0건, 새 성능 판정 0건**(gate #13은 분산 측정이지 성능 비교가
@@ -692,8 +701,18 @@ fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJ
   force=1, 문턱을 가로지르는 구간) → **E1-d**(Zamba2 r3 여유 13
   정면 검정, E1-b에 포함 가능). 전부 **미실행**. (구 "E3"는 E1
   채택으로 불필요 확정, 관측자-효과 잔여 질문은 E1-b가 부분 흡수.)
-- **S3 / `%smid` 직접 하드웨어 SM 프로브**(미실행, 별건으로 등재) —
-  "무분할(C)"의 잔여 SM 차감 여부·물리적 내용이 여전히 미측정.
+- **S3 / `%smid` 직접 하드웨어 SM 프로브**(★2026-08-22 부분 갱신 —
+  **L0 유사물만 측정됐고 S3 자신은 미종결**, 닫지 마라) —
+  `%smid` R0(job 889631, gpu40, 0.0275 GPU-hr, claims-auditor
+  `CONFIRMED(scoped)`)가 **엔진·모델·요청 없는 별도 프로세스**에서
+  eager 스트림 위 census로 green context가 SM id 집합 층에서
+  전역 일관 라벨임을 확인했다(`GLOBALLY_CONSISTENT_LABEL`, 상세
+  `CONSENSUS.md` §1-1 R0 addendum·§3 항목76·77). 이건 **L0
+  유사물**(엔진 없음·서빙 없음·cudagraph 없음)일 뿐이라 이 항목이
+  원래 묻는 질문 — **"무분할(C)"의 잔여 SM 차감 여부·서빙 중 물리적
+  내용**은 여전히 미측정이다. cudagraph-ON 운영점 전달 문장·
+  성능/정책 주장 전부 금지. `PROJECT_STATUS.md` "다음 실험 gate"
+  #11 레지스트리 `%smid` R0 행 참조.
 - **Gate 3**(NemotronH·Falcon-H1 운영점 대조, 미착수) — "4모델 전부"를
   다시 쓰려면 필요.
 - **Gate 4**(sustainable-rate 직접 측정 n≥4, 미착수) — r4/r6 크기·용량

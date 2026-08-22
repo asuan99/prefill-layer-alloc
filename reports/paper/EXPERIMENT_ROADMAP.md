@@ -1,6 +1,14 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-16(doc-steward — **"상금 크기" 논증 감사가 찾은 인용정지
+최종 갱신: 2026-08-22(doc-steward — **`%smid` R0(job 889631,
+claims-auditor `CONFIRMED(scoped)`) 결과 반영 — 아래 §"P1 트랙"
+항목6(S3/`%smid`)에 갱신 문단 추가.** id 집합 층에서
+`GLOBALLY_CONSISTENT_LABEL` 확인(엔진 없는 별도 프로세스 eager
+census, L0 유사물). **이 항목은 닫히지 않는다** — "무분할(C)" 잔여
+SM 차감·서빙/cudagraph-ON 운영점 전달은 여전히 미측정, 새 성능
+판정 0건. 상세 `CONSENSUS.md` §1-1(R0 addendum)·§3 항목76·77,
+`CLAIM_EVIDENCE_MATRIX.md:704`.
+이전: 2026-08-16(doc-steward — **"상금 크기" 논증 감사가 찾은 인용정지
 전파 결손 정정, 새 성능 판정 0건.** 아래 §"8B decode-SM 민감도 측정 노트"의
 국소 ε 밴드(16→24 0.77–0.88 vs 44→92 0.09–0.35)에 **인용정지 (a) 표기**
 부착 — 이 밴드는 arm별 국소 탄력도의 min/max이므로 인용정지 (a)(arm별
@@ -302,7 +310,16 @@ D/E 소관)와 별개다 — 여기서 묻는 질문은 "이 엔진에서 PD-mux
    (`log(108/34)` 분모 정정)이 정정 대상 없음을 확인했다(34는 요청값이자
    드라이버 보고 realized 값) — **이 항목 자체의 우선순위·필요성은
    불변**(SM id 집합 disjointness는 여전히 개수 층 프로브가 못 여는
-   질문). `%smid` 재설계 시 §0.1 재작성 필요.
+   질문). `%smid` 재설계 시 §0.1 재작성 필요. ★★**2026-08-22 갱신 —
+   `%smid` R0(job 889631, claims-auditor `CONFIRMED(scoped)`)가
+   실행돼 id 집합 층에서 `GLOBALLY_CONSISTENT_LABEL`을 확인했다**
+   (엔진·모델·요청 없는 별도 프로세스의 eager census, "물리 SM
+   인덱스" 아닌 "전역 일관 라벨"). ★**이 항목은 여전히 닫히지
+   않는다** — R0는 L0 유사물이라 이 항목이 실제로 묻는 것("무분할
+   (C)"의 잔여 SM 차감 여부, selector-level→hardware-level 격상,
+   서빙·cudagraph-ON 운영점 전달)은 미측정. 상세 `CONSENSUS.md`
+   §1-1(R0 addendum)·§3 항목76·77, `CLAIM_EVIDENCE_MATRIX.md:704`,
+   `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리 `%smid` R0 행.
 7. **F-B(ii) 재설계** — Gate 2-S 인용-셀 선별 필터의 귀무 발화율이 40.1%
    (1−0.95¹⁰)임이 확인됐다(방법론 게이트 #24). 다음 사전등록에서 대체할
    것, **이번 결과에 소급 적용 금지**.
