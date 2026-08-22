@@ -1,0 +1,84 @@
+{
+  "frame": "rev6 operating characteristic. No GPU, no measurement. Truths are imposed; output is P(rule reaches verdict).",
+  "n_boots": 4,
+  "reps": 400,
+  "cv_sweep": [
+    0.01,
+    0.025,
+    0.05
+  ],
+  "scenarios": {
+    "gap_truth   (간극 불변, 커널 잘 줄어듦)": {
+      "s_asym_true": 0.0,
+      "s_sym_true": 0.8108,
+      "counterfactuals_agree": false,
+      "by_cv": {
+        "cv=0.01": {
+          "SENSITIVE(KERNEL|GAP)": 1.0
+        },
+        "cv=0.025": {
+          "SENSITIVE(KERNEL|GAP)": 1.0
+        },
+        "cv=0.05": {
+          "SENSITIVE(KERNEL|GAP)": 0.855,
+          "SENSITIVE(UNDETERMINED|GAP)": 0.133,
+          "SENSITIVE(MULTI_CAUSE|GAP)": 0.01,
+          "GAP": 0.003
+        }
+      }
+    },
+    "kernel_truth(커널이 안 줄어듦)": {
+      "s_asym_true": 0.3026,
+      "s_sym_true": 0.3375,
+      "counterfactuals_agree": true,
+      "by_cv": {
+        "cv=0.01": {
+          "KERNEL": 1.0
+        },
+        "cv=0.025": {
+          "KERNEL": 1.0
+        },
+        "cv=0.05": {
+          "KERNEL": 1.0
+        }
+      }
+    },
+    "mixed       (양쪽 절반씩)": {
+      "s_asym_true": 0.4646,
+      "s_sym_true": 0.6901,
+      "counterfactuals_agree": false,
+      "by_cv": {
+        "cv=0.01": {
+          "SENSITIVE(KERNEL|GAP)": 0.985,
+          "SENSITIVE(MULTI_CAUSE|GAP)": 0.015
+        },
+        "cv=0.025": {
+          "SENSITIVE(KERNEL|GAP)": 0.593,
+          "SENSITIVE(MULTI_CAUSE|GAP)": 0.403,
+          "GAP": 0.005
+        },
+        "cv=0.05": {
+          "SENSITIVE(MULTI_CAUSE|GAP)": 0.67,
+          "SENSITIVE(KERNEL|GAP)": 0.307,
+          "GAP": 0.022
+        }
+      }
+    },
+    "strong_gap  (간극이 실제로 커짐)": {
+      "s_asym_true": 0.8582,
+      "s_sym_true": 0.9252,
+      "counterfactuals_agree": true,
+      "by_cv": {
+        "cv=0.01": {
+          "GAP": 1.0
+        },
+        "cv=0.025": {
+          "GAP": 1.0
+        },
+        "cv=0.05": {
+          "GAP": 1.0
+        }
+      }
+    }
+  }
+}
