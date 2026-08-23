@@ -290,10 +290,24 @@ def _leg_eager(kernel, stream, spin_ns, sweeps):
             "mode": "eager"}
 
 
-def _leg_graph(kernel, capture_stream, replay_stream, spin_ns, dev, sweeps):
-    """Same, but every launch is a capture+replay through the shim."""
+def _leg_graph(kernel, capture_stream, replay_stream, spin_ns, dev, sweeps,
+               capture_role=None, replay_role=None):
+    """Same, but every launch is a capture+replay through the shim.
+
+    ★`capture_role`/`replay_role` are the caller's own names for the two
+    streams, written into the leg (audit E1). H5 tried to protect the
+    name<->stream pairing with an AST check and failed: the dict form that
+    replaced `zip` is keyed by POSITION (`CROSS_LEGS[0]`), so `.items()` is
+    element-identical to the zip it replaced, and reordering the constant still
+    swaps the two descriptive legs silently -- measured, with A7c/A7d/A7e all
+    passing. An AST check cannot see that. Recording the role at RUNTIME can:
+    the artefact then says which stream each leg actually used, and the adapter
+    asserts it.
+    """
     out = {"sweeps": [], "capture_events": [], "capture_summary": [],
-           "mode": "graph"}
+           "mode": "graph",
+           "capture_stream_role": capture_role,
+           "replay_stream_role": replay_role}
     cap_s, rep_s = [], []
     for _ in range(sweeps):
         shim = GraphLaunchShim(kernel, capture_stream, replay_stream, dev)
@@ -443,13 +457,27 @@ def run(outdir, tag, spin_ns):
 
     # ---- leg 2: graph_plain (the null channel)
     legs["graph_plain"] = _leg_graph(census_kernel, plain, plain, spin_ns,
-                                     dev, SWEEPS_PLAIN)
+                                     dev, SWEEPS_PLAIN,
+                                     capture_role="plain",
+                                     replay_role="plain")  # pre-green: no map yet
     flush()
 
     # ---- green pair, built exactly as initialize_stream_groups does
     green = spatial.create_greenctx_stream_by_value(p_sm, d_sm, dev)
     g_prefill, g_decode = green[0], green[1]
     plain_post = torch.cuda.Stream(device=dev)
+
+    # ★audit E1/F3. The role a leg reports must be DERIVED from the stream
+    #   object it was handed, never written by hand beside it. Hand-written
+    #   labels are exactly what H5 got wrong: swap the streams and the labels
+    #   keep saying the old thing, so the artefact lies with nothing to catch
+    #   it. Identity lookup makes a stream swap swap the labels too, which
+    #   `_cross_roles_ok` then rejects.
+    _roles = {id(g_decode): "green_decode", id(g_prefill): "green_prefill",
+              id(plain): "plain", id(plain_post): "plain_post"}
+
+    def role_of(st):
+        return _roles.get(id(st), "UNKNOWN")
     # sec8-19: read the driver IMMEDIATELY after creation, for the green pair
     # AND for plain streams -- without the latter the negative control cannot
     # be evaluated at all.
@@ -468,25 +496,31 @@ def run(outdir, tag, spin_ns):
                                              spin_ns, SWEEPS_GREEN)
     flush()
     legs["graph_green"] = _leg_graph(census_kernel, g_decode, g_decode,
-                                     spin_ns, dev, SWEEPS_GREEN)
+                                     spin_ns, dev, SWEEPS_GREEN,
+                                     capture_role=role_of(g_decode),
+                                     replay_role=role_of(g_decode))
     raw = flush()
     print("[run] decision legs complete and flushed; descriptive legs follow "
           "(their failure does NOT block scoring -- sec5.3)")
 
     # ---- descriptive cross legs: failure allowed (sec3-C, sec5.3)
     incomplete = False
-    # ★audit H5: the N3 repair had separated the leg NAME from its stream pair
-    #   (`zip(CROSS_LEGS, (...))`), so reordering the constant would silently
-    #   swap the two descriptive legs -- and those two legs are exactly the
-    #   probe's most interesting descriptive output ("is the confinement fixed
-    #   at capture time or does it come from the replay stream"). Bind them
-    #   back together, keyed by the constant, and let A7 check the keys.
-    cross_spec = {CROSS_LEGS[0]: (g_decode, plain),   # capture green, replay plain
-                  CROSS_LEGS[1]: (plain, g_decode)}   # capture plain, replay green
+    # ★audit H5 -> F1/F3. Reordering CROSS_LEGS would silently swap the two
+    #   descriptive legs, and those two are the probe's most interesting
+    #   descriptive output. The rev8 repair -- a dict keyed by CROSS_LEGS[i] --
+    #   did NOT fix it: keyed by POSITION, `.items()` is element-identical to
+    #   the `zip` it replaced, and the audit reproduced the swap with every AST
+    #   check passing. What actually closes it is below: the role each leg
+    #   reports is DERIVED from the stream object via `role_of()`, so swapping
+    #   the streams swaps the recorded roles and `_cross_roles_ok` rejects them.
+    cross_spec = {CROSS_LEGS[0]: (g_decode, plain),
+                  CROSS_LEGS[1]: (plain, g_decode)}
     for name, (cap_stream, rep_stream) in cross_spec.items():
         try:
             cross[name] = _leg_graph(census_kernel, cap_stream, rep_stream,
-                                     spin_ns, dev, SWEEPS_CROSS)
+                                     spin_ns, dev, SWEEPS_CROSS,
+                                     capture_role=role_of(cap_stream),
+                                     replay_role=role_of(rep_stream))
         except Exception as exc:  # noqa: BLE001
             cross[name] = {"failed": repr(exc)}
             incomplete = True
@@ -663,6 +697,29 @@ def _escape_replicated(raw):
               "replicated_any (DESCRIPTIVE, NOT THE DECISION)":
                   bool(per) and len(per) >= 2 and all(bool(x) for x in per)}
     return (len(per) >= 2 and bool(same)), detail
+
+
+# Expected (capture, replay) roles per descriptive cross leg -- the names are
+# the contract, and this is what makes them checkable at runtime (audit E1/F3).
+CROSS_ROLES = {"capture_green_replay_plain": ("green_decode", "plain"),
+               "capture_plain_replay_green": ("plain", "green_decode")}
+
+
+def _cross_roles_ok(name, leg):
+    """Did the leg actually use the streams its NAME claims? (audit E1)
+
+    Returns True/False, or None when the run did not record roles (an older
+    artefact). Descriptive only -- these legs carry no decision rule -- but
+    without it a swapped stream pair would invert the meaning of the two most
+    interesting descriptive numbers with nothing in the artefact to show it.
+    """
+    want = CROSS_ROLES.get(name)
+    if want is None or not isinstance(leg, dict):
+        return None
+    got = (leg.get("capture_stream_role"), leg.get("replay_stream_role"))
+    if got == (None, None):
+        return None
+    return got == want
 
 
 def _attach_failure_accounting(rec, legs, raw):
@@ -896,7 +953,13 @@ def _diagnostics(w, raw):
         "cross_legs": {
             k: {"union_sizes": [len(x) for x in _leg_sweep_sets(v)],
                 "capture_status": _tool_status(v, "capture_status"),
-                "replay_status": _tool_status(v, "replay_status")}
+                "replay_status": _tool_status(v, "replay_status"),
+                # ★audit E1: the RUNTIME roles, so a reader of the verdict can
+                #   see which stream each descriptive leg captured on and
+                #   replayed on instead of trusting the leg's name.
+                "capture_stream_role": (v or {}).get("capture_stream_role"),
+                "replay_stream_role": (v or {}).get("replay_stream_role"),
+                "roles_match_name": _cross_roles_ok(k, v)}
             for k, v in (raw.get("cross_legs") or {}).items()},
         # ★audit G3(c): `capture_events` used to be written in four places and
         #   read in none, so a verdict said NOCAP with no field naming which of
@@ -1073,6 +1136,33 @@ def _producer_sweep_keys():
     return set()
 
 
+def _cross_loop_index_set(fn):
+    """The CROSS_LEGS index set of the dict that actually drives the cross-leg
+    loop, or None if the loop is not driven by such a dict (audit E2)."""
+    import ast
+    for node in ast.walk(fn):
+        if not (isinstance(node, ast.For)
+                and isinstance(node.iter, ast.Call)
+                and isinstance(node.iter.func, ast.Attribute)
+                and node.iter.func.attr == "items"
+                and isinstance(node.iter.func.value, ast.Name)):
+            continue
+        target = node.iter.func.value.id
+        for a in ast.walk(fn):
+            if (isinstance(a, ast.Assign) and isinstance(a.value, ast.Dict)
+                    and any(isinstance(t, ast.Name) and t.id == target
+                            for t in a.targets)):
+                idx = []
+                for k in a.value.keys:
+                    if (isinstance(k, ast.Subscript)
+                            and isinstance(k.value, ast.Name)
+                            and k.value.id == "CROSS_LEGS"
+                            and isinstance(k.slice, ast.Constant)):
+                        idx.append(k.slice.value)
+                return sorted(set(idx)) if len(idx) == len(set(idx)) else None
+    return None
+
+
 def _run_wiring():
     """What `run()` ACTUALLY writes, read off its AST (harness audit G5).
 
@@ -1113,26 +1203,47 @@ def _run_wiring():
             if isinstance(n, ast.Constant) and isinstance(n.value, str)}
     # Same idea for the sweep counts, targeted so ordinary 1/2 literals
     # elsewhere do not trip it: every leg call must pass a NAME, not a number.
-    sweep_args_are_names = True
+    sweep_args_are_names, no_kw_sweeps, n_leg_calls = True, True, 0
     for node in ast.walk(fn):
         if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                and node.func.id in ("_leg_eager", "_leg_graph")
-                and node.args
-                and not isinstance(node.args[-1], ast.Name)):
-            sweep_args_are_names = False
+                and node.func.id in ("_leg_eager", "_leg_graph")):
+            n_leg_calls += 1
+            # ★audit E3: `_leg_graph(..., dev, sweeps=1)` used to PASS, because
+            #   the last POSITIONAL argument was then `dev` (a Name). A numeric
+            #   sweep count smuggled in as a keyword must fail too.
+            for kw in node.keywords:
+                if kw.arg == "sweeps" and not isinstance(kw.value, ast.Name):
+                    no_kw_sweeps = False
+            pos = [a for a in node.args]
+            # the sweep count is the last positional arg; a call with none at
+            # all must not silently skip the check
+            if not pos or not isinstance(pos[-1], ast.Name):
+                if not any(kw.arg == "sweeps" and isinstance(kw.value, ast.Name)
+                           for kw in node.keywords):
+                    sweep_args_are_names = False
     return {"legs": legs, "streams": streams,
             "cross_literals_absent": not (strs & set(CROSS_LEGS)),
-            # ★keyed by CROSS_LEGS[i] -- a SUBSCRIPT, because spelling the
-            #   names as literals would contradict A7c's negative form. So the
-            #   check is structural: a dict whose keys are all subscripts of
-            #   CROSS_LEGS, one per element.
-            "cross_spec_subscript_keys": max(
-                [sum(1 for k in node.keys
-                     if isinstance(k, ast.Subscript)
-                     and isinstance(k.value, ast.Name)
-                     and k.value.id == "CROSS_LEGS")
-                 for node in ast.walk(fn) if isinstance(node, ast.Dict)]
-                or [0]),
+            "no_kw_sweeps": no_kw_sweeps, "n_leg_calls": n_leg_calls,
+            # every capture_role=/replay_role= in the cross-leg loop must be a
+            # CALL (role_of(...)), never a bare string constant.
+            "roles_derived": all(
+                isinstance(kw.value, ast.Call)
+                for node in ast.walk(fn)
+                if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id == "_leg_graph"
+                for kw in node.keywords
+                if kw.arg in ("capture_role", "replay_role")
+                and not (isinstance(kw.value, ast.Constant)
+                         and kw.value.value == "plain")),
+            # ★audit E2. The first version took max() over EVERY dict in
+            #   run(), so a decoy `_decoy = {CROSS_LEGS[0]: None, ...}` made it
+            #   pass while the real loop went back to zip -- measured, ALL
+            #   PASS. And it counted DUPLICATE keys, so {CROSS_LEGS[0]: a,
+            #   CROSS_LEGS[0]: b} scored 2 while only one cross leg ran.
+            #   Follow the loop instead: find `for ... in <name>.items()`, then
+            #   the Assign that builds <name>, and require its key INDEX SET to
+            #   be exactly range(len(CROSS_LEGS)).
+            "cross_spec_index_set": _cross_loop_index_set(fn),
             "sweep_args_are_names": sweep_args_are_names}
 
 
@@ -1448,9 +1559,35 @@ def selftest_adapter(sample=None, verbose=True):
        w["cross_literals_absent"])
     ck("A7d every leg call takes its sweep count from a NAME, not a number",
        w["sweep_args_are_names"])
-    ck("A7e the cross-leg name->stream mapping is keyed by CROSS_LEGS (H5)",
-       w["cross_spec_subscript_keys"] == len(CROSS_LEGS),
-       f"subscript keys={w['cross_spec_subscript_keys']} of {len(CROSS_LEGS)}")
+    ck("A7e the loop-driving dict is keyed by CROSS_LEGS, one per element (E2)",
+       w["cross_spec_index_set"] == list(range(len(CROSS_LEGS))),
+       f"index set={w['cross_spec_index_set']}")
+    ck("A7f every leg call passes its sweep count POSITIONALLY (no kw gap, E3)",
+       w["no_kw_sweeps"], "a leg call passes sweeps= as a keyword")
+    ck("A7g exactly the expected number of leg calls (arity, E3)",
+       w["n_leg_calls"] == 6,
+       f"{w['n_leg_calls']} leg calls, expected 6 "
+       "(5 decision legs + 1 inside the cross-leg loop)")
+    print("-- A9 the cross-leg ROLES are bound at runtime, not by name (E1)")
+    healthy_roles = _w_healthy_raw()
+    ck("A9a the contract names both descriptive legs",
+       set(CROSS_ROLES) == set(CROSS_LEGS))
+    ck("A9b a leg whose roles match its name checks out",
+       _cross_roles_ok("capture_green_replay_plain",
+                       {"capture_stream_role": "green_decode",
+                        "replay_stream_role": "plain"}) is True)
+    ck("A9c ★a SWAPPED stream pair is caught (this is what H5 missed)",
+       _cross_roles_ok("capture_green_replay_plain",
+                       {"capture_stream_role": "plain",
+                        "replay_stream_role": "green_decode"}) is False)
+    ck("A9d an older artefact without roles reports None, not False",
+       _cross_roles_ok("capture_green_replay_plain", {}) is None)
+    # ★A9e: roles are DERIVED from stream identity in run(), so swapping the
+    #   streams swaps the labels and A9c then rejects the leg. A hand-written
+    #   label would survive the swap and the artefact would lie silently.
+    ck("A9e run() derives the roles from the stream object (not by hand)",
+       w["roles_derived"], "run() writes role strings literally")
+    _ = healthy_roles
 
     print("-- A8 the label ceiling holds in TEXT, not by absence (G7)")
     men = _banned_adjective_mentions()
