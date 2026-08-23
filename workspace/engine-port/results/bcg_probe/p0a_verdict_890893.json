@@ -1,0 +1,321 @@
+{
+  "kind": "bcg_p0a_verdict",
+  "rule": "p0a_rule_totality.score (imported, not re-implemented)",
+  "prereg": "PREREG_P0A_2026-08-22.md",
+  "adapter": {
+    "contract": "PREREG_P0A sec10.2",
+    "set_sizes": {
+      "ep": 108,
+      "gp": 108,
+      "eg": 34,
+      "egp": 74,
+      "gg": 34
+    },
+    "min_hits": {
+      "ep": 155,
+      "gp": 155,
+      "eg": 475,
+      "gg": 476,
+      "egp": 210
+    },
+    "saturated": {
+      "ep": true,
+      "gp": true,
+      "eg": true,
+      "gg": true,
+      "egp": true
+    },
+    "capture_status": "ok",
+    "replay_status": "ok",
+    "tool_status_by_leg": {
+      "graph_plain": [
+        "ok",
+        "ok"
+      ],
+      "graph_green": [
+        "ok",
+        "ok"
+      ]
+    },
+    "attachment_positive": {
+      "observed": {
+        "green_prefill": false,
+        "green_decode": false
+      },
+      "blocked": [],
+      "why": ""
+    },
+    "attachment_negative": {
+      "observed": {
+        "plain_pre": true,
+        "plain_post": true
+      },
+      "detached": [
+        "plain_pre",
+        "plain_post"
+      ],
+      "why": ""
+    },
+    "attached": true,
+    "instrument_alive": true,
+    "escape_replicated": false,
+    "escape_replication": {
+      "per_sweep": [
+        [],
+        []
+      ],
+      "replicated_same": [],
+      "replicated_any (DESCRIPTIVE, NOT THE DECISION)": false
+    },
+    "escape_union_size": 0,
+    "d_sm_target": 34,
+    "granularity": 2
+  },
+  "verdict": "CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY",
+  "why": "CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY: |S(graph_green)|=34, |S(eager_green)|=34, escape |E|=0, attributed |E\u2229S(prefill half)|=0, shortfall |E_rev|=0, target d_sm=34\u00b12, capture=ok, replay=ok, attached=True",
+  "D_size": 108,
+  "escape": [],
+  "escape_attributed": [],
+  "shortfall": [],
+  "delta": [],
+  "graph_green_covers_D": false,
+  "exact_set_match": true,
+  "null_channel": {
+    "graph_plain_minus_eager_plain": [],
+    "eager_plain_minus_graph_plain": []
+  },
+  "green_pair_disjoint": true,
+  "green_pair_tiles_D": true,
+  "min_hits_by_leg": {
+    "ep": 155,
+    "gp": 155,
+    "eg": 475,
+    "gg": 476,
+    "egp": 210
+  },
+  "delta_split_by_leg": {
+    "eg": [],
+    "gg": [],
+    "egp": []
+  },
+  "delta_size_vs_split_size": {
+    "delta": 0,
+    "split": {
+      "eg": 0,
+      "gg": 0,
+      "egp": 0
+    }
+  },
+  "delta_label_ranks": {},
+  "descriptive_legs_incomplete": false,
+  "cross_legs": {
+    "capture_green_replay_plain": {
+      "union_sizes": [
+        34
+      ],
+      "capture_status": "ok",
+      "replay_status": "ok"
+    },
+    "capture_plain_replay_green": {
+      "union_sizes": [
+        108
+      ],
+      "capture_status": "ok",
+      "replay_status": "ok"
+    }
+  },
+  "graph_leg_failures": {
+    "graph_plain": [
+      {
+        "expected": 25,
+        "launched": 25,
+        "warmed": 25,
+        "captured": 25,
+        "replayed": 25,
+        "warmup_failed": 0,
+        "first_warmup_exc": null,
+        "first_capture_exc": null,
+        "first_replay_exc": null
+      }
+    ],
+    "graph_green": [
+      {
+        "expected": 25,
+        "launched": 25,
+        "warmed": 25,
+        "captured": 25,
+        "replayed": 25,
+        "warmup_failed": 0,
+        "first_warmup_exc": null,
+        "first_capture_exc": null,
+        "first_replay_exc": null
+      },
+      {
+        "expected": 25,
+        "launched": 25,
+        "warmed": 25,
+        "captured": 25,
+        "replayed": 25,
+        "warmup_failed": 0,
+        "first_warmup_exc": null,
+        "first_capture_exc": null,
+        "first_replay_exc": null
+      }
+    ]
+  },
+  "scope": "TOOL-VALIDITY / LABEL-IDENTITY ONLY. %smid is a globally consistent label, not an established physical SM index, and its set cardinalities are not compute-resource fractions. This probe says nothing about kernel efficiency, occupancy, wave quantization, the high-SM decode flattening mechanism, or any policy ranking. No model, no request, no server, no shared graph memory pool, one division (the decode half of divide_sm(...)[0]) -- do not generalise to d16/d44 or to the cudagraph-ON serving operating point. A PRESERVED verdict closes no gate.",
+  "raw_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/bcg_probe/p0a_raw_890893.json",
+  "raw_sha256": "e5392fba7f3a6c3a5b739dc096f389dc5db6aba599cea163f05e590827d0550e",
+  "run_tag": "890893",
+  "run_host": "gpu43",
+  "run_slurm_job_id": "890893",
+  "run_device_name": "NVIDIA A100-SXM4-80GB",
+  "run_utc": "2026-08-23T08:16:42Z",
+  "run_compute_capability": [
+    8,
+    0
+  ],
+  "run_nvidia_smi_compute_mode": "Default",
+  "run_provenance": {
+    "note": "provenance only; no field here is an input to any verdict. gate #33: the manifest below covers 15 files and neither pdmux_context.py nor sgl_kernel/spatial.py is one of them -- those two are hashed in sha256_unmanifested.",
+    "git_head": "366841ca62f5967d10929e9c112a625e5159346f",
+    "git_dirty": false,
+    "git_dirty_paths": [],
+    "repo_root": "/scratch/ehmoon/whlee/prefill-layer-alloc",
+    "runtime_source_manifest": {
+      "path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/runtime_source_manifest.sha256",
+      "sha256": "25d961fd1f09769c7f6ff8df06e5350cfae4eea340d81460727df5c0e34e12da",
+      "expected_entry_count": 15,
+      "entries": [
+        {
+          "sha256": "167424ad6fcf8b57cd17f19ef46bb0e6ce792bd2fa36bb2b024309d8a5f1f78e",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/distributed/parallel_state.py"
+        },
+        {
+          "sha256": "605b840d9da8a968fb28d7198affe8b2fd047215a7d3a819bcdfc0f38d108980",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/multiplex/dual_worker.py"
+        },
+        {
+          "sha256": "59eaafb4ac61cc09ad8d28f663c495cf6a0e850435c15b873547b8a6e5a7d20a",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+        },
+        {
+          "sha256": "27c665c303ee7bd5381b455130a8e1677bd3a26acf417a4670e18ff646af6660",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+        },
+        {
+          "sha256": "722db60fe1612d3ef117636787ac54716c110c301bb0020d461b580a25f540c3",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+        },
+        {
+          "sha256": "87a117eaa49d84622cd1d9a0cbdc846a895d8050819436aba552f80d581219b3",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/multiplex/telemetry.py"
+        },
+        {
+          "sha256": "e0488b2035af9091a32058afabb85d65fcdefd911f118f5a8802f846fbb91501",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/configs/mamba2.py"
+        },
+        {
+          "sha256": "43b2a9e4f02fa65df326fb87735a3d96fde5ac0b39ee49f1e85b03f74fbc3ca7",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/models/mamba2.py"
+        },
+        {
+          "sha256": "97e91d40908c956014691f64aa03acaf11aa9ebd0bc84cc129a96c37b5bbe437",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/configs/zamba2.py"
+        },
+        {
+          "sha256": "035a7d758ada757a76af4b76332dd1f8e769ea24195b2169fce8b7b7b7a1e264",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/models/zamba2.py"
+        },
+        {
+          "sha256": "f2e89a1051d4537d959b48768693a21e6b713a7ecbf29d7315329242b09be388",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/server_args.py"
+        },
+        {
+          "sha256": "b673f3fb378791065b97b74f03ca68ab4f5ad0a5e1aad70d7fe101d85a69d514",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py"
+        },
+        {
+          "sha256": "0e99909a421f004cf25d7f79ad693882301a0de75395c05566ff859ff103e1b2",
+          "path": "/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/mem_cache/memory_pool.py"
+        }
+      ],
+      "entry_count": 13,
+      "entry_count_matches_sync_script": false,
+      "mtime_utc": "2026-08-04T09:38:13Z"
+    },
+    "torch_version": "2.9.1+cu130",
+    "triton_version": "3.5.1",
+    "python_version": "3.14.2",
+    "platform": "Linux-5.14.0-427.13.1.el9_4.x86_64-x86_64-with-glibc2.34",
+    "self_sha256": "1cee21918f34e7f1f207aaef0fc13d03717ea38500e9b937c7de3c49ae96a325"
+  },
+  "run_sha256_unmanifested": {
+    "pdmux_context.py": "b4e6ff1aa10a19f9cdd285088424b9388574fd291edfd466e155cbaa8e876b9e",
+    "sgl_kernel/spatial.py": "687898eefeb3b267ce9c0476b2877b72ff7fa8308d9cbe369294fe9893686aa3",
+    "smid_l0_census.py": "1cee21918f34e7f1f207aaef0fc13d03717ea38500e9b937c7de3c49ae96a325"
+  },
+  "run_harness_sha256": "f4ba1d46e492f2ba9264fbd10679706190b81065691a62e50b66b4398ecd64c6",
+  "run_rule_module_sha256": "40709b24f1008e3fec84e132d879c393f43a81e1b58a31d5b2ff757629e3b43e",
+  "run_division_under_test": [
+    74,
+    34
+  ],
+  "run_granularity": 2,
+  "run_grid_sweep": [
+    108,
+    216,
+    432,
+    864,
+    1728
+  ],
+  "run_repeats_per_grid": 5,
+  "run_sweeps_per_green_leg": 2,
+  "run_sweeps_per_plain_leg": 1,
+  "run_spin_ns": 1000000,
+  "run_total_sm_reported": 108,
+  "run_divisions_from_divide_sm": [
+    [
+      74,
+      34
+    ],
+    [
+      54,
+      54
+    ]
+  ],
+  "run_green_ctx_attached": {
+    "green_prefill": true,
+    "green_decode": true,
+    "plain_pre": false,
+    "plain_post": false
+  },
+  "run_driver_readout": {
+    "note": "DESCRIPTIVE / TARGET LAYER ONLY -- never an input to a verdict",
+    "cuCtxGetCurrent_rc": 0,
+    "cuCtxGetDevResource_rc": 0,
+    "primary_sm": {
+      "smCount": 108,
+      "minSmPartitionSize": 4,
+      "smCoscheduledAlignment": 2
+    },
+    "streams": {
+      "green_prefill": {
+        "rc": 0,
+        "green_ctx_is_null": false
+      },
+      "green_decode": {
+        "rc": 0,
+        "green_ctx_is_null": false
+      },
+      "plain_pre": {
+        "rc": 0,
+        "green_ctx_is_null": true
+      },
+      "plain_post": {
+        "rc": 0,
+        "green_ctx_is_null": true
+      }
+    }
+  }
+}

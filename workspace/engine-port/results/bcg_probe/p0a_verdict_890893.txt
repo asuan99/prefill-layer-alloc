@@ -1,0 +1,6 @@
+★ THIS TEXT IS NOT CITABLE (gate #56). Cite p0a_verdict_890893.json, which holds every field in full.
+{
+  "verdict": "CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY",
+  "why": "CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY: |S(graph_green)|=34, |S(eager_green)|=34, escape |E|=0, attributed |E\u2229S(prefill half)|=0, shortfall |E_rev|=0, target d_sm=34\u00b12, capture=ok, replay=ok, attached=True"
+}
+[analyze] verdict -> /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/bcg_probe/p0a_verdict_890893.json
