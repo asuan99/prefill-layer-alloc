@@ -133,6 +133,7 @@ WORLD_LEG = {"ep": "eager_plain", "gp": "graph_plain", "eg": "eager_green",
 #   what the run recorded (audit G5) instead of trusting them.
 SWEEPS_GREEN = 2
 SWEEPS_PLAIN = 1
+SWEEPS_CROSS = 1          # sec8-26: the two descriptive cross legs, one sweep
 # Streams whose TRUE answer to "is a green context attached?" is known to be
 # "no": they are built without one. At least one must report detached, or the
 # read-out has not been shown to discriminate (producer `_greenctx_detached`).
@@ -474,11 +475,18 @@ def run(outdir, tag, spin_ns):
 
     # ---- descriptive cross legs: failure allowed (sec3-C, sec5.3)
     incomplete = False
-    for name, (cap_stream, rep_stream) in zip(
-            CROSS_LEGS, ((g_decode, plain), (plain, g_decode))):
+    # ★audit H5: the N3 repair had separated the leg NAME from its stream pair
+    #   (`zip(CROSS_LEGS, (...))`), so reordering the constant would silently
+    #   swap the two descriptive legs -- and those two legs are exactly the
+    #   probe's most interesting descriptive output ("is the confinement fixed
+    #   at capture time or does it come from the replay stream"). Bind them
+    #   back together, keyed by the constant, and let A7 check the keys.
+    cross_spec = {CROSS_LEGS[0]: (g_decode, plain),   # capture green, replay plain
+                  CROSS_LEGS[1]: (plain, g_decode)}   # capture plain, replay green
+    for name, (cap_stream, rep_stream) in cross_spec.items():
         try:
             cross[name] = _leg_graph(census_kernel, cap_stream, rep_stream,
-                                     spin_ns, dev, 1)
+                                     spin_ns, dev, SWEEPS_CROSS)
         except Exception as exc:  # noqa: BLE001
             cross[name] = {"failed": repr(exc)}
             incomplete = True
@@ -652,9 +660,25 @@ def _escape_replicated(raw):
     same = set.intersection(*per) if len(per) >= 2 else set()
     detail = {"per_sweep": [sorted(x) for x in per],
               "replicated_same": sorted(same),
-              "replicated_any": bool(per) and len(per) >= 2
-              and all(bool(x) for x in per)}
+              "replicated_any (DESCRIPTIVE, NOT THE DECISION)":
+                  bool(per) and len(per) >= 2 and all(bool(x) for x in per)}
     return (len(per) >= 2 and bool(same)), detail
+
+
+def _attach_failure_accounting(rec, legs, raw):
+    """Carry the tool-failure account onto the EARLY-RETURN paths (audit H2).
+
+    `score()` skips `_diagnostics` when the adapter returns no world, so when
+    one of the pre-World gates fired -- i.e. exactly when a TOOL failure was
+    the cause -- the tool-failure account vanished from the verdict. That is
+    G3(c)'s defect returning by a new and smaller route.
+    """
+    rec["graph_leg_failures"] = {
+        name: (legs.get(name) or {}).get("capture_summary")
+        for name in ("graph_plain", "graph_green")
+        if isinstance(legs.get(name), dict)}
+    rec["instrument_alive"] = _instrument(raw)
+    return rec
 
 
 def world_from_raw(raw):
@@ -701,6 +725,7 @@ def world_from_raw(raw):
                           "(sec8-22). S(leg) := union over sweeps, so a "
                           "different count silently changes coverage, the "
                           "replication test and the split-half ruler")
+            _attach_failure_accounting(rec, legs, raw)
             return None, rec
     for key, n_want in (("sweeps_per_green_leg", SWEEPS_GREEN),
                         ("sweeps_per_plain_leg", SWEEPS_PLAIN)):
@@ -708,6 +733,7 @@ def world_from_raw(raw):
             rec["why"] = (f"the run recorded {key}={raw.get(key)!r} but the "
                           f"registered value is {n_want}; the artefact was not "
                           "produced by the registered schedule")
+            _attach_failure_accounting(rec, legs, raw)
             return None, rec
     # ★G2: graph_plain is a REPLAY leg too. Its capture failing narrows S(gp),
     #   and the rule then reports NULL CHANNEL OPEN (a diagnostic conclusion
@@ -717,12 +743,15 @@ def world_from_raw(raw):
     gp_cap = _tool_status(legs.get("graph_plain"), "capture_status")
     gp_rep = _tool_status(legs.get("graph_plain"), "replay_status")
     if gp_cap != "ok" or gp_rep != "ok":
-        rec["why"] = (f"the plain-stream graph leg did not complete "
+        verb = ("is absent from the artefact" if "absent" in (gp_cap, gp_rep)
+                else "did not complete")
+        rec["why"] = (f"the plain-stream graph leg {verb} "
                       f"(capture={gp_cap}, replay={gp_rep}); its census cannot "
                       "be read as the null channel of the decision function. "
                       "This is a tool fact about the PLAIN stream and says "
                       "nothing about capture on a green-context stream")
         rec["tool_status_by_leg"] = {"graph_plain": [gp_cap, gp_rep]}
+        _attach_failure_accounting(rec, legs, raw)
         return None, rec
 
     sets = {k: _leg_set(legs.get(v)) for k, v in WORLD_LEG.items()}
@@ -737,6 +766,7 @@ def world_from_raw(raw):
                       "it -- this is not evidence about whether a graph can "
                       "be captured on a green-context stream")
         rec["tool_status_by_leg"] = {"graph_green": [cap, rep]}
+        _attach_failure_accounting(rec, legs, raw)
         return None, rec
     att, pos, neg = _attached(raw)
     repl, repl_detail = _escape_replicated(raw)
@@ -756,6 +786,13 @@ def world_from_raw(raw):
         "attachment_positive": pos, "attachment_negative": neg,
         "attached": att, "instrument_alive": w.instrument,
         "escape_replicated": repl, "escape_replication": repl_detail,
+        # ★audit H7: `per_sweep` already carries the values, but the union
+        #   SIZE is what separates "one stray label per sweep" from "a large
+        #   escape whose sweeps happen to be disjoint" at a glance. Reported,
+        #   never a threshold (sec5.1).
+        "escape_union_size": len(set().union(*[set(x) for x in
+                                               repl_detail["per_sweep"]])
+                                 if repl_detail["per_sweep"] else set()),
         "d_sm_target": div[1], "granularity": gran})
     return w, rec
 
@@ -902,7 +939,8 @@ def analyze(raw_path, outdir, tag):
               "compute_capability", "nvidia_smi_compute_mode", "provenance",
               "sha256_unmanifested", "harness_sha256", "rule_module_sha256",
               "division_under_test", "granularity", "grid_sweep",
-              "repeats_per_grid", "sweeps_per_green_leg", "spin_ns",
+              "repeats_per_grid", "sweeps_per_green_leg",
+              "sweeps_per_plain_leg", "spin_ns",
               "total_sm_reported", "divisions_from_divide_sm",
               "green_ctx_attached", "driver_readout"):
         if k in raw:
@@ -1067,10 +1105,35 @@ def _run_wiring():
     #   project keeps catching). Require instead that run() REFERENCES the
     #   constant by name, which fails the moment someone re-spells the
     #   literals (audit N3: it used to, and the constant was dead).
-    refs = {n.id for n in ast.walk(fn) if isinstance(n, ast.Name)}
+    # ★audit H4: "does run() mention the constant" is weak -- a bare
+    #   `_ = CROSS_LEGS` passes it while the literals come back (measured).
+    #   The falsifiable form is NEGATIVE: if the names come from the constant,
+    #   then NO string constant in run() may equal one of its elements.
+    strs = {n.value for n in ast.walk(fn)
+            if isinstance(n, ast.Constant) and isinstance(n.value, str)}
+    # Same idea for the sweep counts, targeted so ordinary 1/2 literals
+    # elsewhere do not trip it: every leg call must pass a NAME, not a number.
+    sweep_args_are_names = True
+    for node in ast.walk(fn):
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id in ("_leg_eager", "_leg_graph")
+                and node.args
+                and not isinstance(node.args[-1], ast.Name)):
+            sweep_args_are_names = False
     return {"legs": legs, "streams": streams,
-            "uses_cross_const": "CROSS_LEGS" in refs,
-            "uses_sweep_consts": {"SWEEPS_GREEN", "SWEEPS_PLAIN"} <= refs}
+            "cross_literals_absent": not (strs & set(CROSS_LEGS)),
+            # ★keyed by CROSS_LEGS[i] -- a SUBSCRIPT, because spelling the
+            #   names as literals would contradict A7c's negative form. So the
+            #   check is structural: a dict whose keys are all subscripts of
+            #   CROSS_LEGS, one per element.
+            "cross_spec_subscript_keys": max(
+                [sum(1 for k in node.keys
+                     if isinstance(k, ast.Subscript)
+                     and isinstance(k.value, ast.Name)
+                     and k.value.id == "CROSS_LEGS")
+                 for node in ast.walk(fn) if isinstance(node, ast.Dict)]
+                or [0]),
+            "sweep_args_are_names": sweep_args_are_names}
 
 
 def _banned_adjective_mentions():
@@ -1381,10 +1444,13 @@ def selftest_adapter(sample=None, verbose=True):
     ck("A7b run()'s driver stream keys == the adapter's green + control sets",
        w["streams"] == set(GREEN_STREAMS) | set(PLAIN_CONTROL_STREAMS),
        f"run={sorted(w['streams'])}")
-    ck("A7c run() takes the cross-leg names FROM CROSS_LEGS (not literals)",
-       w["uses_cross_const"])
-    ck("A7d run() takes the sweep counts FROM the registered constants",
-       w["uses_sweep_consts"])
+    ck("A7c run() spells NO cross-leg name as a literal (negative form)",
+       w["cross_literals_absent"])
+    ck("A7d every leg call takes its sweep count from a NAME, not a number",
+       w["sweep_args_are_names"])
+    ck("A7e the cross-leg name->stream mapping is keyed by CROSS_LEGS (H5)",
+       w["cross_spec_subscript_keys"] == len(CROSS_LEGS),
+       f"subscript keys={w['cross_spec_subscript_keys']} of {len(CROSS_LEGS)}")
 
     print("-- A8 the label ceiling holds in TEXT, not by absence (G7)")
     men = _banned_adjective_mentions()
