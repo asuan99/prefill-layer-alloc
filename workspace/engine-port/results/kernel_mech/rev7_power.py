@@ -68,7 +68,11 @@ N_WIN = 20                # ★B6 prereg: R=5 rounds x 4 boots = 20 windows/cell
 ALPHA = 0.05
 
 VERDICTS = ("KERNEL_DOMINATED", "GAP_DOMINATED", "MULTI_CAUSE",
-            "COUNTERFACTUAL_SENSITIVE", "HOST_DOMINATED", "UNDETERMINED")
+            "COUNTERFACTUAL_SENSITIVE", "HOST_DOMINATED", "UNDETERMINED",
+            # ★rev8 (audit C5): rev7 downgraded the sec3.3 gate to a
+            #   sanity check and DELETED its failure outcome, which rev6
+            #   had registered. A gate with no failure label cannot fail.
+            "PHENOMENON_ABSENT_IN_CELL_A")
 
 
 # ===========================================================================
@@ -144,13 +148,26 @@ def _gather(arr, b, w):
 
 
 def _cell_sums(cell, b, w):
-    """Resampled cell aggregates: (B,) sums of K, Gi, Ge, T."""
-    return {k: _gather(cell[k], b, w).sum(axis=(1, 2)) for k in
-            ("K", "Gi", "Ge", "T")}
+    """Resampled cell aggregates: (B,) sums of K, Gi, Ge, T, plus the COUNT.
+
+    ★rev8 (audit C8). The count used to be assumed equal to the global
+    `N_BOOT * N_WIN`, but a JACKKNIFE replicate has one boot deleted, so its
+    sums run over 3x20 = 60 values while the divisor stayed 80. Every mean fed
+    to `stat_eps`/`stat_s` was therefore scaled by 0.75 in the jackknife and
+    1.00 in the resamples -- which corrupts the BCa acceleration term
+    specifically (the audit measured an artefactual jackknife spread in the
+    epsilon statistic). Carry the count with the sums.
+    """
+    g = {k: _gather(cell[k], b, w) for k in ("K", "Gi", "Ge", "T")}
+    out = {k: v.sum(axis=(1, 2)) for k, v in g.items()}
+    out["n"] = float(g["K"].shape[1] * g["K"].shape[2])
+    return out
 
 
 def _cell_sums_obs(cell):
-    return {k: cell[k].sum() for k in ("K", "Gi", "Ge", "T")}
+    out = {k: cell[k].sum() for k in ("K", "Gi", "Ge", "T")}
+    out["n"] = float(cell["K"].size)
+    return out
 
 
 def _jack_cells(cells):
@@ -251,6 +268,9 @@ def ci_for(cells, stat, rng, B=B_BOOT, paired=False):
     jack = np.array([stat({k: {kk: np.array([vv]) for kk, vv in
                                _cell_sums_obs(s[k]).items()} for k in names})[0]
                      for s in _jack_cells(cells)])
+    # ★rev8 C8 regression guard: a jackknife replicate must NOT be normalised
+    #   by the full-sample count. If it were, deleting a boot would shift every
+    #   mean by n/(n-1) and the acceleration term would be an artefact.
     lo, hi, flag = bca(theta_hat, theta_star, jack)
     return {"point": float(theta_hat), "lo": lo, "hi": hi,
             "z0_undefined": flag, "star": theta_star,
@@ -280,8 +300,8 @@ def stat_frac_inter(cell_name):
 def stat_eps(c1, c2, d1, d2):
     """epsilon_T(d1->d2) = -ln(T(d2)/T(d1)) / ln(d2/d1), on per-window means."""
     def f(s):
-        t1 = s[c1]["T"] / (N_BOOT * N_WIN)
-        t2 = s[c2]["T"] / (N_BOOT * N_WIN)
+        t1 = s[c1]["T"] / s[c1]["n"]
+        t2 = s[c2]["T"] / s[c2]["n"]
         return -np.log(t2 / t1) / math.log(d2 / d1)
     return f
 
@@ -291,10 +311,10 @@ def stat_s(kind, d_lo=44, d_hi=92):
     r = d_lo / d_hi
 
     def f(s):
-        K_lo = s["lo"]["K"] / (N_BOOT * N_WIN)
-        K_hi = s["hi"]["K"] / (N_BOOT * N_WIN)
-        G_lo = s["lo"]["Gi"] / (N_BOOT * N_WIN)
-        G_hi = s["hi"]["Gi"] / (N_BOOT * N_WIN)
+        K_lo = s["lo"]["K"] / s["lo"]["n"]
+        K_hi = s["hi"]["K"] / s["hi"]["n"]
+        G_lo = s["lo"]["Gi"] / s["lo"]["n"]
+        G_hi = s["hi"]["Gi"] / s["hi"]["n"]
         S_K = K_hi - K_lo * r
         S_G = G_hi - (G_lo if kind == "A" else G_lo * r)
         den = S_K + S_G
@@ -308,19 +328,45 @@ def stat_s(kind, d_lo=44, d_hi=92):
 # ===========================================================================
 # 4. The registered decision rule, in the registered ORDER
 # ===========================================================================
-def decide(cells, rng, B=B_BOOT, paired=False):
-    """Full rule: gates -> HOST_DOMINATED -> S<=0 -> counterfactual pair.
+def stat_host_margin(cell_name):
+    """frac_inter - gap_frac_intra, the quantity HOST_DOMINATED tests.
 
-    ★The order is part of the registration (gate #21): a measurement
-    condition must be assigned BEFORE any substantive label can be reached.
+    ★rev8 (audit C2). rev7 compared two POINT estimates and ranked the result
+    first, so at a true tie it fired on a coin flip -- the audit measured 0.600
+    -- and pre-empted every substantive label. A comparison that decides a
+    label needs an interval like every other comparison in the registration.
     """
+    def f(s):
+        return (s[cell_name]["Ge"] - s[cell_name]["Gi"]) / s[cell_name]["T"]
+    return f
+
+
+def decide(cells, rng, B=B_BOOT, paired=False):
+    """The registered rule, in the registered ORDER -- all FOUR stages.
+
+    ★rev8 (audit C9): rev7 registered `preceding gate -> HOST_DOMINATED ->
+    S<=0 -> counterfactual pair` and implemented only the last three. The
+    preceding gate was in the document and not in the code, so its operating
+    characteristics were being reported for a rule nothing ran.
+    """
+    # --- stage 1: the sec3.3 lever-existence gate (preceding condition)
+    if "c16" in cells:
+        a = ci_for({k: cells[k] for k in ("c16", "lo")},
+                   stat_eps("c16", "lo", 16, 44), rng, B)
+        b = ci_for({k: cells[k] for k in ("lo", "hi")},
+                   stat_eps("lo", "hi", 44, 92), rng, B)
+        if not (np.isfinite(a["lo"]) and np.isfinite(b["hi"])
+                and a["lo"] > b["hi"]):
+            return "PHENOMENON_ABSENT_IN_CELL_A", {
+                "eps_16_44": [a["lo"], a["hi"]], "eps_44_92": [b["lo"], b["hi"]]}
+    # --- stage 2: HOST_DOMINATED, now on an interval (C2)
+    hm = ci_for({"hi": cells["hi"]}, stat_host_margin("hi"), rng, B)
+    if np.isfinite(hm["lo"]) and hm["lo"] > 0:
+        return "HOST_DOMINATED", {"host_margin": [hm["lo"], hm["hi"]],
+                                  "point": hm["point"]}
+    # --- stage 3: S<=0 abstention, then stage 4: the counterfactual pair
     two = {"lo": cells["lo"], "hi": cells["hi"]}
-    gap_hi = ci_for({"hi": cells["hi"]}, stat_gap_frac("hi"), rng, B)
-    inter_hi = ci_for({"hi": cells["hi"]}, stat_frac_inter("hi"), rng, B)
-    if inter_hi["point"] > gap_hi["point"]:
-        return "HOST_DOMINATED", {"gap": gap_hi["point"],
-                                  "inter": inter_hi["point"]}
-    res = {}
+    res = {"host_margin": [hm["lo"], hm["hi"]]}
     for kind in ("A", "B"):
         c = ci_for(two, stat_s(kind), rng, B, paired=paired)
         bad = c["nonfinite_rate"]
@@ -360,7 +406,13 @@ ETA = 0.10          # inter-step host share of T_step (swept)
 CVS = (0.01, 0.025, 0.05)
 
 
-def _cells_for(rng, truth, cv, eta=ETA, rho=0.0, derive_g=True):
+def _cells_for(rng, truth, cv, eta=ETA, rho=0.0, derive_g=True, eps1=None):
+    """Cells lo(=D 44) and hi(=D 92), plus optionally c16 for the gate.
+
+    ★rev8 (audit C9): `eps1` imposes the 16->44 elasticity so the sec3.3 gate
+    has a third cell to run on. `None` leaves it out, which is how the gate's
+    own operating characteristics are measured separately in `exp_gate`.
+    """
     (k44, g44), (k92, g92) = truth
     out = {}
     for nm, (k, g) in (("lo", (k44, g44)), ("hi", (k92, g92))):
@@ -368,6 +420,13 @@ def _cells_for(rng, truth, cv, eta=ETA, rho=0.0, derive_g=True):
         ge = eta * span / (1 - eta)
         out[nm] = simulate_cell(rng, k, g, ge, cv_boot=cv, cv_win=cv * 2,
                                 rho=rho, derive_g=derive_g)
+    if eps1 is not None:
+        t44 = k44 + g44
+        t16 = t44 * math.exp(eps1 * math.log(44 / 16))
+        sc = t16 / t44
+        out["c16"] = simulate_cell(rng, k44 * sc, g44 * sc,
+                                   eta * t16 / (1 - eta), cv_boot=cv,
+                                   cv_win=cv * 2, rho=rho, derive_g=derive_g)
     return out
 
 
@@ -431,15 +490,21 @@ def exp_gate(rng, n_rep, B, grid):
     return out
 
 
-def exp_secondary(rng, n_rep, B, paired=False, derive_g=True):
-    """★B4(b)-(e): the secondary verdict under the FULL registered rule."""
+EPS1_SCEN = 0.55   # imposed 16->44 elasticity for the preceding gate (swept
+                   # input, NOT a canon citation; the gate's own operating
+                   # characteristics are measured separately in `exp_gate`)
+
+
+def exp_secondary(rng, n_rep, B, paired=False, derive_g=True, with_gate=True):
+    """★B4(b)-(e) + rev8 C9: the FULL registered rule, all four stages."""
     out = {}
     for tname, truth in TRUTHS.items():
         for cv in CVS:
             counts = {v: 0 for v in VERDICTS}
             z0flag = 0
             for _ in range(n_rep):
-                cells = _cells_for(rng, truth, cv, derive_g=derive_g)
+                cells = _cells_for(rng, truth, cv, derive_g=derive_g,
+                                   eps1=EPS1_SCEN if with_gate else None)
                 v, det = decide(cells, rng, B, paired=paired)
                 counts[v] = counts.get(v, 0) + 1
                 if isinstance(det, dict) and det.get("A", {}).get(
@@ -541,6 +606,28 @@ def selftest():
     ck("S4b HOST_DOMINATED is reachable", "HOST_DOMINATED" in seen,
        str(sorted(seen)))
 
+    print("-- S6 C8: jackknife replicates carry their OWN count (audit C8)")
+    c = _cells_for(np.random.default_rng(5), TRUTHS["mixed"], 0.0)
+    full = _cell_sums_obs(c["hi"])["n"]
+    jk = [_cell_sums_obs(j["hi"])["n"] for j in _jack_cells({"hi": c["hi"]})]
+    ck("S6a a delete-one replicate reports a SMALLER count than the sample",
+       all(x < full for x in jk), f"full={full} jack={sorted(set(jk))}")
+    ck("S6b the count is never the hardwired global",
+       all(x != N_BOOT * N_WIN for x in jk), str(sorted(set(jk))))
+    # the epsilon statistic on a noiseless cell must be IDENTICAL under
+    # delete-one -- it is a ratio of means, so a wrong divisor shows up here.
+    cc = _cells_for(np.random.default_rng(5), TRUTHS["mixed"], 0.0)
+    e_full = stat_eps("a", "b", 16, 44)({
+        "a": {k: np.array([v]) for k, v in _cell_sums_obs(cc["lo"]).items()},
+        "b": {k: np.array([v]) for k, v in _cell_sums_obs(cc["hi"]).items()}})[0]
+    j = _jack_cells({"a": cc["lo"], "b": cc["hi"]})[0]
+    e_jack = stat_eps("a", "b", 16, 44)({
+        "a": {k: np.array([v]) for k, v in _cell_sums_obs(j["a"]).items()},
+        "b": {k: np.array([v]) for k, v in _cell_sums_obs(j["b"]).items()}})[0]
+    ck("S6c on a NOISELESS cell, delete-one leaves epsilon unchanged "
+       "(a wrong divisor would move it)", abs(e_full - e_jack) < 1e-9,
+       f"{e_full:.6f} vs {e_jack:.6f}")
+
     print("-- S5 mutation: each registered knob is load-bearing")
     # ★The first version of S5a printed base -> mutant and asserted True. That
     #   is a check that cannot fail (lesson #53), and it needed a witness in
@@ -619,7 +706,7 @@ def main():
                          "eps_grid": grid,
                          "note_not_canon": "every truth here is an imposed "
                          "simulation input; none is a canon citation"},
-        "n_rep": a.reps,
+        "n_rep": a.reps, "eps1_for_gate": EPS1_SCEN,
         "primary": exp_primary(rng, a.reps, a.B),
         "gate": exp_gate(rng, max(50, a.reps // 4), a.B, grid),
         "secondary_registered_rule": exp_secondary(rng, a.reps, a.B),

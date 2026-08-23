@@ -39,6 +39,29 @@ POWER = 0.80
 REL_DELTA = 0.03        # methodology gate #3: below 3% is not a headline
 
 
+def _power_at(crit, df, ncp):
+    """Two-sided non-central t power, or None if scipy could not evaluate it.
+
+    ★audit G6. `nct.cdf` returns NaN for small df with a large ncp, and the
+    old code compared that NaN with `>=` -- which is False -- so an
+    UNEVALUABLE configuration was silently recorded as "not enough power".
+    The bisection in `detectable_sd` then ran over a predicate that was not
+    monotone, and the published table was wrong by up to 2.05x (the audit
+    measured 70pp/n=4 as 0.377 where the correct value is 0.773).
+    NaN now stops the calculation instead of being absorbed into an answer.
+    """
+    import numpy as _np
+    a = nct.cdf(crit, df, ncp)
+    b = nct.cdf(-crit, df, ncp)
+    if not (_np.isfinite(a) and _np.isfinite(b)):
+        # survival-function form is stable where the cdf underflows
+        a2 = nct.sf(crit, df, ncp)
+        if not _np.isfinite(a2):
+            return None
+        return float(a2 + (b if _np.isfinite(b) else 0.0))
+    return float(1 - a + b)
+
+
 def n_required(sd_pp, goodput_pp, rel_delta=REL_DELTA, alpha=ALPHA,
                power=POWER, n_max=200):
     """Smallest per-cell n for an unpaired two-sample t test to reach `power`.
@@ -51,7 +74,11 @@ def n_required(sd_pp, goodput_pp, rel_delta=REL_DELTA, alpha=ALPHA,
         df = 2 * n - 2
         ncp = delta / (sd_pp * math.sqrt(2.0 / n))
         crit = tdist.ppf(1 - alpha / 2, df)
-        got = 1 - nct.cdf(crit, df, ncp) + nct.cdf(-crit, df, ncp)
+        got = _power_at(crit, df, ncp)
+        if got is None:                 # ★G6: NaN is NOT "insufficient power"
+            raise FloatingPointError(
+                f"non-central t returned NaN at df={df}, ncp={ncp:.4f}; the "
+                "power of this configuration is unknown, not low")
         if got >= power:
             return n, got
     return None, None
@@ -91,7 +118,10 @@ def n_required_paired(sd_diff_pp, goodput_pp, n_contrasts=2,
         df = n - 1
         ncp = delta / (sd_diff_pp / math.sqrt(n))
         crit = tdist.ppf(1 - a / 2, df)
-        got = 1 - nct.cdf(crit, df, ncp) + nct.cdf(-crit, df, ncp)
+        got = _power_at(crit, df, ncp)
+        if got is None:
+            raise FloatingPointError(
+                f"non-central t returned NaN at df={df}, ncp={ncp:.4f}")
         if got >= power:
             return n, got
     return None, None
@@ -144,8 +174,12 @@ def main():
     cells = 9
     res = {"kind": "nsl1_detectability_precondition",
            "assumptions": {
-               "comparison": "unpaired across boots (pairing unavailable: "
-                             "different servers/jobs)",
+               "comparison": "★RETRACTED by rev2 (audit F5): the rev1 claim "
+                             "that pairing is 'unavailable by construction' is "
+                             "FALSE -- s8_frontier/batchcap.sbatch:96-99 runs "
+                             "several cells inside one job and says so. The "
+                             "rev1 block below is kept only to show what was "
+                             "retracted; the live計算 is `rev2_paired`.",
                "test": "two-sample t, exact non-central t power",
                "alpha": ALPHA, "power": POWER,
                "rel_delta": REL_DELTA,

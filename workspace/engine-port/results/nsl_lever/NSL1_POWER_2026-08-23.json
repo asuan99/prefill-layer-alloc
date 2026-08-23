@@ -1,7 +1,7 @@
 {
   "kind": "nsl1_detectability_precondition",
   "assumptions": {
-    "comparison": "unpaired across boots (pairing unavailable: different servers/jobs)",
+    "comparison": "\u2605RETRACTED by rev2 (audit F5): the rev1 claim that pairing is 'unavailable by construction' is FALSE -- s8_frontier/batchcap.sbatch:96-99 runs several cells inside one job and says so. The rev1 block below is kept only to show what was retracted; the live\u8a08\u7b97 is `rev2_paired`.",
     "test": "two-sample t, exact non-central t power",
     "alpha": 0.05,
     "power": 0.8,
@@ -136,7 +136,7 @@
     },
     "goodput=70pp": {
       "detectable_sd_diff_pp_at_n": {
-        "n=4": 0.377,
+        "n=4": 0.773,
         "n=6": 1.231,
         "n=8": 1.568,
         "n=12": 2.083,
