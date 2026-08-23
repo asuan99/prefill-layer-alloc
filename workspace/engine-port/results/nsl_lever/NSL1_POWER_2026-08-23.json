@@ -88,5 +88,92 @@
         "boot_only_GPU_hr_9cells": null
       }
     }
+  },
+  "rev2_paired": {
+    "note": "paired-difference SD is bracketed, not assumed: the upper end is sqrt(2) x the canon between-boot SD (zero correlation), the lower end is a strongly shared boot effect. Stage 0 P6 measures it.",
+    "n_contrasts": 2,
+    "alpha_per_contrast": 0.025,
+    "goodput=50pp": {
+      "detectable_sd_diff_pp_at_n": {
+        "n=4": 0.552,
+        "n=6": 0.88,
+        "n=8": 1.12,
+        "n=12": 1.488,
+        "n=20": 2.03
+      },
+      "n_required_by_sd_diff": {
+        "sd_diff=0.5pp": {
+          "n_jobs": 4,
+          "achieved_power": 0.867,
+          "boot_only_GPU_hr_4cells": 0.65
+        },
+        "sd_diff=1.0pp": {
+          "n_jobs": 7,
+          "achieved_power": 0.806,
+          "boot_only_GPU_hr_4cells": 1.13
+        },
+        "sd_diff=2.0pp": {
+          "n_jobs": 20,
+          "achieved_power": 0.812,
+          "boot_only_GPU_hr_4cells": 3.24
+        },
+        "sd_diff=3.4pp": {
+          "n_jobs": 52,
+          "achieved_power": 0.805,
+          "boot_only_GPU_hr_4cells": 8.42
+        },
+        "sd_diff=4.8pp": {
+          "n_jobs": 100,
+          "achieved_power": 0.801,
+          "boot_only_GPU_hr_4cells": 16.2
+        },
+        "sd_diff=6.8pp": {
+          "n_jobs": 198,
+          "achieved_power": 0.8,
+          "boot_only_GPU_hr_4cells": 32.08
+        }
+      }
+    },
+    "goodput=70pp": {
+      "detectable_sd_diff_pp_at_n": {
+        "n=4": 0.377,
+        "n=6": 1.231,
+        "n=8": 1.568,
+        "n=12": 2.083,
+        "n=20": 2.841
+      },
+      "n_required_by_sd_diff": {
+        "sd_diff=0.5pp": {
+          "n_jobs": 4,
+          "achieved_power": 0.986,
+          "boot_only_GPU_hr_4cells": 0.65
+        },
+        "sd_diff=1.0pp": {
+          "n_jobs": 5,
+          "achieved_power": 0.819,
+          "boot_only_GPU_hr_4cells": 0.81
+        },
+        "sd_diff=2.0pp": {
+          "n_jobs": 12,
+          "achieved_power": 0.833,
+          "boot_only_GPU_hr_4cells": 1.94
+        },
+        "sd_diff=3.4pp": {
+          "n_jobs": 28,
+          "achieved_power": 0.809,
+          "boot_only_GPU_hr_4cells": 4.54
+        },
+        "sd_diff=4.8pp": {
+          "n_jobs": 53,
+          "achieved_power": 0.807,
+          "boot_only_GPU_hr_4cells": 8.59
+        },
+        "sd_diff=6.8pp": {
+          "n_jobs": 103,
+          "achieved_power": 0.803,
+          "boot_only_GPU_hr_4cells": 16.69
+        }
+      }
+    }
   }
 }

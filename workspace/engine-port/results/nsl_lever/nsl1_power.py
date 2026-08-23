@@ -70,6 +70,73 @@ def detectable_sd(n, goodput_pp, **kw):
     return lo
 
 
+# ===========================================================================
+# rev2 -- PAIRED contrasts with multiplicity control (audit F5/F6/F7)
+# ===========================================================================
+# ★rev1 asserted that pairing was "structurally impossible". That is FALSE:
+#   s8_frontier/batchcap.sbatch:96-99 runs several (cell, cap) combinations
+#   inside ONE job and says so itself. The whole power gate stood on that
+#   wrong assumption.
+# ★rev1 also treated the decision as a single contrast while the registered
+#   decision quantity was a 9-cell argmax. Under the corrected design there
+#   are TWO contrasts against the incumbent cap, so alpha is split.
+
+def n_required_paired(sd_diff_pp, goodput_pp, n_contrasts=2,
+                      rel_delta=REL_DELTA, alpha=ALPHA, power=POWER,
+                      n_max=400):
+    """Per-arm n for a PAIRED t-test at Bonferroni-corrected alpha."""
+    delta = rel_delta * goodput_pp
+    a = alpha / max(1, n_contrasts)
+    for n in range(2, n_max + 1):
+        df = n - 1
+        ncp = delta / (sd_diff_pp / math.sqrt(n))
+        crit = tdist.ppf(1 - a / 2, df)
+        got = 1 - nct.cdf(crit, df, ncp) + nct.cdf(-crit, df, ncp)
+        if got >= power:
+            return n, got
+    return None, None
+
+
+def detectable_sd_paired(n, goodput_pp, **kw):
+    lo, hi = 1e-4, 100.0
+    for _ in range(80):
+        mid = (lo + hi) / 2
+        need, _ = n_required_paired(mid, goodput_pp, n_max=n, **kw)
+        lo, hi = (mid, hi) if (need is not None and need <= n) else (lo, mid)
+    return lo
+
+
+def rev2_table():
+    """What the corrected design needs, over the plausible paired-SD range.
+
+    The BETWEEN-boot SD for this arm/SLO pair is on record in canon
+    (reports/interactive_slo_retune_plan.md:153-158, n=4, chat 300/50). The
+    PAIRED-difference SD is NOT on record and is bounded above by sqrt(2) x
+    that value (zero correlation) and below by ~0 (perfectly shared boot
+    effect). That bracket is the honest state of knowledge, so the table
+    spans it and Stage 0 measures where inside it we actually are.
+    """
+    out = {"note": ("paired-difference SD is bracketed, not assumed: the "
+                    "upper end is sqrt(2) x the canon between-boot SD (zero "
+                    "correlation), the lower end is a strongly shared boot "
+                    "effect. Stage 0 P6 measures it."),
+           "n_contrasts": 2, "alpha_per_contrast": ALPHA / 2}
+    for goodput_pp in (50.0, 70.0):
+        key = f"goodput={goodput_pp:.0f}pp"
+        out[key] = {"detectable_sd_diff_pp_at_n":
+                    {f"n={n}": round(detectable_sd_paired(n, goodput_pp), 3)
+                     for n in (4, 6, 8, 12, 20)},
+                    "n_required_by_sd_diff": {}}
+        for sd in (0.5, 1.0, 2.0, 3.4, 4.8, 6.8):
+            n, got = n_required_paired(sd, goodput_pp)
+            # 4 cells per job (3 caps + 1 anchor); boots are jobs
+            cost = None if n is None else round(n * 4 * BOOT_S / 3600.0, 2)
+            out[key]["n_required_by_sd_diff"][f"sd_diff={sd}pp"] = {
+                "n_jobs": n, "achieved_power": None if got is None
+                else round(got, 3), "boot_only_GPU_hr_4cells": cost}
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="NSL1_POWER_2026-08-23.json")
@@ -86,7 +153,8 @@ def main():
                "note": "NO variance is imported. The design registers the "
                        "measured SD as a Stage-0 gate instead."},
            "detectable_sd_pp_at_n": {},
-           "n_required_by_sd": {}}
+           "n_required_by_sd": {},
+        "rev2_paired": None}
 
     for goodput_pp in (50.0, 70.0):
         key = f"goodput={goodput_pp:.0f}pp"
@@ -104,6 +172,7 @@ def main():
                                  "boot_only_GPU_hr_9cells": cost}
         res["n_required_by_sd"][key] = row
 
+    res["rev2_paired"] = rev2_table()
     with open(a.out, "w") as f:
         json.dump(res, f, indent=2)
     print(json.dumps(res, indent=2))
