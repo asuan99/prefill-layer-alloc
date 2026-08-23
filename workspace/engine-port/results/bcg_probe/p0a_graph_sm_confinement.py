@@ -1,235 +1,309 @@
 """
-P0-A PROBE -- does CUDA-graph replay preserve Green-Context SM confinement?
+P0-A PROBE -- does CUDA-graph replay preserve green-context SM confinement?
+
+★ THE PRE-REGISTRATION IS CANON, THIS DOCSTRING IS A SUMMARY (sec10-17).
+  workspace/engine-port/results/bcg_probe/PREREG_P0A_2026-08-22.md (rev7).
+  Where the two differ, the prereg wins and this file is the defect.
 
 ★ NOT production code. ★ NO SERVER. ★ NO MODEL. ★ NO REQUEST.
-This launches spin kernels on CUDA streams and reads a hardware register.
-It produces NO latency, NO throughput, NO goodput -- there is nothing in its
+It launches spin kernels on CUDA streams and reads a hardware register. It
+produces NO latency, NO throughput, NO goodput -- there is nothing in its
 output that can be quoted as a performance number, by construction. It is a
-TOOL-VALIDITY probe, not a performance verdict (2026-08-20 job 886718 precedent).
+TOOL-VALIDITY probe, not a performance verdict (2026-08-20 job 886718
+precedent).
+
+★ LABEL CEILING (sec6, inherited from R0 sec3.4, job 889631): `%smid` is a
+  GLOBALLY CONSISTENT LABEL that survives a green context. It is NOT
+  established to be a physical SM index, and this file never calls it one.
+  Cardinalities of label sets are NOT convertible into compute-resource
+  fractions.
 
 ------------------------------------------------------------------------------
 THE QUESTION (구멍 C / assumption E5, registered 2026-08-11, never measured)
 ------------------------------------------------------------------------------
 workspace/engine-port/reports/SMID_DIRECT_INSTRUMENTATION_DESIGN_2026-08-11.md
 :77-96 records, as a code fact, that under `--enable-pdmux`
-cuda_graph_runner.py:806-817 captures one decode graph per stream group ON THAT
-GROUP'S GREEN-CONTEXT STREAM, and then asks:
+cuda_graph_runner.py:811-816 captures one decode graph per stream group ON THAT
+GROUP'S GREEN-CONTEXT STREAM, and multiplexing_mixin.py:993/1007/1088/1192
+replays it inside `with torch.cuda.stream(decode_stream)`, then asks whether
+the green context's SM limit carries through the replay -- and explicitly
+refuses to guess the direction (":93").
 
-    "green-ctx 스트림 위에서 캡처된 CUDA graph를 재생할 때 그 green context의
-     SM 제한이 그대로 전달되는가?  ... 어떤 아티팩트도 이걸 측정한 적이 없다."
-
-and explicitly refuses to guess the direction (":93  여기서 방향을 단정하지 않는다").
-The operating point is cudagraph-ON and every decode-side SM split goes through
-that path, so this is upstream of the whole decode-side SM-split story -- and
-upstream of every Breakable-CUDA-Graph scenario in
-workspace/engine-port/reports/BCG_APPLICABILITY_2026-08-21.md.
-
-------------------------------------------------------------------------------
-DESIGN -- four legs, two levels of control
-------------------------------------------------------------------------------
-The census machinery is IMPORTED, never re-implemented, from
-results/smid_census/smid_l0_census.py (829 lines, pre-registered in
-PREREG_SMID_R0_2026-08-14.md). That file is NOT modified by this probe -- this
-is a derivative script, following the 2026-08-20 p1_greenctx_target.py
-precedent. Methodology gate #9: put the contrast on the producer, not on a
-re-implementation of it.
-
-  leg              stream                       execution      role
-  ---------------- ---------------------------- -------------- --------------------
-  eager_plain      plain (no green ctx)         eager launch   positive control
-  graph_plain      plain (no green ctx)         graph replay   2nd-level control:
-                                                               the graph path itself
-                                                               does not break census
-  eager_green      green pair idx1, DECODE half eager launch   baseline (= base R0)
-  graph_green      green pair idx1, DECODE half  graph replay  ★ CONDITION UNDER TEST
-
-The DECODE half of the green pair is used because that is exactly the stream
-the engine captures decode graphs on (`graph_capture(stream=sg[1])`).
-
-Decision quantity: U(leg) = |{ observed %smid values }| unioned over the grid
-sweep and repeats, i.e. how many distinct physical SMs the leg's blocks landed
-on. Grid/repeat schedule and spin length are inherited verbatim from the
-pre-registered constants in smid_l0_census.py -- this probe introduces no new
-sweep knobs.
+★ WHAT A `PRESERVED` VERDICT DOES NOT DO (sec0.3): it does not close 구멍 C,
+  it does not answer R4, it licenses no performance claim, and it does not
+  transfer to the cudagraph-ON serving operating point. This is an L0 toy
+  graph in a process with no engine in it.
 
 ------------------------------------------------------------------------------
-PRE-FIXED DECISION RULE (fixed here, before any GPU run)
+ARCHITECTURE -- three layers, each owned by exactly one file
 ------------------------------------------------------------------------------
-Let TOTAL = spatial.get_sm_available(dev), D = decode-half SM count of the
-green division actually built, TOL = 4 (A100 green-context granularity is
-`multiple = 2` per pdmux_context.get_arch_constraints((8, 0)); TOL is two
-granules, chosen before the run and not adjustable afterwards).
+  1. CENSUS PRODUCER   results/smid_census/smid_l0_census.py  (imported, never
+                       edited; pre-registered in PREREG_SMID_R0_2026-08-14.md).
+                       Owns the grid/repeat sweep, the ladder, the per-label
+                       hit counts, the driver read-out and the runtime-PTX
+                       instrument check.
+  2. DECISION RULE     p0a_rule_totality.py  (imported, never re-implemented).
+                       Owns sec4/sec5: every precondition, the attribution
+                       rule, and the twelve registered labels. It is enumerated
+                       over the whole world space by its own `run()`.
+  3. THIS FILE         owns (a) the LAUNCH SHIM that turns one census launch
+                       into capture+replay, and (b) the ADAPTER that turns the
+                       raw artefact into a `World` for layer 2.
 
-  PRECONDITIONS -- if any fails the verdict is UNDETERMINED (MEASUREMENT
-  ABSENT) and NOTHING else is reported. A measurement failure is not a gate
-  failure (methodology lesson #21, 8+ recurrences):
-    P1  census instrument alive at run time: %smid site present in the PTX that
-        actually ran, and the residency loop still has its back edge.
-    P2  U(eager_plain) == TOTAL          -- census saturates the full GPU.
-    P3  U(graph_plain) == TOTAL          -- the graph path does not, by itself,
-                                            suppress census coverage.
-    P4  U(eager_green) <= D + TOL        -- the green context delivers AT ALL in
-                                            eager mode. If it does not, the base
-                                            R0 question is unanswered and this
-                                            probe cannot be interpreted; the
-                                            verdict points at PREREG_SMID_R0.
-
-  VERDICT (preconditions passed):
-    |U(graph_green) - U(eager_green)| <= TOL and U(graph_green) <= D + TOL
-        -> CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY
-    U(graph_green) >= TOTAL - TOL
-        -> CONFINEMENT_LOST_THROUGH_GRAPH_REPLAY
-    otherwise
-        -> UNDETERMINED (OUTCOME OUTSIDE PRE-REGISTERED MATRIX)
-
-  If graph capture on the green stream RAISES, the verdict is
-  UNDETERMINED (GRAPH CAPTURE UNAVAILABLE ON GREEN STREAM) with the exception
-  text recorded. That is a tool-availability fact, not a confinement verdict --
-  it does NOT mean confinement was lost.
+★ WHY THIS FILE HAS NO `score()` OF ITS OWN (sec10-20, corrected in rev7).
+  rev6 asked the harness to re-implement the rule and then check that the two
+  implementations agree. Two copies of a rule cannot be kept in step, and the
+  agreement check would have been the thing that breaks first. Instead the
+  rule is imported and called ONCE, so agreement is structural -- and the
+  entire remaining risk surface is the ADAPTER, which is what the round-4 Q2
+  contract table (prereg sec10.2) now pins down and what `--selftest-adapter`
+  mutation-tests. A check that cannot fail is an identity (lesson #53): the
+  "harness agrees with the rule" check is deleted, not weakened, and replaced
+  by "the adapter maps every world in the rule's space back to that world's
+  label".
 
 ------------------------------------------------------------------------------
-★2026-08-21 DEAD-CODE REPAIR -- P1's INPUT, not P1 itself
+LEGS (sec3)
 ------------------------------------------------------------------------------
-P1 reads two fields of the raw artefact. Until this repair `run()` filled them
-with an inline copy of the 2026-08-14 census read-out, which looked the
-compiled kernel up under `JITFunction.cache` -- an attribute Triton 3.5.1 does
-not have (measured on this venv: `hasattr` is False). The lookup therefore
-raised on every launch, both fields were written as None, and P1 -- correctly
-fail-closed -- would have stopped EVERY GPU run at UNDETERMINED (MEASUREMENT
-ABSENT). The probe could not have produced any verdict; the job was waste.
+  leg                  stream                        execution   role
+  -------------------- ----------------------------- ----------- --------------
+  eager_plain          plain (no green ctx)          eager       control; D
+  graph_plain          plain                         replay      null channel
+  eager_green          green pair [1] = DECODE half  eager       baseline
+  eager_green_prefill  green pair [0] = PREFILL half eager       attribution
+  graph_green          green pair [1] = DECODE half  replay      ★UNDER TEST
+  capture_green_replay_plain / capture_plain_replay_green        descriptive,
+                       cross                          replay      failure OK
 
-The repair deletes that copy and binds the census's own writer,
-`smid_l0_census._record_runtime_ptx` (repaired and mutation-tested in that
-file on 2026-08-21), as a module-level name here. NOTHING in the decision
-matrix, TOL, or the P1/P2/P3/P4/NOCAP guards is touched: P1's condition and
-text are byte-identical, it merely now receives data instead of None. The
-self-test gained the R1-R3 read-out battery and `--selftest-mutants` gained
-`dead_runtime_ptx_readout`, which puts the dead body back and demands that R1
-and R2 FAIL under it (methodology lesson #53).
-
-------------------------------------------------------------------------------
-WHAT THIS PROBE DOES NOT ANSWER (mandatory)
-------------------------------------------------------------------------------
-  * Nothing about kernel efficiency, occupancy, wave quantization, or the
-    high-SM decode flattening mechanism. %smid gives IDENTITY only.
-  * Nothing about Breakable CUDA Graph itself -- that is P0-B.
-  * Nothing about whether any policy is better than any other.
-  * A PRESERVED verdict does not license any performance claim; it only removes
-    one documented hole (구멍 C).
+The DECODE half is used because that is exactly the stream the engine captures
+decode graphs on. Each GREEN leg is censused TWICE (independent sweeps A and
+B); `S(leg) := S_A ∪ S_B` and `Δ_split := S_A △ S_B` is a noise ruler
+(sec8-22, sec5.1). The plain legs are censused once.
 
 Usage:
-    python p0a_graph_sm_confinement.py --selftest-analyzer   # CPU only (also runs mutants)
-    python p0a_graph_sm_confinement.py --selftest-mutants    # CPU only, mutants alone
-    python p0a_graph_sm_confinement.py --run                 # requires GPU
-    python p0a_graph_sm_confinement.py --analyze RAW.json    # scores a raw file
+    python p0a_graph_sm_confinement.py --selftest        # CPU, everything
+    python p0a_graph_sm_confinement.py --selftest-adapter  # CPU, adapter only
+    python p0a_graph_sm_confinement.py --run --tag T --outdir D   # needs a GPU
+    python p0a_graph_sm_confinement.py --analyze RAW.json --tag T --outdir D
 """
 
 import argparse
-import hashlib  # noqa: F401 -- used by the pre-repair mutant body below
 import json
 import os
 import platform
+import subprocess
 import sys
 import time
 
-# The pre-registered census producer. Imported, never edited.
-_SMID_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "smid_census")
+# Layer 1: the census producer. Imported, never edited (sec9-4).
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SMID_DIR = os.path.join(os.path.dirname(_HERE), "smid_census")
 sys.path.insert(0, _SMID_DIR)
+sys.path.insert(0, _HERE)
 import smid_l0_census as CEN  # noqa: E402
+# Layer 2: the decision rule. Imported, never re-implemented.
+import p0a_rule_totality as RULE  # noqa: E402
 
-TOL = 4  # pre-fixed, see module docstring. Two A100 green-context granules.
-
-V_PRESERVED = "CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY"
-V_LOST = "CONFINEMENT_LOST_THROUGH_GRAPH_REPLAY"
-V_UNDET = CEN.V_UNDET  # "UNDETERMINED (MEASUREMENT ABSENT)"
-V_OUTSIDE = CEN.V_AMBIG  # "UNDETERMINED (OUTCOME OUTSIDE PRE-REGISTERED MATRIX)"
-V_NOCAP = "UNDETERMINED (GRAPH CAPTURE UNAVAILABLE ON GREEN STREAM)"
-
-# P1's input. This is the census's own writer, NOT a copy of it -- a second
-# copy of that read-out is exactly how this probe inherited the 2026-08-14
-# dead path (methodology gate #9: put the work on the producer). It is bound
-# as a module-level name, rather than called through CEN inside run(), so
-# that (a) the CPU battery below can exercise the very object run() calls
-# without a GPU, and (b) a source mutant can swap the dead body back in and
-# prove this line is load-bearing.
+# P1's input: the census's own writer, bound as a module-level name so the CPU
+# battery can exercise the very object `run()` calls, and so a source mutant
+# can prove the line is load-bearing (2026-08-21 dead-path repair).
 _record_runtime_ptx = CEN._record_runtime_ptx
 
+# The five decision legs, in the registered order (sec3-D).
+DECISION_LEGS = ("eager_plain", "graph_plain", "eager_green",
+                 "eager_green_prefill", "graph_green")
+GREEN_LEGS = ("eager_green", "eager_green_prefill", "graph_green")
+CROSS_LEGS = ("capture_green_replay_plain", "capture_plain_replay_green")
+# adapter key -> raw leg name (sec10.2, the Q2 contract table)
+WORLD_LEG = {"ep": "eager_plain", "gp": "graph_plain", "eg": "eager_green",
+             "egp": "eager_green_prefill", "gg": "graph_green"}
+# Streams whose TRUE answer to "is a green context attached?" is known to be
+# "no": they are built without one. At least one must report detached, or the
+# read-out has not been shown to discriminate (producer `_greenctx_detached`).
+PLAIN_CONTROL_STREAMS = ("plain_pre", "plain_post")
+GREEN_STREAMS = ("green_prefill", "green_decode")
+
 
 # ==========================================================================
-# 1. Execution legs
+# 1. Launch shim -- the ONLY thing this file owns on the measurement side
 # ==========================================================================
-def _alloc(n_blocks, dev):
-    import torch
-    return (torch.full((n_blocks,), -1, dtype=torch.int32, device=f"cuda:{dev}"),
-            torch.full((n_blocks,), -1, dtype=torch.int32, device=f"cuda:{dev}"),
-            torch.zeros((n_blocks,), dtype=torch.int64, device=f"cuda:{dev}"),
-            torch.zeros((n_blocks,), dtype=torch.int64, device=f"cuda:{dev}"))
+class GraphLaunchShim:
+    """Stands in for a Triton kernel in `CEN._census_target`'s launch slot.
 
+    `_census_target` -> `_census_once` issues exactly one launch per (grid,
+    repeat) as `kernel[(n_blocks,)](*args, num_warps=1)` and reads the output
+    tensors afterwards (smid_l0_census.py:614-646). Substituting a shim for
+    `kernel` therefore leaves the sweep, the ladder, the per-label hit counts
+    and the union accounting ENTIRELY with the producer, and this file owns
+    one line: how that launch happens (prereg sec10.1).
 
-def _leg_eager(kernel, stream, spin_ns, dev):
-    """Union of %smid over the pre-registered grid/repeat schedule, eager."""
-    import torch
-    union = set()
-    ladder = []
-    for n_blocks in CEN.GRID_SWEEP:
-        for _ in range(CEN.REPEATS_PER_GRID):
-            smid, nsmid, t0, t1 = _alloc(n_blocks, dev)
-            with torch.cuda.stream(stream):
-                kernel[(n_blocks,)](smid, nsmid, t0, t1, spin_ns,
-                                    CEN.SPIN_ITER_CAP, num_warps=1)
-            stream.synchronize()
-            union.update(v for v in smid.tolist() if v >= 0)
-        ladder.append({"n_blocks": n_blocks, "union_size": len(union)})
-    return {"union": sorted(union), "union_size": len(union), "ladder": ladder}
+    Consequences that the prereg registers as free parameters:
+      * one capture per (grid, repeat) = 25 per leg, because `_census_once`
+        allocates fresh tensors on every call and a graph is bound to the
+        addresses it captured (sec8-12);
+      * warmup runs on a SIDE stream with SCRATCH buffers, one warmup per
+        capture (sec8-18). Scratch buffers matter: a warmup that wrote into
+        the leg's own census tensors would leave PLAIN-stream labels in them,
+        and any block the replay failed to overwrite would then be read as an
+        observation of this leg -- manufacturing an escape. The producer fills
+        every census tensor with -1 at allocation, so untouched entries are
+        skipped, which is why sec8-20 retires the old `fill_(-1)` step;
+      * `pool=None` and `capture_error_mode="global"` (sec8-14, sec8-15). The
+        engine captures into a SHARED pool; this probe does not, and sec6
+        records that as a scope limit rather than papering over it.
 
-
-def _leg_graph(kernel, stream, spin_ns, dev):
-    """Same schedule, but every launch is a replay of a graph CAPTURED ON
-    `stream`. One graph per grid point (grid size is baked into the graph).
-
-    The kernel is warmed up on a side stream first: Triton JIT compilation and
-    any autotuning must not happen inside stream capture. The warmup is on a
-    DIFFERENT stream on purpose, so the warmup launches do not contribute to
-    this leg's census union.
+    Failure is recorded, never raised: a capture or replay exception leaves
+    the census tensors at -1 (contributing nothing) and marks the event, so
+    the adapter can report `NOCAP`/`NOREPLAY` -- which are tool-availability
+    facts, not confinement verdicts (sec5.3).
     """
-    import torch
-    union = set()
-    ladder = []
-    side = torch.cuda.Stream(device=dev)
-    for n_blocks in CEN.GRID_SWEEP:
-        smid, nsmid, t0, t1 = _alloc(n_blocks, dev)
-        # --- warmup (JIT + any lazy init), off this leg's stream
-        with torch.cuda.stream(side):
-            kernel[(n_blocks,)](smid, nsmid, t0, t1, spin_ns,
-                                CEN.SPIN_ITER_CAP, num_warps=1)
-        side.synchronize()
-        torch.cuda.synchronize()
-        # --- capture ON the leg's stream
-        g = torch.cuda.CUDAGraph()
-        with torch.cuda.graph(g, stream=stream):
-            kernel[(n_blocks,)](smid, nsmid, t0, t1, spin_ns,
-                                CEN.SPIN_ITER_CAP, num_warps=1)
-        # --- replay, also on the leg's stream
-        for _ in range(CEN.REPEATS_PER_GRID):
-            # `fill_` MUST be issued on the leg's stream, not the default one.
-            # Off-stream it is unordered against g.replay(), and a race narrows
-            # this leg's union -- which for the green leg biases TOWARD the
-            # positive verdict (a narrow graph_green scores PRESERVED). The
-            # eager leg re-allocates every iteration and has no such hazard, so
-            # off-stream fill would also make the two legs asymmetric.
-            with torch.cuda.stream(stream):
-                smid.fill_(-1)
-                g.replay()
-            stream.synchronize()
-            union.update(v for v in smid.tolist() if v >= 0)
-        del g
-        ladder.append({"n_blocks": n_blocks, "union_size": len(union)})
-    return {"union": sorted(union), "union_size": len(union), "ladder": ladder}
+
+    def __init__(self, kernel, capture_stream, replay_stream, dev):
+        import torch
+        self.kernel = kernel
+        self.capture_stream = capture_stream
+        self.replay_stream = replay_stream
+        self.dev = dev
+        self.side = torch.cuda.Stream(device=dev)
+        self.events = []
+        self._seq = {}
+
+    def __getitem__(self, grid):
+        import torch
+        n_blocks = grid[0]
+
+        def _launch(*args, **kwargs):
+            self._seq[n_blocks] = self._seq.get(n_blocks, 0) + 1
+            ev = {"n_blocks": n_blocks, "seq": self._seq[n_blocks],
+                  "capture_ok": False, "replay_ok": False,
+                  "capture_exc": None, "replay_exc": None}
+            self.events.append(ev)
+            # --- warmup: JIT + lazy init must not happen inside capture, and
+            #     must not touch this leg's census tensors.
+            scratch = [torch.empty_like(a) if torch.is_tensor(a) else a
+                       for a in args]
+            try:
+                with torch.cuda.stream(self.side):
+                    self.kernel[grid](*scratch, **kwargs)
+                self.side.synchronize()
+            except Exception as exc:  # noqa: BLE001
+                ev["capture_exc"] = f"warmup: {exc!r}"
+                return
+            del scratch
+            # --- capture on the capture stream
+            g = torch.cuda.CUDAGraph()
+            try:
+                with torch.cuda.graph(g, stream=self.capture_stream):
+                    self.kernel[grid](*args, **kwargs)
+                ev["capture_ok"] = True
+            except Exception as exc:  # noqa: BLE001
+                ev["capture_exc"] = repr(exc)
+                return
+            # --- replay on the replay stream (the same one, except in the two
+            #     descriptive cross legs)
+            try:
+                with torch.cuda.stream(self.replay_stream):
+                    g.replay()
+                self.replay_stream.synchronize()
+                ev["replay_ok"] = True
+            except Exception as exc:  # noqa: BLE001
+                ev["replay_exc"] = repr(exc)
+            finally:
+                del g
+
+        return _launch
+
+    def status(self, expected):
+        """(capture_status, replay_status) over `expected` launches.
+
+        `ok` requires EVERY expected (grid, repeat) pair to have succeeded --
+        sec5 admits a graph-leg statement only when all 25 pairs captured.
+        """
+        cap = sum(1 for e in self.events if e["capture_ok"])
+        rep = sum(1 for e in self.events if e["replay_ok"])
+        if cap == expected:
+            cap_s = "ok"
+        elif cap == 0:
+            cap_s = "fail"
+        else:
+            cap_s = "partial"
+        rep_s = "ok" if rep == expected and cap_s == "ok" else (
+            "fail" if rep == 0 else "partial")
+        return cap_s, rep_s
+
+
+def _n_launches():
+    return len(CEN.GRID_SWEEP) * CEN.REPEATS_PER_GRID
 
 
 # ==========================================================================
-# 2. Run
+# 2. Legs
+# ==========================================================================
+def _leg_eager(kernel, stream, spin_ns, sweeps):
+    """`sweeps` independent censuses of one stream, eager. Producer-owned."""
+    return {"sweeps": [CEN._census_target(kernel, stream, spin_ns)
+                       for _ in range(sweeps)],
+            "mode": "eager"}
+
+
+def _leg_graph(kernel, capture_stream, replay_stream, spin_ns, dev, sweeps):
+    """Same, but every launch is a capture+replay through the shim."""
+    out = {"sweeps": [], "capture_events": [], "mode": "graph"}
+    cap_s, rep_s = [], []
+    for _ in range(sweeps):
+        shim = GraphLaunchShim(kernel, capture_stream, replay_stream, dev)
+        out["sweeps"].append(CEN._census_target(shim, capture_stream, spin_ns))
+        out["capture_events"].extend(shim.events)
+        c, r = shim.status(_n_launches())
+        cap_s.append(c)
+        rep_s.append(r)
+    # Worst status over the sweeps: a leg is only `ok` if every sweep was.
+    rank = {"ok": 0, "partial": 1, "fail": 2}
+    out["capture_status"] = max(cap_s, key=lambda s: rank[s])
+    out["replay_status"] = max(rep_s, key=lambda s: rank[s])
+    return out
+
+
+# ==========================================================================
+# 3. Raw artefact assembly -- ONE constructor, used by run() and the self-test
+# ==========================================================================
+def assemble_raw(meta, legs, driver, ptx_fields, cross=None,
+                 descriptive_incomplete=False):
+    """Build the raw artefact. Pure; no I/O, no CUDA.
+
+    ★This function exists so the CPU self-test can assert that the artefact a
+    GPU run WOULD write is scorable -- the S-6 F2 failure mode (a campaign
+    whose legs are structurally never adopted) is a plumbing defect that is
+    invisible if `run()` assembles its dict inline.
+    """
+    raw = dict(meta)
+    raw["kind"] = "bcg_p0a_raw"
+    raw["legs"] = legs
+    raw["driver_readout"] = driver
+    # sec11 / gate #56: keep the producer's own NEGATIVE-form field verbatim
+    # (the negative control is driven off it) AND publish a POSITIVE-form
+    # derivation whose name means what its value says.
+    streams = (driver or {}).get("streams") or {}
+    raw["green_ctx_attached"] = {
+        k: (v.get("green_ctx_is_null") is False) if isinstance(v, dict) else None
+        for k, v in streams.items()}
+    raw.update(ptx_fields or {})
+    raw["cross_legs"] = cross or {}
+    raw["descriptive_legs_incomplete"] = bool(descriptive_incomplete)
+    return raw
+
+
+def _flush(raw, outdir, tag):
+    path = os.path.join(outdir, f"p0a_raw_{tag}.json")
+    tmp = path + ".part"
+    with open(tmp, "w") as f:
+        json.dump(raw, f, indent=2)
+    os.replace(tmp, path)
+    return path
+
+
+# ==========================================================================
+# 4. GPU run
 # ==========================================================================
 def run(outdir, tag, spin_ns):
     import torch
@@ -239,159 +313,397 @@ def run(outdir, tag, spin_ns):
     if not torch.cuda.is_available():
         raise SystemExit("no CUDA device; --run requires a GPU (this is a "
                          "MEASUREMENT ABSENT condition, not a result)")
+    if not RULE.PRODUCER_OK:
+        raise SystemExit(
+            "the decision rule could not import its constants from the "
+            f"producer ({RULE.PRODUCER_ERR}); refusing to run (sec14 D8)")
 
     from sglang.srt.multiplex import pdmux_context as pdc
     from sgl_kernel import spatial
 
     census_kernel, _, _ = CEN._kernels()
     dev = torch.cuda.current_device()
-    total_sm = spatial.get_sm_available(dev)
     cc = torch.cuda.get_device_capability(dev)
-    divisions = pdc.divide_sm(total_sm, cc, 4 - 2)  # pdmux_a100_smoke.yml
+    granularity = pdc.get_arch_constraints(cc)[1]
+    if granularity != RULE.GRANULARITY:
+        raise SystemExit(
+            f"granularity from the producer for cc={cc} is {granularity} but "
+            f"the rule was built with {RULE.GRANULARITY}; sec9-5 self-"
+            "invalidation -- refusing to run")
+    total = spatial.get_sm_available(dev)
+    divisions = pdc.divide_sm(total, cc, 4 - 2)  # sm_group_num = 4
     p_sm, d_sm = divisions[0]
 
-    rep = {
-        "kind": "bcg_p0a_raw", "tag": tag,
+    meta = {
+        "tag": tag,
         "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "host": platform.node(), "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "device_name": torch.cuda.get_device_name(dev),
         "torch_version": torch.__version__,
-        "compute_capability": list(cc), "total_sm_reported": total_sm,
+        "compute_capability": list(cc),
+        # DESCRIPTIVE ONLY (sec2.3, sec10-7): the scorer is forbidden from
+        # reading this by an AST guard, it is here for the report.
+        "total_sm_reported": total,
+        "divisions_from_divide_sm": [list(x) for x in divisions],
         "division_under_test": [p_sm, d_sm],
-        "spin_ns": spin_ns, "tol": TOL,
+        "granularity": granularity,
+        "min_hits_floor": CEN.MIN_HITS_REPORTED,
+        "spin_ns": spin_ns,
         "grid_sweep": list(CEN.GRID_SWEEP),
         "repeats_per_grid": CEN.REPEATS_PER_GRID,
-        # gate #33: critical-path files outside sync_engine_tree.sh's manifest.
+        "sweeps_per_green_leg": 2,
+        "prereg": "PREREG_P0A_2026-08-22.md",
+        "rule_module_sha256": CEN._sha256(
+            os.path.join(_HERE, "p0a_rule_totality.py")),
+        "harness_sha256": CEN._sha256(os.path.abspath(__file__)),
+        # gate #33: critical-path files outside sync_engine_tree.sh's manifest
         "sha256_unmanifested": {
             "pdmux_context.py": CEN._sha256(pdc.__file__),
             "sgl_kernel/spatial.py": CEN._sha256(spatial.__file__),
             "smid_l0_census.py": CEN._sha256(
                 os.path.join(_SMID_DIR, "smid_l0_census.py"))},
+        "provenance": CEN._provenance(),
+        "nvidia_smi_compute_mode": _compute_mode(),   # sec9-3
     }
 
+    legs, ptx_fields, cross = {}, {}, {}
+    driver = {}
+
+    def flush(descriptive_incomplete=False):
+        raw = assemble_raw(meta, legs, driver, ptx_fields, cross,
+                           descriptive_incomplete)
+        p = _flush(raw, outdir, tag)
+        print(f"[run] raw -> {p}")
+        return raw
+
+    # ---- leg 1: eager_plain (defines D)
     plain = torch.cuda.Stream(device=dev)
-    rep["eager_plain"] = _leg_eager(census_kernel, plain, spin_ns, dev)
+    legs["eager_plain"] = _leg_eager(census_kernel, plain, spin_ns, 1)
+    # P1, on the object that actually ran. Scope (sec4 N6): this checks the
+    # variant compiled by the eager_plain leg.
+    _record_runtime_ptx(ptx_fields, census_kernel, dev, outdir, f"p0a_{tag}")
+    ptx_fields["runtime_ptx_scope"] = "variant compiled during eager_plain"
+    flush()
 
-    # Runtime instrument check on the object that actually ran (P1). The CPU
-    # self-test inspects AOT-compiled PTX; the JIT specialises differently, so
-    # the PTX that ran is not guaranteed to be the PTX that was inspected.
-    # It never raises: on any failure both fields stay None and P1 stops with
-    # MEASUREMENT ABSENT. It covers the variants cached at THIS point (the
-    # eager_plain leg has run, so the census kernel is compiled); variants that
-    # a later leg might add are not re-checked. The PTX it dumps is tagged
-    # `p0a_` so it can never be mistaken for an R0 census artefact.
-    _record_runtime_ptx(rep, census_kernel, dev, outdir, f"p0a_{tag}")
+    # ---- leg 2: graph_plain (the null channel)
+    legs["graph_plain"] = _leg_graph(census_kernel, plain, plain, spin_ns,
+                                     dev, 1)
+    flush()
 
-    rep["graph_plain"] = _leg_graph(census_kernel, plain, spin_ns, dev)
-
-    # Green pair, built exactly as initialize_stream_groups does
-    # (pdmux_context.py:132-135). Index [1] is the DECODE half -- the stream the
-    # engine captures decode graphs on.
+    # ---- green pair, built exactly as initialize_stream_groups does
     green = spatial.create_greenctx_stream_by_value(p_sm, d_sm, dev)
-    g_decode = green[1]
-    rep["eager_green"] = _leg_eager(census_kernel, g_decode, spin_ns, dev)
-    try:
-        rep["graph_green"] = _leg_graph(census_kernel, g_decode, spin_ns, dev)
-        rep["graph_green_capture_error"] = None
-    except Exception as e:  # noqa: BLE001
-        rep["graph_green"] = None
-        rep["graph_green_capture_error"] = repr(e)
+    g_prefill, g_decode = green[0], green[1]
+    plain_post = torch.cuda.Stream(device=dev)
+    # sec8-19: read the driver IMMEDIATELY after creation, for the green pair
+    # AND for plain streams -- without the latter the negative control cannot
+    # be evaluated at all.
+    driver = CEN.driver_readout({
+        "green_prefill": g_prefill.cuda_stream,
+        "green_decode": g_decode.cuda_stream,
+        "plain_pre": plain.cuda_stream,
+        "plain_post": plain_post.cuda_stream})
+    flush()
 
-    path = os.path.join(outdir, f"p0a_raw_{tag}.json")
-    with open(path, "w") as f:
-        f.write(json.dumps(rep, indent=2))
-    print(f"[run] raw artefact -> {path}")
+    # ---- legs 3-5
+    legs["eager_green"] = _leg_eager(census_kernel, g_decode, spin_ns, 2)
+    flush()
+    legs["eager_green_prefill"] = _leg_eager(census_kernel, g_prefill,
+                                             spin_ns, 2)
+    flush()
+    legs["graph_green"] = _leg_graph(census_kernel, g_decode, g_decode,
+                                     spin_ns, dev, 2)
+    raw = flush()
+    print("[run] decision legs complete and flushed; descriptive legs follow "
+          "(their failure does NOT block scoring -- sec5.3)")
+
+    # ---- descriptive cross legs: failure allowed (sec3-C, sec5.3)
+    incomplete = False
+    for name, (cap_stream, rep_stream) in (
+            ("capture_green_replay_plain", (g_decode, plain)),
+            ("capture_plain_replay_green", (plain, g_decode))):
+        try:
+            cross[name] = _leg_graph(census_kernel, cap_stream, rep_stream,
+                                     spin_ns, dev, 1)
+        except Exception as exc:  # noqa: BLE001
+            cross[name] = {"failed": repr(exc)}
+            incomplete = True
+    flush(incomplete)
+
     print("[run] NO VERDICT IS PRODUCED HERE. Score with --analyze.")
     return 0
 
 
+def _compute_mode():
+    """sec9-3: record it; a difference from job 889631 goes on the verdict."""
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-gpu=compute_mode", "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=30)
+        return out.stdout.strip() or f"rc={out.returncode}"
+    except Exception as exc:  # noqa: BLE001
+        return f"unavailable: {exc!r}"
+
+
 # ==========================================================================
-# 3. Scoring -- pure function, no I/O, no globals
+# 5. ADAPTER -- raw artefact -> World (prereg sec10.2, the Q2 contract table)
+# ==========================================================================
+# Every rule below is fail-closed: a missing, malformed or absent field must
+# land on the value that produces a NON-substantive label. The mapping is
+# mechanised in `--selftest-adapter` (round-trip over the rule's whole world
+# space) and mutation-tested (each contract line has a mutant that breaks it).
+
+def _sweeps(leg):
+    """The producer-shaped sweeps of one leg, or [] if the leg is unusable."""
+    if not isinstance(leg, dict):
+        return []
+    sw = leg.get("sweeps")
+    return [s for s in sw if isinstance(s, dict)] if isinstance(sw, list) else []
+
+
+def _leg_set(leg):
+    """S(leg) := union over ALL sweeps (sec8-22: A ∪ B, frozen)."""
+    s = set()
+    for sweep in _sweeps(leg):
+        u = sweep.get("union")
+        if isinstance(u, list):
+            s |= {v for v in u if isinstance(v, int)}
+    return s
+
+
+def _leg_sweep_sets(leg):
+    return [{v for v in (s.get("union") or []) if isinstance(v, int)}
+            for s in _sweeps(leg)]
+
+
+def _leg_min_hits(leg):
+    """MIN over sweeps: a leg is only as positive as its weakest census."""
+    sw = _sweeps(leg)
+    if not sw:
+        return 0
+    vals = []
+    for s in sw:
+        m = s.get("min_hits")
+        vals.append(m if isinstance(m, int) and not isinstance(m, bool) else 0)
+    return min(vals)
+
+
+def _leg_saturated(leg):
+    """EVERY sweep must satisfy the producer's set-equality ladder test."""
+    sw = _sweeps(leg)
+    if not sw:
+        return False
+    for s in sw:
+        ok, _why = CEN._saturated(s)
+        if not ok:
+            return False
+    return True
+
+
+def _leg_hits(leg):
+    """label -> total hits across sweeps (descriptive; sec5.1 rank ruler)."""
+    tot = {}
+    for s in _sweeps(leg):
+        for k, v in (s.get("hits") or {}).items():
+            try:
+                tot[int(k)] = tot.get(int(k), 0) + int(v)
+            except (TypeError, ValueError):
+                continue
+    return tot
+
+
+def _tool_status(leg, field):
+    """`ok` only if the leg says so explicitly; anything else fails closed."""
+    if not isinstance(leg, dict):
+        return "fail"
+    v = leg.get(field)
+    return v if v in ("ok", "partial", "fail") else "fail"
+
+
+def _attached(raw):
+    """P4a: BOTH green streams attached AND at least one control detached.
+
+    The asymmetry is the producer's (sec4 P4a / C4): a census taken on a
+    stream with no green context is not the measurement at all, while ONE
+    control reporting detached is enough to show the read-out can say "no".
+    A read-out that answers the same way everywhere carries no information.
+    """
+    pos = CEN._greenctx_attached(raw, GREEN_STREAMS)
+    neg = CEN._greenctx_detached(raw, PLAIN_CONTROL_STREAMS)
+    return (not pos["blocked"]) and bool(neg["detached"]), pos, neg
+
+
+def _instrument(raw):
+    """P1: did the kernel that ran keep the %smid site and the spin back edge?"""
+    sites = raw.get("runtime_ptx_smid_sites")
+    edge = raw.get("runtime_spin_back_edge")
+    return bool(isinstance(sites, int) and sites > 0 and edge is True)
+
+
+def _escape_replicated(raw):
+    """sec5 F4: was the attributed escape present in BOTH graph sweeps?
+
+    The baseline stays frozen at S(eg) = A ∪ B (sec8-22) and only the GRAPH
+    leg's sweep varies, so this asks exactly "did the same census, repeated,
+    show the escape again". Fail-closed: fewer than two sweeps, or an escape
+    seen in only one, is NOT the expensive verdict.
+    """
+    legs = raw.get("legs") or {}
+    base = _leg_set(legs.get("eager_green"))
+    pre = _leg_set(legs.get("eager_green_prefill"))
+    per = [((s - base) & pre) for s in _leg_sweep_sets(legs.get("graph_green"))]
+    return len(per) >= 2 and all(bool(x) for x in per), [sorted(x) for x in per]
+
+
+def world_from_raw(raw):
+    """raw artefact -> (World, adapter_record) or (None, adapter_record).
+
+    ★The Q2 contract, in one place. Each line is a fail-closed mapping and is
+    covered by a mutant in `ADAPTER_MUTANTS`.
+    """
+    rec = {"contract": "PREREG_P0A sec10.2"}
+    if not isinstance(raw, dict):
+        rec["why"] = "raw artefact is not an object"
+        return None, rec
+    div = raw.get("division_under_test")
+    if not (isinstance(div, list) and len(div) == 2
+            and all(isinstance(x, int) for x in div)):
+        rec["why"] = ("the division under test is absent from the artefact, so "
+                      "the producer's target for P4b is unknown; nothing about "
+                      "the green legs can be read")
+        return None, rec
+    gran = raw.get("granularity")
+    if gran != RULE.GRANULARITY:
+        rec["why"] = (f"granularity recorded by the run ({gran!r}) differs from "
+                      f"the one the rule was built with ({RULE.GRANULARITY}); "
+                      "the artefact and the rule are not about the same "
+                      "substrate")
+        return None, rec
+    legs = raw.get("legs") if isinstance(raw.get("legs"), dict) else {}
+    sets = {k: _leg_set(legs.get(v)) for k, v in WORLD_LEG.items()}
+    cap = _tool_status(legs.get("graph_green"), "capture_status")
+    rep = _tool_status(legs.get("graph_green"), "replay_status")
+    att, pos, neg = _attached(raw)
+    repl, per_sweep = _escape_replicated(raw)
+    w = RULE.World(
+        sets["ep"], sets["gp"], sets["eg"], sets["gg"], S_egp=sets["egp"],
+        d_sm=div[1],
+        min_hits={k: _leg_min_hits(legs.get(v)) for k, v in WORLD_LEG.items()},
+        saturated={k: _leg_saturated(legs.get(v)) for k, v in WORLD_LEG.items()},
+        attached=att, capture=cap, replay=rep,
+        instrument=_instrument(raw), escape_replicated=repl)
+    rec.update({
+        "set_sizes": {k: len(v) for k, v in sets.items()},
+        "min_hits": dict(w.min_hits), "saturated": dict(w.saturated),
+        "capture_status": cap, "replay_status": rep,
+        "attachment_positive": pos, "attachment_negative": neg,
+        "attached": att, "instrument_alive": w.instrument,
+        "escape_replicated": repl, "escape_per_graph_sweep": per_sweep,
+        "d_sm_target": div[1], "granularity": gran})
+    return w, rec
+
+
+# ==========================================================================
+# 6. Scoring -- the rule is CALLED, not re-implemented
 # ==========================================================================
 def score(raw):
-    """raw artefact dict -> verdict dict. Pure."""
-    out = {"kind": "bcg_p0a_verdict", "tol": TOL}
-
-    def undet(why):
-        out["verdict"] = V_UNDET
-        out["why"] = why
+    """raw artefact dict -> verdict dict. Pure. No target-layer reads."""
+    out = {"kind": "bcg_p0a_verdict",
+           "rule": "p0a_rule_totality.score (imported, not re-implemented)",
+           "prereg": "PREREG_P0A_2026-08-22.md"}
+    w, rec = world_from_raw(raw)
+    out["adapter"] = rec
+    if w is None:
+        out["verdict"] = RULE.ABSENT
+        out["why"] = rec.get("why", "the adapter could not build a world")
+        out["scope"] = _SCOPE
         return out
-
-    for key in ("total_sm_reported", "division_under_test", "eager_plain",
-                "graph_plain", "eager_green"):
-        if raw.get(key) in (None, {}):
-            return undet(f"raw artefact missing or empty field: {key}")
-
-    total = raw["total_sm_reported"]
-    d_sm = raw["division_under_test"][1]
-    out["total_sm"] = total
-    out["decode_sm_target"] = d_sm
-
-    # P1 -- instrument alive
-    if not raw.get("runtime_ptx_smid_sites") or not raw.get("runtime_spin_back_edge"):
-        return undet("P1 failed: the kernel that ran lost either the %smid probe "
-                     "or the residency loop back edge; the census cannot be "
-                     "interpreted (measurement failure, not a gate failure)")
-
-    u = {k: raw[k]["union_size"] for k in
-         ("eager_plain", "graph_plain", "eager_green")}
-    if raw.get("graph_green") is not None:
-        u["graph_green"] = raw["graph_green"]["union_size"]
-    out["union_sizes"] = dict(u)
-
-    # P2 / P3 -- controls
-    if u["eager_plain"] != total:
-        return undet(f"P2 failed: eager_plain covered {u['eager_plain']} of "
-                     f"{total} SMs; the census does not saturate the full GPU, "
-                     f"so no leg is interpretable")
-    if u["graph_plain"] != total:
-        return undet(f"P3 failed: graph_plain covered {u['graph_plain']} of "
-                     f"{total} SMs; the graph path suppresses census coverage "
-                     f"on its own, so a narrow graph_green cannot be attributed "
-                     f"to green-context confinement")
-
-    # P4 -- does the green context deliver at all in eager mode?
-    if u["eager_green"] > d_sm + TOL:
-        out["verdict"] = V_UNDET
-        out["why"] = (
-            f"P4 failed: eager_green covered {u['eager_green']} SMs against a "
-            f"target of {d_sm} (+TOL {TOL}). The green context does not deliver "
-            f"even in eager mode, so the graph question is not yet askable. "
-            f"This is the base R0 question -- see "
-            f"results/smid_census/PREREG_SMID_R0_2026-08-14.md, verdict "
-            f"{CEN.V_NO_DELIVERY}.")
-        return out
-
-    # Capture availability
-    if raw.get("graph_green") is None:
-        out["verdict"] = V_NOCAP
-        out["why"] = ("graph capture on the green-context stream raised: "
-                      f"{raw.get('graph_green_capture_error')!r}. This is a "
-                      "tool-availability fact, NOT a confinement verdict -- it "
-                      "does not mean confinement was lost.")
-        return out
-
-    gg, eg = u["graph_green"], u["eager_green"]
-    if abs(gg - eg) <= TOL and gg <= d_sm + TOL:
-        out["verdict"] = V_PRESERVED
-        out["why"] = (f"graph_green={gg} matches eager_green={eg} within TOL="
-                      f"{TOL} and stays within the {d_sm}-SM target, while the "
-                      f"plain controls both saturate at {total}.")
-    elif gg >= total - TOL:
-        out["verdict"] = V_LOST
-        out["why"] = (f"graph_green={gg} reaches the full-GPU count {total} "
-                      f"(TOL={TOL}) while eager_green={eg} stayed at the "
-                      f"{d_sm}-SM target: replay escaped the green context.")
-    else:
-        out["verdict"] = V_OUTSIDE
-        out["why"] = (f"graph_green={gg} is neither within TOL of "
-                      f"eager_green={eg} nor at the full-GPU count {total}.")
-
-    out["scope"] = (
-        "TOOL-VALIDITY / SM-IDENTITY ONLY. Says nothing about kernel "
-        "efficiency, occupancy, wave quantization, high-SM decode flattening, "
-        "or any policy ranking. Scoped to this device/driver/torch build.")
+    out["verdict"] = RULE.score(w)
+    out["why"] = _why(out["verdict"], w, rec)
+    out.update(_diagnostics(w, raw))
+    out["scope"] = _SCOPE
     return out
+
+
+_SCOPE = (
+    "TOOL-VALIDITY / LABEL-IDENTITY ONLY. %smid is a globally consistent "
+    "label, not an established physical SM index, and its set cardinalities "
+    "are not compute-resource fractions. This probe says nothing about kernel "
+    "efficiency, occupancy, wave quantization, the high-SM decode flattening "
+    "mechanism, or any policy ranking. No model, no request, no server, no "
+    "shared graph memory pool, one division (the decode half of "
+    "divide_sm(...)[0]) -- do not generalise to d16/d44 or to the cudagraph-ON "
+    "serving operating point. A PRESERVED verdict closes no gate.")
+
+
+def _why(verdict, w, rec):
+    E = w.S["gg"] - w.S["eg"]
+    E_rev = w.S["eg"] - w.S["gg"]
+    return (f"{verdict}: |S(graph_green)|={len(w.S['gg'])}, "
+            f"|S(eager_green)|={len(w.S['eg'])}, escape |E|={len(E)}, "
+            f"attributed |E∩S(prefill half)|={len(E & w.S['egp'])}, "
+            f"shortfall |E_rev|={len(E_rev)}, "
+            f"target d_sm={w.d_sm}±{RULE.GRANULARITY}, "
+            f"capture={rec.get('capture_status')}, "
+            f"replay={rec.get('replay_status')}, attached={rec.get('attached')}")
+
+
+def _rank(hits, label):
+    """Where `label` sits in its leg's hit distribution (sec5.1 noise ruler).
+
+    Not a threshold: a label in the extreme lower tail leaves the "coverage
+    noise" reading alive, one near the middle kills it. Reported, never gated.
+    """
+    if label not in hits or not hits:
+        return None
+    vals = sorted(hits.values())
+    below = sum(1 for v in vals if v < hits[label])
+    return {"hits": hits[label], "rank": below + 1, "of": len(vals),
+            "median": vals[len(vals) // 2]}
+
+
+def _diagnostics(w, raw):
+    """sec5.1: mandatory non-identity reporting. No thresholds, no tests."""
+    legs = raw.get("legs") if isinstance(raw.get("legs"), dict) else {}
+    E = w.S["gg"] - w.S["eg"]
+    E_rev = w.S["eg"] - w.S["gg"]
+    E_attrib = E & w.S["egp"]
+    hits = {k: _leg_hits(legs.get(v)) for k, v in WORLD_LEG.items()}
+    split = {}
+    for k in ("eg", "gg", "egp"):
+        ss = _leg_sweep_sets(legs.get(WORLD_LEG[k]))
+        split[k] = sorted(ss[0] ^ ss[1]) if len(ss) >= 2 else None
+    delta = sorted(E | E_rev)
+    return {
+        "D_size": len(w.S["ep"]),
+        "escape": sorted(E), "escape_attributed": sorted(E_attrib),
+        "shortfall": sorted(E_rev), "delta": delta,
+        "graph_green_covers_D": w.S["gg"] >= w.S["ep"],
+        "exact_set_match": w.S["gg"] == w.S["eg"],
+        "null_channel": {"graph_plain_minus_eager_plain":
+                         sorted(w.S["gp"] - w.S["ep"]),
+                         "eager_plain_minus_graph_plain":
+                         sorted(w.S["ep"] - w.S["gp"])},
+        "green_pair_disjoint": not (w.S["eg"] & w.S["egp"]),
+        "green_pair_tiles_D": (w.S["eg"] | w.S["egp"]) == w.S["ep"],
+        "min_hits_by_leg": dict(w.min_hits),
+        "delta_split_by_leg": split,
+        "delta_size_vs_split_size": {
+            "delta": len(delta),
+            "split": {k: (len(v) if v is not None else None)
+                      for k, v in split.items()}},
+        "delta_label_ranks": {
+            str(x): {"graph_green": _rank(hits["gg"], x),
+                     "eager_green": _rank(hits["eg"], x),
+                     "prefill_half": _rank(hits["egp"], x)}
+            for x in delta},
+        "descriptive_legs_incomplete": bool(
+            raw.get("descriptive_legs_incomplete")),
+        "cross_legs": {
+            k: {"union_sizes": [len(s) for s in _leg_sweep_sets(v)],
+                "capture_status": _tool_status(v, "capture_status"),
+                "replay_status": _tool_status(v, "replay_status")}
+            for k, v in (raw.get("cross_legs") or {}).items()},
+    }
 
 
 def analyze(raw_path, outdir, tag):
@@ -400,200 +712,446 @@ def analyze(raw_path, outdir, tag):
     v = score(raw)
     v["raw_path"] = os.path.abspath(raw_path)
     v["raw_sha256"] = CEN._sha256(raw_path)
+    for k in ("tag", "host", "slurm_job_id", "device_name", "utc",
+              "compute_capability", "nvidia_smi_compute_mode", "provenance",
+              "sha256_unmanifested", "harness_sha256", "rule_module_sha256",
+              "division_under_test", "granularity", "grid_sweep",
+              "repeats_per_grid", "sweeps_per_green_leg", "spin_ns",
+              "total_sm_reported", "divisions_from_divide_sm",
+              "green_ctx_attached", "driver_readout"):
+        if k in raw:
+            v.setdefault("run_" + k, raw[k])
     path = os.path.join(outdir, f"p0a_verdict_{tag}.json")
     with open(path, "w") as f:
-        f.write(json.dumps(v, indent=2))
-    print(json.dumps(v, indent=2))
+        json.dump(v, f, indent=2)
+    print("★ THIS TEXT IS NOT CITABLE (gate #56). Cite "
+          f"p0a_verdict_{tag}.json, which holds every field in full.")
+    print(json.dumps({k: v[k] for k in ("verdict", "why") if k in v}, indent=2))
     print(f"[analyze] verdict -> {path}")
     return 0
 
 
 # ==========================================================================
-# 4. Analyzer self-test -- INCLUDING mutation tests
+# 7. Fixtures -- a raw artefact for any world in the rule's space
 # ==========================================================================
-def _synth(gg, eg=34, ep=108, gp=108, total=108, d_sm=34):
-    r = {"total_sm_reported": total, "division_under_test": [total - d_sm, d_sm],
-         "runtime_ptx_smid_sites": 1, "runtime_spin_back_edge": True,
-         "eager_plain": {"union_size": ep}, "graph_plain": {"union_size": gp},
-         "eager_green": {"union_size": eg}}
-    r["graph_green"] = None if gg is None else {"union_size": gg}
-    return r
+# ★This is the inverse of the adapter, and it is what makes sec10-20 a real
+#   check instead of an identity: for EVERY world the rule enumerates, build
+#   the artefact a run in that world would have written, push it through the
+#   adapter, and demand the label the rule gives that world.
+
+_SWEEP_CACHE = {}
 
 
-def selftest_analyzer():
-    """Methodology lesson #53: a check that verifies a repair must FAIL on a
-    mutant that undoes the repair. Every assertion below is paired with a
-    mutation that must flip it -- a rule that cannot be falsified is an
-    identity, not evidence."""
+def _fake_sweep(S, sat=True, min_hits=None):
+    """One `_census_target`-shaped sweep. Producer schema, checked by A2."""
+    key = (frozenset(S), sat, min_hits)
+    if key in _SWEEP_CACHE:
+        return _SWEEP_CACHE[key]
+    ids = sorted(S)
+    mh = (CEN.MIN_HITS_REPORTED if ids else 0) if min_hits is None else min_hits
+    if sat or len(ids) == 0:
+        # saturated: the last two grid points have identical union SETS
+        lad = [{"n_blocks": n, "union": list(ids), "union_size": len(ids),
+                "nsmid_observed": []} for n in CEN.GRID_SWEEP]
+    else:
+        # unsaturated: "still growing" at the last grid point
+        grown = list(ids[:-1])
+        lad = [{"n_blocks": n, "union": list(grown), "union_size": len(grown),
+                "nsmid_observed": []} for n in CEN.GRID_SWEEP[:-1]]
+        lad.append({"n_blocks": CEN.GRID_SWEEP[-1], "union": list(ids),
+                    "union_size": len(ids), "nsmid_observed": []})
+    out = {"ladder": lad, "union": list(ids),
+           "hits": {str(x): max(mh, 1) for x in ids}, "min_hits": mh}
+    _SWEEP_CACHE[key] = out
+    return out
+
+
+def _fake_leg(sets, sat=True, min_hits=None, mode="eager",
+              capture=None, replay=None):
+    leg = {"mode": mode,
+           "sweeps": [_fake_sweep(s, sat, min_hits) for s in sets]}
+    if capture is not None:
+        leg["capture_status"] = capture
+        leg["replay_status"] = replay
+        leg["capture_events"] = []
+    return leg
+
+
+def _fake_driver(green_attached=True, control_detached=True):
+    def e(is_null):
+        return {"rc": 0, "green_ctx_is_null": is_null}
+    streams = {k: e(not green_attached) for k in GREEN_STREAMS}
+    streams.update({k: e(bool(control_detached))
+                    for k in PLAIN_CONTROL_STREAMS})
+    return {"streams": streams}
+
+
+def raw_from_world(w, green_attached=None, control_detached=True):
+    """The artefact a run in world `w` would have written."""
+    S = w.S
+    e_attrib = (S["gg"] - S["eg"]) & S["egp"]
+    gg_sweeps = ([S["gg"], S["gg"]] if w.escape_replicated
+                 else [S["gg"], S["gg"] - e_attrib])
+    legs = {
+        "eager_plain": _fake_leg([S["ep"]], w.saturated["ep"],
+                                 w.min_hits["ep"]),
+        "graph_plain": _fake_leg([S["gp"]], w.saturated["gp"],
+                                 w.min_hits["gp"], mode="graph",
+                                 capture="ok", replay="ok"),
+        "eager_green": _fake_leg([S["eg"], S["eg"]], w.saturated["eg"],
+                                 w.min_hits["eg"]),
+        "eager_green_prefill": _fake_leg([S["egp"], S["egp"]],
+                                         w.saturated["egp"],
+                                         w.min_hits["egp"]),
+        "graph_green": _fake_leg(gg_sweeps, w.saturated["gg"],
+                                 w.min_hits["gg"], mode="graph",
+                                 capture=w.capture, replay=w.replay),
+    }
+    att = w.attached if green_attached is None else green_attached
+    meta = {"tag": "fixture", "division_under_test": [108 - w.d_sm, w.d_sm],
+            "granularity": RULE.GRANULARITY,
+            "min_hits_floor": CEN.MIN_HITS_REPORTED,
+            "total_sm_reported": 108, "sweeps_per_green_leg": 2}
+    ptx = {"runtime_ptx_smid_sites": 1 if w.instrument else 0,
+           "runtime_spin_back_edge": bool(w.instrument)}
+    return assemble_raw(meta, legs, _fake_driver(att, control_detached), ptx)
+
+
+def _healthy():
+    """The world a clean run is expected to produce: PRESERVED."""
+    return RULE.World(RULE.FULL, RULE.FULL, RULE.GREEN, RULE.GREEN,
+                      S_egp=set(range(34, 108)))
+
+
+# ==========================================================================
+# 8. Self-tests
+# ==========================================================================
+def _producer_sweep_keys():
+    """The key set `CEN._census_target` returns, read off the producer's AST.
+
+    A fixture that drifts from the producer's schema would make every CPU
+    check pass while the GPU run writes something the adapter cannot read --
+    the defect shape that costs a whole campaign (S-6 F2). Read it, do not
+    assume it.
+    """
+    import ast
+    src = open(CEN.__file__, encoding="utf-8").read()
+    tree = ast.parse(src)
+    for n in ast.walk(tree):
+        if isinstance(n, ast.FunctionDef) and n.name == "_census_target":
+            for sub in ast.walk(n):
+                if isinstance(sub, ast.Return) and isinstance(sub.value,
+                                                              ast.Dict):
+                    return {k.value for k in sub.value.keys
+                            if isinstance(k, ast.Constant)}
+    return set()
+
+
+def _guard_findings():
+    src = open(os.path.abspath(__file__), encoding="utf-8").read()
+    return CEN._score_excludes_target_layer(src=src)
+
+
+# --- adapter mutants: one per Q2 contract line -----------------------------
+def _w_unreplicated():
+    """gg sweep B lacks the escape: the union sees it, one sweep does not."""
+    w = RULE.World(RULE.FULL, RULE.FULL, RULE.GREEN, RULE.GREEN | {40},
+                   S_egp=set(range(34, 108)), escape_replicated=False)
+    return raw_from_world(w)
+
+
+def _w_unreplicated_b():
+    """The same escape, but in the SECOND sweep only.
+
+    ★This is the witness that makes `S(leg) := S_A ∪ S_B` load-bearing. With
+    the escape in sweep A (`_w_unreplicated`) a sweep-A-only adapter still
+    sees it, so that witness cannot detect the mutant -- measured: the first
+    version of this table used it and `sweep_A_only` reported no flip. Reading
+    sweep A alone here hides the escape outright.
+    """
+    raw = _w_unreplicated()
+    raw["legs"]["graph_green"]["sweeps"].reverse()
+    return raw
+
+
+def _w_mixed_min_hits():
+    raw = raw_from_world(_healthy())
+    raw["legs"]["eager_green"]["sweeps"][1] = _fake_sweep(RULE.GREEN, True, 0)
+    return raw
+
+
+def _w_mixed_saturation():
+    raw = raw_from_world(_healthy())
+    raw["legs"]["graph_green"]["sweeps"][1] = _fake_sweep(RULE.GREEN, False, 1)
+    return raw
+
+
+def _w_no_negative_control():
+    w = _healthy()
+    return raw_from_world(w, control_detached=False)
+
+
+def _w_no_capture_status():
+    raw = raw_from_world(_healthy())
+    raw["legs"]["graph_green"].pop("capture_status")
+    return raw
+
+
+def _w_dead_instrument():
+    raw = raw_from_world(_healthy())
+    raw["runtime_ptx_smid_sites"] = 0
+    return raw
+
+
+def _w_wrong_granularity():
+    raw = raw_from_world(_healthy())
+    raw["granularity"] = RULE.GRANULARITY + 97
+    return raw
+
+
+def _w_healthy_raw():
+    return raw_from_world(_healthy())
+
+
+def _j(*parts):
+    """Join a mutation anchor from pieces.
+
+    ★The anchors below are stored SPLIT on purpose. A table that spelled them
+    out in full would itself be a second occurrence of every anchor, and the
+    uniqueness check would then fail on the intact file -- the shape of lesson
+    #54 (a watcher that quotes its own watch string catches itself). Verified:
+    the first version of this table did exactly that and eight of nine mutants
+    reported "the harness is stale".
+    """
+    return "".join(parts)
+
+
+# The P1 anchor is named once and reused, so `p1_fails_open` and
+# `instrument_fails_open` cannot drift apart (and cannot become two
+# occurrences of the same string).
+_ANCHOR_P1 = ("    return bool(isinstance(sites, int) and sites > 0 and ",
+              "edge is True)")
+
+# name -> (needle parts, replacement parts, witness builder, intact, mutated)
+ADAPTER_MUTANTS = {
+    # S(leg) := A ∪ B (sec8-22). Reading one sweep hides a label the other saw.
+    "sweep_A_only": (
+        ("    for sweep in _sweeps(leg", "):"),
+        ("    for sweep in _sweeps(leg", ")[:1]:"),
+        lambda: _w_unreplicated_b(), RULE.LOST_UNREP, RULE.PRESERVED),
+    # min over sweeps: a leg is only as positive as its weakest census.
+    "min_hits_max": (
+        ("    return mi", "n(vals)"), ("    return ma", "x(vals)"),
+        lambda: _w_mixed_min_hits(), RULE.ABSENT, RULE.PRESERVED),
+    # EVERY sweep must saturate (P5 bias is two-directional, sec4).
+    "saturation_first_sweep_only": (
+        ("    for s in sw:\n        ok, _wh", "y = CEN._saturated(s)"),
+        ("    for s in sw[:1]:\n        ok, _wh", "y = CEN._saturated(s)"),
+        lambda: _w_mixed_saturation(), RULE.NOSAT, RULE.PRESERVED),
+    # P4a is two-sided (C4): an instrument that cannot say "no" may not be
+    # quoted saying "yes".
+    "drop_negative_control": (
+        ('    return (not pos["blocked"]) and bool(neg["detached"]',
+         "), pos, neg"),
+        ('    return (not pos["blocked"]', "), pos, neg"),
+        lambda: _w_no_negative_control(), RULE.NOATT, RULE.PRESERVED),
+    # An absent tool status is a failed tool status.
+    "capture_fails_open": (
+        ('    return v if v in ("ok", "partial", "fail") else ', '"fail"'),
+        ('    return v if v in ("ok", "partial", "fail") else ', '"ok"'),
+        lambda: _w_no_capture_status(), RULE.NOCAP, RULE.PRESERVED),
+    # P1 (sec4): a dead instrument is a measurement failure, not a result.
+    "instrument_fails_open": (
+        _ANCHOR_P1, ("    return Tru", "e"),
+        lambda: _w_dead_instrument(), RULE.ABSENT, RULE.PRESERVED),
+    # The attribution leg must be the OTHER half of the pair (E2/F1).
+    "prefill_leg_aliased_to_decode": (
+        ('"egp": "eager_green', '_prefill"'), ('"egp": "eager_gree', 'n"'),
+        lambda: _w_healthy_raw(), RULE.PRESERVED, RULE.NOPAIR),
+    # F4: one sweep is not a replication.
+    "replication_fails_open": (
+        ("    return len(per) >= 2 and all(bool(x) for x in per)", ", "),
+        ("    return Tru", "e, "),
+        lambda: _w_unreplicated(), RULE.LOST_UNREP, RULE.LOST_PART),
+    # sec9-5: an artefact from another substrate is not scorable by this rule.
+    "granularity_unchecked": (
+        ("    if gran != RULE.GRANULARIT", "Y:"),
+        ("    if False and gran != RULE.GRANULARIT", "Y:"),
+        lambda: _w_wrong_granularity(), RULE.ABSENT, RULE.PRESERVED),
+}
+
+
+def _exec_mutant(src, name):
+    ns = {"__name__": "_mutant", "__file__": os.path.abspath(__file__)}
+    exec(compile(src, f"<mutant:{name}>", "exec"), ns)
+    return ns
+
+
+def selftest_adapter(sample=None, verbose=True):
+    """The whole world space, through the adapter, against the rule."""
     ok = [True]
 
-    def ck(name, cond):
-        print(f"  [{'PASS' if cond else 'FAIL'}] {name}")
-        ok[0] = ok[0] and cond
+    def ck(name, cond, detail=""):
+        if verbose or not cond:
+            print(f"  [{'PASS' if cond else 'FAIL'}] {name}"
+                  + (f"  {detail}" if detail and not cond else ""))
+        ok[0] = ok[0] and bool(cond)
 
-    print("-- verdict matrix")
-    ck("confined graph_green -> PRESERVED",
-       score(_synth(34))["verdict"] == V_PRESERVED)
-    ck("full-GPU graph_green -> LOST",
-       score(_synth(108))["verdict"] == V_LOST)
-    ck("in-between graph_green -> OUTSIDE MATRIX",
-       score(_synth(70))["verdict"] == V_OUTSIDE)
-    ck("capture raised -> NOCAP (not LOST)",
-       score(_synth(None))["verdict"] == V_NOCAP)
+    print("-- A0 producer constants (sec14 D8: no silent substitution)")
+    ck("A0a rule imported its constants from the producer",
+       RULE.PRODUCER_OK, str(RULE.PRODUCER_ERR))
+    ck("A0b the rule's floor IS the producer's constant",
+       RULE.MIN_HITS == CEN.MIN_HITS_REPORTED)
+    ck("A0c granularity is a positive integer from the producer",
+       isinstance(RULE.GRANULARITY, int) and RULE.GRANULARITY > 0)
 
-    print("-- preconditions produce UNDETERMINED, never a substantive verdict")
-    ck("dead %smid probe -> UNDET",
-       score(dict(_synth(34), runtime_ptx_smid_sites=0))["verdict"] == V_UNDET)
-    ck("dead residency loop -> UNDET",
-       score(dict(_synth(34), runtime_spin_back_edge=False))["verdict"] == V_UNDET)
-    ck("eager_plain unsaturated -> UNDET",
-       score(_synth(34, ep=90))["verdict"] == V_UNDET)
-    ck("graph_plain unsaturated -> UNDET (cannot attribute a narrow green leg)",
-       score(_synth(34, gp=40))["verdict"] == V_UNDET)
-    ck("green ctx not delivered in eager -> UNDET pointing at base R0",
-       score(_synth(34, eg=108))["verdict"] == V_UNDET)
+    print("-- A1 schema: the fixture speaks the producer's language")
+    pk = _producer_sweep_keys()
+    ck("A1a the producer's sweep keys were resolved (not an empty set)",
+       bool(pk), str(pk))
+    ck("A1b the fixture emits exactly the producer's sweep keys",
+       pk == set(_fake_sweep(RULE.GREEN).keys()),
+       f"producer={sorted(pk)} fixture={sorted(_fake_sweep(RULE.GREEN))}")
+    ck("A1c the producer's own saturation test reads the fixture ladder",
+       CEN._saturated(_fake_sweep(RULE.GREEN, True))[0] is True
+       and CEN._saturated(_fake_sweep(RULE.GREEN, False))[0] is False)
 
-    print("-- MUTATION TESTS: each check must break when its guard is removed")
-    # If P3 were dropped, a run where the graph path alone collapses coverage
-    # (graph_plain=40) AND graph_green=34 would be misread as PRESERVED.
-    ck("P3 is load-bearing: gp=40,gg=34 must NOT score PRESERVED",
-       score(_synth(34, gp=40))["verdict"] != V_PRESERVED)
-    # If P4 were dropped, a run in which the green context never confined
-    # ANYTHING (eager_green already at the full GPU) is reported as
-    # "replay escaped the green context" -- LOST. That is this probe's most
-    # dangerous misverdict, and `!= V_PRESERVED` does NOT catch it: the
-    # PRESERVED branch is `abs(gg-eg) <= TOL AND gg <= d_sm + TOL`, whose
-    # second conjunct already fails at gg=108 regardless of P4. Verified by
-    # running a P4-deleted mutant (2026-08-21 audit): it returns LOST, and the
-    # weaker assertion passed. The assertion must demand UNDETERMINED.
-    ck("P4 is load-bearing: eg=108,gg=108 must score UNDETERMINED, not LOST",
-       score(_synth(108, eg=108))["verdict"] == V_UNDET)
-    # TOL must not be wide enough to make LOST and PRESERVED both true.
-    ck("TOL does not collapse the matrix: 34 and 108 differ in verdict",
-       score(_synth(34))["verdict"] != score(_synth(108))["verdict"])
-    # A capture failure must not be silently absorbed into a substantive branch,
-    # AND must not be confused with the preconditions: it has to survive a run
-    # whose controls are all healthy. (The earlier `capture raised -> NOCAP`
-    # check uses the same input; this one asserts the stronger property that
-    # NOCAP is disjoint from every substantive verdict.)
-    ck("NOCAP is disjoint from every substantive verdict",
-       score(_synth(None))["verdict"] not in (V_PRESERVED, V_LOST, V_OUTSIDE))
+    print("-- A2 target-layer AST guard (sec10-7, transitive)")
+    g = _guard_findings()
+    ck("A2a no target-layer number is reachable from score()",
+       g["target_numbers"] == [], str(g["target_numbers"]))
+    ck("A2b no non-whitelisted driver key is reachable from score()",
+       g["driver_keys"] == [], str(g["driver_keys"]))
+    ck("A2c the guard actually resolves THROUGH the adapter (positive control)",
+       "world_from_raw" in g["reachable"], str(g["reachable"]))
+    leak = CEN._score_excludes_target_layer(src=CEN._GUARD_PROBE_SRC)
+    ck("A2d the guard can fire (known-leak fixture is flagged)",
+       bool(leak["driver_keys"]))
+
+    print("-- A3 plumbing: the artefact run() assembles is scorable")
+    healthy = _w_healthy_raw()
+    ck("A3a a clean run scores PRESERVED",
+       score(healthy)["verdict"] == RULE.PRESERVED,
+       score(healthy)["verdict"])
+    ck("A3b assemble_raw derives the POSITIVE-form attachment field",
+       healthy["green_ctx_attached"]["green_decode"] is True
+       and healthy["green_ctx_attached"]["plain_pre"] is False)
+    ck("A3c the producer's NEGATIVE-form field is kept verbatim (sec11 D4)",
+       healthy["driver_readout"]["streams"]["green_decode"]
+       ["green_ctx_is_null"] is False)
+    ck("A3d every decision leg is present in the assembled artefact",
+       set(healthy["legs"]) == set(DECISION_LEGS))
+
+    print("-- A4 fail-closed: dropping any field the adapter reads")
+    for drop, expect in (("legs", RULE.ABSENT),
+                         ("division_under_test", RULE.ABSENT),
+                         ("granularity", RULE.ABSENT),
+                         ("driver_readout", RULE.NOATT),
+                         ("runtime_ptx_smid_sites", RULE.ABSENT)):
+        r = dict(healthy)
+        r.pop(drop, None)
+        v = score(r)["verdict"]
+        ck(f"A4 dropping {drop} -> {expect}", v == expect, v)
+    ck("A4f an empty artefact never reaches a substantive label",
+       score({})["verdict"] not in RULE.SUBSTANTIVE)
+
+    print("-- A5 round trip over the rule's world space")
+    n, bad = 0, []
+    for name, w in RULE.worlds():
+        n += 1
+        if sample and n % sample:
+            continue
+        want = RULE.score(w)
+        got = score(raw_from_world(w))["verdict"]
+        if got != want:
+            bad.append((name, want, got))
+            if len(bad) > 5:
+                break
+    ck(f"A5 adapter reproduces the rule's label on every world "
+       f"({n} enumerated{', sampled 1/%d' % sample if sample else ''})",
+       not bad, str(bad[:3]))
+
+    print("-- A6 repair witnesses survive the round trip")
+    for label, mk, guards, with_repair, without in RULE.REPAIR_WITNESSES:
+        w = mk()
+        got = score(raw_from_world(w))["verdict"]
+        ck(f"A6 {label[:52]}", got == with_repair, f"want {with_repair} got {got}")
+
+    print("ADAPTER ALL PASS" if ok[0] else "ADAPTER FAILURES PRESENT")
+    return 0 if ok[0] else 1
+
+
+def selftest_mutants(verbose=True):
+    """Lesson #53 on the adapter: every contract line must be falsifiable."""
+    src = open(os.path.abspath(__file__), encoding="utf-8").read()
+    ok = [True]
+
+    def ck(name, cond, detail=""):
+        if verbose or not cond:
+            print(f"  [{'PASS' if cond else 'FAIL'}] {name}"
+                  + (f"  {detail}" if detail and not cond else ""))
+        ok[0] = ok[0] and bool(cond)
+
+    print("-- adapter contract mutants (prereg sec10.2)")
+    for name, (n_parts, r_parts, mk, intact, mutated) in \
+            ADAPTER_MUTANTS.items():
+        needle, repl = _j(*n_parts), _j(*r_parts)
+        cnt = src.count(needle)
+        if cnt != 1:
+            ck(f"{name}: anchor is unique", False,
+               f"found {cnt} occurrences -- the harness is stale")
+            continue
+        raw = mk()
+        got_intact = score(raw)["verdict"]
+        try:
+            ns = _exec_mutant(src.replace(needle, repl, 1), name)
+        except Exception as exc:  # noqa: BLE001
+            ck(f"{name}: mutant compiles", False, repr(exc))
+            continue
+        try:
+            got_mut = ns["score"](json.loads(json.dumps(raw)))["verdict"]
+        except Exception as exc:  # noqa: BLE001
+            got_mut = f"RAISED {exc!r}"
+        ck(f"{name}: intact={intact}", got_intact == intact, got_intact)
+        ck(f"{name}: mutant={mutated}", got_mut == mutated, str(got_mut))
 
     print("-- runtime-instrument read-out (P1's INPUT; the census's own writer)")
     try:
         census = _readout_fixture()
-    except Exception as e:  # noqa: BLE001
-        print(f"  [SKIP] R1-R3: the AOT fixture could not be built ({e!r}); "
-              "THIS RUN DOES NOT VALIDATE THE RUNTIME-PTX READ-OUT")
-    else:
-        for name, status, detail in _readout_checks(globals(), census):
-            print(f"  [{'PASS' if status == 'ok' else 'FAIL'}] {name}"
-                  + (f"  <{status}> {detail}" if status != "ok" else ""))
-            ok[0] = ok[0] and status == "ok"
-
-    print("ALL PASS" if ok[0] else "FAILURES PRESENT")
-    return 0 if ok[0] else 1
-
-
-MUTANTS = {
-    # name -> (source substring to delete, label of the check that must FAIL)
-    "drop_P2": ('    if u["eager_plain"] != total:\n        return undet(',
-                "P2"),
-    "drop_P3": ('    if u["graph_plain"] != total:\n        return undet(',
-                "P3"),
-    "drop_P4": ('    if u["eager_green"] > d_sm + TOL:\n        out["verdict"]',
-                "P4"),
-    "drop_NOCAP": ('    if raw.get("graph_green") is None:\n        out["verdict"] = V_NOCAP',
-                   "NOCAP"),
-    "widen_TOL": ("TOL = 4  #", "TOL"),
-}
-
-
-def selftest_mutants():
-    """Lesson #53, mechanised. Each guard is deleted (or neutered) in a COPY of
-    this file's source, the copy is exec'd, and its `score()` is re-run against
-    the same self-test inputs. A guard whose removal does not flip at least one
-    assertion is not load-bearing, and the assertion that was supposed to
-    protect it is an identity -- report it as such instead of claiming the
-    self-test 'includes mutation tests'."""
-    src = open(os.path.abspath(__file__), encoding="utf-8").read()
-    ok = [True]
-    for name, (needle, guard) in MUTANTS.items():
-        if needle not in src:
-            print(f"  [FAIL] mutant {name}: anchor not found -- harness is stale")
-            ok[0] = False
-            continue
-        if name == "widen_TOL":
-            mutated = src.replace(needle, "TOL = 74  #", 1)
-        else:
-            end = src.index("\n\n", src.index(needle))
-            mutated = src[: src.index(needle)] + src[end:]
-        ns = {"__name__": "_mutant", "__file__": __file__}
-        try:
-            exec(compile(mutated, f"<mutant:{name}>", "exec"), ns)
-        except Exception as e:  # noqa: BLE001
-            print(f"  [FAIL] mutant {name}: did not compile/exec ({e!r})")
-            ok[0] = False
-            continue
-        m_score, m_synth = ns["score"], ns["_synth"]
-        # Re-run every self-test input through the mutant and demand that at
-        # least one verdict differs from the intact scorer's.
-        inputs = [_synth(34), _synth(108), _synth(70), _synth(None),
-                  _synth(34, ep=90), _synth(34, gp=40), _synth(108, eg=108),
-                  _synth(34, eg=108),
-                  dict(_synth(34), runtime_ptx_smid_sites=0)]
-        flipped = []
-        for i, raw in enumerate(inputs):
+    except Exception as exc:  # noqa: BLE001
+        ck("the AOT fixture could be built (an unjudgeable guard is an "
+           "unguarded one)", False, repr(exc))
+        census = None
+    if census is not None:
+        for nm, status, detail in _readout_checks(globals(), census):
+            ck(nm, status == "ok", f"<{status}> {detail}")
+        for nm, (mutate, expected) in READOUT_MUTANTS.items():
             try:
-                a = score(raw)["verdict"]
-            except Exception:  # noqa: BLE001
-                a = "RAISED"
+                mutated_src = mutate(src)
+            except AssertionError as exc:
+                ck(f"readout mutant {nm}: anchor found", False, str(exc))
+                continue
             try:
-                b = m_score(dict(raw))["verdict"]
-            except Exception:  # noqa: BLE001
-                b = "RAISED"
-            if a != b:
-                flipped.append((i, a, b))
-        good = bool(flipped)
-        print(f"  [{'PASS' if good else 'FAIL'}] mutant {name} ({guard}) "
-              f"flips {len(flipped)} verdict(s)"
-              + (f" e.g. {flipped[0][1]} -> {flipped[0][2]}" if flipped else
-                 "  <-- GUARD NOT LOAD-BEARING / CHECK IS AN IDENTITY"))
-        ok[0] = ok[0] and good
-        _ = m_synth
-
-    # --- read-out mutant (2026-08-21 repair). Named checks, named expected
-    #     failures. Unmutated source must pass the same battery first: a
-    #     mutant harness whose baseline is broken proves nothing.
-    print("-- runtime-instrument read-out mutant (P1's INPUT)")
-    try:
-        census = _readout_fixture()
-    except Exception as e:  # noqa: BLE001
-        print(f"  [FAIL] the AOT fixture could not be built ({e!r}); the "
-              "read-out mutant CANNOT BE JUDGED -- counted as a failure, not "
-              "skipped (an unjudgeable guard is an unguarded one)")
-        ok[0] = False
-    else:
-        base = _readout_checks(globals(), census)
-        bad = [(n.split()[0], s, d) for n, s, d in base if s != "ok"]
-        print(f"  [{'PASS' if not bad else 'FAIL'}] unmutated source passes the "
-              f"R battery ({len(base) - len(bad)}/{len(base)})"
-              + (f"  {bad}" if bad else ""))
-        ok[0] = ok[0] and not bad
-        ok[0] = _run_named_mutants(src, census) and ok[0]
+                ns = _exec_mutant(mutated_src, nm)
+            except Exception as exc:  # noqa: BLE001
+                ck(f"readout mutant {nm}: compiles", False, repr(exc))
+                continue
+            status = {n: s for n, s, _ in _readout_checks(ns, census)}
+            failed = {n for n, s in status.items() if s == "fail"}
+            raised = {n for n, s in status.items() if s == "raised"}
+            ck(f"readout mutant {nm} breaks exactly {sorted(x.split()[0] for x in expected)}",
+               failed == expected and not raised,
+               f"failed={sorted(failed)} raised={sorted(raised)}")
 
     print("MUTANTS ALL PASS" if ok[0] else "MUTANT FAILURES PRESENT")
     return 0 if ok[0] else 1
 
 
-# ==========================================================================
-# 5. Runtime-instrument read-out (P1's INPUT) -- CPU-testable, mutation-tested
-# ==========================================================================
-# The 2026-08-14 read-out this probe inherited, restored verbatim by the mutant
-# below. Held as a string so the intact module can never execute it.
+# --- P1's input: the read-out battery, carried over from the 2026-08-21 repair
 _PRE_REPAIR_RUNTIME_PTX = '''def _record_runtime_ptx(rep, kernel, device, outdir, tag):
     """2026-08-14 dead path: `JITFunction` has no `.cache` attribute in triton
     3.5.1, so this raises on every call and writes None into both P1 fields."""
+    import hashlib
     try:
         cached = list(kernel.cache[device].values())[0]
         rt_ptx = cached.asm["ptx"]
@@ -609,32 +1167,19 @@ _PRE_REPAIR_RUNTIME_PTX = '''def _record_runtime_ptx(rep, kernel, device, outdir
 
 R1 = "R1 read-out fills the P1 fields from the kernel that actually ran"
 R2 = "R2 a filled read-out lets the scorer reach a substantive verdict"
-R3 = "R3 nothing compiled -> fields None, P1 stops (fail-closed, unchanged)"
-
+R3 = "R3 nothing compiled -> fields None, P1 stops (fail-closed)"
 _FIXTURE = []
 
 
 def _readout_fixture():
-    """One REAL CompiledKernel of the census kernel, built with NO GPU.
-
-    Built by the census's own ahead-of-time fixture path, so this battery
-    exercises the producer instead of a re-compilation of it. Memoised because
-    `--selftest-analyzer` runs the battery twice (analyzer, then mutants).
-    Raises if triton cannot compile here; each caller decides what that means.
-    """
+    """One REAL CompiledKernel of the census kernel, built with NO GPU."""
     if not _FIXTURE:
         _FIXTURE.append(CEN._extractor_fixtures()[0])
     return _FIXTURE[0]
 
 
 def _readout_checks(ns, census):
-    """R1-R3 against `ns`'s read-out: does P1 actually receive data?
-
-    `ns` is a module namespace -- `globals()` for the intact file, or an exec'd
-    mutant. The check bodies themselves always come from the intact file, so a
-    mutant cannot weaken its own examiner. Returns [(name, status, detail)]
-    with status in ok/fail/raised; `raised` is NOT a pass anywhere.
-    """
+    """R1-R3 against `ns`'s read-out: does P1 actually receive data?"""
     import tempfile
     rec, score_fn = ns["_record_runtime_ptx"], ns["score"]
     res = []
@@ -642,27 +1187,24 @@ def _readout_checks(ns, census):
     def ck(name, fn):
         try:
             good = bool(fn())
-        except Exception as e:  # noqa: BLE001
-            res.append((name, "raised", repr(e)))
+        except Exception as exc:  # noqa: BLE001
+            res.append((name, "raised", repr(exc)))
             return
         res.append((name, "ok" if good else "fail", ""))
 
     def readout(kernel):
-        """Run the read-out into a fresh rep; report the files it wrote too."""
         with tempfile.TemporaryDirectory() as td:
             rep = {}
             rec(rep, kernel, 0, td, "t")
             return rep, sorted(os.listdir(td))
 
     def scored(rep):
-        """Feed the measured P1 fields into the UNCHANGED scorer."""
-        raw = dict(_synth(34))
+        raw = json.loads(json.dumps(_w_healthy_raw()))
         raw["runtime_ptx_smid_sites"] = rep.get("runtime_ptx_smid_sites")
         raw["runtime_spin_back_edge"] = rep.get("runtime_spin_back_edge")
         return score_fn(raw)["verdict"]
 
     def loaded():
-        # A compiled census kernel sitting where a real JIT launch leaves it.
         return CEN._inject(CEN._kernels()[0], 0, [census])
 
     def r1():
@@ -674,15 +1216,15 @@ def _readout_checks(ns, census):
 
     def r2():
         rep, _ = readout(loaded())
-        return scored(rep) == V_PRESERVED
+        return scored(rep) == RULE.PRESERVED
 
     def r3():
-        rep, files = readout(CEN._kernels()[0])   # nothing ever compiled
+        rep, files = readout(CEN._kernels()[0])
         return (files == []
                 and rep.get("runtime_ptx_smid_sites") is None
                 and rep.get("runtime_spin_back_edge") is None
                 and bool(rep.get("runtime_ptx_error"))
-                and scored(rep) == V_UNDET)
+                and scored(rep) == RULE.ABSENT)
 
     ck(R1, r1)
     ck(R2, r2)
@@ -691,12 +1233,9 @@ def _readout_checks(ns, census):
 
 
 def _mut_dead_readout(src):
-    """Undo the repair: bring back the read-out that reads a missing attribute.
-
-    The anchor is the module-level binding of the census writer, assembled here
-    from two pieces so that this line is not itself a second occurrence of the
-    string it searches for (the count assertion would then always fail).
-    """
+    """Undo the 2026-08-21 repair: bring back the read-out that reads a
+    missing attribute. The anchor is assembled from two pieces so this
+    function is not itself a second occurrence of the string it searches."""
     anchor = "_record_runtime_ptx = CEN." + "_record_runtime_ptx"
     n = src.count(anchor)
     if n != 1:
@@ -704,89 +1243,54 @@ def _mut_dead_readout(src):
     return src.replace(anchor, _PRE_REPAIR_RUNTIME_PTX, 1)
 
 
-def _mut_drop_p1_guard(src):
-    """Delete the P1 guard -- the guard this repair does NOT change.
+def _mut_drop_p1(src):
+    """Neuter P1 so R3 ('an empty read-out still stops the scorer') can fail.
 
-    Without it R3 ("an empty read-out still stops the scorer") could not fail
-    under any mutant, i.e. it would be an identity rather than evidence
-    (methodology lesson #53). The guard in the shipping file is untouched: the
-    deletion happens in a COPY. The anchor is assembled from two pieces so this
-    function is not itself a second occurrence of the line it searches for.
+    Reuses `_ANCHOR_P1` rather than re-spelling it: a second literal copy of
+    the anchor would make the uniqueness check fail on the intact file.
     """
-    needle = ('    if not raw.get("runtime_ptx_smid_sites") or not '
-              'raw.get("runtime_spin_back_edge"):')
+    needle = _j(*_ANCHOR_P1)
     n = src.count(needle)
     if n != 1:
-        raise AssertionError(f"P1 guard occurs {n} times, expected 1")
-    i = src.index(needle)
-    return src[:i] + src[src.index("\n\n", i):]
+        raise AssertionError(f"P1 body occurs {n} times, expected 1")
+    return src.replace(needle, "    return True", 1)
 
 
-# name -> (source mutation, the checks that MUST fail under it)
-READOUT_MUTANTS = {
-    "dead_runtime_ptx_readout": (_mut_dead_readout, {R1, R2}),
-    "drop_P1_guard": (_mut_drop_p1_guard, {R3}),
-}
+READOUT_MUTANTS = {"dead_runtime_ptx_readout": (_mut_dead_readout, {R1, R2}),
+                   "p1_fails_open": (_mut_drop_p1, {R3})}
 
 
-def _run_named_mutants(src, census):
-    """Named-check mutant harness (the census's shape, stricter than the
-    verdict-flip loop above): the mutant must break EXACTLY the checks that
-    claim to cover it. A check that dies with some other exception counts
-    AGAINST the mutant -- a crash is not a detection."""
-    ok = True
-    for name, (mutate, expected) in READOUT_MUTANTS.items():
-        try:
-            mutated = mutate(src)
-        except AssertionError as e:
-            print(f"  [FAIL] mutant {name}: anchor not found ({e}) -- the "
-                  "harness is stale, it is not testing this file")
-            ok = False
-            continue
-        if mutated == src:
-            print(f"  [FAIL] mutant {name}: source unchanged -- no mutation")
-            ok = False
-            continue
-        ns = {"__name__": "_mutant", "__file__": os.path.abspath(__file__)}
-        try:
-            exec(compile(mutated, f"<mutant:{name}>", "exec"), ns)
-        except Exception as e:  # noqa: BLE001
-            print(f"  [FAIL] mutant {name}: did not compile/exec ({e!r})")
-            ok = False
-            continue
-        status = {n: s for n, s, _ in _readout_checks(ns, census)}
-        raised = sorted(n.split()[0] for n, s in status.items() if s == "raised")
-        failed = {n for n, s in status.items() if s == "fail"}
-        missing = sorted(n.split()[0] for n in expected - failed)
-        extra = sorted(n.split()[0] for n in failed - expected)
-        good = not raised and not missing and not extra
-        ids = " ".join(sorted(n.split()[0] for n in failed)) or "(none)"
-        print(f"  [{'PASS' if good else 'FAIL'}] mutant {name}: "
-              f"{len(failed)}/{len(status)} checks FAIL -> {ids}"
-              + (f"; MISSING (should have failed, passed instead) {missing}"
-                 if missing else "")
-              + (f"; RAISED {raised}" if raised else "")
-              + (f"; UNEXPECTED failures {extra}" if extra else ""))
-        ok = ok and good
-    return ok
+def selftest(sample=None):
+    a = selftest_adapter(sample=sample)
+    b = selftest_mutants()
+    good = (a == 0 and b == 0)
+    print("ALL PASS" if good else "FAILURES PRESENT")
+    return 0 if good else 1
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    ap.add_argument("--selftest-analyzer", action="store_true")
+# ==========================================================================
+# 9. CLI
+# ==========================================================================
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--selftest-adapter", action="store_true")
     ap.add_argument("--selftest-mutants", action="store_true")
+    ap.add_argument("--sample", type=int, default=None,
+                    help="score 1 world in N (development only; the submitted "
+                         "run must pass the FULL space)")
     ap.add_argument("--run", action="store_true")
-    ap.add_argument("--analyze", metavar="RAW.json")
-    ap.add_argument("--outdir", default=os.path.dirname(os.path.abspath(__file__)))
-    ap.add_argument("--tag", default=os.environ.get("SLURM_JOB_ID", "local"))
+    ap.add_argument("--analyze")
+    ap.add_argument("--tag", default="local")
+    ap.add_argument("--outdir", default=_HERE)
     ap.add_argument("--spin-ns", type=int, default=CEN.SPIN_NS_DEFAULT)
-    a = ap.parse_args()
-    os.makedirs(a.outdir, exist_ok=True)
+    a = ap.parse_args(argv)
+    if a.selftest:
+        return selftest(sample=a.sample)
+    if a.selftest_adapter:
+        return selftest_adapter(sample=a.sample)
     if a.selftest_mutants:
         return selftest_mutants()
-    if a.selftest_analyzer:
-        rc = selftest_analyzer()
-        return rc or selftest_mutants()
     if a.run:
         return run(a.outdir, a.tag, a.spin_ns)
     if a.analyze:

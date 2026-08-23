@@ -1,0 +1,92 @@
+{
+  "kind": "nsl1_detectability_precondition",
+  "assumptions": {
+    "comparison": "unpaired across boots (pairing unavailable: different servers/jobs)",
+    "test": "two-sample t, exact non-central t power",
+    "alpha": 0.05,
+    "power": 0.8,
+    "rel_delta": 0.03,
+    "boot_cost_s": 145.8,
+    "note": "NO variance is imported. The design registers the measured SD as a Stage-0 gate instead."
+  },
+  "detectable_sd_pp_at_n": {
+    "goodput=50pp": {
+      "n=4": 0.63,
+      "n=6": 0.835,
+      "n=8": 0.996,
+      "n=12": 1.253
+    },
+    "goodput=70pp": {
+      "n=4": 0.882,
+      "n=6": 1.17,
+      "n=8": 1.394,
+      "n=12": 1.755
+    }
+  },
+  "n_required_by_sd": {
+    "goodput=50pp": {
+      "sd=0.5pp": {
+        "n_per_cell": 4,
+        "achieved_power": 0.939,
+        "boot_only_GPU_hr_9cells": 1.46
+      },
+      "sd=1.0pp": {
+        "n_per_cell": 9,
+        "achieved_power": 0.848,
+        "boot_only_GPU_hr_9cells": 3.28
+      },
+      "sd=2.0pp": {
+        "n_per_cell": 29,
+        "achieved_power": 0.801,
+        "boot_only_GPU_hr_9cells": 10.57
+      },
+      "sd=3.0pp": {
+        "n_per_cell": 64,
+        "achieved_power": 0.801,
+        "boot_only_GPU_hr_9cells": 23.33
+      },
+      "sd=4.8pp": {
+        "n_per_cell": 162,
+        "achieved_power": 0.801,
+        "boot_only_GPU_hr_9cells": 59.05
+      },
+      "sd=8.0pp": {
+        "n_per_cell": null,
+        "achieved_power": null,
+        "boot_only_GPU_hr_9cells": null
+      }
+    },
+    "goodput=70pp": {
+      "sd=0.5pp": {
+        "n_per_cell": 3,
+        "achieved_power": 0.963,
+        "boot_only_GPU_hr_9cells": 1.09
+      },
+      "sd=1.0pp": {
+        "n_per_cell": 5,
+        "achieved_power": 0.828,
+        "boot_only_GPU_hr_9cells": 1.82
+      },
+      "sd=2.0pp": {
+        "n_per_cell": 16,
+        "achieved_power": 0.82,
+        "boot_only_GPU_hr_9cells": 5.83
+      },
+      "sd=3.0pp": {
+        "n_per_cell": 34,
+        "achieved_power": 0.812,
+        "boot_only_GPU_hr_9cells": 12.39
+      },
+      "sd=4.8pp": {
+        "n_per_cell": 83,
+        "achieved_power": 0.8,
+        "boot_only_GPU_hr_9cells": 30.25
+      },
+      "sd=8.0pp": {
+        "n_per_cell": null,
+        "achieved_power": null,
+        "boot_only_GPU_hr_9cells": null
+      }
+    }
+  }
+}
