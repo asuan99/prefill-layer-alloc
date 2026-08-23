@@ -99,8 +99,25 @@ if [ "$RC_RUN" -ne 0 ]; then
 fi
 
 echo "=== stage 3/3: scoring against the pre-registered rule ==="
+# ★harness-layer audit G6. Until 2026-08-23 this stage had NO rc check, so a
+#   scoring exception ended the job at exit 0 with a traceback in the .txt and
+#   NO p0a_verdict_<jobid>.json at all. That defect is already on record for
+#   R0 (PROJECT_STATUS.md:4375 caveat (c), smid_l0_run.sbatch:86, left
+#   unrepaired) and it was inherited here -- lesson #71, a fork inherits the
+#   original's hardwiring. `pipefail` alone does not help: `tee` succeeds.
 python3 "$OUT/p0a_graph_sm_confinement.py" --analyze "$OUT/p0a_raw_${JOBTAG}.json" \
         --tag "$JOBTAG" --outdir "$OUT" | tee "$OUT/p0a_verdict_${JOBTAG}.txt"
+RC_AN=${PIPESTATUS[0]}
+echo "analyze rc=$RC_AN"
+if [ "$RC_AN" -ne 0 ]; then
+  echo "SCORING FAILED -> no verdict exists for this job. This is a MEASUREMENT"
+  echo "condition, not a result. Do not quote the .txt (it holds a traceback)."
+  exit 22
+fi
+if [ ! -s "$OUT/p0a_verdict_${JOBTAG}.json" ]; then
+  echo "SCORING PRODUCED NO .json -- the only citable artefact is missing."
+  exit 22
+fi
 
 echo "############# done job=$JOBTAG #############"
 echo "★ CITE p0a_verdict_${JOBTAG}.json ONLY. The .txt above is a console"

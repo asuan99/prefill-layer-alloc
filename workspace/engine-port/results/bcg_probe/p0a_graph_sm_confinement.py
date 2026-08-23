@@ -109,6 +109,15 @@ import p0a_rule_totality as RULE  # noqa: E402
 # can prove the line is load-bearing (2026-08-21 dead-path repair).
 _record_runtime_ptx = CEN._record_runtime_ptx
 
+# ★sec9 self-invalidation reference values (harness-layer audit G9, 2026-08-23).
+#   sec9-3 and sec9-4 said "record it" and nothing held a reference, so neither
+#   condition could ever fire. These two values come from R0 itself (job 889631,
+#   the run this probe's green legs depend on) and are checked by `analyze()`,
+#   which stamps a `substrate_mismatch` banner at the top of the verdict.
+R0_COMPUTE_MODE = "Default"            # smidl0_889631.out:7
+R0_CENSUS_SHA256 = ("1cee21918f34e7f1f207aaef0fc13d03717ea3850"
+                    "0e9b937c7de3c49ae96a325")   # smid_l0_census.py as R0 ran it
+
 # The five decision legs, in the registered order (sec3-D).
 DECISION_LEGS = ("eager_plain", "graph_plain", "eager_green",
                  "eager_green_prefill", "graph_green")
@@ -117,6 +126,13 @@ CROSS_LEGS = ("capture_green_replay_plain", "capture_plain_replay_green")
 # adapter key -> raw leg name (sec10.2, the Q2 contract table)
 WORLD_LEG = {"ep": "eager_plain", "gp": "graph_plain", "eg": "eager_green",
              "egp": "eager_green_prefill", "gg": "graph_green"}
+# ★sec8-22 / audit G8: green legs are censused TWICE, plain legs ONCE. The
+#   asymmetry is registered rather than incidental -- P4c compares S(eg) u
+#   S(egp) (2 sweeps each) against D = S(eager_plain) (1 sweep), so coverage
+#   asymmetry lands straight on NOPAIR. The adapter checks the counts against
+#   what the run recorded (audit G5) instead of trusting them.
+SWEEPS_GREEN = 2
+SWEEPS_PLAIN = 1
 # Streams whose TRUE answer to "is a green context attached?" is known to be
 # "no": they are built without one. At least one must report detached, or the
 # read-out has not been shown to discriminate (producer `_greenctx_detached`).
@@ -175,7 +191,14 @@ class GraphLaunchShim:
         def _launch(*args, **kwargs):
             self._seq[n_blocks] = self._seq.get(n_blocks, 0) + 1
             ev = {"n_blocks": n_blocks, "seq": self._seq[n_blocks],
+                  # ★audit G3(b): warmup runs EAGER on a PLAIN side stream with
+                  #   scratch buffers, so its failure says nothing about whether
+                  #   a graph can be captured on a green stream. It used to be
+                  #   written into `capture_exc` and was therefore reported as
+                  #   "GRAPH CAPTURE UNAVAILABLE ON GREEN STREAM".
+                  "warmup_ok": False,
                   "capture_ok": False, "replay_ok": False,
+                  "warmup_exc": None,
                   "capture_exc": None, "replay_exc": None}
             self.events.append(ev)
             # --- warmup: JIT + lazy init must not happen inside capture, and
@@ -186,8 +209,9 @@ class GraphLaunchShim:
                 with torch.cuda.stream(self.side):
                     self.kernel[grid](*scratch, **kwargs)
                 self.side.synchronize()
+                ev["warmup_ok"] = True
             except Exception as exc:  # noqa: BLE001
-                ev["capture_exc"] = f"warmup: {exc!r}"
+                ev["warmup_exc"] = repr(exc)
                 return
             del scratch
             # --- capture on the capture stream
@@ -212,6 +236,25 @@ class GraphLaunchShim:
                 del g
 
         return _launch
+
+    def summary(self, expected):
+        """Per-leg failure accounting -- consumed by `_diagnostics` (audit G3c).
+
+        Until this existed, `capture_events` was written in four places and
+        read in none, so the verdict `.json` carried the label `NOCAP` with no
+        field saying which of three different events produced it.
+        """
+        first = lambda k: next(  # noqa: E731
+            (e[k] for e in self.events if e.get(k)), None)
+        return {"expected": expected, "launched": len(self.events),
+                "warmed": sum(1 for e in self.events if e["warmup_ok"]),
+                "captured": sum(1 for e in self.events if e["capture_ok"]),
+                "replayed": sum(1 for e in self.events if e["replay_ok"]),
+                "warmup_failed": sum(1 for e in self.events
+                                     if not e["warmup_ok"]),
+                "first_warmup_exc": first("warmup_exc"),
+                "first_capture_exc": first("capture_exc"),
+                "first_replay_exc": first("replay_exc")}
 
     def status(self, expected):
         """(capture_status, replay_status) over `expected` launches.
@@ -248,12 +291,14 @@ def _leg_eager(kernel, stream, spin_ns, sweeps):
 
 def _leg_graph(kernel, capture_stream, replay_stream, spin_ns, dev, sweeps):
     """Same, but every launch is a capture+replay through the shim."""
-    out = {"sweeps": [], "capture_events": [], "mode": "graph"}
+    out = {"sweeps": [], "capture_events": [], "capture_summary": [],
+           "mode": "graph"}
     cap_s, rep_s = [], []
     for _ in range(sweeps):
         shim = GraphLaunchShim(kernel, capture_stream, replay_stream, dev)
         out["sweeps"].append(CEN._census_target(shim, capture_stream, spin_ns))
         out["capture_events"].extend(shim.events)
+        out["capture_summary"].append(shim.summary(_n_launches()))
         c, r = shim.status(_n_launches())
         cap_s.append(c)
         rep_s.append(r)
@@ -325,6 +370,14 @@ def run(outdir, tag, spin_ns):
     dev = torch.cuda.current_device()
     cc = torch.cuda.get_device_capability(dev)
     granularity = pdc.get_arch_constraints(cc)[1]
+    # ★audit N12: `RULE.GRANULARITY` is imported for a hardwired cc (8,0), and
+    #   cc (8,6) also yields 2 -- so the granularity check alone does not pin
+    #   the substrate. The partition and R0 are A100-specific (sec6), so pin it.
+    if tuple(cc) != (8, 0):
+        raise SystemExit(
+            f"compute capability {tuple(cc)} is not the registered substrate "
+            "(8, 0); R0 and the division under test are A100-specific "
+            "(sec6/sec9) -- refusing to run")
     if granularity != RULE.GRANULARITY:
         raise SystemExit(
             f"granularity from the producer for cc={cc} is {granularity} but "
@@ -351,7 +404,8 @@ def run(outdir, tag, spin_ns):
         "spin_ns": spin_ns,
         "grid_sweep": list(CEN.GRID_SWEEP),
         "repeats_per_grid": CEN.REPEATS_PER_GRID,
-        "sweeps_per_green_leg": 2,
+        "sweeps_per_green_leg": SWEEPS_GREEN,
+        "sweeps_per_plain_leg": SWEEPS_PLAIN,
         "prereg": "PREREG_P0A_2026-08-22.md",
         "rule_module_sha256": CEN._sha256(
             os.path.join(_HERE, "p0a_rule_totality.py")),
@@ -378,7 +432,8 @@ def run(outdir, tag, spin_ns):
 
     # ---- leg 1: eager_plain (defines D)
     plain = torch.cuda.Stream(device=dev)
-    legs["eager_plain"] = _leg_eager(census_kernel, plain, spin_ns, 1)
+    legs["eager_plain"] = _leg_eager(census_kernel, plain, spin_ns,
+                                 SWEEPS_PLAIN)
     # P1, on the object that actually ran. Scope (sec4 N6): this checks the
     # variant compiled by the eager_plain leg.
     _record_runtime_ptx(ptx_fields, census_kernel, dev, outdir, f"p0a_{tag}")
@@ -387,7 +442,7 @@ def run(outdir, tag, spin_ns):
 
     # ---- leg 2: graph_plain (the null channel)
     legs["graph_plain"] = _leg_graph(census_kernel, plain, plain, spin_ns,
-                                     dev, 1)
+                                     dev, SWEEPS_PLAIN)
     flush()
 
     # ---- green pair, built exactly as initialize_stream_groups does
@@ -405,28 +460,35 @@ def run(outdir, tag, spin_ns):
     flush()
 
     # ---- legs 3-5
-    legs["eager_green"] = _leg_eager(census_kernel, g_decode, spin_ns, 2)
+    legs["eager_green"] = _leg_eager(census_kernel, g_decode, spin_ns,
+                                 SWEEPS_GREEN)
     flush()
     legs["eager_green_prefill"] = _leg_eager(census_kernel, g_prefill,
-                                             spin_ns, 2)
+                                             spin_ns, SWEEPS_GREEN)
     flush()
     legs["graph_green"] = _leg_graph(census_kernel, g_decode, g_decode,
-                                     spin_ns, dev, 2)
+                                     spin_ns, dev, SWEEPS_GREEN)
     raw = flush()
     print("[run] decision legs complete and flushed; descriptive legs follow "
           "(their failure does NOT block scoring -- sec5.3)")
 
     # ---- descriptive cross legs: failure allowed (sec3-C, sec5.3)
     incomplete = False
-    for name, (cap_stream, rep_stream) in (
-            ("capture_green_replay_plain", (g_decode, plain)),
-            ("capture_plain_replay_green", (plain, g_decode))):
+    for name, (cap_stream, rep_stream) in zip(
+            CROSS_LEGS, ((g_decode, plain), (plain, g_decode))):
         try:
             cross[name] = _leg_graph(census_kernel, cap_stream, rep_stream,
                                      spin_ns, dev, 1)
         except Exception as exc:  # noqa: BLE001
             cross[name] = {"failed": repr(exc)}
             incomplete = True
+        else:
+            # ★audit N8: `descriptive_legs_incomplete` used to be set ONLY on
+            #   an exception, so a cross leg that captured 0 of 25 pairs
+            #   without raising was reported as complete.
+            if (cross[name].get("capture_status") != "ok"
+                    or cross[name].get("replay_status") != "ok"):
+                incomplete = True
     flush(incomplete)
 
     print("[run] NO VERDICT IS PRODUCED HERE. Score with --analyze.")
@@ -471,8 +533,21 @@ def _leg_set(leg):
 
 
 def _leg_sweep_sets(leg):
-    return [{v for v in (s.get("union") or []) if isinstance(v, int)}
-            for s in _sweeps(leg)]
+    """Per-sweep label sets. ★audit N4: this used to accept any iterable while
+    `_leg_set` required a list, so a malformed sweep could be seen differently
+    by S(gg) and by the replication test. Both fail toward the cheaper label,
+    but they should not disagree about what the data is."""
+    out = []
+    # ★the loop variable is deliberately NOT named `sweep`: `_leg_set`'s first
+    #   two lines would then be byte-identical to these, and the
+    #   `sweep_A_only` mutation anchor (which must hit `_leg_set` alone) would
+    #   stop being unique. Measured -- it did, and the mutant reported "the
+    #   harness is stale". Do not "tidy" this back.
+    for one in _sweeps(leg):
+        u = one.get("union")
+        out.append({v for v in u if isinstance(v, int)}
+                   if isinstance(u, list) else set())
+    return out
 
 
 def _leg_min_hits(leg):
@@ -512,11 +587,19 @@ def _leg_hits(leg):
 
 
 def _tool_status(leg, field):
-    """`ok` only if the leg says so explicitly; anything else fails closed."""
+    """`ok` only if the leg says so explicitly; anything else fails closed.
+
+    ★audit G3(a): a leg that is not in the artefact at all is `absent`, not
+    `fail`. The two are different events -- an absent leg means the run was
+    killed before it wrote that leg (incremental flush makes a truncated
+    artefact a NORMAL product), while `fail` means the leg ran and the tool
+    refused. Collapsing them reported a wall-clock kill as "graph capture
+    unavailable on the green stream".
+    """
     if not isinstance(leg, dict):
-        return "fail"
+        return "absent"
     v = leg.get(field)
-    return v if v in ("ok", "partial", "fail") else "fail"
+    return v if v in ("ok", "partial", "fail") else "absent"
 
 
 def _attached(raw):
@@ -540,18 +623,38 @@ def _instrument(raw):
 
 
 def _escape_replicated(raw):
-    """sec5 F4: was the attributed escape present in BOTH graph sweeps?
+    """sec5 F4: did the SAME attributed escape appear in BOTH graph sweeps?
 
-    The baseline stays frozen at S(eg) = A ∪ B (sec8-22) and only the GRAPH
-    leg's sweep varies, so this asks exactly "did the same census, repeated,
-    show the escape again". Fail-closed: fewer than two sweeps, or an escape
-    seen in only one, is NOT the expensive verdict.
+    ★audit G1 -- this used to be `all(non-empty)`, i.e. "each sweep saw SOME
+    escaping label". Noise's cheapest form is one stray label per sweep, and
+    that form made `per = [{40}, {41}]` satisfy the predicate, earning the
+    probe's most expensive verdict (`LOST (PARTIAL)` -> immediate canon
+    referral) -- while the SAME label seen in only one sweep earned the
+    cheaper `LOST (UNREPLICATED)`. A less reproducible observation was being
+    punished harder. Rounds 3-5 killed "one noisy label -> most expensive
+    verdict" three times in the rule layer; it had moved to the replication
+    layer.
+
+    The registered predicate is now INTERSECTION: the same label must escape
+    twice. The old `any` form is kept as a DESCRIPTIVE field so the two can be
+    read side by side, and sec5 / sec8-25 now state the same predicate (they
+    did not before -- the prose said "in only one sweep" and the formula said
+    "both non-empty", which are different rules).
+
+    The baseline stays frozen at S(eg) = A ∪ B (sec8-22); only the graph leg's
+    sweep varies. Fail-closed: fewer than two sweeps is NOT the expensive
+    verdict.
     """
     legs = raw.get("legs") or {}
     base = _leg_set(legs.get("eager_green"))
     pre = _leg_set(legs.get("eager_green_prefill"))
-    per = [((s - base) & pre) for s in _leg_sweep_sets(legs.get("graph_green"))]
-    return len(per) >= 2 and all(bool(x) for x in per), [sorted(x) for x in per]
+    per = [((x - base) & pre) for x in _leg_sweep_sets(legs.get("graph_green"))]
+    same = set.intersection(*per) if len(per) >= 2 else set()
+    detail = {"per_sweep": [sorted(x) for x in per],
+              "replicated_same": sorted(same),
+              "replicated_any": bool(per) and len(per) >= 2
+              and all(bool(x) for x in per)}
+    return (len(per) >= 2 and bool(same)), detail
 
 
 def world_from_raw(raw):
@@ -579,11 +682,64 @@ def world_from_raw(raw):
                       "substrate")
         return None, rec
     legs = raw.get("legs") if isinstance(raw.get("legs"), dict) else {}
+
+    # --- ★pre-World measurement gates (harness-layer audit G2/G3a/G5).
+    #     These run BEFORE the rule because they answer "was this artefact
+    #     produced by the registered run at all", which no `World` field can
+    #     express. Every one of them is fail-closed and lands on ABSENT with a
+    #     `why` that names the leg -- never on a substantive label, and never
+    #     on NOCAP (whose registered text is specifically about the GREEN
+    #     stream). Order: sweep counts -> plain graph leg -> leg presence.
+    want = {**{v: SWEEPS_GREEN for k, v in WORLD_LEG.items()
+               if v in GREEN_LEGS},
+            **{v: SWEEPS_PLAIN for k, v in WORLD_LEG.items()
+               if v not in GREEN_LEGS}}
+    for name, n_want in want.items():
+        if name in legs and len(_sweeps(legs.get(name))) != n_want:
+            rec["why"] = (f"leg {name} carries {len(_sweeps(legs.get(name)))} "
+                          f"sweep(s), the registered count is {n_want} "
+                          "(sec8-22). S(leg) := union over sweeps, so a "
+                          "different count silently changes coverage, the "
+                          "replication test and the split-half ruler")
+            return None, rec
+    for key, n_want in (("sweeps_per_green_leg", SWEEPS_GREEN),
+                        ("sweeps_per_plain_leg", SWEEPS_PLAIN)):
+        if raw.get(key) != n_want:
+            rec["why"] = (f"the run recorded {key}={raw.get(key)!r} but the "
+                          f"registered value is {n_want}; the artefact was not "
+                          "produced by the registered schedule")
+            return None, rec
+    # ★G2: graph_plain is a REPLAY leg too. Its capture failing narrows S(gp),
+    #   and the rule then reports NULL CHANNEL OPEN (a diagnostic conclusion
+    #   about the decision function) or MEASUREMENT ABSENT -- neither of which
+    #   says "the plain-stream capture only partly succeeded", which is what
+    #   the artefact already knew.
+    gp_cap = _tool_status(legs.get("graph_plain"), "capture_status")
+    gp_rep = _tool_status(legs.get("graph_plain"), "replay_status")
+    if gp_cap != "ok" or gp_rep != "ok":
+        rec["why"] = (f"the plain-stream graph leg did not complete "
+                      f"(capture={gp_cap}, replay={gp_rep}); its census cannot "
+                      "be read as the null channel of the decision function. "
+                      "This is a tool fact about the PLAIN stream and says "
+                      "nothing about capture on a green-context stream")
+        rec["tool_status_by_leg"] = {"graph_plain": [gp_cap, gp_rep]}
+        return None, rec
+
     sets = {k: _leg_set(legs.get(v)) for k, v in WORLD_LEG.items()}
     cap = _tool_status(legs.get("graph_green"), "capture_status")
     rep = _tool_status(legs.get("graph_green"), "replay_status")
+    # ★G3(a): an ABSENT leg is a truncated artefact (incremental flush makes
+    #   that a normal product of a wall-clock kill), not a refusal by the
+    #   green stream. Only `fail`/`partial` may reach NOCAP/NOREPLAY.
+    if "absent" in (cap, rep):
+        rec["why"] = ("the graph_green leg is missing from the artefact "
+                      "(capture/replay status absent). The run did not reach "
+                      "it -- this is not evidence about whether a graph can "
+                      "be captured on a green-context stream")
+        rec["tool_status_by_leg"] = {"graph_green": [cap, rep]}
+        return None, rec
     att, pos, neg = _attached(raw)
-    repl, per_sweep = _escape_replicated(raw)
+    repl, repl_detail = _escape_replicated(raw)
     w = RULE.World(
         sets["ep"], sets["gp"], sets["eg"], sets["gg"], S_egp=sets["egp"],
         d_sm=div[1],
@@ -595,9 +751,11 @@ def world_from_raw(raw):
         "set_sizes": {k: len(v) for k, v in sets.items()},
         "min_hits": dict(w.min_hits), "saturated": dict(w.saturated),
         "capture_status": cap, "replay_status": rep,
+        "tool_status_by_leg": {"graph_plain": [gp_cap, gp_rep],
+                               "graph_green": [cap, rep]},
         "attachment_positive": pos, "attachment_negative": neg,
         "attached": att, "instrument_alive": w.instrument,
-        "escape_replicated": repl, "escape_per_graph_sweep": per_sweep,
+        "escape_replicated": repl, "escape_replication": repl_detail,
         "d_sm_target": div[1], "granularity": gran})
     return w, rec
 
@@ -699,10 +857,18 @@ def _diagnostics(w, raw):
         "descriptive_legs_incomplete": bool(
             raw.get("descriptive_legs_incomplete")),
         "cross_legs": {
-            k: {"union_sizes": [len(s) for s in _leg_sweep_sets(v)],
+            k: {"union_sizes": [len(x) for x in _leg_sweep_sets(v)],
                 "capture_status": _tool_status(v, "capture_status"),
                 "replay_status": _tool_status(v, "replay_status")}
             for k, v in (raw.get("cross_legs") or {}).items()},
+        # ★audit G3(c): `capture_events` used to be written in four places and
+        #   read in none, so a verdict said NOCAP with no field naming which of
+        #   three different events caused it. sec11 requires every field of the
+        #   verdict to be in the .json.
+        "graph_leg_failures": {
+            name: (legs.get(name) or {}).get("capture_summary")
+            for name in ("graph_plain", "graph_green")
+            if isinstance(legs.get(name), dict)},
     }
 
 
@@ -710,6 +876,26 @@ def analyze(raw_path, outdir, tag):
     with open(raw_path) as f:
         raw = json.load(f)
     v = score(raw)
+    # ★sec9-3 / sec9-4, made enforceable (harness-layer audit G9). Both
+    #   conditions previously said "record it" and nothing held a reference,
+    #   so neither could ever fire. A mismatch does NOT invalidate the verdict
+    #   by itself -- sec9-3 says "record it in the raw and put it at the top of
+    #   the verdict" -- so this is a banner, not a gate.
+    mism = {}
+    mode = raw.get("nvidia_smi_compute_mode")
+    if mode is not None and str(mode).strip() != R0_COMPUTE_MODE:
+        mism["compute_mode"] = {"this_run": mode, "R0_job_889631":
+                                R0_COMPUTE_MODE}
+    got = (raw.get("sha256_unmanifested") or {}).get("smid_l0_census.py")
+    if got is not None and got != R0_CENSUS_SHA256:
+        mism["smid_l0_census.py_sha256"] = {"this_run": got,
+                                            "as_R0_ran_it": R0_CENSUS_SHA256}
+    if mism:
+        v = {"substrate_mismatch": mism,
+             "substrate_mismatch_meaning":
+                 "this run was taken on a substrate that differs from the one "
+                 "R0 (job 889631) established the green legs on; sec9-2/9-4 "
+                 "govern what may still be said", **v}
     v["raw_path"] = os.path.abspath(raw_path)
     v["raw_sha256"] = CEN._sha256(raw_path)
     for k in ("tag", "host", "slurm_job_id", "device_name", "utc",
@@ -811,7 +997,9 @@ def raw_from_world(w, green_attached=None, control_detached=True):
     meta = {"tag": "fixture", "division_under_test": [108 - w.d_sm, w.d_sm],
             "granularity": RULE.GRANULARITY,
             "min_hits_floor": CEN.MIN_HITS_REPORTED,
-            "total_sm_reported": 108, "sweeps_per_green_leg": 2}
+            "total_sm_reported": 108,
+            "sweeps_per_green_leg": SWEEPS_GREEN,
+            "sweeps_per_plain_leg": SWEEPS_PLAIN}
     ptx = {"runtime_ptx_smid_sites": 1 if w.instrument else 0,
            "runtime_spin_back_edge": bool(w.instrument)}
     return assemble_raw(meta, legs, _fake_driver(att, control_detached), ptx)
@@ -845,6 +1033,75 @@ def _producer_sweep_keys():
                     return {k.value for k in sub.value.keys
                             if isinstance(k, ast.Constant)}
     return set()
+
+
+def _run_wiring():
+    """What `run()` ACTUALLY writes, read off its AST (harness audit G5).
+
+    A5 pushes every world through the adapter, but the fixture and the adapter
+    share `DECISION_LEGS`/`WORLD_LEG`/`GREEN_STREAMS`, so a drift in `run()`'s
+    string literals leaves all 516,096 worlds passing while the real artefact
+    is unreadable. The result is fail-closed -- no false verdict -- but the
+    whole budget is lost silently, which is S-6 F2 in miniature. Bind them.
+    """
+    import ast
+    src = open(os.path.abspath(__file__), encoding="utf-8").read()
+    fn = next(n for n in ast.walk(ast.parse(src))
+              if isinstance(n, ast.FunctionDef) and n.name == "run")
+    legs, cross, streams = set(), set(), set()
+    for node in ast.walk(fn):
+        if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
+                and isinstance(node.slice, ast.Constant)
+                and isinstance(node.ctx, ast.Store)):
+            (legs if node.value.id == "legs" else cross if
+             node.value.id == "cross" else set()).add(node.slice.value)
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "driver_readout" and node.args
+                and isinstance(node.args[0], ast.Dict)):
+            streams |= {k.value for k in node.args[0].keys
+                        if isinstance(k, ast.Constant)}
+    # ★The cross legs are assigned through a loop variable, so their names
+    #   cannot be read off a subscript. Checking that run()'s string literals
+    #   "match CROSS_LEGS" would be an IDENTITY -- it would search for values
+    #   already in the constant and could only ever confirm (the shape this
+    #   project keeps catching). Require instead that run() REFERENCES the
+    #   constant by name, which fails the moment someone re-spells the
+    #   literals (audit N3: it used to, and the constant was dead).
+    refs = {n.id for n in ast.walk(fn) if isinstance(n, ast.Name)}
+    return {"legs": legs, "streams": streams,
+            "uses_cross_const": "CROSS_LEGS" in refs,
+            "uses_sweep_consts": {"SWEEPS_GREEN", "SWEEPS_PLAIN"} <= refs}
+
+
+def _banned_adjective_mentions():
+    """Every line using the banned adjective, and whether it NEGATES the claim.
+
+    ★audit G7: the prereg sec10 table claimed the repair was verified by a grep
+    returning 0. It returns 4, and all four are negations ("NOT an established
+    ... SM index") -- the CONTENT is right and the stated VERIFICATION METHOD
+    was false. Round 4's E6 is exactly that failure, so the method is replaced
+    by a predicate that actually holds.
+
+    ★The search term is ASSEMBLED FROM PIECES and this docstring does not spell
+    it, because a checker that quotes its own watch string catches itself
+    (lesson #54). Measured: the first version of this function reported six
+    hits, all of them its own machinery.
+    """
+    term = "phys" + "ical"
+    out = []
+    for fname in (os.path.abspath(__file__),
+                  os.path.abspath(__file__).replace(".py", ".sbatch")):
+        try:
+            lines = open(fname, encoding="utf-8").read().splitlines()
+        except OSError:
+            continue
+        for i, line in enumerate(lines, 1):
+            low = line.lower()
+            if term in low and "phys" + '" + "' + "ical" not in line:
+                neg = any(t in low for t in
+                          ("not ", "never", "nothing here may be written"))
+                out.append((os.path.basename(fname), i, neg, line.strip()))
+    return out
 
 
 def _guard_findings():
@@ -913,6 +1170,46 @@ def _w_healthy_raw():
     return raw_from_world(_healthy())
 
 
+def _w_noise_per_sweep():
+    """★audit G1: ONE STRAY LABEL PER SWEEP -- noise's cheapest form.
+
+    Sweep A escapes to 40, sweep B to 41. The old `any` predicate called that
+    "replicated" and handed it the probe's most expensive verdict; the
+    registered intersection predicate calls it unreplicated.
+    """
+    w = RULE.World(RULE.FULL, RULE.FULL, RULE.GREEN, RULE.GREEN | {40, 41},
+                   S_egp=set(range(34, 108)))
+    raw = raw_from_world(w)
+    raw["legs"]["graph_green"]["sweeps"] = [
+        _fake_sweep(RULE.GREEN | {40}), _fake_sweep(RULE.GREEN | {41})]
+    return raw
+
+
+def _w_plain_graph_partial():
+    """★audit G2: the PLAIN graph leg only partly captured."""
+    raw = _w_healthy_raw()
+    raw["legs"]["graph_plain"] = _fake_leg(
+        [set(range(100))], True, 1, mode="graph", capture="partial",
+        replay="partial")
+    return raw
+
+
+def _w_graph_green_absent():
+    """★audit G3(a): a truncated artefact (wall-clock kill after the flush of
+    an earlier decision leg) -- NOT a refusal by the green stream."""
+    raw = _w_healthy_raw()
+    del raw["legs"]["graph_green"]
+    return raw
+
+
+def _w_wrong_sweep_count():
+    """★audit G5: a green leg censused once instead of twice."""
+    raw = _w_healthy_raw()
+    raw["legs"]["eager_green"]["sweeps"] = \
+        raw["legs"]["eager_green"]["sweeps"][:1]
+    return raw
+
+
 def _j(*parts):
     """Join a mutation anchor from pieces.
 
@@ -957,9 +1254,9 @@ ADAPTER_MUTANTS = {
         lambda: _w_no_negative_control(), RULE.NOATT, RULE.PRESERVED),
     # An absent tool status is a failed tool status.
     "capture_fails_open": (
-        ('    return v if v in ("ok", "partial", "fail") else ', '"fail"'),
+        ('    return v if v in ("ok", "partial", "fail") else ', '"absent"'),
         ('    return v if v in ("ok", "partial", "fail") else ', '"ok"'),
-        lambda: _w_no_capture_status(), RULE.NOCAP, RULE.PRESERVED),
+        lambda: _w_no_capture_status(), RULE.ABSENT, RULE.PRESERVED),
     # P1 (sec4): a dead instrument is a measurement failure, not a result.
     "instrument_fails_open": (
         _ANCHOR_P1, ("    return Tru", "e"),
@@ -970,9 +1267,30 @@ ADAPTER_MUTANTS = {
         lambda: _w_healthy_raw(), RULE.PRESERVED, RULE.NOPAIR),
     # F4: one sweep is not a replication.
     "replication_fails_open": (
-        ("    return len(per) >= 2 and all(bool(x) for x in per)", ", "),
-        ("    return Tru", "e, "),
+        ("    return (len(per) >= 2 and bool(same))", ", detail"),
+        ("    return Tru", "e, detail"),
         lambda: _w_unreplicated(), RULE.LOST_UNREP, RULE.LOST_PART),
+    # ★G1: replication means the SAME label twice, not "each sweep saw one".
+    "replication_any_instead_of_same": (
+        ("    same = set.intersection(*per) if len(per) >= 2 else se", "t()"),
+        ("    same = (per[0] | per[1]) if len(per) >= 2 else se", "t()"),
+        lambda: _w_noise_per_sweep(), RULE.LOST_UNREP, RULE.LOST_PART),
+    # ★G2: the plain graph leg's tool failure must not be read as the null
+    #   channel of the decision function.
+    "plain_graph_gate_removed": (
+        ('    if gp_cap != "ok" or gp_rep != "ok"', ':'),
+        ("    if Fals", "e:"),
+        lambda: _w_plain_graph_partial(), RULE.ABSENT, RULE.NULLCH),
+    # ★G3(a): an absent leg is a truncated artefact, not a green-stream refusal.
+    "absent_leg_treated_as_fail": (
+        ('    if "absent" in (cap, rep)', ':'),
+        ("    if Fals", "e:  # noqa"),
+        lambda: _w_graph_green_absent(), RULE.ABSENT, RULE.NOCAP),
+    # ★G5: the registered sweep counts are checked, not assumed.
+    "sweep_count_unchecked": (
+        ("        if name in legs and len(_sweeps(legs.get(name))) != n_want", ":"),
+        ("        if Fals", "e:  # noqa"),
+        lambda: _w_wrong_sweep_count(), RULE.ABSENT, RULE.PRESERVED),
     # sec9-5: an artefact from another substrate is not scorable by this rule.
     "granularity_unchecked": (
         ("    if gran != RULE.GRANULARIT", "Y:"),
@@ -1055,6 +1373,27 @@ def selftest_adapter(sample=None, verbose=True):
     ck("A4f an empty artefact never reaches a substantive label",
        score({})["verdict"] not in RULE.SUBSTANTIVE)
 
+    print("-- A7 the adapter contract is BOUND to what run() writes (G5)")
+    w = _run_wiring()
+    ck("A7a run()'s leg keys == DECISION_LEGS == WORLD_LEG values",
+       w["legs"] == set(DECISION_LEGS) == set(WORLD_LEG.values()),
+       f"run={sorted(w['legs'])}")
+    ck("A7b run()'s driver stream keys == the adapter's green + control sets",
+       w["streams"] == set(GREEN_STREAMS) | set(PLAIN_CONTROL_STREAMS),
+       f"run={sorted(w['streams'])}")
+    ck("A7c run() takes the cross-leg names FROM CROSS_LEGS (not literals)",
+       w["uses_cross_const"])
+    ck("A7d run() takes the sweep counts FROM the registered constants",
+       w["uses_sweep_consts"])
+
+    print("-- A8 the label ceiling holds in TEXT, not by absence (G7)")
+    men = _banned_adjective_mentions()
+    ck("A8a every mention of the banned adjective negates the claim",
+       all(neg for _f, _i, neg, _l in men),
+       str([(f, i, l[:60]) for f, i, neg, l in men if not neg]))
+    ck("A8b the check is not vacuous (the ceiling IS stated somewhere)",
+       len(men) >= 2, f"{len(men)} mention(s)")
+
     print("-- A5 round trip over the rule's world space")
     n, bad = 0, []
     for name, w in RULE.worlds():
@@ -1114,6 +1453,13 @@ def selftest_mutants(verbose=True):
             got_mut = f"RAISED {exc!r}"
         ck(f"{name}: intact={intact}", got_intact == intact, got_intact)
         ck(f"{name}: mutant={mutated}", got_mut == mutated, str(got_mut))
+        # ★audit G4. Without this, a table row whose two declared labels are
+        #   EQUAL passes while proving nothing -- the mutant is then not shown
+        #   to be detectable at all. Round 4 caught exactly this shape in the
+        #   rule file (E6 -> `T5'`) and the defect had moved here. Measured:
+        #   injecting a degenerate witness produced `MUTANTS ALL PASS`.
+        ck(f"{name}: the two declared labels differ (witness discriminates)",
+           intact != mutated, f"both {intact}")
 
     print("-- runtime-instrument read-out (P1's INPUT; the census's own writer)")
     try:
