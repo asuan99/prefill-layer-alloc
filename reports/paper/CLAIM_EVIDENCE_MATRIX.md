@@ -718,6 +718,27 @@ fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJ
   내용**은 여전히 미측정이다. cudagraph-ON 운영점 전달 문장·
   성능/정책 주장 전부 금지. `PROJECT_STATUS.md` "다음 실험 gate"
   #11 레지스트리 `%smid` R0 행 참조.
+  ★**2026-08-23 추가 — P0-A는 또 하나의 L0 관측일 뿐, S3는 여전히
+  미종결이다.** P0-A(job 890893, gpu43, 0.054 GPU-hr, claims-auditor
+  `CONFIRMED with conditions`[조건 C1–C8])는 R0와 다른 질문을 겨냥
+  했다 — "**cudagraph replay**가 green-context SM 한정을 전달하는가".
+  판정 `CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY`: 단일 토이 커널
+  그래프를 decode 절반(34) 스트림에 캡처·같은 스트림에서 replay했을 때
+  관측된 `%smid` 라벨 집합이 eager census와 정확히 일치(`Δ=∅`, 공허참
+  아님 — 33,480 block 관측 중 34-라벨 밖 0건). 부수로 green-context
+  스트림 위 CUDA 그래프 캡처·replay 자체가 이 기판에서 **가능**함을
+  최초로 확인(단일 커널 노드·`pool=None` 한정, 엔진 캡처 경로 진술
+  아님). ★그러나 이것도 **엔진·모델·요청·서버 없는 별도 프로세스**의
+  L0 유사물이다(공유 graph memory pool 아님·동시부하 0·캡처당 replay
+  1회·decode 절반만) — S3가 원래 묻는 **서빙 중(엔진의 실제 decode
+  그래프, 공유 pool, 요청 존재, cudagraph-ON 운영점) 물리적 내용**은
+  여전히 미측정이다. cudagraph-ON 운영점 전달 문장·"구멍 C가 닫혔다"·
+  "P0-A가 R4에 답했다"·성능/정책 주장 전부 금지. 확정 문구 ①–⑦
+  전문·감사 판정서 = `reports/CONSENSUS.md` §1-1(Gate 1 블록, P0-A
+  addendum), `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리
+  P0-A 행, 원자료 `workspace/engine-port/results/bcg_probe/
+  {p0a_verdict_890893.json, audit_p0a_result_890893_2026-08-23/
+  VERDICT.md}`(수정 금지·인용만, `.json`만 인용 — 게이트 #56).
 - **Gate 3**(NemotronH·Falcon-H1 운영점 대조, 미착수) — "4모델 전부"를
   다시 쓰려면 필요.
 - **Gate 4**(sustainable-rate 직접 측정 n≥4, 미착수) — r4/r6 크기·용량
