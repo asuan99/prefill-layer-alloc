@@ -1,0 +1,5 @@
+{
+  "verdict": "REPLAY_IS_THE_WRITER",
+  "why": "capture-only observed NOTHING while capture+replay observed 34 labels on the same stream, with only the replay step differing. The census is written by the replay. \u2605This closes result-audit C4 and nothing else -- it licenses no performance claim and says nothing about confinement."
+}
+[analyze] verdict -> /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/bcg_probe/p0a_f2_verdict_891612.json

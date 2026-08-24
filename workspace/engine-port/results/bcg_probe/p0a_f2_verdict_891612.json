@@ -1,0 +1,53 @@
+{
+  "kind": "p0a_f2_verdict",
+  "premise_under_test": "the census tensors are written by g.replay()",
+  "capture_only_labels": [],
+  "capture_replay_label_count": 34,
+  "capture_status": {
+    "capture_only": "ok",
+    "capture_replay": "ok"
+  },
+  "summary": {
+    "capture_only": {
+      "expected": 25,
+      "launched": 25,
+      "warmed": 25,
+      "captured": 25,
+      "replayed": 0,
+      "warmup_failed": 0,
+      "first_warmup_exc": null,
+      "first_capture_exc": null,
+      "first_replay_exc": null
+    },
+    "capture_replay": {
+      "expected": 25,
+      "launched": 25,
+      "warmed": 25,
+      "captured": 25,
+      "replayed": 25,
+      "warmup_failed": 0,
+      "first_warmup_exc": null,
+      "first_capture_exc": null,
+      "first_replay_exc": null
+    }
+  },
+  "verdict": "REPLAY_IS_THE_WRITER",
+  "why": "capture-only observed NOTHING while capture+replay observed 34 labels on the same stream, with only the replay step differing. The census is written by the replay. \u2605This closes result-audit C4 and nothing else -- it licenses no performance claim and says nothing about confinement.",
+  "raw_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/bcg_probe/p0a_f2_raw_891612.json",
+  "raw_sha256": "0756222efd3a394ff2389546a8cae3c784045f4b9d1d1810772bb65316caede0",
+  "run_tag": "891612",
+  "run_host": "gpu43",
+  "run_slurm_job_id": "891612",
+  "run_device_name": "NVIDIA A100-SXM4-80GB",
+  "run_compute_capability": [
+    8,
+    0
+  ],
+  "run_division_under_test": [
+    74,
+    34
+  ],
+  "run_cited_harness_sha256": "c7d5ec38cdc976273360d0d3cbabcef7586828f00fde8d22debd1975bfab1546",
+  "run_census_sha256": "1cee21918f34e7f1f207aaef0fc13d03717ea38500e9b937c7de3c49ae96a325",
+  "run_utc": "2026-08-24T02:11:21Z"
+}
