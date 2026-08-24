@@ -1,0 +1,121 @@
+{
+ "rule_rev": 2,
+ "rule_sha256": "7d61d6bc821f4c83e762d7114c7d13584ce7371be44229132b41d203915d132c",
+ "date": "2026-08-24",
+ "gpu_hr": 0.0,
+ "n_worlds": 414720,
+ "n_labels": 15,
+ "n_mutants": 18,
+ "n_discriminating_checks": 12,
+ "label_reachability": {
+  "KSET_NEEDS_TIME_ATTRIBUTION": 16,
+  "KSET_JOINS_CAPTURE_NOT_REPLAY": 16,
+  "KSET_CONSTRUCTIBLE_PARTIAL": 8,
+  "KSET_CONSTRUCTIBLE": 8,
+  "KSET_NOT_ATTRIBUTABLE": 36,
+  "CONTRADICTORY_ATTRIBUTION": 12,
+  "PRIMARY_ESTIMAND_UNCONSTRUCTIBLE": 192,
+  "TRACE_TRUNCATED": 1536,
+  "NODE_ROWS_EXCEED_EXPECTATION": 96,
+  "GREEN_PARTITION_MISMATCH": 1920,
+  "PROBE_INVALID": 94080,
+  "CAPTURE_FAILS_ONLY_UNDER_GREEN": 23040,
+  "GREENCTX_INVISIBLE": 5760,
+  "NODE_TRACE_UNAVAILABLE": 11520,
+  "MEASUREMENT_ABSENT": 276480
+ },
+ "mutant_delta": {
+  "g_measurement": 276480,
+  "g_capture": 55680,
+  "g_capgreen": 23040,
+  "g_l1": 21120,
+  "g_l2": 11520,
+  "g_l3": 5760,
+  "g_green": 3840,
+  "g_trunc": 1536,
+  "g_excess": 96,
+  "g_q1": 192,
+  "g_q1_floor": 96,
+  "g_q1_value": 96,
+  "g_ctx": 24,
+  "g_contra": 12,
+  "g_capjoin": 16,
+  "g_join_none": 16,
+  "g_join_value": 4,
+  "g_basis": 36
+ },
+ "mutant_coverage": {
+  "g_measurement": [
+   "T4  no substantive verdict on a failed control",
+   "T18 run/export failure => MEASUREMENT_ABSENT"
+  ],
+  "g_capture": [
+   "T4  no substantive verdict on a failed control",
+   "T17 green-only capture failure is preserved"
+  ],
+  "g_capgreen": [
+   "T17 green-only capture failure is preserved"
+  ],
+  "g_l1": [
+   "T4  no substantive verdict on a failed control"
+  ],
+  "g_l2": [
+   "T4  no substantive verdict on a failed control"
+  ],
+  "g_l3": [
+   "T4  no substantive verdict on a failed control"
+  ],
+  "g_green": [
+   "T4  no substantive verdict on a failed control",
+   "T14 non-matched green never substantive"
+  ],
+  "g_trunc": [
+   "T4  no substantive verdict on a failed control",
+   "T15 truncation never substantive"
+  ],
+  "g_excess": [
+   "T16 excess rows never OK/PARTIAL/UNCONSTR"
+  ],
+  "g_q1": [
+   "T9a UNCONSTR <=> frac < 0.90 (literal)"
+  ],
+  "g_q1_floor": [
+   "T9a UNCONSTR <=> frac < 0.90 (literal)"
+  ],
+  "g_q1_value": [
+   "T9a UNCONSTR <=> frac < 0.90 (literal)"
+  ],
+  "g_ctx": [
+   "T6b unusable ctx never reported on a ctx basis",
+   "T11 CONTRA <=> distinct ctx + mismatched stream"
+  ],
+  "g_contra": [
+   "T11 CONTRA <=> distinct ctx + mismatched stream"
+  ],
+  "g_capjoin": [
+   "T7  capture-only join never CONSTRUCTIBLE"
+  ],
+  "g_join_none": [
+   "T12 join_target=none => NEEDS_TIME_ATTRIBUTION"
+  ],
+  "g_join_value": [
+   "T9b OK => join_rate >= 0.95 (literal)"
+  ],
+  "g_basis": [
+   "T6b unusable ctx never reported on a ctx basis"
+  ]
+ },
+ "companion": {
+  "n_worlds": 512,
+  "labels": {
+   "E1B_NEEDS_STREAM": 3,
+   "E1B_ALIVE": 1,
+   "E1B_DEAD": 4,
+   "E1B_PROBE_INVALID": 112,
+   "E1B_GRAPH_TRACE_UNAVAILABLE": 8,
+   "E1B_UNMEASURED": 384
+  }
+ },
+ "all_pass": true,
+ "uncovered_mutants": []
+}
