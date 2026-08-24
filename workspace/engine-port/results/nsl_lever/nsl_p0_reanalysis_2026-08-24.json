@@ -1,0 +1,106 @@
+{
+ "date": "2026-08-24",
+ "gpu_hr": 0.0,
+ "X": 0.05,
+ "prereg": "PREREG_NSL_P0_REANALYSIS_2026-08-24.md",
+ "script_sha256": "655668b6bfcb5aa16d8d8c284fa80820bb48530f2294d436524d5a9d6e0a9188",
+ "label": "BRACKET_DECIDES",
+ "straddling_boots": [],
+ "estimator_flips_side": [
+  "g16_blk1_d44_boot1_884336_telemetry.jsonl",
+  "g16_blk2_d44_boot1_884410_telemetry.jsonl",
+  "g16_blk3_d44_boot1_884411_telemetry.jsonl",
+  "g16_blk4_d44_boot1_884412_telemetry.jsonl"
+ ],
+ "boots": [
+  {
+   "file": "g16_blk1_d44_boot1_884336_telemetry.jsonl",
+   "n_snapshots": 59646,
+   "total_time_s": 441.064,
+   "cap": 48,
+   "cap_source": "server_banner",
+   "observed_max_running_bs": 48,
+   "sample_index_strides": [
+    31,
+    32
+   ],
+   "gap_ms": {
+    "p50": 2.046,
+    "p99": 206.418,
+    "max": 713.347
+   },
+   "L_time_weighted": 0.08759,
+   "U_time_weighted": 0.114,
+   "L_count_weighted": 0.00146,
+   "U_count_weighted": 0.00186,
+   "bracket_width_tw": 0.02641
+  },
+  {
+   "file": "g16_blk2_d44_boot1_884410_telemetry.jsonl",
+   "n_snapshots": 57854,
+   "total_time_s": 431.299,
+   "cap": 48,
+   "cap_source": "server_banner",
+   "observed_max_running_bs": 48,
+   "sample_index_strides": [
+    31,
+    32
+   ],
+   "gap_ms": {
+    "p50": 1.946,
+    "p99": 213.057,
+    "max": 658.487
+   },
+   "L_time_weighted": 0.08644,
+   "U_time_weighted": 0.11701,
+   "L_count_weighted": 0.00147,
+   "U_count_weighted": 0.00194,
+   "bracket_width_tw": 0.03057
+  },
+  {
+   "file": "g16_blk3_d44_boot1_884411_telemetry.jsonl",
+   "n_snapshots": 57854,
+   "total_time_s": 433.513,
+   "cap": 48,
+   "cap_source": "server_banner",
+   "observed_max_running_bs": 48,
+   "sample_index_strides": [
+    31,
+    32
+   ],
+   "gap_ms": {
+    "p50": 1.991,
+    "p99": 215.119,
+    "max": 780.74
+   },
+   "L_time_weighted": 0.08547,
+   "U_time_weighted": 0.11239,
+   "L_count_weighted": 0.00145,
+   "U_count_weighted": 0.00188,
+   "bracket_width_tw": 0.02692
+  },
+  {
+   "file": "g16_blk4_d44_boot1_884412_telemetry.jsonl",
+   "n_snapshots": 56446,
+   "total_time_s": 431.257,
+   "cap": 48,
+   "cap_source": "server_banner",
+   "observed_max_running_bs": 48,
+   "sample_index_strides": [
+    31,
+    32
+   ],
+   "gap_ms": {
+    "p50": 1.994,
+    "p99": 217.16,
+    "max": 654.536
+   },
+   "L_time_weighted": 0.08026,
+   "U_time_weighted": 0.11928,
+   "L_count_weighted": 0.0014,
+   "U_count_weighted": 0.00202,
+   "bracket_width_tw": 0.03903
+  }
+ ],
+ "NOT_A_VERDICT": "audit B1 invalidated the point predicate; these numbers are NOT an answer to whether the cap binds"
+}
