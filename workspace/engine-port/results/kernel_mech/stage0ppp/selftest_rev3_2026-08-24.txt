@@ -1,0 +1,117 @@
+== Stage 0ppp A0 rule (RULE_REV=3) ==
+   663,552 worlds x 24 mutants x 16 checks ...
+  [PASS] T1a totality 
+  [PASS] T1b basis registered 
+  [PASS] T1c determinism 
+  [PASS] T2 reachable: ATTRIBUTION_DISCONFIRMED n=48
+  [PASS] T2 reachable: CAPTURE_FAILS_ONLY_UNDER_GREEN n=672
+  [PASS] T2 reachable: CONTRADICTORY_ATTRIBUTION n=24
+  [PASS] T2 reachable: GREENCTX_INVISIBLE n=1344
+  [PASS] T2 reachable: GREEN_PARTITION_MISMATCH n=10752
+  [PASS] T2 reachable: KSET_CONSTRUCTIBLE n=4
+  [PASS] T2 reachable: KSET_CONSTRUCTIBLE_PARTIAL n=12
+  [PASS] T2 reachable: KSET_JOINS_CAPTURE_NOT_REPLAY n=24
+  [PASS] T2 reachable: KSET_NEEDS_TIME_ATTRIBUTION n=24
+  [PASS] T2 reachable: KSET_NOT_ATTRIBUTABLE n=48
+  [PASS] T2 reachable: KSET_STREAM_ONLY_ATTRIBUTION n=8
+  [PASS] T2 reachable: MEASUREMENT_ABSENT n=442368
+  [PASS] T2 reachable: NODE_ROWS_EXCEED_EXPECTATION n=96
+  [PASS] T2 reachable: NODE_TRACE_UNAVAILABLE n=2688
+  [PASS] T2 reachable: PRIMARY_ESTIMAND_UNCONSTRUCTIBLE n=288
+  [PASS] T2 reachable: PROBE_INVALID n=89952
+  [PASS] T2 reachable: TRACE_TRUNCATED n=115200
+  [PASS] T4  failed control never substantive [DISCRIM] 
+  [PASS] T6b unusable ctx never on a ctx basis [DISCRIM] 
+  [PASS] T7  capture-only join never OK [DISCRIM] 
+  [PASS] T9a UNCONSTR iff frac < 0.90 [DISCRIM] 
+  [PASS] T9b PARTIAL iff join_rate < 0.95 [DISCRIM] 
+  [PASS] T11 CONTRA iff distinct+mismatch [DISCRIM] 
+  [PASS] T11b DISCONF iff ctx=parent [DISCRIM] 
+  [PASS] T12 TIMEATTR iff join_target=none [DISCRIM] 
+  [PASS] T16 excess never OK/PARTIAL/UNCONSTR [DISCRIM] 
+  [PASS] T20a GREENCTX_INVISIBLE is clean [DISCRIM] 
+  [PASS] T20b NODE_TRACE_UNAVAILABLE is clean [DISCRIM] 
+  [PASS] T20c CAPGREEN is clean [DISCRIM] 
+  [PASS] T20d TRUNC iff truncated [DISCRIM] 
+  [PASS] T20e GREENBAD iff mismatched [DISCRIM] 
+  [PASS] T21 OK requires ctx+stream basis [DISCRIM] 
+  [PASS] T22 silent eager fallback is INVALID [DISCRIM] 
+  [PASS] T3 mutant g_measurement is load-bearing n=442368
+  [PASS] T3 mutant g_capture is load-bearing n=65568
+  [PASS] T3 mutant g_trunc is load-bearing n=115200
+  [PASS] T3 mutant g_green is load-bearing n=16032
+  [PASS] T3 mutant g_l1 is load-bearing n=5280
+  [PASS] T3 mutant g_l2 is load-bearing n=2688
+  [PASS] T3 mutant g_l3 is load-bearing n=1344
+  [PASS] T3 mutant g_capgreen is load-bearing n=672
+  [PASS] T3 mutant g_eager is load-bearing n=96
+  [PASS] T3 mutant g_excess is load-bearing n=96
+  [PASS] T3 mutant g_q1 is load-bearing n=288
+  [PASS] T3 mutant g_q1_floor is load-bearing n=192
+  [PASS] T3 mutant g_q1_value is load-bearing n=96
+  [PASS] T3 mutant g_ctx is load-bearing n=48
+  [PASS] T3 mutant g_contra is load-bearing n=24
+  [PASS] T3 mutant g_disconf is load-bearing n=48
+  [PASS] T3 mutant g_capjoin is load-bearing n=24
+  [PASS] T3 mutant g_join_none is load-bearing n=24
+  [PASS] T3 mutant g_join_value is load-bearing n=6
+  [PASS] T3 mutant g_basis is load-bearing n=48
+  [PASS] T3 mutant g_streamonly is load-bearing n=8
+  [PASS] T3 mutant g_order_capgreen_early is load-bearing n=36192
+  [PASS] T3 mutant g_order_ctl_before_trunc is load-bearing n=114240
+  [PASS] T3 mutant g_order_ctl_before_green is load-bearing n=13440
+  -- T8 meta: each check fails under each of its named mutants --
+  [PASS] T8 'T4  failed control never substanti' fails under g_l1 
+  [PASS] T8 'T6b unusable ctx never on a ctx ba' fails under g_basis 
+  [PASS] T8 'T7  capture-only join never OK' fails under g_capjoin 
+  [PASS] T8 'T9a UNCONSTR iff frac < 0.90' fails under g_q1 
+  [PASS] T8 'T9a UNCONSTR iff frac < 0.90' fails under g_q1_floor 
+  [PASS] T8 'T9a UNCONSTR iff frac < 0.90' fails under g_q1_value 
+  [PASS] T8 'T9b PARTIAL iff join_rate < 0.95' fails under g_join_value 
+  [PASS] T8 'T11 CONTRA iff distinct+mismatch' fails under g_contra 
+  [PASS] T8 'T11b DISCONF iff ctx=parent' fails under g_ctx 
+  [PASS] T8 'T11b DISCONF iff ctx=parent' fails under g_disconf 
+  [PASS] T8 'T12 TIMEATTR iff join_target=none' fails under g_join_none 
+  [PASS] T8 'T16 excess never OK/PARTIAL/UNCONS' fails under g_excess 
+  [PASS] T8 'T20a GREENCTX_INVISIBLE is clean' fails under g_green 
+  [PASS] T8 'T20a GREENCTX_INVISIBLE is clean' fails under g_order_ctl_before_green 
+  [PASS] T8 'T20a GREENCTX_INVISIBLE is clean' fails under g_order_ctl_before_trunc 
+  [PASS] T8 'T20a GREENCTX_INVISIBLE is clean' fails under g_trunc 
+  [PASS] T8 'T20b NODE_TRACE_UNAVAILABLE is cle' fails under g_green 
+  [PASS] T8 'T20b NODE_TRACE_UNAVAILABLE is cle' fails under g_order_ctl_before_trunc 
+  [PASS] T8 'T20b NODE_TRACE_UNAVAILABLE is cle' fails under g_trunc 
+  [PASS] T8 'T20c CAPGREEN is clean' fails under g_order_capgreen_early 
+  [PASS] T8 'T20d TRUNC iff truncated' fails under g_trunc 
+  [PASS] T8 'T20e GREENBAD iff mismatched' fails under g_green 
+  [PASS] T8 'T21 OK requires ctx+stream basis' fails under g_streamonly 
+  [PASS] T8 'T22 silent eager fallback is INVAL' fails under g_eager 
+  -- T10 meta: every mutant is caught by some check --
+  [PASS] T10 every mutant broken by >=1 check uncovered=none
+  -- T19 meta: is any check entailed by another (hollow)? --
+  [PASS] T19 no check is entailed by another entailed=none
+  [PASS] C1 totality (6,912 graph worlds) 
+  [PASS] C2 reachable: E1B_ALIVE n=1
+  [PASS] C2 reachable: E1B_DEAD n=4
+  [PASS] C2 reachable: E1B_GRAPH_TRACE_UNAVAILABLE n=48
+  [PASS] C2 reachable: E1B_GREEN_PARTITION_MISMATCH n=128
+  [PASS] C2 reachable: E1B_NEEDS_STREAM n=3
+  [PASS] C2 reachable: E1B_PROBE_INVALID n=968
+  [PASS] C2 reachable: E1B_TRACE_TRUNCATED n=1152
+  [PASS] C2 reachable: E1B_UNMEASURED n=4608
+  [PASS] C3 mutant h_measure is load-bearing n=4608
+  [PASS] C3 mutant h_capture is load-bearing n=672
+  [PASS] C3 mutant h_trunc is load-bearing n=1152
+  [PASS] C3 mutant h_green is load-bearing n=184
+  [PASS] C3 mutant h_ctl is load-bearing n=56
+  [PASS] C3 mutant h_l2g is load-bearing n=16
+  [PASS] C3 mutant h_l3g is load-bearing n=16
+  [PASS] C3 mutant h_capgreen is load-bearing n=8
+  [PASS] C3 mutant h_rows is load-bearing n=4
+  [PASS] C3 mutant h_ctx is load-bearing n=3
+  [PASS] C5 E1B_DEAD never when graph-trace control is empty 
+  [PASS] C5 meta: fails under h_l2g 
+  [PASS] C6 E1B_DEAD is clean of every other failure 
+  [PASS] C6 meta: fails under h_trunc 
+
+== 663,552 worlds | 17 labels | 24 mutants | 16 checks | companion 6,912 -> ALL PASS ==
+   wrote selftest_rev3_2026-08-24.json

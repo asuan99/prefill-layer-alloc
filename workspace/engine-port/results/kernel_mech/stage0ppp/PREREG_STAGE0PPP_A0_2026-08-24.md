@@ -1,9 +1,10 @@
 # 사전등록 — **Stage 0‴ A0**: nsys가 green-context **graph-node 커널**을 귀속 가능한 형태로 내는가
 
-**rev2** (2026-08-24). rev1은 규칙층 감사 **`NO-GO`**(차단 X1–X13, ★死因 없음,
-`../audit_stage0ppp_a0_2026-08-24/VERDICT.md`). 이 판본은 감사가 **구매 전제**로 지목한
-**X1·X3·X4·X5·X8**과 나머지 8건을 닫는다. **GPU 미집행 · 새 성능 판정 0건.**
-규칙 정본: **`stage0ppp_a0_rule.py`** (`RULE_REV=2`, sha256 `7d61d6bc821f4c83…`) — 문서와 코드가 다르면 **코드가 이긴다**.
+**rev3** (2026-08-24). rev1 규칙층 감사 **`NO-GO`**(X1–X13), rev2 **재감사도 `NO-GO`**(N1–N13, ★死因 없음,
+`../audit_stage0ppp_a0_rev2_2026-08-24/VERDICT.md`). 이 판본은 재감사가 **구매 전제**로 지목한 **N1·N2**와
+N3–N13을 닫는다. 이전 근거: rev1 판정(
+`../audit_stage0ppp_a0_2026-08-24/VERDICT.md`). **GPU 미집행 · 새 성능 판정 0건.**
+규칙 정본: **`stage0ppp_a0_rule.py`** (`RULE_REV=3`, sha256 `ca7f0fb615cdcd65…`) — 문서와 코드가 다르면 **코드가 이긴다**.
 
 ---
 
@@ -25,7 +26,7 @@ green ctx/스트림 **2개 동시**)다. 따라서:
 - ★**A0-양성은 엔진 그래프로 전이되지 않는다.** 특히 `stream_only` basis는 엔진에서 **훨씬 약해진다**
   (동시 스트림이 2개다). 결과에는 반드시 `substrate="synthetic_probe_graph"`를 병기한다.
 - ⇒ **A0+A1을 다 사도 2026-08-15 §2 Stage 0 항목 1은 미구매**로 남는다. **A1에 엔진 기판 Q1/Q2
-  재측정을 등록한다**(§11).
+  재측정을 등록한다**(§12 — rev2의 `(§11)`은 참조 오류였다, 재감사 N12).
 
 ### ★★ 0-2. 선행 등록 승계표 (감사 X11 — 승계 상실을 차단으로 채점했다)
 
@@ -37,7 +38,8 @@ rev1은 아래 두 문서를 **인용하지 않았고**, 그 결과 이미 저�
 | 같은 문서 **V14**(:190) | stock layerwise NVTX 훅 **존재**(file:line 3개) + *"Python 훅이라 eager 전용"* + ★**올바른 트리를 겨눈 grep 명령**(:643-645) | **아니오** — `../NVTX_EVIDENCE_CORRECTION_2026-08-24.md`가 승계 |
 | 같은 문서 **V15**(:191) / **가정 E5**(:210) / **프로브 P4**(:541,563) | nsys granularity 지원 · *"replay된 그래프에서 커널 행을 내는가 — **미검증**"* · **≈0.2 GPU-hr**(엔진 포함 s8 1셀) | ★**A0가 그 질문의 도구층 절반을 산다**(엔진 절반은 A1) |
 | `../DESIGN_KERNEL_MECH_2026-08-15.md` **§2 Stage 0 항목 1**(:58-71) | *"`nsys profile`이 pdmux green-context 스트림의 cudagraph 재생 커널을 타임라인에 기록하는가"*, **≈15분, exclusive 불필요**, ★*"이것이 통과하지 못하면 나머지 전부 무의미하다. **사전등록 전 필수**"* | ★**A0의 Q1이 이것이다**(합성 기판 한정, §0-1) |
-| 같은 문서 §2 정지 규칙(:70) | *"'측정 실패'로 기록하지 '게이트 실패'로 라벨하지 않는다(#21)"* | ★**승계** — A0의 측정조건 라벨 5종이 이것의 구현 |
+| 같은 문서 §2 정지 규칙(:70) **뒤 절반** | *"'측정 실패'로 기록하지 '게이트 실패'로 라벨하지 않는다(#21)"* | ★**승계** — A0의 측정조건 라벨 5종이 이것의 구현 |
+| 같은 문서 §2 정지 규칙(:70) **앞 절반** | *"1이 실패하면 **전 설계 폐기**"* | ★**승계하지 않고 대체한다**(재감사 N12 — rev2는 이 절반을 조용히 무효화했다). 사유: 단일 음성에 트랙 폐기를 붙이는 규칙은 부모 감사 **E1이 반증**했다(생존 경로 4개). 대체물 = `PRIMARY_ESTIMAND_UNCONSTRUCTIBLE` |
 | 같은 문서 §2 항목 2–4(ncu·카운터 오염·서버 생존) | — | **폐기** — Stage B(ncu)는 P1 프로브가 이미 폐기 확정 |
 
 ★**감사 판정 인용**: *"이 트랙의 가장 비싼 지출은 GPU가 아니라 이 프로브를 안 산 것"* — A0는
@@ -51,7 +53,17 @@ rev1은 아래 두 문서를 **인용하지 않았고**, 그 결과 이미 저�
 | **Q2a** | 그 행의 `greenContextId`가 **`NULL`/0이 아닌 값으로 채워지고** `streamId`가 L3의 green 스트림과 **일치**하는가 | 3분기 |
 | **Q2b** | 그 행의 `correlationId`가 **그 replay의 `cudaGraphLaunch` RUNTIME 행과 조인**되는가 (성공률 ≥ `JOIN_HIGH`=0.95) | 성공률 병기 |
 
-## 2. 다리 — ★대조 **4겹** (부모 E2 + 감사 X5)
+## 2. 다리 **5개** — ★대조 4겹 (부모 E2 · X5 · 재감사 N7)
+
+★**재감사 N7 정정**: rev2는 §2·§9에서 5 다리, §4에서 4 다리, companion 코드에서 3 다리라고 적었다.
+**정본은 5 다리**(L1·L2·L3·L4·L2′)이고 **두 입도 각각** 실행하며 **companion도 5 다리**로 채점한다.
+
+★★**분기 순서도 규칙의 일부다**(재감사 N1). 등록 순서:
+**① 측정(run/export) → ② 전면 캡처 실패 → ③ 무결성(절단) → ④ green realized → ⑤ 존재 대조(L1·L2·L3)
+→ ⑥ 비대칭 캡처 → ⑦ 조용한 eager fallback → ⑧ Q1 → ⑨ 귀속 → ⑩ 조인**.
+rev2는 순서를 자유 모수로 등록하지 않았고, 순서를 바꾸면 라벨 3,840–18,816개가 바뀌는데도 자기검사가
+전부 통과했다. rev3은 순서를 **자유 모수 #26**으로 등재하고 **순서 mutant 3종**(`g_order_capgreen_early`·
+`g_order_ctl_before_trunc`·`g_order_ctl_before_green`)으로 **배타성 검사 `T20a–e`가 실제로 깨지는지** 실증한다.
 
 한 프로세스에서 **아래 순서로** 실행, granularity마다 `.nsys-rep` 하나:
 
@@ -75,16 +87,17 @@ rev1은 이 실패를 `PRIMARY_ESTIMAND_UNCONSTRUCTIBLE`(실질 라벨)로 채�
 
 ## 3. 판정 규칙 = **코드** (게이트 #66)
 
-`stage0ppp_a0_rule.py` `RULE_REV=2`. 자기검사 아티팩트: **`selftest_rev2_2026-08-24.{txt,json}`**.
+`stage0ppp_a0_rule.py` `RULE_REV=3`. 자기검사 아티팩트: **`selftest_rev3_2026-08-24.{txt,json}`**
+(★재감사 N10 수리 — 이제 **커밋된 스크립트 자신이 `.json`을 쓴다**).
 
-| | rev1 | **rev2** |
-|---|---|---|
-| 세계 | 8,192 | ★**414,720** |
-| 라벨 | 11 | **15**(전부 도달 가능 실증) |
-| mutant | 12 | **18**(전부 load-bearing) |
-| 판별 검사 | 3 | ★**12** |
-| **mutant 커버리지** | ★**8/12** | ★**18/18** |
-| 공허한 검사 | 미검사 | ★**0건**(최소 구속 8세계, 전 검사 실측) |
+| | rev1 | rev2 | **rev3** |
+|---|---|---|---|
+| 세계 | 8,192 | 414,720 | ★**663,552** |
+| 라벨 | 11 | 15 | **17** |
+| mutant | 12 | 18 | ★**24**(★**분기 순서 mutant 3종 포함**) |
+| 판별 검사 | 3 | 12 | **16** |
+| mutant 커버리지 | 8/12 | 18/18 | **24/24** |
+| ★**함의된(공허한) 검사** | 미검사 | ★**2건**(`T14`·`T15`가 `T4`에 함의) | ★**0건**(`T19`로 전수 확인) |
 
 ★**추가된 메타 검사 `T10`**(감사 X2의 실질): *"모든 mutant가 판별검사 ≥1개를 깬다"*.
 **반증 가능성 실증** — 12개 검사 중 **9개**는 제거하면 커버리지가 **실제로 깨진다**(예: `T9a` 제거 →
@@ -146,7 +159,8 @@ rev2는 (a) `join_rate`를 실수 축으로 만들어 `JOIN_HIGH`로 비교하�
 `E1B_GRAPH_TRACE_UNAVAILABLE`로 분기한다. **이 다리는 이미 사고 있으므로 추가 비용 0.**
 
 ★**답하지 않는 것**: `[:<launch origin>]` = `host-only\|host-and-device`(호스트/디바이스 **코드** 기원)이며
-**캡처/replay 시점을 가르지 않는다** ⇒ **부모 E5 미해결**. ★감사 추가 확인: launch origin은
+**캡처/replay 시점을 가르지 않는다**(★rev2 정정, 재감사 N11: *"launch origin은 granularity=graph에서만 지원"* 은
+**`host-and-device` 값에만** 걸린다 — `host-only`엔 제한이 없다) ⇒ **부모 E5 미해결**. ★감사 추가 확인: launch origin은
 **granularity=graph에서만 지원**되고 **기본 granularity는 driver ≥11.7이면 `graph`** ⇒ 1차 실행에
 `=node`를 **명시하는 것이 필수**다.
 
@@ -164,6 +178,13 @@ rev2는 (a) `join_rate`를 실수 축으로 만들어 `JOIN_HIGH`로 비교하�
 모수에서 빠뜨렸다. **총 권한 실패는 `MEASUREMENT_ABSENT`가 흡수하지만 부분 실패는 `TRACE_TRUNCATED`가
 받는다**(rev1에선 실질 라벨로 샜다).
 
+★★**관측 채널 등록(재감사 N6)** — rev2는 축만 만들고 *채우는 방법*을 하네스에 남겼다:
+- **`green ∈ {matched, mismatched, absent}`**: ★**프로브 자신의 CUDA API 값**으로 판정한다
+  (green ctx 생성 반환값 + `numMultiprocessors`를 target `[74,34]`과 대조). ★**nsys 쪽 값
+  (`TARGET_INFO_CUDA_CONTEXT_INFO.isGreenContext`)을 쓰면 Q2a와 순환**하므로 **금지**한다.
+- **`export ∈ {ok, partial, fail}`**: `nsys export` 종료코드 + ★**`nsys stats`의 손실/드롭 경고**로 판정한다
+  (§6에 `--stats` 등록). 경고 원문을 아티팩트에 기록한다.
+
 ## 6. 프로파일러 호출 — 전 스위치 등록
 
 ```
@@ -172,12 +193,13 @@ nsys profile --trace=cuda --sample=none --cpuctxsw=none --gpu-metrics-devices=no
              python3 stage0ppp_a0_probe.py --granularity node
 # 2차: --cuda-graph-trace=graph, -o a0_graph_<jobid>, --granularity graph
 nsys export --type sqlite <rep> -o <sqlite>
+nsys stats --report cuda_gpu_kern_sum <rep>   # ★재감사 N6: 손실/드롭 경고를 export 판정에 쓴다
 ```
 
 - `--sample`·`--cpuctxsw`는 target을 launch하면 **기본이 `process-tree`** 이므로 `none` 명시가 필요하다(감사 ⑤-5).
-- ★**`--exclusive`·`--constrain=hwperf` 불필요** — 감사가 `--help`로 확인: root/paranoid 요구는
-  `--cpu-core-events`·`--cpuctxsw=system-wide`·`--cuda-event-trace`·`--ftrace`·`--run-as`·
-  `--sample=system-wide`에만 붙고 **`--trace=cuda`에는 없다**. ⇒ 비exclusive `--gres=gpu:1`.
+- ★**`--exclusive`·`--constrain=hwperf` 불필요** — 감사가 `--help`로 확인: ★**rev2 정정(재감사 N11)**: rev2가 권한 요구 목록에 넣은 `--cuda-event-trace`는
+  2025.3.2 `--help`에 **권한 문구가 없다**(메인 세션 직접 재확인). 목록에서 **삭제한다**.
+  ★**결론은 불변**: `--trace=cuda`에 root/paranoid 요구가 **없다**는 것은 독립 확인됐다. ⇒ 비exclusive `--gres=gpu:1`.
   (★단 이 클러스터엔 반대 선례가 있다 — `../p1_probe/p1_greenctx_ncu_nonexcl.sbatch:26-30`
   *"`--constrain=hwperf` requires `--exclusive`"*, 비exclusive ncu는 `ERR_NVGPUCTRPERM`. 모순은
   **아니다**(카운터 권한 vs CUPTI activity 층) — 그래서 §5에 권한 축을 등록한다.)
@@ -199,7 +221,7 @@ rev1은 **비율 문턱만** 고정하고 *어떤 행이 분자에 드는가*와
   하나여서 **균일 손실**(L2 기대치가 함께 줄어 비율이 상쇄 ⇒ 정상으로 보임, 교훈 #20)과 후반 손실을
   구분하지 못했다.
 
-## 8. 자유 모수 — ★**재열거 25개**("전수" 표기는 이 목록에 한한다)
+## 8. 자유 모수 — ★**재열거 27개**("전수" 표기는 이 목록에 한한다)
 
 1 SLURM 할당(비exclusive) · 2 `--trace` · 3 `--sample` · 4 `--cpuctxsw` · 5 `--gpu-metrics-devices` ·
 6 입도(node/graph **2회**) · 7 launch origin(기본) · 8 `-o`/`--force-overwrite` · 9 종료 방식 ·
@@ -208,7 +230,8 @@ rev1은 **비율 문턱만** 고정하고 *어떤 행이 분자에 드는가*와
 17 아티팩트 형식(`.json` 단일 정본) · 18 결정성(무작위 없음) ·
 ★19 **행 선택 술어**(§7) · ★20 **기대치 산출식**(§7, 중앙값 vs 평균 fallback) ·
 ★21 **다리 실행 순서**(L1→L2→L3→L4→**L2′**) · ★22 **두 입도 실행의 순서·독립성**(별 프로세스, node 먼저) ·
-★23 **권한 상태 3종**(§5) · ★24 `Q1_FRAC=0.90` · ★25 `JOIN_HIGH=0.95`
+★23 **권한 상태 3종**(§5) · ★24 `Q1_FRAC=0.90` · ★25 `JOIN_HIGH=0.95` ·
+★26 **`score()`의 분기 순서**(§2, 재감사 N1) · ★27 **`green`·`export` 축의 관측 채널**(§5, 재감사 N6)
 
 ## 9. 예산 — ★**등록 가격은 벽시계 상한** (감사 X9)
 
@@ -230,29 +253,38 @@ rev1은 **비율 문턱만** 고정하고 *어떤 행이 분자에 드는가*와
 ★**`.json` 단일 정본**(게이트 #56 — R0 결함 N1: `.txt` 절단으로 3필드 소실) · ★**필드명↔값 극성 일치**
 (게이트 #57) · 병기 필수: nsys/CUDA/driver(**컴퓨트 노드**) · **권한 3종** · `realized_sm` · 규칙 sha256 ·
 `profile` 벡터 · `eager_contamination` · `expectation_basis` · 조인 성공률 · **basis** · `substrate`.
-
 ## 11. ★ 쓰면 안 되는 문장
 
 **승계**: *"kernel_mech 트랙을 열었다/닫았다"* · *"rev7·rev8 차단이 해소됐다"*(B1–B5·B7 / C1–C10 **불변**) ·
 *"`TOOL_CANNOT_DEFINE_K_SET`는 트랙 종결 조건이다"* · *"엔진에 NVTX가 없다"* · *"NVTX 선행조건이 사라졌다"* ·
-*"nsys는 green-context 커널을 낸다"*(A0 실행 전) · HE0 · gate #13/#16 · switch-cost · C2 인용정지 (a)(b).
+*"nsys는 green-context 커널을 낸다"*(A0 실행 전) · HE0 · gate #13/#16 · switch-cost · C2 인용정지 (a)(b) ·
+**rev1 감사(X1–X13) 신설분 전부**.
 
-**감사 X1–X13이 신설한 것**:
-- ✗ *"A0가 통과하면 엔진 decode 그래프에서도 node row가 난다"*(X8 — 기판이 다르다)
-- ✗ *"Q1·Q2b가 NVTX 선행조건 질문에 실측으로 답한다"* — ★**rev1 §10에 있던 문장이며 삭제했다**(A0는 엔진을 돌리지 않는다)
-- ✗ *"A0가 2026-08-15 §2 Stage 0 항목 1을 이행했다"*(필요조건 스크린일 뿐)
-- ✗ *"규칙이 코드로 고정됐으므로 문턱이 보호된다"* — rev1에 대해 **거짓이었다**. rev2에 대해서만, `T9a`·`T9b`·`T10` 범위에서 참
-- ✗ *"`T8`이 항등식을 잡는다"* / *"초판 `T6b`는 항등식이었다"*(X2 — 철회됨)
-- ✗ *"mutant가 전부 판별검사로 덮인다"* — rev1은 **8/12**였다. rev2는 18/18이나 **`T10`을 실행해 확인한 범위에서만**
-- ✗ *"`E1B_DEAD` = (b) 경로가 죽었다"* — **L2g 대조 없이 금지**(X4)
-- ✗ *"`KSET_CONSTRUCTIBLE`이 떴으므로 green context 귀속이 선다"* — **basis 없이 금지**(X3)
-- ✗ *"A0는 0.03–0.05 GPU-hr다"*(X9 — 등록가는 상한 0.33)
-- ✗ *"`PROBE_INVALID`이므로 아무것도 알 수 없다"*(X13 — `CAPTURE_FAILS_ONLY_UNDER_GREEN`은 실질 사실)
+**rev2 재감사(N1–N13)가 신설 — 전부 승계**:
+- ✗ *"rev2/rev3이 규칙층 감사를 통과했다"* — ★**rev3은 미감사**다.
+- ✗ ★★★ *"`T14`/`T15`가 X3/X5를 검증한다"* / *"`T14`가 276,480 세계를, `T15`가 304,128 세계를 구속한다"* —
+  ★**둘 다 `T4`에 함의됐다**(반례 0/18,662,400). **한계 구속 0세계.** rev3에서 배타성 형태로 교체했고
+  `T19`가 함의 쌍을 전수 검사한다.
+- ✗ ★★★ *"규칙이 코드로 고정됐으므로 채점이 보호된다"* — rev2에 대해 **거짓이었다**(분기 순서가 무방비).
+  rev3에 대해서만, **순서 mutant 3종과 `T20a–e`가 확인한 범위에서** 참.
+- ✗ ★★ *"문턱 0.90/0.95가 코드에 산다"* — rev2에선 **밴드 `(0.80,1.00]` / `[0.95,1.00]`에만** 살았다.
+  rev3은 `frac`에 0.89/0.91을 넣고 `T9b`를 iff로 올렸으나, **밴드가 완전히 한 점으로 좁혀졌다는 주장은 하지 않는다.**
+- ✗ ★★ *"`GREENCTX_INVISIBLE`은 green-무관 도구 한계다"* — rev2에선 부분 export·후행 대조 사망·파티션
+  불일치·green 부재가 **전부 이 라벨로 왔다**(clean 6.3%). rev3은 `T20a`로 막았으나 **이 문장 자체는 금지 유지**.
+- ✗ ★★ *"`CAPTURE_FAILS_ONLY_UNDER_GREEN`은 실질 사실이다"* — rev2에선 정합 24세계 중 **clean 1개**.
+- ✗ ★★ *"green ctx가 realized로 검증되므로 `stream_only`가 정당화된다"* — `matched`는 **컨텍스트 생성**의
+  증거이지 **커널 소속**의 증거가 아니다. rev3은 아예 **`OK`가 `ctx+stream` basis를 요구**하도록 바꿨다.
+- ✗ ★ *"companion이 고쳐졌다"*(rev2 기준) · *"조용한 eager fallback이 흡수된다"*(rev2 기준).
+- ✗ ★ *"자기검사가 아티팩트로 재현된다"*(rev2 기준 — `.json`을 커밋된 스크립트가 만들 수 없었다).
+- ✗ ★ *"`--cuda-event-trace`는 root/paranoid를 요구한다"*(**거짓**) · *"launch origin은 graph 입도에서만
+  지원된다"*(**`host-and-device` 값만**).
+- ✗ *"세계 공간이 커졌으므로 커버리지가 그만큼 커졌다"* — rev2의 414,720 중 **정합은 7,072개**(98.29% 부정합).
+  ★rev3의 663,552에도 같은 주의가 적용된다.
 
 ## 12. 다음 단계
 
-**① 규칙층 감사(rev2 재감사)** → ② 하네스(`stage0ppp_a0_probe.py` + `.sbatch`) → ③ **하네스층 감사(2단)** → ④ 제출.
-★**②③ 없이 제출 금지.** ★**A1에 등록할 것**(§0-1): 엔진 기판 Q1/Q2 재측정 · K1(양 다리 모두 엔진
+**① 규칙층 감사(rev3 재감사)** → ② 하네스(`stage0ppp_a0_probe.py` + `.sbatch`) → ③ **하네스층 감사(2단)** → ④ 제출.
+★**②③ 없이 제출 금지.** ★**A1에 등록할 것**(§0-1): **엔진 기판 Q1/Q2 재측정** · K1(양 다리 모두 엔진
 telemetry ITL 중앙값) · Q3(축소). ★감사 권고 — node 입도의 *"significant runtime overhead"*(도구 문서
 자신의 경고)에 대해 **프로파일러 없이 같은 프로브를 1회 더 도는 다리**를 붙이면 K1의 **프로브층 하한**을
 거의 공짜로 산다(★엔진 K1로 전이 금지).
@@ -263,10 +295,15 @@ telemetry ITL 중앙값) · Q3(축소). ★감사 권고 — node 입도의 *"si
 |---|---|---|
 | Stage 0″ | (전신) | 규칙층 감사 `NO-GO`, 차단 E1–E11 |
 | A0 rev1 | 규칙 코드화·대조 3겹·E5 분기·companion | 규칙층 감사 `NO-GO`, 차단 **X1–X13**, 死因 없음 |
-| **rev2** X1 문턱을 코드에 살림 | `join_rate` 실수 축 + `T9a`/`T9b` 리터럴 재선언 + 값 변이 mutant | `T8`: `g_q1_value`·`g_q1_floor`·`g_q1`·`g_join_value`에서 **실제 실패 확인**(`selftest_rev2_2026-08-24.txt`) |
-| **rev2** X2 커버리지 메타검사 | `T10` 신설 + 판별검사 3→**12** | `T10` **반증 가능성 실측**: 12개 중 **9개**를 제거하면 커버리지가 실제로 깨짐. 공허 검사 **0건**(최소 구속 8세계) |
-| **rev2** X3 green-ness 가드 | 축 `green ∈ {matched,mismatched,absent}` + `GREEN_PARTITION_MISMATCH` | `T14`(+`T8` `g_green`), `n=276,480` 세계 구속 |
-| **rev2** X4 companion 대조 | `l2g`·capture·export·green 축 + `E1B_GRAPH_TRACE_UNAVAILABLE` | `C5`(+메타 `h_l2g`), companion 512 세계 `C1–C5` PASS |
-| **rev2** X5 절단 가드 | `profile` 벡터 + **L2′ 후행 대조** + export 3분기 | `T15`(+`T8` `g_trunc`), `n=304,128` 세계 구속 |
-| **rev2** X13 비대칭 캡처 | `CAPTURE_FAILS_ONLY_UNDER_GREEN` | `T17`(+`T8` `g_capgreen`·`g_capture`), 도달 `n=23,040` |
-| **rev2** X6·X7·X8·X9·X10·X11·X12 | 행 술어·기대치 산출식 등록 · 라벨 표 **15+6 전수** · 전이 간극 §0-1 · 등록가 상한 · 권한 축 · **선행 등록 승계표 §0-2** · 자기검사 아티팩트 저장 | `selftest_rev2_2026-08-24.json`(`uncovered_mutants: []`) · 라벨 표 ↔ 코드 자동 대조 |
+| A0 rev2 | X1–X13 반영 시도 | ★**재감사 `NO-GO`, 차단 N1–N13, 死因 없음** — 닫힘 4 · **부분 9** |
+| ~~rev2 X3 검증 = `T14`, n=276,480 세계 구속~~ | ★**철회(N2)** | `T4 ⟹ T14` 반례 **0/18,662,400** ⇒ **한계 구속 0세계**(메인 세션 재현) |
+| ~~rev2 X5 검증 = `T15`, n=304,128 세계 구속~~ | ★**철회(N2)** | `T4 ⟹ T15` 반례 **0** ⇒ 동일 |
+| **rev3** N1 분기 순서 | 순서 재배치(§2 ①–⑩) + **순서 mutant 3종** + **배타성 검사 `T20a–e`** | `T8`: `T20c`가 `g_order_capgreen_early`에서, `T20a/b`가 `g_order_ctl_before_trunc`에서 **실제 실패 확인**(`selftest_rev3_2026-08-24.txt`) |
+| **rev3** N2 함의 배제 | `T14`/`T15`를 배타성 형태로 교체 + ★**메타검사 `T19`** 신설 | `T19` 전 쌍(24×23) 전수 → **함의 0쌍**(`entailed_pairs: []`). ★2단 탐색은 **건전**하다(부분집합의 반례는 전 공간의 반례) |
+| **rev3** N3 문턱 밴드 | `PROFILE_FRAC`에 0.89/0.91 + `T9b` iff 승격 | `T9a`/`T9b`가 `g_q1_value`(0.85)·`g_join_value`에서 실제 실패 |
+| **rev3** N4 적극적 반대 증거 | `ctx="parent"` → 신규 **`ATTRIBUTION_DISCONFIRMED`** + `T11b` | `T11b`가 `g_disconf`·`g_ctx`에서 실제 실패 |
+| **rev3** N5·N7 companion | **5 다리**로 확장 + `mismatched`·`partial`·`fail_green_only`·`l2g_post` 축 + `E1B_TRACE_TRUNCATED`·`E1B_GREEN_PARTITION_MISMATCH` | companion **6,912 세계**, `C1–C6` PASS, `C6`(=`E1B_DEAD`가 다른 실패로 오염되지 않음)이 `h_trunc`에서 실제 실패 |
+| **rev3** N8 stream 구조성 | **`OK`는 `ctx+stream` basis를 요구**, `stream_only`는 신규 **`KSET_STREAM_ONLY_ATTRIBUTION`**(1차 추정량 아님) | `T21`이 `g_streamonly`에서 실제 실패 |
+| **rev3** N9 eager fallback | `profile="eager_only"` 축 + **`PROBE_INVALID`** 분기 | `T22`가 `g_eager`에서 실제 실패 |
+| **rev3** N6·N10·N11·N12·N13 | 관측 채널 등록(§5) · **커밋된 스크립트가 `.json`을 쓴다** · nsys 문장 2건 정정 · 승계표 "대체" 명시 + `(§11)`→`(§12)` · 정본 금지문 정정 | `selftest_rev3_2026-08-24.json`(`all_pass: true`, `uncovered_mutants: []`, `entailed_pairs: []`) · `nsys profile --help` 재확인 · `PROJECT_STATUS.md:4587` 정정 |
+| **rev3** 자기 검출 2건 | `_reaches_join`이 `join_target=="replay"`를 요구해 `T12`/`T9b` iff가 성립 불가 · `T20a/b`가 `capture=="ok"`를 과잉 요구 | ★**검사 스위트가 첫 실행에서 잡았다**(5 FAIL → 수리 → 1 FAIL → 수리 → `ALL PASS`). ★그 1건도 **검사↔mutant 짝짓기 실패**(라벨 삭제 mutant로는 "clean" 검사를 못 깬다)였고 **순서 mutant 도입으로 해소**했다 |
