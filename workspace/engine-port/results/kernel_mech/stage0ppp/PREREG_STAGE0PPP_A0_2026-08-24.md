@@ -1,10 +1,10 @@
 # 사전등록 — **Stage 0‴ A0**: nsys가 green-context **graph-node 커널**을 귀속 가능한 형태로 내는가
 
-**rev3** (2026-08-24). rev1 규칙층 감사 **`NO-GO`**(X1–X13), rev2 **재감사도 `NO-GO`**(N1–N13, ★死因 없음,
-`../audit_stage0ppp_a0_rev2_2026-08-24/VERDICT.md`). 이 판본은 재감사가 **구매 전제**로 지목한 **N1·N2**와
-N3–N13을 닫는다. 이전 근거: rev1 판정(
+**rev4** (2026-08-24). rev1 규칙층 감사 **`NO-GO`**(X1–X13), rev2 **재감사 `NO-GO`**(N1–N13), rev3 **3차 감사도 `NO-GO`**(R1–R10, ★死因 없음,
+`../audit_stage0ppp_a0_rev3_2026-08-24/VERDICT.md`) — ★★단 3차 감사는 **"구매 저지 사유는 소멸했다"** 고 판정하고
+**(a) 지금 사라**를 권고하며 **R1–R10은 편집 + 재실행으로 닫으라**고 명시했다. 이 판본이 그 이행이다. 이전 근거: rev1 판정(
 `../audit_stage0ppp_a0_2026-08-24/VERDICT.md`). **GPU 미집행 · 새 성능 판정 0건.**
-규칙 정본: **`stage0ppp_a0_rule.py`** (`RULE_REV=3`, sha256 `ca7f0fb615cdcd65…`) — 문서와 코드가 다르면 **코드가 이긴다**.
+규칙 정본: **`stage0ppp_a0_rule.py`** (`RULE_REV=4`, sha256 `23b7335557fcff34…`) — 문서와 코드가 다르면 **코드가 이긴다**.
 
 ---
 
@@ -87,21 +87,28 @@ rev1은 이 실패를 `PRIMARY_ESTIMAND_UNCONSTRUCTIBLE`(실질 라벨)로 채�
 
 ## 3. 판정 규칙 = **코드** (게이트 #66)
 
-`stage0ppp_a0_rule.py` `RULE_REV=3`. 자기검사 아티팩트: **`selftest_rev3_2026-08-24.{txt,json}`**
+`stage0ppp_a0_rule.py` `RULE_REV=4`. 자기검사 아티팩트: **`selftest_rev4_2026-08-24.{txt,json}`**
 (★재감사 N10 수리 — 이제 **커밋된 스크립트 자신이 `.json`을 쓴다**).
 
-| | rev1 | rev2 | **rev3** |
-|---|---|---|---|
-| 세계 | 8,192 | 414,720 | ★**663,552** |
-| 라벨 | 11 | 15 | **17** |
-| mutant | 12 | 18 | ★**24**(★**분기 순서 mutant 3종 포함**) |
-| 판별 검사 | 3 | 12 | **16** |
-| mutant 커버리지 | 8/12 | 18/18 | **24/24** |
-| ★**함의된(공허한) 검사** | 미검사 | ★**2건**(`T14`·`T15`가 `T4`에 함의) | ★**0건**(`T19`로 전수 확인) |
+| | rev1 | rev2 | rev3 | **rev4** |
+|---|---|---|---|---|
+| 세계 | 8,192 | 414,720 | 663,552 | **1,327,104** |
+| ★**정합 세계** | 미계산 | 미계산 | ★**미계산**(3차 감사 R9) | ★**33,088 등록** |
+| ★**정합 세계에서 도달 불가 라벨** | — | — | ★**2개**(R1) | ★**0개** |
+| 라벨 | 11 | 15 | 17 | **18** |
+| mutant | 12 | 18 | 24 | **27**(★순서 mutant **5종**) |
+| 판별 검사 | 3 | 12 | 16 | **17** |
+| mutant 커버리지 | 8/12 | 18/18 | 24/24 | **27/27** |
+| ★**함의된 검사** | 미검사 | ★**2건** | ★**2건**(곱공간이라 미검출, R3) | ★**0건**(실제 평가 공간) |
+| ★**단독 구속 0인 검사** | 미검사 | 미검사 | ★**1건**(`T22`) | ★**0건**(최소 4) |
 
-★**추가된 메타 검사 `T10`**(감사 X2의 실질): *"모든 mutant가 판별검사 ≥1개를 깬다"*.
-**반증 가능성 실증** — 12개 검사 중 **9개**는 제거하면 커버리지가 **실제로 깨진다**(예: `T9a` 제거 →
-`g_q1`·`g_q1_floor`·`g_q1_value` 미커버).
+★**메타 검사 3개**: `T8`(각 검사가 지정 mutant에서 실제로 실패) · `T10`(모든 mutant가 검사 ≥1개를 깬다) ·
+★**`T19a/b`**(어떤 검사도 다른 검사에 **함의되지 않고**, 각 검사가 **자기만 구속하는 배정을 갖는다**).
+
+★**R7 정정**: rev3까지 실려 있던 *"12개 검사 중 9개는 제거하면 커버리지가 깨진다(예: `T9a` 제거 →
+`g_q1`·`g_q1_floor`·`g_q1_value` 미커버)"* 는 **rev2의 수치이며 rev3에서는 거짓**이다(3차 감사 R7 —
+재실행 없이 승계된 문장). 검사가 늘어 `g_q1` 계열은 여러 검사가 덮는다. **삭제 실험을 커버리지 지표로
+쓰는 것 자체를 폐기**하고, 더 강한 `T19b`(**단독 구속**)로 대체한다.
 
 ★**X1 수리 — 문턱이 이제 코드에 산다**: rev1에서 `JOIN_HIGH=0.95`는 `score()`가 **한 번도 참조하지
 않는 死코드**였고 `Q1_FRAC`은 **0.60/0.70/0.99 어느 값으로 바꿔도 자기검사가 전부 통과**했다.
@@ -139,14 +146,18 @@ rev2는 (a) `join_rate`를 실수 축으로 만들어 `JOIN_HIGH`로 비교하�
 | `CONTRADICTORY_ATTRIBUTION` | ctx는 green, stream은 아님 | **하네스/분석기 버그** ⇒ 판정 안 함 |
 | `KSET_JOINS_CAPTURE_NOT_REPLAY` | 부모 E5 | 필드 존재를 *"Q2=예"* 로 쓰기 금지 |
 | `KSET_NEEDS_TIME_ATTRIBUTION` | 조인 대상 없음 | E1-(d)로 이동. 실패 아님 |
-| `KSET_CONSTRUCTIBLE_PARTIAL` / `KSET_CONSTRUCTIBLE` | 조인율 < / ≥ 0.95 | ★★**basis 없이 인용 금지** — `stream_only`면 `greenContextId`가 **아니라** `streamId`로 선 것이다 |
+| `EXPECTATION_UNVERIFIABLE` | ★**R6 신설** — L2 조인 실패로 분모가 `total/20`(mean) fallback | ★**Q1을 채점하지 않는다**. mean 분모에서는 양 다리 균일 손실이 **상쇄**돼 `frac≈1.0`이 된다(교훈 #20) ⇒ *"노드 행이 충분하다"* 로 읽기 **금지** |
+| ★`ATTRIBUTION_DISCONFIRMED` | **N4 신설** — `ctx="parent"`(행이 **green이 아닌 컨텍스트 소속**이라는 적극적 관측) | ★*"도구가 귀속을 못 한다"*(도구 한계)로 읽기 **금지** — 도구는 답했고 그 답이 **부정**이다. `Q1` 실패로 읽는 것도 금지 |
+| ★`KSET_STREAM_ONLY_ATTRIBUTION` | **N8 신설** — 멤버십이 `streamId`로만 선 경우 | ★★**1차 추정량이 아니다.** 등록된 스트림 배치(§8 #15)에서 L3·L4가 **같은 green 스트림**을 쓰므로 stream 일치는 **구조적**이고 증거가 아니다. *"green context 귀속이 섰다"* 로 쓰기 **금지** |
+| `KSET_CONSTRUCTIBLE_PARTIAL` / `KSET_CONSTRUCTIBLE` | 조인율 < / ≥ 0.95 | ★**`OK`는 `ctx+stream` basis에서만 난다**(N8). basis 병기 필수 |
 
 **companion (입도 `graph`)**
 
 | `E1B_UNMEASURED` / `E1B_PROBE_INVALID` | 측정 조건 | 판정 금지 |
 | ★`E1B_GRAPH_TRACE_UNAVAILABLE` | **L2g(full-GPU) whole-graph 행 0** | ★**green 무관 도구 한계** — *"(b) 경로가 죽었다"* 로 쓰기 금지 |
 | `E1B_DEAD` | L2g는 있는데 **green에서만** 없음 | (b) 경로 부정. **L2g 대조 없이 인용 금지** |
-| `E1B_NEEDS_STREAM` / `E1B_ALIVE` | ctx 불가 / 가능 | basis 병기 |
+| ★`E1B_TRACE_TRUNCATED` / ★`E1B_GREEN_PARTITION_MISMATCH` | **N5 신설**(primary와 동형) | 도구 판정 **금지** — 측정 조건이다 |
+| `E1B_NEEDS_STREAM` / `E1B_ALIVE` | ctx 불가 / 가능 | ★**R8**: companion엔 **stream 축이 없다** — 이 이름은 *"ctx를 못 쓴다"* 는 뜻일 뿐 **stream으로 대체 가능하다는 주장이 아니다**. basis 개념 없음 |
 
 ## 4. E1-(b)를 **같은 job에서** 산다 + companion 대조 (감사 X4)
 
@@ -191,7 +202,9 @@ rev2는 (a) `join_rate`를 실수 축으로 만들어 `JOIN_HIGH`로 비교하�
 nsys profile --trace=cuda --sample=none --cpuctxsw=none --gpu-metrics-devices=none \\
              --cuda-graph-trace=node  -o <out>/a0_node_<jobid>  --force-overwrite true \\
              python3 stage0ppp_a0_probe.py --granularity node
-# 2차: --cuda-graph-trace=graph, -o a0_graph_<jobid>, --granularity graph
+# 2차: --cuda-graph-trace=graph:host-only  (★R10: driver >=12.3에서 기본이 `host-and-device`이고
+#      도구 문서가 스스로 오버헤드를 경고한다. 이 클러스터는 580.105.08 ⇒ 해당. 명시 등록한다.)
+#      -o a0_graph_<jobid>, --granularity graph
 nsys export --type sqlite <rep> -o <sqlite>
 nsys stats --report cuda_gpu_kern_sum <rep>   # ★재감사 N6: 손실/드롭 경고를 export 판정에 쓴다
 ```
@@ -216,12 +229,17 @@ rev1은 **비율 문턱만** 고정하고 *어떤 행이 분자에 드는가*와
   세고 그 **중앙값**을 `expected_nodes_per_replay`로 쓴다. 조인이 L2에서 불가하면
   `total/20`으로 대체하고 `expectation_basis="mean"`을 **아티팩트에 기록**(fallback 사실을 숨기지 않는다).
 - **`frac`** = L4 노드 행 수 / (`expected_nodes_per_replay` × 20).
+- ★★**R6 — 분모 fallback에 축·라벨·가드를 준다**: rev3까지 `expectation_basis="mean"` fallback이
+  **1차 결정량의 분모를 바꾸는데** 코드에 축도 라벨도 가드도 없었다(`expectation_basis` 등장 0회).
+  rev4는 **축 `l2_join ∈ {ok, fail}`**(L2의 `correlationId`→`cudaGraphLaunch` 조인이 서는가)을 넣고,
+  `fail`이면 **`EXPECTATION_UNVERIFIABLE`** 로 채점해 **Q1을 아예 채점하지 않는다**. 이유: mean 분모에서는
+  양 다리의 **균일 손실이 상쇄**돼 `frac ≈ 1.0`이 된다(교훈 #20 — 귀무 채택형 게이트가 노이즈를 보상한다).
 - ★**replay별 벡터를 함께 낸다**(감사 X5): `profile ∈ {full, uniform_short, tail_missing, excess, empty}`.
   `tail_missing`(접미 replay 결손) → `TRACE_TRUNCATED`이지 Q1의 답이 **아니다**. rev1은 스칼라
   하나여서 **균일 손실**(L2 기대치가 함께 줄어 비율이 상쇄 ⇒ 정상으로 보임, 교훈 #20)과 후반 손실을
   구분하지 못했다.
 
-## 8. 자유 모수 — ★**재열거 27개**("전수" 표기는 이 목록에 한한다)
+## 8. 자유 모수 — ★**재열거 28개** + ★**R5: 값 5개 신규 등록**("전수" 표기는 이 목록에 한한다)
 
 1 SLURM 할당(비exclusive) · 2 `--trace` · 3 `--sample` · 4 `--cpuctxsw` · 5 `--gpu-metrics-devices` ·
 6 입도(node/graph **2회**) · 7 launch origin(기본) · 8 `-o`/`--force-overwrite` · 9 종료 방식 ·
@@ -283,7 +301,13 @@ rev1은 **비율 문턱만** 고정하고 *어떤 행이 분자에 드는가*와
 
 ## 12. 다음 단계
 
-**① 규칙층 감사(rev3 재감사)** → ② 하네스(`stage0ppp_a0_probe.py` + `.sbatch`) → ③ **하네스층 감사(2단)** → ④ 제출.
+★★★**하드 스톱 등재(3차 감사 §6-3 권고)**: **이것이 마지막 규칙층 감사다.** R1–R10은 **편집 + 재실행**으로
+닫고(적대적 감사 없이), **다음 적대적 감사는 ③ 하네스층**이다. 근거 — 규칙층 강화가 사는 것은 게이트 #21
+위반 방지인데 **그 경로가 0으로 측정됐다**(배관 실패 → 도구한계/실질 라벨 = **0건 / 663,552**, rev2 순서로는
+44,064건). 남은 위험이 실제로 사는 곳은 **하네스**다(`l2_post`·`profile`·`ctx`·`stream`에 무엇을 기록하는가).
+★**규칙층을 한 번 더 도는 것은 순손실**이다 — 회차당 ~10 닫고 ~3 여는 패턴이 3/3으로 관측됐다.
+
+**① 규칙층 자기 검증(적대적 감사 아님)** → ② 하네스(`stage0ppp_a0_probe.py` + `.sbatch`) → ③ **하네스층 감사(2단)** → ④ 제출.
 ★**②③ 없이 제출 금지.** ★**A1에 등록할 것**(§0-1): **엔진 기판 Q1/Q2 재측정** · K1(양 다리 모두 엔진
 telemetry ITL 중앙값) · Q3(축소). ★감사 권고 — node 입도의 *"significant runtime overhead"*(도구 문서
 자신의 경고)에 대해 **프로파일러 없이 같은 프로브를 1회 더 도는 다리**를 붙이면 K1의 **프로브층 하한**을
@@ -298,6 +322,14 @@ telemetry ITL 중앙값) · Q3(축소). ★감사 권고 — node 입도의 *"si
 | A0 rev2 | X1–X13 반영 시도 | ★**재감사 `NO-GO`, 차단 N1–N13, 死因 없음** — 닫힘 4 · **부분 9** |
 | ~~rev2 X3 검증 = `T14`, n=276,480 세계 구속~~ | ★**철회(N2)** | `T4 ⟹ T14` 반례 **0/18,662,400** ⇒ **한계 구속 0세계**(메인 세션 재현) |
 | ~~rev2 X5 검증 = `T15`, n=304,128 세계 구속~~ | ★**철회(N2)** | `T4 ⟹ T15` 반례 **0** ⇒ 동일 |
+| **rev4** R1 `truncated()` 오정의 | `l2_post=="zero"`를 무조건 절단으로 읽어 **`NODE_TRACE_UNAVAILABLE`이 정합 세계에서 발화 불가**였다(도달 2,688세계 전부가 자기모순) | 수리 후 `W(l2=zero, l2_post=zero, profile=empty)` → **`NODE_TRACE_UNAVAILABLE`**(실행 확인). ★**정합 세계 도달 불가 라벨 2개 → 0개** |
+| **rev4** R9 정합성 모형 | `consistent()` **10제약** 등록 + **`T2c`**(모든 라벨이 **정합 세계에서도** 도달) | 1,327,104 중 **정합 33,088(2.49%)**, **18 라벨 전부 도달**(`consistent_label_reachability`) |
+| **rev4** R3 `T19` 공간 | 곱공간 → ★**실제 평가 공간**(`{(w, score(w,g)) : g ∈ {∅}∪MUTANTS}`, 정합 세계 한정) + ★**`T19b` 단독 구속** 신설 | **926,464 배정** 전수 → **함의 0쌍**, **단독구속 최소 4**(rev3은 `T22`가 0) |
+| **rev4** R3 `T22` **삭제** | 전용 검사를 두 번 만들었으나 **둘 다 단독 구속 0**(`T4`·`T9a`에 흡수) | ★**`T19b`가 스스로 잡았다.** 억지 검사 대신 **삭제**하고 *"`g_eager`의 검출자는 `T4`와 `T9a`"* 로 기록 — rev2 감사가 `T14`/`T15`에 대해 벌한 형태를 되풀이하지 않는다 |
+| **rev4** R4 순서 iff화 | `T18`·`T20a/b/c`를 **iff**로 승격 + 3차 감사가 찾은 생존 순서를 **mutant 2종 신설**(`g_order_capture_first`·`g_order_eager_first`) | **27 mutant 전부 커버**(`uncovered_mutants: []`). ★`T18`이 편집 중 **통째로 삭제돼 있었고 `T10`이 그것을 잡아냈다**(`g_order_capture_first` 미커버로 표면화) |
+| **rev4** R6 분모 fallback | 축 **`l2_join`** + 라벨 **`EXPECTATION_UNVERIFIABLE`** 신설, **Q1 이전**에 단락 | `T23`이 `g_expbasis`에서 실제 실패. 근거: mean 분모에서 균일 손실이 **상쇄**(교훈 #20) |
+| **rev4** R2·R5·R7·R8·R10 | 신설 라벨 4개에 금지 문구 등록 · **값 없던 자유 모수 5개 등록**(#9·#13·#14·★#15·#16) · 거짓 검증 문장 2건 정정 · companion `E1B_NEEDS_STREAM` 한계 명시 · `graph` 실행에 **`:host-only`** 명시 | 라벨 **26개 전부** 문서 대조 통과 · `nsys --help` 재확인 · 문서↔코드 라벨 대조 스크립트 실행 |
+| **rev4** 자기 검출 3건 | `T22` 단독구속 0(2회) · `T18` 실종 · 요약 줄 변수 그림자(`fails` 리스트를 dict가 덮음) | ★**전부 스위트/실행이 잡았다** — 사람이 읽어서 찾은 것이 아니다 |
 | **rev3** N1 분기 순서 | 순서 재배치(§2 ①–⑩) + **순서 mutant 3종** + **배타성 검사 `T20a–e`** | `T8`: `T20c`가 `g_order_capgreen_early`에서, `T20a/b`가 `g_order_ctl_before_trunc`에서 **실제 실패 확인**(`selftest_rev3_2026-08-24.txt`) |
 | **rev3** N2 함의 배제 | `T14`/`T15`를 배타성 형태로 교체 + ★**메타검사 `T19`** 신설 | `T19` 전 쌍(24×23) 전수 → **함의 0쌍**(`entailed_pairs: []`). ★2단 탐색은 **건전**하다(부분집합의 반례는 전 공간의 반례) |
 | **rev3** N3 문턱 밴드 | `PROFILE_FRAC`에 0.89/0.91 + `T9b` iff 승격 | `T9a`/`T9b`가 `g_q1_value`(0.85)·`g_join_value`에서 실제 실패 |

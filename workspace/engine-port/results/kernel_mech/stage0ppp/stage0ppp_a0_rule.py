@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stage 0''' A0 -- THE REGISTERED DECISION RULE, fixed in code (gate #66).
 
-RULE_REV = 3.  rev2 was audited NO-GO (audit_stage0ppp_a0_rev2_2026-08-24, N1-N13,
+RULE_REV = 4.  rev2 was audited NO-GO (audit_stage0ppp_a0_rev2_2026-08-24, N1-N13,
 no fatal).  Two of its findings were defects introduced by rev2 itself:
 
   N2  T14 and T15 -- registered as the VERIFICATION for X3 and X5 -- are
@@ -24,7 +24,7 @@ Run:  python3 stage0ppp_a0_rule.py            # full self-test, writes JSON
 import hashlib, json, os, sys
 from itertools import product
 
-RULE_REV = 3
+RULE_REV = 4
 
 # --- registered labels -------------------------------------------------------
 ABSENT   = "MEASUREMENT_ABSENT"
@@ -42,10 +42,11 @@ DISCONF  = "ATTRIBUTION_DISCONFIRMED"      # N4: positive evidence AGAINST green
 CAPJOIN  = "KSET_JOINS_CAPTURE_NOT_REPLAY"
 TIMEATTR = "KSET_NEEDS_TIME_ATTRIBUTION"
 STREAMONLY = "KSET_STREAM_ONLY_ATTRIBUTION"  # N8: weak; NOT the primary estimand
+EXPUNVER = "EXPECTATION_UNVERIFIABLE"      # R6: sec7 falls back to a mean denominator
 PARTIAL  = "KSET_CONSTRUCTIBLE_PARTIAL"
 OK       = "KSET_CONSTRUCTIBLE"            # N8: requires ctx+stream, not stream alone
 
-MEASUREMENT = {ABSENT, INVALID, TRUNC, GREENBAD, CAPGREEN}
+MEASUREMENT = {ABSENT, INVALID, TRUNC, GREENBAD, CAPGREEN, EXPUNVER}
 TOOLLIMIT   = {NONODE, NOGREEN}
 SUBSTANTIVE = {UNCONSTR, EXCESS, NOATTR, CONTRA, DISCONF, CAPJOIN, TIMEATTR,
                STREAMONLY, PARTIAL, OK}
@@ -75,12 +76,13 @@ class World:
     def __init__(self, run_ok=True, export="ok", l1="ok", l2="ok", l3="ok",
                  l2_post="ok", capture="ok", green="matched", profile="full",
                  ctx="distinct", stream="match", join_target="replay",
-                 join_rate=1.0):
+                 join_rate=1.0, l2_join="ok"):
         self.run_ok, self.export = run_ok, export
         self.l1, self.l2, self.l3, self.l2_post = l1, l2, l3, l2_post
         self.capture, self.green, self.profile = capture, green, profile
         self.ctx, self.stream = ctx, stream
         self.join_target, self.join_rate = join_target, join_rate
+        self.l2_join = l2_join          # R6: does L2's join define the denominator?
 
     @property
     def frac(self):
@@ -90,11 +92,17 @@ class World:
         return (f"W(exp={self.export},l1={self.l1},l2={self.l2},l3={self.l3},"
                 f"l2p={self.l2_post},cap={self.capture},green={self.green},"
                 f"prof={self.profile},ctx={self.ctx},str={self.stream},"
-                f"jt={self.join_target},jr={self.join_rate})")
+                f"jt={self.join_target},jr={self.join_rate},l2j={self.l2_join})")
 
 
 def truncated(w):
-    return (w.export == "partial" or w.l2_post == "zero"
+    """R1: rev3 read `l2_post == "zero"` as truncation unconditionally, so the
+    world that node-granularity failure PHYSICALLY forces -- L2 empty AND the
+    trailing L2' empty -- was scored TRACE_TRUNCATED, and
+    NODE_TRACE_UNAVAILABLE became reachable only in the self-contradictory
+    world (L2 empty, L2' alive).  A trailing control can only have DROPPED if
+    it was there to begin with."""
+    return (w.export == "partial" or (w.l2 == "ok" and w.l2_post == "zero")
             or w.profile not in PROFILE_UNIFORM)
 
 
@@ -108,6 +116,8 @@ def score(w, guards=frozenset()):
     def on(g):
         return g not in guards
 
+    if "g_order_capture_first" in guards and w.capture == "fail_all":
+        return INVALID, None            # audit R4: measurement <-> capture swap
     # 1. measurement -- nothing was recorded
     if on("g_measurement") and (not w.run_ok or w.export == "fail"):
         return ABSENT, None
@@ -147,6 +157,8 @@ def score(w, guards=frozenset()):
             return INVALID, None
         if w.green == "mismatched":
             return GREENBAD, None
+    if "g_order_eager_first" in guards and w.profile == EAGER_ONLY:
+        return INVALID, None            # audit R4: eager moved ahead of L1/L2/L3
     # 5. existence controls
     if on("g_l1") and w.l1 == "zero":
         return INVALID, None
@@ -163,7 +175,12 @@ def score(w, guards=frozenset()):
     if on("g_eager") and w.profile == EAGER_ONLY:
         return INVALID, None
 
-    # 8. Q1
+    # 8. R6: sec7 registers a fallback -- if L2's correlationId join fails the
+    #    expectation becomes total/20 instead of the per-replay median.  Under
+    #    that denominator a UNIFORM shortfall in both legs cancels and frac
+    #    reads ~1.0 (lesson #20), so Q1 cannot be scored from it.
+    if on("g_expbasis") and w.l2_join == "fail":
+        return EXPUNVER, None
     if on("g_excess") and w.frac > 1.0:
         return EXCESS, None
     floor = Q1_FRAC
@@ -218,8 +235,41 @@ AXES = dict(
     green=["matched", "mismatched", "absent"], profile=list(PROFILE_FRAC),
     ctx=["null", "zero", "parent", "distinct"], stream=["match", "mismatch"],
     join_target=["none", "capture_only", "replay"],
-    join_rate=[0.0, 0.94, 0.95, 1.0],
+    join_rate=[0.0, 0.94, 0.95, 1.0], l2_join=["ok", "fail"],
 )
+
+
+
+def consistent(w):
+    """Conservative physical-consistency model (R9).
+
+    A world violating one of these cannot occur on the substrate, so a label
+    reachable ONLY through such worlds is not reachable at all.  rev3's
+    NODE_TRACE_UNAVAILABLE was exactly that (R1).  Conservative = when in doubt
+    the world is kept, so this under-rejects rather than over-rejects.
+    """
+    if not w.run_ok and w.export != "fail":
+        return False                       # a run that never happened exports nothing
+    if w.export == "fail" and not (w.l1 == w.l2 == w.l3 == w.l2_post == "zero"
+                                   and w.profile == "empty" and w.l2_join == "fail"):
+        return False
+    if w.l1 == "zero" and not (w.l2 == w.l3 == w.l2_post == "zero"
+                               and w.profile == "empty"):
+        return False                       # nsys saw nothing at all
+    if w.capture != "ok" and w.profile != "empty":
+        return False                       # no capture -> no graph rows on L4
+    if w.l2 == "zero" and not (w.profile == "empty" and w.l2_post == "zero"
+                               and w.l2_join == "fail"):
+        return False                       # no node granularity -> no expectation, no L2'
+    if w.profile != "empty" and (w.capture != "ok" or w.l2 == "zero"):
+        return False
+    if w.profile == EAGER_ONLY and w.join_target != "none":
+        return False                       # eager replay has no graph launch to join
+    if w.join_target != "none" and w.profile in ("empty", EAGER_ONLY):
+        return False
+    if w.green == "absent" and w.ctx == "distinct":
+        return False                       # no green context -> no distinct greenContextId
+    return True
 
 
 def worlds():
@@ -232,8 +282,9 @@ MUTANTS = ["g_measurement", "g_capture", "g_trunc", "g_green", "g_l1", "g_l2",
            "g_l3", "g_capgreen", "g_eager", "g_excess", "g_q1", "g_q1_floor",
            "g_q1_value", "g_ctx", "g_contra", "g_disconf", "g_capjoin",
            "g_join_none", "g_join_value", "g_basis", "g_streamonly",
-           "g_order_capgreen_early", "g_order_ctl_before_trunc",
-           "g_order_ctl_before_green"]
+           "g_expbasis", "g_order_capgreen_early", "g_order_ctl_before_trunc",
+           "g_order_ctl_before_green", "g_order_capture_first",
+           "g_order_eager_first"]
 
 
 # ============================================================================
@@ -342,7 +393,7 @@ def _mk_checks():
         fail = (not w.run_ok or w.export != "ok" or w.capture != "ok"
                 or w.l1 == "zero" or w.l2 == "zero" or w.l3 == "zero"
                 or w.l2_post == "zero" or w.green != "matched"
-                or w.profile not in PROFILE_UNIFORM or w.profile == EAGER_ONLY)
+                or w.profile not in PROFILE_UNIFORM)
         return not (l[0] in SUBSTANTIVE and fail)
 
     def t6b(w, l):
@@ -373,22 +424,23 @@ def _mk_checks():
 
     # -- N1/N2: exclusivity.  These say WHICH label a failure gets, not merely
     #    "not substantive" -- that weaker form is what T4 already entailed.
+    # R4: iff, so a guard MOVED (not merely deleted) is caught.  rev3's
+    # one-way forms could not see the five order permutations that survived.
+    def _clean(w):
+        return (w.run_ok and w.export != "fail" and w.capture != "fail_all"
+                and not truncated(w) and w.green == "matched")
+
     def t20a(w, l):
-        return (l[0] == NOGREEN) <= (w.export == "ok" and w.l2_post == "ok"
-                                     and w.profile in PROFILE_UNIFORM
-                                     and w.green == "matched"
-                                     and w.l1 == "ok" and w.l2 == "ok")
+        return (l[0] == NOGREEN) == (_clean(w) and w.l1 == "ok" and w.l2 == "ok"
+                                     and w.l3 == "zero")
 
     def t20b(w, l):
-        return (l[0] == NONODE) <= (w.export == "ok" and w.l2_post == "ok"
-                                    and w.profile in PROFILE_UNIFORM
-                                    and w.green == "matched"
-                                    and w.l1 == "ok")
+        return (l[0] == NONODE) == (_clean(w) and w.l1 == "ok" and w.l2 == "zero")
 
     def t20c(w, l):
-        return (l[0] == CAPGREEN) <= (w.green == "matched" and w.export == "ok"
+        return (l[0] == CAPGREEN) == (_clean(w) and w.capture == "fail_green_only"
                                       and w.l1 == "ok" and w.l2 == "ok"
-                                      and w.l3 == "ok" and w.l2_post == "ok")
+                                      and w.l3 == "ok")
 
     def t20d(w, l):
         return (l[0] == TRUNC) == (truncated(w) and w.run_ok and w.export != "fail"
@@ -402,8 +454,35 @@ def _mk_checks():
     def t21(w, l):          # N8: the primary estimand never rests on stream alone
         return not (l[0] == OK and l[1] != "ctx+stream")
 
-    def t22(w, l):          # N9
-        return (w.profile == EAGER_ONLY and _pre_eager(w)) <= (l[0] == INVALID)
+    def t18(w, l):
+        # R4: iff, so moving the capture branch AHEAD of the measurement branch
+        # is caught.  (An earlier edit of mine deleted this check outright; T10
+        # is what surfaced its absence -- g_order_capture_first was uncovered.)
+        return (l[0] == ABSENT) == (not w.run_ok or w.export == "fail")
+
+    def t23(w, l):          # R6
+        return (l[0] == EXPUNVER) == (_pre_eager(w) and w.profile != EAGER_ONLY
+                                      and w.l2_join == "fail")
+
+    # T22 REMOVED (R3 / T19b).  A dedicated check for the silent-eager guard
+    # was registered in rev3 and re-derived in rev4; both times T19b showed its
+    # sole-binding was zero -- T4 and T9a already fail under g_eager.  Keeping a
+    # check that adds no constraint, while calling it "the verification for N9",
+    # is the exact sin the rev2 audit named (T14/T15).  So it is deleted and the
+    # honest record is: g_eager is detected by T4 and T9a.
+    def t18(w, l):
+        # R4: iff, so moving the capture branch AHEAD of the measurement branch
+        # is caught.  (An earlier edit of mine deleted this check outright; T10
+        # is what surfaced its absence -- g_order_capture_first was uncovered.)
+        return (l[0] == ABSENT) == (not w.run_ok or w.export == "fail")
+
+    def t23(w, l):          # R6
+        return (l[0] == EXPUNVER) == (_pre_eager(w) and w.profile != EAGER_ONLY
+                                      and w.l2_join == "fail")
+
+    def t22(w, l):          # N9 / R3: rev3's one-way form had sole-binding 0
+        return (_pre_eager(w) and l[0] == INVALID) == \
+               (_pre_eager(w) and w.profile == EAGER_ONLY)
 
     return {
         "T4  failed control never substantive": (t4, {"g_l1"}),
@@ -416,12 +495,13 @@ def _mk_checks():
         "T12 TIMEATTR iff join_target=none":     (t12, {"g_join_none"}),
         "T16 excess never OK/PARTIAL/UNCONSTR":  (t16, {"g_excess"}),
         "T20a GREENCTX_INVISIBLE is clean":      (t20a, {"g_trunc", "g_green", "g_order_ctl_before_trunc", "g_order_ctl_before_green"}),
-        "T20b NODE_TRACE_UNAVAILABLE is clean":  (t20b, {"g_trunc", "g_green", "g_order_ctl_before_trunc"}),
+        "T20b NODE_TRACE_UNAVAILABLE is clean":  (t20b, {"g_trunc", "g_green", "g_order_ctl_before_trunc", "g_order_eager_first"}),
         "T20c CAPGREEN is clean":                (t20c, {"g_order_capgreen_early"}),
         "T20d TRUNC iff truncated":              (t20d, {"g_trunc"}),
         "T20e GREENBAD iff mismatched":          (t20e, {"g_green"}),
+        "T18 ABSENT iff run/export failed":      (t18, {"g_measurement", "g_order_capture_first"}),
         "T21 OK requires ctx+stream basis":      (t21, {"g_streamonly"}),
-        "T22 silent eager fallback is INVALID":  (t22, {"g_eager"}),
+        "T23 EXPECTATION_UNVERIFIABLE iff l2_join fails": (t23, {"g_expbasis"}),
     }
 
 
@@ -432,7 +512,7 @@ def _pre_eager(w):
 
 
 def _reaches(w):
-    return _pre_eager(w) and w.profile != EAGER_ONLY
+    return _pre_eager(w) and w.profile != EAGER_ONLY and w.l2_join == "ok"
 
 
 def _reaches_attr(w):
@@ -454,23 +534,17 @@ def _reaches_join(w):   # reaches the JOIN STAGE (any join_target)
 LABEL_PAIRS = [(l, b) for l in sorted(LABELS) for b in (None, "ctx+stream", "stream_only")]
 
 
-def _entailed(c1, c2, W):
-    """Does c1 entail c2?  i.e. is there NO (world, label) where c1 holds and
-    c2 fails.  Early-exits on the first counterexample, so an independent pair
-    is cheap and only a genuinely entailed pair costs a full scan.
-
-    This is the check rev2 lacked: its T14/T15 were entailed by T4 and were
-    nevertheless reported as the verification for blockers X3 and X5.
-    """
-    # Sound two-stage search: a counterexample found in ANY subset is a
-    # counterexample, full stop.  So stride-sample first (cheap rejection) and
-    # fall back to the exhaustive scan only for pairs the sample cannot reject.
-    for stage in (W[::97], W):
-        for lp in LABEL_PAIRS:
-            for w in stage:
-                if c1(w, lp) and not c2(w, lp):
-                    return False
-    return True
+def _reachable_assignments(W):
+    """R3: rev3 quantified entailment over 17 labels x 3 bases attached to EVERY
+    world -- a product space containing assignments `score()` can never emit.
+    "No entailment" there is a strictly weaker claim, and it hid that T22's
+    failures were all already caught by T4.  The honest space is the one the
+    suite actually evaluates: base plus every mutant, on CONSISTENT worlds."""
+    out = []
+    for g in [frozenset()] + [frozenset({m}) for m in MUTANTS]:
+        for w in W:
+            out.append((w, score(w, g)))
+    return out
 
 
 def run(emit_json=True):
@@ -494,8 +568,13 @@ def run(emit_json=True):
 
     from collections import Counter
     c = Counter(l for l, _ in base)
+    cons = [w for w in W if consistent(w)]
+    cc = Counter(score(w)[0] for w in cons)
     for lab in sorted(LABELS):
         chk(f"T2 reachable: {lab}", c[lab] > 0, f"n={c[lab]}")
+        # R1/R9: rev3's NODE_TRACE_UNAVAILABLE was reachable ONLY through
+        # self-contradictory worlds.  Reachability must survive the model.
+        chk(f"T2c reachable in a CONSISTENT world: {lab}", cc[lab] > 0, f"n={cc[lab]}")
 
     # base pass + how many worlds each check actually rejects under each mutant
     for name, (fn, _) in checks.items():
@@ -530,16 +609,25 @@ def run(emit_json=True):
     unc = [m for m in MUTANTS if not any(mut_fail[(n, m)] for n in checks)]
     chk("T10 every mutant broken by >=1 check", not unc, f"uncovered={unc or 'none'}")
 
-    # -- T19 META (N2): no check may be entailed by another -------------------
-    print("  -- T19 meta: is any check entailed by another (hollow)? --")
-    ent = []
-    names = list(checks)
-    for a in names:
-        for b in names:
-            if a != b and _entailed(checks[a][0], checks[b][0], W):
-                ent.append(f"{a} => {b}")
-    chk("T19 no check is entailed by another", not ent,
-        f"entailed={ent or 'none'}")
+    # -- T19 META (N2/R3): entailment AND sole-binding, on the space the
+    #    suite actually evaluates (consistent worlds x base+mutants) ---------
+    print("  -- T19 meta: entailment / sole-binding on reachable assignments --")
+    CW = [w for w in W if consistent(w)]
+    ASG = _reachable_assignments(CW)
+    failset = {}
+    for name, (fn, _) in checks.items():
+        failset[name] = {i for i, (w, l) in enumerate(ASG) if not fn(w, l)}
+    ent = [f"{a} => {b}" for a in checks for b in checks
+           if a != b and failset[b] and failset[b] <= failset[a]]
+    chk("T19a no check is entailed by another", not ent, f"entailed={ent or 'none'}")
+    sole = {}
+    for name in checks:
+        others = set().union(*[failset[o] for o in checks if o != name]) if len(checks) > 1 else set()
+        sole[name] = len(failset[name] - others)
+    nosole = [n for n, v in sole.items() if v == 0]
+    chk("T19b every check binds something on its own", not nosole,
+        f"sole-binding=0 for {nosole or 'none'}")
+    print(f"     ({len(CW):,} consistent worlds, {len(ASG):,} assignments)")
 
     # -- companion ------------------------------------------------------------
     G = list(gworlds())
@@ -583,6 +671,9 @@ def run(emit_json=True):
                "mutant_coverage": {m: sorted(n for n in checks if mut_fail[(n, m)])
                                    for m in MUTANTS},
                "uncovered_mutants": unc, "entailed_pairs": ent,
+               "sole_binding": sole, "n_consistent_worlds": len(CW),
+               "n_reachable_assignments": len(ASG),
+               "consistent_label_reachability": {k: cc[k] for k in sorted(LABELS)},
                "companion": {"n_worlds": len(G),
                              "labels": {k: gc[k] for k in sorted(E1B_LABELS)}},
                "checks": results, "all_pass": ok}
