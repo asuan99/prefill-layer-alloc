@@ -1,5 +1,18 @@
 # 설계 rev6 — 서술적 분해를 1차로, 반사실 쌍을 2차로. **작동특성을 먼저 계산했다**
 
+> ★★ **근거 정정 (2026-08-24) — 이 문서의 NVTX 근거는 무효다.** 아래에 나오는
+> *"`grep -rn nvtx src/` = 0건"* 은 **틀린 트리**(PD-mux 오버레이 `workspace/engine-port/src/`)를
+> 본 것이다. **실제로 도는 엔진**(`sglang_engine_dev/python/sglang/srt/`)에는 NVTX가 **4개 파일**에
+> 이미 있고 CLI 플래그(`--enable-layerwise-nvtx-marker`)까지 있다. ★**결론(쓸 수 있는 스텝-경계
+> 마커가 없다)은 유지되지만 이유가 다르다** — 그 훅은 **모듈 forward hook**(cudagraph replay에서
+> 미발화)이고 **layerwise**(스텝 경계 아님)이기 때문이다. ★그리고 감사 E1-(a): decode 스텝당
+> `replay()`가 **정확히 1회**(`cuda_graph_runner.py:1161`)이므로 **NVTX 없이도** graph-launch row
+> 하나가 경계와 `K_set(k)`를 함께 줄 수 있다 ⇒ 이 문서가 계상한 **NVTX 엔진 패치 선행조건이
+> 불필요할 수 있다**(미측정 가설, Stage 0‴ Q2가 산다). 전문: [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md)
+> ★쓰면 안 되는 문장: *"엔진에 NVTX가 없다"* · *"NVTX 선행조건이 사라졌다"* ·
+> *"kernel_mech 트랙이 열렸다"*(rev7·rev8 `NO-GO` 불변).
+
+
 > ★★**SUPERSEDED (2026-08-23) — `DESIGN_KERNEL_MECH_REV7_2026-08-23.md`를 읽어라.**
 > 이 판본은 규칙층 감사 [`audit_kernel_mech_rev6_2026-08-22/VERDICT.md`](audit_kernel_mech_rev6_2026-08-22/VERDICT.md)
 > 에서 `NO-GO`(차단 B1–B7)를 받았고 rev7이 그 7건을 다뤘다. **설계 근거로 재사용 금지.**
@@ -225,8 +238,8 @@ rev5는 정본 국소 ε 밴드를 인용해 문턱 여유를 주장했다가 **
 
 ## 8. 예산 — NVTX 엔진 패치를 계상한다 (감사 v5)
 
-★**rev5가 빠뜨린 것**: `pdmux.decode_step` NVTX 방출이 **엔진에 없다**(`grep -rn nvtx
-workspace/engine-port/src/` → **0건**). 즉 필요한 것은 하네스가 아니라 **엔진 핫패스 패치**다.
+★**rev5가 빠뜨린 것**: `pdmux.decode_step` NVTX 방출이 **엔진에 없다**(~~`grep -rn nvtx
+workspace/engine-port/src/` → **0건**~~ ★**근거 무효**(틀린 트리, 2026-08-24 → [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md))). 즉 필요한 것은 하네스가 아니라 **엔진 핫패스 패치**다.
 
 | 항목 | 값 |
 |---|---|

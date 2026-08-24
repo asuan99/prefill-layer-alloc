@@ -1,5 +1,18 @@
 # 설계 rev8 — 서술적 분해를 1차로. **2단 분할 구매**로 재구성
 
+> ★★ **근거 정정 (2026-08-24) — 이 문서의 NVTX 근거는 무효다.** 아래에 나오는
+> *"`grep -rn nvtx src/` = 0건"* 은 **틀린 트리**(PD-mux 오버레이 `workspace/engine-port/src/`)를
+> 본 것이다. **실제로 도는 엔진**(`sglang_engine_dev/python/sglang/srt/`)에는 NVTX가 **4개 파일**에
+> 이미 있고 CLI 플래그(`--enable-layerwise-nvtx-marker`)까지 있다. ★**결론(쓸 수 있는 스텝-경계
+> 마커가 없다)은 유지되지만 이유가 다르다** — 그 훅은 **모듈 forward hook**(cudagraph replay에서
+> 미발화)이고 **layerwise**(스텝 경계 아님)이기 때문이다. ★그리고 감사 E1-(a): decode 스텝당
+> `replay()`가 **정확히 1회**(`cuda_graph_runner.py:1161`)이므로 **NVTX 없이도** graph-launch row
+> 하나가 경계와 `K_set(k)`를 함께 줄 수 있다 ⇒ 이 문서가 계상한 **NVTX 엔진 패치 선행조건이
+> 불필요할 수 있다**(미측정 가설, Stage 0‴ Q2가 산다). 전문: [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md)
+> ★쓰면 안 되는 문장: *"엔진에 NVTX가 없다"* · *"NVTX 선행조건이 사라졌다"* ·
+> *"kernel_mech 트랙이 열렸다"*(rev7·rev8 `NO-GO` 불변).
+
+
 2026-08-23 · 메인 세션 · **사전등록 아님 — 규칙층 초안**(게이트 #34 1단) · GPU 지출 **0** ·
 새 성능 판정 **0건** · 등급 변경 **0건** · 정책 순위 변경 **0건**
 
@@ -73,7 +86,7 @@
 > | **C9** 등록 순서 **4단계** 중 `decide()`엔 **3단계**(선행 게이트 부재) | ★**4단계 전부 구현** — 선행 게이트를 1단계로, 세 번째 셀(`c16`)을 시나리오에 배선 | `decide()` · §3.2 |
 > | ★**C10** 값어치 문장이 **워크로드 변경 전** 감사 판정을 상속(정본 C2는 `B≈9–12` 스코프 + B/L 이식 금지인데 캠페인은 **B=16 고정**) | ★**§7에 스코프 줄 신설** | §7-13 |
 >
-> ★**여전히 닫히지 않은 것**: **NVTX 엔진 패치 미작성**(`grep -rn nvtx src/` = **0건**) —
+> ★**여전히 닫히지 않은 것**: **NVTX 엔진 패치 미작성**(~~`grep -rn nvtx src/` = **0건**~~ ★**근거 무효**(틀린 트리, 2026-08-24 → [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md))) —
 > 이 설계의 **선행조건**이고 rev8도 그것을 만들지 않는다 · 하네스 미작성 · 사전등록 아님 ·
 > `capture="partial"` 축 미모형화 · rev7 감사의 caveat 9건 중 성격 강등(5)만 반영.
 > ★**쓰면 안 되는 문장**: *"rev8이 C1–C10을 전부 수리했다"*(C1은 **설계 형태를 바꾼 것**이지
@@ -417,7 +430,7 @@ arm **Ha8** · `D` **16·44·92** · 셀당 부팅 **4**(총 12) · 라운드/�
 
 | 항목 | 값 |
 |---|---|
-| ★**NVTX 엔진 패치** | ★**선행조건, 미작성**(`grep -rn nvtx src/` = 0건). 하네스가 아니라 **엔진 핫패스 패치** — manifest 갱신 + correctness gate 필수, engine-porter 소관 |
+| ★**NVTX 엔진 패치** | ★**선행조건, 미작성**(~~`grep -rn nvtx src/` = 0건~~ ★**근거 무효**(틀린 트리, 2026-08-24 → [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md))). 하네스가 아니라 **엔진 핫패스 패치** — manifest 갱신 + correctness gate 필수, engine-porter 소관 |
 | 부팅(순수 기동) | ≈85 s (gate #13 실측 145.8 s에서 60 s 창 차감, **다른 워크로드라 부분 검증**) |
 | Stage A 12 부팅 | ≈0.48 GPU-hr |
 | B6 라운드 추가분 | ≤0.20 |

@@ -739,6 +739,15 @@ fused execution보다 나은가, 그리고 그 이유는 무엇인가"다. `PROJ
   P0-A 행, 원자료 `workspace/engine-port/results/bcg_probe/
   {p0a_verdict_890893.json, audit_p0a_result_890893_2026-08-23/
   VERDICT.md}`(수정 금지·인용만, `.json`만 인용 — 게이트 #56).
+  ★**2026-08-24 追記 — F2 양성대조가 890893의 결과-audit 조건 C4를
+  닫았다(성능 판정 아님, S3 상태 무변경)**: job 891612(gpu43, GPU
+  0.017 GPU-hr, `REPLAY_IS_THE_WRITER`)가 "census 텐서를 쓴 것은
+  replay다"라는 890893의 남은 전제를 실측으로 확인했다
+  (`capture_only`=census 0개 vs `capture_replay`=34개, 890893 라벨
+  집합과 일치) — 890893의 집합 술어가 공허하게 만족됐을 가능성이
+  배제됐을 뿐, S3가 원래 묻는 서빙 중 물리적 내용은 여전히
+  미측정이다. 인용 대상 `p0a_f2_verdict_891612.json`뿐(게이트
+  #56). 상세 `reports/CONSENSUS.md` §1-1 F2 addendum.
 - **Gate 3**(NemotronH·Falcon-H1 운영점 대조, 미착수) — "4모델 전부"를
   다시 쓰려면 필요.
 - **Gate 4**(sustainable-rate 직접 측정 n≥4, 미착수) — r4/r6 크기·용량

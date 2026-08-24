@@ -1,5 +1,18 @@
 # 설계 rev5 — 고-SM decode 평탄화: **단일 스칼라 판정 · 디바이스 시계 · Ha8 3셀 n=4**
 
+> ★★ **근거 정정 (2026-08-24) — 이 문서의 NVTX 근거는 무효다.** 아래에 나오는
+> *"`grep -rn nvtx src/` = 0건"* 은 **틀린 트리**(PD-mux 오버레이 `workspace/engine-port/src/`)를
+> 본 것이다. **실제로 도는 엔진**(`sglang_engine_dev/python/sglang/srt/`)에는 NVTX가 **4개 파일**에
+> 이미 있고 CLI 플래그(`--enable-layerwise-nvtx-marker`)까지 있다. ★**결론(쓸 수 있는 스텝-경계
+> 마커가 없다)은 유지되지만 이유가 다르다** — 그 훅은 **모듈 forward hook**(cudagraph replay에서
+> 미발화)이고 **layerwise**(스텝 경계 아님)이기 때문이다. ★그리고 감사 E1-(a): decode 스텝당
+> `replay()`가 **정확히 1회**(`cuda_graph_runner.py:1161`)이므로 **NVTX 없이도** graph-launch row
+> 하나가 경계와 `K_set(k)`를 함께 줄 수 있다 ⇒ 이 문서가 계상한 **NVTX 엔진 패치 선행조건이
+> 불필요할 수 있다**(미측정 가설, Stage 0‴ Q2가 산다). 전문: [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md)
+> ★쓰면 안 되는 문장: *"엔진에 NVTX가 없다"* · *"NVTX 선행조건이 사라졌다"* ·
+> *"kernel_mech 트랙이 열렸다"*(rev7·rev8 `NO-GO` 불변).
+
+
 2026-08-21 · 메인 세션 · **사전등록 아님 — 규칙층 초안**(게이트 #34 1단 대상) ·
 GPU 지출 **0**(제출 0건) · 새 성능 판정 **0건** · 등급 변경 **0건** · 정책 순위 변경 **0건**
 
@@ -339,7 +352,7 @@ rev4 차단 8건 중 **닫힘 2 · 부분 4 · 재발 2**(B1 시계 혼합이 �
    (ii)(iv)는 **SM에 비례해 커지지 않는다**(스텝당 고정 오버헤드) ⇒ `GAP_DOMINATED`가 구조적으로
    도달 불가. 실제로 `K44=50,G44=50 → K92=30,G92=50`(스텝의 62.5%가 SM-불변 유휴)에서
    **`s=0.000 ⇒ KERNEL_DOMINATED`** 가 나온다. ⇒ rev4의 편향을 고치려다 **반대 방향 편향**을 만들었다.
-2. **`pdmux.decode_step` NVTX 방출이 엔진에 없다**(v5) — `grep -rn nvtx src/` **0건**. 이 설계가
+2. **`pdmux.decode_step` NVTX 방출이 엔진에 없다**(v5) — ~~`grep -rn nvtx src/`~~ ★**근거 무효**(틀린 트리, 2026-08-24 → [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md)) **0건**. 이 설계가
    요구하는 것은 하네스가 아니라 **엔진 핫패스 패치 + manifest + correctness gate**이며 §10 예산과
    §12 상태에 계상돼 있지 않다.
 

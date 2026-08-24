@@ -1,5 +1,18 @@
 # 사전등록 — **B6 적격 창(eligible window) 실현 가능성**: rev7의 예산 승인 선행 조건
 
+> ★★ **근거 정정 (2026-08-24) — 이 문서의 NVTX 근거는 무효다.** 아래에 나오는
+> *"`grep -rn nvtx src/` = 0건"* 은 **틀린 트리**(PD-mux 오버레이 `workspace/engine-port/src/`)를
+> 본 것이다. **실제로 도는 엔진**(`sglang_engine_dev/python/sglang/srt/`)에는 NVTX가 **4개 파일**에
+> 이미 있고 CLI 플래그(`--enable-layerwise-nvtx-marker`)까지 있다. ★**결론(쓸 수 있는 스텝-경계
+> 마커가 없다)은 유지되지만 이유가 다르다** — 그 훅은 **모듈 forward hook**(cudagraph replay에서
+> 미발화)이고 **layerwise**(스텝 경계 아님)이기 때문이다. ★그리고 감사 E1-(a): decode 스텝당
+> `replay()`가 **정확히 1회**(`cuda_graph_runner.py:1161`)이므로 **NVTX 없이도** graph-launch row
+> 하나가 경계와 `K_set(k)`를 함께 줄 수 있다 ⇒ 이 문서가 계상한 **NVTX 엔진 패치 선행조건이
+> 불필요할 수 있다**(미측정 가설, Stage 0‴ Q2가 산다). 전문: [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md)
+> ★쓰면 안 되는 문장: *"엔진에 NVTX가 없다"* · *"NVTX 선행조건이 사라졌다"* ·
+> *"kernel_mech 트랙이 열렸다"*(rev7·rev8 `NO-GO` 불변).
+
+
 **2026-08-22 (2차 세션)** · 메인 세션 · GPU 지출 **0**(제출 0건) · 새 성능 판정 **0건**.
 
 > **왜 이 문서만 따로 있는가.** rev6 규칙층 감사
@@ -159,6 +172,6 @@ ITL≈120 ms 가정 시 부팅당 벤치가 **+192 s** — 부팅 상수(**145.8
 
 ★**이 판정이 닫지 않는 것**: **B1·B2·B3·B4·B5·B7**(분모 불일치 · `U_infl` 대수 · 자유 모수
 "전수" 오류 · 1차 작동특성 0건 · "스텝 경계" 미정의 + `A3` 항등식 · 프로브 정의가 재사용
-금지된 rev5에만 존재) — 전부 **불변**이고, **NVTX 엔진 패치**(`grep -rn nvtx src/` = 0건)라는
+금지된 rev5에만 존재) — 전부 **불변**이고, **NVTX 엔진 패치**(~~`grep -rn nvtx src/` = 0건~~ ★**근거 무효**(틀린 트리, 2026-08-24 → [NVTX_EVIDENCE_CORRECTION_2026-08-24.md](NVTX_EVIDENCE_CORRECTION_2026-08-24.md)))라는
 선행조건도 그대로다. ⇒ **rev7은 여전히 `NO-GO` 상태다.** 이 문서는 그 중 **예산 판단을 걸어
 둔 항목 하나**를 값으로 닫았을 뿐이다.
