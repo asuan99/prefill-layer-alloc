@@ -1,6 +1,9 @@
 # 사전등록 — **Stage 0‴ A0**: nsys가 green-context **graph-node 커널**을 귀속 가능한 형태로 내는가
 
-**rev4** (2026-08-24). rev1 규칙층 감사 **`NO-GO`**(X1–X13), rev2 **재감사 `NO-GO`**(N1–N13), rev3 **3차 감사도 `NO-GO`**(R1–R10, ★死因 없음,
+**rev5** (2026-08-25) — ★**하네스층 감사(게이트 #34 2단) 반영판**.
+`../audit_a0_harness_2026-08-25/VERDICT.md` = **`NO-GO`(차단 B1–B15, ★死因 없음)**. 런킬러 2건
+(`triton.jit`이 `exec` 생성 함수를 못 받음 · default 스트림 캡처 금지)과 어댑터 결함 5건을 닫았고,
+감사가 지정한 **변이 테스트 4종 + 대조 2종**을 실행해 확인했다. 이전 판본: **rev4** (2026-08-24). rev1 규칙층 감사 **`NO-GO`**(X1–X13), rev2 **재감사 `NO-GO`**(N1–N13), rev3 **3차 감사도 `NO-GO`**(R1–R10, ★死因 없음,
 `../audit_stage0ppp_a0_rev3_2026-08-24/VERDICT.md`) — ★★단 3차 감사는 **"구매 저지 사유는 소멸했다"** 고 판정하고
 **(a) 지금 사라**를 권고하며 **R1–R10은 편집 + 재실행으로 닫으라**고 명시했다. 이 판본이 그 이행이다. 이전 근거: rev1 판정(
 `../audit_stage0ppp_a0_2026-08-24/VERDICT.md`). **GPU 미집행 · 새 성능 판정 0건.**
@@ -159,21 +162,30 @@ rev2는 (a) `join_rate`를 실수 축으로 만들어 `JOIN_HIGH`로 비교하�
 | ★`E1B_TRACE_TRUNCATED` / ★`E1B_GREEN_PARTITION_MISMATCH` | **N5 신설**(primary와 동형) | 도구 판정 **금지** — 측정 조건이다 |
 | `E1B_NEEDS_STREAM` / `E1B_ALIVE` | ctx 불가 / 가능 | ★**R8**: companion엔 **stream 축이 없다** — 이 이름은 *"ctx를 못 쓴다"* 는 뜻일 뿐 **stream으로 대체 가능하다는 주장이 아니다**. basis 개념 없음 |
 
-## 4. E1-(b)를 **같은 job에서** 산다 + companion 대조 (감사 X4)
+## 4. E1-(b) — ★**rev5: 이 제출에서는 사지 않는다**(감사 B6)
 
 `nsys profile --help`(2025.3.2, 실측): *"If 'node' is selected, node activities will be collected,
-**but CUDA graphs will not be traced as a whole**."* ⇒ 입도 **상호 배타** ⇒ 4 다리를 **두 입도로 각각**.
+**but CUDA graphs will not be traced as a whole**."* ⇒ 입도는 **상호 배타**다. rev4는 이를 근거로
+4→5 다리를 **두 입도로 각각** 실행해 E1-(b)를 같은 job에서 사겠다고 등록했다.
 
-★**rev1 결함**: companion에 **대조가 0겹**이라 *"`graph` 입도가 **어디서도** whole-graph 행을 못 낸다"*
-는 **green 무관 도구 한계**가 `E1B_DEAD`(= green에서 (b)가 죽었다)로 등재됐다 — **부모 E2를 그 수리
-안에서 재발**시킨 것이다. rev2는 **L2g**(full-GPU graph 대조)·capture·export·green 축을 넣고
-`E1B_GRAPH_TRACE_UNAVAILABLE`로 분기한다. **이 다리는 이미 사고 있으므로 추가 비용 0.**
+★★**그런데 하네스층 감사가 `companion()` 호출이 어디에도 없음을 찾았다**(B6). `--sqlite-graph`는 필수
+인자인데 한 번도 읽히지 않았고, `E1B_*` **8개 라벨이 전부 도달 불가**였으며, 두 번째 nsys 실행은
+**비용만 쓰고 산출이 0**이었다. §4의 *"추가 비용 0"* 은 그 배선에서 **거짓**이었다.
 
-★**답하지 않는 것**: `[:<launch origin>]` = `host-only\|host-and-device`(호스트/디바이스 **코드** 기원)이며
-**캡처/replay 시점을 가르지 않는다**(★rev2 정정, 재감사 N11: *"launch origin은 granularity=graph에서만 지원"* 은
-**`host-and-device` 값에만** 걸린다 — `host-only`엔 제한이 없다) ⇒ **부모 E5 미해결**. ★감사 추가 확인: launch origin은
-**granularity=graph에서만 지원**되고 **기본 granularity는 driver ≥11.7이면 `graph`** ⇒ 1차 실행에
-`=node`를 **명시하는 것이 필수**다.
+**rev5의 결정: `graph` 입도 실행을 이 제출에서 제외하고 §4를 A1로 이월한다.**
+사유 두 가지 —
+1. `CUPTI_ACTIVITY_KIND_GRAPH_TRACE`에는 **커널 이름이 없어** L2와 L2′를 이름으로 가를 수 없다. 시각·
+   `graphId`로 가르는 설계는 **B3와 같은 함정**(다른 다리에서 파생되는 축)을 다시 만든다. 그리고 그
+   설계를 **실제 데이터로 시험할 방법이 지금 없다** — 시험 못 하는 스키마에 맞춰 하네스를 쓰는 것이
+   바로 이 감사가 방금 벌한 실수다.
+2. ★**§0-1의 전이 간극이 E1-(b)에도 똑같이 걸린다** — 합성 spin 그래프에서 whole-graph 행이 나온다는
+   사실은 **엔진 decode 그래프로 전이되지 않는다**. E1-(b)가 의미를 갖는 기판은 A1이다.
+
+★**금지**: *"E1-(b)를 같은 job에서 산다"* · *"추가 비용 0"* — **rev4의 이 두 문장은 철회한다.**
+아티팩트에 `companion_scored: false`와 이월 사유를 기록한다.
+
+★**답하지 않는 것**(불변): `[:<launch origin>]`은 호스트/디바이스 **코드** 기원이며 **캡처/replay 시점을
+가르지 않는다** ⇒ **부모 E5 미해결**.
 
 ## 5. 환경 등록값 · ★**권한 축** (감사 X10)
 
@@ -246,10 +258,24 @@ rev1은 **비율 문턱만** 고정하고 *어떤 행이 분자에 드는가*와
 10 `nsys export --type sqlite` · 11 다리당 replay 수(**20**) · 12 green 파티션(`(8,0),2`→`[74,34]`) ·
 13 spin 커널 grid/지속 · 14 캡처 전 warmup 수 · 15 스트림 배치 · 16 torch/CUDA 모듈 버전 ·
 17 아티팩트 형식(`.json` 단일 정본) · 18 결정성(무작위 없음) ·
-★19 **행 선택 술어**(§7) · ★20 **기대치 산출식**(§7, 중앙값 vs 평균 fallback) ·
+★19 **행 선택 술어**(§7) — ★**rev5 변경(감사 B13)**: 등록 술어를 *"`graphNodeId != 0` ∧ **그 다리의 streamId**"* 에서 *"`graphNodeId != 0` ∧ **커널 이름**(다리마다 고유한 triton jit 함수명)"* 으로 바꾼다. 사유 — nsys `streamId`는 자체 번호라 프로브의 스트림 포인터와 직접 대조가 불가하고, 다리별 고유 커널명이 **NVTX 없이** 귀속을 세우는 채널이다. `streamId`는 `stream` 축(Q2a)에서 계속 쓴다 · ★20 **기대치 산출식**(§7, 중앙값 vs 평균 fallback) ·
 ★21 **다리 실행 순서**(L1→L2→L3→L4→**L2′**) · ★22 **두 입도 실행의 순서·독립성**(별 프로세스, node 먼저) ·
 ★23 **권한 상태 3종**(§5) · ★24 `Q1_FRAC=0.90` · ★25 `JOIN_HIGH=0.95` ·
 ★26 **`score()`의 분기 순서**(§2, 재감사 N1) · ★27 **`green`·`export` 축의 관측 채널**(§5, 재감사 N6)
+
+★★**R5 / rev5 — 값이 없던 5개를 등록한다.** rev3까지 이름만 있었고 그중 셋은 결정량에 직접 걸린다
+(3차 감사 R5). ★표시는 하네스층 감사 이후 **변경된** 값이다.
+
+| # | 등록값 |
+|---|---|
+| **9** 종료 방식 | 프로브 프로세스 **정상 종료(exit 0)** 후 nsys가 리포트를 flush. `--kill` 미사용 |
+| ★**13** spin 커널 | grid **34 블록** × block **128 스레드**, 커널당 **≥100 µs**. ★**rev5 신설: 그래프당 노드 `NODES_PER_GRAPH = 5`** — 사유(감사 B4-c): 노드가 1개면 `expected=1`이라 결손이 있을 때마다 replay 수가 20 미만이 되어 **모든 부분 세계가 `tail_missing`으로 붕괴**하고 **`Q1_FRAC`이 한 번도 평가되지 않는다** |
+| **14** warmup | 캡처 전 **3회**. eager라 `graphNodeId == 0`이므로 §7 분자에서 **구조적으로 배제**된다(감사 ⑤-5가 확인) |
+| ★**15** 스트림 배치 | **L3와 L4는 같은 green ctx 스트림 1개**(`create_greenctx_stream_by_value`의 decode-half). ★**rev5 변경: L1·L2·L2′는 default가 아니라 전용 비-default `torch.cuda.Stream()`** — 사유(감사 B2): PyTorch가 *"CUDA graphs must be captured on a non-default stream"* 으로 **거부한다**(`libtorch_cuda.so` 문자열 실측, 메인 세션 재현). primary context이므로 full-GPU 성격은 불변. ⇒ stream 일치가 **구조적**이라는 N8 논증도 불변 |
+| **16** 버전 | torch **2.9.1** · CUDA **13.0.2** · module `conda/pytorch_2.9.1_cuda13`. ★**rev5: 실측값을 아티팩트 `.json`에 기록**(감사 B11 — 이전엔 `.out` 콘솔뿐이었고 sbatch 자신이 `.out`을 비인용으로 선언) |
+
+★**추가 등록(rev5)**: **28** `l2_join`(§7, R6) · **29 `graph` 입도 실행 여부** — 이 제출에서는 **취하지 않는다**(§4, 감사 B6).
+
 
 ## 9. 예산 — ★**등록 가격은 벽시계 상한** (감사 X9)
 
@@ -329,7 +355,19 @@ telemetry ITL 중앙값) · Q3(축소). ★감사 권고 — node 입도의 *"si
 | **rev4** R4 순서 iff화 | `T18`·`T20a/b/c`를 **iff**로 승격 + 3차 감사가 찾은 생존 순서를 **mutant 2종 신설**(`g_order_capture_first`·`g_order_eager_first`) | **27 mutant 전부 커버**(`uncovered_mutants: []`). ★`T18`이 편집 중 **통째로 삭제돼 있었고 `T10`이 그것을 잡아냈다**(`g_order_capture_first` 미커버로 표면화) |
 | **rev4** R6 분모 fallback | 축 **`l2_join`** + 라벨 **`EXPECTATION_UNVERIFIABLE`** 신설, **Q1 이전**에 단락 | `T23`이 `g_expbasis`에서 실제 실패. 근거: mean 분모에서 균일 손실이 **상쇄**(교훈 #20) |
 | **rev4** R2·R5·R7·R8·R10 | 신설 라벨 4개에 금지 문구 등록 · **값 없던 자유 모수 5개 등록**(#9·#13·#14·★#15·#16) · 거짓 검증 문장 2건 정정 · companion `E1B_NEEDS_STREAM` 한계 명시 · `graph` 실행에 **`:host-only`** 명시 | 라벨 **26개 전부** 문서 대조 통과 · `nsys --help` 재확인 · 문서↔코드 라벨 대조 스크립트 실행 |
-| **rev4** 하네스 신설(②) | `stage0ppp_a0_probe.py`(5 다리, ★**NVTX 없이 다리마다 커널 이름으로 귀속**) · `stage0ppp_a0_analyze.py`(어댑터, **fail-closed**) · `stage0ppp_a0.sbatch`(비exclusive, `node` 먼저·명시, `graph:host-only`, 규칙 sha 검증, 권한 3종 기록) | 어댑터 fail-closed 2경로 **실행 확인**(아티팩트 전무 / raw만 존재 → 둘 다 `MEASUREMENT_ABSENT`) · 규칙 자기검사 **ALL PASS** 재실행 |
+| A0 rev4 | 하네스 신설(②) | ★**하네스층 감사 `NO-GO`, 차단 B1–B15, 死因 없음** — 런킬러 2건 + 어댑터 5건 |
+| **rev5** B1 프로브 기동 불가 | `exec` 생성 함수에 `triton.jit` 불가 → 커널을 **파일에 문자 그대로** 정의 | 메인 세션 재현(`ValueError: @jit functions should be defined in a Python file`) → 수리 후 `_kernels()`가 **5개 반환** 실행 확인 |
+| **rev5** B2 default 스트림 캡처 | L1·L2·L2′를 **전용 비-default 스트림**으로(자유 모수 #15 변경, 등재) | `libtorch_cuda.so`의 *"CUDA graphs must be captured on a non-default stream."* 문자열 실측 |
+| **rev5** B3 `l2_post`가 L4에서 파생 | L2′에 **고유 커널명** `a0_l2p_graph_full` 부여, `cut`/`cut2` 분할 **삭제** | ★변이 테스트 ①: `L4=0` → **`PRIMARY_ESTIMAND_UNCONSTRUCTIBLE`**(rev4는 `TRACE_TRUNCATED`) |
+| **rev5** B4 `profile` 4종 | 측정 `frac`을 **규칙 상수와 직접 비교**, `tail`은 **진짜 접미 결손**만, `eager_only` 분기 수리, 그래프 노드 **5개** | ★변이 ③: `frac=0.900`(균일) → **`KSET_CONSTRUCTIBLE`** · ③b: replay 2개 결손 → **`TRACE_TRUNCATED`** — **두 세계가 갈린다**(X5가 `profile` 벡터를 도입한 목적) |
+| **rev5** B5 `ctx="parent"` 오매핑 | 버려지던 `contextId`를 써서 **`gctx∈{0,NULL}` ∧ 부모 컨텍스트 일치** ⇒ `parent`. 근거: nsys 자신이 `NULLIF(greenContext, 0)`로 **0을 "green 아님"으로 인코딩** | ★변이 ②: `gctx=0` → **`ATTRIBUTION_DISCONFIRMED`**(rev4는 `KSET_STREAM_ONLY_ATTRIBUTION` = 최상위 긍정 계열) |
+| **rev5** B7 `l2_join` 공허 | 조인을 **L2에서 실측**(`rep_corr`와의 교집합) | ★변이 ④: L2 조인 실패 → **`EXPECTATION_UNVERIFIABLE`**(R6 수리가 처음으로 도달 가능해짐) |
+| **rev5** B6 companion 미구현 | ★**`graph` 입도 실행을 이 제출에서 제외**, §4를 A1로 이월(§4 재작성, 자유 모수 #29 등재) | `companion` 호출 0회를 확인 후 결정. 아티팩트에 `companion_scored: false` + 이월 사유 기록 |
+| **rev5** B8·B9·B10·B15 | 스키마 결손을 `export="fail"`로 · sqlite 쿼리 `try/except` · `nsys stats` 종료코드 배선 · green readout 실패를 **프로브 조건**으로 재라우팅 | 어댑터 fail-closed 경로 실행 확인 |
+| **rev5** B11·B14 | 권한 3종·nsys/driver·git HEAD를 **`.json`에 기록** · sbatch가 **프로브·어댑터 sha도 출력** | sbatch 실행 경로에 배선(규칙만 핀돼 있던 것은 허위 안심이었다) |
+| **rev5** 배관 스모크 | nsys 부착 **전** leg 0으로 프로브 1회(≤120 s, 전용 exit code) | 교훈 #25 — 커널 빌드·캡처 실패로 예산을 태우지 않는다 |
+| **rev5** ★자기 검출 | R5(자유 모수 5개 값 등록)가 **앞선 편집에서 조용히 실패**해 있었다(적용됐다고 보고했으나 미적용) | 사전등록 재검사에서 발견 → 재적용 + `grep`으로 확인. **교훈 #67/#70 계열의 자기 재발** |
+| ~~rev4 하네스 신설(②)~~ | ~~`stage0ppp_a0_probe.py`(5 다리, ★**NVTX 없이 다리마다 커널 이름으로 귀속**) · `stage0ppp_a0_analyze.py`(어댑터, **fail-closed**) · `stage0ppp_a0.sbatch`(비exclusive, `node` 먼저·명시, `graph:host-only`, 규칙 sha 검증, 권한 3종 기록) | 어댑터 fail-closed 2경로 **실행 확인**(아티팩트 전무 / raw만 존재 → 둘 다 `MEASUREMENT_ABSENT`) · 규칙 자기검사 **ALL PASS** 재실행 |
 | **rev4** ★어댑터 자기 검출 | green 축을 `driver_readout.primary_sm`(=**현재 컨텍스트** SM 108)과 target 34로 비교하고 있었다 — **무조건 `mismatched`**. 게다가 그 함수는 docstring에 *"never an input to a verdict"* 라고 **스스로 등록**돼 있다 | ★**`cuStreamGetGreenCtx` → `cuGreenCtxGetDevResource`** 로 green ctx **자신의** smCount를 읽도록 교체(실패 시 fail-closed). nsys의 `isGreenContext`는 **Q2a와 순환**이라 금지 |
 | **rev4** 자기 검출 3건 | `T22` 단독구속 0(2회) · `T18` 실종 · 요약 줄 변수 그림자(`fails` 리스트를 dict가 덮음) | ★**전부 스위트/실행이 잡았다** — 사람이 읽어서 찾은 것이 아니다 |
 | **rev3** N1 분기 순서 | 순서 재배치(§2 ①–⑩) + **순서 mutant 3종** + **배타성 검사 `T20a–e`** | `T8`: `T20c`가 `g_order_capgreen_early`에서, `T20a/b`가 `g_order_ctl_before_trunc`에서 **실제 실패 확인**(`selftest_rev3_2026-08-24.txt`) |
