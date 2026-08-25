@@ -104,7 +104,10 @@ C2를 *고치는* 것이 아니라 **필요 없게 만든다**.
 
 1. ★**A1의 워크로드에서 아직 재본 적이 없다.** 위 두 파일은 **ShareGPT open-loop**이고 A1의 셀은
    **batch-synchronous `NP=CONC=16`**이다. ⇒ rev2 §2.3 스모크가 사는 것 중 (d)가 **이것**이다.
-2. ★**`Ha8`(Zamba2-7B) + sticky 부팅 선례 없음**(sticky 실증은 `T8`뿐) — 같은 스모크가 함께 산다.
+2. ★★**정정(2026-08-25, rev2 감사 B5 · 재감사 P6 전파)**: 초판은 *"`Ha8` + sticky 부팅 선례 없음"* 이라
+   적었다. **거짓이다** — `results/sticky_smoke/stksmoke_Ha8_d16_872800_result.txt`가
+   `ARM=Ha8`·`sticky=1`·`correctness PASS`·`E1_DECODE_REALIZED 1.0000`을 보인다.
+   **실제 미구매분은 batch-synchronous 워크로드에서의 같은 확인**뿐이고, 그것을 §2.3 스모크가 산다.
 3. **`decode_iterations`는 `RuntimeSnapshot` 필드**(`multiplexing_mixin.py:380`)이므로 telemetry가
    꺼지면 채널도 없다. `PDMUX_TELEMETRY_PATH`는 **부팅 필수**로 등록한다.
 

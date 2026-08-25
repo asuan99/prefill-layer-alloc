@@ -1,5 +1,11 @@
 {
  "results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md": {
+  "a1/a1_q3k1_rule.py:105-105": {
+   "anchor": "N_MIN_DECODE_STEPS = 64",
+   "anchor_offset": 0,
+   "sha": "32ef13e3784741b5",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/kernel_mech/a1/a1_q3k1_rule.py"
+  },
   "a1/a1_q3k1_rule.py:98-98": {
    "anchor": "N_MIN_DECODE_STEPS = 64",
    "anchor_offset": 0,
