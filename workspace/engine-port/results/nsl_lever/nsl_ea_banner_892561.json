@@ -1,0 +1,62 @@
+{
+ "C1_control": true,
+ "NOT_A_PERFORMANCE_RESULT": "no requests were sent; this job cannot produce latency, throughput or goodput. It does NOT answer whether the cap binds (capbind audit B1) and does NOT close B3.",
+ "P1_derivation": true,
+ "P2_opposite_direction": true,
+ "P3_realized_equals_requested": true,
+ "cells": {
+  "c24": {
+   "boot_oom": false,
+   "boot_refused_not_enough_memory": false,
+   "log": "ea_c24_892561_srv.log",
+   "mamba_gb": null,
+   "max_mamba_cache_size": 24,
+   "max_running_requests": 24,
+   "max_total_num_tokens": 337039,
+   "present": true
+  },
+  "c48": {
+   "boot_oom": false,
+   "boot_refused_not_enough_memory": false,
+   "log": "ea_c48_892561_srv.log",
+   "mamba_gb": null,
+   "max_mamba_cache_size": 48,
+   "max_running_requests": 48,
+   "max_total_num_tokens": 327601,
+   "present": true
+  },
+  "c48m96": {
+   "boot_oom": false,
+   "boot_refused_not_enough_memory": false,
+   "log": "ea_c48m96_892561_srv.log",
+   "mamba_gb": null,
+   "max_mamba_cache_size": 96,
+   "max_running_requests": 48,
+   "max_total_num_tokens": 308727,
+   "present": true
+  },
+  "c96": {
+   "boot_oom": false,
+   "boot_refused_not_enough_memory": false,
+   "log": "ea_c96_892561_srv.log",
+   "mamba_gb": null,
+   "max_mamba_cache_size": 96,
+   "max_running_requests": 96,
+   "max_total_num_tokens": 308727,
+   "present": true
+  }
+ },
+ "git_head": "16b9a5b3917fe0ef2df72e27d340ad692d62c135",
+ "gpu": "NVIDIA A100-SXM4-80GB, 580.105.08",
+ "kind": "nsl_ea_banner",
+ "label": "ARITHMETIC_CONFIRMED",
+ "node": "gpu40",
+ "prereg": "PREREG_NSL_EA_CAPBANNER_2026-08-25.md",
+ "requested_caps": {
+  "c24": 24,
+  "c48": 48,
+  "c48m96": 48,
+  "c96": 96
+ },
+ "tag": "892561"
+}
