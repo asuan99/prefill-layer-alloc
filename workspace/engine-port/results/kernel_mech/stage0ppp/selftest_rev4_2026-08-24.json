@@ -431,7 +431,7 @@
  "n_reachable_assignments": 926464,
  "n_worlds": 1327104,
  "rule_rev": 4,
- "rule_sha256": "23b7335557fcff3420b29288e0ffbafc5ae2a5da74644c0e444008c266032f04",
+ "rule_sha256": "583c4ab08a1f2194d63178ac1dab40aa9625e601bc0f72d6ee516d8219082652",
  "sole_binding": {
   "T11 CONTRA iff distinct+mismatch": 24,
   "T11b DISCONF iff ctx=parent": 60,

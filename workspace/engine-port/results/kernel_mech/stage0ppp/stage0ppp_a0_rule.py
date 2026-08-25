@@ -54,6 +54,7 @@ LABELS = MEASUREMENT | TOOLLIMIT | SUBSTANTIVE
 BASES = {"ctx+stream", "stream_only", None}
 
 # --- registered constants ----------------------------------------------------
+REPLAYS_EXPECTED = 20   # prereg sec8 #11 -- the harness launches this many
 Q1_FRAC   = 0.90
 JOIN_HIGH = 0.95
 

@@ -4,7 +4,7 @@
 `../audit_stage0ppp_a0_rev3_2026-08-24/VERDICT.md`) — ★★단 3차 감사는 **"구매 저지 사유는 소멸했다"** 고 판정하고
 **(a) 지금 사라**를 권고하며 **R1–R10은 편집 + 재실행으로 닫으라**고 명시했다. 이 판본이 그 이행이다. 이전 근거: rev1 판정(
 `../audit_stage0ppp_a0_2026-08-24/VERDICT.md`). **GPU 미집행 · 새 성능 판정 0건.**
-규칙 정본: **`stage0ppp_a0_rule.py`** (`RULE_REV=4`, sha256 `23b7335557fcff34…`) — 문서와 코드가 다르면 **코드가 이긴다**.
+규칙 정본: **`stage0ppp_a0_rule.py`** (`RULE_REV=4`, sha256 `583c4ab08a1f2194…`) — 문서와 코드가 다르면 **코드가 이긴다**.
 
 ---
 
@@ -329,6 +329,8 @@ telemetry ITL 중앙값) · Q3(축소). ★감사 권고 — node 입도의 *"si
 | **rev4** R4 순서 iff화 | `T18`·`T20a/b/c`를 **iff**로 승격 + 3차 감사가 찾은 생존 순서를 **mutant 2종 신설**(`g_order_capture_first`·`g_order_eager_first`) | **27 mutant 전부 커버**(`uncovered_mutants: []`). ★`T18`이 편집 중 **통째로 삭제돼 있었고 `T10`이 그것을 잡아냈다**(`g_order_capture_first` 미커버로 표면화) |
 | **rev4** R6 분모 fallback | 축 **`l2_join`** + 라벨 **`EXPECTATION_UNVERIFIABLE`** 신설, **Q1 이전**에 단락 | `T23`이 `g_expbasis`에서 실제 실패. 근거: mean 분모에서 균일 손실이 **상쇄**(교훈 #20) |
 | **rev4** R2·R5·R7·R8·R10 | 신설 라벨 4개에 금지 문구 등록 · **값 없던 자유 모수 5개 등록**(#9·#13·#14·★#15·#16) · 거짓 검증 문장 2건 정정 · companion `E1B_NEEDS_STREAM` 한계 명시 · `graph` 실행에 **`:host-only`** 명시 | 라벨 **26개 전부** 문서 대조 통과 · `nsys --help` 재확인 · 문서↔코드 라벨 대조 스크립트 실행 |
+| **rev4** 하네스 신설(②) | `stage0ppp_a0_probe.py`(5 다리, ★**NVTX 없이 다리마다 커널 이름으로 귀속**) · `stage0ppp_a0_analyze.py`(어댑터, **fail-closed**) · `stage0ppp_a0.sbatch`(비exclusive, `node` 먼저·명시, `graph:host-only`, 규칙 sha 검증, 권한 3종 기록) | 어댑터 fail-closed 2경로 **실행 확인**(아티팩트 전무 / raw만 존재 → 둘 다 `MEASUREMENT_ABSENT`) · 규칙 자기검사 **ALL PASS** 재실행 |
+| **rev4** ★어댑터 자기 검출 | green 축을 `driver_readout.primary_sm`(=**현재 컨텍스트** SM 108)과 target 34로 비교하고 있었다 — **무조건 `mismatched`**. 게다가 그 함수는 docstring에 *"never an input to a verdict"* 라고 **스스로 등록**돼 있다 | ★**`cuStreamGetGreenCtx` → `cuGreenCtxGetDevResource`** 로 green ctx **자신의** smCount를 읽도록 교체(실패 시 fail-closed). nsys의 `isGreenContext`는 **Q2a와 순환**이라 금지 |
 | **rev4** 자기 검출 3건 | `T22` 단독구속 0(2회) · `T18` 실종 · 요약 줄 변수 그림자(`fails` 리스트를 dict가 덮음) | ★**전부 스위트/실행이 잡았다** — 사람이 읽어서 찾은 것이 아니다 |
 | **rev3** N1 분기 순서 | 순서 재배치(§2 ①–⑩) + **순서 mutant 3종** + **배타성 검사 `T20a–e`** | `T8`: `T20c`가 `g_order_capgreen_early`에서, `T20a/b`가 `g_order_ctl_before_trunc`에서 **실제 실패 확인**(`selftest_rev3_2026-08-24.txt`) |
 | **rev3** N2 함의 배제 | `T14`/`T15`를 배타성 형태로 교체 + ★**메타검사 `T19`** 신설 | `T19` 전 쌍(24×23) 전수 → **함의 0쌍**(`entailed_pairs: []`). ★2단 탐색은 **건전**하다(부분집합의 반례는 전 공간의 반례) |
