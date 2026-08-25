@@ -71,6 +71,10 @@ if [ "$GOT" != "$RULE_SHA_REGISTERED" ]; then
   exit 31
 fi
 echo "rule sha256 OK"
+# B14: rev4 pinned only the rule.  The files this audit round actually faulted
+# -- probe and adapter -- were unpinned, which is false reassurance.
+sha256sum "$D/stage0ppp_a0_probe.py" "$D/stage0ppp_a0_analyze.py" \
+          "$D/stage0ppp_a0_rule.py"
 
 run_leg () {                      # $1 = node|graph   $2 = granularity argument
   local G="$1" GARG="$2"
@@ -86,25 +90,41 @@ run_leg () {                      # $1 = node|graph   $2 = granularity argument
        -o "$D/a0_${G}_${J}.sqlite" "$D/a0_${G}_${J}.nsys-rep" || return 32
   # sec5/N6: the export axis is judged by nsys' own loss warnings
   nsys stats --report cuda_gpu_kern_sum "$D/a0_${G}_${J}.nsys-rep" \
-       > "$D/a0_stats_${G}_${J}.txt" 2>&1 || true
+       > "$D/a0_stats_${G}_${J}.txt" 2>&1
+  echo $? > "$D/a0_statsrc_${G}_${J}.txt"    # B10: stats failure != "no warnings"
   grep -iE "dropped|lost|truncat|incomplete" "$D/a0_stats_${G}_${J}.txt" \
        > "$D/a0_warn_${G}_${J}.txt" 2>/dev/null || true
   return 0
 }
 
-# node FIRST and EXPLICITLY: driver >= 11.7 defaults to whole-graph granularity,
-# which would silently give the wrong thing for the primary estimand (sec4).
-run_leg node  node             || { echo "node leg failed -> MEASUREMENT ABSENT"; exit 33; }
-# :host-only is explicit because driver >= 12.3 defaults to host-and-device,
-# which nsys' own help warns carries significant overhead (audit R10).
-run_leg graph graph:host-only  || { echo "graph leg failed -> MEASUREMENT ABSENT"; exit 34; }
+echo "=== leg 0: plumbing smoke, NO nsys, <= 60 s (lesson #25) ==="
+# The harness audit found the probe could not build a single kernel and could
+# not capture a graph -- both would have burned the budget for a MEASUREMENT
+# label.  Prove the plumbing before the profiler is ever attached.
+timeout 120 python3 "$D/stage0ppp_a0_probe.py" --granularity node \
+        --out "$D/a0_smoke_${J}.json" --tag "smoke-$J"
+RC=$?
+if [ "$RC" -ne 0 ]; then
+  echo "SMOKE FAILED (rc=$RC) -> plumbing, not a result. Refusing to profile."
+  exit 36
+fi
+echo "smoke ok"
+
+# node granularity, EXPLICIT: driver >= 11.7 defaults to whole-graph, which
+# would silently give the wrong thing for the primary estimand (sec4).
+run_leg node node || { echo "node leg failed -> MEASUREMENT ABSENT"; exit 33; }
+# B6 (harness audit): the `graph` run is NOT taken in this submission.  Its
+# scorer (companion / E1-(b)) was never wired -- the second nsys run cost
+# budget and produced nothing.  Rather than build a scorer against a schema
+# that cannot be exercised here, sec4 moves to A1, where the engine substrate
+# makes E1-(b) meaningful anyway (sec0-1: a synthetic-graph positive does not
+# transfer).
 
 echo "=== scoring against the registered rule ==="
 python3 "$D/stage0ppp_a0_analyze.py" \
   --raw-node    "$D/a0_raw_node_${J}.json"   --sqlite-node  "$D/a0_node_${J}.sqlite" \
-  --raw-graph   "$D/a0_raw_graph_${J}.json"  --sqlite-graph "$D/a0_graph_${J}.sqlite" \
   --stats-warn-node  "$(cat "$D/a0_warn_node_${J}.txt" 2>/dev/null)" \
-  --stats-warn-graph "$(cat "$D/a0_warn_graph_${J}.txt" 2>/dev/null)" \
+  --stats-rc-node    "$(cat "$D/a0_statsrc_node_${J}.txt" 2>/dev/null || echo 0)" \
   --out "$D/a0_verdict_${J}.json" --tag "$J"
 RC=$?
 echo "analyze rc=$RC"

@@ -27,6 +27,11 @@ WARMUPS = 3             # prereg sec8 #14
 GRID = 34               # prereg sec8 #13 -- one block per green-half SM label
 BLOCK_WARPS = 4         # 128 threads
 SPIN_NS = 120_000       # >= 100 us per kernel (prereg sec8 #13)
+NODES_PER_GRAPH = 5     # B4(c): with ONE node per graph, `expected`=1 and any
+                        # loss makes the replay count < 20, so every partial
+                        # world collapsed to tail_missing and Q1_FRAC was never
+                        # evaluated.  Five nodes make a partial replay express-
+                        # ible.  Registered as free parameter #13.
 
 
 def _sha256(path):
@@ -37,33 +42,84 @@ def _sha256(path):
 def _kernels():
     """One jit function per leg.  Identical bodies; the NAME is the leg tag.
 
-    The spin primitive is taken from the upstream producer, as
-    smid_l0_census.py does (methodology gate #14): a probe that re-implements
-    the thing it measures is close to an identity.
+    B1 (harness audit): these were built with exec() in a dict namespace, and
+    triton.jit calls inspect.getsourcelines on the function -- which raises
+    `@jit functions should be defined in a Python file` for anything not in
+    linecache.  The probe could not create a single kernel.  Reproduced on the
+    login node before this repair; they are literal definitions now.
+
+    The spin primitive comes from the upstream producer, as smid_l0_census.py
+    does (methodology gate #14).
     """
     import triton
     import triton.language as tl
-    from triton.language.extra.cuda import globaltimer as _gt
+    from triton.language.extra.cuda import globaltimer
 
-    def _mk(name):
-        src = (
-            "def {n}(out, spin_ns, iter_cap):\n"
-            "    pid = tl.program_id(0)\n"
-            "    t0 = _gt()\n"
-            "    t = t0\n"
-            "    i = 0\n"
-            "    while (t - t0) < spin_ns and i < iter_cap:\n"
-            "        t = _gt()\n"
-            "        i += 1\n"
-            "    tl.store(out + pid, t - t0)\n"
-        ).format(n=name)
-        ns = {"tl": tl, "_gt": _gt}
-        exec(src, ns)
-        return triton.jit(ns[name])
+    @triton.jit
+    def a0_l1_eager_full(out, spin_ns, iter_cap):
+        pid = tl.program_id(0)
+        t0 = globaltimer()
+        t = t0
+        i = 0
+        while (t - t0) < spin_ns and i < iter_cap:
+            t = globaltimer()
+            i += 1
+        tl.store(out + pid, t - t0)
 
-    return {k: _mk(k) for k in
-            ("a0_l1_eager_full", "a0_l2_graph_full",
-             "a0_l3_eager_green", "a0_l4_graph_green")}
+    @triton.jit
+    def a0_l2_graph_full(out, spin_ns, iter_cap):
+        pid = tl.program_id(0)
+        t0 = globaltimer()
+        t = t0
+        i = 0
+        while (t - t0) < spin_ns and i < iter_cap:
+            t = globaltimer()
+            i += 1
+        tl.store(out + pid, t - t0)
+
+    @triton.jit
+    def a0_l3_eager_green(out, spin_ns, iter_cap):
+        pid = tl.program_id(0)
+        t0 = globaltimer()
+        t = t0
+        i = 0
+        while (t - t0) < spin_ns and i < iter_cap:
+            t = globaltimer()
+            i += 1
+        tl.store(out + pid, t - t0)
+
+    @triton.jit
+    def a0_l4_graph_green(out, spin_ns, iter_cap):
+        pid = tl.program_id(0)
+        t0 = globaltimer()
+        t = t0
+        i = 0
+        while (t - t0) < spin_ns and i < iter_cap:
+            t = globaltimer()
+            i += 1
+        tl.store(out + pid, t - t0)
+
+    # B3: L2 and L2' MUST NOT share a name.  The adapter used to split them by
+    # position around the L4 rows, so an EMPTY L4 -- the registered decisive
+    # negative -- made L2' look empty and scored TRACE_TRUNCATED, i.e. the
+    # harness erased the answer and then forbade stating it.
+    @triton.jit
+    def a0_l2p_graph_full(out, spin_ns, iter_cap):
+        pid = tl.program_id(0)
+        t0 = globaltimer()
+        t = t0
+        i = 0
+        while (t - t0) < spin_ns and i < iter_cap:
+            t = globaltimer()
+            i += 1
+        tl.store(out + pid, t - t0)
+
+    return {f.__name__ if hasattr(f, "__name__") else n: f for n, f in (
+        ("a0_l1_eager_full", a0_l1_eager_full),
+        ("a0_l2_graph_full", a0_l2_graph_full),
+        ("a0_l3_eager_green", a0_l3_eager_green),
+        ("a0_l4_graph_green", a0_l4_graph_green),
+        ("a0_l2p_graph_full", a0_l2p_graph_full))}
 
 
 def _census():
@@ -136,7 +192,8 @@ def _graph_leg(torch, kern, out, stream, rec, key):
         torch.cuda.synchronize()
         g = torch.cuda.CUDAGraph()
         with torch.cuda.graph(g, stream=stream):
-            kern[(GRID,)](out, SPIN_NS, 1 << 22, num_warps=BLOCK_WARPS)
+            for _ in range(NODES_PER_GRAPH):
+                kern[(GRID,)](out, SPIN_NS, 1 << 22, num_warps=BLOCK_WARPS)
         rec[key + "_capture"] = "ok"
     except Exception as e:                      # a capture failure is a
         rec[key + "_capture"] = "fail"          # MEASUREMENT condition, never
@@ -149,9 +206,51 @@ def _graph_leg(torch, kern, out, stream, rec, key):
                 g.replay()
         torch.cuda.synchronize()
         rec[key + "_replays"] = REPLAYS
+        rec[key + "_nodes_per_graph"] = NODES_PER_GRAPH
         rec[key + "_wall_ns"] = time.monotonic_ns() - t0
     except Exception as e:
         rec[key + "_replay_error"] = repr(e)
+
+
+def _permissions():
+    out = {}
+    for k, path in (("perf_event_paranoid", "/proc/sys/kernel/perf_event_paranoid"),
+                    ("nvidia_params", "/proc/driver/nvidia/params")):
+        try:
+            with open(path) as f:
+                v = f.read()
+            out[k] = (v.strip() if k != "nvidia_params" else
+                      next((l for l in v.splitlines()
+                            if "RestrictProfiling" in l), "absent"))
+        except Exception as e:
+            out[k] = f"unreadable: {e}"
+    return out
+
+
+def _versions():
+    import subprocess
+    out = {}
+    for k, cmd in (("nsys", ["nsys", "--version"]),
+                   ("nvidia_smi", ["nvidia-smi",
+                                   "--query-gpu=name,driver_version,persistence_mode",
+                                   "--format=csv,noheader"])):
+        try:
+            out[k] = subprocess.run(cmd, capture_output=True, text=True,
+                                    timeout=30).stdout.strip()
+        except Exception as e:
+            out[k] = f"unavailable: {e}"
+    return out
+
+
+def _git_head():
+    import subprocess
+    try:
+        return subprocess.run(
+            ["git", "-C", "/scratch/ehmoon/whlee/prefill-layer-alloc",
+             "rev-parse", "HEAD"], capture_output=True, text=True,
+            timeout=30).stdout.strip()
+    except Exception as e:
+        return f"unavailable: {e}"
 
 
 def run(args):
@@ -179,9 +278,21 @@ def run(args):
            "rule_sha256": _sha256(os.path.join(os.path.dirname(
                os.path.abspath(__file__)), "stage0ppp_a0_rule.py")),
            "probe_sha256": _sha256(os.path.abspath(__file__)),
+           "analyzer_sha256": _sha256(os.path.join(os.path.dirname(
+               os.path.abspath(__file__)), "stage0ppp_a0_analyze.py")),
+           # B11: sec10 registers these and the sbatch printed them to the .out,
+           # which the sbatch itself declares non-citable (gate #56).
+           "permissions": _permissions(),
+           "versions": _versions(),
+           "git_head": _git_head(),
            "legs": {}}
 
-    plain = torch.cuda.current_stream(device=dev)
+    # B2 (harness audit): L2/L2' captured on the DEFAULT stream, which PyTorch
+    # refuses -- "CUDA graphs must be captured on a non-default stream."
+    # (literal string in libtorch_cuda.so; reproduced before this repair).  The
+    # full-GPU legs get their own non-default stream; it is still the primary
+    # context, so they remain full-GPU.  Registered as free parameter #15.
+    plain = torch.cuda.Stream(device=dev)
     # ---- L1: full-GPU eager, BEFORE any green context exists ---------------
     t = time.monotonic_ns()
     for _ in range(REPLAYS):
@@ -206,6 +317,8 @@ def run(args):
         rec["green_create_error"] = repr(e)
         g_decode = None
     if g_decode is not None:
+        rec["green_stream_ptr"] = int(g_decode.cuda_stream)
+        rec["plain_stream_ptr"] = int(plain.cuda_stream)
         rec["green_readout"] = _green_sm_readout(g_decode.cuda_stream)
         try:      # descriptive only
             rec["driver_readout"] = _driver_readout(
@@ -227,8 +340,8 @@ def run(args):
         rec["legs"]["L4"] = l4
 
     # ---- L2': the trailing control (X5 / N1) --------------------------------
-    l2p = {"kernel": "a0_l2_graph_full", "position": "after_L4"}
-    _graph_leg(torch, K["a0_l2_graph_full"], out, plain, l2p, "L2p")
+    l2p = {"kernel": "a0_l2p_graph_full", "position": "after_L4"}
+    _graph_leg(torch, K["a0_l2p_graph_full"], out, plain, l2p, "L2p")
     rec["legs"]["L2p"] = l2p
 
     torch.cuda.synchronize()
