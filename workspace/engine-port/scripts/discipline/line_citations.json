@@ -69,6 +69,7 @@
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   }
  },
+ "results/kernel_mech/a1/a1_primary_rule.py": {},
  "results/kernel_mech/a1/a1_q3k1_rule.py": {
   "dual_worker.py:121-121": {
    "anchor": "self.snapshot.last_tpot_ms = max(",
