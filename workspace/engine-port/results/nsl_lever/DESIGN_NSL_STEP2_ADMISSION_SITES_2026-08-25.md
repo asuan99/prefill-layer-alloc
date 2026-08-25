@@ -26,18 +26,23 @@
 
 ### 1.1 ★ `batch_is_full`을 세우는 자리는 **셋이 아니라 다섯**이다
 
-| 사이트 | 술어 | 이 구성에서 |
-|---|---|---|
-| `:2369` | `chunked_req is not None ∧ ¬enable_priority_preemption` | **도달** — chunked-prefill 가드 |
-| **`:2434`** | `len(adder.can_run_list) ≥ get_num_allocatable_reqs(running_bs)` | ★**도달 — cap 경로** |
-| `:2439` | `len(can_run_list) ≥ req_to_token_pool.available_size()` | **미도달** — `disaggregation_mode == PREFILL` 전용 |
-| `:2472` | `NO_TOKEN ∧ enable_hierarchical_cache` (True **또는** False로 배정) | **미도달** — hierarchical cache 미사용 |
-| **`:2476`** | `NO_TOKEN ∧ ¬enable_hierarchical_cache` | ★**도달 — KV/토큰 경로** |
+| 사이트 | 술어 | **pdmux arm**에서 | 닫는 것 |
+|---|---|---|---|
+| `:2369` | `chunked_req is not None ∧ ¬enable_priority_preemption` | ★**미도달** | **엔진 assert** — `--enable-pdmux`는 `chunked_prefill_size == -1`을 강제하고(`server_args.py:6129-6131`), `<= 0`이면 `chunked_prefill_size = None`이 되어(`scheduler.py:890-891`) `chunked_req`가 **항상 None**이다 |
+| **`:2434`** | `len(adder.can_run_list) ≥ get_num_allocatable_reqs(running_bs)` | ★**도달 — cap 경로** | — |
+| `:2439` | `len(can_run_list) ≥ req_to_token_pool.available_size()` | **미도달** | **엔진 assert** — pdmux는 `disaggregation_mode == "null"`을 강제(`server_args.py:6132-6134`) |
+| `:2472` | `NO_TOKEN ∧ enable_hierarchical_cache` (True **또는** False로 배정) | **미도달** | 플래그 미사용(**assert 아님** — 이 셋 중 유일하게 구성으로만 닫힌다) |
+| **`:2476`** | `NO_TOKEN ∧ ¬enable_hierarchical_cache` | ★**도달 — KV/토큰 경로** | — |
 
-⇒ 감사의 "세 사이트"는 **이 구성에서 도달 가능한 셋**이며 서술로서 옳다. 그러나 나머지 둘은
-**기능 플래그로 닫혀 있을 뿐 코드에는 있다**. ★**설계 결정**: 다섯 사이트를 **전부** 계측하고,
-닫힌 둘이 **0을 유지하는지 검사**한다 — 구성이 바뀌면 카운터가 말해 주지, **조용히 오귀속되지 않는다**
-(교훈: 무언의 절단 금지 / 전수 열거).
+⇒ ★★**pdmux arm에서 도달 가능한 사이트는 다섯 중 둘뿐이고, 그 둘이 정확히 감사가 가르려던
+cap 경로와 KV 경로다.** 감사가 센 셋 중 `:2369`는 pdmux에서 **엔진이 assert로 닫는다**.
+★**정정(2026-08-25, 이 문서 커밋 직후 자기 검출)**: 초판은 `:2369`를 *"도달 — chunked-prefill 가드"* 로
+적었다. **거짓이다** — 근거는 위 assert이며, 이 문서가 스스로 그 assert를 인용하면서 반대로 적었다.
+
+★**설계 결정은 그대로**: 다섯 사이트를 **전부** 계측하고 닫힌 셋이 **0을 유지하는지 검사**한다.
+이유가 하나 늘었다 — ★**사이트 도달성은 arm마다 다르다.** fused 비교 arm `chunk512`(pdmux 없음,
+`--chunked-prefill-size 512`, `g2_run.sbatch:104,115`)에서는 `:2369`가 **도달 가능**하다.
+arm 무관 카운터가 arm마다 다른 도달성을 갖는다는 사실 자체가 **기록 대상**이다.
 
 ### 1.2 ★★ cap 술어의 상수는 `--max-running-requests`가 **아니다**
 
@@ -53,8 +58,10 @@ if self.pp_size > 1: res = min(res, self.req_to_token_pool.available_size())
 `pp_max_micro_batch_size`는 **미지정이면** `max(max_running_requests // pp_size, 1)`로 채워진다
 (`scheduler.py:668-671`). ⇒ ★**`pp_size == 1` ∧ 플래그 미지정일 때만** 그 상수가 cap과 같다.
 
-- ★**NSL ①의 `cap = 48` 사용은 이 구성에서 정당하다** — 이 프로젝트는 pipeline parallelism을
-  쓰지 않고 플래그를 주지 않는다. **확인했으므로 이제 가정이 아니다.**
+- ★**NSL ①의 `cap = 48` 사용은 이 구성에서 정당하다** — `pp_size == 1`은 **엔진이 assert로 강제**하고
+  (`server_args.py:6127-6128`, `--enable-pdmux` 하에서), `pp_max_micro_batch_size`는 이 프로젝트가
+  주지 않는다. **확인했으므로 이제 가정이 아니다.** ★단 **둘의 성격이 다르다** — 앞은 강제,
+  뒤는 **관례**다. 강제되지 않는 쪽만 부팅 전제로 검사하면 된다.
 - ★**그러나 항등식이 아니라 조건부다.** ②의 사전등록은 **부팅 전제**로 못박는다:
   `pp_size == 1` ∧ `pp_max_micro_batch_size` 미지정, 그리고 **실현값을 배너/`get_server_info`에서
   읽어 셀마다 기록**(③의 R3와 같은 형태). 어긋나면 `CAP_CONSTANT_MISMATCH` = MEASUREMENT 조건.
@@ -104,8 +111,13 @@ NSL ①이 참 술어를 계산 못 한 이유가 **`can_run_list`가 telemetry 
 
 - ✗ ★★★ *"②를 설계했으니 cap이 admission lever임이 곧 선다"* — **귀속을 사는 것**이지 레버 주장이 아니다.
 - ✗ ★★★ *"cap이 문다 / 안 문다"* — B1로 점 술어 무효, ②가 **돌기 전까지** 그대로다.
-- ✗ ★★ *"감사가 세 사이트를 잘못 셌다"* — **아니다.** 셋은 **이 구성에서 도달 가능한 전부**이고,
-  이 문서가 더한 것은 **닫힌 둘을 계측해 구성 변화를 잡는다**는 규율이다.
+- ✗ ★★ *"감사가 세 사이트를 잘못 셌다"* — 감사의 셋은 **`batch_is_full`을 세우는 자리 중 가장
+  중요한 셋**이며 줄번호도 정확하다. 이 문서가 더한 것은 (a) 자리가 **다섯**이라는 것, (b) pdmux
+  arm에서 **도달 가능한 것은 둘**이라는 것, (c) 닫힌 셋을 계측해 구성 변화를 잡는다는 규율이다.
+- ✗ ★★ *"`:2369`는 pdmux arm에서 발화한다"* — **엔진 assert가 닫는다**(§1.1). 이 문서 **초판이
+  그렇게 적었고 정정했다.**
+- ✗ ★★ *"pdmux와 chunked prefill을 함께 쓴다"* — `server_args.py:6129-6131`이 **assert로 금지**한다.
+  이 저장소에서 `--chunked-prefill-size 512`는 **fused 비교 arm(`chunk512` = A3)** 이지 운영점이 아니다.
 - ✗ ★★ *"cap 술어의 상수는 `max_running_requests`다"* — **`pp_max_micro_batch_size`** 이고,
   둘이 같은 것은 `pp_size == 1` ∧ 플래그 미지정일 때뿐이다(§1.2).
 - ✗ ★★ *"①의 구간이 ②로 소급해 좁혀진다"* — **새 런에서만**(§2.1). 기존 아티팩트에 `can_run_list`는 없다.
