@@ -94,7 +94,7 @@ E-A가 실현 cap = 요청 cap을 관측한 것은 **`--disable-radix-cache`(rat
 - ✗ **귀속**(cap 경로 vs KV 경로) — reason 문자열이 두 경로를 뭉갠다(감사 B10). ②의 몫.
 - ✗ 어떤 **성능·SLO·정책** 문장도.
 
-⇒ ★**③ 다음은 ②다**: `scheduler.py:2369` / `:2434` / `:2476` 세 사이트에 기본 OFF·arm 무관 카운터
+⇒ ★**③ 다음은 ②다**: `managers/scheduler.py:2369` / `:2434` / `:2476` 세 사이트에 기본 OFF·arm 무관 카운터
 (+ 발화 시점의 `running_bs`·`len(can_run_list)`). `PDMUX_HOLB_PATH` 선례를 따른다.
 
 ## 5. 가격

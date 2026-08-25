@@ -20,7 +20,7 @@
 
 ## 1. ★ 감사가 지목한 세 사이트 — **직접 확인했고, 두 가지가 다르다**
 
-감사 권고 2는 `scheduler.py:2369` / `:2434` / `:2476`을 지목했다. **줄번호는 현재 트리와 일치한다**
+감사 권고 2는 `managers/scheduler.py:2369` / `:2434` / `:2476`을 지목했다. **줄번호는 현재 트리와 일치한다**
 (교훈 #80에 따라 직접 확인; 같은 세션에서 다른 감사의 줄번호 2건은 어긋나 있었다).
 그러나 **두 가지가 감사 서술과 다르다**.
 
@@ -28,7 +28,7 @@
 
 | 사이트 | 술어 | **pdmux arm**에서 | 닫는 것 |
 |---|---|---|---|
-| `:2369` | `chunked_req is not None ∧ ¬enable_priority_preemption` | ★**미도달** | **엔진 assert** — `--enable-pdmux`는 `chunked_prefill_size == -1`을 강제하고(`server_args.py:6129-6131`), `<= 0`이면 `chunked_prefill_size = None`이 되어(`scheduler.py:890-891`) `chunked_req`가 **항상 None**이다 |
+| `:2369` | `chunked_req is not None ∧ ¬enable_priority_preemption` | ★**미도달** | **엔진 assert** — `--enable-pdmux`는 `chunked_prefill_size == -1`을 강제하고(`server_args.py:6129-6131`), `<= 0`이면 `chunked_prefill_size = None`이 되어(`managers/scheduler.py:890-891`) `chunked_req`가 **항상 None**이다 |
 | **`:2434`** | `len(adder.can_run_list) ≥ get_num_allocatable_reqs(running_bs)` | ★**도달 — cap 경로** | — |
 | `:2439` | `len(can_run_list) ≥ req_to_token_pool.available_size()` | **미도달** | **엔진 assert** — pdmux는 `disaggregation_mode == "null"`을 강제(`server_args.py:6132-6134`) |
 | `:2472` | `NO_TOKEN ∧ enable_hierarchical_cache` (True **또는** False로 배정) | **미도달** | 플래그 미사용(**assert 아님** — 이 셋 중 유일하게 구성으로만 닫힌다) |
@@ -46,7 +46,7 @@ arm 무관 카운터가 arm마다 다른 도달성을 갖는다는 사실 자체
 
 ### 1.2 ★★ cap 술어의 상수는 `--max-running-requests`가 **아니다**
 
-`get_num_allocatable_reqs`(`scheduler.py:2296-2300`):
+`get_num_allocatable_reqs`(`managers/scheduler.py:2296-2300`):
 
 ```
 res = get_global_server_args().pp_max_micro_batch_size - running_bs
@@ -56,7 +56,7 @@ if self.pp_size > 1: res = min(res, self.req_to_token_pool.available_size())
 ⇒ `:2434`의 술어는 실제로 **`running_bs + |can_run_list| ≥ pp_max_micro_batch_size`** 다.
 
 `pp_max_micro_batch_size`는 **미지정이면** `max(max_running_requests // pp_size, 1)`로 채워진다
-(`scheduler.py:668-671`). ⇒ ★**`pp_size == 1` ∧ 플래그 미지정일 때만** 그 상수가 cap과 같다.
+(`managers/scheduler.py:668-671`). ⇒ ★**`pp_size == 1` ∧ 플래그 미지정일 때만** 그 상수가 cap과 같다.
 
 - ★**NSL ①의 `cap = 48` 사용은 이 구성에서 정당하다** — `pp_size == 1`은 **엔진이 assert로 강제**하고
   (`server_args.py:6127-6128`, `--enable-pdmux` 하에서), `pp_max_micro_batch_size`는 이 프로젝트가

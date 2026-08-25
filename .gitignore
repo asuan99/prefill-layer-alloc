@@ -29,6 +29,10 @@ pip-wheel-metadata/
 # Results & data
 *.csv
 *.json
+# ...except the line-citation baseline: `--check` is meaningless without it, so
+# a manifest that only ever lives on one machine makes the tool useless to the
+# next session.  See scripts/discipline/check_line_citations.py.
+!workspace/engine-port/scripts/discipline/line_citations.json
 *.pkl
 *.pickle
 *.parquet
