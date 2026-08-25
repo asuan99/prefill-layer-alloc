@@ -4,6 +4,11 @@
 선행: `DESIGN_A1_ENGINE_SUBSTRATE_2026-08-25.md`(rev1, ★**규칙층 감사 `NO-GO` · 死因 2건**) +
 `audit_a1_rules_2026-08-25/VERDICT.md`.
 
+> ★★★**rev2도 규칙층 감사 `NO-GO`다**(2026-08-25, `audit_a1_rev2_rules_2026-08-25/VERDICT.md`).
+> 신설 死因 0건이나 **死因 A1 미해소**(A0 규칙 `RULE_REV=4` 미개정) · **게이트 #21 `launches` 축에서
+> 재개방** · 문서 자기모순 3건 · 정본 대조 거짓 2건. 아래 §0·§5.1a·§6·§7은 그 판정에 따라
+> **정정된 판본**이며, **여전히 ② 어댑터로 보낼 수 없다**. *"rev2가 규칙층을 통과했다"* 금지.
+
 > ★★**이 판본의 범위는 감사 §⑤ 권고 절차 중 `1`뿐이다** — §2(다리)와 §5(중단 규칙)의 재작성.
 > **절차 2·3·4·5·6·7은 미이행**이며, 따라서 **rev2도 미감사이고 제출 불가**다.
 > *"rev2가 규칙층을 통과했다"* · *"A1의 死因이 닫혔다"* 는 **쓰면 안 된다**(§7).
@@ -20,7 +25,7 @@
 | **死因 A1**(리포트 로컬 `streamId`) | ★**완화** — `stream` 축을 **리포트 내** 정의로 교체(§3). ★대가: rev1 §4의 *"A0 규칙 그대로 · **재감사하지 않는다**"* 는 **철회**한다. 새 rule rev + 규칙층 감사 **1회**가 이 설계의 일부다 |
 | **런킬러 B1**(`decode_step_count` = 0) | ✗ **미해결** — 절차 3(Q3 채널 결정 + **비영 실증 먼저**). §5-8에 stop만 등록 |
 | **C1**(`N_min` 死코드) · **C2**(단위 오독) | §5에 **단위와 값**을 등록했을 뿐, **코드 참조는 절차 4**(rule rev2)에서 |
-| **D1·D3 정정** · **D4·D5·D6**(K1) | ✗ **미이행** — 절차 5·6 |
+| **D1·D3 정정** · **D4·D5·D6**(K1) | ★**이행**(절차 5·6) — §6 표·§6.1 참조. ★**단 rev2 감사는 K1을 `K1_UNMEASURED`로 판정**한다: 부팅 매트릭스 전 항목이 nsys-ON이라 `pair`를 만들 수 없다(B7) |
 | **rev7·rev8 차단**(B1–B5·B7 / C1–C10) | **전부 불변** — 이 판본은 하나도 건드리지 않는다 |
 
 ---
@@ -30,12 +35,12 @@
 감사 §⑤가 지목한 뿌리: *"분할과 무분할이 한 런 안에서 3% 듀티로 95번 교차하고, 둘이 같은 커널이라
 시간창으로만 갈 수 있다."* 그 교차를 만드는 코드는 하나다.
 
-- **sticky OFF** — `multiplexing_mixin.py:881-883`: `not running_batch.is_empty() and split_prefill_batch`
-  일 때만 division을 고르고, **아니면** `:911-912`가 `set_current_stream_idx(real_sm_group_num - 1)`
+- **sticky OFF** — `multiplexing_mixin.py:922-924`: `not running_batch.is_empty() and split_prefill_batch`
+  일 때만 division을 고르고, **아니면** `:952-953`가 `set_current_stream_idx(real_sm_group_num - 1)`
   = **plain `(0,108)` 그룹**을 고른다. ⇒ **prefill이 in-flight가 아닌 decode는 108 SM에서 돈다.**
-- **sticky ON + `FixedPolicy(D)`** — `:884`+`:891`: `stream_idx = self._sticky_fixed_idx`(상수)
+- **sticky ON + `FixedPolicy(D)`** — `:925`+`:932`: `stream_idx = self._sticky_fixed_idx`(상수)
   ⇒ **런 전체가 한 division에 앉는다.**
-- **replay 경로는 유지된다** — `:228-231` 주석: 그래프는 stream-group index마다 캡처되므로
+- **replay 경로는 유지된다** — `:269-272` 주석: 그래프는 stream-group index마다 캡처되므로
   (`cuda_graph_runner.capture`, key `f"{stream_idx}_{bs}"`) division을 붙들어도 **캡처된 그래프를
   그대로 replay**한다. **eager fallback 없음.**
 - **실측 승계**(CONSENSUS 항목27(II)) — sticky OFF `E1_DECODE_REALIZED` **0.0839** → ON **1.0000**
@@ -45,7 +50,7 @@
 ### 1.1 ★이 셀에서 sticky는 편의가 아니라 **필요조건**이다 — 그리고 **B6가 이미 그렇게 등록했다**
 
 rev8 §5 / B6 사전등록이 승계한 워크로드는 **batch-synchronous `NP=CONC=16`**이고, rev8:380이 그
-성질을 *"라운드 안 prefill을 **0으로 강제**한다"* 로 적는다. 위 `:911-912`와 합치면:
+성질을 *"라운드 안 prefill을 **0으로 강제**한다"* 로 적는다. 위 `:952-953`와 합치면:
 
 > **sticky OFF에서 그 라운드의 decode는 `D`가 아니라 108 SM에서 돈다.**
 
@@ -55,7 +60,7 @@ rev8 §5 / B6 사전등록이 승계한 워크로드는 **batch-synchronous `NP=
 등록하지 않았다"* 를 근거로 달았다. **문자 그대로는 참이지만(rev8 문서에 문자열 0건) 오도한다** —
 rev8이 워크로드를 승계한 **B6 사전등록 `PREREG_B6_ELIGIBLE_WINDOW_2026-08-22.md:102-109`가
 sticky-ON을 이미 전제한다**. 그 절은 라운드 **사이**에 decode batch가 비면
-`multiplexing_mixin.py:913-923`(B6는 `:915-923`으로 인용)이 division을 놓고
+`multiplexing_mixin.py:954-967`(B6는 `:915-923`으로 인용 — B6 작성 시점 트리)이 division을 놓고
 `set_current_stream_idx(0)`으로 떨어지므로 *"라운드 **첫 몇 step은 목표 `D`가 아닌 파티션에서
 돌 수 있다**"* 고 적고, 그래서 분석 구간의 시작점을 **관측이 정하게** 했다. ⇒ 올바른 서술은
 *"rev8을 정정한다"* 가 아니라 **"B6의 등록 전제를 A1의 부팅 매트릭스에 명시적으로 이름 붙여
@@ -67,10 +72,10 @@ sticky-ON을 이미 전제한다**. 그 절은 라운드 **사이**에 decode ba
 
 ### 1.2 ★ B6가 알려주는 것 하나 더 — **라운드 경계에서 sticky는 놓였다가 재확립된다**
 
-`:913-923`은 **decode batch가 비면 의도적으로 division을 놓는다**(주석: *"there is no decode work
+`:954-967`은 **decode batch가 비면 의도적으로 division을 놓는다**(주석: *"there is no decode work
 to protect … holding it would strand D SM"*). batch-synchronous는 라운드 사이마다 decode를
 비우므로 **부팅 안에 라운드 수만큼 재확립 지연이 있다**. B6는 이것을 `out=128`의 여유
-(**~125 step 중 20 step만 사용**)로 흡수했다. rev2는 이 사실을 **문턱에 반영**한다(§5.1a).
+(**~125 step 중 20 step만 사용**)로 흡수했다. rev2 초판은 이 사실로 문턱을 열었고, **그것은 철회됐다**(§5.1a) — 서술은 참이나 **크기가 0.1–0.4%** 다.
 
 ---
 
@@ -108,7 +113,7 @@ sticky ON에서는 *"마지막 분할 창 **이후**"* 라는 구간이 **존재
 |---|---|---|
 | arm | **Ha8 = `Zamba2-7B`** | rev8 §5 · B6 · Stage 0″ §3 승계. ★**[임의]** 아님(셀 일치가 목적) |
 | `D` | **16**(주) · **92**(두 번째 점) | `pdmux_e1_d16.yml`(`sm_counts=[(108,0),(92,16),(0,108)]`, `FixedPolicy(16)→idx 1`) · `pdmux_e1_d92.yml`(`[(108,0),(16,92),(64,44),(0,108)]`, 2행은 **guard-satisfier 전용**, `FixedPolicy(92)→idx 1`) |
-| 정책 | `PDMUX_R2_POLICY=fixed` · `PDMUX_R2_FIXED_DSM=D` | sticky는 `R2_POLICY ∈ {unset, fixed}`에서만 정의(`:269-273`) |
+| 정책 | `PDMUX_R2_POLICY=fixed` · `PDMUX_R2_FIXED_DSM=D` | sticky는 `R2_POLICY ∈ {unset, fixed}`에서만 정의(`:311-314`) |
 | ctx | `--context-length` = `L + out + margin`, `L=1024`·`out=128` | B6 승계 |
 | 워크로드 | **batch-synchronous `NP=CONC=16`**, `out=128`, `L=1024` 고정 프롬프트, `--disable-radix-cache` | B6 · rev8 §5 승계 |
 | 라운드 | 부팅당 **2**(워밍업 1 + 분석 1) | ★**[임의]** — `N_MIN_DECODE_STEPS`(§5-4)를 만족시키기 위한 최소치 |
@@ -123,13 +128,22 @@ sticky ON에서는 *"마지막 분할 창 **이후**"* 라는 구간이 **존재
 
 ### 2.3 ★ 선행 스모크 1회 (게이트 #25 — 대형 제출 전 배관 스모크)
 
-★**sticky가 실증된 부팅은 `T8`(`Qwen/Qwen2.5-7B`)뿐이다**(job 873015 · 873921).
-**`Ha8`(Zamba2-7B) + sticky 부팅은 선례가 없다.** 따라서 nsys를 붙이기 전에:
+★★**정정(rev2 감사 B5)**: 초판은 *"`Ha8` + sticky 부팅은 선례가 없다"* 고 적었다. **거짓이다.**
+`results/sticky_smoke/stksmoke_Ha8_d16_872800_result.txt` — `ARM=Ha8`(`Zyphra/Zamba2-7B-Instruct`),
+`pdmux_e1_d16.yml`, `boot_ok=1 sticky=1`, `STICKY_LOG_LINES sticky=1: 1`,
+`STICKY_CORRECTNESS n=6 identical=True verdict=PASS`, `E1_DECODE_REALIZED sticky=1 D=16 **frac=1.0000**`.
+★**§1이 인용한 `0.0839 → 1.0000`이 바로 이 파일의 두 줄이다** — **파일의 수치를 인용하면서 그 파일의
+주어가 선례 없다고 적었다**(교훈 #79의 가장 나쁜 형태).
 
-> `Ha8` + `pdmux_e1_d16.yml` + `PDMUX_STICKY_PARTITION=1`로 **1 부팅**만 띄워
-> (a) `boot_ok=1`, (b) `srv.log`에 `"sticky partition ENABLED"` ≥ 1줄,
-> (c) `E1_DECODE_REALIZED(16) ≥ 0.99`, (d) **절차 3의 Q3 채널이 비영**임을 확인한다.
-> 넷 중 하나라도 실패하면 **부팅 매트릭스를 제출하지 않는다.**
+⇒ **이미 산 것**: Ha8 + sticky 부팅 · sticky 로그 · correctness · realized 1.0000.
+⇒ **아직 안 산 것은 둘뿐이다** — ★**batch-synchronous `NP=CONC=16` 워크로드**에서의 같은 확인과,
+★**Q3 채널 비영**. 스모크는 **그 둘만** 산다:
+
+> `Ha8` + `pdmux_e1_d16.yml` + `PDMUX_STICKY_PARTITION=1` + ★**batch-synchronous `NP=CONC=16`**로
+> **1 부팅**만 띄워 (a) `E1_DECODE_REALIZED(16) ≥ 0.99`가 **이 워크로드에서도** 성립하는지,
+> (b) **절차 3의 Q3 채널(`decode_iterations`)이 비영**인지, (c) ★**`PDMUX_GREEN_READOUT=1`의 첫 부팅
+> 실행**(현재 부팅 실행 **0회**)을 확인한다. 셋 중 하나라도 실패하면 **부팅 매트릭스를 제출하지 않는다.**
+> ★`boot_ok`·sticky 로그·correctness·realized는 **job 872800이 이미 샀다** — 재구매하지 않는다.
 
 ★(d)를 여기에 묶는 이유: 런킬러 B1이 정확히 *"결정량이 죽은 필드 위에 있다"* 였고,
 교훈 #77(*"가장 비싼 지출은 GPU가 아니라 안 산 프로브"*)이 지목하는 최소비용 선결 프로브가 이것이다.
@@ -197,10 +211,10 @@ decode 구간에만 나타나는 커널명이 **하나도 없으면** `LEG_LABEL
 | # | 라벨 | 술어 | 채널 |
 |---|---|---|---|
 | 1 | `BOOT_FAILED` | `boot_ok ≠ 1` | `/health` 폴링(`s2_sticky.sbatch:173-179`, sticky 로그 줄 수는 `:180-181`) |
-| 2 | `STICKY_NOT_REALIZED` | B-S: `srv.log`의 `"sticky partition ENABLED"` = 0줄 **또는** `E1_DECODE_REALIZED(D) < 0.95` ★(0.99 아님 — §5.1a) | 서버 로그 + telemetry(`e1_pin_check.compute_decode_realized`, **decode-active 시간 가중**) |
-| 3 | `UNSPLIT_NOT_REALIZED` | B-U: `frac(decode_sms == 108) < 0.95`(decode-active 시간 가중) | 같음(2의 거울상) |
+| 2 | `STICKY_NOT_REALIZED` | B-S: `srv.log`의 `"sticky partition ENABLED"` = 0줄 **또는** `E1_DECODE_REALIZED(D) < 0.99` ★(§5.1a — 초판의 0.95는 **철회**) | 서버 로그 + telemetry(`e1_pin_check.compute_decode_realized`, **decode-active 시간 가중**) |
+| 3 | `UNSPLIT_NOT_REALIZED` | B-U: `frac(decode_sms == 108) < 0.99`(decode-active 시간 가중). ★**규칙 코드에 없다**(감사 B9) — 절차 4 rev3에서 코드화 | 같음(2의 거울상) |
 | 4 | `SPAN_TOO_SHORT` | `N_steps < N_MIN_DECODE_STEPS` | ★**단위 = decode step** |
-| 5 | `EXPECTATION_AMBIGUOUS` | B-U의 **replay당 노드 수** 분포에서 최빈값 점유 < 0.99 | nsys 노드 행 |
+| 5 | `EXPECTATION_AMBIGUOUS` | B-U의 **replay당 노드 수** 분포에서 최빈값 점유 < 0.99. ★**규칙 코드에 없다**(감사 B9) | nsys 노드 행 |
 | 6 | `TRACE_TRUNCATED` | `export ≠ "ok"` **또는** `dropped_events > 0` **또는** `halves` 중 한쪽 노드 행 = 0 | nsys export 상태 + §2.1 |
 | 7 | `LEG_LABELLING_UNAVAILABLE` | decode 구간 전용 커널명이 **0개** | nsys 커널명 집합 |
 | 8 | `CHANNEL_ZERO` | 절차 3에서 고른 Q3 채널이 런 전체에서 **0** | telemetry |
@@ -216,7 +230,7 @@ decode 구간에만 나타나는 커널명이 **하나도 없으면** `LEG_LABEL
 - ★★**그러나 변환 계수는 스냅샷의 성질이 아니라 그 부분모집단의 성질이다.** 같은 파일의 `benchmark`
   전체에서 전진 쌍은 **1,440 / 59,142(2.4%)** 뿐이고 평균은 **0.387 step/스냅샷**이다
   (sticky 부팅 873015 blk1에서는 **0.156**, 3,802 step / 24,435 스냅샷). 이유는 코드에 있다 —
-  `dual_worker_trace_count`는 **sync마다** 오르고(`multiplexing_mixin.py:501`) 이벤트 루프는
+  `dual_worker_trace_count`는 **sync마다** 오르고(`multiplexing_mixin.py:542`) 이벤트 루프는
   **idle에도 계속 돈다**(그 자리의 주석이 이미 경고한다). 분할 실현 스냅샷이 특별한 이유는
   **분할 실현 ⟺ decode busy ∧ prefill in-flight** — decode가 **반드시 스텝하는 상태**이기 때문이다.
 - ⇒ ★**rev2는 스냅샷→스텝 변환을 아예 쓰지 않는다.** **`N_steps`** = Δ`decode_iterations`(런 단위
@@ -232,22 +246,41 @@ decode 구간에만 나타나는 커널명이 **하나도 없으면** `LEG_LABEL
   ★**절차 4의 요구**: 이 값은 rule rev2에서 **정수 축으로 실제 참조**되어야 하며,
   값을 바꾸면 자기검사가 **깨져야 한다**(C1의 死코드 재발 금지 — 변이 테스트, 교훈 #53).
 
-### 5.1a ★ 왜 0.99가 아니라 **0.95**인가 — 라운드 경계 잔차 (신규)
+### 5.1a ★★★ **철회** — 0.95 완화는 반증된 전제 위에 있었다
 
-§1.2: `:913-923`이 라운드 **사이**마다 division을 의도적으로 놓으므로 라운드 **첫 몇 step**은
-목표 `D`가 아닌 파티션에서 돌 수 있고, **그 step들은 decode-active라 가중치를 갖는다**.
-⇒ **0.99를 요구하면 stop이 물리적 사실 때문에 발화한다** = **정상 실행을 측정 실패로
-라벨링**하는 형태(★교훈 #21, 8회+ 재발).
+**이 절의 초판은 문턱을 0.99에서 0.95로 내리고 그 근거로 라운드 경계 재확립 지연을 들었다. 철회한다.**
 
-**등록**:
-- 문턱 **0.95** ★**[임의]** — B6의 여유 산정(라운드 ~125 step 중 20 step만 사용)과 정합하는
-  자릿수이나 **실측으로 교정된 적은 없다**.
-- ★**잔차를 반드시 센다**: `N_offtarget_steps` = 분석 구간에서 `decode_sms ≠ D`인 decode step 수를
-  **보고 필수** 항목으로 등록(교훈 #5 — 집계 단위를 먼저 정한다).
-- ★★**닫히지 않는 것(정직 등록)**: **그 off-target step들이 nsys의 어느 행인지는 매핑되지 않는다.**
-  rev2는 그것을 시계 다리로 풀지 **않고** `Q1_FRAC` 문턱의 **허용 오차 안으로 흡수**한다.
-  ⇒ 절차 4의 규칙은 `Q1_FRAC`를 **`1 − E1_DECODE_REALIZED`보다 넉넉하게** 잡아야 하며, 그 관계가
-  성립하지 않으면 **Q1e를 채점할 수 없다**. **이것은 해결이 아니라 등록된 한계다.**
+rev2 감사가 저장소의 **모든 sticky 부팅**에 정본 추정기를 재계산했다:
+
+| 부팅군 | n | realized 범위 | off-target 시간 |
+|---|---|---|---|
+| `873015` T8 d16 | 8 | **0.99564 – 1.00000** | 0–0.47 s / ~110 s |
+| `873015` T8 d54 | 8 | **0.99805 – 1.00000** | 0–0.20 s |
+| `873921` T8 d92 | 4 | **0.99802 – 1.00000** | 0–0.19 s |
+| `872800` **Ha8** d16 | 1 | **1.00000** | 0 |
+
+★**21/21 부팅이 0.99를 통과한다**(최소 0.99564). 잔차는 실재하나 **0.1–0.4%** 로, 내가 잡은 완화폭(5%)보다
+**10–50배 작다**. 그리고 기전 논증 자체가 세 갈래로 반박된다:
+
+1. 엔진 주석(`:955-967`)이 decode-empty 구간에 대해 *"the decode-active time weighting of
+   `E1_DECODE_REALIZED` gives this interval **zero weight** either way"* 라고 **이미 적고 있다**.
+2. `compute_decode_realized`는 `decode_running_batch_size > 0`만 세므로 라운드 사이 구간은
+   **분모에도 들어가지 않는다**.
+3. sticky + `FixedPolicy`에서는 `running_batch`가 비지 않는 **첫 호출부터** `_sticky_fixed_idx`가
+   걸린다(`:925-932`) — "재확립 지연"이 앉을 자리가 거의 없다.
+
+★**내가 한 일의 정확한 형태**: B6의 산문(*"라운드 첫 몇 step은 목표 D가 아닌 파티션에서 돌 수 있다"*)을
+읽고 **크기를 재지 않은 채** 문턱을 5% 열었다. B6의 서술은 참이지만 **그 크기는 0.1–0.4%** 다.
+교훈 #21을 인용하면서 그 반대 방향의 실수를 했다 — **측정하지 않은 물리로 게이트를 느슨하게 만든 것**.
+
+**등록(정정판)**:
+- 문턱 **`E1_DECODE_REALIZED(D) ≥ 0.99`** — §2.3 스모크 게이트와 **같은 값**(초판은 §2.3에 0.99,
+  §5-2에 0.95를 적어 **같은 문서 안에서 모순**이었다).
+- ★**정본 사전등록 문턱은 `≥ 0.90`** (`s8_frontier/DESIGN.md:1331`). rev2는 그보다 **엄격한 값**을
+  쓰며, 그 근거는 위 21 부팅 실측이다. **정본과의 관계를 여기 명시 등록한다**(초판은 언급조차 안 했다).
+- `N_offtarget_steps` **보고 필수는 유지**한다(감사도 유지를 권고).
+- ★**닫히지 않는 것**은 그대로다: off-target step과 nsys 행의 매핑은 없고 `Q1_FRAC` 허용 오차로
+  흡수된다. ★단 이제 그 오차는 **5%가 아니라 ≤0.5%** 다.
 
 ### 5.2 ★ rev1 §5가 요구하던 것의 폐기
 
@@ -266,7 +299,10 @@ rev1 §5는 *"워크로드는 분할 창을 의도적으로 만들도록 고른�
   `cuda_graph_runner.capture`가 stream index마다 **같은 모델·같은 bs**로 캡처한다는 코드 사실에
   기대며, **실측된 적이 없다**. `EXPECTATION_AMBIGUOUS`(5)는 B-U **안의** 이봉성만 잡고
   **B-U↔B-S 사이의 구조 차이는 못 잡는다.** ⇒ 절차 4의 규칙이 이 축을 별도로 열어야 한다.
-- **K1**(nsys 오버헤드)은 이 판본에서 **손대지 않았다** — D4·D5·D6 전부 미이행(절차 5).
+- **K1** 규칙은 절차 5에서 갱신됐다(구간 4개·`pair`·`channel`·`clipped`). ★**그러나 그것을 먹일
+  실험이 §2.2에 없다** — 전 부팅이 nsys-ON이므로 `pair`(nsys ON/OFF)가 성립하지 않아 **구조적으로
+  `K1_UNMEASURED`** 다(rev2 감사 B7). ⇒ **nsys-OFF 부팅을 추가하거나 K1을 이번 제출 범위 밖으로
+  명시 등록**해야 한다. **미해결.**
 
 ---
 
@@ -279,7 +315,7 @@ rev1 §5는 *"워크로드는 분할 창을 의도적으로 만들도록 고른�
 | 4 | Q3 규칙 **rev2** | ★**완료** — `a1/a1_q3k1_rule.py`(`RULE_REV=2`), Q3 **34,560 세계**·라벨 11개 전부 도달·mutant 12개 전부 load-bearing·검사 **3개**(§6.2). `N_MIN_DECODE_STEPS`는 **정수 축과 비교**되고 `g_nmin_value`(64→5)가 라벨을 바꾼다 ⇒ **C1의 死코드 재발 없음**. `export="partial"`·`dropped_events`·`halves`는 **측정조건**으로 분리(C5·D8), `launches="more"` 의미 등록(D7) |
 | 5 | K1 **rev2** | ★**완료** — 구간 **4개**(1.10 / 2.00 / 10.00, 뒤 둘은 **[임의]** 표시) · **부팅쌍 축**(`pair`) · **채널 축**(`channel`) · **클리핑 축**(`clipped`) · K1 **288 세계** |
 | 6 | **D1·D3 정정** | ★**완료** — §6.1 |
-| 7 | 규칙층 **재감사** → ② 어댑터 → ③ 하네스층 감사 → ④ 제출 | 미착수 |
+| 7 | 규칙층 **재감사** | ★**실행됨 → `NO-GO`**(`audit_a1_rev2_rules_2026-08-25/VERDICT.md`). **②로 못 간다.** 남은 필수: **A0 규칙 rev5**(부팅 분리 세계모형·`role` 축·`consistent()`·`l2_post`→`halves`) + **Q3 규칙 rev3**(`TOOLLIMIT` 계층·`disjoint` 축·전사 아닌 검사) + 부팅 매트릭스 수정(d92용 B-U 또는 B-S92 제외 · nsys-OFF 부팅 또는 K1 범위 밖 등록) → **규칙층 감사 1회 더** |
 
 ### 6.1 ★ D1·D3 정정 (절차 6)
 
@@ -329,6 +365,28 @@ rev2는 그 문장을 지우고 판정 기준(단독 구속 **또는** 커버리
 - **승계**: HE0 · gate #13/#16 *"닫았다"* 금지 · switch-cost *"닫았다"* 금지 · C2 인용정지 (a)(b) ·
   A0 판정의 금지 문장 전부 · *"구현 완료 ≠ 성능 주장 성립"*
 
+**★★★rev2 감사(2026-08-25)가 신설한 금지문** — 아래는 **rev2 자신에 대한** 금지다:
+
+- ✗ ★★★ *"절차 4·5·6이 완료됐으니 rev2가 감사 권고를 이행했다"* — **규칙층 감사는 `NO-GO`**다.
+- ✗ ★★★ *"`stream` 축이 재정의됐다"* — 1차 추정량을 채점하는 규칙은 `stage0ppp_a0_rule.py`
+  **`RULE_REV=4`, `stream=["match","mismatch"]` 그대로**다. 재정의는 **설계에만** 있다.
+- ✗ ★★★ *"부팅 분리가 死因 A2를 닫았다"*(무조건형) — **허용 축소형**: *"A2의 시간창 조인 요구는
+  소멸했고, 그 자리에 **미측정·미게이트 전제 1개**(B-U↔B-S 그래프 구조 동등성)가 들어왔으며
+  B-S92는 **config까지 다르다**."*
+- ✗ ★★★ *"0.99를 요구하면 stop이 물리적 사실 때문에 발화한다"* — **21/21 부팅이 ≥0.9956**(§5.1a 철회).
+- ✗ ★★ *"`Ha8` + sticky 부팅은 선례가 없다"* — **job 872800**(§2.3 정정).
+- ✗ ★★ *"Q3 규칙의 검사 3개가 명세 오류를 잡는다"* — 양 사본을 함께 바꾼 명세 오류(**C5 회귀 포함**)에서
+  **ALL PASS**. 셋은 `q3_score`의 **전사(轉寫)** 라 오타는 잡고 **명세 오류는 원리적으로 못 잡는다**.
+- ✗ ★★ *"Q3 검사 3개가 전부 load-bearing이다"* — **Q3-A를 삭제해도 ALL PASS**(탐지력 기여 0).
+- ✗ ★★ *"Q3 규칙이 배관 실패를 실질 판정으로 바꾸지 않는다"* — `launches ∈ {zero, more}`가
+  **실질 라벨** `BOUNDARY_NOT_SEPARABLE`로 간다. `more`는 rev2 자신이 *"분모가 틀렸다"* 로 등록한
+  측정조건이다 ⇒ **게이트 #21 재개방**. A0의 `TOOLLIMIT` 계층이 Q3에 **없다**.
+- ✗ ★ *"`stream` 축이 Q2ae와 순환하지 않는다"* — 비순환 논거인 `disjoint` 술어가 **규칙에 축이 없다**;
+  남은 `single`은 `ctx=distinct`와 사실상 항등이다.
+- ✗ ★ *"K1 규칙 rev2가 K1을 산다"* — 부팅 매트릭스에 **nsys-OFF 부팅이 없다** ⇒ `K1_UNMEASURED`.
+- ✗ ★ *"설계 §5의 중단 규칙 8개가 코드로 등록됐다"* — `UNSPLIT_NOT_REALIZED`·`EXPECTATION_AMBIGUOUS` **부재**.
+- ✗ ★ *"`FULL_SCAN_GLOBS`는 사전 선언이다"* — 수치와 **같은 파일·같은 커밋**이라 시간 순서가 감사 불가.
+
 **신설**(rev2가 만들 수 있는 새 거짓말):
 
 - ✗ ★★★ *"sticky가 A1의 死因을 닫았다"* — **닫은 것은 없다.** rev2는 死因을 **닫을 설계를 등록**했을 뿐이고,
@@ -348,4 +406,8 @@ rev2는 그 문장을 지우고 판정 기준(단독 구속 **또는** 커버리
   ★**금지되지 않는 것**: 감사의 *"130 스냅샷 ≈ 2,064 step"* 은 **재현됐다**(§5.1) — 이 금지는
   그 문장이 아니라 **그것을 스냅샷 일반으로 옮기는 것**을 막는다.
 - ✗ ★ *"예상 지출 0.5–0.8 GPU-hr"를 약속으로 인용* — **구속력을 갖는 것은 상한 2.0뿐**(K1 미측정).
-- ✗ ★ *"`N_MIN_DECODE_STEPS=64`가 코드로 등록됐다"* — **등록된 곳은 이 문서뿐**, 코드 참조는 절차 4.
+- ★★**철회된 금지문**(rev2 감사 B4-3): 초판은 *"✗ `N_MIN_DECODE_STEPS = 64`가 코드로 등록됐다 —
+  등록된 곳은 이 문서뿐"* 을 금지문으로 실었다. ★**그 금지문 자체가 거짓이다** — 값은
+  `a1/a1_q3k1_rule.py:83`에 있고 **값 변이(5/40/63/65/128/200)가 자기검사를 반드시 깬다**(감사 재현).
+  절차 4가 끝난 뒤 이 줄을 갱신하지 않아 **참인 문장을 금지**하고 있었다. ★교훈: **금지문 목록도
+  판본이 바뀌면 재검증 대상이다**(교훈 #67/#70의 금지문층 변종).

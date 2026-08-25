@@ -4,6 +4,14 @@
 근거: `audit_a1_rules_2026-08-25/VERDICT.md` §⑤ 절차 3 + 정본 아티팩트
 `a1/a1_q3_channel_probe.{py,json}`.
 
+> ★**rev2 감사 판정 반영(2026-08-25, `audit_a1_rev2_rules_2026-08-25/VERDICT.md`)**: 이 문서의 채널
+> 결정은 감사 기준 5에서 **"대체로 건전"** 판정을 받았다 — `decode_iterations`는 비순환이고
+> 증가 지점이 `run_batch(self.running_batch)` **직전**(`:1133-1134`)이라 decode forward와 1:1이며,
+> `decode_step_count` 기각은 접두 표본이 아니라 **코드 게이트 + `architecture` 전수 `legacy`** 가
+> 지탱한다. ★**남은 차단 2건**: (a) `FULL_SCAN_GLOBS`가 수치와 **같은 커밋**이라 "사전 선언"이
+> 감사 불가(B13) · (b) 인용 줄번호 4건이 **노후**였다(B11, 이 판본에서 정정 — `:620→:661`,
+> `:501→:542`, `:1091-1093→:1133-1134`, `:339→:380`; 원인은 이 세션 자신의 `27bbae7` 배선이다).
+
 > 감사 절차 3 원문: *"`decode_step_count`(⇒ 모드 등록 + 기판 불변 논증) vs
 > `decode_iterations`(legacy에서 생존) 중 **하나를 코드로 고정**, 어느 쪽이든 **비영 실증 먼저**."*
 
@@ -32,7 +40,7 @@
 
 ### 1.1 `decode_step_count`가 기각되는 이유 — 죽은 필드가 아니라 **기판이 다르다**
 
-`multiplexing_mixin.py:620`의 `finish_step()` 호출부는 **`if dual_worker_enabled:`** 뒤에만 있고,
+`multiplexing_mixin.py:661`의 `finish_step()` 호출부는 **`if dual_worker_enabled:`** 뒤에만 있고,
 그 플래그는 `PDMUX_DUAL_WORKER=1`(**R1 observer 전용**)에서만 켜진다. 저장소의 telemetry가
 전수 `legacy`인 것이 그것과 정합한다. ⇒ 이 필드를 쓰려면 **A1이 재려는 기판을 바꿔야 한다**
 (운영점 = cudagraph-ON legacy pdmux). ★**런킬러 B1을 저장소 규모로 독립 재현**한 것이고,
@@ -71,7 +79,7 @@
 ### 2.2 ★ 그러나 변환 계수는 **스냅샷의 성질이 아니다**
 
 같은 파일 benchmark 전체의 평균은 **0.387 step/스냅샷**이고 sticky 부팅에서는 **0.156**이다.
-이유는 코드에 있다 — `dual_worker_trace_count`는 **sync마다** 오르고(`multiplexing_mixin.py:501`)
+이유는 코드에 있다 — `dual_worker_trace_count`는 **sync마다** 오르고(`multiplexing_mixin.py:542`)
 **이벤트 루프는 idle에도 계속 돈다**(그 자리의 주석이 *"the event loop keeps spinning when idle"* 로
 이미 경고한다). 분할 실현 스냅샷이 특별한 이유는 **분할 실현 ⟺ decode busy ∧ prefill in-flight**,
 즉 **decode가 반드시 스텝하는 상태**이기 때문이다.
@@ -88,7 +96,7 @@ C2를 *고치는* 것이 아니라 **필요 없게 만든다**.
 - ✗ **Q3 자체** — *"graph-launch RUNTIME row 수와 이 카운터가 **1:1인가**"* 는 **nsys가 필요하고
   미측정**이다. 이 문서는 결정량이 **죽은 필드 위에 있지 않은지**만 확인했다.
 - ✗ **`decode_iterations`가 decode 스텝의 정의와 일치하는가** — 증가 지점은
-  `multiplexing_mixin.py:1091-1093`(`running_batch`가 비지 않은 decode 분기)이고, 이것이 nsys가
+  `multiplexing_mixin.py:1133-1134`(`running_batch`가 비지 않은 decode 분기)이고, 이것이 nsys가
   세는 replay 단위와 같은지는 **Q3가 답할 질문**이다. 여기서 전제하면 순환이다.
 - ✗ **어떤 성능·정책 문장도.**
 
@@ -97,7 +105,7 @@ C2를 *고치는* 것이 아니라 **필요 없게 만든다**.
 1. ★**A1의 워크로드에서 아직 재본 적이 없다.** 위 두 파일은 **ShareGPT open-loop**이고 A1의 셀은
    **batch-synchronous `NP=CONC=16`**이다. ⇒ rev2 §2.3 스모크가 사는 것 중 (d)가 **이것**이다.
 2. ★**`Ha8`(Zamba2-7B) + sticky 부팅 선례 없음**(sticky 실증은 `T8`뿐) — 같은 스모크가 함께 산다.
-3. **`decode_iterations`는 `RuntimeSnapshot` 필드**(`multiplexing_mixin.py:339`)이므로 telemetry가
+3. **`decode_iterations`는 `RuntimeSnapshot` 필드**(`multiplexing_mixin.py:380`)이므로 telemetry가
    꺼지면 채널도 없다. `PDMUX_TELEMETRY_PATH`는 **부팅 필수**로 등록한다.
 
 ## 5. 쓰면 안 되는 문장
