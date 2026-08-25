@@ -285,5 +285,37 @@
    "sha": "0d78b620de294e02",
    "target": "sglang_engine_dev/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py"
   }
+ },
+ "results/nsl_lever/nsl_eb/PREREG_NSL_EB_ATTRIBUTION_2026-08-25.md": {
+  "managers/scheduler.py:2369-2369": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "63169157b1e43417",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2434-2434": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "615708704dc17516",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2439-2439": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "d8cc4c3fd21b017e",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2472-2472": {
+   "anchor": "self.running_batch.batch_is_full = len(",
+   "anchor_offset": 0,
+   "sha": "bc93e1636be7b642",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2476-2476": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "53a09b7b16c03318",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  }
  }
 }
