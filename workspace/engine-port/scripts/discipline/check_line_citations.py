@@ -294,6 +294,19 @@ def process(docs, snapshot, man, force=False):
                 violations.append(
                     f"{rel}  {key}  DRIFT  expected {prev['sha']} got {sha}"
                     f"{hint}\n      anchor: {prev['anchor'][:88]}")
+    # ★ORPHAN KEYS (3rd audit B9).  `REBASE-REFUSED` guards the SAME key, so
+    # editing a citation's number creates a NEW key that is recorded without
+    # comparison while the old key lingers.  That is the exact path the
+    # `:83 -> :98 -> :105` incident took.  A key the document no longer cites
+    # is therefore reported: either the fix is real (drop the key) or a claim
+    # silently disappeared.
+    for doc in docs:
+        rel = os.path.relpath(os.path.abspath(doc), TRACK_ROOT)
+        live = {f"{c}:{a}-{b}" for c, a, b in citations_in(doc)}
+        for key in sorted(set(man.get(rel, {})) - live):
+            violations.append(
+                f"{rel}  {key}  ORPHAN  the document no longer cites this; "
+                f"drop the key (--prune) if the citation was corrected")
     return violations, recorded, checked
 
 
@@ -301,6 +314,9 @@ def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("--snapshot", action="store_true")
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--prune", action="store_true",
+                    help="with --snapshot: drop manifest keys the documents no "
+                         "longer cite (report them without it).")
     ap.add_argument("--force", action="store_true",
                     help="with --snapshot: re-baseline citations whose content "
                          "changed.  Without it, a changed baseline is REFUSED.")
@@ -321,6 +337,13 @@ def main(argv):
         print("no documents given", file=sys.stderr)
         return 2
 
+    if args.prune and args.snapshot:
+        for doc in docs:
+            rel = os.path.relpath(os.path.abspath(doc), TRACK_ROOT)
+            live = {f"{c}:{a}-{b}" for c, a, b in citations_in(doc)}
+            for key in list(man.get(rel, {})):
+                if key not in live:
+                    del man[rel][key]
     violations, recorded, checked = process(docs, args.snapshot, man, args.force)
     if args.snapshot:
         save_manifest(man)

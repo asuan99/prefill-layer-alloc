@@ -6,12 +6,6 @@
    "sha": "32ef13e3784741b5",
    "target": "prefill-layer-alloc/workspace/engine-port/results/kernel_mech/a1/a1_q3k1_rule.py"
   },
-  "a1/a1_q3k1_rule.py:98-98": {
-   "anchor": "N_MIN_DECODE_STEPS = 64",
-   "anchor_offset": 0,
-   "sha": "32ef13e3784741b5",
-   "target": "prefill-layer-alloc/workspace/engine-port/results/kernel_mech/a1/a1_q3k1_rule.py"
-  },
   "cuda_graph_runner.py:806-816": {
    "anchor": "with graph_capture() as graph_capture_context, profile_context as prof:",
    "anchor_offset": 1,
@@ -143,16 +137,16 @@
    "sha": "a32b79efa6dde3d9",
    "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
   },
-  "src/multiplex/multiplexing_mixin.py:1012-1012": {
-   "anchor": "decode_future = None",
+  "src/multiplex/multiplexing_mixin.py:1009-1009": {
+   "anchor": "_slo_on = bool(os.environ.get(\"PDMUX_SLO_SCHED\")) or self.r2_policy is not None",
    "anchor_offset": 0,
-   "sha": "3bc330ca8022a078",
+   "sha": "bd8a93dd8f5cf281",
    "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/multiplexing_mixin.py"
   },
-  "src/multiplex/multiplexing_mixin.py:1032-1032": {
-   "anchor": "getattr(self, \"_r2_itl_samples\", []) + [_dt]",
-   "anchor_offset": 0,
-   "sha": "a6a79d740eb698c2",
+  "src/multiplex/multiplexing_mixin.py:1027-1029": {
+   "anchor": "_a = float(os.environ.get(\"PDMUX_SLO_EMA\", \"0.85\"))  # v7b: smoother signal (was 0.7)",
+   "anchor_offset": 1,
+   "sha": "8d29cb5ea62842b7",
    "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/multiplexing_mixin.py"
   },
   "src/multiplex/multiplexing_mixin.py:395-400": {

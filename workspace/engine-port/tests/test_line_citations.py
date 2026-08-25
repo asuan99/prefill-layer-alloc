@@ -172,3 +172,70 @@ class AmbiguityTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OrphanAndUntestedDecisionsTest(unittest.TestCase):
+    """The three design decisions the 3rd audit found surviving mutation, plus
+    the orphan path it named.
+
+    ★B10: mutating `anchor` to the first non-empty line, `relocate` to a partial
+    match, and dropping the `anchor_offset` correction all passed the original
+    eleven tests -- while the tool's own docstring records the first of those as
+    a repair it made after observing fifteen relocation candidates.  A repair
+    with no test is a repair that can be undone silently (lesson #53).
+    """
+
+    def setUp(self):
+        self.t = _Tree(BODY, "see `widget.py:3-4` for the constants\n")
+        self.addCleanup(self.t.close)
+
+    def test_orphan_key_is_reported(self):
+        """★B9: correcting a citation's NUMBER makes a new key, so
+        REBASE-REFUSED never fires and the old key lingers unverified -- the
+        path the :83 -> :98 -> :105 incident actually took."""
+        man = {}
+        C.process([self.t.doc], True, man)
+        with open(self.t.doc, "w") as fh:
+            fh.write("see `widget.py:4-4` for the constant\n")
+        v, _, _ = C.process([self.t.doc], False, man)
+        self.assertTrue(any("ORPHAN" in x and "widget.py:3-4" in x for x in v), v)
+
+    def test_prune_drops_the_orphan(self):
+        man = {}
+        C.process([self.t.doc], True, man)
+        with open(self.t.doc, "w") as fh:
+            fh.write("see `widget.py:4-4` for the constant\n")
+        rel = os.path.relpath(os.path.abspath(self.t.doc), C.TRACK_ROOT)
+        live = {f"{c}:{a}-{b}" for c, a, b in C.citations_in(self.t.doc)}
+        for key in list(man.get(rel, {})):
+            if key not in live:
+                del man[rel][key]
+        v, _, _ = C.process([self.t.doc], True, man)
+        self.assertEqual(v, [])
+
+    def test_anchor_is_the_longest_line_not_the_first(self):
+        """The repair the docstring records: `ALPHA = 1` is shorter than
+        `BETA = 2`?  No -- equal.  Use a range whose first line is the SHORT
+        one, so first-line and longest-line disagree."""
+        chunk = ["    x = 1", "    some_much_longer_identifier = 2"]
+        _sha, anchor, offset = C.fingerprint(chunk)
+        self.assertEqual(anchor, "some_much_longer_identifier = 2")
+        self.assertEqual(offset, 1)
+
+    def test_relocate_requires_an_exact_line_match(self):
+        """A partial match would relocate `ALPHA = 1` onto `ALPHA = 10`."""
+        with open(self.t.target, "w") as fh:
+            fh.write("ALPHA = 10\nBETA = 2\n")
+        self.assertEqual(C.relocate(self.t.target, "ALPHA = 1", 1), [])
+        self.assertEqual(C.relocate(self.t.target, "ALPHA = 10", 1), [1])
+
+    def test_the_offered_fix_subtracts_the_anchor_offset(self):
+        """Without the correction the tool points at the ANCHOR's new line
+        rather than the range's new start, which is wrong for every
+        multi-line citation -- and the live manifest has offsets of 1 and 2."""
+        man = {}
+        C.process([self.t.doc], True, man)
+        self.t.rewrite_target("# pad\n# pad\n" + BODY)
+        v, _, _ = C.process([self.t.doc], False, man)
+        self.assertEqual(len(v), 1)
+        self.assertIn("widget.py:5-6", v[0])      # start moved 3 -> 5, not 4 -> 6

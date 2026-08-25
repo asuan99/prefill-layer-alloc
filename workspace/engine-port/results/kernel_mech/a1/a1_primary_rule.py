@@ -84,7 +84,13 @@ EAGERONLY   = "EAGER_REPLAY_ONLY"          # B-S replayed nothing to attribute
 # world A1 exists to distinguish.  `GREENINVIS` did not catch it because that
 # guard also requires B-G to be empty.
 GRAPHINVIS  = "GRAPH_NODE_ROWS_INVISIBLE_UNDER_GREEN"
-TOOLLIMIT = {NODEUNAVAIL, GREENINVIS, EAGERONLY, GRAPHINVIS}
+# ★NEW (3rd audit B6): the mirror of CONTRA.  The driver confirms a green
+# context of D SM and nsys leaves `greenContextId` empty on the node rows.
+# That is the fidelity of one nsys column, not an answer about the K-set --
+# and it is the most plausible negative on this substrate.  It was
+# KSET_NOT_ATTRIBUTABLE (SUBSTANTIVE); gate #21 on a fourth axis.
+CTXCOLUMN   = "GREENCTX_COLUMN_UNPOPULATED"
+TOOLLIMIT = {NODEUNAVAIL, GREENINVIS, EAGERONLY, GRAPHINVIS, CTXCOLUMN}
 
 # --- SUBSTANTIVE: an answer about the estimand -------------------------------
 UNCONSTR  = "PRIMARY_ESTIMAND_UNCONSTRUCTIBLE"
@@ -92,9 +98,23 @@ CONTRA    = "CONTRADICTORY_ATTRIBUTION"
 DISCONF   = "ATTRIBUTION_DISCONFIRMED"
 NOATTR    = "KSET_NOT_ATTRIBUTABLE"
 CAPJOIN   = "KSET_JOINS_AT_CAPTURE_ONLY"
-STREAMONLY = "KSET_STREAM_ONLY_ATTRIBUTION"    # weak; NOT the primary estimand
+# ★RENAMED (3rd audit B7).  A0 rev4 uses `KSET_STREAM_ONLY_ATTRIBUTION` for
+# "ctx failed, only the stream agrees".  This rule reached for the same string
+# with the OPPOSITE meaning -- "the stream channel failed, only ctx is left" --
+# and the departures list above did not mention the inversion.  That is lesson
+# #72 exactly: a label read by name instead of by code, with the verdict's sign
+# flipped.  The name now says what it means, and the basis string matches.
+STREAMONLY = "KSET_CTX_ONLY_ATTRIBUTION"       # weak; NOT the primary estimand
 OK        = "KSET_CONSTRUCTIBLE"
-SUBSTANTIVE = {UNCONSTR, CONTRA, DISCONF, NOATTR, CAPJOIN, STREAMONLY, OK}
+# ★NEW (3rd audit R1): B-D92's POSITIVE answer.  That boot exists to ask one
+# thing -- does the driver confirm the D the engine targeted -- and before this
+# label it could only say "no" (GREEN_PARTITION_MISMATCH) or fall through to
+# NODE_TRACE_UNAVAILABLE, because it carries no trace.  An instrument that can
+# only answer one way is the degenerate instrument the 2026-08-21 R2 audit
+# named, and it was sitting in the boot matrix.
+GREENOK   = "GREEN_TARGET_CONFIRMED"
+SUBSTANTIVE = {UNCONSTR, CONTRA, DISCONF, NOATTR, CAPJOIN, STREAMONLY, OK,
+               GREENOK}
 
 LABELS = MEASUREMENT | TOOLLIMIT | SUBSTANTIVE
 
@@ -129,7 +149,11 @@ LABELS = MEASUREMENT | TOOLLIMIT | SUBSTANTIVE
 #   So:
 #       OK           requires ctx == "distinct" AND stream_disjoint == "yes"
 #       STREAMONLY   is what ctx-without-disjoint gets, and is NOT primary
-BASES = {"ctx+disjoint", "ctx_only", None}
+# ★NAMING (3rd audit B5): the basis string used to read `ctx+disjoint` and the
+# check was called "basis is two-channel", which is the strong sentence the
+# SCOPE block above forbids -- `disjoint` is tool fidelity, not a second
+# attribution channel.  The string says what it is now.
+BASES = {"ctx+fidelity", "ctx_only", None}
 
 # --- registered constants ----------------------------------------------------
 Q1_FRAC = 0.90            # inherited from A0 prereg sec8 #12 (band (0.89,0.91])
@@ -161,15 +185,17 @@ class World:
     join_rate       low (< JOIN_HIGH) | high
     """
 
-    __slots__ = ("plumbing", "rows_s", "rows_u", "rows_g", "halves_s",
+    __slots__ = ("role", "plumbing", "rows_s", "rows_u", "rows_g", "halves_s",
                  "sticky_s", "bu_quality", "profile", "ctx_s", "stream_single",
                  "stream_disjoint", "green_s", "join_target", "join_rate")
 
-    def __init__(self, plumbing="ok", rows_s="ok", rows_u="ok", rows_g="ok",
+    def __init__(self, role="trace", plumbing="ok", rows_s="ok", rows_u="ok",
+                 rows_g="ok",
                  halves_s="both", sticky_s="ok", bu_quality="ok",
                  profile="full", ctx_s="distinct", stream_single="yes",
                  stream_disjoint="yes", green_s="matched",
                  join_target="replay", join_rate="high"):
+        self.role = role
         self.plumbing, self.rows_s, self.rows_u, self.rows_g = plumbing, rows_s, rows_u, rows_g
         self.halves_s, self.sticky_s, self.bu_quality = halves_s, sticky_s, bu_quality
         self.profile, self.ctx_s = profile, ctx_s
@@ -181,7 +207,7 @@ class World:
         return PROFILE_FRAC[self.profile]
 
     def __repr__(self):
-        return (f"W(pl={self.plumbing},s={self.rows_s},u={self.rows_u},"
+        return (f"W({self.role},pl={self.plumbing},s={self.rows_s},u={self.rows_u},"
                 f"g={self.rows_g},hv={self.halves_s},st={self.sticky_s},"
                 f"bu={self.bu_quality},pr={self.profile},ctx={self.ctx_s},"
                 f"sg={self.stream_single},dj={self.stream_disjoint},"
@@ -189,6 +215,13 @@ class World:
 
 
 AXES = dict(
+    # ★`role` (3rd audit R1).  §2.2 registers FIVE boots and this model had
+    # three.  `trace` covers the profiled trio (B-U / B-S16 / B-G) whose axes
+    # are the trace ones; `green_only` covers the two unprofiled boots
+    # (B-S16' / B-D92) whose ONLY registered question is the driver read-out.
+    # Without this, an unprofiled boot's absent trace was scored as a tool
+    # failure -- design, reported as defect.
+    role=["trace", "green_only"],
     plumbing=["ok", "boot_failed", "partial_s", "partial_ctl", "fail"],
     rows_s=["ok", "zero"], rows_u=["ok", "zero"], rows_g=["ok", "zero"],
     halves_s=["both", "one"],
@@ -226,6 +259,14 @@ def score(w, guards=frozenset()):
     # ---- tier 1: MEASUREMENT ------------------------------------------------
     if on("g_absent") and w.plumbing in ("boot_failed", "fail"):
         return ABSENT, None
+    # ★R1: an unprofiled boot has no trace BY DESIGN.  Its one registered
+    # question is the driver read-out, and it must be able to answer YES.
+    if on("g_greenonly") and w.role == "green_only":
+        if w.green_s == "mismatched":
+            return GREENBAD, None
+        if w.green_s == "absent":
+            return DISCONF, None
+        return GREENOK, None
     # A0 harness audit / job 892554: a partial export must never reach a
     # substantive label, in EITHER the condition boot or a control boot.
     if on("g_trunc") and (w.plumbing in ("partial_s", "partial_ctl")
@@ -270,6 +311,9 @@ def score(w, guards=frozenset()):
     # two narrower tool limits so it does not swallow them.
     if on("g_graphinvis") and w.rows_g == "ok" and w.rows_s == "zero":
         return GRAPHINVIS, None
+    # ★B6: driver confirms the green context, nsys leaves the column empty.
+    if on("g_ctxcolumn") and w.green_s == "matched" and w.ctx_s in ("null", "zero"):
+        return CTXCOLUMN, None
     if "g_order_leg_late" in guards:
         if w.rows_s == "ok" and w.stream_disjoint == "unanswerable":
             return NOLEG, None
@@ -310,7 +354,7 @@ def score(w, guards=frozenset()):
     if on("g_single") and w.stream_single != "yes":
         # rows spread over several streams: the set is not one stream's replays
         return NOATTR, None
-    return _basis(OK, "ctx+disjoint")
+    return _basis(OK, "ctx+fidelity")
 
 
 # ★TWO MUTANTS DELETED, with the reason recorded rather than a check invented
@@ -325,7 +369,7 @@ def score(w, guards=frozenset()):
 #   g_join_none removing it leaves `join_target == "none"` to `g_joinrate`,
 #               because consistent() forces `join_rate == "low"` there.  Same
 #               label, 0 worlds moved.
-MUTANTS = ["g_absent", "g_trunc", "g_sticky", "g_unsplit", "g_expambig",
+MUTANTS = ["g_greenonly", "g_ctxcolumn", "g_absent", "g_trunc", "g_sticky", "g_unsplit", "g_expambig",
            "g_green", "g_leg", "g_nodeunavail", "g_greeninvis", "g_eager",
            "g_q1", "g_q1_value", "g_contra", "g_disconf",
            "g_noattr", "g_capjoin", "g_joinrate", "g_basis",
@@ -340,11 +384,25 @@ GUARD_LABEL = {
     "g_leg": NOLEG, "g_nodeunavail": NODEUNAVAIL, "g_greeninvis": GREENINVIS,
     "g_eager": EAGERONLY, "g_contra": CONTRA, "g_disconf": DISCONF,
     "g_capjoin": CAPJOIN, "g_basis": STREAMONLY,
-    "g_graphinvis": GRAPHINVIS,
+    "g_graphinvis": GRAPHINVIS, "g_ctxcolumn": CTXCOLUMN,
+    "g_noattr": NOATTR,
+    "g_greenonly": GREENOK,
 }
 
 
 def consistent(w):
+    # ★R1: an unprofiled boot carries no trace, so every trace axis must sit at
+    # its empty value.  This is DESIGN, not failure -- and keeping the two
+    # apart is the whole point of the role axis.
+    if w.role == "green_only":
+        return (w.plumbing in ("ok", "boot_failed", "fail")
+                and w.rows_s == "zero" and w.rows_u == "zero"
+                and w.rows_g == "zero" and w.profile == "empty"
+                and w.halves_s == "both" and w.ctx_s == "null"
+                and w.stream_single == "no"
+                and w.stream_disjoint == "unanswerable"
+                and w.join_target == "none" and w.join_rate == "low"
+                and w.sticky_s == "ok" and w.bu_quality == "ok")
     """Physical consistency, REWRITTEN FOR BOOT SEPARATION (audit B1').
 
     rev4's model said `l1 == "zero" => l2 == l3 == l2_post == "zero"` -- "nsys
@@ -439,6 +497,12 @@ REGISTERED_STOPS = (
     (dict(join_target="capture_only"), CAPJOIN),
     (dict(join_rate="low"), NOATTR),
     (dict(stream_disjoint="no"), STREAMONLY),
+    # ★R1 / B6
+    (dict(role="green_only", rows_s="zero", rows_u="zero", rows_g="zero",
+          sticky_s="ok", bu_quality="ok", **_CLEAN_EMPTY), GREENOK),
+    (dict(role="green_only", green_s="mismatched", rows_s="zero",
+          rows_u="zero", rows_g="zero", **_CLEAN_EMPTY), GREENBAD),
+    (dict(green_s="matched", ctx_s="zero"), CTXCOLUMN),
 )
 
 
@@ -454,6 +518,10 @@ def worlds():
 # =============================================================================
 def _checks():
     def c_tiers(w, l, b):
+        if w.role == "green_only":
+            # ★an unprofiled boot answers the green question; the trace tiers
+            # do not apply to it and must not be asserted over it.
+            return l in {GREENOK, GREENBAD, DISCONF, ABSENT}
         """A. TIER DISCIPLINE: a plumbing fault never reaches a substantive
         label, and a tool limit never reaches one either.  Reads the axes, not
         the branch order."""
@@ -466,10 +534,13 @@ def _checks():
         return l not in MEASUREMENT
 
     def c_basis(w, l, b):
-        """B. BASIS: the primary label exists only on the two-channel basis, and
-        the basis string never contradicts the label."""
+        """B. BASIS: the primary label exists only on ctx + tool-fidelity, and
+        the basis string never contradicts the label.  ★Not "two channels" --
+        the SCOPE block says `disjoint` measures nsys' streamId fidelity, and
+        naming it a second attribution channel is the sentence that block
+        forbids (3rd audit B5)."""
         if l == OK:
-            return b == "ctx+disjoint" and w.ctx_s == "distinct" \
+            return b == "ctx+fidelity" and w.ctx_s == "distinct" \
                 and w.stream_disjoint == "yes"
         if l == STREAMONLY:
             return b == "ctx_only"
@@ -479,9 +550,9 @@ def _checks():
         """C. TOOL LIMIT: 'nsys saw no node rows anywhere' is a statement about
         the tool and must be labelled as one -- never as an answer about the
         estimand.  ★This is the cross-section the Q3 rule was missing (B2)."""
-        if (w.plumbing == "ok" and w.halves_s == "both" and w.sticky_s == "ok"
-                and w.bu_quality == "ok" and w.green_s != "mismatched"
-                and w.rows_s == "zero"):
+        if (w.role == "trace" and w.plumbing == "ok" and w.halves_s == "both"
+                and w.sticky_s == "ok" and w.bu_quality == "ok"
+                and w.green_s != "mismatched" and w.rows_s == "zero"):
             # ★P2 widened the guarded region: ANY world where the condition
             # boot is empty and the plumbing is clean is a statement about the
             # tool, whatever the controls did.
@@ -491,8 +562,9 @@ def _checks():
     def c_q1(w, l, b):
         """D. THRESHOLD: below the registered fraction the estimand is not
         constructible, stated with the literal."""
-        if (w.plumbing == "ok" and w.halves_s == "both" and w.sticky_s == "ok"
-                and w.bu_quality == "ok" and w.green_s != "mismatched"
+        if (w.role == "trace" and w.plumbing == "ok" and w.halves_s == "both"
+                and w.sticky_s == "ok" and w.bu_quality == "ok"
+                and w.green_s == "matched" and w.ctx_s not in ("null", "zero")
                 and w.stream_disjoint != "unanswerable" and w.rows_s == "ok"
                 and w.profile not in ("empty", EAGER_ONLY)):
             if w.frac < 0.90:
@@ -516,8 +588,16 @@ def _checks():
             # unconstructible now.
             return w.profile == "empty" or w.frac < 0.90
         if l == NOATTR:
+            # ★B6 moved (matched, null/zero) out of here into CTXCOLUMN, so a
+            # NOATTR carrying that combination is now a mislabel.
+            if w.green_s == "matched" and w.ctx_s in ("null", "zero"):
+                return False
             return (w.ctx_s != "distinct" or w.join_target == "none"
                     or w.join_rate == "low" or w.stream_single != "yes")
+        if l == CTXCOLUMN:
+            return w.green_s == "matched" and w.ctx_s in ("null", "zero")
+        if l == GREENOK:
+            return w.role == "green_only" and w.green_s == "matched"
         if l == EAGERONLY:
             return w.profile == EAGER_ONLY
         if l == OK:
@@ -547,7 +627,7 @@ def _checks():
             # fall through to the Q1 threshold, which returns UNCONSTR -- a
             # label whose witness is satisfied (frac 0.0 < 0.90).  E cannot see
             # it; T25 does, because EAGER_REPLAY_ONLY stops appearing.
-            "g_capjoin", "g_joinrate", "g_single", "g_q1"}),
+            "g_capjoin", "g_joinrate", "g_single", "g_q1", "g_ctxcolumn"}),
         "F a boot that never happened is ABSENT": (c_absent, {"g_absent"}),
         "A tier discipline (plumbing => measurement)": (c_tiers, {
             "g_absent", "g_trunc", "g_sticky", "g_unsplit", "g_expambig",
@@ -555,13 +635,17 @@ def _checks():
         # `g_single` is NOT here: without that guard, OK appears with a
         # well-formed basis string, so B is satisfied.  E's OK witness is what
         # rejects it, because that witness carries `stream_single == "yes"`.
-        "B basis is two-channel and matches the label": (c_basis, {
-            "g_basis", "g_noattr", "g_basis_string"}),
+        "B basis = ctx + tool-fidelity, and matches the label": (c_basis, {
+            "g_basis", "g_basis_string"}),
         # `g_greeninvis` is NOT here: C's guarded region is "no rows in ANY
         # boot", and GREENCTX_INVISIBLE lives in "controls alive, condition
         # empty" -- outside it.  T25 covers that mutant.
         "C tool limits are labelled as tool limits": (c_toollimit, {
             "g_nodeunavail", "g_graphinvis"}),
+        # ★`g_noattr` is named on E, not B: with (matched, null/zero) routed to
+        # CTXCOLUMN, dropping the NOATTR guard no longer produces an OK with a
+        # bad basis (which is what B watches) -- it produces a NOATTR-shaped
+        # world carrying some other label, which only the witness sees.
         "D Q1_FRAC = 0.90 (literal)": (c_q1, {"g_q1", "g_q1_value"}),
     }
 

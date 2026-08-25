@@ -115,11 +115,12 @@ K1_PROHIB_AT = 10.00  # ★[ARBITRARY] -- the design's fourth band
 #             `src/multiplex/multiplexing_mixin.py:395-400`).
 #   DEAD      `decode_last_tpot_ms` -- behind the `dual_worker_enabled` gate
 #             that kills `decode_step_count`.  0 / 294,506 snapshots.
-#   ★LIVENESS IS CONDITIONAL on `_slo_on` (`:1012`): measured non-zero in 4/4
+#   ★LIVENESS IS CONDITIONAL on `_slo_on` (`src/multiplex/multiplexing_mixin.py:1009`): measured non-zero in 4/4
 #   s2_sticky boots and zero in 4/4 g16 boots.  A1 sets PDMUX_R2_POLICY=fixed,
 #   so it is live -- a boot that omits it gets K1_CHANNEL_DEAD.
 #   ★CLIPPING HAZARD: samples outside (0, max(3*EMA, 90ms)) are rejected
-#   (`:1032`), which biases the ITL channel DOWNWARD exactly when overhead is
+#   (`src/multiplex/multiplexing_mixin.py:1027-1029`), which biases the ITL
+#   channel DOWNWARD exactly when overhead is
 #   large.  That is why PRIMARY is the counter, not the ITL field.
 
 
