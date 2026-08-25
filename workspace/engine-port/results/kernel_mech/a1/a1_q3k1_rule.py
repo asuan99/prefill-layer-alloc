@@ -240,9 +240,16 @@ def q3_score(w, guards=frozenset()):
         return Q3_PARTIAL
     if "g_order_span_last" in guards and w.steps < N_MIN_DECODE_STEPS:
         return Q3_SHORT
-    # ★the non-circular channel.  `single` alone is near-identity with the
-    # green-context id; the evidence is that the stream carries no prefill-only
-    # kernel, which is decided by kernel names.
+    # ★`single` alone is near-identity with the green-context id; the extra
+    # channel is that the stream carries no prefill-only kernel, decided by
+    # kernel names.
+    # ★SCOPE (re-audit P9): under sticky with FixedPolicy, prefill and decode
+    # sit on the two green streams of ONE stream group, so that separation is
+    # ARRANGED BY THE ENGINE -- as A0's `stream == "match"` was arranged by
+    # free parameter #15.  ⇒ `disjoint` measures whether nsys' `streamId`
+    # column is FAITHFUL to the engine's separation (tool fidelity), NOT that
+    # the green-context attribution is correct.  Do not write the stronger
+    # sentence; the design's forbidden list carries the allowed reduced form.
     if on("g_disjoint") and w.stream_disjoint != "yes":
         return Q3_STREAMAMB
     return Q3_SEP
@@ -323,6 +330,12 @@ REGISTERED_STOPS = (
 
 
 def q3_worlds():
+    """★NOTE (re-audit P14): Q3 has **no** `consistent()` model, unlike the
+    primary rule.  So its world count is the size of the AXIS PRODUCT, not the
+    number of physically possible worlds, and its sole-binding numbers are NOT
+    comparable with the primary rule's.  Enumerating impossible worlds is the
+    conservative direction -- it can only make a check look weaker -- but the
+    number must not be quoted as "possible worlds"."""
     keys = list(Q3_AXES)
     for c in product(*(Q3_AXES[k] for k in keys)):
         yield Q3World(**dict(zip(keys, c)))

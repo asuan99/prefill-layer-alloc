@@ -113,9 +113,20 @@ LABELS = MEASUREMENT | TOOLLIMIT | SUBSTANTIVE
 # (gate #9).
 #
 # ⇒ the evidentiary content lives in `stream_disjoint`: the analysed rows sit on
-#   a stream that carries NO prefill-only kernel.  That is decided by KERNEL
-#   NAMES, a channel neither nsys attribution nor the engine's own partition
-#   label feeds.  So:
+#   a stream that carries NO prefill-only kernel, decided by KERNEL NAMES.
+#
+# ★SCOPE (re-audit P9), registered here because this is where the next revision
+#   reads it.  Under sticky with FixedPolicy, prefill and decode sit on the two
+#   green streams of ONE stream group -- so "the decode stream carries no
+#   prefill-only kernel" is ARRANGED BY THE ENGINE SUBSTRATE, exactly as A0's
+#   `stream == "match"` was arranged by free parameter #15.  N8's rule that
+#   what is arranged is not evidence therefore still bites.
+#   ⇒ what `disjoint` MEASURES is whether nsys' `streamId` column is FAITHFUL
+#     to the engine's stream separation -- tool fidelity -- and NOT whether the
+#     green-context attribution is correct.  That is necessary to establish and
+#     it is weaker than "non-circular evidence for Q2ae".  Do not write the
+#     stronger sentence.
+#   So:
 #       OK           requires ctx == "distinct" AND stream_disjoint == "yes"
 #       STREAMONLY   is what ctx-without-disjoint gets, and is NOT primary
 BASES = {"ctx+disjoint", "ctx_only", None}
@@ -273,6 +284,10 @@ def score(w, guards=frozenset()):
         return UNCONSTR, None
     # attribution
     ctx_green = w.ctx_s == "distinct"
+    # ★P10: the driver says there is no green context and nsys reports a
+    # distinct one.  Two channels disagreeing is a harness/analyser fact.
+    if on("g_contra") and w.green_s == "absent" and w.ctx_s == "distinct":
+        return CONTRA, None
     if on("g_contra") and w.ctx_s == "parent" and w.stream_disjoint == "yes":
         # the ID says "not green" while the kernel-name channel says the stream
         # is a decode-only stream.  Two channels disagree -> harness/analyser.
@@ -360,9 +375,16 @@ def consistent(w):
         return False
     if w.join_target == "none" and w.join_rate != "low":
         return False
-    # no green context anywhere -> no distinct greenContextId on B-S's rows
-    if w.green_s == "absent" and w.ctx_s == "distinct":
-        return False
+    # ★P10 (re-audit): this exclusion is RETRACTED.  It said "no green context
+    # anywhere means nsys cannot report a distinct greenContextId", but the two
+    # sides are not the same observation: `green_s` is a ONE-SHOT driver
+    # read-out at `init_pdmux`, and `ctx_s` is a property of the whole trace.
+    # A boot where the read-out fired before the context existed, or asked the
+    # wrong stream, is physically possible and is EXACTLY the world worth
+    # catching.  The file's own R9 discipline says keep the world when in
+    # doubt, and the mirror case (`ctx null/zero` + `green absent`) already had
+    # a label -- so the disagreement space was being cut on one side only.
+    # It is a label now, not an exclusion; see `g_contra`.
     # ★the kernel-name channel is a property of the TRACE, so it cannot be
     # answered when there is no trace in B-S
     if w.rows_s == "zero" and w.stream_disjoint != "unanswerable":
@@ -412,6 +434,7 @@ REGISTERED_STOPS = (
      NODEUNAVAIL),
     (dict(profile="just_below"), UNCONSTR),
     (dict(ctx_s="parent"), CONTRA),
+    (dict(green_s="absent", ctx_s="distinct"), CONTRA),          # ★P10
     (dict(ctx_s="null", green_s="absent"), DISCONF),
     (dict(join_target="capture_only"), CAPJOIN),
     (dict(join_rate="low"), NOATTR),
@@ -483,7 +506,8 @@ def _checks():
         if l == CAPJOIN:
             return w.join_target == "capture_only"
         if l == CONTRA:
-            return w.ctx_s == "parent" and w.stream_disjoint == "yes"
+            return ((w.ctx_s == "parent" and w.stream_disjoint == "yes")
+                    or (w.green_s == "absent" and w.ctx_s == "distinct"))
         if l == DISCONF:
             return w.ctx_s in ("null", "zero") and w.green_s == "absent"
         if l == UNCONSTR:
