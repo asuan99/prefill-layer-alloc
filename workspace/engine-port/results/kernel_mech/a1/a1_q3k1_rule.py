@@ -38,7 +38,14 @@ N_MIN_SPLIT_STEPS = 200   # design sec5.  Below this the window, not the tool,
                           # so a thin window is the EXPECTED failure, not a
                           # surprise, and must not be scorable as "Q3 = no".
 K1_MOD_AT  = 1.10         # ratio of engine-telemetry median ITL, nsys ON / OFF
-K1_HIGH_AT = 2.00         # rev8 registered this as the affordability stop
+K1_HIGH_AT = 2.00         # ★[ARBITRARY -- provenance retracted, A1 audit D5]
+                          # rev1 attributed this to rev8 as "the affordability
+                          # stop".  rev8 contains the string "K1" ZERO times and
+                          # records nsys overhead as UNMEASURED (:438).  The
+                          # figure came from A0 prereg sec12 and has no basis
+                          # beyond being round.  Treat as unregistered until
+                          # calibrated (gate #31: verify the basis of an
+                          # imported number).
 
 
 class Q3World:
