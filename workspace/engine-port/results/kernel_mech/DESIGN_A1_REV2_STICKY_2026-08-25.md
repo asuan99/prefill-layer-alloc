@@ -1,0 +1,302 @@
+# 설계 — Stage 0‴ **A1 rev2**: sticky 기반 **부팅 분리**로 §2·§5를 다시 쓴다
+
+2026-08-25 · **GPU 지출 0**(기존 아티팩트 + 코드 대조만) · **새 성능 판정 0건** · HE0 불변.
+선행: `DESIGN_A1_ENGINE_SUBSTRATE_2026-08-25.md`(rev1, ★**규칙층 감사 `NO-GO` · 死因 2건**) +
+`audit_a1_rules_2026-08-25/VERDICT.md`.
+
+> ★★**이 판본의 범위는 감사 §⑤ 권고 절차 중 `1`뿐이다** — §2(다리)와 §5(중단 규칙)의 재작성.
+> **절차 2·3·4·5·6·7은 미이행**이며, 따라서 **rev2도 미감사이고 제출 불가**다.
+> *"rev2가 규칙층을 통과했다"* · *"A1의 死因이 닫혔다"* 는 **쓰면 안 된다**(§7).
+
+---
+
+## 0. 이 판본이 바꾸는 것 / 바꾸지 않는 것
+
+| | 상태 |
+|---|---|
+| **§2 다리** | ★**재작성** — 시간창 조인 폐기, **부팅 분리**로 교체 |
+| **§5 중단 규칙** | ★**재작성** — 전부 부팅 단위, **시계 다리 없음** |
+| **死因 A2**(E-L2↔E-L4를 가를 채널 없음) | ★**소멸 근거를 얻는다** — 두 다리가 **다른 부팅**에 산다(§2) |
+| **死因 A1**(리포트 로컬 `streamId`) | ★**완화** — `stream` 축을 **리포트 내** 정의로 교체(§3). ★대가: rev1 §4의 *"A0 규칙 그대로 · **재감사하지 않는다**"* 는 **철회**한다. 새 rule rev + 규칙층 감사 **1회**가 이 설계의 일부다 |
+| **런킬러 B1**(`decode_step_count` = 0) | ✗ **미해결** — 절차 3(Q3 채널 결정 + **비영 실증 먼저**). §5-8에 stop만 등록 |
+| **C1**(`N_min` 死코드) · **C2**(단위 오독) | §5에 **단위와 값**을 등록했을 뿐, **코드 참조는 절차 4**(rule rev2)에서 |
+| **D1·D3 정정** · **D4·D5·D6**(K1) | ✗ **미이행** — 절차 5·6 |
+| **rev7·rev8 차단**(B1–B5·B7 / C1–C10) | **전부 불변** — 이 판본은 하나도 건드리지 않는다 |
+
+---
+
+## 1. 왜 sticky가 뿌리를 없애는가 — **코드 근거**
+
+감사 §⑤가 지목한 뿌리: *"분할과 무분할이 한 런 안에서 3% 듀티로 95번 교차하고, 둘이 같은 커널이라
+시간창으로만 갈 수 있다."* 그 교차를 만드는 코드는 하나다.
+
+- **sticky OFF** — `multiplexing_mixin.py:881-883`: `not running_batch.is_empty() and split_prefill_batch`
+  일 때만 division을 고르고, **아니면** `:911-912`가 `set_current_stream_idx(real_sm_group_num - 1)`
+  = **plain `(0,108)` 그룹**을 고른다. ⇒ **prefill이 in-flight가 아닌 decode는 108 SM에서 돈다.**
+- **sticky ON + `FixedPolicy(D)`** — `:884`+`:891`: `stream_idx = self._sticky_fixed_idx`(상수)
+  ⇒ **런 전체가 한 division에 앉는다.**
+- **replay 경로는 유지된다** — `:228-231` 주석: 그래프는 stream-group index마다 캡처되므로
+  (`cuda_graph_runner.capture`, key `f"{stream_idx}_{bs}"`) division을 붙들어도 **캡처된 그래프를
+  그대로 replay**한다. **eager fallback 없음.**
+- **실측 승계**(CONSENSUS 항목27(II)) — sticky OFF `E1_DECODE_REALIZED` **0.0839** → ON **1.0000**
+  (n=1). correctness gate 전부 PASS(CPU 회귀 40 + 단위 12 + GPU smoke **job 872800** greedy 출력
+  byte-identical), OFF는 패치 전과 byte-identical. ★**승계 문장: "구현 완료 ≠ 성능 주장 성립."**
+
+### 1.1 ★이 셀에서 sticky는 편의가 아니라 **필요조건**이다 — 그리고 **B6가 이미 그렇게 등록했다**
+
+rev8 §5 / B6 사전등록이 승계한 워크로드는 **batch-synchronous `NP=CONC=16`**이고, rev8:380이 그
+성질을 *"라운드 안 prefill을 **0으로 강제**한다"* 로 적는다. 위 `:911-912`와 합치면:
+
+> **sticky OFF에서 그 라운드의 decode는 `D`가 아니라 108 SM에서 돈다.**
+
+⇒ A1이 sticky를 켜는 것은 측정 편의가 아니라 **그 셀에서 `D`를 실현하는 유일한 경로**다.
+
+★★**정정(이 문서 작성 중 자기 검출)**: 초안은 여기에 *"rev8은 `PDMUX_STICKY_PARTITION`을
+등록하지 않았다"* 를 근거로 달았다. **문자 그대로는 참이지만(rev8 문서에 문자열 0건) 오도한다** —
+rev8이 워크로드를 승계한 **B6 사전등록 `PREREG_B6_ELIGIBLE_WINDOW_2026-08-22.md:102-109`가
+sticky-ON을 이미 전제한다**. 그 절은 라운드 **사이**에 decode batch가 비면
+`multiplexing_mixin.py:913-923`(B6는 `:915-923`으로 인용)이 division을 놓고
+`set_current_stream_idx(0)`으로 떨어지므로 *"라운드 **첫 몇 step은 목표 `D`가 아닌 파티션에서
+돌 수 있다**"* 고 적고, 그래서 분석 구간의 시작점을 **관측이 정하게** 했다. ⇒ 올바른 서술은
+*"rev8을 정정한다"* 가 아니라 **"B6의 등록 전제를 A1의 부팅 매트릭스에 명시적으로 이름 붙여
+승계한다"** 이다(rev8 본문만으로는 그 플래그가 실행 사양에 나타나지 않기 때문).
+★교훈 #79 형태 — **결론은 살아 있었고 근거가 틀렸다.**
+
+★**따라서 rev8 차단의 재판정은 이 문서 어디에도 없다** — rev8은 `NO-GO` 상태 그대로이고
+차단 D1–D9는 **불변**이다.
+
+### 1.2 ★ B6가 알려주는 것 하나 더 — **라운드 경계에서 sticky는 놓였다가 재확립된다**
+
+`:913-923`은 **decode batch가 비면 의도적으로 division을 놓는다**(주석: *"there is no decode work
+to protect … holding it would strand D SM"*). batch-synchronous는 라운드 사이마다 decode를
+비우므로 **부팅 안에 라운드 수만큼 재확립 지연이 있다**. B6는 이것을 `out=128`의 여유
+(**~125 step 중 20 step만 사용**)로 흡수했다. rev2는 이 사실을 **문턱에 반영**한다(§5.1a).
+
+---
+
+## 2. ★ 다리 — **부팅으로 가른다** (rev1의 시간창 조인 전면 폐기)
+
+**한 부팅 = 한 nsys 리포트 = 한 다리.** 리포트 사이에서는 **`streamId`·`greenContextId` 같은
+리포트 로컬 식별자를 비교하지 않는다**(死因 A1). 부팅 간에 비교하는 것은 **수와 구조**뿐이다.
+
+| 부팅 | sticky | cudagraph | `D` | 실현되는 다리 | 역할 |
+|---|---|---|---|---|---|
+| **B-U** | **OFF** | ON | (해당 없음) | **E-L1** + **E-L2** | 양성대조(nsys가 엔진을 보는가) + ★**기대 노드 수 정의**(green 무관, decode는 plain 그룹 108 SM) |
+| **B-S16** | **ON** | ON | **16** | **E-L4** | ★**본 조건** — 런 전체가 green division 위 graph replay |
+| **B-S92** | **ON** | ON | **92** | **E-L4′** | 두 번째 점 — `green_sm`이 **`D`를 따라가는가**(green ctx의 존재와 **크기**를 가른다) |
+| **B-G** | **ON** | **OFF** | **16** | **E-L3** | green **eager** 가시성 — 그래프 없이 green 위 엔진 커널이 보이는가 |
+
+- **B-U ↔ B-S16의 차이는 환경변수 `PDMUX_STICKY_PARTITION` 한 개**다(설정·워크로드·모델·config 동일).
+  ★선례: F2 양성대조(job 891612)가 *"replay 유무 **한 단계만** 다른 두 레그"* 로 C4를 닫은 형태와 같다.
+- **B-G는 부팅 플래그가 두 개 다르다**(sticky ON + cudagraph OFF). E-L3는 **부팅 간 `streamId` 비교에
+  쓰이지 않으며**, 답하는 질문은 *"green 스트림 위 엔진 커널이 nsys에 나타나는가"* 하나로 **축소**된다.
+  rev1이 E-L3에 걸었던 `stream="match"` 역할은 **폐기**한다(死因 A1).
+
+### 2.1 E-L2′(후행 대조)의 재실현
+
+sticky ON에서는 *"마지막 분할 창 **이후**"* 라는 구간이 **존재하지 않는다**(런 전체가 분할).
+따라서 A0의 X5/N1이 E-L2′에 맡겼던 **역할만** 승계한다 — *트레이스가 중간부터 잘렸는가*:
+
+> **`halves` 축**: 리포트의 decode graph replay를 **replay 순서 index**로 전·후반으로 나누고,
+> **양쪽 모두** 노드 행이 존재해야 한다. 한쪽이 0이면 `TRACE_TRUNCATED`(§5-6).
+
+★이것은 **리포트 내 순서**만 쓰므로 시계 다리를 필요로 하지 않는다.
+
+### 2.2 부팅 매트릭스 (전 항목 등록)
+
+| 항목 | 값 | 근거 / 성격 |
+|---|---|---|
+| arm | **Ha8 = `Zamba2-7B`** | rev8 §5 · B6 · Stage 0″ §3 승계. ★**[임의]** 아님(셀 일치가 목적) |
+| `D` | **16**(주) · **92**(두 번째 점) | `pdmux_e1_d16.yml`(`sm_counts=[(108,0),(92,16),(0,108)]`, `FixedPolicy(16)→idx 1`) · `pdmux_e1_d92.yml`(`[(108,0),(16,92),(64,44),(0,108)]`, 2행은 **guard-satisfier 전용**, `FixedPolicy(92)→idx 1`) |
+| 정책 | `PDMUX_R2_POLICY=fixed` · `PDMUX_R2_FIXED_DSM=D` | sticky는 `R2_POLICY ∈ {unset, fixed}`에서만 정의(`:269-273`) |
+| ctx | `--context-length` = `L + out + margin`, `L=1024`·`out=128` | B6 승계 |
+| 워크로드 | **batch-synchronous `NP=CONC=16`**, `out=128`, `L=1024` 고정 프롬프트, `--disable-radix-cache` | B6 · rev8 §5 승계 |
+| 라운드 | 부팅당 **2**(워밍업 1 + 분석 1) | ★**[임의]** — `N_MIN_DECODE_STEPS`(§5-4)를 만족시키기 위한 최소치 |
+| cudagraph | B-U·B-S16·B-S92 **ON**(운영점, `--disable-piecewise-cuda-graph`만) · B-G **OFF**(`--disable-cuda-graph`) | 운영점 = cudagraph-ON(정본) |
+| ★**KV/mamba 예산** | `--max-mamba-cache-size` = **전 부팅 동일 고정값**으로 명시 등록 (`--max-running-requests`에 딸려 보내지 않는다) | ★**NSL E-A 실증 승계**(job 892561, `ARITHMETIC_CONFIRMED`): **KV 예산은 cap이 아니라 mamba pool을 따른다**(대조 `c48m96` = `c96` 오차 0, mamba 슬롯당 393 attention-KV 토큰). 고정하지 않으면 부팅마다 KV 예산이 달라져 **배치 구성 → 캡처되는 그래프 집합**이 달라지고 B-U↔B-S 노드 수 비교(§5.3)가 **교락된다**. ★이것이 NSL ③(손잡이 순화)의 처방이며 A1에도 그대로 적용된다 |
+| 서버 args | `s2_sticky/s2_sticky.sbatch:163-171` **축자 승계**(model·config 경로만 교체) | ★sticky가 **실제로 부팅한** 유일한 레시피 |
+| 프로파일러 | `nsys profile --cuda-graph-trace=node` | rev8 §8 P3a · A0 승계 |
+| telemetry | `PDMUX_TELEMETRY_PATH` 부팅마다 별도 · `PDMUX_RUN_ID`·`PDMUX_WORKLOAD_ID` 등록 | §5의 결정 채널 |
+| 부팅 수 | **4** + ★**스모크 1**(§2.3) | |
+| 등록가 | ★**벽시계 상한 2.0 GPU-hr** · 예상 0.5–0.8 | ★**예상은 약속이 아니다** — nsys 오버헤드(K1)가 **미측정**이므로 상한만 구속력을 갖는다 |
+| 반복 | **동일 셀 반복 미구매** | 구조적 예·아니오 질문이고 B-S16/B-S92가 2점 정합 검사 역할. ★**단일 부팅의 이상은 판정이 아니라 재실행 사유**로 등록 |
+
+### 2.3 ★ 선행 스모크 1회 (게이트 #25 — 대형 제출 전 배관 스모크)
+
+★**sticky가 실증된 부팅은 `T8`(`Qwen/Qwen2.5-7B`)뿐이다**(job 873015 · 873921).
+**`Ha8`(Zamba2-7B) + sticky 부팅은 선례가 없다.** 따라서 nsys를 붙이기 전에:
+
+> `Ha8` + `pdmux_e1_d16.yml` + `PDMUX_STICKY_PARTITION=1`로 **1 부팅**만 띄워
+> (a) `boot_ok=1`, (b) `srv.log`에 `"sticky partition ENABLED"` ≥ 1줄,
+> (c) `E1_DECODE_REALIZED(16) ≥ 0.99`, (d) **절차 3의 Q3 채널이 비영**임을 확인한다.
+> 넷 중 하나라도 실패하면 **부팅 매트릭스를 제출하지 않는다.**
+
+★(d)를 여기에 묶는 이유: 런킬러 B1이 정확히 *"결정량이 죽은 필드 위에 있다"* 였고,
+교훈 #77(*"가장 비싼 지출은 GPU가 아니라 안 산 프로브"*)이 지목하는 최소비용 선결 프로브가 이것이다.
+
+---
+
+## 3. §2가 여는 두 축의 **엔진 응답자** — 요구사항 등록 (절차 2, ★배선 미작성)
+
+### 3.1 `green` 축
+
+> **채널**: 서버 프로세스 **안에서** `cuStreamGetGreenCtx(decode_stream)` →
+> `cuGreenCtxGetDevResource(g, …, CU_DEV_RESOURCE_TYPE_SM)` → `green_sm`.
+> **판정**: `green_sm == D`(matched) / `≠ D`(mismatched) / green ctx null(absent).
+
+- **재사용 코드가 이미 있다**: `stage0ppp/stage0ppp_a0_probe.py:132-171`(`_green_sm_readout`, 호출 예 `:322`) —
+  A0의 **등록된 결정 채널**이고 **nsys를 참조하지 않는다**(참조하면 Q2ae와 순환).
+- ★**답이 아닌 것 두 개**(A0 프로브 주석이 이미 등록):
+  `smid_l0_census.driver_readout`는 **현재 컨텍스트**의 `primary_sm`(=108)을 돌려주므로 `D`와
+  비교하면 **무조건 mismatch**이고, 자기 docstring이 *"DESCRIPTIVE / TARGET LAYER ONLY"* 로 스스로를
+  등록한다. `realizedprobe`는 **서버를 죽인 뒤 별도 프로세스**가 재므로 답이 아니다(D108의 3번째 재발 위험).
+- ★**배선 완료(2026-08-25, 절차 2 이행)** — `src/multiplex/green_readout.py`(신규) +
+  `multiplexing_mixin.py`의 `_maybe_emit_green_readout()`(`init_pdmux`에서 `_init_sticky_partition()`
+  직후 1회). **`PDMUX_GREEN_READOUT=1`에서만** 동작하고, 미설정이면 ctypes를 건드리기 전에 `None`을
+  돌려준다. `PDMUX_GREEN_READOUT_PATH`를 주면 JSON으로도 쓴다. `sync_engine_tree.sh`의 복사 목록과
+  SHA-256 manifest에 등재됨.
+- **기록되는 것**(stream group index마다): 엔진이 **목표한** `target_prefill_sm`/`target_decode_sm`
+  (`sm_counts` 표) **와** 드라이버가 답한 `green_sm.smCount`. ★두 수는 **서로에게서 파생되지 않는다**
+  — 항등식은 증거가 아니다(게이트 #6).
+- **correctness gate**: `tests/test_green_readout.py` **15 tests PASS** · 전체 CPU 회귀
+  **155 tests PASS**(기존 140 + 15). ★**변이 테스트 포함** —
+  `test_a_constant_answer_producer_is_detected`는 *"모든 스트림에 같은 답"* 을 내는 이중자에서
+  판별 술어가 **반드시 False가 되게** 한다(2026-08-21 감사 R2가 잡은 축퇴 계측기 형태).
+- ★**여전히 미측정**: 이 배선은 **엔진 부팅에서 한 번도 실행된 적이 없다**(GPU 0). §2.3 스모크가 그것을 산다.
+
+### 3.2 `stream` 축 — **리포트 내** 정의로 교체
+
+rev1의 *"L3와 L4의 `streamId`가 일치"* 는 **부팅이 갈리는 순간 원리적으로 불가**(死因 A1)이므로 폐기하고,
+**한 리포트 안에서만** 평가하는 두 술어로 바꾼다.
+
+| | 술어 | 순환하지 않는 이유 |
+|---|---|---|
+| **(i) `single`** | 분석 모집단의 노드 행이 **단일 `streamId`** 위에 있다 | 식별자 값을 쓰지 않고 **집합의 크기**만 쓴다 |
+| **(ii) `disjoint`** | 그 `streamId`가 **prefill 전용 커널명**을 나르는 `streamId`와 **서로소** | 판별에 **커널 이름**을 쓴다 — A0 자유 모수 #19(*다리마다 고유 커널명*)의 엔진 대응물. `greenContextId`를 쓰지 않으므로 **Q2ae와 순환하지 않는다** |
+
+★**(ii)는 가정이 아니라 검사다**: *"prefill과 decode의 커널명이 실제로 갈린다"* 를 **주장하지 않는다**.
+decode 구간에만 나타나는 커널명이 **하나도 없으면** `LEG_LABELLING_UNAVAILABLE`(§5-7)로 **채점을 멈춘다**.
+
+### 3.3 ★ 그래도 **닫히지 않는 것** (반드시 등록)
+
+> **엔진 stream 핸들 ↔ nsys `streamId`의 동일성 다리는 여전히 없다.**
+
+얻는 것은 **식별자 일치가 아니라 구조 대응**이다 — 엔진 쪽: *"전 decode가 `green_sm=D`인 한 스트림 위에서
+돌았다"*(드라이버가 답함) · nsys 쪽: *"전 노드 행이 non-null `greenContextId`인 한 스트림 위에 있다"*.
+★A0도 정확히 같은 처지였고(그쪽의 `stream="match"`는 **구조적**이었다), 그래서 N8이 `OK`에
+**`ctx+stream` 동시 basis**를 요구했다. rev2도 그 요구를 승계한다.
+
+---
+
+## 5. ★ 중단 규칙 — **전부 부팅 단위, 시계 다리 없음**
+
+각 라벨은 **MEASUREMENT 조건**이며, 발화하면 `Q1e`·`Q2ae`·`Q2be`·`Q3` **어느 것도 채점하지 않는다**.
+★선례이자 이 절의 존재 이유: A0 **job 892554**는 모든 축이 깨끗했는데 `export="partial"` 하나로
+`TRACE_TRUNCATED`를 냈고, **하네스가 배관 실패를 실질 판정으로 바꾸지 않았다**(게이트 #21).
+
+| # | 라벨 | 술어 | 채널 |
+|---|---|---|---|
+| 1 | `BOOT_FAILED` | `boot_ok ≠ 1` | `/health` 폴링(`s2_sticky.sbatch:173-179`, sticky 로그 줄 수는 `:180-181`) |
+| 2 | `STICKY_NOT_REALIZED` | B-S: `srv.log`의 `"sticky partition ENABLED"` = 0줄 **또는** `E1_DECODE_REALIZED(D) < 0.95` ★(0.99 아님 — §5.1a) | 서버 로그 + telemetry(`e1_pin_check.compute_decode_realized`, **decode-active 시간 가중**) |
+| 3 | `UNSPLIT_NOT_REALIZED` | B-U: `frac(decode_sms == 108) < 0.95`(decode-active 시간 가중) | 같음(2의 거울상) |
+| 4 | `SPAN_TOO_SHORT` | `N_steps < N_MIN_DECODE_STEPS` | ★**단위 = decode step** |
+| 5 | `EXPECTATION_AMBIGUOUS` | B-U의 **replay당 노드 수** 분포에서 최빈값 점유 < 0.99 | nsys 노드 행 |
+| 6 | `TRACE_TRUNCATED` | `export ≠ "ok"` **또는** `dropped_events > 0` **또는** `halves` 중 한쪽 노드 행 = 0 | nsys export 상태 + §2.1 |
+| 7 | `LEG_LABELLING_UNAVAILABLE` | decode 구간 전용 커널명이 **0개** | nsys 커널명 집합 |
+| 8 | `CHANNEL_ZERO` | 절차 3에서 고른 Q3 채널이 런 전체에서 **0** | telemetry |
+
+### 5.1 ★ `N_MIN_DECODE_STEPS` — **단위와 값** (C1·C2 정정)
+
+- **단위 = decode step.** ★**C2 정정 승계**: **1 telemetry 스냅샷 ≈ 16 decode step**(실측
+  Δ`decode_iterations`, 396구간 중 394). ⇒ **스냅샷 개수를 스텝 수로 읽지 않는다.**
+  rev1의 `N_MIN_SPLIT_STEPS = 200`은 이 오독 위에 있었고 **어느 쪽으로 읽어도 estimand에 대해
+  교정된 적이 없다** — **폐기**한다.
+- **관측량**: `N_steps` = 분석 구간의 **Δ`decode_iterations`**. sticky ON에서 분석 구간은
+  **리포트 전체**이므로 이는 **런 단위 총계**다(창별 조인 불요 ⇒ rev1 C3·C4·C7이 함께 소멸).
+- **등록값**: `N_MIN_DECODE_STEPS = 64` ★**[임의]** — 한 라운드(`out=128`)의 절반.
+  ★**절차 4의 요구**: 이 값은 rule rev2에서 **정수 축으로 실제 참조**되어야 하며,
+  값을 바꾸면 자기검사가 **깨져야 한다**(C1의 死코드 재발 금지 — 변이 테스트, 교훈 #53).
+
+### 5.1a ★ 왜 0.99가 아니라 **0.95**인가 — 라운드 경계 잔차 (신규)
+
+§1.2: `:913-923`이 라운드 **사이**마다 division을 의도적으로 놓으므로 라운드 **첫 몇 step**은
+목표 `D`가 아닌 파티션에서 돌 수 있고, **그 step들은 decode-active라 가중치를 갖는다**.
+⇒ **0.99를 요구하면 stop이 물리적 사실 때문에 발화한다** = **정상 실행을 측정 실패로
+라벨링**하는 형태(★교훈 #21, 8회+ 재발).
+
+**등록**:
+- 문턱 **0.95** ★**[임의]** — B6의 여유 산정(라운드 ~125 step 중 20 step만 사용)과 정합하는
+  자릿수이나 **실측으로 교정된 적은 없다**.
+- ★**잔차를 반드시 센다**: `N_offtarget_steps` = 분석 구간에서 `decode_sms ≠ D`인 decode step 수를
+  **보고 필수** 항목으로 등록(교훈 #5 — 집계 단위를 먼저 정한다).
+- ★★**닫히지 않는 것(정직 등록)**: **그 off-target step들이 nsys의 어느 행인지는 매핑되지 않는다.**
+  rev2는 그것을 시계 다리로 풀지 **않고** `Q1_FRAC` 문턱의 **허용 오차 안으로 흡수**한다.
+  ⇒ 절차 4의 규칙은 `Q1_FRAC`를 **`1 − E1_DECODE_REALIZED`보다 넉넉하게** 잡아야 하며, 그 관계가
+  성립하지 않으면 **Q1e를 채점할 수 없다**. **이것은 해결이 아니라 등록된 한계다.**
+
+### 5.2 ★ rev1 §5가 요구하던 것의 폐기
+
+rev1 §5는 *"워크로드는 분할 창을 의도적으로 만들도록 고른다 — prefill이 **계속 in-flight**여야 한다"* 를
+요구했고, 감사 **E2**가 그것이 rev8 셀(batch-synchronous `NP=CONC=16`)과 **배타적**이라 지적했다.
+
+> ★**sticky ON에서 그 요구는 사라진다** — `:881-883`이 `split_prefill_batch`를 **또는**으로
+> 우회하므로 **decode busy만으로** division이 유지된다. ⇒ **E2의 배타성 해소.**
+> rev1이 *"A0가 §0-1에 전이 간극을 등재해 놓고 A1이 자기 안에 두 번째 전이 간극을 만든다"* 는
+> 지적을 받은 지점이 여기였고, rev2는 **rev8 셀 그대로** 측정한다.
+
+### 5.3 이 절이 **여전히 못 막는 것** (정직 등록)
+
+- ★**`Q1_FRAC` 문턱은 A0에서 미관측**(`frac=1.000`). rev2도 그것을 시험한다는 보장이 없다.
+- ★**부팅 간 노드 수 비교의 전제** — B-U와 B-S의 그래프가 *같은 구조*라는 것은
+  `cuda_graph_runner.capture`가 stream index마다 **같은 모델·같은 bs**로 캡처한다는 코드 사실에
+  기대며, **실측된 적이 없다**. `EXPECTATION_AMBIGUOUS`(5)는 B-U **안의** 이봉성만 잡고
+  **B-U↔B-S 사이의 구조 차이는 못 잡는다.** ⇒ 절차 4의 규칙이 이 축을 별도로 열어야 한다.
+- **K1**(nsys 오버헤드)은 이 판본에서 **손대지 않았다** — D4·D5·D6 전부 미이행(절차 5).
+
+---
+
+## 6. 이 판본이 **아직 안 한 것** — 절차 2–7 미이행 목록
+
+| 절차 | 내용 | 상태 |
+|---|---|---|
+| 2 | `stream`·`green` 엔진 응답자 **배선** | ★**`green` 배선 완료**(2026-08-25, `green_readout.py` + 호출부 + 단위 **15** · 회귀 **155** PASS, **부팅 실행은 0회**). `stream`은 **분석층** 술어라 배선이 아니라 규칙(절차 4)에서 산다 |
+| 3 | **Q3 채널 결정** + ★**비영 실증 먼저** | 미이행. §2.3(d)·§5-8에 stop만 등록 |
+| 4 | Q3 규칙 **rev2**(`N_min` 실참조·`export=partial` 가드·`dropped_events`·`launches="more"` 의미·★**검사 2개 이상, 서로 다른 절편**) | 미착수 |
+| 5 | K1 **rev2**(구간 4개 · `2.00`을 **[임의]**로 표시 · 부팅쌍 축 · ITL 필드) | 미착수 |
+| 6 | **D1·D3 정정** | 미착수 |
+| 7 | 규칙층 **재감사** → ② 어댑터 → ③ 하네스층 감사 → ④ 제출 | 미착수 |
+
+---
+
+## 7. ★ 쓰면 안 되는 문장 (rev1 §8 + 감사 §⑥ **전부 승계** + 신설)
+
+**승계**(rev1 §8 · 감사 §⑥):
+
+- ✗ *"A0 규칙이 A1을 그대로 채점한다 / 바뀌는 것은 어댑터뿐"* · ✗ *"재감사하지 않는다"*
+- ✗ *"엔진 telemetry `stream_index`/`decode_sms`가 **분할 실현**을 말한다"* —
+  허용 축소형: *"엔진이 어느 파티션을 **선택**했는지 말한다"*
+- ✗ *"`N_min = 200`이 규칙층에 코드로 등록됐다"* · ✗ *"분할 실현은 59,646 중 130이다"* 와 **거기서
+  유도한 스텝 수 문장 전부**
+- ✗ *"Q3가 성립하면 NVTX 선행조건이 불필요함이 실측된다"* · ✗ *"`K1_HIGH_AT=2.00`은 rev8이 등록한
+  정지선이다"* · ✗ *"이 규칙에서 sole binding은 구조적으로 도달 불가하다"*
+- ✗ *"A0가 통과했으므로 엔진 decode 그래프에서도 node row가 난다"*(**전이 간극**) ·
+  ✗ *"kernel_mech 트랙을 열었다/닫았다"* · ✗ **어떤 성능·정책 문장도**
+- **승계**: HE0 · gate #13/#16 *"닫았다"* 금지 · switch-cost *"닫았다"* 금지 · C2 인용정지 (a)(b) ·
+  A0 판정의 금지 문장 전부 · *"구현 완료 ≠ 성능 주장 성립"*
+
+**신설**(rev2가 만들 수 있는 새 거짓말):
+
+- ✗ ★★★ *"sticky가 A1의 死因을 닫았다"* — **닫은 것은 없다.** rev2는 死因을 **닫을 설계를 등록**했을 뿐이고,
+  **규칙층 재감사·하네스·하네스층 감사·제출이 전부 미이행**이다.
+- ✗ ★★★ *"부팅 분리로 `stream` 축이 해결됐다"* — §3.3: **엔진 핸들 ↔ nsys `streamId` 다리는 없다.**
+  얻는 것은 **구조 대응**이지 식별자 일치가 아니다.
+- ✗ ★★ *"sticky ON이면 decode가 `D` SM에서 **돈다**"* — telemetry가 말하는 것은 엔진의 **선택**이고,
+  `green_sm == D`는 **드라이버가 답해야 하며 아직 배선되지 않았다**(§3.1).
+- ✗ ★★★ *"rev8이 sticky를 안 켜서 108 SM에서 측정했다 / rev8을 정정했다"* — ★**이 문서 작성 중
+  자기 검출된 오진**(§1.1): rev8이 승계한 **B6 사전등록이 sticky-ON을 이미 전제**한다
+  (`PREREG_B6_ELIGIBLE_WINDOW_2026-08-22.md:102-109`). §1.1은 **A1의 부팅 선택 근거**일 뿐이고
+  **rev8 차단의 재판정이 아니다** — 차단 D1–D9는 **불변**이다.
+- ✗ ★★ *"Ha8 sticky 부팅이 검증됐다"* — 검증된 sticky 부팅은 **`T8`(Qwen2.5-7B)뿐**이다(job 873015·873921).
+  `Ha8`는 **선례 없음**이고 §2.3 스모크가 그것을 사는 지점이다.
+- ✗ ★ *"예상 지출 0.5–0.8 GPU-hr"를 약속으로 인용* — **구속력을 갖는 것은 상한 2.0뿐**(K1 미측정).
+- ✗ ★ *"`N_MIN_DECODE_STEPS=64`가 코드로 등록됐다"* — **등록된 곳은 이 문서뿐**, 코드 참조는 절차 4.
