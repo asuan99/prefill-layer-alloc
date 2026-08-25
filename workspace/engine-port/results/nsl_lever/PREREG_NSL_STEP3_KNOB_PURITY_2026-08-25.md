@@ -35,8 +35,8 @@
 | # | 경로 | mamba 고정 후 | 근거 |
 |---|---|---|---|
 | 1 | **admission cap** (원하는 축) | 그대로 | — |
-| 2 | `max_mamba_cache_size` (미지정 시 `cap // dp`) | ★**끊긴다**(명시 지정) | `model_runner_kv_cache_mixin.py:228` ★**직접 확인**(감사 B3는 `:155`로 적었다 — §2.2) |
-| 3 | **attention KV 토큰 예산** (`total_rest − mamba_state_memory`) | ★**끊긴다** — mamba pool만 따름 | `:250-255` ★**직접 확인**(감사는 `:249-254`) + **E-A C1 대조(오차 0)** |
+| 2 | `max_mamba_cache_size` (미지정 시 `cap // dp`) | ★**끊긴다**(명시 지정) | `model_runner_kv_cache_mixin.py:228` ★**직접 확인**(감사 B3는 `:155` [HIST] 로 적었다 — §2.2) |
+| 3 | **attention KV 토큰 예산** (`total_rest − mamba_state_memory`) | ★**끊긴다** — mamba pool만 따름 | `:250-255` ★**직접 확인**(감사는 `:249-254` [HIST]) + **E-A C1 대조(오차 0)** |
 | 4 | `req_to_token_pool` 크기(`max_num_reqs`) | ✗ **남는다** | `:404` `_init_pools` ★직접 확인 |
 | 5 | ★**클램프** `max_num_reqs = min(max_num_reqs, max_mamba_cache_size // ratio)` | ✗ **남는다 — 그리고 방향이 뒤집힌다**(§3 R2) | `model_runner_kv_cache_mixin.py:870-874` |
 
@@ -49,8 +49,8 @@ mamba를 고정하지 않으면 cap 48→24 대조가 KV 예산을 **+9,438 토�
 
 | 감사가 적은 것 | 현재 트리 실측 | 내용 |
 |---|---|---|
-| `:155` | ★`model_runner_kv_cache_mixin.py:228` | `server_args.max_mamba_cache_size = server_args.max_running_requests // (…)` |
-| `:249-254` | ★`:250-255` | `mamba_state_memory = max_mamba_cache_size * mamba_cache_per_req … return total_rest_memory − mamba_state_memory` |
+| `:155` [HIST] | ★`model_runner_kv_cache_mixin.py:228` | `server_args.max_mamba_cache_size = server_args.max_running_requests // (…)` |
+| `:249-254` [HIST] | ★`:250-255` | `mamba_state_memory = max_mamba_cache_size * mamba_cache_per_req … return total_rest_memory − mamba_state_memory` |
 
 ★**내용은 감사가 서술한 그대로이고, 위치만 다르다** — 판정에 영향 없음. `sync_engine_tree.sh`가
 설치하는 `mamba2_pure_ssm_arch.patch`가 이 파일을 건드리므로 줄이 밀릴 수 있다.

@@ -1,9 +1,9 @@
 {
  "results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md": {
-  "a1/a1_q3k1_rule.py:83-83": {
-   "anchor": "K1_PAIRBAD  = \"K1_PAIR_INVALID\"",
+  "a1/a1_q3k1_rule.py:98-98": {
+   "anchor": "N_MIN_DECODE_STEPS = 64",
    "anchor_offset": 0,
-   "sha": "09256fefeb7d812f",
+   "sha": "32ef13e3784741b5",
    "target": "prefill-layer-alloc/workspace/engine-port/results/kernel_mech/a1/a1_q3k1_rule.py"
   },
   "cuda_graph_runner.py:806-816": {
@@ -11,6 +11,18 @@
    "anchor_offset": 1,
    "sha": "a32b79efa6dde3d9",
    "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
+  },
+  "multiplexing_mixin.py:269-272": {
+   "anchor": "# f\"{stream_idx}_{bs}\"), so holding a division index replays a captured",
+   "anchor_offset": 2,
+   "sha": "5e5ffb97aef1d47c",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:311-314": {
+   "anchor": "f\"PDMUX_R2_POLICY in (unset, fixed); got {self.r2_policy_name!r}\"",
+   "anchor_offset": 2,
+   "sha": "ec58c3ec49e7b05d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
   "multiplexing_mixin.py:542-542": {
    "anchor": "self.dual_worker_trace_count += 1",
@@ -24,16 +36,52 @@
    "sha": "b6762f93eba8af71",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
+  "multiplexing_mixin.py:925-925": {
+   "anchor": "if self.sticky_partition_enabled and self._sticky_fixed_idx is not None:",
+   "anchor_offset": 0,
+   "sha": "67660886288d7fbd",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:925-932": {
+   "anchor": "if self.sticky_partition_enabled and self._sticky_fixed_idx is not None:",
+   "anchor_offset": 0,
+   "sha": "02a09b9122b5fc15",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:932-932": {
+   "anchor": "stream_idx = self._sticky_fixed_idx",
+   "anchor_offset": 0,
+   "sha": "5a109140391c872f",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:952-953": {
+   "anchor": "set_current_stream_idx(self.real_sm_group_num - 1)",
+   "anchor_offset": 1,
+   "sha": "781d620460cbe267",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
   "multiplexing_mixin.py:954-967": {
    "anchor": "# running_batch.is_empty()` trigger in `event_loop_pdmux` exists to",
    "anchor_offset": 8,
    "sha": "11c02d2fb419c498",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
+  "multiplexing_mixin.py:955-967": {
+   "anchor": "# running_batch.is_empty()` trigger in `event_loop_pdmux` exists to",
+   "anchor_offset": 7,
+   "sha": "e1703cc00791c7a0",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
   "s2_sticky.sbatch:173-179": {
    "anchor": "[ \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:$PORT/health 2>/dev/null||true)\" = 200 ] && { ok=1; break; }",
    "anchor_offset": 2,
    "sha": "3f14743a1a25fdbc",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/s2_sticky/s2_sticky.sbatch"
+  },
+  "s2_sticky.sbatch:180-181": {
+   "anchor": "| sed \"s/^/  STICKY_LOG_LINES cell=$NAME block=$BLOCK: /\" | tee -a \"$RESULT\"",
+   "anchor_offset": 1,
+   "sha": "d5720b3a29c4e6ed",
    "target": "prefill-layer-alloc/workspace/engine-port/results/s2_sticky/s2_sticky.sbatch"
   },
   "s2_sticky/s2_sticky.sbatch:163-171": {
@@ -46,6 +94,12 @@
    "anchor": "SM resource.  nsys is deliberately not consulted: using nsys' isGreenContext",
    "anchor_offset": 13,
    "sha": "a77210536f4d77be",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/kernel_mech/stage0ppp/stage0ppp_a0_probe.py"
+  },
+  "stage0ppp/stage0ppp_a0_probe.py:322-322": {
+   "anchor": "rec[\"green_readout\"] = _green_sm_readout(g_decode.cuda_stream)",
+   "anchor_offset": 0,
+   "sha": "50d5e751f1f02fb6",
    "target": "prefill-layer-alloc/workspace/engine-port/results/kernel_mech/stage0ppp/stage0ppp_a0_probe.py"
   }
  },
@@ -83,23 +137,17 @@
    "sha": "a32b79efa6dde3d9",
    "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
   },
-  "dual_worker.py:121-121": {
-   "anchor": "self.snapshot.last_tpot_ms = max(",
+  "src/multiplex/multiplexing_mixin.py:1012-1012": {
+   "anchor": "decode_future = None",
    "anchor_offset": 0,
-   "sha": "59e9537087fbaf1f",
-   "target": "sglang_engine_dev/python/sglang/srt/multiplex/dual_worker.py"
+   "sha": "3bc330ca8022a078",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:1009-1009": {
-   "anchor": "_slo_on = bool(os.environ.get(\"PDMUX_SLO_SCHED\")) or self.r2_policy is not None",
+  "src/multiplex/multiplexing_mixin.py:1032-1032": {
+   "anchor": "getattr(self, \"_r2_itl_samples\", []) + [_dt]",
    "anchor_offset": 0,
-   "sha": "bd8a93dd8f5cf281",
-   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
-  },
-  "multiplexing_mixin.py:392-397": {
-   "anchor": "sorted(getattr(self, \"_r2_itl_samples\", ())),",
-   "anchor_offset": 2,
-   "sha": "cc83c0975aa44004",
-   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+   "sha": "a6a79d740eb698c2",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/multiplexing_mixin.py"
   },
   "src/multiplex/multiplexing_mixin.py:395-400": {
    "anchor": "itl_slo_ms=float(os.environ.get(\"PDMUX_TPOT_SLO_MS\", \"60\")),",
@@ -119,6 +167,30 @@
    "anchor": "self.running_batch.batch_is_full = True",
    "anchor_offset": 0,
    "sha": "63169157b1e43417",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2434-2434": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "615708704dc17516",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2439-2439": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "d8cc4c3fd21b017e",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2472-2472": {
+   "anchor": "self.running_batch.batch_is_full = len(",
+   "anchor_offset": 0,
+   "sha": "bc93e1636be7b642",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2476-2476": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "53a09b7b16c03318",
    "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
   },
   "managers/scheduler.py:668-671": {
@@ -159,10 +231,40 @@
    "sha": "63169157b1e43417",
    "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
   },
+  "managers/scheduler.py:2434-2434": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "615708704dc17516",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2476-2476": {
+   "anchor": "self.running_batch.batch_is_full = True",
+   "anchor_offset": 0,
+   "sha": "53a09b7b16c03318",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
   "model_runner_kv_cache_mixin.py:228-228": {
    "anchor": "server_args.max_mamba_cache_size = server_args.max_running_requests // (",
    "anchor_offset": 0,
    "sha": "4d48259f4d6c0425",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py"
+  },
+  "model_runner_kv_cache_mixin.py:250-255": {
+   "anchor": "* config.mamba2_cache_params.mamba_cache_per_req",
+   "anchor_offset": 2,
+   "sha": "8d75c46312ff38cc",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py"
+  },
+  "model_runner_kv_cache_mixin.py:390-402": {
+   "anchor": "# ping-pong buffer size is 2 when overlap schedule is on, 1 otherwise.",
+   "anchor_offset": 6,
+   "sha": "49d3e6ae972d7de3",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py"
+  },
+  "model_runner_kv_cache_mixin.py:404-404": {
+   "anchor": "def _init_pools(self: ModelRunner):",
+   "anchor_offset": 0,
+   "sha": "b8fe70fb826e764d",
    "target": "sglang_engine_dev/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py"
   },
   "model_runner_kv_cache_mixin.py:862-875": {

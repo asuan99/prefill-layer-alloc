@@ -75,7 +75,16 @@ MEASUREMENT = {ABSENT, TRUNC, NOSTICKY, UNSPLIT, EXPAMBIG, NOLEG, GREENBAD}
 NODEUNAVAIL = "NODE_TRACE_UNAVAILABLE"     # no node granularity anywhere
 GREENINVIS  = "GREENCTX_INVISIBLE"         # green rows exist nowhere, controls fine
 EAGERONLY   = "EAGER_REPLAY_ONLY"          # B-S replayed nothing to attribute
-TOOLLIMIT = {NODEUNAVAIL, GREENINVIS, EAGERONLY}
+# ★NEW (re-audit P2).  THE modal negative of this whole experiment: the tool
+# sees engine kernels (B-U alive) and sees them on a green stream when they run
+# eager (B-G alive), and still emits no node rows for the green GRAPH REPLAY
+# (B-S empty).  That is a statement about `nsys --cuda-graph-trace=node`, not
+# about the estimand -- and the first version of this rule sent it to
+# PRIMARY_ESTIMAND_UNCONSTRUCTIBLE, i.e. SUBSTANTIVE.  Gate #21, in the one
+# world A1 exists to distinguish.  `GREENINVIS` did not catch it because that
+# guard also requires B-G to be empty.
+GRAPHINVIS  = "GRAPH_NODE_ROWS_INVISIBLE_UNDER_GREEN"
+TOOLLIMIT = {NODEUNAVAIL, GREENINVIS, EAGERONLY, GRAPHINVIS}
 
 # --- SUBSTANTIVE: an answer about the estimand -------------------------------
 UNCONSTR  = "PRIMARY_ESTIMAND_UNCONSTRUCTIBLE"
@@ -246,12 +255,19 @@ def score(w, guards=frozenset()):
         return GREENINVIS, None
     if on("g_eager") and w.profile == EAGER_ONLY:
         return EAGERONLY, None
+    # ★P2: controls alive on BOTH sides, condition empty.  Ordered after the
+    # two narrower tool limits so it does not swallow them.
+    if on("g_graphinvis") and w.rows_g == "ok" and w.rows_s == "zero":
+        return GRAPHINVIS, None
     if "g_order_leg_late" in guards:
         if w.rows_s == "ok" and w.stream_disjoint == "unanswerable":
             return NOLEG, None
 
     # ---- tier 3: SUBSTANTIVE ------------------------------------------------
-    if on("g_unconstr") and (w.rows_s == "zero" or w.profile == "empty"):
+    # ★P2: `rows_s == "zero"` never reaches here any more -- the tool tier owns
+    # it.  What remains is a condition boot that produced rows but no usable
+    # fraction.
+    if on("g_unconstr") and w.profile == "empty":
         return UNCONSTR, None
     if on("g_q1") and w.frac < (Q1_FRAC if on("g_q1_value") else 0.50):
         return UNCONSTR, None
@@ -298,7 +314,7 @@ MUTANTS = ["g_absent", "g_trunc", "g_sticky", "g_unsplit", "g_expambig",
            "g_green", "g_leg", "g_nodeunavail", "g_greeninvis", "g_eager",
            "g_q1", "g_q1_value", "g_contra", "g_disconf",
            "g_noattr", "g_capjoin", "g_joinrate", "g_basis",
-           "g_single", "g_order_leg_late", "g_basis_string"]
+           "g_single", "g_order_leg_late", "g_basis_string", "g_graphinvis"]
 
 # ★Which guard is registered as PRODUCING which label.  T25 uses this: a
 # necessary-condition check cannot see a label that stopped appearing, so the
@@ -309,6 +325,7 @@ GUARD_LABEL = {
     "g_leg": NOLEG, "g_nodeunavail": NODEUNAVAIL, "g_greeninvis": GREENINVIS,
     "g_eager": EAGERONLY, "g_contra": CONTRA, "g_disconf": DISCONF,
     "g_capjoin": CAPJOIN, "g_basis": STREAMONLY,
+    "g_graphinvis": GRAPHINVIS,
 }
 
 
@@ -356,6 +373,52 @@ def consistent(w):
     return True
 
 
+# ★★REGISTERED STOPS -- the design's sec 5 table, transcribed ONCE as data.
+#
+# WHY (re-audit P1).  The Q3 rule got this and this rule did not, and the
+# re-audit showed exactly what that costs: apply the audit's own both-copies
+# specification edit -- regress the C5 repair in `score()` AND in every check
+# that reads it -- and all six checks pass while `plumbing == "partial_s"`
+# comes back KSET_CONSTRUCTIBLE.  `T25` cannot see it either, because
+# `g_trunc` still produces TRACE_TRUNCATED via `halves_s`, so the census does
+# not move.  A registry is the only oracle that does not travel with the prose.
+#
+# ★LIMIT, stated here as it is in the Q3 rule: this raises a two-copy edit to a
+# three-copy edit and makes the third one a visible change to what was
+# REGISTERED.  A determined three-copy edit still passes.  Saying otherwise
+# would be the overclaim the audit punished.
+_CLEAN_EMPTY = dict(profile="empty", ctx_s="null", stream_single="no",
+                    stream_disjoint="unanswerable", join_target="none",
+                    join_rate="low")
+REGISTERED_STOPS = (
+    # (kwargs from an otherwise-clean world, expected label)
+    (dict(plumbing="boot_failed", rows_s="zero", rows_u="zero", rows_g="zero",
+          **_CLEAN_EMPTY), ABSENT),
+    (dict(plumbing="fail", rows_s="zero", rows_u="zero", rows_g="zero",
+          **_CLEAN_EMPTY), ABSENT),
+    (dict(plumbing="partial_s"), TRUNC),                       # ★the C5 stop
+    (dict(plumbing="partial_ctl"), TRUNC),
+    (dict(halves_s="one"), TRUNC),
+    (dict(sticky_s="low"), NOSTICKY),
+    (dict(sticky_s="nolog"), NOSTICKY),
+    (dict(bu_quality="unsplit_low"), UNSPLIT),
+    (dict(bu_quality="expect_ambiguous"), EXPAMBIG),
+    (dict(green_s="mismatched"), GREENBAD),
+    (dict(stream_disjoint="unanswerable"), NOLEG),
+    (dict(profile=EAGER_ONLY, join_target="none", join_rate="low"), EAGERONLY),
+    (dict(rows_s="zero", rows_g="ok", **_CLEAN_EMPTY), GRAPHINVIS),   # ★P2
+    (dict(rows_s="zero", rows_u="ok", rows_g="zero", **_CLEAN_EMPTY), GREENINVIS),
+    (dict(rows_s="zero", rows_u="zero", rows_g="zero", **_CLEAN_EMPTY),
+     NODEUNAVAIL),
+    (dict(profile="just_below"), UNCONSTR),
+    (dict(ctx_s="parent"), CONTRA),
+    (dict(ctx_s="null", green_s="absent"), DISCONF),
+    (dict(join_target="capture_only"), CAPJOIN),
+    (dict(join_rate="low"), NOATTR),
+    (dict(stream_disjoint="no"), STREAMONLY),
+)
+
+
 def worlds():
     keys = list(AXES)
     for combo in product(*(AXES[k] for k in keys)):
@@ -395,8 +458,10 @@ def _checks():
         estimand.  ★This is the cross-section the Q3 rule was missing (B2)."""
         if (w.plumbing == "ok" and w.halves_s == "both" and w.sticky_s == "ok"
                 and w.bu_quality == "ok" and w.green_s != "mismatched"
-                and w.rows_s == "zero" and w.rows_u == "zero"
-                and w.rows_g == "zero"):
+                and w.rows_s == "zero"):
+            # ★P2 widened the guarded region: ANY world where the condition
+            # boot is empty and the plumbing is clean is a statement about the
+            # tool, whatever the controls did.
             return l in TOOLLIMIT
         return True
 
@@ -422,8 +487,10 @@ def _checks():
         if l == DISCONF:
             return w.ctx_s in ("null", "zero") and w.green_s == "absent"
         if l == UNCONSTR:
-            return (w.rows_s == "zero" or w.profile == "empty"
-                    or w.frac < 0.90)
+            # ★P2: `rows_s == "zero"` is no longer a route to UNCONSTR -- it is
+            # a tool limit.  Only the fraction can make the estimand
+            # unconstructible now.
+            return w.profile == "empty" or w.frac < 0.90
         if l == NOATTR:
             return (w.ctx_s != "distinct" or w.join_target == "none"
                     or w.join_rate == "low" or w.stream_single != "yes")
@@ -470,7 +537,7 @@ def _checks():
         # boot", and GREENCTX_INVISIBLE lives in "controls alive, condition
         # empty" -- outside it.  T25 covers that mutant.
         "C tool limits are labelled as tool limits": (c_toollimit, {
-            "g_nodeunavail"}),
+            "g_nodeunavail", "g_graphinvis"}),
         "D Q1_FRAC = 0.90 (literal)": (c_q1, {"g_q1", "g_q1_value"}),
     }
 
@@ -542,6 +609,17 @@ def _battery(out):
     print(f"     sole-binding: { {n[:12]: sole[n] for n in checks} }")
     print(f"     required-for-coverage: { {n[:12]: needed[n] for n in checks} }")
     chk("T19b no check is dead weight", not dead, f"{dead or 'none'}")
+    # ★T26: each registered stop, exercised one axis at a time from an
+    # otherwise-clean world.  The oracle is a declaration of what the DESIGN
+    # registered, not a re-derivation of the rule -- which is what makes it
+    # survive a both-copies specification edit.  See REGISTERED_STOPS for how
+    # far that goes and exactly where it stops.
+    print("  -- T26 meta (every registered stop fires on its own) --")
+    for kwargs, want in REGISTERED_STOPS:
+        got = score(World(**kwargs))[0]
+        chk(f"T26 {sorted(kwargs.items())[:2]} -> {want}", got == want,
+            f"got {got}")
+
     # ★T25: a NECESSARY-CONDITION check (E) constrains worlds that DO carry a
     # label; it is structurally blind to a label that stopped appearing.  The
     # first run of this suite showed that directly -- E was named on nine

@@ -65,7 +65,14 @@ Q3_MEASUREMENT_LABELS = {Q3_BOOT, Q3_TRUNC, Q3_NOTEL, Q3_NOSTICKY, Q3_UNSPLIT,
 Q3_NOLAUNCH = "Q3_LAUNCH_ROWS_ABSENT"        # `zero`: nothing to count
 Q3_IMPURE   = "Q3_LAUNCH_POPULATION_IMPURE"  # `more`: the denominator is wrong
 Q3_EAGER    = "Q3_EAGER_FALLBACK"            # the boot replayed nothing
-Q3_TOOLLIMIT_LABELS = {Q3_NOLAUNCH, Q3_IMPURE, Q3_EAGER}
+# ★NEW (re-audit P12): `fewer` is the exact mirror of `more`.  If MORE rows than
+# steps means the denominator is wrong, FEWER means the numerator is short --
+# some decode steps produced no graph launch (a partial eager fallback for
+# uncaptured batch sizes, or rows lost in the trace).  Both are facts about the
+# measurement.  What is left in SUBSTANTIVE is `partition == "overlap"`, which
+# really is an answer about separability.
+Q3_SHORTLAUNCH = "Q3_LAUNCH_ROWS_SHORT"
+Q3_TOOLLIMIT_LABELS = {Q3_NOLAUNCH, Q3_IMPURE, Q3_EAGER, Q3_SHORTLAUNCH}
 
 # --- Q3 tier 3: SUBSTANTIVE --------------------------------------------------
 Q3_STREAMAMB = "Q3_STREAM_AMBIGUOUS"
@@ -221,11 +228,13 @@ def q3_score(w, guards=frozenset()):
         return Q3_NOLAUNCH
     if on("g_impure") and w.launches == "more":
         return Q3_IMPURE
+    if on("g_shortlaunch") and w.launches == "fewer":
+        return Q3_SHORTLAUNCH
 
     # ---- tier 3: SUBSTANTIVE ------------------------------------------------
     if on("g_stream") and w.stream_single != "yes":
         return Q3_STREAMAMB
-    if on("g_nosep") and (w.launches == "fewer" or w.partition == "overlap"):
+    if on("g_nosep") and w.partition == "overlap":
         return Q3_NOSEP
     if on("g_partial") and w.partition == "orphans":
         return Q3_PARTIAL
@@ -257,7 +266,8 @@ Q3_AXES = dict(
 )
 Q3_MUTANTS = ["g_boot", "g_trunc", "g_tel", "g_realized", "g_expambig",
               "g_zero", "g_span", "g_nmin_value", "g_leg", "g_eager",
-              "g_nolaunch", "g_impure", "g_stream", "g_nosep", "g_partial",
+              "g_nolaunch", "g_impure", "g_shortlaunch", "g_stream", "g_nosep",
+              "g_partial",
               "g_disjoint", "g_order_span_last", "g_role_confused"]
 
 # ★which guard is registered as producing which label.  T25 uses this: a
@@ -267,7 +277,8 @@ Q3_GUARD_LABEL = {
     "g_boot": Q3_BOOT, "g_trunc": Q3_TRUNC, "g_tel": Q3_NOTEL,
     "g_expambig": Q3_EXPAMBIG, "g_zero": Q3_ZEROCH, "g_span": Q3_SHORT,
     "g_leg": Q3_NOLEG, "g_eager": Q3_EAGER, "g_nolaunch": Q3_NOLAUNCH,
-    "g_impure": Q3_IMPURE, "g_nosep": Q3_NOSEP, "g_partial": Q3_PARTIAL,
+    "g_impure": Q3_IMPURE, "g_shortlaunch": Q3_SHORTLAUNCH,
+    "g_nosep": Q3_NOSEP, "g_partial": Q3_PARTIAL,
 }
 
 
@@ -307,6 +318,7 @@ REGISTERED_STOPS = (
     ("B_S", "eager", "yes", Q3_EAGER),                        # ★B2
     ("B_S", "launches", "zero", Q3_NOLAUNCH),                 # ★B2
     ("B_S", "launches", "more", Q3_IMPURE),                   # ★B2
+    ("B_S", "launches", "fewer", Q3_SHORTLAUNCH),             # ★P12
 )
 
 
@@ -327,7 +339,7 @@ def _q3_plumbing_dirty(w):
 
 
 def _q3_toollimited(w):
-    return w.eager == "yes" or w.launches in ("zero", "more")
+    return w.eager == "yes" or w.launches in ("zero", "more", "fewer")
 
 
 def _q3_checks():
@@ -367,13 +379,15 @@ def _q3_checks():
         if l == Q3_PARTIAL:
             return w.partition == "orphans"
         if l == Q3_NOSEP:
-            return w.launches == "fewer" or w.partition == "overlap"
+            return w.partition == "overlap"
         if l == Q3_STREAMAMB:
             return w.stream_single != "yes" or w.stream_disjoint != "yes"
         if l == Q3_IMPURE:
             return w.launches == "more"
         if l == Q3_NOLAUNCH:
             return w.launches == "zero"
+        if l == Q3_SHORTLAUNCH:
+            return w.launches == "fewer"
         if l == Q3_EAGER:
             return w.eager == "yes"
         return True
@@ -399,7 +413,8 @@ def _q3_checks():
     return {
         "Q3-A tier discipline (plumbing/tool => that tier)": (c_tiers, {
             "g_boot", "g_trunc", "g_tel", "g_realized", "g_expambig", "g_span",
-            "g_leg", "g_nmin_value", "g_eager", "g_nolaunch", "g_impure"}),
+            "g_leg", "g_nmin_value", "g_eager", "g_nolaunch", "g_impure",
+            "g_shortlaunch"}),
         "Q3-B every substantive label has a witness": (c_witness, {
             "g_stream", "g_disjoint"}),
         "Q3-C SPAN_TOO_SHORT iff 0 < steps < 64 (literal)": (c_threshold, {

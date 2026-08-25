@@ -169,13 +169,40 @@ def relocate(path, anchor, chunk_len):
     return [i + 1 for i, l in enumerate(lines) if l.strip() == anchor]
 
 
+BARE = re.compile(r"`:(\d+)(?:-(\d+))?`")
+# ★A citation followed by [HIST] deliberately quotes an OLDER tree -- "the audit
+# wrote :155, the current tree says :228".  Checking it against HEAD would
+# report a drift that is the whole point of the sentence.  The marker is
+# explicit so that skipping is a declared act, not a silent exemption.
+HIST = "[HIST]"
+
+
 def citations_in(doc):
+    """Both `path.py:12` and the bare `:12` shorthand these documents use.
+
+    ★The bare form is 12 of the 21 citations in the A1 design and it is where
+    the one surviving stale number lived, so a scanner that only sees the full
+    form reports OK on a document whose worst citation it never looked at.
+    A bare citation inherits the last full-form file named before it -- which
+    is exactly how a reader resolves it.
+    """
     with open(doc, "r", errors="replace") as fh:
         text = fh.read()
     out = []
-    for m in CITE.finditer(text):
-        cited, a, b = m.group(1), int(m.group(2)), int(m.group(3) or m.group(2))
+    events = [(m.start(), "full", m) for m in CITE.finditer(text)]
+    events += [(m.start(), "bare", m) for m in BARE.finditer(text)]
+    current = None
+    for _pos, kind, m in sorted(events, key=lambda e: e[0]):
+        if kind == "full":
+            cited, a, b = m.group(1), int(m.group(2)), int(m.group(3) or m.group(2))
+            current = cited
+        else:
+            if current is None:
+                continue
+            cited, a, b = current, int(m.group(1)), int(m.group(2) or m.group(1))
         if cited.endswith(SKIP_TARGET_EXT) or b < a:
+            continue
+        if text[m.end():m.end() + 40].lstrip().startswith(HIST):
             continue
         out.append((cited, a, b))
     # de-duplicate, keep order
@@ -201,7 +228,7 @@ def save_manifest(man):
     os.replace(tmp, MANIFEST)
 
 
-def process(docs, snapshot, man):
+def process(docs, snapshot, man, force=False):
     violations, recorded, checked = [], 0, 0
     for doc in docs:
         rel = os.path.relpath(os.path.abspath(doc), TRACK_ROOT)
@@ -222,6 +249,25 @@ def process(docs, snapshot, man):
                 continue
             sha, anchor, offset = fingerprint(chunk)
             if snapshot:
+                prev = entries.get(key)
+                if prev is not None and prev["sha"] != sha and not force:
+                    # ★THE LIMIT THIS TOOL DECLARES, FIRING.  A re-snapshot of
+                    # an edited file silently rebased every citation into it --
+                    # which is exactly how `a1_q3k1_rule.py:83` kept saying
+                    # `N_MIN_DECODE_STEPS` after the constant moved to :98,
+                    # while --check reported OK.  The tool certified a false
+                    # citation because I re-baselined instead of re-checking.
+                    # Overwriting a CHANGED baseline is now an explicit act.
+                    moved = relocate(path, prev["anchor"], b - a + 1)
+                    off0 = prev.get("anchor_offset", 0)
+                    hint = (f"  -> cite `{cited}:{moved[0] - off0}`"
+                            if len(moved) == 1 else "")
+                    violations.append(
+                        f"{rel}  {key}  REBASE-REFUSED  the baseline changed "
+                        f"({prev['sha']} -> {sha}); fix the citation, or pass "
+                        f"--force to re-baseline deliberately{hint}\n"
+                        f"      anchor was: {prev['anchor'][:80]}")
+                    continue
                 entries[key] = {"sha": sha, "anchor": anchor,
                                 "anchor_offset": offset,
                                 "target": os.path.relpath(path, WORKSPACE_ROOT)}
@@ -255,6 +301,9 @@ def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("--snapshot", action="store_true")
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--force", action="store_true",
+                    help="with --snapshot: re-baseline citations whose content "
+                         "changed.  Without it, a changed baseline is REFUSED.")
     ap.add_argument("--all", action="store_true",
                     help="with --check: every document already in the manifest")
     ap.add_argument("docs", nargs="*")
@@ -272,7 +321,7 @@ def main(argv):
         print("no documents given", file=sys.stderr)
         return 2
 
-    violations, recorded, checked = process(docs, args.snapshot, man)
+    violations, recorded, checked = process(docs, args.snapshot, man, args.force)
     if args.snapshot:
         save_manifest(man)
         print(f"--- snapshotted {recorded} citation(s) in {len(docs)} doc(s)")
