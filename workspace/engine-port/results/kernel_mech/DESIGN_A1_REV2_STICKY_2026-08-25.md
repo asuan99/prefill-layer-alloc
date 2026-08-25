@@ -84,15 +84,36 @@ to protect … holding it would strand D SM"*). batch-synchronous는 라운드 �
 **한 부팅 = 한 nsys 리포트 = 한 다리.** 리포트 사이에서는 **`streamId`·`greenContextId` 같은
 리포트 로컬 식별자를 비교하지 않는다**(死因 A1). 부팅 간에 비교하는 것은 **수와 구조**뿐이다.
 
-| 부팅 | sticky | cudagraph | `D` | 실현되는 다리 | 역할 |
-|---|---|---|---|---|---|
-| **B-U** | **OFF** | ON | (해당 없음) | **E-L1** + **E-L2** | 양성대조(nsys가 엔진을 보는가) + ★**기대 노드 수 정의**(green 무관, decode는 plain 그룹 108 SM) |
-| **B-S16** | **ON** | ON | **16** | **E-L4** | ★**본 조건** — 런 전체가 green division 위 graph replay |
-| **B-S92** | **ON** | ON | **92** | **E-L4′** | 두 번째 점 — `green_sm`이 **`D`를 따라가는가**(green ctx의 존재와 **크기**를 가른다) |
-| **B-G** | **ON** | **OFF** | **16** | **E-L3** | green **eager** 가시성 — 그래프 없이 green 위 엔진 커널이 보이는가 |
+| 부팅 | sticky | cudagraph | **nsys** | `D` | 실현되는 다리 | 역할 |
+|---|---|---|---|---|---|---|
+| **B-U** | **OFF** | ON | **ON** | (해당 없음) | **E-L1** + **E-L2** | 양성대조 + ★**기대 노드 수 정의**(green 무관, decode는 plain 그룹 108 SM) |
+| **B-S16** | **ON** | ON | **ON** | **16** | **E-L4** | ★**본 조건** — 런 전체가 green division 위 graph replay |
+| **B-G** | **ON** | **OFF** | **ON** | **16** | **E-L3** | green **eager** 가시성 |
+| ★**B-S16′** | **ON** | ON | ★**OFF** | **16** | — | ★**K1의 OFF 레그**(B7) + `PDMUX_GREEN_READOUT` 첫 실행 + §2.3 스모크 |
+| ★**B-D92** | **ON** | ON | ★**OFF** | **92** | — | ★`green_sm`이 **`D`를 따라가는가**(B8) — **드라이버 배너만** 필요하므로 프로파일링 불요 |
 
 - **B-U ↔ B-S16의 차이는 환경변수 `PDMUX_STICKY_PARTITION` 한 개**다(설정·워크로드·모델·config 동일).
   ★선례: F2 양성대조(job 891612)가 *"replay 유무 **한 단계만** 다른 두 레그"* 로 C4를 닫은 형태와 같다.
+- ★**B-S16 ↔ B-S16′의 차이도 한 단계다 — `nsys` 유무**. 그것이 **K1의 정의**(`pair="matched"`)다.
+
+### 2.2a ★ 매트릭스 재작성 (rev2 감사 B7·B8 이행)
+
+초판은 **전 부팅이 nsys-ON**이었고 `D=92` 점을 **프로파일된 부팅**으로 뒀다. 두 결함이 있었다:
+
+| 감사 | 초판의 문제 | 수리 |
+|---|---|---|
+| **B7** | nsys-OFF 부팅이 없어 K1의 `pair`가 성립 불가 ⇒ **구조적으로 `K1_UNMEASURED`**. 규칙 288 세계를 만들어 놓고 **먹일 실험이 없었다** | ★**B-S16′**(nsys-OFF 쌍둥이) 신설 |
+| **B8** | **B-U ↔ B-S92가 두 가지**(sticky + config)가 달랐다. `d92`는 `pdmux_e1_d92.yml`(`sm_group_num: 4`, guard-satisfier 행)이고 **d92용 B-U가 없었다** | ★**B-S92를 프로파일 매트릭스에서 제외**하고 `D` 두 번째 점을 **B-D92**(nsys 없음)로 이관 |
+
+★**B8 수리의 근거**: `D=92` 점이 답하려던 것은 *"`green_sm`이 `D`를 따라가는가"* 하나였고,
+그 질문의 채널은 **드라이버 배너**(§3.1 `PDMUX_GREEN_READOUT`)이지 **nsys가 아니다**.
+⇒ 프로파일할 이유가 없고, 프로파일하지 않으면 **비교 confound도 사라진다**(nsys 매트릭스 안에서
+`d92`와 `d16`을 나란히 두지 않으므로). 감사가 제시한 두 선택지 중 *"B-S92를 이번 제출에서 제외"* 를
+택하되, **그것이 사려던 것은 더 싸게 산다**.
+
+★**부수 효과 — 스모크가 K1의 OFF 레그와 같은 부팅이다.** §2.3이 사야 할 셋(워크로드에서의 realized ·
+채널 비영 · green readout 첫 실행)은 전부 **nsys 없이** 확인되고, 그것이 정확히 B-S16′다.
+⇒ **스모크를 따로 사지 않는다. B-S16′가 스모크다.**
 - **B-G는 부팅 플래그가 두 개 다르다**(sticky ON + cudagraph OFF). E-L3는 **부팅 간 `streamId` 비교에
   쓰이지 않으며**, 답하는 질문은 *"green 스트림 위 엔진 커널이 nsys에 나타나는가"* 하나로 **축소**된다.
   rev1이 E-L3에 걸었던 `stream="match"` 역할은 **폐기**한다(死因 A1).
@@ -122,8 +143,8 @@ sticky ON에서는 *"마지막 분할 창 **이후**"* 라는 구간이 **존재
 | 서버 args | `s2_sticky/s2_sticky.sbatch:163-171` **축자 승계**(model·config 경로만 교체) | ★sticky가 **실제로 부팅한** 유일한 레시피 |
 | 프로파일러 | `nsys profile --cuda-graph-trace=node` | rev8 §8 P3a · A0 승계 |
 | telemetry | `PDMUX_TELEMETRY_PATH` 부팅마다 별도 · `PDMUX_RUN_ID`·`PDMUX_WORKLOAD_ID` 등록 | §5의 결정 채널 |
-| 부팅 수 | **4** + ★**스모크 1**(§2.3) | |
-| 등록가 | ★**벽시계 상한 2.0 GPU-hr** · 예상 0.5–0.8 | ★**예상은 약속이 아니다** — nsys 오버헤드(K1)가 **미측정**이므로 상한만 구속력을 갖는다 |
+| 부팅 수 | **5**(프로파일 3 + nsys-OFF 2). ★**스모크는 별도가 아니다** — B-S16′가 스모크다(§2.2a) | |
+| 등록가 | ★**벽시계 상한 2.5 GPU-hr** · 예상 0.6–1.0 | 부팅 **5**(프로파일 3 + 비프로파일 2). ★**예상은 약속이 아니다** — nsys 오버헤드가 미측정이라 상한만 구속력을 갖는다. ★다만 이제 **K1이 그 오버헤드를 측정한다** ⇒ 다음 판본은 예상을 **실측으로 교체**할 수 있다 |
 | 반복 | **동일 셀 반복 미구매** | 구조적 예·아니오 질문이고 B-S16/B-S92가 2점 정합 검사 역할. ★**단일 부팅의 이상은 판정이 아니라 재실행 사유**로 등록 |
 
 ### 2.3 ★ 선행 스모크 1회 (게이트 #25 — 대형 제출 전 배관 스모크)
@@ -139,11 +160,15 @@ sticky ON에서는 *"마지막 분할 창 **이후**"* 라는 구간이 **존재
 ⇒ **아직 안 산 것은 둘뿐이다** — ★**batch-synchronous `NP=CONC=16` 워크로드**에서의 같은 확인과,
 ★**Q3 채널 비영**. 스모크는 **그 둘만** 산다:
 
-> `Ha8` + `pdmux_e1_d16.yml` + `PDMUX_STICKY_PARTITION=1` + ★**batch-synchronous `NP=CONC=16`**로
-> **1 부팅**만 띄워 (a) `E1_DECODE_REALIZED(16) ≥ 0.99`가 **이 워크로드에서도** 성립하는지,
-> (b) **절차 3의 Q3 채널(`decode_iterations`)이 비영**인지, (c) ★**`PDMUX_GREEN_READOUT=1`의 첫 부팅
-> 실행**(현재 부팅 실행 **0회**)을 확인한다. 셋 중 하나라도 실패하면 **부팅 매트릭스를 제출하지 않는다.**
-> ★`boot_ok`·sticky 로그·correctness·realized는 **job 872800이 이미 샀다** — 재구매하지 않는다.
+> ★**그 부팅이 `B-S16′`다**(§2.2a) — 별도 스모크를 사지 않는다.
+> `Ha8` + `pdmux_e1_d16.yml` + `PDMUX_STICKY_PARTITION=1` + `PDMUX_R2_POLICY=fixed` +
+> `PDMUX_GREEN_READOUT=1` + ★**batch-synchronous `NP=CONC=16`**, **nsys 없이** 띄워
+> (a) `E1_DECODE_REALIZED(16) ≥ 0.99`가 **이 워크로드에서도** 성립하는지,
+> (b) **Q3 채널(`decode_iterations`)이 비영**인지,
+> (c) ★**`PDMUX_GREEN_READOUT=1`의 첫 부팅 실행**(현재 부팅 실행 **0회**)을 확인한다.
+> 셋 중 하나라도 실패하면 **프로파일 부팅 3개를 제출하지 않는다.**
+> ★`boot_ok`·sticky 로그·correctness·realized(ShareGPT)는 **job 872800이 이미 샀다** — 재구매하지 않는다.
+> ★그리고 이 부팅은 버려지지 않는다 — **K1의 OFF 레그로 그대로 쓰인다.**
 
 ★(d)를 여기에 묶는 이유: 런킬러 B1이 정확히 *"결정량이 죽은 필드 위에 있다"* 였고,
 교훈 #77(*"가장 비싼 지출은 GPU가 아니라 안 산 프로브"*)이 지목하는 최소비용 선결 프로브가 이것이다.
@@ -299,10 +324,11 @@ rev1 §5는 *"워크로드는 분할 창을 의도적으로 만들도록 고른�
   `cuda_graph_runner.capture`가 stream index마다 **같은 모델·같은 bs**로 캡처한다는 코드 사실에
   기대며, **실측된 적이 없다**. `EXPECTATION_AMBIGUOUS`(5)는 B-U **안의** 이봉성만 잡고
   **B-U↔B-S 사이의 구조 차이는 못 잡는다.** ⇒ 절차 4의 규칙이 이 축을 별도로 열어야 한다.
-- **K1** 규칙은 절차 5에서 갱신됐다(구간 4개·`pair`·`channel`·`clipped`). ★**그러나 그것을 먹일
-  실험이 §2.2에 없다** — 전 부팅이 nsys-ON이므로 `pair`(nsys ON/OFF)가 성립하지 않아 **구조적으로
-  `K1_UNMEASURED`** 다(rev2 감사 B7). ⇒ **nsys-OFF 부팅을 추가하거나 K1을 이번 제출 범위 밖으로
-  명시 등록**해야 한다. **미해결.**
+- **K1** 규칙은 절차 5에서 갱신됐고(구간 4개·`pair`·`channel`·`clipped`), ★**B7은 §2.2a에서
+  해소됐다** — **B-S16′**(nsys-OFF 쌍둥이)가 `pair="matched"`를 만든다. K1의 PRIMARY 채널
+  (per-step wall time = duration / Δ`decode_iterations`)은 **두 레그 모두 nsys와 무관**하게 나온다.
+  ★**남는 위험**: `clipped`(ITL 샘플러의 `(0, max(3×EMA, 90ms))` 밴드)는 secondary에만 걸리므로
+  PRIMARY 판정에는 안 걸리나, **`clipped="suspect"`면 ITL secondary를 인용할 수 없다**(규칙 밖 강제).
 
 ---
 
@@ -315,6 +341,7 @@ rev1 §5는 *"워크로드는 분할 창을 의도적으로 만들도록 고른�
 | 4 | Q3 규칙 **rev2** | ★**완료** — `a1/a1_q3k1_rule.py`(`RULE_REV=2`), Q3 **34,560 세계**·라벨 11개 전부 도달·mutant 12개 전부 load-bearing·검사 **3개**(§6.2). `N_MIN_DECODE_STEPS`는 **정수 축과 비교**되고 `g_nmin_value`(64→5)가 라벨을 바꾼다 ⇒ **C1의 死코드 재발 없음**. `export="partial"`·`dropped_events`·`halves`는 **측정조건**으로 분리(C5·D8), `launches="more"` 의미 등록(D7) |
 | 5 | K1 **rev2** | ★**완료** — 구간 **4개**(1.10 / 2.00 / 10.00, 뒤 둘은 **[임의]** 표시) · **부팅쌍 축**(`pair`) · **채널 축**(`channel`) · **클리핑 축**(`clipped`) · K1 **288 세계** |
 | 6 | **D1·D3 정정** | ★**완료** — §6.1 |
+| 5′ | **부팅 매트릭스 수정**(rev2 감사 권고 5) | ★**완료** — §2.2a. B7(K1의 nsys-OFF 레그 부재)·B8(B-S92의 이중 변경) **둘 다 해소**, 부팅 5개, 스모크가 K1 OFF 레그와 동일 부팅 |
 | 7 | 규칙층 **재감사** | ★**실행됨 → `NO-GO`**(`audit_a1_rev2_rules_2026-08-25/VERDICT.md`). **②로 못 간다.** 남은 필수: **A0 규칙 rev5**(부팅 분리 세계모형·`role` 축·`consistent()`·`l2_post`→`halves`) + **Q3 규칙 rev3**(`TOOLLIMIT` 계층·`disjoint` 축·전사 아닌 검사) + 부팅 매트릭스 수정(d92용 B-U 또는 B-S92 제외 · nsys-OFF 부팅 또는 K1 범위 밖 등록) → **규칙층 감사 1회 더** |
 
 ### 6.1 ★ D1·D3 정정 (절차 6)
