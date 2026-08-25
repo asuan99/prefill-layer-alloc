@@ -1,0 +1,117 @@
+{
+ "analyzer_sha256": "ea6922ee461f65a631cab51365eec79a3621e87de6cedc131d0d37672a4712e1",
+ "compute_capability": [
+  8,
+  0
+ ],
+ "device_name": "NVIDIA A100-SXM4-80GB",
+ "divisions_from_divide_sm": [
+  [
+   74,
+   34
+  ],
+  [
+   54,
+   54
+  ]
+ ],
+ "driver_readout": {
+  "cuCtxGetCurrent_rc": 0,
+  "cuCtxGetDevResource_rc": 0,
+  "note": "DESCRIPTIVE / TARGET LAYER ONLY -- never an input to a verdict",
+  "primary_sm": {
+   "minSmPartitionSize": 4,
+   "smCoscheduledAlignment": 2,
+   "smCount": 108
+  },
+  "streams": {
+   "green_decode": {
+    "green_ctx_is_null": false,
+    "rc": 0
+   },
+   "plain": {
+    "green_ctx_is_null": true,
+    "rc": 0
+   }
+  }
+ },
+ "git_head": "c8665ac6e9820eb23059fe35d0985a84f47c6bb2",
+ "granularity": "node",
+ "green_create": "ok",
+ "green_readout": {
+  "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+  "cuGreenCtxGetDevResource_rc": 0,
+  "cuStreamGetGreenCtx_rc": 0,
+  "green_ctx_is_null": false,
+  "green_sm": {
+   "minSmPartitionSize": 2,
+   "smCoscheduledAlignment": 2,
+   "smCount": 34
+  }
+ },
+ "green_stream_ptr": 94799043312704,
+ "green_target": {
+  "decode_sm": 34,
+  "prefill_sm": 74
+ },
+ "grid": 34,
+ "host": "gpu40",
+ "kind": "stage0ppp_a0_raw",
+ "legs": {
+  "L1": {
+   "kernel": "a0_l1_eager_full",
+   "launches": 20,
+   "wall_ns": 1264242141
+  },
+  "L2": {
+   "L2_capture": "ok",
+   "L2_nodes_per_graph": 5,
+   "L2_replays": 20,
+   "L2_wall_ns": 12220501,
+   "kernel": "a0_l2_graph_full"
+  },
+  "L2p": {
+   "L2p_capture": "ok",
+   "L2p_nodes_per_graph": 5,
+   "L2p_replays": 20,
+   "L2p_wall_ns": 12212957,
+   "kernel": "a0_l2p_graph_full",
+   "position": "after_L4"
+  },
+  "L3": {
+   "kernel": "a0_l3_eager_green",
+   "launches": 20,
+   "wall_ns": 154871709
+  },
+  "L4": {
+   "L4_capture": "ok",
+   "L4_nodes_per_graph": 5,
+   "L4_replays": 20,
+   "L4_wall_ns": 11614019,
+   "kernel": "a0_l4_graph_green"
+  }
+ },
+ "permissions": {
+  "nvidia_params": "absent",
+  "perf_event_paranoid": "2"
+ },
+ "plain_stream_ptr": 94799027036112,
+ "probe_sha256": "90ddb2f62297cb8115fbe6e9230fa6b55f06c7d12ba2ae154d98007987900eec",
+ "replays": 20,
+ "rule_sha256": "583c4ab08a1f2194d63178ac1dab40aa9625e601bc0f72d6ee516d8219082652",
+ "sha256_unmanifested": {
+  "pdmux_context.py": "b4e6ff1aa10a19f9cdd285088424b9388574fd291edfd466e155cbaa8e876b9e",
+  "spatial.py": "687898eefeb3b267ce9c0476b2877b72ff7fa8308d9cbe369294fe9893686aa3"
+ },
+ "slurm_job_id": "892556",
+ "spin_ns": 120000,
+ "tag": "smoke-892556",
+ "torch": "2.9.1+cu130",
+ "total_sm_reported": 108,
+ "utc": "2026-08-25T02:07:50Z",
+ "versions": {
+  "nsys": "NVIDIA Nsight Systems version 2025.3.2.474-253236389321v0",
+  "nvidia_smi": "NVIDIA A100-SXM4-80GB, 580.105.08, Enabled"
+ },
+ "warmups": 3
+}

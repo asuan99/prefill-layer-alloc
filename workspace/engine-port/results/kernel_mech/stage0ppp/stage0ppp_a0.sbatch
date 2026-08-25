@@ -89,7 +89,14 @@ run_leg () {                      # $1 = node|graph   $2 = granularity argument
   nsys export --type sqlite --force-overwrite true \
        -o "$D/a0_${G}_${J}.sqlite" "$D/a0_${G}_${J}.nsys-rep" || return 32
   # sec5/N6: the export axis is judged by nsys' own loss warnings
-  nsys stats --report cuda_gpu_kern_sum "$D/a0_${G}_${J}.nsys-rep" \
+  # --force-export=true: `nsys export` has already written the .sqlite, and
+  # `nsys stats` refuses a pre-existing export that is older than the .nsys-rep
+  # ("Use --force-export=true").  Job 892554 hit exactly that: the trace was
+  # perfect on every axis and the run still scored TRACE_TRUNCATED, because the
+  # adapter correctly treats a failed `nsys stats` as an unknown export state
+  # rather than as "no warnings" (harness audit B10).  That is gate #21 working
+  # -- a harness ordering bug became a MEASUREMENT condition, not a verdict.
+  nsys stats --force-export=true --report cuda_gpu_kern_sum "$D/a0_${G}_${J}.nsys-rep" \
        > "$D/a0_stats_${G}_${J}.txt" 2>&1
   echo $? > "$D/a0_statsrc_${G}_${J}.txt"    # B10: stats failure != "no warnings"
   grep -iE "dropped|lost|truncat|incomplete" "$D/a0_stats_${G}_${J}.txt" \

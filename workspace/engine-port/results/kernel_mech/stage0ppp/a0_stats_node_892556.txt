@@ -1,0 +1,14 @@
+Generating SQLite file /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/kernel_mech/stage0ppp/a0_node_892556.sqlite from /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/kernel_mech/stage0ppp/a0_node_892556.nsys-rep
+Processing [/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/kernel_mech/stage0ppp/a0_node_892556.sqlite] with [/apps/cuda/13.0.2/nsight-systems-2025.3.2/host-linux-x64/reports/cuda_gpu_kern_sum.py]... 
+
+ ** CUDA GPU Kernel Summary (cuda_gpu_kern_sum):
+
+ Time (%)  Total Time (ns)  Instances  Avg (ns)  Med (ns)  Min (ns)  Max (ns)  StdDev (ns)                                                  Name                                                
+ --------  ---------------  ---------  --------  --------  --------  --------  -----------  ----------------------------------------------------------------------------------------------------
+     29.5         12522905        103  121581.6  121567.0    121535    121919         50.6  a0_l2p_graph_full                                                                                   
+     29.5         12522528        103  121577.9  121567.0    121535    121919         52.9  a0_l2_graph_full                                                                                    
+     29.5         12520482        103  121558.1  121536.0    121503    122079         78.8  a0_l4_graph_green                                                                                   
+      5.7          2435566         20  121778.3  121759.0    121759    121919         44.5  a0_l1_eager_full                                                                                    
+      5.7          2435502         20  121775.1  121759.0    121727    122047         70.0  a0_l3_eager_green                                                                                   
+      0.0            13408          7    1915.4    1760.0      1664      2560        326.6  void at::native::vectorized_elementwise_kernel<(int)2, at::native::FillFunctor<long>, std::array<ch…
+
