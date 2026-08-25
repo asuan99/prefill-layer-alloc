@@ -1,10 +1,16 @@
 {
  "results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md": {
   "a1/a1_q3k1_rule.py:83-83": {
-   "anchor": "N_MIN_DECODE_STEPS = 64",
+   "anchor": "K1_PAIRBAD  = \"K1_PAIR_INVALID\"",
    "anchor_offset": 0,
-   "sha": "32ef13e3784741b5",
+   "sha": "09256fefeb7d812f",
    "target": "prefill-layer-alloc/workspace/engine-port/results/kernel_mech/a1/a1_q3k1_rule.py"
+  },
+  "cuda_graph_runner.py:806-816": {
+   "anchor": "with graph_capture() as graph_capture_context, profile_context as prof:",
+   "anchor_offset": 1,
+   "sha": "a32b79efa6dde3d9",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
   },
   "multiplexing_mixin.py:542-542": {
    "anchor": "self.dual_worker_trace_count += 1",
@@ -71,6 +77,12 @@
  },
  "results/kernel_mech/a1/a1_primary_rule.py": {},
  "results/kernel_mech/a1/a1_q3k1_rule.py": {
+  "cuda_graph_runner.py:806-816": {
+   "anchor": "with graph_capture() as graph_capture_context, profile_context as prof:",
+   "anchor_offset": 1,
+   "sha": "a32b79efa6dde3d9",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
+  },
   "dual_worker.py:121-121": {
    "anchor": "self.snapshot.last_tpot_ms = max(",
    "anchor_offset": 0,
@@ -88,6 +100,12 @@
    "anchor_offset": 2,
    "sha": "cc83c0975aa44004",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "src/multiplex/multiplexing_mixin.py:395-400": {
+   "anchor": "itl_slo_ms=float(os.environ.get(\"PDMUX_TPOT_SLO_MS\", \"60\")),",
+   "anchor_offset": 4,
+   "sha": "dacc821458d45ed0",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/multiplexing_mixin.py"
   }
  },
  "results/nsl_lever/DESIGN_NSL_STEP2_ADMISSION_SITES_2026-08-25.md": {
