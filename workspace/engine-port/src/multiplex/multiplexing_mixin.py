@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import atexit
+import json
 import time
 from contextlib import contextmanager
 from dataclasses import asdict
@@ -33,6 +34,7 @@ from sglang.srt.multiplex.pdmux_context import (
     load_pdmux_config,
     set_current_stream_idx,
 )
+from sglang.srt.multiplex.green_readout import maybe_read_green_contexts
 from sglang.srt.multiplex.dual_worker import (
     DualWorkerState,
     ExecutionContext,
@@ -120,6 +122,7 @@ class SchedulerMultiplexMixin:
         self.r2_policy = self._build_r2_policy(self.r2_policy_name)
         self.r2_admission_limited = False
         self._init_sticky_partition()
+        self._maybe_emit_green_readout()
         logger.info(
             f"PD-Multiplexing enabled with {self.real_sm_group_num} stream groups, sm_counts (prefill_sm, decode_sm): {self.sm_counts}"
         )
@@ -202,6 +205,44 @@ class SchedulerMultiplexMixin:
         raise RuntimeError(
             f"unsupported PDMUX_R2_POLICY={name!r}; use fixed, generic or hybrid"
         )
+
+    # ------------------------------------------------------------------
+    # PDMUX_GREEN_READOUT (default OFF)
+    # ------------------------------------------------------------------
+    # A1 rev2 (DESIGN_A1_REV2_STICKY_2026-08-25.md sec 3.1) registers the
+    # `green` axis' decision channel: the driver, asked INSIDE this process,
+    # what green context each stream group's streams are attached to and how
+    # many SM that context holds.  nsys is deliberately not consulted (that
+    # would make the axis circular with Q2ae) and `realizedprobe` is not an
+    # answer (separate process, after the server is dead -- the Stage 0 D108
+    # failure mode).
+    #
+    # DEFAULT-OFF GUARANTEE.  Without PDMUX_GREEN_READOUT the helper returns
+    # None before touching ctypes and this method emits nothing, so a run with
+    # the flag unset is unchanged.  Nothing here feeds scheduling, partition
+    # selection, batching or admission: it is a one-shot startup observation.
+    def _maybe_emit_green_readout(self: Scheduler) -> None:
+        try:
+            readout = maybe_read_green_contexts(
+                self.stream_groups,
+                self.sm_counts,
+                sticky_idx=getattr(self, "_sticky_fixed_idx", None),
+            )
+        except Exception as exc:  # noqa: BLE001 - an observation must never
+            logger.warning("green read-out failed: %s", exc)  # kill a boot
+            return
+        if readout is None:
+            return
+        self._green_readout = readout
+        logger.info("PD-mux green read-out: %s", readout)
+        path = os.environ.get("PDMUX_GREEN_READOUT_PATH", "")
+        if not path:
+            return
+        try:
+            with open(path, "w") as handle:
+                json.dump(readout, handle, indent=2, sort_keys=True)
+        except (OSError, TypeError, ValueError) as exc:
+            logger.warning("green read-out not written to %s: %s", path, exc)
 
     # ------------------------------------------------------------------
     # PDMUX_STICKY_PARTITION (default OFF)

@@ -48,7 +48,8 @@ for source in \
   "${track_root}/src/multiplex/profile.py" \
   "${track_root}/src/multiplex/controller.py" \
   "${track_root}/src/multiplex/telemetry.py" \
-  "${track_root}/src/multiplex/holb_probe.py"; do
+  "${track_root}/src/multiplex/holb_probe.py" \
+  "${track_root}/src/multiplex/green_readout.py"; do
   target="${runtime_python}/sglang/srt/multiplex/$(basename "${source}")"
   install -D -m 0644 "${source}" "${target}"
 done
@@ -104,6 +105,7 @@ sha256sum \
   "${runtime_python}/sglang/srt/multiplex/controller.py" \
   "${runtime_python}/sglang/srt/multiplex/telemetry.py" \
   "${runtime_python}/sglang/srt/multiplex/holb_probe.py" \
+  "${runtime_python}/sglang/srt/multiplex/green_readout.py" \
   "${runtime_python}/sglang/srt/managers/scheduler.py" \
   "${runtime_python}/sglang/srt/configs/mamba2.py" \
   "${runtime_python}/sglang/srt/models/mamba2.py" \
