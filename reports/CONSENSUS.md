@@ -4,7 +4,59 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-25 rev48 (doc-steward — ★★★**kernel_mech Stage 0‴ A0
+최종 갱신: 2026-08-26 rev49 (doc-steward — ★★★**kernel_mech A1(엔진
+기판) sticky 재설계(rev2) 규칙층 감사 **3회, 전부 `NO-GO`**(1·3
+회차 死因 없음·차단만, ★2회차 판정서는 파일로 저장되지 않음) +
+★A1 스모크 **job 893663**(GPU ≈0.014 GPU-hr, 채점 판정 0건·세
+항목 PASS, ★n=1) + NSL **③②E-B 묶음**이 그 트랙 첫 규칙층 감사를
+받아 `NO-GO`(★死因 4건) + 규율 도구 2종 신설(`check_line_
+citations.py`·`check_doc_facts.py`) + 신규 방법론 교훈 5건
+등재(§3 항목96–100, 항목35·93에 짧은 追記). 이 세션 GPU 지출 =
+**0.014 GPU-hr(job 893663)뿐** · 새 성능 판정 0건 · HE0·정책
+순위·기존 인용정지 전부 불변.**
+
+★**kernel_mech A1 sticky 재설계** — 시간창 조인 대신 부팅 5개로
+분리(B-U/B-S16/B-G/B-S16′[nsys-OFF]/B-D92). 1차 추정량 규칙을
+새 파일 `a1/a1_primary_rule.py`로 신설(A0 규칙은 동결 — 채점
+해시 보존). 규칙층 감사 3회: 1회차(死因 A1 미해소·A2 조건부
+소멸, 런킬러 B1′–B5 — ★B5 "Ha8+sticky 부팅 선례 없다"가 거짓,
+job 872800이 그 job) · 2회차(파일 미저장, 요지는 설계문서
+§6.8·§7 — ★P5 인용 도구가 거짓 인용 인증) · 3회차(런킬러 R1–R4,
+상태오보·거짓금지문·출처허위 3회째 재발 — ★★형태 명명 **"수리는
+국소, 주장은 전역"**). ★★**GPU 실측 — A1 스모크 job 893663**
+(2026-08-26, ≈0.014 GPU-hr): (a) `E1_DECODE_REALIZED(16)=1.0000`
+(batch-sync, §5.1a 모집단 간극을 닫음) (b) `decode_iterations`
+0→415 (c) `PDMUX_GREEN_READOUT` 첫 실행, 드라이버 `smCount=16`
+확인. ★한정: n=1·35.5초, 채점 판정 0건(배관 스모크).
+
+★**NSL ③②E-B 묶음 + 그 트랙 첫 규칙층 감사** `NO-GO`, ★死因
+4건: D1(`WORKLOAD_NOT_SATURATING`이 실질 성공을 버림) · D2
+(TOOLLIMIT 유일 술어에 관측 채널 없음) · D3(추정량이 순서통계량
++ 거울 대칭 검사를 격자 인공물 근거로 삭제) · D4(cap 축 제거가
+답을 미리 정함). ★★§4.1 헤드라인이 거짓으로 확인(A1 3회차 6
+가족 중 4개만 베끼고 그 회차 런킬러 3개 누락).
+
+★**규율 도구 2종 신설** — `check_line_citations.py`(드리프트
+검출·재베이스 거부·고아 키, 한계: bare `:NNN` 미포착 +
+`--snapshot`이 거짓 인증을 낼 수 있음) · `check_doc_facts.py`
+(11 facts, 표는 못 읽음). ★**신규 방법론 교훈 5건**: 인용 도구
+자기실패(항목96) · 추정량=순서통계량(항목97) · 계측완전성=
+기전목록(항목98) · de-confound 처방=자유모수(항목99) · "수리는
+국소, 주장은 전역"(항목100). 항목35(gate #21)에 NSL D1 재발,
+항목93(gate #73)에 mirror-check 삭제 재발을 각각 追記.
+
+★★**불변**: HE0·정책 순위·gate #13/#16 "닫았다" 금지·switch-cost
+"닫았다" 금지·C2 인용정지 (a)(b) 전부 유지. 상세
+`handoff-report/session_handoff_2026-08-26.md`, `PROJECT_STATUS.md`
+최상단 절, `workspace/engine-port/results/kernel_mech/
+{DESIGN_A1_REV2_STICKY_2026-08-25.md,
+audit_a1_rev2_rules_2026-08-25/VERDICT.md,
+audit_a1_rev2_rules_3rd_2026-08-25/VERDICT.md,
+a1_smoke/RESULT_A1_SMOKE_893663_2026-08-26.md}`, `workspace/
+engine-port/results/nsl_lever/audit_nsl_bundle_2026-08-26/
+VERDICT.md`.
+
+이전: 2026-08-25 rev48 (doc-steward — ★★★**kernel_mech Stage 0‴ A0
 완주[KSET_CONSTRUCTIBLE, job 892554→892556, 기판 한정] + NSL ①
 [BRACKET_DECIDES] + NSL E-A[ARITHMETIC_CONFIRMED, job 892561] 메인
 세션 등재분 검증·정규화 + kernel_mech **A1**(엔진 기판) 규칙층 감사
@@ -2264,6 +2316,21 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     정본 반영 건 A절), 원자료 `workspace/engine-port/results/
     p1_gates/gate2/g2det_876699.out`·`g2det_876699.err`·
     `g2det_analyze.py`.
+    ★**追記(2026-08-26, NSL ③②E-B 묶음 규칙층 감사 D1) — 이
+    항목 계열의 최신 재발, ★반대 방향.** 이전 재발들은 대부분
+    "측정이 실패했는데 실패를 가설의 반증으로 읽음"이었다. 이번은
+    거울상이다 — `score(saturated="no", n_firings=4000)`가
+    `WORKLOAD_NOT_SATURATING`(판정 제외)을 반환해 **실질 성공을
+    버렸다**: `saturated`의 정의(`running_bs ≥ cap`)는 감사가
+    이미 무효화한 바로 그 점 술어인데, 저장소 자신의 데이터
+    (`g16_blk1_d44_boot1_884336` 재집계)가 등록된 rate-3 부팅
+    4개가 정확히 그 세계(≈0.7 GPU-hr)임을 보여준다 — **게이트가
+    반대 방향으로 열려도 같은 가족**임을 확인한 사례. 정확한
+    전역 재발 횟수는 이 항목 원문 전체 개정 이력에서 확인할 것
+    (본 追記는 그 카운트를 갱신하지 않는다). 상세 `workspace/
+    engine-port/results/nsl_lever/audit_nsl_bundle_2026-08-26/
+    VERDICT.md` D1, `PROJECT_STATUS.md` "방법론 게이트" #21
+    追記와 대응.
 36. ★★★**(2026-08-09, engine-porter 발견 + 메인 세션 노출범위
     실측) 통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지
     않는다 — 분석 재현 시 인터프리터 환경을 아티팩트에 남겨라.**
@@ -4071,6 +4138,20 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     상세 `workspace/engine-port/results/kernel_mech/
     audit_a1_rules_2026-08-25/VERDICT.md` D2, `PROJECT_STATUS.md`
     "방법론 게이트" #73과 대응.
+    ★**追記(2026-08-26, NSL ③②E-B 묶음 감사 D3(c)) — 두 번째
+    사례, 다른 각도.** NSL의 거울 대칭 검사(`cap_share` 0.2 vs
+    0.8을 같은 규칙으로 채점하는지)를 메인 세션이 "단독구속 0"을
+    근거로 직접 삭제했으나, 그 0은 **격자에 0.20·0.80이 아예
+    없어서 생긴 인공물**이었다 — 삭제 후 `1.0-0.80=
+    0.19999999999999996`이라는 부동소수 비대칭이 그대로 남아
+    `cap_share=0.2`는 `BOTH_PATHS_MATERIAL`, `0.8`은
+    `CAP_PATH_DOMINANT`로 다르게 채점된다. 항목93 원 교훈은
+    "검사를 접었을 때 메타검사가 공허해질 수 있다"였고, 이번은
+    "접을지 말지를 판단하는 근거(단독구속 관측)조차 격자 선택에
+    의존할 수 있다"는 한 단계 더 이른 형태다. 상세 `workspace/
+    engine-port/results/nsl_lever/audit_nsl_bundle_2026-08-26/
+    VERDICT.md` D3(c), `PROJECT_STATUS.md` "방법론 게이트" #73
+    追記와 대응.
 
 94. ★★**(2026-08-24, kernel_mech NVTX 근거 정정, 메인 세션 직접
     확인, GPU 0) 결론이 우연히 살아있는 것과 근거가 타당한 것은
@@ -4106,6 +4187,100 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     상세 `workspace/engine-port/results/kernel_mech/
     audit_a1_rules_2026-08-25/VERDICT.md` D5, `PROJECT_STATUS.md`
     "방법론 게이트" #75와 대응.
+
+96. ★★**(2026-08-25, kernel_mech A1 규칙층 감사 2·3회차,
+    claims-auditor, GPU 0) 인용/드리프트 검출 도구 자신이 거짓
+    인증을 낼 수 있다 — 도구가 선언한 한계가 한 커밋 만에
+    발화했다.** `check_line_citations.py`의 `--snapshot`이
+    편집된 파일의 기준선을 조용히 덮어써 `a1_q3k1_rule.py:83`이
+    `N_MIN_DECODE_STEPS`를 가리킨다고 인증했으나 실제 위치는
+    `:105`였다(3회차 감사 R4가 재발 확인 — 규칙 정본 안 `:1012`·
+    `:1032` 오류도 같은 경로로 인증됨). "지문 기반 드리프트
+    검출"로 설계해도 재베이스 시점에 스냅샷을 다시 찍으면 그
+    지문 자체가 갱신돼 드리프트가 은폐된다. 수리 = 재베이스
+    거부(같은 키 재스냅샷 차단) + 고아 키 탐지, 그러나 bare
+    `:NNN`·쉼표 목록 인용은 여전히 미포착(구조적으로 못 봄, NSL
+    감사 B6). 게이트 #33(매니페스트 sha 일치는 런타임 바이트
+    동일을 함의하지 않음)·#47(인용금지는 등재만으로 전파 안 됨)의
+    도구층 사례. 상세 `workspace/engine-port/results/kernel_mech/
+    audit_a1_rev2_rules_3rd_2026-08-25/VERDICT.md` R4,
+    `scripts/discipline/check_line_citations.py`,
+    `PROJECT_STATUS.md` "방법론 게이트" #76과 대응.
+
+97. ★★★**(2026-08-26, NSL ③②E-B 묶음 규칙층 감사, claims-auditor,
+    GPU 0) 추정량이 코드 경로의 평가 순서에 의존하면 그것은
+    귀속이 아니라 순서통계량이다.**
+    `managers/scheduler.py:2433-2434`의 cap 검사가 매 반복
+    최상단에서 평가되고 `:2441`에서 `break`하므로 `:2476`의 KV
+    검사는 **cap이 물지 않았을 때만** 도달한다 — `cap_share`는
+    "cap이 얼마나 무는가"가 아니라 "어느 쪽이 먼저 검사되는가"를
+    잰다. 게다가 토큰 예산 고갈의 `AddReqResult.OTHER` 출구
+    (`schedule_policy.py:768`·`:791`)는 `batch_is_full`을 세우지
+    않아 사이트 목록에도 잡히지 않는다. 계수(counting) 설계 전에
+    제어흐름 그래프에서 **상호 배제·평가 우선순위를 먼저
+    등록**하고, 추정량 이름 자체를 그 성질이 드러나게(예:
+    `cap_first_share`) 지어라. 상세 `workspace/engine-port/
+    results/nsl_lever/audit_nsl_bundle_2026-08-26/VERDICT.md`
+    D3(a)(b), `PROJECT_STATUS.md` "방법론 게이트" #77과 대응.
+
+98. ★★**(2026-08-26, NSL ③②E-B 묶음 규칙층 감사, claims-auditor,
+    GPU 0) 계측 완전성은 사이트 목록이 아니라 기전 목록에서
+    판정하라.** "이 상태 변수를 세우는 자리"(`batch_is_full`이
+    참이 되는 코드 위치, ②가 열거한 5개/도달 2개)와 "이 결과를
+    만드는 기전"(admission을 실제로 막는 경로 전부)은 **다른
+    집합**이다. NSL의 유일한 TOOLLIMIT 술어(`SITES_INCOMPLETE` =
+    "batch_is_full이 참인데 사이트 미발화")는 (i) 페이로드가
+    발화만 기록하고 (ii) telemetry가 `reason=blocked`일 때만
+    채워지며 (iii) `batch_is_full`이 래치라 소박한 구현이 래치
+    구간 내내 참이 되는 탓에 — **관측 불가이거나 상시발화** 둘
+    중 하나이고 어느 쪽인지를 하네스가 조용히 정한다. 계측
+    완전성 주장은 사이트를 다 나열했다는 것으로 성립하지 않고,
+    그 사이트들이 실제로 관측 가능한 기전과 1:1 대응하는지까지
+    확인해야 한다. 상세 `workspace/engine-port/results/nsl_lever/
+    audit_nsl_bundle_2026-08-26/VERDICT.md` D2, `PROJECT_STATUS.md`
+    "방법론 게이트" #78과 대응.
+
+99. ★★**(2026-08-26, NSL ③②E-B 묶음 규칙층 감사, claims-auditor,
+    GPU 0) de-confound 처방 자체가 추정량의 자유 모수일 수
+    있다(confound #10의 메타 형태).** ③이 처방한 "손잡이 순화"
+    (`--max-mamba-cache-size`를 전 셀 고정)는 실제로 KV 예산을
+    cap과 분리하는 데 성공했지만(E-A, `ARITHMETIC_CONFIRMED`),
+    그 처방값(`M=96` 고정 vs `M=48`)을 **어느 쪽으로 고르느냐에
+    따라 KV 예산이 −18,874(−5.8%) 이동하고 그 방향이 측정하려는
+    현상(Phase 2 도달) 자체를 취소시키는 쪽으로 갈 수 있다**
+    (NSL B2) — "순화했다"는 사실이 "그 순화가 측정 대상에
+    중립적이다"를 함의하지 않는다. de-confound 처방을 등록할
+    때는 그 처방의 파라미터가 estimand에 미치는 부호·크기까지
+    함께 등록하라. 상세 `workspace/engine-port/results/nsl_lever/
+    audit_nsl_bundle_2026-08-26/VERDICT.md` B2·⑥(C),
+    `PROJECT_STATUS.md` "방법론 게이트" #79와 대응.
+
+100. ★★★**(2026-08-25, kernel_mech A1 rev2 규칙층 감사 3회차,
+     claims-auditor, GPU 0) "수리는 국소, 주장은 전역"
+     (repair-local truth vs. document-global claims) — 각 수리는
+     지목된 좌표에서 실재하나 그 파급을 재도출하지 않으면 다음
+     회차 결함의 대부분이 직전 수리의 그림자가 된다.** 3회차
+     감사가 사슬 판단표로 실증: 1회차 死因/차단이 2·3회차에서
+     "이동"만 할 뿐 소멸하지 않는 계열이 다수(게이트 #21·
+     미등록 축·상태 오보/거짓 금지문·출처 허위 — 그중 R4는
+     2회차가 수리한 도구 자신이 인증). 부수형: ★**"세계모형이
+     실험설계 성장을 못 따라간다"** — 규칙의 축 공간은 감사
+     지적당 한 축씩, 부팅 매트릭스는 개정당 한 부팅씩 자라는데
+     둘이 동기화되지 않는다(rev2 시점: 규칙 세계모형 3부팅 /
+     등록 부팅 5개). 실무 규칙: 수리를 반영할 때는 그 수리가
+     문서의 다른 절·다른 축·다른 세계에 미치는 파급을 명시적으로
+     재도출하고, 상태 서술(표·헤더·금지문)을 그 커밋에서 함께
+     재검증하라. ★단 이 패턴이 "무한 반복"은 아니다 — 이번 회차
+     잔여는 전부 산문·표·축 등록 층이고 핵심 규칙 로직은 실행으로
+     전부 검증됐다; 다음 회차가 다시 `NO-GO`라면 그건 규칙이
+     아니라 문서 갱신 규율의 실패다. NSL ③②E-B 묶음의 §4.1(A1
+     6가족 중 4개만 베끼고 그 회차 런킬러 3개를 누락)이 **이
+     세션 안에서 이미 이 형태를 재현**했다. 상세 `workspace/
+     engine-port/results/kernel_mech/
+     audit_a1_rev2_rules_3rd_2026-08-25/VERDICT.md` ⑨,
+     `workspace/engine-port/results/nsl_lever/
+     audit_nsl_bundle_2026-08-26/VERDICT.md` B9,
+     `PROJECT_STATUS.md` "방법론 게이트" #80과 대응.
 
 ---
 
@@ -4165,6 +4340,10 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `workspace/engine-port/results/nsl_lever/{DESIGN_NSL1_REV3_2026-08-23.md, audit_nsl1_rules_rev3_2026-08-23/VERDICT.md}` | ★★★**NSL-1 rev3 규칙층 재감사 `NO-GO`(2026-08-23, claims-auditor, 게이트 #34 1단, 死因 H1·H2, 차단 H3–H11) — 정본 등재 완료(doc-steward, 2026-08-24).** ★H1(死因): rev3 §1.2가 rev2의 attainment %(pp)를 ITL 밀리초로 오독 — 실측하면 HI에서 ITL 다리 통과율(12.08%)이 TTFT 다리 통과율(30.46%)보다 낮다(더 세게 문다). ★H2(死因): 유일한 생존 전제 "cap이 문다"가 미증명 — Little 법칙 동시성(in-system 인구)은 rate 10·12에서 cap 48을 크게 초과(63.96·83.06)해 running batch 제약과 다른 양. H3–H11(대표): ①거부 논거가 §1-14 과잉 일반화(rate 8만 해당, 6·7은 절벽 아님)·H7 요청-내부 ITL p95 추정기(NR/IN) 미등록으로 δ=1.22pp인데 추정기 선택이 9.92pp를 움직임·H5 rev3 자신의 등록 상수로 계산돼 있지 않음(2.2–3.4배 과소). ★★**§7(성능 판정 아님, §1-7 addendum으로 정본 반영)**: 정본 변화-trace 하네스가 실제 채점하는 것은 `mean`-ITL이고 이 운영점에서 그 다리가 제거하는 양은 0.00–1.21pp뿐(정본 goodput이 TTFT 통과율과 경험적으로 구분 불가) — ★그러나 HE0는 흔들리지 않는다(정본이 이미 p95로 재채점·§1-17은 rate 8에서 측정·rate 12×chat 300/50은 정본이 명시 기각). §6(d): 요청-내부 ITL p95 자체가 58–60ms에 이봉 모드를 가져 자기 metric cliff를 가질 수 있다(PLAUSIBLE). **금지 문장 신설 5건**(§9): "cap은 TTFT 다리에만 작용한다"·"HI에서 ITL 다리는 안 문다"·"HI 동시성 44.19/48이므로 cap은 문다"·"rate 6–8은 정본이 절벽으로 판정한 대역"·"정본 goodput은 TTFT-only 지표였으므로 HE0가 흔들린다". **성능 판정 0건**·HE0 불변(재확인). 정본 반영 = §1-1·§1-7 addendum, §3 항목87–89(신설), `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(NSL-1 행 追記)·#17(2026-08-24 갱신)·"방법론 게이트" #67–69(신설) |
 | `reports/AUDIT_DEBT_2026-08-23.md` §6 | ★★★**메인 세션 반복 실패 3회 등재 + 방법론 게이트 승격(2026-08-23 작성, 2026-08-24 doc-steward 승격 판단·정본 등재).** 같은 오류("검증 칸에 무엇을 했다가 아니라 무엇일 것이다를 적음")가 kernel_mech rev7 C1·P0-A rev8 헤더·kernel_mech rev8 D1에서 3회 재발(3번은 1번을 수리하는 항목 안에서 재발). 기존 게이트(#62/항목67·82, "이력표에 검증 방법 병기")는 형식상 지켰으나 그 칸 내용이 예측이었다는 점에서 **신규 게이트로 승격**(§3 항목90). ★doc-steward 판단: NSL-1 rev3 H1(단위 오독, 항목87)도 이 메타-패턴의 네 번째 사례로 볼 수 있으나 구체 기전은 항목76·78·87 계열(라벨/단위)이 더 정확히 포착 — 두 계열 모두에 교차 등재, 강제 흡수 안 함. 정본 반영 = §3 항목90(신설), `PROJECT_STATUS.md` "방법론 게이트" #70(신설) |
 | `workspace/engine-port/results/kernel_mech/{DESIGN_A1_ENGINE_SUBSTRATE_2026-08-25.md, a1/a1_q3k1_rule.py, audit_a1_rules_2026-08-25/VERDICT.md}` | ★★★**Stage 0‴ A1(엔진 기판) 규칙층 감사 `NO-GO` — ★★★死因 2건(A1·A2, 이 감사 사슬 최초), 2026-08-25, claims-auditor, 게이트 #34 1단, 정본 등재 완료(doc-steward, 같은 날).** A0가 등록한 전이 간극(§0-1)을 엔진 decode 그래프에서 닫으려는 설계. ★死因 A1: nsys `streamId`가 **리포트 로컬**이라 E-L3를 별도 부팅에 두면 `stream="match"`가 원리적으로 불가 — 정합 세계 663,552 전부에서 `KSET_CONSTRUCTIBLE` **0건**(최선 세계도 `CONTRADICTORY_ATTRIBUTION`). ★死因 A2: E-L2·E-L4가 **같은 커널·같은 이름**이라 A0의 고유 커널명 행선택 술어에 대응물이 없고, 남은 선택지는 `streamId`/`greenContextId`(=Q2ae와 **순환**) 또는 미정의 telemetry↔nsys 시계 다리뿐. ★런킬러 B1: `decode_step_count`가 저장소 **전 telemetry에서 0**(`PDMUX_DUAL_WORKER=1`에서만 발화, 런타임 모드 미등록). 대표 차단: C1 `N_MIN_SPLIT_STEPS=200` 死코드(A0 X1의 문자 그대로 재발) · C2 **단위 오독**(1 스냅샷=16 decode step, 교훈 #61/#63/#72의 5번째 재발) · C5 `export="partial"`이 최상위 양성으로 새고 **job 892554가 정확히 그 세계**였음 · D5 `K1_HIGH_AT=2.00` **출처 허위**(rev8에 `K1` 0건, 게이트 #31의 규칙 정본 파일 내부 재발). ★★값어치: 死因 2건·차단 절반이 "분할/무분할이 같은 런 안에서 같은 커널로 3% 듀티·95회 교차"라는 한 뿌리에서 나오고, **`PDMUX_STICKY_PARTITION`**(구현 완료·correctness gate 전부 PASS·`E1_DECODE_REALIZED` 0.0839→1.0000)이 그 뿌리를 없앤다 — sticky ON이면 A2는 부팅 분리로 소멸, A1은 재정의 근거를 얻는다(신규 rule rev + 재감사 필요). 권고: ①§2·§5 sticky 기반 부팅 분리 재작성 ②`stream`·`green` 엔진 응답자 명시 등록(`green`은 서버 프로세스 안 `cuStreamGetGreenCtx`+`cuGreenCtxGetDevResource` 배선) ③Q3 채널 결정(`decode_step_count` 모드 등록 vs `decode_iterations`, 비영 실증 먼저) ④Q3 rev2·K1 rev2·D1/D3 정정 ⑤규칙층 재감사 → 하네스 → 하네스층 감사 → 제출. **rev7·rev8 차단(B1–B5·B7/C1–C10)은 A0·A1 어느 쪽도 건드리지 않아 전부 불변.** 금지 문장: "A0 규칙이 A1을 그대로 채점한다/바뀌는 것은 어댑터뿐" · "엔진 telemetry `stream_index`/`decode_sms`가 분할 실현을 말한다"(축소형만: "어느 파티션을 선택했는지") · "`N_min=200`이 규칙층에 코드로 등록됐다" · "Q3가 성립하면 NVTX 선행조건이 불필요함이 실측된다" · "`K1_HIGH_AT=2.00`은 rev8이 등록한 정지선이다" · "kernel_mech 트랙을 열었다/닫았다". 새 성능 판정 0건·HE0 불변. 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(A1 행 신설) |
+| `workspace/engine-port/results/kernel_mech/{DESIGN_A1_REV2_STICKY_2026-08-25.md, a1/a1_primary_rule.py, a1/a1_q3k1_rule.py, a1/DECISION_A1_Q3_CHANNEL_2026-08-25.md, audit_a1_rev2_rules_2026-08-25/VERDICT.md, audit_a1_rev2_rules_3rd_2026-08-25/VERDICT.md}` | ★★★**Stage 0‴ A1 sticky 재설계(rev2) — 규칙층 감사 3회, 전부 `NO-GO`(2026-08-25, claims-auditor, 게이트 #34 1단), 정본 등재 완료(doc-steward, 2026-08-26).** §2 다리를 부팅 분리(B-U/B-S16/B-G/B-S16′[nsys-OFF]/B-D92)로 재작성, 1차 추정량 규칙을 새 파일 `a1/a1_primary_rule.py`로 신설(A0 규칙 `RULE_REV=4`는 동결 — 제자리 수정 시 `a0_verdict_892556.json`의 `rule_sha256` 고정 채점 해시가 깨짐). Q3 채널 = `decode_iterations`(`decode_step_count`는 저장소 0/1,958,528 스냅샷, 전수 `architecture=legacy`). **1회차**: 死因 A1 미해소(A2는 조건부 소멸)·런킬러 B1′(A0 규칙 미개정인데 문서는 개정됐다 보고)·B2(게이트 #21이 `launches` 축 재개방)·B3(§5.1a 0.99→0.95 완화가 반증된 전제 위 — sticky 부팅 21/21 ≥0.9956)·B4(자기모순 3건)·★B5("Ha8+sticky 부팅 선례 없다"가 거짓, job **872800**이 그 job이고 rev2가 인용한 `0.0839→1.0000`이 바로 그 파일 수치). **2회차**: ★판정서가 파일로 저장되지 않음(요지는 이 설계문서 §6.8·§7 + 커밋 `3359fa3`/`7b7b007`/`189acfc`) — P1(B10 primary 미적용)·P2(게이트 #21이 primary에서 재발)·★P5(인용 도구가 거짓 인용을 인증)·P7–P12. **3회차**: 런킬러 R1(부팅 5개/규칙 세계모형 3개 불일치, B-D92 양성 답에 라벨 없음)·R2·R3(상태표·거짓 금지문 3회째 재발)·R4(출처 허위 3회째, 이번엔 그것을 막을 도구 자신이 인증) — ★★사슬 판단표가 형태를 명명: **"수리는 국소, 주장은 전역"**(repair-local truth vs. document-global claims, §3 항목100) + 부수형 "세계모형이 실험설계 성장을 못 따라간다". ★단 "무한반복 아님"(핵심 규칙 로직은 실행으로 전부 검증됨, 4회차 재실패 시 문서 갱신 규율의 실패). **rev7·rev8 차단(B1–B5·B7/C1–C10)은 전부 불변.** 정본 반영 = §3 항목96·100(신설), `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(A1 행 追記)·"방법론 게이트" #76·80(신설) |
+| `workspace/engine-port/results/kernel_mech/a1_smoke/{a1_smoke.sbatch, RESULT_A1_SMOKE_893663_2026-08-26.md}` | ★★**A1 배관 스모크 — job 893663(2026-08-26, ≈0.014 GPU-hr), 채점 판정 0건(게이트 #25), 세 항목 PASS.** (a) `E1_DECODE_REALIZED(16)=1.0000`(batch-synchronous 워크로드, `t_decode_active=35.5s`, hist `D16`만 — §5.1a가 등록한 모집단 간극[0.99 문턱의 근거 21 부팅이 전부 ShareGPT open-loop]을 닫음) (b) `decode_iterations` 0→415 (c) `PDMUX_GREEN_READOUT` 첫 부팅 실행, sticky division decode 스트림에서 드라이버가 `smCount=16`을 답함(`GREEN_TARGET_CONFIRMED`의 첫 관측, `D=16` 한 점뿐·`D=92` 미관측). 배너로 `pp_size=1 ∧ pp_max_micro_batch_size=None` 실측 확인(NSL ②§1.2 전제). ★★**한정 엄수**: n=1 부팅·35.5초 — *"batch-sync에서 realized는 1.0이다"* 로 일반화 금지, 사는 것은 "기전이 존재하는 모집단에서 게이트가 물리적 사실 때문에 발화하지 않는다"뿐. **금지 문장**: "스모크가 통과했으므로 A1을 제출할 수 있다"(규칙층 3회 전부 `NO-GO`) · 어떤 성능·지연·처리량 문장도. 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(A1 행 追記) |
+| `workspace/engine-port/results/nsl_lever/{PREREG_NSL_STEP3_KNOB_PURITY_2026-08-25.md, DESIGN_NSL_STEP2_ADMISSION_SITES_2026-08-25.md, nsl_eb/PREREG_NSL_EB_ATTRIBUTION_2026-08-25.md, nsl_eb/nsl_eb_rule.py, audit_nsl_bundle_2026-08-26/VERDICT.md}` | ★★★**NSL ③②E-B 묶음 — 그 트랙 첫 규칙층 감사 `NO-GO`, ★死因 4건(2026-08-26, claims-auditor, 게이트 #34 1단), 정본 등재 완료(doc-steward, 같은 날).** ③(손잡이 순화 사전등록, R1–R6, cap 술어 상수=`pp_max_micro_batch_size`) · ②(`batch_is_full` 사이트 5개/도달 2개, 초판 `:2369` "도달" 자기 정정) · E-B(`nsl_eb_rule.py`, 13,440 세계, cap 스윕 제외 한 셀 귀속으로 축소). **死因**: D1(`WORKLOAD_NOT_SATURATING`이 실질 성공[등록 rate-3 부팅 4개, ≈0.7 GPU-hr]을 삼킴, §3 항목35 追記) · D2(TOOLLIMIT 유일 술어 `SITES_INCOMPLETE`에 관측 채널 없음, §3 항목98) · D3(추정량이 순서통계량[§3 항목97] + 거울 대칭 검사를 격자 인공물 근거로 삭제[§3 항목93 追記]) · D4(cap 축 제거가 답을 미리 정함). ★**반증 실패**: ③ 코드 사실 전부 정확 · ②§1.1·§1.2가 주장보다 강함(`pp_max_micro_batch_size`가 실현 cap으로 채워짐, 구조적으로 강건) · E-A 수치 전부 재현. ★★§4.1 헤드라인이 거짓으로 확인(A1 3회차 6가족 중 4개만 베끼고 그 회차 런킬러 3개 누락 — §3 항목100 재현 사례). de-confound 처방 자체가 자유 모수일 수 있다는 관찰(B2, §3 항목99)도 이 감사에서 도출. **금지 문장**: "cap이 문다/안 문다" · "①이 잰 정본 셀이다"(cap arm 하나뿐) · "NSL이 admission 축을 쟀다" · "②의 엔진 패치가 배선됐다"(0줄). 새 성능 판정 0건·HE0 불변. 정본 반영 = §3 항목97–99(신설)·35·93(追記), `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(NSL-1 행 追記)·"방법론 게이트" #77–79(신설) |
+| `workspace/engine-port/scripts/discipline/{check_line_citations.py, line_citations.json, check_doc_facts.py}` | ★**규율 도구 2종 신설(2026-08-25~26, 메인 세션, GPU 0)** — 산문 규율 반복 실패 가족을 기계 검사로 이전. `check_line_citations.py`(+매니페스트 50건, 단위 테스트 16) = 지문 기반 드리프트 검출 + 정정 인용 제시 + 재베이스 거부 + bare 인용/`[HIST]`/고아 키 탐지. `check_doc_facts.py`(11 facts/14 occurrences, 첫 실행 7건 적발) = 문서 자기-아티팩트 수치를 진리원과 대조. ★**두 도구 다 한계가 감사에서 즉시 노출**: line-citations는 `--snapshot`이 편집 파일 기준선을 조용히 갱신해 거짓 인증을 낼 수 있었다(§3 항목96, 재베이스 거부+고아 탐지로 부분 수리) + bare `:NNN`·쉼표 목록 미포착 · doc-facts는 표 안 수치를 못 읽어 NSL §4.1 헤드라인 오류를 못 잡음. **아직 사전등록 "제출 전 체크리스트"에 등재되지 않음.** 정본 반영 = §3 항목96(신설) |
 
 `deprecated_reports/`(2026-07-24부터 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)) = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 
