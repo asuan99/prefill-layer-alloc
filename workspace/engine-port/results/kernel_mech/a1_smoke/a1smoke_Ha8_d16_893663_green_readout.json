@@ -1,0 +1,73 @@
+{
+  "groups": [
+    {
+      "decode": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94745964334544,
+        "green_ctx_is_null": true
+      },
+      "is_sticky_target": false,
+      "prefill": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94745964296656,
+        "green_ctx_is_null": true
+      },
+      "stream_index": 0,
+      "target_decode_sm": 0,
+      "target_prefill_sm": 108
+    },
+    {
+      "decode": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuGreenCtxGetDevResource_rc": 0,
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94745967615600,
+        "green_ctx_is_null": false,
+        "green_sm": {
+          "minSmPartitionSize": 2,
+          "smCoscheduledAlignment": 2,
+          "smCount": 16
+        }
+      },
+      "is_sticky_target": true,
+      "prefill": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuGreenCtxGetDevResource_rc": 0,
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94745970516880,
+        "green_ctx_is_null": false,
+        "green_sm": {
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2,
+          "smCount": 92
+        }
+      },
+      "stream_index": 1,
+      "target_decode_sm": 16,
+      "target_prefill_sm": 92
+    },
+    {
+      "decode": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94745964385376,
+        "green_ctx_is_null": true
+      },
+      "is_sticky_target": false,
+      "prefill": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94745964335312,
+        "green_ctx_is_null": true
+      },
+      "stream_index": 2,
+      "target_decode_sm": 108,
+      "target_prefill_sm": 0
+    }
+  ],
+  "note": "engine-side driver read-out; nsys is deliberately NOT consulted",
+  "probe": "pdmux_green_readout",
+  "sticky_target_index": 1
+}
