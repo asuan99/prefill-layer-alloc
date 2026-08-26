@@ -98,6 +98,7 @@ def _regression_tests():
 
 
 DESIGN = "results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md"
+NSL_EB = "results/nsl_lever/nsl_eb/PREREG_NSL_EB_ATTRIBUTION_2026-08-25.md"
 
 # name -> (source-of-truth, document, regex with ONE capturing group)
 # ★The regex must capture the number as the document writes it (commas kept).
@@ -117,6 +118,18 @@ FACTS = {
         _module_len("results/kernel_mech/a1/a1_q3k1_rule.py", "Q3_MUTANTS"),
         DESIGN, r"mutant \*\*(\d+)종\*\* 전부 load-bearing"),
     "regression tests": (_regression_tests(), DESIGN, r"회귀 \*\*(\d+)\*\* PASS"),
+    # ★NSL E-B, registered at the same time as the document rather than after
+    # an audit finds the number stale -- which is the whole point of naming
+    # "repair-local truth vs document-global claims".
+    "nsl E-B worlds": (
+        lambda: _json("results/nsl_lever/nsl_eb/selftest_nsl_eb_2026-08-25.json")["worlds"],
+        NSL_EB, r"\*\*([\d,]+) 세계"),
+    "nsl E-B labels": (
+        _count_json_key("results/nsl_lever/nsl_eb/selftest_nsl_eb_2026-08-25.json",
+                        "labels"), NSL_EB, r"라벨 \*\*(\d+)개\*\* 전부 도달"),
+    "nsl E-B mutants": (
+        _module_len("results/nsl_lever/nsl_eb/nsl_eb_rule.py", "MUTANTS"),
+        NSL_EB, r"mutant \*\*(\d+)종\*\*"),
     "citation manifest entries": (
         _manifest_entries(), DESIGN, r"매니페스트에 등재된 (\d+)건"),
 }

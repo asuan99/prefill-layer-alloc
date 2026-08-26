@@ -41,8 +41,20 @@ CAPCLAMP  = "CAP_CLAMPED"            # realized cap != requested (③ R4)
 KVUNEQUAL = "KV_BUDGET_UNEQUAL"      # max_total_num_tokens differs across cells (③ R5)
 COUNTDEAD = "COUNTER_DEAD"           # the patch is off, or never fired
 NOTEL     = "TELEMETRY_ABSENT"
-SHORT     = "SPAN_TOO_SHORT"
-MEASUREMENT = {BOOT, CFGDRIFT, CAPCLAMP, KVUNEQUAL, COUNTDEAD, NOTEL, SHORT}
+SHORT     = "TOO_FEW_FIRINGS"       # ★renamed: `SPAN_TOO_SHORT` is the Q3
+                                    # rule's string for a different quantity
+                                    # (decode steps), and A1's B7 was exactly a
+                                    # label reused with a changed meaning.
+# ★NEW, applied BEFORE the audit from the A1 chain's recurring families.
+# `NEITHER_PATH_FIRES` was substantive, so a run whose workload never reached
+# the cap-bound regime -- an experiment-design fact -- read as an answer about
+# which path binds.  That is gate #21 in this track's clothing, and the A1
+# chain paid for the same shape three times (Q3 `launches`, primary `rows_s`,
+# primary (matched, null/zero)).  ★Carrying a lesson across tracks instead of
+# re-buying it is the whole point of naming it.
+NOSAT     = "WORKLOAD_NOT_SATURATING"
+MEASUREMENT = {BOOT, CFGDRIFT, CAPCLAMP, KVUNEQUAL, COUNTDEAD, NOTEL, SHORT,
+               NOSAT}
 
 # --- tier 2: TOOLLIMIT -------------------------------------------------------
 # ★The instrument, not the engine: `batch_is_full` was observed True while no
@@ -82,26 +94,33 @@ class World:
     realized_cap requested | clamped          (③ R4)
     kv_budget    equal | unequal              (③ R5, across the cells compared)
     n_firings    ★INTEGER -- cap-site + KV-site firings in the analysed span
+    saturated    did the run REACH the cap-bound regime at all?  yes | no
+                 ★Read from telemetry independently of the counters:
+                 `running_bs` reaching the realized cap at any point.  Without
+                 this axis "nothing blocked" and "the workload never created
+                 the condition" are the same label.
     unattributed were there `batch_is_full` observations no site explains?
     cap_share    the estimand, banded: 0.0 | 0.5 | 0.85 | 1.0
     """
 
     __slots__ = ("boot_ok", "tel", "counters", "closed_sites", "realized_cap",
-                 "kv_budget", "n_firings", "unattributed", "cap_share")
+                 "kv_budget", "saturated", "n_firings", "unattributed",
+                 "cap_share")
 
     def __init__(self, boot_ok=True, tel="ok", counters="ok",
                  closed_sites="none", realized_cap="requested",
-                 kv_budget="equal", n_firings=4000, unattributed="no",
-                 cap_share=1.0):
+                 kv_budget="equal", saturated="yes", n_firings=4000,
+                 unattributed="no", cap_share=1.0):
         self.boot_ok, self.tel, self.counters = boot_ok, tel, counters
         self.closed_sites, self.realized_cap = closed_sites, realized_cap
-        self.kv_budget, self.n_firings = kv_budget, n_firings
+        self.kv_budget, self.saturated = kv_budget, saturated
+        self.n_firings = n_firings
         self.unattributed, self.cap_share = unattributed, cap_share
 
     def __repr__(self):
         return (f"W(boot={self.boot_ok},tel={self.tel},cnt={self.counters},"
                 f"closed={self.closed_sites},cap={self.realized_cap},"
-                f"kv={self.kv_budget},n={self.n_firings},"
+                f"kv={self.kv_budget},sat={self.saturated},n={self.n_firings},"
                 f"unattr={self.unattributed},share={self.cap_share})")
 
 
@@ -111,6 +130,7 @@ AXES = dict(
     closed_sites=["none", "fired"],
     realized_cap=["requested", "clamped"],
     kv_budget=["equal", "unequal"],
+    saturated=["yes", "no"],
     n_firings=[0, 4, 99, 100, 4000],
     unattributed=["no", "yes"],
     # ★0.6/0.75 sit BETWEEN the registered 0.80 and the mutant's 0.55, which
@@ -139,6 +159,14 @@ def score(w, guards=frozenset()):
         return KVUNEQUAL
     if on("g_dead") and w.counters != "ok":
         return COUNTDEAD
+    # ★the workload gate is TIER 1, ahead of the instrument tier: `saturated`
+    # comes from telemetry (`running_bs` vs the realized cap) and does not
+    # depend on the counters, so it is the more primitive fact.  If the regime
+    # was never reached, nothing about the instrument is under test -- and
+    # "nothing blocked" would be an answer manufactured out of a workload that
+    # never created the condition.
+    if on("g_nosat") and w.saturated != "yes":
+        return NOSAT
     # ★the tool tier: an unexplained block means the SITE LIST is incomplete.
     # It must be decided BEFORE `n_firings`, or a build whose real blocking site
     # is uninstrumented reads as "few firings" and then as a share.
@@ -157,13 +185,14 @@ def score(w, guards=frozenset()):
     return MIXED
 
 
-MUTANTS = ["g_boot", "g_tel", "g_cfg", "g_clamp", "g_kv", "g_dead",
+MUTANTS = ["g_boot", "g_tel", "g_cfg", "g_clamp", "g_kv", "g_dead", "g_nosat",
            "g_incomplete", "g_noblock", "g_short", "g_nmin_value",
            "g_capdom", "g_kvdom", "g_dom_value"]
 
 GUARD_LABEL = {"g_boot": BOOT, "g_tel": NOTEL, "g_cfg": CFGDRIFT,
                "g_clamp": CAPCLAMP, "g_kv": KVUNEQUAL, "g_dead": COUNTDEAD,
                "g_incomplete": INCOMPLETE, "g_noblock": NOBLOCK,
+               "g_nosat": NOSAT,
                "g_short": SHORT, "g_capdom": CAPDOM, "g_kvdom": KVDOM}
 
 # ★REGISTERED STOPS -- the prereg's stop table as data.  The A1 chain showed
@@ -180,6 +209,7 @@ REGISTERED_STOPS = (
     (dict(counters="absent"), COUNTDEAD),
     (dict(counters="zero"), COUNTDEAD),
     (dict(unattributed="yes"), INCOMPLETE),
+    (dict(saturated="no"), NOSAT),
     (dict(n_firings=0), NOBLOCK),
     (dict(n_firings=4), SHORT),
     (dict(n_firings=99), SHORT),
@@ -201,7 +231,7 @@ def _plumbing_dirty(w):
     contradict the rule's registered order."""
     return (not w.boot_ok or w.tel != "ok" or w.closed_sites != "none"
             or w.realized_cap != "requested" or w.kv_budget != "equal"
-            or w.counters != "ok")
+            or w.counters != "ok" or w.saturated != "yes")
 
 
 def _checks():
@@ -229,14 +259,16 @@ def _checks():
         if l == MIXED:
             return 0.20 < w.cap_share < 0.80 and w.n_firings >= N_MIN_FIRINGS
         if l == NOBLOCK:
-            return w.n_firings == 0
+            # ★"nothing fired" only means something once the regime was reached
+            return w.n_firings == 0 and w.saturated == "yes"
         return True
 
     def c_threshold(w, l):
         """C. the firing floor as a literal, on otherwise-clean worlds."""
         if (not w.boot_ok or w.tel != "ok" or w.closed_sites != "none"
                 or w.realized_cap != "requested" or w.kv_budget != "equal"
-                or w.counters != "ok" or w.unattributed == "yes"):
+                or w.counters != "ok" or w.saturated != "yes"
+                or w.unattributed == "yes"):
             return True
         return (l == SHORT) == (0 < w.n_firings < 100)
 
@@ -251,13 +283,87 @@ def _checks():
 
     return {
         "A tier discipline": (c_tier, {"g_boot", "g_tel", "g_cfg", "g_clamp",
-                                       "g_kv", "g_dead", "g_incomplete"}),
+                                       "g_kv", "g_dead", "g_incomplete",
+                                       "g_nosat"}),
         "B substantive witness": (c_witness, {"g_capdom", "g_kvdom",
                                               "g_dom_value"}),
         "C firing floor = 100 (literal)": (c_threshold, {"g_short",
                                                          "g_nmin_value",
                                                          "g_noblock"}),
     }
+
+
+# =============================================================================
+# CAMPAIGN LEVEL -- the prereg registers 4 boots per rate and says, in prose,
+# that boots disagreeing is itself reportable.  ★Prose is where the A1 chain
+# lost three audits: the world model tracked one boot while the design grew to
+# five.  The aggregation is code here, with its own labels and its own checks.
+# =============================================================================
+N_MIN_BOOTS = 4                      # prereg sec 3; gate #3 (n>=4)
+
+AGG_FEW      = "INSUFFICIENT_BOOTS"          # too few scorable boots
+AGG_TOOL     = "TOOL_LIMIT_IN_CAMPAIGN"      # a tool limit does not average away
+AGG_DISAGREE = "BOOTS_DISAGREE"
+AGG_LABELS = {AGG_FEW, AGG_TOOL, AGG_DISAGREE} | SUBSTANTIVE
+
+
+def aggregate(boot_labels, guards=frozenset()):
+    """One cell's verdict from its boots' labels.
+
+    ★Three rules, and the middle one is the one worth arguing about:
+      1. MEASUREMENT boots delivered no observation -> DROP them, then require
+         `N_MIN_BOOTS` of the rest.
+      2. ★A TOOLLIMIT boot is NOT dropped.  "The instrument could not do it"
+         does not become false by averaging it with boots where it could; it is
+         a campaign-level fact and it is reported as one.  Dropping it would be
+         the aggregation-layer version of gate #21.
+      3. The surviving substantive boots must AGREE.  Disagreement is a result,
+         not noise to be voted away -- this project has been burned by
+         majority-style summaries of bimodal populations (metric cliff).
+    """
+    def on(g):
+        return g not in guards
+    labels = list(boot_labels)
+    if on("a_tool") and any(l in TOOLLIMIT for l in labels):
+        return AGG_TOOL
+    scorable = [l for l in labels if l in SUBSTANTIVE]
+    if on("a_few") and len(scorable) < N_MIN_BOOTS:
+        return AGG_FEW
+    if on("a_disagree") and len(set(scorable)) > 1:
+        return AGG_DISAGREE
+    # ★totality must survive the mutants too: with `a_few` removed, `scorable`
+    # can be empty, and a rule that raises under its own mutant is not a rule.
+    return scorable[0] if scorable else AGG_FEW
+
+
+AGG_MUTANTS = ["a_tool", "a_few", "a_disagree"]
+
+
+def _agg_selftest(chk):
+    """Enumerate every multiset of 4-6 boot labels over a small alphabet."""
+    from itertools import combinations_with_replacement as cwr
+    alphabet = [CAPDOM, KVDOM, MIXED, NOBLOCK, BOOT, NOSAT, INCOMPLETE]
+    cases = [list(c) for n in (3, 4, 5) for c in cwr(alphabet, n)]
+    outs = [aggregate(c) for c in cases]
+    chk("AGG T1 totality", all(o in AGG_LABELS for o in outs))
+    from collections import Counter as _C
+    cnt = _C(outs)
+    for lab in sorted(AGG_LABELS):
+        chk(f"AGG T2 reachable: {lab}", cnt[lab] > 0, f"n={cnt[lab]}")
+    for m in AGG_MUTANTS:
+        d = sum(1 for a, b in zip(outs, [aggregate(c, {m}) for c in cases])
+                if a != b)
+        chk(f"AGG T3 mutant {m} load-bearing", d > 0, f"n={d}")
+    # ★the three registered properties, each as its own witness
+    chk("AGG P1 a tool limit anywhere surfaces",
+        all(aggregate(c) == AGG_TOOL for c in cases
+            if any(l in TOOLLIMIT for l in c)))
+    chk("AGG P2 measurement boots are dropped, not counted",
+        aggregate([CAPDOM] * 4 + [BOOT, NOSAT]) == CAPDOM)
+    chk("AGG P3 disagreement is a result, not a majority vote",
+        aggregate([CAPDOM] * 5 + [KVDOM]) == AGG_DISAGREE)
+    chk("AGG P4 n<4 scorable boots is insufficient",
+        aggregate([CAPDOM] * 3 + [BOOT]) == AGG_FEW)
 
 
 def run():
@@ -311,6 +417,8 @@ def run():
     chk("T19b no check binds nothing", all(v > 0 for v in sole.values()),
         f"{sole}")
 
+    print("  -- campaign aggregation --")
+    _agg_selftest(chk)
     ok = not fails
     print(f"\n== {len(W):,} worlds -> "
           f"{'ALL PASS' if ok else str(len(fails)) + ' FAILURES: ' + '; '.join(fails[:4])} ==")
