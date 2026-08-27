@@ -1,0 +1,211 @@
+{
+  "all_pass": true,
+  "axes": {
+    "boot_H": [
+      "ok",
+      "failed"
+    ],
+    "boot_T": [
+      "ok",
+      "failed"
+    ],
+    "cliff": [
+      "clean",
+      "straddle",
+      "capacity_unmeasurable"
+    ],
+    "compar": [
+      "ok",
+      "realized_mismatch",
+      "tokenizer_skew"
+    ],
+    "discrim_H": [
+      "ok",
+      "degenerate"
+    ],
+    "discrim_T": [
+      "ok",
+      "degenerate"
+    ],
+    "grid_H": [
+      "interior",
+      "edge"
+    ],
+    "grid_T": [
+      "interior",
+      "edge"
+    ],
+    "power_H": [
+      "adequate",
+      "inadequate"
+    ],
+    "power_T": [
+      "adequate",
+      "inadequate"
+    ],
+    "scoring_H": [
+      "agree",
+      "disagree"
+    ],
+    "scoring_T": [
+      "agree",
+      "disagree"
+    ],
+    "sign_H": [
+      "win",
+      "lose_sig",
+      "equiv",
+      "undecided"
+    ],
+    "sign_T": [
+      "win",
+      "lose_sig",
+      "equiv",
+      "undecided"
+    ],
+    "visits_H": [
+      "yes",
+      "no"
+    ],
+    "visits_T": [
+      "yes",
+      "no"
+    ]
+  },
+  "constants": {
+    "ALPHA": 0.05,
+    "ANCHOR_IDX_SOURCE": "canonical constant, model-independent (sharegpt_vary_bench.sbatch:40)",
+    "DELTA_REL": 0.03,
+    "ESTIMAND": "COMBINED goodput, round durations SUMMED (CLAUDE.md 게이트 #7)",
+    "N_REPS": 4,
+    "PAIRED": false,
+    "POWER_AT": 2.0,
+    "POWER_TARGET": 0.8,
+    "REALIZED_MAX_GAP": 0.15,
+    "SCORING_PRIMARY": "p95 in-request ITL (CLAUDE.md 게이트 #4); mean kept as bridge only",
+    "SIGN_SCORING": "p95",
+    "TOKEN_MAX_GAP": 0.2
+  },
+  "failed": [],
+  "guard_order": [
+    "boot",
+    "cliff",
+    "compar",
+    "discrim",
+    "grid",
+    "visits",
+    "scoring"
+  ],
+  "labels": {
+    "COMPARABILITY": [
+      "REALIZED_MISMATCH",
+      "TOKENIZER_SKEW"
+    ],
+    "DESIGN": [
+      "CONTROLLER_DEGENERATE",
+      "GRID_EDGE_UNRESOLVED",
+      "NOT_DISCRIMINATING"
+    ],
+    "MEASUREMENT": [
+      "BOOT_FAILED",
+      "CAPACITY_UNMEASURABLE",
+      "CLIFF_STRADDLE"
+    ],
+    "SCORING": [
+      "SCORING_DEPENDENT"
+    ],
+    "SUBSTANTIVE": [
+      "FLIP_MODEL_ATTRIBUTED",
+      "INCONCLUSIVE",
+      "NO_FLIP_BOTH_LOSE",
+      "NO_FLIP_BOTH_WIN",
+      "REVERSE_FLIP",
+      "UNDERPOWERED_NULL"
+    ]
+  },
+  "marginals": {
+    "BOOT_FAILED": 442368,
+    "CAPACITY_UNMEASURABLE": 49152,
+    "CLIFF_STRADDLE": 49152,
+    "CONTROLLER_DEGENERATE": 768,
+    "FLIP_MODEL_ATTRIBUTED": 4,
+    "GRID_EDGE_UNRESOLVED": 3072,
+    "INCONCLUSIVE": 28,
+    "NOT_DISCRIMINATING": 12288,
+    "NO_FLIP_BOTH_LOSE": 4,
+    "NO_FLIP_BOTH_WIN": 4,
+    "REALIZED_MISMATCH": 16384,
+    "REVERSE_FLIP": 4,
+    "SCORING_DEPENDENT": 192,
+    "TOKENIZER_SKEW": 16384,
+    "UNDERPOWERED_NULL": 20
+  },
+  "mutants_killed": {
+    "drop_boot_guard": 442368,
+    "drop_cliff_guard": 98304,
+    "drop_compar_guard": 32768,
+    "drop_discrim_guard": 12288,
+    "drop_grid_guard": 3072,
+    "drop_power_gate": 20,
+    "drop_scoring_guard": 192,
+    "drop_visits_guard": 768,
+    "reorder_grid_visits": 2304
+  },
+  "n_worlds": 589824,
+  "rule_rev": 2,
+  "rule_sha256": "0c56eab68a1c98c0dc7916c3b06042cc8c4172b5fab565a0784c3ccbe1689cfc",
+  "tests": {
+    "T10_sign_scoring_registered": {
+      "detail": "sign_* refers to p95; disagreement blocks via SCORING_DEPENDENT",
+      "pass": true
+    },
+    "T11_null_rate_bounded": {
+      "detail": "P(win|0)=0.00e+00; thr=0.0966 se=0.0115 df=6",
+      "pass": true
+    },
+    "T12_power_criterion_derived": {
+      "detail": "P(win|2delta)=1.000 >= 0.8",
+      "pass": true
+    },
+    "T13_power_criterion_has_teeth": {
+      "detail": "a CV-6% arm is correctly refused",
+      "pass": true
+    },
+    "T1_totality": {
+      "detail": "589,824 worlds",
+      "pass": true
+    },
+    "T2_reachable_in_grid": {
+      "detail": "unreachable=[]",
+      "pass": true
+    },
+    "T3_negative_needs_evidence": {
+      "detail": "BOTHLOSE requires lose_sig or equiv in BOTH arms, not 'not win'",
+      "pass": true
+    },
+    "T4_undecided_is_its_own_label": {
+      "detail": "an undecided arm can never be read as a flip or a null",
+      "pass": true
+    },
+    "T5_underpowered_reachable_and_disjoint": {
+      "detail": "20 worlds; never overlaps an undecided arm",
+      "pass": true
+    },
+    "T6_visits_blocks": {
+      "detail": "",
+      "pass": true
+    },
+    "T7_mutant_coverage": {
+      "detail": "uncovered_mutants=[]",
+      "pass": true
+    },
+    "T8_every_guard_has_a_mutant": {
+      "detail": "each registered guard has a named mutant",
+      "pass": true
+    },
+    "T9_order_renames_only": {
+      "detail": "reorder moves 2,304 labels but never changes whether a substantive verdict is reached",
+      "pass": true
+    }
+  }
+}
