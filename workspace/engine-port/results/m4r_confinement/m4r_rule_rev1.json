@@ -1,0 +1,142 @@
+{
+  "all_pass": true,
+  "axes": {
+    "R": [
+      "ge_rmin",
+      "between",
+      "le_one"
+    ],
+    "cadence": [
+      "ok",
+      "suspect"
+    ],
+    "ci": [
+      "excludes_one",
+      "includes_one"
+    ],
+    "confined": [
+      "enough",
+      "thin"
+    ],
+    "iters": [
+      "advances",
+      "flat"
+    ],
+    "models": [
+      "multi",
+      "single"
+    ],
+    "rates": [
+      "multi",
+      "single"
+    ],
+    "telemetry": [
+      "ok",
+      "absent"
+    ],
+    "unconf": [
+      "enough",
+      "empty"
+    ]
+  },
+  "constants": {
+    "CADENCE_MAX_RATIO": 3.0,
+    "MAX_GAP_S": 1.0,
+    "MIN_CELLS_MODEL": 2,
+    "MIN_CELLS_RATE": 2,
+    "MIN_CONFINED_S": 20.0,
+    "MIN_UNCONFINED_S": 20.0,
+    "R_MIN": 1.15
+  },
+  "failed": [],
+  "guard_order": [
+    "telemetry",
+    "iters",
+    "confined",
+    "unconf",
+    "cadence"
+  ],
+  "labels": {
+    "MEASUREMENT": [
+      "CADENCE_SUSPECT",
+      "COVERAGE_THIN",
+      "ITERATIONS_FLAT",
+      "NO_CONTRAST",
+      "TELEMETRY_ABSENT"
+    ],
+    "SUBSTANTIVE": [
+      "CONFINEMENT_ABSENT",
+      "CONFINEMENT_CONFIRMED",
+      "CONFINEMENT_SCOPED",
+      "INCONCLUSIVE_TIE"
+    ]
+  },
+  "marginals": {
+    "CADENCE_SUSPECT": 24,
+    "CONFINEMENT_ABSENT": 4,
+    "CONFINEMENT_CONFIRMED": 1,
+    "CONFINEMENT_SCOPED": 3,
+    "COVERAGE_THIN": 96,
+    "INCONCLUSIVE_TIE": 16,
+    "ITERATIONS_FLAT": 192,
+    "NO_CONTRAST": 48,
+    "TELEMETRY_ABSENT": 384
+  },
+  "n_worlds": 768,
+  "rule_rev": 1,
+  "rule_sha256": "9a3f4347f83e61722eb5d60dfc89c4531a43109adf6dd085132b35fc43eee494",
+  "tests": {
+    "M_cadence_not_hollow": {
+      "detail": "24 worlds change",
+      "pass": true
+    },
+    "M_confined_not_hollow": {
+      "detail": "96 worlds change",
+      "pass": true
+    },
+    "M_iters_not_hollow": {
+      "detail": "192 worlds change",
+      "pass": true
+    },
+    "M_order_is_load_bearing": {
+      "detail": "cadence-first moves 72 labels; order REGISTERED as ('telemetry', 'iters', 'confined', 'unconf', 'cadence')",
+      "pass": true
+    },
+    "M_telemetry_not_hollow": {
+      "detail": "384 worlds change",
+      "pass": true
+    },
+    "M_unconf_not_hollow": {
+      "detail": "48 worlds change",
+      "pass": true
+    },
+    "T1_totality": {
+      "detail": "768 worlds",
+      "pass": true
+    },
+    "T2_reachable": {
+      "detail": "unreachable=[]",
+      "pass": true
+    },
+    "T3_measurement_terminal": {
+      "detail": "gate #21: a measurement failure is never scored as a verdict",
+      "pass": true
+    },
+    "T4_confirmed_needs_both_scopes": {
+      "detail": "",
+      "pass": true
+    },
+    "T5_null_needs_ci": {
+      "detail": "R<=1 with a CI covering 1 is a TIE, not a refutation",
+      "pass": true
+    },
+    "T6_no_inert_axis": {
+      "detail": "inert=[]",
+      "pass": true
+    },
+    "T7_scope_is_the_only_difference": {
+      "detail": "SCOPED becomes CONFIRMED iff both scope axes are satisfied",
+      "pass": true
+    }
+  }
+}
