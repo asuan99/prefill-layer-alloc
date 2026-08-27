@@ -1,0 +1,247 @@
+{
+  "all_pass": true,
+  "axes": {
+    "band": [
+      "exists",
+      "empty"
+    ],
+    "boot": [
+      "ok",
+      "failed"
+    ],
+    "cliff": [
+      "clean",
+      "straddle"
+    ],
+    "deg_H": [
+      "ok",
+      "degenerate"
+    ],
+    "deg_T": [
+      "ok",
+      "degenerate"
+    ],
+    "grid_H": [
+      "interior",
+      "edge_lo",
+      "edge_hi"
+    ],
+    "grid_T": [
+      "interior",
+      "edge_lo",
+      "edge_hi"
+    ],
+    "power_H": [
+      "adequate",
+      "inadequate"
+    ],
+    "power_T": [
+      "adequate",
+      "inadequate"
+    ],
+    "scoring": [
+      "agree",
+      "disagree"
+    ],
+    "sign_H": [
+      "win",
+      "lose",
+      "tie"
+    ],
+    "sign_T": [
+      "win",
+      "lose",
+      "tie"
+    ]
+  },
+  "constants": {
+    "ALPHA": 0.05,
+    "DELTA_REL": 0.03,
+    "GOODPUT_BASE": {
+      "H": 3.22,
+      "T": null
+    },
+    "MDE_SLACK": 2.0,
+    "N_REPS": 4,
+    "POWER_TARGET": 0.8,
+    "SD_PRIOR": {
+      "H": 0.023,
+      "T": null
+    },
+    "T_CRIT_N4": 3.182
+  },
+  "design_power_H": {
+    "delta_abs": 0.0966,
+    "mde_80": 0.10627864418608853,
+    "p_win_at_null": 0.0,
+    "sd": 0.023,
+    "se": 0.0115,
+    "win_threshold": 0.0966
+  },
+  "failed": [],
+  "guard_order": [
+    "boot",
+    "band",
+    "cliff",
+    "grid",
+    "degen",
+    "scoring"
+  ],
+  "labels": {
+    "DESIGN": [
+      "CONTROLLER_DEGENERATE",
+      "GRID_EDGE_UNRESOLVED"
+    ],
+    "MEASUREMENT": [
+      "CLIFF_STRADDLE",
+      "MEASUREMENT_ABSENT",
+      "NO_COMMON_BAND"
+    ],
+    "SCORING": [
+      "SCORING_DEPENDENT"
+    ],
+    "SUBSTANTIVE": [
+      "FLIP_MODEL_ATTRIBUTED",
+      "INCONCLUSIVE_TIE",
+      "NO_FLIP_BOTH_LOSE",
+      "NO_FLIP_BOTH_WIN",
+      "REVERSE_FLIP",
+      "UNDERPOWERED_NULL"
+    ]
+  },
+  "marginals": {
+    "CLIFF_STRADDLE": 2592,
+    "CONTROLLER_DEGENERATE": 216,
+    "FLIP_MODEL_ATTRIBUTED": 2,
+    "GRID_EDGE_UNRESOLVED": 2304,
+    "INCONCLUSIVE_TIE": 20,
+    "MEASUREMENT_ABSENT": 10368,
+    "NO_COMMON_BAND": 5184,
+    "NO_FLIP_BOTH_LOSE": 1,
+    "NO_FLIP_BOTH_WIN": 4,
+    "REVERSE_FLIP": 2,
+    "SCORING_DEPENDENT": 36,
+    "UNDERPOWERED_NULL": 7
+  },
+  "n_worlds": 20736,
+  "rule_rev": 1,
+  "rule_sha256": "598e5ad28523507be8c0927a682c4bc1d33cd706f655992944965475d7e7dc54",
+  "separating_distance": {
+    "FLIP_MODEL_ATTRIBUTED": {
+      "INCONCLUSIVE_TIE": 1,
+      "NO_FLIP_BOTH_LOSE": 1,
+      "NO_FLIP_BOTH_WIN": 1,
+      "REVERSE_FLIP": 2,
+      "UNDERPOWERED_NULL": 1
+    },
+    "INCONCLUSIVE_TIE": {
+      "FLIP_MODEL_ATTRIBUTED": 1,
+      "NO_FLIP_BOTH_LOSE": 1,
+      "NO_FLIP_BOTH_WIN": 1,
+      "REVERSE_FLIP": 1,
+      "UNDERPOWERED_NULL": 1
+    },
+    "NO_FLIP_BOTH_LOSE": {
+      "FLIP_MODEL_ATTRIBUTED": 1,
+      "INCONCLUSIVE_TIE": 1,
+      "NO_FLIP_BOTH_WIN": 2,
+      "REVERSE_FLIP": 1,
+      "UNDERPOWERED_NULL": 1
+    },
+    "NO_FLIP_BOTH_WIN": {
+      "FLIP_MODEL_ATTRIBUTED": 1,
+      "INCONCLUSIVE_TIE": 1,
+      "NO_FLIP_BOTH_LOSE": 2,
+      "REVERSE_FLIP": 1,
+      "UNDERPOWERED_NULL": 1
+    },
+    "REVERSE_FLIP": {
+      "FLIP_MODEL_ATTRIBUTED": 2,
+      "INCONCLUSIVE_TIE": 1,
+      "NO_FLIP_BOTH_LOSE": 1,
+      "NO_FLIP_BOTH_WIN": 1,
+      "UNDERPOWERED_NULL": 1
+    },
+    "UNDERPOWERED_NULL": {
+      "FLIP_MODEL_ATTRIBUTED": 1,
+      "INCONCLUSIVE_TIE": 1,
+      "NO_FLIP_BOTH_LOSE": 1,
+      "NO_FLIP_BOTH_WIN": 1,
+      "REVERSE_FLIP": 1
+    }
+  },
+  "tests": {
+    "M1_grid_not_hollow": {
+      "detail": "2304 worlds change",
+      "pass": true
+    },
+    "M2_degen_not_hollow": {
+      "detail": "216 worlds change",
+      "pass": true
+    },
+    "M3_scoring_not_hollow": {
+      "detail": "36 worlds change",
+      "pass": true
+    },
+    "M4_power_not_hollow": {
+      "detail": "7 worlds change",
+      "pass": true
+    },
+    "M5_order_is_load_bearing": {
+      "detail": "grid<->degen swap moves 1728 labels; order is REGISTERED as ('boot', 'band', 'cliff', 'grid', 'degen', 'scoring')",
+      "pass": true
+    },
+    "T10_H_power_adequate": {
+      "detail": "MDE(80%) = 0.1063 = 3.30% vs delta 0.0966",
+      "pass": true
+    },
+    "T11_no_inert_axis": {
+      "detail": "inert axes=[]",
+      "pass": true
+    },
+    "T1_totality": {
+      "detail": "20736 worlds",
+      "pass": true
+    },
+    "T2_reachable": {
+      "detail": "unreachable=[]",
+      "pass": true
+    },
+    "T3_measurement_is_terminal": {
+      "detail": "gate #21 (측정 실패를 게이트 실패로 라벨링 마라)",
+      "pass": true
+    },
+    "T4_flip_exclusive": {
+      "detail": "",
+      "pass": true
+    },
+    "T5_negative_control": {
+      "detail": "6912 same-sign worlds, none attributed",
+      "pass": true
+    },
+    "T6_power_gates_nulls_only": {
+      "detail": "BOTHWIN ungated(4/4) | FLIP gated by power_H only | REVFLIP by power_T only | BOTHLOSE by both",
+      "pass": true
+    },
+    "T7_all_substantive_separated": {
+      "detail": "distinct labels never share a world",
+      "pass": true
+    },
+    "T7b_flip_needs_two_signs": {
+      "detail": "d(FLIP,REVFLIP)=2  d(BOTHWIN,BOTHLOSE)=2 -- a flip is a JOINT move of both model signs, not one",
+      "pass": true
+    },
+    "T7c_flip_one_sign_from_bothwin": {
+      "detail": "a single per-model sign separates a flip from a no-flip",
+      "pass": true
+    },
+    "T8_design_before_scoring": {
+      "detail": "",
+      "pass": true
+    },
+    "T9_null_rate_bounded": {
+      "detail": "P(win | delta=0) = 0.00e+00; delta binds (0.0966) over t.se (0.0366)",
+      "pass": true
+    }
+  }
+}
