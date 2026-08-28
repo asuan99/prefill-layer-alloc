@@ -1,6 +1,11 @@
 # Document status
 
-최종 갱신: 2026-08-21(doc-steward — **gate #13 job-축 캠페인 완주(양
+최종 갱신: 2026-08-28(doc-steward — **TC1·M4R 규칙층 감사 각 2회
+(전부 `NO-GO`) 반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim A 각주에
+2026-08-27~28 追記(estimand 미식별 재확인, 유일한 해소 경로 =
+`PDMUX_STICKY_PARTITION=1` 신규 측정). `reports/CONSENSUS.md`
+rev50·§3 항목101–102와 재동기화. 등급·인용정지 (a)(b) 무변경,
+새 성능 판정 0건, 분류표 무변경, changelog 기록뿐.** 이전: 2026-08-21(doc-steward — **gate #13 job-축 캠페인 완주(양
 arm `PASS`) 반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim A 각주의
 "job/node/day 축 부재"를 `reports/CONSENSUS.md` rev41·§3 항목71과
 재동기화(job 축만 갱신, batch·node(≥3)·day(≥3) 축 부재는 그대로,

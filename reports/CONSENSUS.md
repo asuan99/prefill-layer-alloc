@@ -4,7 +4,67 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-26 rev49 (doc-steward — ★★★**kernel_mech A1(엔진
+최종 갱신: 2026-08-28 rev50 (doc-steward — ★★★**TC1(모델귀속)·
+M4R(confinement) 두 트랙 규칙층 감사 각 2회(rev1·rev2), 전부
+`NO-GO`** + GPU 실측 1건(job **896565**, ≈0.20 GPU-hr,
+`F2_CONFIRMED`) + GPU 0 프로브 5건 + 설계층 도달가능성 메타검사
+신설(`design_reachability.py`) + 제출 게이트 신설(`presubmit.py`)로
+규율 도구 4종 첫 등록 실행 지점 확보. 이 세션 GPU 지출 = **0.20
+GPU-hr(job 896565)뿐** · 새 성능 판정 0건 · HE0·정책 순위·기존
+인용정지 전부 불변. `CONSENSUS §1-24`는 **반증되지 않았다**
+(두 트랙 모두 "이 채널로는 답할 수 없다"는 판정뿐).**
+
+★**TC1**(`workspace/engine-port/results/tc1_model_attrib/`) —
+Zamba2 컨트롤러를 자기 Stage-1 argmax(d44)에 anchor시켜
+model-attribution 대조를 세우려는 설계. rev1 F2: anchor=argmax로
+고정하면 컨트롤러가 그 자리에 앉아버려(§1-10 ratchet 재확인)
+`NO_FLIP_BOTH_LOSE`가 기전적으로 강제됨 — job 896565가 실측
+확정(`SW=0`·`gpC=3.232`), 단 서버 로그 `SLO-FEAS refused=152`로
+"죽음"이 아니라 "봉쇄"임이 드러남(rev2 재감사 B29, ★메모리항목
+21의 거울상). rev2: `visits_argmax` 신설로 우회 시도했으나 강제의
+**이름만** 바뀜(`CONTROLLER_DEGENERATE`, d34↔d44 격차 1.5%<δ/2가
+판정을 가름) + δ 미재도출로 최빈 결과가 `INCONCLUSIVE`(P≈0.66) +
+§7 세 대조 전부 반증불가. 설계층 도달가능성: 시나리오 A(정본이
+지지하는 좌표) = `NOTHING_PURCHASABLE`(캠페인 정보량 전체가
+argmax 추첨 하나에 걸림). rev3 작성 완료·★감사 대기.
+
+★**M4R**(`workspace/engine-port/results/m4r_confinement/`) —
+§1-24·§1-26(B) 후속. rev1 F1: 노출변수 `R`이 정본 등재 항등식
+(`decode_sms≠108 ⟺ prefill_active_batch_size>0`)과 aliased — SM
+맞추면 R이 1.762→1.097로 붕괴, 부호가 108/D와 같은 모양으로
+confinement 예측과 반대 방향. rev2가 `R_matched`로 estimand를
+이관했으나 F1′: `sm_match` 가드 자체가 엔진이 강제하는 항등식
+(28파일 39,849구간 반례 0)이고 "SM 매칭"은 구간의 왼쪽 끝점에서만
+성립 — 자유 다리는 파티션 복원 지연 구간 자체(65–87%가 앞뒤 모두
+108 SM). batch 층화 시 108/D 서명 재출현. 7셀 중 6셀이 자기
+가드에 막히고 유일 생존 셀은 `RESIDUAL_INCONCLUSIVE`(블록 t-CI
+7/7이 1 포함). 도달가능성: `SINGLE_LABEL_FORCED`. **유일한 해소
+경로 = `PDMUX_STICKY_PARTITION=1` 신규 측정.**
+
+★★**설계층 도달가능성 메타검사 신설**(`scripts/discipline/
+design_reachability.py`) — 규칙 파일의 `T2_reachable`은 격자
+내부 성질이라 설계층 도달불가를 못 잡는다; 이 도구는 "등록된
+설계+이미 측정된 데이터가 실제로 낼 수 있는 실질 라벨"을 묻는다.
+두 트랙에서 독립 발화(신규 방법론 교훈, §3 항목101). ★**제출
+게이트 신설**(`presubmit.py`) — 규율 도구 4종의 첫 등록 실행
+지점, 현재 `exit=1`(TC1 rev3 spec `OK` / M4R rev2 spec `BLOCK`).
+
+★**인용 규율 발견**: 번호 체계가 **넷**(`CLAUDE.md`·
+`PROJECT_STATUS`·`CONSENSUS §3`·메모리 topic)인데 다수 사전등록이
+둘로만 셈(§3 항목102). `stage0ppp_a0_rule.py:2`의 `(gate #66)`은
+오인용(정답 = 항목81/게이트 #61) — ★파일은 완주 실험 A0의 동결
+규칙 정본이라 **제자리 수정 금지**, `PROJECT_STATUS.md` 정오표로만
+처리. TC1 rev1의 정정문 자체도 같은 문장 안에서 다시 틀렸다
+(rev2가 정정).
+
+★★**불변**: HE0·정책 순위·gate #13/#16 "닫았다" 금지·switch-cost
+"닫았다" 금지·C2 인용정지 (a)(b)·`CONSENSUS §1-24` 전부 유지. 상세
+`workspace/engine-port/results/{tc1_model_attrib,m4r_confinement}/`,
+`workspace/engine-port/results/REACHABILITY_FINDING_2026-08-28.md`,
+`workspace/engine-port/scripts/discipline/PRESUBMIT_CHECKLIST.md`,
+`PROJECT_STATUS.md` 최상단 절.
+
+이전: 2026-08-26 rev49 (doc-steward — ★★★**kernel_mech A1(엔진
 기판) sticky 재설계(rev2) 규칙층 감사 **3회, 전부 `NO-GO`**(1·3
 회차 死因 없음·차단만, ★2회차 판정서는 파일로 저장되지 않음) +
 ★A1 스모크 **job 893663**(GPU ≈0.014 GPU-hr, 채점 판정 0건·세
@@ -2331,6 +2391,24 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     engine-port/results/nsl_lever/audit_nsl_bundle_2026-08-26/
     VERDICT.md` D1, `PROJECT_STATUS.md` "방법론 게이트" #21
     追記와 대응.
+    ★**追記(2026-08-28, TC1 rev2 규칙층 감사 B29) — 판정서
+    자신이 최강 증거를 안 적는 형태의 재발, ★역시 반대 방향.**
+    F2 anchor 확정 프로브(job 896565)의 사전등록 결정규칙은
+    `SW`(이동 횟수) 하나만으로 `F2_CONFIRMED`를 냈다. `SW=0`은
+    **"컨트롤러가 anchor에 앉았다"**와 **"컨트롤러가 아예
+    평가되지 않았다(측정 실패)"**를 구별하지 못하는데, 사전등록에
+    이 둘을 가르는 liveness 절이 없었다 — 판정서(`f2_verdict_
+    896565.md`)도 `SW=0`만 인용하고 그 구별을 적지 않았다. 재감사가
+    서버 로그를 열어 `SLO-BIND 0줄` / `SLO-FEAS refused 152줄`을
+    확인한 뒤에야 컨트롤러가 "죽은 게 아니라 살아서 막혔다"는
+    사실이 드러났다(판정 `F2_CONFIRMED` 자체는 이 확인으로
+    유지된다). 이번 재발은 항목35 6·7차와 달리 **판정 자체는
+    옳았고 근거 문서의 완전성만 결여**됐다는 점에서 새 부류다 —
+    측정량이 두 가지 다른 물리적 상태를 하나의 숫자로 접을 때는
+    liveness/생존 증거를 판정서 본문에 명시적으로 병기하라. 상세
+    `workspace/engine-port/results/tc1_model_attrib/
+    audit_tc1_rules_rev2_2026-08-28/VERDICT.md` B29,
+    `PROJECT_STATUS.md` "방법론 게이트" #21 追記와 대응.
 36. ★★★**(2026-08-09, engine-porter 발견 + 메인 세션 노출범위
     실측) 통계 라이브러리의 조용한 폴백은 아티팩트에 기록되지
     않는다 — 분석 재현 시 인터프리터 환경을 아티팩트에 남겨라.**
@@ -4281,6 +4359,93 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
      `workspace/engine-port/results/nsl_lever/
      audit_nsl_bundle_2026-08-26/VERDICT.md` B9,
      `PROJECT_STATUS.md` "방법론 게이트" #80과 대응.
+     ★**追記(2026-08-28, TC1 rev2·M4R rev2 규칙층 재감사) — 이
+     패턴이 두 트랙에서 각각 독립적으로 재발.** TC1 rev2 감사의
+     단일 판정 질문 답이 **"국소였다"**였다 — rev1의 F1–F4 수리는
+     지목 좌표에서 전부 옳았으나(반증 실패 §6 참조), F2 수리
+     (`visits_argmax`)가 새 강제(F5=`CONTROLLER_DEGENERATE`)를
+     만들었고, δ 재도출 누락이 F6(`INCONCLUSIVE` 사구간)을,
+     계측 체제 변경 미등록이 F7(대조 3종 오염)을 낳았다. M4R
+     rev2는 F1(노출-realized SM aliasing)의 처방(`R_matched`,
+     SM 맞춘 대조)이 "이름만 바뀐" 형태로 재발(F1′ — `sm_match`
+     가드 자체가 엔진이 강제하는 항등식이고 자유 다리는 파티션
+     복원 지연 구간 그 자체)했고, 대조 4종 전부(F2′)·설계층
+     도달가능성(F3′)·드레인 컷 해석(F4′, "포화"가 표본 해상도의
+     구멍이었음)이 같은 형태로 새로 열렸다. ⇒ 이 항목의 실무
+     규칙("수리를 반영할 때는 파급을 재도출하라")이 **2회차
+     시행조차 완전히 지켜지지 않았다**는 것을 두 독립 트랙이
+     동시에 보였다 — 정확한 전역 재발 횟수는 이 항목 원문
+     개정 이력에서 확인할 것(본 追記는 카운트를 갱신하지 않는다).
+     상세 `workspace/engine-port/results/tc1_model_attrib/
+     audit_tc1_rules_rev2_2026-08-28/VERDICT.md` §0,
+     `workspace/engine-port/results/m4r_confinement/
+     audit_m4r_rules_rev2_2026-08-28/VERDICT.md` §3(rev1 대비
+     닫힘/안 닫힘 표), `PROJECT_STATUS.md` "방법론 게이트" #80
+     追記와 대응.
+
+101. ★★**(2026-08-28, TC1 rev2·M4R rev2 규칙층 재감사 공통 요구
+     + `design_reachability.py` 신설, claims-auditor + doc-steward,
+     GPU 0) 도달가능성 검사가 격자 안에서만 돌면, 설계가 답을
+     미리 정해 놓아도 통과한다 — 게이트 #40(결정량 자체가
+     항등식일 수 있다)의 설계층 판본.** 규칙 파일의
+     `T2_reachable`류는 "라벨이 등록 격자 어딘가에 나타나는가"를
+     묻는 **격자 내부 성질**이라 설계층 도달불가를 원리적으로
+     못 잡는다(TC1 rev1 감사 B13·M4R rev2 감사 F3′가 각각 이
+     구멍을 독립 지적). 반대 질문 — **등록된 설계와 이미 측정된
+     데이터가 실제로 낼 수 있는 실질 라벨은 무엇인가**(모든
+     제약에 출처 문자열 강제, 출처 없는 제약은 거부) — 을 던지는
+     메타검사를 두 트랙에 돌린 결과: **M4R rev2** = 실질 라벨
+     3종(`RESIDUAL_{PRESENT,ABSENT,INCONCLUSIVE}`) 중
+     **`RESIDUAL_INCONCLUSIVE` 하나만** 도달 가능
+     (`SINGLE_LABEL_FORCED`, 7/7 셀의 블록 클러스터 t-CI가 1을
+     포함). **TC1 rev2 시나리오 A**(argmax=d44, 정본 §1-7·§1-33이
+     두 번 지지하는 좌표) = **낼 수 있는 실질 라벨 0개**
+     (`NOTHING_PURCHASABLE`) — 캠페인 50 job 전체의 정보량이
+     Stage 1 argmax 추첨 하나(d34↔d44 격차 1.5% = 등록 문턱
+     δ의 절반)에 걸려 있었다. 두 사례 모두에서 결정량 자체도
+     이미 항등식이었지만(TC1의 `visits_argmax`, M4R의
+     `sm_match`는 둘 다 엔진 코드가 강제하는 진짜 항등식), 이
+     항목이 지적하는 것은 그와 **독립인 상위 층의 문제**다 —
+     설령 결정량이 매 세계에서 데이터에 반응하더라도, 등록된
+     설계+실제 데이터가 만드는 부분집합에 실질 라벨이 0개나
+     1개뿐이면 그 결정 자체가 항등식이 된다. 실무 규칙:
+     사전등록 산출물로 `reachability_spec.json`을 요구하고,
+     `NOTHING_PURCHASABLE` 또는 `SINGLE_LABEL_FORCED`이면
+     **제출 금지**로 못 박아라(이 세션에 `presubmit.py` 제출
+     게이트로 집행 완료). 상세 `workspace/engine-port/results/
+     REACHABILITY_FINDING_2026-08-28.md`, `workspace/engine-port/
+     results/{tc1_model_attrib/reach_verdict_A.json,
+     m4r_confinement/reachability_verdict.json}`,
+     `PROJECT_STATUS.md` "방법론 게이트" #81과 대응.
+
+102. ★**(2026-08-28, TC1 rev1 규칙층 감사 §3, claims-auditor,
+     GPU 0) 번호 참조 체계가 넷인데 사전등록이 둘로만 세면,
+     "정정문" 자체도 오인용을 재생산한다.** 이 저장소는 번호
+     체계가 넷이다 — `CLAUDE.md` "방법론 게이트"(#1–8) ·
+     `PROJECT_STATUS.md` "방법론 게이트"(#1–80대) · 이 문서
+     §3 교훈 항목(#1–100대) · 메모리 topic
+     `deconfound-measurement-lessons` 항목(#1–80대). TC1 rev1
+     사전등록 §0은 이를 둘로만 셌고, `results/kernel_mech/
+     stage0ppp/stage0ppp_a0_rule.py:2`의 `(gate #66)`이
+     rules-as-code 규율을 잘못 가리킨다는 지적(사실관계는
+     정확 — 게이트 #66은 "포크는 원본의 하드와이어를 상속한다"
+     이지 rules-as-code가 아니다)을 하면서 **그 자신의 정정문
+     안에서** "CONSENSUS §3 교훈 항목66"이라고 다시 썼다 —
+     정답은 **항목81**(대응 게이트는 `PROJECT_STATUS.md` 게이트
+     #61)이다. 즉 오인용을 지적하는 문장이 같은 문서·같은
+     단락 안에서 새 오인용을 만들었다(게이트 #67/#70 — "검증
+     칸에는 이미 실행된 검증만 적어라"의 재발이기도 하다). 같은
+     저장소에서 같은 파일이 동일 번호(`#4`)를 체계 A(`CLAUDE.md`
+     집계 단위 게이트)와 체계 B(`PROJECT_STATUS.md` goodput
+     정의 게이트) 양쪽 의미로 섞어 쓴 사례도 확인됐다
+     (`p1_gates/gate2/PREREG_GATE2S_2026-08-09.md`). 실무 규칙:
+     번호를 인용할 때는 **항상 체계 이름을 병기**하라
+     (`CLAUDE.md 게이트 #N` / `PS게이트 #N` / `CONSENSUS §3
+     항목N` / `메모리항목 N`) — 다른 문서가 "정정했다"고 적은
+     서술 자체를 검증 없이 승계하지 마라. 상세 `workspace/
+     engine-port/results/tc1_model_attrib/
+     audit_tc1_rules_2026-08-27/VERDICT.md` §3,
+     `PROJECT_STATUS.md` "방법론 게이트" #82와 대응.
 
 ---
 
@@ -4344,6 +4509,9 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `workspace/engine-port/results/kernel_mech/a1_smoke/{a1_smoke.sbatch, RESULT_A1_SMOKE_893663_2026-08-26.md}` | ★★**A1 배관 스모크 — job 893663(2026-08-26, ≈0.014 GPU-hr), 채점 판정 0건(게이트 #25), 세 항목 PASS.** (a) `E1_DECODE_REALIZED(16)=1.0000`(batch-synchronous 워크로드, `t_decode_active=35.5s`, hist `D16`만 — §5.1a가 등록한 모집단 간극[0.99 문턱의 근거 21 부팅이 전부 ShareGPT open-loop]을 닫음) (b) `decode_iterations` 0→415 (c) `PDMUX_GREEN_READOUT` 첫 부팅 실행, sticky division decode 스트림에서 드라이버가 `smCount=16`을 답함(`GREEN_TARGET_CONFIRMED`의 첫 관측, `D=16` 한 점뿐·`D=92` 미관측). 배너로 `pp_size=1 ∧ pp_max_micro_batch_size=None` 실측 확인(NSL ②§1.2 전제). ★★**한정 엄수**: n=1 부팅·35.5초 — *"batch-sync에서 realized는 1.0이다"* 로 일반화 금지, 사는 것은 "기전이 존재하는 모집단에서 게이트가 물리적 사실 때문에 발화하지 않는다"뿐. **금지 문장**: "스모크가 통과했으므로 A1을 제출할 수 있다"(규칙층 3회 전부 `NO-GO`) · 어떤 성능·지연·처리량 문장도. 정본 반영 = `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(A1 행 追記) |
 | `workspace/engine-port/results/nsl_lever/{PREREG_NSL_STEP3_KNOB_PURITY_2026-08-25.md, DESIGN_NSL_STEP2_ADMISSION_SITES_2026-08-25.md, nsl_eb/PREREG_NSL_EB_ATTRIBUTION_2026-08-25.md, nsl_eb/nsl_eb_rule.py, audit_nsl_bundle_2026-08-26/VERDICT.md}` | ★★★**NSL ③②E-B 묶음 — 그 트랙 첫 규칙층 감사 `NO-GO`, ★死因 4건(2026-08-26, claims-auditor, 게이트 #34 1단), 정본 등재 완료(doc-steward, 같은 날).** ③(손잡이 순화 사전등록, R1–R6, cap 술어 상수=`pp_max_micro_batch_size`) · ②(`batch_is_full` 사이트 5개/도달 2개, 초판 `:2369` "도달" 자기 정정) · E-B(`nsl_eb_rule.py`, 13,440 세계, cap 스윕 제외 한 셀 귀속으로 축소). **死因**: D1(`WORKLOAD_NOT_SATURATING`이 실질 성공[등록 rate-3 부팅 4개, ≈0.7 GPU-hr]을 삼킴, §3 항목35 追記) · D2(TOOLLIMIT 유일 술어 `SITES_INCOMPLETE`에 관측 채널 없음, §3 항목98) · D3(추정량이 순서통계량[§3 항목97] + 거울 대칭 검사를 격자 인공물 근거로 삭제[§3 항목93 追記]) · D4(cap 축 제거가 답을 미리 정함). ★**반증 실패**: ③ 코드 사실 전부 정확 · ②§1.1·§1.2가 주장보다 강함(`pp_max_micro_batch_size`가 실현 cap으로 채워짐, 구조적으로 강건) · E-A 수치 전부 재현. ★★§4.1 헤드라인이 거짓으로 확인(A1 3회차 6가족 중 4개만 베끼고 그 회차 런킬러 3개 누락 — §3 항목100 재현 사례). de-confound 처방 자체가 자유 모수일 수 있다는 관찰(B2, §3 항목99)도 이 감사에서 도출. **금지 문장**: "cap이 문다/안 문다" · "①이 잰 정본 셀이다"(cap arm 하나뿐) · "NSL이 admission 축을 쟀다" · "②의 엔진 패치가 배선됐다"(0줄). 새 성능 판정 0건·HE0 불변. 정본 반영 = §3 항목97–99(신설)·35·93(追記), `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리(NSL-1 행 追記)·"방법론 게이트" #77–79(신설) |
 | `workspace/engine-port/scripts/discipline/{check_line_citations.py, line_citations.json, check_doc_facts.py}` | ★**규율 도구 2종 신설(2026-08-25~26, 메인 세션, GPU 0)** — 산문 규율 반복 실패 가족을 기계 검사로 이전. `check_line_citations.py`(+매니페스트 50건, 단위 테스트 16) = 지문 기반 드리프트 검출 + 정정 인용 제시 + 재베이스 거부 + bare 인용/`[HIST]`/고아 키 탐지. `check_doc_facts.py`(11 facts/14 occurrences, 첫 실행 7건 적발) = 문서 자기-아티팩트 수치를 진리원과 대조. ★**두 도구 다 한계가 감사에서 즉시 노출**: line-citations는 `--snapshot`이 편집 파일 기준선을 조용히 갱신해 거짓 인증을 낼 수 있었다(§3 항목96, 재베이스 거부+고아 탐지로 부분 수리) + bare `:NNN`·쉼표 목록 미포착 · doc-facts는 표 안 수치를 못 읽어 NSL §4.1 헤드라인 오류를 못 잡음. **아직 사전등록 "제출 전 체크리스트"에 등재되지 않음.** 정본 반영 = §3 항목96(신설) |
+| `workspace/engine-port/results/tc1_model_attrib/{PREREG_TC1_RULES_2026-08-27.md, tc1_rule.py, audit_tc1_rules_2026-08-27/VERDICT.md, PREREG_TC1_RULES_REV2_2026-08-27.md, tc1_rule_rev2.py, audit_tc1_rules_rev2_2026-08-28/VERDICT.md, probes/}` | ★★★**TC1(모델귀속) — 규칙층 감사 2회, 전부 `NO-GO`(2026-08-27·2026-08-28, claims-auditor, 게이트 #34 1단), 정본 등재 완료(doc-steward, 2026-08-28).** rev1: 死因 4(F1 sticky+bind 상호배타 ⇒ `MEASUREMENT_ABSENT` 강제·F2 anchor=argmax ⇒ `NO_FLIP_BOTH_LOSE` 강제·F3 estimand 3종 미지정·F4 부호 재척도불변 방어가 대수적 거짓)·차단 18. ★**GPU 실측 F2 확정 프로브 job 896565**(2026-08-28, ≈0.20 GPU-hr, `F2_CONFIRMED`, `SW=0`·`gpC=3.232`) — 단 rev2 재감사가 서버 로그(`SLO-FEAS refused=152`)로 "죽음"이 아니라 "봉쇄"임을 확인(B29, 메모리항목21 거울상). rev2: `visits_argmax` 신설로 F2를 우회하려 했으나 강제가 **이름만** 바뀜(F5=`CONTROLLER_DEGENERATE`) + δ 미재도출로 최빈 결과가 `INCONCLUSIVE`(F6, P≈0.66) + §7 세 대조 전부 반증불가(F7) — 단일 판정질문 답 = **"국소였다"**(死因 3·차단 12, B19–B30). 설계층 도달가능성(GPU 0): 시나리오 A(정본 지지 좌표) = `NOTHING_PURCHASABLE`. **rev3 작성 완료(`PREREG_TC1_RULES_REV3_2026-08-28.md`, `tc1_rule_rev3.py`) — ★규칙층 감사 미실행, 판정 없음.** 새 성능 판정 0건·HE0 불변. 금지 문장·상세는 `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리 tc1_model_attrib 행. 정본 반영 = §3 항목101–102(신설), `PROJECT_STATUS.md` "방법론 게이트" #81–82(신설) |
+| `workspace/engine-port/results/m4r_confinement/{PREREG_M4R_RULES_2026-08-27.md, m4r_rule.py, audit_m4r_rules_2026-08-27/VERDICT.md, PREREG_M4R_RULES_REV2_2026-08-28.md, m4r_rule_rev2.py, audit_m4r_rules_rev2_2026-08-28/VERDICT.md, probes/}` | ★★★**M4R(confinement) — 규칙층 감사 2회, 전부 `NO-GO`(2026-08-27·2026-08-28, claims-auditor, 게이트 #34 1단), 정본 등재 완료(doc-steward, 2026-08-28).** §1-24·§1-26(B) 후속. rev1 F1: 노출변수 `R`이 정본 등재 항등식(`decode_sms≠108 ⟺ prefill_active_batch_size>0`, §1-25 追記·§1-26(B))과 aliased — G16 confined 스냅샷 100.0%가 decode=D SM, SM 맞추면 R이 1.762→1.097로 붕괴·전 셀 `R_MIN` 미달·부호가 108/D와 같은 모양(§3(a) confinement 예측과 반대). rev1 死因 4·차단 16. rev2가 `R_matched`(SM 맞춘 대조)로 estimand를 이관했으나 F1′: `sm_match` 가드 자체가 엔진이 강제하는 항등식(28파일 39,849구간 반례 0)이고 "SM 매칭"은 구간의 **왼쪽 끝점**에서만 성립 — 자유 다리는 파티션 복원 지연 구간 자체(65–87%가 앞뒤 모두 108 SM), batch 층화 시 108/D 서명 재출현(1.061–1.387). 대조 4종 전부 반증불가(F2′), 7셀 중 6셀이 자기 가드에 막히고 유일 생존 셀 `RESIDUAL_INCONCLUSIVE`(F3′, 블록 t-CI 7/7이 1 포함), 드레인 "포화"가 표본 해상도 구멍이었음 확인(F4′) — rev2 死因 4·차단 12. ★★**불변 재확인**: `CONSENSUS §1-24`는 반증되지 않았다 — 두 감사 모두 "이 채널로는 답할 수 없다"고만 말한다. **유일한 해소 경로 = `PDMUX_STICKY_PARTITION=1` 신규 측정**("M4R은 GPU 0이다" 금지 문장, ★rev1이 이미 금지했고 rev2 §1 F2 행이 위반 — B10′). 새 성능 판정 0건·HE0 불변·§1-24 불변. 금지 문장·상세는 `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리 m4r_confinement 행. 정본 반영 = §3 항목101(신설), `PROJECT_STATUS.md` "방법론 게이트" #81(신설) |
+| `scripts/discipline/design_reachability.py`(저장소 루트) + `workspace/engine-port/scripts/discipline/{presubmit.py, presubmit_registry.json, PRESUBMIT_CHECKLIST.md}` | ★**설계층 도달가능성 메타검사 + 제출 게이트 신설(2026-08-28, GPU 0, 성능 판정 대상 아님)** | TC1 rev2·M4R rev2 두 재감사가 공통 요구한 메타검사 — 규칙 파일의 `T2_reachable`(격자 내부 성질)과 달리 등록된 설계+이미 측정된 데이터가 실제로 낼 수 있는 실질 라벨을 묻는다(모든 제약에 출처 문자열 강제). `presubmit.py`가 규율 도구 4종(`check_line_citations`·`check_doc_facts`·`check_citation_stops`·`design_reachability`)의 **첫 등록된 실행 지점**(감사 B11이 2026-08-26에 지적한 결손 해소). 현재 실행: `exit=1`(제출 금지) — line_citations/doc_facts/citation_stops `OK`, reachability `reach_spec_rev3_A.json→DISCRIMINATING`(OK) / `reachability_spec.json→SINGLE_LABEL_FORCED`(BLOCK, M4R rev2). ★**경로 미정본화**: `design_reachability.py`가 저장소 루트 `scripts/discipline/`에 있고 기존 도구 셋은 `workspace/engine-port/scripts/discipline/`에 있다 — 동시 세션이 그 경로로 호출 중이라 지금 옮기지 않았다(doc-steward 소관, 다음 세션 조율); `presubmit.py`는 두 위치를 모두 찾는다. 정본 반영 = §3 항목101(신설), `PROJECT_STATUS.md` "방법론 게이트" #81(신설) |
 
 `deprecated_reports/`(2026-07-24부터 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)) = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 
