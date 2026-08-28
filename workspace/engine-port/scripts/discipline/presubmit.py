@@ -16,7 +16,15 @@
 차단 조건 (하나라도 걸리면 제출 금지):
   * line-citation 드리프트
   * doc-fact 위반
-  * 도달가능성이 NOTHING_PURCHASABLE 또는 SINGLE_LABEL_FORCED
+  * 도달가능성이 NOTHING_PURCHASABLE · SINGLE_LABEL_FORCED · RESTRICTIONS_INERT ·
+    RESTRICTION_DROPPED_UNEXPLAINED · PRIOR_UNREGISTERED
+  * ★레지스트리에서 spec이 **사라짐**(append-only 위반)
+
+★rev2 (2026-08-28): TC1 rev3 감사가 이 파일의 구멍을 실증했다 — *"레지스트리에서 빼면
+통과한다"* 는 가설이 아니라 **이미 일어난 일**이었다. 커밋 `d11243a`가 TC1을
+`NOTHING_PURCHASABLE`로 막던 `reach_spec_A.json`을 **rev3 spec을 추가한 같은 커밋에서
+삭제**했다. 판정 대상이 자기 판정 범위를 정할 수 있으면 게이트가 아니다.
+⇒ 레지스트리는 **append-only**이고, 빼려면 `superseded`로 **표시**해야 한다(삭제 불가).
 """
 import argparse, json, os, subprocess, sys
 
@@ -31,7 +39,36 @@ REACH_CANDIDATES = [
     os.path.join(ROOT, "scripts", "discipline", "design_reachability.py"),
 ]
 
-BLOCKING_REACH = {"NOTHING_PURCHASABLE", "SINGLE_LABEL_FORCED"}
+BLOCKING_REACH = {"NOTHING_PURCHASABLE", "SINGLE_LABEL_FORCED", "RESTRICTIONS_INERT",
+                  "RESTRICTION_DROPPED_UNEXPLAINED", "PRIOR_UNREGISTERED"}
+
+
+def _specs(reg):
+    """항목은 문자열(활성) 또는 {spec, status, superseded_by}."""
+    out = []
+    for e in reg.get("reachability_specs", []):
+        if isinstance(e, str):
+            out.append({"spec": e, "status": "active"})
+        else:
+            out.append({"spec": e["spec"], "status": e.get("status", "active"),
+                        "superseded_by": e.get("superseded_by")})
+    return out
+
+
+def append_only_violations(registry_path):
+    """★HEAD 판본에 있던 spec이 지금 **사라졌다면** append-only 위반.
+    superseded로 남겨 두는 것은 허용, 통째로 지우는 것은 금지."""
+    rel = os.path.relpath(os.path.abspath(registry_path), ROOT)
+    rc, out = run(["git", "show", f"HEAD:{rel}"], cwd=ROOT)
+    if rc != 0:
+        return []                                  # 최초 등록 등 — 비교 대상 없음
+    try:
+        prev = json.loads(out)
+    except Exception:
+        return []
+    now = {e["spec"] for e in _specs(json.load(open(registry_path)))}
+    gone = [e["spec"] for e in _specs(prev) if e["spec"] not in now]
+    return gone
 
 
 def run(cmd, cwd=None):
@@ -46,6 +83,14 @@ def main():
     a = ap.parse_args()
     reg = json.load(open(a.registry))
     blocks, notes = [], []
+
+    # 0) append-only -- 판정 대상이 자기 판정 범위를 줄이지 못하게
+    gone = append_only_violations(a.registry)
+    if gone:
+        blocks.append(("registry_append_only", 1,
+                       [f"HEAD에 있던 spec이 삭제됨: {gone} — superseded로 표시하라"]))
+    else:
+        notes.append(("registry_append_only", 0, ["삭제 0건"]))
 
     # 1) line citations -----------------------------------------------------
     if reg.get("check_line_citations", True):
@@ -69,7 +114,13 @@ def main():
 
     # 4) design-layer reachability, per REGISTERED spec ---------------------
     reach = next((p for p in REACH_CANDIDATES if os.path.exists(p)), None)
-    for spec in reg.get("reachability_specs", []):
+    for ent in _specs(reg):
+        spec = ent["spec"]
+        if ent["status"] == "superseded":
+            notes.append(("reachability", 0,
+                          [f"{os.path.basename(spec)} -> superseded by "
+                           f"{ent.get('superseded_by') or '?'} (미검사)"]))
+            continue
         sp = spec if os.path.isabs(spec) else os.path.join(ROOT, spec)
         if reach is None or not os.path.exists(sp):
             blocks.append(("reachability", 2, [f"missing tool or spec: {spec}"]))

@@ -3,9 +3,29 @@
   "check_line_citations": true,
   "check_doc_facts": true,
   "reachability_specs": [
-    "workspace/engine-port/results/m4r_confinement/reachability_spec.json",
-    "workspace/engine-port/results/tc1_model_attrib/reach_spec_rev3_A.json"
+    {
+      "spec": "workspace/engine-port/results/tc1_model_attrib/reach_spec_A.json",
+      "status": "superseded",
+      "superseded_by": "reach_spec_rev3_A.json"
+    },
+    {
+      "spec": "workspace/engine-port/results/tc1_model_attrib/reach_spec_B.json",
+      "status": "superseded",
+      "superseded_by": "reach_spec_rev3_A.json"
+    },
+    {
+      "spec": "workspace/engine-port/results/m4r_confinement/reachability_spec.json",
+      "status": "active"
+    },
+    {
+      "spec": "workspace/engine-port/results/tc1_model_attrib/reach_spec_rev3_A.json",
+      "status": "active"
+    },
+    {
+      "spec": "workspace/engine-port/results/cp_baseline/spec_C1_canonical.json",
+      "status": "active"
+    }
   ],
   "check_citation_stops": true,
-  "_active_note": "트랙별 '현재 제출 후보' 하나씩. 폐기(SUPERSEDED)된 판본의 spec은 뺀다 — 판정은 그 파일과 문서에 보존된다."
+  "_active_note": "★append-only. spec을 빼려면 status=superseded + superseded_by로 표시한다. 통째 삭제는 presubmit이 차단한다 — 커밋 d11243a에서 판정 대상이 자기 판정 범위를 줄인 전례가 있다."
 }
