@@ -1,0 +1,12 @@
+{
+  "label": "TC1 rev2 -- scenario A (visits_argmax = no)",
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/tc1_model_attrib/tc1_rule_rev2.py",
+  "world_is_tuple": true,
+  "out": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/tc1_model_attrib/reach_verdict_A.json",
+  "restrict": {
+    "boot_H": {"values": ["ok"], "why": "job 896565 boot_ok=1 on the canonical harness."},
+    "boot_T": {"values": ["ok"], "why": "TC0 precedent: Qwen2.5-3B boots under pdmux (stage0_pdmux_capture.sbatch:89)."},
+    "visits_H": {"values": ["no"], "why": "canon s1-10 (n=9): bind+GATE visits {d24,d34} only, never d44; job 896565 confirms 0 moves / 152 SLO-FEAS refused at the anchor. argmax = d44 per s1-7 (3.220 max) and s1-33 (goodput argmax d44 3.7973)."},
+    "sign_H": {"values": ["lose_sig", "equiv", "undecided"], "why": "audit F6: Delta_H = 3.132-3.220 = -0.088 < 0, so P(win) ~ 0. Which of the three occurs is P=0.227/0.116/0.66 at the registered constants."}
+  }
+}

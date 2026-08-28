@@ -1,0 +1,52 @@
+{
+  "design_labels_all": {
+    "AGGREGATION_DEPENDENT": 3,
+    "BATCH_CONFOUNDED": 6,
+    "COVERAGE_THIN": 12,
+    "RESIDUAL_INCONCLUSIVE": 3,
+    "TELEMETRY_ABSENT": 24
+  },
+  "design_substantive": {
+    "RESIDUAL_INCONCLUSIVE": 3
+  },
+  "grid_substantive": {
+    "RESIDUAL_ABSENT": 1,
+    "RESIDUAL_INCONCLUSIVE": 4,
+    "RESIDUAL_PRESENT": 1
+  },
+  "label": "M4R rev2 under its own measured grid",
+  "reading": "Exactly one substantive label is reachable, so the verdict is fixed before the data arrive. This is the gate-#40 failure at the design layer rather than the algebra layer.",
+  "restrictions": {
+    "cadence": {
+      "values": [
+        "ok"
+      ],
+      "why": "audit B5': CADENCE_MAX_RATIO was deleted from rev2 constants while the label was kept -- a guard with no value cannot fire."
+    },
+    "ci": {
+      "values": [
+        "includes_one"
+      ],
+      "why": "audit F3' table: block-clustered t-CI (n=4) includes 1 in 7 of 7 cells (d16 [0.930,1.396] ... d74 [0.855,1.199])."
+    },
+    "iters": {
+      "values": [
+        "advances"
+      ],
+      "why": "audit B5': delta decode_iterations == 16 in 99.16% of intervals (verified this session, 1418/1430 on g16_blk1_d44). ITERATIONS_FLAT has no firing world."
+    },
+    "sm_match": {
+      "values": [
+        "ok"
+      ],
+      "why": "audit_m4r_rules_rev2 F1'(a): 28 files / 39,849 decode-busy intervals, confined AND decode_sms != D = 0 cases. The guard has no firing world; the engine forces it."
+    }
+  },
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/m4r_confinement/m4r_rule_rev2.py",
+  "rule_rev": 2,
+  "unreachable_by_design": [
+    "RESIDUAL_ABSENT",
+    "RESIDUAL_PRESENT"
+  ],
+  "verdict": "SINGLE_LABEL_FORCED"
+}
