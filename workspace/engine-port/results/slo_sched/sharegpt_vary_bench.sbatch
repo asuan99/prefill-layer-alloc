@@ -29,7 +29,10 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONUNBUFFERED=1
 export TRITON_CACHE_DIR="$OUT/../../triage/.triton_cache"
 
 MODE="${1:-bind}"; REP="${2:-1}"; RLO="${3:-3}"; RHI="${4:-12}"
-MODEL=Zyphra/Zamba2-2.7B; CTX=4096; NP="${NP:-200}"; ROUNDS="${ROUNDS:-3}"
+# TC0 (2026-08-28): MODEL/CTX are now env-overridable so a size-matched pure
+# Transformer can run the SAME canonical trace.  Defaults are byte-identical to
+# every prior sgptv run, so unset env => unchanged behaviour.
+MODEL="${MODEL:-Zyphra/Zamba2-2.7B}"; CTX="${CTX:-4096}"; NP="${NP:-200}"; ROUNDS="${ROUNDS:-3}"
 SGPT="/scratch/ehmoon/whlee/prefill-layer-alloc/hf_cache/raw/ShareGPT_V3_unfiltered_cleaned_split.json"
 
 case "$MODE" in
