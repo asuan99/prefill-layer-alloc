@@ -1,0 +1,37 @@
+{
+  "cases": {
+    "neither": {
+      "exc": null,
+      "msg": null,
+      "raised": false,
+      "sticky_enabled": false
+    },
+    "slosched1_only": {
+      "exc": null,
+      "msg": null,
+      "raised": false,
+      "sticky_enabled": false
+    },
+    "sticky1_only": {
+      "exc": null,
+      "msg": null,
+      "raised": false,
+      "sticky_enabled": true
+    },
+    "sticky1_slosched1": {
+      "exc": "RuntimeError",
+      "msg": "PDMUX_STICKY_PARTITION with PDMUX_SLO_SCHED is undefined: the SLO controller only decides on prefill spans, and extending its decisions into decode-only spans changes its dynamics",
+      "raised": true
+    }
+  },
+  "extract_sha256": "2c152d2430efba4d761e3cfbd40c2d369e8b251df3023334e727b5859b4944be",
+  "extracted_lines": 69,
+  "gpu_hours": 0.0,
+  "import_path": "verbatim function extract (no re-implementation)",
+  "probe": "TC1-F1",
+  "reading": "TC1 rev1 F1 CONFIRMED — the two knobs rev1 registered as both-required cannot coexist; rev2's withdrawal of the sticky requirement is necessary, not a convenience.",
+  "scope": "Code fact at scheduler init. Says NOTHING about performance, about whether sticky OFF is the right substrate, or about realized residency magnitudes.",
+  "source": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/src/multiplex/multiplexing_mixin.py",
+  "source_sha256": "25d170e0135b285bf72b8b74d18857cdd609cd0e622049561662ddf8ff0c6c56",
+  "verdict": "REFUSED_AT_INIT"
+}

@@ -1,0 +1,281 @@
+{
+  "cells": {
+    "16": {
+      "0": {
+        "R_matched_mean": 1.1461,
+        "T_conf_D": 41.95,
+        "T_free_D_clean": 90.21,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "25": {
+        "R_matched_mean": 1.1631,
+        "T_conf_D": 41.95,
+        "T_free_D_clean": 87.19,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "50": {
+        "R_matched_mean": 1.1631,
+        "T_conf_D": 41.95,
+        "T_free_D_clean": 87.19,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "100": {
+        "R_matched_mean": 1.1631,
+        "T_conf_D": 41.95,
+        "T_free_D_clean": 87.19,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "200": {
+        "R_matched_mean": 1.1631,
+        "T_conf_D": 41.95,
+        "T_free_D_clean": 87.19,
+        "n_blocks": 4,
+        "viable": true
+      }
+    },
+    "24": {
+      "0": {
+        "R_matched_mean": 1.0986,
+        "T_conf_D": 55.35,
+        "T_free_D_clean": 87.16,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "25": {
+        "R_matched_mean": 1.1127,
+        "T_conf_D": 55.35,
+        "T_free_D_clean": 83.42,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "50": {
+        "R_matched_mean": 1.1127,
+        "T_conf_D": 55.35,
+        "T_free_D_clean": 83.42,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "100": {
+        "R_matched_mean": 1.1127,
+        "T_conf_D": 55.35,
+        "T_free_D_clean": 83.42,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "200": {
+        "R_matched_mean": 1.1127,
+        "T_conf_D": 55.35,
+        "T_free_D_clean": 83.42,
+        "n_blocks": 4,
+        "viable": true
+      }
+    },
+    "34": {
+      "0": {
+        "R_matched_mean": 0.9864,
+        "T_conf_D": 75.27,
+        "T_free_D_clean": 77.84,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "25": {
+        "R_matched_mean": 1.0234,
+        "T_conf_D": 75.27,
+        "T_free_D_clean": 69.66,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "50": {
+        "R_matched_mean": 1.0234,
+        "T_conf_D": 75.27,
+        "T_free_D_clean": 69.66,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "100": {
+        "R_matched_mean": 1.0234,
+        "T_conf_D": 75.27,
+        "T_free_D_clean": 69.66,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "200": {
+        "R_matched_mean": 1.0234,
+        "T_conf_D": 75.27,
+        "T_free_D_clean": 69.66,
+        "n_blocks": 4,
+        "viable": true
+      }
+    },
+    "44": {
+      "0": {
+        "R_matched_mean": 0.9673,
+        "T_conf_D": 94.8,
+        "T_free_D_clean": 82.88,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "25": {
+        "R_matched_mean": 1.0018,
+        "T_conf_D": 94.8,
+        "T_free_D_clean": 71.69,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "50": {
+        "R_matched_mean": 1.0018,
+        "T_conf_D": 94.8,
+        "T_free_D_clean": 71.69,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "100": {
+        "R_matched_mean": 1.0018,
+        "T_conf_D": 94.8,
+        "T_free_D_clean": 71.69,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "200": {
+        "R_matched_mean": 1.0018,
+        "T_conf_D": 94.8,
+        "T_free_D_clean": 71.69,
+        "n_blocks": 4,
+        "viable": true
+      }
+    },
+    "54": {
+      "0": {
+        "R_matched_mean": 0.9604,
+        "T_conf_D": 132.67,
+        "T_free_D_clean": 71.21,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "25": {
+        "R_matched_mean": 1.028,
+        "T_conf_D": 132.67,
+        "T_free_D_clean": 57.08,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "50": {
+        "R_matched_mean": 1.028,
+        "T_conf_D": 132.67,
+        "T_free_D_clean": 57.08,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "100": {
+        "R_matched_mean": 1.028,
+        "T_conf_D": 132.67,
+        "T_free_D_clean": 57.08,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "200": {
+        "R_matched_mean": 1.028,
+        "T_conf_D": 132.67,
+        "T_free_D_clean": 57.08,
+        "n_blocks": 4,
+        "viable": true
+      }
+    },
+    "64": {
+      "0": {
+        "R_matched_mean": 0.98,
+        "T_conf_D": 203.44,
+        "T_free_D_clean": 67.26,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "25": {
+        "R_matched_mean": 1.0669,
+        "T_conf_D": 203.44,
+        "T_free_D_clean": 50.84,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "50": {
+        "R_matched_mean": 1.0669,
+        "T_conf_D": 203.44,
+        "T_free_D_clean": 50.84,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "100": {
+        "R_matched_mean": 1.0669,
+        "T_conf_D": 203.44,
+        "T_free_D_clean": 50.84,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "200": {
+        "R_matched_mean": 1.0669,
+        "T_conf_D": 203.44,
+        "T_free_D_clean": 50.84,
+        "n_blocks": 4,
+        "viable": true
+      }
+    },
+    "74": {
+      "0": {
+        "R_matched_mean": 0.9623,
+        "T_conf_D": 288.89,
+        "T_free_D_clean": 57.51,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "25": {
+        "R_matched_mean": 1.0268,
+        "T_conf_D": 288.89,
+        "T_free_D_clean": 38.21,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "50": {
+        "R_matched_mean": 1.0268,
+        "T_conf_D": 288.89,
+        "T_free_D_clean": 38.21,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "100": {
+        "R_matched_mean": 1.0268,
+        "T_conf_D": 288.89,
+        "T_free_D_clean": 38.21,
+        "n_blocks": 4,
+        "viable": true
+      },
+      "200": {
+        "R_matched_mean": 1.0268,
+        "T_conf_D": 288.89,
+        "T_free_D_clean": 38.21,
+        "n_blocks": 4,
+        "viable": true
+      }
+    }
+  },
+  "drain_ms_grid": [
+    0,
+    25,
+    50,
+    100,
+    200
+  ],
+  "gpu_hours": 0.0,
+  "min_clean_s": 20.0,
+  "probe": "M4R-Rmatched",
+  "verdict": "RMATCHED_VIABLE",
+  "viable_cells_by_drain": {
+    "0": 7,
+    "25": 7,
+    "50": 7,
+    "100": 7,
+    "200": 7
+  }
+}

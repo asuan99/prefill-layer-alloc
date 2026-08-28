@@ -1,0 +1,145 @@
+{
+  "all_pass": true,
+  "axes": {
+    "R": [
+      "ge_rmin",
+      "between",
+      "le_one"
+    ],
+    "agg": [
+      "agree",
+      "disagree"
+    ],
+    "batch": [
+      "parity",
+      "skewed"
+    ],
+    "cadence": [
+      "ok",
+      "suspect"
+    ],
+    "ci": [
+      "excludes_one",
+      "includes_one"
+    ],
+    "coverage": [
+      "enough",
+      "thin"
+    ],
+    "iters": [
+      "advances",
+      "flat"
+    ],
+    "sm_match": [
+      "ok",
+      "failed"
+    ],
+    "telemetry": [
+      "ok",
+      "absent"
+    ]
+  },
+  "constants": {
+    "BATCH_PARITY_BAND": [
+      0.8,
+      1.25
+    ],
+    "DRAIN_MS": 25,
+    "MAX_GAP_S": 1.0,
+    "MIN_CLEAN_S": 20.0,
+    "SM_MATCH_MIN": 0.99,
+    "r_min_formula": "1 + 0.01/f  (f = confined share of decode-busy time)"
+  },
+  "failed": [],
+  "guard_order": [
+    "telemetry",
+    "iters",
+    "coverage",
+    "sm_match",
+    "batch",
+    "cadence",
+    "agg"
+  ],
+  "labels": {
+    "DESIGN": [
+      "AGGREGATION_DEPENDENT",
+      "BATCH_CONFOUNDED",
+      "EXPOSURE_ALIASED"
+    ],
+    "MEASUREMENT": [
+      "CADENCE_SUSPECT",
+      "COVERAGE_THIN",
+      "ITERATIONS_FLAT",
+      "TELEMETRY_ABSENT"
+    ],
+    "SUBSTANTIVE": [
+      "RESIDUAL_ABSENT",
+      "RESIDUAL_INCONCLUSIVE",
+      "RESIDUAL_PRESENT"
+    ]
+  },
+  "marginals": {
+    "AGGREGATION_DEPENDENT": 6,
+    "BATCH_CONFOUNDED": 24,
+    "CADENCE_SUSPECT": 12,
+    "COVERAGE_THIN": 96,
+    "EXPOSURE_ALIASED": 48,
+    "ITERATIONS_FLAT": 192,
+    "RESIDUAL_ABSENT": 1,
+    "RESIDUAL_INCONCLUSIVE": 4,
+    "RESIDUAL_PRESENT": 1,
+    "TELEMETRY_ABSENT": 384
+  },
+  "mutants_killed": {
+    "drop_agg": 6,
+    "drop_batch": 24,
+    "drop_cadence": 12,
+    "drop_coverage": 96,
+    "drop_iters": 192,
+    "drop_sm_match": 48,
+    "drop_telemetry": 384,
+    "reorder_sm_batch": 24
+  },
+  "n_worlds": 768,
+  "rule_rev": 2,
+  "rule_sha256": "9a30747aae6bafdad1449400b2fa138598746b533cc94c82f372471b3189cc31",
+  "scope": "Zamba2-2.7B, ShareGPT varying trace, cudagraph ON, G16 grid d16-d74, 4 blocks. NOT multi-model and NOT multi-rate-regime: the audit showed CONFINEMENT_CONFIRMED was unreachable (F4), so rev2 has no such label.",
+  "tests": {
+    "T1_totality": {
+      "detail": "768 worlds",
+      "pass": true
+    },
+    "T2_reachable": {
+      "detail": "unreachable=[]",
+      "pass": true
+    },
+    "T3_measurement_terminal": {
+      "detail": "gate #21: a measurement or design failure is never scored as a verdict",
+      "pass": true
+    },
+    "T4_null_needs_ci": {
+      "detail": "R<=1 with a CI covering 1 is a TIE, not a refutation",
+      "pass": true
+    },
+    "T5_alias_guard_is_the_point": {
+      "detail": "SM-matching failure blocks before any substantive reading",
+      "pass": true
+    },
+    "T6_mutant_coverage": {
+      "detail": "uncovered=[]",
+      "pass": true
+    },
+    "T7_every_guard_has_mutant": {
+      "detail": "",
+      "pass": true
+    },
+    "T8_rmin_varies_with_f": {
+      "detail": "r_min(0.037)=1.270 vs r_min(0.91)=1.011 -- the audit's B14 (single global threshold over a 25x range) is answered",
+      "pass": true
+    },
+    "T9_no_confirmed_label": {
+      "detail": "F4: the label the audit showed unreachable is not defined at all",
+      "pass": true
+    }
+  }
+}

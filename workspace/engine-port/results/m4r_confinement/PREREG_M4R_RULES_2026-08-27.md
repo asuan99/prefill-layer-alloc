@@ -1,5 +1,9 @@
 # 사전등록 **M4R rev1** — §1-24(prefill 강등) 확대 재현
 
+> ★★**SUPERSEDED (2026-08-28)** — 규칙층 감사 `NO-GO`(死因 F1–F4 · 차단 B1–B16). **설계 근거 재사용 금지.**
+> 등록 estimand `R`은 `probes/alias_verdict.json`(28/28 셀 `P(decode_sms==D|confined)=1.0000`)로 **폐기**됐다.
+> 후속 `PREREG_M4R_RULES_REV2_2026-08-28.md` · 판정서 `audit_m4r_rules_2026-08-27/VERDICT.md`.
+
 2026-08-27 · 메인 세션 · ★**규칙층 초안 — 미감사**(게이트 #34 2단 감사의 **1단계 대기**) ·
 GPU 지출 **0**(기존 telemetry 재분석, job 제출 0) · 새 성능 판정 **0건** · 등급 변경 **0건**
 
