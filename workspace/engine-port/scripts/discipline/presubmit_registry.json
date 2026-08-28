@@ -4,8 +4,8 @@
   "check_doc_facts": true,
   "reachability_specs": [
     "workspace/engine-port/results/m4r_confinement/reachability_spec.json",
-    "workspace/engine-port/results/tc1_model_attrib/reach_spec_A.json",
-    "workspace/engine-port/results/tc1_model_attrib/reach_spec_B.json"
+    "workspace/engine-port/results/tc1_model_attrib/reach_spec_rev3_A.json"
   ],
-  "check_citation_stops": true
+  "check_citation_stops": true,
+  "_active_note": "트랙별 '현재 제출 후보' 하나씩. 폐기(SUPERSEDED)된 판본의 spec은 뺀다 — 판정은 그 파일과 문서에 보존된다."
 }

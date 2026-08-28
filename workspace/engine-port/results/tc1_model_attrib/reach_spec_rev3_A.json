@@ -1,0 +1,11 @@
+{
+  "label": "TC1 rev3 -- scenario A, the one that killed rev2 (argmax = d44)",
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/tc1_model_attrib/tc1_rule_rev3.py",
+  "world_is_tuple": true,
+  "out": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/tc1_model_attrib/reach_verdict_rev3_A.json",
+  "restrict": {
+    "boot_H": {"values": ["ok"], "why": "job 896565 boot_ok=1 on the canonical harness."},
+    "boot_T": {"values": ["ok"], "why": "TC0 precedent: Qwen2.5-3B boots under pdmux (stage0_pdmux_capture.sbatch:89)."},
+    "ctrl_H": {"values": ["blocked"], "why": "job 896565 server log: SLO-BIND 0 lines, SLO-FEAS refused 152 lines. The controller proposed moves and was refused -- ALIVE and BLOCKED, not dead. This is the same measurement that forced rev2's visits_argmax = no."}
+  }
+}

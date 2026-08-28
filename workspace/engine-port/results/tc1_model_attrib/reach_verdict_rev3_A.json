@@ -1,0 +1,57 @@
+{
+  "design_labels_all": {
+    "CAPACITY_UNMEASURABLE": 18432,
+    "CLIFF_STRADDLE": 18432,
+    "CONTROLLER_DEAD": 384,
+    "CONTROL_DEGENERATE": 144,
+    "FLIP_MODEL_ATTRIBUTED": 24,
+    "INCONCLUSIVE": 60,
+    "MAGNITUDE_DIFFERS_NO_FLIP": 24,
+    "NOT_DISCRIMINATING": 4608,
+    "NO_INTERACTION": 18,
+    "REALIZED_MISMATCH": 6144,
+    "SCORING_DEPENDENT": 864,
+    "TOKENIZER_SKEW": 6144,
+    "UNDERPOWERED_NULL": 18
+  },
+  "design_substantive": {
+    "FLIP_MODEL_ATTRIBUTED": 24,
+    "INCONCLUSIVE": 60,
+    "MAGNITUDE_DIFFERS_NO_FLIP": 24,
+    "NO_INTERACTION": 18,
+    "UNDERPOWERED_NULL": 18
+  },
+  "grid_substantive": {
+    "FLIP_MODEL_ATTRIBUTED": 72,
+    "INCONCLUSIVE": 180,
+    "MAGNITUDE_DIFFERS_NO_FLIP": 72,
+    "NO_INTERACTION": 54,
+    "UNDERPOWERED_NULL": 54
+  },
+  "label": "TC1 rev3 -- scenario A, the one that killed rev2 (argmax = d44)",
+  "reading": "More than one substantive label is reachable; the design can still be informative, subject to the other audit findings.",
+  "restrictions": {
+    "boot_H": {
+      "values": [
+        "ok"
+      ],
+      "why": "job 896565 boot_ok=1 on the canonical harness."
+    },
+    "boot_T": {
+      "values": [
+        "ok"
+      ],
+      "why": "TC0 precedent: Qwen2.5-3B boots under pdmux (stage0_pdmux_capture.sbatch:89)."
+    },
+    "ctrl_H": {
+      "values": [
+        "blocked"
+      ],
+      "why": "job 896565 server log: SLO-BIND 0 lines, SLO-FEAS refused 152 lines. The controller proposed moves and was refused -- ALIVE and BLOCKED, not dead. This is the same measurement that forced rev2's visits_argmax = no."
+    }
+  },
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/tc1_model_attrib/tc1_rule_rev3.py",
+  "rule_rev": 3,
+  "unreachable_by_design": [],
+  "verdict": "DISCRIMINATING"
+}

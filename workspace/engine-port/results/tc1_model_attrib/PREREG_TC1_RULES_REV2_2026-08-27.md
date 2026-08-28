@@ -1,5 +1,9 @@
 # 사전등록 **TC1 rev2** — 모델 귀속 (rev1 `NO-GO` 반영)
 
+> ★★**SUPERSEDED (2026-08-28)** — 규칙층 재감사 `NO-GO`(死因 F5–F7 · 차단 B19–B30), 그리고
+> **설계층 도달가능성 검사에서 `NOTHING_PURCHASABLE`**(argmax=d44 시나리오). **설계 근거 재사용 금지.**
+> 후속 `PREREG_TC1_RULES_REV3_2026-08-28.md` · 판정서 `audit_tc1_rules_rev2_2026-08-28/VERDICT.md`.
+
 2026-08-27 · ★**규칙층 초안 — 미감사** · GPU 지출 **0** · 미제출 · 새 성능 판정 **0건**
 
 선행: [`PREREG_TC1_RULES_2026-08-27.md`](PREREG_TC1_RULES_2026-08-27.md)(rev1, ★**SUPERSEDED**) +

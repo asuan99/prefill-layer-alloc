@@ -1,0 +1,202 @@
+{
+  "all_pass": true,
+  "axes": {
+    "boot_H": [
+      "ok",
+      "failed"
+    ],
+    "boot_T": [
+      "ok",
+      "failed"
+    ],
+    "cliff": [
+      "clean",
+      "straddle",
+      "capacity_unmeasurable"
+    ],
+    "compar": [
+      "ok",
+      "realized_mismatch",
+      "tokenizer_skew"
+    ],
+    "control": [
+      "ok",
+      "degenerate"
+    ],
+    "ctrl_H": [
+      "reaches",
+      "mispositioned",
+      "blocked",
+      "dead"
+    ],
+    "ctrl_T": [
+      "reaches",
+      "mispositioned",
+      "blocked",
+      "dead"
+    ],
+    "discrim_H": [
+      "ok",
+      "degenerate"
+    ],
+    "discrim_T": [
+      "ok",
+      "degenerate"
+    ],
+    "equiv": [
+      "passes",
+      "fails"
+    ],
+    "int_ci": [
+      "excludes_zero",
+      "includes_zero"
+    ],
+    "inter": [
+      "ge_dint",
+      "between",
+      "le_neg_dint"
+    ],
+    "power": [
+      "adequate",
+      "inadequate"
+    ],
+    "scoring_H": [
+      "agree",
+      "disagree"
+    ],
+    "scoring_T": [
+      "agree",
+      "disagree"
+    ],
+    "signs": [
+      "oppose",
+      "same"
+    ]
+  },
+  "constants": {
+    "CTRL_MIN_FIRE": 0.05,
+    "CTRL_NULL_MAX": 0.1,
+    "DELTA_INT": 0.06,
+    "DELTA_REL": 0.03,
+    "ESTIMAND": "theta_M = (goodput_dynamic,M - goodput_static,M) / goodput_static,M ; interaction = theta_T - theta_H ; goodput = COMBINED, durations SUMMED",
+    "N_REPS": 4,
+    "PAIRED": false,
+    "POWER_AT": 2.0,
+    "POWER_TARGET": 0.8,
+    "REALIZED_MAX_GAP": 0.15,
+    "SIGN_SCORING": "p95",
+    "TOKEN_MAX_GAP": 0.2
+  },
+  "failed": [],
+  "guard_order": [
+    "boot",
+    "cliff",
+    "compar",
+    "discrim",
+    "ctrl",
+    "scoring",
+    "control"
+  ],
+  "labels": {
+    "COMPARABILITY": [
+      "REALIZED_MISMATCH",
+      "TOKENIZER_SKEW"
+    ],
+    "DESIGN": [
+      "CONTROLLER_DEAD",
+      "CONTROL_DEGENERATE",
+      "NOT_DISCRIMINATING"
+    ],
+    "MEASUREMENT": [
+      "BOOT_FAILED",
+      "CAPACITY_UNMEASURABLE",
+      "CLIFF_STRADDLE"
+    ],
+    "SCORING": [
+      "SCORING_DEPENDENT"
+    ],
+    "SUBSTANTIVE": [
+      "FLIP_MODEL_ATTRIBUTED",
+      "INCONCLUSIVE",
+      "MAGNITUDE_DIFFERS_NO_FLIP",
+      "NO_INTERACTION",
+      "UNDERPOWERED_NULL"
+    ]
+  },
+  "marginals": {
+    "BOOT_FAILED": 663552,
+    "CAPACITY_UNMEASURABLE": 73728,
+    "CLIFF_STRADDLE": 73728,
+    "CONTROLLER_DEAD": 2688,
+    "CONTROL_DEGENERATE": 432,
+    "FLIP_MODEL_ATTRIBUTED": 72,
+    "INCONCLUSIVE": 180,
+    "MAGNITUDE_DIFFERS_NO_FLIP": 72,
+    "NOT_DISCRIMINATING": 18432,
+    "NO_INTERACTION": 54,
+    "REALIZED_MISMATCH": 24576,
+    "SCORING_DEPENDENT": 2592,
+    "TOKENIZER_SKEW": 24576,
+    "UNDERPOWERED_NULL": 54
+  },
+  "mutants_killed": {
+    "drop_boot": 663552,
+    "drop_cliff": 147456,
+    "drop_compar": 49152,
+    "drop_control": 432,
+    "drop_ctrl": 2688,
+    "drop_discrim": 18432,
+    "drop_power": 54,
+    "drop_scoring": 2592,
+    "reorder_ctrl_discrim": 8064
+  },
+  "n_worlds": 884736,
+  "rule_rev": 3,
+  "rule_sha256": "fe0e585a3de80bf8900817821f73d90c5bd98f6f842dc38ba5746ad321a2828b",
+  "tests": {
+    "T10_delta_int_is_derived": {
+      "detail": "DELTA_INT=0.06 = 2*DELTA_REL; B7 killed the free-constant habit",
+      "pass": true
+    },
+    "T11_power_has_teeth": {
+      "detail": "a tight interaction SD passes, a loose one is refused",
+      "pass": true
+    },
+    "T1_totality": {
+      "detail": "884,736 worlds",
+      "pass": true
+    },
+    "T2_reachable_in_grid": {
+      "detail": "unreachable=[]",
+      "pass": true
+    },
+    "T3_only_dead_blocks": {
+      "detail": "blocked / mispositioned / reaches all reach substantive labels; only dead blocks",
+      "pass": true
+    },
+    "T4_no_dead_zone": {
+      "detail": "with all guards clear, every remaining world has a substantive label",
+      "pass": true
+    },
+    "T5_null_has_its_own_label": {
+      "detail": "NO_INTERACTION requires equivalence, never mere absence of significance",
+      "pass": true
+    },
+    "T6_flip_needs_opposing_signs": {
+      "detail": "a significant interaction with the SAME sign is MAGNITUDE_DIFFERS, not a flip",
+      "pass": true
+    },
+    "T7_control_degeneracy_blocks": {
+      "detail": "",
+      "pass": true
+    },
+    "T8_mutant_coverage": {
+      "detail": "uncovered=[]",
+      "pass": true
+    },
+    "T9_every_guard_has_mutant": {
+      "detail": "",
+      "pass": true
+    }
+  }
+}
