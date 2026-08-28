@@ -10,6 +10,7 @@
 |---|---|---|
 | `check_line_citations.py` | 2026-08-26 | 감사 B11 — *"사전등록 제출 전 체크리스트에 아직 등재 안 됨"* |
 | `check_doc_facts.py` | 2026-08-26 | 〃 |
+| `check_citation_stops.py` | 2026-08-18 | 게이트 #47 — 인용금지가 정본 등재만으로 전파되지 않는다 |
 | `design_reachability.py` | 2026-08-28 | TC1 rev2·M4R rev2 두 재감사가 같은 지적을 반복 |
 
 **도구가 있는데 아무도 안 부르면 도구가 없는 것과 같다.** `presubmit.py`가 그 실행 지점이다.

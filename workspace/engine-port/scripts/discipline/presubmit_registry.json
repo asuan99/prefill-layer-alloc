@@ -1,0 +1,11 @@
+{
+  "_comment": "제출 전 체크리스트가 검사할 항목. 디렉터리 스캔 금지 — 여기 적힌 것만 본다.",
+  "check_line_citations": true,
+  "check_doc_facts": true,
+  "reachability_specs": [
+    "workspace/engine-port/results/m4r_confinement/reachability_spec.json",
+    "workspace/engine-port/results/tc1_model_attrib/reach_spec_A.json",
+    "workspace/engine-port/results/tc1_model_attrib/reach_spec_B.json"
+  ],
+  "check_citation_stops": true
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """제출 전 체크리스트 — 규율 도구들의 **실행 지점**.
 
-배경: 이 저장소는 규율 도구를 세 개 갖고 있는데 **셋 다 등록된 실행 지점이 없었다**
+배경: 이 저장소는 규율 도구를 **네 개** 갖고 있는데 **셋 다 등록된 실행 지점이 없었다**
 (2026-08-26 감사 B11: `check_line_citations.py`·`check_doc_facts.py`가 "사전등록 제출 전
 체크리스트에 아직 등재 안 됨"; 2026-08-28 두 재감사가 `design_reachability.py`에 대해 같은
 지적을 반복). 도구가 있는데 아무도 안 부르면 도구가 없는 것과 같다.
@@ -61,7 +61,13 @@ def main():
         rc, out = run([sys.executable, os.path.join(HERE, "check_doc_facts.py")])
         (notes if rc == 0 else blocks).append(("doc_facts", rc, out.strip().splitlines()[-1:] or [""]))
 
-    # 3) design-layer reachability, per REGISTERED spec ---------------------
+    # 3) citation stops -- staged added lines only (그 도구 자신의 설계 결정)
+    if reg.get("check_citation_stops", True):
+        rc, out = run([sys.executable, os.path.join(HERE, "check_citation_stops.py")], cwd=ROOT)
+        (notes if rc == 0 else blocks).append(
+            ("citation_stops", rc, out.strip().splitlines()[-1:] or [""]))
+
+    # 4) design-layer reachability, per REGISTERED spec ---------------------
     reach = next((p for p in REACH_CANDIDATES if os.path.exists(p)), None)
     for spec in reg.get("reachability_specs", []):
         sp = spec if os.path.isabs(spec) else os.path.join(ROOT, spec)

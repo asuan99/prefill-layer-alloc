@@ -33,6 +33,7 @@ pip-wheel-metadata/
 # a manifest that only ever lives on one machine makes the tool useless to the
 # next session.  See scripts/discipline/check_line_citations.py.
 !workspace/engine-port/scripts/discipline/line_citations.json
+!workspace/engine-port/scripts/discipline/presubmit_registry.json
 *.pkl
 *.pickle
 *.parquet
