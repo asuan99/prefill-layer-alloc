@@ -1,0 +1,1538 @@
+<title>PD-mux 구조 계보</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Saira+Condensed:wght@500;600;700&display=swap">
+
+<style>
+  /* ─────────────────────────────────────────────────────────────
+     PD-mux 구조 계보 — "die plate" 
+     ground: graphite-green tinted paper · marks: copper(prefill) / petrol(decode)
+     validated: copper #A2551A vs petrol #0B6C93 → CVD min ΔE 16.9 / normal 22.5
+     ───────────────────────────────────────────────────────────── */
+
+  :root {
+    --ground:   #E9EBE5;
+    --plate:    #F6F7F4;
+    --sunk:     #DEE1D9;
+    --ink:      #191D18;
+    --ink-2:    #3E453C;
+    --muted:    #6C7268;
+    --rule:     #CBD0C4;
+    --rule-hi:  #B3BAAB;
+
+    --prefill:  #A2551A;
+    --decode:   #0B6C93;
+    --ok:       #3D6B2F;
+    --bad:      #9C3226;
+    --open:     #63489C;
+    --inert:    #6A7268;
+
+    --ok-bg:    #DDE7D6;
+    --bad-bg:   #F0DCD8;
+    --open-bg:  #E1DCEE;
+    --inert-bg: #DFE2DB;
+    --dec-bg:   #D7E5EC;
+    --pre-bg:   #EFE0D0;
+
+    --sans: "IBM Plex Sans KR", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --cond: "Saira Condensed", "IBM Plex Sans KR", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #14170F;
+      --plate:    #1D211B;
+      --sunk:     #262B23;
+      --ink:      #E4E8DF;
+      --ink-2:    #C0C7BA;
+      --muted:    #8D9587;
+      --rule:     #2E342A;
+      --rule-hi:  #414838;
+
+      --prefill:  #C07C36;
+      --decode:   #3E99C0;
+      --ok:       #6C9950;
+      --bad:      #CC6A5B;
+      --open:     #957DCC;
+      --inert:    #8B948A;
+
+      --ok-bg:    #1F2C18;
+      --bad-bg:   #33201C;
+      --open-bg:  #262038;
+      --inert-bg: #262B23;
+      --dec-bg:   #122833;
+      --pre-bg:   #2E2113;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #14170F;
+    --plate:    #1D211B;
+    --sunk:     #262B23;
+    --ink:      #E4E8DF;
+    --ink-2:    #C0C7BA;
+    --muted:    #8D9587;
+    --rule:     #2E342A;
+    --rule-hi:  #414838;
+
+    --prefill:  #C07C36;
+    --decode:   #3E99C0;
+    --ok:       #6C9950;
+    --bad:      #CC6A5B;
+    --open:     #957DCC;
+    --inert:    #8B948A;
+
+    --ok-bg:    #1F2C18;
+    --bad-bg:   #33201C;
+    --open-bg:  #262038;
+    --inert-bg: #262B23;
+    --dec-bg:   #122833;
+    --pre-bg:   #2E2113;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 30px 110px; }
+
+  /* ── type ── */
+
+  .lbl {
+    font-family: var(--cond);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--decode);
+  }
+  .lbl.q { color: var(--muted); }
+
+  h1 {
+    font-size: clamp(38px, 6.2vw, 66px);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+    margin: 12px 0 0;
+    text-wrap: balance;
+  }
+  h2 {
+    font-size: clamp(22px, 2.7vw, 29px);
+    line-height: 1.22;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 { font-size: 17px; line-height: 1.38; letter-spacing: -0.012em; font-weight: 600; margin: 0; text-wrap: balance; }
+  h4 {
+    font-family: var(--cond);
+    font-size: 12.5px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); margin: 0;
+  }
+  p { margin: 0; }
+  strong { font-weight: 600; color: var(--ink); }
+  em { font-style: normal; color: var(--muted); }
+
+  code, .num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+  code {
+    font-size: 0.85em;
+    background: var(--sunk);
+    border-radius: 2px;
+    padding: 0.1em 0.36em;
+    word-break: break-all;
+  }
+  .num { letter-spacing: -0.01em; }
+
+  /* ── masthead ── */
+
+  header.mast {
+    padding: 68px 0 30px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 14px;
+  }
+  .standfirst {
+    margin-top: 22px;
+    font-size: 18.5px;
+    line-height: 1.62;
+    color: var(--ink-2);
+    max-width: 60ch;
+    font-weight: 300;
+  }
+  .standfirst strong { font-weight: 600; }
+
+  .mast-strip {
+    margin: 0;
+    display: flex; flex-wrap: wrap; gap: 0;
+    border-bottom: 1px solid var(--rule-hi);
+    margin-bottom: 8px;
+  }
+  .mast-strip div {
+    flex: 1 1 168px;
+    padding: 14px 18px 15px 0;
+    border-right: 1px solid var(--rule);
+    padding-left: 18px;
+  }
+  .mast-strip div:first-child { padding-left: 0; }
+  .mast-strip div:last-child { border-right: none; }
+  .mast-strip dt { font-family: var(--cond); font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .mast-strip dd { margin: 3px 0 0; margin-inline-start: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+
+  /* ── sections ── */
+
+  section { margin-top: 74px; }
+  .sec-head {
+    display: flex; align-items: baseline; gap: 18px;
+    padding-bottom: 13px;
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: 30px;
+  }
+  .sec-head .lbl { flex: none; }
+  .sec-sub { margin: -14px 0 30px; max-width: 74ch; color: var(--ink-2); font-size: 15.5px; }
+
+  .stack   { display: flex; flex-direction: column; gap: 16px; }
+  .stack-l { display: flex; flex-direction: column; gap: 30px; }
+
+  /* ── pills ── */
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em;
+    padding: 3px 9px 3px 7px; border-radius: 2px; white-space: nowrap;
+  }
+  .pill::before { font-size: 9px; line-height: 1; }
+  .pill.ok    { color: var(--ok);    background: var(--ok-bg); }
+  .pill.ok::before    { content: "\25CF"; }
+  .pill.bad   { color: var(--bad);   background: var(--bad-bg); }
+  .pill.bad::before   { content: "\2715"; }
+  .pill.open  { color: var(--open);  background: var(--open-bg); }
+  .pill.open::before  { content: "\25CB"; }
+  .pill.inert { color: var(--inert); background: var(--inert-bg); }
+  .pill.inert::before { content: "\2014"; }
+  .pill.base  { color: var(--decode); background: var(--dec-bg); }
+  .pill.base::before  { content: "\25B3"; }
+
+  /* ── lineage ── */
+
+  .lineage {
+    background: var(--plate);
+    border: 1px solid var(--rule);
+    padding: 26px 26px 20px;
+    overflow-x: auto;
+  }
+  .lineage svg { display: block; min-width: 820px; width: 100%; height: auto; }
+
+  /* ── tally ── */
+
+  .tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 18px; }
+  .tally-c {
+    background: var(--plate); border: 1px solid var(--rule);
+    border-top: 3px solid var(--rule-hi);
+    padding: 15px 16px 16px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .tally-c.t-ok   { border-top-color: var(--ok); }
+  .tally-c.t-bad  { border-top-color: var(--bad); }
+  .tally-c.t-open { border-top-color: var(--open); }
+  .tally-c.t-in   { border-top-color: var(--inert); }
+  .tally-n { font-family: var(--mono); font-size: 30px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; }
+  .t-ok .tally-n { color: var(--ok); }
+  .t-bad .tally-n { color: var(--bad); }
+  .t-open .tally-n { color: var(--open); }
+  .t-in .tally-n { color: var(--inert); }
+  .tally-c p { font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+
+  /* ── structure plates ── */
+
+  .plate {
+    background: var(--plate);
+    border: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: 396px 1fr;
+  }
+  .plate.dead   { border-left: 3px solid var(--bad); }
+  .plate.live   { border-left: 3px solid var(--ok); }
+  .plate.unver  { border-left: 3px solid var(--open); }
+  .plate.inertb { border-left: 3px solid var(--inert); }
+  .plate.baseb  { border-left: 3px solid var(--decode); }
+
+  .plate-fig {
+    border-right: 1px solid var(--rule);
+    padding: 22px 22px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+    background: var(--ground);
+  }
+  .plate-fig figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .plate-fig svg { display: block; width: 100%; height: auto; }
+  .plate-fig figcaption { font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+
+  .plate-body { padding: 22px 26px 24px; display: flex; flex-direction: column; gap: 15px; }
+
+  .plate-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; }
+  .plate-top h3 { flex: 1 1 auto; }
+  .plate-switch {
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    letter-spacing: -0.01em; width: 100%; margin-top: -6px;
+  }
+
+  .field { display: grid; grid-template-columns: 88px 1fr; gap: 16px; align-items: start; }
+  .field p { font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+  .field p + p { margin-top: 7px; }
+
+  .caveat {
+    background: var(--sunk);
+    border-left: 2px solid var(--rule-hi);
+    padding: 10px 13px;
+    font-size: 13px; line-height: 1.55; color: var(--muted);
+  }
+  .caveat strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ── figures / charts ── */
+
+  .figgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); gap: 18px; }
+
+  figure.chart {
+    margin: 0;
+    background: var(--plate);
+    border: 1px solid var(--rule);
+    padding: 20px 22px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+    min-width: 0;
+  }
+  figure.chart .chart-head { display: flex; flex-direction: column; gap: 3px; }
+  figure.chart .chart-head .lbl { font-size: 12px; }
+  figure.chart .plot { overflow-x: auto; }
+  figure.chart svg { display: block; width: 100%; height: auto; min-width: 330px; }
+  figure.chart figcaption { font-size: 13px; line-height: 1.55; color: var(--muted); }
+  figure.chart figcaption strong { color: var(--ink-2); font-weight: 600; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 14px; height: 10px; display: inline-block; flex: none; }
+  .sw.dec { background: var(--decode); }
+  .sw.pre { background: var(--prefill); }
+  .sw.bad { background: var(--bad); }
+  .sw.hatch { background: var(--dec-bg); border: 1px solid var(--decode); }
+  .sw.gr { background: var(--inert); }
+
+  /* ── SVG shared classes ── */
+
+  .s-pre  { fill: var(--prefill); }
+  .s-dec  { fill: var(--decode); }
+  .s-bad  { fill: var(--bad); }
+  .s-ok   { fill: var(--ok); }
+  .s-gr   { fill: var(--inert); }
+  .s-sunk { fill: var(--sunk); }
+  .s-plate{ fill: var(--plate); }
+  .s-none { fill: none; }
+  .k-rule { stroke: var(--rule-hi); }
+  .k-ink  { stroke: currentColor; }
+  .k-dec  { stroke: var(--decode); }
+  .k-bad  { stroke: var(--bad); }
+  .t-lbl  { font-family: "IBM Plex Mono", "IBM Plex Sans KR", ui-monospace, monospace; font-size: 10.5px; fill: var(--muted); }
+  .t-lbl.on-fill { fill: var(--plate); font-weight: 600; }
+  .t-val  { font-family: "IBM Plex Mono", "IBM Plex Sans KR", ui-monospace, monospace; font-size: 11.5px; fill: var(--ink); font-variant-numeric: tabular-nums; }
+  .t-val.dim { fill: var(--muted); font-size: 10.5px; }
+  .t-box  { font-family: "IBM Plex Sans KR", sans-serif; font-size: 11px; fill: var(--ink-2); }
+  .grid   { stroke: var(--rule); stroke-width: 1; }
+
+  /* ── tables ── */
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--plate); }
+  table { border-collapse: collapse; width: 100%; min-width: 800px; font-size: 13.5px; line-height: 1.55; }
+  thead th {
+    text-align: left;
+    font-family: var(--cond); font-size: 12px; font-weight: 600;
+    letter-spacing: 0.11em; text-transform: uppercase;
+    color: var(--muted); background: var(--sunk);
+    padding: 10px 14px; border-bottom: 1px solid var(--rule-hi);
+    white-space: nowrap; vertical-align: bottom;
+  }
+  tbody td { padding: 13px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; color: var(--ink-2); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.who { color: var(--ink); font-weight: 600; }
+  td.who span { display: block; font-family: var(--mono); font-size: 10.5px; font-weight: 400; color: var(--muted); margin-top: 3px; letter-spacing: 0; }
+
+  /* ── open items ── */
+
+  .gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px; }
+  .gate {
+    background: var(--plate); border: 1px solid var(--rule);
+    border-top: 3px solid var(--open);
+    padding: 18px 19px 19px; display: flex; flex-direction: column; gap: 9px;
+  }
+  .gate .who { font-family: var(--mono); font-size: 11.5px; color: var(--open); font-weight: 600; letter-spacing: 0.04em; }
+  .gate p { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
+  .gate .cost { margin-top: auto; padding-top: 9px; border-top: 1px dashed var(--rule-hi); font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  .forbid {
+    background: var(--bad-bg);
+    border: 1px solid var(--bad);
+    padding: 20px 22px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .forbid h4 { color: var(--bad); }
+  .forbid ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .forbid li { font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+
+  .disc { display: grid; grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 14px; }
+  .disc-c { background: var(--plate); border: 1px solid var(--rule); padding: 17px 18px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .disc-n { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--decode); }
+  .disc-c h4 { color: var(--ink-2); }
+  .disc-c p { font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+  footer {
+    margin-top: 82px; padding-top: 24px;
+    border-top: 1px solid var(--rule-hi);
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.9; color: var(--muted);
+  }
+  footer strong { color: var(--ink-2); font-weight: 600; }
+
+  a { color: var(--decode); }
+  :focus-visible { outline: 2px solid var(--decode); outline-offset: 2px; }
+
+  @media (max-width: 900px) {
+    .plate { grid-template-columns: 1fr; }
+    .plate-fig { border-right: none; border-bottom: 1px solid var(--rule); }
+  }
+  @media (max-width: 680px) {
+    .wrap { padding: 0 18px 80px; }
+    header.mast { padding-top: 46px; }
+    .field { grid-template-columns: 1fr; gap: 4px; }
+    .mast-strip div { border-right: none; padding-left: 0; border-bottom: 1px solid var(--rule); }
+    .figgrid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="lbl">prefill-layer-alloc · 정본 재구성 · 2026-09-01</div>
+  <h1>PD-mux 구조 계보</h1>
+  <p class="standfirst">
+    A100 한 장의 <strong>108 SM</strong>을 prefill과 decode에 어떻게 갈라 줄 것인가.
+    이 프로젝트는 그 질문에 <strong>아홉 개의 실행 구조</strong>로 답을 시도했고,
+    전부 SGLang v0.5.10 위에 실제로 올려 서빙으로 쟀다.
+    아래는 그 구조들이 무엇이었고, 무엇이 그것들을 죽였고, 무엇이 아직 판정 밖에 있는지에 대한 한 장짜리 지도다.
+  </p>
+</header>
+
+<dl class="mast-strip">
+  <div>
+    <dt>기판</dt>
+    <dd>A100 108 SM · CUDA green context<br>SGLang v0.5.10 · cudagraph ON</dd>
+  </div>
+  <div>
+    <dt>모델</dt>
+    <dd>Zamba2-2.7B · Granite-4.0-h<br>NemotronH · Falcon-H1 (attn+SSM)</dd>
+  </div>
+  <div>
+    <dt>판정 술어</dt>
+    <dd>TTFT ≤ SLO <em>AND</em><br>요청-내부 token-ITL p95 ≤ SLO</dd>
+  </div>
+  <div>
+    <dt>정본 위계</dt>
+    <dd>PROJECT_STATUS.md &gt; reports/paper/<br>&gt; CONSENSUS.md rev52</dd>
+  </div>
+</dl>
+
+<!-- ══════════════════ 01 계보 ══════════════════ -->
+<section>
+  <div class="sec-head">
+    <span class="lbl">01</span>
+    <h2>계보 — 무엇에서 무엇이 갈라져 나왔나</h2>
+  </div>
+  <p class="sec-sub">
+    구조들은 목록이 아니라 <strong>나무</strong>다. fused를 이긴 것은 <code>agnostic PD-mux</code> 하나뿐이고,
+    그 위에 얹으려 한 "더 똑똑한" 구조 — layer-type 인식, 런타임 동적 제어 — 는 전부 <strong>서빙 실증으로</strong> 죽었다.
+    아직 살아 있는 가지는 <strong>구현만 끝난</strong> 두 갈래(R2 아키텍처·R2 정책층)뿐이다.
+  </p>
+  <div class="caveat" style="max-width:none; margin-bottom:26px">
+    <strong>이 페이지가 다루지 않는 것</strong> — 2026-08 말 이후 열린 트랙들(cp_baseline · TC1 모델 귀속 · M4R confinement · kernel_mech · NSL)은
+    <strong>새 실행 구조가 아니라 계측·축·규칙층</strong> 트랙이라 계보에 넣지 않았다. 그 트랙들은 위 아홉 구조의 판정을 하나도 바꾸지 않았다 —
+    2026-09-01 정본 기준 <strong>새 성능 판정 0건 · 등급 변경 0건 · 정책 순위 변경 0건</strong>이다.
+  </div>
+
+  <div class="lineage">
+    <svg viewBox="0 0 900 268" role="img" aria-label="구조 계보도: fused에서 agnostic PD-mux가 갈라져 채택되고, 그 아래 layer-type 인식과 단일-worker 동적 제어가 서빙 실증으로 죽었으며, R1 observer는 인과 귀속이 철회되고 R2 true dual-worker와 R2 정책층은 미검증으로 남아 있다.">
+      <defs>
+        <marker id="lg-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+        </marker>
+        <marker id="lg-ar-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,1 L9,5 L0,9 z" fill="var(--open)"/>
+        </marker>
+      </defs>
+
+      <!-- time axis -->
+      <line x1="24" y1="240" x2="876" y2="240" class="grid"/>
+      <text x="24" y="258" class="t-lbl">2026-07 초 · 이양</text>
+      <text x="356" y="258" class="t-lbl">2026-07 중 · 정책층</text>
+      <text x="616" y="258" class="t-lbl">2026-07 말 ~ 08 · 기전·계측</text>
+
+      <!-- root: fused -->
+      <rect x="24" y="98" width="126" height="48" class="s-sunk k-rule" stroke-width="1"/>
+      <text x="87" y="118" class="t-val" text-anchor="middle">fused</text>
+      <text x="87" y="134" class="t-lbl" text-anchor="middle">단일 108 SM</text>
+
+      <line x1="150" y1="122" x2="196" y2="122" class="k-ink" stroke-width="1.5" marker-end="url(#lg-ar)"/>
+      <text x="173" y="112" class="t-lbl" text-anchor="middle">진다</text>
+
+      <!-- adopted: agnostic -->
+      <rect x="196" y="96" width="140" height="52" class="s-plate" stroke="var(--ok)" stroke-width="2"/>
+      <text x="266" y="117" class="t-val" text-anchor="middle">agnostic PD-mux</text>
+      <text x="266" y="133" class="t-lbl" text-anchor="middle">정적 [74 | 34]</text>
+      <text x="266" y="84" class="t-lbl" text-anchor="middle" fill="var(--ok)">● 채택 · 유일</text>
+
+      <!-- branch up: layer-type (dead) -->
+      <path d="M336,110 L372,110 L372,46 L410,46" class="s-none k-bad" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#lg-ar)" color="var(--bad)"/>
+      <rect x="410" y="24" width="152" height="46" class="s-plate k-bad" stroke-width="1.5"/>
+      <text x="486" y="43" class="t-val" text-anchor="middle">layer-type 인식</text>
+      <text x="486" y="59" class="t-lbl" text-anchor="middle">attn ≠ mamba split</text>
+      <line x1="418" y1="30" x2="554" y2="64" class="k-bad" stroke-width="1.5"/>
+      <line x1="554" y1="30" x2="418" y2="64" class="k-bad" stroke-width="1.5"/>
+      <text x="576" y="43" class="t-lbl" fill="var(--bad)">✕ 死 · TPOT 42→124 ms</text>
+      <text x="576" y="59" class="t-lbl">시뮬레이터 이득 전이 0</text>
+
+      <!-- branch down: dynamic (dead) -->
+      <path d="M336,134 L372,134 L372,182 L410,182" class="s-none k-bad" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#lg-ar)" color="var(--bad)"/>
+      <rect x="410" y="160" width="152" height="46" class="s-plate k-bad" stroke-width="1.5"/>
+      <text x="486" y="179" class="t-val" text-anchor="middle">단일-worker 동적</text>
+      <text x="486" y="195" class="t-lbl" text-anchor="middle">SLO-aware · gate</text>
+      <line x1="418" y1="166" x2="554" y2="200" class="k-bad" stroke-width="1.5"/>
+      <line x1="554" y1="166" x2="418" y2="200" class="k-bad" stroke-width="1.5"/>
+      <text x="576" y="179" class="t-lbl" fill="var(--bad)">✕ 死 · HE0 (관대·tight 양쪽)</text>
+      <text x="576" y="195" class="t-lbl">best static을 못 넘음</text>
+
+      <!-- R1 observer: retracted -->
+      <path d="M266,148 L266,214 L410,214" class="s-none" stroke="var(--inert)" stroke-width="1.5" stroke-dasharray="2 3" marker-end="url(#lg-ar)" color="var(--inert)"/>
+      <rect x="410" y="214" width="152" height="26" class="s-none" stroke="var(--inert)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="486" y="231" class="t-lbl" text-anchor="middle">R1 observer — 인과 귀속 철회</text>
+
+      <!-- R2 arch + policy: unverified -->
+      <path d="M562,182 L600,182 L600,122 L640,122" class="s-none" stroke="var(--open)" stroke-width="1.5" marker-end="url(#lg-ar-d)"/>
+      <rect x="640" y="76" width="164" height="44" class="s-plate" stroke="var(--open)" stroke-width="1.5"/>
+      <text x="722" y="94" class="t-val" text-anchor="middle">R2 true dual-worker</text>
+      <text x="722" y="110" class="t-lbl" text-anchor="middle">control-plane만 분리</text>
+
+      <rect x="640" y="130" width="164" height="44" class="s-plate" stroke="var(--open)" stroke-width="1.5"/>
+      <text x="722" y="148" class="t-val" text-anchor="middle">R2 정책층</text>
+      <text x="722" y="164" class="t-lbl" text-anchor="middle">offline decode floor</text>
+      <line x1="722" y1="120" x2="722" y2="130" class="s-none" stroke="var(--open)" stroke-width="1.5"/>
+
+      <text x="816" y="94" class="t-lbl" fill="var(--open)">○ 미검증</text>
+      <text x="816" y="110" class="t-lbl">GPU 게이트 0회</text>
+      <text x="816" y="148" class="t-lbl" fill="var(--open)">○ 미검증</text>
+      <text x="816" y="164" class="t-lbl">증거 없음</text>
+    </svg>
+  </div>
+
+  <div class="tally">
+    <div class="tally-c t-ok">
+      <div class="tally-n">1</div>
+      <h4>채택</h4>
+      <p>agnostic PD-mux — 운영점에서 fused를 이긴 유일한 구조.</p>
+    </div>
+    <div class="tally-c t-bad">
+      <div class="tally-n">2</div>
+      <h4>서빙 실증으로 死</h4>
+      <p>layer-type 인식 · 단일-worker 동적 제어. 둘 다 시뮬레이터에서는 이겼다.</p>
+    </div>
+    <div class="tally-c t-open">
+      <div class="tally-n">2</div>
+      <h4>구현 완료 · 미검증</h4>
+      <p>R2 아키텍처 · R2 정책층. 성능 주장 0건.</p>
+    </div>
+    <div class="tally-c t-in">
+      <div class="tally-n">4</div>
+      <h4>기준 · 철회 · 계측 · 미구현</h4>
+      <p>fused · R1 observer · sticky partition · disaggregation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 02 구조 플레이트 ══════════════════ -->
+<section>
+  <div class="sec-head">
+    <span class="lbl">02</span>
+    <h2>구조 플레이트 — 아홉 개를 같은 눈금으로</h2>
+  </div>
+  <p class="sec-sub">
+    모든 그림이 같은 어휘를 쓴다. 아래 <strong>108 SM 레일</strong>은 항상 같은 자리에 있고,
+    그 위 상자들은 <strong>제어 평면</strong>, 아래 상자는 <strong>데이터 평면</strong>(running batch · KV/mamba pool)이다.
+    따라서 플레이트를 넘길 때 눈에 남는 것은 <em>무엇이 달라졌는가</em> 하나뿐이다.
+  </p>
+
+  <div class="stack-l">
+
+  <!-- P0 fused -->
+  <article class="plate baseb">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="fused 구조: 하나의 event loop, 하나의 running batch와 KV·mamba pool, 그리고 분할되지 않은 108 SM 레일.">
+          <rect x="8" y="14" width="344" height="26" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="180" y="31" class="t-box" text-anchor="middle">event loop (단일) · chunked prefill</text>
+          <line x1="180" y1="40" x2="180" y2="56" class="k-rule" stroke-width="1"/>
+          <rect x="8" y="56" width="344" height="26" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="180" y="73" class="t-box" text-anchor="middle">running batch · KV / mamba pool (단일)</text>
+          <line x1="180" y1="82" x2="180" y2="100" class="k-rule" stroke-width="1"/>
+          <rect x="8" y="100" width="344" height="24" class="s-gr"/>
+          <text x="180" y="116" class="t-lbl on-fill" text-anchor="middle">prefill + decode 공용 · 108 SM</text>
+          <line x1="8" y1="132" x2="352" y2="132" class="k-rule" stroke-width="1"/>
+          <text x="8" y="146" class="t-lbl">0</text>
+          <text x="352" y="146" class="t-lbl" text-anchor="end">108 SM</text>
+        </svg>
+        <figcaption>분할이 없다. 두 phase는 시간축에서만 섞인다.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>fused — 비교 기준</h3>
+        <span class="pill base">기준선</span>
+        <div class="plate-switch"><code>plain</code> · 무플래그</div>
+      </div>
+      <div class="field"><h4>구조</h4><p>prefill과 decode가 같은 event loop, 같은 running batch, 같은 108 SM에서 돈다. 유일한 완충은 chunked prefill이다.</p></div>
+      <div class="field"><h4>측정</h4><p>이 arm의 死因은 <strong>TPOT가 60 ms 임계를 넘는 것</strong>이다(Granite rate4 TPOT <span class="num">61.21 ms</span>). 그런데 <strong>cudagraph가 그 벽을 없앤다</strong> — Zamba2 plain TPOT <span class="num">62.70 → 13.51 ms</span>, rate4 <span class="num">82.41 → 54.04 ms</span>로 60 ms SLO를 통과한다.</p></div>
+      <div class="field"><h4>판정</h4><p>비교 기준으로만 쓴다.</p></div>
+      <div class="caveat"><strong>미조율 baseline이다.</strong> fused가 졌다는 것이 "PD 분리가 옳다"를 뜻하지 않는다 — 관측된 실패모드(prefill 배치 stall)에 대해 이 arm은 조율된 적이 없다.</div>
+      <div class="caveat"><strong>2026-09-01 추가 — chunked prefill을 비교군으로 세우려는 트랙(cp_baseline)은 정책 비교를 아직 한 건도 못 쟀다.</strong>
+        규칙층 적대 감사 <strong>4회 전부 <code>NO-GO</code></strong>를 받고 정책 판정 트랙에서 계측·축 검증 트랙으로 내려앉았다(1.36 GPU-hr 집행, 새 성능 판정 0건).
+        그 과정에서 기전 하나가 코드 독해가 아니라 <em>관측</em>으로 확인됐다: <code>--chunked-prefill-size</code>가 prefill 예산과
+        <strong>piecewise CUDA graph 캡처 범위를 동시에</strong> 결정하며, cps −1에서 캡처 목록 길이가 <span class="num">0</span>이다(job 900053).
+        ⚠️ 스코프 = Zamba2-2.7B · 이 트리 · arm당 부팅 n = 1 ⇒ <strong>정본 pdmux arm(전부 cps −1)으로의 파급은 미검증 관측일 뿐 판정이 아니다.</strong></div>
+    </div>
+  </article>
+
+  <!-- P1 agnostic -->
+  <article class="plate live">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="agnostic PD-mux 구조: 제어·데이터 평면은 그대로 단일이고, 108 SM 레일만 prefill 74와 decode 34로 정적 분할되며 엔진이 무분할 그룹을 하나 더 덧붙인다.">
+          <rect x="8" y="14" width="344" height="26" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="180" y="31" class="t-box" text-anchor="middle">event loop (단일) · split-prefill</text>
+          <line x1="180" y1="40" x2="180" y2="56" class="k-rule" stroke-width="1"/>
+          <rect x="8" y="56" width="344" height="26" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="180" y="73" class="t-box" text-anchor="middle">running batch · KV / mamba pool (단일)</text>
+          <line x1="118" y1="82" x2="118" y2="100" class="k-rule" stroke-width="1"/>
+          <line x1="290" y1="82" x2="290" y2="100" class="k-rule" stroke-width="1"/>
+          <rect x="8" y="100" width="235.7" height="24" class="s-pre"/>
+          <rect x="245.7" y="100" width="106.3" height="24" class="s-dec"/>
+          <text x="126" y="116" class="t-lbl on-fill" text-anchor="middle">prefill 74</text>
+          <text x="299" y="116" class="t-lbl on-fill" text-anchor="middle">decode 34</text>
+          <rect x="8" y="128" width="344" height="10" class="s-none k-rule" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="180" y="148" class="t-lbl" text-anchor="middle">엔진이 항상 덧붙이는 무분할 그룹 ⇒ sm_group_num: 3</text>
+        </svg>
+        <figcaption>레일만 바뀐다. 제어·데이터 평면은 fused와 동일하다.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>agnostic PD-mux — 채택된 유일한 구조</h3>
+        <span class="pill ok">채택 · 운영 기본값</span>
+        <div class="plate-switch"><code>--enable-pdmux</code> · <code>manual_divisions: [[74,34,0]]</code></div>
+      </div>
+      <div class="field"><h4>구조</h4><p>green context로 108 SM을 정적 분할한다. layer도 phase도 모르는 <em>policy-agnostic</em> 고정 split이다 — 정책이 없다는 것이 이 구조의 내용이다.</p></div>
+      <div class="field"><h4>측정</h4><p>운영점(cudagraph-ON, n=5 paired) 정본 goodput 술어에서 fused를 <strong>2모델 전부</strong> 이긴다. 통계 정정 후 인용 가능한 정량치는 <strong>세 점</strong>: Zamba2 rate2 <span class="num">+40.5 %</span> · rate3 <span class="num">+185.8 %</span> · Granite rate4 <span class="num">+27.0 %</span>.</p><p>이득은 <strong>꼬리</strong>에, 비용은 <strong>중앙</strong>에 있다 — 정상상태 per-token decode가 5–45 % 느려진다.</p></div>
+      <div class="field"><h4>판정</h4><p>실무 기본값. 검증된 profile이 없으면 agnostic, 있으면 <strong>peak decode 부하 기준 decode-heavy static 고정</strong>.</p></div>
+      <div class="caveat"><strong>"SM 분할 자체가 원인"은 NOT-YET-SUPPORTED.</strong> <code>--enable-pdmux</code>가 <code>--chunked-prefill-size -1</code>·<code>--disable-overlap-schedule</code>을 assert로 강제하는 <strong>3-플래그 묶음 처치</strong>다. 후속 게이트가 두 aux 플래그를 원인에서 배제해 귀속 상한을 "pdmux 서브시스템 전체"까지 좁혔을 뿐이다. 운영점 대조는 <strong>2모델</strong>만 — "4모델 전부"는 더 이상 쓸 수 없다.</div>
+    </div>
+  </article>
+
+  <!-- P2 layer-type -->
+  <article class="plate dead">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="layer-type 인식 구조: attention 레이어와 mamba 레이어가 서로 다른 SM 분할을 쓰기 때문에 하나의 forward 안에서 레이어 경계마다 green context를 다시 나눠야 한다.">
+          <text x="8" y="18" class="t-lbl">한 forward 안 (step)</text>
+          <rect x="8" y="26" width="344" height="24" class="s-none k-rule" stroke-width="1"/>
+          <rect x="8" y="26" width="293" height="24" class="s-pre"/>
+          <rect x="303" y="26" width="49" height="24" class="s-dec"/>
+          <text x="154" y="42" class="t-lbl on-fill" text-anchor="middle">attn layer → prefill 92</text>
+          <text x="327" y="42" class="t-lbl on-fill" text-anchor="middle">16</text>
+
+          <path d="M40,50 L40,66 M96,50 L96,66 M152,50 L152,66 M208,50 L208,66 M264,50 L264,66 M320,50 L320,66" class="k-bad" stroke-width="1.5"/>
+          <text x="180" y="80" class="t-lbl" text-anchor="middle" fill="var(--bad)">layer 경계마다 green context 재분할</text>
+
+          <rect x="8" y="86" width="344" height="24" class="s-none k-rule" stroke-width="1"/>
+          <rect x="8" y="86" width="108.3" height="24" class="s-pre"/>
+          <rect x="118.3" y="86" width="233.7" height="24" class="s-dec"/>
+          <text x="62" y="102" class="t-lbl on-fill" text-anchor="middle">34</text>
+          <text x="235" y="102" class="t-lbl on-fill" text-anchor="middle">mamba layer → decode 74</text>
+
+          <line x1="8" y1="122" x2="352" y2="122" class="k-rule" stroke-width="1"/>
+          <text x="8" y="138" class="t-lbl">step 파편화 · sync 직렬화 · overlap 감소</text>
+          <text x="352" y="138" class="t-lbl" text-anchor="end" fill="var(--bad)">TPOT 42 → 124 ms</text>
+        </svg>
+        <figcaption>비용은 "누가 split을 정하나"가 아니라 <em>한 step 안에서 파티션이 몇 번 바뀌나</em>에 붙는다.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>layer-type 인식 · coordinated per-type</h3>
+        <span class="pill bad">全형태 死</span>
+        <div class="plate-switch"><code>manual_divisions: [[92,16,0],[34,74,0]]</code> · <code>sm_group_num: 4</code></div>
+      </div>
+      <div class="field"><h4>구조</h4><p>Hybrid 모델의 attention 레이어와 SSM(Mamba2) 레이어에 <strong>서로 다른 split</strong>을 준다. 이 프로젝트의 원래 논문 가설이었다.</p></div>
+      <div class="field"><h4>측정</h4><p>coordinated per-type 구현이 TPOT <span class="num">42 → 124 ms</span>. 최적화 후에도 <span class="num">≈85 ms</span>. 시뮬레이터가 약속한 per-layer 이득(<span class="num">1.37–2.02×</span>)은 실엔진으로 <strong>전이되지 않았다</strong>.</p></div>
+      <div class="field"><h4>판정</h4><p><strong>런타임 정책으로서 全형태 死.</strong> 死因은 결정 비용이 아니라 <strong>실행 파편화</strong>다 — offline 고정값으로 만들어도 attn↔mamba 경계마다 재분할이 필요해 그대로 죽는다.</p><p>살아남는 offline 역할은 <strong>whole-phase floor</strong> 하나뿐이다: step 내내 단일 파티션을 유지하되, 그 <em>크기</em>만 모델 구성으로 정한다.</p></div>
+      <div class="caveat">2026-08-04 계측 결함 2종 감사로 <strong>마그니튜드는 강등</strong>됐다. 강등되지 않은 것은 판정 자체다 — 死 판정의 근거는 시뮬레이터가 아니라 <strong>서빙 직접 측정</strong>이다.</div>
+    </div>
+  </article>
+
+  <!-- P3 dynamic -->
+  <article class="plate dead">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="단일-worker 동적 제어 구조: 컨트롤러가 레일 위에서 split 좌표만 움직이며, feasibility 게이트가 d34에 고착되어 최적점 d44에 도달하지 못한다.">
+          <defs><marker id="dy-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="var(--rule-hi)"/></marker></defs>
+          <rect x="8" y="14" width="150" height="26" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="83" y="31" class="t-box" text-anchor="middle">CoarseGrainedController</text>
+          <path d="M158,27 L186,27" class="s-none k-rule" stroke-width="1.5" marker-end="url(#dy-ar)"/>
+          <text x="352" y="23" class="t-lbl" text-anchor="end">switch ≈ 0 · CPU 0.014 %</text>
+          <text x="352" y="37" class="t-lbl" text-anchor="end">⇒ 오버헤드는 死因이 아니다</text>
+
+          <rect x="8" y="56" width="344" height="26" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="180" y="73" class="t-box" text-anchor="middle">running batch · KV / mamba pool (여전히 단일)</text>
+
+          <rect x="8" y="100" width="344" height="24" class="s-sunk"/>
+          <rect x="8" y="100" width="235.7" height="24" class="s-pre" opacity="0.30"/>
+          <rect x="243.7" y="100" width="108.3" height="24" class="s-dec" opacity="0.30"/>
+          <rect x="273.5" y="100" width="3" height="24" class="s-gr"/>
+          <rect x="242.2" y="100" width="3" height="24" class="s-bad"/>
+          <rect x="210.3" y="100" width="3" height="24" class="s-ok"/>
+          <text x="275" y="96" class="t-lbl" text-anchor="middle">d24</text>
+          <text x="243" y="96" class="t-lbl" text-anchor="middle" fill="var(--bad)">d34</text>
+          <text x="211" y="96" class="t-lbl" text-anchor="middle" fill="var(--ok)">d44</text>
+          <text x="14" y="116" class="t-lbl">컨트롤러가 옮기는 것은 이 경계 하나뿐</text>
+          <text x="8" y="140" class="t-lbl" fill="var(--bad)">게이트가 d34에 영구 고착 (one-way ratchet)</text>
+          <text x="352" y="140" class="t-lbl" text-anchor="end" fill="var(--ok)">최적 = d44</text>
+        </svg>
+        <figcaption>구조는 그대로 두고 <strong>파티션 좌표만</strong> 시간에 따라 옮기는 설계.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>단일-worker 동적 제어</h3>
+        <span class="pill bad">死 · HE0</span>
+        <div class="plate-switch"><code>CoarseGrainedController</code> — SLO-aware · binding-first · feasibility gate</div>
+      </div>
+      <div class="field"><h4>구조</h4><p>런타임 신호(ITL p95, decode batch)를 보고 split을 옮긴다. 제어·데이터 평면은 fused와 동일하고, 바뀌는 것은 좌표뿐이다.</p></div>
+      <div class="field"><h4>측정</h4><p>관대 SLO(TTFT 3 s) goodput: <span class="num">d44 3.220 ± 0.013</span> &gt; <span class="num">bind+GATE 3.132 ± 0.019</span> — 격차 <span class="num">5.4 σ</span>, n ≥ 4.</p><p>tight SLO(chat 300/50 ms)로 컨트롤러를 <strong>실제 재튜닝</strong>해도 열위이고 오히려 격차가 벌어진다: rate 8 attainment <span class="num">d44 73.2 %</span> ≫ <span class="num">bind+GATE 44.3 %</span> (<span class="num">28.9 %p ≈ 10 σ</span>).</p></div>
+      <div class="field"><h4>판정</h4><p><strong>死.</strong> 死因은 switch 오버헤드가 아니라 <strong>positioning + 얽힘</strong>이다: 컨트롤러가 tight TTFT에 반응해 prefill 쪽으로 이동 → decode 굶김 → ITL↑ → batch 정체 → admission 차단 → TTFT 폭발.</p><p>feasibility 게이트의 정체는 동적 제어가 아니라 <strong>틀린 static에 조기 수렴하는 auto-tuner</strong>였다.</p></div>
+      <div class="caveat">살아남은 동적의 값어치는 <strong>성능이 아니라 견고성</strong>이다 — 게이트가 트랩 붕괴를 1/4에서 0/5로 막았다. 그리고 <strong>달성된 동적의 열위(HE0)</strong>와 <strong>달성 가능한 천장</strong>은 다른 명제다.</div>
+    </div>
+  </article>
+
+  <!-- P4 R1 -->
+  <article class="plate inertb">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="R1 observer 구조: 두 개의 큐처럼 보이는 것은 기존 scheduler 큐의 alias일 뿐이고 실행은 동일한 event_loop_pdmux 하나에서 일어난다.">
+          <rect x="8" y="14" width="160" height="24" class="s-none k-rule" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="88" y="30" class="t-box" text-anchor="middle">prefill queue (alias)</text>
+          <rect x="192" y="14" width="160" height="24" class="s-none k-rule" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="272" y="30" class="t-box" text-anchor="middle">decode queue (alias)</text>
+          <path d="M88,38 L88,50 L180,50 L180,58" class="s-none k-rule" stroke-width="1"/>
+          <path d="M272,38 L272,50 L180,50" class="s-none k-rule" stroke-width="1"/>
+          <rect x="8" y="58" width="344" height="26" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="180" y="75" class="t-box" text-anchor="middle">event_loop_pdmux — 실행은 여전히 하나</text>
+          <rect x="8" y="100" width="235.7" height="24" class="s-pre" opacity="0.45"/>
+          <rect x="245.7" y="100" width="106.3" height="24" class="s-dec" opacity="0.45"/>
+          <text x="180" y="116" class="t-lbl on-fill" text-anchor="middle">logical arbiter만 추가</text>
+          <text x="180" y="142" class="t-lbl" text-anchor="middle">dual arm에만 동기 JSONL · cudagraph OFF · seed 다름 · arm당 1회</text>
+        </svg>
+        <figcaption>"두 worker"로 보이던 것은 <strong>이름</strong>이었지 실행 분리가 아니었다.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>R1 observer dual-worker</h3>
+        <span class="pill inert">인과 귀속 철회</span>
+        <div class="plate-switch"><code>PDMUX_DUAL_WORKER=1</code> · 재현 전용</div>
+      </div>
+      <div class="field"><h4>구조</h4><p>기존 scheduler queue/batch의 <strong>alias와 logical arbiter</strong>를 추가했을 뿐, 동일한 <code>event_loop_pdmux</code>에서 실행됐다.</p></div>
+      <div class="field"><h4>측정</h4><p>dual arm에만 동기식 JSONL bookkeeping이 있었고, CUDA Graph가 꺼져 있었고, server seed가 달랐고, 각 arm은 <strong>한 번만</strong> 실행됐다.</p></div>
+      <div class="field"><h4>판정</h4><p>"4 improved / 0 worse / 3 mixed" 판정과 decode-heavy 성능 차이의 <strong>dual-worker 인과 귀속을 철회</strong>한다. 모든 scenario는 방향성 관측이며 통계·인과 미확정이다.</p></div>
+      <div class="caveat">이 구조는 <strong>재현 목적으로만</strong> 남긴다. 아키텍처 분리 실험으로 인용하지 않는다.</div>
+    </div>
+  </article>
+
+  <!-- P5 R2 arch -->
+  <article class="plate unver">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="R2 true dual-worker 구조: 제어 평면은 두 host thread와 role별 큐로 실제 분리되지만 running batch, KV·mamba pool, SM arbiter의 stream index는 전부 공유되어 데이터 평면이 하나로 남는다.">
+          <rect x="8" y="12" width="164" height="42" class="s-plate" stroke="var(--open)" stroke-width="1.5"/>
+          <text x="90" y="28" class="t-box" text-anchor="middle">host thread A</text>
+          <text x="90" y="44" class="t-lbl" text-anchor="middle">prefill role queue</text>
+          <rect x="188" y="12" width="164" height="42" class="s-plate" stroke="var(--open)" stroke-width="1.5"/>
+          <text x="270" y="28" class="t-box" text-anchor="middle">host thread B</text>
+          <text x="270" y="44" class="t-lbl" text-anchor="middle">decode role queue</text>
+          <text x="180" y="30" class="t-lbl" text-anchor="middle" fill="var(--open)">분리</text>
+          <path d="M90,54 L90,64 L180,64 L180,72" class="s-none" stroke="var(--open)" stroke-width="1.5"/>
+          <path d="M270,54 L270,64 L180,64" class="s-none" stroke="var(--open)" stroke-width="1.5"/>
+          <rect x="8" y="72" width="344" height="34" class="s-sunk" stroke="currentColor" stroke-width="2"/>
+          <text x="180" y="88" class="t-box" text-anchor="middle">running batch · KV / mamba pool · SharedGpuArbiter</text>
+          <text x="180" y="101" class="t-lbl" text-anchor="middle">전면 공유 — stream_index 하나, ≤ 108</text>
+          <rect x="8" y="116" width="235.7" height="18" class="s-pre" opacity="0.45"/>
+          <rect x="245.7" y="116" width="106.3" height="18" class="s-dec" opacity="0.45"/>
+          <text x="180" y="148" class="t-lbl" text-anchor="middle" fill="var(--bad)">얽힘이 사는 substrate = 굵은 상자 ⇒ 구성상 깰 수 없다</text>
+        </svg>
+        <figcaption>두 thread가 갈라져도 <strong>아래 한 칸</strong>이 공유인 한, 死因의 기판은 그대로다.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>R2 true dual-worker</h3>
+        <span class="pill open">미검증 · Claim D</span>
+        <div class="plate-switch"><code>PDMUX_TRUE_DUAL_WORKER=1</code> · thread-local role(ContextVar) 패치 필수</div>
+      </div>
+      <div class="field"><h4>구조</h4><p>두 long-lived host issue thread, role별 task queue, immutable <code>ExecutionContext</code>, safe-boundary resource lease. 읽기 전용 코드 리뷰가 확인한 실체는 <strong>control-plane dual-worker</strong>다.</p><p>running batch(<code>max_running_requests</code>)·KV/mamba pool·SM 파티션(<code>SharedGpuArbiter</code>의 단일 <code>stream_index</code>)은 <strong>전면 공유</strong>된다.</p></div>
+      <div class="field"><h4>측정</h4><p><strong>없다.</strong> GPU correctness gate 통과 이력 0, <code>results/r2_eval/</code> 미생성, <code>architecture=true_dual</code> telemetry 전무.</p></div>
+      <div class="field"><h4>판정</h4><p><strong>미검증.</strong> Claim D는 "얽힘을 깬다"가 아니라 <strong>"control-plane coupling 감소"</strong>로 범위가 축소됐다. 별도 device pool과 mamba state transfer가 필요한 headroom에는 이 구현으로 도달할 수 없다 — 그 경로는 코드에 <strong>전무</strong>하다.</p></div>
+      <div class="caveat">알려진 잠복 결함 1건: admission latch(<code>r2_admission_limited</code>)가 split batch가 <code>None</code>으로 배수되면 clear 경로 없이 <code>True</code>로 고착돼 prefill admission을 영구 차단할 수 있다. <strong>사용자 결정으로 현재 수정 보류.</strong></div>
+    </div>
+  </article>
+
+  <!-- P6 policy -->
+  <article class="plate unver">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="R2 정책층: offline 모델 프로파일이 보수적 decode floor 추정기를 거쳐 세 가지 정책 중 하나로 들어가고, 그 결과는 step 내내 단일 파티션의 크기만 결정한다.">
+          <rect x="8" y="18" width="94" height="38" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="55" y="34" class="t-box" text-anchor="middle">HybridModel</text>
+          <text x="55" y="48" class="t-lbl" text-anchor="middle">ProfileV1 (offline)</text>
+          <path d="M102,37 L124,37" class="s-none k-rule" stroke-width="1.5" marker-end="url(#pl-ar)"/>
+          <defs><marker id="pl-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="var(--rule-hi)"/></marker></defs>
+          <rect x="124" y="18" width="100" height="38" class="s-sunk k-rule" stroke-width="1"/>
+          <text x="174" y="34" class="t-box" text-anchor="middle">Conservative</text>
+          <text x="174" y="48" class="t-lbl" text-anchor="middle">DecodeFloorEstimator</text>
+          <path d="M224,37 L246,37" class="s-none k-rule" stroke-width="1.5" marker-end="url(#pl-ar)"/>
+          <rect x="246" y="10" width="106" height="18" class="s-none" stroke="var(--open)" stroke-width="1"/>
+          <text x="299" y="23" class="t-lbl" text-anchor="middle">FixedPolicy</text>
+          <rect x="246" y="30" width="106" height="18" class="s-none" stroke="var(--open)" stroke-width="1"/>
+          <text x="299" y="43" class="t-lbl" text-anchor="middle">GenericDynamicPolicy</text>
+          <rect x="246" y="50" width="106" height="18" class="s-plate" stroke="var(--open)" stroke-width="2"/>
+          <text x="299" y="63" class="t-lbl" text-anchor="middle" fill="var(--open)">HybridInformedPolicy</text>
+
+          <path d="M180,68 L180,90" class="s-none k-rule" stroke-width="1.5" marker-end="url(#pl-ar)"/>
+          <text x="190" y="83" class="t-lbl">safe boundary에서만 적용</text>
+          <rect x="8" y="94" width="344" height="24" class="s-none k-rule" stroke-width="1"/>
+          <rect x="8" y="94" width="203.8" height="24" class="s-pre"/>
+          <rect x="213.8" y="94" width="138.2" height="24" class="s-dec"/>
+          <text x="110" y="110" class="t-lbl on-fill" text-anchor="middle">prefill = 108 − floor</text>
+          <text x="283" y="110" class="t-lbl on-fill" text-anchor="middle">decode floor</text>
+          <text x="180" y="138" class="t-lbl" text-anchor="middle">layer 구성은 floor의 <tspan font-style="italic">크기</tspan>만 정한다 — 스케줄링 경계로 쓰지 않는다</text>
+        </svg>
+        <figcaption>죽은 가설의 살아남은 잔여물: layer 정보를 <strong>런타임 경계</strong>가 아니라 <strong>offline 크기 예측</strong>으로만 쓴다.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>R2 정책층 — hybrid-informed decode floor</h3>
+        <span class="pill open">미검증 · Claim E (핵심 가설)</span>
+        <div class="plate-switch"><code>PDMUX_R2_POLICY=fixed|generic|hybrid</code> · <code>PDMUX_MODEL_PROFILE=&lt;json&gt;</code></div>
+      </div>
+      <div class="field"><h4>구조</h4><p>versioned <code>HybridModelProfileV1</code>과 보수적 floor 추정기가 offline에서 decode floor를 예측하고, 세 정책이 engine safe-boundary에 연결된다. layer composition은 <strong>런타임 스케줄링 경계로 쓰지 않는다</strong> — layer-type 死 판정에서 유일하게 살아남은 사용처다.</p></div>
+      <div class="field"><h4>측정</h4><p><strong>없다.</strong> Claim E의 existing evidence 칸은 문자 그대로 "없음"이다.</p></div>
+      <div class="field"><h4>판정</h4><p>이 프로젝트의 <strong>미검증 핵심 가설</strong>. 필요한 것은 architecture control · generic policy · static/oracle 대조 · profile 일반화(leave-one-workload/model-family-out).</p></div>
+      <div class="caveat"><strong>구현 완료 ≠ 성능 주장 성립.</strong> 이 구분이 이 프로젝트에서 결론을 두 번 뒤집었다.</div>
+    </div>
+  </article>
+
+  <!-- P7 sticky -->
+  <article class="plate inertb">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="sticky partition: 패치 전에는 arm 라벨이 decode 시간의 3.8퍼센트에서만 실제 파티션이었고, 패치 후에는 99.9퍼센트로 올라간다.">
+          <text x="8" y="18" class="t-lbl">패치 전 — 라벨이 실제 파티션이던 시간</text>
+          <rect x="8" y="26" width="344" height="22" class="s-sunk"/>
+          <rect x="8" y="26" width="13" height="22" class="s-bad"/>
+          <text x="180" y="41" class="t-lbl" text-anchor="middle">엔진이 덧붙인 무분할 그룹이 나머지를 먹는다</text>
+          <text x="352" y="18" class="t-val dim" text-anchor="end">0.038 – 0.093</text>
+
+          <text x="8" y="76" class="t-lbl">패치 후 — PDMUX_STICKY_PARTITION</text>
+          <rect x="8" y="84" width="344" height="22" class="s-sunk"/>
+          <rect x="8" y="84" width="343" height="22" class="s-ok"/>
+          <text x="180" y="99" class="t-lbl on-fill" text-anchor="middle">라벨 = 실현 파티션</text>
+          <text x="352" y="76" class="t-val dim" text-anchor="end">0.999 – 0.9994</text>
+
+          <line x1="8" y1="120" x2="352" y2="120" class="k-rule" stroke-width="1"/>
+          <text x="8" y="136" class="t-lbl">"decode가 D SM에서 돌았다" ⟺ "prefill이 동시 in-flight였다"</text>
+          <text x="8" y="148" class="t-lbl">— 이 alias를 끊는 것이 이 구조의 전부다</text>
+        </svg>
+        <figcaption>성능 구조가 아니라 <strong>estimand 수리</strong>. 라벨과 실물을 일치시킨다.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>sticky partition — 계측 기판</h3>
+        <span class="pill inert">correctness 통과 · 성능 판정 아님</span>
+        <div class="plate-switch"><code>PDMUX_STICKY_PARTITION</code></div>
+      </div>
+      <div class="field"><h4>구조</h4><p>엔진의 <code>initialize_stream_groups</code>가 마지막에 <strong>무분할 그룹을 항상 덧붙인다</strong>. 그 결과 이 기판에서는 "decode가 D SM에서 돌았다"와 "prefill이 동시 in-flight였다"가 <strong>같은 사건</strong>이 돼, 어떤 통계도 decode-SM 탄력도와 prefill 간섭을 분리하지 못했다. sticky는 라벨을 고정해 그 alias를 끊는다.</p></div>
+      <div class="field"><h4>측정</h4><p>correctness gate 통과 — CPU 회귀 40 tests + sticky 단위 12 + GPU smoke byte-identical 출력. 실현률 <span class="num">0.038/0.093 → 0.999/0.9994</span>.</p></div>
+      <div class="field"><h4>판정</h4><p>구현·검증 완료. <strong>성능 판정이 아니다</strong> — 이 구조가 여는 것은 결론이 아니라 <em>측정 가능성</em>이다.</p></div>
+      <div class="caveat">여전히 미해결: sticky 기판은 estimand 자체를 바꾼다(decode-busy 시 prefill이 벽시계 ~77 % 유휴 ⇒ 공동 예산 배분이 아니라 단일-테넌트 decode 측정에 가깝다). 하드웨어 SM 프로브(S3)는 <strong>미실행</strong>이다.</div>
+    </div>
+  </article>
+
+  <!-- P8 disagg -->
+  <article class="plate inertb">
+    <div class="plate-fig">
+      <figure>
+        <svg viewBox="0 0 360 150" role="img" aria-label="disaggregation: TTFT가 원하는 92 SM과 ITL이 요구하는 24 SM의 합이 116으로 108을 넘기 때문에 단일 GPU에서는 두 요구를 동시에 만족할 수 없다.">
+          <text x="8" y="16" class="t-lbl">TTFT 도너가 원하는 것</text>
+          <rect x="8" y="22" width="344" height="20" class="s-sunk"/>
+          <rect x="8" y="22" width="293" height="20" class="s-pre"/>
+          <text x="154" y="36" class="t-lbl on-fill" text-anchor="middle">prefill 92</text>
+
+          <text x="8" y="62" class="t-lbl">ITL 도너가 요구하는 것</text>
+          <rect x="8" y="68" width="344" height="20" class="s-sunk"/>
+          <rect x="8" y="68" width="76.4" height="20" class="s-dec"/>
+          <text x="46" y="82" class="t-lbl on-fill" text-anchor="middle">24</text>
+
+          <line x1="8" y1="100" x2="352" y2="100" class="k-rule" stroke-width="1"/>
+          <text x="8" y="118" class="t-val">92 + 24 = 116</text>
+          <text x="90" y="118" class="t-val" fill="var(--bad)">&gt; 108</text>
+          <text x="150" y="118" class="t-lbl">⇒ coupling tax 8 SM</text>
+          <rect x="8" y="126" width="344" height="14" class="s-none k-bad" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="180" y="137" class="t-lbl" text-anchor="middle" fill="var(--bad)">단일 GPU에는 이 구간이 없다 — 별도 device pool에만 있다</text>
+        </svg>
+        <figcaption>진짜 headroom은 <strong>디바이스 사이</strong>에 있다. 단일-GPU split에는(동적이든 정적이든) 없다.</figcaption>
+      </figure>
+    </div>
+    <div class="plate-body">
+      <div class="plate-top">
+        <h3>disaggregation — 별도 device pool</h3>
+        <span class="pill inert">미구현</span>
+        <div class="plate-switch">state-transfer 경로 전무 · mamba conv/ssm state migration 스캐폴딩조차 없음</div>
+      </div>
+      <div class="field"><h4>구조</h4><p>prefill과 decode를 <strong>다른 디바이스 풀</strong>에 두고 hybrid의 mamba/SSM state를 옮긴다. 코드에 존재하지 않는다.</p></div>
+      <div class="field"><h4>측정</h4><p>goodput을 TTFT-pass ⊗ ITL-pass로 분해하면 두 도너의 SM 합이 <strong>108을 넘는다</strong>. 그 초과분이 곧 단일 GPU가 지불하는 coupling tax다.</p></div>
+      <div class="field"><h4>판정</h4><p>미구현. 이 플레이트가 존재하는 이유는 <strong>동적 제어의 死가 곧 천장의 소멸은 아님</strong>을 자리로 보여주기 위해서다 — 두 명제는 다르다.</p></div>
+      <div class="caveat"><strong>크기 인용 금지.</strong> 이 오라클의 "+16 %"는 n = 1~2 · overload-only로 강등됐고, ITL 도너가 완전 동률이라 "116"이라는 숫자 자체가 tie-break 의존이며, TTFT 임계를 ±10 % 훑으면 크기가 <span class="num">0.00 % ~ +19.75 %</span>로 요동한다. 인용 가능한 것은 <strong>구조 대조</strong>뿐이다.</div>
+    </div>
+  </article>
+
+  </div>
+</section>
+
+<!-- ══════════════════ 03 측정 ══════════════════ -->
+<section>
+  <div class="sec-head">
+    <span class="lbl">03</span>
+    <h2>측정 — 구조를 죽이고 살린 수치들</h2>
+  </div>
+  <p class="sec-sub">
+    아래 여덟 개 그림은 전부 <strong>실엔진 서빙 측정</strong>이다. 시뮬레이터·마이크로벤치 수치는
+    이 프로젝트에서 결론 근거로 쓰지 않는다 — 그 규율이 없어서 결론이 두 번 뒤집혔다.
+    모든 값은 그림 위에 직접 찍혀 있으므로 색 없이도 읽힌다.
+  </p>
+
+  <div class="figgrid">
+
+    <!-- FIG 1: G16 M_ttft -->
+    <figure class="chart">
+      <div class="chart-head">
+        <span class="lbl">Fig 1 · 용량 프록시</span>
+        <h3>최적 split은 격자의 <em>안쪽</em>에 있다</h3>
+      </div>
+      <div class="plot">
+        <svg viewBox="0 0 480 250" role="img" aria-label="decode SM을 16에서 74까지 늘렸을 때의 M_ttft 곡선. 최소값은 양 끝이 아니라 내부점 d44에서 1089.8 ms로 나타난다.">
+          <!-- grid -->
+          <line x1="52" y1="30"    x2="466" y2="30"    class="grid"/>
+          <line x1="52" y1="78.6"  x2="466" y2="78.6"  class="grid"/>
+          <line x1="52" y1="127.1" x2="466" y2="127.1" class="grid"/>
+          <line x1="52" y1="175.7" x2="466" y2="175.7" class="grid"/>
+          <line x1="52" y1="200"   x2="466" y2="200"   class="k-rule" stroke-width="1"/>
+          <text x="46" y="34"    class="t-lbl" text-anchor="end">2400</text>
+          <text x="46" y="82.6"  class="t-lbl" text-anchor="end">2000</text>
+          <text x="46" y="131.1" class="t-lbl" text-anchor="end">1600</text>
+          <text x="46" y="179.7" class="t-lbl" text-anchor="end">1200</text>
+          <text x="52" y="18" class="t-lbl">M_ttft (ms) — 낮을수록 좋다</text>
+          <!-- x = 52 + i*69 ; y = 200 − (v−1000)·170/1400 -->
+          <polyline points="52,50.9 121,166.1 190,173.5 259,189.1 328,177.1 397,176.9 466,93.7"
+                    class="s-none k-dec" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="52"  cy="50.9"  r="4.5" class="s-dec"><title>d16 — M_ttft 2227.9 ms</title></circle>
+          <circle cx="121" cy="166.1" r="4.5" class="s-dec"><title>d24 — M_ttft 1279.5 ms</title></circle>
+          <circle cx="190" cy="173.5" r="4.5" class="s-dec"><title>d34 — M_ttft 1218.1 ms</title></circle>
+          <circle cx="259" cy="189.1" r="6.5" class="s-dec"><title>d44 — M_ttft 1089.8 ms · argmin, 4/4 블록, 블록 부트스트랩 1.000</title></circle>
+          <circle cx="259" cy="189.1" r="10.5" class="s-none k-dec" stroke-width="1.5"/>
+          <circle cx="328" cy="177.1" r="4.5" class="s-dec"><title>d54 — M_ttft 1188.6 ms</title></circle>
+          <circle cx="397" cy="176.9" r="4.5" class="s-dec"><title>d64 — M_ttft 1189.9 ms</title></circle>
+          <circle cx="466" cy="93.7"  r="4.5" class="s-dec"><title>d74 — M_ttft 1875.6 ms</title></circle>
+          <text x="52"  y="42"  class="t-val" text-anchor="middle">2227.9</text>
+          <text x="466" y="85"  class="t-val" text-anchor="end">1875.6</text>
+          <text x="259" y="226" class="t-val" text-anchor="middle">1089.8</text>
+          <text x="259" y="240" class="t-lbl" text-anchor="middle" fill="var(--decode)">argmin · 내부점</text>
+          <text x="52"  y="215" class="t-lbl" text-anchor="middle">d16</text>
+          <text x="121" y="215" class="t-lbl" text-anchor="middle">d24</text>
+          <text x="190" y="215" class="t-lbl" text-anchor="middle">d34</text>
+          <text x="328" y="215" class="t-lbl" text-anchor="middle">d54</text>
+          <text x="397" y="215" class="t-lbl" text-anchor="middle">d64</text>
+          <text x="466" y="215" class="t-lbl" text-anchor="middle">d74</text>
+          <text x="52"  y="245" class="t-lbl">decode SM (prefill = 108 − decode) →</text>
+        </svg>
+      </div>
+      <figcaption>
+        sgptv HI · Zamba2-2.7B · cudagraph ON · 4블록 × 7 arm × 4부팅. <strong>argmin = d44</strong>,
+        4/4 블록 일치·블록 부트스트랩 <span class="num">1.000</span>. 양 끝이 모두 나쁜 <strong>내부점</strong>이라는 것이 요점이다 —
+        구 격자는 끝이 잘려 있어 이 사실을 볼 수 없었다. <strong>d44는 <code>M_ttft</code> argmin이며, 그 이상으로 부르지 않는다</strong>("처리량 최적"은 반증됐다).
+      </figcaption>
+    </figure>
+
+    <!-- FIG 2: G16 M_itl -->
+    <figure class="chart">
+      <div class="chart-head">
+        <span class="lbl">Fig 2 · ITL 축</span>
+        <h3>ITL은 절벽 한 번 뒤 평평해진다</h3>
+      </div>
+      <div class="plot">
+        <svg viewBox="0 0 480 250" role="img" aria-label="같은 격자의 M_itl 곡선. d16에서 d34로 25.3밀리초 급락한 뒤 상단 다섯 arm이 0.634밀리초 폭 안에 전부 들어간다.">
+          <line x1="52" y1="30"    x2="466" y2="30"    class="grid"/>
+          <line x1="52" y1="77.4"  x2="466" y2="77.4"  class="grid"/>
+          <line x1="52" y1="124.9" x2="466" y2="124.9" class="grid"/>
+          <line x1="52" y1="172.3" x2="466" y2="172.3" class="grid"/>
+          <line x1="52" y1="196"   x2="466" y2="196"   class="k-rule" stroke-width="1"/>
+          <text x="46" y="34"    class="t-lbl" text-anchor="end">86</text>
+          <text x="46" y="81.4"  class="t-lbl" text-anchor="end">78</text>
+          <text x="46" y="128.9" class="t-lbl" text-anchor="end">70</text>
+          <text x="46" y="176.3" class="t-lbl" text-anchor="end">62</text>
+          <text x="52" y="18" class="t-lbl">M_itl (ms) — 낮을수록 좋다</text>
+          <!-- 포화 밴드: 58.533‥59.167 ms (상단 5 arm) -->
+          <rect x="182" y="186.5" width="292" height="9" class="s-dec" opacity="0.16"/>
+          <!-- y = 196 − (v−58)·166/28 -->
+          <polyline points="52,42.1 121,181.4 190,192.3 259,191.9 328,191.3 397,192.8 466,189.1"
+                    class="s-none k-dec" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="52"  cy="42.1"  r="4.5" class="s-dec"><title>d16 — M_itl 83.952 ms</title></circle>
+          <circle cx="121" cy="181.4" r="4.5" class="s-dec"><title>d24 — M_itl 60.461 ms</title></circle>
+          <circle cx="190" cy="192.3" r="4.5" class="s-dec"><title>d34 — M_itl 58.625 ms</title></circle>
+          <circle cx="259" cy="191.9" r="4.5" class="s-dec"><title>d44 — M_itl 58.692 ms</title></circle>
+          <circle cx="328" cy="191.3" r="4.5" class="s-dec"><title>d54 — M_itl 58.793 ms</title></circle>
+          <circle cx="397" cy="192.8" r="6"   class="s-pre"><title>d64 — M_itl 58.533 ms · argmin이나 미식별 (부트스트랩 0.5115)</title></circle>
+          <circle cx="466" cy="189.1" r="4.5" class="s-dec"><title>d74 — M_itl 59.167 ms</title></circle>
+          <text x="52"  y="33"  class="t-val" text-anchor="middle">83.952</text>
+          <text x="121" y="172" class="t-val" text-anchor="middle">60.461</text>
+          <text x="397" y="226" class="t-val" text-anchor="middle" fill="var(--prefill)">58.533</text>
+          <text x="397" y="240" class="t-lbl" text-anchor="middle" fill="var(--prefill)">argmin · 미식별</text>
+          <path d="M62,52 L112,172" class="s-none k-rule" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="128" y="110" class="t-lbl" fill="var(--bad)">25.3 ms 급락</text>
+          <text x="474" y="181" class="t-lbl" text-anchor="end" fill="var(--decode)">상단 5 arm 폭 0.634 ms &lt; δ 1.0 ms</text>
+          <text x="52"  y="215" class="t-lbl" text-anchor="middle">d16</text>
+          <text x="190" y="215" class="t-lbl" text-anchor="middle">d34</text>
+          <text x="259" y="215" class="t-lbl" text-anchor="middle">d44</text>
+          <text x="328" y="215" class="t-lbl" text-anchor="middle">d54</text>
+          <text x="466" y="215" class="t-lbl" text-anchor="middle">d74</text>
+          <text x="52"  y="245" class="t-lbl">decode SM →</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="sw dec"></i> 식별된 점</span>
+        <span><i class="sw pre"></i> argmin이나 미식별 (부트스트랩 0.5115 &lt; 0.80)</span>
+      </div>
+      <figcaption>
+        ITL 도너 <code>D_itl</code>은 <strong>식별되지 않는다</strong> — 선택 분포가 네 arm에 퍼진다(d34 .243 / d44 .126 / d54 .120 / d64 .512).
+        상단 포화는 <span class="num">P(gap &gt; δ) = 0.266</span>, 즉 <strong>약 4회 중 1회는 반대로 나오는 결정</strong>이다.
+      </figcaption>
+    </figure>
+
+    <!-- FIG 3: HE0 goodput -->
+    <figure class="chart">
+      <div class="chart-head">
+        <span class="lbl">Fig 3 · HE0 · 관대 SLO</span>
+        <h3>동적 제어는 best static을 못 넘는다</h3>
+      </div>
+      <div class="plot">
+        <svg viewBox="0 0 480 262" role="img" aria-label="변화 trace goodput 막대. 정적 d44가 3.220으로 가장 높고, 동적 컨트롤러 계열은 모두 그 아래에 있다.">
+          <defs>
+            <pattern id="hz-dyn" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="6" height="6" fill="var(--dec-bg)"/>
+              <line x1="0" y1="0" x2="0" y2="6" stroke="var(--decode)" stroke-width="2.2"/>
+            </pattern>
+          </defs>
+          <!-- x = 104 + (v−2.75)/0.55·276 -->
+          <line x1="104"   y1="16" x2="104"   y2="232" class="grid"/>
+          <line x1="229.5" y1="16" x2="229.5" y2="232" class="grid"/>
+          <line x1="354.9" y1="16" x2="354.9" y2="232" class="grid"/>
+          <text x="104"   y="248" class="t-lbl" text-anchor="middle">2.75</text>
+          <text x="229.5" y="248" class="t-lbl" text-anchor="middle">3.00</text>
+          <text x="354.9" y="248" class="t-lbl" text-anchor="middle">3.25</text>
+          <text x="104"  y="10"  class="t-lbl">SLO goodput (변화 trace · 하네스 3× 버그 수정 후) →</text>
+
+          <text x="98" y="34"  class="t-val" text-anchor="end">d44</text>
+          <rect x="104" y="20" width="235.9" height="18" rx="3" class="s-dec"><title>d44 static — 3.220 ± 0.013 (n=4)</title></rect>
+          <text x="348" y="34" class="t-val">3.220 ±0.013</text>
+
+          <text x="98" y="65"  class="t-val" text-anchor="end">d34</text>
+          <rect x="104" y="51" width="211.3" height="18" rx="3" class="s-dec"><title>d34 static — 3.171 ± 0.025 (n=4)</title></rect>
+          <text x="323" y="65" class="t-val dim">3.171 ±0.025</text>
+
+          <text x="98" y="96"  class="t-val" text-anchor="end">bind+GATE</text>
+          <rect x="104" y="82" width="191.7" height="18" rx="3" fill="url(#hz-dyn)" stroke="var(--decode)" stroke-width="1"><title>binding-first + feasibility gate — 3.132 ± 0.019 (n=9)</title></rect>
+          <text x="304" y="96" class="t-val dim">3.132 ±0.019</text>
+
+          <text x="98" y="127" class="t-val" text-anchor="end">d24</text>
+          <rect x="104" y="113" width="145.0" height="18" rx="3" class="s-dec" opacity="0.55"><title>d24 static — 3.039 ± 0.130 (n=4)</title></rect>
+          <text x="257" y="127" class="t-val dim">3.039 ±0.130</text>
+
+          <text x="98" y="158" class="t-val" text-anchor="end">slo</text>
+          <rect x="104" y="144" width="107.4" height="18" rx="3" fill="url(#hz-dyn)" stroke="var(--decode)" stroke-width="1"><title>SLO-aware 컨트롤러 — 2.964 ± 0.025 (n=4)</title></rect>
+          <text x="219" y="158" class="t-val dim">2.964 ±0.025</text>
+
+          <text x="98" y="189" class="t-val" text-anchor="end">bind</text>
+          <rect x="104" y="175" width="92.3" height="18" rx="3" fill="url(#hz-dyn)" stroke="var(--decode)" stroke-width="1"><title>binding-first, 게이트 없음 — 2.934 ± 0.306 (n=4)</title></rect>
+          <text x="204" y="189" class="t-val dim">2.934 ±0.306</text>
+
+          <text x="98" y="220" class="t-val" text-anchor="end">d16</text>
+          <rect x="104" y="206" width="48.2" height="18" rx="3" class="s-dec" opacity="0.55"><title>d16 static — 2.846 ± 0.055 (n=4)</title></rect>
+          <text x="160" y="220" class="t-val dim">2.846 ±0.055</text>
+
+          <!-- d44 ↔ bind+GATE 격차 -->
+          <line x1="295.7" y1="20" x2="295.7" y2="106" class="k-bad" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="339.9" y1="20" x2="339.9" y2="106" class="k-bad" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="318" y="118" class="t-lbl" text-anchor="middle" fill="var(--bad)">0.088 = 5.4 σ</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="sw dec"></i> 정적 split (고정)</span>
+        <span><i class="sw hatch"></i> 동적 컨트롤러</span>
+      </div>
+      <figcaption>
+        <strong>동적 계열 셋이 전부 best static 아래</strong>에 있고, 최상위 동적(bind+GATE)조차 2위 static(d34)을 못 넘는다.
+        switch ≈ 0 · 컨트롤러 CPU <span class="num">0.014 %</span>이므로 <strong>오버헤드 가설은 죽었다</strong>.
+      </figcaption>
+    </figure>
+
+    <!-- FIG 4: tight SLO -->
+    <figure class="chart">
+      <div class="chart-head">
+        <span class="lbl">Fig 4 · HE0 · tight SLO</span>
+        <h3>SLO를 조여도, 재튜닝해도 격차는 벌어진다</h3>
+      </div>
+      <div class="plot">
+        <svg viewBox="0 0 480 214" role="img" aria-label="chat SLO 300/50밀리초로 컨트롤러를 재튜닝한 뒤의 rate 8 attainment. d44 정적이 73.2퍼센트, 최상위 동적은 44.3퍼센트다.">
+          <defs>
+            <pattern id="hz-dyn2" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="6" height="6" fill="var(--dec-bg)"/>
+              <line x1="0" y1="0" x2="0" y2="6" stroke="var(--decode)" stroke-width="2.2"/>
+            </pattern>
+          </defs>
+          <!-- x = 100 + v·4.0 -->
+          <line x1="100" y1="20" x2="100" y2="158" class="k-rule" stroke-width="1"/>
+          <line x1="180" y1="20" x2="180" y2="158" class="grid"/>
+          <line x1="260" y1="20" x2="260" y2="158" class="grid"/>
+          <line x1="340" y1="20" x2="340" y2="158" class="grid"/>
+          <line x1="420" y1="20" x2="420" y2="158" class="grid"/>
+          <text x="100" y="174" class="t-lbl" text-anchor="middle">0</text>
+          <text x="180" y="174" class="t-lbl" text-anchor="middle">20</text>
+          <text x="260" y="174" class="t-lbl" text-anchor="middle">40</text>
+          <text x="340" y="174" class="t-lbl" text-anchor="middle">60</text>
+          <text x="420" y="174" class="t-lbl" text-anchor="middle">80 %</text>
+          <text x="100" y="14"  class="t-lbl">rate 8 attainment (%) →</text>
+
+          <text x="94" y="38" class="t-val" text-anchor="end">d44</text>
+          <rect x="100" y="24" width="292.8" height="18" rx="3" class="s-dec"><title>d44 static — attainment 73.2 % ± 4.8</title></rect>
+          <text x="401" y="38" class="t-val">73.2 ±4.8</text>
+
+          <text x="94" y="72" class="t-val" text-anchor="end">d34</text>
+          <rect x="100" y="58" width="198.4" height="18" rx="3" class="s-dec" opacity="0.62"><title>d34 static — attainment 49.6 % ± 3.9</title></rect>
+          <text x="307" y="72" class="t-val dim">49.6 ±3.9</text>
+
+          <text x="94" y="106" class="t-val" text-anchor="end">bind+GATE</text>
+          <rect x="100" y="92" width="177.2" height="18" rx="3" fill="url(#hz-dyn2)" stroke="var(--decode)" stroke-width="1"><title>binding-first + gate, tight SLO로 재튜닝 — 44.3 % ± 2.7</title></rect>
+          <text x="286" y="106" class="t-val dim">44.3 ±2.7</text>
+
+          <text x="94" y="140" class="t-val" text-anchor="end">bind</text>
+          <rect x="100" y="126" width="162.4" height="18" rx="3" fill="url(#hz-dyn2)" stroke="var(--decode)" stroke-width="1"><title>binding-first, 게이트 없음 — 40.6 %</title></rect>
+          <text x="271" y="140" class="t-val dim">40.6</text>
+
+          <line x1="277.2" y1="24" x2="277.2" y2="116" class="k-bad" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="392.8" y1="24" x2="392.8" y2="116" class="k-bad" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="240" y="202" class="t-lbl" fill="var(--bad)">28.9 %p ≈ 10 σ — 동적은 2위 static도 못 넘는다</text>
+        </svg>
+      </div>
+      <figcaption>
+        결정적인 것은 <strong>재스코어가 아니라 재튜닝</strong>이라는 점이다. 2026-07-18에 tight SLO 재스코어가 한때 "동적 우위"로 보였으나,
+        컨트롤러를 그 SLO로 <strong>실제로 다시 튜닝해</strong> 직접 측정하니 반대로 나왔다 — 재스코어는 3 s-튜닝 컨트롤러의 정착 static 위치를 사후 채점한 아티팩트였다.
+      </figcaption>
+    </figure>
+
+    <!-- FIG 5: layer-type -->
+    <figure class="chart">
+      <div class="chart-head">
+        <span class="lbl">Fig 5 · layer-type 死因</span>
+        <h3>시뮬레이터의 이득은 엔진으로 건너오지 않았다</h3>
+      </div>
+      <div class="plot">
+        <svg viewBox="0 0 480 236" role="img" aria-label="coordinated per-type 구현의 TPOT는 42밀리초에서 124밀리초로 악화되고 최적화 후에도 85밀리초에 머문다. 시뮬레이터가 약속한 1.37에서 2.02배 이득은 실엔진으로 전이되지 않았다.">
+          <!-- x = 110 + v·2.4 -->
+          <line x1="110" y1="26" x2="110" y2="134" class="k-rule" stroke-width="1"/>
+          <line x1="206" y1="26" x2="206" y2="134" class="grid"/>
+          <line x1="302" y1="26" x2="302" y2="134" class="grid"/>
+          <line x1="398" y1="26" x2="398" y2="134" class="grid"/>
+          <text x="110" y="150" class="t-lbl" text-anchor="middle">0</text>
+          <text x="206" y="150" class="t-lbl" text-anchor="middle">40</text>
+          <text x="302" y="150" class="t-lbl" text-anchor="middle">80</text>
+          <text x="398" y="150" class="t-lbl" text-anchor="middle">120 ms</text>
+          <text x="12"  y="20"  class="t-lbl">TPOT (ms) — 낮을수록 좋다 →</text>
+          <text x="104" y="44" class="t-val" text-anchor="end">agnostic</text>
+          <rect x="110" y="30" width="100.8" height="18" rx="3" class="s-dec"><title>agnostic 기준선 — TPOT 약 42 ms</title></rect>
+          <text x="219" y="44" class="t-val">≈42</text>
+
+          <text x="104" y="78" class="t-val" text-anchor="end">per-type</text>
+          <rect x="110" y="64" width="297.6" height="18" rx="3" class="s-bad"><title>coordinated per-type 구현 — TPOT 약 124 ms</title></rect>
+          <text x="416" y="78" class="t-val" fill="var(--bad)">≈124</text>
+
+          <text x="104" y="112" class="t-val" text-anchor="end">최적화 후</text>
+          <rect x="110" y="98" width="204" height="18" rx="3" class="s-bad" opacity="0.6"><title>최적화 후에도 TPOT 약 85 ms</title></rect>
+          <text x="322" y="112" class="t-val dim">≈85</text>
+
+          <line x1="12" y1="176" x2="466" y2="176" class="k-rule" stroke-width="1"/>
+          <text x="12" y="196" class="t-lbl">시뮬레이터 약속</text>
+          <text x="12" y="212" class="t-val" fill="var(--prefill)">1.37× / 2.02× / 1.82×</text>
+          <text x="12" y="228" class="t-lbl">1.2B / 2.7B / 7B</text>
+          <text x="256" y="196" class="t-lbl">실엔진 전이</text>
+          <text x="256" y="214" class="t-val" fill="var(--bad)">0</text>
+          <text x="290" y="214" class="t-lbl">— 서빙 실증으로 全형태 死</text>
+        </svg>
+      </div>
+      <figcaption>
+        死因은 <strong>(D) granularity</strong>다 — "누가 split을 정하나"가 아니라 <em>한 forward 안에서 파티션이 몇 번 바뀌나</em>.
+        offline 고정값으로 만들어도 attn↔mamba 경계마다 green context 재분할이 필요하므로 실행 파편화 비용은 그대로 남는다.
+        <strong>시뮬레이터 배수는 2026-08-04 감사로 마그니튜드가 강등</strong>됐고, 강등되지 않은 것은 死 판정 자체다.
+      </figcaption>
+    </figure>
+
+    <!-- FIG 6: P1 -->
+    <figure class="chart">
+      <div class="chart-head">
+        <span class="lbl">Fig 6 · P1 운영점</span>
+        <h3>PD-mux를 켜면 fused보다 낫다 — 인용 가능한 건 세 점</h3>
+      </div>
+      <div class="plot">
+        <svg viewBox="0 0 480 214" role="img" aria-label="운영점 cudagraph ON에서 agnostic PD-mux가 fused 대비 얻은 goodput 이득. Zamba2 rate3가 185.8퍼센트로 가장 크고, Zamba2 rate2 40.5퍼센트, Granite rate4 27.0퍼센트다.">
+          <!-- x = 76 + v·1.95 -->
+          <line x1="76"    y1="24" x2="76"    y2="146" class="k-rule" stroke-width="1"/>
+          <line x1="173.5" y1="24" x2="173.5" y2="146" class="grid"/>
+          <line x1="271"   y1="24" x2="271"   y2="146" class="grid"/>
+          <line x1="368.5" y1="24" x2="368.5" y2="146" class="grid"/>
+          <text x="76"    y="162" class="t-lbl" text-anchor="middle">0</text>
+          <text x="173.5" y="162" class="t-lbl" text-anchor="middle">+50</text>
+          <text x="271"   y="162" class="t-lbl" text-anchor="middle">+100</text>
+          <text x="368.5" y="162" class="t-lbl" text-anchor="middle">+150 %</text>
+          <text x="76"    y="16"  class="t-lbl">fused 대비 SLO goodput 이득 (%) →</text>
+          <text x="70" y="42" class="t-val" text-anchor="end">Zamba2 r3</text>
+          <rect x="76" y="28" width="362.3" height="18" rx="3" class="s-dec"><title>Zamba2-2.7B rate 3 — +185.8 %</title></rect>
+          <text x="446" y="42" class="t-val" text-anchor="end" fill="var(--decode)">+185.8</text>
+
+          <text x="70" y="80" class="t-val" text-anchor="end">Zamba2 r2</text>
+          <rect x="76" y="66" width="79" height="18" rx="3" class="s-dec"><title>Zamba2-2.7B rate 2 — +40.5 % [CI +0.431, +0.620 req/s]</title></rect>
+          <text x="163" y="80" class="t-val">+40.5</text>
+
+          <text x="70" y="118" class="t-val" text-anchor="end">Granite r4</text>
+          <rect x="76" y="104" width="52.6" height="18" rx="3" class="s-dec"><title>Granite-4.0-h-micro-base rate 4 — +27.0 %</title></rect>
+          <text x="137" y="118" class="t-val">+27.0</text>
+
+          <line x1="12" y1="180" x2="466" y2="180" class="k-rule" stroke-width="1"/>
+          <text x="12" y="198" class="t-lbl">이득은 꼬리에</text>
+          <text x="12" y="212" class="t-lbl" fill="var(--bad)">비용은 중앙에 — 정상상태 per-token decode 5–45 % 느려짐</text>
+        </svg>
+      </div>
+      <figcaption>
+        cudagraph-ON 운영점 · n = 5 paired · 정본 goodput 술어. <strong>2모델 전부·rate 2–6 정상상태 셀에서</strong> agnostic이 fused를 이긴다.
+        통계 방법 층 정정(percentile bootstrap → t-CI) 후 인용 가능 정량치는 <strong>4개 → 3개</strong>로 줄었다.
+        "항상 이득"은 <strong>철회</strong>했고, "4모델 전부"도 더 이상 쓸 수 없다(운영점은 2모델만 측정).
+      </figcaption>
+    </figure>
+
+    <!-- FIG 7: Gate 2-S -->
+    <figure class="chart">
+      <div class="chart-head">
+        <span class="lbl">Fig 7 · Gate 2-S</span>
+        <h3>SM 분할만 켜면 9-셀 전부 트레이드오프</h3>
+      </div>
+      <div class="plot">
+        <svg viewBox="0 0 480 268" role="img" aria-label="SM 분할 성분만 무력화한 대조에서 요청 내부 ITL p95는 네 셀 모두 개선되지만 같은 네 셀의 TTFT p95는 모두 악화된다.">
+          <text x="0" y="14" class="t-lbl" fill="var(--decode)">▲ 요청-내부 ITL p95 — 4셀 전부 개선 (ms)</text>
+          <line x1="128" y1="22" x2="128" y2="118" class="k-rule" stroke-width="1"/>
+          <line x1="228" y1="22" x2="228" y2="118" class="grid"/>
+          <line x1="328" y1="22" x2="328" y2="118" class="grid"/>
+          <line x1="428" y1="22" x2="428" y2="118" class="grid"/>
+          <text x="228" y="132" class="t-lbl" text-anchor="middle">+10</text>
+          <text x="328" y="132" class="t-lbl" text-anchor="middle">+20</text>
+          <text x="428" y="132" class="t-lbl" text-anchor="middle">+30</text>
+          <!-- x = 128 + v*10 -->
+          <text x="122" y="38" class="t-val" text-anchor="end">Zamba2 r2</text>
+          <rect x="128" y="24" width="140" height="16" rx="3" class="s-dec"><title>Zamba2 rate2 — ITL p95 평균 +13.95 ms 개선</title></rect>
+          <text x="276" y="37" class="t-val">+13.95</text>
+          <text x="122" y="62" class="t-val" text-anchor="end">Zamba2 r3</text>
+          <rect x="128" y="48" width="249" height="16" rx="3" class="s-dec"><title>Zamba2 rate3 — ITL p95 평균 +24.88 ms 개선</title></rect>
+          <text x="385" y="61" class="t-val">+24.88</text>
+          <text x="122" y="86" class="t-val" text-anchor="end">Granite r3</text>
+          <rect x="128" y="72" width="160" height="16" rx="3" class="s-dec"><title>Granite rate3 — ITL p95 평균 +16.04 ms 개선</title></rect>
+          <text x="296" y="85" class="t-val">+16.04</text>
+          <text x="122" y="110" class="t-val" text-anchor="end">Granite r4</text>
+          <rect x="128" y="96" width="191" height="16" rx="3" class="s-dec"><title>Granite rate4 — ITL p95 평균 +19.11 ms 개선</title></rect>
+          <text x="327" y="109" class="t-val">+19.11</text>
+
+          <line x1="0" y1="150" x2="480" y2="150" class="k-rule" stroke-width="1"/>
+          <text x="0" y="170" class="t-lbl" fill="var(--bad)">▼ 같은 4셀 · TTFT p95 — 전부 악화 (ms)</text>
+          <line x1="128" y1="178" x2="128" y2="252" class="k-rule" stroke-width="1"/>
+          <line x1="228" y1="178" x2="228" y2="252" class="grid"/>
+          <line x1="328" y1="178" x2="328" y2="252" class="grid"/>
+          <line x1="428" y1="178" x2="428" y2="252" class="grid"/>
+          <text x="228" y="266" class="t-lbl" text-anchor="middle">−200</text>
+          <text x="328" y="266" class="t-lbl" text-anchor="middle">−400</text>
+          <text x="428" y="266" class="t-lbl" text-anchor="middle">−600</text>
+          <text x="122" y="196" class="t-val dim" text-anchor="end">최소 악화</text>
+          <rect x="128" y="182" width="92" height="16" rx="3" class="s-bad"><title>가장 작은 TTFT p95 악화 — 약 −183 ms</title></rect>
+          <text x="228" y="195" class="t-val" fill="var(--bad)">−183</text>
+          <text x="122" y="226" class="t-val dim" text-anchor="end">최대 악화</text>
+          <rect x="128" y="212" width="268" height="16" rx="3" class="s-bad"><title>가장 큰 TTFT p95 악화 — 약 −536 ms</title></rect>
+          <text x="404" y="225" class="t-val" fill="var(--bad)">−536</text>
+          <text x="128" y="248" class="t-lbl">9-셀 표 좌표 = 16블록 전부 S1-C (트레이드오프)</text>
+        </svg>
+      </div>
+      <figcaption>
+        패치 0줄, env 조합만으로 <strong>SM 분할 성분 하나만</strong> 무력화한 첫 대조(n = 10 paired, 4셀 Holm 보정 후 최대 <span class="num">p = 1.88e-06</span>).
+        효과는 <strong>꼬리에 한정</strong>된다 — 같은 대비에서 q ≤ 0.7 분위수는 4셀 전부 반대 부호로 유의하다. 기전은
+        "드문 대형 prefill이 유발하는 decode 스톨을 균일한 소폭 지연으로 교환"이다.
+        <strong>크기(%) 인용이 허용된 셀은 Zamba2 r2 하나</strong>(ITL <span class="num">−38.8 %</span>, TTFT p95 <span class="num">+51.5 %</span>).
+      </figcaption>
+    </figure>
+
+    <!-- FIG 8: residency -->
+    <figure class="chart">
+      <div class="chart-head">
+        <span class="lbl">Fig 8 · 계측</span>
+        <h3>arm 라벨이 실제로 켜져 있던 시간</h3>
+      </div>
+      <div class="plot">
+        <svg viewBox="0 0 480 224" role="img" aria-label="G16 격자에서 arm 라벨이 실제 실현 파티션이었던 시간분율은 d16 7.67퍼센트, d44 10.27퍼센트, d74 20.28퍼센트에 불과하다.">
+          <line x1="96" y1="22" x2="96" y2="140" class="k-rule" stroke-width="1"/>
+          <line x1="192" y1="22" x2="192" y2="140" class="grid"/>
+          <line x1="288" y1="22" x2="288" y2="140" class="grid"/>
+          <line x1="384" y1="22" x2="384" y2="140" class="grid"/>
+          <text x="96"  y="156" class="t-lbl" text-anchor="middle">0</text>
+          <text x="192" y="156" class="t-lbl" text-anchor="middle">10</text>
+          <text x="288" y="156" class="t-lbl" text-anchor="middle">20</text>
+          <text x="384" y="156" class="t-lbl" text-anchor="middle">30 %</text>
+          <text x="96"  y="14"  class="t-lbl">시간가중 residency (분모 = benchmark 전 구간) →</text>
+          <!-- x = 96 + v*9.6 -->
+          <text x="90" y="40" class="t-val" text-anchor="end">d16</text>
+          <rect x="96" y="26" width="74" height="16" rx="3" class="s-dec"><title>d16 — 7.67 % ± 0.26 (t(3) 95% CI [7.26, 8.08])</title></rect>
+          <text x="178" y="39" class="t-val">7.67 ±0.26</text>
+
+          <text x="90" y="70" class="t-val" text-anchor="end">d44</text>
+          <rect x="96" y="56" width="99" height="16" rx="3" class="s-dec"><title>d44 — 10.27 % (M_ttft argmin arm)</title></rect>
+          <text x="203" y="69" class="t-val">10.27</text>
+          <text x="256" y="69" class="t-lbl" fill="var(--decode)">← M_ttft argmin arm</text>
+
+          <text x="90" y="100" class="t-val" text-anchor="end">d74</text>
+          <rect x="96" y="86" width="195" height="16" rx="3" class="s-dec"><title>d74 — 20.28 % ± 0.77 (t(3) 95% CI [19.06, 21.50])</title></rect>
+          <text x="299" y="99" class="t-val">20.28 ±0.77</text>
+
+          <line x1="143.1" y1="122" x2="387.9" y2="122" class="s-none" stroke="var(--inert)" stroke-width="1.5"/>
+          <line x1="143.1" y1="117" x2="143.1" y2="127" class="s-none" stroke="var(--inert)" stroke-width="1.5"/>
+          <line x1="387.9" y1="117" x2="387.9" y2="127" class="s-none" stroke="var(--inert)" stroke-width="1.5"/>
+          <text x="96" y="140" class="t-lbl">라운드 창으로 좁히면 LO 4.91 → 15.80 % · HI 12.98 → 30.41 %</text>
+
+          <line x1="0" y1="164" x2="480" y2="164" class="k-rule" stroke-width="1"/>
+          <text x="0" y="186" class="t-lbl">결정량이 실제로 보고 있는 "동거 구간의 명목 split"</text>
+          <text x="0" y="210" class="t-val" fill="var(--bad)">= 측정 창의 5–30 %</text>
+        </svg>
+      </div>
+      <figcaption>
+        arm당 관측치는 주변 평균 <strong>1개</strong>인데 상태-혼합 <code>M_itl(a) = w(a)·S(a) + (1−w(a))·U(a)</code>의 미지수는 <strong>2개</strong>다.
+        따라서 상단 arm 간 대비는 순수 split 대비가 아니라 <strong>(조건부 효과 × 노출)의 혼합 대비</strong>이며 구조적으로 식별되지 않는다.
+        블록을 더 넣어도 희석은 그대로다 — 필요한 것은 표본이 아니라 <strong>노출 <span class="num">w → 1</span></strong>이다.
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<!-- ══════════════════ 04 증거 수준 ══════════════════ -->
+<section>
+  <div class="sec-head">
+    <span class="lbl">04</span>
+    <h2>증거 수준 — 지금 무엇을 주장할 수 있나</h2>
+  </div>
+  <p class="sec-sub">
+    구조를 만들었다는 것과 그 구조가 무엇을 한다고 말할 수 있다는 것은 다르다.
+    아래가 현재 <strong>말할 수 있는 것의 전부</strong>다.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th style="width:300px">Claim</th><th style="width:160px">현재 판정</th><th>근거 · 제한</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="who">A. decode demand는 composition·context·load에 따라 변한다</td>
+          <td><span class="pill open">부분 지지</span></td>
+          <td>prefill을 16 SM에 고정한 채 decode-SM만 16 → 92로 올리면 decode ITL p50이 <strong>2.36–2.91×</strong> 개선(4 arm, 모델-무관, ctx 1024). 단 이것은 <strong>decode 측 등량곡선</strong>이라 <em>레버의 존재만</em> 확립하며 정책 이득 근거가 아니다. 국소 탄력도가 구간별로 4× 다르므로 <strong>44 이상 구간에 이 비를 적용 금지</strong>.</td>
+        </tr>
+        <tr>
+          <td class="who">B. layer-level 재구성은 ITL critical path와 CUDA Graph를 훼손한다</td>
+          <td><span class="pill ok">강한 지지 <em>(현 구현 범위 한정)</em></span></td>
+          <td>coordinated TPOT <span class="num">42 → 124 ms</span>, 최적화 후 <span class="num">≈85 ms</span>; sub-step drain; graph 비호환. 다중 모델 반복과 timeline attribution이 아직 없다.</td>
+        </tr>
+        <tr>
+          <td class="who">C. decode 굶김은 TTFT도 악화시킨다</td>
+          <td><span class="pill ok">running-batch 경로 강함<br>KV 경로 부분</span></td>
+          <td>admission capacity 관측이 방향을 지지. ⚠️ 정본이 이 경로에 걸어 둔 D16 TTFT magnitude는 <strong>폐기 벤치 n = 1</strong>이라 <strong>수치 자체가 인용 금지</strong>이므로 여기 싣지 않는다 — 방향(decode 굶김 → admission 차단 → TTFT 악화)만 변화 trace n ≥ 4가 지지한다.</td>
+        </tr>
+        <tr>
+          <td class="who">D. execution-state 분리가 single-worker coupling을 줄인다</td>
+          <td><span class="pill open">미검증</span></td>
+          <td>R1은 observer라 증거가 아니다. 코드 리뷰로 R2가 <strong>control-plane dual-worker</strong>임이 확인됐고 data/resource plane은 전면 공유다. GPU correctness 동치 테스트 없음, <code>results/r2_eval/</code> 미생성.</td>
+        </tr>
+        <tr>
+          <td class="who">E. Hybrid-informed decode floor가 generic/static보다 높은 goodput을 낸다</td>
+          <td><span class="pill open">미검증 <em>(핵심 가설)</em></span></td>
+          <td>existing evidence <strong>없음</strong>. 필요한 것: architecture control · generic policy · static/oracle · profile 일반화.</td>
+        </tr>
+        <tr>
+          <td class="who">F. short-ctx conflict-regime에 동적이 이길 escape hatch가 있다</td>
+          <td><span class="pill bad">강한 지지(범위 한정)<br>— escape hatch <em>없음</em></span></td>
+          <td>razor-thin real disjoint 최초 관측 → 재채점 <code>ILL-POSED</code> → 120 job 스윕에서 off-cliff band 재확인 실패 → 사전등록 24-job 확증 열에서 companion-collapse 결정규칙 충족. <strong>닫힌 음성 결과</strong>다.</td>
+        </tr>
+        <tr>
+          <td class="who">G. PD-mux <em>활성화 자체</em>가 fused 대비 이득의 원인이다</td>
+          <td><span class="pill open">부분 지지<br><em>(모델·워크로드 한정)</em></span></td>
+          <td>"PD-mux를 켜면 이득이 난다"는 2모델서 지지. <strong>"SM 분할 자체가 원인"이라는 좁은 형태는 여전히 NOT-YET-SUPPORTED</strong> — 하드웨어 SM 프로브 미실행, 나머지 2모델 운영점 미측정.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════ 05 열린 것 ══════════════════ -->
+<section>
+  <div class="sec-head">
+    <span class="lbl">05</span>
+    <h2>지금 열려 있는 것</h2>
+  </div>
+  <p class="sec-sub">
+    2026-09-01 정본 기준. 최근 세션들의 형태는 같다 — <strong>규칙층·설계층에서 막히고, GPU를 써도 새 성능 판정은 0건</strong>.
+    그것이 실패가 아니라 이 프로젝트의 현재 작동 방식이다: 결론이 두 번 뒤집힌 뒤로 <em>측정보다 결정 규칙을 먼저 감사한다</em>.
+  </p>
+  <div class="gates">
+    <div class="gate">
+      <span class="who">gate #13 rev3</span>
+      <h3>job/node 축 · batch vs job 분해</h3>
+      <p>rev2가 규칙층 NO-GO(死因 3건) → rev3 재감사에서 GO-with-caveats. <strong>여전히 사전등록이 아니고</strong>, 어느 밴드 점을 사든 이 게이트를 <strong>닫지 못한다</strong> — batch⊗regime 앨리어스에 노드·날짜 축이 미배선이다.</p>
+      <p class="cost">등록 11.52 GPU-hr · 미제출</p>
+    </div>
+    <div class="gate">
+      <span class="who">gate #16 · rate 축</span>
+      <h3>이차 표적이 반대로 당긴다</h3>
+      <p>정본 문구가 묶은 두 목표가 rate 축에서 <strong>서로 반대 방향</strong>이다 — 과부하 이탈엔 rate↓가 옳지만, <code>D_itl</code>/<code>Δ</code> 식별에는 rate↓가 반대 방향이다(<code>gap_upper</code> rate3 <span class="num">0.304</span> → rate12 <span class="num">0.634 ms</span>, δ = 1.0 ms).</p>
+      <p class="cost">미실행 · 2026-08-19 신규 발견</p>
+    </div>
+    <div class="gate">
+      <span class="who">S-6</span>
+      <h3>telemetry OFF ↔ ON 대조</h3>
+      <p>"상단이 평평하다"가 물리인지 <strong>계측 희석의 산물</strong>인지 아직 구별되지 않는다. telemetry는 공짜 관찰자가 아니다 — 켜고 끈 대조가 필요하다.</p>
+      <p class="cost">설계 미감사 · 미제출</p>
+    </div>
+    <div class="gate">
+      <span class="who">R2 correctness gate</span>
+      <h3>구조 둘이 여기서 막혀 있다</h3>
+      <p>Claim D·E를 여는 유일한 문. legacy fixed 대 true dual fixed를 동일 telemetry·seed·graph로 비교하고, admission latch stale-True를 먼저 고쳐야 한다.</p>
+      <p class="cost">GPU 이력 0회 · <code>results/r2_eval/</code> 미생성</p>
+    </div>
+    <div class="gate">
+      <span class="who">cp_baseline</span>
+      <h3>chunked prefill vs pdmux — 아직 0건</h3>
+      <p>사용자가 요청한 원래 질문("정책 비교군에 chunked prefill을 넣어라")은 <strong>이 트랙 전체에서 여전히 한 건도 측정되지 않았다</strong>.
+         규칙층 감사 4회 전부 <code>NO-GO</code>(4회차 死因 8건 중 <span class="num">46 %</span>가 순수 전파 실패)로 계측·축 검증 트랙으로 내려앉았다.</p>
+      <p class="cost">1.36 GPU-hr 집행 · 새 성능 판정 0건</p>
+    </div>
+    <div class="gate">
+      <span class="who">G1 · 용량 축</span>
+      <h3>이 격자로는 포화가 식별되지 않는다</h3>
+      <p>등록 술어(threshold 0.80, 격자 {2,4,8})는 두 arm 모두 <code>CAPACITY_BRACKETED</code>를 내는데,
+         달성 처리량은 최상단 rate에서도 <strong>단조 상승</strong>한다(fused +12.4 % / cp512 +7.0 %)
+         ⇒ 이 축·이 격자·이 임계로는 포화를 못 잡는다. <em>계측 축 판정이며 정책 판정이 아니다.</em></p>
+      <p class="cost">job 900067 · <code>band_vs_sd</code> 미등록</p>
+    </div>
+  </div>
+
+  <div class="forbid" style="margin-top:20px">
+    <h4>쓰지 말 것 — 정본이 명시적으로 금지한 문장</h4>
+    <ul>
+      <li><strong>"gate #16을 닫았다" · "gate #13을 닫았다"</strong> — 둘 다 불변으로 열려 있다. G16이 닫은 것은 결정량의 <em>재정식화판</em>뿐이고 원문 문턱 판본은 rate 축에 잔존한다.</li>
+      <li><strong>"SM 분할 자체가 원인이다"</strong> — 귀속 상한은 "pdmux 서브시스템 전체"까지다.</li>
+      <li><strong>"4모델 전부에서 이긴다"</strong> — 운영점 대조는 2모델(Zamba2 · Granite)만 측정됐다.</li>
+      <li><strong>disaggregation "+16 %" 크기</strong> — n = 1~2 · overload-only 강등, tie-break 의존, 임계 ±10 %에서 0.00 ~ +19.75 % 요동. 구조 대조만 인용 가능.</li>
+      <li><strong>C2-R의 "3.06 vs 2.91" 판정</strong> — job/node 축과 batch-vs-job 분해 전에는 범주 오류다.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════════════ 06 방법론 구조 ══════════════════ -->
+<section>
+  <div class="sec-head">
+    <span class="lbl">06</span>
+    <h2>여섯 번째 구조 — 규율 자체</h2>
+  </div>
+  <p class="sec-sub">
+    이 프로젝트가 실제로 가장 많이 손본 구조는 엔진이 아니라 <strong>결론을 만드는 절차</strong>다.
+    결론이 두 번 뒤집힌 뒤 세워진 층이고, 위 다섯 절의 신뢰도는 전적으로 여기에 얹혀 있다.
+  </p>
+  <div class="disc">
+    <div class="disc-c">
+      <div class="disc-n">87</div>
+      <h4>방법론 게이트</h4>
+      <p>정책 주장은 반드시 서빙 실증 · 변화 trace로만 정책 비교 · n ≥ 4 없이 결론 금지 · duration은 합산 · SLO를 바꾸면 재스코어가 아니라 재튜닝.</p>
+    </div>
+    <div class="disc-c">
+      <div class="disc-n">107</div>
+      <h4>de-confound 교훈</h4>
+      <p>최고 재사용가치: <strong>항등식을 증거로 쓰지 마라</strong>. 그리고 <strong>측정 실패를 게이트 실패로 라벨링하지 마라</strong>(8회 이상 재발).</p>
+    </div>
+    <div class="disc-c">
+      <div class="disc-n">14+</div>
+      <h4>항등식 재발</h4>
+      <p>게이트·확증서술·양성대조·<em>감사 도구 자신</em>이 항등식이었던 횟수(교훈 항목 9). 이 프로젝트에서 가장 자주 재발하는 단일 실패 모드다.</p>
+    </div>
+    <div class="disc-c">
+      <div class="disc-n">2단</div>
+      <h4>사전등록 감사</h4>
+      <p>규칙을 먼저 감사받고, 하네스를 그 다음 <strong>별도로</strong> 감사받는다. 대형 캠페인 제출 전 배관 스모크는 규율로 등재돼 있다.</p>
+    </div>
+  </div>
+  <div class="caveat" style="margin-top:16px; max-width:none">
+    최신 게이트(#84–87, 2026-09-01): <strong>자기검사에 등록된 오라클이 없으면 그 검사는 자기 실패를 볼 수 없다</strong> ·
+    판본이력표와 본문의 모순 · <strong>전파 실패의 정량화</strong>(한 감사 회차 死因 24건 중 <span class="num">46 %</span>가
+    "수리는 국소, 주장은 전역" — 각 수리는 지목된 좌표에서 실재하나, 파급을 재도출하지 않아 다음 회차 결함이 직전 수리의 그림자가 됐다).
+    규율 도구도 함께 늘었다: <code>check_citation_stops.py</code> · <code>check_line_citations.py</code> ·
+    <code>design_reachability.py</code> · <code>presubmit.py</code> · <code>check_version_sweep.py</code>.
+  </div>
+</section>
+
+<footer>
+  <p><strong>정본 위계</strong> — PROJECT_STATUS.md &gt; reports/paper/(CLAIM_EVIDENCE_MATRIX · EXPERIMENT_ROADMAP · R1_REANALYSIS) &gt; reports/CONSENSUS.md rev52 &gt; RESUME.md. <code>deprecated/</code>는 이력용이며 새 분석의 근거로 재사용하지 않는다.</p>
+  <p><strong>이 페이지의 범위</strong> — 구조와 그 판정의 지도이고, 판정의 <em>근거 수치</em>는 위 정본에서 확인해야 한다. 이 문서는 정본이 아니라 정본의 재구성이다.</p>
+  <p>재구성 2026-09-01 (정본 <code>PROJECT_STATUS.md</code> 최종 갱신일과 동일) · 이 문서를 만든 세션의 GPU 지출 0 · 새 성능 판정 0건 · 여기 실린 어떤 수치도 이 문서에서 새로 산출되지 않았다.</p>
+</footer>
+
+</div>
