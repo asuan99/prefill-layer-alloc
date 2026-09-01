@@ -49,3 +49,36 @@ piecewise 캡처 목록을 좌우하는지 **관측**하는 것이기 때문이�
 **제출 전 통과한 것**: `check_version_sweep.py` 0 violation · `cp0_selftest.py` OK ·
 도달가능성 인증 2건 `DISCRIMINATING`(findings 0) · `check_citation_stops.py` 전 파일 0 violation ·
 CPU 회귀 `Ran 244 tests OK`.
+
+---
+
+# 범위 확장 (2026-09-01) — P1 **재실행** + **G1 프로브**
+
+**승인**: 사용자. 두 잡을 함께 내도록 명시 지시.
+
+## 1. P1 재실행 — 기존 범위 안
+같은 `p1_accept.sbatch`, 같은 근거. 첫 실행(job 899768)이 `P1_BLOCKED_INSTRUMENT`로 끝났고 그것이
+드러낸 결함 3종(SIGKILL로 인한 flush 유실 · 채널2의 DECODE 오계수 · P1-e window 겹침)이
+수리됐다. ★**재실행이 특히 필요한 이유**: `on_forward`가 이제 forward마다 `classify_forward_mode`를
+호출하고 방출 이벤트 집합이 바뀌었으므로 **P1-f(관찰자 효과 ±3%)를 CPU 테스트로 주장할 수 없다.**
+
+## 2. G1 프로브 — ★**이전 override의 제외 목록에서 해제**
+원 문서는 *"❌ G1 프로브 — 그것은 **측정**이고 자체 등록이 필요하다"*로 금지했다. **그 사유가
+사라졌다** — `PREREG_G1_PROBE_2026-08-28.md`(규칙 `cp0_g1_rule.py` RULE_REV=1, 오라클 등재,
+금지 문장 5건)로 등록이 끝났다. 제외의 근거가 없어졌으므로 해제한다.
+★**도달가능성 인증은 여전히 발급하지 않는다** — G1엔 증거에 근거한 제약이 없고, 빈 `restrict`는
+도구의 `RESTRICTIONS_INERT` 검사를 구조적으로 회피한다(`RETRACTION_reqinactive_2026-08-28.md`가
+세운 규율). 그 사실은 사전등록 §3에 적혀 있다.
+
+## 여전히 허가하지 않는 것
+- ❌ **CP-0 본체 제출** — 4회차 감사 `NO-GO`의 死因 중 G2(격자의 절대단위 이송)·G3·G4·G7이
+  미해소다. (G1·G5·G6은 이 세션에서 닫혔다.)
+- ❌ 다른 트랙(M4R `SINGLE_LABEL_FORCED`, TC1 `RESTRICTIONS_INERT`)의 차단을 대신 해소하거나
+  우회하는 것 — 여전히 손대지 않는다.
+- ❌ `presubmit.py`의 차단 범위를 좁히는 도구 변경.
+- ❌ 두 잡의 결과로 **성능 주장**을 하는 것. P1은 계측을 재고 G1은 축의 식별가능성을 잰다.
+  둘 다 arm을 재지 않는다.
+
+## 제출 전 상태
+`check_version_sweep.py` 0 violation · `cp0_selftest.py` OK(111 검사) · 회귀 **295 tests OK** ·
+도달가능성 인증 2건 `DISCRIMINATING`(findings 0) · 커밋 `fe8781b`·`5907a33`·`94fa01a`로 이력 고정.

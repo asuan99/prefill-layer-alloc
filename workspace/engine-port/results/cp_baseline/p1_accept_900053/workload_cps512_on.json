@@ -1,0 +1,152 @@
+{
+  "schema": "cp0.p1-workload/v1",
+  "mode": "p1e",
+  "port": 34111,
+  "chunked_prefill_size": 512,
+  "t_start": 1788243798.1134257,
+  "phases": {
+    "S": {
+      "phase": "S",
+      "chunked_prefill_size": 512,
+      "n_prompts": 4,
+      "requested_lens": [
+        1500,
+        512,
+        513,
+        100
+      ],
+      "served_lens": [
+        1500,
+        512,
+        513,
+        100
+      ],
+      "length_mismatch": false,
+      "n_prompts_longer_than_cps": 2,
+      "total_prompt_tokens": 2625,
+      "t_start": 1788243798.1299164,
+      "t_end": 1788243805.3356102,
+      "note": "concurrency 1; the registered numbers are exact",
+      "requests": [
+        {
+          "rid": "S-0",
+          "requested_len": 1500,
+          "served_len": 1500,
+          "t_start": 1788243798.1299164,
+          "t_end": 1788243803.1298163
+        },
+        {
+          "rid": "S-1",
+          "requested_len": 512,
+          "served_len": 512,
+          "t_start": 1788243803.1299875,
+          "t_end": 1788243803.2502613
+        },
+        {
+          "rid": "S-2",
+          "requested_len": 513,
+          "served_len": 513,
+          "t_start": 1788243803.2504346,
+          "t_end": 1788243805.2121084
+        },
+        {
+          "rid": "S-3",
+          "requested_len": 100,
+          "served_len": 100,
+          "t_start": 1788243805.2121577,
+          "t_end": 1788243805.3356102
+        }
+      ]
+    },
+    "B": {
+      "phase": "B",
+      "chunked_prefill_size": 512,
+      "n_prompts": 8,
+      "requested_lens": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "served_lens": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "length_mismatch": false,
+      "n_prompts_longer_than_cps": 0,
+      "total_prompt_tokens": 1600,
+      "t_start": 1788243805.3377087,
+      "t_end": 1788243807.332855,
+      "note": "concurrency 8; only the inequalities in gpu_assertions are registered for this phase",
+      "requests": [
+        {
+          "rid": "B-0",
+          "requested_len": 200,
+          "served_len": 200,
+          "t_start": 1788243805.3385973,
+          "t_end": 1788243807.3324292
+        },
+        {
+          "rid": "B-1",
+          "requested_len": 200,
+          "served_len": 200,
+          "t_start": 1788243805.338128,
+          "t_end": 1788243807.332146
+        },
+        {
+          "rid": "B-2",
+          "requested_len": 200,
+          "served_len": 200,
+          "t_start": 1788243805.3379703,
+          "t_end": 1788243807.3324816
+        },
+        {
+          "rid": "B-3",
+          "requested_len": 200,
+          "served_len": 200,
+          "t_start": 1788243805.3388703,
+          "t_end": 1788243807.3323417
+        },
+        {
+          "rid": "B-4",
+          "requested_len": 200,
+          "served_len": 200,
+          "t_start": 1788243805.3383253,
+          "t_end": 1788243807.3327508
+        },
+        {
+          "rid": "B-5",
+          "requested_len": 200,
+          "served_len": 200,
+          "t_start": 1788243805.3387272,
+          "t_end": 1788243807.3326821
+        },
+        {
+          "rid": "B-6",
+          "requested_len": 200,
+          "served_len": 200,
+          "t_start": 1788243805.3384545,
+          "t_end": 1788243807.331475
+        },
+        {
+          "rid": "B-7",
+          "requested_len": 200,
+          "served_len": 200,
+          "t_start": 1788243805.3377087,
+          "t_end": 1788243807.332855
+        }
+      ]
+    }
+  },
+  "t_end": 1788243807.3332987
+}

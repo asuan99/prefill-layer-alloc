@@ -1,0 +1,17 @@
+{
+  "segments": [
+    {
+      "segment_id": "mono_S",
+      "phase": "S",
+      "t_start": 1788243860.8165524,
+      "t_end": 1788243862.5979495,
+      "raw_t_end": 1788243861.5979495,
+      "grace_s": 1.0,
+      "clamped_to_next_segment": false
+    }
+  ],
+  "mode": "mono",
+  "port": 34135,
+  "chunked_prefill_size": -1,
+  "segment_grace_s": 1.0
+}

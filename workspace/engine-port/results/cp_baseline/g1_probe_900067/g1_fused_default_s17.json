@@ -1,0 +1,68 @@
+{
+  "arm": "fused_default",
+  "seed": 17,
+  "boot_ok": true,
+  "banner": {
+    "disable_piecewise_cuda_graph": true,
+    "piecewise_cuda_graph_max_tokens": 8192,
+    "chunked_prefill_size": 8192,
+    "disable_piecewise_reason": "--disable-piecewise-cuda-graph is set"
+  },
+  "rates": [
+    {
+      "rate": 2,
+      "offered_np": 200,
+      "completed": 200,
+      "duration": 107.1649027930107,
+      "achieved_rps": 1.8662826614633388,
+      "attainment": 0.9331413307316694,
+      "extraction": "ok",
+      "mean_ttft_ms": 89.22033277456649,
+      "p95_itl_ms": 9.502953151240945
+    },
+    {
+      "rate": 3,
+      "offered_np": 200,
+      "completed": 200,
+      "duration": 73.61279448005371,
+      "achieved_rps": 2.7169190004625143,
+      "attainment": 0.9056396668208381,
+      "extraction": "ok",
+      "mean_ttft_ms": 91.25174260232598,
+      "p95_itl_ms": 10.619686916470528
+    },
+    {
+      "rate": 4,
+      "offered_np": 200,
+      "completed": 200,
+      "duration": 56.98603713186458,
+      "achieved_rps": 3.509631658316649,
+      "attainment": 0.8774079145791622,
+      "extraction": "ok",
+      "mean_ttft_ms": 98.40195347438566,
+      "p95_itl_ms": 12.508180923759937
+    },
+    {
+      "rate": 6,
+      "offered_np": 200,
+      "completed": 200,
+      "duration": 41.71228599292226,
+      "achieved_rps": 4.794750401211192,
+      "attainment": 0.799125066868532,
+      "extraction": "ok",
+      "mean_ttft_ms": 108.15849738777615,
+      "p95_itl_ms": 68.64099809899926
+    },
+    {
+      "rate": 8,
+      "offered_np": 200,
+      "completed": 200,
+      "duration": 35.65671104681678,
+      "achieved_rps": 5.609042284842332,
+      "attainment": 0.7011302856052914,
+      "extraction": "ok",
+      "mean_ttft_ms": 136.6114963986911,
+      "p95_itl_ms": 73.00840807147324
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "schema": "cp0.p1-acceptance/v1",
+  "rule_rev": 2,
+  "verdict": "P1_ACCEPTED",
+  "verdict_measurement": "MEASUREMENT_CLEAN",
+  "verdict_expectation": "EXPECTATION_HELD",
+  "refuted_tests": [],
+  "tests": {
+    "P1-a": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "realized_chunked_prefill_size": 512,
+        "n_requests_chunked": 4,
+        "n_chunk_events": 5,
+        "max_extend_tokens": 512
+      }
+    },
+    "P1-b": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "requested_chunked_prefill_size": -1,
+        "realized_chunked_prefill_size": null,
+        "n_requests_chunked": 0,
+        "n_chunk_events": 0,
+        "max_extend_tokens": 1500
+      }
+    },
+    "P1-c": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "n_prompts": 4,
+        "n_differing": 0,
+        "differing_index": [],
+        "n_without_token_ids": 0
+      }
+    },
+    "P1-d": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "realized_chunked_prefill_size": 4096,
+        "n_prompts": 16,
+        "n_prompts_longer_than_cps": 0,
+        "n_requests_chunked": 1,
+        "n_chunk_events": 1,
+        "max_extend_tokens": 4096
+      }
+    },
+    "P1-e": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "S": {
+          "expected": {
+            "n_requests_chunked": 2,
+            "n_chunk_events": 3,
+            "n_chunk_events_admission": 2,
+            "n_chunk_events_continuation": 1,
+            "n_prompts_longer_than_cps": 2,
+            "extend_tokens_per_forward_multiset": [
+              512,
+              512,
+              476,
+              512,
+              512,
+              1,
+              100
+            ],
+            "n_prefill_forwards": 7,
+            "sum_extend_tokens": 2625,
+            "max_extend_tokens": 512,
+            "mean_extend_tokens": 375.0
+          },
+          "observed": {
+            "n_requests_chunked": 2,
+            "n_chunk_events": 3,
+            "n_chunk_events_admission": 2,
+            "n_chunk_events_continuation": 1,
+            "n_prompts_longer_than_cps": 2,
+            "n_prefill_forwards": 7,
+            "sum_extend_tokens": 2625,
+            "max_extend_tokens": 512
+          }
+        },
+        "B": {
+          "expected": {
+            "n_requests_chunked": 3,
+            "n_chunk_events": 3,
+            "n_chunk_events_admission": 3,
+            "n_chunk_events_continuation": 0,
+            "n_prompts_longer_than_cps": 0,
+            "extend_tokens_per_forward_multiset": [
+              512,
+              512,
+              512,
+              64
+            ],
+            "n_prefill_forwards": 4,
+            "sum_extend_tokens": 1600,
+            "max_extend_tokens": 512,
+            "mean_extend_tokens": 400.0
+          },
+          "observed": {
+            "n_requests_chunked": 2,
+            "n_chunk_events": 2,
+            "n_chunk_events_admission": 2,
+            "n_chunk_events_continuation": 0,
+            "n_prompts_longer_than_cps": 0,
+            "n_prefill_forwards": 4,
+            "sum_extend_tokens": 1600,
+            "max_extend_tokens": 512
+          }
+        },
+        "combined": {
+          "n_requests_chunked": 4,
+          "n_chunk_events": 5,
+          "n_prompts_longer_than_cps": 2,
+          "registered": {
+            "n_requests_chunked": 5,
+            "n_chunk_events": 6,
+            "n_prompts_longer_than_cps": 2
+          }
+        }
+      }
+    },
+    "P1-f": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "n_pairs": 3,
+        "rel_diff": [
+          0.018265627889515777,
+          -0.0015881113858398487,
+          -0.013298979533480979
+        ],
+        "mean_rel_diff": 0.0011261789900649832,
+        "ci": {
+          "n": 3,
+          "mean": 0.0011261789900649832,
+          "lo": -0.038514910422470974,
+          "hi": 0.040767268402600934,
+          "t_crit": 4.303,
+          "assumption": "normality; n is small"
+        },
+        "margin": 0.03
+      }
+    },
+    "P1-g": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "cps512": {
+          "disable_piecewise_cuda_graph": false,
+          "piecewise_cuda_graph_tokens": {
+            "len": 30,
+            "min": 4,
+            "max": 512
+          },
+          "piecewise_cuda_graph_max_tokens": 512,
+          "requested_chunked_prefill_size": 512
+        },
+        "mono": {
+          "disable_piecewise_cuda_graph": false,
+          "piecewise_cuda_graph_tokens": {
+            "len": 0,
+            "min": null,
+            "max": null
+          },
+          "piecewise_cuda_graph_max_tokens": -1,
+          "requested_chunked_prefill_size": -1
+        },
+        "cps4096": {
+          "disable_piecewise_cuda_graph": false,
+          "piecewise_cuda_graph_tokens": {
+            "len": 50,
+            "min": 4,
+            "max": 4096
+          },
+          "piecewise_cuda_graph_max_tokens": 4096,
+          "requested_chunked_prefill_size": 4096
+        },
+        "_note": "the arm with requested cps -1 is expected to show an empty piecewise capture list (server_args.py:1254-1259 -> :1397-1415 -> model_executor/model_runner.py:2486-2491); the counters are in the scheduler layer so this cannot make the negative control pass for the wrong reason"
+      }
+    }
+  },
+  "reminder": "P1 is instrumentation, not an experiment.  A P1 verdict says nothing about whether chunked prefill helps or hurts (PREREG_CP0_2026-08-28.md section 9), and a P1 failure does not kill the chunked-prefill axis (PROJECT_STATUS.md \"\ubc29\ubc95\ub860 \uac8c\uc774\ud2b8\" #21). Read BOTH axes: verdict_measurement answers 'did the measurement happen', verdict_expectation answers 'is the registered expectation true'.  A blocked measurement never means the expectations held."
+}

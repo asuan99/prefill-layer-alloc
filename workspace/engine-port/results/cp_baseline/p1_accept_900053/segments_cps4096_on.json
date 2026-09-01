@@ -1,0 +1,17 @@
+{
+  "segments": [
+    {
+      "segment_id": "p1d_D",
+      "phase": "D",
+      "t_start": 1788243912.166304,
+      "t_end": 1788243914.4338832,
+      "raw_t_end": 1788243913.4338832,
+      "grace_s": 1.0,
+      "clamped_to_next_segment": false
+    }
+  ],
+  "mode": "d",
+  "port": 34063,
+  "chunked_prefill_size": 4096,
+  "segment_grace_s": 1.0
+}

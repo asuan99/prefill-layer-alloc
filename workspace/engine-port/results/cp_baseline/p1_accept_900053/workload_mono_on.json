@@ -1,0 +1,111 @@
+{
+  "schema": "cp0.p1-workload/v1",
+  "mode": "mono",
+  "port": 34135,
+  "chunked_prefill_size": -1,
+  "t_start": 1788243860.8165524,
+  "phase": "S",
+  "n_prompts": 4,
+  "requested_lens": [
+    1500,
+    512,
+    513,
+    100
+  ],
+  "served_lens": [
+    1500,
+    512,
+    513,
+    100
+  ],
+  "length_mismatch": false,
+  "n_prompts_longer_than_cps": null,
+  "total_prompt_tokens": 2625,
+  "t_end": 1788243861.5979629,
+  "note": "fused_mono negative control",
+  "requests": [
+    {
+      "rid": "S-0",
+      "requested_len": 1500,
+      "served_len": 1500,
+      "t_start": 1788243860.8165524,
+      "t_end": 1788243861.2124832
+    },
+    {
+      "rid": "S-1",
+      "requested_len": 512,
+      "served_len": 512,
+      "t_start": 1788243861.2126272,
+      "t_end": 1788243861.3599393
+    },
+    {
+      "rid": "S-2",
+      "requested_len": 513,
+      "served_len": 513,
+      "t_start": 1788243861.3601117,
+      "t_end": 1788243861.4794517
+    },
+    {
+      "rid": "S-3",
+      "requested_len": 100,
+      "served_len": 100,
+      "t_start": 1788243861.4795315,
+      "t_end": 1788243861.5979495
+    }
+  ],
+  "phases": {
+    "S": {
+      "phase": "S",
+      "chunked_prefill_size": -1,
+      "n_prompts": 4,
+      "requested_lens": [
+        1500,
+        512,
+        513,
+        100
+      ],
+      "served_lens": [
+        1500,
+        512,
+        513,
+        100
+      ],
+      "length_mismatch": false,
+      "n_prompts_longer_than_cps": null,
+      "total_prompt_tokens": 2625,
+      "t_start": 1788243860.8165524,
+      "t_end": 1788243861.5979495,
+      "note": "fused_mono negative control",
+      "requests": [
+        {
+          "rid": "S-0",
+          "requested_len": 1500,
+          "served_len": 1500,
+          "t_start": 1788243860.8165524,
+          "t_end": 1788243861.2124832
+        },
+        {
+          "rid": "S-1",
+          "requested_len": 512,
+          "served_len": 512,
+          "t_start": 1788243861.2126272,
+          "t_end": 1788243861.3599393
+        },
+        {
+          "rid": "S-2",
+          "requested_len": 513,
+          "served_len": 513,
+          "t_start": 1788243861.3601117,
+          "t_end": 1788243861.4794517
+        },
+        {
+          "rid": "S-3",
+          "requested_len": 100,
+          "served_len": 100,
+          "t_start": 1788243861.4795315,
+          "t_end": 1788243861.5979495
+        }
+      ]
+    }
+  }
+}

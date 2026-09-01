@@ -1,0 +1,238 @@
+{
+  "schema": "cp0.chunk-boot-record/v1",
+  "status": "OK",
+  "problems": [],
+  "warnings": [
+    "178 forward line(s) whose forward_mode is not a prefill mode carried extend tokens ({'DECODE': 178}, 12834 tokens in total); ScheduleBatch does not clear extend_num_tokens on a decode step, so these are excluded from channel 2 and kept in the raw data"
+  ],
+  "cross_check": "full",
+  "writer_schema": "pdmux.chunk-probe/v2",
+  "writer_is_pre_repair": false,
+  "run_id": "p1accept_900053",
+  "workload_id": "cps512_on",
+  "arm": "cps512_on",
+  "requested_chunked_prefill_size": 512,
+  "realized_chunked_prefill_size": 512,
+  "page_size": 1,
+  "max_prefill_tokens": 16384,
+  "max_running_requests": 48,
+  "enable_mixed_chunk": false,
+  "enable_dynamic_chunking": false,
+  "disable_radix_cache": true,
+  "tree_cache_class": "ChunkCache",
+  "tree_cache_disable": true,
+  "truncation_align_size": null,
+  "enable_pdmux": false,
+  "enable_overlap": true,
+  "disable_cuda_graph": false,
+  "tp_rank": 0,
+  "true_dual_worker": false,
+  "disable_piecewise_cuda_graph": false,
+  "enforce_piecewise_cuda_graph": false,
+  "piecewise_cuda_graph_max_tokens": 512,
+  "piecewise_cuda_graph_compiler": "eager",
+  "piecewise_cuda_graph_tokens_len": 30,
+  "piecewise_cuda_graph_tokens_min": 4,
+  "piecewise_cuda_graph_tokens_max": 512,
+  "piecewise_cuda_graph_tokens": {
+    "len": 30,
+    "min": 4,
+    "max": 512
+  },
+  "segments": [
+    {
+      "segment_id": "p1e_S",
+      "phase": "S",
+      "t_start": 1788243798.1299164,
+      "t_end": 1788243805.3377087,
+      "raw_t_end": 1788243805.3356102,
+      "grace_s": 1.0,
+      "clamped_to_next_segment": true,
+      "n_requests_chunked": 2,
+      "n_chunk_events": 3,
+      "n_chunk_events_admission": 2,
+      "n_chunk_events_continuation": 1,
+      "n_dllm_trunc_events": 0,
+      "mech_counts": {
+        "admission_ignore_eos": 2,
+        "continuation": 1
+      },
+      "extend_tokens_per_forward": {
+        "max": 512,
+        "min": 1,
+        "mean": 375.0,
+        "sum": 2625,
+        "n_forwards": 7,
+        "observed_multiset": [
+          512,
+          512,
+          476,
+          512,
+          512,
+          1,
+          100
+        ],
+        "observed_multiset_truncated": 0
+      },
+      "n_nonprefill_forwards": 32,
+      "n_nonprefill_forwards_with_extend_tokens": 32,
+      "n_unknown_mode_forwards": 0,
+      "sum_extend_tokens_not_counted": 8712,
+      "forward_mode_counts": {
+        "EXTEND": 7,
+        "DECODE": 32
+      }
+    },
+    {
+      "segment_id": "p1e_B",
+      "phase": "B",
+      "t_start": 1788243805.3377087,
+      "t_end": 1788243808.332855,
+      "raw_t_end": 1788243807.332855,
+      "grace_s": 1.0,
+      "clamped_to_next_segment": false,
+      "n_requests_chunked": 2,
+      "n_chunk_events": 2,
+      "n_chunk_events_admission": 2,
+      "n_chunk_events_continuation": 0,
+      "n_dllm_trunc_events": 0,
+      "mech_counts": {
+        "admission_ignore_eos": 2
+      },
+      "extend_tokens_per_forward": {
+        "max": 512,
+        "min": 176,
+        "mean": 400.0,
+        "sum": 1600,
+        "n_forwards": 4,
+        "observed_multiset": [
+          400,
+          512,
+          512,
+          176
+        ],
+        "observed_multiset_truncated": 0
+      },
+      "n_nonprefill_forwards": 8,
+      "n_nonprefill_forwards_with_extend_tokens": 8,
+      "n_unknown_mode_forwards": 0,
+      "sum_extend_tokens_not_counted": 3200,
+      "forward_mode_counts": {
+        "EXTEND": 4,
+        "DECODE": 8
+      }
+    }
+  ],
+  "segment_consistency": {
+    "windows_overlap": [],
+    "additive_sums": {
+      "n_chunk_events": 5,
+      "n_chunk_events_admission": 4,
+      "n_chunk_events_continuation": 1,
+      "n_dllm_trunc_events": 0,
+      "n_prefill_forwards": 11,
+      "sum_extend_tokens": 4225
+    },
+    "additive_boot": {
+      "n_chunk_events": 5,
+      "n_chunk_events_admission": 4,
+      "n_chunk_events_continuation": 1,
+      "n_dllm_trunc_events": 0,
+      "n_prefill_forwards": 18,
+      "sum_extend_tokens": 4261
+    },
+    "n_distinct_rids_boot": 4,
+    "n_distinct_rids_union_of_segments": 4,
+    "sum_of_per_segment_distinct_rids": 4,
+    "n_rid_segment_pairs_beyond_the_first": 0,
+    "n_chunk_events_outside_every_segment": 0,
+    "n_prefill_forwards_outside_every_segment": 7,
+    "n_forward_lines_outside_every_segment": 145
+  },
+  "boot_total_from_events": {
+    "n_requests_chunked": 4,
+    "n_chunk_events": 5,
+    "n_chunk_events_admission": 4,
+    "n_chunk_events_continuation": 1,
+    "n_dllm_trunc_events": 0,
+    "mech_counts": {
+      "admission_ignore_eos": 4,
+      "continuation": 1
+    },
+    "extend_tokens_per_forward": {
+      "max": 512,
+      "min": 1,
+      "mean": 236.72222222222223,
+      "sum": 4261,
+      "n_forwards": 18,
+      "observed_multiset": [
+        7,
+        1,
+        512,
+        512,
+        476,
+        512,
+        512,
+        1,
+        100,
+        400,
+        512,
+        512,
+        176,
+        6,
+        8,
+        6,
+        7,
+        1
+      ],
+      "observed_multiset_truncated": 0
+    },
+    "n_nonprefill_forwards": 178,
+    "n_nonprefill_forwards_with_extend_tokens": 178,
+    "n_unknown_mode_forwards": 0,
+    "sum_extend_tokens_not_counted": 12834,
+    "forward_mode_counts": {
+      "EXTEND": 18,
+      "DECODE": 178
+    }
+  },
+  "boot_total_from_accountant": {
+    "n_requests_chunked": 4,
+    "n_chunk_events": 5,
+    "n_chunk_events_admission": 4,
+    "n_chunk_events_continuation": 1,
+    "n_dllm_trunc_events": 0,
+    "extend_tokens_per_forward": {
+      "max": 512,
+      "mean": 236.72222222222223,
+      "min": 1,
+      "n_forwards": 18,
+      "sum": 4261
+    },
+    "forward_mode_counts": {
+      "DECODE": 178,
+      "EXTEND": 18
+    },
+    "n_forwards_total": 196,
+    "n_events_without_shrink": 0,
+    "n_events_unknown_rid": 0,
+    "rid_set_truncated": 0,
+    "n_errors": 0
+  },
+  "health": {
+    "dropped_events": 0,
+    "n_periodic_summaries": 5,
+    "n_chunk_event_lines": 5,
+    "n_forward_lines": 196,
+    "n_prefill_forward_lines": 18,
+    "n_nonprefill_forward_lines": 178,
+    "n_unknown_mode_forward_lines": 0,
+    "bad_jsonl_lines": 0
+  },
+  "harness": {
+    "mode": "p1e",
+    "port": 34111,
+    "chunked_prefill_size": 512,
+    "segment_grace_s": 1.0
+  }
+}

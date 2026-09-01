@@ -1,0 +1,26 @@
+{
+  "segments": [
+    {
+      "segment_id": "p1e_S",
+      "phase": "S",
+      "t_start": 1788243798.1299164,
+      "t_end": 1788243805.3377087,
+      "raw_t_end": 1788243805.3356102,
+      "grace_s": 1.0,
+      "clamped_to_next_segment": true
+    },
+    {
+      "segment_id": "p1e_B",
+      "phase": "B",
+      "t_start": 1788243805.3377087,
+      "t_end": 1788243808.332855,
+      "raw_t_end": 1788243807.332855,
+      "grace_s": 1.0,
+      "clamped_to_next_segment": false
+    }
+  ],
+  "mode": "p1e",
+  "port": 34111,
+  "chunked_prefill_size": 512,
+  "segment_grace_s": 1.0
+}
