@@ -38,6 +38,25 @@ class AsyncJsonlTelemetry:
     Emission never performs file I/O on a scheduler/worker thread.  A full
     buffer drops the event and increments ``dropped_events``; the count is
     included in subsequent events and the close record.
+
+    DURABILITY ON A LOW-TRAFFIC BOOT (2026-09-01)
+    ---------------------------------------------
+    ``flush_every`` alone loses everything a short-lived boot produced.  The
+    scheduler process is reaped with **SIGKILL** by its own parent
+    (``sglang/launch_server.py``'s ``finally: kill_process_tree(os.getpid(),
+    include_parent=False)`` -> ``srt/utils/common.py:1054`` ``child.kill()``),
+    so ``close()`` -- the only other flush point -- is never reached through
+    ``atexit``.  CP-0 P1 job 899768 lost two whole boots that way: 4-request
+    and 16-request boots never reached 128 pending records, and their probe
+    files were *exactly 0 bytes* while a 200-request boot on the same code was
+    fine (``results/cp_baseline/RESULT_P1_899768_2026-08-28.md``).
+
+    ``flush_interval_s`` bounds that loss window in wall-clock time instead of
+    in records.  The cost lands on the **writer thread only** -- ``emit()`` is
+    untouched, so no scheduler/worker thread does more work than before, which
+    is what the P1-f neutrality margin (+/-3%) is protecting.  A busy boot is
+    unaffected in practice because ``flush_every`` still fires first.
+    ``flush_interval_s <= 0`` restores the pre-2026-09-01 behaviour exactly.
     """
 
     def __init__(
@@ -47,11 +66,13 @@ class AsyncJsonlTelemetry:
         workload_id: str,
         max_events: int = 65536,
         flush_every: int = 128,
+        flush_interval_s: float = 1.0,
     ):
         self.path = Path(path) if path else None
         self.run_id = run_id
         self.workload_id = workload_id
         self.flush_every = max(1, int(flush_every))
+        self.flush_interval_s = float(flush_interval_s)
         self._queue: "queue.Queue[Optional[RuntimeEvent]]" = queue.Queue(
             maxsize=max(1, int(max_events))
         )
@@ -99,10 +120,24 @@ class AsyncJsonlTelemetry:
     def _writer_loop(self) -> None:
         assert self.path is not None
         pending = 0
+        interval = self.flush_interval_s
+        last_flush = time.monotonic()
         try:
             with self.path.open("a", encoding="utf-8") as output:
                 while True:
-                    item = self._queue.get()
+                    if interval > 0:
+                        try:
+                            item = self._queue.get(timeout=interval)
+                        except queue.Empty:
+                            # Idle.  Anything buffered has now waited a whole
+                            # interval, so put it where a SIGKILL cannot take it.
+                            if pending:
+                                output.flush()
+                                pending = 0
+                            last_flush = time.monotonic()
+                            continue
+                    else:
+                        item = self._queue.get()
                     if item is None:
                         break
                     output.write(
@@ -110,9 +145,16 @@ class AsyncJsonlTelemetry:
                         + "\n"
                     )
                     pending += 1
-                    if pending >= self.flush_every:
+                    now = time.monotonic()
+                    # The count trigger is kept first and unchanged: a busy boot
+                    # flushes on records exactly as before.  The interval only
+                    # adds a ceiling for a stream too slow to reach the count.
+                    if pending >= self.flush_every or (
+                        interval > 0 and now - last_flush >= interval
+                    ):
                         output.flush()
                         pending = 0
+                        last_flush = now
                 output.flush()
         except OSError as exc:
             self.writer_error = str(exc)

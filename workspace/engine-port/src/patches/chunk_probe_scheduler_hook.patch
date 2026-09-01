@@ -1,0 +1,50 @@
+Chunked-prefill probe construction hook (CP-0 prerequisite P1, 2026-08-28).
+
+ONE hunk, one region, two statements of engine change.  All instrumentation
+lives in sglang/srt/multiplex/chunk_probe.py and installs itself *by wrapping*
+the three PrefillAdder truncation entry points plus Scheduler.run_batch -- and
+only when PDMUX_CHUNK_PROBE_PATH is set.  With the variable unset,
+maybe_install_chunk_probe returns None immediately, installs nothing, and the
+engine keeps running the pristine functions: no added branch anywhere on the
+admission path or in run_batch.
+
+WHY HERE AND NOT NEXT TO THE HOLB HOOK.  holb_probe_scheduler_hooks.patch is
+mirrored and reverse-applied by
+tests/test_holb_probe.py::TestSchedulerHooksInstalled::
+test_patch_reapplies_the_hooks_and_nothing_else.  An insertion inside either of
+that patch's context windows (the import cluster around
+`from sglang.srt.multiplex.holb_probe import ...`, and the block between
+`self.grammar_manager = GrammarManager(self)` and `def init_model_config`)
+makes the reverse application fail, i.e. it silently costs the holb patch its
+reversibility.  The first draft of this patch did exactly that and the existing
+test caught it.  This version therefore anchors on
+`self.init_deterministic_inference_config()` and imports inside the function so
+that the module import cluster is untouched.
+
+The hook must sit after init_cache_with_memory_pool (scheduler.py:397, sets
+self.tree_cache) and after init_chunked_prefill (:403, sets
+self.chunked_prefill_size, mapping <= 0 to None) because the boot config echo
+reads both; the anchor above satisfies that.
+
+--- a/sglang/srt/managers/scheduler.py
++++ b/sglang/srt/managers/scheduler.py
+@@ -426,6 +426,19 @@
+         # Init prefill kv split size when deterministic inference is enabled with various attention backends
+         self.init_deterministic_inference_config()
+ 
++        # Init chunked-prefill probe (arm-agnostic; default OFF).  Returns None
++        # unless PDMUX_CHUNK_PROBE_PATH is set; when set it wraps the three
++        # PrefillAdder truncation entry points plus Scheduler.run_batch, so the
++        # counters live in the scheduler layer and are therefore alive on the
++        # `--chunked-prefill-size -1` arm too -- that arm is the only one whose
++        # prefill runs eager, because cps -1 empties the piecewise CUDA graph
++        # capture list.  Imported here rather than at module scope so this hook
++        # touches exactly one region of the file.
++        # See sglang/srt/multiplex/chunk_probe.py.
++        from sglang.srt.multiplex.chunk_probe import maybe_install_chunk_probe
++
++        self.chunk_probe = maybe_install_chunk_probe(self)
++
+         # Init request dispatcher
+         self.init_request_dispatcher()
+ 

@@ -1,0 +1,329 @@
+{
+  "schema": "cp0.p1-workload/v1",
+  "mode": "d",
+  "port": 34244,
+  "chunked_prefill_size": 4096,
+  "t_start": 1788235771.9953558,
+  "phase": "D",
+  "n_prompts": 16,
+  "requested_lens": [
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341
+  ],
+  "served_lens": [
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341,
+    341
+  ],
+  "length_mismatch": false,
+  "n_prompts_longer_than_cps": 0,
+  "total_prompt_tokens": 5456,
+  "t_end": 1788235773.2999024,
+  "note": "batch-boundary positive control; every prompt is shorter than cps by construction",
+  "requests": [
+    {
+      "rid": "D-0",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9969127,
+      "t_end": 1788235773.2987015
+    },
+    {
+      "rid": "D-1",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9973016,
+      "t_end": 1788235773.2984743
+    },
+    {
+      "rid": "D-2",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9976037,
+      "t_end": 1788235773.2990103
+    },
+    {
+      "rid": "D-3",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.99791,
+      "t_end": 1788235773.2988224
+    },
+    {
+      "rid": "D-4",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9981623,
+      "t_end": 1788235773.298856
+    },
+    {
+      "rid": "D-5",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9986591,
+      "t_end": 1788235773.2986214
+    },
+    {
+      "rid": "D-6",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.996399,
+      "t_end": 1788235773.2987528
+    },
+    {
+      "rid": "D-7",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9960876,
+      "t_end": 1788235773.2989178
+    },
+    {
+      "rid": "D-8",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9966521,
+      "t_end": 1788235773.29858
+    },
+    {
+      "rid": "D-9",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9984095,
+      "t_end": 1788235773.29904
+    },
+    {
+      "rid": "D-10",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9988925,
+      "t_end": 1788235773.2989802
+    },
+    {
+      "rid": "D-11",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.999385,
+      "t_end": 1788235773.2987926
+    },
+    {
+      "rid": "D-12",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9991345,
+      "t_end": 1788235773.2978628
+    },
+    {
+      "rid": "D-13",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.999617,
+      "t_end": 1788235773.298951
+    },
+    {
+      "rid": "D-14",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9998689,
+      "t_end": 1788235773.2988858
+    },
+    {
+      "rid": "D-15",
+      "requested_len": 341,
+      "served_len": 341,
+      "t_start": 1788235771.9953558,
+      "t_end": 1788235773.2986674
+    }
+  ],
+  "burst_n_override": null,
+  "phases": {
+    "D": {
+      "phase": "D",
+      "chunked_prefill_size": 4096,
+      "n_prompts": 16,
+      "requested_lens": [
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341
+      ],
+      "served_lens": [
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341,
+        341
+      ],
+      "length_mismatch": false,
+      "n_prompts_longer_than_cps": 0,
+      "total_prompt_tokens": 5456,
+      "t_start": 1788235771.9953558,
+      "t_end": 1788235773.29904,
+      "note": "batch-boundary positive control; every prompt is shorter than cps by construction",
+      "requests": [
+        {
+          "rid": "D-0",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9969127,
+          "t_end": 1788235773.2987015
+        },
+        {
+          "rid": "D-1",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9973016,
+          "t_end": 1788235773.2984743
+        },
+        {
+          "rid": "D-2",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9976037,
+          "t_end": 1788235773.2990103
+        },
+        {
+          "rid": "D-3",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.99791,
+          "t_end": 1788235773.2988224
+        },
+        {
+          "rid": "D-4",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9981623,
+          "t_end": 1788235773.298856
+        },
+        {
+          "rid": "D-5",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9986591,
+          "t_end": 1788235773.2986214
+        },
+        {
+          "rid": "D-6",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.996399,
+          "t_end": 1788235773.2987528
+        },
+        {
+          "rid": "D-7",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9960876,
+          "t_end": 1788235773.2989178
+        },
+        {
+          "rid": "D-8",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9966521,
+          "t_end": 1788235773.29858
+        },
+        {
+          "rid": "D-9",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9984095,
+          "t_end": 1788235773.29904
+        },
+        {
+          "rid": "D-10",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9988925,
+          "t_end": 1788235773.2989802
+        },
+        {
+          "rid": "D-11",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.999385,
+          "t_end": 1788235773.2987926
+        },
+        {
+          "rid": "D-12",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9991345,
+          "t_end": 1788235773.2978628
+        },
+        {
+          "rid": "D-13",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.999617,
+          "t_end": 1788235773.298951
+        },
+        {
+          "rid": "D-14",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9998689,
+          "t_end": 1788235773.2988858
+        },
+        {
+          "rid": "D-15",
+          "requested_len": 341,
+          "served_len": 341,
+          "t_start": 1788235771.9953558,
+          "t_end": 1788235773.2986674
+        }
+      ],
+      "burst_n_override": null
+    }
+  }
+}

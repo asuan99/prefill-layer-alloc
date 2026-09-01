@@ -1,0 +1,140 @@
+{
+  "schema": "cp0.chunk-boot-record/v1",
+  "status": "OK",
+  "problems": [],
+  "warnings": [
+    "no shutdown summary (the scheduler did not run its atexit hook); cross-checking against the last periodic summary only",
+    "extend_tokens_per_forward.n_forwards: event stream says 116, accountant says 106 (partial cross-check)",
+    "extend_tokens_per_forward.sum: event stream says 17464, accountant says 17384 (partial cross-check)"
+  ],
+  "cross_check": "partial_no_shutdown_summary",
+  "run_id": "p1accept_899768",
+  "workload_id": "cps512_on",
+  "arm": "cps512_on",
+  "requested_chunked_prefill_size": 512,
+  "realized_chunked_prefill_size": 512,
+  "page_size": 1,
+  "max_prefill_tokens": 16384,
+  "max_running_requests": 48,
+  "enable_mixed_chunk": false,
+  "enable_dynamic_chunking": false,
+  "disable_radix_cache": true,
+  "tree_cache_class": "ChunkCache",
+  "tree_cache_disable": true,
+  "truncation_align_size": null,
+  "enable_pdmux": false,
+  "enable_overlap": true,
+  "disable_cuda_graph": false,
+  "tp_rank": 0,
+  "true_dual_worker": false,
+  "disable_piecewise_cuda_graph": false,
+  "enforce_piecewise_cuda_graph": false,
+  "piecewise_cuda_graph_max_tokens": 512,
+  "piecewise_cuda_graph_compiler": "eager",
+  "piecewise_cuda_graph_tokens_len": 30,
+  "piecewise_cuda_graph_tokens_min": 4,
+  "piecewise_cuda_graph_tokens_max": 512,
+  "piecewise_cuda_graph_tokens": {
+    "len": 30,
+    "min": 4,
+    "max": 512
+  },
+  "segments": [
+    {
+      "segment_id": "p1e_S",
+      "phase": "S",
+      "t_start": 1788235661.986495,
+      "t_end": 1788235671.213481,
+      "n_requests_chunked": 5,
+      "n_chunk_events": 6,
+      "n_chunk_events_admission": 5,
+      "n_chunk_events_continuation": 1,
+      "n_dllm_trunc_events": 0,
+      "mech_counts": {
+        "admission_ignore_eos": 5,
+        "continuation": 1
+      },
+      "extend_tokens_per_forward": {
+        "max": 512,
+        "min": 1,
+        "mean": 300.86046511627904,
+        "sum": 12937,
+        "n_forwards": 43
+      }
+    },
+    {
+      "segment_id": "p1e_B",
+      "phase": "B",
+      "t_start": 1788235670.215035,
+      "t_end": 1788235673.490252,
+      "n_requests_chunked": 3,
+      "n_chunk_events": 3,
+      "n_chunk_events_admission": 3,
+      "n_chunk_events_continuation": 0,
+      "n_dllm_trunc_events": 0,
+      "mech_counts": {
+        "admission_ignore_eos": 3
+      },
+      "extend_tokens_per_forward": {
+        "max": 512,
+        "min": 64,
+        "mean": 474.6666666666667,
+        "sum": 5696,
+        "n_forwards": 12
+      }
+    }
+  ],
+  "boot_total_from_events": {
+    "n_requests_chunked": 5,
+    "n_chunk_events": 6,
+    "n_chunk_events_admission": 5,
+    "n_chunk_events_continuation": 1,
+    "n_dllm_trunc_events": 0,
+    "mech_counts": {
+      "admission_ignore_eos": 5,
+      "continuation": 1
+    },
+    "extend_tokens_per_forward": {
+      "max": 512,
+      "min": 1,
+      "mean": 150.55172413793105,
+      "sum": 17464,
+      "n_forwards": 116
+    }
+  },
+  "boot_total_from_accountant": {
+    "n_requests_chunked": 5,
+    "n_chunk_events": 6,
+    "n_chunk_events_admission": 5,
+    "n_chunk_events_continuation": 1,
+    "n_dllm_trunc_events": 0,
+    "extend_tokens_per_forward": {
+      "max": 512,
+      "mean": 164.0,
+      "min": 1,
+      "n_forwards": 106,
+      "sum": 17384
+    },
+    "forward_mode_counts": {
+      "DECODE": 91,
+      "EXTEND": 15
+    },
+    "n_forwards_total": 106,
+    "n_events_without_shrink": 0,
+    "n_events_unknown_rid": 0,
+    "rid_set_truncated": 0,
+    "n_errors": 0
+  },
+  "health": {
+    "dropped_events": 0,
+    "n_periodic_summaries": 5,
+    "n_chunk_event_lines": 6,
+    "n_prefill_forward_lines": 116,
+    "bad_jsonl_lines": 0
+  },
+  "harness": {
+    "mode": "p1e",
+    "port": 34267,
+    "chunked_prefill_size": 512
+  }
+}

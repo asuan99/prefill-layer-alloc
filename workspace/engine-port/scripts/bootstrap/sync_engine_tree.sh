@@ -49,6 +49,7 @@ for source in \
   "${track_root}/src/multiplex/controller.py" \
   "${track_root}/src/multiplex/telemetry.py" \
   "${track_root}/src/multiplex/holb_probe.py" \
+  "${track_root}/src/multiplex/chunk_probe.py" \
   "${track_root}/src/multiplex/green_readout.py"; do
   target="${runtime_python}/sglang/srt/multiplex/$(basename "${source}")"
   install -D -m 0644 "${source}" "${target}"
@@ -66,6 +67,24 @@ holb_patch="${track_root}/src/patches/holb_probe_scheduler_hooks.patch"
 if ! grep -q "maybe_create_holb_probe" \
   "${runtime_python}/sglang/srt/managers/scheduler.py"; then
   patch --forward --batch -p1 -d "${runtime_python}" < "${holb_patch}"
+fi
+
+# Chunked-prefill probe construction hook in Scheduler.__init__ (2026-08-28).
+# CP-0 prerequisite P1 (PREREG_CP0_2026-08-28.md section 2): before this the tree
+# had no way to observe chunked prefill outside the pdmux mixin. Arm-agnostic and
+# DEFAULT OFF: without PDMUX_CHUNK_PROBE_PATH `maybe_install_chunk_probe` returns
+# None and installs no wrapper at all, so the admission path and `run_batch` keep
+# running the pristine engine functions with no added branch. Counters live in the
+# scheduler layer on purpose -- `--chunked-prefill-size -1` empties the piecewise
+# CUDA graph capture list (server_args.py:1254-1259, :1397-1415 ->
+# model_runner.py:2486-2490), so an instrument inside a graph-captured prefill
+# path would let the negative control pass for the wrong reason (P1-g).
+# MUST run after the holb patch: it shares context lines with it.
+# See sglang/srt/multiplex/chunk_probe.py.
+chunk_patch="${track_root}/src/patches/chunk_probe_scheduler_hook.patch"
+if ! grep -q "maybe_install_chunk_probe" \
+  "${runtime_python}/sglang/srt/managers/scheduler.py"; then
+  patch --forward --batch -p1 -d "${runtime_python}" < "${chunk_patch}"
 fi
 
 # Zamba2 (Zyphra/Zamba2-*): NEW config + model files (dev_tree_edits.md items 1-2).
@@ -105,6 +124,7 @@ sha256sum \
   "${runtime_python}/sglang/srt/multiplex/controller.py" \
   "${runtime_python}/sglang/srt/multiplex/telemetry.py" \
   "${runtime_python}/sglang/srt/multiplex/holb_probe.py" \
+  "${runtime_python}/sglang/srt/multiplex/chunk_probe.py" \
   "${runtime_python}/sglang/srt/multiplex/green_readout.py" \
   "${runtime_python}/sglang/srt/managers/scheduler.py" \
   "${runtime_python}/sglang/srt/configs/mamba2.py" \

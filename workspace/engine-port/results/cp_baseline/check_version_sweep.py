@@ -115,6 +115,18 @@ for sb, must_have, why in (("p1_accept.sbatch", False,
         viol("S7", f"{sb}가 `{FLAG}`를 생략하는 것이 사전등록에 명시돼 있지 않다 — "
                    f"의도된 차이와 누락을 구별할 수 없다")
 
+# S8 -- two measurement definitions that job 899768 proved were unregistered, and
+#      whose absence silently decided what P1-e measured.  Registering them is what
+#      keeps the next run from failing for the same reason.
+for needle, why in (
+    ("forward_mode == EXTEND",
+     "채널2의 prefill 판정 (extend_num_tokens>0은 DECODE의 stale 값을 통과시킨다: 116건 중 101건)"),
+    ("t_start`로 클램프",
+     "P1-e phase window가 서로소라는 등록 (초안의 +1.0초가 S를 B에 침범시켰다)"),
+):
+    if needle not in text:
+        viol("S8", f"사전등록에 `{needle}`가 없다 — {why}")
+
 print("=== CP version sweep ===")
 for r, m in VIOL:
     print(f"  [{r}] {m}")

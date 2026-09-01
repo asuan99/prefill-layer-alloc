@@ -1,0 +1,19 @@
+{
+  "segments": [
+    {
+      "segment_id": "p1e_S",
+      "phase": "S",
+      "t_start": 1788235661.986495,
+      "t_end": 1788235671.213481
+    },
+    {
+      "segment_id": "p1e_B",
+      "phase": "B",
+      "t_start": 1788235670.215035,
+      "t_end": 1788235673.490252
+    }
+  ],
+  "mode": "p1e",
+  "port": 34267,
+  "chunked_prefill_size": 512
+}

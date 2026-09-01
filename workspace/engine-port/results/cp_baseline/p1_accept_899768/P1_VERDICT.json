@@ -1,0 +1,173 @@
+{
+  "schema": "cp0.p1-acceptance/v1",
+  "rule_rev": 1,
+  "verdict": "P1_BLOCKED_INSTRUMENT",
+  "tests": {
+    "P1-a": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "realized_chunked_prefill_size": 512,
+        "n_requests_chunked": 5,
+        "n_chunk_events": 6,
+        "max_extend_tokens": 512
+      }
+    },
+    "P1-b": {
+      "label": "EXTRACTION_EMPTY",
+      "note": "no chunk_open record: the probe never started; no summary record at all: the accountant's totals cannot be cross-checked against the event stream",
+      "observed": {}
+    },
+    "P1-c": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "n_prompts": 4,
+        "n_differing": 0,
+        "differing_index": [],
+        "n_without_token_ids": 0
+      }
+    },
+    "P1-d": {
+      "label": "EXTRACTION_EMPTY",
+      "note": "no chunk_open record: the probe never started; no summary record at all: the accountant's totals cannot be cross-checked against the event stream",
+      "observed": {}
+    },
+    "P1-e": {
+      "label": "FAIL",
+      "note": "phase S: n_requests_chunked expected 2, got 5 | phase S: n_chunk_events expected 3, got 6 | phase S: n_chunk_events_admission expected 2, got 5 | phase S: n_prefill_forwards expected 7, got 43 | phase S: sum_extend_tokens expected 2625, got 12937",
+      "observed": {
+        "S": {
+          "expected": {
+            "n_requests_chunked": 2,
+            "n_chunk_events": 3,
+            "n_chunk_events_admission": 2,
+            "n_chunk_events_continuation": 1,
+            "n_prompts_longer_than_cps": 2,
+            "extend_tokens_per_forward_multiset": [
+              512,
+              512,
+              476,
+              512,
+              512,
+              1,
+              100
+            ],
+            "n_prefill_forwards": 7,
+            "sum_extend_tokens": 2625,
+            "max_extend_tokens": 512,
+            "mean_extend_tokens": 375.0
+          },
+          "observed": {
+            "n_requests_chunked": 5,
+            "n_chunk_events": 6,
+            "n_chunk_events_admission": 5,
+            "n_chunk_events_continuation": 1,
+            "n_prompts_longer_than_cps": 2,
+            "n_prefill_forwards": 43,
+            "sum_extend_tokens": 12937,
+            "max_extend_tokens": 512
+          }
+        },
+        "B": {
+          "expected": {
+            "n_requests_chunked": 3,
+            "n_chunk_events": 3,
+            "n_chunk_events_admission": 3,
+            "n_chunk_events_continuation": 0,
+            "n_prompts_longer_than_cps": 0,
+            "extend_tokens_per_forward_multiset": [
+              512,
+              512,
+              512,
+              64
+            ],
+            "n_prefill_forwards": 4,
+            "sum_extend_tokens": 1600,
+            "max_extend_tokens": 512,
+            "mean_extend_tokens": 400.0
+          },
+          "observed": {
+            "n_requests_chunked": 3,
+            "n_chunk_events": 3,
+            "n_chunk_events_admission": 3,
+            "n_chunk_events_continuation": 0,
+            "n_prompts_longer_than_cps": 0,
+            "n_prefill_forwards": 12,
+            "sum_extend_tokens": 5696,
+            "max_extend_tokens": 512
+          }
+        },
+        "combined": {
+          "n_requests_chunked": 8,
+          "n_chunk_events": 9,
+          "n_prompts_longer_than_cps": 2,
+          "registered": {
+            "n_requests_chunked": 5,
+            "n_chunk_events": 6,
+            "n_prompts_longer_than_cps": 2
+          }
+        }
+      }
+    },
+    "P1-f": {
+      "label": "PASS",
+      "note": "",
+      "observed": {
+        "n_pairs": 3,
+        "rel_diff": [
+          -0.02202923599841315,
+          0.001682416059627129,
+          -0.03130750388454249
+        ],
+        "mean_rel_diff": -0.017218107941109503,
+        "ci": {
+          "n": 3,
+          "mean": -0.017218107941109503,
+          "lo": -0.059484281678661335,
+          "hi": 0.025048065796442327,
+          "t_crit": 4.303,
+          "assumption": "normality; n is small"
+        },
+        "margin": 0.03
+      }
+    },
+    "P1-g": {
+      "label": "EXTRACTION_EMPTY",
+      "note": "missing banner fields: mono.disable_piecewise_cuda_graph, mono.piecewise_cuda_graph_tokens.len, cps4096.disable_piecewise_cuda_graph, cps4096.piecewise_cuda_graph_tokens.len",
+      "observed": {
+        "cps512": {
+          "disable_piecewise_cuda_graph": false,
+          "piecewise_cuda_graph_tokens": {
+            "len": 30,
+            "min": 4,
+            "max": 512
+          },
+          "piecewise_cuda_graph_max_tokens": 512,
+          "requested_chunked_prefill_size": 512
+        },
+        "mono": {
+          "disable_piecewise_cuda_graph": null,
+          "piecewise_cuda_graph_tokens": {
+            "len": null,
+            "min": null,
+            "max": null
+          },
+          "piecewise_cuda_graph_max_tokens": null,
+          "requested_chunked_prefill_size": null
+        },
+        "cps4096": {
+          "disable_piecewise_cuda_graph": null,
+          "piecewise_cuda_graph_tokens": {
+            "len": null,
+            "min": null,
+            "max": null
+          },
+          "piecewise_cuda_graph_max_tokens": null,
+          "requested_chunked_prefill_size": null
+        }
+      }
+    }
+  },
+  "reminder": "P1 is instrumentation, not an experiment.  A P1 verdict says nothing about whether chunked prefill helps or hurts (PREREG_CP0_2026-08-28.md section 9), and a P1 failure does not kill the chunked-prefill axis (PROJECT_STATUS.md \"\ubc29\ubc95\ub860 \uac8c\uc774\ud2b8\" #21)."
+}

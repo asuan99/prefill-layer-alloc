@@ -1,0 +1,90 @@
+{
+  "schema": "cp0.chunk-boot-record/v1",
+  "status": "EXTRACTION_UNRELIABLE",
+  "problems": [
+    "no chunk_open record: the probe never started",
+    "no summary record at all: the accountant's totals cannot be cross-checked against the event stream"
+  ],
+  "warnings": [],
+  "cross_check": "none",
+  "run_id": null,
+  "workload_id": null,
+  "arm": null,
+  "requested_chunked_prefill_size": null,
+  "realized_chunked_prefill_size": null,
+  "page_size": null,
+  "max_prefill_tokens": null,
+  "max_running_requests": null,
+  "enable_mixed_chunk": null,
+  "enable_dynamic_chunking": null,
+  "disable_radix_cache": null,
+  "tree_cache_class": null,
+  "tree_cache_disable": null,
+  "truncation_align_size": null,
+  "enable_pdmux": null,
+  "enable_overlap": null,
+  "disable_cuda_graph": null,
+  "tp_rank": null,
+  "true_dual_worker": null,
+  "disable_piecewise_cuda_graph": null,
+  "enforce_piecewise_cuda_graph": null,
+  "piecewise_cuda_graph_max_tokens": null,
+  "piecewise_cuda_graph_compiler": null,
+  "piecewise_cuda_graph_tokens_len": null,
+  "piecewise_cuda_graph_tokens_min": null,
+  "piecewise_cuda_graph_tokens_max": null,
+  "piecewise_cuda_graph_tokens": {
+    "len": null,
+    "min": null,
+    "max": null
+  },
+  "segments": [
+    {
+      "segment_id": "mono_S",
+      "phase": "S",
+      "t_start": 1788235723.5002162,
+      "t_end": 1788235725.3066287,
+      "n_requests_chunked": 0,
+      "n_chunk_events": 0,
+      "n_chunk_events_admission": 0,
+      "n_chunk_events_continuation": 0,
+      "n_dllm_trunc_events": 0,
+      "mech_counts": {},
+      "extend_tokens_per_forward": {
+        "max": null,
+        "min": null,
+        "mean": null,
+        "sum": 0,
+        "n_forwards": 0
+      }
+    }
+  ],
+  "boot_total_from_events": {
+    "n_requests_chunked": 0,
+    "n_chunk_events": 0,
+    "n_chunk_events_admission": 0,
+    "n_chunk_events_continuation": 0,
+    "n_dllm_trunc_events": 0,
+    "mech_counts": {},
+    "extend_tokens_per_forward": {
+      "max": null,
+      "min": null,
+      "mean": null,
+      "sum": 0,
+      "n_forwards": 0
+    }
+  },
+  "boot_total_from_accountant": null,
+  "health": {
+    "dropped_events": 0,
+    "n_periodic_summaries": 0,
+    "n_chunk_event_lines": 0,
+    "n_prefill_forward_lines": 0,
+    "bad_jsonl_lines": 0
+  },
+  "harness": {
+    "mode": "mono",
+    "port": 34266,
+    "chunked_prefill_size": -1
+  }
+}

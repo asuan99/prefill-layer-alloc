@@ -288,3 +288,48 @@ measurement only.
     Design + arm-symmetry argument + known biases:
     `results/p1_gates/gate2/DIRECT_BLOCKING_DESIGN.md`.
     CPU regression: `tests/test_holb_probe.py`.
+
+## CP-0 prerequisite P1: chunked-prefill instrumentation (2026-08-28)
+
+20. **NEW** `multiplex/chunk_probe.py` <- `src/multiplex/chunk_probe.py`, installed
+    by `sync_engine_tree.sh` and hashed in the manifest. Produces the two counters
+    `PREREG_CP0_2026-08-28.md` section 2.1 registers (`n_requests_chunked`,
+    `n_chunk_events`) plus per-forward extend tokens, for **every** arm. Before
+    this the tree had no chunked-prefill observation outside the pdmux mixin
+    (`grep -rn "num_chunked|chunk_count|chunked_prefill_count" sglang/srt/` -> 0).
+21. Tracked patch `src/patches/chunk_probe_scheduler_hook.patch` (1 existing file,
+    `managers/scheduler.py`; grep-guarded on `maybe_install_chunk_probe`,
+    idempotent). **ONE hunk, two statements**, anchored on
+    `self.init_deterministic_inference_config()`:
+    - a function-local `from sglang.srt.multiplex.chunk_probe import
+      maybe_install_chunk_probe`;
+    - `self.chunk_probe = maybe_install_chunk_probe(self)`.
+    - **DEFAULT OFF, and stronger than the holb precedent**: without
+      `PDMUX_CHUNK_PROBE_PATH` the function returns `None` *before installing
+      anything*, so `PrefillAdder.add_one_req` / `add_one_req_ignore_eos` /
+      `add_chunked_req` and `Scheduler.run_batch` remain the pristine engine
+      functions -- there is not even an `is not None` test on the admission path.
+      When ON, the instrumentation is five method wrappers installed at scheduler
+      construction; `uninstall_wrappers` restores the originals (used by the CPU
+      tests, not by the engine).
+    - **WHY THIS ANCHOR.** The first draft inserted next to the holb hook and
+      thereby broke `test_holb_probe.py::TestSchedulerHooksInstalled::
+      test_patch_reapplies_the_hooks_and_nothing_else`: an insertion inside a
+      mirrored patch's context window costs that patch its reversibility. The
+      existing test caught it; the anchor is now outside both holb windows and
+      `tests/test_chunk_probe.py::TestSchedulerHookInstalled` pins the separation
+      and re-applies both patches together.
+    - **WHY THE SCHEDULER LAYER.** `server_args.py:1254-1259` derives
+      `piecewise_cuda_graph_max_tokens` from `chunked_prefill_size`, `:1397-1415`
+      keeps only capture sizes `<= max_tokens` (empty list for cps -1), and
+      `model_runner.py:2486-2490` then disables piecewise CUDA graph. The negative
+      control (`--chunked-prefill-size -1`) is therefore the one arm whose prefill
+      runs eager, so a counter inside a graph-captured prefill path would let it
+      pass for the wrong reason (acceptance test P1-g).
+    Mechanism list, detection argument and the counted/not-counted enumeration:
+    the module docstring of `src/multiplex/chunk_probe.py`.
+    CPU regression: `tests/test_chunk_probe.py` (drives the **real**
+    `PrefillAdder` with stub caches), `tests/test_cp0_p1_tools.py`.
+    Offline tools + acceptance harness: `results/cp_baseline/`
+    (`analyze_chunk_probe.py`, `check_p1_acceptance.py`, `p1_accept_workload.py`,
+    `p1e_expectations.json`, `p1_accept.sbatch` -- **written, not submitted**).
