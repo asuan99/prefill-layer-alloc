@@ -1,5 +1,8 @@
 # 철회 — `spec_cp0_arm_reqinactive.json` (2026-08-28)
 
+
+> ⚠️ **날짜 정정**: 파일명/본문 날짜 2026-08-28은 오기 — 실제 작성/실행일 **2026-09-01**. 상세: `DATE_CORRECTION_NOTE.md`.
+
 **철회 사유**: 이 spec의 제약 `req_channel ∈ {inactive, unmeasured}`와 그 `why` 문자열
 (*"structural, not rare … no prompt this arm could split survives the filter"*)이 **거짓 기전
 주장**에 근거했다. 3회차 감사 F2, 메인 세션이 코드로 독립 확인:

@@ -1,5 +1,8 @@
 # 제출 override 기록 — P1 수용 시험 (2026-08-28)
 
+
+> ⚠️ **날짜 정정**: 파일명/본문 날짜 2026-08-28은 오기 — 실제 작성/실행일 **2026-09-01**. 상세: `DATE_CORRECTION_NOTE.md`.
+
 **무엇을 넘었나**: `presubmit.py --registry .../presubmit_registry.json`이 `rc=1`
 (**제출 금지**)인 상태에서 `p1_accept.sbatch`를 제출한다.
 

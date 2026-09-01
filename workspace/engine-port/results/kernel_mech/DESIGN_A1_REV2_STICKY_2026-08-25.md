@@ -379,7 +379,7 @@ rev1 §5는 *"워크로드는 분할 창을 의도적으로 만들도록 고른�
 
 | 절차 | 내용 | 상태 |
 |---|---|---|
-| 2 | `stream`·`green` 엔진 응답자 **배선** | ★**`green` 배선 완료**(2026-08-25, `green_readout.py` + 호출부 + 단위 **15** · 회귀 **244** PASS, **부팅 실행은 0회**). `stream`은 **분석층** 술어라 배선이 아니라 규칙(절차 4)에서 산다. ★**회귀 수 갱신(2026-09-01)**: 171 → 244는 이 절차와 무관 — CP-0 P1 `chunk_probe_scheduler_hook.patch`가 `test_chunk_probe.py`(42)·`test_cp0_p1_tools.py`(31) 합 **+73**을 추가했을 뿐, 기존 171개는 그대로 PASS(`unittest discover` 재확인) |
+| 2 | `stream`·`green` 엔진 응답자 **배선** | ★**`green` 배선 완료**(2026-08-25, `green_readout.py` + 호출부 + 단위 **15** · 회귀 **295** PASS, **부팅 실행은 0회**). `stream`은 **분석층** 술어라 배선이 아니라 규칙(절차 4)에서 산다. ★**회귀 수 갱신(2026-09-01, 같은 세션 내 2회)**: 171 → 244 → **295**는 이 절차와 무관 — CP-0 P1이 `test_chunk_probe.py`·`test_cp0_p1_tools.py`(+73)에 이어 flush/kill·채널2·window 수리의 재현 테스트 `test_probe_flush_durability.py` 등(+51)을 더 추가했을 뿐이고, 기존 171개는 그대로 PASS(`unittest discover` 재확인). ★두 번 갱신된 이유 자체가 기록 대상이다 — 한 세션 안에서 계측이 두 차례 확장되면 이 필드는 그때마다 낡는다 |
 | 3 | **Q3 채널 결정** + ★**비영 실증 먼저** | ★**완료** — `a1/DECISION_A1_Q3_CHANNEL_2026-08-25.md`. 채널 = `decode_iterations`(975/980 파일 비영·단조), `decode_step_count` 기각(0/1,958,528). ★**부팅에서의 비영 실증은 §2.3 스모크가 산다** |
 | 4 | Q3 규칙 | ★**`RULE_REV=3`** — Q3 **414,720 세계** · 라벨 **17개** 전부 도달 · mutant **19종** 전부 load-bearing · 검사 **4개**(§6.5). `N_MIN_DECODE_STEPS`는 **정수 축과 비교**되고 값 변이가 자기검사를 깬다 ⇒ **C1 불변**. `export="partial"`·`dropped_events`·`halves` 측정조건(C5·D8), ★**`TOOLLIMIT` 3계층**(B2·P12) |
 | 5 | K1 규칙 | ★**완료** — 구간 **4개**(1.10 / 2.00 / 10.00, 뒤 둘은 **[임의]** 표시) · **부팅쌍 축**(`pair`) · **채널 축**(`channel`) · **클리핑 축**(`clipped`) · K1 **288 세계** |

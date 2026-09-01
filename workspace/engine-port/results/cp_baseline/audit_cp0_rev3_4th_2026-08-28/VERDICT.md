@@ -1,5 +1,8 @@
 # VERDICT — CP-0 rev3 감사 (4회차, 2026-08-28)
 
+
+> ⚠️ **날짜 정정**: 파일명/본문 날짜 2026-08-28은 오기 — 실제 작성/실행일 **2026-09-01**. 상세: `DATE_CORRECTION_NOTE.md`.
+
 **판정: `NO-GO`** · claims-auditor(적대, read-only) · GPU 0 · 새 성능 판정 0건 · 정본 변경 0건
 
 **답**: rev3는 세 판본 중 가장 실질적이고 `RETRACTION_reqinactive_2026-08-28.md`는 이 트랙 최초로

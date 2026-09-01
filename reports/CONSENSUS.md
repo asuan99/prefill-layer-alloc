@@ -4,7 +4,40 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-08-28 rev51 (같은 날 2차, doc-steward — ★★★
+최종 갱신: 2026-09-01 rev52 (doc-steward — ★★★**cp_baseline
+(chunked-prefill baseline) 트랙 정본 반영** — 사용자 요청("정책
+비교군 정리 + chunked prefill을 비교 대상으로 추가")에서 출발한
+캠페인이 **규칙층 적대 감사 4회 전부 `NO-GO`**(CP-1 rev1 死因9·
+rev2 死因7[71%가 직전 수리의 그림자]·CP-0 rev1[3회차] 死因6·
+CP-0 rev3[4회차] 死因8[24건 중 11건=46%가 순수 전파 실패])를
+받고 정책 판정 트랙에서 계측·축 검증 트랙으로 내려앉았다. GPU
+4 job **1.36 GPU-hr**(899768 0.248·900053 0.246·900054 0.139·
+900067 0.729, 전부 `COMPLETED 0:0`) — **새 성능 판정 0건**.
+**P1 계측**: 1차(899768) `P1_BLOCKED_INSTRUMENT`(하네스×텔레메트리
+상호작용, kill 시퀀스가 SIGTERM 없이 SIGKILL) → 3중 수리 후
+재실행(900053) `P1_ACCEPTED` 7/7. ★**F3 기전 관측 확인**(그전까지
+코드 독해뿐): `--chunked-prefill-size`가 prefill 예산과 **piecewise
+CUDA graph 캡처 범위**를 동시 결정 — cps −1서 캡처 목록 len 0
+관측(스코프: Zamba2-2.7B·이 트리·arm당 부팅 n=1, 정본 pdmux arm
+파급은 **미검증 관측**일 뿐 판정 아님). **G1 프로브**(job 900067):
+등록 술어(threshold 0.80, 격자{2,4,8})는 두 arm `CAPACITY_
+BRACKETED`를 내나 rate 8에서도 달성 처리량이 단조 상승(+12.4%/
++7.0%) ⇒ **이 축·이 격자·이 임계로는 포화 미식별**(계측 축
+판정, arm/정책 판정 아님). ★신규 방법론 교훈 4건(§3 항목104–107)
++ 항목90·100 追記 2건(자기검사 오라클 부재·판본이력↔본문 모순·
+전파실패 정량화 46%·`check_version_sweep.py` 신설). ★**날짜
+정정**: cp_baseline 산출물 다수가 파일명·본문 날짜를 2026-08-28로
+오기(실제 2026-09-01) — 개명 없이 배너+`DATE_CORRECTION_NOTE.md`
+로 정정. ★★**원래 질문(chunked prefill vs pdmux 정책 비교)은
+이 트랙 전체에서 여전히 0건 측정.** 불변: HE0·정책 순위·gate
+#13/#16 "닫았다" 금지·switch-cost "닫았다" 금지·C2 인용정지
+(a)(b)·`CONSENSUS §1-24` 전부 유지. 정본 반영: `PROJECT_STATUS.md`
+"다음 실험 gate" #11 레지스트리 cp_baseline 행 신설·"방법론 게이트"
+#84–87 신설+#70·#80 追記, `reports/CONSENSUS.md` rev51→**rev52**.
+상세 `workspace/engine-port/results/cp_baseline/`, `handoff-report/
+session_handoff_2026-09-01.md`.**
+
+이전: 2026-08-28 rev51 (같은 날 2차, doc-steward — ★★★
 `deprecated_v2/README.md` 초안 **비준 완료**(§7) — 정본 등재
 `1c6bb59` 이후 발견분 반영: **백엔드 강제 교락**(Nemotron-H+`triton`
 부팅 거부·Zamba2+`flashinfer` 스케줄러 사망 2/2, job 896776) ⇒
@@ -4231,6 +4264,20 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
     재현으로 확정. 상세 아래 항목91, `workspace/engine-port/results/
     kernel_mech/audit_a1_rules_2026-08-25/VERDICT.md`.
 
+    ★**거울상 사례(2026-09-01, cp_baseline CP-0 rev3 규칙층 감사
+    4회차, claims-auditor, GPU 0)**: 이 게이트가 요구하는 "검증
+    칸은 이미 실행된 것만 적어라"의 **반대쪽**이 CP 트랙에서
+    나왔다 — 판본 이력표(변경 이력 서술)가 **본문과 직접 모순**
+    됐다(死因 L-l, 어느 절이 맞는지 서술만으로 판별 불가). 실무
+    규칙: 이력표와 본문이 같은 사실을 다르게 서술하면 그 문서는
+    **감사 접수 대상이 아니다**(수리 여부를 묻기 전에 반려) —
+    근본 해법은 이력표를 검증 가능한 단일 출처(코드가 갱신하는
+    카운터)로 대체하는 것이며, 아래 항목100 追記의
+    `check_version_sweep.py`가 그 첫 시도다. 상세 `workspace/
+    engine-port/results/cp_baseline/audit_cp0_rev3_4th_2026-08-28/
+    VERDICT.md` 死因 L-l·"신규 방법론 교훈 후보" 6번,
+    `PROJECT_STATUS.md` "방법론 게이트" #70 追記와 대응.
+
 91. ★★★**(2026-08-25, kernel_mech A1, claims-auditor, GPU 0) 어댑터
     축이 다른 축에서 파생되면 그 자체가 차단이다 — 파생 관계를
     등록하고, "무엇이 비면 무엇을 말하지 못하는가"를 규칙이 아니라
@@ -4447,6 +4494,29 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
      닫힘/안 닫힘 표), `PROJECT_STATUS.md` "방법론 게이트" #80
      追記와 대응.
 
+     ★★★★**追記(2026-09-01, cp_baseline 규칙층 감사 4연속, claims-
+     auditor, GPU 0) — 정량 재확인 + 새로운 하위 형태.** CP 트랙이
+     이 패턴의 **또 다른 독립 확인**을 냈다: 4회차 감사(CP-0 rev3)가
+     死因 8건 중 그림자 비율을 재계산해 **"24건 중 11건(46%)이
+     순수 전파 실패"**(수리는 실행됐고 그것을 인용하는 자리를
+     안 쓸었을 뿐, 새 사고 불필요)라고 정량화했고, 3회차 대비
+     비율이 사실상 불변(그림자 死因 비중 50%대)임을 확인했다.
+     ★**새 하위 형태**: 전파 실패 중 하나(§8의 "시험 3개" 갱신
+     누락)는 **유일한 중단 규칙 자체를 무력화**했다 — 전파 실패는
+     산문 서식 문제가 아니라 **런킬러**(감사를 계속 통과시키지
+     못하게 막는 결함)가 될 수 있다. 4회차 최종 판정: *"rev1은
+     규칙이 문제였고 rev2도 규칙이 문제였고 rev3는 절반 이상이
+     규율이다 — 이 이동 자체는 전진이지만, 규율 실패는 감사로
+     못 고친다."* ★**대응 도구**: 이 세션이 `check_version_sweep.py`
+     (S1–S8, `workspace/engine-port/results/cp_baseline/
+     check_version_sweep.py`)를 신설해 회차 카운터·시험 개수·
+     인용 좌표를 코드로 검사하는 시도를 시작했다(범위: cp_baseline
+     산출물 한정, 저장소 전역 아님). 상세 `workspace/engine-port/
+     results/cp_baseline/audit_cp0_rev3_4th_2026-08-28/VERDICT.md`
+     "수리는 국소, 주장은 전역 + 4연속 NO-GO 판정" 절·"신규 방법론
+     교훈 후보" 7번, `PROJECT_STATUS.md` "방법론 게이트" #80
+     追記와 대응.
+
 101. ★★**(2026-08-28, TC1 rev2·M4R rev2 규칙층 재감사 공통 요구
      + `design_reachability.py` 신설, claims-auditor + doc-steward,
      GPU 0) 도달가능성 검사가 격자 안에서만 돌면, 설계가 답을
@@ -4546,6 +4616,68 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
      `PROJECT_STATUS.md` "방법론 게이트" #83(신설), 메모리 topic
      `deconfound-measurement-lessons.md` 항목88(신설, 넷째 체계).
 
+104. ★★★**(2026-09-01, cp_baseline CP-0 rev3 규칙층 감사 4회차,
+     claims-auditor, GPU 0) 자기검사의 기준선을 검사 대상 자신에서
+     계산하면 외부 의미 반전을 원리적으로 못 잡는다 — 등록 오라클이
+     필요하다.** `cp0_selftest.py`의 변이 검사가 `base`를 변이체
+     자신에서 계산해 *"서로 다른 4값이 4셀에 놓이면 항등 아닌
+     순열은 정의상 라벨을 바꾼다"*는 **항등식**만 확인했다(등록
+     변이 X1–X3 전부 "DETECTED"로 생존했으나 외부 의미 반전은
+     0건 검출). 메인 세션이 `cp0_expected_labels.json`(사람이 읽는
+     world→label 정답표, 검사 대상 코드와 독립)을 별도 파일로
+     신설해 대응했다. 게이트 #45(감사용 검사 자신의 항등식)·#9
+     계열의 재발이지만 "기준선을 어디서 계산했는가"라는 새 축을
+     지목한다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #84(신설).
+     상세 `workspace/engine-port/results/cp_baseline/
+     audit_cp0_rev3_4th_2026-08-28/VERDICT.md` "신규 방법론 교훈
+     후보" 1번.
+
+105. ★★★**(2026-09-01, 상동) 문턱을 이식 가능한 비율로 바꿔도 그
+     문턱을 재는 격자가 절대 단위면 이식 불가성은 격자로 옮겨간
+     것뿐이다.** CP-0 rev1이 `SATURATED_AT_FLOOR` 임계를 절대
+     req/s에서 비율(도달률)로 바꿨으나, 그 비율을 측정하는 격자
+     `{2,4,8} req/s`는 여전히 절대 단위이고 워크로드마다 다르다
+     (capscan 2096 tok/req vs ShareGPT 578 tok/req = 3.6배 차이).
+     추가로 임계를 **유도한 데이터를 검증 벡터로 재사용**해 반증
+     불가능하게 만든 사례가 병존(0.72·0.795 두 후보 모두 자기
+     유도 데이터 위에서 생존)했다. 실무 규칙: de-confound 처방
+     (절대→비율)이 결함을 닫았는지 이동시켰는지를 그 처방이 딛고
+     선 다음 층(여기선 격자)까지 추적하고, 임계 유도 데이터를
+     검증 데이터로 재사용하지 마라. 대응 `PROJECT_STATUS.md`
+     "방법론 게이트" #85(신설). 상세 `workspace/engine-port/
+     results/cp_baseline/audit_cp0_rev3_4th_2026-08-28/VERDICT.md`
+     "신규 방법론 교훈 후보" 2·4번.
+
+106. ★★★**(2026-09-01, 상동) 연속 축 위에 문턱을 등록하기 전에 그
+     통계량의 무처치(no-load) 분산을 먼저 재고, 유도한 판정 밴드가
+     그 분산보다 넓은지 산술로 보여라.** CP-0 rate 축의 무부하
+     attainment seed-SD가 **0.108**인데 knee 유도 밴드 폭은
+     **0.09**로 그 SD보다 좁았다. ★같은 논리가 이 세션의 G1
+     프로브에서 **독립 재확인**됐다 — `band_vs_sd`(plateau 판정)를
+     채우려 하니 fused_default(6→8 증가 0.610 ≫ achieved SD 0.19)
+     와 cp512(0.336 < achieved SD 0.435)가 반대 부호로 갈려 그
+     축을 미등록 상태로 남겼다. 실무 규칙: 연속 축 문턱 사전등록
+     시 §0에 "무처치 SD" 산출물을 요구하고, 유도 밴드가 그 SD의
+     배수인지(예: >2×) 명시 임계로 등록하라. 대응
+     `PROJECT_STATUS.md` "방법론 게이트" #86(신설). 상세
+     `workspace/engine-port/results/cp_baseline/{audit_cp0_rev3_
+     4th_2026-08-28/VERDICT.md "신규 방법론 교훈 후보" 3번,
+     RESULT_G1_900067_2026-09-01.md §B}`.
+
+107. ★★**(2026-09-01, 상동) 상수를 검사 표면 밖 모듈로 옮기는 것은
+     수리가 아니라 은폐일 수 있다.** `FLOAT_TOL`·`PROBE_RATES`가
+     규칙 모듈(`cp0_arm_rule.py`)에는 상수 분류 검사를 통과하도록
+     등록됐으나, 술어 모듈(`cp0_predicates.py`)로 옮겨진 뒤에는
+     그 검사가 따라가지 않아 사실상 검사 표면 밖으로 나갔다(死因
+     L-d). 게이트 #75(규칙 정본 파일 안 출처 허위가 가장 위험)의
+     거울상 — 여기선 허위 주석이 아니라 **검사 커버리지가 모듈
+     경계에서 끊긴 것**이 문제였다. 실무 규칙: 상수를 새 모듈로
+     옮길 때 그 상수를 검사하는 도구도 같은 커밋에서 그 모듈을
+     훑도록 갱신하라. 대응 `PROJECT_STATUS.md` "방법론 게이트"
+     #87(신설). 상세 `workspace/engine-port/results/cp_baseline/
+     audit_cp0_rev3_4th_2026-08-28/VERDICT.md` 死因 L-d·"신규
+     방법론 교훈 후보" 5번.
+
 ---
 
 ## 4. 살아있는 문서 (이것만 참조)
@@ -4611,6 +4743,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `workspace/engine-port/results/tc1_model_attrib/{PREREG_TC1_RULES_2026-08-27.md, tc1_rule.py, audit_tc1_rules_2026-08-27/VERDICT.md, PREREG_TC1_RULES_REV2_2026-08-27.md, tc1_rule_rev2.py, audit_tc1_rules_rev2_2026-08-28/VERDICT.md, PREREG_TC1_RULES_REV3_2026-08-28.md, tc1_rule_rev3.py, audit_tc1_rules_rev3_2026-08-28/VERDICT.md, probes/}`, `deprecated_v2/README.md` | ★★★**TC1(모델귀속) — 규칙층 감사 3회, 전부 `NO-GO`(2026-08-27·2026-08-28×2, claims-auditor, 게이트 #34 1단), 정본 등재 완료(doc-steward, 2026-08-28 2차).** rev1: 死因 4(F1 sticky+bind 상호배타 ⇒ `MEASUREMENT_ABSENT` 강제·F2 anchor=argmax ⇒ `NO_FLIP_BOTH_LOSE` 강제·F3 estimand 3종 미지정·F4 부호 재척도불변 방어가 대수적 거짓)·차단 18. ★**GPU 실측 F2 확정 프로브 job 896565**(2026-08-28, ≈0.20 GPU-hr, `F2_CONFIRMED`, `SW=0`·`gpC=3.232`) — 단 rev2 재감사가 서버 로그(`SLO-FEAS refused=152`)로 "죽음"이 아니라 "봉쇄"임을 확인(B29, 메모리항목21 거울상). rev2: `visits_argmax` 신설로 F2를 우회하려 했으나 강제가 **이름만** 바뀜(F5=`CONTROLLER_DEGENERATE`) + δ 미재도출로 최빈 결과가 `INCONCLUSIVE`(F6, P≈0.66) + §7 세 대조 전부 반증불가(F7) — 단일 판정질문 답 = **"국소였다"**(死因 3·차단 12, B19–B30). 설계층 도달가능성(GPU 0): 시나리오 A(정본 지지 좌표) = `NOTHING_PURCHASABLE`. **rev3**(`ctrl_H=blocked` 재정의)이 시나리오 A를 일단 `DISCRIMINATING`으로 되돌렸으나 규칙층 재감사 死因 5(F8–F12)·차단 10 — 단일 판정질문 답 = **"네 번째 고리다"**(옳은 국소 수리 셋이 각각 새 강제를 만듦, F8 주효과 축 소실이 가장 무거움). ★**P3 프로브**(jobs 896689/896690, Qwen2.5-3B 대조, ≈0.28 GPU-hr) — `MEASUREMENT_ABSENT`, 등록된 두 뿔보다 나쁜 **"셋째 뿔"**(배선이 아니라 물리: 짧은 프롬프트 모델은 동시성 자체가 발생하지 않음). ★**모델 전환**: Zamba2-2.7B(ctx 4096)→**Nemotron-Nano-9B-v2-Base**(ctx 131072), 대조 arm **Qwen2.5-7B**(부팅 스모크 jobs 896760/764/767 배관 확인). ★★**백엔드 강제 교락 발견**(job 896776): Nemotron-H+`triton`=부팅 거부·Zamba2+`flashinfer`=스케줄러 사망(2/2) ⇒ 두 모델 계열의 동작 가능 백엔드가 서로소, "모델 고정·백엔드만 변경" 셀 불가능(신규 게이트 #83/§3 항목103) — 상세 `deprecated_v2/README.md`(비준 완료, §7). ★★**도구 자기감사**(commit `5d180a6`) — `design_reachability.py`가 자기 spec을 잘못 통과시킨 결함 발견, `RESTRICTIONS_INERT` 등 신설(`TOOL_REV 2`) ⇒ TC1 rev3 spec 판정 `DISCRIMINATING`→**`BLOCKED`**로 하향. **금지 문장(신규)**: "TC1 rev3이 규칙층을 통과했다"·"P3가 배선 결함이다"(물리임)·"모델을 바꾸면 TC1이 재개된다"(rev1–rev3 死因은 anchor=argmax 구조 자체, 모델 전환으로 자동 해소 안 됨 — rev4는 신규 설계 필요)·Zamba2 arm의 δ·anchor·estimand 결론을 Nemotron-Nano-9B-v2 arm으로 이전. 새 성능 판정 0건·HE0 불변. 금지 문장·상세는 `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리 tc1_model_attrib 행. 정본 반영 = §3 항목101–103(신설), `PROJECT_STATUS.md` "방법론 게이트" #81–83(신설) |
 | `workspace/engine-port/results/m4r_confinement/{PREREG_M4R_RULES_2026-08-27.md, m4r_rule.py, audit_m4r_rules_2026-08-27/VERDICT.md, PREREG_M4R_RULES_REV2_2026-08-28.md, m4r_rule_rev2.py, audit_m4r_rules_rev2_2026-08-28/VERDICT.md, probes/}` | ★★★**M4R(confinement) — 규칙층 감사 2회, 전부 `NO-GO`(2026-08-27·2026-08-28, claims-auditor, 게이트 #34 1단), 정본 등재 완료(doc-steward, 2026-08-28).** §1-24·§1-26(B) 후속. rev1 F1: 노출변수 `R`이 정본 등재 항등식(`decode_sms≠108 ⟺ prefill_active_batch_size>0`, §1-25 追記·§1-26(B))과 aliased — G16 confined 스냅샷 100.0%가 decode=D SM, SM 맞추면 R이 1.762→1.097로 붕괴·전 셀 `R_MIN` 미달·부호가 108/D와 같은 모양(§3(a) confinement 예측과 반대). rev1 死因 4·차단 16. rev2가 `R_matched`(SM 맞춘 대조)로 estimand를 이관했으나 F1′: `sm_match` 가드 자체가 엔진이 강제하는 항등식(28파일 39,849구간 반례 0)이고 "SM 매칭"은 구간의 **왼쪽 끝점**에서만 성립 — 자유 다리는 파티션 복원 지연 구간 자체(65–87%가 앞뒤 모두 108 SM), batch 층화 시 108/D 서명 재출현(1.061–1.387). 대조 4종 전부 반증불가(F2′), 7셀 중 6셀이 자기 가드에 막히고 유일 생존 셀 `RESIDUAL_INCONCLUSIVE`(F3′, 블록 t-CI 7/7이 1 포함), 드레인 "포화"가 표본 해상도 구멍이었음 확인(F4′) — rev2 死因 4·차단 12. ★★**불변 재확인**: `CONSENSUS §1-24`는 반증되지 않았다 — 두 감사 모두 "이 채널로는 답할 수 없다"고만 말한다. **유일한 해소 경로 = `PDMUX_STICKY_PARTITION=1` 신규 측정**("M4R은 GPU 0이다" 금지 문장, ★rev1이 이미 금지했고 rev2 §1 F2 행이 위반 — B10′). 새 성능 판정 0건·HE0 불변·§1-24 불변. 금지 문장·상세는 `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리 m4r_confinement 행. 정본 반영 = §3 항목101(신설), `PROJECT_STATUS.md` "방법론 게이트" #81(신설) |
 | `scripts/discipline/design_reachability.py`(저장소 루트) + `workspace/engine-port/scripts/discipline/{presubmit.py, presubmit_registry.json, PRESUBMIT_CHECKLIST.md}` | ★**설계층 도달가능성 메타검사 + 제출 게이트 신설(2026-08-28, GPU 0, 성능 판정 대상 아님)** | TC1 rev2·M4R rev2 두 재감사가 공통 요구한 메타검사 — 규칙 파일의 `T2_reachable`(격자 내부 성질)과 달리 등록된 설계+이미 측정된 데이터가 실제로 낼 수 있는 실질 라벨을 묻는다(모든 제약에 출처 문자열 강제). `presubmit.py`가 규율 도구 4종(`check_line_citations`·`check_doc_facts`·`check_citation_stops`·`design_reachability`)의 **첫 등록된 실행 지점**(감사 B11이 2026-08-26에 지적한 결손 해소). 현재 실행: `exit=1`(제출 금지) — line_citations/doc_facts/citation_stops `OK`, reachability `reach_spec_rev3_A.json→DISCRIMINATING`(OK) / `reachability_spec.json→SINGLE_LABEL_FORCED`(BLOCK, M4R rev2). ★**경로 미정본화**: `design_reachability.py`가 저장소 루트 `scripts/discipline/`에 있고 기존 도구 셋은 `workspace/engine-port/scripts/discipline/`에 있다 — 동시 세션이 그 경로로 호출 중이라 지금 옮기지 않았다(doc-steward 소관, 다음 세션 조율); `presubmit.py`는 두 위치를 모두 찾는다. 정본 반영 = §3 항목101(신설), `PROJECT_STATUS.md` "방법론 게이트" #81(신설) |
+| `workspace/engine-port/results/cp_baseline/` | ★★★**cp_baseline(chunked-prefill baseline) — 규칙층 감사 4회, 전부 `NO-GO`(2026-09-01, claims-auditor, 게이트 #34 1단), 정본 등재 완료(doc-steward, 2026-09-01).** 사용자 요청("정책 비교군 정리 + chunked prefill을 비교 대상으로 추가")에서 출발해 CP-1 rev1(死因9)→rev2(死因7, 71%가 직전 수리의 그림자)→CP-0 rev1[3회차](死因6)→CP-0 rev3[4회차](死因8, 24건 중 11건[46%]이 순수 전파 실패)로 4연속 `NO-GO`, GPU 4 job 1.36 GPU-hr(전부 계측·축 검증, 새 성능 판정 0건). **P1**: 1차(899768) `P1_BLOCKED_INSTRUMENT`(하네스×텔레메트리 상호작용) → 3중 수리 후 재실행(900053) `P1_ACCEPTED` 7/7. ★**F3 기전 관측 확인** — `--chunked-prefill-size`가 prefill 예산과 piecewise CUDA graph 캡처 범위를 동시 결정, cps −1서 캡처 목록 len 0 관측(스코프: Zamba2-2.7B·이 트리·arm당 n=1, pdmux arm 파급은 미검증 관측). **G1 프로브**(900067): 등록 술어(threshold 0.80, 격자{2,4,8})는 두 arm `CAPACITY_BRACKETED`를 내나 rate 8에서도 달성 처리량 단조 상승(+12.4%/+7.0%) ⇒ 이 축·격자·임계로는 포화 미식별(계측 축 판정, arm/정책 판정 아님). `band_vs_sd`(plateau 술어) 미등록 — 다음 판본 선결조건. presubmit override 2건(사용자 명시 승인, M4R/TC1 전역 차단과 별개). ★날짜 정정: 산출물 다수의 파일명·본문 날짜 2026-08-28 오기(실제 2026-09-01) — 개명 없이 배너+`DATE_CORRECTION_NOTE.md`로 정정. **금지 문장**: "P1/G1이 chunked prefill 정책을 비교했다"·"F3 관측이 정본 pdmux 캠페인의 piecewise 상태를 확정한다"·"CP-0 용량 축은 원리적으로 불가능하다"·"CP-0 본체가 제출 가능하다"(G2·G3·G4·G7 미해소). ★★**원래 질문(chunked prefill vs pdmux 정책 비교)은 여전히 0건 측정.** 새 성능 판정 0건·HE0 불변. 금지 문장·상세는 `PROJECT_STATUS.md` "다음 실험 gate" #11 레지스트리 cp_baseline 행. 정본 반영 = §3 항목104–107(신설)+항목90·100 追記, `PROJECT_STATUS.md` "방법론 게이트" #84–87(신설)+#70·#80 追記 |
 
 `deprecated_reports/`(2026-07-24부터 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)) = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 

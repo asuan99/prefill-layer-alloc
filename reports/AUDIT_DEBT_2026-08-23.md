@@ -215,3 +215,40 @@
 |---|---|---|---|---|
 | **P3-1**(신설) | `knee2d.sbatch:105` grep 패턴 수리(`ZBPT`→`ZBPT2`) | 하네스 | **1·4** | GPU 0 |
 | — | `design_reachability.py` 경로 통합 | — | 조율(부채 아님) — 동시 세션 종료 후 재검토 | GPU 0 |
+
+## 8. 2026-09-01 추가 (doc-steward, cp_baseline 정본 반영 세션) — 인접 트랙 사실 드리프트 발견 (수리 대상, 손대지 않음)
+
+### 8.1 `check_doc_facts.py` FAIL — `DESIGN_A1_REV2_STICKY_2026-08-25.md`의 "회귀 244"가 stale
+
+cp_baseline 정본 반영 마무리 중 `check_doc_facts.py`를 돌리자(이 세션이 요구한 도구는
+`check_citation_stops.py`뿐이었으나 부수로 실행) 아래가 나왔다:
+
+```
+[FAIL] regression tests: document says 244, artefact says 295 (DESIGN_A1_REV2_STICKY_2026-08-25.md)
+```
+
+**원인 추정**: `DESIGN_A1_REV2_STICKY_2026-08-25.md:382`가 이미 "★회귀 수 갱신(2026-09-01):
+171 → 244는 이 절차와 무관 — CP-0 P1 `chunk_probe_scheduler_hook.patch`가
+`test_chunk_probe.py`(42)·`test_cp0_p1_tools.py`(31) 합 **+73**을 추가했을 뿐"이라는
+정정 각주를 갖고 있다(171+73=244로 계산). 그러나 `check_doc_facts.py`가 CPU 테스트
+디렉터리에서 **정적으로 센 현재값은 295**(핸드오프가 기록한 "회귀 테스트 171 → 295"와
+일치) — 즉 이 각주 자체가 **자기 산수와 실제 상태 양쪽 다 스테일**일 가능성이 있다
+(244≠295, 차이 51의 출처 미확인 — 다른 커밋이 추가 테스트를 넣었을 수도, 각주의
++73 산정 자체가 틀렸을 수도 있다).
+
+**손대지 않은 이유**: `DESIGN_A1_REV2_STICKY_2026-08-25.md`는 kernel_mech A1 트랙 문서다
+— 이 세션의 위임 범위(cp_baseline 정본 반영)를 벗어난다. 51의 원천을 확인하지 않고
+숫자만 고치면 "수리는 국소, 주장은 전역"(게이트 #80/항목100)의 새 사례가 될 위험이
+있다. **적용 기준**: 위 §0 우선순위표 기준 **1**(살아있는 도구가 지금 FAIL을 내고
+있음 — presubmit 계열이 이 문서를 인용하면 막힐 수 있다).
+
+**수리 권고**: kernel_mech 트랙(또는 다음 doc-steward 세션)이 (a) 295가 맞는 정적
+카운트인지 재확인(`grep -rc '^\s*def test_' workspace/engine-port/tests/test_*.py`)
+(b) 244→295 차이 51의 커밋 출처를 `git log -p`로 역추적 (c) `DESIGN_A1_REV2_STICKY_
+2026-08-25.md:382`의 각주를 그 근거와 함께 갱신, 순으로 처리할 것.
+
+### 8.2 우선순위표 추가 (§2 참조)
+
+| 순위 | 항목 | 층 | 적용 기준 | 비용 |
+|---|---|---|---|---|
+| **P1-1**(신설) | `DESIGN_A1_REV2_STICKY_2026-08-25.md:382` "회귀 244" → 295(근거 역추적 후) | 결과층 | **1** | GPU 0 |
