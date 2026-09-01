@@ -1,0 +1,58 @@
+{
+  "design_labels_all": {
+    "CP_EQUIV_RANK_ONLY": 2,
+    "CP_EQUIV_SIZED": 2,
+    "CP_LOSES_GE_DELTA": 1,
+    "CP_LOSES_RANK_ONLY": 3,
+    "CP_LOSES_SIZE_UNRESOLVED": 1,
+    "CP_LOSES_SUBDELTA": 1,
+    "CP_WINS_GE_DELTA": 1,
+    "CP_WINS_RANK_ONLY": 3,
+    "CP_WINS_SIZE_UNRESOLVED": 1,
+    "CP_WINS_SUBDELTA": 1,
+    "DEGENERATE_ARM": 36,
+    "IMPOSSIBLE_WORLD": 24,
+    "LADDER_CONFLICT": 14,
+    "UNDERPOWERED": 6
+  },
+  "design_substantive": {
+    "CP_EQUIV_RANK_ONLY": 2,
+    "CP_EQUIV_SIZED": 2,
+    "CP_LOSES_GE_DELTA": 1,
+    "CP_LOSES_RANK_ONLY": 3,
+    "CP_LOSES_SIZE_UNRESOLVED": 1,
+    "CP_LOSES_SUBDELTA": 1,
+    "CP_WINS_GE_DELTA": 1,
+    "CP_WINS_RANK_ONLY": 3,
+    "CP_WINS_SIZE_UNRESOLVED": 1,
+    "CP_WINS_SUBDELTA": 1,
+    "LADDER_CONFLICT": 14
+  },
+  "grid_substantive": {
+    "CP_EQUIV_RANK_ONLY": 6,
+    "CP_EQUIV_SIZED": 6,
+    "CP_LOSES_GE_DELTA": 3,
+    "CP_LOSES_RANK_ONLY": 9,
+    "CP_LOSES_SIZE_UNRESOLVED": 3,
+    "CP_LOSES_SUBDELTA": 3,
+    "CP_WINS_GE_DELTA": 3,
+    "CP_WINS_RANK_ONLY": 9,
+    "CP_WINS_SIZE_UNRESOLVED": 3,
+    "CP_WINS_SUBDELTA": 3,
+    "LADDER_CONFLICT": 42
+  },
+  "label": "Dropped arm cps4096 (request channel empty), canonical trace",
+  "reading": "More than one substantive label is reachable; the design can still be informative, subject to the other audit findings.",
+  "restrictions": {
+    "req_split_n_ge_min": {
+      "values": [
+        "no"
+      ],
+      "why": "served_population.json: cps 4096 splits 0 of the 200 served requests (the prompt+output<=4000 filter removes every prompt that could be split), below the registered minimum of 6"
+    }
+  },
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp_rule.py",
+  "rule_rev": 2,
+  "unreachable_by_design": [],
+  "verdict": "DISCRIMINATING"
+}

@@ -1,0 +1,40 @@
+{
+  "design_labels_all": {
+    "ARM_DISTINCT_BATCH_ONLY": 1,
+    "ARM_INDISTINGUISHABLE": 1,
+    "ARM_UNUSABLE": 12,
+    "BOOT_FAILED": 1,
+    "CHANNELS_UNMEASURED": 4,
+    "IMPOSSIBLE_WORLD": 17
+  },
+  "design_substantive": {
+    "ARM_DISTINCT_BATCH_ONLY": 1,
+    "ARM_INDISTINGUISHABLE": 1
+  },
+  "findings": [],
+  "grid_substantive": {
+    "ARM_DISTINCT_BATCH_ONLY": 1,
+    "ARM_DISTINCT_BOTH": 1,
+    "ARM_DISTINCT_REQUEST_ONLY": 1,
+    "ARM_INDISTINGUISHABLE": 1
+  },
+  "label": "CP-0 arm distinctness -- arm whose request channel is measured EMPTY (cps 4096)",
+  "reading": "More than one substantive label is reachable; the design can still be informative, subject to the other audit findings.",
+  "restrictions": {
+    "req_channel": {
+      "values": [
+        "inactive",
+        "unmeasured"
+      ],
+      "why": "served_population.json: 0 of the 200 served requests exceed 4096 tokens. This is structural, not rare -- the harness passes --sharegpt-context-len 4000 and the sampler drops any request with prompt_len + output_len > 4000 (benchmark/datasets/sharegpt.py:136), so no prompt this arm could split survives the filter"
+    }
+  },
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp0_arm_rule.py",
+  "rule_rev": 1,
+  "tool_rev": 2,
+  "unreachable_by_design": [
+    "ARM_DISTINCT_BOTH",
+    "ARM_DISTINCT_REQUEST_ONLY"
+  ],
+  "verdict": "DISCRIMINATING"
+}

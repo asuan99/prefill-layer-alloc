@@ -1,0 +1,32 @@
+{
+  "design_labels_all": {
+    "BOOT_FAILED": 1,
+    "CAPACITY_BRACKETED": 1,
+    "CAPACITY_UNMEASURED": 5,
+    "IMPOSSIBLE_WORLD": 8,
+    "NONMONOTONE_PROBE": 1,
+    "NO_SATURATION_IN_RANGE": 1,
+    "SATURATED_AT_FLOOR": 1
+  },
+  "design_substantive": {
+    "CAPACITY_BRACKETED": 1,
+    "NONMONOTONE_PROBE": 1,
+    "NO_SATURATION_IN_RANGE": 1,
+    "SATURATED_AT_FLOOR": 1
+  },
+  "findings": [],
+  "grid_substantive": {
+    "CAPACITY_BRACKETED": 1,
+    "NONMONOTONE_PROBE": 1,
+    "NO_SATURATION_IN_RANGE": 1,
+    "SATURATED_AT_FLOOR": 1
+  },
+  "label": "CP-0 capacity probe -- do probe rates {2,4,8} bracket saturation? (NO restriction registered; this certificate excludes nothing -- see priors)",
+  "reading": "More than one substantive label is reachable; the design can still be informative, subject to the other audit findings.",
+  "restrictions": {},
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp0_capacity_rule.py",
+  "rule_rev": 2,
+  "tool_rev": 2,
+  "unreachable_by_design": [],
+  "verdict": "DISCRIMINATING"
+}

@@ -1,0 +1,7 @@
+{
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp_rule.py",
+  "world_is_tuple": false,
+  "label": "Dropped arm cps4096 (request channel empty), canonical trace",
+  "restrict": {"req_split_n_ge_min": {"values": ["no"], "why": "served_population.json: cps 4096 splits 0 of the 200 served requests (the prompt+output<=4000 filter removes every prompt that could be split), below the registered minimum of 6"}},
+  "out": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/reach_D_cps4096.json"
+}

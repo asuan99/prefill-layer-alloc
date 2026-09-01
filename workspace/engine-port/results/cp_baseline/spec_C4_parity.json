@@ -1,0 +1,7 @@
+{
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp_rule.py",
+  "world_is_tuple": false,
+  "label": "C4 parity (cp512 - d44), canonical trace HI=12",
+  "restrict": {"req_split_n_ge_min": {"values": ["yes"], "why": "served_population.json (bench sampler, seed=1, NP=200, --sharegpt-context-len 4000): cps 512 splits 51 of the 200 served requests, at or above the registered minimum of 6 = ceil(0.03*200)"}, "capacity": {"values": ["above"], "why": "CONSENSUS.md:1803 (=CONSENSUS §1-32) records the canonical HI phase at offered/achieved 2.15-2.35x for the pdmux static arms; capacity is defined on the CONTRAST as below iff BOTH arms are at or under their measured achieved throughput, and the d44 side is established above, so contrast C4 is above at HI=12 regardless of the CP arm"}},
+  "out": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/reach_C4_parity.json"
+}

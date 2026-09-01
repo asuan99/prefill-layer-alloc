@@ -1,0 +1,45 @@
+{
+  "design_labels_all": {
+    "ARM_DISTINCT_BOTH": 1,
+    "ARM_DISTINCT_BOTH_RATE_DEPENDENT": 1,
+    "ARM_DISTINCT_REQUEST_ONLY": 1,
+    "ARM_UNUSABLE": 16,
+    "BOOT_FAILED": 1,
+    "CHANNELS_UNMEASURED": 5,
+    "IMPOSSIBLE_WORLD": 23
+  },
+  "design_substantive": {
+    "ARM_DISTINCT_BOTH": 1,
+    "ARM_DISTINCT_BOTH_RATE_DEPENDENT": 1,
+    "ARM_DISTINCT_REQUEST_ONLY": 1
+  },
+  "findings": [],
+  "grid_substantive": {
+    "ARM_DISTINCT_BATCH_ONLY": 1,
+    "ARM_DISTINCT_BATCH_RATE_DEPENDENT": 1,
+    "ARM_DISTINCT_BOTH": 1,
+    "ARM_DISTINCT_BOTH_RATE_DEPENDENT": 1,
+    "ARM_DISTINCT_REQUEST_ONLY": 1,
+    "ARM_INDISTINGUISHABLE": 1
+  },
+  "label": "CP-0 arm distinctness -- arms with prompts that individually exceed the cap (cps 512 / 1024 / 2048)",
+  "reading": "More than one substantive label is reachable; the design can still be informative, subject to the other audit findings.",
+  "restrictions": {
+    "req_channel": {
+      "values": [
+        "active",
+        "unmeasured"
+      ],
+      "why": "served_population.json: 51 / 10 / 4 of the 200 served prompts individually exceed 512 / 1024 / 2048 tokens. A prompt longer than the cap cannot fit one budget even alone, so it is chunked regardless of backlog -- this makes req_channel=active OVER-DETERMINED and independent of the batch-budget mechanism (schedule_policy.py:802-842). 'unmeasured' stays live because the extraction itself can fail, which PROJECT_STATUS.md 'methodology gate' #21 requires be kept distinct from a finding. ★This why-string was rewritten on 2026-08-28: the earlier version leaned on prompt length as THE chunking mechanism, which is false (3rd audit F2, see RETRACTION_reqinactive_2026-08-28.md)."
+    }
+  },
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp0_arm_rule.py",
+  "rule_rev": 3,
+  "tool_rev": 2,
+  "unreachable_by_design": [
+    "ARM_DISTINCT_BATCH_ONLY",
+    "ARM_DISTINCT_BATCH_RATE_DEPENDENT",
+    "ARM_INDISTINGUISHABLE"
+  ],
+  "verdict": "DISCRIMINATING"
+}

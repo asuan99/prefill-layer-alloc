@@ -1,0 +1,18 @@
+{
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp0_arm_rule.py",
+  "world_is_tuple": false,
+  "label": "CP-0 arm distinctness -- arm whose request channel is measured EMPTY (cps 4096)",
+  "supersedes": "spec_C1_canonical.json",
+  "dropped_restrictions": {
+    "req_split_n_ge_min": "withdrawn -- see spec_cp0_arm_reqactive.json for the reason (2nd audit K3). CP-0 excludes no arm."
+  },
+  "restrict": {
+    "req_channel": {"values": ["inactive", "unmeasured"],
+      "why": "served_population.json: 0 of the 200 served requests exceed 4096 tokens. This is structural, not rare -- the harness passes --sharegpt-context-len 4000 and the sampler drops any request with prompt_len + output_len > 4000 (benchmark/datasets/sharegpt.py:136), so no prompt this arm could split survives the filter"}
+  },
+  "priors": {
+    "ARM_DISTINCT_BATCH_ONLY": {"prior": 0.35, "why": "a 4096-token batch cap needs about 12 queued requests at the measured 341-token mean to bind; reachable under HI backlog but not the default expectation"},
+    "ARM_INDISTINGUISHABLE": {"prior": 0.65, "why": "with the request channel structurally empty this arm is fused_mono unless the batch cap binds"}
+  },
+  "out": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/reach_cp0_arm_reqinactive.json"
+}

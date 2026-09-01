@@ -1,0 +1,133 @@
+
+=== cp0_arm_rule.py ===
+  72 worlds, 10 labels
+  [PASS] a registered oracle exists for this rule
+  [PASS] oracle axis order matches the rule
+  [PASS] oracle rule_rev matches the rule  -- oracle 3 vs rule 3
+  [PASS] EVERY world's label matches the registered oracle  -- 0 mismatch(es)
+  [PASS] label() is TOTAL and emits only declared labels  -- undeclared: []
+  [PASS] every substantive label is reachable in the grid  -- missing: []
+  [PASS] OUTCOME table is total over the measured 2-tuples
+  [PASS] branch mutant `boot_failed` [dropped] is DETECTED
+  [PASS] branch mutant `boot_failed` [negated] is DETECTED
+  [PASS] branch mutant `echo_mismatch` [dropped] is DETECTED
+  [PASS] branch mutant `echo_mismatch` [negated] is DETECTED
+  [PASS] branch mutant `echo_unmeasured` [dropped] is DETECTED
+  [PASS] branch mutant `echo_unmeasured` [negated] is DETECTED
+  [PASS] branch mutant `req_unmeasured` [dropped] is DETECTED
+  [PASS] branch mutant `req_unmeasured` [negated] is DETECTED
+  [PASS] branch mutant `batch_unmeasured` [dropped] is DETECTED
+  [PASS] branch mutant `batch_unmeasured` [negated] is DETECTED
+  [PASS] every RULES branch was mutated  -- 5/5
+  [PASS] outcome mutant ('active', 'binds') -> ARM_DISTINCT_BOTH_RATE_DEPENDENT is DETECTED
+  [PASS] outcome mutant ('active', 'mixed') -> ARM_DISTINCT_BOTH is DETECTED
+  [PASS] outcome mutant ('active', 'slack') -> ARM_DISTINCT_BOTH is DETECTED
+  [PASS] outcome mutant ('inactive', 'binds') -> ARM_DISTINCT_BOTH is DETECTED
+  [PASS] outcome mutant ('inactive', 'mixed') -> ARM_DISTINCT_BOTH is DETECTED
+  [PASS] outcome mutant ('inactive', 'slack') -> ARM_DISTINCT_BOTH is DETECTED
+  [PASS] OUTCOME values are pairwise distinct (permutation theorem applies)  -- 6 cells
+  [PASS] every OUTCOME cell is reachable in the grid (the other precondition)  -- unreachable: []
+  [PASS] guard transposition `boot_failed`<->`echo_mismatch` is inert BY CONSTRUCTION (firing sets disjoint over coherent worlds)
+  [PASS]   ...and the disjointness is real, not assumed (`boot_failed` 1 worlds, `echo_mismatch` 12, overlap 0)
+  [PASS] guard transposition `echo_mismatch`<->`echo_unmeasured` is inert BY CONSTRUCTION (same label ARM_UNUSABLE)
+  [PASS] guard order mutant `echo_unmeasured`<->`req_unmeasured` is DETECTED
+  [PASS] guard transposition `req_unmeasured`<->`batch_unmeasured` is inert BY CONSTRUCTION (same label CHANNELS_UNMEASURED)
+  [note] 3 transposition(s) inert by construction: [('boot_failed', 'echo_mismatch', 'firing sets disjoint over coherent worlds'), ('echo_mismatch', 'echo_unmeasured', 'same label ARM_UNUSABLE'), ('req_unmeasured', 'batch_unmeasured', 'same label CHANNELS_UNMEASURED')]
+  [PASS] coherence mutant `incoherent -> always None` is DETECTED
+  [PASS] every module constant is classified as label-bearing or campaign-only  -- unclassified: []
+  [note] this rule declares no label-bearing constants: every branch is categorical
+  [PASS] CAMPAIGN_PARAM `N_BOOTS_PER_ARM` does NOT touch the label map (declared, verified)
+
+=== cp0_arm_rule.py predicates ===
+  [PASS] registered RATE_VECTORS classify as expected
+  [PASS] registered BATCH_VECTORS classify as expected
+  [PASS] every predicate-module constant is classified  -- unclassified: []
+  [PASS] this rule's PREDICATE_CONSTANTS are a subset of the module's LABEL_CONSTANTS
+  [PASS] INFRA_CONSTANT `FLOAT_TOL` does not change a classification (declared, verified)
+  [PASS] INFRA_CONSTANT `PROBE_RATES` does not change a classification (declared, verified)
+  [PASS] registered FOLD_VECTORS fold as expected
+  [PASS] PREDICATE_CONSTANT `BATCH_MARGIN_REL` x0.5 is load-bearing
+  [PASS] PREDICATE_CONSTANT `BATCH_MARGIN_REL` x1.5 is load-bearing
+  [PASS] rate_axis(offered=0) is refused
+  [PASS] rate_axis(achieved<0) is refused
+  [PASS] batch_axis(ref=0) is refused
+  [PASS] batch_axis(lo>hi) is refused
+
+=== cp0_capacity_rule.py ===
+  18 worlds, 7 labels
+  [PASS] a registered oracle exists for this rule
+  [PASS] oracle axis order matches the rule
+  [PASS] oracle rule_rev matches the rule  -- oracle 2 vs rule 2
+  [PASS] EVERY world's label matches the registered oracle  -- 0 mismatch(es)
+  [PASS] label() is TOTAL and emits only declared labels  -- undeclared: []
+  [PASS] every substantive label is reachable in the grid  -- missing: []
+  [PASS] OUTCOME table is total over the measured 2-tuples
+  [PASS] branch mutant `boot_failed` [dropped] is DETECTED
+  [PASS] branch mutant `boot_failed` [negated] is DETECTED
+  [PASS] branch mutant `lo_unmeasured` [dropped] is DETECTED
+  [PASS] branch mutant `lo_unmeasured` [negated] is DETECTED
+  [PASS] branch mutant `hi_unmeasured` [dropped] is DETECTED
+  [PASS] branch mutant `hi_unmeasured` [negated] is DETECTED
+  [PASS] every RULES branch was mutated  -- 3/3
+  [PASS] outcome mutant ('tracking', 'saturated') -> SATURATED_AT_FLOOR is DETECTED
+  [PASS] outcome mutant ('saturated', 'saturated') -> CAPACITY_BRACKETED is DETECTED
+  [PASS] outcome mutant ('tracking', 'tracking') -> CAPACITY_BRACKETED is DETECTED
+  [PASS] outcome mutant ('saturated', 'tracking') -> CAPACITY_BRACKETED is DETECTED
+  [PASS] OUTCOME values are pairwise distinct (permutation theorem applies)  -- 4 cells
+  [PASS] every OUTCOME cell is reachable in the grid (the other precondition)  -- unreachable: []
+  [PASS] guard order mutant `boot_failed`<->`lo_unmeasured` is DETECTED
+  [PASS] guard transposition `lo_unmeasured`<->`hi_unmeasured` is inert BY CONSTRUCTION (same label CAPACITY_UNMEASURED)
+  [note] 1 transposition(s) inert by construction: [('lo_unmeasured', 'hi_unmeasured', 'same label CAPACITY_UNMEASURED')]
+  [PASS] coherence mutant `incoherent -> always None` is DETECTED
+  [PASS] every module constant is classified as label-bearing or campaign-only  -- unclassified: []
+  [note] this rule declares no label-bearing constants: every branch is categorical
+
+=== cp0_capacity_rule.py predicates ===
+  [PASS] registered RATE_VECTORS classify as expected
+  [PASS] registered BATCH_VECTORS classify as expected
+  [PASS] every predicate-module constant is classified  -- unclassified: []
+  [PASS] this rule's PREDICATE_CONSTANTS are a subset of the module's LABEL_CONSTANTS
+  [PASS] INFRA_CONSTANT `FLOAT_TOL` does not change a classification (declared, verified)
+  [PASS] INFRA_CONSTANT `PROBE_RATES` does not change a classification (declared, verified)
+  [PASS] registered FOLD_VECTORS fold as expected
+  [PASS] PREDICATE_CONSTANT `ATTAINMENT_THRESHOLD` x0.5 is load-bearing
+  [PASS] PREDICATE_CONSTANT `ATTAINMENT_THRESHOLD` x1.5 is load-bearing
+  [PASS] rate_axis(offered=0) is refused
+  [PASS] rate_axis(achieved<0) is refused
+  [PASS] batch_axis(ref=0) is refused
+  [PASS] batch_axis(lo>hi) is refused
+
+=== cp0_g1_rule.py ===
+  18 worlds, 7 labels
+  [PASS] a registered oracle exists for this rule
+  [PASS] oracle axis order matches the rule
+  [PASS] oracle rule_rev matches the rule  -- oracle 1 vs rule 1
+  [PASS] EVERY world's label matches the registered oracle  -- 0 mismatch(es)
+  [PASS] label() is TOTAL and emits only declared labels  -- undeclared: []
+  [PASS] every substantive label is reachable in the grid  -- missing: []
+  [PASS] OUTCOME table is total over the measured 2-tuples
+  [PASS] branch mutant `coverage_absent` [dropped] is DETECTED
+  [PASS] branch mutant `coverage_absent` [negated] is DETECTED
+  [PASS] branch mutant `coverage_partial` [dropped] is DETECTED
+  [PASS] branch mutant `coverage_partial` [negated] is DETECTED
+  [PASS] every RULES branch was mutated  -- 2/2
+  [PASS] outcome mutant ('band_wider', 'yes') -> AXIS_IDENTIFIED_REGRID is DETECTED
+  [PASS] outcome mutant ('band_wider', 'no') -> AXIS_IDENTIFIED is DETECTED
+  [PASS] outcome mutant ('band_narrower', 'yes') -> AXIS_IDENTIFIED is DETECTED
+  [PASS] outcome mutant ('band_narrower', 'no') -> AXIS_IDENTIFIED is DETECTED
+  [PASS] outcome cell ('no_knee_in_range', 'yes') is UNREACHABLE by construction (remap inert)
+  [PASS] outcome mutant ('no_knee_in_range', 'no') -> AXIS_IDENTIFIED is DETECTED
+  [note] permutation theorem does NOT apply -- cells sharing a label: {'AXIS_NOT_IDENTIFIED': [('band_narrower', 'yes'), ('band_narrower', 'no')], 'NO_KNEE_IN_RANGE': [('no_knee_in_range', 'yes'), ('no_knee_in_range', 'no')]}
+  [PASS] every OUTCOME cell is reachable in the grid (the other precondition)  -- unreachable: []
+  [PASS] guard transposition `coverage_absent`<->`coverage_partial` is inert BY CONSTRUCTION (firing sets disjoint over coherent worlds)
+  [PASS]   ...and the disjointness is real, not assumed (`coverage_absent` 5 worlds, `coverage_partial` 5, overlap 0)
+  [note] 1 transposition(s) inert by construction: [('coverage_absent', 'coverage_partial', 'firing sets disjoint over coherent worlds')]
+  [PASS] coherence mutant `incoherent -> always None` is DETECTED
+  [PASS] every module constant is classified as label-bearing or campaign-only  -- unclassified: []
+  [note] this rule declares no label-bearing constants: every branch is categorical
+  [PASS] CAMPAIGN_PARAM `N_SEEDS` does NOT touch the label map (declared, verified)
+  [PASS] CAMPAIGN_PARAM `SEEDS` does NOT touch the label map (declared, verified)
+  [PASS] CAMPAIGN_PARAM `RATES` does NOT touch the label map (declared, verified)
+  [PASS] CAMPAIGN_PARAM `ARMS` does NOT touch the label map (declared, verified)
+
+SELFTEST OK -- every enumerated branch, outcome cell, coherence guard and constant behaved as declared.

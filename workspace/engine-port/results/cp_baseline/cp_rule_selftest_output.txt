@@ -1,0 +1,46 @@
+grid: 120 (lo,hi) pairs with lo<=hi, delta=0.0966
+  [PASS] ci_shape is TOTAL on {lo<=hi} (returns an axis value, never raises)
+  [PASS] ci_shape agrees with an independent implementation on every grid point
+  [PASS] ci_shape is SURJECTIVE onto the axis (all 8 values attained)  -- attained 8/8: ['neg_ge_delta', 'neg_indet', 'neg_subdelta', 'pos_ge_delta', 'pos_indet', 'pos_subdelta', 'straddles', 'within_delta']
+  [PASS] (sign=zero, magnitude=ge_delta) is unreachable, as the docstring claims
+  [PASS] ci_shape rejects a malformed CI (lo > hi)
+  [PASS] ci_shape rejects delta <= 0
+  [PASS] canonical HE0-scale CI [+0.068,+0.108] maps to a real axis value  -- -> pos_indet  (rev1: no value; sign settled, size not -- exactly the gap D1 named)
+  [PASS] mutant `sign_pos_nonstrict` is DETECTED  -- 8 point(s) differ, e.g. (0.0, 0.0)
+  [PASS] mutant `sign_neg_nonstrict` is DETECTED  -- 8 point(s) differ, e.g. (-0.2898, 0.0)
+  [PASS] mutant `ge_strict` is DETECTED  -- 8 point(s) differ, e.g. (-0.2898, -0.0966)
+  [PASS] mutant `inside_nonstrict` is DETECTED  -- 15 point(s) differ, e.g. (-0.0966, -0.09659999034)
+  [PASS] mutant `drop_zero_case` is DETECTED  -- 64 point(s) differ, e.g. (-0.2898, 0.0)
+
+grid: 192 worlds -> 14 labels
+    CP_EQUIV_RANK_ONLY              6  (substantive)
+    CP_EQUIV_SIZED                  6  (substantive)
+    CP_LOSES_GE_DELTA               3  (substantive)
+    CP_LOSES_RANK_ONLY              9  (substantive)
+    CP_LOSES_SIZE_UNRESOLVED        3  (substantive)
+    CP_LOSES_SUBDELTA               3  (substantive)
+    CP_WINS_GE_DELTA                3  (substantive)
+    CP_WINS_RANK_ONLY               9  (substantive)
+    CP_WINS_SIZE_UNRESOLVED         3  (substantive)
+    CP_WINS_SUBDELTA                3  (substantive)
+    DEGENERATE_ARM                 36
+    IMPOSSIBLE_WORLD               48
+    LADDER_CONFLICT                42  (substantive)
+    UNDERPOWERED                   18
+  [PASS] every substantive label appears somewhere in the grid  -- missing: none
+  [PASS] no label is produced that is neither substantive nor a declared non-label  -- unexpected: []
+  [PASS] IMPOSSIBLE_WORLD is non-substantive and is actually used
+  [PASS] mutant `power-check moved AFTER ladder (rev1 ordering)` is DETECTED  -- 6/192 worlds differ
+  [PASS] mutant `sub-delta wins folded into GE_DELTA (L10 regression)` is DETECTED  -- 6/192 worlds differ
+  [PASS] mutant `world-coherence check removed` is DETECTED  -- 48/192 worlds differ
+  [PASS] power-first does NOT swallow pos_ge_delta / neg_ge_delta  -- 0 swallowed
+  [PASS] ladder_shape is TOTAL over sampled CI tuples
+  [PASS] ladder_shape('conflicting') needs two OPPOSITE CIs that each exclude 0
+
+ladder conflict screen, null firing rate (6 points, alpha=0.05, independence) = 0.016955  (1.696%)
+  independence is the conservative direction: the 6 points re-score the SAME
+  reps, and positive correlation makes a sign conflict rarer, not commoner.
+  for contrast: a rev1-style point-estimate sign screen has no such bound at all.
+  [PASS] null firing rate of the ladder screen is registered and below alpha  -- 0.0170 < 0.05
+
+SELFTEST OK -- all checks passed and every mutant was detected.

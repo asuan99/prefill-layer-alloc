@@ -1,0 +1,7 @@
+{
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp_rule.py",
+  "world_is_tuple": false,
+  "label": "C1 primary (cp512 - fused_mono), canonical trace HI=12",
+  "restrict": {"req_split_n_ge_min": {"values": ["yes"], "why": "served_population.json (bench sampler, seed=1, NP=200, --sharegpt-context-len 4000): cps 512 splits 51 of the 200 served requests, at or above the registered minimum of 6 = ceil(0.03*200)"}},
+  "out": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/reach_C1_canonical.json"
+}

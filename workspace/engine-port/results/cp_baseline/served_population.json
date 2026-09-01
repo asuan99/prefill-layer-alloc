@@ -1,0 +1,39 @@
+{
+  "provenance": {
+    "sampler": "sglang.benchmark.datasets.sharegpt.sample_sharegpt_requests",
+    "seed": 1,
+    "num_prompts": 200,
+    "context_len": 4000,
+    "matches_harness": "sharegpt_vary_bench.sbatch:65-71 (NP=200, --sharegpt-context-len 4000, --seed default 1)",
+    "model": "Zyphra/Zamba2-2.7B"
+  },
+  "n_served": 200,
+  "prompt_len": {
+    "p10": 13,
+    "p25": 27,
+    "p50": 217,
+    "p75": 522,
+    "p90": 845,
+    "p95": 1029,
+    "p99": 2776,
+    "max": 3089,
+    "mean": 341.4
+  },
+  "n_prompts_longer_than_cps": {
+    "512": 51,
+    "1024": 10,
+    "2048": 4,
+    "4096": 0
+  },
+  "budget_exhaustions_if_fully_backlogged": {
+    "512": 133,
+    "1024": 66,
+    "2048": 33,
+    "4096": 16
+  },
+  "total_prompt_tokens": 68276,
+  "sampler_stdout": [
+    "#Input tokens: 68276",
+    "#Output tokens: 47376"
+  ]
+}

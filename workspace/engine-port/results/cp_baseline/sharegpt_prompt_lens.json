@@ -1,0 +1,24 @@
+{
+  "model": "Zyphra/Zamba2-2.7B",
+  "dataset": "/scratch/ehmoon/whlee/prefill-layer-alloc/hf_cache/raw/ShareGPT_V3_unfiltered_cleaned_split.json",
+  "n_sample_requested": 4000,
+  "n_after_min_len_filter": 3949,
+  "quantiles": {
+    "p10": 12,
+    "p25": 26,
+    "p50": 202,
+    "p75": 571,
+    "p90": 940,
+    "p95": 1181,
+    "p99": 2923
+  },
+  "max": 27473,
+  "mean": 409.3,
+  "frac_prompt_exceeds": {
+    "512": 0.2788,
+    "1024": 0.0755,
+    "2048": 0.0205,
+    "4096": 0.0048
+  },
+  "note": "frac_prompt_exceeds = fraction of requests that a given --chunked-prefill-size splits ON ITS OWN (per-request axis only)."
+}

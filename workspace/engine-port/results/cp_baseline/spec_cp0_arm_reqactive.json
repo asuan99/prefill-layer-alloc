@@ -1,0 +1,33 @@
+{
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp0_arm_rule.py",
+  "world_is_tuple": false,
+  "label": "CP-0 arm distinctness -- arms with prompts that individually exceed the cap (cps 512 / 1024 / 2048)",
+  "supersedes": "spec_C1_canonical.json",
+  "dropped_restrictions": {
+    "req_split_n_ge_min": "withdrawn, not silently dropped. The 2nd audit (K3) showed the >=6 threshold was not a derivation: ceil(delta*N) equates a goodput RATIO with a request COUNT, and canon CONSENSUS §1-24 (stall probe: 16 of 17 stalls held by the probe's longest prompt) contradicts the equal-contribution premise the equation needs. CP-0 therefore excludes no arm at all -- all six boots are measured and the arm-set decision moves to the CP-1 pre-registration, which will be written against these measurements instead of the withdrawn threshold."
+  },
+  "restrict": {
+    "req_channel": {
+      "values": [
+        "active",
+        "unmeasured"
+      ],
+      "why": "served_population.json: 51 / 10 / 4 of the 200 served prompts individually exceed 512 / 1024 / 2048 tokens. A prompt longer than the cap cannot fit one budget even alone, so it is chunked regardless of backlog -- this makes req_channel=active OVER-DETERMINED and independent of the batch-budget mechanism (schedule_policy.py:802-842). 'unmeasured' stays live because the extraction itself can fail, which PROJECT_STATUS.md 'methodology gate' #21 requires be kept distinct from a finding. ★This why-string was rewritten on 2026-08-28: the earlier version leaned on prompt length as THE chunking mechanism, which is false (3rd audit F2, see RETRACTION_reqinactive_2026-08-28.md)."
+    }
+  },
+  "priors": {
+    "ARM_DISTINCT_BOTH": {
+      "prior": 0.2,
+      "why": "requires the batch cap to bind at EVERY probe rate including the lowest, i.e. even without backlog. Possible for cps 512 against a 341-token mean prompt, less so for 2048."
+    },
+    "ARM_DISTINCT_REQUEST_ONLY": {
+      "prior": 0.35,
+      "why": "the request channel is over-determined for these arms (prompts individually exceeding the cap) while the batch cap may never bind at any registered probe rate."
+    },
+    "ARM_DISTINCT_BOTH_RATE_DEPENDENT": {
+      "prior": 0.45,
+      "why": "the batch cap is expected to bind only once a backlog forms, so 'binds at the top probe rate but not the lowest' is the outcome the mechanism actually predicts. Registered ABOVE ARM_DISTINCT_BOTH because a cap that binds at every probe rate including the lowest would mean the arm is capped even without backlog."
+    }
+  },
+  "out": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/reach_cp0_arm_reqactive.json"
+}

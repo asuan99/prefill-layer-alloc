@@ -1,0 +1,68 @@
+{
+  "design_labels_all": {
+    "CP_EQUIV_RANK_ONLY": 4,
+    "CP_EQUIV_SIZED": 4,
+    "CP_LOSES_GE_DELTA": 2,
+    "CP_LOSES_RANK_ONLY": 6,
+    "CP_LOSES_SIZE_UNRESOLVED": 2,
+    "CP_LOSES_SUBDELTA": 2,
+    "CP_WINS_GE_DELTA": 2,
+    "CP_WINS_RANK_ONLY": 6,
+    "CP_WINS_SIZE_UNRESOLVED": 2,
+    "CP_WINS_SUBDELTA": 2,
+    "IMPOSSIBLE_WORLD": 24,
+    "LADDER_CONFLICT": 28,
+    "UNDERPOWERED": 12
+  },
+  "design_substantive": {
+    "CP_EQUIV_RANK_ONLY": 4,
+    "CP_EQUIV_SIZED": 4,
+    "CP_LOSES_GE_DELTA": 2,
+    "CP_LOSES_RANK_ONLY": 6,
+    "CP_LOSES_SIZE_UNRESOLVED": 2,
+    "CP_LOSES_SUBDELTA": 2,
+    "CP_WINS_GE_DELTA": 2,
+    "CP_WINS_RANK_ONLY": 6,
+    "CP_WINS_SIZE_UNRESOLVED": 2,
+    "CP_WINS_SUBDELTA": 2,
+    "LADDER_CONFLICT": 28
+  },
+  "findings": [
+    {
+      "code": "RESTRICTIONS_INERT",
+      "detail": "every substantive label survived at the SAME ratio (2/3); the restriction rescaled the lattice without excluding anything"
+    },
+    {
+      "code": "PRIOR_UNREGISTERED",
+      "detail": "no per-label prior registered; a label reachable in the lattice may still have prior ~0 under the design's own measured scale"
+    }
+  ],
+  "grid_substantive": {
+    "CP_EQUIV_RANK_ONLY": 6,
+    "CP_EQUIV_SIZED": 6,
+    "CP_LOSES_GE_DELTA": 3,
+    "CP_LOSES_RANK_ONLY": 9,
+    "CP_LOSES_SIZE_UNRESOLVED": 3,
+    "CP_LOSES_SUBDELTA": 3,
+    "CP_WINS_GE_DELTA": 3,
+    "CP_WINS_RANK_ONLY": 9,
+    "CP_WINS_SIZE_UNRESOLVED": 3,
+    "CP_WINS_SUBDELTA": 3,
+    "LADDER_CONFLICT": 42
+  },
+  "label": "C1 primary (cp512 - fused_mono), canonical trace HI=12",
+  "reading": "The restrictions excluded nothing. This run could not have failed, so its DISCRIMINATING would have carried no evidence.",
+  "restrictions": {
+    "req_split_n_ge_min": {
+      "values": [
+        "yes"
+      ],
+      "why": "served_population.json (bench sampler, seed=1, NP=200, --sharegpt-context-len 4000): cps 512 splits 51 of the 200 served requests, at or above the registered minimum of 6 = ceil(0.03*200)"
+    }
+  },
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp_rule.py",
+  "rule_rev": 2,
+  "tool_rev": 2,
+  "unreachable_by_design": [],
+  "verdict": "RESTRICTIONS_INERT"
+}

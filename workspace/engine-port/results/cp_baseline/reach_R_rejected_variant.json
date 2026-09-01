@@ -1,0 +1,46 @@
+{
+  "design_labels_all": {
+    "CLIFF_ILLPOSED": 36,
+    "IMPOSSIBLE_WORLD": 12
+  },
+  "design_substantive": {},
+  "grid_substantive": {
+    "CP_EQUIV_SIZED": 6,
+    "CP_LOSES_GE_DELTA": 3,
+    "CP_LOSES_SIZE_UNRESOLVED": 3,
+    "CP_LOSES_SUBDELTA": 3,
+    "CP_WINS_GE_DELTA": 3,
+    "CP_WINS_SIZE_UNRESOLVED": 3,
+    "CP_WINS_SUBDELTA": 3,
+    "LADDER_CONFLICT": 21
+  },
+  "label": "REJECTED variant -- capacity gates the whole verdict, C4 restrictions",
+  "reading": "No substantive label is reachable. Running the campaign cannot return a verdict; the spend buys nothing.",
+  "restrictions": {
+    "capacity": {
+      "values": [
+        "above"
+      ],
+      "why": "CONSENSUS.md:1803 (=CONSENSUS §1-32) records the canonical HI phase at offered/achieved 2.15-2.35x for the pdmux static arms; capacity is defined on the CONTRAST as below iff BOTH arms are at or under their measured achieved throughput, and the d44 side is established above, so contrast C4 is above at HI=12 regardless of the CP arm"
+    },
+    "req_split_n_ge_min": {
+      "values": [
+        "yes"
+      ],
+      "why": "served_population.json (bench sampler, seed=1, NP=200, --sharegpt-context-len 4000): cps 512 splits 51 of the 200 served requests, at or above the registered minimum of 6 = ceil(0.03*200)"
+    }
+  },
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp_rule_rejected_capacity_gates_all.py",
+  "rule_rev": "rejected-2",
+  "unreachable_by_design": [
+    "CP_EQUIV_SIZED",
+    "CP_LOSES_GE_DELTA",
+    "CP_LOSES_SIZE_UNRESOLVED",
+    "CP_LOSES_SUBDELTA",
+    "CP_WINS_GE_DELTA",
+    "CP_WINS_SIZE_UNRESOLVED",
+    "CP_WINS_SUBDELTA",
+    "LADDER_CONFLICT"
+  ],
+  "verdict": "NOTHING_PURCHASABLE"
+}

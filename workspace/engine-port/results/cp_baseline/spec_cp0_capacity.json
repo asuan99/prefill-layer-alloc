@@ -1,0 +1,25 @@
+{
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp0_capacity_rule.py",
+  "world_is_tuple": false,
+  "label": "CP-0 capacity probe -- do probe rates {2,4,8} bracket saturation? (NO restriction registered; this certificate excludes nothing -- see priors)",
+  "restrict": {},
+  "priors": {
+    "CAPACITY_BRACKETED": {
+      "prior": 0.6,
+      "why": "registered grid {2,4,8}: on the reference capacity scan the slowest arm still tracks at the low probe (attainment 0.95) and the fastest is past its knee at the high probe (0.55). CONSENSUS 1-32 puts the canonical ShareGPT HI at 2.15-2.35x achieved capacity, i.e. capacity ~5.3, which also falls inside the grid. Held at 0.6 because the reference scan is a different workload (random-ids in2000/out96) and this workload's capacity is unmeasured."
+    },
+    "SATURATED_AT_FLOOR": {
+      "prior": 0.1,
+      "why": "requires capacity below the low probe times the 0.80 attainment threshold = 1.6 req/s. The repository's ShareGPT runs show every arm completing 5.07-6.42 req/s at the canonical high offered load, so this is unlikely -- given real mass only because those runs are pdmux arms, not CP arms."
+    },
+    "NO_SATURATION_IN_RANGE": {
+      "prior": 0.25,
+      "why": "requires capacity above the high probe times 0.80 = 6.4 req/s. ShareGPT prompts average 341 tokens against the reference scan's ~2000, so this workload is roughly 3.6x lighter and its knee may sit above the grid. This is the most likely way the registered grid turns out wrong, and detecting it is what CP-0 is for."
+    },
+    "NONMONOTONE_PROBE": {
+      "prior": 0.05,
+      "why": "requires the attainment ratio to be non-monotone between the two decision probes. Monotonicity held in all five arms of the reference scan, so this is an anomaly bucket -- non-zero only because that scan is a different workload and CONSENSUS 1-32 mandatory-caveat (6) records node/co-tenancy confounds as real for this harness family."
+    }
+  },
+  "out": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/reach_cp0_capacity.json"
+}

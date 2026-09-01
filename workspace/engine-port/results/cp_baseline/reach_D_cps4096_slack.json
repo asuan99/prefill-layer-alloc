@@ -1,0 +1,52 @@
+{
+  "design_labels_all": {
+    "DEGENERATE_ARM": 36,
+    "IMPOSSIBLE_WORLD": 12
+  },
+  "design_substantive": {},
+  "grid_substantive": {
+    "CP_EQUIV_RANK_ONLY": 6,
+    "CP_EQUIV_SIZED": 6,
+    "CP_LOSES_GE_DELTA": 3,
+    "CP_LOSES_RANK_ONLY": 9,
+    "CP_LOSES_SIZE_UNRESOLVED": 3,
+    "CP_LOSES_SUBDELTA": 3,
+    "CP_WINS_GE_DELTA": 3,
+    "CP_WINS_RANK_ONLY": 9,
+    "CP_WINS_SIZE_UNRESOLVED": 3,
+    "CP_WINS_SUBDELTA": 3,
+    "LADDER_CONFLICT": 42
+  },
+  "label": "Dropped arm cps4096 AND batch cap does not bind",
+  "reading": "No substantive label is reachable. Running the campaign cannot return a verdict; the spend buys nothing.",
+  "restrictions": {
+    "batch_budget": {
+      "values": [
+        "slack"
+      ],
+      "why": "hypothetical CP-0 stage (c) outcome under test: mean extend tokens per prefill forward within the registered 3% margin of fused_mono, i.e. the batch token cap does not bind"
+    },
+    "req_split_n_ge_min": {
+      "values": [
+        "no"
+      ],
+      "why": "served_population.json: cps 4096 splits 0 of the 200 served requests (the prompt+output<=4000 filter removes every prompt that could be split), below the registered minimum of 6"
+    }
+  },
+  "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/cp_baseline/cp_rule.py",
+  "rule_rev": 2,
+  "unreachable_by_design": [
+    "CP_EQUIV_RANK_ONLY",
+    "CP_EQUIV_SIZED",
+    "CP_LOSES_GE_DELTA",
+    "CP_LOSES_RANK_ONLY",
+    "CP_LOSES_SIZE_UNRESOLVED",
+    "CP_LOSES_SUBDELTA",
+    "CP_WINS_GE_DELTA",
+    "CP_WINS_RANK_ONLY",
+    "CP_WINS_SIZE_UNRESOLVED",
+    "CP_WINS_SUBDELTA",
+    "LADDER_CONFLICT"
+  ],
+  "verdict": "NOTHING_PURCHASABLE"
+}

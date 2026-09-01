@@ -23,8 +23,16 @@
     },
     {
       "spec": "workspace/engine-port/results/cp_baseline/spec_C1_canonical.json",
-      "status": "active"
-    }
+      "status": "superseded",
+      "superseded_by": "workspace/engine-port/results/cp_baseline/spec_cp0_arm_reqactive.json"
+    },
+    "workspace/engine-port/results/cp_baseline/spec_cp0_arm_reqactive.json",
+    {
+      "spec": "workspace/engine-port/results/cp_baseline/spec_cp0_arm_reqinactive.json",
+      "status": "superseded",
+      "superseded_by": "workspace/engine-port/results/cp_baseline/RETRACTION_reqinactive_2026-08-28.md"
+    },
+    "workspace/engine-port/results/cp_baseline/spec_cp0_capacity.json"
   ],
   "check_citation_stops": true,
   "_active_note": "★append-only. spec을 빼려면 status=superseded + superseded_by로 표시한다. 통째 삭제는 presubmit이 차단한다 — 커밋 d11243a에서 판정 대상이 자기 판정 범위를 줄인 전례가 있다."
