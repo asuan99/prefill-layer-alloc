@@ -1,6 +1,48 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-09-01 (doc-steward — ★★★**cp_baseline(chunked-prefill
+최종 갱신: 2026-09-03 (doc-steward — ★★★**cp_baseline 트랙 5·6회차
+규칙층 감사(누적 6연속, 둘 다 `NO-GO`) + 구조적 원인 첫 측정** —
+2026-09-01 저녁 개시 3일 연속 세션. 5회차(CP-2 rev1) 死因 **H1–H8**,
+그림자 **81%**; 6회차(CP-2 rev2) 死因 **F1–F8**, 그림자
+**88%(트랙 최고)** — 단일 판정 질문 답: *"수리의 절반이 조건
+등록이 아니라 조건 삭제였다. 삭제는 감사에 안 잡힌다 — 없는 것은
+grep되지 않기 때문."* GPU **18 job 5.78 GPU-hr**(전부 `COMPLETED
+0:0`) — **새 성능 판정 0건**. ★★**W1**(Nemotron-Nano-9B-v2,
+32/32셀, 1.56 GPU-hr)이 이 트랙이 다섯 번 죽은 **구조적 원인을
+처음 측정**: `d44`와 chunked-prefill(cp) 두 가족이 **서로 다른
+SLO 다리에 묶여 있어** 등록 사다리 안에서 비교 부호가 뒤집힌다
+(TTFT2000/ITL40=cp 우세 ↔ TTFT6000/ITL60=d44 2.4×, **n=1 —
+순위 아님, 구조 관측**). **V-probe**(8 job, 2.16 GPU-hr)가 5회차
+死因 H1(무처치 분산이 3% 마진을 삼킴)을 확증(job-내 Δ SD
+`fused_default` 1.99%/`d44` 6.13%, ⚠️arm×노드 완전 교락이라 두
+SD 비교 금지). **ShareGPT 전수 센서스**(92,824행, GPU 0)는
+`cps 8192` 초과 프롬프트가 캡 4000 하 **0건**·무제한도 56건뿐임을
+확인 — 정본 trace에서 chunked-prefill 처치가 **발화한 적이
+없었다**. **correctness gate**(1.20 GPU-hr)는 arm 간 56 비교 중
+55 바이트 동일로 통과(동시성은 미검증). **모델 부팅 스모크**
+(0.36 GPU-hr)는 게이트 #83의 백엔드 강제가 **`nemotron_h`
+계열에만** 걸림을 확인(`granite`·`Falcon-H1`은 양쪽 백엔드에서
+돎). **설계 결정(사용자)**: piecewise CUDA graph 전 arm OFF(부수로
+F3/G4 교락 닫힘) · W1용 모델을 Nemotron-Nano-9B-v2+flashinfer로
+전환(★정본 정책 결과[Zamba2-2.7B/ctx4096]와 직접 연결 단절).
+★**도구·장부 결함 2건**: `presubmit.py`가 **read-only가
+아님**(실행이 타 트랙 인증서 재작성, 그 부작용으로 **다른 세션의
+미커밋 작업이 소실**됐다가 이 세션이 재생성해 복구 — 이후
+회차는 이 도구를 돌리지 않음) · **4회차 死因 G8이 정본 장부에서
+2026-09-01 등재 시점부터 누락**돼 있었음을 발견해 이 세션이
+정정(G2·G3·G7·G8 미해소, G4는 rev4에서 수리됨·미감사로 정정).
+★신규 방법론 게이트 2건(#88 삭제는 조건 등록이 아니라 grep에
+안 잡힌다·#89 규율 도구도 read-only를 자체검증 안 하면 타 트랙을
+조용히 바꿀 수 있다). ★★**원래 질문(chunked prefill vs pdmux
+정책 비교)은 이 트랙 전체에서 여전히 0건 측정** — 이 세션은
+"왜 0건인가"를 측정으로 답했을 뿐이다. **새 성능 판정 0건 · 등급
+변경 0건 · 정책 순위 변경 0건**. HE0·정책 순위·gate #13/#16
+"닫았다" 금지·switch-cost "닫았다" 금지·C2 인용정지 (a)(b)·
+`CONSENSUS §1-24` 전부 불변. 정본 반영: `CONSENSUS.md`
+rev52→**rev53**. 상세 `workspace/engine-port/results/cp_baseline/`,
+`handoff-report/session_handoff_2026-09-03.md`.**
+
+이전: 2026-09-01 (doc-steward — ★★★**cp_baseline(chunked-prefill
 baseline) 트랙 정본 반영** — 사용자 요청("정책 비교군 정리 +
 chunked prefill을 비교 대상으로 추가")에서 출발한 캠페인이
 **규칙층 적대 감사 4회 전부 `NO-GO`**(CP-1 rev1 死因9 ·
@@ -4799,7 +4841,12 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     자기감사(`RESTRICTIONS_INERT` 등 신설, TOOL_REV 2) 追記,
     2026-09-01(doc-steward) cp_baseline(chunked-prefill baseline)
     행 신설 — 규칙층 감사 4회 전부 `NO-GO`, GPU 4 job 1.36 GPU-hr
-    · 새 성능 판정 0건)**
+    · 새 성능 판정 0건, 2026-09-03(doc-steward) cp_baseline 행에
+    5·6회차 규칙층 감사(둘 다 `NO-GO`, 死因 H1–H8/F1–F8, 그림자
+    81%/88%) + V-probe·운영점 재배치·ShareGPT 센서스·W1·correctness
+    gate·모델 부팅 스모크 측정(GPU 18 job 5.78 GPU-hr, 새 성능 판정
+    0건) + G8 장부 누락 정정 + `presubmit.py` read-only 아님 발견·
+    타 세션 데이터 소실 복구 追記)**
     — 이 표의 목적은 판정 기록이 아니라
     **다음 세션이 같은 설계를 그대로 재제출하는 것을 막는 것**이다.
     ★**감사 부채 목록(2026-08-23 신설, 2026-08-24 §6 반영 완료)** —
@@ -4979,7 +5026,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     | ★★★TC1(모델귀속, `workspace/engine-port/results/tc1_model_attrib/`) | ★★규칙층 감사 **3회, 전부 `NO-GO`**(2026-08-27·2026-08-28×2, claims-auditor, 게이트 #34 1단) — rev1 死因4·차단18, rev2 死因3(F5–F7)·차단12(B19–B30, 단일 판정질문 답="국소였다"), **rev3 死因5(F8–F12)·차단10, 단일 판정질문 답="네 번째 고리다"**(옳은 국소 수리 셋이 각각 새 강제를 만듦 — F8 상호작용 재정식화가 주효과 축을 지워 `both_lose`/`both_win`이 같은 라벨로 접힘·F9 사구간 재척도 확대·F10 `control` 가드가 nuisance로 강제·F11 도달가능성 메타검사가 ctrl 축에 무력·F12 봉쇄 상태 estimand 비식별). GPU 실측 1건(job **896565**, ≈0.20 GPU-hr, `F2_CONFIRMED`) + GPU 0 프로브 4건(F1 `REFUSED_AT_INIT`·B17 인덱스맵·rev3 도달가능성·**P3 `MEASUREMENT_ABSENT`**). ★**P3(jobs 896689/896690, ≈0.28 GPU-hr, Qwen2.5-3B 대조 프로브)** — 사전등록된 두 뿔(`BOTH_BLOCKED`/`ASYMMETRIC_TREATMENT`)보다 나쁜 **"셋째 뿔"**: `BIND=0∧FEAS=0`로 `MEASUREMENT_ABSENT`, 원인은 배선이 아니라 **물리**(Qwen HI phase TTFT p50 44.9ms vs Zamba2 1344.8ms ⇒ split-prefill 동시성 자체가 발생 안 함, `running_batch`·`split_prefill_batch` 동시 성립 조건 미충족) — 대조 arm 후보의 **공변량 수준차**도 큼(`level_gap`=40.2%, F10 치환창 6–9%를 크게 벗어남). ⇒ **모델 귀속 대조는 긴 프롬프트(동시성 강제)가 필요**하다는 실측 근거가 됨. ★★**모델 전환**(Zamba2-2.7B[ctx 4096, 긴 프롬프트 원천 불가]→**Nemotron-Nano-9B-v2-Base**[8.89B, ctx 131072, attn4/mamba27/mlp25], 대조 arm **Qwen2.5-7B**) — 부팅 스모크(jobs 896760/764/767)가 배관 확인: `triton` 부팅 거부→`flashinfer`로 `boot_ok=1`·cudagraph 캡처·긴 프롬프트서 컨트롤러 이동 2회(짧은 프롬프트 0). ★★★**백엔드 강제 교락 발견**(job 896776, `deprecated_v2/README.md`) — Nemotron-H 계열+`triton`=부팅 거부, Zamba2+`flashinfer`=스케줄러 사망(2/2) ⇒ 두 모델 계열의 동작 가능 백엔드가 **서로소**, "모델 고정·백엔드만 변경" 셀 불가능(신규 게이트 #83/§3 항목103). ★★도구 자기감사(commit `5d180a6`) — `design_reachability.py`가 자기 spec을 잘못 통과시켰음이 드러나 `RESTRICTIONS_INERT` 등 신설(`TOOL_REV 2`) ⇒ **rev3 spec은 이제 `DISCRIMINATING`이 아니라 `BLOCKED`**(구 판정 철회) | Zamba2 컨트롤러를 자기 Stage-1 argmax(d44)에 anchor시켜 model-attribution 대조를 세우려는 설계. rev1 F2: anchor=argmax로 고정하면 컨트롤러가 그 자리에 서 버려(§1-10 ratchet 재확인) `NO_FLIP_BOTH_LOSE`가 기전적으로 강제됨 — job 896565가 실측 확정(`SW=0`·`gpC=3.232`), 단 서버 로그 `SLO-FEAS refused=152`로 "죽음"이 아니라 "봉쇄"임이 드러남(rev2 재감사 B29, ★메모리항목21의 거울상 — 사전등록에 liveness 절 부재로 판정서가 자기 최강 증거를 안 적었었음). rev2: `visits_argmax` 관측 축 신설로 F2 봉쇄를 우회하려 했으나 강제의 **이름만** 바뀜(F5=`CONTROLLER_DEGENERATE`, d34↔d44 격차 1.5%<δ/2가 판정을 가름) + anchor 원복하며 δ=3% 미재도출로 최빈 결과가 `INCONCLUSIVE`(관측 −2.73%에서 P≈0.66, F6) + §7 세 대조 전부 반증불가(F7). 설계층 도달가능성(GPU 0, `design_reachability.py`): 시나리오 A(argmax=d44, 정본이 §1-7·§1-33 두 번 지지)=**`NOTHING_PURCHASABLE`**(캠페인 50 job 전체가 d34↔d44 추첨 하나에 걸림), 시나리오 B(argmax=d34)만 `DISCRIMINATING`. rev3(`ctrl_H=blocked`로 재정의, "퇴화" 대신 "시도·봉쇄")이 시나리오 A를 `DISCRIMINATING`으로 되돌렸으나 규칙층 재감사가 F8–F12로 **`NO-GO`** — 단일질문 답 "네 번째 고리다"(옳은 수리가 새 강제를 만드는 패턴이 3회 연속). ★**Zamba2 arm 자체가 이제 스코프 밖으로 이동** — P3가 드러낸 물리적 한계(짧은 프롬프트는 동시성 자체가 없음) + ctx 4096 한계 때문에, rev4 이후는 (착수한다면) **Nemotron-Nano-9B-v2 arm에서 새로 설계**해야 하며 Zamba2 rev1–rev3의 δ·anchor·estimand 결론은 **이전 금지**(§1-31 이식 금지 규칙 적용). **금지 문장**: "TC1이 규칙층을 통과했다"·"`PDMUX_STICKY_PARTITION`이 M3의 estimand 미식별을 해소한다"(컨트롤러 arm엔 미정의)·"`visits_argmax`가 F2를 닫았다"(이름만 바뀜)·"d44 anchor가 더 낫다"·"n=1로 정책을 비교했다"·"TC1 rev2가 `INCONCLUSIVE`를 피한다"·"TC1 rev3이 규칙층을 통과했다"·★"P3가 배선 결함이다"(물리임, F10)·★"모델을 바꾸면 TC1이 재개된다"(rev1–rev3 死因은 anchor=argmax 구조 자체에서 나와 모델 전환으로 자동 해소되지 않음, rev4 신규 설계 필요). 새 성능 판정 0건·HE0 불변. 상세 `workspace/engine-port/results/tc1_model_attrib/{audit_tc1_rules_2026-08-27/VERDICT.md, audit_tc1_rules_rev2_2026-08-28/VERDICT.md, audit_tc1_rules_rev3_2026-08-28/VERDICT.md, probes/f2_verdict_896565.md, probes/f1_verdict.json, probes/B17_ANCHOR_INDEX_MAP.md, probes/P3_VERDICT_896689_896690.md, probes/PREREG_P3_QWEN_CONTROLLER_2026-08-28.md, reach_verdict_rev3_A.json}`, `deprecated_v2/README.md`, `workspace/engine-port/results/model_roster/MODEL_ROSTER_2026-08-28.md` |
     | ★★★M4R(confinement, `workspace/engine-port/results/m4r_confinement/`) | ★★규칙층 감사 2회, 전부 `NO-GO`(2026-08-27·2026-08-28, claims-auditor, 게이트 #34 1단) — rev1 死因4(F1–F4)·차단16, rev2 死因4(F1′–F4′)·차단12(B1′–B12′). GPU 0 프로브 2건: alias(`EXPOSURE_ALIASED`, 28/28 셀)·`R_matched`(`RMATCHED_VIABLE` 7/7, 드레인 "포화"는 rev2가 반증). presubmit: `SINGLE_LABEL_FORCED`(BLOCK, 제출 금지) | §1-24(monolithic-prefill stall)·§1-26(B)(decode-SM 확대재현) 후속. rev1 F1: 노출변수 `R`(confined vs free 시간가중 rate 비)이 정본 등재 항등식(`decode_sms≠108 ⟺ prefill_active_batch_size>0`, §1-25 追記·§1-26(B))과 aliased — G16 confined 스냅샷 100.0%가 decode=D SM, SM 맞추면 R이 1.762→1.097로 붕괴·전 셀 `R_MIN` 미달·**부호가 108/D와 같은 모양으로 D에 단조감소**(§3(a) confinement 예측과 반대 방향). F2: 정본 §1-26(B) 선행금지·"GPU 0" 전제 붕괴(sticky 신규측정만이 경로). rev2가 `R_matched`(SM 맞춘 대조)로 estimand를 이관했으나 F1′: `sm_match` 가드 자체가 엔진이 강제하는 항등식(28파일 39,849구간 반례 0)이고 "SM 매칭"은 구간의 **왼쪽 끝점**에서만 성립 — 자유 다리(`free@D`)는 65–87%가 앞뒤 모두 108 SM인 **파티션 복원 지연 구간** 자체다(16-iteration 표집 묶음이 노출을 희석). batch 층화 시 108/D 서명 재출현(1.061–1.387, rev1을 죽인 서명과 동형). F3′: 7셀 중 6셀이 자기 가드(batch parity/CI/coverage)에 막히고 유일 생존 d24는 `RESIDUAL_INCONCLUSIVE`(블록 클러스터 t-CI 7/7이 1을 포함). F4′: 드레인 "25ms 포화"는 데이터 질량이 (0,200)ms에 정확히 0이라 생긴 측정불가의 오독(실제 연산=16-iteration 묶음 1개 삭제, 명목값의 10–14배) — 대칭 컷 적용 시 R이 1.067–1.595로 상승. ★★**불변 재확인**: `CONSENSUS §1-24`는 반증되지 않았다 — 두 감사 모두 "이 채널로는 그 질문에 답할 수 없다"고만 말한다. `R_matched` 1.00–1.16도, batch 층화판 1.06–1.39도 판정이 아니다. **유일한 해소 경로 = `PDMUX_STICKY_PARTITION=1` 신규 측정**. **금지 문장**: "M4R이 규칙층을 통과했다"·"M4R은 GPU 0이다"(★rev1이 이미 금지했고 rev2 §1 F2 행이 위반 — B10′, 인용금지 승계 실패)·"`sm_match`가 aliasing을 차단한다"·"`R_matched`≈1이므로 강등비용은 SM감소 그 자체다"(`RESIDUAL_ABSENT` 도달 불가). 새 성능 판정 0건·HE0 불변·`CONSENSUS §1-24` 불변. 상세 `workspace/engine-port/results/m4r_confinement/{audit_m4r_rules_2026-08-27/VERDICT.md, audit_m4r_rules_rev2_2026-08-28/VERDICT.md, probes/alias_verdict.json, probes/rmatched_verdict.json}` |
     | ★규율 도구 4종 첫 제출 게이트(`workspace/engine-port/scripts/discipline/{presubmit.py, presubmit_registry.json, PRESUBMIT_CHECKLIST.md}` + 루트 `scripts/discipline/design_reachability.py`) | 신설(2026-08-28), GPU 0, 성능 판정 대상 아님 | 감사 B11(2026-08-26)이 지적한 "도구 4종에 등록된 실행 지점이 없다"를 해소. `design_reachability.py`는 TC1 rev2·M4R rev2 두 재감사가 공통으로 요구한 메타검사 — 규칙 파일의 `T2_reachable`(격자 내부 성질)과 달리 **등록된 설계 + 이미 측정된 데이터가 실제로 낼 수 있는 실질 라벨**을 묻는다(모든 제약에 출처 문자열 강제, 출처 없는 제약은 거부). 현재 실행(`python3 presubmit.py --registry presubmit_registry.json`): `exit=1`(제출 금지) — `line_citations`(50건 비교 0 위반)·`doc_facts`(11 facts 14 occurrences 0 위반)·`citation_stops`(0 위반) 전부 `OK`, `reachability`(★2026-08-28 2차 갱신, `TOOL_REV 2`) `reach_spec_rev3_A.json→BLOCKED`(**`RESTRICTIONS_INERT`, 구 판정 `DISCRIMINATING`에서 하향**) / `reachability_spec.json→SINGLE_LABEL_FORCED`(BLOCK, M4R rev2). ★신규 방법론 교훈(아래 "방법론 게이트" #81): 도달가능성 검사가 격자 안에서만 돌면 설계가 답을 미리 정해 놓아도 통과한다 — 두 트랙에서 각각 독립적으로 발화. ★★**도구 자기감사(2026-08-28 2차, commit `5d180a6`)**: TC1 rev3 규칙층 감사가 이 도구 자신을 겨눠 결함을 찾았다 — `design_reachability` rev1은 `ctrl_H`를 `blocked`/`mispositioned`/`reaches` 무엇으로 고정해도 라벨 함수가 안 바뀌어(`design_sub`가 `grid_sub/3`으로 균일 재척도) `unreachable_by_design: []`를 냈고, 이는 **제약이 아무것도 못 지운 것을 "손실 없음"으로 오보한 것**이었다. `TOOL_REV 2`가 이 형태에 `RESTRICTIONS_INERT`를 신설(+ `RESTRICTION_DROPPED_UNEXPLAINED` — rev3 spec이 rev2 판정을 결정했던 `sign_H` 제약을 커밋 메시지 "same evidence"라 적고 조용히 뺀 것을 잡음 + `PRIOR_UNREGISTERED` — rev3 헤드라인이 3개 사전 중 2개에서 사전확률 ≈0을 지님을 미등록). ★**레지스트리는 이제 append-only**(과거 판정을 지우지 않고 `TOOL_REV`로 버전화) — 다음에 도구를 고칠 때도 이전 판정을 덮어쓰지 말 것. ★**경로 미정본화**: `design_reachability.py`가 저장소 **루트** `scripts/discipline/`에 있고 기존 도구 셋(`check_line_citations.py`·`check_doc_facts.py`·`check_citation_stops.py`)은 `workspace/engine-port/scripts/discipline/`에 있다 — **동시 세션이 그 경로로 호출 중이라 지금 옮기지 않았다**(doc-steward 소관, 다음 세션이 양쪽 세션을 조율해 처리). `presubmit.py`는 두 위치를 모두 찾아 검사한다. **금지 문장**: "도달가능성 검사를 통과했으므로 제출할 수 있다"(다른 死因이 독립으로 남는다). 상세 `workspace/engine-port/scripts/discipline/PRESUBMIT_CHECKLIST.md`, `workspace/engine-port/results/REACHABILITY_FINDING_2026-08-28.md` |
-    | ★★★cp_baseline(chunked-prefill baseline, `workspace/engine-port/results/cp_baseline/`) | ★★규칙층 감사 **4회, 전부 `NO-GO`**(2026-09-01, claims-auditor, 게이트 #34 1단) — CP-1 rev1 死因9(`audit_cp_rules_2026-08-28/VERDICT.md`) · CP-1 rev2 死因7(**71%가 직전 수리의 그림자**, `audit_cp_rules_2nd_2026-08-28/VERDICT.md`) · CP-0 rev1(3회차) 死因6(`audit_cp0_3rd_2026-08-28/VERDICT.md`) · CP-0 rev3(4회차) 死因8(24건 중 **11건[46%]이 순수 전파 실패** — 게이트 #80 "수리는 국소, 주장은 전역"의 정량 재확인, `audit_cp0_rev3_4th_2026-08-28/VERDICT.md`). GPU 4 job **1.36 GPU-hr**(899768 0.248·900053 0.246·900054 0.139·900067 0.729, 전부 `COMPLETED 0:0`) — **새 성능 판정 0건**(전부 계측·축 검증) | 사용자 요청("정책 비교군 정리 + chunked prefill을 비교 대상으로 추가하는 설계")에서 출발, 규칙층 감사 4회를 거치며 정책 판정 트랙에서 계측·축 검증 트랙으로 내려앉았다. **P1(계측 수용시험)**: 1차(job 899768) `P1_BLOCKED_INSTRUMENT`(원인은 계측 로직이 아니라 하네스×텔레메트리 상호작용 — launcher가 SIGTERM 유예 없이 SIGKILL로 자식을 회수해 telemetry flush가 못 돎, `launch_server.py:64`→`utils/common.py:1054`) → 3중 수리(벽시계 flush·shutdown handler 체이닝·kill 시퀀스) 후 재실행(job 900053) `P1_ACCEPTED` 7/7 PASS(`verdict_measurement=MEASUREMENT_CLEAN`). ★**F3 기전이 관측으로 확인됨**(그전까지 코드 독해뿐): `--chunked-prefill-size`가 prefill 예산과 **piecewise CUDA graph 캡처 범위를 동시에** 결정(`server_args.py:1259`→`:1397-1415`→`model_runner.py:2486-2491`) — realized 캡처 목록이 **cps −1에서 len 0**(cps512 30/4/512·cps4096 50/4/4096, job 900053) 관측. ⚠️**스코프: Zamba2-2.7B·이 트리·arm당 부팅 n=1.** ★**다른 트랙 파급 가능성(관측이지 판정 아님)**: 정본 pdmux arm은 assert로 전부 `chunked_prefill_size=-1`이므로 piecewise prefill graph가 꺼진 채 돌았을 수 있다 — **이것으로 기존 어떤 결론도 수정하지 않는다**(캠페인 시점 코드판본 미확인·hybrid에서 piecewise가 실제 engage하는지 미검증). 한정 2건: (a) P1-e phase B가 `exact_on`이 아니라 최소 문턱 채점(체커의 3번째 비대칭 — 앞의 둘은 수리됨, `n_chunk_events` 기대3/실측2가 verdict를 못 뒤집음) (b) P1-f n=3, mean_rel_diff +0.00113은 마진(±0.03) 안이나 **95% CI 양끝이 마진 밖** ⇒ "중립 입증"이 아니라 "n=3에서 중립과 부합"까지만 인용. **G1(용량 축 식별가능성) 프로브**(job 900067, ShareGPT 2arm×5rate×**seed 3**×1job, 전 arm `--disable-piecewise-cuda-graph`): 등록 술어(`ATTAINMENT_THRESHOLD=0.80`, 격자{2,4,8})는 두 arm 모두 `CAPACITY_BRACKETED`를 내나 **달성 처리량이 최상단 rate(8)에서도 단조 상승 중**(fused_default 6→8 +12.4%·cp512 6→8 +7.0%) ⇒ **이 축·이 격자·이 임계로는 포화가 식별되지 않는다** — arm이나 정책에 대한 판정이 아니라 **우리 계측 축에 대한 판정**(4회차 감사 死因 G1·G2의 예측을 측정으로 확인). `band_vs_sd`(plateau 판정 술어)는 **미확정**(미등록 — 결과를 본 뒤 채우면 사후 튜닝이라 다음 판본 선결조건으로 등재만). **presubmit override 2건**(899768·900053, 사용자 명시 승인 — `workspace/engine-port/results/cp_baseline/OVERRIDE_P1_SUBMIT_2026-08-28.md`, 범위·금지사항 기록. M4R `SINGLE_LABEL_FORCED`·TC1 `RESTRICTIONS_INERT` 전역 차단과는 **별개**, 다른 트랙 소관 미변경). ★**날짜 정정(doc-steward, 2026-09-01)**: 이 트랙 산출물 다수가 파일명·본문 날짜를 **2026-08-28로 오기**(실제 작성/실행일 2026-09-01) — 커밋 4건(`fe8781b`·`5907a33`·`94fa01a`·`6a6b843`)·`presubmit_registry.json`이 그 경로를 인용해 **개명하지 않고** 각 파일 상단에 배너 + `workspace/engine-port/results/cp_baseline/DATE_CORRECTION_NOTE.md`로 정정. **금지 문장**: "P1이 chunked prefill 정책을 비교했다"·"F3 관측이 정본 pdmux 캠페인의 piecewise 상태를 확정한다"(미검증 파급 가능성일 뿐)·"G1이 chunked prefill의 처리량/goodput을 판정했다"(arm을 재지 않음)·"CP-0 용량 축은 원리적으로 불가능하다"(이 격자·이 임계 한정일 뿐)·"CP-0 본체가 제출 가능하다"(4회차 死因 G2·G3·G4·G7 미해소, 닫힌 것은 G1[측정]·G5[오라클]·G6[접기규칙]뿐). ★★**원래 질문(chunked prefill vs pdmux 정책 비교)은 이 트랙 전체에서 여전히 0건 측정**. 새 성능 판정 0건·HE0 불변·정책 순위 변경 0건. 상세 `workspace/engine-port/results/cp_baseline/{RESULT_P1_899768_2026-08-28.md, RESULT_G1_900067_2026-09-01.md, audit_cp_rules_2026-08-28/VERDICT.md, audit_cp_rules_2nd_2026-08-28/VERDICT.md, audit_cp0_3rd_2026-08-28/VERDICT.md, audit_cp0_rev3_4th_2026-08-28/VERDICT.md, DATE_CORRECTION_NOTE.md}`, `handoff-report/session_handoff_2026-09-01.md` |
+    | ★★★cp_baseline(chunked-prefill baseline, `workspace/engine-port/results/cp_baseline/`) | ★★규칙층 감사 **4회, 전부 `NO-GO`**(2026-09-01, claims-auditor, 게이트 #34 1단) — CP-1 rev1 死因9(`audit_cp_rules_2026-08-28/VERDICT.md`) · CP-1 rev2 死因7(**71%가 직전 수리의 그림자**, `audit_cp_rules_2nd_2026-08-28/VERDICT.md`) · CP-0 rev1(3회차) 死因6(`audit_cp0_3rd_2026-08-28/VERDICT.md`) · CP-0 rev3(4회차) 死因8(24건 중 **11건[46%]이 순수 전파 실패** — 게이트 #80 "수리는 국소, 주장은 전역"의 정량 재확인, `audit_cp0_rev3_4th_2026-08-28/VERDICT.md`). GPU 4 job **1.36 GPU-hr**(899768 0.248·900053 0.246·900054 0.139·900067 0.729, 전부 `COMPLETED 0:0`) — **새 성능 판정 0건**(전부 계측·축 검증) | 사용자 요청("정책 비교군 정리 + chunked prefill을 비교 대상으로 추가하는 설계")에서 출발, 규칙층 감사 4회를 거치며 정책 판정 트랙에서 계측·축 검증 트랙으로 내려앉았다. **P1(계측 수용시험)**: 1차(job 899768) `P1_BLOCKED_INSTRUMENT`(원인은 계측 로직이 아니라 하네스×텔레메트리 상호작용 — launcher가 SIGTERM 유예 없이 SIGKILL로 자식을 회수해 telemetry flush가 못 돎, `launch_server.py:64`→`utils/common.py:1054`) → 3중 수리(벽시계 flush·shutdown handler 체이닝·kill 시퀀스) 후 재실행(job 900053) `P1_ACCEPTED` 7/7 PASS(`verdict_measurement=MEASUREMENT_CLEAN`). ★**F3 기전이 관측으로 확인됨**(그전까지 코드 독해뿐): `--chunked-prefill-size`가 prefill 예산과 **piecewise CUDA graph 캡처 범위를 동시에** 결정(`server_args.py:1259`→`:1397-1415`→`model_runner.py:2486-2491`) — realized 캡처 목록이 **cps −1에서 len 0**(cps512 30/4/512·cps4096 50/4/4096, job 900053) 관측. ⚠️**스코프: Zamba2-2.7B·이 트리·arm당 부팅 n=1.** ★**다른 트랙 파급 가능성(관측이지 판정 아님)**: 정본 pdmux arm은 assert로 전부 `chunked_prefill_size=-1`이므로 piecewise prefill graph가 꺼진 채 돌았을 수 있다 — **이것으로 기존 어떤 결론도 수정하지 않는다**(캠페인 시점 코드판본 미확인·hybrid에서 piecewise가 실제 engage하는지 미검증). 한정 2건: (a) P1-e phase B가 `exact_on`이 아니라 최소 문턱 채점(체커의 3번째 비대칭 — 앞의 둘은 수리됨, `n_chunk_events` 기대3/실측2가 verdict를 못 뒤집음) (b) P1-f n=3, mean_rel_diff +0.00113은 마진(±0.03) 안이나 **95% CI 양끝이 마진 밖** ⇒ "중립 입증"이 아니라 "n=3에서 중립과 부합"까지만 인용. **G1(용량 축 식별가능성) 프로브**(job 900067, ShareGPT 2arm×5rate×**seed 3**×1job, 전 arm `--disable-piecewise-cuda-graph`): 등록 술어(`ATTAINMENT_THRESHOLD=0.80`, 격자{2,4,8})는 두 arm 모두 `CAPACITY_BRACKETED`를 내나 **달성 처리량이 최상단 rate(8)에서도 단조 상승 중**(fused_default 6→8 +12.4%·cp512 6→8 +7.0%) ⇒ **이 축·이 격자·이 임계로는 포화가 식별되지 않는다** — arm이나 정책에 대한 판정이 아니라 **우리 계측 축에 대한 판정**(4회차 감사 死因 G1·G2의 예측을 측정으로 확인). `band_vs_sd`(plateau 판정 술어)는 **미확정**(미등록 — 결과를 본 뒤 채우면 사후 튜닝이라 다음 판본 선결조건으로 등재만). **presubmit override 2건**(899768·900053, 사용자 명시 승인 — `workspace/engine-port/results/cp_baseline/OVERRIDE_P1_SUBMIT_2026-08-28.md`, 범위·금지사항 기록. M4R `SINGLE_LABEL_FORCED`·TC1 `RESTRICTIONS_INERT` 전역 차단과는 **별개**, 다른 트랙 소관 미변경). ★**날짜 정정(doc-steward, 2026-09-01)**: 이 트랙 산출물 다수가 파일명·본문 날짜를 **2026-08-28로 오기**(실제 작성/실행일 2026-09-01) — 커밋 4건(`fe8781b`·`5907a33`·`94fa01a`·`6a6b843`)·`presubmit_registry.json`이 그 경로를 인용해 **개명하지 않고** 각 파일 상단에 배너 + `workspace/engine-port/results/cp_baseline/DATE_CORRECTION_NOTE.md`로 정정. **금지 문장**: "P1이 chunked prefill 정책을 비교했다"·"F3 관측이 정본 pdmux 캠페인의 piecewise 상태를 확정한다"(미검증 파급 가능성일 뿐)·"G1이 chunked prefill의 처리량/goodput을 판정했다"(arm을 재지 않음)·"CP-0 용량 축은 원리적으로 불가능하다"(이 격자·이 임계 한정일 뿐)·"CP-0 본체가 제출 가능하다"(4회차 死因 **G2·G3·G7·G8 미해소**·**G4는 rev4에서 수리됨·미감사**[미해소 아님], 닫힌 것은 G1[측정]·G5[오라클]·G6[접기규칙]뿐 — ★2026-09-01 등재 시점부터 이 줄·`CONSENSUS.md`·핸드오프가 G8을 어느 쪽으로도 세지 않은 **장부 누락**이었음을 2026-09-03 `SWEEP_FINDINGS_CP0_REV4_2026-09-01.md` §1로 확인해 이 줄에서 정정). ★★**원래 질문(chunked prefill vs pdmux 정책 비교)은 이 트랙 전체에서 여전히 0건 측정**. ★★★**追記(2026-09-03, doc-steward)**: 이 트랙 **5·6회차 규칙층 감사, 둘 다 `NO-GO`**(누적 6연속) — 5회차(CP-2 rev1, `audit_cp2_rules_5th_2026-09-01/VERDICT.md`) 死因 **H1–H8**, 그림자 **7/8(81%)**; 6회차(CP-2 rev2, `audit_cp2r2_rules_6th_2026-09-03/VERDICT.md`) 死因 **F1–F8**, 그림자 **7/8(88%, 트랙 최고)** — 단일 판정 질문 답: *"수리의 절반이 조건 등록이 아니라 조건 삭제였다. 삭제는 감사에 안 잡힌다 — 없는 것은 grep되지 않기 때문."*(방법론 게이트 #88). 이 세션 전체 GPU **18 job 5.78 GPU-hr**(V-probe 8job/2.16 GPU-hr·W1 스모크 4job/0.50·모델 부팅 스모크 2job/0.36·W1 본캠페인 2job/1.56·correctness gate 2job/1.20 — 규칙층 감사 자체는 GPU 0). **새 측정(전부 서빙 실증, 전부 n 제한 있음 — 정책 판정 아님)**: (i) **V-probe**(900411·900423–900436, `RESULT_VPROBE_2026-09-01.md`) — job-내 페어 무처치 Δ SD `fused_default` **1.99%** / `d44` **6.13%** ⇒ 5회차 死因 H1 확증(오히려 과소평가 — 스모크 1쌍 +0.39%가 반대 결론으로 오도했다가 n=4에서 뒤집힘). ⚠️**arm×노드 완전 교락**(`fused_default`=gpu42 전부, `d44`=gpu40 전부) — **두 SD의 비교는 금지**. (ii) **운영점 재배치**(`RESULT_POSITIONING_AND_WORKLOAD_2026-09-02.md`) — 통과율 6%→52%로 옮기면 SD 11.4%→0.7%(16배)나 **arm-중립 운영점이 없다**(HI에서 `fused` 71.8%가 [70,80)ms 모드·`d44` 81.8%가 [40,60)ms 모드, 등록 임계 60ms가 `d44` 모드 상단 1.2ms 위 ⇒ 통과율로 운영점을 고르는 행위 자체가 arm을 고르는 행위). (iii) **ShareGPT 전수 센서스**(92,824행 전수, GPU 0, `RESULT_SHAREGPT_CENSUS_2026-09-02.md`) — `cps 8192` 초과 프롬프트가 캡 4000 하 **0건**·무제한도 **56건(0.1%)** ⇒ 정본 trace에서 chunked-prefill 처치가 **발화한 적이 없다**. (iv) ★★**W1**(Nemotron-Nano-9B-v2, 32/32셀, `RESULT_W1_2026-09-02.md`) — 이 트랙이 다섯 번 죽은 구조적 원인을 처음 측정: A트랙(ShareGPT 장문꼬리) knee 1.6–2.0 req/s·B트랙(random 16k) knee 0.32–0.47 req/s 둘 다 도달, **knee 아래 4 arm 무구별**. `d44`는 요청별 ITL-p95가 전 rate서 29–32ms 고정(TTFT 561→18,559ms)인 반면 cp arm은 반대(ITL 13.5→331–395ms) ⇒ **두 가족이 서로 다른 SLO 다리에 묶여 있어 등록 사다리 안에서 비교 부호가 뒤집힌다**(TTFT2000/ITL40=cp 우세 ↔ TTFT6000/ITL60=d44 2.4×). **n=1 seed·arm당 부팅 1회 — 순위 아님, 구조 관측**. (v) **correctness gate**(902397·902407, `RESULT_CORRECTNESS_GATE_2026-09-03.md`) — 기준 `plain` 대비 56 비교 중 **55 바이트 동일**, 퇴화 0/14, 장문(8k·16k) 전 arm 일치, 유일 예외는 청크수 비단조(계통 오류 아닌 근사 동률 argmax 뒤집힘) — 사용자 수용. ★**동시성은 미검증**(요청 순차 전송). (vi) **모델 지원 표**(900731·900752, `../model_roster/RESULT_MODEL_BOOT_SMOKE_2026-09-02.md`) — piecewise OFF 시 3모델 모두 장문(8k) 서빙, ★**게이트 #83의 백엔드 강제는 `nemotron_h` 계열에만 걸린다**(`granite`·`Falcon-H1`은 triton·flashinfer 양쪽에서 돈다, 로스터 미확인 칸 해소). **설계 결정(사용자)**: **piecewise CUDA graph 전 arm OFF**(`DECISION_PIECEWISE_OFF_2026-09-02.md`, falcon_h1/nemotron_h 캡처 크래시가 근거) — 부수효과로 **F3/G4 교락이 닫힌다**(`cps`가 다시 단일 레버, 강제번들 4중→3중, 대가=CP가족 prefill 최적화 1종 제거). **모델을 Nemotron-Nano-9B-v2+flashinfer로 전환**(W1 전용, 로스터 1순위) — ★**정본 정책 결과(Zamba2-2.7B/ctx4096)와의 직접 연결은 단절**(로스터 §4-3 요구대로 명시, W1 수치를 정본 arm 비교로 전이 금지). **도구·장부 결함 2건**: ★`presubmit.py`가 **read-only가 아님**(5회차 감사 자기신고 — 실행이 `m4r_confinement/reachability_verdict.json`·`tc1_model_attrib/reach_verdict_rev3_A.json`을 재작성, 그 부작용으로 **타 세션의 미커밋 작업이 소실**됐다가 이 세션이 재생성해 복구 — 6회차부터는 이 도구를 **돌리지 않음**). ★**S6 파급**: `check_version_sweep.py` **S6**이 발화해 `PREREG_CP0_2026-08-28.md`의 감사 회차 표기를 5→6으로 스윕 — `SWEEP_FINDINGS §5-5`가 **미리 예고한 항목**이자 예고된 전파 실패가 도구로 잡힌 **첫 사례**. ★신규 방법론 게이트 **#88**(삭제는 조건 등록이 아니라서 grep에 안 잡힌다)·**#89**(등록된 규율 도구도 read-only를 자체 검증하지 않으면 타 트랙 상태를 조용히 바꿀 수 있다) 신설. **금지 문장 추가**: "V-probe의 두 SD를 비교해 arm이 더/덜 시끄럽다"(arm×노드 교락)·"W1이 chunked prefill과 PD-mux 중 하나를 골랐다"(n=1·순위 아님·SLO쌍 미정의)·"TTFT 6000/ITL60에서 d44가 2.4배 낫다"(부호가 SLO에 의존함을 보이는 표 자체를 인용 금지)·"correctness gate가 동시성까지 검증했다"(순차 전송뿐). ★★새 성능 판정 0건·등급 변경 0건·정책 순위 변경 0건. HE0·정책 순위·gate #13/#16 "닫았다" 금지·switch-cost "닫았다" 금지·C2 인용정지 (a)(b)·`CONSENSUS §1-24` 전부 불변. ★★**원래 질문(chunked prefill vs pdmux 정책 비교)은 여전히 0건 측정.** 정본 반영: `CONSENSUS.md` rev52→**rev53**, "방법론 게이트" #88–89 신설. 상세 `workspace/engine-port/results/cp_baseline/{RESULT_P1_899768_2026-08-28.md, RESULT_G1_900067_2026-09-01.md, RESULT_VPROBE_2026-09-01.md, RESULT_POSITIONING_AND_WORKLOAD_2026-09-02.md, RESULT_SHAREGPT_CENSUS_2026-09-02.md, RESULT_W1_2026-09-02.md, RESULT_CORRECTNESS_GATE_2026-09-03.md, DECISION_PIECEWISE_OFF_2026-09-02.md, SWEEP_FINDINGS_CP0_REV4_2026-09-01.md, audit_cp_rules_2026-08-28/VERDICT.md, audit_cp_rules_2nd_2026-08-28/VERDICT.md, audit_cp0_3rd_2026-08-28/VERDICT.md, audit_cp0_rev3_4th_2026-08-28/VERDICT.md, audit_cp2_rules_5th_2026-09-01/VERDICT.md, audit_cp2r2_rules_6th_2026-09-03/VERDICT.md, DATE_CORRECTION_NOTE.md}`, `../model_roster/RESULT_MODEL_BOOT_SMOKE_2026-09-02.md`, `handoff-report/session_handoff_2026-09-01.md`, `handoff-report/session_handoff_2026-09-03.md` |
 
     감사 보고서(있는 것만): E1-b/c ↔
     `workspace/engine-port/results/p1_gates/gate2/AUDIT_E1B_E1C_2026-08-14.md`,
@@ -7773,3 +7820,55 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     results/cp_baseline/audit_cp0_rev3_4th_2026-08-28/VERDICT.md`
     死因 목록 L-d·"신규 방법론 교훈 후보" 5번, CONSENSUS §3
     항목107과 대응.
+
+88. ★★★★**(2026-09-03, cp_baseline CP-2 rev2 규칙층 감사 6회차,
+    claims-auditor, GPU 0) 삭제는 조건 등록이 아니라서 grep에
+    안 잡힌다 — 수리를 "조건을 지웠다/범위를 좁혔다"로 서술하면
+    감사가 못 잡는 死因을 만든다.** 이 회차의 단일 판정 질문 답이
+    바로 이것이다: rev1의 死因 8건(H1–H8) 중 절반가량이 rev2에서
+    "조건을 새로 등록"해서가 아니라 **조건을 삭제**해서 사라졌다
+    — `H7`(범위로 양화한 중단 규칙)이 옳은 형태로 고쳐지는 과정에서
+    rev1이 등록했던 **정본 스코어러·duration 합산·paired
+    bootstrap·`N_BOOTS`·동반 공표 의무**가 rev2 본문에 **0회**
+    등장한다(직접 grep 확인, 死因 F4) — "범위로 양화했다"는 옳은
+    수리 서사가 실제로는 **더 작은 세계**를 묶었다. `H8`(estimand)은
+    논증되지 않고 그냥 **삭제**됐다(rate 3개 × 사다리 36점을 단일
+    `(ci_lo, ci_hi)`로 접는 경로가 어디에도 없다, 死因 F4). 이런
+    삭제형 수리는 인용 검사(`check_line_citations`)·변이 검사
+    양쪽에서 **구조적으로 안 잡힌다** — 두 도구 모두 "등록된 것이
+    맞는가"만 검사하고 "이전에 있던 것이 없어졌는가"는 검사하지
+    않는다(없는 대상을 grep할 수 없다). 실무 규칙: 판본 간 수리를
+    감사할 때는 이전 판본이 등록했던 조항의 **전체 목록**을 만들고
+    그 목록 각각이 새 판본에 **문자 그대로 존재하는지**를 개수로
+    세라(`grep -c`) — "삭제됐다"를 "폐기하기로 했다"는 산문으로
+    대체하지 마라. 대응 `CONSENSUS.md` §3 항목108(신설). 상세
+    `workspace/engine-port/results/cp_baseline/
+    audit_cp2r2_rules_6th_2026-09-03/VERDICT.md` 死因 F4·"단일
+    판정 질문 직답" (2).
+
+89. ★★★**(2026-09-01, cp_baseline CP-2 rev1 규칙층 감사 5회차,
+    claims-auditor 자기 신고, GPU 0) 등록된 규율 도구 자신이
+    read-only라고 이름 붙었어도, 실행 전 그 사실을 검증하지
+    않으면 실제로는 타 트랙 상태를 조용히 바꿀 수 있다.** 5회차
+    감사가 등록된 재현 절차의 마지막 줄(`presubmit.py --registry
+    presubmit_registry.json`)을 그대로 실행한 결과, 그 도구가
+    `m4r_confinement/reachability_verdict.json`과
+    `tc1_model_attrib/reach_verdict_rev3_A.json` **두 개의 타
+    트랙 추적 파일을 재작성**했다(`git checkout --`으로 즉시
+    원상복구, 감사 대상 파일 md5는 불변). 같은 날 메인 세션에서는
+    이 부작용이 **다른(동시 진행 중인) 세션의 미커밋 작업을
+    실제로 소실**시켰고, 이 세션이 그 산출물을 재생성해 복구했다.
+    ★게이트 #34(규칙 먼저·하네스 다음 2단 감사)·#26(대형 캠페인
+    제출 전 배관 스모크) 계열의 새 하위 형태 — 두 게이트는 캠페인
+    자신의 정확성을 겨누지만, 이번 결함은 **감사·제출 도구 자신이
+    부작용원**이라는 점에서 별개다. 6회차는 이 결함을 반영해
+    `presubmit.py`를 **아예 돌리지 않고** `design_reachability.py`만
+    스크래치 경로로 격리해 돌렸다(그 결과 저장소에 파일 0개 생성).
+    실무 규칙: "read-only"라고 문서화된 규율 도구도 실행 전
+    `git status`로 대상 외 파일 변경 여부를 감시하거나, 결과
+    아티팩트를 격리된 스크래치 경로에 쓰도록 강제하기 전까지는
+    돌리지 마라 — 특히 여러 트랙이 동시에 진행 중일 때. 대응
+    `CONSENSUS.md` §3 항목109(신설). 상세 `workspace/engine-port/
+    results/cp_baseline/audit_cp2_rules_5th_2026-09-01/VERDICT.md`
+    "감사자 자기 신고"·死因 L16, `handoff-report/
+    session_handoff_2026-09-03.md` §4.1·§5.

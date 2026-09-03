@@ -252,3 +252,35 @@ cp_baseline 정본 반영 마무리 중 `check_doc_facts.py`를 돌리자(이 �
 | 순위 | 항목 | 층 | 적용 기준 | 비용 |
 |---|---|---|---|---|
 | **P1-1**(신설) | `DESIGN_A1_REV2_STICKY_2026-08-25.md:382` "회귀 244" → 295(근거 역추적 후) | 결과층 | **1** | GPU 0 |
+
+## 9. 2026-09-03 추가 (doc-steward, cp_baseline 5·6회차 정본 반영 세션) — 미감사 산출물 4건 + 도구 결함 1건
+
+### 9.1 미감사 산출물 (규칙층 감사 미실행, 이 세션이 손대지 않음)
+
+메인 세션 스스로 등재한 목록(`handoff-report/session_handoff_2026-09-03.md` §7):
+`g1b_plateau_predicates.py`(step 1 산출물, plateau 술어 3-way 상수 분류) · **W1 결과
+해석**(`RESULT_W1_2026-09-02.md` — SLO 다리 부호반전 서사) · **correctness gate 설계**
+(`correctness_gate.sbatch`·`correctness_check.py`) · **모델 부팅 스모크**
+(`model_boot_smoke.sbatch`). 전부 claims-auditor 미실행. 적용 기준 **2**(측정은 끝났으나
+독립 눈 없음) — 단 넷 다 이 세션이 "새 성능 판정 0건"으로 스코프를 좁혀 등재했으므로
+**P1-1(g16 재감사)**·**P2-1(G13 하네스 감사)**보다는 아래 순위로 둔다(감사 실패 시
+손실 규모가 그 둘보다 작음 — cp_baseline은 이미 정책 판정 트랙에서 계측 트랙으로
+내려앉아 있다).
+
+### 9.2 `presubmit.py` read-only 아님 — 도구 결함 (수리 대상, 손대지 않음)
+
+5회차 감사(`audit_cp2_rules_5th_2026-09-01/VERDICT.md` 死因 L16)가 `presubmit.py` 실행이
+`m4r_confinement/reachability_verdict.json`·`tc1_model_attrib/reach_verdict_rev3_A.json`
+두 **타 트랙** 파일을 재작성함을 발견했다. 같은 부작용이 다른 동시 세션의 미커밋 작업을
+실제로 소실시켰다(재생성해 복구, `PROJECT_STATUS.md` "방법론 게이트" #89 참조). **수리
+권고**: `presubmit.py`가 `reachability` 검사를 돌릴 때 결과를 등록 레지스트리 경로가
+아니라 호출자가 지정한 스크래치 경로에 쓰도록 강제(6회차가 임시로 이 우회를 손으로
+했다 — 도구 자체는 아직 안 고쳐졌다). **적용 기준 1**(살아있는 도구가 지금도 이 부작용을
+낼 수 있음) — 다음 도구 수리 세션 1순위 후보.
+
+### 9.3 우선순위표 추가 (§2 참조)
+
+| 순위 | 항목 | 층 | 적용 기준 | 비용 |
+|---|---|---|---|---|
+| **P0-3**(신설) | `presubmit.py` reachability 출력을 스크래치 경로로 강제(도구 자체 수리) | 도구 | **1** | GPU 0 |
+| **P3-1**(신설) | `g1b_plateau_predicates.py`·W1 해석·correctness gate 설계·모델 부팅 스모크 규칙층/하네스층 감사 4건 | 규칙·하네스 | **2** | GPU 0 |

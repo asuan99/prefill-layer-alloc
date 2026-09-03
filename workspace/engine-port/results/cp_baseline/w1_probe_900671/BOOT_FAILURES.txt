@@ -1,0 +1,1 @@
+BOOT_FAILED arm=cp2048

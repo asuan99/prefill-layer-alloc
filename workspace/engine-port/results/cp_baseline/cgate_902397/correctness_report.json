@@ -1,0 +1,194 @@
+{
+ "_what_this_is": "Correctness gate: greedy-output agreement against the `plain` reference. Reports structure, sets no pass/fail threshold.",
+ "reference": "cp2048",
+ "arms": {
+  "cp2048": {
+   "degenerate": [],
+   "errors": []
+  },
+  "cp8192": {
+   "degenerate": [],
+   "errors": [],
+   "agreement": [
+    {
+     "id": "short0",
+     "verdict": "IDENTICAL",
+     "ref_len": 200,
+     "common_prefix": null
+    },
+    {
+     "id": "short1",
+     "verdict": "IDENTICAL",
+     "ref_len": 48,
+     "common_prefix": null
+    },
+    {
+     "id": "short2",
+     "verdict": "IDENTICAL",
+     "ref_len": 151,
+     "common_prefix": null
+    },
+    {
+     "id": "short3",
+     "verdict": "IDENTICAL",
+     "ref_len": 213,
+     "common_prefix": null
+    },
+    {
+     "id": "short4",
+     "verdict": "IDENTICAL",
+     "ref_len": 151,
+     "common_prefix": null
+    },
+    {
+     "id": "short5",
+     "verdict": "IDENTICAL",
+     "ref_len": 175,
+     "common_prefix": null
+    },
+    {
+     "id": "short6",
+     "verdict": "IDENTICAL",
+     "ref_len": 168,
+     "common_prefix": null
+    },
+    {
+     "id": "short7",
+     "verdict": "IDENTICAL",
+     "ref_len": 201,
+     "common_prefix": null
+    },
+    {
+     "id": "real0",
+     "verdict": "IDENTICAL",
+     "ref_len": 218,
+     "common_prefix": null
+    },
+    {
+     "id": "real1",
+     "verdict": "PREFIX_DIV",
+     "ref_len": 179,
+     "common_prefix": 58
+    },
+    {
+     "id": "real2",
+     "verdict": "IDENTICAL",
+     "ref_len": 48,
+     "common_prefix": null
+    },
+    {
+     "id": "real3",
+     "verdict": "IDENTICAL",
+     "ref_len": 146,
+     "common_prefix": null
+    },
+    {
+     "id": "long16k",
+     "verdict": "IDENTICAL",
+     "ref_len": 273,
+     "common_prefix": null
+    },
+    {
+     "id": "long8k",
+     "verdict": "IDENTICAL",
+     "ref_len": 273,
+     "common_prefix": null
+    }
+   ],
+   "n_identical": 13,
+   "n_prompts": 14
+  },
+  "d44": {
+   "degenerate": [],
+   "errors": [],
+   "agreement": [
+    {
+     "id": "short0",
+     "verdict": "IDENTICAL",
+     "ref_len": 200,
+     "common_prefix": null
+    },
+    {
+     "id": "short1",
+     "verdict": "IDENTICAL",
+     "ref_len": 48,
+     "common_prefix": null
+    },
+    {
+     "id": "short2",
+     "verdict": "IDENTICAL",
+     "ref_len": 151,
+     "common_prefix": null
+    },
+    {
+     "id": "short3",
+     "verdict": "IDENTICAL",
+     "ref_len": 213,
+     "common_prefix": null
+    },
+    {
+     "id": "short4",
+     "verdict": "IDENTICAL",
+     "ref_len": 151,
+     "common_prefix": null
+    },
+    {
+     "id": "short5",
+     "verdict": "IDENTICAL",
+     "ref_len": 175,
+     "common_prefix": null
+    },
+    {
+     "id": "short6",
+     "verdict": "IDENTICAL",
+     "ref_len": 168,
+     "common_prefix": null
+    },
+    {
+     "id": "short7",
+     "verdict": "IDENTICAL",
+     "ref_len": 201,
+     "common_prefix": null
+    },
+    {
+     "id": "real0",
+     "verdict": "IDENTICAL",
+     "ref_len": 218,
+     "common_prefix": null
+    },
+    {
+     "id": "real1",
+     "verdict": "PREFIX_DIV",
+     "ref_len": 179,
+     "common_prefix": 58
+    },
+    {
+     "id": "real2",
+     "verdict": "IDENTICAL",
+     "ref_len": 48,
+     "common_prefix": null
+    },
+    {
+     "id": "real3",
+     "verdict": "IDENTICAL",
+     "ref_len": 146,
+     "common_prefix": null
+    },
+    {
+     "id": "long16k",
+     "verdict": "IDENTICAL",
+     "ref_len": 273,
+     "common_prefix": null
+    },
+    {
+     "id": "long8k",
+     "verdict": "IDENTICAL",
+     "ref_len": 273,
+     "common_prefix": null
+    }
+   ],
+   "n_identical": 13,
+   "n_prompts": 14
+  }
+ }
+}

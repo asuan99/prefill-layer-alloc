@@ -1,0 +1,11 @@
+{
+ "_what_this_is": "W1 descriptive statistics: knee location and distribution positions on the long-prompt tail. No arm ranking, no goodput comparison, no operating point chosen.",
+ "cells": [
+  {
+   "arm": "cp2048",
+   "boot_ok": false,
+   "scored": false,
+   "why": "boot failed"
+  }
+ ]
+}
