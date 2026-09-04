@@ -1,0 +1,3243 @@
+{
+  "_policy": {
+    "hand_authored": "WRITTEN BY HAND from the pre-registration's prose. NEVER regenerated. `af1_selftest.py --freeze` refuses to touch this key, and `meta.hand_world_keys` pins the exact KEY SET (not merely a count), because 1st-audit A6/D10 deleted a label and a duplicate guard row with a count decrement and passed.",
+    "prose_anchor": "PAIRED **and branch-bearing**. Each anchor begins with its own world key, label AND fork branch, so changing a prescription -- not only a label -- forces an edit to the pre-registration table. 2nd-audit E1/M2 flipped every `b` to `a` with a two-file edit while the document still said `b`; rev2's anchor stopped at the label.",
+    "substantive": "ALSO hand-authored, for the reason 6th CP-2 audit F8 gave: rev2 kept `substantive` in a regenerable section, so promoting a measurement failure into a finding and regenerating passed every check.",
+    "fork": "Hand-authored per row and compared to `af1_rule.FORK`. 1st-audit D3 changed one FORK value and the self-test stayed green because it only checked totality.",
+    "frozen": "Regenerable from the rule by `--freeze`. It catches drift; it does not justify the design.",
+    "known_limit": "A consistent edit across af1_rule.py, af1_predicates.py, this file AND PREREG_AF1_2026-09-04.md still passes. The paired anchors force the fourth file for any change of LABEL or BRANCH; they do not force it for a change of prose. And no test can grep for a condition that was never registered -- the pre-registration's sec 0.1 ledger is that check, and 2nd-audit E6 found six of its ten rows overstated, so it is a human check that has already failed once."
+  },
+  "meta": {
+    "hand_row_count": 28,
+    "hand_world_keys": [
+      "insufficient|unmeasured|unmeasured|unmeasured|unmeasured",
+      "sufficient|unmeasured|unmeasured|unmeasured|unmeasured",
+      "sufficient|arm_specific|agree|unique|intact",
+      "sufficient|arm_specific|disagree|unique|intact",
+      "sufficient|borderline|agree|multiple|intact",
+      "sufficient|borderline|agree|unique|intact",
+      "sufficient|neutral|disagree|unique|intact",
+      "sufficient|neutral|agree|unique|intact",
+      "sufficient|neutral|agree|unique|pruned",
+      "sufficient|neutral|agree|unique|empty",
+      "sufficient|neutral|agree|unique|borderline",
+      "sufficient|neutral|agree|multiple|intact",
+      "sufficient|neutral|agree|multiple|pruned",
+      "sufficient|neutral|agree|multiple|borderline",
+      "sufficient|neutral|agree|none|pruned",
+      "sufficient|neutral|agree|none|borderline",
+      "sufficient|neutral|agree|none|empty",
+      "sufficient|neutral|agree|borderline|intact",
+      "sufficient|neutral|agree|borderline|pruned",
+      "sufficient|neutral|agree|borderline|empty",
+      "sufficient|neutral|agree|borderline|borderline",
+      "sufficient|neutral|agree|none|intact",
+      "sufficient|neutral|agree|multiple|empty",
+      "insufficient|neutral|agree|unique|intact",
+      "sufficient|neutral|agree|unique|unmeasured",
+      "sufficient|neutral|unmeasured|unique|pruned",
+      "sufficient|arm_specific|agree|multiple|intact",
+      "sufficient|arm_specific|unmeasured|unique|intact"
+    ],
+    "substantive_count": 17,
+    "stop_rule_worlds": [
+      "insufficient|unmeasured|unmeasured|unmeasured|unmeasured",
+      "sufficient|unmeasured|unmeasured|unmeasured|unmeasured",
+      "sufficient|arm_specific|agree|unique|intact",
+      "sufficient|borderline|agree|multiple|intact",
+      "sufficient|neutral|unmeasured|unique|pruned",
+      "sufficient|neutral|disagree|unique|intact"
+    ],
+    "guard_order_independent_pairs": [
+      {
+        "pair": [
+          "floor_not_neutral",
+          "floor_neutrality_borderline"
+        ],
+        "reason": "중립성 축은 한 값만 가지므로 arm_specific과 borderline이 동시에 참일 수 없다"
+      },
+      {
+        "pair": [
+          "screen_incomplete",
+          "floor_not_neutral"
+        ],
+        "reason": "등록 층 판독이 미측정이면 중립성도 미측정이므로 두 가드가 함께 발화할 수 없다"
+      },
+      {
+        "pair": [
+          "stratum_unmeasured",
+          "stratum_disagree"
+        ],
+        "reason": "stratum 축은 한 값만 가지므로 unmeasured와 disagree가 동시에 참일 수 없다"
+      }
+    ],
+    "prereg_file": "PREREG_AF1_2026-09-04.md",
+    "fold_vector_count": 105,
+    "prereg_counts": {
+      "prohibitions": 18,
+      "ledger_0_1_rows": 12,
+      "ledger_0_2_rows": 27,
+      "ledger_0_3_rows": 34,
+      "ledger_0_4_rows": 12,
+      "limits": 9
+    },
+    "limit_anchors": [
+      "★**루프라인(§5.1)은 상한 산술이지 측정이 아니다",
+      "★★**ITL 다리는 SM 분할을 볼 수 없다",
+      "무경쟁 바닥은 **부하 하 지연의 하한",
+      "`PDMUX_CHUNK_PROBE_*`가 OFF이므로",
+      "층은 캠페인 토크나이저로 재계산하지만",
+      "부팅 SD가 **노드 효과를 포함",
+      "외부 좌표 5개는 **한 출처의 표",
+      "AF-1은 §0.1이 밝힌 대로 정본 goodput 술어의",
+      "자기검사가 **못 하는 것**: 규칙·술어·오라클·이 문서"
+    ]
+  },
+  "hand_authored": {
+    "substantive": [
+      "ANCHOR_REGISTERED",
+      "ANCHOR_REGISTERED_LADDER_PRUNED",
+      "ANCHOR_REGISTERED_LADDER_EMPTY",
+      "ANCHOR_REGISTERED_LADDER_BORDERLINE",
+      "ANCHOR_UNDERDETERMINED",
+      "ANCHOR_UNDERDETERMINED_LADDER_PRUNED",
+      "ANCHOR_UNDERDETERMINED_LADDER_BORDERLINE",
+      "ANCHOR_INFEASIBLE_LADDER_PRUNED",
+      "ANCHOR_INFEASIBLE_LADDER_BORDERLINE",
+      "NOTHING_FEASIBLE",
+      "ANCHOR_BORDERLINE",
+      "ANCHOR_BORDERLINE_LADDER_PRUNED",
+      "ANCHOR_BORDERLINE_LADDER_EMPTY",
+      "ANCHOR_BORDERLINE_LADDER_BORDERLINE",
+      "FLOOR_NOT_ARM_NEUTRAL",
+      "FLOOR_NEUTRALITY_BORDERLINE",
+      "STRATUM_DEPENDENT"
+    ],
+    "rows": [
+      {
+        "world": "insufficient|unmeasured|unmeasured|unmeasured|unmeasured",
+        "label": "COVERAGE_INSUFFICIENT",
+        "fork": "n/a",
+        "why": "COVERAGE_INSUFFICIENT — 중단 규칙 S1 — arm 하나라도 MIN_BOOTS 미만이면 부팅 간 SD가 없고, 밴드가 곧 SD이므로 더 엄격한 스크린이 아니라 스크린이 없다",
+        "prose_anchor": "`insufficient|unmeasured|unmeasured|unmeasured|unmeasured` → `COVERAGE_INSUFFICIENT` → `n/a`: 중단 규칙 S1 — arm 하나라도 MIN_BOOTS 미만이면 부팅 간 SD가 없고, 밴드가 곧 SD이므로 더 엄격한 스크린이 아니라 스크린이 없다"
+      },
+      {
+        "world": "sufficient|unmeasured|unmeasured|unmeasured|unmeasured",
+        "label": "SCREEN_INCOMPLETE",
+        "fork": "n/a",
+        "why": "SCREEN_INCOMPLETE — 중단 규칙 S2 — 부팅은 충분히 채점됐는데 스크린이 값을 못 냈다(층 셀 결측·ITL 미정의). rev2는 이 세계를 불가능하다 선언하고 KeyError를 냈다",
+        "prose_anchor": "`sufficient|unmeasured|unmeasured|unmeasured|unmeasured` → `SCREEN_INCOMPLETE` → `n/a`: 중단 규칙 S2 — 부팅은 충분히 채점됐는데 스크린이 값을 못 냈다(층 셀 결측·ITL 미정의). rev2는 이 세계를 불가능하다 선언하고 KeyError를 냈다"
+      },
+      {
+        "world": "sufficient|arm_specific|agree|unique|intact",
+        "label": "FLOOR_NOT_ARM_NEUTRAL",
+        "fork": "b",
+        "why": "FLOOR_NOT_ARM_NEUTRAL — 중단 규칙 S3 — arm들이 서로 다른 후보 집합을 허용하면 살아남은 좌표는 최악 arm이 정한 것이고, 그것은 좌표의 옷을 입은 arm 선택이다",
+        "prose_anchor": "`sufficient|arm_specific|agree|unique|intact` → `FLOOR_NOT_ARM_NEUTRAL` → `b`: 중단 규칙 S3 — arm들이 서로 다른 후보 집합을 허용하면 살아남은 좌표는 최악 arm이 정한 것이고, 그것은 좌표의 옷을 입은 arm 선택이다"
+      },
+      {
+        "world": "sufficient|arm_specific|disagree|unique|intact",
+        "label": "FLOOR_NOT_ARM_NEUTRAL",
+        "fork": "b",
+        "why": "FLOOR_NOT_ARM_NEUTRAL — 중립성 가드는 stratum·anchor·ladder 어떤 값보다 앞선다 — 추정량 실패가 측정 선택 실패보다 더 많은 것을 설명한다",
+        "prose_anchor": "`sufficient|arm_specific|disagree|unique|intact` → `FLOOR_NOT_ARM_NEUTRAL` → `b`: 중립성 가드는 stratum·anchor·ladder 어떤 값보다 앞선다 — 추정량 실패가 측정 선택 실패보다 더 많은 것을 설명한다"
+      },
+      {
+        "world": "sufficient|borderline|agree|multiple|intact",
+        "label": "FLOOR_NEUTRALITY_BORDERLINE",
+        "fork": "b_precision_bound",
+        "why": "FLOOR_NEUTRALITY_BORDERLINE — 중단 규칙 S4 — arm들의 바닥은 같은 집합을 주는데 밴드를 씌우면 갈린다. 잡음이 중립성을 정했고, 그 처방은 **부팅을 더 사라가 아니다**(`boot_sd`는 표본 SD라 밴드가 2σ로 수렴한다 — 死因 K3): 이 정밀도에서 경로 (a)가 닫히지 않았다는 진술이다",
+        "prose_anchor": "`sufficient|borderline|agree|multiple|intact` → `FLOOR_NEUTRALITY_BORDERLINE` → `b_precision_bound`: 중단 규칙 S4 — arm들의 바닥은 같은 집합을 주는데 밴드를 씌우면 갈린다. 잡음이 중립성을 정했고, 그 처방은 **부팅을 더 사라가 아니다**(`boot_sd`는 표본 SD라 밴드가 2σ로 수렴한다 — 死因 K3): 이 정밀도에서 경로 (a)가 닫히지 않았다는 진술이다"
+      },
+      {
+        "world": "sufficient|borderline|agree|unique|intact",
+        "label": "IMPOSSIBLE_WORLD",
+        "fork": "n/a",
+        "why": "IMPOSSIBLE_WORLD — 스크린의 상에 없다 — 중립성이 borderline이면 최악 arm의 banded 집합이 strict보다 작으므로 anchor는 borderline이거나 multiple이다. rev3가 이 세계를 실질 라벨로 등록했던 것이 死因 J3다",
+        "prose_anchor": "`sufficient|borderline|agree|unique|intact` → `IMPOSSIBLE_WORLD` → `n/a`: 스크린의 상에 없다 — 중립성이 borderline이면 최악 arm의 banded 집합이 strict보다 작으므로 anchor는 borderline이거나 multiple이다. rev3가 이 세계를 실질 라벨로 등록했던 것이 死因 J3다"
+      },
+      {
+        "world": "sufficient|neutral|disagree|unique|intact",
+        "label": "STRATUM_DEPENDENT",
+        "fork": "b",
+        "why": "STRATUM_DEPENDENT — 중단 규칙 S5 — 등록 층과 대안 층이 세 판독 중 하나라도 다르면 층 선택이 결론을 정한다",
+        "prose_anchor": "`sufficient|neutral|disagree|unique|intact` → `STRATUM_DEPENDENT` → `b`: 중단 규칙 S5 — 등록 층과 대안 층이 세 판독 중 하나라도 다르면 층 선택이 결론을 정한다"
+      },
+      {
+        "world": "sufficient|neutral|agree|unique|intact",
+        "label": "ANCHOR_REGISTERED",
+        "fork": "a",
+        "why": "ANCHOR_REGISTERED — 외부 좌표가 정확히 하나 살아남고 두 스크린·두 층·세 arm이 전부 일치하면 그것이 등록된 운영점이 된다",
+        "prose_anchor": "`sufficient|neutral|agree|unique|intact` → `ANCHOR_REGISTERED` → `a`: 외부 좌표가 정확히 하나 살아남고 두 스크린·두 층·세 arm이 전부 일치하면 그것이 등록된 운영점이 된다"
+      },
+      {
+        "world": "sufficient|neutral|agree|unique|pruned",
+        "label": "ANCHOR_REGISTERED_LADDER_PRUNED",
+        "fork": "a",
+        "why": "ANCHOR_REGISTERED_LADDER_PRUNED — 물리적으로 도달 불가한 사다리 점은 CP-2가 채점에서 빼야 한다",
+        "prose_anchor": "`sufficient|neutral|agree|unique|pruned` → `ANCHOR_REGISTERED_LADDER_PRUNED` → `a`: 물리적으로 도달 불가한 사다리 점은 CP-2가 채점에서 빼야 한다"
+      },
+      {
+        "world": "sufficient|neutral|agree|unique|empty",
+        "label": "ANCHOR_REGISTERED_LADDER_EMPTY",
+        "fork": "a_with_ladder_rederivation",
+        "why": "ANCHOR_REGISTERED_LADDER_EMPTY — 앵커는 있으나 사다리 위에 채점 가능한 점이 하나도 없으므로 CP-2는 사다리를 재유도해야 한다",
+        "prose_anchor": "`sufficient|neutral|agree|unique|empty` → `ANCHOR_REGISTERED_LADDER_EMPTY` → `a_with_ladder_rederivation`: 앵커는 있으나 사다리 위에 채점 가능한 점이 하나도 없으므로 CP-2는 사다리를 재유도해야 한다"
+      },
+      {
+        "world": "sufficient|neutral|agree|unique|borderline",
+        "label": "ANCHOR_REGISTERED_LADDER_BORDERLINE",
+        "fork": "a_with_ladder_rederivation",
+        "why": "ANCHOR_REGISTERED_LADDER_BORDERLINE — 앵커는 있으나 어느 사다리 점을 뺄지는 밴드가 정한다 — 점을 빼는 대신 부팅을 더 사거나 전수 유지하고 한계를 적어야 한다",
+        "prose_anchor": "`sufficient|neutral|agree|unique|borderline` → `ANCHOR_REGISTERED_LADDER_BORDERLINE` → `a_with_ladder_rederivation`: 앵커는 있으나 어느 사다리 점을 뺄지는 밴드가 정한다 — 점을 빼는 대신 부팅을 더 사거나 전수 유지하고 한계를 적어야 한다"
+      },
+      {
+        "world": "sufficient|neutral|agree|multiple|intact",
+        "label": "ANCHOR_UNDERDETERMINED",
+        "fork": "b",
+        "why": "ANCHOR_UNDERDETERMINED — 둘 이상이 살아남으면 이 절차는 고를 수 없다 — tie-break가 없는 것이 설계다",
+        "prose_anchor": "`sufficient|neutral|agree|multiple|intact` → `ANCHOR_UNDERDETERMINED` → `b`: 둘 이상이 살아남으면 이 절차는 고를 수 없다 — tie-break가 없는 것이 설계다"
+      },
+      {
+        "world": "sufficient|neutral|agree|multiple|pruned",
+        "label": "ANCHOR_UNDERDETERMINED_LADDER_PRUNED",
+        "fork": "b",
+        "why": "ANCHOR_UNDERDETERMINED_LADDER_PRUNED — 고를 수 없는 상태에서 사다리 일부까지 잘리면 두 처방이 함께 걸린다",
+        "prose_anchor": "`sufficient|neutral|agree|multiple|pruned` → `ANCHOR_UNDERDETERMINED_LADDER_PRUNED` → `b`: 고를 수 없는 상태에서 사다리 일부까지 잘리면 두 처방이 함께 걸린다"
+      },
+      {
+        "world": "sufficient|neutral|agree|multiple|borderline",
+        "label": "ANCHOR_UNDERDETERMINED_LADDER_BORDERLINE",
+        "fork": "b",
+        "why": "ANCHOR_UNDERDETERMINED_LADDER_BORDERLINE — 고를 수도 없고 무엇을 뺄지도 밴드가 정하는 상태 — 이 런으로는 좌표도 사다리도 확정되지 않는다",
+        "prose_anchor": "`sufficient|neutral|agree|multiple|borderline` → `ANCHOR_UNDERDETERMINED_LADDER_BORDERLINE` → `b`: 고를 수도 없고 무엇을 뺄지도 밴드가 정하는 상태 — 이 런으로는 좌표도 사다리도 확정되지 않는다"
+      },
+      {
+        "world": "sufficient|neutral|agree|none|pruned",
+        "label": "ANCHOR_INFEASIBLE_LADDER_PRUNED",
+        "fork": "b",
+        "why": "ANCHOR_INFEASIBLE_LADDER_PRUNED — 어느 외부 좌표도 물리적으로 도달 불가하면 경로 (a)는 측정으로 죽고, 잘린 사다리 점도 함께 빠진다",
+        "prose_anchor": "`sufficient|neutral|agree|none|pruned` → `ANCHOR_INFEASIBLE_LADDER_PRUNED` → `b`: 어느 외부 좌표도 물리적으로 도달 불가하면 경로 (a)는 측정으로 죽고, 잘린 사다리 점도 함께 빠진다"
+      },
+      {
+        "world": "sufficient|neutral|agree|none|borderline",
+        "label": "ANCHOR_INFEASIBLE_LADDER_BORDERLINE",
+        "fork": "b",
+        "why": "ANCHOR_INFEASIBLE_LADDER_BORDERLINE — 경로 (a)는 죽었고 사다리 손질은 밴드가 정하는 상태",
+        "prose_anchor": "`sufficient|neutral|agree|none|borderline` → `ANCHOR_INFEASIBLE_LADDER_BORDERLINE` → `b`: 경로 (a)는 죽었고 사다리 손질은 밴드가 정하는 상태"
+      },
+      {
+        "world": "sufficient|neutral|agree|none|empty",
+        "label": "NOTHING_FEASIBLE",
+        "fork": "cp2_regime_void",
+        "why": "NOTHING_FEASIBLE — 등록된 36점 전부가 도달 불가하면 CP-2는 이 체제에서 채점 가능한 점을 하나도 갖지 못한다 — 포크가 아니라 CP-2 체제 자체의 문제",
+        "prose_anchor": "`sufficient|neutral|agree|none|empty` → `NOTHING_FEASIBLE` → `cp2_regime_void`: 등록된 36점 전부가 도달 불가하면 CP-2는 이 체제에서 채점 가능한 점을 하나도 갖지 못한다 — 포크가 아니라 CP-2 체제 자체의 문제"
+      },
+      {
+        "world": "sufficient|neutral|agree|borderline|intact",
+        "label": "ANCHOR_BORDERLINE",
+        "fork": "b",
+        "why": "ANCHOR_BORDERLINE — strict 스크린과 banded 스크린이 후보 개수에서 갈리면 잡음이 좌표를 정한다 — 저자가 어느 쪽을 믿을지 고르는 것은 금지된다",
+        "prose_anchor": "`sufficient|neutral|agree|borderline|intact` → `ANCHOR_BORDERLINE` → `b`: strict 스크린과 banded 스크린이 후보 개수에서 갈리면 잡음이 좌표를 정한다 — 저자가 어느 쪽을 믿을지 고르는 것은 금지된다"
+      },
+      {
+        "world": "sufficient|neutral|agree|borderline|pruned",
+        "label": "ANCHOR_BORDERLINE_LADDER_PRUNED",
+        "fork": "b",
+        "why": "ANCHOR_BORDERLINE_LADDER_PRUNED — 잡음이 좌표를 정하고 사다리도 일부 잘린 상태",
+        "prose_anchor": "`sufficient|neutral|agree|borderline|pruned` → `ANCHOR_BORDERLINE_LADDER_PRUNED` → `b`: 잡음이 좌표를 정하고 사다리도 일부 잘린 상태"
+      },
+      {
+        "world": "sufficient|neutral|agree|borderline|empty",
+        "label": "ANCHOR_BORDERLINE_LADDER_EMPTY",
+        "fork": "b",
+        "why": "ANCHOR_BORDERLINE_LADDER_EMPTY — 잡음이 좌표를 정하고 사다리는 비었다",
+        "prose_anchor": "`sufficient|neutral|agree|borderline|empty` → `ANCHOR_BORDERLINE_LADDER_EMPTY` → `b`: 잡음이 좌표를 정하고 사다리는 비었다"
+      },
+      {
+        "world": "sufficient|neutral|agree|borderline|borderline",
+        "label": "ANCHOR_BORDERLINE_LADDER_BORDERLINE",
+        "fork": "b",
+        "why": "ANCHOR_BORDERLINE_LADDER_BORDERLINE — 두 축 전부 밴드가 정한다 — 이 예산에서 스크린은 결론을 내지 못한다",
+        "prose_anchor": "`sufficient|neutral|agree|borderline|borderline` → `ANCHOR_BORDERLINE_LADDER_BORDERLINE` → `b`: 두 축 전부 밴드가 정한다 — 이 예산에서 스크린은 결론을 내지 못한다"
+      },
+      {
+        "world": "sufficient|neutral|agree|none|intact",
+        "label": "IMPOSSIBLE_WORLD",
+        "fork": "n/a",
+        "why": "IMPOSSIBLE_WORLD — 스크린의 상에 없다 — 후보 최대원소(3000/200)를 못 넘는 바닥이 사다리 최소점(500/40)을 전부 통과할 수는 없다. rev1이 이 쌍을 ANCHOR_INFEASIBLE로 등록했던 것이 死因 D2다",
+        "prose_anchor": "`sufficient|neutral|agree|none|intact` → `IMPOSSIBLE_WORLD` → `n/a`: 스크린의 상에 없다 — 후보 최대원소(3000/200)를 못 넘는 바닥이 사다리 최소점(500/40)을 전부 통과할 수는 없다. rev1이 이 쌍을 ANCHOR_INFEASIBLE로 등록했던 것이 死因 D2다"
+      },
+      {
+        "world": "sufficient|neutral|agree|multiple|empty",
+        "label": "IMPOSSIBLE_WORLD",
+        "fork": "n/a",
+        "why": "IMPOSSIBLE_WORLD — 스크린은 단조이므로 어떤 (anchor, ladder) 쌍은 함께 나타날 수 없다 — 둘 이상 통과하면 사다리가 지배하는 후보가 하나는 있다",
+        "prose_anchor": "`sufficient|neutral|agree|multiple|empty` → `IMPOSSIBLE_WORLD` → `n/a`: 스크린은 단조이므로 어떤 (anchor, ladder) 쌍은 함께 나타날 수 없다 — 둘 이상 통과하면 사다리가 지배하는 후보가 하나는 있다"
+      },
+      {
+        "world": "insufficient|neutral|agree|unique|intact",
+        "label": "IMPOSSIBLE_WORLD",
+        "fork": "n/a",
+        "why": "IMPOSSIBLE_WORLD — MIN_BOOTS 미달 세계에서 스크린 판독이 존재한다고 적힌 세계는 없다",
+        "prose_anchor": "`insufficient|neutral|agree|unique|intact` → `IMPOSSIBLE_WORLD` → `n/a`: MIN_BOOTS 미달 세계에서 스크린 판독이 존재한다고 적힌 세계는 없다"
+      },
+      {
+        "world": "sufficient|neutral|agree|unique|unmeasured",
+        "label": "IMPOSSIBLE_WORLD",
+        "fork": "n/a",
+        "why": "IMPOSSIBLE_WORLD — 네 판독은 한 번의 스크린에서 나오므로 따로 측정될 수 없다",
+        "prose_anchor": "`sufficient|neutral|agree|unique|unmeasured` → `IMPOSSIBLE_WORLD` → `n/a`: 네 판독은 한 번의 스크린에서 나오므로 따로 측정될 수 없다"
+      },
+      {
+        "world": "sufficient|neutral|unmeasured|unique|pruned",
+        "label": "STRATUM_UNMEASURED",
+        "fork": "n/a",
+        "why": "STRATUM_UNMEASURED — 부팅이 등록 층을 마치고 대안 층 전에 죽었다 — 등록 층 판독은 온전하므로 중립성 가드 뒤에서 이 라벨을 받는다. rev4는 이것을 SCREEN_INCOMPLETE로 덮어 21세계의 측정된 실질 결과를 함께 강등시켰다(死因 K2)",
+        "prose_anchor": "`sufficient|neutral|unmeasured|unique|pruned` → `STRATUM_UNMEASURED` → `n/a`: 부팅이 등록 층을 마치고 대안 층 전에 죽었다 — 등록 층 판독은 온전하므로 중립성 가드 뒤에서 이 라벨을 받는다. rev4는 이것을 SCREEN_INCOMPLETE로 덮어 21세계의 측정된 실질 결과를 함께 강등시켰다(死因 K2)"
+      },
+      {
+        "world": "sufficient|arm_specific|agree|multiple|intact",
+        "label": "FLOOR_NOT_ARM_NEUTRAL",
+        "fork": "b",
+        "why": "FLOOR_NOT_ARM_NEUTRAL — arm-특이는 anchor가 multiple일 때도 성립한다 — 중립성 가드가 anchor 값과 무관하게 앞선다",
+        "prose_anchor": "`sufficient|arm_specific|agree|multiple|intact` → `FLOOR_NOT_ARM_NEUTRAL` → `b`: arm-특이는 anchor가 multiple일 때도 성립한다 — 중립성 가드가 anchor 값과 무관하게 앞선다"
+      },
+      {
+        "world": "sufficient|arm_specific|unmeasured|unique|intact",
+        "label": "FLOOR_NOT_ARM_NEUTRAL",
+        "fork": "b",
+        "why": "FLOOR_NOT_ARM_NEUTRAL — ★중립성 가드는 stratum 미측정보다 앞선다 — 등록 층에서 arm-특이가 측정됐으면 대안 층 결측이 그것을 덮지 않는다(死因 K2가 만든 21세계의 대표)",
+        "prose_anchor": "`sufficient|arm_specific|unmeasured|unique|intact` → `FLOOR_NOT_ARM_NEUTRAL` → `b`: ★중립성 가드는 stratum 미측정보다 앞선다 — 등록 층에서 arm-특이가 측정됐으면 대안 층 결측이 그것을 덮지 않는다(死因 K2가 만든 21세계의 대표)"
+      }
+    ],
+    "folds": {
+      "order_stat": [
+        [
+          [
+            [
+              5.0
+            ],
+            0.9
+          ],
+          5.0
+        ],
+        [
+          [
+            [
+              1.0,
+              2.0
+            ],
+            0.0
+          ],
+          1.0
+        ],
+        [
+          [
+            [
+              1.0,
+              2.0
+            ],
+            1.0
+          ],
+          2.0
+        ],
+        [
+          [
+            [
+              1.0,
+              2.0,
+              3.0,
+              4.0,
+              5.0
+            ],
+            0.9
+          ],
+          4.6
+        ],
+        [
+          [
+            [
+              10.0,
+              20.0,
+              30.0
+            ],
+            0.5
+          ],
+          20.0
+        ],
+        [
+          [
+            [
+              1.0,
+              2.0,
+              3.0,
+              4.0,
+              5.0
+            ]
+          ],
+          4.6
+        ]
+      ],
+      "agg_within_boot": [
+        [
+          [
+            [
+              1.0,
+              2.0,
+              3.0
+            ]
+          ],
+          2.8
+        ],
+        [
+          [
+            []
+          ],
+          null
+        ],
+        [
+          [
+            [
+              7.0
+            ]
+          ],
+          7.0
+        ]
+      ],
+      "agg_across_boots": [
+        [
+          [
+            [
+              1.0,
+              2.0,
+              3.0
+            ]
+          ],
+          null
+        ],
+        [
+          [
+            [
+              1.0,
+              2.0,
+              3.0,
+              4.0
+            ]
+          ],
+          2.5
+        ],
+        [
+          [
+            [
+              10.0,
+              12.0,
+              14.0,
+              16.0,
+              18.0
+            ]
+          ],
+          14.0
+        ],
+        [
+          [
+            [
+              1.0,
+              2.0,
+              3.0,
+              10.0
+            ]
+          ],
+          4.0
+        ]
+      ],
+      "boot_sd": [
+        [
+          [
+            [
+              1.0,
+              1.0,
+              1.0
+            ]
+          ],
+          null
+        ],
+        [
+          [
+            [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          ],
+          0.0
+        ],
+        [
+          [
+            [
+              10.0,
+              12.0,
+              14.0,
+              16.0
+            ]
+          ],
+          2.5819888974716116
+        ]
+      ],
+      "screen_bound": [
+        [
+          [
+            100.0,
+            null,
+            true
+          ],
+          null
+        ],
+        [
+          [
+            null,
+            1.0,
+            true
+          ],
+          null
+        ],
+        [
+          [
+            100.0,
+            5.0,
+            true
+          ],
+          110.0
+        ],
+        [
+          [
+            100.0,
+            null,
+            false
+          ],
+          100.0
+        ],
+        [
+          [
+            100.0,
+            5.0,
+            false
+          ],
+          100.0
+        ]
+      ],
+      "arm_bounds": [
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  100.0,
+                  10.0,
+                  2.0,
+                  0.5
+                ],
+                "0.99": [
+                  999.0,
+                  99.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  100.0,
+                  10.0,
+                  2.0,
+                  0.5
+                ],
+                "0.99": [
+                  999.0,
+                  99.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  100.0,
+                  10.0,
+                  2.0,
+                  0.5
+                ],
+                "0.99": [
+                  999.0,
+                  99.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            true
+          ],
+          {
+            "plain": [
+              104.0,
+              11.0
+            ],
+            "cp2048": [
+              104.0,
+              11.0
+            ],
+            "d44": [
+              104.0,
+              11.0
+            ]
+          }
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  100.0,
+                  10.0,
+                  2.0,
+                  0.5
+                ],
+                "0.99": [
+                  999.0,
+                  99.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  100.0,
+                  10.0,
+                  2.0,
+                  0.5
+                ],
+                "0.99": [
+                  999.0,
+                  99.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  100.0,
+                  10.0,
+                  2.0,
+                  0.5
+                ],
+                "0.99": [
+                  999.0,
+                  99.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            false
+          ],
+          {
+            "plain": [
+              100.0,
+              10.0
+            ],
+            "cp2048": [
+              100.0,
+              10.0
+            ],
+            "d44": [
+              100.0,
+              10.0
+            ]
+          }
+        ],
+        [
+          [
+            {},
+            true
+          ],
+          {}
+        ]
+      ],
+      "survey_is_chain": [
+        [
+          [],
+          true
+        ]
+      ],
+      "admissible": [
+        [
+          [
+            200.0,
+            20.0,
+            {
+              "plain": [
+                100.0,
+                10.0
+              ],
+              "cp2048": [
+                110.0,
+                11.0
+              ],
+              "d44": [
+                120.0,
+                12.0
+              ]
+            }
+          ],
+          true
+        ],
+        [
+          [
+            120.0,
+            12.0,
+            {
+              "plain": [
+                100.0,
+                10.0
+              ],
+              "cp2048": [
+                110.0,
+                11.0
+              ],
+              "d44": [
+                120.0,
+                12.0
+              ]
+            }
+          ],
+          true
+        ],
+        [
+          [
+            115.0,
+            20.0,
+            {
+              "plain": [
+                100.0,
+                10.0
+              ],
+              "cp2048": [
+                110.0,
+                11.0
+              ],
+              "d44": [
+                120.0,
+                12.0
+              ]
+            }
+          ],
+          false
+        ],
+        [
+          [
+            200.0,
+            11.5,
+            {
+              "plain": [
+                100.0,
+                10.0
+              ],
+              "cp2048": [
+                110.0,
+                11.0
+              ],
+              "d44": [
+                120.0,
+                12.0
+              ]
+            }
+          ],
+          false
+        ],
+        [
+          [
+            200.0,
+            20.0,
+            {
+              "plain": [
+                null,
+                10.0
+              ]
+            }
+          ],
+          null
+        ],
+        [
+          [
+            200.0,
+            20.0,
+            {}
+          ],
+          null
+        ]
+      ],
+      "admissible_survey": [
+        [
+          [
+            {
+              "plain": [
+                1000.0,
+                100.0
+              ],
+              "cp2048": [
+                1000.0,
+                100.0
+              ],
+              "d44": [
+                1000.0,
+                100.0
+              ]
+            }
+          ],
+          [
+            "batch_async"
+          ]
+        ],
+        [
+          [
+            {
+              "plain": [
+                90.0,
+                20.0
+              ],
+              "cp2048": [
+                90.0,
+                20.0
+              ],
+              "d44": [
+                90.0,
+                20.0
+              ]
+            }
+          ],
+          [
+            "code_inline",
+            "voice",
+            "chat",
+            "rag",
+            "batch_async"
+          ]
+        ],
+        [
+          [
+            {
+              "plain": [
+                5000.0,
+                300.0
+              ],
+              "cp2048": [
+                5000.0,
+                300.0
+              ],
+              "d44": [
+                5000.0,
+                300.0
+              ]
+            }
+          ],
+          []
+        ],
+        [
+          [
+            {
+              "plain": [
+                350.0,
+                60.0
+              ],
+              "cp2048": [
+                350.0,
+                60.0
+              ],
+              "d44": [
+                350.0,
+                60.0
+              ]
+            }
+          ],
+          [
+            "rag",
+            "batch_async"
+          ]
+        ]
+      ],
+      "anchor_class": [
+        [
+          [
+            {
+              "plain": [
+                1000.0,
+                100.0
+              ],
+              "cp2048": [
+                1000.0,
+                100.0
+              ],
+              "d44": [
+                1000.0,
+                100.0
+              ]
+            }
+          ],
+          "unique"
+        ],
+        [
+          [
+            {
+              "plain": [
+                90.0,
+                20.0
+              ],
+              "cp2048": [
+                90.0,
+                20.0
+              ],
+              "d44": [
+                90.0,
+                20.0
+              ]
+            }
+          ],
+          "multiple"
+        ],
+        [
+          [
+            {
+              "plain": [
+                5000.0,
+                300.0
+              ],
+              "cp2048": [
+                5000.0,
+                300.0
+              ],
+              "d44": [
+                5000.0,
+                300.0
+              ]
+            }
+          ],
+          "none"
+        ],
+        [
+          [
+            {}
+          ],
+          "unmeasured"
+        ]
+      ],
+      "ladder_class": [
+        [
+          [
+            {
+              "plain": [
+                400.0,
+                35.0
+              ],
+              "cp2048": [
+                400.0,
+                35.0
+              ],
+              "d44": [
+                400.0,
+                35.0
+              ]
+            }
+          ],
+          "intact"
+        ],
+        [
+          [
+            {
+              "plain": [
+                1000.0,
+                100.0
+              ],
+              "cp2048": [
+                1000.0,
+                100.0
+              ],
+              "d44": [
+                1000.0,
+                100.0
+              ]
+            }
+          ],
+          "pruned"
+        ],
+        [
+          [
+            {
+              "plain": [
+                7000.0,
+                150.0
+              ],
+              "cp2048": [
+                7000.0,
+                150.0
+              ],
+              "d44": [
+                7000.0,
+                150.0
+              ]
+            }
+          ],
+          "empty"
+        ],
+        [
+          [
+            {}
+          ],
+          "unmeasured"
+        ],
+        [
+          [
+            {
+              "plain": [
+                501.0,
+                40.0
+              ],
+              "cp2048": [
+                501.0,
+                40.0
+              ],
+              "d44": [
+                501.0,
+                40.0
+              ]
+            }
+          ],
+          "pruned"
+        ],
+        [
+          [
+            {
+              "plain": [
+                500.0,
+                40.0
+              ],
+              "cp2048": [
+                500.0,
+                40.0
+              ],
+              "d44": [
+                500.0,
+                40.0
+              ]
+            }
+          ],
+          "intact"
+        ]
+      ],
+      "anchor_axis": [
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "unique"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  90.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  90.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  90.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  90.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  90.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  90.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "multiple"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "none"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  50.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  50.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  50.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  50.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  50.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  50.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "borderline"
+        ],
+        [
+          [
+            {}
+          ],
+          "unmeasured"
+        ]
+      ],
+      "ladder_axis": [
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "intact"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "pruned"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  7000.0,
+                  150.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  7000.0,
+                  150.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  7000.0,
+                  150.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  7000.0,
+                  150.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  7000.0,
+                  150.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  7000.0,
+                  150.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "empty"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  5.0
+                ],
+                "0.99": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  5.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  5.0
+                ],
+                "0.99": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  5.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  5.0
+                ],
+                "0.99": [
+                  400.0,
+                  35.0,
+                  0.0,
+                  5.0
+                ]
+              }
+            }
+          ],
+          "borderline"
+        ],
+        [
+          [
+            {}
+          ],
+          "unmeasured"
+        ]
+      ],
+      "stratum_axis": [
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "agree"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  5000.0,
+                  300.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "disagree"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  600.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "disagree"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1500.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1500.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  1000.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  1500.0,
+                  100.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "agree"
+        ],
+        [
+          [
+            {}
+          ],
+          "unmeasured"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  200.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  200.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "disagree"
+        ]
+      ],
+      "neutrality_axis": [
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "neutral"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  600.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  600.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "arm_specific"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  1.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  1.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  1.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  1.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  40.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  40.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "borderline"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  350.0,
+                  90.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  90.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "arm_specific"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  350.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            0.99
+          ],
+          "neutral"
+        ],
+        [
+          [
+            {}
+          ],
+          "unmeasured"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  200.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  200.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            }
+          ],
+          "neutral"
+        ],
+        [
+          [
+            {
+              "plain": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  200.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "cp2048": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  200.0,
+                  20.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "d44": {
+                "0.9": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ],
+                "0.99": [
+                  390.0,
+                  60.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            0.99
+          ],
+          "arm_specific"
+        ]
+      ],
+      "reachable_pairs": [
+        [
+          [],
+          [
+            [
+              "borderline",
+              "borderline"
+            ],
+            [
+              "borderline",
+              "empty"
+            ],
+            [
+              "borderline",
+              "intact"
+            ],
+            [
+              "borderline",
+              "pruned"
+            ],
+            [
+              "multiple",
+              "borderline"
+            ],
+            [
+              "multiple",
+              "intact"
+            ],
+            [
+              "multiple",
+              "pruned"
+            ],
+            [
+              "none",
+              "borderline"
+            ],
+            [
+              "none",
+              "empty"
+            ],
+            [
+              "none",
+              "pruned"
+            ],
+            [
+              "unique",
+              "borderline"
+            ],
+            [
+              "unique",
+              "empty"
+            ],
+            [
+              "unique",
+              "intact"
+            ],
+            [
+              "unique",
+              "pruned"
+            ]
+          ]
+        ]
+      ],
+      "undominated_survey": [
+        [
+          [],
+          [
+            "batch_async"
+          ]
+        ]
+      ],
+      "coverage_axis": [
+        [
+          [
+            {
+              "plain": 6,
+              "cp2048": 6,
+              "d44": 6
+            }
+          ],
+          "sufficient"
+        ],
+        [
+          [
+            {
+              "plain": 4,
+              "cp2048": 6,
+              "d44": 5
+            }
+          ],
+          "sufficient"
+        ],
+        [
+          [
+            {
+              "plain": 3,
+              "cp2048": 6,
+              "d44": 6
+            }
+          ],
+          "insufficient"
+        ],
+        [
+          [
+            {
+              "plain": 6,
+              "cp2048": 6
+            }
+          ],
+          "insufficient"
+        ],
+        [
+          [
+            {}
+          ],
+          "insufficient"
+        ]
+      ],
+      "critical_bound_values": [
+        [
+          [
+            [
+              10.0,
+              20.0,
+              40.0
+            ]
+          ],
+          [
+            5.0,
+            10.0,
+            15.0,
+            20.0,
+            25.0,
+            40.0,
+            45.0
+          ]
+        ],
+        [
+          [
+            [
+              7.0
+            ]
+          ],
+          [
+            6.0,
+            7.0,
+            8.0
+          ]
+        ]
+      ],
+      "reachable_triples": [
+        [
+          [],
+          [
+            [
+              "arm_specific",
+              "borderline",
+              "borderline"
+            ],
+            [
+              "arm_specific",
+              "borderline",
+              "empty"
+            ],
+            [
+              "arm_specific",
+              "borderline",
+              "intact"
+            ],
+            [
+              "arm_specific",
+              "borderline",
+              "pruned"
+            ],
+            [
+              "arm_specific",
+              "multiple",
+              "borderline"
+            ],
+            [
+              "arm_specific",
+              "multiple",
+              "intact"
+            ],
+            [
+              "arm_specific",
+              "multiple",
+              "pruned"
+            ],
+            [
+              "arm_specific",
+              "none",
+              "borderline"
+            ],
+            [
+              "arm_specific",
+              "none",
+              "empty"
+            ],
+            [
+              "arm_specific",
+              "none",
+              "pruned"
+            ],
+            [
+              "arm_specific",
+              "unique",
+              "borderline"
+            ],
+            [
+              "arm_specific",
+              "unique",
+              "empty"
+            ],
+            [
+              "arm_specific",
+              "unique",
+              "intact"
+            ],
+            [
+              "arm_specific",
+              "unique",
+              "pruned"
+            ],
+            [
+              "borderline",
+              "borderline",
+              "borderline"
+            ],
+            [
+              "borderline",
+              "borderline",
+              "empty"
+            ],
+            [
+              "borderline",
+              "borderline",
+              "intact"
+            ],
+            [
+              "borderline",
+              "borderline",
+              "pruned"
+            ],
+            [
+              "borderline",
+              "multiple",
+              "borderline"
+            ],
+            [
+              "borderline",
+              "multiple",
+              "intact"
+            ],
+            [
+              "borderline",
+              "multiple",
+              "pruned"
+            ],
+            [
+              "neutral",
+              "borderline",
+              "borderline"
+            ],
+            [
+              "neutral",
+              "borderline",
+              "empty"
+            ],
+            [
+              "neutral",
+              "borderline",
+              "intact"
+            ],
+            [
+              "neutral",
+              "borderline",
+              "pruned"
+            ],
+            [
+              "neutral",
+              "multiple",
+              "borderline"
+            ],
+            [
+              "neutral",
+              "multiple",
+              "intact"
+            ],
+            [
+              "neutral",
+              "multiple",
+              "pruned"
+            ],
+            [
+              "neutral",
+              "none",
+              "borderline"
+            ],
+            [
+              "neutral",
+              "none",
+              "empty"
+            ],
+            [
+              "neutral",
+              "none",
+              "pruned"
+            ],
+            [
+              "neutral",
+              "unique",
+              "borderline"
+            ],
+            [
+              "neutral",
+              "unique",
+              "empty"
+            ],
+            [
+              "neutral",
+              "unique",
+              "intact"
+            ],
+            [
+              "neutral",
+              "unique",
+              "pruned"
+            ]
+          ]
+        ]
+      ],
+      "margin_in_bands": [
+        [
+          [
+            850.0,
+            20.0,
+            [
+              1000.0,
+              2000.0
+            ]
+          ],
+          3.75
+        ],
+        [
+          [
+            850.0,
+            null,
+            [
+              1000.0
+            ]
+          ],
+          null
+        ],
+        [
+          [
+            850.0,
+            20.0,
+            [
+              500.0
+            ]
+          ],
+          Infinity
+        ],
+        [
+          [
+            850.0,
+            0.0,
+            [
+              1000.0
+            ]
+          ],
+          Infinity
+        ],
+        [
+          [
+            850.0,
+            20.0,
+            [
+              850.0
+            ]
+          ],
+          Infinity
+        ],
+        [
+          [
+            850.0,
+            20.0,
+            [
+              890.0,
+              1000.0
+            ]
+          ],
+          1.0
+        ]
+      ],
+      "margin_identifiable": [
+        [
+          [
+            850.0,
+            20.0,
+            [
+              1000.0,
+              2000.0
+            ]
+          ],
+          true
+        ],
+        [
+          [
+            850.0,
+            60.0,
+            [
+              1000.0
+            ]
+          ],
+          false
+        ],
+        [
+          [
+            850.0,
+            null,
+            [
+              1000.0
+            ]
+          ],
+          null
+        ],
+        [
+          [
+            850.0,
+            20.0,
+            [
+              500.0
+            ]
+          ],
+          true
+        ],
+        [
+          [
+            850.0,
+            20.0,
+            [
+              890.0
+            ]
+          ],
+          false
+        ],
+        [
+          [
+            850.0,
+            20.0,
+            [
+              930.0
+            ]
+          ],
+          true
+        ]
+      ],
+      "roofline_prefill_ms": [
+        [
+          [
+            3764.0,
+            108,
+            1.0
+          ],
+          214.45697219610258
+        ],
+        [
+          [
+            3764.0,
+            64,
+            1.0
+          ],
+          361.89614058092315
+        ],
+        [
+          [
+            5925.3,
+            64,
+            1.0
+          ],
+          569.6979813454154
+        ],
+        [
+          [
+            0,
+            108,
+            1.0
+          ],
+          null
+        ],
+        [
+          [
+            3764.0,
+            108,
+            0
+          ],
+          null
+        ]
+      ],
+      "roofline_decode_ms": [
+        [
+          [
+            1.0
+          ],
+          8.718221999019129
+        ],
+        [
+          [
+            0.5
+          ],
+          17.436443998038257
+        ],
+        [
+          [
+            0
+          ],
+          null
+        ]
+      ],
+      "screen_boundaries": [
+        [
+          [
+            "ttft"
+          ],
+          [
+            100.0,
+            150.0,
+            300.0,
+            400.0,
+            500.0,
+            1000.0,
+            2000.0,
+            3000.0,
+            4000.0,
+            6000.0
+          ]
+        ],
+        [
+          [
+            "itl"
+          ],
+          [
+            25.0,
+            30.0,
+            40.0,
+            50.0,
+            60.0,
+            70.0,
+            80.0,
+            100.0,
+            200.0
+          ]
+        ]
+      ],
+      "stratum_floor_ms": [
+        [
+          [
+            0.9,
+            108,
+            1.0
+          ],
+          214.45697219610258
+        ],
+        [
+          [
+            0.9,
+            64,
+            1.0
+          ],
+          361.89614058092315
+        ],
+        [
+          [
+            0.99,
+            64,
+            1.0
+          ],
+          569.6979813454154
+        ],
+        [
+          [
+            0.75,
+            108,
+            1.0
+          ],
+          null
+        ]
+      ]
+    }
+  },
+  "frozen": {
+    "insufficient|arm_specific|agree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|agree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|disagree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|arm_specific|unmeasured|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|agree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|disagree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|borderline|unmeasured|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|agree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|disagree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|neutral|unmeasured|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|agree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|disagree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|borderline|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|borderline|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|multiple|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|multiple|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|none|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|none|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|none|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|none|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unique|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unique|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unique|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unique|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "insufficient|unmeasured|unmeasured|unmeasured|unmeasured": "COVERAGE_INSUFFICIENT",
+    "sufficient|arm_specific|agree|borderline|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|borderline|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|borderline|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|borderline|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|multiple|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|multiple|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|multiple|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|none|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|none|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|none|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|unique|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|unique|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|unique|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|unique|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|agree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|agree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|borderline|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|borderline|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|borderline|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|borderline|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|multiple|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|multiple|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|multiple|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|none|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|none|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|none|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|unique|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|unique|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|unique|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|unique|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|disagree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|disagree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|borderline|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|borderline|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|borderline|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|borderline|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|multiple|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|multiple|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|multiple|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|none|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|none|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|none|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|unique|borderline": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|unique|empty": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|unique|intact": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|unique|pruned": "FLOOR_NOT_ARM_NEUTRAL",
+    "sufficient|arm_specific|unmeasured|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|arm_specific|unmeasured|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|borderline|borderline": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|agree|borderline|empty": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|agree|borderline|intact": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|agree|borderline|pruned": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|agree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|multiple|borderline": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|agree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|multiple|intact": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|agree|multiple|pruned": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|agree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|none|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|none|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|none|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unique|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unique|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|agree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|borderline|borderline": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|disagree|borderline|empty": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|disagree|borderline|intact": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|disagree|borderline|pruned": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|disagree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|multiple|borderline": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|disagree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|multiple|intact": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|disagree|multiple|pruned": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|disagree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|none|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|none|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|none|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unique|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unique|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|disagree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|borderline|borderline": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|unmeasured|borderline|empty": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|unmeasured|borderline|intact": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|unmeasured|borderline|pruned": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|unmeasured|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|multiple|borderline": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|unmeasured|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|multiple|intact": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|unmeasured|multiple|pruned": "FLOOR_NEUTRALITY_BORDERLINE",
+    "sufficient|borderline|unmeasured|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|none|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|none|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|none|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unique|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unique|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unique|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unique|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|borderline|unmeasured|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|borderline|borderline": "ANCHOR_BORDERLINE_LADDER_BORDERLINE",
+    "sufficient|neutral|agree|borderline|empty": "ANCHOR_BORDERLINE_LADDER_EMPTY",
+    "sufficient|neutral|agree|borderline|intact": "ANCHOR_BORDERLINE",
+    "sufficient|neutral|agree|borderline|pruned": "ANCHOR_BORDERLINE_LADDER_PRUNED",
+    "sufficient|neutral|agree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|multiple|borderline": "ANCHOR_UNDERDETERMINED_LADDER_BORDERLINE",
+    "sufficient|neutral|agree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|multiple|intact": "ANCHOR_UNDERDETERMINED",
+    "sufficient|neutral|agree|multiple|pruned": "ANCHOR_UNDERDETERMINED_LADDER_PRUNED",
+    "sufficient|neutral|agree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|none|borderline": "ANCHOR_INFEASIBLE_LADDER_BORDERLINE",
+    "sufficient|neutral|agree|none|empty": "NOTHING_FEASIBLE",
+    "sufficient|neutral|agree|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|none|pruned": "ANCHOR_INFEASIBLE_LADDER_PRUNED",
+    "sufficient|neutral|agree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|unique|borderline": "ANCHOR_REGISTERED_LADDER_BORDERLINE",
+    "sufficient|neutral|agree|unique|empty": "ANCHOR_REGISTERED_LADDER_EMPTY",
+    "sufficient|neutral|agree|unique|intact": "ANCHOR_REGISTERED",
+    "sufficient|neutral|agree|unique|pruned": "ANCHOR_REGISTERED_LADDER_PRUNED",
+    "sufficient|neutral|agree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|agree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|borderline|borderline": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|borderline|empty": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|borderline|intact": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|borderline|pruned": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|multiple|borderline": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|multiple|intact": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|multiple|pruned": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|none|borderline": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|none|empty": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|none|pruned": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|unique|borderline": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|unique|empty": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|unique|intact": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|unique|pruned": "STRATUM_DEPENDENT",
+    "sufficient|neutral|disagree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|disagree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|borderline|borderline": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|borderline|empty": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|borderline|intact": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|borderline|pruned": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|multiple|borderline": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|multiple|intact": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|multiple|pruned": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|none|borderline": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|none|empty": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|none|pruned": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|unique|borderline": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|unique|empty": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|unique|intact": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|unique|pruned": "STRATUM_UNMEASURED",
+    "sufficient|neutral|unmeasured|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|neutral|unmeasured|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|none|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|none|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|none|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unique|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unique|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|agree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|borderline|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|borderline|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|multiple|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|none|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|none|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|none|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unique|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unique|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unique|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unique|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|disagree|unmeasured|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|borderline|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|borderline|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|borderline|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|borderline|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|borderline|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|multiple|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|multiple|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|multiple|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|multiple|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|multiple|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|none|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|none|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|none|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|none|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|none|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unique|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unique|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unique|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unique|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unique|unmeasured": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unmeasured|borderline": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unmeasured|empty": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unmeasured|intact": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unmeasured|pruned": "IMPOSSIBLE_WORLD",
+    "sufficient|unmeasured|unmeasured|unmeasured|unmeasured": "SCREEN_INCOMPLETE"
+  }
+}
