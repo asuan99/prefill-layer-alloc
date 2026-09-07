@@ -18,6 +18,14 @@
 
 ## 1. 가장 큰 의의 — **좌표 문제가 소멸한다**
 
+> ⚠️★**정정(2026-09-07 후속, 1차 출처 확인)** — 아래 §1은 정본 서베이의 *"DistServe SLO
+> scale = 무경쟁 지연의 배수"* 인용 위에 세워졌는데 **그 인용이 틀렸다**. DistServe는
+> **Table 1 절대값**을 스케일한다. **그러나 §1의 결론은 살아남는다** — 무경쟁 지연을
+> 분모로 쓰는 것은 **Splitwise(ISCA'24)**(*"slowdown compared to a request running on
+> DGX-A100 under **no contention**"*, TTFT 2×/3×/6×)·Mooncake(TTFT_P90 10×/TBT_P90 5×)·
+> LoongServe(25×)이고, **선례는 오히려 더 강하다**(peer-reviewed 시스템 논문 3편).
+> ⇒ **귀속만 바뀌고 논증은 유지된다.** 상세 = `RELATEDWORK_LONGCTX_SLO_2026-09-07.md`.
+
 사전등록 §2가 이미 표준을 인용해 뒀다(`serving_slo_survey.md` §2):
 
 > DistServe는 **"SLO scale" = 무경쟁 단일 요청 실행 지연의 배수**로 SLO를 정의하고,
