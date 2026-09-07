@@ -1,0 +1,751 @@
+{
+  "_what_this_is": "AF-1 uncontended-floor probe result. Concurrency 1. Not a policy comparison, not goodput, not an arm ranking.",
+  "always": {
+    "rounds": [
+      {
+        "dir": "af1_904851_1",
+        "task": 1,
+        "seed": 23,
+        "node": "gpu42",
+        "arms_scored": [
+          "cp2048",
+          "d44",
+          "plain"
+        ],
+        "server_args": {
+          "plain": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "cp2048": "attention_backend='flashinfer' chunked_prefill_size=2048 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "d44": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=True disable_piecewise_cuda_graph=True enable_pdmux=True"
+        },
+        "partition_readout": {
+          "plain": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "cp2048": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "d44": "CONFIGURED PD-Multiplexing enabled with 3 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (64, 44), (0, 108)]\nREALISED NO_GROUP_SWITCH_TELEMETRY (no switch fired; expected at concurrency 1 -- addenda sec E)"
+        }
+      },
+      {
+        "dir": "af1_904858_0",
+        "task": 0,
+        "seed": 11,
+        "node": "gpu42",
+        "arms_scored": [
+          "cp2048",
+          "d44",
+          "plain"
+        ],
+        "server_args": {
+          "plain": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "cp2048": "attention_backend='flashinfer' chunked_prefill_size=2048 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "d44": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=True disable_piecewise_cuda_graph=True enable_pdmux=True"
+        },
+        "partition_readout": {
+          "plain": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "cp2048": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "d44": "CONFIGURED PD-Multiplexing enabled with 3 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (64, 44), (0, 108)]\nREALISED NO_GROUP_SWITCH_TELEMETRY (no switch fired; expected at concurrency 1 -- addenda sec E)"
+        }
+      },
+      {
+        "dir": "af1_904858_2",
+        "task": 2,
+        "seed": 37,
+        "node": "gpu42",
+        "arms_scored": [
+          "cp2048",
+          "d44",
+          "plain"
+        ],
+        "server_args": {
+          "plain": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "cp2048": "attention_backend='flashinfer' chunked_prefill_size=2048 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "d44": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=True disable_piecewise_cuda_graph=True enable_pdmux=True"
+        },
+        "partition_readout": {
+          "plain": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "cp2048": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "d44": "CONFIGURED PD-Multiplexing enabled with 3 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (64, 44), (0, 108)]\nREALISED NO_GROUP_SWITCH_TELEMETRY (no switch fired; expected at concurrency 1 -- addenda sec E)"
+        }
+      },
+      {
+        "dir": "af1_904858_3",
+        "task": 3,
+        "seed": 53,
+        "node": "gpu42",
+        "arms_scored": [
+          "cp2048",
+          "d44",
+          "plain"
+        ],
+        "server_args": {
+          "plain": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "cp2048": "attention_backend='flashinfer' chunked_prefill_size=2048 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "d44": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=True disable_piecewise_cuda_graph=True enable_pdmux=True"
+        },
+        "partition_readout": {
+          "plain": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "cp2048": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "d44": "CONFIGURED PD-Multiplexing enabled with 3 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (64, 44), (0, 108)]\nREALISED NO_GROUP_SWITCH_TELEMETRY (no switch fired; expected at concurrency 1 -- addenda sec E)"
+        }
+      },
+      {
+        "dir": "af1_904858_4",
+        "task": 4,
+        "seed": 67,
+        "node": "gpu42",
+        "arms_scored": [
+          "cp2048",
+          "d44",
+          "plain"
+        ],
+        "server_args": {
+          "plain": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "cp2048": "attention_backend='flashinfer' chunked_prefill_size=2048 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "d44": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=True disable_piecewise_cuda_graph=True enable_pdmux=True"
+        },
+        "partition_readout": {
+          "plain": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "cp2048": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "d44": "CONFIGURED PD-Multiplexing enabled with 3 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (64, 44), (0, 108)]\nREALISED NO_GROUP_SWITCH_TELEMETRY (no switch fired; expected at concurrency 1 -- addenda sec E)"
+        }
+      },
+      {
+        "dir": "af1_904863_5",
+        "task": 5,
+        "seed": 71,
+        "node": "gpu42",
+        "arms_scored": [
+          "cp2048",
+          "d44",
+          "plain"
+        ],
+        "server_args": {
+          "plain": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "cp2048": "attention_backend='flashinfer' chunked_prefill_size=2048 context_length=32768 disable_overlap_schedule=False disable_piecewise_cuda_graph=True enable_pdmux=False",
+          "d44": "attention_backend='flashinfer' chunked_prefill_size=-1 context_length=32768 disable_overlap_schedule=True disable_piecewise_cuda_graph=True enable_pdmux=True"
+        },
+        "partition_readout": {
+          "plain": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "cp2048": "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)",
+          "d44": "CONFIGURED PD-Multiplexing enabled with 3 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (64, 44), (0, 108)]\nREALISED NO_GROUP_SWITCH_TELEMETRY (no switch fired; expected at concurrency 1 -- addenda sec E)"
+        }
+      }
+    ],
+    "boot_failures": []
+  },
+  "planned_boots": 6,
+  "min_boots": 4,
+  "scored_boots_per_arm": {
+    "plain": 6,
+    "cp2048": 6,
+    "d44": 6
+  },
+  "stratum_tokens_registered": {
+    "0.1": 1932.7,
+    "0.5": 2514.0,
+    "0.9": 3764.0,
+    "0.99": 5925.3
+  },
+  "output_5_per_stratum": {
+    "plain": {
+      "0.1": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 235.82778442651033,
+          "p90": 236.40749282203615,
+          "max": 236.58455284312367,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 12.245863084681332,
+          "p90": 12.321127350442111,
+          "max": 12.384916739538312,
+          "n": 6
+        },
+        "ttft_floor_ms": 235.87624859064817,
+        "ttft_between_boot_sd_ms": 0.4764825326126992,
+        "ritl_floor_ms": 12.267271236826977,
+        "ritl_between_boot_sd_ms": 0.058277032656889126
+      },
+      "0.5": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 297.1730506513268,
+          "p90": 297.45818288065493,
+          "max": 297.47176077216864,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 12.256477121263742,
+          "p90": 12.265844573266804,
+          "max": 12.268230952322483,
+          "n": 6
+        },
+        "ttft_floor_ms": 297.082602713878,
+        "ttft_between_boot_sd_ms": 0.3847155137852919,
+        "ritl_floor_ms": 12.253743071729938,
+        "ritl_between_boot_sd_ms": 0.013568712149290096
+      },
+      "0.9": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 422.4957399535924,
+          "p90": 423.2580155134201,
+          "max": 423.42378478497267,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 12.277561128139496,
+          "p90": 12.316736108623445,
+          "max": 12.354795467108488,
+          "n": 6
+        },
+        "ttft_floor_ms": 422.1387444219242,
+        "ttft_between_boot_sd_ms": 1.280246088325333,
+        "ritl_floor_ms": 12.288805269636214,
+        "ritl_between_boot_sd_ms": 0.03255278680018065
+      },
+      "0.99": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 642.2727948054671,
+          "p90": 657.2838450782001,
+          "max": 669.9566825293005,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 12.301816153340042,
+          "p90": 12.329712733626366,
+          "max": 12.337123500183225,
+          "n": 6
+        },
+        "ttft_floor_ms": 645.8768487131844,
+        "ttft_between_boot_sd_ms": 12.099822743538322,
+        "ritl_floor_ms": 12.304878506499032,
+        "ritl_between_boot_sd_ms": 0.022253036671634117
+      }
+    },
+    "cp2048": {
+      "0.1": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 235.81713465973735,
+          "p90": 236.2743473611772,
+          "max": 236.37875551357865,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 12.251269379630685,
+          "p90": 12.31728539802134,
+          "max": 12.350089941173792,
+          "n": 6
+        },
+        "ttft_floor_ms": 235.85470252049467,
+        "ttft_between_boot_sd_ms": 0.39909865358713953,
+        "ritl_floor_ms": 12.269304762594402,
+        "ritl_between_boot_sd_ms": 0.04292863203118008
+      },
+      "0.5": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 309.4263182953,
+          "p90": 309.8548044450581,
+          "max": 309.9114161916077,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 12.263304409570992,
+          "p90": 12.372168931178749,
+          "max": 12.402849020436406,
+          "n": 6
+        },
+        "ttft_floor_ms": 309.4891314705213,
+        "ttft_between_boot_sd_ms": 0.3115455956270987,
+        "ritl_floor_ms": 12.2918330396836,
+        "ritl_between_boot_sd_ms": 0.06639093497227248
+      },
+      "0.9": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 449.8219278641045,
+          "p90": 451.0343815665692,
+          "max": 451.11488346010447,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 12.274200497195125,
+          "p90": 12.402122505009174,
+          "max": 12.438411572948098,
+          "n": 6
+        },
+        "ttft_floor_ms": 449.97354426110786,
+        "ttft_between_boot_sd_ms": 0.8963870083850733,
+        "ritl_floor_ms": 12.314867841390273,
+        "ritl_between_boot_sd_ms": 0.07148400014103704
+      },
+      "0.99": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 694.8682545218617,
+          "p90": 712.2239024378359,
+          "max": 728.327402472496,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 12.304783090949059,
+          "p90": 12.399865323677659,
+          "max": 12.418263489380479,
+          "n": 6
+        },
+        "ttft_floor_ms": 697.4774337063233,
+        "ttft_between_boot_sd_ms": 15.897917356294803,
+        "ritl_floor_ms": 12.329348049437007,
+        "ritl_between_boot_sd_ms": 0.056733636123123786
+      }
+    },
+    "d44": {
+      "0.1": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 229.28163995966315,
+          "p90": 229.7197391744703,
+          "max": 229.7668973915279,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 13.075124137103558,
+          "p90": 13.131116856820881,
+          "max": 13.148846663534641,
+          "n": 6
+        },
+        "ttft_floor_ms": 229.2606082589676,
+        "ttft_between_boot_sd_ms": 0.44256020568745175,
+        "ritl_floor_ms": 13.070744541473687,
+        "ritl_between_boot_sd_ms": 0.057986386826448515
+      },
+      "0.5": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 291.4125901181251,
+          "p90": 292.69726262427866,
+          "max": 293.7125476077199,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 13.052541464567184,
+          "p90": 13.128539784811437,
+          "max": 13.135150978341699,
+          "n": 6
+        },
+        "ttft_floor_ms": 291.6071755811572,
+        "ttft_between_boot_sd_ms": 1.1111677667462316,
+        "ritl_floor_ms": 13.061526807335516,
+        "ritl_between_boot_sd_ms": 0.05940440083889797
+      },
+      "0.9": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 419.05621769838035,
+          "p90": 421.7337212525308,
+          "max": 423.20344150066376,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 13.093392234295607,
+          "p90": 13.155171810649335,
+          "max": 13.159119468182325,
+          "n": 6
+        },
+        "ttft_floor_ms": 419.3915283307433,
+        "ttft_between_boot_sd_ms": 2.214172369347533,
+        "ritl_floor_ms": 13.094057392639419,
+        "ritl_between_boot_sd_ms": 0.0551980122900517
+      },
+      "0.99": {
+        "n_boots": 6,
+        "ttft": {
+          "p50": 641.4292327594012,
+          "p90": 719.0578479319811,
+          "max": 770.9832144901156,
+          "n": 6
+        },
+        "ritl_p95": {
+          "p50": 13.107696608640254,
+          "p90": 13.13990019261837,
+          "max": 13.143424652516842,
+          "n": 6
+        },
+        "ttft_floor_ms": 665.9725204575807,
+        "ttft_between_boot_sd_ms": 52.69168337177641,
+        "ritl_floor_ms": 13.107312652282417,
+        "ritl_between_boot_sd_ms": 0.03060116262950143
+      }
+    }
+  },
+  "world": {
+    "coverage": "sufficient",
+    "neutrality": "neutral",
+    "stratum": "disagree",
+    "anchor": "unique",
+    "ladder": "intact"
+  },
+  "world_key": "sufficient|neutral|disagree|unique|intact",
+  "label": "STRATUM_DEPENDENT",
+  "fork_branch": "b",
+  "outcome_gap": false,
+  "substantive": true,
+  "output_6_screens": {
+    "0.9": {
+      "strict": {
+        "arm_bounds_ms": {
+          "plain": [
+            422.1387444219242,
+            12.288805269636214
+          ],
+          "cp2048": [
+            449.97354426110786,
+            12.314867841390273
+          ],
+          "d44": [
+            419.3915283307433,
+            13.094057392639419
+          ]
+        },
+        "candidates": {
+          "code_inline": false,
+          "voice": false,
+          "chat": false,
+          "rag": false,
+          "batch_async": true
+        },
+        "ladder": {
+          "500.0x40.0": true,
+          "500.0x50.0": true,
+          "500.0x60.0": true,
+          "500.0x70.0": true,
+          "500.0x80.0": true,
+          "500.0x100.0": true,
+          "1000.0x40.0": true,
+          "1000.0x50.0": true,
+          "1000.0x60.0": true,
+          "1000.0x70.0": true,
+          "1000.0x80.0": true,
+          "1000.0x100.0": true,
+          "2000.0x40.0": true,
+          "2000.0x50.0": true,
+          "2000.0x60.0": true,
+          "2000.0x70.0": true,
+          "2000.0x80.0": true,
+          "2000.0x100.0": true,
+          "3000.0x40.0": true,
+          "3000.0x50.0": true,
+          "3000.0x60.0": true,
+          "3000.0x70.0": true,
+          "3000.0x80.0": true,
+          "3000.0x100.0": true,
+          "4000.0x40.0": true,
+          "4000.0x50.0": true,
+          "4000.0x60.0": true,
+          "4000.0x70.0": true,
+          "4000.0x80.0": true,
+          "4000.0x100.0": true,
+          "6000.0x40.0": true,
+          "6000.0x50.0": true,
+          "6000.0x60.0": true,
+          "6000.0x70.0": true,
+          "6000.0x80.0": true,
+          "6000.0x100.0": true
+        },
+        "anchor_class": "unique",
+        "ladder_class": "intact"
+      },
+      "banded": {
+        "arm_bounds_ms": {
+          "plain": [
+            424.6992365985748,
+            12.353910843236575
+          ],
+          "cp2048": [
+            451.766318277878,
+            12.457835841672347
+          ],
+          "d44": [
+            423.81987306943836,
+            13.204453417219522
+          ]
+        },
+        "candidates": {
+          "code_inline": false,
+          "voice": false,
+          "chat": false,
+          "rag": false,
+          "batch_async": true
+        },
+        "ladder": {
+          "500.0x40.0": true,
+          "500.0x50.0": true,
+          "500.0x60.0": true,
+          "500.0x70.0": true,
+          "500.0x80.0": true,
+          "500.0x100.0": true,
+          "1000.0x40.0": true,
+          "1000.0x50.0": true,
+          "1000.0x60.0": true,
+          "1000.0x70.0": true,
+          "1000.0x80.0": true,
+          "1000.0x100.0": true,
+          "2000.0x40.0": true,
+          "2000.0x50.0": true,
+          "2000.0x60.0": true,
+          "2000.0x70.0": true,
+          "2000.0x80.0": true,
+          "2000.0x100.0": true,
+          "3000.0x40.0": true,
+          "3000.0x50.0": true,
+          "3000.0x60.0": true,
+          "3000.0x70.0": true,
+          "3000.0x80.0": true,
+          "3000.0x100.0": true,
+          "4000.0x40.0": true,
+          "4000.0x50.0": true,
+          "4000.0x60.0": true,
+          "4000.0x70.0": true,
+          "4000.0x80.0": true,
+          "4000.0x100.0": true,
+          "6000.0x40.0": true,
+          "6000.0x50.0": true,
+          "6000.0x60.0": true,
+          "6000.0x70.0": true,
+          "6000.0x80.0": true,
+          "6000.0x100.0": true
+        },
+        "anchor_class": "unique",
+        "ladder_class": "intact"
+      },
+      "anchor_axis": "unique",
+      "ladder_axis": "intact",
+      "neutrality_axis": "neutral"
+    },
+    "0.99": {
+      "strict": {
+        "arm_bounds_ms": {
+          "plain": [
+            645.8768487131844,
+            12.304878506499032
+          ],
+          "cp2048": [
+            697.4774337063233,
+            12.329348049437007
+          ],
+          "d44": [
+            665.9725204575807,
+            13.107312652282417
+          ]
+        },
+        "candidates": {
+          "code_inline": false,
+          "voice": false,
+          "chat": false,
+          "rag": false,
+          "batch_async": true
+        },
+        "ladder": {
+          "500.0x40.0": false,
+          "500.0x50.0": false,
+          "500.0x60.0": false,
+          "500.0x70.0": false,
+          "500.0x80.0": false,
+          "500.0x100.0": false,
+          "1000.0x40.0": true,
+          "1000.0x50.0": true,
+          "1000.0x60.0": true,
+          "1000.0x70.0": true,
+          "1000.0x80.0": true,
+          "1000.0x100.0": true,
+          "2000.0x40.0": true,
+          "2000.0x50.0": true,
+          "2000.0x60.0": true,
+          "2000.0x70.0": true,
+          "2000.0x80.0": true,
+          "2000.0x100.0": true,
+          "3000.0x40.0": true,
+          "3000.0x50.0": true,
+          "3000.0x60.0": true,
+          "3000.0x70.0": true,
+          "3000.0x80.0": true,
+          "3000.0x100.0": true,
+          "4000.0x40.0": true,
+          "4000.0x50.0": true,
+          "4000.0x60.0": true,
+          "4000.0x70.0": true,
+          "4000.0x80.0": true,
+          "4000.0x100.0": true,
+          "6000.0x40.0": true,
+          "6000.0x50.0": true,
+          "6000.0x60.0": true,
+          "6000.0x70.0": true,
+          "6000.0x80.0": true,
+          "6000.0x100.0": true
+        },
+        "anchor_class": "unique",
+        "ladder_class": "pruned"
+      },
+      "banded": {
+        "arm_bounds_ms": {
+          "plain": [
+            670.076494200261,
+            12.3493845798423
+          ],
+          "cp2048": [
+            729.2732684189128,
+            12.442815321683254
+          ],
+          "d44": [
+            771.3558872011336,
+            13.16851497754142
+          ]
+        },
+        "candidates": {
+          "code_inline": false,
+          "voice": false,
+          "chat": false,
+          "rag": false,
+          "batch_async": true
+        },
+        "ladder": {
+          "500.0x40.0": false,
+          "500.0x50.0": false,
+          "500.0x60.0": false,
+          "500.0x70.0": false,
+          "500.0x80.0": false,
+          "500.0x100.0": false,
+          "1000.0x40.0": true,
+          "1000.0x50.0": true,
+          "1000.0x60.0": true,
+          "1000.0x70.0": true,
+          "1000.0x80.0": true,
+          "1000.0x100.0": true,
+          "2000.0x40.0": true,
+          "2000.0x50.0": true,
+          "2000.0x60.0": true,
+          "2000.0x70.0": true,
+          "2000.0x80.0": true,
+          "2000.0x100.0": true,
+          "3000.0x40.0": true,
+          "3000.0x50.0": true,
+          "3000.0x60.0": true,
+          "3000.0x70.0": true,
+          "3000.0x80.0": true,
+          "3000.0x100.0": true,
+          "4000.0x40.0": true,
+          "4000.0x50.0": true,
+          "4000.0x60.0": true,
+          "4000.0x70.0": true,
+          "4000.0x80.0": true,
+          "4000.0x100.0": true,
+          "6000.0x40.0": true,
+          "6000.0x50.0": true,
+          "6000.0x60.0": true,
+          "6000.0x70.0": true,
+          "6000.0x80.0": true,
+          "6000.0x100.0": true
+        },
+        "anchor_class": "unique",
+        "ladder_class": "pruned"
+      },
+      "anchor_axis": "unique",
+      "ladder_axis": "pruned",
+      "neutrality_axis": "neutral"
+    }
+  },
+  "output_7_margins": {
+    "plain": {
+      "ttft": {
+        "floor_ms": 422.1387444219242,
+        "between_boot_sd_ms": 1.280246088325333,
+        "nearest_boundary_ms": 500.0,
+        "margin_in_bands": 30.40870668854171,
+        "identifiable": true,
+        "announcement": null
+      },
+      "itl": {
+        "floor_ms": 12.288805269636214,
+        "between_boot_sd_ms": 0.03255278680018065,
+        "nearest_boundary_ms": 25.0,
+        "margin_in_bands": 195.23973182986052,
+        "identifiable": true,
+        "announcement": null
+      }
+    },
+    "cp2048": {
+      "ttft": {
+        "floor_ms": 449.97354426110786,
+        "between_boot_sd_ms": 0.8963870083850733,
+        "nearest_boundary_ms": 500.0,
+        "margin_in_bands": 27.904496200262635,
+        "identifiable": true,
+        "announcement": null
+      },
+      "itl": {
+        "floor_ms": 12.314867841390273,
+        "between_boot_sd_ms": 0.07148400014103704,
+        "nearest_boundary_ms": 25.0,
+        "margin_in_bands": 88.72707272663898,
+        "identifiable": true,
+        "announcement": null
+      }
+    },
+    "d44": {
+      "ttft": {
+        "floor_ms": 419.3915283307433,
+        "between_boot_sd_ms": 2.214172369347533,
+        "nearest_boundary_ms": 500.0,
+        "margin_in_bands": 18.202844725456085,
+        "identifiable": true,
+        "announcement": null
+      },
+      "itl": {
+        "floor_ms": 13.094057392639419,
+        "between_boot_sd_ms": 0.0551980122900517,
+        "nearest_boundary_ms": 25.0,
+        "margin_in_bands": 107.84756654639881,
+        "identifiable": true,
+        "announcement": null
+      }
+    }
+  },
+  "output_8_predictions": {
+    "1_label": {
+      "expected": "ANCHOR_REGISTERED_LADDER_PRUNED / a",
+      "observed": "STRATUM_DEPENDENT / b",
+      "holds": false
+    },
+    "2_hardware_bound": {
+      "status": "FALSIFIED at GPU 0 before the run (pre-registration sec 5.1); not re-tested here"
+    },
+    "3_mfu_threshold": {
+      "threshold_pct": 53.6,
+      "back_derived_mfu": {
+        "plain": 0.5080248497203911,
+        "cp2048": 0.47659906883694214,
+        "d44": 0.8629076081277498
+      },
+      "holds": true
+    },
+    "4_prune_list": {
+      "expected": [
+        500.0
+      ],
+      "observed": [],
+      "flip_below_mfu_pct": 36.2,
+      "holds": false
+    },
+    "5_itl_below_lowest_boundary": {
+      "lowest_itl_boundary_ms": 25.0,
+      "observed_floors_ms": {
+        "plain": 12.288805269636214,
+        "cp2048": 12.314867841390273,
+        "d44": 13.094057392639419
+      },
+      "holds": true
+    }
+  }
+}

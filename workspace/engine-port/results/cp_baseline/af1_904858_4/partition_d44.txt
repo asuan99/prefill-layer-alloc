@@ -1,0 +1,2 @@
+CONFIGURED PD-Multiplexing enabled with 3 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (64, 44), (0, 108)]
+REALISED NO_GROUP_SWITCH_TELEMETRY (no switch fired; expected at concurrency 1 -- addenda sec E)
