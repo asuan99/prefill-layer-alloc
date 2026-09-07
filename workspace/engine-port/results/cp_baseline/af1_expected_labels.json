@@ -76,9 +76,9 @@
     "prereg_counts": {
       "prohibitions": 18,
       "ledger_0_1_rows": 12,
-      "ledger_0_2_rows": 27,
-      "ledger_0_3_rows": 34,
-      "ledger_0_4_rows": 12,
+      "ledger_0_2_rows": 30,
+      "ledger_0_3_rows": 39,
+      "ledger_0_4_rows": 14,
       "limits": 9
     },
     "limit_anchors": [

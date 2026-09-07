@@ -1,5 +1,5 @@
 """AF-1: does an arm-neutral, externally-anchored operating point EXIST?
-RULE_REV = 5.
+RULE_REV = 6.
 
 Why this probe exists
 ---------------------
@@ -18,7 +18,19 @@ run: every outcome names which branch CP-2 rev3 takes.  A probe whose result
 cannot change what happens next is not a probe, and a probe whose mapping is
 written afterwards IS the free parameter it was meant to remove.
 
-What changed from rev4 (`audit_af1_rules_4th_2026-09-04/VERDICT.md`, NO-GO + a
+What rev6 changed (`audit_af1_rules_5th_2026-09-04/VERDICT.md`, NO-GO, ONE death
+cause -- three sentences and one regex; the 6th pass then returned GO)
+-----------------------------------------------------------------------------------
+  Q1  The branch `b_more_boots`, deleted in rev5 and entered in the deletion
+      ledger, was still handing out a PRESENT-TENSE prescription in the
+      pre-registration's forbidden-sentence list.  One label carried two
+      branches, and the check meant to catch that read only UPPERCASE tokens
+      while every branch name in this design is lowercase.
+      -> the surviving descriptions now say `b_precision_bound`, and C20 reads
+         identifiers of either case.  The repair carries its own test: before it,
+         the widened C20 flags exactly `b_more_boots` and nothing else.
+
+What changed in rev4 (`audit_af1_rules_4th_2026-09-04/VERDICT.md`, NO-GO + a
 CONDITIONAL GO list, K1-K8)
 -----------------------------------------------------------------------------------
   K2  `screen_incomplete` fired on ANY unmeasured reading and sat ahead of the
@@ -135,7 +147,7 @@ Scope this rule INHERITS and does not re-argue
     does not exercise the unverified part -- a limit of AF-1's reach, not evidence.
 """
 
-RULE_REV = 5
+RULE_REV = 6
 
 PREDICATE_MODULE = "af1_predicates.py"
 # ★Derived, not retyped.  rev4 kept a byte-identical copy that nothing compared,

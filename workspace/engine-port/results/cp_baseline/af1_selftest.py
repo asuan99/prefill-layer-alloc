@@ -58,8 +58,15 @@ passing mutations it claimed to stop.
        cites EXISTS, and no inert check is cited as enforcement
        -> (3rd) J7, (4th) K4: rev4's version was a prefix test plus a hard-coded
           grep, so an inert citation and a ghost citation both passed.
+  C22  each module's change history names its own current revision
+       -> (6th) 등재 권고 1: a header stayed at rev2 for four revisions while a
+          ledger row said otherwise.
   C21  the rule's predicate-constant list IS the predicate module's list, not a
        re-typed copy -> (4th) K7 + mutation MPREDCONSTDROP.
+  C20b the token scan is non-vacuous for lowercase identifiers, so the widening
+       cannot be silently reverted -> (5th) mutation MC20NARROW.
+  C20c no unused entry sits in the registered external-identifier escape hatch
+       -> (5th) mutation MEXTIDGHOST: an unused slot launders any ghost.
   C20  every label-shaped token in the prohibitions and the limits names something
        that exists -> (4th) K6: counting items protected a prohibition that
        covered a label the revision had already deleted.
@@ -562,20 +569,49 @@ def main():
         # ★4th-audit K6: counting items does not stop an item from naming a label
         # that does not exist -- rev3 had a prohibition covering a label rev3 had
         # already removed, and the count protected it.
+        # ★5th-audit Q1(c): rev5's token regex was `[A-Z][A-Z0-9_]{2,}` and every
+        # BRANCH name in this design is lowercase, so `FORK_BRANCHES` sat in
+        # `known` with no chance of ever being compared -- the check was true on
+        # the empty set.  It now reads identifiers of either case, and keeps the
+        # ones that look like identifiers rather than English prose (contain "_"
+        # or start uppercase).
         known = (set(R.SUBSTANTIVE) | set(R.NON_SUBSTANTIVE) | set(R.FORK_BRANCHES)
                  | {v for vals in R.AXES.values() for v in vals} | set(R.AXES)
-                 | set(dir(P)) | set(R.PREDICATE_FOLDS) | {"AF", "CP", "SLO", "GPU",
-                 "ITL", "TTFT", "SD", "MFU", "SM", "HBM", "A100", "BF16", "W1",
-                 "HE0", "PD", "C2", "S1", "S2", "S3", "S4", "S5"})
+                 | set(dir(P)) | set(R.PREDICATE_FOLDS)
+                 | {n for n, _t, _i in P.SURVEY_POINTS} | set(P.ARMS)
+                 | {"AF", "CP", "SLO", "GPU", "ITL", "TTFT", "SD", "MFU", "SM",
+                    "HBM", "A100", "BF16", "W1", "HE0", "PD", "C2",
+                    "S1", "S2", "S3", "S4", "S5"})
         raw2 = pre.read_text()
         toks = set()
         for sect in ("## 8.", "## 9."):
-            for m in re.finditer(r"`([A-Z][A-Z0-9_]{2,})`", _section(raw2, sect)):
-                toks.add(m.group(1))
+            for m in re.finditer(r"`([A-Za-z][A-Za-z0-9_]{2,})`",
+                                 _section(raw2, sect)):
+                t = m.group(1)
+                if "_" in t or t[0].isupper():
+                    toks.add(t)
         ghosts = sorted(t for t in toks if t not in known)
         ck(not ghosts,
            "C20 every label-shaped token in the prohibitions and limits exists",
            str(ghosts[:4]))
+        # ★mutation MC20NARROW: narrowing the regex back to UPPERCASE-only leaves a
+        # clean document passing, so the widening that made this check see BRANCH
+        # names at all was one edit from reverting.  The scan must be non-vacuous
+        # in the direction it was widened for.
+        ck(any(t[0].islower() for t in toks),
+           "C20b the token scan actually reaches lowercase identifiers",
+           "only %s -- the regex has been narrowed back" % sorted(toks)[:4])
+        # ★6th-audit 등재 권고 2 (mutation MEXTIDLAUNDER): rev6 had an escape
+        # hatch `external_identifiers` whose entries were accepted as known.  Its
+        # own membership test asked whether the name appeared ANYWHERE in the
+        # document, so parking a retired branch name there revived 5th-audit Q1
+        # with rc=0.  The hatch is now GONE, and it turned out to be provably
+        # unnecessary: every token this check scans is already covered by the
+        # code's own registries, so `scanned - known` was empty without it.
+        # C20c keeps it gone -- there is no list to launder through.
+        ck("external_identifiers" not in oracle["meta"],
+           "C20c no escape hatch exists for the token check",
+           "a `known` override list is back; it is a laundering surface")
 
     # C8 -----------------------------------------------------------------
     hand = {r["world"]: r["label"] for r in rows}
@@ -713,6 +749,20 @@ def main():
         dup = sorted({n for n in names if names.count(n) > 1})
         ck(not dup, "C18 no duplicate top-level definition in %s"
            % mod.__name__, str(dup))
+
+    # C22 ----------------------------------------------------------------
+    # ★6th-audit 등재 권고 1 + mutation MHEADERREVERT: a change-history header
+    # stayed at rev2 through four revisions while a ledger row claimed it had
+    # been updated (gates #67/#70).  A header that does not name its own current
+    # revision cannot be recording that revision.
+    for mod, cname in ((P, "PRED_REV"), (R, "RULE_REV")):
+        doc = mod.__doc__ or ""
+        m = re.search(cname + r" = (\d+)", doc) if cname == "PRED_REV" else None
+        rev = int(m.group(1)) if m else getattr(R, "RULE_REV")
+        ck(("rev%d" % rev) in doc,
+           "C22 %s's change history names its own current revision (rev%d)"
+           % (mod.__name__, rev),
+           "the header stops before the revision it is shipped with")
 
     # C14 ----------------------------------------------------------------
     if ck(CP2R2.exists(), "C14 CP-2 rev2 predicate file present"):

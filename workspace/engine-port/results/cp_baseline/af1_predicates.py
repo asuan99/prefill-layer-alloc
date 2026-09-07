@@ -1,4 +1,22 @@
-"""AF-1 predicates: the UNCONTENDED-FLOOR SCREEN, as code.  PRED_REV = 5.
+"""AF-1 predicates: the UNCONTENDED-FLOOR SCREEN, as code.  PRED_REV = 6.
+
+What changed in rev3, rev4, rev5 and rev6 -- the short version
+-----------------------------------------------------------------------------------
+  rev3 (3rd audit, J1-J8)  neutrality judged on the STRICT screen with a
+        `borderline` value and a `q` argument; `coverage_axis` replaced the
+        predicate-less `boot` axis; `undominated_survey` restored.
+  rev4 (4th audit, K1-K8)  the roofline became registered constants and folds on
+        MEASURED strata; `screen_boundaries`; `MARGIN_MIN_BAND_MULT`;
+        `INTERNAL_CONSTANTS` so private globals cannot escape classification.
+  rev5 (5th audit, Q1)     the branch `b_more_boots` was retired for
+        `b_precision_bound` -- a sample SD does not shrink with more boots, so
+        "buy more boots" was never purchasable (4th-audit K3).
+  rev6 (6th audit, GO)     the surviving descriptions of that retired branch were
+        corrected, and the token check that should have caught them was widened
+        past UPPERCASE-only.
+  ★This header stopped at rev2 through four revisions while a ledger row claimed
+  it had been updated (6th-audit 등재 권고 1) -- gates #67/#70: a change-history
+  entry may only record what has actually been done.
 
 What changed from rev2 (`audit_af1_rules_2nd_2026-09-04/VERDICT.md`, NO-GO, E1-E10)
 -----------------------------------------------------------------------------------
@@ -512,10 +530,15 @@ def neutrality_axis(strata_by_arm, q=None):
 
     ⚠️NOT SD-free, and rev3 said it was in three places (3rd-audit J1).  The band
     still enters through `borderline`: identical floors plus one noisy arm gives
-    `borderline`, not `neutral`.  What changed is the PRESCRIPTION -- rev4 sends
-    `borderline` to its own branch (`b_more_boots`, "buy more boots"), so the noise
-    path no longer buys the same verdict as a real arm difference.  rev3 renamed
-    that path and left it going to the same place.
+    `borderline`, not `neutral`.  What changed is the PRESCRIPTION -- `borderline`
+    has its OWN branch, `b_precision_bound`: the noise decided at THIS measurement
+    precision.  ★It is NOT "buy more boots".  rev4 named that branch
+    `b_more_boots` and 4th-audit K3 showed the name was unpurchasable -- `boot_sd`
+    is a SAMPLE SD, so the band converges to 2*sigma rather than to zero, and sec
+    3.3 forbids the purchase anyway.  The lever is sigma (measurement design) and
+    AF-1 does not buy it, so this label ends AF-1 and hands the coordinate
+    question to CP-2 rev3.  (5th-audit Q1: this docstring was one of three places
+    where the deleted name kept giving the old prescription.)
     """
     strict = _survey_sets(strata_by_arm, banded=False, q=q)
     if strict is None:
