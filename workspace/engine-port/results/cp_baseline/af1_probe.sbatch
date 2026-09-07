@@ -140,9 +140,19 @@ for ARM in "$ARM1" "$ARM2" "$ARM3"; do
   # names are `current_decode_sms` / `target_decode_sms`, not `decode_sms`
   # (`multiplexing_mixin.py:446`).
   if [ "$ARM" = "d44" ]; then
+    # (a) CONFIGURED groups -- the engine prints the whole `sm_counts` table at
+    # boot.  Smoke 904845_0 showed the per-step fields below can legitimately be
+    # empty (no group switch ever happens at concurrency 1), which left the
+    # artifact with no record of what the arm was even set up to do.  ADDITIVE
+    # repair (addenda sec E): keep (b) unchanged, record the config line too.
+    grep -oE "PD-Multiplexing enabled with .*" "$SRVLOG" \
+      | sed 's/^/CONFIGURED /' | sort -u | tee "$OUT/partition_${ARM}.txt"
+    # (b) REALISED per-step readout (unchanged emitter fields, `multiplexing_mixin.py:446`)
     grep -oE "current_decode_sms=[0-9]+|target_decode_sms=[0-9]+|smCount=[0-9]+|manual_divisions[^ ]*" \
-      "$SRVLOG" | sort | uniq -c | tee "$OUT/partition_${ARM}.txt"
-    [ -s "$OUT/partition_${ARM}.txt" ] || echo "NO_PARTITION_READOUT_IN_LOG" | tee "$OUT/partition_${ARM}.txt"
+      "$SRVLOG" | sort | uniq -c | sed 's/^/REALISED /' | tee -a "$OUT/partition_${ARM}.txt"
+    grep -q "^REALISED" "$OUT/partition_${ARM}.txt" \
+      || echo "REALISED NO_GROUP_SWITCH_TELEMETRY (no switch fired; expected at concurrency 1 -- addenda sec E)" \
+         | tee -a "$OUT/partition_${ARM}.txt"
   else
     echo "PRINCIPALLY_ABSENT (no --enable-pdmux; canon CONSENSUS sec 1-1)" > "$OUT/partition_${ARM}.txt"
   fi
