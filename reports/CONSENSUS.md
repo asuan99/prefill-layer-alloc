@@ -4,7 +4,50 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-09-03 rev53 (doc-steward — ★★★**cp_baseline 트랙
+최종 갱신: 2026-09-07 rev54 (doc-steward — ★★★**cp_baseline 트랙
+AF-1 완주 = 이 트랙 첫 실질 라벨 + 경로 (a) 폐쇄 사유 확정** —
+규칙층 rev6이 이 트랙 최초 `GO`를 받은 뒤 하네스·스모크 2회
+(계측 결함 2건 수리)를 거쳐 6 boot(0.88 GPU-hr, 11 job)로 등록
+분석기를 **1회** 실행, **`STRATUM_DEPENDENT` → 분기 `b`**를 냈다
+(사다리만 `intact`↔`pruned`, 분기 `b`의 등록 처방인 사다리 전수
+공표에서 **ITL 축은 어느 조합에서도 못 떨어짐** — 실체는 TTFT
+축 단 한 행). 등록 예측 5건 중 3건이 틀림(§5.1이 "틀리는 것이
+결과"로 등록해 산출물). ★이월 항목 해소: `d44` q=0.99 부팅간
+SD 52.69ms = `plain`의 4.35배(귀속 안 함, arm이 묶임). 이어
+사용자 지시로 "층을 고정할 근거"를 제안했으나 규칙층 감사
+`NO-GO`(死因 7건, 단일질문답 "이름만 바꿨다")를 받아 수용했고,
+1차 출처 재조회 + 관련연구 조사(392줄)로 **경로 (a)("외부
+앵커 좌표 하나를 운영점으로 등록")가 닫힌 이유는 우리 측정이
+아니라 그런 좌표가 존재하지 않기 때문**임을 확정했다(DistServe
+OSDI'24 자신이 *"there exists no available SLO settings"* 라
+적고, long-context에 인터랙티브 100–400ms를 적용한 논문은
+문헌 조사에서 0건). ★신규 방법론 게이트 3건(§3 항목110–112):
+**#90/항목110** 금지문 목록 자신이 거짓 진술을 담을 수 있다
+(死因 U4, 게이트 #75=항목95의 금지문 판본) · **#91/항목111**
+모집단 선별이 답을 정할 수 있다 — 분위수는 모집단을 명명해야
+뜻을 갖는다(死因 U2, AF-1 풀=코퍼스 상위 2.12%라 `anchor=unique`
+는 사슬이 아니라 풀 선택이 정함[코퍼스 p99에선 `multiple`],
+게이트 #81=항목101의 모집단 판본) · **#92/항목112** 외부 앵커를
+쓰는 트랙은 1차 출처 스냅샷을 남겨야 한다(`serving_slo_survey.md`
+가 URL만 남겨 재조회 필요, 재조회가 §2 인용보다 많이 찾아냈고
+DistServe SLO-scale 오인용 1건도 함께 드러남). ★**정정**:
+`serving_slo_survey.md` §2의 "DistServe SLO scale = 무경쟁
+단일 요청 실행 지연의 배수" 귀속이 1차 출처(arXiv 2401.09670v3)
+와 불일치(본문은 **Table 1 절대 SLO의 선형 배수**) — 무경쟁
+지연을 분모로 쓰는 것은 Splitwise·Mooncake·LoongServe. 서베이
+문서에 정정 배너 부착(이 문서 §1-16/§4가 이 구체 문구를 인용한
+적은 없어 grep 확인 후 별도 수정 불요, §4 living-doc 행에
+정정 배너 포인터만 追記). ★overclaim 금지 재확인 — 이 세션
+**새 성능 판정 0건**: `STRATUM_DEPENDENT`는 계측·설계 판정이지
+정책 판정이 아니고, `d44` 꼬리 SD 4.35배는 관측이지 arm 순위가
+아니다. 불변: HE0·정책 순위·gate #13/#16 "닫았다" 금지·switch-cost
+"닫았다" 금지·C2 인용정지 (a)(b)·`CONSENSUS §1-24` 전부 유지.
+정본 반영: `PROJECT_STATUS.md` 최상단 배너·cp_baseline 레지스트리
+행 追記·"방법론 게이트" #90–92 신설, `reports/CONSENSUS.md`
+rev53→**rev54**. 상세 `workspace/engine-port/results/cp_baseline/`,
+`handoff-report/session_handoff_2026-09-07.md`.**
+
+이전: 2026-09-03 rev53 (doc-steward — ★★★**cp_baseline 트랙
 5·6회차 규칙층 감사(누적 6연속, 둘 다 `NO-GO`) + 구조적 원인 첫
 측정** — 2026-09-01 저녁 개시 3일 연속 세션. 5회차(CP-2 rev1) 死因
 **H1–H8**, 그림자 **81%**; 6회차(CP-2 rev2) 死因 **F1–F8**, 그림자
@@ -4750,6 +4793,53 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
      audit_cp2_rules_5th_2026-09-01/VERDICT.md` "감사자 자기
      신고"·死因 L16.
 
+110. ★★★**(2026-09-07, cp_baseline 층-근거 제안 rev1 규칙층
+     감사, claims-auditor, GPU 0) 금지문 목록 자신이 거짓 진술을
+     담을 수 있다.** 오독을 막으려 쓴 제안 §7 금지문 #2
+     (*"바뀌는 것은 어느 바닥을 비교하느냐뿐"*)가 감사 死因
+     U3(등록 예측이 q=0.99에서 False→True로 뒤집힘, 게이트 #8
+     정면 위반)로 직접 반증됐다(死因 U4) — 금지문은 산문이라
+     인용 검사·변이 검사 어느 도구도 못 잡는다. 게이트 #75
+     (항목95, "출처 허위는 규칙 정본 파일 안에서 가장 위험")의
+     **금지문 판본** — 코드 상수가 아니라 산문 금지문이 같은
+     위험을 갖는다. 실무 규칙: 금지문을 등재하기 전에 그것이
+     참임을 보이는 반례 탐색을 최소 1회 직접 수행하고 병기하라.
+     대응 `PROJECT_STATUS.md` "방법론 게이트" #90(신설). 상세
+     `workspace/engine-port/results/cp_baseline/
+     audit_stratum_ground_2026-09-07/VERDICT.md` 死因 U3·U4.
+
+111. ★★★**(2026-09-07, 상동) 모집단 선별이 답을 정할 수 있다 —
+     분위수는 모집단을 명명해야 뜻을 갖는다.** 死因 U2. AF-1
+     풀(`ShareGPT_long2048_cap8192`, n=1,968)은 코퍼스(92,886행)
+     상위 **2.12%**라 등록된 네 층 전부가 코퍼스 p98 위였다 —
+     1차 출처가 지시하는 "당신의 P99"(코퍼스 p99)로 재계산하면
+     `anchor=multiple`로 갈린다(`unique`는 AF-1 풀의 p99에서만
+     나온다). 사전등록의 사슬 논증 자체는 참이었지만 그 사슬이
+     발화하는지는 풀 선택이 정했다. 항목101(=`PROJECT_STATUS.md`
+     게이트 #81, "도달가능성 검사가 격자 안에서만 돌면 설계가
+     답을 미리 정해도 통과한다")의 **모집단 판본** — 거기서는
+     설계 격자가, 여기서는 데이터 풀 선택이 답을 미리 정했다.
+     실무 규칙: 분위수 문턱 등록 시 그 분위수를 재는 모집단을
+     별도 산출물로 정의하고 상위 스코프(코퍼스/실 트래픽)
+     대표성을 논증하라. 대응 `PROJECT_STATUS.md` "방법론 게이트"
+     #91(신설). 상세 `workspace/engine-port/results/cp_baseline/
+     WORKLOAD_REVIEW_2026-09-07.md` §A.4,
+     `FOLLOWUP_STRATUM_2026-09-07.md` §가.3.
+
+112. ★★**(2026-09-07, 상동) 외부 앵커를 쓰는 트랙은 1차 출처
+     스냅샷을 남겨야 한다.** `serving_slo_survey.md`가 URL만
+     남기고 저장본·스냅샷을 안 남겨 이 세션이 같은 URL을 다른
+     질문으로 두 번 재조회했다 — 재조회가 서베이 §2 인용보다
+     많이 찾아냈고(*"P99 prompt length"* 직접 지시 2건), 같은
+     과정에서 서베이 §2의 DistServe SLO-scale 귀속 오인용도
+     드러났다(무경쟁 배수 아님, Table 1 절대값의 선형 배수 —
+     무경쟁 배수는 Splitwise/Mooncake/LoongServe). 실무 규칙:
+     외부 문헌 인용 시 조회일·저장본/스냅샷 해시·축자 인용을
+     함께 등재하라. 대응 `PROJECT_STATUS.md` "방법론 게이트"
+     #92(신설). 상세 `workspace/engine-port/results/cp_baseline/
+     FOLLOWUP_STRATUM_2026-09-07.md` §가.4, `reports/
+     serving_slo_survey.md` 정정 배너(2026-09-07).
+
 ---
 
 ## 4. 살아있는 문서 (이것만 참조)
@@ -4762,7 +4852,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | **`longcontext_trace_plan.md`** | ★**계획 문서**(L−1 이상은 측정 전) — 실 trace를 long-context로 전환하는 문제. 동기(Diff A는 L≥3k서 열림) vs 정직한 반론(Diff B는 long-L서 닫힘) · 하드 블로커(Zamba2 ctx 4096 / goodput SLO 붕괴) · 단계 L0–L3. ★★★**L−2(Stage 0) 게이트는 2026-07-26 non-binding으로 "실행·확정"됐다고 기록했으나 2026-07-28 claims-auditor 감사(C1 CONFIRMED)로 무효 — 게이트는 사실상 미실행이었다**(아래 `stage0_verdict_2026-07-26.md` 참조), L−1 이상은 "게이트 실패로 보류"가 아니라 "게이트 미실행" |
 | **`stage0_verdict_2026-07-26.md`** | ★★★**Stage 0(long-ctx L−2) 원 판정 — 2026-07-28 판정2/판정3 철회(C1 CONFIRMED, §1-21)**. coupled 스윕 confound 진단(판정1)만 생존, "de-confounded D16≡D108 null" 결과는 D108 앵커가 실은 decode 16 SM이었음이 확인돼 무효. 이력 보존용, 새 분석 근거로 재인용 금지(단독으로는) — 재인용 시 §1-21 전문과 병기 |
 | `results/slo_sched/lengthnorm_slo_reanalysis.md` | ★**길이-정규화/tight SLO 재계측**(§1-16) — HE0가 SLO 엄격도 의존임을 기존 벤치 재분석으로 확정. 스크립트 `reanalyze_lengthnorm_slo.py` |
-| **`serving_slo_survey.md`** | ★**실 서빙 SLO 관행 조사**(§1-16 후속) — 프로덕션 인터랙티브 TTFT(chat 300/voice 150/code 100/RAG 400ms)가 전부 tight regime; 우리 3s=batch async. DistServe SLO-scale sweep=표준. goodput 메트릭 비판 |
+| **`serving_slo_survey.md`** | ★**실 서빙 SLO 관행 조사**(§1-16 후속) — 프로덕션 인터랙티브 TTFT(chat 300/voice 150/code 100/RAG 400ms)가 전부 tight regime; 우리 3s=batch async. DistServe SLO-scale sweep=표준. goodput 메트릭 비판. ⚠️**정정 배너(2026-09-07)**: §2의 "DistServe SLO scale=무경쟁 단일 요청 실행 지연의 배수" 귀속이 1차 출처와 불일치(실제는 Table 1 절대 SLO의 선형 배수, 무경쟁 배수는 Splitwise/Mooncake/LoongServe) — 문서 §2에 정정 배너 부착, 상세 `CONSENSUS §3` 항목112 |
 | **`interactive_slo_retune_plan.md`** | ★**tight-SLO 컨트롤러 재튜닝 + P90-attainment 직접 측정**(§1-17) — §9에 최종 결과(HT0 확정, d44≫동적). 하네스 `results/slo_sched/interactive_bench.sbatch` |
 | `../../workspace/engine-port/results/s8_frontier/DESIGN.md` | ★★**E1 프론티어 하네스 설계·전사**(§4.3.1–4.3.16) — 사전등록·버그 수정·게이트 이력의 정본. §4.3.9=`g` 격자 한정 은퇴, §4.3.10=`A_free` 대체 조건부 추정량[AUDITED, blocking 스윕만 UNAUDITED], §4.3.11=`PDMUX_STICKY_PARTITION` 구현 사실, §4.3.12=sticky 런 사전등록(`G_LEVER`/`G_FLAT` 미결정), §4.3.13=C2→`G_LEVER` 앵커 경로 폐기[AUDITED, §0 신규 최상위 열린 항목], §4.3.14=D=54 측정 취소+keepalive 재현성 결함[일부 미감사]+C2 residency 워크로드 장치 산물[AUDITED], §4.3.15=§0 이분법 유지 불가·세 번째 후보 실측 문서화[감사자 재프레이밍 UNAUDITED, result-analyst 독립 재현 PARTIAL INDEPENDENCE, 성능 판정 0건, S2(GPU) 대기], **§4.3.16=S2(job 873015) 독립 재현 CONFIRMED(scoped) — §0 최상위 열린 항목 behavioural 종결, E1은 4가지 독립 사유로 미개방, 성능 판정 0건[claims-auditor CONFIRMED, 2026-08-05]** |
 | `../../workspace/engine-port/results/s2_sticky/S2_REPLICATION_2026-08-05.md` | ★★★**S2(job 873015) 독립 재현 전문 — claims-auditor CONFIRMED(scoped), 2026-08-05.** §0 3지선다의 behavioural 종결(pooled ITL p50 d16 28.92ms/d54 12.04ms, 사전등록 구간 적중), 기전(스냅샷 샘플링 케이던스) 독립 도출, d54 companion 미스·§4.3.12(f) 판별예측 설계상 미판정·결과 게이트 0개(방법론 게이트 #9 네 번째 재발)·`S2_ANALYSIS_2026-08-04.md` 계측 오류 정정 기록, "등재 금지" 표 포함. **재현 스크립트는 아직 리포지토리 밖(에이전트 scratchpad)** — 이관 필요, 별도 작업 |
