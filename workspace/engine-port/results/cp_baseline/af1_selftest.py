@@ -245,6 +245,7 @@ SUBST = {
 DESIGN_SUBST = {
     "REPORT_STRATUM_QS": [(0.10, 0.50, 0.90, 0.99, 0.995), (0.50, 0.90, 0.99)],
     "REPEATS_PER_STRATUM": [1, 99],
+    "WARMUP_REQUESTS_PER_STRATUM": [0, 9],
     "PLANNED_BOOTS": [4, 12],
     "ARM_ORDER_BY_JOB": [(("plain", "cp2048", "d44"),) * 6,
                          tuple(reversed(P.ARM_ORDER_BY_JOB))],

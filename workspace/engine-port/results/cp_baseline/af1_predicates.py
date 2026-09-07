@@ -149,7 +149,7 @@ LABEL_CONSTANTS = (
 # many boots are BOUGHT, and losing one must not create a world.  The two-sided
 # mutation in af1_selftest.py proves it moves no label in either direction.
 DESIGN_CONSTANTS = (
-    "REPORT_STRATUM_QS", "REPEATS_PER_STRATUM", "PLANNED_BOOTS", "MAX_NEW_TOKENS",
+    "REPORT_STRATUM_QS", "REPEATS_PER_STRATUM", "WARMUP_REQUESTS_PER_STRATUM", "PLANNED_BOOTS", "MAX_NEW_TOKENS",
     "TEMPERATURE", "IGNORE_EOS", "BOOT_SEEDS", "ARM_ORDER_BY_JOB",
 )
 INFRA_CONSTANTS = ("REQ_TIMEOUT_S",)
@@ -258,6 +258,21 @@ ARM_ORDER_BY_JOB = (
 )
 
 REPEATS_PER_STRATUM = 3
+
+# Unmeasured requests issued at each stratum BEFORE the measured repeats.
+# ★Added after the plumbing smoke (job 904819, 2026-09-07) and registered in
+# `AF1_HARNESS_ADDENDA_2026-09-07.md` sec C.  The smoke showed the first request
+# at a stratum paying a one-off cost the others do not -- 3.6x at one stratum and
+# 16.5x at another (`cp2048` q=0.50: 5,126 ms then 311, 311).  Because
+# `agg_within_boot` is an order statistic at 0.90 over three repeats, i.e. very
+# nearly the maximum, that first request BECAME the boot value.  A floor that is
+# mostly one-off compilation is not a floor.
+#
+# This does NOT change the registered estimand: the statistic is still
+# `order_stat` over `REPEATS_PER_STRATUM` MEASURED repeats.  What changes is the
+# state the measurement starts from.  DESIGN, not LABEL -- no fold reads it, and
+# the self-test's two-sided C3 proves it moves no label.
+WARMUP_REQUESTS_PER_STRATUM = 2
 MAX_NEW_TOKENS = 64
 TEMPERATURE = 0.0
 IGNORE_EOS = True    # so that ITL p95 is defined on a fixed token count
