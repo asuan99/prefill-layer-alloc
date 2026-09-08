@@ -1,5 +1,5 @@
 """D1: does the registered PAIR's goodput difference have a sign, or only a
-curve?  RULE_REV = 2.
+curve?  RULE_REV = 3.
 
 rev1 took this track's EIGHTH consecutive NO-GO
 (`audit_d1_rules_2026-09-07/VERDICT.md`, death causes U1-U8).  Its single
@@ -41,6 +41,32 @@ resolvable object is the SIGN AT THE LADDER EXTREMES, not the crossing locus
 (near a crossing |delta| is small by definition and falls under the MDE).  The
 branch is named `answered_sign_flip_extremes_only` so the scope travels with it.
 
+★ What changed in rev3 (2nd audit `audit_d1_rules_2nd_2026-09-07`, V1-V10)
+--------------------------------------------------------------------------
+V2  The sign call ran on a percentile bootstrap CI.  `PROJECT_STATUS.md`
+    methodology gate **#14** (2026-08-06) had ALREADY registered that interval
+    as unusable for a verdict at n<=8 (coverage n=4 0.798 ... n=8 0.888;
+    prescription: *primary is the t-CI, bootstrap reported alongside only*),
+    and rev2 walked into it.  This is not a new statistical finding, it is a
+    tooling-discipline failure of exactly the kind `CONSENSUS.md` sec 3 item 18
+    names -- the canonical library still ships the percentile version.
+    -> `paired_t_ci` is the only label-bearing interval.  `MIN_BOOTS` 4 -> 6,
+       because the exact paired sign-flip test's two-sided p floor is 2/2**n and
+       only n>=6 can reach 0.05 at all.
+V1  The degenerate ends are bracketing witnesses, not comparison points:
+    `interior_points` removes them from the sign field and the leave-one-out
+    set, which revives `refine_grid`/`buy_boots` and makes the track's
+    termination label reachable again.  `band_binding` now asks whether the
+    interval is sharp enough to ASSERT a sub-floor effect (`precise`, an
+    equivalence statement) or merely inconclusive (`imprecise`).
+V5  The SLO ladder itself was never registered.  `K_T_START` / `K_I_START`.
+V7  The forbidden sentence about `UNAFFORDABLE_PRECISION` is rewritten to
+    match `OUTCOME` (it now really is the imprecise branch, and boots really
+    are its lever).
+V8  The power arithmetic is restated as a MINIMUM DETECTABLE EFFECT, which is a
+    property of (n, SD, alpha) alone.  It no longer takes W1 magnitudes as
+    input, so it no longer depends on numbers `RESULT_W1` sec 4 forbids citing.
+
 ★ Regime transfer (the question this rule was asked to survive)
 --------------------------------------------------------------
 `REGIME_FREE` and `REGIME_BOUND` below split this design into the part that
@@ -51,16 +77,33 @@ constant in both modules, so a new constant cannot be added without answering
 """
 import d1_predicates as P
 
-RULE_REV = 2
+RULE_REV = 3
 PREDICATE_MODULE = "d1_predicates.py"
 # Derived, never retyped (AF-1 4th-audit K7: a byte-identical copy that nothing
 # compares is the data version of the duplicate-definition risk).
 PREDICATE_FOLDS = P.PREDICATE_FOLDS
 
 # ---------------------------------------------------------------- constants
-MIN_BOOTS = 4          # gate #3 (n>=4): scored boots per arm, from distinct jobs
+# ★ 6, not 4.  Gate #3 asks for n>=4; the exact paired sign-flip test's
+# two-sided p floor is 2/2**n (n=4: 0.125, n=5: 0.0625, n=6: 0.03125), so below
+# six boots no distribution-free paired statement can reach 0.05 at all -- the
+# same arithmetic gate #14 used to retire this project's n=5 paired cells.
+MIN_BOOTS = 6
 CI_LEVEL = 0.95
-N_BOOTS = 10000
+ALPHA = 0.05
+# ★ MULTIPLICITY (2nd audit 5-A/B1).  The sign field is a DISJUNCTION over the
+# grid, so a per-point alpha is not the rate at which a direction appears: with
+# ~40 interior points at 0.05 the expected number of false calls is about two,
+# and a directional label could be manufactured by multiplicity alone -- rev1's
+# yardstick failure one level up.  The label-bearing interval is therefore
+# BONFERRONI-corrected over the realised interior points,
+# `d1_predicates.t_crit_for(ALPHA / m, MIN_BOOTS - 1)`, and Holm
+# (`holm_calls`, more powerful, step-down) is reported alongside.
+# Registered cost, measured: at n=6 over m=40, t goes 2.571 -> 6.541, so the
+# minimum detectable |delta|/max(G) at SD 7.9% goes 8.29% -> 21.10%.
+# This is the uncorrected companion value, reported but not label-bearing.
+T_CRIT_UNCORRECTED = 2.571
+N_BOOTS = 10000        # companion bootstrap only; may not decide a sign
 PRACTICAL_FLOOR = 0.03  # gate #3: under 3% relative is not a headline
 # Derived, not chosen: W1 sec 3 observed a median TTFT of 18,559 ms against a
 # p50 floor of 297.1 ms = a slowdown of 62.5x.  W1 reported medians only, so the
@@ -69,8 +112,15 @@ PRACTICAL_FLOOR = 0.03  # gate #3: under 3% relative is not a headline
 # a tail.  Reaching the cap is a FINDING (`GRID_UNBRACKETABLE`), not a failure.
 K_MAX = 1024
 
-DECISION_CONSTANTS = ("MIN_BOOTS", "CI_LEVEL", "N_BOOTS", "PRACTICAL_FLOOR",
-                      "K_MAX")
+# ★V5: the sweep axis itself, registered.  rev2 described a campaign to sweep
+# the SLO axis and never wrote the ladder down; `extend_grid` took it as an
+# argument, so nothing fixed where the sweep starts.
+K_T_START = (1, 2, 4, 8, 16, 32, 64)
+K_I_START = (1, 2, 4, 8, 16, 32)
+
+DECISION_CONSTANTS = ("MIN_BOOTS", "CI_LEVEL", "ALPHA",
+                      "T_CRIT_UNCORRECTED", "N_BOOTS",
+                      "PRACTICAL_FLOOR", "K_MAX")
 
 # The registered comparison pair.  Fixed before any D1 data exists.
 # ★ rev1 justified `cp2048` with "the census puts 200/200 prompts above 2048 ->
@@ -97,13 +147,16 @@ ARM_FLAGS = {
 
 # ------------------------------------------------------------ regime split
 # What moves to a long-context environment UNCHANGED: the decision layer.
-REGIME_FREE = ("MIN_BOOTS", "CI_LEVEL", "N_BOOTS", "PRACTICAL_FLOOR",
+REGIME_FREE = ("MIN_BOOTS", "CI_LEVEL", "ALPHA", "T_CRIT_UNCORRECTED",
+               "N_BOOTS", "PRACTICAL_FLOOR",
                "AXES", "AXIS_ORDER", "OUTCOME", "FORK", "GUARDS", "COHERENCE",
                "SUBSTANTIVE", "NON_SUBSTANTIVE", "PREDICATE_FOLDS",
-               "FORK_BRANCHES", "FORK_GRID_FRAGILE", "DELETED_IN_REV2")
+               "FORK_BRANCHES", "FORK_GRID_FRAGILE", "DELETED_IN_REV2",
+               "DELETED_IN_REV3")
 # What must be RE-MEASURED before this design may be used in another regime.
 # Every one of these is a measurement of (model, workload, tree), not a choice.
-REGIME_BOUND = ("K_MAX", "PRIMARY_PAIR", "DIAGNOSTIC_ARMS", "ARM_FLAGS",
+REGIME_BOUND = ("K_MAX", "K_T_START", "K_I_START", "PRIMARY_PAIR",
+                "DIAGNOSTIC_ARMS", "ARM_FLAGS",
                 "STRATA_TOK", "FLOOR_TTFT_MS", "FLOOR_ITLP95_MS",
                 "FIRING_RATE", "YARDSTICK_ARM", "DEGEN_HIGH_TOL")
 
@@ -113,6 +166,10 @@ REGIME_BOUND = ("K_MAX", "PRIMARY_PAIR", "DIAGNOSTIC_ARMS", "ARM_FLAGS",
 # to ENUMERATE what was removed and let a check count it.  Every name here was
 # live in rev1, is dead in rev2, and must be accounted for in the
 # pre-registration's version-inheritance section.
+DELETED_IN_REV3 = (
+    "ci", "floor", "both",          # band_binding values (V1) -> none/precise/imprecise
+)
+
 DELETED_IN_REV2 = (
     "INTERIM_BOOTS", "INTERIM_CONTINUE",          # Stage V (U6)
     "GRID_AND_YARDSTICK_DECIDE",                  # folded into the guard
@@ -145,7 +202,11 @@ AXES = {
     "sign_field": ["cp_dominant", "pd_dominant", "crossing", "null",
                    "unmeasured"],
     "robustness": ["stable", "grid_fragile", "unmeasured"],
-    "band_binding": ["ci", "floor", "both", "none", "unmeasured"],
+    # ★V1: what the 0-calls WERE, not merely which criterion clipped them.
+    # `precise` = the interval is sharp enough to assert a sub-floor effect (an
+    # equivalence statement); `imprecise` = this measurement cannot resolve a
+    # floor-sized effect, and that is what more boots buys.
+    "band_binding": ["none", "precise", "imprecise", "unmeasured"],
 }
 AXIS_ORDER = ["trace", "coverage", "bracket", "estimator", "sign_field",
               "robustness", "band_binding"]
@@ -231,7 +292,7 @@ def _build_outcome():
     out = {}
     for sf in ("cp_dominant", "pd_dominant", "crossing", "null"):
         for rb in ("stable", "grid_fragile"):
-            for bb in ("ci", "floor", "both", "none"):
+            for bb in ("none", "precise", "imprecise"):
                 if sf == "null" and bb == "none":
                     continue          # incoherent, never registered
                 if rb == "grid_fragile":
@@ -243,11 +304,12 @@ def _build_outcome():
                 elif sf == "crossing":
                     out[(sf, rb, bb)] = "SLO_DEPENDENT"
                 else:                  # null, stable
-                    # ★ the distinction rev1 could not make: zeros bound by the
-                    # CI mean "not identifiable at this precision"; zeros bound
-                    # by the 3% floor mean "the effect is smaller than what this
-                    # project calls a result".  Those are different answers.
-                    out[(sf, rb, bb)] = ("PAIR_INDISTINGUISHABLE" if bb == "floor"
+                    # ★ every 0-call is an equivalence statement -> the effect
+                    # really is below what this project calls a result.  One
+                    # unresolved point -> the field is not an equivalence claim
+                    # and the lever is boots.
+                    out[(sf, rb, bb)] = ("PAIR_INDISTINGUISHABLE"
+                                         if bb == "precise"
                                          else "UNAFFORDABLE_PRECISION")
     return out
 
@@ -329,10 +391,11 @@ FORK = {
     "IMPOSSIBLE_WORLD": "n/a",
 }
 FORK_GRID_FRAGILE = {
-    "none": "refine_grid",       # free: the SLO axis is re-scored offline
-    "ci": "buy_boots",           # purchasable as 1/sqrt(n), against a cap
-    "floor": "precision_bound",  # 3% is a registered decision, not noise
-    "both": "precision_bound",
+    # free: the SLO axis is re-scored offline, so resolution is not a purchase
+    "none": "refine_grid",
+    "precise": "refine_grid",
+    # the half-width, not the grid, is what is short -> boots, as 1/sqrt(n)
+    "imprecise": "buy_boots",
 }
 FORK_BRANCHES = ("answered_cp_pair", "answered_pd_pair",
                  "answered_sign_flip_extremes_only", "answered_null_below_floor",
