@@ -1,0 +1,6 @@
+MODEL=Zyphra/Zamba2-2.7B ATTN=triton L=8000 ctxcap=8512 chunk=16384 B_LIST=1 4 SM_LIST=full 24 port=34678 job=896776_2
+boot_ok=1
+RESULT attn=triton L=8000 B=1 sm=full 
+RESULT attn=triton L=8000 B=1 sm=24 
+RESULT attn=triton L=8000 B=4 sm=full 
+RESULT attn=triton L=8000 B=4 sm=24 
