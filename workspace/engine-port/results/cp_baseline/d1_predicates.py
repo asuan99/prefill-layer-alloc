@@ -66,14 +66,21 @@ PRED_REV = 3
 # ----------------------------------------------------------------- measured
 # Nemotron-Nano-9B-v2 tokenizer over ShareGPT_long2048_cap8192.json (n=1,968).
 # `RESULT_D1_A1A2_2026-09-07.md`.  A prompt splits iff len > cps.
-# ★CORRECTED 2026-09-07 (2nd audit V3, independently re-verified).  rev2 registered
-# {512: 0.9995, 2048: 0.7967} and BOTH were wrong.  The cause is NOT the `>` vs `>=`
-# convention (the audit's diagnosis; measured: `len >= 2048` gives 79.73%, not 79.67%)
-# -- it is the tokenizer's SPECIAL-TOKEN convention.  Only `add_special_tokens=False`
-# reproduces `af1_strata.json`'s quantiles exactly (the default adds precisely +1.0 tok
-# to every quantile), and the canonical prompt is turn 0 of a >=2-turn conversation
-# (`af1_strata.py:59`).  Under that convention, with this module's own rule
-# "a prompt splits iff len > cps":
+# ★VALUES CORRECTED 2026-09-07 (2nd audit V3); ★CAUSAL CLAIM RETRACTED 2026-09-08
+# (3rd audit W5, re-measured here).  rev2 registered {512: 0.9995, 2048: 0.7967} and
+# both values were wrong.  The three conventions that fix the numbers are: the
+# canonical prompt is turn 0 of a >=2-turn conversation (`af1_strata.py:59`), the
+# tokenizer is called with `add_special_tokens=False` (only that reproduces
+# `af1_strata.json`'s quantiles; the default adds exactly +1.0 tok to every one),
+# and a prompt splits iff `len > cps`.  All three are registered together.
+#
+# ★ What this comment must NOT say, and said until 2026-09-08: that the `>=`
+# hypothesis was measured and rejected.  At cps 2048 the two explanations are
+# OBSERVATIONALLY EQUIVALENT -- (canonical, `>=`) and (default, `>`) both give
+# 1568/1968 = 79.6748%, which is exactly rev2's registered number.  The earlier
+# "measured: `len >= 2048` gives 79.73%" was `>=` evaluated under the WRONG
+# convention, i.e. two variables moved at once to reject one of them (confound #10
+# in its diagnostic form).  The values below stand; the causal attribution does not.
 FIRING_RATE = {512: 1.0000, 1024: 0.9995, 2048: 0.7952, 4096: 0.0742, 8192: 0.0000}
 # AF-1 strata, campaign tokenizer (`af1_strata.json`).  These are the ONLY
 # lengths at which an uncontended floor was measured, so they are the buckets:
