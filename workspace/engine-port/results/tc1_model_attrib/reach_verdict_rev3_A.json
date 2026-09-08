@@ -21,6 +21,16 @@
     "NO_INTERACTION": 18,
     "UNDERPOWERED_NULL": 18
   },
+  "findings": [
+    {
+      "code": "RESTRICTIONS_INERT",
+      "detail": "every substantive label survived at the SAME ratio (24/72); the restriction rescaled the lattice without excluding anything"
+    },
+    {
+      "code": "PRIOR_UNREGISTERED",
+      "detail": "no per-label prior registered; a label reachable in the lattice may still have prior ~0 under the design's own measured scale"
+    }
+  ],
   "grid_substantive": {
     "FLIP_MODEL_ATTRIBUTED": 72,
     "INCONCLUSIVE": 180,
@@ -29,7 +39,7 @@
     "UNDERPOWERED_NULL": 54
   },
   "label": "TC1 rev3 -- scenario A, the one that killed rev2 (argmax = d44)",
-  "reading": "More than one substantive label is reachable; the design can still be informative, subject to the other audit findings.",
+  "reading": "The restrictions excluded nothing. This run could not have failed, so its DISCRIMINATING would have carried no evidence.",
   "restrictions": {
     "boot_H": {
       "values": [
@@ -52,6 +62,7 @@
   },
   "rule_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/tc1_model_attrib/tc1_rule_rev3.py",
   "rule_rev": 3,
+  "tool_rev": 2,
   "unreachable_by_design": [],
-  "verdict": "DISCRIMINATING"
+  "verdict": "RESTRICTIONS_INERT"
 }
