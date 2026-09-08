@@ -1,4 +1,22 @@
-"""Primary SLO-goodput and paired bootstrap analysis for R2."""
+"""Canonical SLO-goodput and arm-comparison analysis library for R2 / PD-mux.
+
+Scoring: the request-level SLO predicate (methodology gate #4 -- TTFT <= SLO AND
+the request's OWN token-ITL p95 <= SLO) in ``RequestResult.passes``, aggregated
+to per-cell goodput by ``summarize_requests``; controller residency/dwell by
+``controller_summary``.
+
+Intervals: the PRIMARY, verdict-bearing interval is the Student-t interval --
+``paired_t_ci`` for matched repetitions, ``unpaired_t_ci`` (Welch) for unmatched
+arms.  ``paired_bootstrap_ci`` / ``unpaired_bootstrap_ci`` are REPORTED
+COMPANIONS ONLY: methodology gate #14 (``PROJECT_STATUS.md`` "방법론 게이트" #14,
+2026-08-06) forbids reading their intervals as a verdict at n<=8, where their
+measured coverage against a nominal 0.95 is n=4 0.798 / n=5 0.840 / n=6 0.859 /
+n=8 0.888.  This module used to describe itself, in this very docstring, as a
+bootstrap tool, which is why the order of precedence is spelled out here.
+
+stdlib only, on purpose: there is no SciPy in the serving venv and no decision in
+this project may depend on an unpinned import.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +25,7 @@ import json
 import math
 import random
 import statistics
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Mapping, Sequence, Tuple
@@ -112,12 +131,342 @@ def request_tpot_percentiles(
     }
 
 
+# ===========================================================================
+# PRIMARY (verdict-bearing) intervals -- methodology gate #14
+# ===========================================================================
+# Gate #14 (``PROJECT_STATUS.md`` "방법론 게이트" #14, 2026-08-06, claims-auditor
+# Gate-2 design audit x2 + independent result-analyst reproduction): at n<=8
+# repetitions the percentile bootstrap interval of the mean may NOT decide a
+# verdict.  The primary is the Student-t interval below; the bootstrap is
+# reported alongside only.  Measured true coverage of the bootstrap against a
+# nominal 0.95 (100k-trial MC, ``results/p1_gates/verify/verify_c1_coverage.py``):
+#
+#     n=4 0.798 | n=5 0.840 | n=6 0.859 | n=8 0.888
+#
+# (independently reproduced 2026-09-08 as .802/.838/.860/.882; the t interval
+#  measures .949-.954 on the same trials).
+#
+# The incomplete-beta tail function and the bisection are PORTED (numerics
+# unchanged) from the audited, self-tested implementation in
+# ``workspace/engine-port/results/cp_baseline/d1_predicates.py``:
+#     constants  d1_predicates.py:263-267
+#     _betacf    d1_predicates.py:272
+#     _betai     d1_predicates.py:307
+#     paired_t_p d1_predicates.py:319
+#     t_crit_for d1_predicates.py:333
+# so that the project has ONE t implementation and the critical value can never
+# disagree with the p-value.  ``tests/test_analyze_gate14.py`` asserts numeric
+# agreement with that module.
+
+#: Smallest number of repetitions at which a BOOTSTRAP interval may be read as a
+#: verdict.  Gate #14 forbids n<=8, so the first eligible n is 9.
+GATE14_DECISION_MIN_N = 9
+
+#: Measured coverage of the percentile bootstrap of the mean, nominal 0.95.
+GATE14_BOOTSTRAP_COVERAGE = {4: 0.798, 5: 0.840, 6: 0.859, 8: 0.888}
+
+
+class Gate14SmallSampleWarning(UserWarning):
+    """Emitted when a bootstrap interval is computed at n<=8 (gate #14).
+
+    A warning, never an exception: the small-n bootstrap callers in this
+    repository are the EVIDENCE GENERATORS for gate #14 itself and must keep
+    running.  The refusal lives on the verdict path, not on the arithmetic.
+    """
+
+
+# Numerical-method tolerances for the incomplete beta / bisection.  These are
+# NOT decision constants -- no verdict depends on their value beyond convergence
+# -- but they are named so that no threshold hides inside a function body.
+_BETACF_ITMAX = 300
+_BETACF_EPS = 3e-14
+_TINY = 1e-30
+_TCRIT_HI = 10000.0
+_TCRIT_ITERS = 200
+
+
+def _betacf(a, b, x, itmax=_BETACF_ITMAX, eps=_BETACF_EPS):
+    """Lentz continued fraction for the incomplete beta.  Standard; no SciPy in
+    this environment and the decision must not depend on an unpinned import.
+    Ported from ``results/cp_baseline/d1_predicates.py:272``."""
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c, d = 1.0, 1.0 - qab * x / qap
+    if abs(d) < _TINY:
+        d = _TINY
+    d = 1.0 / d
+    h = d
+    for m in range(1, itmax + 1):
+        m2 = 2 * m
+        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+        d = 1.0 + aa * d
+        c = 1.0 + aa / c
+        if abs(d) < _TINY:
+            d = _TINY
+        if abs(c) < _TINY:
+            c = _TINY
+        d = 1.0 / d
+        h *= d * c
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        d = 1.0 + aa * d
+        c = 1.0 + aa / c
+        if abs(d) < _TINY:
+            d = _TINY
+        if abs(c) < _TINY:
+            c = _TINY
+        d = 1.0 / d
+        de = d * c
+        h *= de
+        if abs(de - 1.0) < eps:
+            break
+    return h
+
+
+def _betai(a, b, x):
+    """Regularised incomplete beta.  Ported from ``d1_predicates.py:307``."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    lbeta = (math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+             + a * math.log(x) + b * math.log(1.0 - x))
+    if x < (a + 1.0) / (a + b + 2.0):
+        return math.exp(lbeta) * _betacf(a, b, x) / a
+    return 1.0 - math.exp(lbeta) * _betacf(b, a, 1.0 - x) / b
+
+
+def _t_two_sided_p(t_stat, df):
+    """Two-sided tail of Student-t at ``t_stat`` with (possibly fractional) ``df``.
+
+    Same expression as the tail used inside ``t_crit_for`` and ``paired_t_p``;
+    named separately so Welch's fractional df can reuse it."""
+    return _betai(df / 2.0, 0.5, df / (df + t_stat * t_stat))
+
+
+def paired_t_p(deltas):
+    """Two-sided p of the paired t on the differences.
+    Ported from ``d1_predicates.py:319``.  The CI remains the primary object;
+    this is reported alongside (and is what any multiplicity correction would
+    have to be applied to -- see gate #93)."""
+    n = len(deltas)
+    if n < 2:
+        raise ValueError("a t test needs at least two paired boots")
+    sd = statistics.stdev(deltas)
+    if sd == 0.0:
+        return 0.0 if statistics.fmean(deltas) != 0.0 else 1.0
+    t = statistics.fmean(deltas) / (sd / math.sqrt(n))
+    nu = n - 1
+    return _betai(nu / 2.0, 0.5, nu / (nu + t * t))
+
+
+def t_crit_for(alpha, df, hi=_TCRIT_HI):
+    """Two-sided t critical value at `alpha`, by bisection on `paired_t_p`'s own
+    tail function -- so the critical value and the p-value can never disagree.
+    Ported from ``d1_predicates.py:333``.  ``df`` may be fractional (Welch)."""
+    def tail(t):
+        return _betai(df / 2.0, 0.5, df / (df + t * t))
+    lo = 0.0
+    for _ in range(_TCRIT_ITERS):
+        mid = (lo + hi) / 2.0
+        if tail(mid) > alpha:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2.0
+
+
+def paired_t_ci(
+    baseline: Mapping[str, float],
+    proposed: Mapping[str, float],
+    level: float = 0.95,
+) -> Dict[str, float]:
+    """★PRIMARY paired interval (methodology gate #14).  Student-t on the
+    per-repetition differences.
+
+    Deliberately the SAME two-Mapping signature and the SAME pairing convention
+    as ``paired_bootstrap_ci`` -- pairs are ``sorted(set(baseline) &
+    set(proposed))`` -- so the primary and the companion can never disagree about
+    WHICH repetitions are matched, only about the width of the interval.
+
+    ``ci95_low``/``ci95_high`` are named for interoperability with the bootstrap
+    dicts and follow ``level`` (default 0.95, i.e. genuinely 95%); ``level`` is
+    returned so a non-default coverage cannot be silently misread.
+
+    This interval is honest at small n but not powerful, and it does not repeal
+    the other gates: gate #3 still requires n>=4 before any policy conclusion and
+    gate #2 still requires ``effect_percent >= 3.0`` for a headline.
+    """
+    pair_ids = sorted(set(baseline) & set(proposed))
+    if len(pair_ids) < 2:
+        raise ValueError("paired CI requires at least two matched repetitions")
+    effects = [proposed[pair] - baseline[pair] for pair in pair_ids]
+    n = len(effects)
+    df = n - 1
+    mean_effect = statistics.fmean(effects)
+    sd = statistics.stdev(effects)
+    standard_error = sd / math.sqrt(n)
+    t_crit = t_crit_for(1.0 - level, df)
+    # associate exactly as ``d1_predicates.paired_t_ci`` does (t*sd/sqrt(n), not
+    # t*(sd/sqrt(n))): the two implementations must agree to the last bit, and
+    # ``tests/test_analyze_gate14.py`` compares them with ``assertEqual``
+    half_width = t_crit * sd / math.sqrt(n)
+    baseline_mean = statistics.fmean(baseline[pair] for pair in pair_ids)
+    if standard_error == 0.0:
+        t_stat = math.copysign(math.inf, mean_effect) if mean_effect else 0.0
+    else:
+        t_stat = mean_effect / standard_error
+    return {
+        "pairs": float(n),
+        "df": float(df),
+        "level": float(level),
+        "mean_effect": mean_effect,
+        "median_effect": statistics.median(effects),
+        "effect_percent": 100.0 * mean_effect / baseline_mean
+        if baseline_mean
+        else math.nan,
+        "ci95_low": mean_effect - half_width,
+        "ci95_high": mean_effect + half_width,
+        "standard_deviation": sd,
+        "standard_error": standard_error,
+        "t_stat": t_stat,
+        "t_crit": t_crit,
+        "p_value": paired_t_p(effects),
+        "baseline_mean": baseline_mean,
+    }
+
+
+def unpaired_t_ci(
+    baseline: Sequence[float],
+    proposed: Sequence[float],
+    level: float = 0.95,
+) -> Dict[str, float]:
+    """★PRIMARY arm-vs-arm interval when repetitions are NOT matched: WELCH t.
+
+    Same Sequence-of-values signature as ``unpaired_bootstrap_ci``.  Equal
+    variances are NOT assumed and the pooled-variance t is not offered: arms in
+    this project differ in variance by construction (a controller arm against a
+    static arm, or two arms measured on different nodes), and pooling would
+    understate the interval exactly where the difference matters.  ``df`` is
+    Welch-Satterthwaite and is therefore fractional.
+
+    Gate #14 companion coverage for reference: the unpaired percentile bootstrap
+    measures 0.8556 at n=4/arm where Welch t measures 0.9590
+    (``results/p1_gates/verify/verify_c1_unpaired.py``).
+    """
+    base = [float(value) for value in baseline]
+    prop = [float(value) for value in proposed]
+    if len(base) < 2 or len(prop) < 2:
+        raise ValueError("unpaired CI requires at least two repetitions per arm")
+    n_base, n_prop = len(base), len(prop)
+    var_base = statistics.variance(base)
+    var_prop = statistics.variance(prop)
+    term_base = var_base / n_base
+    term_prop = var_prop / n_prop
+    standard_error = math.sqrt(term_base + term_prop)
+    baseline_mean = statistics.fmean(base)
+    proposed_mean = statistics.fmean(prop)
+    mean_effect = proposed_mean - baseline_mean
+    if standard_error == 0.0:
+        # Both arms are constant: the difference is exact, the interval is a
+        # point, and Welch's df is undefined -- fall back to the conservative
+        # min(n)-1 for the reported critical value.
+        df = float(min(n_base, n_prop) - 1)
+        t_stat = math.copysign(math.inf, mean_effect) if mean_effect else 0.0
+        p_value = 0.0 if mean_effect else 1.0
+        half_width = 0.0
+    else:
+        df = (term_base + term_prop) ** 2 / (
+            term_base * term_base / (n_base - 1)
+            + term_prop * term_prop / (n_prop - 1)
+        )
+        t_stat = mean_effect / standard_error
+        p_value = _t_two_sided_p(t_stat, df)
+        half_width = t_crit_for(1.0 - level, df) * standard_error
+    t_crit = t_crit_for(1.0 - level, df)
+    return {
+        "n_baseline": float(n_base),
+        "n_proposed": float(n_prop),
+        "df": df,
+        "level": float(level),
+        "baseline_mean": baseline_mean,
+        "baseline_sd": statistics.stdev(base),
+        "proposed_mean": proposed_mean,
+        "proposed_sd": statistics.stdev(prop),
+        "mean_effect": mean_effect,
+        "effect_percent": 100.0 * mean_effect / baseline_mean
+        if baseline_mean
+        else math.nan,
+        "ci95_low": mean_effect - half_width,
+        "ci95_high": mean_effect + half_width,
+        "standard_error": standard_error,
+        "t_stat": t_stat,
+        "t_crit": t_crit,
+        "p_value": p_value,
+    }
+
+
+def _gate14_guard(n: int) -> Dict[str, object]:
+    """Non-destructive verdict guard bolted onto the two bootstrap estimators.
+
+    ADDS keys, never raises, never touches an existing value or the RNG.  It must
+    not raise: ``tests/test_benchmark_tools.py`` exercises ``paired_bootstrap_ci``
+    at n=3 and ``results/p1_gates/verify/verify_c1_coverage.py`` replays it at
+    n=5 -- both are the evidence generators for gate #14 itself, so refusing to
+    compute would destroy the gate's own reproduction path.  The refusal belongs
+    on the verdict path (``main``), not on the arithmetic.
+    """
+    eligible = n >= GATE14_DECISION_MIN_N
+    if eligible:
+        note = (
+            "methodology gate #14: n=%d >= %d, so this bootstrap interval is not "
+            "refused on small-sample grounds; the t interval (paired_t_ci / "
+            "unpaired_t_ci) is still the registered primary."
+            % (n, GATE14_DECISION_MIN_N)
+        )
+    else:
+        note = (
+            "methodology gate #14 (PROJECT_STATUS.md, 2026-08-06): n=%d <= 8, so "
+            "this percentile-bootstrap interval MAY NOT decide a verdict "
+            "(measured coverage n=4 0.798 / n=5 0.840 / n=6 0.859 / n=8 0.888 "
+            "against a nominal 0.95).  Use paired_t_ci / unpaired_t_ci as the "
+            "primary and report this interval alongside only." % n
+        )
+        warnings.warn(note, Gate14SmallSampleWarning, stacklevel=3)
+    return {"decision_eligible": eligible, "gate14_note": note}
+
+
+# ===========================================================================
+# COMPANION (reported-only) bootstrap intervals -- FROZEN NUMERICS
+# ===========================================================================
+
+
 def paired_bootstrap_ci(
     baseline: Mapping[str, float],
     proposed: Mapping[str, float],
     samples: int = 10000,
     seed: int = 1,
-) -> Dict[str, float]:
+) -> Dict[str, object]:
+    """COMPANION ONLY -- reported alongside, never verdict-bearing at n<=8.
+
+    ★Methodology gate #14 (``PROJECT_STATUS.md`` #14, 2026-08-06): do NOT read
+    this interval as a verdict at n<=8 repetitions.  ``paired_t_ci`` is the
+    primary; report this one next to it.  Measured true coverage of this
+    percentile bootstrap of the mean against a nominal 0.95:
+
+        n=4 0.798 | n=5 0.840 | n=6 0.859 | n=8 0.888
+
+    (100k-trial MC, ``results/p1_gates/verify/verify_c1_coverage.py``.  The cause
+    is n itself -- not the frozen seed, not a normality assumption: releasing the
+    seed leaves n=5 at 0.8397.)  The returned ``decision_eligible`` and
+    ``gate14_note`` keys carry that refusal with its numbers; they are ADDITIONS
+    and every pre-existing key is unchanged.
+
+    ★FROZEN NUMERICS -- extend by adding keys, never by changing the arithmetic.
+    ``seed=1``, ``samples=10000`` and the ``rng.choice`` draw ORDER are replayed
+    bit-for-bit by ``verify_c1_coverage.py``, which recovers the 10000xN resample
+    count matrix from ``random.Random(1)`` and validates it by requiring exact
+    agreement with this function's own ``ci95_low``/``ci95_high``.  That replay is
+    the evidence path for gate #14 itself.
+    """
     pair_ids = sorted(set(baseline) & set(proposed))
     if len(pair_ids) < 2:
         raise ValueError("paired CI requires at least two matched repetitions")
@@ -139,6 +488,7 @@ def paired_bootstrap_ci(
         "ci95_low": percentile(boot, 0.025),
         "ci95_high": percentile(boot, 0.975),
         "standard_deviation": statistics.stdev(effects),
+        **_gate14_guard(len(pair_ids)),
     }
 
 
@@ -147,13 +497,30 @@ def unpaired_bootstrap_ci(
     proposed: Sequence[float],
     samples: int = 10000,
     seed: int = 1,
-) -> Dict[str, float]:
-    """Difference-of-means CI when arms have no natural repetition pairing.
+) -> Dict[str, object]:
+    """COMPANION ONLY -- difference-of-means CI when arms have no natural pairing.
 
-    ``paired_bootstrap_ci`` is preferred whenever repetitions are matched (same
-    seed/trace slot).  Static-split arms from separate SLURM jobs have no such
-    matching, so each arm is resampled independently with the same conventions
-    (10000 samples, seed=1) rather than inventing an arbitrary pairing.
+    ★Methodology gate #14 (``PROJECT_STATUS.md`` #14, 2026-08-06): do NOT read
+    this interval as a verdict at n<=8 per arm.  ``unpaired_t_ci`` (Welch) is the
+    primary; report this one next to it.  Measured coverage against a nominal
+    0.95: this estimator 0.8556 at n=4/arm where Welch t measures 0.9590
+    (``results/p1_gates/verify/verify_c1_unpaired.py``); the paired bootstrap
+    ladder is n=4 0.798 / n=5 0.840 / n=6 0.859 / n=8 0.888.  The returned
+    ``decision_eligible`` / ``gate14_note`` keys carry that refusal.
+
+    PAIRING convention (this paragraph replaces the pre-2026-09-08 sentence that
+    called ``paired_bootstrap_ci`` "preferred", which contradicted gate #14 by
+    steering the reader to a bootstrap interval): use the PAIRED functions
+    whenever repetitions are genuinely matched (same seed / trace slot), because
+    pairing removes the trace-and-seed component of the variance.  That is a
+    statement about PAIRING, not about the estimator -- for either pairing the
+    primary estimator is the t interval.  Static-split arms from separate SLURM
+    jobs have no such matching, so each arm is resampled independently with the
+    same conventions (10000 samples, seed=1) rather than inventing an arbitrary
+    pairing.
+
+    ★FROZEN NUMERICS -- see ``paired_bootstrap_ci``; the seed, the sample count
+    and the ``rng.choice`` draw order are replayed by ``verify_c1_unpaired.py``.
     """
     base = [float(value) for value in baseline]
     prop = [float(value) for value in proposed]
@@ -180,6 +547,7 @@ def unpaired_bootstrap_ci(
         else math.nan,
         "ci95_low": percentile(boot, 0.025),
         "ci95_high": percentile(boot, 0.975),
+        **_gate14_guard(min(len(base), len(prop))),
     }
 
 
@@ -358,7 +726,14 @@ def trace_aware_oracle(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "Paired arm comparison over a campaign summary.  PRIMARY estimator "
+            "is the paired Student-t interval (methodology gate #14); the paired "
+            "bootstrap is reported alongside under 'companion_bootstrap' and "
+            "does not decide 'headline_improvement'."
+        )
+    )
     parser.add_argument("--paired-summary", type=Path, required=True)
     parser.add_argument("--baseline", default="B1")
     parser.add_argument("--proposed", default="B6")
@@ -376,14 +751,24 @@ def main() -> None:
         for row in rows
         if row["baseline"] == args.proposed
     }
-    result = paired_bootstrap_ci(baseline, proposed)
+    primary = paired_t_ci(baseline, proposed)
+    companion = paired_bootstrap_ci(baseline, proposed)
+    result = dict(primary)
     result.update(
         {
             "baseline": args.baseline,
             "proposed": args.proposed,
             "metric": args.metric,
+            "primary_estimator": "paired_t_ci",
+            "gate14_compliant": True,
+            "companion_bootstrap": companion,
+            # ⚠ CHANGED 2026-09-08 (methodology gate #14).  This used to be read
+            # off the BOOTSTRAP interval, which the gate forbids at n<=8.  The
+            # headline predicate itself is unchanged (gate #2: effect >= 3% AND
+            # the lower confidence bound excludes 0) -- only the ESTIMATOR that
+            # supplies ci95_low changed, from percentile bootstrap to paired t.
             "headline_improvement": (
-                result["effect_percent"] >= 3.0 and result["ci95_low"] > 0.0
+                primary["effect_percent"] >= 3.0 and primary["ci95_low"] > 0.0
             ),
         }
     )
