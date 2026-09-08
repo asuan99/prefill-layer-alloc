@@ -328,11 +328,79 @@ cp_baseline 정본 반영 마무리 중 `check_doc_facts.py`를 돌리자(이 �
 
 ### 10.3 우선순위표 추가 (§2 참조)
 
-| 순위 | 항목 | 층 | 적용 기준 | 비용 |
-|---|---|---|---|---|
-| **P0-4**(신설) | `benchmarks/pdmux_eval/analyze.py`에 t-CI 함수 추가 + `paired_bootstrap_ci`/`unpaired_bootstrap_ci` docstring에 게이트 #14 인용 + n≤8 판정 호출 시 거부/경고(도구 자체 수리 — ⚠️여러 트랙 공유, **사용자 승인 필요**, 이 세션은 착수하지 않음) | 도구 | **1·2** | GPU 0 |
-| **P3-2**(신설) | 다른 트랙이 인용한 CI가 어느 추정량에서 나왔는지 전수 확인(스코프 미확인, 열린 질문) | 결과층 | **2** | GPU 0 |
+| 순위 | 항목 | 층 | 적용 기준 | 비용 | 상태 |
+|---|---|---|---|---|---|
+| **P0-4** | `benchmarks/pdmux_eval/analyze.py`에 t-CI 함수 추가 + `paired_bootstrap_ci`/`unpaired_bootstrap_ci` docstring에 게이트 #14 인용 + n≤8 판정 호출 시 거부/경고(도구 자체 수리 — ⚠️여러 트랙 공유, **사용자 승인 필요**) | 도구 | **1·2** | GPU 0 | ★**부분 이행(2026-09-08, 2차)** — 사용자 승인 하 브랜치 `fix/gate14-tci-analyze`에서 착수(死因 F1만 수리, 설계서 규칙층 감사 `NO-GO`, **main 미병합**). 상세 §11 |
+| **P3-2**(신설) | 다른 트랙이 인용한 CI가 어느 추정량에서 나왔는지 전수 확인(스코프 미확인, 열린 질문) | 결과층 | **2** | GPU 0 | 미착수 |
 
 상세: `PROJECT_STATUS.md` "방법론 게이트" #14 追記·#97(신설), `CONSENSUS.md` §3
 항목27 追記·117(신설), `workspace/engine-port/results/cp_baseline/
 FINDING_GATE14_TOOLING_2026-09-08.md`.
+
+## 11. 2026-09-08(2차 세션) 추가 (doc-steward) — P0-4 부분 이행 + longctx_conflict 트랙 미감사 산출물 2건
+
+### 11.1 P0-4(게이트 #14 도구 수리) — 사용자 승인 하 브랜치에서 착수, 미완료
+
+§10.3이 "사용자 승인 필요, 이 세션은 착수하지 않음"으로 등재한 **P0-4**를 이 세션
+(2026-09-08, 2차)에서 사용자가 승인해 **별도 브랜치 `fix/gate14-tci-analyze`**에서
+착수했다(사용자 지시: "기존 라이브러리는 유지하고 다른 브랜치로 진행"). `main`의
+`benchmarks/pdmux_eval/analyze.py`는 **원본 397줄 그대로**다.
+
+브랜치 내용: t-CI 3함수(`paired_t_ci`/`unpaired_t_ci`/`t_crit_for`,
+`cp_baseline/d1_predicates.py`에서 이식) 추가 · CLI 판정을 t-CI로 전환, bootstrap은
+`companion_bootstrap`으로 병기 · 테스트 17건 + 변이 하네스 신설. 검증(메인 세션
+독립 재실행): 행동 보존(main 블롭 대조 5,100키 불일치 0·삭제 0) · `d1_predicates.
+t_crit_for`와 24조합 일치 · 회귀 314 tests OK · 변이 4/4 killed.
+
+**설계서 자체가 규칙층 적대 감사 `NO-GO`를 받았다**(死因4·차단12,
+`workspace/engine-port/results/tooling_gate14/audit_design_2026-09-08/VERDICT.md`)
+— 死因 F1(판정 경로에 n 하한 부재, n=2에서도 `headline_improvement=True`, 게이트
+#3 하한을 *추가*하는 변이를 이 수리가 낸 새 테스트가 죽임)**만** 수리
+(`fc87a17`). F2(`GATE14_DECISION_MIN_N=9`가 판정과 무관한 죽은 상수)·F3(§3의
+"유일하게 남는 설계"가 거짓 — `d1_predicates.py`에 더 강한 P5c형 검사가 이미
+존재)·F4(§6의 재검토 대상 인용이 오귀속) + 차단 12건은 **열려 있다**(백로그
+`results/tooling_gate14/BACKLOG_2026-09-08.md` 묶음 A[코드], 합격 신호 = 변이
+X4·X5·X7·X10이 SURVIVE→KILLED로 바뀌는 것).
+
+**§10.3 P0-4 상태를 "미착수" → "부분 이행"으로 갱신했다(위 표 참조).** ⚠️**"게이트
+#14를 닫았다"는 여전히 금지** — 完了(완료) 아님, main 미병합, 설계서 자체가
+`NO-GO`다. 다음 세션이 묶음 A를 마치고 재감사를 통과시킨 뒤에만 병합·"완료"
+표기를 검토한다.
+
+★부수 발견(수리와 별개, 게이트 #99/§3 항목119): 감사 차단 B5("venv에 scipy
+없음"이 거짓)도 **과장**이었음이 메인 세션 재확인으로 드러났다 — 문장은 문자
+그대로 참(venv 자체엔 없고 `~/.local` + `--system-site-packages`로 보임). 같은
+전제가 **7개 파일 10개 지점**(`analyze.py` 2곳·`d1_predicates.py`·
+`e1a_analyze.py`·`g2det_analyze.py`·`g2ctrl_analyze.py`·`design_g13_stats.py`
+3곳·`verify_g2_tau40_lib.py`)에 상속돼 있으며 **전부 미수리** — §0 기준 1(살아있는
+전제가 여러 파일에 상속)에 해당하나, 트랙 밖(도구 공유) 파급이라 이 세션은 손대지
+않는다.
+
+### 11.2 `longctx_conflict` — 방향 판정 문서(ITT 재프레이밍)가 미감사
+
+`DIRECTION_2026-09-08.md`(방향 판정: (ㄴ) L1 직행/ITT 채택)와
+`FINDING_BIN0_2026-09-08.md`(신규 confound `C-R` 자기 강등)는 **메인 세션 단독
+작성이며 claims-auditor 감사를 받지 않았다** — 규칙층 감사 2회(rev1·rev2)는 그
+이전 사전등록 판본을 대상으로 했고, 이 두 문서는 그 감사 이후 메인 세션이
+자체적으로 도출한 재프레이밍·자기 정정이다. 특히 *"HE0가 ITT다"*(`DIRECTION_
+2026-09-08.md` §3.2)는 메인 세션의 독해이며 정본 자기 규정이 아니라고 문서
+자신이 명시한다.
+
+**적용 기준**: 위 §0 우선순위표 기준 **2**(정본이 이미 이 판정 위에 서 있는가) —
+`PROJECT_STATUS.md`·`CONSENSUS.md` 양쪽이 "(ㄴ) L1 직행 채택"을 이 세션의 방향
+판정으로 기록했으므로, 다음 산출물(`PREREG_L1_*`)이 이 재프레이밍 위에 설계되기
+전에 **독립 감사(claims-auditor)를 받는 것을 권고**한다(특히 ITT가 collider를
+피하는 논증과 "HE0=ITT" 선례 주장 둘 다).
+
+### 11.3 우선순위표 추가 (§2 참조)
+
+| 순위 | 항목 | 층 | 적용 기준 | 비용 |
+|---|---|---|---|---|
+| **P1-3**(신설) | `DIRECTION_2026-09-08.md`(ITT 재프레이밍)·`FINDING_BIN0_2026-09-08.md`(C-R 자기 강등) 규칙층/결과층 감사 | 규칙·결과 | **2** | GPU 0 |
+| **P2-3**(신설) | 게이트 #14 도구 수리 백로그 묶음 A(X4·X5·X7·X10 변이 KILLED화) 완료 후 재감사 → 통과 시 main 병합 | 도구 | **1·2** | GPU 0 |
+| **P3-3**(신설) | "venv에 scipy 없음" 전제 상속 7파일 10지점 정리(트랙 밖 승인 필요) | 도구 | **4** | GPU 0 |
+
+상세: `PROJECT_STATUS.md` "방법론 게이트" #98–100(신설), `CONSENSUS.md` §3
+항목118–120(신설)·§5-6 追記, `workspace/engine-port/results/tooling_gate14/`,
+`workspace/engine-port/results/longctx_conflict/`,
+`handoff-report/session_handoff_2026-09-08.md` "2차 세션" 절.
