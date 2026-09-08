@@ -284,3 +284,55 @@ cp_baseline 정본 반영 마무리 중 `check_doc_facts.py`를 돌리자(이 �
 |---|---|---|---|---|
 | **P0-3**(신설) | `presubmit.py` reachability 출력을 스크래치 경로로 강제(도구 자체 수리) | 도구 | **1** | GPU 0 |
 | **P3-1**(신설) | `g1b_plateau_predicates.py`·W1 해석·correctness gate 설계·모델 부팅 스모크 규칙층/하네스층 감사 4건 | 규칙·하네스 | **2** | GPU 0 |
+
+## 10. 2026-09-08 추가 (doc-steward, cp_baseline/D1 트랙 정본 반영 세션) — 게이트 #14 도구 결함(신규)
+
+### 10.1 정본 라이브러리가 자신이 지목된 게이트와 정반대를 안내함
+
+`PROJECT_STATUS.md` 방법론 게이트 **#14**(2026-08-06, `CONSENSUS §3` 항목27)는
+*"n≤8 반복에서 `paired_bootstrap_ci`/`unpaired_bootstrap_ci`의 구간을 판정에 쓰지
+않는다 — primary는 t-CI, bootstrap은 병기만"* 을 이미 등재했다. 그런데 cp_baseline/D1
+트랙의 규칙층 rev2(2026-09-07)가 이 게이트를 한 번도 참조하지 않은 채 **처음부터
+같은 percentile bootstrap을 다시 채택**했고, 2회차 적대 감사가 이를 死因 V2로
+독립 재발견했다(참-귀무 n=4 위양성 ~20%, 명목 5%). 이 세션이 원인을 직접 확인했다
+(`workspace/engine-port/results/cp_baseline/FINDING_GATE14_TOOLING_2026-09-08.md`):
+
+`workspace/engine-port/benchmarks/pdmux_eval/analyze.py`(게이트 #14가 명시적으로
+지목한 바로 그 파일, `:115-142`)가 **지금도**:
+
+1. **t-CI 함수를 아예 제공하지 않는다** — `paired_bootstrap_ci`·`unpaired_bootstrap_ci`
+   둘 다 percentile bootstrap of the mean이고, 게이트가 primary로 지정한 t-CI
+   구현은 이 모듈에 존재하지 않는다.
+2. **모듈 자신의 docstring(`:153`)이 오히려 `paired_bootstrap_ci`를 권장한다** —
+   *"preferred whenever repetitions are matched"* 라 적혀 있고 n≤8 제한도 게이트
+   #14 인용도 없다.
+3. **CLI 경로(`:379`)가 n 가드 없이 무조건 그것을 호출한다.**
+
+⇒ **게이트는 `PROJECT_STATUS.md`에 있고 도구는 정반대를 말하며, 새 트랙이 참조하는
+것은 도구다.** `CONSENSUS §3` 항목18(*"저장소가 같은 진단을 두 번 냈는데 정본이 안
+바뀌면 도구 규율 실패다"*)의 **네 번째 발화**이고, 이번엔 *"정본이 이미 바뀌었는데도
+(게이트 #14 등재) 도구가 안 바뀌어서"* 재발했다는 점이 새롭다.
+
+### 10.2 왜 손대지 않았는가
+
+`benchmarks/pdmux_eval/analyze.py`는 cp_baseline/D1뿐 아니라 **여러 트랙이 공유하는
+정본 방법론 라이브러리**다 — t-CI 함수 추가·docstring 게이트 인용·n≤8 판정 호출
+거부/경고 셋 다 코드 변경이 **트랙 경계 밖으로 파급**된다. 이 세션(cp_baseline/D1
+정본 반영 위임 범위)은 이 파일을 **건드리지 않았다** — 수리는 **사용자 승인이
+필요한 별도 작업**으로 이관한다.
+
+★**스코프 미확인(열린 질문)**: 이 세션은 **다른 트랙이 인용한 CI가 실제로 어느
+추정량(percentile bootstrap vs t-CI)에서 나왔는지 조사하지 않았다.** 게이트 #14가
+2026-08-06 당시 P1 재채점에서 이미 인용 목록을 4개→3개로 줄인 전례가 있어, 그
+작업이 다른 어떤 정본 문서까지 전파됐는지는 **미확인**이다 — 조사했다고 쓰지 않는다.
+
+### 10.3 우선순위표 추가 (§2 참조)
+
+| 순위 | 항목 | 층 | 적용 기준 | 비용 |
+|---|---|---|---|---|
+| **P0-4**(신설) | `benchmarks/pdmux_eval/analyze.py`에 t-CI 함수 추가 + `paired_bootstrap_ci`/`unpaired_bootstrap_ci` docstring에 게이트 #14 인용 + n≤8 판정 호출 시 거부/경고(도구 자체 수리 — ⚠️여러 트랙 공유, **사용자 승인 필요**, 이 세션은 착수하지 않음) | 도구 | **1·2** | GPU 0 |
+| **P3-2**(신설) | 다른 트랙이 인용한 CI가 어느 추정량에서 나왔는지 전수 확인(스코프 미확인, 열린 질문) | 결과층 | **2** | GPU 0 |
+
+상세: `PROJECT_STATUS.md` "방법론 게이트" #14 追記·#97(신설), `CONSENSUS.md` §3
+항목27 追記·117(신설), `workspace/engine-port/results/cp_baseline/
+FINDING_GATE14_TOOLING_2026-09-08.md`.
