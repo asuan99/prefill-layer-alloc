@@ -1,6 +1,6 @@
 # 실 trace를 **long-context로 전환**하는 문제 — 논의와 계획
 
-발의: 사용자, 2026-07-17. 작성: 같은 날. ★**개정: 2026-07-25**(§0.5 신설 + §4.3 SLO 교정 + §6 L−2/L3s + §2 H_L5 — 벡터1 short-ctx 종결·r0c decode-floor grounding·시간/공간 분리·운영점 게이트 반영). ★★**개정: 2026-07-26**(§0.6 신설 — **L−2(Stage 0) 게이트 실행 완료·결과 기록**: non-binding, ctx≤16k. L−1 이상은 여전히 계획 미실행). ★★★**개정: 2026-07-28**(§0.6/H_L4/H_L5/L−2 행 **철회** — claims-auditor 감사(C1 CONFIRMED)로 Stage 0의 D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어, L−2가 "실행 완료·non-binding"이 아니라 **"게이트 미실행"**으로 정정됨. L−1 이상은 "게이트 실패로 보류"가 아니라 다시 계획 단계).
+발의: 사용자, 2026-07-17. 작성: 같은 날. ★**개정: 2026-07-25**(§0.5 신설 + §4.3 SLO 교정 + §6 L−2/L3s + §2 H_L5 — 벡터1 short-ctx 종결·r0c decode-floor grounding·시간/공간 분리·운영점 게이트 반영). ★★**개정: 2026-07-26**(§0.6 신설 — **L−2(Stage 0) 게이트 실행 완료·결과 기록**: non-binding, ctx≤16k. L−1 이상은 여전히 계획 미실행). ★★★**개정: 2026-07-28**(§0.6/H_L4/H_L5/L−2 행 **철회** — claims-auditor 감사(C1 CONFIRMED)로 Stage 0의 D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어, L−2가 "실행 완료·non-binding"이 아니라 **"게이트 미실행"**으로 정정됨. L−1 이상은 "게이트 실패로 보류"가 아니라 다시 계획 단계). ★★★★**개정: 2026-09-07**(doc-steward, D4 — §4.3 **부분 정정**: 2026-07-25 판정 중 "(i) `a+b·L` 연속 길이-정규화 임계는 **계보 없음**"이라는 사실 주장을 정정. 계보가 **있다**(Etalon/Metron이 `D_p(L)` 프로파일 fitting을 명시적으로 처방, LoongServe가 input-normalized latency 사용) — 근거 `workspace/engine-port/results/cp_baseline/RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)/§6-2. **선형 폐형식 `a+b·L` 자체에 대한 기각과 §4.3의 실무 처방(절대 class SLO+slowdown 병기)은 유효 유지** — 성능/정책 판정 아님, 인용·계보에 관한 정정).
 계기: *"motivation으로 attn과 mamba가 차이가 난다는 지점은 **long-sequence에서 심화**되는데, 실 trace에도 그런 데이터셋들이 존재할 것이고, 그에 따라 **실행의 범위가 달라질 수 있는** 가능성이 있다."*
 
 관련: [CONSENSUS.md](CONSENSUS.md)(정본) · [research_arc.md §S-M](research_arc.md)(반증 지점·측정 환경·유효 경계) · [realtrace_findings_and_open_branches.md](realtrace_findings_and_open_branches.md)(얽힘 기전) · [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)(L−2 원 판정, ★★★2026-07-28 claims-auditor 감사로 철회 — 아래 §0.6 참조).
@@ -169,11 +169,30 @@ A100 80GB · `mem-fraction-static 0.82`에서 **ctx 32k × running 48**은 KV가
 
 ★**교정(2026-07-25, venue-strategist prior-work 조사)**: 초안의 **(i) `TTFT_SLO(L)=a+b·L` 연속 길이-정규화 임계는 학회 통용 방법론이 아니다 = ad-hoc**. 표준은 아래 두 가지이며, 우리 계획을 그것으로 대체한다.
 
+★★**부분 정정(2026-09-07, doc-steward, D4 — 1차 출처 검증 완료, 재조사 아님)**: 위 2026-07-25 판정 중 **"계보 없음"은 사실과 다르다** — 계보가 **있다**:
+- **Etalon/Metron**(arXiv [2407.07000](https://arxiv.org/html/2407.07000v2), `[venue 미확인]`)이
+  `D_i = D_p + i·D_d`에서 **`D_p`를 프롬프트 길이의 함수로 프로파일링 fitting하라고 명시적으로 처방**한다.
+  본문 인용: *"TTFT is oblivious of prompt length"* / *"defining a static Service Level Objective (SLO)
+  on TTFT as a measure for user-facing responsiveness of the system is not practical."* / *"The prefill
+  time increases quadratically in the size of input prompt. Therefore, setting a static value for `D_p`
+  is impractical."*
+- **LoongServe**(SOSP'24, arXiv [2404.09526](https://arxiv.org/html/2404.09526v2))가 TTFT 대신
+  **normalized input latency**(prefill phase time ÷ **입력** 길이)를 쓴다.
+- ⚠️혼동 금지(아래 표의 기존 경고와 동일 축 구분): Orca(OSDI'22)/vLLM(SOSP'23) 계보의 "normalized
+  latency"는 **출력 정규화**(÷ output length, decode 축)라 위 둘과 다른 축이다.
+
+**유효하게 남는 것(강등·철회 아님)**: (a) **선형 폐형식 `a+b·L` 자체에 대한 기각은 유효** — Etalon도
+폐형식이 아니라 "프로파일링 곡선 fitting"을 처방한다. (b) 아래 표의 실무 처방(Primary=절대 class
+SLO+SLO-scale sweep, Secondary=prefill-normalized slowdown, prefill_floor 실측 필수)은 **전부 유효**.
+⇒ 이것은 §4.3 판정의 철회가 아니라 **인용/계보에 관한 부분 정정**이다(성능·정책 판정 아님, "Etalon이
+우리 방법을 지지한다"는 뜻 아님). 근거: `workspace/engine-port/results/cp_baseline/
+RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)(표+인용)·§6 항목2.
+
 | 방법 | 내용 | prior-work 근거 |
 |---|---|---|
 | **★Primary = 절대 class SLO + SLO-scale sweep** | application-class별 절대 TTFT/TPOT(chat 300 / voice 150 / code 100 / RAG 400ms / batch 3s; [serving_slo_survey.md](serving_slo_survey.md) §2) 를 **단일점이 아니라 배수로 sweep**(DistServe "SLO scale": rate 고정·절대 SLO를 곱셈 스윕, 작을수록 tight) | DistServe OSDI'24 (Table 1: summarization TTFT **15s** = 그들의 long-context 답; SLO는 class별 절대·경험적). §1-14 단일-3s 실수 회피 |
 | **★Secondary 진단 = prefill-normalized slowdown** | `slowdown(stretch) = 관측_TTFT / prefill_floor(L)` (그리고 excess = 관측 − floor). "정책의 손상 = 환원불가 prefill floor 위의 excess"를 분리 → physics(길이) vs policy(split) 분리 | queueing 계보 **slowdown/stretch**(Bansal & Harchol-Balter SIGMETRICS'01) + 표준 `TTFT = W_queue + T_prefill` 분해. ⚠️**"normalized latency"라 부르지 말 것**(Orca/vLLM선 지연/*output*길이=decode 축, 우리와 혼동) |
-| (폐기) (i) `a+b·L` | 연속 길이-정규화 임계 | ad-hoc·계보 없음. **길이-불변 slowdown 임계(관측/floor ≤ k)** 또는 **per-length-bucket SLO-scale**로 대체 |
+| (조건부 폐기: 선형 폐형식만 — ★정정 2026-09-07, 아래 참조) (i) `a+b·L` | 연속 길이-정규화 임계 | 원 판정(2026-07-25) "ad-hoc·계보 없음"의 **"계보 없음"은 ★정정됨(2026-09-07, doc-steward)**: **계보 있음**(Etalon/Metron이 `D_p(L)` profiling fit 처방, LoongServe가 input-normalized latency 사용 — §4.3 본문 참조). 단 **선형 폐형식 자체**는 Etalon도 안 씀 → 기각은 유효 유지. **길이-불변 slowdown 임계(관측/floor ≤ k)** 또는 **per-length-bucket SLO-scale**로 대체 |
 | (참고) (iii) 분포 지표 | TTFT p95 / 용량(req/s) 직접 비교 | 절벽 회피엔 유효하나 goodput 계보와 단절 — slowdown이 상위호환 |
 
 ★**필수 규율**: **prefill_floor는 반드시 *측정*(모델링 금지)** — 단일요청·목표 SM·무경합으로 실측(gate #1이 floor에도 적용; 모델링 floor면 아티팩트). Primary(절대)로 **제품 goodput**을 주장하고, Secondary(slowdown)로 **split 인과 효과**를 분리 — 둘 다 병기(mean-ITL secondary·per-req p95 primary 패턴과 동일).
