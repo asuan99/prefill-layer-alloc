@@ -1,0 +1,50 @@
+{
+  "C_max_algebraic": 1.3747067653780864,
+  "L_decode_exact": 0.8054396416400487,
+  "L_decode_model_pred": 0.8738665841772139,
+  "L_decode_obs_over_pred": 0.9216963507059921,
+  "L_pre_exact": 1.2986452000947026,
+  "L_total_exact": 2.1040848417347515,
+  "L_total_reported": 2.1040887242980744,
+  "R": 0.4211046241916888,
+  "achieved_over_offered": 1.142231440959336,
+  "achieved_rate": 0.4568925763837344,
+  "bench_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/longctx_conflict/probes/c_905835/bench_d44_r0_o96.jsonl",
+  "completed": 80,
+  "crosscheck_rel_err": 1.8452469603622112e-06,
+  "duration_s": 175.09586308710277,
+  "expect_d": 44,
+  "itl_p50_over_itl_solo": 1.5282186786953968,
+  "itl_p50_s": 0.019923232262954116,
+  "itl_p95_s": 0.02263079534750432,
+  "label": "d44_r0_o96",
+  "n_errors": 0,
+  "offered_rate": 0.4,
+  "prefill_slowdown_s_D": 2.404088443955976,
+  "probe": "C_CAPACITY",
+  "random_input_len": 8192,
+  "random_output_len": 96,
+  "telemetry": {
+    "decode_hist": {
+      "44": 93.51036464096978,
+      "108": 33.08635440794751
+    },
+    "decode_hist_mode": 44,
+    "f_count": 0.576530612244898,
+    "f_time": 0.7386476153843856,
+    "n_decode_active_at_target": 226,
+    "n_decode_active_snapshots": 392,
+    "n_split_pab0": 0,
+    "n_split_total": 226,
+    "telemetry_audit": {
+      "dropped_events": 0,
+      "n_lines": 46041,
+      "n_snapshot_benchmark_rows": 44993,
+      "parse_errors": 0
+    }
+  },
+  "ttft_p50_over_floor_ref": 3.120614343165031,
+  "ttft_p50_s": 2.841028286376968,
+  "ttft_p95_s": 5.622134909010492,
+  "ttft_p99_s": 6.451872235047629
+}

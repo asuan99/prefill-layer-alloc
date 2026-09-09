@@ -1,0 +1,125 @@
+{
+  "R1_knee_bracketed": {
+    "d16": {
+      "n_cells_present": 3,
+      "offered_vs_ach_over_off": [
+        [
+          0.56,
+          1.1699546041039726
+        ],
+        [
+          0.85,
+          1.0797704840139841
+        ],
+        [
+          1.22,
+          0.7648515315625887
+        ]
+      ],
+      "verdict": "KNEE_BRACKETED"
+    },
+    "d44": {
+      "n_cells_present": 3,
+      "offered_vs_ach_over_off": [
+        [
+          0.4,
+          1.142231440959336
+        ],
+        [
+          0.6,
+          1.0883434344216156
+        ],
+        [
+          0.86,
+          0.7852356325767385
+        ]
+      ],
+      "verdict": "KNEE_BRACKETED"
+    },
+    "d92": {
+      "n_cells_present": 3,
+      "offered_vs_ach_over_off": [
+        [
+          0.111,
+          1.1886076107170174
+        ],
+        [
+          0.167,
+          1.1164487620557455
+        ],
+        [
+          0.241,
+          0.7746250133663946
+        ]
+      ],
+      "verdict": "KNEE_BRACKETED"
+    }
+  },
+  "R2_P_C1_out96_lt3": {
+    "L_decode_exact": {
+      "d16_r0_o96": 2.037019137793003,
+      "d16_r1_o96": 3.8340019056282446,
+      "d16_r2_o96": 3.974012439257004,
+      "d44_r0_o96": 0.8054396416400487,
+      "d44_r1_o96": 1.2798018508850757,
+      "d44_r2_o96": 1.3301819960038164,
+      "d92_r0_o96": 0.17242796872340194,
+      "d92_r1_o96": 0.26429879780013116,
+      "d92_r2_o96": 0.26576506919059856
+    },
+    "direction": "lt",
+    "max_L_decode_exact": 3.974012439257004,
+    "threshold": 3.0,
+    "verdict": "P_C1_REFUTED"
+  },
+  "R3_P_C2_out384_ge3": {
+    "L_decode_exact": {
+      "d16_r1_o384": 22.825927149657765,
+      "d44_r1_o384": 5.545392413654597,
+      "d92_r1_o384": 0.9626001032904598
+    },
+    "direction": "ge",
+    "max_L_decode_exact": 22.825927149657765,
+    "threshold": 3.0,
+    "verdict": "P_C2_SUPPORTED"
+  },
+  "R4_model_holds": {
+    "obs_over_pred_by_saturated_cell": {
+      "d16_r2_o96": 0.9806431770183072,
+      "d44_r2_o96": 1.0068371807028778,
+      "d92_r2_o96": 0.9882471835198492
+    },
+    "tolerance": 0.15,
+    "verdict": "MODEL_HOLDS",
+    "violations": []
+  },
+  "R5_mu_p_d16": {
+    "cells": [
+      {
+        "ach_over_off": 1.1699546041039726,
+        "achieved": 0.6551745782982247,
+        "offered": 0.56
+      },
+      {
+        "ach_over_off": 1.0797704840139841,
+        "achieved": 0.9178049114118865,
+        "offered": 0.85
+      },
+      {
+        "ach_over_off": 0.7648515315625887,
+        "achieved": 0.9331188685063582,
+        "offered": 1.22
+      }
+    ],
+    "mu_p_d16_saturated_req_per_s": 0.9331188685063582,
+    "note": "measurement only, no registered threshold",
+    "prior_extrapolation_req_per_s": 0.94,
+    "verdict": "MEASURED"
+  },
+  "crosscheck_rel_err_max": 1.8452469603622112e-06,
+  "missing_cells": [],
+  "n_cells_expected": 12,
+  "n_cells_present": 12,
+  "prereg": "PREREG_CAPACITY_2026-09-09.md",
+  "probe": "C_CAPACITY"
+}
