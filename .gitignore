@@ -129,3 +129,7 @@ tmp/
 # transient job-monitoring logs (results/, not artifacts)
 *_poll.log
 *_rounds.jsonl.tmp
+
+# 프로브 원자료 — telemetry는 크고(P4 TRACE_EVERY=1에서 337 MB) 재생성 가능
+workspace/engine-port/results/longctx_conflict/probes/**/*telemetry.jsonl
+workspace/engine-port/results/longctx_conflict/probes/**/.triton_cache/

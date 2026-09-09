@@ -1,0 +1,15 @@
+# P3 BOOT_SANITY -- homogenized 3-division config (5 stream groups total).
+# PREREG_PROBES_2026-09-08.md sec 3 ("3F3 수리로 등록한 sm_group_num: 5 +
+# division 3행"). sm_counts = [(108,0),(92,16),(64,44),(16,92),(0,108)].
+# decode_states (see multiplexing_mixin.py:_build_r2_policy, entries with
+# decode_sm in {16,24,34,44}) = {16, 44} -- non-empty, so the policy builds.
+# PDMUX_R2_FIXED_DSM in {16,44,92} matches sm_counts index 1/2/3 by exact
+# decode_sms equality (_r2_decide_idx), independent of decode_states
+# membership, so all three registered targets resolve to a real division.
+sm_group_num: 5
+manual_divisions:
+  - [92, 16, 0]
+  - [64, 44, 0]
+  - [16, 92, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

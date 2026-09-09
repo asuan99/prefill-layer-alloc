@@ -1,0 +1,17 @@
+{
+  "ctx": 16384,
+  "floor_ref_ttft_p50_s": 1.8216060374397784,
+  "input_lens_realized": {
+    "max": 16384,
+    "mean": 16384.0,
+    "min": 16384,
+    "n": 20
+  },
+  "itl_solo_p50_s": 0.013113421387970448,
+  "n_errors_in_measured": 0,
+  "n_itl_window_samples": 460,
+  "n_measured": 20,
+  "n_total_requests": 22,
+  "n_warmup_excluded": 2,
+  "ttft_p95_s": 1.829336265195161
+}

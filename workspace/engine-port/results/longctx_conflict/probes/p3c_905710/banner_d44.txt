@@ -1,0 +1,14 @@
+--- PD-mux enable banner + sm_counts ---
+PD-Multiplexing enabled with 3 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (64, 44), (0, 108)]
+--- max_total_num_tokens ---
+max_total_num_tokens=2620200, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=16896, available_gpu_mem=13.79 GB
+--- cudagraph capture list ---
+Capture cuda graph bs [1, 2, 4, 8, 12, 16, 24, 32, 40, 48]
+N_CAPTURING_BATCHES_LOG_LINES 4
+N_CAPTURE_FAILURES 0
+BOOT_SECONDS 49
+--- smoke: 8 requests (in=512 out=32, identical to P3) ---
+smoke_rc=0 D=44
+Successful requests:                     8         
+Median TTFT (ms):                        776.71    
+Median ITL (ms):                         14.94     

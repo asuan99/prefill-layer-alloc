@@ -1,0 +1,27 @@
+{
+  "audit": {
+    "dropped_events": 0,
+    "n_lines": 11922,
+    "n_snapshot_benchmark_rows": 10154,
+    "parse_errors": 0
+  },
+  "decode_hist": {
+    "44": 238.7303253398277,
+    "108": 1.9083871617913246
+  },
+  "decode_hist_mode": 44,
+  "expect_d": 44,
+  "f_count": 0.9813664596273292,
+  "f_time": 0.99206949230258,
+  "frac_split_pab0_of_all": 0.0,
+  "frac_split_pab0_of_split": 0.0,
+  "label": "p1_d44",
+  "n_decode_active_at_target": 474,
+  "n_decode_active_snapshots": 483,
+  "n_rows_total": 10154,
+  "n_split_pab0": 0,
+  "n_split_total": 474,
+  "scipy_stubbed": false,
+  "t_decode_active_s": 240.638712501619,
+  "telemetry_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/longctx_conflict/probes/p1_905707/p1_d44_telemetry.jsonl"
+}

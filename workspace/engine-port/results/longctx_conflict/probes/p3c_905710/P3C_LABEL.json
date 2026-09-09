@@ -1,0 +1,44 @@
+{
+  "capture_list_exact_equal": true,
+  "capture_list_len_equal": true,
+  "capture_list_len_new": 10,
+  "capture_list_len_ref": 10,
+  "delta_max_total_num_tokens_pct": 0.050861670003986455,
+  "new": {
+    "boot_seconds": 49,
+    "capture_list": [
+      1,
+      2,
+      4,
+      8,
+      12,
+      16,
+      24,
+      32,
+      40,
+      48
+    ],
+    "max_total_num_tokens": 2620200,
+    "n_stream_groups": 3
+  },
+  "probe": "P3C_DIVISION_COST",
+  "reading": "homogenization is effectively free -- B12 closed",
+  "reference": {
+    "boot_seconds": null,
+    "capture_list": [
+      1,
+      2,
+      4,
+      8,
+      12,
+      16,
+      24,
+      32,
+      40,
+      48
+    ],
+    "max_total_num_tokens": 2618868,
+    "n_stream_groups": 5
+  },
+  "verdict": "HOMOG_FREE"
+}

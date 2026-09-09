@@ -1,0 +1,23 @@
+{
+  "prediction_1": {
+    "f_count_p1_trace32": 0.9813664596273292,
+    "f_count_trace1_sticky_off": 0.9721538660795234,
+    "reading": "subsampling harmless",
+    "rel_diff": 0.009387516210105902,
+    "within_20pct": true
+  },
+  "prediction_2": {
+    "f_count_sticky_off": 0.9721538660795234,
+    "f_count_sticky_on": 0.9893796140396321,
+    "ge_3x": false,
+    "ratio_on_over_off": 1.0177191580069278,
+    "reading": "FINDING_DUTYCYCLE sec2 code-reading withdrawn"
+  },
+  "prediction_3": {
+    "frac_split_pab0_of_split_off": 0.0002664535038635758,
+    "frac_split_pab0_of_split_on": 0.017672470218615,
+    "on_gt_off": true,
+    "reading": "record-skew mechanism supported"
+  },
+  "probe": "P4_SKEW"
+}
