@@ -1,0 +1,26 @@
+# STEP 1 ARM-SET REPAIR -- homogenized 4-division config (6 stream groups total).
+# audit_p6_rules_2026-09-09/VERDICT.md 死因 Y4 + rev1 개선 #5.
+#
+# Why: with arms {16, 44, 92} the measured mu_p spread is 4.99x (0.187 .. 0.933
+# req/s), while the two constraints of a common-W design (rho >= 0.6 on a
+# competing arm, drain/arrival <= 2x on every arm) admit at most 3.33x.  The
+# common-W prescription is therefore infeasible on that arm set -- not a
+# design failure but an arithmetic one.  Adding D=54 (prefill 54 SM) is
+# predicted to bring the spread to <= 2.4x.
+#
+# sm_counts becomes [(108,0),(92,16),(64,44),(54,54),(16,92),(0,108)].
+# PDMUX_R2_FIXED_DSM in {16,44,54,92} matches by exact decode_sms equality
+# (_r2_decide_idx), independent of decode_states membership -- same mechanism
+# P3 (job 905701) confirmed for pdmux_homog5.yml.
+#
+# mu_p(54) is EXTRAPOLATED as ~0.566 req/s from the 3-point least squares
+# mu_p(D) ~= 0.0334 + 0.009854*(108-D) (audit estimate, residual <= 0.011).
+# ★That extrapolation is what Step 1 measures.  It is not assumed anywhere.
+sm_group_num: 6
+manual_divisions:
+  - [92, 16, 0]
+  - [64, 44, 0]
+  - [54, 54, 0]
+  - [16, 92, 0]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

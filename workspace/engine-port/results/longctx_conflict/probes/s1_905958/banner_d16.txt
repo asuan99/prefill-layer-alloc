@@ -1,0 +1,2 @@
+sm_counts (prefill_sm, decode_sm): [(108, 0), (92, 16), (64, 44), (54, 54), (16, 92), (0, 108)]
+max_total_num_tokens=2618152

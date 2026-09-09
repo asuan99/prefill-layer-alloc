@@ -1,0 +1,62 @@
+{
+  "banners": {
+    "16": "sm_counts (prefill_sm, decode_sm): [(108, 0), (92, 16), (64, 44), (54, 54), (16, 92), (0, 108)]\nmax_total_num_tokens=2618152",
+    "44": "sm_counts (prefill_sm, decode_sm): [(108, 0), (92, 16), (64, 44), (54, 54), (16, 92), (0, 108)]\nmax_total_num_tokens=2618152",
+    "54": "sm_counts (prefill_sm, decode_sm): [(108, 0), (92, 16), (64, 44), (54, 54), (16, 92), (0, 108)]\nmax_total_num_tokens=2618152",
+    "92": "sm_counts (prefill_sm, decode_sm): [(108, 0), (92, 16), (64, 44), (54, 54), (16, 92), (0, 108)]\nmax_total_num_tokens=2618152"
+  },
+  "boot": {
+    "booted": [
+      16,
+      44,
+      54,
+      92
+    ],
+    "verdict": "BOOT_OK"
+  },
+  "cells": {
+    "16": {
+      "ach_over_off": 0.6530844725190208,
+      "completed": 60,
+      "homog5_anchor": 0.9331,
+      "median_itl_ms": 45.50841357558966,
+      "mu_p_saturated_req_per_s": 0.914318261526629,
+      "n_errors": 0,
+      "offered_rate": 1.4,
+      "ratio_to_anchor": 0.9798716766977055
+    },
+    "44": {
+      "ach_over_off": 0.5555273859478137,
+      "completed": 45,
+      "homog5_anchor": 0.6753,
+      "median_itl_ms": 20.407292991876602,
+      "mu_p_saturated_req_per_s": 0.6666328631373765,
+      "n_errors": 0,
+      "offered_rate": 1.2,
+      "ratio_to_anchor": 0.9871655014621301
+    },
+    "54": {
+      "ach_over_off": 0.481017115549622,
+      "completed": 45,
+      "median_itl_ms": 18.910021986812353,
+      "mu_p_saturated_req_per_s": 0.5772205386595464,
+      "n_errors": 0,
+      "offered_rate": 1.2,
+      "prior_extrapolation": 0.566,
+      "ratio_to_extrapolation": 1.019824273250082
+    },
+    "92": {
+      "ach_over_off": 0.5387132495060662,
+      "completed": 30,
+      "homog5_anchor": 0.1867,
+      "median_itl_ms": 14.923476381227374,
+      "mu_p_saturated_req_per_s": 0.18854963732712318,
+      "n_errors": 0,
+      "offered_rate": 0.35,
+      "ratio_to_anchor": 1.0099070022877514
+    }
+  },
+  "mu_p_spread": 4.849217821301546,
+  "mu_p_spread_note": "target <= 2.4x so a common-W design satisfies both rho>=0.6 and drain<=2x; homog5 arm set was 4.99x",
+  "probe": "S1_ARMFIX"
+}
