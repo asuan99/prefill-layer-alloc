@@ -16,6 +16,25 @@ subagent, 기록 주체: `doc-steward` subagent.
 > 인용금지 각주를 함께 읽을 것. 상세 `../CONSENSUS.md` §1-4·rev33,
 > `../PRIZE_SIZE_ARGUMENT_2026-08-16.md` §7.
 
+> ⚠️**2026-09-10 doc-steward 갱신(신규 1차 증거 승급, 새 서빙 측정 아님)**:
+> §5(related work)와 §6(참고 소스)에 `workspace/engine-port/external/
+> muxwise/{sharegpt.yml, loogle.yml}` 설정 파일을 **직접 읽어 확인**한
+> 결과를 반영했다 — 이 파일들이 같은 코드베이스(엔진)에서 워크로드별로
+> 다른 SM 분할표를 이미 출하한다는 **구조적 사실**을 **저장소 내 1차
+> 증거**로 승급했다(★2026-09-10 doc-steward 자기정정: 초판이 여기
+> "같은 하드웨어"라 잘못 적었다 — 두 yml 전 행의 SM 합은 132로
+> H100/H200급 다이이며 우리 A100 108-SM이 아니다, 아래 §5 표 참조).
+> arXiv 2504.14489 논문 자체의 주장·수치·게재처는 여전히
+> (ii) "검증 필요"로 분리했다(§5 말미·§6 참고). 근거 `../CONSENSUS.md`
+> §5-6(2026-09-09 2차 세션 (D) 항목), `../impl_vs_external_pdmux_
+> 2026-08-28.md` §2.5–2.6. **claim 등급 변경 0건 — stake #1("최적
+> static split 위치가 워크로드 모양에 따라 움직이는가")은 이 프로젝트의
+> 기판(A100 108-SM green-context)에서 여전히 구매 불가로 종결된
+> 상태**(`EXPERIMENT_ROADMAP.md` longctx_conflict 절, `audit_p6_rules_
+> 2026-09-09/VERDICT.md` Y1-f) — 아래 §5의 정정은 그 스코프 판정을
+> 바꾸지 않으며, "선행이 이미 그 답을 전제하고 있다"는 positioning
+> 사실만 추가한다.
+
 > **2026-07-25 갱신 성격**: 이 갱신은 **새 서빙 측정이 아니라 prior-art 조사 +
 > positioning reasoning**이다. 확정 서빙 결과(`PROJECT_STATUS.md` "확정된 결과"
 > §1–5, Claim A–F 등급)는 하나도 바뀌지 않는다. §0.1은 (i) `venue_positioning.md`
@@ -389,10 +408,58 @@ headroom과 정합적이다. 즉 우리 negative는 선행 positive와 모순이
 "coupling이 원인"이라는 동일 기전의 다른 면이며, **이 프레이밍이 유일한
 substrate-artifact 반박 방어선**이다.
 
+★**2026-09-10 추가(doc-steward, 저장소 내 1차 증거로 승급)** — 위 문단의
+"decode_bs 임계 테이블" 프레이밍은 지금까지 요약·추론이었으나, 그 설정
+파일 자체가 저장소 안에 있어 **직접 읽어 확인**했다
+(`workspace/engine-port/external/muxwise/{sharegpt.yml, loogle.yml}`):
+
+| | `sharegpt.yml` | `loogle.yml`(long-context) |
+|---|---|---|
+| `sm_group_num` | 8 | 5 |
+| `manual_divisions`(prefill SM, decode SM, `decode_bs_threshold`) | `[112,20,1] [104,28,5] [96,36,10] [80,52,15] [64,68,20] [56,76,25]` | `[80,52,1] [64,68,5] [56,76,10]` |
+| `decode_bs=1`에서 decode SM | **20** | **52** |
+| prefill+decode SM 합 | 132 (전 행 일정) | 132 (전 행 일정) |
+
+이것은 **저장소 내에서 직접 검증된 사실**이다: 같은 코드베이스·같은 green-context
+primitive 위에서, MuxWise는 워크로드(ShareGPT vs LooGLE)마다 **다른 SM 분할표를
+출하**하고, 세 번째 필드 `decode_bs_threshold`가 "현재 decode batch가 이 문턱을
+넘으면 이 분할로 전환"이라는 규칙으로 "분할점이 이동한다"를 자료구조로 인코딩한다
+(선택 루프는 break 없이 마지막 만족 행을 취함 — 상세 대조는
+`../impl_vs_external_pdmux_2026-08-28.md` §2.5–2.6, 특히 `manual_divisions` 3번째
+값의 엔진 의미). ★합계 132 SM은 H100/H200급 다이(A100 108 SM 아님)이므로 이
+수치를 우리 108-SM 격자로 그대로 이식하지 않는다 — 여기서 검증되는 것은 "분할표가
+워크로드에 따라 달라진다"는 **구조적 사실**이지 특정 SM 수의 이식성이 아니다.
+
+**증거 등급 구분(overclaim 방지)**: (i) **저장소 내에서 직접 검증됨** = 위 표의
+설정 파일 내용 자체(파일 경로·필드·수치는 이 세션이 직접 읽어 확인, 인용 시
+재확인 불필요). (ii) **여전히 검증 필요** = arXiv 2504.14489 논문 본문의 주장
+(예: 2.2× goodput), 수치, 게재처(ASPLOS'26 추정) — venue-strategist 지식
+컷오프(2026-01) 이후 문헌이라 원문 재확인 전 인용 금지(§6).
+
+**이 사실이 포지셔닝에 갖는 의미(이미 정본에 등재된 해석, 새 주장 아님)**: stake
+#1의 긍정 답("최적 static split 위치가 워크로드 모양에 따라 움직인다")은 이미
+최근접 선행(MuxWise)의 **제품 전제**로 배포돼 있다 — 우리가 이것을 "발견"으로
+팔 수 없다. 이는 HE0와도 모순이 아니라 **정합**이다: 부하-색인(load-indexed)
+static 테이블은 여전히 static이지 reactive closed-loop 제어가 아니다(HE0가
+반증한 것은 후자). ⇒ 남는 우리 몫은 *"고정 분할표(그리고 그 분할표가 이미
+워크로드-조건부라는 사실)를 넘어서는 closed-loop reactive 판본이 왜 더 얻지
+못하는가"*이며, 이것이 정확히 C3(entanglement 기전)의 자리다. `stake #1` 자체에
+대한 우리 실험적 답은 이 기판(A100 108-SM, `prefill SM+decode SM=108` 엔진
+강제)에서 **구매 불가로 종결**됐다(`../../workspace/engine-port/results/
+longctx_conflict/audit_p6_rules_2026-09-09/VERDICT.md` Y1-f, `EXPERIMENT_
+ROADMAP.md` longctx_conflict 절) — 이 문단은 그 판정을 재도출하지 않는다.
+
 ## 6. 참고 (검증 필요 소스)
 
 - Bullet: arXiv 2504.19516 (ASPLOS'26) — **검증 필요**
-- MuxWise / SLO-oriented PD-Multiplexing: arXiv 2504.14489 — **검증 필요**
+- MuxWise / SLO-oriented PD-Multiplexing — **증거 등급 분리(2026-09-10)**:
+  (i) 워크로드별 SM 분할표(`sharegpt.yml` decode 20 SM vs `loogle.yml` decode
+  52 SM at `decode_bs_threshold=1`, `manual_divisions` 필드 구조)는 **저장소 내
+  `workspace/engine-port/external/muxwise/{sharegpt.yml, loogle.yml}`를 직접
+  읽어 검증 완료** — 재확인 불필요, 위 §5 표 참조. (ii) 논문 본문 주장·수치
+  (예: "2.2× goodput")·게재처(arXiv 2504.14489, ASPLOS'26 추정)는 **여전히
+  검증 필요**(venue-strategist 지식 컷오프 2026-01 이후 문헌, 원문 재확인 전
+  인용 금지) — (i)과 (ii)를 혼동해 인용하지 말 것.
 - PD-Multiplexing with GreenContext: LMSYS blog, 2025-09-28 — **검증 필요**
 - CFP: MLSys 2026/2027, HPCA 2027, ASPLOS 2027, OSDI 2027, NSDI 2027,
   EuroSys 2027 — **날짜 전부 검증 필요** (venue-strategist 지식 컷오프 2026-01

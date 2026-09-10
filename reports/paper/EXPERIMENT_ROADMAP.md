@@ -1,6 +1,29 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-08-22(doc-steward — **`%smid` R0(job 889631,
+최종 갱신: 2026-09-10(doc-steward, 4차 세션 — **Q-A(longctx_conflict
+트랙 후계 질문)가 규칙층 감사 계보 rev2→rev6[`GO-with-caveats`,
+死因0·반전0, 이 트랙 최초]→rev7(제출 판본)을 거쳐 캠페인 제출됨**
+[`probes/qa_regret.sbatch`, jobs 906504–906507, 승인 예산 ≈10.1
+GPU-h(10.4에서 Stage A 폐지로 감액), **제출 상태 PENDING·결과
+0건**]. 아래 "longctx_conflict 트랙 로드맵" §1 갱신. ⚠️결과는
+여전히 0건 — "예정"에서 "제출됨·미도착"으로만 바뀐다, 결론 예고
+없음. 새 성능 판정 0건·arm 순위 0건·정책 순위 변경 0건·HE0
+불변. 상세 `PROJECT_STATUS.md` longctx_conflict 행, `CONSENSUS.md`
+§5-6 追記(rev62)·§3 항목139–168.
+이전: 2026-09-10(doc-steward — **`longctx_conflict` 트랙(P0–P6/벡터1/
+벡터2/P1 트랙과 별개, `CONSENSUS.md` §5-6 소관) 상태를 처음으로 이 로드맵에
+반영 — 신규 "longctx_conflict 트랙 로드맵" 절 신설(아래 "공통 방법" 앞).
+stake #1("최적 static split 위치가 워크로드 모양에 따라 움직이는가")은 이
+기판(A100 108-SM, `prefill SM+decode SM=108` 엔진 강제)에서 **구매 불가로
+종결**(반증 아님 — 스코프 선언, `audit_p6_rules_2026-09-09/VERDICT.md`
+Y1-f). 후계 질문 2건 신설: **Q-A**(고정 split의 regret 프론티어, 사전등록
+초안 `PREREG_QA_REGRET_2026-09-10.md` 존재·**미회부·미제출·예산 미승인
+[≈6.8 GPU-h 산정]**) · **Q-B**(SM-split 액추에이터 자기상쇄 루프 이득,
+사전등록 없음, 2순위). ⚠️Q-A는 아직 결과 0건 — "예정"으로만 기록, 결론
+예고 없음. 새 성능 판정 0건·arm 순위 0건·정책 순위 변경 0건.** 상세
+`CONSENSUS.md` §5-6(2026-09-09 rev58/rev59), `PROJECT_STATUS.md`
+longctx_conflict 관련 절.
+이전: 2026-08-22(doc-steward — **`%smid` R0(job 889631,
 claims-auditor `CONFIRMED(scoped)`) 결과 반영 — 아래 §"P1 트랙"
 항목6(S3/`%smid`)에 갱신 문단 추가.** id 집합 층에서
 `GLOBALLY_CONSISTENT_LABEL` 확인(엔진 없는 별도 프로세스 eager
@@ -331,6 +354,68 @@ D/E 소관)와 별개다 — 여기서 묻는 질문은 "이 엔진에서 PD-mux
 10. E-A 잔여 사다리(T3-1/T3-2/T3-3/T4-2/E-C/E-D, 우선순위·비용은
    `PROJECT_STATUS.md` "확정된 결과" 1번 E-A 블록 참조) — fused-측 조율
    가능성 진단 계열, Gate 2 본 질문에는 직접 기여하지 않음.
+
+## longctx_conflict 트랙 로드맵 (stake #1 종결 + 후계 질문 Q-A/Q-B)
+(2026-09-10 신설)
+
+벡터1·벡터2·P1 트랙과 마찬가지로 이 트랙도 아래 "단계와 stop/go gate"(P0–P6,
+Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` §5-6(전체
+경과)·`PROJECT_STATUS.md`이며, 이 절은 로드맵 상태만 이관한다(수치·死因 전문은
+정본에서 확인).
+
+### stake #1 — 이 기판에서 구매 불가로 종결(반증 아님, 스코프 선언)
+
+*"최적 static split 위치가 워크로드 모양에 따라 움직이는가"*는 `longctx_conflict`
+트랙의 규칙층 사전등록 계열(누적 17연속 `NO-GO`, `PREREG_SWEEP` rev1/rev2·
+`PREREG_P6_ITL_ORDER` 포함)이 직접 검증을 시도했으나, 이 기판에서는 **구매 불가로
+종결**됐다. 근거 = `prefill SM + decode SM = 108`이 엔진 강제라 `μ_p(D)`(포화
+처리율)와 `itl(·,D)`(ITL 반응)를 분리할 자유도가 없고, 실측된 두 단조성이
+서로 상쇄가 아니라 **보강**하므로 순서 역전이 구조적으로 관측될 수 없다
+(`../../workspace/engine-port/results/longctx_conflict/audit_p6_rules_
+2026-09-09/VERDICT.md` Y1-f, `../CONSENSUS.md` §5-6 (C)).
+
+⚠️**이 판정을 인용할 때 절대 쓰면 안 되는 문장**: *"장문(long-context)에서
+최적 split 위치가 안 움직인다"* — 이것은 반증이 아니라 **이 공통-부하 설계로는
+답할 수 없다는 스코프 선언**이며, 저 문장으로 쓰면 즉시 방법론 게이트 위반이다.
+"구매 불가"로만 서술한다. (관련 positioning 함의는
+[`venue_positioning.md`](venue_positioning.md) §5 2026-09-10 추가 참조 — 이
+질문의 긍정 답은 이미 최근접 선행[MuxWise]의 제품 전제로 배포돼 있다.)
+
+### 후계 질문 (둘 다 아직 실행 전 — 우선순위순)
+
+1. **Q-A — 고정 split의 regret 프론티어**(1순위). 질문을 "어느 위치가
+   최적인가"에서 "하나로 고정하면 얼마를 잃는가"(쌍 페어드 차 행렬 estimand,
+   `min`·argmin·포락선 산출 사전등록 문자로 금지)로 바꿔 stake #1을 다시
+   묻지 않고 우회한다.
+
+   ★★**(2026-09-10, 4차 세션, doc-steward 갱신) 규칙층 감사 계보 완주 +
+   캠페인 제출** — rev2(`.../longctx_conflict/audit_qa_rules_2026-09-10/
+   VERDICT.md`) `NO-GO` → rev3 `NO-GO` → rev4 `NO-GO` → rev5 `NO-GO`
+   (전부 반전 시험 死因 N2, 트랙 계열 누적 18→21연속[승계 장부, 게이트#110
+   미검증]) → **rev6(`.../audit_qa_rev6_2026-09-10/VERDICT.md`)
+   `GO-with-caveats`(死因 0·반전 0/6표면) — 이 트랙 최초의 `GO-with-caveats`,
+   결정 규칙 6개를 유지한 채 반전 시험을 통과한 첫 설계**(P7식 "결정 규칙
+   0개로 우회"와 구분) → rev7(`PREREG_QA_REGRET_REV7_2026-09-10.md`,
+   T1–T6 문면 수리 이행, 제출 판본).
+
+   **캠페인 제출·결과 없음**: `.../longctx_conflict/probes/qa_regret.sbatch`,
+   **jobs 906504–906507**(라운드당 1개), 승인 예산 **≈10.1 GPU-h**(초안
+   ≈6.8→등록 10.4, Stage A 폐지로 10.4→10.1로 감액 — `𝒜(λ,B):=𝒜(λ,A)` 확정
+   이후 그 산출이 Stage B 포화 bench와 중복). **제출 상태 PENDING·완료 0/4·
+   결과 0건.** ⚠️**Q-A는 여전히 결과가 전혀 없다** — 이 로드맵 항목을
+   인용할 때 "제출됨·미도착" 이상의 어떤 결론도 예고하지 않는다.
+
+   **결과 문서가 승계할 인용 금지 55건**(rev6 §6의 14건 + rev2–rev5의 41건,
+   전문은 각 VERDICT 경로)의 필수 병기 3종: ① 미처치 바닥이 arm-무관
+   (median-ITL 최소 13.016–13.079ms·최소 TTFT 0.883–0.903s, 기전
+   `CONSENSUS §3 항목26`) ② `|𝒜(λ)|`이 처치 강도의 순감소 함수 ③ 저부하
+   외삽 노출 18/19 셀(94.7%). stake #1 구조 판정은 이 캠페인의 어떤 판본
+   으로도 열리지 않는다(`Ê`·argmin·순위·포락선·"어느 arm이 최적" 산출
+   사전등록 문자로 금지). 상세 `CONSENSUS.md` §5-6 追記(rev62)·§3 항목
+   139–168, `PROJECT_STATUS.md` longctx_conflict 행·"방법론 게이트"
+   #119–148.
+2. **Q-B — SM-split 액추에이터 자기상쇄 루프 이득**(2순위). 사전등록 없음,
+   착수 전.
 
 ## 공통 방법
 

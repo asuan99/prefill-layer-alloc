@@ -1,6 +1,22 @@
 # Document status
 
-최종 갱신: 2026-08-28(doc-steward — **TC1·M4R 규칙층 감사 각 2회
+최종 갱신: 2026-09-10(doc-steward, 4차 세션 — **`longctx_conflict`
+Q-A 트랙 rev2→rev7 규칙층 감사 계보[rev6 `GO-with-caveats`, 이
+트랙 최초] + 캠페인 제출[jobs 906504–906507, PENDING·결과 0건]
+반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim A 각주와
+`EXPERIMENT_ROADMAP.md` "longctx_conflict 트랙 로드맵" §1(Q-A)을
+`reports/CONSENSUS.md` rev62·§3 항목139–168과 재동기화. 등급·
+인용정지·claim 등급 전부 무변경, 새 성능 판정 0건, 이 문서의
+Canonical/Historical/Superseded 분류표는 무변경 — changelog
+기록뿐.** 이전: 2026-09-10(doc-steward — **`longctx_conflict` 트랙 rev59(Step 1 job
+905958 + P7 job 905994, 전부 순수 계측) 반영으로 `CLAIM_EVIDENCE_MATRIX.md`
+Claim A 각주와 `EXPERIMENT_ROADMAP.md`(신규 "longctx_conflict 트랙 로드맵"
+절)를 `reports/CONSENSUS.md` rev59와 재동기화. `reports/paper/
+venue_positioning.md`도 함께 갱신(§5/§6, `muxwise/{sharegpt,loogle}.yml`
+직접 확인 결과를 저장소 내 1차 증거로 승급, arXiv 2504.14489 자체 주장은
+"검증 필요" 분리 유지). 등급·인용정지·claim 등급 전부 무변경, 새 성능 판정
+0건, 이 문서의 Canonical/Historical/Superseded 분류표는 무변경(구조는
+그대로 정확) — changelog 기록뿐.** 이전: 2026-08-28(doc-steward — **TC1·M4R 규칙층 감사 각 2회
 (전부 `NO-GO`) 반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim A 각주에
 2026-08-27~28 追記(estimand 미식별 재확인, 유일한 해소 경로 =
 `PDMUX_STICKY_PARTITION=1` 신규 측정). `reports/CONSENSUS.md`
