@@ -1,0 +1,192 @@
+=== cells (probe C, o96) ===
+        cell    N  lambda         X  ach/off      med     mean   trim10   pool95  span_f | 95%CI half-width % (req resample)
+      d16_r0  110   0.560  0.655175   1.1700   45.791   41.194   43.444   48.027  0.8504 | medi=±0.970 mean=±5.413 trim=±5.926 pool=±3.002
+      d16_r1  170   0.850  0.917805   1.0798   46.951   46.702   46.937   46.980  0.8531 | medi=±0.088 mean=±0.759 trim=±0.102 pool=±0.074
+      d16_r2  170   1.220  0.933119   0.7649   46.863   46.768   46.854   46.917  0.8534 | medi=±0.076 mean=±0.728 trim=±0.093 pool=±0.078
+      d44_r0   80   0.400  0.456893   1.1422   21.802   20.418   20.990   22.631  0.8723 | medi=±2.202 mean=±3.963 trim=±4.774 pool=±1.067
+      d44_r1  120   0.600  0.653006   1.0883   23.013   22.603   23.005   23.028  0.8265 | medi=±0.056 mean=±1.557 trim=±0.119 pool=±0.086
+      d44_r2  130   0.860  0.675303   0.7852   23.079   22.987   23.077   23.089  0.8495 | medi=±0.052 mean=±0.541 trim=±0.049 pool=±0.058
+      d92_r0   40   0.111  0.131935   1.1886   13.216   14.291   14.222   15.309  0.8568 | medi=±9.183 mean=±2.772 trim=±3.468 pool=±1.567
+      d92_r1   40   0.167  0.186447   1.1164   16.111   15.999   16.098   16.120  0.8564 | medi=±0.141 mean=±0.896 trim=±0.318 pool=±0.331
+      d92_r2   45   0.241  0.186685   0.7746   16.180   16.094   16.168   16.219  0.8276 | medi=±0.308 mean=±0.772 trim=±0.235 pool=±0.147
+
+X vs bench 'request_throughput'  max rel err : 0.000e+00   (!! ALGEBRAIC IDENTITY, bench_serving.py:1093 -- validates nothing)
+X vs cell_*.json 'achieved_rate' max rel err : 0.000e+00   (same identity)
+
+=== D1/D2 conditioning of the X axis + dynamic range ===
+  d16: X=[0.655175, 0.917805, 0.933119]
+        dX(r0,r1)=0.262630  dX(r1,r2)=0.015314  collapse=0.0583
+        D1 lever(X)=0.9449   lever(lambda)=0.4394
+        dX/dlambda: 0.9056 (r0->r1)  0.0414 (r1->r2)
+        D2 dynamic range %: median=2.53  mean=13.53  trim10=8.04  pooled_p95=2.37   [resolution 7.2%]
+        log-log slope (median): 0.074 (r0->r1) -> -0.113 (r1->r2)
+        rho realized approx: [0.706, 1.068, 1.532]
+  d44: X=[0.456893, 0.653006, 0.675303]
+        dX(r0,r1)=0.196113  dX(r1,r2)=0.022297  collapse=0.1137
+        D1 lever(X)=0.8979   lever(lambda)=0.4348
+        dX/dlambda: 0.9806 (r0->r1)  0.0858 (r1->r2)
+        D2 dynamic range %: median=5.86  mean=12.58  trim10=9.94  pooled_p95=2.03   [resolution 7.2%]
+        log-log slope (median): 0.151 (r0->r1) -> 0.086 (r1->r2)
+        rho realized approx: [0.679, 1.075, 1.499]
+  d92: X=[0.131935, 0.186447, 0.186685]
+        dX(r0,r1)=0.054511  dX(r1,r2)=0.000238  collapse=0.0044
+        D1 lever(X)=0.9957   lever(lambda)=0.4308
+        dX/dlambda: 0.9734 (r0->r1)  0.0032 (r1->r2)
+        D2 dynamic range %: median=22.43  mean=12.62  trim10=13.69  pooled_p95=5.94   [resolution 7.2%]
+        log-log slope (median): 0.573 (r0->r1) -> 3.350 (r1->r2)
+        rho realized approx: [0.694, 1.045, 1.56]
+
+=== LOO (hold out r1; interpolate r0,r2) -- REGISTERED TEST ===
+  arm   estimator      obs  pred_lin    err%  pred_log    err% |  D3 near  D3 mid  D3 flat | D4 noise
+  d16      median   46.951    46.804   0.313    46.813   0.296 |    0.188   1.329    2.471 |    0.088
+  d16        mean   46.702    46.461   0.517    46.491   0.452 |    0.141   5.827   11.794 |    0.759
+  d16      trim10   46.937    46.666   0.577    46.689   0.529 |    0.176   3.809    7.443 |    0.102
+  d16  pooled_p95   46.980    46.978   0.003    46.969   0.023 |    0.133   1.049    2.230 |    0.074
+  d44      median   23.013    22.949   0.278    22.967   0.201 |    0.288   2.486    5.260 |    0.056
+  d44        mean   22.603    22.725   0.539    22.754   0.669 |    1.699   3.984    9.667 |    1.557
+  d44      trim10   23.005    22.864   0.616    22.890   0.504 |    0.310   4.225    8.760 |    0.119
+  d44  pooled_p95   23.028    23.043   0.062    23.050   0.092 |    0.265   0.731    1.727 |    0.086
+  d92      median   16.111    16.168   0.348    16.168   0.353 |    0.428   8.772   17.972 |    0.141
+  d92        mean   15.999    16.086   0.542    16.087   0.547 |    0.591   5.044   10.679 |    0.896
+  d92      trim10   16.098    16.160   0.386    16.161   0.391 |    0.438   5.607   11.653 |    0.318
+  d92  pooled_p95   16.120    16.215   0.584    16.215   0.588 |    0.609   2.214    5.037 |    0.331
+
+  max 0.669%  median 0.422%  mean 0.392%  min 0.003%  | over 7.2%: 0/24  => PASS (max < 7.2%)
+  D3 nearest-anchor null: max 1.699%  median 0.299%   | flat-from-r0 null max 17.972%
+  D4 request-sampling noise floor (median 95% CI half-width): 0.130%   | LOO errors inside their own noise floor: 9/24
+  interpolant beats the nearest-anchor constant in 8/12 (arm,estimator) cases
+
+=== D5 mixture structure (untreated mode = split never fired) ===
+  untreated threshold = 1.1 x ITL_SOLO(13.037 ms) = 14.341 ms
+        cell  untreated        median in   gap ms        gap between  f_time  t@108SM
+      d16_r0      0.118     treated mode    26.94        14.74-41.68   0.710    0.286
+      d16_r1      0.000     treated mode    27.72        15.10-42.82   0.920    0.079
+      d16_r2      0.000     treated mode    30.27        15.05-45.32   0.941    0.055
+      d44_r0      0.212     treated mode     6.03        14.12-20.15   0.739    0.261
+      d44_r1      0.042     treated mode     7.43        14.15-21.58   0.914    0.086
+      d44_r2      0.008     treated mode     7.68        14.11-21.79   0.946    0.054
+      d92_r0      0.575   untreated mode     1.70        13.29-14.99   0.713    0.280
+      d92_r1      0.025     treated mode     2.03        13.22-15.25   0.947    0.053
+      d92_r2      0.022     treated mode     2.45        13.20-15.64   0.955    0.045
+  !! the MEDIAN estimator jumps between modes as untreated_fraction crosses 0.5 -> y(X) has a STEP; no ladder density reproduces a step.
+
+  mode decomposition  itl95_cell ~ (1-w)*untreated + w*treated
+        cell  w=treated frac  untreated mean  treated mean  cell median  cell mean
+      d16_r0           0.882          13.765        44.870       45.791     41.194
+      d16_r1           1.000               -        46.702       46.951     46.702
+      d16_r2           1.000               -        46.768       46.863     46.768
+      d44_r0           0.787          13.435        22.303       21.802     20.418
+      d44_r1           0.958          13.453        23.001       23.013     22.603
+      d44_r2           0.992          14.112        23.056       23.079     22.987
+      d92_r0           0.425          13.197        15.770       13.216     14.291
+      d92_r1           0.975          13.218        16.071       16.111     15.999
+      d92_r2           0.978          13.199        16.160       16.180     16.094
+  d16: treated-mode mean over the 3 rungs [44.87, 46.702, 46.768]  -> range 4.23% (vs 7.2% resolution)
+  d44: treated-mode mean over the 3 rungs [22.303, 23.001, 23.056]  -> range 3.38% (vs 7.2% resolution)
+  d92: treated-mode mean over the 3 rungs [15.77, 16.071, 16.16]  -> range 2.47% (vs 7.2% resolution)
+
+=== D4b noise floor projected onto Q-A's registered per-rung N ===
+  Lambda = [0.09, 0.15, 0.25, 0.42, 0.7]  T_win = 150s  =>  N = round(lambda*T_win)+1 = [15, 23, 39, 64, 106]
+  m-out-of-n bootstrap on each probe C cell; 95% CI half-width [%] of itl95_cell
+  -- estimator: median
+        cell  N_obs   N= 15  N= 23  N= 39  N= 64  N=106
+      d16_r0    110    2.30   2.16   1.63   1.39   0.97
+      d16_r1    170    0.41   0.33   0.24   0.16   0.10
+      d16_r2    170    0.28   0.26   0.18   0.14   0.10
+      d44_r0     80    4.03   3.37   2.51   2.30   2.12
+      d44_r1    120    0.14   0.10   0.08   0.07   0.06
+      d44_r2    130    0.18   0.14   0.10   0.08   0.06
+      d92_r0     40    9.47   9.24   9.21   9.13   6.74
+      d92_r1     40    0.21   0.17   0.14   0.13   0.11
+      d92_r2     45    0.42   0.37   0.32   0.29   0.25
+  -- estimator: mean
+        cell  N_obs   N= 15  N= 23  N= 39  N= 64  N=106
+      d16_r0    110   14.12  11.62   8.98   7.00   5.49
+      d16_r1    170    2.72   1.93   1.42   1.26   0.96
+      d16_r2    170    2.75   1.92   1.27   1.24   0.87
+      d44_r0     80    9.17   7.27   5.72   4.44   3.41
+      d44_r1    120    3.58   3.06   2.46   2.06   1.63
+      d44_r2    130    1.45   1.06   1.04   0.71   0.61
+      d92_r0     40    4.40   3.68   2.83   2.22   1.71
+      d92_r1     40    1.41   1.14   0.89   0.73   0.57
+      d92_r2     45    1.37   1.01   0.83   0.66   0.52
+  -- estimator: trim10
+        cell  N_obs   N= 15  N= 23  N= 39  N= 64  N=106
+      d16_r0    110   13.18  10.99   9.10   7.30   6.09
+      d16_r1    170    0.64   0.39   0.30   0.18   0.14
+      d16_r2    170    0.46   0.34   0.25   0.17   0.13
+      d44_r0     80    9.69   8.10   6.50   5.28   4.06
+      d44_r1    120    2.32   1.36   0.97   0.24   0.15
+      d44_r2    130    0.30   0.14   0.10   0.07   0.05
+      d92_r0     40    5.07   4.47   3.34   2.74   2.11
+      d92_r1     40    0.97   0.55   0.39   0.25   0.19
+      d92_r2     45    0.90   0.37   0.27   0.19   0.15
+  -- estimator: pooled_p95
+        cell  N_obs   N= 15  N= 23  N= 39  N= 64  N=106
+      d16_r0    110    4.26   3.98   3.74   3.33   3.00
+      d16_r1    170    0.34   0.29   0.19   0.14   0.09
+      d16_r2    170    0.22   0.18   0.14   0.11   0.09
+      d44_r0     80    2.56   2.30   1.75   1.21   1.03
+      d44_r1    120    0.30   0.22   0.16   0.13   0.09
+      d44_r2    130    0.18   0.14   0.10   0.08   0.06
+      d92_r0     40    2.53   1.93   1.54   1.22   1.00
+      d92_r1     40    0.60   0.42   0.33   0.28   0.17
+      d92_r2     45    0.41   0.25   0.16   0.12   0.09
+
+=== registered ladder Lambda coverage (Step 1 mu_p) ===
+  Lambda = [0.09, 0.15, 0.25, 0.42, 0.7]  ratios [1.667, 1.667, 1.68, 1.667]
+  Q-A §2.1 states the execution condition in NOMINAL lambda; probe C shows the realised arrival stream is ~1/span_factor faster, so realised rho is ~17% higher than nominal
+    d16: mu_p=0.9143 cap=0.8686 n_exec=5  rho_nom=[0.098, 0.164, 0.273, 0.459, 0.766]  rho_real=[0.115, 0.192, 0.321, 0.538, 0.897]
+          top rung realized rho over observed span factors 0.8265-0.8723: 0.878-0.926
+    d44: mu_p=0.6666 cap=0.6333 n_exec=4  rho_nom=[0.135, 0.225, 0.375, 0.63]  rho_real=[0.158, 0.264, 0.44, 0.739]
+          top rung realized rho over observed span factors 0.8265-0.8723: 0.722-0.762
+    d54: mu_p=0.5772 cap=0.5484 n_exec=4  rho_nom=[0.156, 0.26, 0.433, 0.728]  rho_real=[0.183, 0.305, 0.508, 0.853]
+          top rung realized rho over observed span factors 0.8265-0.8723: 0.834-0.880
+    d92: mu_p=0.1885 cap=0.1791 n_exec=2  rho_nom=[0.477, 0.796]  rho_real=[0.56, 0.933]
+          top rung realized rho over observed span factors 0.8265-0.8723: 0.912-0.963   ** CAN EXCEED the registered 0.95
+          ** 2-rung arm: linear and log-log fits COINCIDE (Q-A §2.4) -> its curve is a straight line by construction
+
+=== recommendation arithmetic (RESULT doc sec 8) ===
+  baseline: Lambda, nominal cap 0.95*mu_p
+     d16:5  d44:4  d54:4  d92:2   = 15 cells/(round,shape)  -> 120 benches  -> 6.83 GPU-h total (bench 5.67 + boot 0.87 + StageA 0.30)
+  (ii) only: Lambda, realised-safe cap 0.785*mu_p
+     d16:5  d44:4  d54:4  d92:1   = 14 cells/(round,shape)  -> 112 benches  -> 6.46 GPU-h total (bench 5.29 + boot 0.87 + StageA 0.30)
+  (ii)+(iii-a): + deterministic cap rungs for arms with <3
+     d16:5  d44:4  d54:4  d92:3   = 16 cells/(round,shape)  -> 128 benches  -> 7.21 GPU-h total (bench 6.04 + boot 0.87 + StageA 0.30)
+       d92 cap=0.1480 rungs=[0.09, 0.1147, 0.148] (added [0.148, 0.1147])
+  (iii-b): 7-point shared ladder, cap 0.785*mu_p
+     d16:7  d44:5  d54:5  d92:2   = 19 cells/(round,shape)  -> 152 benches  -> 8.34 GPU-h total (bench 7.18 + boot 0.87 + StageA 0.30)
+
+=== AUX: below-knee pair (r0,r1) EXTRAPOLATED to r2 (NOT the registered test) ===
+  arm   estimator      obs  pred_lin     err%  pred_log     err%
+  d16      median   46.863    47.019    0.332    47.009    0.311
+  d16        mean   46.768    47.024    0.546    46.991    0.477
+  d16      trim10   46.854    47.141    0.611    47.116    0.558
+  d16  pooled_p95   46.917    46.918    0.003    46.929    0.025
+  d44      median   23.079    23.151    0.309    23.130    0.220
+  d44        mean   22.987    22.852    0.590    22.820    0.727
+  d44      trim10   23.077    23.235    0.684    23.205    0.554
+  d44  pooled_p95   23.089    23.074    0.069    23.066    0.101
+  d92      median   16.180    16.124    0.348    16.123    0.353
+  d92        mean   16.094    16.007    0.541    16.006    0.546
+  d92      trim10   16.168    16.106    0.386    16.105    0.391
+  d92  pooled_p95   16.219    16.124    0.583    16.124    0.586
+
+  max 0.727%  median 0.434%  | over 7.2%: 0/24
+
+=== DIAGNOSTIC: same LOO on the offered-rate axis lambda ===
+  arm   estimator      obs  pred_lin    err%  pred_log    err%
+  d16      median   46.951    46.262   1.468    46.363   1.254
+  d16        mean   46.702    43.643   6.550    44.093   5.587
+  d16      trim10   46.937    44.942   4.250    45.239   3.617
+  d16  pooled_p95   46.980    47.540   1.192    47.429   0.957
+  d44      median   23.013    22.358   2.848    22.470   2.361
+  d44        mean   22.603    21.535   4.725    21.741   3.814
+  d44      trim10   23.005    21.897   4.816    22.071   4.063
+  d44  pooled_p95   23.028    22.830   0.861    22.873   0.677
+  d92      median   16.111    14.493  10.046    14.703   8.742
+  d92        mean   15.999    15.068   5.824    15.214   4.908
+  d92      trim10   16.098    15.060   6.444    15.216   5.476
+  d92  pooled_p95   16.120    15.701   2.605    15.781   2.103
+
+  max 10.046%  median 3.938%  | over 7.2%: 2/24

@@ -1,0 +1,311 @@
+{
+  "gpu_hours": 0,
+  "checks": [
+    {
+      "check": "F_{0.05}(3,8)",
+      "got": 0.1131,
+      "expected": 0.1131,
+      "reproduced": true,
+      "note": "RESULT_P7 sec 2"
+    },
+    {
+      "check": "F_{0.95}(3,4)",
+      "got": 6.591,
+      "expected": 6.591,
+      "reproduced": true,
+      "note": "rev6 sec 6"
+    },
+    {
+      "check": "t_{0.975}(3)",
+      "got": 3.182446,
+      "expected": 3.182446,
+      "reproduced": true,
+      "note": "verdict sec 2-(3)"
+    },
+    {
+      "check": "Delta(d44,d54) pooled_p95 [axis P]",
+      "got": 1.5201,
+      "expected": 1.5201,
+      "reproduced": true,
+      "note": "SD(boot means) 0.1217 (want 0.1217); boot-level t3 CI [1.3265, 1.7137] (want [1.3265, 1.7137])"
+    },
+    {
+      "check": "Delta(d44,d54) median [axis P]",
+      "got": 1.2854,
+      "expected": 1.2854,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d44,d54) mean [axis P]",
+      "got": 0.4935,
+      "expected": 0.4935,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d44,d54) trim10 [axis P]",
+      "got": 0.4409,
+      "expected": 0.4409,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d44,d54) axis R (per-request itl95) -- CONTRAST",
+      "got": {
+        "pooled_p95": 1.5201,
+        "median": 1.4147,
+        "mean": 0.8022,
+        "trim10": 0.8823
+      },
+      "expected": "n/a",
+      "reproduced": null,
+      "note": "reported so the axis divergence is visible; pooled_p95 identical by construction, the other three are NOT"
+    },
+    {
+      "check": "Delta(d16,d54) pooled_p95 [axis P]",
+      "got": 25.5196,
+      "expected": 25.5196,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d16,d54) median [axis P]",
+      "got": -0.2165,
+      "expected": -0.2165,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d16,d54) mean [axis P]",
+      "got": 7.9639,
+      "expected": 7.9639,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d16,d54) trim10 [axis P]",
+      "got": 6.6642,
+      "expected": 6.6642,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d16,d54) axis R (per-request itl95) -- CONTRAST",
+      "got": {
+        "pooled_p95": 25.5196,
+        "median": 23.022,
+        "mean": 16.2244,
+        "trim10": 16.9469
+      },
+      "expected": "n/a",
+      "reproduced": null,
+      "note": "reported so the axis divergence is visible; pooled_p95 identical by construction, the other three are NOT"
+    },
+    {
+      "check": "Delta(d16,d44) pooled_p95 [axis P]",
+      "got": 23.9996,
+      "expected": 23.9996,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d16,d44) median [axis P]",
+      "got": -1.5019,
+      "expected": -1.5019,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d16,d44) mean [axis P]",
+      "got": 7.4704,
+      "expected": 7.4704,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d16,d44) trim10 [axis P]",
+      "got": 6.2233,
+      "expected": 6.2233,
+      "reproduced": true,
+      "note": ""
+    },
+    {
+      "check": "Delta(d16,d44) axis R (per-request itl95) -- CONTRAST",
+      "got": {
+        "pooled_p95": 23.9996,
+        "median": 21.6072,
+        "mean": 15.4222,
+        "trim10": 16.0647
+      },
+      "expected": "n/a",
+      "reproduced": null,
+      "note": "reported so the axis divergence is visible; pooled_p95 identical by construction, the other three are NOT"
+    },
+    {
+      "check": "sign_agree Delta(d44,d54)",
+      "got": 4,
+      "expected": 4,
+      "reproduced": true,
+      "note": "REGISTERED rev7 sec 3 CI, n_boot=4 x n_seed=3 (P7 design, NOT the registered n_seed=2); half-widths {\"pooled_p95\": 0.2122, \"median\": 0.5116, \"mean\": 0.3584, \"trim10\": 0.4133}; se_without_req {\"pooled_p95\": 0.0608, \"median\": 0.0371, \"mean\": 0.0955, \"trim10\": 0.1098}; N=90 and P7 LOAD, not a registered N"
+    },
+    {
+      "check": "sign_agree Delta(d44,d54) [boot-level diagnostic CI]",
+      "got": 4,
+      "expected": 4,
+      "reproduced": true,
+      "note": "the CI the rev6 verdict sec 2-(2) table used"
+    },
+    {
+      "check": "sign_agree Delta(d16,d54)",
+      "got": 3,
+      "expected": 3,
+      "reproduced": true,
+      "note": "REGISTERED rev7 sec 3 CI, n_boot=4 x n_seed=3 (P7 design, NOT the registered n_seed=2); half-widths {\"pooled_p95\": 1.5055, \"median\": 12.1342, \"mean\": 2.5252, \"trim10\": 3.0729}; se_without_req {\"pooled_p95\": 0.4451, \"median\": 3.1157, \"mean\": 0.7289, \"trim10\": 0.887}; N=90 and P7 LOAD, not a registered N"
+    },
+    {
+      "check": "sign_agree Delta(d16,d54) [boot-level diagnostic CI]",
+      "got": 3,
+      "expected": 3,
+      "reproduced": true,
+      "note": "the CI the rev6 verdict sec 2-(2) table used"
+    },
+    {
+      "check": "rev6 sec 6 SE projected onto the REGISTERED design (4 boots x 2 seeds) Delta(d44,d54) pooled_p95",
+      "got": 0.0718,
+      "expected": 0.0718,
+      "reproduced": true,
+      "note": "half-width t3*SE = 0.228 (want 0.228); the SE of the ACTUAL P7 design (n_cells=12) is 0.0608 -- rung_ci uses the actual design, as it must"
+    },
+    {
+      "check": "rev6 sec 6 SE projected onto the REGISTERED design (4 boots x 2 seeds) Delta(d16,d54) pooled_p95",
+      "got": 0.4922,
+      "expected": 0.4922,
+      "reproduced": true,
+      "note": "half-width t3*SE = 1.566 (want 1.566); the SE of the ACTUAL P7 design (n_cells=12) is 0.4451 -- rung_ci uses the actual design, as it must"
+    },
+    {
+      "check": "L_pre+L_decode vs concurrency, max rel err (probe C, 12 cells)",
+      "got": "1.8452e-06",
+      "expected": "1.845e-06",
+      "reproduced": true,
+      "note": "the parent brief attributed 1.845e-06 to P7; it is probe C"
+    },
+    {
+      "check": "L_pre+L_decode vs concurrency, max rel err (P7, 36 benches)",
+      "got": "2.6618e-06",
+      "expected": "2.66e-06",
+      "reproduced": true,
+      "note": "RESULT_P7 sec 4"
+    },
+    {
+      "check": "span_hat reconstruction, mean |err| (P7, 36 benches)",
+      "got": "0.2071%",
+      "expected": "0.207%",
+      "reproduced": true,
+      "note": "denominator = PREDICTED span factor (|pred-obs|/pred); the /obs denominator gives 0.2052%"
+    },
+    {
+      "check": "mu_p_ref(d16) from P7 saturation benches, n_boot=4",
+      "got": 0.8962,
+      "expected": 0.8962,
+      "reproduced": true,
+      "note": "rev5 sec 5; sd 0.01874 over 4 boots"
+    },
+    {
+      "check": "mu_p_ref(d44) from P7 saturation benches, n_boot=4",
+      "got": 0.6632,
+      "expected": 0.6632,
+      "reproduced": true,
+      "note": "rev5 sec 5; sd 0.00565 over 4 boots"
+    },
+    {
+      "check": "mu_p_ref(d54) from P7 saturation benches, n_boot=4",
+      "got": 0.5736,
+      "expected": 0.5736,
+      "reproduced": true,
+      "note": "rev5 sec 5; sd 0.00477 over 4 boots"
+    },
+    {
+      "check": "cells with u defined (repo population 56)",
+      "got": "47/56",
+      "expected": "47/56",
+      "reproduced": true,
+      "note": "the 47-cell population the rev6 verdict used"
+    },
+    {
+      "check": "d92 cells with u = UNDEFINED (far bin empty)",
+      "got": 5,
+      "expected": 5,
+      "reproduced": true,
+      "note": "rev7 sec 1 registered third branch; files bench_d92_r0_o96.jsonl, bench_d92_r1_o384.jsonl, bench_d92_r1_o96.jsonl, bench_d92_r2_o96.jsonl, bench_d92.jsonl"
+    },
+    {
+      "check": "min gap over the 47 cells (bin width 2 ms, REGISTERED)",
+      "got": 6.0,
+      "expected": 4.0,
+      "reproduced": false,
+      "note": "verdict sec 0 says 'exactly 4.0'; at the REGISTERED 2 ms width the minimum is 6.0 (d54).  4.0 is reachable only at the 4 ms DIAGNOSTIC width (verdict sec 2-(6) itself reports d54 gap 5/6/4 for widths 1/2/4).  The operative claim -- 'gap < 4 never fires' -- reproduces: 0 cells below 4"
+    },
+    {
+      "check": "cells with gap < 4 ms",
+      "got": 0,
+      "expected": 0,
+      "reproduced": true,
+      "note": "the 'empty branch' finding (verdict sec 0)"
+    },
+    {
+      "check": "unregistered bin-count tie cells",
+      "got": [
+        [
+          "bench_r2_d16_s44.jsonl",
+          27.0,
+          [
+            27.0,
+            29.0
+          ],
+          0.6133
+        ],
+        [
+          "bench_r3_d16_s49.jsonl",
+          27.0,
+          [
+            27.0,
+            28.0
+          ],
+          0.7281
+        ]
+      ],
+      "expected": "2 cells: r2_d16_s44 c_valley 27<->29 u 0.6133; r3_d16_s49 27<->28 u 0.7281",
+      "reproduced": true,
+      "note": "verdict sec 1 row A: u identical to 4 decimals under either tie-break"
+    },
+    {
+      "check": "label flips if u used the per-request median axis instead",
+      "got": "6/47",
+      "expected": "6/47",
+      "reproduced": true,
+      "note": "verdict sec 1-E; max |du| 0.0677 (want 0.0677)"
+    },
+    {
+      "check": "P7 d16 u range",
+      "got": [
+        0.4832,
+        0.7281
+      ],
+      "expected": [
+        0.483,
+        0.728
+      ],
+      "reproduced": true,
+      "note": "verdict sec 4 item 4"
+    },
+    {
+      "check": "P7 d16 cells firing the `median` cliff |u-0.50|<0.10",
+      "got": "6/12",
+      "expected": "8/12",
+      "reproduced": false,
+      "note": "NOT reproduced: 6/12 on the registered token axis, 7/12 on the per-request median axis.  The same computation reproduces the u range and the 6/47 flip count exactly, so the discrepancy is in the verdict's count, not in the extraction.  No registered output depends on it (verdict sec 4 is prose)"
+    }
+  ]
+}
