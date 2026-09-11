@@ -971,7 +971,7 @@ class SchedulerMultiplexMixin:
     def update_split_prefill_batch(self: Scheduler, sm_count: int) -> bool:
         if self.split_prefill_batch:
             return False
-        if getattr(self, "r2_admission_limited", False):
+        if getattr(self, "r2_admission_limited", False) and self._r2_admission_holds():
             return False
 
         # add new request
@@ -1066,7 +1066,7 @@ class SchedulerMultiplexMixin:
             if (
                 _slo_on
                 and not self.running_batch.is_empty()
-                and self.split_prefill_batch
+                and (self.split_prefill_batch or self._r2_admission_recheck())
                 and not wait_prefill_kernel_done
             ):
                 # v7: SLO layer-span evaluation — decide the target split EVERY prefill span,
@@ -1714,3 +1714,89 @@ class SchedulerMultiplexMixin:
                         self.split_prefill_batch = None
                         wait_prefill_kernel_done = False
                         adjust_stream_group = True
+
+    # ------------------------------------------------------------------
+    # R2 admission-limit liveness (2026-09-11)
+    # ------------------------------------------------------------------
+    # Placed at the END of the class on purpose: the two call sites
+    # (`update_split_prefill_batch` and the R2 gate in `event_loop_pdmux`)
+    # were edited in place, so no earlier line of this module moved and every
+    # snapshotted `multiplexing_mixin.py:NNN` citation
+    # (scripts/discipline/line_citations.json) stays valid.
+    #
+    # THE BUG (reports/r2_decoupling_review_2026-07-24.md, item 4).
+    # `r2_admission_limited` is WRITTEN only by `_r2_decide_idx`, which the
+    # event loop calls only while a split prefill batch is in flight, and it
+    # is READ only by `update_split_prefill_batch`, which reaches that check
+    # only when NO split prefill batch is in flight.  The write set and the
+    # read set are disjoint: once the last in-span decision said "limited"
+    # and that prefill drained, nothing could write the latch again, so
+    # "latched with no prefill in flight" was an absorbing state and prefill
+    # admission stopped for the rest of the run.  Before this fix the latch
+    # had exactly two possible effects -- none, or a permanent stall -- and
+    # never the temporary limit the controller asks for.
+    #
+    # WHY NOT "CLEAR ON DRAIN".  Every read happens after a drain, so clearing
+    # the latch where the split batch is set to None would make it False at
+    # every read: that deletes the R2 proactive admission limit instead of
+    # fixing it.  tests/test_r2_admission_latch.py runs such a variant and it
+    # fails the safety test.
+    #
+    # THE FIX (minimal; the policy's admission semantics are unchanged).
+    #   1. While the latch is set and no prefill is in flight, the R2 policy
+    #      is ALSO consulted on decode-only iterations
+    #      (`_r2_admission_recheck` widens the existing gate).  Its decision
+    #      goes through the same drain/switch code as an in-span decision, so
+    #      the controller's view of the current partition stays true and no
+    #      telemetry record describes a transition that was not applied.
+    #   2. With the running batch EMPTY that gate cannot run (it needs decode
+    #      state) and there is no decode left to protect, so the limit is
+    #      released at the admission point (`_r2_admission_holds`).  Without
+    #      this, a controller that keeps reporting overload from stale ITL
+    #      samples could still stall an idle server.
+    #
+    # SCOPE.  FixedPolicy never sets `admission_limited` (controller.py:68,
+    # :84-94), so under PDMUX_R2_POLICY unset/fixed the latch stays False,
+    # `_r2_admission_holds` is never called, `_r2_admission_recheck` returns
+    # False without emitting anything, and the loop is unchanged.  Only
+    # generic/hybrid (CoarseGrainedController, controller.py:182-183) can
+    # set the latch.
+    def _r2_admission_recheck(self: Scheduler) -> bool:
+        """True iff the R2 admission limit is set with no prefill in flight.
+
+        Only caller: the R2 gate in `event_loop_pdmux`, after its
+        `self.split_prefill_batch` operand is falsy.  Emits
+        `r2_admission_recheck` so a consumer can tell the `controller_decision`
+        that follows from an in-span one (that record's schema is left as is).
+        """
+        if getattr(self, "r2_policy", None) is None or not getattr(
+            self, "r2_admission_limited", False
+        ):
+            return False
+        self.pdmux_telemetry.emit(
+            "r2_admission_recheck",
+            self.pdmux_experiment_phase,
+            policy=self.r2_policy_name,
+            running_batch_size=self.running_batch.batch_size(),
+            prefill_queue_depth=len(self.waiting_queue),
+        )
+        return True
+
+    def _r2_admission_holds(self: Scheduler) -> bool:
+        """Whether a set R2 admission limit still applies at an admission point.
+
+        Only caller: `update_split_prefill_batch`, and only when the latch is
+        set.  Releases the limit when the running batch is empty: the limit
+        exists to let decode drain, and an empty batch means it has.
+        """
+        running = getattr(self, "running_batch", None)
+        if running is not None and not running.is_empty():
+            return True
+        self.r2_admission_limited = False
+        self.pdmux_telemetry.emit(
+            "r2_admission_released",
+            self.pdmux_experiment_phase,
+            policy=self.r2_policy_name,
+            reason="running_batch_empty",
+        )
+        return False

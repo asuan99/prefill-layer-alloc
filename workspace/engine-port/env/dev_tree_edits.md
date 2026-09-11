@@ -333,3 +333,40 @@ measurement only.
     Offline tools + acceptance harness: `results/cp_baseline/`
     (`analyze_chunk_probe.py`, `check_p1_acceptance.py`, `p1_accept_workload.py`,
     `p1e_expectations.json`, `p1_accept.sbatch` -- **written, not submitted**).
+
+## R2 admission-limit latch fix (2026-09-11)
+
+22. `multiplex/multiplexing_mixin.py` <- `src/multiplex/multiplexing_mixin.py`
+    (installed by `sync_engine_tree.sh`; manifest hash `25d170e0...` ->
+    `fdea4c32...`). Fixes the stale-True `r2_admission_limited` latch
+    (`reports/r2_decoupling_review_2026-07-24.md` item 4), whose fix had been on
+    hold until the 2026-09-11 return to the R2 track.
+    - **Defect.** The latch is written only by `_r2_decide_idx`, which runs only
+      while a split prefill batch is in flight, and read only by
+      `update_split_prefill_batch`, which reaches the check only when no split
+      prefill batch is in flight. Once the last in-span decision said "limited",
+      admission stopped for the rest of the run.
+    - **Change.** Two same-line edits plus two helpers appended at the end of the
+      class (no earlier line moves, so `scripts/discipline/line_citations.json`
+      stays valid: `--check --all` 50 compared, 0 violations):
+      the R2 gate in `event_loop_pdmux` also fires on decode-only iterations
+      while the latch is set (`_r2_admission_recheck`), and
+      `update_split_prefill_batch` releases the latch when the running batch is
+      empty (`_r2_admission_holds`). New telemetry events, emitted only when the
+      latch is set: `r2_admission_recheck`, `r2_admission_released`.
+    - **Scope.** `FixedPolicy` never sets `admission_limited`, so
+      `PDMUX_R2_POLICY` unset/fixed runs are unchanged (latch stays False, no
+      new events). Only generic/hybrid (`CoarseGrainedController`) are affected.
+      cudagraph: no new stream group, capture shape or eager path. For
+      generic/hybrid a decode-only R2 decision may now switch the partition
+      (drain + index change, the same code as an in-span switch); decode then
+      replays the graph captured for that stream index (`cuda_graph_runner`
+      key `f"{stream_idx}_{bs}"`).
+    - **Rejected alternative.** Clear-on-drain: every read happens after a drain,
+      so it would make the latch False at every read, i.e. delete the admission
+      limit.
+    CPU regression: `tests/test_r2_admission_latch.py` (drives the real
+    `event_loop_pdmux` on CPU; `PDMUX_MIXIN_UNDER_TEST=<file>` runs it against a
+    variant file without touching this tree).
+    GPU correctness harness (legacy vs `PDMUX_TRUE_DUAL_WORKER=1`, fixed D44,
+    cudagraph ON): `results/r2_correctness/` -- **written, not submitted**.
