@@ -1,6 +1,19 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-10(doc-steward, 4차 세션 — **Q-A(longctx_conflict
+최종 갱신: 2026-09-10(doc-steward, 5차 세션 — **캠페인(jobs
+906504–906507)이 PENDING/RUNNING인 동안 Q-A 분석기 작성 중
+result-analyst가 4추정량의 "축"(어느 배열의 범함수인가)이
+rev7까지 미등록이었음을 발견 — rev8이 축 P(풀링 토큰 ITL)를
+등록해 봉인(`GO-with-caveats`, 死因0·반전0/10표면), rev9가
+코드-only 분석 상수 4건 등록+erratum 3건 정정.** 승계 인용
+금지 총 68건(rev1–7 55+rev8 13), 신규 게이트 8건(#149–156)+
+기존#130 追記+도구-버전관리 게이트#157. ⚠️캠페인 결과는 여전히
+**0건** — 이 갱신은 어떤 결과·기대도 예고하지 않는다. 새 성능
+판정 0건·arm 순위 0건·정책 순위 변경 0건·HE0 불변. 아래
+"longctx_conflict 트랙 로드맵" §1 追記. 상세 `PROJECT_STATUS.md`
+longctx_conflict 행, `CONSENSUS.md` §5-6 追記(rev63)·§3 항목
+169–177.
+이전: 2026-09-10(doc-steward, 4차 세션 — **Q-A(longctx_conflict
 트랙 후계 질문)가 규칙층 감사 계보 rev2→rev6[`GO-with-caveats`,
 死因0·반전0, 이 트랙 최초]→rev7(제출 판본)을 거쳐 캠페인 제출됨**
 [`probes/qa_regret.sbatch`, jobs 906504–906507, 승인 예산 ≈10.1
@@ -414,6 +427,28 @@ Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` �
    사전등록 문자로 금지). 상세 `CONSENSUS.md` §5-6 追記(rev62)·§3 항목
    139–168, `PROJECT_STATUS.md` longctx_conflict 행·"방법론 게이트"
    #119–148.
+
+   ★★**(2026-09-10, 5차 세션, doc-steward 갱신) 캠페인 PENDING 중
+   "실행 중" 분석 정의 등록(rev8·rev9)** — 캠페인(jobs 906504–906507)이
+   여전히 PENDING/RUNNING인 동안, 분석기 작성 과정에서 **4추정량이 어느
+   배열의 범함수인지가 rev7까지 미등록**이었음이 드러났다(미등록 축
+   R[요청별 `itl95`]에서는 유일한 등록 허가 `sign_agree=4`가 3쌍×3 N
+   전부 발화, 등록 축 P[풀링 토큰 ITL]에서는 0회). **rev8**(`audit_qa_
+   rev8_2026-09-10/VERDICT.md`) **`GO-with-caveats`(死因 0·반전
+   0/10표면)** — 축 P 등록이 **사후 선택이 아니라 정합성 복원**임을
+   4갈래로 논증(rev7 §2·rev6 §1(d) 연역·rev6 §3 제출-전 예보값 일치·
+   이해상충 방향이 허가를 죽이는 쪽·시각순서). **rev9**가 처방 이행(코드-
+   only 상수 4건[`σ̂_req` 페어드 재표집·`B=10000`/seed1·모드 값 정렬·
+   `UNTREATED_TOL=1.10×ITL_SOLO`] 등록·1시드 rung 대칭 진단 병기[등록식
+   불변]·산출7 구현·rev8 erratum 3건 정정). ★★승계 인용 금지 총
+   **68건**(rev1–7 55 + rev8 13). ⚠️**캠페인 결과는 여전히 0건** — 이
+   갱신은 분석 정의 문면 결함의 정정일 뿐 어떤 결론도 예고하지 않는다.
+   신규 게이트 8건(#149–156, `CONSENSUS §3` 항목169–177) + 기존#130
+   追記(ε 중복) + 도구-버전관리 게이트#157. 새 성능 판정 0건·arm 순위
+   0건·정책 순위 변경 0건·HE0 불변. 상세 `workspace/engine-port/results/
+   longctx_conflict/{PREREG_QA_REGRET_REV8_2026-09-10.md,
+   PREREG_QA_REGRET_REV9_2026-09-10.md,
+   audit_qa_rev8_2026-09-10/VERDICT.md}`.
 2. **Q-B — SM-split 액추에이터 자기상쇄 루프 이득**(2순위). 사전등록 없음,
    착수 전.
 

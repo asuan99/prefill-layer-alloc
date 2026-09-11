@@ -4,7 +4,76 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-09-10 rev62 **(4차 세션, doc-steward — `longctx_
+최종 갱신: 2026-09-10 rev63 **(5차 세션, doc-steward — Q-A rev8·
+rev9 "실행 중" 분석 정의 등록 + rev8 판정서 등재, 새 성능 판정
+0건·arm 순위 0건·정책 순위 변경 0건·HE0 불변, GPU 0)** — 캠페인
+(jobs 906504–906507, PENDING/RUNNING)이 도착하기 전에
+result-analyst가 분석기(`probes/qa_analyze.py`)를 작성하다가
+**4추정량(`pooled_p95`·`median`·`mean`·`trim10`)이 어느 배열의
+범함수인지 rev7까지 문면에 없었다**는 것을 자기점검(`qa_analyze_
+selfcheck.json`)으로 발견했다 — 미등록 축 R(요청별 `itl95`)에서는
+캠페인의 유일한 등록 허가 `sign_agree=4`가 3쌍×3 N **전부**에서
+발화하지만, rev6/rev7이 실제로 쓴 등록 축 P(풀링 토큰 ITL)에서는
+**한 번도 발화하지 않는다** — 즉 rev7 제출 시점까지 축 자체가
+`N2`급 자유 표면이었다.
+
+**rev8**(`audit_qa_rev8_2026-09-10/VERDICT.md`) **`GO-with-
+caveats`(死因 0·반전 0/10표면)** — A1이 `PRIMARY_AXIS := 풀링
+토큰 ITL 배열`을 등록해 이 표면을 봉인했다. **사후 선택이
+아니라 정합성 복원**(3+1갈래: ① rev7 §2·rev6 §1(d)의 연역
+[`mean`은 균일성으로만 덮임] ② ★rev6 §3이 제출 전에 적어 둔
+예보 12값 자체가 축 P의 값 ③ 이해상충 방향이 반대[A1이 **자기
+캠페인의 허가를 죽이는 쪽**을 골랐다] ④ 시각순서[자기점검
+18:16:42 < 첫 bench 18:17:49 < rev8 18:22:08]). ⚠️단 그 대가로
+`Δ(d44,d54)`에서는 rev8 자신이 이중계상이라 인정한
+`σ̂_req²/8` 항 하나가 허가를 단독 결정한다(빼면 4/4, 넣으면
+2/4–3/4).
+
+**rev9**는 판정서 처방 P2–P5(전부 비용 0·GPU 0)를 이행한다:
+코드에만 있던 분석 상수 4건(`σ̂_req` **페어드** 재표집·
+부트스트랩 `B=10000`/seed 1·모드 **값 정렬**·`UNTREATED_TOL=
+1.10×ITL_SOLO`)을 **현재 구현 그대로** 등록·1시드 rung 대칭
+진단 병기(등록식 불변)·등록 산출 7 구현·**rev8 erratum 3건
+정정**(§A3 "3.5–3.9배"는 반폭÷SE **단위 오류**, 옳게는 SE
+기준 1.06–1.22×[`median`@`Δ(d44,d54)`만 4.33×] · CI 상단
+전정밀도 1.713666[rev8의 1.71373은 SD 재반올림] · 표 열이름
+`pooled_p95` 행 부정확).
+
+★★**승계 인용 금지 총계 68건**(rev1–rev7 55건 + rev8 판정서
+13건, 전문은 옮기지 않는다 — 소재만 `PREREG_QA_REGRET_
+REV{1..7}_2026-09-10.md`·`audit_qa_{rules,rev3,rev4,rev5,rev6}_
+2026-09-10/VERDICT.md`[55건]·`audit_qa_rev8_2026-09-10/
+VERDICT.md` §6[13건]). 문자 그대로 승계할 핵심 3건: ⓐ 부호
+진술을 못 해도 "효과 없음"으로 쓰기 금지(원인이 쌍마다 다르다)
+ⓑ `sign_agree=4`를 "통과 가능했던 문턱"으로 쓰기 금지(등록
+투영 9칸 전부 ≤3/4) ⓒ 1시드 rung의 `sign_agree`를 다른 rung과
+같은 자로 비교 금지(A2가 反보수, 최소 여유 0.25% < MC 오차
+0.7%).
+
+★★신규 방법론 게이트 8건 등재(#149–#156, rev8 판정서 §8의
+후보 α–ι 9건 중 ε 1건은 기존 #130에 사례 追記) — 최고 전이가치
+3건: **#149**(α, 추정량 이름 등록≠추정량 등록 — 어느 배열의
+범함수인가가 판정을 뒤집는다) · **#150**(β, 사전등록의 자기
+예보 수치가 미등록 정의를 사후에 특정한다 — 방어 자산) ·
+**#151**(γ, 실행 중 분석 정의 수정은 허가를 여는/닫는 쪽인지
+수치로 먼저 보고하라). 전문 §3 항목169–177(+항목150 追記).
+★★★도구 파일 버전관리 밖 등재(신규 게이트 **#157**):
+`/scratch/ehmoon/whlee/.claude/agents/claims-auditor.md`(63→109
+줄, SHA-256
+`47e800cf6b663752730c492137f06cab7ede58d29c38dea6f55211656835ae02`)
+가 있는 워크스페이스는 git
+저장소가 아니다 — 오늘 커밋 `d869751`·`e2c2ba1`에 이 파일이
+들어갈 수 없었다(교훈 항목97의 뒷면: 도구는 고쳐졌으나 그 수정이
+버전관리에 없다). 캠페인 결과·기대는 이 세션도 **0건**(트랙
+누적 4.78 GPU-h 불변). ★기존 불변 배너 전부 승계(HE0·정책
+순위·gate #13/#16 "닫았다" 금지·switch-cost "닫았다" 금지·C2
+인용정지(a)(b)·§1-24·게이트#14 "닫았다" 금지·stake #1 구조
+판정). 상세 §5-6 追記·§3 항목169–177,
+`workspace/engine-port/results/longctx_conflict/{PREREG_QA_
+REGRET_REV8_2026-09-10.md, PREREG_QA_REGRET_REV9_2026-09-10.md,
+audit_qa_rev8_2026-09-10/VERDICT.md}`.
+
+이전: 2026-09-10 rev62 **(4차 세션, doc-steward — `longctx_
 conflict` Q-A 트랙 rev2→rev7 규칙층 감사 계보 전체 등재 + 캠페인
 제출 반영, 새 성능 판정 0건·arm 순위 0건·정책 순위 변경 0건·HE0
 불변, GPU 0[이번 세션 문서 등재분])** — Q-A(고정 split의 regret
@@ -5923,6 +5992,26 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 
 168. ★★★**(2026-09-10, rev6, claims-auditor, GPU 0) arm/조건 태그가 파일명에 없는 프로브는 "전수(exhaustive)" 조사에서 조용히 빠질 수 있다 — 태그 스킴 자체를 감사하라.** `probes/p2_905712`(실제로는 `PDMUX_R2_FIXED_DSM=44` 구성)의 파일명에 arm 태그가 없어, "저장소는 X≥0.4186에서만 측정했다"는 전수 조사가 이 프로브의 `X=0.3257`(ctx16384) 표본을 놓쳤다. 대응 #148(신설). 상세 `workspace/engine-port/results/longctx_conflict/audit_qa_rev6_2026-09-10/VERDICT.md` §2-(4)·§8-후보X.
 
+**추기(2026-09-10, 5차 세션, rev8 판정서 §4-4, doc-steward)** — 항목150(#130)의 새 사례: rev8/rev9의 A2(1시드 rung 등록 CI식 `√(σ̂_cell²/4+σ̂_req²/4)`)가 **같은 오류의 재발**임을 확인했다 — 4부팅이 **공통 trace**를 쓰는데 `σ̂_req²`을 `n=4`로 나눠 SE를 최대 2배 과소평가한다(A2 투영 3/4 ↔ 공통-trace 진단 1/4, 허가까지 최소 여유 0.25% < MC 오차 0.7%). rev8 판정서 §8-후보ε("고정된 시드 성분을 `n`으로 나누지 마라 — 반복이 그 성분을 평균하지 않는다")가 새 게이트로 제안됐으나, 기전(반복해도 평균화되지 않는 공유/고정 성분을 표본 수로 나눠 SE를 인위적으로 줄임)이 이 항목과 동일하므로 **별도 게이트 번호를 매기지 않고 이 항목에 追記**한다(doc-steward 판단, `PROJECT_STATUS.md` "방법론 게이트" #130 追記로 동시 반영). 대응 `.../longctx_conflict/audit_qa_rev8_2026-09-10/VERDICT.md` §4-4·§8-후보ε, `PREREG_QA_REGRET_REV9_2026-09-10.md` §2.
+
+169. ★★★**(2026-09-10, rev8, claims-auditor, GPU 0 — ★이 세션 최고 전이가치 ⓐ) 추정량의 이름을 등록하는 것은 추정량을 등록하는 것이 아니다 — 어느 배열의 범함수인지가 판정을 뒤집는다.** rev5 §6이 "4추정량(`pooled_p95`·`median`·`mean`·`trim10`)"이라고만 쓰고 어느 배열(축) 위에서 계산하는지 등록하지 않았다 — 저장소 기존 도구 `p7_analyze.itl95_estimators`는 혼합축(`pooled_p95`만 토큰축, 나머지는 요청별 `itl95`축)이었다. 같은 `Δ(d16,d54)` 셀에서 `median`이 축 P(등록, 풀링 토큰)에서는 **−0.2165**, 축 R(요청별)에서는 **+23.0220**로 **부호까지** 다르고, 캠페인의 유일한 등록 허가(`sign_agree=4`)가 축 R에서는 3쌍×3 N 전부 발화(9/9칸), 축 P에서는 0회(0/9칸) 발화했다. 실무 규칙: 추정량을 등록할 때 그 이름만이 아니라 "어느 배열의 원소에 적용하는 함수인가"를 문자로 못박아라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #149(신설). 상세 `workspace/engine-port/results/longctx_conflict/audit_qa_rev8_2026-09-10/VERDICT.md` §0·§1-표A·§8-후보α.
+
+170. ★★★**(2026-09-10, rev8, claims-auditor, GPU 0 — ★이 세션 최고 전이가치 ⓑ) 사전등록이 자기 예보 수치를 적어 두면 그 수치가 미등록 정의를 사후에 특정한다 — 결함이 아니라 방어 자산이다.** rev6 §3이 **제출 전에** 적어 둔 예보 12값이 축 P(rev8이 사후 등록한 정의)에서만 소수 4자리까지 정확히 재현되고, 축 R에서는 재현되지 않는다(`median` `Δ(d16,d54)`가 부호까지 반대) — 즉 사전등록 문서 자신이 뒤늦게 문면화될 정의를 이미 수치로 못박아 두고 있었다. 이 사실이 A1("사후 선택 아님")의 두 번째이자 가장 강한 근거였다. 실무 규칙: 미등록 자유도를 뒤늦게 문면화할 때, 그 정의가 기존에 적어 둔 예보·산출 수치와 정확히 일치하는지 대조하라 — 일치하면 사후 선택이 아니라 문면 결함의 정정이라는 독립 증거다. 대응 #150(신설). 상세 `.../audit_qa_rev8_2026-09-10/VERDICT.md` §0·§4-1(ii)·§8-후보β.
+
+171. ★★★**(2026-09-10, rev8, claims-auditor, GPU 0 — ★이 세션 최고 전이가치 ⓒ) 분석 정의를 실행 중에 고쳐야 한다면, 그 수정이 "허가를 여는 쪽"인지 "닫는 쪽"인지를 수치로 먼저 보고하라.** rev8의 A1(축 P 등록)은 캠페인의 유일한 등록 허가(`sign_agree=4`)를 축 R 전면 발화(9/9칸)에서 축 P 최대 3/4(0/9칸)로 **닫는 쪽**을 골랐다 — 이것이 "자기 캠페인에 유리하게 사후 선택했다"는 의심에 대한 세 번째 독립 방어(이해상충 방향이 결론과 반대)였다. 실무 규칙: 실행 중(캠페인 진행 중) 분석 정의를 확정할 때는, 그 정의가 데이터 수집 계획과 무관함을 밝히는 것에 더해 **그 정의가 자기 결론에 유리한 방향인지 불리한 방향인지를 수치로 먼저 제시**하라 — 닫는 쪽(불리한 방향)이면 이해상충 방어가 성립하고, 여는 쪽(유리한 방향)이면 그 자체로 死因 후보가 된다. 대응 #151(신설). 상세 `.../audit_qa_rev8_2026-09-10/VERDICT.md` §0·§4-1(iii)·§8-후보γ.
+
+172. ★★**(2026-09-10, rev9, claims-auditor 계산[rev8 §4-4]+메인 세션 등재, GPU 0) 정렬을 단언하는 괄호는 검사가 아니다 — 위반 시 처분과 함께 등록하라.** rev6 §1(a)가 괄호로 적어 둔 `m_low<m_high`(저모드가 미처치 바닥) 가정이 저장소 47셀 중 **33셀(70.2%)에서 최대 빈이 高모드**라 문자 그대로는 거짓이었다 — 값으로 정렬(swap)하는 현재 구현이 이를 해소하지만, 그 사실 자체를 등록하지 않으면 "정렬이 보장돼 있다"는 오해가 재발한다. 실무 규칙: 코드/문서가 괄호로 단언하는 정렬·순서 조건은 사전등록 시점에 저장소 원자료로 위반율을 계산해 함께 등록하라 — 단언만으로는 검사를 대체하지 못한다. 대응 #152(신설). 상세 `PREREG_QA_REGRET_REV9_2026-09-10.md` §1(c), `.../audit_qa_rev8_2026-09-10/VERDICT.md` §1-표C·§4-6(c).
+
+173. ★★**(2026-09-10, rev8 erratum 1, claims-auditor 자기 정정, GPU 0) "보수적이니 유지"를 주장할 땐 보수성 배율을 판정 단위(SE 기준)로 계산하라 — 반폭÷SE는 `t`를 곱한 값이다.** rev8 §A3이 "등록형 반폭이 `σ_req`-free의 3.5–3.9배"라 썼으나 이는 **반폭÷SE의 단위 오류**(`t₃`가 곱해진 값)였다 — 옳은 SE 기준 배율은 1.06–1.22×(8개 중 7개), `median`@`Δ(d44,d54)`만 4.33×다. 실무 규칙: 두 SE(또는 두 CI 반폭)의 비율을 "보수성 배율"로 인용할 때, 그 비율이 SE 대 SE인지 CI 반폭 대 CI 반폭인지(후자는 자유도의 임계값이 곱해져 있음)를 명시하고, 판정에 실제로 쓰이는 단위(SE)로 환산해 보고하라. 대응 #153(신설). 상세 `PREREG_QA_REGRET_REV9_2026-09-10.md` §4-erratum1, `.../audit_qa_rev8_2026-09-10/VERDICT.md` §5-1·§4-4.
+
+174. ★★**(2026-09-10, rev9 P3, claims-auditor 계산+메인 세션 등재, GPU 0) 결정 마진이 부트스트랩 Monte Carlo 오차보다 작으면 그 칸의 판정은 seed의 함수다.** 1시드 rung(λ=0.42) `Δ(d44,d54)`에서 등록식 대 공통-trace 진단의 `sign_agree` 허가까지 최소 여유가 `trim10` 반폭 0.442 대 효과 0.4409 = **0.25%**로, 부트스트랩 재실행 시의 MC 오차(`≈1/√(2B)≈0.7%`, `B=10000`)보다 **작다** — 즉 이 칸의 등록 판정은 부트스트랩 seed를 바꾸면 뒤집힐 수 있다. 실무 규칙: 등록 판정이 임계값에 얼마나 가까운지(마진)를 그 판정을 산출하는 절차 자체의 재현 오차(MC 오차 등)와 비교해, 마진이 그 오차보다 작으면 "판정이 확정적"이라고 쓰지 마라 — seed 의존성을 명시하라. 대응 #154(신설). 상세 `PREREG_QA_REGRET_REV9_2026-09-10.md` §2, `.../audit_qa_rev8_2026-09-10/VERDICT.md` §1-표G·H·§4-4.
+
+175. ★★**(2026-09-10, rev9 P4, doc-steward 등재, GPU 0) "분석기가 등록 격자와 일치한다"는 등록 산출 전부가 구현됐다는 뜻이 아니다.** rev8까지 `registration_conformance`(격자·시드표·`N` 일치, 파일명 파서 mismatch 0)가 100% 통과했음에도, 등록 산출 9개 중 산출 7(런타임 매니페스트·`server_info` 동일성 보고)은 **미구현 상태로 남아 있었다** — rev9 P4가 뒤늦게 구현했다. 실무 규칙: 격자/시드/표본수 정합성 검사(conformance check)의 통과를 "사전등록이 요구한 산출물이 전부 나왔다"로 확대 해석하지 마라 — 산출물 목록을 별도로 대조하라. 대응 #155(신설). 상세 `PREREG_QA_REGRET_REV9_2026-09-10.md` §3, `.../audit_qa_rev8_2026-09-10/VERDICT.md` §4-6(e).
+
+176. ★**(2026-09-10, rev8 §6, claims-auditor, GPU 0) 실행 중 관측을 사전등록에 적을 때의 봉인은 "n=1·판정 금지"가 아니라 "그 관측이 문제의 선택과 직교함을 수치로 보이는 것"이다.** rev8 §6이 라운드 1 첫 셀의 실행 중 관측(`u` 정의 불가·`pooled_p95` 요청-표집 반폭 108.2%)을 "n=1이므로 설계·성능 판정에 인용 금지"로만 봉인했으나, 감사(표 J)는 그것으로 충분하지 않다고 판정했다 — 실제 방어는 그 두 관측이 **축 선택(A1)과 구별 정보 0**임(둘 다 두 축에서 구성상 동일하거나 제3의 축의 함수)을 수치로 보인 것이었다. 실무 규칙: 사전등록 실행 중 관측을 기재할 때 "표본 크기가 작다"는 caveat만으로 오염 가능성을 봉인했다고 쓰지 말고, 그 관측이 문제되는 선택(설계 자유도)과 통계적으로 독립임을 별도로 논증하라. 대응 #156(신설). 상세 `.../audit_qa_rev8_2026-09-10/VERDICT.md` §1-표J·§4-5.
+
+177. ★★★**(2026-09-10, 5차 세션, doc-steward, GPU 0 — 연구 도구 인프라 사실) 게이트의 "작동하는 절반"이 버전관리 밖에 있으면 그 게이트는 드리프트 탐지·재현이 불가능하다.** 게이트#118(규칙층 감사 등급 개편)의 실제 이행분은 `/scratch/ehmoon/whlee/.claude/agents/claims-auditor.md`(63→109줄, SHA-256 `47e800cf6b663752730c492137f06cab7ede58d29c38dea6f55211656835ae02`)에 있는데, 그 파일이 속한 워크스페이스 루트(`/scratch/ehmoon/whlee`)는 **git 저장소가 아니다**(`.git`이 빈 디렉터리, `git status` → `fatal: not a git repository`) — 이 프로젝트(`prefill-layer-alloc`)의 오늘 커밋 `d869751`·`e2c2ba1`(둘 다 "규칙층 감사 규율 개편(게이트 #118)"을 언급)에 **이 파일 자체는 들어갈 수 없었다**(별도 워크스페이스). 이것은 **교훈 항목97**("게이트 등재돼도 도구가 안 고치면 재발")의 **뒷면**이다 — 이번엔 도구가 실제로 고쳐졌는데 그 수정이 기록(버전관리)에 없다. 실무 규칙: 감사·게이트 도구 파일을 프로젝트 정본에서 참조할 때는 그 파일이 실제로 버전관리 대상인지 확인하고, 아니라면 (i) 정본에 경로+체크섬을 박아 드리프트를 탐지 가능하게 하고 (ii) 근본 해법(그 파일을 대상 저장소로 편입할지)을 사용자에게 명시적으로 위임하라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #157(신설). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-10, 5차 세션).
+
 ---
 
 ## 4. 살아있는 문서 (이것만 참조)
@@ -6515,6 +6604,37 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
    새 성능 판정 0건·arm 순위 0건·정책 순위 변경 0건·HE0 불변.
    상세 `EXPERIMENT_ROADMAP.md` "longctx_conflict 트랙 로드맵"·
    `CLAIM_EVIDENCE_MATRIX.md` Q-A 관련 행.
+
+   ★★**追記(2026-09-10, 5차 세션, doc-steward, GPU 0)** — 캠페인
+   (jobs 906504–906507)이 PENDING/RUNNING인 동안 result-analyst가
+   분석기(`probes/qa_analyze.py`)를 작성하다 **4추정량이 어느
+   배열의 범함수인지 rev7까지 문면에 없었다**는 것을 발견했다
+   (자기점검 `qa_analyze_selfcheck.json`) — 미등록 축 R(요청별
+   `itl95`)에서는 유일한 등록 허가 `sign_agree=4`가 3쌍×3 N
+   전부에서 발화, 등록 축 P(풀링 토큰 ITL)에서는 0회 발화(즉
+   축 자체가 `N2`급 자유 표면이었다). **rev8**(`audit_qa_rev8_
+   2026-09-10/VERDICT.md`) **`GO-with-caveats`(死因 0·반전
+   0/10표면)** — A1이 `PRIMARY_AXIS := 풀링 토큰 ITL 배열`을
+   등록해 봉인, **사후 선택 아님**(3+1갈래: rev7 §2·rev6
+   §1(d) 연역·rev6 §3의 제출-전 예보 12값이 축 P였음·이해상충
+   방향이 반대[허가를 죽이는 쪽을 골랐다]·시각순서). ⚠️단
+   `Δ(d44,d54)`는 rev8 자신이 이중계상이라 인정한 `σ̂_req²/8`
+   항 하나가 허가를 단독 결정. **rev9**가 처방 이행 —
+   `σ̂_req` 페어드 재표집·`B=10000`/seed 1·모드 값 정렬·
+   `UNTREATED_TOL=1.10×ITL_SOLO` 4상수 등록(현 구현 그대로)·
+   1시드 rung 대칭 진단 병기(등록식 불변)·산출7 구현·rev8
+   erratum 3건 정정("3.5–3.9배"는 반폭÷SE 단위 오류, 옳게는 SE
+   기준 1.06–1.22×). ★★승계 인용 금지 총 **68건**(rev1–7
+   55+rev8 13, 소재만 옮김). 신규 게이트 8건(#149–156, §3
+   항목169–177) + 기존 #130 追記(ε 중복) + 도구-버전관리
+   게이트 #157(`.claude/agents/claims-auditor.md`가 별도
+   git-비관리 워크스페이스에 있어 오늘 커밋 `d869751`·
+   `e2c2ba1`에 못 들어감). 캠페인 결과·기대 여전히 0건(트랙
+   누적 4.78 GPU-h 불변). 새 성능 판정 0건·arm 순위 0건·정책
+   순위 변경 0건·HE0 불변. 상세 `workspace/engine-port/results/
+   longctx_conflict/{PREREG_QA_REGRET_REV8_2026-09-10.md,
+   PREREG_QA_REGRET_REV9_2026-09-10.md, audit_qa_rev8_
+   2026-09-10/VERDICT.md}`.
 
 8. ★**미결(종결 아님, 2026-07-24 스코프 정정으로 신설)**: §5-7의 "완전 종결"은 아래 세 갈래를 배제하지 않는다.
    - **(a) dual-worker(decoupled) 동적** — [`../PROJECT_STATUS.md`](../PROJECT_STATUS.md) Claim D("역할별 queue/host issue loop/CUDA stream을 실제로 분리하면 single-worker control-plane coupling을 줄일 수 있다")는 **서빙 측정 0건**(증거 수준 "미검증"). §1-20이 정량화한 **+16% disaggregation ceiling**(92 prefill SM + 24 decode SM = 116 > 108 = 단일-GPU coupling tax로 불가능)은 **별도 디바이스 풀 + hybrid state transfer를 갖춘 decoupled substrate에만 열려 있다**. ★★**정정(2026-07-24, engine-porter 코드 리뷰, 읽기전용, [`r2_decoupling_review_2026-07-24.md`](r2_decoupling_review_2026-07-24.md))**: `PDMUX_TRUE_DUAL_WORKER=1`는 이 decoupled substrate에 **해당하지 않는다** — file:line 근거로 확인한바 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이고, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter`의 단일 `stream_index`)은 **전면 공유**된다(92+24=116의 별도 device pool이 아니라 ≤108 단일 coupled index). §1-4 死因 얽힘(공유 running-batch+KV)의 substrate가 불변이므로 이 구현은 **구성상 +16% headroom에 도달 불가**하며 coupled ceiling(+2%, §1-20) 위에 앉아 있다. state-transfer 경로·mamba conv/ssm state migration은 **코드에 전무**(스캐폴딩조차 없음). ⇒ **Claim D는 "control-plane coupling 감소"로만 유의미하게 측정 가능**, "얽힘 깨기"로 팔 수 없다. 부가: admission latch(`r2_admission_limited`)에 **known-latent stale-True 버그** 확인 — split batch가 None으로 배수되면 재평가 경로가 없어 latch가 True로 고착되어 prefill admission을 영구 차단할 수 있다(clear 경로 부재). **사용자 결정으로 현재 수정하지 않고 보류.** R2는 GPU correctness gate를 통과한 이력이 없다(`results/r2_eval/` 디렉터리 미생성, `architecture=true_dual` telemetry 전무). 이 headroom이 (다른 substrate에서) 실현되는지는 여전히 미검증. 게이트는 PROJECT_STATUS "다음 실험 gate" §2 참조.
