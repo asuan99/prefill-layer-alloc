@@ -1219,11 +1219,18 @@ class SchedulerMultiplexMixin:
                         )
                     else:
                         prefill_result = self.run_batch(self.split_prefill_batch)
-                    if prefill_is_final:
-                        self.split_prefill_batch.split_prefill_finished = True
-                        if prefill_future is None:
+                    # A submitted batch belongs to the prefill task until its
+                    # future resolves: run_batch reads `split_index` to decide
+                    # whether to build `split_forward_batch`
+                    # (tp_worker.forward_batch_split_prefill), so advancing it
+                    # here raced the worker and crashed job 907032.  The
+                    # true-dual path advances it after `prefill_future.result()`
+                    # below; the legacy statements and their order are unchanged.
+                    if prefill_future is None:
+                        if prefill_is_final:
+                            self.split_prefill_batch.split_prefill_finished = True
                             prefill_exe_done = prefill_stream.record_event()
-                    self.split_prefill_batch.split_index = next_split_index
+                        self.split_prefill_batch.split_index = next_split_index
 
                 elif wait_prefill_kernel_done:
                     prefill_done = True
@@ -1251,6 +1258,12 @@ class SchedulerMultiplexMixin:
                     self.true_dual_worker_runtime.record_inflight_event(
                         WorkerRole.PREFILL, threaded_prefill_event
                     )
+                    # The task has returned the batch: apply the advance that
+                    # the legacy path applies right after its synchronous
+                    # run_batch (see the ownership note above).
+                    if prefill_is_final:
+                        self.split_prefill_batch.split_prefill_finished = True
+                    self.split_prefill_batch.split_index = next_split_index
                     if self.split_prefill_batch.split_prefill_finished:
                         prefill_exe_done = threaded_prefill_event
                 if prefill_done and self.split_prefill_batch.split_prefill_finished:

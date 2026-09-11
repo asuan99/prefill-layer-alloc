@@ -370,3 +370,29 @@ measurement only.
     variant file without touching this tree).
     GPU correctness harness (legacy vs `PDMUX_TRUE_DUAL_WORKER=1`, fixed D44,
     cudagraph ON): `results/r2_correctness/` -- **written, not submitted**.
+
+## True-dual split-prefill ownership fix (2026-09-11, GPU job 907032)
+
+23. `multiplex/multiplexing_mixin.py` <- `src/multiplex/multiplexing_mixin.py`
+    (manifest hash `fdea4c32...` -> `0b88c07c...`). Fixes the crash that killed
+    both `PDMUX_TRUE_DUAL_WORKER=1` boots of `results/r2_correctness/job_907032`
+    on their first split prefill (the server's own warm-up request):
+    `AttributeError: 'NoneType' object has no attribute 'forward_mode'`.
+    - **Defect.** `event_loop_pdmux` submitted the prefill chunk to the prefill
+      worker thread and then, without waiting, advanced the same ScheduleBatch
+      (`split_prefill_finished`, `split_index = next_split_index`). The worker's
+      `run_batch` -> `tp_worker.forward_batch_split_prefill` builds
+      `split_forward_batch` only when it reads `split_index == 0`; the scheduler
+      thread's stores won the race, so the first chunk read a non-zero index and
+      passed `split_forward_batch=None` to the model forward. The legacy loop
+      never raced (synchronous `run_batch`: read, then advance). Present since
+      the R2 true-dual wiring; independent of item 22 (reproduced on CPU on both
+      `25d170e0` and `fdea4c32`).
+    - **Change.** The advance is applied only after `prefill_future.result()` on
+      the true-dual path; the legacy statements and their order are unchanged
+      (they now sit under `if prefill_future is None`). No GPU-side change, no
+      new stream group, capture shape or eager path.
+    CPU regression: `tests/test_true_dual_prefill_ownership.py` (deterministic
+    eager/deferred task interleavings + real worker threads + legacy
+    bookkeeping equivalence); loop fakes shared with `test_r2_admission_latch.py`
+    via `tests/pdmux_loop_fakes.py`.

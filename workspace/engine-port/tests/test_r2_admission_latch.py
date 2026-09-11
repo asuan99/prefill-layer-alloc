@@ -31,254 +31,34 @@ WHAT IS PINNED, AND WHICH VARIANT EACH TEST KILLS.
                (P1/P2, Claim D) are outside this bug both before and after
                the fix.
 
-RUNNING AGAINST A VARIANT.  By default the mixin is imported from the
-installed runtime tree (as the other mixin tests do), so a stale dev tree is
-caught.  Set PDMUX_MIXIN_UNDER_TEST=/path/to/multiplexing_mixin.py to load a
-specific file instead -- used to show that the tests fail on the pre-fix code
-and on the rejected fix variants, without touching the shared dev tree.
+RUNNING AGAINST A VARIANT.  The loop fakes and the mixin import live in
+pdmux_loop_fakes.py.  By default the mixin is imported from the installed
+runtime tree (as the other mixin tests do), so a stale dev tree is caught.
+Set PDMUX_MIXIN_UNDER_TEST=/path/to/multiplexing_mixin.py to load a specific
+file instead -- used to show that the tests fail on the pre-fix code and on
+the rejected fix variants, without touching the shared dev tree.
 """
 
-import contextlib
-import importlib.util
 import os
 import sys
 import unittest
-from types import SimpleNamespace
-from unittest import mock
 
-# See test_trace_force_prefill.py: test_profile_controller.py installs
-# src/multiplex/profile.py as sys.modules["profile"], which shadows the stdlib
-# module and breaks the sglang import chain below.
-sys.modules.pop("profile", None)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import torch
-
-from sglang.srt.multiplex import pdmux_context
-from sglang.srt.multiplex.controller import (
+from pdmux_loop_fakes import (  # noqa: E402  (after the sys.path insert)
+    MIXIN_SOURCE,
+    FakeReq,
+    LoopScheduler,
+    LoopTestBase,
+    run_loop,
+)
+from sglang.srt.multiplex.controller import (  # noqa: E402
     CoarseGrainedController,
     FixedPolicy,
     GenericDynamicPolicy,
     RuntimeSnapshot,
     SplitDecision,
 )
-
-_UNDER_TEST = os.environ.get("PDMUX_MIXIN_UNDER_TEST", "")
-if _UNDER_TEST:
-    _spec = importlib.util.spec_from_file_location(
-        "pdmux_mixin_under_test", _UNDER_TEST
-    )
-    _mixin_module = importlib.util.module_from_spec(_spec)
-    assert _spec.loader is not None
-    _spec.loader.exec_module(_mixin_module)
-else:
-    from sglang.srt.multiplex import multiplexing_mixin as _mixin_module
-
-SchedulerMultiplexMixin = _mixin_module.SchedulerMultiplexMixin
-MIXIN_SOURCE = _mixin_module.__file__
-
-# The canonical R2 state set (benchmarks/configs/pdmux_r2.yml): plain
-# prefill group, four whole-phase divisions, plain decode group.
-SM_COUNTS = [(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]
-MANUAL_DIVISIONS = [[92, 16, 0], [84, 24, 0], [74, 34, 0], [64, 44, 0]]
-NUM_LAYERS = 4
-TOKEN_BUDGET = 100  # with 100-token prompts: one layer per iteration
-
-# Env the loop or the snapshot reads; cleared so a developer shell cannot
-# change the scripted dynamics.
-_ENV_KEYS = (
-    "PDMUX_SLO_SCHED",
-    "PDMUX_SLO_SPAN_TYPE",
-    "PDMUX_STICKY_PARTITION",
-    "PDMUX_TPOT_SLO_MS",
-    "PDMUX_TTFT_SLO_MS",
-    "PDMUX_SLO_EMA",
-)
-
-
-class LoopDone(Exception):
-    """Raised by the scripted `recv_requests` to leave the infinite loop."""
-
-
-class FakeEvent:
-    def query(self):
-        return True
-
-    def synchronize(self):
-        return None
-
-
-class FakeStream:
-    def __init__(self, name):
-        self.name = name
-        self.syncs = 0
-
-    def synchronize(self):
-        self.syncs += 1
-
-    def record_event(self):
-        return FakeEvent()
-
-
-class FakeGroup:
-    def allreduce(self, _tensor, _op):
-        return SimpleNamespace(wait=lambda: None)
-
-
-class FakeReq:
-    def __init__(self, rid, max_new, prompt_len=100):
-        self.rid = rid
-        self.origin_input_ids = [0] * prompt_len
-        self.output_ids = []
-        self.sampling_params = SimpleNamespace(max_new_tokens=max_new)
-        self.time_stats = SimpleNamespace(wait_queue_entry_time=0.0)
-
-    def finished(self):
-        return len(self.output_ids) >= self.sampling_params.max_new_tokens
-
-
-class FakeBatch:
-    """ScheduleBatch stand-in.  Like ScheduleBatch it defines neither
-    __len__ nor __bool__, so any non-None batch is truthy."""
-
-    def __init__(self, reqs=(), prefill=False):
-        self.reqs = list(reqs)
-        self.forward_mode = None
-        self.split_index = 0
-        self.split_forward_count = 0
-        self.split_prefill_finished = False
-        self.extend_num_tokens = (
-            sum(len(r.origin_input_ids) for r in self.reqs) if prefill else 0
-        )
-
-    def is_empty(self):
-        return not self.reqs
-
-    def batch_size(self):
-        return len(self.reqs)
-
-    def merge_batch(self, other):
-        self.reqs.extend(other.reqs)
-
-
-class RecordingTelemetry:
-    """AsyncJsonlTelemetry's emit() surface, appending to a shared log."""
-
-    def __init__(self, log):
-        self.log = log
-
-    def emit(self, event, phase, request_id="", **fields):
-        self.log.append(("telemetry", event, dict(fields)))
-        return True
-
-    def mark_phase(self, phase):
-        return self.emit("phase_marker", phase)
-
-    def close(self, timeout_s=5.0):
-        return None
-
-
-class LoopScheduler(SchedulerMultiplexMixin):
-    """Just enough Scheduler for `event_loop_pdmux` to run on CPU."""
-
-    def __init__(self, policy, policy_name, arrivals, max_iters,
-                 admit_per_batch=1, max_running_requests=48):
-        self.sm_counts = list(SM_COUNTS)
-        self.stream_groups = [
-            (FakeStream(f"p{i}"), FakeStream(f"d{i}")) for i in range(len(SM_COUNTS))
-        ]
-        self.real_sm_group_num = len(SM_COUNTS)
-        self.pdmux_config = SimpleNamespace(
-            manual_divisions=[list(row) for row in MANUAL_DIVISIONS],
-            split_forward_token_budget=TOKEN_BUDGET,
-            decode_bs_divisor=36,
-        )
-        self.model_config = SimpleNamespace(num_hidden_layers=NUM_LAYERS)
-        self.tp_worker = SimpleNamespace(
-            model_runner=SimpleNamespace(
-                update_decode_attn_backend=lambda _idx: None,
-                model=SimpleNamespace(),
-                decode_attn_backend=None,
-            )
-        )
-        self.tp_cpu_group = FakeGroup()
-        self.tp_size = 1
-        self.waiting_queue = []
-        self.running_batch = FakeBatch()
-        self.split_prefill_batch = None
-        self.max_running_requests = max_running_requests
-        self.token_to_kv_pool_allocator = None
-        self.req_to_token_pool = None
-        self.dual_worker_enabled = False
-        self.true_dual_worker_enabled = False
-        self.true_dual_worker_runtime = None
-        self.dual_worker_trace_path = ""
-        self.sticky_partition_enabled = False
-        self._sticky_fixed_idx = None
-        self.new_token_ratio = 0.0
-        self.init_new_token_ratio = 0.0
-        self.log = []
-        self.pdmux_telemetry = RecordingTelemetry(self.log)
-        self.pdmux_experiment_phase = "benchmark"
-        self.r2_policy = policy
-        self.r2_policy_name = policy_name
-        self.r2_admission_limited = False
-        self._arrivals = arrivals
-        self._max_iters = max_iters
-        self._admit_per_batch = admit_per_batch
-        self.iteration = -1
-
-    # --- scheduler surface used by event_loop_pdmux -----------------------
-    def recv_requests(self):
-        if self.iteration + 1 >= self._max_iters:
-            raise LoopDone
-        self.iteration += 1
-        return list(self._arrivals.get(self.iteration, ()))
-
-    def process_input_requests(self, reqs):
-        self.waiting_queue.extend(reqs)
-
-    def get_new_batch_prefill(self):
-        if not self.waiting_queue:
-            return None
-        take = self.waiting_queue[: self._admit_per_batch]
-        del self.waiting_queue[: self._admit_per_batch]
-        for req in take:
-            self.log.append(
-                ("admit", req.rid, self.iteration, self.running_batch.batch_size())
-            )
-        return FakeBatch(take, prefill=True)
-
-    def update_running_batch(self, batch):
-        batch.reqs = [req for req in batch.reqs if not req.finished()]
-        return batch
-
-    def check_memory(self):
-        return None
-
-    def check_tree_cache(self):
-        return None
-
-    def maybe_sleep_on_idle(self):
-        return None
-
-    def run_batch(self, batch):
-        return SimpleNamespace(batch=batch)
-
-    def process_batch_result(self, batch, _result):
-        # decode: one token per running request; prefill completion: first token
-        for req in batch.reqs:
-            if not req.finished():
-                req.output_ids.append(1)
-
-    # --- helpers for the assertions ---------------------------------------
-    def admissions(self, rid):
-        return [e for e in self.log if e[0] == "admit" and e[1] == rid]
-
-    def decisions(self):
-        return [e for e in self.log if e[0] == "telemetry" and e[1] == "controller_decision"]
-
-    def events(self, name):
-        return [e for e in self.log if e[0] == "telemetry" and e[1] == name]
 
 
 class ScriptedPolicy:
@@ -303,16 +83,6 @@ class ScriptedPolicy:
             safe=safe_boundary,
             admission_limited=limited,
         )
-
-
-def run_loop(sched):
-    with mock.patch.object(torch.cuda, "stream", lambda _s: contextlib.nullcontext()), \
-            mock.patch.object(torch.cuda, "empty_cache", lambda: None):
-        try:
-            sched.event_loop_pdmux()
-        except LoopDone:
-            pass
-    return sched
 
 
 def scripted_scheduler(limited, arrivals, max_iters):
@@ -341,34 +111,7 @@ def generic_policy():
     )
 
 
-class _LoopTestBase(unittest.TestCase):
-    def setUp(self):
-        saved = (
-            pdmux_context.STREAM_GROUPS,
-            pdmux_context.CURRENT_STREAM_IDX,
-            pdmux_context.CURRENT_STREAM_GROUP,
-        )
-
-        def _restore():
-            (
-                pdmux_context.STREAM_GROUPS,
-                pdmux_context.CURRENT_STREAM_IDX,
-                pdmux_context.CURRENT_STREAM_GROUP,
-            ) = saved
-
-        self.addCleanup(_restore)
-        env = mock.patch.dict(os.environ, {}, clear=False)
-        env.start()
-        self.addCleanup(env.stop)
-        for key in _ENV_KEYS:
-            os.environ.pop(key, None)
-
-    def install(self, sched):
-        pdmux_context.STREAM_GROUPS = sched.stream_groups
-        pdmux_context.CURRENT_STREAM_IDX = 0
-        pdmux_context.CURRENT_STREAM_GROUP = sched.stream_groups[0]
-        return sched
-
+class _LoopTestBase(LoopTestBase):
     def assert_no_admission_while_limited(self, sched, after_rid):
         """Safety: from `after_rid`'s admission on, every admission must be
         preceded by a decision that did NOT report admission_limited (or by
