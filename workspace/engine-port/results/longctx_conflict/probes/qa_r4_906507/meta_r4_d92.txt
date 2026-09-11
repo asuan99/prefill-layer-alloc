@@ -1,0 +1,5 @@
+boot_start=2026-09-10T21:08:10+09:00 node=gpu36
+numpy 2.5.1
+torch 2.9.1+cu130
+210 MHz, 33
+sm_counts (prefill_sm, decode_sm): [(108, 0), (92, 16), (64, 44), (54, 54), (16, 92), (0, 108)]
