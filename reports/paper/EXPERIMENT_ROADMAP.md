@@ -1,6 +1,26 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-11(2)(doc-steward — **Q-B 사전등록
+최종 갱신: 2026-09-11(3)(doc-steward — **R2 true-dual GPU
+correctness 트랙** — 2026-09-11 admission latch stale-True
+버그 수정(`02918e8`, 보류 해제·사용자 R2 복귀 결정) 이후 재실행
+job 907032(0.12 GPU-h)는 split-prefill ownership race로
+**FAIL**, 경합 수정 `874873b`+판정 규칙 사전 고정 하네스 v2
+`e16e93f` 이후 job 907100(≈0.16 GPU-h, 커밋 `ea99191`)은
+**PASS**. claims-auditor 결과 감사(`workspace/engine-port/
+results/r2_correctness/audit_r2corr_2026-09-11/VERDICT.md`)가
+S16 순차+O8 단일-probe 중첩 프로토콜 한정으로 `CONFIRMED(scoped)`
+— 동시 부하(C 층) 포함 무스코프 "같은 토큰"은 관측으로
+`REFUTED`(3/32 arm-분리 불일치). **Claim D 등급 무변경(미검증).**
+닫힌 선결 #5(cudagraph-ON, scoped)·부분 해소 #2·#1(latch)은
+코드 수정뿐. 인용 금지 R2C-1…16+필수 병기 P-1…7(VERDICT §5
+문자 승계, 인용 금지 총계 **116건**). 신규 방법론 게이트
+3건(#167–169)+追記 3건(G-3→#50, G-5→#1·#114, G-6→#95). 후속
+실험 X1–X3·하네스 결함 H1–H3은 **미실행·미승인**(아래 "P1/P2"
+절). 새 성능 판정 0건·arm 순위 0건·정책 순위 변경 0건·HE0
+불변. GPU 이번 0.28 GPU-h(이 트랙 최초 지출). 상세
+`PROJECT_STATUS.md` "다음 실험 gate" 항목1–4 追記, `CONSENSUS.md`
+§5-8(a) 追記(rev66)·§3 항목187–189.
+이전: 2026-09-11(2)(doc-steward — **Q-B 사전등록
 `PREREG_QB_LOOPGAIN_2026-09-11.md`가 규칙층+결과 감사
 `GO-with-caveats`(死因 0·반전 0/23표면)를 받고 **Q-B′**로
 개명.** 원 Q-B(프로브 C 교락 14.953×/23.713×)는 Little
@@ -626,6 +646,44 @@ sampling, writer를 수정하고 architecture 비교를 보류한다.
 Decode-heavy/alternating에서 decode progress, ITL 또는 oldest queue age가
 유의하게 개선되고 throughput regression이 3% 이하일 때만 Claim D를 채택한다.
 그렇지 않으면 true dual은 negative architecture result로 남긴다.
+
+★追記(2026-09-11, doc-steward, R2 true-dual GPU correctness
+트랙) — 위 P1/P2는 여전히 미실행 성능 게이트다. 별도로
+**correctness 게이트**(P1/P2 성능 기준과 무관)가 job 907100에서
+S16 순차+O8 단일-probe 중첩 프로토콜 한정으로 `PASS`했다
+(claims-auditor `CONFIRMED(scoped)`, `workspace/engine-port/
+results/r2_correctness/audit_r2corr_2026-09-11/VERDICT.md`).
+직전 job 907032(admission latch 수정 `02918e8` 직후 재실행)는
+split-prefill ownership race로 두 boot 모두 **FAIL**했고, 경합
+수정 `874873b`+하네스 v2 `e16e93f` 이후 907100이 PASS했다. 새
+성능 판정 0건, 위 P1/P2 acceptance는 여전히 미평가(observer
+effect·decode progress/ITL·throughput regression 전부 미측정).
+인용 금지 R2C-1…16·필수 병기 P-1…7(VERDICT §5, 문자 승계) —
+요지는 무스코프 "같은 토큰"/"동시 부하 동치" 금지(R2C-1/2),
+C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
+"무해 노이즈" 양쪽으로 단정 금지(R2C-3).
+
+**후속 실험(전부 미실행·미승인, 사용자 판단 대기)**:
+- **X1**: 민감도 양성대조 + C 층 기전 판별(≈0.16 GPU-h).
+  `SGLANG_TRITON_DECODE_ATTN_STATIC_KV_SPLITS=true`로 4 boot
+  (L/TD/L/TD) 재실행, 불일치 1건 이상 기대(측정 층 양성대조),
+  C01 arm-분리 소멸 여부 확인.
+- **X2**: 비기본 split D16(≈0.16 GPU-h). `R2C_DSM=16`으로
+  B8/O3의 FixedPolicy 변별력을 확보하고 B5/B6가 방문하는 split
+  까지 스코프를 넓힌다.
+- **X3**: 러너 설정 인증. ctx/dirname 버그 수정 후 러너 서버
+  인자 튜플로 하네스를 1회 실행(관측 플래그 ON/OFF 대조) — 선결
+  #4b(observer effect)의 토큰 쪽 절반.
+- **하네스 결함(게이트 아님, engine-porter 이관)**: H1
+  (INPUT_IDENTITY가 개수만 비교, sha 미검사) · H2(`task_count`가
+  `set_result` 뒤 증가해 Δ+1 지연) · H3(`host_worker_overlap_
+  ratio`의 1024개 절단·수명 분모로 동시성 지표 부적합).
+
+상세 `workspace/engine-port/results/r2_correctness/{job_907032/,
+job_907100/, audit_r2corr_2026-09-11/VERDICT.md}` §6–§7.3. 정본
+반영: `PROJECT_STATUS.md` 최상단 배너·"다음 실험 gate" 항목1–4
+追記, `CONSENSUS.md` §5-8(a) 追記(rev66), `CLAIM_EVIDENCE_
+MATRIX.md` Claim D 행·"주장 제한" 갱신.
 
 ### P3 — Offline profile/estimator
 

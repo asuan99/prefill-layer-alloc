@@ -1,6 +1,101 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-09-11(2) **(doc-steward — Q-B′ 사전등록
+최종 갱신: 2026-09-11(3) **(doc-steward — R2 true-dual GPU
+correctness 트랙 등재, 새 성능 판정 0건·Claim D 등급 불변
+[미검증]·HE0·정책 순위·stake #1 전부 불변, 이 세션은 문서
+등재분[GPU 0] — 트랙 자체는 오늘 0.12+0.16≈**0.28 GPU-h**
+기지출[이 트랙 최초 지출, longctx_conflict 트랙 누적 **15.42
+GPU-h**와는 별개 장부])** — 2026-09-11 커밋 `02918e8`가
+admission latch(`r2_admission_limited`) stale-True 버그를
+수정했다(2026-07-24 사용자 결정으로 걸린 보류를 **해제**,
+사용자 R2 복귀 결정에 따름). 재실행 job 907032(gpu42, 0.12
+GPU-h)는 **FAIL** — true-dual 두 boot(TD1/TD2) 모두 split-prefill
+ownership race로 크래시했다(구현 사실). 경합 수정 커밋
+`874873b`, 이어 판정 규칙을 TD 출력이 생성되기 전에 사전
+고정한 하네스 v2 커밋 `e16e93f`. job 907100(19:37–19:47 KST,
+≈0.16 GPU-h, 아티팩트는 커밋 `ea99191`)은 **PASS**했다.
+
+claims-auditor가 이 결과를 read-only 결과 감사했다(`workspace/
+engine-port/results/r2_correctness/audit_r2corr_2026-09-11/
+VERDICT.md`) — 제안 문장은 그대로 정본에 쓸 수 없으나 PASS
+자체는 공허하지 않고, 스코프를 S16(순차)+O8(단일 probe·단일
+background 중첩) 프로토콜로 고치면 **`CONFIRMED(scoped)`**다.
+무스코프("동시 부하[C 층] 포함, 같은 토큰")는 관측으로
+**`REFUTED`**다 — C01·C10·C19 3/32 요청이 L1=L2≠TD1=TD2
+arm-분리 패턴을 보이며, 그 불일치를 "TD 결함"으로 돌리는 것은
+**`NOT-YET-SUPPORTED`**다(C01은 triton KV-split 휴리스틱의
+arm-특이 타이밍으로 산술 설명됨, C10·C19는 재구성 못함). **Claim
+D 등급 영향은 0이다(미검증 유지)** — 이 job이 닫는 Claim D
+선결은 #5(cudagraph-ON 호환, decode 한정·scoped) 하나, 부분
+해소는 #2(GPU correctness, S/O 프로토콜 범위)뿐이다. #1(admission
+latch)은 코드 수정(`02918e8`)만 있고, FixedPolicy에서는 그
+경로가 한 번도 발화하지 않아(`admission_limited` 185개 결정 중
+0, `r2_admission` 이벤트 0) **GPU에서의 발화는 이번에도 관측되지
+않았다**.
+
+등재 한 줄(판정서 §7.2, 문자 승계): *"R2 true-dual GPU
+correctness: job 907100 PASS, `CONFIRMED(scoped)`, S/O 프로토콜
+한정. 인용 금지 R2C-1…16과 필수 병기 P-1…7을 판정서에서 문자
+그대로 승계한다. 새 성능 판정 0건, Claim D 등급 불변, HE0
+불변."*
+
+★**정정 追記**: 아티팩트 커밋 `ea99191`의 메시지 "since B8/O3
+confirmed the realized split was D44"는 **R2C-9**로 정정한다 —
+직접 근거는 `controller_decision` 텔레메트리(target=current=44,
+60/60)이고, B8/O3는 표본 기반 검사라 근거로 쓰기에 부정확했다
+(커밋 자체는 재작성하지 않는다).
+
+★★인용 금지 R2C-1…16(문자 소재 = VERDICT §5, 전문은 정본에
+복사하지 않음) 중 요지: **R2C-1** 무스코프 "같은 토큰" 금지
+(허용형: "S16 순차·O8 단일-probe 중첩 프로토콜에서 토큰 동일") ·
+**R2C-2** "동시/서빙 부하에서 TD≡legacy" 금지(C 층 3/32 arm-분리
+불일치) · **R2C-3** C 층 불일치를 "TD 결함"·"무해한 노이즈"
+양쪽 다로 단정 금지(원인 미확정) · **R2C-5** "토큰 동치가 D44
+실현을 확인한다" 금지(동치 검사는 파티션 오결합을 보지 못함) ·
+**R2C-11** "스레드 안전성·경합 부재가 검증됐다" 금지(host 중첩
+13.5/19.4ms는 하한) · **R2C-14** 무스코프 "Claim D 증거"·"Claim
+D 선결 해소" 금지. 필수 병기 P-1…7(스코프 튜플·D44 계산 분할·
+C 층 수치·unsafe 기전·host 중첩 크기·하네스-러너 편차·새 성능
+판정 0건)도 문자 승계, 전문은 VERDICT §5. 인용 금지 총계
+**116건**(기존 100+R2C 16, 트랙별 계수는 총계와 별개로 유지:
+Q-A 계보 80+QB 20+R2C 16).
+
+★★신규 방법론 게이트 3건(#167–169, 기존 #1–166과 대조해 중복
+없음) — **#167**(G-1, 진단 층으로 강등해도 주장 스코프에서는
+빠지지 않는다) · **#168**(G-2, 같은 이름의 텔레메트리 필드가
+arm마다 다른 술어로 채워질 수 있다) · **#169**(G-4, 워커 경로를
+탔다는 것[태스크 카운터 증가]은 동시 실행의 증거가 아니다).
+追記 3건(신규 번호 없음): **G-3**(#50/`CONSENSUS §3` 항목70
+追記, 동치 게이트의 검출력은 스코어러 변이 테스트로 보증되지
+않는다 — #50의 측정 층 판본) · **G-5**(#1·#114/`CONSENSUS`
+§1-9·§3 항목130 追記, 파티션 실현은 "창 안에 분할이 있었다"가
+아니라 "비교 대상 산출의 어느 계산이 그 분할 위에서 돌았는가"로
+적어라) · **G-6**(#95/§3 항목115 追記, 검증 표적이 설정의 기본
+동작과 같으면 실현 검사는 두 가설을 구별하지 못한다 — confound
+#10 사례). 하네스 결함 H1–H3(INPUT_IDENTITY가 개수만 비교·
+`task_count`가 `set_result` 뒤에 증가해 Δ+1 지연·overlap ratio
+1024개 절단+수명 분모)은 게이트가 아니라 engine-porter 이관
+사항으로만 등재.
+
+후속 실험 X1(민감도 양성대조+C 기전 판별)·X2(비기본 split
+D16)·X3(러너 설정 인증), 각 ≈0.16 GPU-h — **전부 미실행·
+미승인**(사용자 판단 대기). `reports/paper/EXPERIMENT_ROADMAP.md`
+"P1/P2" 절에 열린 항목으로만 등재.
+
+★기존 불변 배너 전부 승계(HE0·정책 순위·gate #13/#16 "닫았다"
+금지·switch-cost "닫았다" 금지·C2 인용정지(a)(b)·`CONSENSUS
+§1-24`·게이트 #14 "닫았다" 금지·stake #1 구조 판정). 정본
+반영: `CONSENSUS.md` rev65→**rev66**(§5-8(a) 追記·§3 항목
+187–189 신설), 이 문서 아래 "다음 실험 gate" 항목1–4 追記·
+"방법론 게이트" #167–169 신설(+#1·#50·#95·#114 追記),
+`reports/paper/{CLAIM_EVIDENCE_MATRIX,EXPERIMENT_ROADMAP}.md`
+Claim D/R2 절 갱신, `MEMORY.md` 포인터 갱신·`memory/slo-aware-
+scheduling-track.md`[2026-09-11(3)]·`memory/deconfound-
+measurement-lessons.md` 항목165–167 신설. 상세 `workspace/
+engine-port/results/r2_correctness/{job_907032/, job_907100/,
+audit_r2corr_2026-09-11/VERDICT.md}`.
+
+이전: 2026-09-11(2) **(doc-steward — Q-B′ 사전등록
 규칙층+결과 감사 `GO-with-caveats` 등재, 새 성능 판정 0건·arm
 순위 0건·정책 순위 변경 0건·HE0 불변·stake #1 불변, GPU 0,
 트랙 누적 **15.42 GPU-h 불변**)** — claims-auditor가
@@ -5499,6 +5594,53 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    1% 이하여야 한다.
 4. target applicability 영역에서 proposed가 B1/B5보다 paired CI 기준 유의하고
    effect가 3% 이상이어야 Claim E를 채택한다.
+
+   ★★追記(2026-09-11, doc-steward, R2 true-dual GPU correctness
+   트랙) — 위 1–4는 Claim D/E **성능** 게이트이며, 이번에 통과한
+   것은 **별개의 correctness 게이트**다(혼동 금지, 위 1–4 중
+   어느 것도 이 job으로 평가되지 않았다 — observer effect·decode
+   progress/ITL·throughput regression·estimator coverage는 전부
+   미측정). 2026-09-11 admission latch stale-True 버그 수정
+   (`02918e8`, 2026-07-24 보류 해제·사용자 R2 복귀 결정) 이후
+   재실행 job 907032(0.12 GPU-h)는 true-dual 두 boot 모두
+   **split-prefill ownership race로 크래시(FAIL)**했다(구현
+   사실). 경합 수정 커밋 `874873b`, 이어 판정 규칙을 TD 출력이
+   나오기 전에 사전 고정한 하네스 v2 커밋 `e16e93f`. job
+   907100(19:37–19:47 KST, ≈0.16 GPU-h, 아티팩트 커밋 `ea99191`)
+   이 **PASS**했고, claims-auditor 결과 감사(`workspace/
+   engine-port/results/r2_correctness/audit_r2corr_2026-09-11/
+   VERDICT.md`)가 S16 순차+O8 단일-probe 중첩 프로토콜 한정으로
+   **`CONFIRMED(scoped)`** — 무스코프 "같은 토큰"(동시 부하[C 층]
+   포함)은 관측으로 **`REFUTED`**(C01·C10·C19 3/32 arm-분리
+   불일치, 원인 미확정, TD 결함 귀속은 **`NOT-YET-SUPPORTED`**).
+   등재 한 줄(판정서 §7.2, 문자 승계): *"R2 true-dual GPU
+   correctness: job 907100 PASS, `CONFIRMED(scoped)`, S/O
+   프로토콜 한정. 인용 금지 R2C-1…16과 필수 병기 P-1…7을
+   판정서에서 문자 그대로 승계한다. 새 성능 판정 0건, Claim D
+   등급 불변, HE0 불변."* Claim D는 여전히 **미검증**. R2 GPU
+   지출 오늘 0.12+0.16≈**0.28 GPU-h**(이 트랙 최초 지출). 선결
+   상태(VERDICT §4): closes #5(cudagraph-ON 호환, scoped) ·
+   부분 #2(GPU correctness, S/O 프로토콜 한정) · #1(latch)은
+   코드 수정뿐이며 이 job에서 GPU 발화 관측 0(`admission_limited`
+   185개 결정 중 0). ★**정정 추기**: 아티팩트 커밋 `ea99191`의
+   문구 "since B8/O3 confirmed the realized split was D44"는
+   **R2C-9**로 정정한다 — 직접 근거는 `controller_decision`
+   텔레메트리(target=current=44, 60/60)이고 B8/O3는 표본 기반
+   검사라 근거로 부정확했다(커밋 자체는 재작성하지 않음). 인용
+   금지 R2C-1…16 요지: R2C-1(무스코프 "같은 토큰" 금지)·R2C-2
+   ("동시/서빙 부하에서 TD≡legacy" 금지)·R2C-3(C 층 불일치를
+   "TD 결함"도 "무해 노이즈"도로 단정 금지)·R2C-5(토큰 동치가
+   D44 실현을 확인한다는 주장 금지)·R2C-11(스레드 안전성 검증
+   완료 주장 금지)·R2C-14(무스코프 "Claim D 증거" 금지) 외
+   전문은 VERDICT §5, 필수 병기 P-1…7도 동소. 신규 방법론 게이트
+   3건(#167 G-1·#168 G-2·#169 G-4, 아래 "방법론 게이트" 절)·
+   追記 3건(G-3→#50, G-5→#1·#114, G-6→#95). **후속 실험
+   X1–X3(각≈0.16 GPU-h)·하네스 결함 H1–H3은 미실행·미승인**
+   (사용자 판단 대기) — `reports/paper/EXPERIMENT_ROADMAP.md`
+   "P1/P2" 절. 정본 반영: `CONSENSUS.md` §5-8(a) 追記(rev66),
+   `reports/paper/CLAIM_EVIDENCE_MATRIX.md` Claim D 행·"주장
+   제한" 갱신. 상세 `workspace/engine-port/results/r2_correctness/
+   {job_907032/, job_907100/, audit_r2corr_2026-09-11/VERDICT.md}`.
 5. 벡터1(disjoint conflict-regime escape hatch, CONSENSUS §5-8(c)): **CONFIRMED
    closure (scoped, 2026-07-25)** — g2_0_full → g2_0_hard → g2_0_decliff →
    g2_0_rasweep → g2_0_raconf(pre-registered 24-job 확증 열, 결정 규칙 충족)로
@@ -7240,6 +7382,17 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
    실제로 일치하는지 확인한다 — 검증 비용은 0이며, 이걸 생략해서 Stage 0의
    D108 앵커가 실은 D16임을 놓쳤다. ★**아래 4번의 특수 사례**(target-vs-realized
    집계 단위 불일치)로 재분류.
+   ★**追記(2026-09-11, G-5, R2 true-dual GPU correctness 판정서[`workspace/
+   engine-port/results/r2_correctness/audit_r2corr_2026-09-11/VERDICT.md`]
+   §6, claims-auditor, GPU 0)**: "realized로 검증하라"를 한 단계 더
+   좁혀라 — 파티션 실현은 **"창 안에 그 분할이 있었다"가 아니라 "비교
+   대상 산출의 어느 계산이 실제로 그 분할 위에서 돌았는가"**로 적어야
+   한다. job 907100에서 D44 64-SM(prefill) 측은 probe prefill(비교
+   대상)이 돌았지만, D44 44-SM(decode) 측에서는 **비교 대상에서 제외된
+   bg decode만** 돌았다(probe decode 47 step은 비분할 plain stream
+   idx 5에서 실행) — "overlap 스냅샷 100%가 idx 4(=D44)"라는 target-
+   vs-realized 검사를 통과해도, 토큰 동치가 실제로 확인하는 범위는
+   그보다 좁다. 대응 `CONSENSUS.md` §1-9(추기)·§3 항목130(추기).
 2. **파티션 활성률을 사전등록 게이트로 삼는다.** green-context 분할은
    split-prefill 동거 중에만 유효하고, 비면 legacy `adjust_stream_groups`가
    무분할로 되돌아간다 — 활성률이 낮으면 셀 평균이 목표 파티션과 무분할의
@@ -8492,6 +8645,21 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     results/s8_scaleup/DESIGN_G13_JOB_BATCH_REV3_2026-08-19.md`
     §4.1·§6, `DESIGN_G13_JOB_BATCH_REV2_2026-08-17.md`(재현성 지뢰
     경고 배너), `reports/CONSENSUS.md` §3 항목70.
+    ★**追記(2026-09-11, G-3, R2 true-dual GPU correctness 판정서
+    §1.6·§6, claims-auditor, GPU 0 — 이 항목의 측정 층 판본)**:
+    자기 수리의 검증 검사만 항등식일 수 있는 게 아니라, **동치
+    게이트의 검출력(민감도)도 "스코어러가 항상-통과 변이본을
+    잡아낸다"는 검사(하네스 v2의 e16e93f mutation test)만으로는
+    보증되지 않는다** — 그 검사는 스코어러 층만 재고, 엔진+프롬프트
+    라는 측정 층 자체의 민감도는 재지 않는다. job 907100의 O probe
+    출력 8/8이 passage 그대로의 복사라 argmax 마진이 거의 전 구간
+    작았는데도(복사형 출력 구간에서만 마진이 남음), "스코어러는
+    항상-통과를 잡는다"는 확인은 이 사실을 드러내지 못했다. 실무
+    규칙: 동치 게이트를 등록할 때는 스코어러 변이 테스트와 별개로,
+    알려진 미세 수치 섭동이 실제로 불일치를 1건 이상 만드는지
+    확인하는 **측정 층 양성대조**를 사전등록하라(예: X1,
+    `SGLANG_TRITON_DECODE_ATTN_STATIC_KV_SPLITS=true`). 대응
+    `reports/CONSENSUS.md` §3 항목70(追記).
 
 51. ★★**(2026-08-21, gate #13 캠페인 해제 절차, 메인 세션, GPU 0·새
     성능 판정 아님) 블라인딩 감시 문자열을 설명하는 문서가 그 문자열
@@ -9289,6 +9457,21 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
     audit_d1_rules_3rd_2026-09-08/VERDICT.md` §9 死因 W5,
     `RESULT_D1_A1A2_2026-09-07.md` 정정 배너, `CONSENSUS §3`
     항목115와 대응.
+    ★**追記(2026-09-11, G-6, R2 true-dual GPU correctness 판정서
+    §2.5, claims-auditor, GPU 0 — confound #10 새 사례)**: 두
+    설명이 관측 동치인 경우의 변종 — **검증 표적이 설정의 기본
+    동작과 같으면, 그 설정에서의 실현 검사는 두 가설(정책 경로가
+    실제로 액추에이션했다 vs 아무것도 안 해도 같은 값이 나왔다)을
+    구별하지 못한다.** `pdmux_r2.yml`의 문턱이 전부 0이라 네이티브
+    선택기도 overlap 시 idx 4(=D44)를 고르므로, D44에서는 B8/O3의
+    idx 4 검사가 "FixedPolicy가 액추에이션했다"와 "아무 정책 없이도
+    네이티브 선택기가 같은 분할을 골랐다"를 구별하지 못한다 —
+    변별 증거는 `split_transition`(reason=fixed) 이벤트뿐이고,
+    B8이 실제로 변별력을 갖는 것은 기본값이 아닌 D16/24/34에서뿐
+    이다. 실무 규칙: 실현 검사를 설계할 때 "기본 동작이 이미 같은
+    결과를 주는가"를 먼저 확인하고, 변별력이 필요하면 기본값이
+    아닌 표적(예: X2, `R2C_DSM=16`)도 함께 돌려라. 대응
+    `CONSENSUS §3` 항목115(追記).
 
 96. ★★★**(2026-09-08, 상동) 판별식을 자기 저작 픽스처로 대체하면
     양성대조가 된다 — 원 대상 문서가 디스크에 있으면 반드시
@@ -9719,6 +9902,14 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
      `workspace/engine-port/results/longctx_conflict/
      {PREREG_P6_ITL_ORDER_2026-09-09.md,
      audit_p6_rules_2026-09-09/VERDICT.md}`.
+     ★**追記(2026-09-11, G-5, R2 true-dual GPU correctness
+     판정서 §6, claims-auditor, GPU 0 — 파티션 실현의 "어떤 창"
+     판본)**: 같은 교훈이 파티션 실현에도 적용된다 — "D44 위에서
+     돌았다"고 쓸 때도 정확히 어떤 창(overlap 스냅샷 창/비교
+     대상 산출이 실제로 실행된 창)을 말하는지 명시해야 한다.
+     job 907100에서 overlap 스냅샷 창은 전부 idx 4였지만, 비교
+     대상 계산이 실제로 그 분할 위에서 돈 창은 probe prefill뿐
+     이었다(§2.3). 대응 `CONSENSUS §3` 항목130(追記).
 
 115. ★★★**(2026-09-09, `longctx_conflict` 트랙, doc-steward 정본
      등재 절차 중 발견·메인 세션 자기 정정, GPU 0) 에이전트
@@ -9976,3 +10167,9 @@ CONSENSUS §3 항목181과 대응]. 이 4건은 기존 #119–157과 전수 대�
 165. ★★★**(2026-09-11, claims-auditor, GPU 0) 층을 세분하는 강건성·반전 시험은 지지 결손으로 채움 규칙의 산물을 "민감도"로 보고하게 할 수 있다.** 층 세분화 시험은 off-support 질량과 같은 층의 원자료 분포를 함께 보고하라. Q-B′ 감사가 (e,b)층에 토큰 위치 3분위를 추가하자 d16 λ=0.09 A 3칸에서 `K@D`가 65.9–73.6% 움직였으나, 노출 ITL 자체는 위치와 무관(d16 42.3/—/43.3ms)해 이 "반전"은 해당 3분위 노출 토큰 0개가 만든 채움 산물이었다(가짜 반전으로 판정, 死因 후보에서 제외). 대응 `CONSENSUS.md` §3 항목185. 상세 `.../audit_qb_rules_2026-09-11/VERDICT.md` §2.2(A6)·§4.4.
 
 166. ★★★**(2026-09-11, claims-auditor, GPU 0) 인계된 질문의 정의가 항등식으로 소진되면 그 "정식 판본"은 같은 질문이 아니라 다른 질문이다 — 개명하고 원 질문의 소진을 등재 문장에 명시하라.** 원 Q-B(SM-split 액추에이터 자기상쇄 루프 이득, 프로브 C 교락 14.953×/23.713×)는 Little 항등식(도착 비×체류 비)으로 정확히 분해됐고, 핸드오프가 요구한 공통-λ 설계는 원 교락의 도착 채널 자체를 구조적으로 끈다 — 남는 비자명 내용(평균 ITL 차의 합성 표준화 분해)을 **Q-B′**로 개명해 등재한다. 대응 `CONSENSUS.md` §3 항목186. 상세 `.../audit_qb_rules_2026-09-11/VERDICT.md` §3(c)·§5.2(QB-15).
+
+167. ★★★**(2026-09-11, `r2_correctness` 트랙, claims-auditor 결과 감사[`workspace/engine-port/results/r2_correctness/audit_r2corr_2026-09-11/VERDICT.md` §6, G-1], GPU 0) 진단 층으로 강등해도 그 층은 주장 스코프에서 빠지지 않는다.** 등록 규칙이 동시 부하(C) 층을 층 단위 귀무대조(L1-L2 불일치 4/32 ≠ 0)로 이미 진단 전용으로 강등해 뒀지만, 같은 조건을 **요청 단위**로 적용하면 C01·C10·C19(3/32)에서 L1=L2≠TD1=TD2라는 arm-분리 불일치가 발화한다 — 이것은 등록 판정의 死因은 아니지만(등록 범위 밖), PASS 문장의 스코프를 "통과한 층(S/O)"으로 한정해야 하는 사유다. 실무 규칙: 층 단위 귀무대조가 실패한 층을 강등할 때는 그 층의 요청별 등가류를 병기하고, PASS 선언문에 그 층이 배제됨을 명시하라. 기존 게이트와 중복 없음(#17[모든 보고 블록에 게이트를 걸어라]은 수치 누출, 이 항목은 판정 라벨의 스코프 누출; #20·#24·#142와도 무관). 대응 `CONSENSUS.md` §3 항목187(신설). 상세 `.../audit_r2corr_2026-09-11/VERDICT.md` §1.7·§6(G-1).
+
+168. ★★★**(2026-09-11, `r2_correctness` 트랙, claims-auditor, GPU 0, G-2·게이트#20 인접) 같은 이름의 텔레메트리 필드가 arm마다 다른 술어로 채워질 수 있다.** FixedPolicy(legacy)는 `true_dual_worker_runtime is None` 조건에서 단락돼 `safe` 술어를 평가하지 않는 채 상수 True로 기록하는 반면, true-dual은 `arbiter.safe_to_switch()`로 in-flight CUDA 이벤트를 실제로 query한다 — 같은 `safe` 필드값(`unsafe_decisions`=0 대 30)이 "arm 간 거동 차이"를 뜻하지 않고 "같은 필드를 다른 술어로 채운 결과"일 뿐이다(60/60 unsafe가 전부 target=current=44인 no-op). #20의 "식별자 수입≠거동 수입"은 분석기 쪽 문제고, 이 게이트는 엔진 쪽 필드 의미 문제라 구분 유지. 실무 규칙: 두 arm의 텔레메트리 필드를 비교하기 전에 같은 술어가 양쪽에서 실제로 평가되는지 코드로 확인하라. 대응 `CONSENSUS.md` §3 항목188(신설). 상세 `.../audit_r2corr_2026-09-11/VERDICT.md` §3.2·§6(G-2).
+
+169. ★★★**(2026-09-11, `r2_correctness` 트랙, claims-auditor, GPU 0, G-4) 워커 경로를 탔다는 것(태스크 카운터 증가)은 동시 실행의 증거가 아니다.** job 907100의 S/O 전 구간에서 두 worker 스레드의 `prefill_host_tasks`/`decode_host_tasks` 증가량이 기대값과 정확히 일치했지만(O4 충족), 벽시계 host-worker 중첩을 복원하면 S 층 0.000s, O 층 13.5/19.4ms(`host_worker_overlap_ratio`의 1024개 절단+서버 수명 분모 때문에 이조차 하한)뿐이었다 — "경로를 탔다"가 "동시에 실행됐다"를 함의하지 않는다. 실무 규칙: 동시성은 태스크 카운터가 아니라 중첩 시간과 경합 기회 수로 적어라. 하네스 결함으로 `host_worker_overlap_ratio`를 동시성 지표로 쓰지 말 것(engine-porter 이관, 게이트 아님). 대응 `CONSENSUS.md` §3 항목189(신설). 상세 `.../audit_r2corr_2026-09-11/VERDICT.md` §1.5·§6(G-4).
