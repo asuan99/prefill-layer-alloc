@@ -1,0 +1,12 @@
+job=907100 node=gpu38 date=2026-09-11T19:37:59+09:00
+commit=38c1aca5ab996a8ec97396c57dd29f6dea80be1c
+src_dirty:
+GPU 0: NVIDIA A100-SXM4-80GB (UUID: GPU-f8ae85e7-c7dc-ed76-15fb-301cd43ed095)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+thread_local_role_patch True
+harness sha256:
+ec355e171a66d68eab1300edcc7616a693cd55aa2c3fb5c251ee4b42eac50d30  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness_check.py
+95e10b492ed6239d83cae20ad7898bdbbcce1713a37d42c2bfa111f7347ec367  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness_client.py
+7ad119a044c72fa49f9320452a1cdb8aac19f4efd8224e211a3d2aaaf9923dc9  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness.sbatch
+model=Zyphra/Zamba2-2.7B dsm=44 seed=1 order=[L TD L TD] config=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml

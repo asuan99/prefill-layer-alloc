@@ -1,0 +1,1218 @@
+{
+  "boots": [
+    "L1",
+    "TD1",
+    "L2",
+    "TD2"
+  ],
+  "checks": {
+    "B6_reference_degenerate": "0/56",
+    "C_diagnostic_cross_arm": {
+      "L1-TD1": 7,
+      "L1-TD2": 7,
+      "L2-TD2": 7,
+      "TD1-L2": 4
+    },
+    "C_diagnostic_within_arm": {
+      "L1-L2": 4,
+      "TD1-TD2": 3
+    },
+    "C_pairs": {
+      "L1-L2": {
+        "detail": [
+          {
+            "first_divergence": 60,
+            "id": "C00",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 101,
+            "id": "C02",
+            "len": [
+              160,
+              160
+            ]
+          },
+          {
+            "first_divergence": 0,
+            "id": "C16",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 8,
+            "id": "C24",
+            "len": [
+              96,
+              96
+            ]
+          }
+        ],
+        "mismatches": 4,
+        "n": 32
+      },
+      "L1-TD1": {
+        "detail": [
+          {
+            "first_divergence": 34,
+            "id": "C00",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 12,
+            "id": "C01",
+            "len": [
+              48,
+              48
+            ]
+          },
+          {
+            "first_divergence": 101,
+            "id": "C02",
+            "len": [
+              160,
+              160
+            ]
+          },
+          {
+            "first_divergence": 1,
+            "id": "C10",
+            "len": [
+              160,
+              160
+            ]
+          },
+          {
+            "first_divergence": 0,
+            "id": "C16",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 6,
+            "id": "C19",
+            "len": [
+              64,
+              64
+            ]
+          },
+          {
+            "first_divergence": 8,
+            "id": "C24",
+            "len": [
+              96,
+              96
+            ]
+          }
+        ],
+        "mismatches": 7,
+        "n": 32
+      },
+      "L1-TD2": {
+        "detail": [
+          {
+            "first_divergence": 34,
+            "id": "C00",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 12,
+            "id": "C01",
+            "len": [
+              48,
+              48
+            ]
+          },
+          {
+            "first_divergence": 101,
+            "id": "C02",
+            "len": [
+              160,
+              160
+            ]
+          },
+          {
+            "first_divergence": 1,
+            "id": "C10",
+            "len": [
+              160,
+              160
+            ]
+          },
+          {
+            "first_divergence": 6,
+            "id": "C14",
+            "len": [
+              144,
+              144
+            ]
+          },
+          {
+            "first_divergence": 0,
+            "id": "C16",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 6,
+            "id": "C19",
+            "len": [
+              64,
+              64
+            ]
+          }
+        ],
+        "mismatches": 7,
+        "n": 32
+      },
+      "L2-TD2": {
+        "detail": [
+          {
+            "first_divergence": 34,
+            "id": "C00",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 12,
+            "id": "C01",
+            "len": [
+              48,
+              48
+            ]
+          },
+          {
+            "first_divergence": 1,
+            "id": "C10",
+            "len": [
+              160,
+              160
+            ]
+          },
+          {
+            "first_divergence": 6,
+            "id": "C14",
+            "len": [
+              144,
+              144
+            ]
+          },
+          {
+            "first_divergence": 9,
+            "id": "C16",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 6,
+            "id": "C19",
+            "len": [
+              64,
+              64
+            ]
+          },
+          {
+            "first_divergence": 8,
+            "id": "C24",
+            "len": [
+              96,
+              96
+            ]
+          }
+        ],
+        "mismatches": 7,
+        "n": 32
+      },
+      "TD1-L2": {
+        "detail": [
+          {
+            "first_divergence": 34,
+            "id": "C00",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 12,
+            "id": "C01",
+            "len": [
+              48,
+              48
+            ]
+          },
+          {
+            "first_divergence": 1,
+            "id": "C10",
+            "len": [
+              160,
+              160
+            ]
+          },
+          {
+            "first_divergence": 6,
+            "id": "C19",
+            "len": [
+              64,
+              64
+            ]
+          }
+        ],
+        "mismatches": 4,
+        "n": 32
+      },
+      "TD1-TD2": {
+        "detail": [
+          {
+            "first_divergence": 6,
+            "id": "C14",
+            "len": [
+              144,
+              144
+            ]
+          },
+          {
+            "first_divergence": 9,
+            "id": "C16",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 8,
+            "id": "C24",
+            "len": [
+              96,
+              96
+            ]
+          }
+        ],
+        "mismatches": 3,
+        "n": 32
+      }
+    },
+    "O_cross_arm_mismatches": {
+      "L1-TD1": 0,
+      "L1-TD2": 0,
+      "L2-TD2": 0,
+      "TD1-L2": 0
+    },
+    "O_null_control_complete": true,
+    "O_pairs": {
+      "L1-L2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 8
+      },
+      "L1-TD1": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 8
+      },
+      "L1-TD2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 8
+      },
+      "L2-TD2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 8
+      },
+      "TD1-L2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 8
+      },
+      "TD1-TD2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 8
+      }
+    },
+    "O_within_arm_mismatches": {
+      "L1-L2": 0,
+      "TD1-TD2": 0
+    },
+    "S_pairs": {
+      "L1-L2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 16
+      },
+      "L1-TD1": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 16
+      },
+      "L1-TD2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 16
+      },
+      "L2-TD2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 16
+      },
+      "TD1-L2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 16
+      },
+      "TD1-TD2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 16
+      }
+    },
+    "prompt_tokens_consistent": {
+      "C": true,
+      "O": true,
+      "S": true
+    },
+    "server_args_across_boots": {
+      "attention_backend": [
+        "triton"
+      ],
+      "context_length": [
+        "4096"
+      ],
+      "disable_cuda_graph": [
+        "False"
+      ],
+      "max_running_requests": [
+        "48"
+      ],
+      "pdmux_config_path": [
+        "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml"
+      ],
+      "random_seed": [
+        "1"
+      ],
+      "triton_attention_num_kv_splits": [
+        "8"
+      ]
+    }
+  },
+  "dsm": 44,
+  "failures": [],
+  "infra": [],
+  "per_boot": {
+    "L1": {
+      "checks": {
+        "B1_BOOTED": true,
+        "B2_NO_CRASH": true,
+        "B3_CUDAGRAPH_ON": true,
+        "B4_PATH": true,
+        "B5_POLICY": true,
+        "B7_OVERLAP": true,
+        "B8_SPLIT_REALIZED": true,
+        "O_TIER_CONFIRMED": true,
+        "request_errors": 0
+      },
+      "division_index": 4,
+      "green": {
+        "confirmed": true,
+        "division_index": 4,
+        "exists": true,
+        "realized": {
+          "decode": {
+            "error": null,
+            "green_ctx_is_null": false,
+            "smCount": 44
+          },
+          "prefill": {
+            "error": null,
+            "green_ctx_is_null": false,
+            "smCount": 64
+          }
+        },
+        "target": [
+          64,
+          44
+        ]
+      },
+      "log": {
+        "capture_end": 1,
+        "decode_graph_false": 0,
+        "decode_graph_true": 2617,
+        "decode_lines": 2617,
+        "exists": true,
+        "first_traceback": "",
+        "scheduler_exceptions": 0,
+        "server_args": {
+          "attention_backend": "triton",
+          "chunked_prefill_size": "-1",
+          "context_length": "4096",
+          "decode_log_interval": "1",
+          "disable_cuda_graph": "False",
+          "disable_overlap_schedule": "True",
+          "disable_piecewise_cuda_graph": "False",
+          "enable_pdmux": "True",
+          "max_running_requests": "48",
+          "mem_fraction_static": "0.82",
+          "pdmux_config_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml",
+          "piecewise_cuda_graph_tokens": "[]",
+          "random_seed": "1",
+          "triton_attention_num_kv_splits": "8"
+        },
+        "sm_counts": "[(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]",
+        "tracebacks": 0,
+        "tracebacks_benign_responses_api": 0,
+        "true_dual_banner": false,
+        "unsafe_transition": 0
+      },
+      "o_tier": [
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O00",
+          "overlap_snapshots": 22,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O01",
+          "overlap_snapshots": 30,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O02",
+          "overlap_snapshots": 28,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O03",
+          "overlap_snapshots": 32,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O04",
+          "overlap_snapshots": 34,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O05",
+          "overlap_snapshots": 38,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O06",
+          "overlap_snapshots": 44,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O07",
+          "overlap_snapshots": 48,
+          "window_stream_indices": [
+            4
+          ]
+        }
+      ],
+      "telemetry": {
+        "architectures": [
+          "legacy"
+        ],
+        "decision_admission_limited": 0,
+        "decision_policies": [
+          "fixed"
+        ],
+        "decision_targets": [
+          44
+        ],
+        "decisions": 45,
+        "decisions_unsafe": 0,
+        "exists": true,
+        "max_decode_host_tasks": null,
+        "max_dropped_events": 0,
+        "max_host_worker_overlap_ratio": null,
+        "max_prefill_host_tasks": null,
+        "overlap_on_division": 600,
+        "overlap_snapshots": 600,
+        "r2_admission_events": {},
+        "snapshots": 10060
+      }
+    },
+    "L2": {
+      "checks": {
+        "B1_BOOTED": true,
+        "B2_NO_CRASH": true,
+        "B3_CUDAGRAPH_ON": true,
+        "B4_PATH": true,
+        "B5_POLICY": true,
+        "B7_OVERLAP": true,
+        "B8_SPLIT_REALIZED": true,
+        "O_TIER_CONFIRMED": true,
+        "request_errors": 0
+      },
+      "division_index": 4,
+      "green": {
+        "confirmed": true,
+        "division_index": 4,
+        "exists": true,
+        "realized": {
+          "decode": {
+            "error": null,
+            "green_ctx_is_null": false,
+            "smCount": 44
+          },
+          "prefill": {
+            "error": null,
+            "green_ctx_is_null": false,
+            "smCount": 64
+          }
+        },
+        "target": [
+          64,
+          44
+        ]
+      },
+      "log": {
+        "capture_end": 1,
+        "decode_graph_false": 0,
+        "decode_graph_true": 2580,
+        "decode_lines": 2580,
+        "exists": true,
+        "first_traceback": "",
+        "scheduler_exceptions": 0,
+        "server_args": {
+          "attention_backend": "triton",
+          "chunked_prefill_size": "-1",
+          "context_length": "4096",
+          "decode_log_interval": "1",
+          "disable_cuda_graph": "False",
+          "disable_overlap_schedule": "True",
+          "disable_piecewise_cuda_graph": "False",
+          "enable_pdmux": "True",
+          "max_running_requests": "48",
+          "mem_fraction_static": "0.82",
+          "pdmux_config_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml",
+          "piecewise_cuda_graph_tokens": "[]",
+          "random_seed": "1",
+          "triton_attention_num_kv_splits": "8"
+        },
+        "sm_counts": "[(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]",
+        "tracebacks": 0,
+        "tracebacks_benign_responses_api": 0,
+        "true_dual_banner": false,
+        "unsafe_transition": 0
+      },
+      "o_tier": [
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O00",
+          "overlap_snapshots": 22,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O01",
+          "overlap_snapshots": 26,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O02",
+          "overlap_snapshots": 28,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O03",
+          "overlap_snapshots": 30,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O04",
+          "overlap_snapshots": 30,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O05",
+          "overlap_snapshots": 38,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O06",
+          "overlap_snapshots": 44,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "id": "O07",
+          "overlap_snapshots": 48,
+          "window_stream_indices": [
+            4
+          ]
+        }
+      ],
+      "telemetry": {
+        "architectures": [
+          "legacy"
+        ],
+        "decision_admission_limited": 0,
+        "decision_policies": [
+          "fixed"
+        ],
+        "decision_targets": [
+          44
+        ],
+        "decisions": 47,
+        "decisions_unsafe": 0,
+        "exists": true,
+        "max_decode_host_tasks": null,
+        "max_dropped_events": 0,
+        "max_host_worker_overlap_ratio": null,
+        "max_prefill_host_tasks": null,
+        "overlap_on_division": 536,
+        "overlap_snapshots": 536,
+        "r2_admission_events": {},
+        "snapshots": 12414
+      }
+    },
+    "TD1": {
+      "checks": {
+        "B1_BOOTED": true,
+        "B2_NO_CRASH": true,
+        "B3_CUDAGRAPH_ON": true,
+        "B4_PATH": true,
+        "B5_POLICY": true,
+        "B7_OVERLAP": true,
+        "B8_SPLIT_REALIZED": true,
+        "O_TIER_CONFIRMED": true,
+        "request_errors": 0
+      },
+      "division_index": 4,
+      "green": {
+        "confirmed": true,
+        "division_index": 4,
+        "exists": true,
+        "realized": {
+          "decode": {
+            "error": null,
+            "green_ctx_is_null": false,
+            "smCount": 44
+          },
+          "prefill": {
+            "error": null,
+            "green_ctx_is_null": false,
+            "smCount": 64
+          }
+        },
+        "target": [
+          64,
+          44
+        ]
+      },
+      "log": {
+        "capture_end": 1,
+        "decode_graph_false": 0,
+        "decode_graph_true": 2611,
+        "decode_lines": 2611,
+        "exists": true,
+        "first_traceback": "",
+        "scheduler_exceptions": 0,
+        "server_args": {
+          "attention_backend": "triton",
+          "chunked_prefill_size": "-1",
+          "context_length": "4096",
+          "decode_log_interval": "1",
+          "disable_cuda_graph": "False",
+          "disable_overlap_schedule": "True",
+          "disable_piecewise_cuda_graph": "False",
+          "enable_pdmux": "True",
+          "max_running_requests": "48",
+          "mem_fraction_static": "0.82",
+          "pdmux_config_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml",
+          "piecewise_cuda_graph_tokens": "[]",
+          "random_seed": "1",
+          "triton_attention_num_kv_splits": "8"
+        },
+        "sm_counts": "[(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]",
+        "tracebacks": 0,
+        "tracebacks_benign_responses_api": 0,
+        "true_dual_banner": true,
+        "unsafe_transition": 0
+      },
+      "o_tier": [
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 46,
+          "id": "O00",
+          "overlap_snapshots": 20,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 57,
+          "id": "O01",
+          "overlap_snapshots": 24,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 46,
+          "id": "O02",
+          "overlap_snapshots": 24,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 61,
+          "id": "O03",
+          "overlap_snapshots": 28,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 60,
+          "id": "O04",
+          "overlap_snapshots": 30,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 57,
+          "id": "O05",
+          "overlap_snapshots": 32,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 66,
+          "id": "O06",
+          "overlap_snapshots": 40,
+          "prefill_task_delta": 4,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 60,
+          "id": "O07",
+          "overlap_snapshots": 44,
+          "prefill_task_delta": 4,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        }
+      ],
+      "telemetry": {
+        "architectures": [
+          "true_dual"
+        ],
+        "decision_admission_limited": 0,
+        "decision_policies": [
+          "fixed"
+        ],
+        "decision_targets": [
+          44
+        ],
+        "decisions": 46,
+        "decisions_unsafe": 30,
+        "exists": true,
+        "max_decode_host_tasks": 2611,
+        "max_dropped_events": 0,
+        "max_host_worker_overlap_ratio": 0.012630829322133337,
+        "max_prefill_host_tasks": 79,
+        "overlap_on_division": 558,
+        "overlap_snapshots": 558,
+        "r2_admission_events": {},
+        "snapshots": 9157
+      }
+    },
+    "TD2": {
+      "checks": {
+        "B1_BOOTED": true,
+        "B2_NO_CRASH": true,
+        "B3_CUDAGRAPH_ON": true,
+        "B4_PATH": true,
+        "B5_POLICY": true,
+        "B7_OVERLAP": true,
+        "B8_SPLIT_REALIZED": true,
+        "O_TIER_CONFIRMED": true,
+        "request_errors": 0
+      },
+      "division_index": 4,
+      "green": {
+        "confirmed": true,
+        "division_index": 4,
+        "exists": true,
+        "realized": {
+          "decode": {
+            "error": null,
+            "green_ctx_is_null": false,
+            "smCount": 44
+          },
+          "prefill": {
+            "error": null,
+            "green_ctx_is_null": false,
+            "smCount": 64
+          }
+        },
+        "target": [
+          64,
+          44
+        ]
+      },
+      "log": {
+        "capture_end": 1,
+        "decode_graph_false": 0,
+        "decode_graph_true": 2592,
+        "decode_lines": 2592,
+        "exists": true,
+        "first_traceback": "",
+        "scheduler_exceptions": 0,
+        "server_args": {
+          "attention_backend": "triton",
+          "chunked_prefill_size": "-1",
+          "context_length": "4096",
+          "decode_log_interval": "1",
+          "disable_cuda_graph": "False",
+          "disable_overlap_schedule": "True",
+          "disable_piecewise_cuda_graph": "False",
+          "enable_pdmux": "True",
+          "max_running_requests": "48",
+          "mem_fraction_static": "0.82",
+          "pdmux_config_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml",
+          "piecewise_cuda_graph_tokens": "[]",
+          "random_seed": "1",
+          "triton_attention_num_kv_splits": "8"
+        },
+        "sm_counts": "[(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]",
+        "tracebacks": 0,
+        "tracebacks_benign_responses_api": 0,
+        "true_dual_banner": true,
+        "unsafe_transition": 0
+      },
+      "o_tier": [
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 44,
+          "id": "O00",
+          "overlap_snapshots": 20,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 45,
+          "id": "O01",
+          "overlap_snapshots": 22,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 46,
+          "id": "O02",
+          "overlap_snapshots": 24,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 60,
+          "id": "O03",
+          "overlap_snapshots": 28,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 63,
+          "id": "O04",
+          "overlap_snapshots": 30,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 52,
+          "id": "O05",
+          "overlap_snapshots": 34,
+          "prefill_task_delta": 3,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 60,
+          "id": "O06",
+          "overlap_snapshots": 40,
+          "prefill_task_delta": 4,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        },
+        {
+          "O1_protocol": true,
+          "O2_overlap": true,
+          "O3_division": true,
+          "O4_threads": true,
+          "confirmed": true,
+          "decode_task_delta": 60,
+          "id": "O07",
+          "overlap_snapshots": 32,
+          "prefill_task_delta": 4,
+          "probe_in_decode_batch": true,
+          "window_stream_indices": [
+            4
+          ]
+        }
+      ],
+      "telemetry": {
+        "architectures": [
+          "true_dual"
+        ],
+        "decision_admission_limited": 0,
+        "decision_policies": [
+          "fixed"
+        ],
+        "decision_targets": [
+          44
+        ],
+        "decisions": 47,
+        "decisions_unsafe": 30,
+        "exists": true,
+        "max_decode_host_tasks": 2592,
+        "max_dropped_events": 0,
+        "max_host_worker_overlap_ratio": 0.0019297949698274307,
+        "max_prefill_host_tasks": 80,
+        "overlap_on_division": 532,
+        "overlap_snapshots": 532,
+        "r2_admission_events": {},
+        "snapshots": 9295
+      }
+    }
+  },
+  "rule": "r2_correctness verdict rule v2 (2026-09-11)",
+  "unrealized": [],
+  "verdict": "PASS"
+}
