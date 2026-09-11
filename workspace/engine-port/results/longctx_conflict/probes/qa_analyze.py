@@ -511,6 +511,7 @@ def rung_ci(cell_deltas, sigma_req, alpha=0.05):
     point = float(means.mean())          # balanced -> = mean of all cell deltas
     df_boot = n_boot - 1
     tcrit = t_ppf(1 - alpha / 2.0, df_boot)
+    se_common = None
     if n_seed >= 2:
         s2_seed = float(np.mean([np.var(r, ddof=1) for r in per_boot if len(r) >= 2]))
         s2_between = float(means.var(ddof=1))
@@ -523,22 +524,45 @@ def rung_ci(cell_deltas, sigma_req, alpha=0.05):
         s2_boot, s2_seed = float("nan"), float("nan")
         se = math.sqrt(s2_cell / n_boot + sigma_req ** 2 / n_boot)
         se_no_req = math.sqrt(s2_cell / n_boot)
+        # rev9 sec 2 (P3): on a 1-seed rung all 4 boots share ONE arrival trace,
+        # so the request-sampling component is COMMON across boots and dividing
+        # it by n_boot understates the SE by up to 2x (anti-conservative, rev8
+        # verdict 6-5 / sec 4-4).  The registered form (above) is NOT changed;
+        # this symmetric diagnostic is carried alongside it and NEITHER is
+        # selected -- choosing one would itself be a new free surface.
+        se_common = math.sqrt(s2_cell / n_boot + sigma_req ** 2)
         mode = "sigma_cell_only"
     hw = tcrit * se
-    return {"point": point, "n_boot": n_boot, "n_seed_per_boot": n_seed,
-            "n_cells": n_cells, "variance_mode": mode,
-            "sigma_boot": (math.sqrt(s2_boot) if s2_boot == s2_boot else None),
-            "sigma_seed": (math.sqrt(s2_seed) if s2_seed == s2_seed else None),
-            "sigma_req": sigma_req,
-            "se_registered": se, "se_without_req_diagnostic": se_no_req,
-            "t_crit": tcrit, "df_boot": df_boot,
-            "ci95": [point - hw, point + hw], "half_width": hw,
-            "excludes_zero": bool((point - hw > 0) or (point + hw < 0)),
-            "sd_of_boot_means": float(means.std(ddof=1)),
-            "ci95_boot_level_diagnostic": [
-                point - tcrit * means.std(ddof=1) / math.sqrt(n_boot),
-                point + tcrit * means.std(ddof=1) / math.sqrt(n_boot)],
-            }
+    out = {"point": point, "n_boot": n_boot, "n_seed_per_boot": n_seed,
+           "n_cells": n_cells, "variance_mode": mode,
+           "sigma_boot": (math.sqrt(s2_boot) if s2_boot == s2_boot else None),
+           "sigma_seed": (math.sqrt(s2_seed) if s2_seed == s2_seed else None),
+           "sigma_req": sigma_req,
+           "se_registered": se, "se_without_req_diagnostic": se_no_req,
+           "t_crit": tcrit, "df_boot": df_boot,
+           "ci95": [point - hw, point + hw], "half_width": hw,
+           "excludes_zero": bool((point - hw > 0) or (point + hw < 0)),
+           "sd_of_boot_means": float(means.std(ddof=1)),
+           "ci95_boot_level_diagnostic": [
+               point - tcrit * means.std(ddof=1) / math.sqrt(n_boot),
+               point + tcrit * means.std(ddof=1) / math.sqrt(n_boot)],
+           }
+    if se_common is not None:
+        hw_c = tcrit * se_common
+        out["se_common_trace_diagnostic"] = se_common
+        out["ci95_common_trace_diagnostic"] = [point - hw_c, point + hw_c]
+        out["half_width_common_trace_diagnostic"] = hw_c
+        out["excludes_zero_common_trace_diagnostic"] = bool(
+            (point - hw_c > 0) or (point + hw_c < 0))
+        out["common_trace_note"] = (
+            "rev9 sec 2 (P3): sqrt(sigma_cell^2/4 + sigma_req^2).  Carried NEXT TO "
+            "the registered SE, never instead of it.  BOTH are reported; no rule "
+            "picks between them (rev9 sec 2).")
+    else:
+        out["se_common_trace_diagnostic"] = None
+        out["common_trace_note"] = ("not applicable: this rung has >= 2 seeds per "
+                                    "boot, so the trace is not common across boots")
+    return out
 
 
 def sign_agree(ci_by_est):
@@ -802,6 +826,7 @@ def build_delta_matrix(cells, boot_n=BOOT_N):
                     if D == Dp:
                         continue
                     d_itl = {}
+                    d_itl_R = {}
                     d_ttft = {}
                     d_make = {}
                     sreq = {e: [] for e in EST}
@@ -815,7 +840,10 @@ def build_delta_matrix(cells, boot_n=BOOT_N):
                         me = by_key[(lam, sh, rnd, sd, D)]
                         e1 = me["estimators"]["pooled_token_axis"]
                         e2 = other["estimators"]["pooled_token_axis"]
+                        r1 = me["estimators"]["per_request_itl95_axis"]
+                        r2 = other["estimators"]["per_request_itl95_axis"]
                         d_itl.setdefault(rnd, {})[sd] = {e: e1[e] - e2[e] for e in EST}
+                        d_itl_R.setdefault(rnd, {})[sd] = {e: r1[e] - r2[e] for e in EST}
                         d_ttft.setdefault(rnd, {})[sd] = (me["ttft_p95_s"] - other["ttft_p95_s"])
                         d_make.setdefault(rnd, {})[sd] = (me["makespan_s"] - other["makespan_s"])
                         pb = paired_request_bootstrap(me["_itls"], other["_itls"], n=boot_n)
@@ -833,10 +861,28 @@ def build_delta_matrix(cells, boot_n=BOOT_N):
                     # makespan is ONE number per bench: there is no request-
                     # sampling component to bootstrap, hence sigma_req = 0.
                     make_ci = rung_ci(d_make, 0.0)
+                    # Axis R carried ALONGSIDE, per rev8 sec 1 ("축 R 값은 전 셀에
+                    # 병기해 두 축이 조용히 갈라지는 일이 불가능하게 한다").  POINT
+                    # ESTIMATES ONLY: axis R is NOT the registered axis, so it gets
+                    # no CI, no sign_agree and no permission of any kind.
+                    axisR = {}
+                    for e in EST:
+                        per = [d_itl_R[b][s][e] for b in sorted(d_itl_R)
+                               for s in sorted(d_itl_R[b])]
+                        bm = [float(np.mean([d_itl_R[b][s][e] for s in sorted(d_itl_R[b])]))
+                              for b in sorted(d_itl_R)]
+                        axisR[e] = {"point": float(np.mean(bm)),
+                                    "sd_of_boot_means": (float(np.std(bm, ddof=1))
+                                                         if len(bm) >= 2 else None),
+                                    "n_cells": len(per)}
+                    axisR["note"] = ("DIAGNOSTIC companion (rev8 sec 1 A1).  PRIMARY_AXIS "
+                                     "is pooled token (axis P).  No CI / no sign_agree / "
+                                     "no sign statement is derived from axis R.")
                     matrix.append({
                         "rung_lambda": lam, "shape": sh, "pair_D_minus_Dprime": [D, Dp],
                         "delta_itl_by_estimator": ci,
                         "sign_agree": sign_agree(ci),
+                        "delta_itl_axis_R_DIAGNOSTIC": axisR,
                         "delta_ttft95_s": ttft_ci,
                         "delta_makespan_s": make_ci,
                         "delta_makespan_note": "NEVER call this a throughput difference "
@@ -844,6 +890,131 @@ def build_delta_matrix(cells, boot_n=BOOT_N):
                         "cells_used": {b: sorted(d_itl[b]) for b in sorted(d_itl)},
                     })
     return matrix
+
+
+# =============================================================================
+# Output 7 -- provenance (rev5 sec 6 item 7, implemented per rev9 sec 3 / P4)
+# =============================================================================
+SERVER_INFO_KEYS = ("disable_cuda_graph", "enable_pdmux", "attention_backend",
+                    "max_running_requests", "cuda_graph_max_bs",
+                    "pdmux_config_path", "sm_group_num", "disable_radix_cache",
+                    "mem_fraction_static", "context_length", "model_path",
+                    "disable_overlap_schedule", "page_size", "random_seed",
+                    "chunked_prefill_size", "max_prefill_tokens", "tp_size")
+
+
+def provenance(run_dirs, cells):
+    """Registered output 7.  rev9 sec 3 (P4): report the 4 rounds' manifest
+    IDENTITY, the full `server_info`, numpy/torch versions, node/time/clock/
+    temperature -- AS FACTS.
+
+    ! There is deliberately NO rule that drops a cell on a mismatch.  Creating
+    one would put a new free surface in the eligibility layer (rev9 sec 3,
+    gate #119 family).  A mismatch is reported; the results document
+    interprets it.
+    """
+    out = {"registered_output": 7,
+           "rule": "facts only -- NO cell is dropped for any mismatch (rev9 sec 3 P4)"}
+    # --- manifest identity across rounds ---
+    man = {}
+    for rd in run_dirs:
+        p = Path(rd) / "runtime_source_manifest.sha256"
+        if p.exists():
+            body = p.read_text()
+            import hashlib
+            man[Path(rd).name] = {
+                "manifest_of_manifest_sha256": hashlib.sha256(body.encode()).hexdigest(),
+                "n_files": len([x for x in body.splitlines() if x.strip()]),
+                "entries": dict(
+                    (ln.split()[1], ln.split()[0]) for ln in body.splitlines() if ln.strip()),
+            }
+        else:
+            man[Path(rd).name] = {"error": "missing runtime_source_manifest.sha256"}
+    digests = {v.get("manifest_of_manifest_sha256") for v in man.values()}
+    out["runtime_source_manifest"] = {
+        "per_round": {k: {kk: vv for kk, vv in v.items() if kk != "entries"}
+                      for k, v in man.items()},
+        "identical_across_rounds": bool(len(digests) == 1 and None not in digests),
+        "n_distinct_digests": len(digests),
+        "entries_round1": next(iter(man.values())).get("entries"),
+    }
+    # --- boot-level metadata ---
+    boots = []
+    for rd in run_dirs:
+        for p in sorted(glob.glob(str(Path(rd) / "meta_r*_d*.txt"))):
+            t = parse_tokens(Path(p).name)
+            lines = [x.rstrip("\n") for x in Path(p).read_text().splitlines()]
+            e = {"meta_file": Path(p).name, "run_dir": Path(rd).name,
+                 "round": t["round"], "arm": t["arm"], "raw": lines}
+            for ln in lines:
+                if ln.startswith("boot_start="):
+                    for fld in ln.split():
+                        if "=" in fld:
+                            k, v = fld.split("=", 1)
+                            e[k] = v
+                elif ln.startswith("numpy "):
+                    e["numpy"] = ln.split()[1]
+                elif ln.startswith("torch "):
+                    e["torch"] = ln.split()[1]
+                elif "MHz" in ln and "," in ln:
+                    a, b = ln.split(",", 1)
+                    e["sm_clock_MHz_at_boot"] = a.replace("MHz", "").strip()
+                    e["gpu_temp_C_at_boot"] = b.strip()
+                elif ln.startswith("sm_counts"):
+                    e["sm_counts"] = ln.split(":", 1)[1].strip()
+            boots.append(e)
+    out["boots"] = boots
+    out["nodes_by_round"] = {}
+    for e in boots:
+        out["nodes_by_round"].setdefault(str(e.get("round")), set()).add(e.get("node"))
+    out["nodes_by_round"] = {k: sorted(v) for k, v in out["nodes_by_round"].items()}
+    out["distinct_nodes"] = sorted({e.get("node") for e in boots if e.get("node")})
+    out["distinct_numpy"] = sorted({e.get("numpy") for e in boots if e.get("numpy")})
+    out["distinct_torch"] = sorted({e.get("torch") for e in boots if e.get("torch")})
+    out["distinct_sm_counts"] = sorted({e.get("sm_counts") for e in boots
+                                        if e.get("sm_counts")})
+    out["gpu_info_by_round"] = {
+        Path(rd).name: (Path(rd) / "gpu_info.txt").read_text().strip().splitlines()
+        for rd in run_dirs if (Path(rd) / "gpu_info.txt").exists()}
+    # --- server_info, read from the bench files themselves ---
+    si_seen, si_full = {}, None
+    for rd in run_dirs:
+        for p in sorted(glob.glob(str(Path(rd) / "bench_*.jsonl"))):
+            try:
+                d = json.loads(Path(p).read_text())
+            except Exception:
+                continue
+            si = d.get("server_info") or {}
+            sa = si.get("server_args") if isinstance(si.get("server_args"), dict) else si
+            if si_full is None:
+                si_full = sa
+            sig = tuple((k, str(sa.get(k))) for k in SERVER_INFO_KEYS)
+            si_seen.setdefault(sig, []).append(Path(p).name)
+            rr = d.get("random_range_ratio")
+            out.setdefault("_rr", set()).add(rr)
+    out["random_range_ratio_distinct"] = sorted(out.pop("_rr", {None}), key=str)
+    out["server_info_registered_fields"] = [
+        {"fields": dict(sig), "n_benches": len(v), "example_bench": v[0]}
+        for sig, v in si_seen.items()]
+    out["server_info_identical_across_all_benches"] = bool(len(si_seen) == 1)
+    out["server_info_full_verbatim_round1_first_bench"] = si_full
+    # --- max_running_requests vs realised L_total ---
+    cap = None
+    if si_full is not None:
+        try:
+            cap = float(si_full.get("max_running_requests"))
+        except (TypeError, ValueError):
+            cap = None
+    lt = [(c["L_total_reported"], c["bench_file"]) for c in cells
+          if c["L_total_reported"] == c["L_total_reported"]]
+    mx = max(lt) if lt else (None, None)
+    out["concurrency_cap_check"] = {
+        "max_running_requests": cap, "max_L_total_observed": mx[0],
+        "at_bench": mx[1],
+        "binding": (None if (cap is None or mx[0] is None) else bool(mx[0] >= 0.95 * cap)),
+        "note": "if binding, X_max(.,B) is a function of the cap and that must be "
+                "stated in place (rev5 sec 6 item 7)"}
+    return out
 
 
 def collect_saturation(run_dirs):
@@ -907,8 +1078,13 @@ def run(run_dirs, boot_n=BOOT_N):
             cells.append(c)
     res = {
         "analysis": "QA_REGRET outputs 1-10",
-        "prereg": "PREREG_QA_REGRET_REV7_2026-09-10.md",
-        "verdict": "audit_qa_rev6_2026-09-10/VERDICT.md (GO-with-caveats)",
+        "prereg": ["PREREG_QA_REGRET_REV7_2026-09-10.md (submitted version)",
+                   "PREREG_QA_REGRET_REV8_2026-09-10.md (axis / 1-seed CI / sigma_req)",
+                   "PREREG_QA_REGRET_REV9_2026-09-10.md (analysis constants a-d, "
+                   "symmetric 1-seed diagnostic P3, output 7 P4)"],
+        "verdict": ["audit_qa_rev6_2026-09-10/VERDICT.md (GO-with-caveats)",
+                    "audit_qa_rev8_2026-09-10/VERDICT.md (GO-with-caveats)"],
+        "inherited_citation_bans": 68,
         "primary_estimator_axis": PRIMARY_AXIS,
         "gpu_hours_spent_by_this_file": 0,
         "produces": "numbers only -- no performance verdict, no arm ranking, "
@@ -966,6 +1142,7 @@ def run(run_dirs, boot_n=BOOT_N):
          "rel_err_pct_vs_pred": c["span_factor_rel_err_pct_vs_pred"],
          "X_realised": c["X_completed_over_duration"]} for c in cells]
     res["registration_conformance"] = registration_conformance(cells)
+    res["provenance_output_7"] = provenance(run_dirs, cells)
     for c in cells:
         c.pop("_itls", None)
         c.pop("_ttfts", None)
