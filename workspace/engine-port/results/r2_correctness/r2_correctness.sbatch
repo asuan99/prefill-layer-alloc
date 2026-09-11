@@ -22,10 +22,28 @@
 #   canonical R2 state set benchmarks/configs/pdmux_r2.yml.
 #
 # ★ BOOTS  (default order L TD L TD -> labels L1 TD1 L2 TD2)
-#   The second L and TD boots are the NULL CONTROL: under concurrency batch
-#   composition depends on timing, so a legacy-vs-legacy difference is the
-#   noise floor any legacy-vs-true_dual difference has to be judged against.
-#   Phase S (one request at a time) must be identical across ALL boots.
+#   The second L and TD boots are the NULL CONTROL for every equality tier.
+#
+# ★ TIERS AND VERDICT -- rule v2, fixed 2026-09-11 before any true-dual boot
+#   has produced an output.  The NORMATIVE text (per-boot checks B1-B8,
+#   O-tier confirmation O1-O4, the five verdict lines in precedence order,
+#   and why the rule is not chosen after the fact) is the header of
+#   r2_correctness_check.py; this job copies that exact text into
+#   job_<id>/verdict_rule.txt and records the checker's sha256 in
+#   provenance.txt, so the rule a result was scored under is pinned to it.
+#   Summary (non-normative):
+#     S  16 requests one at a time                       -> equality gate
+#     O  8 overlap probes, each sent while one long background request
+#        decodes, so the probe prefill runs on the D division concurrently
+#        with that decode; probe token ids compared      -> equality gate
+#     C  32 staggered concurrent requests                -> diagnostic only
+#        (job 907032: legacy-vs-legacy 7/32 differ, so the pre-declared
+#        null-control condition can never hold for C)
+#   FAIL > NO_VERDICT_INFRA > INCONCLUSIVE > NO_VERDICT_UNREALIZED > PASS.
+#   D realization is pinned by the driver: PDMUX_GREEN_READOUT=1 in every
+#   scored boot (startup-only observation, both arms) writes
+#   green_<label>.json, and the checker requires the D division's green
+#   contexts to report smCount 108-D / D -- not just the stream-group label.
 #
 # ★ CUDAGRAPH MUST BE ON AND MUST STAY ON
 #   No --disable-cuda-graph.  --decode-log-interval 1 makes every decode step
@@ -42,18 +60,23 @@
 #   max_position_embeddings=4096 and SGLang refuses to boot without
 #   SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN); --decode-log-interval 1.
 #   PDMUX_TRACE_FORCE_PREFILL=1 (observation only, both arms) so the
-#   checker can see prefill/decode overlap in telemetry.
+#   checker can see prefill/decode overlap in telemetry;
+#   PDMUX_GREEN_READOUT=1 (startup-only driver read-out, both arms).
 #
 # ★ WHAT A PASS DOES NOT MEAN
 #   Not a performance result, not Claim D.  It certifies that the two
-#   architectures agree on outputs at this split and that cudagraph stayed on.
-#   Other splits (D16/D24/D34), generic/hybrid policies, sampling (T>0) and
-#   other models are not covered.
+#   architectures agree on outputs at this split (S: plain stream groups;
+#   O: probe prefill on the D division under overlap) and that cudagraph
+#   stayed on.  Other splits (D16/D24/D34), generic/hybrid policies, sampling
+#   (T>0), concurrent batch compositions beyond the O protocol, and other
+#   models are not covered.
 #
-# Cost estimate: warmup boot (cold import ~4 min) + 4 scored boots x ~2 min
-# (boot ~45 s incl. 6 stream groups x 10 graph sizes, phase S 16 x 64 tok,
-# phase C 32 staggered requests) ~= 15-25 min => ~0.25-0.4 GPU-h; hard cap
-# 1.25 GPU-h (wall limit).
+# Cost estimate (revised after job 907032, 2026-09-11): 907032 took 7m13s with
+# both TD boots dying ~30 s after their first log line; a legacy boot spans
+# ~50 s of server log (boot + S + C) plus ~45 s of launch/teardown.  The O
+# tier adds 8 probes x ~2.5-3 s ~= 25 s per boot (~1.7 min over 4 boots).
+# Total ~= warmup 1.5 min + 4 x ~2 min ~= 10-11 min => ~0.18-0.2 GPU-h;
+# hard cap 1.25 GPU-h (wall limit).
 #
 # usage:
 #   sbatch workspace/engine-port/results/r2_correctness/r2_correctness.sbatch
@@ -95,9 +118,14 @@ COMMIT=$(git -C "$PROJECT" rev-parse HEAD)
   echo "src_dirty:"; git -C "$PROJECT" status --porcelain -- workspace/engine-port/src
   nvidia-smi -L
   python -c "from sglang.srt.distributed.parallel_state import pdmux_role_is_thread_local as f; print('thread_local_role_patch', f())"
+  echo "harness sha256:"; sha256sum "$HERE/r2_correctness_check.py" "$HERE/r2_correctness_client.py" "$HERE/r2_correctness.sbatch"
   echo "model=$MODEL dsm=$DSM seed=$SEED order=[$ORDER] config=$CONFIG"
 } > "$OUT/provenance.txt" 2>&1
 cat "$OUT/provenance.txt"
+# Pin the exact verdict rule this job is scored under (normative text = the
+# checker's module header, from the rule banner to its closing rule line).
+python3 -c "import ast,sys; d=ast.get_docstring(ast.parse(open(sys.argv[1]).read())); i=d.index('VERDICT RULE v2'); print(d[d.rfind(chr(10), 0, i)+1:])" \
+  "$HERE/r2_correctness_check.py" > "$OUT/verdict_rule.txt" || exit 2
 
 server_cmd () {   # $1 = port
   echo python -m sglang.launch_server --model-path "$MODEL" --trust-remote-code \
@@ -151,7 +179,8 @@ for ARM in $ORDER; do
     PDMUX_TELEMETRY_PATH="$OUT/tel_${LABEL}.jsonl" \
     PDMUX_RUN_ID="r2corr_${SLURM_JOB_ID:-local}_${LABEL}" \
     PDMUX_WORKLOAD_ID="r2corr_seed${SEED}" \
-    PDMUX_TRACE_FORCE_PREFILL=1 PDMUX_ENGINE_COMMIT="$COMMIT" $TD_ENV \
+    PDMUX_TRACE_FORCE_PREFILL=1 PDMUX_ENGINE_COMMIT="$COMMIT" \
+    PDMUX_GREEN_READOUT=1 PDMUX_GREEN_READOUT_PATH="$OUT/green_${LABEL}.json" $TD_ENV \
     $(server_cmd "$PORT") > "$OUT/srv_${LABEL}.log" 2>&1 &
   PID=$!
   if ! wait_health "$PORT" "$PID" 96; then
@@ -165,7 +194,7 @@ for ARM in $ORDER; do
   grep -m1 "PD-Multiplexing enabled" "$OUT/srv_${LABEL}.log"
   grep -m1 "true dual-worker enabled" "$OUT/srv_${LABEL}.log" || echo "  (legacy loop: no true-dual banner)"
   timeout 900 python3 "$HERE/r2_correctness_client.py" --port "$PORT" \
-    --boot "$LABEL" --out "$OUT/gen_${LABEL}.json" \
+    --boot "$LABEL" --out "$OUT/gen_${LABEL}.json" --n-probes 8 \
     || echo "CLIENT_FAILED boot=$LABEL" | tee -a "$OUT/BOOT_FAILURES.txt"
   kill -0 "$PID" 2>/dev/null || echo "SERVER_DIED_DURING_CLIENT boot=$LABEL" | tee -a "$OUT/BOOT_FAILURES.txt"
   stop_server "$PORT" "$PID"

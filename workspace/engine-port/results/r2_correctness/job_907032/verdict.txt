@@ -1,0 +1,9 @@
+boots: ['L1', 'TD1', 'L2', 'TD2']  (booted: ['L1', 'L2'])  DSM=44
+  L1   booted=True crash_free=True graph_on=True (decode True/False=1276/0, capture_end=1) path=True arch=['legacy'] host_tasks p/d=None/None policy_ok=True unsafe_decisions=0 overlap_snaps=190 realized_D44_frac=1.0
+  TD1  booted=False crash_free=False graph_on=False (decode True/False=0/0, capture_end=1) path=False arch=['true_dual'] host_tasks p/d=0/0 policy_ok=True unsafe_decisions=0 overlap_snaps=0 realized_D44_frac=None
+  L2   booted=True crash_free=True graph_on=True (decode True/False=1357/0, capture_end=1) path=True arch=['legacy'] host_tasks p/d=None/None policy_ok=True unsafe_decisions=0 overlap_snaps=378 realized_D44_frac=1.0
+  TD2  booted=False crash_free=False graph_on=False (decode True/False=0/0, capture_end=1) path=False arch=['true_dual'] host_tasks p/d=0/0 policy_ok=True unsafe_decisions=0 overlap_snaps=0 realized_D44_frac=None
+  S-tier mismatches: {'L1-L2': 0}
+  C-tier within-arm: {'L1-L2': 7}  cross-arm: {}
+  failures=['TD1:B1', 'TD2:B1'] infra=[]
+VERDICT FAIL

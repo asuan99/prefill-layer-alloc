@@ -1,0 +1,2 @@
+BOOT_FAILED boot=TD1
+BOOT_FAILED boot=TD2

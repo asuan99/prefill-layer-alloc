@@ -1,0 +1,360 @@
+{
+  "boots": [
+    "L1",
+    "TD1",
+    "L2",
+    "TD2"
+  ],
+  "checks": {
+    "B6_reference_degenerate": "0/48",
+    "C_cross_arm_mismatches": {},
+    "C_pairs": {
+      "L1-L2": {
+        "detail": [
+          {
+            "first_divergence": 60,
+            "id": "C00",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 28,
+            "id": "C06",
+            "len": [
+              144,
+              144
+            ]
+          },
+          {
+            "first_divergence": 1,
+            "id": "C10",
+            "len": [
+              160,
+              160
+            ]
+          },
+          {
+            "first_divergence": 0,
+            "id": "C16",
+            "len": [
+              96,
+              96
+            ]
+          },
+          {
+            "first_divergence": 6,
+            "id": "C19",
+            "len": [
+              64,
+              64
+            ]
+          },
+          {
+            "first_divergence": 23,
+            "id": "C20",
+            "len": [
+              128,
+              128
+            ]
+          },
+          {
+            "first_divergence": 55,
+            "id": "C26",
+            "len": [
+              160,
+              160
+            ]
+          }
+        ],
+        "mismatches": 7,
+        "n": 32
+      }
+    },
+    "C_within_arm_mismatches": {
+      "L1-L2": 7
+    },
+    "I1_overlap_exercised_all_boots": true,
+    "S_pairs": {
+      "L1-L2": {
+        "detail": [],
+        "mismatches": 0,
+        "n": 16
+      }
+    },
+    "prompt_tokens_consistent": {
+      "C": true,
+      "S": true
+    },
+    "server_args_across_boots": {
+      "attention_backend": [
+        "triton"
+      ],
+      "context_length": [
+        "4096"
+      ],
+      "disable_cuda_graph": [
+        "False"
+      ],
+      "max_running_requests": [
+        "48"
+      ],
+      "pdmux_config_path": [
+        "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml"
+      ],
+      "random_seed": [
+        "1"
+      ]
+    }
+  },
+  "dsm": 44,
+  "failures": [
+    "TD1:B1",
+    "TD2:B1"
+  ],
+  "infra": [],
+  "per_boot": {
+    "L1": {
+      "checks": {
+        "B1_BOOTED": true,
+        "B2_NO_CRASH": true,
+        "B3_CUDAGRAPH_ON": true,
+        "B4_PATH": true,
+        "B5_POLICY": true,
+        "request_errors": 0
+      },
+      "log": {
+        "capture_end": 1,
+        "decode_graph_false": 0,
+        "decode_graph_true": 1276,
+        "decode_lines": 1276,
+        "exists": true,
+        "first_traceback": "",
+        "scheduler_exceptions": 0,
+        "server_args": {
+          "attention_backend": "triton",
+          "chunked_prefill_size": "-1",
+          "context_length": "4096",
+          "decode_log_interval": "1",
+          "disable_cuda_graph": "False",
+          "disable_overlap_schedule": "True",
+          "disable_piecewise_cuda_graph": "False",
+          "enable_pdmux": "True",
+          "max_running_requests": "48",
+          "mem_fraction_static": "0.82",
+          "pdmux_config_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml",
+          "piecewise_cuda_graph_tokens": "[]",
+          "random_seed": "1"
+        },
+        "sm_counts": "[(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]",
+        "tracebacks": 0,
+        "tracebacks_benign_responses_api": 0,
+        "true_dual_banner": false,
+        "unsafe_transition": 0
+      },
+      "telemetry": {
+        "architectures": [
+          "legacy"
+        ],
+        "decision_admission_limited": 0,
+        "decision_policies": [
+          "fixed"
+        ],
+        "decision_targets": [
+          44
+        ],
+        "decisions": 27,
+        "decisions_unsafe": 0,
+        "exists": true,
+        "max_decode_host_tasks": null,
+        "max_dropped_events": 0,
+        "max_host_worker_overlap_ratio": null,
+        "max_prefill_host_tasks": null,
+        "overlap_realized_dsm_frac": 1.0,
+        "overlap_snapshots": 190,
+        "r2_admission_events": {},
+        "snapshots": 6253
+      }
+    },
+    "L2": {
+      "checks": {
+        "B1_BOOTED": true,
+        "B2_NO_CRASH": true,
+        "B3_CUDAGRAPH_ON": true,
+        "B4_PATH": true,
+        "B5_POLICY": true,
+        "request_errors": 0
+      },
+      "log": {
+        "capture_end": 1,
+        "decode_graph_false": 0,
+        "decode_graph_true": 1357,
+        "decode_lines": 1357,
+        "exists": true,
+        "first_traceback": "",
+        "scheduler_exceptions": 0,
+        "server_args": {
+          "attention_backend": "triton",
+          "chunked_prefill_size": "-1",
+          "context_length": "4096",
+          "decode_log_interval": "1",
+          "disable_cuda_graph": "False",
+          "disable_overlap_schedule": "True",
+          "disable_piecewise_cuda_graph": "False",
+          "enable_pdmux": "True",
+          "max_running_requests": "48",
+          "mem_fraction_static": "0.82",
+          "pdmux_config_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml",
+          "piecewise_cuda_graph_tokens": "[]",
+          "random_seed": "1"
+        },
+        "sm_counts": "[(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]",
+        "tracebacks": 0,
+        "tracebacks_benign_responses_api": 0,
+        "true_dual_banner": false,
+        "unsafe_transition": 0
+      },
+      "telemetry": {
+        "architectures": [
+          "legacy"
+        ],
+        "decision_admission_limited": 0,
+        "decision_policies": [
+          "fixed"
+        ],
+        "decision_targets": [
+          44
+        ],
+        "decisions": 31,
+        "decisions_unsafe": 0,
+        "exists": true,
+        "max_decode_host_tasks": null,
+        "max_dropped_events": 0,
+        "max_host_worker_overlap_ratio": null,
+        "max_prefill_host_tasks": null,
+        "overlap_realized_dsm_frac": 1.0,
+        "overlap_snapshots": 378,
+        "r2_admission_events": {},
+        "snapshots": 8967
+      }
+    },
+    "TD1": {
+      "checks": {
+        "B1_BOOTED": false,
+        "B2_NO_CRASH": false,
+        "B3_CUDAGRAPH_ON": false,
+        "B4_PATH": false,
+        "B5_POLICY": true,
+        "request_errors": 0
+      },
+      "log": {
+        "capture_end": 1,
+        "decode_graph_false": 0,
+        "decode_graph_true": 0,
+        "decode_lines": 0,
+        "exists": true,
+        "first_traceback": "[2026-09-11 17:20:19] Scheduler hit an exception: Traceback (most recent call last):\n  File \"/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/managers/scheduler.py\", line 3665, in run_scheduler_process\n    scheduler.run_event_loop()\n    ~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/managers/scheduler.py\", line 1325, in run_event_loop\n    dispatch_event_loop(self)\n    ~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/managers/scheduler.py\", line 3542, in dispatch_event_loop\n    scheduler.event_loop_pdmux()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/utils/_contextlib.py\", line 120, in decorate_context\n    return func(*args, **kwargs)\n  File \"/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py\", line 1250, in event_loop_pdmux\n    prefill_result, threaded_prefill_event = prefill_future.result()\n                                             ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/concurrent/futures/_base.py\", line 443, in result\n    return self.__get_result()\n           ~~~~~~~~~~~~~~~~~^^\n  File \"/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/concurrent/futures/_base.py\", line 395, in __get_result\n    raise self._exception\n  File \"/scratch/ehmoon/whlee/s",
+        "scheduler_exceptions": 1,
+        "server_args": {
+          "attention_backend": "triton",
+          "chunked_prefill_size": "-1",
+          "context_length": "4096",
+          "decode_log_interval": "1",
+          "disable_cuda_graph": "False",
+          "disable_overlap_schedule": "True",
+          "disable_piecewise_cuda_graph": "False",
+          "enable_pdmux": "True",
+          "max_running_requests": "48",
+          "mem_fraction_static": "0.82",
+          "pdmux_config_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml",
+          "piecewise_cuda_graph_tokens": "[]",
+          "random_seed": "1"
+        },
+        "sm_counts": "[(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]",
+        "tracebacks": 1,
+        "tracebacks_benign_responses_api": 0,
+        "true_dual_banner": true,
+        "unsafe_transition": 0
+      },
+      "telemetry": {
+        "architectures": [
+          "true_dual"
+        ],
+        "decision_admission_limited": 0,
+        "decision_policies": [],
+        "decision_targets": [],
+        "decisions": 0,
+        "decisions_unsafe": 0,
+        "exists": true,
+        "max_decode_host_tasks": 0,
+        "max_dropped_events": 0,
+        "max_host_worker_overlap_ratio": 0.0,
+        "max_prefill_host_tasks": 0,
+        "overlap_realized_dsm_frac": null,
+        "overlap_snapshots": 0,
+        "r2_admission_events": {},
+        "snapshots": 505
+      }
+    },
+    "TD2": {
+      "checks": {
+        "B1_BOOTED": false,
+        "B2_NO_CRASH": false,
+        "B3_CUDAGRAPH_ON": false,
+        "B4_PATH": false,
+        "B5_POLICY": true,
+        "request_errors": 0
+      },
+      "log": {
+        "capture_end": 1,
+        "decode_graph_false": 0,
+        "decode_graph_true": 0,
+        "decode_lines": 0,
+        "exists": true,
+        "first_traceback": "[2026-09-11 17:22:28] Scheduler hit an exception: Traceback (most recent call last):\n  File \"/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/managers/scheduler.py\", line 3665, in run_scheduler_process\n    scheduler.run_event_loop()\n    ~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/managers/scheduler.py\", line 1325, in run_event_loop\n    dispatch_event_loop(self)\n    ~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/managers/scheduler.py\", line 3542, in dispatch_event_loop\n    scheduler.event_loop_pdmux()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/utils/_contextlib.py\", line 120, in decorate_context\n    return func(*args, **kwargs)\n  File \"/scratch/ehmoon/whlee/sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py\", line 1250, in event_loop_pdmux\n    prefill_result, threaded_prefill_event = prefill_future.result()\n                                             ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/concurrent/futures/_base.py\", line 443, in result\n    return self.__get_result()\n           ~~~~~~~~~~~~~~~~~^^\n  File \"/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/concurrent/futures/_base.py\", line 395, in __get_result\n    raise self._exception\n  File \"/scratch/ehmoon/whlee/s",
+        "scheduler_exceptions": 1,
+        "server_args": {
+          "attention_backend": "triton",
+          "chunked_prefill_size": "-1",
+          "context_length": "4096",
+          "decode_log_interval": "1",
+          "disable_cuda_graph": "False",
+          "disable_overlap_schedule": "True",
+          "disable_piecewise_cuda_graph": "False",
+          "enable_pdmux": "True",
+          "max_running_requests": "48",
+          "mem_fraction_static": "0.82",
+          "pdmux_config_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml",
+          "piecewise_cuda_graph_tokens": "[]",
+          "random_seed": "1"
+        },
+        "sm_counts": "[(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]",
+        "tracebacks": 1,
+        "tracebacks_benign_responses_api": 0,
+        "true_dual_banner": true,
+        "unsafe_transition": 0
+      },
+      "telemetry": {
+        "architectures": [
+          "true_dual"
+        ],
+        "decision_admission_limited": 0,
+        "decision_policies": [],
+        "decision_targets": [],
+        "decisions": 0,
+        "decisions_unsafe": 0,
+        "exists": true,
+        "max_decode_host_tasks": 0,
+        "max_dropped_events": 0,
+        "max_host_worker_overlap_ratio": 0.0,
+        "max_prefill_host_tasks": 0,
+        "overlap_realized_dsm_frac": null,
+        "overlap_snapshots": 0,
+        "r2_admission_events": {},
+        "snapshots": 489
+      }
+    }
+  },
+  "verdict": "FAIL"
+}
