@@ -1,6 +1,25 @@
 # Document status
 
-최종 갱신: 2026-09-10(doc-steward, 4차 세션 — **`longctx_conflict`
+최종 갱신: 2026-09-11(doc-steward — Q-A `REGRET` 캠페인(jobs
+906504–906507)이 4/4 `COMPLETED 0:0`로 완주(10.641 GPU-h,
+cudagraph-ON 192/192) + claims-auditor read-only 결과 감사
+(`audit_qa_result_2026-09-11/VERDICT.md`)가 raw 독립 재구현으로
+전 항목 4자리 일치 확인 반영으로 `CLAIM_EVIDENCE_MATRIX.md`
+Claim A 각주·`EXPERIMENT_ROADMAP.md` "longctx_conflict 트랙
+로드맵" §1(Q-A)을 `reports/CONSENSUS.md` rev64·§3 항목178–181과
+재동기화. **재동기화 범위 고지**: 이 changelog의 직전 항목은
+rev62(4차 세션) 기준이었고 rev63(5차 세션, Q-A rev8·rev9 축
+등록+게이트#149–157)의 개별 changelog 항목이 이 문서에 없던
+채로 이번에 rev64와 함께 일괄 흡수됐다(그 구간 내내 claim 등급·
+인용 셀 **무변경**이었으므로 소급 재판정 없음). 등록 허가
+`sign_agree=4`는 **0칸 발화**(⛔"효과 없음" 금지) — 결함 9건 중
+D1·D2·D3 정정+D9 라벨 강등을 조건으로 **정본 등재 = 조건부
+가(可, "계측 기록"으로만)**, 조건 전부 충족·이미 커밋
+(`bc0033c`). 등급·인용정지·claim 등급 전부 무변경, 새 성능
+판정 0건·arm 순위 0건·정책 순위 변경 0건·HE0 불변·stake #1
+불변. 신규 게이트 4건(#158–161). GPU 장부 4.78→**15.42 GPU-h**.
+이 문서의 Canonical/Historical/Superseded 분류표는 무변경 —
+changelog 기록뿐.** 이전: 2026-09-10(doc-steward, 4차 세션 — **`longctx_conflict`
 Q-A 트랙 rev2→rev7 규칙층 감사 계보[rev6 `GO-with-caveats`, 이
 트랙 최초] + 캠페인 제출[jobs 906504–906507, PENDING·결과 0건]
 반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim A 각주와
