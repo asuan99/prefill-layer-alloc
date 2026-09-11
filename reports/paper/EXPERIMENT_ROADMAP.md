@@ -1,6 +1,20 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-11(doc-steward — **Q-A `REGRET` 캠페인(jobs
+최종 갱신: 2026-09-11(2)(doc-steward — **Q-B 사전등록
+`PREREG_QB_LOOPGAIN_2026-09-11.md`가 규칙층+결과 감사
+`GO-with-caveats`(死因 0·반전 0/23표면)를 받고 **Q-B′**로
+개명.** 원 Q-B(프로브 C 교락 14.953×/23.713×)는 Little
+항등식(도착 비×체류 비)으로 소진, 공통-λ 설계가 도착 채널을
+끈다. Stage 0(GPU 0, 기존 Q-A+P7 원자료, 신규 측정량 `E`
+하나)은 "탐색적 계측 기록(사후 정의)"으로만 등재, Stage 1
+(≈2.9 GPU-h)은 실행 허가·비권고로 **미실행**. 인용 금지
+QB-1…20(총 100건=Q-A 80+QB 20) + 필수 병기 ⓐ–ⓕ. 신규 게이트
+4건(#163–166)+追記 3건(#159·#160·#83). 아래 "longctx_conflict
+트랙 로드맵" §2(Q-B′) 갱신. 새 성능 판정 0건·arm 순위 0건·정책
+순위 변경 0건·HE0 불변·stake #1 불변. GPU 0, 트랙 누적 **15.42
+GPU-h 불변**. 상세 `PROJECT_STATUS.md` longctx_conflict 행,
+`CONSENSUS.md` §5-6 追記(rev65)·§3 항목182–186.
+이전: 2026-09-11(doc-steward — **Q-A `REGRET` 캠페인(jobs
 906504–906507)이 4/4 `COMPLETED 0:0`로 완주(10.641 GPU-h,
 cudagraph-ON 192/192) + claims-auditor read-only 결과 감사
 (`audit_qa_result_2026-09-11/VERDICT.md`)로 raw 독립 재구현
@@ -386,7 +400,7 @@ D/E 소관)와 별개다 — 여기서 묻는 질문은 "이 엔진에서 PD-mux
    `PROJECT_STATUS.md` "확정된 결과" 1번 E-A 블록 참조) — fused-측 조율
    가능성 진단 계열, Gate 2 본 질문에는 직접 기여하지 않음.
 
-## longctx_conflict 트랙 로드맵 (stake #1 종결 + 후계 질문 Q-A/Q-B)
+## longctx_conflict 트랙 로드맵 (stake #1 종결 + 후계 질문 Q-A/Q-B′)
 (2026-09-10 신설)
 
 벡터1·벡터2·P1 트랙과 마찬가지로 이 트랙도 아래 "단계와 stop/go gate"(P0–P6,
@@ -412,7 +426,7 @@ Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` �
 [`venue_positioning.md`](venue_positioning.md) §5 2026-09-10 추가 참조 — 이
 질문의 긍정 답은 이미 최근접 선행[MuxWise]의 제품 전제로 배포돼 있다.)
 
-### 후계 질문 (Q-A 캠페인 완주[계측 기록으로만 등재] · Q-B 착수 전 — 우선순위순)
+### 후계 질문 (Q-A 캠페인 완주[계측 기록으로만 등재] · Q-B′ 규칙층+결과 감사 `GO-with-caveats`[탐색적 계측 기록으로만 등재, Stage 1 미실행] — 우선순위순)
 
 1. **Q-A — 고정 split의 regret 프론티어**(1순위). 질문을 "어느 위치가
    최적인가"에서 "하나로 고정하면 얼마를 잃는가"(쌍 페어드 차 행렬 estimand,
@@ -528,8 +542,49 @@ Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` �
    0건·HE0 불변. 상세 `workspace/engine-port/results/longctx_
    conflict/{RESULT_QA_REGRET_2026-09-11.md, audit_qa_result_
    2026-09-11/VERDICT.md}`.
-2. **Q-B — SM-split 액추에이터 자기상쇄 루프 이득**(2순위). 사전등록 없음,
-   착수 전.
+2. **Q-B′ — 공통 λ에서 decode 평균 ITL 차의 노출·인구 합성 표준화
+   분해**(경로 cf 지정, 2순위, 원 **Q-B**[SM-split 액추에이터
+   자기상쇄 루프 이득]의 개명 후계).
+
+   ★★**(2026-09-11(2), doc-steward 갱신) 사전등록 규칙층+결과
+   감사 `GO-with-caveats`**(`audit_qb_rules_2026-09-11/VERDICT.md`,
+   死因 0·N1–N4 미발화·반전 0/23표면) — 등재 전 필수 수리
+   D1–D9(전부 GPU 0, 문면·계산기 편집) 이행을 조건으로 "가(可)".
+
+   **명칭 변경 Q-B → Q-B′**: 원 Q-B가 가리킨 프로브 C 교락 수치
+   (out=96 14.953×=`X`비4.998×체류비2.992, out=384 23.713×=
+   5.194×4.565)는 **Little 항등식**으로 raw에서 소진 확인됐고,
+   핸드오프가 요구한 공통 λ 설계 자체가 이 교락의 도착 채널을
+   구조적으로 끈다(`dL/dD`가 Q-A `Δ_mean`의 재척도로 붕괴, 36/36
+   차이 0.0ms로 재현). "루프 이득"·"액추에이터"·"자기상쇄"·
+   "되돌린다"는 인용에서 퇴역 — 정적 arm 사이에는 되먹임 루프가
+   없다.
+
+   **Stage 0**(GPU 0, 기존 Q-A 192+P7 36 bench에서 계산, 신규
+   측정량은 토큰 노출 계측기 `E` 하나): 위약·정렬 검사로 타당성
+   확인(위약 최대 0.039ms, 구간 조기종료 변이에서 0.704ms로
+   실패 ⇒ 작동하는 검사). `E`는 `ρ`의 재진술이 아니다(ρ-대리
+   R² 0.529). 1차 성분 `K@D`/`S@D′`는 39 pair-cell 중 32칸에서
+   CI가 0을 배제하나, 분해는 경로 의존(`G` 중앙 cf 0.809/sf
+   0.410, 외삽 없는 e-only에서도 0.815/0.516 — 상호작용
+   `I`[39/39 음]에서 옴). **등재는 "탐색적 계측 기록(사후
+   정의)"으로만**(게이트#150형 방어 자산 없음).
+
+   **Stage 1(≈2.9 GPU-h)은 실행 허가되나 저자·감사 모두
+   비권고**(하류 소비자 없음 — HE0·stake #1 사용 금지, 확증도
+   예측 0개라 구조적으로 불가) — **미실행**.
+
+   ★★인용 금지 QB-1…QB-20(소재 = 사전등록 §12·판정서 §5.2,
+   전문 비승계) + 필수 병기 ⓐ–ⓕ(ⓐ–ⓒ는 Q-A에서 승계). **인용
+   금지 총계 100건**(Q-A 계보 80+QB 20). 신규 방법론 게이트
+   4건(#163–166, `CONSENSUS §3` 항목182–186) + 追記 3건(#159·
+   #160·#83/교훈88). stake #1 구조 판정·HE0 불변(이 판정서도
+   "어떤 게이트도 닫지 않는다"고 명시). 새 성능 판정 0건·arm
+   순위 0건·정책 순위 변경 0건. GPU 지출 0(트랙 누적 **15.42
+   GPU-h 불변**). 상세 `PROJECT_STATUS.md` longctx_conflict 행,
+   `CONSENSUS.md` §5-6 追記(rev65)·§3 항목182–186,
+   `workspace/engine-port/results/longctx_conflict/{PREREG_QB_
+   LOOPGAIN_2026-09-11.md, audit_qb_rules_2026-09-11/VERDICT.md}`.
 
 ## 공통 방법
 
