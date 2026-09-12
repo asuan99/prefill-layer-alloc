@@ -32,6 +32,13 @@ telemetry = load("telemetry")
 
 
 def make_profile():
+    # `engine_source_hash` became a REQUIRED compatibility axis on 2026-09-12
+    # (roadmap "Controller defaults" declared canonical over the code): engine
+    # identity is compared on source content instead of `engine_commit`, and an
+    # empty hash is fail-closed on purpose, so a profile built without one is
+    # never compatible.  Before that change this fixture passed with no hash at
+    # all, which is exactly the silent "unknown == unknown" match the axis
+    # removes; the axis itself is gated in test_controller_defaults.py.
     environment = profile.RuntimeEnvironment(
         engine_commit="abc",
         gpu_name="A100",
@@ -39,6 +46,7 @@ def make_profile():
         cuda_driver="13.0",
         attention_backend="triton",
         cuda_graph=True,
+        engine_source_hash="f" * 64,
     )
     points = []
     for decode_sms, base in ((16, 70.0), (24, 50.0), (34, 40.0), (44, 30.0), (108, 20.0)):

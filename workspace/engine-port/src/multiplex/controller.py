@@ -120,14 +120,40 @@ class CoarseGrainedController:
         self.last_transition_iteration = -10**12
         self.downshift_streak = 0
         self.overload_streak = 0
+        # Verdict of the LAST EVALUATION, carried by the HOLD decisions in
+        # between (roadmap "Controller defaults", EXPERIMENT_ROADMAP.md:979:
+        # the limit persists while the 2-epoch overload condition holds, and
+        # is lifted by a later evaluation -- not by the next iteration).
+        self.admission_limited = False
 
     def evaluation_due(self, snapshot: RuntimeSnapshot, bucket_changed: bool = False) -> bool:
-        return (
-            bucket_changed
-            or snapshot.timestamp_s - self.last_evaluation_s >= self.min_epoch_s
-            or snapshot.decode_iterations - self.last_evaluation_iteration
+        """Whether this iteration re-evaluates the split.
+
+        Cadence is the roadmap's `max(4 decode iterations, 100 ms)`
+        (EXPERIMENT_ROADMAP.md:975): BOTH thresholds must be met, which is the
+        same AND that `_dwell_satisfied` already uses for `max(8 steps,
+        200 ms)`.  A bucket change still forces an evaluation.  The `-inf` /
+        `-10**12` initial sentinels keep the FIRST call due.
+        """
+        return bucket_changed or (
+            snapshot.timestamp_s - self.last_evaluation_s >= self.min_epoch_s
+            and snapshot.decode_iterations - self.last_evaluation_iteration
             >= self.min_epoch_iterations
         )
+
+    def release_admission_limit(self) -> None:
+        """Drop a limit that the RUNTIME released outside the controller.
+
+        Called when the serving loop has already decided the limit cannot
+        apply any more (`multiplexing_mixin._r2_admission_holds`: the running
+        batch is empty, so the decode the limit protects has drained).  Both
+        the carried verdict and the overload streak are cleared, so a new
+        limit again needs two fresh overloaded evaluations; without clearing
+        them the next HOLD decision would re-assert the limit the runtime just
+        released (stale-True, the 2026-09-11 bug class).
+        """
+        self.admission_limited = False
+        self.overload_streak = 0
 
     def _dwell_satisfied(self, snapshot: RuntimeSnapshot) -> bool:
         return (
@@ -146,7 +172,17 @@ class CoarseGrainedController:
     ) -> SplitDecision:
         current = int(current_decode_sms)
         if not self.evaluation_due(snapshot, bucket_changed):
-            return SplitDecision(current, current, DecisionReason.HOLD.value)
+            # Not an evaluation: hold the split AND the admission verdict the
+            # last evaluation produced.  Returning the dataclass default
+            # (False) here made a limit live ~1 iteration, because
+            # `_r2_decide_idx` writes `r2_admission_limited` from every
+            # decision (multiplexing_mixin.py:430-441).
+            return SplitDecision(
+                current,
+                current,
+                DecisionReason.HOLD.value,
+                admission_limited=self.admission_limited,
+            )
         self.last_evaluation_s = snapshot.timestamp_s
         self.last_evaluation_iteration = snapshot.decode_iterations
 
@@ -181,6 +217,7 @@ class CoarseGrainedController:
         )
         self.overload_streak = self.overload_streak + 1 if overloaded else 0
         admission_limited = self.overload_streak >= 2
+        self.admission_limited = admission_limited
 
         if target < current:
             enough_slack = desired.upper_bound_itl_ms <= 0.75 * snapshot.itl_slo_ms

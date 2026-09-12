@@ -8,8 +8,11 @@ isolated layer timings are metadata only.
 
 from __future__ import annotations
 
+import hashlib
+import importlib.util
 import json
 import math
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
@@ -20,6 +23,17 @@ PROFILE_SCHEMA = "pdmux.hybrid-model-profile/v1"
 
 @dataclass(frozen=True)
 class RuntimeEnvironment:
+    """Operating point a profile was measured at / is being used at.
+
+    `engine_commit` is PROVENANCE ONLY (repo HEAD of the driving checkout); it
+    is deliberately NOT a compatibility axis, because a docs-only commit moves
+    it without changing a single instruction the decode step executes.  The
+    compatibility axis is `engine_source_hash` -- a content hash of the engine
+    sources that run a decode step (see `engine_source_hash()` at the end of
+    this module).  Empty means "unknown", which `is_compatible` treats as
+    INCOMPATIBLE (fail-closed), never as a match.
+    """
+
     engine_commit: str
     gpu_name: str
     gpu_sm_count: int
@@ -27,6 +41,7 @@ class RuntimeEnvironment:
     attention_backend: str
     cuda_graph: bool
     piecewise_cuda_graph: bool = False
+    engine_source_hash: str = ""
 
 
 @dataclass(frozen=True)
@@ -96,10 +111,22 @@ class HybridModelProfileV1:
             point.validate()
 
     def is_compatible(self, runtime: RuntimeEnvironment) -> Tuple[bool, List[str]]:
-        """Return strict compatibility and human-readable mismatch reasons."""
+        """Return strict compatibility and human-readable mismatch reasons.
+
+        Engine identity is compared on `engine_source_hash` (engine SOURCE
+        CONTENT), not on `engine_commit` (repo HEAD): a docs-only commit must
+        not invalidate a profile, and a one-byte change in an engine source
+        must.  `engine_commit` stays in the record as provenance.
+
+        FAIL-CLOSED.  A profile written before the hash axis existed
+        (2026-09-12) carries an empty hash; so does a runtime where the hash
+        could not be computed.  Either one is reported as a mismatch with an
+        explicit reason, so the estimator falls back
+        (`fallback=True`, `upper_bound_itl_ms=inf`) instead of silently
+        treating "unknown == unknown" as a match.
+        """
         reasons: List[str] = []
         for name in (
-            "engine_commit",
             "gpu_name",
             "gpu_sm_count",
             "attention_backend",
@@ -111,6 +138,25 @@ class HybridModelProfileV1:
                     f"{name}: profile={getattr(self.environment, name)!r}, "
                     f"runtime={getattr(runtime, name)!r}"
                 )
+        profile_hash = (self.environment.engine_source_hash or "").strip()
+        runtime_hash = (getattr(runtime, "engine_source_hash", "") or "").strip()
+        if not profile_hash:
+            reasons.append(
+                "engine_source_hash: missing in profile (written before the "
+                "engine-source axis existed, or built without it) -- "
+                "fail-closed; rebuild the profile on the engine it measures"
+            )
+        if not runtime_hash:
+            reasons.append(
+                "engine_source_hash: could not be computed for the running "
+                f"engine (modules {', '.join(ENGINE_SOURCE_MODULES)}) -- "
+                "fail-closed"
+            )
+        if profile_hash and runtime_hash and profile_hash != runtime_hash:
+            reasons.append(
+                f"engine_source_hash: profile={profile_hash}, "
+                f"runtime={runtime_hash}"
+            )
         return not reasons, reasons
 
     def to_dict(self) -> Dict[str, Any]:
@@ -315,3 +361,121 @@ class ConservativeDecodeFloorEstimator:
             fallback=True,
             reason="no_steady_state_meets_slo",
         )
+
+
+# ---------------------------------------------------------------------------
+# Engine source identity (2026-09-12)
+# ---------------------------------------------------------------------------
+# `RuntimeEnvironment.engine_source_hash` is the compatibility axis that
+# replaced `engine_commit` in `HybridModelProfileV1.is_compatible`.  It answers
+# "is the engine that is about to use this profile the same CODE as the engine
+# the profile was measured on?".
+#
+# WHY A CONTENT HASH OF THE LOADED MODULES, AND NOT THE SYNC MANIFEST.
+# `scripts/bootstrap/sync_engine_tree.sh` already writes
+# `results/runtime_source_manifest.sha256` (a sha256sum listing of the tracked
+# engine files), and reading it would have been less code.  It is not used as
+# the axis because the manifest is a CLAIM MADE AT INSTALL TIME about a
+# repo-relative path, not a statement about the process that is running:
+#   * one dev tree is shared by SLURM array tasks and a later sync by another
+#     job rewrites the manifest under a running server (the sync script takes a
+#     flock precisely because concurrent installs happen);
+#   * the manifest path lives in the repo checkout, while the serving process
+#     may be started with a different SGLANG_ENGINE_DEV, or from an installed
+#     tree with no manifest at all -- in both cases a manifest read would
+#     describe sources the process never imported;
+#   * "same manifest" can therefore be True while the loaded bytes differ,
+#     which is exactly the failure mode (a proxy standing in for the thing)
+#     that moving off `engine_commit` is meant to remove.
+# Hashing the files of the modules THIS process imported is self-validating:
+# the hash moves if and only if the engine source the process actually runs
+# moves, and it is computed identically on a GPU node and a login node.  The
+# manifest stays useful as the install-time record (it also covers model/config
+# files, which this axis deliberately does not).
+#
+# SCOPE.  The modules below are the ones that execute or schedule a PD-mux
+# decode step, i.e. the code whose content can change measured ITL.  The
+# default-OFF probe modules (holb_probe, chunk_probe, green_readout) are
+# excluded on purpose: their hooks collapse to `is not None` checks when their
+# env switches are unset, so including them would invalidate every profile
+# whenever a diagnostic is edited.  Model/config files are out of scope too --
+# `model_id`/`model_revision`/`model_config_hash` already pin the model.
+ENGINE_SOURCE_MODULES: Tuple[str, ...] = (
+    "sglang.srt.distributed.parallel_state",
+    "sglang.srt.managers.scheduler",
+    "sglang.srt.multiplex.controller",
+    "sglang.srt.multiplex.dual_worker",
+    "sglang.srt.multiplex.multiplexing_mixin",
+    "sglang.srt.multiplex.pdmux_context",
+    "sglang.srt.multiplex.profile",
+    "sglang.srt.multiplex.telemetry",
+)
+ENGINE_SOURCE_HASH_SCHEME = "pdmux.engine-source/v1"
+ENGINE_SOURCE_HASH_UNAVAILABLE = ""
+
+
+def hash_engine_source_files(sources: Mapping[str, Any]) -> str:
+    """Hash a `{module name: source path}` mapping deterministically.
+
+    Only NAMES and FILE CONTENT enter the digest, never absolute paths: the
+    same sources installed under a different dev-tree root must hash equal, or
+    a profile could not be reused across checkouts of identical code.  Names
+    are sorted, so iteration order of the mapping cannot change the result.
+    """
+    digest = hashlib.sha256()
+    digest.update(ENGINE_SOURCE_HASH_SCHEME.encode("utf-8") + b"\n")
+    for name in sorted(sources):
+        data = Path(sources[name]).read_bytes()
+        digest.update(name.encode("utf-8") + b"\0")
+        digest.update(hashlib.sha256(data).hexdigest().encode("ascii") + b"\n")
+    return digest.hexdigest()
+
+
+def resolve_engine_source_files(
+    module_names: Sequence[str] = ENGINE_SOURCE_MODULES,
+) -> Optional[Dict[str, Path]]:
+    """Map engine module names to their source files, or None if incomplete.
+
+    Already-imported modules are read from `sys.modules` (the bytes this
+    process ran); anything not imported -- the offline profile builder imports
+    no engine -- is located with `importlib.util.find_spec`.  Any failure
+    returns None so the caller can fail closed instead of hashing a subset.
+    """
+    resolved: Dict[str, Path] = {}
+    for name in module_names:
+        module = sys.modules.get(name)
+        origin = getattr(getattr(module, "__spec__", None), "origin", None)
+        if origin is None:
+            origin = getattr(module, "__file__", None)
+        if origin is None:
+            try:
+                spec = importlib.util.find_spec(name)
+            except Exception:  # ImportError, ValueError, partially built pkgs
+                return None
+            origin = spec.origin if spec is not None else None
+        if not origin:
+            return None
+        path = Path(origin)
+        if not path.is_file():
+            return None
+        resolved[name] = path
+    return resolved
+
+
+def engine_source_hash(
+    module_names: Sequence[str] = ENGINE_SOURCE_MODULES,
+) -> str:
+    """Content hash of the engine sources, or "" when it cannot be computed.
+
+    "" is the fail-closed sentinel: `is_compatible` reports it as an explicit
+    mismatch reason, so an un-hashable engine gets the conservative fallback
+    rather than a silent match.  Never raises -- a profile-compatibility check
+    must not be able to kill a server.
+    """
+    try:
+        sources = resolve_engine_source_files(module_names)
+        if sources is None:
+            return ENGINE_SOURCE_HASH_UNAVAILABLE
+        return hash_engine_source_files(sources)
+    except Exception:  # unreadable file, permissions, races
+        return ENGINE_SOURCE_HASH_UNAVAILABLE

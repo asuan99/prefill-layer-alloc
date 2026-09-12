@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from pathlib import Path
 
 
@@ -43,6 +44,20 @@ def build(metadata_path: Path, measurements_path: Path, output_path: Path) -> No
                     residual_p95_ms=float(row.get("residual_p95_ms") or 0.0),
                 )
             )
+    if not (metadata.get("environment") or {}).get("engine_source_hash"):
+        # NOT filled in automatically: this process is not necessarily the
+        # engine the measurements came from, and stamping the builder host's
+        # hash onto someone else's measurements is exactly the false-provenance
+        # the axis exists to prevent.  An empty hash is fail-closed --
+        # `is_compatible` will report the profile as incompatible, so the
+        # serving run falls back instead of trusting it.
+        print(
+            "WARNING: metadata.environment has no engine_source_hash; the "
+            "profile will be INCOMPATIBLE with every runtime (fail-closed). "
+            "Fill it with `profile_cli.py engine-source-hash`, run ON the "
+            "engine that produced the measurements.",
+            file=sys.stderr,
+        )
     metadata["environment"] = module.RuntimeEnvironment(**metadata["environment"])
     metadata["points"] = points
     profile = module.HybridModelProfileV1(**metadata)
@@ -58,9 +73,24 @@ def main() -> None:
     build_parser.add_argument("--output", type=Path, required=True)
     validate_parser = commands.add_parser("validate")
     validate_parser.add_argument("profile", type=Path)
+    # Prints the engine-source compatibility axis of THIS engine, to be pasted
+    # into a metadata file's `environment.engine_source_hash`.  Must be run on
+    # the engine tree that produced the measurements (see profile.py's
+    # "Engine source identity" note for why the sync manifest is not the axis).
+    commands.add_parser("engine-source-hash")
     args = parser.parse_args()
     module = _load_profile_module()
-    if args.command == "build":
+    if args.command == "engine-source-hash":
+        value = module.engine_source_hash()
+        if not value:
+            print(
+                "ERROR: could not resolve every engine source module "
+                f"({', '.join(module.ENGINE_SOURCE_MODULES)})",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+        print(value)
+    elif args.command == "build":
         build(args.metadata, args.measurements, args.output)
         module.HybridModelProfileV1.load(args.output)
         print(f"VALID {args.output}")

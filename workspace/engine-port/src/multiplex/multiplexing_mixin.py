@@ -179,7 +179,7 @@ class SchedulerMultiplexMixin:
             cuda_graph_enabled = not bool(
                 getattr(self.server_args, "disable_cuda_graph", False)
             )
-            runtime_environment = RuntimeEnvironment(
+            runtime_environment = self._r2_runtime_environment(profile,
                 engine_commit=os.environ.get("PDMUX_ENGINE_COMMIT", "unknown"),
                 gpu_name=device_properties.name,
                 gpu_sm_count=int(device_properties.multi_processor_count),
@@ -1806,6 +1806,14 @@ class SchedulerMultiplexMixin:
         if running is not None and not running.is_empty():
             return True
         self.r2_admission_limited = False
+        # The controller carries its own copy of the verdict across
+        # non-evaluation iterations (controller.py `stabilize` HOLD branch), so
+        # clearing only the scheduler flag would let the very next HOLD
+        # decision re-assert the limit this backstop just released.
+        controller = getattr(getattr(self, "r2_policy", None), "controller", None)
+        release = getattr(controller, "release_admission_limit", None)
+        if callable(release):
+            release()
         self.pdmux_telemetry.emit(
             "r2_admission_released",
             self.pdmux_experiment_phase,
@@ -1813,3 +1821,59 @@ class SchedulerMultiplexMixin:
             reason="running_batch_empty",
         )
         return False
+
+    # ------------------------------------------------------------------
+    # Hybrid-profile runtime environment + provenance (2026-09-12)
+    # ------------------------------------------------------------------
+    # Appended at the END of the class, and reached by changing exactly ONE
+    # existing line in `_build_r2_policy` (`RuntimeEnvironment(` ->
+    # `self._r2_runtime_environment(profile,`), so no earlier line of this
+    # module moves and every snapshotted `multiplexing_mixin.py:NNN` citation
+    # (scripts/discipline/line_citations.json) stays valid -- same reason as
+    # the R2 admission-liveness helpers above.
+    #
+    # WHY THIS EXISTS.  `HybridModelProfileV1.is_compatible` compares engine
+    # identity on `engine_source_hash` (engine SOURCE CONTENT) instead of
+    # `engine_commit` (repo HEAD), because a docs-only commit moved HEAD and
+    # dropped every hybrid arm into the conservative fallback
+    # (`upper_bound_itl_ms=inf`).  `engine_commit` is still recorded, as
+    # provenance only.  The hash is FAIL-CLOSED: if it cannot be computed the
+    # profile is treated as incompatible, so the record below is the only place
+    # that says why a run fell back, and it is written once at startup whether
+    # the profile matched or not.
+    #
+    # SCOPE.  Hybrid policy construction only (`PDMUX_R2_POLICY=hybrid`).
+    # FixedPolicy/generic never build a RuntimeEnvironment, never consult a
+    # profile, and never reach this method.
+    def _r2_runtime_environment(
+        self: Scheduler, profile: HybridModelProfileV1, **fields
+    ) -> RuntimeEnvironment:
+        # Local import: adding a name to the module's import block would shift
+        # every line below it and invalidate the snapshotted citations above.
+        from sglang.srt.multiplex.profile import engine_source_hash
+
+        source_hash = engine_source_hash()
+        environment = RuntimeEnvironment(engine_source_hash=source_hash, **fields)
+        compatible, reasons = profile.is_compatible(environment)
+        self.pdmux_telemetry.emit(
+            "r2_profile_environment",
+            self.pdmux_experiment_phase,
+            policy=self.r2_policy_name,
+            engine_commit=environment.engine_commit,
+            engine_source_hash=source_hash or "unavailable",
+            profile_engine_commit=profile.environment.engine_commit,
+            profile_engine_source_hash=(
+                profile.environment.engine_source_hash or "unavailable"
+            ),
+            profile_model_id=profile.model_id,
+            compatible=compatible,
+            reasons="; ".join(reasons),
+        )
+        if not compatible:
+            logger.warning(
+                "PD-mux hybrid profile is NOT compatible with this runtime; the "
+                "decode-floor estimator will return its conservative fallback "
+                "(upper_bound_itl_ms=inf) for every decision: %s",
+                "; ".join(reasons),
+            )
+        return environment
