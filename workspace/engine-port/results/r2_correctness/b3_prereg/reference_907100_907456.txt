@@ -1,0 +1,20 @@
+=== job_907100  boots=['L1', 'TD1', 'L2', 'TD2']  present=['L1', 'L2', 'TD1', 'TD2'] ===
+  [S] units=16 differing(E1)=0 sum(classes-1)(E2)=0
+       pairwise(E3)={'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  [O] units=8 differing(E1)=0 sum(classes-1)(E2)=0
+       pairwise(E3)={'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  [C] units=32 differing(E1)=8 sum(classes-1)(E2)=10
+       pairwise(E3)={'L1-TD1': 7, 'L1-L2': 4, 'L1-TD2': 7, 'TD1-L2': 4, 'TD1-TD2': 3, 'L2-TD2': 7}
+       2-2 shapes(E5): {1,3}|{2,4}=3 ['C01', 'C10', 'C19'], {1,2}|{3,4}=0 [], {1,4}|{2,3}=1 ['C24']
+       position-partition (E4, the same-arm analogue of 'arm-separated') = 3
+       boot positions: L1=1, TD1=2, L2=3, TD2=4
+=== job_907456  boots=['L1', 'TD1', 'L2', 'TD2']  present=['L1', 'L2', 'TD1', 'TD2'] ===
+  [S] units=16 differing(E1)=0 sum(classes-1)(E2)=0
+       pairwise(E3)={'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  [O] units=8 differing(E1)=0 sum(classes-1)(E2)=0
+       pairwise(E3)={'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  [C] units=32 differing(E1)=6 sum(classes-1)(E2)=10
+       pairwise(E3)={'L1-TD1': 5, 'L1-L2': 5, 'L1-TD2': 4, 'TD1-L2': 4, 'TD1-TD2': 3, 'L2-TD2': 3}
+       2-2 shapes(E5): {1,3}|{2,4}=0 [], {1,2}|{3,4}=0 [], {1,4}|{2,3}=0 []
+       position-partition (E4, the same-arm analogue of 'arm-separated') = 0
+       boot positions: L1=1, TD1=2, L2=3, TD2=4

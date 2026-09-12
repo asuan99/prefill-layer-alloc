@@ -1,0 +1,30 @@
+=== job_907100  boots.txt=['L1', 'TD1', 'L2', 'TD2']  order=['L1', 'TD1', 'L2', 'TD2'] ===
+  shape map: {1,3}|{2,4}=[('L1', 'L2'), ('TD1', 'TD2')] | {1,2}|{3,4}=[('L1', 'TD1'), ('L2', 'TD2')] | {1,4}|{2,3}=[('L1', 'TD2'), ('L2', 'TD1')]
+  arm boundary (L|TD) = {1,3}|{2,4}  ★ALIASED with the position parity {1,3}|{2,4} -- this boot order cannot tell 'arm' from 'order/drift'
+  [S] units=16 differing=0 sum(classes-1)=0
+       pairwise={'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  [O] units=8 differing=0 sum(classes-1)=0
+       pairwise={'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  [C] units=32 differing=8 sum(classes-1)=10
+       pairwise={'L1-TD1': 7, 'L1-L2': 4, 'L1-TD2': 7, 'TD1-L2': 4, 'TD1-TD2': 3, 'L2-TD2': 7}
+       2-2 units n_22=4 (arm boundary = {1,3}|{2,4}): {1,3}|{2,4}=3 ['C01', 'C10', 'C19']  <-ARM, {1,2}|{3,4}=0 [], {1,4}|{2,3}=1 ['C24']
+       non-2-2 differing units=4 [('C00', [1, 1, 2]), ('C02', [1, 3]), ('C14', [3, 1]), ('C16', [1, 2, 1])]
+       focus units (pre-named from 907100):
+         C01: classes=[['L1', 'L2'], ['TD1', 'TD2']] shape={1,3}|{2,4} = ARM
+         C10: classes=[['L1', 'L2'], ['TD1', 'TD2']] shape={1,3}|{2,4} = ARM
+         C19: classes=[['L1', 'L2'], ['TD1', 'TD2']] shape={1,3}|{2,4} = ARM
+=== job_907456  boots.txt=['L1', 'TD1', 'L2', 'TD2']  order=['L1', 'TD1', 'L2', 'TD2'] ===
+  shape map: {1,3}|{2,4}=[('L1', 'L2'), ('TD1', 'TD2')] | {1,2}|{3,4}=[('L1', 'TD1'), ('L2', 'TD2')] | {1,4}|{2,3}=[('L1', 'TD2'), ('L2', 'TD1')]
+  arm boundary (L|TD) = {1,3}|{2,4}  ★ALIASED with the position parity {1,3}|{2,4} -- this boot order cannot tell 'arm' from 'order/drift'
+  [S] units=16 differing=0 sum(classes-1)=0
+       pairwise={'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  [O] units=8 differing=0 sum(classes-1)=0
+       pairwise={'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  [C] units=32 differing=6 sum(classes-1)=10
+       pairwise={'L1-TD1': 5, 'L1-L2': 5, 'L1-TD2': 4, 'TD1-L2': 4, 'TD1-TD2': 3, 'L2-TD2': 3}
+       2-2 units n_22=0 (arm boundary = {1,3}|{2,4}): {1,3}|{2,4}=0 []  <-ARM, {1,2}|{3,4}=0 [], {1,4}|{2,3}=0 []
+       non-2-2 differing units=6 [('C00', [1, 1, 1, 1]), ('C06', [3, 1]), ('C10', [1, 3]), ('C16', [1, 1, 1, 1]), ('C19', [1, 3]), ('C24', [3, 1])]
+       focus units (pre-named from 907100):
+         C01: classes=[['L1', 'L2', 'TD1', 'TD2']] shape=identical
+         C10: classes=[['L1'], ['L2', 'TD1', 'TD2']] shape=non-2-2
+         C19: classes=[['L1'], ['L2', 'TD1', 'TD2']] shape=non-2-2
