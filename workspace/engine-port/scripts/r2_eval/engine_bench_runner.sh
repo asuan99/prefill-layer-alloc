@@ -4,6 +4,7 @@ set -euo pipefail
 
 run_record="${1:?run record required}"
 run_dir="${2:?run directory required}"
+mkdir -p "${run_dir}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 engine_root="$(cd "${script_dir}/../.." && pwd)"
 engine_dev="${SGLANG_ENGINE_DEV:-/scratch/ehmoon/whlee/sglang_engine_dev/python}"
@@ -49,6 +50,19 @@ if [[ "${PDMUX_ENGINE_MODE:-pdmux}" == pdmux ]]; then
 fi
 if [[ "${PDMUX_DISABLE_CUDA_GRAPH:-0}" == 1 ]]; then
   server_args+=(--disable-cuda-graph --disable-piecewise-cuda-graph)
+fi
+
+# Provenance: the exact tuple this boot was launched with, one argument per
+# line, written BEFORE the launch so it exists even if the server dies during
+# boot.  results/r2_correctness/r2_correctness.sbatch relies on the same kind of
+# dump to prove a CLI-only perturbation (R2C_NUM_KV_SPLITS) was really applied;
+# without it, "which context length did that run use" is unanswerable after the
+# fact.  PDMUX_DRY_RUN=1 stops here, so the tuple can be inspected on a login
+# node with no GPU and no model load.
+printf '%s\n' "${server_args[@]}" >"${run_dir}/server_args.txt"
+if [[ "${PDMUX_DRY_RUN:-0}" == 1 ]]; then
+  printf '%s\n' "${server_args[@]}"
+  exit 0
 fi
 
 cleanup() {
