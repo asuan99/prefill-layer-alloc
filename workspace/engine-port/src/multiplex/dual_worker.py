@@ -330,20 +330,20 @@ class RoleWorkerThread:
             if not task.future.set_running_or_notify_cancel():
                 continue
             started = time.perf_counter()
+            error = None
             try:
                 with self._activate(task.context):
                     result = task.callback(task.context)
             except BaseException as exc:
-                self.last_error = repr(exc)
-                task.future.set_exception(exc)
-            else:
-                task.future.set_result(result)
+                error, self.last_error = exc, repr(exc)
             finally:
                 finished = time.perf_counter()
-                with self._metrics_lock:
+                with self._metrics_lock:   # H2, see NOTE at end of file
                     self.busy_time_s += finished - started
                     self.task_count += 1
                     self._intervals = (self._intervals + [(started, finished)])[-1024:]
+                setter = task.future.set_result if error is None else task.future.set_exception
+                setter(result if error is None else error)
 
     def close(self, timeout_s: float = 5.0) -> None:
         if self._closed:
@@ -507,16 +507,16 @@ class TrueDualWorkerRuntime:
         elapsed = max(1e-9, time.perf_counter() - self.started_at_s)
         prefill_intervals = self.prefill.intervals()
         decode_intervals = self.decode.intervals()
-        overlap_s = 0.0
-        i = j = 0
-        while i < len(prefill_intervals) and j < len(decode_intervals):
-            p_start, p_end = prefill_intervals[i]
-            d_start, d_end = decode_intervals[j]
-            overlap_s += max(0.0, min(p_end, d_end) - max(p_start, d_start))
-            if p_end <= d_end:
-                i += 1
-            else:
-                j += 1
+        # H3: `host_worker_overlap_ratio` keeps EXACTLY the value and meaning
+        # job 907032 / 907100 were scored under (r2_correctness_check.py reads
+        # it).  The additive `_window_` keys beside it answer what it cannot:
+        # it divides by the whole boot lifetime and sees at most the last 1024
+        # intervals per role.  The NOTE at the end of this file explains both.
+        overlap = _host_overlap_metrics(
+            prefill_intervals, decode_intervals, elapsed,
+            self.prefill.task_count, self.decode.task_count,
+        )
+
         with self._request_lock:
             request_counts = {
                 "owned_prefill_waiting": len(self.prefill_waiting),
@@ -537,7 +537,7 @@ class TrueDualWorkerRuntime:
             "decode_host_idle_ratio": max(
                 0.0, 1.0 - self.decode.busy_time_s / elapsed
             ),
-            "host_worker_overlap_ratio": min(1.0, overlap_s / elapsed),
+            **overlap,
             "active_leases": len(self.arbiter.active_roles),
             "pending_gpu_events": pending_events,
             "partition_generation": self.arbiter.generation,
@@ -617,9 +617,155 @@ class DualWorkerState:
             "decode_ready_queue_depth": d.queue_depth,
             "decode_running_batch_size": d.active_batch_size,
             "decode_last_tpot_ms": d.last_tpot_ms,
-            "decode_step_count": d.step_count,
+            # H4: `decode_step_count` dropped -- NOTE at end of file.
             "stream_index": self.arbiter.stream_index,
             "prefill_sms": prefill_sms,
             "decode_sms": decode_sms,
             "active_worker_leases": len(self.arbiter.active_roles),
         }
+
+
+# ===========================================================================
+# NOTE -- host-worker accounting repairs H2/H3/H4 (2026-09-12)
+# ===========================================================================
+# ★WHY THE HELPER IS DOWN HERE AND NOT IMPORTED AT THE TOP
+#   The canonical documents cite this file by line number -- `dual_worker.py:82`,
+#   `:117-125`, `:566-602`, `:591`, `:608`, `:608-623`, `:619`, `:604-624` --
+#   and this change is not allowed to edit `reports/**`.  Anything inserted
+#   above line 625 would silently turn those citations into false ones, which is
+#   the exact failure lesson #80 is about.  So every repair above is
+#   line-for-line neutral and the new code lives past the last cited line.
+#
+# ★H2  `task_count` USED TO RISE AFTER THE FUTURE RESOLVED
+#   `_loop` updated `busy_time_s` / `task_count` / `_intervals` in a `finally`
+#   that ran AFTER `task.future.set_result(...)`.  A `Future` wakes its waiters
+#   inside `set_result`, so a scheduler thread that submitted a task, waited on
+#   it, and then read `metrics()` could observe a `task_count` short by one --
+#   a systematic -1 on every Delta computed across a task boundary.  In
+#   `r2_correctness_check.py` those Deltas are `prefill_task_delta` /
+#   `decode_task_delta`, which is why the lag is worth removing even though the
+#   O4 check only asks whether the counters INCREASE.
+#   The repair publishes the metrics inside the same `finally`, before the
+#   future is resolved.  The field's MEANING is unchanged (tasks completed by
+#   this role thread); only the instant it becomes visible moved earlier.
+#
+# ★H3  `host_worker_overlap_ratio` IS NOT A CONCURRENCY MEASURE
+#   Two independent reasons, both silent:
+#     (a) `RoleWorkerThread._intervals` keeps only the last 1024 intervals per
+#         role, so on a long boot the numerator is computed over a recent window
+#         while the denominator is the whole boot -- the ratio decays toward 0
+#         with boot age for a system whose concurrency never changed.
+#     (b) Prefill and decode truncate INDEPENDENTLY.  If prefill ran 5000 tasks
+#         and decode 50, the retained prefill window is recent while decode's
+#         spans the boot, and their intersection is not the period the two
+#         roles were jointly observed.
+#   ★The field is NOT redefined: `r2_correctness_check.py` SNAP_KEYS reads it
+#   and jobs 907032 / 907100 were scored under its current definition, so
+#   changing it would break comparability with those runs.  Instead the same
+#   dict gains new NAMES, per the rule "redefine => add a new field, keep the
+#   old one":
+#     host_worker_overlap_s              total pairwise overlap, seconds
+#     host_worker_overlap_window_s       overlap inside the jointly-observed span
+#     host_worker_overlap_window_span_s  length of that span
+#     host_worker_overlap_window_ratio   window overlap / window span
+#     host_worker_overlap_truncated      1 if either role lost intervals to the
+#                                        1024 cap (so the window is partial)
+#   `host_worker_overlap_window_ratio` is the number to read as "how much of the
+#   time both roles could be seen were they actually running at once".
+#
+# ★H4  `decode_step_count` WAS 0 IN EVERY BOOT IN THE REPOSITORY
+#   `DecodeWorker.begin_step()` has exactly one caller
+#   (`multiplexing_mixin.py`, inside `if getattr(self, "dual_worker_enabled",
+#   False):`) and `finish_step()` returns immediately when `begin_step()` never
+#   ran.  `dual_worker_enabled` is the R1 OBSERVER mode (`PDMUX_DUAL_WORKER=1`),
+#   which no campaign uses, so the emitted key was the constant 0 in legacy and
+#   in true-dual alike -- a field whose name promises decode progress and whose
+#   value promises none was ever made.  PROJECT_STATUS.md already carries this
+#   as run-killer B1.
+#   The EMISSION is removed; `DecodeWorker.begin_step` / `finish_step` /
+#   `snapshot.step_count` are untouched, so the R1-observer instrument still
+#   exists and its unit test still covers it.  The live equivalent is already in
+#   the same telemetry record: `decode_iterations`, from
+#   `_r2_runtime_snapshot()`, which is incremented on every decode iteration in
+#   every PD-mux arm.  Adding a second name for it here is what gate #166 G-2
+#   warns about, so it is not done.
+#   NOT a SNAP_KEY; `r2_correctness_check.py` never read it; no verdict moves.
+#
+# ★H5  TWO NAMES FOR ONE QUANTITY, AND THE LIVE ONE WAS NOT THE OBVIOUS ONE
+#   `controller.RuntimeSnapshot.worker_overlap_ratio` was declared with a 0.0
+#   default and NEVER assigned by any construction site, so `asdict()` shipped
+#   it into every `runtime_snapshot` record as a hard 0.0 -- including true-dual
+#   boots, where the two host threads demonstrably did overlap.  The real number
+#   was next door under a different name, `host_worker_overlap_ratio`, produced
+#   here.  A reader who grepped for "overlap" and stopped at the first hit would
+#   have concluded true-dual achieves no concurrency.  That is gate #166 G-2:
+#   one member of a same-named family is dead and nothing says which.
+#   The dead declaration is removed (`controller.py:56`, replaced in place so
+#   the file's line numbering, which the canon cites, does not move).  Nothing
+#   read it: no policy, no test, and `r2_correctness_check.py` SNAP_KEYS does
+#   not list it, so no verdict moves.  `prefill_idle_ratio` / `decode_idle_ratio`
+#   two lines above are the SAME defect and are deliberately left in place --
+#   PROJECT_STATUS.md and s8_frontier/DESIGN.md cite `controller.py:55` as the
+#   evidence that they are dead, and silently removing the thing those
+#   citations point at would destroy the record rather than the defect.
+
+
+def _host_overlap_metrics(
+    prefill_intervals: List[tuple[float, float]],
+    decode_intervals: List[tuple[float, float]],
+    elapsed_s: float,
+    prefill_tasks: int,
+    decode_tasks: int,
+) -> dict[str, Any]:
+    """Pairwise host-thread overlap, reported on two clocks (see NOTE above).
+
+    Both interval lists are produced by a single thread each, one task at a
+    time, so each is sorted and internally disjoint -- which is what lets the
+    two-pointer sweep be linear and exact.
+    """
+    total_s = 0.0
+    window_s = 0.0
+    paired = bool(prefill_intervals) and bool(decode_intervals)
+    # The jointly-observed span: from the later of the two first starts to the
+    # earlier of the two last ends.  Outside it, one role has no retained
+    # evidence, so counting that time against overlap would be an artefact of
+    # the 1024 cap rather than a property of the run.
+    lo = max(prefill_intervals[0][0], decode_intervals[0][0]) if paired else 0.0
+    hi = min(prefill_intervals[-1][1], decode_intervals[-1][1]) if paired else 0.0
+    i = j = 0
+    while i < len(prefill_intervals) and j < len(decode_intervals):
+        p_start, p_end = prefill_intervals[i]
+        d_start, d_end = decode_intervals[j]
+        total_s += max(0.0, min(p_end, d_end) - max(p_start, d_start))
+        window_s += max(0.0, min(p_end, d_end, hi) - max(p_start, d_start, lo))
+        if p_end <= d_end:
+            i += 1
+        else:
+            j += 1
+    span_s = max(0.0, hi - lo)
+    # `task_count` counts every completed task; `_intervals` keeps 1024.  A
+    # reader that sees truncated=1 knows the window keys describe a suffix of
+    # the boot, not the boot.
+    #
+    # ★The gap must exceed 1, not 0.  `metrics()` reads `intervals()` and
+    # `task_count` under two separate acquisitions of the worker's metrics lock,
+    # so a task that completes between them makes the counts differ by exactly
+    # one on a perfectly untruncated worker -- and on a busy true-dual boot that
+    # is the common case, which would leave the flag stuck at 1 and say nothing.
+    # The cost is one boundary sample (task 1025, where the real gap is also 1);
+    # from 1026 on, truncation is reported.
+    truncated = (
+        prefill_tasks - len(prefill_intervals) > 1
+        or decode_tasks - len(decode_intervals) > 1
+    )
+    return {
+        # UNCHANGED definition -- scored jobs depend on it byte-for-byte.
+        "host_worker_overlap_ratio": min(1.0, total_s / elapsed_s),
+        "host_worker_overlap_s": total_s,
+        "host_worker_overlap_window_s": window_s,
+        "host_worker_overlap_window_span_s": span_s,
+        "host_worker_overlap_window_ratio": (
+            min(1.0, window_s / span_s) if span_s > 0.0 else 0.0
+        ),
+        "host_worker_overlap_truncated": int(truncated),
+    }

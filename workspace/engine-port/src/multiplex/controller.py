@@ -53,7 +53,7 @@ class RuntimeSnapshot:
     running_batch_occupancy: float
     prefill_idle_ratio: float = 0.0
     decode_idle_ratio: float = 0.0
-    worker_overlap_ratio: float = 0.0
+    # H5: `worker_overlap_ratio` removed 2026-09-12 -- see dual_worker.py NOTE.
 
 
 @dataclass(frozen=True)
