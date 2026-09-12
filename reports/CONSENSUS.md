@@ -4,7 +4,43 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-09-12(3) rev68 **(doc-steward — X1 결과 등재:
+최종 갱신: 2026-09-12(4) rev69 **(doc-steward — Claim E
+컨트롤러 코드, engine-porter A안 구현으로 2026-09-12(2) 긴장
+2건 해소 + 신규 방법론 게이트 3건, GPU 0·작업트리 미커밋)** —
+2026-09-12(2)가 미해결로 등재했던 긴장 2건(로드맵 `:976` 즉시
+upshift 지연·`:979` occupancy 90% 단독 트리거 무발화)이 사용자
+승인 A안 구현으로 해소됐다: `_live_underprediction` 술어를
+단일 정의원 헬퍼로 추출해 `evaluation_due`의 독립 disjunct로
+승격(`:975` 케이던스와 별개 조항 유지)했고, 그 필수 동반
+수리로 overload streak 증가를 케이던스 epoch당 최대 1회로
+게이팅하는 별도 epoch 마커를 신설했다(없으면 admission 제한이
+연속 2 iteration[≈27–85ms]만에 걸렸을 것). `:979`는 점유율 90%
+단독 트리거를 복원하되 `target≥D108 AND upper_bound>SLO`
+결합은 profile-less hybrid arm의 무조건 throttle을 막기 위해
+**의도적으로 유지**했다(순수 OR 금지). `bucket_changed`가
+서빙 경로에서 미구현임을 코드 docstring에 명시하고, 감사
+가능성 필드 2건(`SplitDecision.off_cadence` + 텔레메트리
+`controller_decision.off_cadence`)을 신설했다. 검증: 전체 CPU
+**362 tests OK**(직전 343, +19), 변이 12종(M1–M12) 전부 실패
+확인, `check_line_citations.py --check --all` 50 compared **0
+violation**(doc-steward 독립 재확인). `FixedPolicy`/Claim D
+경로는 6개 이름 부재로 테스트 고정(불변). 이 등재로 신규
+방법론 게이트 3건(§3 항목197–199, 신설)이 생겨 rev를 올린다 —
+**판단 근거**: 코드 사실 자체는 2026-09-12(1차) 선례로는 rev
+사유가 아니나, 2026-09-12(2)가 확립한 후속 선례("신규 방법론
+게이트는 그 자체로 CONSENSUS rev 사유")를 적용했다. **새 성능
+판정 0건·Claim D/E 등급 불변(둘 다 미검증)·HE0·정책 순위·
+stake #1 전부 불변.** ★열린 항목(미결정, 성능 미측정): dwell이
+upshift 면제라 위반이 지속되면 상태 사다리가 연속 iteration마다
+한 칸씩 올라갈 수 있다(`D16→24→34→44→108`이 4 iteration
+[≈40ms], 이전 판본은 4 epochs[≥400ms]) — "epoch당 한 칸으로
+제한할 것인가"는 다음 세션/사용자 판단 대기. 상세
+`PROJECT_STATUS.md` 최상단 배너(2026-09-12(4)), `reports/
+paper/{CLAIM_EVIDENCE_MATRIX,EXPERIMENT_ROADMAP}.md` 갱신,
+`MEMORY.md`·`memory/{deconfound-measurement-lessons,slo-aware-
+scheduling-track}.md` 갱신.
+
+이전: 2026-09-12(3) rev68 **(doc-steward — X1 결과 등재:
 job 907456 완주(0.154 GPU-h, node gpu42) + claims-auditor 결과
 감사 `CONFIRMED(scoped)`, 새 성능 판정 0건·Claim D 등급
 불변[미검증]·HE0·정책 순위·stake #1 전부 불변)** — 2026-09-12(2)가
@@ -6515,6 +6551,12 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 195. ★★★**(2026-09-12(3), `r2_correctness` 트랙, X1 결과 감사, claims-auditor, GPU 0.154 GPU-h, G-X1-4 — 게이트#80 인접, 신설) provenance 보강을 교란 arm에만 넣으면 비대칭 기록이 되어 baseline 전제를 사후 검증 불가로 만든다.** X1 sbatch는 env var 덤프를 신설했으나 907100(baseline)에는 없어, baseline에서 `SGLANG_TRITON_DECODE_ATTN_STATIC_KV_SPLITS`가 unset이었다는 것을 아티팩트로 증명할 수 없다(X1P-8). 실무 규칙: 보강 항목은 기준 arm에도 (재실행 없이 가능한 범위에서) 소급 기록하거나, "그 항목은 baseline에서 검증 불가"를 등록 문서에 명시하라. 뒤집힘의 존재 귀속 자체는 바뀌지 않으나 사전등록 교란표의 전제는 바뀔 수 있다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #175(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_x1_2026-09-12/VERDICT.md` §1.6·§11(G-X1-4).
 
 196. ★★★**(2026-09-12(3), `r2_correctness` 트랙, X1 결과 감사, claims-auditor, GPU 0.154 GPU-h, G-X1-5 — 긍정 사례, 게이트#1의 처치 측 적용) 교란 노브 자신에 대해 "target이 아니라 realized"를 요구하라.** X1은 (a) server args 덤프 + `SAME_ACROSS_BOOTS` 검사, (b) cudagraph capture 메모리 변화(5/5 boot에서 `mem usage` 0.73→0.65 GB, `avail mem` 13.32→13.40 GB, 부호·차수가 `max_kv_splits` 8→2 축소와 정합) 두 채널로 이를 충족했다(정성적 실현 확인, 닫힌 형태 추정과 배수 2 불일치는 미해소). 앞으로 수치 구성 교란은 이 2채널 확인을 사전등록 항목으로 넣는다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #176(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_x1_2026-09-12/VERDICT.md` §5.1·§11(G-X1-5).
+
+197. ★★★**(2026-09-12(4), Claim E 컨트롤러 코드, engine-porter 구현 + doc-steward 등재, GPU 0) 산문 사양의 두 조항(케이던스·즉시성)을 한 술어로 합치면 한쪽이 조용히 죽는다.** 2026-09-12(2) 시점의 `evaluation_due()`는 로드맵 `:976`(즉시 safe-boundary upshift)을 `stabilize`의 평가 분기 안에서만 계산해, 사실상 `:975`(정상 케이던스 `max(4 iterations, 100ms)`)가 먼저 충족돼야만 `:976`을 볼 수 있었다 — "즉시"가 최악 한 epoch까지 늦어졌다(2026-09-12(2)가 "새로 생긴 긴장 2건" 중 (1)로 등재). 수리는 `_live_underprediction`(ITL p95>SLO 또는 KV/running 점유≥85%)을 단일 정의원 헬퍼로 추출해 `evaluation_due`를 `bucket_changed or _live_underprediction(snapshot) or _cadence_due(snapshot)`의 **독립 disjunct 셋**으로 재조립하는 것이었다. 실무 규칙: 산문 사양이 "또는"으로 묶은 두 조항을 구현이 "그리고" 관계로(또는 한쪽을 다른 쪽의 전제 조건으로) 합성하면, 그 위반은 단위 테스트로는 드러나지 않고 반응 지연 같은 시간 단위 회귀로만 드러난다 — 각 조항을 독립된 정의원 헬퍼로 쪼개 disjunct로 조립하라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #177(신설). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-12(4)) 구현 상세 3항, `workspace/engine-port/src/multiplex/controller.py:151-166,168-179,196-216`.
+
+198. ★★★**(2026-09-12(4), Claim E 컨트롤러 코드, engine-porter 구현 + doc-steward 등재, GPU 0) 긴급 경로를 추가할 때 그 경로가 다른 카운터의 시간 단위를 바꾸지 않는지 확인하라.** 게이트#177의 수리(즉시성 회복)만 단독으로 넣으면 overload streak 증가 카운터가 케이던스 epoch이 아니라 **iteration마다** 증가해, 로드맵 `:979`의 "2 epochs 지속"(기본 케이던스에서 ≥400ms)이 실질적으로 "2 iterations"(≈27–85ms)로 조용히 재정의됐을 것이다 — admission 제한은 이 프로젝트에서 TTFT 폭발을 일으키는 실측 레버(HE0: decode 굶김→ITL↑→batch 정체→admission 차단→TTFT 폭발)이므로 이 축소는 보수적 오차가 아니라 위험 방향 오차다. 수리는 overload streak 증가를 별도 epoch 마커(`last_overload_epoch_s/_iteration`)로 게이팅해 케이던스 epoch당 최대 1회로 제한한 것이었다(게이트#177 수리의 필수 동반 수리). 실무 규칙: 이벤트 기반 즉시 반응 경로를 케이던스 위에 추가할 때는, 그 경로가 우회하는 케이던스에 묶여 있던 다른 카운터(스트릭·재시도·백오프 등)를 함께 감사해 그 카운터의 "단위 시간"이 조용히 축소되지 않았는지 확인하라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #178(신설). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-12(4)) 구현 상세 4항, `workspace/engine-port/src/multiplex/controller.py:130-140[주석],181-194,311-326`.
+
+199. ★★★**(2026-09-12(4), Claim E 컨트롤러 코드, engine-porter 구현 + doc-steward 등재, GPU 0) 미구현 절을 산문에 남겨 두면 구현된 것처럼 인용된다 — `bucket_changed`/"or bucket change" 사례.** 로드맵 `:975` "evaluate every `max(4 decode iterations, 100 ms)` **or bucket change**"의 후반절은 파라미터(`bucket_changed`)가 API·테스트에 존재하고 관련 테스트가 통과함에도, 서빙 경로(`_r2_decide_idx`, `multiplexing_mixin.py:436-440`)가 이 인자를 **한 번도 넘기지 않고**, `src/multiplex`에 bucket 정의 자체가 없어 서빙 iteration 전부에서 `False`로 고정된 채 **미구현**이다. 파라미터를 지우면 "이 절이 미구현"이라는 사실 자체가 코드에서 사라지므로, 수리는 삭제가 아니라 `stabilize` docstring에 미구현임을 명시적으로 박는 것이었다. 실무 규칙: API 파라미터가 존재하고 관련 테스트가 통과한다는 것은 그 파라미터가 서빙 경로에서 실제로 채워진다는 증거가 아니다 — 로드맵/논문이 그 절을 구현된 것으로 인용하기 전에 실제 호출부가 그 인자를 전달하는지 grep으로 확인하고, 미구현이면 파라미터를 지우는 대신 "미구현"을 코드·문서 양쪽에 명시적으로 남겨라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #179(신설). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-12(4)) 구현 상세 6항, `workspace/engine-port/src/multiplex/controller.py:249-262`, `multiplexing_mixin.py:436-440`.
 
 ---
 ## 4. 살아있는 문서 (이것만 참조)

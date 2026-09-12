@@ -1,6 +1,27 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-09-12(3)(doc-steward — **X1 결과 등재**: job
+최종 갱신: 2026-09-12(4)(doc-steward — **Claim E 컨트롤러
+코드: 2026-09-12(2)가 미해결로 등재한 긴장 2건이
+engine-porter A안 구현으로 해소**[사용자 승인, GPU 0, 작업트리
+미커밋]. `_live_underprediction` 단일 정의원 헬퍼를
+`evaluation_due`의 독립 disjunct로 승격해 로드맵 `:976`
+즉시성을 회복하고, 필수 동반 수리로 overload streak 증가를
+케이던스 epoch당 최대 1회로 게이팅했다(없으면 admission
+제한이 연속 2 iteration[≈27–85ms]만에 걸렸을 것). `:979`는
+점유율 90% 단독 트리거를 복원하되 profile-less hybrid arm
+무조건 throttle을 막는 `target≥D108 AND upper_bound>SLO`
+결합은 유지(순수 OR 금지). `bucket_changed` 미구현 사실을
+코드에 명시. 검증: 전체 CPU **362 tests OK**(직전 343, +19),
+변이 12종(M1–M12) 전부 실패 확인, `check_line_citations.py` 50
+compared **0 violation**. 새 방법론 게이트 3건(#177–179).
+**새 사실 2건**(사다리 상승 4-iteration[미측정, 열린 항목] ·
+stale dev tree 프로세스 교훈). 새 성능 판정 0건·Claim D/E
+등급 불변(둘 다 미검증)·HE0·정책 순위·stake #1 전부 불변.
+`CONSENSUS.md` rev68→**rev69**(신규 게이트 3건이 사유). 상세
+아래 "Claim E 착수 전 코드↔로드맵 불일치 3건" 절
+(2026-09-12(4) 갱신), `PROJECT_STATUS.md` 최상단 배너,
+`CONSENSUS.md` §3 항목197–199.
+이전: 2026-09-12(3)(doc-steward — **X1 결과 등재**: job
 907456(0.154 GPU-h) 완주, claims-auditor 결과 감사
 **`CONFIRMED(scoped)`**[F1–F4 전부 충족·PASS 및 교차-잡 8/96
 불일치 독립 재현·귀속 성립]. 메인 세션 해석 문장 1건은
@@ -39,12 +60,16 @@ FixedPolicy/Claim D 경로 불변(테스트로 고정).
 줄 수 있는 유일한 항목. (2) 로드맵 `:979`는 "D108 risk **또는**
 occupancy 90%"인데 코드는 `AND` 합성(`controller.py:210-218`) —
 occupancy 90%만으로는 제한이 걸리지 않는다(접속사는 그대로 둠).
+★★**해소됨(2026-09-12(4))** — engine-porter A안 구현, 상세 아래
+"Claim E 착수 전 코드↔로드맵 불일치 3건" 절.
 
 ★**깨진 줄 인용 갱신**: `controller.py:124-130 → :129-142`·
 `:148-149 → :174`(+`:180-185`)·`:174-183 → :210-219`·`:183 → :219`
 · `:207 → :244`·`:222 → :259`·`profile.py:98-114 → :113-160`·
 **`profile.py:102`("engine_commit" 엔트리)는 더 이상 존재하지
-않음**·`profile.py:268-279 → :314-325`.
+않음**·`profile.py:268-279 → :314-325`. ★★**이 인용은
+2026-09-12(4)에서 다시 갱신됐다**(역사 보존용, 최신은 아래
+"Claim E 착수 전 코드↔로드맵 불일치 3건" 절).
 
 Claim E 등급(미검증)·B0–B8 ranking·새 성능 판정 전부 무변경.
 **X1**(별도 R2 correctness 트랙): 사전등록 rev1은 제출 전 감사에서
@@ -738,6 +763,72 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   (2026-09-12(2)). 게이트 #157(도구 파일 버전관리 이관, Claim E와
   무관한 별건)은 같은 세션에서 **완료**됐다 — `PROJECT_STATUS.md`
   "방법론 게이트" #157 追記 참조.
+
+  ★★**追記(2026-09-12(4), doc-steward — 위 "새로 생긴 긴장 2건"
+  해소 완료, engine-porter A안 구현, GPU 0, 작업트리 미커밋,
+  사용자 승인)**: 위 1·2는 전부 해소됐다.
+
+  1. `_live_underprediction`(ITL p95>SLO 또는 KV/running 점유
+     ≥85%)을 단일 정의원 헬퍼로 추출(`controller.py:151-166`)해
+     `evaluation_due()`를 `bucket_changed or
+     _live_underprediction(snapshot) or _cadence_due(snapshot)`
+     (`:196-216`)의 **독립 disjunct 셋**으로 재조립했다 — `:975`
+     (`_cadence_due`, `:168-179`)와 `:976`이 다시 별개 조항이 돼
+     위반이 난 그 iteration에 즉시 재평가한다(즉시 평가는
+     upshift 전용, `downshift_streak`을 0으로 리셋, 다음 정상
+     평가는 긴급 평가 시점 기준 1 epoch 후). **필수 동반 수리**:
+     overload streak 증가를 별도 epoch 마커(`_overload_epoch_
+     elapsed`, `:181-194`)로 케이던스 epoch당 최대 1회로
+     게이팅했다 — 없으면 긴급 평가가 매 iteration 발화해 연속 2
+     iteration(≈27–85ms)만에 admission 제한이 걸렸을 것이다
+     (HE0의 TTFT-폭발 레버).
+  2. `:979`를 `(target≥D108 AND upper_bound>SLO) OR kv≥0.90 OR
+     running≥0.90`으로 갱신했다(`controller.py:311-318`). 죽어
+     있던 점유율 90% 단독 트리거가 살아났고(이전엔 `target≥108`
+     AND가 전부를 막음), `upper_bound=inf`(프로파일 비호환
+     fallback)가 저점유에서 무조건 throttle하는 순수 OR은
+     명시적으로 금지했다(B6 arm 보호). "코드/로드맵 중 옳은 쪽"
+     판정이 아니라 둘 다 로드맵 산문으로 흡수했다.
+
+  부수 변경: `bucket_changed` 미구현임을 코드 docstring에 명시
+  (`:249-262`), 감사 가능성 필드 2건(`SplitDecision.off_cadence`
+  `:78` + 텔레메트리 `controller_decision.off_cadence`,
+  `multiplexing_mixin.py:452`) 신설. 검증: **전체 CPU 362 tests
+  OK**(직전 343, +19), 변이 12종(M1–M12) 전부 실패 확인,
+  `check_line_citations.py --check --all` 50 compared **0
+  violation**(전·후, doc-steward 독립 재확인). **FixedPolicy/
+  Claim D 경로 불변**(6개 이름 부재를 테스트로 고정, 변이 M8이
+  잡음), `r2_correctness_check.py`는 `.get()` 기반이라 B5
+  POLICY 검사 무영향.
+
+  깨진 줄 인용 갱신(engine-porter 제공, 위 2026-09-12(2) 인용은
+  다시 이동했다 — 역사 보존용): `controller.py:129-142 →
+  :196-216` · `:127 → :148` · `:174-185 → :263-274` ·
+  `:210-218 → :311-326` · `:219 → :327` · `:219-220 → :327-328`
+  · `:244 → :352` · `:259 → :368`. 불변: `:68`, `:17`,
+  `profile.py` 전부(파일 미수정), `multiplexing_mixin.py` 17개
+  인용(줄 수 1879 유지). 신규 앵커: `_live_underprediction
+  :151-166` · `_cadence_due :168-179` · `_overload_epoch_
+  elapsed :181-194` · `off_cadence` 필드 `:78` · 계산 `:277` ·
+  release epoch 리셋 `:231-232` · `stabilize` bucket docstring
+  `:249-262` · 텔레메트리 필드 `multiplexing_mixin.py:452`.
+
+  ★**새 사실 2건**: (1) 사다리 상승 속도(**미측정**, 열린 항목):
+  dwell이 upshift 면제라 위반이 지속되면 상태 사다리가 연속
+  iteration마다 한 칸 오른다(`D16→24→34→44→108`이 4 iteration
+  [≈40ms], 이전 판본은 4 epochs[≥400ms]) — 성능 영향 측정 0건,
+  성능 주장 인용 금지. (2) 프로세스 교훈: 세션 시작 시 dev tree가
+  stale이면 CLAUDE.md 부팅 절차(`sync_engine_tree.sh` 포함)
+  이전엔 테스트가 다수 실패한다 — 343/362 기준선은 그 절차
+  이후에만 재현된다.
+
+  신규 방법론 게이트 3건(#177–179, `CONSENSUS.md` §3
+  항목197–199). `CONSENSUS.md` rev68→**rev69**(신규 게이트
+  3건이 사유 — 코드 사실 자체는 2026-09-12(2) 선례로도 단독
+  rev 사유가 아니다). Claim E 등급(미검증)·B0–B8 ranking·새
+  성능 판정 전부 무변경. 상세 `PROJECT_STATUS.md` 최상단 배너
+  (2026-09-12(4)), `EXPERIMENT_ROADMAP.md` "Controller
+  defaults" 절 追記(2026-09-12(4)).
 - D/E가 실패하면 A–C의 characterization 및 negative result를 논문의 중심으로
   유지한다.
 - Claim F는 {Zamba2-2.7B, ctx4096, Phase A in2048/o32, Phase B in2048/o512@rB4,

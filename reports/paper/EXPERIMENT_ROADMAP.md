@@ -1068,11 +1068,29 @@ target으로 사용한다.
 ## Controller defaults
 
 - steady: D16/D24/D34/D44; emergency D108
-- evaluate every `max(4 decode iterations, 100 ms)` or bucket change
-- immediate safe-boundary upshift on ITL violation or 85% KV/batch occupancy
+- 정상 평가 케이던스 = `max(4 decode iterations, 100 ms)`(**둘 다** 충족해야
+  발화, `_dwell_satisfied`와 같은 AND). ★`or bucket change`는 **미구현**이다
+  — 서빙 경로 `_r2_decide_idx`가 `bucket_changed`를 넘기지 않고
+  `src/multiplex`에 bucket 정의가 없다. 파라미터는 API·테스트 호환과 "이
+  절이 미구현임"을 남기기 위해 유지한다.
+- ITL p95 > SLO **또는** KV/running-batch 점유 ≥ 85%면 케이던스를 기다리지
+  않고 **그 iteration에 즉시** 재평가한다(`evaluation_due`의 독립 disjunct,
+  위 케이던스 항과 별개 조항). 이 즉시 평가는 **upshift 전용**(target을
+  내리지 않으며 `downshift_streak`을 0으로 리셋한다)이고, `safe_boundary`가
+  거짓이면 전환하지 않고 `requested_decode_sms`만 기록한 뒤 다음 iteration에
+  재시도한다. 긴급 평가도 epoch 시계를 재시작하므로 **다음 정상 평가는 긴급
+  평가 시점 기준 1 epoch 후**다.
 - downshift only below 0.75×SLO for 3 epochs
 - dwell `max(8 decode steps, 200 ms)`; upshift exempt
-- D108 risk 또는 occupancy 90%가 2 epochs 지속되면 admission 제한
+- **(a)** `target ≥ D108` **이고** 예측 상한 `upper_bound_itl_ms` > ITL SLO,
+  **또는 (b)** KV 점유 ≥ 90%, **또는 (c)** running-batch 점유 ≥ 90% — 이 중
+  하나가 **연속 2 epochs**(증가는 케이던스 epoch당 최대 1회) 지속되면
+  admission 제한. ★(a)의 `target ≥ D108`은 장식이 아니다: 호환 프로파일이
+  없으면 `upper_bound_itl_ms = inf`가 되어 (a)의 부등식이 무조건 참이 되므로,
+  `target ≥ D108` 결합이 **프로파일 없는 hybrid arm의 무조건 throttle을
+  막는 안전장치**다(순수 OR 금지). 제한은 설정한 평가 이후의 비평가(HOLD)
+  iteration에도 유지되고, 이후 평가 또는 런타임 backstop
+  `release_admission_limit()`이 해제한다.
 
 ★★追記(2026-09-12, doc-steward — engine-porter 코드 사실 3건,
 2026-09-11 확인·file:line 근거, **성능 판정 아님·수정 없음·사용자
@@ -1141,12 +1159,111 @@ target으로 사용한다.
 `AND` 합성(`controller.py:210-218`)이라 occupancy 90%만으로는
 제한이 걸리지 않는다(접속사는 그대로 둠 — 2026-09-12(1차) 등재는
 지속 기간만 문제 삼았음). 둘 다 어느 쪽이 옳은지는 판정하지 않는다.
+★★**해소됨(2026-09-12(4), 아래 追記 참조)** — 원문은 역사로
+보존하고 상태만 갱신한다.
 
 깨진 줄 인용 갱신: `controller.py:124-130 → :129-142` ·
 `:148-149 → :174`(+`:180-185`) · `:174-183 → :210-219` ·
 `:183 → :219` · `:207 → :244` · `:222 → :259` · `profile.py:
 98-114 → :113-160` · `profile.py:268-279 → :314-325`.
+★★**이 인용은 다시 이동했다 — 아래 追記(2026-09-12(4)) 참조**
+(이 줄은 역사 보존용).
 
 Claim E 등급(미검증)·B0–B8 순위·새 성능 판정 전부 무변경. 상세
 `CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E 항목(2026-09-12(2)
 갱신), `PROJECT_STATUS.md` 최상단 배너 B 항목.
+
+★★追記(2026-09-12(4), doc-steward — 위 "새로 생긴 긴장 2건"
+해소 완료, engine-porter A안 구현, GPU 0, **작업트리 미커밋**,
+사용자 승인): 위 두 긴장은 전부 해소됐다. 위 5줄짜리 명세
+(`steady`·케이던스·즉시 upshift·downshift·dwell·admission)는
+이미 이 문서 상단 "Controller defaults" 절 본문에서 최신
+문안으로 교체됐다(engine-porter 제안 문안, 문자 그대로 적용).
+요지:
+
+1. (1)의 해소: `_live_underprediction`(ITL p95>SLO 또는
+   KV/running 점유≥85%)을 단일 정의원 헬퍼로 추출해
+   `evaluation_due()`를 `bucket_changed or _live_underprediction
+   (snapshot) or _cadence_due(snapshot)`의 **독립 disjunct
+   셋**으로 재조립했다(`controller.py:196-216`). `:975`(정상
+   케이던스, `_cadence_due`, `:168-179`)와 `:976`(즉시 upshift,
+   `:151-166`)이 이제 독립 조항이라 위반이 난 그 iteration에
+   즉시 재평가한다 — 최악 반응 지연이 다시 짧아졌다. 이 즉시
+   평가는 **upshift 전용**(target을 내리지 않고
+   `downshift_streak`을 0으로 리셋)이고, `safe_boundary`가
+   거짓이면 전환 없이 `requested_decode_sms`만 기록한 뒤 다음
+   iteration에 재시도한다. 다음 정상 평가는 긴급 평가 시점
+   기준 1 epoch 후다.
+2. **①의 필수 동반 수리(신규)**: overload streak 증가를 별도
+   epoch 마커(`last_overload_epoch_s/_iteration`,
+   `_overload_epoch_elapsed` `:181-194`)로 케이던스 epoch당
+   최대 1회로 게이팅했다. 없으면 긴급 평가가 매 iteration
+   발화해 연속 2 iteration(≈27–85ms)만에 admission 제한이
+   걸렸을 것이다(로드맵 "2 epochs"[≥400ms]와 다르고, 이
+   프로젝트에서 TTFT 폭발을 일으키는 레버). 과부하 해제 시 즉시
+   0 리셋은 유지, `release_admission_limit()`(`:218-232`)이
+   epoch 시계도 재시작한다(`:231-232`).
+3. (2)의 해소: `:979`를 `(target≥D108 AND upper_bound>SLO) OR
+   kv≥0.90 OR running≥0.90`으로 갱신했다(`controller.py:
+   311-318`). 죽어 있던 점유율 90% 단독 트리거가 살아났고
+   (이전엔 `target≥108` AND가 전부를 막아 발화 불가), 동시에
+   `upper_bound=inf`(프로파일 비호환 fallback,
+   `fallback_decode_sms=44`)가 저점유에서 무조건 throttle하는
+   순수 OR은 명시적으로 금지했다(B6 arm이 조용히 제한되는 것
+   방지). 두 방향 다 테스트로 고정. "코드/로드맵 중 옳은 쪽"을
+   판정한 것이 아니라 둘 다 이 로드맵 산문으로 흡수했다.
+4. `bucket_changed`는 **미구현임이 코드에 명시**됐다 —
+   `_r2_decide_idx`(`multiplexing_mixin.py:436-440`)가 이
+   인자를 넘기지 않고 `src/multiplex`에 bucket 정의가 없다.
+   파라미터는 API·테스트 호환과 "이 절이 미구현"이라는 기록을
+   위해 유지한다(`stabilize` bucket docstring, `controller.py:
+   249-262`). 즉시성은 ①이 제공한다.
+5. 감사 가능성: `SplitDecision.off_cadence`(신설, `:78`) +
+   `controller_decision` 텔레메트리 필드
+   (`multiplexing_mixin.py:452`)로 긴급 경로가 케이던스 밖에서
+   발화했는지를 기록한다. 기존 필드 의미·스키마 변경 0.
+
+검증: **전체 CPU 362 tests OK**(직전 343, +19), 변이 트리 12종
+(M1–M12)에서 각 수리가 실패함을 확인, `check_line_citations.py
+--check --all` = 50 compared **0 violation**(전·후, doc-steward
+독립 재실행 확인). manifest 2항목 변경(`controller.py
+bd9e6660…→a4fde4d3…`, `multiplexing_mixin.py
+a3b9a4e9…→0fe9d570…`). **FixedPolicy/Claim D 경로 불변**(6개
+이름 부재를 테스트로 고정, 변이 M8이 잡음), 공용 경로 편집은
+텔레메트리 kwarg 1개뿐이고 `r2_correctness_check.py`는
+`rec.get(...)`이라 B5 POLICY 검사 무영향.
+
+★새 사실 1(**미측정**, 열린 항목/후속 결정 후보로만 등재): dwell은
+upshift에 면제(`:977`)이므로 위반이 지속되면 상태 사다리가
+연속 iteration마다 한 칸 오른다 — 기본 케이던스에서
+`D16→24→34→44→108`이 4 iteration(≈40ms), 이전 판본은 4
+epochs(≥400ms)였다. 칸마다 green-context 드레인 1회다. **성능
+영향은 측정된 바 없다**(generic/hybrid GPU 측정 0건). "upshift를
+epoch당 한 칸으로 제한할 것인가"는 아직 결정되지 않았다 —
+성능 주장으로 인용 금지.
+
+★새 사실 2(프로세스 교훈): 세션 시작 시 dev tree가 stale이어서
+`sync_engine_tree.sh`(→ module load + venv 활성화 포함 CLAUDE.md
+부팅 절차) 전에는 테스트 다수가 실패한다. 343/362 기준선은
+그 절차 이후에만 재현된다(doc-steward 독립 재확인: 절차 없이
+`python -m unittest discover`는 220개만 수집·다수 실패, 절차대로
+하면 362 OK) — CLAUDE.md 부팅 절차의 근거 사례.
+
+깨진 줄 인용 갱신(engine-porter 제공, 위 줄이 다시 갱신됨):
+`controller.py:129-142 → :196-216` · `:127 → :148` ·
+`:174-185 → :263-274` · `:210-218 → :311-326` · `:219 → :327` ·
+`:219-220 → :327-328` · `:244 → :352` · `:259 → :368`. 불변:
+`:68`, `:17`, `profile.py` 전부(파일 미수정), `multiplexing_
+mixin.py` 17개 인용(줄 수 1879 유지). 신규 앵커:
+`_live_underprediction :151-166` · `_cadence_due :168-179` ·
+`_overload_epoch_elapsed :181-194` · `off_cadence` 필드 `:78` ·
+계산 `:277` · release epoch 리셋 `:231-232` · `stabilize`
+bucket docstring `:249-262` · 텔레메트리 필드
+`multiplexing_mixin.py:452`.
+
+신규 방법론 게이트 3건(#177–179, `CONSENSUS.md` §3
+항목197–199). Claim E 등급(미검증)·B0–B8 순위·새 성능 판정
+전부 무변경. `CONSENSUS.md` rev68→**rev69**(신규 게이트가
+사유). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-12(4)),
+`CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E 항목
+(2026-09-12(4) 갱신).
