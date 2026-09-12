@@ -1,6 +1,18 @@
 <!-- claims-auditor 결과 감사 반환문 원문 전사 (2026-09-12, 메인 세션이 스크립트로 추출;
      재타이핑·요약 아님). 대상 = job 907456, 사전등록 rev2, 1단 판정서 VERDICT_x1_rules_2026-09-12.md. -->
 
+> ★★**정정 追記(2026-09-12(5), doc-steward, GPU 0 — 이 삽입만 후속
+> 추가, 아래 본문은 원문 전사 그대로 미변경)**: §3.3 표의 907100
+> 행 "cross-arm 합 **22**"는 산술 오류다. 실제 합은 **25**다
+> (7+7+4+7; 같은 표 "6쌍 pairwise 합 32"·"within L-L 4/TD-TD 3"과
+> 정합하려면 32 − 7 = 25여야 하며, 22를 쓰면 7+22=29≠32로
+> 자기모순이다). 이 오류는 `b3_prereg/VERDICT_b3_rules_2026-09-12.md`
+> §1과 `os_prereg/VERDICT_os_rules_2026-09-12.md` §1이 각각 **독립
+> 재계산**으로 발견·확인했다(둘 다 `job_907100/gen_*.json`에서
+> `output_ids` 등가류를 직접 재산출). 907456 행의 "cross 16"은
+> 원래 정확하다(변경 없음). 본문 §3.3 표는 역사 보존을 위해 원문
+> 그대로 두고, 이 삽입만 정정 표시를 부착한다.
+
 # X1 결과 감사 판정서 (claims-auditor, read-only, GPU 0)
 
 - 일자: 2026-09-12. 대상: `/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907456/` (job 907456, node gpu42, GPU UUID `GPU-7a590213`, 9m14s ≈ 0.154 GPU-h, commit `19b9d8d`).

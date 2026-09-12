@@ -1,6 +1,16 @@
 # Document status
 
-최종 갱신: 2026-09-11(doc-steward — Q-A `REGRET` 캠페인(jobs
+최종 갱신: 2026-09-12(5)(doc-steward — 정정 2건(X1 §12-2 유래
+"n=4/arm=게이트 3 충족" ★철회[인용 금지 B3C-3] + X1 §3.3
+cross-arm 22→25 산술 정정) + B3 사전등록 `NO-GO`(GPU 0·미실행) +
+OS 사전등록 규칙층 `GO-with-caveats`(GPU 0·미실행) + A1/A2/A4
+구현(커밋 `09a8075`·`ae7830e`·`3153260`, GPU 0) 반영으로
+`CLAIM_EVIDENCE_MATRIX.md` Claim D 행·`EXPERIMENT_ROADMAP.md`
+"P1/P2"·R2 correctness 절을 `reports/CONSENSUS.md` rev69→rev70과
+재동기화. 신규 게이트 10건(#180–189, G-B3-1…5·G-OS-1…5). 등급·
+인용정지·claim 등급 전부 무변경(Claim D/E 둘 다 미검증), 새 성능
+판정 0건, 이 문서의 Canonical/Historical/Superseded 분류표는
+무변경 — changelog 기록뿐. 이전: 2026-09-11(doc-steward — Q-A `REGRET` 캠페인(jobs
 906504–906507)이 4/4 `COMPLETED 0:0`로 완주(10.641 GPU-h,
 cudagraph-ON 192/192) + claims-auditor read-only 결과 감사
 (`audit_qa_result_2026-09-11/VERDICT.md`)가 raw 독립 재구현으로

@@ -4,7 +4,89 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-09-12(4) rev69 **(doc-steward — Claim E
+최종 갱신: 2026-09-12(5) rev70 **(doc-steward — 정정 2건(최우선:
+X1 §12-2 유래 "n=4/arm=게이트 3 충족" 철회 + X1 §3.3 cross-arm
+22→25 산술 정정) + B3 사전등록 `NO-GO`(死因 N2, GPU 0·미실행) +
+OS 사전등록 규칙층 `GO-with-caveats`(死因 0, GPU 0·미실행) +
+A1/A2/A4 구현 등재(커밋 `09a8075`·`ae7830e`·`3153260`, GPU 0),
+신규 방법론 게이트 10건)** — **정정 1(철회)**: 2026-09-12(3)이
+등재한 "B3 두 job 합쳐 n=4/arm ⇒ 프로젝트 게이트 3(n≥4) 충족"
+문장(아래 §5-8(a) "다음 실험" 항목2)을 claims-auditor가 B3
+판정서 §8에서 철회했다 — 한 job의 4 boot은 같은 노드·같은 물리
+GPU·같은 warmup·같은 `TRITON_CACHE_DIR`을 공유하는 순차 실행이라
+독립 런이 아니고, 게이트 3은 *독립 런* n≥4를 요구한다. 인용 금지
+**B3C-3** 신설, 해당 항목에 취소선 대신 ★철회 표시 부착(원문
+보존). **정정 2(산술)**: X1 결과 판정서(`audit_x1_2026-09-12/
+VERDICT.md`) §3.3 표의 907100 "cross-arm 합 22"는 **25**가
+맞다(7+7+4+7=25; B3·OS 두 판정서가 각각 독립 재계산으로 확인).
+이 문서 본문은 합계를 직접 인용한 적이 없어 수정 불필요, 근원
+판정서에 정정 追記를 부착했다.
+
+**B3(GPU 0, 미실행)**: 동일-arm 4 boot × 2 job(`L L L L`/
+`TD TD TD TD`, 0.31 GPU-h) 사전등록 — **死因 N2 발화(반전
+3건)**: (R1) E4를 2-2 단위 총수(n_22)로 조건부 읽으면 실제
+907456의 n_22=0에서 "귀무로 재현 안 됨"이 "측정 불가"로 뒤집힘
+(R2) F4 문턱 여집합에 **31–59% 무라벨**(n_22=3에서 최빈값)
+(R4) 한 boot의 빈 `phase_c`만으로 `E4=0`이 인쇄돼 측정 실패가
+결론 분기를 발화(실증). 부수: selftest 4종 중 3종 통과(E4
+배선 변이가 907100에서 3 대신 0을 출력하며 통과) · TD-only
+job은 `s_ref_ok` 공허 참(`r2_correctness_check.py:471`) 때문에
+같은 사건이 L-only=`NO_VERDICT_INFRA`/TD-only=`VERDICT FAIL`로
+갈림 · TD-only에선 B6이 계산되지 않음. 구매 권고: rev2가
+`GO-with-caveats`가 되어도 B3를 먼저 사지 않는다 — 아래 "OS"가
+같은 비용으로 게이트 런을 1→2로 늘리는 유일한 선택지다(B3
+2 job은 +0).
+
+**OS(순서 교환, 규칙층만, 미실행)**: `R2C_ORDER="L TD TD L"` 1
+job(0.154 GPU-h) — **死因 0**(자유표면 20개 전수, 등록 라벨
+반전 0건), 차단 조건 D1–D8. 무수정 checker를 이 순서로 실제
+실행해 `VERDICT PASS` 확인(B3가 죽던 자리). 필수 등재 사실:
+(D2) 엔진 소스 핀은 장식이 아니라 하중재 — 작업 트리
+`dual_worker.py`가 38c1aca 대비 +172줄(A2의 H2, true-dual hot
+loop)이고 미커밋이었다(D1은 A1 커밋으로 이미 해소). (D3 —
+★철회) "L이 항상 먼저라는 조건을 제거한다"는 거짓(L1은 여전히
+위치 1, 감사자 자신의 B3 §7에서 철회). (D4 — 가장 중요) 이
+순서의 arm 경계 `{1,4}|{2,3}`은 동시에 "외곽-중앙" 위치 모양이라
+이 설계는 둘을 구별하지 못한다(C24 1건, 균등 기대 1.33 미만,
+유일한 관측 위치구조[위치1 고립]는 p≈0.57 미확립이며 3-1을
+만들어 초점에서 제외). 구매 순서 권고 변경: **A1 커밋 → X3 →
+OS**(OS는 어떤 선결도 안 닫고, 재현 대상 자신이 1/3 확률 사건).
+
+**A1/A2/A4 구현(커밋 3건, GPU 0)**: r2_eval sbatch spool-copy
+경로 결함 수리 + ctx 스크리닝, dual-worker 텔레메트리 H2–H5
+수리(판정 규칙 무영향), controller.py/profile.py line-citation
+앵커 38항목 등록(0 violation) + 도구 결함 2건 수리. 전체 CPU
+**426 tests OK**(직전 362). **★사용자 결정 대기**: 생성되는
+405 run 중 약 270이 현 구성으로 실행 불가(W2/W4/W5 135 run이
+8192-토큰 프롬프트로 Zamba2 ctx 4096 초과, B2/B8 90 run이
+`requires_offline_oracle`, B6 45 run이 미바인딩 변수 오류) —
+Claim E 캠페인은 모델/워크로드 교체 결정 없이는 돌 수 없다.
+잠복 결함 다수(로그 경로·module load·TRITON_CACHE_DIR 등)는
+미수정으로 등재만 함(engine-porter 이관). 인용 drift 검토 결과
+controller.py/profile.py 최종 교정본은 이미 세 정본 문서
+2026-09-12(4) 追記에 정확히 실려 있었음을 확인했고, 남아 있던
+"그대로 유효" 서브리스트의 `:87`(빈 줄)·`:65`(실제
+`upper_bound_itl_ms`, `admission_limited`는 `:68`) 오류만
+정정했다.
+
+신규 방법론 게이트 10건: **#180–184**(G-B3-1…5, `§3`
+항목200–204) · **#185–189**(G-OS-1…5, `§3` 항목205–209,
+#189=긍정 사례). 새 성능 판정 0건·Claim D/E 등급 불변(둘 다
+미검증)·HE0·정책 순위·stake #1 전부 불변. GPU 장부: 이 트랙
+0.43 GPU-h **불변**(B3/OS 미실행, A1/A2/A4는 코드 작업).
+**판단 근거(rev69→rev70)**: 신규 방법론 게이트 10건이 이번
+세션 산출이므로 2026-09-12(2)가 확립한 선례("신규 방법론
+게이트는 그 자체로 CONSENSUS rev 사유")를 그대로 적용한다.
+여기에 더해 이번 회차는 이전 정본 문장의 **철회**(B3C-3)와
+근원 판정서의 **산술 오류 정정**을 포함해 단순 코드 사실
+등재보다 무거운 갱신이다. 상세는 `PROJECT_STATUS.md` 최상단
+배너(2026-09-12(5))·§3 항목200–209(아래, 신설), `reports/
+paper/{CLAIM_EVIDENCE_MATRIX,EXPERIMENT_ROADMAP,DOCUMENT_
+STATUS}.md`, `MEMORY.md`·`memory/{deconfound-measurement-
+lessons,slo-aware-scheduling-track}.md`. **OS·B3는 미실행이므로
+어떤 결과도 등재하지 않았다.**
+
+이전: 2026-09-12(4) rev69 **(doc-steward — Claim E
 컨트롤러 코드, engine-porter A안 구현으로 2026-09-12(2) 긴장
 2건 해소 + 신규 방법론 게이트 3건, GPU 0·작업트리 미커밋)** —
 2026-09-12(2)가 미해결로 등재했던 긴장 2건(로드맵 `:976` 즉시
@@ -6558,6 +6640,26 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 
 199. ★★★**(2026-09-12(4), Claim E 컨트롤러 코드, engine-porter 구현 + doc-steward 등재, GPU 0) 미구현 절을 산문에 남겨 두면 구현된 것처럼 인용된다 — `bucket_changed`/"or bucket change" 사례.** 로드맵 `:975` "evaluate every `max(4 decode iterations, 100 ms)` **or bucket change**"의 후반절은 파라미터(`bucket_changed`)가 API·테스트에 존재하고 관련 테스트가 통과함에도, 서빙 경로(`_r2_decide_idx`, `multiplexing_mixin.py:436-440`)가 이 인자를 **한 번도 넘기지 않고**, `src/multiplex`에 bucket 정의 자체가 없어 서빙 iteration 전부에서 `False`로 고정된 채 **미구현**이다. 파라미터를 지우면 "이 절이 미구현"이라는 사실 자체가 코드에서 사라지므로, 수리는 삭제가 아니라 `stabilize` docstring에 미구현임을 명시적으로 박는 것이었다. 실무 규칙: API 파라미터가 존재하고 관련 테스트가 통과한다는 것은 그 파라미터가 서빙 경로에서 실제로 채워진다는 증거가 아니다 — 로드맵/논문이 그 절을 구현된 것으로 인용하기 전에 실제 호출부가 그 인자를 전달하는지 grep으로 확인하고, 미구현이면 파라미터를 지우는 대신 "미구현"을 코드·문서 양쪽에 명시적으로 남겨라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #179(신설). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-12(4)) 구현 상세 6항, `workspace/engine-port/src/multiplex/controller.py:249-262`, `multiplexing_mixin.py:436-440`.
 
+200. ★★★**(2026-09-12(5), B3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-B3-1 — 교훈 53·85 계열) 직전 회차의 허위-0 수리를 새 스크립트에 옮길 때는 granularity를 재도출하라.** X1 감사 D8의 "gen 파일 4개 미만이면 NOT-RUN" 가드를 B3의 `c_tier_null_control.py`가 **파일 존재**로 그대로 복제해, 한 boot의 `phase_c`가 빈 리스트(레코드 결손)인 경우 허위 0이 재발한다. 수리는 국소적이었고 결함이 한 층 아래(파일 수준→레코드 수준)로 이동했을 뿐이다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #180(신설). 상세 `workspace/engine-port/results/r2_correctness/b3_prereg/VERDICT_b3_rules_2026-09-12.md` §9(D1)·§12(G-B3-1).
+
+201. ★★★**(2026-09-12(5), B3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-B3-2 — 교훈 9의 또 한 층) selftest는 핵심 추정량의 *정의*(이름-모양 배선)를 assert해야 한다.** B3의 selftest는 `shape_of()`(어느 분할이 2-2인가)는 검사하지만 `report()`의 `named` dict(그 모양에 arm/parity 등 이름을 붙이는 매핑)는 검사하지 않아, 이름 배선을 뒤바꾼 변이(`M2`)가 selftest를 통과하면서 907100에서 결과 수치 E4를 3 대신 0으로 출력한다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #181(신설). 상세 `.../b3_prereg/VERDICT_b3_rules_2026-09-12.md` §5·§9(D5)·§12(G-B3-2).
+
+202. ★★★**(2026-09-12(5), B3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-B3-3 — 게이트#18 인접) 귀무대조의 문턱은 그 귀무에서의 발화 확률과 함께 등록하라.** B3의 F4 문턱 "E4≥2"는 position 구조가 전무한 균등 귀무(1/3)에서도 n_22=4에서 40.7%(n_22=3에서 25.9%)로 발화하며, 그 분기의 결론은 하필 기존 관측을 은퇴시키는 쪽이다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #182(신설). 상세 `.../b3_prereg/VERDICT_b3_rules_2026-09-12.md` §2(R3)·§4·§12(G-B3-3).
+
+203. ★★★**(2026-09-12(5), B3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-B3-4, 신설) 공허 수량자가 arm에 따라 verdict 라벨을 바꿀 수 있다.** `r2_correctness_check.py:471`의 `s_ref_ok = all(... for combinations(l_boots,2))`가 `l_boots=[]`(TD-only)에서 공허 참이 돼, 같은 물리적 사건이 `L L L L`=`NO_VERDICT_INFRA` / `TD TD TD TD`=`VERDICT FAIL`로 다르게 기록된다(S 토큰 1개 섭동으로 실증). 대응 `PROJECT_STATUS.md` "방법론 게이트" #183(신설). 상세 `.../b3_prereg/VERDICT_b3_rules_2026-09-12.md` §6·§9(D4)·§12(G-B3-4).
+
+204. ★★★**(2026-09-12(5), B3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-B3-5, 자기 적용 — 게이트#113 계열) 감사자의 "유일한 값싼 길" 처방은 그 자신이 사전등록 심사를 받기 전까지는 설계 권고가 아니다.** X1 결과 감사 §12-1이 B3를 "F3을 해석 가능하게 만드는 유일한 값싼 길"로 지목했으나, 그 처방 자체가 사전등록되자 (i) 조건부 균등 귀무가 이미 GPU 0으로 정본에 존재했다는 것 (ii) 분모가 둘(L·TD)이고 결합 규칙이 없다는 것 (iii) 동일-arm 설계가 가설 A·B를 동시에 지워 구별 불가하게 만든다는 것, 이 셋을 놓쳤다. 같은 판정서 §12-2는 별도로 사실과 다른 "n≥4 충족" 주장(위 rev70 정정1)을 담았다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #184(신설). 상세 `.../b3_prereg/VERDICT_b3_rules_2026-09-12.md` §8·§12(G-B3-5).
+
+205. ★★★**(2026-09-12(5), OS 사전등록 규칙층 감사, claims-auditor, GPU 0, G-OS-1 — 게이트#110의 실패 사례) 직전 판정서의 코드 사실은 그 사실이 참이었던 트리 상태와 함께 인용하라.** B3 §10/R10의 "핀해도 값은 어차피 같다"는 `HEAD` vs `38c1aca` 비교에서만 참이었는데, OS가 이를 트리 무관 상수로 승계한 사이 작업 트리에 `dual_worker.py` +172줄(true-dual hot loop 변경)이 미커밋으로 들어와 명제가 거짓이 됐다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #185(신설). 상세 `workspace/engine-port/results/r2_correctness/os_prereg/VERDICT_os_rules_2026-09-12.md` §9(D2)·§12(G-OS-1).
+
+206. ★★★**(2026-09-12(5), OS 사전등록 규칙층 감사, claims-auditor, GPU 0, G-OS-2 — 게이트#113 계열) "소스를 핀하라"는 처방은 미커밋 작업의 존재를 확인한 뒤에만 실행 가능하다.** `git checkout <ref> -- <path>`는 unstaged 변경을 reflog 없이 파괴한다 — OS 등록을 그대로 실행했다면 미커밋 A1/A2 작업이 사라졌을 것이다. 엔진 소스 핀을 요구하는 사전등록은 "핀 대상 경로에 미커밋 변경이 있으면 먼저 커밋/stash하라"를 명령문으로 넣어야 한다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #186(신설). 상세 `.../os_prereg/VERDICT_os_rules_2026-09-12.md` §9(D1)·§12(G-OS-2).
+
+207. ★★★**(2026-09-12(5), OS 사전등록 규칙층 감사, claims-auditor, GPU 0, G-OS-3 — 게이트#172 인접) 교락 해소 설계는 '깨는 교락'만이 아니라 '새로 만드는 교락'을 열거해야 한다.** `L TD TD L`은 arm 경계를 `{1,4}|{2,3}`으로 옮기는데, 그 모양은 동시에 "외곽-중앙" 위치 구조라 새 교락이 생긴다 — 세 개의 2-2 모양에 세 개의 물리적 해석을 1:1로 붙이는 것은 "위치 구조 후보가 셋뿐"이라는 미등록 가정이었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #187(신설). 상세 `.../os_prereg/VERDICT_os_rules_2026-09-12.md` §3(3)·§12(G-OS-3).
+
+208. ★★★**(2026-09-12(5), OS 사전등록 규칙층 감사, claims-auditor, GPU 0, G-OS-4, 신설) 사후 선택된 단위의 사전등록 재현은 재현 대상 자신의 귀무 확률과 선택에서 배제된 반대 증거 단위를 함께 등록해야 한다.** OS의 F3(초점 3단위 재현)은 정당한 설계이지만, 재현 대상인 907100의 관측 자신이 균등 귀무에서 P=1/3인 사건이고 초점 선택이 arm-비지지 유일 단위(C24)를 배제한다는 사실을 등록하지 않으면 재현 성공이 실제보다 9–30배 강해 보인다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #188(신설). 상세 `.../os_prereg/VERDICT_os_rules_2026-09-12.md` §5.3(D7)·§12(G-OS-4).
+
+209. ★★★**(2026-09-12(5), OS 사전등록 규칙층 감사, claims-auditor, GPU 0, G-OS-5 — 긍정 사례) "구성상 게이트가 도는가"는 논증하지 말고 판정 규칙을 그 구성으로 실제 실행해서 보여라.** OS의 "혼합-arm 순서라 checker 전 경로가 돈다"는 주장은 907100 아티팩트에 `boots.txt="L1 TD1 TD2 L2"`만 부여해 무수정 checker를 돌려 `VERDICT PASS`로 실제 확인됐다 — B3의 같은 자리 주장은 실행해 보니 부분적으로 틀렸었다(항목203)와 대조된다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #189(신설). 상세 `.../os_prereg/VERDICT_os_rules_2026-09-12.md` §4(a)·§12(G-OS-5).
+
 ---
 ## 4. 살아있는 문서 (이것만 참조)
 
@@ -7599,7 +7701,14 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
       유일한 값싼 길이며 arm-분리 판정에 분모를 준다(현재
       n=2/arm, P≈0.20).
    2. `R2C_ORDER="TD TD TD TD"` 1 job(+0.154 GPU-h) ⇒ 합쳐
-      n=4/arm(프로젝트 게이트 3 충족), paired 비교.
+      n=4/arm(프로젝트 게이트 3 충족), paired 비교. ★**철회
+      (2026-09-12(5), B3 판정서 §8)**: 괄호 문장은 **거짓**이다
+      — 한 job의 4 boot은 같은 노드·같은 물리 GPU·같은 warmup·
+      같은 `TRITON_CACHE_DIR`을 공유하는 순차 실행이라 독립 런이
+      아니고, 게이트 3(n≥4)은 *독립 런*을 요구한다. 인용 금지
+      **B3C-3**. 이 항목은 "B3" 2-job 사전등록(0.31 GPU-h)으로
+      구체화됐고 **`NO-GO`**(死因 N2, GPU 0·미실행) — 상세 아래
+      2026-09-12(5) 추가 항목.
    3. **D44 resident decode 동치를 보려면 새 층 O′ + 판정 규칙
       v3 사전등록 필수**(≈0.16 GPU-h) — 엔진은 prefill이
       없으면 idx 4를 떠나므로 probe가 decode하는 동안에도

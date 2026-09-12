@@ -754,7 +754,15 @@ C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
      유일한 값싼 길이며 arm-분리 판정에 분모를 준다(현재 n=2/arm,
      P≈0.20).
   2. `R2C_ORDER="TD TD TD TD"` 1 job(+0.154 GPU-h) ⇒ 합쳐
-     n=4/arm(프로젝트 게이트 3 충족), paired 비교.
+     n=4/arm(프로젝트 게이트 3 충족), paired 비교. ★**철회
+     (2026-09-12(5), B3 판정서 §8)**: 괄호 문장은 **거짓**이다 —
+     한 job의 4 boot은 같은 노드·같은 물리 GPU·같은 warmup·같은
+     `TRITON_CACHE_DIR`을 공유하는 순차 실행이라 독립 런이
+     아니고, 프로젝트 게이트 3(n≥4)은 *독립 런* n≥4를 요구한다.
+     인용 금지 **B3C-3**. 이 항목은 `L L L L`+`TD TD TD TD` 2
+     job(0.31 GPU-h) 사전등록 "B3"로 구체화됐고 **`NO-GO`**(死因
+     N2, GPU 0·미실행) — 상세 `PROJECT_STATUS.md` 최상단 배너
+     (2026-09-12(5)) "B. B3" 절.
   3. **D44 resident decode 동치를 보려면 새 층 O′ + 판정 규칙 v3
      사전등록 필수**(≈0.16 GPU-h) — 엔진은 prefill이 없으면 idx
      4를 떠나므로 probe가 decode하는 동안에도 제3의 장문 prefill을
@@ -768,27 +776,88 @@ C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
   5. **권고하지 않음**: cap을 더 낮추거나 다른 수치 구성으로 X1
      반복(교란이 떨어지는 위치가 안 바뀌므로 같은 한계의 결과가
      또 나온다).
+
+  ★★追記(2026-09-12(5), doc-steward — 항목1이 "B3" 사전등록으로
+  구체화·제출됐고, 후속 설계 "OS"가 규칙층 감사를 받았다. 둘 다
+  **미실행**, GPU 0): **B3**(`L L L L`+`TD TD TD TD` 2 job, 0.31
+  GPU-h) 판정 = **`NO-GO`**(死因 N2, 반전 3건: E4를 n_22 조건부로
+  읽으면 907456 n_22=0에서 라벨 반전·F4 여집합 31–59% 무라벨·빈
+  `phase_c`만으로 측정 실패가 결론 발화). 신규 게이트
+  G-B3-1…5(`#180–184`, `CONSENSUS.md` §3 항목200–204). 判定서
+  원문 `workspace/engine-port/results/r2_correctness/b3_prereg/
+  VERDICT_b3_rules_2026-09-12.md`.
+
+  **OS**(순서 교환, `R2C_ORDER="L TD TD L"`, 0.154 GPU-h, 규칙층
+  만) 판정 = **`GO-with-caveats`**(死因 0, 자유표면 20개 전수
+  반전 0건) + 차단 D1–D8. 무수정 checker를 이 순서로 실제
+  실행해 `VERDICT PASS` 확인(B3가 죽던 자리). 핵심 caveat:
+  arm 경계 `{1,4}|{2,3}`이 동시에 "외곽-중앙" 위치 모양이라 arm과
+  구별되지 않음(C24 1건, 균등 기대 1.33 미만) · 엔진 소스 핀은
+  장식이 아니라 하중재(작업 트리 `dual_worker.py` +172줄 미커밋
+  이었음 — A1 커밋으로 해소) · "L이 항상 먼저 조건을 제거한다"는
+  B3 §7의 주장은 **철회**(L1은 여전히 위치 1). 신규 게이트
+  G-OS-1…5(`#185–189`, §3 항목205–209). 판정서 원문
+  `.../os_prereg/VERDICT_os_rules_2026-09-12.md`.
+
+  **★구매 순서 권고 변경: A1 커밋 → X3 → OS.** OS는 어떤 선결도
+  안 닫고(등록 스스로 선언) 재현 대상(907100)이 균등 귀무에서
+  1/3 확률 사건이라, 아래 X3(선결 #4b 토큰 쪽 절반 + 성능 트랙
+  전체 해제 조건)를 먼저 산다.
+
 - **X2**: 비기본 split D16(≈0.16 GPU-h). `R2C_DSM=16`으로
   B8/O3의 FixedPolicy 변별력을 확보하고 B5/B6가 방문하는 split
   까지 스코프를 넓힌다.
 - **X3**: 러너 설정 인증. ctx/dirname 버그 수정 후 러너 서버
   인자 튜플로 하네스를 1회 실행(관측 플래그 ON/OFF 대조) — 선결
-  #4b(observer effect)의 토큰 쪽 절반.
+  #4b(observer effect)의 토큰 쪽 절반. ★**추기(2026-09-12(5))**:
+  이 항목의 "ctx/dirname 버그"가 A1 커밋(`09a8075`)으로
+  수리됐다 — `r2_eval.sbatch:11`의 spool-copy 경로 결함 +
+  `PDMUX_CONTEXT_LENGTH` 미배선 + `context_limit.py` 사전
+  스크리닝 신설. X3 실행 자체는 여전히 미실행(GPU 0)이지만
+  선행조건은 이제 충족됐다 — 위 구매 순서 권고에서 최우선.
 - **하네스 결함(게이트 아님, engine-porter 이관)**: H1
-  (INPUT_IDENTITY가 개수만 비교, sha 미검사) · H2(`task_count`가
-  `set_result` 뒤 증가해 Δ+1 지연) · H3(`host_worker_overlap_
-  ratio`의 1024개 절단·수명 분모로 동시성 지표 부적합) ·
-  H4(신설, 2026-09-12(3) X1 결과 감사 — `decode_step_count`가
-  전 boot·전 스냅샷 0, 죽은 필드) · H5(신설, 동 감사 —
-  `worker_overlap_ratio`가 TD boot에서도 전부 0.0이고 실제 값은
-  `host_worker_overlap_ratio`에만 있음, 게이트#166 G-2 재발 위험).
+  (INPUT_IDENTITY가 개수만 비교, sha 미검사, 미수정) ·
+  ~~H2(`task_count`가 `set_result` 뒤 증가해 Δ+1 지연)~~ →
+  **수리 완료(A2, 커밋 `ae7830e`)**: `finally`에서 future 해소
+  전에 공개하도록 변경(의미 불변, 가시화 시점만 앞당김) ·
+  H3(`host_worker_overlap_ratio`의 1024개 절단·수명 분모로
+  동시성 지표 부적합)는 **재정의하지 않고**(기존 값 비트 동일
+  고정) 올바른 창 기반 지표 5개를 새 이름으로 A2가 추가 ·
+  ~~H4(`decode_step_count`가 전 boot·전 스냅샷 0, 죽은 필드)~~ →
+  **A2가 방출 제거**(유일한 호출부가 R1 observer 가드라 항상 0) ·
+  ~~H5(`worker_overlap_ratio`가 TD boot에서도 전부 0.0)~~ →
+  **A2가 죽은 선언 제거**(살아있는 형제 `host_worker_overlap_
+  ratio`만 남김). `controller.py:54-55`의 같은 결함
+  (`prefill_idle_ratio`/`decode_idle_ratio`)은 정본이 "죽어
+  있다는 증거"로 인용 중이라 **의도적으로 미수정**, 테스트로
+  고정.
+
+- ★**A4 부수 결과(GPU 0)**: `controller.py`·`profile.py`
+  line-citation 앵커 38항목/21키가 이제
+  `workspace/engine-port/scripts/discipline/line_citations.json`
+  으로 버전관리 안에 있다 — 이 로드맵/`PROJECT_STATUS.md`/
+  `CLAIM_EVIDENCE_MATRIX.md`의 controller.py/profile.py 인용은
+  `check_line_citations.py --check`가 자동 검증한다(50→88
+  compared, 0 violation).
+
+- ★**사용자 결정 대기(가장 중요, 2026-09-12(5))**: A1이 만든
+  `results/r2_eval` 러너로 실제 캠페인을 생성하면 **405 run 중
+  약 270이 현 구성으로 실행 불가**하다 — W2/W4/W5(135 run)가
+  8192-토큰 프롬프트를 내보내 Zamba2-2.7B ctx 4096으로 서빙
+  불가·B2/B8(90 run)이 `requires_offline_oracle`로 exit 2·
+  B6(45 run)이 `policy_adapter.sh:57`
+  `PDMUX_MODEL_PROFILE_PATH: unbound variable`. **Claim E
+  캠페인은 모델 교체 또는 워크로드 교체 결정 없이는 돌 수
+  없다** — 아래 "Controller ablation" 절과 함께 다음 세션/
+  사용자 판단 대기.
 
 상세 `workspace/engine-port/results/r2_correctness/{job_907032/,
 job_907100/, job_907456/, audit_r2corr_2026-09-11/VERDICT.md,
-audit_x1_2026-09-12/VERDICT.md}` §6–§7.3·§11. 정본 반영:
-`PROJECT_STATUS.md` 최상단 배너·"다음 실험 gate" 항목1–4 追記,
-`CONSENSUS.md` §5-8(a) 追記(rev68)·§3 항목192–196, `CLAIM_EVIDENCE_
-MATRIX.md` Claim D 행·"주장 제한" 갱신.
+audit_x1_2026-09-12/VERDICT.md, b3_prereg/, os_prereg/}` §6–§7.3·
+§11. 정본 반영: `PROJECT_STATUS.md` 최상단 배너(2026-09-12(5))·
+"다음 실험 gate" 항목1–4 追記, `CONSENSUS.md` rev69→rev70·§3
+항목200–209, `CLAIM_EVIDENCE_MATRIX.md` Claim D 행·"주장 제한"
+갱신.
 
 ### P3 — Offline profile/estimator
 
