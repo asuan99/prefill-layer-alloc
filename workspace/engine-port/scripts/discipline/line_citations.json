@@ -1,4 +1,301 @@
 {
+ "../../PROJECT_STATUS.md": {
+  "__scope__": {
+   "only": [
+    "*controller.py:151-166",
+    "*controller.py:168-179",
+    "*controller.py:181-194",
+    "*controller.py:196-216",
+    "*controller.py:218-232",
+    "*controller.py:231-232",
+    "*controller.py:249-262",
+    "*controller.py:277-277",
+    "*controller.py:300-310",
+    "*controller.py:311-318",
+    "*controller.py:311-326",
+    "*controller.py:55-55",
+    "*controller.py:68-68",
+    "*controller.py:78-78",
+    "*profile.py:113-160",
+    "*profile.py:367-481",
+    "*profile.py:44-44"
+   ]
+  },
+  "controller.py:151-166": {
+   "anchor": "\"\"\"The roadmap's immediate-upshift predicate (EXPERIMENT_ROADMAP.md:976,",
+   "anchor_offset": 1,
+   "sha": "283e2f891cf315c3",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:168-179": {
+   "anchor": "(EXPERIMENT_ROADMAP.md:975).  BOTH thresholds must be met, which is the",
+   "anchor_offset": 2,
+   "sha": "5c27d7f994d204cb",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:181-194": {
+   "anchor": "\"\"\"Whether a new CADENCE EPOCH has passed since the overload streak was",
+   "anchor_offset": 1,
+   "sha": "44cb40eb9329f516",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:196-216": {
+   "anchor": "def evaluation_due(self, snapshot: RuntimeSnapshot, bucket_changed: bool = False) -> bool:",
+   "anchor_offset": 0,
+   "sha": "4fd82a904ea9e212",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:231-232": {
+   "anchor": "self.last_overload_epoch_iteration = -10**12",
+   "anchor_offset": 1,
+   "sha": "99bb400bc5721a1f",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:249-262": {
+   "anchor": "passes it, and `src/multiplex` contains no bucket definition at all, so",
+   "anchor_offset": 4,
+   "sha": "829a4500bd4e24ea",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:277-277": {
+   "anchor": "off_cadence = not self._cadence_due(snapshot)",
+   "anchor_offset": 0,
+   "sha": "aac880be2a21b631",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:300-310": {
+   "anchor": "#     An incompatible profile makes `desired.upper_bound_itl_ms = inf`",
+   "anchor_offset": 4,
+   "sha": "5530801a34d4900c",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:311-318": {
+   "anchor": "and desired.upper_bound_itl_ms > snapshot.itl_slo_ms",
+   "anchor_offset": 3,
+   "sha": "3d2b85e2aa13e34d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:311-326": {
+   "anchor": "self.last_overload_epoch_iteration = snapshot.decode_iterations",
+   "anchor_offset": 15,
+   "sha": "09789c754c2f4489",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:55-55": {
+   "anchor": "decode_idle_ratio: float = 0.0",
+   "anchor_offset": 0,
+   "sha": "9ace5e65e2fdff39",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:68-68": {
+   "anchor": "admission_limited: bool = False",
+   "anchor_offset": 0,
+   "sha": "575fc4a9feff6248",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "workspace/engine-port/src/multiplex/controller.py:151-166": {
+   "anchor": "\"\"\"The roadmap's immediate-upshift predicate (EXPERIMENT_ROADMAP.md:976,",
+   "anchor_offset": 1,
+   "sha": "283e2f891cf315c3",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/controller.py"
+  },
+  "workspace/engine-port/src/multiplex/controller.py:168-179": {
+   "anchor": "(EXPERIMENT_ROADMAP.md:975).  BOTH thresholds must be met, which is the",
+   "anchor_offset": 2,
+   "sha": "5c27d7f994d204cb",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/controller.py"
+  },
+  "workspace/engine-port/src/multiplex/controller.py:196-216": {
+   "anchor": "def evaluation_due(self, snapshot: RuntimeSnapshot, bucket_changed: bool = False) -> bool:",
+   "anchor_offset": 0,
+   "sha": "4fd82a904ea9e212",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/controller.py"
+  },
+  "workspace/engine-port/src/multiplex/controller.py:249-262": {
+   "anchor": "passes it, and `src/multiplex` contains no bucket definition at all, so",
+   "anchor_offset": 4,
+   "sha": "829a4500bd4e24ea",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/controller.py"
+  }
+ },
+ "../../reports/paper/CLAIM_EVIDENCE_MATRIX.md": {
+  "__scope__": {
+   "only": [
+    "*controller.py:151-166",
+    "*controller.py:168-179",
+    "*controller.py:181-194",
+    "*controller.py:196-216",
+    "*controller.py:218-232",
+    "*controller.py:231-232",
+    "*controller.py:249-262",
+    "*controller.py:277-277",
+    "*controller.py:300-310",
+    "*controller.py:311-318",
+    "*controller.py:311-326",
+    "*controller.py:55-55",
+    "*controller.py:68-68",
+    "*controller.py:78-78",
+    "*profile.py:113-160",
+    "*profile.py:367-481",
+    "*profile.py:44-44"
+   ]
+  },
+  "controller.py:151-166": {
+   "anchor": "\"\"\"The roadmap's immediate-upshift predicate (EXPERIMENT_ROADMAP.md:976,",
+   "anchor_offset": 1,
+   "sha": "283e2f891cf315c3",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:168-179": {
+   "anchor": "(EXPERIMENT_ROADMAP.md:975).  BOTH thresholds must be met, which is the",
+   "anchor_offset": 2,
+   "sha": "5c27d7f994d204cb",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:181-194": {
+   "anchor": "\"\"\"Whether a new CADENCE EPOCH has passed since the overload streak was",
+   "anchor_offset": 1,
+   "sha": "44cb40eb9329f516",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:196-216": {
+   "anchor": "def evaluation_due(self, snapshot: RuntimeSnapshot, bucket_changed: bool = False) -> bool:",
+   "anchor_offset": 0,
+   "sha": "4fd82a904ea9e212",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:249-262": {
+   "anchor": "passes it, and `src/multiplex` contains no bucket definition at all, so",
+   "anchor_offset": 4,
+   "sha": "829a4500bd4e24ea",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:311-318": {
+   "anchor": "and desired.upper_bound_itl_ms > snapshot.itl_slo_ms",
+   "anchor_offset": 3,
+   "sha": "3d2b85e2aa13e34d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:55-55": {
+   "anchor": "decode_idle_ratio: float = 0.0",
+   "anchor_offset": 0,
+   "sha": "9ace5e65e2fdff39",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:68-68": {
+   "anchor": "admission_limited: bool = False",
+   "anchor_offset": 0,
+   "sha": "575fc4a9feff6248",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:78-78": {
+   "anchor": "off_cadence: bool = False",
+   "anchor_offset": 0,
+   "sha": "6dbc8ee4ac0fb7bb",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "profile.py:113-160": {
+   "anchor": "def is_compatible(self, runtime: RuntimeEnvironment) -> Tuple[bool, List[str]]:",
+   "anchor_offset": 0,
+   "sha": "a2d286373499b565",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:367-481": {
+   "anchor": "# replaced `engine_commit` in `HybridModelProfileV1.is_compatible`.  It answers",
+   "anchor_offset": 3,
+   "sha": "19b947821920d04d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:44-44": {
+   "anchor": "engine_source_hash: str = \"\"",
+   "anchor_offset": 0,
+   "sha": "d5f03654571c755d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  }
+ },
+ "../../reports/paper/EXPERIMENT_ROADMAP.md": {
+  "__scope__": {
+   "only": [
+    "*controller.py:151-166",
+    "*controller.py:168-179",
+    "*controller.py:181-194",
+    "*controller.py:196-216",
+    "*controller.py:218-232",
+    "*controller.py:231-232",
+    "*controller.py:249-262",
+    "*controller.py:277-277",
+    "*controller.py:300-310",
+    "*controller.py:311-318",
+    "*controller.py:311-326",
+    "*controller.py:55-55",
+    "*controller.py:68-68",
+    "*controller.py:78-78",
+    "*profile.py:113-160",
+    "*profile.py:367-481",
+    "*profile.py:44-44"
+   ]
+  },
+  "controller.py:151-166": {
+   "anchor": "\"\"\"The roadmap's immediate-upshift predicate (EXPERIMENT_ROADMAP.md:976,",
+   "anchor_offset": 1,
+   "sha": "283e2f891cf315c3",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:168-179": {
+   "anchor": "(EXPERIMENT_ROADMAP.md:975).  BOTH thresholds must be met, which is the",
+   "anchor_offset": 2,
+   "sha": "5c27d7f994d204cb",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:181-194": {
+   "anchor": "\"\"\"Whether a new CADENCE EPOCH has passed since the overload streak was",
+   "anchor_offset": 1,
+   "sha": "44cb40eb9329f516",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:196-216": {
+   "anchor": "def evaluation_due(self, snapshot: RuntimeSnapshot, bucket_changed: bool = False) -> bool:",
+   "anchor_offset": 0,
+   "sha": "4fd82a904ea9e212",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:218-232": {
+   "anchor": "them the next HOLD decision would re-assert the limit the runtime just",
+   "anchor_offset": 8,
+   "sha": "3d7f014bfb3da529",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:231-232": {
+   "anchor": "self.last_overload_epoch_iteration = -10**12",
+   "anchor_offset": 1,
+   "sha": "99bb400bc5721a1f",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:68-68": {
+   "anchor": "admission_limited: bool = False",
+   "anchor_offset": 0,
+   "sha": "575fc4a9feff6248",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "profile.py:113-160": {
+   "anchor": "def is_compatible(self, runtime: RuntimeEnvironment) -> Tuple[bool, List[str]]:",
+   "anchor_offset": 0,
+   "sha": "a2d286373499b565",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:367-481": {
+   "anchor": "# replaced `engine_commit` in `HybridModelProfileV1.is_compatible`.  It answers",
+   "anchor_offset": 3,
+   "sha": "19b947821920d04d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:44-44": {
+   "anchor": "engine_source_hash: str = \"\"",
+   "anchor_offset": 0,
+   "sha": "d5f03654571c755d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  }
+ },
  "results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md": {
   "a1/a1_q3k1_rule.py:105-105": {
    "anchor": "N_MIN_DECODE_STEPS = 64",

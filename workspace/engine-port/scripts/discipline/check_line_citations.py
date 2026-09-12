@@ -34,9 +34,14 @@
     python3 check_line_citations.py --snapshot <doc.md> [...]   # 지문 기록
     python3 check_line_citations.py --check <doc.md> [...]      # 드리프트 검사
     python3 check_line_citations.py --check --all               # 매니페스트에 있는 전부
+    python3 check_line_citations.py --snapshot --only 'controller.py:151-166' <doc.md>
+        # ★부분 등록. 장수 원장(`PROJECT_STATUS.md`, `reports/paper/*`)은 역사적 인용과
+        # `A → B` 갱신 노트를 의도적으로 품고 있어 통째 스냅샷하면 거짓 인용을 기준선으로
+        # 굳힌다(= 레지스트리가 항등식). 손으로 검증한 키만 등록하고, 그 범위를 매니페스트
+        # 안 `__scope__`에 적어 둔다 — `--check`는 그 기록된 범위를 다시 읽어 적용한다.
 종료: 0 통과, 1 위반, 2 사용법/해석 오류.
 """
-import argparse, hashlib, json, os, re, sys
+import argparse, fnmatch, hashlib, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TRACK_ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))      # .../engine-port
@@ -46,10 +51,33 @@ PROJECT_ROOT = os.path.abspath(os.path.join(TRACK_ROOT, "..", ".."))  # .../pref
 # engine citation "UNRESOLVED", which is how the first run of this tool failed.
 WORKSPACE_ROOT = os.path.abspath(os.path.join(PROJECT_ROOT, ".."))
 MANIFEST = os.path.join(HERE, "line_citations.json")
+# ★A document may be registered ONLY IN PART.  `PROJECT_STATUS.md` and
+# `reports/paper/*` are decade-long ledgers that deliberately contain historical
+# citations ("the audit wrote :155"), the left half of `A -> B` update notes, and
+# bare `:975` shorthands that mean the ROADMAP's own lines rather than the last
+# .py file named -- 51 of their citations fail RANGE/BLANK/UNRESOLVED for those
+# reasons alone.  Registering such a document wholesale would either baseline
+# false citations (the registry becomes an identity) or paint the gate
+# permanently red (a red gate is a dead gate).  So a partial registration is
+# DECLARED, in the manifest, next to the keys it covers, and the always-on
+# RANGE/BLANK/UNRESOLVED checks are confined to that same scope for that document
+# only.  A document registered WITHOUT `--only` keeps the unrestricted checks.
+SCOPE_KEY = "__scope__"
 
-# `path/or/name.ext:12` or `...:12-34`, inside markdown backticks.
+# `path/or/name.ext:12`, `...:12-34`, or a COMMA LIST `...:44,113-160,367-481`.
+# ★The comma list is not a nicety.  The canon writes a multi-site citation as one
+# span -- `profile.py:44,113-160,367-481` -- and the single-item form skipped the
+# whole thing (no backtick follows `44`), so `is_compatible` and
+# `engine_source_hash`, two of the anchors a 2026-09-12 drift actually hit, were
+# invisible to this tool.  A list is unambiguous: every item names the SAME file
+# and every item is a CURRENT claim.
+# ★Deliberately NOT parsed: the `A -> B` update notes, e.g.
+# `controller.py:124-130 -> :129-142`.  There the first number is HISTORY and the
+# second is current, and a scanner cannot tell which side of an arrow it is on.
+# Those are reported by hand instead of registered.
 CITE = re.compile(
-    r"`([A-Za-z0-9_./\-]+\.(?:py|sh|sbatch|yml|yaml|md)):(\d+)(?:-(\d+))?`"
+    r"`([A-Za-z0-9_./\-]+\.(?:py|sh|sbatch|yml|yaml|md)):"
+    r"(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)`"
 )
 # Files whose line numbers are not worth tracking (prose that moves freely).
 SKIP_TARGET_EXT = (".md",)
@@ -194,17 +222,25 @@ def citations_in(doc):
     current = None
     for _pos, kind, m in sorted(events, key=lambda e: e[0]):
         if kind == "full":
-            cited, a, b = m.group(1), int(m.group(2)), int(m.group(3) or m.group(2))
+            cited = m.group(1)
             current = cited
+            spans = []
+            for item in m.group(2).split(","):
+                lo, _, hi = item.partition("-")
+                spans.append((int(lo), int(hi or lo)))
         else:
             if current is None:
                 continue
-            cited, a, b = current, int(m.group(1)), int(m.group(2) or m.group(1))
-        if cited.endswith(SKIP_TARGET_EXT) or b < a:
+            cited = current
+            spans = [(int(m.group(1)), int(m.group(2) or m.group(1)))]
+        if cited.endswith(SKIP_TARGET_EXT):
             continue
         if text[m.end():m.end() + 40].lstrip().startswith(HIST):
             continue
-        out.append((cited, a, b))
+        for a, b in spans:
+            if b < a:
+                continue
+            out.append((cited, a, b))
     # de-duplicate, keep order
     seen, uniq = set(), []
     for c in out:
@@ -228,13 +264,35 @@ def save_manifest(man):
     os.replace(tmp, MANIFEST)
 
 
-def process(docs, snapshot, man, force=False):
+def process(docs, snapshot, man, force=False, only=None):
+    """`only` = fnmatch patterns over the citation key, or None for every one.
+
+    ★WHY A SELECTOR EXISTS, AND WHY IT IS ONLY SAFE AT SNAPSHOT TIME.
+    A snapshot RECORDS, it does not VALIDATE (see the module docstring).  The
+    canonical documents are long-lived and carry three kinds of `file:line`:
+    live claims, deliberately-historical ones ("the audit wrote :155"), and the
+    left half of `A -> B` update notes.  Snapshotting such a document wholesale
+    would enter the stale ones as baselines, and `--check` would then certify
+    them forever -- the registry becomes an identity function, which is worse
+    than no registry.  `--only` makes "I verified exactly these" expressible.
+    On `--check` the scope is NOT taken from the command line -- it is read
+    back from `SCOPE_KEY` in the manifest, so the set of citations a document is
+    accountable for is a recorded fact rather than a flag someone remembered to
+    pass.  Widening or narrowing it is a manifest change, i.e. a reviewable one.
+    """
     violations, recorded, checked = [], 0, 0
     for doc in docs:
         rel = os.path.relpath(os.path.abspath(doc), TRACK_ROOT)
         entries = man.setdefault(rel, {}) if snapshot else man.get(rel, {})
+        # On --check the scope comes from the manifest, not the command line, so
+        # a partial registration cannot be silently widened or narrowed later.
+        scope = only if snapshot else (entries.get(SCOPE_KEY) or {}).get("only")
         for cited, a, b in citations_in(doc):
             key = f"{cited}:{a}-{b}"
+            if scope is not None and not any(
+                fnmatch.fnmatch(key, pattern) for pattern in scope
+            ):
+                continue
             path, why = resolve(cited)
             if path is None:
                 violations.append(f"{rel}  {key}  UNRESOLVED  ({why})")
@@ -294,6 +352,13 @@ def process(docs, snapshot, man, force=False):
                 violations.append(
                     f"{rel}  {key}  DRIFT  expected {prev['sha']} got {sha}"
                     f"{hint}\n      anchor: {prev['anchor'][:88]}")
+        # Record the registration scope NEXT TO the keys it covers, so a
+        # later --check reads the same scope the snapshot was taken under.
+        if snapshot:
+            if only is not None:
+                entries[SCOPE_KEY] = {"only": sorted(only)}
+            else:
+                entries.pop(SCOPE_KEY, None)
     # ★ORPHAN KEYS (3rd audit B9).  `REBASE-REFUSED` guards the SAME key, so
     # editing a citation's number creates a NEW key that is recorded without
     # comparison while the old key lingers.  That is the exact path the
@@ -303,7 +368,8 @@ def process(docs, snapshot, man, force=False):
     for doc in docs:
         rel = os.path.relpath(os.path.abspath(doc), TRACK_ROOT)
         live = {f"{c}:{a}-{b}" for c, a, b in citations_in(doc)}
-        for key in sorted(set(man.get(rel, {})) - live):
+        registered = set(man.get(rel, {})) - {SCOPE_KEY}
+        for key in sorted(registered - live):
             violations.append(
                 f"{rel}  {key}  ORPHAN  the document no longer cites this; "
                 f"drop the key (--prune) if the citation was corrected")
@@ -322,6 +388,11 @@ def main(argv):
                          "changed.  Without it, a changed baseline is REFUSED.")
     ap.add_argument("--all", action="store_true",
                     help="with --check: every document already in the manifest")
+    ap.add_argument("--only", action="append", default=None,
+                    help="with --snapshot: register ONLY citation keys matching "
+                         "this fnmatch pattern (repeatable).  Use it to enter a "
+                         "hand-verified subset of a long document instead of "
+                         "baselining its historical citations too.")
     ap.add_argument("docs", nargs="*")
     args = ap.parse_args(argv)
     if args.snapshot == args.check:
@@ -337,14 +408,19 @@ def main(argv):
         print("no documents given", file=sys.stderr)
         return 2
 
+    if args.only and not args.snapshot:
+        print("--only applies to --snapshot; --check always compares every "
+              "registered key", file=sys.stderr)
+        return 2
     if args.prune and args.snapshot:
         for doc in docs:
             rel = os.path.relpath(os.path.abspath(doc), TRACK_ROOT)
             live = {f"{c}:{a}-{b}" for c, a, b in citations_in(doc)}
             for key in list(man.get(rel, {})):
-                if key not in live:
+                if key != SCOPE_KEY and key not in live:
                     del man[rel][key]
-    violations, recorded, checked = process(docs, args.snapshot, man, args.force)
+    violations, recorded, checked = process(
+        docs, args.snapshot, man, args.force, args.only)
     if args.snapshot:
         save_manifest(man)
         print(f"--- snapshotted {recorded} citation(s) in {len(docs)} doc(s)")

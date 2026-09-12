@@ -239,3 +239,192 @@ class OrphanAndUntestedDecisionsTest(unittest.TestCase):
         v, _, _ = C.process([self.t.doc], False, man)
         self.assertEqual(len(v), 1)
         self.assertIn("widget.py:5-6", v[0])      # start moved 3 -> 5, not 4 -> 6
+
+
+class CommaListTest(unittest.TestCase):
+    """The canon writes multi-site citations as one span: `f.py:44,113-160`.
+
+    The single-item form required a backtick right after the first number, so a
+    whole comma list was invisible -- which is how `profile.py`'s
+    `is_compatible` and `engine_source_hash` anchors escaped the registry while
+    a 2026-09-12 edit moved them.
+    """
+
+    def test_a_comma_list_yields_every_item(self):
+        t = _Tree(BODY, "see `widget.py:3,4,7-8` for all of it\n")
+        self.addCleanup(t.close)
+        self.assertEqual(
+            C.citations_in(t.doc),
+            [("widget.py", 3, 3), ("widget.py", 4, 4), ("widget.py", 7, 8)],
+        )
+
+    def test_a_plain_citation_is_unchanged(self):
+        t = _Tree(BODY, "see `widget.py:3-4`\n")
+        self.addCleanup(t.close)
+        self.assertEqual(C.citations_in(t.doc), [("widget.py", 3, 4)])
+
+    def test_an_arrow_update_note_yields_nothing_at_all(self):
+        """`A -> B` notes are history on the left and current on the right.
+
+        A scanner cannot tell which side it is on, so it must not turn either
+        into a live claim.  It yields NOTHING -- not even the left half -- and
+        that is why the canon's "broken citation update" lines have to be
+        reviewed by hand rather than registered.  Pinned here so a future
+        loosening of CITE cannot start baselining the historical side.
+        """
+        t = _Tree(BODY, "moved: `widget.py:3 -> :4`\n")
+        self.addCleanup(t.close)
+        self.assertEqual(C.citations_in(t.doc), [])
+
+
+class PartialRegistrationScopeTest(unittest.TestCase):
+    """A long ledger is registered on PART of its citations, and says so.
+
+    Without a declared scope there are only two options for `PROJECT_STATUS.md`:
+    baseline its historical citations too (the registry becomes an identity
+    function) or leave the gate permanently red (a red gate is a dead gate).
+    """
+
+    def setUp(self):
+        self.t = _Tree(
+            BODY,
+            "good `widget.py:3` and broken `widget.py:900` and blank `widget.py:5-6`\n",
+        )
+        self.addCleanup(self.t.close)
+
+    def test_only_registers_just_the_selected_key(self):
+        man = {}
+        v, rec, _ = C.process([self.t.doc], True, man, only=["widget.py:3-3"])
+        self.assertEqual(v, [])
+        self.assertEqual(rec, 1)
+        rel = os.path.relpath(os.path.abspath(self.t.doc), C.TRACK_ROOT)
+        self.assertEqual(set(man[rel]) - {C.SCOPE_KEY}, {"widget.py:3-3"})
+
+    def test_the_scope_is_recorded_in_the_manifest(self):
+        man = {}
+        C.process([self.t.doc], True, man, only=["widget.py:3-3"])
+        rel = os.path.relpath(os.path.abspath(self.t.doc), C.TRACK_ROOT)
+        self.assertEqual(man[rel][C.SCOPE_KEY], {"only": ["widget.py:3-3"]})
+
+    def test_check_reads_the_scope_back_and_ignores_out_of_scope_breakage(self):
+        man = {}
+        C.process([self.t.doc], True, man, only=["widget.py:3-3"])
+        v, _, checked = C.process([self.t.doc], False, man)
+        self.assertEqual(v, [], "out-of-scope RANGE/BLANK must not fail a scoped doc")
+        self.assertEqual(checked, 1)
+
+    def test_drift_inside_the_scope_is_still_caught(self):
+        """★The scope narrows WHAT is watched, never HOW HARD."""
+        man = {}
+        C.process([self.t.doc], True, man, only=["widget.py:3-3"])
+        self.t.rewrite_target(SHIFTED)
+        v, _, _ = C.process([self.t.doc], False, man)
+        self.assertEqual(len(v), 1)
+        self.assertIn("DRIFT", v[0])
+        self.assertIn("widget.py:5", v[0])
+
+    def test_an_unscoped_document_keeps_the_unrestricted_checks(self):
+        """The original guarantee must survive for fully-registered docs."""
+        man = {}
+        C.process([self.t.doc], True, man)      # no --only
+        v, _, _ = C.process([self.t.doc], False, man)
+        kinds = sorted(x.split()[2] for x in v)
+        self.assertEqual(kinds, ["BLANK", "RANGE"])
+
+    def test_a_re_snapshot_without_only_drops_the_scope(self):
+        man = {}
+        C.process([self.t.doc], True, man, only=["widget.py:3-3"])
+        rel = os.path.relpath(os.path.abspath(self.t.doc), C.TRACK_ROOT)
+        self.assertIn(C.SCOPE_KEY, man[rel])
+        C.process([self.t.doc], True, man)
+        self.assertNotIn(C.SCOPE_KEY, man[rel])
+
+    def test_the_scope_key_is_never_reported_as_an_orphan(self):
+        man = {}
+        C.process([self.t.doc], True, man, only=["widget.py:3-3"])
+        v, _, _ = C.process([self.t.doc], False, man)
+        self.assertFalse([x for x in v if C.SCOPE_KEY in x], v)
+
+
+class LiveRegistryTest(unittest.TestCase):
+    """★The registry must not be an identity function on the REAL canon docs.
+
+    2026-09-12 saw `controller.py` / `profile.py` citations drift twice in one
+    session while `--check --all` reported OK, because no manifest entry pointed
+    at either file.  These two tests say: the entries now exist, and a line
+    shift in either file makes every one of them fail.
+    """
+
+    CANON = (
+        "../../PROJECT_STATUS.md",
+        "../../reports/paper/CLAIM_EVIDENCE_MATRIX.md",
+        "../../reports/paper/EXPERIMENT_ROADMAP.md",
+    )
+
+    def setUp(self):
+        self.man = C.load_manifest()
+        missing = [d for d in self.CANON if d not in self.man]
+        if missing:
+            self.fail(f"canon documents are not registered at all: {missing}")
+
+    def test_the_canon_documents_target_controller_and_profile(self):
+        targets = {
+            entry["target"]
+            for doc in self.CANON
+            for key, entry in self.man[doc].items()
+            if key != C.SCOPE_KEY
+        }
+        self.assertTrue(
+            any(t.endswith("multiplex/controller.py") for t in targets), targets
+        )
+        self.assertTrue(
+            any(t.endswith("multiplex/profile.py") for t in targets), targets
+        )
+
+    def test_every_canon_document_declares_a_partial_scope(self):
+        for doc in self.CANON:
+            self.assertIn(C.SCOPE_KEY, self.man[doc], doc)
+            self.assertTrue(self.man[doc][C.SCOPE_KEY]["only"], doc)
+
+    def test_shifting_the_real_files_fails_every_registered_key(self):
+        import copy
+        import shutil
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        src = os.path.join(C.TRACK_ROOT, "src", "multiplex")
+        watched = []
+        for name in ("controller.py", "profile.py"):
+            with open(os.path.join(src, name)) as fh:
+                text = fh.read().split("\n")
+            text[20:20] = ["# line-shift mutation", "# line-shift mutation"]
+            with open(os.path.join(tmp.name, name), "w") as fh:
+                fh.write("\n".join(text))
+            watched.append(name)
+        for other in os.listdir(src):
+            if other.endswith(".py") and other not in watched:
+                shutil.copy(os.path.join(src, other), tmp.name)
+
+        saved_i, saved_r = C._index, C.SEARCH_ROOTS
+        self.addCleanup(lambda: setattr(C, "SEARCH_ROOTS", saved_r))
+        self.addCleanup(lambda: setattr(C, "_index", saved_i))
+        C._index, C.SEARCH_ROOTS = None, (tmp.name,)
+
+        docs = [os.path.join(C.TRACK_ROOT, d) for d in self.CANON]
+        violations, _, _ = C.process(docs, False, copy.deepcopy(self.man))
+        drifted = {v.split()[1] for v in violations if " DRIFT " in v}
+
+        # Keys written with a repo-relative path resolve through the real tree
+        # (resolve() prefers an explicit path that exists), so the temp shift
+        # cannot reach them; they are excluded rather than silently expected.
+        expected = {
+            key
+            for doc in self.CANON
+            for key in self.man[doc]
+            if key != C.SCOPE_KEY and "/" not in key
+        }
+        self.assertTrue(expected, "nothing registered to mutate")
+        self.assertEqual(
+            expected - drifted, set(),
+            "a registered citation survived a line shift -- it is an identity",
+        )
