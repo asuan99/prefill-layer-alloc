@@ -1,6 +1,15 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-11(3)(doc-steward — **R2 true-dual GPU
+최종 갱신: 2026-09-12(doc-steward — **engine-porter 코드 사실 3건
+등재**, 2026-09-11 확인·file:line 근거, **성능 판정 아님·수정 없음·
+사용자 결정 대기**) — "Controller defaults" 절(아래)의 평가 주기·
+admission 명세가 실제 컨트롤러/프로파일 코드와 3곳에서 불일치함을
+확인해 그 절 바로 아래에 追記했다(Claim E 착수 전 해소 필요). 전문·
+line-by-line 근거는 `CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E
+항목(2026-09-12 추가) 참조. Claim E 등급 무변경(미검증)·새 성능
+판정 0건·arm 순위 0건·HE0 불변. `CONSENSUS.md` rev 변경 없음(rev66
+유지, doc-steward 판단 — 코드 사실 등재이며 새 분석 결론 아님).
+이전: 2026-09-11(3)(doc-steward — **R2 true-dual GPU
 correctness 트랙** — 2026-09-11 admission latch stale-True
 버그 수정(`02918e8`, 보류 해제·사용자 R2 복귀 결정) 이후 재실행
 job 907032(0.12 GPU-h)는 split-prefill ownership race로
@@ -968,3 +977,43 @@ target으로 사용한다.
 - downshift only below 0.75×SLO for 3 epochs
 - dwell `max(8 decode steps, 200 ms)`; upshift exempt
 - D108 risk 또는 occupancy 90%가 2 epochs 지속되면 admission 제한
+
+★★追記(2026-09-12, doc-steward — engine-porter 코드 사실 3건,
+2026-09-11 확인·file:line 근거, **성능 판정 아님·수정 없음·사용자
+결정 대기**): 위 명세 두 줄이 실제 컨트롤러/프로파일 코드
+(`workspace/engine-port/src/multiplex/`)와 다음 지점에서 불일치한다
+— 어느 쪽(코드/이 로드맵)이 옳은지는 판정하지 않는다.
+
+1. **평가 주기 연산이 반대다.** 위 `evaluate every max(4 decode
+   iterations, 100 ms)`(:975, `max`=둘 다 채운 뒤 발화)와 달리, 코드
+   `evaluation_due()`(`controller.py:124-130`)는 `bucket_changed OR
+   경과시간≥100ms OR 경과iteration≥4`, 즉 **셋 중 먼저 오는 것**(`OR`/
+   min 의미)에 발화한다.
+2. **admission 제한의 지속 기간이 사실상 ~1 iteration이다.** 위
+   `D108 risk 또는 occupancy 90%가 2 epochs 지속되면 admission
+   제한`(:979)은 트리거 조건만 적고 있으나, 트리거된 뒤의 지속은
+   코드상 짧다 — `stabilize()`가 `evaluation_due()==False`인 매
+   iteration마다 `SplitDecision(current, current, HOLD)`을 반환하고
+   (`controller.py:148-149`) 이 반환값의 `admission_limited`는
+   dataclass 기본값 `False`다(`controller.py:68`). `_r2_decide_idx`
+   (`multiplexing_mixin.py:430-441`)가 이 값으로
+   `self.r2_admission_limited`를 매 호출 무조건 덮어쓰고, 그 호출은
+   split-prefill in-flight 또는 admission-recheck 경로
+   (`multiplexing_mixin.py:1066-1080`)로 거의 매 iteration
+   일어난다 — 즉 latch가 평가 iteration에 `True`가 된 바로 다음
+   (비평가) iteration에 `False`로 되돌아간다.
+3. **hybrid profile 호환 검사가 `engine_commit`을 포함해 거의 항상
+   fallback이다.** `HybridModelProfileV1.is_compatible()`
+   (`profile.py:98-114`)이 `engine_commit`(:102, repo HEAD —
+   `scripts/r2_eval/r2_eval.sbatch:26`이 `git rev-parse HEAD`로
+   설정)을 포함한 6개 필드 엄격 일치를 요구해, 엔진과 무관한 문서
+   커밋만으로도 `ConservativeDecodeFloorEstimator.estimate()`
+   (`profile.py:268-279`)가 `upper_bound_itl_ms=inf`·`fallback=True`로
+   떨어진다 — B6(hybrid) arm이 기본값으로 profile 없이 도는 구성이
+   될 수 있다.
+
+**Claim E(위 "P4" 절·"Controller ablation" 절 A/E 행) 착수 전 해소
+필요 — 전부 고치지 않고 표시만 해 둔다(사용자 결정 대기).** Claim E
+등급(미검증)·B0–B8 순위·새 성능 판정 전부 무변경. 전문·인용 근거는
+`CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E 항목(2026-09-12 추가)
+참조.

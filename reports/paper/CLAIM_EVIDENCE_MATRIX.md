@@ -1,6 +1,35 @@
 # Claim–evidence matrix
 
-최종 갱신: 2026-09-11(3)(doc-steward — 이 문서를 `CONSENSUS.md`
+최종 갱신: 2026-09-12(doc-steward — **engine-porter 코드 사실 3건
+등재**, 2026-09-11 확인·file:line 근거, **성능 판정 아님·수정 없음·
+사용자 결정 대기**). generic/hybrid(`PDMUX_R2_POLICY=generic|hybrid`)
+컨트롤러·프로파일 설계에 Claim E 착수 전 해소가 필요한 코드↔로드맵
+불일치 3건이 확인됐다: ①admission 제한 latch가 평가 차례가 아닌
+호출마다 기본값 `admission_limited=False`로 재덮어써 사실상 ~1
+iteration만 유지된다(`workspace/engine-port/src/multiplex/
+controller.py:68,124-130,148-149`; `multiplexing_mixin.py:430-441,
+1066-1080`) — `EXPERIMENT_ROADMAP.md:979`의 "2 epochs 지속되면
+admission 제한" 명세와 불일치. ②컨트롤러 평가 주기 연산이 코드
+(`controller.py:124-130`, `OR`=먼저 오는 것)와 로드맵(:975,
+`max(4 iterations, 100 ms)`=둘 다 채운 뒤) 사이에서 반대다. ③hybrid
+profile 호환 검사(`profile.py:98-114,268-279`)가 `engine_commit`
+(repo HEAD, `scripts/r2_eval/r2_eval.sbatch:26`)을 포함한 6개 필드
+엄격 일치를 요구해 엔진과 무관한 문서 커밋만으로도 fallback
+(`upper_bound_itl_ms=inf`)에 빠질 수 있다 — B6(hybrid) arm이 기본값
+으로 profile 없이 도는 구성이 될 수 있다. **전부 고치지 않고 표시만
+해 둔다**(사용자 결정 대기) — 어느 쪽(코드/로드맵)이 옳은지는
+판정하지 않는다. Claim E 등급 무변경(미검증)·새 성능 판정 0건·arm
+순위 0건·정책 순위 변경 0건·HE0 불변. 별도로 도구 사실 1건(게이트
+#157 계열 — `/scratch/ehmoon/whlee/.claude/agents/git-committer.md:
+25-27`이 outer 워크스페이스를 git 저장소로 서술하나 실제로는 아님)은
+`PROJECT_STATUS.md`에만 등재(이 매트릭스·`CONSENSUS.md` 무영향).
+`CONSENSUS.md` rev는 **변경 없음**(rev66 유지) — 코드 사실 등재이며
+새 분석 결론이 아니라 이 매트릭스·`EXPERIMENT_ROADMAP.md`·
+`PROJECT_STATUS.md` 3개 문서 등재로 충분하다고 판단(doc-steward).
+상세 아래 Claim E 행·"주장 제한" 절, `EXPERIMENT_ROADMAP.md`
+"Controller defaults" 절 追記(2026-09-12), `PROJECT_STATUS.md` 게이트
+#157 관련 追記(2026-09-12).
+이전: 2026-09-11(3)(doc-steward — 이 문서를 `CONSENSUS.md`
 rev66과 재동기화. **R2 true-dual GPU correctness 트랙** — 2026-09-11
 커밋 `02918e8`가 admission latch stale-True 버그를 수정(보류
 해제, 사용자 R2 복귀 결정)한 뒤 재실행 job 907032(0.12 GPU-h)는
@@ -338,7 +367,7 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
 | B. layer-level reconfiguration은 ITL critical path와 CUDA Graph를 훼손한다 | 강한 지지, 현 구현 범위 한정 | coordinated TPOT 약 42→124 ms, 최적화 후 약 85 ms; sub-step drain; graph incompatibility | 다중 모델 반복과 timeline attribution | B7 반복, CUDA Graph on/off, Nsight synchronization timeline |
 | C. decode starvation은 TTFT도 악화시킨다 | running-batch 경로 강함; KV 경로 부분 (★2026-08-02 등급 불변) | D16 TTFT 7.24 s/ITL 61.9 ms 대 D24 1.21 s/39.9 ms; admission capacity 관측. ⚠️**인용금지(2026-08-04, `../layertype_dynamic_POSITIVE_2026-08-04.md:159`, doc-steward 전파 2026-08-16)**: 이 "7.24s" magnitude는 **폐기 벤치 n=1**(stationary ShareGPT rate 8, 방법론 게이트 #2·§1-14 절벽 rate)이라 수치는 인용 금지, **방향**(decode 굶김→admission 차단이 TTFT를 악화시킨다)만 변화 trace n≥4가 지지 | time-aligned KV occupancy와 admission reason. ★**2026-08-02**: occupancy 데이터 자체는 `results/s8_frontier/`(2026-08-01)에서 처음 생겼으나 **de-confound가 안 됐다** — hybrid arm의 `kv_mamba_occupancy=1.0`은 pool 크기가 `--max-running-requests`와 같아서 생기는 **항등식**이고(`model_runner_kv_cache_mixin.py:223-229`), 그 캠페인은 **claims-auditor 미통과(인용 금지)**다. 남은 Missing evidence는 그대로 | D16/D24 paired replay, structured KV/full/mamba occupancy(**`--max-mamba-cache-size`를 `= cap` 규칙으로 명시 고정해 항등식을 깬 뒤에** — 절대상수 고정은 arm마다 메모리 분할을 다르게 만들어 새 교락이 된다), mediation timeline |
 | D. execution-state separation은 single-worker coupling을 줄인다 (★2026-07-24 코드 리뷰로 scope 축소, 아래 "주장 제한" 참조) | 미검증 | R1은 observer라 해당 증거가 아님; 2026-07-24 읽기 전용 코드 리뷰([`../r2_decoupling_review_2026-07-24.md`](../r2_decoupling_review_2026-07-24.md), file:line 근거)로 `PDMUX_TRUE_DUAL_WORKER=1`의 구조 확인: 두 host issue thread/role별 task queue/immutable `ExecutionContext`/thread-local role(ContextVar)만 분리하는 **control-plane dual-worker**이며, running batch(`max_running_requests`)·KV/mamba pool·SM 파티션(`SharedGpuArbiter` 단일 `stream_index`, ≤108)은 **전면 공유** | 실제 두 host loop에서의 fixed-split 비교(coupled ceiling 내); GPU correctness 동치: "job 907100(2026-09-11, 약 0.16 GPU-h, commit 38c1aca, 하네스 v2 판정 규칙 사전 고정) `PASS`, claims-auditor 결과 감사 `CONFIRMED(scoped)`. 조건은 {Zamba2-2.7B, TP=1, pdmux_r2.yml fixed D44, cudagraph-ON(decode 한정, prefill은 두 arm 모두 eager), greedy T=0·ignore_eos, seed 1, ctx 4096(러너 기본값 16384와 다름), boot 2개/arm}이다. 이 조건에서 S16(순차, plain group idx 0/5)과 O8(단일 probe·단일 bg 중첩, probe prefill만 D44 64-SM 측, probe decode는 비분할 idx 5) 프로토콜의 greedy 토큰 ID가 legacy와 전부 같았다(교차 4쌍 × 1,408 토큰 불일치 0, 귀무 L-L·TD-TD 0). 동시 부하(C, 진단 전용)에서는 같지 않았다. L-L 4/32, TD-TD 3/32, cross 4–7/32이고, 그중 C01·C10·C19 3건은 L1=L2≠TD1=TD2이다(원인 미확정, C01은 triton KV-split 휴리스틱의 arm-특이 타이밍으로 산술 설명됨). 닫힌 선결은 #5(cudagraph-ON 호환, scoped), 부분 해소는 #2다. 미해소: 동시 부하 동치, D16/24/34, generic/hybrid, 다른 모델, TP≥2, 러너 설정(ctx 16384 부팅 실패, dirname), observer effect, latch의 GPU 발화, lease-release 잠재 위험. 성능 판정이 아니며 Claim D 등급은 불변(미검증)이다"(claims-auditor 결과 감사 §7.1, `workspace/engine-port/results/r2_correctness/audit_r2corr_2026-09-11/VERDICT.md`). **직전 job 907032**(admission latch 수정 `02918e8` 직후 재실행, 0.12 GPU-h)는 split-prefill ownership race로 true-dual 두 boot 모두 **FAIL**했다(경합 수정 `874873b`, 이후 하네스 v2 `e16e93f`로 재실행해 PASS). ⚠️무스코프("동시/서빙 부하에서 TD≡legacy") 인용 금지(R2C-2); admission latch(`r2_admission_limited`) stale-True 버그 수정 — 코드 수정(`02918e8`, 2026-09-11)은 완료됐으나(보류 해제, 사용자 R2 복귀 결정) 이 job(FixedPolicy)에서는 `admission_limited` 185개 결정 중 0, `r2_admission` 이벤트 0으로 **GPU 발화가 관측되지 않았다**(§4 선결표 #1); results/r2_eval 캠페인 실행(여전히 미생성, 캠페인 러너는 Zamba2-2.7B를 부팅하지 못한다) | legacy fixed 대 true dual fixed, 동일 telemetry/seed/graph — coupled ceiling(+2%, PROJECT_STATUS/CONSENSUS §1-20) 내에서만 유의미, "얽힘 깨기"로 측정 불가(§1-4 死因의 substrate가 구성상 불변). ⚠️**강등 배너(doc-steward, 2026-08-16, CONSENSUS §1-20에 이미 있던 강등을 이 소비처로 전파)**: 이 "+2%"는 2026-08-04 claims-auditor 강등으로 **n=1~2·overload-only, 미확증**이다. ★**R1 완료(2026-08-16, result-analyst 독립 재현 + claims-auditor 적대 감사, `ORACLE_REANALYSIS_2026-08-16.md` rev2) — 재현 확정, Claim D 등급 무변경**: **집계 단위**에 따라 phase-mean **+2.28/+2.35%**(정본 "+2.1%"과 정합) vs 하네스 pooled trace-level **+5.88/+6.12%**로 갈리고, **정본 goodput 술어(TTFT≤3s ∧ 요청-내부 token-ITL p95≤60ms)로 재채점하면 phase B가 5 arm×2 rep 전부 joint 0/192 — "coupled ceiling"이라는 오라클 자체가 미정의**임이 확정됐다. ⇒ Claim D 스코프 축소 근거로는 계속 쓰되, "+2%"라는 고정 숫자·"coupled ceiling"이라는 라벨 둘 다 술어·집계를 명시하지 않고는 인용하지 말 것(§1-20의 disaggregation +16% 쪽은 정본술어에서도 견디나 ITL 도너 동률로 "116"이 tie-break 의존이며 TTFT 임계 ±10%에서 크기가 0.00~+19.75%로 요동함, `CONSENSUS.md` §1-20 참조). 상세 `CONSENSUS.md` §1-19·§3 항목59. ★**G16 완료(2026-08-17) — 별개 결정량, Claim D 등급·"+2%" 수치 무영향**: R2 결정량②(§1-32, `SM합=(108−D_ttft)+D_itl>108`, 즉 TTFT-최적 split과 ITL-요구 split의 SM 합 초과 여부)가 이 캠페인이 다루는 것으로, coupled ceiling "+2%"(oracle 크기)와는 **다른 질문**이다. 재정식화판(`Δ_SLO` 사다리)은 산출됐으나 유일한 SLO payoff 구간(ITL≲58.6ms)에서 부호가 미식별(P=0.632)이고, 원문 문턱 판본은 rate 축에 남아 있다 — **"gate #16을 닫았다"고 쓰지 말 것**. 상세 `CONSENSUS.md` §1-33·§3 항목65·66 |
-| E. Hybrid-informed decode floor가 generic/global static보다 높은 SLO goodput을 낸다 | 미검증 핵심 가설 | 없음 | architecture control, generic policy, static/oracle, profile generalization | B0–B8, P4 profile ablation, W1–W9 및 real trace |
+| E. Hybrid-informed decode floor가 generic/global static보다 높은 SLO goodput을 낸다 | 미검증 핵심 가설 | 없음(★2026-09-11 engine-porter 코드 리뷰로 generic/hybrid 컨트롤러·프로파일 설계에 코드↔로드맵 불일치 3건 확인 — 성능 증거 아님, 착수 전 해소 필요·사용자 결정 대기. 아래 "주장 제한" 참조) | architecture control, generic policy, static/oracle, profile generalization | B0–B8, P4 profile ablation, W1–W9 및 real trace |
 | F. short-ctx conflict-regime 워크로드에는 동적 제어가 이길 수 있는 disjoint-feasibility escape hatch(어떤 static도 두 phase 동시 SLO를 못 만족하는 워크로드)가 있다 | **강한 지지(범위 한정) — CONFIRMED closure, scoped negative(2026-07-25)**: escape hatch **없음**을 확정 | `g2_0_full`(n=4, razor-thin real disjoint 최초 관측)→`g2_0_hard`(n=6–10, claims-auditor 재채점, ILL-POSED at rA5)→`g2_0_decliff`(rA2 n=6, PLAUSIBLE closure)→`g2_0_rasweep`(120 job, off-cliff band rate≤2.75 disjoint 재확인 없음)→`g2_0_raconf`(pre-registered 24-job 확증 열, rate{3.5,3.75}×{d44,d54}×n6, companion-collapse 결정규칙 충족: rate3.5 d44 0.953±0.035≈d54 0.948±0.035; rate3.75 d54 0.948±0.062>d44 0.932±0.042) | long-context(decode floor 상승 영역, CONSENSUS §1-5) 재검증; hot varying-trace(drain 아닌 entangled 조건)에서의 직접 실증 | long-context G2.0-style disjoint sweep(모델/ctx 교체 필요); §1-20 spatial coupling-tax와 결합한 재검토 |
 | G. PD-mux(공간 SM 분할) **활성화 자체**가 fused 대비 SLO goodput 이득의 원인이다(Claim A–F 밖, 별도 트랙 "P1" — 상세는 아래 "P1 트랙" 절) | **부분 지지(모델·워크로드 한정)** — "PD-mux를 켜면 이득이 난다"는 2모델서 지지; **"SM 분할 자체"·"PD 분리 자체"가 원인이라는 좁은 형태는 여전히 NOT-YET-SUPPORTED** | P1 운영점 대조(2026-08-05, jobs 873944/873945, cudagraph-ON, n=5 paired, 2026-08-06 통계 정정 후 인용 가능 3점: Zamba2 rate2 +40.5%/rate3 +185.8%, Granite rate4 +27.0%). Gate 1/G1-b(2026-08-06/07, selector-level 파티션 라벨, Zamba2 rate{2,3} 조건부 해금). Gate 2 rev4(2026-08-07, chunk512는 pdmux를 대체 못함)+R1′/R2′(aux 두 플래그를 원인에서 배제, 귀속 상한="pdmux 서브시스템 전체"). E-A(2026-08-08~09, mixed-chunk 레버 고유 기여 1.2%, 격차 대부분 미조율 fused 탓). **Gate 2-S(2026-08-11, jobs 877756/877757)** — SM 분할만 무력화한 대조 arm으로 처음 "SM 분할" 성분 하나를 격리: 요청-내부 ITL p95 평균이 4셀 전부 개선(꼬리 한정)·TTFT p95는 4셀 전부 악화. **★G1-c(2026-08-11, job 877974, 0.10 GPU-hr)** — Gate 2-S Granite r3·r4의 §8.9 전제(realized 파티션 궤적이 `(74,34)` 하나로 유지)가 VERIFIED로 승격(max(decode_bs)=10/10<36, frac((54,54))=0/0). **해제되는 것은 명명 층 하나뿐**(Granite r3·r4에서 "엔진 기본 궤적"·"A4형" 명명 허용) — **크기 인용 자격은 불변**(코드 확인, `g2s_analyze.py:1157-1161`: `premise`는 F-계열 gate 산출에 미입력, Granite r3·r4는 F-계열 발화 상태라 `SIGN ONLY, MAGNITUDE NOT CITABLE` 유지). **★E1 addendum(2026-08-11, jobs 877756/877757 재집계, GPU 0)** — §8.9 전제를 Gate 2-S 자신의 셀에서 n=10 직접 산출(4셀 전부 `VERIFIED_AT_SAMPLED_INSTANTS`: Zamba2 r2=14·r3=23, Granite r3=10·r4=13, 문턱 36) — **등급 하향된 조건부 채택**(승격 아님, E1이 스스로 주장한 밀도 우위는 반증됨: 결정 관련 pop-A 관측 수가 G1-b/G1-c 대비 5–6× 적음). Zamba2 r3는 적대적 bound(q=1e-6)에서 이미 37≥36으로 문턱 미배제인 유일한 셀. **인용 시 아래 "P1 트랙" 절의 제한 7건(4번 갱신)을 반드시 함께 적용** | S3/`%smid` 하드웨어 SM 프로브(미실행), Gate 3(NemotronH·Falcon-H1 운영점 대조, 미착수), Gate 4(sustainable-rate 직접 측정, 미착수), F-B(ii) 재설계(현 인용-셀 선별 필터의 귀무 발화율 40.1%), E1 후속 E1-a·**E1-b(★결정적)**·**E1-c(★필수)**·E1-d(전부 미실행) | 아래 "P1 트랙" 절, `PROJECT_STATUS.md` "다음 실험 gate" #10 |
 
@@ -559,6 +588,56 @@ SM92 2.36–2.91×, 4 arm 모델-무관]를 Existing evidence에 추가, C2b["hy
   Claim D 행의 "GPU correctness 동치" 문장과 `CONSENSUS.md` §5-8(a) 追記
   (rev66)·`PROJECT_STATUS.md` "다음 실험 gate" 항목1–4 追記 참조.
 - Claim E는 B6가 B1과 B5를 모두 유의하게 이긴 경우에만 사용한다.
+- ★★**Claim E 착수 전 해소 필요 · 사용자 결정 대기(2026-09-11
+  engine-porter 코드 리뷰, file:line 근거, 2026-09-12 doc-steward
+  등재 — 성능 판정 아님, 전부 미수정·보류)**: generic/hybrid
+  (`PDMUX_R2_POLICY=generic|hybrid`) R2 컨트롤러·프로파일 설계에 코드
+  사실 3건이 확인됐다.
+  1. **admission 제한이 사실상 ~1 iteration만 유지된다.**
+     `CoarseGrainedController.stabilize()`는 `evaluation_due()`가
+     `False`(평가 차례가 아님)면 즉시 `SplitDecision(current, current,
+     HOLD)`를 반환하는데(`workspace/engine-port/src/multiplex/
+     controller.py:148-149`), 이 반환값의 `admission_limited`는
+     dataclass 기본값 `False`다(`controller.py:68`). `_r2_decide_idx`
+     (`multiplexing_mixin.py:430-441`)는 매 호출마다
+     `self.r2_admission_limited = decision.admission_limited`로
+     **무조건 덮어쓰며**, 이 호출은 split-prefill in-flight 또는
+     admission-recheck 두 경로(`multiplexing_mixin.py:1066-1080`) 중
+     하나라도 성립하면 거의 매 iteration 발생한다 — 즉 latch가 평가
+     iteration에서 `True`가 된 바로 다음(비평가) iteration에 `False`로
+     되돌아간다. `EXPERIMENT_ROADMAP.md:979`은 "D108 risk 또는
+     occupancy 90%가 2 epochs 지속되면 admission 제한"을 명세하나, 그
+     제한이 트리거된 뒤 얼마나 유지되는지는 코드상 위 재덮어쓰기 때문에
+     사실상 1 iteration이다 — **코드↔로드맵 불일치**(어느 쪽이 옳은지는
+     판정하지 않음).
+  2. **평가 주기 연산이 로드맵과 반대다.** `evaluation_due()`
+     (`controller.py:124-130`)는 `bucket_changed OR 경과시간≥100ms OR
+     경과iteration≥4`, 즉 **셋 중 먼저 발화하는 것**(min 의미)이다.
+     `EXPERIMENT_ROADMAP.md:975`은 `"evaluate every max(4 decode
+     iterations, 100 ms)"`로 **max**(둘 다 채워야 발화, 더 느슨한
+     주기)를 명세한다 — 연산자가 반대다. 코드↔로드맵 불일치, 판정
+     보류.
+  3. **hybrid profile 호환 검사가 `engine_commit`을 포함해 거의 항상
+     fallback이다.** `HybridModelProfileV1.is_compatible()`
+     (`workspace/engine-port/src/multiplex/profile.py:98-114`)이
+     `engine_commit`(:102)을 포함한 6개 필드(`gpu_name`,
+     `gpu_sm_count`, `attention_backend`, `cuda_graph`,
+     `piecewise_cuda_graph`) 엄격 일치를 요구하고, 하나라도 불일치하면
+     `ConservativeDecodeFloorEstimator.estimate()`(`profile.py:268-279`)
+     가 `upper_bound_itl_ms=inf`·`confidence=0.0`·`fallback=True`로
+     되돌린다. `runtime.engine_commit`은 `multiplexing_mixin.py:183`
+     에서 `os.environ.get("PDMUX_ENGINE_COMMIT", "unknown")`으로
+     채워지고, 그 값은 `scripts/r2_eval/r2_eval.sbatch:26`이
+     `git -C "${engine_root}/../.." rev-parse HEAD`(repo HEAD)로
+     설정한다 — 엔진 코드와 무관한 문서 커밋만으로도 HEAD가 바뀌어
+     다음 런에서 profile이 깨진다. 결과적으로 **B6(hybrid) arm이
+     기본값으로 profile 없이(fallback) 도는 구성**이 될 수 있다.
+
+  전부 **고치지 않고 표시만 해 둔다**(engine-porter, 2026-09-11 —
+  사용자 결정 대기). Claim E 등급(미검증)·B0–B8 ranking·새 성능 판정
+  전부 무변경. 상세 `EXPERIMENT_ROADMAP.md` "Controller defaults"
+  절 追記(2026-09-12), `PROJECT_STATUS.md` 게이트 #157 관련
+  追記(2026-09-12, 도구 사실 별건).
 - D/E가 실패하면 A–C의 characterization 및 negative result를 논문의 중심으로
   유지한다.
 - Claim F는 {Zamba2-2.7B, ctx4096, Phase A in2048/o32, Phase B in2048/o512@rB4,

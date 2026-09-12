@@ -1,6 +1,33 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-09-11(3) **(doc-steward — R2 true-dual GPU
+최종 갱신: 2026-09-12(doc-steward — **engine-porter 코드 사실 4건
+등재**[Claim E 설계 3건 + 도구 1건], 2026-09-11 확인·file:line
+근거, **성능 판정 아님·수정 없음·사용자 결정 대기**, GPU 0). Claim
+E(generic/hybrid R2 정책) 착수 전 해소가 필요한 코드↔로드맵 불일치
+3건이 `reports/paper/{CLAIM_EVIDENCE_MATRIX,EXPERIMENT_ROADMAP}.md`
+에 등재됐다 — ①admission 제한 latch가 평가 차례가 아닌 호출마다
+기본값 `False`로 재덮어써 사실상 ~1 iteration만 유지
+(`workspace/engine-port/src/multiplex/controller.py:68,124-130,
+148-149`; `multiplexing_mixin.py:430-441,1066-1080`) ②평가 주기
+연산이 코드(`controller.py:124-130`, `OR`=먼저 오는 것)와 로드맵
+(`max(4 iterations, 100 ms)`=둘 다 채운 뒤)에서 반대 ③hybrid
+profile 호환 검사(`profile.py:98-114,268-279`)가 `engine_commit`
+(repo HEAD, `scripts/r2_eval/r2_eval.sbatch:26`)을 포함해 엔진과
+무관한 문서 커밋만으로도 fallback(`upper_bound_itl_ms=inf`)에
+빠질 수 있음(B6 arm이 기본값으로 profile-less가 될 수 있음). 도구
+사실 1건(게이트 #157 계열 — `/scratch/ehmoon/whlee/.claude/agents/
+git-committer.md:25-27`이 outer 워크스페이스를 별도 git 저장소로
+서술하나 실제로는 `.git`이 빈 디렉터리라 저장소가 아님)은 아래
+게이트 #157 항목에 追記. **전부 고치지 않고 표시만 해 둔다**(사용자
+결정 대기). Claim D/E 등급 무변경(둘 다 미검증)·새 성능 판정
+0건·arm 순위 0건·정책 순위 변경 0건·HE0·stake #1 전부 불변.
+`CONSENSUS.md` rev **변경 없음**(rev66 유지 — 코드 사실 등재이며
+새 분석 결론이 아니라 이 3개 문서(매트릭스·로드맵·이 문서) 등재로
+충분하다고 판단, doc-steward). 상세는 `reports/paper/
+CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E 항목,
+`EXPERIMENT_ROADMAP.md` "Controller defaults" 절 追記, 아래 게이트
+#157 追記(전부 2026-09-12).
+이전: 2026-09-11(3) **(doc-steward — R2 true-dual GPU
 correctness 트랙 등재, 새 성능 판정 0건·Claim D 등급 불변
 [미검증]·HE0·정책 순위·stake #1 전부 불변, 이 세션은 문서
 등재분[GPU 0] — 트랙 자체는 오늘 0.12+0.16≈**0.28 GPU-h**
@@ -385,6 +412,25 @@ alloc`)에 만들어진 커밋 **`d869751`·`e2c2ba1`에 그 파일이 들어갈
 정본에 박아 두는 것 자체가 임시 완화책(다음 세션이 이 값과
 다르면 무단 수정 탐지 가능)이며, 근본 해법(그 파일을 어느
 저장소로 편입할지)은 사용자 소관으로 남긴다.
+
+★★追記(2026-09-12, doc-steward, GPU 0 — 게이트 #157 계열, 도구
+사실 추가 사례): 위와 같은 형태의 결함이 **다른 도구 파일에도
+있다** — `/scratch/ehmoon/whlee/.claude/agents/git-committer.md:
+25-27`은 outer 워크스페이스(`/scratch/ehmoon/whlee`)를 "별도
+`.git`, 원격 있음"인 저장소로 서술하나(engine-porter, 2026-09-11
+확인), 위에서 이미 확인한 대로 그 경로의 `.git`은 **빈
+디렉터리**이고 `git status`는 `fatal: not a git repository`를
+반환한다(doc-steward 2026-09-12 재확인, `ls -la`·`git status`
+직접 실행). 2026-09-11 doc-steward가 `claims-auditor.md`의 오기
+경로 문자열은 정정했으나(위 참조), `git-committer.md`의 이
+서술(경로 문자열이 아니라 에이전트 동작 지침 문장)은 그 정정
+때 고치지 않고 **표시만 해 두었던 항목**이다 — **아직 고치지
+않고 보류**(도구 파일 버전관리 이관 여부와 함께 사용자 결정
+대기). 신규 게이트 번호 없음(#157 자체의 추가 사례). GPU 0·새
+성능 판정 0건. 정본 대응은 이 항목(#157)뿐이며 `CONSENSUS.md`
+rev는 변경하지 않는다(원 게이트#157/§3 항목177은 그대로 유지,
+이번 追記는 이 문서에만 등재 — 코드 사실 확인이며 새 분석
+결론 아님).
 
 ★기존 불변 배너 전부 승계(HE0·정책 순위·gate #13/#16 "닫았다"
 금지·switch-cost "닫았다" 금지·C2 인용정지(a)(b)·`CONSENSUS
