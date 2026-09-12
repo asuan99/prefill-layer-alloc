@@ -43,6 +43,22 @@ prefill eager) · `--attention-backend triton` · `--disable-radix-cache` · `--
 프롬프트 집합/seed/stagger(client 불변) · **판정 규칙 = `r2_correctness_check.py` 무수정**
 (rule v2, sha `ec355e17…` = 907100 provenance와 동일).
 
+### ★통제 요인 추가 (2026-09-12, 데이터 생성 전 · 통제를 **강화**하는 추가)
+**엔진 소스는 907100이 돌린 것과 바이트 동일해야 한다.** 같은 세션에서 engine-porter가
+`src/multiplex/{controller,multiplexing_mixin,profile}.py`를 수정 중이고(Claim E 불일치 3건 반영),
+하네스는 job 시작 시 `sync_engine_tree.sh`로 **저장소의 현재 파일**을 dev tree에 설치한다. 그
+상태로 제출하면 교란 노브와 **엔진 소스 변경이 동시에** 바뀌어(confound #10) F2의 불일치를
+교란에 귀속할 수 없다 — F1(within-job)은 양 arm이 같은 소스라 영향 없지만 F2는 무효가 된다.
+
+그래서 제출 절차를 다음으로 고정한다:
+1. engine-porter 작업을 먼저 끝내고 커밋한다(X1 제출 전 워킹트리 확정).
+2. `git checkout 38c1aca -- workspace/engine-port/src/multiplex`로 **907100이 돌린 소스**를 트리에
+   복원한 뒤 제출한다(job 완료까지 이 경로를 건드리지 않는다).
+3. 결과 검증: X1의 `runtime_source_manifest.sha256`의 multiplex 항목이 `job_907100/
+   runtime_source_manifest.sha256`과 **전부 일치**해야 한다. 불일치하면 **F2를 읽지 않는다**
+   (측정 실패로 기록, 게이트 실패 아님).
+4. 검증 후 `git checkout HEAD -- workspace/engine-port/src/multiplex`로 최신 소스를 되돌린다.
+
 ### 변인 요인 — **단 하나의 노브**
 네 boot 전부에 `--triton-attention-num-kv-splits 2`를 준다. **env var는 쓰지 않는다**(감사 조건 D4(a)).
 - 이유: CLI 인자는 **관측 가능**하다 — 서버 args 덤프에 찍히고, checker의 `SAME_ACROSS_BOOTS`
