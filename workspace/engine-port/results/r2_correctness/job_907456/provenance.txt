@@ -1,0 +1,30 @@
+job=907456 node=gpu42 date=2026-09-12T19:11:23+09:00
+commit=19b9d8d8379a2077936e7ceb77fb9067a6428d89
+src_dirty:
+M  workspace/engine-port/src/multiplex/controller.py
+M  workspace/engine-port/src/multiplex/multiplexing_mixin.py
+M  workspace/engine-port/src/multiplex/profile.py
+GPU 0: NVIDIA A100-SXM4-80GB (UUID: GPU-7a590213-bc18-46a3-bfc6-894dde14a51d)
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+thread_local_role_patch True
+harness sha256:
+ec355e171a66d68eab1300edcc7616a693cd55aa2c3fb5c251ee4b42eac50d30  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness_check.py
+95e10b492ed6239d83cae20ad7898bdbbcce1713a37d42c2bfa111f7347ec367  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness_client.py
+6d79fd9d9c2a086a0810a3b6d7c2a6fc1950694203f2259bf1e6fab29b1ff38e  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness.sbatch
+model=Zyphra/Zamba2-2.7B dsm=44 seed=1 order=[L TD L TD] config=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_r2.yml
+num_kv_splits_cli=2 baseline_job=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907100
+env (SGLANG|R2C):
+R2C_BASELINE_JOB=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907100
+R2C_NUM_KV_SPLITS=2
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+multi_processor_count 108 NVIDIA A100-SXM4-80GB
+pre-registration sha256:
+34d7ce21a3085f98cf2d01566ab8901e7a394ce57821aacb2ffdf10f450de7d9  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/x1_prereg/PREREG_X1_SENSITIVITY_2026-09-12.md
+54e76c9a05c4a20932b64500cad865a3b76e740f95196c3ba7d1b17348f013e3  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/x1_prereg/PREREG_X1_SENSITIVITY_2026-09-12_rev2.md
+b7eddf6c700edbc13aed033966624e18b53c9ae2cd6dd734aa8f46f073bf1af3  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/x1_prereg/VERDICT_x1_rules_2026-09-12.md
+9ba6b23069e49dcee5b92d6c95346272acf16ce7eb262b40eab90499fc8dff74  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/x1_prereg/x1_cross_job_compare.py
+b473636ab53024f2197b690a9d1d324297d64f0757458148d1c8ce63d7601cfb  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/x1_prereg/x1_preflight_splits.py
+037c026f0b0036d112fd41dcbd7f5eb14ab34f4382b976033c8edf45ff2506cc  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/x1_prereg/x1_preflight_splits_stdout.txt
+69afcef61e8c013aefb563502cc3113606e4522c5ff163d9cd5602f4b891d7ed  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/x1_prereg/x1_selftest_stdout.txt

@@ -1,0 +1,19 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+baseline = /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907100
+X1       = /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907456
+L1: S compared=16 mismatch=1 | O compared=8 mismatch=1  [O06@11, S05@25]
+TD1: S compared=16 mismatch=1 | O compared=8 mismatch=1  [O06@11, S05@25]
+L2: S compared=16 mismatch=1 | O compared=8 mismatch=1  [O06@11, S05@25]
+TD2: S compared=16 mismatch=1 | O compared=8 mismatch=1  [O06@11, S05@25]
+
+TOTAL compared unit-pairs = 96 (expected 96)  mismatching = 8  [S 4/64, O 4/32]  excluded(input) = 0
+reading (F2): mismatch>=1 with first_divergence>=1 -> the S/O token comparison is sensitive to a decode-attention reduction-order perturbation, on the units where it landed.  mismatch==0 -> sensitivity not demonstrated; a PASS certifies absence of argmax-flipping corruption only (VERDICT §1.6).  Neither outcome is a gate result and neither licenses a Claim D statement.
+
+C tier (baseline, diagnostic only): units differing = 8 ['C00', 'C01', 'C02', 'C10', 'C14', 'C16', 'C19', 'C24']
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 3 ['C01', 'C10', 'C19']
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+C tier (X1, diagnostic only): units differing = 6 ['C00', 'C06', 'C10', 'C16', 'C19', 'C24']
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
