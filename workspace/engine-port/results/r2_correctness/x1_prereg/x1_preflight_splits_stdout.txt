@@ -1,0 +1,16 @@
+baseline: cap=8 + kernel heuristic (job 907100's operating config)
+criterion: kv_len_per_split = cdiv(cdiv(L,s),32)*32 differs at any step
+O tier background row lengths used: [17, 97, 177]
+
+candidate settings (CLI `--triton-attention-num-kv-splits C`, no env var):
+  C  perturbed units unperturbed (bit-identical by construction)
+  2         24/24    0 []
+  3         20/24    4 ['S00', 'S01', 'S02', 'S03']
+  4         17/24    7 ['S00', 'S01', 'S02', 'S03', 'S04', 'S05', 'S13']
+  5         17/24    7 ['S00', 'S01', 'S02', 'S03', 'S04', 'S05', 'S13']
+  6         17/24    7 ['S00', 'S01', 'S02', 'S03', 'S04', 'S05', 'S13']
+  7         15/24    9 ['S00', 'S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'S08', 'S13']
+  8          0/24    24 ['S00', 'S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07', 'S08', 'S09', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'O00', 'O01', 'O02', 'O03', 'O04', 'O05', 'O06', 'O07']
+
+rev1 plan (STATIC env var + cap 6): perturbed 18/24, unperturbed 6 ['S00', 'S01', 'S02', 'S03', 'S04', 'S13']
+VERDICT §7.3 draft (STATIC env var only -> cap 8): perturbed 2/24, unperturbed 22 ['S00', 'S01', 'S02', 'S03', 'S04', 'S07', 'S08', 'S09', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'O00', 'O01', 'O02', 'O03', 'O04', 'O05', 'O06', 'O07']

@@ -1,0 +1,145 @@
+=== A. selftest ===
+baseline = /tmp/tmp1rcy04g1/a
+X1       = /tmp/tmp1rcy04g1/b
+L1: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD1: S compared=2 mismatch=0 | O compared=1 mismatch=0
+L2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+
+TOTAL compared unit-pairs = 12 (expected 96)  mismatching = 0  [S 0/8, O 0/4]  excluded(input) = 0
+!! DENOMINATOR NOT INTACT -- the registered F2 sentence does not apply to this run (pre-registration D2(i)).  Restate the denominator and the exclusions explicitly instead.
+
+C tier (baseline, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+C tier (X1, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+baseline = /tmp/tmp1rcy04g1/a
+X1       = /tmp/tmp1rcy04g1/b
+L1: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD1: S compared=2 mismatch=0 | O compared=1 mismatch=1  [O00@1]
+L2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+
+TOTAL compared unit-pairs = 12 (expected 96)  mismatching = 1  [S 0/8, O 1/4]  excluded(input) = 0
+!! DENOMINATOR NOT INTACT -- the registered F2 sentence does not apply to this run (pre-registration D2(i)).  Restate the denominator and the exclusions explicitly instead.
+
+C tier (baseline, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+C tier (X1, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+baseline = /tmp/tmp1rcy04g1/a
+X1       = /tmp/tmp1rcy04g1/b
+L1: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD1: S compared=2 mismatch=1 | O compared=1 mismatch=0  [S00@0]
+L2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+
+TOTAL compared unit-pairs = 12 (expected 96)  mismatching = 1  [S 1/8, O 0/4]  excluded(input) = 0
+!! DENOMINATOR NOT INTACT -- the registered F2 sentence does not apply to this run (pre-registration D2(i)).  Restate the denominator and the exclusions explicitly instead.
+!! 1 mismatch(es) at output_ids[0]: [('TD1', 'S00')]
+   index 0 is a prefill (extend) output and this perturbation does not touch forward_extend -- NOT attributable to the perturbation (pre-registration D2(ii)); investigate separately.
+
+C tier (baseline, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+C tier (X1, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+baseline = /tmp/tmp1rcy04g1/a
+X1       = /tmp/tmp1rcy04g1/b
+L1: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD1: S compared=1 mismatch=0 | O compared=1 mismatch=0  INPUT_MISMATCH=['S00']
+L2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+
+TOTAL compared unit-pairs = 11 (expected 96)  mismatching = 0  [S 0/7, O 0/4]  excluded(input) = 1
+!! DENOMINATOR NOT INTACT -- the registered F2 sentence does not apply to this run (pre-registration D2(i)).  Restate the denominator and the exclusions explicitly instead.
+   input-excluded units: [('TD1', 'S00')]
+
+C tier (baseline, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+C tier (X1, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+baseline = /tmp/tmp1rcy04g1/a
+X1       = /tmp/tmp1rcy04g1/b
+L1: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD1: S compared=1 mismatch=0 | O compared=1 mismatch=0  INPUT_MISMATCH=['S00']
+L2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+
+TOTAL compared unit-pairs = 11 (expected 96)  mismatching = 0  [S 0/7, O 0/4]  excluded(input) = 1
+!! DENOMINATOR NOT INTACT -- the registered F2 sentence does not apply to this run (pre-registration D2(i)).  Restate the denominator and the exclusions explicitly instead.
+   input-excluded units: [('TD1', 'S00')]
+
+C tier (baseline, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+C tier (X1, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+baseline = /tmp/tmp1rcy04g1/a
+X1       = /tmp/tmp1rcy04g1/b
+L1: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD1: S compared=2 mismatch=0 | O compared=1 mismatch=0
+L2: S compared=2 mismatch=0 | O compared=1 mismatch=0
+TD2: MISSING gen file (baseline=True x1=False) -- excluded
+
+TOTAL compared unit-pairs = 9 (expected 96)  mismatching = 0  [S 0/6, O 0/3]  excluded(input) = 0
+!! DENOMINATOR NOT INTACT -- the registered F2 sentence does not apply to this run (pre-registration D2(i)).  Restate the denominator and the exclusions explicitly instead.
+   missing boot labels: ['TD2']
+
+C tier (baseline, diagnostic only): units differing = 0 []
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 0 []
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+C tier (X1, diagnostic only): NOT-RUN -- needs all four boots, found ['L1', 'L2', 'TD1'] (D8: a partial job would print a false zero here)
+
+SELFTEST OK (identical=0; S and O flips detected; sha and prompt_tokens mismatches excluded; partial job handled)
+
+=== B. null control (D7): job_907032 -> job_907100, no perturbation, different node+commit ===
+baseline = ../job_907032
+X1       = ../job_907100
+L1: S compared=16 mismatch=0 | O compared=0 mismatch=0
+TD1: MISSING gen file (baseline=False x1=True) -- excluded
+L2: S compared=16 mismatch=0 | O compared=0 mismatch=0
+TD2: MISSING gen file (baseline=False x1=True) -- excluded
+
+TOTAL compared unit-pairs = 32 (expected 96)  mismatching = 0  [S 0/32, O 0/0]  excluded(input) = 0
+!! DENOMINATOR NOT INTACT -- the registered F2 sentence does not apply to this run (pre-registration D2(i)).  Restate the denominator and the exclusions explicitly instead.
+   missing boot labels: ['TD1', 'TD2']
+
+C tier (baseline, diagnostic only): NOT-RUN -- needs all four boots, found ['L1', 'L2'] (D8: a partial job would print a false zero here)
+
+C tier (X1, diagnostic only): units differing = 8 ['C00', 'C01', 'C02', 'C10', 'C14', 'C16', 'C19', 'C24']
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 3 ['C01', 'C10', 'C19']
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+=== C. identity sanity: job_907100 -> job_907100 ===
+baseline = ../job_907100
+X1       = ../job_907100
+L1: S compared=16 mismatch=0 | O compared=8 mismatch=0
+TD1: S compared=16 mismatch=0 | O compared=8 mismatch=0
+L2: S compared=16 mismatch=0 | O compared=8 mismatch=0
+TD2: S compared=16 mismatch=0 | O compared=8 mismatch=0
+
+TOTAL compared unit-pairs = 96 (expected 96)  mismatching = 0  [S 0/64, O 0/32]  excluded(input) = 0
+reading (F2): mismatch>=1 with first_divergence>=1 -> the S/O token comparison is sensitive to a decode-attention reduction-order perturbation, on the units where it landed.  mismatch==0 -> sensitivity not demonstrated; a PASS certifies absence of argmax-flipping corruption only (VERDICT §1.6).  Neither outcome is a gate result and neither licenses a Claim D statement.
+
+C tier (baseline, diagnostic only): units differing = 8 ['C00', 'C01', 'C02', 'C10', 'C14', 'C16', 'C19', 'C24']
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 3 ['C01', 'C10', 'C19']
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.
+
+C tier (X1, diagnostic only): units differing = 8 ['C00', 'C01', 'C02', 'C10', 'C14', 'C16', 'C19', 'C24']
+  arm-separated ({L1,L2} vs {TD1,TD2}) = 3 ['C01', 'C10', 'C19']
+  C licenses no gate, mechanism or policy claim (R2C-3); a drop in the total is an EXPECTED side effect of making decode attention batch-invariant per row.

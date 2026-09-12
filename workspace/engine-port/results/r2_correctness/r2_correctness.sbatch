@@ -82,6 +82,15 @@
 #   sbatch workspace/engine-port/results/r2_correctness/r2_correctness.sbatch
 #   R2C_DSM=24 sbatch ...          # other split (must exist in pdmux_r2.yml)
 #   R2C_ORDER="L TD TD L" sbatch ...
+#   R2C_NUM_KV_SPLITS=2 sbatch ... # X1 sensitivity positive control: forces the
+#                                  # decode-attention KV-split count for EVERY
+#                                  # boot (CLI only, no env var, so the value is
+#                                  # visible in the server args dump and checked
+#                                  # by SAME_ACROSS_BOOTS).  Unset = server
+#                                  # default 8 + kernel heuristic = job 907100.
+#                                  # Pre-registered in x1_prereg/ (rev2).
+#   R2C_BASELINE_JOB=.../job_907100 sbatch ...  # also run the DIAGNOSTIC
+#                                  # cross-job token comparison at the end.
 
 set -uo pipefail
 module load conda/pytorch_2.9.1_cuda13 cuda/13.0.2 gcc/15.2.0
@@ -102,10 +111,17 @@ MODEL="${R2C_MODEL:-Zyphra/Zamba2-2.7B}"
 DSM="${R2C_DSM:-44}"
 SEED="${R2C_SEED:-1}"
 ORDER="${R2C_ORDER:-L TD L TD}"
+NKVS="${R2C_NUM_KV_SPLITS:-}"
 
 # Start from a clean PD-mux environment (policy_adapter.sh does the same).
 for var in $(env | grep -o '^PDMUX_[A-Z0-9_]*' || true); do unset "$var"; done
 unset SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN
+# X1 (x1_prereg rev2, condition D4(a)) deliberately perturbs the KV-split count
+# through the CLI flag ONLY, because a CLI flag is observable in the server args
+# dump and enforced equal across boots by the checker, while this env var's
+# effect is not observable at all.  Clear it so an inherited value cannot
+# silently change the perturbation that the pre-registration computed.
+unset SGLANG_TRITON_DECODE_ATTN_STATIC_KV_SPLITS
 
 echo "=== env sync ==="
 workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh \
@@ -120,6 +136,14 @@ COMMIT=$(git -C "$PROJECT" rev-parse HEAD)
   python -c "from sglang.srt.distributed.parallel_state import pdmux_role_is_thread_local as f; print('thread_local_role_patch', f())"
   echo "harness sha256:"; sha256sum "$HERE/r2_correctness_check.py" "$HERE/r2_correctness_client.py" "$HERE/r2_correctness.sbatch"
   echo "model=$MODEL dsm=$DSM seed=$SEED order=[$ORDER] config=$CONFIG"
+  echo "num_kv_splits_cli=${NKVS:-<server default>} baseline_job=${R2C_BASELINE_JOB:-<none>}"
+  # The pre-registration's arithmetic assumes this SM count and a clean
+  # SGLANG_TRITON_* environment; record both rather than assuming them.
+  echo "env (SGLANG|R2C):"; env | grep -E '^(SGLANG|R2C)_' | sort || echo "  (none)"
+  python -c "import torch; p=torch.cuda.get_device_properties(0); print('multi_processor_count', p.multi_processor_count, p.name)"
+  if [ -d "$HERE/x1_prereg" ]; then
+    echo "pre-registration sha256:"; sha256sum "$HERE"/x1_prereg/*.md "$HERE"/x1_prereg/*.py "$HERE"/x1_prereg/*.txt
+  fi
 } > "$OUT/provenance.txt" 2>&1
 cat "$OUT/provenance.txt"
 # Pin the exact verdict rule this job is scored under (normative text = the
@@ -132,6 +156,7 @@ server_cmd () {   # $1 = port
     --dtype bfloat16 --attention-backend triton --disable-radix-cache \
     --mem-fraction-static 0.82 --max-running-requests 48 --context-length 4096 \
     --random-seed "$SEED" --host 127.0.0.1 --port "$1" \
+    ${NKVS:+--triton-attention-num-kv-splits $NKVS} \
     --enable-pdmux --pdmux-config-path "$CONFIG" --chunked-prefill-size -1 \
     --disable-overlap-schedule --decode-log-interval 1
 }
@@ -203,4 +228,14 @@ done
 echo ""
 echo "=== correctness check ==="
 python3 "$HERE/r2_correctness_check.py" "$OUT" --dsm "$DSM" | tee "$OUT/verdict.txt"
+
+# DIAGNOSTIC ONLY (never a verdict): cross-job token comparison against a
+# baseline job, pre-registered in x1_prereg/ rev2 §3.  Runs after the verdict so
+# it can never influence it.
+if [ -n "${R2C_BASELINE_JOB:-}" ] && [ -d "${R2C_BASELINE_JOB}" ]; then
+  echo ""
+  echo "=== cross-job diagnostic (not a verdict) ==="
+  python3 "$HERE/x1_prereg/x1_cross_job_compare.py" "${R2C_BASELINE_JOB}" "$OUT" \
+    2>&1 | tee "$OUT/cross_job_compare.txt"
+fi
 echo "R2CORR_DONE_${SLURM_JOB_ID:-local}"
