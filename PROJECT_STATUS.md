@@ -1,6 +1,445 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-09-12(doc-steward — **engine-porter 코드 사실 4건
+최종 갱신: 2026-09-12(3)(doc-steward — **X1 결과 등재**: job
+907456(gpu42, 0.154 GPU-h) 완주 + claims-auditor 결과 감사
+**`CONFIRMED(scoped)`**[등록 예보 F1–F4 전부 충족, `VERDICT
+PASS`·교차-잡 불일치 8/96 독립 재현, 귀속 성립]. 단 메인 세션이
+쓰려던 해석 문장 1건은 **`REFUTED`**(D44 운영점 측정층 민감도
+미보정). 새 방법론 게이트 5건(#172–176, #176=긍정 사례) 신설.
+새 성능 판정 0건·Claim D 등급 불변(미검증)·HE0·정책 순위·
+stake #1 전부 불변. `CONSENSUS.md` rev67→**rev68**.
+
+**사실 기록** — job 907456, node gpu42, GPU UUID
+`GPU-7a590213`, 2026-09-12 19:11:22–19:20:36 KST, 9m14s =
+**0.154 GPU-h**, commit `19b9d8d`(`src/multiplex`는 `38c1aca`
+복원, `runtime_source_manifest.sha256` 17/17 907100과 바이트
+동일), `--triton-attention-num-kv-splits 2`, checker sha
+`ec355e17…` 무수정, 사전등록 sha `54e76c9a…`. claims-auditor
+결과 감사 원문 전사 = `workspace/engine-port/results/
+r2_correctness/audit_x1_2026-09-12/VERDICT.md`(357행, sha256
+`f1d8e64e91f2a251fdbbd76a2947bb853709efcbdff570219ced5fda53
+aeedc7`). 총괄 **`CONFIRMED(scoped)`** — 등록 예보 F1–F4 전부
+충족, PASS와 교차-잡 8/96 불일치는 정확히 재현되고 공허성
+없음(TD 경로·비복사·작업량 일치·8,448 토큰 비교 불일치 0·퇴화
+0/56), 귀속 성립(귀무대조 2건: 등록 `907032→907100` S 0/32 +
+감사자가 추가한 비등록 `907032→907456` S 2/32 전부 S05@25),
+엔진 소스 manifest 17/17 바이트 동일.
+
+★★**정본 등재 스코프 문장(판정서 §8, 문자 그대로 승계)**:
+
+> "X1 민감도 양성대조: job 907456(2026-09-12, 0.154 GPU-h,
+> node gpu42, commit `19b9d8d` — `src/multiplex`는
+> `38c1aca`로 복원되어 `runtime_source_manifest.sha256`
+> 17항목이 job 907100과 바이트 동일, 판정 규칙
+> `r2_correctness_check.py` sha `ec355e17…` 무수정, 사전등록
+> `PREREG_X1_SENSITIVITY_2026-09-12_rev2.md` sha
+> `54e76c9a…`). 네 boot 전부에 `--triton-attention-num-kv-
+> splits 2`를 준 **비운영 수치 구성**에서도 `VERDICT PASS`
+> (S 6쌍 + O 6쌍 = 8,448 토큰 비교 불일치 0; 4 boot 전부
+> booted·crash-free·cudagraph-ON[decode 10,384줄 전부 True,
+> false 0]·path·policy·overlap 100% idx 4·green realized
+> 64/44·O1–O4 8/8·퇴화 0/56). 등록 예보 F1–F4 전부 충족,
+> claims-auditor 결과 감사 **`CONFIRMED(scoped)`**. 교차-잡
+> 진단(907100→X1, 분모 96 온전·제외 0·index-0 불일치 0)에서
+> **2단위 S05·O06이 4 boot 전부 동일하게 뒤집혔다**(first
+> divergence 25·11, 꼬리 38/64·35/48 토큰 계속 상이, 토큰
+> 값도 4 boot 동일). 귀무대조 2건이 귀속을 받친다:
+> `907032→907100`(노드·GPU·커밋 상이, 무교란) **S 0/32**,
+> `907032→907456`(노드명 동일·물리 GPU 상이, 교란) **S
+> 2/32 전부 S05@25**. 이로써 **측정층 민감도의 하한**이
+> 시연됐고, 범위는 세 가지로 한정된다: (i) 교란은 decode
+> attention에만 걸리고 **prefill(extend)은 비트 동일**,
+> (ii) 뒤집힌 두 단위의 decode는 **비분할 stream_index
+> 5(0/108)**에서 돌았고 **D44(idx 4)에서 돈 비교 대상
+> 계산은 여전히 probe prefill뿐이며 미교란**, (iii) D44에서
+> 돈 유일한 **교란된** decode(O 층 background 행, bs=1 구간
+> 112/159 step)는 **0/32로 뒤집히지 않았다**. 따라서 **X1은
+> D44 운영점의 측정층 민감도를 보정하지 않는다.** 교란의
+> 도달 범위는 단위 기준 24/24지만 **decode 스텝 기준
+> 1,142/1,384(82.5%)**이고, 직전 회차가 가장 민감하다고
+> 지목한 비복사형 단기 6단위는 부분 커버리지(S00 5/63·S03
+> 6/63·S02 10/63·S01 24/63·S04 36/63·S13 55/63)다. C 층
+> (진단 전용): C01의 arm-분리 소멸(4 boot 전부 = 907100 TD
+> 값)은 §1.7 기전과 **정합이며 확증 아님**; 그러나 arm-분리
+> 0의 2/3는 C10·C19에서 **L2가 옛 TD 값으로 이탈**해
+> `{L1}`/`{L2,TD1,TD2}`가 된 결과이고 L-L 불일치는 4→5로
+> 증가했다. 불일치 단위 수 8→6이지만 **등가류 초과수
+> Σ(classes−1)는 10→10 불변**(C00·C16은 3류→4류). **성능
+> 판정 0건, Claim D 등급 불변(미검증), 선결 #1·#2·#3·#4a·
+> #4b·#5 상태 불변, R2C-1…16·P-1…7·HE0·정책 순위·stake #1
+> 불변. X1은 어떤 게이트도 닫지 않는다."**
+
+★★**§9 인용 금지 추가분(X1C-10…14, 판정서 원문 그대로
+승계)**:
+
+- **X1C-10** "X1이 **D44(PD-mux 운영 분할)에서의** 측정층
+  민감도를 시연했다 / 보정했다". 허용형: "비분할
+  `stream_index 5` decode에서 시연됐고, D44에서 돈 교란된
+  decode(O 층 background 행)는 **0/32로 뒤집히지 않았다**;
+  D44 64-SM 측의 probe prefill은 구성상 미교란이다."
+- **X1C-11** "X1의 교란이 비교 단위 **전 구간**에 걸렸다" /
+  "24/24는 교란 **커버리지**다". (24/24는 '어떤 step에서라도
+  다르다'는 단위 지시함수다. 스텝 커버리지는 **1,142/1,384
+  = 82.5%**이고 S00은 **5/63**, 즉 마지막 5토큰만 교란됐다.)
+- **X1C-12** "C 층 불일치가 **줄었다**" / "8→6 감소가
+  교란의 효과를 보여 준다". (**Σ(등가류−1)은 10→10 불변**,
+  C00·C16은 3류→**4류**로 더 파편화, L-L은 **4→5로 증가**.
+  '감소'라는 서술 자체를 쓰지 않는다.)
+- **X1C-13** "arm-분리 = 0이 §1.7 기전을 **지지**한다".
+  (arm-분리 0의 2/3인 C10·C19는 **L2가 옛 TD 값으로
+  이탈**해 분할선이 `{L1}` vs `{L2,TD1,TD2}`로 바뀐 결과다.
+  TD가 legacy로 수렴한 것이 아니다. 지지되는 범위는 **C01
+  한 건**이고 boot 2/arm에서 P≈0.20이다.)
+- **X1C-14** "**8/96 = 8.3%**가 측정층 민감도(검출률)다"
+  또는 그 수에서 파생한 어떤 율. (독립 비교 수는 **24**이고
+  4 boot-쌍은 같은 결정론적 비교의 반복이다 — first
+  divergence와 토큰 값이 4/4 동일. 단위별 교란 커버리지
+  8%–100%와 argmax 마진 차이가 섞여 있어 어떤 율도
+  추정량이 아니다.)
+
+★★**§10 필수 병기(X1P-1′·2′·3′·5′·6′·8·9 + P-1 추가분,
+판정서 원문 그대로 승계)**:
+
+- **X1P-1′** "X1의 수치 구성은 `--triton-attention-num-kv-
+  splits **2**`(907100은 `8`, 4 boot 전부 server args에
+  기록)이며 **운영점이 아니다**. 운영 기본은 8 + 커널
+  휴리스틱이다. X1의 within-job PASS는 운영 수치 구성의
+  correctness를 확장 인증하지 않는다."
+- **X1P-2′** "X1의 교란은 decode attention에만 걸린다
+  (`forward_extend`에 `num_kv_splits` 참조 0건; 실측
+  index-0 불일치 0/96). 따라서 **probe prefill의 민감도는
+  X1 이후에도 미보정**이다. 나아가 뒤집힌 두 단위의 decode는
+  `stream_index 5`에서 돌았고, D44에서 돈 교란된 decode(bg
+  행)는 **0/32**다 — **X1은 D44에서의 민감도를 전혀
+  시연하지 않았다.**"
+- **X1P-3′** "X1의 교란은 **단위 기준 24/24에 도달**하지만
+  (무교란 0), 그 지표는 '어떤 decode step에서라도
+  `kv_len_per_split`이 다르다'는 지시함수다. **스텝 기준
+  커버리지는 1,142/1,384(82.5%)**이고 단위별로 S00 5/63·
+  S03 6/63·S02 10/63·S01 24/63·S04 36/63·S13 55/63, 나머지
+  18단위 100%다. 직전 회차 §1.6이 '뒤집힐 확률이 가장
+  높다'고 분류한 비복사형 단기 6단위가 **전부 부분
+  커버리지**다. (4-gram 복사형 분류값은 직전 회차 §1.6에서
+  **인용**한 것이며, `gen_*.json`에 prompt token id가 없어
+  output↔prompt 4-gram은 이번에 독립 재계산하지 못했다 —
+  내가 계산한 output 자기-4-gram 반복률은 다른 지표다.)"
+- **X1P-5′** "교차-잡 비교는 **진단 전용**이다. 귀무대조는
+  두 건이다: 등록된 `907032→907100` S `compared=32 /
+  mismatch=0`(gpu42→gpu38, GPU UUID 상이, `02918e8`→
+  `38c1aca`, 무교란)과 **비등록 추가** `907032→907456` S
+  `compared=32 / mismatch=2`(전부 S05@25). O 층에는
+  귀무대조가 없다(907032에 O 층 부재). 불일치는
+  `first_divergence ≥ 1`일 때만 교란에 귀속하고, 실제로
+  index-0 불일치는 0/96이다."
+- **X1P-6′** "C 층 수치는 어떤 게이트·기전·정책 판정에도
+  쓰지 않는다(boot 2/arm, 균등 귀무 P≈0.20). 불일치 단위 수
+  8→6은 **총량 감소가 아니다** — Σ(등가류−1) 10→10 불변,
+  C00·C16 3류→4류, L-L 4→5."
+- **X1P-8**(신설) "907100의 provenance는 env를 기록하지
+  않는다(env 기록은 X1 sbatch가 신설). 따라서 baseline에서
+  `SGLANG_TRITON_DECODE_ATTN_STATIC_KV_SPLITS`가 unset이었다는
+  것은 **아티팩트로 검증 불가**다. set이었다면 X1은 두 가지를
+  동시에 바꾼 것이 된다(static fill→휴리스틱 ∧ cap 8→2,
+  confound #10). 이 불확실성은 뒤집힘의 존재 귀속을 바꾸지
+  않으나 사전등록 교란표의 전제를 바꿀 수 있다."
+- **X1P-9**(신설) "교란의 **실현** 증거(args 덤프 외 2번째
+  채널): cudagraph capture `mem usage`가 5/5 boot에서
+  **0.73 GB → 0.65 GB**, `avail mem` 13.32 → 13.40 GB로
+  바뀌었다. 부호·차수는 `attn_logits`/`attn_lse`/cudagraph
+  버퍼가 `max_kv_splits` 8→2로 줄어든 것과 맞다. 닫힌 형태
+  추정(≈39 MB)과 관측(≈80 MB)의 배수 2는 미해소이므로
+  **정성적 실현 확인으로만** 인용한다."
+- **P-1 추가**: 스코프 튜플에 `triton_attention_num_kv_
+  splits=2`, node gpu42(`GPU-7a590213`), commit `19b9d8d`
+  (`src/multiplex`는 `38c1aca` 복원, manifest 17/17 동일)를
+  넣는다.
+
+★★신규 방법론 게이트 5건 — **#172**(G-X1-1, 교훈 9 계열의
+3번째 층. 양성대조의 도달 범위는 "비교 단위 지시함수"가 아니라
+"교란이 실제로 걸린 계산 스텝/토큰의 분포"로 등록하라 — 자기
+적용: 이 결함의 출처는 claims-auditor 1단 판정서 자신의 D1이다,
+`CONSENSUS.md` §3 항목192[신설]) · **#173**(G-X1-2, 게이트#1·
+#114·#166 확장, 양성대조가 게이트가 인증하려는 운영점 위에
+떨어졌는지 확인하고 떨어지지 않았으면 "그 운영점에서는
+미보정"을 등록 문안에 넣어라, §3 항목193[신설]) · **#174**
+(G-X1-3, 등가류 "불일치 단위 수"는 불일치 총량이 아니다 —
+Σ(등가류−1) 또는 분할 전체를 병기하라, §3 항목194[신설]) ·
+**#175**(G-X1-4, 게이트#80 인접, provenance 보강을 교란
+arm에만 넣으면 비대칭 기록이 되어 baseline 전제를 사후 검증
+불가로 만든다, §3 항목195[신설]) · **#176**(G-X1-5, **긍정
+사례**, 게이트#1의 처치 측 적용 — 교란 노브 자신에 대해
+"target이 아니라 realized"를 요구하라, X1은 (a) server args
+덤프+`SAME_ACROSS_BOOTS` 검사, (b) cudagraph capture 메모리
+변화 두 채널로 충족했다, §3 항목196[신설]).
+
+★**engine-porter 이관 항목(게이트 아님, 열린 항목으로 등재)**:
+(i) `decode_step_count`가 전 boot·전 스냅샷 0(죽은 필드) — 이를
+작업량 지표로 쓰면 0을 얻는다. (ii) `worker_overlap_ratio`가 TD
+boot에서도 전부 0.0이고, 실제 값은 이름이 비슷한
+`host_worker_overlap_ratio`(X1 TD 최대 0.0024/0.0017)에만 있음
+— 게이트 #166(G-2) 계열 재발 위험.
+
+★**다음 실험(판정서 §12, 전부 미승인·사용자 판단 대기, 아래
+"다음 실험 gate" 항목4 追記에도 등재)**:
+
+1. **C-tier 귀무대조**(`R2C_ORDER="L L L L"`, ≈0.154 GPU-h) —
+   무교란·동일 arm에서 32단위 등가류 분할·Σ(classes−1)·
+   pairwise 불일치를 측정한다. F3을 해석 가능하게 만드는 유일한
+   값싼 길이며 arm-분리 판정에 분모를 준다(현재 n=2/arm,
+   P≈0.20).
+2. `R2C_ORDER="TD TD TD TD"` 1 job(+0.154 GPU-h) ⇒ 합쳐
+   n=4/arm(프로젝트 게이트 3 충족), paired 비교.
+3. **D44 resident decode 동치를 보려면 새 층 O′ + 판정 규칙 v3
+   사전등록 필수**(≈0.16 GPU-h) — 엔진은 prefill이 없으면 idx
+   4를 떠나므로 probe가 decode하는 동안에도 제3의 장문 prefill을
+   계속 투입해야 한다. 이것은 X1 후속이 아니라 **선결 #2를
+   넓히는 실험**이고 1·2를 먼저 하지 않으면 또 n=2로 끝난다.
+4. **GPU 0으로 지금 가능**: preflight에 스텝 커버리지 출력
+   추가·비교기에 Σ(classes−1) 출력 추가·죽은 텔레메트리 필드
+   2건 처리(engine-porter)·사전등록 템플릿에 "교란 도달
+   위치=인증하려는 운영점인가" 항목 추가.
+5. **권고하지 않음**: cap을 더 낮추거나 다른 수치 구성으로 X1
+   반복(교란이 떨어지는 위치가 안 바뀌므로 같은 한계의 결과가
+   또 나온다).
+
+GPU 장부: 이 트랙 0.28 → **0.43 GPU-h**(longctx_conflict 15.42
+GPU-h 장부와 별개). Claim D 등급 불변(미검증). 선결 #1–#5 전부
+상태 불변(#5 cudagraph-ON은 재확인이나 등급 변화 없음, #2는
+오히려 X1의 within-job 시험이 더 약함). R2C-1…16·P-1…7·HE0·
+정책 순위·stake #1 전부 불변. **X1은 어떤 게이트도 닫지
+않는다.**
+
+`CONSENSUS.md` rev67→**rev68** — **판단 근거**: 직전
+2026-09-12(2)(A/B/C)는 코드 사실 등재·X1 규칙층(제출 전) 감사
+였으나, 이번은 **GPU 캠페인 실행 결과 + claims-auditor 결과
+감사 판정**(F1–F4 충족·`CONFIRMED(scoped)`·메인 세션 해석 문장
+1건 `REFUTED`)이라 이전 결과-등재 세션들의 관례(Q-A 캠페인
+rev64, R2 true-dual correctness 결과 rev65/66)를 따라 rev를
+올린다. 정본 반영: `CONSENSUS.md` §3 항목192–196(신설)·§5-8(a)
+追記(rev68), `reports/paper/CLAIM_EVIDENCE_MATRIX.md` Claim D
+행·"주장 제한" 갱신, `EXPERIMENT_ROADMAP.md` "P1/P2" 절 갱신,
+`MEMORY.md` 포인터 갱신·`memory/deconfound-measurement-
+lessons.md` 항목170–174 신설·`memory/slo-aware-scheduling-
+track.md` 새 절 `## 2026-09-12(3)` 신설(결과 등재). 상세
+`workspace/engine-port/results/r2_correctness/{job_907456/,
+audit_x1_2026-09-12/VERDICT.md}`.
+
+이전: 2026-09-12(2)(doc-steward — **A) 게이트 #157(도구
+파일 버전관리 이관) 완료**[커밋 `4027257`, GPU 0] · **B) Claim E
+선결 코드↔로드맵 불일치 3건 해소**[커밋 `3f188bb`, GPU 0,
+engine-porter — 사용자 결정: 3건 모두 "로드맵이 정본"] · **C) X1
+사전등록 rev1→rev2 규칙층 감사 `GO-with-caveats` 등재**[커밋
+`b3ef62d`·`19b9d8d` — **X1 job 실행 중, 결과는 등재하지
+않는다**]. 새 성능 판정 0건·arm 순위 0건·Claim D/E 등급 무변경
+(둘 다 미검증)·HE0·정책 순위·stake #1 전부 불변.
+
+**A) 게이트 #157 완료** — outer 워크스페이스
+`/scratch/ehmoon/whlee`가 git 저장소가 아니라는 사실(`.git`이
+빈 디렉터리)이 게이트 #157의 미해결 부분이었다(아래 "방법론
+게이트" #157 참조). `.claude/agents/*.md`(7)·`.claude/skills/*/
+SKILL.md`(3)·루트 `CLAUDE.md`, 총 **추적 사본 11개**를 inner
+repo `tools/claude/`로 이관해 버전관리 안에 넣었다. 동기화·검증:
+`tools/claude/sync_claude_tools.sh`(`--check` 기본·`--import`
+live→추적·`--install` 추적→live·`--manifest`), 해시 목록
+`tools/claude/claude_tools.manifest.sha256`, 변이 테스트
+`tools/claude/test_sync_claude_tools.sh` **10케이스 전부 통과**
+(수정·삭제·신규추가·추적사본삭제 검출 + `--install`/`--import`
+복구, 해시뿐 아니라 **파일 집합**도 비교 — 교훈89 대응). `--import`
+직후 `--check`는 항등식이라 정보 0이라는 한계를 README에 명시.
+심볼릭 링크 방식은 **기각**(에이전트·스킬 디스커버리가 링크를
+따라가는지 이 세션에서 검증 불가 ⇒ 실패 시 다음 세션 에이전트 7개
+소실 위험). **사실 정정**: `.claude/agents/git-committer.md`의
+"outer는 별도 repo, 두 repo는 별개 커밋" 서술을 "저장소는 하나
+(inner)뿐, outer는 git 저장소가 아님 + 툴 파일 변경 시 `--import`
+후 `tools/claude/` 커밋" 절차로 교체, 루트 `CLAUDE.md`에도 같은
+취지 1블록 추가. 앵커 해시: `claims-auditor.md` =
+`e7c2dedfe53527a84a0990c50607135d9ba4200d85a151f919aa7f81e7ed93b8`
+(**변경 없음**)·`git-committer.md` =
+`68797f68781f1c21900045d0b57b3ea9c1995f4c5052032836fa2f8d76a2ada1`
+(이번 정정으로 변경)·`workspace/CLAUDE.workspace.md`(=루트
+`CLAUDE.md`) =
+`478c83bc2604d743f8eab811236995fc796ca98552a5e4c972b0b9c861f4a076`.
+앞으로는 개별 해시를 산문에 붙여 넣는 대신 **manifest 파일 +
+커밋을 인용**한다(아래 "방법론 게이트" #157 갱신 참조).
+
+**B) Claim E 선결 3건 해소**(커밋 `3f188bb`) — 2026-09-12(1차)가
+등재한 "불일치 3건(수정 없이 표시만)"을 사용자 결정("3건 모두
+로드맵이 정본")에 따라 engine-porter가 코드로 해소했다: ①
+admission 제한 지속을 컨트롤러 상태로 보존하고 HOLD가 승계
+(`controller.py:127,174-185,219-220`) + `release_admission_
+limit()` 신설(`multiplexing_mixin.py:1809-1817`, duck-typed
+⇒ FixedPolicy는 no-op) — stale-True 게이트 테스트 불변 통과,
+"영구 True 퇴화" 변이도 검출 ② `evaluation_due()`를 로드맵
+`max(4 iterations, 100 ms)` 의미(`bucket_changed OR (시간 AND
+iteration)`)로 수정(`controller.py:129-142`) ③ profile 호환
+검사에서 `engine_commit`(repo HEAD)을 엄격 일치 집합에서 제외
+(provenance 기록용으로만 남김)하고, **실제 임포트된 엔진 모듈
+8개의 내용 해시** `engine_source_hash`로 교체(`profile.py:44,
+113-160,367-481`) — 하위호환 **fail-closed**(해시 없는 프로파일은
+명시 reason과 함께 fallback), `profile_cli`에 `engine-source-hash`
+서브커맨드 + 자동 채우기 거부(허위 provenance 방지). 저장소에
+기존 프로파일 JSON 0건 ⇒ 재생성 대상 없음. 선택 근거(manifest
+아닌 임포트된 바이트를 씀): manifest는 설치 시점의 경로 기반
+주장이라 array task 공유 dev tree·재sync·다른
+`SGLANG_ENGINE_DEV`에서 "같은 manifest인데 로드된 바이트는
+다름"이 가능 — `engine_commit`과 같은 대리물 실패 모드. 검증:
+신규 테스트 38개(`test_controller_defaults.py` 27 +
+`test_r2_admission_persistence.py` 11, 후자는 실제
+`event_loop_pdmux`를 fake로 구동) + 수리를 되돌린 변이 M1–M6 +
+mixin 2종 전부 실패 확인. **전체 343 tests OK**(직전 305).
+`check_line_citations.py --check --all` = 50 compared,
+**0 violation**(전·후). **FixedPolicy/Claim D 경로 불변**
+(테스트로 고정) — `controller` 속성 없음 ⇒ 해제 훅 no-op,
+`evaluation_due`/`stabilize` 미호출, `RuntimeEnvironment`·profile
+미사용. R2 correctness 하네스의 `B5_POLICY` 불변식도 그대로
+성립.
+
+★**새로 생긴 긴장 2건 — 미해결로 등재(사용자 결정 대기, 고치지
+않음)**: (1) 로드맵 `:976`의 "ITL 위반 또는 85% KV/batch 점유율
+즉시 upshift"가 결정 ②로 인해 **덜 즉각적**이 됐다 — upshift
+분기(`controller.py:189-204`)는 평가 iteration에만 돌고, 평가
+주기가 이제 `max(100ms, 4 iter)`(둘 다 충족)라 최악 반응 지연이
+이전(먼저 오는 것)보다 **길어진다**. bucket 변화가 안 걸리면
+"immediate"는 성립하지 않는다. ★이것은 결정 ②가 **만든** 긴장이고,
+이 패치에서 Claim E 거동에 실제로 영향을 줄 수 있는 유일한
+항목이다. (2) 로드맵 `:979`의 트리거 합성 — 산문은 "D108 risk
+**또는** occupancy 90%"인데 코드는 `target>=108 AND
+(upper_bound>SLO or kv>=0.90 or running>=0.90)`
+(`controller.py:210-218`) — occupancy 90%만으로는 제한이 걸리지
+않는다. 2026-09-12(1차) 등재는 *지속 기간*만 문제 삼았으므로
+접속사는 그대로 뒀다. 둘 다 어느 쪽(코드/로드맵)이 옳은지는
+판정하지 않는다.
+
+★**정본 문서의 깨진 줄 인용 갱신**(engine-porter 제공, 반드시
+반영): `controller.py:124-130 → :129-142` · `:148-149 → :174`
+(+반환 블록 `:180-185`) · `:174-183 → :210-219` · `:183 → :219`
+· `:207 → :244` · `:222 → :259` · `profile.py:98-114 → :113-160`
+· **`profile.py:102`("engine_commit" 엔트리)는 더 이상 존재하지
+않음** · `profile.py:268-279 → :314-325`. 그대로 유효:
+`controller.py:55,65,68,80-94,87` · `multiplexing_mixin.py:
+430-441,1066-1080,1758`. 영향 문서: 이 문서 위 A/B 항목 ·
+`reports/paper/CLAIM_EVIDENCE_MATRIX.md` Claim E 행·"주장 제한" ·
+`EXPERIMENT_ROADMAP.md` "Controller defaults" · `reports/
+r2_decoupling_review_2026-07-24.md:84` · `workspace/engine-port/
+results/s8_frontier/DESIGN.md:3460,3466`(engine-porter가 코드
+사실을 확인, doc-steward는 정본 인용만 갱신 — DESIGN.md 파일
+자체는 이 doc-steward 갱신 범위 밖).
+
+**C) X1 규칙층만 등재(결과 없음 — job 실행 중)**(커밋 `b3ef62d`·
+`19b9d8d`) — 사전등록 rev1은 **제출 전 감사에서 반증**돼
+**SUPERSEDED**(배너 부착, 보존). 死因: "교란됨"을 행별 split
+수로 판정했으나 커널이 `MIN_BLOCK_KV=32`로 한 번 더 양자화해
+(`decode_attention.py:35,98,553`) split 수가 달라도
+`kv_len_per_split`이 같으면 **비트 동일** ⇒ rev1의 "강제 6 ⇒
+24/24 교란"은 거짓(실효 **18/24**), 무교란 6개가 하필 4-gram
+≤0.04 비복사형이었다. 판정서 초안(env var만 ⇒ cap 8)은 **2/24**로
+더 나빴다.
+
+유효 판본 **rev2**: `--triton-attention-num-kv-splits 2`
+**CLI 단일 노브**(env var 미사용 ⇒ 관측 가능·`SAME_ACROSS_BOOTS`
+자동 검사·confound "변수 동시 변경" 제거), 실효 **24/24 교란**.
+통제 강화 1건 추가: 엔진 소스를 `38c1aca`(907100이 돌린 바이트,
+8/8 해시 확인)로 되돌린 뒤 제출하고 job의 manifest로 사후
+검증한다.
+
+claims-auditor 감사 판정 **`GO-with-caveats`**(死因 0, 반전 0/7
+표면) + 차단 조건 D1–D4·D6–D9 반영 완료. 판정서 **원문 전사** =
+`workspace/engine-port/results/r2_correctness/x1_prereg/
+VERDICT_x1_rules_2026-09-12.md`(228행).
+
+★★**필수 병기 X1P-1…7 / 인용 금지 X1C-1…9를 문자 그대로
+등재**(판정서 §7, 전문은 판정서에서 확인, 요지):
+
+- **X1P-1** X1의 수치 구성(`triton_attention_num_kv_splits=6`)은
+  **운영점이 아니다**(운영 기본 = 8 + 커널 휴리스틱). within-job
+  PASS는 운영 수치 구성의 correctness를 확장 인증하지 않는다.
+- **X1P-2** 교란은 **decode attention에만** 걸린다. prefill
+  (extend) 경로는 비트 동일이므로(`forward_extend`에 `num_kv_
+  splits` 참조 0건), 판정서 §2.3이 "비교 대상 중 D44 64-SM에서
+  돈 유일한 계산"으로 지목한 **probe prefill의 민감도는 X1
+  이후에도 미보정**이다.
+- **X1P-3** 교란은 비교 단위 24개 중 **18개(실효 기준, `MIN_
+  BLOCK_KV=32` 양자화 반영)**에만 도달한다. S00·S01·S02·S03·
+  S04·S13 6개(= 96 unit-pair 중 24개)는 구성상 비트 동일이어서
+  불일치를 만들 수 없다. 교란된 단위는 전부 4-gram≥0.98 복사형,
+  ≤0.04 비복사형 7개 중 6개가 무교란.
+- **X1P-4** X1의 within-job 동치 시험은 **907100보다 약하다**.
+  강제 split은 decode attention을 행 단위 배치 불변으로 만들고
+  O1의 전제를 자동 성립시켜, arm-특이 타이밍이 토큰을 바꿀 수
+  있는 경로 하나를 제거한 뒤 동치를 확인한다.
+- **X1P-5** 교차-잡 비교는 **진단 전용**이다. 귀무대조는
+  `907032→907100` S 층 `compared=32/mismatch=0`(노드·커밋 상이,
+  교란 없음)이며, **O 층에는 귀무대조가 없다**. 불일치는
+  `first_divergence≥1`일 때만 교란에 귀속한다.
+- **X1P-6** C 층 수치는 등가류 서술뿐이고 어떤 게이트·기전·정책
+  판정에도 쓰지 않는다. boot 2개/arm에서 "arm-분리 소멸"은
+  균등 귀무로도 P≈0.20이다. 강제 split은 decode attention의
+  배치 의존성을 제거하므로 **C 불일치 총수 감소는 교란의 예상된
+  부작용**이다.
+- **X1P-7** X1은 성능을 측정하지 않는다. 새 성능 판정 0건. Claim
+  D 등급 불변(미검증), 선결 #1·#2·#3·#4a·#4b·#5 상태 불변(#2는
+  여전히 S/O 프로토콜 부분 해소). R2C-1…16·P-1…7·HE0·정책
+  순위·stake #1 불변.
+
+인용 금지 **X1C-1**"X1이 correctness를 더 넓게 인증했다"/"두
+수치 구성에서 확인됐으므로 TD≡legacy가 강해졌다" · **X1C-2**
+"비교기(측정층)의 민감도가 보정됐다"(허용형: "불일치가 난
+층·단위에서 decode attention 수치 교란에 대한 민감도의 하한이
+시연됐다") · **X1C-3** "X1 0 mismatch는 TD와 legacy가 정말
+같다는 추가 증거"(C 층 8/32 불일치가 이미 이 엔진·프롬프트
+계열에서 ULP급 섭동이 argmax를 뒤집을 수 있음을 보여 준다 ⇒
+0은 "이 복사형 단위들의 마진을 넘지 못했다"로 읽는다) ·
+**X1C-4** "24/24 비교 단위를 교란했다"/"무교란 단위는 없다" ·
+**X1C-5** "`fill_` 값 하나만 바꿨다"(`MAX_KV_SPLITS` constexpr·
+grid z·버퍼 shape가 함께 바뀐다) · **X1C-6** "C01 arm-분리
+소멸이 §1.7 기전을 확증한다"/"X1이 C 층 불일치 원인을
+규명했다" · **X1C-7** "C 층 결과가 동시 부하 동치(R2C-2)를
+완화한다" · **X1C-8** "X1이 Claim D 선결을 닫았다/진전시켰다"
+또는 "r2_eval 설정·D16/24/34·generic/hybrid·다른 모델·TP≥2로
+확장됐다" · **X1C-9** X1 아티팩트(또는 907100↔X1 교차)에서
+**어떤 지연·스루풋·GPU-h 비교 수치도 인용 금지**(n=1, 비페어,
+교차-잡, 두 수치 구성이 동시에 다름).
+
+**X1은 Claim D 선결을 하나도 닫지 않는다**(#1·#2·#3·#4a·#4b·#5
+상태 불변). GPU 장부: 이 트랙(R2 correctness) **0.28 GPU-h**
+지출 불변, X1 ≈0.16 GPU-h **예정**(job 실행 중 — **결과 도착
+후 갱신**, 지금은 미기재). `longctx_conflict` 15.42 GPU-h
+장부와 별개.
+
+★신규 방법론 게이트 — **#170**(X1 감사 §1(a), 양성대조의
+"교란됨" 판정은 상위 API 근사[행별 split 수]가 아니라 **커널이
+실제로 쓰는 granularity**[`MIN_BLOCK_KV` 양자화]로 해야 한다 —
+게이트#9 계열 **스무 번째 재발**[gate #40이 열 번째, gate #163이
+19번째였던 것과 같은 형태로 새 게이트 번호를 받는다], `CONSENSUS.md`
+§3 항목190[신설]) · **#171**(X1 D4/rev2 설계, 교란 노브를 도입하는
+실험은 그 교란과 무관한 배경 축[엔진 소스/커밋 등]을 이전 참조
+실행과 고정해 드리프트를 통제하라 — 노브 하나만 진짜로 바뀌게
+하라, `CONSENSUS.md` §3 항목191[신설]). "도구 파일이 버전관리 밖이면
+규칙 자신에 이력이 없다"는 새 번호를 매기지 않는다 — 위 A항목이
+바로 **기존 게이트 #157**의 완료 사례이므로 그 항목에 追記한다
+(중복 방지, 아래 "방법론 게이트" #157 참조).
+
+★기존 불변 배너 전부 승계(HE0·정책 순위·gate #13/#16·switch-
+cost "닫았다" 금지·C2 인용정지(a)(b)·`CONSENSUS §1-24`·게이트
+#14 "닫았다" 금지·stake #1 구조 판정, 교훈88). `CONSENSUS.md`
+rev66→**rev67**(§3 항목190·191 신설[게이트 #170·#171 대응] +
+항목177 追記[게이트#157 완료], X1 등재는 §5-8(a) 追記) —
+**판단 근거**: A(도구 이관)·B(Claim E 코드 수정)
+는 코드/도구 사실 등재이며 새 분석 결론이 아니므로, 직전 세션
+(2026-09-12 1차)이 세운 선례("코드 사실 등재는 매트릭스·로드맵·
+이 문서 3개로 충분, CONSENSUS rev 불필요")를 그대로 따라
+CONSENSUS에 반영하지 않는다. C(X1 규칙층 감사가 산출한 신규
+방법론 게이트 2건)만 CONSENSUS rev 사유로 판단했다 — 이는 이전
+세션들(Q-A rev8/9, Q-B′ rev65)이 GPU 결과 없이도 규칙층 감사의
+신규 게이트를 즉시 CONSENSUS §3에 반영해 온 선례를 따른 것이다.
+정본 반영: `reports/paper/{CLAIM_EVIDENCE_MATRIX,
+EXPERIMENT_ROADMAP}.md` Claim D/E 절 갱신, `MEMORY.md` 포인터
+갱신·`memory/deconfound-measurement-lessons.md` 항목168–169
+신설. 상세 `workspace/engine-port/results/r2_correctness/
+x1_prereg/{PREREG_X1_SENSITIVITY_2026-09-12.md,
+VERDICT_x1_rules_2026-09-12.md}`, `tools/claude/README.md`.
+
+이전: 2026-09-12(doc-steward — **engine-porter 코드 사실 4건
 등재**[Claim E 설계 3건 + 도구 1건], 2026-09-11 확인·file:line
 근거, **성능 판정 아님·수정 없음·사용자 결정 대기**, GPU 0). Claim
 E(generic/hybrid R2 정책) 착수 전 해소가 필요한 코드↔로드맵 불일치
@@ -5687,6 +6126,60 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
    `reports/paper/CLAIM_EVIDENCE_MATRIX.md` Claim D 행·"주장
    제한" 갱신. 상세 `workspace/engine-port/results/r2_correctness/
    {job_907032/, job_907100/, audit_r2corr_2026-09-11/VERDICT.md}`.
+
+   ★★追記(2026-09-12(2), doc-steward — X1 사전등록 규칙층만
+   등재, **X1 job 실행 중이므로 결과는 등재하지 않는다**, GPU 0):
+   위 "후속 실험 X1–X3" 중 X1(민감도 양성대조+C 기전 판별)의
+   사전등록 rev1이 제출 전 감사에서 **반증**돼 SUPERSEDED됐다
+   (死因: 행별 split 수 판정이 커널 실효 양자화 `MIN_BLOCK_KV=32`
+   를 놓쳐 "강제 6 ⇒ 24/24 교란"이 거짓, 실효 **18/24**).
+   유효 판본 rev2(`--triton-attention-num-kv-splits 2` CLI 단일
+   노브 + 엔진 소스 `38c1aca` 고정)는 claims-auditor 규칙층 감사
+   `GO-with-caveats`(死因 0, 반전 0/7표면, 차단 D1–D4·D6–D9
+   반영 완료)를 받았다. 판정서 원문 전사 = `workspace/engine-port/
+   results/r2_correctness/x1_prereg/VERDICT_x1_rules_2026-09-12.md`.
+   필수 병기 X1P-1…7·인용 금지 X1C-1…9는 이 문서 최상단 배너
+   "C) X1 규칙층만 등재" 항목에 문자 그대로 등재돼 있다. **X1은
+   위 게이트 2("동일 fixed split에서 true dual이 legacy 대비…")
+   를 포함해 어떤 Claim D 선결도 아직 평가하지 않는다** — job이
+   아직 실행 중이다. GPU: R2 correctness 트랙 0.28 GPU-h 지출
+   불변, X1 ≈0.16 GPU-h는 **결과 도착 후 갱신**. 신규 방법론
+   게이트 #170·#171(아래 "방법론 게이트" 절). 정본 반영:
+   `CONSENSUS.md` §5-8(a) 追記(rev67), `reports/paper/
+   EXPERIMENT_ROADMAP.md` "P1/P2" 절 갱신.
+
+   ★★追記(2026-09-12(3), doc-steward — X1 **결과** 등재, rev68,
+   새 성능 판정 0건·Claim D 등급 불변[미검증]·HE0·정책 순위·
+   stake #1 전부 불변, GPU 0.28→**0.43 GPU-h**): 위 X1 rev2가
+   job 907456(0.154 GPU-h)으로 완주했고, claims-auditor 결과
+   감사가 총괄 **`CONFIRMED(scoped)`**를 판정했다(등록 예보
+   F1–F4 전부 충족·PASS 및 8/96 불일치 독립 재현·귀속 성립).
+   전문·§8 정본 등재 스코프 문장·§9 인용 금지 X1C-10…14·§10
+   필수 병기 X1P-1′·2′·3′·5′·6′·8·9는 이 문서 최상단 배너
+   (2026-09-12(3))에 문자 그대로 등재돼 있다. 요지: 메인
+   세션이 쓰려던 "O06이 D44를 밟는 probe prefill 민감도를
+   보정한다"는 문장은 **`REFUTED`**다 — 뒤집힌 두 단위(S05·
+   O06) 모두 비분할 `stream_index 5`에서 돌았고, D44에서 돈
+   유일한 교란된 decode는 0/32로 뒤집히지 않았다. "24/24
+   교란"은 단위 지시함수이고 실제 스텝 커버리지는 82.5%다.
+   C 층 "불일치 감소"는 Σ(등가류−1) 10→10 불변으로 성립하지
+   않는다. **X1은 위 게이트 2를 포함해 어떤 Claim D 선결도
+   닫지 않는다**(#1·#2·#3·#4a·#4b·#5 상태 불변, #2는 오히려
+   더 약함). 신규 방법론 게이트 5건 #172–176(아래 "방법론
+   게이트" 절, #176=긍정 사례). GPU: R2 correctness 트랙
+   0.28→**0.43 GPU-h**(이번 0.154). **다음 실험(판정서 §12,
+   전부 미승인·사용자 판단 대기)**: (1) C-tier 귀무대조
+   `R2C_ORDER="L L L L"`(≈0.154 GPU-h, F3을 해석 가능하게 만드는
+   유일한 값싼 길) (2) `TD TD TD TD` 1 job(+0.154) ⇒ n=4/arm
+   (3) D44 resident decode 동치엔 새 층 O′+판정 규칙 v3
+   사전등록 필수(≈0.16, 선결 #2를 넓히는 실험, X1 후속 아님)
+   (4) GPU 0: preflight 스텝 커버리지·비교기 Σ(classes−1) 출력·
+   죽은 텔레메트리 2건 처리(engine-porter)·사전등록 템플릿
+   항목 추가 (5) 권고 안 함: cap을 더 낮추거나 다른 수치
+   구성으로 X1 반복. 정본 반영: `CONSENSUS.md` §5-8(a)
+   追記(rev68)·§3 항목192–196(신설), `reports/paper/{CLAIM_
+   EVIDENCE_MATRIX,EXPERIMENT_ROADMAP}.md` Claim D/"P1/P2" 절
+   갱신.
 5. 벡터1(disjoint conflict-regime escape hatch, CONSENSUS §5-8(c)): **CONFIRMED
    closure (scoped, 2026-07-25)** — g2_0_full → g2_0_hard → g2_0_decliff →
    g2_0_rasweep → g2_0_raconf(pre-registered 24-job 확증 열, 결정 규칙 충족)로
@@ -10159,7 +10652,7 @@ E1 하네스 구축에서 도출된 상위 원칙(4), 그리고 2026-08-01 캠�
 
 156. ★**(2026-09-10, rev8 §6, claims-auditor, GPU 0) 실행 중 관측을 사전등록에 적을 때의 봉인은 "n=1·판정 금지"가 아니라 "그 관측이 문제의 선택과 직교함을 수치로 보이는 것"이다.** rev8 §6이 라운드 1 첫 셀의 실행 중 관측(`u` 정의 불가·`pooled_p95` 요청-표집 반폭 108.2%)을 "n=1이므로 설계·성능 판정에 인용 금지"로만 봉인했으나, 감사(표 J)는 그것으로 충분하지 않다고 판정했다 — 실제 방어는 그 두 관측이 **축 선택(A1)과 구별 정보 0**임(둘 다 두 축에서 구성상 동일하거나 제3의 축의 함수)을 수치로 보인 것이었다. 실무 규칙: 사전등록 실행 중 관측을 기재할 때 "표본 크기가 작다"는 caveat만으로 오염 가능성을 봉인했다고 쓰지 말고, 그 관측이 문제되는 선택(설계 자유도)과 통계적으로 독립임을 별도로 논증하라. 정본 `CONSENSUS §3` 항목176(신설), `PROJECT_STATUS.md` "방법론 게이트" 이 항목(#156, 신설). 상세 `.../audit_qa_rev8_2026-09-10/VERDICT.md` §1-표J·§4-5.
 
-157. ★★★**(2026-09-10, 5차 세션, doc-steward, GPU 0 — 연구 도구 인프라 사실) 게이트의 "작동하는 절반"이 버전관리 밖에 있으면 그 게이트는 드리프트 탐지·재현이 불가능하다.** 게이트#118(규칙층 감사 등급 개편)의 실제 이행분은 `/scratch/ehmoon/whlee/.claude/agents/claims-auditor.md`(63→109줄, SHA-256 `47e800cf6b663752730c492137f06cab7ede58d29c38dea6f55211656835ae02` — **2026-09-11 doc-steward 追記**: 경로 1줄 정정[존재하지 않는 `workspace/engine-port/reports/CONSENSUS.md` → `reports/CONSENSUS.md`], 규칙 내용 불변. 새 SHA-256 = `e7c2dedfe53527a84a0990c50607135d9ba4200d85a151f919aa7f81e7ed93b8`)에 있는데, 그 파일이 속한 워크스페이스 루트(`/scratch/ehmoon/whlee`)는 **git 저장소가 아니다**(`.git`이 빈 디렉터리, `git status` → `fatal: not a git repository`) — 이 프로젝트(`prefill-layer-alloc`)의 오늘 커밋 `d869751`·`e2c2ba1`(둘 다 "규칙층 감사 규율 개편(게이트 #118)"을 언급)에 **이 파일 자체는 들어갈 수 없었다**(별도 워크스페이스). 이것은 **교훈 항목97**("게이트 등재돼도 도구가 안 고치면 재발")의 **뒷면**이다 — 이번엔 도구가 실제로 고쳐졌는데 그 수정이 기록(버전관리)에 없다. 실무 규칙: 감사·게이트 도구 파일을 프로젝트 정본에서 참조할 때는 그 파일이 실제로 버전관리 대상인지 확인하고, 아니라면 (i) 정본에 경로+체크섬을 박아 드리프트를 탐지 가능하게 하고 (ii) 근본 해법(그 파일을 대상 저장소로 편입할지)을 사용자에게 명시적으로 위임하라. 정본 `CONSENSUS §3` 항목177(신설), `PROJECT_STATUS.md` "방법론 게이트" 이 항목(#157, 신설). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-10, 5차 세션).
+157. ★★★**(2026-09-10, 5차 세션, doc-steward, GPU 0 — 연구 도구 인프라 사실) 게이트의 "작동하는 절반"이 버전관리 밖에 있으면 그 게이트는 드리프트 탐지·재현이 불가능하다.** 게이트#118(규칙층 감사 등급 개편)의 실제 이행분은 `/scratch/ehmoon/whlee/.claude/agents/claims-auditor.md`(63→109줄, SHA-256 `47e800cf6b663752730c492137f06cab7ede58d29c38dea6f55211656835ae02` — **2026-09-11 doc-steward 追記**: 경로 1줄 정정[존재하지 않는 `workspace/engine-port/reports/CONSENSUS.md` → `reports/CONSENSUS.md`], 규칙 내용 불변. 새 SHA-256 = `e7c2dedfe53527a84a0990c50607135d9ba4200d85a151f919aa7f81e7ed93b8`)에 있는데, 그 파일이 속한 워크스페이스 루트(`/scratch/ehmoon/whlee`)는 **git 저장소가 아니다**(`.git`이 빈 디렉터리, `git status` → `fatal: not a git repository`) — 이 프로젝트(`prefill-layer-alloc`)의 오늘 커밋 `d869751`·`e2c2ba1`(둘 다 "규칙층 감사 규율 개편(게이트 #118)"을 언급)에 **이 파일 자체는 들어갈 수 없었다**(별도 워크스페이스). 이것은 **교훈 항목97**("게이트 등재돼도 도구가 안 고치면 재발")의 **뒷면**이다 — 이번엔 도구가 실제로 고쳐졌는데 그 수정이 기록(버전관리)에 없다. 실무 규칙: 감사·게이트 도구 파일을 프로젝트 정본에서 참조할 때는 그 파일이 실제로 버전관리 대상인지 확인하고, 아니라면 (i) 정본에 경로+체크섬을 박아 드리프트를 탐지 가능하게 하고 (ii) 근본 해법(그 파일을 대상 저장소로 편입할지)을 사용자에게 명시적으로 위임하라. 정본 `CONSENSUS §3` 항목177(신설), `PROJECT_STATUS.md` "방법론 게이트" 이 항목(#157, 신설). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-10, 5차 세션). ★追記(2026-09-11, doc-steward, GPU 0 — 도구 사실 추가 사례): 같은 형태의 결함이 다른 도구 파일에도 있었다 — `.claude/agents/git-committer.md:25-27`이 outer 워크스페이스를 "별도 `.git`, 원격 있음"인 저장소로 서술했으나(engine-porter, 2026-09-11 확인) 실제로는 위와 같은 빈 `.git`이었다(doc-steward 재확인). 당시 표시만 해 두고 수정하지 않았다. ★★追記(2026-09-12(2), doc-steward, GPU 0 — 게이트 완료, 커밋 `4027257`): 이 게이트가 지적한 문제 자체가 해소됐다 — `.claude/agents/*.md`(7)·`.claude/skills/*/SKILL.md`(3)·루트 `CLAUDE.md`, 총 11개 추적 사본을 inner repo `tools/claude/`로 이관해 버전관리 안에 넣었다(동기화·검증 스크립트 `sync_claude_tools.sh` + 해시 매니페스트 + 변이 테스트 10케이스 전부 통과, 심볼릭 링크는 기각). `git-committer.md`의 "outer는 별도 repo" 서술도 정정했다(위 2026-09-11 추기 사례 해소). 이 완료로 도구 파일 3개(`claims-auditor.md`·`git-committer.md`·`CLAUDE.md`)가 이제 커밋으로 추적된다 — 앞으로 이 파일들을 인용할 때는 개별 SHA-256 대신 `tools/claude/claude_tools.manifest.sha256` + 커밋 해시를 인용한다. 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-12(2)) A항목, `tools/claude/README.md`.
 
 , 2026-09-11 (Q-A `REGRET` 캠페인[jobs 906504–906507] 결과 문서에 대한
 claims-auditor 결과 감사[`audit_qa_result_2026-09-11/VERDICT.md`], GPU 0)
@@ -10219,3 +10712,17 @@ CONSENSUS §3 항목181과 대응]. 이 4건은 기존 #119–157과 전수 대�
 168. ★★★**(2026-09-11, `r2_correctness` 트랙, claims-auditor, GPU 0, G-2·게이트#20 인접) 같은 이름의 텔레메트리 필드가 arm마다 다른 술어로 채워질 수 있다.** FixedPolicy(legacy)는 `true_dual_worker_runtime is None` 조건에서 단락돼 `safe` 술어를 평가하지 않는 채 상수 True로 기록하는 반면, true-dual은 `arbiter.safe_to_switch()`로 in-flight CUDA 이벤트를 실제로 query한다 — 같은 `safe` 필드값(`unsafe_decisions`=0 대 30)이 "arm 간 거동 차이"를 뜻하지 않고 "같은 필드를 다른 술어로 채운 결과"일 뿐이다(60/60 unsafe가 전부 target=current=44인 no-op). #20의 "식별자 수입≠거동 수입"은 분석기 쪽 문제고, 이 게이트는 엔진 쪽 필드 의미 문제라 구분 유지. 실무 규칙: 두 arm의 텔레메트리 필드를 비교하기 전에 같은 술어가 양쪽에서 실제로 평가되는지 코드로 확인하라. 대응 `CONSENSUS.md` §3 항목188(신설). 상세 `.../audit_r2corr_2026-09-11/VERDICT.md` §3.2·§6(G-2).
 
 169. ★★★**(2026-09-11, `r2_correctness` 트랙, claims-auditor, GPU 0, G-4) 워커 경로를 탔다는 것(태스크 카운터 증가)은 동시 실행의 증거가 아니다.** job 907100의 S/O 전 구간에서 두 worker 스레드의 `prefill_host_tasks`/`decode_host_tasks` 증가량이 기대값과 정확히 일치했지만(O4 충족), 벽시계 host-worker 중첩을 복원하면 S 층 0.000s, O 층 13.5/19.4ms(`host_worker_overlap_ratio`의 1024개 절단+서버 수명 분모 때문에 이조차 하한)뿐이었다 — "경로를 탔다"가 "동시에 실행됐다"를 함의하지 않는다. 실무 규칙: 동시성은 태스크 카운터가 아니라 중첩 시간과 경합 기회 수로 적어라. 하네스 결함으로 `host_worker_overlap_ratio`를 동시성 지표로 쓰지 말 것(engine-porter 이관, 게이트 아님). 대응 `CONSENSUS.md` §3 항목189(신설). 상세 `.../audit_r2corr_2026-09-11/VERDICT.md` §1.5·§6(G-4).
+
+170. ★★★**(2026-09-12, `r2_correctness` 트랙, X1 사전등록 규칙층 감사, claims-auditor, GPU 0) 양성대조의 "교란됨" 판정은 상위 API가 보고하는 근사값이 아니라 커널이 실제로 쓰는 granularity로 해야 한다 — 게이트#9 계열 스무 번째 재발.** X1 사전등록 rev1의 pre-flight(`x1_preflight_splits.py`)는 `get_num_kv_splits_triton`이 돌려주는 **행별 split 수**만 비교했으나, 실제 축약 구간은 커널 안에서 `_MIN_BLOCK_KV=32`로 한 번 더 양자화된다(`kv_len_per_split = cdiv(cdiv(cur_batch_seq_len, kv_splits), MIN_BLOCK_KV)*MIN_BLOCK_KV`, `decode_attention.py:35,98,553`) — split 수가 달라도 이 값이 같으면 결과는 비트 단위로 같다. 이 때문에 rev1의 핵심 수치("강제 6 ⇒ 24/24 교란, 무교란 0")는 거짓이었고 실효값은 **18/24 교란·72/96 unit-pair, 무교란 6/24**였다(그것도 하필 4-gram≤0.04 비복사형 7개 중 6개). 도구 자신의 docstring이 선언한 목적("does the planned perturbation actually change the decode attention reduction")을 자기 코드가 달성하지 못한 사례로, de-confound 교훈 9의 변종이다(gate #40이 "게이트#9 계열 열 번째 재발", gate #163이 "19번째 재발"이었던 것과 같은 형태로 새 게이트 번호를 받는다). 실무 규칙: 양성대조·항등식 검출 도구를 설계할 때는 API가 노출하는 파라미터가 아니라 그 파라미터가 실제로 소비되는 최종 계산(커널 내부 양자화·타일링 등)까지 추적해 "교란됨"을 정의하라. 대응 `CONSENSUS.md` §3 항목190(신설). 상세 `workspace/engine-port/results/r2_correctness/x1_prereg/VERDICT_x1_rules_2026-09-12.md` §1(a)·§6(D1).
+
+171. ★★★**(2026-09-12, `r2_correctness` 트랙, X1 사전등록 rev2 설계 + claims-auditor 규칙층 감사, GPU 0) 교란 노브를 도입하는 실험은 그 교란과 무관한 배경 축(엔진 소스/커밋 등)을 이전 참조 실행과 고정해 드리프트를 통제하라 — 노브 하나만 진짜로 바뀌게 하라.** X1 rev1은 새 교란(decode KV-split 강제 고정)을 env var와 CLI arg 두 경로로 동시에 주입했다(제1원칙 confound 카탈로그 #10 "변수 동시 변경" 해당). 실효 기준으로 재계산하면 두 노브의 한계 기여 차이는 단 1/24 단위(S05)뿐이었으나, env var는 관측 가능성이 CLI arg보다 낮고(`SAME_ACROSS_BOOTS` 같은 자동 검사가 CLI arg만큼 보장되지 않음) 원인 귀속을 흐린다. rev2는 (i) env var를 버리고 `--triton-attention-num-kv-splits` CLI 인자 하나만 쓰고, (ii) 그와 별개로 엔진 소스를 이전 GO 판정(job 907100)이 돈 정확한 커밋(`38c1aca`, 8/8 해시 확인)으로 되돌린 뒤 새 교란을 도입해, 교란 효과와 "엔진이 907100 이후 드리프트했다"는 효과가 뒤섞이지 않게 했다. 실무 규칙: 새 교란을 도입하는 실험을 설계할 때는 (a) 교란 자체는 관측 가능한 단일 노브로 주입하고, (b) 그 교란과 무관한 배경 축(엔진 소스/커밋·설정 등)은 비교 대상이 되는 이전 참조 실행과 명시적으로 고정하라 — 그러지 않으면 "무엇이 바뀌어서 결과가 달라졌는가"를 사후에 분해할 수 없다. 대응 `CONSENSUS.md` §3 항목191(신설). 상세 `workspace/engine-port/results/r2_correctness/x1_prereg/VERDICT_x1_rules_2026-09-12.md` §1(d)·§6(D4)·§8.
+
+172. ★★★**(2026-09-12(3), `r2_correctness` 트랙, X1 결과 감사[job 907456], claims-auditor, GPU 0.154 GPU-h, G-X1-1 — 게이트#9 계열의 3번째 층) 양성대조의 도달 범위는 "비교 단위 지시함수"가 아니라 "교란이 실제로 걸린 계산 스텝/토큰의 분포"로 등록하라.** 같은 양에서 granularity 오류가 세 번 일어났다: rev1은 행별 split 수(틀림) → 게이트#170(1단 감사)이 `kv_len_per_split`로 교정(옳음) → **rev2, 그리고 그 교정을 지시한 claims-auditor의 D1 자신이 "any-step 지시함수"에 머물러 단위 기준 24/24를 보고**(실제 decode 스텝 커버리지 1,142/1,384 = 82.5%, 최악 단위 S00 5/63). 검출력 배분이 여전히 숨었다. 자기 적용: 이 결함의 출처는 claims-auditor 자신의 1단 판정서 D1이다 — 처방자가 같은 층에서 다시 미끄러졌다. 대응 `CONSENSUS.md` §3 항목192(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_x1_2026-09-12/VERDICT.md` §2.1·§11(G-X1-1).
+
+173. ★★★**(2026-09-12(3), `r2_correctness` 트랙, X1 결과 감사, claims-auditor, GPU 0.154 GPU-h, G-X1-2 — 게이트#1·#114·#166 확장) 양성대조가 게이트가 인증하려는 운영점 위에 떨어졌는지 확인하고, 떨어지지 않았으면 "그 운영점에서는 미보정"을 등록 문안에 넣어라.** X1의 교란은 D44 resident 비교 계산 **0개**에 떨어졌다(prefill은 구성상 미교란, O 층 background 행은 bs=2 구간에서 비트 동일, bs=1 교란 구간[112/159 step, D44 상주]에서는 0/32로 뒤집히지 않음). 창 안에 그 파티션이 있었다는 것과 *교란이 그 파티션 위 계산에 실제로 닿았다*는 것은 다른 명제다. 대응 `CONSENSUS.md` §3 항목193(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_x1_2026-09-12/VERDICT.md` §2.4·§11(G-X1-2).
+
+174. ★★★**(2026-09-12(3), `r2_correctness` 트랙, X1 결과 감사, claims-auditor, GPU 0.154 GPU-h, G-X1-3, 신설) 등가류 "불일치 단위 수"는 불일치 총량이 아니다 — Σ(등가류−1) 또는 분할 전체를 병기하라.** X1의 C 층에서 불일치 단위 수는 907100의 8에서 6으로 줄었으나, 32단위 합 **Σ(등가류 수−1)은 10→10으로 불변**이었고 일부 단위(C00·C16)는 3류→**4류**로 오히려 더 갈렸다(L-L 불일치도 4→5로 증가). 단위 수만 보면 "교란이 불일치를 줄였다"는 반대 결론이 나온다. 대응 `CONSENSUS.md` §3 항목194(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_x1_2026-09-12/VERDICT.md` §3.3·§11(G-X1-3).
+
+175. ★★★**(2026-09-12(3), `r2_correctness` 트랙, X1 결과 감사, claims-auditor, GPU 0.154 GPU-h, G-X1-4 — 게이트#80 인접, 신설) provenance 보강을 교란 arm에만 넣으면 비대칭 기록이 되어 baseline 전제를 사후 검증 불가로 만든다.** X1 sbatch는 env var 덤프를 신설했으나 907100(baseline)에는 없어, baseline에서 `SGLANG_TRITON_DECODE_ATTN_STATIC_KV_SPLITS`가 unset이었다는 것을 아티팩트로 증명할 수 없다(X1P-8). 실무 규칙: 보강 항목은 기준 arm에도 (재실행 없이 가능한 범위에서) 소급 기록하거나, "그 항목은 baseline에서 검증 불가"를 등록 문서에 명시하라. 뒤집힘의 존재 귀속 자체는 바뀌지 않으나 사전등록 교란표의 전제는 바뀔 수 있다. 대응 `CONSENSUS.md` §3 항목195(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_x1_2026-09-12/VERDICT.md` §1.6·§11(G-X1-4).
+
+176. ★★★**(2026-09-12(3), `r2_correctness` 트랙, X1 결과 감사, claims-auditor, GPU 0.154 GPU-h, G-X1-5 — 긍정 사례, 게이트#1의 처치 측 적용) 교란 노브 자신에 대해 "target이 아니라 realized"를 요구하라.** X1은 (a) server args 덤프 + `SAME_ACROSS_BOOTS` 검사, (b) cudagraph capture 메모리 변화(5/5 boot에서 `mem usage` 0.73→0.65 GB, `avail mem` 13.32→13.40 GB, 부호·차수가 `max_kv_splits` 8→2 축소와 정합) 두 채널로 이를 충족했다(정성적 실현 확인, 닫힌 형태 추정과 배수 2 불일치는 미해소). 앞으로 수치 구성 교란은 이 2채널 확인을 사전등록 항목으로 넣는다. 대응 `CONSENSUS.md` §3 항목196(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_x1_2026-09-12/VERDICT.md` §5.1·§11(G-X1-5).

@@ -1,6 +1,38 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-12(doc-steward — **engine-porter 코드 사실 3건
+최종 갱신: 2026-09-12(3)(doc-steward — **X1 결과 등재**: job
+907456(0.154 GPU-h) 완주, claims-auditor 결과 감사
+**`CONFIRMED(scoped)`**[F1–F4 전부 충족·PASS 및 교차-잡 8/96
+불일치 독립 재현·귀속 성립]. 메인 세션 해석 문장 1건
+**`REFUTED`**(O06이 D44 probe prefill 민감도를 보정한다는
+문장 — 뒤집힌 두 단위 모두 비분할 idx 5 decode, D44에서 돈
+교란된 decode는 0/32). "24/24 교란"은 단위 지시함수(실제
+스텝 커버리지 82.5%). C 층 "불일치 8→6 감소"는 Σ(등가류−1)
+10→10 불변이라 성립하지 않는다. 새 게이트 5건(#172–176,
+#176=긍정 사례). **X1은 어떤 Claim D 선결도 닫지 않는다.** "P1/
+P2" 절(아래)의 X1 항목을 결과로 갱신하고 §12의 다음 실험
+1–5를 열린 항목(전부 미승인)으로 등재했다. 새 성능 판정 0건·
+Claim D 등급 불변(미검증)·HE0·정책 순위·stake #1 전부 불변.
+`CONSENSUS.md` rev67→**rev68**. GPU: 이 트랙 0.28→**0.43
+GPU-h**. 전문·line-by-line 근거는 `CLAIM_EVIDENCE_MATRIX.md`
+Claim D 행(2026-09-12(3) 갱신)·"주장 제한" 참조.
+이전: 2026-09-12(2)(doc-steward — **A) Claim E 선결
+코드↔로드맵 불일치 3건 해소**[커밋 `3f188bb`, engine-porter, GPU 0,
+사용자 결정: "3건 모두 로드맵이 정본"] + **B) X1 사전등록 규칙층만
+등재**[커밋 `b3ef62d`·`19b9d8d` — **X1 job 실행 중, 결과 미등재**]).
+"Controller defaults" 절(아래)의 2026-09-12(1차) 追記가 지적한 3건
+불일치는 전부 코드로 해소됐다(추가로 새로운 긴장 2건이 등재됨,
+사용자 결정 대기). "P1/P2" 절의 X1 설명은 사전등록 rev1(SUPERSEDED)
+→ rev2(claims-auditor `GO-with-caveats`)로 갱신했다 — X1은 아직
+실행되지 않았다(job 실행 중, 결과는 별도 등재). 전문·line-by-line
+근거는 `CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E 항목·Claim D
+행(2026-09-12(2) 갱신) 참조. Claim D/E 등급 무변경(둘 다 미검증)·새
+성능 판정 0건·arm 순위 0건·HE0 불변. `CONSENSUS.md` rev66→**rev67**
+(§3 항목190·191 신설[게이트#170·#171, X1 감사 기원] + 항목177
+追記[게이트#157 완료] — A는 코드 사실 등재이며 새 분석 결론이
+아니므로 직전 세션 선례대로 CONSENSUS에 반영하지 않되, B[X1 규칙층
+감사의 신규 게이트 2건]만 반영).
+이전: 2026-09-12(doc-steward — **engine-porter 코드 사실 3건
 등재**, 2026-09-11 확인·file:line 근거, **성능 판정 아님·수정 없음·
 사용자 결정 대기**) — "Controller defaults" 절(아래)의 평가 주기·
 admission 명세가 실제 컨트롤러/프로파일 코드와 3곳에서 불일치함을
@@ -672,11 +704,70 @@ effect·decode progress/ITL·throughput regression 전부 미측정).
 C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
 "무해 노이즈" 양쪽으로 단정 금지(R2C-3).
 
-**후속 실험(전부 미실행·미승인, 사용자 판단 대기)**:
-- **X1**: 민감도 양성대조 + C 층 기전 판별(≈0.16 GPU-h).
-  `SGLANG_TRITON_DECODE_ATTN_STATIC_KV_SPLITS=true`로 4 boot
-  (L/TD/L/TD) 재실행, 불일치 1건 이상 기대(측정 층 양성대조),
-  C01 arm-분리 소멸 여부 확인.
+**후속 실험(X2·X3·하네스 결함은 여전히 미실행·미승인, 사용자 판단
+대기 — X1은 아래 참조)**:
+- **X1**: 민감도 양성대조 + C 층 기전 판별(0.154 GPU-h, **완료**).
+  원래 계획 ~~`SGLANG_TRITON_DECODE_ATTN_STATIC_KV_SPLITS=true`로
+  4 boot(L/TD/L/TD) 재실행~~은 **SUPERSEDED**(사전등록 rev1, 死因:
+  `MIN_BLOCK_KV=32` 커널 양자화 미반영). 유효 **rev2**
+  (`--triton-attention-num-kv-splits 2` CLI 단일 노브 + 엔진 소스
+  `38c1aca` 고정)가 job 907456(gpu42, 2026-09-12 19:11:22–19:20:36
+  KST, 0.154 GPU-h, commit `19b9d8d`, manifest 17/17 907100과
+  바이트 동일)으로 완주했다. ★**2026-09-12(3) 결과 갱신**:
+  claims-auditor 결과 감사(`workspace/engine-port/results/
+  r2_correctness/audit_x1_2026-09-12/VERDICT.md`, 357행) 총괄
+  **`CONFIRMED(scoped)`** — 등록 예보 F1–F4 전부 충족, `VERDICT
+  PASS`와 교차-잡 불일치 8/96(S05·O06, 4 boot 전부 동일)이 독립
+  재현되며 공허성 없음, 귀속 성립(귀무대조 2건: `907032→907100`
+  S 0/32 + 비등록 `907032→907456` S 2/32 전부 S05@25). 단 메인
+  세션이 쓰려던 해석 문장 하나는 **`REFUTED`**됐다 — "O06이 D44를
+  밟는 probe prefill의 민감도를 보정한다"는 거짓이다(뒤집힌 S05·
+  O06 둘 다 **비분할 `stream_index 5`(0/108)**에서 돌았고, D44
+  [idx 4]에서 돈 유일한 교란된 decode[O 층 background 행]는
+  **0/32**로 뒤집히지 않았다 ⇒ **X1은 D44 운영점의 측정층 민감도를
+  보정하지 않는다**). "24/24 교란"은 단위 지시함수였다 — 실제
+  **decode 스텝 커버리지는 1,142/1,384 = 82.5%**이고 비복사형
+  단기 6단위(S00 5/63 등)가 전부 부분 커버리지다. F3: C01
+  arm-분리 소멸은 §1.7 기전과 정합이나(확증 아님) "arm-분리 = 0"의
+  2/3(C10·C19)는 **L2가 옛 TD 값으로 이탈**한 결과이고 L-L 불일치는
+  4→5로 증가했다 — 불일치 단위 수는 8→6이나 **Σ(등가류−1)은 10→10
+  불변**(C00·C16은 3류→4류) ⇒ "C 불일치가 줄었다"는 서술 금지.
+  필수 병기 X1P-1′·2′·3′·5′·6′·8·9 + P-1 추가분·인용 금지
+  X1C-10…14는 `PROJECT_STATUS.md` 최상단 배너(2026-09-12(3))·
+  `CLAIM_EVIDENCE_MATRIX.md` Claim D 행에 문자 그대로 등재돼
+  있다. **X1은 Claim D 선결을 하나도 닫지 않는다**(#1·#2·#3·#4a·
+  #4b·#5 상태 불변, #5는 재확인이나 등급 변화 없음, #2는 오히려
+  더 약함). GPU: R2 correctness 트랙 0.28→**0.43 GPU-h**. 신규
+  방법론 게이트 5건: **#172**(양성대조의 도달 범위는 비교 단위
+  지시함수가 아니라 실제 교란 스텝/토큰 분포로 등록하라, 게이트#9
+  계열 3번째 층) · **#173**(양성대조가 인증 운영점 위에 떨어졌는지
+  확인하라) · **#174**(등가류 "불일치 단위 수"는 총량이 아니다 —
+  Σ(등가류−1)을 병기하라) · **#175**(provenance 보강을 교란 arm
+  에만 넣지 마라) · **#176**(**긍정 사례** — 교란 노브 자신에
+  대해 target이 아니라 realized를 요구하라, args 덤프 +
+  cudagraph capture 메모리 변화 2채널로 충족).
+
+  **X1 이후 다음 실험(판정서 §12, 전부 미승인·사용자 판단 대기)**:
+  1. **C-tier 귀무대조**(`R2C_ORDER="L L L L"`, ≈0.154 GPU-h) —
+     무교란·동일 arm에서 32단위 등가류 분할·Σ(classes−1)·
+     pairwise 불일치를 측정한다. F3을 해석 가능하게 만드는
+     유일한 값싼 길이며 arm-분리 판정에 분모를 준다(현재 n=2/arm,
+     P≈0.20).
+  2. `R2C_ORDER="TD TD TD TD"` 1 job(+0.154 GPU-h) ⇒ 합쳐
+     n=4/arm(프로젝트 게이트 3 충족), paired 비교.
+  3. **D44 resident decode 동치를 보려면 새 층 O′ + 판정 규칙 v3
+     사전등록 필수**(≈0.16 GPU-h) — 엔진은 prefill이 없으면 idx
+     4를 떠나므로 probe가 decode하는 동안에도 제3의 장문 prefill을
+     계속 투입해야 한다. 이것은 X1 후속이 아니라 **선결 #2를
+     넓히는 실험**이고 1·2를 먼저 하지 않으면 또 n=2로 끝난다.
+  4. **GPU 0으로 지금 가능**: preflight에 스텝 커버리지 출력
+     추가·비교기에 Σ(classes−1) 출력 추가·죽은 텔레메트리 필드
+     2건(`decode_step_count`·`worker_overlap_ratio`) 처리
+     (engine-porter)·사전등록 템플릿에 "교란 도달 위치=인증하려는
+     운영점인가" 항목 추가.
+  5. **권고하지 않음**: cap을 더 낮추거나 다른 수치 구성으로 X1
+     반복(교란이 떨어지는 위치가 안 바뀌므로 같은 한계의 결과가
+     또 나온다).
 - **X2**: 비기본 split D16(≈0.16 GPU-h). `R2C_DSM=16`으로
   B8/O3의 FixedPolicy 변별력을 확보하고 B5/B6가 방문하는 split
   까지 스코프를 넓힌다.
@@ -686,12 +777,17 @@ C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
 - **하네스 결함(게이트 아님, engine-porter 이관)**: H1
   (INPUT_IDENTITY가 개수만 비교, sha 미검사) · H2(`task_count`가
   `set_result` 뒤 증가해 Δ+1 지연) · H3(`host_worker_overlap_
-  ratio`의 1024개 절단·수명 분모로 동시성 지표 부적합).
+  ratio`의 1024개 절단·수명 분모로 동시성 지표 부적합) ·
+  H4(신설, 2026-09-12(3) X1 결과 감사 — `decode_step_count`가
+  전 boot·전 스냅샷 0, 죽은 필드) · H5(신설, 동 감사 —
+  `worker_overlap_ratio`가 TD boot에서도 전부 0.0이고 실제 값은
+  `host_worker_overlap_ratio`에만 있음, 게이트#166 G-2 재발 위험).
 
 상세 `workspace/engine-port/results/r2_correctness/{job_907032/,
-job_907100/, audit_r2corr_2026-09-11/VERDICT.md}` §6–§7.3. 정본
-반영: `PROJECT_STATUS.md` 최상단 배너·"다음 실험 gate" 항목1–4
-追記, `CONSENSUS.md` §5-8(a) 追記(rev66), `CLAIM_EVIDENCE_
+job_907100/, job_907456/, audit_r2corr_2026-09-11/VERDICT.md,
+audit_x1_2026-09-12/VERDICT.md}` §6–§7.3·§11. 정본 반영:
+`PROJECT_STATUS.md` 최상단 배너·"다음 실험 gate" 항목1–4 追記,
+`CONSENSUS.md` §5-8(a) 追記(rev68)·§3 항목192–196, `CLAIM_EVIDENCE_
 MATRIX.md` Claim D 행·"주장 제한" 갱신.
 
 ### P3 — Offline profile/estimator
@@ -1017,3 +1113,40 @@ target으로 사용한다.
 등급(미검증)·B0–B8 순위·새 성능 판정 전부 무변경. 전문·인용 근거는
 `CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E 항목(2026-09-12 추가)
 참조.
+
+★★追記(2026-09-12(2), doc-steward — 위 3건 해소 완료, 커밋
+`3f188bb`, engine-porter, GPU 0, 사용자 결정: "3건 모두 이 로드맵이
+정본"): 위 1–3은 전부 코드로 해소됐다.
+
+1. `evaluation_due()`가 이제 이 로드맵(:975)의 `max(4 iterations,
+   100 ms)` 의미(`bucket_changed OR (경과시간≥100ms AND
+   경과iteration≥4)`)로 동작한다(`controller.py:129-142`).
+2. admission 제한 지속을 컨트롤러 상태로 보존하고 HOLD가 그 값을
+   승계한다(`controller.py:127,174-185,219-220`) + `release_
+   admission_limit()` 신설(`multiplexing_mixin.py:1809-1817`,
+   FixedPolicy는 no-op).
+3. profile 호환 축에서 `engine_commit`을 제외하고 실제 임포트된
+   엔진 모듈 8개의 내용 해시 `engine_source_hash`로 교체
+   (`profile.py:44,113-160,367-481`, `:102`의 `engine_commit` 엔트리는
+   더 이상 존재하지 않는다).
+
+검증: 신규 테스트 38개 + 수리를 되돌린 변이 전부 실패 확인, 전체
+**343 tests OK**(직전 305), `check_line_citations.py` 0 violation.
+
+★**새로 생긴 긴장 2건 — 미해결(사용자 결정 대기)**: (1) 위
+"immediate safe-boundary upshift"(:976)가 해결 ①로 인해 최악
+반응 지연이 **길어질 수 있다**(평가 주기가 이제 둘 다 충족해야
+발화) — 이 패치가 Claim E 거동에 실제 영향을 줄 수 있는 유일한
+항목. (2) 위 "D108 risk **또는** occupancy 90%"(:979)는 코드에서
+`AND` 합성(`controller.py:210-218`)이라 occupancy 90%만으로는
+제한이 걸리지 않는다(접속사는 그대로 둠 — 2026-09-12(1차) 등재는
+지속 기간만 문제 삼았음). 둘 다 어느 쪽이 옳은지는 판정하지 않는다.
+
+깨진 줄 인용 갱신: `controller.py:124-130 → :129-142` ·
+`:148-149 → :174`(+`:180-185`) · `:174-183 → :210-219` ·
+`:183 → :219` · `:207 → :244` · `:222 → :259` · `profile.py:
+98-114 → :113-160` · `profile.py:268-279 → :314-325`.
+
+Claim E 등급(미검증)·B0–B8 순위·새 성능 판정 전부 무변경. 상세
+`CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E 항목(2026-09-12(2)
+갱신), `PROJECT_STATUS.md` 최상단 배너 B 항목.
