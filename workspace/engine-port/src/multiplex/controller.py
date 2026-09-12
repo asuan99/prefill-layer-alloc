@@ -68,6 +68,14 @@ class SplitDecision:
     admission_limited: bool = False
     emergency: bool = False
     requested_decode_sms: int = 0
+    # AUDIT ONLY.  True when this decision came from an evaluation that the
+    # emergency disjunct forced BEFORE the normal cadence was due
+    # (`CoarseGrainedController.evaluation_due`, roadmap
+    # EXPERIMENT_ROADMAP.md:976).  It exists so a later GPU run can be checked
+    # for whether that path ever fires -- generic/hybrid have zero GPU
+    # measurements, so today it fires only in CPU tests.  HOLD decisions carry
+    # False: they are not evaluations.
+    off_cadence: bool = False
 
 
 class MultiplexingPolicy(Protocol):
@@ -119,26 +127,92 @@ class CoarseGrainedController:
         self.last_transition_s = -math.inf
         self.last_transition_iteration = -10**12
         self.downshift_streak = 0
+        # Counts overload EPOCHS, not evaluations.  Once `evaluation_due` can
+        # fire off-cadence (roadmap :976), "2 consecutive evaluations" would
+        # mean 2 consecutive decode iterations (~27-85 ms), not the roadmap's
+        # "2 epochs" (>= 100 ms AND >= 4 iterations apart at the defaults).
+        # That matters because the admission limit is the measured
+        # TTFT-explosion lever in this project (CONSENSUS.md HE0: decode
+        # starvation -> ITL up -> batch stalls -> admission blocked -> TTFT
+        # blows up), so arming it an order of magnitude early is not a
+        # conservative error.  `last_overload_epoch_*` gate the increment to at
+        # most one per cadence epoch; the sentinels keep the FIRST overloaded
+        # evaluation counting.
         self.overload_streak = 0
+        self.last_overload_epoch_s = -math.inf
+        self.last_overload_epoch_iteration = -10**12
         # Verdict of the LAST EVALUATION, carried by the HOLD decisions in
         # between (roadmap "Controller defaults", EXPERIMENT_ROADMAP.md:979:
         # the limit persists while the 2-epoch overload condition holds, and
         # is lifted by a later evaluation -- not by the next iteration).
         self.admission_limited = False
 
-    def evaluation_due(self, snapshot: RuntimeSnapshot, bucket_changed: bool = False) -> bool:
-        """Whether this iteration re-evaluates the split.
+    @staticmethod
+    def _live_underprediction(snapshot: RuntimeSnapshot) -> bool:
+        """The roadmap's immediate-upshift predicate (EXPERIMENT_ROADMAP.md:976,
+        "immediate safe-boundary upshift on ITL violation or 85% KV/batch
+        occupancy").
 
-        Cadence is the roadmap's `max(4 decode iterations, 100 ms)`
-        (EXPERIMENT_ROADMAP.md:975): BOTH thresholds must be met, which is the
-        same AND that `_dwell_satisfied` already uses for `max(8 steps,
-        200 ms)`.  A bucket change still forces an evaluation.  The `-inf` /
-        `-10**12` initial sentinels keep the FIRST call due.
+        SINGLE DEFINITION SITE.  Two callers need it -- `evaluation_due`, so
+        the upshift does not have to wait for the cadence, and `stabilize`, to
+        pick the upshifted target.  A second copy of these three comparisons
+        would be the same-name-two-implementations defect (PROJECT_STATUS.md
+        gate #166 family), where the trigger and the action can drift apart.
         """
-        return bucket_changed or (
+        return (
+            snapshot.measured_itl_p95_ms > snapshot.itl_slo_ms
+            or snapshot.kv_occupancy >= 0.85
+            or snapshot.running_batch_occupancy >= 0.85
+        )
+
+    def _cadence_due(self, snapshot: RuntimeSnapshot) -> bool:
+        """The NORMAL cadence alone: `max(4 decode iterations, 100 ms)`
+        (EXPERIMENT_ROADMAP.md:975).  BOTH thresholds must be met, which is the
+        same AND that `_dwell_satisfied` already uses for `max(8 steps,
+        200 ms)`.  The `-inf` / `-10**12` initial sentinels keep the FIRST call
+        due.
+        """
+        return (
             snapshot.timestamp_s - self.last_evaluation_s >= self.min_epoch_s
             and snapshot.decode_iterations - self.last_evaluation_iteration
             >= self.min_epoch_iterations
+        )
+
+    def _overload_epoch_elapsed(self, snapshot: RuntimeSnapshot) -> bool:
+        """Whether a new CADENCE EPOCH has passed since the overload streak was
+        last incremented -- the same `max(min_epoch_iterations, min_epoch_s)`
+        AND as `_cadence_due`, kept on its own markers so that off-cadence
+        emergency evaluations cannot inflate the streak.  With
+        `min_epoch_s=0` and `min_epoch_iterations=0` (the zero-cadence
+        configuration used by the loop tests) this is always True, so every
+        evaluation counts exactly as it did before the gate existed.
+        """
+        return (
+            snapshot.timestamp_s - self.last_overload_epoch_s >= self.min_epoch_s
+            and snapshot.decode_iterations - self.last_overload_epoch_iteration
+            >= self.min_epoch_iterations
+        )
+
+    def evaluation_due(self, snapshot: RuntimeSnapshot, bucket_changed: bool = False) -> bool:
+        """Whether this iteration re-evaluates the split.
+
+        TWO SEPARATE ROADMAP CLAUSES, not one:
+
+          * `:975` "evaluate every `max(4 decode iterations, 100 ms)` or bucket
+            change" -- the normal cadence (`_cadence_due`);
+          * `:976` "immediate safe-boundary upshift on ITL violation or 85%
+            KV/batch occupancy" -- an IMMEDIATE clause, so it has to be able to
+            fire BETWEEN cadence points.  Folding it into the cadence (the
+            2026-09-12(2) state, where it was only computed inside
+            `stabilize`'s evaluation branch) made the worst-case reaction to an
+            SLO violation one full epoch.
+
+        `bucket_changed` is NOT SET by the serving path -- see `stabilize`.
+        """
+        return (
+            bucket_changed
+            or self._live_underprediction(snapshot)
+            or self._cadence_due(snapshot)
         )
 
     def release_admission_limit(self) -> None:
@@ -154,6 +228,8 @@ class CoarseGrainedController:
         """
         self.admission_limited = False
         self.overload_streak = 0
+        self.last_overload_epoch_s = -math.inf
+        self.last_overload_epoch_iteration = -10**12
 
     def _dwell_satisfied(self, snapshot: RuntimeSnapshot) -> bool:
         return (
@@ -170,6 +246,19 @@ class CoarseGrainedController:
         safe_boundary: bool,
         bucket_changed: bool = False,
     ) -> SplitDecision:
+        """One controller step: cadence gate, then target, then admission.
+
+        `bucket_changed` IS NOT IMPLEMENTED in this runtime.  Its only serving
+        call site, `_r2_decide_idx` (`multiplexing_mixin.py:436-440`), never
+        passes it, and `src/multiplex` contains no bucket definition at all, so
+        it is False in every served iteration -- the roadmap's "or bucket
+        change" (:975) has no implementation behind it.  The parameter is kept
+        because the API and the unit tests use it, and because deleting it
+        would erase the fact that the clause is unimplemented.  The IMMEDIACY
+        the roadmap asks for is supplied here by the emergency disjunct of
+        `evaluation_due` (:976) instead.  Do NOT invent a bucket definition in
+        passing: that would be a new, unregistered policy knob, not a repair.
+        """
         current = int(current_decode_sms)
         if not self.evaluation_due(snapshot, bucket_changed):
             # Not an evaluation: hold the split AND the admission verdict the
@@ -183,15 +272,13 @@ class CoarseGrainedController:
                 DecisionReason.HOLD.value,
                 admission_limited=self.admission_limited,
             )
+        # Read BEFORE the markers move: True means the :976 emergency (or a
+        # bucket change) brought us here with the :975 cadence not yet due.
+        off_cadence = not self._cadence_due(snapshot)
         self.last_evaluation_s = snapshot.timestamp_s
         self.last_evaluation_iteration = snapshot.decode_iterations
 
-        live_underprediction = (
-            snapshot.measured_itl_p95_ms > snapshot.itl_slo_ms
-            or snapshot.kv_occupancy >= 0.85
-            or snapshot.running_batch_occupancy >= 0.85
-        )
-        if live_underprediction:
+        if self._live_underprediction(snapshot):
             target = max(current, desired.decode_sms)
             target = next(
                 (
@@ -207,15 +294,36 @@ class CoarseGrainedController:
             target = desired.decode_sms
             reason = DecisionReason.PROFILE_FLOOR.value
 
+        # :979 "D108 risk 또는 occupancy 90%가 2 epochs 지속되면 admission
+        # 제한" is a DISJUNCTION of two independent triggers, and the split
+        # below is deliberate in BOTH directions:
+        #   * the old flat `AND` made the occupancy half unreachable -- with
+        #     `target < emergency_state` no KV/batch pressure could ever arm
+        #     the limit, so half of :979 was dead code;
+        #   * a flat `OR` over all three terms would be wrong the other way.
+        #     An incompatible profile makes `desired.upper_bound_itl_ms = inf`
+        #     (profile.py's fail-closed fallback), and `inf > slo` is always
+        #     true, so a hybrid arm running without a matching profile would
+        #     throttle admission at ANY occupancy.  Today that is masked only
+        #     by the accident that the fallback floor (44) is below
+        #     `emergency_state`; keeping the D108-risk term conjoined with
+        #     `target >= emergency_state` is what makes it safe on purpose.
         overloaded = (
-            target >= self.emergency_state
-            and (
-                desired.upper_bound_itl_ms > snapshot.itl_slo_ms
-                or snapshot.kv_occupancy >= 0.90
-                or snapshot.running_batch_occupancy >= 0.90
+            (
+                target >= self.emergency_state
+                and desired.upper_bound_itl_ms > snapshot.itl_slo_ms
             )
+            or snapshot.kv_occupancy >= 0.90
+            or snapshot.running_batch_occupancy >= 0.90
         )
-        self.overload_streak = self.overload_streak + 1 if overloaded else 0
+        if not overloaded:
+            self.overload_streak = 0
+        elif self._overload_epoch_elapsed(snapshot):
+            # At most one increment per cadence epoch: see the
+            # `last_overload_epoch_*` note in `__init__`.
+            self.overload_streak += 1
+            self.last_overload_epoch_s = snapshot.timestamp_s
+            self.last_overload_epoch_iteration = snapshot.decode_iterations
         admission_limited = self.overload_streak >= 2
         self.admission_limited = admission_limited
 
@@ -244,6 +352,7 @@ class CoarseGrainedController:
                 admission_limited=admission_limited,
                 emergency=target >= self.emergency_state,
                 requested_decode_sms=requested,
+                off_cadence=off_cadence,
             )
         if target != current:
             self.last_transition_s = snapshot.timestamp_s
@@ -259,6 +368,7 @@ class CoarseGrainedController:
             admission_limited=admission_limited,
             emergency=target >= self.emergency_state,
             requested_decode_sms=target,
+            off_cadence=off_cadence,
         )
 
 
@@ -282,6 +392,10 @@ class HybridInformedPolicy:
         safe_boundary: bool,
         bucket_changed: bool = False,
     ) -> SplitDecision:
+        """`bucket_changed` is accepted and forwarded, but NOTHING in the
+        serving runtime sets it (`multiplexing_mixin.py:436-440` calls
+        `decide(snapshot, current, safe_boundary=...)`); see
+        `CoarseGrainedController.stabilize`."""
         estimate = self.estimator.estimate(
             snapshot.decode_batch_size,
             snapshot.context_p95,

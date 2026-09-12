@@ -19,6 +19,31 @@ Each one gets a test here that FAILS on the pre-fix source:
       side is FAIL-CLOSED.  Mutants that fail: `engine_commit` back in the
       strict field set; treating an empty hash as a match.
 
+2026-09-12(3) adds four more, from the two tensions (1) left open:
+
+  (4) the roadmap's "immediate safe-boundary upshift" (:976) is a SEPARATE,
+      OFF-CADENCE clause, not something that waits for :975's
+      `max(4 iterations, 100 ms)`.  Mutant that fails: dropping the
+      `_live_underprediction` disjunct from `evaluation_due` (the reaction is
+      then held to the next epoch).
+  (5) the overload streak counts EPOCHS, not evaluations, so (4) cannot arm
+      the admission limit in two consecutive decode iterations (~27-85 ms)
+      instead of the roadmap's two epochs.  Mutant that fails: the
+      unconditional `overload_streak + 1 if overloaded else 0`.
+  (6) :979's trigger is a DISJUNCTION -- "D108 risk" OR "occupancy 90%".  Two
+      mutants fail: the old flat `AND` (occupancy alone can then never limit),
+      and a flat `OR` over all three terms (the fail-closed `inf` upper bound
+      of an incompatible profile would then throttle admission at any
+      occupancy).
+  (7) `off_cadence` is carried on every evaluation decision, so a future GPU
+      run can be audited for whether (4) ever fires.  It is emitted with the
+      `controller_decision` record; that end is pinned in
+      test_r2_admission_persistence.py.
+
+`bucket_changed` is deliberately NOT implemented: the serving path never sets
+it (`_r2_decide_idx`), and nothing in src/multiplex defines a bucket.  The
+parameter stays for API/test compatibility and the docstrings say so.
+
 RUNNING AGAINST A VARIANT.  Set PDMUX_MULTIPLEX_SRC=/path/to/multiplex to load
 `profile.py`/`controller.py` from another copy of the tracked source; the
 pre-fix variants of all three changes fail here.
@@ -112,6 +137,20 @@ def overloaded_estimate():
 
 def calm_estimate():
     return profile.DecodeFloorEstimate(24, 20.0, 30.0, 6.0, 0.95, False, "t")
+
+
+def fallback_estimate(decode_sms=44):
+    """What the estimator returns with NO usable profile.
+
+    `upper_bound_itl_ms=inf` is the fail-closed bound and the default
+    `fallback_decode_sms` is 44 -- BELOW the emergency state.  This is the
+    shape that a flat-`OR` :979 trigger would throttle unconditionally, and
+    the reason the D108-risk term stays conjoined with `target >=
+    emergency_state`.
+    """
+    return profile.DecodeFloorEstimate(
+        decode_sms, math.nan, math.inf, 6.0, 0.0, True, "incompatible_profile"
+    )
 
 
 def environment(**overrides):
@@ -471,12 +510,36 @@ class FallbackDrivesTheLatchTest(unittest.TestCase):
         self.assertFalse(first.admission_limited)
         second = policy.decide(snapshot(20.0, 10, itl=90.0), 108, True)
         self.assertTrue(second.admission_limited)
-        held = policy.decide(snapshot(20.2, 11, itl=90.0), 108, True)
+        # The HOLD iteration has to be CALM.  Since 2026-09-12(3) an iteration
+        # that is STILL violating the ITL SLO is an EVALUATION by design
+        # (gate (4)), so the persistence being pinned here is the one that
+        # matters in the runtime: the limit set at the last evaluation stays in
+        # force through the non-evaluation iterations, including after the
+        # instantaneous reading has fallen back under the trigger.
+        held = policy.decide(snapshot(20.2, 11), 108, True)
         self.assertEqual(held.reason, controller.DecisionReason.HOLD.value)
         self.assertTrue(
             held.admission_limited,
             "the fallback-driven limit vanished on the next iteration",
         )
+
+    def test_a_still_violating_iteration_is_an_evaluation_not_a_hold(self):
+        """Companion to the above: the calm snapshot is not a workaround."""
+        item = make_profile(engine_source_hash="")
+        estimator = profile.ConservativeDecodeFloorEstimator(item)
+        policy = controller.HybridInformedPolicy(
+            estimator,
+            controller=controller.CoarseGrainedController(
+                min_epoch_s=10.0, min_epoch_iterations=4
+            ),
+            runtime_environment=environment(),
+        )
+        policy.decide(snapshot(0.0, 0, itl=90.0), 44, True)
+        still_violating = policy.decide(snapshot(0.2, 1, itl=90.0), 108, True)
+        self.assertNotEqual(
+            still_violating.reason, controller.DecisionReason.HOLD.value
+        )
+        self.assertTrue(still_violating.off_cadence)
 
 
 class FixedPolicyIsUntouchedTest(unittest.TestCase):
@@ -506,6 +569,38 @@ class FixedPolicyIsUntouchedTest(unittest.TestCase):
                     else controller.DecisionReason.UNSAFE.value,
                 )
 
+    def test_the_emergency_path_is_a_no_op_for_fixed_policy(self):
+        """(4)-(6) live on `CoarseGrainedController`; FixedPolicy has none.
+
+        Claim D / P1-P2 arms run `PDMUX_R2_POLICY` unset or `fixed`, so an
+        off-cadence emergency evaluation, the epoch-gated overload streak and
+        the :979 disjunction are all unreachable for them.
+        """
+        policy = controller.FixedPolicy(44)
+        for attribute in (
+            "controller", "evaluation_due", "_live_underprediction",
+            "_cadence_due", "_overload_epoch_elapsed", "overload_streak",
+        ):
+            self.assertFalse(
+                hasattr(policy, attribute),
+                f"FixedPolicy acquired controller machinery: {attribute}",
+            )
+        for now, iteration in ((0.0, 0), (0.001, 1), (0.002, 2), (0.003, 3)):
+            decision = policy.decide(
+                snapshot(now, iteration, itl=500.0, kv=0.99, running=0.99),
+                44,
+                True,
+            )
+            self.assertEqual(decision.target_decode_sms, 44)
+            self.assertEqual(
+                decision.reason, controller.DecisionReason.FIXED.value
+            )
+            self.assertFalse(decision.admission_limited)
+            self.assertFalse(
+                decision.off_cadence,
+                "FixedPolicy has no cadence to be off",
+            )
+
     def test_fixed_policy_ignores_evaluation_cadence(self):
         """FixedPolicy never calls `evaluation_due`, so (2) cannot reach it."""
         policy = controller.FixedPolicy(24)
@@ -513,6 +608,366 @@ class FixedPolicyIsUntouchedTest(unittest.TestCase):
             decision = policy.decide(snapshot(0.0, iteration), 44, True)
             self.assertEqual(decision.target_decode_sms, 24)
             self.assertEqual(decision.reason, controller.DecisionReason.FIXED.value)
+
+
+class OffCadenceEmergencyUpshiftTest(unittest.TestCase):
+    """(4) `:976` is an IMMEDIATE clause, independent of the `:975` cadence."""
+
+    def controller(self, **overrides):
+        """Cadence deliberately far away (10 s AND 100 iterations), so every
+        evaluation these tests see can only come from the emergency clause."""
+        fields = dict(min_epoch_s=10.0, min_epoch_iterations=100)
+        fields.update(overrides)
+        return controller.CoarseGrainedController(**fields)
+
+    def settled(self, ctl):
+        """One on-cadence evaluation, so the next call is inside an epoch."""
+        first = ctl.stabilize(calm_estimate(), snapshot(0.0, 0), 24, True)
+        self.assertFalse(first.off_cadence, "the first call IS on cadence")
+        self.assertEqual(first.target_decode_sms, 24)
+        return ctl
+
+    def test_itl_violation_upshifts_on_the_same_iteration(self):
+        ctl = self.settled(self.controller())
+        probe = snapshot(0.010, 1, itl=90.0)
+        self.assertFalse(ctl._cadence_due(probe), "scenario broken: on cadence")
+        reacted = ctl.stabilize(calm_estimate(), probe, 24, True)
+        self.assertEqual(
+            reacted.reason,
+            controller.DecisionReason.LIVE_UNDERPREDICTION.value,
+            "the ITL violation waited for the next epoch instead of "
+            "upshifting immediately (roadmap :976)",
+        )
+        self.assertEqual(reacted.target_decode_sms, 34)
+        self.assertTrue(reacted.off_cadence)
+
+    def test_occupancy_violations_are_immediate_too(self):
+        for label, extra in (
+            ("kv", {"kv": 0.85}),
+            ("running_batch", {"running": 0.85}),
+        ):
+            with self.subTest(label):
+                ctl = self.settled(self.controller())
+                reacted = ctl.stabilize(
+                    calm_estimate(), snapshot(0.010, 1, **extra), 24, True
+                )
+                self.assertEqual(reacted.target_decode_sms, 34)
+                self.assertTrue(reacted.off_cadence)
+
+    def test_the_same_predicate_drives_the_trigger_and_the_action(self):
+        """Single definition site: whenever the emergency makes an iteration an
+        evaluation, that evaluation IS the upshift, and vice versa.  Two copies
+        of the predicate could disagree here."""
+        cases = (
+            (90.0, 0.10, 0.20, True),
+            (30.0, 0.85, 0.20, True),
+            (30.0, 0.10, 0.85, True),
+            (60.0, 0.84, 0.84, False),  # exactly AT the SLO is not over it
+            (30.0, 0.10, 0.20, False),
+        )
+        for itl, kv, running, fires in cases:
+            with self.subTest(itl=itl, kv=kv, running=running):
+                ctl = self.settled(self.controller())
+                probe = snapshot(0.010, 1, itl=itl, kv=kv, running=running)
+                self.assertFalse(ctl._cadence_due(probe))
+                self.assertEqual(ctl._live_underprediction(probe), fires)
+                self.assertEqual(ctl.evaluation_due(probe), fires)
+                decision = ctl.stabilize(calm_estimate(), probe, 24, True)
+                self.assertEqual(
+                    decision.reason,
+                    controller.DecisionReason.LIVE_UNDERPREDICTION.value
+                    if fires
+                    else controller.DecisionReason.HOLD.value,
+                )
+                self.assertEqual(decision.off_cadence, fires)
+
+    def test_an_unsafe_boundary_still_blocks_the_off_cadence_upshift(self):
+        """`:976` says "immediate SAFE-BOUNDARY upshift".  An off-cadence
+        evaluation at an unsafe boundary must not switch -- and, because the
+        emergency clause re-fires while the violation lasts, it must retry on
+        the NEXT iteration rather than wait out the epoch it just consumed."""
+        ctl = self.settled(self.controller())
+        blocked = ctl.stabilize(
+            calm_estimate(), snapshot(0.010, 1, itl=90.0), 24, False
+        )
+        self.assertEqual(blocked.reason, controller.DecisionReason.UNSAFE.value)
+        self.assertEqual(blocked.target_decode_sms, 24)
+        self.assertEqual(blocked.requested_decode_sms, 34)
+        self.assertFalse(blocked.safe)
+        self.assertTrue(blocked.off_cadence)
+        retried = ctl.stabilize(
+            calm_estimate(), snapshot(0.020, 2, itl=90.0), 24, True
+        )
+        self.assertEqual(
+            retried.target_decode_sms,
+            34,
+            "the blocked emergency consumed its epoch and the retry had to "
+            "wait for the cadence",
+        )
+
+    def test_the_cadence_resumes_after_the_violation_ends(self):
+        """An emergency evaluation RESTARTS the epoch clock: the next normal
+        evaluation is at least one full epoch after it, not after the last
+        on-cadence one."""
+        ctl = controller.CoarseGrainedController(
+            min_epoch_s=0.100, min_epoch_iterations=4
+        )
+        ctl.stabilize(calm_estimate(), snapshot(0.0, 0), 24, True)
+        emergency = ctl.stabilize(
+            calm_estimate(), snapshot(0.010, 1, itl=90.0), 24, True
+        )
+        self.assertTrue(emergency.off_cadence)
+        for now, iteration in ((0.020, 2), (0.060, 3), (0.105, 4)):
+            calm = ctl.stabilize(calm_estimate(), snapshot(now, iteration), 34, True)
+            self.assertEqual(
+                calm.reason,
+                controller.DecisionReason.HOLD.value,
+                f"a normal evaluation ran at t={now}: the epoch clock was "
+                "measured from the last ON-cadence evaluation, not from the "
+                "emergency one",
+            )
+        resumed = ctl.stabilize(calm_estimate(), snapshot(0.111, 5), 34, True)
+        self.assertNotEqual(resumed.reason, controller.DecisionReason.HOLD.value)
+        self.assertFalse(resumed.off_cadence)
+
+    def test_bucket_changed_is_not_set_by_the_serving_path(self):
+        """(7) The parameter still exists and still forces an evaluation, but
+        nothing in the runtime passes it -- so the immediacy comes from the
+        emergency clause.  Pinned so a later reader does not "restore" a bucket
+        implementation that never existed."""
+        import inspect
+
+        ctl = self.settled(self.controller())
+        self.assertTrue(
+            ctl.evaluation_due(snapshot(0.010, 1), bucket_changed=True)
+        )
+        for target in (
+            controller.CoarseGrainedController.stabilize,
+            controller.HybridInformedPolicy.decide,
+        ):
+            self.assertIn(
+                "bucket_changed",
+                inspect.signature(target).parameters,
+                "the parameter was deleted; the roadmap clause it documents "
+                "is still unimplemented",
+            )
+            self.assertIn(
+                "NOT",
+                target.__doc__ or "",
+                "the docstring must say the serving path does not set it",
+            )
+
+
+class OverloadStreakCountsEpochsTest(unittest.TestCase):
+    """(5) the streak counts EPOCHS, so (4) cannot arm the limit in 2 steps."""
+
+    def controller(self):
+        return controller.CoarseGrainedController(
+            min_epoch_s=10.0, min_epoch_iterations=4
+        )
+
+    def test_violating_iterations_inside_one_epoch_do_not_limit(self):
+        ctl = self.controller()
+        first = ctl.stabilize(calm_estimate(), snapshot(0.0, 0, kv=0.92), 24, True)
+        self.assertFalse(first.admission_limited)
+        self.assertEqual(ctl.overload_streak, 1)
+        for now, iteration in ((0.020, 1), (0.040, 2), (0.060, 3)):
+            step = ctl.stabilize(
+                calm_estimate(), snapshot(now, iteration, kv=0.92), 24, True
+            )
+            self.assertTrue(step.off_cadence, "scenario broken: on cadence")
+            self.assertFalse(
+                step.admission_limited,
+                f"admission was limited at t={now}, {now * 1000:.0f} ms after "
+                "the overload started: the streak counted decode iterations "
+                "instead of the roadmap's 2 epochs (:979)",
+            )
+            self.assertEqual(ctl.overload_streak, 1)
+        second = ctl.stabilize(calm_estimate(), snapshot(10.5, 10, kv=0.92), 24, True)
+        self.assertEqual(ctl.overload_streak, 2)
+        self.assertTrue(
+            second.admission_limited,
+            "the epoch gate also blocked the LEGITIMATE second epoch",
+        )
+
+    def test_a_calm_evaluation_still_resets_the_streak_immediately(self):
+        ctl = self.controller()
+        ctl.stabilize(calm_estimate(), snapshot(0.0, 0, kv=0.92), 24, True)
+        self.assertEqual(ctl.overload_streak, 1)
+        ctl.stabilize(calm_estimate(), snapshot(10.5, 10), 24, True)
+        self.assertEqual(
+            ctl.overload_streak, 0, "the reset must not be epoch-gated"
+        )
+
+    def test_zero_cadence_configuration_counts_every_evaluation(self):
+        """`min_epoch_s=0, min_epoch_iterations=0` is what the event-loop tests
+        configure; the gate must be a no-op there (`x - y >= 0` is true for a
+        non-decreasing clock and iteration counter, including for the very same
+        timestamp), so that arm behaves exactly as before."""
+        ctl = controller.CoarseGrainedController(
+            (16, 24, 34, 44),
+            108,
+            min_epoch_s=0.0,
+            min_epoch_iterations=0,
+            min_dwell_s=0.0,
+            min_dwell_iterations=0,
+        )
+        first = ctl.stabilize(calm_estimate(), snapshot(0.0, 0, kv=0.92), 24, True)
+        self.assertFalse(first.admission_limited)
+        second = ctl.stabilize(calm_estimate(), snapshot(0.0, 0, kv=0.92), 24, True)
+        self.assertTrue(
+            second.admission_limited,
+            "the epoch gate changed the zero-cadence arm, where every call is "
+            "an epoch by construction",
+        )
+
+    def test_release_restarts_the_epoch_clock_as_well(self):
+        ctl = self.controller()
+        ctl.stabilize(calm_estimate(), snapshot(0.0, 0, kv=0.92), 24, True)
+        ctl.stabilize(calm_estimate(), snapshot(10.5, 10, kv=0.92), 24, True)
+        ctl.release_admission_limit()
+        self.assertEqual(ctl.overload_streak, 0)
+        self.assertFalse(
+            ctl.stabilize(
+                calm_estimate(), snapshot(10.6, 11, kv=0.92), 24, True
+            ).admission_limited,
+            "one overloaded evaluation after a release re-latched immediately",
+        )
+        self.assertTrue(
+            ctl.stabilize(
+                calm_estimate(), snapshot(30.0, 30, kv=0.92), 24, True
+            ).admission_limited
+        )
+
+
+class OverloadTriggerDisjunctionTest(unittest.TestCase):
+    """(6) :979 = "D108 risk" OR "occupancy 90%", with the inf-fallback guard."""
+
+    def controller(self):
+        return controller.CoarseGrainedController(
+            min_epoch_s=10.0, min_epoch_iterations=4
+        )
+
+    def test_occupancy_alone_limits_after_two_epochs(self):
+        """The half that the old `AND` composition made unreachable."""
+        for label, extra in (
+            ("kv", {"kv": 0.92}),
+            ("running_batch", {"running": 0.92}),
+        ):
+            with self.subTest(label):
+                ctl = self.controller()
+                first = ctl.stabilize(
+                    calm_estimate(), snapshot(0.0, 0, **extra), 16, True
+                )
+                self.assertFalse(first.admission_limited)
+                second = ctl.stabilize(
+                    calm_estimate(), snapshot(10.0, 10, **extra), 24, True
+                )
+                for decision in (first, second):
+                    self.assertLess(
+                        decision.target_decode_sms,
+                        108,
+                        "scenario broken: the target reached the emergency "
+                        "state, so this no longer isolates the occupancy half",
+                    )
+                self.assertTrue(
+                    second.admission_limited,
+                    "90% occupancy for two epochs never limited admission: "
+                    "the occupancy half of :979 is dead code",
+                )
+
+    def test_inf_fallback_does_not_limit_at_low_occupancy(self):
+        """The rejected flat-`OR` variant.  `inf > slo` is ALWAYS true, so a
+        hybrid arm booted without a compatible profile would throttle its own
+        admission at any occupancy -- silently, and only in that arm."""
+        ctl = self.controller()
+        for index in range(6):
+            decision = ctl.stabilize(
+                fallback_estimate(), snapshot(20.0 * index, 10 * index), 44, True
+            )
+            self.assertFalse(
+                decision.admission_limited,
+                "an incompatible profile throttled admission on an idle "
+                f"engine (iteration {index})",
+            )
+            self.assertEqual(ctl.overload_streak, 0)
+
+    def test_inf_fallback_still_limits_at_the_emergency_state(self):
+        """The D108-risk half stays alive: unbounded prediction AT D108 is
+        exactly the condition :979 names."""
+        ctl = self.controller()
+        first = ctl.stabilize(fallback_estimate(108), snapshot(0.0, 0), 44, True)
+        self.assertEqual(first.target_decode_sms, 108)
+        self.assertFalse(first.admission_limited)
+        second = ctl.stabilize(
+            fallback_estimate(108), snapshot(20.0, 10), 108, True
+        )
+        self.assertTrue(second.admission_limited)
+
+
+class DownshiftIsUnchangedTest(unittest.TestCase):
+    """(4)/(5) must not touch the downshift side: hysteresis and dwell."""
+
+    def controller(self):
+        return controller.CoarseGrainedController(
+            min_epoch_s=10.0,
+            min_epoch_iterations=4,
+            min_dwell_s=0.200,
+            min_dwell_iterations=8,
+            downshift_epochs=3,
+        )
+
+    def test_the_emergency_path_never_lowers_the_target(self):
+        for itl, kv, running in (
+            (90.0, 0.10, 0.20),
+            (30.0, 0.92, 0.20),
+            (30.0, 0.10, 0.92),
+        ):
+            with self.subTest(itl=itl, kv=kv, running=running):
+                ctl = self.controller()
+                held = ctl.stabilize(calm_estimate(), snapshot(0.0, 0), 44, True)
+                self.assertEqual(held.target_decode_sms, 44)
+                reacted = ctl.stabilize(
+                    calm_estimate(),
+                    snapshot(0.010, 1, itl=itl, kv=kv, running=running),
+                    44,
+                    True,
+                )
+                self.assertGreaterEqual(
+                    reacted.target_decode_sms,
+                    44,
+                    "the off-cadence emergency path downshifted",
+                )
+                self.assertEqual(ctl.downshift_streak, 0)
+
+    def test_hysteresis_still_takes_three_epochs(self):
+        ctl = self.controller()
+        for index, (now, iteration) in enumerate(
+            ((0.0, 0), (10.0, 10), (20.0, 20)), start=1
+        ):
+            out = ctl.stabilize(calm_estimate(), snapshot(now, iteration), 44, True)
+            if index < 3:
+                self.assertEqual(
+                    out.reason,
+                    controller.DecisionReason.DOWNSHIFT_HYSTERESIS.value,
+                )
+                self.assertEqual(out.target_decode_sms, 44)
+            else:
+                self.assertEqual(out.target_decode_sms, 24)
+                self.assertEqual(
+                    out.reason, controller.DecisionReason.PROFILE_FLOOR.value
+                )
+
+    def test_dwell_still_blocks_a_downshift_after_a_recent_transition(self):
+        ctl = self.controller()
+        ctl.stabilize(calm_estimate(), snapshot(0.0, 0), 44, True)
+        ctl.stabilize(calm_estimate(), snapshot(10.0, 10), 44, True)
+        ctl.last_transition_s, ctl.last_transition_iteration = 19.95, 19
+        blocked = ctl.stabilize(calm_estimate(), snapshot(20.0, 20), 44, True)
+        self.assertEqual(blocked.reason, controller.DecisionReason.DWELL.value)
+        self.assertEqual(blocked.target_decode_sms, 44)
+        freed = ctl.stabilize(calm_estimate(), snapshot(30.0, 30), 44, True)
+        self.assertEqual(freed.target_decode_sms, 24)
 
 
 class ProfileBuilderTest(unittest.TestCase):

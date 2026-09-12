@@ -448,8 +448,8 @@ class SchedulerMultiplexMixin:
             reason=decision.reason,
             predicted_itl_ms=decision.predicted_itl_ms,
             upper_bound_itl_ms=decision.upper_bound_itl_ms,
-            confidence=decision.confidence,
-            safe=decision.safe,
+            confidence=decision.confidence, safe=decision.safe,
+            off_cadence=decision.off_cadence,  # :976 fired before the cadence
             admission_limited=decision.admission_limited,
         )
         if decision.target_decode_sms != decision.current_decode_sms:

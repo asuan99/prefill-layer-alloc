@@ -13,7 +13,12 @@ machinery:
   * it still LIFTS by the policy, with decode still running -- "persist" must
     not degenerate into the absorbing state that 2026-09-11 removed;
   * the empty-running-batch backstop clears the CONTROLLER's carried verdict
-    too, not just the scheduler flag.
+    too, not just the scheduler flag;
+  * (2026-09-12(3)) the `off_cadence` audit flag reaches the
+    `controller_decision` record through the real `_r2_decide_idx`, so a later
+    GPU run can be checked for whether the off-cadence emergency path
+    (EXPERIMENT_ROADMAP.md:976) ever fires.  Mutant that fails: dropping the
+    field from the emit in `multiplexing_mixin._r2_decide_idx`.
 
 WHAT IS REAL HERE.  The unmodified `event_loop_pdmux`,
 `update_split_prefill_batch`, `_r2_decide_idx`, `_r2_admission_recheck`,
@@ -206,6 +211,34 @@ class AdmissionLimitSurvivesHoldIterationsTest(LoopTestBase):
             "degenerated into a latch",
         )
         self.assertFalse(sched.r2_admission_limited)
+
+    def test_off_cadence_evaluations_are_visible_in_the_telemetry(self):
+        """Audit hook, NOT a performance signal.
+
+        The generic/hybrid policies have zero GPU measurements; this only says
+        that IF the off-cadence emergency path fires, a `controller_decision`
+        record says so.  In this scenario occupancy sits at/above 0.85 for a
+        stretch, which is exactly the roadmap's :976 trigger.
+        """
+        records = [decision[2] for decision in self.scenario().decisions()]
+        self.assertTrue(records, "scenario broken: no decisions")
+        missing = [r for r in records if "off_cadence" not in r]
+        self.assertEqual(
+            missing,
+            [],
+            "controller_decision records carry no off_cadence field, so a GPU "
+            f"run could not be audited for this path [{MIXIN_SOURCE}]",
+        )
+        self.assertTrue(
+            any(r["off_cadence"] for r in records),
+            "scenario broken: the off-cadence path never fired, so this test "
+            "would pass with the field hard-wired to False",
+        )
+        self.assertFalse(
+            any(r["off_cadence"] for r in records if r["reason"] == "hold"),
+            "a HOLD iteration was reported as an off-cadence EVALUATION; "
+            "HOLDs are not evaluations",
+        )
 
     def test_the_recheck_path_keeps_consulting_the_policy_while_limited(self):
         """Liveness precondition: the limit is re-examined every iteration."""
