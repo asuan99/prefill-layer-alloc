@@ -1,0 +1,8 @@
+=== job_907100: overlap snapshots by sample origin ===
+boot  snapshots  forced  overlap  forced  scheduled  (overlap = prefill>=1 AND decode>=1)
+L1        10060    2285      600     582         18
+TD1        9157    1342      558     541         17
+L2        12414    2103      536     517         19
+TD2        9295    1263      532     517         15
+
+Reading: the `scheduled` column is what a run WITHOUT forced samples would have had to work with.  O2 needs at least one such snapshot INSIDE each of the 8 probe windows, on the D division.
