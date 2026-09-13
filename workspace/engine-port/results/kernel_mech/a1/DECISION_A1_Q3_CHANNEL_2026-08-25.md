@@ -40,7 +40,7 @@
 
 ### 1.1 `decode_step_count`가 기각되는 이유 — 죽은 필드가 아니라 **기판이 다르다**
 
-`multiplexing_mixin.py:661`의 `finish_step()` 호출부는 **`if dual_worker_enabled:`** 뒤에만 있고,
+`multiplexing_mixin.py:908`의 `finish_step()` 호출부는 **`if dual_worker_enabled:`** 뒤에만 있고,
 그 플래그는 `PDMUX_DUAL_WORKER=1`(**R1 observer 전용**)에서만 켜진다. 저장소의 telemetry가
 전수 `legacy`인 것이 그것과 정합한다. ⇒ 이 필드를 쓰려면 **A1이 재려는 기판을 바꿔야 한다**
 (운영점 = cudagraph-ON legacy pdmux). ★**런킬러 B1을 저장소 규모로 독립 재현**한 것이고,
@@ -79,7 +79,7 @@
 ### 2.2 ★ 그러나 변환 계수는 **스냅샷의 성질이 아니다**
 
 같은 파일 benchmark 전체의 평균은 **0.387 step/스냅샷**이고 sticky 부팅에서는 **0.156**이다.
-이유는 코드에 있다 — `dual_worker_trace_count`는 **sync마다** 오르고(`multiplexing_mixin.py:542`)
+이유는 코드에 있다 — `dual_worker_trace_count`는 **sync마다** 오르고(`multiplexing_mixin.py:777`)
 **이벤트 루프는 idle에도 계속 돈다**(그 자리의 주석이 *"the event loop keeps spinning when idle"* 로
 이미 경고한다). 분할 실현 스냅샷이 특별한 이유는 **분할 실현 ⟺ decode busy ∧ prefill in-flight**,
 즉 **decode가 반드시 스텝하는 상태**이기 때문이다.
@@ -96,7 +96,7 @@ C2를 *고치는* 것이 아니라 **필요 없게 만든다**.
 - ✗ **Q3 자체** — *"graph-launch RUNTIME row 수와 이 카운터가 **1:1인가**"* 는 **nsys가 필요하고
   미측정**이다. 이 문서는 결정량이 **죽은 필드 위에 있지 않은지**만 확인했다.
 - ✗ **`decode_iterations`가 decode 스텝의 정의와 일치하는가** — 증가 지점은
-  `multiplexing_mixin.py:1133-1134`(`running_batch`가 비지 않은 decode 분기)이고, 이것이 nsys가
+  `multiplexing_mixin.py:1380-1381`(`running_batch`가 비지 않은 decode 분기)이고, 이것이 nsys가
   세는 replay 단위와 같은지는 **Q3가 답할 질문**이다. 여기서 전제하면 순환이다.
 - ✗ **어떤 성능·정책 문장도.**
 
@@ -108,7 +108,7 @@ C2를 *고치는* 것이 아니라 **필요 없게 만든다**.
    적었다. **거짓이다** — `results/sticky_smoke/stksmoke_Ha8_d16_872800_result.txt`가
    `ARM=Ha8`·`sticky=1`·`correctness PASS`·`E1_DECODE_REALIZED 1.0000`을 보인다.
    **실제 미구매분은 batch-synchronous 워크로드에서의 같은 확인**뿐이고, 그것을 §2.3 스모크가 산다.
-3. **`decode_iterations`는 `RuntimeSnapshot` 필드**(`multiplexing_mixin.py:380`)이므로 telemetry가
+3. **`decode_iterations`는 `RuntimeSnapshot` 필드**(`multiplexing_mixin.py:489`)이므로 telemetry가
    꺼지면 채널도 없다. `PDMUX_TELEMETRY_PATH`는 **부팅 필수**로 등록한다.
 
 ## 5. 쓰면 안 되는 문장

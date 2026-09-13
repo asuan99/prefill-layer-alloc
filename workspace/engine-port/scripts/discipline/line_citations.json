@@ -309,64 +309,64 @@
    "sha": "a32b79efa6dde3d9",
    "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
   },
-  "multiplexing_mixin.py:269-272": {
-   "anchor": "# f\"{stream_idx}_{bs}\"), so holding a division index replays a captured",
-   "anchor_offset": 2,
-   "sha": "5e5ffb97aef1d47c",
-   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
-  },
-  "multiplexing_mixin.py:311-314": {
-   "anchor": "f\"PDMUX_R2_POLICY in (unset, fixed); got {self.r2_policy_name!r}\"",
-   "anchor_offset": 2,
-   "sha": "ec58c3ec49e7b05d",
-   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
-  },
-  "multiplexing_mixin.py:542-542": {
-   "anchor": "self.dual_worker_trace_count += 1",
-   "anchor_offset": 0,
-   "sha": "f9c22b2ec319fc3b",
-   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
-  },
-  "multiplexing_mixin.py:922-924": {
+  "multiplexing_mixin.py:1169-1171": {
    "anchor": "self.split_prefill_batch or self.sticky_partition_enabled",
    "anchor_offset": 1,
    "sha": "b6762f93eba8af71",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:925-925": {
+  "multiplexing_mixin.py:1172-1172": {
    "anchor": "if self.sticky_partition_enabled and self._sticky_fixed_idx is not None:",
    "anchor_offset": 0,
    "sha": "67660886288d7fbd",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:925-932": {
+  "multiplexing_mixin.py:1172-1179": {
    "anchor": "if self.sticky_partition_enabled and self._sticky_fixed_idx is not None:",
    "anchor_offset": 0,
    "sha": "02a09b9122b5fc15",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:932-932": {
+  "multiplexing_mixin.py:1179-1179": {
    "anchor": "stream_idx = self._sticky_fixed_idx",
    "anchor_offset": 0,
    "sha": "5a109140391c872f",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:952-953": {
+  "multiplexing_mixin.py:1199-1200": {
    "anchor": "set_current_stream_idx(self.real_sm_group_num - 1)",
    "anchor_offset": 1,
    "sha": "781d620460cbe267",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:954-967": {
+  "multiplexing_mixin.py:1201-1214": {
    "anchor": "# running_batch.is_empty()` trigger in `event_loop_pdmux` exists to",
    "anchor_offset": 8,
    "sha": "11c02d2fb419c498",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:955-967": {
+  "multiplexing_mixin.py:1202-1214": {
    "anchor": "# running_batch.is_empty()` trigger in `event_loop_pdmux` exists to",
    "anchor_offset": 7,
    "sha": "e1703cc00791c7a0",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:378-381": {
+   "anchor": "# f\"{stream_idx}_{bs}\"), so holding a division index replays a captured",
+   "anchor_offset": 2,
+   "sha": "5e5ffb97aef1d47c",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:420-423": {
+   "anchor": "f\"PDMUX_R2_POLICY in (unset, fixed); got {self.r2_policy_name!r}\"",
+   "anchor_offset": 2,
+   "sha": "ec58c3ec49e7b05d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:777-777": {
+   "anchor": "self.dual_worker_trace_count += 1",
+   "anchor_offset": 0,
+   "sha": "f9c22b2ec319fc3b",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
   "s2_sticky.sbatch:173-179": {
@@ -401,25 +401,25 @@
   }
  },
  "results/kernel_mech/a1/DECISION_A1_Q3_CHANNEL_2026-08-25.md": {
-  "multiplexing_mixin.py:1133-1134": {
+  "multiplexing_mixin.py:1380-1381": {
    "anchor": "getattr(self, \"_r2_decode_iterations\", 0) + 1",
    "anchor_offset": 1,
    "sha": "a295700fcaeddd2a",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:380-380": {
+  "multiplexing_mixin.py:489-489": {
    "anchor": "decode_iterations=int(getattr(self, \"_r2_decode_iterations\", 0)),",
    "anchor_offset": 0,
    "sha": "44a345200de5643c",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:542-542": {
+  "multiplexing_mixin.py:777-777": {
    "anchor": "self.dual_worker_trace_count += 1",
    "anchor_offset": 0,
    "sha": "f9c22b2ec319fc3b",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
-  "multiplexing_mixin.py:661-661": {
+  "multiplexing_mixin.py:908-908": {
    "anchor": "self.dual_worker_state.decode.finish_step()",
    "anchor_offset": 0,
    "sha": "1b093a03da7e3880",
@@ -434,19 +434,19 @@
    "sha": "a32b79efa6dde3d9",
    "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
   },
-  "src/multiplex/multiplexing_mixin.py:1009-1009": {
+  "src/multiplex/multiplexing_mixin.py:1256-1256": {
    "anchor": "_slo_on = bool(os.environ.get(\"PDMUX_SLO_SCHED\")) or self.r2_policy is not None",
    "anchor_offset": 0,
    "sha": "bd8a93dd8f5cf281",
    "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/multiplexing_mixin.py"
   },
-  "src/multiplex/multiplexing_mixin.py:1027-1029": {
+  "src/multiplex/multiplexing_mixin.py:1274-1276": {
    "anchor": "_a = float(os.environ.get(\"PDMUX_SLO_EMA\", \"0.85\"))  # v7b: smoother signal (was 0.7)",
    "anchor_offset": 1,
    "sha": "8d29cb5ea62842b7",
    "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/multiplexing_mixin.py"
   },
-  "src/multiplex/multiplexing_mixin.py:395-400": {
+  "src/multiplex/multiplexing_mixin.py:504-509": {
    "anchor": "itl_slo_ms=float(os.environ.get(\"PDMUX_TPOT_SLO_MS\", \"60\")),",
    "anchor_offset": 4,
    "sha": "dacc821458d45ed0",

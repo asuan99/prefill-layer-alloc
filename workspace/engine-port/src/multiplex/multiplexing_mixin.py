@@ -8,7 +8,7 @@ import logging
 import atexit
 import json
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -61,6 +61,89 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# ROLE-WORKER GRAD GUARD  (repair, 2026-09-13; job 907959)
+# ---------------------------------------------------------------------------
+# `event_loop_pdmux` is decorated `@torch.inference_mode()`.  That guard is
+# THREAD-LOCAL.  In the legacy loop every `run_batch` is called on the
+# decorated thread, so the whole model forward runs with autograd off.  In
+# true-dual mode the forward is handed to `RoleWorkerThread`, a thread the
+# decorator never touched, so it ran with `torch.is_grad_enabled() == True`.
+#
+# WHY THAT IS NOT MERELY UNTIDY.  SGLang blocks autograd at the parameter level
+# almost everywhere -- linear/embedding weights are created
+# `requires_grad=False` and `RMSNorm.forward_cuda` multiplies by
+# `self.weight.data` -- but `Mixer2RMSNormGated.forward_native` (installed tree
+# `srt/layers/attention/mamba/mixer2_rms_norm_gated.py:97`) ends in
+# `self.weight * x.to(input_dtype)` with a bare `nn.Parameter`.  That branch is
+# taken whenever `n_groups != 1` (`:109-110`), i.e. on NemotronH
+# (`mamba_num_groups=8`) but not on Zamba2-2.7B / Falcon-H1 / Granite-4
+# (`n_groups=1`).  With grad enabled the multiply builds `MulBackward0`, which
+# RETAINS its input for a backward pass that never comes, so a 56-layer split
+# prefill accumulates activations layer by layer.  Job 907959: both true-dual
+# boots died with `torch.OutOfMemoryError` on the 14-seq / 10,125-token split
+# prefill that both legacy boots completed.
+#
+# WHY `inference_mode` AND NOT `no_grad` (decision recorded here because the
+# two are NOT interchangeable, and the loser has a real failure mode):
+#   * SYMMETRY IS THE POINT.  Under `inference_mode` the set of operations
+#     executed with inference semantics in true-dual is exactly the set legacy
+#     already executes that way -- the main loop keeps its decorator and each
+#     worker enters the same guard, so no tensor becomes an inference tensor in
+#     true-dual that was not one in legacy.  Under `no_grad` the workers would
+#     produce ordinary version-counted tensors while legacy produced inference
+#     tensors, i.e. the two arms of a CORRECTNESS gate would still be running
+#     the model under different tensor semantics.  Repairing an arm asymmetry
+#     with a different arm asymmetry is not a repair.
+#   * THE RISK `no_grad` WOULD AVOID, AND WHY IT IS NOT LIVE HERE.  Inference
+#     tensors are harsher than no-grad tensors in exactly two ways (measured on
+#     CPU, torch 2.9.1): an in-place update to one from OUTSIDE inference mode
+#     raises `RuntimeError: Inplace update to inference tensor outside
+#     InferenceMode is not allowed`, and feeding one to an autograd-tracked op
+#     outside raises `Inference tensors cannot be saved for backward`.  Both
+#     require a consumer that is NOT inside inference mode.  In this process
+#     every consumer of a worker result is: `prefill_future.result()` /
+#     `decode_future.result()` are read inside `event_loop_pdmux`, the KV and
+#     mamba pools and the CUDA-graph static buffers are ordinary tensors
+#     allocated at boot (writing to an ordinary tensor from inside inference
+#     mode is allowed and keeps it ordinary -- verified), views of them created
+#     inside inference mode stay ordinary, and the telemetry writer thread
+#     serialises Python scalars only.  The two worker threads may hold the
+#     guard concurrently; `InferenceMode` is thread-local and independent.
+#   * `PDMUX_WORKER_GRAD_GUARD` exists only as an escape hatch if that analysis
+#     is wrong on some future model.  The DEFAULT -- and the only value any
+#     harness sets -- is `inference_mode`; `none` reproduces the pre-repair
+#     behaviour and exists so the regression test has a negative control.
+# ★This is a CORRECTNESS/SYMMETRY repair.  It is not a performance change and
+#  no speed or memory claim may be made from it without its own measurement.
+WORKER_GRAD_GUARDS = {
+    "inference_mode": torch.inference_mode,
+    "no_grad": torch.no_grad,
+    "none": nullcontext,
+}
+DEFAULT_WORKER_GRAD_GUARD = "inference_mode"
+
+
+def resolve_worker_grad_guard(value: Optional[str] = None) -> str:
+    """Name of the grad guard every role-worker task runs inside.
+
+    Fails loudly on an unknown value: a silently ignored guard name would put
+    the workers back outside the guard, which is the defect being repaired.
+    """
+    name = (
+        value
+        if value is not None
+        else os.environ.get("PDMUX_WORKER_GRAD_GUARD", "")
+    )
+    name = (name or DEFAULT_WORKER_GRAD_GUARD).strip().lower()
+    if name not in WORKER_GRAD_GUARDS:
+        raise ValueError(
+            f"PDMUX_WORKER_GRAD_GUARD={name!r} is not one of "
+            f"{sorted(WORKER_GRAD_GUARDS)}"
+        )
+    return name
+
+
 class SchedulerMultiplexMixin:
 
     def init_pdmux(self: Scheduler):
@@ -106,6 +189,32 @@ class SchedulerMultiplexMixin:
             "PDMUX_TRACE_FORCE_PREFILL", "0"
         ) in ("1", "true", "True")
         self.dual_worker_trace_forced_count = 0
+        # Grad guard for every role-worker task (see WORKER_GRAD_GUARDS above).
+        # Resolved once here, not per task, and NOT gated on any flag: running
+        # the workers outside the guard is the defect, not an option.
+        self.pdmux_worker_grad_guard = resolve_worker_grad_guard()
+        # PDMUX_MEM_TELEMETRY=1 (default OFF) adds allocator fields to every
+        # `runtime_snapshot` and resets the allocator peak at each split-prefill
+        # start.  DEFAULT OFF so a run that does not ask for it writes records
+        # byte-identical to a pre-patch run (same rule as
+        # PDMUX_TRACE_FORCE_PREFILL) -- no other campaign inherits an
+        # unmeasured observer effect.  When ON it is ON FOR THE WHOLE PROCESS,
+        # so both arms of a job carry the same fields at the same cadence.
+        self.pdmux_mem_telemetry = os.environ.get(
+            "PDMUX_MEM_TELEMETRY", "0"
+        ) in ("1", "true", "True")
+        self._r2_mem_peak_epoch = 0
+        # Realised (not target) guard state, written by the worker thread from
+        # INSIDE the guard.  Both arms emit all four keys; legacy leaves them
+        # None because it has no worker thread, which is itself the fact worth
+        # recording.  `worker_grad_guard` is the configured name and is emitted
+        # by both arms.
+        self._r2_worker_guard = {
+            "prefill_worker_grad_enabled": None,
+            "prefill_worker_inference_mode": None,
+            "decode_worker_grad_enabled": None,
+            "decode_worker_inference_mode": None,
+        }
         self.dual_worker_state = DualWorkerState.from_sm_counts(self.sm_counts)
         self.true_dual_worker_runtime = (
             TrueDualWorkerRuntime(self.sm_counts, self._activate_role_context)
@@ -427,6 +536,93 @@ class SchedulerMultiplexMixin:
         mamba = _occupancy(getattr(req_pool, "mamba_pool", None))
         return max(full, mamba), full, mamba
 
+    # -----------------------------------------------------------------
+    # ALLOCATOR TELEMETRY  (PDMUX_MEM_TELEMETRY=1, default OFF)
+    # -----------------------------------------------------------------
+    # WHAT IS READ, AND WHY NOT THE OBVIOUS API.  `torch.cuda.memory_allocated`
+    # / `max_memory_allocated` / `memory_reserved` each call
+    # `torch.cuda.memory_stats()`, which FLATTENS the allocator's nested stat
+    # dict into ~122 entries and SORTS them.  Measured on this venv (torch
+    # 2.9.1, python 3.14): 54.3 us of pure Python per call, so the three public
+    # calls cost ~163 us per emitted snapshot.  Job 907959 emitted 12,458
+    # snapshots in 56.0 s on the legacy boot (222.5/s, because this harness
+    # runs with PDMUX_TRACE_FORCE_PREFILL=1), which would have put ~3.6% of
+    # wall-clock of extra Python on the scheduler thread -- i.e. the naive
+    # spelling alone would blow the +/-3% observer-effect budget the P1 track
+    # protects.  `memory_stats_as_nested_dict()` skips the flatten and sort;
+    # reading the three values out of the nested dict costs 0.14 us.  One C++
+    # stat copy per snapshot remains and is NOT measured here (no GPU in this
+    # round).
+    # ★NOT CLEARED FOR P1.  This instrument has no paired on/off measurement
+    #  yet, so it must not be enabled on any run that makes a timing claim
+    #  until one exists.  It is enabled here for a CORRECTNESS gate, which
+    #  publishes no timing numbers, and it is enabled for BOTH arms of that
+    #  gate at the same cadence.
+    # NO SYNCHRONISATION: `memory_stats_as_nested_dict` copies allocator
+    # bookkeeping under the allocator lock and does not touch the device, and
+    # it returns {} (not an exception) before CUDA is initialised, which is
+    # what keeps the CPU tests honest rather than skipped.
+    def _r2_memory_fields(self: Scheduler) -> dict:
+        if not getattr(self, "pdmux_mem_telemetry", False):
+            return {}
+        allocated = peak = reserved = None
+        try:
+            stats = torch.cuda.memory_stats_as_nested_dict(
+                device=getattr(self, "gpu_id", None)
+            )
+            if stats:
+                allocated_bytes = stats["allocated_bytes"]["all"]
+                allocated = allocated_bytes["current"]
+                peak = allocated_bytes["peak"]
+                reserved = stats["reserved_bytes"]["all"]["current"]
+        except (AttributeError, KeyError, RuntimeError, TypeError):
+            pass
+        fields = {
+            "gpu_mem_allocated_b": allocated,
+            "gpu_mem_peak_allocated_b": peak,
+            "gpu_mem_reserved_b": reserved,
+            # Which reset window `gpu_mem_peak_allocated_b` belongs to.  Without
+            # it a consumer cannot tell a peak that survived a reset boundary
+            # from one that did not.
+            "gpu_mem_peak_epoch": int(getattr(self, "_r2_mem_peak_epoch", 0)),
+            "worker_grad_guard": getattr(
+                self, "pdmux_worker_grad_guard", DEFAULT_WORKER_GRAD_GUARD
+            ),
+        }
+        fields.update(getattr(self, "_r2_worker_guard", None) or {})
+        return fields
+
+    # WHERE THE PEAK IS RESET, AND WHY THAT CHOICE CHANGES WHAT IS MEASURED.
+    # `max_memory_allocated` is monotone from process start, so with no reset
+    # every snapshot after the first big batch reports the same number and the
+    # per-layer curve is invisible.  The reset is placed at SPLIT-PREFILL BATCH
+    # START, so `gpu_mem_peak_allocated_b` reads "peak device allocation since
+    # this prefill batch began" -- monotone non-decreasing inside one batch, so
+    # the LAST sample of a batch is that batch's peak and a missed sample
+    # cannot hide it.  The alternative (reset at each emission) gives a finer
+    # per-window peak but attributes a peak that lands between two samples to
+    # the wrong window, and it destroys the within-batch monotonicity that
+    # makes the curve readable.
+    # Resetting is safe here because NOTHING in `sglang/srt/` reads the peak
+    # counters: `grep -rn 'max_memory_allocated|reset_peak_memory_stats|
+    # max_memory_reserved' sglang/srt/` returns nothing (the hits in the tree
+    # are in `multimodal_gen/`, `_mps_stub.py`, benchmarks and test utils, none
+    # of which this server loads).  It is also arm-symmetric: the call site is
+    # reached by both arms, and it is gated on the SAME flag as the read, so a
+    # run without the flag is untouched.
+    # NOT reset: `gpu_mem_allocated_b` (instantaneous live bytes) needs no
+    # reset at all and answers the retention question on its own, which is why
+    # it is emitted alongside the peak rather than instead of it.
+    def _r2_reset_memory_peak(self: Scheduler) -> None:
+        if not getattr(self, "pdmux_mem_telemetry", False):
+            return
+        try:
+            if torch.cuda.is_initialized():
+                torch.cuda.reset_peak_memory_stats(getattr(self, "gpu_id", None))
+        except (AttributeError, RuntimeError, TypeError):
+            return
+        self._r2_mem_peak_epoch = int(getattr(self, "_r2_mem_peak_epoch", 0)) + 1
+
     def _r2_decide_idx(self: Scheduler, current_idx: int) -> int:
         snapshot = self._r2_runtime_snapshot()
         safe = (
@@ -499,12 +695,51 @@ class SchedulerMultiplexMixin:
 
     @contextmanager
     def _activate_role_context(self: Scheduler, context: ExecutionContext):
-        """Activate CUDA stream and thread-local PD-mux role for one host task."""
+        """Activate grad guard, CUDA stream and thread-local PD-mux role.
+
+        The grad guard is FIRST and unconditional.  `event_loop_pdmux`'s
+        `@torch.inference_mode()` is thread-local, so without this line the
+        model forward submitted to a role worker runs with autograd ON while
+        the legacy loop runs it with autograd OFF -- an arm asymmetry that
+        retains activations layer by layer on any model whose gated RMSNorm
+        takes the native branch (see WORKER_GRAD_GUARDS at module scope, and
+        job 907959).  The guard is entered outside the CUDA device/stream
+        guards only because they are independent; the order carries no meaning.
+        """
         if context.stream is None:
             raise RuntimeError("true dual-worker task has no CUDA stream")
-        with torch.cuda.device(self.gpu_id), torch.cuda.stream(context.stream):
+        guard = WORKER_GRAD_GUARDS[
+            getattr(self, "pdmux_worker_grad_guard", DEFAULT_WORKER_GRAD_GUARD)
+        ]
+        # A fresh guard object per task: `torch.inference_mode` instances keep
+        # their saved state on `self`, so one shared instance entered from the
+        # prefill and decode threads at once would race.
+        with guard(), torch.cuda.device(self.gpu_id), torch.cuda.stream(
+            context.stream
+        ):
             set_pdmux_status(context.role is WorkerRole.PREFILL)
+            self._r2_record_worker_guard(context.role)
             yield
+
+    def _r2_record_worker_guard(self: Scheduler, role: WorkerRole) -> None:
+        """Record the REALISED guard state from inside the worker thread.
+
+        Gate #176: a knob has to be observed as realised, not asserted as
+        targeted.  `pdmux_worker_grad_guard` is what was asked for; these two
+        booleans are what the thread that runs the forward actually sees.  Two
+        C calls and two dict stores per task, and only when the memory/guard
+        telemetry flag is on.
+        """
+        if not getattr(self, "pdmux_mem_telemetry", False):
+            return
+        store = getattr(self, "_r2_worker_guard", None)
+        if store is None:
+            return
+        prefix = role.value if isinstance(role, WorkerRole) else str(role)
+        store[f"{prefix}_worker_grad_enabled"] = torch.is_grad_enabled()
+        store[f"{prefix}_worker_inference_mode"] = (
+            torch.is_inference_mode_enabled()
+        )
 
     def _dual_worker_sync(self, stream_idx: Optional[int] = None) -> None:
         """Refresh role-owned views without changing legacy scheduler state."""
@@ -603,6 +838,13 @@ class SchedulerMultiplexMixin:
                     "kv_mamba_occupancy": kv_mamba,
                 }
             )
+            # Allocator fields.  Added to the BASE payload, not to
+            # `runtime.metrics()`, so legacy and true-dual carry the same keys
+            # at the same cadence -- the asymmetry this whole round exists to
+            # remove must not be reintroduced by the instrument that measures
+            # it.  Empty dict when PDMUX_MEM_TELEMETRY is off, so an off run's
+            # records are byte-identical to a pre-patch run's.
+            payload.update(self._r2_memory_fields())
             if getattr(self, "dual_worker_trace_force_prefill", False):
                 # Emitted ONLY in force mode, so a run with the flag off writes
                 # byte-identical records to a pre-patch run.  In force mode,
@@ -621,6 +863,11 @@ class SchedulerMultiplexMixin:
                 self.dual_worker_trace_error_logged = True
 
     def _dual_worker_start_prefill(self, batch: ScheduleBatch) -> None:
+        # Peak-reset boundary (see _r2_reset_memory_peak).  This call site is
+        # on the unconditional path in `update_split_prefill_batch`, so both
+        # arms reset at the same event: one split-prefill batch = one peak
+        # window.
+        self._r2_reset_memory_peak()
         if getattr(self, "dual_worker_enabled", False):
             self.dual_worker_state.prefill.active_batch = batch
             self.dual_worker_state.coordinator.start_prefill(batch.reqs)

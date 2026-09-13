@@ -112,14 +112,14 @@ K1_PROHIB_AT = 10.00  # ★[ARBITRARY] -- the design's fourth band
 #   PRIMARY   per-step wall time = boot duration / `Delta decode_iterations`.
 #             Neither term passes the outlier filter below.
 #   SECONDARY `measured_itl_p95_ms` (p95 of <=128 raw per-iteration samples,
-#             `src/multiplex/multiplexing_mixin.py:395-400`).
+#             `src/multiplex/multiplexing_mixin.py:504-509`).
 #   DEAD      `decode_last_tpot_ms` -- behind the `dual_worker_enabled` gate
 #             that kills `decode_step_count`.  0 / 294,506 snapshots.
-#   ★LIVENESS IS CONDITIONAL on `_slo_on` (`src/multiplex/multiplexing_mixin.py:1009`): measured non-zero in 4/4
+#   ★LIVENESS IS CONDITIONAL on `_slo_on` (`src/multiplex/multiplexing_mixin.py:1256`): measured non-zero in 4/4
 #   s2_sticky boots and zero in 4/4 g16 boots.  A1 sets PDMUX_R2_POLICY=fixed,
 #   so it is live -- a boot that omits it gets K1_CHANNEL_DEAD.
 #   ★CLIPPING HAZARD: samples outside (0, max(3*EMA, 90ms)) are rejected
-#   (`src/multiplex/multiplexing_mixin.py:1027-1029`), which biases the ITL
+#   (`src/multiplex/multiplexing_mixin.py:1274-1276`), which biases the ITL
 #   channel DOWNWARD exactly when overhead is
 #   large.  That is why PRIMARY is the counter, not the ITL field.
 

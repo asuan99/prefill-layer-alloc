@@ -37,12 +37,12 @@
 감사 §⑤가 지목한 뿌리: *"분할과 무분할이 한 런 안에서 3% 듀티로 95번 교차하고, 둘이 같은 커널이라
 시간창으로만 갈 수 있다."* 그 교차를 만드는 코드는 하나다.
 
-- **sticky OFF** — `multiplexing_mixin.py:922-924`: `not running_batch.is_empty() and split_prefill_batch`
-  일 때만 division을 고르고, **아니면** `:952-953`가 `set_current_stream_idx(real_sm_group_num - 1)`
+- **sticky OFF** — `multiplexing_mixin.py:1169-1171`: `not running_batch.is_empty() and split_prefill_batch`
+  일 때만 division을 고르고, **아니면** `:1199-1200`가 `set_current_stream_idx(real_sm_group_num - 1)`
   = **plain `(0,108)` 그룹**을 고른다. ⇒ **prefill이 in-flight가 아닌 decode는 108 SM에서 돈다.**
-- **sticky ON + `FixedPolicy(D)`** — `:925`+`:932`: `stream_idx = self._sticky_fixed_idx`(상수)
+- **sticky ON + `FixedPolicy(D)`** — `:1172`+`:1179`: `stream_idx = self._sticky_fixed_idx`(상수)
   ⇒ **런 전체가 한 division에 앉는다.**
-- **replay 경로는 유지된다** — `:269-272` 주석: 그래프는 stream-group index마다 캡처되므로
+- **replay 경로는 유지된다** — `:378-381` 주석: 그래프는 stream-group index마다 캡처되므로
   (`cuda_graph_runner.capture`, key `f"{stream_idx}_{bs}"`) division을 붙들어도 **캡처된 그래프를
   그대로 replay**한다. **eager fallback 없음.**
 - **실측 승계**(CONSENSUS 항목27(II)) — sticky OFF `E1_DECODE_REALIZED` **0.0839** → ON **1.0000**
@@ -52,7 +52,7 @@
 ### 1.1 ★이 셀에서 sticky는 편의가 아니라 **필요조건**이다 — 그리고 **B6가 이미 그렇게 등록했다**
 
 rev8 §5 / B6 사전등록이 승계한 워크로드는 **batch-synchronous `NP=CONC=16`**이고, rev8:380이 그
-성질을 *"라운드 안 prefill을 **0으로 강제**한다"* 로 적는다. 위 `:952-953`와 합치면:
+성질을 *"라운드 안 prefill을 **0으로 강제**한다"* 로 적는다. 위 `:1199-1200`와 합치면:
 
 > **sticky OFF에서 그 라운드의 decode는 `D`가 아니라 108 SM에서 돈다.**
 
@@ -62,7 +62,7 @@ rev8 §5 / B6 사전등록이 승계한 워크로드는 **batch-synchronous `NP=
 등록하지 않았다"* 를 근거로 달았다. **문자 그대로는 참이지만(rev8 문서에 문자열 0건) 오도한다** —
 rev8이 워크로드를 승계한 **B6 사전등록 `PREREG_B6_ELIGIBLE_WINDOW_2026-08-22.md:102-109`가
 sticky-ON을 이미 전제한다**. 그 절은 라운드 **사이**에 decode batch가 비면
-`multiplexing_mixin.py:954-967`(B6는 `:915-923` [HIST] 으로 인용 — **B6 작성 시점 트리**)이 division을 놓고
+`multiplexing_mixin.py:1201-1214`(B6는 `:915-923` [HIST] 으로 인용 — **B6 작성 시점 트리**)이 division을 놓고
 `set_current_stream_idx(0)`으로 떨어지므로 *"라운드 **첫 몇 step은 목표 `D`가 아닌 파티션에서
 돌 수 있다**"* 고 적고, 그래서 분석 구간의 시작점을 **관측이 정하게** 했다. ⇒ 올바른 서술은
 *"rev8을 정정한다"* 가 아니라 **"B6의 등록 전제를 A1의 부팅 매트릭스에 명시적으로 이름 붙여
@@ -74,7 +74,7 @@ sticky-ON을 이미 전제한다**. 그 절은 라운드 **사이**에 decode ba
 
 ### 1.2 ★ B6가 알려주는 것 하나 더 — **라운드 경계에서 sticky는 놓였다가 재확립된다**
 
-`:954-967`은 **decode batch가 비면 의도적으로 division을 놓는다**(주석: *"there is no decode work
+`:1201-1214`은 **decode batch가 비면 의도적으로 division을 놓는다**(주석: *"there is no decode work
 to protect … holding it would strand D SM"*). batch-synchronous는 라운드 사이마다 decode를
 비우므로 **부팅 안에 라운드 수만큼 재확립 지연이 있다**. B6는 이것을 `out=128`의 여유
 (**~125 step 중 20 step만 사용**)로 흡수했다. rev2 초판은 이 사실로 문턱을 열었고, **그것은 철회됐다**(§5.1a) — 서술은 참이나 **크기가 0.1–0.4%** 다.
@@ -136,7 +136,7 @@ sticky ON에서는 *"마지막 분할 창 **이후**"* 라는 구간이 **존재
 |---|---|---|
 | arm | **Ha8 = `Zamba2-7B`** | rev8 §5 · B6 · Stage 0″ §3 승계. ★**[임의]** 아님(셀 일치가 목적) |
 | `D` | **16**(주) · **92**(두 번째 점) | `pdmux_e1_d16.yml`(`sm_counts=[(108,0),(92,16),(0,108)]`, `FixedPolicy(16)→idx 1`) · `pdmux_e1_d92.yml`(`[(108,0),(16,92),(64,44),(0,108)]`, 2행은 **guard-satisfier 전용**, `FixedPolicy(92)→idx 1`) |
-| 정책 | `PDMUX_R2_POLICY=fixed` · `PDMUX_R2_FIXED_DSM=D` | sticky는 `R2_POLICY ∈ {unset, fixed}`에서만 정의(`:311-314`) |
+| 정책 | `PDMUX_R2_POLICY=fixed` · `PDMUX_R2_FIXED_DSM=D` | sticky는 `R2_POLICY ∈ {unset, fixed}`에서만 정의(`:420-423`) |
 | ctx | `--context-length` = `L + out + margin`, `L=1024`·`out=128` | B6 승계 |
 | 워크로드 | **batch-synchronous `NP=CONC=16`**, `out=128`, `L=1024` 고정 프롬프트, `--disable-radix-cache` | B6 · rev8 §5 승계 |
 | 라운드 | 부팅당 **2**(워밍업 1 + 분석 1) | ★**[임의]** — `N_MIN_DECODE_STEPS`(§5-4)를 만족시키기 위한 최소치 |
@@ -292,7 +292,7 @@ decode 구간에만 나타나는 커널명이 **하나도 없으면** `LEG_LABEL
 - ★★**그러나 변환 계수는 스냅샷의 성질이 아니라 그 부분모집단의 성질이다.** 같은 파일의 `benchmark`
   전체에서 전진 쌍은 **1,440 / 59,142(2.4%)** 뿐이고 평균은 **0.387 step/스냅샷**이다
   (sticky 부팅 873015 blk1에서는 **0.156**, 3,802 step / 24,435 스냅샷). 이유는 코드에 있다 —
-  `dual_worker_trace_count`는 **sync마다** 오르고(`multiplexing_mixin.py:542`) 이벤트 루프는
+  `dual_worker_trace_count`는 **sync마다** 오르고(`multiplexing_mixin.py:777`) 이벤트 루프는
   **idle에도 계속 돈다**(그 자리의 주석이 이미 경고한다). 분할 실현 스냅샷이 특별한 이유는
   **분할 실현 ⟺ decode busy ∧ prefill in-flight** — decode가 **반드시 스텝하는 상태**이기 때문이다.
 - ⇒ ★**rev2는 스냅샷→스텝 변환을 아예 쓰지 않는다.** **`N_steps`** = Δ`decode_iterations`(런 단위
@@ -324,12 +324,12 @@ rev2 감사가 저장소의 **모든 sticky 부팅**에 정본 추정기를 재�
 ★**21/21 부팅이 0.99를 통과한다**(최소 0.99564). 잔차는 실재하나 **0.1–0.4%** 로, 내가 잡은 완화폭(5%)보다
 **10–50배 작다**. 그리고 기전 논증 자체가 세 갈래로 반박된다:
 
-1. 엔진 주석(`:955-967`)이 decode-empty 구간에 대해 *"the decode-active time weighting of
+1. 엔진 주석(`:1202-1214`)이 decode-empty 구간에 대해 *"the decode-active time weighting of
    `E1_DECODE_REALIZED` gives this interval **zero weight** either way"* 라고 **이미 적고 있다**.
 2. `compute_decode_realized`는 `decode_running_batch_size > 0`만 세므로 라운드 사이 구간은
    **분모에도 들어가지 않는다**.
 3. sticky + `FixedPolicy`에서는 `running_batch`가 비지 않는 **첫 호출부터** `_sticky_fixed_idx`가
-   걸린다(`:925-932`) — "재확립 지연"이 앉을 자리가 거의 없다.
+   걸린다(`:1172-1179`) — "재확립 지연"이 앉을 자리가 거의 없다.
 
 ★**내가 한 일의 정확한 형태**: B6의 산문(*"라운드 첫 몇 step은 목표 D가 아닌 파티션에서 돌 수 있다"*)을
 읽고 **크기를 재지 않은 채** 문턱을 5% 열었다. B6의 서술은 참이지만 **그 크기는 0.1–0.4%** 다.
@@ -355,7 +355,7 @@ rev2 감사가 저장소의 **모든 sticky 부팅**에 정본 추정기를 재�
 rev1 §5는 *"워크로드는 분할 창을 의도적으로 만들도록 고른다 — prefill이 **계속 in-flight**여야 한다"* 를
 요구했고, 감사 **E2**가 그것이 rev8 셀(batch-synchronous `NP=CONC=16`)과 **배타적**이라 지적했다.
 
-> ★**sticky ON에서 그 요구는 사라진다** — `multiplexing_mixin.py:922-924`이 `split_prefill_batch`를 **또는**으로
+> ★**sticky ON에서 그 요구는 사라진다** — `multiplexing_mixin.py:1169-1171`이 `split_prefill_batch`를 **또는**으로
 > 우회하므로 **decode busy만으로** division이 유지된다. ⇒ **E2의 배타성 해소.**
 > rev1이 *"A0가 §0-1에 전이 간극을 등재해 놓고 A1이 자기 안에 두 번째 전이 간극을 만든다"* 는
 > 지적을 받은 지점이 여기였고, rev2는 **rev8 셀 그대로** 측정한다.

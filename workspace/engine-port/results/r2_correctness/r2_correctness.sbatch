@@ -62,7 +62,11 @@
 #   SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN); --decode-log-interval 1.
 #   PDMUX_TRACE_FORCE_PREFILL=1 (observation only, both arms) so the
 #   checker can see prefill/decode overlap in telemetry;
-#   PDMUX_GREEN_READOUT=1 (startup-only driver read-out, both arms).
+#   PDMUX_GREEN_READOUT=1 (startup-only driver read-out, both arms);
+#   PDMUX_MEM_TELEMETRY=1 (observation only, both arms, engine default OFF)
+#   so each runtime_snapshot carries current/peak/reserved allocator bytes and
+#   the realised grad-guard state of the role workers.  Added 2026-09-13 for
+#   the true-dual OOM decomposition round; it publishes no timing number.
 #
 # ★ WHAT A PASS DOES NOT MEAN
 #   Not a performance result, not Claim D.  It certifies that the two
@@ -195,6 +199,17 @@ TFP="${R2C_TRACE_FORCE_PREFILL:-1}"
 # read-outs, all of them on the warm-up boot.  See the block below for why the
 # warm-up boot is the only place they can go without touching the verdict.
 INSTR="${R2C_INSTRUMENT:-0}"
+# Allocator telemetry, DEFAULT ON IN THIS HARNESS (engine default is OFF).
+# Every scored boot of every arm gets the same value, so the memory fields
+# appear in legacy and true-dual records at the same cadence; a per-arm value
+# would make the instrument itself the asymmetry it is meant to measure.  The
+# WARM-UP boot is deliberately NOT given it: that boot runs without
+# PDMUX_TELEMETRY_PATH, so the flag would be inert there anyway, and its argv
+# is pinned byte-for-byte by tests/test_r2_correctness_instrument.py.
+# ★This adds ~one allocator stat read per emitted runtime_snapshot to BOTH
+#  arms.  It has no paired on/off measurement yet, so no run that publishes a
+#  timing number may use it until one exists; this harness publishes none.
+MEMTEL="${R2C_MEM_TELEMETRY:-1}"
 SGPT_RAW="${R2C_SGPT_RAW:-$HF_HOME/raw/ShareGPT_V3_unfiltered_cleaned_split.json}"
 
 # Start from a clean PD-mux environment (policy_adapter.sh does the same).
@@ -245,6 +260,11 @@ COMMIT=$(git -C "$PROJECT" rev-parse HEAD)
   echo "model=$MODEL dsm=$DSM seed=$SEED order=[$ORDER] config=$CONFIG"
   echo "num_kv_splits_cli=${NKVS:-<server default>} baseline_job=${R2C_BASELINE_JOB:-<none>}"
   echo "trace_force_prefill=$TFP (907100/907456 used 1; r2_eval runner uses 0)"
+  # Realised instrument state, not just the target.  `worker_grad_guard` is NOT
+  # settable from this harness on purpose -- the engine default is the
+  # registered value, and each boot's telemetry also reports what the worker
+  # thread actually observed, so the two channels can disagree visibly.
+  echo "mem_telemetry=$MEMTEL worker_grad_guard=<engine default> (907959 had neither)"
   echo "context_length=$CTX ($CTX_SRC) attention_backend=$ABE"
   echo "instrument=$INSTR sgpt_raw=$SGPT_RAW"
   # The manifest hashes sglang's flashinfer_backend.py (entry 25); the wheel it
@@ -455,6 +475,7 @@ for ARM in $ORDER; do
     PDMUX_RUN_ID="r2corr_${SLURM_JOB_ID:-local}_${LABEL}" \
     PDMUX_WORKLOAD_ID="r2corr_seed${SEED}" \
     PDMUX_TRACE_FORCE_PREFILL="$TFP" PDMUX_ENGINE_COMMIT="$COMMIT" \
+    PDMUX_MEM_TELEMETRY="$MEMTEL" \
     PDMUX_GREEN_READOUT=1 PDMUX_GREEN_READOUT_PATH="$OUT/green_${LABEL}.json" $TD_ENV \
     $(server_cmd "$PORT") > "$OUT/srv_${LABEL}.log" 2>&1 &
   PID=$!
