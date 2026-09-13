@@ -90,13 +90,25 @@ fi
 # Zamba2 (Zyphra/Zamba2-*): NEW config + model files (dev_tree_edits.md items 1-2).
 # Brought under sync + manifest on 2026-08-04 with the per-layer-type timing
 # rework, so the instrumentation that produces ZBLT2 lines is reproducible from
-# the tracked source instead of a manual copy. The remaining hybrids
-# (nemotron_h / falcon_h1 / granitemoehybrid) are still manual copies -- see
-# dev_tree_edits.md items 6, 8, 9.
+# the tracked source instead of a manual copy.
 install -D -m 0644 "${track_root}/src/configs/zamba2.py" \
   "${runtime_python}/sglang/srt/configs/zamba2.py"
 install -D -m 0644 "${track_root}/src/models/zamba2.py" \
   "${runtime_python}/sglang/srt/models/zamba2.py"
+
+# The other three hybrids (dev_tree_edits.md items 6, 8, 9) were MANUAL copies
+# until 2026-09-13 and their model files were absent from the hash manifest, so
+# a campaign served by NemotronH / Falcon-H1 / Granite-4 recorded no provenance
+# for the model implementation it actually ran -- including
+# `forward_split_prefill`, i.e. the method that makes PD-mux SPLIT_PREFILL
+# possible on those models at all. Verified byte-identical to the dev tree at
+# the time of this change (sha256 of src/models/{nemotron_h,falcon_h1,
+# granitemoehybrid}.py == the installed copies), so installing them is a no-op
+# on the current tree and a repair on any rebuilt one.
+for hybrid_model in nemotron_h falcon_h1 granitemoehybrid; do
+  install -D -m 0644 "${track_root}/src/models/${hybrid_model}.py" \
+    "${runtime_python}/sglang/srt/models/${hybrid_model}.py"
+done
 
 # Pure Mamba2 (state-spaces/mamba2-*) Stage 0 negative-control arm: install the
 # NEW config + model files, then apply the tracked arch-registration patch
@@ -113,6 +125,23 @@ if ! grep -q 'model_arch in \["Mamba2ForCausalLM"\]' \
 fi
 
 mkdir -p "$(dirname "${manifest_path}")"
+# MANIFEST (2026-09-13: 17 -> 24 entries).  Two kinds of line:
+#   (a) installed from tracked source  -- multiplex/*, configs/{mamba2,zamba2},
+#       models/{mamba2,zamba2,nemotron_h,falcon_h1,granitemoehybrid}; the sync
+#       above rewrites these, so a mismatch means the tracked source changed.
+#   (b) upstream-but-load-bearing      -- parallel_state / scheduler /
+#       server_args / model_runner_kv_cache_mixin / memory_pool (patched in
+#       place) and configs/{nemotron_h,falcon_h1,granitemoehybrid,mamba_utils}
+#       (pristine upstream, NOT installed here).  These are hashed because they
+#       decide the served geometry: configs/nemotron_h.py maps
+#       hybrid_override_pattern -> layers_block_type (which layers are attention
+#       vs mamba) and mamba_utils.py turns that into mamba_cache_per_req, i.e.
+#       how much state one request holds -- the capacity a lambda* label depends
+#       on.  Recording them cannot prevent drift, but it makes drift visible
+#       instead of silent.
+# The first 17 lines and their order are UNCHANGED, so `sha256sum -c` of a
+# pre-2026-09-13 manifest (job_907100 / job_907456) still verifies exactly the
+# same 17 files; a manifest written after this change has 7 additional lines.
 # Write via temp+rename so a concurrent reader never sees a truncated manifest.
 manifest_tmp="$(mktemp "${manifest_path}.XXXXXX")"
 trap 'rm -f "${manifest_tmp}"' EXIT
@@ -134,6 +163,13 @@ sha256sum \
   "${runtime_python}/sglang/srt/server_args.py" \
   "${runtime_python}/sglang/srt/model_executor/model_runner_kv_cache_mixin.py" \
   "${runtime_python}/sglang/srt/mem_cache/memory_pool.py" \
+  "${runtime_python}/sglang/srt/models/nemotron_h.py" \
+  "${runtime_python}/sglang/srt/models/falcon_h1.py" \
+  "${runtime_python}/sglang/srt/models/granitemoehybrid.py" \
+  "${runtime_python}/sglang/srt/configs/nemotron_h.py" \
+  "${runtime_python}/sglang/srt/configs/falcon_h1.py" \
+  "${runtime_python}/sglang/srt/configs/granitemoehybrid.py" \
+  "${runtime_python}/sglang/srt/configs/mamba_utils.py" \
   > "${manifest_tmp}"
 mv -f "${manifest_tmp}" "${manifest_path}"
 trap - EXIT

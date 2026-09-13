@@ -56,8 +56,9 @@
 #   srv_pdmux_cgON_847391.log 98/98 True; srv_pdmux_cgOFF_847391.log 0/41).
 #
 # ★ DEVIATIONS FROM scripts/r2_eval/engine_bench_runner.sh (deliberate)
-#   --context-length 4096 (runner default 16384 exceeds Zamba2-2.7B
-#   max_position_embeddings=4096 and SGLang refuses to boot without
+#   --context-length $CTX (see R2C_CTX below: DERIVED from the served model's
+#   own config, not a literal, because the runner default 16384 exceeds
+#   Zamba2-2.7B max_position_embeddings=4096 and SGLang refuses to boot without
 #   SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN); --decode-log-interval 1.
 #   PDMUX_TRACE_FORCE_PREFILL=1 (observation only, both arms) so the
 #   checker can see prefill/decode overlap in telemetry;
@@ -91,6 +92,44 @@
 #                                  # Pre-registered in x1_prereg/ (rev2).
 #   R2C_BASELINE_JOB=.../job_907100 sbatch ...  # also run the DIAGNOSTIC
 #                                  # cross-job token comparison at the end.
+#   R2C_TRACE_FORCE_PREFILL=0 sbatch ...  # X3 runner-configuration
+#                                  # certification: drop the forced telemetry
+#                                  # samples, which is what the r2_eval runner
+#                                  # actually does.  NOTE the forced samples are
+#                                  # ALSO the only instrument that makes the O
+#                                  # tier observable (prefill is ~4.9% of wall
+#                                  # time but 0.07% of SCHEDULED samples,
+#                                  # multiplexing_mixin.py:545-551), so with 0
+#                                  # the O-tier confirmation is expected to fail
+#                                  # and the verdict to be NO_VERDICT_UNREALIZED
+#                                  # BY CONSTRUCTION.  Pre-registered in
+#                                  # x3_prereg/.
+#   R2C_CTX=16384 sbatch ...       # --context-length for every boot.  DEFAULT =
+#                                  # the served model's own derived limit
+#                                  # (`python -m pdmux_eval.context_limit
+#                                  # --model "$MODEL"`, the same module
+#                                  # scripts/r2_eval/r2_eval.sbatch pre-flights
+#                                  # the campaign with), NOT a literal.
+#                                  # Zyphra/Zamba2-2.7B -> 4096, so the default
+#                                  # reproduces jobs 907100/907456 exactly;
+#                                  # pinned by tests/test_r2_correctness_ctx.py.
+#                                  # Set it explicitly for a long-context model:
+#                                  # NVIDIA-Nemotron-Nano-9B-v2-Base derives
+#                                  # 131072, which is NOT the context length the
+#                                  # r2_eval campaign resolves for the W1-W9
+#                                  # traces, and a correctness gate should
+#                                  # certify the operating point that is
+#                                  # actually measured.
+#   R2C_ATTN_BACKEND=flashinfer sbatch ...   # --attention-backend.  DEFAULT
+#                                  # triton = the 907100/907456 value.  REQUIRED
+#                                  # for NemotronH: SGLang asserts
+#                                  # "NemotronHForCausalLM does not support
+#                                  # triton attention backend" while parsing
+#                                  # server args, so the boot dies immediately.
+#                                  # Switching the backend changes the kernel,
+#                                  # so arms measured under different values are
+#                                  # NOT comparable -- this is a campaign-design
+#                                  # choice, deliberately left to the caller.
 
 set -uo pipefail
 module load conda/pytorch_2.9.1_cuda13 cuda/13.0.2 gcc/15.2.0
@@ -112,6 +151,21 @@ DSM="${R2C_DSM:-44}"
 SEED="${R2C_SEED:-1}"
 ORDER="${R2C_ORDER:-L TD L TD}"
 NKVS="${R2C_NUM_KV_SPLITS:-}"
+# `triton` is the 907100/907456 value and stays the DEFAULT so those jobs keep
+# reproducing.  It is a knob because it is not a free choice: SGLang refuses
+# NemotronHForCausalLM on the triton backend outright (server_args.py
+# `_handle_mamba_radix_cache` branch: "does not support triton attention
+# backend, as the first layer might not be an attention layer"), so a NemotronH
+# boot needs `R2C_ATTN_BACKEND=flashinfer`, which is what
+# results/longctx_conflict/probes/c_capacity.sbatch already uses for that model.
+# Changing it is a MEASUREMENT-DESIGN decision, not a porting detail: the kernel
+# changes, so results are not comparable across backends.
+ABE="${R2C_ATTN_BACKEND:-triton}"
+# 1 keeps the 907100/907456 behaviour (forced prefill-in-flight telemetry); 0 is
+# the r2_eval runner's own configuration.  Either way the SCHEDULED sample grid
+# is bit-identical -- forced records are strictly additional and tagged
+# `trace_forced=true` (multiplexing_mixin.py:552-556).
+TFP="${R2C_TRACE_FORCE_PREFILL:-1}"
 
 # Start from a clean PD-mux environment (policy_adapter.sh does the same).
 for var in $(env | grep -o '^PDMUX_[A-Z0-9_]*' || true); do unset "$var"; done
@@ -127,6 +181,29 @@ echo "=== env sync ==="
 workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh \
   "$OUT/runtime_source_manifest.sha256" || exit 2
 
+# --- BEGIN r2c ctx resolution (extracted verbatim by tests/test_r2_correctness_ctx.py) ---
+# `--context-length` used to be the literal 4096 on the server command line, so
+# pointing R2C_MODEL at a model whose max_position_embeddings differs silently
+# served a context the model does not declare (X3 audit finding D1).
+# Resolution order: R2C_CTX, else the model's own derived limit via
+# benchmarks/pdmux_eval/context_limit.py -- the same module
+# scripts/r2_eval/r2_eval.sbatch pre-flights the campaign with, so the
+# correctness gate and the measurement resolve context the same way.
+# No --trace is passed: this harness generates its own prompts, so only the
+# model limit is knowable here.  A failing derivation is fatal, never a silent
+# fallback: a wrong context length is exactly what produced defect D1.
+export PYTHONPATH="$PROJECT/workspace/engine-port/benchmarks${PYTHONPATH:+:$PYTHONPATH}"
+if [ -n "${R2C_CTX:-}" ]; then
+  CTX="$R2C_CTX"; CTX_SRC="R2C_CTX"
+else
+  CTX="$(python -m pdmux_eval.context_limit --model "$MODEL")" || {
+    echo "ERROR: could not derive a context length for $MODEL" >&2; exit 2; }
+  CTX_SRC="derived from $MODEL config"
+fi
+case "$CTX" in ''|*[!0-9]*) echo "ERROR: bad context length '$CTX'" >&2; exit 2;; esac
+echo "context_length=$CTX ($CTX_SRC)"
+# --- END r2c ctx resolution ---
+
 COMMIT=$(git -C "$PROJECT" rev-parse HEAD)
 {
   echo "job=${SLURM_JOB_ID:-local} node=$(hostname) date=$(date -Is)"
@@ -137,13 +214,17 @@ COMMIT=$(git -C "$PROJECT" rev-parse HEAD)
   echo "harness sha256:"; sha256sum "$HERE/r2_correctness_check.py" "$HERE/r2_correctness_client.py" "$HERE/r2_correctness.sbatch"
   echo "model=$MODEL dsm=$DSM seed=$SEED order=[$ORDER] config=$CONFIG"
   echo "num_kv_splits_cli=${NKVS:-<server default>} baseline_job=${R2C_BASELINE_JOB:-<none>}"
+  echo "trace_force_prefill=$TFP (907100/907456 used 1; r2_eval runner uses 0)"
+  echo "context_length=$CTX ($CTX_SRC) attention_backend=$ABE"
   # The pre-registration's arithmetic assumes this SM count and a clean
   # SGLANG_TRITON_* environment; record both rather than assuming them.
   echo "env (SGLANG|R2C):"; env | grep -E '^(SGLANG|R2C)_' | sort || echo "  (none)"
   python -c "import torch; p=torch.cuda.get_device_properties(0); print('multi_processor_count', p.multi_processor_count, p.name)"
-  if [ -d "$HERE/x1_prereg" ]; then
-    echo "pre-registration sha256:"; sha256sum "$HERE"/x1_prereg/*.md "$HERE"/x1_prereg/*.py "$HERE"/x1_prereg/*.txt
-  fi
+  for pre in "$HERE"/*_prereg; do
+    [ -d "$pre" ] || continue
+    echo "pre-registration sha256 ($(basename "$pre")):"
+    sha256sum "$pre"/*.md "$pre"/*.py "$pre"/*.txt 2>/dev/null
+  done
 } > "$OUT/provenance.txt" 2>&1
 cat "$OUT/provenance.txt"
 # Pin the exact verdict rule this job is scored under (normative text = the
@@ -153,8 +234,8 @@ python3 -c "import ast,sys; d=ast.get_docstring(ast.parse(open(sys.argv[1]).read
 
 server_cmd () {   # $1 = port
   echo python -m sglang.launch_server --model-path "$MODEL" --trust-remote-code \
-    --dtype bfloat16 --attention-backend triton --disable-radix-cache \
-    --mem-fraction-static 0.82 --max-running-requests 48 --context-length 4096 \
+    --dtype bfloat16 --attention-backend "$ABE" --disable-radix-cache \
+    --mem-fraction-static 0.82 --max-running-requests 48 --context-length "$CTX" \
     --random-seed "$SEED" --host 127.0.0.1 --port "$1" \
     ${NKVS:+--triton-attention-num-kv-splits $NKVS} \
     --enable-pdmux --pdmux-config-path "$CONFIG" --chunked-prefill-size -1 \
@@ -204,7 +285,7 @@ for ARM in $ORDER; do
     PDMUX_TELEMETRY_PATH="$OUT/tel_${LABEL}.jsonl" \
     PDMUX_RUN_ID="r2corr_${SLURM_JOB_ID:-local}_${LABEL}" \
     PDMUX_WORKLOAD_ID="r2corr_seed${SEED}" \
-    PDMUX_TRACE_FORCE_PREFILL=1 PDMUX_ENGINE_COMMIT="$COMMIT" \
+    PDMUX_TRACE_FORCE_PREFILL="$TFP" PDMUX_ENGINE_COMMIT="$COMMIT" \
     PDMUX_GREEN_READOUT=1 PDMUX_GREEN_READOUT_PATH="$OUT/green_${LABEL}.json" $TD_ENV \
     $(server_cmd "$PORT") > "$OUT/srv_${LABEL}.log" 2>&1 &
   PID=$!

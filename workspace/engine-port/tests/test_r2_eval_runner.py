@@ -36,6 +36,7 @@ PROJECT_ROOT = TRACK_ROOT.parents[1]
 BENCHMARKS = TRACK_ROOT / "benchmarks"
 SBATCH = TRACK_ROOT / "scripts" / "r2_eval" / "r2_eval.sbatch"
 RUNNER = TRACK_ROOT / "scripts" / "r2_eval" / "engine_bench_runner.sh"
+GENERATE = TRACK_ROOT / "scripts" / "r2_eval" / "generate_campaign.sh"
 ENGINE_DEV = Path(
     os.environ.get("SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python")
 )
@@ -215,24 +216,32 @@ class TestSbatchSourceText(unittest.TestCase):
         text = SBATCH.read_text(encoding="utf-8")
         self.assertIn('project_root="${PDMUX_PROJECT_ROOT:-/', text)
 
-    def test_default_model_agrees_with_runner(self):
-        """The default model is written twice; drift would silently re-break ctx.
+    def test_default_model_agrees_everywhere_it_is_written(self):
+        """The default model is written in three shells; drift re-breaks ctx.
 
-        The runner keeps its own default so it stays usable standalone, and the
+        The runner keeps its own default so it stays usable standalone, the
         sbatch needs the value before the runner is reached (to derive the
-        context length).  Two constants, one meaning -> assert they are equal.
+        context length), and generate_campaign.sh needs it to stamp the field
+        into every run record.  Three constants, one meaning -> assert equal.
+        Also pinned against the generator's Python copy, which is what actually
+        lands in campaign.json.
         """
         import re
 
         pattern = re.compile(r'PDMUX_MODEL:-([^"}]+)')
-        sbatch_default = pattern.search(SBATCH.read_text(encoding="utf-8"))
-        runner_default = pattern.search(RUNNER.read_text(encoding="utf-8"))
-        self.assertIsNotNone(sbatch_default)
-        self.assertIsNotNone(runner_default)
-        self.assertEqual(sbatch_default.group(1), runner_default.group(1))
+        values = {}
+        for path in (SBATCH, RUNNER, GENERATE):
+            found = pattern.search(path.read_text(encoding="utf-8"))
+            self.assertIsNotNone(found, f"{path.name} has no PDMUX_MODEL default")
+            values[path.name] = found.group(1)
+        self.assertEqual(len(set(values.values())), 1, values)
+
+        from pdmux_eval.campaign import DEFAULT_MODEL
+
+        self.assertEqual(set(values.values()), {DEFAULT_MODEL})
 
     def test_does_not_enable_the_context_override(self):
-        for path in (SBATCH, RUNNER):
+        for path in (SBATCH, RUNNER, GENERATE):
             for line in path.read_text(encoding="utf-8").splitlines():
                 if line.lstrip().startswith("#"):
                     continue
@@ -269,7 +278,12 @@ class _SbatchDriver(unittest.TestCase):
 
         trace_dir = self.tmp / "traces"
         _write_trace(trace_dir / "W1.jsonl", [(2048, 128), (2048, 128)])
-        runs = build_runs(["W1"], ["B4"], trace_dir, repetitions=5, seed=1)
+        # The campaign DECLARES the model (schema v2).  Before that field existed
+        # the driver had to inject it through PDMUX_MODEL; now the record is the
+        # source of truth and the env var is left unset on purpose, so these
+        # tests exercise the wiring that a real campaign uses.
+        runs = build_runs(["W1"], ["B4"], trace_dir, repetitions=5, seed=1,
+                          model=str(self.model_dir))
         self.campaign = self.tmp / "campaign.json"
         self.campaign.write_text(
             json.dumps({"schema": "pdmux.campaign/v1", "runs": [r.__dict__ for r in runs]}),
@@ -281,8 +295,9 @@ class _SbatchDriver(unittest.TestCase):
         self.env["PDMUX_CAMPAIGN"] = str(self.campaign)
         self.env["PDMUX_RESULT_ROOT"] = str(self.tmp / "out")
         self.env["PDMUX_DRY_RUN"] = "1"
-        self.env["PDMUX_MODEL"] = str(self.model_dir)
+        self.env.pop("PDMUX_MODEL", None)
         self.env.pop("PDMUX_CONTEXT_LENGTH", None)
+        self.env.pop("PDMUX_DISABLE_CUDA_GRAPH", None)
         self.env.pop("SLURM_ARRAY_TASK_ID", None)
         self.env.pop("SLURM_JOB_ID", None)
 
@@ -403,7 +418,8 @@ class TestSbatchPathResolution(_SbatchDriver):
     def test_oversized_trace_is_refused_before_any_allocation_is_used(self):
         trace_dir = self.tmp / "traces_big"
         _write_trace(trace_dir / "W2.jsonl", [(8192, 64)])
-        runs = build_runs(["W2"], ["B4"], trace_dir, repetitions=5, seed=1)
+        runs = build_runs(["W2"], ["B4"], trace_dir, repetitions=5, seed=1,
+                          model=str(self.model_dir))
         campaign = self.tmp / "campaign_big.json"
         campaign.write_text(
             json.dumps({"schema": "pdmux.campaign/v1", "runs": [r.__dict__ for r in runs]}),

@@ -89,10 +89,66 @@ python -c 'import json,os,pathlib; p=pathlib.Path(os.environ["PDMUX_CAMPAIGN"]);
 #   the allocation costs GPU-hours and produces a contaminated arm.
 # ============================================================================
 unset SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN
-# Default duplicated from engine_bench_runner.sh:10 on purpose (the runner must
+
+# ★ THE RUN RECORD DECIDES WHAT IS SERVED (campaign schema v2, 2026-09-13)
+#   campaign.json used to carry no model and no context_length, so a finished run
+#   could not say which checkpoint or which window produced its numbers; both came
+#   from the environment.  They are fields now, and the record wins.  An
+#   environment that CONTRADICTS the record is refused rather than silently
+#   preferred in either direction -- a campaign whose manifest disagrees with its
+#   boots is not a campaign, it is two experiments with one name.  A v1 record
+#   (no such keys) still runs: the reads below yield empty and the old defaults
+#   apply.
+readarray -t record_fields < <(
+  python -c 'import json,os,pathlib; d=json.loads(pathlib.Path(os.environ["PDMUX_RUN_RECORD"]).read_text()); print(d["trace_path"]); print(d.get("model") or ""); print("" if d.get("context_length") is None else d["context_length"]); print("" if d.get("cuda_graph") is None else int(bool(d["cuda_graph"])))'
+)
+# `readarray < <(cmd)` does NOT fail the script when cmd dies (the previous
+# `run_trace="$(python ...)"` did, via set -e), so check the shape explicitly
+# rather than reading unset array elements under set -u.
+if (( ${#record_fields[@]} != 4 )) || [[ -z "${record_fields[0]}" ]]; then
+  echo "ERROR: could not read the run record ${PDMUX_RUN_RECORD}" >&2
+  exit 2
+fi
+run_trace="${record_fields[0]}"
+record_model="${record_fields[1]}"
+record_ctx="${record_fields[2]}"
+record_cuda_graph="${record_fields[3]}"
+
+for pair in "PDMUX_MODEL|${record_model}" \
+            "PDMUX_CONTEXT_LENGTH|${record_ctx}"; do
+  name="${pair%%|*}"; want="${pair#*|}"
+  have="${!name:-}"
+  if [[ -n "${have}" && -n "${want}" && "${have}" != "${want}" ]]; then
+    echo "ERROR: ${name}=${have} contradicts the run record (${want})." >&2
+    echo "       Regenerate the campaign with the intended value, or unset" \
+      "${name}; a run record must describe what was served." >&2
+    exit 2
+  fi
+  if [[ -z "${have}" && -n "${want}" ]]; then
+    printf -v "${name}" '%s' "${want}"
+    export "${name}"
+  fi
+done
+
+# `cuda_graph` was a field nothing read.  It now sets the flag the runner acts
+# on, with the same refuse-on-contradiction rule: cudagraph-ON is the canonical
+# operating point, so a disagreement here is an experiment-design error.
+if [[ -n "${record_cuda_graph}" ]]; then
+  want_disable_cg=$((1 - record_cuda_graph))
+  if [[ -n "${PDMUX_DISABLE_CUDA_GRAPH:-}" \
+        && "${PDMUX_DISABLE_CUDA_GRAPH}" != "${want_disable_cg}" ]]; then
+    echo "ERROR: PDMUX_DISABLE_CUDA_GRAPH=${PDMUX_DISABLE_CUDA_GRAPH} contradicts" \
+      "the run record's cuda_graph=${record_cuda_graph}." >&2
+    exit 2
+  fi
+  export PDMUX_DISABLE_CUDA_GRAPH="${want_disable_cg}"
+fi
+
+# Default duplicated from engine_bench_runner.sh on purpose (the runner must
 # stay usable standalone); tests/test_r2_eval_runner.py asserts they agree.
+# Reached only when NEITHER the record nor the environment named a model (the
+# loop above has already made those two agree, or exited 2).
 export PDMUX_MODEL="${PDMUX_MODEL:-Zyphra/Zamba2-2.7B}"
-run_trace="$(python -c 'import json,os,pathlib; print(json.loads(pathlib.Path(os.environ["PDMUX_RUN_RECORD"]).read_text())["trace_path"])')"
 preflight_args=(--model "${PDMUX_MODEL}" --trace "${run_trace}")
 if [[ -n "${PDMUX_CONTEXT_LENGTH:-}" ]]; then
   preflight_args+=(--context-length "${PDMUX_CONTEXT_LENGTH}")
@@ -100,7 +156,7 @@ fi
 resolved_ctx="$(python -m pdmux_eval.context_limit "${preflight_args[@]}")"
 export PDMUX_CONTEXT_LENGTH="${resolved_ctx}"
 echo "pre-flight: model=${PDMUX_MODEL} context_length=${PDMUX_CONTEXT_LENGTH}" \
-  "trace=${run_trace}"
+  "cuda_graph=${record_cuda_graph:-<unset in record>} trace=${run_trace}"
 
 export PDMUX_TELEMETRY_PATH="${run_dir}/telemetry.jsonl"
 export PDMUX_ENGINE_BENCH_RUNNER="${PDMUX_ENGINE_BENCH_RUNNER:-${script_dir}/engine_bench_runner.sh}"

@@ -8,20 +8,60 @@ mkdir -p "${run_dir}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 engine_root="$(cd "${script_dir}/../.." && pwd)"
 engine_dev="${SGLANG_ENGINE_DEV:-/scratch/ehmoon/whlee/sglang_engine_dev/python}"
-model="${PDMUX_MODEL:-Zyphra/Zamba2-2.7B}"
 config="${PDMUX_R2_CONFIG:-${engine_root}/benchmarks/configs/pdmux_r2.yml}"
 port=$((32000 + (${SLURM_JOB_ID:-1} + ${SLURM_ARRAY_TASK_ID:-0}) % 20000))
 
+# The run record is the provenance of what was served, so `model`,
+# `context_length` and `cuda_graph` are read FROM IT (campaign schema v2).  A v1
+# record has none of the three; the `or ""` keeps those campaigns runnable by
+# falling through to the env/literal defaults below.
 readarray -t fields < <(
-  python -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["trace_path"]); print(d["server_seed"]); print(d["max_running_requests"]); print(d["ttft_slo_ms"]); print(d["itl_slo_ms"]); print(d["workload"])' \
+  python -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["trace_path"]); print(d["server_seed"]); print(d["max_running_requests"]); print(d["ttft_slo_ms"]); print(d["itl_slo_ms"]); print(d["workload"]); print(d.get("model") or ""); print("" if d.get("context_length") is None else d["context_length"]); print("" if d.get("cuda_graph") is None else int(bool(d["cuda_graph"])))' \
     "${run_record}"
 )
+# Same caveat as r2_eval.sbatch: a dead `python` inside the process
+# substitution leaves `fields` short instead of failing the script.
+if (( ${#fields[@]} != 9 )) || [[ -z "${fields[0]}" ]]; then
+  echo "ERROR: could not read the run record ${run_record}" >&2
+  exit 2
+fi
 trace_path="${fields[0]}"
 server_seed="${fields[1]}"
 max_running="${fields[2]}"
 ttft_slo="${fields[3]}"
 itl_slo="${fields[4]}"
 workload="${fields[5]}"
+record_model="${fields[6]}"
+record_ctx="${fields[7]}"
+record_cuda_graph="${fields[8]}"
+
+# Precedence: environment (set by r2_eval.sbatch, which has already validated it
+# against the record) > run record > literal default.  Written as two statements
+# rather than one nested expansion so the literal stays a plain default
+# expansion that tests/test_r2_eval_runner.py can compare against the copies in
+# r2_eval.sbatch and generate_campaign.sh.
+if [[ -z "${PDMUX_MODEL:-}" && -n "${record_model}" ]]; then
+  PDMUX_MODEL="${record_model}"
+fi
+model="${PDMUX_MODEL:-Zyphra/Zamba2-2.7B}"
+if [[ -z "${PDMUX_CONTEXT_LENGTH:-}" && -n "${record_ctx}" ]]; then
+  PDMUX_CONTEXT_LENGTH="${record_ctx}"
+fi
+# `cuda_graph` used to be a field nothing read.  Make it decide the flags, and
+# refuse rather than silently pick a winner when the environment disagrees: the
+# campaign manifest declares the operating point, and cudagraph-ON vs -OFF is
+# precisely the axis the canon calls the operating point.
+if [[ -n "${record_cuda_graph}" ]]; then
+  record_disable_cg=$((1 - record_cuda_graph))
+  if [[ -n "${PDMUX_DISABLE_CUDA_GRAPH:-}" \
+        && "${PDMUX_DISABLE_CUDA_GRAPH}" != "${record_disable_cg}" ]]; then
+    echo "ERROR: PDMUX_DISABLE_CUDA_GRAPH=${PDMUX_DISABLE_CUDA_GRAPH} contradicts" \
+      "the run record's cuda_graph=${record_cuda_graph} (${run_record})." >&2
+    echo "       Regenerate the campaign with/without --no-cuda-graph instead." >&2
+    exit 2
+  fi
+  PDMUX_DISABLE_CUDA_GRAPH="${record_disable_cg}"
+fi
 
 source /scratch/ehmoon/whlee/sglang_engine_venv/bin/activate
 export PYTHONPATH="${engine_root}/benchmarks${PYTHONPATH:+:${PYTHONPATH}}"
@@ -31,7 +71,14 @@ server_args=(
   --model-path "${model}"
   --trust-remote-code
   --dtype bfloat16
-  --attention-backend triton
+  # `triton` is the established R2 value and stays the default.  It is a knob
+  # because SGLang hard-refuses NemotronHForCausalLM on triton (server_args.py:
+  # "does not support triton attention backend, as the first layer might not be
+  # an attention layer"), so a NemotronH campaign must set
+  # PDMUX_ATTENTION_BACKEND=flashinfer.  Switching backends changes the kernel,
+  # so arms measured under different values are not comparable -- this is a
+  # measurement-design choice that belongs to whoever designs the campaign.
+  --attention-backend "${PDMUX_ATTENTION_BACKEND:-triton}"
   --disable-radix-cache
   --mem-fraction-static "${PDMUX_MEM_FRACTION:-0.82}"
   --max-running-requests "${max_running}"

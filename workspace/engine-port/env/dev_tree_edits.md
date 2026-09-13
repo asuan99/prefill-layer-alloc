@@ -396,3 +396,32 @@ measurement only.
     eager/deferred task interleavings + real worker threads + legacy
     bookkeeping equivalence); loop fakes shared with `test_r2_admission_latch.py`
     via `tests/pdmux_loop_fakes.py`.
+
+## Hybrid model files brought under sync + manifest (2026-09-13, GPU 0)
+
+24. `models/{nemotron_h,falcon_h1,granitemoehybrid}.py` — items 6, 8, 9 above
+    were **manual copies** and were **absent from the hash manifest**, so any
+    campaign served by NemotronH / Falcon-H1 / Granite-4 recorded no provenance
+    for the model implementation it ran — including the `forward_split_prefill`
+    methods that are the reason PD-mux SPLIT_PREFILL works on those models at
+    all. `scripts/bootstrap/sync_engine_tree.sh` now installs all three from
+    `src/models/` and hashes them.
+    - Verified **byte-identical** before the change
+      (`sha256 src/models/X.py == sha256 <dev tree>/sglang/srt/models/X.py` for
+      all three: nemotron_h `713333e8…`, falcon_h1 `3fb851ad…`,
+      granitemoehybrid `b97f8312…`), so the install is a no-op on the current
+      tree and a repair on any rebuilt one. No dev-tree bytes changed.
+    - Also added as **hash-only** (pristine upstream, NOT installed):
+      `configs/{nemotron_h,falcon_h1,granitemoehybrid}.py` and
+      `configs/mamba_utils.py`. These decide the served geometry —
+      `configs/nemotron_h.py` maps `hybrid_override_pattern` to
+      `layers_block_type` (which layer index is attention vs mamba) and
+      `mamba_utils.Mamba2StateShape` turns that into `mamba_cache_per_req`, i.e.
+      how much state one in-flight request holds, which is what a capacity
+      (lambda*) label rests on.
+    - **Manifest: 17 -> 24 entries, appended at the end.** The first 17 lines and
+      their order are unchanged, so `sha256sum -c` on a pre-2026-09-13 manifest
+      (e.g. `results/r2_correctness/job_907100/runtime_source_manifest.sha256`)
+      checks exactly the same 17 files as before. Cross-job comparisons must now
+      read as "the original 17 still agree **and** 7 new entries exist", not
+      "17/17 identical".
