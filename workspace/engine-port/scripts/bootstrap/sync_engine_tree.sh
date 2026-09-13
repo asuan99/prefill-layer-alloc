@@ -125,23 +125,33 @@ if ! grep -q 'model_arch in \["Mamba2ForCausalLM"\]' \
 fi
 
 mkdir -p "$(dirname "${manifest_path}")"
-# MANIFEST (2026-09-13: 17 -> 24 entries).  Two kinds of line:
+# MANIFEST (2026-09-13: 17 -> 24 -> 25 entries).  Two kinds of line:
 #   (a) installed from tracked source  -- multiplex/*, configs/{mamba2,zamba2},
 #       models/{mamba2,zamba2,nemotron_h,falcon_h1,granitemoehybrid}; the sync
 #       above rewrites these, so a mismatch means the tracked source changed.
 #   (b) upstream-but-load-bearing      -- parallel_state / scheduler /
 #       server_args / model_runner_kv_cache_mixin / memory_pool (patched in
 #       place) and configs/{nemotron_h,falcon_h1,granitemoehybrid,mamba_utils}
-#       (pristine upstream, NOT installed here).  These are hashed because they
-#       decide the served geometry: configs/nemotron_h.py maps
-#       hybrid_override_pattern -> layers_block_type (which layers are attention
-#       vs mamba) and mamba_utils.py turns that into mamba_cache_per_req, i.e.
-#       how much state one request holds -- the capacity a lambda* label depends
-#       on.  Recording them cannot prevent drift, but it makes drift visible
-#       instead of silent.
+#       plus layers/attention/flashinfer_backend.py (pristine upstream, NOT
+#       installed here).  These are hashed because they decide the served
+#       geometry: configs/nemotron_h.py maps hybrid_override_pattern ->
+#       layers_block_type (which layers are attention vs mamba) and
+#       mamba_utils.py turns that into mamba_cache_per_req, i.e. how much state
+#       one request holds -- the capacity a lambda* label depends on.
+#       flashinfer_backend.py was added 2026-09-13 (entry 25) because switching
+#       NemotronH off triton made it load bearing for a CONCLUSION, not just for
+#       speed: its decode plan is called with fixed_split_size=None and
+#       disable_split_kv=False outside --enable-deterministic-inference, so the
+#       adaptive split-KV schedule it picks is what the R2 correctness gate's
+#       O-tier equality rests on (newpair_prereg/PREREG_NEWPAIR_2026-09-13.md
+#       sec 3.3).  NOTE this hashes SGLang's backend wrapper, NOT the installed
+#       `flashinfer` wheel -- that version is recorded separately in the
+#       r2_correctness provenance dump.  Recording them cannot prevent drift,
+#       but it makes drift visible instead of silent.
 # The first 17 lines and their order are UNCHANGED, so `sha256sum -c` of a
 # pre-2026-09-13 manifest (job_907100 / job_907456) still verifies exactly the
-# same 17 files; a manifest written after this change has 7 additional lines.
+# same 17 files; entries 18-24 and now 25 are APPENDED, never inserted, so every
+# earlier manifest stays a prefix of every later one.
 # Write via temp+rename so a concurrent reader never sees a truncated manifest.
 manifest_tmp="$(mktemp "${manifest_path}.XXXXXX")"
 trap 'rm -f "${manifest_tmp}"' EXIT
@@ -170,6 +180,7 @@ sha256sum \
   "${runtime_python}/sglang/srt/configs/falcon_h1.py" \
   "${runtime_python}/sglang/srt/configs/granitemoehybrid.py" \
   "${runtime_python}/sglang/srt/configs/mamba_utils.py" \
+  "${runtime_python}/sglang/srt/layers/attention/flashinfer_backend.py" \
   > "${manifest_tmp}"
 mv -f "${manifest_tmp}" "${manifest_path}"
 trap - EXIT

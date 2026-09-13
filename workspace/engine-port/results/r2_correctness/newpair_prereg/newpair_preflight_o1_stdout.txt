@@ -1,0 +1,35 @@
+========================================================================
+nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base   [NEW pair (flashinfer)]
+  bg prompt tokens        : 17
+  bg_len_max (+max_new)   : 177
+  O1 threshold (K-1)*bg   : 1239   (K=8)
+    O00  prompt_tokens= 1280  margin=   +41  ok 
+    O01  prompt_tokens= 1409  margin=  +170  ok 
+    O02  prompt_tokens= 1499  margin=  +260  ok 
+    O03  prompt_tokens= 1672  margin=  +433  ok 
+    O04  prompt_tokens= 1839  margin=  +600  ok 
+    O05  prompt_tokens= 2019  margin=  +780  ok 
+    O06  prompt_tokens= 2197  margin=  +958  ok 
+    O07  prompt_tokens= 2310  margin= +1071  ok 
+  worst O1 margin         : +41 tokens (+3.3% of the threshold)
+  bg prompt could grow to : 22 tokens before O1 fails (measured 17)
+  longest request (in+out): 2358 tokens   vs R2C_CTX=16384 -> fits
+========================================================================
+Zyphra/Zamba2-2.7B   [reference: jobs 907100/907456 (triton)]
+  bg prompt tokens        : 17
+  bg_len_max (+max_new)   : 177
+  O1 threshold (K-1)*bg   : 1239   (K=8)
+    O00  prompt_tokens= 1437  margin=  +198  ok 
+    O01  prompt_tokens= 1584  margin=  +345  ok 
+    O02  prompt_tokens= 1680  margin=  +441  ok 
+    O03  prompt_tokens= 1879  margin=  +640  ok 
+    O04  prompt_tokens= 2012  margin=  +773  ok 
+    O05  prompt_tokens= 2237  margin=  +998  ok 
+    O06  prompt_tokens= 2494  margin= +1255  ok 
+    O07  prompt_tokens= 2619  margin= +1380  ok 
+  worst O1 margin         : +198 tokens (+16.0% of the threshold)
+  bg prompt could grow to : 45 tokens before O1 fails (measured 17)
+  longest request (in+out): 2667 tokens   vs R2C_CTX=16384 -> fits
+  cross-check vs job 907456 server-reported prompt_tokens: 8/8 probes agree (bg=17 on all)
+========================================================================
+PREFLIGHT_RC=0

@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=01:15:00
+#SBATCH --time=02:30:00
 #SBATCH --comment="field=efficientai;appl=pytorch"
 #SBATCH --output=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/%x_%j.out
 #SBATCH --error=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/%x_%j.err
@@ -76,8 +76,19 @@
 # both TD boots dying ~30 s after their first log line; a legacy boot spans
 # ~50 s of server log (boot + S + C) plus ~45 s of launch/teardown.  The O
 # tier adds 8 probes x ~2.5-3 s ~= 25 s per boot (~1.7 min over 4 boots).
-# Total ~= warmup 1.5 min + 4 x ~2 min ~= 10-11 min => ~0.18-0.2 GPU-h;
-# hard cap 1.25 GPU-h (wall limit).
+# Total ~= warmup 1.5 min + 4 x ~2 min ~= 10-11 min => ~0.18-0.2 GPU-h.
+#
+# WALL LIMIT 02:30:00 (was 01:15:00 until 2026-09-13).  Raising a wall cap
+# changes no measured quantity -- only queue wait -- and putting it in the
+# DIRECTIVE removes the single human failure point of having to remember
+# `sbatch --time=...`.  Budgets: 9B + R2C_INSTRUMENT=1 is ~28-35 min typical;
+# the realistic worst (all three read-outs hit their timeouts, boots normal) is
+# ~69 min; the STRUCTURAL worst, where every timeout in the script fires, is
+# ~161 min = warm-up health 900 s + read-outs 3000 s + 4 x (health 480 s +
+# client 900 s + teardown 20 s) + ~180 s overhead, i.e. 02:30:00 does NOT cover
+# it.  That branch is registered in newpair_prereg/ sec 9(f), not defended
+# against here: shortening the scored-path timeouts would change the default
+# path.
 #
 # usage:
 #   sbatch workspace/engine-port/results/r2_correctness/r2_correctness.sbatch
@@ -130,6 +141,19 @@
 #                                  # so arms measured under different values are
 #                                  # NOT comparable -- this is a campaign-design
 #                                  # choice, deliberately left to the caller.
+#   R2C_INSTRUMENT=1 sbatch ...    # ALSO run the three read-outs the lambda0
+#                                  # rule-layer audit asked for (results/r2_eval/
+#                                  # lambda0_prereg/VERDICT_lambda0_rules_
+#                                  # 2026-09-13.md sec 3-8): the boot banner
+#                                  # (I1), a (256,512) concurrency-1 floor probe
+#                                  # (I2), and two `--request-rate inf
+#                                  # --max-concurrency 64` saturation ceilings
+#                                  # (I3a/I3b).  ZERO additional boots: they run
+#                                  # against the WARM-UP server, which boots.txt
+#                                  # never names, so nothing the scorer opens is
+#                                  # touched.  DEFAULT 0 = the exact command
+#                                  # sequence jobs 907100/907456 ran.
+#                                  # Pre-registered in newpair_prereg/.
 
 set -uo pipefail
 module load conda/pytorch_2.9.1_cuda13 cuda/13.0.2 gcc/15.2.0
@@ -166,6 +190,12 @@ ABE="${R2C_ATTN_BACKEND:-triton}"
 # is bit-identical -- forced records are strictly additional and tagged
 # `trace_forced=true` (multiplexing_mixin.py:552-556).
 TFP="${R2C_TRACE_FORCE_PREFILL:-1}"
+# lambda0-audit instrumentation, DEFAULT OFF.  0 reproduces the 907100/907456
+# command sequence exactly (not one extra process is started); 1 adds the three
+# read-outs, all of them on the warm-up boot.  See the block below for why the
+# warm-up boot is the only place they can go without touching the verdict.
+INSTR="${R2C_INSTRUMENT:-0}"
+SGPT_RAW="${R2C_SGPT_RAW:-$HF_HOME/raw/ShareGPT_V3_unfiltered_cleaned_split.json}"
 
 # Start from a clean PD-mux environment (policy_adapter.sh does the same).
 for var in $(env | grep -o '^PDMUX_[A-Z0-9_]*' || true); do unset "$var"; done
@@ -216,6 +246,13 @@ COMMIT=$(git -C "$PROJECT" rev-parse HEAD)
   echo "num_kv_splits_cli=${NKVS:-<server default>} baseline_job=${R2C_BASELINE_JOB:-<none>}"
   echo "trace_force_prefill=$TFP (907100/907456 used 1; r2_eval runner uses 0)"
   echo "context_length=$CTX ($CTX_SRC) attention_backend=$ABE"
+  echo "instrument=$INSTR sgpt_raw=$SGPT_RAW"
+  # The manifest hashes sglang's flashinfer_backend.py (entry 25); the wheel it
+  # calls into is a separate artifact and is not hashed anywhere else.
+  # grep the marker, not `tail -1`: the import emits warnings on stderr and the
+  # interleaving is not deterministic.
+  python -c "import flashinfer; print('flashinfer_version', getattr(flashinfer, '__version__', '?'), flashinfer.__file__)" 2>&1 \
+    | grep -m1 flashinfer_version || echo "flashinfer_version UNAVAILABLE"
   # The pre-registration's arithmetic assumes this SM count and a clean
   # SGLANG_TRITON_* environment; record both rather than assuming them.
   echo "env (SGLANG|R2C):"; env | grep -E '^(SGLANG|R2C)_' | sort || echo "  (none)"
@@ -262,10 +299,142 @@ BASEPORT=$((30000 + (${SLURM_JOB_ID:-0} % 5000) * 6))
 # boot does not time out (cp_baseline job 902397 lost two arms to exactly
 # that; its BOOT_FAILED was a harness artifact, not an engine fact).
 echo "=== warmup boot (not scored) ==="
-env PDMUX_R2_POLICY=fixed PDMUX_R2_FIXED_DSM="$DSM" \
+# --- BEGIN r2c warmup launch (extracted verbatim by tests/test_r2_correctness_instrument.py) ---
+# D8: when the read-outs run here, their numbers are quoted as "measured at
+# D44", so the warm-up boot's SM split must be shown REALIZED and not merely
+# targeted -- this project has been bitten twice by target != realized (the
+# Stage 0 "D108 anchor was actually 16 SM").  PDMUX_GREEN_READOUT is the same
+# startup-only driver read-out every scored boot already takes.  It is added
+# ONLY when the read-outs run: with R2C_INSTRUMENT=0 the variable is empty and
+# word-splits to nothing, so the launched argv is byte-identical to the one
+# jobs 907100/907456 ran.  `green_warmup.json` is not of the form
+# green_<label>.json for any label the scored loop can emit (L<n>/TD<n>), and
+# it is written under instrument/, so the scorer cannot open it either way.
+WARM_GREEN=""
+if [ "$INSTR" = "1" ]; then
+  mkdir -p "$OUT/instrument"
+  WARM_GREEN="PDMUX_GREEN_READOUT=1 PDMUX_GREEN_READOUT_PATH=$OUT/instrument/green_warmup.json"
+fi
+env PDMUX_R2_POLICY=fixed PDMUX_R2_FIXED_DSM="$DSM" $WARM_GREEN \
   $(server_cmd "$BASEPORT") > "$OUT/srv_warmup.log" 2>&1 &
 WPID=$!
-wait_health "$BASEPORT" "$WPID" 180 && echo "  warmup up" || echo "  warmup did not come up (continuing)"
+# --- END r2c warmup launch ---
+if wait_health "$BASEPORT" "$WPID" 180; then
+  WARM_OK=1; echo "  warmup up"
+else
+  WARM_OK=0; echo "  warmup did not come up (continuing)"
+fi
+
+# --- BEGIN r2c instrumentation (extracted verbatim by tests/test_r2_correctness_instrument.py) ---
+# The three read-outs of lambda0 audit sec 3-8, at ZERO additional scored boots.
+#
+# WHY THE WARM-UP BOOT IS THE ONLY SAFE HOST.  r2_correctness_check.py opens
+# exactly five things per label in boots.txt: gen_<label>.json, srv_<label>.log,
+# tel_<label>.jsonl, green_<label>.json (main(), and boots.txt itself).  The
+# warm-up boot is never written to boots.txt, and it is started WITHOUT
+# PDMUX_TELEMETRY_PATH, so it emits no telemetry at all
+# (multiplexing_mixin.py resolves an empty trace path to "no writer").  Nothing
+# below can therefore reach the verdict.  Attaching the same load to a SCORED
+# boot would NOT be safe, because three of the per-boot checks are WHOLE-FILE
+# predicates over that boot's artifacts: B3 requires "cuda graph: True" on EVERY
+# Decode line of srv_<label>.log, B5 requires EVERY controller_decision to be
+# fixed/unlimited, and B8 requires EVERY prefill-and-decode snapshot in
+# tel_<label>.jsonl to sit on the D division.  Extra load adds rows to all three.
+#
+# NOT a verdict input, in either direction: a failed or timed-out read-out is a
+# measurement failure and is reported as one (lesson 21 / gate #21).
+if [ "$INSTR" = "1" ] && [ "$WARM_OK" = "1" ]; then
+  IOUT="$OUT/instrument"; mkdir -p "$IOUT"
+  echo "=== instrumentation (R2C_INSTRUMENT=1; warm-up server, NOT scored) ==="
+  # Line offsets into the (single, shared) warm-up server log, so each
+  # read-out's slice of the engine's own decode lines can be recovered offline.
+  i_mark () { echo "$1 $(wc -l < "$OUT/srv_warmup.log" | tr -d " ")" >> "$IOUT/I_log_offsets.txt"; }
+  : > "$IOUT/I_log_offsets.txt"
+  # I1 -- RECORDED, never judged.  ★The banner's `max_mamba_cache_size: 48` /
+  # `max_running_requests=48` are NOT measurements: with --disable-radix-cache
+  # and --max-running-requests 48 the engine ASSIGNS the first
+  # (model_runner_kv_cache_mixin.py:223-230) and pins the second
+  # (:857-876 with :390-392 returning ratio 1), independently of ctx and
+  # mem-fraction; job 905835's 48 is the same identity.  What this read-out
+  # actually measures is `max_total_num_tokens` and `available_gpu_mem`, which
+  # come from mem_get_info at runtime -- the pre-registered forecast is F2'.
+  # See newpair_prereg/ NP-7' before quoting any of this.
+  grep -hE "Mamba Cache is allocated|KV Cache is allocated|max_total_num_tokens=" \
+    "$OUT/srv_warmup.log" | tee "$IOUT/I1_banner_warmup.txt"
+  # D8: the split the read-outs below actually ran on, REALIZED not targeted.
+  # `sm_counts` is the engine's target table; green_warmup.json is what the
+  # driver reports the green contexts really got.
+  grep -m1 "sm_counts (prefill_sm, decode_sm)" "$OUT/srv_warmup.log" \
+    | tee -a "$IOUT/I1_banner_warmup.txt"
+  if [ -s "$IOUT/green_warmup.json" ]; then
+    python3 -c "
+import json, sys
+for g in json.load(open(sys.argv[1])).get('groups', []):
+    print('  green idx=%s target=(%s,%s) realized=(%s,%s) null=(%s,%s)' % (
+        g.get('stream_index'), g.get('target_prefill_sm'), g.get('target_decode_sm'),
+        ((g.get('prefill') or {}).get('green_sm') or {}).get('smCount'),
+        ((g.get('decode') or {}).get('green_sm') or {}).get('smCount'),
+        (g.get('prefill') or {}).get('green_ctx_is_null'),
+        (g.get('decode') or {}).get('green_ctx_is_null')))
+" "$IOUT/green_warmup.json" | tee "$IOUT/I1_green_warmup.txt"
+  else
+    echo "WARMUP_GREEN_READOUT_MISSING" | tee "$IOUT/I1_green_warmup.txt"
+  fi
+  # I2 -- shape-A floor: 8 x (256 in, 512 out) strictly one at a time, the same
+  # recipe probe C used for its discarded warm-up (c_capacity.sbatch:139-145).
+  # Gives the 256-token prefill TTFT floor and the B=1 ITL.
+  i_mark I2_start
+  timeout 600 python -m sglang.bench_serving --backend sglang --model "$MODEL" \
+    --host 127.0.0.1 --port "$BASEPORT" \
+    --dataset-name random --dataset-path "$SGPT_RAW" --tokenize-prompt \
+    --random-input-len 256 --random-output-len 512 --random-range-ratio 1.0 \
+    --num-prompts 8 --max-concurrency 1 --request-rate inf --seed 7 \
+    --output-details --output-file "$IOUT/I2_shapeA_conc1.jsonl" \
+    > "$IOUT/I2_shapeA_conc1.log" 2>&1
+  echo "I2_rc=$?"; i_mark I2_end
+  grep -E "Successful requests|Benchmark duration|Total input tokens|Total generated tokens|Mean TTFT|Median TTFT|Median ITL|Concurrency:" \
+    "$IOUT/I2_shapeA_conc1.log"
+  # I3 -- closed-loop saturation ceiling for the two shapes the first campaign
+  # needs ((256,512) = W3 and W4's decode phase; (8192,64) = W4's prefill
+  # phase).  `--request-rate inf` makes get_request skip every sleep
+  # (bench_serving.py:943-945), so there is NO Poisson realisation and the
+  # arrival-realisation factor 1/Ebar cannot appear.
+  # ★ THIS IS AN UPPER-BOUND PROBE, NOT lambda*.  Closed-loop 64 is not
+  # open-loop Poisson: probe C's saturated d44 cell reported Concurrency 24.08
+  # with 22.75 of it merely waiting, so a closed loop can hold more admitted
+  # work and read a HIGHER ceiling.  The client-bottleneck check is NOT the
+  # `Concurrency:` line -- see the grep after the loop for why.
+  for I_SPEC in "I3a_shapeA 256 512 900" "I3b_shapeB 8192 64 1500"; do
+    read -r I_NAME I_IN I_OUTLEN I_TMO <<< "$I_SPEC"
+    i_mark "${I_NAME}_start"
+    timeout "$I_TMO" python -m sglang.bench_serving --backend sglang --model "$MODEL" \
+      --host 127.0.0.1 --port "$BASEPORT" \
+      --dataset-name random --dataset-path "$SGPT_RAW" --tokenize-prompt \
+      --random-input-len "$I_IN" --random-output-len "$I_OUTLEN" --random-range-ratio 1.0 \
+      --num-prompts 300 --request-rate inf --max-concurrency 64 --seed 41 \
+      --output-details --output-file "$IOUT/${I_NAME}.jsonl" \
+      > "$IOUT/${I_NAME}.log" 2>&1
+    echo "${I_NAME}_rc=$?"; i_mark "${I_NAME}_end"
+    grep -E "Successful requests|Benchmark duration|Request throughput|Total input tokens|Total generated tokens|Concurrency:|Median TTFT|P99 TTFT|Median ITL" \
+      "$IOUT/${I_NAME}.log"
+  done
+  # ★ CLIENT-BOTTLENECK CHECK (confound #7).  NOT the client's `Concurrency:`
+  # line: under `--max-concurrency 64` that metric counts requests from send to
+  # completion, queueing included, so a closed loop pins it near 64 BY
+  # CONSTRUCTION and it carries no information (probe C's OPEN-loop saturated
+  # d44 cell read 24.08 with 22.75 of it merely waiting).  The informative
+  # quantity is the ENGINE's own admitted batch: if `#running-req` reaches the
+  # mamba-cache cap the engine is the binding constraint; if it plateaus well
+  # below while 64 requests are outstanding, the bottleneck is upstream.
+  grep -oE "#running-req: [0-9]+" "$OUT/srv_warmup.log" | awk '{print $2}' \
+    | sort -n | tail -1 > "$IOUT/I3_max_running_req.txt"
+  echo "engine max #running-req during read-outs: $(cat "$IOUT/I3_max_running_req.txt")"
+  cat "$IOUT/I_log_offsets.txt"
+elif [ "$INSTR" = "1" ]; then
+  echo "INSTRUMENT_SKIPPED_WARMUP_DOWN"   # measurement failure, not a verdict
+fi
+# --- END r2c instrumentation ---
+
 stop_server "$BASEPORT" "$WPID"
 
 : > "$OUT/boots.txt"
@@ -305,6 +474,20 @@ for ARM in $ORDER; do
   kill -0 "$PID" 2>/dev/null || echo "SERVER_DIED_DURING_CLIENT boot=$LABEL" | tee -a "$OUT/BOOT_FAILURES.txt"
   stop_server "$PORT" "$PID"
 done
+
+# I1, second pass: the same banner from EVERY boot, warm-up and scored alike.
+# Pure `grep` over logs that already exist; it starts no process on the GPU and
+# writes only under instrument/, which the scorer never opens.
+if [ "$INSTR" = "1" ]; then
+  mkdir -p "$OUT/instrument"
+  echo ""
+  echo "=== instrumentation I1: boot banners, every boot (read-only) ==="
+  for I_LOG in "$OUT"/srv_*.log; do
+    [ -e "$I_LOG" ] || continue
+    echo "--- $(basename "$I_LOG")"
+    grep -hE "Mamba Cache is allocated|KV Cache is allocated|max_total_num_tokens=" "$I_LOG"
+  done | tee "$OUT/instrument/I1_boot_banners.txt"
+fi
 
 echo ""
 echo "=== correctness check ==="
