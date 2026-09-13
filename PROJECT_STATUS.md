@@ -1,6 +1,230 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-09-13(2)(doc-steward — ★**세 번째 사용자 결정**
+최종 갱신: 2026-09-13(3)(doc-steward — ★캠페인 0단계(λ*)
+사전등록 `NO-GO` 등재[死因 N2+N3, GPU 0·미실행] + 감사 파생
+사실 7건 등재[게이트 #6 미충족이 최우선] + 2026-09-13(2) 배너의
+W4 decode phase 오독 정정[(64,512)→(256,512)] + 신규 게이트
+5건(#196–200) + `EXPERIMENT_ROADMAP.md` P2에 열린 항목 신설
+[단일 λ*가 W4 phase 둘을 동시에 파라미터화 못 함, 사용자 결정
+대기]). 새 성능 판정 0건·GPU 0(감사는 기존 원자료+CPU만 사용,
+캠페인 자체 미실행)·Claim D/E 등급 불변(둘 다 미검증)·HE0·
+정책 순위·stake #1 전부 불변. `CONSENSUS.md` rev72→**rev73**
+(판단 근거는 아래 "F. 정본 반영" 참조). **커밋 금지**(핸드오프
+커밋에 함께 묶인다).
+
+## A. ★정정: 2026-09-13(2) 배너의 W4 decode phase 오독
+
+아래 "이전" 절(2026-09-13(2) "C")이 "W4 = prefill phase
+(8192,64) + decode phase (64,512)"라고 적었는데 **거짓이다**.
+λ0 사전등록 규칙층 감사(claims-auditor, GPU 0)가
+`benchmarks/pdmux_eval/workloads.py:159-160`을 실제로 실행해
+확인했다:
+
+```
+W4 n=96
+   (in=256, out=512) phase=decode   n=48
+   (in=8192, out=64) phase=prefill  n=48
+```
+
+⇒ **W4 decode phase = (256, 512)**이고 저장소 전체에 (in 64,
+out 512)는 **존재하지 않는다**. 오독 출처 = `WorkloadSpec.
+output_distribution = "64/512 by phase"`(phase별 **출력** 길이
+서술)를 입력 길이로 읽은 것 — `reports/paper/EXPERIMENT_
+ROADMAP.md`의 워크로드 정의표(`W4 | W2형/W3형 30초 phase를 3
+cycles`)는 애초에 옳았고, 잘못은 2026-09-13(2) 세션의 서술
+추가분에만 있었다. ★**shape (256,512)는 W3 전부이자 W4 decode
+phase 그 자체이며 근사가 아니다** — 1차 캠페인(Claim D)에
+필요한 shape는 3개가 아니라 **2개뿐**: (256,512)[=W3=W4 decode
+phase]·(8192,64)[=W4 prefill phase]. 이 정정을
+`EXPERIMENT_ROADMAP.md`·`CLAIM_EVIDENCE_MATRIX.md` Claim D 행·
+이 문서 아래 "이전"(2026-09-13(2)) 절 원문에 **역사 보존 + 정정
+표시**로 부착했다(삭제 없음).
+
+## B. 캠페인 0단계(λ\*) 사전등록 `NO-GO`(GPU 0, 미실행)
+
+판정서 원문 전사 = `workspace/engine-port/results/r2_eval/
+lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md`(358행, sha
+`fe75287b…`). 대상 사전등록 `PREREG_LAMBDA0_2026-09-13.md`(sha
+`fa4bb517…`, **미실행**).
+
+**死因 2건**:
+
+- **N2(반전 확인, 수치 있음)**: ①client `--seed`가 미등록 —
+  `bench_serving.py:1706 np.random.seed(args.seed)` +
+  `:948 np.random.exponential(1/rate)`이므로 비포화 셀의
+  achieved/offered는 **포화도가 아니라 도착 실현 계수 `1/Ē`**다.
+  905835 원자료 **12/12 셀 전부** 도착 구간이 명목보다 15–18%
+  짧았다(평균 −2.0σ) ⇒ ach/off 1.03–1.19. 다른 seed 시뮬레이션
+  (40개)에서는 용량의 53%인 셀이 "포화" 오라벨(seed 24)되거나
+  0.90<x<0.95 사각지대에 떨어져 브래킷이 성립 불가(seed 18/34)
+  — **실패율 15–28%**. ★**N을 늘려도 못 고친다**:
+  `1.96/√(N−1)≤0.05`는 **N≥1537**을 요구한다. ②shape A 사다리
+  4점의 값이 등록에 적혀 있지 않다 — R1은 최저·최고점만 쓰므로
+  사다리 선택만으로 `BRACKETED↔NOT_BRACKETED`가 뒤집히는 예시
+  3건이 제시됐다.
+- **N3(예측 도달 불가)**: 위 "A"의 오독 때문에 "두 shape의
+  λ\*는 5% 이내" 예보의 **정의역이 공집합**이었다.
+
+제출 차단 운영 결함 3건(전부 GPU 0): `UNRESOLVED`가 live
+경로에서 **도달 불가**(glob이 결손 셀을 건너뛰어 boot 실패가
+`KNEE_NOT_BRACKETED`로 나온다 — 등록 문안과 코드 불일치, 교훈
+21·게이트 #21 위반) · `rec["shape"]`가 기존 analyzer 출력에
+없어 **KeyError** · **sbatch·per-cell analyzer 자체가
+부존재**(제출할 실행체가 없었다). 조건 D1–D15(전부 GPU 0)
+전문은 판정서 §4.
+
+★이 `NO-GO`는 "설계가 틀렸다"가 아니다 — **측정 격자와 승계된
+규칙(R1/R5)은 건강함을 감사가 확인**했다(보관 cell JSON 9개를
+직접 투입해 `C_LABEL.json`의 R1·R5를 비트 단위 재현). D1–D15
+적용 후 재감사에서 `GO`/`GO-with-caveats`가 가능하다고 본다.
+
+## C. ★이 감사가 만든 사실 7건(정본 가치가 큰 순서)
+
+1. ★★**이 단계는 방법론 게이트 #6("용량 먼저 측정")을 닫지
+   못한다.** 게이트 #6이 요구하는 것은 **지표 절벽 대비** 용량인데
+   λ\*_throughput은 그 절벽을 위치시키지 않는다. 905835 d44
+   원자료를 **정본 goodput 술어**(TTFT≤3000ms ∧ 요청-내부
+   token-ITL p95≤60ms)로 재채점: **0.59·λ\*에서 goodput
+   53.8%·0.89·λ\*에서 5.8%·1.27·λ\*에서 0.8%** ⇒ **λ\*_SLO
+   < 0.59×λ\*_throughput**(비 추정 2.3–3.4×). **"0.60·λ\*"는
+   이미 SLO 바깥이다.** `EXPERIMENT_ROADMAP.md:652`의 정본
+   정의는 "sustainable **SLO** rate"인데 이 사전등록이
+   **throughput 포화로 교체**했다 — 이 교체를 **정정으로
+   등재**한다(아래 "D" 필수 병기 (2)).
+2. ★★**두 λ\*는 W4를 파라미터화하지 못한다 — 상호 배타다**:
+   λ\*=0.675 주입 → prefill phase 0.79× ✓ / decode phase
+   **0.21–0.25×** ✗; λ\*=2.1 → decode 0.79× ✓ / prefill
+   **2.47×** ✗; 기본값 4 → prefill **4.7×**. **어떤 단일
+   스칼라도 두 phase를 동시에 0.80으로 만들 수 없다** ⇒
+   **Claim D의 P2가 W4를 쓰려면 워크로드 정의 자체(phase별
+   독립 λ\*)를 고쳐야 한다** — `EXPERIMENT_ROADMAP.md` P2 절에
+   **사용자 결정 대기**로 등재(아래 "F").
+3. **λ\*(A) ≈ 2.1–2.5 req/s**(절대 경계 [1.08, 7.15]) — 엔진
+   로그 decode step 회귀 `step(B) = 19.82 + 0.5174·B ms`와
+   구속 자원(`max_mamba_cache_size = max_running_requests = 48`;
+   KV는 `max_total_num_tokens = 2,618,868`로 6.6× 과공급)에서
+   유도. 권고 사다리 shape A **{1.1, 1.8, 3.0, 4.9, 8.0}**,
+   shape B **{0.45, 0.62, 0.85, 1.15}**(사전등록 ×1.2 상단은
+   자기 예보 방향에서 깨졌다 — probe C 실제 상단은 ×1.30).
+4. **ctx 16384 / mem 0.82는 용량을 바꾸지 않는다**(구속이
+   mamba cache 48이고 KV 6.6× 과공급) ⇒ 앵커 0.675의
+   provisional 강등은 **충분하다**.
+5. **R4(MODEL_HOLDS)의 닫힌 형태는 항등식이었다** —
+   `pred = μ_ach·out·itl_load`로 환원되어 추정량(λ\*)을 입력으로
+   요구, `obs/pred`는 사실상 `mean_itl/itl_p50`를 검정했다. λ0이
+   R4를 승계하지 않은 것은 **옳다**(되살리지 말 것).
+6. **R1/R5 승계는 CONFIRMED** — 보관 cell JSON 9개 직접 투입
+   재현(d16 0.9331188685063582 등, `C_LABEL.json`과 비트 단위
+   일치).
+7. **우선순위 권고 변경**: **새 모델 correctness 게이트 +
+   `--request-rate inf` 2셀(≈0.3–0.4 GPU-h)을 먼저** 산다 —
+   `bench_serving.py:943-945`가 `rate == inf`에서 sleep을 전부
+   건너뛰어 Poisson 실현이 존재하지 않으므로 **N2 死因이
+   구조적으로 소멸**한다. ★감사자 자기 한계 고지 승계:
+   closed-loop(concurrency 64) 포화율이 open-loop와 같다고 볼
+   근거와 다를 근거가 둘 다 있으므로(905835 d44는 Concurrency
+   24.08 중 22.75가 대기) **λ\*의 대체가 아니라 사다리 양 끝을
+   고정하는 상한 프로브로만** 등록해야 한다.
+
+## D. 인용 금지 Q1–Q5 + 필수 병기 6항(판정서 §5·§6 문안 그대로)
+
+> **Q1** — 이 캠페인 0단계는 어떤 결과가 나오더라도 방법론
+> 게이트 #6을 닫지 못한다. 905835 원자료를 정본 술어로
+> 재채점하면 shape B(8192-in)의 SLO 절벽은 0.59·λ\*_throughput
+> 아래에 있다(0.59×에서 53.8%, 0.89×에서 5.8%, 1.27×에서
+> 0.8%). "λ\*를 측정했으므로 W3/W4의 부하 라벨이 참이 되었다"는
+> 문장은 **쓸 수 없다**.
+
+> **Q2** — λ\*(B1)의 측정은 (Nano-9B-v2, flashinfer) 쌍의 R2
+> correctness를 **어느 정도도 확인하지 않는다**. 이 단계와 job
+> 905835는 legacy 루프+fixed split만 발화시켰고 `PDMUX_TRUE_
+> DUAL_WORKER`는 이 모델에서 **한 번도 실행된 적이 없다**.
+> 907100·907456·X1의 결론은 (Zamba2-2.7B, triton) 한정으로
+> 동결이고, X1의 민감도 시연은 `triton_attention_num_kv_splits`가
+> flashinfer에 없으므로 이식되지 않는다.
+
+> **Q3** — 이 단계가 내놓는 두 λ\*는 W4를 파라미터화하지
+> 못한다 — 상호 배타적이다(위 "C-2"). W4를 Claim D의 P2에서
+> 쓰려면 워크로드 정의 자체(phase별 독립 λ\*)를 고쳐야 하며,
+> 그것을 이 단계가 주지 않는다.
+
+> **Q4** — "B1의 용량이 시스템의 용량"이 아니다. 워크로드
+> 이름(W8 "near saturation", W9 "overload")은 **B1에서만** 참인
+> 서술이고, B4에서 같은 trace는 자기 용량의 0.2×일 수도 5×일
+> 수도 있다. 워크로드 이름을 regime 서술로 인용하는 것을
+> 금지한다.
+
+> **Q5** — shape A·B 두 shape를 쟀다는 것이 W1·W5·W6·W7·W8·W9의
+> 부하 라벨을 고치지 않는다. 그 워크로드들의 shape는 미측정으로
+> 남으며, λ\*는 shape 의존적이다.
+
+**필수 병기 6항**(결과가 나오면 문자 그대로 붙인다 — 이번
+회차는 미실행이므로 선반영만): (1) λ\*는 B1(legacy, fixed D44)
+한정 throughput 포화율이다 — split을 바꾸면 같은 모델·같은
+shape에서 5× 변한다(D16 0.933/D44 0.675/D92 0.187). B4의 λ\*는
+측정되지 않았다. (2) 정본 술어 goodput은 이 단계에서 측정되지
+않았다 — TTFT·ITL SLO를 쓰지 않는다. (3) 상단 셀의 TTFT/ITL
+백분위는 인용 불가(의도적 과포화 셀, 지연 수치가 아니라 처리율
+plateau용). (4) `switch_count`·split 체류분포는 이 단계의
+판정에 쓰이지 않았다(fixed split, 동적 제어 없음). (5) 포화
+셀의 achieved는 도착 실현에 무관하나(λ\*는 robust), 비포화
+셀의 ach/off는 도착 실현 계수다(905835에서 1.03–1.19, 12/12
+동일 방향). (6) 이 단계는 `sglang.bench_serving`(Poisson)을
+쓰고 캠페인은 `pdmux_eval.trace_loadgen`(고정 도착시각,
+`input_ids=[1]*n`)을 쓴다 — λ\*는 다른 하네스에서 측정된
+상수로 캠페인을 파라미터화한다.
+
+## E. 신규 방법론 게이트 5건(#196–200)
+
+번호 이어서(직전 #195). 전문은 이 문서 아래 "방법론 게이트"
+목록(신규 항목 196–200) 참조, 요지:
+
+- **#196** — 비포화 셀의 achieved/offered는 포화도가 아니라
+  도착 실현 계수다(Poisson 부하에서 명목 rate를 분모로 쓰는
+  문턱 규칙은 client seed가 사다리 전체에 공통모드로 들어가
+  실현 가능한 N으로는 신뢰 도달이 불가능하다, N≥1537 요구).
+  대응 `CONSENSUS.md` §3 항목216.
+- **#197** — 사다리 규칙이 최저·최고점만 쓰면 중간점은 예보가
+  아니다 — 사다리 값을 수치로 등록하지 않으면 그 예보는 자유
+  표면이고 판정을 뒤집을 수 있다. 대응 §3 항목217.
+- **#198** — 예보의 정의역은 생성기를 실행해 확인하라 — 워크로드
+  명세 문자열(예: `output_distribution`)을 입력 shape로 읽으면
+  예보가 공집합 위에 선다. 대응 §3 항목218.
+- **#199** — 닫힌 형태 추정식이 자기 추정량(예측 대상 자체)을
+  입력으로 요구하면 그것은 항등식이지 예측 모델이 아니다(R4
+  유형 재발). 대응 §3 항목219.
+- **#200** — `UNRESOLVED`(측정 실패) 경로가 live 코드에서 실제로
+  도달 가능한지 주입 실험으로 확인하라 — glob 기반 셀 수집은
+  결손 셀을 조용히 빼고 규칙 판정(실패가 아닌)을 내보낼 수 있다.
+  대응 §3 항목220.
+
+## F. 정본 반영
+
+`CONSENSUS.md` rev72→**rev73**(§3 항목216–220 신설[게이트
+#196–200]) — 판단 근거: 신규 방법론 게이트 5건은 그 자체로
+CONSENSUS rev 사유(기존 선례)이며, 여기에 (1) 캠페인 0단계
+`NO-GO`(死因 2건, GPU 0) (2) 정본 게이트 #6 미충족이라는
+1순위 사실 (3) W4 상호배타 발견(Claim D P2 열린 항목) (4)
+2026-09-13(2) 배너의 사실 오류 정정을 더해 단순 게이트 등재보다
+무거운 갱신이다. `reports/paper/{CLAIM_EVIDENCE_MATRIX,
+EXPERIMENT_ROADMAP}.md` 갱신(Claim D 행·"공통 방법" λ\* 절·P2
+열린 항목: **"단일 λ\*가 W4의 두 phase를 동시에 파라미터화할 수
+없음 — 워크로드 정의 변경 여부 사용자 결정 대기"**), `MEMORY.md`
+포인터 갱신, `memory/{deconfound-measurement-lessons,
+slo-aware-scheduling-track}.md` 갱신(항목 신설 — topic 파일
+내부 순번, `CONSENSUS.md` §3 항목과는 별개 축). **커밋 금지**
+(이번 등재는 문서 작업만이며 핸드오프 커밋에 함께 묶인다).
+
+GPU 장부: 이 배너 전체 **GPU 0**(감사는 기존 원자료+CPU만
+사용, 캠페인 자체 미실행). `longctx_conflict` 15.42 GPU-h·R2
+correctness 0.43 GPU-h 장부 둘 다 불변.
+
+**overclaim 금지**: λ\*는 **측정되지 않았다**(사전등록이
+`NO-GO`). 905835의 값(D16 0.933/D44 0.675/D92 0.187)은
+**8192-in/96-out·ctx 8192·mem 0.80** 조건의 기존 측정이며 새
+캠페인의 λ\*가 아니다.
+
+이전: 2026-09-13(2)(doc-steward — ★**세 번째 사용자 결정**
 (attention 백엔드 `triton`→`flashinfer` 전환) + engine-porter의
 Nano-9B-v2-Base **모델 지원 검증 `GO`**(job 905835 재인용, GPU 0
 이 세션) + λ*가 이 모델에서 **이미 측정돼 있음**을 확인(arm별
@@ -111,6 +335,16 @@ D): **D16 0.933 req/s · D44 0.675 · D92 0.187**(전부
   96-out)은 **W4의 prefill phase에 가깝고 W3와는 무관**이다
   (256-in은 prefill이 싸고 512-out이 지배 ⇒ λ*가 훨씬 높을
   것).
+
+  ★★**정정(2026-09-13(3), doc-steward, λ0 사전등록 규칙층 감사
+  §S8/N3 — 이 문서 최상단 배너 "A" 절 참조)**: 위 "decode phase
+  (64, 512)"는 **오독이다**. `workloads.py:159-160`을 실행해
+  확인하면 W4 decode phase = **(256, 512)**이고, 이는 W3
+  전부와 **정확히 같다**(근사 아님) — 저장소 전체에 (in 64,
+  out 512)는 존재하지 않는다. ⇒ 1차 캠페인에 필요한 shape는
+  3개가 아니라 **2개뿐**: (256,512)[=W3=W4 decode phase]·
+  (8192,64)[=W4 prefill phase]. 기존 측정(8192-in/96-out)이
+  "W4 prefill phase에 가깝다"는 서술 자체는 옳다.
 - 비용 감각: job 905835는 12 cell에 **1.11 GPU-h**(≈5.6분/
   cell). 참조 arm 1개 × 2 shape × 3–4 rate point ≈ **0.6–0.75
   GPU-h** 추정.
@@ -11742,3 +11976,13 @@ CONSENSUS §3 항목181과 대응]. 이 4건은 기존 #119–157과 전수 대�
 194. ★★★**(2026-09-13, X3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-X3-5, 신설 — 우선순위 규율) "트랙을 해제한다"는 주장은 그 트랙의 블로커 목록을 열거하고 각각 제거되는지 대조한 뒤에만 쓰라.** 감사자 자신의 OS §8이 X3가 성능 트랙을 연다고 적었으나 블로커 3개(W2/4/5 ctx·B2/8 oracle 산출물·B6 hybrid profile 산출물) 중 실제로는 **0개**가 제거된다(자기 철회, 3회차 누적). 부수로 정본의 "약 270 run 불가"는 중복 계수였다(고유 225/가능 180). 대응 `CONSENSUS.md` §3 항목214(신설). 상세 `.../x3_prereg/VERDICT_x3_rules_2026-09-13.md` §10·§14(G-X3-5).
 
 195. ★★★**(2026-09-13(2), engine-porter + doc-steward, GPU 0 — provenance manifest 확장에서 도출) 서빙한 모델의 구현 파일이 provenance manifest에 없으면 그 캠페인은 모델 축에서 귀속 불가다.** job 905835(`longctx_conflict` 트랙, 2026-09-09, `results/longctx_conflict/probes/c_905835/runtime_source_manifest.sha256`)는 17항목이고 `models/` 아래 항목은 `mamba2.py`·`zamba2.py`뿐인데, 이 job은 `nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base`(`NemotronHForCausalLM`)를 12 boot 서빙했다 — 서빙된 모델 구현의 provenance가 **0**이었다(`sync_engine_tree.sh:94`가 그 파일을 "수동 복사"라고 적어 매니페스트 생성 대상에서 제외했었음). 커밋 `87213a9`가 `models/{nemotron_h,falcon_h1,granitemoehybrid}.py`를 설치 경로로 옮기고 `configs/{nemotron_h,falcon_h1,granitemoehybrid}.py`·`configs/mamba_utils.py`를 해시 전용으로 추가해 매니페스트를 17→24항목으로 넓혔다(신규 7줄은 뒤에 append, 기존 17줄·순서 바이트 동일). 해시 전용 근거: `configs/nemotron_h.py`가 `hybrid_override_pattern → layers_block_type`을, `mamba_utils.Mamba2StateShape`가 그것을 `mamba_cache_per_req`로 바꾸므로 λ* 라벨이 딛고 선 값이다. ★**읽기 규칙**: 2026-09-13 이전 job의 manifest는 같은 17파일을 검증하고 이후 job은 7줄이 더 많다 — 교차-잡 서술은 "기존 17은 여전히 일치 + 신규 7항목 존재"로 쓰고 "17/17 동일"로 쓰지 않는다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #195(본 항목). 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-13(2)) "D" 절, 커밋 `87213a9` 메시지.
+
+196. ★★★**(2026-09-13(3), 캠페인 0단계[λ*] 사전등록 규칙층 감사, claims-auditor, GPU 0, 死因 N2) 비포화 셀의 achieved/offered는 포화도가 아니라 도착 실현 계수다 — Poisson 부하에서 명목 rate를 분모로 쓰는 문턱 규칙은 client seed가 사다리 전체에 공통모드로 들어가 실현 가능한 N으로는 신뢰 도달이 불가능하다.** `bench_serving.py:1706 np.random.seed(args.seed)` + `:948 np.random.exponential(1/rate)`이므로 비포화 셀의 `achieved/offered`는 서비스 포화도가 아니라 `1/Ē`(Ē=도착 간격 표본평균)다 — seed가 프로세스당 한 번 고정돼 사다리 전체에 공통모드로 들어가고 셀을 늘려도 평균되지 않는다. job 905835 원자료 12/12 셀 전부 같은 방향(−15~−18%, 평균 −2.0σ)으로 치우쳐 있었고, seed 40개 모의에서 저측(0.95 문턱) 실패율이 15–28%였다(N=90/150/300). `1.96/√(N−1)≤0.05`가 요구하는 N≥1537은 이 프로젝트의 실현 가능한 boot 예산 밖이다. 실무 규칙: Poisson 도착 부하에서 명목 rate 대비 achieved 비를 포화 판정 문턱으로 쓰는 모든 사전등록은 client seed를 등록하거나(그래도 N2 소멸 안 됨) `--request-rate inf` 같은 결정적 포화 프로브로 그 판정을 대체해야 한다. 대응 `CONSENSUS.md` §3 항목216(신설). 상세 `workspace/engine-port/results/r2_eval/lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md` §1(S1)·§2(N2).
+
+197. ★★★**(2026-09-13(3), 캠페인 0단계[λ*] 사전등록 규칙층 감사, claims-auditor, GPU 0, 死因 N2) 사다리 규칙이 최저·최고점만 쓰면 중간점은 예보가 아니다 — 사다리 값을 수치로 등록하지 않으면 그 예보는 자유 표면이고 판정을 뒤집을 수 있다.** λ0 등록 §2는 "shape A rate 4점(앵커가 없어 넓게)"라고만 적고 네 수를 적지 않았다. R1 브래킷 판정은 x_min·x_max에만 의존하므로 중간 2점은 애초에 판정에 기여하지 않는데도, 등록되지 않은 4점 전체가 자유 표면으로 남아 있으면 사후에 어떤 사다리를 고르느냐로 `BRACKETED↔NOT_BRACKETED`가 뒤집힌다(감사자가 λ*(A)≈2.1 가정하에 3가지 사다리 후보로 반전 예시 3건을 실제로 계산해 확인). 실무 규칙: rate 사다리를 쓰는 사전등록은 사다리의 모든 점을 숫자로 등록하고, 등록된 문턱과 그 수로 계산되는 브래킷 창을 사전등록 문서 자체에 명시하라(그 계산이 향후 원자료로 검증 가능해야 한다). 대응 `CONSENSUS.md` §3 항목217(신설). 상세 `.../lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md` §1(S2)·§2(N2).
+
+198. ★★★**(2026-09-13(3), 캠페인 0단계[λ*] 사전등록 규칙층 감사, claims-auditor, GPU 0, 死因 N3) 예보의 정의역은 생성기를 실행해 확인하라 — 워크로드 명세 문자열을 입력 shape로 읽으면 예보가 공집합 위에 선다.** λ0 등록 §3은 "W4의 decode phase는 (64, 512)이고 이 단계는 (256, 512)로 근사한다"고 적었으나, `benchmarks/pdmux_eval/workloads.py:159-160`을 실제로 실행하면 W4 decode phase는 **(256, 512)** 그 자체다 — (in 64, out 512)는 저장소 어디에도 없다. 오독의 출처는 `WorkloadSpec.output_distribution = "64/512 by phase"`(phase별 **출력** 길이 서술)를 입력 shape로 읽은 것이었다. 이 오독은 이 사전등록 이전에 메인 세션의 다른 등재(`PROJECT_STATUS.md`·`CONSENSUS.md`·`EXPERIMENT_ROADMAP.md`·`CLAIM_EVIDENCE_MATRIX.md`의 2026-09-13(2) 배너)에도 이미 승계돼 있었다 — 정본 문서가 여러 개 동시에 같은 오독을 반복해도 코드 실행 전에는 드러나지 않는다. 실무 규칙: 워크로드/데이터 스펙 문자열에서 파생된 수치 예보는 그 문자열을 만드는 생성기 코드를 실행해 실제 산출을 눈으로 확인한 뒤에만 등록하라 — 산문 인용만으로는 정의역 존재를 보장하지 못한다. 대응 `CONSENSUS.md` §3 항목218(신설). 상세 `.../lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md` §1(S8)·§2(N3)·§3(4).
+
+199. ★★★**(2026-09-13(3), 캠페인 0단계[λ*] 사전등록 규칙층 감사, claims-auditor, GPU 0 — R4 유형 재발) 닫힌 형태 추정식이 자기 추정량(예측 대상 자체)을 입력으로 요구하면 그것은 항등식이지 예측 모델이 아니다.** λ0 등록 §3이 예보 근거로 인용하려 한 `c_capacity_analyze.py`의 닫힌 형태 `L_decode=[(1−R)/R]·(itl_load/itl_solo)/s(D)`를 대입해 전개하면 `pred=μ_ach·out·itl_load`로 환원된다 — `μ_ach`가 곧 λ*이므로 이 식은 λ*를 예측하는 데 **λ*를 입력으로 요구**한다. `obs/pred`는 사실상 `mean_itl/itl_p50`를 검정한 것이었다(longctx_conflict 트랙 R4/MODEL_HOLDS와 같은 함정). λ0 등록이 R4를 승계하지 않은 것은 이 감사로 확인상 옳았다 — 되살리지 말 것. 실무 규칙: 닫힌 형태 추정식을 예측 도구로 재사용하기 전에 그 식을 대입 전개해 예측 대상 자신이 우변에 나타나는지 확인하라. 대응 `CONSENSUS.md` §3 항목219(신설). 상세 `.../lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md` §3(3).
+
+200. ★★★**(2026-09-13(3), 캠페인 0단계[λ*] 사전등록 규칙층 감사, claims-auditor, GPU 0 — 게이트 #21 확장, 제출 차단급) `UNRESOLVED`(측정 실패) 경로가 live 코드에서 실제로 도달 가능한지 주입 실험으로 확인하라 — glob 기반 셀 수집은 결손 셀을 조용히 빼고 규칙 판정(실패가 아닌)을 내보낼 수 있다.** `lambda0_label.py:104`의 `for f in sorted(d.glob("cell_*.json"))`는 없는 셀 파일을 리스트에서 그냥 빠뜨리므로 `any(c is None)` 검사가 결코 참이 될 수 없고, 등록 §4가 "셀 JSON 결손 → `UNRESOLVED`, 측정 실패이며 규칙 실패가 아니다(교훈 21)"라고 적은 문안과 실제 코드가 불일치했다 — boot 실패가 조용히 `KNEE_NOT_BRACKETED`(규칙 실패)로 나온다. 감사자가 4점 사다리에서 셀 1개를 실제로 삭제하는 주입 실험으로 이 불일치를 재현했다(상단 결손 → `KNEE_BRACKETED`로 오히려 통과, 하단 2점만 결손 → `KNEE_NOT_BRACKETED`). 실무 규칙: "측정 실패는 X로 라벨한다"고 등록한 사전등록은 제출 전에 그 실패 라벨이 실제 코드 경로에서 도달 가능한지 결손 셀을 인위적으로 주입해 확인하라 — 산문 서술과 glob 기반 파일 수집의 암묵적 스킵 동작은 다른 것이다. 대응 `CONSENSUS.md` §3 항목220(신설). 상세 `.../lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md` §1(S9)·§6(c).

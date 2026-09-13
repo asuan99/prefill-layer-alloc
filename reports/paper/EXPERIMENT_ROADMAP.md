@@ -690,6 +690,74 @@ Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` �
   8192/64+decode 64/512) 둘뿐이며, 기존 측정은 W4 prefill
   phase에 가깝고 W3와는 무관(λ*가 더 높을 것). 상세
   `PROJECT_STATUS.md` 최상단 배너(2026-09-13(2)) "C" 절.
+
+  ★★**정정(2026-09-13(3), doc-steward, λ0 사전등록 규칙층
+  감사 §S8/N3 — `.../lambda0_prereg/VERDICT_lambda0_rules_
+  2026-09-13.md`)**: 위 "W4(prefill 8192/64+decode 64/512)"의
+  **"decode 64/512"는 오독이다**. `workloads.py:159-160`을
+  실행해 확인: W4 decode phase = **(256, 512)**이고 이는 W3
+  전부와 **정확히 같다**(근사 아님) — 저장소 전체에 (in 64,
+  out 512)는 존재하지 않는다. 오독 출처는 `WorkloadSpec.
+  output_distribution = "64/512 by phase"`(phase별 **출력**
+  길이 서술)를 입력 길이로 읽은 것. ⇒ 1차 캠페인(Claim D)에
+  필요한 shape는 3개가 아니라 **2개뿐**: (256,512)[=W3=W4
+  decode phase]·(8192,64)[=W4 prefill phase].
+
+  ★★**캠페인 0단계(λ*) 사전등록 `NO-GO`(2026-09-13(3),
+  claims-auditor 규칙층 감사, GPU 0, **미실행**)**: 판정서
+  `.../lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md`
+  (358행). 死因 **N2**(client `--seed` 미등록 — 비포화 셀의
+  achieved/offered는 포화도가 아니라 도착 실현 계수 `1/Ē`;
+  `bench_serving.py:1706,948`; 905835 12/12 셀 동일 방향
+  −2.0σ; seed 40개 모의 실패율 15–28%; `1.96/√(N−1)≤0.05`가
+  요구하는 N≥1537은 실현 불가 + shape A 사다리 4점 미등록으로
+  브래킷 판정 반전 예시 3건) + **N3**(위 정정에서 확인된 정의역
+  `∅`). 제출 차단 운영 결함 3건(`UNRESOLVED` 도달 불가·`shape`
+  KeyError·sbatch/analyzer 부존재). ★측정 격자·승계 규칙
+  (R1/R5)은 건강함을 보관 cell JSON 9개 직접 투입으로 비트
+  단위 재현해 확인.
+
+  ★★★**최우선 파생 사실 — 이 단계는 게이트 #6을 닫지 못한다**:
+  905835 d44를 정본 goodput 술어(TTFT≤3000ms ∧ 요청내부
+  token-ITL p95≤60ms)로 재채점하면 **0.59·λ*에서 goodput
+  53.8%·0.89·λ*에서 5.8%·1.27·λ*에서 0.8%** ⇒ **λ*_SLO <
+  0.59×λ*_throughput**(비 추정 2.3–3.4×). 위 "먼저 B1
+  sustainable **SLO** rate를 측정한다"는 산문 정의를 이
+  사전등록은 **throughput 포화로 교체**했다 — 이 교체를
+  **정정으로 등재**한다: **λ*_SLO는 여전히 측정되지 않았다**,
+  측정된 것은 λ*_throughput뿐이다.
+
+  ★★★**두 λ*는 W4를 파라미터화하지 못한다 — 상호 배타다**:
+  λ*=0.675 주입 → prefill phase 0.79×λ*(B) ✓ / decode phase
+  **0.21–0.25×λ*(A)** ✗; λ*=2.1 주입 → decode 0.79×λ*(A) ✓ /
+  prefill **2.47×λ*(B)** ✗; 캠페인 기본값 4 → prefill
+  **4.7×λ*(B)**. **어떤 단일 스칼라도 두 phase를 동시에 0.80×로
+  만들 수 없다.** ⇒ **★열린 항목(사용자 결정 대기)**: W4를
+  아래 "P2" acceptance에서 쓰려면 `generate_campaign.sh`의
+  "9 워크로드에 단일 `PDMUX_SUSTAINABLE_RATE`" 설계를
+  phase별 독립 λ*로 바꿔야 한다 — 그렇게 개정할지, W4를 1차
+  캠페인 범위에서 제외할지, 아니면 두 λ* 중 하나만으로
+  W4 전체를 근사(그리고 그 근사를 명시적으로 최강 caveat로
+  달아)할지는 **아직 결정되지 않았다**.
+
+  권고 사다리(GPU 0 재감사 통과 시): shape A(8192-in 대응 없음,
+  실은 256-in) **{1.1, 1.8, 3.0, 4.9, 8.0}**, shape B(8192-in)
+  **{0.45, 0.62, 0.85, 1.15}**. ctx 16384/mem 0.82는 구속 자원
+  (`max_mamba_cache_size=max_running_requests=48`, KV 6.6×
+  과공급)을 바꾸지 않으므로 앵커 0.675의 provisional 강등은
+  충분. 우선순위 권고: 새 모델 correctness 게이트 + `--request
+  -rate inf` 2셀(≈0.3–0.4 GPU-h, N2 死因을 구조적으로 소멸시킴)
+  을 λ* 사다리 재감사보다 먼저.
+
+  인용 금지 Q1–Q5(게이트 #6 미충족·correctness 미확인·W4
+  파라미터화 불가·B1≠시스템 용량·W1/5/6/7/8/9 라벨 불변) +
+  필수 병기 6항, 판정서 §5·§6 문자 승계. 신규 방법론 게이트
+  5건(#196–200, `CONSENSUS.md` §3 항목216–220). **overclaim
+  금지**: λ*는 측정되지 않았다(NO-GO) — 905835 값은 기존
+  측정(8192-in/96-out·ctx 8192·mem 0.80)이며 새 캠페인의 λ*가
+  아니다. 새 성능 판정 0건·GPU 0·Claim D/E 등급 불변. 상세
+  `PROJECT_STATUS.md` 최상단 배너(2026-09-13(3)), `CONSENSUS.md`
+  rev73·§3 항목216–220.
 - configuration당 최소 5회, paired CI가 0을 교차하거나 variance가 크면 10회
   이상 수행한다.
 - 모든 pair는 동일 immutable trace/hash, workload seed, server seed를 사용하고
@@ -727,6 +795,21 @@ sampling, writer를 수정하고 architecture 비교를 보류한다.
 Decode-heavy/alternating에서 decode progress, ITL 또는 oldest queue age가
 유의하게 개선되고 throughput regression이 3% 이하일 때만 Claim D를 채택한다.
 그렇지 않으면 true dual은 negative architecture result로 남긴다.
+
+★★★**★열린 항목(2026-09-13(3), doc-steward, λ0 캠페인 0단계
+사전등록 규칙층 감사에서 도출, 사용자 결정 대기)**: 위
+acceptance의 W4 워크로드는 두 phase(prefill (8192,64)·decode
+(256,512))를 `generate_campaign.sh`의 **단일** `PDMUX_
+SUSTAINABLE_RATE`로 스케일한다. 실측/추정 λ*(A≈2.1–2.5,
+B=0.675)로 계산하면 **어떤 단일 스칼라도 두 phase를 동시에
+0.80×λ*로 만들 수 없다**(λ*=0.675 → prefill 0.79×✓/decode
+0.21–0.25×✗; λ*=2.1 → decode 0.79×✓/prefill 2.47×✗) — 상세
+`.../lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md` §3
+(1a). **P2가 W3+W4×{B1,B4}로 실행되려면 다음 중 하나를 사용자가
+결정해야 한다**: (a) W4 정의를 phase별 독립 λ*로 개정, (b) W4를
+1차 캠페인 범위(위 "P2")에서 제외하고 W3만 진행, (c) 두 λ* 중
+하나로 W4 전체를 근사하고 그 근사를 결과 문서에 최강 caveat로
+명시. **미결정 상태에서는 P2를 W4 포함으로 실행하지 않는다.**
 
 ★追記(2026-09-11, doc-steward, R2 true-dual GPU correctness
 트랙) — 위 P1/P2는 여전히 미실행 성능 게이트다. 별도로
@@ -932,6 +1015,18 @@ C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
   비용 감각(추정, 미측정): 실행 가능 180 run×~3분 ≈ **9–13
   GPU-h**(Zamba2-2.7B 기준, 9B 모델은 더 비쌈) vs 트랙 누적
   0.43 GPU-h.
+
+  ★★★**(0)의 상태 갱신(2026-09-13(3), doc-steward, λ0 사전등록
+  규칙층 감사)**: 위 "(0) λ* 측정"은 `NO-GO`로 판정됐다(死因
+  N2+N3, GPU 0·미실행 — 상세 위 "공통 방법" 절). 재감사 통과
+  전제로 **권고 순서를 (0a) 새 모델 correctness 게이트 +
+  `--request-rate inf` 2셀(≈0.3–0.4 GPU-h, N2 死因 구조적
+  소멸) → (0b) λ* 사다리 재감사·측정으로 개정**한다 — 즉 위
+  "(0)→(1)"의 순서를 사실상 뒤집는다(correctness가 λ* 사다리
+  설계를 추측에서 측정으로 바꾸기 때문). 추가로 **(3) P2**는
+  W4를 포함하려면 위 "P2" 절의 열린 항목(단일 λ*가 W4 두
+  phase를 동시에 파라미터화 못 함)이 **사용자 결정**으로 먼저
+  풀려야 한다.
 
   ★★**세 번째 사용자 결정 + engine-porter 모델 지원 검증 `GO`
   (2026-09-13(2), doc-steward, GPU 0 이 세션)**: `--attention-
