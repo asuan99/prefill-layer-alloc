@@ -1,6 +1,23 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-12(3)(doc-steward — **X1 결과 등재**: job
+최종 갱신: 2026-09-13(2)(doc-steward — **세 번째 사용자 결정**
+(attention 백엔드 triton→flashinfer 전환) + engine-porter
+Nano-9B-v2-Base 모델 지원 검증 **`GO`**(job 905835 재인용, GPU 0
+이 세션) + λ* 기존 측정 확인(job 905835 `c_capacity.sbatch`,
+arm별 5× 상이·단일 스칼라 설계 문제 신규 등재) + provenance
+manifest 확장 사실(커밋 `87213a9`, 이미 커밋) + 신규 게이트 1건
+(#195). X1의 발견·907100·907456 결론은 **(Zamba2-2.7B, triton)
+한정 동결**, 새 (Nano-9B-v2-Base, flashinfer) 쌍은 correctness
+게이트를 새로 쌓아야 한다(스코프 튜플에 `attention_backend=
+flashinfer`·`model=nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base`·
+`context_length=16384` 필요). "공통 방법" λ* 절과 "P2" 절
+(아래)을 갱신했다. 새 성능 판정 0건·Claim D/E 등급 불변(둘 다
+미검증)·HE0·정책 순위·stake #1 전부 불변. `CONSENSUS.md`
+rev71→**rev72**. GPU: 이 트랙 신규 지출 0(job 905835 1.11
+GPU-h는 `longctx_conflict` 트랙 기존 지출). 상세
+`CLAIM_EVIDENCE_MATRIX.md` Claim D 행(2026-09-13(2) 갱신)·
+`PROJECT_STATUS.md` 최상단 배너(2026-09-13(2)).
+이전: 2026-09-12(3)(doc-steward — **X1 결과 등재**: job
 907456(0.154 GPU-h) 완주, claims-auditor 결과 감사
 **`CONFIRMED(scoped)`**[F1–F4 전부 충족·PASS 및 교차-잡 8/96
 불일치 독립 재현·귀속 성립]. 메인 세션 해석 문장 1건
@@ -659,6 +676,20 @@ Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` �
   자체가 틀린다(게이트 #6 "용량 먼저 측정" 위반). **모델별 λ*
   측정을 R2/Claim D 캠페인의 0번째 단계로 등재**(아래 "P2"
   절·`PROJECT_STATUS.md` 최상단 배너[2026-09-13] "D" 참조).
+  ★**추기(2026-09-13(2), doc-steward, engine-porter 모델 지원
+  검증 부수 발견)**: λ*는 **이미 측정돼 있다**(새 도구 불필요) —
+  job 905835의 `c_capacity.sbatch`가 같은 체크포인트(flashinfer,
+  ctx 8192, PD-mux fixed D)에서 **D16 0.933 req/s·D44 0.675·
+  D92 0.187**(전부 `KNEE_BRACKETED`)을 측정했다. 단 λ*는
+  **arm별 5× 차이**가 나는데 이 스크립트는 W1–W9에 **단일
+  스칼라**를 쓰고 입력 길이는 32× 차이(W3 256-in vs W2/W4/W5
+  8192-in)가 나므로 "기본값 미측정"보다 **더 깊은 설계 문제**
+  로 열어둔다 — "단일 스칼라 λ*를 W1–W9가 공유하는 것이 무엇을
+  뜻하는지"가 캠페인 0단계의 사전등록 대상이다. 1차 캠페인
+  (Claim D)에 필요한 shape는 W3(256in/512out)·W4(prefill
+  8192/64+decode 64/512) 둘뿐이며, 기존 측정은 W4 prefill
+  phase에 가깝고 W3와는 무관(λ*가 더 높을 것). 상세
+  `PROJECT_STATUS.md` 최상단 배너(2026-09-13(2)) "C" 절.
 - configuration당 최소 5회, paired CI가 0을 교차하거나 variance가 크면 10회
   이상 수행한다.
 - 모든 pair는 동일 immutable trace/hash, workload seed, server seed를 사용하고
@@ -902,13 +933,70 @@ C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
   GPU-h**(Zamba2-2.7B 기준, 9B 모델은 더 비쌈) vs 트랙 누적
   0.43 GPU-h.
 
+  ★★**세 번째 사용자 결정 + engine-porter 모델 지원 검증 `GO`
+  (2026-09-13(2), doc-steward, GPU 0 이 세션)**: `--attention-
+  backend triton`이 NemotronH에서 엔진에 거부됨(CPU-only
+  `ServerArgs` 재현, `server_args.py:1959` assert)을 확인 —
+  사용자가 **flashinfer로 전환**을 결정했다. 두 R2 하네스가
+  triton을 하드코딩하고 있었다(`r2_correctness.sbatch`·
+  `engine_bench_runner.sh`, 커밋 `87213a9`로 백엔드 노브 신설,
+  **기본값은 `triton` 불변** — Zamba2 재현 보존, NemotronH arm은
+  명시적으로 `flashinfer` 지정 필요). **X1의 발견(`triton_
+  attention_num_kv_splits`)과 907100·907456 결론은 (Zamba2-2.7B,
+  triton) 한정으로 동결**되고, 새 (모델, 백엔드) 쌍은
+  correctness 게이트를 새로 쌓아야 한다(스코프 튜플에
+  `attention_backend=flashinfer`·`model=nvidia/NVIDIA-
+  Nemotron-Nano-9B-v2-Base`·`context_length=16384` 명시, 1
+  job·9B 기준 ≈0.2–0.3 GPU-h 추정). 게이트#83/`CONSENSUS.md`
+  §3 항목103(TC1 job 896776) 追記 — 같은 백엔드 강제 상호배타가
+  **Nano-9B-v2-Base에서도 재현**됐다.
+
+  **engine-porter 모델 지원 검증 = `GO`**: job 905835(2026-09-09,
+  1.11 GPU-h, `longctx_conflict` 트랙 기존 지출 — 재인용, 이
+  세션 신규 GPU 지출 아님)가 Nano-9B-v2-Base를 flashinfer·PD-mux
+  ON·cudagraph ON·ctx 8704·D∈{16,44,92}로 **12/12 cell 전부
+  boot**(BOOT_FAILED 0)했다. 가중치 완전(4 shard 16.56 GiB,
+  index 341/341 일치, Σparams 8.888B) + config↔가중치 전수 대조
+  + hybrid KV `cell_size=16 KiB/token` 확인, 메모리 제약 아님.
+  **ctx 권고 = 16384**(131072 아님 — 트레이스 최대 요구
+  8320토큰의 2× 여유). 잠복 상류 위험 3건(미수정, 등재만):
+  `mamba2_cache_params`의 미선언 `self.n_groups` 의존·
+  `config.expand` stale(미사용)·`piecewise_cuda_graph_disabled_
+  model_archs` 목록 부재(cps>0 arm 생기면 재개). **overclaim
+  금지**: 아직 아무 correctness 게이트도 돌지 않았다 — 있는
+  것은 부팅·서빙 사실과 capacity 측정뿐.
+
+  **λ* = 이미 측정돼 있음**(위 "공통 방법" 절 참조, job 905835
+  `c_capacity.sbatch`): D16 0.933 req/s·D44 0.675·D92 0.187,
+  arm별 5× 차이인데 단일 스칼라 캠페인 설계는 열린 문제.
+
+  **provenance 구멍 해소**(커밋 `87213a9`, 이미 커밋, GPU 0):
+  모델 구현이 manifest 안으로(17→24항목, 신규 7줄 append·기존
+  순서 바이트 동일). ★**이 결함의 실증**: job 905835의 manifest
+  는 17줄·`models/`가 mamba2·zamba2뿐인 채로 NemotronH를 12
+  boot 서빙 — 모델 구현 provenance 0이었다. **신규 게이트
+  #195**: "서빙한 모델의 구현 파일이 provenance manifest에
+  없으면 그 캠페인은 모델 축에서 귀속 불가다." correctness
+  하네스 ctx 하드코딩도 함께 제거(`R2C_CTX`, Zamba2 4096 재현
+  보존)·`campaign.json` schema v2(model·context_length)·
+  `cuda_graph` 읽히게 배선. 전체 463 tests OK(신규 37). 상세
+  `PROJECT_STATUS.md` 최상단 배너(2026-09-13(2)), `CONSENSUS.md`
+  rev72·§3 항목215(+항목103 追記), `CLAIM_EVIDENCE_MATRIX.md`
+  Claim D 행. **커밋 금지**(이번 등재는 문서뿐, 코드는 커밋
+  `87213a9`로 이미 완료).
+
 상세 `workspace/engine-port/results/r2_correctness/{job_907032/,
 job_907100/, job_907456/, audit_r2corr_2026-09-11/VERDICT.md,
 audit_x1_2026-09-12/VERDICT.md, b3_prereg/, os_prereg/,
 x3_prereg/}` §6–§7.3·§11. 정본 반영: `PROJECT_STATUS.md`
 최상단 배너(2026-09-13)·"다음 실험 gate" 항목1–4 追記,
 `CONSENSUS.md` rev70→rev71·§3 항목210–214, `CLAIM_EVIDENCE_
-MATRIX.md` Claim D 행·"주장 제한" 갱신.
+MATRIX.md` Claim D 행·"주장 제한" 갱신. **추가 반영
+(2026-09-13(2))**: `results/longctx_conflict/probes/{ccap_
+905835.out, c_905835/C_LABEL.json, PREREG_CAPACITY_
+2026-09-09.md}`, `PROJECT_STATUS.md` 최상단 배너(2026-09-13(2)),
+`CONSENSUS.md` rev71→rev72·§3 항목215(신설)+항목103(追記),
+`CLAIM_EVIDENCE_MATRIX.md` Claim D 행 갱신.
 
 ### P3 — Offline profile/estimator
 

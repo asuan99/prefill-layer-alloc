@@ -11,6 +11,19 @@
 - SGLang base: v0.5.10
 - cluster stack: PyTorch 2.9.1+cu130, CUDA 13, A100 108 SM
 - Zamba2 serving: bfloat16, Triton attention backend
+- NemotronH(Nano-9B-v2-Base) serving: bfloat16, **flashinfer**
+  attention backend — `--attention-backend triton`은 NemotronH에서
+  엔진이 거부한다(`AssertionError: NemotronHForCausalLM does not
+  support triton attention backend`, `server_args.py:1959`;
+  `CONSENSUS.md` §3 항목103, 2026-09-13(2) 追記). `r2_correctness.
+  sbatch`·`engine_bench_runner.sh`(커밋 `87213a9`)의 백엔드 노브
+  (`R2C_ATTN_BACKEND`/`PDMUX_ATTENTION_BACKEND`) 기본값은
+  **`triton` 불변**(Zamba2 907100/907456 재현 보존) — NemotronH
+  arm은 명시적으로 `flashinfer`를 지정해야 한다. 이 백엔드 전환
+  때문에 X1(`triton_attention_num_kv_splits`)·907100·907456의
+  correctness 결론은 **(Zamba2-2.7B, triton) 한정**이며 새
+  (모델, 백엔드) 쌍은 correctness 게이트를 새로 쌓아야 한다
+  (`PROJECT_STATUS.md` 최상단 배너[2026-09-13(2)] 참조).
 
 실행 전에 tracked PD-mux source와 thread-local role patch를 적용하고 hash
 manifest를 만든다.
@@ -115,6 +128,8 @@ https://<user>:<PAT>@github.com/...`, `credential.helper = store`로
 | `PDMUX_MODEL_PROFILE=<json>` | Hybrid policy의 versioned offline profile |
 | `PDMUX_TELEMETRY_PATH=<path>` | 모든 arm에 같은 async telemetry |
 | `PDMUX_RUN_ID`, `PDMUX_WORKLOAD_ID` | trace 식별자 |
+| `R2C_ATTN_BACKEND` / `PDMUX_ATTENTION_BACKEND` | attention 백엔드 선택(커밋 `87213a9`, 2026-09-13 신설). **기본값 `triton`**(Zamba2 재현 보존) — NemotronH는 `flashinfer` 명시 필요 |
+| `R2C_CTX` | correctness 게이트 ctx 명시(커밋 `87213a9`). 미지정 시 모델 config에서 유도, 실패하면 `exit 2`(조용한 폴백 금지). Zamba2는 4096, NemotronH(Nano-9B-v2-Base)는 **16384 권고**(131072 아님) |
 
 True dual은 thread-local role capability가 없으면 fail-fast한다. GPU correctness
 gate를 통과하기 전에는 기본값을 켜지 않는다.

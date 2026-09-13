@@ -1,6 +1,23 @@
 # Document status
 
-최종 갱신: 2026-09-13(doc-steward — ★정정(고유 225/가능 180,
+최종 갱신: 2026-09-13(2)(doc-steward — ★세 번째 사용자 결정
+(attention 백엔드 triton→flashinfer 전환) + engine-porter
+Nano-9B-v2-Base 모델 지원 검증 `GO`(job 905835 재인용, GPU 0
+이 세션) + λ* 기존 측정 확인(arm별 5× 상이, 단일 스칼라 설계
+문제 신규 등재) + provenance manifest 확장 사실 등재(커밋
+`87213a9`, 이미 커밋) + 신규 게이트 1건(#195) + 게이트#83/§3
+항목103 追記(교차-트랙 위험 Nano-9B-v2 재현) 반영으로
+`CLAIM_EVIDENCE_MATRIX.md` Claim D 행·`EXPERIMENT_ROADMAP.md`
+"공통 방법"·"P2" 절을 `CONSENSUS.md` rev72·§3 항목215(+항목103
+追記)와 재동기화. X1의 발견·907100·907456 결론은 (Zamba2-2.7B,
+triton) 한정으로 재동결, 새 (Nano-9B-v2-Base, flashinfer) 쌍은
+correctness 게이트를 새로 쌓아야 한다. `workspace/engine-port/
+RESUME.md`도 백엔드 노브 등재로 갱신(같은 세션). 등급·
+인용정지·claim 등급 전부 무변경(Claim D/E 둘 다 미검증), 새
+성능 판정 0건, 이 문서의 Canonical/Historical/Superseded
+분류표는 무변경 — changelog 기록뿐. **커밋 금지**(코드 변경은
+커밋 `87213a9`로 이미 완료, 이 세션은 문서만).
+이전: 2026-09-13(doc-steward — ★정정(고유 225/가능 180,
 "약 270" 중복계수) + X3 사전등록 규칙층 `GO-with-caveats`
 등재(死因 0·차단 D1–D13, GPU 0·미실행) + 사용자 결정 2건(①모델
 교체 Zamba2-2.7B→NemotronH Nano-9B-v2-Base, X3는 같은 세션
