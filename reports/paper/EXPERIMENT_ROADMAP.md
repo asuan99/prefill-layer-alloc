@@ -650,6 +650,15 @@ Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` �
 ## 공통 방법
 
 - 먼저 B1 sustainable SLO rate `lambda*`를 모델별로 측정한다.
+  ★**정정(2026-09-13, doc-steward, X3 규칙층 감사 §10.3 부수
+  발견)**: `benchmarks/pdmux_eval/generate_campaign.sh:10`의
+  `sustainable_rate`가 실제로는 **측정값이 아니라 기본값
+  `4`**로 코드에 박혀 있다 — 워크로드가 전부 이 값의 분수로
+  정의되므로(W1 0.60·W3 0.80·W8 0.90·W9 1.10) 이 산문이 요구한
+  측정이 실행되지 않으면 "near saturation"·"overload" 라벨
+  자체가 틀린다(게이트 #6 "용량 먼저 측정" 위반). **모델별 λ*
+  측정을 R2/Claim D 캠페인의 0번째 단계로 등재**(아래 "P2"
+  절·`PROJECT_STATUS.md` 최상단 배너[2026-09-13] "D" 참조).
 - configuration당 최소 5회, paired CI가 0을 교차하거나 variance가 크면 10회
   이상 수행한다.
 - 모든 pair는 동일 immutable trace/hash, workload seed, server seed를 사용하고
@@ -840,7 +849,7 @@ C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
   `check_line_citations.py --check`가 자동 검증한다(50→88
   compared, 0 violation).
 
-- ★**사용자 결정 대기(가장 중요, 2026-09-12(5))**: A1이 만든
+- ★**사용자 결정 대기(2026-09-12(5))**: A1이 만든
   `results/r2_eval` 러너로 실제 캠페인을 생성하면 **405 run 중
   약 270이 현 구성으로 실행 불가**하다 — W2/W4/W5(135 run)가
   8192-토큰 프롬프트를 내보내 Zamba2-2.7B ctx 4096으로 서빙
@@ -851,13 +860,55 @@ C 층 불일치(3/32 arm-분리, C01·C10·C19)의 원인을 "TD 결함"·
   없다** — 아래 "Controller ablation" 절과 함께 다음 세션/
   사용자 판단 대기.
 
+  ★★**정정 + X3 규칙층 판정 + 사용자 결정 2건(2026-09-13,
+  doc-steward)**: 위 "약 270"은 **중복 계수**였다. X3 사전등록
+  규칙층 감사(claims-auditor, GPU 0, `.../x3_prereg/
+  VERDICT_x3_rules_2026-09-13.md`, 死因 0·차단 D1–D13,
+  **`GO-with-caveats`**, 미실행)가 포함-배제로 재계산: **고유
+  차단 = 225**(135[W2/4/5]+90[B2/8]+45[B6] −
+  30[W2/4/5×B2,B8] − 15[W2/4/5×B6]), **실행 가능 = 180**
+  (W1·W3·W6·W7·W8·W9 × 5 rep × B0·B1·B3·B4·B5·B7). 사실 정정
+  3건: F1이 측정 안 한 것을 측정했다고 말함(러너 코드를 한 줄도
+  실행하지 않는다 — 선결 #2 "러너 설정"은 X3가 안 닫음) · F2의
+  "eval 계측 구성으로 전이"가 3중 과대(관측자 2/4만 시험·엔진
+  소스 핀 대 캠페인 HEAD 불일치·C층 제외) · F3 크기 오류
+  (probe-boot 26/32=81% 적중, 진짜 이유는 32칸 전칭 요구).
+  감사자 자기 철회(3회차 누적): 자기 OS §8 "X3는 성능 트랙
+  전체를 연다"를 철회 — 블로커 3개 중 X3가 제거하는 것은
+  **0개**. 신규 게이트 G-X3-1…5(`#190–194`).
+
+  ★★**사용자 결정 2건(같은 세션, X3를 즉시 무효화)**:
+  **(1) 모델 교체** — Zamba2-2.7B → `NemotronHForCausalLM`
+  Nano-9B-v2-Base(ctx 131072). **X3 사전등록(rev1)은 SUPERSEDED**
+  (Zamba2 기준 설계, 아티팩트는 이력 보존+무효 배너). OS
+  사전등록도 같은 취급 대상(재무효화는 안 함, 아직 미구매).
+  907100·907456·X1 결론은 Zamba2-2.7B 한정으로 동결, 새 모델은
+  R2 correctness 게이트를 새로 쌓아야 한다. Nano-9B-v2는 서빙된
+  적 없음 — engine-porter CPU-only 검증 중, GO/NO-GO 전 GPU
+  계획 없음. ★교차 트랙 위험: TC1 트랙이 이미 NemotronH+
+  `triton`=부팅 거부(`CONSENSUS.md` §3 항목103/게이트#83)를
+  확인했는데 R2 correctness 조건 튜플은 `--attention-backend
+  triton`이라 재확인 필요. provenance 구멍:
+  `sync_engine_tree.sh`가 nemotron_h를 수동 복사한다면서 manifest
+  17항목엔 zamba2·mamba2뿐(engine-porter 이관 중).
+  **(2) 1차 캠페인 범위 = Claim D+P3까지** — 아래 "P2"
+  acceptance는 `B1`/`B4` arm과 W3+W4 워크로드만 필요하므로
+  고유 차단 225 중 135(B2/8/6)는 Claim E/oracle 쪽이며 Claim D와
+  독립이다. **실행 순서**: **(0) λ* 측정(위 "공통 방법" 정정
+  참조) → (1) 새 모델 R2 correctness 게이트 → (2) P1 observer
+  effect → (3) P2(W3+W4×{B1,B4}×5rep) → (4) P3 offline profile
+  → (5) Claim E(B6)**, 각 단계 개별 사전등록+규칙층 감사 대상.
+  비용 감각(추정, 미측정): 실행 가능 180 run×~3분 ≈ **9–13
+  GPU-h**(Zamba2-2.7B 기준, 9B 모델은 더 비쌈) vs 트랙 누적
+  0.43 GPU-h.
+
 상세 `workspace/engine-port/results/r2_correctness/{job_907032/,
 job_907100/, job_907456/, audit_r2corr_2026-09-11/VERDICT.md,
-audit_x1_2026-09-12/VERDICT.md, b3_prereg/, os_prereg/}` §6–§7.3·
-§11. 정본 반영: `PROJECT_STATUS.md` 최상단 배너(2026-09-12(5))·
-"다음 실험 gate" 항목1–4 追記, `CONSENSUS.md` rev69→rev70·§3
-항목200–209, `CLAIM_EVIDENCE_MATRIX.md` Claim D 행·"주장 제한"
-갱신.
+audit_x1_2026-09-12/VERDICT.md, b3_prereg/, os_prereg/,
+x3_prereg/}` §6–§7.3·§11. 정본 반영: `PROJECT_STATUS.md`
+최상단 배너(2026-09-13)·"다음 실험 gate" 항목1–4 追記,
+`CONSENSUS.md` rev70→rev71·§3 항목210–214, `CLAIM_EVIDENCE_
+MATRIX.md` Claim D 행·"주장 제한" 갱신.
 
 ### P3 — Offline profile/estimator
 

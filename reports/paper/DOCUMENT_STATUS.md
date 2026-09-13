@@ -1,6 +1,17 @@
 # Document status
 
-최종 갱신: 2026-09-12(5)(doc-steward — 정정 2건(X1 §12-2 유래
+최종 갱신: 2026-09-13(doc-steward — ★정정(고유 225/가능 180,
+"약 270" 중복계수) + X3 사전등록 규칙층 `GO-with-caveats`
+등재(死因 0·차단 D1–D13, GPU 0·미실행) + 사용자 결정 2건(①모델
+교체 Zamba2-2.7B→NemotronH Nano-9B-v2-Base, X3는 같은 세션
+안에서 SUPERSEDED ②1차 캠페인 범위=Claim D+P3) + 새 선결 1건
+(λ* 미측정) 반영으로 `CLAIM_EVIDENCE_MATRIX.md` Claim D 행·
+`EXPERIMENT_ROADMAP.md` "P1/P2"·R2 correctness 절을 `reports/
+CONSENSUS.md` rev70→rev71과 재동기화. 신규 게이트 5건
+(#190–194, G-X3-1…5). 등급·인용정지·claim 등급 전부
+무변경(Claim D/E 둘 다 미검증), 새 성능 판정 0건, 이 문서의
+Canonical/Historical/Superseded 분류표는 무변경 — changelog
+기록뿐. 이전: 2026-09-12(5)(doc-steward — 정정 2건(X1 §12-2 유래
 "n=4/arm=게이트 3 충족" ★철회[인용 금지 B3C-3] + X1 §3.3
 cross-arm 22→25 산술 정정) + B3 사전등록 `NO-GO`(GPU 0·미실행) +
 OS 사전등록 규칙층 `GO-with-caveats`(GPU 0·미실행) + A1/A2/A4

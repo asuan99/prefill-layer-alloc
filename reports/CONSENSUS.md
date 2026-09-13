@@ -4,12 +4,51 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-09-12(5) rev70 **(doc-steward — 정정 2건(최우선:
-X1 §12-2 유래 "n=4/arm=게이트 3 충족" 철회 + X1 §3.3 cross-arm
-22→25 산술 정정) + B3 사전등록 `NO-GO`(死因 N2, GPU 0·미실행) +
-OS 사전등록 규칙층 `GO-with-caveats`(死因 0, GPU 0·미실행) +
-A1/A2/A4 구현 등재(커밋 `09a8075`·`ae7830e`·`3153260`, GPU 0),
-신규 방법론 게이트 10건)** — **정정 1(철회)**: 2026-09-12(3)이
+최종 갱신: 2026-09-13 rev71 **(doc-steward — ★정본 산술 정정
+(최우선, "약 270"은 중복계수 → 고유 225/가능 180) + X3 사전등록
+규칙층 감사 `GO-with-caveats`(死因 0·차단 D1–D13, GPU 0·미실행,
+같은 세션에서 사용자 결정으로 즉시 무효화) + 사용자 결정 2건
+(①모델 교체 Zamba2-2.7B→NemotronH Nano-9B-v2-Base ②1차
+캠페인 범위=Claim D+P3) + 새 선결 1건(λ*/`sustainable_rate`
+미측정) + 신규 방법론 게이트 5건)** — **정정**: 2026-09-12(5)이
+등재한 "생성 405 run 중 약 270이 실행 불가"는 **중복 계수**다.
+X3 규칙층 감사가 포함-배제로 재계산: **고유 차단 = 225**
+(135[W2/4/5]+90[B2/8]+45[B6] − 30[W2/4/5×B2,B8] −
+15[W2/4/5×B6]), **실행 가능 = 180**(W1·W3·W6·W7·W8·W9 ×
+5 rep × B0·B1·B3·B4·B5·B7). ★**X3 규칙층 감사 요지(GPU 0,
+미실행)**: 死因 0(자유표면 14개 전수, 등록 라벨 반전 0건) +
+차단 D1–D13. 사실 정정 3건 — F1이 측정 안 한 것을 측정했다고
+말함(러너 코드를 한 줄도 실행하지 않는다, 선결 #2 "러너 설정"은
+X3가 안 닫음) · F2의 "eval 계측 구성으로 전이"가 3중 과대
+(관측자 2/4만 시험·엔진 소스 핀 대 캠페인 HEAD 불일치·타이밍→
+토큰 결합이 실측된 C층 제외) · F3 기전 크기 오류(probe-boot
+26/32=81% 적중, 32칸 전칭 요구가 진짜 이유). 묶음(seed 1000+
+forced OFF)은 seed→토큰 경로 부재로 confound #10 아님(단
+"동시 증명"은 과대, seed 쪽은 코드 연역). 엔진 핀 충분성
+실측(핀 전 13 OK/4 FAILED=핀 대상 4개). ★감사자 자기 철회(3회차
+누적 4건): 자기 OS §8 문장 "X3는 성능 트랙 전체를 연다"를
+철회 — 캠페인 블로커 3개 중 X3가 제거하는 것은 0개.
+★**사용자 결정 2건(같은 세션, X3를 즉시 무효화)**: (1) **모델
+교체** — Zamba2-2.7B→`NemotronHForCausalLM` Nano-9B-v2-Base
+(ctx 131072, W2/4/5의 8192-토큰 트레이스가 무수정으로 돎).
+X3(rev1)·907100·907456·X1은 전부 **Zamba2-2.7B 기준으로 동결**
+(X3는 SUPERSEDED, OS도 같은 취급 대상으로 표시만). 새 모델은
+R2 correctness 게이트를 새로 쌓아야 하고, Nano-9B-v2는 서빙된
+적이 없어 engine-porter CPU-only 검증 중(GO/NO-GO 전 GPU 계획
+없음). ★교차 트랙 위험: TC1 트랙이 이미 NemotronH+`triton`
+부팅 거부(§3 항목103/게이트#83)를 확인했는데 R2 correctness
+조건 튜플은 `--attention-backend triton`이라 재확인 필요.
+provenance 구멍: `sync_engine_tree.sh`가 nemotron_h를 수동
+복사한다면서 manifest 17항목엔 zamba2·mamba2뿐. (2) **1차
+캠페인 범위** = Claim D+P3까지 — P2는 B1/B4 arm과 W3+W4
+워크로드만 필요(차단 225 중 135는 Claim E/oracle 쪽과 독립).
+실행 순서: (0)λ* 측정→(1)새 모델 R2 correctness→(2)P1→(3)P2→
+(4)P3→(5)Claim E. ★**새 선결**: `generate_campaign.sh:10`의
+`sustainable_rate`(λ*) 기본값 4가 미측정(게이트 #6 위반, 워크로드
+전부 λ*의 분수로 정의됨). 신규 방법론 게이트 5건 G-X3-1…5
+(`#190–194`, §3 항목210–214). GPU 장부: 이 트랙 0.43 GPU-h
+**불변**(전부 미실행/코드+문서 작업). **이전 정정(2026-09-12(5))**:
+2026-09-12(3)이
 등재한 "B3 두 job 합쳐 n=4/arm ⇒ 프로젝트 게이트 3(n≥4) 충족"
 문장(아래 §5-8(a) "다음 실험" 항목2)을 claims-auditor가 B3
 판정서 §8에서 철회했다 — 한 job의 4 boot은 같은 노드·같은 물리
@@ -85,6 +124,26 @@ paper/{CLAIM_EVIDENCE_MATRIX,EXPERIMENT_ROADMAP,DOCUMENT_
 STATUS}.md`, `MEMORY.md`·`memory/{deconfound-measurement-
 lessons,slo-aware-scheduling-track}.md`. **OS·B3는 미실행이므로
 어떤 결과도 등재하지 않았다.**
+
+**판단 근거(rev70→rev71)**: 신규 방법론 게이트 5건(G-X3-1…5)이
+이번 세션 산출이므로 같은 선례를 그대로 적용한다. 여기에 더해
+이번 회차는 (1) 정본 산술 정정(고유 225/가능 180) (2) 사용자의
+구조적 결정 2건(모델 교체·캠페인 범위, 하위 트랙 다수에 파급)
+(3) X3 사전등록의 같은 세션 내 발행→즉시 무효화를 포함해 단순
+코드 사실 등재보다 무거운 갱신이다. 상세는 `PROJECT_STATUS.md`
+최상단 배너(2026-09-13)·§3 항목210–214(아래, 신설), `reports/
+paper/{CLAIM_EVIDENCE_MATRIX,EXPERIMENT_ROADMAP,DOCUMENT_
+STATUS}.md`, `MEMORY.md`·`memory/{deconfound-measurement-
+lessons,slo-aware-scheduling-track}.md`. **X3·OS·B3 전부
+미실행이므로 어떤 성능 결과도 등재하지 않았다.**
+
+이전: 2026-09-12(5) rev70 **(doc-steward — 정정 2건[최우선:
+X1 §12-2 유래 "n=4/arm=게이트 3 충족" 철회 + X1 §3.3 cross-arm
+22→25 산술 정정] + B3 사전등록 `NO-GO`[死因 N2, GPU 0·미실행] +
+OS 사전등록 규칙층 `GO-with-caveats`[死因 0, GPU 0·미실행] +
+A1/A2/A4 구현 등재[커밋 `09a8075`·`ae7830e`·`3153260`, GPU 0],
+신규 방법론 게이트 10건)** — 전문은 위 "이전 정정(2026-09-12(5))"
+단락과 "B3"·"OS"·"A1/A2/A4"·§3 항목200–209 참조.
 
 이전: 2026-09-12(4) rev69 **(doc-steward — Claim E
 컨트롤러 코드, engine-porter A안 구현으로 2026-09-12(2) 긴장
@@ -6659,6 +6718,16 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 208. ★★★**(2026-09-12(5), OS 사전등록 규칙층 감사, claims-auditor, GPU 0, G-OS-4, 신설) 사후 선택된 단위의 사전등록 재현은 재현 대상 자신의 귀무 확률과 선택에서 배제된 반대 증거 단위를 함께 등록해야 한다.** OS의 F3(초점 3단위 재현)은 정당한 설계이지만, 재현 대상인 907100의 관측 자신이 균등 귀무에서 P=1/3인 사건이고 초점 선택이 arm-비지지 유일 단위(C24)를 배제한다는 사실을 등록하지 않으면 재현 성공이 실제보다 9–30배 강해 보인다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #188(신설). 상세 `.../os_prereg/VERDICT_os_rules_2026-09-12.md` §5.3(D7)·§12(G-OS-4).
 
 209. ★★★**(2026-09-12(5), OS 사전등록 규칙층 감사, claims-auditor, GPU 0, G-OS-5 — 긍정 사례) "구성상 게이트가 도는가"는 논증하지 말고 판정 규칙을 그 구성으로 실제 실행해서 보여라.** OS의 "혼합-arm 순서라 checker 전 경로가 돈다"는 주장은 907100 아티팩트에 `boots.txt="L1 TD1 TD2 L2"`만 부여해 무수정 checker를 돌려 `VERDICT PASS`로 실제 확인됐다 — B3의 같은 자리 주장은 실행해 보니 부분적으로 틀렸었다(항목203)와 대조된다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #189(신설). 상세 `.../os_prereg/VERDICT_os_rules_2026-09-12.md` §4(a)·§12(G-OS-5).
+
+210. ★★★**(2026-09-13, X3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-X3-1 — 게이트 #1의 3번째 층) 관측자를 끄는 실험은 "끈 관측자"와 "남긴 관측자"의 발화율을 함께 등록하라.** X3는 boot당 1263–2285건 발화하는 관측자(forced 샘플)를 끄고 2580–2617건 발화하는 관측자(`--decode-log-interval 1`)를 남긴다 — "관측자 효과를 시험했다"는 서술은 남긴 쪽의 발화율을 적지 않으면 과대다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #190(신설). 상세 `workspace/engine-port/results/r2_correctness/x3_prereg/VERDICT_x3_rules_2026-09-13.md` §1·§14(G-X3-1).
+
+211. ★★★**(2026-09-13, X3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-X3-2 — 게이트#110/G-OS-1 대칭, 긍정 사례) "구성상 그렇게 된다"는 예보는 논증하지 말고 무수정 판정 규칙을 그 구성의 반사실 입력으로 실제 실행해 보여라.** X3는 907100에서 `trace_forced` 레코드만 제거한 입력으로 무수정 `r2_correctness_check.py`를 돌려 `NO_VERDICT_UNREALIZED`·`failures=[]`·실패 하위검사 O2 한정까지 사전 재현했다 — 등록이 추정한 기전("15–19건 중 하나가 창에 들어와야")은 크기가 81% 적중으로 틀렸지만 결론은 맞았다(실행 없이는 둘을 구별할 수 없었다). 대응 `PROJECT_STATUS.md` "방법론 게이트" #191(신설). 상세 `.../x3_prereg/VERDICT_x3_rules_2026-09-13.md` §5·§14(G-X3-2).
+
+212. ★★★**(2026-09-13, X3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-X3-3, 신설 — #174·G-OS-4 인접) 다른 처치를 위해 감사·강화된 분석 도구를 재사용할 때, 그 도구가 *인쇄하는 해석 문장*이 새 처치에서 부호가 반대인지 확인하라.** 재사용 비교기(`x1_cross_job_compare.py`)가 아티팩트에 찍는 "`mismatch==0` → sensitivity not demonstrated"는 X1에서는 참이었으나 X3에서는 0이 등록된 긍정 결과라 의미가 반대다 — 도구를 고칠 수 없으면(해시 유지) 인용 금지 문장으로 중화하라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #192(신설). 상세 `.../x3_prereg/VERDICT_x3_rules_2026-09-13.md` §7·§14(G-X3-3).
+
+213. ★★★**(2026-09-13, X3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-X3-4, 신설) 귀무대조의 적용 범위를 층별로 적어라.** `907032→907100`은 **S층 전용** 귀무대조다(907032에 O층 부재) — "교차-잡 불일치는 귀무대조로 처치에 귀속된다"는 문장은 O층에 대해서는 거짓이다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #193(신설). 상세 `.../x3_prereg/VERDICT_x3_rules_2026-09-13.md` §2#4·§14(G-X3-4).
+
+214. ★★★**(2026-09-13, X3 사전등록 규칙층 감사, claims-auditor, GPU 0, G-X3-5, 신설 — 우선순위 규율) "트랙을 해제한다"는 주장은 그 트랙의 블로커 목록을 열거하고 각각 제거되는지 대조한 뒤에만 쓰라.** 감사자 자신의 OS §8이 X3가 성능 트랙을 연다고 적었으나 블로커 3개(W2/4/5 ctx·B2/8 oracle 산출물·B6 hybrid profile 산출물) 중 실제로는 0개가 제거된다(자기 철회, 3회차 누적). 부수로 정본의 "약 270 run 불가"는 중복 계수였다(고유 225/가능 180). 대응 `PROJECT_STATUS.md` "방법론 게이트" #194(신설). 상세 `.../x3_prereg/VERDICT_x3_rules_2026-09-13.md` §10·§14(G-X3-5).
 
 ---
 ## 4. 살아있는 문서 (이것만 참조)
