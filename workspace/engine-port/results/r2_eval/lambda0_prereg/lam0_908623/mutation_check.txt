@@ -1,0 +1,63 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+CONTROL unmutated lambda0_label.py        (temp-dir copy) PASSES (good)
+CONTROL unmutated lambda0_plan.py         (temp-dir copy) PASSES (good)
+CONTROL unmutated lambda0_cells.py        (temp-dir copy) PASSES (good)
+CONTROL unmutated lambda0_lambda_inf.py   (temp-dir copy) PASSES (good)
+CONTROL unmutated lambda0_reachability.py (temp-dir copy) PASSES (good)
+M1  max(saturated) -> min            [label            ] FAILS (good) via label
+M2  drop tie/monotone guard          [label            ] FAILS (good) via label
+M3  ACH_HI 0.95 -> 1.20              [label            ] FAILS (good) via label
+M4  ACH_LO 0.90 -> 0.70              [label            ] FAILS (good) via label
+M5  ACH_LO 0.90 -> 0.80              [label            ] FAILS (good) via label
+M6  ACH_HI 0.95 -> 1.05              [label            ] FAILS (good) via label
+M7  ACH_HI boundary >= -> >          [label            ] FAILS (good) via label
+M8  ACH_LO boundary <= -> <          [label            ] FAILS (good) via label
+M9  saturation sign flip             [label            ] FAILS (good) via label
+M10 lambda* = max over ALL cells     [label            ] FAILS (good) via label
+M11 sort by ratio, not offered rate  [label            ] FAILS (good) via label
+M12 use the NOMINAL denominator      [label            ] FAILS (good) via label
+M13 revert D4: glob the directory    [label            ] FAILS (good) via label
+M14 seed-repeat tol 0.05 -> 0.50     [label            ] FAILS (good) via label
+M15 lambda* without a bracket        [label            ] FAILS (good) via label
+M16 guards off by default            [label            ] FAILS (good) via label
+M17 ebar guard defaults to pass      [label            ] FAILS (good) via label
+X1  high side ACH_LO -> ACH_HI       [label            ] FAILS (good) via label
+X2  saturated set ACH_LO -> ACH_HI   [label            ] FAILS (good) via label
+X3  realized denominator N-1 -> N    [analyze          ] FAILS (good) via label
+X4  EBAR_GUARD band -> (0.5, 1.5)    [analyze          ] FAILS (good) via label
+X5  analyzer drops the shape field   [analyze          ] FAILS (good) via label
+X6  replay draws n instead of n-1    [analyze          ] FAILS (good) via label+reachability
+R3a low-side restriction removed     [label            ] FAILS (good) via label
+R3b low-side flag defaults to True   [label            ] FAILS (good) via label
+R3c range-ratio guard removed        [label            ] FAILS (good) via label
+R3d drain guard defaults to pass     [label            ] FAILS (good) via label
+R3e unevaluated repeat -> REFUTED    [label            ] FAILS (good) via label
+R3f drain sign flipped               [analyze          ] FAILS (good) via label+reachability
+R3g drain model tolerance -> 1e9     [analyze          ] FAILS (good) via label+reachability
+R3h range ratio requirement dropped  [analyze          ] FAILS (good) via label+reachability
+R3i KAPPA_MIN -> ACH_HI - 0.10       [plan             ] FAILS (good) via plan+reachability
+R3j window extension disabled        [plan             ] FAILS (good) via plan+reachability
+R3k no rung is extendable            [plan             ] FAILS (good) via plan+reachability
+R3l drain model ignores the batch    [plan             ] FAILS (good) via plan
+R3m step model intercept -> solo ITL [plan             ] FAILS (good) via plan+reachability
+Y1  achieved from another field     [analyze          ] FAILS (good) via label+reachability
+Y2  TTFT_LOAD_FACTOR 3.2 -> 1.0     [plan             ] FAILS (good) via plan+reachability
+Y3  kappa margin +0.02 -> +0.001    [plan             ] FAILS (good) via plan+reachability
+Y4  load() ignores the record shape [label            ] FAILS (good) via label
+Y5  renderer certifies every rung   [cells            ] FAILS (good) via cells
+Y6  renderer swaps kappa/low-side   [cells            ] FAILS (good) via cells
+R4a E1 reverted: drain ignored      [label            ] FAILS (good) via label
+R4b LADDER_TOO_LOW -> top rung >=HI [label            ] FAILS (good) via label
+R4c predicate: F5 threshold 48 -> 1 [lambda_inf       ] FAILS (good) via lambda_inf
+R4d predicate ignores a missing file [lambda_inf       ] FAILS (good) via lambda_inf
+R4e reachability grid collapsed     [reachability     ] FAILS (good) via reachability
+Z1  MULT[B] top rung 1.70 -> 1.16   [plan             ] FAILS (good) via reachability
+Z4  analyze DRAIN_MODEL_TOL 2 -> 3  [analyze          ] FAILS (good) via reachability
+Z5  F5 threshold 48 -> 32           [lambda_inf       ] FAILS (good) via lambda_inf
+Z19 drain guard boundary <= -> <    [analyze          ] FAILS (good) via label
+F1a predicate back to global max    [lambda_inf       ] FAILS (good) via lambda_inf
+F1b cell interval start INCLUSIVE   [lambda_inf       ] FAILS (good) via lambda_inf
+F1c log split by splitlines()       [lambda_inf       ] FAILS (good) via lambda_inf
+
+escapes: none (54/54 blocked, 72 selftest runs over 8 parallel workers)

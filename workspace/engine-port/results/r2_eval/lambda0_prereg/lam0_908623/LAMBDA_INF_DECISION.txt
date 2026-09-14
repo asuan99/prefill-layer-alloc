@@ -1,0 +1,14 @@
+LAMBDA0_MODE=FALLBACK
+LAMBDA0_LAMBDA_INF_A=
+LAMBDA0_LAMBDA_INF_B=
+LAMBDA0_DISQUALIFICATIONS=["I3b_shapeB: max #running-req over its OWN log interval [8435, 18380] is all_lines=2, decode_only=2, drop_prev_cell_tail=2 < 48 (newpair F5 -- that cell's achieved rate may not be cited as a saturation throughput)"]
+LAMBDA0_INSTR_ABSPATH=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument
+LAMBDA0_INPUT_SHA256_I3_max_running_req_txt=654ee9da442fa353f59f11beb688fc7f76c8de62a6c18b2a181fdde2a27cc3ef
+LAMBDA0_INPUT_SHA256_I3a_shapeA_jsonl=8539b43a3e67d36cbb271757d2635f8281f5f11e241af18c8cc03ca90b6b12c8
+LAMBDA0_INPUT_SHA256_I3b_shapeB_jsonl=7fbc81e7633114fd62b6d965441c415b99cba2501ee6e3388bfb615e97764b55
+LAMBDA0_INPUT_SHA256_I_log_offsets_txt=29ac5e6ae4e411e5c21a5a03324f61360fa31af3faeddf2d20ec624a449cee50
+LAMBDA0_INPUT_SHA256_srv_warmup_log=18400ea7bf90db5851abe6ddd58f2d2b6af78e286168a358e67514aba561690a
+LAMBDA0_RUNNING_REQ_I2=1/1/1 lines=85..4226 interval_lines=4142 (reported)
+LAMBDA0_RUNNING_REQ_I3a_shapeA=48/48/48 lines=4227..8434 interval_lines=4208 (judged)
+LAMBDA0_RUNNING_REQ_I3b_shapeB=2/2/2 lines=8435..18380 interval_lines=9946 (judged)
+LAMBDA0_RUNNING_REQ_FILE_VALUE=48 (provenance only, never the decision)

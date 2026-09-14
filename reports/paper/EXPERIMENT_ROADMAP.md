@@ -1001,6 +1001,87 @@ TTFT). rev4 판정서의 `I3b=11/11/2`는 **인용 금지**(`wc -l`
 전부 불변. 상세 `PROJECT_STATUS.md` 최상단 배너
 (2026-09-14(4)), `reports/CONSENSUS.md` rev77.
 
+★★★**job 908623(λ0 0단계) 결과 감사 등재(2026-09-14(5)) — 11셀
+완주·死因 0이나 게이트 #6은 여전히 닫히지 않는다**: gpu38,
+`sacct` COMPLETED 01:23:29=5,009s, **1.391389 GPU-h**(λ0 트랙
+최초 GPU 지출, 등록 보통 1.348의 1.032×). 라벨은 감사자 무수정
+재실행으로 **전 아티팩트 바이트 재현**(digest 11/11 일치, 변이
+54/54 blocked, 반전 시험 7표면 전부 λ\* 값 불변) — 기계적
+산물 CONFIRMED. shape A(256,512) `KNEE_BRACKETED`
+**λ\*(A)≈3.05 req/s**(±0.6%, n=2, @창 131.01s·N=400) · shape
+B(8192,64) `KNEE_BRACKETED` **λ\*(B)≈0.696 req/s**(±0.3%, n=2,
+@창 286.85s·N=200), 양쪽 `SEED_REPEAT_HOLDS` — ★라벨이 인쇄한
+17자리는 인용 금지(λ0R-7).
+
+★★**최대 신규 발견 — 실현 분할 재집계로 `runtime_snapshot`
+(`multiplex/dual_worker.py:608`, 그 순간 선택된 division)을 세
+독립 추정량으로 집계하면 λ\*(A)는 D44 측정이 아니다**:
+λ\*(A)를 공급한 셀(a_r4)의 decode-busy 시간 **85.6–95.0%가
+비분할 `(0,108)`**이고 D44 점유는 **4.5–13.5%뿐**이다(λ\*(B)
+공급 셀 b_r3는 반대로 90.7–91.9%가 D44). 기전:
+`multiplexing_mixin.py:1199-1200`(decode 배치가 있는데
+split-prefill이 in-flight가 아니면 무조건 (0,108))
++`lambda0.sbatch:92-94`가 `PDMUX_STICKY_PARTITION`을 unset. 이는
+새 기전이 아니라 `CONSENSUS.md` §1-25·§1-26(B)가 이미 등재한
+`E1_DECODE_REALIZED`(4–19%)의 재현이며, 정본이 같은 이유로 `g`를
+은퇴시킨 것과 **같은 구조의 교락**이다. ⇒ **NPC-I(caveat)가
+shape A에서 반증으로 승격**(λ0R-8): (i) λ\*(A)를
+"decode_sm=44 용량"으로 인용 금지 (ii) "split을 바꾸면 5×
+변한다"(905835 계열)를 shape A에 이식 금지 (iii)
+★★**λ\*(A)로 B4(true-dual)를 B1에 정규화하는 설계는
+교락된다** — true-dual이 바꾸는 것이 바로 prefill·decode
+동시성, 즉 실현 혼합비 자신이다.
+
+★★**P2 블로커 갱신**: **①λ0 `NO-GO` 해소**(rev1–4 4연속
+`NO-GO`→rev5 `GO-with-caveats`→job 908623 `COMPLETED`, 측정
+실패 0). ②W4 λ\* 실측 부재는 **부분 이동·미해소(4겹)** — (1)
+정의가 틀렸다: 측정된 것은 `throughput_saturation`, 요구되는
+것은 `slo_sustainable`(하네스 자신의 `lambda_star.py`
+docstring이 명기 — "does NOT close gate #6") ⇒ ②③은 같은
+블로커의 두 이름 (2) Q3(상호 배타) 그대로: λ\*=0.697→decode
+phase 0.23×, λ\*=3.053→prefill phase 4.38× (3) 위 실현 분할
+발견이 새 장벽: 두 λ\*는 **서로 다른 실현 분할**에서 측정돼
+"한 arm의 두 phase 용량"조차 성립하지 않는다 (4) NPC-I: B4
+포화 상한 미측정. ③게이트#6은 **불변**(λ5C-8이 이 job 자신의
+수치로 재확인 — 정본 goodput 술어 재채점 결과 ITL은 11셀 전부
+통과, 구속은 전적으로 TTFT; shape B는 0.45 req/s 미만에서만
+λ\*_SLO가 있고 그보다 낮은 셀이 없어 브래킷 안 됨, shape A는
+인용 가능 셀 2개뿐이라 하한만 λ\*_SLO(A)≥1.754 req/s).
+**실제로 움직인 만큼**: W3+W4가 요구하는 두 shape에 대해
+`lambda_star.py`의 `source="measured"` 항목을 거짓말 없이
+채울 수 있게 됐다(이전엔 `exit 2`). 부수: 폐기된 옛 기본값
+4 req/s는 측정 대비 A 1.310×·B 5.737× 과대. **P2 착수 남는
+조건 3개**: (a) λ\*_SLO 두 shape 직접 측정 (b) λ\*를 실현
+분할 혼합비와 함께 등록 + `PDMUX_STICKY_PARTITION=1` 대조 (c)
+B4 포함 시 B4의 λ\* 또는 정규화 논증. ★금지:
+`PDMUX_ALLOW_UNMEASURED_LAMBDA_STAR=1`로 ③ 우회(허용되나
+게이트 #6을 닫지 않는다).
+
+그 밖 필수 병기: ★**λ\*(B) 0.697240 vs 인용금지 λ_inf(B)
+0.695587(+0.2377%)의 "일치"는 N-8을 되살리지 않는다**(λ0R-1,
+이번 회차 최대 위험) — 차이가 이 측정 자신의 seed 재현 산포
+(0.310%)보다 작아 통계적으로 구별 불가, N-8은 자격 조항이라
+사후 독립 측정으로 충족되지 않으며(λ5C-1 재확인, 두 번째
+job에서 복제), 상한/피상한 순서도 미약히 반대로 깨지고(λ_inf는
+상한 프로브였는데 측정 λ\*(B)가 초과), B 사다리 사전이 그 값을
+겨냥해 설계돼 순환 위험도 있다 — 합법적으로 남는 것은 하네스
+교차 일관성 서술뿐(λ0R-2). λ\*(A)는
+`--max-running-requests 48`이 구속(λ0R-3, 하드웨어 상한
+아님). arm 비동일성 1파일(`multiplexing_mixin.py`, 커밋
+`a9cd8dd`) — 무영향은 코드 독해 추론이며 측정된 null 아님.
+"제출 전 커밋" 절차가 어겨졌으나(F6 `uncommitted=31`, 커밋은
+job 시작 14분 뒤) 실행 바이트 HEAD 일치로 死因 아님(λ0R-10).
+`ACH_HI`를 조이는 방향이 미등록 자유 표면(λ0R-6, 최단 반전
++3.3%). GPU 장부: λ0 트랙 신규 **1.391389 GPU-h**(이 트랙
+최초 지출), R2 correctness 트랙 불변 1.322778 GPU-h. 신규
+게이트 6건(#248–253, `CONSENSUS.md` §3 항목268–273). **새
+성능 판정 0건**(arm 비교 0·shape A vs B 비교 금지[in·out
+동시 변경]·policy 레버 0·hybrid/generic·true-dual 미발화)·
+Claim D/E 등급 불변(둘 다 미검증)·HE0·layer-type 死·정책
+순위·stake #1·게이트#13/#16·C2 인용정지 전부 불변. 상세
+`PROJECT_STATUS.md` 최상단 배너(2026-09-14(5)),
+`reports/CONSENSUS.md` rev78.
+
 ★追記(2026-09-11, doc-steward, R2 true-dual GPU correctness
 트랙) — 위 P1/P2는 여전히 미실행 성능 게이트다. 별도로
 **correctness 게이트**(P1/P2 성능 기준과 무관)가 job 907100에서

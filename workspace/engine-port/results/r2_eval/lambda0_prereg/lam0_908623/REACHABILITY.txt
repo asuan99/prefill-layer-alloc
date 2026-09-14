@@ -1,0 +1,127 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+### MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)   lambda_inf=(3.0939, 0.6956)
+    lam*/lam_inf |            shape A            |            shape B
+            0.10 | LADDER_TOO_HIGH    lam*= 0.309 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.070 err=    --   low=0/4
+            0.20 | LADDER_TOO_HIGH    lam*= 0.619 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.139 err=    --   low=0/4
+            0.25 | KNEE_NOT_BRACKETED lam*= 0.773 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.174 err=    --   low=0/4
+            0.35 | KNEE_BRACKETED     lam*= 1.083 err=  +0.0% low=1/2 | LADDER_TOO_HIGH    lam*= 0.243 err=    --   low=0/4
+            0.50 | KNEE_BRACKETED     lam*= 1.547 err=  +0.0% low=2/2 | KNEE_NOT_BRACKETED lam*= 0.348 err=    --   low=0/4
+            0.70 | KNEE_BRACKETED     lam*= 2.166 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.487 err=  +0.0% low=1/4
+            0.85 | KNEE_BRACKETED     lam*= 2.630 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.591 err=  +0.0% low=2/4
+            1.00 | KNEE_BRACKETED     lam*= 3.094 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.696 err=  +0.0% low=2/4
+            1.20 | KNEE_BRACKETED     lam*= 3.713 err=  -0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.835 err=  +0.0% low=2/4
+            1.45 | KNEE_BRACKETED     lam*= 4.486 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 1.009 err=  -9.1% low=3/4
+            1.80 | KNEE_BRACKETED     lam*= 5.569 err=  -2.2% low=2/2 | LADDER_TOO_LOW     lam*= 1.252 err=    --   low=3/4
+            2.50 | LADDER_TOO_LOW     lam*= 7.735 err=    --   low=2/2 | LADDER_TOO_LOW     lam*= 1.739 err=    --   low=4/4
+
+### point estimate lower  (lambda*(A)=2.1 regression extrapolation)   lambda_inf=(2.1, 0.675)
+    lam*/lam_inf |            shape A            |            shape B
+            0.10 | LADDER_TOO_HIGH    lam*= 0.210 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.068 err=    --   low=0/4
+            0.20 | LADDER_TOO_HIGH    lam*= 0.420 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.135 err=    --   low=0/4
+            0.25 | LADDER_TOO_HIGH    lam*= 0.525 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.169 err=    --   low=0/4
+            0.35 | KNEE_BRACKETED     lam*= 0.735 err=  +0.0% low=1/2 | LADDER_TOO_HIGH    lam*= 0.236 err=    --   low=0/4
+            0.50 | KNEE_BRACKETED     lam*= 1.050 err=  +0.0% low=1/2 | KNEE_NOT_BRACKETED lam*= 0.338 err=    --   low=0/4
+            0.70 | KNEE_BRACKETED     lam*= 1.470 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.472 err=  +0.0% low=1/4
+            0.85 | KNEE_BRACKETED     lam*= 1.785 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.574 err=  +0.0% low=2/4
+            1.00 | KNEE_BRACKETED     lam*= 2.100 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.675 err=  -0.0% low=2/4
+            1.20 | KNEE_BRACKETED     lam*= 2.520 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.810 err=  +0.0% low=2/4
+            1.45 | KNEE_BRACKETED     lam*= 3.045 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.979 err= -10.3% low=3/4
+            1.80 | KNEE_BRACKETED     lam*= 3.780 err=  -1.6% low=2/2 | LADDER_TOO_LOW     lam*= 1.215 err=    --   low=3/4
+            2.50 | LADDER_TOO_LOW     lam*= 5.250 err=    --   low=2/2 | LADDER_TOO_LOW     lam*= 1.688 err=    --   low=4/4
+
+### point estimate upper  (lambda*(A)=2.5 ctx-768 KV-term variant)   lambda_inf=(2.51, 0.8)
+    lam*/lam_inf |            shape A            |            shape B
+            0.10 | LADDER_TOO_HIGH    lam*= 0.251 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.080 err=    --   low=0/4
+            0.20 | LADDER_TOO_HIGH    lam*= 0.502 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.160 err=    --   low=0/4
+            0.25 | LADDER_TOO_HIGH    lam*= 0.627 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.200 err=    --   low=0/4
+            0.35 | KNEE_BRACKETED     lam*= 0.878 err=  +0.0% low=1/2 | LADDER_TOO_HIGH    lam*= 0.280 err=    --   low=0/4
+            0.50 | KNEE_BRACKETED     lam*= 1.255 err=  +0.0% low=1/2 | KNEE_NOT_BRACKETED lam*= 0.400 err=    --   low=0/4
+            0.70 | KNEE_BRACKETED     lam*= 1.757 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.560 err=  +0.0% low=1/4
+            0.85 | KNEE_BRACKETED     lam*= 2.133 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.680 err=  +0.0% low=2/4
+            1.00 | KNEE_BRACKETED     lam*= 2.510 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.800 err=  +0.0% low=2/4
+            1.20 | KNEE_BRACKETED     lam*= 3.012 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.960 err=  +0.0% low=2/4
+            1.45 | KNEE_BRACKETED     lam*= 3.639 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 1.160 err=  -7.0% low=3/4
+            1.80 | KNEE_BRACKETED     lam*= 4.518 err=  -1.6% low=2/2 | LADDER_TOO_LOW     lam*= 1.440 err=    --   low=3/4
+            2.50 | LADDER_TOO_LOW     lam*= 6.275 err=    --   low=2/2 | LADDER_TOO_LOW     lam*= 2.000 err=    --   low=4/4
+
+### absolute lower bound  (A=1.08 worst observed step, B=0.35)   lambda_inf=(1.08, 0.35)
+    lam*/lam_inf |            shape A            |            shape B
+            0.10 | LADDER_TOO_HIGH    lam*= 0.108 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.035 err=    --   low=0/4
+            0.20 | LADDER_TOO_HIGH    lam*= 0.216 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.070 err=    --   low=0/4
+            0.25 | LADDER_TOO_HIGH    lam*= 0.270 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.087 err=    --   low=0/4
+            0.35 | KNEE_BRACKETED     lam*= 0.378 err=  +0.0% low=1/2 | LADDER_TOO_HIGH    lam*= 0.122 err=    --   low=0/4
+            0.50 | KNEE_BRACKETED     lam*= 0.540 err=  +0.0% low=1/2 | KNEE_NOT_BRACKETED lam*= 0.175 err=    --   low=0/4
+            0.70 | KNEE_BRACKETED     lam*= 0.756 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.245 err=  +0.0% low=1/4
+            0.85 | KNEE_BRACKETED     lam*= 0.918 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.297 err=  +0.0% low=2/4
+            1.00 | KNEE_BRACKETED     lam*= 1.080 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.350 err=  -6.1% low=2/4
+            1.20 | KNEE_BRACKETED     lam*= 1.296 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.420 err= -15.4% low=2/4
+            1.45 | KNEE_BRACKETED     lam*= 1.566 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.507 err= -24.7% low=3/4
+            1.80 | KNEE_BRACKETED     lam*= 1.944 err=  -3.1% low=2/2 | LADDER_TOO_LOW     lam*= 0.630 err=    --   low=3/4
+            2.50 | LADDER_TOO_LOW     lam*= 2.700 err=    --   low=2/2 | LADDER_TOO_LOW     lam*= 0.875 err=    --   low=4/4
+
+### absolute upper bound  (A=7.15 step(B=1) floor, B=1.20)   lambda_inf=(7.15, 1.2)
+    lam*/lam_inf |            shape A            |            shape B
+            0.10 | LADDER_TOO_HIGH    lam*= 0.715 err=    --   low=0/1 | LADDER_TOO_HIGH    lam*= 0.120 err=    --   low=0/4
+            0.20 | LADDER_TOO_HIGH    lam*= 1.430 err=    --   low=0/1 | LADDER_TOO_HIGH    lam*= 0.240 err=    --   low=0/4
+            0.25 | KNEE_BRACKETED     lam*= 1.788 err=  +0.0% low=1/1 | LADDER_TOO_HIGH    lam*= 0.300 err=    --   low=0/4
+            0.35 | KNEE_BRACKETED     lam*= 2.502 err=  +0.0% low=1/1 | LADDER_TOO_HIGH    lam*= 0.420 err=    --   low=0/4
+            0.50 | KNEE_BRACKETED     lam*= 3.575 err=  +0.0% low=1/1 | KNEE_NOT_BRACKETED lam*= 0.600 err=    --   low=0/4
+            0.70 | KNEE_BRACKETED     lam*= 5.005 err=  +0.0% low=1/1 | KNEE_BRACKETED     lam*= 0.840 err=  +0.0% low=1/4
+            0.85 | KNEE_BRACKETED     lam*= 6.078 err=  +0.0% low=1/1 | KNEE_BRACKETED     lam*= 1.020 err=  +0.0% low=2/4
+            1.00 | KNEE_BRACKETED     lam*= 7.150 err=  +0.0% low=1/1 | KNEE_BRACKETED     lam*= 1.200 err=  +0.0% low=2/4
+            1.20 | KNEE_BRACKETED     lam*= 8.580 err=  +0.0% low=1/1 | KNEE_BRACKETED     lam*= 1.440 err=  +0.0% low=2/4
+            1.45 | KNEE_BRACKETED     lam*=10.367 err=  +0.0% low=1/1 | KNEE_BRACKETED     lam*= 1.740 err=  -0.9% low=3/4
+            1.80 | KNEE_BRACKETED     lam*=12.870 err=  -2.5% low=1/1 | LADDER_TOO_LOW     lam*= 2.160 err=    --   low=3/4
+            2.50 | LADDER_TOO_LOW     lam*=17.875 err=    --   low=1/1 | LADDER_TOO_LOW     lam*= 3.000 err=    --   low=4/4
+
+### B=6 plateau variant   (A=3.91, B=1.00)   lambda_inf=(3.91, 1.0)
+    lam*/lam_inf |            shape A            |            shape B
+            0.10 | LADDER_TOO_HIGH    lam*= 0.391 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.100 err=    --   low=0/4
+            0.20 | LADDER_TOO_HIGH    lam*= 0.782 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.200 err=    --   low=0/4
+            0.25 | KNEE_NOT_BRACKETED lam*= 0.978 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.250 err=    --   low=0/4
+            0.35 | KNEE_BRACKETED     lam*= 1.369 err=  +0.0% low=1/2 | LADDER_TOO_HIGH    lam*= 0.350 err=    --   low=0/4
+            0.50 | KNEE_BRACKETED     lam*= 1.955 err=  +0.0% low=2/2 | KNEE_NOT_BRACKETED lam*= 0.500 err=    --   low=0/4
+            0.70 | KNEE_BRACKETED     lam*= 2.737 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.700 err=  +0.0% low=1/4
+            0.85 | KNEE_BRACKETED     lam*= 3.324 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.850 err=  +0.0% low=2/4
+            1.00 | KNEE_BRACKETED     lam*= 3.910 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 1.000 err=  +0.0% low=2/4
+            1.20 | KNEE_BRACKETED     lam*= 4.692 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 1.200 err=  +0.0% low=2/4
+            1.45 | KNEE_BRACKETED     lam*= 5.670 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 1.450 err=  -3.5% low=3/4
+            1.80 | KNEE_BRACKETED     lam*= 7.038 err=  -1.0% low=2/2 | LADDER_TOO_LOW     lam*= 1.800 err=    --   low=3/4
+            2.50 | LADDER_TOO_LOW     lam*= 9.775 err=    --   low=2/2 | LADDER_TOO_LOW     lam*= 2.500 err=    --   low=4/4
+
+### FALLBACK literal ladders   lambda_inf=(2.1, 0.675)  [FALLBACK ladders]
+    lam*/lam_inf |            shape A            |            shape B
+            0.10 | LADDER_TOO_HIGH    lam*= 0.210 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.068 err=    --   low=0/4
+            0.20 | LADDER_TOO_HIGH    lam*= 0.420 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.135 err=    --   low=0/4
+            0.25 | LADDER_TOO_HIGH    lam*= 0.525 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.169 err=    --   low=0/4
+            0.35 | LADDER_TOO_HIGH    lam*= 0.735 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.236 err=    --   low=0/4
+            0.50 | KNEE_NOT_BRACKETED lam*= 1.050 err=    --   low=0/2 | LADDER_TOO_HIGH    lam*= 0.338 err=    --   low=0/4
+            0.70 | KNEE_BRACKETED     lam*= 1.470 err=  +0.0% low=1/2 | KNEE_NOT_BRACKETED lam*= 0.472 err=    --   low=0/4
+            0.85 | KNEE_BRACKETED     lam*= 1.785 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.574 err=  +0.0% low=1/4
+            1.00 | KNEE_BRACKETED     lam*= 2.100 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.675 err=  -0.0% low=1/4
+            1.20 | KNEE_BRACKETED     lam*= 2.520 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.810 err=  +0.0% low=2/4
+            1.45 | KNEE_BRACKETED     lam*= 3.045 err=  +0.0% low=2/2 | KNEE_BRACKETED     lam*= 0.979 err=  -9.2% low=2/4
+            1.80 | KNEE_BRACKETED     lam*= 3.780 err=  +0.0% low=2/2 | LADDER_TOO_LOW     lam*= 1.215 err=    --   low=3/4
+            2.50 | KNEE_BRACKETED     lam*= 5.250 err=  +0.0% low=2/2 | LADDER_TOO_LOW     lam*= 1.688 err=    --   low=4/4
+
+### verdict domain census (must be non-empty for each registered verdict)
+    shape A  KNEE_BRACKETED        56 grid points  e.g. ('MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)', 0.35)
+    shape A  KNEE_NOT_BRACKETED     3 grid points  e.g. ('MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)', 0.25)
+    shape A  LADDER_TOO_HIGH       19 grid points  e.g. ('MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)', 0.1)
+    shape A  LADDER_TOO_LOW         6 grid points  e.g. ('MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)', 2.5)
+    shape B  KNEE_BRACKETED        34 grid points  e.g. ('MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)', 0.7)
+    shape B  KNEE_NOT_BRACKETED     7 grid points  e.g. ('MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)', 0.5)
+    shape B  LADDER_TOO_HIGH       29 grid points  e.g. ('MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)', 0.1)
+    shape B  LADDER_TOO_LOW        14 grid points  e.g. ('MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)', 1.8)
+
+### ★the REGISTERED MAP (F5-1), one code per lambda*/lambda_inf grid point, in grid order
+###   B=KNEE_BRACKETED  N=KNEE_NOT_BRACKETED  H=LADDER_TOO_HIGH  L=LADDER_TOO_LOW  U=UNRESOLVED
+###   grid = 0.1 0.2 0.25 0.35 0.5 0.7 0.85 1 1.2 1.45 1.8 2.5
+    A HHNBBBBBBBBL   B HHHHNBBBBBLL   MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)  <== matches REGISTERED_MAP
+    A HHHBBBBBBBBL   B HHHHNBBBBBLL   point estimate lower  (lambda*(A)=2.1 regression extrapolation)  <== matches REGISTERED_MAP
+    A HHHBBBBBBBBL   B HHHHNBBBBBLL   point estimate upper  (lambda*(A)=2.5 ctx-768 KV-term variant)  <== matches REGISTERED_MAP
+    A HHHBBBBBBBBL   B HHHHNBBBBBLL   absolute lower bound  (A=1.08 worst observed step, B=0.35)  <== matches REGISTERED_MAP
+    A HHBBBBBBBBBL   B HHHHNBBBBBLL   absolute upper bound  (A=7.15 step(B=1) floor, B=1.20)  <== matches REGISTERED_MAP
+    A HHNBBBBBBBBL   B HHHHNBBBBBLL   B=6 plateau variant   (A=3.91, B=1.00)  <== matches REGISTERED_MAP
+    A HHHHNBBBBBBB   B HHHHHNBBBBLL   FALLBACK literal ladders  <== matches REGISTERED_MAP

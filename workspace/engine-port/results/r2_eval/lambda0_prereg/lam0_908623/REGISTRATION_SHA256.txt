@@ -1,0 +1,20 @@
+# pre-registration in force: PREREG_LAMBDA0_REV5_2026-09-14.md
+8367b6ecdb6b4d795fac2e8aa9960805887f2512fe623fb01c1a87020082c214  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/PREREG_LAMBDA0_REV5_2026-09-14.md
+# decision path (7 files) + renderer + runner
+2c9c80111aa5c0bf9f35f5156cdbcfe7d5248a65199952953b3a95f19f94f861  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_lambda_inf.py
+2e51280c42e61f0e3ff7fdeccb1e7184a5091e228328d66d9d6d482e2893f86d  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_plan.py
+75cc7a67898f49b298dfb0bd313e34194dc5faf7eeeb303a6c1c2c7f58c6efc7  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_label.py
+3b17a162272f614f40f68f53045db38a7e55b8457dafb7829423f57b659d409d  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_analyze.py
+3dd4a1a0a78ab239acb209ca0bc4169108a2d279fa36f6075cafea19e00d4205  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_cells.py
+8b49ca716748f6831b0cc8468cc1628ab2e8002134eb9869fcfbf4b647d4b303  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_reachability.py
+44b41cffef5229fe1b5375f2e462fe45db57ac478ef631f76da7ba20c374946e  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_mutation_check.py
+222519d4812b0d90ac5ab53324c48e0a800e3aac41fb80d13a54a5d26d57f93b  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_cellprint.py
+c789af6ce8861ba56faeda96c3daf662f0bdcf1b380269c831bec8092d553416  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0.sbatch
+# every pre-registration revision kept beside it
+4cdcb6d7254ea7b5636aebe56a431b6793629a6c0e901eb71391efee0a208d58  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/PREREG_LAMBDA0_2026-09-13.md
+821a15891270aa815606454f580d091856e111b869ad1657b2cf765f16d9efba  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/PREREG_LAMBDA0_REV2_2026-09-13.md
+a6752b5fce1cf47d44dbba84c89480c15a5cf633ead999f5d0e5bebaa3d91769  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/PREREG_LAMBDA0_REV3_2026-09-13.md
+edc092b9e134ec12a108e010cbf1791231b7a90fb66adc94e87a54c7eced5342  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/PREREG_LAMBDA0_REV4_2026-09-13.md
+8367b6ecdb6b4d795fac2e8aa9960805887f2512fe623fb01c1a87020082c214  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/PREREG_LAMBDA0_REV5_2026-09-14.md
+632c2d7804f7fef03622f5287c4f7ae2dad019f605511bb896acba061061ab6d  /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/PREREG_LAMBDA0_REV5_ADDENDUM_2026-09-14.md
+# tree: 8507ceed973eb1d7be6ac484bc38d5e63105eb0f uncommitted=31

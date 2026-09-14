@@ -1,0 +1,7 @@
+# per-cell #running-req recount (F1) -- /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument/I_log_offsets.txt
+# log: /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/srv_warmup.log (18382 lines, `wc -l` convention), whole-log max 48
+# interval: start_exclusive_end_inclusive   judged: I3a_shapeA,I3b_shapeB   threshold 48
+cell           interval(1-based)    all_lines decode_only drop_prev_cell_tail  judged
+I2             85..4226                     1           1                   1  reported only
+I3a_shapeA     4227..8434                  48          48                  48  YES
+I3b_shapeB     8435..18380                  2           2                   2  YES

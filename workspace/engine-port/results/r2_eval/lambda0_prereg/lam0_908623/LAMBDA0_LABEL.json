@@ -1,0 +1,263 @@
+{
+  "R0_R1_R2_R3_by_shape": {
+    "A": {
+      "blind_spot_cells": [
+        3.0
+      ],
+      "drain_disqualified_low_side": [],
+      "ladder": [
+        {
+          "ach_over_realized": 0.9888371357338189,
+          "achieved": 1.0726152217910405,
+          "kappa_pred": 0.9780533423344222,
+          "low_side_candidate": true,
+          "offered": 1.1,
+          "slack_vs_ACH_HI": 0.03883713573381897
+        },
+        {
+          "ach_over_realized": 0.988644440915504,
+          "achieved": 1.7539478836481017,
+          "kappa_pred": 0.9737636815789732,
+          "low_side_candidate": true,
+          "offered": 1.8,
+          "slack_vs_ACH_HI": 0.03864444091550401
+        },
+        {
+          "ach_over_realized": 0.9371928655363014,
+          "achieved": 2.807915985563469,
+          "kappa_pred": null,
+          "low_side_candidate": false,
+          "offered": 3.0,
+          "slack_vs_ACH_HI": -0.012807134463698522
+        },
+        {
+          "ach_over_realized": 0.6228945253629398,
+          "achieved": 3.0482071304216585,
+          "kappa_pred": null,
+          "low_side_candidate": false,
+          "offered": 4.9,
+          "slack_vs_ACH_HI": -0.3271054746370602
+        },
+        {
+          "ach_over_realized": 0.3821390189876374,
+          "achieved": 3.0531296871219915,
+          "kappa_pred": null,
+          "low_side_candidate": false,
+          "offered": 8.0,
+          "slack_vs_ACH_HI": -0.5678609810123625
+        }
+      ],
+      "lambda_star": 3.0531296871219915,
+      "n_low_side_candidates": 2,
+      "n_saturated_cells": 2,
+      "n_usable_low_side": 2,
+      "nominal_agrees": true,
+      "nominal_denominator_would_say": "KNEE_BRACKETED",
+      "redesign_factor": null,
+      "seed_repeat": {
+        "achieved_rate": 3.071575449158392,
+        "ratio": 0.3897446060226017,
+        "rel_diff_vs_lambda_star": 0.006041591392008055,
+        "still_saturated": true,
+        "tolerance": 0.05,
+        "verdict": "SEED_REPEAT_HOLDS"
+      },
+      "verdict": "KNEE_BRACKETED"
+    },
+    "B": {
+      "blind_spot_cells": [],
+      "drain_disqualified_low_side": [
+        "b_r2",
+        "b_r3"
+      ],
+      "ladder": [
+        {
+          "ach_over_realized": 0.9763499964633945,
+          "achieved": 0.4369751947301573,
+          "kappa_pred": 0.989104428062669,
+          "low_side_candidate": true,
+          "offered": 0.45,
+          "slack_vs_ACH_HI": 0.02634999646339453
+        },
+        {
+          "ach_over_realized": 0.9816029438109354,
+          "achieved": 0.6025708684247865,
+          "kappa_pred": 0.9856950155693045,
+          "low_side_candidate": true,
+          "offered": 0.62,
+          "slack_vs_ACH_HI": 0.031602943810935424
+        },
+        {
+          "ach_over_realized": 0.8271321538631751,
+          "achieved": 0.6961451286520527,
+          "kappa_pred": 0.9819881477692713,
+          "low_side_candidate": false,
+          "offered": 0.85,
+          "slack_vs_ACH_HI": -0.12286784613682489
+        },
+        {
+          "ach_over_realized": 0.6067575846092663,
+          "achieved": 0.697240255416205,
+          "kappa_pred": 0.9811512026959239,
+          "low_side_candidate": false,
+          "offered": 1.15,
+          "slack_vs_ACH_HI": -0.34324241539073364
+        }
+      ],
+      "lambda_star": 0.697240255416205,
+      "n_low_side_candidates": 4,
+      "n_saturated_cells": 2,
+      "n_usable_low_side": 2,
+      "nominal_agrees": true,
+      "nominal_denominator_would_say": "KNEE_BRACKETED",
+      "redesign_factor": null,
+      "seed_repeat": {
+        "achieved_rate": 0.6950756354785993,
+        "ratio": 0.6012712361738511,
+        "rel_diff_vs_lambda_star": 0.003104553876215335,
+        "still_saturated": true,
+        "tolerance": 0.05,
+        "verdict": "SEED_REPEAT_HOLDS"
+      },
+      "verdict": "KNEE_BRACKETED"
+    }
+  },
+  "expected_cells": [
+    "a_r0",
+    "a_r1",
+    "a_r2",
+    "a_r3",
+    "a_r4",
+    "b_r0",
+    "b_r1",
+    "b_r2",
+    "b_r3"
+  ],
+  "expected_repeat_cells": [
+    "a_r4_s2",
+    "b_r3_s2"
+  ],
+  "lambda_inf_decision": {
+    "disqualifications": [
+      "I3b_shapeB: max #running-req over its OWN log interval [8435, 18380] is all_lines=2, decode_only=2, drop_prev_cell_tail=2 < 48 (newpair F5 -- that cell's achieved rate may not be cited as a saturation throughput)"
+    ],
+    "inputs": {
+      "I3_max_running_req.txt": {
+        "abspath": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument/I3_max_running_req.txt",
+        "exists": true,
+        "sha256": "654ee9da442fa353f59f11beb688fc7f76c8de62a6c18b2a181fdde2a27cc3ef",
+        "size": 3
+      },
+      "I3a_shapeA.jsonl": {
+        "abspath": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument/I3a_shapeA.jsonl",
+        "exists": true,
+        "sha256": "8539b43a3e67d36cbb271757d2635f8281f5f11e241af18c8cc03ca90b6b12c8",
+        "size": 4039465
+      },
+      "I3b_shapeB.jsonl": {
+        "abspath": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument/I3b_shapeB.jsonl",
+        "exists": true,
+        "sha256": "7fbc81e7633114fd62b6d965441c415b99cba2501ee6e3388bfb615e97764b55",
+        "size": 529542
+      },
+      "I_log_offsets.txt": {
+        "abspath": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument/I_log_offsets.txt",
+        "exists": true,
+        "sha256": "29ac5e6ae4e411e5c21a5a03324f61360fa31af3faeddf2d20ec624a449cee50",
+        "size": 109
+      },
+      "srv_warmup.log": {
+        "abspath": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/srv_warmup.log",
+        "exists": true,
+        "sha256": "18400ea7bf90db5851abe6ddd58f2d2b6af78e286168a358e67514aba561690a",
+        "size": 3555273
+      }
+    },
+    "instrument_dir": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument",
+    "lambda_inf": {},
+    "min_running_req": 48,
+    "mode": "FALLBACK",
+    "running_req_file_value": 48,
+    "running_req_recount": {
+      "cells": {
+        "I2": {
+          "all_lines": 1,
+          "decode_only": 1,
+          "drop_prev_cell_tail": 1,
+          "drop_prev_cell_tail_lines": 4,
+          "interval_1based": [
+            85,
+            4226
+          ],
+          "lines_in_interval": 4142,
+          "n_all_lines": 4128,
+          "n_decode_only": 4119,
+          "n_drop_prev_cell_tail": 4128
+        },
+        "I3a_shapeA": {
+          "all_lines": 48,
+          "decode_only": 48,
+          "drop_prev_cell_tail": 48,
+          "drop_prev_cell_tail_lines": 2,
+          "interval_1based": [
+            4227,
+            8434
+          ],
+          "lines_in_interval": 4208,
+          "n_all_lines": 3904,
+          "n_decode_only": 3880,
+          "n_drop_prev_cell_tail": 3904
+        },
+        "I3b_shapeB": {
+          "all_lines": 2,
+          "decode_only": 2,
+          "drop_prev_cell_tail": 2,
+          "drop_prev_cell_tail_lines": 2,
+          "interval_1based": [
+            8435,
+            18380
+          ],
+          "lines_in_interval": 9946,
+          "n_all_lines": 9632,
+          "n_decode_only": 9481,
+          "n_drop_prev_cell_tail": 9632
+        }
+      },
+      "convention_primary": "all_lines",
+      "conventions": [
+        "all_lines",
+        "decode_only",
+        "drop_prev_cell_tail"
+      ],
+      "errors": [],
+      "interval_convention": "start_exclusive_end_inclusive",
+      "judged_cells": [
+        "I3a_shapeA",
+        "I3b_shapeB"
+      ],
+      "line_convention": "wc_l_newline_only",
+      "offsets": {
+        "I2_end": 4226,
+        "I2_start": 84,
+        "I3a_shapeA_end": 8434,
+        "I3a_shapeA_start": 4226,
+        "I3b_shapeB_end": 18380,
+        "I3b_shapeB_start": 8434
+      },
+      "offsets_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument/I_log_offsets.txt",
+      "server_log_global_max": 48,
+      "server_log_lines": 18382,
+      "server_log_path": "/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/srv_warmup.log"
+    }
+  },
+  "missing_cells": [],
+  "prereg": "PREREG_LAMBDA0_REV5_2026-09-14.md",
+  "ratio_key": "achieved_over_realized",
+  "rev": 5,
+  "stage": "LAMBDA0",
+  "thresholds": {
+    "ACH_HI": 0.95,
+    "ACH_LO": 0.9,
+    "SEED_REPEAT_TOL": 0.05
+  }
+}
