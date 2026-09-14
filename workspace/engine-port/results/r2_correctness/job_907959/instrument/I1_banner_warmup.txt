@@ -1,0 +1,4 @@
+[2026-09-13 21:53:31] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB 
+[2026-09-13 21:53:32] KV Cache is allocated. #tokens: 2721290, K size: 20.76 GB, V size: 20.76 GB
+[2026-09-13 21:54:06] max_total_num_tokens=2721290, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=16384, available_gpu_mem=11.59 GB
+[2026-09-13 21:53:04] PD-Multiplexing enabled with 6 stream groups, sm_counts (prefill_sm, decode_sm): [(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]

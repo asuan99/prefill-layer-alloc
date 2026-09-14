@@ -1,0 +1,20 @@
+--- srv_L1.log
+[2026-09-13 22:06:04] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB 
+[2026-09-13 22:06:04] KV Cache is allocated. #tokens: 2721290, K size: 20.76 GB, V size: 20.76 GB
+[2026-09-13 22:06:15] max_total_num_tokens=2721290, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=16384, available_gpu_mem=11.59 GB
+--- srv_L2.log
+[2026-09-13 22:09:43] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB 
+[2026-09-13 22:09:43] KV Cache is allocated. #tokens: 2721290, K size: 20.76 GB, V size: 20.76 GB
+[2026-09-13 22:09:53] max_total_num_tokens=2721290, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=16384, available_gpu_mem=11.59 GB
+--- srv_TD1.log
+[2026-09-13 22:07:54] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB 
+[2026-09-13 22:07:54] KV Cache is allocated. #tokens: 2721290, K size: 20.76 GB, V size: 20.76 GB
+[2026-09-13 22:08:05] max_total_num_tokens=2721290, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=16384, available_gpu_mem=11.59 GB
+--- srv_TD2.log
+[2026-09-13 22:11:34] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB 
+[2026-09-13 22:11:34] KV Cache is allocated. #tokens: 2721290, K size: 20.76 GB, V size: 20.76 GB
+[2026-09-13 22:11:44] max_total_num_tokens=2721290, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=16384, available_gpu_mem=11.59 GB
+--- srv_warmup.log
+[2026-09-13 21:53:31] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB 
+[2026-09-13 21:53:32] KV Cache is allocated. #tokens: 2721290, K size: 20.76 GB, V size: 20.76 GB
+[2026-09-13 21:54:06] max_total_num_tokens=2721290, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=16384, available_gpu_mem=11.59 GB

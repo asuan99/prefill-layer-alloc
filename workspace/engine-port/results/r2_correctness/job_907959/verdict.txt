@@ -1,0 +1,10 @@
+r2_correctness verdict rule v2 (2026-09-11)  boots=['L1', 'TD1', 'L2', 'TD2'] booted=['L1', 'TD1', 'L2', 'TD2'] D=44
+  L1   booted=True crash_free=True graph_on=True (decode T/F=2604/0) path=True policy=True overlap=True (592/592 on idx 4) green_realized=True O_confirmed=True unsafe_decisions=0
+  TD1  booted=True crash_free=False graph_on=True (decode T/F=2347/0) path=True policy=True overlap=True (346/346 on idx 4) green_realized=True O_confirmed=True unsafe_decisions=16
+  L2   booted=True crash_free=True graph_on=True (decode T/F=2634/0) path=True policy=True overlap=True (624/624 on idx 4) green_realized=True O_confirmed=True unsafe_decisions=0
+  TD2  booted=True crash_free=False graph_on=True (decode T/F=2347/0) path=True policy=True overlap=True (344/344 on idx 4) green_realized=True O_confirmed=True unsafe_decisions=16
+  S mismatches: {'L1-TD1': 0, 'L1-L2': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'TD1-TD2': 0, 'L2-TD2': 0}
+  O within-arm: {'L1-L2': 0, 'TD1-TD2': 0}  cross-arm: {'L1-TD1': 0, 'L1-TD2': 0, 'TD1-L2': 0, 'L2-TD2': 0}
+  C (diagnostic) within-arm: {'L1-L2': 7, 'TD1-TD2': 0}  cross-arm: {'L1-TD1': 31, 'L1-TD2': 31, 'TD1-L2': 31, 'L2-TD2': 31}
+  failures=['TD1:B2_NO_CRASH', 'TD2:B2_NO_CRASH'] infra=[] unrealized=[]
+VERDICT FAIL

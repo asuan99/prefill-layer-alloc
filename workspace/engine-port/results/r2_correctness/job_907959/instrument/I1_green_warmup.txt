@@ -1,0 +1,6 @@
+  green idx=0 target=(108,0) realized=(None,None) null=(True,True)
+  green idx=1 target=(92,16) realized=(92,16) null=(False,False)
+  green idx=2 target=(84,24) realized=(84,24) null=(False,False)
+  green idx=3 target=(74,34) realized=(74,34) null=(False,False)
+  green idx=4 target=(64,44) realized=(64,44) null=(False,False)
+  green idx=5 target=(0,108) realized=(None,None) null=(True,True)

@@ -284,6 +284,53 @@ COMMIT=$(git -C "$PROJECT" rev-parse HEAD)
   done
 } > "$OUT/provenance.txt" 2>&1
 cat "$OUT/provenance.txt"
+
+# --- BEGIN r2c scope guard (added 2026-09-14 after job 908020) ---
+# FAIL-CLOSED SUBSTRATE CHECK.  Job 908020 burned 0.15250 GPU-h on
+# (Zamba2-2.7B, triton, ctx 4096) while its pre-registration had registered
+# (NemotronH-Nano-9B-v2, flashinfer, ctx 16384).  Nothing malfunctioned: the
+# registered submit command carried no R2C_* prefix, and the DEFAULTS above
+# (`:177` Zamba2, `:191` triton, and a ctx derived from whatever model won)
+# are a different substrate.  A pre-registration whose only registered
+# execution procedure deterministically produces the wrong substrate is a
+# submission-blocking defect, and three lines of defence (author, two
+# rule-layer audits, submitter) all missed it.
+#
+# WHY THE EXPECTATION IS REQUIRED RATHER THAN DEFAULTED.  Defaulting
+# R2C_EXPECT_* to one campaign's tuple would privilege that campaign inside a
+# shared harness and would silently drift from the pre-registration's scope
+# table.  Requiring them makes every submission STATE the substrate it
+# believes it is measuring, so a forgotten `R2C_MODEL=` is caught by the
+# mismatch and a forgotten expectation is caught by the unset check.  Both
+# failure directions exit 2 BEFORE the first boot, so a wrong substrate costs
+# seconds instead of a whole job.  No programmatic caller exists (the three
+# repo references to this file are comments), so nothing automated breaks.
+#
+# WHAT IT COMPARES: the RESOLVED values actually about to be served -- $MODEL
+# and $ABE as they will enter `server_cmd`, and $CTX after the derivation
+# block above -- not the raw env.  That is the target/realized distinction
+# gate #176 asks for: a typo in R2C_MODEL changes $MODEL and is caught.
+scope_fail=0
+for _v in R2C_EXPECT_MODEL R2C_EXPECT_BACKEND R2C_EXPECT_CTX; do
+  eval "_val=\${$_v:-}"
+  [ -n "$_val" ] || { echo "SCOPE_GUARD: $_v is not set" >&2; scope_fail=1; }
+done
+if [ "$scope_fail" = 0 ]; then
+  [ "$MODEL" = "$R2C_EXPECT_MODEL" ] || { echo "SCOPE_GUARD: model '$MODEL' != expected '$R2C_EXPECT_MODEL'" >&2; scope_fail=1; }
+  [ "$ABE" = "$R2C_EXPECT_BACKEND" ] || { echo "SCOPE_GUARD: backend '$ABE' != expected '$R2C_EXPECT_BACKEND'" >&2; scope_fail=1; }
+  [ "$CTX" = "$R2C_EXPECT_CTX" ] || { echo "SCOPE_GUARD: context_length '$CTX' != expected '$R2C_EXPECT_CTX'" >&2; scope_fail=1; }
+fi
+{
+  echo "scope_guard: model=$MODEL backend=$ABE ctx=$CTX"
+  echo "scope_guard expected: model=${R2C_EXPECT_MODEL:-<unset>} backend=${R2C_EXPECT_BACKEND:-<unset>} ctx=${R2C_EXPECT_CTX:-<unset>}"
+  echo "scope_guard: $([ "$scope_fail" = 0 ] && echo OK || echo MISMATCH)"
+} | tee -a "$OUT/provenance.txt"
+if [ "$scope_fail" != 0 ]; then
+  echo "SCOPE_GUARD: refusing to boot (no GPU work performed)" >&2
+  exit 2
+fi
+# --- END r2c scope guard ---
+
 # Pin the exact verdict rule this job is scored under (normative text = the
 # checker's module header, from the rule banner to its closing rule line).
 python3 -c "import ast,sys; d=ast.get_docstring(ast.parse(open(sys.argv[1]).read())); i=d.index('VERDICT RULE v2'); print(d[d.rfind(chr(10), 0, i)+1:])" \

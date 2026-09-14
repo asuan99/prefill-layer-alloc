@@ -1,0 +1,6 @@
+I2_start 84
+I2_end 4226
+I3a_shapeA_start 4226
+I3a_shapeA_end 8434
+I3b_shapeB_start 8434
+I3b_shapeB_end 18380

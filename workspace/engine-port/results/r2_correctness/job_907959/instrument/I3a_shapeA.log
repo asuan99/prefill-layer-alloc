@@ -1,0 +1,56 @@
+/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+benchmark_args=Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=47754, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/scratch/ehmoon/whlee/prefill-layer-alloc/hf_cache/raw/ShareGPT_V3_unfiltered_cleaned_split.json', model='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', served_model_name=None, tokenizer=None, num_prompts=300, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=256, random_output_len=512, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=64, output_file='/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument/I3a_shapeA.jsonl', output_details=True, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, seed=41, disable_ignore_eos=False, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, warmup_requests=1, tokenize_prompt=True, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', tag=None, header=None)
+Waiting up to 60s for http://127.0.0.1:47754/v1/models to become ready...
+Server ready in 0.0s.
+
+WARNING It is recommended to use the `Chat` or `Instruct` model for benchmarking.
+Because when the tokenizer counts the output tokens, if there is gibberish, it might count incorrectly.
+
+Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=47754, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/scratch/ehmoon/whlee/prefill-layer-alloc/hf_cache/raw/ShareGPT_V3_unfiltered_cleaned_split.json', model='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', served_model_name=None, tokenizer=None, num_prompts=300, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=256, random_output_len=512, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=64, output_file='/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_907959/instrument/I3a_shapeA.jsonl', output_details=True, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, seed=41, disable_ignore_eos=False, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, warmup_requests=1, tokenize_prompt=True, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', tag=None, header=None)
+
+#Input tokens: 76800
+#Output tokens: 153600
+Starting warmup with 1 sequences...
+Warmup completed with 1 sequences. Starting main benchmark run...
+  0%|          | 0/300 [00:00<?, ?it/s]/apps/applications/Miniconda/25.11.1/envs/pytorch_2.9.1_cuda13/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+  0%|          | 1/300 [00:12<1:02:45, 12.59s/it]  1%|          | 2/300 [00:15<35:17,  7.10s/it]   16%|█▋        | 49/300 [00:26<01:37,  2.58it/s] 17%|█▋        | 50/300 [00:30<02:03,  2.03it/s] 22%|██▏       | 66/300 [00:31<01:18,  2.99it/s] 32%|███▏      | 97/300 [00:39<01:00,  3.34it/s] 33%|███▎      | 98/300 [00:44<01:20,  2.50it/s] 38%|███▊      | 114/300 [00:46<00:55,  3.37it/s] 44%|████▍     | 132/300 [00:46<00:33,  4.96it/s] 48%|████▊     | 145/300 [00:53<00:45,  3.41it/s] 49%|████▊     | 146/300 [00:58<01:06,  2.32it/s] 54%|█████▍    | 162/300 [01:00<00:42,  3.28it/s] 60%|██████    | 180/300 [01:01<00:23,  5.03it/s] 64%|██████▍   | 193/300 [01:07<00:30,  3.54it/s] 65%|██████▌   | 195/300 [01:13<00:45,  2.31it/s] 70%|███████   | 210/300 [01:15<00:28,  3.18it/s] 76%|███████▌  | 228/300 [01:15<00:14,  4.95it/s] 80%|████████  | 241/300 [01:21<00:16,  3.69it/s] 81%|████████  | 243/300 [01:27<00:25,  2.27it/s] 86%|████████▌ | 258/300 [01:29<00:13,  3.15it/s] 92%|█████████▏| 275/300 [01:29<00:05,  4.95it/s] 96%|█████████▋| 289/300 [01:32<00:02,  4.86it/s] 97%|█████████▋| 291/300 [01:36<00:02,  3.17it/s]100%|██████████| 300/300 [01:36<00:00,  3.09it/s]
+
+============ Serving Benchmark Result ============
+Backend:                                 sglang    
+Traffic request rate:                    inf       
+Max request concurrency:                 64        
+Successful requests:                     300       
+Benchmark duration (s):                  96.97     
+Total input tokens:                      76800     
+Total input text tokens:                 76800     
+Total generated tokens:                  153600    
+Total generated tokens (retokenized):    153463    
+Request throughput (req/s):              3.09      
+Input token throughput (tok/s):          792.04    
+Output token throughput (tok/s):         1584.07   
+Peak output token throughput (tok/s):    1920.00   
+Peak concurrent requests:                111       
+Total token throughput (tok/s):          2376.11   
+Concurrency:                             59.05     
+----------------End-to-End Latency----------------
+Mean E2E Latency (ms):                   19084.87  
+Median E2E Latency (ms):                 16033.70  
+P90 E2E Latency (ms):                    27346.84  
+P99 E2E Latency (ms):                    30096.08  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          5835.29   
+Median TTFT (ms):                        2557.29   
+P99 TTFT (ms):                           16736.50  
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          25.93     
+Median TPOT (ms):                        26.34     
+P99 TPOT (ms):                           26.80     
+---------------Inter-Token Latency----------------
+Mean ITL (ms):                           25.93     
+Median ITL (ms):                         25.46     
+P95 ITL (ms):                            34.96     
+P99 ITL (ms):                            40.12     
+Max ITL (ms):                            197.10    
+==================================================
