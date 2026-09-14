@@ -1,6 +1,6 @@
 import json,collections
 D="/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_908534"
-S="/tmp/claude-100018302/-scratch-ehmoon-whlee/1d13f22f-029f-454a-9ec0-68a0e6ef664e/scratchpad/fn2"
+S=str(__import__("pathlib").Path(__file__).resolve().parent)
 batches=json.load(open(f"{S}/batches.json"))
 for b in ["L1","TD1","L2","TD2","DN1"]:
     first={}

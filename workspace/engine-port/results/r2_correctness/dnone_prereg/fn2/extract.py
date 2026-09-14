@@ -27,7 +27,7 @@ for boot in ["L1","TD1","L2","TD2","DN1"]:
                 guard=d.get("worker_grad_guard"),
             ))
     out[boot]=recs
-with open("/tmp/claude-100018302/-scratch-ehmoon-whlee/1d13f22f-029f-454a-9ec0-68a0e6ef664e/scratchpad/fn2/recs.json","w") as f:
+with open(str(__import__("pathlib").Path(__file__).resolve().parent)+"/recs.json","w") as f:
     json.dump(out,f)
 for b,r in out.items():
     eps=[x["ep"] for x in r]

@@ -1,5 +1,5 @@
 import json
-S="/tmp/claude-100018302/-scratch-ehmoon-whlee/1d13f22f-029f-454a-9ec0-68a0e6ef664e/scratchpad/fn2"
+S=str(__import__("pathlib").Path(__file__).resolve().parent)
 ep=json.load(open(f"{S}/epochs.json")); ba=json.load(open(f"{S}/batches.json"))
 GiB=1024**3; MiB=1024**2
 boots=["DN1","TD1","TD2","L1","L2"]

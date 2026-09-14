@@ -1,6 +1,6 @@
 import json,re,collections,datetime
 D="/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_correctness/job_908534"
-S="/tmp/claude-100018302/-scratch-ehmoon-whlee/1d13f22f-029f-454a-9ec0-68a0e6ef664e/scratchpad/fn2"
+S=str(__import__("pathlib").Path(__file__).resolve().parent)
 pat=re.compile(r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] Prefill batch, #new-seq: (\d+), #new-token: (\d+)")
 ep=json.load(open(f"{S}/epochs.json"))
 batches={}

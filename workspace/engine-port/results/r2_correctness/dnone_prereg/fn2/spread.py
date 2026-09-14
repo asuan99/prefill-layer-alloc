@@ -1,5 +1,5 @@
 import json,statistics
-S="/tmp/claude-100018302/-scratch-ehmoon-whlee/1d13f22f-029f-454a-9ec0-68a0e6ef664e/scratchpad/fn2"
+S=str(__import__("pathlib").Path(__file__).resolve().parent)
 rows=json.load(open(f"{S}/rows.json"))
 MiB=1048576; GiB=1024**3
 four=["TD1","TD2","L1","L2"]
