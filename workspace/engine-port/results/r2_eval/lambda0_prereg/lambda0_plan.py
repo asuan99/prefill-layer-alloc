@@ -115,7 +115,12 @@ KAPPA_MIN = ACH_HI + 0.02               # D16: low-side eligibility ceiling
 EBAR_TOL = 0.025                        # |Ebar-1| guard (audit option (c) band
                                         # is 1/Ebar in [0.95,1.05]; the seed
                                         # SELECTION achieves half that width)
-DRAIN_MODEL_TOL = 2.0                   # measured L > TOL * Lhat -> UNRESOLVED
+# ★rev5/F5-3: the dead `DRAIN_MODEL_TOL = 2.0` that used to sit here is DELETED.
+# Nothing in this module read it, and its comment still described the rev3 rule
+# ("measured L > TOL * Lhat -> UNRESOLVED") that E1 RETRACTED -- a blown drain
+# now disqualifies the cell from the low side and never voids the shape.  The
+# live tolerance is `lambda0_analyze.DRAIN_MODEL_TOL`, which is the one the
+# analyzer applies (gate #179: a stale constant reads as a live rule).
 SEED_REPEAT_RUNG = -1                   # F4 repeats the TOP rung of each shape
 SEED_REPEAT_TOL = 0.05                  # F4 prediction: lambda* within 5%
 
@@ -146,6 +151,21 @@ FALLBACK_LADDER = {
     "A": (1.1, 1.8, 3.0, 4.9, 8.0),
     "B": (0.45, 0.62, 0.85, 1.15),
 }
+# =========================================== lam5A-3 (rev5 addendum sec B-2)
+# THE HEADING OF A RUN RECORD MAY NOT CALL A PRIOR A MEASUREMENT.  `main()` used
+# to title EVERY plan `### measured lambda_inf`, including the one the F1 repair
+# actually selects -- where `lambda_inf` is (A 2.10 / B 0.675), i.e. the
+# REGISTERED PRIOR, and NEITHER NUMBER IS MEASURED.  (The measured pair
+# 3.0939 / 0.6956 is disqualified at cell granularity by newpair F5, so it may
+# not be cited as a saturation throughput at all -- audit R4C-2 / N-8 / lam5C-4.)
+# `PLAN.txt` is the run record, so a result document inheriting that heading puts
+# a FALSE sentence into canon; the 8th unregistered free surface the 5th audit
+# named is exactly this rebinding of the symbol `lambda_inf`.
+FALLBACK_TITLE = ("FALLBACK prior lambda_inf (NOT measured -- registered prior "
+                  "A=2.10 / B=0.675; the measured 3.0939 / 0.6956 are "
+                  "DISQUALIFIED per cell by newpair F5 and may not be cited as "
+                  "saturation throughputs)")
+ANCHORED_TITLE = "measured lambda_inf"
 LAMBDA_STAR_PRIOR = {"A": (2.1, 2.5), "B": (0.675, 0.675)}
 LAMBDA_STAR_ABS = {"A": (1.08, 7.15), "B": (0.35, 1.20)}
 
@@ -404,10 +424,18 @@ def _fmt_plan(p: dict, title: str) -> str:
 
 # ★MEASURED (job 907959, 2026-09-13, 0.356 GPU-h): I3a (256,512) achieved
 # 3.0939 req/s and I3b (8192,64) achieved 0.6956 req/s at --request-rate inf
-# --max-concurrency 64, with I3_max_running_req = 48 (the engine cap was
-# reached, newpair F5).  This is the scenario that will actually run; the rest
-# of the grid stays registered so the plan remains published across the whole
-# plausible range (gate #197).
+# --max-concurrency 64.
+# ★rev5/F1 -- THIS SCENARIO IS NO LONGER THE ONE THAT RUNS, and the sentence
+# that used to stand here ("with I3_max_running_req = 48, the engine cap was
+# reached, newpair F5") WAS FALSE AT CELL GRANULARITY.  `I3_max_running_req.txt`
+# holds the GLOBAL max over the warm-up log, and recomputing it per cell from
+# `I_log_offsets.txt` + `srv_warmup.log` gives I3a = 48 (F5 met) but
+# I3b = 2 (F5 NOT met) under all three registered conventions.  So
+# `lambda0_lambda_inf.decide` now answers FALLBACK on this artifact and neither
+# 3.0939 nor 0.6956 may be cited as a saturation throughput (audit R4C-2 / N-8).
+# The grid stays registered so the plan remains published across the whole
+# plausible range (gate #197); the scenario that actually runs is the FALLBACK
+# ladder below.
 LAMBDA_INF_MEASURED = (3.0939, 0.6956)
 REGISTERED_GRID = (
     ("MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)", 3.0939, 0.6956),
@@ -530,6 +558,19 @@ def selftest() -> None:
     fb = plan(2.10, 0.675, ladders={k: tuple(v) for k, v in FALLBACK_LADDER.items()})
     assert fb["shapes"]["A"]["n_low_side_candidates"] >= 1, fb["shapes"]["A"]["cells"]
     assert fb["shapes"]["B"]["n_low_side_candidates"] >= 1
+    # ★rev5/F5-4: and its BUDGET must be inside the request too.  Item 7 walks
+    #   `REGISTERED_GRID` only, whose worst corner is 3.224 GPU-h, so the
+    #   FALLBACK plan -- 3.509 GPU-h at the 0.25x corner, and after F1 the plan
+    #   that ACTUALLY RUNS -- used to sit outside every budget assertion.
+    assert fb["seed1_max_abs_ebar_dev"] <= EBAR_TOL, fb["seed1_max_abs_ebar_dev"]
+    assert fb["seed2_max_abs_ebar_dev"] <= EBAR_TOL, fb["seed2_max_abs_ebar_dev"]
+    fb_worst = max(budget(fb, r)["total_gpu_h"] for r in BUDGET_RATIO_GRID)
+    assert fb_worst <= REQUESTED_BUDGET_GPU_H, ("FALLBACK", fb_worst)
+    for s in ("A", "B"):
+        for c in fb["shapes"][s]["cells"]:
+            assert not c.get("window_unsatisfiable"), ("FALLBACK", s, c)
+            cap = N_MAX_LONG if c["T_measure_s"] > T_SHORT_S else N_MAX_SHORT
+            assert N_MIN <= c["num_prompts"] <= cap, ("FALLBACK", s, c)
 
     # 9. the window formula is the one the rev1 audit verified against probe C.
     p = plan(2.1, 0.675)
@@ -553,13 +594,15 @@ def selftest() -> None:
     rev2_low = [cell_at("A", m * 2.10, 170.0, 400)["kappa_pred"] for m in (0.40, 0.70)]
     assert all(k is not None and ACH_LO < k < ACH_HI for k in rev2_low), rev2_low
 
-    print("PLAN SELFTEST OK (rev4: exponential replay exact and rr=1.0 shown to "
+    print("PLAN SELFTEST OK (rev5: exponential replay exact and rr=1.0 shown to "
           "be necessary; one step model reproduces lambda*(A)=2.10; rev2's 170 s "
           "low rungs are REJECTED by the new ceiling [negative control]; every "
           "registered scenario has >=1 low-side candidate with kappa>=%.2f, both "
           "seeds within |Ebar-1|<=%.3f, 11 boots; blind-spot "
-          "theorem withdrawn with its counterexample recorded)"
-          % (KAPPA_MIN, EBAR_TOL))
+          "theorem withdrawn with its counterexample recorded; ★F5-4 the "
+          "FALLBACK plan -- the one that runs after F1, worst corner %.3f GPU-h "
+          "vs the %.2f requested -- is inside the budget, N and window asserts "
+          "too)" % (KAPPA_MIN, EBAR_TOL, fb_worst, REQUESTED_BUDGET_GPU_H))
 
 
 def main() -> int:
@@ -584,8 +627,11 @@ def main() -> int:
     ladders = ({k: tuple(v) for k, v in FALLBACK_LADDER.items()} if args.fallback
                else None)
     p = plan(args.lambda_inf_a, args.lambda_inf_b, ladders=ladders)
+    # lam5A-3: the title follows the MODE.  `--fallback` is the branch the F1
+    # repair selects and its lambda_inf is a prior, not a measurement.
+    title = FALLBACK_TITLE if args.fallback else ANCHORED_TITLE
     print(json.dumps(p, indent=2, sort_keys=True) if args.json
-          else _fmt_plan(p, "measured lambda_inf"))
+          else _fmt_plan(p, title))
     return 0
 
 

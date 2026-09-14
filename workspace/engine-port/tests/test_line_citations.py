@@ -386,24 +386,38 @@ class LiveRegistryTest(unittest.TestCase):
             self.assertIn(C.SCOPE_KEY, self.man[doc], doc)
             self.assertTrue(self.man[doc][C.SCOPE_KEY]["only"], doc)
 
+    # ★Every directory a registered key resolves through must be mutated, or the
+    # key that lives outside the mutated set comes back UNRESOLVED instead of
+    # DRIFT and the assertion below reads it as "survived".  `workloads.py`
+    # (registered 2026-09-14 for W4's phase shapes) is the case that forced this
+    # to be a list rather than two hard-coded names.
+    MUTATED = (
+        (("src", "multiplex"), "controller.py"),
+        (("src", "multiplex"), "profile.py"),
+        (("benchmarks", "pdmux_eval"), "workloads.py"),
+    )
+
     def test_shifting_the_real_files_fails_every_registered_key(self):
         import copy
         import shutil
 
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        src = os.path.join(C.TRACK_ROOT, "src", "multiplex")
-        watched = []
-        for name in ("controller.py", "profile.py"):
+        watched = set()
+        for parts, name in self.MUTATED:
+            src = os.path.join(C.TRACK_ROOT, *parts)
             with open(os.path.join(src, name)) as fh:
                 text = fh.read().split("\n")
             text[20:20] = ["# line-shift mutation", "# line-shift mutation"]
             with open(os.path.join(tmp.name, name), "w") as fh:
                 fh.write("\n".join(text))
-            watched.append(name)
-        for other in os.listdir(src):
-            if other.endswith(".py") and other not in watched:
-                shutil.copy(os.path.join(src, other), tmp.name)
+            watched.add(name)
+        for parts, _ in self.MUTATED:
+            src = os.path.join(C.TRACK_ROOT, *parts)
+            for other in os.listdir(src):
+                if other.endswith(".py") and other not in watched:
+                    shutil.copy(os.path.join(src, other), tmp.name)
+                    watched.add(other)
 
         saved_i, saved_r = C._index, C.SEARCH_ROOTS
         self.addCleanup(lambda: setattr(C, "SEARCH_ROOTS", saved_r))
@@ -428,3 +442,60 @@ class LiveRegistryTest(unittest.TestCase):
             expected - drifted, set(),
             "a registered citation survived a line shift -- it is an identity",
         )
+
+
+class BenchmarksSearchRootTest(unittest.TestCase):
+    """★`benchmarks/` was not a search root until 2026-09-14.
+
+    Every citation of `workloads.py` / `campaign.py` / `lambda_star.py` -- the
+    whole W4 and lambda* workstream -- resolved to UNRESOLVED, so those anchors
+    COULD NOT BE REGISTERED and `--check` skipped them in silence.  That is the
+    same failure the module comment above WORKSPACE_ROOT records for the engine
+    tree, repeated for a second root.  Deleting `benchmarks` from SEARCH_ROOTS
+    must make these fail.
+    """
+
+    def test_a_bare_benchmarks_basename_resolves(self):
+        for name in ("workloads.py", "campaign.py", "lambda_star.py"):
+            path, why = C.resolve(name)
+            self.assertIsNotNone(path, f"{name}: {why}")
+            self.assertTrue(
+                path.endswith(os.path.join("benchmarks", "pdmux_eval", name)),
+                path,
+            )
+
+    def test_benchmarks_is_listed_as_a_search_root(self):
+        self.assertIn(
+            os.path.join(C.TRACK_ROOT, "benchmarks"), C.SEARCH_ROOTS,
+        )
+
+    def test_the_canon_documents_register_the_w4_phase_shapes(self):
+        man = C.load_manifest()
+        docs = (
+            "../../PROJECT_STATUS.md",
+            "../../reports/paper/CLAIM_EVIDENCE_MATRIX.md",
+            "../../reports/paper/EXPERIMENT_ROADMAP.md",
+        )
+        for doc in docs:
+            targets = {
+                entry["target"]
+                for key, entry in man.get(doc, {}).items()
+                if key != C.SCOPE_KEY
+            }
+            self.assertTrue(
+                any(t.endswith("benchmarks/pdmux_eval/workloads.py")
+                    for t in targets),
+                f"{doc} does not register the W4 shape anchor: {targets}",
+            )
+
+    def test_the_registered_w4_anchor_is_the_shape_pair(self):
+        """The claim the canon makes there is (8192,64) / (256,512)."""
+        man = C.load_manifest()
+        entry = man["../../reports/paper/EXPERIMENT_ROADMAP.md"][
+            "workloads.py:159-160"]
+        path, _ = C.resolve("workloads.py")
+        chunk, _ = C.read_range(path, 159, 160)
+        sha, anchor, _ = C.fingerprint(chunk)
+        self.assertEqual(sha, entry["sha"])
+        self.assertIn("8192 if is_prefill else 256", "\n".join(chunk))
+        self.assertIn("64 if is_prefill else 512", "\n".join(chunk))

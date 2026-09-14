@@ -23,6 +23,10 @@
 #
 # ★ BOOTS  (default order L TD L TD -> labels L1 TD1 L2 TD2)
 #   The second L and TD boots are the NULL CONTROL for every equality tier.
+#   A third arm letter `DN` exists for the D-none diagnostic (R2C_GUARD below).
+#   It is NOT SCORED: its label is written to diag_boots.txt, a name no scorer
+#   opens, so its PREDICTED crash cannot reach the verdict.  The default order
+#   does not contain it and nothing about the default path changes.
 #
 # ★ TIERS AND VERDICT -- rule v2, fixed 2026-09-11 before any true-dual boot
 #   has produced an output.  The NORMATIVE text (per-boot checks B1-B8,
@@ -158,6 +162,23 @@
 #                                  # touched.  DEFAULT 0 = the exact command
 #                                  # sequence jobs 907100/907456 ran.
 #                                  # Pre-registered in newpair_prereg/.
+#   R2C_ORDER="L TD L TD DN" R2C_GUARD=none sbatch ...   # ★D-none CONTROL ARM.
+#                                  # `DN` = the true-dual arm with
+#                                  # PDMUX_WORKER_GRAD_GUARD moved to $R2C_GUARD
+#                                  # and NOTHING else changed: same policy, same
+#                                  # D, same telemetry/green/mem read-outs, same
+#                                  # client call, same seed, same --n-probes 8.
+#                                  # It is a NON-SCORED diagnostic boot (label ->
+#                                  # diag_boots.txt), so the OOM it is predicted
+#                                  # to hit cannot colour the gate label.
+#                                  # R2C_GUARD is FAIL-CLOSED: a value outside
+#                                  # inference_mode|no_grad|none is exit 2, and a
+#                                  # DN boot without R2C_GUARD is exit 2 (no
+#                                  # silent default).  Without a DN boot the
+#                                  # variable changes nothing and is recorded as
+#                                  # set-but-ignored.
+#                                  # Requires its own pre-registration; see
+#                                  # audit_908179_2026-09-14/VERDICT.md sec 8.5.
 
 set -uo pipefail
 module load conda/pytorch_2.9.1_cuda13 cuda/13.0.2 gcc/15.2.0
@@ -212,6 +233,63 @@ INSTR="${R2C_INSTRUMENT:-0}"
 MEMTEL="${R2C_MEM_TELEMETRY:-1}"
 SGPT_RAW="${R2C_SGPT_RAW:-$HF_HOME/raw/ShareGPT_V3_unfiltered_cleaned_split.json}"
 
+# --- BEGIN r2c grad-guard knob (extracted verbatim by tests/test_r2_correctness_dnone.py) ---
+# ★D-none CONTROL ARM (audit_908179_2026-09-14/VERDICT.md sec 8.5).  Job 908179
+# PASSed on the repaired engine, which makes "the grad-guard repair fixed the
+# true-dual OOM" PLAUSIBLE(conditional) and nothing more.  The ONE experiment
+# that can raise it is an arm that moves `PDMUX_WORKER_GRAD_GUARD=none` and
+# NOTHING else.  Two facts made that unrunnable without this knob:
+#   (i)  the unset loop below wipes every PDMUX_* variable, so submitting
+#        `PDMUX_WORKER_GRAD_GUARD=none sbatch ...` is silently discarded;
+#   (ii) the scorer splits arms by LABEL PREFIX (r2_correctness_check.py:366
+#        enumerates boots.txt; the per-boot checks use startswith("TD")), so a
+#        `none` boot entered as a SCORED boot joins the TD arm, and since it is
+#        PREDICTED to crash the gate would read FAIL BY CONSTRUCTION.
+# Hence the guard axis gets its own arm letter `DN` in the boot loop, whose
+# label goes to diag_boots.txt instead of boots.txt.
+#
+# FAIL CLOSED, NO SILENT DEFAULT (the shape of gate #6 / #237):
+#   * a value outside the enumeration is exit 2 EVEN WITH NO DN BOOT, because
+#     the engine maps an empty/absent guard name to the DEFAULT `inference_mode`
+#     (multiplexing_mixin.py:136-138) -- a typo would otherwise serve the
+#     default while the provenance echoed the typo;
+#   * a DN boot with no R2C_GUARD is exit 2, for the same reason;
+#   * with no DN boot the variable changes NOTHING (it is never exported), and
+#     the fact that it was set is still recorded in provenance.txt.
+GUARD="${R2C_GUARD:-}"
+case " $ORDER " in *" DN "*) HAS_DN=1 ;; *) HAS_DN=0 ;; esac
+case "$GUARD" in
+  inference_mode|no_grad|none) ;;
+  "") ;;                       # allowed ONLY when no DN boot -- checked next
+  *) echo "ERROR: R2C_GUARD='$GUARD' is not one of inference_mode|no_grad|none" >&2
+     exit 2 ;;
+esac
+if [ "$HAS_DN" = 1 ] && [ -z "$GUARD" ]; then
+  echo "ERROR: ORDER contains a DN boot but R2C_GUARD is unset -- the grad guard" >&2
+  echo "       is the only axis a DN boot moves, so it must be stated" >&2
+  exit 2
+fi
+if [ "$HAS_DN" = 1 ]; then
+  GUARD_PROV="$GUARD"; GUARD_APPLIED="DN-boots-only"
+elif [ -n "$GUARD" ]; then
+  GUARD_PROV="<engine default>"
+  GUARD_APPLIED="no (R2C_GUARD='$GUARD' set but ORDER has no DN boot)"
+else
+  GUARD_PROV="<engine default>"; GUARD_APPLIED="no"
+fi
+# PORT BUDGET, fail-closed.  BASEPORT = 30000 + (job % 5000) * 6 reserves SIX
+# ports per job (warm-up at +0, boot n at +n), so at most FIVE boots fit: a
+# sixth would land on the next job's warm-up port.  Adding the DN arm puts the
+# intended order `L TD L TD DN` exactly ON that boundary, so the boundary stops
+# being theoretical.  The count includes tokens the loop would reject as bad
+# arms, which only makes it refuse earlier.
+n_arms=0
+for _a in $ORDER; do n_arms=$((n_arms + 1)); done
+[ "$n_arms" -le 5 ] || {
+  echo "ERROR: ORDER has $n_arms boots; the port budget is 5 (BASEPORT+1..+5)" >&2
+  exit 2; }
+# --- END r2c grad-guard knob ---
+
 # Start from a clean PD-mux environment (policy_adapter.sh does the same).
 for var in $(env | grep -o '^PDMUX_[A-Z0-9_]*' || true); do unset "$var"; done
 unset SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN
@@ -260,11 +338,17 @@ COMMIT=$(git -C "$PROJECT" rev-parse HEAD)
   echo "model=$MODEL dsm=$DSM seed=$SEED order=[$ORDER] config=$CONFIG"
   echo "num_kv_splits_cli=${NKVS:-<server default>} baseline_job=${R2C_BASELINE_JOB:-<none>}"
   echo "trace_force_prefill=$TFP (907100/907456 used 1; r2_eval runner uses 0)"
-  # Realised instrument state, not just the target.  `worker_grad_guard` is NOT
-  # settable from this harness on purpose -- the engine default is the
-  # registered value, and each boot's telemetry also reports what the worker
-  # thread actually observed, so the two channels can disagree visibly.
-  echo "mem_telemetry=$MEMTEL worker_grad_guard=<engine default> (907959 had neither)"
+  # Realised instrument state, not just the target.  `worker_grad_guard` IS
+  # settable now, but ONLY for the non-scored DN diagnostic boot (R2C_GUARD, see
+  # the grad-guard knob block): a SCORED L/TD boot always gets the engine
+  # default.  It is recorded here, not merely logged, because it is part of the
+  # scope tuple -- a run whose provenance says `<engine default>` may not be
+  # quoted afterwards as a `none` arm, and one that says `none` may not be
+  # quoted as the registered configuration.  Each boot's telemetry independently
+  # reports what the worker thread actually observed, so the two channels can
+  # disagree visibly.
+  echo "mem_telemetry=$MEMTEL worker_grad_guard=$GUARD_PROV (907959 had neither)"
+  echo "r2c_guard=${R2C_GUARD:-<unset>} guard_applied=$GUARD_APPLIED dn_boots=$HAS_DN order=[$ORDER]"
   echo "context_length=$CTX ($CTX_SRC) attention_backend=$ABE"
   echo "instrument=$INSTR sgpt_raw=$SGPT_RAW"
   # The manifest hashes sglang's flashinfer_backend.py (entry 25); the wheel it
@@ -504,19 +588,45 @@ fi
 
 stop_server "$BASEPORT" "$WPID"
 
+# --- BEGIN r2c boot loop (extracted verbatim by tests/test_r2_correctness_dnone.py) ---
+# ARM VOCABULARY.  `L` and `TD` are the SCORED arms; their labels go to
+# boots.txt, the ONLY label list the scorer reads (r2_correctness_check.py:366).
+# `DN` is the non-scored D-none diagnostic arm: a TD boot plus
+# PDMUX_WORKER_GRAD_GUARD=$GUARD, identical in every other respect -- same
+# policy, same D, same telemetry path rule, same green read-out, same mem
+# telemetry, same client command, same seed, same --n-probes 8.
+# ★ITS LABEL GOES TO diag_boots.txt, NEVER TO boots.txt.  That is what keeps a
+#  PREDICTED crash out of the gate BY DESIGN rather than by prose: the scorer
+#  reads boots.txt and then only the five per-label templates
+#  gen_/srv_/tel_/green_<label>, with no glob, no listdir and no walk (pinned by
+#  tests/test_r2_correctness_instrument.py), so a label absent from boots.txt is
+#  INVISIBLE to it -- not merely tolerated by it.
 : > "$OUT/boots.txt"
-n_l=0; n_td=0; i=0
+n_l=0; n_td=0; n_dn=0; i=0
 for ARM in $ORDER; do
   i=$((i + 1))
   case "$ARM" in
-    L)  n_l=$((n_l + 1)); LABEL="L$n_l"; TD_ENV="" ;;
-    TD) n_td=$((n_td + 1)); LABEL="TD$n_td"; TD_ENV="PDMUX_TRUE_DUAL_WORKER=1" ;;
+    L)  n_l=$((n_l + 1)); LABEL="L$n_l"; TD_ENV=""; SCORED=1 ;;
+    TD) n_td=$((n_td + 1)); LABEL="TD$n_td"; TD_ENV="PDMUX_TRUE_DUAL_WORKER=1"; SCORED=1 ;;
+    DN) n_dn=$((n_dn + 1)); LABEL="DN$n_dn"; SCORED=0
+        # Fail closed AT THE POINT OF USE too: an empty value would reach the
+        # engine as `PDMUX_WORKER_GRAD_GUARD=`, which resolves to the DEFAULT
+        # inference_mode (multiplexing_mixin.py:136-138) -- i.e. a DN boot that
+        # silently is not one.  `${GUARD:-}` so the check itself cannot trip
+        # `set -u` when this block is extracted and run on its own.
+        [ -n "${GUARD:-}" ] || { echo "ERROR: DN boot with no R2C_GUARD" >&2; exit 2; }
+        TD_ENV="PDMUX_TRUE_DUAL_WORKER=1 PDMUX_WORKER_GRAD_GUARD=$GUARD" ;;
     *)  echo "bad arm $ARM"; continue ;;
   esac
   PORT=$((BASEPORT + i))
   echo ""
-  echo "########## boot=$LABEL arm=$ARM port=$PORT ##########"
-  echo -n "$LABEL " >> "$OUT/boots.txt"
+  echo "########## boot=$LABEL arm=$ARM port=$PORT scored=$SCORED ##########"
+  if [ "$SCORED" = 1 ]; then
+    echo -n "$LABEL " >> "$OUT/boots.txt"
+  else
+    echo -n "$LABEL " >> "$OUT/diag_boots.txt"
+    echo "  DIAGNOSTIC boot, NOT SCORED (label -> diag_boots.txt); grad guard=$GUARD"
+  fi
   env PDMUX_R2_POLICY=fixed PDMUX_R2_FIXED_DSM="$DSM" \
     PDMUX_TELEMETRY_PATH="$OUT/tel_${LABEL}.jsonl" \
     PDMUX_RUN_ID="r2corr_${SLURM_JOB_ID:-local}_${LABEL}" \
@@ -542,6 +652,7 @@ for ARM in $ORDER; do
   kill -0 "$PID" 2>/dev/null || echo "SERVER_DIED_DURING_CLIENT boot=$LABEL" | tee -a "$OUT/BOOT_FAILURES.txt"
   stop_server "$PORT" "$PID"
 done
+# --- END r2c boot loop ---
 
 # I1, second pass: the same banner from EVERY boot, warm-up and scored alike.
 # Pure `grep` over logs that already exist; it starts no process on the GPU and

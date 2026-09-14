@@ -4,7 +4,62 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-09-14(2) rev75 **(doc-steward — ★job 908179
+최종 갱신: 2026-09-14(4) rev77 **(doc-steward — ★job 908534
+(D-none 대조) 결과 감사 등재 + λ0 rev5 규칙층 감사 등재 +
+신규 게이트 7건[#241–247, §3 항목261–267])**: job 908534(gpu41,
+0.215278 GPU-h) `VERDICT PASS` — "수리가 907959 OOM의 원인"
+판정이 `PLAUSIBLE(조건부)` → **`CONFIRMED(scoped)`로 승급**
+(결과 감사 §3 (A)(B) 두 문장만 인용 가능, "지배 원인" 서술은
+감사가 명시 거부, 승급으로 안 닫히는 것 11항 동시 등재 —
+특히 Claim D 선결 0건 폐쇄·P2 블로커 3개 불변·성능 판정 0건).
+λ0 rev5는 규칙층 감사 **`GO-with-caveats`**(死因 0) — 신규
+발견 λ5C-1(shape B의 F5 앵커 자격 술어가 이 구성에서
+구조적으로 도달 불가), 게이트 #6은 이 결과로도 닫히지
+않는다(λ5C-8), GPU 신규 지출 0·**아직 미제출**(사용자 승인
+후 engine-porter 코드 권고 반영 대기). GPU 장부 갱신: R2
+correctness 트랙 1.107500→**1.322778 GPU-h**(등록
+1.170278/등록 밖 0.152500, 등록 상한 대비 +9.28%). 4번째
+미등록 축 갱신(gpu38→43→40→41) — **게이트 #233은 여전히
+열려 있다**. 신규 게이트 7건은 전부 새 성능 판정 0건: 승계
+술어 목록이 캠페인 설계 변경으로 문자 그대로 거짓이 됨(#241)·
+"보수적 변경" 자기점검은 도달성 보장 안 함(#242)·다른
+캠페인 문턱을 역할 반대로 인용(#243)·로그 인쇄 시점↔계측
+epoch 혼동(#244, 정정이 결과를 강화)·자기보고 수치를 전역
+단조 카운터에 묶은 취약성(#245)·동시 편집 트랙의 중간
+상태를 게이트 사실로 등재(#246)·앵커 자격 술어의 구조적
+도달 불가(#247, λ5C-1). 새 성능 판정 0건·Claim D/E 등급
+불변(둘 다 미검증)·HE0·layer-type 死·정책 순위·stake #1·
+게이트#13/#16·C2 인용정지 전부 불변. 상세 `PROJECT_STATUS.md`
+최상단 배너(2026-09-14(4)). **커밋 금지**(핸드오프 커밋에
+함께 묶인다).
+
+이전: 2026-09-14(3) rev76 **(doc-steward — 정본 인용
+부패 4건 수정[engine-porter 등록성 검사 발견] + 신규 게이트
+3건[#238–240, §3 항목258–260] + presubmit 차단 2건을 현재
+블로커로 등재)**: `generate_campaign.sh:10`(3문서 인용, 경로
+오기·"기본값 4 미측정" 주장이 W4 fail-closed 구현[커밋
+`8507cee`]으로 이제 거짓)·`r2_eval.sbatch:26→:69-70`(3문서,
+`PDMUX_ENGINE_COMMIT`, 커밋 `09a8075`)·`r2_eval.sbatch:100→
+:180`(`PROJECT_STATUS.md`, `context_limit` 호출) — 전부
+[HIST]+dated 追記로 처리(삭제 없음), λ\* 자체 미측정(게이트
+#6·λ0 `NO-GO`)은 불변. 범위 제한(line-citation `__scope__`가
+controller.py/profile.py만 등록)이 부패를 숨겼다는 사실도
+등재. 신규 게이트 3건은 전부 engine-porter 측정 귀속·새 성능
+판정 0건: 감사자 교정 정규식이 실행 엔진 의존 실효 항등식
+(#238)·`git show HEAD:` 대조가 W4 커밋 순간 자기부정(#239,
+세션 시작 시 전체 스위트 이미 red[645 tests, errors=2])·
+`presubmit.py`(`design_reachability.py`)가 read-only 아님
+(#240). presubmit 차단 2건(M4R `SINGLE_LABEL_FORCED`·TC1
+`RESTRICTIONS_INERT`)은 살아 있는 설계 결함으로 재확인 —
+다음 R2 job 제출은 범위 한정 OVERRIDE 문서+사용자 승인
+선행조건. M4R `sm_match` "why"의 2026-09-09 부분정정(⟸
+방향만 참) 이후 미재유도 플래그도 병기. 새 성능 판정 0건·
+Claim D/E 등급 불변(둘 다 미검증)·HE0·정책 순위·stake #1·
+게이트#13/#16·C2 인용정지 전부 불변. 상세 `PROJECT_STATUS.md`
+최상단 배너(2026-09-14(3)). **커밋 금지**(핸드오프 커밋에
+함께 묶인다).
+
+이전: 2026-09-14(2) rev75 **(doc-steward — ★job 908179
 결과 감사 등재)**: job 908179(등록 튜플 최초 실행,
 0.165556 GPU-h) `VERDICT PASS` — C1 스코프 술어 (1)–(11) 전부
 참(`NO_VERDICT_SCOPE` 아님), 비트 단위 재현. TD 2/2가 907959를
@@ -6995,6 +7050,20 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 256. ★★★**(2026-09-14, job 908179 결과 감사, claims-auditor, GPU 0 — 교훈88 계열, 규칙층 판) 백엔드를 바꾸면 판정 규칙 본문의 정당화 문장도 함께 재유도하라 — 조건 자체가 충족돼도 그 조건이 "왜 결정적인가"의 근거는 이식되지 않을 수 있다.** O1 프로토콜의 독립성 조건("구성상 결정적")은 `triton_attention_num_kv_splits`에서 유도됐는데 job 908179는 flashinfer 기판이다. 조건은 8/8 만족해 PASS는 영향받지 않지만 정당화는 이 기판에서 재유도된 적이 없다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #236(신설). 상세 `.../audit_908179_2026-09-14/VERDICT.md` §12(T13)·§16(G-8179-5).
 
 257. ★★★**(2026-09-14, job 908179 결과 감사, claims-auditor, GPU 0 — 게이트#113 명령줄 판) "이 처방은 값싸다"고 쓰기 전에 하네스가 그 노브를 실제로 삼키는지 확인하라.** `PDMUX_WORKER_GRAD_GUARD=none` 대조 arm 제출은 `r2_correctness.sbatch:216`의 일괄 `PDMUX_*` unset 루프에 조용히 먹혀 값이 전달되지 않는다 — 노브 배선 없이는 "다음 job 하나면 CONFIRMED로 올릴 수 있다"는 처방이 성립하지 않는다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #237(신설). 상세 `.../audit_908179_2026-09-14/VERDICT.md` §8.5·§16(G-8179-6).
+
+258. ★★★**(2026-09-14, engine-porter — E5 계열 RA4-2 처리[정본 인용 등록성 검사에서 부수 발견], GPU 0) 감사자의 교정 처방 자체가 실효 항등식일 수 있다 — 정규식은 실행 엔진까지 고정해 검증하라.** RA4-2가 처방한 `RuntimeError.*(?i:inference[ _](tensor|mode))|RuntimeError.*InferenceMode`의 `(?i:…)`는 PCRE 인라인 플래그이고 POSIX ERE에 없다 — 이 클러스터의 `/usr/bin/grep`(GNU grep 3.6) `-E`에서는 실측 12개 양성 중 4개만 잡히고, 대안을 하나로 줄인 형태로는 0/12(아무것도 안 잡고 "E5 미발화"라고 보고할 수 있는 형태)다. 같은 명령이 셸에 따라 12 또는 4를 낸다(이 세션 셸의 `grep`은 `(?i:)`를 받는 ugrep 7.8.4 래퍼). 검증된 대체형 `RuntimeError.*[Ii]nference[ _]?([Tt]ensors?|[Mm]ode)\b`는 `grep -E`/`grep -P`/`python re` 세 엔진 전부 12/12 양성으로 동값이다. 부수 정정: RA4-2는 등록 계열이 놓치는 하드 에러가 1종이라 했으나 실측은 3종(X5·X6·X7). 대응 `PROJECT_STATUS.md` "방법론 게이트" #238(신설). 상세 `workspace/engine-port/results/r2_correctness/E5_FAMILY_RA4_2_2026-09-14.md`(§4·§5·§6) + `e5_family_probe.py`.
+
+259. ★★★**(2026-09-14, engine-porter — 전체 테스트 스위트 감사[W4 커밋 직후], GPU 0) 변화를 통제하는 대조(control)를 그 변화가 움직이는 기준점(`HEAD`)에 걸면, 그 변화가 커밋되는 순간 대조가 자살한다.** `tests/test_lambda_star_per_shape.py`의 개정-전 대조는 `git show HEAD:…`를 exec해 개정 전 코드를 얻는데, W4가 커밋(`8507cee`)되는 순간 `HEAD`가 개정 후 파일이 돼 `ImportError`로 2 에러가 났다. 저자의 `try/except TypeError → skipTest` 가드는 모듈이 호출 전에 죽으므로 이 실패를 못 잡는다. 수리 = 고정 커밋 핀(`bddff6a`). ★부수 사실: 이 세션 시작 시점에 전체 스위트가 이미 red였다(645 tests, errors=2)는데 아무도 보고 있지 않았다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #239(신설). 상세 `workspace/engine-port/tests/test_lambda_star_per_shape.py:660,690,693-694,717-718`(읽기 확인만 — 이 파일은 engine-porter가 별도로 수리 중).
+
+260. ★★★**(2026-09-14, engine-porter — 규율 도구 부작용 감사, GPU 0) 규율 검사 도구 자신이 read-only라고 전제하지 마라 — 검사가 아티팩트를 다시 쓸 수 있다.** `presubmit.py`가 호출하는 `design_reachability.py`가 각 spec의 `out` 경로를 매 실행마다 다시 쓴다(`scripts/discipline/design_reachability.py:161-162`) — 이번 4회 실행이 `m4r_confinement/reachability_verdict.json`·`tc1_model_attrib/reach_verdict_rev3_A.json`을 재작성했다(이번엔 바이트 동일 확인됐으나, 다른 세션의 미커밋 작업을 파괴한 전례가 있다). 대응 `PROJECT_STATUS.md` "방법론 게이트" #240(신설). 상세 `scripts/discipline/design_reachability.py:161-162`.
+
+261. ★★★**(2026-09-14, D-none 결과 감사, claims-auditor, GPU 0) 승계 술어 목록은 캠페인 설계가 바뀌면 문자 그대로 거짓이 된다 — 실행 전에 새 값을 등록해도 목록 자체를 갱신하지 않으면 판정서가 그 거짓을 놓친다.** D-none rev2가 승계한 C1 스코프 술어 (4)"order=[L TD L TD]"·(7) harness sha 3행은 D-none boot 추가(order에 DN 삽입)·하네스 sha 이동으로 문자 그대로 거짓이 됐다(`grep -F` 0 hit). rev2가 §0-b/§2에서 새 값(order=[L TD L TD DN], 새 하네스 sha)을 실행 전에 정확히 등록했고 실측이 그 값과 정확히 일치해 사후 자유도는 0이었지만, 승계 목록의 문자열 자체는 갱신되지 않았고 이 결함은 rev2 본문·구속 追記·규칙층 판정서 2건(rules·rev2) 전부에서 놓쳤다 — rev1을 죽인 사인(DNR-2)과 같은 형태다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #241(신설). 상세 `workspace/engine-port/results/r2_correctness/dnone_prereg/VERDICT_result_908534_2026-09-14.md` §1-A.
+262. ★★★**(2026-09-14, D-none 결과 감사, claims-auditor, GPU 0) "이 변경은 보수적이다"라는 자기 점검은 도달성을 보장하지 않는다 — 트리거 문자열 하나가 정의와 모순하면 강한 독법에서 그 분지가 구조적으로 도달 불가가 될 수 있다.** D-none rev2 구속 追記 A2는 트리거 목록에 `SERVER_DIED_DURING_CLIENT`를 추가하면서 §4-1의 `UNREALIZED-BOOT-FAILED` 정의("health/warm-up 단계에서 사망")와 모순했다. 하네스는 `kill -0` 실패 시 무조건 그 문자열을 쓰므로, 강한 독법을 택하면 예보된 OOM이 그 문자열을 필연적으로 만들어 `RECOVERED-*` 분지가 구조적으로 도달 불가가 되고 rev1의 사인(DNR-1)이 되살아난다. 追記는 "모든 변경이 보수적"이라는 점검만으로 감사 회차를 면제받았으나 그 점검은 도달성을 검사하지 않았다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #242(신설). 상세 위 판정서 §1-D.
+263. ★★★**(2026-09-14, D-none 결과 감사, claims-auditor, GPU 0) 다른 캠페인의 문턱을 역할을 반대로 뒤집어 끌어오지 마라.** F-n2/채점서가 "0.3·R(6245)의 3.237배 ⇒ 문턱 충족"이라 적었으나 D-none rev2 §5-2는 그런 문턱을 등록한 적이 없다. θ=0.3825 MiB/token은 `PREREG_RERUN:787`의 F-b1 문턱이며 거기서는 수리 arm의 기울기를 위에서 묶는 판단이었는데, 여기서는 역할이 뒤집혀 가드 없는 arm의 하한으로 쓰였다. 라벨은 뒤집히지 않지만 "등록 문턱 통과"라는 서술은 허위다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #243(신설). 상세 위 판정서 §1-F F1.
+264. ★★★**(2026-09-14, D-none 결과 감사, claims-auditor, GPU 0) 로그 인쇄 시점과 계측 epoch을 섞으면 토큰 비매칭 비교가 된다 — 그러나 그 정정이 항상 결과를 약화시키는 것은 아니다.** 채점서의 "로그 77.25 GiB → Δ ≳ 9.70 GiB"는 epoch 40(사망 배치)과 epoch 39(계측값)을 비교한 것이었다(인용 금지). 또 "DN1이 ep39 도중 사망했다"도 거짓이었다 — `report_prefill_stats`가 forward 완료 후 호출되므로 `#new-token` 인쇄가 ep39 완주의 증거이고, 사망은 다음 배치(ep40, 텔레메트리 부재)에서 일어났다. 이 정정은 창 길이 비대칭 교락을 소멸시켜 Δ가 동일 커버리지의 공정 비교임을 강화했다(약화가 아니다). 대응 `PROJECT_STATUS.md` "방법론 게이트" #244(신설). 상세 위 판정서 §1-F F2·F3.
+265. ★★★**(2026-09-14, D-none 결과 감사, claims-auditor, GPU 0) 자기보고 수치를 저장소 전역 단조 카운터에 묶지 마라 — 그 카운터는 동시 편집 트랙 때문에 세션 안에서도 여러 번 낡을 수 있다.** `DESIGN_A1_REV2_STICKY_2026-08-25.md`류 문서가 인용하는 전체 CPU 회귀 수는 한 세션에 네 번(295→641→645→681→697) 낡았다. 서술이 틀린 게 아니라 진리원 선택이 틀린 것이다 — 필드를 "절차 시점 값+이력"으로 재정의하거나 검사의 진리원을 그 절차의 테스트 파일 집합으로 좁혀야 한다(이 회차에서는 수리하지 않고 열린 항목으로만 등재). 대응 `PROJECT_STATUS.md` "방법론 게이트" #245(신설). 상세 위 판정서 §4(DN2-1 정정 문단).
+266. ★★★**(2026-09-14, D-none 결과 감사, claims-auditor, GPU 0) 동시 편집 중인 트랙의 중간 상태를 게이트 사실로 등재하면 거짓이 될 수 있다 — 세 수치를 날짜 붙은 계열로 병기하라.** D-none rev2 판정서가 "제출 시점 전체 스위트 696 중 4 실패"를 필수 병기로 등록했으나, 제출 창의 실측은 697/697 OK였다(동시에 편집 중이던 λ0 트랙의 4개 실패가 그 창 안에서 통과로 바뀌었다). 세 수치(rev1 감사 시점 681/1·rev2 감사 시점 696/4·제출 창 697/0)를 날짜 붙은 계열로 병기해야 하며, 제출 창 실측 자체는 제3자 재현이 불가능하다(λ0 4개 파일이 job 종료 후 수정됨). 대응 `PROJECT_STATUS.md` "방법론 게이트" #246(신설). 상세 위 판정서 §4(DN2-1 문단·AD-6).
+267. ★★★**(2026-09-14, λ0 rev5 규칙층 감사, claims-auditor, GPU 0 — λ5C-1) 앵커 자격 술어는 그 shape/cap에서 구조적으로 도달 불가일 수 있다 — "부하가 모자랐다"로 오독하지 말고 재시도를 경로로 등록하지 마라.** λ0 shape B의 F5 앵커 자격 술어(`#running-req ≥ 48`)는 이 구성(`max_prefill_tokens=16384`가 8192-토큰 요청 2개를 prefill 배치 상한으로 만들어 decode 배치가 구성상 ~2)에서 어떤 부하로도 도달 불가다. 같은 레코드가 실현 동시성 57.43/64·median TTFT 90.69s를 적어 엔진이 셀 내내 backlog였음을 보인다. ⇒ (a) 셀 B의 F5 실격은 규칙의 올바른 적용이나 "포화하지 못했다"로 바꿔 쓸 수 없고, (b) `ANCHORED` 분지는 이 shape/cap의 모든 미래 instrument run에서 구조적으로 사용 불가하므로 "다시 재서 앵커를 살린다"는 경로가 아니며, (c) 미달 원인은 미확정으로 남는다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #247(신설). 상세 `workspace/engine-port/results/r2_eval/lambda0_prereg/VERDICT_lambda0_rev5_2026-09-14.md` §3(λ5C-1).
 
 ---
 ## 4. 살아있는 문서 (이것만 참조)

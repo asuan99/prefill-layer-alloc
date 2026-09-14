@@ -18,8 +18,15 @@
     "*controller.py:78-78",
     "*profile.py:113-160",
     "*profile.py:367-481",
-    "*profile.py:44-44"
+    "*profile.py:44-44",
+    "*workloads.py:159-160"
    ]
+  },
+  "benchmarks/pdmux_eval/workloads.py:159-160": {
+   "anchor": "8192 if is_prefill else 256,",
+   "anchor_offset": 0,
+   "sha": "98fed431d065bb27",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/workloads.py"
   },
   "controller.py:151-166": {
    "anchor": "\"\"\"The roadmap's immediate-upshift predicate (EXPERIMENT_ROADMAP.md:976,",
@@ -93,6 +100,18 @@
    "sha": "575fc4a9feff6248",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
   },
+  "controller.py:78-78": {
+   "anchor": "off_cadence: bool = False",
+   "anchor_offset": 0,
+   "sha": "6dbc8ee4ac0fb7bb",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "workloads.py:159-160": {
+   "anchor": "8192 if is_prefill else 256,",
+   "anchor_offset": 0,
+   "sha": "98fed431d065bb27",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/workloads.py"
+  },
   "workspace/engine-port/src/multiplex/controller.py:151-166": {
    "anchor": "\"\"\"The roadmap's immediate-upshift predicate (EXPERIMENT_ROADMAP.md:976,",
    "anchor_offset": 1,
@@ -137,7 +156,8 @@
     "*controller.py:78-78",
     "*profile.py:113-160",
     "*profile.py:367-481",
-    "*profile.py:44-44"
+    "*profile.py:44-44",
+    "*workloads.py:159-160"
    ]
   },
   "controller.py:151-166": {
@@ -211,6 +231,12 @@
    "anchor_offset": 0,
    "sha": "d5f03654571c755d",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "workloads.py:159-160": {
+   "anchor": "8192 if is_prefill else 256,",
+   "anchor_offset": 0,
+   "sha": "98fed431d065bb27",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/workloads.py"
   }
  },
  "../../reports/paper/EXPERIMENT_ROADMAP.md": {
@@ -232,7 +258,8 @@
     "*controller.py:78-78",
     "*profile.py:113-160",
     "*profile.py:367-481",
-    "*profile.py:44-44"
+    "*profile.py:44-44",
+    "*workloads.py:159-160"
    ]
   },
   "controller.py:151-166": {
@@ -294,6 +321,12 @@
    "anchor_offset": 0,
    "sha": "d5f03654571c755d",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "workloads.py:159-160": {
+   "anchor": "8192 if is_prefill else 256,",
+   "anchor_offset": 0,
+   "sha": "98fed431d065bb27",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/workloads.py"
   }
  },
  "results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md": {

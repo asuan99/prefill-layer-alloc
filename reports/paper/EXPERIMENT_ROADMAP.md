@@ -1,6 +1,25 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-14(2)(doc-steward — **job 908179 결과 등재**:
+최종 갱신: 2026-09-14(3)(doc-steward — **job 908534(D-none
+대조) 결과 감사 등재 + λ0 rev5 규칙층 감사 등재**: "수리가
+907959 OOM의 원인" = `PLAUSIBLE(조건부)` → **`CONFIRMED(scoped)`
+승급**(결과 감사 §3 (A)(B) 두 문장만 인용 가능, "지배 원인"
+거부) — 그러나 **P2는 여전히 시작할 수 없다**: 승급으로 안
+닫히는 것 11항에 **Claim D 선결 0건 폐쇄·P2 블로커 3개
+불변**(λ0·W4 λ\* 실측 부재·게이트#6)이 포함된다.
+λ0 rev5 = 규칙층 감사 **`GO-with-caveats`**(死因 0, 신규 발견
+λ5C-1: shape B의 F5 앵커 자격 술어가 이 구성에서 구조적으로
+도달 불가) — **실행 승인이며 게이트#6을 닫은 것이 아니다**,
+GPU 신규 지출 0·**아직 미제출**(engine-porter 코드 권고 5건
+반영 대기). GPU 장부 갱신(트랙 누적 1.107500→**1.322778
+GPU-h**, 등록 상한 대비 +9.28%) + 4번째 미등록 축 갱신
+(gpu38→43→40→41, 게이트#233 여전히 열림) + 신규 게이트 7건
+(#241–247). 새 성능 판정 0건·Claim D/E 등급 불변·HE0·
+layer-type 死·정책 순위·stake #1 전부 불변. `CONSENSUS.md`
+rev76→**rev77**. 상세 "P2" 절(아래)·`CLAIM_EVIDENCE_MATRIX.md`
+Claim D 행(2026-09-14(3) 갱신)·`PROJECT_STATUS.md` 최상단
+배너(2026-09-14(4)).
+이전: 2026-09-14(2)(doc-steward — **job 908179 결과 등재**:
 `VERDICT PASS`(등록 튜플 최초 실행, 0.165556 GPU-h) — "수리가
 OOM을 고쳤다"는 `PLAUSIBLE(조건부)`(`CONFIRMED` 아님, 결정적
 `none`-guard 대조 arm 부재). **Claim D 선결 #5는 새로 닫힌
@@ -699,13 +718,13 @@ Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` �
 
 - 먼저 B1 sustainable SLO rate `lambda*`를 모델별로 측정한다.
   ★**정정(2026-09-13, doc-steward, X3 규칙층 감사 §10.3 부수
-  발견)**: `benchmarks/pdmux_eval/generate_campaign.sh:10`의
-  `sustainable_rate`가 실제로는 **측정값이 아니라 기본값
-  `4`**로 코드에 박혀 있다 — 워크로드가 전부 이 값의 분수로
+  발견)**: `benchmarks/pdmux_eval/generate_campaign.sh:10`[HIST]
+  의 `sustainable_rate`가 그때는 **측정값이 아니라 기본값
+  `4`**로 코드에 박혀 있었다 — 워크로드가 전부 이 값의 분수로
   정의되므로(W1 0.60·W3 0.80·W8 0.90·W9 1.10) 이 산문이 요구한
   측정이 실행되지 않으면 "near saturation"·"overload" 라벨
-  자체가 틀린다(게이트 #6 "용량 먼저 측정" 위반). **모델별 λ*
-  측정을 R2/Claim D 캠페인의 0번째 단계로 등재**(아래 "P2"
+  자체가 틀린다(게이트 #6 "용량 먼저 측정" 위반이었다). **모델별
+  λ* 측정을 R2/Claim D 캠페인의 0번째 단계로 등재**(아래 "P2"
   절·`PROJECT_STATUS.md` 최상단 배너[2026-09-13] "D" 참조).
   ★**추기(2026-09-13(2), doc-steward, engine-porter 모델 지원
   검증 부수 발견)**: λ*는 **이미 측정돼 있다**(새 도구 불필요) —
@@ -789,6 +808,27 @@ Claim D/E 소관) 밖의 별도 트랙이다. 정본은 `reports/CONSENSUS.md` �
   아니다. 새 성능 판정 0건·GPU 0·Claim D/E 등급 불변. 상세
   `PROJECT_STATUS.md` 최상단 배너(2026-09-13(3)), `CONSENSUS.md`
   rev73·§3 항목216–220.
+
+  ★**반증(2026-09-14, doc-steward — engine-porter W4 구현 확인,
+  커밋 `8507cee`, 등재 계기: 정본 인용 등록성 검사)**: 위
+  `generate_campaign.sh:10`[HIST] 인용은 **경로도 틀렸고**
+  (실제 파일은 `scripts/r2_eval/generate_campaign.sh`이며
+  `benchmarks/pdmux_eval/` 아래가 아니다) **지금은 존재하지 않는
+  코드도 인용한다.** `sustainable_rate` 기본값 `4`는 삭제됐다 —
+  `generate_campaign.sh:30-46`이 `PDMUX_LAMBDA_STAR_TABLE`
+  미설정 시 fail-closed(`exit 2`)로 대체하고, `PDMUX_SUSTAINABLE_
+  RATE` 자체도 명시적으로 거부한다(단일 스칼라로는 W4의 phase별
+  용량 5×차를 표현할 수 없어 per-shape 테이블로 교체,
+  `benchmarks/pdmux_eval/lambda_star.py`) — 이 개정 자체는 이미
+  아래 "### P2" "열린 항목 종결(2026-09-13/14)"에 등재돼 있고,
+  이 문단은 **위 원문 인용의 경로·기본값 서술만** 최신 상태로
+  정정한다. **달라지지 않은 것**: 모델별 λ\*가 실측됐다는 뜻은
+  아니다 — 캠페인 0단계 λ0 사전등록은 여전히 `NO-GO`(게이트 #6
+  잔류). 이 인용이 그동안 정정되지 않았던 이유: `check_line_
+  citations.py`의 이 문서 `__scope__`가 `controller.py`/
+  `profile.py`(+`workloads.py`) 패턴만 등록해 `generate_
+  campaign.sh` 인용은 원래부터 검사 대상 밖이었다(신규 게이트
+  #238, `PROJECT_STATUS.md` "방법론 게이트" 참조).
 - configuration당 최소 5회, paired CI가 0을 교차하거나 variance가 크면 10회
   이상 수행한다.
 - 모든 pair는 동일 immutable trace/hash, workload seed, server seed를 사용하고
@@ -908,6 +948,58 @@ A8179-1…7. 신규 게이트 6건(#232–237). 새 성능 판정 0건·
 Claim D/E 등급 불변(둘 다 미검증)·HE0·정책 순위·stake #1
 전부 불변. 상세 `PROJECT_STATUS.md` 최상단 배너
 (2026-09-14(2)), `reports/CONSENSUS.md` rev75.
+
+★★★**job 908534(D-none 대조) 결과 감사 등재(2026-09-14(4)) —
+"수리가 907959 OOM의 원인" `PLAUSIBLE(조건부)` →
+`CONFIRMED(scoped)` 승급이나, P2는 여전히 시작할 수 없다**:
+같은 job 안에서 `PDMUX_WORKER_GRAD_GUARD` 축만
+`inference_mode`→`none`으로 이동시키면 907959의 OOM이 같은
+39-배치 도착열·같은 rung·바이트 동일 OOM 원문으로 재현되고
+(가드 없는 조건 3/3 사망, 가드 있는 조건 4/4 완주), 매칭
+배치에서 peak 차 `+8,107,034,112 B`(산포 천장의 1,804배).
+인용 가능 문장은 결과 감사(`.../dnone_prereg/
+VERDICT_result_908534_2026-09-14.md`) §3의 (A)(B) 두 개뿐이며
+**"지배 원인"이라는 표현은 승인되지 않았다**(측정된 것은
+충분성+필요성뿐, 분산 분해 미측정). ★★**승급으로 닫히지
+않는 것 11항 중 P2에 직결되는 것**: **Claim D 선결 0건
+폐쇄**(908534는 grad-guard 귀속을 강화했을 뿐 Claim D의
+S/O 프로토콜 선결과는 무관) · **P2 블로커 3개 불변**(λ0
+사전등록·W4 λ\* 실측 부재·게이트 #6) · **H-Architecture/
+H-Policy 무진전**(구현 결함의 수리 확인이며 dual-worker 구조
+자체의 이득 증거가 아니다) · 성능 판정 0건 · 모델(Zamba2/
+Falcon-H1/Granite-4)·백엔드·ctx 일반화 없음 · guard-none 축
+n=1(구간추정 금지). **Claim D 등급 = 미검증, 불변.**
+GPU 장부: R2 correctness 트랙 누적 = **1.322778 GPU-h**(등록
+1.170278/등록 밖 0.152500, 등록 상한 대비 +9.28%). 4번째
+미등록 축 갱신(gpu38→43→40→**41**) — within-job 비교엔
+교락하지 않으나 **게이트 #233은 여전히 열려 있다**(cross-job
+비교는 노드 교락). 신규 게이트 7건(#241–247, `CONSENSUS.md`
+§3 항목261–267).
+
+★★★**λ0 rev5 규칙층 감사 등재(2026-09-14(4)) — `GO-with-caveats`
+(死因 0)이나 게이트 #6은 닫히지 않는다**: 계보 rev1–rev4
+4연속 `NO-GO` → rev5 死因 0건. ★이번 회차 최대 발견
+**λ5C-1**: shape B의 F5 앵커 자격 술어(`#running-req ≥ 48`)가
+이 구성(`max_prefill_tokens=16384`가 8192-토큰 요청 2개를
+prefill 배치 상한으로 만듦)에서 **어떤 부하로도 도달
+불가**다(실현 동시성 57.43/64·median TTFT 90.69s로 backlog
+확인) ⇒ (a) 셀 B의 F5 실격은 규칙의 올바른 적용이나 "셀이
+포화하지 못했다"로 바꿔 쓸 수 없고, (b) `ANCHORED` 분지는 이
+shape/cap의 모든 미래 instrument run에서 구조적으로 사용
+불가(→ "다시 재서 앵커를 살린다"는 경로가 아니다), (c) 미달
+원인은 미확정. ★★**게이트 #6은 이 결과로도 닫히지
+않는다**(λ5C-8) — probe C d44 4셀 정본 술어 재채점 goodput
+53.8%/5.8%/0.8%(ITL 조건은 4셀 전부 통과, 구속은 전적으로
+TTFT). rev4 판정서의 `I3b=11/11/2`는 **인용 금지**(`wc -l`
+체계로는 2/2/2). `FALLBACK`이 1차 등록, `ANCHORED`는
+반사실. 예산 최악 코너 3.509 GPU-h(요청 3.60 ≤ 벽시계
+4.50h). **GPU 신규 지출 0**(rev1–rev5 전부) — **이 사전등록은
+아직 제출되지 않았다**(사용자가 0단계 제출을 승인했으나,
+제출은 engine-porter의 코드 권고 5건[λ5A-2·3·4·9·11] 반영
+이후로 예정). 새 성능 판정 0건·Claim D/E 등급 불변(둘 다
+미검증)·HE0·layer-type 死·정책 순위·stake #1·게이트#13/#16
+전부 불변. 상세 `PROJECT_STATUS.md` 최상단 배너
+(2026-09-14(4)), `reports/CONSENSUS.md` rev77.
 
 ★追記(2026-09-11, doc-steward, R2 true-dual GPU correctness
 트랙) — 위 P1/P2는 여전히 미실행 성능 게이트다. 별도로
@@ -1568,7 +1660,16 @@ target으로 사용한다.
 `:183 → :219` · `:207 → :244` · `:222 → :259` · `profile.py:
 98-114 → :113-160` · `profile.py:268-279 → :314-325`.
 ★★**이 인용은 다시 이동했다 — 아래 追記(2026-09-12(4)) 참조**
-(이 줄은 역사 보존용).
+(이 줄은 역사 보존용). ★**추가 갱신(2026-09-14, doc-steward
+— engine-porter 등록성 검사에서 발견)**: 위 목록이 `scripts/
+r2_eval/r2_eval.sbatch:26 → :69-70`(`PDMUX_ENGINE_COMMIT`
+export, 커밋 `09a8075`가 이동시킴)를 빠뜨렸다 — 이 파일은
+`check_line_citations.py`의 이 문서 `__scope__`(controller.py/
+profile.py/workloads.py 패턴만) 밖이라 위 8건과 함께 잡히지
+않았다(신규 게이트 #238, `PROJECT_STATUS.md` "방법론 게이트"
+참조). 인용된 결함(`engine_commit`이 hybrid 호환 6개 필드
+엄격 일치에 포함)은 위 항목3의 해소로 이미 없다 — 이 문단은
+그 해소된 문장이 남겨 둔 하위 인용 하나만 정정한다.
 
 Claim E 등급(미검증)·B0–B8 순위·새 성능 판정 전부 무변경. 상세
 `CLAIM_EVIDENCE_MATRIX.md` "주장 제한" Claim E 항목(2026-09-12(2)

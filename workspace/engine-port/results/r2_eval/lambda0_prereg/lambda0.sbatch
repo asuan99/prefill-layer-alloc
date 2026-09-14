@@ -12,8 +12,15 @@
 #SBATCH --error=/scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/%x_%j.err
 #
 # CAMPAIGN STAGE 0 -- lambda*(shape) on the reference arm B1.
-# Pre-registration: PREREG_LAMBDA0_REV4_2026-09-13.md
-#   (rev1 NO-GO -> rev2 NO-GO -> rev3 NO-GO -> rev4; all kept, none deleted)
+# Pre-registration: $PREREG_MD (default PREREG_LAMBDA0_REV5_2026-09-14.md)
+#   (rev1 NO-GO -> rev2 NO-GO -> rev3 NO-GO -> rev4 NO-GO -> rev5; all kept,
+#    none deleted).  ★rev5 exists because the rev4 audit found condition (b) of
+#    the anchor predicate was an effective IDENTITY on live artifacts (N1) and
+#    that repairing it FLIPS the branch ANCHORED -> FALLBACK (N2).  The repair is
+#    in `lambda0_lambda_inf.py` (F1); the flip is registered in rev5 (F2).
+#    ★F6: the digest of every file that can change the verdict, and of the
+#    pre-registration itself, is written to $OUT/REGISTRATION_SHA256.txt BEFORE
+#    the decision is taken.
 #
 # ONE BOOT PER CELL, ONE telemetry file per boot -- deliberately NOT a rate
 # ladder inside a single boot, because slicing one telemetry file by time window
@@ -40,7 +47,12 @@
 #   lambda*(B)=1.10 the anchored window [0.5157,1.835] brackets and the fallback
 #   window [0.4302,1.026] does not).  `lambda0_lambda_inf.py` decides from the
 #   newpair I3 artifacts instead: both cells present, run at rate inf with
-#   positive throughput, and every reported #running-req >= 48 (newpair F5).
+#   positive throughput, and -- ★rev5/F1 -- EACH OF THE TWO CELLS reaching
+#   #running-req >= 48 inside ITS OWN interval of `srv_warmup.log`, recomputed
+#   from `I_log_offsets.txt` under all three registered conventions (newpair F5).
+#   rev4 read one GLOBAL-max line out of `I3_max_running_req.txt` instead, which
+#   made the disqualification path an identity; that file is now provenance and a
+#   cross-check only -- it can veto the anchor, never grant it.
 #   `PDMUX_LAMBDA0_INSTR` says only WHERE to look, never WHAT to conclude.
 #
 # ★ WHY NOT ${BASH_SOURCE[0]}: sbatch COPIES the submitted script into the node
@@ -51,8 +63,13 @@
 #   (scripts/r2_eval/r2_eval.sbatch:38 @HEAD bddff6a,
 #   `project_root="${PDMUX_PROJECT_ROOT:-/scratch/ehmoon/whlee/prefill-layer-alloc}"`).
 #   NB commit 09a8075's message cites r2_correctness.sbatch:99 for the same
-#   precedent; that line number was true on 2026-09-12 and is NOT true now (the
-#   constant sits at :138 @HEAD), so the stable anchor is cited instead.
+#   precedent; that line number was true on 2026-09-12 and is NOT true now.  ★And
+#   this line's own replacement ("the constant sits at :138 @HEAD") HAS ALREADY
+#   GONE STALE -- :138 was true at HEAD bddff6a and the same constant
+#   (`PROJECT=/scratch/ehmoon/whlee/prefill-layer-alloc`) sits at :166 at HEAD
+#   8507cee, because another track added ~28 lines above it.  That is lam5A-11 in
+#   this very file, so the citation is given as CODE TEXT + a commit pin instead
+#   of a bare line number, and only the stable anchor above is relied on.
 set -uo pipefail
 
 ROOT=/scratch/ehmoon/whlee/prefill-layer-alloc
@@ -89,7 +106,43 @@ SERVER_SEED=1                     # D11: the campaign passes --random-seed; prob
 FIXED_DSM=44
 SGPT_RAW="$HF_HOME/raw/ShareGPT_V3_unfiltered_cleaned_split.json"
 
-echo "STAGE0 lambda* rev3 model=$MODEL backend=$BACKEND ctx=$CTX mem=$MEM_FRACTION job=$JOBID"
+# ------------------------------------------------- F6: registration integrity
+# The pre-registration in force, and the digest of every file that can change
+# the verdict, recorded BEFORE the decision.  rev4 ran with all 14 executables
+# uncommitted and no digests, so a post-hoc edit would not have been detectable.
+PREREG_MD="${PDMUX_LAMBDA0_PREREG:-$PREREG/PREREG_LAMBDA0_REV5_2026-09-14.md}"
+# ★the DECISION PATH: 7 files.  A change to any of them can change the label.
+DECISION_PATH=(lambda0_lambda_inf.py lambda0_plan.py lambda0_label.py
+               lambda0_analyze.py lambda0_cells.py lambda0_reachability.py
+               lambda0_mutation_check.py)
+echo "STAGE0 lambda* $(basename "$PREREG_MD") model=$MODEL backend=$BACKEND ctx=$CTX mem=$MEM_FRACTION job=$JOBID"
+for f in "${DECISION_PATH[@]}" lambda0_cellprint.py lambda0.sbatch; do
+  [ -f "$PREREG/$f" ] || { echo "ABORT_F6 decision-path file missing: $f" \
+    | tee -a "$OUT/PREFLIGHT_FAILURES.txt"; exit 3; }
+done
+if [ ! -f "$PREREG_MD" ]; then
+  echo "ABORT_F6 pre-registration document missing: $PREREG_MD (set PDMUX_LAMBDA0_PREREG if it is named differently)" \
+    | tee -a "$OUT/PREFLIGHT_FAILURES.txt"
+  exit 3
+fi
+{
+  echo "# pre-registration in force: $(basename "$PREREG_MD")"
+  sha256sum "$PREREG_MD"
+  echo "# decision path (${#DECISION_PATH[@]} files) + renderer + runner"
+  for f in "${DECISION_PATH[@]}" lambda0_cellprint.py lambda0.sbatch; do
+    sha256sum "$PREREG/$f"
+  done
+  echo "# every pre-registration revision kept beside it"
+  sha256sum "$PREREG"/PREREG_LAMBDA0*.md
+  echo "# tree: $(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo NO_GIT)" \
+       "uncommitted=$(git -C "$ROOT" status --porcelain 2>/dev/null | grep -c .)"
+} | tee "$OUT/REGISTRATION_SHA256.txt"
+N_SHA=$(grep -c "^[0-9a-f]\{64\} " "$OUT/REGISTRATION_SHA256.txt")
+if [ "${N_SHA:-0}" -lt 10 ]; then
+  echo "ABORT_F6 only $N_SHA digests recorded, registered minimum 10" \
+    | tee -a "$OUT/PREFLIGHT_FAILURES.txt"
+  exit 3
+fi
 
 # ------------------------------------------------- D12: provenance BEFORE GPU
 echo "=== env sync (runtime source manifest) ==="
@@ -114,9 +167,32 @@ fi
 # resolved absolute path and a sha256 per input are recorded below, because
 # the rev3 audit showed the directory choice can flip a shape-A label.
 INSTR="${PDMUX_LAMBDA0_INSTR:-$ROOT/workspace/engine-port/results/r2_correctness/job_907959/instrument}"
+# =========================================================== lam5A-2 (rev5 addendum sec B-1)
+# BIND THE SELFTEST'S INPUT TO THE BRANCH'S INPUT.  The 5th rules-layer audit
+# showed BY EXECUTION (W4') that `PDMUX_LAMBDA0_INSTR` -- what `decide()` reads --
+# and `LAMBDA0_I3_JOB_DIR` -- what the predicate's LIVE-artifact selftest leg
+# recounts -- were INDEPENDENT.  So a substituted instrument dir with hand-written
+# offsets answered ANCHORED (lambda_inf 3.0939 / 0.6956, zero disqualifications)
+# WHILE THE SHIPPED SELFTEST STILL RETURNED rc 0: the gate certified job 907959
+# and the branch was taken on somebody else's bytes.  One export closes it -- the
+# selftest now recounts THE SAME JOB the branch is decided from, so a substituted
+# dir fails `set(rc["cells"]) == set(LIVE_RECOUNT)` and `|| exit 2` below stops
+# the job instead of running an unregistered plan.
+#   NB the mutation harness sets this variable EXPLICITLY for its temp-dir copies
+#   (`lambda0_mutation_check.py`, `env = dict(os.environ, ..., LAMBDA0_I3_JOB_DIR=
+#   str(I3_JOB))`), so it is unaffected by this export.
+export LAMBDA0_I3_JOB_DIR="$(dirname "$INSTR")"
 python3 "$PREREG/lambda0_lambda_inf.py" --selftest || exit 2
-python3 "$PREREG/lambda0_lambda_inf.py" "$INSTR" --record \
-  | tee "$OUT/LAMBDA_INF_DECISION.txt"
+# ★F1: the per-cell #running-req recount condition (b) is decided on, in its own
+# file, so the run record carries the numbers even if the warm-up log is later
+# rotated away.  (rev4 passed a `--record` flag the tool never had: argv was
+# length 3, so the tool printed its docstring and returned 2 -- and `tee`
+# swallowed that status, leaving MODE empty and the job on the fallback branch
+# for the WRONG reason.)
+python3 "$PREREG/lambda0_lambda_inf.py" --recount "$INSTR" \
+  | tee "$OUT/RUNNING_REQ_RECOUNT.txt" || exit 2
+python3 "$PREREG/lambda0_lambda_inf.py" "$INSTR" \
+  | tee "$OUT/LAMBDA_INF_DECISION.txt" || exit 2
 # E6: the machine-readable twin travels with the cells so the label JSON embeds it.
 python3 -c "
 import json,sys
@@ -125,15 +201,39 @@ from lambda0_lambda_inf import decide
 json.dump(decide('$INSTR'), open('$OUT/LAMBDA_INF_DECISION.json','w'), indent=2, sort_keys=True)
 "
 LAMBDA0_MODE=$(awk -F= '$1=="LAMBDA0_MODE"{print $2}' "$OUT/LAMBDA_INF_DECISION.txt")
+# ★fail closed on a decision that did not happen.  An EMPTY mode used to fall
+# through to the `else` of the branch below, i.e. the job would have taken the
+# fallback branch because the predicate CRASHED -- a measurement failure wearing
+# a verdict's clothes (lesson 21 / gate #21).  ★That `else` no longer exists
+# (lam5A-9's sibling lam5A-4 made the FALLBACK plan unconditional and turned
+# ANCHORED into an abort), but this `case` is still the guard that separates "the
+# predicate said FALLBACK" from "the predicate never answered".
+case "$LAMBDA0_MODE" in
+  ANCHORED|FALLBACK) ;;
+  *) echo "ABORT_D18 predicate produced no mode (got '$LAMBDA0_MODE')" \
+       | tee -a "$OUT/PREFLIGHT_FAILURES.txt"; exit 2;;
+esac
 LAMBDA0_A=$(awk -F= '$1=="LAMBDA0_LAMBDA_INF_A"{print $2}' "$OUT/LAMBDA_INF_DECISION.txt")
 LAMBDA0_B=$(awk -F= '$1=="LAMBDA0_LAMBDA_INF_B"{print $2}' "$OUT/LAMBDA_INF_DECISION.txt")
+# =========================================================== lam5A-4 (rev5 addendum sec B-3)
+# rev5 REGISTERS FALLBACK.  On the registered inputs the ANCHORED branch is
+# UNREACHABLE: `lambda0_lambda_inf.py --selftest` asserts
+# `decide(live)["mode"] == "FALLBACK"` and the `|| exit 2` above makes that
+# assertion fatal.  An unreachable branch that would silently build a DIFFERENT
+# ladder is the same defect class as an operator switch (D18), so it is NOT
+# deleted -- the predicate and both of its outputs are preserved and the
+# unregistered outcome becomes a fail-closed abort.
+#   lam5C-1: at this cap the anchor is STRUCTURALLY unreachable for shape B
+#   (`max_prefill_tokens=16384` caps a prefill-dominated decode batch at ~2), so
+#   reviving it means redesigning the F5 threshold, which is a SEPARATE
+#   pre-registration and is not authorised here.
 if [ "$LAMBDA0_MODE" = "ANCHORED" ]; then
-  PLAN_ARGS=(--lambda-inf-a "$LAMBDA0_A" --lambda-inf-b "$LAMBDA0_B")
-  echo "PLAN=anchored A=$LAMBDA0_A B=$LAMBDA0_B (from $INSTR)"
-else
-  PLAN_ARGS=(--lambda-inf-a 2.10 --lambda-inf-b 0.675 --fallback)
-  echo "PLAN=fallback (registered literal ladders; see LAMBDA_INF_DECISION.txt)"
+  echo "ABORT_D18 unexpected ANCHORED (rev5 registers FALLBACK) A=$LAMBDA0_A B=$LAMBDA0_B (from $INSTR)" \
+    | tee -a "$OUT/PREFLIGHT_FAILURES.txt"
+  exit 2
 fi
+PLAN_ARGS=(--lambda-inf-a 2.10 --lambda-inf-b 0.675 --fallback)
+echo "PLAN=fallback (registered literal ladders; see LAMBDA_INF_DECISION.txt)"
 
 python3 "$PREREG/lambda0_plan.py" --selftest || exit 2
 python3 "$PREREG/lambda0_label.py" --selftest || exit 2
@@ -143,8 +243,29 @@ python3 "$PREREG/lambda0_cells.py" --selftest || exit 2
 # structurally unreachable and nothing in the run would have said so.
 python3 "$PREREG/lambda0_reachability.py" --selftest || exit 2
 python3 "$PREREG/lambda0_reachability.py" > "$OUT/REACHABILITY.txt" 2>&1 || exit 2
-python3 "$PREREG/lambda0_mutation_check.py" > "$OUT/mutation_check.txt" 2>&1 \
-  || { echo "ABORT_MUTATION_ESCAPE"; tail -5 "$OUT/mutation_check.txt"; exit 5; }
+# =========================================================== lam5A-9 (rev5 addendum sec B-4)
+# DO NOT LABEL A MEASUREMENT FAILURE AS A VERDICT (lesson 21 / gate #21).  The
+# harness has two distinct non-zero exits and the old one-liner printed
+# `ABORT_MUTATION_ESCAPE` for BOTH:
+#   rc 1  >= 1 registered mutation PASSED its routed selftest      = AN ESCAPE
+#   rc 2  the harness could not run -- archived probe-C job or I3 job missing,
+#         or the unmutated CONTROL failed on the temp-dir copy     = NO MEASUREMENT
+# Both still abort (fail closed); only the NAME and the exit code differ, so the
+# run record cannot be read as "a mutation escaped" when nothing was scored.
+python3 "$PREREG/lambda0_mutation_check.py" > "$OUT/mutation_check.txt" 2>&1
+MUT_RC=$?
+case "$MUT_RC" in
+  0) ;;
+  1) echo "ABORT_MUTATION_ESCAPE (rc=1: a registered mutation survived its selftest)" \
+       | tee -a "$OUT/PREFLIGHT_FAILURES.txt"
+     tail -5 "$OUT/mutation_check.txt"; exit 5;;
+  2) echo "ABORT_MUTATION_HARNESS_CANNOT_RUN (rc=2: MEASUREMENT FAILURE, not an escape -- the harness never scored the mutations)" \
+       | tee -a "$OUT/PREFLIGHT_FAILURES.txt"
+     tail -5 "$OUT/mutation_check.txt"; exit 6;;
+  *) echo "ABORT_MUTATION_UNEXPECTED_RC=$MUT_RC (unregistered exit status; treated as a MEASUREMENT FAILURE, not an escape)" \
+       | tee -a "$OUT/PREFLIGHT_FAILURES.txt"
+     tail -5 "$OUT/mutation_check.txt"; exit 6;;
+esac
 python3 "$PREREG/lambda0_plan.py" "${PLAN_ARGS[@]}" | tee "$OUT/PLAN.txt"
 python3 "$PREREG/lambda0_plan.py" "${PLAN_ARGS[@]}" --json > "$OUT/plan.json" || exit 2
 
@@ -282,7 +403,10 @@ for SPEC in "${CELLS[@]}"; do
 done
 
 echo ""
-echo "=== registered rules (PREREG_LAMBDA0_REV4 sec 5) ==="
+# lam5A-6 (rev5 addendum sec A4): rev5 sec 5 SUPERSEDES rev4 sec 5 (and rev4
+# sec 3/4/6/7).  Still live from rev4: sec 9 citation bans, sec 10 mandatory
+# companions, sec 11 citation table.
+echo "=== registered rules (PREREG_LAMBDA0_REV5 sec 5 + ADDENDUM sec A6; rev4 sec 5 SUPERSEDED, rev4 sec 9/10/11 still live) ==="
 # ★ --expect, not a glob: a cell whose boot failed (or was never reached) must
 #   put its shape on UNRESOLVED rather than silently shortening the ladder
 #   (rev1 audit S9 / D4, rev2 audit D23).

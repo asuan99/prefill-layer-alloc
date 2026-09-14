@@ -72,6 +72,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 import tempfile
@@ -555,6 +556,13 @@ def selftest():
           "is UNRESOLVED not REFUTED; deleted cell file -> UNRESOLVED)")
 
 
+def _ulp_walk(x, k):
+    """`x` moved `|k|` representable steps toward +inf (k>0) or 0 (k<0)."""
+    for _ in range(abs(k)):
+        x = math.nextafter(x, math.inf if k > 0 else 0.0)
+    return x
+
+
 def _synth_bench(path, n, rate, seed, in_len, out_len, itl_s, ttft_s,
                  lam_star=None):
     """A bench_serving --output-details record with a KNOWN arrival window and a
@@ -687,6 +695,54 @@ def _end_to_end():
         # and the saturated rungs are exactly the ones the drain disqualified.
         assert set(rb["drain_disqualified_low_side"]) == {"b_r2", "b_r3"}, rb
 
+        # (g) ★rev5/F5-2 -- the drain-model MULTIPLE GUARD's boundary DIRECTION.
+        # `drain_model_ok` is `drain <= TOL * drain_pred_s`; the rev4 audit's Z19
+        # flipped that `<=` to `<` and no registered mutation noticed, because
+        # random data never lands exactly on the boundary.  So the boundary is
+        # hit EXACTLY here: `drain/2.0` is exact in binary floating point and
+        # `2.0 * (drain/2.0) == drain`, so predicting half the measured drain
+        # puts the cell precisely ON the tolerance.  A closed guard must accept
+        # it; one nudge outwards must reject it.  (This also pins TOL itself: at
+        # TOL = 3.0 the `nudge` leg below would still pass.)
+        from lambda0_analyze import DRAIN_MODEL_TOL  # noqa: E402
+        raw = analyze(bp, "A", "a_r0", n, seed, kappa_pred=0.9839,
+                      drain_pred_s=None, low_side_candidate=True,
+                      t_measure_s=600.0)["drain_s"]
+        # `raw / TOL` is exact when TOL is a power of two and within one ulp
+        # otherwise, so walk a few ulps to land on `TOL * pred == raw` for ANY
+        # registered tolerance (the leg must not silently depend on TOL = 2.0).
+        base = raw / DRAIN_MODEL_TOL
+        on_boundary = None
+        for cand in [base] + [_ulp_walk(base, k) for k in
+                              (1, -1, 2, -2, 3, -3, 4, -4)]:
+            if DRAIN_MODEL_TOL * cand == raw:
+                on_boundary = cand
+                break
+        assert on_boundary is not None, (
+            "no float prediction puts the measured drain exactly on "
+            "TOL * prediction; the boundary DIRECTION of the multiple guard "
+            "cannot be tested without one", raw, DRAIN_MODEL_TOL)
+        exact = analyze(bp, "A", "a_r0", n, seed, kappa_pred=0.9839,
+                        drain_pred_s=on_boundary,
+                        low_side_candidate=True, t_measure_s=600.0)
+        assert exact["drain_s"] == DRAIN_MODEL_TOL * exact["drain_pred_s"], (
+            "the boundary leg must land ON the tolerance, exactly",
+            exact["drain_s"], exact["drain_pred_s"])
+        assert exact["drain_model_ok"], (
+            "the drain-model guard is CLOSED at TOL * prediction: a measured "
+            "drain exactly equal to the tolerance is inside it", exact["drain_s"])
+        nudge = analyze(bp, "A", "a_r0", n, seed, kappa_pred=0.9839,
+                        drain_pred_s=on_boundary * (1 - 1e-9),
+                        low_side_candidate=True, t_measure_s=600.0)
+        assert not nudge["drain_model_ok"], (
+            "one part in 1e9 past the tolerance must be OUTSIDE it -- otherwise "
+            "the tolerance is not the tolerance", nudge["drain_s"],
+            nudge["drain_pred_s"])
+        # ...and the guard must be load bearing THROUGH the rule, not only in
+        # the analyzer dict.
+        assert rule({"A": [exact, hi]})["A"]["n_usable_low_side"] == 1
+        assert rule({"A": [nudge, hi]})["A"]["n_usable_low_side"] == 0
+
 
 def mutation_missing_cell(verbose=True):
     """Injection experiment for D4 (rev1 audit S9).
@@ -761,8 +817,8 @@ def main():
     decision = (json.loads(dec_path.read_text()) if dec_path.exists()
                 else {"note": "no LAMBDA_INF_DECISION.json beside the cells"})
     result = {
-        "stage": "LAMBDA0", "rev": 4,
-        "prereg": "PREREG_LAMBDA0_REV4_2026-09-13.md",
+        "stage": "LAMBDA0", "rev": 5,
+        "prereg": "PREREG_LAMBDA0_REV5_2026-09-14.md",
         "expected_cells": expect,
         "expected_repeat_cells": repeat,
         "missing_cells": missing,

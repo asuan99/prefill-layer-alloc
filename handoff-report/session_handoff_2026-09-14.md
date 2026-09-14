@@ -224,3 +224,179 @@ rev4 死因 = `lambda0_lambda_inf.py`의 F5 술어가 **live에서 실효 항등
 > 새로 닫히지 않았고 P2는 여전히 차단이다. λ0는 4연속 `NO-GO`(GPU 0)로 트랙 자체에 대한 사용자
 > 결정((a) rev5 / (b) 하네스 수정 후 재실행 / (c) shape B 제외)이 필요하다. GPU 누적 1.1075 GPU-h,
 > 그중 0.1525는 등록 밖 실행으로 어떤 게이트도 진전시키지 못했다.**
+
+---
+---
+
+# 세션 핸드오프 (append) — 2026-09-14 **후반 세션**
+
+> 위 문서(2026-09-13 저녁~2026-09-14 새벽)의 **같은 날짜 이어짐**. 시작점 = 위 "다음 세션
+> `catch-up` 시작점" 한 줄. 사용자 지시 = catch-up 브리핑의 액션 후보를 **"321 순서"**
+> (③ GPU-0 정리 → ② D-none → ① λ0)로 진행.
+> **커밋**: 이 append와 함께 한 커밋으로 저장(정본·메모리·코드 포함).
+> **실행 중 job**: ★**908623(λ0 0단계) RUNNING**(gpu38, `--time 04:30:00`).
+
+## 이번 세션 요약
+
+세 갈래를 사용자 지정 순서대로 완주했다. ③ **GPU-0 규율 정리**에서 감사자 처방 자체가 셸 엔진에
+따라 무력해지는 결함(RA4-2)과 **세션 시작 시점에 이미 red였던 회귀 스위트**를 찾아 고쳤다.
+② **D-none 대조 arm**은 사전등록 rev1 `NO-GO` → rev2 `GO-with-caveats` → job 908534 실행 →
+결과 감사로 **"grad-guard 수리가 907959 OOM의 원인"을 `PLAUSIBLE(조건부)` → `CONFIRMED(scoped)`로
+승급**시켰다(단 "지배 원인" 표현은 감사가 거부). ① **λ0**는 사용자 결정 (a)에 따라 rev5를 만들고
+5차 감사에서 **첫 `GO-with-caveats`**(死因 0, rev1–rev4는 4연속 `NO-GO`)를 받아 **0단계를 제출**했다
+(job 908623). GPU 지출 = **0.215278 GPU-h**(908534) + 908623 진행 중.
+
+## 결정 (사용자, 3건)
+1. **작업 순서 = "321"** — ③ GPU-0 정리 → ② D-none → ① λ0.
+2. **λ0 트랙 = (a) rev5 한 번 더** + ★**정지 조건**: rev5도 **검정력 사유로** `NO-GO`면 rev6으로
+   가지 말고 **생산자 하네스 수정 + 재실행**으로 승급. (rev5가 `GO`를 받아 정지 조건 미발동.)
+3. **D-none 제출 승인 = (a) 마지막에 몰아서 한 창에서**(OVERRIDE + 0.197 GPU-h 상한 승인).
+   이어서 **λ0 0단계 제출도 승인**(최악 3.509 GPU-h) — 감사자의 검정력 실산(λ5C-5/λ5C-6) 제시 후.
+
+## 측정 (GPU 1 job 완료 + 1 job 진행 중)
+
+| job | 노드 | `sacct` | GPU-h | 라벨 | 비고 |
+|---|---|---|---|---|---|
+| **908534** | gpu41 | 00:12:55 (775 s) | **0.215278** | **`VERDICT PASS`** + 진단 arm **`RECOVERED-STRICT`** | D-none. 등록 상한 0.197 대비 **+9.28%**(예보 708 s 대비 +9.46%) |
+| **908623** | gpu38 | RUNNING | (진행) | — | λ0 0단계. ★**pre-GPU 결정 경로가 등록대로 재현**(아래) |
+
+```
+R2 correctness 트랙 누적  1.322778 GPU-h   (등록 1.170278 / 등록 밖 0.152500, sacct 기준)
+λ0 트랙                   rev1–rev5 사전등록 GPU 0 · 908623이 이 트랙 최초 GPU 지출
+```
+
+### 908534 — D-none 대조 arm, **`CONFIRMED(scoped)` 승급**
+`R2C_ORDER="L TD L TD DN" R2C_GUARD=none`. **인용 가능한 문장은 결과 감사 §3의 (A)(B) 두 개뿐**
+(`dnone_prereg/VERDICT_result_908534_2026-09-14.md`, sha `e54fcd90…`). 요지:
+- DN1(guard=`none`)이 TD1/TD2/L2와 **39 배치 도착열이 순서까지 동일**하고 **마지막 기록값이 정확히
+  6245**, 다른 4 boot이 완주한 **다음 rung(10125)** 에서 사망.
+- OOM 원문 **635 byte가 907959 TD1 = TD2 = 908534 DN1 세 개 모두 바이트 동일**
+  (198.00 MiB / 77.25 GiB / 55.19 MiB free / 156.00 MiB private pools / 1014.25 MiB reserved).
+  스택은 24 프레임 중 **22개 바이트 동일**, 2개는 같은 파일·함수의 **줄번호만**
+  (`mixer2_rms_norm_gated.py:110 → :97 return self.weight * x.to(input_dtype)`).
+- **가드 없는 조건 3/3 사망 · 가드 있는 조건 4/4 완주.**
+- 토큰·seq 매칭 배치(`#new-token 6245`, `#new-seq 8`)에서 peak 차 **`+8,107,034,112 B`**(7.5503 GiB)
+  = 같은-설정 boot 산포 천장 `4,494,336 B`의 **1,804배**; **동반 상태까지 완전 일치**하는 배치
+  (`3241`)에서도 **`+5,013,701,632 B`**(4.6694 GiB).
+- G 게이트: DN1 `grad_enabled=True` **6,434** / TD `True` **0**.
+- ★**"지배 원인"은 감사가 명시 거부**(분산 분해 미측정) — 문장 (B)로만 쓴다.
+
+### 908623 — λ0 0단계, pre-GPU 결정 경로가 **등록대로 재현**
+`lam0_908623/LAMBDA_INF_DECISION.txt`: `LAMBDA0_MODE=FALLBACK` · I2 **1/1/1** ·
+I3a_shapeA **48/48/48**(judged) · **I3b_shapeB 2/2/2**(judged) · 실격 reason 문자열이 rev5 §2-1
+등록 문안과 일치 · `LAMBDA0_RUNNING_REQ_FILE_VALUE=48 (provenance only, never the decision)` ·
+입력 5종 sha 기록 · `REGISTRATION_SHA256.txt` **20행**(F6의 `N_SHA ≥ 10` 충족).
+⇒ **F1 수리가 live에서 작동하고 분지가 사전등록한 `FALLBACK`이다.** 측정 단계는 진행 중.
+
+## 코드·문서 변경 (전부 이 커밋에 포함)
+
+**규율 도구·정본 위생(③)**
+- `scripts/discipline/check_line_citations.py`: `SEARCH_ROOTS`에 `benchmarks` 추가 — 이것이 없어서
+  **W4/λ\* 워크스트림 전체가 등록 불가·조용히 skip**이었다. `line_citations.json` **+5키**
+  (append-only), `--check` 88 → **93 비교/0 위반**. `tests/test_line_citations.py` 29 → 33.
+- `tests/test_lambda_star_per_shape.py`: 사전-개정 대조가 `git show HEAD:…`를 exec해
+  **W4 커밋 순간 자살**했다(세션 시작 시점 스위트가 이미 red, errors=2) ⇒ `bddff6a` 고정 핀.
+- `results/r2_correctness/E5_FAMILY_RA4_2_2026-09-14.md` + `e5_family_probe.py` **신설**:
+  E5 계열은 **실행체에 구현이 없고**(문서 문안뿐), RA4-2의 교정안 `(?i:…)`는 GNU `grep -E`에서
+  **12개 중 4개**만(단일 대안 형태면 **0/12**) 잡는다 ⇒ 3엔진 12/12인
+  `RuntimeError.*[Ii]nference[ _]?([Tt]ensors?|[Mm]ode)\b` 산출. 놓친 문자열도 1종이 아니라 **3종**.
+- `results/r2_correctness/CARRYFORWARD_INVENTORY_2026-09-14.md` **신설**: 승계 8계열 전수
+  (**96 + 전사의무 2 = 98**) sha 핀 원문 전사 + 계열별 계수표.
+- `results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md`: 자기보고 회귀 수를 **다섯 번** 정정
+  (295→641→645→681→697→**710**) + ★**구조 지적 등재**(진리원이 저장소 전역 단조 카운터라
+  서술이 아니라 **진리원 선택이 틀렸다**; 올바른 수리는 미실행 → 열린 항목).
+- `rerun_prereg/PREREG_RERUN_2026-09-13.md`: RA4-9 정정을 **dated 追記**로(본문 삭제 0) ⇒
+  sha `1e421391…` → `fa304128…`(908179 판정서 핀과 불일치, 그 사실을 등재).
+
+**하네스(②)**
+- `results/r2_correctness/r2_correctness.sbatch` 573 → 684줄, sha `f39b167b…` → **`ab55c07c…`**:
+  `R2C_GUARD` fail-closed 노브 + **비채점 `DN` 진단 boot**(`boots.txt` 대신 `diag_boots.txt`) +
+  `n_arms ≤ 5` 포트 예산 검사 + provenance 2줄. 기본 경로 argv는 **908179 blob에서 추출해 실행
+  비교**로 바이트 동일 증명. `tests/test_r2_correctness_dnone.py` **신설 36 테스트**(변이 5앵커
+  유일성 단정 포함).
+
+**λ0(①)** — `lambda0_lambda_inf.py`(조건 (b) **셀별 재계산**, 세 규약 전부 산출) ·
+`lambda0_plan.py`(죽은 `DRAIN_MODEL_TOL` 삭제, FALLBACK 예산 assert, **모드별 제목**) ·
+`lambda0_reachability.py`(**`REGISTERED_MAP` 168점 전체 pin**, "confirmed three ways" 문안 정정) ·
+`lambda0_mutation_check.py`(plan·analyze → reachability 라우팅, **Z1·Z4·Z5·Z19 추가**, 병렬화
+45분→5분) · `lambda0_label.py`(경계 변이 차단 leg) · `lambda0.sbatch`(**F6** digest 블록,
+`ABORT_F6`/`ABORT_D18`, `--record` 제거, λ5A-2 `export LAMBDA0_I3_JOB_DIR`, λ5A-4 `ANCHORED`→abort,
+λ5A-9 rc 분기, 배너 정정) · `tests/test_lambda0_prereg.py` 81 → **94**.
+
+**사전등록·판정·결과 문서(신설, `results/r2_correctness/dnone_prereg/` 11파일 + `fn2/`)**
+rev1 → 판정서(`NO-GO`, 死因 DNR-1…4) → rev2 → 판정서(`GO-with-caveats`, 死因 0) → 구속 追記 →
+OVERRIDE → 원자료(+정정 追記) → F-n2 분석(+재현 스크립트) → 채점서 → 정정 追記 → **결과 감사**.
+**λ0**: `PREREG_LAMBDA0_REV5_2026-09-14.md` · 구속 追記 · 판정서(`GO-with-caveats`) ·
+`OVERRIDE_LAMBDA0_SUBMIT_2026-09-14.md` · rev4에 SUPERSEDED 배너.
+
+**정본(doc-steward)**: `PROJECT_STATUS.md` 배너 `2026-09-14(4)` A–G + **게이트 #241–247** ·
+`CONSENSUS.md` **rev76 → rev77**(§3 항목261–267) · CEM Claim D 증거 로그(**등급 미검증 불변**) ·
+`EXPERIMENT_ROADMAP.md` P2 절. **메모리** 4파일(교훈 **239–245**).
+
+## 열린 항목 / 다음 세션 시작점
+
+### ★1. job 908623(λ0 0단계) 결과 채점 — **최우선**
+`PREREG_LAMBDA0_REV5_2026-09-14.md` + 구속 追記로만 채점한다. **1차 등록은 `FALLBACK`**이고
+`ANCHORED`가 나오면 `ABORT_D18`로 죽는 것이 정상. `lambda_inf = 2.1 / 0.675`는 **사전 기준이고
+측정값이 아니다**(λ5C-4). ★**게이트 #6은 어떤 결과에서도 닫히지 않는다**(λ5C-8).
+라벨 해석에 **λ5C-1**(ANCHORED 분지는 이 shape/cap에서 **구조적 사용 불가** —
+`#running-req ≥ 48`이 8192-in shape에서 어떤 부하로도 도달 불가) · **λ5C-5**(A 창 하단 여유 3.3%) ·
+**λ5C-6**(B 창은 타당범위의 43%만 덮음)을 병기. 결과 감사는 claims-auditor에 위임.
+
+### 2. D-none 후속 — 감사가 설계까지 확정한 실험 3개 (`VERDICT_result_908534…` §5)
+- **Δ 구간추정 + guard 축 계측기 양성대조**: `R2C_ORDER="L TD DN DN"`, `R2C_GUARD=none`, 1 job
+  **0.17–0.19 GPU-h**. ★`n_arms=4 ≤ 5` 통과하지만 **verdict rule v2의 귀무대조가 깨지므로
+  correctness verdict를 사전에 `NO_VERDICT`로 등록해야 한다.**
+- **guard-none n≥4**: 위 설계 2 job **0.34–0.40 GPU-h**.
+- **기전(층별 retention)**: ★**현 텔레메트리로 불가**(epoch당 chunk 지점 3–6개) ⇒ 엔진에
+  **chunk 경계마다 1 스냅샷** 추가 + **자체 사전등록 + correctness 게이트** 필요.
+  `prefill_chunk_progress`가 이미 층 인덱스(0..56)라 배선은 국소.
+
+### 3. GPU 0 잔여 (문서·도구)
+- ★**승계 술어 목록 갱신**: D-none SCOPE (4)(order)·(7)(harness sha)가 **문자 그대로 거짓**이었다
+  (정정본 (4′)(7′)로 집행). **차기 사전등록은 술어 목록을 캠페인 설계 변경과 함께 갱신**해야 한다.
+- ★**구속 追記 A2 문면 수리**: 트리거 목록의 `SERVER_DIED_DURING_CLIENT`가 §4-1 정의와 모순 —
+  강한 독법이면 `RECOVERED-*`가 도달 불가(rev1 死因 재도입). "보수적"이라는 자기 점검이
+  **도달성을 검사하지 않았다**는 것이 교훈.
+- `DESIGN_A1_REV2_STICKY`의 회귀 수 필드 **진리원 재정의**(전역 카운터 → 절차 2 범위).
+- λ0 미해결 2건(追記 §B-3): `lambda0_plan.py:279`의 `"rev": 4` ↔ 다른 모듈 `"rev": 5`(읽는 코드
+  없음, 의미 미등록이라 추측 수정 금지) · `lambda0.sbatch:266`의 `tee`에 `|| exit 2` 없음(선재).
+- λ0 판정서 **λ5A-10의 잔류 escape 5종**(예산/가드 **정의역** 변이 — 라벨 불변) 등록만 됨.
+
+### 4. 불변 (재도출 금지)
+**HE0** · layer-type 정책 全형태 死 · 정책 순위 · **stake #1 구조 판정** · 게이트 #13/#16 ·
+C2 인용정지 2건 · 실무 기본값(peak decode 부하 기준 decode-heavy static) · **Claim D/E 등급 =
+둘 다 미검증** · **P2 블로커 3개**(λ0 · W4 λ\* 실측 부재 · 게이트 #6).
+
+## 미완·주의
+
+- ★★**"지배 원인"은 쓸 수 없다.** 승급된 것은 **이 튜플 안의 충분성+필요성(양방향 결정)** 이고
+  **분산 분해·기여도는 미측정**이다. 인용 가능한 문장은 결과 감사 §3의 (A)(B) 두 개뿐.
+- ★**기전은 닫히지 않았고 이 회차 데이터가 단순 층별 단조 축적을 반증**한다(짝지은 chunk 40에서
+  두 arm의 live 차 **+0.0613 GiB**). `R(T) = T × 1.2750 MiB` 모형도 **반증**(Δ/R 0.772–89.969).
+- ★**F-n2에 등록 문턱은 없다** — "0.3·R의 3.237배 충족"은 **다른 캠페인(`PREREG_RERUN:787`)의
+  문턱을 역할 반대로** 끌어온 허위 서술. F-n2의 등록 내용은 **부호(35/35 양수)와 매칭 성립뿐**.
+- ★**"DN1이 ep39 도중 사망"은 거짓**(그 정정이 결과를 **강화**: 창 길이 비대칭 교락 소멸,
+  Δ는 동일 커버리지 공정 비교). **"창의 14%만 관측"·"로그 77.25 GiB → Δ ≳ 9.70 GiB"는 인용 금지.**
+- **guard-none 축 n=1** ⇒ **Δ에 ±/CI/p/σ 금지**. paired bootstrap **적용 불가**(epoch은 독립 반복
+  아님). 계측기 해상력 실증은 **architecture 축**에서만 있다.
+- **907959 자신의 가드 실현은 미측정**(연역). **모델 일반화 없음**(n_groups=1 면역은 코드 독해).
+- **게이트 #233(노드/물리 GPU 축)은 열려 있다** — within-job DN↔TD 비교만 무교락.
+- **전체 CPU 스위트 수치는 움직이는 전역 카운터**다: rev1 감사 **681/1** · rev2 감사 **696/4** ·
+  D-none 제출 창 **697/697 OK** · λ0 제출 창 **710/710 OK**. 합격 기준은 **NPC-H의 트랙 한정**.
+  ★제출 창 실측은 **제3자 재현 불가**(λ0 파일이 job 이후 수정됨).
+- 두 OVERRIDE는 **각각 1 job으로 소진**됐다(908534 · 908623). 다음 job은 새 OVERRIDE가 필요하고,
+  presubmit의 **M4R·TC1 차단 2건은 여전히 살아 있다**(해소 경로 = 신규 측정 / rev4 부재).
+- **rev1·rev2·rev5·결과 감사 판정서는 전부 메인 세션 전사본**이다(감사 에이전트가 파일 쓰기 권한
+  없음) — **전사 충실성은 제3자 검증 불가**, 각 파일 머리에 공시돼 있다.
+- `push` 안 함(정책).
+
+## 다음 세션 `catch-up` 시작점 (한 줄)
+
+> **D-none 대조 arm(job 908534)이 예보대로 죽어 "grad-guard 수리가 907959 OOM의 원인"이
+> `CONFIRMED(scoped)`로 승급됐다 — 단 "지배 원인"은 거부됐고(분해 미측정) 기전·`R(T)` 모형은
+> 오히려 이 데이터가 반증하며 guard-none 축은 n=1이다. λ0는 rev5에서 5차 감사 첫 `GO-with-caveats`를
+> 받아 0단계를 제출했고(job 908623, gpu38 RUNNING, 최악 3.509 GPU-h) pre-GPU 결정 경로가 등록대로
+> `FALLBACK`(I3b 2/2/2)을 재현했다 — **그 결과 채점이 다음 세션 최우선**이며, λ5C-1(ANCHORED 분지는
+> 이 shape/cap에서 구조적 사용 불가)·λ5C-6(B 창은 타당범위의 43%)을 병기해야 한다. Claim D 선결은
+> 0건 닫혔고 P2 블로커 3개는 불변이다.**

@@ -82,10 +82,20 @@ CITE = re.compile(
 # Files whose line numbers are not worth tracking (prose that moves freely).
 SKIP_TARGET_EXT = (".md",)
 # Where to look for a bare basename.  Deliberately NOT the whole filesystem.
+# ★`benchmarks` WAS MISSING UNTIL 2026-09-14, and the omission is the same
+# failure the comment above WORKSPACE_ROOT records: a root that is not listed
+# makes every citation into it `UNRESOLVED`, so the gate cannot see the file at
+# all.  The canon cites `workloads.py:159-160` (W4's phase shapes) in three
+# living documents and `campaign.py` / `lambda_star.py` elsewhere; all of those
+# live under `benchmarks/pdmux_eval/` and none of them could be registered.
+# Only `README.md` (skipped by extension) and `__init__.py` (reported as
+# ambiguous, which is the safe branch) share a basename with another root, so
+# adding this root widens what the gate can check without teaching it to guess.
 SEARCH_ROOTS = tuple(r for r in (
     os.environ.get("SGLANG_ENGINE_DEV",
                    os.path.join(WORKSPACE_ROOT, "sglang_engine_dev")) + "/python/sglang/srt",
     os.path.join(TRACK_ROOT, "src"),
+    os.path.join(TRACK_ROOT, "benchmarks"),
     os.path.join(TRACK_ROOT, "results"),
     os.path.join(TRACK_ROOT, "scripts"),
     os.path.join(TRACK_ROOT, "tests"),

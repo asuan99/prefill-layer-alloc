@@ -127,8 +127,8 @@ def analyze(bench_path, shape, label, num_prompts, seed, kappa_pred=None,
     rr = d.get("random_range_ratio")
 
     return {
-        "stage": "LAMBDA0", "rev": 4,
-        "prereg": "PREREG_LAMBDA0_REV4_2026-09-13.md",
+        "stage": "LAMBDA0", "rev": 5,
+        "prereg": "PREREG_LAMBDA0_REV5_2026-09-14.md",
         "shape": shape, "label": label,
         "bench_path": str(bench_path),
         "client_seed": seed,

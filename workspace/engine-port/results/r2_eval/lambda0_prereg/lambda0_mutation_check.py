@@ -30,9 +30,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from concurrent import futures
 
 HERE = pathlib.Path(__file__).resolve().parent
 ARCHIVE = HERE.parent.parent / "longctx_conflict" / "probes" / "c_905835"
+# ★rev5/F1: the live instrumentation the repaired predicate reads.  Passed into
+# every mutant's environment because the mutant runs from a temp dir.
+I3_JOB = HERE.parent.parent / "r2_correctness" / "job_907959"
 # ★rev4/E3: the DECISION PATH, not a subset.  rev3 stopped at three files and
 # the rev3 audit's Y5 -- `lambda0_cells.py` certifying every rung -- replicated
 # rev3's own kill cause into shape A while passing 36/36 untouched.
@@ -168,17 +172,58 @@ MUTATIONS = {
         "LAMBDA_RATIO_GRID = (0.10, 0.20, 0.25, 0.35, 0.50, 0.70, 0.85,\n"
         "                     1.00, 1.20, 1.45, 1.80, 2.50)",
         "LAMBDA_RATIO_GRID = (1.00,)"),
+    # ---- the rev4 auditor's independent escapes, now registered (F5-2) -------
+    # All four ESCAPED rev4's 47.  Z1 and Z4 each MOVE one label on the
+    # reachability map; Z5 and Z19 move no label on this data but leave a
+    # threshold and a boundary direction untested.  The structural cause the
+    # audit named was `SELFTEST_OF` routing plan/analyze mutations away from the
+    # map -- fixed below.
+    "Z1  MULT[B] top rung 1.70 -> 1.16  ": ("lambda0_plan.py",
+        '"B": (0.45, 0.70, 1.15, 1.70),', '"B": (0.45, 0.70, 1.15, 1.16),'),
+    "Z4  analyze DRAIN_MODEL_TOL 2 -> 3 ": ("lambda0_analyze.py",
+        "DRAIN_MODEL_TOL = 2.0", "DRAIN_MODEL_TOL = 3.0"),
+    "Z5  F5 threshold 48 -> 32          ": ("lambda0_lambda_inf.py",
+        "MIN_RUNNING_REQ = 48", "MIN_RUNNING_REQ = 32"),
+    "Z19 drain guard boundary <= -> <   ": ("lambda0_analyze.py",
+        "and drain <= DRAIN_MODEL_TOL * drain_pred_s",
+        "and drain < DRAIN_MODEL_TOL * drain_pred_s"),
+    # ---- rev5/F1's own new surfaces (lesson 53: the repair must be revertible
+    #      into a FAILING test).  F1a is literally the rev4 behaviour.
+    "F1a predicate back to global max   ": ("lambda0_lambda_inf.py",
+        "vals = [m[c] for c in CONVENTIONS]",
+        'vals = [rc["server_log_global_max"]]'),
+    "F1b cell interval start INCLUSIVE  ": ("lambda0_lambda_inf.py",
+        "seg = lines[start:end]", "seg = lines[start - 1:end]"),
+    "F1c log split by splitlines()      ": ("lambda0_lambda_inf.py",
+        'lines = raw.split(b"\\n")',
+        'lines = [l.encode() for l in raw.decode("utf-8", "replace").splitlines()]'),
 }
 
-# Which selftest is expected to notice a mutation of which module.
-SELFTEST_OF = {"lambda0_label.py": "lambda0_label.py",
-               "lambda0_analyze.py": "lambda0_label.py",   # via the e2e leg
-               "lambda0_plan.py": "lambda0_plan.py",
-               "lambda0_cells.py": "lambda0_cells.py",
-               "lambda0_lambda_inf.py": "lambda0_lambda_inf.py",
-               "lambda0_reachability.py": "lambda0_reachability.py"}
+# Which selftest(s) are expected to notice a mutation of which module.
+#
+# ★rev5/F5-1: `plan` and `analyze` mutations are ALSO routed through the
+# reachability map.  rev4 sent them to the plan / label selftests only, and the
+# rev4 audit walked 11 mutations through that gap -- two of which (Z1, Z4) move
+# a label on the very map the registration publishes.  A mutation counts as
+# BLOCKED if ANY routed selftest fails, and every routed selftest is run and
+# reported, so "which one caught it" is on the record.
+SELFTEST_OF = {"lambda0_label.py": ("lambda0_label.py",),
+               "lambda0_analyze.py": ("lambda0_label.py",       # e2e leg
+                                      "lambda0_reachability.py"),
+               "lambda0_plan.py": ("lambda0_plan.py",
+                                   "lambda0_reachability.py"),
+               "lambda0_cells.py": ("lambda0_cells.py",),
+               "lambda0_lambda_inf.py": ("lambda0_lambda_inf.py",),
+               "lambda0_reachability.py": ("lambda0_reachability.py",)}
 CONTROL_ENTRIES = ("lambda0_label.py", "lambda0_plan.py", "lambda0_cells.py",
                    "lambda0_lambda_inf.py", "lambda0_reachability.py")
+
+# The reachability selftest costs ~90 s, and F5-1 routes ~20 mutations into it,
+# so the runs are dispatched in parallel.  Each one is an independent subprocess
+# over its own temp-dir copy; results are collected and printed in REGISTRY
+# ORDER, so the report is byte-identical whatever the completion order.
+JOBS = max(1, min(8, int(os.environ.get("LAMBDA0_MUTATION_JOBS",
+                                        os.cpu_count() or 1))))
 
 
 def _run(patched_name, patched_text, env, entry=None):
@@ -191,16 +236,28 @@ def _run(patched_name, patched_text, env, entry=None):
         shutil.copy(HERE / f, td)
     if patched_name:
         pathlib.Path(td, patched_name).write_text(patched_text)
-    entry = entry or SELFTEST_OF.get(patched_name, "lambda0_label.py")
-    return subprocess.run([sys.executable, os.path.join(td, entry), "--selftest"],
-                          capture_output=True, text=True, env=env)
+    entry = entry or SELFTEST_OF.get(patched_name, ("lambda0_label.py",))[0]
+    try:
+        return subprocess.run([sys.executable, os.path.join(td, entry),
+                               "--selftest"],
+                              capture_output=True, text=True, env=env)
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
 
 
 def main() -> int:
     src = {f: (HERE / f).read_text() for f in MODULES}
     # The patched copy runs from a temp dir, so hand it the archive explicitly;
     # the shipped file resolves it relative to itself and HARD FAILS if absent.
-    env = dict(os.environ, LAMBDA0_PROBE_C_DIR=str(ARCHIVE))
+    # ★rev5/F1: the predicate's selftest is run against the PRODUCER's own
+    # instrumentation bytes for the same reason -- a fixture the producer never
+    # writes certifies nothing (audit N1 / gate G-lam4-1).
+    env = dict(os.environ, LAMBDA0_PROBE_C_DIR=str(ARCHIVE),
+               LAMBDA0_I3_JOB_DIR=str(I3_JOB))
+    for p, what in ((ARCHIVE, "archived probe C job"), (I3_JOB, "I3 job")):
+        if not p.exists():
+            print("HARNESS CANNOT RUN: %s missing at %s" % (what, p))
+            return 2
 
     # ★rev4/E3 + gate G-lam3-5: the CONTROL must be scored ON THE PATH THE
     # MUTANTS RUN (the temp-dir copy).  rev3 called `_run(None, None, env)` and
@@ -208,8 +265,11 @@ def main() -> int:
     # temp-dir copy were broken every mutation would print "FAILS (good)" and
     # 36/36 would pass vacuously.  Injection-checked below by the caller.
     bad_control = False
+    with futures.ThreadPoolExecutor(max_workers=JOBS) as pool:
+        ctl = {entry: pool.submit(_run, None, None, env, entry)
+               for entry in CONTROL_ENTRIES}
     for entry in CONTROL_ENTRIES:
-        r = _run(None, None, env, entry=entry)
+        r = ctl[entry].result()
         ok = r.returncode == 0
         print("CONTROL unmutated %-24s(temp-dir copy) %s" % (
             entry, "PASSES (good)" if ok else
@@ -219,20 +279,40 @@ def main() -> int:
     if bad_control:
         return 2
 
+    # Every (mutation, routed selftest) pair is an independent subprocess; they
+    # are dispatched together and REPORTED IN REGISTRY ORDER, so parallelism
+    # cannot change the report.
+    skipped, tasks = [], {}
+    with futures.ThreadPoolExecutor(max_workers=JOBS) as pool:
+        for name, (mod, a, b) in MUTATIONS.items():
+            if a not in src[mod]:
+                skipped.append(name)
+                continue
+            patched = src[mod].replace(a, b, 1)
+            for entry in SELFTEST_OF[mod]:
+                tasks[(name, entry)] = pool.submit(_run, mod, patched, env, entry)
+
     escapes = []
     for name, (mod, a, b) in MUTATIONS.items():
-        if a not in src[mod]:
-            print("%s  SKIPPED <<< mutation target text not found in %s" % (name, mod))
+        if name in skipped:
+            print("%s  SKIPPED <<< mutation target text not found in %s"
+                  % (name, mod))
             escapes.append(name.strip())
             continue
-        r = _run(mod, src[mod].replace(a, b, 1), env)
-        blocked = r.returncode != 0
-        print("%s [%-17s] %s" % (name, mod[8:-3], "FAILS (good)" if blocked
-                                 else "PASSES  <<< ESCAPE"))
-        if not blocked:
+        caught = []
+        for entry in SELFTEST_OF[mod]:
+            if tasks[(name, entry)].result().returncode != 0:
+                caught.append(entry[8:-3])
+        print("%s [%-17s] %s" % (name, mod[8:-3], "FAILS (good) via %s"
+                                 % "+".join(caught) if caught
+                                 else "PASSES  <<< ESCAPE (ran %s)"
+                                 % "+".join(e[8:-3] for e in SELFTEST_OF[mod])))
+        if not caught:
             escapes.append(name.strip())
     print("\nescapes: %s" % (escapes if escapes else
-                             "none (%d/%d blocked)" % (len(MUTATIONS), len(MUTATIONS))))
+                             "none (%d/%d blocked, %d selftest runs over %d "
+                             "parallel workers)"
+                             % (len(MUTATIONS), len(MUTATIONS), len(tasks), JOBS)))
     return 1 if escapes else 0
 
 

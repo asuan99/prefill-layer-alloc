@@ -1,0 +1,87 @@
+VERDICT RULE v2 -- fixed 2026-09-11, BEFORE any true-dual boot has
+produced an output.  The scorer never picks a threshold after seeing data.
+======================================================================
+Tiers
+  S  16 requests, one at a time.                           EQUALITY GATE
+  O  8 overlap probes: each probe is sent while one long background request
+     decodes, so its prefill runs on the fixed D division concurrently with
+     that decode.  Probe token ids are compared; background outputs are
+     excluded.                                             EQUALITY GATE
+  C  32 staggered concurrent requests.                     DIAGNOSTIC ONLY
+     (mismatch counts are reported and never enter the verdict)
+
+Per-boot checks (every boot, both arms)
+  B1 BOOTED        the client output exists.
+  B2 NO_CRASH      no non-benign traceback, no "Scheduler hit an exception",
+                   no "unsafe ... split transition", no request error.
+  B3 CUDAGRAPH_ON  disable_cuda_graph=False, "Capture cuda graph end", and
+                   every "Decode batch" line says "cuda graph: True" (>= 1).
+  B4 PATH          TD: true-dual banner, every snapshot architecture=true_dual,
+                   max prefill_host_tasks > 0 and max decode_host_tasks > 0.
+                   L: no banner, every snapshot architecture=legacy.
+  B5 POLICY        every controller_decision is policy=fixed with
+                   admission_limited=False; every SAFE decision targets D;
+                   no r2_admission_* events; server args identical across
+                   boots (seed, backend, context, cap, config, cudagraph,
+                   triton_attention_num_kv_splits).
+  B6 NOT_DEGENERATE  the first L boot: at most half of all outputs are empty
+                   or one repeated token over their first 32 tokens.
+  B7 OVERLAP       >= 1 snapshot with prefill and decode active at once.
+  B8 SPLIT_REALIZED  every such snapshot is on the D division index, AND the
+                   driver read-out (green_<label>.json) reports that index's
+                   prefill/decode green contexts non-null with smCount =
+                   total-D / D.  (Realization, not target: the stream-group
+                   label alone is the engine's target.)
+O-tier confirmation (every probe, every boot)
+  O1 protocol      probe and background finished without error; the
+                   background had streamed its first token before the probe
+                   was sent; the background finished after the probe; and
+                   probe prompt_tokens > (K-1) * (bg prompt_tokens +
+                   bg max_new), K = triton_attention_num_kv_splits (the
+                   condition under which the probe's decode KV-split count
+                   does not depend on the background; see the client).
+  O2 overlap       >= 1 snapshot inside [probe sent, probe done] (perf_counter
+                   = CLOCK_MONOTONIC, the telemetry clock) with prefill and
+                   decode active.
+  O3 division      every snapshot counted in O2 is on the D division index
+                   (its realized SM counts are B8's read-out).
+  O4 threads (TD)  prefill_host_tasks and decode_host_tasks both increase from
+                   the last snapshot at or before the probe was sent to the
+                   last snapshot inside the window, and some in-window
+                   snapshot shows decode batch >= 2 (probe decoding alongside
+                   the background on the decode worker).
+
+Verdict, first matching line wins
+  1 FAIL                   any B2-B6 failure in any boot; a boot missing (B1)
+                           whose log shows a crash; input identity differs
+                           (S or O prompt_tokens) across boots; an S mismatch
+                           between any two boots while the two L boots agree
+                           on S; an O mismatch between an L and a TD boot
+                           while both within-arm O pairs (L-L and TD-TD) are
+                           present and identical.
+  2 NO_VERDICT_INFRA       a boot is missing and its log shows no crash, or
+                           an arm has no booted boot at all.
+  3 INCONCLUSIVE           the two L boots disagree on S (reference not
+                           reproducible), or any within-arm O pair differs.
+  4 NO_VERDICT_UNREALIZED  B7 or B8 fails in some boot, or O1-O4 is not
+                           confirmed for some probe in some boot (the fixed D
+                           split under overlap was not shown to be exercised
+                           and realized, so equality there is not certified).
+  5 PASS                   otherwise: every boot passes B1-B8, S and O are
+                           token-identical across all boots, O1-O4 hold for
+                           every probe in every boot.
+
+Why this rule is not chosen after the fact
+  * No true-dual boot has ever produced an output: in job 907032 both TD
+    boots crashed on the server's own warm-up request.  Nothing about
+    true-dual outputs could have informed this rule.
+  * The C demotion applies the condition declared before job 907032 ("a
+    cross-arm mismatch only counts when legacy-vs-legacy is identical"):
+    job 907032 measured legacy-vs-legacy C mismatch 7/32 (one request at
+    token 0), so C cannot meet that condition by construction.  The O tier
+    replaces it with a concurrency test that is deterministic by construction
+    and carries its own null control (rule line 3).
+  * S alone never runs on the D division (prefill-only states use the plain
+    group 0, decode-only states the last plain group; job 907032 L1: every
+    overlap snapshot on index 4, none otherwise), hence the O tier and B8.
+======================================================================

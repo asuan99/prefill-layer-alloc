@@ -25,7 +25,11 @@ THE PHYSICAL MODEL (the only external input; registered, not tuned)
     lambda*, i.e. ITL(48) = 48 / ((out-1) * lambda*)
     Bbar solves Bbar = x*(out-1)*ITL(Bbar)          (Little)
 
-`a'` is a MEASUREMENT, not a guess, and it has now been confirmed three ways:
+`a'` is a MEASUREMENT, not a guess, but it has NOT been "confirmed three
+ways" (F3-(4) of VERDICT_lambda0_rev4_2026-09-14.md; R4C-6).  All three
+numbers below are the SAME quantity measured three times -- every one of
+them is at B=1, and the engine only uses D44 when prefill and decode are
+concurrent, so all three are UNSPLIT 108-SM values (N-7).  They are:
 the registered constant 13.06 ms (P2 job 905712, concurrency 1); the rev3
 audit's independent read of the last, uncontended request of the three archived
 r0 cells (13.48 / 13.27 / 13.07 ms at D16/D44/D92 -- arm independent); and
@@ -86,10 +90,31 @@ def cell_physics(shape: str, x: float, n: int, lam_star: float) -> tuple:
     return drain, itl
 
 
+_PLAN_CACHE = {}
+
+
+def _plan(lam_inf_a, lam_inf_b, ladders):
+    """`PLAN.plan` memoised across the ratio sweep.
+
+    The plan does not depend on the true lambda* being swept, only on
+    (lambda_inf, ladders), and each call spends ~0.5 s searching 5000 seeds.
+    rev5 routes plan and analyze mutations through this map as well (F5-1), so
+    the map is now run ~20x more often and the 84 redundant plan() calls per
+    sweep mattered.  Purity is asserted separately (`lambda0_plan` selftest
+    item 6), so caching cannot hide a mutation.
+    """
+    key = (lam_inf_a, lam_inf_b,
+           None if ladders is None else tuple(sorted(
+               (k, tuple(v)) for k, v in ladders.items())))
+    if key not in _PLAN_CACHE:
+        _PLAN_CACHE[key] = PLAN.plan(lam_inf_a, lam_inf_b, ladders=ladders)
+    return _PLAN_CACHE[key]
+
+
 def emit(lam_inf_a: float, lam_inf_b: float, ratio: float, ladders=None,
          tmpdir=None) -> dict:
     """Run the SHIPPED decision path at a given true lambda*/lambda_inf."""
-    p = PLAN.plan(lam_inf_a, lam_inf_b, ladders=ladders)
+    p = _plan(lam_inf_a, lam_inf_b, ladders)
     out = {}
     td = tmpdir or tempfile.mkdtemp()
     for shape in ("A", "B"):
@@ -135,10 +160,50 @@ SCENARIOS = PLAN.REGISTERED_GRID + (
     ("FALLBACK literal ladders", 2.10, 0.675),
 )
 
+VERDICT_CODE = {"KNEE_BRACKETED": "B", "KNEE_NOT_BRACKETED": "N",
+                "LADDER_TOO_HIGH": "H", "LADDER_TOO_LOW": "L",
+                "UNRESOLVED": "U"}
+
+# ★rev5/F5-1+2 -- THE REGISTERED MAP, not just its census.
+#
+# One code per point of `LAMBDA_RATIO_GRID`, in grid order, per scenario and
+# shape.  The rev4 audit's escapes Z1 (`MULT["B"]` 1.70 -> 1.16) and Z4
+# (`lambda0_analyze.DRAIN_MODEL_TOL` 2.0 -> 3.0) each MOVE exactly one label on
+# this map, and the old `assert seen[s][verdict]` was blind to them: a pooled
+# non-emptiness test cannot see a point change from one non-empty verdict to
+# another.  What this registration publishes is the whole map, so the whole map
+# is what is asserted.  Any decision-path change that moves a single point now
+# fails here and must be re-registered.
+#
+# ★Read `LADDER_TOO_LOW[A]` in the FALLBACK row: there is NO "L" there.  The
+# scenario that actually runs after F1 cannot emit that verdict for shape A
+# under this model (audit V4 / R4C-5) -- the pooled census hides it, this table
+# does not.
+REGISTERED_MAP = {
+    "MEASURED job 907959 (I3a 3.0939 / I3b 0.6956 req/s)":
+        ("HHNBBBBBBBBL", "HHHHNBBBBBLL"),
+    "point estimate lower  (lambda*(A)=2.1 regression extrapolation)":
+        ("HHHBBBBBBBBL", "HHHHNBBBBBLL"),
+    "point estimate upper  (lambda*(A)=2.5 ctx-768 KV-term variant)":
+        ("HHHBBBBBBBBL", "HHHHNBBBBBLL"),
+    "absolute lower bound  (A=1.08 worst observed step, B=0.35)":
+        ("HHHBBBBBBBBL", "HHHHNBBBBBLL"),
+    "absolute upper bound  (A=7.15 step(B=1) floor, B=1.20)":
+        ("HHBBBBBBBBBL", "HHHHNBBBBBLL"),
+    "B=6 plateau variant   (A=3.91, B=1.00)":
+        ("HHNBBBBBBBBL", "HHHHNBBBBBLL"),
+    "FALLBACK literal ladders":
+        ("HHHHNBBBBBBB", "HHHHHNBBBBLL"),
+}
+
 
 def table() -> tuple:
-    """The registered reachability map + the per-verdict domain census."""
-    lines, seen = [], {"A": {}, "B": {}}
+    """The registered reachability map + the per-verdict domain census.
+
+    Returns `(text, census, codes)`; `codes[title] = (shape-A string, shape-B
+    string)` is the compact form `REGISTERED_MAP` pins (F5-1).
+    """
+    lines, seen, codes = [], {"A": {}, "B": {}}, {}
     with tempfile.TemporaryDirectory() as td:
         for title, la, lb in SCENARIOS:
             lad = ({k: tuple(v) for k, v in PLAN.FALLBACK_LADDER.items()}
@@ -147,10 +212,12 @@ def table() -> tuple:
                          + ("  [FALLBACK ladders]" if lad else ""))
             lines.append("    lam*/lam_inf |            shape A            |"
                          "            shape B")
+            row = {"A": "", "B": ""}
             for ratio in LAMBDA_RATIO_GRID:
                 r = emit(la, lb, ratio, ladders=lad, tmpdir=td)
                 cells = []
                 for s in ("A", "B"):
+                    row[s] += VERDICT_CODE[r[s]["verdict"]]
                     d = r[s]
                     err = ("    --  " if d["rel_err"] is None
                            else f"{100*d['rel_err']:+6.1f}%")
@@ -160,12 +227,13 @@ def table() -> tuple:
                     seen[s].setdefault(d["verdict"], []).append(
                         (title, round(ratio, 2)))
                 lines.append(f"    {ratio:12.2f} | {cells[0]} | {cells[1]}")
+            codes[title] = (row["A"], row["B"])
             lines.append("")
-    return "\n".join(lines), seen
+    return "\n".join(lines), seen, codes
 
 
 def selftest() -> None:
-    txt, seen = table()
+    txt, seen, codes = table()
     # ★E2: every registered verdict the SWEEP can produce must have a non-empty
     # domain, for BOTH shapes.  rev3 failed exactly here: KNEE_BRACKETED[B] and
     # LADDER_TOO_HIGH[A,B] were empty and nothing in the registration noticed.
@@ -176,6 +244,23 @@ def selftest() -> None:
             assert seen[s].get(v), (
                 f"verdict {v} has an EMPTY domain for shape {s} -- the "
                 f"registration cannot emit it under its own model", sorted(seen[s]))
+
+    # ★rev5/F5-1: and the WHOLE MAP must be the registered one.  The assert
+    # above is POOLED over scenarios and blind to a label MOVING between two
+    # non-empty verdicts -- which is exactly what the rev4 audit's Z1 and Z4 do
+    # (one point each).  `REGISTERED_MAP` is published in the pre-registration,
+    # so a decision-path change that moves any point fails here.
+    assert set(codes) == set(REGISTERED_MAP), (
+        "the scenario set changed; the registered map no longer covers it",
+        sorted(set(codes) ^ set(REGISTERED_MAP)))
+    for title, got in codes.items():
+        want = REGISTERED_MAP[title]
+        assert got == want, (
+            "the reachability map MOVED and is no longer the registered one",
+            title, "registered A/B", want, "got A/B", got,
+            "grid", LAMBDA_RATIO_GRID)
+    assert all(len(c) == len(LAMBDA_RATIO_GRID) for cc in codes.values()
+               for c in cc), codes
 
     # ...and the bracket must land on lambda* when it fires.  A bracket that
     # reports the wrong number is worse than no bracket.
@@ -216,10 +301,13 @@ def selftest() -> None:
 
     print("REACHABILITY SELFTEST OK (shipped analyze->rule over %d true-lambda* "
           "points x %d scenarios x 2 shapes; all FOUR registered "
-          "verdicts have non-empty domains for both shapes; bracket "
+          "verdicts have non-empty domains for both shapes; ★F5-1 all %d map "
+          "points equal REGISTERED_MAP, so a moved label is a failure and not "
+          "merely a non-empty census; bracket "
           "reports lambda* within 15%%; NEGATIVE CONTROL: the rev3 rule still "
           "returns UNRESOLVED for shape B at the anchor)"
-          % (len(LAMBDA_RATIO_GRID), len(SCENARIOS)))
+          % (len(LAMBDA_RATIO_GRID), len(SCENARIOS),
+             2 * len(SCENARIOS) * len(LAMBDA_RATIO_GRID)))
 
 
 def main() -> int:
@@ -229,13 +317,24 @@ def main() -> int:
     if len(sys.argv) != 1:
         print(__doc__)
         return 2
-    txt, seen = table()
+    txt, seen, codes = table()
     print(txt)
     print("### verdict domain census (must be non-empty for each registered verdict)")
     for s in ("A", "B"):
         for v, where in sorted(seen[s].items()):
             print(f"    shape {s}  {v:<20s} {len(where):3d} grid points  "
                   f"e.g. {where[0]}")
+    print("")
+    print("### ★the REGISTERED MAP (F5-1), one code per lambda*/lambda_inf grid "
+          "point, in grid order")
+    print("###   B=KNEE_BRACKETED  N=KNEE_NOT_BRACKETED  H=LADDER_TOO_HIGH  "
+          "L=LADDER_TOO_LOW  U=UNRESOLVED")
+    print("###   grid = " + " ".join(f"{r:g}" for r in LAMBDA_RATIO_GRID))
+    for title, _, _ in SCENARIOS:
+        a, b = codes[title]
+        flag = "  <== matches REGISTERED_MAP" \
+            if REGISTERED_MAP.get(title) == (a, b) else "  <== ★DRIFTED"
+        print(f"    A {a}   B {b}   {title}{flag}")
     return 0
 
 

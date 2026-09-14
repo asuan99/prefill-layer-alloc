@@ -649,21 +649,39 @@ class SbatchReadsTheField(unittest.TestCase):
         )
 
 
+# ★The pre-revision reference is a FIXED COMMIT, not `HEAD` (2026-09-14,
+# engine-porter).  It was written as `HEAD:` while the revision was still
+# uncommitted, and the moment commit `8507cee` landed, `HEAD` BECAME the
+# post-revision file -- whose first statement is `from .lambda_star import ...`,
+# which `exec()` of a bare module cannot resolve.  Both controls in this class
+# then raised `ImportError: attempted relative import with no known parent
+# package` in `unittest discover` (measured: 645 tests, 2 errors).  A control
+# anchored to a moving reference destroys itself at the instant the change it
+# controls for is recorded; the `try/except TypeError -> skipTest` guards below
+# were meant to catch that transition and could not, because the module now dies
+# before any call.  `bddff6a` is the last commit whose `workloads.py` takes the
+# scalar `sustainable_rate`.
+PRE_REVISION_COMMIT = "bddff6a"
+
+
 class NoUnintendedBehaviourChange(unittest.TestCase):
     """The revision must be a no-op when every shape shares one lambda*."""
 
     def old_module(self):
         result = subprocess.run(
             ["git", "-C", str(PROJECT_ROOT), "show",
-             "HEAD:workspace/engine-port/benchmarks/pdmux_eval/workloads.py"],
+             f"{PRE_REVISION_COMMIT}:workspace/engine-port/benchmarks/"
+             "pdmux_eval/workloads.py"],
             capture_output=True, text=True,
         )
         if result.returncode != 0:
-            raise unittest.SkipTest("git HEAD copy of workloads.py unavailable")
+            raise unittest.SkipTest(
+                f"git {PRE_REVISION_COMMIT} copy of workloads.py unavailable")
         module = types.ModuleType("_pre_revision_workloads")
         sys.modules["_pre_revision_workloads"] = module
         self.addCleanup(sys.modules.pop, "_pre_revision_workloads", None)
-        exec(compile(result.stdout, "<HEAD workloads.py>", "exec"), module.__dict__)
+        exec(compile(result.stdout, f"<{PRE_REVISION_COMMIT} workloads.py>",
+                     "exec"), module.__dict__)
         return module
 
     def test_shared_rate_reproduces_the_pre_revision_traces_exactly(self):
