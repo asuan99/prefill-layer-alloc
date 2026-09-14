@@ -163,10 +163,24 @@ python3 workspace/engine-port/scripts/bootstrap/check_sbatch_comment.py [--fix]
 ## R2 campaign
 
 ```bash
-workspace/engine-port/scripts/r2_eval/generate_campaign.sh
+# lambda*는 캠페인 0단계에서 측정된다 — 기본값이 없다(2026-09-13 개정).
+# 표 형식: workspace/engine-port/scripts/r2_eval/lambda_star.example.json
+#          workspace/engine-port/benchmarks/pdmux_eval/lambda_star.py
+PDMUX_LAMBDA_STAR_TABLE=<measured lambda_star.json> \
+  PDMUX_WORKLOADS="W3 W4" \
+  workspace/engine-port/scripts/r2_eval/generate_campaign.sh
 PDMUX_CAMPAIGN=workspace/engine-port/results/r2_eval/campaign.json \
   sbatch --array=0-<N-1> workspace/engine-port/scripts/r2_eval/r2_eval.sbatch
 ```
+
+lambda\*는 **shape별**(= `(input_tokens, output_tokens)`)로 준다. W4는 두
+phase가 서로 다른 shape((8192,64)·(256,512))이라 각 phase가 **자기 shape의**
+lambda\*의 0.80배로 스케일된다 — 단일 스칼라로는 두 phase를 동시에 0.80배로
+만들 수 없다. 표가 없거나 `source`가 `measured`가 아니면 트레이스 생성·캠페인
+빌드·`r2_eval.sbatch` **세 지점 모두에서 거부**되며,
+`PDMUX_ALLOW_UNMEASURED_LAMBDA_STAR=1`로만 (caveat를 manifest에 남긴 채)
+통과한다. 옛 `PDMUX_SUSTAINABLE_RATE`(기본 4 req/s, 미측정)는 제거됐고 설정
+시 즉시 실패한다.
 
 기본 runner는 CUDA Graph를 켠 SGLang server와 immutable SSE trace load
 generator를 사용한다. 필요하면 `PDMUX_R2_RUNNER` 또는

@@ -7,25 +7,47 @@ from pathlib import Path
 BENCHMARKS = Path(__file__).parents[1] / "benchmarks"
 sys.path.insert(0, str(BENCHMARKS))
 
-from pdmux_eval import analyze, campaign, trace_loadgen, workloads
+from pdmux_eval import analyze, campaign, lambda_star, trace_loadgen, workloads
+
+
+def fixture_table(rate=4.0, source="measured", shapes=((256, 512),)):
+    """A per-shape lambda* table (the scalar argument no longer exists)."""
+    return lambda_star.parse(
+        {
+            "schema": lambda_star.SCHEMA,
+            "definition": "slo_sustainable",
+            "measured_by": "unit-test fixture",
+            "shapes": {
+                lambda_star.shape_key(shape): {
+                    "req_per_s": rate,
+                    "source": source,
+                    "evidence": "fixture",
+                }
+                for shape in shapes
+            },
+        }
+    )
 
 
 class WorkloadTest(unittest.TestCase):
     def test_trace_generation_is_deterministic(self):
-        first = workloads.generate_requests("W3", 4.0, 16, seed=7)
-        second = workloads.generate_requests("W3", 4.0, 16, seed=7)
+        table = fixture_table()
+        first = workloads.generate_requests("W3", table, 16, seed=7)
+        second = workloads.generate_requests("W3", table, 16, seed=7)
         self.assertEqual(first, second)
         self.assertTrue(all(item.input_tokens == 256 for item in first))
         self.assertTrue(all(item.output_tokens == 512 for item in first))
 
     def test_campaign_pairs_share_trace_and_server_seed(self):
+        table = fixture_table()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             trace = root / "W3.jsonl"
             workloads.write_trace(
                 trace,
                 workloads.builtin_workloads()["W3"],
-                workloads.generate_requests("W3", 4.0, 8, seed=1),
+                workloads.generate_requests("W3", table, 8, seed=1),
+                lambda_star=workloads.lambda_star_record("W3", table, 8),
             )
             runs = campaign.build_runs(["W3"], ["B1", "B6"], root, 5, seed=3)
         self.assertEqual(len(runs), 10)

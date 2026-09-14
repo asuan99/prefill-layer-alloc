@@ -4,7 +4,79 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-09-13(3) rev73 **(doc-steward — ★캠페인
+최종 갱신: 2026-09-14(2) rev75 **(doc-steward — ★job 908179
+결과 감사 등재)**: job 908179(등록 튜플 최초 실행,
+0.165556 GPU-h) `VERDICT PASS` — C1 스코프 술어 (1)–(11) 전부
+참(`NO_VERDICT_SCOPE` 아님), 비트 단위 재현. TD 2/2가 907959를
+죽였던 바로 그 14-seq/10,125-token 배치를 완주. ★"수리가
+OOM을 고쳤다" = **`PLAUSIBLE(조건부)`, `CONFIRMED` 아님**(조건 =
+`PDMUX_WORKER_GRAD_GUARD=none` 대조 arm 1회 — 무수정으로는
+실행 불가, 반증 시도 4건 실패했으나 반증 실패≠확증). 메모리축:
+`peak(TD1)=peak(TD2)=peak(L2)`(차 0 B, 9/36 epoch 완전 arm
+분리로 계측기 5MiB 해상력 실증됨), L1 이탈은 arm 아닌 boot
+수준 산포(3 job 교차 확인 — arm도 위치도 안 고정). **Claim D
+선결 #5는 새로 닫힌 게 아니라 (Zamba2,triton)에서 이미 닫혀
+있던 술어가 두 번째 (모델,백엔드,ctx) 쌍으로 스코프 확장된
+것** — Claim D 등급 미검증 불변, **PASS는 P2 착수를 승인하지
+않는다**(NP-8). ★GPU 장부 드리프트 정정 — `sacct` 기준으로
+통일(이전 배너 "0.78583" 내부 반올림 불일치 −0.00361 GPU-h
+확인, 이번부터 정확 초 단위 채택): R2 correctness 트랙 누적
+**1.107500 GPU-h**(등록 0.955000/등록 밖 0.152500). ★4번째
+미등록 축(노드/물리 GPU, gpu38→gpu40) 발견 — 메모리 채널은
+닫혔으나 축 자체가 사전등록 §10에 없었다. 신규 게이트 6건
+(#232–237, 이 문서 §3 항목252–257) — #232는 긍정 사례(계측기
+해상력 실증 없이 "바이트 동일"을 인용하지 말 것). 새 성능
+판정 0건·Claim D/E 등급 불변(둘 다 미검증)·HE0·정책 순위·
+stake #1·게이트#13/#16·C2 인용정지·Zamba2/triton 동결 전부
+불변. 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-14(2)).
+**커밋 금지**(핸드오프 커밋에 함께 묶인다).
+
+이전: 2026-09-14 rev74 **(doc-steward — ★2026-09-13
+저녁~2026-09-14 새벽 세션 산출물 정본 반영 1회 패스)**:
+사용자 결정 4건[W4=phase별 독립 λ\*·옵션A 수리+arm대칭
+메모리계측→재실행·rev4 검정력공시 수용→실행·모델/백엔드/ctx
+승계] + R2 correctness 트랙 GPU 실측 2건 등재[job 907959
+`FAIL`=true-dual OOM `CONFIRMED(scoped)`·job 908020 `PASS`-
+등록밖, 트랙 누적 0.43→**0.93833 GPU-h**(등록 0.78583/등록밖
+0.15250 분리표기)] + ★엔진 실물 결함 발견+수리[worker thread가
+`inference_mode` 밖에서 autograd 켠 채 forward, 노출 경로
+`mixer2_rms_norm_gated.py:97`(bare Parameter, `n_groups≠1`
+전용) — NemotronH(n_groups=8)만 노출·Zamba2/Falcon-H1/Granite
+(전부 n_groups=1)는 구조적 면역, 수리=`_activate_role_
+context`에 grad guard(`inference_mode`), 커밋 `a9cd8dd`] +
+λ_inf(A)=3.0939 req/s 측정(legacy·warmup·cudagraph ON 한정,
+분할 혼합비 미측정)·λ_inf(B)=0.6956 인용 금지[N-8, 사전등록
+레시피로 셀별 재계산하면 최댓값 2, 하네스가 쓴 48은 전역
+최댓값]·N-7 정정[I2 프로브는 D44가 아니라 비분할 108SM 값 —
+엔진은 prefill∧decode 동시성에서만 D44를 씀] + 사전등록
+재감사 이력 4+4연속 등재[재실행 사전등록 rev1 `NO-GO`→rev2
+`GO-with-caveats`(사후 ★철회, A908-7)→job 908020(등록 밖,
+Zamba2-2.7B/triton/ctx4096)→rev3 `NO-GO`(死因 N2, C1 스코프
+술어 항목(9)의 참 분지 ∅)→rev4 `GO-with-caveats`(死因0, caveat
+RA4-1…12); λ0(캠페인 0단계) 사전등록 rev2 `NO-GO`(死因 N2,
+비포화 영점 미등록)→rev3 `NO-GO`(死因 N3, shape B 브래킷
+정의역 ∅ — 감사자 자기 처방[rev2 D16/D17]이 만든 死因을
+자기 철회)→rev4 `NO-GO`(死因 N1+N2, F5 앵커 술어가 live에서
+실효 항등식 + 수리 시 shape B 13격자점 중 5점·shape A 12점 중
+3점 라벨 반전), 전부 GPU 0] + job 908179(rerun rev4 등록
+튜플 최초 실행으로 추정 — 작성 시작 시 RUNNING, 작성 완료
+시 `sacct` 확인 결과 `COMPLETED` exit 0·4 boot 전부 완주,
+★verdict 미독·미감사, 결과는 다음 패스) + 신규 방법론 게이트
+31건(#201–231, 이 문서 §3 항목221–251 신설). 새 성능 판정
+0건·이 패스 GPU 신규지출 0(전부 이미
+지출된 세션 결과의 재등재)·Claim D/E 등급 불변(둘 다
+미검증)·HE0·정책 순위·stake #1·게이트#13/#16·C2 인용정지
+전부 불변. **overclaim 금지**: job 907959 FAIL의 귀속은 "이
+스코프 튜플·이 배치"에 scoped(NOT-YET-SUPPORTED로 일반화
+금지), grad-guard 수리는 아직 GPU로 검증되지 않았다(job
+908179가 그 검증, 결과 미등재), λ_inf(B)는 인용 불가, rerun
+rev4 `GO-with-caveats`는 "true-dual 아키텍처가 옳다"가
+아니다(RA4-7: 어떤 PASS도 "새 쌍에서 S/O층 토큰 id 동일 +
+cudagraph 유지" 한 문장만 인증). 상세 `PROJECT_STATUS.md`
+최상단 배너(2026-09-14). **커밋 금지**(핸드오프 커밋에 함께
+묶인다).
+
+이전: 2026-09-13(3) rev73 **(doc-steward — ★캠페인
 0단계[λ*] 사전등록 `NO-GO` 등재[死因 N2+N3, GPU 0·미실행] +
 감사 파생 사실 7건 등재[게이트 #6 미충족이 최우선] +
 2026-09-13(2) 배너의 W4 decode phase 오독 정정
@@ -6849,6 +6921,80 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 219. ★★★**(2026-09-13(3), 캠페인 0단계[λ*] 사전등록 규칙층 감사, claims-auditor, GPU 0 — R4 유형 재발) 닫힌 형태 추정식이 자기 추정량(예측 대상 자체)을 입력으로 요구하면 그것은 항등식이지 예측 모델이 아니다.** λ0 등록 §3이 예보 근거로 인용하려 한 `c_capacity_analyze.py`의 닫힌 형태 `L_decode=[(1−R)/R]·(itl_load/itl_solo)/s(D)`를 대입해 전개하면 `pred=μ_ach·out·itl_load`로 환원된다 — `μ_ach`가 곧 λ*이므로 이 식은 λ*를 예측하는 데 **λ*를 입력으로 요구**한다. `obs/pred`는 사실상 `mean_itl/itl_p50`를 검정한 것이었다(longctx_conflict 트랙 R4/MODEL_HOLDS와 같은 함정). λ0 등록이 R4를 승계하지 않은 것은 이 감사로 확인상 옳았다 — 되살리지 말 것. 실무 규칙: 닫힌 형태 추정식을 예측 도구로 재사용하기 전에 그 식을 대입 전개해 예측 대상 자신이 우변에 나타나는지 확인하라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #199(신설). 상세 `.../lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md` §3(3).
 
 220. ★★★**(2026-09-13(3), 캠페인 0단계[λ*] 사전등록 규칙층 감사, claims-auditor, GPU 0 — 게이트 #21 확장, 제출 차단급) `UNRESOLVED`(측정 실패) 경로가 live 코드에서 실제로 도달 가능한지 주입 실험으로 확인하라 — glob 기반 셀 수집은 결손 셀을 조용히 빼고 규칙 판정(실패가 아닌)을 내보낼 수 있다.** `lambda0_label.py:104`의 `for f in sorted(d.glob("cell_*.json"))`는 없는 셀 파일을 리스트에서 그냥 빠뜨리므로 `any(c is None)` 검사가 결코 참이 될 수 없고, 등록 §4가 "셀 JSON 결손 → `UNRESOLVED`, 측정 실패이며 규칙 실패가 아니다(교훈 21)"라고 적은 문안과 실제 코드가 불일치했다 — boot 실패가 조용히 `KNEE_NOT_BRACKETED`(규칙 실패)로 나온다. 감사자가 4점 사다리에서 셀 1개를 실제로 삭제하는 주입 실험으로 이 불일치를 재현했다(상단 결손 → `KNEE_BRACKETED`로 오히려 통과, 하단 2점만 결손 → `KNEE_NOT_BRACKETED`). 실무 규칙: "측정 실패는 X로 라벨한다"고 등록한 사전등록은 제출 전에 그 실패 라벨이 실제 코드 경로에서 도달 가능한지 결손 셀을 인위적으로 주입해 확인하라 — 산문 서술과 glob 기반 파일 수집의 암묵적 스킵 동작은 다른 것이다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #200(신설). 상세 `.../lambda0_prereg/VERDICT_lambda0_rules_2026-09-13.md` §1(S9)·§6(c).
+
+221. ★★★**(2026-09-13, job 907959 결과 감사, claims-auditor, GPU 0 — 긍정 사례) "진단 전용" 라벨의 정의역을 사전등록 문안에 명시하라 — 불일치 *수*만 가리키는지, 그 층에서 일어난 *모든 사건*을 가리키는지 구분하지 않으면 결과 해석 시점에 미등록 재량이 생긴다.** 907959의 verdict rule v2는 "C층은 진단 전용(mismatch counts are reported and never enter the verdict)"이라고 괄호로 정의역을 불일치 수로 한정해 두었고, 그 덕에 C층에서 일어난 서버 크래시(`B2_NO_CRASH`, 티어 수식 없는 퍼-boot 술어)가 판정에 들어가는 데 재량이 0이었다(감사자 반사실 CF1로 과결정 확인). 대응 `PROJECT_STATUS.md` "방법론 게이트" #201(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_907959_2026-09-13/VERDICT.md` §2·§14(1).
+
+222. ★★★**(2026-09-13/14, job 907959 결과 감사 + λ0 rev4 규칙층 감사, claims-auditor, GPU 0) 퍼-셀 판정을 요구하는 예보는 생산 하네스가 실제로 퍼-셀 산출물을 만드는지 확인하라 — 소비자가 전역 집계 파일 하나를 셀별 값으로 오독하면 실격 경로가 실효 항등식이 된다.** newpair F5를 위해 하네스가 쓴 `I3_max_running_req.txt`는 전역 최댓값 한 줄뿐이었고, 그 파일을 그대로 소비한 `lambda0_lambda_inf.py`의 `min(vals) >= 48` 조건은 "어느 한 셀이라도 48에 닿았다"와 동치인 실효 항등식이었다(셀별 재계산 결과 I3a=48/I3b=2). 대응 `PROJECT_STATUS.md` "방법론 게이트" #202(신설). 상세 `.../audit_907959_2026-09-13/VERDICT.md` §6-4·§14(2); `.../lambda0_prereg/VERDICT_lambda0_rev4_2026-09-14.md` §2(N1)·G-λ4-1.
+
+223. ★★★**(2026-09-13, job 907959 결과 감사, claims-auditor, GPU 0) 포화 판정 계기는 그 워크로드 shape의 실제 병목 축과 맞춰라 — decode-슬롯 계기는 prefill-토큰-지배 shape에서 구조적으로 도달 불가할 수 있다.** F5가 쓴 `#running-req ≥ 48`(mamba/decode 슬롯 계기)은 shape B(8192-in, prefill 지배)에서 진짜 구속인 `max_prefill_tokens=16384`를 반영하지 못해, 서버가 명백히 병목(대부분 구간 `#queue-req` 60 이상, 최대 62)인데도 계기 자체가 발화할 수 없었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #203(신설). 상세 `.../audit_907959_2026-09-13/VERDICT.md` §6-3·§14(3).
+
+224. ★★★**(2026-09-13, job 907959 결과 감사, claims-auditor, GPU 0 — N-7) 분할(green-context SM) 라벨을 수치에 붙이기 전에 그 측정 구간이 실제로 prefill∧decode 동시성 위에 있었는지 확인하라 — 동시성-1 프로브는 구성상 분할 인덱스를 밟을 수 없다.** 엔진은 prefill과 decode가 동시에 활성인 구간에서만 green idx 4(D44)를 쓰고, 그 외에는 idx 0/5(비분할, 108 SM)에서 돈다(같은 job 텔레메트리 12,458 스냅샷 전수: idx0 11,725·idx4 592·idx5 141). newpair I2(동시성 1) 프로브의 TTFT/ITL을 "D44 값"으로 태깅한 사전등록 문구(NP-9/D6-ii)는 이 사실로 거짓임이 확인됐다 — λ0 rev1 판정서의 각주("B=1은 pdmux 분할 미적용 구간")가 옳았다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #204(신설). 상세 `.../audit_907959_2026-09-13/VERDICT.md` §6-2·§14(4)(N-7).
+
+225. ★★★**(2026-09-13, job 907959 결과 감사, claims-auditor, GPU 0) verdict 리포트가 인쇄하는 카운터 이름이 게이트 술어가 실제로 읽는 값과 같은 것인지 확인하라 — 이름이 겹치면 "N건인데 왜 통과?"라는 오독을 유도한다.** `unsafe_decisions`(텔레메트리 `controller_decision.safe=False` 계수, TD 16건)는 B2가 실제로 검사하는 로그 정규식 `unsafe (automatic )?split transition`(값 0, 4 boot 전부)과 다른 양이다 — 16건 전부 `target=current=44`라 분할 전이 자체가 없었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #205(신설). 상세 `.../audit_907959_2026-09-13/VERDICT.md` §3-3(A6)·§14(5).
+
+226. ★★★**(2026-09-13, job 907959 결과 감사, claims-auditor, GPU 0) 요청 오류로 비어버린 출력끼리의 "불일치 0"은 결정성의 증거가 아니다 — 비교 함수가 오류 레코드를 등가류에 넣으면 죽은 arm은 자기 자신과 항상 일치한다.** `C within-arm TD1-TD2: 0`은 두 TD boot이 같은 31건에서 똑같이 빈 출력(서버 사망 후 `RemoteDisconnected`)을 냈기 때문에 나온 0이며, "TD가 결정적으로 재현됐다"의 증거가 아니다(항등식, 게이트 #9 계열 재발). 대응 `PROJECT_STATUS.md` "방법론 게이트" #206(신설). 상세 `.../audit_907959_2026-09-13/VERDICT.md` §12(N-5)·§14(6).
+
+227. ★★★**(2026-09-14, job 908020 결과 감사, claims-auditor, GPU 0) 사전등록의 "제출 명령"은 그 문서의 스코프 튜플을 실제로 실현하는지 한 줄씩 대조한 뒤에만 승인하라 — 하네스 기본값이 튜플과 다르면 명령 그 자체가 死因이다.** `rerun_prereg/PREREG_RERUN_2026-09-13.md` §9의 제출 명령은 `R2C_MODEL`/`R2C_ATTN_BACKEND`/`R2C_CTX` 세 env를 빠뜨렸는데, 하네스 기본값이 정확히 반대 모델(Zamba2-2.7B/triton/ctx4096)이었다 — 규칙층 감사 2회 모두 이 세 문자열을 0회 언급했고 rev2는 그 명령을 그대로 전사하며 승인했다. 결과 job 908020이 등록 밖 튜플로 돌았다(0.15250 GPU-h, 어떤 게이트도 진전 없음). 대응 `PROJECT_STATUS.md` "방법론 게이트" #207(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_908020_2026-09-14/VERDICT.md` §5.3(G-908020-1).
+
+228. ★★★**(2026-09-14, job 908020 결과 감사, claims-auditor, GPU 0 — 교훈 89 확장) rev 개정 시 "불변"이라고 표에 적은 축이 실행 절차(제출 명령 등)에서 조용히 사라졌는지 확인하라 — 삭제는 diff에도 grep에도 안 잡힌다.** 올바른 제출 명령(세 env 포함)은 sha로 핀된 선행 문서에 이미 있었으나 rerun rev1/rev2로 복사되며 소실됐고, 같은 rerun 문서의 §0 표는 그 축을 "동일 | 동일 | 불변"으로 선언하고 있었다(문서 내부 모순). 대응 `PROJECT_STATUS.md` "방법론 게이트" #208(신설). 상세 `.../audit_908020_2026-09-14/VERDICT.md` §5.3(G-908020-2).
+
+229. ★★★**(2026-09-14, job 908020 결과 감사, claims-auditor, GPU 0 — 교훈 85 계열) 인적 실패점 하나를 명령줄 인자에서 제거했다면 같은 명령줄의 나머지 인자 전부에 같은 검사를 적용하라 — 처방은 국소, 결함은 계열이다.** newpair D11은 `--time` 인자에 대해 "빠뜨리면 조용히 망가지는 단일 인적 실패점"이라 진단하고 지시자로 내재화했으면서, 같은 명령줄의 모델 정체성 3개(env)에는 같은 검사를 적용하지 않았다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #209(신설). 상세 `.../audit_908020_2026-09-14/VERDICT.md` §5.3(G-908020-3).
+
+230. ★★★**(2026-09-14, job 908020 결과 감사, claims-auditor, GPU 0 — 라벨 쇼핑 방지) 사전등록에 스코프 불일치 처분을 반드시 등록하라 — 넣지 않으면 "등록 실험이 돌았는가"가 라벨을 본 뒤의 사람 재량이 된다.** 908020 사건 이전에는 하네스·채점기 어디에도 §0-b 스코프 튜플을 강제하는 코드가 없었고, "등록 실험이 아니다"라는 판단 자체가 라벨(`PASS`)이 이미 보이는 상태에서 사람이 provenance를 읽어 내린 사후 판단이었다. 최소 요구: (i) provenance만으로 판정되는 기계적 일치 술어 (ii) 전용 라벨(`NO_VERDICT_SCOPE`, 게이트 실패 아님) (iii) 유한한 운영오류 재실행 예산 (iv) 불일치 job의 라벨·수치 병기 의무. 대응 `PROJECT_STATUS.md` "방법론 게이트" #210(신설). 상세 `.../audit_908020_2026-09-14/VERDICT.md` §2.3·§5.3(G-908020-4).
+
+231. ★★★**(2026-09-14, job 908020 결과 감사 + rerun rev3, claims-auditor, GPU 0 — 양성통제의 소극판) 사전등록의 1차 판정 술어를 처치-이전 엔진 + 같은 기판의 기존 원자료에 먼저 먹여, 그 기판에서 검정력이 0인지 확인하라.** F-a1(4채널 무크래시)을 907100/907456(둘 다 수리 前, Zamba2)에 먹이면 4채널 전부 이미 참이었고, F-a2 문턱(6,245)은 907100 TD1의 12,369에 이미 초과돼 있었다 — 이 사전등록은 어느 결과가 나와도 H1을 닫지 못한다(RA3-1). 대응 `PROJECT_STATUS.md` "방법론 게이트" #211(신설). 상세 `.../audit_908020_2026-09-14/VERDICT.md` §5.3(G-908020-5); `workspace/engine-port/results/r2_correctness/rerun_prereg/VERDICT_rerun_rev3_2026-09-14.md` §4(RA3-1).
+
+232. ★★★**(2026-09-13, λ0 rev3 규칙층 감사, claims-auditor, GPU 0) 계획 단계의 "자격"(eligibility)과 실행 단계의 "역할"(role)을 구분하라 — 자격 인증에 걸리는 가드가 그 자격이 아닌 역할로 쓰인 같은 셀에도 걸릴 수 있다.** λ0 rev3의 계획이 shape B의 rung 4개 전부를 "저측 후보가 될 수 있다"고 인증했는데, 저측 전용 배수 가드(`drain ≤ 2·L̂`)가 그 인증에 걸린 모든 셀에 무조건 적용돼 고측(포화) 증거로 쓰일 셀까지 측정 실패로 폐기했다(브래킷 판정 자체가 구조적으로 정의역 공집합). 대응 `PROJECT_STATUS.md` "방법론 게이트" #212(신설). 상세 `workspace/engine-port/results/r2_eval/lambda0_prereg/VERDICT_lambda0_rev3_2026-09-13.md` §2·§8(G-λ3-1).
+
+233. ★★★**(2026-09-13/14, λ0 rev3+rev4 규칙층 감사, claims-auditor, GPU 0) 결정 규칙의 문턱 도달가능성은 등록된 모든 verdict 라벨 각각에 대해, pooled가 아니라 실제로 돌 시나리오별로 사전 계산하라.** rev3는 저측(κ) 도달가능성만 계산했고 그 계산이 만든 새 도달불가(`LADDER_TOO_HIGH`가 A·B 공통으로 영원히 도달불가)를 못 봤다. rev4의 도달가능성 assert는 7 시나리오를 pooled해 "4개 verdict 전부 정의역 비어있지 않다"고 했지만 시나리오별로는 5/7이 shape A에서 빈 정의역이었고 실제로 도는 시나리오는 하나뿐이었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #213(신설). 상세 `.../VERDICT_lambda0_rev3_2026-09-13.md` §8(G-λ3-2); `.../VERDICT_lambda0_rev4_2026-09-14.md` §1(V4)·§8(G-λ4-3).
+
+234. ★★★**(2026-09-13, λ0 rev3 규칙층 감사, claims-auditor, GPU 0) 같은 문서의 두 문장이 같은 대상(셀/조건)에 상호배타적인 수치 요구를 하고 있는지 대조하라.** λ0 rev3 §3.3("고측 rung은 배수 0.5–0.7×span[=120초]을 읽는다")과 §3.4("배수 ≤ 2·L̂=8.4초를 요구한다")가 같은 b_r3 셀에 대해 한 페이지 안에서 서로 배타적인 수치를 요구하고 있었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #214(신설). 상세 `.../VERDICT_lambda0_rev3_2026-09-13.md` §2(N3-2)·§8(G-λ3-3).
+
+235. ★★★**(2026-09-13, λ0 rev3 규칙층 감사, claims-auditor, GPU 0 — 교훈 9 계열) 분지(branch) 존재를 증명하는 테스트에 손으로 만든 레코드를 쓰지 마라 — 실제 인증 경로에서 존재할 수 없는 셀을 픽스처로 쓰면 그 분지는 증명되지 않은 채 "통과" 표시만 얻는다.** `LADDER_TOO_HIGH`를 증명하는 테스트가 `LABEL._cell(r, 0.70)`을 썼는데 이 헬퍼는 `drain_ok=True`가 기본값이라, 실제 인증된 저측 rung에서는 존재할 수 없는 조합이었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #215(신설). 상세 `.../VERDICT_lambda0_rev3_2026-09-13.md` §2·§8(G-λ3-4).
+
+236. ★★★**(2026-09-13/14, λ0 rev3+rev4 규칙층 감사, claims-auditor, GPU 0) 변이(mutation) 하네스 CONTROL의 비공허성은 논증이 아니라 주입(injection)으로 보여라.** rev3는 `lambda0_mutation_check.py:156`이 CONTROL 결과를 즉시 덮어써 버려 죽은 CONTROL이었음을 지적만 했으나(死因은 아님), rev4는 실제로 아카이브 경로를 깨는 주입 실험으로 CONTROL이 `FAILS`·rc=2로 실패함을 실행으로 확인했다(긍정 사례). 대응 `PROJECT_STATUS.md` "방법론 게이트" #216(신설). 상세 `.../VERDICT_lambda0_rev3_2026-09-13.md` §8(G-λ3-5); `.../VERDICT_lambda0_rev4_2026-09-14.md` §4-3(E3)·§8(G-λ4-6, 긍정 사례).
+
+237. ★★★**(2026-09-14, λ0 rev4 규칙층 감사, claims-auditor, GPU 0) 직전 감사가 "제출 전 필수"로 등록해 둔 수리를 반영하지 않은 판본을 감사할 때는, 그 수리가 판정 분지를 바꾼다는 사실과 두 분지 각각의 결과를 실행 전에 등록하라.** 907959 결과 감사 §13-D1이 λ0 rev3 제출 전 필수로 등록해 둔 F5 셀별 재계산 수리를 rev4가 반영하지 않았고, 그 수리를 넣으면 분지가 `ANCHORED→FALLBACK`으로 바뀌며 shape B 13격자점 중 5점·shape A 12점 중 3점의 라벨이 뒤집힘이 사후 계산으로 드러났다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #217(신설). 상세 `.../VERDICT_lambda0_rev4_2026-09-14.md` §2(N2)·§8(G-λ4-2).
+
+238. ★★★**(2026-09-14, λ0 rev4 규칙층 감사, claims-auditor, GPU 0) 변이 하네스의 모듈-변이 라우팅표는 그 모듈의 상수가 실제로 영향을 주는 모든 판정 산출물(reachability selftest 포함)로 보내라.** `SELFTEST_OF`가 `plan`·`analyze` 변이를 reachability selftest로 보내지 않아, 감사자 독립 변이 19종 중 11종이 escape했고 그중 2종(`DRAIN_MODEL_TOL`, `MULT[B]` 최상단)은 shape B 지도 라벨을 실제로 이동시켰다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #218(신설). 상세 `.../VERDICT_lambda0_rev4_2026-09-14.md` §4-3(E3)·§8(G-λ4-4).
+
+239. ★★★**(2026-09-14, λ0 rev4 규칙층 감사, claims-auditor, GPU 0 — 게이트#179 계열 재발) 같은 상수를 두 파일이 각자 정의하고 있으면 죽은 쪽을 삭제하라 — 특히 그 주석이 이미 철회된 규칙을 적고 있을 때.** `lambda0_plan.py:118`의 `DRAIN_MODEL_TOL`은 죽은 상수이면서 주석이 아직 철회된 rev3 규칙을 인용하고 있었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #219(신설). 상세 `.../VERDICT_lambda0_rev4_2026-09-14.md` §6(F5)·§8(G-λ4-5).
+
+240. ★★★**(2026-09-14, rerun rev3 규칙층 감사, claims-auditor, GPU 0) "블록이 비어 있다"를 게이트 술어로 쓰지 마라 — 빈 명령 출력은 파일에 줄을 남기지 않으므로 "그 다음 줄"은 언제나 그 다음 명령의 출력이다.** rerun rev3의 C1 항목 (9)("`src_dirty:` 다음 줄이 비어 있음")는 `git status --porcelain`이 깨끗하면 0줄을 내므로 그 "다음 줄"이 항상 `nvidia-smi`의 출력이 되어, 직해하면 참 분지가 하네스 산출물 어디서도 성립하지 않는 死因이었다(rerun rev4가 "다음 줄이 `GPU 0: `로 시작한다"로 수정해 해소). 대응 `PROJECT_STATUS.md` "방법론 게이트" #220(신설). 상세 `workspace/engine-port/results/r2_correctness/rerun_prereg/VERDICT_rerun_rev3_2026-09-14.md` §2·§9(G-RA3-1).
+
+241. ★★★**(2026-09-14, rerun rev3 규칙층 감사, claims-auditor, GPU 0 — 게이트#110 심화) 재감사에서 직전 판정서 문안의 일부 항목만 재검증하면, 재검증에 성공한 항목이 나머지 미검증 항목까지 감사받은 것처럼 신뢰를 위조한다.** rerun rev3는 C1의 (7)·(10) 항목은 독립 재검증해 정정했지만 (9)는 감사 문안에서 글자 그대로 승계했고, 그 (9)가 바로 死因이었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #221(신설). 상세 `.../VERDICT_rerun_rev3_2026-09-14.md` §2·§9(G-RA3-2).
+
+242. ★★★**(2026-09-14, rerun rev3 규칙층 감사, claims-auditor, GPU 0) 철회된 판정서의 "등급"과 그 판정서가 등록한 "caveat 목록"은 별개다 — 등급을 철회할 때 caveat 중 어느 것이 함께 소실되는지 명시적으로 열거하라.** rerun rev2의 등급이 철회(A908-7)됐지만 그 철회 사유는 caveat RRC-1…13과 무관했는데, rev3 본문은 "RRC" 언급이 0회였다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #222(신설). 상세 `.../VERDICT_rerun_rev3_2026-09-14.md` §4(RA3-5)·§9(G-RA3-3).
+
+243. ★★★**(2026-09-14, rerun rev3 규칙층 감사, claims-auditor, GPU 0) "이 라이브러리/설치본의 엄한 실패 지점(hard error)은 정확히 N개"라는 사실은 설치본에서 전수 열거해 등록하라.** rev3 §1.2(b)의 "inference-tensor 하드 에러는 정확히 둘"은 venv 실측으로 최소 4종임이 드러났고, 그중 하나(`Inference tensors do not track version counter.`)는 inference mode 안에서도 발화해 완전성 근거가 거짓이었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #223(신설). 상세 `.../VERDICT_rerun_rev3_2026-09-14.md` §4(RA3-6)·§9(G-RA3-4).
+
+244. ★★★**(2026-09-14, rerun rev3 규칙층 감사, claims-auditor, GPU 0) 서로 다른 기판(substrate)에서 같은 수치가 우연히 나왔을 때 "조합 공간이 조밀해서"로 설명하지 마라.** 6,245가 907959(NemotronH)·908020(Zamba2) 양쪽에서 4항 부분합으로 실현 가능하다는 산술은 참이었지만, 실측 배치는 4항이 아니라 8-seq/7-seq였고 6,245로 가는 부분합이 72,489·35,597개나 돼 "부분합이다"라는 설명은 거의 무정보였다 — 진짜 근거는 "907100 TD1이 수리 前 같은 기판에서 12,369를 완주했다"는 사실 하나뿐이었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #224(신설). 상세 `.../VERDICT_rerun_rev3_2026-09-14.md` §4(RA3-3)·§9(G-RA3-5).
+
+245. ★★★**(2026-09-14, rerun rev3 규칙층 감사, claims-auditor, GPU 0) fail-closed 스코프 가드를 하네스에 넣은 뒤 그 가드의 발화 자체를 provenance 확인 술어로 추가하는 것은 정보량이 거의 0이다.** 가드가 fail-closed이므로 부팅한 모든 job은 자동으로 `scope_guard: OK`가 되고, 이 항목의 고유 정보는 spool-copy 검출 하나로 한정된다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #225(신설). 상세 `.../VERDICT_rerun_rev3_2026-09-14.md` §4(RA3-8)·§9(G-RA3-6).
+
+246. ★★★**(2026-09-14, rerun rev4 규칙층 감사, claims-auditor, GPU 0 — RA4-1) "이 조합은 GPU에서 한 번도 실행된 적 없다"는 주장을 쓰기 전에 같은 job의 대조 arm(control arm)을 먼저 조회하라.** rerun rev3 §6-5는 "`inference_mode`×`forward_native`(bare Parameter, n_groups≠1) 조합은 GPU에서 한 번도 실행된 적 없다"고 적었으나, 같은 job(907959)의 legacy 2 boot(NemotronH, n_groups=8)이 바로 그 조합을 이미 무오류로 완주하고 있었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #226(신설). 상세 `workspace/engine-port/results/r2_correctness/rerun_prereg/VERDICT_rerun_rev4_2026-09-14.md` §4(RA4-1)·§7(G-RA4-1).
+
+247. ★★★**(2026-09-14, rerun rev4 규칙층 감사, claims-auditor, GPU 0) 개별 예외 문자열들을 하나의 "계열(pattern)"로 일반화할 때, 그 계열의 토큰을 원래 열거가 이미 불완전했던 같은 소스에서 다시 뽑지 마라.** rev4가 E5 트리거를 열거에서 계열(정규식)로 일반화했지만, 설치본(`libtorch_cpu.so`)의 inference-tensor 하드 에러 중 최소 1종을 여전히 놓쳤다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #227(신설). 상세 `.../VERDICT_rerun_rev4_2026-09-14.md` §4(RA4-2)·§7(G-RA4-2).
+
+248. ★★★**(2026-09-14, rerun rev4 규칙층 감사, claims-auditor, GPU 0) 파생 집계(기저율·백분율 등)를 철회할 때는 그 파생물을 문서 전체에서 grep해 함께 철회하라.** "61–68%"·"23–26/38" 철회가 문서 전역에 적용되지 않아 등록 처분절(`:783`)과 자기 적용절(`:1428`)에 그대로 생존해 있었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #228(신설). 상세 `.../VERDICT_rerun_rev4_2026-09-14.md` §4(RA4-4)·§7(G-RA4-3).
+
+249. ★★★**(2026-09-14, rerun rev4 규칙층 감사, claims-auditor, GPU 0) 사전등록의 "제출 전 커밋 목록"은 작성 시점이 아니라 감사 시점의 `git status`로 재생성하라.** §9-3의 11항목 커밋 목록 중 7항목은 이미 커밋돼 있었던 반면, §0-c가 sha로 핀한 `job_907959/`는 목록에 없고 untracked 상태였다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #229(신설). 상세 `.../VERDICT_rerun_rev4_2026-09-14.md` §4(RA4-8)·§7(G-RA4-4).
+
+250. ★★★**(2026-09-14, rerun rev4 규칙층 감사, claims-auditor, GPU 0) 승계 사슬의 "전방 강제" 조항은 자기 문서의 요약절이 실제로 등재한 항목 수와 대조하라 — 총 caveat 수보다 강제 조항이 적으면 그 차이만큼 무강제 누수가 생긴다.** §11.1은 65건 + 전사 의무 2건을 이 회차에 의무화했지만 RR-14(다음 회차 강제)는 RR 19 + RA3 12 + RRC 13 = 44건만 요구해 40건이 무강제로 남았다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #230(신설). 상세 `.../VERDICT_rerun_rev4_2026-09-14.md` §4(RA4-6)·§7(G-RA4-5).
+
+251. ★★★**(2026-09-14, rerun rev4 규칙층 감사, claims-auditor, GPU 0 — 긍정 사례) 참 분지가 공집합이던 술어를 수리한 뒤에는 교체 문안을 실제 아티팩트 전수(음성대조 포함)에 먹여 참/참/참/거짓 같은 구체적 출력으로 도달가능성을 보여라.** rerun rev4는 C1 (9)의 대체 문안을 907959·908020·907100(참) + 907456(src dirty, 거짓 — 음성대조)에 실제로 먹여 도달가능성을 실행으로 확인했다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #231(신설). 상세 `.../VERDICT_rerun_rev4_2026-09-14.md` §1(U1)·§7(G-RA4-6).
+
+252. ★★★**(2026-09-14, job 908179 결과 감사, claims-auditor, GPU 0 — 긍정 사례) "세 boot이 바이트 동일하다"를 보고할 때는 그 계측기가 같은 job 안에서 arm 차이를 해상함을 먼저 보여라 — 동일성은 "차이가 없다"와 "계측기가 눈이 멀었다"를 구별하지 못한다.** job 908179의 `peak(TD1)=peak(TD2)=peak(L2)`(차 0 B)는 9/36 epoch에서 완전 arm 분리(+5.17…+20.08 MiB)가 같은 job 안에서 관측된 뒤에야 계측기가 5 MiB 수준에서 arm 차이를 해상할 수 있음이 실증돼, 0 B 일치를 "측정"이라 부를 근거가 생겼다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #232(신설). 상세 `workspace/engine-port/results/r2_correctness/audit_908179_2026-09-14/VERDICT.md` §6·§16(G-8179-1).
+
+253. ★★★**(2026-09-14, job 908179 결과 감사, claims-auditor, GPU 0) 사전등록의 "동시에 움직이는 축" 목록에 노드·물리 GPU를 넣어라 — 세지 않은 축은 닫을 대상으로도 등록되지 않는다.** rerun rev4 §10은 이동 축을 3개로 셌으나 907959→908179 사이에 노드·물리 GPU(gpu38→gpu40, 다른 UUID)도 함께 이동했다. 메모리 채널은 두 job 5 boot의 `avail mem` 사다리가 완전 동일함을 확인해 닫았지만, 그 축의 존재 자체가 사전등록에 없었다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #233(신설). 상세 `.../audit_908179_2026-09-14/VERDICT.md` §8.1·§16(G-8179-2).
+
+254. ★★★**(2026-09-14, job 908179 결과 감사, claims-auditor, GPU 0) arm-비교 추정량의 정의역이 arm마다 다른 처치 단위 위에 놓일 수 있는지 검사하라 — "정의역이 비어있지 않다"만으로는 부족하다.** F-b2의 정의역이 boot마다 다른 배치(L1은 10,630-token, 나머지 셋은 10,125-token)를 지목했고 그 505-토큰 초과분이 arm-간 차이(`Δ`) 전량을 만들었다. 실무 규칙: "같은 `#new-token`을 비교하고 있는가"도 처분 조건에 넣어라. 대응 `PROJECT_STATUS.md` "방법론 게이트" #234(신설). 상세 `.../audit_908179_2026-09-14/VERDICT.md` §5.3·§16(G-8179-3).
+
+255. ★★★**(2026-09-14, job 908179 결과 감사, claims-auditor, GPU 0) 정렬 검사를 등록할 때 그 검출점이 실현된 정의역 안에 실제로 있는지 확인하라.** rerun rev4의 2채널 epoch↔ordinal 정렬 검사는 907959의 유일한 검출점(ordinal 38)에 의존했는데, job 908179는 정의역이 ordinal 36에서 끝나 그 검출점이 없어 검출력 0이 됐다(등록된 최악 케이스가 실제로 실현). 대응 `PROJECT_STATUS.md` "방법론 게이트" #235(신설). 상세 `.../audit_908179_2026-09-14/VERDICT.md` §4.2·§16(G-8179-4).
+
+256. ★★★**(2026-09-14, job 908179 결과 감사, claims-auditor, GPU 0 — 교훈88 계열, 규칙층 판) 백엔드를 바꾸면 판정 규칙 본문의 정당화 문장도 함께 재유도하라 — 조건 자체가 충족돼도 그 조건이 "왜 결정적인가"의 근거는 이식되지 않을 수 있다.** O1 프로토콜의 독립성 조건("구성상 결정적")은 `triton_attention_num_kv_splits`에서 유도됐는데 job 908179는 flashinfer 기판이다. 조건은 8/8 만족해 PASS는 영향받지 않지만 정당화는 이 기판에서 재유도된 적이 없다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #236(신설). 상세 `.../audit_908179_2026-09-14/VERDICT.md` §12(T13)·§16(G-8179-5).
+
+257. ★★★**(2026-09-14, job 908179 결과 감사, claims-auditor, GPU 0 — 게이트#113 명령줄 판) "이 처방은 값싸다"고 쓰기 전에 하네스가 그 노브를 실제로 삼키는지 확인하라.** `PDMUX_WORKER_GRAD_GUARD=none` 대조 arm 제출은 `r2_correctness.sbatch:216`의 일괄 `PDMUX_*` unset 루프에 조용히 먹혀 값이 전달되지 않는다 — 노브 배선 없이는 "다음 job 하나면 CONFIRMED로 올릴 수 있다"는 처방이 성립하지 않는다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #237(신설). 상세 `.../audit_908179_2026-09-14/VERDICT.md` §8.5·§16(G-8179-6).
 
 ---
 ## 4. 살아있는 문서 (이것만 참조)

@@ -46,10 +46,37 @@ from pdmux_eval import context_limit as CL           # noqa: E402
 from pdmux_eval.campaign import build_runs           # noqa: E402
 
 
+# A trace header must now declare the per-shape lambda* it was generated from
+# (campaign schema v3); `campaign.build_runs` REFUSES a trace that declares
+# none.  These fixtures are about model/context provenance, so they declare a
+# measured one and stay on the accept path.  The refusal itself is tested in
+# tests/test_lambda_star_per_shape.py.
+MEASURED_LAMBDA_STAR = {
+    "schema": "pdmux.lambda_star/v1",
+    "definition": "slo_sustainable",
+    "measured_by": "unit-test fixture",
+    "rate_derivation": "single_shape",
+    "source": "measured",
+    "caveats": [],
+    "shapes": {
+        "2048x128": {"req_per_s": 1.0, "source": "measured", "evidence": "fixture"}
+    },
+}
+
+
 def _write_trace(path: Path, requests) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as out:
-        out.write(json.dumps({"record": "workload", "workload_id": "T1"}) + "\n")
+        out.write(
+            json.dumps(
+                {
+                    "record": "workload",
+                    "workload_id": "T1",
+                    "lambda_star": MEASURED_LAMBDA_STAR,
+                }
+            )
+            + "\n"
+        )
         for index, (inp, outp) in enumerate(requests):
             out.write(
                 json.dumps(

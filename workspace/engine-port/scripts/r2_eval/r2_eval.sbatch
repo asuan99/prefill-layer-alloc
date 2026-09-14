@@ -100,12 +100,12 @@ unset SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN
 #   (no such keys) still runs: the reads below yield empty and the old defaults
 #   apply.
 readarray -t record_fields < <(
-  python -c 'import json,os,pathlib; d=json.loads(pathlib.Path(os.environ["PDMUX_RUN_RECORD"]).read_text()); print(d["trace_path"]); print(d.get("model") or ""); print("" if d.get("context_length") is None else d["context_length"]); print("" if d.get("cuda_graph") is None else int(bool(d["cuda_graph"])))'
+  python -c 'import json,os,pathlib; d=json.loads(pathlib.Path(os.environ["PDMUX_RUN_RECORD"]).read_text()); print(d["trace_path"]); print(d.get("model") or ""); print("" if d.get("context_length") is None else d["context_length"]); print("" if d.get("cuda_graph") is None else int(bool(d["cuda_graph"]))); print(d.get("lambda_star_source") or "")'
 )
 # `readarray < <(cmd)` does NOT fail the script when cmd dies (the previous
 # `run_trace="$(python ...)"` did, via set -e), so check the shape explicitly
 # rather than reading unset array elements under set -u.
-if (( ${#record_fields[@]} != 4 )) || [[ -z "${record_fields[0]}" ]]; then
+if (( ${#record_fields[@]} != 5 )) || [[ -z "${record_fields[0]}" ]]; then
   echo "ERROR: could not read the run record ${PDMUX_RUN_RECORD}" >&2
   exit 2
 fi
@@ -113,6 +113,7 @@ run_trace="${record_fields[0]}"
 record_model="${record_fields[1]}"
 record_ctx="${record_fields[2]}"
 record_cuda_graph="${record_fields[3]}"
+record_lambda_star_source="${record_fields[4]}"
 
 for pair in "PDMUX_MODEL|${record_model}" \
             "PDMUX_CONTEXT_LENGTH|${record_ctx}"; do
@@ -142,6 +143,29 @@ if [[ -n "${record_cuda_graph}" ]]; then
     exit 2
   fi
   export PDMUX_DISABLE_CUDA_GRAPH="${want_disable_cg}"
+fi
+
+# ============================================================================
+# ★ lambda* PROVENANCE GATE (campaign schema v3, 2026-09-13)
+#   Every workload's intensity is a FRACTION of lambda*, so a campaign built on
+#   an unmeasured lambda* asserts its own regime ("W8 near saturation") instead
+#   of measuring it -- gate #6.  The generator already refuses to build such a
+#   campaign; this is the last check before an allocation is spent, because a
+#   manifest can also be hand-edited or produced by an older checkout.
+#   EMPTY means "pre-v3 manifest, makes no lambda* claim" and is allowed, for
+#   the same back-compatibility reason the model/context reads have.
+# ============================================================================
+if [[ -n "${record_lambda_star_source}" \
+      && "${record_lambda_star_source}" != "measured" \
+      && "${PDMUX_ALLOW_UNMEASURED_LAMBDA_STAR:-0}" != "1" ]]; then
+  echo "ERROR: run record declares lambda_star_source=${record_lambda_star_source}." >&2
+  echo "       lambda* is measured in campaign stage 0 (lambda*는 캠페인 0단계에서" >&2
+  echo "       측정된다); this run's arrival rates are fractions of a capacity that" >&2
+  echo "       was not measured for its request shapes.  Regenerate the campaign" >&2
+  echo "       from a measured table, or set PDMUX_ALLOW_UNMEASURED_LAMBDA_STAR=1" >&2
+  echo "       to spend the allocation deliberately (the caveats stay in the" >&2
+  echo "       manifest and in ${PDMUX_RUN_RECORD})." >&2
+  exit 2
 fi
 
 # Default duplicated from engine_bench_runner.sh on purpose (the runner must

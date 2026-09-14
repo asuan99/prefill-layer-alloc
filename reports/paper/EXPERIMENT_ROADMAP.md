@@ -1,6 +1,37 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-13(2)(doc-steward — **세 번째 사용자 결정**
+최종 갱신: 2026-09-14(2)(doc-steward — **job 908179 결과 등재**:
+`VERDICT PASS`(등록 튜플 최초 실행, 0.165556 GPU-h) — "수리가
+OOM을 고쳤다"는 `PLAUSIBLE(조건부)`(`CONFIRMED` 아님, 결정적
+`none`-guard 대조 arm 부재). **Claim D 선결 #5는 새로 닫힌
+게 아니라 (Zamba2,triton) 한정 술어가 두 번째 (모델,백엔드,
+ctx) 쌍으로 스코프만 확장**됐다 — Claim D 등급 불변(미검증),
+**`PASS`는 P2 착수를 승인하지 않는다**(NP-8, 남은 블로커 =
+λ0 `NO-GO`·λ\* 미측정·게이트 #6). GPU 장부 드리프트 정정
+(`sacct` 기준 통일, 트랙 누적 1.107500 GPU-h) + 4번째 미등록
+축(노드/물리GPU) 발견 + 신규 게이트 6건(#232–237). 새 성능
+판정 0건·Claim D/E 등급 불변·HE0·정책 순위·stake #1 전부
+불변. `CONSENSUS.md` rev74→**rev75**. 상세 "P2" 절(아래)·
+`CLAIM_EVIDENCE_MATRIX.md` Claim D 행(2026-09-14(2) 갱신)·
+`PROJECT_STATUS.md` 최상단 배너(2026-09-14(2)).
+이전: 2026-09-14(doc-steward — **2026-09-13 저녁~2026-09-14
+새벽 세션 정본 반영 1회 패스**: "P2" 절의 W4 열린 항목을
+**사용자 결정(phase별 독립 λ\*)으로 종결**(구현 `lambda_star.py`,
+미커밋; W5/W6는 단일 shape 아닌 phase-교대 스트림이라 별도
+규칙층 감사 필요) + P2가 여전히 GPU correctness 선결(job 907959
+`FAIL`=true-dual OOM)에 막혀 있음을 갱신 + 엔진 grad-guard
+결함 발견+수리(커밋 `a9cd8dd`) + job 908020(등록 밖)·job
+908179(작성 중 RUNNING→종료 시 `COMPLETED` exit 0, verdict
+미독·결과 미등재) 등재. ★이 갱신은 직전
+2026-09-13(3)(λ0 캠페인 0단계 `NO-GO`, "P2" 절 열린 항목
+최초 등재)의 상단 배너 미갱신도 함께 catch-up한다 — 그
+사이 본문 내용은 이미 반영돼 있었다. 새 성능 판정 0건·
+Claim D/E 등급 불변(둘 다 미검증)·HE0·정책 순위·stake #1
+전부 불변. `CONSENSUS.md` rev73→**rev74**. GPU: 이 트랙
+신규 지출 0(모두 이미 지출된 R2 correctness 트랙 결과의
+재등재). 상세 `CLAIM_EVIDENCE_MATRIX.md` Claim D 행
+(2026-09-14 갱신)·`PROJECT_STATUS.md` 최상단 배너(2026-09-14).
+이전: 2026-09-13(2)(doc-steward — **세 번째 사용자 결정**
 (attention 백엔드 triton→flashinfer 전환) + engine-porter
 Nano-9B-v2-Base 모델 지원 검증 **`GO`**(job 905835 재인용, GPU 0
 이 세션) + λ* 기존 측정 확인(job 905835 `c_capacity.sbatch`,
@@ -810,6 +841,73 @@ B=0.675)로 계산하면 **어떤 단일 스칼라도 두 phase를 동시에
 1차 캠페인 범위(위 "P2")에서 제외하고 W3만 진행, (c) 두 λ* 중
 하나로 W4 전체를 근사하고 그 근사를 결과 문서에 최강 caveat로
 명시. **미결정 상태에서는 P2를 W4 포함으로 실행하지 않는다.**
+
+★★★**열린 항목 종결(2026-09-13/14, 사용자 결정 — 위 (a) 채택)**:
+W4 워크로드 정의를 **phase별 독립 λ\***로 개정한다. 구현물
+`lambda_star.py`(신설)·`PDMUX_SUSTAINABLE_RATE` fail-closed·
+campaign 스키마 v2→v3 — **미커밋**. ★신규 사실(구현 중 발견):
+W5/W6는 단일 shape가 아니라 **한 Poisson 스트림에서 두 shape를
+교대**하므로 per-shape rate가 존재하지 않아 이 fail-closed
+설계에서는 기본 거부된다 — 도입된 혼합 정의(교대 스트림에
+대한 rate 정의)는 **사전등록된 적이 없다**, W5/W6를 P2/Claim E
+어느 쪽이든 돌리려면 별도 규칙층 감사가 선행돼야 한다.
+
+★★★**P2는 여전히 GPU correctness 선결에 막혀 있다(2026-09-13/14
+갱신)**: 새 (Nano-9B-v2, flashinfer) 쌍의 R2 correctness 게이트
+job 907959가 **`FAIL`**(true-dual OOM, `CONFIRMED(scoped)`
+귀속)했다 — 사전등록 §8이 이 FAIL로 **P2 착수를 명시적으로
+차단**한다. 원인은 엔진 실물 결함(worker thread가
+`inference_mode` 밖에서 autograd 켠 채 forward, NemotronH
+[n_groups=8]만 노출)이었고 수리(`_activate_role_context`
+grad-guard, 커밋 `a9cd8dd`)는 완료됐으나 **아직 GPU로
+검증되지 않았다**. 검증 사전등록(재실행 `rerun_prereg/`)은
+rev1 `NO-GO`→rev2 `GO-with-caveats`(★사후 철회)→job
+908020(등록 밖 실행, Zamba2-2.7B/triton/ctx4096)→rev3
+`NO-GO`→**rev4 `GO-with-caveats`**(死因 0건)를 거쳐 제출
+가능 상태가 됐고, **job 908179가 그 등록 튜플(Nano-9B-v2/
+flashinfer/ctx16384/D44, 수리 반영 엔진)의 최초 실행으로
+보인다 — 배너 작성 시작 시 RUNNING이었고, 작성 완료 시점
+`sacct` 확인 결과 **`COMPLETED`(exit 0, 4 boot 전부 완주)로
+이미 종료돼 있었으나 이 갱신은 `verdict.txt`를 의도적으로
+읽지 않았다** — 결과는 다음 정본 반영 패스에서 결과 감사를
+거쳐 등재한다.** ★필수 병기(RA3-1 승계): 이 검증
+회차는 어느 결과가 나와도 "grad-guard 수리가 OOM의 지배
+원인이었다"는 인과 주장을 닫지 못한다 — PASS/FAIL 어느
+쪽이든 그 자체로 P2 착수를 자동 승인/거부하지 않으며, 결과가
+나오면 별도 감사를 거쳐 P2 재개 여부를 판단한다. 새 성능
+판정 0건·GPU 0(이 문단은 트랙 누적 재등재)·**Claim D 등급
+불변(미검증)**. 상세 `PROJECT_STATUS.md` 최상단
+배너(2026-09-14), `reports/CONSENSUS.md` rev74.
+
+★★★**job 908179 결과 등재(2026-09-14(2)) — `VERDICT PASS`이나
+P2는 여전히 시작할 수 없다**: 등록 튜플의 최초 실행이
+`PASS`했다(0.165556 GPU-h, C1 스코프 술어 (1)–(11) 전부 참,
+비트 단위 재현). TD 2/2가 907959에서 자신을 죽였던 바로 그
+14-seq/10,125-token 배치를 완주했다. ★★**"수리가 OOM을
+고쳤다"는 `PLAUSIBLE(조건부)`일 뿐 `CONFIRMED`가 아니다** —
+결정적 `PDMUX_WORKER_GRAD_GUARD=none` 대조 arm이 없고(무수정
+하네스로는 실행 불가), F-a1은 원인 무차별이라 반증 시도 4건
+실패가 확증을 만들지 않는다. ★★**Claim D 선결 #5는 이 job으로
+새로 닫힌 게 아니다** — 이미 (Zamba2-2.7B, triton) 한정으로
+닫혀 있던 술어("S/O층 토큰 id 동일 + cudagraph[decode 한정]
+유지")가 두 번째 (Nano-9B-v2, flashinfer, ctx16384) 쌍으로
+**스코프만 확장**됐을 뿐이다. 선결 #1·#3·#4a·#4b 상태 불변,
+#2는 부분 해소. **Claim D 등급 = 미검증, 불변.** **`PASS`는
+P2 착수를 승인하지 않는다**(NP-8) — 남은 블로커는 **λ0
+사전등록 `NO-GO`(캠페인 0단계 λ\* 미측정)·W4 워크로드 정의
+(위에서 phase별 독립 λ\*로 종결됐으나 λ\* 실측 자체가 아직
+없음)·방법론 게이트 #6(용량 먼저 측정) 셋 다 그대로**다.
+부수: 4번째 미등록 축(노드/물리 GPU, gpu38→gpu40) 발견 —
+메모리 채널은 닫혔으나(양 job 5 boot `avail mem` 사다리
+완전 동일) 축 존재 자체가 사전등록 §10에 없었다. ★GPU 장부
+드리프트 정정: `sacct` 기준으로 통일해 R2 correctness 트랙
+누적 = **1.107500 GPU-h**(등록 0.955000/등록 밖 0.152500,
+이전 배너의 "0.78583" 소계는 반올림 오차 −0.00361 GPU-h를
+안고 있었음 — 상세 `PROJECT_STATUS.md` "G" 절). 인용 금지
+A8179-1…7. 신규 게이트 6건(#232–237). 새 성능 판정 0건·
+Claim D/E 등급 불변(둘 다 미검증)·HE0·정책 순위·stake #1
+전부 불변. 상세 `PROJECT_STATUS.md` 최상단 배너
+(2026-09-14(2)), `reports/CONSENSUS.md` rev75.
 
 ★追記(2026-09-11, doc-steward, R2 true-dual GPU correctness
 트랙) — 위 P1/P2는 여전히 미실행 성능 게이트다. 별도로
