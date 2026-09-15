@@ -110,4 +110,27 @@ achieved가 어떻게 변하는가(R2, paired n=4 + CI) · 그 셀들의 one-kno
   **못 사는 것 전부**(게이트 #6 미해소 · Claim D/E 불변 · 새 성능 판정 0건 · λ0R-8(iii) 미해소 ·
   ★E2C-21 = shape A 처치 시간의 86–89%가 prefill 유휴 구간) · §2-1의 M4R 노브 공유 공시.
 - **승인된 예산 상한**: 1.803 GPU-h(보통) / 2.338(최악) / **3.0(`--time` 하드 캡)**.
-- **소진 job id**: (제출 후 追記)
+- **소진 job id**: **없음 — 이 OVERRIDE는 아직 소진되지 않았다.**
+
+### 7-1. ★제출 시도 기록 (2026-09-15) — **스케줄러가 거부, GPU 지출 0**
+
+한 창 규율 §6을 1→4단계까지 실행했고 **4단계에서 외부 사유로 막혔다**:
+
+1. ✅ `presubmit.py` 재실행 — 차단이 §1의 2건과 **정확히 일치**(위생 3종 0 위반).
+2. ✅ 셀프테스트 3종(venv) — `7/7` · `8 도달성 + 10 되돌림 회귀` · `test_sticky_partition 12 OK`.
+3. ✅ **커밋 `b917bfc`**(P5 충족 — 13 파일).
+4. ❌ `sbatch e2_sticky.sbatch` →
+   ```
+   sbatch: error: Your account has expired or exceeded the allocated CPU time.
+   Please contact the account manager. (account@ksc.re.kr, 042-869-0597)
+   sbatch: error: Batch job submission failed: Unspecified error
+   ```
+
+**진단**: 계정 수준 할당량 문제이며 이 회차의 설계·하네스·규율과 **무관**하다.
+`sacctmgr show assoc user=ehmoon`의 `GrpTRESMins`/`MaxTRESMins`는 **비어 있고**
+(association 층 제한 아님), `sshare` RawUsage 489,800. 직전 job **908623은 정상 완주**
+(2026-09-14, `COMPLETED 01:23:29`)했으므로 그 이후에 계정 할당이 만료·소진된 것으로 보인다.
+
+**상태**: 이 OVERRIDE는 **유효하며 미소진**이다. 계정이 복구되면 §6의 **1·2단계를 다시 실행한 뒤**
+(한 창 규율 — 시간이 지났으므로 재확인이 필요하다) 4단계만 재시도한다. **새 승인은 불필요**하다
+— 승인된 설계·예산이 바뀌지 않았기 때문이다. 단 **설계나 예산이 바뀌면 새 OVERRIDE**다.
