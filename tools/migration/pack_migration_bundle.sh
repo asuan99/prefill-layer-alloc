@@ -7,12 +7,12 @@
 #   /usr/bin/bash tools/migration/pack_migration_bundle.sh results [DEST]  # untracked result artifacts
 #   /usr/bin/bash tools/migration/pack_migration_bundle.sh final   [DEST]  # git bundle, Claude memory/tools, env, misc
 #   /usr/bin/bash tools/migration/pack_migration_bundle.sh extra   [DEST]  # hand-made HF config dirs, editor settings
-#   /usr/bin/bash tools/migration/pack_migration_bundle.sh hf_models DEST [REPO ...]  # optional: HF cache repos as .tar
 #   /usr/bin/bash tools/migration/pack_migration_bundle.sh sums    [DEST]  # MANIFEST.tsv + SHA256SUMS
 #   /usr/bin/bash tools/migration/pack_migration_bundle.sh verify  [DEST]  # sha256sum -c (run again after copying)
 #
 # Run `final` only after the handoff commit, so the git bundle contains it.
-# Not packed by default (regenerable or secret): hf_cache/hub model weights (opt-in `hf_models`),
+# Not packed (regenerable or secret): hf_cache/hub model weights (user decision 2026-09-17:
+# re-downloaded on the new device from D_misc/hf_hub_revisions.tsv),
 # venvs, pip/triton caches, external git clones (pinned in the handoff doc),
 # ~/.claude/.credentials.json, .git/config (its remote URL embeds a token).
 set -euo pipefail
@@ -144,31 +144,6 @@ stage_extra() {
   tar -C "${workspace}" -czf "${dest}/D_misc/workspace_dotfiles.tar.gz" .vscode
 }
 
-stage_hf_models() {  # optional, large: one uncompressed tar per HF cache repo
-  local hub="${repo}/hf_cache/hub" r purged
-  if (( $# == 0 )); then
-    echo "usage: pack_migration_bundle.sh hf_models DEST REPO... (e.g. models--Zyphra--Zamba2-2.7B)"
-    for r in "${hub}"/models--* "${hub}"/datasets--*; do
-      purged="$(find "${r}" -name 'ToBeDelete_*' | wc -l)"
-      printf '  %-55s %8s  purged=%s\n' "$(basename "${r}")" "$(du -sh "${r}" | cut -f1)" "${purged}"
-    done
-    return 0
-  fi
-  mkdir -p "${dest}/F_hf_models"
-  for r in "$@"; do
-    [[ -d "${hub}/${r}" ]] || { echo "no such repo: ${r}" >&2; exit 2; }
-    purged="$(find "${hub}/${r}" -name 'ToBeDelete_*' | wc -l)"
-    if (( purged > 0 )); then
-      echo "skip ${r}: ${purged} files already renamed by the scratch purge - re-download instead" >&2
-      continue
-    fi
-    # snapshots/ hold relative symlinks into blobs/, which tar keeps as links.
-    tar -C "${repo}/hf_cache" -cf "${dest}/F_hf_models/${r}.tar.part" "hub/${r}"
-    mv -f "${dest}/F_hf_models/${r}.tar.part" "${dest}/F_hf_models/${r}.tar"
-    echo "packed ${r} ($(du -sh "${dest}/F_hf_models/${r}.tar" | cut -f1))"
-  done
-}
-
 stage_sums() {
   (cd "${dest}" && find . -type f ! -name SHA256SUMS ! -name MANIFEST.tsv ! -path './.lists.*' \
      -printf '%s\t%P\n' | sort -k2 > MANIFEST.tsv \
@@ -180,7 +155,6 @@ case "${stage}" in
   results) make_tmp; stage_results ;;
   final)   make_tmp; stage_final ;;
   extra)   stage_extra ;;
-  hf_models) shift 2 || shift $#; stage_hf_models "$@" ;;
   sums)    stage_sums ;;
   verify)  (cd "${dest}" && sha256sum -c --quiet SHA256SUMS && echo "OK: all checksums match") ;;
   *) echo "unknown stage: ${stage}" >&2; exit 2 ;;

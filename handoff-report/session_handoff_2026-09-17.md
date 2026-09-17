@@ -53,7 +53,7 @@ git + SGLang v0.5.10만으로 재구성할 수 있는지 바이트 단위로 실
 | 로컬 전용 git 커밋: 브랜치 `fix/gate14-tci-analyze`의 origin보다 앞선 4건(`8ad2d7c`·`fc87a17`·`7c11739`·`71cdb30`; main 미병합 7건 중) | — | 불가 | **필수**(git bundle에 포함) |
 | Claude 세션 transcript(`~/.claude/projects/-scratch-ehmoon-whlee/*.jsonl` 등) | 약 346 MB | 불가 | 선택 |
 | `sglang_engine_dev` 소스 | 43 MB | M1로 재구성 가능 | 보험(선택) |
-| `hf_cache/hub` 모델 가중치 | 152 GB | HF 재다운로드(리비전 고정, 아래 M4) | 저장 안 함 |
+| `hf_cache/hub` 모델 가중치 | 152 GB | HF 재다운로드(리비전 고정, 아래 M4) | **제외**(사용자 결정: 다른 장치에서 재다운로드) |
 | `sglang_engine_venv`(1.4 G)·`vllm_venv`(8.8 G)·`.pip_cache`·triton 캐시·`serving-eval/.venv` | — | 재설치 | 저장 안 함 |
 | `external/{sglang-latest,muxwise,bullet}` git 클론 | 510 MB | 커밋 고정 재클론(M4) | 저장 안 함 |
 | `SSM-Scope/` | 623 MB | 별도 저장소, 워킹트리 clean·origin과 차이 0 | 저장 안 함 |
@@ -154,7 +154,7 @@ telemetry 원본 약 41 GiB → 압축 약 1.8 GB. git bundle은 `git bundle ver
   purge가 `refs/main`을 바꿔 둔 저장소 2개(Falcon-H1-7B-Instruct·LongBench)의 리비전까지 읽도록 다시 만들었다.
 - **HF 모델 purge 손상**: Nemotron-H-8B-Base-8K(10파일)·Zamba2-7B-Instruct(3)·Falcon-H1-7B-Instruct(8)·
   LongBench(2)는 blob/ref 이름이 이미 바뀌어 **로컬 사본을 옮겨도 쓸 수 없다 — 재다운로드만 가능**.
-  가중치(148.5 GiB)는 기본 미포함, 필요하면 `hf_models` 단계로 손상 0인 저장소만 묶는다.
+  가중치(148.5 GiB)는 **사용자 결정으로 제외** — 새 장치에서 `D_misc/hf_hub_revisions.tsv`의 리비전으로 다시 받는다.
 - **외부 클론 3개 로컬 수정 0**(`git diff HEAD --diff-filter=M` 0) — 재클론으로 충분.
 - **Claude 도구**: 머신 의존 참조는 `experiment-runner`(31줄)·`CLAUDE.md`(21)·`git-committer`(10)·
   catch-up/handoff 스킬(각 6)·`engine-porter`(4)·`doc-steward`(1)·sync 도구(5). 나머지 4개는 0.

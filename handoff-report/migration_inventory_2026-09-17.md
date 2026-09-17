@@ -26,13 +26,13 @@
 | `pla_other_untracked` — 루트 `logs/`·`slurm/logs/`·루트 `.out/.err/.jsonl`·`reports/figures/*.png/pdf`·`deprecated/logs` 등 | 740 | 0.03 GiB | **필수** | `D_misc/repo_untracked_misc.tar.zst` (27 MB, 아래 줄과 합본) |
 | `claude_workspace_tools` — `CLAUDE.md`·`.claude/agents`·`.claude/skills` | 11 | <1 MB | **필수** | `B_claude/claude_memory_tools.tar.gz` (git `tools/claude/`에도 사본) |
 | `external_zenodo_and_logs` — `external/muxwise-zenodo{,.zip}`·clone 로그 | 2,149 | 0.03 GiB | 권장 | `D_misc/repo_untracked_misc.tar.zst` |
-| `hf_converted_configs` — `hf_cache/mamba2-2.7b-sglang`·`mamba-codestral-7b-sglang` | 17 | 3.6 MB | 권장 | `D_misc/hf_converted_model_dirs.tar.gz` (가중치는 hub 링크로만 기록) |
+| `hf_converted_configs` — `hf_cache/mamba2-2.7b-sglang`·`mamba-codestral-7b-sglang` | 17 | 3.6 MB | 권장 | `D_misc/hf_converted_model_dirs.tar.gz` (가중치는 hub 링크로만 기록 — 재다운로드 후 링크 대상 경로를 새 HF 캐시로 다시 걸어야 함) |
 | `engine_dev_tree` — `sglang_engine_dev/` | 2,269 | 0.02 GiB | 권장 | `E_env/sglang_engine_dev_src.tar.zst` |
 | `engine_venv_config` — venv `pyvenv.cfg`·`sitecustomize.py` | 2 | <1 MB | 권장 | `E_env/` (+ git `env/sitecustomize.py`) |
 | `vllm_bench_scripts` — `vllm_bench/` | 3 | <1 MB | 권장 | `D_misc/vllm_bench.tar.gz` |
 | `vscode_settings` — `.vscode/settings.json` | 1 | <1 MB | 선택 | `D_misc/workspace_dotfiles.tar.gz` |
-| `hf_hub_models` — `hf_cache/hub/models--*` | 312 | **148.52 GiB** | 선택 (재다운로드 권장) | 기본 미포함 — §4, 필요 시 `hf_models` 단계 |
-| `hf_hub_datasets` — `hf_cache/hub/datasets--THUDM--LongBench` | 5 | <1 MB | 선택 | 미포함(재다운로드; 실제 데이터는 `hf_cache/raw/longbench_cache`에 저장됨) |
+| `hf_hub_models` — `hf_cache/hub/models--*` | 312 | 148.52 GiB | **제외**(사용자 결정: 다른 장치에서 재다운로드) | 리비전만 `D_misc/hf_hub_revisions.tsv` — §4 |
+| `hf_hub_datasets` — `hf_cache/hub/datasets--THUDM--LongBench` | 5 | <1 MB | **제외**(재다운로드) | 리비전만 기록(실제 사용 데이터는 `hf_cache/raw/longbench_cache`로 저장됨) |
 | `vllm_venv_and_pip_cache` — `vllm_venv/`·`.pip_cache/` | 60,017 | 9.57 GiB | 불필요 | 재설치 |
 | `pla_stray_venvs` — 저장소 루트 `bin/lib/include/pyvenv.cfg`(cuda12 pip-only venv)·`serving-eval/.venv` | 23,470 | 3.26 GiB | 불필요 | 재설치 |
 | `build_caches` — triton 캐시·`__pycache__`·`.pytest_cache` | 70,446 | 1.80 GiB | 불필요 | 재생성 |
@@ -69,18 +69,21 @@
 6. `D_misc/` 전부 (`hf_cache_raw_traces`·`repo_untracked_misc`·`hf_converted_model_dirs`·`hf_hub_revisions.tsv`·`vllm_bench`·`workspace_dotfiles`)
 7. `E_env/` 전부
 8. (선택) `B_claude/claude_transcripts.tar.zst`
-9. (선택) HF 모델 — §4
 
-## 4. HF 모델 가중치 (148.5 GiB, 기본 미포함)
+HF 모델 가중치는 받지 않는다(§4 — 다른 장치에서 재다운로드).
+
+## 4. HF 모델 가중치 (148.5 GiB) — 제외, 다른 장치에서 재다운로드
+
+**사용자 결정(2026-09-17): 번들에 넣지 않고 새 장치에서 아래 리비전으로 다시 받는다.** 아래 표는 재다운로드용 기록이다.
 
 | 저장소 | 크기 | 리비전(`refs/main`) | purge 손상 파일 | 권고 |
 |---|---:|---|---:|---|
-| `nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base` | 16.57 GiB | `dc0661c829b1…` | 0 | 현재 열린 트랙(λ0·E2) 모델 — 새 환경에 인터넷이 없으면 `hf_models`로 묶어 가져갈 1순위 |
+| `nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base` | 16.57 GiB | `dc0661c829b1…` | 0 | 재다운로드 — 현재 열린 트랙(λ0·E2) 모델이라 가장 먼저 받을 것 |
 | `Zyphra/Zamba2-2.7B` | 4.96 GiB | `31afeeac4c66…` | 0 | 재다운로드 |
 | `Zyphra/Zamba2-1.2B` | 4.53 GiB | `6b05bf29d1bb…` | 0 | 재다운로드 |
-| `Zyphra/Zamba2-7B-Instruct` | 27.72 GiB | `3146688c5286…` | **3** | **로컬 사본 이미 불완전 — 재다운로드만 가능** |
-| `nvidia/Nemotron-H-8B-Base-8K` | 30.20 GiB | `94ea861e008c…` | **10** | **로컬 사본 이미 불완전 — 재다운로드만 가능** |
-| `tiiuae/Falcon-H1-7B-Instruct` | 14.14 GiB | `41e72f27effb…`(`refs/ToBeDelete_main`에서 읽음) | **8** | **로컬 사본 이미 불완전 — 재다운로드만 가능** |
+| `Zyphra/Zamba2-7B-Instruct` | 27.72 GiB | `3146688c5286…` | **3** | 재다운로드(로컬 사본은 이미 불완전) |
+| `nvidia/Nemotron-H-8B-Base-8K` | 30.20 GiB | `94ea861e008c…` | **10** | 재다운로드(로컬 사본은 이미 불완전) |
+| `tiiuae/Falcon-H1-7B-Instruct` | 14.14 GiB | `41e72f27effb…`(`refs/ToBeDelete_main`에서 읽음) | **8** | 재다운로드(로컬 사본은 이미 불완전) |
 | `tiiuae/Falcon-H1-3B-Base` | 5.87 GiB | `c096902c69be…` | 0 | 재다운로드 |
 | `ibm-granite/granite-4.0-h-micro-base` | 5.95 GiB | `372ede0bc484…` | 0 | 재다운로드 |
 | `mistralai/Mamba-Codestral-7B-v0.1` | 13.57 GiB | `4f086c08c1e0…` | 0 | 재다운로드(게이트 여부 미확인) |
@@ -92,9 +95,7 @@
 전체 40자리 리비전은 `D_misc/hf_hub_revisions.tsv`·`INVENTORY/hf_models.tsv`.
 
 - 새 환경에서 받기: `huggingface-cli download <repo> --revision <40자리> --cache-dir <HF_HOME>/hub`(dataset은 `--repo-type dataset`).
-- 이 머신에서 묶어 가기(손상 0인 저장소만 허용, 비압축 tar):
-  `/usr/bin/bash tools/migration/pack_migration_bundle.sh hf_models /scratch/ehmoon/whlee/_migration_2026-09-17 models--nvidia--NVIDIA-Nemotron-Nano-9B-v2-Base`
-  → `F_hf_models/<repo>.tar`, 이어서 `sums` 다시 실행. 인자 없이 실행하면 크기·손상 표만 출력한다.
+- 받은 뒤 `hf_converted_model_dirs.tar.gz`의 심볼릭 링크(`pytorch_model.bin`·`*.safetensors` 등)는 새 HF 캐시의 해당 snapshot/blob 경로로 다시 걸어야 한다.
 
 ## 5. Claude 스킬·에이전트 — 이양 후 수정할 곳
 
