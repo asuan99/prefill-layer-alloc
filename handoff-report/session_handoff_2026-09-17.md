@@ -108,12 +108,15 @@ git + SGLang v0.5.10만으로 재구성할 수 있는지 바이트 단위로 실
 | `B_claude/claude_transcripts.tar.zst` | 세션 transcript | 선택 |
 | `MANIFEST.tsv` · `SHA256SUMS` | 파일별 크기·체크섬 | **필수**(복사 후 `sha256sum -c`) |
 
-압축 후 크기는 `MANIFEST.tsv`에 있다(이 문서에는 적지 않는다 — 번들이 이 커밋 뒤에 만들어진다).
+압축 후 크기는 `MANIFEST.tsv`에 있다(체크섬은 이 문서에 적지 않는다 — 번들이 이 커밋 뒤에 만들어진다).
+생성 직후 검증(2026-09-17): 결과 아카이브 35개를 모두 풀어 목록을 세면 **11,162개 = 원본 목록 11,162개**;
+telemetry 원본 약 41 GiB → 압축 약 1.8 GB. git bundle은 `git bundle verify` 통과(6 refs, complete history).
 
 ## 새 머신 복원 절차
 
 1. **저장소**: GitHub에서 새 자격증명으로 clone하거나 `git clone A_git/prefill-layer-alloc.bundle`.
-   번들에서 브랜치 복구: `git fetch <bundle> 'refs/heads/*:refs/heads/*'`.
+   번들 clone 뒤 로컬 전용 브랜치 복구: `git branch fix/gate14-tci-analyze origin/fix/gate14-tci-analyze`
+   (scratch 사본에서 clone→branch→`71cdb30` 확인 완료).
 2. **결과**: 저장소 루트에서 `zstd -dc <archive> | tar -xf -`(경로가 저장소 기준 상대경로).
 3. **Claude 도구·메모리**: `tar -xzf claude_memory_tools.tar.gz -C <임시>` 후
    - `CLAUDE.md`·`.claude/`는 새 작업 루트로(또는 `tools/claude/sync_claude_tools.sh --install`),
