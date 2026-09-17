@@ -49,7 +49,7 @@ git + SGLang v0.5.10만으로 재구성할 수 있는지 바이트 단위로 실
 | 같은 디렉터리의 로그·`.out/.err`·csv 등 비-telemetry 무시 파일 | 약 0.6 GiB | 동일 | **필수** |
 | Claude Code 메모리 `~/.claude/projects/-scratch-ehmoon-whlee/memory/` | 약 1 MB · 14 파일 | 불가 | **필수** |
 | 저장소 안 기타 무시 파일(루트 `logs/`·`slurm/logs/`·루트 `.out/.err`·`reports/figures/*.png/pdf`·`external/muxwise-zenodo`) | 약 65 MB | 일부만 | 권장 |
-| `hf_cache/raw/`(ShareGPT/LongBench 필터 사본 = 벤치 입력 trace) | 약 755 MB | 스크립트로 가능하나 upstream 변동 위험 | 권장 |
+| `hf_cache/raw/`(ShareGPT/LongBench 필터 사본 = 벤치 입력 trace) | 약 755 MB | 스크립트로 가능하나 upstream 변동 위험 | **필수**(후반 인벤토리에서 권장→필수로 상향) |
 | 로컬 전용 git 커밋: 브랜치 `fix/gate14-tci-analyze`의 origin보다 앞선 4건(`8ad2d7c`·`fc87a17`·`7c11739`·`71cdb30`; main 미병합 7건 중) | — | 불가 | **필수**(git bundle에 포함) |
 | Claude 세션 transcript(`~/.claude/projects/-scratch-ehmoon-whlee/*.jsonl` 등) | 약 346 MB | 불가 | 선택 |
 | `sglang_engine_dev` 소스 | 43 MB | M1로 재구성 가능 | 보험(선택) |
@@ -140,6 +140,28 @@ telemetry 원본 약 41 GiB → 압축 약 1.8 GB. git bundle은 `git bundle ver
    `module load` 줄은 새 클러스터에 맞게 바꿔야 한다. CLAUDE.md "환경 / 실행" 절 전체가 이 머신 기준이다.
 4. **dev tree 재현 범위**: sync manifest가 해시하는 15개 파일 밖의 수동 편집 5파일은 여전히 sync가 적용하지 않는다
    (M1). 새 환경에서 patch 단계를 빠뜨리면 Zamba2 부팅과 pdmux 경로(`ngram_embedding_info` 가드)가 달라진다.
+
+## 추가 (2026-09-17 후반) — whlee 전체 인벤토리 · Claude 도구 수정 목록 · 전송 경로
+
+사용자 요청("git에 없는 whlee 하위 파일 전부 정리, 스킬·에이전트도 이양 후 수정 필요")에 따라 작업했다.
+정리 결과는 **`migration_inventory_2026-09-17.md`**, Claude 도구 줄 단위 목록은
+**`migration_claude_tools_retarget_2026-09-17.md`** 에 있다. 요점:
+
+- **whlee 전체 전수 분류**(`tools/migration/inventory_workspace.py`): git 밖 파일 22개 규칙, 미분류 0.
+  인벤토리의 결과 파일 경로 집합 = 결과 아카이브를 풀어 얻은 집합(11,162개, 차이 0).
+- **번들 추가**(`pack_migration_bundle.sh extra`): `D_misc/hf_converted_model_dirs.tar.gz`(수작업 mamba2/Codestral
+  config·tokenizer), `D_misc/workspace_dotfiles.tar.gz`(`.vscode`), `INVENTORY/`. `D_misc/hf_hub_revisions.tsv`는
+  purge가 `refs/main`을 바꿔 둔 저장소 2개(Falcon-H1-7B-Instruct·LongBench)의 리비전까지 읽도록 다시 만들었다.
+- **HF 모델 purge 손상**: Nemotron-H-8B-Base-8K(10파일)·Zamba2-7B-Instruct(3)·Falcon-H1-7B-Instruct(8)·
+  LongBench(2)는 blob/ref 이름이 이미 바뀌어 **로컬 사본을 옮겨도 쓸 수 없다 — 재다운로드만 가능**.
+  가중치(148.5 GiB)는 기본 미포함, 필요하면 `hf_models` 단계로 손상 0인 저장소만 묶는다.
+- **외부 클론 3개 로컬 수정 0**(`git diff HEAD --diff-filter=M` 0) — 재클론으로 충분.
+- **Claude 도구**: 머신 의존 참조는 `experiment-runner`(31줄)·`CLAUDE.md`(21)·`git-committer`(10)·
+  catch-up/handoff 스킬(각 6)·`engine-porter`(4)·`doc-steward`(1)·sync 도구(5). 나머지 4개는 0.
+  이양 대상이 정해진 뒤 고친다(지금은 목록만).
+- **전송 경로**: 사용자 로컬 PC `163.239.23.156`(APNIC: SOGANG-NET, Sogang University)은 이 로그인 노드에서 ping·22번
+  모두 무응답. 대조로 `github.com:22`도 타임아웃(443은 열림) ⇒ **Neuron 로그인 노드의 외부행 SSH가 막혀 있어 여기서
+  PC로 보내는 방식은 불가**. PC에서 `neuron.ksc.re.kr`로 접속해 받는(pull) `rsync` 절차를 인벤토리 문서 §6에 적었다.
 
 ## 열린 항목 / 다음 세션 시작점
 
