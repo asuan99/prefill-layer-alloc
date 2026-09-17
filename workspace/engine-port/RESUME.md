@@ -47,6 +47,16 @@ CPU 회귀는 **노드 구분 없이** 돌려도 된다 — 로그인 노드에�
 `parallel_state.py` thread-local role patch를 설치한다. 실험 manifest에는
 생성된 SHA-256 파일을 보존한다.
 
+★**새 환경에서 재구성할 때(2026-09-17, 머신 이양 준비)**: `sync_engine_tree.sh`는
+5개 파일(`configs/__init__.py`·`layers/attention/triton_backend.py`·
+`managers/scheduler.py`·`model_executor/model_runner.py`·
+`utils/hf_transformers_utils.py`)에 남아 있는 수동 편집을 **재적용하지 않는다**
+(기존 사실, 방법론 게이트 #33=`CONSENSUS.md` §3 항목48). sync 직후
+`patch -p1 -d <SGLANG python 경로> < workspace/engine-port/env/devtree_manual_edits.patch`를
+추가로 적용해야 live 트리와 바이트 동일해진다. 상세 절차·검증 방법은
+`handoff-report/session_handoff_2026-09-17.md` "M1", 패키지 버전 고정값은
+`workspace/engine-port/env/venv_packages_2026-09-17.txt` 참조.
+
 ## 하드웨어 노드 이질성 (2026-08-14 신설)
 
 ★**로그인 노드 `glogin01`과 컴퓨트 노드(`amd_a100nv_8` 파티션, gpu36–43 등)는

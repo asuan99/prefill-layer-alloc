@@ -1,6 +1,27 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-09-15(6)(doc-steward — 작업 수행일 2026-09-15,
+최종 갱신: 2026-09-17(doc-steward — **머신 이양 준비
+체크포인트**, GPU 0·새 측정 0·새 성능 판정 0). 사용자가 이
+머신(KISTI Neuron)을 더 이상 쓸 수 없어 이양 준비 — **이양
+대상 미정**, 임시 저장소만 존재. 확정 결론·HE0·layer-type 死·
+정책 순위·Claim D/E 등급·게이트#6·게이트#13/#16·stake #1·아래
+"이전"(2026-09-15(6)) 전부 **불변**(재도출 없음). ★**SLURM
+블로커 재확인**: 2026-09-17 `sbatch --test-only`가 2026-09-15와
+**동일 문구로 거부**(계정 만료/한도초과, 원인 여전히 **미확정**);
+OVERRIDE(E2)는 유효·미소진 그대로. 신규 추적 파일:
+`workspace/engine-port/env/devtree_manual_edits.patch`(sync
+미적용 수동편집 5파일 — 방법론 게이트 #33=`CONSENSUS.md` §3
+항목48의 재확인, 새 판정 아님) · 같은 디렉터리
+`venv_packages_2026-09-17.txt` ·
+`tools/migration/pack_migration_bundle.sh`. ★**기판 의존(OPEN
+USER DECISION, 판정 아님)**: E2 등록 격자·λ\*·OVERRIDE 예산은
+이 클러스터 A100(108 SM) 기판 기준이다 — 다른 기판에서 E2를
+"등록된 실험"으로 그대로 돌릴 수 있는지는 **미결정**(사용자+
+규칙층 감사 사항, 이 세션은 판정 안 함). 전문
+`handoff-report/session_handoff_2026-09-17.md`. **커밋 금지**
+(핸드오프 커밋에 함께 묶인다).
+
+이전: 2026-09-15(6)(doc-steward — 작업 수행일 2026-09-15,
 문서 반영 2026-09-16 — **E2(sticky 분할 대조) 트랙 신설**[설계
 **E2-α**(대조 arm 같은 job), 20 boot, 등록 예산 **1.803
 GPU-h**(최악 2.338, 하드캡 3.0), 규칙층 3회차+하네스층 2회차=

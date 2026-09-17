@@ -1,0 +1,117 @@
+--- a/sglang/srt/configs/__init__.py
++++ b/sglang/srt/configs/__init__.py
+@@ -31,8 +31,10 @@
+     Step3VLConfig,
+ )
+ from sglang.srt.configs.step3p5 import Step3p5Config
++from sglang.srt.configs.zamba2 import Zamba2Config
+ 
+ __all__ = [
++    "Zamba2Config",
+     "AfmoeConfig",
+     "BailingHybridConfig",
+     "ExaoneConfig",
+--- a/sglang/srt/layers/attention/triton_backend.py
++++ b/sglang/srt/layers/attention/triton_backend.py
+@@ -95,10 +95,11 @@
+             get_attention_tp_size()
+         )
+         if (
+-            model_runner.hybrid_gdn_config is not None
++            model_runner.mambaish_config is not None
+             or model_runner.kimi_linear_config is not None
+         ):
+-            # For hybrid linear models, layer_id = 0 may not be full attention
++            # For hybrid linear/mamba models, layer_id = 0 may not be full attention
++            # (PATCH engine-port: mambaish_config covers mamba2 too, not just gdn)
+             self.v_head_dim = model_runner.token_to_kv_pool.get_v_head_dim()
+         else:
+             self.v_head_dim = model_runner.token_to_kv_pool.get_value_buffer(0).shape[
+--- a/sglang/srt/managers/scheduler.py
++++ b/sglang/srt/managers/scheduler.py
+@@ -3536,7 +3536,10 @@
+     disaggregation_mode: DisaggregationMode = scheduler.disaggregation_mode
+     if disaggregation_mode == DisaggregationMode.NULL:
+         if scheduler.enable_pdmux:
+-            scheduler.event_loop_pdmux()
++            if os.environ.get("PDMUX_LA_COORD"):
++                scheduler.event_loop_pdmux_coord()
++            else:
++                scheduler.event_loop_pdmux()
+         elif server_args.pp_size > 1:
+             scheduler.event_loop_pp()
+         elif scheduler.enable_overlap:
+--- a/sglang/srt/model_executor/model_runner.py
++++ b/sglang/srt/model_executor/model_runner.py
+@@ -48,6 +48,7 @@
+     Qwen3_5Config,
+     Qwen3_5MoeConfig,
+     Qwen3NextConfig,
++    Zamba2Config,
+ )
+ from sglang.srt.configs.device_config import DeviceConfig
+ from sglang.srt.configs.load_config import LoadConfig, LoadFormat
+@@ -1857,7 +1858,8 @@
+             | NemotronHConfig
+             | Lfm2Config
+             | Lfm2MoeConfig
+-            | Lfm2VlConfig,
++            | Lfm2VlConfig
++            | Zamba2Config,
+         ):
+             return config
+         if isinstance(config, NemotronH_Nano_VL_V2_Config):
+@@ -2399,7 +2401,10 @@
+         forward_batch: "ForwardBatch",
+     ):
+         """Update the ngram embedding token table after sampling."""
+-        ngram_embedding_info = forward_batch.ngram_embedding_info
++        # PATCH (engine-port): the pdmux path calls this with a ModelWorkerBatch
++        # (no ngram_embedding_info attr) instead of a ForwardBatch. With ngram
++        # embedding unused it's a no-op; read defensively so pdmux doesn't crash.
++        ngram_embedding_info = getattr(forward_batch, "ngram_embedding_info", None)
+         if ngram_embedding_info is None:
+             return
+         ngram_embedding_info.out_column_starts[: forward_batch.batch_size] = (
+@@ -2722,6 +2727,25 @@
+         forward_batch.split_index = next_split_index
+         return ret
+ 
++    # ---- coordinated per-type layer-aware (R0c/A) ----
++    def init_decode_metadata_coord(self, forward_batch, attn_stream_idx: int):
++        """Init the decode attn backend ONCE per step for the coordinated windowed decode.
++        attn_stream_idx = the (decode-heavy) pair whose partition the 9 attn windows run on;
++        all attn windows share this backend/metadata. mamba windows never touch the attn backend."""
++        self.update_decode_attn_backend(attn_stream_idx)
++        self.decode_attn_backend.init_forward_metadata(forward_batch)
++        forward_batch.attn_backend = self.decode_attn_backend
++
++    def forward_split_decode(self, forward_batch, split_interval):
++        """Run decode layers [start,end); the caller (event loop) has set the coordinated
++        pdmux decode-half stream for this layer-type window. Threads hidden state across windows."""
++        return self.model.forward_split_decode(
++            forward_batch.input_ids,
++            forward_batch.positions,
++            forward_batch,
++            split_interval,
++        )
++
+     def forward(
+         self,
+         forward_batch: ForwardBatch,
+--- a/sglang/srt/utils/hf_transformers_utils.py
++++ b/sglang/srt/utils/hf_transformers_utils.py
+@@ -137,6 +137,13 @@
+     with contextlib.suppress(ValueError):
+         AutoConfig.register(name, cls)
+ 
++# Zamba2: HF already registers "zamba2", so the suppress-only loop above would
++# keep HF's config. Override with SGLang's subclass (adds hybrid-pool props).
++from sglang.srt.configs.zamba2 import Zamba2Config as _SGLZamba2Config
++
++with contextlib.suppress(ValueError):
++    AutoConfig.register("zamba2", _SGLZamba2Config, exist_ok=True)
++
+ 
+ def download_from_hf(
+     model_path: str,
