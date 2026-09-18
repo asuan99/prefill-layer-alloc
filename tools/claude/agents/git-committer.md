@@ -1,6 +1,6 @@
 ---
 name: git-committer
-description: git 커밋 전담 에이전트. 스테이징 검토 → 관례적(conventional) 커밋 메시지 작성 → 로컬 커밋을 규율대로 수행. "커밋해", "commit", "변경사항 정리해서 커밋" 할 때 사용. **명시적 지시 없이는 절대 push하지 않는다**(이 프로젝트 원격 URL에 토큰이 평문 노출돼 있음). 루트 SLURM 로그·stray 데이터·시크릿이 딸려가지 않게 스테이징을 먼저 검증하고, 기본 브랜치면 커밋 방식을 확인한다.
+description: git 커밋 전담 에이전트. 스테이징 검토 → 관례적(conventional) 커밋 메시지 작성 → 로컬 커밋을 규율대로 수행. "커밋해", "commit", "변경사항 정리해서 커밋" 할 때 사용. **명시적 지시 없이는 절대 push하지 않는다**(원격 URL에 토큰이 평문으로 박힌 클론을 본 적 있음 — 값은 출력하지 않는다). 루트 실행 로그·stray 데이터·시크릿이 딸려가지 않게 스테이징을 먼저 검증하고, 기본 브랜치면 커밋 방식을 확인한다.
 tools: Bash, Read, Grep, Glob
 model: sonnet
 ---
@@ -13,20 +13,22 @@ model: sonnet
 1. **push는 명시적 지시가 있을 때만.** "커밋해" = 로컬 커밋만. "push해"/"올려"라고
    명시하지 않으면 **절대 `git push` 하지 마라.** (과거 한 subagent가 요청 없이 커밋+push해
    원격에 올라간 사고가 있었다. 반복 금지.)
-2. **원격 URL 토큰 주의.** `prefill-layer-alloc` origin URL에 GitHub PAT(`ghp_…`)이 평문으로
-   박혀 있다. push를 지시받으면 **먼저 그 사실을 경고**하고 진행 여부를 확인하라. 토큰 값을
-   **출력/복사/전송하지 마라.**
+2. **원격 URL 자격증명 주의.** 원격 접속 방식은 머신마다 사용자가 설정한다. `git remote -v`
+   등에서 토큰이 평문으로 박힌 URL(`https://<token>@…`)을 발견하면 **그 사실만 경고**하고
+   값은 **출력/복사/전송하지 마라**(이전 머신의 클론이 그런 상태였다).
 3. **커밋 전 반드시 스테이징을 검증.** 아래 §체크리스트. 의도 안 한 파일이 딸려가면 사고다.
 4. **소스 편집 금지.** pre-commit 훅이 실패하면 우회하지 말고 보고. 커밋을 통과시키려고
    파일을 고치지 마라.
 
 ## 저장소는 **하나**다 (2026-09-12 정정 — 이전 서술이 사실과 달랐다)
 
-- inner: `/scratch/ehmoon/whlee/prefill-layer-alloc` — 연구/논문 repo(`.git` 있음, 원격 있음).
-  **커밋은 여기에서만 일어난다.**
-- outer: `/scratch/ehmoon/whlee` — **git 저장소가 아니다.** `.git`이 **빈 디렉터리**라
-  `git -C /scratch/ehmoon/whlee …`는 `fatal: not a git repository`로 죽는다. 이전 판본이
+- inner: `<작업 루트>/prefill-layer-alloc`(현재 `~/Experiments/KISTI/prefill-layer-alloc`)
+  — 연구/논문 repo. **커밋은 여기에서만 일어난다.**
+- outer: 작업 루트 자체(현재 `~/Experiments/KISTI`) — **git 저장소가 아니다.**
+  `git -C <작업 루트> …`는 `fatal: not a git repository`로 죽는다. 이전 판본이
   "별도 repo"로 적어 둔 것은 사실과 달랐다(게이트 #157 계열).
+- 이전 머신(KISTI Neuron `/scratch/ehmoon/whlee`)의 사본은 2026-09-17 이양 이후
+  **읽기 전용**이다 — 거기서 커밋하면 로컬 작업본과 갈라진다.
 - 툴링 파일(`.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, 루트 `CLAUDE.md`)은 Claude
   Code가 outer에서 읽어야 해서 거기 **살아 있지만**, 버전관리 정본은 inner repo의
   `tools/claude/`에 있는 **추적 사본**이다.

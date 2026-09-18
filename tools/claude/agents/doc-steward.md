@@ -45,7 +45,8 @@ model: sonnet
 
 ## 장기 메모리 인덱스
 
-`/home01/ehmoon/.claude/projects/-scratch-ehmoon-whlee/memory/MEMORY.md` = 세션 간
+`~/.claude/projects/-home-wonho-Experiments-KISTI/memory/MEMORY.md`(slug = 작업 루트
+경로의 `/`를 `-`로 바꾼 이름) = 세션 간
 로드되는 인덱스. 프로젝트 상태가 실질적으로 바뀌면(결론 확정/철회, 트랙 종결) 관련 메모리
 파일과 이 인덱스의 한 줄 포인터를 함께 갱신한다. 코드/깃 이력으로 재현 가능한 것은 메모리에
 넣지 않는다(비자명한 판정·방법론 교훈만).

@@ -5,7 +5,7 @@
 이 프로젝트의 감사·규율 규칙은 **에이전트/스킬 파일 본문**에 들어 있고, 정본 문서가 그
 파일을 **SHA-256으로 앵커**한다(예: `PROJECT_STATUS.md`의 게이트 #157이
 `.claude/agents/claims-auditor.md` 해시를 적는다). 그런데 그 파일들이 사는
-`/scratch/ehmoon/whlee`는 **git 저장소가 아니다**(`.git`이 빈 디렉터리). 따라서
+**작업 루트**(저장소의 부모 디렉터리)는 **git 저장소가 아니다**. 따라서
 2026-09-12까지 툴 파일에는 **이력이 없었다** — 규칙이 diff 없이 바뀔 수 있었고, provenance는
 사람이 손으로 붙여 넣은 해시 한 줄뿐이었다.
 
@@ -18,7 +18,7 @@ repo 안으로 옮겨버릴 수는 없다. 그래서 **추적 사본을 이 repo
 | | 경로 | 역할 |
 |---|---|---|
 | 추적 사본 | `prefill-layer-alloc/tools/claude/` | **버전관리 정본**. 리뷰·이력·해시가 여기 붙는다. |
-| live 사본 | `/scratch/ehmoon/whlee/{CLAUDE.md,.claude/{agents,skills}}` | Claude Code가 실제로 읽는 것 |
+| live 사본 | `<작업 루트>/{CLAUDE.md,.claude/{agents,skills}}` | Claude Code가 실제로 읽는 것. 작업 루트는 **저장소의 부모**로 자동 결정되며 `CLAUDE_TOOLS_LIVE=<dir>`로 덮어쓴다(2026-09-18 일반화 — 그 전에는 `/scratch/ehmoon/whlee` 고정) |
 
 `workspace/CLAUDE.workspace.md` = live의 루트 `CLAUDE.md`. 이름을 바꿔 둔 이유는 이
 하위 디렉터리가 **또 하나의 프로젝트 지침으로 자동 로드되지 않게** 하려는 것이다.

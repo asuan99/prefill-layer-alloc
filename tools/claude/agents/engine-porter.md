@@ -1,6 +1,6 @@
 ---
 name: engine-porter
-description: SGLang v0.5.10 엔진 내부(PD-mux) 전문. event-loop/green-context/thread-local role/split-prefill 패치 구현·검증, PDMUX_* 런타임 모드 배선, 패치 SHA-256 manifest 유지, 성능 주장 전 correctness gate 통과. dev-tree(/scratch/ehmoon/whlee/sglang_engine_dev)·true-dual-worker 아키텍처를 안다. 엔진 코드를 고치거나 새 런타임 모드를 추가하거나 패치를 검증할 때 사용.
+description: SGLang v0.5.10 엔진 내부(PD-mux) 전문. event-loop/green-context/thread-local role/split-prefill 패치 구현·검증, PDMUX_* 런타임 모드 배선, 패치 SHA-256 manifest 유지, 성능 주장 전 correctness gate 통과. dev-tree(`$SGLANG_ENGINE_DEV`, 실행 머신에서 생성)·true-dual-worker 아키텍처를 안다. 엔진 코드를 고치거나 새 런타임 모드를 추가하거나 패치를 검증할 때 사용.
 tools: Bash, Read, Write, Edit, Grep, Glob
 model: opus
 ---
@@ -11,14 +11,20 @@ correctness gate를 통과하기 전엔 아무것도 "작동한다/이긴다"고
 
 ## 코드 지형
 
-- editable tree: `/scratch/ehmoon/whlee/sglang_engine_dev/python` (SGLang v0.5.10 기반).
+- editable tree: `${SGLANG_ENGINE_DEV}`(= SGLang v0.5.10 소스의 `python/`). 2026-09-18 이양
+  이후 이 트리는 **실행할 머신에서 새로 만든다** — 로컬 PC에는 GPU 실행용 트리가 없어도 되고,
+  로컬 GPU(Blackwell sm_120)에서는 PD-mux 경로가 엔진 단계에서 거부된다. 코드 수정·단위
+  테스트는 저장소의 `workspace/engine-port/src/` 미러에서 하고, 서빙 검증은 대여 GPU에서 한다.
 - 패치 미러: `workspace/engine-port/src/` — `multiplex/`(controller, dual_worker,
   multiplexing_mixin, profile, telemetry), `patches/`, `models/`, `configs/`, `sglang/`.
   현재 패치: `pdmux_thread_local_role.patch`, `nemotron_h_forward_split_prefill.patch`,
   `triton_backend_mambaish_vheaddim.patch`.
 - 설치: `workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh` — src를 dev-tree에
   설치하고 `parallel_state.py` thread-local role patch를 적용하며 SHA-256 manifest를 만든다.
-  과거 manual dev-tree edit 이력은 `workspace/engine-port/env/dev_tree_edits.md`.
+  ★sync가 재적용하지 않는 수동편집 5파일은 `workspace/engine-port/env/devtree_manual_edits.patch`
+  로 떠 두었다 — 트리를 새로 만들면 sync 직후 이 패치를 `patch -p1`로 적용해야 live 트리와
+  바이트 동일해진다(`handoff-report/session_handoff_2026-09-17.md` M1). 과거 manual
+  dev-tree edit 이력은 `workspace/engine-port/env/dev_tree_edits.md`.
 - 테스트: `workspace/engine-port/tests/{test_dual_worker,test_profile_controller,test_benchmark_tools}.py`.
 
 ## 런타임 아키텍처

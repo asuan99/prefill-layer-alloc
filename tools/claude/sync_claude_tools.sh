@@ -6,8 +6,8 @@
 #   The agent/skill files encode the audit and discipline rules that canonical
 #   documents cite by SHA-256 (e.g. PROJECT_STATUS.md anchors
 #   .claude/agents/claims-auditor.md).  Those files live at
-#   /scratch/ehmoon/whlee, which is NOT a git repository (its .git is an empty
-#   directory), so until now their content had no history: a rule could change
+#   the workspace root (the repository's parent directory), which is NOT a git
+#   repository, so until now their content had no history: a rule could change
 #   with no diff, and the only provenance was a hash pasted into prose by hand.
 #   Claude Code discovers agents/skills from the workspace root it is started
 #   in, so the live copies cannot simply be moved in here.  Instead this repo
@@ -35,7 +35,10 @@
 set -uo pipefail
 
 track_root="${CLAUDE_TOOLS_TRACK:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-live_root="${CLAUDE_TOOLS_LIVE:-/scratch/ehmoon/whlee}"
+# Default live root = the repository's parent directory (the workspace root that
+# Claude Code is started in).  Derived, not hard-coded, so the same script works
+# after the 2026-09-17 machine move and on any future clone.
+live_root="${CLAUDE_TOOLS_LIVE:-$(cd "${track_root}/../../.." && pwd)}"
 manifest="${track_root}/claude_tools.manifest.sha256"
 mode="${1:---check}"
 

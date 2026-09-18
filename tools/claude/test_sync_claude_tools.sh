@@ -10,7 +10,7 @@
 # usage: test_sync_claude_tools.sh        (exit 0 = all cases behaved)
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-live_src="${CLAUDE_TOOLS_LIVE:-/scratch/ehmoon/whlee}"
+live_src="${CLAUDE_TOOLS_LIVE:-$(cd "$here/../../.." && pwd)}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fails=0

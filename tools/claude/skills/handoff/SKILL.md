@@ -11,10 +11,11 @@ description: 세션을 마무리하거나 중간 체크포인트를 남길 때, 
 ## 1. 이번 세션 델타 수집
 
 ```bash
-git -C /scratch/ehmoon/whlee/prefill-layer-alloc log --oneline -15
-git -C /scratch/ehmoon/whlee/prefill-layer-alloc status --short          # 미커밋
-git -C /scratch/ehmoon/whlee/prefill-layer-alloc diff --stat             # 무엇이 바뀜
-ls -t /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/*/ | head
+REPO=~/Experiments/KISTI/prefill-layer-alloc   # 작업 루트가 바뀌면 이 줄만 고친다
+git -C "$REPO" log --oneline -15
+git -C "$REPO" status --short          # 미커밋
+git -C "$REPO" diff --stat             # 무엇이 바뀜
+ls -t "$REPO"/workspace/engine-port/results/*/ | head
 ```
 그리고 **대화에서 실제로 도달한 것**을 정리한다: 내린 결정, 돌린 실험/측정, 만든/고친
 코드·문서, 남은 열린 항목·다음 단계.
@@ -40,7 +41,7 @@ ls -t /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/*/
 - PROJECT_STATUS.md(확정된 결과/철회된 가설/증거 수준/다음 실험 gate) 및 해당 트랙 보고서 갱신.
 - `MEMORY.md` 인덱스 + 관련 메모리 파일 갱신(비자명한 판정·방법론 교훈만; 코드/깃으로
   재현 가능한 건 넣지 않음). 메모리 경로:
-  `/home01/ehmoon/.claude/projects/-scratch-ehmoon-whlee/memory/`.
+  `~/.claude/projects/-home-wonho-Experiments-KISTI/memory/`(= 작업 루트 경로의 `/`를 `-`로 바꾼 slug).
 - 절대 날짜, 증거 수준어(부분 지지/강한 지지(범위 한정)/미검증/철회) 일치, stale 배너.
 
 단순 작업 상태(결론 변화 없음)면 handoff 문서만으로 충분 — 정본을 건드리지 마라.

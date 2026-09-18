@@ -26,16 +26,16 @@ description: 새 세션 시작 시(또는 컨텍스트 유실 시) 이 프로젝
 ## 2. 작업 상태 점검 (아직 정본에 안 들어간 것)
 
 ```bash
-# 두 저장소 모두 (outer workspace + 내부 프로젝트)
-git -C /scratch/ehmoon/whlee log --oneline -12
-git -C /scratch/ehmoon/whlee/prefill-layer-alloc log --oneline -12
-git -C /scratch/ehmoon/whlee/prefill-layer-alloc status --short   # 미커밋 변경
-# 최근 결과·로그
-ls -t /scratch/ehmoon/whlee/prefill-layer-alloc/workspace/engine-port/results/*/ | head
-ls -t /scratch/ehmoon/whlee/prefill-layer-alloc/*.out 2>/dev/null | head
-# 실행 중 job (있으면 experiment-runner로 이어감)
-squeue -u "$USER" 2>/dev/null
+REPO=~/Experiments/KISTI/prefill-layer-alloc   # 작업 루트가 바뀌면 이 줄만 고친다
+git -C "$REPO" log --oneline -12               # 저장소는 여기 하나뿐(작업 루트는 git 아님)
+git -C "$REPO" status --short                  # 미커밋 변경
+# 최근 결과·로그 (원시 telemetry는 git 밖 — 이양 번들에서 푼 것)
+ls -t "$REPO"/workspace/engine-port/results/*/ | head
+ls -t "$REPO"/*.out 2>/dev/null | head
 ```
+**실행 중인 GPU 작업**: 2026-09-18 현재 **없다.** 개발·검증은 로컬(CPU)에서만 하고 GPU
+실행은 대여 서버가 정해진 뒤 시작한다(로컬 5060 Ti는 PD-mux가 거부 — CLAUDE.md "환경 / 실행").
+대여 서버가 생기면 그 접속 방식으로 확인하고 experiment-runner에 넘긴다.
 
 ## 3. 브리핑 출력 (간결하게)
 
