@@ -1,12 +1,12 @@
-# sha256 of the TRACKED copies, 2026-09-18T11:27:41+09:00
+# sha256 of the TRACKED copies, 2026-09-21T15:39:10+09:00
 e7c2dedfe53527a84a0990c50607135d9ba4200d85a151f919aa7f81e7ed93b8  agents/claims-auditor.md
 c89866bd373c8d16b05491110a9d0e2cfc0dc91e16c93a7cf808e4a9361d13eb  agents/doc-steward.md
 3b383d2dec675fcc41b257416a7cf29070fdc2848032acc584eac0ab4037a5ce  agents/engine-porter.md
-fc436e2d19ff67dcf842097be1d277485ad002392e0c4178184eb6242a3c7bd9  agents/experiment-runner.md
+59c82074c478946b3b984ee41148e16eedf76ab545450752083417367c983847  agents/experiment-runner.md
 b10653c31e0cc28938907647c09897ab32d40dc4054a12ab1c062f113711c81e  agents/git-committer.md
 1a42f5e4742f33e9ac908fa3a8190c61f9088775e652b4b098aca310239a3b90  agents/result-analyst.md
 7baf2533910814425da95d10e384a5443c36eb04c6d39a5ab07d2f5e5251c8b3  agents/venue-strategist.md
 8a04172d14d7cf0902093fed6049739a1966e216003b552dc635d9c595d963a4  skills/catch-up/SKILL.md
 84f5a2f094d0aab7a0a34ef5cfc020097d455f2a876bedbe75e2bb59363e9644  skills/handoff/SKILL.md
 ae68e9ffb225bff22aab3e070a947fc729b4c839639bbb295c040b52b4a1ce6c  skills/review-lead/SKILL.md
-205ebf310466c6032e5e1559c9a261f0d2e2d84b3f364c65f4de528ee836250c  workspace/CLAUDE.workspace.md
+86ae3a40b8d7226c9f8653f0aa934dc42f8e5acb456cc45b1650784a845f3ac5  workspace/CLAUDE.workspace.md

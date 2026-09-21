@@ -247,6 +247,140 @@ multiplexing 선행(DuetServe/MuxWise/SGLang-pdmux/Nexus/Bullet)을 1순위
 
 ---
 
+## 0.2 ★2026-09-21 신설 — residency 축(PD 동거 wall-clock 비율) prior-art 조사
+
+**작성**: venue-strategist, 웹 검색 시점 **2026-09-21**(아래 모든 근거는 이
+시점 조사, venue-strategist 지식 컷오프 2026-01 이후 문헌이므로 인용 전
+원문 재확인이 이미 이 세션에서 이뤄짐). **기록**: doc-steward, 같은 날.
+이 절도 §0.1과 같은 caveat를 진다 — **새 서빙 측정이 아니라 prior-art
+조사 + positioning reasoning**이며, 확정 서빙 결과·claim 등급은 하나도
+바뀌지 않는다.
+
+### (1) 핵심 판정 — "트렌드가 residency를 키운다"는 주장할 수 없다
+
+**residency**(= 한 디바이스에서 prefill·decode가 동시 in-flight인
+wall-clock 비율, 우리 비용항이 직접 대응하는 양)를 구성하는 세 양은
+**증거 수준이 다르므로 분리해야 한다**:
+
+| 양 | 정의 | 1차 근거 |
+|---|---|---|
+| (i) 토큰 비 input:output | 요청 하나의 prompt:completion 토큰 수 비 | **풍부**, 강하게 prefill 쪽으로 이동 중 |
+| (ii) 캐시 차감 후 prefill GPU 시간 비중 | prefix caching 적용 후 실제 prefill 연산이 차지하는 GPU-시간 비율 | **희소·충돌**(캐시 적중률 자체가 워크로드·시점마다 크게 다름) |
+| (iii) PD 동거 wall-clock 비율 | 우리가 실제로 쓰는 비용항 | ★**직접 측정한 공개 1차 데이터 없음** |
+
+우리 비용항은 (iii)인데 공개 근거는 전부 (i)에 있다 — **이 간극을
+메우지 않고 "트렌드가 residency를 키운다"로 쓰면 overclaim이다.**
+
+### (2) (i)의 1차 근거 (모델·워크로드·시점 병기)
+
+- **Azure LLM Inference Dataset** 2023(2023-11-11, CC-BY) · 2024
+  (2024-05-10~19, CC-BY).
+- **Mooncake**(FAST'25): 평균 input 12,035 tok, prefix 재사용 ~40%.
+- **TraceLab**(arXiv 2606.30560, UW, Claude Code+Codex 에이전틱 워크로드,
+  2025-09~2026-06, 357,161 step, CC BY 4.0): prefix 중앙값 126K/116K,
+  append 중앙값 857/886, output 중앙값 252/184 (≈ 100:1).
+- **GitHub Copilot 프로덕션 특성화**(arXiv 2608.00101, 2026-06 첫 주,
+  3.2M 사용자·761M call): 중앙값 prompt 68K vs completion 247
+  (>275:1).
+- **vLLM AgentX 블로그**(2026-09-08): 중앙값 input 142K·output 444.
+- **OpenRouter 100T 토큰 연구**(arXiv 2601.10088, 롤링 13개월
+  2025-11 종료): 평균 prompt 1.5K→6K로 이동.
+
+**반대 방향(정직하게 등재)**: prefix caching 적중률 — Copilot 전체
+중앙값 98%(턴 경계 −26%p, 모델 전환 시 8%까지 붕괴), TraceLab
+토큰가중 95.7%, AgentX >96%, Mooncake ~40%. reasoning 토큰 비중
+상승 — ServeGen(NSDI'26, Alibaba Model Studio 3.54B 요청/4개월,
+CC BY-SA 4.0 **생성기**, 원 trace 비공개): reason 길이가 answer의
+4배, 주 단위로 input 1.63×·output 1.46× 이동; OpenRouter: reasoning
+모델 토큰 점유 >50%. decode 지배 1차 측정 — **KernelFlume**(arXiv
+2606.29207): 턴 간 KV 적중 94.2%, "거의 모든 GPU 시간이 autoregressive
+decoding". **Cost of Dynamic Reasoning**(arXiv 2506.04301v2,
+**단일요청 측정**이라 서버 regime과 다름): prefill 4.7%/decode
+74.1%. 나아가 PD disaggregation 확산 자체가 colocation을 제거하는
+방향의 산업 트렌드다.
+
+### (3) ★그럼에도 residency 축이 정당화되는 이유 — 트렌드가 아니라 내부 타당성
+
+DuetServe(arXiv 2511.04791v2) 원문:
+
+> *"Isolating prefill from decode is most beneficial when prefill
+> contributes a large fraction of iteration latency, while
+> decode-heavy regimes inherently exhibit less prefill–decode
+> contention."*
+
+우리 격자가 정확히 그 regime(decode-heavy, prefill이 iteration
+latency의 작은 비중)이라는 **자체 진단이 이미 셋**이다: E2C-21(shape
+A에서 sticky ON이 바꾸는 decode-busy 가중 시간의 86–89%가 prefill
+유휴 구간) · `longctx_conflict` 2F9(decode-only+prefill 유휴+sticky는
+PD-mux 운영점이 아니라는 성분 측정) · λ0(실현 분할이 target D44가
+아니라 대부분 `(0,108)`이었던 불일치, `CONSENSUS.md` §1-25/§1-26(B)).
+⇒ residency 축을 여는 것은 **기여 확대가 아니라 타당성 수리**다 —
+열지 않으면 "unfavorable regime을 골랐다"는 비판을 막을 수 없다.
+
+### (4) ★신규 문헌 공백(주장 가능)
+
+PD-mux 선행 중 **residency를 보고한 논문이 하나도 없다** —
+DuetServe·MuxWise·Nexus·Bullet 전부 확인(§5 목록). 선행은 모두
+"언제 전환할까"를 노브로 잡았는데, 우리 측정은 전환이 지배적이지
+않고(`s ≤ 0.04 ms/전환`, 2026-08-22 CONSENSUS §1 행34) **분할 상태
+체류가 지배**한다고 말한다. residency는 정책이 고르는 변수가 아니라
+워크로드가 강제하는 변수다(PART 진입 조건 `split_prefill_batch is
+not None`).
+
+### (5) trace 후보 순위 (Q4, `../longcontext_trace_plan.md` §5로 전파)
+
+**TraceLab**(CC BY 4.0, prefix/append **분리**로 캐시 적중 가정 없이
+residency 스윕 가능, 단 원문 프롬프트 없음) > **Mooncake**(Apache-2.0,
+SGLang `bench_serving` 로더 내장, 12,035 in/343 out, ★block hash
+보유 ⇒ **radix cache ON/OFF 결정을 강제** — 현재 `--disable-radix-cache`)
+> **Azure-2024**(CC-BY, 단순). BurstGPT는 길이가 짧아 한계를 못
+벗어난다. FineServe(arXiv 2607.19349)는 데이터 라이선스 불명확.
+**LongBench/LooGLE 단독 부적합**(출력 10 tok ⇒ decode 인구 소멸,
+`../longcontext_trace_plan.md` §2-(c)와 일치). ServeGen은
+**생성기**로만 표기(원 trace 비공개), Copilot trace는 **미공개**.
+
+### (6) 저장소 기존 기록과의 충돌 2건(해소·승격 반영)
+
+- `../longcontext_trace_plan.md` §5가 mooncake를 "radix 전제라
+  해석 주의"로만 적었다 → 이제 residency 재현의 최유력 후보이므로
+  **radix 결정(§8 미결정)이 residency 트랙의 선결 게이트로 승격**된다
+  (미결정이라는 사실 자체는 불변, 결정은 이 세션에서 내리지 않음).
+- 아래 §6의 MuxWise "(ii) 게재처·수치 검증 필요" 표기가 **해소됨**:
+  **ASPLOS'26 확정, DOI 10.1145/3779212.3790236**, 평균 2.20×/최대
+  3.06× goodput, 주 testbed 8×A100-80GB(+H100/H200) — §5 표의
+  "yml 132 SM = H100/H200급" 자기정정과 정합.
+
+### (7) 학회 관점
+
+**MLSys 2027 마감 2026-10-30 20:00 UTC**(10쪽, 별도 abstract 마감
+없음, 2026-09-21 재확인) — GPU 부재 + SLURM 블로커로 **이번
+사이클 비현실적**(§4의 "MLSys 2027 마감 ~10–11월 추정, 검증 필요"를
+이 날짜로 확정). EuroSys/ATC가 현재 자산과 가장 정합. ASPLOS는
+MuxWise·Bullet이 이미 ASPLOS'26에 실려 문턱이 높다. NSDI는 ServeGen
+게재로 "워크로드 특성화도 실린다"는 존재 증명은 있으나 규모
+(3.54B 프로덕션 요청)가 우리와 안 맞는다.
+
+### (8) ★쓸 수 없는 주장(금지 목록, claims-auditor 반증 전에도 doc-steward가 등재)
+
+- ✗ "트렌드가 residency를 키운다"(위 (1)의 간극).
+- ✗ "residency-large에서 동적 제어가 이길 것"(근거 0, H_L1은 반대 예측).
+- ✗ "layer-aware가 long-ctx에서 부활"(`../longcontext_trace_plan.md`
+  §2-(a)가 이미 배제).
+- ✗ "우리 1.53–1.94×가 Nexus 8–10×보다 작으니 SM 분할이 낫다"(기전·기판
+  상이, NOT-YET-SUPPORTED 우회 시도로 오독 금지).
+- ✗ "ServeGen/Copilot trace로 실험했다/할 수 있다"(둘 다 원 trace 비공개).
+- ✗ "chunked prefill이 residency를 늘린다"(가설, 측정·문헌 근거 없음).
+
+### 정본 전파
+
+이 절의 (5)는 `../longcontext_trace_plan.md` §5(trace 표)·§8(radix
+게이트 승격)에도 반영했다. `../../PROJECT_STATUS.md` 최상단 배너
+(2026-09-21)와 `../CONSENSUS.md` §4 살아있는 문서 표(venue_positioning
+행)가 이 절을 인용한다. **claim/evidence 등급 변경 0건** — 이 절은
+positioning reasoning이며 `CLAIM_EVIDENCE_MATRIX.md`를 갱신하지 않는다.
+
+---
+
 ## 0. 한 줄 진단
 
 지금 자산은 characterization과 기전 규명된 negative result가 중심이고, 검증된
@@ -362,7 +496,12 @@ top-tier systems(OSDI/NSDI/SOSP)는 불가, architecture(ASPLOS/ISCA/MICRO/HPCA)
   decode-heavy static + offline decode-floor. 추가 작업 = P3 + P6 일부 +
   B0–B2/B7(Nsight/libsmctrl 없이도 MLSys 제출 가능하나 있으면 강화). 타이밍 =
   MLSys 2027 마감 ~2026년 10–11월 추정(MLSys 2026판 마감이 2025-10-30이었다는
-  전례 기반 추정, **검증 필요**).
+  전례 기반 추정, **검증 필요**). ★**확정(2026-09-21, venue-strategist,
+  §0.2(7))**: **MLSys 2027 마감 = 2026-10-30 20:00 UTC**(10쪽, 별도 abstract
+  마감 없음). 단 **GPU 부재(대여 서버 미확정) + SLURM 블로커**(`../../PROJECT_STATUS.md`
+  "B. ★블로커 — SLURM 계정 전 파티션 제출 거부" 절, 2026-09-15 시작·
+  2026-09-17 재확인 동일 문구)로 **이번 사이클은 비현실적** — EuroSys/ATC가 현재 자산과 가장 정합한다는 것이 §0.2(7)의
+  추가 판단이다.
   리스크: ① novelty vs MuxWise/Bullet/Drift(incremental 공격 가능) ②
   "dynamic이 진다"가 substrate 아티팩트로 반박당할 위험 → C3를 **"shared
   running-batch coupling 하의 reactive single-worker"**로 명시 scoping하고
@@ -452,14 +591,19 @@ ROADMAP.md` longctx_conflict 절) — 이 문단은 그 판정을 재도출하�
 ## 6. 참고 (검증 필요 소스)
 
 - Bullet: arXiv 2504.19516 (ASPLOS'26) — **검증 필요**
-- MuxWise / SLO-oriented PD-Multiplexing — **증거 등급 분리(2026-09-10)**:
+- MuxWise / SLO-oriented PD-Multiplexing — **증거 등급 분리(2026-09-10),
+  (ii) 2026-09-21 해소**:
   (i) 워크로드별 SM 분할표(`sharegpt.yml` decode 20 SM vs `loogle.yml` decode
   52 SM at `decode_bs_threshold=1`, `manual_divisions` 필드 구조)는 **저장소 내
   `workspace/engine-port/external/muxwise/{sharegpt.yml, loogle.yml}`를 직접
-  읽어 검증 완료** — 재확인 불필요, 위 §5 표 참조. (ii) 논문 본문 주장·수치
-  (예: "2.2× goodput")·게재처(arXiv 2504.14489, ASPLOS'26 추정)는 **여전히
-  검증 필요**(venue-strategist 지식 컷오프 2026-01 이후 문헌, 원문 재확인 전
-  인용 금지) — (i)과 (ii)를 혼동해 인용하지 말 것.
+  읽어 검증 완료** — 재확인 불필요, 위 §5 표 참조. (ii) ★**해소(2026-09-21,
+  venue-strategist)**: **ASPLOS'26 게재 확정, DOI `10.1145/3779212.3790236`**.
+  주장 수치 = 평균 **2.20×**/최대 **3.06×** goodput, 주 testbed **8×A100-80GB**
+  (+H100/H200 부가) — 저장소의 기존 자기정정("`sharegpt.yml`/`loogle.yml`
+  SM 합 132 = H100/H200급 다이, A100 108 SM 아님", 위 §5)과 정합한다.
+  ★단 이 수치를 우리 108-SM 단일 A100 결과와 **직접 배율 비교하지 말 것**
+  (§0.2(8) 금지 목록 — 기전·기판·metric이 다르다). "게재처·수치 검증 필요"는
+  이제 (ii)에도 적용되지 않는다.
 - PD-Multiplexing with GreenContext: LMSYS blog, 2025-09-28 — **검증 필요**
 - CFP: MLSys 2026/2027, HPCA 2027, ASPLOS 2027, OSDI 2027, NSDI 2027,
   EuroSys 2027 — **날짜 전부 검증 필요** (venue-strategist 지식 컷오프 2026-01

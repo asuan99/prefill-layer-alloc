@@ -124,7 +124,13 @@ telemetry 원본 약 41 GiB → 압축 약 1.8 GB. git bundle은 `git bundle ver
 4. **엔진**: 새 환경에서 torch/triton/flashinfer/sgl-kernel을 M4 버전(또는 그 환경의 등가물)으로 설치 →
    SGLang v0.5.10 `python/` 준비 → `SGLANG_ENGINE_DEV=<path>/python workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh`
    → `patch -p1 -d <path>/python < workspace/engine-port/env/devtree_manual_edits.patch` →
-   `python -m unittest discover -s workspace/engine-port/tests -v`(이 머신 기준 140 tests OK).
+   `python -m unittest discover -s workspace/engine-port/tests -v`(이 머신[KISTI Neuron] 기준 140 tests OK).
+   ★**정정(2026-09-21, doc-steward)**: 이 "140 tests OK"는 **이전 머신 값이며 로컬 PC에
+   그대로 적용되지 않는다** — 로컬(miniconda base python3, dev tree 재구성 후) 정본
+   기준선은 **598 tests / failures=26 / errors=13 / skipped=3 / ~296초**
+   (`workspace/engine-port/env/cpu_regression_baseline_2026-09-18.md`; `PDMUX_ROOT` env var를
+   주면 failures=21). 원인은 테스트 스위트 자체가 이 세션들 사이 늘었기 때문(519→598)이고
+   dev tree 부재로 가려졌던 실패가 드러난 것이지 로컬 환경의 새 결함이 아니다(상세는 그 문서 §3–4).
 5. **모델**: `hf_hub_revisions.tsv`의 리비전으로 HF에서 다시 받는다.
 6. 원본을 지우기 전에 반드시 `pack_migration_bundle.sh verify <복사본 경로>` 또는 `sha256sum -c SHA256SUMS`.
 

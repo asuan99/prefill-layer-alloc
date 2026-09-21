@@ -1,6 +1,6 @@
 # 실 trace를 **long-context로 전환**하는 문제 — 논의와 계획
 
-발의: 사용자, 2026-07-17. 작성: 같은 날. ★**개정: 2026-07-25**(§0.5 신설 + §4.3 SLO 교정 + §6 L−2/L3s + §2 H_L5 — 벡터1 short-ctx 종결·r0c decode-floor grounding·시간/공간 분리·운영점 게이트 반영). ★★**개정: 2026-07-26**(§0.6 신설 — **L−2(Stage 0) 게이트 실행 완료·결과 기록**: non-binding, ctx≤16k. L−1 이상은 여전히 계획 미실행). ★★★**개정: 2026-07-28**(§0.6/H_L4/H_L5/L−2 행 **철회** — claims-auditor 감사(C1 CONFIRMED)로 Stage 0의 D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어, L−2가 "실행 완료·non-binding"이 아니라 **"게이트 미실행"**으로 정정됨. L−1 이상은 "게이트 실패로 보류"가 아니라 다시 계획 단계). ★★★★**개정: 2026-09-07**(doc-steward, D4 — §4.3 **부분 정정**: 2026-07-25 판정 중 "(i) `a+b·L` 연속 길이-정규화 임계는 **계보 없음**"이라는 사실 주장을 정정. 계보가 **있다**(Etalon/Metron이 `D_p(L)` 프로파일 fitting을 명시적으로 처방, LoongServe가 input-normalized latency 사용) — 근거 `workspace/engine-port/results/cp_baseline/RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)/§6-2. **선형 폐형식 `a+b·L` 자체에 대한 기각과 §4.3의 실무 처방(절대 class SLO+slowdown 병기)은 유효 유지** — 성능/정책 판정 아님, 인용·계보에 관한 정정).
+발의: 사용자, 2026-07-17. 작성: 같은 날. ★**개정: 2026-07-25**(§0.5 신설 + §4.3 SLO 교정 + §6 L−2/L3s + §2 H_L5 — 벡터1 short-ctx 종결·r0c decode-floor grounding·시간/공간 분리·운영점 게이트 반영). ★★**개정: 2026-07-26**(§0.6 신설 — **L−2(Stage 0) 게이트 실행 완료·결과 기록**: non-binding, ctx≤16k. L−1 이상은 여전히 계획 미실행). ★★★**개정: 2026-07-28**(§0.6/H_L4/H_L5/L−2 행 **철회** — claims-auditor 감사(C1 CONFIRMED)로 Stage 0의 D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어, L−2가 "실행 완료·non-binding"이 아니라 **"게이트 미실행"**으로 정정됨. L−1 이상은 "게이트 실패로 보류"가 아니라 다시 계획 단계). ★★★★**개정: 2026-09-07**(doc-steward, D4 — §4.3 **부분 정정**: 2026-07-25 판정 중 "(i) `a+b·L` 연속 길이-정규화 임계는 **계보 없음**"이라는 사실 주장을 정정. 계보가 **있다**(Etalon/Metron이 `D_p(L)` 프로파일 fitting을 명시적으로 처방, LoongServe가 input-normalized latency 사용) — 근거 `workspace/engine-port/results/cp_baseline/RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)/§6-2. **선형 폐형식 `a+b·L` 자체에 대한 기각과 §4.3의 실무 처방(절대 class SLO+slowdown 병기)은 유효 유지** — 성능/정책 판정 아님, 인용·계보에 관한 정정). ★★★★★**개정: 2026-09-21**(doc-steward — §5에 TraceLab·Azure-2024 trace 후보 추가 + §5.1 신설[순위·residency 축 연결, `reports/paper/venue_positioning.md` §0.2 전파] + §8 radix-cache 결정을 residency 트랙 선결 게이트로 승격 — 성능/정책 판정 아님, GPU 0, 미결정 상태 자체는 불변).
 계기: *"motivation으로 attn과 mamba가 차이가 난다는 지점은 **long-sequence에서 심화**되는데, 실 trace에도 그런 데이터셋들이 존재할 것이고, 그에 따라 **실행의 범위가 달라질 수 있는** 가능성이 있다."*
 
 관련: [CONSENSUS.md](CONSENSUS.md)(정본) · [research_arc.md §S-M](research_arc.md)(반증 지점·측정 환경·유효 경계) · [realtrace_findings_and_open_branches.md](realtrace_findings_and_open_branches.md)(얽힘 기전) · [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)(L−2 원 판정, ★★★2026-07-28 claims-auditor 감사로 철회 — 아래 §0.6 참조).
@@ -208,11 +208,27 @@ RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)(표+인용)·§6 항목2.
 |---|---|---|---|
 | **`random` (in 8k/16k/32k)** | ❌ | **즉시 가능**·완전 통제·E1 계보와 연속 | 실 trace 아님. **L1의 도구**(최적 이동 확인용) |
 | ★**`longbench_v2`** (THUDM/LongBench-v2) | ✅ | 진짜 long-doc, **로더 내장**, 길이 분포 넓음 | **출력 기본 10 tok**(`--sharegpt-output-len`으로 강제 가능하나 그러면 "실 trace"가 반쪽) · **데이터 미보유**(`hf_cache/raw/longbench_cache/`는 **비어 있음**, 8K) · **`HF_HUB_OFFLINE=1`이라 사전 다운로드 필수** |
-| **`mooncake`** | ✅✅ | 실 서빙 **arrival + 길이 trace** = 가장 현실적 | prefix 재사용 전제 — 우리는 **`--disable-radix-cache`** 중이라 해석 주의(또는 이 실험만 radix 허용 = 또 다른 변수) |
+| **`mooncake`** | ✅✅ | 실 서빙 **arrival + 길이 trace** = 가장 현실적, 평균 input 12,035 tok/output 343 tok(FAST'25), Apache-2.0, SGLang `bench_serving` 로더 내장 | prefix 재사용 전제 — 우리는 **`--disable-radix-cache`** 중이라 해석 주의(또는 이 실험만 radix 허용 = 또 다른 변수). ★block hash를 보유해 radix cache ON/OFF **결정을 강제**(아래 §5.1·§8 참조) |
 | **`generated-shared-prefix`** | ❌ | long prefix 통제 | 위와 동일한 radix 문제 |
 | ★**혼합 (ShareGPT ↔ long-doc 교대)** | ✅ | ★**H_L4 전용** — regime 충돌을 *만드는* 유일한 벤치 | 하네스 신규 필요(E3-vary의 rate 교대를 **dataset 교대**로 확장) |
+| ★**TraceLab**(신규, 2026-09-21) | ✅ | arXiv 2606.30560, UW, Claude Code+Codex 에이전틱 워크로드(2025-09~2026-06, 357,161 step), **CC BY 4.0**, prefix/append **분리 기록** — 캐시 적중률 가정 없이 residency 스윕 가능(prefix 중앙값 126K/116K, append 857/886, output 252/184) | 엔진 내장 로더 없음(신규 어댑터 필요) · 원문 프롬프트 없음(prefix/append 길이만) |
+| ★**Azure LLM Inference Dataset 2024**(신규, 2026-09-21) | ✅ | 2024-05-10~19, **CC-BY**, 단순한 arrival+길이 trace | 엔진 내장 로더 없음(신규 어댑터 필요), Mooncake만큼 길이 분포가 극단적이지 않음 |
 
-**권고**: `random`(통제) → `longbench_v2`(실 trace) → **혼합**(판정). `mooncake`는 radix 결정을 별도로 내린 뒤.
+**권고**: `random`(통제) → `longbench_v2`(실 trace) → **혼합**(판정). `mooncake`/TraceLab은 아래 §5.1·§8의 radix 결정을 먼저 내린 뒤.
+
+### 5.1 ★2026-09-21 갱신 — trace 후보 순위 + residency 축 연결 (`venue-strategist`, `reports/paper/venue_positioning.md` §0.2 전파, GPU 0·새 측정 아님)
+
+`venue_positioning.md` §0.2의 prior-art 조사(웹 검색 시점 2026-09-21)가 이 표를 갱신한
+근거다. **순위**: **TraceLab**(CC BY 4.0, prefix/append 분리로 캐시 적중 가정 없이
+residency 스윕 가능, 단 원문 프롬프트 없음) > **Mooncake**(Apache-2.0, 엔진 내장 로더 보유,
+block hash로 radix 결정 강제) > **Azure-2024**(CC-BY, 단순). BurstGPT는 길이가 짧아
+long-context 트랙의 한계를 못 벗어난다. FineServe(arXiv 2607.19349)는 데이터 라이선스가
+불명확해 제외. **LongBench/LooGLE 단독은 여전히 부적합**(출력 기본 10 tok ⇒ decode 인구
+소멸, 위 §2-(c)와 동일 사유). ServeGen(NSDI'26)은 **생성기**로만 등재한다(원 trace
+비공개, 3.54B 요청 특성화 합성용). GitHub Copilot 특성화(arXiv 2608.00101)의 trace는
+**미공개**. ★이 표가 residency(PD 동거 wall-clock 비율) 트랙에 직접 연결되는 이유는
+`venue_positioning.md` §0.2(3)의 자체 진단 셋(E2C-21·2F9·λ0 실현 분할 불일치)을 참조 —
+이 문서는 그 판정을 재도출하지 않는다.
 
 ---
 
@@ -262,3 +278,8 @@ D108 앵커가 실은 decode 16 SM이었음이 claims-auditor 감사로 확인�
   (그 sweep의 부산물로 드러난 것: 구 `knee2d` 격자는 **B축이 가짜**였다 — `chunked-prefill-size`가 토큰을 잘라 요청한 B=48이 실제로는 bs=1–10으로 관측됨.)
 - **데이터**: `hf_cache/raw/longbench_cache/`는 **비어 있음**. `HF_HUB_OFFLINE=1`이므로 **L2 전에 다운로드 필요**(로그인 노드에서 별도 수행).
 - **미결정**: radix-cache 정책(`mooncake`/shared-prefix를 쓸 것인가), SLO 정의(§4.3 (i) vs (iii)).
+  ★**게이트 승격(2026-09-21, doc-steward, §5.1 전파)**: Mooncake가 residency 트랙의
+  trace 후보 2순위(TraceLab 다음)로 부상하면서, 그 block hash가 radix cache ON/OFF
+  결정을 **강제**하게 됐다 — 따라서 이 radix 결정은 이제 residency 트랙 착수의
+  **선결 게이트**다(미결정이라는 사실 자체는 이 회차에서 바뀌지 않았다, 결정은 아직
+  내리지 않음).

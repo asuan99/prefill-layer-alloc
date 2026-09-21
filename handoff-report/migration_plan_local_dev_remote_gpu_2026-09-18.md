@@ -58,7 +58,9 @@ GPU 서버에 Claude Code를 설치하지 못해도 된다 — Claude는 로컬�
    `results/r2_eval/e2_sticky_prereg/e2_sticky.sbatch`(4, `#SBATCH --output/--error` 포함) · 테스트 15줄.
    루트 환경변수 하나(`PDMUX_ROOT`)로 정리하면 끝난다. `results/` 아래 과거 캠페인 5,473줄은 **재실행할 것만** 고친다.
 3. **서버 부트스트랩을 한 명령으로**: torch/CUDA 스택 → SGLang v0.5.10 소스 → `sync_engine_tree.sh` →
-   `env/devtree_manual_edits.patch` → 모델·trace 내려받기 → CPU 회귀(140 tests) → 부팅 스모크.
+   `env/devtree_manual_edits.patch` → 모델·trace 내려받기 → CPU 회귀
+   (★정정 2026-09-21, doc-steward: "140 tests"는 이전 머신[KISTI Neuron] 값 —
+   로컬 PC 정본 기준선은 598 tests, `env/cpu_regression_baseline_2026-09-18.md`) → 부팅 스모크.
    대여 인스턴스는 매번 새로 뜨므로 **컨테이너 이미지로 굳히는 편이 안전**하다(패키지 버전은
    `env/venv_packages_2026-09-17.txt`; py3.14 shim은 `env/sitecustomize.py`).
 4. **결과 회수 규약**: 실행 뒤 `rsync`로 `results/<campaign>/`를 로컬로 내리고 sha256을 남긴다. 서버는 언제든

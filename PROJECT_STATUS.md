@@ -1,6 +1,144 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-09-17(doc-steward — **머신 이양 준비
+최종 갱신: 2026-09-21(doc-steward — **2026-09-18~2026-09-21
+로컬 세션 산출물 정본 반영**, GPU 0·새 성능 판정 0건. 저장소는
+로컬 PC로 이양 완료, GPU 실행 불가 상태 지속). ★**A100 GPU
+지출 0 · 새 성능 판정 0건 · Claim D/E 등급 불변 · HE0·layer-type
+死·정책 순위·게이트 #6/#13/#16·stake #1 전부 불변**(재도출
+없음, 아래 "이전"[2026-09-17] 포함 전 회차 계승).
+
+**(1) `CLAUDE.md` 정정(작업 루트, `tools/claude/workspace/
+CLAUDE.workspace.md` 동기화 완료)** — `handoff-report/
+gpu_rental_checklist_2026-09-18.md` §0이 upstream SGLang
+`v0.5.10` 소스를 1차 확인해, "PD-mux가 엔진 단계에서 major
+10+ `ValueError`로 거부된다"는 옛 서술이 **자동 격자
+(`divide_sm`) 경로 한정**이고 이 프로젝트가 전적으로 쓰는
+**`manual_divisions` 경로에서는 미발화**함을 발견했다 —
+claims-auditor가 `VERDICT_e2_substrate_portability_2026-09-18.md`
+Q4에서 독립 검증(설치 wheel `sglang-0.5.10.post1`·`0.5.3rc0`
+대조, 구조 바이트 동일) **`CONFIRMED(스코프 한정)`** 처리.
+**결론(로컬 GPU에서 서빙 실험을 돌리지 않는다)은 불변** — 실효
+사유는 ①설치된 `sgl_kernel`에 sm120 대응 빌드가 없어 import
+자체가 깨짐(2026-09-18 로컬 실측 `undefined symbol:
+_ZNK3c106SymInt22maybe_as_int_slow_pathEv`) ②16GB로 9B 모델이
+안 올라감 ③**게이트 1**(기판이 다르면 수치가 주장 근거가 못
+됨) 셋뿐이다. ★단 "그러므로 major 10+에서 돌아간다"로 확장하면
+**거짓**이다 — 제약은 `sgl_kernel.spatial.
+create_greenctx_stream_by_value`→CUDA green context API 층으로
+**이동할 뿐 사라지지 않고**, 그 층의 실제 SM 입도는
+**미실측**이다(신규 방법론 게이트 #258, `CONSENSUS.md` §3
+항목278). H100 "8 SM 단위" 코드 상수도 같은 스코프 배너를
+받았다(§4 대여 전 확인 절, `CLAUDE.md` 갱신).
+
+**(2) E2 기판 이식성 — `REFUTED`(예산), 새 OVERRIDE는 사용자
+결정 사항, 아직 미승인.** `VERDICT_e2_substrate_portability_
+2026-09-18.md`(claims-auditor 규칙층 감사)의 결론: A100→A100
+기판 변경 자체는 **死因을 만들지 못했다**(반전 시험에서 등록
+판정을 뒤집는 수치 없음) — 그러나 E2 OVERRIDE의 "설계·예산
+불변이면 재승인 불요" 조항이 요구하는 "예산 불변"이 **세 경로로
+깨진다**: ①SLURM `--time` 하드 캡이라는 **집행기**가 없어지면
+승인된 3.0 GPU-h 상한이 집행되지 않음(최악 ≈3.3–3.4 GPU-h
+가능) ②908623 아티팩트 mtime 실측으로 산출된 예산 상수
+(A=145.5·B=106.5s)가 호스트 의존 ③무상 SLURM 할당→시간당
+과금이면 초과의 의미(잡 종료 vs 금전)가 달라짐 — 따라서
+**`REFUTED`: 기존 OVERRIDE 그대로는 유효하지 않다, 새 OVERRIDE
+필요**(신규 방법론 게이트 #259, `CONSENSUS.md` §3 항목279).
+판정서가 제안한 **신규 caveat E2C-36…E2C-39**(offered 사다리는
+A100 D44 전용이라 다른 기판 부하 사다리로 해석 금지 · 이 캠페인의
+어떤 게이트도 기판 변화를 탐지하지 않음 · realized
+green-context SM 미측정 · SLURM 밖 실행 시 3.0 GPU-h 하드 캡
+미집행)는 **판정서 참조로만 승계**한다 — E2 사전등록 본문
+(`PREREG_E2_STICKY_*rev1–3*`)은 등록 무결성 보존을 위해 이
+회차에서 **편집하지 않았다**. ★★**새 OVERRIDE 승인 여부는
+사용자 결정 사항이다 — doc-steward는 승인하지 않았고 승인할
+수 없다.** 계정 복구 후 E2를 A100 대여 서버에서 실행하려면
+이 새 OVERRIDE가 먼저 필요하다(기존 OVERRIDE는 여전히 KISTI
+Neuron 재개 시나리오에만 유효·미소진).
+
+**(3) 로컬 CPU 회귀 정본 기준선 정정.** `workspace/engine-port/
+env/cpu_regression_baseline_2026-09-18.md` — dev tree 재구성
+후 **정본 검증 인터프리터 = miniconda base `python3`**, 결과
+**598 tests / failures=26 / errors=13 / skipped=3 / ~296초**
+(`PDMUX_ROOT` env var 지정 시 failures=21). "이전 머신[KISTI
+Neuron] 기준 140 tests / 약 73초"는 로컬 PC에 그대로 적용되지
+않는다 — 3곳 정정: `handoff-report/
+migration_plan_local_dev_remote_gpu_2026-09-18.md:61`,
+`handoff-report/session_handoff_2026-09-17.md:127`,
+`tools/claude/agents/experiment-runner.md:29`(및 동기화된
+`.claude/agents/experiment-runner.md`). 잔존 실패는 전부
+①`sgl_kernel`/GPU 부재(12건, 이 CPU 박스에서 원천 불가) ②
+`PDMUX_ROOT` 미설정(23건, fail-closed 설계 그대로 — 6건은
+`PDMUX_ROOT` 지정만으로 해소) ③venv 부재로 인한 서버 부팅
+전제 실패(17건, 이 세션 지시 범위 밖) ④pre-existing gap
+(`lambda_star.example.json` 미존재, 4건)로 분류됨 — **코드
+결함 0건 발견, 전부 배관/문서 상태**.
+
+**(4) 기타 등재(살아있는 문서, 새 분석 없음)**: `handoff-report/
+vllm_baseline_stack_2026-09-18.md`(vLLM 대조군 스택·의존성
+정리), `workspace/engine-port/results/local_smoke_5060ti_
+2026-09-18/`(로컬 RTX 5060 Ti vLLM 3B 스모크 — **게이트 1
+배너 포함, 어떤 결론의 근거도 아님**), `handoff-report/
+ssm_kernel_sm_partition_2026-09-21.md`(SSM 커널×green-context
+SM 분할 코드 사실 정리, §7 grid 정책·§8 `sgl_kernel` 소스
+검토 — 코드 사실 수집, 새 성능 판정 아님).
+
+**(5) venue-strategist residency prior-art 조사(2026-09-21,
+웹 검색 시점 2026-09-21, `reports/paper/venue_positioning.md`
+§0.2 신설).** 핵심 판정: **"워크로드 트렌드가 residency(한
+디바이스에서 prefill·decode 동시 in-flight인 wall-clock
+비율)를 키운다"는 주장할 수 없다** — 토큰 비(input:output)는
+1차 근거가 풍부하고 강하게 prefill 쪽으로 이동 중이나(Azure
+LLM Inference Dataset 2023/2024·Mooncake FAST'25·TraceLab
+arXiv 2606.30560·GitHub Copilot 특성화 arXiv 2608.00101·
+vLLM AgentX 블로그 2026-09-08·OpenRouter arXiv 2601.10088),
+**residency 자체(PD 동거 wall-clock 비율)를 직접 측정해 보고한
+공개 1차 데이터는 0건**이다(PD-mux 선행 DuetServe·MuxWise·
+Nexus·Bullet 전부 미보고 — **신규 문헌 공백, 주장 가능**).
+prefix caching 적중률(Copilot 98%·TraceLab 95.7%·AgentX
+>96%·Mooncake ~40%)과 reasoning 토큰 비중 상승(ServeGen
+NSDI'26·OpenRouter)은 **반대 방향 증거로 정직하게 등재**.
+★**그럼에도 residency 축이 정당한 이유는 트렌드가 아니라 내부
+타당성**: DuetServe(arXiv 2511.04791v2) 원문이 "prefill
+isolation은 prefill이 iteration latency의 큰 비중일 때
+최유리, decode-heavy regime은 원래 prefill-decode 경합이
+적다"고 명시하는데, 저장소 자체 진단 셋(E2C-21의 shape A
+prefill 유휴 86–89% · longctx_conflict 2F9 · λ0 실현 분할
+불일치)이 정확히 그 regime을 가리킨다 — residency 축을 여는
+것은 기여 확대가 아니라 **"unfavorable regime을 골랐다"는
+비판에 대한 타당성 수리**다. **§6 MuxWise "게재처·수치 검증
+필요" 해소**: **ASPLOS'26 확정, DOI 10.1145/3779212.3790236**,
+평균 2.20×/최대 3.06× goodput, 주 testbed 8×A100-80GB(+H100/
+H200) — 저장소 기존 자기정정("`sharegpt.yml`/`loogle.yml`
+합계 132 SM = H100/H200급, A100 108 SM 아님")과 정합. 학회:
+**MLSys 2027 마감 2026-10-30 20:00 UTC**(10쪽, 별도 abstract
+마감 없음)로 확인 — GPU 부재+SLURM 블로커로 **이번 사이클
+비현실적**; EuroSys/ATC가 현재 자산과 가장 정합. **쓸 수 없는
+주장(금지 목록)**: "트렌드가 residency를 키운다" ·
+"residency-large에서 동적 제어가 이길 것"(근거 0, H_L1은 반대
+예측) · "layer-aware가 long-ctx에서 부활"(§2-(a) 이미 배제) ·
+"1.53–1.94×가 Nexus 8–10×보다 작으니 우리가 낫다"(기전·기판
+상이) · "ServeGen/Copilot trace로 실험했다/할 수 있다" ·
+"chunked prefill이 residency를 늘린다"(가설, 근거 없음).
+`reports/longcontext_trace_plan.md` §5/§8도 이 조사를 반영해
+갱신(trace 후보에 TraceLab·Azure-2024 추가, radix-cache 결정이
+residency 트랙 선결 게이트로 승격 — 미결정이라는 사실 자체는
+불변).
+
+**(6) 미커밋 코드(engine-porter/experiment-runner 소관, 기록만)**:
+`PDMUX_ROOT` 이식 4스크립트 + 테스트 10파일, 신규
+`workspace/engine-port/scripts/run/array_runner.sh` — 이
+회차의 CPU 회귀 재실행(위 (3))이 이 변경을 **다른 세션이
+동시 진행 중인 미커밋 작업**으로 확인했을 뿐, doc-steward는
+이 코드를 검토·수정하지 않았다.
+
+정본 반영: `CONSENSUS.md` rev79→**rev80**(§3 항목278–279 신설,
+§4 "살아있는 문서" 표 갱신), `reports/paper/venue_positioning.md`
+§0.2 신설+§6 갱신, `reports/longcontext_trace_plan.md` §5/§8
+갱신. **정본끼리 모순 0건**(이번 회차 발견 없음). **커밋
+금지**(사용자 승인 전까지 작업 트리에만 반영 — 커밋은
+git-committer 소관, 사용자 지시 대기).
+
+이전: 2026-09-17(doc-steward — **머신 이양 준비
 체크포인트**, GPU 0·새 측정 0·새 성능 판정 0). 사용자가 이
 머신(KISTI Neuron)을 더 이상 쓸 수 없어 이양 준비 — **이양
 대상 미정**, 임시 저장소만 존재. 확정 결론·HE0·layer-type 死·

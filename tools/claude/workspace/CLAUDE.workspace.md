@@ -44,10 +44,24 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
   이양 경위·저장 목록은 `handoff-report/session_handoff_2026-09-17.md`와
   `migration_inventory_2026-09-17.md`.
 - ★**이 머신에서는 서빙 실험을 돌리지 않는다.** 로컬 GPU(RTX 5060 Ti 16GB, Blackwell
-  sm_120)에서는 PD-mux 경로가 **엔진 단계에서 거부된다**(dev tree
-  `sglang/srt/multiplex/pdmux_context.py:get_arch_constraints`는 major 6–9만 지원, major
-  10+ → `ValueError`). 설치된 `sgl_kernel`에도 sm120 빌드가 없고 16GB로는 9B 모델이 안
-  올라간다. 설령 돌아가도 **기판이 다르므로 어떤 수치도 주장 근거가 못 된다**(게이트 1).
+  compute capability 12.0[major 12])에서는 실행하지 않는다. ★**정정(2026-09-21,
+  doc-steward — `handoff-report/gpu_rental_checklist_2026-09-18.md` §0 1차 소스 확인 +
+  claims-auditor `workspace/engine-port/results/r2_eval/e2_sticky_prereg/
+  VERDICT_e2_substrate_portability_2026-09-18.md` Q4 독립 검증 `CONFIRMED`)**: 이전 판은
+  사유를 "PD-mux 경로가 **엔진 단계에서 거부된다**(dev tree
+  `pdmux_context.py:get_arch_constraints`는 major 6–9만 지원, major 10+ → `ValueError`)"로
+  적었으나, 이 함수는 **자동 격자(`divide_sm`) 경로에서만 호출되고**(설치 트리 전역
+  1곳) 이 프로젝트가 쓰는 것은 **전적으로 `manual_divisions` 경로**다(현행 `*pdmux*.yml`
+  59/59 전부 확인) — 이 분기는 **우리 실행 경로에서 발화하지 않는다**. 로컬 실행 불가의
+  **실효 사유**는 (i) 설치된 `sgl_kernel`에 sm120 대응 빌드가 없어 import 자체가
+  깨짐(torch ABI 불일치, 2026-09-18 로컬 실측 `undefined symbol:
+  _ZNK3c106SymInt22maybe_as_int_slow_pathEv`) (ii) 16GB로는 9B 모델이 안 올라감
+  (iii) **게이트 1**(기판이 다르면 수치가 주장 근거가 못 됨) 세 가지다 —
+  **결론(로컬에서 서빙 실험을 돌리지 않는다)은 불변**, 바뀌는 것은 "왜 안 되는가"의
+  정확도뿐. ★단 이것을 "그러므로 major 10+에서 돌아간다"로 확장하면 **거짓**이다 —
+  제약은 사라지는 게 아니라 `sgl_kernel.spatial.create_greenctx_stream_by_value` →
+  `cuGreenCtxCreate`(CUDA green context API) 층으로 이동할 뿐이고, 그 층이 실제로 어느
+  compute capability까지 어떤 SM 입도를 주는지는 **미실측**이다.
 - **로컬에서 하는 일 = 검증·분석·문서**(전부 CPU):
   ```bash
   cd ~/Experiments/KISTI/prefill-layer-alloc
@@ -61,8 +75,14 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
 - **GPU 실행 = 대여 서버(업체 미정)**. 확정되면 `experiment-runner`에 원격 실행 규약을 적는다.
   현재 계획·이식 범위는 `handoff-report/migration_plan_local_dev_remote_gpu_2026-09-18.md`.
   **대여 전 확인**: A100(sm80, 4 SM 단위)이면 기존 격자·λ\*와 직접 비교 가능 · H100(sm90)은
-  8 SM 단위·132 SM이라 격자 재설계 + λ0 재측정 전제 · Blackwell은 코드 확장 필요 ·
-  드라이버 CUDA ≥ 12.4 · MIG/vGPU 불가(전 GPU 필요).
+  upstream `get_arch_constraints` 코드 상수로는 8 SM 단위·132 SM이나 ★**이 상수는
+  `divide_sm`(자동 격자) 경로에만 적용되고 우리가 쓰는 `manual_divisions` 경로의 실제
+  입도는 이 상수를 타지 않는다**(2026-09-21 정정, 위 항목과 동일 근거) — 총 SM 132는
+  그대로(하드웨어 사실)지만 **실제 입도는 대여 후 green-context probe로 실측해야 한다**
+  (`gpu_rental_checklist_2026-09-18.md` §3 B3), 코드 상수를 실측 대신 인용하지 말 것.
+  격자 재설계 + λ0 재측정 전제는 불변 · Blackwell은 실제 동작 여부가 **미지**(단순
+  "코드 확장 필요"가 아니라 `sgl_kernel`에 해당 아키텍처 빌드가 있는지 + green context가
+  동작하는지가 관건, 미실측) · 드라이버 CUDA ≥ 12.4 · MIG/vGPU 불가(전 GPU 필요).
 - 엔진 트리 재구성(어느 머신이든 동일):
   ```bash
   SGLANG_ENGINE_DEV=<sglang>/python workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh <manifest.sha256>

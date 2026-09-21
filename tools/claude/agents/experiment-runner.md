@@ -26,7 +26,11 @@ model: sonnet
 
 ```bash
 cd ~/Experiments/KISTI/prefill-layer-alloc
-python -m unittest discover -s workspace/engine-port/tests -v   # CPU 회귀 (기존 머신 기준 140 tests / 약 73초)
+python -m unittest discover -s workspace/engine-port/tests -v   # CPU 회귀. ★정정(2026-09-21, doc-steward):
+  # "기존 머신 기준 140 tests / 약 73초"는 이전 머신(KISTI Neuron) 값이라 이 머신에 적용 불가.
+  # 로컬 정본 기준선(miniconda base python3, dev tree 재구성 후) = 598 tests / failures=26 /
+  # errors=13 / skipped=3 / ~296초 (`workspace/engine-port/env/cpu_regression_baseline_2026-09-18.md`).
+  # PDMUX_ROOT=~/Experiments/KISTI를 주면 failures=21로 6건 추가 통과.
 python3 workspace/engine-port/scripts/discipline/check_citation_stops.py   # 스테이징 diff의 인용금지 위반
 python3 workspace/engine-port/scripts/discipline/check_doc_facts.py
 python3 workspace/engine-port/scripts/discipline/check_line_citations.py
