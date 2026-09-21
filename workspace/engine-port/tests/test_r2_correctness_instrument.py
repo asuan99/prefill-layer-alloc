@@ -63,7 +63,9 @@ PROJECT_ROOT = TRACK_ROOT.parents[1]
 SBATCH = TRACK_ROOT / "results" / "r2_correctness" / "r2_correctness.sbatch"
 CHECKER = TRACK_ROOT / "results" / "r2_correctness" / "r2_correctness_check.py"
 ENGINE_BENCH = Path(
-    os.environ.get("SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python")
+    os.environ.get("SGLANG_ENGINE_DEV")
+    or os.path.join(os.environ.get("PDMUX_ROOT", str(TRACK_ROOT.parents[2])),
+                     "sglang_engine_dev", "python")
 ) / "sglang" / "bench_serving.py"
 
 BEGIN = "# --- BEGIN r2c instrumentation"

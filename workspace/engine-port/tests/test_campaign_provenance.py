@@ -40,7 +40,9 @@ BENCHMARKS = TRACK_ROOT / "benchmarks"
 SBATCH = TRACK_ROOT / "scripts" / "r2_eval" / "r2_eval.sbatch"
 RUNNER = TRACK_ROOT / "scripts" / "r2_eval" / "engine_bench_runner.sh"
 ENGINE_DEV = Path(
-    os.environ.get("SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python")
+    os.environ.get("SGLANG_ENGINE_DEV")
+    or os.path.join(os.environ.get("PDMUX_ROOT", str(TRACK_ROOT.parents[2])),
+                     "sglang_engine_dev", "python")
 )
 
 sys.path.insert(0, str(BENCHMARKS))

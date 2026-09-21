@@ -4,7 +4,17 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 track_root="$(cd "${script_dir}/../.." && pwd)"
-runtime_python="${SGLANG_ENGINE_DEV:-/scratch/ehmoon/whlee/sglang_engine_dev/python}"
+# PDMUX_ROOT = the execution host's work root (holds prefill-layer-alloc/,
+# sglang_engine_dev/, sglang_engine_venv/ as siblings; see CLAUDE.md
+# "환경 / 실행"). Only used to build the SGLANG_ENGINE_DEV *default* --
+# SGLANG_ENGINE_DEV still wins outright when set, exactly as before this
+# change (the `${SGLANG_ENGINE_DEV:-...}` expansion is untouched). When
+# PDMUX_ROOT is also unset we derive it from this script's own location
+# (three levels above track_root = workspace/engine-port) instead of a
+# hardcoded path, because the old KISTI Neuron path is now a read-only
+# archive, not a place to default onto.
+pdmux_root="${PDMUX_ROOT:-$(cd "${track_root}/../../.." && pwd)}"
+runtime_python="${SGLANG_ENGINE_DEV:-${pdmux_root}/sglang_engine_dev/python}"
 manifest_path="${1:-${track_root}/results/runtime_source_manifest.sha256}"
 
 if [[ ! -f "${runtime_python}/sglang/srt/distributed/parallel_state.py" ]]; then

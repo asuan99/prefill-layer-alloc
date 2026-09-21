@@ -53,7 +53,9 @@ CP = TRACK_ROOT / "results" / "cp_baseline"
 EXPECT_PATH = CP / "p1e_expectations.json"
 
 RUNTIME = Path(
-    os.environ.get("SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python")
+    os.environ.get("SGLANG_ENGINE_DEV")
+    or os.path.join(os.environ.get("PDMUX_ROOT", str(TRACK_ROOT.parents[2])),
+                     "sglang_engine_dev", "python")
 )
 if str(RUNTIME) not in sys.path:
     sys.path.insert(0, str(RUNTIME))

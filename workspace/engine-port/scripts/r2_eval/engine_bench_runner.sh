@@ -7,7 +7,12 @@ run_dir="${2:?run directory required}"
 mkdir -p "${run_dir}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 engine_root="$(cd "${script_dir}/../.." && pwd)"
-engine_dev="${SGLANG_ENGINE_DEV:-/scratch/ehmoon/whlee/sglang_engine_dev/python}"
+# PDMUX_ROOT = execution host's work root (see sync_engine_tree.sh and
+# CLAUDE.md "환경 / 실행"). Only builds *defaults* below; SGLANG_ENGINE_DEV
+# and PDMUX_VENV still win outright when set, unchanged from before.
+pdmux_root="${PDMUX_ROOT:-$(cd "${engine_root}/../../.." && pwd)}"
+engine_dev="${SGLANG_ENGINE_DEV:-${pdmux_root}/sglang_engine_dev/python}"
+venv_dir="${PDMUX_VENV:-${pdmux_root}/sglang_engine_venv}"
 config="${PDMUX_R2_CONFIG:-${engine_root}/benchmarks/configs/pdmux_r2.yml}"
 port=$((32000 + (${SLURM_JOB_ID:-1} + ${SLURM_ARRAY_TASK_ID:-0}) % 20000))
 
@@ -63,7 +68,7 @@ if [[ -n "${record_cuda_graph}" ]]; then
   PDMUX_DISABLE_CUDA_GRAPH="${record_disable_cg}"
 fi
 
-source /scratch/ehmoon/whlee/sglang_engine_venv/bin/activate
+source "${venv_dir}/bin/activate"
 export PYTHONPATH="${engine_root}/benchmarks${PYTHONPATH:+:${PYTHONPATH}}"
 export PDMUX_WORKLOAD_ID="${workload}"
 

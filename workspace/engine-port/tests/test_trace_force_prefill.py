@@ -112,8 +112,10 @@ class TraceForcePrefillTest(unittest.TestCase):
         """The installed runtime must default the flag OFF (past-campaign parity)."""
         self.assertNotIn("PDMUX_TRACE_FORCE_PREFILL", os.environ)
         src = Path(
-            os.environ.get(
-                "SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python"
+            os.environ.get("SGLANG_ENGINE_DEV")
+            or os.path.join(
+                os.environ.get("PDMUX_ROOT", str(Path(__file__).resolve().parents[4])),
+                "sglang_engine_dev", "python",
             )
         ) / "sglang/srt/multiplex/multiplexing_mixin.py"
         text = src.read_text()

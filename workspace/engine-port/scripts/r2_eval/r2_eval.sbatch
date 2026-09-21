@@ -18,24 +18,38 @@ set -euo pipefail
 #   benchmarks/) pointed at nothing.  No run ever reached the server, which is
 #   why results/r2_eval/ has never existed.
 #
-#   Fix = pin the absolute project path, the same way the one R2 job script that
-#   DOES run does it (results/r2_correctness/r2_correctness.sbatch:99
-#   `PROJECT=/scratch/ehmoon/whlee/prefill-layer-alloc`).  This holds in all
+#   Fix = pin the project path from an ENVIRONMENT VARIABLE, never from
+#   ${BASH_SOURCE[0]}/cwd/SLURM_SUBMIT_DIR (the historical fixed value this
+#   comment used to hardcode -- results/r2_correctness/r2_correctness.sbatch:99
+#   `PROJECT=/scratch/ehmoon/whlee/prefill-layer-alloc` -- did the same thing
+#   for the same reason on the one R2 job script that DOES run; that file and
+#   that machine are now a read-only archive, so the value itself is no
+#   longer a valid default here -- see PDMUX_ROOT below). This holds in all
 #   three ways this file gets executed, because none of them depend on cwd or on
 #   where Slurm staged the script:
-#     (a) sbatch          -- spool copy irrelevant; the constant is in the copy.
+#     (a) sbatch          -- spool copy irrelevant; the env var is inherited.
 #     (b) login-node run  -- `bash .../r2_eval.sbatch` ignores #SBATCH lines and
-#                            takes the same constant.
+#                            reads the same env var.
 #     (c) array job       -- every task re-executes the same spool copy; only
 #                            SLURM_ARRAY_TASK_ID differs, and it is read below.
 #   ${SLURM_SUBMIT_DIR} was the alternative and is rejected: it is the directory
 #   sbatch was CALLED from, which is a user habit, not a repository fact, and it
 #   is unset in (b).
 #
-#   PDMUX_PROJECT_ROOT relocates the checkout; the guard below turns a wrong
-#   value into an immediate exit instead of a silently wrong tree.
+#   PDMUX_PROJECT_ROOT relocates the checkout directly and, when set, wins
+#   outright (unchanged from before this comment). PDMUX_ROOT is the execution
+#   host's WORK ROOT one level up (holds prefill-layer-alloc/,
+#   sglang_engine_dev/, sglang_engine_venv/ as siblings -- CLAUDE.md
+#   "환경 / 실행"); it only builds the default when PDMUX_PROJECT_ROOT is
+#   unset. Neither set -> project_root deliberately resolves to an
+#   unbound-variable error (still no BASH_SOURCE/cwd fallback), and the guard
+#   below turns a wrong value into an immediate exit instead of a silently
+#   wrong tree either way.
 # ============================================================================
-project_root="${PDMUX_PROJECT_ROOT:-/scratch/ehmoon/whlee/prefill-layer-alloc}"
+project_root="${PDMUX_PROJECT_ROOT:-}"
+if [[ -z "${project_root}" ]]; then
+  project_root="${PDMUX_ROOT:?set PDMUX_ROOT (execution host work root) or PDMUX_PROJECT_ROOT (direct prefill-layer-alloc checkout path)}/prefill-layer-alloc"
+fi
 engine_root="${project_root}/workspace/engine-port"
 script_dir="${engine_root}/scripts/r2_eval"
 for required in \

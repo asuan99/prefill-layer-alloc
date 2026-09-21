@@ -51,7 +51,9 @@ GENERATE = TRACK_ROOT / "scripts" / "r2_eval" / "generate_campaign.sh"
 EXAMPLE_TABLE = TRACK_ROOT / "scripts" / "r2_eval" / "lambda_star.example.json"
 WORKLOADS_PY = BENCHMARKS / "pdmux_eval" / "workloads.py"
 ENGINE_DEV = Path(
-    os.environ.get("SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python")
+    os.environ.get("SGLANG_ENGINE_DEV")
+    or os.path.join(os.environ.get("PDMUX_ROOT", str(TRACK_ROOT.parents[2])),
+                     "sglang_engine_dev", "python")
 )
 
 sys.path.insert(0, str(BENCHMARKS))

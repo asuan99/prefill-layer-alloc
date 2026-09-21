@@ -66,7 +66,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 RUNTIME = Path(
-    os.environ.get("SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python")
+    os.environ.get("SGLANG_ENGINE_DEV")
+    or os.path.join(os.environ.get("PDMUX_ROOT", str(Path(__file__).resolve().parents[4])),
+                     "sglang_engine_dev", "python")
 )
 if str(RUNTIME) not in sys.path:
     sys.path.insert(0, str(RUNTIME))

@@ -38,7 +38,9 @@ SBATCH = TRACK_ROOT / "scripts" / "r2_eval" / "r2_eval.sbatch"
 RUNNER = TRACK_ROOT / "scripts" / "r2_eval" / "engine_bench_runner.sh"
 GENERATE = TRACK_ROOT / "scripts" / "r2_eval" / "generate_campaign.sh"
 ENGINE_DEV = Path(
-    os.environ.get("SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python")
+    os.environ.get("SGLANG_ENGINE_DEV")
+    or os.path.join(os.environ.get("PDMUX_ROOT", str(PROJECT_ROOT.parent)),
+                     "sglang_engine_dev", "python")
 )
 
 sys.path.insert(0, str(BENCHMARKS))
@@ -239,9 +241,33 @@ class TestSbatchSourceText(unittest.TestCase):
         ]
         self.assertEqual(offending, [], "r2_eval.sbatch must not locate itself")
 
-    def test_project_root_is_absolute(self):
+    def test_project_root_comes_from_an_environment_variable(self):
+        """Regression guard (2026-09-18 local-dev/remote-GPU migration).
+
+        The pre-migration default was a literal KISTI Neuron path
+        (/scratch/ehmoon/whlee/prefill-layer-alloc); that machine is now a
+        read-only archive, so the default must not silently reappear as some
+        OTHER hardcoded absolute path.  project_root must come from
+        PDMUX_PROJECT_ROOT outright, or else from PDMUX_ROOT (required,
+        `:?`-guarded -- fails closed rather than defaulting onto a guess).
+        """
         text = SBATCH.read_text(encoding="utf-8")
-        self.assertIn('project_root="${PDMUX_PROJECT_ROOT:-/', text)
+        self.assertIn('project_root="${PDMUX_PROJECT_ROOT:-}"', text)
+        self.assertIn(
+            'project_root="${PDMUX_ROOT:?', text,
+            "project_root's PDMUX_ROOT fallback must fail closed (${VAR:?...}),"
+            " not default to a literal path",
+        )
+        # The archived machine path may still appear in a COMMENT (historical
+        # context, e.g. why the old design pinned an absolute constant); it
+        # must not appear in a live statement.  Same convention as
+        # test_no_bash_source_derivation above.
+        offending = [
+            line
+            for line in text.splitlines()
+            if "/scratch/ehmoon/whlee" in line and not line.lstrip().startswith("#")
+        ]
+        self.assertEqual(offending, [], "no live statement may default onto the archived path")
 
     def test_default_model_agrees_everywhere_it_is_written(self):
         """The default model is written in three shells; drift re-breaks ctx.
@@ -405,7 +431,18 @@ class TestSbatchPathResolution(_SbatchDriver):
         script that never needed repairing, and would certify nothing.
         """
         def mutate(text: str) -> str:
-            old = 'project_root="${PDMUX_PROJECT_ROOT:-/scratch/ehmoon/whlee/prefill-layer-alloc}"'
+            # 2026-09-18 migration replaced the single-line hardcoded default
+            # with an env-var-only block (PDMUX_PROJECT_ROOT, else a required
+            # PDMUX_ROOT); the mutant below removes ALL of it, env-var
+            # requirement included, and restores the pre-repair self-location.
+            old = (
+                'project_root="${PDMUX_PROJECT_ROOT:-}"\n'
+                'if [[ -z "${project_root}" ]]; then\n'
+                '  project_root="${PDMUX_ROOT:?set PDMUX_ROOT (execution host work root)'
+                ' or PDMUX_PROJECT_ROOT (direct prefill-layer-alloc checkout path)}'
+                '/prefill-layer-alloc"\n'
+                'fi'
+            )
             self.assertIn(old, text)
             return text.replace(
                 old,

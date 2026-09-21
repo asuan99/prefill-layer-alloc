@@ -38,7 +38,9 @@ sys.modules.pop("profile", None)
 TRACK_ROOT = Path(__file__).resolve().parents[1]
 MIRROR = TRACK_ROOT / "src" / "models" / "zamba2.py"
 RUNTIME = (
-    Path(os.environ.get("SGLANG_ENGINE_DEV", "/scratch/ehmoon/whlee/sglang_engine_dev/python"))
+    Path(os.environ.get("SGLANG_ENGINE_DEV")
+         or os.path.join(os.environ.get("PDMUX_ROOT", str(TRACK_ROOT.parents[2])),
+                          "sglang_engine_dev", "python"))
     / "sglang" / "srt" / "models" / "zamba2.py"
 )
 
