@@ -1,0 +1,2 @@
+Fetching 12 files:   0%|          | 0/12 [00:00<?, ?it/s]Fetching 12 files:   8%|▊         | 1/12 [00:00<00:07,  1.45it/s]Fetching 12 files:  25%|██▌       | 3/12 [06:39<22:12, 148.03s/it]Fetching 12 files: 100%|██████████| 12/12 [06:39<00:00, 33.32s/it]
+DONE /home/wonho/Experiments/KISTI/prefill-layer-alloc/hf_cache/hub/models--Zyphra--Zamba2-2.7B/snapshots/31afeeac4c66b4851a54290ba57c995a68c87861 400.22706031799316

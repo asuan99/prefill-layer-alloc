@@ -1,0 +1,2 @@
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files:  10%|█         | 1/10 [00:00<00:06,  1.47it/s]Fetching 10 files:  50%|█████     | 5/10 [02:38<02:48, 33.75s/it]Fetching 10 files: 100%|██████████| 10/10 [02:38<00:00, 15.88s/it]
+DONE /home/wonho/Experiments/KISTI/prefill-layer-alloc/hf_cache/hub/models--tiiuae--Falcon-H1-3B-Base/snapshots/c096902c69be0eed2e5369d3420a8bb960d293e1 159.2708547115326

@@ -54,6 +54,11 @@ green-context SM 미측정 · SLURM 밖 실행 시 3.0 GPU-h 하드 캡
 수 없다.** 계정 복구 후 E2를 A100 대여 서버에서 실행하려면
 이 새 OVERRIDE가 먼저 필요하다(기존 OVERRIDE는 여전히 KISTI
 Neuron 재개 시나리오에만 유효·미소진).
+★**사용자 결정(2026-09-21)**: **E2 실행은 다른 GPU를 확보할
+때까지 보류한다.** 새 OVERRIDE 승인도 그때까지 요청하지
+않는다 — 따라서 이 항목이 "미승인"인 것은 **거부가 아니라
+보류**이며, 설계·예산·감사 결과(5회 `GO-with-caveats`)는
+그대로 유효하다. E2 관련 라벨·수치는 여전히 **0건**이다.
 
 **(3) 로컬 CPU 회귀 정본 기준선 정정.** `workspace/engine-port/
 env/cpu_regression_baseline_2026-09-18.md` — dev tree 재구성
