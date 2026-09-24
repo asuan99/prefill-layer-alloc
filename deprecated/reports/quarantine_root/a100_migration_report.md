@@ -20,7 +20,7 @@
 
 ### C-1. `plot_srm.py` GPU 상수 하드코딩
 
-**파일**: `stage1_sm_scaling/plot_srm.py:57–60`
+**파일**: `stage1_sm_scaling/plot_srm.py:57-60`
 
 ```python
 # 현재 — RTX 5060 Ti 전용 상수
@@ -56,7 +56,7 @@ RIDGE_FULL = PEAK_TFLOPS_FP16 * 1e3 / PEAK_BW_GBS
 
 ### C-2. `BandwidthEstimator._query_theoretical_bw()` 속성 누락 버그
 
-**파일**: `src/profiling/metrics.py:159–177`
+**파일**: `src/profiling/metrics.py:159-177`
 
 ```python
 def _query_theoretical_bw(self) -> float:
@@ -209,7 +209,7 @@ print('SM control works:', c.verify_sm_control())
 
 ### W-2. Policy SM 비율 상수 — A100 Stage 1 결과 후 재조정 권장
 
-**파일**: `stage3_hm_eval/policy_layer_wise.py:28–30`, `policy_step_adaptive.py:26–28`
+**파일**: `stage3_hm_eval/policy_layer_wise.py:28-30`, `policy_step_adaptive.py:26-28`
 
 ```python
 # 현재 — RTX 5060 Ti saturation 데이터 없이 경험적으로 설정
@@ -244,7 +244,7 @@ sudo modprobe -r nvidia && sudo modprobe nvidia
 
 ### W-4. `sm_sweep_steps` 불일치 — `--device auto` vs yaml preset
 
-**파일**: `stage1_sm_scaling/run_ssm_prefill_sweep.py:55–62`
+**파일**: `stage1_sm_scaling/run_ssm_prefill_sweep.py:55-62`
 
 ```python
 # --device auto 시 runtime 계산
@@ -260,7 +260,7 @@ sm_sweep_steps: [11, 22, 33, 44, 54, 65, 87, 108]
 
 ### W-5. `_run_decode_step` seq_len=1 병렬 스캔 — 실제 decode와 다름
 
-**파일**: `stage3_hm_eval/run_concurrent_eval.py:221–233`
+**파일**: `stage3_hm_eval/run_concurrent_eval.py:221-233`
 
 ```python
 def _run_decode_step(...):
@@ -284,10 +284,10 @@ def _run_decode_step(...):
 | --- | --- | --- |
 | SM 총 개수 | `run_*_sweep.py` | `props.multi_processor_count`: 108 자동 감지 |
 | GPU 이름 / 파일 태그 | `run_ssm_prefill_sweep.py:device_tag()` | `torch.cuda.get_device_name()` → `nvidia_a100_40gb` |
-| NCU 메트릭 선택 | `src/profiling/ncu_runner.py:142–149` | `sm_major=8` (Ampere) → Legacy 메트릭셋 자동 선택 |
+| NCU 메트릭 선택 | `src/profiling/ncu_runner.py:142-149` | `sm_major=8` (Ampere) → Legacy 메트릭셋 자동 선택 |
 | Max warps/SM | `ncu_runner.py:75` | `max_threads_per_multi_processor // 32`: A100 = 2048/32 = **64** |
-| TPC mask 계산 | `libsmctrl_wrapper.py:132–145` | `sm_per_tpc=2` 기본값이 A100(GA100)과 일치 |
-| 대역폭 BW 공식 | `metrics.py:163–175` | HBM2e 처리 코드 존재 (단, 속성 조회 버그로 `--device` 명시 필요) |
+| TPC mask 계산 | `libsmctrl_wrapper.py:132-145` | `sm_per_tpc=2` 기본값이 A100(GA100)과 일치 |
+| 대역폭 BW 공식 | `metrics.py:163-175` | HBM2e 처리 코드 존재 (단, 속성 조회 버그로 `--device` 명시 필요) |
 | Policy 인터페이스 | `stage3_hm_eval/policy_*.py` | SM 비율은 GPU 무관한 fraction, 절대값은 smctrl이 변환 |
 
 ---

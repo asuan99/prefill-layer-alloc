@@ -62,7 +62,7 @@
 
 ## 4. 부수 관측 2건 (이 세션, 둘 다 CP-2 §10에서 감사자에게 넘김)
 
-**(a) `g1_probe.sbatch:26–28`이 자기 출처와 반대로 적혀 있다.**
+**(a) `g1_probe.sbatch:26-28`이 자기 출처와 반대로 적혀 있다.**
 그 주석은 빈 `restrict`가 도구의 검사를 *"trip ... vacuously"* 한다고 적는데, 그가 인용하는
 `RETRACTION_reqinactive_2026-08-28.md:36`은 *"**구조적으로 회피**한다"* 이고
 `PREREG_G1_PROBE_2026-08-28.md:61`도 *"`if restrict and _inert(...)` 때문에 **아예 돌지 않아**

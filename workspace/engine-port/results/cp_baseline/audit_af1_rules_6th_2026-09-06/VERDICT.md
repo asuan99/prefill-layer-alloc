@@ -68,7 +68,7 @@ rev5의 문장(*"분기는 `b_more_boots`(부팅을 더 사라)다"*)은 삭제�
 - `PREREG:538–540`: *"S4 = 중립성 borderline(★자기 분기 **`b_precision_bound`** 를 갖는다 —
   rev4가 이 자리에 붙였던 이름 `b_more_boots`는 5회차 死因 Q1로 **철회됐고 §0.4가 그 삭제를
   센다**…)"* — **rev4 이력으로 명시 + 철회 명시 + 원장 참조.**
-- `af1_predicates.py:513–523`(`neutrality_axis`): 현재형 처방을 제거하고
+- `af1_predicates.py:513-523`(`neutrality_axis`): 현재형 처방을 제거하고
   *"★It is NOT 'buy more boots'. rev4 named that branch `b_more_boots` and 4th-audit K3 showed
   the name was unpurchasable … (5th-audit Q1: this docstring was one of three places where the
   deleted name kept giving the old prescription.)"* 로 갱신.
@@ -96,7 +96,7 @@ for m in re.finditer(r"`([A-Za-z][A-Za-z0-9_]{2,})`", _section(raw2, sect)):
 | 확장 C20 + rev5 `known`(SURVEY_POINTS·ARMS·extids 없이) → **rev5 문서** | `['b_more_boots']` — **정확히 하나** |
 | 확장 C20 + rev6 `known` → **rev6 문서** | `[]` |
 
-⇒ `af1_rule.py:29–31`이 새로 등록한 문장 *"before it, the widened C20 flags exactly
+⇒ `af1_rule.py:29-31`이 새로 등록한 문장 *"before it, the widened C20 flags exactly
 `b_more_boots` and nothing else"* 는 **GPU 0에서 참**이다. 변이로도 확인:
 `MGHOSTBRANCHPROHIB` **KILLED**(`C20 … -- ['b_more_boots']`), `MREVERT597` **KILLED**(동일 검사).
 수리 후 `rc=0` / 130 PASS. **판별식 양방향 충족.**
@@ -125,7 +125,7 @@ for m in re.finditer(r"`([A-Za-z][A-Za-z0-9_]{2,})`", _section(raw2, sect)):
 | `MC20FILTER` | 필터 `"_" in t or t[0].isupper()` → `t[0].isupper()` | KILLED | **KILLED** rc=1 | `C20b` (동일) |
 | `MEXTIDGHOST` | `meta.external_identifiers`에 유령 항목 주입 | KILLED | **KILLED** rc=1 | `C20c every registered external identifier is actually used -- ['zzz_ghost_identifier']` |
 
-★`C20b`·`C20c`가 **실재하는 신규 검사**임을 확인했다(`af1_selftest.py:599–609`, 문서화는
+★`C20b`·`C20c`가 **실재하는 신규 검사**임을 확인했다(`af1_selftest.py:599-609`, 문서화는
 :63–66). `external_identifiers` = **15항**, 미사용 **0항**(전수 확인). traceback 0건 —
 셋 다 **크래시가 아니라 명명된 단언 실패**로 죽었다(3회차 N7 규율 유지).
 
@@ -147,7 +147,7 @@ for m in re.finditer(r"`([A-Za-z][A-Za-z0-9_]{2,})`", _section(raw2, sect)):
 리터럴**로 재입력 → `SURVIVED`. **(ii)** 충실형(리터럴 + 상수 하나 누락, 이름의 `DROP`)
 → **`KILLED`**(C21). C21은 `tuple(R.PREDICATE_CONSTANTS) == tuple(P.LABEL_CONSTANTS)` 의
 **값 동등** 검사이므로 (i)이 통과하는 것은 **검사 자신이 이미 등재한 한계**다
-(`af1_selftest.py:711–712`: *"rev5 made `PREDICATE_CONSTANTS` derived, which stops it DRIFTING
+(`af1_selftest.py:711-712`: *"rev5 made `PREDICATE_CONSTANTS` derived, which stops it DRIFTING
 but not someone re-typing it as a literal"*). 따라서 5회차의 `KILLED` 보고와 모순이 아니고
 **신규 결함도 아니다** — 다음 회차가 다시 발견하지 않도록 §5-4에 등재한다.
 
