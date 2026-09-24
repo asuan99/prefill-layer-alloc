@@ -1,0 +1,63 @@
+제안 diff — reports/CONSENSUS.md  (2026-09-22 코드 근거 감사, 2차 통과 = camera-ready 반영)
+
+★ 적용하지 않았다.  정본 편집 권한은 doc-steward + 사용자에게 있다.
+★ 새 성능 판정 0건 · GPU 지출 0 · HE0/정책 순위/Claim 등급 불변.
+★ 내용:
+    (1) rev80 배너의 "전적으로 manual_divisions 경로" 서술을 55/59 로 스코프 정정
+    (2) §3 항목 280-283 신설
+          280 grep-vs-parser (자동 격자 경로가 우리 실행 경로에 있었다)
+          281 sticky가 PART 라벨을 바꾼다 (분해 재집계)
+          282 계측 함수 vs 제어 함수 (dual-worker admission · FixedPolicy 미발화)
+          283 계보(upstream pdmux = MuxWise engine) + 선행 보고 중복 + preprint/camera-ready 판본 함정
+    (3) §5 열린 항목 11 신설 — Bullet §4.4 vs HE0, claims-auditor 회부 (판정 없음)
+★ 함께 집행이 필요하나 이 diff에 넣지 않은 것 (행 하나가 2.5KB라 재현 위험):
+    §4 living-doc 행(:7277)의 같은 "manual_divisions" 문구,
+    작업 루트 CLAUDE.md "환경 / 실행" 절의 같은 문구.
+★ 적용 확인: git apply --check reports/audit/2026-09-22_scope_lineage/consensus_patch_proposal.diff
+
+--- a/reports/CONSENSUS.md
++++ b/reports/CONSENSUS.md
+@@ -8,9 +8,20 @@
+ 로컬 세션 산출물 정본 반영, GPU 0·새 성능 판정 0건)**:
+ `handoff-report/gpu_rental_checklist_2026-09-18.md`(§0, upstream
+ `v0.5.10` 1차 확인 — "major 10+ `ValueError`"는 자동 격자
+-(`divide_sm`) 경로 한정이며 이 프로젝트가 쓰는 `manual_divisions`
+-경로에서는 미발화) + `.../VERDICT_e2_substrate_portability_
++(`divide_sm`) 경로 한정 — ★**스코프 정정(2026-09-22, 코드
++근거 감사 `reports/audit/2026-09-22_scope_lineage/`): "이 프로젝트가
++쓰는 것은 전적으로 `manual_divisions` 경로"는 거짓이다 —
++`yaml.safe_load` 전수 파싱 결과 **55/59**이고, 나머지 4개
++(`pdmux_a100_smoke.yml`, byte-identical, sha256 `8e991318…`)는
++`manual_divisions` 키가 없어 **자동 격자(`divide_sm`) 경로로 간다**.
++이 config를 쓰는 job script가 27개이며 그 안에 **P1.7 4모델**·
++**P1-opint 운영점(873944/873945)**·**p1_gates/gate2 HOLB**(§1 rev44
++residency 수치의 원 캠페인)가 들어 있다 ⇒ `get_arch_constraints`는
++**우리 실행 경로에서 발화한 적이 있다**. "미발화"는 `manual_divisions`
++계열 캠페인(E1/S2/λ0/E2) **한정**으로만 참이다. 로컬 미실행 결론은
++**불변**(A100은 major 8, 실효 사유 3건 그대로). 상세 §3 항목280)
+++ `.../VERDICT_e2_substrate_portability_
+ 2026-09-18.md`(claims-auditor 규칙층 감사 — E2 기판 이식성:
+ 기판[A100→A100] 자체는 死因 0이나 하네스 텍스트·예산 집행기
+ (`--time` 하드 캡)·과금 모형이 걸려 **`REFUTED`**[기존 OVERRIDE
+ 그대로 무효, 새 OVERRIDE 필요] — ★**새 OVERRIDE 승인은 사용자
+@@ -7206,6 +7206,14 @@
+ 278. ★★★**(2026-09-18, claims-auditor 규칙층 감사 — E2 기판 이식성, GPU 0 — Q4) 코드 분기가 우회됨을 확인해도 상위 제약이 사라졌다고 결론짓지 마라 — 제약은 다른 층으로 이동할 뿐일 수 있다.** `pdmux_context.py:get_arch_constraints`(major 6–9만 지원, major 10+ `ValueError`)는 이 프로젝트가 전적으로 쓰는 `manual_divisions` 경로에서는 발화하지 않음이 upstream `v0.5.10` 소스 1차 확인 + 독립 검증(설치 wheel `sglang-0.5.10.post1`·`0.5.3rc0` 대조, 구조 바이트 동일, `CONFIRMED`)으로 확정됐다. 그러나 이를 "그러므로 major 10+(Blackwell)에서도 PD-mux가 동작한다"로 확장하면 거짓이다 — 실제 SM 분할 제약은 `sgl_kernel.spatial.create_greenctx_stream_by_value` → CUDA green context API(`cuGreenCtxCreate` 등) 층으로 **이동할 뿐 사라지지 않고**, 그 층이 어느 compute capability까지 어떤 입도를 주는지는 **미실측**이다(감사자는 이 함정을 "CONFIRMED but INERT"로 명시 — 로컬 실행 결론·게이트 1엔 무관). 대응 `PROJECT_STATUS.md` "방법론 게이트" #258(신설). 상세 `handoff-report/gpu_rental_checklist_2026-09-18.md` §0, `workspace/engine-port/results/r2_eval/e2_sticky_prereg/VERDICT_e2_substrate_portability_2026-09-18.md` Q4.
+ 
+ 279. ★★★**(2026-09-18, claims-auditor 규칙층 감사 — E2 기판 이식성, GPU 0 — Q3) 사전등록 OVERRIDE의 "설계·예산이 불변이면 재승인 불요" 조항에서 "예산"은 액수만이 아니라 집행기·상수의 산출 근거·과금 모형까지 포함한다 — 액수가 같아도 이 셋 중 하나가 바뀌면 재승인이 필요하다.** E2 OVERRIDE(1.803/2.338/3.0 GPU-h)는 SLURM `--time` 하드 캡이 예산 상한의 **집행기**였고, 그 예산 상수는 job 908623 아티팩트 mtime **실측**(호스트 의존)에서 나왔다. A100→A100이라도 SLURM 밖(예: `bash`/`timeout` 루프)에서 실행하면 하드 캡이 집행되지 않아(boot 사이에서만 검사하는 P14만 남고 `wait_health` 최대 1200s+무제한 warmup으로 최악 ≈3.3–3.4 GPU-h 가능, 승인된 3.0 GPU-h 초과) 예산 조항이 조용히 깨지고, 다른 호스트에서는 mtime 실측 상수가 다른 수가 되며, 무상 SLURM 할당에서 시간당 과금으로 전환되면 초과의 의미(잡 강제 종료 vs 금전 손실) 자체가 달라진다 — 기판(108 SM) 동일성 자체는 死因을 못 만들었지만 이 세 경로가 "예산 조항 변경"에 해당해 기존 OVERRIDE는 `REFUTED`(그대로 유효하지 않음, 새 OVERRIDE 필요) 판정을 받았다. 대응 `PROJECT_STATUS.md` "방법론 게이트" #259(신설). 상세 위 VERDICT Q3.
++
++280. ★★★**(2026-09-22, PD-mux 좌표계 v2 코드 근거 감사, GPU 0 — I-1) 설정 키의 존재를 `grep`으로 묻지 마라 — "없음을 설명하는 주석"이 "있음"으로 읽힌다.** 정본 rev80 배너와 §4 living-doc 행(`:7277`)이 적은 "현행 `*pdmux*.yml` **59/59** 전부 `manual_divisions`"는 **거짓**이다. `yaml.safe_load`로 59개를 전수 파싱하면 **55/59**이고, 빠진 4개는 전부 byte-identical한 `pdmux_a100_smoke.yml`(sha256 `8e99131810fe1136…`)인데 이 파일은 키가 **없는** 대신 주석에 *"No manual_divisions -> engine auto-computes partitions via `divide_sm()`"* 라고 적혀 있어 **`grep -q "manual_divisions"`에 걸린다**. ⇒ 존재 검사는 **파서로** 하라. 영향: 이 config를 쓰는 job script 27개 안에 **P1.7 4모델 캠페인**(`triage/p1_7_bench_one.sbatch:35`)·**P1-opint 운영점**(`results/p1_opint/p1op_run.sbatch:47`, jobs 873944/873945)·**`p1_gates/gate2` HOLB**(§1 rev44 residency 1.53–1.94× 의 원 캠페인)가 들어 있으므로, **`get_arch_constraints`/`divide_sm`은 우리 실행 경로에서 발화한 적이 있다**. 항목278의 "우회됨" 서술은 **`manual_divisions` 계열 한정**으로 좁는다. ★**바뀌지 않는 것**: 로컬(sm120) 미실행 결론(A100은 major 8이고 실효 사유는 `sgl_kernel` sm120 빌드 부재·16GB·게이트 1), 어떤 성능 판정·정책 순위·Claim 등급도 불변. ★**doc-steward 집행 필요**: §4 living-doc 행(`:7277`)의 같은 문구와 작업 루트 `CLAUDE.md` "환경 / 실행" 절도 같은 정정을 받아야 한다.
++
++281. ★★★**(2026-09-22, PD-mux 좌표계 v2 코드 근거 감사, GPU 0 — S3) 상태를 "유지"시키는 플래그는 그 상태의 의미를 바꾼다 — 집계기의 상태 술어가 그대로면 표의 라벨이 배반한다.** `residency_census.py`의 PART 술어는 realized `prefill_sms>0 AND decode_sms>0`(`residency_census.py:96-100`)이고 이는 **정의대로 정확**하다. 그러나 `PDMUX_STICKY_PARTITION=1`에서는 분할이 **prefill이 없어도 유지**되므로(`multiplexing_mixin.py:1169-1182`), 같은 "PART"가 sticky OFF에서는 *동거*를, ON에서는 대부분 *분할 유지*를 뜻한다. 분해 재집계(`reports/audit/2026-09-22_scope_lineage/scratch/part_cohab_split.py`, 기존 술어 import·`part_pred` 주입점 사용, 가법성·음성 대조군 자기검사 통과) [DERIVED · R-time-all]: `s2_sticky` PART **78.53% = prefill-busy 7.57 + prefill-idle 70.96**(idle이 PART의 90.4%), `sticky_smoke` ON arm **86.22 = 3.19 + 83.03**, 같은 job의 OFF arm **5.57 = 3.07 + 2.50** ⇒ **sticky가 바꾼 것은 거의 전부 prefill-idle PART이고 prefill-busy PART는 3.07→3.19%로 사실상 불변**이다(E2C-21과 같은 방향, 시간 가중 축에서 재확인). ⇒ **PART 백분율을 "동거 비율"로 읽는 문장 금지**, 규약명(R-time-all 등)과 **sticky 상태**를 함께 적지 않은 PART 수치는 인용 불가(E2C-8′의 연장). 한편 §1 rev44의 residency 1.53–1.94×는 **sticky OFF 캠페인**(`p1_gates/gate2` HOLB, `g2_holb_observer.sbatch`에 플래그 없음, 프로브 자체가 2026-08-06 도입으로 sticky 3 job보다 뒤)에서 나왔으므로 **prefill-idle PART 혼입이 없고 해당 문장은 불변**이다. 변이 주의: 그 집계기의 KILLED 변이 M4(`PART := stream_index != 4`)가 배제한 것은 **index 기반 정의가 `108/0`을 PART로 오분류하는 것**뿐이며, prefill-busy/idle 축은 **어떤 변이 arm도 시험하지 않았다**(교훈254의 "거짓 생존" 면이 그대로 남는다).
++
++282. ★★★**(2026-09-22, PD-mux 좌표계 v2 코드 근거 감사, GPU 0 — D3/D4) 이름이 제어처럼 생긴 계측 함수, 그리고 정책 한 갈래에서만 발화하는 제어 함수 — 둘 다 "개입한다"로 뭉뚱그리면 틀린다.** (a) `DualWorkerState.prefill.begin_admission()`/`finish_admission()`은 `get_new_batch_prefill()`을 감싼 **스톱워치**이고 `admission_latency_ms`를 적는 것이 전부다 — 반환값도 없고 무엇도 막거나 미루지 않으며, `dual_worker_enabled`가 아니면 **호출조차 되지 않는다**(`dual_worker.py:87-97`, `multiplexing_mixin.py:1218-1231`). "dual-worker가 admission에 개입한다"는 **거짓**, 정확한 술어는 "계측한다"다. (b) 반대로 `r2_admission_limited`는 **진짜로** prefill 배치 형성을 보류하지만(`get_new_batch_prefill()` **이전** 반환), 그 래치를 세우는 것은 `CoarseGrainedController`의 `overload_streak >= 2` 뿐이고(`controller.py:320-329`) **`FixedPolicy.decide`는 `admission_limited`를 넘기지 않는다**(dataclass 기본 `False`, `controller.py:88-101`) ⇒ **`PDMUX_R2_POLICY=fixed` 캠페인(E1·S2·sticky·λ0·E2 전부)에서 이 노브는 한 번도 발화하지 않았다**. ⇒ 런타임 노브를 서술할 때는 **어느 정책 갈래에서 발화하는가**를 함께 적어라. 부수 기록: sticky `ENABLED` 로그가 decode-empty 시 쓰는 그룹을 `(0, total_sm)`이라 적지만 코드는 `set_current_stream_idx(0)` = `(total_sm, 0)`이고(`pdmux_context.py:104-137`), sticky ON에서 `(0, total_sm)` 분지는 **도달 불가**다(telemetry 확증: smoke ON arm에 `0/108` 0건) — **동작은 의도대로, 로그 문구만 뒤바뀌었다**.
++
++283. ★★★**(2026-09-22, PD-mux 좌표계 v2 선행 대조, GPU 0 — M1/M4/M5) preprint로 선행을 대조하면 camera-ready에서 판정이 뒤집힐 수 있다 — 그리고 "우리 발견"의 상당 부분은 기판의 출처가 이미 적어 둔 것이다.** (a) **계보**: upstream `sglang/srt/multiplex/`는 **MuxWise 저자들이 올린 MuxWise의 engine 층**이다 — PR #11592/#12275(`multiplexing_mixin.py` 209줄 + `pdmux_context.py` 163줄 신규), layer-wise prefill PR #7634(`jason-fxz` = **Xiaoze Fan**, MuxWise 5저자), 추적 이슈 #10813(`Raphael-Hao` = **Weihao Cui**, MuxWise 2저자)이 **MuxWise arXiv(2504.14489)를 "Related resources"로 명시**. MuxWise 3구성요소 중 upstream에 있는 것은 **engine뿐**이고 estimator·dispatcher 심볼은 **0건** ⇒ 우리 "agnostic"은 **MuxWise engine − estimator − dispatcher + hybrid `forward_split_prefill`** 이다(그 `adjust_stream_groups` 위에 upstream 저자가 남긴 `TODO(jason-fxz): This is a temporary demo` 주석이 그대로 있다). (b) **선행 보고 중복**: "분할을 고정해도 동거 때문에 decode가 느려진다"는 **MuxWise §3.3.1**(dense Llama-8B/70B, A100·H100, `nearly zero to about 30%`)와 **Bullet §3.2.3**(`isolated SM`에서도 memory/network 경합 잔존, decode가 prefill보다 경합에 민감)이 **둘 다 이미 보고**했다 ⇒ 우리 §1 rev44 residency 문장의 신규성은 **hybrid에서의 재확인 + 크기 차이**로 좁는다(★두 수의 직접 비교는 금지 — 기판 1GPU vs 8GPU TP8·모델·격자·측정량 상이). (c) **판본 함정**: Bullet의 arXiv v4에는 재구성 오버헤드 **측정값이 없어** 1차 감사가 "비교할 수가 없다"로 판정했으나, **camera-ready Table 5에는 `Resource Re-config (μs)` 행(Mean 4.1 / P99 5.9)이 있다** — 같은 이유로 "우리만 단일 GPU"도 거짓이다(Bullet §4.2.1이 A100 1장 평가). ⇒ **선행 대조는 게재 판본으로 하고, preprint로 한 대조에는 판본을 명시하라.** 우리 `s ≤ 0.04 ms`와 Bullet `4.1 μs`는 **같은 자릿수·다른 양**이다(device-level 상한 vs CPU-side 계측, green-context 인덱스 교체 vs libsmctrl 마스크 쓰기) — 우열 문장 금지, 금지문장 #18(`s` 2자리 이상 표기 금지) 유지.
+ 
+ ---
+ ## 4. 살아있는 문서 (이것만 참조)
+@@ -8388,3 +8388,5 @@
+    실험) 우선. 상세 §1-31, `../workspace/engine-port/results/s2_sticky/
+    S2_REPLICATION_2026-08-05.md`, `DESIGN.md` §4.3.16.
+ 10. ★**(2026-09-15 신설, doc-steward) E2(sticky 분할 대조) 트랙 — 사전등록·감사 완료, 실행은 SLURM 계정 블로커로 대기.** λ0(job 908623)의 최대 신규 발견(§3 항목268 — λ\*(A)는 D44 실행이 아니라 대부분 `(0,108)`)을 이어받아, sticky partition ON이 이 실현 분할 불일치를 실제로 바꾸는지 대조하는 트랙이다. 설계 E2-α(대조 arm을 같은 job 안에서 측정, 근거는 게이트 #233 미해소·D-none 908534의 within-job 선례·cross-job 1파일차 병기 의무 셋)로 20 boot 등록(a_r4×4seed·a_r2×4seed·b_r3×2seed, 각×{OFF,ON}), 규칙층 3회차+하네스층 2회차 감사 5회 전부 **`GO-with-caveats`**(死因 0, 신규 caveat E2C-1…35, 최대 위험 E2C-1/E2C-8′/E2C-21). ★**E2C-21**(스코프 한계): shape A에서 sticky ON이 바꾸는 decode-busy 가중 시간의 86–89%가 prefill 유휴 구간이라, 이 트랙이 살 수 있는 것은 "멀티플렉싱할 prefill이 없는 동안 decode를 44 SM에 묶어 둔 비용"까지다(정책 서술 금지, 2F9 계열). 사용자 승인으로 OVERRIDE 발효(예산 1.803/2.338/3.0 GPU-h)했으나 **4단계 `sbatch` 제출이 SLURM 계정 사유로 거부**됐다(전 파티션·`--test-only`도 동일, 원인은 계정 만료 vs CPU 한도초과 **미확정** — KISTI 외부 계정 관리 시스템, 클러스터 우회 불가). **GPU 지출 0, 어떤 라벨도 존재하지 않는다** — "sticky가 실현 분할을 고정한다"류 서술은 여전히 근거 없음. OVERRIDE는 유효·미소진(계정 복구 시 재승인 불필요). ★**재확인(2026-09-17, 머신 이양 준비 세션)**: `sbatch --test-only`가 같은 문구로 다시 거부됨 — 원인 여전히 미확정, 상태 변화 없음. 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-15(6)·2026-09-17), `workspace/engine-port/results/r2_eval/e2_sticky_prereg/`, `handoff-report/session_handoff_2026-09-16.md`·`session_handoff_2026-09-17.md`.
++
++11. ★**(2026-09-22 신설, PD-mux 좌표계 v2 선행 대조 감사) Bullet(ASPLOS '26) §4.4가 HE0의 정면 대조 주장을 담고 있다 — 회부 대상, 판정 없음.** camera-ready `Papers/Bullet.pdf`(sha256 `6a0605e037b2a60d…`) §4.4 Sensitivity Studies가 고정 SM 구성들을 돌린 뒤 *"there is no optimal fixed SM allocation"* 이라 적고, SM-108(무분할) 대비 dynamic이 TTFT 1.20×·P90 1.19×·throughput+SLO attainment 13% 우위라고 보고한다. 정본 **HE0**("단일-GPU 동적 제어는 best decode-heavy static을 못 넘는다", n≥4·5.4σ, 관대·tight 양쪽)와 **문면상 반대 방향**이다. ★**그러나 본 감사는 어느 쪽도 지지하지 않는다** — 다음이 전부 다르고 미해소이기 때문이다: (i) static arm 정의(우리 = 예산 구속 분리 격자 `p+d=108` / Bullet = prefill만 고정하고 decode는 全 SM 허용 = **부분 공유**), (ii) **best static을 찾는 절차가 Bullet에 서술되지 않음**(열거된 고정점 SM-108·SM-84만), (iii) 판정 술어(우리 = TTFT≤SLO ∧ 요청내 token-ITL **p95** / Bullet = 정규화 TTFT ∧ TPOT, **P90**), (iv) SLO 엄격도(우리 ITL p95 **60 ms** / Bullet TPOT **150–200 ms**), (v) 동적 제어의 내용(우리 = **분할 인덱스 단일 레버** / Bullet = 분할 + **요청 재정렬** + **decode 일시중단** + 예측기). ★특히 Bullet **§4.5 ablation**의 `w/ Partition`(분할만, 스케줄러 없음) arm이 *"improves TPOT … but suffers unacceptable TTFT degradation from its inability to reorder pending requests"* 라고 적은 것은 **"분할 레버 단독으로는 안 된다"** 는 우리 결론과 **같은 방향**이다 ⇒ 두 결과가 충돌하는지, 아니면 **"동적 분할 단독" vs "동적 분할+스케줄링"이라는 다른 것을 재고 있는지**가 미해결이다. **claims-auditor 회부 필요.** ★이 등재로 **HE0의 등급·문구·정책 순위는 바뀌지 않는다**(§1-7 불변). 상세 `reports/audit/2026-09-22_scope_lineage/REPORT.md` §4.6.
