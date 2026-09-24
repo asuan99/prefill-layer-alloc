@@ -33,6 +33,10 @@ pip-wheel-metadata/
 # a manifest that only ever lives on one machine makes the tool useless to the
 # next session.  See scripts/discipline/check_line_citations.py.
 !workspace/engine-port/scripts/discipline/line_citations.json
+# ...and, for the same reason, the citation fingerprints of audit reports plus the
+# scratch generators whose outputs those reports cite (2026-09-24): without them the
+# audit's numbers and line citations cannot be re-derived on another machine.
+!reports/audit/**/citations.json
 !workspace/engine-port/scripts/discipline/presubmit_registry.json
 *.pkl
 *.pickle
@@ -94,6 +98,11 @@ Thumbs.db
 *.tmp
 *.bak
 scratch/
+# exception (2026-09-24): scratch generators cited by audit/synthesis reports -- see the citations.json note above
+!reports/audit/*/scratch/
+!reports/audit/*/scratch/**
+!reports/synthesis_*/scratch/
+!reports/synthesis_*/scratch/**
 tmp/
 
 # Re-include experimental results

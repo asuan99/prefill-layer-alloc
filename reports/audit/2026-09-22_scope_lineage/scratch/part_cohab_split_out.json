@@ -1,0 +1,2778 @@
+{
+ "campaigns": {
+  "s2_sticky": {
+   "R_cnt_all": {
+    "PART_pbusy_pct": 0.3409,
+    "PART_pct": 2.8899,
+    "PART_pidle_pct": 2.549,
+    "den": 285094.0
+   },
+   "R_cnt_busy": {
+    "PART_pbusy_pct": 11.7847,
+    "PART_pct": 99.8909,
+    "PART_pidle_pct": 88.1062,
+    "den": 8248.0
+   },
+   "R_iter_busy": {
+    "PART_pbusy_pct": 11.8346,
+    "PART_pct": 99.9322,
+    "PART_pidle_pct": 88.0976,
+    "den": 131310.0
+   },
+   "R_time_all": {
+    "PART_pbusy_pct": 7.5738,
+    "PART_pct": 78.5325,
+    "PART_pidle_pct": 70.9587,
+    "den": 2663.2959
+   },
+   "R_time_busy": {
+    "PART_pbusy_pct": 9.6365,
+    "PART_pct": 99.9203,
+    "PART_pidle_pct": 90.2838,
+    "den": 2093.2198
+   },
+   "cohab_P_act_num": 972,
+   "cohab_part_busy_n": 8239,
+   "dwell_part_runs": 60,
+   "files": 20,
+   "nonmono_files": 0,
+   "snapshots_all": 285094,
+   "snapshots_busy": 8248,
+   "span_s_sum": 2663.2958810906857
+  },
+  "sticky_smoke": {
+   "R_cnt_all": {
+    "PART_pbusy_pct": 0.0371,
+    "PART_pct": 0.6822,
+    "PART_pidle_pct": 0.6451,
+    "den": 21548.0
+   },
+   "R_cnt_busy": {
+    "PART_pbusy_pct": 2.7304,
+    "PART_pct": 50.1706,
+    "PART_pidle_pct": 47.4403,
+    "den": 293.0
+   },
+   "R_iter_busy": {
+    "PART_pbusy_pct": 2.8138,
+    "PART_pct": 50.033,
+    "PART_pidle_pct": 47.2192,
+    "den": 4549.0
+   },
+   "R_time_all": {
+    "PART_pbusy_pct": 3.1456,
+    "PART_pct": 57.5697,
+    "PART_pidle_pct": 54.4241,
+    "den": 308.6561
+   },
+   "R_time_busy": {
+    "PART_pbusy_pct": 3.9236,
+    "PART_pct": 71.8088,
+    "PART_pidle_pct": 67.8851,
+    "den": 247.4522
+   },
+   "cohab_P_act_num": 8,
+   "cohab_part_busy_n": 147,
+   "dwell_part_runs": 13,
+   "files": 2,
+   "nonmono_files": 0,
+   "snapshots_all": 21548,
+   "snapshots_busy": 293,
+   "span_s_sum": 308.6561022978276
+  }
+ },
+ "conventions": [
+  "R_cnt_all",
+  "R_time_all",
+  "R_cnt_busy",
+  "R_time_busy",
+  "R_iter_busy"
+ ],
+ "files": [
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 24435.0,
+     "num": 238.0,
+     "pct": 0.9740126867198691
+    },
+    "PART_pbusy": {
+     "den": 24435.0,
+     "num": 5.0,
+     "pct": 0.02046245140167792
+    },
+    "PART_pidle": {
+     "den": 24435.0,
+     "num": 233.0,
+     "pct": 0.9535502353181912
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 238.0,
+     "num": 238.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 238.0,
+     "num": 5.0,
+     "pct": 2.100840336134454
+    },
+    "PART_pidle": {
+     "den": 238.0,
+     "num": 233.0,
+     "pct": 97.89915966386555
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 3782.0,
+     "num": 3782.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 3782.0,
+     "num": 80.0,
+     "pct": 2.1152829190904283
+    },
+    "PART_pidle": {
+     "den": 3782.0,
+     "num": 3702.0,
+     "pct": 97.88471708090957
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 160.874048,
+     "num": 110.949388,
+     "pct": 68.96661649560302
+    },
+    "PART_pbusy": {
+     "den": 160.874048,
+     "num": 2.36722,
+     "pct": 1.4714744167462435
+    },
+    "PART_pidle": {
+     "den": 160.874048,
+     "num": 108.582167,
+     "pct": 67.49514207885679
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 110.949388,
+     "num": 110.949388,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 110.949388,
+     "num": 2.36722,
+     "pct": 2.133603896372178
+    },
+    "PART_pidle": {
+     "den": 110.949388,
+     "num": 108.582167,
+     "pct": 97.86639610362782
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 238,
+    "num": 5,
+    "pct": 2.100840336134454
+   },
+   "cohab_P_q": {
+    "den": 238,
+    "num": 13,
+    "pct": 5.46218487394958
+   },
+   "dwell_part_mean_s": 55.4747,
+   "dwell_part_runs": 2,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.0020204223692417145,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0020931046456098557,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d16_b1_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d16_b1_873015"
+   ],
+   "snapshots_all": 24435,
+   "snapshots_busy": 238,
+   "span_s": 160.8740478735417,
+   "workload_ids": [
+    "s2_T8_d16_b1"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 12994.0,
+     "num": 198.0,
+     "pct": 1.523780206249038
+    },
+    "PART_pbusy": {
+     "den": 12994.0,
+     "num": 7.0,
+     "pct": 0.05387101739264276
+    },
+    "PART_pidle": {
+     "den": 12994.0,
+     "num": 191.0,
+     "pct": 1.4699091888563953
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 199.0,
+     "num": 198.0,
+     "pct": 99.49748743718592
+    },
+    "PART_pbusy": {
+     "den": 199.0,
+     "num": 7.0,
+     "pct": 3.5175879396984926
+    },
+    "PART_pidle": {
+     "den": 199.0,
+     "num": 191.0,
+     "pct": 95.97989949748744
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 3169.0,
+     "num": 3162.0,
+     "pct": 99.77911012937835
+    },
+    "PART_pbusy": {
+     "den": 3169.0,
+     "num": 112.0,
+     "pct": 3.534237929946355
+    },
+    "PART_pidle": {
+     "den": 3169.0,
+     "num": 3050.0,
+     "pct": 96.244872199432
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 119.721311,
+     "num": 93.097523,
+     "pct": 77.7618638082265
+    },
+    "PART_pbusy": {
+     "den": 119.721311,
+     "num": 3.406808,
+     "pct": 2.8456151479420564
+    },
+    "PART_pidle": {
+     "den": 119.721311,
+     "num": 89.690715,
+     "pct": 74.91624866028444
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 93.371835,
+     "num": 93.097523,
+     "pct": 99.70621543000185
+    },
+    "PART_pbusy": {
+     "den": 93.371835,
+     "num": 3.406808,
+     "pct": 3.6486460467472965
+    },
+    "PART_pidle": {
+     "den": 93.371835,
+     "num": 89.690715,
+     "pct": 96.05756938325455
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 198,
+    "num": 7,
+    "pct": 3.5353535353535355
+   },
+   "cohab_P_q": {
+    "den": 198,
+    "num": 11,
+    "pct": 5.555555555555555
+   },
+   "dwell_part_mean_s": 46.5488,
+   "dwell_part_runs": 2,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.001998418942093849,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0022587906569242477,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d16_b2_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d16_b2_873015"
+   ],
+   "snapshots_all": 12994,
+   "snapshots_busy": 199,
+   "span_s": 119.7213110178709,
+   "workload_ids": [
+    "s2_T8_d16_b2"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13988.0,
+     "num": 230.0,
+     "pct": 1.64426651415499
+    },
+    "PART_pbusy": {
+     "den": 13988.0,
+     "num": 5.0,
+     "pct": 0.03574492422076065
+    },
+    "PART_pidle": {
+     "den": 13988.0,
+     "num": 225.0,
+     "pct": 1.6085215899342293
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 231.0,
+     "num": 230.0,
+     "pct": 99.56709956709956
+    },
+    "PART_pbusy": {
+     "den": 231.0,
+     "num": 5.0,
+     "pct": 2.1645021645021645
+    },
+    "PART_pidle": {
+     "den": 231.0,
+     "num": 225.0,
+     "pct": 97.40259740259741
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 3672.0,
+     "num": 3670.0,
+     "pct": 99.94553376906318
+    },
+    "PART_pbusy": {
+     "den": 3672.0,
+     "num": 80.0,
+     "pct": 2.178649237472767
+    },
+    "PART_pidle": {
+     "den": 3672.0,
+     "num": 3590.0,
+     "pct": 97.76688453159042
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 134.294854,
+     "num": 106.574148,
+     "pct": 79.35832614142747
+    },
+    "PART_pbusy": {
+     "den": 134.294854,
+     "num": 2.412805,
+     "pct": 1.7966475485907105
+    },
+    "PART_pidle": {
+     "den": 134.294854,
+     "num": 104.161343,
+     "pct": 77.56167859283676
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 106.645571,
+     "num": 106.574148,
+     "pct": 99.93302757908596
+    },
+    "PART_pbusy": {
+     "den": 106.645571,
+     "num": 2.412805,
+     "pct": 2.2624523191585437
+    },
+    "PART_pidle": {
+     "den": 106.645571,
+     "num": 104.161343,
+     "pct": 97.67057525992742
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 230,
+    "num": 5,
+    "pct": 2.1739130434782608
+   },
+   "cohab_P_q": {
+    "den": 230,
+    "num": 5,
+    "pct": 2.1739130434782608
+   },
+   "dwell_part_mean_s": 106.5741,
+   "dwell_part_runs": 1,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.0019512325525283813,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.002059653401374817,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d16_b3_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d16_b3_873015"
+   ],
+   "snapshots_all": 13988,
+   "snapshots_busy": 231,
+   "span_s": 134.29485374875367,
+   "workload_ids": [
+    "s2_T8_d16_b3"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13371.0,
+     "num": 266.0,
+     "pct": 1.9893800014957745
+    },
+    "PART_pbusy": {
+     "den": 13371.0,
+     "num": 3.0,
+     "pct": 0.02243661655822302
+    },
+    "PART_pidle": {
+     "den": 13371.0,
+     "num": 263.0,
+     "pct": 1.9669433849375515
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 266.0,
+     "num": 266.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 266.0,
+     "num": 3.0,
+     "pct": 1.1278195488721805
+    },
+    "PART_pidle": {
+     "den": 266.0,
+     "num": 263.0,
+     "pct": 98.87218045112782
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 4235.0,
+     "num": 4235.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 4235.0,
+     "num": 48.0,
+     "pct": 1.1334120425029517
+    },
+    "PART_pidle": {
+     "den": 4235.0,
+     "num": 4187.0,
+     "pct": 98.86658795749705
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 149.289264,
+     "num": 122.3577,
+     "pct": 81.9601469934685
+    },
+    "PART_pbusy": {
+     "den": 149.289264,
+     "num": 1.418648,
+     "pct": 0.9502676480564859
+    },
+    "PART_pidle": {
+     "den": 149.289264,
+     "num": 120.939052,
+     "pct": 81.00987934541202
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 122.3577,
+     "num": 122.3577,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 122.3577,
+     "num": 1.418648,
+     "pct": 1.1594264809361723
+    },
+    "PART_pidle": {
+     "den": 122.3577,
+     "num": 120.939052,
+     "pct": 98.84057351906382
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 266,
+    "num": 3,
+    "pct": 1.1278195488721805
+   },
+   "cohab_P_q": {
+    "den": 266,
+    "num": 10,
+    "pct": 3.7593984962406015
+   },
+   "dwell_part_mean_s": 61.1789,
+   "dwell_part_runs": 2,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.0020049717277288437,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.002096923068165779,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d16_b4_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d16_b4_873015"
+   ],
+   "snapshots_all": 13371,
+   "snapshots_busy": 266,
+   "span_s": 149.2892638221383,
+   "workload_ids": [
+    "s2_T8_d16_b4"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13375.0,
+     "num": 279.0,
+     "pct": 2.085981308411215
+    },
+    "PART_pbusy": {
+     "den": 13375.0,
+     "num": 3.0,
+     "pct": 0.022429906542056073
+    },
+    "PART_pidle": {
+     "den": 13375.0,
+     "num": 276.0,
+     "pct": 2.0635514018691588
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 279.0,
+     "num": 279.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 279.0,
+     "num": 3.0,
+     "pct": 1.075268817204301
+    },
+    "PART_pidle": {
+     "den": 279.0,
+     "num": 276.0,
+     "pct": 98.9247311827957
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 4434.0,
+     "num": 4434.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 4434.0,
+     "num": 48.0,
+     "pct": 1.0825439783491204
+    },
+    "PART_pidle": {
+     "den": 4434.0,
+     "num": 4386.0,
+     "pct": 98.91745602165088
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 154.382707,
+     "num": 127.527283,
+     "pct": 82.60464256572047
+    },
+    "PART_pbusy": {
+     "den": 154.382707,
+     "num": 1.411517,
+     "pct": 0.9142975919683292
+    },
+    "PART_pidle": {
+     "den": 154.382707,
+     "num": 126.115766,
+     "pct": 81.69034497375213
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 127.527283,
+     "num": 127.527283,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 127.527283,
+     "num": 1.411517,
+     "pct": 1.1068356009662674
+    },
+    "PART_pidle": {
+     "den": 127.527283,
+     "num": 126.115766,
+     "pct": 98.89316439903374
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 279,
+    "num": 3,
+    "pct": 1.075268817204301
+   },
+   "cohab_P_q": {
+    "den": 279,
+    "num": 8,
+    "pct": 2.867383512544803
+   },
+   "dwell_part_mean_s": 42.5091,
+   "dwell_part_runs": 3,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.0019971169531345367,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.002232782542705536,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d16_b5_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d16_b5_873015"
+   ],
+   "snapshots_all": 13375,
+   "snapshots_busy": 279,
+   "span_s": 154.38270718604326,
+   "workload_ids": [
+    "s2_T8_d16_b5"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13238.0,
+     "num": 232.0,
+     "pct": 1.7525305937452786
+    },
+    "PART_pbusy": {
+     "den": 13238.0,
+     "num": 5.0,
+     "pct": 0.037770055899682735
+    },
+    "PART_pidle": {
+     "den": 13238.0,
+     "num": 227.0,
+     "pct": 1.7147605378455961
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 232.0,
+     "num": 232.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 232.0,
+     "num": 5.0,
+     "pct": 2.1551724137931036
+    },
+    "PART_pidle": {
+     "den": 232.0,
+     "num": 227.0,
+     "pct": 97.84482758620689
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 3684.0,
+     "num": 3684.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 3684.0,
+     "num": 80.0,
+     "pct": 2.1715526601520088
+    },
+    "PART_pidle": {
+     "den": 3684.0,
+     "num": 3604.0,
+     "pct": 97.828447339848
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 134.387175,
+     "num": 107.202293,
+     "pct": 79.77122290870787
+    },
+    "PART_pbusy": {
+     "den": 134.387175,
+     "num": 2.38837,
+     "pct": 1.777230518894459
+    },
+    "PART_pidle": {
+     "den": 134.387175,
+     "num": 104.813923,
+     "pct": 77.99399238981341
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 107.202293,
+     "num": 107.202293,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 107.202293,
+     "num": 2.38837,
+     "pct": 2.2279093313241107
+    },
+    "PART_pidle": {
+     "den": 107.202293,
+     "num": 104.813923,
+     "pct": 97.77209066867589
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 232,
+    "num": 5,
+    "pct": 2.1551724137931036
+   },
+   "cohab_P_q": {
+    "den": 232,
+    "num": 10,
+    "pct": 4.310344827586207
+   },
+   "dwell_part_mean_s": 53.6011,
+   "dwell_part_runs": 2,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.001995941624045372,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0021555908024311066,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d16_b6_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d16_b6_873015"
+   ],
+   "snapshots_all": 13238,
+   "snapshots_busy": 232,
+   "span_s": 134.3871746081859,
+   "workload_ids": [
+    "s2_T8_d16_b6"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 10036.0,
+     "num": 237.0,
+     "pct": 2.361498605021921
+    },
+    "PART_pbusy": {
+     "den": 10036.0,
+     "num": 3.0,
+     "pct": 0.029892387405340774
+    },
+    "PART_pidle": {
+     "den": 10036.0,
+     "num": 234.0,
+     "pct": 2.33160621761658
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 237.0,
+     "num": 237.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 237.0,
+     "num": 3.0,
+     "pct": 1.2658227848101267
+    },
+    "PART_pidle": {
+     "den": 237.0,
+     "num": 234.0,
+     "pct": 98.73417721518987
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 3755.0,
+     "num": 3755.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 3755.0,
+     "num": 48.0,
+     "pct": 1.2782956058588548
+    },
+    "PART_pidle": {
+     "den": 3755.0,
+     "num": 3707.0,
+     "pct": 98.72170439414114
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 129.413544,
+     "num": 108.883583,
+     "pct": 84.13615735566795
+    },
+    "PART_pbusy": {
+     "den": 129.413544,
+     "num": 1.405388,
+     "pct": 1.0859666262444834
+    },
+    "PART_pidle": {
+     "den": 129.413544,
+     "num": 107.478195,
+     "pct": 83.05019072942346
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 108.883583,
+     "num": 108.883583,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 108.883583,
+     "num": 1.405388,
+     "pct": 1.2907252486630538
+    },
+    "PART_pidle": {
+     "den": 108.883583,
+     "num": 107.478195,
+     "pct": 98.70927475133695
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 237,
+    "num": 3,
+    "pct": 1.2658227848101267
+   },
+   "cohab_P_q": {
+    "den": 237,
+    "num": 6,
+    "pct": 2.5316455696202533
+   },
+   "dwell_part_mean_s": 36.2945,
+   "dwell_part_runs": 3,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.001974713057279587,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0021316837519407272,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d16_b7_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d16_b7_873015"
+   ],
+   "snapshots_all": 10036,
+   "snapshots_busy": 237,
+   "span_s": 129.4135439414531,
+   "workload_ids": [
+    "s2_T8_d16_b7"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 12997.0,
+     "num": 233.0,
+     "pct": 1.7927213972455183
+    },
+    "PART_pbusy": {
+     "den": 12997.0,
+     "num": 5.0,
+     "pct": 0.03847041624990383
+    },
+    "PART_pidle": {
+     "den": 12997.0,
+     "num": 228.0,
+     "pct": 1.7542509809956144
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 234.0,
+     "num": 233.0,
+     "pct": 99.57264957264957
+    },
+    "PART_pbusy": {
+     "den": 234.0,
+     "num": 5.0,
+     "pct": 2.1367521367521367
+    },
+    "PART_pidle": {
+     "den": 234.0,
+     "num": 228.0,
+     "pct": 97.43589743589743
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 3705.0,
+     "num": 3689.0,
+     "pct": 99.56815114709852
+    },
+    "PART_pbusy": {
+     "den": 3705.0,
+     "num": 80.0,
+     "pct": 2.1592442645074224
+    },
+    "PART_pidle": {
+     "den": 3705.0,
+     "num": 3609.0,
+     "pct": 97.4089068825911
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 134.462669,
+     "num": 107.455261,
+     "pct": 79.91456821416803
+    },
+    "PART_pbusy": {
+     "den": 134.462669,
+     "num": 2.366234,
+     "pct": 1.7597699255688455
+    },
+    "PART_pidle": {
+     "den": 134.462669,
+     "num": 105.089028,
+     "pct": 78.15479828859918
+    },
+    "additive": false
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 107.926309,
+     "num": 107.455261,
+     "pct": 99.56354704715866
+    },
+    "PART_pbusy": {
+     "den": 107.926309,
+     "num": 2.366234,
+     "pct": 2.1924530119088588
+    },
+    "PART_pidle": {
+     "den": 107.926309,
+     "num": 105.089028,
+     "pct": 97.37109403524981
+    },
+    "additive": false
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 233,
+    "num": 5,
+    "pct": 2.1459227467811157
+   },
+   "cohab_P_q": {
+    "den": 233,
+    "num": 8,
+    "pct": 3.4334763948497855
+   },
+   "dwell_part_mean_s": 35.8184,
+   "dwell_part_runs": 3,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.002000682055950165,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0021542981266975403,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d16_b8_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d16_b8_873015"
+   ],
+   "snapshots_all": 12997,
+   "snapshots_busy": 234,
+   "span_s": 134.46266886219382,
+   "workload_ids": [
+    "s2_T8_d16_b8"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 11571.0,
+     "num": 523.0,
+     "pct": 4.519920490882378
+    },
+    "PART_pbusy": {
+     "den": 11571.0,
+     "num": 39.0,
+     "pct": 0.33704952035260566
+    },
+    "PART_pidle": {
+     "den": 11571.0,
+     "num": 484.0,
+     "pct": 4.182870970529772
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 524.0,
+     "num": 523.0,
+     "pct": 99.80916030534351
+    },
+    "PART_pbusy": {
+     "den": 524.0,
+     "num": 39.0,
+     "pct": 7.442748091603053
+    },
+    "PART_pidle": {
+     "den": 524.0,
+     "num": 484.0,
+     "pct": 92.36641221374046
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 8355.0,
+     "num": 8339.0,
+     "pct": 99.80849790544585
+    },
+    "PART_pbusy": {
+     "den": 8355.0,
+     "num": 624.0,
+     "pct": 7.468581687612208
+    },
+    "PART_pidle": {
+     "den": 8355.0,
+     "num": 7715.0,
+     "pct": 92.33991621783363
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 124.597009,
+     "num": 101.712157,
+     "pct": 81.63290374155832
+    },
+    "PART_pbusy": {
+     "den": 124.597009,
+     "num": 7.990219,
+     "pct": 6.412850088647699
+    },
+    "PART_pidle": {
+     "den": 124.597009,
+     "num": 93.721937,
+     "pct": 75.22005365291062
+    },
+    "additive": false
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 101.910945,
+     "num": 101.712157,
+     "pct": 99.80493946142425
+    },
+    "PART_pbusy": {
+     "den": 101.910945,
+     "num": 7.990219,
+     "pct": 7.84039383064159
+    },
+    "PART_pidle": {
+     "den": 101.910945,
+     "num": 93.721937,
+     "pct": 91.96454563078265
+    },
+    "additive": false
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 523,
+    "num": 39,
+    "pct": 7.45697896749522
+   },
+   "cohab_P_q": {
+    "den": 523,
+    "num": 17,
+    "pct": 3.2504780114722753
+   },
+   "dwell_part_mean_s": 25.428,
+   "dwell_part_runs": 4,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "54/54"
+   },
+   "median_gap_s": 0.0020034685730934143,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.002445640042424202,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d54_b1_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d54_b1_873015"
+   ],
+   "snapshots_all": 11571,
+   "snapshots_busy": 524,
+   "span_s": 124.5970092471689,
+   "workload_ids": [
+    "s2_T8_d54_b1"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13752.0,
+     "num": 432.0,
+     "pct": 3.141361256544503
+    },
+    "PART_pbusy": {
+     "den": 13752.0,
+     "num": 28.0,
+     "pct": 0.2036067481093659
+    },
+    "PART_pidle": {
+     "den": 13752.0,
+     "num": 404.0,
+     "pct": 2.9377545084351366
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 432.0,
+     "num": 432.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 432.0,
+     "num": 28.0,
+     "pct": 6.481481481481482
+    },
+    "PART_pidle": {
+     "den": 432.0,
+     "num": 404.0,
+     "pct": 93.51851851851852
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 6868.0,
+     "num": 6868.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 6868.0,
+     "num": 446.0,
+     "pct": 6.493884682585906
+    },
+    "PART_pidle": {
+     "den": 6868.0,
+     "num": 6422.0,
+     "pct": 93.5061153174141
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 114.619169,
+     "num": 87.412632,
+     "pct": 76.26353636041998
+    },
+    "PART_pbusy": {
+     "den": 114.619169,
+     "num": 5.875075,
+     "pct": 5.125734688890882
+    },
+    "PART_pidle": {
+     "den": 114.619169,
+     "num": 81.537557,
+     "pct": 71.1378016715291
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 87.412632,
+     "num": 87.412632,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 87.412632,
+     "num": 5.875075,
+     "pct": 6.721081834792921
+    },
+    "PART_pidle": {
+     "den": 87.412632,
+     "num": 81.537557,
+     "pct": 93.27891816520707
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 432,
+    "num": 28,
+    "pct": 6.481481481481482
+   },
+   "cohab_P_q": {
+    "den": 432,
+    "num": 19,
+    "pct": 4.398148148148148
+   },
+   "dwell_part_mean_s": 21.8532,
+   "dwell_part_runs": 4,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "54/54"
+   },
+   "median_gap_s": 0.001967810094356537,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0023560039699077606,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d54_b2_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d54_b2_873015"
+   ],
+   "snapshots_all": 13752,
+   "snapshots_busy": 432,
+   "span_s": 114.61916947737336,
+   "workload_ids": [
+    "s2_T8_d54_b2"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13624.0,
+     "num": 502.0,
+     "pct": 3.6846741045214326
+    },
+    "PART_pbusy": {
+     "den": 13624.0,
+     "num": 38.0,
+     "pct": 0.278919553728714
+    },
+    "PART_pidle": {
+     "den": 13624.0,
+     "num": 464.0,
+     "pct": 3.405754550792719
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 503.0,
+     "num": 502.0,
+     "pct": 99.80119284294234
+    },
+    "PART_pbusy": {
+     "den": 503.0,
+     "num": 38.0,
+     "pct": 7.5546719681908545
+    },
+    "PART_pidle": {
+     "den": 503.0,
+     "num": 464.0,
+     "pct": 92.2465208747515
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 8004.0,
+     "num": 8002.0,
+     "pct": 99.97501249375313
+    },
+    "PART_pbusy": {
+     "den": 8004.0,
+     "num": 608.0,
+     "pct": 7.596201899050475
+    },
+    "PART_pidle": {
+     "den": 8004.0,
+     "num": 7394.0,
+     "pct": 92.37881059470264
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 124.353125,
+     "num": 97.069293,
+     "pct": 78.05939170702221
+    },
+    "PART_pbusy": {
+     "den": 124.353125,
+     "num": 7.779771,
+     "pct": 6.256192505414331
+    },
+    "PART_pidle": {
+     "den": 124.353125,
+     "num": 89.289522,
+     "pct": 71.8031992016079
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 97.099492,
+     "num": 97.069293,
+     "pct": 99.96889917825168
+    },
+    "PART_pbusy": {
+     "den": 97.099492,
+     "num": 7.779771,
+     "pct": 8.012164380692141
+    },
+    "PART_pidle": {
+     "den": 97.099492,
+     "num": 89.289522,
+     "pct": 91.95673479755953
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 502,
+    "num": 38,
+    "pct": 7.569721115537849
+   },
+   "cohab_P_q": {
+    "den": 502,
+    "num": 18,
+    "pct": 3.585657370517928
+   },
+   "dwell_part_mean_s": 32.3564,
+   "dwell_part_runs": 3,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "54/54"
+   },
+   "median_gap_s": 0.0020358487963676453,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0021783914417028427,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d54_b3_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d54_b3_873015"
+   ],
+   "snapshots_all": 13624,
+   "snapshots_busy": 503,
+   "span_s": 124.35312505997717,
+   "workload_ids": [
+    "s2_T8_d54_b3"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 14251.0,
+     "num": 581.0,
+     "pct": 4.076906883727458
+    },
+    "PART_pbusy": {
+     "den": 14251.0,
+     "num": 47.0,
+     "pct": 0.32980141744438984
+    },
+    "PART_pidle": {
+     "den": 14251.0,
+     "num": 534.0,
+     "pct": 3.747105466283068
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 581.0,
+     "num": 581.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 581.0,
+     "num": 47.0,
+     "pct": 8.089500860585199
+    },
+    "PART_pidle": {
+     "den": 581.0,
+     "num": 534.0,
+     "pct": 91.9104991394148
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 9258.0,
+     "num": 9258.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 9258.0,
+     "num": 752.0,
+     "pct": 8.122704687837546
+    },
+    "PART_pidle": {
+     "den": 9258.0,
+     "num": 8506.0,
+     "pct": 91.87729531216246
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 139.508662,
+     "num": 112.052211,
+     "pct": 80.31917893442154
+    },
+    "PART_pbusy": {
+     "den": 139.508662,
+     "num": 9.468508,
+     "pct": 6.787039827235176
+    },
+    "PART_pidle": {
+     "den": 139.508662,
+     "num": 102.583703,
+     "pct": 73.53213910718637
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 112.052211,
+     "num": 112.052211,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 112.052211,
+     "num": 9.468508,
+     "pct": 8.450086165318762
+    },
+    "PART_pidle": {
+     "den": 112.052211,
+     "num": 102.583703,
+     "pct": 91.54991383468123
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 581,
+    "num": 47,
+    "pct": 8.089500860585199
+   },
+   "cohab_P_q": {
+    "den": 581,
+    "num": 13,
+    "pct": 2.2375215146299485
+   },
+   "dwell_part_mean_s": 28.0131,
+   "dwell_part_runs": 4,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "54/54"
+   },
+   "median_gap_s": 0.0019705165177583694,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0021515153348445892,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d54_b4_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d54_b4_873015"
+   ],
+   "snapshots_all": 14251,
+   "snapshots_busy": 581,
+   "span_s": 139.50866150297225,
+   "workload_ids": [
+    "s2_T8_d54_b4"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13368.0,
+     "num": 587.0,
+     "pct": 4.391083183722322
+    },
+    "PART_pbusy": {
+     "den": 13368.0,
+     "num": 30.0,
+     "pct": 0.2244165170556553
+    },
+    "PART_pidle": {
+     "den": 13368.0,
+     "num": 557.0,
+     "pct": 4.166666666666667
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 588.0,
+     "num": 587.0,
+     "pct": 99.82993197278911
+    },
+    "PART_pbusy": {
+     "den": 588.0,
+     "num": 30.0,
+     "pct": 5.1020408163265305
+    },
+    "PART_pidle": {
+     "den": 588.0,
+     "num": 557.0,
+     "pct": 94.72789115646259
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 9375.0,
+     "num": 9368.0,
+     "pct": 99.92533333333333
+    },
+    "PART_pbusy": {
+     "den": 9375.0,
+     "num": 480.0,
+     "pct": 5.12
+    },
+    "PART_pidle": {
+     "den": 9375.0,
+     "num": 8888.0,
+     "pct": 94.80533333333334
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 139.817417,
+     "num": 113.439478,
+     "pct": 81.13401108730739
+    },
+    "PART_pbusy": {
+     "den": 139.817417,
+     "num": 6.053492,
+     "pct": 4.329569327716987
+    },
+    "PART_pidle": {
+     "den": 139.817417,
+     "num": 107.385986,
+     "pct": 76.80444175959039
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 113.569597,
+     "num": 113.439478,
+     "pct": 99.88542834261153
+    },
+    "PART_pbusy": {
+     "den": 113.569597,
+     "num": 6.053492,
+     "pct": 5.3302046952008535
+    },
+    "PART_pidle": {
+     "den": 113.569597,
+     "num": 107.385986,
+     "pct": 94.55522364741068
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 587,
+    "num": 30,
+    "pct": 5.1107325383304945
+   },
+   "cohab_P_q": {
+    "den": 587,
+    "num": 13,
+    "pct": 2.2146507666098807
+   },
+   "dwell_part_mean_s": 37.8132,
+   "dwell_part_runs": 3,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "54/54"
+   },
+   "median_gap_s": 0.001954576000571251,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0023574084043502808,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d54_b5_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d54_b5_873015"
+   ],
+   "snapshots_all": 13368,
+   "snapshots_busy": 588,
+   "span_s": 139.81741654872894,
+   "workload_ids": [
+    "s2_T8_d54_b5"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 12962.0,
+     "num": 512.0,
+     "pct": 3.950007714858818
+    },
+    "PART_pbusy": {
+     "den": 12962.0,
+     "num": 36.0,
+     "pct": 0.27773491745101064
+    },
+    "PART_pidle": {
+     "den": 12962.0,
+     "num": 476.0,
+     "pct": 3.6722727974078073
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 512.0,
+     "num": 512.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 512.0,
+     "num": 36.0,
+     "pct": 7.03125
+    },
+    "PART_pidle": {
+     "den": 512.0,
+     "num": 476.0,
+     "pct": 92.96875
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 8174.0,
+     "num": 8174.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 8174.0,
+     "num": 576.0,
+     "pct": 7.046733545387815
+    },
+    "PART_pidle": {
+     "den": 8174.0,
+     "num": 7598.0,
+     "pct": 92.95326645461219
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 124.571579,
+     "num": 99.438085,
+     "pct": 79.82405464770235
+    },
+    "PART_pbusy": {
+     "den": 124.571579,
+     "num": 7.358754,
+     "pct": 5.907249289114503
+    },
+    "PART_pidle": {
+     "den": 124.571579,
+     "num": 92.079331,
+     "pct": 73.91680535858785
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 99.438085,
+     "num": 99.438085,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 99.438085,
+     "num": 7.358754,
+     "pct": 7.400337298306529
+    },
+    "PART_pidle": {
+     "den": 99.438085,
+     "num": 92.079331,
+     "pct": 92.59966270169348
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 512,
+    "num": 36,
+    "pct": 7.03125
+   },
+   "cohab_P_q": {
+    "den": 512,
+    "num": 16,
+    "pct": 3.125
+   },
+   "dwell_part_mean_s": 49.719,
+   "dwell_part_runs": 2,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "54/54"
+   },
+   "median_gap_s": 0.001968802884221077,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.002139151096343994,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d54_b6_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d54_b6_873015"
+   ],
+   "snapshots_all": 12962,
+   "snapshots_busy": 512,
+   "span_s": 124.57157861813903,
+   "workload_ids": [
+    "s2_T8_d54_b6"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 12850.0,
+     "num": 515.0,
+     "pct": 4.007782101167315
+    },
+    "PART_pbusy": {
+     "den": 12850.0,
+     "num": 25.0,
+     "pct": 0.19455252918287938
+    },
+    "PART_pidle": {
+     "den": 12850.0,
+     "num": 490.0,
+     "pct": 3.813229571984436
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 515.0,
+     "num": 515.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 515.0,
+     "num": 25.0,
+     "pct": 4.854368932038835
+    },
+    "PART_pidle": {
+     "den": 515.0,
+     "num": 490.0,
+     "pct": 95.14563106796116
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 8217.0,
+     "num": 8217.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 8217.0,
+     "num": 400.0,
+     "pct": 4.8679566751855905
+    },
+    "PART_pidle": {
+     "den": 8217.0,
+     "num": 7817.0,
+     "pct": 95.1320433248144
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 124.362248,
+     "num": 99.197649,
+     "pct": 79.76508194570724
+    },
+    "PART_pbusy": {
+     "den": 124.362248,
+     "num": 5.059507,
+     "pct": 4.068362202297585
+    },
+    "PART_pidle": {
+     "den": 124.362248,
+     "num": 94.138142,
+     "pct": 75.69671974340964
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 99.197649,
+     "num": 99.197649,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 99.197649,
+     "num": 5.059507,
+     "pct": 5.100430041639962
+    },
+    "PART_pidle": {
+     "den": 99.197649,
+     "num": 94.138142,
+     "pct": 94.89956995836003
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 515,
+    "num": 25,
+    "pct": 4.854368932038835
+   },
+   "cohab_P_q": {
+    "den": 515,
+    "num": 16,
+    "pct": 3.1067961165048543
+   },
+   "dwell_part_mean_s": 49.5988,
+   "dwell_part_runs": 2,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "54/54"
+   },
+   "median_gap_s": 0.0020084045827388763,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0021835528314113617,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d54_b7_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d54_b7_873015"
+   ],
+   "snapshots_all": 12850,
+   "snapshots_busy": 515,
+   "span_s": 124.36224810220301,
+   "workload_ids": [
+    "s2_T8_d54_b7"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 14523.0,
+     "num": 513.0,
+     "pct": 3.5323280313984715
+    },
+    "PART_pbusy": {
+     "den": 14523.0,
+     "num": 36.0,
+     "pct": 0.24788266887006816
+    },
+    "PART_pidle": {
+     "den": 14523.0,
+     "num": 477.0,
+     "pct": 3.284445362528403
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 514.0,
+     "num": 513.0,
+     "pct": 99.80544747081711
+    },
+    "PART_pbusy": {
+     "den": 514.0,
+     "num": 36.0,
+     "pct": 7.003891050583658
+    },
+    "PART_pidle": {
+     "den": 514.0,
+     "num": 477.0,
+     "pct": 92.80155642023347
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 8168.0,
+     "num": 8161.0,
+     "pct": 99.91429970617042
+    },
+    "PART_pbusy": {
+     "den": 8168.0,
+     "num": 576.0,
+     "pct": 7.051909892262488
+    },
+    "PART_pidle": {
+     "den": 8168.0,
+     "num": 7585.0,
+     "pct": 92.86238981390794
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 129.611136,
+     "num": 100.58353,
+     "pct": 77.60408060177377
+    },
+    "PART_pbusy": {
+     "den": 129.611136,
+     "num": 7.436589,
+     "pct": 5.73761574672826
+    },
+    "PART_pidle": {
+     "den": 129.611136,
+     "num": 93.146941,
+     "pct": 71.8664648550455
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 100.712149,
+     "num": 100.58353,
+     "pct": 99.87229089036403
+    },
+    "PART_pbusy": {
+     "den": 100.712149,
+     "num": 7.436589,
+     "pct": 7.384003836278687
+    },
+    "PART_pidle": {
+     "den": 100.712149,
+     "num": 93.146941,
+     "pct": 92.48828705408535
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 513,
+    "num": 36,
+    "pct": 7.017543859649122
+   },
+   "cohab_P_q": {
+    "den": 513,
+    "num": 13,
+    "pct": 2.53411306042885
+   },
+   "dwell_part_mean_s": 20.1167,
+   "dwell_part_runs": 5,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "54/54"
+   },
+   "median_gap_s": 0.0020009446889162064,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0021874699741601944,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d54_b8_873015_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d54_b8_873015"
+   ],
+   "snapshots_all": 14523,
+   "snapshots_busy": 514,
+   "span_s": 129.61113583669066,
+   "workload_ids": [
+    "s2_T8_d54_b8"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 22438.0,
+     "num": 551.0,
+     "pct": 2.4556555842766734
+    },
+    "PART_pbusy": {
+     "den": 22438.0,
+     "num": 169.0,
+     "pct": 0.7531865585168018
+    },
+    "PART_pidle": {
+     "den": 22438.0,
+     "num": 382.0,
+     "pct": 1.7024690257598716
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 551.0,
+     "num": 551.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 551.0,
+     "num": 169.0,
+     "pct": 30.671506352087114
+    },
+    "PART_pidle": {
+     "den": 551.0,
+     "num": 382.0,
+     "pct": 69.32849364791288
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 8784.0,
+     "num": 8784.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 8784.0,
+     "num": 2698.0,
+     "pct": 30.714936247723134
+    },
+    "PART_pidle": {
+     "den": 8784.0,
+     "num": 6086.0,
+     "pct": 69.28506375227687
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 146.326975,
+     "num": 101.518745,
+     "pct": 69.37801112995884
+    },
+    "PART_pbusy": {
+     "den": 146.326975,
+     "num": 33.077595,
+     "pct": 22.60526126192688
+    },
+    "PART_pidle": {
+     "den": 146.326975,
+     "num": 68.44115,
+     "pct": 46.77274986803196
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 101.518745,
+     "num": 101.518745,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 101.518745,
+     "num": 33.077595,
+     "pct": 32.582746166624354
+    },
+    "PART_pidle": {
+     "den": 101.518745,
+     "num": 68.44115,
+     "pct": 67.41725383337564
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 551,
+    "num": 169,
+    "pct": 30.671506352087114
+   },
+   "cohab_P_q": {
+    "den": 551,
+    "num": 51,
+    "pct": 9.255898366606171
+   },
+   "dwell_part_mean_s": 25.3797,
+   "dwell_part_runs": 4,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "16/92"
+   },
+   "median_gap_s": 0.002022160217165947,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0021129585802555084,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d92_b1_873921_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d92_b1_873921"
+   ],
+   "snapshots_all": 22438,
+   "snapshots_busy": 551,
+   "span_s": 146.3269748520106,
+   "workload_ids": [
+    "s2a_T8_d92_b1"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13653.0,
+     "num": 464.0,
+     "pct": 3.3985204716912034
+    },
+    "PART_pbusy": {
+     "den": 13653.0,
+     "num": 153.0,
+     "pct": 1.1206328279499012
+    },
+    "PART_pidle": {
+     "den": 13653.0,
+     "num": 311.0,
+     "pct": 2.2778876437413023
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 465.0,
+     "num": 464.0,
+     "pct": 99.78494623655914
+    },
+    "PART_pbusy": {
+     "den": 465.0,
+     "num": 153.0,
+     "pct": 32.903225806451616
+    },
+    "PART_pidle": {
+     "den": 465.0,
+     "num": 311.0,
+     "pct": 66.88172043010752
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 7395.0,
+     "num": 7379.0,
+     "pct": 99.78363759296822
+    },
+    "PART_pbusy": {
+     "den": 7395.0,
+     "num": 2446.0,
+     "pct": 33.0764029749831
+    },
+    "PART_pidle": {
+     "den": 7395.0,
+     "num": 4933.0,
+     "pct": 66.70723461798512
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 114.466939,
+     "num": 87.12782,
+     "pct": 76.1161432074615
+    },
+    "PART_pbusy": {
+     "den": 114.466939,
+     "num": 30.999681,
+     "pct": 27.08177652552082
+    },
+    "PART_pidle": {
+     "den": 114.466939,
+     "num": 56.128139,
+     "pct": 49.03436668194069
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 87.299325,
+     "num": 87.12782,
+     "pct": 99.8035427099435
+    },
+    "PART_pbusy": {
+     "den": 87.299325,
+     "num": 30.999681,
+     "pct": 35.50964521099128
+    },
+    "PART_pidle": {
+     "den": 87.299325,
+     "num": 56.128139,
+     "pct": 64.2938974989522
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 464,
+    "num": 153,
+    "pct": 32.974137931034484
+   },
+   "cohab_P_q": {
+    "den": 464,
+    "num": 72,
+    "pct": 15.517241379310345
+   },
+   "dwell_part_mean_s": 21.782,
+   "dwell_part_runs": 4,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "16/92"
+   },
+   "median_gap_s": 0.0019962117075920105,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.002129392698407173,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d92_b2_873921_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d92_b2_873921"
+   ],
+   "snapshots_all": 13653,
+   "snapshots_busy": 465,
+   "span_s": 114.46693939343095,
+   "workload_ids": [
+    "s2a_T8_d92_b2"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13767.0,
+     "num": 528.0,
+     "pct": 3.8352582261930706
+    },
+    "PART_pbusy": {
+     "den": 13767.0,
+     "num": 179.0,
+     "pct": 1.300210648652575
+    },
+    "PART_pidle": {
+     "den": 13767.0,
+     "num": 349.0,
+     "pct": 2.5350475775404955
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 529.0,
+     "num": 528.0,
+     "pct": 99.8109640831758
+    },
+    "PART_pbusy": {
+     "den": 529.0,
+     "num": 179.0,
+     "pct": 33.83742911153119
+    },
+    "PART_pidle": {
+     "den": 529.0,
+     "num": 349.0,
+     "pct": 65.97353497164461
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 8436.0,
+     "num": 8420.0,
+     "pct": 99.81033665244192
+    },
+    "PART_pbusy": {
+     "den": 8436.0,
+     "num": 2863.0,
+     "pct": 33.93788525367473
+    },
+    "PART_pidle": {
+     "den": 8436.0,
+     "num": 5557.0,
+     "pct": 65.87245139876718
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 124.640049,
+     "num": 96.525487,
+     "pct": 77.44339638257699
+    },
+    "PART_pbusy": {
+     "den": 124.640049,
+     "num": 33.938528,
+     "pct": 27.229231850066544
+    },
+    "PART_pidle": {
+     "den": 124.640049,
+     "num": 62.586959,
+     "pct": 50.21416453251045
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 96.716863,
+     "num": 96.525487,
+     "pct": 99.80212712869675
+    },
+    "PART_pbusy": {
+     "den": 96.716863,
+     "num": 33.938528,
+     "pct": 35.09060017580122
+    },
+    "PART_pidle": {
+     "den": 96.716863,
+     "num": 62.586959,
+     "pct": 64.71152695289553
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 528,
+    "num": 179,
+    "pct": 33.90151515151515
+   },
+   "cohab_P_q": {
+    "den": 528,
+    "num": 66,
+    "pct": 12.5
+   },
+   "dwell_part_mean_s": 32.1752,
+   "dwell_part_runs": 3,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "16/92"
+   },
+   "median_gap_s": 0.0020462870597839355,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0022451765835285187,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d92_b3_873921_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d92_b3_873921"
+   ],
+   "snapshots_all": 13767,
+   "snapshots_busy": 529,
+   "span_s": 124.64004869572818,
+   "workload_ids": [
+    "s2a_T8_d92_b3"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 13901.0,
+     "num": 618.0,
+     "pct": 4.445723329256888
+    },
+    "PART_pbusy": {
+     "den": 13901.0,
+     "num": 156.0,
+     "pct": 1.1222214229192145
+    },
+    "PART_pidle": {
+     "den": 13901.0,
+     "num": 462.0,
+     "pct": 3.3235019063376736
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 618.0,
+     "num": 618.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 618.0,
+     "num": 156.0,
+     "pct": 25.24271844660194
+    },
+    "PART_pidle": {
+     "den": 618.0,
+     "num": 462.0,
+     "pct": 74.75728155339806
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 9840.0,
+     "num": 9840.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 9840.0,
+     "num": 2495.0,
+     "pct": 25.35569105691057
+    },
+    "PART_pidle": {
+     "den": 9840.0,
+     "num": 7345.0,
+     "pct": 74.64430894308943
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 139.596003,
+     "num": 111.428149,
+     "pct": 79.82187660961729
+    },
+    "PART_pbusy": {
+     "den": 139.596003,
+     "num": 29.498289,
+     "pct": 21.131184540333706
+    },
+    "PART_pidle": {
+     "den": 139.596003,
+     "num": 81.92986,
+     "pct": 58.69069206928359
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 111.428149,
+     "num": 111.428149,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 111.428149,
+     "num": 29.498289,
+     "pct": 26.472923762090215
+    },
+    "PART_pidle": {
+     "den": 111.428149,
+     "num": 81.92986,
+     "pct": 73.52707623790978
+    },
+    "additive": true
+   },
+   "campaign": "s2_sticky",
+   "cohab_P_act": {
+    "den": 618,
+    "num": 156,
+    "pct": 25.24271844660194
+   },
+   "cohab_P_q": {
+    "den": 618,
+    "num": 47,
+    "pct": 7.605177993527508
+   },
+   "dwell_part_mean_s": 27.857,
+   "dwell_part_runs": 4,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "16/92"
+   },
+   "median_gap_s": 0.0020667221397161484,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0034019798040390015,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/s2_sticky/e1m3_T8_d92_b4_873921_telemetry.jsonl",
+   "run_ids": [
+    "e1m3_T8_d92_b4_873921"
+   ],
+   "snapshots_all": 13901,
+   "snapshots_busy": 618,
+   "span_s": 139.596002696082,
+   "workload_ids": [
+    "s2a_T8_d92_b4"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 9878.0,
+     "num": 8.0,
+     "pct": 0.08098805426199636
+    },
+    "PART_pbusy": {
+     "den": 9878.0,
+     "num": 4.0,
+     "pct": 0.04049402713099818
+    },
+    "PART_pidle": {
+     "den": 9878.0,
+     "num": 4.0,
+     "pct": 0.04049402713099818
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 154.0,
+     "num": 8.0,
+     "pct": 5.194805194805195
+    },
+    "PART_pbusy": {
+     "den": 154.0,
+     "num": 4.0,
+     "pct": 2.5974025974025974
+    },
+    "PART_pidle": {
+     "den": 154.0,
+     "num": 4.0,
+     "pct": 2.5974025974025974
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 2401.0,
+     "num": 128.0,
+     "pct": 5.331112036651395
+    },
+    "PART_pbusy": {
+     "den": 2401.0,
+     "num": 64.0,
+     "pct": 2.6655560183256974
+    },
+    "PART_pidle": {
+     "den": 2401.0,
+     "num": 64.0,
+     "pct": 2.6655560183256974
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 109.642339,
+     "num": 6.108531,
+     "pct": 5.57132514815371
+    },
+    "PART_pbusy": {
+     "den": 109.642339,
+     "num": 3.362553,
+     "pct": 3.0668382518077224
+    },
+    "PART_pidle": {
+     "den": 109.642339,
+     "num": 2.745978,
+     "pct": 2.5044868963459868
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 75.868322,
+     "num": 6.108531,
+     "pct": 8.051491045346031
+    },
+    "PART_pbusy": {
+     "den": 75.868322,
+     "num": 3.362553,
+     "pct": 4.432091121111013
+    },
+    "PART_pidle": {
+     "den": 75.868322,
+     "num": 2.745978,
+     "pct": 3.6193999242350183
+    },
+    "additive": true
+   },
+   "campaign": "sticky_smoke",
+   "cohab_P_act": {
+    "den": 8,
+    "num": 4,
+    "pct": 50.0
+   },
+   "cohab_P_q": {
+    "den": 8,
+    "num": 3,
+    "pct": 37.5
+   },
+   "dwell_part_mean_s": 0.8726,
+   "dwell_part_runs": 7,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16",
+    "2": "0/108"
+   },
+   "median_gap_s": 0.0020184163004159927,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.002054663375020027,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/sticky_smoke/stk0_Ha8_d16_872800_telemetry.jsonl",
+   "run_ids": [
+    "stk0_Ha8_d16_872800"
+   ],
+   "snapshots_all": 9878,
+   "snapshots_busy": 154,
+   "span_s": 109.64233868569136,
+   "workload_ids": [
+    "sticky_smoke_Ha8_d16"
+   ]
+  },
+  {
+   "R_cnt_all": {
+    "PART": {
+     "den": 11670.0,
+     "num": 139.0,
+     "pct": 1.1910882604970008
+    },
+    "PART_pbusy": {
+     "den": 11670.0,
+     "num": 4.0,
+     "pct": 0.03427592116538132
+    },
+    "PART_pidle": {
+     "den": 11670.0,
+     "num": 135.0,
+     "pct": 1.1568123393316196
+    },
+    "additive": true
+   },
+   "R_cnt_busy": {
+    "PART": {
+     "den": 139.0,
+     "num": 139.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 139.0,
+     "num": 4.0,
+     "pct": 2.8776978417266186
+    },
+    "PART_pidle": {
+     "den": 139.0,
+     "num": 135.0,
+     "pct": 97.12230215827338
+    },
+    "additive": true
+   },
+   "R_iter_busy": {
+    "PART": {
+     "den": 2148.0,
+     "num": 2148.0,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 2148.0,
+     "num": 64.0,
+     "pct": 2.97951582867784
+    },
+    "PART_pidle": {
+     "den": 2148.0,
+     "num": 2084.0,
+     "pct": 97.02048417132217
+    },
+    "additive": true
+   },
+   "R_time_all": {
+    "PART": {
+     "den": 199.013764,
+     "num": 171.583863,
+     "pct": 86.2170838284597
+    },
+    "PART_pbusy": {
+     "den": 199.013764,
+     "num": 6.346574,
+     "pct": 3.1890125700317498
+    },
+    "PART_pidle": {
+     "den": 199.013764,
+     "num": 165.237289,
+     "pct": 83.02807125842796
+    },
+    "additive": true
+   },
+   "R_time_busy": {
+    "PART": {
+     "den": 171.583863,
+     "num": 171.583863,
+     "pct": 100.0
+    },
+    "PART_pbusy": {
+     "den": 171.583863,
+     "num": 6.346574,
+     "pct": 3.6988174830602163
+    },
+    "PART_pidle": {
+     "den": 171.583863,
+     "num": 165.237289,
+     "pct": 96.30118251693979
+    },
+    "additive": true
+   },
+   "campaign": "sticky_smoke",
+   "cohab_P_act": {
+    "den": 139,
+    "num": 4,
+    "pct": 2.8776978417266186
+   },
+   "cohab_P_q": {
+    "den": 139,
+    "num": 7,
+    "pct": 5.0359712230215825
+   },
+   "dwell_part_mean_s": 28.5973,
+   "dwell_part_runs": 6,
+   "index_to_realized_sm": {
+    "0": "108/0",
+    "1": "92/16"
+   },
+   "median_gap_s": 0.002013208344578743,
+   "negative_gaps": 0,
+   "p95_gap_s": 0.0020477399230003357,
+   "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/sticky_smoke/stk1_Ha8_d16_872800_telemetry.jsonl",
+   "run_ids": [
+    "stk1_Ha8_d16_872800"
+   ],
+   "snapshots_all": 11670,
+   "snapshots_busy": 139,
+   "span_s": 199.01376361213624,
+   "workload_ids": [
+    "sticky_smoke_Ha8_d16"
+   ]
+  }
+ ]
+}

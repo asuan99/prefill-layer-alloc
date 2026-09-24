@@ -1,0 +1,130 @@
+{
+ "reports/audit/2026-09-22_scope_lineage/REPORT.md": {
+  "controller.py:320-329": {
+   "anchor": "self.last_overload_epoch_iteration = snapshot.decode_iterations",
+   "anchor_offset": 6,
+   "sha": "11c3d9fb9d845364",
+   "target": "workspace/engine-port/src/multiplex/controller.py"
+  },
+  "controller.py:88-101": {
+   "anchor": "reason=DecisionReason.FIXED.value if safe_boundary else DecisionReason.UNSAFE.value,",
+   "anchor_offset": 11,
+   "sha": "c5a3e89d947b8c7b",
+   "target": "workspace/engine-port/src/multiplex/controller.py"
+  },
+  "dual_worker.py:566-574": {
+   "anchor": "self.prefill.active_batch = getattr(scheduler, \"split_prefill_batch\", None)",
+   "anchor_offset": 4,
+   "sha": "bf63618514210fe9",
+   "target": "workspace/engine-port/src/multiplex/dual_worker.py"
+  },
+  "dual_worker.py:87-97": {
+   "anchor": "self._admission_started_at = time.perf_counter() if now is None else now",
+   "anchor_offset": 1,
+   "sha": "368c41091e632c9c",
+   "target": "workspace/engine-port/src/multiplex/dual_worker.py"
+  },
+  "e2_realized_mix.py:57-66": {
+   "anchor": "return rec.get(\"event\") == \"runtime_snapshot\" and rec.get(\"phase\") != \"startup\"",
+   "anchor_offset": 0,
+   "sha": "5e3793c6b3128176",
+   "target": "workspace/engine-port/results/r2_eval/e2_sticky_prereg/e2_realized_mix.py"
+  },
+  "falcon_h1.py:503-511": {
+   "anchor": "# PATCH (engine-port P1.7): enable pdmux split-prefill on Falcon-H1 (SPATIAL",
+   "anchor_offset": 8,
+   "sha": "a2d40d39ba9263dc",
+   "target": "workspace/engine-port/src/models/falcon_h1.py"
+  },
+  "granitemoehybrid.py:622-630": {
+   "anchor": "# engine-port P1.7: enable pdmux split-prefill on Granite (temporal hybrid),",
+   "anchor_offset": 8,
+   "sha": "dd0e9322f655b6a8",
+   "target": "workspace/engine-port/src/models/granitemoehybrid.py"
+  },
+  "multiplexing_mixin.py:1169-1182": {
+   "anchor": "if self.sticky_partition_enabled and self._sticky_fixed_idx is not None:",
+   "anchor_offset": 3,
+   "sha": "835607c203d6dcbc",
+   "target": "workspace/engine-port/src/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1183-1197": {
+   "anchor": "// self.pdmux_config.decode_bs_divisor,",
+   "anchor_offset": 12,
+   "sha": "d2ad8f0db81ea6af",
+   "target": "workspace/engine-port/src/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1198-1211": {
+   "anchor": "# running_batch.is_empty()` trigger in `event_loop_pdmux` exists to",
+   "anchor_offset": 11,
+   "sha": "9092826c9b8080eb",
+   "target": "workspace/engine-port/src/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1218-1231": {
+   "anchor": "if getattr(self, \"r2_admission_limited\", False) and self._r2_admission_holds():",
+   "anchor_offset": 3,
+   "sha": "66e583ecefeae153",
+   "target": "workspace/engine-port/src/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:2045-2070": {
+   "anchor": "controller = getattr(getattr(self, \"r2_policy\", None), \"controller\", None)",
+   "anchor_offset": 15,
+   "sha": "8626f4aa67de9bf9",
+   "target": "workspace/engine-port/src/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:388-400": {
+   "anchor": "# Undefined combinations are REJECTED rather than silently given some",
+   "anchor_offset": 10,
+   "sha": "a7138b20c9a49e6e",
+   "target": "workspace/engine-port/src/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:401-428": {
+   "anchor": "f\"PDMUX_R2_POLICY in (unset, fixed); got {self.r2_policy_name!r}\"",
+   "anchor_offset": 21,
+   "sha": "edd537d16f44587f",
+   "target": "workspace/engine-port/src/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:430-455": {
+   "anchor": "index for index in matches if 1 <= index <= self.real_sm_group_num - 2",
+   "anchor_offset": 11,
+   "sha": "a346a586e4eef31f",
+   "target": "workspace/engine-port/src/multiplex/multiplexing_mixin.py"
+  },
+  "nemotron_h.py:859-867": {
+   "anchor": "# PATCH (engine-port P1.3): enable pdmux split-prefill for hybrid models.",
+   "anchor_offset": 8,
+   "sha": "abcea1f0a72e741a",
+   "target": "workspace/engine-port/src/models/nemotron_h.py"
+  },
+  "pdmux_context.py:104-137": {
+   "anchor": "global STREAM_GROUPS, SM_COUNTS, SM_GROUP_NUM, CURRENT_STREAM_IDX, CURRENT_STREAM_GROUP",
+   "anchor_offset": 3,
+   "sha": "2bcb081c72aa1dc4",
+   "target": "../sglang_engine_dev/python/sglang/srt/multiplex/pdmux_context.py"
+  },
+  "pdmux_context.py:54-66": {
+   "anchor": "# green context constraints for different architectures",
+   "anchor_offset": 3,
+   "sha": "452cbda92def5054",
+   "target": "../sglang_engine_dev/python/sglang/srt/multiplex/pdmux_context.py"
+  },
+  "residency_census.py:428-440": {
+   "anchor": "{\"is_busy\": lambda r: (r.get(\"decode_batch_size\") or 0) > 0}, False),",
+   "anchor_offset": 1,
+   "sha": "3e4bdb0c18538840",
+   "target": "workspace/engine-port/results/residency_census_2026-09-21/residency_census.py"
+  },
+  "residency_census.py:96-100": {
+   "anchor": "def census_file(path, is_busy=IS_DECODE_BUSY, uniform_gap=False, part_pred=is_part,",
+   "anchor_offset": 3,
+   "sha": "71e5d2af1eabb6ad",
+   "target": "workspace/engine-port/results/residency_census_2026-09-21/residency_census.py"
+  },
+  "zamba2.py:752-760": {
+   "anchor": "self, input_ids, positions, forward_batch, split_interval, input_embeds=None",
+   "anchor_offset": 1,
+   "sha": "58f792ab352a47e1",
+   "target": "workspace/engine-port/src/models/zamba2.py"
+  }
+ }
+}

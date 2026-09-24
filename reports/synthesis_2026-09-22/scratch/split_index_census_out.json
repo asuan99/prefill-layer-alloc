@@ -1,0 +1,81 @@
+{
+ "e1_traceforce/*.jsonl": {
+  "files": 33,
+  "prefill_active_snapshots": 16512,
+  "split_index_hist": {
+   "20": 10,
+   "21": 4,
+   "23": 11,
+   "25": 2,
+   "28": 16485
+  },
+  "trace_forced": {
+   "False": 509,
+   "None": 550,
+   "True": 15453
+  }
+ },
+ "longctx_conflict/**/*telemetry*.jsonl": {
+  "files": 12,
+  "prefill_active_snapshots": 73723,
+  "split_index_hist": {
+   "12": 317,
+   "16": 333,
+   "20": 316,
+   "24": 413,
+   "28": 317,
+   "32": 332,
+   "36": 318,
+   "4": 318,
+   "40": 330,
+   "44": 394,
+   "48": 336,
+   "52": 317,
+   "54": 1,
+   "56": 69346,
+   "8": 335
+  },
+  "trace_forced": {
+   "None": 73723
+  }
+ },
+ "r2_eval/**/*.jsonl": {
+  "files": 22,
+  "prefill_active_snapshots": 30042,
+  "split_index_hist": {
+   "12": 2,
+   "16": 9,
+   "24": 19,
+   "32": 5,
+   "36": 15,
+   "40": 212,
+   "44": 1,
+   "48": 20,
+   "56": 29744,
+   "8": 15
+  },
+  "trace_forced": {
+   "None": 30042
+  }
+ },
+ "s2_sticky/*_telemetry.jsonl": {
+  "files": 20,
+  "prefill_active_snapshots": 1228,
+  "split_index_hist": {
+   "28": 1228
+  },
+  "trace_forced": {
+   "None": 1228
+  }
+ },
+ "sticky_smoke/*_telemetry.jsonl": {
+  "files": 2,
+  "prefill_active_snapshots": 10,
+  "split_index_hist": {
+   "81": 10
+  },
+  "trace_forced": {
+   "None": 10
+  }
+ }
+}
