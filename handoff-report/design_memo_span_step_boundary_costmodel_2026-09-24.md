@@ -12,21 +12,21 @@
 ## 1. 코드 사실 (`workspace/engine-port/src/multiplex/multiplexing_mixin.py`)
 
 - **R1** `event_loop_pdmux`(legacy·true-dual 공통)의 루프 1회 = decode 1 step ∥ prefill 1 span **발행**. 이는 CPU 루프 경계이며
-  GPU 완료 경계가 아니다(legacy는 decode만 매 반복 synchronize[`:1494`], prefill 스트림은 최종 span까지 비동기 — 중간 전환은
+  GPU 완료 경계가 아니다(legacy는 decode만 매 반복 synchronize[`multiplexing_mixin.py:1494`], prefill 스트림은 최종 span까지 비동기 — 중간 전환은
   `prefill_stream.synchronize()`로 발행된 span 전부를 드레인한다). `PDMUX_LA_COORD=1`(`event_loop_pdmux_coord`)에서는
-  성립하지 않는다. span 크기 `forward_count = max(1, split_forward_token_budget // extend_num_tokens)`(`:1416–1427`)이고
+  성립하지 않는다. span 크기 `forward_count = max(1, split_forward_token_budget // extend_num_tokens)`(`multiplexing_mixin.py:1416-1427`)이고
   `split_forward_token_budget=65536`(전 yml 79개, `pdmux_context.py:20`) 하에서 `extend_num_tokens ≤ 65536/num_hidden_layers`인
   prefill은 span 1개(= layer-wise 경계 없음)다. Nano-9B-v2는 `num_hidden_layers=56`(HF config, 리비전 `dc0661c8…`) ⇒ 문턱 ≈1170 토큰.
-- **R2** v7(`PDMUX_SLO_SCHED`)은 prefill이 비행 중인 동안에만(`:1312–1317`) 매 span `_slo_decide_idx()`를 호출하고(dwell 3,
-  `:1129–1142`), R2는 매 span `_r2_decide_idx()`를 호출하나 `CoarseGrainedController`가 `max(4 iter, 100 ms)` cadence·
-  `max(8 step, 200 ms)` dwell로 재평가를 제한한다(`controller.py:112–115,168–179`; env 노브 없음). prefill이 없는 decode step은
-  결정 지점이 아니며, prefill 종료 후에는 이벤트 경로(`adjust_stream_groups`의 `manual_divisions` bs-임계값, `:1175–1182`)가
-  컨트롤러 선택을 덮어쓴다(sticky+fixed 예외, `:1168–1175`) ⇒ 제안의 '유지'는 prefill 생애주기를 넘어 유지되지 않는다.
+- **R2** v7(`PDMUX_SLO_SCHED`)은 prefill이 비행 중인 동안에만(`multiplexing_mixin.py:1312-1317`) 매 span `_slo_decide_idx()`를 호출하고(dwell 3,
+  `multiplexing_mixin.py:1129-1142`), R2는 매 span `_r2_decide_idx()`를 호출하나 `CoarseGrainedController`가 `max(4 iter, 100 ms)` cadence·
+  `max(8 step, 200 ms)` dwell로 재평가를 제한한다(`controller.py:112-115,168-179`; env 노브 없음). prefill이 없는 decode step은
+  결정 지점이 아니며, prefill 종료 후에는 이벤트 경로(`adjust_stream_groups`의 `manual_divisions` bs-임계값, `multiplexing_mixin.py:1175-1182`)가
+  컨트롤러 선택을 덮어쓴다(sticky+fixed 예외, `multiplexing_mixin.py:1168-1175`) ⇒ 제안의 '유지'는 prefill 생애주기를 넘어 유지되지 않는다.
   (정본 관측: decode-busy 가중 시간의 86–89%가 prefill 유휴 구간 — E2C-21, shape A.)
-- **R3** decode CUDA graph는 `f"{stream_idx}_{bs}"`별로 전 stream group에 캡처(dev tree `cuda_graph_runner.py:798,811–816`,
-  재생 키 `:681`) ⇒ step 경계 전환은 **decode** cudagraph와 양립. split prefill은 eager(`model_runner.py:2866`)다.
+- **R3** decode CUDA graph는 `f"{stream_idx}_{bs}"`별로 전 stream group에 캡처(dev tree `model_executor/cuda_graph_runner.py:798`, `model_executor/cuda_graph_runner.py:811-816`,
+  재생 키 `model_executor/cuda_graph_runner.py:681`) ⇒ step 경계 전환은 **decode** cudagraph와 양립. split prefill은 eager(`model_executor/model_runner.py:2866`)다.
   파티션 수 × bs 수만큼 graph 메모리가 늘어난다(미측정). true-dual worker 스레드의 전역 stream idx 읽기 안전성은 미검증.
-- **R4** `PDMUX_SLO_SPAN_TYPE`(`:1430–1437`): prefill span을 attn/ssm type-run 경계에서 자름 — `la_coord_windows`는
+- **R4** `PDMUX_SLO_SPAN_TYPE`(`multiplexing_mixin.py:1430-1437`): prefill span을 attn/ssm type-run 경계에서 자름 — `la_coord_windows`는
   `zamba2.py`에만 있어 NemotronH에서는 무동작(silent no-op).
 
 ## 2. 정본 대조
@@ -40,9 +40,9 @@
 
 - **R6** 죽은 형태에는 decode-side(C·F·H)뿐 아니라 prefill-side(D·E, lever 부재 — no-cudagraph micro)가 있고, prefill
   현재-layer-type으로 prefill:decode 비율을 span 경계에서 옮기는 **PF(`PDMUX_LA_COORD_PF`, `reports/research_arc.md:192` #9b /
-  `:216` E5)는 서빙이나 no-cudagraph·n=1·변수 동시 변경으로 生死 판정 불가**다(`reports/policy_comparison.md:106`). 따라서
+  `reports/research_arc.md:216` E5)는 서빙이나 no-cudagraph·n=1·변수 동시 변경으로 生死 판정 불가**다(`reports/policy_comparison.md:106`). 따라서
   결정이 **현재 span의 layer type의 함수**이면 PF 계열(정본상 layer-type 정책, 全형태 死 쪽)이고, **남은 phase 전체의 집계
-  조성만의 함수**여야 postmortem §3의 생존 형태(whole-phase floor)다. 구현된 Claim E(`profile.py:1–6`)는 조성을 쓰지 않고
+  조성만의 함수**여야 postmortem §3의 생존 형태(whole-phase floor)다. 구현된 Claim E(`profile.py:1-6`)는 조성을 쓰지 않고
   full-model decode 곡선을 보간한다(`attention_layers`/`ssm_layers`는 메타데이터) ⇒ **'조성 기반 cost model'과 prefill-span 시간
   모델(A1)은 Claim E의 확장이며 별도 사전등록 대상이다.**
 
@@ -68,7 +68,7 @@ cost model(별도 사전등록), (iii) PF 계열(현재-span type 조건)은 판
   조성은 모델 상수라 "조성 포함 vs 미포함"은 모델별 프로파일 유무의 재매개화일 뿐이다. **모델 hold-out**(조성이 다른 ≥2–3개 모델로
   적합, 미사용 모델 예측)이 있어야 식별된다. prefill span 수준은 부분 식별 가능하나 §5대로 짧은 입력은 span이 1개로 퇴화한다.
 - **A2 intra-prefill 재결정 가치** — ★감사: **서술대로는 검정 불가**. v7(매 span)과 이벤트 경로는 규칙과 cadence가 **동시에** 다르다
-  (교락 #10). R2 cadence는 하드코딩(`controller.py:112–115`)이라 같은 규칙에서 cadence만 바꾸려면 엔진 패치가 필요하다. 또
+  (교락 #10). R2 cadence는 하드코딩(`controller.py:112-115`)이라 같은 규칙에서 cadence만 바꾸려면 엔진 패치가 필요하다. 또
   prefill이 대부분 1 span이면 도메인이 비어 있다(§5, N3 위험) ⇒ P0 선행.
 
 ### B. decode (step 단위)
@@ -92,7 +92,7 @@ cost model(별도 사전등록), (iii) PF 계열(현재-span type 조건)은 판
 
 - **P0 도메인 존재**: prefill당 span 수 분포 + decode-active 시간 중 prefill-in-flight 비율(residency), VESSL 실측·워크로드 고정.
   대부분 1 span이거나 residency가 낮으면 A2·B·C 전부 퇴화(N3). → §5에 KISTI 아카이브 기반 부분 결과.
-- **P1 realized vs target**: telemetry의 실현 split만 인정(Stage 0/λ0 교훈). decode-only fallback(`adjust_stream_groups:1188–1200`)·
+- **P1 realized vs target**: telemetry의 실현 split만 인정(Stage 0/λ0 교훈). decode-only fallback(`adjust_stream_groups:1188-1200`)·
   sticky 여부 등록.
 - **P2 아키텍처 선언**: single-worker(HE0 도메인) vs true-dual(Claim E 도메인). 둘을 동시에 바꾼 비교는 해석 불가(#10).
 - **P3 용량 먼저**: VESSL에서 모델·shape별 λ\* 측정 후 변화 trace를 λ\* 분수로 정의. TTFT≈SLO metric cliff 회피(#5, 게이트 6).
@@ -187,3 +187,60 @@ cost model(별도 사전등록), (iii) PF 계열(현재-span type 조건)은 판
   **혼합 trace(긴 prefill + 많은 동시 decode, 부하 변화)**가 있어야 A2·B·C가 비퇴화한다 — 이 trace의 설계·용량(λ\*) 측정이 선행 과제.
 - 한계: telemetry 표본 격자가 비균등(prefill-in-flight 표본 과소 가능 — `PDMUX_TRACE_FORCE_PREFILL` 미사용)이라 residency 절대값은
   가중 규약 의존. 스크립트는 세션 scratchpad `p0_residency.py`(저장소 미등록) — 인용 전 저장소 등록·selftest 필요.
+
+## 8. 정정 + rate 의존성 (2026-09-24, 같은 날, GPU 0)
+
+**정정(§7)**: §7의 "에피소드"는 prefill-in-flight 스냅숏의 **최대 연속 구간**이라, 부하가 높아 prefill이 연달아 돌면 여러 prefill이
+**하나로 합쳐진다**. 따라서 §7 표의 "prefill 1회 동안 decode-bs 변화"는 "prefill이 쉬지 않고 도는 구간 1개 동안"으로 읽어야 한다
+(아래 표에서 shape B의 구간 길이가 rate와 함께 1.5 s → 26.6 s로 늘어나는 것이 그 증거). 또 표본 격자가 decode 동기 시점에
+묶여 있어 decode-bs 감소(완료)는 과소 관측될 수 있다.
+
+**사용자 지적(2026-09-24)**: "prefill 중 조건 변화가 드물다"는 req/s에 따라 달라지는 것 아닌가 → 같은 λ0 telemetry로 rung별 재집계:
+
+| cell | achieved req/s | prefill-busy 구간 평균 길이 | 구간당 decode-bs ↑ / ↓ | 구간당 prefill 큐 증가(도착) | achieved×길이 |
+|---|---:|---:|---|---:|---:|
+| a_r0 | 1.07 | 0.01 s | 0.02 / 0.00 | 0.00 | 0.01 |
+| a_r1 | 1.75 | 0.03 s | 0.06 / 0.00 | 0.00 | 0.04 |
+| a_r2 | 2.81 | 0.02 s | 0.03 / 0.00 | 0.00 | 0.04 |
+| a_r3 | 3.05 | 0.06 s | 0.03 / 0.06 | 0.00 | 0.19 |
+| a_r4 | 3.05 | 0.18 s | 0.12 / 0.12 | 0.12 | 0.54 |
+| b_r0 | 0.44 | 1.46 s | 0.18 / 0.00 | 0.45 | 0.64 |
+| b_r1 | 0.60 | 4.35 s | 0.44 / 0.09 | 1.26 | 2.62 |
+| b_r2 | 0.70 | 17.19 s | 0.17 / 0.08 | 5.17 | 11.97 |
+| b_r3 | 0.70 | 26.61 s | 0.18 / 0.00 | 9.64 | 18.55 |
+
+**읽는 법 (판정 아님, KISTI·fixed D44·합성 shape 한정)**
+- **맞다 — rate 의존이다. 다만 변하는 것은 decode가 아니라 prefill 큐다.** rate가 오르면 prefill-busy 구간 동안 큐에 들어오는 도착이
+  0.45 → 9.6개로 늘고, 구간 자체가 길어진다(용량 부근에서 prefill이 쉬지 않음). 반면 **decode-bs 변화는 rate와 무관하게 구간당
+  ~0.2–0.4회**에 머문다.
+- 기전(설명 가설, 미검증): 요청은 **prefill이 끝나야** decode에 들어가므로 decode 유입률은 prefill 처리율(achieved ≤ 용량, shape B
+  ≈0.70 req/s에서 포화)에 묶인다. decode 인구 ≈ 유효 처리율 × decode 체류시간(Little)이므로 offered rate를 올려도 용량 위에서는 decode
+  쪽 조건이 더 자주 바뀌지 않는다. ⇒ 경계에서 결정을 바꿀 입력은 **"prefill 압력(큐)"은 rate와 함께 커지고, "decode 수요"는 용량과
+  shape(출력 길이)가 상한을 정한다.**
+- shape A는 용량(achieved ≈3.05에서 포화) 부근(a_r3·a_r4)에서야 큐가 쌓이지만(최대 큐 중앙값 26–28) prefill-busy 구간이 0.06–0.18 s로
+  짧아 그 안에서의 변화는 여전히 드물다.
+- 함의: span 경계 재결정이 반응할 "변화"가 생기는 것은 **용량 부근 이상의 부하에서 prefill 큐 쪽**이다. 그런데 그 regime은 TTFT가
+  SLO 경계를 넘나드는 metric cliff 구간이라(게이트 6) 측정 설계가 가장 까다롭다 — P3(용량 먼저)·게이트 6을 이 질문에 직접 적용해야 한다.
+
+**radix cache 결정(사용자, 2026-09-24)**: 당분간 `--disable-radix-cache` 상태에서의 실험 검토를 최우선으로 하고, radix cache ON(multi-turn·
+prefix 재사용 trace — TraceLab/Mooncake)은 이후 확장 검토 항목으로 둔다. ⇒ 합성 혼합 trace는 만들지 않고(애플리케이션 정당성 부족,
+`venue_positioning.md` §0.2 금지 주장과 충돌 위험), short-context·long-context를 **분리**해 regime별로 검토한다.
+
+## 9. radix ON 확장 시 영향 (2026-09-24, doc-steward, 포인터)
+
+이 결정과 그것이 바꿀 판정의 전수 분석(엔진 소스 file:line 인용 포함)은
+`reports/longcontext_trace_plan.md` §8/§8.1에 정본으로 기록했다 — 이 메모는 요약만
+남긴다. **GPU 0·새 측정 0·성능 판정 0.**
+
+- radix ON은 §5/§7의 P0(span 수)·residency 이분법(짧은 shape=decode-only 지배,
+  긴 shape=prefill 지배)을 **하나의 agentic trace 안에서 turn 단위로 교대**하는
+  형태로 바꿀 것(추론): 대부분 캐시 hit·짧은 append(span 1개, decode-only)이다가,
+  드물게 캐시 미스·거대 prefill(다수 span, 다수의 진행 중인 long-ctx decode와
+  충돌)이 낀다 — 이것이 §3(A)가 요구하는 "긴 prefill이 도는 동안 decode 수요가
+  변한다"는 도메인의 **비-합성(non-synthetic)** 형태이자, 사용자가 거부한 합성
+  혼합 trace(위 §8)의 대체 후보다.
+- λ0 수치(λ\*(A)≈3.05·λ\*(B)≈0.696 req/s, n=2)·decode floor 인용정지 값 전부
+  **radix OFF·ctx≤16K 한정**이라 radix ON으로 이식 금지 — 재측정 필요.
+- HE0·PD-mux 이득(P1)·layer-type 死 판정이 radix ON에서 어떻게 되는지는
+  `reports/longcontext_trace_plan.md` §8.1에 항목별 분석/예측 라벨과 함께
+  적어 두었다(HE0는 뒤집힐 근거도 유지될 근거도 없어 **미검증으로 열어 둠**).

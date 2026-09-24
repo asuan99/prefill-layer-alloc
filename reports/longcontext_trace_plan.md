@@ -1,6 +1,7 @@
 # 실 trace를 **long-context로 전환**하는 문제 — 논의와 계획
 
 발의: 사용자, 2026-07-17. 작성: 같은 날. ★**개정: 2026-07-25**(§0.5 신설 + §4.3 SLO 교정 + §6 L−2/L3s + §2 H_L5 — 벡터1 short-ctx 종결·r0c decode-floor grounding·시간/공간 분리·운영점 게이트 반영). ★★**개정: 2026-07-26**(§0.6 신설 — **L−2(Stage 0) 게이트 실행 완료·결과 기록**: non-binding, ctx≤16k. L−1 이상은 여전히 계획 미실행). ★★★**개정: 2026-07-28**(§0.6/H_L4/H_L5/L−2 행 **철회** — claims-auditor 감사(C1 CONFIRMED)로 Stage 0의 D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어, L−2가 "실행 완료·non-binding"이 아니라 **"게이트 미실행"**으로 정정됨. L−1 이상은 "게이트 실패로 보류"가 아니라 다시 계획 단계). ★★★★**개정: 2026-09-07**(doc-steward, D4 — §4.3 **부분 정정**: 2026-07-25 판정 중 "(i) `a+b·L` 연속 길이-정규화 임계는 **계보 없음**"이라는 사실 주장을 정정. 계보가 **있다**(Etalon/Metron이 `D_p(L)` 프로파일 fitting을 명시적으로 처방, LoongServe가 input-normalized latency 사용) — 근거 `workspace/engine-port/results/cp_baseline/RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)/§6-2. **선형 폐형식 `a+b·L` 자체에 대한 기각과 §4.3의 실무 처방(절대 class SLO+slowdown 병기)은 유효 유지** — 성능/정책 판정 아님, 인용·계보에 관한 정정). ★★★★★**개정: 2026-09-21**(doc-steward — §5에 TraceLab·Azure-2024 trace 후보 추가 + §5.1 신설[순위·residency 축 연결, `reports/paper/venue_positioning.md` §0.2 전파] + §8 radix-cache 결정을 residency 트랙 선결 게이트로 승격 — 성능/정책 판정 아님, GPU 0, 미결정 상태 자체는 불변).
+★★★★★★**개정: 2026-09-24**(doc-steward — §8 radix-cache 결정을 사용자 결정으로 **1차 조건만 확정**(OFF, ON은 추후 확장)으로 갱신 + §8.1 신설[radix ON 확장 시 판정이 어떻게 달라지는지 — 분석/예측, 새 측정 아님] + §5 "혼합" 행에 합성 혼합 trace 후순위 결정 각주. GPU 0·새 측정 0·Claim 등급 불변. 근거: `handoff-report/design_memo_span_step_boundary_costmodel_2026-09-24.md` §8, 사용자 지시).
 계기: *"motivation으로 attn과 mamba가 차이가 난다는 지점은 **long-sequence에서 심화**되는데, 실 trace에도 그런 데이터셋들이 존재할 것이고, 그에 따라 **실행의 범위가 달라질 수 있는** 가능성이 있다."*
 
 관련: [CONSENSUS.md](CONSENSUS.md)(정본) · [research_arc.md §S-M](research_arc.md)(반증 지점·측정 환경·유효 경계) · [realtrace_findings_and_open_branches.md](realtrace_findings_and_open_branches.md)(얽힘 기전) · [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)(L−2 원 판정, ★★★2026-07-28 claims-auditor 감사로 철회 — 아래 §0.6 참조).
@@ -210,7 +211,7 @@ RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)(표+인용)·§6 항목2.
 | ★**`longbench_v2`** (THUDM/LongBench-v2) | ✅ | 진짜 long-doc, **로더 내장**, 길이 분포 넓음 | **출력 기본 10 tok**(`--sharegpt-output-len`으로 강제 가능하나 그러면 "실 trace"가 반쪽) · **데이터 미보유**(`hf_cache/raw/longbench_cache/`는 **비어 있음**, 8K) · **`HF_HUB_OFFLINE=1`이라 사전 다운로드 필수** |
 | **`mooncake`** | ✅✅ | 실 서빙 **arrival + 길이 trace** = 가장 현실적, 평균 input 12,035 tok/output 343 tok(FAST'25), Apache-2.0, SGLang `bench_serving` 로더 내장 | prefix 재사용 전제 — 우리는 **`--disable-radix-cache`** 중이라 해석 주의(또는 이 실험만 radix 허용 = 또 다른 변수). ★block hash를 보유해 radix cache ON/OFF **결정을 강제**(아래 §5.1·§8 참조) |
 | **`generated-shared-prefix`** | ❌ | long prefix 통제 | 위와 동일한 radix 문제 |
-| ★**혼합 (ShareGPT ↔ long-doc 교대)** | ✅ | ★**H_L4 전용** — regime 충돌을 *만드는* 유일한 벤치 | 하네스 신규 필요(E3-vary의 rate 교대를 **dataset 교대**로 확장) |
+| ★**혼합 (ShareGPT ↔ long-doc 교대)** | ✅ | ★**H_L4 전용** — regime 충돌을 *만드는* 유일한 벤치 | 하네스 신규 필요(E3-vary의 rate 교대를 **dataset 교대**로 확장). ★**후순위(사용자 결정, 2026-09-24)**: 이 행의 **합성** 혼합 trace는 만들지 않는다 — 애플리케이션 정당성 부족 + `venue_positioning.md` §0.2 금지 목록("트렌드가 residency를 키운다")과 충돌 위험. short-context·long-context는 **분리**해 검토(§8 참조). H_L4/L3 계획 자체는 삭제 아님, 순서만 뒤로 밀림 — 대신 자연발생 혼합(같은 애플리케이션 안 cache-miss turn)이 있는 radix-ON 확장(§8.1)이 이 역할을 대체할 후보다 |
 | ★**TraceLab**(신규, 2026-09-21) | ✅ | arXiv 2606.30560, UW, Claude Code+Codex 에이전틱 워크로드(2025-09~2026-06, 357,161 step), **CC BY 4.0**, prefix/append **분리 기록** — 캐시 적중률 가정 없이 residency 스윕 가능(prefix 중앙값 126K/116K, append 857/886, output 252/184) | 엔진 내장 로더 없음(신규 어댑터 필요) · 원문 프롬프트 없음(prefix/append 길이만) |
 | ★**Azure LLM Inference Dataset 2024**(신규, 2026-09-21) | ✅ | 2024-05-10~19, **CC-BY**, 단순한 arrival+길이 trace | 엔진 내장 로더 없음(신규 어댑터 필요), Mooncake만큼 길이 분포가 극단적이지 않음 |
 
@@ -277,9 +278,130 @@ D108 앵커가 실은 decode 16 SM이었음이 claims-auditor 감사로 확인�
   ⚠️ 이건 **반대 방향(짧은 L) 조사**로, [research_arc.md §S3 정정](research_arc.md)의 열린 질문(*"L≈200–2000서 Diff B가 열리나"*)용이다. **이 문서의 계획과 혼동하지 말 것.**
   (그 sweep의 부산물로 드러난 것: 구 `knee2d` 격자는 **B축이 가짜**였다 — `chunked-prefill-size`가 토큰을 잘라 요청한 B=48이 실제로는 bs=1–10으로 관측됨.)
 - **데이터**: `hf_cache/raw/longbench_cache/`는 **비어 있음**. `HF_HUB_OFFLINE=1`이므로 **L2 전에 다운로드 필요**(로그인 노드에서 별도 수행).
-- **미결정**: radix-cache 정책(`mooncake`/shared-prefix를 쓸 것인가), SLO 정의(§4.3 (i) vs (iii)).
-  ★**게이트 승격(2026-09-21, doc-steward, §5.1 전파)**: Mooncake가 residency 트랙의
+- **부분 결정(2026-09-24, 사용자 — 아래 §8.1 이전은 미결정이었음, 이력 보존)**: radix-cache 정책의 **SLO 정의(§4.3 (i) vs (iii))는 여전히 미결정**이나, **radix-cache ON/OFF 축은 1차값이 정해졌다**: *"radix cache는 disable된 상태에서 실험을 검토하는 것이 최우선이고, 추후 확장에 대한 검토가 필요하다."* ⇒ **`--disable-radix-cache`가 실험 검토의 1차(primary) 조건으로 유지**되고, **radix ON**(multi-turn·prefix 재사용 trace: TraceLab·Mooncake)은 **추후 확장(later extension) 검토 항목**으로 명시적으로 뒤로 밀린다. 같은 결정의 일부로 **합성 혼합(short↔long) trace는 만들지 않는다**(애플리케이션 정당성 부족, `venue_positioning.md` §0.2 금지 목록과 충돌 위험 — 위 §5 "혼합" 행 각주) — short-context·long-context는 **분리**해 검토한다.
+  ★**게이트 승격(2026-09-21, doc-steward, §5.1 전파)의 현재 상태**: Mooncake가 residency 트랙의
   trace 후보 2순위(TraceLab 다음)로 부상하면서, 그 block hash가 radix cache ON/OFF
-  결정을 **강제**하게 됐다 — 따라서 이 radix 결정은 이제 residency 트랙 착수의
-  **선결 게이트**다(미결정이라는 사실 자체는 이 회차에서 바뀌지 않았다, 결정은 아직
-  내리지 않음).
+  결정을 **강제**하게 됐다 — 이 선결 게이트는 이제 **"1차값 OFF로 착수 가능, ON 확장은
+  대기"** 상태다(radix ON 캠페인 자체는 여전히 미착수 — GPU 0·라벨 0건·성능 판정
+  0건, 이 결정은 순서를 정했을 뿐 측정을 만들지 않았다). radix ON으로 확장할 때
+  달라지는 판정들의 **분석(측정 아님)** 은 §8.1. 근거:
+  `handoff-report/design_memo_span_step_boundary_costmodel_2026-09-24.md` §8(사용자
+  지시 원문 인용) — 이 문서(§8)가 이 결정의 정본, design memo §8/§9는 근거 포인터.
+
+### 8.1 ★신설(2026-09-24, doc-steward — radix ON 확장 시 달라지는 판정: **분석/예측, 측정 아님**)
+
+> **지위**: 이 절 전체는 엔진 소스 정독(파일:줄 인용)에 기반한 **분석**이다. **GPU 지출 0 ·
+> 새 측정 0 · 새 성능 판정 0 · Claim 등급 불변.** "측정됐다"고 읽지 말 것 — 아래 각
+> 항목이 실측인지 추론인지 명시한다. 엔진 트리 = `sglang_engine_dev`(v0.5.10 dev),
+> 파일 경로는 그 트리의 `python/sglang/srt/` 기준.
+
+**엔진 사실(코드, 직접 확인)**
+
+- `server_args.py:1930-1962`(`NemotronHForCausalLM`)·`server_args.py:2038-2048`
+  (`FalconH1ForCausalLM`/`JetNemotronForCausalLM`/`JetVLMForConditionalGeneration`)는
+  `_handle_mamba_radix_cache(support_mamba_cache=True, support_mamba_cache_extra_buffer=False, ...)`를
+  호출한다 — 이 두 아키텍처는 MambaRadixCache **지원**(extra_buffer는 미지원). `server_args.py:2050-2061`
+  (`GraniteMoeHybridForCausalLM`, Granite-4 계열)은 `support_mamba_cache_extra_buffer=False`만
+  넘기고 `support_mamba_cache`는 함수 기본값(`server_args.py:2134-2139`의 시그니처 `= True`)에
+  의존한다 ⇒ **기본값 True로 지원**. **`Zamba2ForCausalLM`은 이 arch-dispatch 목록에 전혀 없다**
+  (`server_args.py` 전체 grep 0건, 2026-09-24 확인) — Zamba2가 radix cache를 지원/자동비활성
+  하는지는 **이 파일만으로는 미확인**(다른 경로일 가능성, 코드 추가 조사 필요, 이 절에서
+  단정하지 않는다). 참고로 `server_args.py:1914-1918`의 `KimiLinearForCausalLM`/
+  `BailingMoeV2_5ForCausalLM`은 `support_mamba_cache=False` → `disable_radix_cache=True`로
+  **자동 비활성**되는 사례이나, 이 둘은 이 프로젝트의 4모델(NemotronH/Zamba2/Falcon-H1/
+  Granite-4)에 **속하지 않는다** — "hybrid는 radix가 자동으로 꺼진다"는 서술은 아키텍처
+  전반이 아니라 이 두 아키텍처에 한정된 사실이다.
+- `server_args.py:2151-2156`: `support_mamba_cache=False`이면 `disable_radix_cache=True`로
+  강제(경고 로그 포함) — 위 KimiLinear/BailingMoeV2_5 케이스의 기전.
+- `server_args.py:2201-2207`("no_buffer" 분기, 즉 radix cache가 켜져 있고 extra_buffer가 아닌
+  경우): `speculative_algorithm is None`이면 **overlap schedule을 자동으로 끈다**(경고 로그
+  "Disabling overlap schedule since mamba no_buffer is not compatible with overlap
+  schedule"). 우리 PD-mux 실행은 이미 `--disable-overlap-schedule`를 쓰므로(CLAUDE.md
+  런타임 모드 절) 이 자동 비활성 자체는 우리 설정과 **충돌하지 않는다** — 이미 하던 일을
+  엔진이 한 번 더 강제할 뿐.
+- `server_args.py:2208-2214`: 위 no_buffer 분기 안에서 `attention_backend == "trtllm_mha"`이면
+  MambaRadixCache가 요구하는 `page_size=1`을 trtllm_mha가 지원하지 않아 **radix cache를
+  다시 강제로 끈다**(`disable_radix_cache=True`) — 즉 **backend 선택이 radix ON을 재차 무효화할
+  수 있다**. `server_args.py:1995-1998` 주석이 이 page_size=1 요구를 명시.
+- `mem_cache/mamba_radix_cache.py:76`: 트리 노드는 `mamba_value: Optional[torch.Tensor]`(SSM
+  state)를 들고 있다. `:225,237,251,265`의 매칭 조건은 한결같이
+  `not self.mamba or node.mamba_value is not None`이다 — **mamba 모델에서 어떤 노드가
+  prefix-hit으로 인정되려면 그 노드에 SSM state가 저장돼 있어야 한다.** 이로부터
+  다음은 **추론(측정 아님)**: exact append(정확히 이전 turn 끝에서 이어붙이는 요청)는
+  자연스럽게 SSM state가 있는 리프 노드를 재사용하지만, "공유 system prompt +
+  갈라지는 suffix"(branching) 패턴은 그 분기점 노드에 SSM state가 없을 수 있어(다른
+  분기가 그 자리를 먼저 밀어냈거나 애초에 mamba_value가 그 노드에서 갱신되지 않았을
+  경우) transformer-only radix cache보다 **적중률이 낮을 수 있다** — 이 방향성은
+  hybrid 고유 변수이며, 이 절에서 **측정하지 않았다**.
+- 캐시에 남는 노드는 **KV(attention) + SSM state를 함께** 들고 있으므로, radix ON은
+  in-flight 요청 예산이 아니라 **캐시가 점유하는 메모리**를 통해 동시-처리 가능 요청 수
+  (running-request budget)에 영향을 줄 수 있다 — 이 상호작용의 구체적 상수는 이미 정본에
+  등재된 별개 사실(`model_runner_kv_cache_mixin.py:223-229`, `disable_radix_cache ∧
+  max_running_requests` 조합이 `max_mamba_cache_size`를 통해 KV 예산을 바꿈, `PROJECT_STATUS.md`
+  NSL E-A 절)과 **같은 계열의 우려**이지 이 절의 신규 측정이 아니다.
+
+**radix ON으로 확장하면 달라질 수 있는 판정들(전부 분석/예측 라벨, 미검증)**
+
+- **P0 span 수(design memo §5)**: span 크기는 `PDMUX_SLO_SPAN_TYPE` 무관하게
+  **캐시-미스(uncached append) 토큰 수**가 결정한다(캐시 hit 구간은 재계산이 필요 없어
+  span 예산을 소모하지 않을 것으로 예상 — 추론). agentic trace(TraceLab append 중앙값
+  ≈857–886 토큰)는 그대로면 대부분 **span 1개**로 남고, cache-miss turn(TraceLab
+  prefix 중앙값 116K–126K급)이 발생하면 그 turn만 56-layer 단일 span(design memo
+  §5 shape B 패턴, 문턱 ≈1170 토큰/56층)으로 튄다 ⇒ **bimodal**(대부분 1 span,
+  드물게 다수 span) — design memo §7의 "shape A(짧음, 매번 1 span) vs shape B(길음,
+  다수 span)" 이분법이 radix ON에서는 **같은 trace 안에서 turn마다 갈리는 형태**로
+  나타날 것이라는 예측.
+- **residency**: 대부분의 시간(캐시 hit turn)은 residency가 매우 낮고(prefill이
+  거의 없음), 캐시 미스가 발생하는 드문 turn에서 급등(spike)하는 형태일 것 — design
+  memo §7/§8의 shape A/B 관측(90–97% decode-only vs 43–98% residency)이 **한 trace
+  안에서 turn 단위로 교대**할 것이라는 예측.
+- **decode floor / Δstep**: TraceLab 규모(prefix 68K–142K대)에서는 attention decode
+  비용이 ctx에 비례해 오르는 반면 SSM decode는 O(1)(design memo §0.5-B, r0c 微측정
+  계보) ⇒ **layer 조성(attn 비중)이 decode 비용에 미치는 영향이 ctx≤16K보다 더
+  크게** 나타날 것으로 예상 — 단 §2-a/기존 인용정지 수치(ctx256 1.1×, knee 16→44→108
+  등)는 **인용 금지**(계측 결함 3건, `CONSENSUS.md` §1 항목5 각주)이므로 새로 실측해야
+  하며 이 절이 그 수치를 대신하지 않는다.
+- **capacity λ\*, KV 예산**: λ0(job 908623, KISTI A100)의 λ\*(A)≈3.05·λ\*(B)≈0.696 req/s
+  (n=2)는 **ctx≤16K·radix OFF 한정**이라 radix ON·긴 prefix 규모로는 **이식 불가** —
+  재측정 필요(기존 값을 대입하는 것은 인용 금지 사유가 된다).
+  KV 예산도 캐시 점유분만큼 재계산이 필요하다(위 엔진 사실 항목).
+- **TTFT/SLO**: 캐시 hit turn은 TTFT가 매우 작아지고(재계산할 게 거의 없음), TTFT
+  꼬리(p95/p99)는 **miss/eviction 사건이 지배**할 것 — Etalon류 절대 class SLO(§4.3)
+  자체는 캐시 상태와 무관하게 여전히 쓸 수 있으나 슬로우다운 진단(§4.3 Secondary)의
+  `prefill_floor(L)` 자체가 hit/miss에 따라 달라지므로 floor 실측 시 hit/miss를
+  분리해야 한다는 것이 이 절의 방법론적 함의.
+- **HE0**: 이 절은 HE0(단일-GPU 동적 제어가 best-static을 못 넘는다)가 radix ON에서
+  자동으로 이식되는지 **판정하지 않는다** — 뒤집힐 것이라는 근거도, 유지될 것이라는
+  근거도 이 절에는 없다. **미검증으로 열어 둔다.**
+- **PD-mux 이득(P1)**: DuetServe 원문 인용(`venue_positioning.md` §0.2, "prefill
+  isolation은 prefill이 iteration latency의 큰 비중일 때 최유리, decode-heavy regime은
+  경합이 원래 적다")을 이 절의 residency 예측(대부분 decode-only, 드문 prefill spike)에
+  대입하면, radix ON·agentic trace regime에서는 P1(PD 분리 이득)이 **더 작게 관측될
+  가능성**이 있다는 것이 **추론**이다 — 직접 검증 없음.
+- **layer-type 런타임 정책 死**: 이 판정의 기전(sub-step 재분할 비용, TPOT 42→124ms)은
+  캐시 여부와 무관하므로 **radix ON에서도 그대로 유지된다고 본다**(추론, 이 판정을
+  뒤집을 캐시-특이 경로는 이 절에서 식별되지 않았다).
+- **span/step 경계 설계(design memo)와의 연결**: design memo §7/§8이 이미 지적한
+  "짧은 shape는 prefill이 드물고 decode만 도는 구간 지배, 긴 shape는 prefill이 거의
+  항상 돌지만 decode 수요가 작다"는 이분법의 **비-합성(non-synthetic), 애플리케이션
+  정당화된 형태**가 바로 이것이다 — 하나의 agentic 애플리케이션 trace 안에서
+  "대부분은 decode-only(캐시 hit, 짧은 append)이다가, 가끔 거대한 prefill(캐시 미스,
+  10만 토큰급)이 다수의 진행 중인 long-ctx decode와 충돌"하는 구조. 이것이 사용자가
+  거부한 **합성** 혼합 trace(§5 각주) 대신 쓸 수 있는, 드물지만 무거운 결정 지점(tail
+  latency)을 만드는 자연발생 혼합이다.
+- **워크로드 도구화**: radix ON 캠페인 전에는 trace adapter가 필요하다 — Mooncake는
+  512-token 블록 해시로 캐시 가능 구간을 직접 알려주고, TraceLab은 prefix/append
+  길이만 기록하며 원문 프롬프트가 없다(§5 표).
+
+**생태계 요약(2026-09-21 조사 재인용, 이 회차 신규 웹 검색 없음 — 출처:
+`venue_positioning.md` §0.2, 본 문서 §5.1)**: 전통적 계열 = single-turn·no-cache
+(ShareGPT·LMSYS·Azure 2023/2024·LongBench/LooGLE; MuxWise가 ShareGPT/LooGLE 설정을
+그대로 씀, 저장소 확인). 2025–26년 중심 = agentic/coding multi-turn +
+prefix caching(TraceLab·Copilot[비공개]·AgentX·Mooncake) — 긴 캐시된 prefix, 짧은
+append, 짧은 output, 적중률 95–98%(Mooncake ~40%), GPU 시간은 decode 지배
+(KernelFlume 인용, §5.1). 위 §5.1/`venue_positioning.md`의 금지 주장 목록은 그대로
+유효 — 이 절이 덮어쓰지 않는다.
+
+**radix ON 캠페인 착수 전 필수 선행조건(재확인, 신규 아님)**: (1) trace adapter
+구현(Mooncake/TraceLab) (2) 용량(λ\*) 측정 전에 **적중률과 캐시-미스 사건 빈도를 먼저
+측정** (3) radix ON/OFF를 **같은 trace**에서 단일 변수로 대조.

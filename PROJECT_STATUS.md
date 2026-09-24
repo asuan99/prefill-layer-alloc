@@ -127,7 +127,16 @@ H200) — 저장소 기존 자기정정("`sharegpt.yml`/`loogle.yml`
 `reports/longcontext_trace_plan.md` §5/§8도 이 조사를 반영해
 갱신(trace 후보에 TraceLab·Azure-2024 추가, radix-cache 결정이
 residency 트랙 선결 게이트로 승격 — 미결정이라는 사실 자체는
-불변).
+불변). ★**갱신(2026-09-24, 사용자 결정)**: 위 "미결정이라는
+사실 자체는 불변"은 **부분적으로 갱신됨** — radix-cache
+ON/OFF 축의 **1차값은 결정**됐다(OFF가 실험 검토 최우선,
+ON은 추후 확장 검토 항목; SLO 정의 축(§4.3 (i) vs (iii))은
+여전히 미결정). 같은 결정으로 합성 혼합(short↔long) trace는
+만들지 않음. 상세·radix ON 확장 시 판정 변화 분석(측정
+아님)은 `reports/longcontext_trace_plan.md` §8/§8.1, 요약
+포인터는 `handoff-report/
+design_memo_span_step_boundary_costmodel_2026-09-24.md` §9.
+GPU 0·새 측정 0·성능 판정 0건·Claim 등급 불변.
 
 **(6) 미커밋 코드(engine-porter/experiment-runner 소관, 기록만)**:
 `PDMUX_ROOT` 이식 4스크립트 + 테스트 10파일, 신규
