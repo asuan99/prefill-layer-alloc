@@ -254,6 +254,12 @@ vesslctl job export <slug> > results/<campaign>/job_<id>/vessl_job.json   # 실�
 일부를 해소하고, 일부는 여전히 미확인으로 남긴다. (아래 "우리 경로"는 `sgl_kernel.spatial.create_greenctx_stream_by_value`
 경유 SGLang PD-mux다 — 프로브는 raw Driver API라 **같은 API 계층이지만 같은 코드 경로는 아니다**.)
 
+★**참고(2026-09-22 코드 근거 감사 `reports/audit/2026-09-22_scope_lineage/REPORT.md` §6 I-1, doc-steward
+등재 2026-09-24)**: 이 프로젝트의 config 55/59는 `manual_divisions`(arch 분기 미경유)를 쓰지만 나머지
+4개(byte-identical `pdmux_a100_smoke.yml`)는 자동 격자(`divide_sm`, `get_arch_constraints` 경유)를 쓴다.
+**VESSL A100은 major 8(cc 8.0)로 KISTI A100과 같으므로 이 상수도 동일하게 적용된다** — 이 실행 계획은
+영향받지 않는다. 다른 major(H100/Blackwell)로 갈 때만 §4(대여 전 확인)의 재설계 전제가 걸린다.
+
 **해소된 것**
 - 드라이버 **580.105.08 (CUDA 13.0)** ⇒ cu130 스택(torch 2.9.1+cu130·sglang-kernel 0.4.1+cu130) 구동 조건 충족. §1 "드라이버 미확인" 해소.
 - A100-SXM4-80GB, 108 SM, MIG Disabled, max SM clk 1410 MHz, power limit 400 W, K8s 컨테이너.

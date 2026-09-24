@@ -30,6 +30,28 @@ create_greenctx_stream_by_value`→CUDA green context API 층으로
 항목278). H100 "8 SM 단위" 코드 상수도 같은 스코프 배너를
 받았다(§4 대여 전 확인 절, `CLAUDE.md` 갱신).
 
+★**스코프 정정(2026-09-24, doc-steward — 사용자 승인 2026-09-24,
+2026-09-22 코드 근거 감사 `reports/audit/2026-09-22_scope_lineage/`
+I-1 적용, GPU 0·새 성능 판정 0건)**: 위 (1)의 "이 프로젝트가
+**전적으로** 쓰는 `manual_divisions` 경로"는 부정확했다 —
+`yaml.safe_load` 전수 파싱 결과 현행 `*pdmux*.yml` **55/59**만
+`manual_divisions`를 쓰고, 나머지 4개(byte-identical
+`pdmux_a100_smoke.yml`, sha256 `8e991318…`)는 이 키가 없어
+**자동 격자(`divide_sm`) 경로**로 간다. 이 config를 쓰는 job
+script 27개 안에 **P1.7 4모델·P1-opint 운영점(873944/873945)·
+`p1_gates/gate2` HOLB**(`CONSENSUS.md` §1 rev44 residency 수치의
+원 캠페인)가 들어 있어, `get_arch_constraints`는 **우리 실행
+경로에서 발화한 적이 있다**(단 A100은 major 8이므로 그 캠페인
+결과 자체는 바뀌지 않는다). "미발화"는 `manual_divisions` 계열
+(E1/S2/λ0/E2) **한정**으로만 참이다. **바뀌지 않는 것**: 로컬
+(sm120) 미실행 결론(실효 사유 3건 그대로) · 게이트 #258/#259 ·
+A100 결과·HE0·layer-type 死·정책 순위·Claim 등급 전부 **불변**.
+**이식성 함의(신규)**: 자동 격자 캠페인을 다른 major의 기판에서
+재실행하면 `get_arch_constraints` 상수가 **직접 적용**된다 — VESSL
+대여 계획(A100, major 8)은 이 정정으로 영향받지 않는다. 상세
+`CONSENSUS.md` §3 항목280(rev81), `reports/audit/
+2026-09-22_scope_lineage/REPORT.md` §6 I-1.
+
 **(2) E2 기판 이식성 — `REFUTED`(예산), 새 OVERRIDE는 사용자
 결정 사항, 아직 미승인.** `VERDICT_e2_substrate_portability_
 2026-09-18.md`(claims-auditor 규칙층 감사)의 결론: A100→A100

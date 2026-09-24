@@ -43,7 +43,7 @@
 
 | # | 위치 | 문제 | 조치 |
 |---|---|---|---|
-| R1 | "지금의 지형" 3번째 bullet | 로컬 거부 사유를 여전히 "`get_arch_constraints` major 6–9 → `ValueError`"로 적음. **2026-09-21 정정(`CONSENSUS §3` 항목278) 미반영** — 이 분기는 `manual_divisions` 경로에서 발화하지 않는다 | CLAUDE.md 개정문과 같은 3사유(sgl_kernel sm120 빌드 없음·16GB·게이트1)로 교체 |
+| R1 | "지금의 지형" 3번째 bullet | 로컬 거부 사유를 여전히 "`get_arch_constraints` major 6–9 → `ValueError`"로 적음. **2026-09-21 정정(`CONSENSUS §3` 항목278) 미반영** — 이 분기는 `manual_divisions` 계열 경로(E1/S2/λ0/E2)에서 발화하지 않는다(★2026-09-22 감사 I-1 스코프 정정, 2026-09-24 등재: 자동 격자 경로도 27개 job script에서 쓰이나 VESSL이 A100 cc8이면 이 상수는 KISTI와 동일하게 적용되어 실행 계획에 영향 없음, `CONSENSUS.md` §3 항목280) | CLAUDE.md 개정문과 같은 3사유(sgl_kernel sm120 빌드 없음·16GB·게이트1)로 교체 |
 | R2 | B절 "기판 확인 먼저" | "H100은 8 SM 단위", "Blackwell은 코드 확장 필요"를 사실로 적음 — 둘 다 정정 대상(입도는 B3 실측, Blackwell은 미지) | 체크리스트 §1 판정표를 인용하도록 교체 |
 | R3 | "실패 시그니처" green context 거부 | `Unsupported compute capability`를 기판 거부 신호로 적음 — 우리 경로에선 그 메시지가 나오지 않는다. 실제로 볼 것은 `sgl_kernel.spatial` import 실패("Ensure CUDA Driver >= 12.4")·`cuGreenCtxCreate` 오류·**요청≠실현 SM** | 시그니처 교체 + B3(realized 확인) 연결 |
 | R4 | "실험 규약" | **n≥5**. CLAUDE.md 게이트3·result-analyst는 **n≥4** | 정본(n≥4)과 맞추거나, "운영 목표 n≥5 / 판정 하한 n≥4"로 명시 분리 |

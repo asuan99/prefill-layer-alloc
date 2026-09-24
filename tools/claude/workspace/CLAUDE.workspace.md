@@ -51,8 +51,15 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
   사유를 "PD-mux 경로가 **엔진 단계에서 거부된다**(dev tree
   `pdmux_context.py:get_arch_constraints`는 major 6–9만 지원, major 10+ → `ValueError`)"로
   적었으나, 이 함수는 **자동 격자(`divide_sm`) 경로에서만 호출되고**(설치 트리 전역
-  1곳) 이 프로젝트가 쓰는 것은 **전적으로 `manual_divisions` 경로**다(현행 `*pdmux*.yml`
-  59/59 전부 확인) — 이 분기는 **우리 실행 경로에서 발화하지 않는다**. 로컬 실행 불가의
+  1곳) 이 프로젝트의 **`manual_divisions` 계열 캠페인**(E1/S2/λ0/E2 등)에서는 이 분기가
+  발화하지 않는다. ★**스코프 정정(2026-09-24, 사용자 승인 — `reports/audit/
+  2026-09-22_scope_lineage/REPORT.md` §6 I-1)**: 이전 판의 "전적으로 `manual_divisions`
+  경로(현행 `*pdmux*.yml` 59/59)"는 **거짓**이다 — YAML 파서 전수로 **55/59**이고, 나머지
+  4개(`pdmux_a100_smoke.yml`, byte-identical)는 키가 없어 **자동 격자(`divide_sm`)**를 쓴다
+  (grep이 "없음을 설명하는 주석"에 걸려 "있음"으로 셌다). 이 config를 쓰는 job script 27개에
+  **P1.7 4모델·P1-opint 운영점·p1_gates/gate2(전환 비용 원 캠페인)**가 포함된다 ⇒ 그
+  캠페인들에서는 `get_arch_constraints`가 **발화했다**(A100 cc8이라 정상 반환, 결과 불변).
+  다른 기판에서 그 캠페인을 재현하면 아키텍처 상수가 격자를 직접 바꾼다. 로컬 실행 불가의
   **실효 사유**는 (i) 설치된 `sgl_kernel`에 sm120 대응 빌드가 없어 import 자체가
   깨짐(torch ABI 불일치, 2026-09-18 로컬 실측 `undefined symbol:
   _ZNK3c106SymInt22maybe_as_int_slow_pathEv`) (ii) 16GB로는 9B 모델이 안 올라감
@@ -76,8 +83,10 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
   현재 계획·이식 범위는 `handoff-report/migration_plan_local_dev_remote_gpu_2026-09-18.md`.
   **대여 전 확인**: A100(sm80, 4 SM 단위)이면 기존 격자·λ\*와 직접 비교 가능 · H100(sm90)은
   upstream `get_arch_constraints` 코드 상수로는 8 SM 단위·132 SM이나 ★**이 상수는
-  `divide_sm`(자동 격자) 경로에만 적용되고 우리가 쓰는 `manual_divisions` 경로의 실제
-  입도는 이 상수를 타지 않는다**(2026-09-21 정정, 위 항목과 동일 근거) — 총 SM 132는
+  `divide_sm`(자동 격자) 경로에만 적용되고 `manual_divisions` 계열 캠페인의 실제
+  입도는 이 상수를 타지 않는다**(2026-09-21 정정, 위 항목과 동일 근거; ★2026-09-24 스코프
+  정정: 자동 격자 config[`pdmux_a100_smoke.yml`]를 쓰는 P1.7·P1-opint·gate2 계열을 재현하면
+  이 상수가 **직접** 격자를 정한다 — 위 I-1 참조) — 총 SM 132는
   그대로(하드웨어 사실)지만 **실제 입도는 대여 후 green-context probe로 실측해야 한다**
   (`gpu_rental_checklist_2026-09-18.md` §3 B3), 코드 상수를 실측 대신 인용하지 말 것.
   격자 재설계 + λ0 재측정 전제는 불변 · Blackwell은 실제 동작 여부가 **미지**(단순

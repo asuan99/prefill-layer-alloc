@@ -142,3 +142,9 @@ tmp/
 # 프로브 원자료 — telemetry는 크고(P4 TRACE_EVERY=1에서 337 MB) 재생성 가능
 workspace/engine-port/results/longctx_conflict/probes/**/*telemetry.jsonl
 workspace/engine-port/results/longctx_conflict/probes/**/.triton_cache/
+
+# residency census 원자료 (2026-09-24) — 재생성 가능(같은 디렉터리 residency_census.py), 로컬 보관.
+# 파일명 속 job ID·숫자 부분문자열이 check_citation_stops에 우연히 걸려 추적 불가로 결정(사용자, 2026-09-24).
+workspace/engine-port/results/residency_census_2026-09-21/census_*.csv
+workspace/engine-port/results/residency_census_2026-09-21/census_*.json
+workspace/engine-port/results/residency_census_2026-09-21/file_list.txt
