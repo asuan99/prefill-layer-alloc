@@ -147,3 +147,43 @@ cost model(별도 사전등록), (iii) PF 계열(현재-span type 조건)은 판
 3. 정책 캠페인: 사전등록 + 규칙층 감사 후 C3(B6 vs B1·B5).
 
 기판 주의: 1–3의 모든 수치는 VESSL A100 기판 수치이며 KISTI 결론과 섞지 않는다(CLAUDE.md 게이트 1 연장).
+
+## 7. P0 후반부 — residency·decode-only bs·prefill 중 조건 변화 (KISTI 아카이브 재집계, GPU 0, 2026-09-24)
+
+**자료·규약**: λ0 job 908623 `lam0_908623/tel_*.jsonl`(KISTI A100, `PDMUX_R2_POLICY=fixed` D44, sticky OFF, probe 없음 ⇒ `probe_end=None`).
+술어는 `e2_realized_mix.py`의 등록 리터럴 재사용: snapshot = `runtime_snapshot` ∧ `phase≠startup`, decode-busy =
+`decode_running_batch_size>0`, prefill-in-flight = `prefill_active_batch_size>0`. 가중 3종: **cnt**(균등), **time**(다음 스냅숏까지 간격,
+무상한), **iter**(`decode_iterations` 증가분, 왼쪽 busy). residency = decode-busy 중 prefill-in-flight 비율. ★정본 규약상
+(E2C-8′) 세 가중이 어긋나는 열은 **범위로만** 서술하고 단일값 인용 금지 — 아래 shape B는 cnt↔time 차가 크다(비균등 표본 격자).
+
+| cell | busy n | residency % cnt / time / iter | decode-only bs p50 / p90 / max (iter 가중) | decode-only 구간 stream idx (iter) | prefill 에피소드 n · 지속 p50 | 에피소드당 decode-bs 변화 평균 · 변화≥1 비율 |
+|---|---:|---|---|---|---|---|
+| a_r0 | 2677 | 2.9 / 3.1 / 2.9 | 8 / 12 / 20 | idx4 ≈98% | 85 · <1 스냅숏 | 0.02 · 2.4% |
+| a_r1 | 2667 | 3.7 / 4.0 / 3.8 | 16 / 23 / 35 | idx4 ≈97% | 103 · <1 | 0.06 · 4.9% |
+| a_r2 | 610 | 3.9 / 5.3 / 4.0 | 18 / 48 / 48 | idx4 ≈96% | 34 · <1 | 0.03 · 2.9% |
+| a_r3 | 559 | 5.0 / 7.4 / 5.1 | 8 / 48 / 48 | idx4 ≈96% | 35 · <1 | 0.09 · 8.6% |
+| a_r4 | 555 | 5.8 / 9.3 / 5.8 | 7 / 48 / 48 | idx4 ≈97% | 33 · <1 | 0.24 · 18.2% |
+| a_r4_s2 | 557 | 6.3 / 10.5 / 6.4 | 5 / 48 / 48 | idx4 ≈98% | 36 · <1 | 0.08 · 8.3% |
+| b_r0 | 313 | 43.1 / 66.2 / 45.6 | 1 / 1 / 2 | idx4 ≈92% | 55 · 0.83 s | 0.18 · 14.5% |
+| b_r1 | 356 | 66.9 / 85.0 / 69.7 | 1 / 1 / 2 | idx4 ≈99% | 34 · 0.86 s | 0.53 · 32.4% |
+| b_r2 | 324 | 87.0 / 96.3 / 88.6 | 1 / 1 / 2 | idx4 ≈94% | 12 · 0.84 s | 0.25 · 8.3% |
+| b_r3 | 441 | 90.7 / 97.6 / 92.3 | 1 / 2 / 2 | idx4 ≈97% | 11 · 0.84 s | 0.18 · 9.1% |
+| b_r3_s2 | 441 | 90.7 / 97.5 / 92.1 | 1 / 1 / 2 | idx4 100% | 11 · 0.83 s | 0.18 · 9.1% |
+
+(idx4 = `(0,108)` 비분할, idx2 = D44. 에피소드 = prefill-in-flight 스냅숏의 최대 연속 구간 — 연달은 prefill이 합쳐질 수 있고 스냅숏
+격자가 비균등이라 **짧은 prefill은 스냅숏 0–1개로만 보인다**[shape A 지속 p50 = 0 s는 "측정 불가 수준으로 짧다"는 뜻].)
+
+**읽는 법 (판정 아님, KISTI 기판·합성 고정길이 shape 2개·fixed D44 한정)**
+- **shape A**: decode-busy 시간의 **약 90–97%가 prefill 유휴(decode-only)** — 정본 E2C-21(86–89%, sticky 대조 문맥)과 같은 방향
+  (규약이 달라 수치 대조는 하지 않음). 그 구간의 decode는 거의 전부 `(0,108)`에서 bs p50 5–18(p90 최대 48 = `max_running`)로 돈다.
+  ⇒ sticky/'유지'를 켜면 **decode 반복의 ~90% 이상이 108→44 SM으로 바뀌고**, 이득(전환 제거)은 셀당 prefill 에피소드 33–103회에서만 생긴다.
+  손익분기 `idle_share × Δstep × N_iter < N_prefill × (전환비용+spike)`에서 우변 횟수가 좌변 반복 수의 약 1/100 이하라, sticky가
+  이기려면 **Δstep(44 vs 108, bs 5–48, cudagraph-ON)이 전환비용+spike의 약 1% 이하**여야 한다 — Δstep 미측정이라 예측일 뿐이다.
+- **shape B**: residency가 높다(범위 43–98%, 가중에 따라 크게 다름) — decode는 bs 1–2로 작고 prefill(에피소드 ~0.84 s)이 거의 항상 돈다.
+  **prefill 1회 동안 decode 조건(bs)이 바뀌는 경우는 에피소드의 8–32%, 평균 0.18–0.53회**뿐. ⇒ span 경계 재결정의 기회가 드물고
+  decode 수요가 작아, 이 shape에서의 결정은 사실상 정적(prefill-heavy)이다.
+- ⇒ 두 합성 shape는 제안 구조가 겨냥하는 상황(긴 prefill이 도는 **동안** decode 수요가 크게 변함)을 **어느 쪽도 만들지 않는다**:
+  A는 prefill이 짧고 드물며, B는 decode가 작다. H-Policy가 명시한 도메인("시간적으로 상보적인 near-saturation workload")에 해당하는
+  **혼합 trace(긴 prefill + 많은 동시 decode, 부하 변화)**가 있어야 A2·B·C가 비퇴화한다 — 이 trace의 설계·용량(λ\*) 측정이 선행 과제.
+- 한계: telemetry 표본 격자가 비균등(prefill-in-flight 표본 과소 가능 — `PDMUX_TRACE_FORCE_PREFILL` 미사용)이라 residency 절대값은
+  가중 규약 의존. 스크립트는 세션 scratchpad `p0_residency.py`(저장소 미등록) — 인용 전 저장소 등록·selftest 필요.
