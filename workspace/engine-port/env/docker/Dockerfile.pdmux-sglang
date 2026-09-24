@@ -1,0 +1,56 @@
+# PD-mux SGLang v0.5.10 execution image for VESSL Cloud (A100 SXM 80GB, us-west-2).
+# Build with build_image.sh (it stages a clean context: SGLang tag source + committed engine-port subset).
+# Plan: handoff-report/vessl_cloud_setup_plan_2026-09-24.md sec 4 / sec 9.
+#
+# Base = VESSL managed torch image, pinned by DIGEST (the tag can be re-pointed).
+# Measured 2026-09-24: default python is /opt/conda/bin/python 3.14.6 (NOT 3.13 as the tag
+# suggests), torch 2.9.1+cu130, triton 3.5.1, nvcc 13.0, sshd present.
+FROM quay.io/vessl-ai/torch@sha256:f361ea0d36dae3b692e393e25ec6e7910bc61af80739cd735606865bb19fe4a6
+
+# rsync/ninja are absent from the base; ninja also comes from the pin list (flashinfer JIT).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends rsync \
+ && rm -rf /var/lib/apt/lists/*
+
+# Canonical pins win over the base image's newer versions: --no-deps, then pip check is RECORDED
+# (not enforced) so a missing transitive dependency is visible in the image instead of silently fixed.
+COPY requirements.pdmux-sglang.txt /opt/pdmux/requirements.pdmux-sglang.txt
+# sglang-kernel 0.4.1+cu130 (canonical). PyPI's 0.4.1 is a CUDA-12 build -- do not let pip pick it.
+ARG SGL_KERNEL_URL=https://github.com/sgl-project/whl/releases/download/v0.4.1/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl
+ARG SGL_KERNEL_SHA256=9164b8fc2c1652a52156f21d1a960116670c29033f686946840ef5b13558c5c0
+RUN curl -fsSL -o /tmp/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl "${SGL_KERNEL_URL}" \
+ && echo "${SGL_KERNEL_SHA256}  /tmp/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl" | sha256sum -c - \
+ && pip install --no-cache-dir --no-deps /tmp/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl \
+ && rm /tmp/sglang_kernel-*.whl
+RUN pip install --no-cache-dir --no-deps -r /opt/pdmux/requirements.pdmux-sglang.txt \
+ && (pip check > /opt/pdmux/pip_check.txt 2>&1 || true)
+
+# Same sibling layout as a work root (PDMUX_ROOT=/opt/pdmux):
+#   /opt/pdmux/sglang_engine_dev/            clean `git archive v0.5.10`
+#   /opt/pdmux/prefill-layer-alloc/workspace/engine-port/{src,scripts/bootstrap,env}
+COPY sglang_engine_dev/ /opt/pdmux/sglang_engine_dev/
+COPY engine-port/ /opt/pdmux/prefill-layer-alloc/workspace/engine-port/
+ENV PDMUX_ROOT=/opt/pdmux \
+    SGLANG_ENGINE_DEV=/opt/pdmux/sglang_engine_dev/python
+
+# Engine tree: editable install (no deps -- pins above), tracked sync, then the 5 manual-edit files.
+# Same order as env/cpu_regression_baseline_2026-09-18.md sec 1.
+RUN pip install --no-cache-dir --no-deps -e /opt/pdmux/sglang_engine_dev/python \
+ && bash /opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh \
+      /opt/pdmux/runtime_source_manifest.sha256 \
+ && patch -p1 -d /opt/pdmux/sglang_engine_dev/python \
+      < /opt/pdmux/prefill-layer-alloc/workspace/engine-port/env/devtree_manual_edits.patch
+
+# py3.14 shim (ACTIVE on this base: python 3.14.6).
+RUN cp /opt/pdmux/prefill-layer-alloc/workspace/engine-port/env/sitecustomize.py \
+       "$(python -c 'import site; print(site.getsitepackages()[0])')/sitecustomize.py"
+
+# Provenance baked into the image; job_entry.sh copies it into each result dir.
+RUN pip list --format=freeze > /opt/pdmux/pip_freeze.txt \
+ && python -c 'import sys, torch; print(sys.version); print(torch.__version__, torch.version.cuda)' > /opt/pdmux/python_torch.txt
+
+ARG REPO_COMMIT=unknown
+LABEL org.opencontainers.image.title="pdmux-sglang" \
+      pdmux.sglang_tag="v0.5.10" \
+      pdmux.repo_commit="${REPO_COMMIT}" \
+      pdmux.base_digest="sha256:f361ea0d36dae3b692e393e25ec6e7910bc61af80739cd735606865bb19fe4a6"

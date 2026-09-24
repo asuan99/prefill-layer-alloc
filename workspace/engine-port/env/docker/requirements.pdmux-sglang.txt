@@ -1,0 +1,154 @@
+# pdmux-sglang image requirements (generated 2026-09-24 from env/venv_packages_2026-09-17.txt)
+# Installed with `pip install --no-deps` so the canonical pins win over the base image's newer versions.
+# NOTE sglang-kernel is NOT here: PyPI's 0.4.1 is a CUDA-12 build (links libcudart.so.12/libcublas.so.12, measured
+#   2026-09-24). The canonical 0.4.1+cu130 wheel is installed by URL + sha256 in the Dockerfile.
+# NOTE cuda-tile: flashinfer 0.6.10 declares it; canonical 0.0.0a0 is unobtainable (PyPI has 1.6.0). Left out --
+#   `import flashinfer` works without it (measured); `pip check` records the gap in /opt/pdmux/pip_check.txt.
+# Excluded from the canonical list:
+#   causal_conv1d==1.5.3.post1  -- deferred: compiled CUDA ext, no cp314/cu130 wheel; add only if B4 boot smoke needs it
+#   cuda-tile==0.0.0a0  -- not on PyPI (local install on KISTI)
+#   flash_attn==2.7.4.post1  -- deferred: compiled CUDA ext, no cp314/cu130 wheel; optional import in engine tree
+#   mamba_ssm==2.3.1  -- deferred: compiled CUDA ext, no cp314/cu130 wheel; add only if B4 boot smoke needs it
+# numpy: source env held two dist-infos (2.3.5 and 2.5.1); pinned 2.5.1 below (not excluded)
+#   pf-sparse==0.1  -- not on PyPI (local install on KISTI)
+#   pip==25.3  -- tooling
+#   sglang==0.0.0  -- installed from v0.5.10 source (editable) + sync
+#   torch==2.9.1+cu130  -- provided by base image (2.9.1+cu130, identical)
+#   torchvision==0.24.1+cu130  -- provided by base image (0.24.1+cu130, identical)
+#   triton==3.5.1  -- provided by base image (3.5.1, identical)
+#   uv==0.11.19  -- tooling
+#   wheel==0.47.0  -- tooling
+#   zmq==0.0.0  -- 0.0.0 not on PyPI (local stub)
+aiohappyeyeballs==2.6.1
+aiohttp==3.13.3
+aiosignal==1.4.0
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.13.0
+apache-tvm-ffi==0.1.11
+asttokens==3.0.1
+attrs==25.4.0
+certifi==2026.1.4
+charset-normalizer==3.4.4
+click==8.3.3
+compressed-tensors==0.15.0.1
+contourpy==1.3.3
+cuda-bindings==13.2.0
+cuda-pathfinder==1.5.4
+cuda-python==13.2.0
+cycler==0.12.1
+datasets==5.0.0
+decorator==5.3.1
+dgl==0.1.3
+dill==0.4.1
+distro==1.9.0
+einops==0.8.2
+executing==2.2.1
+fastapi==0.139.0
+filelock==3.20.0
+flashinfer-python==0.6.10
+fonttools==4.62.1
+frozenlist==1.8.0
+fsspec==2025.12.0
+gguf==0.19.0
+h11==0.16.0
+hf-xet==1.5.0
+httpcore==1.0.9
+httpx==0.28.1
+huggingface_hub==1.14.0
+idna==3.11
+iniconfig==2.3.0
+ipython==9.15.0
+jinja2==3.1.6
+jiter==0.16.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+kiwisolver==1.5.0
+loguru==0.7.3
+markdown-it-py==4.1.0
+markupsafe==2.1.5
+matplotlib==3.10.9
+mdurl==0.1.2
+mpmath==1.3.0
+msgspec==0.21.1
+multidict==6.7.1
+multiprocess==0.70.19
+networkx==3.6.1
+ninja==1.13.0
+numpy==2.5.1
+nvidia-cublas==13.0.0.19
+nvidia-cuda-cupti==13.0.48
+nvidia-cuda-nvrtc==13.0.48
+nvidia-cuda-runtime==13.0.48
+nvidia-cudnn-cu13==9.13.0.50
+nvidia-cudnn-frontend==1.23.0
+nvidia-cufft==12.0.0.15
+nvidia-cufile==1.15.0.42
+nvidia-curand==10.4.0.35
+nvidia-cusolver==12.0.3.29
+nvidia-cusparse==12.6.2.49
+nvidia-cusparselt-cu13==0.8.0
+nvidia-cutlass-dsl==4.5.0
+nvidia-cutlass-dsl-libs-base==4.5.0
+nvidia-ml-py==13.595.45
+nvidia-nccl-cu13==2.27.7
+nvidia-nvjitlink==13.0.39
+nvidia-nvshmem-cu13==3.3.24
+nvidia-nvtx==13.0.39
+openai==2.44.0
+openai-harmony==0.0.4
+orjson==3.11.9
+packaging==26.2
+pandas==3.0.2
+partial-json-parser==0.2.1.1.post7
+pillow==12.0.0
+pluggy==1.6.0
+prompt_toolkit==3.0.52
+propcache==0.4.1
+psutil==7.2.2
+pure_eval==0.2.3
+pyarrow==24.0.0
+pybase64==1.4.3
+pydantic==2.13.4
+pydantic_core==2.46.4
+pygments==2.20.0
+pynvml==13.0.1
+pyparsing==3.3.2
+pytest==9.0.3
+python-dateutil==2.9.0.post0
+python-multipart==0.0.32
+pyyaml==6.0.3
+pyzmq==27.1.0
+referencing==0.37.0
+regex==2026.4.4
+requests==2.32.5
+rich==15.0.0
+rpds-py==2026.6.3
+safetensors==0.7.0
+scipy==1.17.0
+seaborn==0.13.2
+sentencepiece==0.2.1
+setproctitle==1.3.7
+setuptools==70.2.0
+shellingham==1.5.4
+six==1.17.0
+sniffio==1.3.1
+stack-data==0.6.3
+starlette==1.3.1
+sympy==1.14.0
+tabulate==0.10.0
+tokenizers==0.22.2
+torch-geometric==2.7.0
+tqdm==4.67.3
+traitlets==5.15.1
+transformers==5.8.0
+typer==0.25.1
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+urllib3==2.6.3
+uvicorn==0.49.0
+uvloop==0.22.1
+wcwidth==0.8.2
+xgrammar==0.2.3
+xxhash==3.6.0
+yarl==1.22.0
