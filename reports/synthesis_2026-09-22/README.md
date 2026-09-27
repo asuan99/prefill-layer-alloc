@@ -13,4 +13,9 @@
 관련: [`../audit/2026-09-22_scope_lineage/`](../audit/2026-09-22_scope_lineage/)
 (sticky·계보·선행 대조 코드 근거 감사 — 이 두 문서의 T6-a·T10·D-5·D-6·D-7의 출처).
 
+⚠️ **부분 STALE (2026-09-27)** — 설계 문서의 **D-8 · D-10 카드는 문서 안에서 정정**됐고,
+**현재 실행 계획의 정본은 [`../../handoff-report/roadmap_review_2026-09-27.md`](../../handoff-report/roadmap_review_2026-09-27.md)(rev2)** 이다.
+이 세션의 감사 제안 diff는 2026-09-24 `b330ae8`으로 정본에 적용됐다(`CONSENSUS.md` rev81).
+체크포인트: [`../../handoff-report/session_handoff_2026-09-27.md`](../../handoff-report/session_handoff_2026-09-27.md).
+
 **GPU 지출 0 · 새 성능 판정 0건 · 정본 무수정.**
