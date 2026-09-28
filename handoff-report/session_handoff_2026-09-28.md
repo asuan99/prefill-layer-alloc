@@ -74,7 +74,9 @@ requirements.pdmux-sglang.txt,build_image.sh}`)·설계 메모 rev2 · `509c655`
    (`p0_residency.py`, scratchpad) 미등록 상태 등재 — 인용 전 등록·자체검사.
 4. **도구**: `check_line_citations.py`가 en-dash 범위를 인식 못 하는 공백(정규식 보강) · `CONSENSUS.md` bare 줄 인용 36건 · `job_entry.sh`
    (`git config --global --add safe.directory '*'` 포함)·vessl 실행 스크립트 미작성 · experiment-runner 등 에이전트 정의의 VESSL 규약 R1–R9 미반영.
-5. **catch-up 시작점 한 줄**: "VESSL 실행 전 사용자 결정 8건 대기 · 기여 3개 서술 확정(artifact v17/v6) · 다음 GPU 작업은 V-0 기판 점검."
+5. **다음 세션 이월(사용자 지시 2026-09-28 말미)** — **TTFT 측정 정의 검토**: 도착(대기열 진입) 기준 TTFT는 문헌 표준(open-loop, 클라이언트 측)이며 우리 하네스도 동일(`workloads.py` Poisson 도착, `analyze.py` per-request `ttft_ms`). 과부하 구간의 TTFT 크기는 시스템 상수가 아님(`CONSENSUS §3` 항목32, 7.24 s 인용 금지[CS-OK] — 금지 사실을 서술)이 이미 정본. 검토할 것: (a) 결과 규약에 **정상성 검사**(대기열 길이 단조 증가 → "불안정" 표기, TTFT 수치 미제출) 명시 (b) telemetry로 **TTFT = 대기 + prefill 처리** 분해 규약 (c) 로드맵 그림 3·시뮬레이션 설명의 "TTFT 폭발" 문구를 "대기열이 쌓여 용량 밖으로 밀려남"으로 교정 (d) 검토용 6절 원칙에 (a)(b) 두 줄 추가. 아직 미반영.
+6. **시뮬레이션 재작업(2026-09-28 저녁, artifact v18→v19, 스냅샷 `artifacts_2026-09-28/pdmux_roadmap_v18.html`)**: 워크로드 4종 × 배분 4종 분리, 요청별 진행 줄(대기→prefill→decode), span = 층 분할 표기(`층1–8`), **decode 배치가 비면 prefill이 108 SM 전부**(엔진 `adjust_stream_groups` 세 갈래: 분할 / (0,108) / (108,0), 유지 ON도 동일 — 코드로 확인) 반영, 동거 비율 계기. 개념 애니메이션이며 측정 아님.
+7. **catch-up 시작점 한 줄**: "VESSL 실행 전 사용자 결정 8건 대기 · 기여 3개 서술 확정(artifact v19/v6) · 이월 1건: TTFT 측정 정의(정상성 검사·대기/처리 분해) 검토 · 다음 GPU 작업은 V-0 기판 점검."
 
 ## 5. 미완·주의
 
