@@ -1244,6 +1244,21 @@ venue_positioning.md` §5(2026-09-10 1차 세션, 이미 이 caveat
 반영)·`CLAIM_EVIDENCE_MATRIX.md:264`·`PROJECT_STATUS.md`도 동일
 정정 반영.
 
+★★**註記(2026-09-28, doc-steward)**: 위 (D)·정정 追記가 인용하는
+`workspace/engine-port/external/muxwise/{sharegpt.yml, loogle.yml}`
+경로는 **이 저장소에 존재하지 않는다**(`external/` 디렉터리 자체가
+없음, `reports/audit/2026-09-28_contributions/AUDIT_1_prior_art_and_arm_2026-09-28.md`
+"출처 결함" 절). 유일한 사본은 저장소 밖 `~/Experiments/muxwise/
+sglang-slo_config/{sharegpt,loogle}.yml`이며 그 **출처는 미검증**
+(`reports/audit/2026-09-22_scope_lineage/REPORT.md:339/349` — 로컬
+아카이브가 `~/Downloads/muxwise.zip`에서 왔고 sglang v0.5.3rc0
+기반이라는 것만 확인됨, 공식 배포 여부는 미확인). 위 표의 **파일
+내용 자체**(필드·수치·행 수)는 그 아카이브를 직접 읽어 검증됐다
+(REPORT.md §3.1–3.2, `CLAIM_EVIDENCE_MATRIX.md` 대응 항목) —
+검증되는 것은 **내용**이고, **출처(제공자·정본성)는 검증되지
+않았다**. 이 구분을 무너뜨려 "저장소 내 1차 증거"로 재서술하지
+말 것.
+
 **(E) 계측 자산 2건 승계**: `L_decode_exact`(Little 적분형,
 구간 부과 아티팩트에 구조적 면역, 12셀 교차검증 최대 오차
 1.845e-06) · `span_hat`(도착 스팬 복원, 12셀 평균 |오차|
@@ -8441,3 +8456,7 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 10. ★**(2026-09-15 신설, doc-steward) E2(sticky 분할 대조) 트랙 — 사전등록·감사 완료, 실행은 SLURM 계정 블로커로 대기.** λ0(job 908623)의 최대 신규 발견(§3 항목268 — λ\*(A)는 D44 실행이 아니라 대부분 `(0,108)`)을 이어받아, sticky partition ON이 이 실현 분할 불일치를 실제로 바꾸는지 대조하는 트랙이다. 설계 E2-α(대조 arm을 같은 job 안에서 측정, 근거는 게이트 #233 미해소·D-none 908534의 within-job 선례·cross-job 1파일차 병기 의무 셋)로 20 boot 등록(a_r4×4seed·a_r2×4seed·b_r3×2seed, 각×{OFF,ON}), 규칙층 3회차+하네스층 2회차 감사 5회 전부 **`GO-with-caveats`**(死因 0, 신규 caveat E2C-1…35, 최대 위험 E2C-1/E2C-8′/E2C-21). ★**E2C-21**(스코프 한계): shape A에서 sticky ON이 바꾸는 decode-busy 가중 시간의 86–89%가 prefill 유휴 구간이라, 이 트랙이 살 수 있는 것은 "멀티플렉싱할 prefill이 없는 동안 decode를 44 SM에 묶어 둔 비용"까지다(정책 서술 금지, 2F9 계열). 사용자 승인으로 OVERRIDE 발효(예산 1.803/2.338/3.0 GPU-h)했으나 **4단계 `sbatch` 제출이 SLURM 계정 사유로 거부**됐다(전 파티션·`--test-only`도 동일, 원인은 계정 만료 vs CPU 한도초과 **미확정** — KISTI 외부 계정 관리 시스템, 클러스터 우회 불가). **GPU 지출 0, 어떤 라벨도 존재하지 않는다** — "sticky가 실현 분할을 고정한다"류 서술은 여전히 근거 없음. OVERRIDE는 유효·미소진(계정 복구 시 재승인 불필요). ★**재확인(2026-09-17, 머신 이양 준비 세션)**: `sbatch --test-only`가 같은 문구로 다시 거부됨 — 원인 여전히 미확정, 상태 변화 없음. 상세 `PROJECT_STATUS.md` 최상단 배너(2026-09-15(6)·2026-09-17), `workspace/engine-port/results/r2_eval/e2_sticky_prereg/`, `handoff-report/session_handoff_2026-09-16.md`·`session_handoff_2026-09-17.md`.
 
 11. ★**(2026-09-22 신설, PD-mux 좌표계 v2 선행 대조 감사) Bullet(ASPLOS '26) §4.4가 HE0의 정면 대조 주장을 담고 있다 — 회부 대상, 판정 없음.** camera-ready `Papers/Bullet.pdf`(sha256 `6a0605e037b2a60d…`) §4.4 Sensitivity Studies가 고정 SM 구성들을 돌린 뒤 *"there is no optimal fixed SM allocation"* 이라 적고, SM-108(무분할) 대비 dynamic이 TTFT 1.20×·P90 1.19×·throughput+SLO attainment 13% 우위라고 보고한다. 정본 **HE0**("단일-GPU 동적 제어는 best decode-heavy static을 못 넘는다", n≥4·5.4σ, 관대·tight 양쪽)와 **문면상 반대 방향**이다. ★**그러나 본 감사는 어느 쪽도 지지하지 않는다** — 다음이 전부 다르고 미해소이기 때문이다: (i) static arm 정의(우리 = 예산 구속 분리 격자 `p+d=108` / Bullet = prefill만 고정하고 decode는 全 SM 허용 = **부분 공유**), (ii) **best static을 찾는 절차가 Bullet에 서술되지 않음**(열거된 고정점 SM-108·SM-84만), (iii) 판정 술어(우리 = TTFT≤SLO ∧ 요청내 token-ITL **p95** / Bullet = 정규화 TTFT ∧ TPOT, **P90**), (iv) SLO 엄격도(우리 ITL p95 **60 ms** / Bullet TPOT **150–200 ms**), (v) 동적 제어의 내용(우리 = **분할 인덱스 단일 레버** / Bullet = 분할 + **요청 재정렬** + **decode 일시중단** + 예측기). ★특히 Bullet **§4.5 ablation**의 `w/ Partition`(분할만, 스케줄러 없음) arm이 *"improves TPOT … but suffers unacceptable TTFT degradation from its inability to reorder pending requests"* 라고 적은 것은 **"분할 레버 단독으로는 안 된다"** 는 우리 결론과 **같은 방향**이다 ⇒ 두 결과가 충돌하는지, 아니면 **"동적 분할 단독" vs "동적 분할+스케줄링"이라는 다른 것을 재고 있는지**가 미해결이다. **claims-auditor 회부 필요.** ★이 등재로 **HE0의 등급·문구·정책 순위는 바뀌지 않는다**(§1-7 불변). 상세 `reports/audit/2026-09-22_scope_lineage/REPORT.md` §4.6.
+
+12. ★**(2026-09-28 신설, doc-steward, `AUDIT_1_prior_art_and_arm_2026-09-28.md` C3 부수 발견) `workspace/engine-port/results/s0_deconfound/pdmux_p16_d16.yml` 주석 오류 + 잠재적 `stream_idx` 미정의 위험 — 결과 영향 미확인.** 이 config 주석("셋째 값은 엔진이 버림, `[16,16,76]`의 76은 그냥 idle SM")은 `pdmux_context.py:115` 관점에서는 맞지만, 실제 셋째 값을 읽는 것은 `multiplexing_mixin.py`(~1183–1188행)의 decode-bs 임계 표 조회 루프다 — 그 열은 threshold로 해석된다. `[16,16,76]` 한 행에 `max_running_requests=48`이면 `decode_bs>=76`을 만족하는 배치가 원천적으로 없어 이 분기에서 `stream_idx`가 **설정되지 않을 수 있다**(초기화 여부·후속 분기의 방어 코드는 미확인, "도달성 미검증"). 이 config를 쓴 실제 job들의 결과가 이 경로를 실제로 밟았는지, 밟았다면 어떤 값을 썼는지는 **미조사** — 기존 결과 재판정 아님, 등재만.
+13. ★**(2026-09-28 신설, doc-steward, `p0_residency.py` 미등록) residency 집계 스크립트는 인용 불가.** `handoff-report/design_memo_span_step_boundary_costmodel_2026-09-24.md` §7–§8이 참조하는 `p0_residency.py`는 scratchpad 산출물이며 **자체검사(self-test) 없이 등록되지 않았다**. 그 스크립트가 낸 residency 범위(3–10%/43–98% 계열)는 **인용 금지**(교훈 항목252, E2C-8′과 같은 계열 — "추정량 열은 규약을 명시하지 않고는 인용할 수 없다"). 등록·자체검사 전까지 이 경로에서 나온 수치는 판정 근거로 쓰지 말 것.
+14. ★**(2026-09-28 신설, doc-steward, `AUDIT_1` C5/C6·MuxWise식 arm 확장 조건) MuxWise 논문 수준 정합(N_PL + estimator) arm은 엔진 수정이 필요 — 설정만으로는 "agnostic 108-SM 표 재현" arm까지만 도달 가능.** MuxWise 논문의 디스패처(`N_PL = ⌈(T_d×N_T)/T_P⌉` + contention-tolerant estimator)는 공개 엔진에 없고, 우리 config 계열로도 재현 불가(요청별 decode 시간 예측 입력이 없음, `split_forward_token_budget`은 배치 합계 토큰일 뿐). 설정만으로 config-reachable한 것은 **부하 인덱스(decode-bs) 선택기의 108-SM 재현 arm 하나뿐**이며, 이는 이미 측정된 P1 auto-grid agnostic arm과 **같은 기제**다(개명 필요, best-static 대조는 미실행). 이 arm을 5-b에 넣으려면 별도 사전등록 필요 — 노브 동시 이동(`PDMUX_R2_POLICY`/`PDMUX_SLO_SCHED` 해제, sticky OFF) 등 confound 목록은 `AUDIT_1_prior_art_and_arm_2026-09-28.md` "MuxWise식 arm을 5-b에 넣을 때의 교락" 절(10개 항목) 참조.

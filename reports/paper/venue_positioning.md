@@ -327,6 +327,19 @@ DuetServe·MuxWise·Nexus·Bullet 전부 확인(§5 목록). 선행은 모두
 워크로드가 강제하는 변수다(PART 진입 조건 `split_prefill_batch is
 not None`).
 
+★★**HISTORICAL / 現 정본은 아래 좁힌 문구 — 註記(2026-09-28,
+doc-steward)**: 위 "residency를 보고한 논문이 하나도 없다"는
+stale하다. `reports/audit/2026-09-22_scope_lineage/REPORT.md:426`
+독립 재조사가 **더 좁힌 형태로 정정**했다 — 지지되는 것은
+"**정의·분모·규약을 갖춘 집계 추정량**으로서 residency를 보고한
+PD-mux 선행은 확인되지 않는다"(defined-aggregate estimand 미확인)
+뿐이며, "체류 시간과 같은 양을 아무도 보여주지 않았다"는 형태는
+**Bullet Fig. 20a가 반례**라 쓸 수 없다(REPORT.md:422/427 — Fig. 20a는
+"the number of SMs provisioned for the prefill phase, with each bar
+showing the SM count and duration"으로 **구성별 지속시간의 타임라인**을
+보여준다; 단 정의된 집계 통계·분모·분포는 없다). 위 문단·§5 목록을
+쓸 때는 이 좁힌 문구로 대체할 것.
+
 ### (5) trace 후보 순위 (Q4, `../longcontext_trace_plan.md` §5로 전파)
 
 **TraceLab**(CC BY 4.0, prefix/append **분리**로 캐시 적중 가정 없이
@@ -547,6 +560,19 @@ headroom과 정합적이다. 즉 우리 negative는 선행 positive와 모순이
 "coupling이 원인"이라는 동일 기전의 다른 면이며, **이 프레이밍이 유일한
 substrate-artifact 반박 방어선**이다.
 
+★★**註記(2026-09-28, doc-steward, 이 절과 §5 아래 "부하-색인(load-indexed)"
+문단 둘 다에 적용)**: 위 "MuxWise의 'dynamic' ≈ decode_bs 임계 테이블(=
+load-dependent static schedule)"은 **MuxWise 공개 엔진의 선택기**를 가리키는
+것으로 스코프를 좁혀야 한다 — `adjust_stream_groups`는 upstream 주석상
+`temporary demo`(`reports/audit/2026-09-28_contributions/
+AUDIT_1_prior_art_and_arm_2026-09-28.md` C1; `reports/audit/
+2026-09-22_scope_lineage/REPORT.md:337/390`). MuxWise **논문**이 서술하는
+디스패처/추정기(`N_PL = ⌈(T_d×N_T)/T_P⌉` + contention-tolerant estimator,
+REPORT.md:434–439)는 공개 코드에 **없다**(predictor·estimator·N_PL 심볼
+0건). 즉 "dynamic ≈ load-dependent static"이라는 동치는 공개 선택기에는
+성립해도 논문이 주장하는 기제 전체에는 적용되지 않는다 — 두 표현을 혼용하지
+말 것.
+
 ★**2026-09-10 추가(doc-steward, 저장소 내 1차 증거로 승급)** — 위 문단의
 "decode_bs 임계 테이블" 프레이밍은 지금까지 요약·추론이었으나, 그 설정
 파일 자체가 저장소 안에 있어 **직접 읽어 확인**했다
@@ -604,6 +630,15 @@ ROADMAP.md` longctx_conflict 절) — 이 문단은 그 판정을 재도출하�
   ★단 이 수치를 우리 108-SM 단일 A100 결과와 **직접 배율 비교하지 말 것**
   (§0.2(8) 금지 목록 — 기전·기판·metric이 다르다). "게재처·수치 검증 필요"는
   이제 (ii)에도 적용되지 않는다.
+  ★★**註記(2026-09-28, doc-steward)**: 위(및 §5 표, L.553/598)가 인용하는
+  `workspace/engine-port/external/muxwise/{sharegpt.yml, loogle.yml}` 경로는
+  **이 저장소에 없다**(`external/` 미존재). 유일 사본은 저장소 밖
+  `~/Experiments/muxwise/sglang-slo_config/{sharegpt,loogle}.yml`이며 그
+  **출처는 미검증**(`reports/audit/2026-09-22_scope_lineage/REPORT.md:339/349`).
+  표의 필드·수치(파일 **내용**)는 그 아카이브를 직접 읽어 검증됐으나, 그
+  아카이브가 MuxWise 저자의 정본 배포물인지(출처)는 확인되지 않았다 —
+  "저장소 내 1차 증거"라는 문구는 내용 검증만을 뜻하며 출처 검증을
+  함의하지 않는다. 상세는 `reports/CONSENSUS.md` §1(D) 동일 날짜 註記.
 - PD-Multiplexing with GreenContext: LMSYS blog, 2025-09-28 — **검증 필요**
 - CFP: MLSys 2026/2027, HPCA 2027, ASPLOS 2027, OSDI 2027, NSDI 2027,
   EuroSys 2027 — **날짜 전부 검증 필요** (venue-strategist 지식 컷오프 2026-01

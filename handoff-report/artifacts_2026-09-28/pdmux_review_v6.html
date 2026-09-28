@@ -1,0 +1,286 @@
+<title>PD-mux 실험 검토</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f5f7f6;--surface:#fff;--ink:#1a2128;--ink-2:#4d5866;--ink-3:#7d8794;--line:#d8dee3;--line-2:#e9edf0;
+--accent:#1f6f8b;--accent-soft:#e3eff4;--ok:#2c7a4b;--ok-soft:#e2f1e7;--warn:#a7701a;--warn-soft:#f7ecd6;--hold:#6f7784;--hold-soft:#e8eaee;
+--done:#4a6aa3;--done-soft:#e4eaf5;--gate:#8a3f6f;--gate-soft:#f2e4ec;
+--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#121619;--surface:#1a2025;--ink:#e7ebee;--ink-2:#b4bcc6;--ink-3:#8791a0;--line:#2d363e;--line-2:#242c33;--accent:#6bb3cc;--accent-soft:#1c3340;--ok:#6fc48f;--ok-soft:#1c3427;--warn:#e0aa4c;--warn-soft:#3b2f16;--hold:#9aa3b0;--hold-soft:#262c34;--done:#8faae0;--done-soft:#1f2a3f;--gate:#d38ab8;--gate-soft:#3a2331}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#121619;--surface:#1a2025;--ink:#e7ebee;--ink-2:#b4bcc6;--ink-3:#8791a0;--line:#2d363e;--line-2:#242c33;--accent:#6bb3cc;--accent-soft:#1c3340;--ok:#6fc48f;--ok-soft:#1c3427;--warn:#e0aa4c;--warn-soft:#3b2f16;--hold:#9aa3b0;--hold-soft:#262c34;--done:#8faae0;--done-soft:#1f2a3f;--gate:#d38ab8;--gate-soft:#3a2331}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;padding-block:0 48px;padding-inline:16px}
+.wrap{max-width:1040px;margin:0 auto}
+h1,h2,h3,h4{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:clamp(26px,4vw,34px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:21px;font-weight:600;margin-top:48px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h3{font-size:16px;font-weight:600}h4{font-size:14px;font-weight:600;color:var(--ink-2)}
+p{margin:0}.prose{max-width:70ch;color:var(--ink-2)}
+.eyebrow{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+code{font-family:var(--mono);font-size:.9em;background:var(--line-2);padding:1px 5px;border-radius:4px}
+header{padding-block:36px 8px;display:flex;flex-direction:column;gap:14px}
+.strip{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--ink-2);font-family:var(--mono)}.strip b{color:var(--ink);font-weight:500}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 6px 6px 0;font-size:13.5px;color:var(--ink-2);max-width:80ch}.note b{color:var(--ink)}
+.chip{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;letter-spacing:.02em;vertical-align:middle}
+.c-req{background:var(--ok-soft);color:var(--ok)}.c-cond{background:var(--warn-soft);color:var(--warn)}.c-hold{background:var(--hold-soft);color:var(--hold)}
+.c-done{background:var(--done-soft);color:var(--done)}.c-gate{background:var(--gate-soft);color:var(--gate)}
+/* summary cards */
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:16px}
+.sc{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;font-size:13.5px;color:var(--ink-2)}
+.sc h3{margin-bottom:8px;font-size:14px}.sc ul{margin:0;padding-left:16px}.sc li{margin-bottom:4px}
+/* glossary */
+.gl{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px 18px;margin-top:14px;font-size:13.5px}
+.gl div{padding:8px 0;border-bottom:1px solid var(--line-2);color:var(--ink-2)}.gl b{color:var(--ink);font-weight:600}
+/* stages */
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-top:14px;display:grid;grid-template-columns:1fr;gap:10px}
+.stage.gate{border-color:var(--gate);background:var(--gate-soft)}
+.st-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.st-head .n{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.st-head .cost{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.q{font-size:14.5px;color:var(--ink);font-weight:500}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px 20px;font-size:13.5px;color:var(--ink-2)}
+.grid2 h4{margin-bottom:3px}.grid2 ul{margin:0;padding-left:16px}.grid2 li{margin-bottom:3px}
+.stop{font-size:13px;color:var(--gate);font-weight:500}
+/* tables */
+.tbl{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 11px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-2)}
+th{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);font-weight:600;background:var(--bg)}
+tr:last-child td{border-bottom:0}td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* tiers */
+.tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}
+.tier{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.tier h3{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:14.5px}.tier ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:13.5px}.tier li{margin-bottom:8px}.tier li b{color:var(--ink);font-weight:600}
+/* bars */
+.bars{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px 10px}
+.axis{position:relative;height:18px;margin-left:210px;font-family:var(--mono);font-size:11px;color:var(--ink-3)}.axis span{position:absolute;transform:translateX(-50%)}
+.row{display:grid;grid-template-columns:210px 1fr;align-items:center;height:38px}.row .lab{font-size:13px;padding-right:10px}.row .lab small{display:block;color:var(--ink-3);font-size:11.5px}
+.lane{position:relative;height:14px;background:var(--line-2);border-radius:3px}.lane i{position:absolute;top:0;height:14px;border-radius:3px;background:var(--accent);opacity:.85}
+.lane i.rec{background:var(--ok)}.lane i.cond{background:var(--warn)}
+.lane em{position:absolute;top:-1px;font-style:normal;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);white-space:nowrap}
+@media (max-width:560px){.row{grid-template-columns:120px 1fr}.axis{margin-left:120px}}
+.checks{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
+.checks li{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-size:13.5px}
+.checks input{margin-top:4px}.checks label{cursor:pointer}.checks .who{color:var(--ink-3);font-size:12.5px;margin-left:auto;white-space:nowrap}
+details{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ink-2)}
+summary{cursor:pointer;font-weight:600;color:var(--ink)}
+
+.sim{margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.sim .ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;margin-bottom:10px}
+.sim .ctl span{display:inline-block;min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+.sim .ctl label{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.sim select,.sim button{font:inherit;font-size:13px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);cursor:pointer}
+.sim button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sim input[type=range]{width:120px}
+.sim canvas{width:100%;height:auto;display:block;border:1px solid var(--line-2);border-radius:6px;background:var(--bg)}
+.sim .meters{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.sim .m{border:1px solid var(--line-2);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink-3);min-width:0;height:58px;overflow:hidden;white-space:nowrap}
+.sim .m b{display:block;font-family:var(--mono);font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sim .m b.bad{color:var(--gate)}
+.sim .desc{font-size:13px;color:var(--ink-2);margin-top:10px;max-width:80ch;height:5.4em;overflow:hidden}
+
+
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:14px}
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 8px 4px}
+.chart figcaption{font-size:12px;color:var(--ink-2);padding:4px 6px 6px}
+.fig{margin:16px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.fig figcaption{font-size:13px;color:var(--ink-3);margin-top:6px}
+
+footer{margin-top:40px;font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:12px;max-width:80ch}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Hybrid LLM PD-mux · VESSL A100 실행 계획 · 실험 검토용</div>
+  <h1>PD-mux 실험 검토</h1>
+  <p class="prose">앞으로 VESSL Cloud의 A100에서 무엇을 어떤 순서로 재며, 그 결과가 논문에서 어떤 역할을 하는지, 비용은 얼마인지, 어떤 결정이 남았는지를 정리했다. 연구 배경·hybrid 특성·워크로드 지도·동작 시나리오는 짝 페이지 <a href="https://claude.ai/artifact/6URdjxzXLB2rCrG7Qq3JWS">Hybrid PD-mux 로드맵</a>에 있다. 내부 문서의 카드 번호·판정 코드는 맨 아래 대응표에만 남겼다.</p>
+  <div class="strip"><span>기준일 <b>2026-09-27</b></span><span>실행 환경 <b>VESSL Cloud · A100 80GB 1장 · us-west-2</b></span><span>GPU 요금 <b>$1.55/시간</b></span><span>지금까지 VESSL 지출 <b>$0</b></span></div>
+  <div class="note"><b>이 페이지의 성격.</b> 계획과 예측이지 측정 결과가 아니다. 예측값은 전부 "아직 재지 않은 제안"이며, 결과를 본 뒤에 기준을 바꾸지 않는다는 원칙 아래 사전 등록을 거쳐야 실행된다. 내용은 2026-09-27 내부 감사(claims-auditor)에서 지적된 과장과 사실 오류를 고친 판이다.</div>
+</header>
+
+<h2>1. 지금까지 확정된 것 (옛 환경 KISTI A100, 재측정 불필요)</h2>
+<p class="prose" style="margin-top:10px">세 가지 결론이 실제 서빙 측정으로 확정됐다. 다만 전부 <b>옛 환경(KISTI의 A100, 모델 1종 Zamba2-2.7B 중심)</b>에서 얻은 것이라, 논문에서는 "그 환경의 결과"로 표기하고 새 환경 수치와 섞지 않는다.</p>
+<div class="sum">
+  <div class="sc"><h3>① 분할 서빙은 기본 서빙보다 낫다</h3>prefill과 decode를 분리해 돌리면(PD-mux) 한 배치에 섞어 돌리는 기본 방식(fused)보다 꼬리 지연 기준 goodput이 좋았다. 단, 이것은 "PD-mux 기능 묶음을 켠 효과"이지 "SM을 나눈 것 자체의 효과"라고 증명된 것은 아니다. 운영 설정(CUDA graph 사용)에서 확인된 모델은 2종이다.</div>
+  <div class="sc"><h3>② 층 종류별로 잘게 나누는 방식은 안 된다</h3>attention 층과 SSM 층 경계마다 SM 배분을 바꾸는 방식은, 경계마다 GPU를 비워야 하고 CUDA graph(운영 속도의 핵심 최적화)와 양립하지 않아 decode 지연이 42→124 ms로 나빠졌다. 최적화해도 85 ms. 배분값을 미리 정해 둬도 실행 중 비용은 그대로다. 이 수치는 CUDA graph를 끈 상태에서 잰 것이라 크기가 아니라 방향으로 인용한다. 선행(MuxWise·Bullet)이 논문에서 쓰는 "층 단위 prefill 진행량 + SM 배분 동시 조절"은 시험하지 않았으므로 이 결과가 그 방식을 반증하지 않는다.</div>
+  <div class="sc"><h3>③ 실시간 조절은 고정 배분을 못 이긴다</h3>부하를 보며 배분을 바꾸는 반응형 제어는, 부하가 변하는 trace에서도 "decode 쪽에 넉넉히 준 고정 배분"을 넘지 못했다(4회 이상 반복, 느슨한 SLO와 빡빡한 SLO 양쪽). 원인은 전환 비용이 아니라 <b>위치 선정 실패와 연쇄 효과</b>다: decode가 SM을 적게 받으면 토큰 간격이 늘고, 배치가 정체되고, 새 요청 입장이 막혀 첫 토큰 지연이 폭발한다. 이 결론은 "하나의 실행 루프가 두 단계를 함께 관리하는 반응형 제어"에 한정된다. 기준점(decode 최소 SM·워크로드별 최적)을 모른 채 움직인 조절기의 결과이며, 도달 가능한 상한이 아니다.</div>
+</div>
+<p class="prose" style="margin-top:12px"><b>실무 권고(확정)</b>: 최고 decode 부하 기준으로 decode 쪽에 넉넉한 고정 배분을 쓴다. 검증된 모델 프로파일이 없으면 엔진 기본 배분 선택기(decode 배치 크기 문턱 표, agnostic)를 쓴다.</p>
+
+<h2>2. 실행 단계</h2>
+<p class="prose" style="margin-top:10px">GPU가 1장이라 순서대로 돈다. 2단계를 통과하기 전에는 어떤 본 실험도 제출하지 않는다. 비용은 GPU 시간(GPU-h)과 달러이며, 옛 환경의 경험값을 옮긴 추정치다.</p>
+
+<div class="stage">
+  <div class="st-head"><span class="n">0단계</span><h3>로컬 준비</h3><span class="chip c-done">진행 중</span><span class="cost">GPU 0 · $0</span></div>
+  <p class="q">VESSL에서 바로 돌 수 있는 실행 환경을 내 PC에서 완성한다.</p>
+  <div class="grid2">
+    <div><h4>하는 일</h4><ul><li>실행 이미지(컨테이너) 빌드 — 완료. VESSL 기본 이미지 위에 우리 엔진(SGLang v0.5.10 + 패치)을 얹었고, 패키지 147개 중 138개가 옛 환경과 같은 버전이다.</li><li>이미지를 올릴 저장소(레지스트리) 결정 후 업로드 — 첫 업로드는 약 9 GB 이상.</li><li>실행 시작 스크립트: GPU·드라이버·클럭 기록, 결과 복사, 체크섬 생성.</li></ul></div>
+    <div><h4>통과 기준</h4><ul><li>이미지 식별자(digest)가 확정되고, 컨테이너 안에서 CPU 회귀 테스트가 로컬과 같은 결과를 낸다(신규 실패 0 — 확인됨).</li></ul></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="st-head"><span class="n">1단계</span><h3>VESSL 환경 만들기</h3><span class="chip c-req">필수</span><span class="cost">CPU 2–4시간 · 약 $0.5–1 + 저장소 월 $6–9</span></div>
+  <p class="q">계정·저장소·선불 크레딧을 만들고, GPU 없는 작업 공간에서 모델과 데이터를 미리 올려 둔다.</p>
+  <div class="grid2">
+    <div><h4>하는 일</h4><ul><li>CLI 설치·로그인, SSH 키, 저장소 2개(빠른 클러스터 저장소 = 실행 중 기록용, 오브젝트 저장소 = 결과 회수용).</li><li>CPU 전용 작업 공간에서 모델(Nano-9B, 17.8 GB)·요청 trace를 내려받아 저장소에 둔다. 한국↔미국 서부 전송은 느리므로 큰 파일은 VESSL 안에서 받는다.</li><li>선택한 예산만큼만 크레딧을 충전한다. 잔액이 0 이하면 작업 생성이 막히므로 이것이 사실상 지출 상한이 된다.</li></ul></div>
+    <div><h4>통과 기준</h4><ul><li>A100 1장 전체를 주는 사양(일부만 주는 MIG 아님)과 CPU 전용 사양이 us-west-2에 있다.</li><li>모델 파일의 해시가 고정 버전과 일치한다.</li></ul></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="st-head"><span class="n">2단계</span><h3>GPU 확인 — 분할이 실제로 되는가</h3><span class="chip c-gate">로드맵 그림1 ②</span><span class="chip c-req">필수 · 실패 시 중단</span><span class="cost">GPU 0.3–0.4시간 · 약 $2–4</span></div>
+  <p class="q">이 GPU에서 우리가 쓰는 배분값이 실제로 그대로 잡히는지, 그리고 결과를 끝까지 내 PC로 가져올 수 있는지 확인한다.</p>
+  <div class="grid2">
+    <div><h4>하는 일</h4><ul><li>배분값 4종(92/16, 84/24, 74/34, 64/44)마다 <b>실제로 돈 SM 수</b>가 요청값과 같은지 확인. 두 묶음이 겹치지 않는지, CUDA graph를 켜도 격리가 유지되는지 확인.</li><li>모델을 띄워 짧은 요청이 왕복하는지 확인(부팅 스모크).</li><li>작업 1개를 끝까지 돌려 결과 복사 → 다운로드 → 체크섬 대조까지 실증. 이때 이미지 내려받기·모델 로드 시간을 재서 예산 추정을 갱신한다.</li></ul></div>
+    <div><h4>통과 / 중단</h4><ul><li>통과: 요청값 = 실측값, 겹침 없음, 격리 유지, 체크섬 일치.</li><li class="stop">중단: 실측이 다르거나 겹치면 여기서 멈춘다. 그 자체가 "환경을 옮기면 분할이 달라진다"는 결과이며, 배분표를 다시 설계해야 한다.</li></ul></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="st-head"><span class="n">3단계</span><h3>기초 측정 — 곡선과 한계</h3><span class="chip c-gate">로드맵 그림1 ① ③ ⑤</span><span class="chip c-req">필수</span><span class="cost">GPU 2.2–3.3시간 · 약 $3.5–5</span></div>
+  <p class="q">이후 모든 실험이 기준으로 삼을 두 가지를 잰다: decode가 SM 수에 얼마나 민감한가, 그리고 이 설정의 처리 한계는 얼마인가.</p>
+  <div class="note" style="margin-top:10px;border-left-color:var(--gate)"><b>채워야 할 측정 공백 — decode 속도 vs 문맥 길이 × SM 수.</b> hybrid 특성이 시스템에 드러나는 핵심 곡선(attention 4층의 몫이 문맥과 함께 커져 decode에 필요한 SM이 움직이는가)인데, 지금 쓸 수 있는 측정이 없다. 옛 값은 계측 결함 3건으로 인용 금지이고, 운영 설정(CUDA graph ON) 측정은 존재하지 않는다. 3-a가 이 곡선을 처음 잰다. 모델 구조 때문이라고 말하려면 구조가 다른 모델 2–3종이 필요하다.</div>
+<div class="grid2">
+    <div><h4>3-a. decode 속도 곡선 (0.8–1.5 GPU-h)</h4><ul><li>decode만 돌리며 SM 수 × 배치 크기 × 문맥 길이를 바꿔 한 step 시간을 잰다. CUDA graph를 켠 운영 설정에서.</li><li>배분을 바꿀 때 드는 시간(GPU를 비우는 비용, 그동안 놀게 되는 SM)도 함께 잰다.</li><li>이것은 <b>성분 측정</b>이다. "그러니 분할 유지가 유리하다" 같은 정책 결론은 여기서 끌어내지 않는다.</li></ul></div>
+    <div><h4>3-b. 처리 한계 (1.4–1.8 GPU-h)</h4><ul><li>짧은 입력(256 토큰 입력/512 출력)과 긴 입력(8192/64) 두 shape에서 초당 몇 요청까지 받는지 잰다.</li><li>옛 환경의 값(약 3.0 / 0.7 req/s)과 비슷하게 나와도 그것을 "같은 환경"의 근거로 쓰지 않는다. 우연한 일치일 수 있다.</li></ul></div>
+  </div>
+</div>
+
+<div class="stage gate">
+  <div class="st-head"><span class="n">결정</span><h3>두 가지 판단 — 실험 재개 전에 사람이 정한다</h3><span class="chip c-gate">사용자 + 감사</span><span class="cost">GPU 0</span></div>
+  <div class="grid2">
+    <div><h4>① 옛 환경과 같다고 볼 것인가</h4><ul><li>같다고 판정하면 옛 수치(배분표, 처리 한계, 2개 모델 결과)를 새 결과와 나란히 쓸 수 있다.</li><li>다르다고 보면 4개 모델을 전부 VESSL에서 다시 재야 하고, 옛 결과는 "옛 환경"으로 따로 표기한다. 비용이 약 3 GPU-h 늘어난다.</li></ul></div>
+    <div><h4>② 분할 유지 검증 실험(E2)의 실행 승인</h4><ul><li>이 실험은 이미 설계·감사(5회)가 끝나 있고 설계 자체는 유효하다. VESSL로 옮기는 데 필요한 것은 실행 경로 보정과 예산 재승인뿐이다.</li><li>설계를 줄이면 감사를 처음부터 다시 받아야 하므로 <b>줄이지 않는다</b>. 예산 1.8 GPU-h(최악 2.3).</li></ul></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="st-head"><span class="n">4단계</span><h3>본 실험 — 논문에 들어갈 측정</h3><span class="chip c-gate">로드맵 그림1 ④ ⑥ · 그림2</span><span class="chip c-req">필수</span><span class="cost">GPU 5.2–8.4시간 · 약 $8–13</span></div>
+  <div class="grid2">
+    <div><h4>4-a. 동거인가, SM 수인가 (0.4–0.6 GPU-h)</h4><ul><li>질문: 나눠 놓은 상태에서 decode가 느려지는 이유가 "SM을 적게 받아서"인가, "옆에서 prefill이 같이 돌아서"인가.</li><li>방법: decode를 44 SM에 묶어 두고 prefill이 있을 때/없을 때를 비교한다. 계측 자체가 성능을 바꾸지 않는지 확인하는 대조군을 같은 작업 안에 둔다.</li><li>기대(제안): "옆에서 돌아서" 쪽이면 decode 시간 비율 1.0–1.15배, "SM 수" 쪽이면 1.5–1.9배. 그 사이(1.15–1.5)면 둘 다 작용한다.</li><li><b>추가 arm(제안): 앉을 자리 아래 고정 배분.</b> 3-a로 잰 decode 최소 SM보다 적게 준 고정 배분 1점을 같은 작업 안에 둔다. 옛 환경에서 본 굶김 연쇄(토큰 간격 상승 → 배치 정체 → 입장 차단)가 새 환경·Nano-9B에서 같은 순서로 나타나는지를 시간열로 확인한다. 이것이 기여 2(기전)와 기여 3(여유)을 인과로 잇는 고리다. 비용 약 0.2–0.3 GPU-h 추정(4-a 산정에 미포함), 4-a 등록 시 함께 등록. 3-a가 끝난 뒤에만 배분값을 정할 수 있다.</li>
+    <li>의미: 일반 transformer에서는 선행 연구(MuxWise, Bullet)가 동거 간섭을 이미 보고했다. 우리 몫은 hybrid 모델에서의 재확인과, <b>동거 시간이 실제로 얼마나 되는지</b>를 정의된 방식으로 세는 것이다(조사한 선행 4편에서는 집계값 보고가 확인되지 않음. "첫 측정"이라 쓰지 않는다).</li></ul></div>
+    <div><h4>4-b. 분할 유지 검증 (1.8 GPU-h, 최악 2.3)</h4><ul><li>질문: "decode에 44 SM"이라고 설정하면 실제로 그 시간의 대부분이 44 SM에서 도는가.</li><li>배경: 옛 환경에서 이 설정의 실제 점유가 소수에 불과했다는 것이 드러났다(prefill이 없을 때 GPU 전체로 돌아갔기 때문). 분할 유지 옵션이 이를 고치는지 확인한다.</li><li>기대(등록됨): 유지 ON일 때 90% 이상, OFF일 때 20% 미만.</li><li>의미: 이후 "고정 배분 D44"라고 말하는 모든 실험의 계측이 믿을 만한지를 정한다. 그 자체가 논문 기여는 아니다.</li></ul></div>
+    <div><h4>4-c. 추가 모델 2종 (3 GPU-h, 4종 전부면 약 6)</h4><ul><li>질문: 분할 서빙이 기본 서빙보다 낫다는 결론이 NemotronH·Falcon-H1에서도 운영 설정으로 성립하는가.</li><li>기대(제안): 부호와 자릿수가 기존 2모델과 같다. 갈리면 "모델에 따라 다르다"로 기록한다.</li><li>의미: 이걸 해야 "hybrid 4모델에서 성립"이라고 쓸 수 있다. 위 결정 ①에서 "다르다"로 판정되면 옛 2모델도 다시 잰다.</li></ul></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="st-head"><span class="n">5단계</span><h3>조건부 확장 — 열릴 때만</h3><span class="chip c-gate">로드맵 그림1 ⑦ · 그림3</span><span class="chip c-cond">조건부</span><span class="cost">GPU 20–30시간 · 약 $30–45</span></div>
+  <div class="grid2">
+    <div><h4>5-a. 워크로드별 최적 배분의 차이 (약 10 GPU-h, 별도 사전 등록)</h4><ul><li>질문: 워크로드마다 가장 좋은 고정 배분이 다른가, 다르다면 "하나로 고정한 배분"과 얼마나 차이 나는가.</li><li>이 차이가 3% 미만이면, 어떤 똑똑한 선택 방법을 만들어도 얻을 게 없다. 그래서 5-b를 하기 전에 먼저 잰다.</li><li>설계 조건: 처리 한계 기준 부하 2점, 짧은 입력과 긴 입력 워크로드를 따로, 최적 배분을 고르는 작업과 평가하는 작업을 분리(고른 데이터로 평가하면 과대평가됨), 독립 작업 2회 × 반복 4회.</li><li>먼저 GPU 없이 기존 자료로 "차이가 생길 만한 워크로드가 있는지"부터 확인한다.</li></ul></div>
+    <div><h4>5-b. 기준점을 바로잡은 배분 선택 (10–20 GPU-h, arm 추가 시 증가)</h4><ul><li>질문: decode 최소 SM 곡선(3-a)과 워크로드별 최적(5-a)을 아는 배분 선택 — 특히 모델의 attention/SSM 구성 정보를 쓰는 것 — 이 고정 배분(B1)이나 일반 동적(B5)보다 goodput이 짝지은 신뢰구간 기준 3% 이상 좋고, 다른 영역에서 3% 넘게 나빠지지 않는가.</li><li>조건: 5-a에서 차이가 확인되고, 별도 실행 구조(prefill·decode 각각 독립 스레드) 검증을 통과한 뒤에만.</li><li>비교군: 고정(B1) · 일반 동적(B5) · 구조 정보(B6). <b>[제안] agnostic 기준선 arm</b> — MuxWise 저자들이 SGLang에 올린 기본 선택기(decode 배치 크기 문턱 → 배분 전환, 저자 주석상 임시 데모)를 108 SM용 표로 재현. 이미 잰 agnostic 기준선과 같은 기제이므로 새 방식이 아니다. 설정만으로 가능하지만 R2 정책·SLO 스케줄·분할 유지 옵션을 모두 꺼야 해 고정 arm과 노브가 여럿 동시에 움직인다 → 별도 사전 등록 + 규칙층 감사 후에만. 선행의 논문 방식(prefill 층 수를 decode step 시간에 맞춤 + 추정기)은 엔진 수정이라 현 계획 밖.</li><li>비용: arm 하나당 반복 4회 × 독립 작업 2회가 늘어난다(10–20 GPU-h 산정에 미포함). 표의 행이 늘면 decode CUDA graph 메모리도 늘어 처리 한계를 arm별로 다시 재야 한다.</li><li>솔직한 기대: 선행 연구(MuxWise)가 이미 워크로드별 배분표를 쓰고 있어서, 남는 차별점은 "구조 정보를 쓰느냐"와 hybrid 한정이다. 옛 환경 결과는 실시간 조절이 이길 영역이 좁다고 시사한다. 이기든 지든 결과가 남는다. 부하 인덱스 표 arm이 져도 "MuxWise가 졌다"고 쓰지 않는다(추정기·디스패처 없는 재현).</li></ul></div>
+  </div>
+</div>
+
+<h2>3. 논문에서의 기여</h2>
+<div class="tiers">
+  <div class="tier"><h3><span class="chip c-done">이미 확보</span>옛 환경 결과, 그대로 사용</h3><ul>
+    <li><b>층 종류별 세분 배분은 실패한다는 기전 규명.</b> 왜 안 되는지(경계마다 GPU 비우기, CUDA graph와 충돌)까지 밝혔다. 한계: 우리 엔진·green context 방식·Zamba2 경로에 한정, 다른 분할 기술(libsmctrl)과 비교 없음. 선행(MuxWise·Bullet)의 논문 방식 — 층 단위 prefill 진행량과 SM 배분을 함께 조절 — 은 미시험이므로 반증 대상이 아니다.</li>
+    <li><b>반응형 실시간 조절이 고정 배분을 못 넘는 이유.</b> 전환 비용이 아니라 decode 굶김의 연쇄 때문이라는 것. 한계: 모델 1종, 하나의 루프가 두 단계를 관리하는 구조에 한정. 선행 연구(Bullet)가 반대 주장을 하는 부분은 검토 중. 시험한 조절기 계열의 실패이지 도달 가능한 상한이 아니며, 교정 사다리(3-a → 3-b → 5-a → 구조 분리 → 5-b)가 그 다음 질문이다.</li>
+    <li><b>운영 가이드</b>: 최고 decode 부하 기준의 고정 배분, 검증된 프로파일이 없으면 엔진 기본 선택기(agnostic). 이 규칙이 남기는 여유의 크기는 5-a가 잰다.</li>
+  </ul></div>
+  <div class="tier"><h3><span class="chip c-req">이번 실험으로 완성</span>2–4단계</h3><ul>
+    <li><b>hybrid 모델 4종에서 분할 서빙이 기본 서빙보다 낫다</b>(4-c). "분할 기능을 켠 효과"로만 서술하고 원인 귀속은 주장하지 않는다.</li>
+    <li><b>decode의 SM 민감도가 문맥 길이·부하에 따라 어떻게 변하는지</b>(3-a). 모델 구조(attention 비율) 때문이라고 말하려면 구조가 다른 모델 2–3종을 더 재야 한다.</li>
+    <li><b>동거 시간의 정의된 측정</b>(4-a). 조사한 4편(DuetServe·MuxWise·Nexus·Bullet) 범위에서 정의·분모·규약을 갖춘 집계 추정량으로 이를 보고한 것은 확인되지 않는다(Bullet 그림 20a는 구성별 지속시간 타임라인으로 보여 주지만 집계값은 아니다). Bullet은 타임라인 그림으로, MuxWise는 다른 지표(활성 SM 비율)로 보여 준다.</li>
+    <li><b>재배분 경계의 결정 표면</b>(3-b·4-b 기록에서 추가 비용 없이). 기본 예산에서 짧은 입력은 prefill이 조각 1개라 prefill 도중 결정 지점이 없다. 옛 자료 재집계(판정 아님, 스크립트 미등록)를 VESSL 기록으로 재확인한다.</li>
+    <li><b>방법론</b>: 설정값이 아니라 실측값으로 배분을 검증해야 한다는 교훈(4-b), 환경을 옮길 때의 확인 절차(2단계).</li>
+  </ul></div>
+  <div class="tier"><h3><span class="chip c-cond">조건부</span>5단계가 열릴 때만</h3><ul>
+    <li><b>기준점을 바로잡은 배분 선택이 고정 배분을 넘는가</b>(5-b) — 구조 정보(B6) vs 일반 동적(B5) vs 고정(B1) vs [제안] 부하 인덱스 표. 성공해도 "실시간 조절"이 아니라 "워크로드에 맞는 고정 배분을 미리 잘 고르는 능력"으로 서술한다. 모델을 건너 일반화하려면 hold-out(구조가 다른 2–3종으로 맞추고 미사용 모델 예측)이 필요하다.</li>
+    <li><b>prefill·decode 독립 실행 구조가 간섭을 줄인다</b>. 선행 연구(Bullet)와 겹치므로 hybrid 한정 + 간섭의 정량 기전으로 차별화해야 한다.</li>
+  </ul></div>
+</div>
+<h3 style="margin-top:22px">세부 항목과 근거 상태 (보고용 6절의 세 핵심 기여를 이루는 항목)</h3>
+<p class="prose" style="margin-top:8px">보고용 페이지의 기여 1은 아래 ①④와 3-b(처리 한계, 사실 기록), 기여 2는 ②③⑤⑧, 기여 3은 ⑥과 5-a 여유·⑨(조건부)에 대응한다. ⑦은 방법론으로 따로 둔다. 기여 2→3의 연결("정책은 앉을 자리를 알아야 한다"는 요구 조건)은 4-a 추가 arm에서 연쇄 신호가 재현될 때만 인과로 쓰고, 재현 전에는 해석으로만 쓴다. "어느 실험이 만드는가"는 이 페이지 2절의 단계 번호다.</p>
+<div class="tbl"><table>
+<thead><tr><th>기여</th><th>한 줄 주장</th><th>근거의 현재 상태</th><th>어느 실험이 만드는가</th><th>주장의 한계 (그대로 적을 것)</th></tr></thead><tbody>
+<tr><td><b>① hybrid 모델에서도 분할 서빙이 기본 서빙보다 낫다</b></td><td>attention+SSM 모델 4종에서 PD-mux를 켜면 꼬리 goodput이 오른다</td><td>옛 환경 운영 설정에서 2모델 확인(H3-f)</td><td>4-c(추가 2모델), 3-b(처리 한계)</td><td>"기능 묶음을 켠 효과"로만 서술. 원인이 SM 분할 자체인지는 미확립. 4모델 문장은 같은 환경에서 재거나 동등성 판정 후에만</td></tr>
+<tr><td><b>② 층 종류 경계마다 GPU를 다시 나누는 방식은 실패한다는 기전</b></td><td>attention/SSM 층 경계마다 SM을 바꾸면 GPU 비우기(격차의 약 절반)와 겹침 손실·CUDA graph 비양립으로 decode가 2–3배 느려지고, 운영 설정(graph ON)에는 들어갈 수 없다</td><td>확정 — 현 구현 범위 한정 (H3-a·H3-c, 양쪽 graph OFF 측정)</td><td>—(옛 환경 결과 사용)</td><td>우리 엔진·green context·Zamba2 경로 한정. <b>선행(MuxWise·Bullet)이 논문에서 쓰는 방식 — 층 단위 prefill 진행량과 SM 배분을 함께 조절 — 은 시험하지 않았으므로 이 결과가 그 방식을 반증하지 않는다.</b> 그 방식은 엔진 수정(조각 크기를 decode step 시간에 맞추기)이 필요해 현 계획 밖. libsmctrl 등 다른 분할 기술과 비교 없음</td></tr>
+<tr><td><b>③ 반응형 실시간 조절이 고정 배분을 못 이기는 이유</b></td><td>전환 비용이 아니라 decode 굶김이 대기열 폭발로 이어지는 연쇄 때문. 조절기가 "앉을 자리"(decode에 필요한 최소 SM)를 모른 채 움직인 결과</td><td>확정 (H3-d·H3-e, 그림 3; 4회 이상 반복, 느슨·빡빡 SLO 양쪽)</td><td>—(옛 환경 결과 사용). 새 환경 재현: 4-a 추가 arm(앉을 자리 아래 고정 배분)에서 연쇄 신호. 교정 사다리: 3-a(자리 곡선) → 3-b(한계) → 5-a(넘어야 할 선의 높이) → 구조 분리 검증 → 5-b</td><td>시험한 조절기 계열(하나의 루프가 두 단계를 관리·SM 분할·반응형)과 모델 1종에 한정. 도달 가능한 상한이 아니다. 기준점을 알려 준 조절기가 이기는지는 ⑨의 열린 질문. 선행(Bullet)의 반대 주장은 열린 항목</td></tr>
+<tr><td><b>④ hybrid decode의 SM 민감도가 문맥·부하에 따라 어떻게 변하는가</b></td><td>문맥이 길수록 attention 4층이 decode 비용을 지배해 필요한 SM이 움직인다</td><td>가설. 쓸 수 있는 측정 없음</td><td><b>3-a</b>(핵심), 3-b</td><td>"모델 구조 때문"이라 말하려면 구조가 다른 모델 2–3종 필요. 옛 값은 계측 결함으로 인용 금지</td></tr>
+<tr><td><b>⑤ 동거 시간의 정의된 측정과 "SM 수 vs 동거" 분해</b></td><td>나눠 놓은 decode가 느린 이유를 SM 부족과 prefill 동거로 가르고, 동거 비율을 정의·분모·규약을 갖춘 집계값으로 센다</td><td>옛 자료 재집계 있음(H3-g는 설정 배분의 실제 유지 비율; 동거 비율 집계 스크립트는 미등록이라 수치 인용 전 등록 필요). 분해 실험은 미실행</td><td>4-a (4-b는 계측 타당성 확인용, 기여 아님)</td><td>일반 transformer에서는 선행(MuxWise·Bullet)이 동거 간섭을 이미 보고. 조사한 4편 범위에서 정의된 집계값으로 보고한 것은 확인되지 않으나(Bullet 그림 20a는 구성별 지속시간 타임라인, 집계값 아님) "첫 측정"이라 쓰지 않음. 우리 몫은 hybrid 재확인 + 정의된 집계 + 워크로드별 값</td></tr>
+<tr><td><b>⑥ 운영 가이드</b></td><td>최고 decode 부하 기준으로 decode 쪽에 넉넉한 고정 배분; 검증된 프로파일이 없으면 엔진 기본 배분 선택기(decode 배치 크기 문턱 표, agnostic)</td><td>확정(③에서 도출)</td><td>3-b, 5-a(워크로드별 차이)</td><td>prefix 캐시 OFF·문맥 16K 이하·짧은/긴 입력 분리 워크로드에 한정</td></tr>
+<tr><td><b>⑦ 방법론</b></td><td>배분은 설정값이 아니라 실측값으로 검증해야 하고(설정 D44의 실제 유지가 채팅형에서 등록 규약 a_r4 기준 13.64%), 환경을 옮길 때 확인 절차가 필요하며, 부하는 처리 한계의 비율로 정의한다</td><td>옛 환경에서 두 번의 결론 번복으로 확인</td><td>2단계, 3-b, 4-b</td><td>—</td></tr>
+<tr><td><b>⑧ 재배분 경계의 결정 표면 — 어디서 바꿀 수 있는가</b></td><td>층 종류 경계는 불가(②), 조각·step 경계는 가능. 그러나 기본 예산에서 짧은 입력은 prefill이 조각 1개라 prefill 도중의 결정 지점이 없다 — 선행이 전제하는 "여러 층 단위 진행"이 채팅형에서는 서지 않는다</td><td>옛 자료 재집계(판정 아님, 스크립트 미등록). 조각 수 규칙은 엔진 코드로 확정</td><td>3-b·4-b의 기록에서 추가 비용 없이 재확인. 예산을 줄여 조각을 늘리는 비용(TTFT 2–4배 선례)은 5-a 전 확인 항목</td><td>Nano-9B-v2·예산 65536·입력 256 기준. 예산은 서버 전역이라 요청별로 조각을 맞출 수 없음(엔진 수정 필요)</td></tr>
+<tr><td><b>⑨ (조건부) 기준점을 바로잡은 배분 선택이 고정 배분을 넘는가</b></td><td>decode 최소 SM 곡선(3-a)과 워크로드별 최적(5-a)을 아는 배분 선택 — 특히 attention/SSM 구성 정보를 쓰는 것 — 이 고정 배분(B1)·일반 동적(B5)보다 goodput이 짝지은 신뢰구간 기준 3% 이상 높고, 다른 영역에서 3% 넘게 나빠지지 않는가(부하 인덱스 arm은 등록되면 비교군으로 추가)</td><td>미검증. 이기든 지든 결과가 남는다: 이기면 "기준점을 알면 동적이 산다", 지면 ③보다 강한 부정 결과</td><td>5-a → 5-b. 비교군: 고정(B1)·일반 동적(B5)·구조 정보(B6)·[제안] agnostic 기준선(MuxWise 저자들이 SGLang에 올린 기본 선택기, 저자 주석상 임시 데모)을 108 SM 표로 재현한 arm(별도 사전 등록·감사 필요)</td><td>성공해도 "실시간 조절"이 아니라 "워크로드에 맞는 배분을 미리 고르는 능력"으로 서술. 선행(MuxWise)이 워크로드별 표를 이미 씀 → 차별점은 구조 정보와 hybrid. 모델을 건너 일반화하려면 구조가 다른 2–3종으로 맞추고 미사용 모델로 예측(hold-out). 부하 인덱스 표 arm이 져도 "MuxWise가 졌다"고 쓰지 않음(추정기·디스패처 없는 재현)</td></tr>
+</tbody></table></div>
+<p class="prose" style="margin-top:12px">투고 방향: 지금 자산과 2–4단계로는 "특성화 + 안 되는 이유의 규명 + 운영 가이드" 논문이 된다(MLSys·EuroSys·ATC 급). 5단계가 열리면 구성적 기여를 더할 수 있다.</p>
+
+<h2>4. 하지 않기로 한 실험과 이유</h2>
+<div class="tbl"><table>
+<thead><tr><th>실험</th><th>무엇을 물었나</th><th>왜 뺐나</th><th>절약</th></tr></thead><tbody>
+<tr><td>분할 효과의 원인 귀속 (SM 분할 자체인가)</td><td>분할 서빙의 이득이 "SM을 나눈 것" 때문인지 다른 부속 효과 때문인지</td><td>이번 논문은 "기능을 켠 효과"로만 서술하므로 불필요. 단, 논문 어디에도 "SM 분할 자체 덕분"이라고 쓰지 않는다는 조건. 계측 대조군은 4-a에 흡수.</td><td class="num">0.5–0.7 GPU-h</td></tr>
+<tr><td>prefill 조각 크기 조절</td><td>prefill을 몇 층씩 끊어 실행하는지가 성능 레버인가</td><td>현재 기본 설정에서는 짧은 입력이 한 번에 실행돼 조각이 생기지 않는다(자료 확인). 긴 문맥 트랙을 열 때만 의미 있음.</td><td class="num">1.0–1.5 GPU-h</td></tr>
+<tr><td>선행 논문 방식의 재현 (MuxWise 층 수 정합 · Bullet SM 겹침/재정렬/decode 중단)</td><td>선행이 논문에서 쓰는 "층 단위 진행량 + SM 배분 동시 조절"이 우리 기판에서도 이기는가</td><td>조각 크기를 decode step 시간에 맞추려면 엔진 수정(요청별 조각 수 + 추정기)이 필요하고, Bullet 방식은 다른 분할 기술(libsmctrl·MPS)이라 별도 빌드. 정확성 게이트부터 다시 시작해야 해 이번 계획 밖. 부하 인덱스 표(공개 엔진 선택기)만 5-b의 제안 arm으로 남긴다.</td><td class="num">미산정</td></tr>
+<tr><td>하드웨어 수준 SM 추적</td><td>드라이버 보고값이 아니라 커널이 실제로 돈 SM을 하드웨어 단위로 세기</td><td>설계를 다시 해야 하고, 이번 논문 주장에 필요하지 않다.</td><td class="num">미산정</td></tr>
+<tr><td>고정 배분의 후회 곡선 (Q-A)</td><td>배분을 잘못 골랐을 때 손해가 얼마나 되나</td><td><b>이미 완료됐다</b>(2026-09-11, 10.6 GPU-h). 다만 등록 규칙상 "최적점"을 뽑는 용도로는 쓸 수 없어 5-a를 대체하지 못한다.</td><td class="num">지출 완료</td></tr>
+</tbody></table></div>
+
+<h2>5. 예산</h2>
+<p class="prose" style="margin-top:10px">GPU 시간 기준, 시간당 $1.55. 눈금 0–60 GPU-h. VESSL 고유 오버헤드(이미지 내려받기, 모델 로드, CUDA graph 준비)는 아직 재지 않았고 과거 재실행 비율을 감안해 1.5–2배 여유를 권한다.</p>
+<div class="bars">
+  <div class="axis"><span style="left:0">0</span><span style="left:33.3%">20</span><span style="left:66.7%">40</span><span style="left:100%">60</span></div>
+  <div class="row"><div class="lab">2–4단계 최소<small>추가 모델 2종</small></div><div class="lane"><i style="left:13%;width:2.8%"></i><em style="left:17.5%">7.8–9.5 · $12–15</em></div></div>
+  <div class="row"><div class="lab">+ 4모델 전부 재측정<small>결정 ①이 "다르다"일 때</small></div><div class="lane"><i style="left:18.3%;width:2.5%"></i><em style="left:22.5%">11–12.5 · $17–19</em></div></div>
+  <div class="row"><div class="lab"><b>여유 1.5–2배 (권고 충전액)</b><small>오버헤드·재실행</small></div><div class="lane"><i class="rec" style="left:20%;width:21.7%"></i><em style="left:43%">12–25 · $19–39</em></div></div>
+  <div class="row"><div class="lab">+ 5-a 워크로드별 차이<small>별도 등록</small></div><div class="lane"><i class="cond" style="left:36.7%;width:21.7%"></i><em style="left:60%">22–35 · $34–54</em></div></div>
+  <div class="row"><div class="lab">+ 5-b 배분 선택 비교<small>조건부</small></div><div class="lane"><i class="cond" style="left:53.3%;width:38.3%"></i><em style="left:50%;top:-18px">32–55 · $50–85</em></div></div>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>단계</th><th>GPU-h</th><th>비용</th><th>비고</th></tr></thead><tbody>
+<tr><td>1단계 환경</td><td class="num">0 (CPU 2–4h)</td><td class="num">$0.5–1</td><td>저장소 월 $6–9 별도</td></tr>
+<tr><td>2단계 GPU 확인</td><td class="num">0.3–0.4</td><td class="num">$2–4</td><td>대화형 작업 시간 포함</td></tr>
+<tr><td>3단계 기초 측정</td><td class="num">2.2–3.3</td><td class="num">$3.5–5</td><td>곡선 0.8–1.5 + 한계 1.4–1.8</td></tr>
+<tr><td>4단계 본 실험</td><td class="num">5.2–8.4</td><td class="num">$8–13</td><td>동거 0.4–0.6 + 유지 검증 1.8(최악 2.3) + 모델 3(또는 6). 앉을 자리 아래 arm 채택 시 +0.2–0.3</td></tr>
+<tr><td><b>2–4단계 합계</b></td><td class="num"><b>7.8–12.5</b></td><td class="num"><b>$12–19</b></td><td>여유 포함 권고 충전 $19–39</td></tr>
+<tr><td>5단계(조건부)</td><td class="num">+20–30</td><td class="num">+$30–45</td><td>5-a 결과를 본 뒤 결정. 5-b에 arm을 더하면 그만큼 증가(미산정)</td></tr>
+</tbody></table></div>
+
+<h2>6. 지켜야 할 원칙</h2>
+<div class="gl">
+  <div><b>환경 수치를 섞지 않는다</b> — 옛 환경(KISTI)과 새 환경(VESSL)의 수치는 결정 ①을 거치기 전에는 나란히 놓지 않는다. 처리 한계가 비슷하게 나와도 "같은 환경" 근거로 쓰지 않는다.</div>
+  <div><b>용량을 먼저 잰다</b> — 부하는 처리 한계의 비율로 정한다. 한계 근처에서는 첫 토큰 지연이 목표를 넘나들어 goodput이 3% 변동에 2배로 흔들리므로 그 구간을 피한다.</div>
+  <div><b>반복 4회 이상, 독립 작업 2회 이상</b> — 한 작업 안에서 여러 번 띄운 것은 독립 반복이 아니다(같은 노드·같은 상태). 비교군은 같은 작업 안에 번갈아 배치한다.</div>
+  <div><b>차이 3% 미만은 결론이 아니다</b> — 반복의 분산을 먼저 보고, 짝지은 신뢰구간이 0을 넘어야 헤드라인이 된다.</div>
+  <div><b>결과를 본 뒤 기준을 바꾸지 않는다</b> — 목표 SLO를 바꾸려면 그 SLO로 다시 조율해 다시 잰다. 기존 결과를 새 기준으로 다시 채점하지 않는다.</div>
+  <div><b>설정값이 아니라 실측값</b> — "44 SM을 줬다"는 설정이 아니라 기록에 남은 실제 점유로 확인한다. 이 원칙을 어겨 결론이 두 번 뒤집힌 적이 있다.</div>
+  <div><b>성분 측정에서 정책 결론을 끌어내지 않는다</b> — 3-a의 곡선만으로 "그러니 분할 유지가 낫다"고 쓰지 않는다. 정책 주장은 반드시 서빙 실측으로.</div>
+  <div><b>적용 범위를 적는다</b> — 이번 결론은 prefix 캐시 OFF, 문맥 16K 이하, 짧은/긴 입력을 분리한 합성 워크로드에 한정한다. 캐시를 켠 multi-turn 환경으로 옮겨 쓰지 않는다.</div>
+</div>
+
+<h2>7. 지금 결정이 필요한 것</h2>
+<ul class="checks">
+  <li><input type="checkbox" id="d1"><label for="d1">예산 시나리오 선택과 선불 크레딧 충전액 (2–4단계 권고 $19–39)</label><span class="who">사용자</span></li>
+  <li><input type="checkbox" id="d2"><label for="d2">이미지 저장소(레지스트리)와 공개 여부 — 엔진 패치 공개 시점과 연결</label><span class="who">사용자</span></li>
+  <li><input type="checkbox" id="d3"><label for="d3">결정 ①: VESSL A100을 옛 환경과 같은 것으로 볼지</label><span class="who">사용자 + 감사</span></li>
+  <li><input type="checkbox" id="d4"><label for="d4">결정 ②: 분할 유지 검증 실험의 VESSL 실행 승인(설계 원안, 예산 1.8 GPU-h)</label><span class="who">사용자</span></li>
+  <li><input type="checkbox" id="d5"><label for="d5">5-a 착수 전 CPU 사전 확인(차이가 생길 워크로드가 있는가)을 할지</label><span class="who">사용자 + 감사</span></li>
+  <li><input type="checkbox" id="d6"><label for="d6">모델 업로드 범위 — 현재 트랙의 Nano-9B만 권장 (전체 15개는 월 +$30)</label><span class="who">사용자</span></li>
+  <li><input type="checkbox" id="d9"><label for="d9">4-a에 "앉을 자리 아래 고정 배분" arm을 넣을지 (기여 2→3 연결 고리, 약 0.2–0.3 GPU-h, 4-a와 함께 등록)</label><span class="who">사용자 + 감사</span></li>
+  <li><input type="checkbox" id="d8"><label for="d8">5-b에 agnostic 기준선 arm(MuxWise 저자 upstream 기본 선택기 재현)을 넣을지 — 별도 사전 등록·감사 전제, 반복 비용 증가</label><span class="who">사용자 + 감사</span></li>
+  <li><input type="checkbox" id="d7"><label for="d7">내부 문서 잔여 정정 2건(선행 연구 서술 갱신, 옛 줄 인용·로그 문구)</label><span class="who">doc-steward</span></li>
+</ul>
+
+<details><summary>내부 문서 대응표 (추적용)</summary>
+<div class="tbl" style="margin-top:8px"><table>
+<thead><tr><th>이 페이지</th><th>내부 명칭</th><th>원본 문서</th></tr></thead><tbody>
+<tr><td>확정 ①/②/③</td><td>C1 (관측적 PD-mux&gt;fused) / Claim B / C3=HE0</td><td>reports/paper/venue_positioning.md §1, CONSENSUS §1-7·§1-15·§1-17</td></tr>
+<tr><td>2단계 GPU 확인 · 결과 회수</td><td>D-0 (B0/B3/B4) · B5</td><td>handoff-report/gpu_rental_checklist_2026-09-18.md §3</td></tr>
+<tr><td>3-a decode 속도 곡선 · 전환 비용</td><td>V-char (로드맵 P3 축소판, 메모 P12)</td><td>handoff-report/design_memo_span_step_boundary_costmodel_2026-09-24.md</td></tr>
+<tr><td>3-b 처리 한계</td><td>V-cap (λ0 재등록)</td><td>results/r2_eval/lambda0_prereg/</td></tr>
+<tr><td>결정 ① / ②</td><td>기판 동등성 판정 / E2 새 OVERRIDE (A13)</td><td>VERDICT_e2_substrate_portability_2026-09-18.md</td></tr>
+<tr><td>4-a 동거 vs SM 수</td><td>D-5 residency 분리 프로브</td><td>reports/synthesis_2026-09-22/EXPERIMENT_DESIGN_2026-09-22.md</td></tr>
+<tr><td>4-b 분할 유지 검증</td><td>D-1 = E2 sticky 대조 (20 boot)</td><td>results/r2_eval/e2_sticky_prereg/PREREG_E2_STICKY_REV3_2026-09-15.md</td></tr>
+<tr><td>4-c 추가 모델</td><td>D-3 Gate 3</td><td>EXPERIMENT_DESIGN §3</td></tr>
+<tr><td>5-a 워크로드별 차이</td><td>P11 (신규 사전등록)</td><td>handoff-report/roadmap_review_2026-09-27.md</td></tr>
+<tr><td>5-b 배분 선택 비교</td><td>V-pol = P9, B6 vs B1·B5 (Claim E / H-Policy)</td><td>reports/paper/EXPERIMENT_ROADMAP.md P4</td></tr>
+<tr><td>뺀 실험</td><td>D-2 (E1-b/c), D-6-b, D-4, D-8 (Q-A 완주)</td><td>EXPERIMENT_DESIGN §3</td></tr>
+</tbody></table></div>
+</details>
+
+<footer>원본: <code>handoff-report/roadmap_review_2026-09-27.md</code>(rev2, 감사 반영) · 예산 <code>handoff-report/vessl_cloud_setup_plan_2026-09-24.md</code> §12 · 실행 절차는 Notion "VESSL 실행 지시본". 체크 상태는 이 브라우저에만 남는다.</footer>
+</div>
+<script>
+(function(){['d1','d2','d3','d4','d5','d6','d7'].forEach(function(id){var el=document.getElementById(id);if(!el)return;try{el.checked=localStorage.getItem('pdmux-roadmap-'+id)==='1';}catch(e){}el.addEventListener('change',function(){try{localStorage.setItem('pdmux-roadmap-'+id,el.checked?'1':'0');}catch(e){}});});})();
+</script>
