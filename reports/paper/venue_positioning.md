@@ -56,6 +56,16 @@ subagent, 기록 주체: `doc-steward` subagent.
 > 실제 CFP가 바뀌었을 수 있다. 아래 날짜는 전부 "추정·검증 필요"로 읽는다. 오늘 날짜
 > 기준(2026-07-24)으로도 아직 어느 것도 재확인되지 않았다.
 
+> ⚠️**2026-10-02 doc-steward 갱신(사용자 승인 "B 진행", HE0 오염 감사
+> `AUDIT_LOGIC_VERDICT_2026-10-01.md` D-6 적용, 새 서빙 측정 아님)**:
+> §4·§5의 "Bullet의 승리는 프로세스 분리로 coupling을 깬 것"이라는
+> 문장 2곳을 **취소선 + 대체 문구**로 정정했다 — Bullet §4.5 ablation
+> (`w/ Partition` 단독은 TTFT 악화)과 충돌하기 때문이다. 대체 문구:
+> "Bullet ablation은 분할 단독으로는 TTFT가 악화된다고 보고하며, 이는
+> HE0와 같은 방향이다." HE0 등급·부호·정책 순위는 불변. 상세
+> `../CONSENSUS.md` rev84, `workspace/engine-port/results/
+> he0_contamination_2026-10-01/AUDIT_LOGIC_VERDICT_2026-10-01.md` 대조17·D-6.
+
 ## 대조 결과 (doc-steward, 2026-07-24)
 
 이 문서를 기록하기 전에 `PROJECT_STATUS.md`(2026-07-23 갱신본), `CLAIM_EVIDENCE_MATRIX.md`
@@ -518,9 +528,12 @@ top-tier systems(OSDI/NSDI/SOSP)는 불가, architecture(ASPLOS/ISCA/MICRO/HPCA)
   리스크: ① novelty vs MuxWise/Bullet/Drift(incremental 공격 가능) ②
   "dynamic이 진다"가 substrate 아티팩트로 반박당할 위험 → C3를 **"shared
   running-batch coupling 하의 reactive single-worker"**로 명시 scoping하고
-  "Bullet의 승리는 coupling을 프로세스 분리로 깬 것이라 우리 기전과 일관"으로
-  프레이밍해야 함 ③ 순수 negative 수용성(characterization 정량 깊이가 얕으면
-  약함).
+  ~~"Bullet의 승리는 coupling을 프로세스 분리로 깬 것이라 우리 기전과
+  일관"으로 프레이밍해야 함~~ ★**정정(2026-10-02, D-6 적용)**: 이
+  프레이밍은 Bullet §4.5 ablation과 충돌한다(아래 §5 대체 문장 참조) —
+  대신 **"Bullet ablation은 분할 단독으로는 TTFT가 악화된다고 보고하며,
+  이는 HE0와 같은 방향"**으로 프레이밍함 ③ 순수 negative 수용성
+  (characterization 정량 깊이가 얕으면 약함).
 - **경로 B(H-Policy 검증 후)**: 전제 = P2(H-Arch gate) + P4(B6 > B1·B5 ≥3%
   paired CI). 성공 시 MLSys full 또는 EuroSys/ATC, 강하면 OSDI/NSDI 시도.
   리스크: ① CONSENSUS §1-13/§1-17이 "동적이 이길 regime 없음"을 강하게
@@ -554,22 +567,23 @@ TPOT 42→124ms + cudagraph 비양립) — 선행이 하지 않은 negative (3) 
 reactive 정책이 왜 static을 못 넘는지의 기전[C3](entanglement).
 
 MuxWise의 "dynamic"이 사실상 decode_bs 임계 테이블(= load-dependent static
-schedule)인 점은 HE0("static 지배", CONSENSUS §1-7)와 일관된다. Bullet의
+schedule)인 점은 HE0("static 지배", CONSENSUS §1-7)와 일관된다. ~~Bullet의
 승리가 프로세스 분리로 coupling을 깬 것이라는 점은 §1-20 disaggregation
-headroom과 정합적이다. 즉 우리 negative는 선행 positive와 모순이 아니라
-"coupling이 원인"이라는 동일 기전의 다른 면이며, **이 프레이밍이 유일한
+headroom과 정합적이다.~~ ★**삭제·대체(2026-10-02, doc-steward, 사용자
+승인 "B 진행" — D-6 적용, 원문은 취소선으로 보존)**: 위 문장은 **Bullet
+§4.5 ablation과 충돌한다**(`w/ Partition`[분할만, 스케줄러 없음] arm이
+TPOT는 개선하되 "재정렬 불능으로 인한 TTFT 저하"로 실패— 분할 단독의
+실패이지 coupling 해소의 증거가 아니다) — 대체 문장: **"Bullet ablation은
+분할 단독으로는 TTFT가 악화된다고 보고하며, 이는 HE0와 같은 방향이다."**
+즉 우리 negative는 선행 positive와 모순이 아니라 "분할 레버 단독으로는
+안 된다"는 동일 관찰의 다른 면이며, **이 프레이밍이 유일한
 substrate-artifact 반박 방어선**이다.
 
-⚠**註記(2026-10-02, doc-steward, HE0 오염 감사 종합 `AUDIT_LOGIC_VERDICT_
-2026-10-01.md` 대조 17[실체] 반영)**: 위 "Bullet의 승리가 프로세스 분리로
-coupling을 깬 것"이라는 문장은 **Bullet §4.5 ablation과 충돌 가능성이
-있다** — `w/ Partition`(분할만, 스케줄러 없음) arm이 TPOT는 개선하되
-"재정렬 불능으로 인한 TTFT 저하"로 실패한다고 적은 것은 분할(=프로세스
-분리와 다른 레버) 단독의 실패이지 coupling 해소의 증거가 아니다. 이
-문장은 **삭제 권고**(오염 감사 "후보 15" 계열) — **사용자 결정 대기,
-원문은 지우지 않는다**(위 두 문단 그대로 보존). 상세
+⚠**註記 이력(2026-10-01 등재 → 2026-10-02 적용)**: 위 대체는 HE0 오염
+감사 논리층(`AUDIT_LOGIC_VERDICT_2026-10-01.md` 대조 17[실체]·D-6)이
+제안한 문구를 그대로 썼다. 상세
 `workspace/engine-port/results/he0_contamination_2026-10-01/
-AUDIT_LOGIC_VERDICT_2026-10-01.md` 대조 17.
+AUDIT_LOGIC_VERDICT_2026-10-01.md` 대조 17·D-6.
 
 ★★**註記(2026-09-28, doc-steward, 이 절과 §5 아래 "부하-색인(load-indexed)"
 문단 둘 다에 적용)**: 위 "MuxWise의 'dynamic' ≈ decode_bs 임계 테이블(=

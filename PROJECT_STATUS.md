@@ -1,6 +1,42 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-10-02(doc-steward — **HE0 오염 감사 종합 + 부속
+최종 갱신: 2026-10-02 (2차 세션, doc-steward — **사용자 승인
+"B 진행": HE0 정본 범위 축소 문구 반영**, GPU 0 · 새 성능 판정
+0건 · HE0 등급·부호·정책 순위 전부 불변). 아래 (d)가 등재만
+했던 HE0 오염 감사(`AUDIT_LOGIC_VERDICT_2026-10-01.md` D-1…D-8)
+를 `CONSENSUS.md` §1-4/§1-6/§1-7/§1-10/§1-11/§1-13/§1-17/§1-20
+본문에 **실제 반영**했다(rev83→**rev84**). ★★병행 claims-auditor
+결과감사(`AUDIT_RESULT_VERDICT_2026-10-02.md`, `MIXED`)가 정량
+재집계의 핵심 해석 1건을 **REFUTED**로 정정했다 — 아래 (d)의
+"legacy 효과 −2.7%는 게이트 3 미달" 서술은 **쓰지 않는다**:
+−2.7%는 도착률에 묶인 LO phase 희석값이고, 처치가 실제로
+작용하는 HI phase에서 cliff 밖 술어(legacy·ITL≥65ms)로는
+**−6.8~−6.9%**(unpaired 95% CI 약 [−8,−5.5]%)다. 반면 "정본
+술어 −19.9%/−49.8%는 ITL p95 55–62ms 절벽 증폭(65ms 재채점 시
+−2.8%/−6.9%)"과 "부호는 CONFIRMED(scoped)"는 결과감사가
+**CONFIRMED**했다. **적용**: D-1(§1-7 positioning 재서술+정정된
+효과크기)·D-2(§1-7 헤더·§1-17 두 행·실전 권고, 시험한 SLO 점
+한정)·D-3(§1-4, cap48 backlog는 정합이지 증거 아님)·D-4(§1-20,
+"디바이스간 headroom" 인용금지)·D-5(§1-6·§1-13, LO 무관심은
+goodput 함수 조건부)·D-7(decode-heavy 라벨 캐비어트). **보류
+(이번 rev 미반영, 사용자 지시)**: D-8(§1-10 "d34 영구 고정",
+C-1 자리분해가 결과감사에서 "bind+GATE 주 성분에 불성립"으로
+추가 지적돼 더 미확정) · §1-11(856964 귀속, 결과감사가
+"클라이언트 아티팩트" 기울임을 **과장**으로 판정해 중립 유지)
+— 둘 다 "C-1/귀속 감사 대기" 표시만, **결과 감사 전**인
+result-analyst 후속(`FOLLOWUP_2026-10-02.md`: C-1 = bind+GATE
+positioning REAL(scoped)·고유 페널티 NOT-REAL / 856964 = 서버측
+비컨트롤러 정지 촉발 REAL(scoped,n=1)·컨트롤러 귀속 NOT-REAL·
+클라이언트 아티팩트도 NOT-REAL)도 같은 자리에 포인터만(본문
+미반영). **바뀌지 않는 것**:
+HE0(부호)·layer-type 死·정책 순위·Claim D/E 등급 전부 **불변**
+(재도출 없음) — 문구만 좁아졌다. 커밋은 하지 않았다(사용자
+지시 대기). 상세 `CONSENSUS.md` rev83→rev84 배너,
+`workspace/engine-port/results/he0_contamination_2026-10-01/
+{AUDIT_LOGIC_VERDICT_2026-10-01,AUDIT_RESULT_VERDICT_2026-10-02,
+SYNTHESIS_2026-10-01}.md`.
+
+이전: 2026-10-02 (1차 세션, doc-steward — **HE0 오염 감사 종합 + 부속
 문서 4건 등재**, GPU 0 · 새 성능 판정 0건 · Claim 등급 변경
 0건). 이 회차는 2026-09-28 저녁~2026-10-01 세션 산출물
 (`handoff-report/session_handoff_2026-10-02.md`)을 정본에
@@ -69,6 +105,11 @@ n=9 중 6/9런뿐, §1-17 "16–24 진동 평균 22"는 숫자만 재현·분포
 승인 후에만.** 상세 `workspace/engine-port/results/
 he0_contamination_2026-10-01/{AUDIT_LOGIC_VERDICT,RESULT,
 SYNTHESIS}_2026-10-01.md`.
+★★★**반증(2026-10-02, 2차 세션) — 위 ①"legacy 효과 −2.7%는
+게이트 3 미달" 해석은 claims-auditor 결과감사로 REFUTED**(도착률
+묶인 LO phase 희석값, HI phase cliff 밖 술어로는 −6.8~−6.9%) —
+쓰지 않는다. 적용·보류 상세는 위 최상단 2차 세션 배너·
+`CONSENSUS.md` rev84.
 
 **(e) 불변 배너.** HE0(동적 제어는 관대·tight SLO 양쪽에서
 best-static을 못 넘음, n≥4·5.4σ — **부호 불변**, 위 (d)는

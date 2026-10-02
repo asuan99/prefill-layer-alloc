@@ -1,5 +1,15 @@
 # HE0 오염 감사 종합 — 논리 감사 × 정량 재집계 대조 (2026-10-01)
 
+> ★**정정 배너(2026-10-02, 결과 감사 반영 — 본문은 이력으로 보존, 아래 정정이 우선)**: claims-auditor 결과 감사
+> `AUDIT_RESULT_VERDICT_2026-10-02.md`(`MIXED`) + result-analyst 후속 `FOLLOWUP_2026-10-02.md`(결과 감사 전).
+> - **§2-1·§4·§5-1 "효과크기 3% 게이트 아래(−2.7%)" = 해석 `REFUTED`** — COMBINED legacy −2.7%는 도착에 묶인 LO phase(arm 간 −0.1%)의
+>   희석값이고, HI phase cliff 밖 술어로는 −6.8~−6.9%(unpaired CI 상대 약 [−8, −5.5]%). "3% 게이트 미만"이라고 쓰지 말 것.
+> - §2-2 cliff 증폭은 `CONFIRMED`(재스코어 민감도 진단으로만, 게이트 8). 부호 견고 `CONFIRMED(scoped)`.
+> - **§2-4 856964 "클라이언트 정지 아티팩트" = 과장** — FOLLOWUP 재집계(결과 감사 전)는 컨트롤러 귀속·클라이언트 아티팩트 둘 다
+>   NOT-REAL, 서버 전체 정지(비컨트롤러)가 촉발 REAL(scoped, n=1).
+> - §2-5 동거율 "범위"는 규약 점이지 구간이 아님(로그만의 하한 ≈ 0). self-test는 변이 "s_pt := 최조기"를 못 잡는다(부분 항등식).
+> - §3의 C-1·C-4는 FOLLOWUP에서 수행: C-1 동적 고유 페널티 NOT-REAL / positioning REAL(scoped), C-4 과반 구속 NOT-REAL / 후보(7) INCONCLUSIVE.
+
 > GPU 0 · 새 성능 판정 0 · 정본 미편집. 입력: `AUDIT_LOGIC_VERDICT_2026-10-01.md`(claims-auditor, `MIXED`) + `RESULT_2026-10-01.md`
 > (result-analyst, 재구성 기반 · 감사 전). 메인 세션 재확인: `he0_realized.py --self-test` PASS(무변이 대조 PASS, 변이 3종 KILLED), sha256
 > `c0b92197…`(스크립트)·`9cfed852…`(JSON) 재현, 인용정지 0건. **재집계 수치는 가중 규약 의존이 커서 범위로만 인용**(교훈 252·E2C-8′).
