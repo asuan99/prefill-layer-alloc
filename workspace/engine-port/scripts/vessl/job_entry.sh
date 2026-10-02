@@ -9,6 +9,9 @@
 # and a copy + SHA256SUMS on the object volume EVEN WHEN THE TARGET FAILS (trap).
 # Plan: handoff-report/vessl_operating_model_2026-10-02.md.
 #
+# The image is PUBLIC and holds only pristine SGLang; this commit's engine code is installed at
+# start by scripts/vessl/install_runtime.sh (step 2).
+#
 # It is launched by scripts/vessl/launch.sh, which uploads it next to the repo bundle,
 # so the Job command is just `bash /io/code/<commit>/job_entry.sh`.
 #
@@ -83,7 +86,7 @@ git clone -q --no-checkout "${CODE}/repo.bundle" "${PROJECT}.new" \
   && git -C "${PROJECT}.new" checkout -q "${PDMUX_COMMIT}" \
   || { echo "ERROR: checkout ${PDMUX_COMMIT}" >&2; exit 3; }
 [[ "$(git -C "${PROJECT}.new" rev-parse HEAD)" == "${PDMUX_COMMIT}" ]] || exit 3
-rm -rf "${OPT}/_image_project" && mv "${PROJECT}" "${OPT}/_image_project"
+rm -rf "${PROJECT}"                                   # empty placeholder in the public image
 mv "${PROJECT}.new" "${PROJECT}"
 git config --global --add safe.directory '*'
 
@@ -95,22 +98,14 @@ ln -s "${RUN}/results" "${PROJECT}/workspace/engine-port/results"
 ln -sfn "${DATA}/hf" "${PROJECT}/hf_cache"                # legacy $ROOT/hf_cache convention
 touch "${RUN}/meta/start.marker"
 
-# ---- 2. engine tree = this commit's src (image was built from an earlier commit) ---
+# ---- 2. install this commit's engine code into the PUBLIC (pristine-SGLang) image ---
 export PDMUX_ROOT="${OPT}" PDMUX_PROJECT_ROOT="${PROJECT}"
 if [[ -n "${PDMUX_TEST_SKIP_SYNC:-}" ]]; then        # local mock test only -- flagged in meta
-  echo "sync skipped (PDMUX_TEST_SKIP_SYNC) -- NOT A VALID MEASUREMENT RUN" > "${RUN}/meta/SYNC_SKIPPED_TEST"
+  echo "install skipped (PDMUX_TEST_SKIP_SYNC) -- NOT A VALID MEASUREMENT RUN" > "${RUN}/meta/SYNC_SKIPPED_TEST"
 else
-  bash "${PROJECT}/workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh" \
-    "${RUN}/meta/runtime_source_manifest.sha256" > "${RUN}/logs/sync_engine_tree.log" 2>&1 \
-    || { echo "ERROR: sync_engine_tree.sh (see logs)" >&2; exit 4; }
-fi
-cp "${OPT}/runtime_source_manifest.sha256" "${RUN}/meta/image_runtime_source_manifest.sha256" 2>/dev/null
-if cmp -s "${PROJECT}/workspace/engine-port/env/devtree_manual_edits.patch" \
-          "${OPT}"/_image_project/workspace/engine-port/env/devtree_manual_edits.patch; then
-  echo same > "${RUN}/meta/manual_edits_patch_vs_image"
-else
-  echo DIFFERENT > "${RUN}/meta/manual_edits_patch_vs_image"   # image must be rebuilt
-  echo "ERROR: devtree_manual_edits.patch changed since the image was built" >&2; exit 4
+  bash "${PROJECT}/workspace/engine-port/scripts/vessl/install_runtime.sh" \
+    "${RUN}/meta/runtime_source_manifest.sha256" > "${RUN}/logs/install_runtime.log" 2>&1 \
+    || { echo "ERROR: install_runtime.sh (see logs/install_runtime.log)" >&2; exit 4; }
 fi
 
 # ---- 3. substrate stamp (B0) + clock/throttle trace ---------------------------------
@@ -130,7 +125,7 @@ rec = {"gpu": dict(zip(keys, gpu)), "hostname": platform.node(),
        "array_spec": os.environ.get("PDMUX_ARRAY_SPEC", "")}
 import hashlib
 opt = pathlib.Path(os.environ.get("PDMUX_OPT", "/opt/pdmux"))
-for f in ("pip_freeze.txt", "python_torch.txt", "runtime_source_manifest.sha256"):
+for f in ("pip_freeze.txt", "python_torch.txt"):
     p = opt / f
     rec["image_" + f + "_sha256"] = hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
 (meta / "substrate.json").write_text(json.dumps(rec, indent=2) + "\n")

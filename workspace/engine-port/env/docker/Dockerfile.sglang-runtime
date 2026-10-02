@@ -1,6 +1,10 @@
-# PD-mux SGLang v0.5.10 execution image for VESSL Cloud (A100 SXM 80GB, us-west-2).
-# Build with build_image.sh (it stages a clean context: SGLang tag source + committed engine-port subset).
-# Plan: handoff-report/vessl_cloud_setup_plan_2026-09-24.md sec 4 / sec 9.
+# PUBLIC runtime image for VESSL Cloud (A100 SXM 80GB, us-west-2): base + pinned packages + UNMODIFIED
+# SGLang v0.5.10 + a generic py3.14 compat shim.  It contains NO project engine code.
+# WHY: VESSL Jobs/Workspaces cannot authenticate to a private registry (console has only an image-URI
+# field, 2026-10-02), so the image must be public.  The project's engine code (src/, patches, manual
+# edits) is installed at container start by scripts/vessl/install_runtime.sh from the commit bundle on
+# the org-private object volume.  Plan: handoff-report/vessl_operating_model_2026-10-02.md sec 6-2.
+# Build with build_image.sh (context = SGLang tag source + this directory).
 #
 # Base = VESSL managed torch image, pinned by DIGEST (the tag can be re-pointed).
 # Measured 2026-09-24: default python is /opt/conda/bin/python 3.14.6 (NOT 3.13 as the tag
@@ -26,32 +30,25 @@ RUN pip install --no-cache-dir --no-deps -r /opt/pdmux/requirements.pdmux-sglang
  && (pip check > /opt/pdmux/pip_check.txt 2>&1 || true)
 
 # Same sibling layout as a work root (PDMUX_ROOT=/opt/pdmux):
-#   /opt/pdmux/sglang_engine_dev/            clean `git archive v0.5.10`
-#   /opt/pdmux/prefill-layer-alloc/workspace/engine-port/{src,scripts/bootstrap,env}
+#   /opt/pdmux/sglang_engine_dev/            clean `git archive v0.5.10` (pristine upstream)
+#   /opt/pdmux/prefill-layer-alloc/          EMPTY here -- job_entry.sh clones the private bundle into it
 COPY sglang_engine_dev/ /opt/pdmux/sglang_engine_dev/
-COPY engine-port/ /opt/pdmux/prefill-layer-alloc/workspace/engine-port/
 ENV PDMUX_ROOT=/opt/pdmux \
     SGLANG_ENGINE_DEV=/opt/pdmux/sglang_engine_dev/python
-
-# Engine tree: editable install (no deps -- pins above), tracked sync, then the 5 manual-edit files.
-# Same order as env/cpu_regression_baseline_2026-09-18.md sec 1.
 RUN pip install --no-cache-dir --no-deps -e /opt/pdmux/sglang_engine_dev/python \
- && bash /opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh \
-      /opt/pdmux/runtime_source_manifest.sha256 \
- && patch -p1 -d /opt/pdmux/sglang_engine_dev/python \
-      < /opt/pdmux/prefill-layer-alloc/workspace/engine-port/env/devtree_manual_edits.patch
+ && mkdir -p /opt/pdmux/prefill-layer-alloc
 
-# py3.14 shim (ACTIVE on this base: python 3.14.6).
-RUN cp /opt/pdmux/prefill-layer-alloc/workspace/engine-port/env/sitecustomize.py \
-       "$(python -c 'import site; print(site.getsitepackages()[0])')/sitecustomize.py"
+# py3.14 shim (ACTIVE on this base: python 3.14.6). Generic compatibility code, not project logic.
+COPY sitecustomize.py /tmp/sitecustomize.py
+RUN install -m 0644 /tmp/sitecustomize.py "$(python -c 'import site; print(site.getsitepackages()[0])')/sitecustomize.py" \
+ && rm /tmp/sitecustomize.py
 
 # Provenance baked into the image; job_entry.sh copies it into each result dir.
 RUN pip list --format=freeze > /opt/pdmux/pip_freeze.txt \
  && python -c 'import sys, torch; print(sys.version); print(torch.__version__, torch.version.cuda)' > /opt/pdmux/python_torch.txt
 
 ARG REPO_COMMIT=unknown
-LABEL org.opencontainers.image.title="pdmux-sglang" \
-      org.opencontainers.image.source="https://github.com/asuan99/prefill-layer-alloc" \
-      pdmux.sglang_tag="v0.5.10" \
-      pdmux.repo_commit="${REPO_COMMIT}" \
-      pdmux.base_digest="sha256:f361ea0d36dae3b692e393e25ec6e7910bc61af80739cd735606865bb19fe4a6"
+LABEL org.opencontainers.image.title="sglang-runtime" \
+      runtime.sglang_tag="v0.5.10" \
+      runtime.recipe_commit="${REPO_COMMIT}" \
+      runtime.base_digest="sha256:f361ea0d36dae3b692e393e25ec6e7910bc61af80739cd735606865bb19fe4a6"
