@@ -107,7 +107,7 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 | `vesslctl` | **로그인 완료**(org `MLSysLab`, team `HybridLLM`, 토큰 만료 2026-10-03 15:35 KST). 볼륨 0·Workspace 0 | 만료되면 다시 `vesslctl auth login` |
 | 이미지 | 로컬 draft2(26.7 GB, label commit `b1c739c`). wonho가 docker 그룹에 들어감(2026-10-02) | §6-1의 3단계로 HEAD 기준 재빌드 |
 | **레지스트리** | **GHCR private으로 결정(2026-10-02)** — push 전까지는 여전히 블로커 | §6-1 절차 |
-| 볼륨 | `pdmux-cs`·`pdmux-io` 생성 여부 미확인 | 로그인 후 `vesslctl volume list` |
+| 볼륨 | **생성 완료(2026-10-02, team HybridLLM 전용)**: `pdmux-cs`=`clustervol-havdzigstmv7`(org 공유 `cluster-storage-0`, betelgeuse-na/us-west-2) · `pdmux-io`=`objvol-9vgmwmerzwd3`. CLI로 Cluster 볼륨 생성 가능(9-24 "콘솔 전용" 서술 정정) | — |
 | 예산·크레딧 | 시나리오 미결정(`setup_plan` §12: A ≈$10–15 … D ≈$35–55) | 사용자 결정 |
 | 스크립트 | `job_entry.sh`·`launch.sh`·`fetch.sh` 작성, 로컬 모의 실행 통과(§6) | 첫 실제 Job(B5)으로 검증 |
 
