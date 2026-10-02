@@ -1,0 +1,1285 @@
+{
+ "generated": "2026-10-02",
+ "script": "he0_selftest_v2.py",
+ "criteria": {
+  "T1_tol": 0.02,
+  "T2_tol_s": 0.015
+ },
+ "control_pass_per_phase": {
+  "LO": 2,
+  "HI": 3
+ },
+ "mutant_summary": {
+  "intersect_is_union": {
+   "usable_scenarios": 5,
+   "killed_in": 5,
+   "verdict": "KILLED",
+   "killed_by_phase": {
+    "LO": "2/2",
+    "HI": "3/3"
+   }
+  },
+  "arrival_seed": {
+   "usable_scenarios": 5,
+   "killed_in": 5,
+   "verdict": "KILLED",
+   "killed_by_phase": {
+    "LO": "2/2",
+    "HI": "3/3"
+   }
+  },
+  "offset_plus_1s": {
+   "usable_scenarios": 5,
+   "killed_in": 5,
+   "verdict": "KILLED",
+   "killed_by_phase": {
+    "LO": "2/2",
+    "HI": "3/3"
+   }
+  },
+  "b_s_pt_is_earliest": {
+   "usable_scenarios": 5,
+   "killed_in": 3,
+   "verdict": "PARTIAL",
+   "killed_by_phase": {
+    "LO": "0/2",
+    "HI": "3/3"
+   }
+  },
+  "c_e_plus_30ms": {
+   "usable_scenarios": 5,
+   "killed_in": 5,
+   "verdict": "KILLED",
+   "killed_by_phase": {
+    "LO": "2/2",
+    "HI": "3/3"
+   }
+  }
+ },
+ "scenarios": [
+  {
+   "phase": "LO",
+   "D": 44,
+   "delay": "0",
+   "send_stall": null,
+   "truth": 0.2932,
+   "max_running_logged": 14,
+   "n_batches": 182,
+   "true_inflight_ms_p50": 92.9,
+   "rec_inflight_pt_ms_p50": 98.51,
+   "R_match": {
+    "exact": 182,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 1,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.3091,
+    "err_co": 0.0159,
+    "median_len_err_s": 0.0065,
+    "T1": true,
+    "T2": true,
+    "pass": true
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2785,
+    "pt": 0.3091,
+    "earliest": 0.3099,
+    "latest": 0.0189
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 0.9997,
+     "err_co": 0.7065,
+     "median_len_err_s": 0.0065,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.193,
+     "err_co": -0.1002,
+     "median_len_err_s": -0.0274,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.7139,
+     "err_co": 0.4207,
+     "median_len_err_s": 0.4763,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.3099,
+     "err_co": 0.0167,
+     "median_len_err_s": 0.0066,
+     "T1": true,
+     "T2": true,
+     "pass": true
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.3596,
+     "err_co": 0.0664,
+     "median_len_err_s": 0.0334,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "LO",
+   "D": 44,
+   "delay": "0",
+   "send_stall": [
+    100,
+    3.0
+   ],
+   "truth": 0.2806,
+   "max_running_logged": 15,
+   "n_batches": 181,
+   "true_inflight_ms_p50": 91.97,
+   "rec_inflight_pt_ms_p50": 97.16,
+   "R_match": {
+    "exact": 181,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 2,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.2946,
+    "err_co": 0.014,
+    "median_len_err_s": 0.0065,
+    "T1": true,
+    "T2": true,
+    "pass": true
+   },
+   "conventions": {
+    "lo_plus1iter": 0.266,
+    "pt": 0.2946,
+    "earliest": 0.296,
+    "latest": 0.0166
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 0.9997,
+     "err_co": 0.7191,
+     "median_len_err_s": 0.0065,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.1835,
+     "err_co": -0.0971,
+     "median_len_err_s": -0.0244,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.689,
+     "err_co": 0.4084,
+     "median_len_err_s": 0.482,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.296,
+     "err_co": 0.0154,
+     "median_len_err_s": 0.0065,
+     "T1": true,
+     "T2": true,
+     "pass": true
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.3434,
+     "err_co": 0.0629,
+     "median_len_err_s": 0.0337,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "LO",
+   "D": 44,
+   "delay": "real",
+   "send_stall": null,
+   "truth": 0.2932,
+   "max_running_logged": 14,
+   "n_batches": 182,
+   "true_inflight_ms_p50": 92.9,
+   "rec_inflight_pt_ms_p50": 108.9,
+   "R_match": {
+    "exact": 182,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 1,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.336,
+    "err_co": 0.0428,
+    "median_len_err_s": 0.0187,
+    "T1": false,
+    "T2": false,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.3056,
+    "pt": 0.336,
+    "earliest": 0.3383,
+    "latest": 0.0212
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 0.9997,
+     "err_co": 0.7066,
+     "median_len_err_s": 0.0187,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.2054,
+     "err_co": -0.0877,
+     "median_len_err_s": -0.0294,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.7218,
+     "err_co": 0.4286,
+     "median_len_err_s": 0.4847,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.3383,
+     "err_co": 0.0451,
+     "median_len_err_s": 0.019,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.3847,
+     "err_co": 0.0916,
+     "median_len_err_s": 0.0478,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "LO",
+   "D": 44,
+   "delay": "real",
+   "send_stall": [
+    100,
+    3.0
+   ],
+   "truth": 0.2805,
+   "max_running_logged": 15,
+   "n_batches": 181,
+   "true_inflight_ms_p50": 91.97,
+   "rec_inflight_pt_ms_p50": 108.4,
+   "R_match": {
+    "exact": 181,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 2,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.3204,
+    "err_co": 0.0398,
+    "median_len_err_s": 0.0188,
+    "T1": false,
+    "T2": false,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2916,
+    "pt": 0.3204,
+    "earliest": 0.3229,
+    "latest": 0.0163
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 0.9997,
+     "err_co": 0.7192,
+     "median_len_err_s": 0.0188,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.193,
+     "err_co": -0.0875,
+     "median_len_err_s": -0.0348,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.6898,
+     "err_co": 0.4093,
+     "median_len_err_s": 0.4799,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.3229,
+     "err_co": 0.0424,
+     "median_len_err_s": 0.0199,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.3673,
+     "err_co": 0.0868,
+     "median_len_err_s": 0.0479,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "LO",
+   "D": 16,
+   "delay": "0",
+   "send_stall": null,
+   "truth": 0.2048,
+   "max_running_logged": 17,
+   "n_batches": 184,
+   "true_inflight_ms_p50": 61.98,
+   "rec_inflight_pt_ms_p50": 75.88,
+   "R_match": {
+    "exact": 184,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 1,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.2338,
+    "err_co": 0.029,
+    "median_len_err_s": 0.009,
+    "T1": false,
+    "T2": true,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2023,
+    "pt": 0.2338,
+    "earliest": 0.2346,
+    "latest": 0.0086
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.7952,
+     "median_len_err_s": 0.009,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.1422,
+     "err_co": -0.0626,
+     "median_len_err_s": -0.0073,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.6871,
+     "err_co": 0.4823,
+     "median_len_err_s": 0.4823,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.2346,
+     "err_co": 0.0298,
+     "median_len_err_s": 0.0091,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.2919,
+     "err_co": 0.0871,
+     "median_len_err_s": 0.0363,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "LO",
+   "D": 16,
+   "delay": "0",
+   "send_stall": [
+    100,
+    3.0
+   ],
+   "truth": 0.195,
+   "max_running_logged": 16,
+   "n_batches": 181,
+   "true_inflight_ms_p50": 63.98,
+   "rec_inflight_pt_ms_p50": 76.29,
+   "R_match": {
+    "exact": 181,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 2,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.2196,
+    "err_co": 0.0246,
+    "median_len_err_s": 0.0081,
+    "T1": false,
+    "T2": true,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.1905,
+    "pt": 0.2196,
+    "earliest": 0.2214,
+    "latest": 0.0094
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 0.9998,
+     "err_co": 0.8048,
+     "median_len_err_s": 0.0081,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.1411,
+     "err_co": -0.0538,
+     "median_len_err_s": -0.0003,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.6652,
+     "err_co": 0.4702,
+     "median_len_err_s": 0.5012,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.2214,
+     "err_co": 0.0264,
+     "median_len_err_s": 0.0085,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.2754,
+     "err_co": 0.0804,
+     "median_len_err_s": 0.0355,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "LO",
+   "D": 16,
+   "delay": "real",
+   "send_stall": null,
+   "truth": 0.2047,
+   "max_running_logged": 17,
+   "n_batches": 184,
+   "true_inflight_ms_p50": 61.98,
+   "rec_inflight_pt_ms_p50": 88.16,
+   "R_match": {
+    "exact": 184,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 1,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.2658,
+    "err_co": 0.0611,
+    "median_len_err_s": 0.0249,
+    "T1": false,
+    "T2": false,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2346,
+    "pt": 0.2658,
+    "earliest": 0.2685,
+    "latest": 0.01
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.7953,
+     "median_len_err_s": 0.0249,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.1656,
+     "err_co": -0.0391,
+     "median_len_err_s": -0.0008,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.6959,
+     "err_co": 0.4912,
+     "median_len_err_s": 0.494,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.2685,
+     "err_co": 0.0638,
+     "median_len_err_s": 0.0253,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.3207,
+     "err_co": 0.1159,
+     "median_len_err_s": 0.0501,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "LO",
+   "D": 16,
+   "delay": "real",
+   "send_stall": [
+    100,
+    3.0
+   ],
+   "truth": 0.195,
+   "max_running_logged": 16,
+   "n_batches": 181,
+   "true_inflight_ms_p50": 63.98,
+   "rec_inflight_pt_ms_p50": 87.11,
+   "R_match": {
+    "exact": 181,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 2,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.2495,
+    "err_co": 0.0545,
+    "median_len_err_s": 0.0235,
+    "T1": false,
+    "T2": false,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2203,
+    "pt": 0.2495,
+    "earliest": 0.2533,
+    "latest": 0.011
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.805,
+     "median_len_err_s": 0.0235,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.1649,
+     "err_co": -0.0301,
+     "median_len_err_s": 0.0036,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.6721,
+     "err_co": 0.4771,
+     "median_len_err_s": 0.5035,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.2533,
+     "err_co": 0.0583,
+     "median_len_err_s": 0.024,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.3022,
+     "err_co": 0.1072,
+     "median_len_err_s": 0.0505,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "HI",
+   "D": 44,
+   "delay": "0",
+   "send_stall": null,
+   "truth": 0.4381,
+   "max_running_logged": 47,
+   "n_batches": 103,
+   "true_inflight_ms_p50": 113.2,
+   "rec_inflight_pt_ms_p50": 118.6,
+   "R_match": {
+    "exact": 103,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 1,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.4498,
+    "err_co": 0.0117,
+    "median_len_err_s": 0.0,
+    "T1": true,
+    "T2": true,
+    "pass": true
+   },
+   "conventions": {
+    "lo_plus1iter": 0.3961,
+    "pt": 0.4498,
+    "earliest": 0.6363,
+    "latest": 0.0494
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.5619,
+     "median_len_err_s": 0.0,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.4068,
+     "err_co": -0.0313,
+     "median_len_err_s": -0.0033,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.662,
+     "err_co": 0.2239,
+     "median_len_err_s": 0.4571,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.6363,
+     "err_co": 0.1982,
+     "median_len_err_s": 0.0265,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.4974,
+     "err_co": 0.0593,
+     "median_len_err_s": 0.0281,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "HI",
+   "D": 44,
+   "delay": "0",
+   "send_stall": [
+    100,
+    3.0
+   ],
+   "truth": 0.4398,
+   "max_running_logged": 47,
+   "n_batches": 105,
+   "true_inflight_ms_p50": 104.6,
+   "rec_inflight_pt_ms_p50": 116.7,
+   "R_match": {
+    "exact": 105,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 2,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.4645,
+    "err_co": 0.0248,
+    "median_len_err_s": 0.0085,
+    "T1": false,
+    "T2": true,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.4099,
+    "pt": 0.4645,
+    "earliest": 0.5824,
+    "latest": 0.0424
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.5602,
+     "median_len_err_s": 0.0085,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.419,
+     "err_co": -0.0208,
+     "median_len_err_s": -0.0105,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.6234,
+     "err_co": 0.1836,
+     "median_len_err_s": 0.4368,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.5824,
+     "err_co": 0.1426,
+     "median_len_err_s": 0.022,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.509,
+     "err_co": 0.0692,
+     "median_len_err_s": 0.0252,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "HI",
+   "D": 44,
+   "delay": "real",
+   "send_stall": null,
+   "truth": 0.438,
+   "max_running_logged": 47,
+   "n_batches": 103,
+   "true_inflight_ms_p50": 113.2,
+   "rec_inflight_pt_ms_p50": 121.4,
+   "R_match": {
+    "exact": 103,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 1,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.4451,
+    "err_co": 0.0071,
+    "median_len_err_s": -0.0013,
+    "T1": true,
+    "T2": true,
+    "pass": true
+   },
+   "conventions": {
+    "lo_plus1iter": 0.391,
+    "pt": 0.4451,
+    "earliest": 0.6375,
+    "latest": 0.048
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 0.9999,
+     "err_co": 0.5619,
+     "median_len_err_s": -0.0013,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.4148,
+     "err_co": -0.0231,
+     "median_len_err_s": -0.0031,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.6612,
+     "err_co": 0.2233,
+     "median_len_err_s": 0.4509,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.6375,
+     "err_co": 0.1996,
+     "median_len_err_s": 0.027,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.4937,
+     "err_co": 0.0558,
+     "median_len_err_s": 0.0228,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "HI",
+   "D": 44,
+   "delay": "real",
+   "send_stall": [
+    100,
+    3.0
+   ],
+   "truth": 0.4397,
+   "max_running_logged": 47,
+   "n_batches": 105,
+   "true_inflight_ms_p50": 104.6,
+   "rec_inflight_pt_ms_p50": 118.8,
+   "R_match": {
+    "exact": 105,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 2,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.4724,
+    "err_co": 0.0327,
+    "median_len_err_s": 0.012,
+    "T1": false,
+    "T2": true,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.4177,
+    "pt": 0.4724,
+    "earliest": 0.5895,
+    "latest": 0.0427
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.5603,
+     "median_len_err_s": 0.012,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.4278,
+     "err_co": -0.0119,
+     "median_len_err_s": -0.0046,
+     "T1": true,
+     "T2": true,
+     "pass": true
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.6229,
+     "err_co": 0.1832,
+     "median_len_err_s": 0.4422,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.5895,
+     "err_co": 0.1498,
+     "median_len_err_s": 0.0242,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.5142,
+     "err_co": 0.0745,
+     "median_len_err_s": 0.0247,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "HI",
+   "D": 16,
+   "delay": "0",
+   "send_stall": null,
+   "truth": 0.2926,
+   "max_running_logged": 47,
+   "n_batches": 145,
+   "true_inflight_ms_p50": 67.5,
+   "rec_inflight_pt_ms_p50": 84.71,
+   "R_match": {
+    "exact": 145,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 1,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.3487,
+    "err_co": 0.0561,
+    "median_len_err_s": 0.0097,
+    "T1": false,
+    "T2": true,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2841,
+    "pt": 0.3487,
+    "earliest": 0.6469,
+    "latest": 0.0307
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.7074,
+     "median_len_err_s": 0.0097,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.4378,
+     "err_co": 0.1452,
+     "median_len_err_s": 0.0188,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.7105,
+     "err_co": 0.4179,
+     "median_len_err_s": 0.5301,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.6469,
+     "err_co": 0.3543,
+     "median_len_err_s": 0.0813,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.4246,
+     "err_co": 0.132,
+     "median_len_err_s": 0.0345,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "HI",
+   "D": 16,
+   "delay": "0",
+   "send_stall": [
+    100,
+    3.0
+   ],
+   "truth": 0.2926,
+   "max_running_logged": 47,
+   "n_batches": 145,
+   "true_inflight_ms_p50": 67.5,
+   "rec_inflight_pt_ms_p50": 74.15,
+   "R_match": {
+    "exact": 145,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 2,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.3127,
+    "err_co": 0.0202,
+    "median_len_err_s": 0.0018,
+    "T1": false,
+    "T2": true,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2483,
+    "pt": 0.3127,
+    "earliest": 0.6309,
+    "latest": 0.0257
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.7074,
+     "median_len_err_s": 0.0018,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.4385,
+     "err_co": 0.1459,
+     "median_len_err_s": 0.0203,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.7088,
+     "err_co": 0.4162,
+     "median_len_err_s": 0.5062,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.6309,
+     "err_co": 0.3383,
+     "median_len_err_s": 0.0762,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.3916,
+     "err_co": 0.0991,
+     "median_len_err_s": 0.0292,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "HI",
+   "D": 16,
+   "delay": "real",
+   "send_stall": null,
+   "truth": 0.2925,
+   "max_running_logged": 47,
+   "n_batches": 145,
+   "true_inflight_ms_p50": 67.5,
+   "rec_inflight_pt_ms_p50": 80.28,
+   "R_match": {
+    "exact": 145,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 1,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.3359,
+    "err_co": 0.0434,
+    "median_len_err_s": 0.0093,
+    "T1": false,
+    "T2": true,
+    "pass": false
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2714,
+    "pt": 0.3359,
+    "earliest": 0.6493,
+    "latest": 0.0294
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.7075,
+     "median_len_err_s": 0.0093,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.4365,
+     "err_co": 0.144,
+     "median_len_err_s": 0.0279,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.7102,
+     "err_co": 0.4177,
+     "median_len_err_s": 0.5179,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.6493,
+     "err_co": 0.3568,
+     "median_len_err_s": 0.0798,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.4118,
+     "err_co": 0.1193,
+     "median_len_err_s": 0.0357,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  },
+  {
+   "phase": "HI",
+   "D": 16,
+   "delay": "real",
+   "send_stall": [
+    100,
+    3.0
+   ],
+   "truth": 0.2925,
+   "max_running_logged": 47,
+   "n_batches": 145,
+   "true_inflight_ms_p50": 67.5,
+   "rec_inflight_pt_ms_p50": 73.12,
+   "R_match": {
+    "exact": 145,
+    "pm1": 0,
+    "none": 0,
+    "bracket_inverted": 0
+   },
+   "offset_segments": 2,
+   "harness_copy_identical": true,
+   "control": {
+    "co_pt": 0.3068,
+    "err_co": 0.0143,
+    "median_len_err_s": 0.0006,
+    "T1": true,
+    "T2": true,
+    "pass": true
+   },
+   "conventions": {
+    "lo_plus1iter": 0.2424,
+    "pt": 0.3068,
+    "earliest": 0.6353,
+    "latest": 0.0257
+   },
+   "mutants": {
+    "intersect_is_union": {
+     "co_pt": 1.0,
+     "err_co": 0.7075,
+     "median_len_err_s": 0.0006,
+     "T1": false,
+     "T2": true,
+     "pass": false
+    },
+    "arrival_seed": {
+     "co_pt": 0.4372,
+     "err_co": 0.1447,
+     "median_len_err_s": 0.0279,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "offset_plus_1s": {
+     "co_pt": 0.7088,
+     "err_co": 0.4163,
+     "median_len_err_s": 0.5025,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "b_s_pt_is_earliest": {
+     "co_pt": 0.6353,
+     "err_co": 0.3429,
+     "median_len_err_s": 0.0769,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    },
+    "c_e_plus_30ms": {
+     "co_pt": 0.3843,
+     "err_co": 0.0918,
+     "median_len_err_s": 0.0286,
+     "T1": false,
+     "T2": false,
+     "pass": false
+    }
+   }
+  }
+ ]
+}

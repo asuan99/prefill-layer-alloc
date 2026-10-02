@@ -1,6 +1,46 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-10-02 (2차 세션, doc-steward — **사용자 승인
+최종 갱신: 2026-10-02 (3차 세션, doc-steward — **claims-auditor
+FOLLOWUP 결과 감사 반영**, GPU 0 · 새 성능 판정 0건 · HE0 등급·
+부호·정책 순위 전부 불변). 아래(2차 세션)가 "C-1/귀속 감사 대기"로
+보류했던 D-8(§1-10)·§1-11(+CONSENSUS §2-1·§2-3)을 FOLLOWUP 결과
+감사(`AUDIT_FOLLOWUP_VERDICT_2026-10-02.md`, `MIXED`)로 이번 세션
+`CONSENSUS.md` rev84→**rev85**에 반영했다. **핵심 4건**: (i)
+**856964 no-gate 붕괴** — "컨트롤러 전환이 촉발" 귀속은 **REFUTED**,
+"서버 전체 정지(비컨트롤러, 호스트/job별 I/O 미확정)가 촉발 —
+REAL(scoped, n=1)"로 교체, 반사실 분석으로 초과 실패 78건 중
+**~76건이 순수 backlog로 설명**돼 FOLLOWUP 자신의 서술(59%만
+귀속)보다 **더 강하게 성립**. "클라이언트 아티팩트"도 **REFUTED**.
+"게이트=견고성(0/9 대 1/4)"·"16배 타이트"(해석)는 **`NOT-YET-
+SUPPORTED`**(gate 9런이 이런 서버 정지를 겪지 않아 시험 자체가
+안 됐다). (ii) **§1-10 D-8** — "113회 전부 거부 ⇒ d34 영구 고정"·
+"bind+GATE ≈ d34-static − 0.039(정착 비용)"은 **인용 금지**(113회는
+재현 안 됨, d34 고정 9런 중 2런뿐). ★**정정(이전 세션의 아래
+"positioning REAL(scoped)" 표현은 틀림)**: C-1은 "앉은 자리만으로
+설명"=**PLAUSIBLE(조건부)**(REAL 아님, 귀무 채택형·허용 폭이
+제외집합 의존) / "고유 페널티 미검출"=**CONFIRMED(scoped)** /
+"고유 페널티 ~1% 초과 배제"라는 **검출력 주장은 REFUTED**(0-전환
+대조 부호 반전)로 셋으로 분리. (iii) **C-4 cap 48 구속** — 아래
+(d)·CLAIM_EVIDENCE_MATRIX의 "과반 구속은 NOT-REAL" 서술도 ★**정정
+(REFUTED)**: 등록 기준(대기열 조건 없음)으로는 cap occupancy≥46이
+오히려 **과반(0.516)**이고, 엄격 정의(=48∧queue)만 비과반(0.42) —
+정의에 따라 라벨이 뒤집혀 C-4는 후보(7)에 라벨을 못 매긴다(E-1만
+가름). (iv) **self-test**는 부분 항등식 — 핵심 함수 전부 미시험,
+"4 PASS/2 KILLED"를 검증 근거로 인용 금지. (v) **동거율(co-residency
+rate) 정의 확정(사용자 직접 지시)**: "동거율"=**(a) prefill
+in-flight 구간 ∩ decode-active 벽시간**. "(b) 분할 하 decode 시간"은
+별개 명칭("분할 하 decode 시간비")으로 부른다. HI 시간가중 동거율
+31/39/57%는 정의 (a)의 추정값이나, 재구성 self-test v2(합성 16
+시나리오 중 11개 실패, 상향 편향)로 재구성 자체가 미검증이고,
+독립 추정량(decode 감속 기반)은 구조상 (b)에 가까워 (a)를 좁히지
+못한다(`INCONCLUSIVE`) — 좁히는 길은 per-iteration telemetry
+재실행뿐(GPU, 사용자 결정 대기). **바뀌지 않는 것**:
+d44 최적·HE0(부호)·layer-type 死·정책 순위·Claim D/E 등급 전부
+**불변**. 상세 `CONSENSUS.md` rev84→rev85 배너, `workspace/
+engine-port/results/he0_contamination_2026-10-01/
+{AUDIT_FOLLOWUP_VERDICT_2026-10-02,CORESIDENCY_2026-10-02}.md`.
+
+이전: 2026-10-02 (2차 세션, doc-steward — **사용자 승인
 "B 진행": HE0 정본 범위 축소 문구 반영**, GPU 0 · 새 성능 판정
 0건 · HE0 등급·부호·정책 순위 전부 불변). 아래 (d)가 등재만
 했던 HE0 오염 감사(`AUDIT_LOGIC_VERDICT_2026-10-01.md` D-1…D-8)

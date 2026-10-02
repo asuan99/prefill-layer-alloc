@@ -176,6 +176,10 @@ static이 정의상 최선**이고 동적은 과도만 지불한다. **동적이
 
 ## 2.5 게이트의 정체
 
+> ⚠**HISTORICAL 정정 포인터(2026-10-02, doc-steward)**: 아래 "113회 전부 거부 ⇒ d34 영구 고정"·
+> "16× 타이트"(해석으로서)는 claims-auditor FOLLOWUP 결과 감사로 **인용 금지**다 — 정본
+> `CONSENSUS.md` §1-10/§1-11(rev85) 참조. 원문은 이력 보존.
+
 ★ feasibility 게이트는 지능적 제어가 아니라 **one-way ratchet auto-tuner**다:
 `d24→d34` 1회 이동 후 prefill-ward 복귀를 **113회 전부 거부** ⇒ d34 영구 고정.
 게다가 **틀린 static에 조기 수렴**(최적은 d44). **가치는 성능이 아니라 견고성**
