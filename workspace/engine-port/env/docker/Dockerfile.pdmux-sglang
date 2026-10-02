@@ -51,6 +51,7 @@ RUN pip list --format=freeze > /opt/pdmux/pip_freeze.txt \
 
 ARG REPO_COMMIT=unknown
 LABEL org.opencontainers.image.title="pdmux-sglang" \
+      org.opencontainers.image.source="https://github.com/asuan99/prefill-layer-alloc" \
       pdmux.sglang_tag="v0.5.10" \
       pdmux.repo_commit="${REPO_COMMIT}" \
       pdmux.base_digest="sha256:f361ea0d36dae3b692e393e25ec6e7910bc61af80739cd735606865bb19fe4a6"

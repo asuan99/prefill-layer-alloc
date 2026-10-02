@@ -105,9 +105,9 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 
 | 항목 | 상태 | 해소 |
 |---|---|---|
-| `vesslctl` | 설치됨(2026.09.22-01). **세션 만료**("token refresh failed") — 계정의 볼륨·Workspace 존재 여부는 확인하지 못했다 | 사용자가 `vesslctl auth login` 실행(브라우저 OAuth) |
-| 이미지 | 로컬 draft2 빌드됨(09-24, 27.0 GB). 현재 셸에서 `docker.sock` 권한 거부(사용자가 docker 그룹이 아님) | `sudo usermod -aG docker wonho` 후 재로그인 |
-| **레지스트리** | 미결정 → Job이 이미지를 받을 수 없음(**하드 블로커**) | 권고: GHCR private + VESSL 콘솔에 registry credential 등록. 첫 push에 base 계층 23 GB 포함 |
+| `vesslctl` | **로그인 완료**(org `MLSysLab`, team `HybridLLM`, 토큰 만료 2026-10-03 15:35 KST). 볼륨 0·Workspace 0 | 만료되면 다시 `vesslctl auth login` |
+| 이미지 | 로컬 draft2(26.7 GB, label commit `b1c739c`). wonho가 docker 그룹에 들어감(2026-10-02) | §6-1의 3단계로 HEAD 기준 재빌드 |
+| **레지스트리** | **GHCR private으로 결정(2026-10-02)** — push 전까지는 여전히 블로커 | §6-1 절차 |
 | 볼륨 | `pdmux-cs`·`pdmux-io` 생성 여부 미확인 | 로그인 후 `vesslctl volume list` |
 | 예산·크레딧 | 시나리오 미결정(`setup_plan` §12: A ≈$10–15 … D ≈$35–55) | 사용자 결정 |
 | 스크립트 | `job_entry.sh`·`launch.sh`·`fetch.sh` 작성, 로컬 모의 실행 통과(§6) | 첫 실제 Job(B5)으로 검증 |
@@ -127,6 +127,39 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
   - Job 컨테이너의 `/opt/pdmux` 쓰기 가능 여부
   - `nvidia-smi -lms` 동작
 
+## 6-1. 이미지 레지스트리 = GHCR private (2026-10-02 사용자 결정)
+
+**요금(GitHub 공식 문서 `billing/concepts/product-billing/github-packages`, 2026-10-02 확인)**
+- "Container image storage and bandwidth for the Container registry is **currently free**." 정책이 바뀌면 최소 1개월 전에 통지한다고 적혀 있다.
+  ⇒ 27 GB private 이미지라도 **지금은 추가 요금이 없다.**
+- 일반 GitHub Packages 한도(Free 500 MB 저장·월 1 GB 전송)는 Container registry에는 현재 적용되지 않는다.
+  통지가 오면 재검토한다(대안: Docker Hub, 또는 VESSL 쪽 레지스트리).
+- VESSL 쪽: 이미지 pull은 Job 시간(=GPU 과금) 안에 일어난다. 노드 캐시(`IfNotPresent`)가 없으면 Job마다 수 분이 붙는다. 이것이 Job을 묶는 이유 중 하나다(§1-3).
+
+**제약(GitHub 문서 `working-with-the-container-registry`)**
+- **레이어당 10 GB 한도**: 최대 레이어가 5.73 GB(비압축, base의 torch 계층)라 통과한다.
+- **업로드 10분 타임아웃(레이어당)**: 압축 후 수 GB 레이어를 10분 안에 올리려면 대략 40–80 Mbps 이상의 업로드가 필요하다(압축 크기·회선 미측정).
+  첫 push에서 타임아웃이 나면 두 가지를 먼저 확인한다: 그 레이어만 재시도되는지, docker의 `max-concurrent-uploads`를 1로 낮춰 대역을 몰아줄 수 있는지.
+- 새로 push한 패키지는 기본이 **private**이고 저장소와 자동 연결되지 않는다. 그래서 Dockerfile에
+  `org.opencontainers.image.source=https://github.com/asuan99/prefill-layer-alloc` 라벨을 추가했다.
+
+**절차** (토큰 값은 사용자만 입력한다 — 대화·파일·커밋에 남기지 않는다)
+1. (사용자, GitHub) Personal access token (classic)을 2개 만든다.
+   - push용: `write:packages`. 로컬 `docker login`에만 쓴다.
+   - pull용: `read:packages`. VESSL에 등록한다.
+   - 만료일을 짧게 두면 노출 위험이 줄어든다.
+2. (로컬) `echo <push PAT> | docker login ghcr.io -u asuan99 --password-stdin`
+   - 사용자가 직접 입력한다. 셸 히스토리에 남지 않게 앞에 공백을 붙이거나 `read -s`를 쓴다.
+3. (로컬) 깨끗한 HEAD에서 이미지를 다시 빌드한다(라벨 커밋을 정확히 남기기 위해):
+   `bash workspace/engine-port/env/docker/build_image.sh ghcr.io/asuan99/pdmux-sglang:<commit7>`
+   - 엔진 입력이 draft2와 같으므로 마지막 계층들 외에는 캐시를 탄다.
+4. (로컬) `docker push ghcr.io/asuan99/pdmux-sglang:<commit7>`
+   - 첫 push는 base 계층 포함 ≈23–27 GB(비압축 기준)다.
+   - 끝나면 digest를 확인한다: `docker inspect --format '{{index .RepoDigests 0}}' ghcr.io/asuan99/pdmux-sglang:<commit7>`
+5. (사용자, VESSL 콘솔) registry credential을 등록한다: 서버 `ghcr.io`, 사용자 `asuan99`, 비밀번호 = pull PAT.
+   - CLI에는 이 기능이 없다. 이 credential이 `job create`의 이미지에 어떻게 연결되는지(자동 매칭인지, Job마다 지정하는지)는 **미확인**이고, B5에서 확인한다.
+6. `scripts/vessl/vessl.env`의 `PDMUX_VESSL_IMAGE=ghcr.io/asuan99/pdmux-sglang@sha256:<digest>`를 채우고 커밋한다(digest만 들어가고 비밀은 없다).
+
 ## 7. 첫 실행까지의 순서
 
 1. (사용자) `vesslctl auth login`을 하고 org/team을 정한다. 레지스트리를 결정하고 docker 그룹을 추가한다.
@@ -140,7 +173,7 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 
 ## 8. 사용자 결정 사항
 
-1. 레지스트리(GHCR private 권고)
+1. ~~레지스트리~~ → GHCR private으로 결정(2026-10-02)
 2. 예산 시나리오와 크레딧 충전액
 3. 모델 업로드 범위(현 트랙만 권고)
 4. 기판 동등성 처리와 E2 새 OVERRIDE(기존과 같음)
