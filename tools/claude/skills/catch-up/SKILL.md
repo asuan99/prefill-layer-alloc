@@ -33,9 +33,15 @@ git -C "$REPO" status --short                  # 미커밋 변경
 ls -t "$REPO"/workspace/engine-port/results/*/ | head
 ls -t "$REPO"/*.out 2>/dev/null | head
 ```
-**실행 중인 GPU 작업**: 2026-09-18 현재 **없다.** 개발·검증은 로컬(CPU)에서만 하고 GPU
-실행은 대여 서버가 정해진 뒤 시작한다(로컬 5060 Ti는 PD-mux가 거부 — CLAUDE.md "환경 / 실행").
-대여 서버가 생기면 그 접속 방식으로 확인하고 experiment-runner에 넘긴다.
+**실행 중인 GPU 작업 (VESSL Cloud, 2026-10-02~)**: 개발·검증은 로컬(CPU), GPU 실행은 VESSL
+(운영 규약 `handoff-report/vessl_operating_model_2026-10-02.md`). 로컬 5060 Ti로는 돌리지 않는다
+(CLAUDE.md "환경 / 실행"). 브리핑 전에 확인:
+```bash
+vesslctl job list                    # 실행 중/최근 Job (인증 만료면 사용자에게 `vesslctl auth login` 요청)
+vesslctl workspace list              # ★켜진 채 방치된 Workspace = 시간 과금 — 있으면 맨 위에 경고
+grep -l $'\tno$' "$REPO"/workspace/engine-port/results/*/vessl_jobs.tsv 2>/dev/null   # 제출했으나 미회수(fetch 안 함)
+```
+미회수 Job은 `scripts/vessl/fetch.sh`로 회수해야 결과로 인정된다 — experiment-runner에 넘긴다.
 
 ## 3. 브리핑 출력 (간결하게)
 

@@ -79,7 +79,10 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
   아카이브 telemetry 재집계·goodput/percentile/paired bootstrap 재계산·그림 재생성도 전부
   CPU다(`workspace/engine-port/benchmarks/pdmux_eval/analyze.py`, `reports/figures/*.py`).
   원시 telemetry는 git 밖이므로 이양 번들의 `C_results_untracked/`를 저장소 원위치에 푼다.
-- **GPU 실행 = 대여 서버(업체 미정)**. 확정되면 `experiment-runner`에 원격 실행 규약을 적는다.
+- **GPU 실행 = VESSL Cloud**(2026-09-24 사용자 결정, A100 SXM 80GB, 리전 `us-west-2`, CLI `vesslctl`).
+  운영 규약 정본 = `handoff-report/vessl_operating_model_2026-10-02.md`: **측정은 Job만**(Workspace는
+  bring-up·프로브 전용), 한 비교의 arm은 한 Job 안에, 제출은 `scripts/vessl/launch.sh` dry-run → 사용자
+  승인 → `--submit`, 회수는 `scripts/vessl/fetch.sh`(DONE+sha256 통과가 "완료"). 실행 담당 = `experiment-runner`.
   현재 계획·이식 범위는 `handoff-report/migration_plan_local_dev_remote_gpu_2026-09-18.md`.
   **대여 전 확인**: A100(sm80, 4 SM 단위)이면 기존 격자·λ\*와 직접 비교 가능 · H100(sm90)은
   upstream `get_arch_constraints` 코드 상수로는 8 SM 단위·132 SM이나 ★**이 상수는
@@ -102,7 +105,7 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
 - 런타임 모드(env): `PDMUX_TRUE_DUAL_WORKER=1`, `PDMUX_R2_POLICY=fixed|generic|hybrid`,
   `PDMUX_MODEL_PROFILE=<json>`, `PDMUX_TELEMETRY_PATH`, `PDMUX_RUN_ID`, `PDMUX_WORKLOAD_ID`.
   (`PDMUX_DUAL_WORKER=1`은 R1 observer 재현 전용 — architecture separation 아님.)
-- 결과는 `results/<campaign>/`에만 기록한다. 원격 실행은 **회수(rsync)+sha256까지가 한 작업**이다.
+- 결과는 `results/<campaign>/`에만 기록한다. 원격 실행은 **회수(VESSL: `scripts/vessl/fetch.sh`)+sha256까지가 한 작업**이다.
   스케줄러가 없는 서버에서는 배열 작업 대신 `PDMUX_RUN_INDEX=i bash <script>` 루프를 쓴다
   (활성 스크립트에 이미 폴백이 있다: `scripts/r2_eval/r2_eval.sbatch:55`).
 

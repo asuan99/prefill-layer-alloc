@@ -43,6 +43,10 @@ micro-measurement와 simulation이 결론을 **두 번** 오도했다 — 너의
 9. **positioning ≠ overhead 혼동** — 동적이 지는 이유를 switch 오버헤드로 귀속(switch~0,
    CPU 0.014%로 이미 반증). 진짜 원인은 앉은 split 위치 + entanglement.
 10. **변수 동시 변경** — 두 노브를 함께 바꿔 해석 불가(pf_urg+dwell 전례).
+11. **기판 혼합** — 옛 기판(KISTI A100) 결론을 새 기판(VESSL A100) 수치로 보강/반박하거나, 비교 arm이
+    다른 Job·노드·드라이버에서 측정됨(VESSL은 공유 노드·클럭 고정 불가·드라이버 플랫폼 패치). 확인 근거:
+    `results/<campaign>/vessl/<job>/meta/substrate.json`·`clk_summary.json`·`SUBSTRATE_WARNING`.
+    (HE0 재감사의 노드 교락 — d24 static에 gpu38 런 0 — 이 같은 부류의 KISTI 전례.)
 
 ## 체크리스트 (모든 주장에)
 

@@ -51,7 +51,10 @@ git -C <repo> branch --show-current
 - **`git add -A`/`git add .` 주의**: untracked stray 파일(예: 루트 `sglang_*.jsonl`, 대용량
   `*.log`, 빌드 산출물)을 통째로 담을 수 있다. 가능하면 **경로를 명시해 add**하고, `-A`를 쓸
   땐 `??` 목록을 먼저 확인해 stray/시크릿이 없는지 본다.
-- **커밋하면 안 되는 것**: 루트 SLURM `.out`/`.err`(CLAUDE.md 규칙), 토큰/키/시크릿,
+- **커밋하면 안 되는 것**: 루트 SLURM `.out`/`.err`(CLAUDE.md 규칙), 토큰/키/시크릿
+  (VESSL: `~/.config/vesslctl/credentials.json`, `VESSLCTL_ACCESS_TOKEN`·`HF_TOKEN` 값, 레지스트리
+  자격증명, `vesslctl volume token` 출력 — `scripts/vessl/vessl.env`는 slug·digest·단가뿐이라 커밋 대상),
+  VESSL 회수 staging(`~/Experiments/KISTI/_vessl_fetch/`, 저장소 밖),
   대용량 로그·바이너리, 무관한 stray 데이터. gitignored면 자동 제외되니 그건 안전.
 - 실험 결과는 `results/<campaign>/`에만(루트 방치 로그를 끌어오지 마라).
 

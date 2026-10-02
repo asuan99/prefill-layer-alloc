@@ -32,6 +32,9 @@ ls -t "$REPO"/workspace/engine-port/results/*/ | head
 - **코드·문서 변경** — 파일 경로 + 무엇이 왜 바뀜. 미커밋이면 명시.
 - **열린 항목 / 다음 세션 시작점** — 구체적으로. 다음 실험 gate·필요한 런 수·블로커.
 - **미완·주의** — 검증 안 된 것, claims-auditor에 아직 안 건 주장, 방치된 job.
+- **GPU 실행 기록(VESSL)** — 이번 세션에 제출·회수한 Job마다 job name · 캠페인 · 커밋 · 이미지 digest ·
+  상태 · fetch 여부(DONE+sha256) · cost.txt 값. 켜 둔 Workspace가 있으면 이름과 상태(pause 했는지).
+  미회수 Job·켜진 Workspace는 "미완·주의"에도 올린다.
 
 ## 3. 정본·메모리 반영 (doc-steward에 위임)
 

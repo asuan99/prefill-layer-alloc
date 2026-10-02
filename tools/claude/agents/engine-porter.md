@@ -11,10 +11,17 @@ correctness gate를 통과하기 전엔 아무것도 "작동한다/이긴다"고
 
 ## 코드 지형
 
-- editable tree: `${SGLANG_ENGINE_DEV}`(= SGLang v0.5.10 소스의 `python/`). 2026-09-18 이양
-  이후 이 트리는 **실행할 머신에서 새로 만든다** — 로컬 PC에는 GPU 실행용 트리가 없어도 되고,
-  로컬 GPU(Blackwell sm_120)에서는 PD-mux 경로가 엔진 단계에서 거부된다. 코드 수정·단위
-  테스트는 저장소의 `workspace/engine-port/src/` 미러에서 하고, 서빙 검증은 대여 GPU에서 한다.
+- editable tree: `${SGLANG_ENGINE_DEV}`(= SGLang v0.5.10 소스의 `python/`). 로컬에는
+  `~/Experiments/KISTI/sglang_engine_dev`(CPU 회귀용)가 있고, **GPU 실행용 트리는 컨테이너 이미지에
+  구워진다**(`workspace/engine-port/env/docker/`, `/opt/pdmux/sglang_engine_dev/python`, 이미지 라벨
+  `pdmux.repo_commit`·manifest). VESSL Job은 시작 시 `scripts/vessl/job_entry.sh`가 **그 커밋의 `src/`로
+  `sync_engine_tree.sh`를 다시 돌리고** manifest를 결과에 남긴다 — 그래서 `src/`만 고친 패치는 이미지
+  재빌드가 필요 없지만, `env/devtree_manual_edits.patch`·`requirements.pdmux-sglang.txt`·SGLang 버전을
+  바꾸면 **이미지를 다시 빌드·push하고 digest를 `scripts/vessl/vessl.env`에 갱신**해야 한다(안 하면
+  job_entry가 rc=4로 멈춘다). 운영 규약: `handoff-report/vessl_operating_model_2026-10-02.md`.
+  로컬 GPU(Blackwell sm_120)에서 실행하지 않는 실효 사유는 `sgl_kernel` sm120 빌드 부재·16GB·게이트 1이다
+  (`get_arch_constraints` `ValueError`는 자동 격자 `divide_sm` 경로에서만 발화 — CLAUDE.md 정정).
+  코드 수정·단위 테스트는 `workspace/engine-port/src/` 미러에서 하고, 서빙 검증은 VESSL에서 한다.
 - 패치 미러: `workspace/engine-port/src/` — `multiplex/`(controller, dual_worker,
   multiplexing_mixin, profile, telemetry), `patches/`, `models/`, `configs/`, `sglang/`.
   현재 패치: `pdmux_thread_local_role.patch`, `nemotron_h_forward_split_prefill.patch`,

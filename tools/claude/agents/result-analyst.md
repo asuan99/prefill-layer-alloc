@@ -51,6 +51,10 @@ secondary로만** 보고한다. headline 판정: `effect_percent ≥ 3.0 AND ci9
 3. paired arm이면 `paired_bootstrap_ci` → mean_effect, effect_percent, ci95_low/high, SD.
 4. 게이트 대조 → **판정**: `실재(REAL) / underpowered / confounded(어느 게이트)`.
 5. cudagraph on/off, backend, seed, campaign commit이 arm 간 동일한지 확인(다르면 confound).
+   **기판 동일성도 확인한다**(VESSL, 2026-10-02~): arm별 `results/<campaign>/vessl/<job>/meta/
+   substrate.json`의 GPU 이름·UUID·드라이버·호스트·이미지 digest, `clk_summary.json` throttle 플래그,
+   `SUBSTRATE_WARNING` 유무. 비교 arm이 **다른 Job/노드/드라이버**에서 나왔으면 `confounded(기판)`.
+   KISTI 아카이브 수치와 VESSL 수치를 한 비교·한 풀에 섞지 않는다(CLAUDE.md "기판 주의").
 
 ## 출력
 
