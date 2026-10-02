@@ -144,11 +144,11 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
   `org.opencontainers.image.source=https://github.com/asuan99/prefill-layer-alloc` 라벨을 추가했다.
 
 **절차** (토큰 값은 사용자만 입력한다 — 대화·파일·커밋에 남기지 않는다)
-1. (사용자, GitHub) Personal access token (classic)을 2개 만든다.
-   - push용: `write:packages`. 로컬 `docker login`에만 쓴다.
-   - pull용: `read:packages`. VESSL에 등록한다.
-   - 만료일을 짧게 두면 노출 위험이 줄어든다.
-2. (로컬) `echo <push PAT> | docker login ghcr.io -u asuan99 --password-stdin`
+1. (사용자, GitHub) Personal access token (classic)을 **1개** 만든다(2026-10-02 사용자 결정: 분리하지 않음).
+   - scope는 `write:packages` 하나만 체크한다(읽기 권한 포함). `repo`·`delete:packages` 등 나머지는 체크하지 않는다.
+   - 만료는 실험 기간(예: 90일)으로 두고, 실험이 끝나면 폐기한다.
+   - 같은 토큰을 로컬 push와 VESSL pull 등록에 함께 쓴다. VESSL에서 유출되면 이미지를 덮어쓰는 것까지 가능하다는 점은 감수한다.
+2. (로컬) `echo <PAT> | docker login ghcr.io -u asuan99 --password-stdin`
    - 사용자가 직접 입력한다. 셸 히스토리에 남지 않게 앞에 공백을 붙이거나 `read -s`를 쓴다.
 3. (로컬) 깨끗한 HEAD에서 이미지를 다시 빌드한다(라벨 커밋을 정확히 남기기 위해):
    `bash workspace/engine-port/env/docker/build_image.sh ghcr.io/asuan99/pdmux-sglang:<commit7>`
@@ -156,7 +156,7 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 4. (로컬) `docker push ghcr.io/asuan99/pdmux-sglang:<commit7>`
    - 첫 push는 base 계층 포함 ≈23–27 GB(비압축 기준)다.
    - 끝나면 digest를 확인한다: `docker inspect --format '{{index .RepoDigests 0}}' ghcr.io/asuan99/pdmux-sglang:<commit7>`
-5. (사용자, VESSL 콘솔) registry credential을 등록한다: 서버 `ghcr.io`, 사용자 `asuan99`, 비밀번호 = pull PAT.
+5. (사용자, VESSL 콘솔) registry credential을 등록한다: 서버 `ghcr.io`, 사용자 `asuan99`, 비밀번호 = 같은 PAT.
    - CLI에는 이 기능이 없다. 이 credential이 `job create`의 이미지에 어떻게 연결되는지(자동 매칭인지, Job마다 지정하는지)는 **미확인**이고, B5에서 확인한다.
 6. `scripts/vessl/vessl.env`의 `PDMUX_VESSL_IMAGE=ghcr.io/asuan99/pdmux-sglang@sha256:<digest>`를 채우고 커밋한다(digest만 들어가고 비밀은 없다).
 
