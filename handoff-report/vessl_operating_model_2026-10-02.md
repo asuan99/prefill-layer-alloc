@@ -143,6 +143,9 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 - 새로 push한 패키지는 기본이 **private**이고 저장소와 자동 연결되지 않는다. 그래서 Dockerfile에
   `org.opencontainers.image.source=https://github.com/asuan99/prefill-layer-alloc` 라벨을 추가했다.
 
+**push 결과(2026-10-02)**: `ghcr.io/asuan99/pdmux-sglang:b27c527` → digest `sha256:f3166a7a4427bf87d7417387c222162a854ed3ba64d3c1b44c11f32a439536a4`
+(빌드 커밋 `b27c527`, SGLang `1519acf3`). push는 약 4분 걸렸고 10분 타임아웃에 걸리지 않았다. `scripts/vessl/vessl.env`에 기록했다(볼륨 slug는 아직 placeholder).
+
 **절차** (토큰 값은 사용자만 입력한다 — 대화·파일·커밋에 남기지 않는다)
 1. (사용자, GitHub) Personal access token (classic)을 **1개** 만든다(2026-10-02 사용자 결정: 분리하지 않음).
    - scope는 `write:packages` 하나만 체크한다(읽기 권한 포함). `repo`·`delete:packages` 등 나머지는 체크하지 않는다.
@@ -156,8 +159,10 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 4. (로컬) `docker push ghcr.io/asuan99/pdmux-sglang:<commit7>`
    - 첫 push는 base 계층 포함 ≈23–27 GB(비압축 기준)다.
    - 끝나면 digest를 확인한다: `docker inspect --format '{{index .RepoDigests 0}}' ghcr.io/asuan99/pdmux-sglang:<commit7>`
-5. (사용자, VESSL 콘솔) registry credential을 등록한다: 서버 `ghcr.io`, 사용자 `asuan99`, 비밀번호 = 같은 PAT.
-   - CLI에는 이 기능이 없다. 이 credential이 `job create`의 이미지에 어떻게 연결되는지(자동 매칭인지, Job마다 지정하는지)는 **미확인**이고, B5에서 확인한다.
+5. (VESSL) Job이 private 이미지를 받는 방법 — ★**미해결**. 2026-10-02 현재 VESSL Cloud 공식 문서(job/workspace 생성·secrets·문서 색인)
+   어디에도 private registry 자격증명 등록 방법이 없다. 폼에는 Managed/Custom 탭만 있고, `vesslctl job create`에도 관련 플래그가 없다.
+   ⇒ `vessl_cloud_setup_plan_2026-09-24.md` §1의 "Job은 private registry 자격증명·pull policy 지원"은 **현재 문서로 확인되지 않는다**(정정).
+   진행 순서: (a) 콘솔 Job 생성 화면의 Custom 탭과 org Settings에서 해당 메뉴를 직접 확인한다. (b) 메뉴가 없으면 GHCR 패키지를 public으로 전환하거나(엔진 패치 공개, 사용자 결정) VESSL 지원팀에 문의한다.
 6. `scripts/vessl/vessl.env`의 `PDMUX_VESSL_IMAGE=ghcr.io/asuan99/pdmux-sglang@sha256:<digest>`를 채우고 커밋한다(digest만 들어가고 비밀은 없다).
 
 ## 7. 첫 실행까지의 순서
