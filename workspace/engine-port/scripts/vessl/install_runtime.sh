@@ -22,15 +22,22 @@ mkdir -p "$(dirname "${manifest}")"
 
 bash "${engine}/scripts/bootstrap/sync_engine_tree.sh" "${manifest}"
 
-if patch --dry-run --reverse --batch -p1 -d "${runtime}" < "${manual}" > /dev/null 2>&1; then
-  manual_state="already-applied"
-elif patch --dry-run --forward --batch -p1 -d "${runtime}" < "${manual}" > /dev/null 2>&1; then
+# Forward check FIRST.  `--batch` makes patch silently flip direction when a patch "looks
+# reversed", so a bare `--reverse --dry-run` succeeds on an UNAPPLIED tree (caught 2026-10-02 by the
+# byte-equivalence test against the old image).  `--force` disables that auto-flip.
+if patch --dry-run --forward --batch -p1 -d "${runtime}" < "${manual}" > /dev/null 2>&1; then
   patch --forward --batch -p1 -d "${runtime}" < "${manual}"
   manual_state="applied"
+elif patch --dry-run --reverse --force -p1 -d "${runtime}" < "${manual}" > /dev/null 2>&1; then
+  manual_state="already-applied"
 else
   echo "ERROR: devtree_manual_edits.patch neither applies nor is already applied" >&2
   exit 4
 fi
+# Re-hash AFTER the manual edits (they touch scheduler.py, a manifest entry), so the manifest
+# describes the tree that actually runs -- the same post-edit state the KISTI live tree had when
+# every historical job ran sync.  Sync is idempotent (grep-guarded), so this only rewrites hashes.
+bash "${engine}/scripts/bootstrap/sync_engine_tree.sh" "${manifest}" > /dev/null
 
 {
   echo "commit=$(git -C "${project}" rev-parse HEAD 2>/dev/null || echo unknown)"
