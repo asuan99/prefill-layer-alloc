@@ -72,8 +72,8 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 [VESSL Job] job_entry.sh
    1 bundle sha256 확인 → 정확한 커밋 checkout (PDMUX_COMMIT과 일치 검사)
    2 engine-port/results → /data/runs/<job>/results 심볼릭 (추적 파일 보존, 쓰기는 영속 볼륨으로)
-   3 sync_engine_tree.sh (이 커밋의 src로 엔진 트리 재동기화, manifest 기록)
-     devtree_manual_edits.patch가 이미지 빌드 때와 다르면 중단 → 이미지 재빌드 필요
+   3 install_runtime.sh: 공개 이미지(pristine SGLang)에 이 커밋의 엔진 코드를 설치
+     (sync_engine_tree.sh → devtree_manual_edits.patch → 최종 트리 manifest 기록) — §6-2
    4 substrate.json (GPU 이름·UUID·드라이버·cc·클럭·전력·MIG·호스트·이미지·커밋) + clk.csv(100 ms) 백그라운드
    5 HF_HOME=/data/hf (offline), Job별 triton/flashinfer 캐시 → 대상 스크립트 실행 (PDMUX_ARRAY_SPEC면 array_runner)
    6 trap: 성공·실패와 무관하게 meta/logs + 이번 실행이 만든 results 파일만 /io/results/<job>/ 복사
@@ -88,9 +88,8 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
   - `launch.sh --env`는 `PDMUX_*` 노브만 받는다.
   - `job_entry.sh`는 env를 덤프하지 않는다. env에는 `VESSLCTL_ACCESS_TOKEN`이 들어 있다.
 - **재실행**: 자동 재시도가 없다. 재실행은 새 job name(커밋·시각 포함)으로 하고 ledger에 남긴다. 실패 셀만 골라 다시 돌린 사실은 결과 보고에 반드시 적는다(사후 선택 방지).
-- **이미지를 재빌드할 때**: `devtree_manual_edits.patch`·`requirements.pdmux-sglang.txt`·SGLang 버전·base digest가 바뀐 경우다.
-  - `src/` 변경은 Job 안의 런타임 sync가 반영하므로 재빌드가 필요 없다.
-  - 2026-10-02 확인: draft2(빌드 커밋 `b1c739c`) 이후 `env/`(docker 제외)·`src/`·`scripts/bootstrap/` 변경이 0이라 draft2 내용은 여전히 유효하다.
+- **이미지를 재빌드할 때**(§6-2 이후): `requirements.pdmux-sglang.txt`·`env/sitecustomize.py`·SGLang 버전·base digest가 바뀐 경우뿐이다.
+  - `src/`·`devtree_manual_edits.patch` 변경은 Job 시작 시 `install_runtime.sh`가 반영하므로 재빌드가 필요 없다.
 - **비용 장부**: `vessl_jobs.tsv`(제출)와 `cost.txt`(실행 시간 하한)를 쓴다. 스케줄링·이미지 pull 중 과금은 컨테이너 시간에 안 잡히므로 `vesslctl billing show`로 대조한다.
 
 ## 4. 기존 캠페인 스크립트 이식 (실행 전 필수)
@@ -164,6 +163,30 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
    ⇒ `vessl_cloud_setup_plan_2026-09-24.md` §1의 "Job은 private registry 자격증명·pull policy 지원"은 **현재 문서로 확인되지 않는다**(정정).
    진행 순서: (a) 콘솔 Job 생성 화면의 Custom 탭과 org Settings에서 해당 메뉴를 직접 확인한다. (b) 메뉴가 없으면 GHCR 패키지를 public으로 전환하거나(엔진 패치 공개, 사용자 결정) VESSL 지원팀에 문의한다.
 6. `scripts/vessl/vessl.env`의 `PDMUX_VESSL_IMAGE=ghcr.io/asuan99/pdmux-sglang@sha256:<digest>`를 채우고 커밋한다(digest만 들어가고 비밀은 없다).
+
+## 6-2. 공개 runtime 이미지 + 엔진 코드 런타임 설치 (2026-10-02, 사용자 결정 — §6-1 이미지 대체)
+
+**왜**: VESSL Job·Workspace는 private 레지스트리 인증을 지원하지 않는다(콘솔 Custom 탭에는 이미지 URI 입력란뿐, 사용자 확인 2026-10-02).
+그래서 이미지는 public이어야 한다. 한편 §6-1 이미지(`pdmux-sglang:b27c527`)에는 엔진 코드(`src/` 24개 등)가 들어 있어 공개하면 안 된다.
+
+**구조**
+- **public 이미지** `ghcr.io/asuan99/sglang-runtime@sha256:c85fc198c43e314567ec208efef51e49189ee861ca4d24e92c6c5035899b1456`
+  (레시피 커밋 `e3bba8f`): VESSL base + 고정 패키지 + **수정 안 한 SGLang v0.5.10** + py3.14 호환 shim.
+  `/opt/pdmux/prefill-layer-alloc`는 빈 자리다. 빌드 스크립트가 컨텍스트에 프로젝트 패치 표식이 없는지 검사한다.
+- **엔진 코드**: org-private Object 볼륨의 커밋 bundle → `job_entry.sh`가 clone → `scripts/vessl/install_runtime.sh`가
+  sync → manual edits 적용 → 최종 트리 manifest 기록. Workspace에서도 같은 스크립트를 한 줄로 실행한다(재실행해도 안전).
+
+**검증 (2026-10-02, 로컬 Docker, GPU 0)**
+- 공개 이미지 안에서 프로젝트 패치 표식(`pdmux_role_is_thread_local`·`maybe_create_holb_probe`·`maybe_install_chunk_probe`) 검색 결과 0건.
+  `prefill-layer-alloc` 디렉터리는 비어 있다.
+- 공개 이미지에 런타임 설치를 한 뒤의 SGLang 트리가 §6-1 이미지(엔진을 빌드 때 구운 것)와 **2269개 파일 전부 바이트 동일**하다(`__pycache__`·egg-info 제외).
+- 런타임 설치 2회 실행 시 manifest가 동일하고, manifest가 최종 트리와 일치한다(`sha256sum -c`).
+- 이 대조로 결함 1건을 잡아 고쳤다: `patch --batch`의 자동 방향 전환 때문에 manual edits가 "이미 적용됨"으로 오판되어 적용되지 않았다(커밋 `2676410`).
+- 공개 이미지 안에서 `job_entry.sh` 전체를 실행했다(가짜 nvidia-smi·볼륨): rc 0, DONE, `SHA256SUMS` 통과, 엔진 패치 import 확인.
+
+**사용자 할 일**
+1. GitHub → https://github.com/asuan99?tab=packages → `sglang-runtime` → Package settings → Change visibility → **Public**.
+2. **`pdmux-sglang` 패키지는 삭제**한다(엔진 코드 포함). GHCR 공개 범위는 패키지 단위라, 공개로 바꾸면 모든 버전이 함께 공개된다.
 
 ## 7. 첫 실행까지의 순서
 

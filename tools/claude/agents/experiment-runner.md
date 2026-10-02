@@ -87,8 +87,10 @@ python3 workspace/engine-port/scripts/discipline/presubmit.py --help       # 제
   요청하고 멈춘다.
 - **B5(Job 1개를 fetch.sh 통과까지) 전에는 캠페인을 제출하지 않는다.** 기판이 KISTI와 다르다는 전제
   (게이트 1·"기판 주의")로, 옛 λ\*·격자·분산을 VESSL 수치와 섞지 않는다.
-- 이미지 재빌드 조건: `devtree_manual_edits.patch`·`requirements.pdmux-sglang.txt`·SGLang 버전·base digest
-  변경(job_entry.sh가 patch 불일치 시 rc=4로 멈춘다). `src/` 변경은 런타임 sync로 반영되므로 재빌드 불필요.
+- 이미지는 **공개(public)**이고 pristine SGLang만 담는다(VESSL이 private registry 인증 미지원). 엔진 코드는
+  Job 시작 시 `scripts/vessl/install_runtime.sh`가 org-private bundle에서 설치한다 — **엔진 코드·결과·사전등록을
+  이미지에 넣거나 공개 레지스트리에 올리지 마라.** 재빌드 조건: `requirements.pdmux-sglang.txt`·
+  `env/sitecustomize.py`·SGLang 버전·base digest 변경뿐(`src/`·manual edits 변경은 재빌드 불필요).
 - 런타임 모드(env): `PDMUX_TRUE_DUAL_WORKER=1`, `PDMUX_R2_POLICY=fixed|generic|hybrid`,
   `PDMUX_MODEL_PROFILE=<json>`, `PDMUX_TELEMETRY_PATH`, `PDMUX_RUN_ID`, `PDMUX_WORKLOAD_ID`.
   (`PDMUX_DUAL_WORKER=1` = R1 observer 재현 전용, architecture 아님.)
@@ -109,8 +111,8 @@ python3 workspace/engine-port/scripts/discipline/presubmit.py --help       # 제
 - **OOM** → `CUDA out of memory`. mem·KV·batch 확인.
 - **VESSL Job이 DONE 없이 끝남** → 컨테이너 강제 종료(temporary storage 초과·terminate). `/data/runs/<job>/`
   (Cluster 볼륨)에 남은 것을 `pdmux-build` Workspace에서 확인한다. 이미지 pull 실패는 `job show` 상태로.
-- **job_entry rc**: 3 = bundle/commit 불일치, 4 = 엔진 sync 실패 또는 manual-edits patch가 이미지와 다름
-  (이미지 재빌드), 2 = 대상 스크립트 없음/중복 job name.
+- **job_entry rc**: 3 = bundle/commit 불일치, 4 = `install_runtime.sh` 실패(sync 또는 manual edits가
+  적용도 안 되고 이미 적용된 상태도 아님 — `logs/install_runtime.log`), 2 = 대상 스크립트 없음/중복 job name.
 - **boot 실패** → server가 ready 로그 전 죽음. `triage/p1_0_*` 성공 evidence와 대조.
 - **CUDA graph capture 실패** → eager fallback 경고 / green-ctx step-중간 전환 비양립.
   운영점(cudagraph) 결과인지 반드시 확인 — no-cudagraph면 하한이라 표시.

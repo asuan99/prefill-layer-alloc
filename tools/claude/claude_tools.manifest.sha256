@@ -1,8 +1,8 @@
-# sha256 of the TRACKED copies, 2026-10-02T15:06:32+09:00
+# sha256 of the TRACKED copies, 2026-10-02T16:42:52+09:00
 4d5180ca239b5f9d6eff248768f6c74a311a22bc43076a5ca7cd915a10d18bb6  agents/claims-auditor.md
 c89866bd373c8d16b05491110a9d0e2cfc0dc91e16c93a7cf808e4a9361d13eb  agents/doc-steward.md
-12cbd41130e39b85d0bcd59d3a0b3d20bb64123e569bc221f2763b21885b7c6b  agents/engine-porter.md
-e3616ced95660054402dc538f46795013da02e6aef843619ade5e4a59c82f0da  agents/experiment-runner.md
+a66ab40812ec498cc601a6e04886c981084e131ae16e0f2c51423c7fd33cf879  agents/engine-porter.md
+104fa0c7dc178173b7746f2c0fba6da0809d4ece63add45800fa40ecbdbb5202  agents/experiment-runner.md
 394e90ba97cfd3e9a9523c2a98d7b7aca60b2dd15bcd2997a8b0952ad5a1cbc0  agents/git-committer.md
 32eee3ed0962852266cdedd0d65d737ab12768ecd1004a0b21055ae17e13f841  agents/result-analyst.md
 7baf2533910814425da95d10e384a5443c36eb04c6d39a5ab07d2f5e5251c8b3  agents/venue-strategist.md
