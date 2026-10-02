@@ -67,3 +67,88 @@ TTFT 측정 정의 검토로 시작해(artifact 미반영 지시), 사용자와�
 - TTFT 규약·PAUSE max-ITL 병기·phase 단위 정상성은 전부 [제안] — 사전등록 감사 전.
 - **`he0_realized_2026-10-01.json`은 커밋하지 않았다**: 부동소수 출력의 숫자 부분열이 인용정지 패턴(정지 레지스트리의 소수·job 번호 패턴)과 우연히 충돌해 8건 거짓 양성. 결정적 산출물이므로 `python3 workspace/engine-port/results/he0_contamination_2026-10-01/he0_realized.py`로 재생성(sha256 `9cfed852…`, RESULT 문서에 기록). 로컬 작업 트리에는 남아 있다.
 - 실행 중 job 없음. 로컬 GPU 실행 없음. 미커밋 상태 없음(이 커밋 이후).
+
+---
+
+# 追記 — 2026-10-02 2차 세션 (HE0 감사 후속 + VESSL 실행 기반 구축)
+
+> **GPU 지출 0 · 새 성능 판정 0 · Claim 등급 변경 0.** VESSL 셋업은 **SSH 키 등록 직전에서 사용자 지시로 중단**(진행하지 말고 정리).
+> 실행 중 Job 0, 켜진 Workspace 0(`vesslctl job list`·`workspace list` 확인).
+
+## A. 이번 세션 요약
+
+HE0 오염 감사의 남은 결정을 처리했다. 정본 범위 축소(D-1…D-8)를 반영해 CONSENSUS를 rev84에서 rev85로 올렸고, 재집계 결과 감사 2회와 GPU 0 보강을 마쳤다.
+감사 범위는 "정본 결론을 바꿀 수 있는 결과"로 한정하기로 했다. 아카이브 재분석은 여기서 종료하고, 남은 질문은 E-1+telemetry로 넘긴다. CORESIDENCY 감사는 생략했다.
+이어서 VESSL Cloud 실행 기반을 만들었다. 만든 것은 운영 모델, Job 스크립트, 에이전트 교정, 공개 runtime 이미지, 볼륨이다.
+
+## B. 결정·측정
+
+**HE0 (전부 재구성 기반, GPU 0)**
+- 결과 감사 1(`AUDIT_RESULT_VERDICT_2026-10-02.md`, `MIXED`): "legacy −2.7% < 3% 게이트" 해석은 **REFUTED**다.
+  −2.7%는 LO phase의 희석값이고, HI phase에서 cliff 밖 술어로 재면 −6.8~−6.9%다. 정본 −19.9%가 cliff 증폭이라는 주장은 CONFIRMED.
+- FOLLOWUP 계산과 그 결과 감사(`AUDIT_FOLLOWUP_VERDICT_2026-10-02.md`, `MIXED`):
+  - 856964는 서버 정지가 촉발했다(컨트롤러 탓 아님). 정지 이후 초과 실패 78건 중 약 76건이 backlog로 설명된다.
+    "게이트 = 견고성"은 NOT-YET-SUPPORTED.
+  - C-1: "결과가 앉은 자리만으로 설명된다"는 PLAUSIBLE(조건부)로 강등. "~1% 배제"와 0-전환 +1.0%는 REFUTED(독립 재계산으로 재현).
+  - C-4: "과반 비구속"은 REFUTED(정의에 따라 판정이 갈림). cap 48 가설은 E-1만 가린다.
+- 동거율 정의 = **(a) prefill in-flight ∩ decode-active 벽시간**(사용자 결정).
+  재구성은 self-test v2에서 상향 편향을 보였고(16개 시나리오 중 11개 실패), 독립 추정량은 INCONCLUSIVE다(`CORESIDENCY_2026-10-02.md`, 결과 감사 전·참고용).
+
+**VESSL (사용자 결정)**
+- 측정은 Job으로만 한다. 한 비교의 arm은 한 Job 안에 둔다. 제출은 `launch.sh` dry-run → 승인 → `--submit`. 회수는 `fetch.sh`가 DONE+sha256을 통과해야 완료다.
+- VESSL은 private registry 인증을 지원하지 않는다(콘솔 Custom 탭에 URI 입력란만 있음).
+  그래서 **이미지는 공개**하고, pristine SGLang만 담은 `ghcr.io/asuan99/sglang-runtime@sha256:c85fc198c43e314567ec208efef51e49189ee861ca4d24e92c6c5035899b1456`을 쓴다.
+  엔진 코드는 org-private bundle에서 `install_runtime.sh`로 런타임에 설치한다.
+  - 엔진을 포함했던 `pdmux-sglang`은 사용자가 삭제했다. `sglang-runtime`은 public 전환 후 익명 manifest 조회 200을 확인했다.
+- GHCR 토큰은 1개(`write:packages`). GHCR Container registry는 현재 무료다(GitHub 문서, 2026-10-02 확인).
+- 볼륨(team HybridLLM 전용):
+  - `pdmux-cs` = `clustervol-havdzigstmv7`(org 공유 `cluster-storage-0`, betelgeuse-na/us-west-2, `/data`)
+  - `pdmux-io` = `objvol-9vgmwmerzwd3`(`/io`)
+  - 둘 다 빈 상태다.
+- 실측 spec: A100 = `resourcespec-a100x1` **$1.48/h**, CPU = `resourcespec-a100cpu` **$0.30/h**(문서의 $1.55·$0.20는 틀렸다).
+- 공개 이미지 검증(로컬 Docker):
+  - 프로젝트 표식 0건.
+  - 런타임 설치 트리가 구 이미지와 2269개 파일 바이트 동일.
+  - 이미지 안에서 `job_entry.sh` 전체 실행 통과.
+  - 이 검증에서 `patch --batch` 방향 자동전환 결함을 발견해 수정했다.
+
+## C. 코드·문서 변경 (전부 커밋, push 안 함)
+
+| 커밋 | 내용 |
+|---|---|
+| `4734871`·`439fb7a` | HE0 rev84·rev85, 감사 판정서 2, FOLLOWUP·CORESIDENCY·self-test v2 스크립트 |
+| `321770c` | `handoff-report/vessl_operating_model_2026-10-02.md` · `scripts/vessl/{launch,job_entry,fetch}.sh` · 에이전트 5·스킬 2·CLAUDE.md 교정 |
+| `46b6c27`·`b27c527`·`94d12ef` | GHCR 결정·절차, 토큰 1개, 구 이미지 push 기록 |
+| `e3bba8f`·`2676410`·`22ea3ad` | 공개 `Dockerfile.sglang-runtime` + `install_runtime.sh`, 패치 방향 버그 수정, §6-2, 에이전트 재빌드 조건 |
+| `b9871a9` | 볼륨 생성, `scripts/vessl/vessl.env` 완성(slug·digest·단가) |
+
+메모리 `vessl-operating-model.md` 신설·갱신, `he0-contamination-audit.md`(doc-steward), 교훈 265–266.
+의도적 미추적: `he0_realized_2026-10-01.json`.
+
+## D. 열린 항목 / 다음 세션 시작점
+
+**VESSL 셋업 재개 지점 = SSH 키**
+- 로컬 `~/.ssh/id_ed25519`(지문 `SHA256:uPuHP3cg…`, GitHub용)와 VESSL 등록 키 `wonho-local`(`sshkey-dz9d7v93oqhb`, 지문 `SHA256:xxqjT1Tk…`, 09-24)는 **다른 키**다. 짝이 되는 개인키는 로컬에 없다.
+- 권고: `vesslctl ssh-key add --name wonho-pc-ed25519 --public-key-file ~/.ssh/id_ed25519.pub`(비용 0). VESSL 전용 키를 새로 만드는 것도 선택지다.
+  `wonho-local`은 다른 기기에서 쓰는 키가 아니라면 삭제 후보다. **사용자가 결정하기 전에는 건드리지 않는다.**
+
+**그다음 순서** (각 단계는 비용 행위 → 명령과 비용을 보이고 승인을 받는다)
+1. `pdmux-build`(CPU, $0.30/h) 생성(볼륨 2개 + ssh-key + 공개 이미지) → `install_runtime.sh` → Nano-9B-v2(리비전 `dc0661c8…`) + trace를 `/data/hf`에 적재 → CPU 회귀 → pause.
+   gated 모델이면 HF 토큰은 사용자가 직접 입력하고 작업 후 logout한다.
+2. `pdmux-probe`(A100, $1.48/h)에서 B0·B3(SM 격자 realized, 두 파티션 smid 비중첩, cudagraph 중 격리)·B4 → 즉시 pause.
+3. **B5**: 소형 스모크 Job 1개를 `fetch.sh` 통과까지. **통과 전에는 캠페인을 제출하지 않는다.**
+4. 이후: 기판 재앵커(λ0) → E-1 + per-iteration telemetry 사전등록·규칙층 감사.
+
+**이전부터 대기 중인 사용자 결정**: 예산 시나리오·크레딧 충전액 · 기판 동등성·E2 새 OVERRIDE · hybrid 귀속 운반체(A11) · 5-b/4-a arm.
+
+## E. 미완·주의
+
+- 스크립트의 실제 VESSL 동작은 미검증이다(B5에서 확인).
+  - 항목: `volume download`의 prefix 처리, tag 밑줄 허용, Object FUSE 위 rsync, `FLASHINFER_WORKSPACE_BASE` 변수명, `/opt/pdmux` 쓰기 권한, `nvidia-smi -lms`.
+- KISTI 경로가 하드코딩된 캠페인 스크립트(예: `e2_sticky.sbatch:46–51`)는 이식이 필요하다. 이식은 새 사전등록의 일부로 다룬다.
+- `docker login ghcr.io` 자격증명이 `~/.docker/config.json`에 남아 있을 수 있다. 재빌드할 때 말고는 logout을 권장한다.
+- vesslctl 토큰 만료는 2026-10-03 15:35 KST다. 이후 `vesslctl auth login`(브라우저)이 필요하다.
+
+## F. GPU 실행 기록 (VESSL)
+
+- 제출한 Job 0 · 회수 0 · Workspace 0. 비용 발생: 빈 볼륨 2개(사용 0 B).
