@@ -1,6 +1,171 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-09-21(doc-steward — **2026-09-18~2026-09-21
+최종 갱신: 2026-10-02(doc-steward — **HE0 오염 감사 종합 + 부속
+문서 4건 등재**, GPU 0 · 새 성능 판정 0건 · Claim 등급 변경
+0건). 이 회차는 2026-09-28 저녁~2026-10-01 세션 산출물
+(`handoff-report/session_handoff_2026-10-02.md`)을 정본에
+반영한다. **HE0·layer-type 死·정책 순위·Claim D/E 등급은 전부
+재도출하지 않는다.**
+
+**(a) 부속 문서 4건 등재(지위: `reports/system_design_anchor_
+2026-09-30.md`의 자식 문서 — 설계 좌표계, 결과 정본 아님, GPU 0).**
+`reports/cost_model_design_space_2026-10-01.md`(CM-1…7 + "누가
+정하는가" 열, X-1…11 + 원문 정독 정정, A1–A11, 배치 지도 §5,
+조성 3층 §1.0 — **CM-1·X-7의 "SSM은 SM 둔감" 전제 철회**) ·
+`reports/prior_cost_models_bullet_muxwise_2026-10-01.md`(Bullet
+SRM·α·간섭·Alg.1 / MuxWise 식 1·2·contention guard·N_PL, 로컬
+camera-ready 정독 — 이력 비교 자료, 새 측정 없음) · `reports/
+definition_blind_spots_2026-10-01.md`(D-1…D-12, 최상위 5: p95가
+PAUSE 간격을 가림·1층 하한·변화 trace 정상성 미정의·결정 반영
+지연·H 층 누락 — **사용자 결정 대기**) · `reports/
+prefill_attn_ssm_length_review_2026-10-01.md`(rev2, 핵심 동기
+검토 — 아래 (b)).
+
+**(b) 핵심 동기 검토 rev2 — 확정 문장의 범위(overclaim 금지).**
+방어 가능한 문장은 **"코어 vs mixer 시간이 L≳2k에서 L^1.92(코어)
+/ L^0.95(mixer) 스케일"뿐**(단일 모델 micro 스코프 **필수** —
+"Nemotron-H에서도 같다"는 쓸 수 없다, 백엔드 교락·미측정) +
+**조건부 per-op 교차점 ≈2.75k**(백엔드 의존, 일반화 금지).
+★**NOT-YET-SUPPORTED**: "span 비용 = 조성×길이"(분해 실증 없음).
+★**사용 금지**: "decode SSM은 SM 둔감"(§1-21·Claim C2가 이미
+반증한 명제 — rev1에 혼입됐던 것, rev2에서 철회·`CM-1`/`X-7`과
+동일 정정). job **896776 수치는 인용 금지**(기존 배너 승계).
+
+**(c) A4 분리 재구성 `NO-GO`의 방법론적 귀결.** 단일 모델에서
+hybrid 프로파일 표(P_hyb)와 fitted generic 표(P_gen+recal)를
+나란히 두고 그 발산(D)을 재는 설계는 **재매개화 항등식**이다
+(D ≡ 0, `workspace/engine-port/results/hybrid_sched_s0/
+audit_a4_split_2026-10-01/VERDICT.md` 死因 2) — **hybrid
+귀속은 모델 hold-out(비-hybrid 모델과의 대조) 없이는 성립하지
+않는다.** 1차 운반체를 S0′에서 A11(모델 hold-out)로 옮길지는
+**사용자 결정 대기**(아래 (e) 불변 배너 다음 "다음 세션" 참조).
+
+**(d) HE0 오염 감사 — "열린 긴장"으로 등재. 정본 §1-N 본문 문구
+축소는 사용자 결정 대기라 이번 회차엔 적용하지 않는다.** 사용자
+문제제기("선행과 반대되는 결과가 설계 오염 아닌가")로
+claims-auditor 논리 감사(`MIXED`)와 result-analyst 정량 재집계
+(재구성 기반, **결과 감사 전**)를 대조한 종합
+(`workspace/engine-port/results/he0_contamination_2026-10-01/
+SYNTHESIS_2026-10-01.md`). **부호는 견고** — 이 trace·이
+컨트롤러가 best static을 못 넘는다는 방향은 오염으로 뒤집히지
+않는다(두 갈래 모두 일치). **그러나 headline은 크기·범위 둘 다
+과장이다**: ①legacy 효과(mean-ITL 술어) **−2.7%**는 방법론
+게이트 3("3% 미만 차이는 headline 아님") **미달** ②정본 술어
+(요청내 ITL p95) **−19.9%**는 ITL p95 59–61ms **metric
+cliff**(게이트 6)가 증폭한 수치 — cliff 없는 SLO에서 재측정
+필요 ③동적 arm(bind+GATE)은 9런 중 3런만 d34→전이, **d44
+자체엔 미도달**(허수아비 — 재확인, `CONFIRMED(scoped)`) ④TTFT
+차이의 **95% 이상이 공유 대기열 경로**(요청 자신의 in-flight는
+arm 무관) ⑤신규 최대 후보: 버스트 prefill-ward 부호 충돌은
+**running cap 48 = mamba pool 48 포화 조건 한정 가능성**(cap
+48 vs 192 대조, E-1만 가를 수 있음, GPU ≈10–20h, 미실행) ⑥정본
+서술 3건이 원자료와 **형태 불일치**(§1-10 "d34 영구 고정"은
+n=9 중 6/9런뿐, §1-17 "16–24 진동 평균 22"는 숫자만 재현·분포는
+16/34 이봉, §1-11 "no-gate 붕괴"[job 856964]는 클라이언트 정지
+아티팩트와 겹칠 가능성 — **본문 문구는 이번 회차에 바꾸지
+않는다**, `CONSENSUS.md` 해당 행에 포인터만 부착). **등급
+유지(HE0 `CONFIRMED` 불변) — 문구 축소는 claims-auditor 결과
+감사(C-1 자리분해 잔차·C-4 cap 구속 시간비) 완료 + 사용자
+승인 후에만.** 상세 `workspace/engine-port/results/
+he0_contamination_2026-10-01/{AUDIT_LOGIC_VERDICT,RESULT,
+SYNTHESIS}_2026-10-01.md`.
+
+**(e) 불변 배너.** HE0(동적 제어는 관대·tight SLO 양쪽에서
+best-static을 못 넘음, n≥4·5.4σ — **부호 불변**, 위 (d)는
+크기·범위 경고일 뿐 등급 변경 아님) · layer-type 런타임 정책
+全형태 死 · 정책 순위(decode-heavy static 기본값) · Claim D/E
+등급(미검증) · 게이트 #6/#13/#16 · stake #1(구매 불가로 종결)
+전부 불변(재도출 없음). GPU 지출 0·새 성능 판정 0건. 정본
+반영: `CONSENSUS.md` rev82→**rev83**(§4 살아있는 문서 표 4행
+신설·§1-7/§1-10/§1-11/§1-17 포인터 부착·§5 열린 항목 15 신설),
+`reports/paper/CLAIM_EVIDENCE_MATRIX.md`(Claim C/E 追記),
+`reports/paper/venue_positioning.md`(§5 Bullet 문장 ⚠註記),
+메모리 `system-design-anchor.md`(2026-10-01/02 절 추가)·
+`he0-contamination-audit.md`(신규). **커밋 금지**(작업 트리
+편집만, 사용자 지시 대기).
+
+이전: 2026-09-30(doc-steward — **설계 기준선(anchor)
+등재**, GPU 0 · 새 성능 판정 0건 · Claim 등급 변경 0건).
+`reports/system_design_anchor_2026-09-30.md`를 프로젝트 전체의
+**설계 기준선(main anchor)**으로 고정한다(사용자 지시
+2026-09-30) — 결과 정본이 아니라 "앞으로 무엇을 어떤 구조로
+검증하는가"의 좌표계이며, 정본 위계(본 문서 > `reports/paper/`
+> `CONSENSUS.md`)와 충돌하지 않는다. 확정 결론은 재도출하지
+않는다. 시각화 스냅샷: `handoff-report/artifacts_2026-09-30/
+hybrid_pdmux_anchor.html`(같은 날 발행, 수치 없음·전부 개념도).
+
+**(a) 중심 주장 재정의.** SM 배분형 단일-GPU PD-mux 스케줄러
+(Bullet/MuxWise 계열: 예측기 기반 최소-SM 배분 + 요청 재정렬 +
+극단 부하 시 decode 일시중단)를 hybrid(attention+SSM) 모델로
+확장하는 일이 **자명하지 않다**는 것이 검증 대상 주장이다
+(미확인). 자명하지 않음의 조작적 정의(**셋 다 필요**): ①generic
+예측기가 hybrid에서 다른 decode 최소 SM·다른 행동을 낸다 ②그
+차이가 goodput(TTFT ≤ SLO ∧ 요청내 token-ITL p95 ≤ SLO, n≥4·
+짝지은 CI·3% 이상·변화 trace)에 나타난다 ③hybrid 보정판(attn/SSM
+분리 프로파일)이 그 손실을 고친다. 반증 4갈래: ①이 없으면
+확장은 자명(부정 결과로 기록) · ①은 있되 ②가 없으면 "결정은
+다르나 성능은 같다"(상수 튜닝 수준) · ①②는 있되 ③이 없으면
+"hybrid에서 이 계열 스케줄러가 깨지지만 프로파일로는 못
+고친다"(기전 결과) · 넷 다 논문 결과다. **금지 서술**: "이미
+검증됐다" · 충실한 baseline(P_gen+recal) 없이 얻은 우세.
+
+**(b) 사용자 결정 2건(2026-09-30).** ①선행 논문(Bullet)이 확장을
+"straightforward, future work"로 예고했다는 사실은 **인용
+의무**이지 novelty 감점 근거가 아니다 — 아무도 수행하지 않은
+확장이므로 수행 자체가 논문 의의를 가진다. ②엔진 수정 비용
+(pause manager 신규 구현 등)은 **중단 사유가 아니다**.
+
+**(c) S0 rev1 규칙층 감사 `NO-GO`**(설계 결함, 방향 판정
+아님). `workspace/engine-port/results/hybrid_sched_s0/
+DESIGN_S0_REV1_2026-09-30.md`(offline 결정 발산 검사)를
+claims-auditor가 감사(`.../audit_s0_rules_2026-09-30/
+VERDICT.md`, 死因 5·차단 7·반증 실패 6): **K1**(항등식) 재생
+경로의 발산률이 분기 순서+개방 루프에서 계산 전에 연역되고
+`attn_ratio`·비용 격자와 무관 · **K2**(estimand 부재) 대조군
+G-PAUSE는 Bullet의 허수아비(Bullet 주 규칙은 예측기 기반 최소
+SM, 일시중단은 끝단)이고 충실한 Bullet-on-hybrid는 hybrid 항이
+없는 `estimate()`와 H-SQUEEZE 자체와 항등 · K3(해석 폭 반전)·
+K4(라벨 비전사)·K5(폐쇄 루프 미정의). 개선 제안 **S0′**(결정
+규칙을 Bullet Algorithm 1 decode 쪽 하나로 고정, 예측기만
+P_hyb/P_gen/P_gen+recal로 교체)은 감사 승인이나, 합성 비용
+격자로는 `MODEL_DEPENDENT` 이상이 불가해 **3-a 실측 프로파일이
+선행**해야 한다. engine-porter 읽기전용 검토(`.../
+engine_porter_review_2026-09-30.md`)는 PAUSE 훅이 구현 가능함을
+확인(불변식 4개 필수: 쌍 건너뜀·idx0 드레인·케이던스 동결 대응·
+admission latch 배타)하되 착수는 하지 않았다.
+
+**(d) 증거 사다리(순서 고정).** V-0/D-0 기판 점검 → **3-a 실측
+decode 프로파일(SM × batch × ctx)** → 3-b λ\*(B) → **S0′**(CPU,
+예측기 3판 결정 발산) → **S1**(pause manager + F1 재정렬 훅
+구현, correctness gate, Bullet §4.5형 ablation) → 5-a(워크로드별
+최적 static 격차) → 5-b(변화 trace, n≥4, 짝지은 CI). 각 단계
+NO-GO는 다음 단계를 막고 그 자체가 결과다.
+
+**(e) TTFT 정의·분해 규약은 [제안], 감사 전.** `reports/
+ttft_measurement_definition_review_2026-09-28.md` — 현 하네스
+TTFT(클라이언트 송신→첫 토큰) 정의는 불변, 정상성 검사 3종
+(F-E·게이트#12·`prefill_queue_depth` 추세)과 `W_queue`/
+`S_prefill` 분해 규약을 제안. engine-porter가 분해 전제 1
+(2026-09-30)을 해소(`forward_entry_time`은 admission 1회만
+set, split-prefill 재진입 미재호출, legacy/true-dual 동일)했고
+추가로 `prefill_run_batch_*`가 PD-mux(SPLIT_PREFILL)에서
+미기록됨과 decode OOM retract가 `wait_queue_entry_time`을
+덮어써 `W_queue` 음수 가능함을 발견(retract 요청은 분해에서 제외
+규칙). **아직 claims-auditor 사전 감사 전, artifact 미반영**
+(사용자 지시).
+
+**(f) 불변 배너.** HE0(동적 제어는 관대·tight SLO 양쪽에서
+best-static을 못 넘음, n≥4·5.4σ) · layer-type 런타임 정책
+全형태 死 · 정책 순위(decode-heavy static 기본값) · Claim D/E
+등급(미검증) · 게이트 #6/#13/#16 · stake #1(구매 불가로 종결)
+전부 불변(재도출 없음). GPU 지출 0·새 성능 판정 0건. 정본
+반영: `CONSENSUS.md` rev81→**rev82**(§4 살아있는 문서 표·§5
+열린 항목 14 갱신), `reports/paper/EXPERIMENT_ROADMAP.md`·
+`CLAIM_EVIDENCE_MATRIX.md` 갱신 배너, `handoff-report/
+session_handoff_2026-09-28.md` 追記 2 갱신. **커밋 금지**(작업
+트리 편집만, 사용자 지시 대기).
+
+이전: 2026-09-21(doc-steward — **2026-09-18~2026-09-21
 로컬 세션 산출물 정본 반영**, GPU 0·새 성능 판정 0건. 저장소는
 로컬 PC로 이양 완료, GPU 실행 불가 상태 지속). ★**A100 GPU
 지출 0 · 새 성능 판정 0건 · Claim D/E 등급 불변 · HE0·layer-type

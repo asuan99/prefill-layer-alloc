@@ -560,6 +560,17 @@ headroom과 정합적이다. 즉 우리 negative는 선행 positive와 모순이
 "coupling이 원인"이라는 동일 기전의 다른 면이며, **이 프레이밍이 유일한
 substrate-artifact 반박 방어선**이다.
 
+⚠**註記(2026-10-02, doc-steward, HE0 오염 감사 종합 `AUDIT_LOGIC_VERDICT_
+2026-10-01.md` 대조 17[실체] 반영)**: 위 "Bullet의 승리가 프로세스 분리로
+coupling을 깬 것"이라는 문장은 **Bullet §4.5 ablation과 충돌 가능성이
+있다** — `w/ Partition`(분할만, 스케줄러 없음) arm이 TPOT는 개선하되
+"재정렬 불능으로 인한 TTFT 저하"로 실패한다고 적은 것은 분할(=프로세스
+분리와 다른 레버) 단독의 실패이지 coupling 해소의 증거가 아니다. 이
+문장은 **삭제 권고**(오염 감사 "후보 15" 계열) — **사용자 결정 대기,
+원문은 지우지 않는다**(위 두 문단 그대로 보존). 상세
+`workspace/engine-port/results/he0_contamination_2026-10-01/
+AUDIT_LOGIC_VERDICT_2026-10-01.md` 대조 17.
+
 ★★**註記(2026-09-28, doc-steward, 이 절과 §5 아래 "부하-색인(load-indexed)"
 문단 둘 다에 적용)**: 위 "MuxWise의 'dynamic' ≈ decode_bs 임계 테이블(=
 load-dependent static schedule)"은 **MuxWise 공개 엔진의 선택기**를 가리키는

@@ -113,6 +113,11 @@ VESSL은 매번 새 컨테이너라 migration plan §3-3의 "이미지로 굳히
 - **노드 간 변동**: Run마다 다른 노드에 배정될 수 있다. 쌍(pair)은 같은 Run 안에서 구성하고, 여러 Run에 걸친
   반복은 노드 id를 공변량으로 남긴다. 기준선 분산(게이트 3)을 **VESSL에서 새로 측정**하기 전엔 옛 ±값을 쓰지 않는다.
 - 비용 장부: run id · preset · 시작/종료 · 청구 단위 · $ — E2 이식성 `REFUTED`의 3경로 중 "과금 모형" 경로가 이것.
+- **TTFT 결과 규약(2026-09-28 추가, 감사 전 [제안])**: 채점 셀마다 정상성 검사 3종(F-E · 게이트 #12 큐-성장 ·
+  telemetry `prefill_queue_depth` 추세)을 병기하고 발화 셀은 `UNSTABLE` 라벨·부호만 제출한다. TTFT는 서버측 stage
+  stamp로 대기(`W_queue`)/prefill 처리(`S_prefill`)로 분해해 병기한다 — 단 PD-mux 경로에서 `forward_entry_time`이
+  set되는지 등 전제 3건은 engine-porter 확인 전. `--max-concurrency`가 걸린 런의 TTFT는 도착 기준이 아니므로 채점에
+  쓰지 않는다. 상세·문안 `reports/ttft_measurement_definition_review_2026-09-28.md` §3.
 
 ### 3-5. [P1] 기판 bring-up (체크리스트 §3 B0–B5를 VESSL로 번역)
 

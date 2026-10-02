@@ -1,6 +1,31 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-15(doc-steward — **E2(sticky 분할 대조)
+최종 갱신: 2026-09-30(doc-steward — **설계 기준선(anchor) 등재**,
+GPU 0·새 성능 판정 0건·Claim 등급 변경 0건). `reports/
+system_design_anchor_2026-09-30.md`가 프로젝트 전체의 설계
+좌표계로 고정됨(사용자 지시 2026-09-30, 결과 정본 아님). 이
+로드맵에 대한 실효 변화 하나: **5-b의 "동적" 정의가 재정의됐다**
+— 기존의 단일-worker reactive SM-split 제어(HE0가 이미 반증한
+계열)가 아니라 **Bullet Algorithm-1형 규칙(예측기 기반 최소-SM
+배분 + 극단 부하 시 decode 일시중단) + 예측기 3판(P_gen/
+P_gen+recal/P_hyb) × 분할 arm**으로 5-b의 "동적" arm 후보를
+재정의한다(사전등록 전, [제안]). 첫 검증 설계 S0 rev1(offline
+결정 발산 검사)은 claims-auditor 규칙층 감사 **`NO-GO`**(설계
+결함: 발산률이 계산 전에 연역되는 항등식 K1 + 대조군이 Bullet의
+허수아비인 estimand 부재 K2 — 방향 판정 아님,
+`workspace/engine-port/results/hybrid_sched_s0/
+audit_s0_rules_2026-09-30/VERDICT.md`). 개선 제안 S0′는 **3-a
+실측 decode 프로파일(SM×batch×ctx)이 선행**해야 성립한다. 신규
+카드 **S1**(pause manager + F1 재정렬 훅, correctness gate
+선행 — engine-porter 읽기전용 검토로 구현 가능성 확인,
+`.../engine_porter_review_2026-09-30.md`)을 P2/P3 계열 뒤에
+신설 예정으로 표시한다(착수 안 함, 카드 본문은 다음 회차). **기존
+카드 순서(P0–P6, 벡터1/2, longctx_conflict, Controller
+ablation/defaults) 불변** — 재배치·삭제 없음. 상세
+`PROJECT_STATUS.md` 최상단 배너(2026-09-30), `CONSENSUS.md`
+rev82. **커밋 금지**(작업 트리 편집만).
+
+이전: 2026-09-15(doc-steward — **E2(sticky 분할 대조)
 사전등록·감사 완료, 실행은 SLURM 계정 블로커로 대기**: 설계
 E2-α(대조 arm 같은 job), 20 boot, 등록 예산 1.803 GPU-h(최악
 2.338, 하드캡 3.0), 규칙층 3회차+하네스층 2회차=감사 5회 전부

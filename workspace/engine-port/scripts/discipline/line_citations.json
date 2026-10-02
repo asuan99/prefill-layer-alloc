@@ -329,6 +329,667 @@
    "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/workloads.py"
   }
  },
+ "../../reports/prefill_attn_ssm_length_review_2026-10-01.md": {
+  "knee2d.sbatch:105-105": {
+   "anchor": "echo \"DONE L=$L\"",
+   "anchor_offset": 0,
+   "sha": "d373914b57d0b2ab",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/prefill_knee/knee2d.sbatch"
+  },
+  "workspace/engine-port/src/models/zamba2.py:269-275": {
+   "anchor": "# \"attn_core\" is the DIAGNOSTIC (nested) bucket = exactly what pre-2026-08-04",
+   "anchor_offset": 0,
+   "sha": "a9c3cee47c9eb1a3",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/models/zamba2.py"
+  }
+ },
+ "../../reports/ttft_measurement_definition_review_2026-09-28.md": {
+  "multiplexing_mixin.py:498-498": {
+   "anchor": "prefill_queue_depth=len(self.waiting_queue),",
+   "anchor_offset": 0,
+   "sha": "5d8b19023970d2d0",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "r2_correctness.sbatch:572-579": {
+   "anchor": "# line: under `--max-concurrency 64` that metric counts requests from send to",
+   "anchor_offset": 1,
+   "sha": "fd9e5a028fbb0f67",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness.sbatch"
+  },
+  "workspace/engine-port/benchmarks/pdmux_eval/analyze.py:212-221": {
+   "anchor": "tokens = itls[index] if index < len(itls) else []",
+   "anchor_offset": 5,
+   "sha": "79c2566161af5c70",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/analyze.py"
+  },
+  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:106-109": {
+   "anchor": "\"ttft_ms\": ttft_ms if math.isfinite(ttft_ms) else None,",
+   "anchor_offset": 3,
+   "sha": "78a27a59756710ad",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py"
+  },
+  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:49-51": {
+   "anchor": "await asyncio.sleep(max(0.0, benchmark_started + target - time.perf_counter()))",
+   "anchor_offset": 1,
+   "sha": "4c0f12efbfab3794",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py"
+  },
+  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:93-95": {
+   "anchor": "(token_times[0] - sent) * 1000.0 if token_times else math.inf",
+   "anchor_offset": 1,
+   "sha": "0e3041b9db5b4898",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py"
+  },
+  "workspace/engine-port/results/r2_correctness/r2_correctness.sbatch:572-579": {
+   "anchor": "# line: under `--max-concurrency 64` that metric counts requests from send to",
+   "anchor_offset": 1,
+   "sha": "fd9e5a028fbb0f67",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness.sbatch"
+  },
+  "workspace/engine-port/results/r2_eval/e2_sticky_prereg/e2_sticky.sbatch:338-342": {
+   "anchor": "--random-range-ratio 1.0 --num-prompts \"${NP[$CELL]}\" --request-rate \"${RATE[$CELL]}\" \\",
+   "anchor_offset": 4,
+   "sha": "49e91b4662bf72df",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/e2_sticky.sbatch"
+  },
+  "workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0.sbatch:372-376": {
+   "anchor": "--random-input-len \"$INLEN\" --random-output-len \"$OUTLEN\" --random-range-ratio 1.0 \\",
+   "anchor_offset": 3,
+   "sha": "2992a679ca6e8633",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0.sbatch"
+  },
+  "workspace/engine-port/src/multiplex/dual_worker.py:58-59": {
+   "anchor": "entry = getattr(stats, \"wait_queue_entry_time\", 0.0) if stats else 0.0",
+   "anchor_offset": 1,
+   "sha": "079b04751dd674af",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/dual_worker.py"
+  }
+ },
+ "results/hybrid_sched_s0/DESIGN_S0_REV1_2026-09-30.md": {
+  "controller.py:375-408": {
+   "anchor": "estimate, snapshot, current_decode_sms, safe_boundary, bucket_changed",
+   "anchor_offset": 31,
+   "sha": "6e7c4b4664870540",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "src/multiplex/controller.py:37-56": {
+   "anchor": "# H5: `worker_overlap_ratio` removed 2026-09-12 -- see dual_worker.py NOTE.",
+   "anchor_offset": 19,
+   "sha": "b2c1f5fa094642c4",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/controller.py"
+  },
+  "src/multiplex/profile.py:303-303": {
+   "anchor": "def estimate(",
+   "anchor_offset": 0,
+   "sha": "2a02336ec7e91331",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/profile.py"
+  }
+ },
+ "results/hybrid_sched_s0/PROPOSAL_A4_SPLIT_2026-10-01.md": {},
+ "results/hybrid_sched_s0/audit_a4_split_2026-10-01/VERDICT.md": {
+  "multiplexing_mixin.py:1184-1188": {
+   "anchor": "for i in range(len(manual_divisions)):",
+   "anchor_offset": 0,
+   "sha": "6fff2630d67766b2",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1190-1199": {
+   "anchor": "// self.pdmux_config.decode_bs_divisor,",
+   "anchor_offset": 5,
+   "sha": "b9c658b89fc5f038",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1304-1304": {
+   "anchor": "adjust_stream_group = adjust_stream_group or (",
+   "anchor_offset": 0,
+   "sha": "4c88314a39643df6",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1368-1368": {
+   "anchor": "stream_idx, stream_group = self.adjust_stream_groups()",
+   "anchor_offset": 0,
+   "sha": "7535edbeb8f693b5",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1518-1518": {
+   "anchor": "prefill_exe_done_flag = prefill_exe_done.query()",
+   "anchor_offset": 0,
+   "sha": "4db86d5e5e1464ac",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1628-1628": {
+   "anchor": "stream_idx, stream_group = self.adjust_stream_groups()",
+   "anchor_offset": 0,
+   "sha": "7535edbeb8f693b5",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "profile.py:224-238": {
+   "anchor": "upper = min((value for value in ordered if value >= target), default=ordered[-1])",
+   "anchor_offset": 5,
+   "sha": "ee2bfb48b4c81ed4",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "src/multiplex/profile.py:224-238": {
+   "anchor": "upper = min((value for value in ordered if value >= target), default=ordered[-1])",
+   "anchor_offset": 5,
+   "sha": "ee2bfb48b4c81ed4",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/profile.py"
+  },
+  "src/multiplex/profile.py:239-290": {
+   "anchor": "def predict(self, decode_sms: int, batch_size: int, context_tokens: int) -> Tuple[float, float]:",
+   "anchor_offset": 46,
+   "sha": "06c967e0f216f199",
+   "target": "prefill-layer-alloc/workspace/engine-port/src/multiplex/profile.py"
+  }
+ },
+ "results/hybrid_sched_s0/audit_s0_rules_2026-09-30/VERDICT.md": {
+  "benchmarks/pdmux_eval/profile_cli.py:106-106": {
+   "anchor": "\"attention_ratio\": item.attention_ratio,",
+   "anchor_offset": 0,
+   "sha": "9fc6c4598e7ad41c",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/profile_cli.py"
+  },
+  "model_runner_kv_cache_mixin.py:222-230": {
+   "anchor": "server_args.max_mamba_cache_size = server_args.max_running_requests // (",
+   "anchor_offset": 6,
+   "sha": "5d9b9e90bc23fecd",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py"
+  },
+  "multiplexing_mixin.py:239-247": {
+   "anchor": "\"PD-mux R1 observer path enabled (not execution-state separation)\"",
+   "anchor_offset": 1,
+   "sha": "6e42f1216a25511b",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:491-491": {
+   "anchor": "decode_batch_size=max(1, batch_size),",
+   "anchor_offset": 0,
+   "sha": "a9f7171b914d1ce7",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "profile.py:303-303": {
+   "anchor": "def estimate(",
+   "anchor_offset": 0,
+   "sha": "2a02336ec7e91331",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "workloads.py:191-193": {
+   "anchor": "# == every W3 request, exactly.  Not an approximation of anything (gate #198).",
+   "anchor_offset": 1,
+   "sha": "48ca314fbd7ef0e2",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/workloads.py"
+  }
+ },
+ "results/hybrid_sched_s0/engine_porter_review_2026-09-30.md": {
+  "controller.py:162-166": {
+   "anchor": "snapshot.measured_itl_p95_ms > snapshot.itl_slo_ms",
+   "anchor_offset": 1,
+   "sha": "1397e2fba5f8e33b",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:168-194": {
+   "anchor": "(EXPERIMENT_ROADMAP.md:975).  BOTH thresholds must be met, which is the",
+   "anchor_offset": 2,
+   "sha": "7698d88278737853",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:236-239": {
+   "anchor": "snapshot.timestamp_s - self.last_transition_s >= self.min_dwell_s",
+   "anchor_offset": 0,
+   "sha": "d719091939de3853",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:311-315": {
+   "anchor": "and desired.upper_bound_itl_ms > snapshot.itl_slo_ms",
+   "anchor_offset": 3,
+   "sha": "92cdc9747b6db47d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:330-338": {
+   "anchor": "self.downshift_streak = self.downshift_streak + 1 if enough_slack else 0",
+   "anchor_offset": 2,
+   "sha": "46d9a3fa624c22db",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:339-340": {
+   "anchor": "self.downshift_streak = 0",
+   "anchor_offset": 1,
+   "sha": "aa83719423de004a",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:380-380": {
+   "anchor": "runtime_environment: Optional[RuntimeEnvironment] = None,",
+   "anchor_offset": 0,
+   "sha": "9b5eb0f766203803",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:399-404": {
+   "anchor": "estimate = self.estimator.estimate(",
+   "anchor_offset": 0,
+   "sha": "3a43fad3cd586ca8",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:425-427": {
+   "anchor": "self, snapshot: RuntimeSnapshot, current_decode_sms: int, safe_boundary: bool",
+   "anchor_offset": 1,
+   "sha": "1413a38a64f64be3",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:436-443": {
+   "anchor": "elif slack > 0.35 * snapshot.itl_slo_ms and snapshot.prefill_queue_depth:",
+   "anchor_offset": 0,
+   "sha": "3ac167dedfd8ed1a",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "controller.py:5-21": {
+   "anchor": "except ImportError:  # Loaded directly by CPU-only tests.",
+   "anchor_offset": 11,
+   "sha": "8a092804ac47845c",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/controller.py"
+  },
+  "cuda_graph_runner.py:680-681": {
+   "anchor": "graph_key = f\"{get_current_stream_idx()}_{cuda_graph_bs}\"",
+   "anchor_offset": 1,
+   "sha": "b74e82e40b70a85b",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
+  },
+  "cuda_graph_runner.py:808-815": {
+   "anchor": ") as graph_capture_context, profile_context as prof:",
+   "anchor_offset": 7,
+   "sha": "28cb701cfc6e97eb",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/cuda_graph_runner.py"
+  },
+  "dual_worker.py:197-207": {
+   "anchor": "for event in self.inflight_events.values():",
+   "anchor_offset": 4,
+   "sha": "25bcab2637dc9b15",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/dual_worker.py"
+  },
+  "dual_worker.py:233-275": {
+   "anchor": "self.request_phase.setdefault(self._rid(req), RequestPhase.PREFILL_WAITING)",
+   "anchor_offset": 13,
+   "sha": "62f9deae81484871",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/dual_worker.py"
+  },
+  "dual_worker.py:465-491": {
+   "anchor": "worker = self.prefill if role is WorkerRole.PREFILL else self.decode",
+   "anchor_offset": 19,
+   "sha": "848e06db428298b8",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/dual_worker.py"
+  },
+  "forward_batch_info.py:119-119": {
+   "anchor": "or self == ForwardMode.SPLIT_PREFILL",
+   "anchor_offset": 0,
+   "sha": "65341696ad143f2a",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/forward_batch_info.py"
+  },
+  "lambda0.sbatch:342-342": {
+   "anchor": "--disable-radix-cache --mem-fraction-static \"$MEM_FRACTION\" \\",
+   "anchor_offset": 0,
+   "sha": "6498b71a3da1fd9c",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0.sbatch"
+  },
+  "lambda0.sbatch:343-343": {
+   "anchor": "--max-running-requests \"$MAX_RUNNING\" \\",
+   "anchor_offset": 0,
+   "sha": "c70a08f602af0328",
+   "target": "prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0.sbatch"
+  },
+  "managers/scheduler.py:1961-1969": {
+   "anchor": "def _add_request_to_queue(self, req: Req, is_retracted: bool = False):",
+   "anchor_offset": 0,
+   "sha": "73178c8b6e706708",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2309-2313": {
+   "anchor": "res = get_global_server_args().pp_max_micro_batch_size - running_bs",
+   "anchor_offset": 1,
+   "sha": "4bfb59a698b6f9d4",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2315-2315": {
+   "anchor": "def get_new_batch_prefill(self) -> Optional[ScheduleBatch]:",
+   "anchor_offset": 0,
+   "sha": "f3d9e5fa90e0e340",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2386-2386": {
+   "anchor": "self.policy.calc_priority(self.waiting_queue, self.running_batch)",
+   "anchor_offset": 0,
+   "sha": "eb010bfd3282584b",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2403-2489": {
+   "anchor": "# For overlapping loading of LoRA weights with computation, we will load each adapter one at a time,",
+   "anchor_offset": 28,
+   "sha": "94657e10b26737c6",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2497-2497": {
+   "anchor": "break",
+   "anchor_offset": 0,
+   "sha": "b4884b3918a4c9f0",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2523-2523": {
+   "anchor": "set_time_batch(can_run_list, \"set_forward_entry_time\")",
+   "anchor_offset": 0,
+   "sha": "4ff141a284103fa7",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2648-2648": {
+   "anchor": "# Update batch tensors",
+   "anchor_offset": 0,
+   "sha": "4fbc9d62a9e11d2d",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2676-2677": {
+   "anchor": "set_time_batch(batch.reqs, \"set_prefill_run_batch_start_time\")",
+   "anchor_offset": 1,
+   "sha": "5330f3e5ce6f743a",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "managers/scheduler.py:2814-2815": {
+   "anchor": "set_time_batch(batch.reqs, \"set_prefill_run_batch_end_time\")",
+   "anchor_offset": 1,
+   "sha": "44be2f58d7ec8adb",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler.py"
+  },
+  "model_executor/model_runner.py:2709-2728": {
+   "anchor": "if forward_batch.split_index == 0 or reinit_attn_backend:",
+   "anchor_offset": 6,
+   "sha": "147d65e873edd519",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/model_runner.py"
+  },
+  "model_runner_kv_cache_mixin.py:222-228": {
+   "anchor": "server_args.max_mamba_cache_size = server_args.max_running_requests // (",
+   "anchor_offset": 6,
+   "sha": "b20437d55a555918",
+   "target": "sglang_engine_dev/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py"
+  },
+  "multiplexing_mixin.py:1175-1211": {
+   "anchor": "# running_batch.is_empty()` trigger in `event_loop_pdmux` exists to",
+   "anchor_offset": 34,
+   "sha": "b71f74ab7a29190e",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1218-1237": {
+   "anchor": "if getattr(self, \"r2_admission_limited\", False) and self._r2_admission_holds():",
+   "anchor_offset": 3,
+   "sha": "0a4396224f2f9bfd",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1219-1220": {
+   "anchor": "if self.split_prefill_batch:",
+   "anchor_offset": 0,
+   "sha": "2589a4df2964750b",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1227-1227": {
+   "anchor": "batch = self.get_new_batch_prefill()",
+   "anchor_offset": 0,
+   "sha": "529dcff0d8747583",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1265-1280": {
+   "anchor": "_a = float(os.environ.get(\"PDMUX_SLO_EMA\", \"0.85\"))  # v7b: smoother signal (was 0.7)",
+   "anchor_offset": 10,
+   "sha": "63b5cb4ed74f9cb2",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1278-1278": {
+   "anchor": "self._r2_itl_samples = (",
+   "anchor_offset": 0,
+   "sha": "519609ec2e8a38d2",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1297-1297": {
+   "anchor": "self.running_batch = self.update_running_batch(self.running_batch)",
+   "anchor_offset": 0,
+   "sha": "05e1646abfedf9c7",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1305-1305": {
+   "anchor": "stream_idx > 0 and self.running_batch.is_empty()",
+   "anchor_offset": 0,
+   "sha": "4cc780068c323f80",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1341-1357": {
+   "anchor": "if getattr(self, \"true_dual_worker_runtime\", None) is not None:",
+   "anchor_offset": 5,
+   "sha": "6fac6bfac255b41c",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1358-1368": {
+   "anchor": "if getattr(self, \"true_dual_worker_runtime\", None) is not None:",
+   "anchor_offset": 5,
+   "sha": "f62cd1c86fb3a75f",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1376-1404": {
+   "anchor": "if getattr(self, \"true_dual_worker_runtime\", None) is not None:",
+   "anchor_offset": 11,
+   "sha": "710539668b72a62a",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1380-1380": {
+   "anchor": "self._r2_decode_iterations = (",
+   "anchor_offset": 0,
+   "sha": "8a508e0f8d3b4605",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1390-1390": {
+   "anchor": "decode_future = self.true_dual_worker_runtime.submit(",
+   "anchor_offset": 0,
+   "sha": "aa906af13f3dd704",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1476-1481": {
+   "anchor": "self.split_prefill_batch.split_index = next_split_index",
+   "anchor_offset": 4,
+   "sha": "3d0a5a2318a18b7a",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1497-1502": {
+   "anchor": "self.dual_worker_state.arbiter.release(WorkerRole.DECODE)",
+   "anchor_offset": 2,
+   "sha": "c47f17e74885f81d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1529-1533": {
+   "anchor": "if self.running_batch and not self.running_batch.is_empty():",
+   "anchor_offset": 2,
+   "sha": "768e9e149a8067e7",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:1531-1541": {
+   "anchor": "if self.running_batch and not self.running_batch.is_empty():",
+   "anchor_offset": 0,
+   "sha": "d0863b8b9f3128a9",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:2045-2067": {
+   "anchor": "controller = getattr(getattr(self, \"r2_policy\", None), \"controller\", None)",
+   "anchor_offset": 15,
+   "sha": "01dee21e59bd0a53",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:388-455": {
+   "anchor": "index for index in matches if 1 <= index <= self.real_sm_group_num - 2",
+   "anchor_offset": 53,
+   "sha": "4579876373766c65",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "multiplexing_mixin.py:672-682": {
+   "anchor": "for index, (_prefill_sms, decode_sms) in enumerate(self.sm_counts)",
+   "anchor_offset": 0,
+   "sha": "222efac28632a2f5",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
+  },
+  "pdmux_context.py:124-138": {
+   "anchor": "(spatial.create_greenctx_stream_by_value(prefill_sm, decode_sm, gpu_id))",
+   "anchor_offset": 10,
+   "sha": "c66a0c3b7bad5abd",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/pdmux_context.py"
+  },
+  "profile.py:11-18": {
+   "anchor": "from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple",
+   "anchor_offset": 7,
+   "sha": "f05fe5433530d145",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:239-301": {
+   "anchor": "def predict(self, decode_sms: int, batch_size: int, context_tokens: int) -> Tuple[float, float]:",
+   "anchor_offset": 46,
+   "sha": "9b3309aa5b82f497",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:310-313": {
+   "anchor": "float(self.profile.heldout_residual_p95_ms),",
+   "anchor_offset": 2,
+   "sha": "fbda5101c99c5967",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:314-314": {
+   "anchor": "if runtime is not None:",
+   "anchor_offset": 0,
+   "sha": "40ceeb3dbdd3429c",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:329-334": {
+   "anchor": "decode_sms, batch_size, context_tokens",
+   "anchor_offset": 2,
+   "sha": "401b0108fc54f278",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:347-363": {
+   "anchor": "self.emergency_decode_sms, batch_size, context_tokens",
+   "anchor_offset": 4,
+   "sha": "5e1fd9317ec49f7d",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:403-412": {
+   "anchor": "ENGINE_SOURCE_MODULES: Tuple[str, ...] = (",
+   "anchor_offset": 0,
+   "sha": "63f7e8eebb385276",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:48-65": {
+   "anchor": "raise ValueError(\"decode_sms, batch_size and context_tokens must be positive\")",
+   "anchor_offset": 13,
+   "sha": "d46621fb29029c9a",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile.py:99-111": {
+   "anchor": "if self.attention_kind not in {\"GQA\", \"MQA\", \"MHA\", \"NONE\", \"MIXED\"}:",
+   "anchor_offset": 7,
+   "sha": "ede253b77b4892f4",
+   "target": "sglang_engine_dev/python/sglang/srt/multiplex/profile.py"
+  },
+  "profile_cli.py:106-106": {
+   "anchor": "\"attention_ratio\": item.attention_ratio,",
+   "anchor_offset": 0,
+   "sha": "9fc6c4598e7ad41c",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/profile_cli.py"
+  },
+  "req_time_stats.py:590-610": {
+   "anchor": "self.observe_per_stage_req_latency(stage, ts - slice_start_time)",
+   "anchor_offset": 15,
+   "sha": "836efa40378748e9",
+   "target": "sglang_engine_dev/python/sglang/srt/observability/req_time_stats.py"
+  },
+  "req_time_stats.py:612-617": {
+   "anchor": "def set_forward_entry_time(self, ts=None):",
+   "anchor_offset": 0,
+   "sha": "52ba8982151e5ac7",
+   "target": "sglang_engine_dev/python/sglang/srt/observability/req_time_stats.py"
+  },
+  "req_time_stats.py:670-673": {
+   "anchor": "def set_prefill_finished_time(self, ts=None):",
+   "anchor_offset": 0,
+   "sha": "0160102ed2fd5e29",
+   "target": "sglang_engine_dev/python/sglang/srt/observability/req_time_stats.py"
+  },
+  "schedule_policy.py:120-125": {
+   "anchor": "if self.policy == CacheAgnosticPolicy.FCFS:",
+   "anchor_offset": 0,
+   "sha": "304ee8fd94926abf",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/schedule_policy.py"
+  },
+  "schedule_policy.py:167-181": {
+   "anchor": "Validates the policy and adjusts it if necessary based on tree cache settings.",
+   "anchor_offset": 4,
+   "sha": "a6b01e16077da73f",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/schedule_policy.py"
+  },
+  "schedule_policy.py:465-468": {
+   "anchor": "self.token_to_kv_pool_allocator.available_size()",
+   "anchor_offset": 2,
+   "sha": "23e709aa551ca1c5",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/schedule_policy.py"
+  },
+  "schedule_policy.py:486-489": {
+   "anchor": "self.token_to_kv_pool_allocator.available_size()",
+   "anchor_offset": 2,
+   "sha": "23e709aa551ca1c5",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/schedule_policy.py"
+  },
+  "schedule_policy.py:87-93": {
+   "anchor": "ROUTING_KEY = \"routing-key\"  # prioritize by routing key frequency in running batch",
+   "anchor_offset": 6,
+   "sha": "8a2a8ed93132be57",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/schedule_policy.py"
+  },
+  "scheduler_output_processor_mixin.py:180-181": {
+   "anchor": "req.time_stats.set_prefill_finished_time()",
+   "anchor_offset": 1,
+   "sha": "c15adda30a054c3f",
+   "target": "sglang_engine_dev/python/sglang/srt/managers/scheduler_output_processor_mixin.py"
+  },
+  "server_args.py:6130-6132": {
+   "anchor": "), \"PD-Multiplexing is not compatible with chunked prefill.\"",
+   "anchor_offset": 1,
+   "sha": "902bf221602b15fa",
+   "target": "sglang_engine_dev/python/sglang/srt/server_args.py"
+  },
+  "server_args.py:6158-6162": {
+   "anchor": "], f\"To use priority scheduling, schedule_policy must be 'fcfs' or 'lof'. '{self.schedule_policy}' is not supported.\"",
+   "anchor_offset": 4,
+   "sha": "dfd63232b49eaf20",
+   "target": "sglang_engine_dev/python/sglang/srt/server_args.py"
+  },
+  "test_host_worker_metrics.py:295-295": {
+   "anchor": "for f in controller.RuntimeSnapshot.__dataclass_fields__",
+   "anchor_offset": 0,
+   "sha": "3e42675a65d128c2",
+   "target": "prefill-layer-alloc/workspace/engine-port/tests/test_host_worker_metrics.py"
+  },
+  "test_host_worker_metrics.py:311-311": {
+   "anchor": "fields = controller.RuntimeSnapshot.__dataclass_fields__",
+   "anchor_offset": 0,
+   "sha": "69b4e61fffc0c0f2",
+   "target": "prefill-layer-alloc/workspace/engine-port/tests/test_host_worker_metrics.py"
+  },
+  "tests/test_host_worker_metrics.py:295-295": {
+   "anchor": "for f in controller.RuntimeSnapshot.__dataclass_fields__",
+   "anchor_offset": 0,
+   "sha": "3e42675a65d128c2",
+   "target": "prefill-layer-alloc/workspace/engine-port/tests/test_host_worker_metrics.py"
+  },
+  "tests/test_host_worker_metrics.py:311-311": {
+   "anchor": "fields = controller.RuntimeSnapshot.__dataclass_fields__",
+   "anchor_offset": 0,
+   "sha": "69b4e61fffc0c0f2",
+   "target": "prefill-layer-alloc/workspace/engine-port/tests/test_host_worker_metrics.py"
+  },
+  "tests/test_profile_controller.py:12-28": {
+   "anchor": "# NOTE: the bare name is load-bearing -- controller.py's CPU-only fallback",
+   "anchor_offset": 1,
+   "sha": "58237b74f9b60f45",
+   "target": "prefill-layer-alloc/workspace/engine-port/tests/test_profile_controller.py"
+  }
+ },
  "results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md": {
   "a1/a1_q3k1_rule.py:105-105": {
    "anchor": "N_MIN_DECODE_STEPS = 64",
