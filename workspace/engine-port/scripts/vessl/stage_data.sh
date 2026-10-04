@@ -36,6 +36,10 @@ for model in "$@"; do
   rev="$(awk -F'\t' -v k="${key}" '$1==k{print $2}' "${revs}")"
   [[ -n "${rev}" ]] || { echo "ERROR: ${model} not in ${revs}; refusing floating revision" >&2; exit 2; }
   if hf download "${model}" --revision "${rev}" > /dev/null; then
+    # A by-revision download writes no refs/main, so an offline `from_pretrained("<id>")` (no
+    # revision -- how every campaign script names the model) cannot resolve a snapshot.  Point
+    # refs/main at the pinned revision, exactly what the KISTI cache held.
+    refdir="${HF_HOME}/hub/${key}/refs"; mkdir -p "${refdir}"; printf '%s' "${rev}" > "${refdir}/main"
     printf '%s\tmodel\t%s\t%s\tok\n' "$(utc)" "${model}" "${rev}" >> "${log}"
   else
     printf '%s\tmodel\t%s\t%s\tFAILED\n' "$(utc)" "${model}" "${rev}" >> "${log}"; exit 3
