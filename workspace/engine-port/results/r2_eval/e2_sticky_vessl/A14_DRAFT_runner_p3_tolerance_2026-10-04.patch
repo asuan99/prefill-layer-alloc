@@ -1,0 +1,47 @@
+--- a/workspace/engine-port/results/r2_eval/e2_sticky_vessl/e2_sticky_vessl.sh	2026-10-05 00:13:06.214002967 +0900
++++ b/workspace/engine-port/results/r2_eval/e2_sticky_vessl/e2_sticky_vessl.sh	2026-10-05 00:16:10.943374498 +0900
+@@ -461,9 +461,32 @@
+   MTT=$(grep -o "max_total_num_tokens=[0-9]*" "$SRVLOG" | tail -1 | grep -o "[0-9]*$")
+   echo "$NAME max_mamba_cache_size=${MMB:-NONE} max_total_num_tokens=${MTT:-NONE}" | tee -a "$OUT/BANNERS.txt"
+   echo "${MMB:-NONE} ${MTT:-NONE}" >> "$OUT/P3_KEYS.txt"
+-  if [ "$(sort -u "$OUT/P3_KEYS.txt" | wc -l)" -gt 1 ]; then
+-    teardown "$PID" "$PORT"; fail "ABORT_P3 binding resources differ across boots -- see BANNERS.txt" 8
+-  fi
++  # A14 sec 3 option (ii) (DRAFT -- applies only if the rules-layer audit accepts it):
++  #   (a) max_mamba_cache_size: EXACTLY one value across all boots (it is the binding resource:
++  #       --max-running-requests 48 with --disable-radix-cache fixes it; E2C-10);
++  #   (b) every max_total_num_tokens >= MAX_RUNNING x CTX (= 786,432): the KV pool can then never
++  #       bind admission, whatever the admitted set;
++  #   (c) (max - min) / max of max_total_num_tokens <= 1e-4 (a gross-drift backstop: a different
++  #       mem-fraction or model would move it by >> 1e-4).
++  #   Any NONE (banner not found) still aborts.  The raw keys are kept in P3_KEYS.txt as before.
++  P3_VERDICT=$(python3 - "$OUT/P3_KEYS.txt" "$MAX_RUNNING" "$CTX" <<'PY'
++import sys
++rows = [l.split() for l in open(sys.argv[1]) if l.strip()]
++floor = int(sys.argv[2]) * int(sys.argv[3])
++if any(len(r) != 2 or not r[0].isdigit() or not r[1].isdigit() for r in rows):
++    print("FAIL banner_missing"); sys.exit()
++mamba = {int(r[0]) for r in rows}; tok = [int(r[1]) for r in rows]
++if len(mamba) != 1: print(f"FAIL mamba_distinct={sorted(mamba)}"); sys.exit()
++if min(tok) < floor: print(f"FAIL tokens_min={min(tok)}<floor={floor}"); sys.exit()
++rel = (max(tok) - min(tok)) / max(tok)
++print(("PASS" if rel <= 1e-4 else "FAIL") + f" mamba={mamba.pop()} tokens_min={min(tok)} tokens_max={max(tok)} rel={rel:.3e} floor={floor}")
++PY
++)
++  echo "$NAME P3 $P3_VERDICT" | tee -a "$OUT/P3_VERDICTS.txt"
++  case "$P3_VERDICT" in
++    PASS*) ;;
++    *) teardown "$PID" "$PORT"; fail "ABORT_P3 binding resources differ across boots ($P3_VERDICT) -- see BANNERS.txt" 8 ;;
++  esac
+ 
+   # ---- P13 (rev3 sec 7 + ADDENDUM A3/A7): correctness contrast, BOTH arms, before any load.
+   # Probe body byte-identical to e2_sticky.sbatch (= sticky_smoke.sbatch:118-133).
+@@ -568,7 +591,7 @@
+ echo ""
+ echo "=== P3 summary (the gate itself fired per boot, above) ==="
+ sort -u "$OUT/P3_KEYS.txt" 2>/dev/null | tee "$OUT/P3_BANNER_UNIQUE.txt"
+-echo "P3 distinct binding-resource keys across all boots: $(sort -u "$OUT/P3_KEYS.txt" 2>/dev/null | wc -l) (registered: 1)"
++echo "P3 distinct binding-resource keys across all boots: $(sort -u "$OUT/P3_KEYS.txt" 2>/dev/null | wc -l) (A14 (ii): mamba exactly 1; tokens within 1e-4 and >= MAX_RUNNING x CTX)"
+ 
+ # ---- P13 verdict: byte-identical greedy output across arms (literal, ADDENDUM A7).
+ # Both files come from THIS Job; a fully resumed Job compares the previous Job's pair of files.

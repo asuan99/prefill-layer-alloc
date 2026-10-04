@@ -1,0 +1,71 @@
+--- a/workspace/engine-port/results/r2_eval/e2_sticky_vessl/e2_sticky_vessl.sh	2026-10-05 00:12:32.231635553 +0900
++++ b/workspace/engine-port/results/r2_eval/e2_sticky_vessl/e2_sticky_vessl.sh	2026-10-05 00:13:06.214002967 +0900
+@@ -286,7 +286,49 @@
+ teardown () {   # $1 pid  $2 port  (inherited sequence: kill, 5 s, pkill -9, 10 s)
+   kill "$1" 2>/dev/null; sleep 5
+   pkill -9 -f "launch_server.*--port $2" 2>/dev/null; sleep 10
++  # A14 sec 2 (DRAFT): SGLang children rewrite their cmdline via setproctitle
++  # ("sglang::scheduler", "sglang::detokenizer"), so the pattern above never matches them;
++  # they normally die by PR_SET_PDEATHSIG.  Belt and braces, appended AFTER the inherited
++  # sequence (which is unchanged).  One server per container, so this cannot hit another arm.
++  pkill -9 -f "^sglang::" 2>/dev/null
+ }
++# A14 sec 2 (DRAFT): before every launch, wait until no SGLang process is alive and the GPU's
++# used memory is back at the pre-boot-1 baseline (+64 MiB), max 180 s.  Recorded, NOT a gate:
++# P3 stays the gate.  Also records NVML byte-level free/used so a future max_total_num_tokens
++# drift can be told apart (persistent device-level offset vs in-process variation).
++gpu_used_mib () { nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits -i 0 2>/dev/null | head -1 | tr -d ' '; }
++nvml_bytes () {
++  python3 -c 'import pynvml as n; n.nvmlInit(); m=n.nvmlDeviceGetMemoryInfo(n.nvmlDeviceGetHandleByIndex(0)); print(f"nvml_total={m.total} nvml_free={m.free} nvml_used={m.used}")' 2>/dev/null \
++    || echo "nvml=NA"
++}
++settle () {   # $1 boot name
++  local i used alive
++  for i in $(seq 1 36); do
++    used=$(gpu_used_mib); alive=0
++    pgrep -f "sglang.launch_server|^sglang::" > /dev/null 2>&1 && alive=1
++    if [ "$alive" = 0 ] && [ -n "$used" ] && [ "$used" -le $((GPU_USED_BASE_MIB + 64)) ]; then break; fi
++    budget_fired && break
++    sleep 5
++  done
++  echo "$1 epoch=$(date +%s) settle_polls=$i used_mib=${used:-NA} base_mib=$GPU_USED_BASE_MIB sglang_alive=$alive $(nvml_bytes)" >> "$OUT/SETTLE.txt"
++}
++# A14 sec 1 (DRAFT): the HTTP port is drawn OUTSIDE the kernel ephemeral range and checked
++# against sockets in EVERY TCP state.  Job 20261004135228 boot a_r2_ON_4386 drew 39184 (inside
++# 32768-60999); that exact port was the client-side ephemeral port of the previous boot's
++# last bench request, still in TIME_WAIT, which `ss -ltn` (LISTEN only) cannot see -> EADDRINUSE.
++PORT_LO=20000; PORT_SPAN=800
++read -r EPH_LO EPH_HI < /proc/sys/net/ipv4/ip_local_port_range 2>/dev/null || { EPH_LO=NA; EPH_HI=NA; }
++{ echo "ip_local_port_range=$EPH_LO $EPH_HI"
++  echo "ip_local_reserved_ports=$(cat /proc/sys/net/ipv4/ip_local_reserved_ports 2>/dev/null || echo NA)"
++  echo "listen_port_window=$PORT_LO-$((PORT_LO + PORT_SPAN - 1))"; } | tee "$OUT/PORT_RANGE.txt"
++if [ "$EPH_LO" = NA ] || { [ $((PORT_LO + PORT_SPAN - 1)) -ge "$EPH_LO" ] && [ "$PORT_LO" -le "$EPH_HI" ]; }; then
++  fail "ABORT_PORT_RANGE listen window $PORT_LO+$PORT_SPAN overlaps ephemeral range $EPH_LO-$EPH_HI (or unreadable)" 5
++fi
++port_in_use () {   # any TCP socket, any state, whose LOCAL port is $1
++  ss -Htan 2>/dev/null | awk '{print $4}' | grep -q ":$1\$"
++}
++GPU_USED_BASE_MIB=$(gpu_used_mib); GPU_USED_BASE_MIB=${GPU_USED_BASE_MIB:-0}
++echo "baseline epoch=$(date +%s) used_mib=$GPU_USED_BASE_MIB $(nvml_bytes)" > "$OUT/SETTLE.txt"
+ cpu_snap () {   # $1 file  $2 tag   -- cgroup CFS throttle counters (λ0 VESSL result audit C8)
+   { echo "# $2 epoch=$(date +%s)"; cat /sys/fs/cgroup/cpu.stat 2>/dev/null || echo "cpu.stat NA"; } >> "$1"
+ }
+@@ -317,14 +359,16 @@
+   echo "admit boot=$NAME need_s=$NEED remaining_s=$REM" >> "$OUT/BUDGET.txt"
+   T_ADMIT=$(date +%s)
+ 
++  [ "$DRYRUN" = 1 ] || settle "$NAME"
+   PORT=0
+   for try in $(seq 1 50); do
+-    CAND=$((39100 + (RANDOM + $$ + try) % 800))
++    CAND=$((PORT_LO + (RANDOM + $$ + try) % PORT_SPAN))
+     if ! curl -s -o /dev/null --max-time 1 "http://127.0.0.1:$CAND/health" 2>/dev/null; then
+-      if ! ss -ltn 2>/dev/null | grep -q ":$CAND "; then PORT=$CAND; break; fi
++      if ! port_in_use "$CAND"; then PORT=$CAND; break; fi
+     fi
+   done
+   [ "$PORT" = 0 ] && fail "ABORT_NO_FREE_PORT" 5
++  echo "$NAME port=$PORT tries=$try" >> "$OUT/PORT_RANGE.txt"
+ 
+   SRVLOG="$OUT/srv_${NAME}.log"
+   export PDMUX_TELEMETRY_PATH="$OUT/tel_${NAME}.jsonl"
