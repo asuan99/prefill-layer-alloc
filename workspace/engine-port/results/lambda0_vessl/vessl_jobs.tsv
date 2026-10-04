@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-10-04T08:49:51Z	pdmux-lambda0-vessl-1d47d3e-20261004084945	1d47d3ef1466b96b21b95fe12eef7ae0300c31da	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/results/r2_eval/lambda0_vessl/lambda0_vessl.sh		no

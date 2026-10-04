@@ -263,7 +263,7 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 - **Job 안 probe 전 단계 PASS**(PRE, B0, B3-R0/plain/a/b/gran/c, B4, B4-green). 입도표는 Workspace 실행과 같다.
   ⇒ 공개 이미지 → bundle → `install_runtime` → GPU 작업 → export → fetch까지 **파이프라인 전체가 실측으로 동작한다.** §6의 미검증 항목 중 다음이 해소됐다:
   - `volume download`는 `--remote-prefix`를 벗긴다.
-  - tag 밑줄(`b5_smoke`)이 허용된다.
+  - ~~tag 밑줄(`b5_smoke`)이 허용된다.~~ ★정정(2026-10-04): **허용되지 않는다** — VESSL tag는 소문자·숫자·하이픈만. 밑줄 tag는 Job 생성 후 tag 단계에서 rc=1을 낸다(B5 첫 제출의 비0 종료 원인). `launch.sh`가 밑줄을 하이픈으로 바꾸도록 고쳤다.
   - Object FUSE 위에서 rsync와 sha256이 동작한다.
   - `/opt/pdmux`에 쓸 수 있다.
   - `nvidia-smi -lms`가 동작한다.

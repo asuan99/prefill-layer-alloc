@@ -55,7 +55,7 @@ cmd=(vesslctl job create -n "${name}" -r "${PDMUX_VESSL_SPEC}" -i "${PDMUX_VESSL
      --image-pull-policy IfNotPresent
      --cluster-volume "${PDMUX_VESSL_CLUSTER_VOLUME}:/data"
      --object-volume "${PDMUX_VESSL_OBJECT_VOLUME}:/io"
-     "${env_args[@]}" --tag "${campaign}"
+     "${env_args[@]}" --tag "${campaign//_/-}"   # VESSL tags: [a-z0-9-] only (underscore -> rc=1 after create, 2026-10-04)
      --cmd "bash /io/${code_prefix}job_entry.sh")
 
 echo "job name : ${name}"
