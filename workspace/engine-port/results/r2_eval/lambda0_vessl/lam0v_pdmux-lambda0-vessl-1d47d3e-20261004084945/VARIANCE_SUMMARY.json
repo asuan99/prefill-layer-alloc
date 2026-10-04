@@ -1,0 +1,104 @@
+{
+  "definition": "achieved_rate of the TOP rung at seeds 1..4 (rev5 a_r4/b_r3 + _s2 + variance _s3/_s4); each seed its own boot",
+  "mixed_jobs": false,
+  "n_min": 4,
+  "resumed_cells": {},
+  "shapes": {
+    "A": {
+      "cells": [
+        {
+          "achieved_rate": 2.993674869636432,
+          "cell": "a_r4",
+          "from_job": "this",
+          "r0_invalid": null,
+          "ratio": 0.37469747278543936,
+          "saturated": true,
+          "seed": 4386
+        },
+        {
+          "achieved_rate": 3.00990296033788,
+          "cell": "a_r4_s2",
+          "from_job": "this",
+          "r0_invalid": null,
+          "ratio": 0.38191913656705906,
+          "saturated": true,
+          "seed": 4162
+        },
+        {
+          "achieved_rate": 2.997402548567481,
+          "cell": "a_r4_s3",
+          "from_job": "this",
+          "r0_invalid": null,
+          "ratio": 0.3810541408246676,
+          "saturated": true,
+          "seed": 251
+        },
+        {
+          "achieved_rate": 3.007111215624897,
+          "cell": "a_r4_s4",
+          "from_job": "this",
+          "r0_invalid": null,
+          "ratio": 0.3821033213986966,
+          "saturated": true,
+          "seed": 2630
+        }
+      ],
+      "cv_pct": 0.25732410613004003,
+      "max_rel_dev_vs_rev5_lambda_star_pct": 0.5420792640524409,
+      "mean": 3.0020228985416724,
+      "n_usable": 4,
+      "range_pct_of_mean": 0.5405718493796748,
+      "rev5_lambda_star": 2.993674869636432,
+      "sd": 0.007724928589491478,
+      "verdict": "N_MET"
+    },
+    "B": {
+      "cells": [
+        {
+          "achieved_rate": 0.6904485381127837,
+          "cell": "b_r3",
+          "from_job": "this",
+          "r0_invalid": null,
+          "ratio": 0.600847246021726,
+          "saturated": true,
+          "seed": 4386
+        },
+        {
+          "achieved_rate": 0.6901401953661896,
+          "cell": "b_r3_s2",
+          "from_job": "this",
+          "r0_invalid": null,
+          "ratio": 0.5970018616972056,
+          "saturated": true,
+          "seed": 4162
+        },
+        {
+          "achieved_rate": 0.6909619721961632,
+          "cell": "b_r3_s3",
+          "from_job": "this",
+          "r0_invalid": null,
+          "ratio": 0.5975736261775344,
+          "saturated": true,
+          "seed": 251
+        },
+        {
+          "achieved_rate": 0.6909626440276821,
+          "cell": "b_r3_s4",
+          "from_job": "this",
+          "r0_invalid": null,
+          "ratio": 0.6016829333847064,
+          "saturated": true,
+          "seed": 2630
+        }
+      ],
+      "cv_pct": 0.058738019187736024,
+      "max_rel_dev_vs_rev5_lambda_star_pct": 0.07445970069016834,
+      "mean": 0.6906283374257047,
+      "n_usable": 4,
+      "range_pct_of_mean": 0.11908701350977784,
+      "rev5_lambda_star": 0.6904485381127837,
+      "sd": 0.00040566140535305275,
+      "verdict": "N_MET"
+    }
+  }
+}

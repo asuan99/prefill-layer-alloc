@@ -1,0 +1,19 @@
+hard_cap_s=16200 tail_reserve_s=600
+t0_epoch=1791103805 (job_entry_start_utc) deadline_epoch=1791119405
+remaining_at_script_start_s=15586
+admit cell=a_r0 need_s=1551 remaining_s=14868
+admit cell=a_r1 need_s=2694 remaining_s=14001
+admit cell=a_r2 need_s=1056 remaining_s=13119
+admit cell=a_r3 need_s=1056 remaining_s=12816
+admit cell=a_r4 need_s=1056 remaining_s=12522
+admit cell=a_r4_s2 need_s=1056 remaining_s=12229
+admit cell=b_r0 need_s=728 remaining_s=11937
+admit cell=b_r1 need_s=906 remaining_s=11633
+admit cell=b_r2 need_s=1084 remaining_s=11330
+admit cell=b_r3 need_s=1440 remaining_s=11008
+admit cell=b_r3_s2 need_s=1440 remaining_s=10599
+admit cell=a_r4_s3 need_s=1056 remaining_s=10190
+admit cell=b_r3_s3 need_s=1440 remaining_s=9897
+admit cell=a_r4_s4 need_s=1056 remaining_s=9488
+admit cell=b_r3_s4 need_s=1440 remaining_s=9195
+remaining_at_loop_end_s=8787

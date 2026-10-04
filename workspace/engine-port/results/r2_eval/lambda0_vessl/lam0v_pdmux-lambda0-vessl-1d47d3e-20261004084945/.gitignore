@@ -1,0 +1,16 @@
+# Raw logs/bench/telemetry stay local (473 MB); track decision files and summaries.
+*
+!.gitignore
+!*/
+!*.txt
+!LAMBDA0_LABEL.json
+!LAMBDA_INF_DECISION.json
+!COMPARE_908623.json
+!VARIANCE_SUMMARY.json
+!BUDGET_TABLE.json
+!plan.json
+!runtime_source_manifest.sha256
+!SHA256SUMS
+!**/mix_*.json
+!**/green_*.json
+!**/banner_*.txt

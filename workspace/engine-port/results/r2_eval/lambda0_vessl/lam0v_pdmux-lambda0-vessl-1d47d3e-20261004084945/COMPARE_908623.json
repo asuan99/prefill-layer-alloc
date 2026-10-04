@@ -1,0 +1,106 @@
+{
+  "POLICY": "COMPARE ONLY -- different substrate; never pooled, averaged or used to fill a missing cell (PREREG_LAMBDA0_VESSL sec 4)",
+  "cells": [
+    {
+      "cell": "a_r0",
+      "kisti_908623_achieved": 1.0726152217910405,
+      "kisti_ratio": 0.9888371357338189,
+      "vessl_achieved": 1.0721883730539086,
+      "vessl_ratio": 0.9884436266039444
+    },
+    {
+      "cell": "a_r1",
+      "kisti_908623_achieved": 1.7539478836481017,
+      "kisti_ratio": 0.988644440915504,
+      "vessl_achieved": 1.75350636623904,
+      "vessl_ratio": 0.9883955716440133
+    },
+    {
+      "cell": "a_r2",
+      "kisti_908623_achieved": 2.807915985563469,
+      "kisti_ratio": 0.9371928655363014,
+      "vessl_achieved": 2.799130049684338,
+      "vessl_ratio": 0.9342604001543898
+    },
+    {
+      "cell": "a_r3",
+      "kisti_908623_achieved": 3.0482071304216585,
+      "kisti_ratio": 0.6228945253629398,
+      "vessl_achieved": 2.9740272415145252,
+      "vessl_ratio": 0.6077360257219089
+    },
+    {
+      "cell": "a_r4",
+      "kisti_908623_achieved": 3.0531296871219915,
+      "kisti_ratio": 0.3821390189876374,
+      "vessl_achieved": 2.993674869636432,
+      "vessl_ratio": 0.37469747278543936
+    },
+    {
+      "cell": "a_r4_s2",
+      "kisti_908623_achieved": 3.071575449158392,
+      "kisti_ratio": 0.3897446060226017,
+      "vessl_achieved": 3.00990296033788,
+      "vessl_ratio": 0.38191913656705906
+    },
+    {
+      "cell": "b_r0",
+      "kisti_908623_achieved": 0.4369751947301573,
+      "kisti_ratio": 0.9763499964633945,
+      "vessl_achieved": 0.43699910424091887,
+      "vessl_ratio": 0.9764034183761919
+    },
+    {
+      "cell": "b_r1",
+      "kisti_908623_achieved": 0.6025708684247865,
+      "kisti_ratio": 0.9816029438109354,
+      "vessl_achieved": 0.602077384445065,
+      "vessl_ratio": 0.9807990461242044
+    },
+    {
+      "cell": "b_r2",
+      "kisti_908623_achieved": 0.6961451286520527,
+      "kisti_ratio": 0.8271321538631751,
+      "vessl_achieved": 0.6890035196904536,
+      "vessl_ratio": 0.8186467760887247
+    },
+    {
+      "cell": "b_r3",
+      "kisti_908623_achieved": 0.697240255416205,
+      "kisti_ratio": 0.6067575846092663,
+      "vessl_achieved": 0.6904485381127837,
+      "vessl_ratio": 0.600847246021726
+    },
+    {
+      "cell": "b_r3_s2",
+      "kisti_908623_achieved": 0.6950756354785993,
+      "kisti_ratio": 0.6012712361738511,
+      "vessl_achieved": 0.6901401953661896,
+      "vessl_ratio": 0.5970018616972056
+    }
+  ],
+  "kisti_908623_labels": {
+    "A": {
+      "lambda_star": 3.0531296871219915,
+      "seed_repeat": "SEED_REPEAT_HOLDS",
+      "verdict": "KNEE_BRACKETED"
+    },
+    "B": {
+      "lambda_star": 0.697240255416205,
+      "seed_repeat": "SEED_REPEAT_HOLDS",
+      "verdict": "KNEE_BRACKETED"
+    }
+  },
+  "vessl_labels": {
+    "A": {
+      "lambda_star": 2.993674869636432,
+      "seed_repeat": "SEED_REPEAT_HOLDS",
+      "verdict": "KNEE_BRACKETED"
+    },
+    "B": {
+      "lambda_star": 0.6904485381127837,
+      "seed_repeat": "SEED_REPEAT_HOLDS",
+      "verdict": "KNEE_BRACKETED"
+    }
+  }
+}

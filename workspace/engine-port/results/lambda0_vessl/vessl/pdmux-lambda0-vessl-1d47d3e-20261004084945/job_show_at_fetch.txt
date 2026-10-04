@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-lambda0-vessl-1d47d3e-20261004084945
+Slug:                 job-mhhyqwkzwyir
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/1d47d3ef1466b96b21b95fe12eef7ae0300c31da/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-04T08:49:50Z
+Started At:           2026-10-04T08:49:54Z
+Completed At:         2026-10-04T10:43:57Z
+Duration:             1h54m3s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=1d47d3ef1466b96b21b95fe12eef7ae0300c31da, PDMUX_JOB_NAME=pdmux-lambda0-vessl-1d47d3e-20261004084945, PDMUX_CAMPAIGN=lambda0_vessl, PDMUX_TARGET=workspace/engine-port/results/r2_eval/lambda0_vessl/lambda0_vessl.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

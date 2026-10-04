@@ -1,0 +1,70 @@
+{
+  "arm": null,
+  "bench": {
+    "P10_completed_eq_num_prompts": true,
+    "P11_input_len_exact": true,
+    "P11b_output_len_exact": true,
+    "P12_range_ratio_one": true,
+    "P9_errors_zero": true,
+    "achieved_req_s": 2.799130049684338,
+    "all_pass": true,
+    "observed": {
+      "completed": 400,
+      "duration": 142.90154187195003,
+      "n_errors": 0,
+      "random_range_ratio": 1.0,
+      "total_input_tokens": 102400
+    }
+  },
+  "busy_n": 597,
+  "cell": "a_r2",
+  "e_cnt": {
+    "den": 597,
+    "num": 55,
+    "pct": 9.212730318257956
+  },
+  "e_iter": {
+    "den": 9461,
+    "idx0_weight_pct": 0.0,
+    "num": 880,
+    "pct": 9.301342352816826
+  },
+  "e_pact": {
+    "den": 33,
+    "num": 33,
+    "pct": 100.0
+  },
+  "e_qcond": {
+    "den": 141,
+    "num": 29,
+    "pct": 20.56737588652482
+  },
+  "e_time": {
+    "den_s": 196.5904558589682,
+    "num_s": 25.795321877114475,
+    "pct": 13.121350049475318
+  },
+  "idx0": {
+    "den": 597,
+    "num": 0,
+    "pct": 0.0
+  },
+  "idx3": {
+    "den": 597,
+    "num": 0,
+    "pct": 0.0
+  },
+  "index_hist_busy": {
+    "2": 55,
+    "4": 542
+  },
+  "negative_gaps": 0,
+  "probe_end": null,
+  "run_ids": [
+    "lam0_a_r2_pdmux-lambda0-vessl-1d47d3e-20261004084945"
+  ],
+  "seed": "4386",
+  "sm_index_mismatch": 0,
+  "snapshots": 19949,
+  "split_transition": 286
+}

@@ -1,0 +1,22 @@
+{
+  "gpu": {
+    "name": "NVIDIA A100-SXM4-80GB",
+    "uuid": "GPU-3be4c7da-d19f-503a-e5fc-25d52e8393c3",
+    "driver_version": "580.105.08",
+    "compute_cap": "8.0",
+    "memory_total": "81920 MiB",
+    "clocks_max_sm": "1410 MHz",
+    "power_limit": "400.00 W",
+    "mig_mode": "Disabled"
+  },
+  "hostname": "job-mhhyqwkzwyir-6b2ll",
+  "commit": "1d47d3ef1466b96b21b95fe12eef7ae0300c31da",
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "spec": "resourcespec-a100x1",
+  "job_name": "pdmux-lambda0-vessl-1d47d3e-20261004084945",
+  "campaign": "lambda0_vessl",
+  "target": "workspace/engine-port/results/r2_eval/lambda0_vessl/lambda0_vessl.sh",
+  "array_spec": "",
+  "image_pip_freeze.txt_sha256": "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324",
+  "image_python_torch.txt_sha256": "25072b0933afd254cc50b78a7aa43e34e43af33034036709169f08788d8686d3"
+}

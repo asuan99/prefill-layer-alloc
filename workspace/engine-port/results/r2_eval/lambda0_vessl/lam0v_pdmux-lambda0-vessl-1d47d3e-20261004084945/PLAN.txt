@@ -1,0 +1,29 @@
+### FALLBACK prior lambda_inf (NOT measured -- registered prior A=2.10 / B=0.675; the measured 3.0939 / 0.6956 are DISQUALIFIED per cell by newpair F5 and may not be cited as saturation throughputs)
+seed1=4386 (max|Ebar-1|=0.0146)  seed2=4162 (max|Ebar-1|=0.0151)  boots=11  KAPPA_MIN=0.97
+  shape A (256, 512)  lambda_inf=2.1
+    cell     offered_nom     N    T_s  ITLhat  Bhat  Lhat   L/span   kappa  lowside  est_dur_s
+    a_r0            1.1   660   600  27.9   16  14.4  2.40%  0.9781    YES      613.5
+    a_r1            1.8  1260   700  37.8   35  19.4  2.78%  0.9738    YES      718.9
+    a_r2              3   400   170    --    --     --     --      SAT      -       133.3
+    a_r3            4.9   400   170    --    --     --     --      SAT      -        81.6
+    a_r4              8   400   170    --    --     --     --      SAT      -        50.0
+    low-side candidates: ['a_r0', 'a_r1'] (need >= 1; kappa >= 0.97)
+    window(realized)     [1.03, 7.191]
+    window(nominal)      [1.045, 7.2]
+    window(conservative) [1.045, 7.191] = lambda*/lambda_inf in [0.4976, 3.424]
+    prior point (2.1, 2.5) inside: True   prior absolute (1.08, 7.15) inside: True   (reported, NOT asserted)
+    F4 repeat cell: a_r4_s2 (Ebar@seed2=1.0151)
+  shape B (8192, 64)  lambda_inf=0.675
+    cell     offered_nom     N    T_s  ITLhat  Bhat  Lhat   L/span   kappa  lowside  est_dur_s
+    b_r0           0.45    80   170  20.1    1   4.2  2.38%  0.9891    YES      179.7
+    b_r1           0.62   110   170  20.2    1   4.2  2.38%  0.9857    YES      180.0
+    b_r2           0.85   140   170  20.4    1   4.2  2.57%  0.9820    YES      167.7
+    b_r3           1.15   200   170  20.6    1   4.2  2.43%  0.9812    YES      177.3
+    low-side candidates: ['b_r0', 'b_r1', 'b_r2', 'b_r3'] (need >= 1; kappa >= 0.97)
+    window(realized)     [0.4252, 1.034]
+    window(nominal)      [0.4275, 1.035]
+    window(conservative) [0.4275, 1.034] = lambda*/lambda_inf in [0.6333, 1.532]
+    prior point (0.675, 0.675) inside: True   prior absolute (0.35, 1.2) inside: False   (reported, NOT asserted)
+    F4 repeat cell: b_r3_s2 (Ebar@seed2=0.9948)
+  BUDGET @lambda*=lambda_inf: bench 54.2 min + warmup 6.5 min + boot/teardown 20.2 min = 1.348 GPU-h
+  BUDGET vs true capacity (E5: saturated rungs cost N/lambda*, not N/x):  1.00x -> 1.348 GPU-h  0.50x -> 1.977 GPU-h  0.25x -> 3.509 GPU-h
