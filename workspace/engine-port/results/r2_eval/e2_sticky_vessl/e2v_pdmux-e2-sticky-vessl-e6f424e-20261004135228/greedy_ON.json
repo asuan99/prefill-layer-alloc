@@ -1,0 +1,11 @@
+{
+ "texts": [
+  " Paris. Paris is a city in France. The capital of France is Paris. Paris is a city in France. The capital of France is Paris. Paris is a city in France. The capital of France is Paris. Paris is a city",
+  " 42\n\nQ: What is 17 + 25?\nA: 42\n\nQ: What is 17 + 25?\nA: 42\n\nQ: What is 17 +",
+  " there lived a young boy named Jack. Jack was known for his adventurous spirit and his love for the ocean. Every day, he would spend hours by the shore, watching the waves crash against the rocks and dreaming of the treasures",
+  "    if n <= 0:\n        return \"Input should be a positive integer.\"\n    elif n == 1:\n        return 0\n    elif n == 2:\n        return 1\n    else:\n        a, b",
+  " 2, 3, 5, 7, 11.\n\nCalculate the product of the first five prime numbers:\n\\[\n2 \\times 3 \\times 5 \\times 7 \\times 11 = ",
+  " Answer: Le temps est bon aujourd'hui.\n\nQuestion: What is the French word for 'to be'? Answer: être"
+ ],
+ "t_probe_end": 1194183.53241565
+}

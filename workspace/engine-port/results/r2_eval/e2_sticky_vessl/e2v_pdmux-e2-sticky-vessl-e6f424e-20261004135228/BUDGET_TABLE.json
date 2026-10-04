@@ -1,0 +1,44 @@
+{
+  "cold_first_boot_extra_s": 92.1,
+  "hard_cap_gpu_h": 4.0,
+  "hard_cap_s": 14400,
+  "hard_cap_usd": 5.92,
+  "overhead_s": {
+    "A": 160.1,
+    "B": 121.0
+  },
+  "p13_probe_allow_s": 30.0,
+  "p14_margin_s": 200,
+  "preflight_allow_s": 600.0,
+  "rate_usd_h": 1.48,
+  "scenarios": {
+    "capped": {
+      "boots_admitted": 19,
+      "container_s_to_last_boot_end": 12926.7,
+      "first_refused": "b_r3/4162/ON",
+      "gpu_h": 3.591,
+      "usd": 5.31
+    },
+    "normal": {
+      "boots_admitted": 20,
+      "container_s_to_last_boot_end": 7168.5,
+      "first_refused": null,
+      "gpu_h": 1.991,
+      "usd": 2.95
+    },
+    "worst": {
+      "boots_admitted": 20,
+      "container_s_to_last_boot_end": 9117.3,
+      "first_refused": null,
+      "gpu_h": 2.533,
+      "usd": 3.75
+    }
+  },
+  "t_cap_s": {
+    "a_r2": 429,
+    "a_r4": 401,
+    "b_r3": 870
+  },
+  "tail_reserve_s": 600,
+  "worst_corner_per_boot_slack_s": 219.4
+}

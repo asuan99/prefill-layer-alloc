@@ -1,0 +1,1 @@
+E2V PLAN SELFTEST OK (20 boots in rev3 order; T_cap formula reproduces KISTI 393/428/861 and gives VESSL 401/429/870; normal+worst corners admit all 20 boots under the 4.0 h cap; substrate + engine-diff checkers discriminate)

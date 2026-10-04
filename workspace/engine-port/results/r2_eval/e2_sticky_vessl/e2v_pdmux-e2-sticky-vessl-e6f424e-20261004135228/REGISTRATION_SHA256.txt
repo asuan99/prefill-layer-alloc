@@ -1,0 +1,26 @@
+# pre-registration in force: rev3 + ADDENDUM (A1-A12) + A13
+8998d53277abf660bb42bffc388fc92aa05c8de61e991c241783d9c87e1b29a4  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/PREREG_E2_STICKY_REV3_2026-09-15.md
+a9c872ab00fcbf280c90c0df88482526f70190f7f64d559cc363ab74f5b6bed8  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/PREREG_E2_STICKY_REV3_ADDENDUM_2026-09-15.md
+82055fe17f1d438a80b48d9412a21e4d7d300d5f2ce1ed15b284762247a719c0  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_vessl/PREREG_E2_VESSL_A13_2026-10-04.md
+# decision path (called, never copied)
+ecb0f6fce76f82c3a3b816ebc542885c4b9be4ac247529b51efc6f5032ab0b78  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/e2_realized_mix.py
+feabd5a7ce393c6de24fbfa5bbf030796f714b5e1597c2aa6c1074b22c25868c  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/e2_label.py
+# KISTI runner (not executed here) + every revision and verdict kept beside it
+e30df9f4f61cdfefa50f0bbca489d69ba307929f48d3aedac9628c10b3c99f95  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/e2_sticky.sbatch
+b09c93a716d53e3b6f2efb93fb4f2d8dc7653c4abba8610c7650d0b26fe88454  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/PREREG_E2_STICKY_2026-09-15.md
+d87461a9d59ec48e724be4261b1b4717d86947b158c8eaaf681bee3a5a0f767b  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/PREREG_E2_STICKY_REV2_2026-09-15.md
+8998d53277abf660bb42bffc388fc92aa05c8de61e991c241783d9c87e1b29a4  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/PREREG_E2_STICKY_REV3_2026-09-15.md
+a9c872ab00fcbf280c90c0df88482526f70190f7f64d559cc363ab74f5b6bed8  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/PREREG_E2_STICKY_REV3_ADDENDUM_2026-09-15.md
+0971cef7ade95f7a47b2a84478eb21b1a67a5e9b87f4538ebc7ce1ef4b13426c  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/VERDICT_e2_harness_2026-09-15.md
+9768ec7855c1f13dde445ccaf331f5a2cf81200f8531d987580cc12488e38ee3  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/VERDICT_e2_harness_rev2_2026-09-15.md
+145b786ecb50c249e02bccf7c706eb2185eca153d5bf6c159b714bbfdc295595  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/VERDICT_e2_rules_2026-09-15.md
+3386c8076d734e184630c2d3b9b6b747969e7409181f676d4bafd26eac4d9078  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/VERDICT_e2_rules_rev2_2026-09-15.md
+396927b7d5f73e2617bc1ff5fe16f1a0080a99eaf063cfad9ebce10eb28fe962  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/VERDICT_e2_rules_rev3_2026-09-15.md
+6b715c879db81b167c4a5a474689f8c212f44516b34b6018af11c2df0c3ffaed  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/VERDICT_e2_substrate_portability_2026-09-18.md
+0e5833e377b7f962d5f627ec3aa286bd0e88794057d3fb6e2791f588061ef213  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_prereg/OVERRIDE_E2_SUBMIT_2026-09-15.md
+# VESSL port runner + helper + override + served config
+921dfd2df4c532ee2e6e0452533ca5a0cb09fd541daca0dcd4cda927af00a6c4  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_vessl/e2_sticky_vessl.sh
+57220a46bc8e57d60f470d45accabdbdba5e99135435a0e19c06eb3c5354700f  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_vessl/e2_vessl_plan.py
+46c85d71c1f9be637a23ab6be661c8006353e4174fede86aa9729dc673ca0648  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/e2_sticky_vessl/OVERRIDE_E2_VESSL_2026-10-04.md
+be6dd6473ff8884f429b4d0d825e9cbf0b42b59da0ad4b136b542105c533625c  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/longctx_conflict/probes/pdmux_homog5.yml
+# tree: e6f424e1c12c87eab567967c92a4474f60fc0a6e uncommitted_outside_results=0

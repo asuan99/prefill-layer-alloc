@@ -1,0 +1,1 @@
+SELFTEST_OK 8 reachability checks + 10 repair-regression checks (H-F1 x2/H-F2/H-B1/H-B2/H-B3/H-B5/H-B7/#1/#4); every rule's PASS and FAIL branch is producible

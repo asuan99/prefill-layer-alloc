@@ -173,5 +173,10 @@ M4R·TC1 spec의 산출물·규칙·측정을 읽지도 쓰지도 않는다.
   초과 시 과금, 캡 범위 = 셀 구간+preflight+tail이며 clone·install·결과 반출에는 kill 층 없음, 실패 Job도 과금·자동 재시도 없음)와 "컨테이너 하드캡 ≈4 h" 문언의
   차이, 그리고 Q1이 `OFF_BASELINE_ABOVE_BAND`로 끝날 공산이 크다는 예보(E2VC-5, 비등록)를 제시한 뒤 받은 승인이다. 승인 범위는 불변(20 boot, 보통 $2.95 / 최악 $3.75 / 셀 구간 하드캡 4.0 GPU-h $5.92).
 - **승인된 예산 상한**: 1.991 GPU-h / $2.95(보통) · 2.533 GPU-h / $3.75(최악) · **4.0 GPU-h / $5.92(셀 구간 하드캡)**.
-- **소진 job name**: **없음 — 미소진.**
-- **선행조건 상태**: A13 규칙층 감사 ☑(1회차 `NO-GO` 死因 1 → 수리 → rev2 **`GO-with-caveats`**, E2VC-1…11) · 하네스층 국소 재확인 ☑(rev2 §(5) 봉인 8파일) · presubmit 차단 = M4R·TC1 2건 ☑(§1-1) · 사용자 §5-2 위험표 재확인 ☑(2026-10-04 2차) · 커밋 ☐ · staging ☐ · dry-run 승인 ☐.
+- **소진 job name**: **`pdmux-e2-sticky-vessl-e6f424e-20261004135228`** (slug `job-nulj8b3do42r`, 2026-10-04T13:52:33Z 제출, 커밋 `e6f424e`).
+  이 OVERRIDE는 **이 Job 1건으로 소진된다. 재개 Job은 §5-1에 따라 재승인 대상**이다.
+- **선행조건 상태**: A13 규칙층 감사 ☑(1회차 `NO-GO` 死因 1 → 수리 → rev2 **`GO-with-caveats`**, E2VC-1…11) · 하네스층 국소 재확인 ☑(rev2 §(5) 봉인 8파일) · presubmit 차단 = M4R·TC1 2건 ☑(§1-1) · 사용자 §5-2 위험표 재확인 ☑(2026-10-04 2차) · **커밋 ☑(`8f716f8`; 제출 시 HEAD `e6f424e` — 러너/`scripts/vessl/`은 `8f716f8`..`e6f424e` 바이트 동일, `git diff --stat` 무변경 확인) · staging ☑(226.4 MB = 237,346,884 bytes, 7/7 파일 + `SHA256SUMS`, object volume `objvol-9vgmwmerzwd3` `staging/e2_selftest_archive/` 확인) · dry-run 승인 ☑(2026-10-04 사용자 "권고대로 진행")**.
+- **비용(실측, 2026-10-04T14:50:47Z fetch)**: 플랫폼 `Duration` 58m13s(0.970 GPU-h) × $1.48/h ≈ **$1.44**; job_entry 내부 타이밍(`start_utc`13:53:08Z–`end_utc`14:50:32Z)
+  기준 `cost.txt` 하한 0.957 GPU-h / **$1.42**(스케줄링·이미지 pull 제외). 승인 예산(보통 1.991 GPU-h/$2.95) 48% 소진, 하드캡(4.0 GPU-h) 24% 소진.
+  **결과: 10/20 boot 완주 후 `exit_code=8`(`ABORT_P3`, BANNERS.txt/P3_KEYS.txt — `a_r2_OFF_4162` boot가 `max_total_num_tokens=2722022`로
+  나머지 9개 성공 boot의 `2722025`와 3-token 어긋나 중단. 2026-10-04 fetch 즉시 보고, 재개 Job은 미제출 — §5-1 재승인 대상).**

@@ -1,0 +1,14 @@
+hard_cap_s=14400 tail_reserve_s=600 p14_margin_s=200
+t0_epoch=1791121988 (job_entry_start_utc) deadline_epoch=1791135788
+remaining_at_script_start_s=13781
+admit boot=a_r4_OFF_4386 need_s=601 remaining_s=13691
+admit boot=a_r4_ON_4386 need_s=601 remaining_s=13304
+admit boot=a_r4_OFF_4162 need_s=601 remaining_s=12913
+admit boot=a_r4_ON_4162 need_s=601 remaining_s=12613
+admit boot=a_r4_OFF_251 need_s=601 remaining_s=12240
+admit boot=a_r4_ON_251 need_s=601 remaining_s=11945
+admit boot=a_r4_OFF_2630 need_s=601 remaining_s=11571
+admit boot=a_r4_ON_2630 need_s=601 remaining_s=11272
+admit boot=a_r2_OFF_4386 need_s=629 remaining_s=10899
+admit boot=a_r2_ON_4386 need_s=629 remaining_s=10597
+admit boot=a_r2_OFF_4162 need_s=629 remaining_s=10417
