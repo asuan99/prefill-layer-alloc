@@ -1,0 +1,8 @@
+# Raw probe artifacts (caches, json, logs) stay local; track only summaries + checksums.
+*
+!.gitignore
+!*/
+!SHA256SUMS
+!**/SUMMARY.md
+!*DEVIATION*.txt
+**/cache/

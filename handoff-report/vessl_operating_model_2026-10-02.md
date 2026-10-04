@@ -224,3 +224,29 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 - CPU 회귀(B2): VESSL에서 **655 tests / failures 22 / errors 9 / skipped 16**. 같은 이미지·같은 커밋을 로컬 Docker에서 돌린 결과와 **실패 목록이 완전히 같다.**
   draft2 기록(662/21/6/1)과 수가 다른 것은 커밋과 이미지가 다르기 때문이다. 새 기준선은 이 값이다.
 - 아직 안 한 것: B0·B3·B4(A100 필요), B5(첫 Job).
+
+## 10. 진행 기록 — A100 기판 점검 B0·B3·B4 (2026-10-04)
+
+- `pdmux-probe` = `wsp-7ix1cg4xl1jd`(A100 SXM ×1, $1.48/h). 07:12:33Z에 생성해 07:26:52Z에 pause했다(약 15분, ≈$0.37).
+  점검 스크립트는 `scripts/vessl/substrate_probe.sh`(커밋 `396a9f2`)다. 결과는 `workspace/engine-port/results/vessl_substrate_probe_2026-10-04/`(sha256 검증 통과)에 있다.
+- **1차 실행 B0 FAIL**: `import sgl_kernel` 실패. 원인은 `common_ops.abi3.so`가 링크하는 `libnuma.so.1`이 base 이미지에 없기 때문이었다.
+  아키텍처(sm80→sm100 로더) 문제는 아니었다. Workspace에서 `apt install libnuma1`을 하자 `get_sm_available(0)=108`이 됐다.
+  - 이미지에 libnuma1을 넣어 다시 빌드·push했다: `sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d`(레시피 `75758e8`, 익명 pull 200). `vessl.env`도 갱신했다.
+- **2차 실행(libnuma1 수동 설치 상태 — DEVIATION 파일에 기록) 전 단계 PASS**:
+  - PRE, B0(A100, cc8.0, 108 SM, MIG off, driver 580.105.08)
+  - B3-R0: `GLOBALLY_CONSISTENT_LABEL`(KISTI 889631과 같음)
+  - B3-plain(|D|=108)
+  - B3a: 격자 (92,16)(84,24)(74,34)(64,44)(16,92) 모두 요청 SM = 실현 %smid 집합 크기, 서로소
+  - B3b: 동시 실행 격리
+  - B3c: P0-A `CONFINEMENT_PRESERVED_THROUGH_GRAPH_REPLAY`(KISTI 890893과 같음)
+  - B4: Nano-9B-v2 PD-mux 부팅, cudagraph ON, 12/12 응답
+  - B4-green: 5개 그룹 드라이버 smCount가 목표와 같음
+  - 스로틀 0
+- **B3-gran(입도 실측)**: 최소 4 SM, 2 SM 단위로 올림된다(1–3→4, 5→6, 15→16, 17→18; 홀수 요청은 짝수로 올림). (2,2)는 드라이버가 거부한다.
+  우리 격자는 모두 짝수 ≥16이라 그대로 실현된다. cc8 코드 상수(min 4, multiple 2)와 일치하는 것을 **실측**으로 확인했다.
+- 의미와 한계:
+  - 이 기판이 **우리 SM 격자를 요청한 그대로 격리해서 제공한다**는 배관 사실이 확인됐다. 성능 판정이나 기판 동등성 판정은 아니다(사용자 결정 사항).
+  - B3b는 빈 GPU에서의 미시 조건이다. B4는 부팅 스모크일 뿐이다.
+  - 새 이미지(1e0d335b) 자체의 GPU 동작은 B5 Job에서 확인한다.
+- 두 Workspace 모두 standby다.
+
