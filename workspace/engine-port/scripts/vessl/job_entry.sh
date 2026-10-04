@@ -58,7 +58,12 @@ import csv, json, pathlib, sys
 meta = pathlib.Path(sys.argv[1]); p = meta / "clk.csv"
 rows = list(csv.reader(p.open())) if p.exists() else []
 body = [r for r in rows[1:] if len(r) >= 5]
-active = [r for r in body if r[4].strip() not in ("0x0000000000000000", "0x0", "Not Active")]
+def _throttled(v):  # bit 0x1 = GpuIdle (not a throttle); any other active bit counts
+    try:
+        return (int(v.strip(), 16) & ~0x1) != 0
+    except ValueError:
+        return False
+active = [r for r in body if _throttled(r[4])]
 (meta / "clk_summary.json").write_text(json.dumps(
     {"samples": len(body), "throttle_active_samples": len(active),
      "throttle_flag": bool(active)}, indent=2) + "\n")
