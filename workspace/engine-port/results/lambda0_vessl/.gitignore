@@ -13,3 +13,4 @@
 !**/meta/clk_summary.json
 !**/meta/timing.txt
 !**/meta/runtime_source_manifest.sha256*
+!**/meta/cgroup_cpu.txt

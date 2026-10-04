@@ -52,6 +52,7 @@ finish() {
   local rc=$?
   [[ -n "${clk_pid}" ]] && kill "${clk_pid}" 2>/dev/null
   echo "end_utc=$(utc)" >> "${RUN}/meta/timing.txt"
+  { echo "# at end $(utc)"; cat /sys/fs/cgroup/cpu.stat 2>/dev/null; } >> "${RUN}/meta/cgroup_cpu.txt"
   echo "${rc}" > "${RUN}/meta/exit_code"
   python3 - "${RUN}/meta" <<'PY' || true
 import csv, json, pathlib, sys
@@ -146,6 +147,11 @@ if [[ -f "${hist}" ]]; then
 fi
 printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(utc)" "${PDMUX_CAMPAIGN}" "${PDMUX_JOB_NAME}" "${uuid}" "${drv}" \
   "$(hostname)" >> "${hist}"
+# CPU-side substrate (λ0 VESSL result audit C8, 2026-10-04): the cgroup CFS quota (cpu.max) and the
+# visible core count differ from KISTI's cpuset; record quota + throttle counters (cpu.stat
+# nr_throttled/throttled_usec) at start and end so CPU throttling is visible, not inferred.
+{ echo "# at start $(utc)"; echo "nproc=$(nproc)"; echo "cpu.max=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null)";
+  cat /sys/fs/cgroup/cpu.stat 2>/dev/null; } > "${RUN}/meta/cgroup_cpu.txt"
 nvidia-smi --query-gpu=timestamp,clocks.sm,power.draw,temperature.gpu,clocks_throttle_reasons.active \
   --format=csv -lms 100 > "${RUN}/meta/clk.csv" 2>/dev/null &
 clk_pid=$!
