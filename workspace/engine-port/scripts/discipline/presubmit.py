@@ -130,7 +130,12 @@ def main():
         for ln in out.splitlines():
             if ln.strip().startswith("VERDICT:"):
                 verdict = ln.split("VERDICT:")[1].strip()
-        item = ("reachability", rc, [f"{os.path.basename(sp)} -> {verdict}"])
+        # design_reachability prints `PATH_REMAP <field>: <legacy root> -> <repo root>` when it
+        # rewrote a pre-migration absolute path at read time (spec bytes untouched).  Surface it,
+        # so a verdict reached through a remap is visibly so in this log.
+        remaps = [ln.split()[1].rstrip(":") for ln in out.splitlines() if ln.startswith("PATH_REMAP ")]
+        tag = f"  [PATH_REMAP {','.join(remaps)}: /scratch/ehmoon/whlee/prefill-layer-alloc -> repo root]" if remaps else ""
+        item = ("reachability", rc, [f"{os.path.basename(sp)} -> {verdict}{tag}"])
         (blocks if verdict in BLOCKING_REACH or rc != 0 else notes).append(item)
 
     print("=== presubmit ===")

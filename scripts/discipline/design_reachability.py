@@ -36,6 +36,29 @@ Usage:  python3 design_reachability.py <spec.json>
 import importlib.util, json, os, sys
 from itertools import product
 
+# ---- legacy absolute-path remap (2026-10-04, VERDICT_e2_vessl_rules_2026-10-04 required repair 3)
+# Specs written on the retired KISTI host carry absolute paths under LEGACY_ROOT.  After the
+# 2026-09-17 migration those files live under this repository's root, so the tool could not
+# import the rule and printed no VERDICT (presubmit then showed `?` -- a measurement failure,
+# not a design verdict).  The remap is done HERE, at read time, so spec bytes stay untouched;
+# every remap is printed (`PATH_REMAP ...`) so the log shows that it happened.  Only the exact
+# legacy prefix is rewritten, and only when the remapped file exists (else the original path is
+# kept and the tool fails loudly as before).
+LEGACY_ROOT = "/scratch/ehmoon/whlee/prefill-layer-alloc"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # scripts/discipline/ -> repo
+
+
+def resolve_legacy(path, field, must_exist=True):
+    if not isinstance(path, str) or not path.startswith(LEGACY_ROOT + "/"):
+        return path
+    new = REPO_ROOT + path[len(LEGACY_ROOT):]
+    target = new if must_exist else os.path.dirname(new)
+    if not os.path.exists(target):
+        print(f"PATH_REMAP_SKIPPED {field}: {path} (no {target})")
+        return path
+    print(f"PATH_REMAP {field}: {LEGACY_ROOT} -> {REPO_ROOT}  ({path[len(LEGACY_ROOT) + 1:]})")
+    return new
+
 
 def load_rule(path):
     spec = importlib.util.spec_from_file_location("rule_under_test", path)
@@ -78,7 +101,7 @@ def _inert(grid_sub, live_sub, tol=1e-9):
 
 def main(spec_path):
     spec = json.load(open(spec_path))
-    mod = load_rule(spec["rule_path"])
+    mod = load_rule(resolve_legacy(spec["rule_path"], "rule_path"))
     as_tuple = spec.get("world_is_tuple", True)
     restrict = spec["restrict"]
     for a, r in restrict.items():
@@ -90,7 +113,7 @@ def main(spec_path):
     # (b) a spec that narrows a predecessor must account for every axis it dropped
     prev_path = spec.get("supersedes")
     if prev_path:
-        pp = prev_path if os.path.isabs(prev_path) else os.path.join(
+        pp = resolve_legacy(prev_path, "supersedes") if os.path.isabs(prev_path) else os.path.join(
             os.path.dirname(os.path.abspath(spec_path)), prev_path)
         prev = json.load(open(pp))
         dropped = set(prev.get("restrict", {})) - set(restrict)
@@ -158,7 +181,8 @@ def main(spec_path):
         "DISCRIMINATING": "More than one substantive label is reachable; the design can "
                           "still be informative, subject to the other audit findings.",
     }[out["verdict"]]
-    p = spec.get("out", os.path.splitext(spec_path)[0] + "_reachability.json")
+    p = resolve_legacy(spec.get("out", os.path.splitext(spec_path)[0] + "_reachability.json"),
+                       "out", must_exist=False)
     json.dump(out, open(p, "w"), indent=2, ensure_ascii=False, sort_keys=True)
 
     print(f"=== {out['label']}  (RULE_REV={out['rule_rev']}) ===")
