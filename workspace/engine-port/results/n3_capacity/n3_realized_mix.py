@@ -371,19 +371,28 @@ def per_request_exposure(events, bench_rec, seed, rate, marks=None, target=TARGE
     return out
 
 
-def arm_identity(events, forbidden=NONTARGET_DIVISIONS):
+def arm_identity(events, forbidden=NONTARGET_DIVISIONS, expect_decode_iterations=False):
     """R3 arm-identity condition (a DECISION-GATING validity check, not a descriptive): zero
     decode iterations (pair = post-switch index, emitted at decode sync) and zero decode-busy
     snapshots on a non-target division.  `decode_iterations_seen` is 0 when PHASE_EVENTS is off
-    or was disabled mid-boot; then only the snapshot leg is evidence (recorded)."""
+    or was disabled mid-boot; then only the snapshot leg is evidence (recorded).
+    D1 (rev3): ABSENCE OF EVIDENCE IS NOT A PASS.  `busy_snapshots_seen == 0` -> unverifiable;
+    with `expect_decode_iterations` (PHASE_EVENTS ON and no R7 marker) `decode_iterations_seen
+    == 0` -> unverifiable.  Thresholds are 0 only (no new constant)."""
     fb = {tuple(p) for p in forbidden}
     dec = [e for e in events if e.get("event") == "decode_iteration"]
     busy = [e for e in events if _is_snapshot(e) and _is_decode_busy(e)]
     n_dec = sum(1 for e in dec if (e.get("prefill_sms"), e.get("decode_sms")) in fb)
     n_snap = sum(1 for e in busy if _pair(e) in fb)
+    unv = []
+    if not busy:
+        unv.append("no decode-busy snapshot (snapshot leg has no evidence)")
+    if expect_decode_iterations and not dec:
+        unv.append("PHASE_EVENTS ON but no decode_iteration event (decode leg has no evidence)")
     return {"forbidden_pairs": [list(p) for p in sorted(fb)], "decode_iterations_seen": len(dec),
             "busy_snapshots_seen": len(busy), "decode_iteration_on_nontarget": n_dec,
-            "busy_snapshot_on_nontarget": n_snap, "ok": n_dec == 0 and n_snap == 0}
+            "busy_snapshot_on_nontarget": n_snap, "unverifiable": unv,
+            "ok": n_dec == 0 and n_snap == 0 and not unv}
 
 
 def compute(tel, bench=None, seed=None, rate=None, marks_path=None, target=TARGET_PAIR, cap=None):
@@ -553,8 +562,18 @@ def selftest_synthetic():
     if xr3.get("status") == "OK" and abs(xr3["mean"] - xr.get("mean", -1)) < 1e-12:
         fails.append("anchor control: a missing warm-up span went unnoticed")
     # R3: clean timeline passes; one injected decode iteration / busy snapshot on (84,24) fails
-    if not arm_identity(ev)["ok"]:
+    ev = [{"event": "runtime_snapshot", "phase": "benchmark", "decode_running_batch_size": 2,
+           "prefill_sms": 64, "decode_sms": 44, "timestamp_monotonic_s": 0.4}] + ev   # D1: snapshot-leg evidence
+    if not arm_identity(ev, expect_decode_iterations=True)["ok"]:
         fails.append("arm identity: clean synthetic timeline flagged")
+    # D1: absence of evidence is not a pass -- empty telemetry, and an ON cell without decode events
+    if arm_identity([])["ok"] or not arm_identity([])["unverifiable"]:
+        fails.append("arm identity D1: empty telemetry passed")
+    snaps_only = [e for e in ev if e.get("event") != "decode_iteration"]
+    if arm_identity(snaps_only, expect_decode_iterations=True)["ok"]:
+        fails.append("arm identity D1: ON cell with snapshots only passed")
+    if not arm_identity(snaps_only, expect_decode_iterations=False)["ok"]:
+        fails.append("arm identity D1 control: OFF/R7 cell with snapshots must pass on the snapshot leg")
     bad = ev + [dict(ev[-1], prefill_sms=84, decode_sms=24)]
     if arm_identity(bad)["ok"] or arm_identity(bad)["decode_iteration_on_nontarget"] != 1:
         fails.append("arm identity: injected (84,24) decode iteration not caught")

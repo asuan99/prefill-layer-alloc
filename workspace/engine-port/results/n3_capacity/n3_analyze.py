@@ -84,9 +84,20 @@ def cell_validity(u: dict, rec: dict, out_dir: Path) -> list:
     if n_ret:
         bad.append(f"retracted requests {n_ret} (X-10: per-request exclusion impossible -> cell excluded)")
     ai = arm_identity_of(out_dir, u["name"])
+    # D1 (rev3): no evidence = unverifiable = invalid.  The decode leg is required when the unit
+    # ran with PHASE_EVENTS ON and no R7 mid-boot-disable marker; thresholds are 0 only.
+    expect_dec = u["phase_events"] == 1 and not phase_events_disabled(out_dir, u["name"])
+    unv = []
+    if ai is not None:
+        if ai.get("busy_snapshots_seen", 0) == 0:
+            unv.append("no decode-busy snapshot")
+        if expect_dec and ai.get("decode_iterations_seen", 0) == 0:
+            unv.append("PHASE_EVENTS ON but no decode_iteration")
     if ai is None:
         bad.append("arm identity unverifiable (no telemetry) -- R3")
-    elif not ai["ok"]:
+    elif unv:
+        bad.append(f"arm identity unverifiable (D1: {'; '.join(unv)}) -- R3")
+    elif ai["decode_iteration_on_nontarget"] or ai["busy_snapshot_on_nontarget"]:
         bad.append(f"arm identity violated (R3): {ai['decode_iteration_on_nontarget']} decode iterations, "
                    f"{ai['busy_snapshot_on_nontarget']} decode-busy snapshots on {ai['forbidden_pairs']}")
     return bad
@@ -610,7 +621,9 @@ def _synth(td: Path, shape: str, ttft_fn, itl_ms=20.0, drop=None, obs_shift=0.0,
     (td / "T_K.json").write_text(json.dumps({"valid": True, "floor_s": floor_s, "ttfts_s": [floor_s] * P.FLOOR_N,
                                              "T_k_s": {str(k): k * floor_s for k in P.K_DECISION}}))
     clean = json.dumps({"event": "runtime_snapshot", "phase": "benchmark", "decode_running_batch_size": 2,
-                        "prefill_sms": 64, "decode_sms": 44, "timestamp_monotonic_s": 1.0}) + "\n"
+                        "prefill_sms": 64, "decode_sms": 44, "timestamp_monotonic_s": 1.0}) + "\n" + \
+        json.dumps({"event": "decode_iteration", "t_launch": 1.0, "t_sync": 1.01, "bs": 2,
+                    "prefill_sms": 64, "decode_sms": 44}) + "\n"     # D1: both legs carry evidence
     for row in P.units(shape):
         u = P.parse_row(row)
         if u["kind"] not in ("grid", "obs_on", "obs_off", "bridge"):
@@ -698,6 +711,23 @@ def selftest() -> None:
         assert "arm identity violated" in " ".join(r3["invalid_cells"][f"g_r022_{seeds[1]}"])
         (td / "a" / f"tel_g_r022_{seeds[1]}.jsonl").unlink()     # no telemetry -> unverifiable -> invalid
         assert "unverifiable" in " ".join(analyze(td / "a", sh)["invalid_cells"][f"g_r022_{seeds[1]}"])
+        # D1 variant 1: an EMPTY telemetry file (the runner pre-creates it) -> unverifiable -> invalid
+        (td / "a" / f"tel_g_r022_{seeds[1]}.jsonl").write_text("")
+        r = analyze(td / "a", sh)
+        assert "D1: no decode-busy snapshot" in " ".join(r["invalid_cells"][f"g_r022_{seeds[1]}"]), r["invalid_cells"]
+        assert r["decision"]["5"]["label"] == "UNRESOLVED_N_BELOW_4_5", r["decision"]["5"]
+        # D1 variant 2: snapshots only, no decode_iteration, PHASE_EVENTS ON cell -> invalid ...
+        snap_only = json.dumps({"event": "runtime_snapshot", "phase": "benchmark", "decode_running_batch_size": 2,
+                                "prefill_sms": 64, "decode_sms": 44, "timestamp_monotonic_s": 1.0}) + "\n"
+        (td / "a" / f"tel_g_r022_{seeds[1]}.jsonl").write_text(snap_only)
+        r = analyze(td / "a", sh)
+        assert "PHASE_EVENTS ON but no decode_iteration" in " ".join(r["invalid_cells"][f"g_r022_{seeds[1]}"])
+        # ... control: the same file under an R7 marker is valid on the snapshot leg alone
+        (td / "a" / f"phase_events_disabled_g_r022_{seeds[1]}").write_text("x\n")
+        assert f"g_r022_{seeds[1]}" not in analyze(td / "a", sh)["invalid_cells"]
+        # ... control: an OFF observer cell with snapshots only is valid
+        (td / "a" / f"tel_off_r030_{seeds[0]}.jsonl").write_text(snap_only)
+        assert f"off_r030_{seeds[0]}" not in analyze(td / "a", sh)["invalid_cells"]
         # R7: a mid-boot PHASE_EVENTS disable on one observer ON cell drops that pair -> n=3 -> UNRESOLVED
         _synth(td / "j", sh, cliff_at(0.38))
         (td / "j" / f"srv_g_r030_{seeds[0]}.log").write_text("WARNING " + PE_DISABLED + ": boom\n")
@@ -717,7 +747,7 @@ def selftest() -> None:
     assert x["label"] == "CAPACITY_BRACKETED" and x["capacity"] == 1 and x["non_monotone"], x
     print("N3 ANALYZE SELFTEST OK (bracketed + CI; k-dependent cliff orders capacities; BELOW/ABOVE; "
           "n<4 below the first failure -> UNRESOLVED, above it -> not blocking; ITL leg live; observer 6% -> FAIL; "
-          "S2 -> UNSTABLE; invalid/dry-run/no-ttfts floor -> nothing scored (R2); non-monotone flag; ITL_BOUND (R4); arm-identity injection -> cell invalid (R3); PHASE_EVENTS mid-boot disable -> pair dropped (R7))")
+          "S2 -> UNSTABLE; invalid/dry-run/no-ttfts floor -> nothing scored (R2); non-monotone flag; ITL_BOUND (R4); arm-identity injection -> cell invalid (R3); D1 empty-telemetry / ON-without-decode-events -> invalid, R7/OFF snapshot-leg controls valid; PHASE_EVENTS mid-boot disable -> pair dropped (R7))")
 
 
 def main() -> int:

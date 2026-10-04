@@ -370,6 +370,21 @@ class TestEstimators(unittest.TestCase):
     def test_synthetic(self):
         self.assertEqual(M.selftest_synthetic(), 0)
 
+    def test_d1_empty_telemetry_is_unverifiable(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "tel.jsonl"
+            p.write_text("")                              # the runner pre-creates this file
+            ai = M.arm_identity(M.read_events(p))
+            self.assertFalse(ai["ok"])
+            self.assertTrue(ai["unverifiable"])
+
+    def test_d1_on_cell_without_decode_events_is_unverifiable(self):
+        snap = {"event": "runtime_snapshot", "phase": "benchmark", "decode_running_batch_size": 2,
+                "prefill_sms": 64, "decode_sms": 44, "timestamp_monotonic_s": 1.0}
+        self.assertFalse(M.arm_identity([snap], expect_decode_iterations=True)["ok"])
+        # control: OFF / R7-marked cell -> the snapshot leg alone is evidence
+        self.assertTrue(M.arm_identity([snap], expect_decode_iterations=False)["ok"])
+
     @unittest.skipUnless((LAM0V / "tel_a_r4.jsonl").exists(), "git-ignored λ0 VESSL telemetry absent")
     def test_archive_positive_control_7_of_7(self):
         self.assertEqual(M.selftest_archive(LAM0V), 0)

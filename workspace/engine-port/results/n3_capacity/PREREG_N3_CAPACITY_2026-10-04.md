@@ -1,6 +1,7 @@
-# 사전등록 — N3: 게이트 #6 SLO 용량 격자 (Nemotron-Nano-9B-v2, VESSL A100) rev2 (2026-10-05)
+# 사전등록 — N3: 게이트 #6 SLO 용량 격자 (Nemotron-Nano-9B-v2, VESSL A100) rev3 (2026-10-05)
 
-> **지위**: 새 사전등록 **rev2**. 작성 engine-porter, GPU 0, 성능 판정 0, Claim 등급 변경 0.
+> **지위**: 새 사전등록 **rev3**(T1 정정, rev3 델타 감사 `VERDICT_n3_rules_rev3_2026-10-05.md` = `GO-with-caveats`, N3C-20). 작성 engine-porter, GPU 0, 성능 판정 0, Claim 등급 변경 0.
+> - **rev2 → rev3**: rev2 델타 감사 `VERDICT_n3_rules_rev2_2026-10-05.md` = **`GO-with-caveats`**(死因 0, N3C-15…19). 새 결함 **D1(R3 근거 부재 = 통과 → unverifiable로)·D2(R6 전례 문구 정정)만** 수리한다. rev2 봉인 커밋 `81b55c3` 대비 diff로 델타 감사를 받는다. 변경 색인은 §17-2.
 > - **rev1 → rev2**: claims-auditor 규칙층 감사 `VERDICT_n3_rules_rev1_2026-10-05.md` = **`GO-with-caveats`**(死因 0, N3C-1…14). 필수 수리 **R1·R2·R3·R4·R5(기본안)·R7·R8 반영**. **R6(P3 정책)은 사용자 결정 대기 — 자리표시자만 둔다(§2-3).** R1·R3는 규칙 변경이라 **델타 감사 대기**. 변경 색인은 §17.
 > - **claims-auditor 규칙층 감사 대기**. `GO`(또는 `GO-with-caveats`) 전에는 `launch.sh --submit` 금지.
 > - 커밋은 메인 세션이 한다(제출 전 커밋 필수, 조항 11).
@@ -97,8 +98,14 @@ CONFIG_CANDIDATES §2는 "같은 arm"이 **측정으로 확인되지 않았다**
 
 **R6 — P3 정책 = [엄격 | 허용오차(ii)] 사용자 결정 후 기입.**
 - 현재 러너는 **엄격**이다. boot 간 `max_total_num_tokens`가 하나라도 다르면 `ABORT_P3`로 멈춘다.
-- **전례 공시(E2 boot 11)**: 같은 config·arm인 E2 VESSL Job에서 boot 11의 `max_total_num_tokens`가 앞 boot들보다 **3 토큰 적게** 나왔고, 엄격 P3가 Job을 멈췄다. N3는 shape B 한 Job에 boot가 48개라 같은 사건에 노출될 기회가 E2(20 boot)보다 많다.
-- 허용오차안 (ii)의 문언·상수는 E2 A14 초안(`e2_sticky_vessl/PREREG_E2_VESSL_A14_DRAFT_2026-10-04.md`, 자체 감사 대기)을 따른다. 사용자가 고르면 rev3로 기입하고 델타 감사를 받는다. **결정 전에는 제출하지 않는다.**
+- **전례 공시(E2 boot 11, D2 정정 rev3)**: **다른 config(homog5 5그룹)·다른 arm(sticky ON/OFF)의 E2 VESSL Job**에서 boot 11의 `max_total_num_tokens`가 앞 boot들보다 **3 토큰 적게** 나왔고, 엄격 P3가 Job을 멈췄다. (rev2의 "같은 config·arm" 표현은 거짓이라 철회한다. N3는 A-agn 6그룹·sticky unset이다 — §2-2.)
+  - **정황**(`e2_sticky_vessl/PREREG_E2_VESSL_A14_DRAFT_2026-10-04.md`:79–81, 미감사 초안):
+    - VESSL boot 26개(λ0 VESSL 15 + 그 E2 Job 11) 중 이탈은 이 1건뿐이다. KISTI 908623의 11 boot는 전부 2,722,025였다.
+    - 그 이탈은 **그 Job의 유일한 비정상 종료(포트 충돌 `BOOT_FAILED`) 바로 다음 boot**에서 나왔다.
+    - 두 가설은 판별할 수 없다: **H1** 비정상 종료 뒤 드라이버 수준 잔여, **H2** 프로세스 내부 비결정적 소량 할당.
+    - N3에 반영한 O3(`^sglang::` 정리)·O4(boot 전 GPU 메모리 baseline 복귀 대기)·O1/O2(포트 충돌 원인 제거)는 **H1 경로를 겨냥**한다(§8-6). H2라면 막지 못한다.
+  - N3는 shape B 한 Job에 boot가 48개라, 같은 사건이 독립적으로 일어난다면 노출 기회가 E2(20 boot)보다 많다. H1이 원인이고 O1–O4가 그 경로를 막는다면 노출은 줄어든다. 어느 쪽인지 이 등록은 판정하지 않는다.
+- 허용오차안 (ii)의 문언·상수는 E2 A14 초안(`e2_sticky_vessl/PREREG_E2_VESSL_A14_DRAFT_2026-10-04.md`, 자체 감사 대기)을 따른다. 사용자가 고르면 rev4로 기입하고 델타 감사를 받는다(T2 정정). **결정 전에는 제출하지 않는다.**
 
 ### 2-4. 기판(조항 9)
 
@@ -221,6 +228,11 @@ CONFIG_CANDIDATES §2는 "같은 arm"이 **측정으로 확인되지 않았다**
     - decode-busy `runtime_snapshot`이 같은 비표적 분할에 있다.
   - 위반 셀은 **무효**다(retract와 같은 처리, 대체값 없음).
   - telemetry가 없어 검사할 수 없는 셀도 무효다(`arm identity unverifiable`).
+  - **D1 (rev3) — 근거 부재는 통과가 아니다.** 다음 셀도 `unverifiable` = 무효다(문턱은 0뿐, 새 상수 없음).
+    - decode-busy 스냅숏이 0개인 셀(`busy_snapshots_seen == 0`, 예: 러너가 미리 만든 빈 telemetry 파일 — writer가 조용히 실패해도 rev2에서는 0건 = 통과였다).
+    - PHASE_EVENTS ON이고 R7 표식이 없는데 `decode_iteration`이 0개인 셀(`decode_iterations_seen == 0`).
+    - PHASE_EVENTS OFF 셀(obs_off·bridge)과 R7 표식 셀은 스냅숏 다리만으로 판정한다.
+    - 변이 시험: 빈 telemetry 셀 → 무효(그 rate n = 3 → `UNRESOLVED_N_BELOW_4_5`); 스냅숏만 있는 ON 셀 → 무효; 대조로 같은 파일 + R7 표식 → 유효, 스냅숏만 있는 OFF 셀 → 유효.
   - PHASE_EVENTS OFF이거나 boot 중 꺼진 셀은 스냅숏 다리만 증거가 된다(`decode_iterations_seen` 기록).
   - 사전 근거: λ0 VESSL 358,583 레코드에서 비표적 분할 0건(감사 §4 R3). 로컬 셀프테스트로 λ0 7셀이 homog5 비표적 (92,16)·(16,92)에서 0건임을 재확인했다.
   - 근거 경로: 임계 열이 fixed arm에서 inert라는 것이 GPU 미실증(조항 1)이다. 이 조건이 그것을 측정으로 대신한다. 오발화하면 해당 rate가 `UNRESOLVED`로 간다(정직한 쪽).
@@ -475,6 +487,13 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 - **N3C-13.** "λ0 VESSL 셀로 정한 격자 위치와 사전 floor(B 0.90 s, A 45 ms)는 설계 사전값이다. 결과로 인용하지 않는다."
 - **N3C-14.** "B 격자 간격은 조항 5의 0.1×를 충족하지 않는다(최대 0.116×λ\*\_ref, 브래킷 폭 최대 0.08 req/s)." (R5 기본안 채택 시)
 
+**등록 caveat N3C-15…19 (rules verdict rev2 §4, 문자 그대로 승계)**:
+- **N3C-15.** "round 순서는 예산 절단이 최고 rate부터 빠지게 설계됐다. shape A에서는 상위 rate가 r_fail 후보대와 겹쳐, 절단이 그 k의 라벨을 UNRESOLVED로 만들 수 있다. 이는 측정 부족이지 발견이 아니다."
+- **N3C-16.** "각 Job의 첫 grid 셀은 최고 rate다. Job 초반 노드 상태(클럭·power cap)의 비선형 효과는 r_fail이 최고 rate일 때만 라벨에 닿고, 크기는 측정하지 않았다."
+- **N3C-17.** "`ITL_BOUND_k` = false는 ITL을 50→65 ms로 완화해도 라벨이 바뀌지 않는다는 뜻일 뿐이다. ITL이 무관하다는 뜻이 아니다."
+- **N3C-18.** "boot마다 도는 abort 분기(STICKY·GREEN·P3·floor boot·CG2)의 배선은 텍스트 검사(분기별 중화 변이 11/11)로만 검증됐다. 실행형 검증은 preflight 4분기뿐이다."
+- **N3C-19.** "R3 arm 동일성의 사전 근거(λ0 VESSL 11셀 비표적 0건)는 homog5·스냅숏 다리에서만 나왔다. A-agn 임계에서 decode_iteration 다리는 GPU에서 측정된 적이 없다."
+
 **승계 caveat**: DS-1…DS-7(N4 판정서) 전부, λ0 VESSL LV-2·LV-3·LV-6·LV-12·LV-13 형식, LVR-1…4, λ0R-3(cap 48 구속)·λ0R-8 계열(형식만, KISTI 수치 승계 금지 — LV-5). 특히 **DS-4**: 부하점은 절대 offered rate이고 "arm별 용량 대비 비율"로 쓰지 않는다. **DS-6**: shape A 0.36×–0.59× 부근의 ITL 민감도 전환은 예보다.
 
 ---
@@ -515,7 +534,7 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 - `n3_plan.py --selftest` 통과: seed = 채점 상위 4, Ēbar 가드, unit 구조·ABBA·PHASE_EVENTS 배치, 간격 ≤ 0.12×, 보통 코너 전 unit·최악 코너 floor_tail 외 전 unit 입장, config 검사 + 음성 대조 2(D54·5그룹), 등록 digest + 미러 9개, floor 공식 + 무효화 대조 2((64,44) span, running_bs > 0).
 - `n3_realized_mix.py --selftest --require-archive`: 합성 OK + **λ0 VESSL 아카이브 7/7 E2 도구와 비트 동일**, 외부 기대값 재현, (92,16)·인덱스 재배치 대조 통과.
 - `n3_analyze.py --selftest`: 라벨·CI·k 의존 절벽·BELOW/ABOVE·n < 4 규칙·ITL 다리·관측자 6% → FAIL·S2 → UNSTABLE·floor 무효 → 미채점·비단조 플래그.
-- `tests/test_n3_capacity.py` 44/44(구조·변이 대조·digest·셀프테스트·dry-run·집행기·재개·포트/teardown O1–O4; rev2: R1 순서·절단 모사, R2 placeholder 거부·재개 대조, R3 주입 변이, R4 플래그, R7 표식, ABORT 분기별 변이 11개, 최소 트리 행동 시험 5개).
+- `tests/test_n3_capacity.py` 46/46(구조·변이 대조·digest·셀프테스트·dry-run·집행기·재개·포트/teardown O1–O4; rev2: R1 순서·절단 모사, R2 placeholder 거부·재개 대조, R3 주입 변이, R4 플래그, R7 표식, ABORT 분기별 변이 11개, 최소 트리 행동 시험 5개; rev3: D1 단위 시험 2개 + mix/analyze 셀프테스트 D1 변이).
 - 로컬 dry-run(B 48 unit, A 36 unit 명령 생성), `__pycache__` 잔여 0.
 - 로컬에서 **돌지 않는 것**: `test_phase_events`·`test_green_readout`(sgl_kernel 없음 — Job preflight에서 돈다), 실제 sync·manifest 대조, GPU 전부.
 - 이 문서의 digest가 실행 기록에 들어가므로, 공개 이미지 컨테이너 dry-run 결과는 이 문서가 아니라 engine-porter 보고에 적는다(λ0 VESSL §9와 같은 이유).
@@ -575,4 +594,13 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 | R7 PHASE_EVENTS 중도 비활성 | §7-2 | 러너 검출·표식, `n3_analyze.phase_events_disabled`·`summarize_mix`·`observer` | `TestR2R7Runner.test_r7_*`, analyze selftest |
 | R8 P-1 리터럴·P-6 4개 | §11 | 없음 | — |
 | 하네스: wiring 항등식 근접 | — | — | `TestFailClosedWiring` 분기별 중화 변이 11개, `TestAbortBranchesBehaviour` 5개 |
+
+### 17-2. rev2 → rev3 변경 색인 (기준 커밋 `81b55c3`)
+
+| 수리 | 문서 | 코드 | 테스트 |
+|---|---|---|---|
+| D1 R3 근거 부재 → unverifiable | §5-2 R3 항목 | `n3_realized_mix.arm_identity`(`expect_decode_iterations`, `unverifiable`), `n3_analyze.cell_validity`(ON ∧ R7 표식 없음이면 decode 다리 요구) | `TestEstimators.test_d1_*` 2개; mix 셀프테스트(빈·스냅숏만 ON → 무효, 스냅숏만 OFF → 유효); analyze 셀프테스트(빈 파일 → UNRESOLVED, ON 스냅숏만 → 무효, R7 표식·OFF 대조 → 유효); 합성 fixture에 두 다리 근거 추가 |
+| D2 R6 전례 문구 | §2-3 | 없음 | — |
+| N3C-15…19 수록 | §11 | 없음 | — |
+| 헤더·로컬 검증 수치 | 머리말, §13 | 없음 | — |
 
