@@ -1,6 +1,36 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-09-30(doc-steward — **설계 기준선(anchor) 등재**,
+최종 갱신: 2026-10-04(doc-steward — **V-0/D-0 기판 점검 완료 +
+λ0 VESSL 재앵커 + E-1 cap 대조 사전등록 rev1 등재**, VESSL GPU
+지출(λ0 Job 컨테이너 1.894 h + B0/B5 소규모 프로브) · 새 성능
+판정 0건 · 게이트 #6·λ0R-8(iii)·HE0·Claim 등급 전부 불변).
+**V-0**(기판 가용성)·**D-0**(데이터/엔진 재현성) 점검을 VESSL
+A100에서 완료했다 — `handoff-report/vessl_operating_model_
+2026-10-02.md` §9–§11: CPU workspace bring-up(CPU 회귀 655/22/9/16)
+→ A100 B0·B3·B4(공개 이미지 `libnuma1` 수정 후 PASS, 격자
+요청=실현=격리, 입도 실측 최소4/2단위) → B5(첫 Job 파이프라인
+전체 PASS). 이어 **λ0 재앵커**: Job `pdmux-lambda0-vessl-
+1d47d3e-20261004084945`가 KISTI job 908623의 rev5 판정 경로를
+바이트 동일 재실행해 두 shape 모두 `KNEE_BRACKETED` +
+`SEED_REPEAT_HOLDS`, λ\*가 KISTI와 **구별되지 않음**(|Δ| A
+1.95%·B 0.97% < 3%, claims-auditor 결과 감사 死因 0, 정정 7건
+R-1…R-7, 신규 caveat LVR-1…4 — 상세
+`workspace/engine-port/results/r2_eval/lambda0_vessl/
+VERDICT_result_lambda0_vessl_2026-10-04.md`). ★**이는 두 Job이
+실행된 그대로의 값에 대한 서술이며, VESSL↔KISTI 기판 동등성·
+격자·HE0·정책 순위 이식은 여전히 금지**(게이트 #6: λ\*\_VESSL
+정규화 격자로 E1 재등록 — 미등록; λ0R-8(iii): E2 sticky 대조 —
+미실행). 신규 **E-1 cap 대조 VESSL 사전등록 rev1**
+(`workspace/engine-port/results/e1_cap_vessl/`)도 규칙층
+`GO-with-caveats`(死因 0, caveat E1C-1…9) — **미실행**, 블록
+1 제출 전 사용자 결정 3건 동결 필요(블록 수 6/4·D arm 포함
+여부·`BOOT_S`/`RUN_NEED_S` 追記, E1C-9). **3-a(실측 decode
+프로파일) 등 기존 순서는 이 점검으로 바뀌지 않는다** — V-0/D-0은
+기판 가용성 확인일 뿐, 3-a 실측 자체는 여전히 미착수. 상세
+`PROJECT_STATUS.md` 최상단 배너(2026-10-04)·"다음 실험 gate" #18,
+`CONSENSUS.md` rev86.
+
+이전: 2026-09-30(doc-steward — **설계 기준선(anchor) 등재**,
 GPU 0·새 성능 판정 0건·Claim 등급 변경 0건). `reports/
 system_design_anchor_2026-09-30.md`가 프로젝트 전체의 설계
 좌표계로 고정됨(사용자 지시 2026-09-30, 결과 정본 아님). 이

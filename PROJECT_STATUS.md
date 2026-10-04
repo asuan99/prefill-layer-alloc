@@ -1,6 +1,109 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-10-02 (3차 세션, doc-steward — **claims-auditor
+최종 갱신: 2026-10-04 (4차 세션, doc-steward — **λ0 VESSL 재앵커
+결과 감사 반영 + VESSL 실행 기반 완성(B0–B5 PASS) + E-1 cap 대조
+VESSL 사전등록 rev1 등재**, VESSL GPU 지출(λ0 Job 컨테이너
+1.894 h + B0/B5 소규모 프로브) · 새 성능 판정 0건 · 게이트 #6·
+λ0R-8(iii)·HE0·Claim 등급 전부 불변). 이 회차는 2026-10-04 세션
+산출물을 정본에 반영한다.
+
+**(a) λ0 VESSL 재앵커 — claims-auditor 결과 감사 완료, 死因 0.**
+Job `pdmux-lambda0-vessl-1d47d3e-20261004084945`(VESSL
+A100-SXM4-80GB 1장 `GPU-3be4c7da…`, host `job-mhhyqwkzwyir-6b2ll`,
+2026-10-04, container 1.894 h)가 KISTI job 908623의 rev5 판정
+경로를 바이트 동일하게 재실행했다. 결과 감사
+(`workspace/engine-port/results/r2_eval/lambda0_vessl/
+VERDICT_result_lambda0_vessl_2026-10-04.md` §6)의 정본 반영 문장을
+문자 그대로 옮긴다:
+
+> λ0 VESSL 재앵커(Job `pdmux-lambda0-vessl-1d47d3e-20261004084945`,
+> VESSL A100-SXM4-80GB 1장 `GPU-3be4c7da…`, host
+> `job-mhhyqwkzwyir-6b2ll`, 2026-10-04, container 1.894 h)는 rev5
+> 판정 경로를 바이트 동일하게 재실행해 두 shape 모두
+> `KNEE_BRACKETED` + `SEED_REPEAT_HOLDS`를 냈다. 등록 §4-4 규칙상
+> 이 Job의 λ\*는 KISTI job 908623의 λ\*와 **구별되지 않는다**(|Δ|
+> A 1.95%, B 0.97% < 3%; 범위 비중첩 조건만 참). 이는 두 Job이
+> 실행된 그대로의 값에 대한 서술이다. "VESSL과 KISTI의 용량이
+> 같다", "KISTI의 λ\*·격자·HE0·정책 순위·caveat 수치를 VESSL에
+> 이식할 수 있다"는 쓰지 않는다. 성능 판정 0건. 게이트 #6,
+> λ0R-8(iii), HE0, Claim 등급은 불변이다.
+
+**인용 가능한 λ\* 값(§6 허용형, 유일)**:
+> λ\*\_VESSL(A) ≈ 2.99 req/s @ duration 133.62 s, N=400, offered
+> 8.0 — 위 Job 1건. `--max-running-requests 48` 구속 처리율
+> (#running-req 48, #queue-req 221, TTFT p50 36.1 s). 실현 분할
+> D44 E-cnt 8.66%, E-time 13.89%, E-iter 8.76%, E-qcond 18.33%;
+> decode-busy 스냅샷 91.2%가 비분할 (0,108)이므로 fixed D44
+> 용량이 아니다. bench 창 SW power cap(0x4) 노출 27.2%, 평균
+> SM 1404 MHz(−0.4%). 참 포화율의 하한.
+>
+> λ\*\_VESSL(B) ≈ 0.690 req/s @ duration 289.67 s, N=200, offered
+> 1.15 — 같은 Job. #running-req 2, #queue-req 79, TTFT p50
+> 56.1 s. D44 E-cnt 90.48%, E-time 97.38%, E-iter 91.68%,
+> E-qcond 100%. power cap 노출 49.4%, 평균 SM 1380.5 MHz(−2.1%).
+> 라벨 존재는 `ACH_HI` 0.981에서 소멸한다. 하한.
+
+**산포 문장(별도, LV-6)**: 한 VESSL Job·한 노드에서 포화 top rung
+achieved의 n=4(boot·seed·시점 미분리, df=3, power-cap 노출 거의
+일정): 범위/평균 A 0.54%, B 0.12%. **기준선 분산·노드 간 산포·
+설계 입력으로 쓰지 않는다.**
+
+**인용 금지(신규 caveat LVR-1…4)**: (LVR-1) "VESSL λ\*가 KISTI보다
+약 2%/1% 낮다"·"8/8 전부 낮다" 금지(Job 수준 n=1 대 1, 3% 미만).
+(LVR-2) "Δ는 power cap 때문이다/일부다/무관하다" 금지(shape 간
+순서 역전, KISTI 클럭·VESSL CFS 스로틀 미기록). (LVR-3) "λ\*가
+구별되지 않으므로 SLO 지표(TTFT/goodput)도 기판 간 같다" 금지
+(a_r2 TTFT p95 1.81→2.84 s, 같은 offered rate가 0.983× vs
+1.002×). (LVR-4) n=4 SD를 VESSL 캠페인 설계(검정력·잡음 바닥·
+정규화 오차)에 쓰는 것 금지.
+
+규칙층 감사(`VERDICT_lambda0_vessl_rules_2026-10-04.md`, LV-1…14)
+도 `GO-with-caveats`로 선행했다(死因 0). 두 판정서 모두
+사전등록 `PREREG_LAMBDA0_VESSL_2026-10-04.md`(rev5 사전등록·
+追記에 대한 **기판 이식 追記**, rev5 규칙 한 글자도 변경 없음) 대조.
+
+**(b) VESSL 실행 기반 완성(B0–B5 전부 PASS) — 배관 사실, 기판
+동등성 판정 아님.** `handoff-report/vessl_operating_model_
+2026-10-02.md` §9–§11: CPU workspace bring-up(§9, 엔진 설치 확인,
+CPU 회귀 **655 tests / failures 22 / errors 9 / skipped 16** —
+VESSL 새 로컬 기준선, 로컬 Docker 재현과 실패 목록 완전 일치)
+→ A100 기판 점검 B0·B3·B4(§10: 공개 이미지에 `libnuma1` 누락으로
+`import sgl_kernel` 1차 FAIL → 이미지 수정[`sglang-runtime@
+sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a
+6867d`] 후 PASS; 격자 (92,16)(84,24)(74,34)(64,44)(16,92) 요청=
+실현=서로소 격리 유지; 입도 **실측**(B3-gran): 최소 4 SM, 2 SM
+단위 올림[cc8 코드 상수 min4/multiple2와 일치]; cudagraph ON 유지,
+스로틀 0) → B5(§11, 첫 Job 파이프라인 전체 PASS, 공개 이미지→
+bundle→`install_runtime`→GPU 작업→export→fetch, 10분 28초, 비용
+하한 $0.23; 결함 4건 수정[`launch.sh` 비0 종료·`fetch.sh` slug/
+staging 경로·`job_entry.sh` GpuIdle 비트 오분류] + ★정정: VESSL
+Job tag는 밑줄 비허용[소문자·숫자·하이픈만], 밑줄 tag는 rc=1을
+낸다). 기판 사실: driver 580.105.08, A100 cc8.0 108 SM, cgroup
+CFS quota **11 CPU**(`cpu.max` 1,100,000/100,000, `nproc` 96
+가시 — 가시 코어≠quota), SW power cap(`0x4`) 노출 관측(위 λ0
+절, 전력 최대 434 W > limit 400 W와 정합). **이것은 캠페인
+제출 전제(B0–B5) 충족이며, 기판 동등성(KISTI 수치와의 비교
+가능성)·사전등록·규칙층 감사는 별도이고 사용자 결정 사항이다.**
+
+**(c) E-1 cap 대조 VESSL 사전등록 rev1 — 규칙층 `GO-with-caveats`,
+미실행.** `workspace/engine-port/results/e1_cap_vessl/
+{PREREG_E1_CAP_VESSL_2026-10-04.md, VERDICT_e1_cap_vessl_rules_
+rev1_2026-10-04.md}`. 死因 0(N1–N4 수치로 미성립), 등록 caveat
+9건(E1C-1…9). ★**E1C-1(스코프, 최우선)**: "실행 승인이지 '후보
+(7)을 닫았다'가 아니다 — 어느 라벨이 나와도 **KISTI HE0의 후보
+(7) 판정은 바뀌지 않는다**." E1C-4(TTFT 한정): 모든 라벨은 HI
+TTFT p50 부호에 관한 것뿐, goodput·ITL·HE0 순위·실무 권고로
+확장 금지. **사용자 결정 대기(블록 1 제출 전 동결 필수, E1C-9)**:
+블록 수(6 또는 4) · D arm 포함 여부 · `BOOT_S`/`RUN_NEED_S` 追記.
+예산 3.05 GPU-h/Job(6블록 ≈18.3 GPU-h, 천장 33.33). 엔진 변경
+`PDMUX_PHASE_EVENTS`(기본 OFF, 관측 전용, correctness gate
+확인됨) 배선 완료 — 이후 λ0 Job은 엔진 트리 drift 시
+`ABORT_ENGINE_TREE_DRIFT`(재실행은 커밋 `1d47d3e`에서).
+
+상세는 아래 "다음 실험 gate" 갱신, `CONSENSUS.md` rev86,
+`reports/paper/{EXPERIMENT_ROADMAP.md, CLAIM_EVIDENCE_MATRIX.md}`.
+
+이전: 2026-10-02 (3차 세션, doc-steward — **claims-auditor
 FOLLOWUP 결과 감사 반영**, GPU 0 · 새 성능 판정 0건 · HE0 등급·
 부호·정책 순위 전부 불변). 아래(2차 세션)가 "C-1/귀속 감사 대기"로
 보류했던 D-8(§1-10)·§1-11(+CONSENSUS §2-1·§2-3)을 FOLLOWUP 결과
@@ -10633,6 +10736,27 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     VERDICT.md, PREREG_STAGE0PP_2026-08-23.md}`, `workspace/
     engine-port/results/nsl_lever/audit_nsl1_rules_rev3_2026-08-23/
     VERDICT.md`.
+
+18. ★★**(2026-10-04 신설, doc-steward — VESSL 실행 기반 완성 + λ0 재앵커 +
+    E-1 사전등록) 캠페인 제출 배관은 준비됐으나 두 블로커가 남는다.**
+    (A) **배관 완료**: `handoff-report/vessl_operating_model_2026-10-02.md`
+    §9–§11 B0–B5 전부 PASS(위 "확정된 결과" 참조) — 공개 이미지
+    `sglang-runtime@1e0d335b`(libnuma1), 격자 요청=실현=격리, 입도
+    실측(최소 4 SM·2 SM 단위), cudagraph ON 유지. (B) **λ0 VESSL
+    재앵커 완료**: Job `pdmux-lambda0-vessl-1d47d3e-20261004084945`가
+    KISTI job 908623과 "구별되지 않는다"(|Δ| A 1.95%·B 0.97% < 3%) —
+    단 이는 **두 Job이 실행된 그대로의 값**에 대한 서술이고, **게이트
+    #6(λ\*\_VESSL 정규화 격자로 E1 재등록)·λ0R-8(iii)(E2 sticky 대조
+    미실행)은 여전히 열려 있다.** (C) **남은 블로커 1 — E-1 cap 대조
+    VESSL 사전등록 rev1**(`workspace/engine-port/results/e1_cap_vessl/`)
+    은 규칙층 `GO-with-caveats`(死因 0)이나 **블록 1 제출 전 사용자
+    결정 3건을 동결해야 한다**(E1C-9): 블록 수(6 또는 4) · D arm
+    포함 여부 · `BOOT_S`/`RUN_NEED_S` 追記. ★**E1C-1**: 어느 라벨이
+    나와도 KISTI HE0의 후보 (7) 판정은 바뀌지 않는다(스코프, "닫는다"
+    아님). (D) **남은 블로커 2 — 예산**: E-1 6블록 ≈18.3 GPU-h(천장
+    33.33), λ0 재앵커는 이미 집행(컨테이너 1.894 h). 상세
+    `CONSENSUS.md` rev86, `reports/paper/{EXPERIMENT_ROADMAP.md,
+    CLAIM_EVIDENCE_MATRIX.md}` 2026-10-04 갱신.
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.

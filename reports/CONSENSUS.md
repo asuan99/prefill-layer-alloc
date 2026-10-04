@@ -4,7 +4,49 @@
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
 > negative result, entanglement, single-worker dynamic 결과의 정본으로 유지한다.
 
-최종 갱신: 2026-10-02 rev85 **(doc-steward — claims-auditor
+최종 갱신: 2026-10-04 rev86 **(doc-steward — λ0 VESSL 재앵커
+결과 감사 반영 + VESSL 실행 기반 완성(B0–B5 PASS) + E-1 cap
+대조 VESSL 사전등록 rev1 등재, VESSL GPU 지출(λ0 Job 컨테이너
+1.894 h + B0/B5 소규모 프로브)·새 성능 판정 0건·게이트 #6·
+λ0R-8(iii)·HE0·Claim 등급 전부 불변)**: Job
+`pdmux-lambda0-vessl-1d47d3e-20261004084945`(VESSL
+A100-SXM4-80GB 1장 `GPU-3be4c7da…`, host `job-mhhyqwkzwyir-6b2ll`,
+2026-10-04, container 1.894 h)가 KISTI job 908623의 rev5 판정
+경로를 바이트 동일하게 재실행했다. claims-auditor 결과 감사
+(`workspace/engine-port/results/r2_eval/lambda0_vessl/
+VERDICT_result_lambda0_vessl_2026-10-04.md`, 死因 0)의 §6 정본
+반영 문장을 문자 그대로 옮긴다:
+
+> λ0 VESSL 재앵커(Job `pdmux-lambda0-vessl-1d47d3e-20261004084945`,
+> VESSL A100-SXM4-80GB 1장 `GPU-3be4c7da…`, host
+> `job-mhhyqwkzwyir-6b2ll`, 2026-10-04, container 1.894 h)는 rev5
+> 판정 경로를 바이트 동일하게 재실행해 두 shape 모두
+> `KNEE_BRACKETED` + `SEED_REPEAT_HOLDS`를 냈다. 등록 §4-4 규칙상
+> 이 Job의 λ\*는 KISTI job 908623의 λ\*와 **구별되지 않는다**(|Δ|
+> A 1.95%, B 0.97% < 3%; 범위 비중첩 조건만 참). 이는 두 Job이
+> 실행된 그대로의 값에 대한 서술이다. "VESSL과 KISTI의 용량이
+> 같다", "KISTI의 λ\*·격자·HE0·정책 순위·caveat 수치를 VESSL에
+> 이식할 수 있다"는 쓰지 않는다. 성능 판정 0건. 게이트 #6,
+> λ0R-8(iii), HE0, Claim 등급은 불변이다.
+
+인용 가능한 λ\* 값·산포 문장(LV-6)·인용 금지 caveat(LVR-1…4)는
+§6 허용형 문자 그대로(`PROJECT_STATUS.md` 최상단 배너(2026-10-04)
+참조). 규칙층 감사(`VERDICT_lambda0_vessl_rules_2026-10-04.md`,
+LV-1…14)도 `GO-with-caveats`로 선행했다. 병행해서 (i) VESSL
+실행 기반이 완성됐다(`handoff-report/vessl_operating_model_
+2026-10-02.md` §9–§11, B0–B5 전부 PASS — 배관 사실, 기판 동등성
+판정 아님) (ii) **E-1 cap 대조 VESSL 사전등록 rev1**
+(`workspace/engine-port/results/e1_cap_vessl/`)이 규칙층
+`GO-with-caveats`(死因 0, caveat E1C-1…9)로 등재됐으나 **미실행**
+— 블록 1 제출 전 사용자 결정 3건 동결 필요(블록 수 6/4·D arm
+포함 여부·`BOOT_S`/`RUN_NEED_S` 追記, E1C-9). ★**E1C-1**: 어느
+라벨이 나와도 KISTI HE0의 후보 (7) 판정은 바뀌지 않는다. §4
+living-doc 표에 신규 행 3건, §5 열린 항목 16 신설. 상세
+`workspace/engine-port/results/r2_eval/lambda0_vessl/`,
+`workspace/engine-port/results/e1_cap_vessl/`,
+`handoff-report/vessl_operating_model_2026-10-02.md` §9–§11.
+
+이전: 2026-10-02 rev85 **(doc-steward — claims-auditor
 FOLLOWUP 결과 감사 반영, GPU 0·새 성능 판정 0건·HE0 등급·부호·
 정책 순위 전부 불변)**: rev84가 "C-1/귀속 감사 대기"로 보류했던
 D-8(§1-10)·§1-11(+§2-1·§2-3)을 FOLLOWUP 결과 감사
@@ -7535,6 +7577,9 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | `reports/prior_cost_models_bullet_muxwise_2026-10-01.md` | ★**(2026-10-02 등재) 선행 cost model 정독 — 이력 비교 자료, 새 측정 없음.** Bullet(SRM·α 간섭 모델·Algorithm 1)과 MuxWise(식 1·2·contention guard·N_PL)의 로컬 camera-ready 원문을 정독해 우리 cost model 설계와의 대응·공백을 정리. CM-1…7/X-1…11 설계가 이 문서의 정독 결과를 전제로 함 |
 | `reports/definition_blind_spots_2026-10-01.md` | ★**(2026-10-02 등재) 정의 사각지대 D-1…D-12 — 사용자 결정 대기, 측정 결과 0.** 최상위 5: p95 집계가 PAUSE 간격을 가림 · 입력 길이 1층(span) 하한 미정의 · 변화 trace 정상성 규약 미정의 · 결정 반영 지연(decision-to-effect lag) 미모델 · 조성 축에 H(기판) 층 누락(M/U/E 3층에서 M/U/E/H 4층으로 재정의 필요). HE0 오염 감사의 D-1…D-8 제안 세트가 이 문서 계열에서 파생 |
 | `reports/prefill_attn_ssm_length_review_2026-10-01.md` | ★**(2026-10-01 rev2, 2026-10-02 등재) 핵심 동기 검토 — rev1 `INACCURATE`(정정 16) → rev2.** 방어 가능 문장 = "코어 vs mixer 시간이 L≳2k에서 L^1.92(코어)/L^0.95(mixer) 스케일"(단일 모델 micro 스코프 필수) + 조건부 per-op 교차점 ≈2.75k(백엔드 의존). **"span 비용=조성×길이"는 NOT-YET-SUPPORTED.** **"decode SSM은 SM 둔감"은 사용 금지**(§1-21·Claim C2가 반증). job 896776 수치는 인용 금지. rev1의 "교차점 불일치"는 attention 모듈 필드와 코어 필드를 비교한 가짜였다(§3 항목18 계열 追記 참조) |
+| `workspace/engine-port/results/r2_eval/lambda0_vessl/{PREREG_LAMBDA0_VESSL_2026-10-04.md, RESULT_lambda0_vessl_2026-10-04.md, VERDICT_lambda0_vessl_rules_2026-10-04.md, VERDICT_result_lambda0_vessl_2026-10-04.md}` | ★★★**(2026-10-04, doc-steward 등재) λ0 VESSL 재앵커 — rev5 사전등록·追記에 대한 기판 이식 追記(rev5 규칙 한 글자도 변경 없음), 규칙층 `GO-with-caveats`(LV-1…14, 死因 0) → Job `pdmux-lambda0-vessl-1d47d3e-20261004084945` 실행 → 결과 감사 `CONFIRMED`(死因 0, 정정 7건 R-1…R-7).** KISTI job 908623의 rev5 판정 경로를 바이트 동일 재실행해 두 shape 모두 `KNEE_BRACKETED`+`SEED_REPEAT_HOLDS` — 등록 §4-4 규칙상 λ\*는 KISTI와 **구별되지 않는다**(\|Δ\| A 1.95%·B 0.97% < 3%, 범위 비중첩 조건만 참; 이는 **두 Job이 실행된 그대로의 값**에 대한 서술이며 기판 동등성 이식이 아니다). 인용 가능 λ\*: A ≈2.99 req/s(`--max-running-requests 48` 구속 처리율, 실현 D44 E-time 13.89%, decode-busy 91.2%가 비분할(0,108)), B ≈0.690 req/s(D44 E-time 97.38%, 라벨은 `ACH_HI` 0.981에서 소멸). 산포(LV-6, n=4 한 Job·한 노드): A 0.54%·B 0.12%(기준선 분산·설계 입력 사용 금지). 신규 인용 금지 **LVR-1…4**: (1) "VESSL이 KISTI보다 낮다/8·8 전부 낮다" (2) "Δ는 power cap 때문" (3) **"λ\*가 구별되지 않으므로 SLO 지표도 같다"**(a_r2 TTFT p95 1.81→2.84 s, 같은 offered rate가 0.983×↔1.002×ρ) (4) n=4 SD를 캠페인 설계에 사용. 기판 사실: cgroup CFS quota **11 CPU**(`nproc` 96 가시)·SW power cap(`0x4`) 노출 A 27.2%/B 49.4%(원인 귀속 불가, shape 간 클럭↔Δ 순서 역전). **게이트 #6(λ\*\_VESSL 정규화 격자 미등록)·λ0R-8(iii)(E2 sticky 대조 미실행)·HE0·Claim 등급 전부 불변.** 상세 `VERDICT_result_lambda0_vessl_2026-10-04.md` §6–§7(실현 불가/가능 확정 실험 목록) |
+| `handoff-report/vessl_operating_model_2026-10-02.md` §9–§11, `workspace/engine-port/results/{vessl_substrate_probe_2026-10-04/, b5_smoke/}` | ★★**(2026-10-04, doc-steward 등재) VESSL 실행 기반 완성(B0–B5 전부 PASS) — 배관 사실, 기판 동등성 판정 아님.** §9 CPU workspace bring-up(엔진 설치 확인, CPU 회귀 **655/22/9/16** — VESSL 새 로컬 기준선, 로컬 Docker 재현과 실패 목록 완전 일치) → §10 A100 B0·B3·B4(공개 이미지에 `libnuma1` 누락으로 `import sgl_kernel` 1차 FAIL → 이미지 수정[`sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d`] 후 PASS; 격자 (92,16)(84,24)(74,34)(64,44)(16,92) 요청=실현=서로소 격리; 입도 **실측**(B3-gran) 최소 4 SM·2 SM 단위[cc8 코드 상수 min4/multiple2와 일치]; cudagraph ON 유지, 스로틀 0) → §11 B5(첫 Job 파이프라인 전체 PASS, 10분 28초, 비용 하한 $0.23; 결함 4건 수정[`launch.sh` 비0 종료·`fetch.sh` slug/staging 경로·`job_entry.sh` GpuIdle 비트 오분류] + ★정정: VESSL Job tag는 밑줄 비허용[소문자·숫자·하이픈만]). 기판 사실: driver 580.105.08, A100 cc8.0 108 SM, cgroup CFS quota 11 CPU. **캠페인 제출 전제(B0–B5) 충족 — 기판 동등성·사전등록·규칙층 감사는 별도, 사용자 결정 사항.** [[vessl-operating-model]] |
+| `workspace/engine-port/results/e1_cap_vessl/{PREREG_E1_CAP_VESSL_2026-10-04.md, VERDICT_e1_cap_vessl_rules_rev1_2026-10-04.md}` | ★★**(2026-10-04, doc-steward 등재) E-1 cap 대조(48 vs 192) VESSL 사전등록 rev1 — 규칙층 `GO-with-caveats`(死因 0, caveat E1C-1…9), 미실행.** ★**E1C-1(스코프, 최우선)**: "실행 승인이지 '후보 (7)을 닫았다'가 아니다 — **어느 라벨이 나와도 KISTI HE0의 후보 (7) 판정은 바뀌지 않는다**." E1C-4(TTFT 한정): 모든 라벨은 HI TTFT p50 부호에 관한 것뿐, goodput·ITL·HE0 순위·실무 권고로 확장 금지. E1C-2/3(허용 문구 정정): `NOT_CAP_BOUND`/`CAP_ATTENUATED`는 부호 수준 문장까지만(코드 상수 출처 허위 — 교훈80 계열). E1C-6: TTFT p50은 정지에 비민감한 지표가 아님(KISTI 859006 포함 시 Δ48 0.157→0.231). E1C-9(절차 동결, 최우선 미결): **블록 수(6 또는 4)·D arm 포함 여부·`BOOT_S`/`RUN_NEED_S` 追記를 블록 1 제출 전에 코드 상수로 고정해야 한다**(사용자 결정 대기) — 블록 1 결과를 보고 설계를 바꾸면 등록 위반. 예산 3.05 GPU-h/Job(6블록 ≈18.3 GPU-h, 천장 33.33). 엔진 변경 `PDMUX_PHASE_EVENTS`(기본 OFF, 관측 전용) 배선 — 이후 λ0 Job은 엔진 트리 drift 시 `ABORT_ENGINE_TREE_DRIFT`(재실행은 커밋 `1d47d3e`에서). **미실행 — GPU 지출 0, 라벨 0건.** |
 
 `deprecated_reports/`(2026-07-24부터 [`../deprecated/reports/quarantine_engine_port/`](../deprecated/reports/quarantine_engine_port)) = 초기 triage·포팅·모델별 평가·구 핸드오프·구 리포트. **이력 보존용, 현재 결론과 충돌 가능.**
 
@@ -8656,3 +8701,5 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 14. ★**(2026-09-28 신설, doc-steward, `AUDIT_1` C5/C6·MuxWise식 arm 확장 조건) MuxWise 논문 수준 정합(N_PL + estimator) arm은 엔진 수정이 필요 — 설정만으로는 "agnostic 108-SM 표 재현" arm까지만 도달 가능.** MuxWise 논문의 디스패처(`N_PL = ⌈(T_d×N_T)/T_P⌉` + contention-tolerant estimator)는 공개 엔진에 없고, 우리 config 계열로도 재현 불가(요청별 decode 시간 예측 입력이 없음, `split_forward_token_budget`은 배치 합계 토큰일 뿐). 설정만으로 config-reachable한 것은 **부하 인덱스(decode-bs) 선택기의 108-SM 재현 arm 하나뿐**이며, 이는 이미 측정된 P1 auto-grid agnostic arm과 **같은 기제**다(개명 필요, best-static 대조는 미실행). 이 arm을 5-b에 넣으려면 별도 사전등록 필요 — 노브 동시 이동(`PDMUX_R2_POLICY`/`PDMUX_SLO_SCHED` 해제, sticky OFF) 등 confound 목록은 `AUDIT_1_prior_art_and_arm_2026-09-28.md` "MuxWise식 arm을 5-b에 넣을 때의 교락" 절(10개 항목) 참조. ★**부기(2026-09-30, 설계 기준선 `system_design_anchor_2026-09-30.md` — 엔진 수정이 필요하다는 위 결론과 정합)**: 재정렬+일시중단까지 포함한 Bullet/MuxWise식 arm을 hybrid로 확장하는 첫 검증 설계(S0 rev1, offline 결정 발산 검사)가 claims-auditor 규칙층 감사에서 **`NO-GO`**(`workspace/engine-port/results/hybrid_sched_s0/audit_s0_rules_2026-09-30/VERDICT.md`, 死因 5: K1 항등식[발산률이 계산 전 연역] · K2 estimand 부재[대조군 G-PAUSE가 Bullet의 허수아비이고 충실한 Bullet-on-hybrid는 H와 항등] — **설계 결함이지 방향 판정 아님**). 같은 회차 사용자 결정: ①Bullet의 "straightforward, future work" 예고는 **인용 의무**이지 novelty 감점 근거가 아니다 ②엔진 수정 비용(pause manager 신규)은 **중단 사유가 아니다** — 중심 주장을 "확장이 자명하지 않음을 보이는 것"으로 재정의하고, 증거 사다리를 **3-a 실측 decode 프로파일(SM×batch×ctx) → S0′(예측기만 P_hyb/P_gen/P_gen+recal 교체) → S1(pause manager 구현) → 5-a → 5-b** 순서로 고정했다. 이 부기는 위 confound 목록·엔진 수정 필요 판정을 대체하지 않고 다음 단계의 좌표만 갱신한다.
 
 15. ★★**(2026-10-02 신설, doc-steward — HE0 오염 감사 종합) HE0 범위 축소·E-1 cap 대조·재집계 결과 감사 — 사용자 결정 대기, 측정 결과 0건.** 사용자 문제제기("선행과 반대되는 결과가 설계 오염 아닌가")로 claims-auditor 논리 감사(`MIXED`)+result-analyst 정량 재집계(재구성 기반, 결과 감사 전)를 대조한 `workspace/engine-port/results/he0_contamination_2026-10-01/SYNTHESIS_2026-10-01.md`: **HE0 부호는 견고**(오염으로 안 뒤집힘), **headline은 크기·범위 과장**(legacy 효과 −2.7%<3% 게이트, 정본 술어 −19.9%는 metric cliff 증폭, bind+GATE는 d44 미도달[허수아비], TTFT 차이 95%+가 공유 대기열, §1-7/§1-10/§1-11/§1-17 서술 3건 형태 불일치). 신규 최대 후보: 버스트 prefill-ward 부호 충돌은 **running cap 48=mamba pool 48 포화 조건 한정 가능성** — **E-1(cap 48 vs 192 대조, GPU ≈10–20h)만이 가를 수 있다**(대여 GPU 확정 후 사전등록). 미해결 3건: C-1(자리 분해 잔차, r=0.96 상관까지만) · C-4(cap 구속 시간비 미집계) · job 856964 no-gate 붕괴의 클라이언트 아티팩트 vs 컨트롤러 귀속. **제안(사용자 결정)**: ①정본 §1-N 범위 축소 반영(등급 유지, 문구만 축소) ②정량 재집계의 claims-auditor 결과 감사 ③E-1 cap 대조 사전등록. 상세 `workspace/engine-port/results/he0_contamination_2026-10-01/{AUDIT_LOGIC_VERDICT,RESULT,SYNTHESIS}_2026-10-01.md`, `handoff-report/session_handoff_2026-10-02.md`.
+
+16. ★★**(2026-10-04 신설, doc-steward — 위 15의 ③이 사전등록 단계로 진행) E-1 cap 대조 VESSL 사전등록 rev1 — 규칙층 `GO-with-caveats`, 블록 1 제출 전 사용자 결정 3건 대기.** `workspace/engine-port/results/e1_cap_vessl/{PREREG_E1_CAP_VESSL_2026-10-04.md, VERDICT_e1_cap_vessl_rules_rev1_2026-10-04.md}` — 死因 0(N1–N4 수치로 미성립), caveat E1C-1…9. **사용자 결정 대기(E1C-9, 블록 1 제출 전 동결 필수)**: (i) 블록 수(6 또는 4 — 4블록은 σ=0.075에서 UNRESOLVED ≈67%로 검출력 손실 크고, D arm 제거는 블록당 ≈0.45 GPU-h 절감이나 C-1 VESSL 입력·게이트 5 동적 기술 상실) (ii) D arm(FEAS 가드) 포함 여부 (iii) `BOOT_S`/`RUN_NEED_S` 追記 값. 블록 1 결과를 보고 이 셋을 바꾸면 등록 위반(E1C-9). 예산 3.05 GPU-h/Job(6블록 ≈18.3 GPU-h, 천장 33.33) — **사용자 승인·예산 확정 전 미제출**. ★어느 라벨이 나와도 KISTI HE0의 후보 (7) 판정은 바뀌지 않는다(E1C-1, "닫는다" 아님). 같은 세션에 **λ0 VESSL 재앵커**(위 rev86 배너, 위 §4 신규 행)와 **VESSL 실행 기반 완성**(B0–B5 PASS, §4 신규 행)도 함께 등재됐다 — 배관·λ0 재확인은 끝났고, 남은 것은 E-1의 이 세 결정과 예산, 그리고 λ0R-8(iii)(E2 sticky 대조)·게이트 #6(λ\*\_VESSL 정규화 격자) 둘 다 여전히 미실행이라는 사실이다. 새 성능 판정 0건. 상세 `PROJECT_STATUS.md` 최상단 배너(2026-10-04)·"다음 실험 gate" #18.
