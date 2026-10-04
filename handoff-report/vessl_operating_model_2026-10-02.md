@@ -205,3 +205,22 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 2. 예산 시나리오와 크레딧 충전액
 3. 모델 업로드 범위(현 트랙만 권고)
 4. 기판 동등성 처리와 E2 새 OVERRIDE(기존과 같음)
+
+## 9. 진행 기록 — CPU Workspace bring-up (2026-10-04)
+
+- SSH 키 `wonho-pc-ed25519`(`sshkey-b8de4n1mamop`)를 등록했다. 로컬 `~/.ssh/id_ed25519`, 지문 `SHA256:uPuHP3cg…`이다.
+  기존 `wonho-local`(`sshkey-dz9d7v93oqhb`)은 짝이 되는 개인키가 로컬에 없어 쓰지 않는다. 삭제할지는 사용자가 정한다.
+- `pdmux-build` = `wsp-fbmj36cisl56`(CPU Only, $0.30/h, 공개 runtime 이미지, `/data`·`/io` 마운트)를 만들었다. 접속은 `ssh -p <port> root@betelgeuse.cloud.vessl.ai`(포트는 `workspace show`의 Endpoints)로 한다. 초기화에는 약 5분 걸렸다. 작업 후 pause해서 현재 standby다.
+  - 크레딧 잔액 $413.73, org 전체 소진 속도 $11.84/h(다른 팀 포함, 생성 시점).
+- ★**ssh 세션은 이미지 ENV를 상속하지 않는다.** `python`이 3.13(시스템)으로 잡히고 `SGLANG_ENGINE_DEV` 등이 비어 있다.
+  Workspace에서는 `export PATH=/opt/conda/bin:$PATH PDMUX_ROOT=/opt/pdmux SGLANG_ENGINE_DEV=/opt/pdmux/sglang_engine_dev/python`를 먼저 해야 한다.
+  Job은 이미지 ENV를 그대로 쓰므로 해당 없다.
+- 엔진을 설치했다(커밋 `a2b4176` bundle → `install_runtime.sh`). manual edits가 적용됐고, sync manifest sha256 `67f73539…`는 로컬 이미지 테스트와 동일하다. thread-local 패치 import도 확인했다.
+- 데이터 적재(`stage_data.sh`):
+  - trace(`/data/hf/raw/`, ShareGPT 계열)
+  - `nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base@dc0661c8…`(18 GB, 비gated, 약 20초)
+  - `STAGED_SHA256SUMS` 28줄
+  - 리비전으로 받으면 `refs/main`이 생기지 않아 offline 해석이 안 된다. 그래서 refs/main을 고정 리비전으로 쓰도록 고쳤다(`d0e31d6`). offline `snapshot_download`·`AutoConfig`(NemotronH)를 확인했다.
+- CPU 회귀(B2): VESSL에서 **655 tests / failures 22 / errors 9 / skipped 16**. 같은 이미지·같은 커밋을 로컬 Docker에서 돌린 결과와 **실패 목록이 완전히 같다.**
+  draft2 기록(662/21/6/1)과 수가 다른 것은 커밋과 이미지가 다르기 때문이다. 새 기준선은 이 값이다.
+- 아직 안 한 것: B0·B3·B4(A100 필요), B5(첫 Job).
