@@ -1,6 +1,20 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-10-04 (4차 세션, doc-steward — **λ0 VESSL 재앵커
+최종 갱신: 2026-10-04 (5차 세션, doc-steward — **N4(D-SEM) 종결
+등재 + TTFT SLO 방법론 A′ 채택**, GPU 0 · 새 성능 판정 0건 ·
+게이트 #6·λ0R-8(iii)·HE0·Claim 등급 전부 불변). N4가 anchor §8
+사다리의 "3-b"를 "target D44 분할 arm의 처리율 포화 λ\*"로
+한정하고 SLO 용량·정상성을 N3로 재배정, 16k–64k 처리 한계를
+미측정 열린 항목으로 등재했다(허용/금지 문안은 아래 "(d) 증거
+사다리" 절 N4 追記). `reports/slo_definition_rationale_
+2026-10-04.md`의 TTFT SLO 원안이 claims-auditor 감사
+(`reports/AUDIT_slo_method_2026-10-04.md`)에서 수정판 **A′**로
+확정(사용자 승인 3차) — TTFT 임계값은 처치가 아니라 판독
+눈금, 결정점 k∈{3,5,10}+연속 곡선, ITL 50 ms는 정책 arm
+고정·static arm만 사다리 재채점. λ0R-8(iii) 문구 정정(E2는
+필요조건일 뿐, 진짜 해소는 B4 λ\*) 반영. 상세 `handoff-report/
+VERDICT_n4_dsem_rules_2026-10-04.md`, `CONSENSUS.md` rev87.
+이전(4차 세션): 2026-10-04(doc-steward — **λ0 VESSL 재앵커
 결과 감사 반영 + VESSL 실행 기반 완성(B0–B5 PASS) + E-1 cap 대조
 VESSL 사전등록 rev1 등재**, VESSL GPU 지출(λ0 Job 컨테이너
 1.894 h + B0/B5 소규모 프로브) · 새 성능 판정 0건 · 게이트 #6·
@@ -324,6 +338,39 @@ decode 프로파일(SM × batch × ctx)** → 3-b λ\*(B) → **S0′**(CPU,
 구현, correctness gate, Bullet §4.5형 ablation) → 5-a(워크로드별
 최적 static 격차) → 5-b(변화 trace, n≥4, 짝지은 CI). 각 단계
 NO-GO는 다음 단계를 막고 그 자체가 결과다.
+
+★★**N4 종결(2026-10-04, claims-auditor `handoff-report/
+VERDICT_n4_dsem_rules_2026-10-04.md`, GPU 0) — "3-b"가 저장소
+안에서 다섯 갈래로 갈려 있던 정의를 여기서 좁힌다.** 허용 문안
+(§1-3, 문자 그대로):
+
+> anchor §8 사다리의 3-b를 **"target D44 분할 arm의 처리율 포화
+> λ\*"로 한정하면**, (8192, 64) 한 점은 λ0 VESSL 재앵커 Job
+> `pdmux-lambda0-vessl-1d47d3e-20261004084945`가 채운다. 인용은
+> `VERDICT_result_lambda0_vessl_2026-10-04.md` §6의
+> λ\*\_VESSL(B) 유일 허용형을 문자 그대로 쓴다(≈0.690 req/s @
+> 289.67 s, N=200, offered 1.15; D44 E-cnt 90.48 / E-time
+> 97.38 / E-iter 91.68 / E-qcond 100%; power cap 49.4%;
+> `ACH_HI` 0.981에서 라벨 소멸; 하한). 이 값은 legacy, cudagraph
+> ON, sticky OFF, `--max-running-requests 48`,
+> `max_prefill_tokens=16384` 구성의 처리율 포화 하한이다. SLO
+> 용량이 아니며 "D44 용량"도 아니다. 이 문서 계보에서 3-b가
+> 함께 지던 역할은 이 Job으로 채워지지 않는다. (i) SLO 용량
+> (게이트 #6, A4 판정서 배정)과 (ii) 정상성은 **N3로 재배정**한다.
+> (iii) 8192 이외 입력 길이(16k–64k, 주 영역 §7(a))의 처리 한계는
+> **미측정 열린 항목**이다. 65536 초과는 anchor §7(b)에 따라 범위
+> 밖이다. 성능 판정 0건. 게이트 #6, λ0R-8(iii), HE0, Claim 등급은
+> 불변이다.
+
+**금지 문안(§1-4)**: "λ\*(B)는 실질/사실상 D44 측정" · "shape
+B는 희석이 없다" · 정의 한정 없는 "3-b 완료/종결" · "8192 초과
+처리 한계는 3-a·prefill 길이 격자로 흡수" · "k×λ\*(B) 부하에서
+arm은 D44로 돈다" · "3-b가 게이트 #6을 진전시켰다" · "λ\*(B)로
+shape B 용량 확정". **DS-1…DS-7**(D-SEM 감사, 같은 판정서 §감사2)은
+5-a/5-b 사전등록 필수 승계 caveat다 — 상세 `reports/paper/
+EXPERIMENT_ROADMAP.md` "N3 사전등록 필수 조항" 절. "SLO 용량·
+정상성은 N3로 재배정", "16k–64k 미측정 열린 항목"은 `CONSENSUS.md`
+§5 열린 항목 17로 등재.
 
 **(e) TTFT 정의·분해 규약은 [제안], 감사 전.** `reports/
 ttft_measurement_definition_review_2026-09-28.md` — 현 하네스

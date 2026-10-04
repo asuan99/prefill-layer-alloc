@@ -1,9 +1,92 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-10-04(doc-steward — **V-0/D-0 기판 점검 완료 +
-λ0 VESSL 재앵커 + E-1 cap 대조 사전등록 rev1 등재**, VESSL GPU
-지출(λ0 Job 컨테이너 1.894 h + B0/B5 소규모 프로브) · 새 성능
-판정 0건 · 게이트 #6·λ0R-8(iii)·HE0·Claim 등급 전부 불변).
+최종 갱신: 2026-10-04(2차, doc-steward — **N4(D-SEM) 종결 등재 +
+TTFT SLO 방법론 A′ 채택**, GPU 0·새 성능 판정 0건·게이트 #6·
+λ0R-8(iii)·HE0·Claim 등급 전부 불변).
+
+**N4 종결 — 3-b 정의 한정(claims-auditor `handoff-report/
+VERDICT_n4_dsem_rules_2026-10-04.md` §1-3, 문자 그대로)**:
+
+> anchor §8 사다리의 3-b를 **"target D44 분할 arm의 처리율 포화
+> λ\*"로 한정하면**, (8192, 64) 한 점은 λ0 VESSL 재앵커 Job
+> `pdmux-lambda0-vessl-1d47d3e-20261004084945`가 채운다. 인용은
+> `VERDICT_result_lambda0_vessl_2026-10-04.md` §6의
+> λ\*\_VESSL(B) 유일 허용형을 문자 그대로 쓴다(≈0.690 req/s @
+> 289.67 s, N=200, offered 1.15; D44 E-cnt 90.48 / E-time
+> 97.38 / E-iter 91.68 / E-qcond 100%; power cap 49.4%;
+> `ACH_HI` 0.981에서 라벨 소멸; 하한). 이 값은 legacy, cudagraph
+> ON, sticky OFF, `--max-running-requests 48`,
+> `max_prefill_tokens=16384` 구성의 처리율 포화 하한이다. SLO
+> 용량이 아니며 "D44 용량"도 아니다. 이 문서 계보에서 3-b가
+> 함께 지던 역할은 이 Job으로 채워지지 않는다. (i) SLO 용량
+> (게이트 #6, A4 판정서 배정)과 (ii) 정상성은 **N3로 재배정**한다.
+> (iii) 8192 이외 입력 길이(16k–64k, 주 영역 §7(a))의 처리 한계는
+> **미측정 열린 항목**이다. 65536 초과는 anchor §7(b)에 따라 범위
+> 밖이다. 성능 판정 0건. 게이트 #6, λ0R-8(iii), HE0, Claim 등급은
+> 불변이다.
+
+**금지 문안(§1-4)**: "λ\*(B)는 실질/사실상 D44 측정" · "shape B는
+희석이 없다" · 정의 한정 없는 "3-b 완료/종결" · "8192 초과 처리
+한계는 3-a·prefill 길이 격자로 흡수" · "k×λ\*(B) 부하에서 arm은
+D44로 돈다" · "3-b가 게이트 #6을 진전시켰다" · "λ\*(B)로 shape B
+용량 확정".
+
+**N3 사전등록 필수 조항(D-SEM 감사 승계, 같은 판정서 "N3 사전등록
+필수 조항" 절, 문자 승계 — 새 게이트 번호 신설 없음)**: ①arm 정의
+= B1 fixed/DSM 44/sticky unset, `sticky_target_index` null로
+실증, legacy·cudagraph ON, 5-a/5-b와 같은 `sm_counts` config
+②명명 = "target-D44 sticky-OFF B1의 λ\*\_SLO"("D44 용량" 금지)
+③셀마다 4추정량+벽시계 인덱스 점유를 규약명과 함께 보고 ④요청별
+노출(`PDMUX_PHASE_EVENTS`, 모든 셀·arm 대칭 + 관측효과 OFF 대조
+블록) ⑤SLO 값은 실행 전 고정, ITL 55–65 ms 절벽 회피 여유 공시,
+B의 D44 ITL p95 ≈24 ms라 구속 술어는 TTFT, TTFT 절벽 둘레는
+0.1× 간격·n≥4·paired bootstrap ⑥정상성 S1–S3 검사(A9), 크기는
+STATIONARY 셀만 보고 ⑦부하는 절대 req/s로 등록, arm별 절벽 가드
+사전 상수 ⑧구속 설정 병기(cap 48=mamba 48, B는
+`max_prefill_tokens=16384`) ⑨기판: shape별 1 Job, 셀 전후
+clk·cpu.stat·power cap 노출 보고 ⑩N3는 best static을 정하지
+않는다(판정 아님 선언) ⑪retract 요청 제외·제출 전 커밋·저부하
+E-time 예보를 반증 가능한 예측으로 등록.
+
+**필수 병기 caveat DS-1…DS-7(문자 승계)**: **DS-1** 5-a/5-b의
+모든 arm은 sticky OFF(엔진 기본 궤적) — arm 라벨 D는 "동거 구간의
+decode 목표 분할"이며 실현 비율은 shape·부하·arm에 따라
+다르다(추정량명 병기), "D SM에서의 성능/용량"으로 쓰지 않는다.
+**DS-2** arm 간 goodput 차이는 분할 효과와 그 분할이 유발한 동거
+비율 변화(매개)의 합이다 — SM 민감도나 D의 가치로 분해하지 않고,
+워크로드 간 격차를 민감도 차이로 읽지 않는다. **DS-3** 3-a(sticky
+ON, decode 단독)는 단독-at-D를 잰다(2F9) — 동거 구간 step 시간과의
+일치는 미검증, 불일치는 d_min 과소 방향으로 예상(미측정). **DS-4**
+λ0R-8(iii)은 N1(E2)으로 해소되지 않는다(E2C-5) — 부하점은 절대
+offered rate, "arm별 용량 대비 비율"로 쓰지 않는다. **DS-5** 우리
+static arm은 Bullet §4.4 static(decode 전 SM 겹침)과 다르다 — 그
+재현·반박으로 쓰지 않는다. **DS-6** shape A 0.36×–0.59×λ\* 부근에서
+ITL p95 술어의 D 민감도가 전환된다(감사자 예보, E-time 3.2→6.1%)
+— 이 구간의 arm 순위는 헤드라인이 아니다. **DS-7** 5-b 결과는
+HE0의 재판정이 아니다(anchor §9) — HE0의 D-2·D-7 범위 문구를
+승계한다.
+
+★**λ0R-8(iii) 문구 정정(N4 판정서 §(e), 감사자 자기 정정)**: "E2
+sticky 대조 미실행"이라는 괄호 서술이 "E2가 실행되면 해소된다"는
+충분조건처럼 읽히는 지점이 있었다 — **E2는 필요조건일 뿐
+해소하지 않는다(E2C-5); 진짜 해소는 B4 λ\*(R2C-2 미충족, 처방
+불가)**. 아래·`reports/paper/CLAIM_EVIDENCE_MATRIX.md`의 동일
+문구도 같은 정정을 받았다.
+
+★**TTFT SLO 방법론 A′ 채택(사용자 승인 3차, 2026-10-04)**:
+`reports/slo_definition_rationale_2026-10-04.md`의 TTFT SLO
+설정 원안이 claims-auditor 감사(`reports/
+AUDIT_slo_method_2026-10-04.md`)에서 `PLAUSIBLE(조건부)` →
+수정판 A′로 확정됐다. 핵심: TTFT 임계값 T는 처치가 아니라 판독
+눈금 — 결정점 k∈{3,5,10}(Holm CI)+연속 곡선[1,25](기술 통계),
+ITL 50 ms는 정책 arm 고정(estimator 입력)·static arm만 사다리
+{40,50,60,65} ms 재채점. `reports/longcontext_trace_plan.md`
+§4.3의 "Primary=절대 class SLO+SLO-scale sweep, Secondary=
+prefill-normalized slowdown"·"floor=목표 SM"은 A′로
+재배정(P-7, 원문 취소선 유지). "SLO 용량·정상성은 N3로 재배정",
+"16k–64k 미측정 열린 항목"은 `CONSENSUS.md` §5 열린 항목 17로
+등재. 이 메모는 아래 "공통 방법"·"단계와 stop/go gate" 절의
+5-a/5-b TTFT SLO 조항을 대체한다(사전등록 시 문자 인용).
 **V-0**(기판 가용성)·**D-0**(데이터/엔진 재현성) 점검을 VESSL
 A100에서 완료했다 — `handoff-report/vessl_operating_model_
 2026-10-02.md` §9–§11: CPU workspace bring-up(CPU 회귀 655/22/9/16)

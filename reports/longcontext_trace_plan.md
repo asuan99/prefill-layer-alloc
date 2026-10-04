@@ -2,6 +2,7 @@
 
 발의: 사용자, 2026-07-17. 작성: 같은 날. ★**개정: 2026-07-25**(§0.5 신설 + §4.3 SLO 교정 + §6 L−2/L3s + §2 H_L5 — 벡터1 short-ctx 종결·r0c decode-floor grounding·시간/공간 분리·운영점 게이트 반영). ★★**개정: 2026-07-26**(§0.6 신설 — **L−2(Stage 0) 게이트 실행 완료·결과 기록**: non-binding, ctx≤16k. L−1 이상은 여전히 계획 미실행). ★★★**개정: 2026-07-28**(§0.6/H_L4/H_L5/L−2 행 **철회** — claims-auditor 감사(C1 CONFIRMED)로 Stage 0의 D108 무경합 앵커가 실은 decode 16 SM이었음이 확인되어, L−2가 "실행 완료·non-binding"이 아니라 **"게이트 미실행"**으로 정정됨. L−1 이상은 "게이트 실패로 보류"가 아니라 다시 계획 단계). ★★★★**개정: 2026-09-07**(doc-steward, D4 — §4.3 **부분 정정**: 2026-07-25 판정 중 "(i) `a+b·L` 연속 길이-정규화 임계는 **계보 없음**"이라는 사실 주장을 정정. 계보가 **있다**(Etalon/Metron이 `D_p(L)` 프로파일 fitting을 명시적으로 처방, LoongServe가 input-normalized latency 사용) — 근거 `workspace/engine-port/results/cp_baseline/RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)/§6-2. **선형 폐형식 `a+b·L` 자체에 대한 기각과 §4.3의 실무 처방(절대 class SLO+slowdown 병기)은 유효 유지** — 성능/정책 판정 아님, 인용·계보에 관한 정정). ★★★★★**개정: 2026-09-21**(doc-steward — §5에 TraceLab·Azure-2024 trace 후보 추가 + §5.1 신설[순위·residency 축 연결, `reports/paper/venue_positioning.md` §0.2 전파] + §8 radix-cache 결정을 residency 트랙 선결 게이트로 승격 — 성능/정책 판정 아님, GPU 0, 미결정 상태 자체는 불변).
 ★★★★★★**개정: 2026-09-24**(doc-steward — §8 radix-cache 결정을 사용자 결정으로 **1차 조건만 확정**(OFF, ON은 추후 확장)으로 갱신 + §8.1 신설[radix ON 확장 시 판정이 어떻게 달라지는지 — 분석/예측, 새 측정 아님] + §5 "혼합" 행에 합성 혼합 trace 후순위 결정 각주. GPU 0·새 측정 0·Claim 등급 불변. 근거: `handoff-report/design_memo_span_step_boundary_costmodel_2026-09-24.md` §8, 사용자 지시).
+★★★★★★★**개정: 2026-10-04**(doc-steward — §4.3 "Primary=절대 class SLO+SLO-scale sweep, Secondary=prefill-normalized slowdown"·"floor=목표 SM" 처방을 **A′로 재배정**[claims-auditor `AUDIT_slo_method_2026-10-04.md` P-7, 사용자 승인]. 사유: 8192 너머 외부 절대 class SLO 값 부재 + arm별 floor가 D2 위반[임계 불일치]. 원문은 취소선 유지, 삭제 아님. GPU 0·새 측정 0·Claim 등급 불변. 상세 `reports/slo_definition_rationale_2026-10-04.md`).
 계기: *"motivation으로 attn과 mamba가 차이가 난다는 지점은 **long-sequence에서 심화**되는데, 실 trace에도 그런 데이터셋들이 존재할 것이고, 그에 따라 **실행의 범위가 달라질 수 있는** 가능성이 있다."*
 
 관련: [CONSENSUS.md](CONSENSUS.md)(정본) · [research_arc.md §S-M](research_arc.md)(반증 지점·측정 환경·유효 경계) · [realtrace_findings_and_open_branches.md](realtrace_findings_and_open_branches.md)(얽힘 기전) · [stage0_verdict_2026-07-26.md](stage0_verdict_2026-07-26.md)(L−2 원 판정, ★★★2026-07-28 claims-auditor 감사로 철회 — 아래 §0.6 참조).
@@ -198,6 +199,13 @@ RELATEDWORK_LONGCTX_SLO_2026-09-07.md` §1(f)(표+인용)·§6 항목2.
 
 ★**필수 규율**: **prefill_floor는 반드시 *측정*(모델링 금지)** — 단일요청·목표 SM·무경합으로 실측(gate #1이 floor에도 적용; 모델링 floor면 아티팩트). Primary(절대)로 **제품 goodput**을 주장하고, Secondary(slowdown)로 **split 인과 효과**를 분리 — 둘 다 병기(mean-ITL secondary·per-req p95 primary 패턴과 동일).
 ※ **long-ctx 인터랙티브 TTFT는 본질적으로 완화/배치성 regime**일 수 있음(사용자 인내는 절대적, 16k prefill 2s는 아무리 scale해도 2s) — slowdown으로 그 사실을 *숨기지 말고* 절대 SLO로 함께 드러낸다.
+
+★★★**재배정 追記(2026-10-04, doc-steward — claims-auditor `AUDIT_slo_method_2026-10-04.md` P-7, 사용자 승인 A′ 채택)**:
+~~**Primary = 절대 class SLO + SLO-scale sweep, Secondary = prefill-normalized slowdown**(위 표)과 "floor = 목표 SM"(위 §4.3 필수 규율 "단일요청·목표 SM·무경합으로 실측")은~~
+**A′(`reports/slo_definition_rationale_2026-10-04.md` 2026-10-04 감사 반영판)로 대체된다**. 사유:
+(i) 8192 너머에 외부 절대 class SLO 값이 없다(long-context 16k–64k는 anchor §7(a) 주 영역의 미측정 열린 항목, N4 판정서 §1-2) — Primary(절대 class SLO)를 유지할 외부 좌표가 없다.
+(ii) arm별 floor는 arm 간 임계 불일치를 만든다(D2 위반) — "floor = 목표 SM"(분할 상태별로 다른 floor)은 임계값을 비교 대상 arm에서 뽑는 것과 같아진다.
+A′는 **TTFT 임계값 T를 처치가 아니라 판독 눈금**으로 다시 정의해 이 둘을 흡수한다: floor는 비분할 기준 구성(realized `(108,0)`, telemetry 실증)에서만 재고, 결정은 k∈{3,5,10}의 3점 부호 일치(Holm CI)로, 연속 곡선(k∈[1,25])은 기술 통계로 공개한다. **원문(위 표·필수 규율)은 삭제하지 않고 이력으로 보존**한다 — 두 처방이 8192 한 점에서는 임계값 집합이 거의 같았으나(감사 §2 "핵심 관찰"), 길이 확장·절대 주장에서 갈린다. doc-steward 등재.
 
 ---
 

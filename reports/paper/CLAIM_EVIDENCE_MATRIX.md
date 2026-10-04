@@ -12,11 +12,19 @@ rev5 판정 경로를 바이트 동일 재실행해 두 shape 모두
 비중첩 조건만 참) — **두 Job이 실행된 그대로의 값에 대한
 서술이며, VESSL↔KISTI 기판 동등성·이식은 아니다.** Claim E
 행에 追記(아래 참조). 게이트 #6(λ\*\_VESSL 정규화 격자 미등록)·
-λ0R-8(iii)(E2 sticky 대조 미실행)·HE0·Claim D/E 등급 전부
+~~λ0R-8(iii)(E2 sticky 대조 미실행)~~ → **정정(2026-10-04 2차,
+N4 판정서 §(e) 감사자 자기 정정)**: 이 괄호 서술은 "E2가
+실행되면 해소된다"는 충분조건처럼 읽혔다 — **E2는 필요조건일
+뿐 해소하지 않는다(E2C-5); 진짜 해소는 B4 λ\*(R2C-2 미충족,
+처방 불가)**. ·HE0·Claim D/E 등급 전부
 불변. 상세 `PROJECT_STATUS.md` 최상단 배너(2026-10-04)·"다음
 실험 gate" #18, `CONSENSUS.md` rev86,
 `workspace/engine-port/results/r2_eval/lambda0_vessl/
-VERDICT_result_lambda0_vessl_2026-10-04.md` §6.
+VERDICT_result_lambda0_vessl_2026-10-04.md` §6. ★추가
+(2026-10-04 2차): N4(D-SEM) 종결 등재 + TTFT SLO 방법론 A′
+채택 — 상세 `reports/paper/EXPERIMENT_ROADMAP.md` 최상단
+배너(2026-10-04 2차), `PROJECT_STATUS.md` "(d) 증거 사다리" 절
+N4 追記.
 이전: 2026-09-15(doc-steward — **E2(sticky 분할 대조)
 트랙 신설: 사전등록 rev1→rev3, 규칙층 3회차+하네스층 2회차 =
 감사 5회 전부 `GO-with-caveats`(死因 0), 등록 예산 1.803
