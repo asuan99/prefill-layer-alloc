@@ -11,9 +11,11 @@
 # suggests), torch 2.9.1+cu130, triton 3.5.1, nvcc 13.0, sshd present.
 FROM quay.io/vessl-ai/torch@sha256:f361ea0d36dae3b692e393e25ec6e7910bc61af80739cd735606865bb19fe4a6
 
+# libnuma1: sgl_kernel common_ops.abi3.so links libnuma.so.1 (absent from the base) -- without it
+# `import sgl_kernel` fails on the A100 (found by substrate_probe B0, 2026-10-04).
 # rsync/ninja are absent from the base; ninja also comes from the pin list (flashinfer JIT).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends rsync \
+ && apt-get install -y --no-install-recommends rsync libnuma1 \
  && rm -rf /var/lib/apt/lists/*
 
 # Canonical pins win over the base image's newer versions: --no-deps, then pip check is RECORDED
