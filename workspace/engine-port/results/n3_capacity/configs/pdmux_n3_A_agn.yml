@@ -1,0 +1,24 @@
+# REGISTERED for N3 (PREREG_N3_CAPACITY_2026-10-04.md, rev1; user decision D1=A, D2=agnostic
+# arm kept -> this A-agn file is the ONE config shared by N3, 5-a and 5-b).  Bytes are
+# pinned by n3_plan.CONFIG_DIGEST; any edit aborts the N3 runner (ABORT_REG_DRIFT).
+# Originally drafted 2026-10-04 by engine-porter (CONFIG_CANDIDATES_2026-10-04.md).
+# Candidate A-agn: the 4 R2 decision divisions (= benchmarks/configs/pdmux_r2.yml
+# division set, 6 stream groups) with the threshold column set to the
+# upstream decode-bs rule evaluated on THIS set:
+#   auto path idx = clip(decode_bs * (G-2) // decode_bs_divisor, 1, G-2), G=6
+#   => D16 bs 1-17, D24 bs 18-26, D34 bs 27-35, D44 bs >= 36.
+# The threshold column is read ONLY by the manual_divisions scan in
+# adjust_stream_groups, which is reached only when PDMUX_R2_POLICY is unset
+# (code reading; see CONFIG_CANDIDATES_2026-10-04.md sec 1). Under
+# fixed/generic/hybrid it is inert. Row 1 threshold MUST stay 0: a decode_bs
+# below every threshold leaves `stream_idx` unbound in the scan.
+# This "agnostic-on-A" is NOT the P1.7 agnostic arm (that one used the auto
+# grid of pdmux_a100_smoke.yml: divisions (74,34),(54,54)).
+sm_group_num: 6
+manual_divisions:
+  - [92, 16, 0]
+  - [84, 24, 18]
+  - [74, 34, 27]
+  - [64, 44, 36]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

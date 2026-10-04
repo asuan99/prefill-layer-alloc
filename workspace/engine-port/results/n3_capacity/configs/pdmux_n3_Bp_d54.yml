@@ -1,0 +1,19 @@
+# DRAFT (2026-10-04, engine-porter) -- NOT registered, NOT used by any runner.
+# Candidate B': R2 decision divisions + (54,54) as a STATIC-ONLY row
+# (7 stream groups). Purpose: a decode-heavier static point just above the
+# R2 grid ceiling D44 (HE0's best static sat AT the grid ceiling d44, so the
+# 5-a best-static may be censored at the boundary).
+# (54,54) was never created on VESSL (B3a probed 92/16,84/24,74/34,64/44,16/92
+# only); KISTI precedent: pdmux_e1_d54.yml / slo_sched/pdmux_slo.yml.
+# The per-boot PDMUX_GREEN_READOUT must show smCount 54/54 before any cell.
+# Same threshold logic as pdmux_n3_B_d92.yml (1000000 = unreachable by the scan; 49 was NOT safe -- a CPU fake loop
+# without the 48 cap reached the row, so the sentinel must not rely on max_running).
+sm_group_num: 7
+manual_divisions:
+  - [92, 16, 0]
+  - [84, 24, 0]
+  - [74, 34, 0]
+  - [64, 44, 0]
+  - [54, 54, 1000000]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

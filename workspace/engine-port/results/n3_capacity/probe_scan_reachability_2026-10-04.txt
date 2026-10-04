@@ -1,0 +1,20 @@
+homog5      fixed D16          scan_hits=   0 decode_steps_by_idx={1(92, 16):2612, 4(0, 108):863}
+homog5      fixed D44          scan_hits=   0 decode_steps_by_idx={2(64, 44):2612, 4(0, 108):863}
+homog5      generic            scan_hits=   0 decode_steps_by_idx={0(108, 0):52, 4(0, 108):3423}
+homog5      no policy          scan_hits= 653 decode_steps_by_idx={3(16, 92):2612, 4(0, 108):863}
+homog5      fixed D92          scan_hits=   0 decode_steps_by_idx={3(16, 92):2612, 4(0, 108):863}
+A=pdmux_r2  fixed D16          scan_hits=   0 decode_steps_by_idx={1(92, 16):2612, 5(0, 108):863}
+A=pdmux_r2  fixed D44          scan_hits=   0 decode_steps_by_idx={4(64, 44):2612, 5(0, 108):863}
+A=pdmux_r2  generic            scan_hits=   0 decode_steps_by_idx={0(108, 0):52, 5(0, 108):3423}
+A=pdmux_r2  no policy          scan_hits= 653 decode_steps_by_idx={4(64, 44):2612, 5(0, 108):863}
+A=pdmux_r2  fixed D92 (ABSENT) scan_hits=   0 decode_steps_by_idx={0(108, 0):52, 5(0, 108):3423}
+A_agn       fixed D16          scan_hits=   0 decode_steps_by_idx={1(92, 16):2612, 5(0, 108):863}
+A_agn       fixed D44          scan_hits=   0 decode_steps_by_idx={4(64, 44):2612, 5(0, 108):863}
+A_agn       generic            scan_hits=   0 decode_steps_by_idx={0(108, 0):52, 5(0, 108):3423}
+A_agn       no policy          scan_hits= 653 decode_steps_by_idx={1(92, 16):140, 2(84, 24):52, 3(74, 34):72, 4(64, 44):2348, 5(0, 108):863}
+A_agn       fixed D92 (ABSENT) scan_hits=   0 decode_steps_by_idx={0(108, 0):52, 5(0, 108):3423}
+B_d92       fixed D16          scan_hits=   0 decode_steps_by_idx={1(92, 16):2612, 6(0, 108):863}
+B_d92       fixed D44          scan_hits=   0 decode_steps_by_idx={4(64, 44):2612, 6(0, 108):863}
+B_d92       generic            scan_hits=   0 decode_steps_by_idx={0(108, 0):52, 6(0, 108):3423}
+B_d92       no policy          scan_hits= 653 decode_steps_by_idx={4(64, 44):2612, 6(0, 108):863}
+B_d92       fixed D92          scan_hits=   0 decode_steps_by_idx={5(16, 92):2612, 6(0, 108):863}

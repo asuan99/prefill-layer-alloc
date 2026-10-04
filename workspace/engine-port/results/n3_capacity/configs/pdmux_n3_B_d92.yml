@@ -1,0 +1,21 @@
+# DRAFT (2026-10-04, engine-porter) -- NOT registered, NOT used by any runner.
+# Candidate B: R2 decision divisions + (16,92) as a STATIC-ONLY row
+# (7 stream groups: (108,0) + 5 divisions + (0,108)).
+# (16,92) is outside the {16,24,34,44} filter of _build_r2_policy, so
+# generic/hybrid can never select it; only PDMUX_R2_POLICY=fixed
+# PDMUX_R2_FIXED_DSM=92 (sticky allowed) reaches it.
+# Threshold 1000000 (sentinel, > any decode batch size) keeps the row unreachable by the
+# manual_divisions scan (only relevant when PDMUX_R2_POLICY is unset), so a
+# no-policy run would sit on (64,44), not (16,92). Rows 1-4 use the zero
+# thresholds of pdmux_r2.yml (swap in 0/18/27/36 if the agnostic-on-A arm is
+# adopted -- see CONFIG_CANDIDATES_2026-10-04.md sec 3).
+# Requires server --sm-group-num >= 7 (default 8; decode_attn_backend_group).
+sm_group_num: 7
+manual_divisions:
+  - [92, 16, 0]
+  - [84, 24, 0]
+  - [74, 34, 0]
+  - [64, 44, 0]
+  - [16, 92, 1000000]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
