@@ -425,3 +425,30 @@ measurement only.
       checks exactly the same 17 files as before. Cross-job comparisons must now
       read as "the original 17 still agree **and** 7 new entries exist", not
       "17/17 identical".
+
+## E-1 per-iteration phase events, `PDMUX_PHASE_EVENTS` (2026-10-04, GPU 0, uncommitted draft)
+
+25. `multiplex/multiplexing_mixin.py` <- `src/multiplex/multiplexing_mixin.py`
+    (installed by `sync_engine_tree.sh`; file sha256 `e2a97b42...` -> `ba5835aa...`).
+    Default-OFF observation events for the E-1 cap campaign
+    (`results/e1_cap_vessl/PREREG_E1_CAP_VESSL_2026-10-04.md` sec 5):
+    `prefill_span_start` / `prefill_span_end` / `decode_iteration` on the existing
+    async telemetry writer, emitted only where work happens (never on idle loop spins).
+    - **Line-neutral.** Five same-line edits (`; hook(...)`): the `init_pdmux`
+      `dual_worker_trace_error_logged` line, `_dual_worker_start_prefill`,
+      `_dual_worker_prefill_ready`, the legacy loop's `decode_done = True` line and its
+      decode `synchronize()` line; everything else appended at the end of the class and
+      file. `check_line_citations.py --check --all` = 201 compared, 0 violations against
+      a dev tree synced to this file (an UNSYNCED sibling dev tree reports 43 "ambiguous
+      across 2 DIFFERENT contents" -- that is the stale tree, not a moved line).
+    - **Default OFF.** Unset/"0" -> every hook returns after one attribute test; "1"
+      requires `PDMUX_TELEMETRY_PATH` and is refused under `PDMUX_LA_COORD`; any other
+      value is refused. Observation only: no scheduling/admission/partition input.
+      cudagraph: host-side Python only; no new stream group, capture shape or eager path.
+    - **Cross-track effect.** This changes one of the 25 entries the lambda0 VESSL runner
+      compares to job 908623 (`ABORT_ENGINE_TREE_DRIFT`): a lambda0 Job submitted at a
+      commit containing this change aborts by design.
+    CPU regression: `tests/test_phase_events.py` (real `event_loop_pdmux` on CPU fakes;
+    6 mutants via `PDMUX_MIXIN_UNDER_TEST`, unmutated control). GPU output-equivalence
+    gate (CG2, greedy 16 prompts ON vs OFF) runs at the start of every E-1 Job --
+    **written, not submitted**.

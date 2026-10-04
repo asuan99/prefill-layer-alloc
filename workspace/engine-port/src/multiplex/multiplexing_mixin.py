@@ -178,7 +178,7 @@ class SchedulerMultiplexMixin:
         self.dual_worker_trace_path = trace_path
         self.dual_worker_trace_every = trace_every
         self.dual_worker_trace_count = 0
-        self.dual_worker_trace_error_logged = False
+        self.dual_worker_trace_error_logged = self._init_phase_events(trace_path)  # PDMUX_PHASE_EVENTS (default OFF); returns False
         # PDMUX_TRACE_FORCE_PREFILL=1 (default OFF): additionally emit a
         # runtime_snapshot on EVERY sync while a prefill batch is in flight,
         # bypassing the count subsampling below.  Default OFF so telemetry from
@@ -867,7 +867,7 @@ class SchedulerMultiplexMixin:
         # on the unconditional path in `update_split_prefill_batch`, so both
         # arms reset at the same event: one split-prefill batch = one peak
         # window.
-        self._r2_reset_memory_peak()
+        self._r2_reset_memory_peak(); self._phase_on_prefill_start(batch)  # PDMUX_PHASE_EVENTS, no-op when OFF
         if getattr(self, "dual_worker_enabled", False):
             self.dual_worker_state.prefill.active_batch = batch
             self.dual_worker_state.coordinator.start_prefill(batch.reqs)
@@ -880,7 +880,7 @@ class SchedulerMultiplexMixin:
             state = self.dual_worker_state
             state.coordinator.complete_prefill(batch.reqs)
             state.decode.ready_queue.extend(batch.reqs)
-        runtime = getattr(self, "true_dual_worker_runtime", None)
+        self._phase_on_prefill_end(batch); runtime = getattr(self, "true_dual_worker_runtime", None)  # PDMUX_PHASE_EVENTS, no-op when OFF
         if runtime is not None:
             runtime.complete_prefill(batch.reqs)
 
@@ -1402,7 +1402,7 @@ class SchedulerMultiplexMixin:
                         )
                     else:
                         decode_result = self.run_batch(self.running_batch)
-                    decode_done = True
+                    decode_done = True; self._phase_on_decode_launch(stream_idx, wait_prefill_kernel_done)  # PDMUX_PHASE_EVENTS
                 else:
                     decode_done = False
             with torch.cuda.stream(prefill_stream):
@@ -1491,7 +1491,7 @@ class SchedulerMultiplexMixin:
                     self.true_dual_worker_runtime.record_inflight_event(
                         WorkerRole.DECODE, threaded_decode_event
                     )
-                decode_stream.synchronize()
+                decode_stream.synchronize(); self._phase_on_decode_sync(decode_done)  # PDMUX_PHASE_EVENTS
                 if decode_done:
                     self.process_batch_result(self.running_batch, decode_result)
                     self._dual_worker_complete_decode(self.running_batch)
@@ -2124,3 +2124,178 @@ class SchedulerMultiplexMixin:
                 "; ".join(reasons),
             )
         return environment
+
+    # =================================================================
+    # PDMUX_PHASE_EVENTS  (default OFF; E-1 cap campaign, 2026-10-04)
+    # =================================================================
+    # WHAT.  Three event types on the SAME async telemetry writer as every
+    # other record (`AsyncJsonlTelemetry`: no file I/O on this thread):
+    #   prefill_span_start  a split-prefill batch was admitted (host time),
+    #                       with the admission state: running bs, new seqs,
+    #                       queue length left behind, the cap, the partition.
+    #   prefill_span_end    that batch's completion was observed and merged.
+    #   decode_iteration    one decode step: host launch time, host time the
+    #                       decode stream drained, bs, partition (decode SM),
+    #                       whether a split prefill was in flight at launch.
+    # Only one split-prefill batch exists at a time, so start/end strictly
+    # alternate (`span_seq` pairs them).  These are what co-residency
+    # definition (a) -- wall time with a prefill in flight AND decode active
+    # -- needs at iteration resolution.  The sampled `runtime_snapshot` grid
+    # (every 32nd sync) is blind to short prefill spans (`_dual_worker_sync`),
+    # and raising it to every sync would also emit on every IDLE spin of the
+    # loop; these events are emitted only where work happens.
+    #
+    # DEFAULT-OFF GUARANTEE.  Unset or "0": every hook below returns after one
+    # attribute test, nothing is emitted, no state is created.  "1" requires
+    # PDMUX_TELEMETRY_PATH and is refused under PDMUX_LA_COORD; any other
+    # value is refused (`resolve_phase_events`, module level below).
+    #
+    # LINE-NEUTRAL.  The five call sites are same-line edits (`; hook(...)`)
+    # and everything else is appended here, so no earlier line moves and the
+    # snapshotted citations in scripts/discipline/line_citations.json hold.
+    #
+    # OBSERVATION ONLY.  Nothing here feeds scheduling, admission, partition
+    # selection or batch composition.  A failure while building or emitting a
+    # record disables the events for the rest of the boot (logged once).
+    # The observer cost is NOT claimed to be zero: a campaign that turns this
+    # on measures it with a symmetric on/off arm (E-1 prereg sec 5).
+    def _init_phase_events(self: Scheduler, trace_path: str) -> bool:
+        self.pdmux_phase_events = resolve_phase_events(trace_path)
+        self._phase_span_seq = 0
+        self._phase_decode_mark = None
+        self._phase_events_error_logged = False
+        return False  # value of the `dual_worker_trace_error_logged` line it rides on
+
+    def _phase_events_disable(self: Scheduler, exc: BaseException) -> None:
+        self.pdmux_phase_events = False
+        self._phase_decode_mark = None
+        if not getattr(self, "_phase_events_error_logged", False):
+            logger.warning("PDMUX_PHASE_EVENTS disabled after failure: %s", exc)
+            self._phase_events_error_logged = True
+
+    def _phase_emit(self: Scheduler, event: str, fields: dict) -> None:
+        try:
+            self.pdmux_telemetry.emit(event, self.pdmux_experiment_phase, **fields)
+        except (AttributeError, TypeError, ValueError) as exc:
+            self._phase_events_disable(exc)
+
+    def _phase_on_prefill_start(self: Scheduler, batch: ScheduleBatch) -> None:
+        if not getattr(self, "pdmux_phase_events", False):
+            return
+        try:
+            idx = get_current_stream_idx()
+            prefill_sms, decode_sms = self.sm_counts[idx]
+            running = getattr(self, "running_batch", None)
+            self._phase_span_seq = getattr(self, "_phase_span_seq", 0) + 1
+            fields = dict(
+                span_seq=self._phase_span_seq,
+                n_new=len(batch.reqs),
+                extend_tokens=int(getattr(batch, "extend_num_tokens", 0) or 0),
+                running_bs=running.batch_size() if running is not None else 0,
+                queue_len=len(self.waiting_queue),
+                cap=int(getattr(self, "max_running_requests", 0) or 0),
+                stream_idx=idx,
+                prefill_sms=prefill_sms,
+                decode_sms=decode_sms,
+            )
+        except (AttributeError, TypeError, ValueError, IndexError) as exc:
+            self._phase_events_disable(exc)
+            return
+        self._phase_emit("prefill_span_start", fields)
+
+    def _phase_on_prefill_end(self: Scheduler, batch: ScheduleBatch) -> None:
+        # Called from `_dual_worker_prefill_ready`, i.e. the moment the loop
+        # observed the batch's kernels done (all TP ranks), BEFORE its result is
+        # processed and it is merged into the running batch.
+        if not getattr(self, "pdmux_phase_events", False):
+            return
+        try:
+            running = getattr(self, "running_batch", None)
+            fields = dict(
+                span_seq=getattr(self, "_phase_span_seq", 0),
+                n_done=len(batch.reqs),
+                running_bs=running.batch_size() if running is not None else 0,
+                queue_len=len(self.waiting_queue),
+                stream_idx=get_current_stream_idx(),
+            )
+        except (AttributeError, TypeError, ValueError) as exc:
+            self._phase_events_disable(exc)
+            return
+        self._phase_emit("prefill_span_end", fields)
+
+    def _phase_on_decode_launch(self: Scheduler, stream_idx: int, kernel_done_wait: bool) -> None:
+        # Called on the `decode_done = True` line, i.e. right AFTER the decode
+        # forward was issued (legacy: `run_batch` returned; true-dual: task
+        # submitted) and BEFORE this iteration's prefill chunk is issued, so
+        # `split_prefill_batch is not None` here == a prefill chunk will run
+        # beside this decode step (unless its kernels are already done).
+        if not getattr(self, "pdmux_phase_events", False):
+            return
+        try:
+            self._phase_decode_mark = (
+                time.perf_counter(),
+                self.running_batch.batch_size(),
+                stream_idx,
+                self.split_prefill_batch is not None,
+                bool(kernel_done_wait),
+            )
+        except (AttributeError, TypeError, ValueError) as exc:
+            self._phase_events_disable(exc)
+
+    def _phase_on_decode_sync(self: Scheduler, decode_done: bool) -> None:
+        if not getattr(self, "pdmux_phase_events", False):
+            return
+        mark, self._phase_decode_mark = getattr(self, "_phase_decode_mark", None), None
+        if not decode_done or mark is None:
+            return
+        t_sync = time.perf_counter()
+        try:
+            t_launch, bs, stream_idx, in_flight, kernel_done_wait = mark
+            prefill_sms, decode_sms = self.sm_counts[stream_idx]
+            fields = dict(
+                iter_seq=int(getattr(self, "_r2_decode_iterations", 0)),
+                t_launch=t_launch,
+                t_sync=t_sync,
+                bs=bs,
+                stream_idx=stream_idx,
+                prefill_sms=prefill_sms,
+                decode_sms=decode_sms,
+                prefill_in_flight=in_flight,
+                prefill_kernel_done_wait=kernel_done_wait,
+                queue_len=len(self.waiting_queue),
+            )
+        except (AttributeError, TypeError, ValueError, IndexError) as exc:
+            self._phase_events_disable(exc)
+            return
+        self._phase_emit("decode_iteration", fields)
+
+
+PHASE_EVENT_TYPES = ("prefill_span_start", "prefill_span_end", "decode_iteration")
+
+
+def resolve_phase_events(trace_path: str, env=None) -> bool:
+    """PDMUX_PHASE_EVENTS: unset/"0" -> OFF, "1" -> ON, anything else refused.
+
+    ON requires a telemetry path (the events go through the telemetry writer;
+    an ON flag with nowhere to write would silently record nothing) and is
+    undefined for the coordinated per-type loop (PDMUX_LA_COORD, a dead track).
+    """
+    env = os.environ if env is None else env
+    raw = (env.get("PDMUX_PHASE_EVENTS", "") or "").strip()
+    if raw in ("", "0"):
+        return False
+    if raw != "1":
+        raise ValueError(
+            f"PDMUX_PHASE_EVENTS={raw!r}: only unset, '0' or '1' are defined"
+        )
+    if not trace_path:
+        raise RuntimeError(
+            "PDMUX_PHASE_EVENTS=1 requires PDMUX_TELEMETRY_PATH (the events go "
+            "through the telemetry writer; without a path nothing is recorded)"
+        )
+    if env.get("PDMUX_LA_COORD"):
+        raise RuntimeError(
+            "PDMUX_PHASE_EVENTS is defined for event_loop_pdmux only, not the "
+            "coordinated per-type loop (PDMUX_LA_COORD)"
+        )
+    return True
