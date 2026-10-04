@@ -250,3 +250,28 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
   - 새 이미지(1e0d335b) 자체의 GPU 동작은 B5 Job에서 확인한다.
 - 두 Workspace 모두 standby다.
 
+## 11. 진행 기록 — B5 (첫 Job, 파이프라인 끝까지) PASS (2026-10-04)
+
+- Job `pdmux-b5-smoke-ec6d94d-20261004072802`(`job-0bwpgxgbh8n2`)
+  - 이미지: 새 공개 이미지 `sglang-runtime@1e0d335b`(libnuma1 포함, 수동 설치 없음)
+  - 커밋: `ec6d94d`
+  - 대상: `scripts/vessl/b5_smoke_job.sh` = Job 안에서 substrate probe를 실행
+- 결과: succeeded, 10분 28초. 이미지 pull이 1분 이내로 빨랐다(노드 캐시로 보임, 미확인).
+  - `fetch.sh`가 DONE + `sha256sum -c`를 통과하고 충돌 0으로 병합했다.
+  - cost.txt 하한 $0.23(컨테이너 0.153 h).
+  - substrate: A100-SXM4-80GB, UUID `GPU-3be4c7da…`, driver 580.105.08, 스로틀 0.
+- **Job 안 probe 전 단계 PASS**(PRE, B0, B3-R0/plain/a/b/gran/c, B4, B4-green). 입도표는 Workspace 실행과 같다.
+  ⇒ 공개 이미지 → bundle → `install_runtime` → GPU 작업 → export → fetch까지 **파이프라인 전체가 실측으로 동작한다.** §6의 미검증 항목 중 다음이 해소됐다:
+  - `volume download`는 `--remote-prefix`를 벗긴다.
+  - tag 밑줄(`b5_smoke`)이 허용된다.
+  - Object FUSE 위에서 rsync와 sha256이 동작한다.
+  - `/opt/pdmux`에 쓸 수 있다.
+  - `nvidia-smi -lms`가 동작한다.
+- 이 과정에서 고친 결함:
+  - (a) `launch.sh`: `vesslctl job create`가 Job은 만들었는데도 비0으로 끝나 `set -e`가 원장 기록 전에 스크립트를 죽였다. 이제 이름으로 Job 존재를 확인한 뒤 기록한다. 첫 원장 행은 수동으로 보충했다.
+  - (b) `fetch.sh`: `job show`는 이름이 아니라 slug를 받는다 → 목록에서 slug를 찾도록 고쳤다.
+  - (c) `fetch.sh`: staging 경로가 `~/Experiments/_vessl_fetch`(한 단계 위)로 잡혀 있던 것을 작업 루트 `~/Experiments/KISTI/_vessl_fetch`로 고쳤다.
+  - (d) `job_entry.sh`: GpuIdle(0x1) 비트를 throttle로 세던 문제를 고쳤다(`396a9f2`).
+- **B5 통과 ⇒ 캠페인 제출 전제(B0–B5)가 충족됐다.** 다만 기판 동등성(KISTI 수치와의 비교 가능성)과 캠페인 사전등록·규칙층 감사는 별도이며 사용자 결정 사항이다.
+- 남은 미검증: `FLASHINFER_WORKSPACE_BASE` 변수명. JIT 캐시는 `cache/flashinfer/.cache/flashinfer/`에 생겼으므로 XDG 경로로 분리가 된 것으로 보이지만, 변수 자체가 적용됐는지는 미확인이다.
+

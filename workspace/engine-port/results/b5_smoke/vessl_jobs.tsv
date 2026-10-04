@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-10-04T07:28:07Z	pdmux-b5-smoke-ec6d94d-20261004072802	ec6d94d95cc5da17bf5880b496096d6240031fb8	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/scripts/vessl/b5_smoke_job.sh		yes

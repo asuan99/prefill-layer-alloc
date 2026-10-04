@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-b5-smoke-ec6d94d-20261004072802
+Slug:                 job-0bwpgxgbh8n2
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/ec6d94d95cc5da17bf5880b496096d6240031fb8/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-04T07:28:07Z
+Started At:           2026-10-04T07:28:09Z
+Completed At:         2026-10-04T07:38:37Z
+Duration:             10m28s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=ec6d94d95cc5da17bf5880b496096d6240031fb8, PDMUX_JOB_NAME=pdmux-b5-smoke-ec6d94d-20261004072802, PDMUX_CAMPAIGN=b5_smoke, PDMUX_TARGET=workspace/engine-port/scripts/vessl/b5_smoke_job.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

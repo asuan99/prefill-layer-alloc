@@ -19,10 +19,11 @@ repo="$(git -C "${here}" rev-parse --show-toplevel)"
 # shellcheck disable=SC1090
 source "${PDMUX_VESSL_ENV:-${here}/vessl.env}"
 results="${repo}/workspace/engine-port/results"
-stage="${PDMUX_VESSL_STAGE:-$(dirname "$(dirname "${repo}")")/_vessl_fetch}/${name}"
+stage="${PDMUX_VESSL_STAGE:-$(dirname "${repo}")/_vessl_fetch}/${name}"   # work root (~/Experiments/KISTI), outside the repo
 
 mkdir -p "${stage}"
-vesslctl job show "${name}" > "${stage}.job_show.txt" 2>&1 || true   # status at fetch time
+slug="$(vesslctl job list 2>/dev/null | awk -v n="${name}" '$2==n{print $1; exit}')"   # show takes the slug
+vesslctl job show "${slug:-${name}}" > "${stage}.job_show.txt" 2>&1 || true   # status at fetch time
 vesslctl volume download "${PDMUX_VESSL_OBJECT_VOLUME}" "${stage}" --remote-prefix "results/${name}/"
 root="${stage}"; [[ -f "${root}/DONE" ]] || root="${stage}/results/${name}"   # prefix kept or stripped
 [[ -f "${root}/DONE" ]] || { echo "NOT DONE: no DONE marker (job still running or export failed)" >&2; exit 3; }

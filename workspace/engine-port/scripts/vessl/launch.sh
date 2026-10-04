@@ -78,7 +78,16 @@ if ! vesslctl volume ls "${PDMUX_VESSL_OBJECT_VOLUME}" --prefix "${code_prefix}"
   cp "${here}/job_entry.sh" "${stage}/job_entry.sh"
   vesslctl volume upload "${PDMUX_VESSL_OBJECT_VOLUME}" "${stage}" --remote-prefix "${code_prefix}"
 fi
-out="$("${cmd[@]}" 2>&1)"; echo "${out}"
+create_rc=0
+out="$("${cmd[@]}" 2>&1)" || create_rc=$?
+echo "${out}"
+# vesslctl may exit non-zero after the job was in fact created (seen on the first B5 submit,
+# 2026-10-04: job existed, ledger row lost because `set -e` killed this script).  Trust the
+# platform, not the exit code: look the job up by name before deciding.
+if ! vesslctl job list 2>/dev/null | awk -v n="${name}" '$2==n{f=1} END{exit !f}'; then
+  echo "ERROR: job ${name} not found after create (rc=${create_rc}); nothing recorded" >&2; exit 3
+fi
+[[ "${create_rc}" -eq 0 ]] || echo "WARNING: vesslctl job create rc=${create_rc} but the job exists; recording it" >&2
 ledger="${repo}/workspace/engine-port/results/${campaign}/vessl_jobs.tsv"
 mkdir -p "$(dirname "${ledger}")"
 [[ -f "${ledger}" ]] || printf 'submitted_utc\tjob_name\tcommit\tspec\trate_usd_h\timage\ttarget\tarray\tfetched\n' > "${ledger}"
