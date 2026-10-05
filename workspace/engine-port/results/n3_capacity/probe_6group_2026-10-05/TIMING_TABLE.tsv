@@ -1,0 +1,4 @@
+unit	boot_wall_s	load_weight_s	capture_s	capture_mem_usage_gb	avail_mem_after_capture_gb	max_total_num_tokens	warmup_wall_s	teardown_wall_s
+A1_cold	124.31	28.58	51.60	1.27	11.59	2721290	75.60	15.01
+A2_warm	59.11	12.38	14.12	1.27	11.59	2721290	76.54	15.01
+H5	60.11	11.66	12.67	1.07	11.79	2722025	75.99	15.01
