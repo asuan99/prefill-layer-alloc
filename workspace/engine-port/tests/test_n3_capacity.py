@@ -786,5 +786,393 @@ class TestResume(_RunnerBase):
             self.assertEqual(json.loads((o / "T_K.json").read_text())["floor_s"], 0.9)
 
 
+# =============================================================================================
+# Harness-layer audit 2026-10-05 (VERDICT_n3_harness_2026-10-05.md): H-1 repair + N3C-18 shrink.
+# Every test below cuts the REAL runner text (no copy of the branch) and executes it with stubs.
+# =============================================================================================
+PROBE = HERE / "probe_6group_2026-10-05"
+CFG = ENG / P.CONFIG_REL
+
+
+def _line(src, prefix):
+    """the runner's own one-line definition starting with `prefix` (fail, dry_or_abort, ...)"""
+    return next(ln for ln in src.splitlines() if ln.startswith(prefix))
+
+
+def _cut(src, start, end):
+    """runner text from `start` through the first `end` after it (both literal)"""
+    a = src.index(start)
+    b = src.index(end, a) + len(end)
+    return src[a:b]
+
+
+def _neutralise(snippet, abort):
+    """`fail "ABORT_X` / `dry_or_abort "ABORT_X` -> `echo "ABORT_X` (text kept, abort gone)"""
+    m = re.sub(r'(?:\bfail|\bdry_or_abort) ("' + re.escape(abort) + r'[ "])', r'echo \1', snippet)
+    assert m != snippet, f"neutralisation did not apply for {abort}"
+    return m
+
+
+class _SnippetBase(unittest.TestCase):
+    """Runs a cut of the runner under `set -uo pipefail` with the runner's real `fail`/`dry_or_abort`
+    and a recording `teardown` stub.  The script is written to a FILE (not `bash -c`) so that a
+    `pkill -f` inside it can never match the test's own command line."""
+
+    def setUp(self):
+        self.src = RUNNER.read_text()
+
+    def _exec(self, td, body, *, defs=(), env_vars=None, timeout=120):
+        v = {"OUT": td, "NAME": "X", "SRVLOG": f"{td}/srv.log", "HELPER": str(HERE / "n3_plan.py"),
+             "CFG": str(CFG), "PID": "1", "PORT": "1", "JOBID": "tj", "SHAPE": "B", "DRYRUN": "0"}
+        v.update(env_vars or {})
+        pre = "".join(f'{k}="{val}"\n' for k, val in v.items())
+        script = ("set -uo pipefail\nexport PYTHONDONTWRITEBYTECODE=1\n" + pre +
+                  'teardown () { echo TEARDOWN >> "$OUT/td.txt"; }\n' +
+                  _line(self.src, "fail () {") + "\n" + _line(self.src, "dry_or_abort () {") + "\n" +
+                  "".join(d + "\n" for d in defs) + body + "\necho SNIPPET_PASSED\n")
+        sp = Path(td) / "snippet.sh"
+        sp.write_text(script)
+        t0 = time.monotonic()
+        r = subprocess.run([BASH, str(sp)], capture_output=True, text=True, timeout=timeout, env=_clean_env())
+        return r.returncode, r.stdout + r.stderr, (Path(td) / "td.txt").exists(), time.monotonic() - t0
+
+
+class TestCG2Snippet(_SnippetBase):
+    """T-H6 (required, lesson 53): H-1 repair of the CG2 fail-open.  The runner's REAL CG2 block is
+    executed on the REAL probe warm-up output (`warmup_A2_warm.jsonl`, 8 greedy texts).
+      8/8 identical -> rc 0 and CG2_DONE=1;  1 text differs -> 9;  ON input absent -> 9;  ON empty -> 9.
+    Control: the REVERTED condition (pre-repair `&& [ -s "$OUT/warmup_floor_head.jsonl" ]`, HEAD
+    3604269) turns "ON absent" back into rc 0 / CG2_DONE=0 -- so the "absent -> 9" assertion fails on
+    the broken variant and is not an identity."""
+    START = '  if [ "$PEV" = 0 ] && [ "$CG2_DONE" = 0 ]'
+    END = "    CG2_DONE=1\n  fi\n"
+    OLD_COND = '  if [ "$PEV" = 0 ] && [ "$CG2_DONE" = 0 ] && [ -s "$OUT/warmup_floor_head.jsonl" ]; then\n'
+
+    def _reverted(self, src):
+        m = re.sub(r'  if \[ "\$PEV" = 0 \] && \[ "\$CG2_DONE" = 0 \]; then\n'
+                   r'    if \[ ! -s "\$OUT/warmup_floor_head\.jsonl" \]; then\n.*?\n    fi\n',
+                   lambda _m: self.OLD_COND, src, count=1, flags=re.S)
+        self.assertNotEqual(m, src, "revert mutation did not apply")
+        return m
+
+    def _go(self, snippet, on, off):
+        """on/off: None = file absent, "" = empty file, list = generated_texts"""
+        with tempfile.TemporaryDirectory() as td:
+            base = json.loads((PROBE / "warmup_A2_warm.jsonl").read_text().splitlines()[0])
+            for fn, texts in (("warmup_floor_head.jsonl", on), ("warmup_X.jsonl", off)):
+                if texts is None:
+                    continue
+                (Path(td) / fn).write_text("" if texts == "" else json.dumps(dict(base, generated_texts=texts)) + "\n")
+            rc, out, td_called, _ = self._exec(td, snippet + 'echo "CG2_DONE=$CG2_DONE"\n',
+                                               env_vars={"PEV": "0", "CG2_DONE": "0"})
+            cg2 = (Path(td) / "CG2.txt").read_text() if (Path(td) / "CG2.txt").exists() else ""
+            return rc, out, td_called, cg2
+
+    def test_t_h6_repaired_block(self):
+        snip = _cut(self.src, self.START, self.END)
+        self.assertNotIn('] && [ -s "$OUT/warmup_floor_head.jsonl" ]', snip)
+        texts = json.loads((PROBE / "warmup_A2_warm.jsonl").read_text().splitlines()[0])["generated_texts"]
+        self.assertEqual(len(texts), 8)
+        rc, out, td, cg2 = self._go(snip, texts, texts)
+        self.assertEqual(rc, 0, out)
+        self.assertIn("CG2_DONE=1", out)
+        self.assertIn("CG2_PASS on=8 off=8 identical=True", cg2)
+        self.assertFalse(td)
+        one_off = list(texts)
+        one_off[3] = one_off[3] + " "
+        rc, out, td, cg2 = self._go(snip, texts, one_off)
+        self.assertEqual(rc, 9, out)
+        self.assertIn("ABORT_CG2 PHASE_EVENTS ON vs OFF", out)
+        self.assertIn("CG2_FAIL", cg2)
+        self.assertTrue(td)
+        for name, on in (("ON absent", None), ("ON empty", "")):
+            rc, out, td, cg2 = self._go(snip, on, texts)
+            self.assertEqual(rc, 9, (name, out))
+            self.assertIn("ABORT_CG2 ON-side input warmup_floor_head.jsonl missing/empty -- CG2 not evaluable "
+                          "(measurement failure, not evidence of an observer effect)", out, name)
+            self.assertTrue(td, f"{name}: server must be torn down before exit")
+            self.assertNotIn("CG2_DONE=", out, name)
+            self.assertEqual(cg2, "", name)
+
+    def test_t_h6_control_reverted_condition_is_fail_open(self):
+        mut = self._reverted(self.src)
+        snip = _cut(mut, self.START, self.END)
+        self.assertTrue(snip.startswith(self.OLD_COND), "mutant must carry the pre-repair condition")
+        texts = json.loads((PROBE / "warmup_A2_warm.jsonl").read_text().splitlines()[0])["generated_texts"]
+        for on in (None, ""):
+            rc, out, td, cg2 = self._go(snip, on, texts)
+            # the broken variant passes silently: the repaired assertion (rc 9) would FAIL here
+            self.assertEqual(rc, 0, out)
+            self.assertIn("CG2_DONE=0", out)
+            self.assertNotEqual(rc, 9)
+            self.assertFalse(td)
+        rc, out, *_ = self._go(snip, texts, texts)          # mutant is otherwise the same gate
+        self.assertEqual(rc, 0, out)
+        self.assertIn("CG2_DONE=1", out)
+
+
+class TestBootBranchSnippets(_SnippetBase):
+    """N3C-18 shrink (harness verdict §11, LOCAL gates only -- not in the Job preflight list §8-1).
+    Each boot-time abort branch is cut from the REAL runner and executed on stub/probe inputs, with a
+    neutralised-branch control (lesson 53).
+
+    Equivalent / partially equivalent mutants (lesson 254, disclosed, not hidden):
+      E-1 (T-H5) floor boot failure: deleting `if [ "$KIND" = floor ]; then fail "ABORT_FLOOR floor boot
+          failed ...` is EQUIVALENT at Job level -- the next arm unit hits the P-2 T_K gate and exits 7
+          (different message, same exit code, no arm cell).  Detectable only on a floor-only unit list.
+      E-2 (T-H1) STICKY: neutralising the srv-log STICKY check is PARTIALLY equivalent -- the GREEN read-out
+          exits 6 if (and only if) the read-out carries a non-null `sticky_target_index`.  Shown here on a
+          stub read-out; that the engine's read-out actually carries the index when sticky is ON is
+          NOT verified on GPU.
+      E-3 (T-H7) hard cap: removing ONLY the bench `timeout` is EQUIVALENT under the runner's watchdog
+          (the watchdog TERMs the bench -> rc 143 + BUDGET_HARDCAP_FIRED -> `budget_killed_<unit>` is still
+          written).  Without the watchdog the same mutant is NOT cut (shown).  "Admission only removed"
+          stays textual (TestFailClosedWiring.test_control_removed_admission), not executed here.
+    Inputs are stubs or Workspace probe files; none of this shows that the branches fire on a real
+    server's output (N3H-1 / N3H-6 scope)."""
+
+    # ----------------------------------------------------------------------------- T-H1 STICKY
+    STICKY = ('  if grep -q "sticky partition ENABLED" "$SRVLOG"; then\n', "  fi\n")
+
+    def _engine_sticky_line(self):
+        mixin = (ENG / "src/multiplex/multiplexing_mixin.py").read_text()
+        m = re.search(r'"(PD-mux sticky partition ENABLED: [^"]*)"', mixin)
+        self.assertIsNotNone(m, "engine literal not found -- runner grep would be untethered")
+        return f"[2026-10-05 00:00:00] {m.group(1)}decode is busy (fixed target index=4); ...\n"
+
+    def _sticky(self, snippet, log):
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "srv.log").write_text(log)
+            return self._exec(td, snippet)
+
+    def test_t_h1_sticky(self):
+        snip = _cut(self.src, *self.STICKY)
+        probe_log = (PROBE / "srv_A2_warm.log").read_text(errors="replace")
+        rc, out, td, _ = self._sticky(snip, probe_log)
+        self.assertEqual(rc, 0, out)
+        self.assertFalse(td)
+        rc, out, td, _ = self._sticky(snip, probe_log + self._engine_sticky_line())
+        self.assertEqual(rc, 6, out)
+        self.assertIn("ABORT_STICKY", out)
+        self.assertTrue(td)
+        rc, out, *_ = self._sticky(_neutralise(snip, "ABORT_STICKY"), probe_log + self._engine_sticky_line())
+        self.assertEqual(rc, 0, "neutralised STICKY still aborted -- the test is vacuous")
+
+    # ------------------------------------------------------------------------------ T-H2 GREEN
+    GREEN = ('  python3 "$HELPER" --check-green', "6; }\n")
+
+    def _green(self, snippet, green):
+        with tempfile.TemporaryDirectory() as td:
+            shutil.copy(green, Path(td) / "green_X.json")
+            return self._exec(td, snippet)
+
+    def test_t_h2_green(self):
+        snip = _cut(self.src, *self.GREEN)
+        self.assertIn("ABORT_GREEN", snip)
+        rc, out, td, _ = self._green(snip, PROBE / "green_A2_warm.json")
+        self.assertEqual(rc, 0, out)
+        self.assertFalse(td)
+        rc, out, td, _ = self._green(snip, PROBE / "green_H5.json")
+        self.assertEqual(rc, 6, out)
+        self.assertIn("ABORT_GREEN", out)
+        self.assertTrue(td)
+        with tempfile.TemporaryDirectory() as t2:
+            g = json.loads((PROBE / "green_A2_warm.json").read_text())
+            self.assertIsNone(g["sticky_target_index"])
+            g["sticky_target_index"] = 4
+            sticky = Path(t2) / "g.json"
+            sticky.write_text(json.dumps(g))
+            rc, out, td, _ = self._green(snip, sticky)
+            self.assertEqual(rc, 6, out)
+            # E-2: STICKY neutralised + engine line in the log; GREEN (sticky_target_index 4) still exits 6
+            both = _neutralise(_cut(self.src, *self.STICKY), "ABORT_STICKY") + snip
+            with tempfile.TemporaryDirectory() as t3:
+                shutil.copy(sticky, Path(t3) / "green_X.json")
+                (Path(t3) / "srv.log").write_text(self._engine_sticky_line())
+                rc, out, *_ = self._exec(t3, both)
+                self.assertEqual(rc, 6, out)
+                self.assertIn("ABORT_GREEN", out)
+        rc, out, *_ = self._green(_neutralise(snip, "ABORT_GREEN"), PROBE / "green_H5.json")
+        self.assertEqual(rc, 0, "neutralised GREEN still aborted -- the test is vacuous")
+
+    # ------------------------------------------------------------------------------ T-H3 floor
+    FLOOR = ('  if [ "$KIND" = floor ] || [ "$KIND" = floor_tail ]; then\n    # P-2',
+             '  if budget_fired; then STOP=budget')
+
+    def _floor_inputs(self, td, mutate=None):
+        """bench: 16 completed concurrency-1 B requests; telemetry: the probe's REAL prefill_span_start
+        records (all (108,0,0,1,0)), repeated to FLOOR_N + 9 spans."""
+        tt = [0.9 + 0.001 * i for i in range(P.FLOOR_N)]
+        (Path(td) / "bench_X.jsonl").write_text(json.dumps(
+            {"completed": P.FLOOR_N, "errors": [""] * P.FLOOR_N, "ttfts": tt,
+             "total_input_tokens": P.FLOOR_N * P.SHAPES["B"]["input_len"], "max_concurrency": 1}) + "\n")
+        real = [json.loads(ln) for ln in (PROBE / "tel_A2_warm.jsonl").read_text().splitlines()
+                if '"prefill_span_start"' in ln]
+        self.assertTrue(real and all((e["prefill_sms"], e["decode_sms"], e["running_bs"], e["n_new"],
+                                      e["queue_len"]) == (108, 0, 0, 1, 0) for e in real))
+        sp = [dict(real[i % len(real)], span_seq=i + 1) for i in range(P.FLOOR_N + 9)]
+        if mutate:
+            mutate(sp[-1])
+        (Path(td) / "tel_X.jsonl").write_text("".join(json.dumps(e) + "\n" for e in sp))
+
+    def _floor(self, snippet, mutate=None, prior_tk=None):
+        with tempfile.TemporaryDirectory() as td:
+            self._floor_inputs(td, mutate)
+            if prior_tk is not None:
+                (Path(td) / "T_K.json").write_text(prior_tk)
+            rc, out, td_called, _ = self._exec(td, snippet, env_vars={
+                "KIND": "floor", "CUT": "", "PDMUX_TELEMETRY_PATH": f"{td}/tel_X.jsonl"})
+            files = {f.name: f.read_text() for f in Path(td).iterdir() if f.is_file()}
+            return rc, out, files
+
+    def test_t_h3_floor(self):
+        snip = _cut(self.src, *self.FLOOR)[:-len(self.FLOOR[1])]
+        rc, out, f = self._floor(snip)
+        self.assertEqual(rc, 0, out)
+        tk = json.loads(f["T_K.json"])
+        self.assertEqual(P.tk_problems(tk), [], tk)
+        self.assertIn("unit_X.complete", f)
+        for name, mut in (("last span (64,44)", lambda e: e.update(prefill_sms=64, decode_sms=44)),
+                          ("running_bs>0", lambda e: e.update(running_bs=3))):
+            rc, out, f = self._floor(snip, mut)
+            self.assertEqual(rc, 7, (name, out))
+            self.assertIn("ABORT_FLOOR floor invalid", out)
+            self.assertFalse(json.loads(f["T_K.json"])["valid"], name)
+            self.assertNotIn("unit_X.complete", f, name)
+        # resume path: a T_K.json already exists (copied from the first Job) -> re-measured floor goes
+        # to T_K_RESUME_<job>.json, never overwrites T_K.json and never aborts (diagnostic)
+        prior = json.dumps({"frozen": "first-job"})
+        rc, out, f = self._floor(snip, lambda e: e.update(prefill_sms=64, decode_sms=44), prior_tk=prior)
+        self.assertEqual(rc, 0, out)
+        self.assertNotIn("ABORT_FLOOR", out)
+        self.assertEqual(f["T_K.json"], prior)
+        self.assertFalse(json.loads(f["T_K_RESUME_tj.json"])["valid"])
+        rc, out, f = self._floor(snip, prior_tk=prior)
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(json.loads(f["T_K_RESUME_tj.json"])["valid"])
+        self.assertEqual(f["T_K.json"], prior)
+        rc, out, _ = self._floor(_neutralise(snip, "ABORT_FLOOR"), lambda e: e.update(prefill_sms=64, decode_sms=44))
+        self.assertEqual(rc, 0, "neutralised floor abort still exited -- the test is vacuous")
+
+    # ------------------------------------------------------------------------- T-H4 T_K gate
+    TKGATE = ('  if [ "$KIND" != floor ] && ! tk_valid "$OUT/T_K.json"; then\n', "  fi\n")
+
+    def _tk(self, snippet, kind, dryrun="0", tk=None):
+        with tempfile.TemporaryDirectory() as td:
+            if tk is not None:
+                (Path(td) / "T_K.json").write_text(json.dumps(tk))
+            return self._exec(td, snippet, defs=(_line(self.src, "tk_valid () {"),),
+                              env_vars={"KIND": kind, "DRYRUN": dryrun})
+
+    def test_t_h4_tk_gate_non_dryrun(self):
+        snip = _cut(self.src, *self.TKGATE)
+        good = {"valid": True, "floor_s": 0.9, "ttfts_s": [0.9] * P.FLOOR_N,
+                "T_k_s": {str(k): 0.9 * k for k in P.K_FLOOR}}
+        rc, out, *_ = self._tk(snip, "grid")
+        self.assertEqual(rc, 7, out)
+        self.assertIn("ABORT_FLOOR no valid T_K.json before arm unit X", out)
+        rc, out, *_ = self._tk(snip, "grid", tk={"valid": True, "dryrun": True, "floor_s": 1.0,
+                                                  "T_k_s": {"3": 3.0, "5": 5.0, "10": 10.0}})
+        self.assertEqual(rc, 7, "dry-run placeholder must not admit an arm unit outside DRYRUN")
+        rc, out, *_ = self._tk(snip, "grid", tk=good)
+        self.assertEqual(rc, 0, out)
+        rc, out, *_ = self._tk(snip, "floor")
+        self.assertEqual(rc, 0, out)
+        rc, out, *_ = self._tk(snip, "grid", dryrun="1")              # control: DRYRUN only notes
+        self.assertEqual(rc, 0, out)
+        self.assertIn("DRYRUN_NOTE ABORT_FLOOR", out)
+        rc, out, *_ = self._tk(_neutralise(snip, "ABORT_FLOOR"), "grid")
+        self.assertEqual(rc, 0, "neutralised T_K gate still aborted -- the test is vacuous")
+
+    # --------------------------------------------------------------- T-H5 floor boot failure
+    BOOT = ('  if ! wait_health "$PORT" "$PID"; then\n', "    continue\n  fi\n")
+    FLOOR_BOOT_LINE = '    if [ "$KIND" = floor ]; then fail "ABORT_FLOOR floor boot failed'
+
+    def _boot(self, boot_snip, units):
+        body = ('for U in ' + " ".join(f'"{u}"' for u in units) + '; do\n  read -r NAME KIND <<< "$U"\n'
+                + _cut(self.src, *self.TKGATE) + boot_snip + "done\n")
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "srv.log").write_text("boom\n")
+            return self._exec(td, body, defs=(_line(self.src, "tk_valid () {"),
+                                              _line(self.src, "budget_fired () {"),
+                                              "wait_health () { return 1; }"),
+                              env_vars={"FAIL_STREAK": "0", "STOP": "", "T_ADMIT": "0",
+                                        "SRVLOG": "$OUT/srv.log"})
+
+    def test_t_h5_floor_boot_failure_and_equivalent_mutant(self):
+        snip = _cut(self.src, *self.BOOT)
+        self.assertIn(self.FLOOR_BOOT_LINE, snip)
+        rc, out, td, _ = self._boot(snip, ["floor_head floor"])
+        self.assertEqual(rc, 7, out)
+        self.assertIn("ABORT_FLOOR floor boot failed", out)
+        self.assertTrue(td)
+        rc, out, *_ = self._boot(snip, ["br grid"])                  # an arm boot failure is not an abort
+        self.assertIn("ABORT_FLOOR no valid T_K.json", out)          # (it is stopped earlier by the T_K gate)
+        mut = re.sub(r'    if \[ "\$KIND" = floor \]; then fail "ABORT_FLOOR floor boot failed[^\n]*\n', "", snip)
+        self.assertNotEqual(mut, snip)
+        # control: on a floor-only unit list the mutant no longer aborts (the test is not vacuous) ...
+        rc, out, *_ = self._boot(mut, ["floor_head floor"])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("BOOT_FAILED unit=floor_head", out)
+        # ... E-1: on the registered order (floor then an arm unit) the mutant still exits 7 via the T_K gate
+        rc, out, *_ = self._boot(mut, ["floor_head floor", "br_b_r3_4386 bridge"])
+        self.assertEqual(rc, 7, out)
+        self.assertNotIn("ABORT_FLOOR floor boot failed", out)
+        self.assertIn("ABORT_FLOOR no valid T_K.json before arm unit br_b_r3_4386", out)
+
+    # --------------------------------------------------------------- T-H7 bench timeout / hard cap
+    BENCHCUT = ('  echo "bench_start $(mono)"',
+                '    echo "BENCH_KILLED_BY_BUDGET unit=$NAME rc=$BRC" | tee -a "$OUT/BUDGET_SKIPPED.txt"\n  fi\n')
+    TIMEOUT_LINE = 'timeout -k 30 "${CAP}s" "${BENCH[@]}"'
+
+    def _watchdog(self, src):
+        return _cut(src, '(\n  while [ "$(remaining)" -gt 0 ]; do sleep 5; done\n', "WD_PID=$!\n")
+
+    def _bench(self, snippet, sleep_s, deadline_in_s, watchdog=False):
+        tag = f"n3_fake_bench_th7_{os.getpid()}"
+        body = (f"DEADLINE=$(( $(date +%s) + {deadline_in_s} ))\n"
+                f"BENCH=(bash -c 'exec -a {tag} sleep \"$1\"' _ {sleep_s})\n"
+                + (self._watchdog(self.src) if watchdog else "WD_PID=\n")
+                + snippet + 'echo "BRC=$BRC"\n[ -n "$WD_PID" ] && kill "$WD_PID" 2>/dev/null\n')
+        with tempfile.TemporaryDirectory() as td:
+            try:
+                rc, out, _, wall = self._exec(
+                    td, body, timeout=90,
+                    defs=(_line(self.src, "remaining () {"), _line(self.src, "cap_s () {"),
+                          _line(self.src, "budget_fired () {"), "mono () { echo 0.0; }", "cpu_snap () { :; }"),
+                    env_vars={"RETR0": "0"})
+            finally:
+                subprocess.run(["pkill", "-f", tag], check=False)
+            marker = (Path(td) / "budget_killed_X").exists()
+            return rc, out, marker, wall
+
+    def test_t_h7_bench_timeout_writes_marker(self):
+        snip = _cut(self.src, *self.BENCHCUT)
+        self.assertIn(self.TIMEOUT_LINE, snip)
+        rc, out, marker, wall = self._bench(snip, 30, 2)
+        self.assertEqual(rc, 0, out)
+        self.assertIn("BRC=124", out)
+        self.assertIn("BENCH_KILLED_BY_BUDGET unit=X rc=124", out)
+        self.assertTrue(marker)
+        self.assertLess(wall, 20.0)
+        rc, out, marker, _ = self._bench(snip, 0, 60)                # control: a bench that finishes
+        self.assertIn("BRC=0", out)
+        self.assertFalse(marker, "marker must not be unconditional")
+
+    def test_t_h7_timeout_only_removed(self):
+        mut = _cut(self.src, *self.BENCHCUT).replace(self.TIMEOUT_LINE, '"${BENCH[@]}"')
+        self.assertNotIn("timeout -k 30", mut)
+        # without the watchdog the mutant is NOT cut: the bench runs to its end, no marker
+        rc, out, marker, wall = self._bench(mut, 6, 2)
+        self.assertIn("BRC=0", out)
+        self.assertFalse(marker)
+        self.assertGreaterEqual(wall, 6.0)
+        # E-3: with the runner's REAL watchdog the mutant is still cut (rc 143) and the marker written
+        rc, out, marker, wall = self._bench(mut, 40, 2, watchdog=True)
+        self.assertIn("BRC=143", out)
+        self.assertTrue(marker, "watchdog-only path must still write budget_killed_<unit>")
+        self.assertLess(wall, 30.0)
+
+
 if __name__ == "__main__":
     unittest.main()

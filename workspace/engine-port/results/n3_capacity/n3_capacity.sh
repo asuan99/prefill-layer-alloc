@@ -432,7 +432,11 @@ for U in "${UNITS[@]}"; do
   # ---- correctness gate 2 (prereg §4-3): greedy concurrency-1 outputs of the SAME 8 warm-up prompts
   # must be byte-identical between a PHASE_EVENTS ON boot (floor_head) and the first OFF boot of
   # this Job, BEFORE any scored cell.  Mismatch = fail-closed (an investigation item, not evidence).
-  if [ "$PEV" = 0 ] && [ "$CG2_DONE" = 0 ] && [ -s "$OUT/warmup_floor_head.jsonl" ]; then
+  if [ "$PEV" = 0 ] && [ "$CG2_DONE" = 0 ]; then
+    if [ ! -s "$OUT/warmup_floor_head.jsonl" ]; then
+      teardown "$PID" "$PORT"
+      fail "ABORT_CG2 ON-side input warmup_floor_head.jsonl missing/empty -- CG2 not evaluable (measurement failure, not evidence of an observer effect)" 9
+    fi
     python3 - "$OUT/warmup_floor_head.jsonl" "$OUT/warmup_${NAME}.jsonl" <<'PY' | tee "$OUT/CG2.txt"
 import json, sys
 a = json.loads(open(sys.argv[1]).readline()).get("generated_texts")
