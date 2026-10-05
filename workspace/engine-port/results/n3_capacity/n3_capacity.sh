@@ -1,6 +1,6 @@
 #!/bin/bash
 # N3 -- gate #6: SLO capacity of the target-D44 sticky-OFF B1 arm (Nemotron-Nano-9B-v2, VESSL A100).
-# Pre-registration: PREREG_N3_CAPACITY_2026-10-04.md (rev1).  One shape per Job:
+# Pre-registration: PREREG_N3_CAPACITY_2026-10-04.md (rev4).  One shape per Job:
 #   PDMUX_N3_SHAPE=B  (E1a: 8192 in / 64 out)      PDMUX_N3_SHAPE=A  (E1b: 256 in / 512 out)
 #
 # JOB STRUCTURE (n3_plan.units):
@@ -408,14 +408,23 @@ for U in "${UNITS[@]}"; do
   fi
   python3 "$HELPER" --check-green "$OUT/green_${NAME}.json" "$CFG" > "$OUT/greencheck_${NAME}.txt" 2>&1 \
     || { cat "$OUT/greencheck_${NAME}.txt"; teardown "$PID" "$PORT"; fail "ABORT_GREEN read-out of $NAME: a division's green smCount != target, a plain group carries green, or sticky_target_index != null" 6; }
-  # ---- clause 8 / P3: binding resources identical across ALL boots (resumed ones excluded: other boot)
+  # ---- clause 8 / P3, option (ii) (prereg §2-3 R6, rev4; user decision 2026-10-05; = E2 A14 §3-1).
+  # Over ALL boots of this Job (resumed units are other boots and never enter P3_KEYS.txt):
+  #   (a) max_mamba_cache_size == 48 on every boot, exact; (b) every max_total_num_tokens >= 786,432;
+  #   (c) (max - min) / max of max_total_num_tokens <= 1e-4.  Rule + constants live in n3_plan.p3_verdict.
+  # PASS needs BOTH exit 0 and a stdout line starting "PASS " (stderr to its own file); a missing
+  # banner, a missing helper or any other output aborts (fail-closed: empty verdict != PASS).
   MMB=$(grep -o "max_mamba_cache_size: *[0-9]*" "$SRVLOG" | tail -1 | grep -o "[0-9]*$")
   MTT=$(grep -o "max_total_num_tokens=[0-9]*" "$SRVLOG" | tail -1 | grep -o "[0-9]*$")
   echo "max_mamba_cache_size=${MMB:-NONE} max_total_num_tokens=${MTT:-NONE}" | tee "$OUT/banner_${NAME}.txt"
   echo "${MMB:-NONE} ${MTT:-NONE}" >> "$OUT/P3_KEYS.txt"
-  if [ "${MMB:-NONE}" != "$(K EXPECT_MAMBA_CACHE)" ] || [ "$(sort -u "$OUT/P3_KEYS.txt" | wc -l)" -gt 1 ]; then
-    teardown "$PID" "$PORT"; fail "ABORT_P3 binding resources differ across boots or mamba != $(K EXPECT_MAMBA_CACHE) (P3_KEYS.txt)" 8
-  fi
+  P3_VERDICT=$(python3 "$HELPER" --p3-verdict "$OUT/P3_KEYS.txt" "$MAX_RUNNING" "$CTX" 2>>"$OUT/P3_VERDICTS.stderr")
+  P3_RC=$?
+  echo "$NAME P3 rc=$P3_RC ${P3_VERDICT:-EMPTY}" | tee -a "$OUT/P3_VERDICTS.txt"
+  case "$P3_RC:$P3_VERDICT" in
+    0:PASS\ *) ;;
+    *) teardown "$PID" "$PORT"; fail "ABORT_P3 binding resources fail P3 (ii) (rc=$P3_RC ${P3_VERDICT:-EMPTY}) -- see P3_KEYS.txt / banner_${NAME}.txt" 8 ;;
+  esac
 
   CAP=$(cap_s)
   timeout -k 30 "$CAP" "${WARM[@]}" > "$OUT/warmup_${NAME}.log" 2>&1

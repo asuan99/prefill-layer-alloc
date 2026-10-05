@@ -2,7 +2,7 @@
 """N3 (gate #6, SLO capacity of the target-D44 sticky-OFF B1 arm) -- registration constants,
 unit list, budget/admission, preflight checks, floor -> T_K.
 
-PRE-REGISTRATION: PREREG_N3_CAPACITY_2026-10-04.md (rev1).  Every constant below is a
+PRE-REGISTRATION: PREREG_N3_CAPACITY_2026-10-04.md (rev4).  Every constant below is a
 registered literal; the runner reads them from here (never from env) and the structural
 tests pin them.
 
@@ -581,6 +581,92 @@ def tk_file_problems(path) -> list:
         return [f"unreadable: {exc!r}"]
 
 
+# ------------------------------------------------------------------------------- P3 option (ii)
+# rev4 (prereg §2-3 R6, user decision 2026-10-05): the SAME rule and constants as E2 A14 §3-1
+# (`e2_vessl_plan_r2.p3_verdict`).  Over all boots of THIS Job (resumed units are other boots and
+# never enter P3_KEYS.txt):
+#   (a) max_mamba_cache_size == 48 on every boot, exact;
+#   (b) every max_total_num_tokens >= MAX_RUNNING x CTX = 786,432 (KV can never bind admission);
+#   (c) (max - min) / max of max_total_num_tokens <= 1e-4.
+# 1e-4 is a USER-DECIDED constant, not a data fit.  N3 runs ONE 6-group config, so (c) only ever
+# compares boots of that config (6-group 2,721,290 vs 5-group 2,722,025 = rel 2.70e-4 is a config
+# difference that cannot occur inside an N3 Job; CONFIG_DIGEST aborts first).
+P3_MAX_RUNNING = MAX_RUNNING              # 48
+P3_CTX = CTX                              # 16384
+P3_MAMBA_EXPECT = EXPECT_MAMBA_CACHE      # 48
+P3_TOKEN_FLOOR = P3_MAX_RUNNING * P3_CTX  # 786,432
+P3_REL_TOL = 1e-4
+
+
+def p3_verdict(rows, max_running, ctx):
+    """rows = P3_KEYS.txt lines split on whitespace (`<mamba> <tokens>`, one per boot so far).
+    Returns (ok, line); line starts with "PASS " or "FAIL ".  Fail-closed on anything unparseable."""
+    try:
+        mr, cx = int(max_running), int(ctx)
+    except (TypeError, ValueError):
+        return False, f"FAIL registered_constants unparseable max_running={max_running!r} ctx={ctx!r}"
+    if mr != P3_MAX_RUNNING or cx != P3_CTX:
+        return False, (f"FAIL registered_constants max_running={max_running} ctx={ctx} "
+                       f"!= {P3_MAX_RUNNING} x {P3_CTX}")
+    rows = [r for r in rows if r]
+    if not rows:
+        return False, "FAIL no_keys"
+    badr = [r for r in rows if len(r) != 2 or not r[0].isdecimal() or not r[1].isdecimal()]
+    if badr:
+        return False, "FAIL banner_missing " + ";".join(" ".join(r) for r in badr)
+    mamba = sorted({int(r[0]) for r in rows})
+    tok = [int(r[1]) for r in rows]
+    if mamba != [P3_MAMBA_EXPECT]:
+        return False, f"FAIL mamba={mamba} != [{P3_MAMBA_EXPECT}]"
+    if min(tok) < P3_TOKEN_FLOOR:
+        return False, f"FAIL tokens_min={min(tok)} < floor={P3_TOKEN_FLOOR}"
+    rel = (max(tok) - min(tok)) / max(tok)
+    ok = rel <= P3_REL_TOL
+    return ok, (("PASS" if ok else "FAIL") + f" mamba={P3_MAMBA_EXPECT} tokens_min={min(tok)} "
+                f"tokens_max={max(tok)} rel={rel:.3e} tol={P3_REL_TOL:g} floor={P3_TOKEN_FLOOR} "
+                f"n_boots={len(rows)} distinct_tokens={len(set(tok))}")
+
+
+def p3_verdict_file(path, max_running, ctx):
+    try:
+        rows = [ln.split() for ln in Path(path).read_text().splitlines() if ln.strip()]
+    except OSError as exc:
+        return False, f"FAIL unreadable {exc!r}"
+    return p3_verdict(rows, max_running, ctx)
+
+
+# E2 first VESSL Job keys (boots 1-9 + 11, homog5): the precedent the (ii) rule must PASS.
+P3_E2_JOB1_KEYS = [["48", "2722025"]] * 9 + [["48", "2722022"]]
+P3_PROBE_6GROUP_TOKENS = 2721290          # probe_6group_2026-10-05 A1/A2 (6-group A-agn, VESSL)
+P3_PROBE_5GROUP_TOKENS = 2722025          # probe_6group_2026-10-05 H5 (homog5) = λ0/KISTI value
+
+
+def p3_selftest() -> None:
+    ok, line = p3_verdict(P3_E2_JOB1_KEYS, 48, 16384)
+    assert ok and line.startswith("PASS ") and "rel=1.102e-06" in line, line
+    six = [["48", str(P3_PROBE_6GROUP_TOKENS)]] * 48
+    assert p3_verdict(six, 48, 16384)[0], "48 identical 6-group boots must PASS"
+    cases = {   # every one MUST fail (lesson 53)
+        "mamba 47/48": [["48", "2721290"], ["47", "2721290"]],
+        "mamba all 47": [["47", "2721290"]] * 3,
+        "tokens 0.8%": [["48", "2721290"], ["48", str(round(2721290 * 0.992))]],
+        "below floor": [["48", "786431"]] * 2,
+        "banner missing": [["48", "2721290"], ["NONE", "NONE"]],
+        "tokens missing": [["48", "2721290"], ["48", "NONE"]],
+        "no keys": [],
+        # documents the config-difference fact: 5-group vs 6-group pool (rel 2.70e-4) is caught
+        "5g vs 6g pool": [["48", str(P3_PROBE_6GROUP_TOKENS)], ["48", str(P3_PROBE_5GROUP_TOKENS)]],
+    }
+    for name, rows in cases.items():
+        ok, line = p3_verdict(rows, 48, 16384)
+        assert not ok and line.startswith("FAIL "), (name, line)
+    assert not p3_verdict(P3_E2_JOB1_KEYS, 47, 16384)[0], "unregistered MAX_RUNNING must fail"
+    assert not p3_verdict(P3_E2_JOB1_KEYS, 48, 8192)[0], "unregistered CTX must fail"
+    assert p3_verdict([["48", "786432"]], 48, 16384)[0], "floor itself passes"
+    assert p3_verdict([["48", "1000000"], ["48", "999900"]], 48, 16384)[0], "rel == 1e-4 passes"
+    assert not p3_verdict([["48", "1000000"], ["48", "999899"]], 48, 16384)[0], "rel > 1e-4 fails"
+
+
 # ------------------------------------------------------------------------------- selftest
 def selftest(eng: Path = ENG) -> None:
     import random
@@ -658,9 +744,12 @@ def selftest(eng: Path = ENG) -> None:
         sp[-3].update(prefill_sms=108, decode_sms=0, running_bs=3)
         tp.write_text("\n".join(json.dumps(x) for x in sp) + "\n")
         assert not floor_from(bp, tp, "B")["valid"], "control: running_bs>0 must invalidate"
+    p3_selftest()
     print("N3 PLAN SELFTEST OK (seeds = scorer top-4 per shape, Ebar guard clean; units/ABBA/phase-events "
           "pinned; spacing <= 0.12x lam_ref; normal corner admits every unit, worst every unit but floor_tail, under the 4.0 h cap; config A-agn passes, D54 and "
-          "5-group controls fail; registered digests + mirror match; floor formula + 2 invalidating controls)")
+          "5-group controls fail; registered digests + mirror match; floor formula + 2 invalidating controls; "
+          "P3 (ii): E2 first-Job keys and 48 x 6-group PASS, mamba 47/48 / all-47 / 0.8% / 786431 / banner or "
+          "tokens missing / no keys / 5g-vs-6g pool / unregistered constants FAIL, boundaries hold)")
 
 
 def main() -> int:
@@ -678,6 +767,7 @@ def main() -> int:
     ap.add_argument("--check-green", nargs=2, metavar=("GREEN_JSON", "CONFIG"))
     ap.add_argument("--floor", nargs=4, metavar=("SHAPE", "BENCH", "TEL", "OUT"))
     ap.add_argument("--tk-valid", metavar="T_K_JSON")
+    ap.add_argument("--p3-verdict", nargs=3, metavar=("P3_KEYS", "MAX_RUNNING", "CTX"))
     a = ap.parse_args()
     if a.selftest:
         selftest()
@@ -736,6 +826,10 @@ def main() -> int:
         for b in bad:
             print("T_K " + b)
         return 1 if bad else 0
+    if a.p3_verdict:
+        ok, line = p3_verdict_file(*a.p3_verdict)
+        print(line)
+        return 0 if ok else 8
     if a.floor:
         shape, bench, tel, out = a.floor
         res = floor_from(Path(bench), Path(tel), shape)

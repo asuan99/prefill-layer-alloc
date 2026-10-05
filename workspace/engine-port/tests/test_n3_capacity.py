@@ -399,6 +399,142 @@ class TestEstimators(unittest.TestCase):
         self.assertLess(M.snapshot_estimators(ev, (84, 24))["e_cnt"]["pct"], 1.0)
 
 
+class TestP3Tolerance(unittest.TestCase):
+    """rev4 (prereg §2-3 R6): P3 option (ii), same rule and constants as E2 A14 §3-1.  The helper
+    is tested directly, then the runner's REAL P3 snippet is executed with stubs (behavioural)."""
+    E2_JOB1 = [["48", "2722025"]] * 9 + [["48", "2722022"]]
+    SIX = [["48", "2721290"]] * 9
+    BANNER = "x max_mamba_cache_size: {m} y\nz max_total_num_tokens={t} w\n"
+    # the rev3 strict branch (commit 69fbbb0), kept literally for the "what (ii) changes" control
+    STRICT_R3 = (
+        '  MMB=$(grep -o "max_mamba_cache_size: *[0-9]*" "$SRVLOG" | tail -1 | grep -o "[0-9]*$")\n'
+        '  MTT=$(grep -o "max_total_num_tokens=[0-9]*" "$SRVLOG" | tail -1 | grep -o "[0-9]*$")\n'
+        '  echo "${MMB:-NONE} ${MTT:-NONE}" >> "$OUT/P3_KEYS.txt"\n'
+        '  if [ "${MMB:-NONE}" != "48" ] || [ "$(sort -u "$OUT/P3_KEYS.txt" | wc -l)" -gt 1 ]; then\n'
+        '    teardown "$PID" "$PORT"; fail "ABORT_P3 strict" 8\n'
+        '  fi\n')
+
+    def test_constants(self):
+        self.assertEqual((P.P3_MAMBA_EXPECT, P.P3_TOKEN_FLOOR, P.P3_REL_TOL), (48, 786432, 1e-4))
+        self.assertEqual((P.P3_MAX_RUNNING, P.P3_CTX), (48, 16384))
+        self.assertTrue(P.p3_verdict([["48", "786432"]], 48, 16384)[0])
+        self.assertFalse(P.p3_verdict(self.E2_JOB1, 48, 8192)[0])
+        # same rule as E2 A14 r2 helper (read-only import of the sealed E2 file, no bytecode)
+        sys.path.insert(0, str(ENG / "results/r2_eval/e2_sticky_vessl"))
+        try:
+            import e2_vessl_plan_r2 as V2
+        finally:
+            sys.path.pop(0)
+        self.assertEqual((V2.P3_MAMBA_EXPECT, V2.P3_TOKEN_FLOOR, V2.P3_REL_TOL),
+                         (P.P3_MAMBA_EXPECT, P.P3_TOKEN_FLOOR, P.P3_REL_TOL))
+        for rows in (self.E2_JOB1, self.SIX, [["48", "2721290"], ["48", "2722025"]],
+                     [["47", "2722025"]], [["48", "786431"]], [["48", "NONE"]], []):
+            self.assertEqual(P.p3_verdict(rows, 48, 16384)[0], V2.p3_verdict(rows, 48, 16384)[0], rows)
+
+    def test_e2_job1_keys_pass_and_mutants_fail(self):
+        ok, line = P.p3_verdict(self.E2_JOB1, 48, 16384)
+        self.assertTrue(ok, line)
+        self.assertIn("rel=1.102e-06", line)
+        mutants = {"mamba 47/48": [["48", "2722025"], ["47", "2722025"]],
+                   "mamba all 47": [["47", "2722025"]] * 3,
+                   "tokens 0.8% apart": [["48", "2722025"], ["48", str(round(2722025 * 0.992))]],
+                   "786431": [["48", "786431"]] * 2,
+                   "banner missing": [["48", "2722025"], ["NONE", "NONE"]],
+                   "5g vs 6g pool (rel 2.70e-4)": [["48", "2721290"], ["48", "2722025"]]}
+        for name, rows in mutants.items():
+            ok, line = P.p3_verdict(rows, 48, 16384)
+            self.assertFalse(ok, name)
+            self.assertTrue(line.startswith("FAIL "), (name, line))
+
+    def test_cli_exit_codes(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "k.txt"
+            p.write_text("".join(f"{a} {b}\n" for a, b in self.E2_JOB1))
+            cmd = [sys.executable, "-B", str(HERE / "n3_plan.py"), "--p3-verdict", str(p), "48", "16384"]
+            r = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env())
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertTrue(r.stdout.startswith("PASS "))
+            p.write_text("48 2722025\n47 2722025\n")
+            r = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env())
+            self.assertEqual(r.returncode, 8)
+            self.assertTrue(r.stdout.startswith("FAIL "))
+
+    @staticmethod
+    def _snippet(src):
+        a = src.index('  MMB=$(grep -o "max_mamba_cache_size')
+        b = src.index("  esac\n", a) + len("  esac\n")
+        return src[a:b]
+
+    def _run(self, snippet, prior_rows, banner, helper=None):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            (out / "P3_KEYS.txt").write_text("".join(f"{a} {b}\n" for a, b in prior_rows))
+            (out / "srv.log").write_text(banner)
+            h = helper or str(HERE / "n3_plan.py")
+            script = (f'OUT="{td}"; NAME=X; SRVLOG="{td}/srv.log"; HELPER="{h}"; MAX_RUNNING=48; CTX=16384; PID=1; PORT=1\n'
+                      'export PYTHONDONTWRITEBYTECODE=1\n'
+                      'teardown () { echo TEARDOWN >> "$OUT/td.txt"; }\n'
+                      'fail () { echo "$1"; exit "$2"; }\n' + snippet + "\necho P3_PASSED\n")
+            r = subprocess.run([BASH, "-c", script], capture_output=True, text=True, timeout=60, env=_clean_env())
+            td_called = (out / "td.txt").exists()
+            verdicts = (out / "P3_VERDICTS.txt").read_text() if (out / "P3_VERDICTS.txt").exists() else ""
+            banner_rec = (out / "banner_X.txt").read_text() if (out / "banner_X.txt").exists() else ""
+            return r.returncode, r.stdout, td_called, verdicts, banner_rec
+
+    def test_runner_snippet(self):
+        snip = self._snippet(RUNNER.read_text())
+        rc, out, td, v, b = self._run(snip, self.E2_JOB1[:9], self.BANNER.format(m=48, t=2722022))
+        self.assertEqual(rc, 0, out)
+        self.assertIn("P3_PASSED", out)
+        self.assertIn("X P3 rc=0 PASS ", v)
+        self.assertFalse(td)
+        self.assertEqual(b, "max_mamba_cache_size=48 max_total_num_tokens=2722022\n")   # per-cell banner kept
+        for name, prior, (m, t) in (("mamba 47/48", self.SIX, (47, 2721290)),
+                                    ("all 47", [["47", "2721290"]] * 3, (47, 2721290)),
+                                    ("0.8% drift", self.SIX, (48, round(2721290 * 0.992))),
+                                    ("786431", [], (48, 786431)),
+                                    ("5g pool in a 6g Job", self.SIX, (48, 2722025))):
+            rc, out, td, v, _ = self._run(snip, prior, self.BANNER.format(m=m, t=t))
+            self.assertEqual(rc, 8, (name, out))
+            self.assertIn("ABORT_P3", out)
+            self.assertTrue(td, name)                        # server torn down before exit
+            self.assertIn("X P3 rc=8 FAIL", v)
+        rc, out, td, v, b = self._run(snip, self.SIX, "no banner here\n")              # banner missing
+        self.assertEqual(rc, 8, out)
+        self.assertIn("NONE NONE", b.replace("max_mamba_cache_size=", "").replace("max_total_num_tokens=", ""))
+        rc, out, _, v, _ = self._run(snip, self.SIX, self.BANNER.format(m=48, t=2721290),
+                                     helper="/nonexistent/n3_plan.py")                 # helper absent: fail-closed
+        self.assertEqual(rc, 8, out)
+        self.assertIn("EMPTY", v)
+        with tempfile.TemporaryDirectory() as td:
+            liar = Path(td) / "liar.py"                     # prints PASS but exits non-zero
+            liar.write_text('import sys\nprint("PASS fake")\nsys.exit(1)\n')
+            liar0 = Path(td) / "liar0.py"                   # exits 0 but prints no PASS line
+            liar0.write_text('print("OK")\n')
+            noisy = Path(td) / "noisy.py"                   # warning on stderr, then a real PASS
+            noisy.write_text('import sys\nprint("warning: x", file=sys.stderr)\nprint("PASS ok")\n')
+            rc, out, *_ = self._run(snip, self.SIX, self.BANNER.format(m=48, t=2721290), helper=str(liar))
+            self.assertEqual(rc, 8, out)
+            rc, out, *_ = self._run(snip, self.SIX, self.BANNER.format(m=48, t=2721290), helper=str(liar0))
+            self.assertEqual(rc, 8, out)
+            rc, out, *_ = self._run(snip, self.SIX, self.BANNER.format(m=48, t=2721290), helper=str(noisy))
+            self.assertEqual(rc, 0, out)
+
+    def test_control_neutralised_case_branch_is_detected(self):
+        src = RUNNER.read_text()
+        m = src.replace('    0:PASS\\ *) ;;\n    *) teardown', '    *) ;;\n    NEVER) teardown', 1)
+        self.assertNotEqual(m, src, "mutation did not apply")
+        rc, out, *_ = self._run(self._snippet(m), self.SIX, self.BANNER.format(m=47, t=2721290))
+        self.assertEqual(rc, 0, "neutralised P3 still aborted -- the test is vacuous")
+
+    def test_rev3_strict_branch_aborts_on_e2_job1_keys(self):
+        # what (ii) changes: the rev3 strict rule aborts on exactly the E2 first-Job keys
+        rc, out, *_ = self._run(self.STRICT_R3 + "  case x in x) ;; esac\n", self.E2_JOB1[:9],
+                                self.BANNER.format(m=48, t=2722022))
+        self.assertEqual(rc, 8, out)
+        self.assertNotIn('sort -u "$OUT/P3_KEYS.txt" | wc -l)" -gt 1 ]', RUNNER.read_text())
+
+
 class TestAnalyzer(unittest.TestCase):
     def test_selftest(self):
         import n3_analyze as N

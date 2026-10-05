@@ -1,6 +1,7 @@
-# 사전등록 — N3: 게이트 #6 SLO 용량 격자 (Nemotron-Nano-9B-v2, VESSL A100) rev3 (2026-10-05)
+# 사전등록 — N3: 게이트 #6 SLO 용량 격자 (Nemotron-Nano-9B-v2, VESSL A100) rev4 (2026-10-05)
 
-> **지위**: 새 사전등록 **rev3**(T1 정정, rev3 델타 감사 `VERDICT_n3_rules_rev3_2026-10-05.md` = `GO-with-caveats`, N3C-20). 작성 engine-porter, GPU 0, 성능 판정 0, Claim 등급 변경 0.
+> **지위**: 새 사전등록 **rev4**(R6 = P3 (ii) 기입, **델타 감사 대기**). 직전 rev3 델타 감사 `VERDICT_n3_rules_rev3_2026-10-05.md` = `GO-with-caveats`(N3C-20). 작성 engine-porter, GPU 0, 성능 판정 0, Claim 등급 변경 0.
+> - **rev3 → rev4**: 사용자 결정(2026-10-05) **R6 = P3 (ii) 허용오차**를 E2 A14 §3-1과 같은 문언·상수로 기입(§2-3)하고, 러너 P3 분기를 엄격 → (ii)로 교체(`n3_plan.p3_verdict`)했다. 6그룹 Workspace 프로브 결과를 예산 상수 검증 근거(판정 아님)로 追記(§8-7, §12-13), N3C-21(O4 해상도, E2VC-14 동형) 수록. rev3 봉인 커밋 `69fbbb0` 대비 diff로 델타 감사를 받는다. 변경 색인은 §17-3.
 > - **rev2 → rev3**: rev2 델타 감사 `VERDICT_n3_rules_rev2_2026-10-05.md` = **`GO-with-caveats`**(死因 0, N3C-15…19). 새 결함 **D1(R3 근거 부재 = 통과 → unverifiable로)·D2(R6 전례 문구 정정)만** 수리한다. rev2 봉인 커밋 `81b55c3` 대비 diff로 델타 감사를 받는다. 변경 색인은 §17-2.
 > - **rev1 → rev2**: claims-auditor 규칙층 감사 `VERDICT_n3_rules_rev1_2026-10-05.md` = **`GO-with-caveats`**(死因 0, N3C-1…14). 필수 수리 **R1·R2·R3·R4·R5(기본안)·R7·R8 반영**. **R6(P3 정책)은 사용자 결정 대기 — 자리표시자만 둔다(§2-3).** R1·R3는 규칙 변경이라 **델타 감사 대기**. 변경 색인은 §17.
 > - **claims-auditor 규칙층 감사 대기**. `GO`(또는 `GO-with-caveats`) 전에는 `launch.sh --submit` 금지.
@@ -89,15 +90,31 @@ CONFIG_CANDIDATES §2는 "같은 arm"이 **측정으로 확인되지 않았다**
 | 구속 | 값 | 출처 | 기록 |
 |---|---|---|---|
 | running cap | 48 | 서버 플래그 | — |
-| mamba state pool | 48 (= cap, `--disable-radix-cache` ∧ `--max-running-requests`) | CONSENSUS §3 항목23 | 배너 `max_mamba_cache_size`, 48 아니면 `ABORT_P3` |
-| attention KV | `max_total_num_tokens`(6그룹 VESSL 값 미측정) | 배너 | boot 간 동일해야 함, 아니면 `ABORT_P3`(exit 8) |
+| mamba state pool | 48 (= cap, `--disable-radix-cache` ∧ `--max-running-requests`) | CONSENSUS §3 항목23 | 배너 `max_mamba_cache_size`, 모든 boot에서 정확히 48 아니면 `ABORT_P3`(R6 (a)) |
+| attention KV | `max_total_num_tokens`(6그룹 VESSL Workspace 프로브 2,721,290 — 기술값, 판정 아님, §8-7) | 배너 | rev4 R6 (ii): 모든 boot ≥ 786,432 ∧ boot 간 (max−min)/max ≤ 1e-4, 아니면 `ABORT_P3`(exit 8) |
 | prefill batch 토큰 | `max_prefill_tokens` 16384 (shape B는 prefill 1 batch = 8192×최대 2요청) | bench `server_info` | `N3_RESULT.json` `binding_settings` |
 | cap-bound 입장 비율 | PHASE_EVENTS `prefill_span_start`의 `running_bs + n_new ≥ cap ∧ queue_len > 0` 비율(E-1 §5-5 정의) | 기술용 | 셀별 `mix_*.json` |
 
 용량 인용에는 이 표를 함께 쓴다(§11).
 
-**R6 — P3 정책 = [엄격 | 허용오차(ii)] 사용자 결정 후 기입.**
-- 현재 러너는 **엄격**이다. boot 간 `max_total_num_tokens`가 하나라도 다르면 `ABORT_P3`로 멈춘다.
+**R6 — P3 정책 = (ii) 허용오차 (사용자 결정 2026-10-05, rev4 기입).** E2 A14 §3-1(`e2_sticky_vessl/PREREG_E2_VESSL_A14_2026-10-05.md`)과 **같은 문언·같은 상수**다.
+- **등록 규칙 (ii)**: 이 Job의 모든 boot에 대해 다음 셋이 모두 성립해야 한다. 하나라도 어기면 `ABORT_P3`(exit 8)다.
+  - (a) `max_mamba_cache_size` = **48**, 모든 boot에서 정확히(허용오차 없음).
+  - (b) 모든 `max_total_num_tokens` ≥ `MAX_RUNNING × CTX` = 48 × 16,384 = **786,432**.
+  - (c) `max_total_num_tokens`의 (max − min) / max ≤ **1e-4**.
+  - 배너를 찾지 못한 boot(`NONE`)는 abort다. `MAX_RUNNING`·`CTX`가 등록값(48, 16,384)이 아니어도 abort다.
+  - 원 키는 `P3_KEYS.txt`와 셀별 `banner_<unit>.txt`에 그대로 남고, boot마다 판정 줄이 `P3_VERDICTS.txt`에 남는다.
+  - 재개 Job에서 복사된 unit은 다른 boot이므로 `P3_KEYS.txt`에 들어가지 않는다(rev3와 같음).
+- **집행(A14 r2 러너와 같은 방식)**: 규칙과 상수는 `n3_plan.p3_verdict`(`--p3-verdict P3_KEYS MAX_RUNNING CTX`, exit 0 PASS / 8 FAIL)에 있다. 상수 48 / 786,432 / 1e-4는 `n3_plan`에 고정되고 `test_constants`가 E2 helper와의 동일성까지 고정한다.
+  러너는 **exit 0 ∧ stdout이 "PASS "로 시작**할 때만 통과시킨다(stderr는 별도 파일). helper 부재·빈 출력·거짓 PASS(exit ≠ 0)는 abort다(fail-closed).
+- **1e-4는 사용자 결정 상수이며 데이터 보정이 아니다**(E2VC-15와 같은 취지). 판별 근거는 두 점뿐이다: E2 1회차 Job 안 이탈 rel 1.102e-6(PASS)과 5↔6그룹 토큰 풀 차 rel 2.70e-4(FAIL).
+- **새 사실(A14 규칙층 감사 §1)**: 같은 모델·`--mem-fraction-static 0.82`에서 **6그룹 config의 토큰 풀은 2,721,290**(KISTI 907959 `srv_L1`, 908179 `srv_L2`, N3 Workspace 프로브 A1/A2 — §8-7)이고 5그룹(homog5)은 2,722,025다. 상대차 **2.70e-4**다.
+  - N3는 6그룹 **단일 config**(A-agn)다. 그래서 (c)의 1e-4는 **같은 config boot 사이의 비교에만** 적용된다.
+  - bridge 블록(§4-2)도 A-agn config로 boot한다. λ0 VESSL(homog5) boot는 이 Job의 `P3_KEYS.txt`에 들어가지 않는다. 그러므로 **config 차이(2.70e-4)는 (c)에 걸리지 않는다.**
+  - config가 바뀌면 (c)보다 먼저 `CONFIG_DIGEST`(`ABORT_REG_DRIFT`)가 멈춘다.
+- **조이는 방향(교훈 251)**: (b) 하한 786,432는 rev3 엄격 규칙에 없던 실패 조건이다((a) mamba 48은 rev3도 `EXPECT_MAMBA_CACHE`로 강제했다). 토큰 **수준값**(2,721,290)은 강제하지 않는다 → 결과 문서는 `banner_<unit>.txt`를 48 / 2,721,290(프로브 기술값)과 대조해 병기한다.
+- **느슨해지는 방향**: 토큰 키가 boot마다 1e-4(≈272 토큰) 안에서 다를 수 있다. 그 표면이 판정량에 닿는 코드 경로는 A14 §3-2가 찾지 못했다(`FixedPolicy.decide`는 occupancy를 읽지 않고, KV 수요 상한 B 48×8,256 = 396,288 ≤ 786,432라 KV는 구속 자원이 아니다). 메모리 배치 차이 같은 2차 경로는 배제를 증명할 수 없다(A14 자기 공시 승계).
+  토큰 키가 둘 이상이었으면 결과 문서는 unit별 값과 그 unit의 블록(floor/bridge/observer ON·OFF/grid)을 함께 싣는다(E2VC-12 형식). "P3가 boot 간 KV 풀이 같음을 확인했다"고 쓰지 않는다(E2V-10 형식).
 - **전례 공시(E2 boot 11, D2 정정 rev3)**: **다른 config(homog5 5그룹)·다른 arm(sticky ON/OFF)의 E2 VESSL Job**에서 boot 11의 `max_total_num_tokens`가 앞 boot들보다 **3 토큰 적게** 나왔고, 엄격 P3가 Job을 멈췄다. (rev2의 "같은 config·arm" 표현은 거짓이라 철회한다. N3는 A-agn 6그룹·sticky unset이다 — §2-2.)
   - **정황**(`e2_sticky_vessl/PREREG_E2_VESSL_A14_DRAFT_2026-10-04.md`:79–81, 미감사 초안):
     - VESSL boot 26개(λ0 VESSL 15 + 그 E2 Job 11) 중 이탈은 이 1건뿐이다. KISTI 908623의 11 boot는 전부 2,722,025였다.
@@ -105,7 +122,8 @@ CONFIG_CANDIDATES §2는 "같은 arm"이 **측정으로 확인되지 않았다**
     - 두 가설은 판별할 수 없다: **H1** 비정상 종료 뒤 드라이버 수준 잔여, **H2** 프로세스 내부 비결정적 소량 할당.
     - N3에 반영한 O3(`^sglang::` 정리)·O4(boot 전 GPU 메모리 baseline 복귀 대기)·O1/O2(포트 충돌 원인 제거)는 **H1 경로를 겨냥**한다(§8-6). H2라면 막지 못한다.
   - N3는 shape B 한 Job에 boot가 48개라, 같은 사건이 독립적으로 일어난다면 노출 기회가 E2(20 boot)보다 많다. H1이 원인이고 O1–O4가 그 경로를 막는다면 노출은 줄어든다. 어느 쪽인지 이 등록은 판정하지 않는다.
-- 허용오차안 (ii)의 문언·상수는 E2 A14 초안(`e2_sticky_vessl/PREREG_E2_VESSL_A14_DRAFT_2026-10-04.md`, 자체 감사 대기)을 따른다. 사용자가 고르면 rev4로 기입하고 델타 감사를 받는다(T2 정정). **결정 전에는 제출하지 않는다.**
+  - (ii)는 어느 가설에서도 같은 규모(수 토큰)의 이탈에 Job을 멈추지 않는다. O4가 그 규모의 잔여를 해상하지 못한다는 한계는 N3C-21이다.
+- (rev3의 "사용자가 고르면 rev4로 기입" 자리표시자는 이 rev4 기입으로 대체됐다. 문언·상수의 출처는 초안이 아니라 감사받은 A14 확정본 §3-1과 그 규칙층 판정서 `VERDICT_e2_vessl_a14_rules_2026-10-05.md` §1·E2VC-12·14·15다.) **rev4 델타 감사 전에는 제출하지 않는다.**
 
 ### 2-4. 기판(조항 9)
 
@@ -410,6 +428,31 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
   - **O4**: settle이 포트 선택보다 앞에 있고, `fail`/`exit`가 없으며(gate 아님), 36회 폴이다.
 - λ0 VESSL과의 bridge 비교에 미치는 영향: 포트 번호와 teardown은 서버 동작(스케줄링·커널)에 닿지 않는다. settle 대기는 boot 사이 유휴 시간만 늘린다. 둘 다 boot당 부대비용에만 들어간다(settle 최대 +180 s, 보통 0–15 s 예상, 미측정).
 
+### 8-7. 6그룹 config Workspace 프로브 (2026-10-05) — **예산 상수 검증 근거, 판정 아님** (rev4 追記)
+
+출처: `probe_6group_2026-10-05/SUMMARY.md`(+ `TIMING_TABLE.tsv`, `srv_*.log`, `SHA256SUMS` 로컬 재검증 OK). Workspace `pdmux-probe`, A100 SXM, 커밋 `69fbbb0` 트리를 `install_runtime.sh`로 설치.
+측정이 아니고 캠페인 셀도 아니다. 이미지 digest가 등록 pin과 다르다(`c85fc198` vs `1e0d335b`, SUMMARY DEVIATION 1 — 엔진 코드는 커밋에서 새로 설치). 각 행 n = 1이다.
+
+| 항목 | 6그룹 A-agn (A2 warm) | 5그룹 homog5 (H5 warm) | 차이 |
+|---|---|---|---|
+| boot 벽시계 | 59.11 s | 60.11 s | −1.0 s |
+| cudagraph 캡처 시간 | 14.12 s | 12.67 s | **+1.45 s** |
+| 캡처 메모리 | 1.27 GB | 1.07 GB | **+0.20 GB** |
+| `max_total_num_tokens` | **2,721,290** | 2,722,025 | −735 (rel 2.70e-4) |
+| `max_mamba_cache_size` | 48 | 48 | 0 |
+| green read-out | 6/6 realized == target, `sticky_target_index` null | 5/5 | — |
+
+- cold 첫 boot(A1)는 124.31 s(캡처 51.60 s)였고, 토큰·mamba·green은 A2와 같았다.
+- 컨테이너 사실: `ip_local_port_range` = 32768–60999(O1 창 20000–20799와 겹치지 않음), `ip_local_reserved_ports` 비어 있음, 3회 teardown 뒤 `ss -Htan` TIME_WAIT 0. cgroup CPU quota 11 vs `nproc` 96.
+- **per-boot 부대비용 상수(A 160.1 s · B 121.0 s, §8-3)는 바꾸지 않는다.** 그 상수는 boot + settle + 입장 장부를 포함한 unit 부대비용이고, 프로브는 boot 벽시계만 쟀다. 그래서 1:1 비교가 아니다(SUMMARY가 그렇게 명시한다).
+  다만 6그룹 warm boot 벽시계(59.1 s)가 5그룹(60.1 s)보다 길지 않으므로, **"6그룹이라서 상수를 올릴 근거"는 이 프로브에 없다.**
+- **캡처 +1.45 s의 입장 영향(공시)**: 부대비용이 boot마다 실제로 +1.45 s 늘었다고 두면, shape B 최악 코너에서 마지막 격자 unit `g_r077_4589`(48개 중 47번째)의 입장 여유 **7.86 s**(`n3_plan.simulate`·`need_s`, rev3 §4-5의 "8 s")가 앞선 46 boot × 1.45 s = **66.7 s**만큼 줄어 **음수(−58.8 s)**가 된다.
+  - 그 경우 최악 코너 입장은 47/48 → **46/48**이다(floor_tail은 원래 최악 코너에서 거부, 이번에는 `g_r077_4589`도 거부). 보통 코너는 48/48 그대로다(최소 여유 1,643 → 1,575 s). shape A는 최악 코너에서도 36/36이다(최소 여유 1,539 → 1,488 s).
+  - **측정 결과는 왜곡되지 않는다.** 입장 규칙이 unit을 시작 전에 거부하므로(`NOT_ATTEMPTED_BUDGET`), 잘린 bench가 채점에 들어가지 않는다.
+  - 대가는 n이다. 0.77의 seed 4589가 빠지면 0.77은 n = 3이다. 첫 실패 규칙이 0.77을 읽어야 하는 k(0.69 이하에서 실패가 없는 k)는 `UNRESOLVED_N_BELOW_4_k`가 된다 — 측정 부족이지 발견이 아니다(N3C-15와 같은 경로).
+  - 이 계산은 "+1.45 s가 매 boot 부대비용에 그대로 더해진다"는 가정이다(n = 1 warm 쌍, 실제로는 boot 벽시계가 오히려 1.0 s 짧았다). 예산 상수·입장 규칙은 바꾸지 않는다.
+- §16 첫 항목(6그룹 VESSL boot 미측정)은 Workspace에서 **기능**(boot·캡처·green 6/6·토큰 값)이 관측됐다. 그러나 Job 안 측정이 아니므로 그 항목의 fail-closed 확인 경로(`ABORT_GREEN`·`ABORT_P3`)는 그대로 유지된다.
+
 ---
 
 ## 9. 반증 가능 예보 (조항 11 "저부하 E-time 예보" 포함 — 판정 입력 아님)
@@ -494,6 +537,12 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 - **N3C-18.** "boot마다 도는 abort 분기(STICKY·GREEN·P3·floor boot·CG2)의 배선은 텍스트 검사(분기별 중화 변이 11/11)로만 검증됐다. 실행형 검증은 preflight 4분기뿐이다."
 - **N3C-19.** "R3 arm 동일성의 사전 근거(λ0 VESSL 11셀 비표적 0건)는 homog5·스냅숏 다리에서만 나왔다. A-agn 임계에서 decode_iteration 다리는 GPU에서 측정된 적이 없다."
 
+**등록 caveat N3C-20 (rules verdict rev3 §4, 문자 그대로 승계 — rev3 수록 누락분을 rev4에서 수록)**:
+- **N3C-20.** "`N3_RESULT.json`의 `realized_partition[*].arm_identity.ok`는 decode 다리를 요구하지 않는 기술 기록이다. 셀의 arm 동일성 판정은 `invalid_cells`(분석기 count 재계산)만 근거로 인용한다."
+
+**등록 caveat N3C-21 (rev4, E2 A14 규칙층 판정서 E2VC-14와 동형)**:
+- **N3C-21 (O4 해상도).** "O4 settle 정지 조건(`memory.used ≤ base+64 MiB`)은 MiB 해상도라 −3 토큰급(≈40–80 KB) 잔여를 해상하지 못한다. 'O4가 H1 잔여를 막았다/배제했다'고 쓰지 않는다. 실효는 `SETTLE.txt`의 NVML 바이트 기록이며 그 판별력도 미검증이다. 토큰 이탈이 재발하지 않으면 'O1–O4가 토큰 이탈을 해결했다'가 아니라 '이 Job에서는 이탈이 관측되지 않았다'고만 쓴다."
+
 **승계 caveat**: DS-1…DS-7(N4 판정서) 전부, λ0 VESSL LV-2·LV-3·LV-6·LV-12·LV-13 형식, LVR-1…4, λ0R-3(cap 48 구속)·λ0R-8 계열(형식만, KISTI 수치 승계 금지 — LV-5). 특히 **DS-4**: 부하점은 절대 offered rate이고 "arm별 용량 대비 비율"로 쓰지 않는다. **DS-6**: shape A 0.36×–0.59× 부근의 ITL 민감도 전환은 예보다.
 
 ---
@@ -516,6 +565,8 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 11. **CG2를 warm-up 텍스트로**: warm-up 명령에 출력 파일 인자만 더했다(클라이언트 동작). 동시성 1 greedy의 boot 간 결정성은 가정이다.
 12. **엔진 트리 = HEAD 전체 manifest 일치**: 다른 트랙이 manifest 25파일 중 하나라도 바꾸면 이 등록은 돌지 않는다(의도). 그때는 rev2 + 새 digest가 필요하다.
 13. **예산 상수**: per-boot 부대비용은 5그룹 config(λ0)에서 쟀다. 6그룹은 캡처 +1–2 s 외삽(CONFIG_CANDIDATES §2). preflight 600 s는 미측정. 최악 코너 배수(1.25, 0.8)는 새 상수.
+    - (rev4) 6그룹 Workspace 프로브(§8-7, n = 1, 판정 아님): 캡처 +1.45 s·+0.20 GB, warm boot 벽시계 59.1 s(5그룹 60.1 s). 외삽의 부호·크기와 맞고, **상수를 올릴 근거는 없다.** 상수는 그대로다.
+    - 단 +1.45 s가 매 boot 부대비용에 더해진다면 shape B 최악 코너의 마지막 격자 unit(`g_r077_4589`) 여유 7.86 s가 66.7 s 깎여 입장 거부된다(47/48 → 46/48). 측정 왜곡은 없고(입장 규칙이 시작 전에 막는다) 0.77의 n이 3으로 줄 수 있다(§8-7).
 14. **입장 규칙 = 최악 코너 비용**: 보통 코너보다 보수적이라 마지막 unit(floor_tail)이 B 최악 코너에서 빠질 수 있다.
 15. **X-req 재구성 앵커**: t0 = 창 안 두 번째 prefill span. 요청 0이 즉시 입장한다는 가정. 앵커 품질을 같이 낸다.
 16. **CI 표본 2000, seed 1**: n = 4라 재표집 공간이 35개뿐이다. 표본 수를 늘려도 구간은 거의 바뀌지 않는다.
@@ -534,7 +585,9 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 - `n3_plan.py --selftest` 통과: seed = 채점 상위 4, Ēbar 가드, unit 구조·ABBA·PHASE_EVENTS 배치, 간격 ≤ 0.12×, 보통 코너 전 unit·최악 코너 floor_tail 외 전 unit 입장, config 검사 + 음성 대조 2(D54·5그룹), 등록 digest + 미러 9개, floor 공식 + 무효화 대조 2((64,44) span, running_bs > 0).
 - `n3_realized_mix.py --selftest --require-archive`: 합성 OK + **λ0 VESSL 아카이브 7/7 E2 도구와 비트 동일**, 외부 기대값 재현, (92,16)·인덱스 재배치 대조 통과.
 - `n3_analyze.py --selftest`: 라벨·CI·k 의존 절벽·BELOW/ABOVE·n < 4 규칙·ITL 다리·관측자 6% → FAIL·S2 → UNSTABLE·floor 무효 → 미채점·비단조 플래그.
-- `tests/test_n3_capacity.py` 46/46(구조·변이 대조·digest·셀프테스트·dry-run·집행기·재개·포트/teardown O1–O4; rev2: R1 순서·절단 모사, R2 placeholder 거부·재개 대조, R3 주입 변이, R4 플래그, R7 표식, ABORT 분기별 변이 11개, 최소 트리 행동 시험 5개; rev3: D1 단위 시험 2개 + mix/analyze 셀프테스트 D1 변이).
+- `tests/test_n3_capacity.py` 52/52(구조·변이 대조·digest·셀프테스트·dry-run·집행기·재개·포트/teardown O1–O4; rev2: R1 순서·절단 모사, R2 placeholder 거부·재개 대조, R3 주입 변이, R4 플래그, R7 표식, ABORT 분기별 변이 11개, 최소 트리 행동 시험 5개; rev3: D1 단위 시험 2개 + mix/analyze 셀프테스트 D1 변이; rev4: `TestP3Tolerance` 6개 — 상수 + E2 helper 동일성, E2 1회차 키 PASS·변이 FAIL, CLI exit 0/8, 러너 실제 P3 조각 실행, case 분기 중화 변이 검출, rev3 엄격 분기 대조).
+- (rev4, 2026-10-05) `n3_plan.py --selftest`에 P3 (ii) 판별 추가: E2 1회차 키(2,722,025×9 + 2,722,022) → `PASS rel=1.102e-06`, 6그룹 48 boot 동일 → PASS; mamba 47/48·전부 47·토큰 0.8% 차·786,431·배너 누락·토큰 누락·키 없음·5그룹 대 6그룹 풀(rel 2.70e-4)·미등록 MAX_RUNNING/CTX → 전부 FAIL; 경계(786,432, 상대차 정확히 1e-4) → PASS.
+  러너 P3 조각 변이(`TestP3Tolerance.test_runner_snippet`): mamba 47/48·전부 47·0.8% 차·786,431·6그룹 Job 안 5그룹 풀·배너 누락·helper 부재·거짓 PASS(exit ≠ 0)·PASS 없는 exit 0 → exit 8 + teardown; stderr 경고 + 진짜 PASS → 통과. 셀별 `banner_<unit>.txt` 기록 유지 확인.
 - 로컬 dry-run(B 48 unit, A 36 unit 명령 생성), `__pycache__` 잔여 0.
 - 로컬에서 **돌지 않는 것**: `test_phase_events`·`test_green_readout`(sgl_kernel 없음 — Job preflight에서 돈다), 실제 sync·manifest 대조, GPU 전부.
 - 이 문서의 digest가 실행 기록에 들어가므로, 공개 이미지 컨테이너 dry-run 결과는 이 문서가 아니라 engine-porter 보고에 적는다(λ0 VESSL §9와 같은 이유).
@@ -604,3 +657,13 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 | N3C-15…19 수록 | §11 | 없음 | — |
 | 헤더·로컬 검증 수치 | 머리말, §13 | 없음 | — |
 
+### 17-3. rev3 → rev4 변경 색인 (기준 커밋 `69fbbb0`)
+
+| 변경 | 문서 | 코드 | 테스트 |
+|---|---|---|---|
+| R6 = P3 (ii) 기입(사용자 결정 2026-10-05, A14 §3-1과 같은 문언·상수) + 6그룹 단일 config 사실(2,721,290 vs 2,722,025 = rel 2.70e-4, boot 간 비교에만 적용, bridge도 같은 config) + 1e-4 사용자 결정 상수 공시 | §2-3 표 2행·R6 블록(rev3 D2 전례 문구 유지) | `n3_plan.p3_verdict`·`p3_verdict_file`·`P3_*` 상수·`--p3-verdict`(exit 0/8)·`p3_selftest`; 러너 P3 분기 엄격 → helper 판정(exit 0 ∧ "PASS " 접두, fail-closed, `P3_VERDICTS.txt`, 셀별 `banner_<unit>.txt` 유지) | `TestP3Tolerance` 6개, plan 셀프테스트 P3 판별 |
+| 6그룹 Workspace 프로브 반영(예산 상수 검증 근거, 판정 아님; 상수 불변; 캡처 +1.45 s의 B 최악 코너 입장 영향 공시) | §8-7 신설, §12-13 追記 | 없음(예산 상수·입장 규칙 불변) | — |
+| N3C-21(O4 해상도, E2VC-14 동형) | §11 | 없음 | — |
+| 헤더·로컬 검증 수치 | 머리말, §13 | 없음 | — |
+| N3C-20 수록(rev3 판정서 §4 문안 그대로, rev3 수록 누락분) | §11 | 없음 | — |
+| 러너 머리 주석·`n3_plan` docstring 회차 표기 "(rev1)" → "(rev4)"(주석·docstring만, 실행 경로 무변) | — | `n3_capacity.sh`:3, `n3_plan.py`:5 | — |
