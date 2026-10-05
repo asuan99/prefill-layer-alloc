@@ -56,6 +56,28 @@ doc-steward가 `DESIGN_A1_REV2_STICKY_2026-08-25.md`의 회귀 수를 853 → **
 ```
 ⇒ 차단은 **정확히 M4R `SINGLE_LABEL_FORCED` · TC1 `RESTRICTIONS_INERT` 2건**(라벨 2026-09-15·2026-10-04와 동일, 둘 다 `PATH_REMAP` 태그)이며 이 OVERRIDE가 넘기는 범위와 일치한다.
 
+### 1-2. 追記 (2026-10-05, 제출 직전 — doc_facts 8차·9차 정정 후 재확인)
+
+§1-1 이후 커밋 `3604269`(doc_facts 8차 940→946)와 `1a90b08`(N3 하네스층 T-H1…T-H7 테스트 +9)로 집계가 955가 되어 제출 직전 presubmit이 doc_facts 1건으로 다시 3건 차단됐다(experiment-runner가 규약대로 제출 보류). doc-steward가 9차 정정(946→955, `PROJECT_STATUS.md` #245·`CONSENSUS.md` §3 항목265 追記, 새 번호 없음)을 한 뒤 재실행:
+```
+=== presubmit ===
+  OK     registry_append_only 삭제 0건
+  OK     line_citations --- check: 201 compared, 0 violation(s)  OK
+  OK     doc_facts      --- 11 fact(s), 14 occurrence(s) compared, 0 violation(s)  OK
+  OK     citation_stops --- 0 added line(s), 0 violation(s), 16 rules  OK
+  OK     reachability   reach_spec_A.json -> superseded by reach_spec_rev3_A.json (미검사)
+  OK     reachability   reach_spec_B.json -> superseded by reach_spec_rev3_A.json (미검사)
+  OK     reachability   spec_C1_canonical.json -> superseded by workspace/engine-port/results/cp_baseline/spec_cp0_arm_reqactive.json (미검사)
+  OK     reachability   spec_cp0_arm_reqactive.json -> DISCRIMINATING  [PATH_REMAP rule_path,out: /scratch/ehmoon/whlee/prefill-layer-alloc -> repo root]
+  OK     reachability   spec_cp0_arm_reqinactive.json -> superseded by workspace/engine-port/results/cp_baseline/RETRACTION_reqinactive_2026-08-28.md (미검사)
+  OK     reachability   spec_cp0_capacity.json -> DISCRIMINATING  [PATH_REMAP rule_path,out: /scratch/ehmoon/whlee/prefill-layer-alloc -> repo root]
+  BLOCK  reachability   reachability_spec.json -> SINGLE_LABEL_FORCED  [PATH_REMAP rule_path,out: /scratch/ehmoon/whlee/prefill-layer-alloc -> repo root]
+  BLOCK  reachability   reach_spec_rev3_A.json -> RESTRICTIONS_INERT  [PATH_REMAP rule_path,out: /scratch/ehmoon/whlee/prefill-layer-alloc -> repo root]
+
+제출 금지 — 차단 2건. 규율 도구가 통과하기 전에는 job을 제출하지 않는다.
+```
+⇒ 차단은 다시 **정확히 M4R·TC1 2건**이다. 이 OVERRIDE가 넘기는 범위와 일치한다. doc_facts 전역 카운터 결함의 구조적 수리((i) 고정값 재정의)는 `PROJECT_STATUS.md` #245에 절차가 구체화돼 있고 사용자 승인 대기다 — 이 결함은 이 OVERRIDE의 판정 경로와 무관하다.
+
 ## 2. 왜 이 회차와 인과 무관인가 (요건 ②)
 
 1회차 OVERRIDE §2와 같다. E2의 결정 경로는 `e2_realized_mix.py`·`e2_label.py`·r2 러너·908623 셀프테스트 아카이브뿐이다. M4R·TC1 spec의 산출물·규칙·측정을 읽지도 쓰지도 않는다.
