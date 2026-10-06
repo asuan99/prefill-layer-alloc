@@ -1,0 +1,46 @@
+ip_local_port_range=32768 60999
+ip_local_reserved_ports=
+listen_port_window=20000-20799
+floor_head port=20514 tries=1
+br_b_r3_4386 port=20247 tries=1
+br_b_r3_4162 port=20792 tries=1
+g_r030_3704 port=20233 tries=1
+off_r030_3704 port=20380 tries=1
+off_r030_2084 port=20200 tries=1
+g_r030_2084 port=20524 tries=1
+g_r030_4861 port=20541 tries=1
+off_r030_4861 port=20276 tries=1
+off_r030_4589 port=20017 tries=1
+g_r030_4589 port=20464 tries=1
+g_r077_3704 port=20488 tries=1
+g_r069_3704 port=20055 tries=1
+g_r061_3704 port=20770 tries=1
+g_r053_3704 port=20577 tries=1
+g_r045_3704 port=20035 tries=1
+g_r038_3704 port=20481 tries=1
+g_r022_3704 port=20594 tries=1
+g_r015_3704 port=20437 tries=1
+g_r010_3704 port=20554 tries=1
+g_r010_2084 port=20677 tries=1
+g_r015_2084 port=20309 tries=1
+g_r022_2084 port=20585 tries=1
+g_r038_2084 port=20088 tries=1
+g_r045_2084 port=20562 tries=1
+g_r053_2084 port=20201 tries=1
+g_r061_2084 port=20791 tries=1
+g_r069_2084 port=20021 tries=1
+g_r077_2084 port=20050 tries=1
+g_r077_4861 port=20298 tries=1
+g_r069_4861 port=20293 tries=1
+g_r061_4861 port=20715 tries=1
+g_r053_4861 port=20141 tries=1
+g_r045_4861 port=20780 tries=1
+g_r038_4861 port=20216 tries=1
+g_r022_4861 port=20054 tries=1
+g_r015_4861 port=20790 tries=1
+g_r010_4861 port=20613 tries=1
+g_r010_4589 port=20764 tries=1
+g_r015_4589 port=20560 tries=1
+g_r022_4589 port=20516 tries=1
+g_r038_4589 port=20110 tries=1
+g_r045_4589 port=20722 tries=1

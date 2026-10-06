@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-n3-capacity-38ed3f4-20261006092813
+Slug:                 job-n60kw8bsejuz
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/38ed3f43ad3378a1493cd232d1c9a83c59a0dfcf/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-06T09:28:19Z
+Started At:           2026-10-06T09:28:22Z
+Completed At:         2026-10-06T13:22:42Z
+Duration:             3h54m20s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=38ed3f43ad3378a1493cd232d1c9a83c59a0dfcf, PDMUX_JOB_NAME=pdmux-n3-capacity-38ed3f4-20261006092813, PDMUX_CAMPAIGN=n3_capacity, PDMUX_TARGET=workspace/engine-port/results/n3_capacity/n3_capacity.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1, PDMUX_N3_SHAPE=B
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

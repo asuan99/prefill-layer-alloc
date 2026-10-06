@@ -1,0 +1,22 @@
+# before_bench epoch=1791282307
+usage_usec 3963389723
+user_usec 3668872466
+system_usec 294517257
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 32682
+nr_throttled 397
+throttled_usec 1409128792
+nr_bursts 0
+burst_usec 0
+# after_bench epoch=1791282436
+usage_usec 4128374519
+user_usec 3826159778
+system_usec 302214741
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 33974
+nr_throttled 406
+throttled_usec 1438595017
+nr_bursts 0
+burst_usec 0

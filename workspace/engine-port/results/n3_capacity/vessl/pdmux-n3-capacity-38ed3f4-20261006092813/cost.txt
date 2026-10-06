@@ -1,0 +1,2 @@
+container_hours=3.838 rate_usd_h=1.48 cost_usd_lower_bound=5.68
+note: excludes scheduling/image-pull time billed before job_entry.sh started

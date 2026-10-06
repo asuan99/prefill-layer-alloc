@@ -1,0 +1,79 @@
+{
+  "arm_identity": {
+    "busy_snapshot_on_nontarget": 0,
+    "busy_snapshots_seen": 441,
+    "decode_iteration_on_nontarget": 0,
+    "decode_iterations_seen": 0,
+    "forbidden_pairs": [
+      [
+        74,
+        34
+      ],
+      [
+        84,
+        24
+      ],
+      [
+        92,
+        16
+      ]
+    ],
+    "ok": true,
+    "unverifiable": []
+  },
+  "cell": "br_b_r3_4162",
+  "phase": {
+    "empty": true,
+    "target_pair": [
+      64,
+      44
+    ],
+    "window_source": "no_work_events"
+  },
+  "snapshot": {
+    "busy_n": 441,
+    "convention": "E2 ADDENDUM A2 decode-busy literal; whole file, phase != startup (E2C-16); pair-keyed",
+    "dropped_events_max": 0,
+    "e_cnt": {
+      "den": 441,
+      "num": 399,
+      "pct": 90.47619047619048
+    },
+    "e_iter": {
+      "den": 6833,
+      "num": 6284,
+      "pct": 91.96546172984048
+    },
+    "e_pact": {
+      "den": 399,
+      "num": 399,
+      "pct": 100.0
+    },
+    "e_qcond": {
+      "den": 394,
+      "num": 394,
+      "pct": 100.0
+    },
+    "e_time": {
+      "den_s": 296.757853691699,
+      "num_s": 287.28349438891746,
+      "pct": 96.80737706351509
+    },
+    "negative_gaps": 0,
+    "pair_hist_busy": {
+      "0,108": 41,
+      "108,0": 1,
+      "64,44": 399
+    },
+    "snapshots": 23452,
+    "target_pair": [
+      64,
+      44
+    ]
+  },
+  "x_req": {
+    "convention": "reconstruction-based (arrival RNG replay + client ttft/itl); descriptive",
+    "status": "NOT_APPLICABLE",
+    "window_source": "no_work_events"
+  }
+}

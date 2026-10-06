@@ -1,0 +1,47 @@
+shape=B hard_cap_s=14400 tail_reserve_s=600
+t0_epoch=1791278919 (job_entry_start_utc) deadline_epoch=1791292719
+remaining_at_script_start_s=13766
+admit unit=floor_head need_s=192 remaining_s=13576
+admit unit=br_b_r3_4386 need_s=514 remaining_s=13298
+admit unit=br_b_r3_4162 need_s=514 remaining_s=12796
+admit unit=g_r030_3704 need_s=251 remaining_s=12322
+admit unit=off_r030_3704 need_s=251 remaining_s=12024
+admit unit=off_r030_2084 need_s=251 remaining_s=11732
+admit unit=g_r030_2084 need_s=251 remaining_s=11439
+admit unit=g_r030_4861 need_s=251 remaining_s=11149
+admit unit=off_r030_4861 need_s=251 remaining_s=10858
+admit unit=off_r030_4589 need_s=251 remaining_s=10553
+admit unit=g_r030_4589 need_s=251 remaining_s=10260
+admit unit=g_r077_3704 need_s=294 remaining_s=9971
+admit unit=g_r069_3704 need_s=280 remaining_s=9667
+admit unit=g_r061_3704 need_s=265 remaining_s=9377
+admit unit=g_r053_3704 need_s=253 remaining_s=9085
+admit unit=g_r045_3704 need_s=253 remaining_s=8791
+admit unit=g_r038_3704 need_s=252 remaining_s=8498
+admit unit=g_r022_3704 need_s=250 remaining_s=8185
+admit unit=g_r015_3704 need_s=281 remaining_s=7897
+admit unit=g_r010_3704 need_s=345 remaining_s=7554
+admit unit=g_r010_2084 need_s=345 remaining_s=7159
+admit unit=g_r015_2084 need_s=281 remaining_s=6772
+admit unit=g_r022_2084 need_s=250 remaining_s=6450
+admit unit=g_r038_2084 need_s=252 remaining_s=6156
+admit unit=g_r045_2084 need_s=253 remaining_s=5847
+admit unit=g_r053_2084 need_s=253 remaining_s=5559
+admit unit=g_r061_2084 need_s=265 remaining_s=5272
+admit unit=g_r069_2084 need_s=280 remaining_s=4979
+admit unit=g_r077_2084 need_s=294 remaining_s=4689
+admit unit=g_r077_4861 need_s=294 remaining_s=4388
+admit unit=g_r069_4861 need_s=280 remaining_s=4086
+admit unit=g_r061_4861 need_s=265 remaining_s=3793
+admit unit=g_r053_4861 need_s=253 remaining_s=3503
+admit unit=g_r045_4861 need_s=253 remaining_s=3221
+admit unit=g_r038_4861 need_s=252 remaining_s=2930
+admit unit=g_r022_4861 need_s=250 remaining_s=2646
+admit unit=g_r015_4861 need_s=281 remaining_s=2354
+admit unit=g_r010_4861 need_s=345 remaining_s=2033
+admit unit=g_r010_4589 need_s=345 remaining_s=1641
+admit unit=g_r015_4589 need_s=281 remaining_s=1242
+admit unit=g_r022_4589 need_s=250 remaining_s=912
+admit unit=g_r038_4589 need_s=252 remaining_s=610
+admit unit=g_r045_4589 need_s=253 remaining_s=323
+remaining_at_loop_end_s=31
