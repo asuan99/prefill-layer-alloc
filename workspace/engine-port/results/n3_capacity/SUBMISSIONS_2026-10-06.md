@@ -56,7 +56,8 @@
 
 | shape | job name | slug | 제출(UTC) | 커밋 | 이미지 | spec | 승인 |
 |---|---|---|---|---|---|---|---|
-| B | (제출 후 기입) | | | rev6 봉인 커밋 | `sglang-runtime@1e0d335b…` | `resourcespec-a100x1` | 사용자 2026-10-06 "a" = rev6 권고안 승인 + "사전등록 개정·델타 감사·재제출까지 진행"(catch-up 브리핑 선택지 A) |
+| B | `pdmux-n3-capacity-38ed3f4-20261006092813` | `job-n60kw8bsejuz` | 2026-10-06T09:28Z | `38ed3f4`(rev6 봉인) | `sglang-runtime@1e0d335b…` | `resourcespec-a100x1` | 사용자 2026-10-06 "a" = rev6 권고안 승인 + "사전등록 개정·델타 감사·재제출까지 진행"(catch-up 브리핑 선택지 A) |
 
-- 선행: rev6 델타 감사 `VERDICT_n3_rev6_delta_2026-10-06.md` = `GO-with-caveats`(死因 0, R-1…R-4 반영, W-1…W-4 반영, W-5 미반영[사용자 결정], N3C-28…33 §11 승계, 재봉인 표 追記), `test_n3_capacity` 66/66, citation 0위반, doc_facts 0위반(11차 정정 957→960), presubmit 차단 = M4R·TC1 2건(등록된 범위), tracked tree clean. `RESUME_FROM` 미설정(1·2회차 모두 셀 0, 재개 불가, N3C-27). dry-run(커밋 전 `460fda2` 기준)으로 명령 형태가 2회차와 동일함을 확인(`PDMUX_N3_SHAPE=B`, 같은 이미지·spec·볼륨).
+- 선행: rev6 델타 감사 `VERDICT_n3_rev6_delta_2026-10-06.md` = `GO-with-caveats`(死因 0, R-1…R-4 반영, W-1…W-4 반영, W-5 미반영[사용자 결정], N3C-28…33 §11 승계, 재봉인 표 追記), `test_n3_capacity` 66/66, citation 0위반, doc_facts 0위반(11차 정정 957→960), presubmit 차단 = M4R·TC1 2건(등록된 범위), tracked tree clean. `RESUME_FROM` 미설정(1·2회차 모두 셀 0, 재개 불가, N3C-27). dry-run(커밋 전 `460fda2` 기준 + 커밋 후 `38ed3f4` 기준 2회)으로 명령 형태가 2회차와 동일함을 확인(`PDMUX_N3_SHAPE=B`, 같은 이미지·spec·볼륨).
 - N3C-27 주의: 1·2회차가 `/data/substrate_history.tsv`에 측정 0 행을 남겼으므로 이번 Job의 `SUBSTRATE_WARNING`은 그 행 기준으로 발화할 수 있다(측정 셀 간 기판 혼합 아님).
+- 제출 결과: 업로드 3 file(76.7 MB), Job 생성(slug `job-n60kw8bsejuz`), tag `n3-capacity`, `vessl_jobs.tsv` 행 추가(fetched=no). 회수: `scripts/vessl/fetch.sh n3_capacity pdmux-n3-capacity-38ed3f4-20261006092813`(DONE+sha256 통과가 완료).
