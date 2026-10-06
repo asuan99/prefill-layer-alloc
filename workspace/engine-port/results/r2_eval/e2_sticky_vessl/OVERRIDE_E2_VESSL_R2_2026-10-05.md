@@ -185,4 +185,5 @@ r2에서 달라진 점: O4 settle가 P14 입장 판정 **앞**에서 돈다. 그
   - 커밋 ☐
   - staging ☐ — 재사용 가능 여부 확인: 2026-10-05 `vesslctl volume ls <object volume> --prefix staging/e2_selftest_archive/` → 7 파일 + `SHA256SUMS`(2026-10-04T13:23:51Z). 파일 크기 합 237,346,884 bytes가 로컬 908623 아카이브와 같고, 로컬 아카이브는 `--verify-archive` OK. 내용 sha는 Job 안 `--verify-archive`가 다시 확인한다(`ABORT_ARCHIVE_DRIFT`). 1회차 중단 Job의 `ARCHIVE_CHECK.txt`도 OK였다.
   - dry-run 승인 ☐
-- **소진 job name**: (미제출)
+- **사용자 재확인(규칙층 A14 판정서 필수 수리 4)**: ☑ 2026-10-05 사용자 "E2 r2 재실행 진행" — §5-1 예산표(보통 2.242 / 최악 2.533 / 최악+settle 3.533 / 하드캡 4.0 GPU-h, 1회차 합산) 제시 후 승인. 2026-10-06 "실험 job들에 대해서 다시 진행"으로 재확인.
+- **소진 job name**: **`pdmux-e2-sticky-vessl-22c8c64-20261006020317`** (slug `job-jtbwoot7zz78`, 제출 2026-10-06T02:03Z, 커밋 `22c8c64`, 이미지 `1e0d335b…`, spec `resourcespec-a100x1`). 이 OVERRIDE는 이 Job 1건으로 소진된다. 재개 없음(R1). 선행조건 체크: 하네스층 ☑(A14 판정서 봉인 표 + export digest 대조 OK) · 커밋 ☑(`d3846d8`, 작업 트리 clean) · staging ☑(재사용, 237,346,884 bytes) · dry-run 승인 ☑ · 제출 ☑.
