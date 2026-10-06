@@ -1,0 +1,1 @@
+ABORT_FLOOR floor invalid (see /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/n3b_pdmux-n3-capacity-79999aa-20261006081638/T_K.json): a floor span not at (108,0), running_bs>0, or an incomplete bench -- no arm cell runs (P-2)

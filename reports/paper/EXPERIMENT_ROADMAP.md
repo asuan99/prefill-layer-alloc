@@ -1,6 +1,20 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-10-04(2차, doc-steward — **N4(D-SEM) 종결 등재 +
+최종 갱신: 2026-10-06(doc-steward — **E2 r2 결과 감사 반영(트랙 완주, 다음 = N2(3-a) 사전등록이 E2VR-6 승계) + N3 shape B 2회 제출 셀 측정 0(rev6 사용자 결정 대기)**, GPU 0·새 성능 판정 0건·게이트 #6·λ0R-8(iii)·HE0·Claim 등급 전부 불변).
+
+**E2 r2 허용 문안(`workspace/engine-port/results/r2_eval/e2_sticky_vessl/VERDICT_result_e2_vessl_r2_2026-10-06.md` §9, 문자 그대로)**:
+
+> E2 sticky 대조 VESSL 재실행 Job `pdmux-e2-sticky-vessl-22c8c64-20261006020317`(A100 `GPU-a66f0fff`, 20/20 boot, 등록대로 집행, 라벨 바이트 재현)은 등록 라벨 R1 = `OFF_BASELINE_ABOVE_BAND`를 냈다(대조 arm 진술: a_r2/251 E-qcond 21.51% [20/93], a_r2/2630 25.93% [14/54]; ON 절은 양성 대조로 성립, Q1 미확립). R2는 a_r4·a_r2 모두 `LAMBDA_MOVES_DOWN`이다(a_r4 d̄ −0.905 req/s, CI[−0.912, −0.898], d/OFF −29.8…−30.3%; a_r2 d̄ −0.689, CI[−0.714, −0.669], −24.1…−25.9%; n=4, `--max-running-requests 48` 구속 achieved, 정지 rate 사다리라 정책 비교 아님). R3/R4/R4′/R5는 PASS, R4″는 `B_RESULT_AXIS_WITHIN`(n=2, 차이 없음 아님), P13은 byte-identical, UNRESOLVED 0이다. 1회차 중단 Job(`…20261004135228`, 10/20 boot, `ABORT_P3`, 라벨 0건) a_r4 d/OFF −29.25…−30.09%(4/4 음수)를 병기한다.
+
+**N2(3-a)가 가져갈 수 있는 것(E2VR-6)**: (a) 이 기판·이 트리·`pdmux_homog5`(5그룹, D44 = index 2)에서 `PDMUX_STICKY_PARTITION=1`이 서빙 중 배선되고 유지된다는 양성 대조 통과(P1 10/10 대 0/10, ON decode-busy idx2 E-cnt ≥99.64%·E-iter ≥99.64%·E-time ≥99.79%·E-qcond 100%, 세 셀 10 boot) (b) 부하 없는 greedy 6건 byte-identical (c) r2 러너 O1/O2 하 20 boot 포트 재시도 0과 P3 (ii) 실가동 사례(운영 사실). **가져갈 수 없는 것**: index 2/D44 밖({16,24,34})·6그룹 config로의 일반화, "≥99.6%"를 엔진 강제 집합 {0,2} 밖의 구속 충실도로 쓰는 것, 부하 중 정확성, sticky-ON achieved를 D별 용량·프로파일 값으로 쓰는 것, 단독 vs 동거 step 시간(DS-3), 수준값의 Job 간 이식.
+
+**필수 병기(판정서 §9·§11)**: E2C-1(기전 둘)·E2C-21(a)(b)(c)(처치 시간의 86–89%가 prefill 유휴 구간)·E2C-10(48-구속 achieved, 시스템 용량 아님)·E2C-7(OFF→ON 순서 비대칭)·E2C-13·E2C-17·E2C-18·E2VC-1·E2VC-2(CPU)·E2VC-7/16(배너 19×…025 + 1×…021)·E2VC-12·E2VC-13·E2VC-14·E2VC-15·E2V-10 원 키. 신규 **E2VR-1**(라벨 존재가 P3 (ii)에 의존 — rev3 리터럴 P3였다면 boot 15에서 `ABORT_P3`·라벨 0건; (ii)는 이 Job 실행 전 등록), **E2VR-2**(R1 OFF 실패는 E-qcond 하나·작은 분모 54·93에서만, 같은 seed 4386 a_r2 OFF E-qcond가 네 측정에서 17.65–20.57%로 문턱 20.0을 가로지름 — seed·기판 속성으로 인용 금지), **E2VR-3**(두 VESSL Job 간 a_r4 achieved 수준 OFF +4.1%·ON +3.6% 이동, 원인 귀속 불가 — Job 내 paired 차분만 인용), **E2VR-4**(`cell_*.json`의 `snapshots`·`dropped_by_probe_filter`·`telemetry_span` 인용 금지), **E2VR-5**(n=4 CI<0 = 4/4 음수 = 정확 부호검정 단측 1/16, 'p<0.05 유의' 금지), **E2VR-6**(N2 승계 범위), **E2VR-7**(−4 토큰 이탈은 H1 필요조건 반례 1건일 뿐 H2 확정·1회차 H1 반증 아님), **E2VR-8**(a_r2 크기는 knee와 섞여 부호만 해석).
+
+**불변 선언**: 게이트 #6(λ\*\_SLO / λ\*\_VESSL 정규화 격자 미등록)·λ0R-8(iii)(E2C-5: E2는 필요조건일 뿐 해소·약화하지 않음)·HE0·layer-type 死·정책 순위·Claim D/E(미검증)·P2 블로커 ②③·게이트 #13/#16·C2 인용정지 모두 불변. **새 성능 판정 0건.**
+
+**N3 현황(2026-10-06, 성능 판정 0건)**: 사전등록 rev5(엔진 루트 `os.path.abspath`, 델타 감사 `GO-with-caveats`·死因 0·N3C-23…27, 커밋 `5c58dbc`). shape B를 VESSL에 **2회 제출했으나 둘 다 셀 측정 0**이다. (1회차 `pdmux-n3-capacity-a4b0c2e-20261006064114`) exit 4 `ABORT_SELFTEST` — Job 레이아웃(`results/`→`/data/runs/<job>/results` 심볼릭 링크)에서 `Path(__file__).resolve()`가 엔진 루트를 클론 밖으로 풀어 `analyze.py` MISSING → rev5로 수리. (2회차 `pdmux-n3-capacity-79999aa-20261006081638`) exit 7 `ABORT_FLOOR`(floor bench 16/16 완료, TTFT p50 906.76 ms·p99 909.99 ms) — floor 판정 조건 (iii)가 입장 시점 `prefill_span_start` 라벨을 읽는데, 엔진 루프 순서(입장+시작 이벤트 기록 → 끝난 요청 제거 → stream 조정 → prefill 발사)상 그 라벨은 stream 조정 **전** 상태라 28 span 중 1건(warmup 4번째, bench 창 이전)이 (0,108)·`running_bs=1`로 찍혔다. 실현 분할은 (108,0)이었다(span_end stream 0, +15/+47 ms 스냅샷 stream 0, span 안 decode_iteration 0건). 직전 decode→prefill 간격 124.8 ms(정상 16–20 ms)는 스케줄러 정지로, cgroup CPU 쓰로틀이 후보이나 **미확정**. R3 arm identity는 이 라벨을 쓰지 않는다. 진단 전문 `workspace/engine-port/results/n3_capacity/SUBMISSIONS_2026-10-06.md`. **다음 = rev6**(floor 판정 입력을 실현 증거로: 각 span `prefill_span_end.stream_idx == 0` ∧ span 구간 안 decode_iteration 0건, 마지막 16 span은 `n_new==1`·`queue_len==0` 유지) — **사용자 결정 대기**, 승인되면 rev6 → claims-auditor 델타 감사 → 커밋 → dry-run → 새 job name 재제출(`RESUME_FROM` 금지). N3 shape A는 B 결과 감사 뒤 별도 승인.
+
+이전: 2026-10-04(2차, doc-steward — **N4(D-SEM) 종결 등재 +
 TTFT SLO 방법론 A′ 채택**, GPU 0·새 성능 판정 0건·게이트 #6·
 λ0R-8(iii)·HE0·Claim 등급 전부 불변).
 

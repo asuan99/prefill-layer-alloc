@@ -1,0 +1,48 @@
+{
+  "hard_cap": {
+    "cell_section_s": 14400,
+    "gpu_h": 4.0,
+    "tail_reserve_s": 600,
+    "usd": 5.92
+  },
+  "normal": {
+    "admitted": 48,
+    "all_admitted": true,
+    "by_block_s": {
+      "bridge": 821.34,
+      "floor": 161.0,
+      "observer": 1765.3333333333337,
+      "round1": 2131.335477135047,
+      "round2": 2131.335477135047,
+      "round3": 2131.335477135047,
+      "round4": 2131.335477135047,
+      "tail": 161.0
+    },
+    "container_s": 12126.11524187352,
+    "corner": "normal",
+    "gpu_h": 3.3683653449648667,
+    "units": 48,
+    "usd": 4.985180710548002
+  },
+  "note": "per-boot overheads are \u03bb0 VESSL measurements (E2 A13 \u00a75-1); bench durations are a model (span vs N/lam_ref); preflight 600 s is UNMEASURED for N3; tail and export are outside the cap (NOT a billing cap).",
+  "rate_usd_h": 1.48,
+  "shape": "B",
+  "worst": {
+    "admitted": 47,
+    "all_admitted": false,
+    "by_block_s": {
+      "bridge": 1026.675,
+      "floor": 191.25,
+      "observer": 2007.3333333333337,
+      "round1": 2468.630618498791,
+      "round2": 2468.6306184987916,
+      "round3": 2468.630618498791,
+      "round4": 2468.6306184987916
+    },
+    "container_s": 13791.880807328496,
+    "corner": "worst",
+    "gpu_h": 3.8310780020356936,
+    "units": 48,
+    "usd": 5.6699954430128265
+  }
+}

@@ -1,0 +1,4 @@
+shape=B hard_cap_s=14400 tail_reserve_s=600
+t0_epoch=1791274657 (job_entry_start_utc) deadline_epoch=1791288457
+remaining_at_script_start_s=13767
+admit unit=floor_head need_s=192 remaining_s=13580

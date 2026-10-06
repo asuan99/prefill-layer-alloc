@@ -1,0 +1,9 @@
+{
+  "dropped_events_max": 0,
+  "n_spans": 28,
+  "problems": [
+    "1 prefill spans not at (108, 0)"
+  ],
+  "shape": "B",
+  "valid": false
+}

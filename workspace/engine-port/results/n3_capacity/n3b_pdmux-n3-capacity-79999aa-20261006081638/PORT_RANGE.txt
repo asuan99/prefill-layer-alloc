@@ -1,0 +1,4 @@
+ip_local_port_range=32768 60999
+ip_local_reserved_ports=
+listen_port_window=20000-20799
+floor_head port=20088 tries=1

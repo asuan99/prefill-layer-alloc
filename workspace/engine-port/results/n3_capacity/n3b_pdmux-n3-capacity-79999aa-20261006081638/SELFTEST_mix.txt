@@ -1,0 +1,2 @@
+SYNTHETIC_SELFTEST_OK (W-dec, X-tok, CO-a, cap-bound, pin, X-req vs constructed timeline; anchor control; R3 arm identity + 3 injection controls)
+SELFTEST_ARCHIVE_MISSING /data/runs/pdmux-n3-capacity-79999aa-20261006081638/results/r2_eval/lambda0_vessl/lam0v_pdmux-lambda0-vessl-1d47d3e-20261004084945 lacks ['a_r0', 'a_r2', 'a_r4', 'a_r4_s2', 'b_r0', 'b_r3', 'b_r3_s2'] (git-ignored; not an estimator failure)

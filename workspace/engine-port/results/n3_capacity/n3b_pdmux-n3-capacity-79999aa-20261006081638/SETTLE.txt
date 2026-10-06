@@ -1,0 +1,2 @@
+baseline epoch=1791274872 used_mib=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+floor_head epoch=1791274878 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936

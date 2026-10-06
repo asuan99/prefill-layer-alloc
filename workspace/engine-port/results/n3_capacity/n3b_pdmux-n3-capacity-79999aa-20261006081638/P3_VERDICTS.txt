@@ -1,0 +1,1 @@
+floor_head P3 rc=0 PASS mamba=48 tokens_min=2721290 tokens_max=2721290 rel=0.000e+00 tol=0.0001 floor=786432 n_boots=1 distinct_tokens=1
