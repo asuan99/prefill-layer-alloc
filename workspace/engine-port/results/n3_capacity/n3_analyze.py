@@ -31,10 +31,15 @@ import math
 import random
 import re
 import statistics
+import os
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+# rev5 (2026-10-06): NOT .resolve() -- inside a VESSL Job job_entry.sh replaces engine-port/results/
+# with a symlink to /data/runs/<job>/results, and resolving through it moved ENG off the clone
+# (benchmarks/ and src/ "MISSING"; Job pdmux-n3-capacity-a4b0c2e-20261006064114 ABORT_SELFTEST).
+# abspath keeps the path the runner invoked ($ROOT/workspace/engine-port/results/...), symlinks intact.
+HERE = Path(os.path.abspath(__file__)).parent
 ENG = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ENG / "benchmarks" / "pdmux_eval"))

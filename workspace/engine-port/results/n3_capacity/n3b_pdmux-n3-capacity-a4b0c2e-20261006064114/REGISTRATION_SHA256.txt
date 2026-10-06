@@ -1,0 +1,17 @@
+# pre-registration in force: PREREG_N3_CAPACITY_2026-10-04.md
+c36d90468a36b26f79c50a7dd8abdbcfe1435e72c734c95384f1d6838407c7a5  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/PREREG_N3_CAPACITY_2026-10-04.md
+# decision path + runner + descriptive estimator + served config + canonical predicate
+3cc780dca651419965b3917db392b4af37f96feb5d035bfef56622b393cb0c3f  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/n3_capacity.sh
+bf2e52f17d0742de5a5021707ef8ec439987b7c7d234153465b013087c1aee1d  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/n3_plan.py
+923a240c70efab60dcf951635d6298f4f1acab8cbfafb26d146d0c47a54efddc  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/n3_analyze.py
+3b6f8934c69ad09b23fd4490a882dafbdecef05e7980f51b2679fe062d2e65c3  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/n3_realized_mix.py
+01675b2d7fa8ff23bb1cb142ff66fa4dfd0c021722ae9b8e7acedc2f4d38fca1  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/configs/pdmux_n3_A_agn.yml
+1be495110ea67c95f275b6c8ab7e7af25d0778c2910bf6a830170dbc078aeaa2  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/analyze.py
+2e51280c42e61f0e3ff7fdeccb1e7184a5091e228328d66d9d6d482e2893f86d  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lambda0_plan.py
+# every verdict kept beside it
+754c428774b62156f2609bda74481c1059c1d0e74ba810b9b45b0929692c2566  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/VERDICT_n3_harness_2026-10-05.md
+d51ca5f20e6fedd9e049a803e2fd4d61877fd8bd3aa50f06cb5aece74b7045b2  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/VERDICT_n3_rules_rev1_2026-10-05.md
+eca31dc7ad056ad014241d126acfb1061cb66718b3341c65d958ceb630b1b512  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/VERDICT_n3_rules_rev2_2026-10-05.md
+d7ce1c5c455549b9df922a74cb67ca1491d9a41c8f237efc6548f87bda3623a8  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/VERDICT_n3_rules_rev3_2026-10-05.md
+353da3ba2acfbb22c21568cfd3913c2067df807e3d48baa9fffd0bc52ec8d310  /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/n3_capacity/VERDICT_n3_rules_rev4_2026-10-05.md
+# tree: a4b0c2e16e5f5c67fff4a0b5799f0ee83e4d401c uncommitted_outside_results=0

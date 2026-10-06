@@ -19,6 +19,10 @@ variant certifies nothing; lesson 254: an equivalent mutant is recorded, not hid
                     (both kill layers removed => overrun; one removed => equivalent mutant);
                     resume (and its digest control).
 
+job layout        rev5: results/ as a symlink (VESSL job_entry.sh) keeps the engine root on the
+                    clone.  Control: the pre-rev5 `.resolve()` line restored fails (MISSING /
+                    ModuleNotFoundError), i.e. the Job a4b0c2e failure is reproduced.
+
 Classes TestRegistration, TestUnits, TestFailClosedWiring are fast and need no sglang: the Job
 preflight runs them against the installed tree.
 """
@@ -1172,6 +1176,59 @@ class TestBootBranchSnippets(_SnippetBase):
         self.assertIn("BRC=143", out)
         self.assertTrue(marker, "watchdog-only path must still write budget_killed_<unit>")
         self.assertLess(wall, 30.0)
+
+
+class TestJobSymlinkLayout(unittest.TestCase):
+    """rev5 (2026-10-06): inside a VESSL Job, job_entry.sh moves engine-port/results/ to
+    /data/runs/<job>/results and leaves a symlink.  The helpers must derive the engine root from
+    the path they were invoked by, not from the resolved file (Job
+    pdmux-n3-capacity-a4b0c2e-20261006064114 aborted on `analyze.py: MISSING`).
+    Control (lesson 53): the same layout with the pre-rev5 `.resolve()` line restored must fail."""
+
+    def _layout(self, td: Path, revert: bool) -> Path:
+        eng = td / "clone" / "workspace" / "engine-port"
+        eng.mkdir(parents=True)
+        for d in ("benchmarks", "src"):
+            (eng / d).symlink_to(ENG / d)
+        real = td / "data" / "runs" / "job" / "results"
+        shutil.copytree(HERE, real / "n3_capacity",
+                        ignore=shutil.ignore_patterns("n3a_*", "n3b_*", "vessl", "probe_*", "__pycache__"))
+        shutil.copytree(ENG / "results/r2_eval/lambda0_prereg", real / "r2_eval/lambda0_prereg",
+                        ignore=shutil.ignore_patterns("__pycache__"))
+        (eng / "results").symlink_to(real)
+        if revert:
+            for f in ("n3_plan.py", "n3_analyze.py"):
+                q = real / "n3_capacity" / f
+                t = q.read_text()
+                new = "HERE = Path(os.path.abspath(__file__)).parent\n"
+                self.assertEqual(t.count(new), 1, f)
+                q.write_text(t.replace(new, "HERE = Path(__file__).resolve().parent\n"))
+        return eng
+
+    def _run(self, eng: Path, *args):
+        return subprocess.run([sys.executable, *map(str, args)], cwd=eng.parents[1], env=_clean_env(),
+                              capture_output=True, text=True, timeout=300)
+
+    def test_symlinked_results_layout(self):
+        with tempfile.TemporaryDirectory() as td:
+            eng = self._layout(Path(td), revert=False)
+            h = eng / "results" / "n3_capacity"
+            r = self._run(eng, h / "n3_plan.py", "--selftest")
+            self.assertEqual(r.returncode, 0, r.stdout[-800:] + r.stderr[-800:])
+            self.assertIn("N3 PLAN SELFTEST OK", r.stdout)
+            r = self._run(eng, h / "n3_analyze.py", "--help")   # imports the canonical analyze.py
+            self.assertEqual(r.returncode, 0, r.stderr[-800:])
+
+    def test_control_resolve_fails_in_symlinked_layout(self):
+        with tempfile.TemporaryDirectory() as td:
+            eng = self._layout(Path(td), revert=True)
+            h = eng / "results" / "n3_capacity"
+            r = self._run(eng, h / "n3_plan.py", "--selftest")
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("benchmarks/pdmux_eval/analyze.py: MISSING", r.stderr)
+            r = self._run(eng, h / "n3_analyze.py", "--help")
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("No module named 'analyze'", r.stderr)
 
 
 if __name__ == "__main__":

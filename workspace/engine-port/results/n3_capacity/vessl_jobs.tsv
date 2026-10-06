@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-10-06T06:41:22Z	pdmux-n3-capacity-a4b0c2e-20261006064114	a4b0c2e16e5f5c67fff4a0b5799f0ee83e4d401c	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/results/n3_capacity/n3_capacity.sh		yes

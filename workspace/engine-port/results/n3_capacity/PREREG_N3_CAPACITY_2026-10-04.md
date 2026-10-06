@@ -1,6 +1,7 @@
-# 사전등록 — N3: 게이트 #6 SLO 용량 격자 (Nemotron-Nano-9B-v2, VESSL A100) rev4 (2026-10-05)
+# 사전등록 — N3: 게이트 #6 SLO 용량 격자 (Nemotron-Nano-9B-v2, VESSL A100) rev5 (2026-10-06)
 
-> **지위**: 새 사전등록 **rev4**(R6 = P3 (ii) 기입, **델타 감사 대기**). 직전 rev3 델타 감사 `VERDICT_n3_rules_rev3_2026-10-05.md` = `GO-with-caveats`(N3C-20). 작성 engine-porter, GPU 0, 성능 판정 0, Claim 등급 변경 0.
+> **지위**: 사전등록 **rev5**(하네스 결함 수리, 규칙 불변). rev5 델타 감사(규칙층+하네스층 합본) `VERDICT_n3_rev5_delta_2026-10-06.md` = `GO-with-caveats`(死因 0, N3C-23…27, 필수 수리 R-1…R-3 반영). 직전 rev4 델타 감사 `VERDICT_n3_rules_rev4_2026-10-05.md` = `GO-with-caveats`(N3C-22), 하네스층 `VERDICT_n3_harness_2026-10-05.md`. 작성 engine-porter(rev1–4)·메인 세션(rev5), GPU 0, 성능 판정 0, Claim 등급 변경 0.
+> - **rev4 → rev5 (2026-10-06, 하네스 결함 수리 — 규칙·상수·arm·순서·예산 불변)**: shape B 1회차 Job `pdmux-n3-capacity-a4b0c2e-20261006064114`가 preflight `ABORT_SELFTEST n3_plan`(exit 4, 셀 측정 0·라벨 0)으로 끝났다. 원인: `n3_plan.py`·`n3_analyze.py`가 엔진 루트를 `Path(__file__).resolve()`로 유도했는데, VESSL `job_entry.sh`가 `engine-port/results/`를 `/data/runs/<job>/results` 심볼릭 링크로 바꾸므로 루트가 클론 밖으로 풀려 `benchmarks/pdmux_eval/analyze.py`가 MISSING(채점 단계 `import analyze`도 같은 이유로 실패했을 것). 수리: 두 파일의 `HERE`를 `Path(os.path.abspath(__file__)).parent`(심볼릭 링크 비해석)로 교체. 러너·config·`n3_realized_mix.py`·판정 규칙 바이트 불변. 테스트 `TestJobSymlinkLayout` 2개(심볼릭 링크 레이아웃 통과 + `.resolve()` 복원 변이가 Job과 같은 MISSING/ModuleNotFoundError로 실패). 진단 전문 `SUBMISSIONS_2026-10-06.md`. rev4 봉인 커밋 `a4b0c2e` 대비 diff로 델타 감사를 받는다. 변경 색인 §17-4. 1회차 Job은 셀 측정 0·`T_K.json` 없음이라 부분 집합 재라벨·Job 혼합 문제가 없고, `RESUME_FROM`으로 쓸 수 없다(`ABORT_RESUME`). 재제출은 새 Job·새 job name. caveat N3C-23…27은 rev5 델타 감사 판정서 §9를 문자 그대로 승계한다.
 > - **rev3 → rev4**: 사용자 결정(2026-10-05) **R6 = P3 (ii) 허용오차**를 E2 A14 §3-1과 같은 문언·상수로 기입(§2-3)하고, 러너 P3 분기를 엄격 → (ii)로 교체(`n3_plan.p3_verdict`)했다. 6그룹 Workspace 프로브 결과를 예산 상수 검증 근거(판정 아님)로 追記(§8-7, §12-13), N3C-21(O4 해상도, E2VC-14 동형) 수록. rev3 봉인 커밋 `69fbbb0` 대비 diff로 델타 감사를 받는다. 변경 색인은 §17-3.
 > - **rev2 → rev3**: rev2 델타 감사 `VERDICT_n3_rules_rev2_2026-10-05.md` = **`GO-with-caveats`**(死因 0, N3C-15…19). 새 결함 **D1(R3 근거 부재 = 통과 → unverifiable로)·D2(R6 전례 문구 정정)만** 수리한다. rev2 봉인 커밋 `81b55c3` 대비 diff로 델타 감사를 받는다. 변경 색인은 §17-2.
 > - **rev1 → rev2**: claims-auditor 규칙층 감사 `VERDICT_n3_rules_rev1_2026-10-05.md` = **`GO-with-caveats`**(死因 0, N3C-1…14). 필수 수리 **R1·R2·R3·R4·R5(기본안)·R7·R8 반영**. **R6(P3 정책)은 사용자 결정 대기 — 자리표시자만 둔다(§2-3).** R1·R3는 규칙 변경이라 **델타 감사 대기**. 변경 색인은 §17.
@@ -667,3 +668,10 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 | 헤더·로컬 검증 수치 | 머리말, §13 | 없음 | — |
 | N3C-20 수록(rev3 판정서 §4 문안 그대로, rev3 수록 누락분) | §11 | 없음 | — |
 | 러너 머리 주석·`n3_plan` docstring 회차 표기 "(rev1)" → "(rev4)"(주석·docstring만, 실행 경로 무변) | — | `n3_capacity.sh`:3, `n3_plan.py`:5 | — |
+
+### 17-4. rev4 → rev5 변경 색인 (기준 커밋 `a4b0c2e`)
+
+| 변경 | 문서 | 코드 | 테스트 |
+|---|---|---|---|
+| 엔진 루트 유도 `.resolve()` → `os.path.abspath` (Job 레이아웃 = `results/` 심볼릭 링크; 1회차 Job preflight 실패 수리, 판정 경로·상수 불변) | 머리말 rev5 줄 | `n3_plan.py` `HERE`(+`import os`, 주석 4줄), `n3_analyze.py` `HERE`(+`import os`, 주석 4줄) | `TestJobSymlinkLayout` 2개(통과 + `.resolve()` 복원 변이 대조) |
+| 1회차 Job 실패 진단 기록 | `SUBMISSIONS_2026-10-06.md` | 없음 | — |
