@@ -1,0 +1,11 @@
+# selftest against /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/r2_eval/lambda0_prereg/lam0_908623 (read-only, GPU 0)
+cell        busy         E-cnt           E-time s  E-iter      E-qcond       idx0 idx3 split
+a_r0        2677    120/2677      31.76/667.98       4.50     6/34        1/2677     0   604
+a_r2         610     49/610       20.61/195.24       8.11    18/102       0/610      0   301
+a_r4         555     48/555       25.05/183.61       8.76    43/250       2/555      0   204
+a_r4_s2      557     46/557       24.57/183.44       8.36    43/253       0/557      0   169
+b_r0         313    135/313       71.26/107.68      45.58    36/45       13/313      0    43
+b_r3         441    400/441      285.08/292.00      92.29   395/395       1/441      0   100
+b_r3_s2      441    400/441      285.99/293.23      92.13   392/392       0/441      0   100
+
+SELFTEST_OK 7/7 cells reproduce the registered table

@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-e2-sticky-vessl-22c8c64-20261006020317
+Slug:                 job-jtbwoot7zz78
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/22c8c64c5d11baf5d9b18823cacec14068fd6cb4/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-06T02:03:25Z
+Started At:           2026-10-06T02:03:29Z
+Completed At:         2026-10-06T04:01:11Z
+Duration:             1h57m42s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=22c8c64c5d11baf5d9b18823cacec14068fd6cb4, PDMUX_JOB_NAME=pdmux-e2-sticky-vessl-22c8c64-20261006020317, PDMUX_CAMPAIGN=e2_sticky_vessl, PDMUX_TARGET=workspace/engine-port/results/r2_eval/e2_sticky_vessl/e2_sticky_vessl_r2.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

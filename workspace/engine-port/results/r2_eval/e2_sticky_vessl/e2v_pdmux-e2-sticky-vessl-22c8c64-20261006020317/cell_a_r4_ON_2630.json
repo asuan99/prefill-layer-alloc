@@ -1,0 +1,70 @@
+{
+  "arm": "ON",
+  "bench": {
+    "P10_completed_eq_num_prompts": true,
+    "P11_input_len_exact": true,
+    "P11b_output_len_exact": true,
+    "P12_range_ratio_one": true,
+    "P9_errors_zero": true,
+    "achieved_req_s": 2.103013300164261,
+    "all_pass": true,
+    "observed": {
+      "completed": 400,
+      "duration": 190.20326688792557,
+      "n_errors": 0,
+      "random_range_ratio": 1.0,
+      "total_input_tokens": 102400
+    }
+  },
+  "busy_n": 553,
+  "cell": "a_r4",
+  "e_cnt": {
+    "den": 553,
+    "num": 551,
+    "pct": 99.63833634719711
+  },
+  "e_iter": {
+    "den": 8781,
+    "idx0_weight_pct": 0.3644231864252363,
+    "num": 8749,
+    "pct": 99.63557681357476
+  },
+  "e_pact": {
+    "den": 22,
+    "num": 22,
+    "pct": 100.0
+  },
+  "e_qcond": {
+    "den": 256,
+    "num": 256,
+    "pct": 100.0
+  },
+  "e_time": {
+    "den_s": 260.72577879577875,
+    "num_s": 260.1694117579609,
+    "pct": 99.78660835135385
+  },
+  "idx0": {
+    "den": 553,
+    "num": 2,
+    "pct": 0.3616636528028933
+  },
+  "idx3": {
+    "den": 553,
+    "num": 0,
+    "pct": 0.0
+  },
+  "index_hist_busy": {
+    "0": 2,
+    "2": 551
+  },
+  "negative_gaps": 0,
+  "probe_end": null,
+  "run_ids": [
+    "e2_a_r4_ON_2630_pdmux-e2-sticky-vessl-22c8c64-20261006020317"
+  ],
+  "seed": "2630",
+  "sm_index_mismatch": 0,
+  "snapshots": 18711,
+  "split_transition": 1
+}

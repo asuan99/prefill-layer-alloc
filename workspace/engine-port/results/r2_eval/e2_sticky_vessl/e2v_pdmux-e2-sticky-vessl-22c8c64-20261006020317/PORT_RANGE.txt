@@ -1,0 +1,23 @@
+ip_local_port_range=32768 60999
+ip_local_reserved_ports=
+listen_port_window=20000-20799
+a_r4_OFF_4386 port=20033 tries=1
+a_r4_ON_4386 port=20357 tries=1
+a_r4_OFF_4162 port=20275 tries=1
+a_r4_ON_4162 port=20337 tries=1
+a_r4_OFF_251 port=20137 tries=1
+a_r4_ON_251 port=20518 tries=1
+a_r4_OFF_2630 port=20722 tries=1
+a_r4_ON_2630 port=20462 tries=1
+a_r2_OFF_4386 port=20373 tries=1
+a_r2_ON_4386 port=20648 tries=1
+a_r2_OFF_4162 port=20642 tries=1
+a_r2_ON_4162 port=20356 tries=1
+a_r2_OFF_251 port=20261 tries=1
+a_r2_ON_251 port=20058 tries=1
+a_r2_OFF_2630 port=20799 tries=1
+a_r2_ON_2630 port=20098 tries=1
+b_r3_OFF_4386 port=20684 tries=1
+b_r3_ON_4386 port=20370 tries=1
+b_r3_OFF_4162 port=20634 tries=1
+b_r3_ON_4162 port=20029 tries=1

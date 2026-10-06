@@ -1,0 +1,356 @@
+{
+  "companions": {
+    "R6": {
+      "mandatory_companion": "Cross-job comparison to job 908623 (gpu38) carries the unregistered node axis (gate #233: gpu38->43->40->41) and must never be cited as a judgement. This campaign's judgements are all within-job OFF vs ON.",
+      "status": "report only"
+    }
+  },
+  "inherited_caveats": [
+    "E2C-1 (one knob, two mechanisms)",
+    "E2C-2 (E-cnt is not time occupancy)",
+    "E2C-3 (ON index set is engine-forced; R1's ON clause is a positive control)",
+    "E2C-4 (E-pact is an identity in both arms)",
+    "E2C-5 (does NOT resolve lambda0R-8(iii))",
+    "E2C-6 (a_r2 Q5 sits on the cliff; step function only)",
+    "E2C-7 (OFF->ON order is a registered asymmetry)",
+    "E2C-8' (no estimator column may be cited without its convention)",
+    "E2C-9/E2C-20 (sampling grid and auxiliary numbers need conventions)",
+    "E2C-10 (achieved is bounded by --max-running-requests 48)",
+    "E2C-11/E2C-19 (four-estimator agreement is not robustness evidence; b_r0's exclusion carried it, and the binding estimator there is E-qcond, not E-iter)",
+    "E2C-12/E2C-13 (seed provenance; seeds change the REALIZED offered rate: a_r2 = 2.996/2.955/2.950/2.951 req/s)",
+    "E2C-15 (rev3 sec 4-2 E-time seconds are citation-banned; use the corrected table)",
+    "E2C-16 (population is not bench-only; post-hoc bench-only re-scoring may NOT re-label R1)",
+    "E2C-17 (n=4 bootstrap CI endpoints step over 256 distinct resamples)",
+    "E2C-18 (R4'' cannot resolve the drain axis)",
+    "E2C-21 (shape A: 86-89% of the treated time has NO prefill in flight; Q2 buys only the cost of pinning decode to 44 SM while there is nothing to multiplex with -- CONSENSUS audit 2F9)"
+  ],
+  "not_changed_by_this_campaign": [
+    "new performance verdicts: 0",
+    "Claim D/E grades: unchanged (both unverified)",
+    "gate #6 (lambda*_SLO): unchanged",
+    "P2 blockers (1)(2)(3): unchanged",
+    "policy ranking / HE0 / layer-type negative result: unchanged"
+  ],
+  "rules": {
+    "R1": {
+      "cells_dropped": [],
+      "cells_evaluated": [
+        "a_r2",
+        "a_r4"
+      ],
+      "label": "OFF_BASELINE_ABOVE_BAND",
+      "note": "OFF_BASELINE_ABOVE_BAND is a statement about the CONTROL arm, not about sticky (ADDENDUM A5).",
+      "off_clause_failures": [
+        "a_r2/251",
+        "a_r2/2630"
+      ],
+      "on_clause_failures": [],
+      "per_seed": {
+        "a_r2/251": {
+          "OFF": {
+            "e_cnt": 8.333333333333334,
+            "e_iter": 8.421052631578947,
+            "e_qcond": 21.50537634408602,
+            "e_time": 11.606943191605824
+          },
+          "ON": {
+            "e_cnt": 99.82300884955752,
+            "e_iter": 99.8210891199821,
+            "e_qcond": 100.0,
+            "e_time": 99.89496731736006
+          }
+        },
+        "a_r2/2630": {
+          "OFF": {
+            "e_cnt": 8.94308943089431,
+            "e_iter": 9.03398008418027,
+            "e_qcond": 25.925925925925927,
+            "e_time": 12.128436759053946
+          },
+          "ON": {
+            "e_cnt": 99.82174688057042,
+            "e_iter": 99.81953530340627,
+            "e_qcond": 100.0,
+            "e_time": 99.89416724663101
+          }
+        },
+        "a_r2/4162": {
+          "OFF": {
+            "e_cnt": 8.169934640522875,
+            "e_iter": 8.275576704251577,
+            "e_qcond": 19.51219512195122,
+            "e_time": 11.086513006505742
+          },
+          "ON": {
+            "e_cnt": 100.0,
+            "e_iter": 100.0,
+            "e_qcond": 100.0,
+            "e_time": 100.0
+          }
+        },
+        "a_r2/4386": {
+          "OFF": {
+            "e_cnt": 8.681135225375627,
+            "e_iter": 8.7597388923984,
+            "e_qcond": 18.181818181818183,
+            "e_time": 11.987341070315475
+          },
+          "ON": {
+            "e_cnt": 100.0,
+            "e_iter": 100.0,
+            "e_qcond": 100.0,
+            "e_time": 100.0
+          }
+        },
+        "a_r4/251": {
+          "OFF": {
+            "e_cnt": 8.78136200716846,
+            "e_iter": 8.885866485322452,
+            "e_qcond": 17.254901960784313,
+            "e_time": 13.345914350127805
+          },
+          "ON": {
+            "e_cnt": 100.0,
+            "e_iter": 100.0,
+            "e_qcond": 100.0,
+            "e_time": 100.0
+          }
+        },
+        "a_r4/2630": {
+          "OFF": {
+            "e_cnt": 8.303249097472925,
+            "e_iter": 8.389376496067479,
+            "e_qcond": 17.46031746031746,
+            "e_time": 13.775635620160097
+          },
+          "ON": {
+            "e_cnt": 99.63833634719711,
+            "e_iter": 99.63557681357476,
+            "e_qcond": 100.0,
+            "e_time": 99.78660835135385
+          }
+        },
+        "a_r4/4162": {
+          "OFF": {
+            "e_cnt": 7.9422382671480145,
+            "e_iter": 8.039282859426745,
+            "e_qcond": 16.929133858267715,
+            "e_time": 13.041528005116447
+          },
+          "ON": {
+            "e_cnt": 99.81981981981981,
+            "e_iter": 100.0,
+            "e_qcond": 100.0,
+            "e_time": 99.99905927803604
+          }
+        },
+        "a_r4/4386": {
+          "OFF": {
+            "e_cnt": 8.288288288288289,
+            "e_iter": 8.36743974533879,
+            "e_qcond": 16.733067729083665,
+            "e_time": 13.175387322574846
+          },
+          "ON": {
+            "e_cnt": 100.0,
+            "e_iter": 100.0,
+            "e_qcond": 100.0,
+            "e_time": 100.0
+          }
+        }
+      }
+    },
+    "R2": {
+      "a_r2": {
+        "banned_reading": null,
+        "bootstrap": {
+          "B": 100000,
+          "ci_hi": -0.6686191430056211,
+          "ci_lo": -0.7139076714140095,
+          "distinct_resamples": 256,
+          "mean": -0.6887180646644044,
+          "n": 4,
+          "rng_seed": 20260915
+        },
+        "diffs": [
+          -0.7256736007245652,
+          -0.6886448756648234,
+          -0.6786098834823422,
+          -0.661943898785887
+        ],
+        "label": "LAMBDA_MOVES_DOWN",
+        "mandatory_companion": "E2C-1: one knob, TWO mechanisms (decode SM 108->44 AND the removal of one drain pair per prefill boundary; opposite signs). No achieved change may be attributed to partitioning alone, and no null may be read as 'partitioning does not matter'.",
+        "seeds": [
+          "4386",
+          "4162",
+          "251",
+          "2630"
+        ],
+        "split_transition": {
+          "OFF": [
+            295,
+            281,
+            293,
+            297
+          ],
+          "ON": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      },
+      "a_r4": {
+        "banned_reading": null,
+        "bootstrap": {
+          "B": 100000,
+          "ci_hi": -0.8980014859577923,
+          "ci_lo": -0.9117494249323959,
+          "distinct_resamples": 256,
+          "mean": -0.9048754554450941,
+          "n": 4,
+          "rng_seed": 20260915
+        },
+        "diffs": [
+          -0.894941133598155,
+          -0.9010618383174296,
+          -0.912489694042768,
+          -0.9110091558220237
+        ],
+        "label": "LAMBDA_MOVES_DOWN",
+        "mandatory_companion": "E2C-1: one knob, TWO mechanisms (decode SM 108->44 AND the removal of one drain pair per prefill boundary; opposite signs). No achieved change may be attributed to partitioning alone, and no null may be read as 'partitioning does not matter'.",
+        "seeds": [
+          "4386",
+          "4162",
+          "251",
+          "2630"
+        ],
+        "split_transition": {
+          "OFF": [
+            157,
+            143,
+            201,
+            163
+          ],
+          "ON": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
+    },
+    "R3": {
+      "i_detail": {
+        "a_r2/251": 0,
+        "a_r2/2630": 0,
+        "a_r2/4162": 0,
+        "a_r2/4386": 0,
+        "a_r4/251": 0,
+        "a_r4/2630": 0,
+        "a_r4/4162": 0,
+        "a_r4/4386": 0,
+        "b_r3/4162": 0,
+        "b_r3/4386": 0
+      },
+      "i_off_idx3_all_zero": true,
+      "ii_idx0_within_ruler": "all within 5.0%",
+      "iii_ON_exceeds_OFF": [],
+      "iii_consequence": "code reading holds",
+      "iii_split_transition_report_only": {
+        "a_r2/251": {
+          "OFF": 293,
+          "ON": 0
+        },
+        "a_r2/2630": {
+          "OFF": 297,
+          "ON": 1
+        },
+        "a_r2/4162": {
+          "OFF": 281,
+          "ON": 0
+        },
+        "a_r2/4386": {
+          "OFF": 295,
+          "ON": 0
+        },
+        "a_r4/251": {
+          "OFF": 201,
+          "ON": 0
+        },
+        "a_r4/2630": {
+          "OFF": 163,
+          "ON": 1
+        },
+        "a_r4/4162": {
+          "OFF": 143,
+          "ON": 0
+        },
+        "a_r4/4386": {
+          "OFF": 157,
+          "ON": 0
+        },
+        "b_r3/4162": {
+          "OFF": 100,
+          "ON": 99
+        },
+        "b_r3/4386": {
+          "OFF": 100,
+          "ON": 99
+        }
+      }
+    },
+    "R4": {
+      "consequence_if_fail": "arm differences also arise from something other than sticky (order, drift, read-skew) => caveat on ALL of R1/R2.",
+      "delta_pp": 0.0,
+      "label": "PASS",
+      "per_arm": {
+        "OFF": 100.0,
+        "ON": 100.0
+      }
+    },
+    "R4dprime": {
+      "Y": 0.0005305127090931006,
+      "d_bar": -0.0003804499901009506,
+      "degenerate_yardstick": false,
+      "label": "B_RESULT_AXIS_WITHIN",
+      "mandatory_companion": "n=2, no CI, power unregistered. B_RESULT_AXIS_WITHIN may NOT be read as 'no difference'. E2C-18: this probe cannot resolve the drain axis at any threshold, and Y is endogenous (treatment that raises run-to-run spread pushes the verdict toward WITHIN).",
+      "not_a_negative_control": "b_r3 moves +2.4pp (E-time) / +9.1pp (E-cnt) OFF->ON; this is a drain-axis sensitivity probe, not a partition-axis control.",
+      "s_off": 0.0005305127090931006,
+      "s_on": 0.00012143719591806157,
+      "trigger": 0.0015915381272793017
+    },
+    "R4prime": {
+      "idx0": {
+        "den": 441,
+        "num": 0,
+        "pct": 0.0
+      },
+      "label": "PASS",
+      "num_den": [
+        441,
+        441
+      ],
+      "on_e_cnt_pct": 100.0
+    },
+    "R5": {
+      "a_r2": {
+        "label": "PASS",
+        "spread_pp": {
+          "OFF": 0.773154790371434,
+          "ON": 0.17825311942958422
+        }
+      },
+      "a_r4": {
+        "label": "PASS",
+        "spread_pp": {
+          "OFF": 0.8391237400204448,
+          "ON": 0.36166365280288915
+        }
+      }
+    }
+  },
+  "unresolved": []
+}

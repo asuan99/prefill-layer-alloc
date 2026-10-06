@@ -1,0 +1,2 @@
+DIGESTS OK (14 E2 files, A13, 1 config)
+DIGESTS_R2 OK (A14, runner r2, 6 first-Job sealed files)

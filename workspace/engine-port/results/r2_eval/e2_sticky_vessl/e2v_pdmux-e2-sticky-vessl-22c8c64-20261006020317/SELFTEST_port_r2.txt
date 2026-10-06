@@ -1,0 +1,1 @@
+E2V r2 SELFTEST OK (P3 (ii): first-Job keys PASS; mamba 47/48, all-47, 0.8% token drift, below 786432, banner/tokens missing, no keys, unregistered constants FAIL; boundaries hold; registered budget corners == e2_vessl_plan.simulate; observed/worst/worst+settle admit all 20 boots)

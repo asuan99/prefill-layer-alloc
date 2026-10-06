@@ -1,0 +1,21 @@
+baseline epoch=1791252323 used_mib=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r4_OFF_4386 epoch=1791252325 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r4_ON_4386 epoch=1791252683 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r4_OFF_4162 epoch=1791253056 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r4_ON_4162 epoch=1791253342 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r4_OFF_251 epoch=1791253700 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r4_ON_251 epoch=1791253990 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r4_OFF_2630 epoch=1791254354 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r4_ON_2630 epoch=1791254638 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r2_OFF_4386 epoch=1791255001 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r2_ON_4386 epoch=1791255300 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r2_OFF_4162 epoch=1791255661 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r2_ON_4162 epoch=1791255957 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r2_OFF_251 epoch=1791256323 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r2_ON_251 epoch=1791256620 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r2_OFF_2630 epoch=1791256981 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+a_r2_ON_2630 epoch=1791257282 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+b_r3_OFF_4386 epoch=1791257642 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+b_r3_ON_4386 epoch=1791258042 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+b_r3_OFF_4162 epoch=1791258445 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936
+b_r3_ON_4162 epoch=1791258846 settle_polls=1 used_mib=0 base_mib=0 sglang_alive=0 nvml_total=85899345920 nvml_free=85094825984 nvml_used=804519936

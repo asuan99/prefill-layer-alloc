@@ -1,0 +1,267 @@
+{
+  "POLICY": "DESCRIPTIVE ONLY -- not an input to e2_label.py (A13 sec 3, E2C-38)",
+  "boots": {
+    "a_r2_OFF_251": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r2_OFF_2630": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r2_OFF_4162": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r2_OFF_4386": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r2_ON_251": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r2_ON_2630": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r2_ON_4162": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r2_ON_4386": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r4_OFF_251": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r4_OFF_2630": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r4_OFF_4162": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r4_OFF_4386": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r4_ON_251": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r4_ON_2630": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r4_ON_4162": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "a_r4_ON_4386": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "b_r3_OFF_4162": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "b_r3_OFF_4386": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": false,
+      "sticky_target_index": null,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "b_r3_ON_4162": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    },
+    "b_r3_ON_4386": {
+      "green": [
+        64,
+        44
+      ],
+      "idx2_green_is_64_44": true,
+      "is_sticky_target": true,
+      "sticky_target_index": 2,
+      "target": [
+        64,
+        44
+      ]
+    }
+  },
+  "n_boots": 20,
+  "n_idx2_green_64_44": 20
+}

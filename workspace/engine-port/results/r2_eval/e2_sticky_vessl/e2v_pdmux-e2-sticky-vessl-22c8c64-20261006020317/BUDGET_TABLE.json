@@ -1,0 +1,46 @@
+{
+  "hard_cap_gpu_h": 4.0,
+  "hard_cap_s": 14400,
+  "hard_cap_usd": 5.92,
+  "obs_a_on_boot_s": 375.0,
+  "rate_usd_h": 1.48,
+  "scenarios": {
+    "capped": {
+      "boots_admitted": 19,
+      "container_s_to_last_boot_end": 12926.7,
+      "first_refused": "b_r3/4162/ON",
+      "gpu_h": 3.591,
+      "usd": 5.31
+    },
+    "normal": {
+      "boots_admitted": 20,
+      "container_s_to_last_boot_end": 7168.5,
+      "first_refused": null,
+      "gpu_h": 1.991,
+      "usd": 2.95
+    },
+    "observed": {
+      "boots_admitted": 20,
+      "container_s_to_last_boot_end": 8071.3,
+      "first_refused": null,
+      "gpu_h": 2.242,
+      "usd": 3.32
+    },
+    "worst": {
+      "boots_admitted": 20,
+      "container_s_to_last_boot_end": 9117.3,
+      "first_refused": null,
+      "gpu_h": 2.533,
+      "usd": 3.75
+    },
+    "worst_settle": {
+      "boots_admitted": 20,
+      "container_s_to_last_boot_end": 12717.3,
+      "first_refused": null,
+      "gpu_h": 3.533,
+      "usd": 5.23
+    }
+  },
+  "settle_max_s": 180.0,
+  "source": "e2_vessl_plan_r2 (A14 sec 5); registered constants from e2_vessl_plan"
+}

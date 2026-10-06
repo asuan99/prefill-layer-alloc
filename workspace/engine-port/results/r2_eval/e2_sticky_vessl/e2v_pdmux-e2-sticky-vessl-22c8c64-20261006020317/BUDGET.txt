@@ -1,0 +1,24 @@
+hard_cap_s=14400 tail_reserve_s=600 p14_margin_s=200
+t0_epoch=1791252224 (job_entry_start_utc) deadline_epoch=1791266024
+remaining_at_script_start_s=13781
+admit boot=a_r4_OFF_4386 need_s=601 remaining_s=13697
+admit boot=a_r4_ON_4386 need_s=601 remaining_s=13339
+admit boot=a_r4_OFF_4162 need_s=601 remaining_s=12966
+admit boot=a_r4_ON_4162 need_s=601 remaining_s=12680
+admit boot=a_r4_OFF_251 need_s=601 remaining_s=12322
+admit boot=a_r4_ON_251 need_s=601 remaining_s=12032
+admit boot=a_r4_OFF_2630 need_s=601 remaining_s=11668
+admit boot=a_r4_ON_2630 need_s=601 remaining_s=11385
+admit boot=a_r2_OFF_4386 need_s=629 remaining_s=11021
+admit boot=a_r2_ON_4386 need_s=629 remaining_s=10722
+admit boot=a_r2_OFF_4162 need_s=629 remaining_s=10362
+admit boot=a_r2_ON_4162 need_s=629 remaining_s=10065
+admit boot=a_r2_OFF_251 need_s=629 remaining_s=9699
+admit boot=a_r2_ON_251 need_s=629 remaining_s=9402
+admit boot=a_r2_OFF_2630 need_s=629 remaining_s=9041
+admit boot=a_r2_ON_2630 need_s=629 remaining_s=8740
+admit boot=b_r3_OFF_4386 need_s=1070 remaining_s=8381
+admit boot=b_r3_ON_4386 need_s=1070 remaining_s=7980
+admit boot=b_r3_OFF_4162 need_s=1070 remaining_s=7577
+admit boot=b_r3_ON_4162 need_s=1070 remaining_s=7176
+remaining_at_loop_end_s=6775
