@@ -1,6 +1,8 @@
 # R2 experiment roadmap
 
-최종 갱신: 2026-10-06(doc-steward — **E2 r2 결과 감사 반영(트랙 완주, 다음 = N2(3-a) 사전등록이 E2VR-6 승계) + N3 shape B 2회 제출 셀 측정 0(rev6 사용자 결정 대기)**, GPU 0·새 성능 판정 0건·게이트 #6·λ0R-8(iii)·HE0·Claim 등급 전부 불변).
+최종 갱신: 2026-10-06 2차(doc-steward — **N3(게이트 #6) shape B 3회차(rev6) 부분 측정 등재**: Job `pdmux-n3-capacity-38ed3f4-20261006092813` 43/48 boot·死因 0·라벨 기계적 `CONFIRMED`(k=3 `CAPACITY_BRACKETED_3` [0.15, 0.22), k=5/10 `UNRESOLVED_N_BELOW_4` — 예산 예보 실패로 인한 측정 부족, '용량 없음' 아님), VESSL 컨테이너 3.838 h, **게이트 #6 불변(부분 측정, 미닫힘)**, **다음 gate = N2(3-a) 사전등록(E2VR-6 승계) 불변**, shape A는 사용자 결정, 열린 사용자 결정 4건(재개/새 Job/보류·예산 상수 rev7·shape A·W-5), 새 성능 판정 0건·λ0R-8(iii)·HE0·Claim 등급 불변. 허용·금지 문안은 `PROJECT_STATUS.md` (a′)·`CONSENSUS.md` §1 행 36, 결과 감사 `workspace/engine-port/results/n3_capacity/VERDICT_result_n3_B_r3_2026-10-06.md`.)
+
+이전 최종 갱신(2026-10-06 1차): (doc-steward — **E2 r2 결과 감사 반영(트랙 완주, 다음 = N2(3-a) 사전등록이 E2VR-6 승계) + N3 shape B 2회 제출 셀 측정 0(rev6 사용자 결정 대기)**, GPU 0·새 성능 판정 0건·게이트 #6·λ0R-8(iii)·HE0·Claim 등급 전부 불변).
 
 **E2 r2 허용 문안(`workspace/engine-port/results/r2_eval/e2_sticky_vessl/VERDICT_result_e2_vessl_r2_2026-10-06.md` §9, 문자 그대로)**:
 
