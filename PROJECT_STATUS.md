@@ -1182,7 +1182,7 @@ within-job DN↔TD 비교(문장 (A)(B)의 근거)는 같은 job·같은
   940→946)**: `test_n3_capacity.py`에 `TestP3Tolerance` +6 추가.
   수리는 여전히 미시행. ★**9차(2026-10-05, 946→955)**: 커밋
   `1a90b08`(하네스층 N3H-1…6 + T-H1…T-H7)이 `test_n3_capacity.py`
-  에 +9 추가. 수리는 여전히 미시행. 9차까지 재발, (i)(이 필드를
+  에 +9 추가. 수리는 여전히 미시행. ★**10차(2026-10-06, 955→957)**: N3 rev5 수리(`n3_plan.py`/`n3_analyze.py` 엔진 루트 `.resolve()`→`os.path.abspath`, shape B 1회차 Job `pdmux-n3-capacity-a4b0c2e-20261006064114` preflight 실패 수리)가 `test_n3_capacity.py`에 `TestJobSymlinkLayout` +2 추가. 수리는 여전히 미시행. 10차까지 재발, (i)(이 필드를
   "절차 2 시점 값(고정)+이후 이력"으로 재정의하고 doc_facts
   정규식을 그 고정값에만 걸도록 재설계) 적용 예정 — 사용자 승인
   대기. ★追記(2026-10-05, 구체화, doc-steward): 적용 시 바꿀
