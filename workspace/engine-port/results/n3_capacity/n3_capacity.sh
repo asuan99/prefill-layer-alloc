@@ -483,8 +483,13 @@ PY
     else TKOUT="$OUT/T_K_TAIL.json"; fi
     python3 "$HELPER" --floor "$SHAPE" "$OUT/bench_${NAME}.jsonl" "$PDMUX_TELEMETRY_PATH" "$TKOUT" | tee "$OUT/floor_${NAME}.log"
     FRC=${PIPESTATUS[0]}
+    # rev6 audit R-1: PHASE_EVENTS switched off mid-boot (R7 marker above) => the floor spans were not
+    # observed; the floor cannot be validated whatever floor_from says (fail-closed, diagnostic T_K kept)
+    if [ "$TKOUT" = "$OUT/T_K.json" ] && [ -e "$OUT/phase_events_disabled_${NAME}" ]; then
+      fail "ABORT_FLOOR PHASE_EVENTS disabled mid-boot -- floor spans unobserved (see $OUT/phase_events_disabled_${NAME}); no arm cell runs (P-2, rev6 R-1)" 7
+    fi
     if [ "$TKOUT" = "$OUT/T_K.json" ] && [ "$FRC" -ne 0 ]; then
-      fail "ABORT_FLOOR floor invalid (see $TKOUT): a floor span not at (108,0), running_bs>0, or an incomplete bench -- no arm cell runs (P-2)" 7
+      fail "ABORT_FLOOR floor invalid (see $TKOUT): a span realised off stream 0 = (108,0) (prefill_span_end.stream_idx) or with a decode_iteration inside it, an unpaired/dropped-events span, n_new/queue_len != 1/0 on a floor request, or an incomplete bench -- no arm cell runs (P-2, rev6)" 7
     fi
     [ "$FRC" -eq 0 ] && [ -z "$CUT" ] && date -u +%Y-%m-%dT%H:%M:%SZ > "$OUT/unit_${NAME}.complete"
   else

@@ -1,6 +1,7 @@
-# 사전등록 — N3: 게이트 #6 SLO 용량 격자 (Nemotron-Nano-9B-v2, VESSL A100) rev5 (2026-10-06)
+# 사전등록 — N3: 게이트 #6 SLO 용량 격자 (Nemotron-Nano-9B-v2, VESSL A100) rev6 (2026-10-06)
 
-> **지위**: 사전등록 **rev5**(하네스 결함 수리, 규칙 불변). rev5 델타 감사(규칙층+하네스층 합본) `VERDICT_n3_rev5_delta_2026-10-06.md` = `GO-with-caveats`(死因 0, N3C-23…27, 필수 수리 R-1…R-3 반영). 직전 rev4 델타 감사 `VERDICT_n3_rules_rev4_2026-10-05.md` = `GO-with-caveats`(N3C-22), 하네스층 `VERDICT_n3_harness_2026-10-05.md`. 작성 engine-porter(rev1–4)·메인 세션(rev5), GPU 0, 성능 판정 0, Claim 등급 변경 0.
+> **지위**: 사전등록 **rev6**(P-2 floor 판정 **입력** 변경 — 규칙층 변경; 사용자 결정 2026-10-06 "a" = rev6 권고안 승인). rev6 델타 감사(규칙층+하네스층 합본) `VERDICT_n3_rev6_delta_2026-10-06.md` = **`GO-with-caveats`**(死因 0, 필수 수리 **R-1…R-4 반영**, 권고 W-1…W-4 반영·W-5 미반영[입력 추가라 사용자 결정, R-1이 있으면 불필요], 새 caveat N3C-28…33 §11 승계). 직전 rev5 델타 감사(규칙층+하네스층 합본) `VERDICT_n3_rev5_delta_2026-10-06.md` = `GO-with-caveats`(死因 0, N3C-23…27, 필수 수리 R-1…R-3 반영). 직전 rev4 델타 감사 `VERDICT_n3_rules_rev4_2026-10-05.md` = `GO-with-caveats`(N3C-22), 하네스층 `VERDICT_n3_harness_2026-10-05.md`. 작성 engine-porter(rev1–4)·메인 세션(rev5), GPU 0, 성능 판정 0, Claim 등급 변경 0.
+> - **rev5 → rev6 (2026-10-06, P-2 floor 판정 입력을 입장 시점 라벨에서 실현 증거로 — 규칙층 변경; 공식·상수·arm·격자·순서·예산·채점 경로 불변)**: shape B 2회차 Job `pdmux-n3-capacity-79999aa-20261006081638`(rev5)가 preflight 전부 통과·floor bench 16/16 완료 뒤 `ABORT_FLOOR`(exit 7, 셀 측정 0·라벨 0)로 끝났다. 원인: rev5 §4-1 조건 (iii) "boot의 **모든** `prefill_span_start`가 (108,0)"이 읽는 `prefill_span_start`의 (prefill_sms, decode_sms, running_bs)는 **입장 시점** 값이다 — `event_loop_pdmux`는 한 반복 안에서 입장+시작 이벤트 기록 → 끝난 요청 제거(`update_running_batch`) → stream 조정(`adjust_stream_groups`) → prefill 발사 순서라, 직전 요청의 마지막 decode와 다음 요청 도착이 같은 반복에 들어오면 시작 라벨이 **조정 전** 상태(이전 decode stream (0,108)·running_bs 1)를 적는다. 그 Job의 28 span 중 1건(span_seq 6, warm-up, bench 창 이전)이 그랬고, 실현 분할은 (108,0)이었다(같은 span의 `prefill_span_end.stream_idx` 0, span 시작 +15/+47 ms `runtime_snapshot` stream 0·prefill_sms 108·decode_running_batch_size 0, span 안 `decode_iteration` 0건). 즉 **기록 라벨의 경쟁(race)이지 분할 위반이 아니었다** — rev5 규칙은 fail-closed로 정상 작동했으나 판정 입력이 틀렸다(교훈 271: 이벤트 라벨은 기록 시점 상태 — 실현 증거로 판정). 수리(`n3_plan.floor_from`, §4-1 재서술): (iii)를 **각 span의 `prefill_span_end.stream_idx == 0`(= (108,0), `check_green`이 boot마다 group 0 → (108,0)을 고정) ∧ span 구간 [start, end] 안 `decode_iteration` 0건**으로 교체하고, 마지막 16 span(floor 요청)은 `n_new == 1 ∧ queue_len == 0`을 **유지**하되 입장 시점 `running_bs`는 입력에서 뺀다(같은 경쟁에 노출). 새 fail-closed 조건 2개: 각 `prefill_span_start`는 같은 `span_seq`의 `prefill_span_end`와 짝지어져야 한다(없으면 무효 — 실현 증거 부재는 통과가 아니다, D1 계열) · boot 안 어떤 이벤트도 `dropped_events > 0`이 아니어야 한다("span 안 decode 0건"은 기록 누락 아래서는 증거가 아니다). 입장 시점 라벨은 `T_K.json`에 기술값(`entry_label_off_count`·`entry_running_bs_nonzero_count`)으로만 남는다. 러너는 `ABORT_FLOOR` 메시지 문자열 1줄만 바뀐다(exit 7·위치·순서 불변). 테스트: `n3_plan --selftest` floor 블록 재작성(실현 증거 무효화 대조 6종 + 경쟁 양성 대조 2건), `TestBootBranchSnippets.test_t_h3_floor` 변이를 실현 증거(span_end stream·span 안 decode)로 교체 + 경쟁 양성 대조, 신규 `TestFloorRev6RealJob` 2개(2회차 Job 실제 floor 자료에서 rev6 유효·rev5 술어 발화 확인 + 실현 위반 변이 거부; 원시 jsonl은 git-ignored라 부재 시 skip). 2회차 실제 자료에 rev6를 적용하면 `valid`, floor_s 0.90676 s(= 그 Job bench 중앙값; **진단 재계산일 뿐 채점에 쓰지 않는다** — 그 Job은 arm 셀 0·라벨 0이고 `RESUME_FROM` 불가, 재제출은 새 Job·새 job name). rev5 봉인 커밋 `460fda2` 대비 diff로 델타 감사를 받는다. 변경 색인 §17-5. 진단 전문 `SUBMISSIONS_2026-10-06.md` "2회차 실패 진단".
 > - **rev4 → rev5 (2026-10-06, 하네스 결함 수리 — 규칙·상수·arm·순서·예산 불변)**: shape B 1회차 Job `pdmux-n3-capacity-a4b0c2e-20261006064114`가 preflight `ABORT_SELFTEST n3_plan`(exit 4, 셀 측정 0·라벨 0)으로 끝났다. 원인: `n3_plan.py`·`n3_analyze.py`가 엔진 루트를 `Path(__file__).resolve()`로 유도했는데, VESSL `job_entry.sh`가 `engine-port/results/`를 `/data/runs/<job>/results` 심볼릭 링크로 바꾸므로 루트가 클론 밖으로 풀려 `benchmarks/pdmux_eval/analyze.py`가 MISSING(채점 단계 `import analyze`도 같은 이유로 실패했을 것). 수리: 두 파일의 `HERE`를 `Path(os.path.abspath(__file__)).parent`(심볼릭 링크 비해석)로 교체. 러너·config·`n3_realized_mix.py`·판정 규칙 바이트 불변. 테스트 `TestJobSymlinkLayout` 2개(심볼릭 링크 레이아웃 통과 + `.resolve()` 복원 변이가 Job과 같은 MISSING/ModuleNotFoundError로 실패). 진단 전문 `SUBMISSIONS_2026-10-06.md`. rev4 봉인 커밋 `a4b0c2e` 대비 diff로 델타 감사를 받는다. 변경 색인 §17-4. 1회차 Job은 셀 측정 0·`T_K.json` 없음이라 부분 집합 재라벨·Job 혼합 문제가 없고, `RESUME_FROM`으로 쓸 수 없다(`ABORT_RESUME`). 재제출은 새 Job·새 job name. caveat N3C-23…27은 rev5 델타 감사 판정서 §9를 문자 그대로 승계한다.
 > - **rev3 → rev4**: 사용자 결정(2026-10-05) **R6 = P3 (ii) 허용오차**를 E2 A14 §3-1과 같은 문언·상수로 기입(§2-3)하고, 러너 P3 분기를 엄격 → (ii)로 교체(`n3_plan.p3_verdict`)했다. 6그룹 Workspace 프로브 결과를 예산 상수 검증 근거(판정 아님)로 追記(§8-7, §12-13), N3C-21(O4 해상도, E2VC-14 동형) 수록. rev3 봉인 커밋 `69fbbb0` 대비 diff로 델타 감사를 받는다. 변경 색인은 §17-3.
 > - **rev2 → rev3**: rev2 델타 감사 `VERDICT_n3_rules_rev2_2026-10-05.md` = **`GO-with-caveats`**(死因 0, N3C-15…19). 새 결함 **D1(R3 근거 부재 = 통과 → unverifiable로)·D2(R6 전례 문구 정정)만** 수리한다. rev2 봉인 커밋 `81b55c3` 대비 diff로 델타 감사를 받는다. 변경 색인은 §17-2.
@@ -190,11 +191,18 @@ CONFIG_CANDIDATES §2는 "같은 arm"이 **측정으로 확인되지 않았다**
 
 - **구성**: 측정 셀과 **같은 서버 config·플래그**(PD-mux 활성), warm-up 8요청(동시성 1, seed 7) 뒤, **서로 다른 프롬프트 16개**(`FLOOR_N`, seed 11 → warm-up과 다른 프롬프트, radix cache off), `--max-concurrency 1`, rate 무한(직전 요청 완료 후 다음 요청 송신 → **decode 유휴**).
 - **floor = 16개 송신→첫 토큰 TTFT(클라이언트)의 중앙값**(초).
-- **실현 분할 실증(PHASE_EVENTS)**: 그 boot의 `prefill_span_start` 이벤트가 ≥ 16개, **전부** (prefill_sms, decode_sms) = (108, 0)이고, 마지막 16개(floor 요청, 순서대로)가 `running_bs = 0 ∧ n_new = 1 ∧ queue_len = 0`이어야 한다.
+- **실현 분할 실증(PHASE_EVENTS, rev6 리터럴)**: 그 boot의 `prefill_span_start` 이벤트가 ≥ 16개이고, 다음을 **전부** 만족해야 한다.
+  - (ii) 각 `prefill_span_start`는 같은 `span_seq`의 `prefill_span_end`와 짝지어진다(짝 없음 = 무효). boot 안 어떤 이벤트도 `dropped_events > 0`이 아니다(기록 누락 아래서 "decode 0건"은 증거가 아니다).
+  - (iii) **모든 span이 (108,0)에서 실현**됐다: 각 span의 `prefill_span_end.stream_idx == 0`(stream 0 = (108,0); `check_green`이 boot마다 group 0의 target을 (108,0)으로 고정한다) **∧** 구간 [`prefill_span_start.timestamp`, `prefill_span_end.timestamp`] 안에 `decode_iteration` 이벤트가 0건이다.
+  - (iv) 마지막 16개(floor 요청, 순서대로)의 입장 라벨이 `n_new = 1 ∧ queue_len = 0`이다.
+  - (v) (rev6 델타 감사 R-2) 마지막 16 span **각각**의 end 시각 초과부터 다음 `prefill_span_start` 시각 이하(마지막 span이면 파일 끝)까지 `decode_iteration`이 ≥ 1건 있다 — (iii)의 부재 논증은 decode 기록기가 살아 있음을 실증해야 성립한다(교훈 232; 등록 output_len 64/512라 정상 boot에서 거짓 abort 경로 없음). 없으면 무효("decode recorder not shown live after floor span").
+  - (vi) (W-1) `span_seq`는 `prefill_span_start`끼리·`prefill_span_end`끼리 유일하다(중복 = 무효).
+  - (R-1, 러너) floor_head boot에서 R7 표식(`phase_events_disabled_floor_head`, PHASE_EVENTS가 boot 도중 꺼짐)이 있으면 `floor_from` 결과와 무관하게 `ABORT_FLOOR`(exit 7, "PHASE_EVENTS disabled mid-boot — floor spans unobserved"). 진단 `T_K.json`은 남긴다. 재개 Job의 `T_K_RESUME_<job>.json`·floor_tail에는 적용하지 않는다(진단).
+  - 입장 시점 `prefill_span_start`의 (prefill_sms, decode_sms, running_bs)는 **판정 입력이 아니다**(rev5까지는 입력이었다 — 조정 전 상태를 적는 경쟁, 머리말 rev6 줄). `T_K.json`에 `entry_label_off_count`·`entry_running_bs_nonzero_count`(boot 전체)와 (R-3) `floor_entry_race_count`(마지막 16 span 중 입장 라벨 ≠ (108,0) 또는 입장 running_bs ≠ 0인 수)·`floor_admission_gap_ms`(각 floor span start − 직전 `decode_iteration` 시각, 16개 목록) **기술값으로만** 남긴다 — 판정 입력이 아니다.
   하나라도 어기면 floor 무효 → `ABORT_FLOOR`(exit 7). **arm 셀은 하나도 돌지 않는다.**
 - **등록 공식**: `T_k = k × floor`, k ∈ {3, 5, 10}, 초 단위로 `T_K.json`에 기록(`n3_plan.floor_from`). 러너는 유효한 `T_K.json`이 없으면 어떤 arm unit도 boot하지 않는다(`ABORT_FLOOR`, 구조 테스트가 순서 고정).
 - **채점은 이 초 값으로만**. floor_tail(같은 seed 11 프롬프트)과 재개 Job의 floor는 `T_K_TAIL.json`·`T_K_RESUME_<job>.json` **진단**이며 재채점하지 않는다.
-- 코드 근거(독해): decode가 빈 상태의 admission은 `elif` → `adjust_stream_groups` → idx0(CONFIG_CANDIDATES §7 새 블록 2). 이 근거는 측정으로 대체된다(위 실증).
+- 코드 근거(독해): decode가 빈 상태의 admission은 `elif` → `adjust_stream_groups` → idx0(CONFIG_CANDIDATES §7 새 블록 2). 이 근거는 측정으로 대체된다(위 실증). (rev6) `prefill_span_end`는 prefill 커널 완료 뒤 같은 stream 선택 아래 기록되고(`_phase_on_prefill_end`, 조정 **후**), `decode_iteration`은 decode sync 시점 라벨이다 — 둘 다 실현된 상태다. 단 발사 SM 자체를 계측한 것은 아니다(N3C-2 유지).
 
 ### 4-2. config bridge 블록 (D3)
 
@@ -404,7 +412,7 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 | `ABORT_SELFTEST` / `ABORT_PREFLIGHT` | 4 | §8-1 |
 | `ABORT_NO_FREE_PORT` / `ABORT_PORT_RANGE` | 5 | §8-6 O1·O2 |
 | `ABORT_STICKY` / `ABORT_GREEN` | 6 | §2-1 (boot마다) |
-| `ABORT_FLOOR` | 7 | §4-1 |
+| `ABORT_FLOOR` | 7 | §4-1 (rev6: floor 무효 · R-1 R7 표식 · floor boot 실패 · 유효 `T_K.json` 부재) |
 | `ABORT_P3` | 8 | §2-3 (boot마다) |
 | `ABORT_CG2` | 9 | §4-3 |
 | `ABORT_UNIT_COUNT` / `ABORT_RESUME` | 2 | §8-4 |
@@ -515,6 +523,14 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 - bridge를 근거로 "새 config와 homog5는 같은 arm이다"(§4-2)
 - `UNRESOLVED_N_BELOW_4_k`를 "용량 없음"·"구별 불가"로 쓰는 것(게이트 #21)
 
+**등록 caveat N3C-28…33 (rev6 델타 감사 `VERDICT_n3_rev6_delta_2026-10-06.md` §9, 문자 그대로 승계)**:
+- **N3C-28**: "rev6로 2회차 Job(`pdmux-n3-capacity-79999aa-20261006081638`)의 floor가 유효해졌다", "N3 floor는 0.907 s다", "새 Job floor가 0.907 s와 일치하므로 타당하다"는 **인용 금지**. 0.9067605545278639 s는 그 자료를 본 뒤 쓴 규칙으로 계산한 진단 재계산이다. 그 Job은 arm 셀 0·라벨 0이고 재채점·재개 대상이 아니며, 새 Job floor의 기대값이나 검증 기준으로 쓰지 않는다.
+- **N3C-29**: "`prefill_span_end.stream_idx == 0`이므로 그 prefill은 (108,0)에서 실현됐다"는 **인용 금지**. end 라벨은 span 도중 전환이 있으면 마지막 chunk의 stream만 말한다. 실현 판정은 "span 안 decode_iteration 0건"과의 논리곱으로만 성립한다(event_loop_pdmux 독해, 등록 엔진 manifest 한정). 또한 stream 0은 green context가 없는 plain 그룹이라, "(108,0)"은 SM 제한이 실현됐다는 증거가 아니라 그룹 라벨이다(N3C-2).
+- **N3C-30**: "rev6는 floor 값을 바꾸지 않는 순수 라벨 수리다"는 **인용 금지**. 입장 라벨 경쟁은 스케줄러 admission 정지의 지문이다(2회차 warm-up #3: 앞 간격 124.8 ms, TTFT 1011.6 ms vs 정상 ≈905 ms, +106 ms). rev5에서는 그런 요청이 있는 boot가 무효였지만 rev6에서는 floor 표본에 들어간다. 편향 방향은 floor ↑ → T_k 완화 → 용량 과대이고, 크기는 `floor_entry_race_count`·`floor_admission_gap_ms`(R-3)로만 공시된다. 정지 원인(cgroup 쓰로틀 후보)은 미확정이며 rev6는 그것을 고치지 않는다.
+- **N3C-31**: "2회차 Job에서 28/28 span이 rev6 기준을 만족했으므로 decode 유휴 admission은 (108,0)이다", "경쟁 발생률은 1/28이다"는 **인용 금지**. n=1 boot의 사전 근거이고 발생률 추정이 아니다.
+- **N3C-32**: "rev6 floor 규칙은 실제 Job 자료로 preflight에서 검증된다"는 **인용 금지**. `TestFloorRev6RealJob`은 git-ignored 원자료에 의존해 클린 클론(Job preflight)에서 skip된다. preflight의 rev6 보호는 합성 selftest와 러너 조각 시험(T-H3)뿐이다(둘 다 수리 되돌림 변이 M1을 죽인다).
+- **N3C-33**: "rev6 floor 판정의 모든 분기가 변이 시험으로 검증됐다"는 **인용 금지**. 반-열림 구간(M6/M6b)·마지막 end 채택(M7)은 동치 변이로 생존했고, `bad_ts` 분기(M10)는 대조가 없다(W-1…W-3 미반영 시).
+
 **등록 caveat N3C-1…14 (rules verdict rev1 §5, 문자 그대로 승계)**:
 - **N3C-1.** "이 캠페인은 게이트 #6을 닫지 않는다. 게이트 #6 상태 변경은 결과 감사와 5-a 전제 판정 뒤에만 논의한다."
 - **N3C-2.** "floor의 (108,0) 실증은 admission 시점 인덱스의 telemetry와, decode 유휴 시 발사 인덱스가 같다는 코드 독해의 결합이다. 발사 분할을 직접 계측한 것이 아니다."
@@ -577,6 +593,7 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 20. **R3 허용 0건**: 비표적 분할 decode iteration·busy 스냅숏이 **하나라도** 있으면 셀을 버린다. 관대하게 하면(예: 비율 문턱) arm 동일성이 정의상 흐려진다. 대가는 드문 오발화가 그 rate의 `UNRESOLVED`로 번지는 것이다.
 21. **R1 순서 반전**: drift 균형은 같지만, round 1의 첫 셀이 최고 rate(포화에 가까운 셀)라 Job 초반 노드 상태가 고부하 셀에 실린다. rev1과 rate·시점의 결합 방식이 다르다.
 22. **R7 처리 범위**: PHASE_EVENTS가 boot 중간에 꺼진 셀도 채점은 유지한다(클라이언트 측정은 무영향). 기술값과 관측자 대칭에서만 빠진다.
+23. **(rev6) floor 판정 입력 교체**: (a) 실현 증거는 `prefill_span_end.stream_idx`(조정 후 기록)와 "span 안 decode_iteration 0건"(부재 논증)의 **논리곱**이다 — end 라벨 단독은 span 도중 전환이 있으면 마지막 chunk의 stream만 말한다(N3C-29). 부재 논증이라 `dropped_events > 0`을 새 무효 조건으로 두고, (R-2) 각 floor span 뒤에 decode_iteration ≥ 1건(기록기 생존)을 요구한다 — 둘 다 rev5에 없던 fail-closed 조건이라 통과 확률은 낮아지면 낮아졌지 높아지지 않는다(2회차 Job dropped_events_max 0, R-2 조건 16/16 충족). (R-1) R7 표식이 있는 floor_head boot는 `floor_from`과 무관하게 abort한다(floor 요청이 관측되지 않은 채 "0건"이 통과하는 fail-open을 닫음). (b) stream 0 ↔ (108,0) 대응은 config 리터럴(`stream_groups()[0]`)과 boot별 `check_green`(group 0 target (108,108-0))에 의존한다 — `prefill_span_end`에는 (prefill_sms, decode_sms) 쌍이 없다. (c) 구간은 닫힌 구간 [start.ts, end.ts], `decode_iteration`의 시각은 sync 시점(`timestamp_monotonic_s`)이다 — span 시작 전에 발사돼 span 안에서 sync된 decode도 위반으로 센다(보수적). (d) 입장 시점 `running_bs`를 입력에서 뺐다 — 2회차 Job에서 그 라벨이 같은 경쟁으로 1을 찍었고(실현 running_bs 0), floor 요청(마지막 16)에 같은 경쟁이 걸리면 rev5 (ii)로도 무효가 됐을 것이다. 대신 "span 안 decode 0건"이 decode 유휴를 **분할** 수준에서 말한다. ★**단 지연 측면은 다르다(델타 감사 Q3 REFUTED, N3C-30)**: 입장 라벨 경쟁은 스케줄러 admission 정지의 지문이며 그 요청의 TTFT를 부풀린다(2회차 실측: warm-up #3 앞 간격 124.8 ms, TTFT 1011.6 ms vs 정상 ≈905 ms, **+106 ms**). rev5에서는 그런 요청이 있는 boot가 무효였지만 rev6에서는 그 요청이 floor 표본에 **들어간다**. 편향 방향은 floor ↑ → T_k 완화 → 용량 과대(16개 중앙값이 흡수하는 범위까지), 크기는 `floor_entry_race_count`·`floor_admission_gap_ms`(R-3 기술값)로만 공시된다. rev6는 "순수 라벨 수리"가 아니다. (e) 2회차 실제 자료는 rev6에서 `valid`(floor_s 0.90676 s) — 이 값은 진단 재계산이며 그 Job은 재채점·재개하지 않는다(새 Job에서 새로 잰다). (f) 관측 빈도 1/28(n=1 boot)은 계획용 어림일 뿐 경쟁 발생률이 아니다. (g) 2회차 직전 decode→prefill 간격 124.8 ms(정상 16–20 ms)의 스케줄러 정지 원인(cgroup CPU 쓰로틀 후보)은 **미확정**이며 rev6는 그것을 고치지 않는다 — 같은 정지가 bench 창 안에서 TTFT에 섞이면 floor 값에 들어간다(중앙값이 흡수, `dispersion_max_over_min`·`floor_admission_gap_ms` 기록; 2회차 자료의 floor 16 span 간격은 첫 span 1029 ms[bench_serving 시험 요청 뒤 클라이언트 측 간격] 외 16.1–20.0 ms, `floor_entry_race_count` 0 — 진단값). (h) `TestFloorRev6RealJob`은 git-ignored 원자료에 의존해 Job preflight(클린 클론)에서 skip된다 — preflight의 rev6 보호는 합성 selftest와 러너 조각 시험(T-H3)뿐이다(N3C-32). (i) 미반영 권고 W-5(마지막 16 span start ∈ [bench_start, bench_end] 대조)는 판정 입력 추가라 사용자 결정으로 남긴다 — R-1이 있으면 같은 fail-open을 이미 닫는다.
 
 ---
 
@@ -589,9 +606,11 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 - `tests/test_n3_capacity.py` 52/52(구조·변이 대조·digest·셀프테스트·dry-run·집행기·재개·포트/teardown O1–O4; rev2: R1 순서·절단 모사, R2 placeholder 거부·재개 대조, R3 주입 변이, R4 플래그, R7 표식, ABORT 분기별 변이 11개, 최소 트리 행동 시험 5개; rev3: D1 단위 시험 2개 + mix/analyze 셀프테스트 D1 변이; rev4: `TestP3Tolerance` 6개 — 상수 + E2 helper 동일성, E2 1회차 키 PASS·변이 FAIL, CLI exit 0/8, 러너 실제 P3 조각 실행, case 분기 중화 변이 검출, rev3 엄격 분기 대조).
 - (rev4, 2026-10-05) `n3_plan.py --selftest`에 P3 (ii) 판별 추가: E2 1회차 키(2,722,025×9 + 2,722,022) → `PASS rel=1.102e-06`, 6그룹 48 boot 동일 → PASS; mamba 47/48·전부 47·토큰 0.8% 차·786,431·배너 누락·토큰 누락·키 없음·5그룹 대 6그룹 풀(rel 2.70e-4)·미등록 MAX_RUNNING/CTX → 전부 FAIL; 경계(786,432, 상대차 정확히 1e-4) → PASS.
   러너 P3 조각 변이(`TestP3Tolerance.test_runner_snippet`): mamba 47/48·전부 47·0.8% 차·786,431·6그룹 Job 안 5그룹 풀·배너 누락·helper 부재·거짓 PASS(exit ≠ 0)·PASS 없는 exit 0 → exit 8 + teardown; stderr 경고 + 진짜 PASS → 통과. 셀별 `banner_<unit>.txt` 기록 유지 확인.
+- (rev6, 2026-10-06) `n3_plan.py --selftest` floor 블록: 합성 boot(start/end 쌍 + span 밖 decode)에서 유효; 무효화 대조 10종(마지막-2 span_end stream 4 · 마지막 span 안 decode_iteration 1건 · span_end 1개 삭제 · dropped_events 2 · n_new 2 · queue_len 1 · span 수 15 · [R-2] 마지막 floor span 뒤 decode 삭제·decode 전부 삭제 · [W-1] start/end span_seq 중복 · [W-2] decode 시각 = start/= end 경계 · [W-3] end < start) 전부 무효; 양성 대조 2건(warm-up span·floor span의 입장 라벨 (0,108)/stream 5/running_bs 1 → 유효 + `floor_entry_race_count` 1·`floor_admission_gap_ms` 16개, 같은 boot에 rev5 술어 발화 확인). `tests/test_n3_capacity.py`(정적 `def test_` 52→61→63→**66**; 전체 모듈 실행 결과는 §13 끝 줄): `test_t_h3_floor` 변이 교체(러너 조각 실행형: span_end stream·span 안 decode → exit 7, 경쟁 양성 → exit 0 + `unit_X.complete`, 재개 경로·중화 변이 대조 유지; [R-1] R7 표식 파일 → exit 7 + 진단 T_K 유지 + 중화 변이 통과 + 재개 경로 무영향) + `TestFloorRev6RealJob` 3개(2회차 Job 실제 자료: rev6 유효·`entry_label_off_count` 1·`floor_entry_race_count` 0·간격 16개·rev5 `T_K.json` 무효 사유 일치·rev5 술어 발화 / span_end stream 변이 거부 / [R-2] 마지막 floor span 뒤 decode 삭제 거부; git-ignored 자료 부재 시 skip). 2회차 실제 자료 CLI: `--floor B … → valid, floor_s 0.9067605545278639`(진단, N3C-28). rev6 델타 감사의 변이 시험 13개 중 수리 되돌림 M1은 selftest·RealJob·T-H3 셋 다 검출, 동치 생존 M6/M6b/M7·미시험 M10은 W-1…W-3 반영으로 대조가 생겼다.
 - 로컬 dry-run(B 48 unit, A 36 unit 명령 생성), `__pycache__` 잔여 0.
 - 로컬에서 **돌지 않는 것**: `test_phase_events`·`test_green_readout`(sgl_kernel 없음 — Job preflight에서 돈다), 실제 sync·manifest 대조, GPU 전부.
 - 이 문서의 digest가 실행 기록에 들어가므로, 공개 이미지 컨테이너 dry-run 결과는 이 문서가 아니라 engine-porter 보고에 적는다(λ0 VESSL §9와 같은 이유).
+- (rev6, 2026-10-06, R-1…R-4·W-1…W-4 반영 후) `tests/test_n3_capacity.py` 전체 모듈 **66/66 OK**(359 s, 로컬 miniconda `python3`; `TestFloorRev6RealJob` 3개는 원자료 존재로 실행됨) · `n3_plan.py --selftest` OK · `n3_analyze.py --selftest` OK · `n3_realized_mix.py --selftest` 7/7 · `bash -n` OK · `check_doc_facts` 0위반(960) · `check_citation_stops` 0위반 · presubmit 차단 = M4R·TC1 2건(등록된 범위, 2회차와 동일).
 
 ## 14. 이 회차가 하지 못하는 것 · 제출 게이트
 
@@ -629,7 +648,7 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 ## 16. 미확인 사항 (실행 전에 닫히지 않는 것)
 
 - VESSL에서 **6그룹 config boot**(green read-out 6/6, 캡처 시간·메모리, `max_total_num_tokens`)는 한 번도 측정되지 않았다(KISTI 907959만). 첫 boot의 `ABORT_GREEN`/`ABORT_P3`가 이를 fail-closed로 확인한다.
-- decode 유휴 admission이 실제로 (108,0)인지 — 코드 독해뿐. floor 블록이 측정으로 확인하거나 `ABORT_FLOOR`로 멈춘다.
+- decode 유휴 admission이 실제로 (108,0)인지 — 코드 독해뿐. floor 블록이 측정으로 확인하거나 `ABORT_FLOOR`로 멈춘다. (rev6) 확인 입력은 `prefill_span_end.stream_idx`와 span 안 `decode_iteration` 부재다(입장 라벨 아님). 2회차 Job 1 boot에서는 28/28 span이 이 기준을 만족했다(n=1 boot, 사전 근거일 뿐).
 - 동시성 1 greedy의 boot 간 결정성(CG2 전제).
 - `#retracted_reqs:` 로그가 `event_loop_pdmux` 경로에서도 같은 함수로 찍히는지(코드 독해: `scheduler.py` decode 메모리 검사 경로) — 미실측.
 - bench_serving random dataset 생성이 numpy 전역 RNG를 소비하지 않는다는 가정(λ0 판정서의 "span RNG 재생 11/11"로 간접 지지) — X-req 재구성에만 영향.
@@ -675,3 +694,17 @@ bench 시간 모형 = max((N−1)/rate, N/λ\*\_ref) + drain(A 25 s, B 3 s); flo
 |---|---|---|---|
 | 엔진 루트 유도 `.resolve()` → `os.path.abspath` (Job 레이아웃 = `results/` 심볼릭 링크; 1회차 Job preflight 실패 수리, 판정 경로·상수 불변) | 머리말 rev5 줄 | `n3_plan.py` `HERE`(+`import os`, 주석 4줄), `n3_analyze.py` `HERE`(+`import os`, 주석 4줄) | `TestJobSymlinkLayout` 2개(통과 + `.resolve()` 복원 변이 대조) |
 | 1회차 Job 실패 진단 기록 | `SUBMISSIONS_2026-10-06.md` | 없음 | — |
+
+### 17-5. rev5 → rev6 변경 색인 (기준 커밋 `460fda2`)
+
+| 변경 | 문서 | 코드 | 테스트 |
+|---|---|---|---|
+| **P-2 floor 판정 입력**: (iii) "모든 `prefill_span_start` (108,0)" → "각 span `prefill_span_end.stream_idx == 0` ∧ span 안 `decode_iteration` 0건"; (ii)에 span_start↔span_end 짝·`dropped_events == 0` 추가; (iv) 마지막 16 span `n_new/queue_len` 유지, 입장 `running_bs` 제외; 입장 라벨은 기술값 | 머리말 rev6 줄, §4-1, §12-23, §13 rev6 줄, §16 | `n3_plan.py` `FLOOR_STREAM_IDX`(새 리터럴 0), `floor_from` 재작성, docstring §5, selftest floor 블록 | selftest 대조 6+2, `test_t_h3_floor` 변이 교체, `TestFloorRev6RealJob` 2개 |
+| `ABORT_FLOOR` 메시지 문자열(exit 7·위치 불변) | — | `n3_capacity.sh` 1줄 | `test_t_h3_floor`(부분 문자열 `ABORT_FLOOR floor invalid` 유지) |
+| **(델타 감사 R-1)** floor_head boot R7 표식 → `ABORT_FLOOR`(fail-open 폐쇄) | §4-1, §8-5, §12-23(a) | `n3_capacity.sh` floor 블록 4줄(helper 호출 뒤, FRC 검사 앞) | `test_t_h3_floor` 대조 + 중화 변이 + 재개 경로 |
+| **(R-2)** 각 floor span 뒤 decode_iteration ≥ 1(기록기 생존) 무효 조건 · **(W-1)** span_seq 유일성 | §4-1 (v)(vi), §12-23(a) | `n3_plan.floor_from` | selftest 대조 3, `TestFloorRev6RealJob` +1 |
+| **(R-3)** `floor_entry_race_count`·`floor_admission_gap_ms` 기술값 | §4-1, §12-23(d)(g) | `n3_plan.floor_from` | selftest 양성 대조, RealJob 단언 |
+| **(W-2·W-3)** 경계·역순 시각 대조 | §13 | 없음(대조만) | selftest 대조 3 |
+| caveat N3C-28…33 승계 · W-5 미반영 공시 | §11, §12-23(i) | 없음 | — |
+| 2회차 Job 실패 진단 기록 | `SUBMISSIONS_2026-10-06.md` | 없음 | — |
+| 불변 | — | `n3_analyze.py`, `n3_realized_mix.py`, `configs/pdmux_n3_A_agn.yml`, 정본 `analyze.py`, 격자·seed·예산·순서·P3 (ii)·R1–R7·CG2·O1–O4 | — |

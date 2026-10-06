@@ -2,7 +2,7 @@
 """N3 (gate #6, SLO capacity of the target-D44 sticky-OFF B1 arm) -- registration constants,
 unit list, budget/admission, preflight checks, floor -> T_K.
 
-PRE-REGISTRATION: PREREG_N3_CAPACITY_2026-10-04.md (rev5).  Every constant below is a
+PRE-REGISTRATION: PREREG_N3_CAPACITY_2026-10-04.md (rev6).  Every constant below is a
 registered literal; the runner reads them from here (never from env) and the structural
 tests pin them.
 
@@ -17,8 +17,10 @@ WHAT THIS FILE DOES (CPU only, no GPU, no network):
      division set, group count <= --sm-group-num), engine manifest == registered HEAD
      manifest, substrate B0, green read-out (targets realised, sticky_target_index null).
   5. FLOOR -> T_K.json: the registered formula T_k = k x floor, floor = median send->first-
-     token TTFT of FLOOR_N concurrency-1 requests whose prefill spans are ALL realised at
-     (108, 0) with running_bs == 0 (PHASE_EVENTS).  Written BEFORE any arm cell starts.
+     token TTFT of FLOOR_N concurrency-1 requests whose prefill spans are ALL REALISED at
+     (108, 0) (PHASE_EVENTS; rev6: realised = prefill_span_end.stream_idx == FLOOR_STREAM_IDX
+     and no decode_iteration inside the span -- NOT the entry-time prefill_span_start label,
+     which is written before adjust_stream_groups).  Written BEFORE any arm cell starts.
 
 It never reads a measured arm cell.  Scoring lives in n3_analyze.py, realised-partition
 estimators in n3_realized_mix.py.
@@ -26,6 +28,7 @@ estimators in n3_realized_mix.py.
 from __future__ import annotations
 
 import argparse
+import bisect
 import hashlib
 import json
 import math
@@ -57,6 +60,7 @@ R2_POLICY = "fixed"
 FIXED_DSM = 44
 TARGET_PAIR = (64, 44)                # (prefill_sms, decode_sms) of the target division
 FLOOR_PAIR = (108, 0)                 # the plain prefill-only group (index 0)
+FLOOR_STREAM_IDX = 0                  # its stream index: stream_groups()[0]; check_green pins group 0 -> (108,0) per boot
 # R3 arm-identity condition: in a scored cell, NO decode iteration (post-switch index) and NO
 # decode-busy snapshot may sit on a non-target division of the config (0 allowed; violation =
 # cell invalid).  Prior: λ0 VESSL 358,583 records, 0 on non-target divisions (homog5).
@@ -512,13 +516,34 @@ def _read_jsonl(path: Path):
 
 
 def floor_from(bench_path: Path, tel_path: Path, shape: str) -> dict:
-    """P-2 literal: the floor is valid iff (i) the bench completed FLOOR_N/FLOOR_N with no error
-    and exact lengths; (ii) the telemetry holds >= FLOOR_MIN_SPANS `prefill_span_start` events and
-    the LAST FLOOR_N of them (the floor requests, concurrency 1, in order) are ALL at (108, 0) with
-    running_bs == 0, n_new == 1, queue_len == 0; (iii) EVERY span in the boot is at (108, 0).
-    floor_s = median of the FLOOR_N client TTFTs (send -> first token).  T_k = k * floor_s."""
+    """P-2 literal (rev6, 2026-10-06): the floor is valid iff
+      (i)   the bench completed FLOOR_N/FLOOR_N with no error, exact lengths, concurrency 1;
+      (ii)  the telemetry holds >= FLOOR_MIN_SPANS `prefill_span_start` events, every one paired
+            (same span_seq) with a `prefill_span_end`, and no event reports dropped_events > 0
+            (an absence-of-decode argument is not evidential under drops);
+      (iii) EVERY span in the boot is REALISED at (108, 0): its `prefill_span_end.stream_idx`
+            == FLOOR_STREAM_IDX and no `decode_iteration` event lies inside
+            [span_start.timestamp, span_end.timestamp];
+      (iv)  the LAST FLOOR_N spans (the floor requests, concurrency 1, in order) have
+            n_new == 1 and queue_len == 0 at entry;
+      (v)   (rev6 audit R-2) after EACH of the last FLOOR_N spans at least one `decode_iteration`
+            is recorded before the next prefill_span_start (file end for the last one): the
+            absence argument of (iii) needs the decode recorder shown live (lesson 232);
+      (vi)  span_seq is unique among prefill_span_start and among prefill_span_end (audit W-1).
+    floor_s = median of the FLOOR_N client TTFTs (send -> first token).  T_k = k * floor_s.
+    Descriptives only (audit R-3, never decision inputs): `floor_entry_race_count` (floor spans
+    whose ENTRY label != (108,0) or entry running_bs != 0 -- the fingerprint of an admission
+    stall that inflates that request's TTFT) and `floor_admission_gap_ms` (each floor span start
+    minus the latest decode_iteration before it).
+
+    rev6 rationale: `prefill_span_start` is recorded at admission, BEFORE `update_running_batch`
+    removes finished requests and BEFORE `adjust_stream_groups` picks the stream, so its
+    (prefill_sms, decode_sms, running_bs) can carry the previous iteration's state (Job
+    pdmux-n3-capacity-79999aa-20261006081638: span 6 entry label (0,108)/running_bs 1, realised
+    stream 0, 0 decode iterations inside -> rev5 (iii) aborted a valid floor).  Those entry
+    labels are kept as descriptives (`entry_*`), never as decision inputs."""
     s = SHAPES[shape]
-    res = {"shape": shape, "valid": False, "problems": []}
+    res = {"shape": shape, "valid": False, "problems": [], "rule": "rev6"}
     recs = _read_jsonl(bench_path)
     if len(recs) != 1:
         res["problems"].append(f"bench record count {len(recs)} != 1")
@@ -535,17 +560,94 @@ def floor_from(bench_path: Path, tel_path: Path, shape: str) -> dict:
         res["problems"].append(f"max_concurrency {b.get('max_concurrency')} != 1")
     ev = _read_jsonl(tel_path)
     spans = [e for e in ev if e.get("event") == "prefill_span_start"]
+    ends, dup_end = {}, []
+    for e in ev:
+        if e.get("event") == "prefill_span_end":
+            if e.get("span_seq") in ends:
+                dup_end.append(e.get("span_seq"))
+            ends.setdefault(e.get("span_seq"), e)       # first end per span_seq (duplicates invalidate, W-1)
+    seqs = [e.get("span_seq") for e in spans]
+    dup_start = sorted({q for q in seqs if seqs.count(q) > 1})
+    if dup_start or dup_end:
+        res["problems"].append(f"span_seq not unique: starts {dup_start[:5]} ends {sorted(set(dup_end))[:5]}")
+    decs = sorted(float(e["timestamp_monotonic_s"]) for e in ev
+                  if e.get("event") == "decode_iteration" and e.get("timestamp_monotonic_s") is not None)
     res["n_spans"] = len(spans)
+    res["n_span_ends"] = len(ends)
+    res["n_decode_iterations"] = len(decs)
     if len(spans) < FLOOR_MIN_SPANS:
         res["problems"].append(f"{len(spans)} prefill_span_start events < {FLOOR_MIN_SPANS} (PHASE_EVENTS off?)")
-    off = [e for e in spans if (e.get("prefill_sms"), e.get("decode_sms")) != FLOOR_PAIR]
-    if off:
-        res["problems"].append(f"{len(off)} prefill spans not at {FLOOR_PAIR}")
-    last = spans[-FLOOR_N:]
-    busy = [e for e in last if e.get("running_bs") != 0 or e.get("n_new") != 1 or e.get("queue_len") != 0]
-    if busy:
-        res["problems"].append(f"{len(busy)} floor spans with running_bs/n_new/queue_len != 0/1/0")
     res["dropped_events_max"] = max([int(e.get("dropped_events", 0) or 0) for e in ev] or [0])
+    if res["dropped_events_max"] > 0:
+        res["problems"].append(f"dropped_events_max {res['dropped_events_max']} > 0 (decode absence not evidential)")
+    # descriptives: entry-time labels (recorded before adjust_stream_groups; NOT decision inputs)
+    res["entry_label_off_count"] = sum(1 for e in spans if (e.get("prefill_sms"), e.get("decode_sms")) != FLOOR_PAIR)
+    res["entry_running_bs_nonzero_count"] = sum(1 for e in spans if e.get("running_bs") != 0)
+    # (iii) realised partition per span
+    unpaired, off_stream, dec_inside, bad_ts = [], [], [], []
+    for st in spans:
+        seq = st.get("span_seq")
+        en = ends.get(seq)
+        if en is None:
+            unpaired.append(seq)
+            continue
+        if en.get("stream_idx") != FLOOR_STREAM_IDX:
+            off_stream.append((seq, en.get("stream_idx")))
+        try:
+            t0, t1 = float(st["timestamp_monotonic_s"]), float(en["timestamp_monotonic_s"])
+        except (KeyError, TypeError, ValueError):
+            bad_ts.append(seq)
+            continue
+        if t1 < t0:
+            bad_ts.append(seq)
+            continue
+        n_in = bisect.bisect_right(decs, t1) - bisect.bisect_left(decs, t0)
+        if n_in:
+            dec_inside.append((seq, n_in))
+    res["end_stream_idx_set"] = sorted({e.get("stream_idx") for e in ends.values()}, key=lambda x: (x is None, x))
+    if unpaired:
+        res["problems"].append(f"{len(unpaired)} prefill spans without prefill_span_end (span_seq {unpaired[:5]})")
+    if bad_ts:
+        res["problems"].append(f"{len(bad_ts)} prefill spans with unusable timestamps (span_seq {bad_ts[:5]})")
+    if off_stream:
+        res["problems"].append(f"{len(off_stream)} prefill spans realised off stream {FLOOR_STREAM_IDX} = {FLOOR_PAIR} "
+                               f"(span_seq, stream_idx) {off_stream[:5]}")
+    if dec_inside:
+        res["problems"].append(f"{len(dec_inside)} prefill spans with decode_iteration inside the span "
+                               f"(span_seq, count) {dec_inside[:5]}")
+    # (iv) floor requests: single admission, empty queue at entry
+    last = spans[-FLOOR_N:]
+    busy = [e for e in last if e.get("n_new") != 1 or e.get("queue_len") != 0]
+    if busy:
+        res["problems"].append(f"{len(busy)} floor spans with n_new/queue_len != 1/0")
+    # (v) R-2: the decode recorder must be shown live after every floor span
+    last_idx = list(range(len(spans)))[-FLOOR_N:]
+    not_live, gaps, race = [], [], 0
+    for j in last_idx:
+        st, en = spans[j], ends.get(spans[j].get("span_seq"))
+        try:
+            t0 = float(st["timestamp_monotonic_s"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        # R-3 descriptive: admission gap = start minus the latest decode_iteration before it
+        k = bisect.bisect_left(decs, t0)
+        gaps.append(round(1000.0 * (t0 - decs[k - 1]), 3) if k > 0 else None)
+        if (st.get("prefill_sms"), st.get("decode_sms")) != FLOOR_PAIR or st.get("running_bs") != 0:
+            race += 1
+        if en is None:
+            continue
+        try:
+            t1 = float(en["timestamp_monotonic_s"])
+            t_next = float(spans[j + 1]["timestamp_monotonic_s"]) if j + 1 < len(spans) else math.inf
+        except (KeyError, TypeError, ValueError):
+            continue
+        if bisect.bisect_right(decs, t_next) - bisect.bisect_right(decs, t1) < 1:
+            not_live.append(st.get("span_seq"))
+    res["floor_entry_race_count"] = race
+    res["floor_admission_gap_ms"] = gaps
+    if not_live:
+        res["problems"].append(f"{len(not_live)} floor spans with no decode_iteration before the next span "
+                               f"-- decode recorder not shown live after floor span (span_seq {not_live[:5]})")
     if not res["problems"]:
         floor_s = statistics.median(ttfts)
         res.update(valid=True, floor_s=floor_s,
@@ -726,7 +828,10 @@ def selftest(eng: Path = ENG) -> None:
         pass
     assert verify_digests(eng) == [], verify_digests(eng)
     assert mirror_check(eng) == [], mirror_check(eng)
-    # floor formula on a synthetic boot: valid, then one span moved off (108,0) -> invalid
+    # floor formula on a synthetic boot (rev6): valid; then controls on the REALISED evidence
+    # (span_end stream, decode inside the span, unpaired end, dropped events, n_new) -> invalid;
+    # and the Job-79999aa entry-label race (start label (0,108)/running_bs 1, realised stream 0,
+    # no decode inside) -> VALID under rev6 while the rev5 predicate would have rejected it.
     import tempfile
     rnd = random.Random(0)
     with tempfile.TemporaryDirectory() as td:
@@ -734,25 +839,112 @@ def selftest(eng: Path = ENG) -> None:
         tt = [0.9 + 0.01 * rnd.random() for _ in range(FLOOR_N)]
         bp.write_text(json.dumps({"completed": FLOOR_N, "errors": [""] * FLOOR_N, "ttfts": tt,
                                   "total_input_tokens": FLOOR_N * 8192, "max_concurrency": 1}) + "\n")
-        sp = [{"event": "prefill_span_start", "prefill_sms": 108, "decode_sms": 0, "running_bs": 0,
-               "n_new": 1, "queue_len": 0} for _ in range(FLOOR_N + 9)]
-        tp.write_text("\n".join(json.dumps(x) for x in sp) + "\n")
+
+        def boot(n=FLOOR_N + 9):
+            evs = []
+            for i in range(n):
+                t0 = 100.0 + 2.0 * i
+                evs.append({"event": "prefill_span_start", "span_seq": i + 1, "prefill_sms": 108, "decode_sms": 0,
+                            "stream_idx": 0, "running_bs": 0, "n_new": 1, "queue_len": 0,
+                            "timestamp_monotonic_s": t0, "dropped_events": 0})
+                evs.append({"event": "prefill_span_end", "span_seq": i + 1, "stream_idx": 0, "running_bs": 0,
+                            "n_done": 1, "queue_len": 0, "timestamp_monotonic_s": t0 + 0.9, "dropped_events": 0})
+                for j in range(5):   # the request's decode, after its prefill, on the plain decode group
+                    evs.append({"event": "decode_iteration", "iter_seq": 5 * i + j, "stream_idx": 5,
+                                "prefill_sms": 0, "decode_sms": 108, "bs": 1,
+                                "timestamp_monotonic_s": t0 + 1.0 + 0.1 * j, "dropped_events": 0})
+            return evs
+
+        def write(evs):
+            tp.write_text("\n".join(json.dumps(x) for x in evs) + "\n")
+
+        def starts(evs):
+            return [e for e in evs if e["event"] == "prefill_span_start"]
+
+        def ends(evs):
+            return [e for e in evs if e["event"] == "prefill_span_end"]
+
+        evs = boot()
+        write(evs)
         f = floor_from(bp, tp, "B")
         assert f["valid"] and abs(f["floor_s"] - statistics.median(tt)) < 1e-12, f
+        assert f["entry_label_off_count"] == 0 and f["n_decode_iterations"] == 5 * (FLOOR_N + 9), f
         assert tk_problems(f) == [], tk_problems(f)
         assert tk_problems(dict(f, dryrun=True)), "control: dry-run key must be refused"
         assert tk_problems({k: v for k, v in f.items() if k != "ttfts_s"}), "control: no ttfts_s refused"
         assert abs(f["T_k_s"]["5"] - 5 * f["floor_s"]) < 1e-12
-        sp[-3]["decode_sms"], sp[-3]["prefill_sms"] = 44, 64
-        tp.write_text("\n".join(json.dumps(x) for x in sp) + "\n")
-        assert not floor_from(bp, tp, "B")["valid"], "control: a (64,44) floor span must invalidate"
-        sp[-3].update(prefill_sms=108, decode_sms=0, running_bs=3)
-        tp.write_text("\n".join(json.dumps(x) for x in sp) + "\n")
-        assert not floor_from(bp, tp, "B")["valid"], "control: running_bs>0 must invalidate"
+        # control 1: a span REALISED on a division stream (span_end.stream_idx != 0) -> invalid
+        evs = boot(); ends(evs)[-3]["stream_idx"] = 4; write(evs)
+        f = floor_from(bp, tp, "B")
+        assert not f["valid"] and any("realised off stream" in p for p in f["problems"]), f
+        # control 2: a decode iteration inside a span (decode co-ran with the floor prefill) -> invalid
+        evs = boot(); st = starts(evs)[-1]
+        evs.append({"event": "decode_iteration", "iter_seq": 9999, "stream_idx": 3, "prefill_sms": 64,
+                    "decode_sms": 44, "bs": 1, "timestamp_monotonic_s": st["timestamp_monotonic_s"] + 0.4,
+                    "dropped_events": 0})
+        write(evs)
+        f = floor_from(bp, tp, "B")
+        assert not f["valid"] and any("decode_iteration inside" in p for p in f["problems"]), f
+        # control 3: a span without its prefill_span_end -> invalid (no realised evidence)
+        evs = boot(); evs.remove(ends(evs)[-1]); write(evs)
+        f = floor_from(bp, tp, "B")
+        assert not f["valid"] and any("without prefill_span_end" in p for p in f["problems"]), f
+        # control 4: dropped events -> invalid (absence of decode_iteration is not evidential)
+        evs = boot(); evs[7]["dropped_events"] = 2; write(evs)
+        f = floor_from(bp, tp, "B")
+        assert not f["valid"] and any("dropped_events_max" in p for p in f["problems"]), f
+        # control 5: a floor request admitted with another (n_new 2) / a queue -> invalid
+        evs = boot(); starts(evs)[-2]["n_new"] = 2; write(evs)
+        assert not floor_from(bp, tp, "B")["valid"], "control: n_new != 1 must invalidate"
+        evs = boot(); starts(evs)[-1]["queue_len"] = 1; write(evs)
+        assert not floor_from(bp, tp, "B")["valid"], "control: queue_len != 0 must invalidate"
+        # control 6: fewer than FLOOR_MIN_SPANS spans -> invalid
+        evs = boot(FLOOR_N - 1); write(evs)
+        assert not floor_from(bp, tp, "B")["valid"], "control: too few spans must invalidate"
+        # positive control (the Job-79999aa race): entry label (0,108)/stream 5/running_bs 1 on a
+        # warm-up span, realised stream 0, no decode inside -> VALID under rev6; the rev5 predicate
+        # (every prefill_span_start at (108,0)) rejects the same boot.
+        evs = boot(); st = starts(evs)[3]; st.update(prefill_sms=0, decode_sms=108, stream_idx=5, running_bs=1)
+        write(evs)
+        f = floor_from(bp, tp, "B")
+        assert f["valid"] and f["entry_label_off_count"] == 1 and f["entry_running_bs_nonzero_count"] == 1, f
+        assert any((e["prefill_sms"], e["decode_sms"]) != FLOOR_PAIR for e in starts(evs)), "rev5 predicate must fire"
+        # the same race on a FLOOR request (last FLOOR_N) is also admissible: entry running_bs is not an input,
+        # but it is counted (R-3 descriptive) and the admission gap is reported per floor span
+        evs = boot(); starts(evs)[-1].update(prefill_sms=0, decode_sms=108, stream_idx=5, running_bs=1); write(evs)
+        f = floor_from(bp, tp, "B")
+        assert f["valid"] and f["floor_entry_race_count"] == 1, f
+        assert len(f["floor_admission_gap_ms"]) == FLOOR_N and abs(f["floor_admission_gap_ms"][-1] - 600.0) < 1e-6, f
+        # control 7 (audit R-2): decode recorder not shown live after a floor span -> invalid
+        evs = boot(); st = starts(evs)[-1]
+        evs = [e for e in evs if not (e["event"] == "decode_iteration" and e["timestamp_monotonic_s"] > st["timestamp_monotonic_s"])]
+        write(evs)
+        f = floor_from(bp, tp, "B")
+        assert not f["valid"] and any("not shown live" in p for p in f["problems"]), f
+        evs = [e for e in boot() if e["event"] != "decode_iteration"]; write(evs)
+        f = floor_from(bp, tp, "B")
+        assert not f["valid"] and f["n_decode_iterations"] == 0 and any("not shown live" in p for p in f["problems"]), f
+        # control 8 (audit W-1): duplicate span_seq among starts / among ends -> invalid
+        evs = boot(); starts(evs)[-1]["span_seq"] = starts(evs)[-2]["span_seq"]; write(evs)
+        assert not floor_from(bp, tp, "B")["valid"], "control: duplicate start span_seq must invalidate"
+        evs = boot(); evs.append(dict(ends(evs)[-1])); write(evs)
+        assert not floor_from(bp, tp, "B")["valid"], "control: duplicate end span_seq must invalidate"
+        # control 9 (audit W-2): closed-interval boundaries -- a decode_iteration exactly at start / at end -> invalid
+        for key in ("start", "end"):
+            evs = boot(); ref = (starts(evs) if key == "start" else ends(evs))[-1]
+            evs.append({"event": "decode_iteration", "iter_seq": 9998, "stream_idx": 5, "prefill_sms": 0, "decode_sms": 108,
+                        "bs": 1, "timestamp_monotonic_s": ref["timestamp_monotonic_s"], "dropped_events": 0})
+            write(evs)
+            assert not floor_from(bp, tp, "B")["valid"], f"control: decode_iteration at span {key} boundary must invalidate"
+        # control 10 (audit W-3): end before start -> invalid (unusable timestamps)
+        evs = boot(); ends(evs)[-1]["timestamp_monotonic_s"] = starts(evs)[-1]["timestamp_monotonic_s"] - 0.1; write(evs)
+        f = floor_from(bp, tp, "B")
+        assert not f["valid"] and any("unusable timestamps" in p for p in f["problems"]), f
     p3_selftest()
     print("N3 PLAN SELFTEST OK (seeds = scorer top-4 per shape, Ebar guard clean; units/ABBA/phase-events "
           "pinned; spacing <= 0.12x lam_ref; normal corner admits every unit, worst every unit but floor_tail, under the 4.0 h cap; config A-agn passes, D54 and "
-          "5-group controls fail; registered digests + mirror match; floor formula + 2 invalidating controls; "
+          "5-group controls fail; registered digests + mirror match; "
+          "floor formula (rev6 realised evidence) + 10 invalidating controls (incl. audit R-2 recorder-live, W-1 span_seq, W-2 boundaries, W-3 timestamps) + entry-label race admitted with R-3 descriptives; "
           "P3 (ii): E2 first-Job keys and 48 x 6-group PASS, mamba 47/48 / all-47 / 0.8% / 786431 / banner or "
           "tokens missing / no keys / 5g-vs-6g pool / unregistered constants FAIL, boundaries hold)")
 

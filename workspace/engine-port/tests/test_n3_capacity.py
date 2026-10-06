@@ -11,7 +11,9 @@ variant certifies nothing; lesson 254: an equivalent mutant is recorded, not hid
                     line makes the structural detector fail.
   green read-out    A-agn layout + null sticky passes.  Control: the homog5 read-out of λ0 VESSL
                     (index 2 = (64,44)) and a non-null sticky_target_index both fail.
-  floor             formula + (108,0)/running_bs controls (n3_plan selftest).
+  floor             rev6: formula + REALISED-evidence controls (span_end stream, decode inside the
+                    span, unpaired end, dropped events, n_new) and the Job-79999aa entry-label race
+                    admitted (n3_plan selftest, T-H3, TestFloorRev6RealJob).
   estimators        pair-keyed == sealed index-keyed E2 tool on the λ0 VESSL archive (7/7; skipped
                     when the git-ignored archive is absent).  Controls: wrong pair, index remap.
   analyzer          labels/CI/stationarity/observer on synthetic campaigns with known answers.
@@ -1004,30 +1006,61 @@ class TestBootBranchSnippets(_SnippetBase):
              '  if budget_fired; then STOP=budget')
 
     def _floor_inputs(self, td, mutate=None):
-        """bench: 16 completed concurrency-1 B requests; telemetry: the probe's REAL prefill_span_start
-        records (all (108,0,0,1,0)), repeated to FLOOR_N + 9 spans."""
+        """bench: 16 completed concurrency-1 B requests; telemetry (rev6): the probe's REAL
+        prefill_span_start/prefill_span_end pairs (all entry (108,0,0,1,0), end stream 0), replayed to
+        FLOOR_N + 9 spans 2 s apart, each followed by its decode iterations on the plain decode group
+        (outside the span).  `mutate(ctx)` gets ctx = {start, end, events} of the LAST span."""
         tt = [0.9 + 0.001 * i for i in range(P.FLOOR_N)]
         (Path(td) / "bench_X.jsonl").write_text(json.dumps(
             {"completed": P.FLOOR_N, "errors": [""] * P.FLOOR_N, "ttfts": tt,
              "total_input_tokens": P.FLOOR_N * P.SHAPES["B"]["input_len"], "max_concurrency": 1}) + "\n")
-        real = [json.loads(ln) for ln in (PROBE / "tel_A2_warm.jsonl").read_text().splitlines()
-                if '"prefill_span_start"' in ln]
-        self.assertTrue(real and all((e["prefill_sms"], e["decode_sms"], e["running_bs"], e["n_new"],
-                                      e["queue_len"]) == (108, 0, 0, 1, 0) for e in real))
-        sp = [dict(real[i % len(real)], span_seq=i + 1) for i in range(P.FLOOR_N + 9)]
+        recs = [json.loads(ln) for ln in (PROBE / "tel_A2_warm.jsonl").read_text().splitlines() if ln.strip()]
+        st_real = [e for e in recs if e["event"] == "prefill_span_start"]
+        en_real = {e["span_seq"]: e for e in recs if e["event"] == "prefill_span_end"}
+        self.assertTrue(st_real and all((e["prefill_sms"], e["decode_sms"], e["running_bs"], e["n_new"],
+                                         e["queue_len"]) == (108, 0, 0, 1, 0) for e in st_real))
+        self.assertTrue(all(en_real[e["span_seq"]]["stream_idx"] == P.FLOOR_STREAM_IDX for e in st_real))
+        dec_real = next(e for e in recs if e["event"] == "decode_iteration")
+        events, ctx = [], None
+        for i in range(P.FLOOR_N + 9):
+            src = st_real[i % len(st_real)]
+            t0 = 100.0 + 2.0 * i
+            st = dict(src, span_seq=i + 1, timestamp_monotonic_s=t0, dropped_events=0)
+            en = dict(en_real[src["span_seq"]], span_seq=i + 1, timestamp_monotonic_s=t0 + 0.9, dropped_events=0)
+            events += [st, en]
+            events += [dict(dec_real, iter_seq=5 * i + j, timestamp_monotonic_s=t0 + 1.0 + 0.1 * j, dropped_events=0)
+                       for j in range(5)]
+            ctx = {"start": st, "end": en, "events": events}
         if mutate:
-            mutate(sp[-1])
-        (Path(td) / "tel_X.jsonl").write_text("".join(json.dumps(e) + "\n" for e in sp))
+            mutate(ctx)
+        (Path(td) / "tel_X.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events))
 
-    def _floor(self, snippet, mutate=None, prior_tk=None):
+    def _floor(self, snippet, mutate=None, prior_tk=None, r7_marker=False):
         with tempfile.TemporaryDirectory() as td:
             self._floor_inputs(td, mutate)
             if prior_tk is not None:
                 (Path(td) / "T_K.json").write_text(prior_tk)
+            if r7_marker:   # the runner's R7 detection file (PHASE_EVENTS disabled mid-boot)
+                (Path(td) / "phase_events_disabled_X").write_text("PDMUX_PHASE_EVENTS disabled after failure\n")
             rc, out, td_called, _ = self._exec(td, snippet, env_vars={
                 "KIND": "floor", "CUT": "", "PDMUX_TELEMETRY_PATH": f"{td}/tel_X.jsonl"})
             files = {f.name: f.read_text() for f in Path(td).iterdir() if f.is_file()}
             return rc, out, files
+
+    # rev6 mutations on the LAST span: realised off stream 0 / a decode iteration inside the span
+    @staticmethod
+    def _mut_end_stream(ctx):
+        ctx["end"]["stream_idx"] = 4
+
+    @staticmethod
+    def _mut_decode_inside(ctx):
+        ctx["events"].append(dict(ctx["events"][-1], iter_seq=9999, stream_idx=3, prefill_sms=64, decode_sms=44,
+                                  timestamp_monotonic_s=ctx["start"]["timestamp_monotonic_s"] + 0.4))
+
+    @staticmethod
+    def _mut_entry_race(ctx):
+        # Job 79999aa span 6: entry label written before adjust_stream_groups; realised stream 0
+        ctx["start"].update(prefill_sms=0, decode_sms=108, stream_idx=5, running_bs=1)
 
     def test_t_h3_floor(self):
         snip = _cut(self.src, *self.FLOOR)[:-len(self.FLOOR[1])]
@@ -1036,17 +1069,23 @@ class TestBootBranchSnippets(_SnippetBase):
         tk = json.loads(f["T_K.json"])
         self.assertEqual(P.tk_problems(tk), [], tk)
         self.assertIn("unit_X.complete", f)
-        for name, mut in (("last span (64,44)", lambda e: e.update(prefill_sms=64, decode_sms=44)),
-                          ("running_bs>0", lambda e: e.update(running_bs=3))):
+        for name, mut in (("last span realised off stream 0", self._mut_end_stream),
+                          ("decode_iteration inside the last span", self._mut_decode_inside)):
             rc, out, f = self._floor(snip, mut)
             self.assertEqual(rc, 7, (name, out))
             self.assertIn("ABORT_FLOOR floor invalid", out)
             self.assertFalse(json.loads(f["T_K.json"])["valid"], name)
             self.assertNotIn("unit_X.complete", f, name)
+        # rev6 positive control: the entry-label race (rev5 ABORT_FLOOR, Job 79999aa) is a VALID floor
+        rc, out, f = self._floor(snip, self._mut_entry_race)
+        self.assertEqual(rc, 0, out)
+        tk = json.loads(f["T_K.json"])
+        self.assertTrue(tk["valid"] and tk["entry_label_off_count"] == 1, tk)
+        self.assertIn("unit_X.complete", f)
         # resume path: a T_K.json already exists (copied from the first Job) -> re-measured floor goes
         # to T_K_RESUME_<job>.json, never overwrites T_K.json and never aborts (diagnostic)
         prior = json.dumps({"frozen": "first-job"})
-        rc, out, f = self._floor(snip, lambda e: e.update(prefill_sms=64, decode_sms=44), prior_tk=prior)
+        rc, out, f = self._floor(snip, self._mut_end_stream, prior_tk=prior)
         self.assertEqual(rc, 0, out)
         self.assertNotIn("ABORT_FLOOR", out)
         self.assertEqual(f["T_K.json"], prior)
@@ -1055,8 +1094,21 @@ class TestBootBranchSnippets(_SnippetBase):
         self.assertEqual(rc, 0, out)
         self.assertTrue(json.loads(f["T_K_RESUME_tj.json"])["valid"])
         self.assertEqual(f["T_K.json"], prior)
-        rc, out, _ = self._floor(_neutralise(snip, "ABORT_FLOOR"), lambda e: e.update(prefill_sms=64, decode_sms=44))
+        rc, out, _ = self._floor(_neutralise(snip, "ABORT_FLOOR"), self._mut_end_stream)
         self.assertEqual(rc, 0, "neutralised floor abort still exited -- the test is vacuous")
+        # rev6 audit R-1: R7 marker (PHASE_EVENTS disabled mid-boot) => ABORT_FLOOR even though floor_from
+        # says valid (floor spans unobserved); the diagnostic T_K.json is still written
+        rc, out, f = self._floor(snip, r7_marker=True)
+        self.assertEqual(rc, 7, out)
+        self.assertIn("ABORT_FLOOR PHASE_EVENTS disabled mid-boot", out)
+        self.assertTrue(json.loads(f["T_K.json"])["valid"], "floor_from itself saw a valid boot (the abort is R-1's)")
+        self.assertNotIn("unit_X.complete", f)
+        rc, out, _ = self._floor(_neutralise(snip, "ABORT_FLOOR PHASE_EVENTS"), r7_marker=True)
+        self.assertEqual(rc, 0, "neutralised R-1 abort still exited -- the test is vacuous")
+        # R7 marker on the RESUME path (TKOUT != T_K.json) is diagnostic only: no abort
+        rc, out, f = self._floor(snip, prior_tk=prior, r7_marker=True)
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(f["T_K.json"], prior)
 
     # ------------------------------------------------------------------------- T-H4 T_K gate
     TKGATE = ('  if [ "$KIND" != floor ] && ! tk_valid "$OUT/T_K.json"; then\n', "  fi\n")
@@ -1176,6 +1228,64 @@ class TestBootBranchSnippets(_SnippetBase):
         self.assertIn("BRC=143", out)
         self.assertTrue(marker, "watchdog-only path must still write budget_killed_<unit>")
         self.assertLess(wall, 30.0)
+
+
+class TestFloorRev6RealJob(unittest.TestCase):
+    """rev6 on the REAL shape-B 2nd-submission floor boot (Job pdmux-n3-capacity-79999aa-20261006081638,
+    exit 7 ABORT_FLOOR under rev5): 28 spans, span 6 entry label (0,108)/running_bs 1, every
+    prefill_span_end on stream 0, no decode_iteration inside any span.  rev6 must accept it and the rev5
+    predicate (every prefill_span_start at (108,0)) must reject it -- otherwise rev6 changed nothing.
+    The bench/telemetry jsonl are git-ignored: skipped when absent."""
+    JOB = HERE / "n3b_pdmux-n3-capacity-79999aa-20261006081638"
+
+    def setUp(self):
+        self.bench = self.JOB / "bench_floor_head.jsonl"
+        self.tel = self.JOB / "tel_floor_head.jsonl"
+        if not (self.bench.exists() and self.tel.exists()):
+            self.skipTest("Job 79999aa floor jsonl absent (git-ignored raw data)")
+
+    def test_rev6_accepts_the_job_floor_that_rev5_rejected(self):
+        f = P.floor_from(self.bench, self.tel, "B")
+        self.assertTrue(f["valid"], f)
+        self.assertEqual(f["n_spans"], 28)
+        self.assertEqual(f["entry_label_off_count"], 1, f)       # the race, descriptive only
+        self.assertEqual(f["end_stream_idx_set"], [0], f)
+        self.assertEqual(P.tk_problems(f), [])
+        # audit R-2/R-3 on the real boot: recorder live after all 16 floor spans, race count 0 in the floor
+        # window (the single race was warm-up span 6), 16 admission gaps all present
+        self.assertEqual(f["floor_entry_race_count"], 0, f)
+        self.assertEqual(len(f["floor_admission_gap_ms"]), P.FLOOR_N)
+        self.assertTrue(all(g is not None and g > 0 for g in f["floor_admission_gap_ms"]), f["floor_admission_gap_ms"])
+
+    def test_rev6_r2_rejects_the_job_data_without_decode_after_a_floor_span(self):
+        evs = [json.loads(ln) for ln in self.tel.read_text().splitlines() if ln.strip()]
+        last_start = [e for e in evs if e["event"] == "prefill_span_start"][-1]["timestamp_monotonic_s"]
+        evs = [e for e in evs if not (e["event"] == "decode_iteration" and e["timestamp_monotonic_s"] > last_start)]
+        with tempfile.TemporaryDirectory() as td:
+            tp = Path(td) / "t.jsonl"
+            tp.write_text("".join(json.dumps(e) + "\n" for e in evs))
+            f = P.floor_from(self.bench, tp, "B")
+        self.assertFalse(f["valid"], f)
+        self.assertTrue(any("not shown live" in p for p in f["problems"]), f)
+        # the sealed rev5 T_K.json of that Job (tracked) was invalid for exactly this reason
+        tk5 = json.loads((self.JOB / "T_K.json").read_text())
+        self.assertFalse(tk5["valid"])
+        self.assertEqual(tk5["problems"], ["1 prefill spans not at (108, 0)"])
+        starts = [json.loads(ln) for ln in self.tel.read_text().splitlines()
+                  if ln.strip() and '"prefill_span_start"' in ln]
+        self.assertTrue(any((e["prefill_sms"], e["decode_sms"]) != P.FLOOR_PAIR for e in starts),
+                        "rev5 predicate does not fire on this boot -- the test is vacuous")
+
+    def test_rev6_still_rejects_a_realised_violation_on_the_job_data(self):
+        evs = [json.loads(ln) for ln in self.tel.read_text().splitlines() if ln.strip()]
+        ends = [e for e in evs if e["event"] == "prefill_span_end"]
+        ends[-1]["stream_idx"] = 3
+        with tempfile.TemporaryDirectory() as td:
+            tp = Path(td) / "t.jsonl"
+            tp.write_text("".join(json.dumps(e) + "\n" for e in evs))
+            f = P.floor_from(self.bench, tp, "B")
+        self.assertFalse(f["valid"], f)
+        self.assertTrue(any("realised off stream" in p for p in f["problems"]), f)
 
 
 class TestJobSymlinkLayout(unittest.TestCase):
