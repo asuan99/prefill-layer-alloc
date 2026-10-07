@@ -208,8 +208,9 @@ class TestUnits(unittest.TestCase):
         for shape in ("A", "B"):
             n, w = P.simulate(shape, "normal"), P.simulate(shape, "worst")
             self.assertTrue(n["all_admitted"])
-            self.assertLessEqual(n["gpu_h"], 3.5)
-            self.assertGreaterEqual(w["admitted"], w["units"] - 1)
+            # rev7: shape B re-estimated from measurement (normal corner 4.24 GPU-h, was 3.37); A unchanged
+            self.assertLessEqual(n["gpu_h"], 4.3 if shape == "B" else 3.5)
+            self.assertGreaterEqual(w["admitted"], P.REV7_B_WORST_MIN_ADMITTED if shape == "B" else w["units"] - 1)
 
 
 class TestFailClosedWiring(unittest.TestCase):
@@ -288,7 +289,7 @@ class TestFailClosedWiring(unittest.TestCase):
 
     def test_cap_and_constants_from_helper_not_env(self):
         src = RUNNER.read_text()
-        self.assertIn("HARD_CAP_S=$(K HARD_CAP_S)", src)
+        self.assertIn('HARD_CAP_S=$(K "HARD_CAP_S_${SHAPE}")', src)
         self.assertIn('[ -n "${PDMUX_N3_TEST_HARD_CAP_S:-}" ] && HARD_CAP_S=', src)
         self.assertIn("PDMUX_N3_TEST_HARD_CAP_S PDMUX_N3_TEST_FAKE_BENCH_S", src.split('if [ "$DRYRUN" != 1 ]; then')[1][:300])
 
@@ -1013,7 +1014,8 @@ class TestBootBranchSnippets(_SnippetBase):
         tt = [0.9 + 0.001 * i for i in range(P.FLOOR_N)]
         (Path(td) / "bench_X.jsonl").write_text(json.dumps(
             {"completed": P.FLOOR_N, "errors": [""] * P.FLOOR_N, "ttfts": tt,
-             "total_input_tokens": P.FLOOR_N * P.SHAPES["B"]["input_len"], "max_concurrency": 1}) + "\n")
+             "total_input_tokens": P.FLOOR_N * P.SHAPES["B"]["input_len"], "max_concurrency": 1,
+             "duration": 2.0 * (P.FLOOR_N - 1) + 0.9 + 0.5}) + "\n")     # W-5 (default length): span window + 0.5 s decode tail
         recs = [json.loads(ln) for ln in (PROBE / "tel_A2_warm.jsonl").read_text().splitlines() if ln.strip()]
         st_real = [e for e in recs if e["event"] == "prefill_span_start"]
         en_real = {e["span_seq"]: e for e in recs if e["event"] == "prefill_span_end"}
@@ -1339,6 +1341,300 @@ class TestJobSymlinkLayout(unittest.TestCase):
             r = self._run(eng, h / "n3_analyze.py", "--help")
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("No module named 'analyze'", r.stderr)
+
+
+
+class TestRev7Budget(unittest.TestCase):
+    """rev7 (2026-10-07, DRAFT before delta audit): shape-B budget constants re-estimated from the
+    3rd-round Job's own TIMING.tsv (admit -> next admit, tracked file).  Controls (lesson 53): putting
+    the rev6 constants back (overhead 121.0 / no bench-fixed term / floor bench 40 / cap 14400) must
+    FAIL the forecast-vs-measurement tests below, i.e. the mutation is detected."""
+    JOB = HERE / "n3b_pdmux-n3-capacity-38ed3f4-20261006092813"
+    REV6 = {"overhead_s": 121.0, "bench_fixed_s": 0.0, "floor_bench_s": 40.0}
+
+    def setUp(self):
+        t = self.JOB / "TIMING.tsv"
+        if not t.exists():
+            self.skipTest("Job 38ed3f4 TIMING.tsv absent")
+        rows = [ln.split("\t") for ln in t.read_text().splitlines()[1:] if ln.strip()]
+        self.rows = rows
+        self.units = {P.parse_row(r)["name"]: (r, P.parse_row(r)) for r in P.units("B")}
+        self.tot = {rows[i][0]: int(rows[i + 1][1]) - int(rows[i][1]) for i in range(len(rows) - 1)}
+        self.tot.pop("floor_head")          # cold first boot: modelled by COLD_FIRST_BOOT_EXTRA_S
+
+    def _pred(self, name):
+        return P.unit_cost_s("B", self.units[name][0], "normal")
+
+    def _median_rel_err(self):
+        errs = sorted((self._pred(n) - t) / t for n, t in self.tot.items())
+        return errs[len(errs) // 2]
+
+    def _mutate(self, **kw):
+        old = {k: P.SHAPES["B"][k] for k in kw}
+        P.SHAPES["B"].update(kw)
+        return old
+
+    def test_forecast_matches_measured_unit_totals(self):
+        self.assertEqual(len(self.tot), 41)
+        self.assertLess(abs(self._median_rel_err()), 0.03, self._median_rel_err())
+        worst = max(abs(self._pred(n) - t) / t for n, t in self.tot.items())
+        self.assertLess(worst, 0.12, worst)
+
+    def test_every_measured_unit_is_covered_by_its_admission_need(self):
+        for n, t in self.tot.items():
+            self.assertGreaterEqual(P.need_s("B", n), t, (n, t, P.need_s("B", n)))
+
+    def test_rev6_constants_are_detected(self):
+        old = self._mutate(**self.REV6)
+        try:
+            self.assertGreater(abs(self._median_rel_err()), 0.15)        # forecast ~ -25 %
+            self.assertTrue(any(P.need_s("B", n) < t for n, t in self.tot.items()),
+                            "rev6 constants must under-cover some measured unit")
+        finally:
+            P.SHAPES["B"].update(old)
+
+    def test_each_constant_reversion_alone_is_detected(self):
+        for k, v in self.REV6.items():
+            if k == "floor_bench_s":
+                continue                      # floor units are not in the 41 warm totals: see test_floor_bench
+            old = self._mutate(**{k: v})
+            try:
+                self.assertGreater(abs(self._median_rel_err()), 0.02, k)
+            finally:
+                P.SHAPES["B"].update(old)
+
+    def test_floor_bench_constant_vs_measured_floor_window(self):
+        fh = [r for r in self.rows if r[0] == "floor_head"][0]
+        measured = int(fh[4]) - int(fh[3])
+        fu = self.units["floor_head"][1]
+        self.assertLessEqual(abs(P.bench_s("B", fu) - measured), 3.0)
+        old = self._mutate(floor_bench_s=40.0)
+        try:
+            self.assertGreater(abs(P.bench_s("B", fu) - measured), 3.0)        # rev6 value detected
+        finally:
+            P.SHAPES["B"].update(old)
+
+    def test_normal_corner_admits_48_of_48_and_cap_tolerates_slowdown(self):
+        n = P.simulate("B", "normal")
+        self.assertTrue(n["all_admitted"], n)
+        self.assertGreater(n["gpu_h"], 4.0)                    # honest: no longer fits 4.0 h
+        self.assertLessEqual(P.PREFLIGHT_ALLOW_S + P.COLD_FIRST_BOOT_EXTRA_S, 400)
+        # uniform 5 % slowdown of every unit (Job-level shift scale in E2VR-3 is 3.6-4.1 %) still admits 48/48
+        t = P.PREFLIGHT_ALLOW_S + P.COLD_FIRST_BOOT_EXTRA_S
+        lim = P.hard_cap("B") - P.TAIL_RESERVE_S
+        # R-5: the tolerance is a property of the chosen cap (16200 -> +2.0 %, 17100 -> +8.2 %, 18000 -> +14.3 %)
+        f = min(1.05, 0.99 * P.max_uniform_slowdown("B"))
+        for r in P.units("B"):
+            self.assertGreaterEqual(lim - t, P.need_s("B", P.parse_row(r)["name"]))
+            t += f * P.unit_cost_s("B", r, "normal")
+
+    def test_cap_reversion_is_detected(self):
+        old = P.HARD_CAP_S_B
+        P.HARD_CAP_S_B = 14400
+        try:
+            self.assertFalse(P.simulate("B", "normal")["all_admitted"])
+        finally:
+            P.HARD_CAP_S_B = old
+
+    def test_cap_is_per_shape_and_a_cap_unchanged(self):
+        """R-4: the rev7 cap does not touch shape A (A stays 14,400); the runner reads the per-shape constant."""
+        self.assertEqual((P.hard_cap("A"), P.hard_cap("B")), (14400, 17100))
+        self.assertEqual(P.budget_table("A")["hard_cap"]["cell_section_s"], 14400)
+        self.assertEqual(P.budget_table("B")["hard_cap"]["cell_section_s"], 17100)
+        out = subprocess.run([sys.executable, str(HERE / "n3_plan.py"), "--const", "HARD_CAP_S_A"], capture_output=True, text=True)
+        self.assertEqual(out.stdout.strip(), "14400")
+        old = P.HARD_CAP_S_B
+        P.HARD_CAP_S_B = 99999                              # mutation: B cap leaking into A is detected
+        try:
+            self.assertEqual(P.hard_cap("A"), 14400)
+        finally:
+            P.HARD_CAP_S_B = old
+
+    def test_stress_floor_is_derived_per_cap_and_pinned_table_is_correct(self):
+        """R-5: the fixed point is keyed by the cap; every alternative cap's pinned value equals simulate()."""
+        old = P.HARD_CAP_S_B
+        try:
+            for cap, want in P.REV7_B_WORST_MIN_ADMITTED_BY_CAP.items():
+                P.HARD_CAP_S_B = cap
+                self.assertEqual(P.simulate("B", "worst")["admitted"], want, cap)
+            self.assertEqual(P.REV7_B_WORST_MIN_ADMITTED_BY_CAP, {16200: 41, 17100: 44, 18000: 46})
+            self.assertEqual(P.REV7_B_WORST_MIN_ADMITTED, P.REV7_B_WORST_MIN_ADMITTED_BY_CAP[17100])
+            P.HARD_CAP_S_B = 16500                          # a cap with no pinned value must not be silently accepted
+            self.assertNotIn(P.HARD_CAP_S_B, P.REV7_B_WORST_MIN_ADMITTED_BY_CAP)
+        finally:
+            P.HARD_CAP_S_B = old
+
+    def test_independent_component_predicates_catch_the_compensating_mutation(self):
+        """Audit Q6: overhead 193 + bench-fixed 0 keeps every total-time test green (total unchanged).  The
+        overhead and the bench-window residual are therefore tested SEPARATELY against the TIMING.tsv columns."""
+        resid, ovh = [], []
+        for i, r in enumerate(self.rows):
+            u = self.units[r[0]][1]
+            if u["kind"] == "floor" or i + 1 >= len(self.rows):
+                continue
+            win = int(r[4]) - int(r[3])
+            resid.append(win - (P.bench_s("B", u) - P.SHAPES["B"]["bench_fixed_s"]))
+            ovh.append(int(self.rows[i + 1][1]) - int(r[1]) - win)
+        resid.sort()
+        ovh.sort()
+        self.assertLessEqual(abs(resid[len(resid) // 2] - P.SHAPES["B"]["bench_fixed_s"]), 3.0)
+        self.assertLessEqual(abs(ovh[len(ovh) // 2] - P.SHAPES["B"]["overhead_s"]), 8.0)
+
+    def test_compensating_mutation_is_killed_by_component_predicates(self):
+        old = self._mutate(overhead_s=193.0, bench_fixed_s=0.0)
+        try:
+            self.assertLess(abs(self._median_rel_err()), 0.03)            # total-time test is blind to it (equivalent there)
+            with self.assertRaises(AssertionError):
+                self.test_independent_component_predicates_catch_the_compensating_mutation()
+        finally:
+            P.SHAPES["B"].update(old)
+
+    def test_bench_fixed_sample_statement_reproduces(self):
+        """R-6: n = 42 non-floor units (32 grid, 8 observer, 2 bridge); medians 22.02 / 24.33 / 20.83; overall 22.48 s."""
+        import statistics
+        base = lambda u: P.bench_s("B", u) - P.SHAPES["B"]["bench_fixed_s"]
+        by = {}
+        for r in self.rows:
+            u = self.units[r[0]][1]
+            if u["kind"] != "floor":
+                by.setdefault({"obs_on": "obs", "obs_off": "obs"}.get(u["kind"], u["kind"]), []).append((int(r[4]) - int(r[3])) - base(u))
+        self.assertEqual({k: len(v) for k, v in by.items()}, {"bridge": 2, "obs": 8, "grid": 32})
+        allv = [x for v in by.values() for x in v]
+        self.assertEqual(len(allv), 42)
+        self.assertAlmostEqual(statistics.median(allv), 22.48, places=2)
+        self.assertAlmostEqual(statistics.median(by["grid"]), 22.02, places=2)
+        self.assertAlmostEqual(statistics.median(by["obs"]), 24.33, places=2)
+        self.assertAlmostEqual(statistics.median(by["bridge"]), 20.83, places=2)
+        self.assertTrue(15.0 <= P.SHAPES["B"]["bench_fixed_s"] <= 30.0)
+
+    def test_budget_table_notes_are_not_stale(self):
+        for shape in ("A", "B"):
+            note = P.budget_table(shape)["note"]
+            self.assertNotIn("600 s is UNMEASURED", note)
+            self.assertNotIn("per-boot overheads are λ0 VESSL measurements", note)
+        self.assertIn("38ed3f4", P.budget_table("B")["note"])
+        self.assertIn("UNMEASURED on the N3", P.budget_table("A")["note"])
+
+    def test_shape_a_constants_untouched_by_rev7(self):
+        a = P.SHAPES["A"]
+        self.assertEqual((a["overhead_s"], a["floor_bench_s"], a["bench_fixed_s"]), (160.1, 110.0, 0.0))
+        self.assertTrue(P.simulate("A", "normal")["all_admitted"])
+
+    def test_units_unchanged_by_rev7(self):
+        """rev7 touches budget constants only: UNITS.txt must stay byte-identical to the 3rd-round Job's."""
+        u = self.JOB / "UNITS.txt"
+        self.assertEqual("\n".join(P.units("B")) + "\n", u.read_text())
+
+    def test_resume_registration_digest_gate_blocks_a_rev7_resume_from_rev6(self):
+        """Statement of fact the notes rely on: the resume digest filter covers n3_*.py and PREREG_*,
+        so any rev7 edit makes ABORT_RESUME fire against the rev6 Job (no resume without a new clause)."""
+        src = RUNNER.read_text()
+        self.assertIn('grep -E "n3_|PREREG_|VERDICT_|pdmux_n3|analyze.py|lambda0_plan"', src)
+        reg = (self.JOB / "REGISTRATION_SHA256.txt").read_text()
+        self.assertRegex(reg, r"n3_plan\.py")
+        self.assertNotEqual(P.sha256(HERE / "n3_plan.py"),
+                            [ln.split()[0] for ln in reg.splitlines() if ln.rstrip().endswith("n3_plan.py")][0])
+
+
+class TestW5Rev7(unittest.TestCase):
+    """rev7 W-5 (length predicate; modes off / length / contain_length; default length -- user decision (iv) 2026-10-07).  On the real Job-38ed3f4 floor boot the
+    gap (duration - span window) is 0.88 s; a stray span (the bench_serving test request 2.33 s earlier) in
+    the last FLOOR_N breaks it.  Raw jsonl is git-ignored: skipped when absent."""
+    JOB = HERE / "n3b_pdmux-n3-capacity-38ed3f4-20261006092813"
+
+    def setUp(self):
+        self.bench = self.JOB / "bench_floor_head.jsonl"
+        self.tel = self.JOB / "tel_floor_head.jsonl"
+        if not (self.bench.exists() and self.tel.exists()):
+            self.skipTest("Job 38ed3f4 floor jsonl absent (git-ignored raw data)")
+
+    def test_default_is_length_and_recorded_in_rule_and_tk_json(self):
+        """User decision (iv) 2026-10-07: W5_MODE = "length".  The default must be length, the floor `rule` must
+        say so, and the T_K.json written by the CLI must carry it.  Mutation: default off -> rule is "rev6"."""
+        self.assertEqual(P.W5_MODE, "length")
+        self.assertTrue(P.W5_ENABLED)
+        f = P.floor_from(self.bench, self.tel, "B")
+        self.assertTrue(f["valid"], f)
+        self.assertEqual((f["rule"], f["w5_mode"], f["w5_enabled"]), ("rev7+W5:length", "length", True))
+        self.assertAlmostEqual(f["w5_window_gap_s"], 0.881, places=2)
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "T_K.json"
+            r = subprocess.run([sys.executable, str(HERE / "n3_plan.py"), "--floor", "B", str(self.bench), str(self.tel), str(out)],
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            tk = json.loads(out.read_text())
+        self.assertEqual(tk["rule"], "rev7+W5:length")
+        self.assertTrue(tk["valid"])
+        self.assertEqual(P.tk_problems(tk), [])
+        off = P.floor_from(self.bench, self.tel, "B", w5="off")
+        self.assertEqual(off["rule"], "rev6")                  # the mutated default would be detected here
+        self.assertNotEqual(off["rule"], f["rule"])
+
+    def _with_dropped_first_floor_span(self, td):
+        evs = [json.loads(ln) for ln in self.tel.read_text().splitlines() if ln.strip()]
+        starts = [e for e in evs if e["event"] == "prefill_span_start"]
+        seq = starts[-P.FLOOR_N]["span_seq"]
+        evs2 = [e for e in evs if not (e.get("span_seq") == seq and e["event"] in ("prefill_span_start", "prefill_span_end"))]
+        tp = Path(td) / "t.jsonl"
+        tp.write_text("".join(json.dumps(e) + "\n" for e in evs2))
+        return tp
+
+    def test_modes_rule_field_and_real_floor(self):
+        """R-1: three modes; `rule` records which; all accept the real Job-38ed3f4 floor."""
+        self.assertEqual(P.W5_MODES, ("off", "length", "contain_length"))
+        for mode, rule in (("off", "rev6"), ("length", "rev7+W5:length"), ("contain_length", "rev7+W5:contain_length")):
+            f = P.floor_from(self.bench, self.tel, "B", w5=mode)
+            self.assertTrue(f["valid"], (mode, f["problems"]))
+            self.assertEqual((f["rule"], f["w5_mode"]), (rule, mode))
+        with self.assertRaises(ValueError):
+            P.floor_from(self.bench, self.tel, "B", w5="containment")
+
+    def test_original_containment_would_not_reject_the_test_request_but_length_does(self):
+        """R-1 disclosure as a test: with the bench_serving test request inside the last FLOOR_N spans, the marks
+        window (CLOCK_MONOTONIC, wraps the whole bench process) still contains every span start, so the ORIGINAL
+        containment predicate passes; the rev7 length predicate rejects (gap < 0)."""
+        with tempfile.TemporaryDirectory() as td:
+            tp = self._with_dropped_first_floor_span(td)
+            f = P.floor_from(self.bench, tp, "B", w5="contain_length")
+            self.assertFalse(f["valid"], f)
+            self.assertFalse(any(x.startswith("W-5 containment") for x in f["problems"]), f["problems"])   # containment passes
+            self.assertTrue(any(x.startswith("W-5: bench duration") for x in f["problems"]), f["problems"])  # length rejects
+            self.assertLess(f["w5_window_gap_s"], 0.0)
+            self.assertFalse(any(x.startswith("W-5") for x in P.floor_from(self.bench, tp, "B", w5="off")["problems"]))
+
+    def test_containment_mode_rejects_spans_outside_marks_window_and_is_fail_closed(self):
+        marks = {k: float(v) for k, v in (ln.split() for ln in (self.JOB / "marks_floor_head.txt").read_text().splitlines())}
+        with tempfile.TemporaryDirectory() as td:
+            mp = Path(td) / "marks.txt"
+            mp.write_text(f"bench_start {marks['bench_start'] + 25.0}\nbench_end {marks['bench_end']}\n")   # mutation: window starts late
+            f = P.floor_from(self.bench, self.tel, "B", w5="contain_length", marks_path=mp)
+            self.assertFalse(f["valid"], f)
+            self.assertTrue(any(x.startswith("W-5 containment") for x in f["problems"]), f["problems"])
+            # same mutated marks are not read in length mode (no containment problem, still valid)
+            self.assertTrue(P.floor_from(self.bench, self.tel, "B", w5="length", marks_path=mp)["valid"])
+            fm = P.floor_from(self.bench, self.tel, "B", w5="contain_length", marks_path=Path(td) / "absent.txt")
+            self.assertFalse(fm["valid"])
+            self.assertTrue(any("marks file missing" in x for x in fm["problems"]), fm["problems"])
+
+    def test_enabled_accepts_the_real_floor(self):
+        f = P.floor_from(self.bench, self.tel, "B", w5=True)
+        self.assertTrue(f["valid"], f)
+
+    def test_enabled_rejects_a_stray_span_but_disabled_does_not(self):
+        evs = [json.loads(ln) for ln in self.tel.read_text().splitlines() if ln.strip()]
+        starts = [e for e in evs if e["event"] == "prefill_span_start"]
+        # control: drop the first floor span's start+end so the last-16 window absorbs the earlier test span
+        seq = starts[-P.FLOOR_N]["span_seq"]
+        evs2 = [e for e in evs if not (e.get("span_seq") == seq and e["event"] in ("prefill_span_start", "prefill_span_end"))]
+        with tempfile.TemporaryDirectory() as td:
+            tp = Path(td) / "t.jsonl"
+            tp.write_text("".join(json.dumps(e) + "\n" for e in evs2))
+            on = P.floor_from(self.bench, tp, "B", w5=True)
+            off = P.floor_from(self.bench, tp, "B", w5=False)
+        self.assertFalse(on["valid"], on)
+        self.assertTrue(any(p.startswith("W-5") for p in on["problems"]), on)
+        self.assertFalse(any(p.startswith("W-5") for p in off["problems"]), off)
+        self.assertLess(on["w5_window_gap_s"], 0.0)          # window now exceeds the bench duration
 
 
 if __name__ == "__main__":

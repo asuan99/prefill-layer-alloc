@@ -157,6 +157,23 @@ K_FLOOR = K_DECISION                  # T_k = k * floor for these k (seconds, wr
 FLOOR_N = 16                          # >= 8 distinct prompts after the warm-up (P-2)
 FLOOR_SEED = 11                       # != warm-up seed 7 => different prompts
 FLOOR_MIN_SPANS = FLOOR_N
+# rev7 W-5 (rev6 delta audit optional item; user decision (iv) 2026-10-07: mode "length", default ON).  Three modes:
+#   "off"             no W-5 predicate (descriptive `w5_window_gap_s` is still recorded)
+#   "length"          rev7 length predicate: 0 <= bench duration - (last floor span end - first floor span start)
+#                     <= W5_SLACK_S.  Job 3 floor_head: duration 28.154 s, window 27.273 s, gap 0.881 s (~ the last
+#                     request's 64-token decode tail); Job 2 gap 0.89 s (n = 2, same GPU, shape B; shape A unverified).
+#   "contain_length"  the ORIGINAL rev6-audit containment predicate (each of the last FLOOR_N span starts lies in
+#                     [bench_start, bench_end] of the runner's CLOCK_MONOTONIC `marks_<unit>.txt`, n3_capacity.sh)
+#                     AND the length predicate.
+# Correction (rev7 delta audit R-1): the runner DOES write CLOCK_MONOTONIC bench_start/bench_end per unit
+# (marks_<unit>.txt, ABORT_CLOCK checks the clock) -- an earlier draft said "no clock anchor": false.  The marks
+# window wraps the whole bench_serving process, so containment ALONE would NOT have rejected the 3rd-run
+# bench_serving test request (span start 1832012.777 lies in [1831996.564, 1832046.971]); the length predicate
+# is a different, stronger predicate (it rejects that case: gap < 0).
+W5_MODE = "length"          # user decision (iv) 2026-10-07 "권장 사항대로 진행": length predicate ON
+W5_MODES = ("off", "length", "contain_length")
+W5_ENABLED = W5_MODE != "off"
+W5_SLACK_S = 2.0
 
 # =============================================================================== (6) per-shape grid
 # Rates are ABSOLUTE offered req/s (DS-4, clause 7).  `lam_ref` (λ*_VESSL, Job
@@ -169,7 +186,10 @@ SHAPES = {
         "span_s": 100.0, "n_min": 20,
         "obs_rate": 0.30,
         "seeds": (3704, 2084, 4861, 4589),
-        "lam_ref": 0.690, "overhead_s": 121.0, "drain_s": 3.0, "floor_bench_s": 40.0,
+        # rev7 (2026-10-07, DRAFT -- before delta audit): overhead / floor / bench-fixed RE-ESTIMATED from
+        # the 3rd-round Job's own TIMING.tsv (admit -> next admit; see REV7_DRAFT_NOTES_2026-10-07.md).
+        # rev6 values were overhead_s 121.0 (λ0 boot-only), floor_bench_s 40.0, no bench-fixed term.
+        "lam_ref": 0.690, "overhead_s": 170.0, "drain_s": 3.0, "floor_bench_s": 50.0, "bench_fixed_s": 23.0,
         "bridge": {"name": "b_r3", "rate": 1.15, "n": 200, "seeds": (4386, 4162), "dur_ref_s": 289.67},
         "lambda0_bridge_achieved": (0.6904485381127837, 0.6901401953661896, 0.6909619721961632, 0.6909626440276821),
         "lambda0_bridge_mix": {"e_cnt": 90.48, "e_time": 97.38, "e_iter": 91.68, "e_qcond": 100.0},
@@ -180,7 +200,9 @@ SHAPES = {
         "span_s": 90.0, "n_min": 0,
         "obs_rate": 1.80,
         "seeds": (898, 3801, 903, 4364),
-        "lam_ref": 2.99, "overhead_s": 160.1, "drain_s": 25.0, "floor_bench_s": 110.0,
+        # rev7: shape A is UNMEASURED on this Job layout; rev6 constants kept, bench-fixed 0.0 (= rev6 model).
+        # A budget forecast is therefore NOT re-validated (see notes); re-estimate before any A submission.
+        "lam_ref": 2.99, "overhead_s": 160.1, "drain_s": 25.0, "floor_bench_s": 110.0, "bench_fixed_s": 0.0,
         "bridge": {"name": "a_r4", "rate": 8.0, "n": 400, "seeds": (4386, 4162), "dur_ref_s": 133.62},
         "lambda0_bridge_achieved": (2.993674869636432, 3.00990296033788, 2.997402548567481, 3.007111215624897),
         "lambda0_bridge_mix": {"e_cnt": 8.66, "e_time": 13.89, "e_iter": 8.76, "e_qcond": 18.33},
@@ -190,11 +212,28 @@ EBAR_GUARD = (0.95, 1.05)             # 1/Ebar for every (seed, N) in a shape (�
 
 # =============================================================================== (7) budget
 RATE_USD_H = 1.48
-HARD_CAP_S = 14400                    # 4.0 h from job_entry start (cell section; NOT a billing cap, LV-13 form)
+# rev7 (DRAFT, user decision (ii) pending): PER-SHAPE cap (audit R-4).  B: 17100 s = 4.75 h.  rev6 value 14400 (4.0 h)
+# cannot admit 48/48 once the measured constants are used (normal-corner forecast needs ~15.9k s; 17100 tolerates a
+# uniform ~8 % model slowdown -- NOT a measured Job-to-Job bound, N3C-35).  Alternatives (user): 16200 (+2.0 %),
+# 18000 (+14.3 %); the stress-corner fixed point below is pinned PER CAP (R-5).  A: stays 14400 s -- the rev7 cap
+# does NOT authorise shape A spend (A needs its own re-estimate + approval, §0/§15).
+HARD_CAP_S_B = 17100                  # from job_entry start (cell section; NOT a billing cap, LV-13 form)
+HARD_CAP_S_A = 14400
+
+
+def hard_cap(shape: str) -> int:
+    return {"A": HARD_CAP_S_A, "B": HARD_CAP_S_B}[shape]
+
+
 TAIL_RESERVE_S = 600                  # analysis + summaries after the last boot
-PREFLIGHT_ALLOW_S = 600.0             # job_entry start -> first boot (E2 A13 value; UNMEASURED for N3)
+PREFLIGHT_ALLOW_S = 300.0             # job_entry start -> first admit; rev7: measured 220 s / 224 s (Jobs 2,3; rev6 value 600.0 was the unmeasured E2 A13 value)
 COLD_FIRST_BOOT_EXTRA_S = 92.1        # λ0 VESSL a_r0 251.44 s - a_r4 159.38 s
 WORST_OVERHEAD_MULT = 1.25            # worst corner: per-boot overhead +25 %
+# rev7 stress corner (every unit at overhead x1.25, capacity x0.8): admitted units of B at each candidate cap
+# (output of `simulate`, a regression fixed point NOT a verified property -- N3C-37).  Changing the cap or the
+# constants requires re-deriving this table; a cap missing from the table is a selftest failure (KeyError).
+REV7_B_WORST_MIN_ADMITTED_BY_CAP = {16200: 41, 17100: 44, 18000: 46}
+REV7_B_WORST_MIN_ADMITTED = REV7_B_WORST_MIN_ADMITTED_BY_CAP[HARD_CAP_S_B]
 WORST_LAM_MULT = 0.80                 # worst corner: capacity 20 % below lam_ref (longer saturated cells)
 
 
@@ -283,12 +322,13 @@ def bench_s(shape: str, u: dict, lam_mult: float = 1.0) -> float:
     s = SHAPES[shape]
     if u["kind"] in ("floor", "floor_tail"):
         return s["floor_bench_s"]
+    fixed = s["bench_fixed_s"]       # rev7: bench_serving fixed cost (own warm-up request + sleep + teardown)
     if u["kind"] == "bridge":
-        return s["bridge"]["dur_ref_s"] / lam_mult
+        return s["bridge"]["dur_ref_s"] / lam_mult + fixed
     lam = s["lam_ref"] * lam_mult
     span = (u["np"] - 1) / u["rate"]
     sat = u["np"] / lam              # throughput-limited duration when offered >= capacity
-    return max(span, sat) + s["drain_s"]
+    return max(span, sat) + s["drain_s"] + fixed
 
 
 def unit_cost_s(shape: str, row: str, corner: str = "normal") -> float:
@@ -308,7 +348,7 @@ def need_s(shape: str, name: str) -> int:
 
 def simulate(shape: str, corner: str) -> dict:
     t = PREFLIGHT_ALLOW_S + COLD_FIRST_BOOT_EXTRA_S
-    limit = HARD_CAP_S - TAIL_RESERVE_S
+    limit = hard_cap(shape) - TAIL_RESERVE_S
     admitted, by_block = 0, {}
     for r in units(shape):
         u = parse_row(r)
@@ -323,14 +363,38 @@ def simulate(shape: str, corner: str) -> dict:
             "admitted": admitted, "units": n, "all_admitted": admitted == n, "by_block_s": by_block}
 
 
+def max_uniform_slowdown(shape: str) -> float:
+    """Largest uniform factor f on every unit's normal-corner cost for which ALL units are still admitted
+    (model arithmetic only -- not a measured Job-to-Job bound, N3C-35)."""
+    lo, hi = 0.5, 2.0
+    for _ in range(40):
+        f = (lo + hi) / 2
+        t = PREFLIGHT_ALLOW_S + COLD_FIRST_BOOT_EXTRA_S
+        lim = hard_cap(shape) - TAIL_RESERVE_S
+        ok = True
+        for r in units(shape):
+            if lim - t < need_s(shape, parse_row(r)["name"]):
+                ok = False
+                break
+            t += unit_cost_s(shape, r, "normal") * f
+        lo, hi = (f, hi) if ok else (lo, f)
+    return lo
+
+
 def budget_table(shape: str) -> dict:
     return {"shape": shape, "rate_usd_h": RATE_USD_H,
             "normal": simulate(shape, "normal"), "worst": simulate(shape, "worst"),
-            "hard_cap": {"cell_section_s": HARD_CAP_S, "gpu_h": HARD_CAP_S / 3600.0,
-                         "usd": HARD_CAP_S / 3600.0 * RATE_USD_H, "tail_reserve_s": TAIL_RESERVE_S},
-            "note": "per-boot overheads are λ0 VESSL measurements (E2 A13 §5-1); bench durations are "
-                    "a model (span vs N/lam_ref); preflight 600 s is UNMEASURED for N3; tail and "
-                    "export are outside the cap (NOT a billing cap)."}
+            "hard_cap": {"cell_section_s": hard_cap(shape), "gpu_h": hard_cap(shape) / 3600.0,
+                         "usd": hard_cap(shape) / 3600.0 * RATE_USD_H, "tail_reserve_s": TAIL_RESERVE_S},
+            "note": (("rev7 shape B: per-unit overhead 170 s, bench fixed cost 23 s, floor bench 50 s are medians of the "
+                      "3rd-round Job pdmux-n3-capacity-38ed3f4-20261006092813 TIMING.tsv (41 warm units / 42 non-floor "
+                      "units, one GPU c36b3c0c; NOT validated across Jobs or GPUs); preflight 300 s = 220/224 s (n=2, same "
+                      "GPU); cold first-boot extra 92.1 s is the lambda0 VESSL value (this Job measured 59 s, n=1). "
+                      if shape == "B" else
+                      "shape A: constants are the rev6 lambda0 VESSL measurements (E2 A13 5-1) and are UNMEASURED on the N3 "
+                      "layout (not re-validated by rev7); bench fixed cost 0 = rev6 model. ")
+                     + "bench durations are a model (span vs N/lam_ref); tail and export are outside the cap "
+                       "(NOT a billing cap).")}
 
 
 # ------------------------------------------------------------------------------- config
@@ -515,7 +579,7 @@ def _read_jsonl(path: Path):
     return out
 
 
-def floor_from(bench_path: Path, tel_path: Path, shape: str) -> dict:
+def floor_from(bench_path: Path, tel_path: Path, shape: str, w5=None, marks_path=None) -> dict:
     """P-2 literal (rev6, 2026-10-06): the floor is valid iff
       (i)   the bench completed FLOOR_N/FLOOR_N with no error, exact lengths, concurrency 1;
       (ii)  the telemetry holds >= FLOOR_MIN_SPANS `prefill_span_start` events, every one paired
@@ -543,7 +607,13 @@ def floor_from(bench_path: Path, tel_path: Path, shape: str) -> dict:
     stream 0, 0 decode iterations inside -> rev5 (iii) aborted a valid floor).  Those entry
     labels are kept as descriptives (`entry_*`), never as decision inputs."""
     s = SHAPES[shape]
-    res = {"shape": shape, "valid": False, "problems": [], "rule": "rev6"}
+    # w5: None -> module default W5_MODE; True -> "length"; False -> "off"; or one of W5_MODES
+    mode = W5_MODE if w5 is None else ("length" if w5 is True else "off" if w5 is False else w5)
+    if mode not in W5_MODES:
+        raise ValueError(f"unknown W-5 mode {mode!r}")
+    w5 = mode != "off"
+    res = {"shape": shape, "valid": False, "problems": [],
+           "rule": "rev6" if not w5 else f"rev7+W5:{mode}", "w5_enabled": w5, "w5_mode": mode}
     recs = _read_jsonl(bench_path)
     if len(recs) != 1:
         res["problems"].append(f"bench record count {len(recs)} != 1")
@@ -620,6 +690,33 @@ def floor_from(bench_path: Path, tel_path: Path, shape: str) -> dict:
     busy = [e for e in last if e.get("n_new") != 1 or e.get("queue_len") != 0]
     if busy:
         res["problems"].append(f"{len(busy)} floor spans with n_new/queue_len != 1/0")
+    # (rev7 W-5, mode W5_MODE) the last FLOOR_N spans must be the bench's own requests
+    try:
+        lj = list(range(len(spans)))[-FLOOR_N:]
+        w_t0 = float(spans[lj[0]]["timestamp_monotonic_s"])
+        w_t1 = float(ends[spans[lj[-1]].get("span_seq")]["timestamp_monotonic_s"])
+        gap = float(b.get("duration")) - (w_t1 - w_t0)
+        res["w5_window_gap_s"] = round(gap, 3)           # descriptive, always recorded
+        if w5 and not (0.0 <= gap <= W5_SLACK_S):
+            res["problems"].append(f"W-5: bench duration - floor span window = {gap:.3f} s not in [0, {W5_SLACK_S}] "
+                                   "(stray span in the last FLOOR_N, or window outside the bench)")
+    except (KeyError, TypeError, ValueError, IndexError):
+        res["w5_window_gap_s"] = None
+        if w5:
+            res["problems"].append("W-5: window/duration not computable (fail-closed when W-5 is enabled)")
+    if mode == "contain_length":
+        mp = Path(marks_path) if marks_path else Path(bench_path).with_name(Path(bench_path).name.replace("bench_", "marks_", 1)).with_suffix(".txt")
+        try:
+            mk = dict(ln.split() for ln in Path(mp).read_text().splitlines() if ln.strip())
+            m0, m1 = float(mk["bench_start"]), float(mk["bench_end"])
+            outside = [e.get("span_seq") for e in spans[-FLOOR_N:]
+                       if not (m0 <= float(e["timestamp_monotonic_s"]) <= m1)]
+            res["w5_marks_window_s"] = [m0, m1]
+            if outside:
+                res["problems"].append(f"W-5 containment: {len(outside)} of the last {FLOOR_N} span starts outside "
+                                       f"[bench_start, bench_end] (span_seq {outside[:5]})")
+        except (OSError, KeyError, TypeError, ValueError):
+            res["problems"].append("W-5 containment: marks file missing/unparseable (fail-closed)")
     # (v) R-2: the decode recorder must be shown live after every floor span
     last_idx = list(range(len(spans)))[-FLOOR_N:]
     not_live, gaps, race = [], [], 0
@@ -812,7 +909,12 @@ def selftest(eng: Path = ENG) -> None:
         # observer unit (only the diagnostic floor_tail may be refused by admission)
         assert simulate(shape, "normal")["all_admitted"], simulate(shape, "normal")
         w = simulate(shape, "worst")
-        assert w["admitted"] >= w["units"] - 1, w
+        if shape == "B":
+            # rev7: with the measured constants the all-units-at-worst stress corner no longer admits
+            # units-1 under a <= 5 h cap; pinned lower bound = the value computed for the registered cap
+            assert w["admitted"] >= REV7_B_WORST_MIN_ADMITTED, w
+        else:
+            assert w["admitted"] >= w["units"] - 1, w
     cfg = eng / CONFIG_REL
     assert check_config(cfg) == [], check_config(cfg)
     assert stream_groups(cfg) == [(108, 0), (92, 16), (84, 24), (74, 34), (64, 44), (0, 108)]
@@ -838,7 +940,8 @@ def selftest(eng: Path = ENG) -> None:
         bp, tp = Path(td) / "b.jsonl", Path(td) / "t.jsonl"
         tt = [0.9 + 0.01 * rnd.random() for _ in range(FLOOR_N)]
         bp.write_text(json.dumps({"completed": FLOOR_N, "errors": [""] * FLOOR_N, "ttfts": tt,
-                                  "total_input_tokens": FLOOR_N * 8192, "max_concurrency": 1}) + "\n")
+                                  "total_input_tokens": FLOOR_N * 8192, "max_concurrency": 1,
+                                  "duration": 2.0 * (FLOOR_N - 1) + 0.9 + 0.5}) + "\n")   # W-5: span window 30.9 s + 0.5 s decode tail
 
         def boot(n=FLOOR_N + 9):
             evs = []
@@ -942,7 +1045,7 @@ def selftest(eng: Path = ENG) -> None:
         assert not f["valid"] and any("unusable timestamps" in p for p in f["problems"]), f
     p3_selftest()
     print("N3 PLAN SELFTEST OK (seeds = scorer top-4 per shape, Ebar guard clean; units/ABBA/phase-events "
-          "pinned; spacing <= 0.12x lam_ref; normal corner admits every unit, worst every unit but floor_tail, under the 4.0 h cap; config A-agn passes, D54 and "
+          "pinned; spacing <= 0.12x lam_ref; normal corner admits every unit, worst (stress corner) pinned per shape, under the registered cap (rev7: B stress corner pinned >= 44/48); config A-agn passes, D54 and "
           "5-group controls fail; registered digests + mirror match; "
           "floor formula (rev6 realised evidence) + 10 invalidating controls (incl. audit R-2 recorder-live, W-1 span_seq, W-2 boundaries, W-3 timestamps) + entry-label race admitted with R-3 descriptives; "
           "P3 (ii): E2 first-Job keys and 48 x 6-group PASS, mamba 47/48 / all-47 / 0.8% / 786431 / banner or "

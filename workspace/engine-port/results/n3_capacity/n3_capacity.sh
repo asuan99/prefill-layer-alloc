@@ -84,7 +84,7 @@ SGPT_RAW="$HF_HOME/raw/ShareGPT_V3_unfiltered_cleaned_split.json"
 MODEL_DIR="$HF_HOME/hub/models--nvidia--NVIDIA-Nemotron-Nano-9B-v2-Base"
 
 # ----------------------------------------------- wall-clock hard cap (prereg §8-3)
-HARD_CAP_S=$(K HARD_CAP_S) || exit 2
+HARD_CAP_S=$(K "HARD_CAP_S_${SHAPE}") || exit 2
 TAIL_RESERVE_S=$(K TAIL_RESERVE_S) || exit 2
 [ -n "${PDMUX_N3_TEST_HARD_CAP_S:-}" ] && HARD_CAP_S="$PDMUX_N3_TEST_HARD_CAP_S"
 T0=""
