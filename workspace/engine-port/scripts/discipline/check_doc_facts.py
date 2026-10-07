@@ -97,6 +97,48 @@ def _regression_tests():
     return go
 
 
+# ★Procedure-2 anchor (2026-10-07 structural repair of gate #245 / CONSENSUS §3 item 265).
+# The DESIGN row-2 field asks "how many CPU regressions passed when the `green`
+# read-out was wired (procedure 2)".  Counting the CURRENT tests/ tree tied that
+# 2026-08-25 claim to a repository-wide monotone counter, so every new test file
+# anywhere flipped it to a violation (11 recurrences, 155->...->960).  The source
+# of truth is now frozen at the wiring commit itself: 27bbae7 ("feat(pdmux): green
+# read-out"), whose tests/ tree was reconstructed with `git show` and counted
+# statically = 155.  The DESIGN commit that first wrote the field (3ea261d) also
+# wrote 155.  New tests no longer move this number; editing the anchor sha is the
+# only way to change it, and that is a rule change, not a doc refresh.
+PROC2_ANCHOR_SHA = "27bbae7b62572d1f18198e7d995af9f7e0a0f70c"
+
+
+def _regression_tests_at(sha):
+    """Static `def test_` count of tests/test_*.py as of commit `sha` (via git).
+
+    Same counting rule as _regression_tests() (environment-independent), but the
+    file set and contents are read from the frozen commit, not the work tree.
+    A missing git or unknown sha raises -> exit 2 (source unreadable), never a
+    silent pass.
+    """
+    def go():
+        root = subprocess.run(["git", "-C", TRACK, "rev-parse", "--show-toplevel"],
+                              check=True, capture_output=True, text=True).stdout.strip()
+        rel = os.path.relpath(os.path.join(TRACK, "tests"), root)
+        names = subprocess.run(["git", "-C", root, "ls-tree", "--name-only", sha, rel + "/"],
+                               check=True, capture_output=True, text=True).stdout.split()
+        n = 0
+        for f in sorted(names):
+            base = os.path.basename(f)
+            if not (base.startswith("test_") and base.endswith(".py")):
+                continue
+            body = subprocess.run(["git", "-C", root, "show", f"{sha}:{f}"],
+                                  check=True, capture_output=True, text=True,
+                                  errors="replace").stdout
+            n += len(re.findall(r"^\s+def test_", body, re.M))
+        if n == 0:
+            raise RuntimeError(f"no tests found at {sha} -- anchor unreadable")
+        return n
+    return go
+
+
 DESIGN = "results/kernel_mech/DESIGN_A1_REV2_STICKY_2026-08-25.md"
 NSL_EB = "results/nsl_lever/nsl_eb/PREREG_NSL_EB_ATTRIBUTION_2026-08-25.md"
 
@@ -117,7 +159,10 @@ FACTS = {
     "q3 mutants": (
         _module_len("results/kernel_mech/a1/a1_q3k1_rule.py", "Q3_MUTANTS"),
         DESIGN, r"mutant \*\*(\d+)종\*\* 전부 load-bearing"),
-    "regression tests": (_regression_tests(), DESIGN, r"회귀 \*\*(\d+)\*\* PASS"),
+    # ★Frozen at the procedure-2 commit (see PROC2_ANCHOR_SHA).  The regex is
+    # unchanged; only the comparand moved from "current tree" to "anchor tree".
+    "regression tests @proc2 anchor": (
+        _regression_tests_at(PROC2_ANCHOR_SHA), DESIGN, r"회귀 \*\*(\d+)\*\* PASS"),
     # ★NSL E-B, registered at the same time as the document rather than after
     # an audit finds the number stale -- which is the whole point of naming
     # "repair-local truth vs document-global claims".
