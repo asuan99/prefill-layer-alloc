@@ -1,0 +1,124 @@
+{
+  "arm_identity": {
+    "busy_snapshot_on_nontarget": 0,
+    "busy_snapshots_seen": 212,
+    "decode_iteration_on_nontarget": 0,
+    "decode_iterations_seen": 3345,
+    "forbidden_pairs": [
+      [
+        74,
+        34
+      ],
+      [
+        84,
+        24
+      ],
+      [
+        92,
+        16
+      ]
+    ],
+    "ok": true,
+    "unverifiable": []
+  },
+  "cell": "g_r053_4861",
+  "phase": {
+    "cap_bound_admission_frac": 0.0,
+    "coresidency_a_decode": 0.7330533799393392,
+    "coresidency_a_wall": 0.34525585142660603,
+    "decode_active_frac": 0.4709832337928464,
+    "dropped_events_max": 0,
+    "n_decode_iterations": 2803,
+    "n_prefill_spans": 45,
+    "pin": {
+      "n": 274,
+      "target_frac": 1.0
+    },
+    "target_pair": [
+      64,
+      44
+    ],
+    "w_dec": {
+      "decode_wall_s": 46.55393171100877,
+      "share": {
+        "0,108": 0.2671376441723361,
+        "64,44": 0.7328623558276639
+      },
+      "target_pct": 73.2862355827664
+    },
+    "w_idx": {
+      "convention": "event-held pair of the last work event; loop-iteration resolution",
+      "share": {
+        "0,108": 0.2895299481886997,
+        "108,0": 0.12482526057307836,
+        "64,44": 0.585644791238222
+      },
+      "target_pct": 58.564479123822196
+    },
+    "window_s": 98.81838041497394,
+    "window_source": "marks",
+    "x_tok": {
+      "den": 3370,
+      "num": 2344,
+      "pct": 69.55489614243324
+    }
+  },
+  "snapshot": {
+    "busy_n": 212,
+    "convention": "E2 ADDENDUM A2 decode-busy literal; whole file, phase != startup (E2C-16); pair-keyed",
+    "dropped_events_max": 0,
+    "e_cnt": {
+      "den": 212,
+      "num": 111,
+      "pct": 52.35849056603774
+    },
+    "e_iter": {
+      "den": 3127,
+      "num": 1746,
+      "pct": 55.83626479053406
+    },
+    "e_pact": {
+      "den": 111,
+      "num": 111,
+      "pct": 100.0
+    },
+    "e_qcond": {
+      "den": 38,
+      "num": 38,
+      "pct": 100.0
+    },
+    "e_time": {
+      "den_s": 74.983792810468,
+      "num_s": 55.749904110329226,
+      "pct": 74.34927205035478
+    },
+    "negative_gaps": 0,
+    "pair_hist_busy": {
+      "0,108": 100,
+      "108,0": 1,
+      "64,44": 111
+    },
+    "snapshots": 33484,
+    "target_pair": [
+      64,
+      44
+    ]
+  },
+  "x_req": {
+    "anchor_gap_s": 2.310573511989787,
+    "convention": "reconstruction-based (arrival RNG replay + client ttft/itl); descriptive",
+    "first_token_residual_ms": {
+      "p50": 1496.2638928554952,
+      "p95": 2848.3128207735717
+    },
+    "frac_ge_half": 0.6981132075471698,
+    "mean": 0.7044025157232705,
+    "n_requests": 53,
+    "p10": 0.0,
+    "p50": 1.0,
+    "p90": 1.0,
+    "status": "OK",
+    "token_weighted_pct": 70.44025157232704,
+    "window_source": "marks"
+  }
+}

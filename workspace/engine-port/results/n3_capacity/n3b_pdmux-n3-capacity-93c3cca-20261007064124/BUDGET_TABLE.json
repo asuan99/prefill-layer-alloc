@@ -1,0 +1,48 @@
+{
+  "hard_cap": {
+    "cell_section_s": 17100,
+    "gpu_h": 4.75,
+    "tail_reserve_s": 600,
+    "usd": 7.03
+  },
+  "normal": {
+    "admitted": 48,
+    "all_admitted": true,
+    "by_block_s": {
+      "bridge": 965.34,
+      "floor": 220.0,
+      "observer": 2341.3333333333335,
+      "round1": 2779.335477135047,
+      "round2": 2779.335477135047,
+      "round3": 2779.335477135047,
+      "round4": 2779.335477135047,
+      "tail": 220.0
+    },
+    "container_s": 15256.115241873518,
+    "corner": "normal",
+    "gpu_h": 4.237809789409311,
+    "units": 48,
+    "usd": 6.2719584883257795
+  },
+  "note": "rev7 shape B: per-unit overhead 170 s, bench fixed cost 23 s, floor bench 50 s are medians of the 3rd-round Job pdmux-n3-capacity-38ed3f4-20261006092813 TIMING.tsv (41 warm units / 42 non-floor units, one GPU c36b3c0c; NOT validated across Jobs or GPUs); preflight 300 s = 220/224 s (n=2, same GPU); cold first-boot extra 92.1 s is the lambda0 VESSL value (this Job measured 59 s, n=1). bench durations are a model (span vs N/lam_ref); tail and export are outside the cap (NOT a billing cap).",
+  "rate_usd_h": 1.48,
+  "shape": "B",
+  "worst": {
+    "admitted": 44,
+    "all_admitted": false,
+    "by_block_s": {
+      "bridge": 1195.175,
+      "floor": 262.5,
+      "observer": 2681.3333333333335,
+      "round1": 3226.880618498791,
+      "round2": 3226.880618498791,
+      "round3": 3226.880618498791,
+      "round4": 2136.380618498791
+    },
+    "container_s": 16348.130807328498,
+    "corner": "worst",
+    "gpu_h": 4.541147446480139,
+    "units": 48,
+    "usd": 6.720898220790605
+  }
+}

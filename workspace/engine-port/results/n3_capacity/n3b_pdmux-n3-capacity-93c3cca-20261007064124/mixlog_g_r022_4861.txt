@@ -1,0 +1,3 @@
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+{"cell": "g_r022_4861", "busy_n": 125, "e_cnt": 15.2, "e_time": 29.013140842329037, "e_iter": 16.601671309192202, "e_qcond": 100.0, "w_dec": 30.559174970613526, "x_tok": 21.947776993648553, "co_a": 0.05766623239751266, "x_req": 0.22655122655122656}
