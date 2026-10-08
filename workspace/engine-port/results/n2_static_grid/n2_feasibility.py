@@ -1,6 +1,6 @@
 """N2(3-a) design-time feasibility & budget calculator (CPU only, no GPU).
 
-Status: DESIGN CALCULATOR for PREREG_N2_3A rev11 (unsealed). Every number it prints is a design
+Status: DESIGN CALCULATOR for PREREG_N2_3A rev12 (unsealed). Every number it prints is a design
 forecast from the coefficients below -- NOT a measurement and NOT citable (N2C-12, N2C-18).
 
 Coefficient DIRECTIONS (rev7, R6-5). One probe yields three coefficient sets, each conservative for
@@ -286,9 +286,10 @@ def limits_check():
 class ProbeRejected(ValueError):
     """value_independent=True only for reasons that do not depend on measured values (R9-1): missing keys,
     missing binding cells / required p, theta n < 20. Only those allow a re-probe (R7-3 as amended by R9-1)."""
-    def __init__(self, msg, value_independent=False):
+    def __init__(self, msg, value_independent=False, code="INPUT_INVALID"):
         super().__init__(msg)
         self.value_independent = value_independent
+        self.code = code
 
 
 def _scalar(x, what, positive=True):
@@ -336,20 +337,20 @@ def apply_probe(probe):
     global L_LAG, DELTA_L_S
     for key in REQUIRED_PROBE_KEYS:                                   # R7-6: no silent design fallback
         if key not in probe:
-            raise ProbeRejected(f"probe key missing: {key}", value_independent=True)
+            raise ProbeRejected(f"probe key missing: {key}", value_independent=True, code="KEY_MISSING")
     new = copy.deepcopy(COEF)
     # theta
     spans = probe["theta_spans"]
     for p in THETA_REQUIRED_P:
         if p not in spans:
-            raise ProbeRejected(f"theta spans missing for p={p}", value_independent=True)
+            raise ProbeRejected(f"theta spans missing for p={p}", value_independent=True, code="THETA_P_MISSING")
     med = {}
     for p, lst in spans.items():
         if p not in THETA_ALLOWED_P:
             raise ProbeRejected(f"theta: p={p} not a registered prefill split")
         if not isinstance(lst, (list, tuple)) or len(lst) < THETA_MIN_SPANS:
             raise ProbeRejected(f"theta: need >= {THETA_MIN_SPANS} realized-split spans at p={p} (counted after exclusion)",
-                                value_independent=True)
+                                value_independent=True, code="THETA_N_SHORT")
         med[p] = statistics.median(_scalar(v, "theta") for v in lst) * 64.0 / p
     new["rho"]["theta"] = max(med.values())
     new["env"]["theta"] = new["budget"]["theta"] = min(med.values())
@@ -357,7 +358,8 @@ def apply_probe(probe):
     tc = probe["tau_cells"]
     for cell in BINDING_EA_CELLS:
         if cell not in tc:
-            raise ProbeRejected(f"tau cells must include binding cell {cell}", value_independent=True)
+            raise ProbeRejected(f"tau cells must include binding cell {cell}", value_independent=True,
+                                code="TAU_BINDING_MISSING")
     ratios = {16: [], 44: []}
     for cell, v in tc.items():
         D, b, c = _check_cell(cell, "tau", (16, 44))
@@ -381,7 +383,8 @@ def apply_probe(probe):
     kc = probe["kappa_cells"]
     for cell in BINDING_EA_CELLS:
         if cell not in kc:
-            raise ProbeRejected(f"kappa cells must include binding cell {cell}", value_independent=True)
+            raise ProbeRejected(f"kappa cells must include binding cell {cell}", value_independent=True,
+                                code="KAPPA_BINDING_MISSING")
     ks = []
     for cell, v in kc.items():
         _check_cell(cell, "kappa", (16, 44))
@@ -538,13 +541,21 @@ def k_sensitivity(k16s=(18, 19, 20, 21, 22), k44s=(8, 9, 10)):
     return rows
 
 
+def _git(base, *args):
+    import subprocess
+    r = subprocess.run(["git", *args], cwd=base, capture_output=True, text=True)
+    return r.returncode, r.stdout.strip()
+
+
 def check_freeze_manifest(freeze_path, calculator_sha, reducer_sha):
-    """H-2 / R9-4: the manifest written at the pre-probe freeze commit (FREEZE_N2_PROBE.json):
-    {"commit": <git sha>, "files": {<path relative to the manifest>: <sha256>}, "harness_mark_writers": [<path>, ...]}.
-    EVERY listed file must exist with that sha256; the calculator and reducer entries must match the running tools;
-    at least one harness mark writer must be listed. This detects drift; it cannot prove the gate code itself was
-    not edited together with this check (self-check, lesson 9) -- the closing defence is the clean-worktree freeze
-    checkout + K recomputation by the delta audit (R10-3, text)."""
+    """H-2 / R9-4 / R11-5: the manifest written for the pre-probe freeze commit (FREEZE_N2_PROBE.json):
+    {"commit": <git sha of the freeze commit>, "files": {<path relative to the manifest>: <sha256>},
+     "harness_mark_writers": [<path>, ...]}. EVERY listed file must exist with that sha256; the calculator and reducer
+    entries must match the running tools; at least one harness mark writer must be listed; the git repository that
+    holds the manifest must be checked out AT manifest.commit (HEAD == commit) with no uncommitted change in any
+    listed file (untracked outputs such as probe.json / K_POST_PROBE.json / the manifest itself are not listed).
+    This is a self-check by the running gate: it detects drift; it cannot prove that the gate code was not edited
+    together with this check (lesson 9) -- the closing defence is the audit's K recomputation (R10-3 text)."""
     if freeze_path is None:
         return ["no pre-probe freeze manifest given (--freeze)"]
     with open(freeze_path) as fh:
@@ -552,8 +563,6 @@ def check_freeze_manifest(freeze_path, calculator_sha, reducer_sha):
     base = os.path.dirname(os.path.abspath(freeze_path))
     files = man.get("files") if isinstance(man.get("files"), dict) else {}
     bad = []
-    if not man.get("commit"):
-        bad.append("freeze manifest: commit missing")
     for rel, sha in files.items():
         path = os.path.join(base, rel)
         if not os.path.exists(path) or _sha256_file(path) != sha:
@@ -564,39 +573,48 @@ def check_freeze_manifest(freeze_path, calculator_sha, reducer_sha):
     writers = man.get("harness_mark_writers")
     if not isinstance(writers, list) or not writers or any(w not in files for w in writers):
         bad.append("freeze manifest: harness mark writer(s) missing from the frozen file list")
+    try:                                                                      # R11-5: commit binding
+        rc, head = _git(base, "rev-parse", "HEAD")
+        if rc != 0 or not man.get("commit") or head != man.get("commit"):
+            bad.append("freeze manifest: git HEAD is not manifest.commit (gate must run on the freeze checkout)")
+        rc, dirty = _git(base, "status", "--porcelain", "--untracked-files=no", "--", *files.keys())
+        if rc != 0 or dirty:
+            bad.append("freeze manifest: frozen files have uncommitted changes in the freeze checkout")
+    except OSError:
+        bad.append("freeze manifest: git not available")
     return bad
 
 
+def _load_registered_reducer():
+    """R11-4: load the reducer that sits next to this calculator BY FILE PATH under a private module name, so a
+    different 'n2_probe_reduce' already imported into the process can never be used; assert it is that file."""
+    import importlib.util
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "n2_probe_reduce.py")
+    spec = importlib.util.spec_from_file_location("_n2_registered_reducer", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert os.path.samefile(mod.__file__, path)
+    return mod
+
+
 def reproduce_probe(probe_path, raw):
-    """R10-3: re-reduce from provenance.boots with the registered reducer next to this file and compare the
-    to_json bytes with the probe file. Returns None if identical, else the reason."""
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    """R10-3 / R11-4: re-reduce from provenance.boots with the registered reducer (loaded by file path) and compare
+    the to_json bytes with the probe file. Returns None if identical, else (reason_code, text)."""
+    boots = (raw.get("provenance") or {}).get("boots")
+    if not isinstance(boots, list) or not boots:
+        return ("PROVENANCE_MISSING", "probe.json has no provenance.boots to re-reduce")
+    missing = [b.get(k) for b in boots for k in ("telemetry", "marks") if not os.path.exists(str(b.get(k)))]
+    if missing:
+        return ("RAW_PATH_MISSING", f"recorded raw path(s) do not open at the gate location: {missing[:3]}")
     try:
-        import n2_probe_reduce as red
-        boots = (raw.get("provenance") or {}).get("boots")
-        if not isinstance(boots, list) or not boots:
-            return "probe.json has no provenance.boots to re-reduce"
+        red = _load_registered_reducer()
         again = red.to_json(red.reduce_probe(boots))
     except Exception as e:
-        return f"re-reduction failed: {e!r}"
-    finally:
-        sys.path.pop(0)
+        return ("REDUCTION_FAILED", f"re-reduction failed: {e!r}")
     with open(probe_path) as fh:
         if fh.read() != again:
-            return "probe.json differs from the re-reduction of its raw files"
+            return ("PROBE_BYTES_MISMATCH", "probe.json differs from the re-reduction of its raw files")
     return None
-
-
-def _git_info():
-    import subprocess
-    here = os.path.dirname(os.path.abspath(__file__))
-    try:
-        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=here, capture_output=True, text=True).stdout.strip()
-        dirty = subprocess.run(["git", "status", "--porcelain", "--", "."], cwd=here, capture_output=True,
-                               text=True).stdout.strip()
-        return dict(head=head or None, dirty_paths=dirty.splitlines() if dirty else [])
-    except OSError:
-        return dict(head=None, dirty_paths=None)
 
 
 def main(argv=None):
@@ -613,19 +631,21 @@ def main(argv=None):
         irreproducible = reproduce_probe(probe_path, raw)
         if irreproducible is not None:
             # R10-3: a probe.json that its own raw files do not reproduce is not evidence -> no K, no re-probe
-            rec = dict(K=None, seal_allowed=False, reasons=[irreproducible], reprobe_allowed=False)
+            rec = dict(K=None, seal_allowed=False, reasons=[irreproducible[1]], reprobe_allowed=False,
+                       reason_codes=[irreproducible[0]])
         elif status != "OK":
             # R9-1: KAPPA_CENSORED / VALUE_DEPENDENT -> no seal and NO re-probe (user decision); VALUE_INDEPENDENT ->
             # re-probe allowed. The gate is not run on a non-OK probe (no K is produced from it).
             rec = dict(K=None, seal_allowed=False, reasons=[f"probe_status {status}"],
-                       reprobe_allowed=(status == "VALUE_INDEPENDENT"))
+                       reprobe_allowed=(status == "VALUE_INDEPENDENT"), reason_codes=list(raw.get("reason_codes", [])))
         else:
             try:
                 rec = post_probe_gate(probe)
                 rec["reprobe_allowed"] = False
+                rec["reason_codes"] = []
             except ProbeRejected as e:
                 rec = dict(K=None, seal_allowed=False, reasons=[f"ProbeRejected: {e}"],
-                           reprobe_allowed=e.value_independent)
+                           reprobe_allowed=e.value_independent, reason_codes=[e.code])
         rec["probe_status"] = status
         # R8-3: reducer provenance -- probe.json must carry the sha256 of the registered reducer next to this file
         prov = raw.get("provenance") if isinstance(raw.get("provenance"), dict) else {}
@@ -645,7 +665,6 @@ def main(argv=None):
         if bad:
             rec["seal_allowed"] = False
             rec["reasons"] = list(rec["reasons"]) + bad
-        rec["git"] = _git_info()                    # recorded only; the clean-checkout rule is procedural (§14-2)
         with open(out_path, "w") as fh:
             json.dump(rec, fh, indent=1, sort_keys=True, default=str)
         print(json.dumps({"K": rec["K"], "seal_allowed": rec["seal_allowed"], "reasons": rec["reasons"]}))

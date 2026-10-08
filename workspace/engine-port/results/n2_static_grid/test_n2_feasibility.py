@@ -56,7 +56,7 @@ def raw_cli(cells=None, manifest=None):
         with open(pi, "w") as fh:
             fh.write(red.to_json(p))
         psha = f._sha256_file(pi)
-        rc = f.main(["--probe", pi, "--out", po, "--freeze", tr.write_manifest(td, **(manifest or {}))])
+        rc = f.main(["--probe", pi, "--out", po, "--freeze", tr.freeze_repo(td, **(manifest or {}))])
         with open(po) as fh:
             rec = json.load(fh)
     rec["_probe_sha_expected"] = psha
