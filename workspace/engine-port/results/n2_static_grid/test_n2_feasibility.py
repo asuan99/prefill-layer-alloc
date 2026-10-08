@@ -1,4 +1,4 @@
-"""CPU tests for n2_feasibility.py (design calculator, PREREG_N2_3A rev8).
+"""CPU tests for n2_feasibility.py (design calculator, PREREG_N2_3A rev9).
 Registered run (bytecode off): PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_n2_feasibility -v
 Every test restores the full module state from a deepcopy snapshot (R5-1)."""
 import copy
@@ -8,6 +8,7 @@ import os
 import tempfile
 import unittest
 import n2_feasibility as f
+import n2_probe_reduce as red
 
 _STATE = ["K_CO", "COEF", "RHO_MAX_REQUIRED", "L_LAG", "DELTA_L_S", "FIX_S", "C_WINDOW_MIN", "X_CONST",
           "KV_TOKENS", "BOOT_OVERHEAD_S"]
@@ -320,6 +321,25 @@ class TestRev8(_Iso):
         self.assertEqual(len(g["derived"]["profile"]), 60)
 
 
+class TestRev9(_Iso):
+    def test_derived_delta_is_exec_env(self):                     # R8-5 C09
+        g = f.post_probe_gate(dispersed_probe())
+        e = g["derived"]["ealpha"]["44,8,2048"]
+        self.assertEqual((e["delta_on_A2"], e["delta_off_A2"]), (24, 47))
+        self.assertNotEqual(e["delta_off_A2"], f.delta_tokens(108, 8, 2048))   # budget-direction value is 31
+
+    def test_budget_record_single_source(self):                   # R8-4
+        g = f.post_probe_gate(dispersed_probe())
+        b = g["budget"]
+        self.assertEqual(b["FIX_S"], {"nom": 22, "worst": 30})
+        for job, boots, probes in (("PROFILE", f.boots_profile_job(), 5), ("EA", f.boots_ea_job(), 0)):
+            for mode, cancel in (("a", False), ("b", True)):
+                r = f.job_budget(boots, cancel, probes)
+                self.assertEqual(b[f"{job}_{mode}"]["cap"], r["cap"])
+                self.assertEqual(b[f"{job}_{mode}"]["per_boot_worst"], r["worst"]["per_boot"])
+        self.assertNotEqual(b["EA_b"]["cap"], 13800)                             # differs from the design table
+
+
 class TestSealGate(_Iso):
     def test_gate_ok(self):
         g = f.post_probe_gate(n3_like_probe())
@@ -340,6 +360,7 @@ class TestSealGate(_Iso):
         p = n3_like_probe()
         raw = {k: ({json.dumps(list(kk)) if isinstance(kk, tuple) else str(kk): vv for kk, vv in v.items()}
                    if isinstance(v, dict) else v) for k, v in p.items()}
+        raw["provenance"] = {"reducer_sha256": red.self_sha256(), "raw_files": {}}
         with tempfile.TemporaryDirectory() as td:
             pi, po = os.path.join(td, "probe.json"), os.path.join(td, "K_POST_PROBE.json")
             with open(pi, "w") as fh:
@@ -359,6 +380,7 @@ class TestSealGate(_Iso):
         p = n3_like_probe(theta64=4500.0, tau_ratio=0.5)
         raw = {k: ({json.dumps(list(kk)) if isinstance(kk, tuple) else str(kk): vv for kk, vv in v.items()}
                    if isinstance(v, dict) else v) for k, v in p.items()}
+        raw["provenance"] = {"reducer_sha256": red.self_sha256(), "raw_files": {}}
         with tempfile.TemporaryDirectory() as td:
             pi, po = os.path.join(td, "probe.json"), os.path.join(td, "out.json")
             with open(pi, "w") as fh:

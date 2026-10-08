@@ -1,6 +1,6 @@
 """N2(3-a) design-time feasibility & budget calculator (CPU only, no GPU).
 
-Status: DESIGN CALCULATOR for PREREG_N2_3A rev8 (unsealed). Every number it prints is a design
+Status: DESIGN CALCULATOR for PREREG_N2_3A rev9 (unsealed). Every number it prints is a design
 forecast from the coefficients below -- NOT a measurement and NOT citable (N2C-12, N2C-18).
 
 Coefficient DIRECTIONS (rev7, R6-5). One probe yields three coefficient sets, each conservative for
@@ -23,6 +23,7 @@ import copy
 import hashlib
 import json
 import math
+import os
 import statistics
 import sys
 from dataclasses import dataclass
@@ -474,7 +475,22 @@ def post_probe_gate(probe):
                coef=copy.deepcopy(COEF), l_lag=L_LAG, delta_l_s=DELTA_L_S, fix_s=dict(FIX_S))
     if not reasons:
         rec["derived"] = derived_constants()
+        rec["budget"] = budget_record()
     return rec
+
+
+def budget_record():
+    """R8-4: the ONLY budget source for the harness (stop rule, watchdog, re-approval): per-boot normal/worst cost,
+    section, container, hard cap and the FIX_S in force, for both Jobs and both U-1 modes."""
+    out = {"FIX_S": dict(FIX_S), "BOOT_OVERHEAD_S": dict(BOOT_OVERHEAD_S)}
+    for job, boots, probes in (("PROFILE", boots_profile_job(), 5), ("EA", boots_ea_job(), 0)):
+        for mode, cancel in (("a", False), ("b", True)):
+            r = job_budget(boots, cancel, probes)
+            out[f"{job}_{mode}"] = dict(per_boot_nom=r["nom"]["per_boot"], per_boot_worst=r["worst"]["per_boot"],
+                                        section_nom=r["nom"]["section"], section_worst=r["worst"]["section"],
+                                        container_nom=r["nom"]["container"], container_worst=r["worst"]["container"],
+                                        cap=r["cap"])
+    return out
 
 
 def derived_constants():
@@ -520,11 +536,21 @@ def main(argv=None):
         with open(probe_path) as fh:
             raw = json.load(fh, object_pairs_hook=_no_duplicate_keys)
         probe = {k: ({tuple(json.loads(kk)) if kk.startswith("[") else int(kk): vv for kk, vv in v.items()}
-                     if isinstance(v, dict) else v) for k, v in raw.items() if k != "theta_excluded"}
+                     if isinstance(v, dict) else v) for k, v in raw.items() if k in REQUIRED_PROBE_KEYS}
         try:
             rec = post_probe_gate(probe)
         except ProbeRejected as e:
             rec = dict(K=None, seal_allowed=False, reasons=[f"ProbeRejected: {e}"])
+        # R8-3: reducer provenance -- probe.json must carry the sha256 of the registered reducer next to this file
+        prov = raw.get("provenance") if isinstance(raw.get("provenance"), dict) else {}
+        red_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "n2_probe_reduce.py")
+        local_red = _sha256_file(red_path) if os.path.exists(red_path) else None
+        rec["reducer_sha256"] = prov.get("reducer_sha256")
+        rec["reducer_sha256_local"] = local_red
+        rec["raw_files"] = prov.get("raw_files", {})
+        if not rec["reducer_sha256"] or rec["reducer_sha256"] != local_red:
+            rec["seal_allowed"] = False
+            rec["reasons"] = list(rec.get("reasons", [])) + ["reducer sha256 missing or differs from registered reducer"]
         rec["probe_sha256"] = _sha256_file(probe_path)
         rec["calculator_sha256"] = _sha256_file(__file__)
         with open(out_path, "w") as fh:
