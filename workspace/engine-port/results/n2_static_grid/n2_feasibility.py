@@ -1,6 +1,6 @@
 """N2(3-a) design-time feasibility & budget calculator (CPU only, no GPU).
 
-Status: DESIGN CALCULATOR for PREREG_N2_3A rev13 (unsealed). Every number it prints is a design
+Status: DESIGN CALCULATOR for PREREG_N2_3A rev14 (unsealed, (A') fixed-K restructure). Every number it prints is a design
 forecast from the coefficients below -- NOT a measurement and NOT citable (N2C-12, N2C-18).
 
 Coefficient DIRECTIONS (rev7, R6-5). One probe yields three coefficient sets, each conservative for
@@ -40,27 +40,35 @@ PREFILL_SMS = {16: 92, 24: 84, 34: 74, 44: 64, 108: 64}
 TAU_D44_ALONE_MS = {1: 16.0, 8: 18.0, 32: 28.0, 48: 36.0}
 CTX_FACTOR = {512: 0.9, 2048: 1.0, 8192: 1.25}
 D_FACTOR_DESIGN = {16: 1.6, 24: 1.35, 34: 1.15, 44: 1.0, 108: 0.75}
-THETA_DESIGN = 4500.0        # tok/s at p = 64 -- SOURCE: none (design assumption, N2C-33)
+THETA_DESIGN = 4500.0        # tok/s at p = 64 -- SOURCE: none (design assumption, N2C-33); env / budget directions
+THETA_RHO_FIXED = 5705.0     # rev14 (A'): registered rho-direction theta = N3 r3/r4 realized 16,384-token span max
+                             # (run-first spans excluded; design input, cite-forbidden) -- used ONCE to fix K
+KAPPA_FLOOR = 0.9            # rev14 (A'): lower-side kappa for N_co,max (O_EA must cover a FAST co-located decode)
 KAPPA_DN_DESIGN = 1.3
 KAPPA_DW_OVER_DN = 1.6 / 1.3
 THETA_WORST_MULT = 0.6
 TAU_WORST_MULT = 1.5
 DIRECTIONS = ("rho", "env", "budget")
-COEF = {d: dict(theta=THETA_DESIGN, d_factor=dict(D_FACTOR_DESIGN), kappa_dn=KAPPA_DN_DESIGN) for d in DIRECTIONS}
+COEF = {d: dict(theta=(THETA_RHO_FIXED if d == "rho" else THETA_DESIGN), d_factor=dict(D_FACTOR_DESIGN),
+                kappa_dn=KAPPA_DN_DESIGN) for d in DIRECTIONS}
 
 MAX_PREFILL_TOKENS = 16384
 CONTEXT_LEN = 16384
 KV_TOKENS = 2_721_290
 CAP = 48
-K_CO = {16: 18, 44: 8}       # PRE-PROBE registered values; post-probe K comes ONLY from post_probe_gate()
+# rev14 (A'): K_16, K_44 are REGISTRATION-TIME INTEGER CONSTANTS, computed once by derive_fixed_k() (theta_rho =
+# THETA_RHO_FIXED, design tau incl. the DW corner, kappa*_worst >= RHO_MAX_REQUIRED, window 128) and pinned here.
+# They are the same in ON/OFF boots and every round and are NEVER updated at runtime or after any probe/smoke.
+K_CO = {16: 33, 44: 15}
 CO_INPUT = 8192
-L_LAG = 32                   # unmeasured allowance; probe -> max
+L_LAG = 128                  # rev14: fixed generous allowance (iterations trigger -> first co span); overflow fail-closed
 X_CONST = 145
 TRIM, WIN = 16, 128
-C_WINDOW_MIN = 128
-RHO_MAX_REQUIRED = 2.0       # registered design requirement (main session, 2026-10-07)
+C_WINDOW_MIN = 128           # C value window = FIRST 128 co-located iterations (rev14 (A') truncation)
+RHO_MAX_REQUIRED = 3.0       # rev14: registered kappa*_worst requirement for the fixed K (review 2026-10-08 §9)
 DELTA_MIN = 8
-DELTA_L_S = 0.0              # client latency asymmetry (s); probe -> max
+DELTA_FIXED = 64             # rev14: fixed cancel margin delta (tokens) for every A2 window; overflow fail-closed
+DELTA_L_S = 0.0              # descriptive only (smoke); no longer feeds delta
 FIX_S = {"nom": 22.48, "worst": 35.5}
 BOOT_OVERHEAD_S = {"nom": 170.5, "worst": 229.0}   # Job-measured; the probe never changes it
 PREFLIGHT_S = {"nom": 224.0, "worst": 600.0}
@@ -135,9 +143,17 @@ def w_co(Dsp, b, c, pc, dc, dirn="rho"):
     return co_prefill_time(Dsp, pc, dirn) / tau_co(Dsp, b, c, dc, dirn)
 
 
+def tau_alone_lower(b, c):
+    """rev14 lower-side bound on the alone step: D44 coefficients for every d (a d = 16 decode may be as fast as
+    D44), DN corner, design ctx factor -- the FASTEST decode O_EA must still cover."""
+    return TAU_D44_ALONE_MS[_kb(b)] * CTX_FACTOR[c] / 1000.0
+
+
 def n_co_max(Dsp, b, c):
-    """worst-corner (largest) W_co with env-direction coefficients (R6-5)"""
-    return math.ceil(max(w_co(Dsp, b, c, pc, dc, "env") for pc, dc in CORNERS))
+    """rev14 (A') lower-side guarantee: the LONGEST possible W_co = co-load prefill at the PW (slowest, design) theta
+    divided by the FASTEST co-located step tau_alone_lower * KAPPA_FLOOR. O_EA built on this keeps bs == b through the
+    co-located window even when co-location barely slows decode (kappa -> 0.9)."""
+    return math.ceil(co_prefill_time(Dsp, "PW", "budget") / (tau_alone_lower(b, c) * KAPPA_FLOOR))
 
 
 def rho_upper(Dsp, b, c, pc, dc_alone, dirn="rho"):
@@ -163,20 +179,18 @@ def o_profile(D, b, c):
 
 
 def o_ealpha(d, b, c):
-    return (c + 71 - ealpha_c_in(d, b, c)) + L_LAG + n_co_max(d, b, c) + TRIM + WIN + s_hat(d, b, c) + 64
+    """O_EA = (c + 71 - c_in) + L_lag + N_co,max + trim + window + delta + s_hat (rev14: L_lag, delta fixed)."""
+    return (c + 71 - ealpha_c_in(d, b, c)) + L_LAG + n_co_max(d, b, c) + TRIM + WIN + DELTA_FIXED + s_hat(d, b, c)
 
 
 def delta_tokens(Dwin, b, c, dc="DN", dirn="budget"):
-    """R5-5: delta per window, tau of THAT window (ON A2: d, OFF A2: 108).
-    dirn="budget" for time tables; the EXECUTION delta (cancel margin) uses delta_exec (env, R7-5)."""
-    if DELTA_L_S <= 0:
-        return DELTA_MIN
-    return max(DELTA_MIN, math.ceil(DELTA_L_S / tau_alone(Dwin, b, c, dc, dirn)))
+    """rev14: the cancel margin is the FIXED allowance DELTA_FIXED for every window (no measured Delta-l path)."""
+    return DELTA_FIXED
 
 
 def delta_exec(Dwin, b, c):
-    """R7-5: execution cancel margin -- tau_win from the env (MIN) set, DN corner (fastest decode => largest delta)."""
-    return delta_tokens(Dwin, b, c, "DN", "env")
+    """rev14: execution cancel margin = DELTA_FIXED (kept as a function so the harness plan keeps its field)."""
+    return DELTA_FIXED
 
 
 # ---- time model (budget direction) ----------------------------------------------------------------
@@ -336,7 +350,6 @@ def apply_probe(probe):
       l_lag_iters: [scalars] -> MAX ; delta_l_s: [scalars] -> MAX ; fix_s: descriptive only, NOT mapped (rev13 G-6)
     Required: tau_cells and kappa_cells each include BINDING_EA_CELLS. s_hat / N_co,max are never given -- they are
     recomputed from the env set. Boot overhead is never changed."""
-    global L_LAG, DELTA_L_S
     for key in REQUIRED_PROBE_KEYS:                                   # R7-6: no silent design fallback
         if key not in probe:
             raise ProbeRejected(f"probe key missing: {key}", value_independent=True, code="KEY_MISSING")
@@ -404,11 +417,12 @@ def apply_probe(probe):
     lags = [_scalar(x, "l_lag", positive=False) for x in _nonempty("l_lag_iters")]
     if min(lags) < 0:                       # rev10: L_lag is an iteration COUNT from raw data; 0 is a valid observation
         raise ProbeRejected("l_lag < 0")
-    l_lag = int(math.ceil(max(lags)))
-    # delta-l is a SIGNED difference l_d - l_co: finite required; <= 0 means no disadvantage (clipped to 0 by delta)
-    dl = max(_scalar(x, "delta_l", positive=False) for x in _nonempty("delta_l_s"))
+    # delta-l is a SIGNED difference l_d - l_co: finite required (descriptive)
+    [_scalar(x, "delta_l", positive=False) for x in _nonempty("delta_l_s")]
+    # rev14: L_LAG and the cancel margin are FIXED allowances -- the smoke's l_lag / delta_l are descriptive only and
+    # are reported back in the record, never assigned (a mutant assigning them must fail).
     COEF.clear(); COEF.update(new)
-    L_LAG, DELTA_L_S = l_lag, max(0.0, dl)
+    return dict(l_lag_observed_max=int(math.ceil(max(lags))))
 
 
 # ---- U-9 rule (R5-4), R6-2 (no artificial search cap), R6-7 (seal gate) ------------------------------
@@ -445,7 +459,9 @@ def k_within_limits(d, K):
 
 def choose_k(d):
     """smallest K satisfying the requirement; search runs to the limits_check boundary (no other cap).
-    E-alpha length grows strictly with K (N_co,max ~ K), so the loop always terminates."""
+    E-alpha length grows strictly with K (N_co,max ~ K), so the loop always terminates.
+    rev14: NOT a judgment input at runtime -- used ONCE by derive_fixed_k() to fix K_CO at registration, and
+    afterwards only as a design diagnostic (post_probe_gate smoke)."""
     K = 1
     while True:
         if not k_within_limits(d, K):
@@ -453,6 +469,31 @@ def choose_k(d):
         if k_satisfies(d, K):
             return K
         K += 1
+
+
+def derive_fixed_k():
+    """rev14 (A'): the ONE registration-time computation of K. Fixed inputs: COEF['rho'] = (THETA_RHO_FIXED, design
+    d_factor, design kappa_dn incl. the DW corner via kappa()), requirement RHO_MAX_REQUIRED, window C_WINDOW_MIN,
+    limits via k_within_limits (N_co,max lower-side guarantee). Returns {d: K}; K_CO must equal it (test-pinned).
+    The result is a DESIGN VALUE (cite-forbidden); it is never recomputed from measurements."""
+    saved = copy.deepcopy(COEF["rho"])
+    COEF["rho"].update(theta=THETA_RHO_FIXED, d_factor=dict(D_FACTOR_DESIGN), kappa_dn=KAPPA_DN_DESIGN)
+    try:
+        return {d: choose_k(d) for d in EA_D}
+    finally:
+        COEF["rho"].clear(); COEF["rho"].update(saved)
+
+
+def registered_constants():
+    """rev14: the SINGLE SOURCE of the judgment-path constants for the harness/analyzer (n2_plan reads this record,
+    never K_POST_PROBE.json): K, allowances, requirement, per-cell lengths, kappa* table, limits, budgets."""
+    kstar = {f"{r['cell'][0]},{r['cell'][1]},{r['cell'][2]}": dict(worst=r["rho_ub_worst"], w_co_min=r["w_co_min"],
+                                                                   corners={f"{pc}{dc}": v for (pc, dc), v in r["rho_ub"].items()})
+             for r in rho_table()}
+    return dict(K=dict(K_CO), K_derivation=dict(theta_rho=THETA_RHO_FIXED, kappa_star_required=RHO_MAX_REQUIRED,
+                                                window=C_WINDOW_MIN, tau="design incl. DW corner"),
+                L_LAG=L_LAG, DELTA_FIXED=DELTA_FIXED, KAPPA_FLOOR=KAPPA_FLOOR, X_CONST=X_CONST, TRIM=TRIM, WIN=WIN,
+                kappa_star=kstar, limits=limits_check(), derived=derived_constants(), budget=budget_record())
 
 
 def is_minimal_k(d, K):
@@ -472,23 +513,23 @@ def _sha256_file(path):
 
 
 def post_probe_gate(probe):
-    """The ONLY post-probe K source (R6-6). Applies the mapping, then choose_k unconditionally (R6-7),
-    then limits_check over ALL cells. seal_allowed is False if any K is None or limits fail."""
-    apply_probe(probe)
-    ks = {d: choose_k(d) for d in EA_D}
-    reasons = [f"no K within limits for d={d}" for d, k in ks.items() if k is None]
-    if not reasons:
-        K_CO.update(ks)
-        lim = limits_check()
-        if not lim["ok"]:
-            reasons.append(f"limits_check failed: {lim['max_len_cell']} len {lim['max_len']:.0f}")
-        if not all(r["passes"] for r in rho_table()):
-            reasons.append("rho table requirement failed after K choice")
-    rec = dict(K=ks, seal_allowed=not reasons, reasons=reasons,
-               coef=copy.deepcopy(COEF), l_lag=L_LAG, delta_l_s=DELTA_L_S, fix_s=dict(FIX_S))
-    if not reasons:
-        rec["derived"] = derived_constants()
-        rec["budget"] = budget_record()
+    """rev14: NOT A JUDGMENT INPUT. Retained as the smoke / design diagnostic of the optional post-seal harness
+    smoke (U-2 demoted): applies the probe mapping to the coefficient sets, re-runs choose_k as a DIAGNOSTIC and
+    reports whether the REGISTERED K_CO would still satisfy the requirement under the smoke's coefficients.
+    K_CO is never modified here; 'K' in the record is the registered constant (the harness must not read any other)."""
+    observed = apply_probe(probe)
+    diag = {d: choose_k(d) for d in EA_D}
+    reasons = []
+    for d in EA_D:
+        if not k_satisfies(d, K_CO[d]):
+            reasons.append(f"registered K_CO[{d}]={K_CO[d]} would not meet the kappa* requirement under smoke coefficients")
+    lim = limits_check()
+    if not lim["ok"]:
+        reasons.append(f"limits_check failed: {lim['max_len_cell']} len {lim['max_len']:.0f}")
+    rec = dict(K=dict(K_CO), K_choose_k_diagnostic=diag, judgment_input=False, seal_allowed=not reasons,
+               reasons=reasons, coef=copy.deepcopy(COEF), l_lag=L_LAG, delta_fixed=DELTA_FIXED, fix_s=dict(FIX_S),
+               smoke_observed=observed,
+               derived=derived_constants(), budget=budget_record())      # informational under smoke coefficients
     return rec
 
 
@@ -619,6 +660,17 @@ def reproduce_probe(probe_path, raw):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["--registered"]:
+        # rev14: python3 n2_feasibility.py --registered N2_REGISTERED.json  -- the harness's single constants source
+        rec = registered_constants()
+        rec["calculator_sha256"] = _sha256_file(__file__)
+        rec["derive_fixed_k"] = derive_fixed_k()
+        rec["K_matches_derivation"] = rec["derive_fixed_k"] == K_CO
+        with open(argv[1], "w") as fh:
+            json.dump(rec, fh, indent=1, sort_keys=True, default=str)
+        print(json.dumps({"K": rec["K"], "K_matches_derivation": rec["K_matches_derivation"],
+                          "limits_ok": rec["limits"]["ok"]}))
+        return 0 if rec["K_matches_derivation"] and rec["limits"]["ok"] else 2
     if argv[:1] == ["--probe"]:
         # post-probe CLI: python3 n2_feasibility.py --probe probe.json --out K_POST_PROBE.json --freeze FREEZE.json
         probe_path, out_path = argv[1], argv[3]
@@ -683,7 +735,9 @@ def main(argv=None):
                   f"worst section {r['worst']['section']:.0f} container {r['worst']['container']:.0f} | cap {r['cap']}")
             print("   per-boot nom", {k: round(v) for k, v in r['nom']['per_boot'].items()},
                   "worst", {k: round(v) for k, v in r['worst']['per_boot'].items()})
-    print("== U-9 rule under design coefficients ==", {d: choose_k(d) for d in EA_D})
+    print("== rev14 fixed K (derive_fixed_k, registration-time) ==", derive_fixed_k(), "registered K_CO", K_CO)
+    print("== N_co,max (lower-side, kappa_floor) / O_EA per E-alpha cell ==",
+          {f"{d},{b},{c}": (n_co_max(d, b, c), o_ealpha(d, b, c)) for d in EA_D for b in EA_B for c in EA_C})
     return 0
 
 

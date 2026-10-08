@@ -1,4 +1,4 @@
-"""CPU tests for n2_probe_reduce.py (PREREG_N2_3A rev11: R7-1, R8-1/2/3, R9-1/2/5/6/8, R10-1…R10-5).
+"""CPU tests for n2_probe_reduce.py (PREREG_N2_3A rev14 smoke/shared-window tool; rev11: R7-1, R8-1/2/3, R9-1/2/5/6/8, R10-1…R10-5).
 Registered run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_n2_probe_reduce -v
 (The N3 positive control loads ~2 GB of JSONL into one process; run suites sequentially, R9-8.)"""
 import hashlib
@@ -333,14 +333,25 @@ class TestWindows(unittest.TestCase):
         self.assertAlmostEqual(a_on, 20.0 + 2.0 * (mm["C"] - mm["A1"]) / (mm["A2"] - mm["A1"]), places=6)
         self.assertTrue(20.0 < a_on < 22.0)
 
+    def test_c_value_window_is_first_128(self):                    # rev14 (A') truncation (kills J07 / J08)
+        win = self._win()
+        self.assertEqual(len(win["C"]), 128)
+        self.assertEqual(win["ranges"]["C"], (231, 358))               # first 128 co-located iterations by iter_seq
+        self.assertEqual(win["n_colocated_all"], 200)
+        self.assertEqual(win["ranges"]["C_all"], (231, 430))
+        self.assertAlmostEqual(win["ctx_mid"]["C"], 8048 + 293.5, places=6)      # ctx of seq 231..358
+        self.assertAlmostEqual(win["ctx_mid"]["C_all"], 8048 + 329.5, places=6)
+
     def test_c_window_excludes_off_type_leaks(self):               # C14
         win = self._win(leaks=300)
-        self.assertEqual(len(win["C"]), 200)
+        self.assertEqual(len(win["C"]), 128)
+        self.assertEqual(win["n_colocated_all"], 200)
         self.assertAlmostEqual(statistics.median(r.s_per_intervals(win["C"])), 26.0, places=6)
 
     def test_c_window_excludes_on_type_leaks(self):                # R9-3 X05: ON leaks carry PAIR[d]
         win = self._win(on_leaks=300)
-        self.assertEqual(len(win["C"]), 200)
+        self.assertEqual(len(win["C"]), 128)
+        self.assertEqual(win["n_colocated_all"], 200)
         self.assertAlmostEqual(statistics.median(r.s_per_intervals(win["C"])), 26.0, places=6)
 
     def test_alone_windows_exclude_in_flight_and_trim(self):       # R9-3 X14 / X07: A2 position pinned
@@ -352,8 +363,8 @@ class TestWindows(unittest.TestCase):
     def test_contaminated_snapshot_excluded(self):
         win = self._win()
         self.assertAlmostEqual(win["ctx_mid"]["A1"], 8192 - 0.5, places=6)
-        # C iterations iter_seq 231..430 -> ctx = (c - 144) + (seq - 1); a used contaminated snapshot would give ~8290
-        self.assertAlmostEqual(win["ctx_mid"]["C"], 8377.5, places=6)
+        # C value window iter_seq 231..358 -> ctx = (c - 144) + (seq - 1); a used contaminated snapshot would give ~8290
+        self.assertAlmostEqual(win["ctx_mid"]["C"], 8341.5, places=6)
 
     def test_l_lag_from_raw(self):
         self.assertEqual(self._win(lag=7)["l_lag_iters"], 7)
@@ -412,10 +423,14 @@ class TestReduceProbe(unittest.TestCase):
         self.assertEqual(self._st(p), [r.VALUE_DEPENDENT])
         self.assertIn("PE-iter", p["measurements"][0]["reason"])
 
-    def test_c_excludes_in_flight_unsplit_leaks(self):             # kills X06
+    def test_c_excludes_in_flight_unsplit_leaks(self):             # kills X06 (pair condition) under the rev14 truncation
         p, _ = self._reduce([dict(inflight_off_leaks=300)])
         self.assertEqual(self._st(p), ["REDUCED"])
         self.assertAlmostEqual(p["measurements"][0]["c_median_ms"], 26.0, places=6)
+        win = r.extract_cell_windows(*(lambda recs, mk: (recs, {"coload_sent": mk["coload_sent"]}, (44, 32, 8192)))(*raw_cell(inflight_off_leaks=300)))
+        self.assertEqual(win["n_colocated_all"], 200)             # in-flight (0,108) leaks are not co-located iterations
+        p, _ = self._reduce([dict(n_c=100, inflight_off_leaks=300)])
+        self.assertEqual(self._st(p), [r.KAPPA_CENSORED])        # without the pair filter the leaks would fill C
 
     # ---- R10-1: class = most severe applicable check; mark loss never launders censored / VD into VI ----
     def test_mark_loss_does_not_launder(self):                     # audit S1-S3, S6
@@ -599,7 +614,8 @@ class TestReduceProbe(unittest.TestCase):
 
     def test_registered_counts_default(self):
         self.assertEqual(r.PROBE_CALLS, {16: 7, 44: 14})
-        self.assertEqual(r.K_PROBE, {16: 18, 44: 8})                # = pre-probe K (§4-2), single source (§21-21)
+        self.assertEqual(r.K_PROBE, {16: 18, 44: 8})                # smoke co-load size only (rev14: NOT the E-alpha K)
+        self.assertNotEqual(r.K_PROBE, f.K_CO)
         self.assertEqual(r.BIND_CELL, (32, 8192))
         with tempfile.TemporaryDirectory() as td:                   # default = registered 14 / 7
             p = r.reduce_probe([write_boot(td, "k", [dict()])])
@@ -707,7 +723,8 @@ class TestCalculatorCli(unittest.TestCase):
         rc, rec, p = self._run()
         self.assertEqual(p["probe_status"], "OK")
         self.assertEqual(rc, 0, rec.get("reasons"))
-        self.assertEqual(rec["K"], {"16": 22, "44": 10})
+        self.assertEqual(rec["K"], {"16": 33, "44": 15})                # rev14: the registered constant, never derived
+        self.assertFalse(rec["judgment_input"])
         self.assertEqual(rec["reducer_sha256"], r.self_sha256())
         self.assertIn("budget", rec)
         self.assertFalse(rec["reprobe_allowed"])

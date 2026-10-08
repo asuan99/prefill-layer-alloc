@@ -1,5 +1,8 @@
-"""N2(3-a) U-2 (a) calibration PROBE runner (PREREG_N2_3A rev12 §14-2 "프로브 하네스 사양", H-1, H-4…H-7, R11-7).
+"""N2(3-a) U-2 harness SMOKE runner (PREREG_N2_3A rev14: OPTIONAL, POST-SEAL, NON-GATING; H-1, H-4…H-7, G-1…G-16).
 
+rev14 (A'): no constant is derived from this run -- K is the registration constant n2_feasibility.K_CO, L_lag / delta
+are fixed allowances. This runner only rehearses the mark format, the cell client and the reducer end to end on the
+real engine. Any edit made after a smoke run goes through a delta audit marked "post-smoke" before the Job.
 NOT a measurement and never cited (N2C-35, N2C-40). Runs in a VESSL **Workspace** (not a Job; see
 handoff-report/vessl_operating_model_2026-10-02.md -- "Workspace는 bring-up·프로브 전용") on an A100 80GB.
 Local use is CPU-only: --emit-plan, --stop-rule, --reduce, and the fake-server tests in test_n2_harness.py.
@@ -124,11 +127,12 @@ def emit_plan(out_path, calculator=CALCULATOR, reducer=REDUCER):
     cells = {}
     for d in red.PROBE_D:
         e = der["ealpha"][f"{d},{b},{c}"]
-        cells[str(d)] = dict(d=d, b=b, c=c, c_in=int(e["c_in"]), O_EA=int(math.ceil(e["O_EA"])), K=int(e["K"]),
-                             delta=int(e["delta_on_A2"]), O_EA_raw=e["O_EA"])
+        cells[str(d)] = dict(d=d, b=b, c=c, c_in=int(e["c_in"]), O_EA=int(math.ceil(e["O_EA"])), K=int(red.K_PROBE[d]),
+                             delta=int(e["delta_on_A2"]), O_EA_raw=e["O_EA"], K_ealpha_registered=int(e["K"]))
     plan = dict(kind="PROBE", calls={str(d): red.PROBE_CALLS[d] for d in red.PROBE_D}, cells=cells,
                 calculator_sha256=sha256_file(calculator), reducer_sha256=sha256_file(reducer),
-                note="pre-probe design values (N2C-12/18: design forecast, not a measurement)")
+                note="rev14 smoke plan: K = smoke co-load K_PROBE (not the E-alpha K_CO); O_EA/c_in/delta = registered "
+                     "design values (N2C-12/18: design forecast, not a measurement); the smoke derives no constant")
     with open(out_path, "x") as fh:
         json.dump(plan, fh, indent=1, sort_keys=True)
     return plan

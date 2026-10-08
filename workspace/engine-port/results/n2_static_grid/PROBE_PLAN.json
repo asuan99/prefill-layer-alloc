@@ -1,5 +1,5 @@
 {
- "calculator_sha256": "2f97f8ea929c7756ebc8b71465d97158a64d3b4fd3002b1576ba719b0ef796d7",
+ "calculator_sha256": "be9b430f22c724d603857df457140bd6f5746d4d151ec07cf01e8ac51d64b57a",
  "calls": {
   "16": 7,
   "44": 14
@@ -7,26 +7,28 @@
  "cells": {
   "16": {
    "K": 18,
-   "O_EA": 3684,
-   "O_EA_raw": 3683.9873240018164,
+   "K_ealpha_registered": 33,
+   "O_EA": 5470,
+   "O_EA_raw": 5469.987324001817,
    "b": 32,
    "c": 8192,
    "c_in": 6694,
    "d": 16,
-   "delta": 8
+   "delta": 64
   },
   "44": {
    "K": 8,
-   "O_EA": 7214,
-   "O_EA_raw": 7213.870845204178,
+   "K_ealpha_registered": 15,
+   "O_EA": 8221,
+   "O_EA_raw": 8220.87084520418,
    "b": 32,
    "c": 8192,
    "c_in": 4935,
    "d": 44,
-   "delta": 8
+   "delta": 64
   }
  },
  "kind": "PROBE",
- "note": "pre-probe design values (N2C-12/18: design forecast, not a measurement)",
- "reducer_sha256": "3823aef2ffe03f96279e83fb407e978fbcf95ddfb5f39ebebf2d7fa39f04ee74"
+ "note": "rev14 smoke plan: K = smoke co-load K_PROBE (not the E-alpha K_CO); O_EA/c_in/delta = registered design values (N2C-12/18: design forecast, not a measurement); the smoke derives no constant",
+ "reducer_sha256": "fd1957335d08b18801770d7afce8f09ca6ceb4d0c4c8846b9a85a73ab87f968f"
 }

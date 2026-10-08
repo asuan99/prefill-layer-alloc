@@ -1,4 +1,4 @@
-"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev13 (R8-5, R9-3, R9-8, R10-4, R11-6, G-6/8/9/15 + harness H01-H32; N2C-47 issue: every registered mutant
+"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev14 ((A') fixed K: judgment-path group J + smoke group S; R8-5, R9-3, R9-8, R10-4, R11-6, G-6/8/9/15, harness H01-H32; N2C-47 issue: every registered mutant
 must be re-runnable by an auditor).
 
 Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_mutants.py [N3_RAW_DIR]
@@ -27,29 +27,29 @@ HARNESS_TESTS = ("test_n2_harness.py",)
 
 # (id, description, expect, [(file, old, new), ...]); expect = "kill" or "equivalent"
 MUTANTS = [
-    ("R01", "K_16 = 16", "kill", [(FE, "K_CO = {16: 18, 44: 8}", "K_CO = {16: 16, 44: 8}")]),
-    ("R02", "K_16 = 20", "kill", [(FE, "K_CO = {16: 18, 44: 8}", "K_CO = {16: 20, 44: 8}")]),
-    ("R03", "L_LAG = 0", "kill", [(FE, "L_LAG = 32 ", "L_LAG = 0 ")]),
+    ("R01", 'K_16 = 32 (registered constant off by one, rev14 re-pin)', "kill", [(FE, 'K_CO = {16: 33, 44: 15}', 'K_CO = {16: 32, 44: 15}')]),
+    ("R02", 'K_44 = 16 (registered constant off by one, rev14 re-pin)', "kill", [(FE, 'K_CO = {16: 33, 44: 15}', 'K_CO = {16: 33, 44: 16}')]),
+    ("R03", 'L_LAG = 0 (rev14 re-pin)', "kill", [(FE, 'L_LAG = 128 ', 'L_LAG = 0 ')]),
     ("R04", "ealpha_c_in -> c_in(108)", "kill", [(FE, 'use c_in(d)."""\n    return c_in_of(d, b, c)', 'use c_in(d)."""\n    return c_in_of(108, b, c)')]),
     ("R05", "choose_k returns K+1", "kill", [(FE, "        if k_satisfies(d, K):\n            return K", "        if k_satisfies(d, K):\n            return K + 1")]),
     ("R06", "kappa_DW fixed 1.6", "kill", [(FE, 'return k * KAPPA_DW_OVER_DN if dcorner == "DW" else k', 'return 1.6 if dcorner == "DW" else k')]),
     ("R07", "theta rho max->min across p", "kill", [(FE, 'new["rho"]["theta"] = max(med.values())', 'new["rho"]["theta"] = min(med.values())')]),
-    ("R08", "rho requirement 1.6", "kill", [(FE, "RHO_MAX_REQUIRED = 2.0 ", "RHO_MAX_REQUIRED = 1.6 ")]),
-    ("R09", "delta tau of 16 not window", "kill", [(FE, "/ tau_alone(Dwin, b, c, dc, dirn)", "/ tau_alone(16, b, c, dc, dirn)")]),
+    ("R08", 'kappa* requirement 2.0 (rev14 re-pin from 1.6)', "kill", [(FE, 'RHO_MAX_REQUIRED = 3.0 ', 'RHO_MAX_REQUIRED = 2.0 ')]),
+    ("R09", 'O_EA drops the delta allowance (rev14 retarget)', "kill", [(FE, '+ L_LAG + n_co_max(d, b, c) + TRIM + WIN + DELTA_FIXED + s_hat(d, b, c)', '+ L_LAG + n_co_max(d, b, c) + TRIM + WIN + s_hat(d, b, c)')]),
     ("R10", "cell_time_ealpha cin = c_in(Dalone)", "kill", [(FE, "    cin = ealpha_c_in(d, b, c)\n    k = max(1", "    cin = c_in_of(Dalone, b, c)\n    k = max(1")]),
-    ("R11", "call-site delta uses d", "kill", [(FE, "delta_tokens(Dalone, b, c, dc)", "delta_tokens(d, b, c, dc)")]),
+    ("R11", 'call-site delta uses d (rev14: equivalent -- delta is the fixed 64 for every window)', "equivalent", [(FE, 'delta_tokens(Dalone, b, c, dc)', 'delta_tokens(d, b, c, dc)')]),
     ("R12", "tau accepts D not in 16,44", "kill", [(FE, 'D, b, c = _check_cell(cell, "tau", (16, 44))', 'D, b, c = _check_cell(cell, "tau", (16, 44, 24, 34, 108))'), (FE, "        ratios[D].append(ms / model)", "        ratios.setdefault(D, []).append(ms / model)")]),
     ("R13", "tau rho uses min", "kill", [(FE, "hi = {D: max(r) for D, r in ratios.items()}", "hi = {D: min(r) for D, r in ratios.items()}")]),
     ("R14", "delete W_co condition", "kill", [(FE, "                if min(w_co(d, b, c, pc, dc) for pc, dc in CORNERS) < C_WINDOW_MIN:\n                    return False\n", "")]),
     ("R15", "kappa rho median", "kill", [(FE, 'new["rho"]["kappa_dn"] = new["budget"]["kappa_dn"] = max(ks)', 'new["rho"]["kappa_dn"] = new["budget"]["kappa_dn"] = statistics.median(ks)')]),
     ("R16", "delete L_LAG in E-alpha pre", "kill", [(FE, "    pre = (c + 71 - start) + L_LAG", "    pre = (c + 71 - start)")]),
     ("R17", "s_hat rho direction", "kill", [(FE, 'return max(burst_spread(D, b, c, pc, dc, "env") for pc, dc in CORNERS)', 'return max(burst_spread(D, b, c, pc, dc, "rho") for pc, dc in CORNERS)')]),
-    ("R18", "N_co,max rho direction", "kill", [(FE, 'return math.ceil(max(w_co(Dsp, b, c, pc, dc, "env") for pc, dc in CORNERS))', 'return math.ceil(max(w_co(Dsp, b, c, pc, dc, "rho") for pc, dc in CORNERS))')]),
+    ("R18", 'N_co,max uses the rho (fast) theta (rev14 retarget)', "kill", [(FE, 'co_prefill_time(Dsp, "PW", "budget") / (tau_alone_lower(b, c) * KAPPA_FLOOR)', 'co_prefill_time(Dsp, "PW", "rho") / (tau_alone_lower(b, c) * KAPPA_FLOOR)')]),
     ("R19", "theta median -> min (D-9)", "kill", [(FE, 'med[p] = statistics.median(_scalar(v, "theta") for v in lst) * 64.0 / p', 'med[p] = min(_scalar(v, "theta") for v in lst) * 64.0 / p')]),
     ("R20", "accept n < 20", "kill", [(FE, "len(lst) < THETA_MIN_SPANS", "len(lst) < 1")]),
     ("R21", "accept iteration-level raw", "kill", [(FE, "    if isinstance(x, (list, tuple, dict)):\n        raise ProbeRejected", "    if isinstance(x, (list, tuple, dict)):\n        return float(max(x))\n        raise ProbeRejected")]),
     ("R22", "restore K_SEARCH_MAX = 64", "kill", [(FE, "    K = 1\n    while True:", "    K = 1\n    while K <= 64:"), (FE, "        K += 1\n", "        K += 1\n    return None\n")]),
-    ("R23", "gate skips limits_check", "kill", [(FE, '        if not lim["ok"]:', "        if False:")]),
+    ("R23", 'smoke gate skips limits_check', "kill", [(FE, '    lim = limits_check()\n    if not lim["ok"]:\n        reasons.append(f"limits_check failed', '    lim = limits_check()\n    if False:\n        reasons.append(f"limits_check failed')]),
     ("A01", "budget tau -> lo", "kill", [(FE, 'for dirn, s in (("rho", hi), ("budget", hi), ("env", lo)):', 'for dirn, s in (("rho", hi), ("budget", lo), ("env", lo)):')]),
     ("A02", "budget kappa -> min", "kill", [(FE, 'new["rho"]["kappa_dn"] = new["budget"]["kappa_dn"] = max(ks)\n    new["env"]["kappa_dn"] = min(ks)', 'new["rho"]["kappa_dn"] = max(ks)\n    new["budget"]["kappa_dn"] = min(ks)\n    new["env"]["kappa_dn"] = min(ks)')]),
     ("A04", "E-alpha cost co_prefill rho", "kill", [(FE, '    tco = co_prefill_time(d, pc, "budget")', '    tco = co_prefill_time(d, pc, "rho")')]),
@@ -59,14 +59,14 @@ MUTANTS = [
     ("A08", "required p (92,) only", "kill", [(FE, "THETA_REQUIRED_P = (64, 92)", "THETA_REQUIRED_P = (92,)")]),
     ("A10", "probe sha from calculator file", "kill", [(FE, 'rec["probe_sha256"] = _sha256_file(probe_path)', 'rec["probe_sha256"] = _sha256_file(__file__)')]),
     ("A11", "CLI rc always 0", "kill", [(FE, 'return 0 if rec["seal_allowed"] else 2', "return 0")]),
-    ("A13", "exec delta budget direction", "kill", [(FE, '    return delta_tokens(Dwin, b, c, "DN", "env")', '    return delta_tokens(Dwin, b, c, "DN", "budget")')]),
+    ("A13", 'delta_exec returns DELTA_MIN (rev14 retarget)', "kill", [(FE, '    """rev14: execution cancel margin = DELTA_FIXED (kept as a function so the harness plan keeps its field)."""\n    return DELTA_FIXED', '    """rev14: execution cancel margin = DELTA_FIXED (kept as a function so the harness plan keeps its field)."""\n    return DELTA_MIN')]),
     ("A09", "drop KV limit", "equivalent", [(FE, "                if L > CONTEXT_LEN or b * L > KV_TOKENS:", "                if L > CONTEXT_LEN:")]),
-    ("A12", "gate drops rho table recheck", "equivalent", [(FE, '        if not all(r["passes"] for r in rho_table()):', "        if False:")]),
+    ("A12", 'smoke gate drops the registered-K kappa* check (rev14: now a real check)', "kill", [(FE, '        if not k_satisfies(d, K_CO[d]):', '        if False:')]),
     ("A16", "search starts at K = 2", "equivalent", [(FE, "    K = 1\n    while True:", "    K = 2\n    while True:")]),
-    ("G01", "gate K hard-coded", "kill", [(FE, "    ks = {d: choose_k(d) for d in EA_D}", "    ks = {16: 18, 44: 8}")]),
-    ("G02", "derived via design coefficients", "kill", [(FE, '    if not reasons:\n        rec["derived"] = derived_constants()', '    if not reasons:\n        _c = copy.deepcopy(COEF); COEF.clear(); COEF.update({d: dict(theta=THETA_DESIGN, d_factor=dict(D_FACTOR_DESIGN), kappa_dn=KAPPA_DN_DESIGN) for d in DIRECTIONS})\n        rec["derived"] = derived_constants(); COEF.clear(); COEF.update(_c)')]),
+    ("G01", 'smoke gate diagnostic K hard-coded', "kill", [(FE, '    diag = {d: choose_k(d) for d in EA_D}\n    reasons = []', '    diag = {16: 18, 44: 8}\n    reasons = []')]),
+    ("G02", 'smoke gate omits derived constants', "kill", [(FE, '               derived=derived_constants(), budget=budget_record())', '               derived={}, budget=budget_record())')]),
     ("G03", "CLI accepts duplicate keys", "kill", [(FE, "raw = json.load(fh, object_pairs_hook=_no_duplicate_keys)", "raw = json.load(fh)")]),
-    ("C09", "derived delta budget direction", "kill", [(FE, "delta_on_A2=delta_exec(d, b, c), delta_off_A2=delta_exec(108, b, c)", "delta_on_A2=delta_tokens(d, b, c), delta_off_A2=delta_tokens(108, b, c)")]),
+    ("C09", 'derived delta budget direction (rev14: equivalent -- delta_tokens == delta_exec == DELTA_FIXED)', "equivalent", [(FE, 'delta_on_A2=delta_exec(d, b, c), delta_off_A2=delta_exec(108, b, c)', 'delta_on_A2=delta_tokens(d, b, c), delta_off_A2=delta_tokens(108, b, c)')]),
     ("M01", "budget record FIX_S hard-coded", "kill", [(FE, '    out = {"FIX_S": dict(FIX_S),', '    out = {"FIX_S": {"nom": 22.48, "worst": 35.5},')]),
     ("M02", 'reducer sha check removed', "kill", [(FE, '        if not rec["reducer_sha256"] or rec["reducer_sha256"] != local_red:', '        if False:')]),
     ("P01", "reducer no first-span exclusion", "kill", [(RD, "        if k in first:\n            excluded", "        if False:\n            excluded")]),
@@ -85,14 +85,14 @@ MUTANTS = [
     ("B18", "kappa A_on from the C window", "kill", [(RD, '    a1 = statistics.median(s_per_intervals(win["W"]))\n    a2 = statistics.median(s_per_intervals(win["A2"]))', '    a1 = statistics.median(s_per_intervals(win["C"]))\n    a2 = statistics.median(s_per_intervals(win["C"]))')]),
     ("B19", "kappa C from the A_on window", "kill", [(RD, '    c_med = statistics.median(s_per_intervals(win["C"]))', '    c_med = statistics.median(s_per_intervals(win["W"]))')]),
     ("B21", "to_json key format", "kill", [(RD, "        return json.dumps(list(k)) if isinstance(k, tuple) else str(k)", "        return str(k)")]),
-    ("C14", "C window contamination (bs filter only)", "kill", [(RD, '    cwin = [e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]', '    cwin = [e for e in wco if e["bs"] == b]')]),
+    ("C14", 'C window contamination (bs filter only)', "kill", [(RD, '    call = sorted((e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair),', '    call = sorted((e for e in wco if e["bs"] == b),')]),
     ("M03", "contaminated snapshots not excluded", "kill", [(RD, '                   if s_.get("active_decode_sequences") == b)', "                   if True)")]),
     ("M04", "A_on pooled instead of interpolated", "kill", [(RD, '    return c_med, a_on_interp(a1, m["A1"], a2, m["A2"], m["C"])', '    return c_med, statistics.median(s_per_intervals(win["W"]) + s_per_intervals(win["A2"]))')]),
     # ---- rev10 (R9-3): audit rev9 X mutants adapted to the rev10 code, and new rev10 rules (M05-M12) ----
     ("X01", "kappa length-weighted over measurements (pooled-C analogue)", "kill", [(RD, '            kap.setdefault(cell, []).append(out["c_med"] / out["a_on"])', '            kap.setdefault(cell, []).extend([out["c_med"] / out["a_on"]] * len(win["C"]))')]),
     ("X02", "kappa cell = mean of kappa_i", "kill", [(RD, '{"kappa_median": statistics.median(ks),', '{"kappa_median": statistics.mean(ks),')]),
     ("X04", "reduce_probe silently drops failing measurements", "kill", [(RD, "            if issues:\n                worst = max(issues, key=lambda x: SEVERITY[x[0]])\n", "            if issues:\n                continue\n                worst = max(issues, key=lambda x: SEVERITY[x[0]])\n")]),
-    ("X05", "C filter drops prefill_in_flight only (pair kept)", "kill", [(RD, 'e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]', 'e["bs"] == b and _pair(e) == pair]')]),
+    ("X05", 'C filter drops prefill_in_flight only (pair kept)', "kill", [(RD, '    call = sorted((e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair),', '    call = sorted((e for e in wco if e["bs"] == b and _pair(e) == pair),')]),
     ("X07", "TRIM = 0", "kill", [(RD, "TRIM = 16", "TRIM = 0")]),
     ("X08", "A2 = last 128 instead of first", "kill", [(RD, '_alone(iters, b, t_co1, float("inf"), pair)[:WINDOW_ITERS]', '_alone(iters, b, t_co1, float("inf"), pair)[-WINDOW_ITERS:]')]),
     ("X09", "co span: drop extend_tokens == n_new*8192 check", "kill", [(RD, 'sp[0] >= t_co and sp[2]["extend_tokens"] == sp[2]["n_new"] * CO_INPUT]', 'sp[0] >= t_co]')]),
@@ -169,12 +169,26 @@ MUTANTS = [
     ("N21", 'promotion even if aborted before the co-load ended', "kill", [(RD, 'all(e is not None and e["timestamp_monotonic_s"] <= t_ab for _s, e in co)', 'True')]),
     ("N22", 'CLI drops the probe reason_codes', "kill", [(FE, 'reason_codes=list(raw.get("reason_codes", [])))', 'reason_codes=[])')]),
     # ---- rev13 (G-6, G-8, G-9) ----
-    ("N23", 'G-6: probe fix_s feeds FIX_S', "kill", [(FE, '    COEF.clear(); COEF.update(new)\n    L_LAG, DELTA_L_S = l_lag, max(0.0, dl)', '    COEF.clear(); COEF.update(new)\n    L_LAG, DELTA_L_S = l_lag, max(0.0, dl)\n    FIX_S["nom"], FIX_S["worst"] = statistics.median(probe["fix_s"]), max(probe["fix_s"])')]),
+    ("N23", 'G-6: probe fix_s feeds FIX_S', "kill", [(FE, '    COEF.clear(); COEF.update(new)\n    return dict(l_lag_observed_max=int(math.ceil(max(lags))))', '    COEF.clear(); COEF.update(new)\n    _fx = [float(x) for x in probe.get("fix_s", [22.48])]\n    FIX_S["nom"], FIX_S["worst"] = statistics.median(_fx), max(_fx)\n    return dict(l_lag_observed_max=int(math.ceil(max(lags))))')]),
     ("N24", 'G-6: fix_s required again', "kill", [(FE, 'REQUIRED_PROBE_KEYS = ("theta_spans", "tau_cells", "kappa_cells", "l_lag_iters", "delta_l_s")', 'REQUIRED_PROBE_KEYS = ("theta_spans", "tau_cells", "kappa_cells", "l_lag_iters", "delta_l_s", "fix_s")')]),
     ("N25", 'G-8: boot_health_timeout VI even after a cell started', "kill", [(RD, '            if ab in BOOT_ONLY_VI_REASONS and not any_cell:', '            if ab in BOOT_ONLY_VI_REASONS:')]),
     ("N26", 'G-8: boot_health_timeout VI as a cell abort', "kill", [(RD, '                 "boot_health_timeout": VALUE_DEPENDENT}', '                 "boot_health_timeout": VALUE_INDEPENDENT}')]),
     ("N27", 'G-8: client_exception -> VI', "kill", [(RD, '"client_exception": VALUE_DEPENDENT,', '"client_exception": VALUE_INDEPENDENT,')]),
-    ("X06", "C filter drops the pair condition", "kill", [(RD, 'e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]', 'e["bs"] == b and e["prefill_in_flight"]]')]),
+    # ---- rev14 (A') judgment-path constants and the C value-window truncation ----
+    ("J13", 'smoke mapping assigns L_LAG from the probe (rev14: allowance must stay fixed)', "kill", [(FE, '    COEF.clear(); COEF.update(new)\n    return dict(l_lag_observed_max=int(math.ceil(max(lags))))', '    global L_LAG\n    COEF.clear(); COEF.update(new)\n    L_LAG = int(math.ceil(max(lags)))\n    return dict(l_lag_observed_max=int(math.ceil(max(lags))))')]),
+    ("J01", 'theta_rho fixed input 5,693 instead of 5,705', "kill", [(FE, 'THETA_RHO_FIXED = 5705.0', 'THETA_RHO_FIXED = 5693.0')]),
+    ("J02", 'kappa_floor 1.3 (lower-side guarantee weakened)', "kill", [(FE, 'KAPPA_FLOOR = 0.9 ', 'KAPPA_FLOOR = 1.3 ')]),
+    ("J03", 'N_co,max lower bound uses d_factor (not D44 coefficients)', "kill", [(FE, '    return TAU_D44_ALONE_MS[_kb(b)] * CTX_FACTOR[c] / 1000.0\n', '    return TAU_D44_ALONE_MS[_kb(b)] * CTX_FACTOR[c] * 1.6 / 1000.0\n')]),
+    ("J04", 'N_co,max uses PN theta instead of PW', "kill", [(FE, 'co_prefill_time(Dsp, "PW", "budget") / (tau_alone_lower(b, c) * KAPPA_FLOOR)', 'co_prefill_time(Dsp, "PN", "budget") / (tau_alone_lower(b, c) * KAPPA_FLOOR)')]),
+    ("J05", 'L_lag allowance 32', "kill", [(FE, 'L_LAG = 128 ', 'L_LAG = 32 ')]),
+    ("J06", 'delta allowance 8', "kill", [(FE, 'DELTA_FIXED = 64 ', 'DELTA_FIXED = 8 ')]),
+    ("J07", 'C value window = all co-located iterations (no truncation)', "kill", [(RD, '    cwin = call[:WINDOW_ITERS]  ', '    cwin = call  ')]),
+    ("J08", 'C value window = last 128 co-located iterations', "kill", [(RD, '    cwin = call[:WINDOW_ITERS]  ', '    cwin = call[-WINDOW_ITERS:]  ')]),
+    ("J09", 'registered_constants K from choose_k (live coefficients)', "kill", [(FE, '    return dict(K=dict(K_CO), K_derivation=', '    return dict(K={d: choose_k(d) for d in EA_D}, K_derivation=')]),
+    ("J10", 'smoke gate writes the diagnostic K into K_CO', "kill", [(FE, '    diag = {d: choose_k(d) for d in EA_D}\n    reasons = []', '    diag = {d: choose_k(d) for d in EA_D}\n    K_CO.update({d: k for d, k in diag.items() if k})\n    reasons = []')]),
+    ("J11", 'rho-direction theta = design 4,500 (K derivation input drift)', "kill", [(FE, 'theta=(THETA_RHO_FIXED if d == "rho" else THETA_DESIGN)', 'theta=THETA_DESIGN')]),
+    ("J12", 'derive_fixed_k uses the live rho set (not the fixed inputs)', "kill", [(FE, '    COEF["rho"].update(theta=THETA_RHO_FIXED, d_factor=dict(D_FACTOR_DESIGN), kappa_dn=KAPPA_DN_DESIGN)\n', '')]),
+    ("X06", 'C filter drops the pair condition', "kill", [(RD, '    call = sorted((e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair),', '    call = sorted((e for e in wco if e["bs"] == b and e["prefill_in_flight"]),')]),
     ("X10", "alone PE threshold 0.5", "kill", [(RD, "ALONE_PE_MIN = 0.99", "ALONE_PE_MIN = 0.5")]),
     ("X11", "centered window accepts >= 128", "equivalent", [(RD, "    if len(w) != WINDOW_ITERS:", "    if len(w) < WINDOW_ITERS:")]),
     ("X16", "ctx: earliest valid snapshot instead of latest", "equivalent", [(RD, "        while k + 1 < len(snaps) and snaps[k + 1][0] <= e[\"iter_seq\"]:\n            k += 1", "        while k < 0 and k + 1 < len(snaps) and snaps[k + 1][0] <= e[\"iter_seq\"]:\n            k += 1")]),
@@ -182,6 +196,16 @@ MUTANTS = [
     ("B09", "extend_tokens >= 16384", "equivalent", [(RD, 'starts[k].get("extend_tokens") == SPAN_TOKENS', 'starts[k].get("extend_tokens", 0) >= SPAN_TOKENS')]),
     ("B11", "N3 positive control ignores bench window", "equivalent", [(RD, '[(float(marks["bench_start"]), float(marks["bench_end"]))]', "[]")]),
 ]
+
+
+# rev14: which mutants bind the JUDGMENT PATH (registered constants, windows, budgets, limits, S-per / A_on / theta
+# positive control shared with n2_analyze). Everything else binds the optional smoke tool chain (probe reducer
+# classes, provenance, gate, harness) -- retained and run, but §15 counts them separately.
+JUDGMENT_IDS = frozenset({"R01", "R02", "R03", "R04", "R06", "R08", "R09", "R10", "R11", "R14", "R16", "R18", "A13",
+                          "A01", "A02", "A04", "A05", "A09", "A12", "A16", "M01",
+                          "P01", "P02", "P03", "P04", "P05", "P06", "P07", "B01", "B02", "B03", "B04", "B06", "B16", "B18",
+                          "B19", "C14", "M03", "M04", "X05", "X06", "X07", "X08", "X10", "X11", "X14", "X15", "X16",
+                          "B09", "B11", "M05", "N13", "Y04", "Y10", "Y11", "Y12"} | {f"J{k:02d}" for k in range(1, 14)})
 
 
 def _harness_mutants():
@@ -247,7 +271,8 @@ def run(n3_dir=None, only=None):
                 rows.append((mid, desc, status, f"{tail}{' pyc!' if pyc else ''}"))
             finally:
                 shutil.rmtree(d, ignore_errors=True)
-        print(f"{rows[-1][0]:5s} {rows[-1][1]:45s} {rows[-1][2]:20s} {rows[-1][3]}", flush=True)
+        grp = "J" if rows[-1][0] in JUDGMENT_IDS else ("-" if rows[-1][0] == "CTRL" else "S")
+        print(f"{rows[-1][0]:5s} {grp} {rows[-1][1]:45s} {rows[-1][2]:20s} {rows[-1][3]}", flush=True)
     return rows
 
 

@@ -1,8 +1,12 @@
-"""N2(3-a) registered reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev13 (R7-1, R8-1/2/3,
+"""N2(3-a) reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev14 (R7-1, R8-1/2/3,
 R9-1/2/5/6, R10-1/2/5, R11-1/2/3/5).
 
-The U-2 (a) Workspace probe is NOT a measurement and is never cited (N2C-35, N2C-40). This tool is the ONLY
-registered path from raw PHASE_EVENTS telemetry to the aggregates that n2_feasibility.apply_probe accepts.
+rev14 (A') STATUS: the U-2 probe is an OPTIONAL post-seal, NON-GATING harness smoke. Nothing this module computes is a
+judgment input or a registered constant source (K is the registration-time constant n2_feasibility.K_CO; L_lag and
+delta are fixed allowances). What REMAINS registered here is the shared window implementation that the main-measurement
+analyzer (n2_analyze / n2_window) imports: extract_cell_windows (alone W/A1, W_co, the C VALUE WINDOW = FIRST 128
+co-located iterations in iter_seq order [rev14 truncation], A2), s_per_intervals (iter_seq-adjacent pairs), ctx_of,
+a_on_interp (§10-2). The probe is NOT a measurement and is never cited (N2C-35, N2C-40).
 
 theta (prefill throughput) sample composition (R7-1, registered):
   * a "16,384-token span" = prefill_span_start/_end pair (same span_seq) with extend_tokens == 16384;
@@ -118,7 +122,7 @@ BAND_LO, BAND_HI = 64, 63            # centered window band [c - 64, c + 63]
 CO_INPUT = 8192
 PAIR = {16: (92, 16), 24: (84, 24), 34: (74, 34), 44: (64, 44), 108: (0, 108)}   # A-agn realized pairs
 ALONE_PE_MIN = 0.99
-PROBE_D = (16, 44)                   # probe cells are sticky-ON binding-type cells only (R9-7)
+PROBE_D = (16, 44)                   # smoke cells are sticky-ON binding-type cells only (R9-7; smoke, not judgment)
 
 # R9-1 measurement-level reject classes (registered):
 KAPPA_CENSORED = "KAPPA_CENSORED"        # C < 128: kappa above the probe's own ceiling kappa* -> no seal, NO re-probe
@@ -135,9 +139,11 @@ class MeasurementRejected(ReduceRejected):
 
 
 SEVERITY = {KAPPA_CENSORED: 3, VALUE_DEPENDENT: 2, VALUE_INDEPENDENT: 1}
-PROBE_CALLS = {16: 7, 44: 14}        # R9-7 exact call (= kappa cell) counts, enforced from the marks + raw (R10-2)
-K_PROBE = {16: 18, 44: 8}            # R11-1 registered probe co-load size (= pre-probe K, §4-2); sum n_new per cell
-BIND_CELL = (32, 8192)               # R11-1 the only registered probe (b, c)
+# rev14: the three constants below describe the OPTIONAL SMOKE only (not judgment inputs). K_PROBE is the smoke's own
+# co-load size and is NOT the E-alpha K (that is n2_feasibility.K_CO = {16: 33, 44: 15}, a registration constant).
+PROBE_CALLS = {16: 7, 44: 14}        # smoke call (= kappa cell) counts, enforced from the marks + raw (R10-2)
+K_PROBE = {16: 18, 44: 8}            # smoke co-load size (sum n_new per smoke cell)
+BIND_CELL = (32, 8192)               # the only smoke (b, c)
 # R10-1 / H-1 / H-5: registered cell_abort / boot_abort reasons -> class. Any other reason is VALUE_DEPENDENT.
 ABORT_REASONS = {"server_down": VALUE_INDEPENDENT, "http_connection_error": VALUE_INDEPENDENT,
                  "cell_timeout": VALUE_DEPENDENT, "coload_payload_invalid": VALUE_DEPENDENT,
@@ -261,7 +267,9 @@ def extract_cell_windows(records, marks, cell):
                                   code="CENTER_WINDOW")
     _check_alone_pair(w, pair, "W/A1")
     wco = [e for e in iters if t_co0 <= e["t_launch"] <= t_co1]           # W_co: before the bs filter (R5-7)
-    cwin = [e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]
+    call = sorted((e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair),
+                  key=lambda e: e["iter_seq"])                              # all co-located iterations (descriptive)
+    cwin = call[:WINDOW_ITERS]                                              # rev14 (A'): C VALUE WINDOW = first 128
     if len(cwin) < WINDOW_ITERS:
         bs_eq = [e for e in wco if e["bs"] == b]
         inflt = [e for e in bs_eq if e["prefill_in_flight"]]
@@ -273,11 +281,12 @@ def extract_cell_windows(records, marks, cell):
     if len(a2) < WINDOW_ITERS:
         raise MeasurementRejected(VALUE_DEPENDENT, "A2 window short", code="A2_SHORT")
     _check_alone_pair(a2, pair, "A2")
-    out = dict(W=w, W_co=wco, C=cwin, A2=a2)
+    out = dict(W=w, W_co=wco, C=cwin, C_all=call, A2=a2)
     out["ctx_mid"] = {k: statistics.mean(ctx[e["iter_seq"]] for e in ws if e["iter_seq"] in ctx)
-                      for k, ws in (("A1", w), ("A2", a2), ("C", cwin))}
+                      for k, ws in (("A1", w), ("A2", a2), ("C", cwin), ("C_all", call))}
     out["ranges"] = {k: (min(e["iter_seq"] for e in out[k]), max(e["iter_seq"] for e in out[k]))
-                     for k in ("W", "W_co", "C", "A2")}
+                     for k in ("W", "W_co", "C", "C_all", "A2")}
+    out["n_colocated_all"] = len(call)                                      # descriptive: whole-W_co co-located count
     out["l_lag_iters"] = sum(1 for e in iters if t_co <= e["t_launch"] < t_co0)
     return out
 
@@ -295,7 +304,8 @@ def a_on_interp(a1_ms, x1, a2_ms, x2, x):
 
 
 def kappa_parts(win):
-    """one kappa measurement: (median S-per(C), A_on at ctx_mid(C)); its kappa_i = c / a_on."""
+    """one kappa measurement: (median S-per(C), A_on at ctx_mid(C)) with C = the FIRST-128 value window (rev14);
+    its kappa_i = c / a_on. Descriptive whole-W_co variants are computed by the analyzer, not here."""
     c_med = statistics.median(s_per_intervals(win["C"]))
     a1 = statistics.median(s_per_intervals(win["W"]))
     a2 = statistics.median(s_per_intervals(win["A2"]))

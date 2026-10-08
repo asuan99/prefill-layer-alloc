@@ -77,14 +77,30 @@ def dispersed_probe():
 
 
 class TestRegistered(_Iso):
-    def test_pre_probe_k_and_requirement(self):
-        self.assertEqual(f.K_CO, {16: 18, 44: 8})
-        self.assertEqual((f.RHO_MAX_REQUIRED, f.C_WINDOW_MIN), (2.0, 128))
+    def test_fixed_k_and_requirement(self):                     # rev14 (A'): K is a registration constant
+        self.assertEqual(f.K_CO, {16: 33, 44: 15})
+        self.assertEqual((f.RHO_MAX_REQUIRED, f.C_WINDOW_MIN), (3.0, 128))
+        self.assertEqual((f.THETA_RHO_FIXED, f.KAPPA_FLOOR, f.L_LAG, f.DELTA_FIXED), (5705.0, 0.9, 128, 64))
+        self.assertEqual(f.COEF["rho"]["theta"], 5705.0)
+        self.assertEqual((f.COEF["env"]["theta"], f.COEF["budget"]["theta"]), (4500.0, 4500.0))
         self.assertFalse(hasattr(f, "K_SEARCH_MAX"))            # R6-2
 
-    def test_l_lag_in_o_ealpha(self):
-        self.assertEqual(f.L_LAG, 32)
-        self.assertEqual(round(f.o_ealpha(44, 8, 2048)), (2048 + 71 - 1903) + 32 + 1038 + 16 + 128 + 0 + 64)
+    def test_k_equals_its_one_time_derivation(self):            # rev14: derive_fixed_k() == K_CO, minimal for kappa* >= 3
+        self.assertEqual(f.derive_fixed_k(), f.K_CO)
+        self.assertTrue(f.is_minimal_k(16, 33) and f.is_minimal_k(44, 15))
+        f.COEF["rho"]["theta"] = 4500.0                         # derivation ignores the live rho set (fixed inputs)
+        self.assertEqual(f.derive_fixed_k(), {16: 33, 44: 15})
+        self.assertEqual(f.registered_constants()["K"], {16: 33, 44: 15})
+
+    def test_l_lag_delta_in_o_ealpha(self):                     # rev14: fixed allowances, lower-side N_co,max
+        self.assertEqual(f.n_co_max(44, 8, 2048), 2810)
+        self.assertEqual(round(f.o_ealpha(44, 8, 2048)), (2048 + 71 - 1903) + 128 + 2810 + 16 + 128 + 64 + 0)
+        self.assertEqual({(d, b, c): f.n_co_max(d, b, c) for d in f.EA_D for b in f.EA_B for c in f.EA_C},
+                         {(16, 8, 2048): 4300, (16, 8, 8192): 3440, (16, 32, 2048): 2764, (16, 32, 8192): 2212,
+                          (44, 8, 2048): 2810, (44, 8, 8192): 2248, (44, 32, 2048): 1806, (44, 32, 8192): 1445})
+        # lower side = D44 coefficients for every d, DN corner, PW design theta, kappa_floor
+        self.assertEqual(f.n_co_max(16, 32, 8192),
+                         math.ceil(f.co_prefill_time(16, "PW", "budget") / (0.028 * 1.25 * 0.9)))
 
     def test_tau_worst_rule_single(self):
         base = f.tau_alone(16, 32, 8192, "DN")
@@ -106,10 +122,10 @@ class TestEalpha(_Iso):
 
     def test_pinned_job_ea_boot_values(self):
         # R6-4 (1)(7): pins catch call-site c_in(Dalone) and L_LAG deletion in `pre`
-        exp = {True: ({"ON16": 548.303, "ON44": 541.47, "OFF16": 472.871, "OFF44": 501.554},
-                      {"ON16": 830.935, "ON44": 816.906, "OFF16": 715.772, "OFF44": 756.007}),
-               False: ({"ON16": 732.454, "ON44": 751.846, "OFF16": 559.192, "OFF44": 659.336},
-                       {"ON16": 1113.596, "ON44": 1134.905, "OFF16": 848.269, "OFF44": 994.507})}
+        exp = {True: ({"ON16": 649.458, "ON44": 608.174, "OFF16": 560.654, "OFF44": 564.326},
+                      {"ON16": 995.331, "ON44": 925.458, "OFF16": 860.11, "OFF44": 858.66}),
+               False: ({"ON16": 1144.315, "ON44": 901.123, "OFF16": 792.619, "OFF44": 784.037},
+                       {"ON16": 1752.575, "ON44": 1373.034, "OFF16": 1215.068, "OFF44": 1194.342})}
         for cancel, (nom, worst) in exp.items():
             r = f.job_budget(f.boots_ea_job(), cancel, 0)
             for k, v in nom.items():
@@ -117,67 +133,81 @@ class TestEalpha(_Iso):
             for k, v in worst.items():
                 self.assertAlmostEqual(r["worst"]["per_boot"][k], v, places=2)
 
-    def test_delta_window_tau_and_call_site(self):
-        # R5-5 + R6-4 (2): OFF cancel time grows by (delta(108) - 8) * tau_alone(108)
-        base = f.cell_time_ealpha(108, 16, 32, 8192, "nom", True)
+    def test_delta_fixed_for_every_window(self):
+        # rev14: the cancel margin is the fixed allowance 64 in every window, independent of any Delta-l value
         f.DELTA_L_S = 0.5
-        d108, d16 = f.delta_tokens(108, 32, 8192), f.delta_tokens(16, 32, 8192)
-        self.assertGreater(d108, d16)
-        grown = f.cell_time_ealpha(108, 16, 32, 8192, "nom", True)
-        self.assertAlmostEqual(grown - base, (d108 - 8) * f.tau_alone(108, 32, 8192, "DN", "budget"), places=6)
+        for D in (16, 44, 108):
+            self.assertEqual((f.delta_tokens(D, 32, 8192), f.delta_exec(D, 32, 8192)), (64, 64))
+        base = f.cell_time_ealpha(108, 16, 32, 8192, "nom", True)
+        f.DELTA_L_S = 5.0
+        self.assertAlmostEqual(f.cell_time_ealpha(108, 16, 32, 8192, "nom", True), base, places=9)
 
 
 class TestRhoTable(_Iso):
     def test_registered_k_passes(self):
         rows = {r["cell"]: r for r in f.rho_table()}
         self.assertTrue(all(r["passes"] for r in rows.values()))
-        self.assertAlmostEqual(rows[(16, 32, 8192)]["rho_ub_worst"], 2.12, delta=0.01)
+        self.assertAlmostEqual(rows[(16, 32, 8192)]["rho_ub_worst"], 3.07, delta=0.01)   # kappa* at theta_rho 5,705
+        self.assertAlmostEqual(rows[(44, 32, 8192)]["rho_ub_worst"], 3.21, delta=0.01)
+        self.assertEqual((round(rows[(16, 32, 8192)]["w_co_min"]), round(rows[(44, 32, 8192)]["w_co_min"])), (245, 256))
 
-    def test_k8_reproduces_d8(self):
-        f.K_CO[16] = 8
-        self.assertAlmostEqual(f.w_co(16, 32, 8192, "PN", "DN"), 139, delta=1)
-        self.assertLess(f.w_co(16, 32, 8192, "PN", "DW"), 128)
+    def test_k_minus_one_fails(self):                           # kills K off-by-one mutants (R01 / R02 re-pinned)
+        f.K_CO.update({16: 32, 44: 14})
+        rows = {r["cell"]: r for r in f.rho_table()}
+        self.assertFalse(rows[(16, 32, 8192)]["passes"]); self.assertFalse(rows[(44, 32, 8192)]["passes"])
+        self.assertAlmostEqual(rows[(16, 32, 8192)]["rho_ub_worst"], 2.973, delta=0.005)
 
-    def test_k16_reproduces_188(self):
-        """DESIGN-COEFFICIENT basis only (R6-6): K=16 was rejected at 1.885 under design coefficients;
-        the post-probe U-9 rule may pick a K below 18 (or below 16) under calibrated coefficients."""
+    def test_rejected_alternatives_recorded(self):
+        """design record (cite-forbidden): the pre-rev14 K (18, 8) gives kappa* 1.67 / 1.71 at theta_rho 5,705;
+        K_16 = 16 gives 1.49; K_16 = 8 gives W_co 110 (PN DN) / 59 (PN DW) < 128."""
+        f.K_CO.update({16: 18, 44: 8})
+        rows = {r["cell"]: r for r in f.rho_table()}
+        self.assertAlmostEqual(rows[(16, 32, 8192)]["rho_ub_worst"], 1.672, delta=0.005)
+        self.assertAlmostEqual(rows[(44, 32, 8192)]["rho_ub_worst"], 1.709, delta=0.005)
+        self.assertFalse(rows[(16, 32, 8192)]["passes"])
         f.K_CO[16] = 16
-        r = {x["cell"]: x for x in f.rho_table()}[(16, 32, 8192)]
-        self.assertAlmostEqual(r["rho_ub_worst"], 1.885, delta=0.005)
-        self.assertFalse(r["passes"])
+        self.assertAlmostEqual({x["cell"]: x for x in f.rho_table()}[(16, 32, 8192)]["rho_ub_worst"], 1.486, delta=0.005)
+        f.K_CO[16] = 8
+        self.assertAlmostEqual(f.w_co(16, 32, 8192, "PN", "DN"), 110, delta=1)
+        self.assertLess(f.w_co(16, 32, 8192, "PN", "DW"), 128)
 
     def test_span_structure(self):
         sc = f.limits_check()["span_checks"]
-        self.assertEqual(sc[16], dict(K=18, n_new_max=2, spans_min=9, spans_max=18, sum_n_new=18))
-        self.assertEqual(sc[44], dict(K=8, n_new_max=2, spans_min=4, spans_max=8, sum_n_new=8))
+        self.assertEqual(sc[16], dict(K=33, n_new_max=2, spans_min=17, spans_max=33, sum_n_new=33))
+        self.assertEqual(sc[44], dict(K=15, n_new_max=2, spans_min=8, spans_max=15, sum_n_new=15))
 
 
 class TestKRule(_Iso):
-    def test_design_coefficients(self):
-        self.assertEqual((f.choose_k(16), f.choose_k(44)), (17, 8))
-        self.assertTrue(f.is_minimal_k(16, 17) and f.is_minimal_k(44, 8))
+    """choose_k is the ONE-TIME derivation of K_CO (rev14); afterwards only a smoke diagnostic."""
+    def test_registered_inputs(self):
+        self.assertEqual((f.choose_k(16), f.choose_k(44)), (33, 15))
+        self.assertTrue(f.is_minimal_k(16, 33) and f.is_minimal_k(44, 15))
+        f.COEF["rho"]["theta"] = 4500.0                         # the old design theta would have given (26, 12)
+        self.assertEqual((f.choose_k(16), f.choose_k(44)), (26, 12))
 
     def test_nonminimal_chooser_caught(self):
         self.assertFalse(f.is_minimal_k(16, f.choose_k(16) + 1))
 
     def test_search_beyond_64(self):
         f.apply_probe(n3_like_probe(kappas=(3.0, 3.0), tau_ratio=2.0))   # R6-2: no artificial cap
-        self.assertEqual(f.choose_k(16), 80)
+        self.assertEqual((f.choose_k(16), f.choose_k(44)), (80, 35))
 
     def test_w_co_condition_load(self):
-        # R6-4 (5): kappa_DN = 2.0 at design theta -> (21, 10); without the W_co condition it would be (17, 8)
+        # R6-4 (5): kappa_DN = 2.0 at design theta 4,500 -> (26, 12) (diagnostic only)
         f.apply_probe(n3_like_probe(theta64=4500.0, kappas=(2.0, 2.0)))
-        self.assertEqual((f.choose_k(16), f.choose_k(44)), (21, 10))
+        self.assertEqual((f.choose_k(16), f.choose_k(44)), (26, 12))
 
 
 class TestProbeMapping(_Iso):
-    def test_n3_like_gives_22_10(self):
+    """smoke diagnostic path (rev14: NOT a judgment input; K_CO never changes)."""
+    def test_n3_like_diagnostic(self):
         f.apply_probe(n3_like_probe())
-        self.assertEqual((f.choose_k(16), f.choose_k(44)), (22, 10))
+        self.assertEqual((f.choose_k(16), f.choose_k(44)), (33, 15))
+        self.assertEqual(f.K_CO, {16: 33, 44: 15})
 
     def test_outlier_span_does_not_move_k(self):
         f.apply_probe(n3_like_probe(outlier=True))                     # D-9: median, not min
-        self.assertEqual((f.choose_k(16), f.choose_k(44)), (22, 10))
+        self.assertEqual((f.choose_k(16), f.choose_k(44)), (33, 15))
 
     def test_reject_too_few_spans_and_missing_p(self):
         p = n3_like_probe(); p["theta_spans"][64] = p["theta_spans"][64][:19]
@@ -228,8 +258,9 @@ class TestProbeMapping(_Iso):
     def test_scalars_maxima_and_overhead_unchanged(self):
         oh = dict(f.BOOT_OVERHEAD_S)
         p = n3_like_probe(); p.update({"l_lag_iters": [10, 41.2], "delta_l_s": [0.01, 0.03], "fix_s": [10, 12, 30]})
-        f.apply_probe(p)
-        self.assertEqual((f.L_LAG, f.DELTA_L_S), (42, 0.03))
+        obs = f.apply_probe(p)
+        self.assertEqual((f.L_LAG, f.DELTA_L_S), (128, 0.0))        # rev14: fixed allowances never assigned
+        self.assertEqual(obs["l_lag_observed_max"], 42)
         self.assertEqual(f.FIX_S, {"nom": 22.48, "worst": 35.5})     # rev13 G-6: probe fix_s never feeds FIX_S
         self.assertEqual(f.BOOT_OVERHEAD_S, oh)
 
@@ -273,15 +304,15 @@ class TestRev8(_Iso):
         ea = f.job_budget(f.boots_ea_job(), True, 0)["worst"]["per_boot"]
         pr = f.job_budget(f.boots_profile_job(), True, 5)["worst"]["per_boot"]
         # rev13 G-6: FIX_S stays at the registered worst 35.5 s (the probe's fix_s no longer replaces it)
-        for k, v in {"ON16": 845.54, "ON44": 789.153, "OFF16": 707.447, "OFF44": 726.432}.items():
+        for k, v in {"ON16": 984.786, "ON44": 882.569, "OFF16": 826.711, "OFF44": 812.746}.items():
             self.assertAlmostEqual(ea[k], v, places=2)
         for k, v in {"ON16": 1367.948, "ON24": 1437.863, "ON44": 1359.451, "OFF16": 1500.868, "OBS44": 357.958}.items():
             self.assertAlmostEqual(pr[k], v, places=2)
 
-    def test_exec_delta_env_budget_delta_budget(self):          # R7-5 / A13
+    def test_exec_delta_fixed(self):                             # rev14: delta is the fixed allowance under any probe
         f.apply_probe(dispersed_probe())
-        self.assertEqual((f.delta_exec(16, 32, 8192), f.delta_exec(108, 32, 8192)), (12, 24))
-        self.assertEqual(f.delta_tokens(108, 32, 8192), 16)
+        self.assertEqual((f.delta_exec(16, 32, 8192), f.delta_exec(108, 32, 8192)), (64, 64))
+        self.assertEqual(f.delta_tokens(108, 32, 8192), 64)
 
     def test_reject_missing_keys(self):                          # R7-6
         for key in f.REQUIRED_PROBE_KEYS:
@@ -326,24 +357,23 @@ class TestRev8(_Iso):
         with self.assertRaises(f.ProbeRejected):
             f.apply_probe(p)
 
-    def test_gate_derived_constants_post_probe(self):           # R7-2: not design-coefficient recompute
-        design_oea = f.o_ealpha(16, 32, 8192)
+    def test_gate_is_a_diagnostic_not_a_k_source(self):          # rev14: K_CO untouched; registered K judged under smoke
         g = f.post_probe_gate(dispersed_probe())
-        self.assertTrue(g["seal_allowed"])
+        self.assertEqual((g["K"], f.K_CO, g["judgment_input"]), ({16: 33, 44: 15}, {16: 33, 44: 15}, False))
+        self.assertEqual(g["K_choose_k_diagnostic"], {16: 39, 44: 19})
+        self.assertFalse(g["seal_allowed"])                      # dispersed kappa 1.5 x theta 1.1 breaks kappa* >= 3
+        self.assertTrue(all("would not meet the kappa* requirement" in r for r in g["reasons"]))
         d = g["derived"]["ealpha"]["16,32,8192"]
-        self.assertEqual(d["K"], g["K"][16])
-        self.assertAlmostEqual(d["O_EA"], f.o_ealpha(16, 32, 8192))
-        self.assertNotAlmostEqual(d["O_EA"], design_oea, places=0)
-        self.assertEqual(g["derived"]["L_LAG"], 40)
+        self.assertEqual(d["K"], 33)
+        self.assertEqual(g["derived"]["L_LAG"], 128)
         self.assertEqual(len(g["derived"]["profile"]), 60)
 
 
 class TestRev9(_Iso):
-    def test_derived_delta_is_exec_env(self):                     # R8-5 C09
+    def test_derived_delta_is_fixed(self):                        # rev14 (was R8-5 C09)
         g = f.post_probe_gate(dispersed_probe())
         e = g["derived"]["ealpha"]["44,8,2048"]
-        self.assertEqual((e["delta_on_A2"], e["delta_off_A2"]), (24, 47))
-        self.assertNotEqual(e["delta_off_A2"], f.delta_tokens(108, 8, 2048))   # budget-direction value is 31
+        self.assertEqual((e["delta_on_A2"], e["delta_off_A2"]), (64, 64))
 
     def test_budget_record_single_source(self):                   # R8-4
         f.FIX_S.update(nom=20.0, worst=31.0)                      # as a later Job-runner measurement would set it
@@ -355,14 +385,14 @@ class TestRev9(_Iso):
                 r = f.job_budget(boots, cancel, probes)
                 self.assertEqual(b[f"{job}_{mode}"]["cap"], r["cap"])
                 self.assertEqual(b[f"{job}_{mode}"]["per_boot_worst"], r["worst"]["per_boot"])
-        self.assertNotEqual(b["EA_b"]["cap"], 13800)                             # differs from the design table
+        self.assertNotEqual(b["EA_b"]["cap"], 16100)                             # differs from the design table
 
 
 class TestSealGate(_Iso):
     def test_gate_ok(self):
         g = f.post_probe_gate(n3_like_probe())
         self.assertTrue(g["seal_allowed"])
-        self.assertEqual(g["K"], {16: 22, 44: 10})
+        self.assertEqual((g["K"], g["K_choose_k_diagnostic"]), ({16: 33, 44: 15}, {16: 33, 44: 15}))
 
     def test_gate_limits_fail_profile(self):
         g = f.post_probe_gate(n3_like_probe(theta64=4500.0, tau_ratio=0.5))     # R6-7: PROFILE longest 16,617
@@ -372,12 +402,14 @@ class TestSealGate(_Iso):
     def test_gate_no_k(self):
         g = f.post_probe_gate(n3_like_probe(theta64=3600.0, tau_ratio=0.5))
         self.assertFalse(g["seal_allowed"])
-        self.assertIsNone(g["K"][44])
+        self.assertIsNone(g["K_choose_k_diagnostic"][44])
+        self.assertEqual(g["K"], {16: 33, 44: 15})
 
     def test_cli_writes_single_k_source(self):
         rc, rec, pi = raw_cli()
         self.assertEqual(rc, 0, rec["reasons"])
-        self.assertEqual(rec["K"], {"16": 22, "44": 10})
+        self.assertEqual(rec["K"], {"16": 33, "44": 15})
+        self.assertFalse(rec["judgment_input"])
         self.assertEqual(rec["probe_sha256"], rec["_probe_sha_expected"])               # R7-4 A10
         self.assertEqual(rec["calculator_sha256"], f._sha256_file(f.__file__))
         self.assertNotEqual(rec["probe_sha256"], rec["calculator_sha256"])
@@ -449,8 +481,8 @@ class TestRev10Cli(_Iso):
 
     def test_l_lag_zero_valid_negative_rejected(self):              # rev10: count from raw data
         p = n3_like_probe(); p["l_lag_iters"] = [0, 0]
-        f.apply_probe(p)
-        self.assertEqual(f.L_LAG, 0)
+        self.assertEqual(f.apply_probe(p)["l_lag_observed_max"], 0)
+        self.assertEqual(f.L_LAG, 128)
         p = n3_like_probe(); p["l_lag_iters"] = [3, -1]
         with self.assertRaises(f.ProbeRejected):
             f.apply_probe(p)
@@ -461,6 +493,26 @@ class TestRev10Cli(_Iso):
         p["kappa_cells"][(16, 32, 8192)]["a_on_ms"] = 10.0
         f.apply_probe(p)
         self.assertAlmostEqual(f.COEF["rho"]["kappa_dn"], 1.8)
+
+
+class TestRev14Registered(_Iso):
+    def test_registered_constants_cli(self):                      # the harness's single source (replaces K_POST_PROBE)
+        with tempfile.TemporaryDirectory() as td:
+            out = os.path.join(td, "N2_REGISTERED.json")
+            self.assertEqual(f.main(["--registered", out]), 0)
+            with open(out) as fh:
+                rec = json.load(fh)
+        self.assertEqual((rec["K"], rec["K_matches_derivation"], rec["L_LAG"], rec["DELTA_FIXED"]),
+                         ({"16": 33, "44": 15}, True, 128, 64))
+        self.assertEqual(rec["K_derivation"]["theta_rho"], 5705.0)
+        self.assertAlmostEqual(rec["kappa_star"]["16,32,8192"]["worst"], 3.07, delta=0.01)
+        self.assertEqual(rec["budget"]["EA_b"]["cap"], 16100)
+        self.assertEqual(rec["budget"]["PROFILE_b"]["cap"], 36700)
+        self.assertTrue(rec["limits"]["ok"])
+
+    def test_gate_never_writes_k(self):                          # a mutant that updates K_CO from the diagnostic must fail
+        f.post_probe_gate(n3_like_probe(theta64=4500.0))         # diagnostic would be (26, 12)
+        self.assertEqual(f.K_CO, {16: 33, 44: 15})
 
 
 class TestBudget(_Iso):
@@ -474,7 +526,8 @@ class TestBudget(_Iso):
     def test_limits(self):
         lim = f.limits_check()
         self.assertTrue(lim["ok"])
-        self.assertEqual(lim["max_len_cell"], ("PROFILE", 108, 32, 8192))
+        self.assertEqual(lim["max_len_cell"], ("EALPHA", 44, 32, 8192))
+        self.assertAlmostEqual(lim["max_len"], 13155.9, delta=0.5)
 
 
 if __name__ == "__main__":
