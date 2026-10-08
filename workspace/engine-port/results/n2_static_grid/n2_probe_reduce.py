@@ -1,4 +1,5 @@
-"""N2(3-a) registered reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev9 (R7-1, R8-1/2/3).
+"""N2(3-a) registered reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev10 (R7-1, R8-1/2/3,
+R9-1/2/5/6).
 
 The U-2 (a) Workspace probe is NOT a measurement and is never cited (N2C-35, N2C-40). This tool is the ONLY
 registered path from raw PHASE_EVENTS telemetry to the aggregates that n2_feasibility.apply_probe accepts.
@@ -13,12 +14,17 @@ theta (prefill throughput) sample composition (R7-1, registered):
   * decode-load condition: kept only if max decode_iteration.bs inside the span <= BIND_BS (32 = binding cells),
     so the probe's co-located decode load is not heavier than the binding E-alpha cells (N2C-43);
   * value = extend_tokens / (span_end_ts - span_start_ts); n >= 20 per p is counted AFTER exclusion (calculator).
+rev10 (R9-1/R9-5): reduce_probe() reads the telemetry and marks FILES itself (raw sha256 from the bytes), enumerates
+load calls and probe cells from the marks, and records every measurement as REDUCED or rejected with its registered
+class (KAPPA_CENSORED / VALUE_DEPENDENT / VALUE_INDEPENDENT); probe_status follows mechanically. Completeness:
+marked cells == reduced + rejected. tau (R9-2) = the A1 window of every kappa measurement.
 tau / kappa (rev9, R8-1): the windows themselves are extracted HERE from raw PHASE_EVENTS + runtime_snapshot + the
 runner's cell marks (extract_cell_windows): alone window W/A1 (§6-1/§6-2: after the last burst span, bs == b,
 not in flight, trim 16, ctx_p50 band [c-64, c+63], 128 iterations, PE-iter >= 0.99), W_co / C (§6-1/§7-2: co spans
 after 'coload_sent' with extend_tokens == n_new*8192; C = W_co with bs == b, in flight, target pair), A2 (after the
 last co span, trim 16, first 128). S-per uses only consecutive iter_seq pairs both inside the window (R8-2).
-kappa element = median S-per(C) / A_on(ctx_mean(C)), A_on = §10-2 linear interpolation of the A1 and A2 medians.
+kappa_i (one measurement) = median S-per(C) / A_on(ctx_mid(C)), A_on = §10-2 linear interpolation of the A1 and A2
+medians (containment guard, R9-6); the cell's kappa = EQUAL-WEIGHT median of kappa_i over its measurements (rev10).
 JSON input is parsed with a duplicate-key rejecting object_pairs_hook.
 """
 from __future__ import annotations
@@ -112,6 +118,23 @@ BAND_LO, BAND_HI = 64, 63            # centered window band [c - 64, c + 63]
 CO_INPUT = 8192
 PAIR = {16: (92, 16), 24: (84, 24), 34: (74, 34), 44: (64, 44), 108: (0, 108)}   # A-agn realized pairs
 ALONE_PE_MIN = 0.99
+PROBE_D = (16, 44)                   # probe cells are sticky-ON binding-type cells only (R9-7)
+
+# R9-1 measurement-level reject classes (registered):
+KAPPA_CENSORED = "KAPPA_CENSORED"        # C < 128: kappa above the probe's own ceiling kappa* -> no seal, NO re-probe
+VALUE_DEPENDENT = "VALUE_DEPENDENT"      # window / A2 / non-co span / PE / A_on containment -> probe rejected, NO re-probe
+VALUE_INDEPENDENT = "VALUE_INDEPENDENT"  # missing / malformed marks, harness defect -> probe rejected, re-probe allowed
+
+
+class MeasurementRejected(ReduceRejected):
+    def __init__(self, klass, msg):
+        super().__init__(msg)
+        self.klass = klass
+
+
+def _ts(e):
+    t = e.get("timestamp_monotonic_s")
+    return e["t_launch"] if t is None else t
 
 
 def _pair(e):
@@ -122,7 +145,7 @@ def s_per_intervals(window_iters):
     """R8-2: S-per = t_launch[i+1] - t_launch[i] ONLY for pairs with consecutive iter_seq that are BOTH in the window
     (the window is the already-filtered set). A window needs >= 128 iterations."""
     if len(window_iters) < WINDOW_ITERS:
-        raise ReduceRejected(f"window has {len(window_iters)} < {WINDOW_ITERS} iterations")
+        raise MeasurementRejected(VALUE_DEPENDENT, f"window has {len(window_iters)} < {WINDOW_ITERS} iterations")
     by_seq = {e["iter_seq"]: e for e in window_iters}
     out = []
     for q, e in sorted(by_seq.items()):
@@ -130,7 +153,7 @@ def s_per_intervals(window_iters):
         if n is not None:
             out.append((n["t_launch"] - e["t_launch"]) * 1000.0)
     if not out:
-        raise ReduceRejected("window has no consecutive iter_seq pair")
+        raise MeasurementRejected(VALUE_DEPENDENT, "window has no consecutive iter_seq pair")
     return out
 
 
@@ -165,17 +188,17 @@ def _alone(iters, b, t_after, t_before, pair):
 
 def _check_alone_pair(win, pair, what):
     if not win:
-        raise ReduceRejected(f"{what}: empty window")
+        raise MeasurementRejected(VALUE_DEPENDENT, f"{what}: empty window")
     frac = sum(1 for e in win if _pair(e) == pair) / len(win)
     if frac < ALONE_PE_MIN:
-        raise ReduceRejected(f"{what}: PE-iter {frac:.3f} < {ALONE_PE_MIN} at {pair} (D_UNREALIZED)")
+        raise MeasurementRejected(VALUE_DEPENDENT, f"{what}: PE-iter {frac:.3f} < {ALONE_PE_MIN} at {pair} (D_UNREALIZED)")
 
 
-def extract_cell_windows(records, marks, cell, kind, d_alone):
-    """records: PHASE_EVENTS + runtime_snapshot of ONE cell (sliced by the runner's cell_start/cell_end marks);
-    marks: dict with 'coload_sent' (E-alpha only, client CLOCK_MONOTONIC); cell = (d, b, c); kind 'TAU' | 'KAPPA';
-    d_alone: D of the alone windows (ON boot: d; for the probe tau/kappa cells this is always d).
-    Returns dict of windows (lists of decode_iteration records) and their iter_seq ranges."""
+def extract_cell_windows(records, marks, cell):
+    """records: PHASE_EVENTS + runtime_snapshot of ONE probe cell (sliced by the reducer from the cell marks);
+    marks: dict with 'coload_sent' (client CLOCK_MONOTONIC); cell = (d, b, c), sticky ON, d in PROBE_D.
+    Returns the windows W(=A1), W_co, C, A2, their realized ctx means (ctx_mid) and iter_seq ranges, and L_lag.
+    Raises MeasurementRejected with the registered class (R9-1)."""
     d, b, c = cell
     iters = [e for e in records if e.get("event") == "decode_iteration"]
     snaps = [e for e in records if e.get("event") == "runtime_snapshot"]
@@ -183,90 +206,72 @@ def extract_cell_windows(records, marks, cell, kind, d_alone):
     ends = {e["span_seq"]: e for e in records if e.get("event") == "prefill_span_end"}
     spans = sorted((starts[k]["timestamp_monotonic_s"], ends[k]["timestamp_monotonic_s"], starts[k])
                    for k in starts if k in ends)
-    t_co = marks.get("coload_sent") if kind == "KAPPA" else None
-    if kind == "KAPPA" and t_co is None:
-        raise ReduceRejected("kappa cell needs a coload_sent mark")
-    burst = [sp for sp in spans if t_co is None or sp[0] < t_co]
-    co = [sp for sp in spans if t_co is not None and sp[0] >= t_co and sp[2]["extend_tokens"] == sp[2]["n_new"] * CO_INPUT]
-    if any(sp for sp in spans if t_co is not None and sp[0] >= t_co and sp not in co):
-        raise ReduceRejected("non-co span after coload_sent (A1 not complete before trigger)")
+    t_co = marks.get("coload_sent")
+    if t_co is None:
+        raise MeasurementRejected(VALUE_INDEPENDENT, "kappa cell needs a coload_sent mark")
+    burst = [sp for sp in spans if sp[0] < t_co]
+    co = [sp for sp in spans if sp[0] >= t_co and sp[2]["extend_tokens"] == sp[2]["n_new"] * CO_INPUT]
+    if any(sp for sp in spans if sp[0] >= t_co and sp not in co):
+        raise MeasurementRejected(VALUE_DEPENDENT, "non-co span after coload_sent (A1 not complete before trigger)")
+    if not co:
+        raise MeasurementRejected(VALUE_DEPENDENT, "no co span")
     t_burst_end = max((sp[1] for sp in burst), default=float("-inf"))
-    t_co0 = min((sp[0] for sp in co), default=float("inf"))
-    t_co1 = max((sp[1] for sp in co), default=float("inf"))
-    pair_alone = PAIR[d_alone]
+    t_co0 = min(sp[0] for sp in co)
+    t_co1 = max(sp[1] for sp in co)
+    pair = PAIR[d]
     ctx = ctx_of(iters, snaps, b)
-    seg = _alone(iters, b, t_burst_end, t_co0, pair_alone)
+    seg = _alone(iters, b, t_burst_end, t_co0, pair)
     w = [e for e in seg if e["iter_seq"] in ctx and c - BAND_LO <= ctx[e["iter_seq"]] <= c + BAND_HI]
     if len(w) != WINDOW_ITERS:
-        raise ReduceRejected(f"centered window has {len(w)} != {WINDOW_ITERS} iterations")
-    _check_alone_pair(w, pair_alone, "W/A1")
-    out = dict(W=w)
-    if kind == "KAPPA":
-        if not co:
-            raise ReduceRejected("no co span")
-        wco = [e for e in iters if t_co0 <= e["t_launch"] <= t_co1]           # W_co: before the bs filter (R5-7)
-        cwin = [e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == PAIR[d]]
-        a2 = _alone(iters, b, t_co1, float("inf"), pair_alone)[:WINDOW_ITERS]
-        if len(a2) < WINDOW_ITERS:
-            raise ReduceRejected("A2 window short")
-        _check_alone_pair(a2, pair_alone, "A2")
-        out.update(C=cwin, A2=a2, W_co=wco)
-        out["ctx"] = {k: ctx.get(e["iter_seq"]) for k, ws in (("A1", w), ("A2", a2), ("C", cwin)) for e in ws[:1]}
-        out["ctx_mean"] = {k: statistics.mean(ctx[e["iter_seq"]] for e in ws if e["iter_seq"] in ctx)
-                           for k, ws in (("A1", w), ("A2", a2), ("C", cwin))}
-    out["ranges"] = {k: (min(e["iter_seq"] for e in v), max(e["iter_seq"] for e in v))
-                     for k, v in out.items() if k in ("W", "A2", "C") and v}
+        raise MeasurementRejected(VALUE_DEPENDENT, f"centered window has {len(w)} != {WINDOW_ITERS} iterations")
+    _check_alone_pair(w, pair, "W/A1")
+    wco = [e for e in iters if t_co0 <= e["t_launch"] <= t_co1]           # W_co: before the bs filter (R5-7)
+    cwin = [e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]
+    if len(cwin) < WINDOW_ITERS:
+        raise MeasurementRejected(KAPPA_CENSORED, f"C has {len(cwin)} < {WINDOW_ITERS} iterations: kappa above the "
+                                                  f"probe ceiling kappa* at the probe K (censored, R9-1)")
+    a2 = _alone(iters, b, t_co1, float("inf"), pair)[:WINDOW_ITERS]
+    if len(a2) < WINDOW_ITERS:
+        raise MeasurementRejected(VALUE_DEPENDENT, "A2 window short")
+    _check_alone_pair(a2, pair, "A2")
+    out = dict(W=w, W_co=wco, C=cwin, A2=a2)
+    out["ctx_mid"] = {k: statistics.mean(ctx[e["iter_seq"]] for e in ws if e["iter_seq"] in ctx)
+                      for k, ws in (("A1", w), ("A2", a2), ("C", cwin))}
+    out["ranges"] = {k: (min(e["iter_seq"] for e in out[k]), max(e["iter_seq"] for e in out[k]))
+                     for k in ("W", "W_co", "C", "A2")}
+    out["l_lag_iters"] = sum(1 for e in iters if t_co <= e["t_launch"] < t_co0)
     return out
 
 
 def a_on_interp(a1_ms, x1, a2_ms, x2, x):
-    """§10-2: A_on(x) = linear interpolation of the A1 and A2 S-per medians at their mean ctx."""
+    """§10-2: A_on(x) = linear interpolation of the A1 and A2 S-per medians at their ctx_mid.
+    R9-6: x must lie in [min(x1, x2), max(x1, x2)] (containment guard, no constant) -- otherwise the measurement
+    is rejected (VALUE_DEPENDENT); by construction (A1 < C < A2 in time, ctx monotone) it lies inside."""
+    if not min(x1, x2) <= x <= max(x1, x2):
+        raise MeasurementRejected(VALUE_DEPENDENT, f"ctx_mid(C) {x} outside [ctx_mid(A1), ctx_mid(A2)] (A_on containment)")
     if x2 == x1:
         return (a1_ms + a2_ms) / 2.0
     return a1_ms + (a2_ms - a1_ms) * (x - x1) / (x2 - x1)
 
 
 def kappa_parts(win):
-    """one kappa measurement: (C intervals, A_on at ctx_mean(C))."""
-    c_iv = s_per_intervals(win["C"])
+    """one kappa measurement: (median S-per(C), A_on at ctx_mid(C)); its kappa_i = c / a_on."""
+    c_med = statistics.median(s_per_intervals(win["C"]))
     a1 = statistics.median(s_per_intervals(win["W"]))
     a2 = statistics.median(s_per_intervals(win["A2"]))
-    m = win["ctx_mean"]
-    return c_iv, a_on_interp(a1, m["A1"], a2, m["A2"], m["C"])
+    m = win["ctx_mid"]
+    return c_med, a_on_interp(a1, m["A1"], a2, m["A2"], m["C"])
 
 
-def build_probe(theta_boots, cell_measurements, l_lag_iters, delta_l_s, fix_s, raw_files=None, reducer_sha256=None):
-    """cell_measurements: [dict(cell=(D,b,c), kind='TAU'|'KAPPA', records=[...], marks={...})] -- RAW per cell.
-    TAU: pooled S-per of all W windows of that cell. KAPPA: c = pooled C intervals of all measurements of the cell,
-    a_on = median over measurements of the interpolated A_on(ctx_mean(C)). Provenance is recorded (R8-3)."""
-    theta, excluded, dropped = reduce_theta(theta_boots)
-    tau_w, kap_c, kap_a, ranges = {}, {}, {}, []
-    for m in cell_measurements:
-        cell, kind = tuple(m["cell"]), m["kind"]
-        win = extract_cell_windows(m["records"], m.get("marks", {}), cell, kind, cell[0])
-        ranges.append(dict(cell=list(cell), kind=kind, **{k: list(v) for k, v in win["ranges"].items()}))
-        if kind == "TAU":
-            tau_w.setdefault(cell, []).append(win["W"])
-        else:
-            c_iv, a_on = kappa_parts(win)
-            kap_c.setdefault(cell, []).extend(c_iv)
-            kap_a.setdefault(cell, []).append(a_on)
-    tau = {cell: {"s_per_median_ms": pooled_median_ms(ws), "window_iters": min(len(w) for w in ws)}
-           for cell, ws in tau_w.items()}
-    kappa = {cell: {"c_median_ms": statistics.median(kap_c[cell]), "a_on_ms": statistics.median(kap_a[cell]),
-                    "window_iters": WINDOW_ITERS, "a_on_window_iters": WINDOW_ITERS} for cell in kap_c}
-    return {"theta_spans": theta, "theta_excluded": excluded, "theta_dropped": dropped,
-            "tau_cells": tau, "kappa_cells": kappa,
-            "l_lag_iters": list(l_lag_iters), "delta_l_s": list(delta_l_s), "fix_s": list(fix_s),
-            "provenance": dict(reducer_sha256=reducer_sha256 or self_sha256(), raw_files=dict(raw_files or {}),
-                               load_calls={bid: [list(w) for w in calls] for bid, _r, calls in theta_boots},
-                               cell_windows=ranges)}
+# ---- R9-1 / R9-5: the reducer reads the files itself, enumerates calls and cells from the marks ------------------
+def sha256_file(path):
+    import hashlib
+    with open(path, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
 
 
 def self_sha256():
-    import hashlib
-    with open(__file__, "rb") as fh:
-        return hashlib.sha256(fh.read()).hexdigest()
+    return sha256_file(__file__)
 
 
 def load_calls_from_marks(marks_lines):
@@ -282,6 +287,91 @@ def load_calls_from_marks(marks_lines):
     if set(starts) != set(ends):
         raise ReduceRejected("unpaired load_call marks")
     return [(starts[k], ends[k]) for k in sorted(starts, key=lambda k: starts[k])]
+
+
+def cells_from_marks(marks_lines):
+    """Cell enumeration from the runner's marks (R9-1): 'cell_start <id> <d> <b> <c> <t>', 'cell_end <id> <t>',
+    'coload_sent <id> <t>', and the client-measured 'delta_l <id> <s>' / 'fix_s <id> <s>'. Every cell_start is a
+    measurement that must end up either reduced or recorded as rejected (completeness)."""
+    cells, defects = {}, []
+    for line in marks_lines:
+        parts = line.split()
+        if not parts:
+            continue
+        tag, rest = parts[0], parts[1:]
+        if tag == "cell_start" and len(rest) == 5:
+            cells.setdefault(rest[0], {}).update(cell=(int(rest[1]), int(rest[2]), int(rest[3])), t0=float(rest[4]))
+        elif tag in ("cell_end", "coload_sent", "delta_l", "fix_s") and len(rest) == 2:
+            key = {"cell_end": "t1"}.get(tag, tag)
+            cells.setdefault(rest[0], {})[key] = float(rest[1])
+        elif tag.startswith("cell") or tag in ("coload_sent", "delta_l", "fix_s"):
+            defects.append(line)
+    return cells, defects
+
+
+def _slice(records, t0, t1):
+    return [e for e in records if t0 <= _ts(e) <= t1]
+
+
+def reduce_probe(boots):
+    """boots: [dict(boot_id=str, telemetry=path, marks=path)] -- the ONLY registered path raw files -> probe.json.
+    Raw-file sha256 are computed here from the file bytes (R9-5); calls and cells are enumerated from the marks;
+    every measurement is reduced or recorded with its reject class (R9-1); probe_status is derived mechanically."""
+    raw_files, theta_boots, measurements, tau_w, kap = {}, [], [], {}, {}
+    l_lag, delta_l, fix_s = [], [], []
+    n_cells = 0
+    for bt in boots:
+        bid = bt["boot_id"]
+        for k in ("telemetry", "marks"):
+            raw_files[bt[k]] = sha256_file(bt[k])
+        records = read_jsonl_strict(bt["telemetry"])
+        with open(bt["marks"]) as fh:
+            mlines = [ln for ln in fh.read().splitlines() if ln.strip()]
+        calls = load_calls_from_marks(mlines)
+        theta_boots.append((bid, records, calls))
+        cells, defects = cells_from_marks(mlines)
+        n_cells += len(cells)
+        for line in defects:
+            measurements.append(dict(boot=bid, cell_id=None, status=VALUE_INDEPENDENT, reason=f"malformed mark: {line}"))
+        for cid in sorted(cells, key=lambda k: cells[k].get("t0", float("inf"))):
+            cm = cells[cid]
+            rec = dict(boot=bid, cell_id=cid, cell=list(cm.get("cell", ())))
+            try:
+                if "cell" not in cm or "t0" not in cm or "t1" not in cm:
+                    raise MeasurementRejected(VALUE_INDEPENDENT, "cell_start/cell_end marks incomplete")
+                cell = cm["cell"]
+                if cell[0] not in PROBE_D:
+                    raise MeasurementRejected(VALUE_INDEPENDENT, f"probe cell d={cell[0]} not in {PROBE_D}")
+                for key in ("delta_l", "fix_s"):
+                    if key not in cm:
+                        raise MeasurementRejected(VALUE_INDEPENDENT, f"{key} mark missing")
+                win = extract_cell_windows(_slice(records, cm["t0"], cm["t1"]),
+                                           {"coload_sent": cm.get("coload_sent")}, cell)
+                c_med, a_on = kappa_parts(win)
+            except MeasurementRejected as e:
+                measurements.append(dict(rec, status=e.klass, reason=str(e)))
+                continue
+            tau_w.setdefault(cell, []).append(win["W"])                           # R9-2: tau from the kappa A1 window
+            kap.setdefault(cell, []).append(c_med / a_on)
+            l_lag.append(win["l_lag_iters"]); delta_l.append(cm["delta_l"]); fix_s.append(cm["fix_s"])
+            measurements.append(dict(rec, status="REDUCED", kappa=c_med / a_on, c_median_ms=c_med, a_on_ms=a_on,
+                                     ctx_mid=win["ctx_mid"], ranges={k: list(v) for k, v in win["ranges"].items()},
+                                     l_lag_iters=win["l_lag_iters"]))
+    n_marked = sum(1 for m in measurements if m["cell_id"] is not None)
+    if n_marked != n_cells:                                                     # completeness invariant (R9-1)
+        raise ReduceRejected(f"completeness: {n_cells} marked cells but {n_marked} reduced + rejected")
+    theta, excluded, dropped = reduce_theta(theta_boots)
+    tau = {cell: {"s_per_median_ms": pooled_median_ms(ws), "window_iters": min(len(w) for w in ws)}
+           for cell, ws in tau_w.items()}
+    kappa = {cell: {"kappa_median": statistics.median(ks), "n_measurements": len(ks),
+                    "window_iters": WINDOW_ITERS, "a_on_window_iters": WINDOW_ITERS} for cell, ks in kap.items()}
+    statuses = {m["status"] for m in measurements}
+    status = next((s for s in (KAPPA_CENSORED, VALUE_DEPENDENT, VALUE_INDEPENDENT) if s in statuses), "OK")
+    return {"theta_spans": theta, "theta_excluded": excluded, "theta_dropped": dropped,
+            "tau_cells": tau, "kappa_cells": kappa, "l_lag_iters": l_lag, "delta_l_s": delta_l, "fix_s": fix_s,
+            "probe_status": status, "measurements": measurements,
+            "provenance": dict(reducer_sha256=self_sha256(), raw_files=raw_files,
+                               load_calls={bid: [list(w) for w in calls] for bid, _r, calls in theta_boots})}
 
 
 def to_json(probe):

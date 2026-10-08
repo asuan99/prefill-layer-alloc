@@ -1,7 +1,10 @@
-"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev9 (R8-5; N2C-47 issue: every registered mutant
+"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev10 (R8-5, R9-3, R9-8; N2C-47 issue: every registered mutant
 must be re-runnable by an auditor).
 
 Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_mutants.py [N3_RAW_DIR]
+Requirements (R9-8): run SEQUENTIALLY and alone -- each mutant runs the full suite in a subprocess, and the N3 positive
+control loads ~2.0 GB of JSONL (36 files) into one process; concurrent heavy processes caused swap and 900 s timeouts
+in the rev9 audit. A timeout is recorded as a TIMEOUT row (never counted as a kill) and the run continues.
 Each mutant is applied to a fresh copy of n2_feasibility.py / n2_probe_reduce.py in its own temp directory together
 with both test files; the full suite runs with bytecode disabled (no .pyc is checked); a no-mutation control runs
 first. Output: one line per mutant, KILLED / SURVIVED / EQUIVALENT-SURVIVED (expected) / UNEXPECTED, with FAIL counts.
@@ -45,7 +48,7 @@ MUTANTS = [
     ("A02", "budget kappa -> min", "kill", [(FE, 'new["rho"]["kappa_dn"] = new["budget"]["kappa_dn"] = max(ks)\n    new["env"]["kappa_dn"] = min(ks)', 'new["rho"]["kappa_dn"] = max(ks)\n    new["budget"]["kappa_dn"] = min(ks)\n    new["env"]["kappa_dn"] = min(ks)')]),
     ("A04", "E-alpha cost co_prefill rho", "kill", [(FE, '    tco = co_prefill_time(d, pc, "budget")', '    tco = co_prefill_time(d, pc, "rho")')]),
     ("A05", "PROFILE cost theta rho", "kill", [(FE, '    tpre = math.ceil(b / k) * min(b, k) * cin / theta(PREFILL_SMS[D], pc, "budget")\n    s = burst_spread(D, b, cin, pc, dc, "budget")\n    start = cin + 1 + s / 2\n    steps = (c + 63', '    tpre = math.ceil(b / k) * min(b, k) * cin / theta(PREFILL_SMS[D], pc, "rho")\n    s = burst_spread(D, b, cin, pc, dc, "budget")\n    start = cin + 1 + s / 2\n    steps = (c + 63')]),
-    ("A06", "drop tau binding-cell check", "kill", [(FE, '    for cell in BINDING_EA_CELLS:\n        if cell not in tc:\n            raise ProbeRejected(f"tau cells must include binding cell {cell}")\n', "")]),
+    ("A06", "drop tau binding-cell check", "kill", [(FE, '    for cell in BINDING_EA_CELLS:\n        if cell not in tc:\n            raise ProbeRejected(f"tau cells must include binding cell {cell}", value_independent=True)\n', "")]),
     ("A07", "drop A_on window check", "kill", [(FE, ' \\\n                or int(v.get("a_on_window_iters", 0)) < WINDOW_ITERS:', ":")]),
     ("A08", "required p (92,) only", "kill", [(FE, "THETA_REQUIRED_P = (64, 92)", "THETA_REQUIRED_P = (92,)")]),
     ("A10", "probe sha from calculator file", "kill", [(FE, 'rec["probe_sha256"] = _sha256_file(probe_path)', 'rec["probe_sha256"] = _sha256_file(__file__)')]),
@@ -74,11 +77,35 @@ MUTANTS = [
     ("B06", "S-per over sorted neighbours (not iter_seq)", "kill", [(RD, "        n = by_seq.get(q + 1)", "        n = by_seq.get(min((k for k in by_seq if k > q), default=None))")]),
     ("B16", "window 127 accepted", "kill", [(RD, "    if len(window_iters) < WINDOW_ITERS:", "    if len(window_iters) < WINDOW_ITERS - 1:")]),
     ("B18", "kappa A_on from the C window", "kill", [(RD, '    a1 = statistics.median(s_per_intervals(win["W"]))\n    a2 = statistics.median(s_per_intervals(win["A2"]))', '    a1 = statistics.median(s_per_intervals(win["C"]))\n    a2 = statistics.median(s_per_intervals(win["C"]))')]),
-    ("B19", "kappa C from the A_on window", "kill", [(RD, '    c_iv = s_per_intervals(win["C"])', '    c_iv = s_per_intervals(win["W"])')]),
+    ("B19", "kappa C from the A_on window", "kill", [(RD, '    c_med = statistics.median(s_per_intervals(win["C"]))', '    c_med = statistics.median(s_per_intervals(win["W"]))')]),
     ("B21", "to_json key format", "kill", [(RD, "        return json.dumps(list(k)) if isinstance(k, tuple) else str(k)", "        return str(k)")]),
-    ("C14", "C window contamination (bs filter only)", "kill", [(RD, '        cwin = [e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == PAIR[d]]', '        cwin = [e for e in wco if e["bs"] == b]')]),
+    ("C14", "C window contamination (bs filter only)", "kill", [(RD, '    cwin = [e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]', '    cwin = [e for e in wco if e["bs"] == b]')]),
     ("M03", "contaminated snapshots not excluded", "kill", [(RD, '                   if s_.get("active_decode_sequences") == b)', "                   if True)")]),
-    ("M04", "A_on pooled instead of interpolated", "kill", [(RD, '    return c_iv, a_on_interp(a1, m["A1"], a2, m["A2"], m["C"])', '    return c_iv, statistics.median(s_per_intervals(win["W"]) + s_per_intervals(win["A2"]))')]),
+    ("M04", "A_on pooled instead of interpolated", "kill", [(RD, '    return c_med, a_on_interp(a1, m["A1"], a2, m["A2"], m["C"])', '    return c_med, statistics.median(s_per_intervals(win["W"]) + s_per_intervals(win["A2"]))')]),
+    # ---- rev10 (R9-3): audit rev9 X mutants adapted to the rev10 code, and new rev10 rules (M05-M12) ----
+    ("X01", "kappa length-weighted over measurements (pooled-C analogue)", "kill", [(RD, "            kap.setdefault(cell, []).append(c_med / a_on)", "            kap.setdefault(cell, []).extend([c_med / a_on] * len(win[\"C\"]))")]),
+    ("X02", "kappa cell = mean of kappa_i", "kill", [(RD, '{"kappa_median": statistics.median(ks),', '{"kappa_median": statistics.mean(ks),')]),
+    ("X04", "reduce_probe silently drops failing measurements", "kill", [(RD, "            except MeasurementRejected as e:\n                measurements.append(dict(rec, status=e.klass, reason=str(e)))\n", "            except MeasurementRejected as e:\n")]),
+    ("X05", "C filter drops prefill_in_flight only (pair kept)", "kill", [(RD, 'e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]', 'e["bs"] == b and _pair(e) == pair]')]),
+    ("X07", "TRIM = 0", "kill", [(RD, "TRIM = 16", "TRIM = 0")]),
+    ("X08", "A2 = last 128 instead of first", "kill", [(RD, '_alone(iters, b, t_co1, float("inf"), pair)[:WINDOW_ITERS]', '_alone(iters, b, t_co1, float("inf"), pair)[-WINDOW_ITERS:]')]),
+    ("X09", "co span: drop extend_tokens == n_new*8192 check", "kill", [(RD, 'sp[0] >= t_co and sp[2]["extend_tokens"] == sp[2]["n_new"] * CO_INPUT]', 'sp[0] >= t_co]')]),
+    ("X12", "A_on containment guard removed", "kill", [(RD, "    if not min(x1, x2) <= x <= max(x1, x2):\n", "    if False:\n")]),
+    ("X13", "raw file sha replaced by a constant", "kill", [(RD, "            raw_files[bt[k]] = sha256_file(bt[k])", "            raw_files[bt[k]] = \"0\" * 64")]),
+    ("X14", "alone windows drop the not-in-flight filter", "kill", [(RD, 'e["bs"] == b and not e["prefill_in_flight"]]', 'e["bs"] == b]')]),
+    ("X15", "theta: load-call exclusion skips the first candidate", "kill", [(RD, "        inside = [s for s in spans if a <= s[0] <= b]", "        inside = [s for s in spans if a <= s[0] <= b][1:]")]),
+    ("M06", "probe status priority: value-dependent before censored", "kill", [(RD, "(KAPPA_CENSORED, VALUE_DEPENDENT, VALUE_INDEPENDENT)", "(VALUE_DEPENDENT, KAPPA_CENSORED, VALUE_INDEPENDENT)")]),
+    ("M07", "CLI allows re-probe after a value-dependent reject", "kill", [(FE, 'reprobe_allowed=(status == "VALUE_INDEPENDENT"))', 'reprobe_allowed=(status in ("VALUE_INDEPENDENT", "VALUE_DEPENDENT")))')]),
+    ("M08", "CLI freeze-manifest check removed", "kill", [(FE, '        if frozen.get("n2_feasibility.py") != rec["calculator_sha256"] or frozen.get("n2_probe_reduce.py") != local_red:', "        if False:")]),
+    ("M09", "tau not taken from the kappa A1 window (R9-2)", "kill", [(RD, "            tau_w.setdefault(cell, []).append(win[\"W\"])", "            pass")]),
+    ("M10", "C < 128 classified VALUE_DEPENDENT instead of KAPPA_CENSORED", "kill", [(RD, "raise MeasurementRejected(KAPPA_CENSORED, f\"C has", "raise MeasurementRejected(VALUE_DEPENDENT, f\"C has")]),
+    ("M11", "n < 20 not value-independent", "kill", [(FE, '(counted after exclusion)",\n                                value_independent=True)', '(counted after exclusion)",\n                                value_independent=False)')]),
+    ("M12", "negative L_lag accepted", "kill", [(FE, "    if min(lags) < 0:", "    if False:")]),
+    ("X06", "C filter drops the pair condition", "equivalent", [(RD, 'e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]', 'e["bs"] == b and e["prefill_in_flight"]]')]),
+    ("X10", "alone PE threshold 0.5", "equivalent", [(RD, "ALONE_PE_MIN = 0.99", "ALONE_PE_MIN = 0.5")]),
+    ("X11", "centered window accepts >= 128", "equivalent", [(RD, "    if len(w) != WINDOW_ITERS:", "    if len(w) < WINDOW_ITERS:")]),
+    ("X16", "ctx: earliest valid snapshot instead of latest", "equivalent", [(RD, "        while k + 1 < len(snaps) and snaps[k + 1][0] <= e[\"iter_seq\"]:\n            k += 1", "        while k < 0 and k + 1 < len(snaps) and snaps[k + 1][0] <= e[\"iter_seq\"]:\n            k += 1")]),
+    ("M05", "completeness invariant removed", "equivalent", [(RD, "    if n_marked != n_cells:", "    if False:")]),
     ("B09", "extend_tokens >= 16384", "equivalent", [(RD, 'starts[k].get("extend_tokens") == SPAN_TOKENS', 'starts[k].get("extend_tokens", 0) >= SPAN_TOKENS')]),
     ("B11", "N3 positive control ignores bench window", "equivalent", [(RD, '[(float(marks["bench_start"]), float(marks["bench_end"]))]', "[]")]),
 ]
@@ -104,8 +131,13 @@ def run(n3_dir=None):
                 for fn, c in {**files, **tests}.items():
                     with open(os.path.join(d, fn), "w") as fh:
                         fh.write(c)
-                r = subprocess.run([sys.executable, "-m", "unittest", *[t[:-3] for t in TESTS]], cwd=d, env=env,
-                                   capture_output=True, text=True, timeout=900)
+                try:
+                    r = subprocess.run([sys.executable, "-m", "unittest", *[t[:-3] for t in TESTS]], cwd=d, env=env,
+                                       capture_output=True, text=True, timeout=900)
+                except subprocess.TimeoutExpired:                 # R9-8: a timeout is a row, never a kill
+                    rows.append((mid, desc, "TIMEOUT", "900 s"))
+                    print(f"{mid:5s} {desc:45s} {'TIMEOUT':20s} 900 s", flush=True)
+                    continue
                 pyc = any(x.endswith(".pyc") for _, _, fs in os.walk(d) for x in fs)
                 tail = [ln for ln in r.stderr.strip().split("\n") if ln.startswith(("OK", "FAILED"))]
                 tail = tail[-1] if tail else r.stderr[-200:]

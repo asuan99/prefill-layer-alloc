@@ -1,6 +1,6 @@
 """N2(3-a) design-time feasibility & budget calculator (CPU only, no GPU).
 
-Status: DESIGN CALCULATOR for PREREG_N2_3A rev9 (unsealed). Every number it prints is a design
+Status: DESIGN CALCULATOR for PREREG_N2_3A rev10 (unsealed). Every number it prints is a design
 forecast from the coefficients below -- NOT a measurement and NOT citable (N2C-12, N2C-18).
 
 Coefficient DIRECTIONS (rev7, R6-5). One probe yields three coefficient sets, each conservative for
@@ -284,7 +284,11 @@ def limits_check():
 
 # ---- D-9 / R5-3 / R6-3: probe -> coefficient mapping ------------------------------------------------
 class ProbeRejected(ValueError):
-    pass
+    """value_independent=True only for reasons that do not depend on measured values (R9-1): missing keys,
+    missing binding cells / required p, theta n < 20. Only those allow a re-probe (R7-3 as amended by R9-1)."""
+    def __init__(self, msg, value_independent=False):
+        super().__init__(msg)
+        self.value_independent = value_independent
 
 
 def _scalar(x, what, positive=True):
@@ -322,27 +326,30 @@ def apply_probe(probe):
                    per-cell ratio r = s_per_median / model tau_alone(DN, design);
                    cross-cell within D: rho/budget = MAX_r, env = MIN_r; D24/D34/108 get MAX(s16, s44) (rho/budget)
                    or MIN(s16, s44) (env)
-      kappa_cells: {(d, b, c): {"c_median_ms": scalar, "a_on_ms": scalar, "window_iters": int}}  (rho_on form)
-                   kappa_cell = c_median / a_on ; cross-cell: rho/budget = MAX, env = MIN ; kappa_DW = kappa_DN*1.6/1.3
+      kappa_cells: {(d, b, c): {"kappa_median": scalar, "window_iters": int, "a_on_window_iters": int}}
+                   kappa_median = EQUAL-WEIGHT median over the cell's measurements of kappa_i = median S-per(C_i) /
+                   A_on_i(ctx_mid(C_i)) (rev10, rho_on form); cross-cell: rho/budget = MAX, env = MIN ;
+                   kappa_DW = kappa_DN*1.6/1.3
       l_lag_iters: [scalars] -> MAX ; delta_l_s: [scalars] -> MAX ; fix_s: [scalars] -> nom MEDIAN, worst MAX
     Required: tau_cells and kappa_cells each include BINDING_EA_CELLS. s_hat / N_co,max are never given -- they are
     recomputed from the env set. Boot overhead is never changed."""
     global L_LAG, DELTA_L_S
     for key in REQUIRED_PROBE_KEYS:                                   # R7-6: no silent design fallback
         if key not in probe:
-            raise ProbeRejected(f"probe key missing: {key}")
+            raise ProbeRejected(f"probe key missing: {key}", value_independent=True)
     new = copy.deepcopy(COEF)
     # theta
     spans = probe["theta_spans"]
     for p in THETA_REQUIRED_P:
         if p not in spans:
-            raise ProbeRejected(f"theta spans missing for p={p}")
+            raise ProbeRejected(f"theta spans missing for p={p}", value_independent=True)
     med = {}
     for p, lst in spans.items():
         if p not in THETA_ALLOWED_P:
             raise ProbeRejected(f"theta: p={p} not a registered prefill split")
         if not isinstance(lst, (list, tuple)) or len(lst) < THETA_MIN_SPANS:
-            raise ProbeRejected(f"theta: need >= {THETA_MIN_SPANS} realized-split spans at p={p} (counted after exclusion)")
+            raise ProbeRejected(f"theta: need >= {THETA_MIN_SPANS} realized-split spans at p={p} (counted after exclusion)",
+                                value_independent=True)
         med[p] = statistics.median(_scalar(v, "theta") for v in lst) * 64.0 / p
     new["rho"]["theta"] = max(med.values())
     new["env"]["theta"] = new["budget"]["theta"] = min(med.values())
@@ -350,7 +357,7 @@ def apply_probe(probe):
     tc = probe["tau_cells"]
     for cell in BINDING_EA_CELLS:
         if cell not in tc:
-            raise ProbeRejected(f"tau cells must include binding cell {cell}")
+            raise ProbeRejected(f"tau cells must include binding cell {cell}", value_independent=True)
     ratios = {16: [], 44: []}
     for cell, v in tc.items():
         D, b, c = _check_cell(cell, "tau", (16, 44))
@@ -374,14 +381,14 @@ def apply_probe(probe):
     kc = probe["kappa_cells"]
     for cell in BINDING_EA_CELLS:
         if cell not in kc:
-            raise ProbeRejected(f"kappa cells must include binding cell {cell}")
+            raise ProbeRejected(f"kappa cells must include binding cell {cell}", value_independent=True)
     ks = []
     for cell, v in kc.items():
         _check_cell(cell, "kappa", (16, 44))
         if not isinstance(v, dict) or int(v.get("window_iters", 0)) < WINDOW_ITERS \
                 or int(v.get("a_on_window_iters", 0)) < WINDOW_ITERS:
-            raise ProbeRejected("kappa cell needs c_median_ms / a_on_ms / window_iters >= 128 / a_on_window_iters >= 128")
-        ks.append(_scalar(v["c_median_ms"], "kappa") / _scalar(v["a_on_ms"], "kappa"))
+            raise ProbeRejected("kappa cell needs kappa_median / window_iters >= 128 / a_on_window_iters >= 128")
+        ks.append(_scalar(v.get("kappa_median"), "kappa"))
     new["rho"]["kappa_dn"] = new["budget"]["kappa_dn"] = max(ks)
     new["env"]["kappa_dn"] = min(ks)
     def _nonempty(key):
@@ -389,7 +396,10 @@ def apply_probe(probe):
         if not isinstance(lst, (list, tuple)) or not lst:
             raise ProbeRejected(f"{key} must be a non-empty list")
         return lst
-    l_lag = int(math.ceil(max(_scalar(x, "l_lag") for x in _nonempty("l_lag_iters"))))
+    lags = [_scalar(x, "l_lag", positive=False) for x in _nonempty("l_lag_iters")]
+    if min(lags) < 0:                       # rev10: L_lag is an iteration COUNT from raw data; 0 is a valid observation
+        raise ProbeRejected("l_lag < 0")
+    l_lag = int(math.ceil(max(lags)))
     # delta-l is a SIGNED difference l_d - l_co: finite required; <= 0 means no disadvantage (clipped to 0 by delta)
     dl = max(_scalar(x, "delta_l", positive=False) for x in _nonempty("delta_l_s"))
     xs = [_scalar(x, "fix") for x in _nonempty("fix_s")]
@@ -533,14 +543,25 @@ def main(argv=None):
     if argv[:1] == ["--probe"]:
         # post-probe CLI: python3 n2_feasibility.py --probe probe.json --out K_POST_PROBE.json
         probe_path, out_path = argv[1], argv[3]
+        freeze_path = argv[5] if argv[4:5] == ["--freeze"] else None
         with open(probe_path) as fh:
             raw = json.load(fh, object_pairs_hook=_no_duplicate_keys)
         probe = {k: ({tuple(json.loads(kk)) if kk.startswith("[") else int(kk): vv for kk, vv in v.items()}
                      if isinstance(v, dict) else v) for k, v in raw.items() if k in REQUIRED_PROBE_KEYS}
-        try:
-            rec = post_probe_gate(probe)
-        except ProbeRejected as e:
-            rec = dict(K=None, seal_allowed=False, reasons=[f"ProbeRejected: {e}"])
+        status = raw.get("probe_status")
+        if status != "OK":
+            # R9-1: KAPPA_CENSORED / VALUE_DEPENDENT -> no seal and NO re-probe (user decision); VALUE_INDEPENDENT ->
+            # re-probe allowed. The gate is not run on a non-OK probe (no K is produced from it).
+            rec = dict(K=None, seal_allowed=False, reasons=[f"probe_status {status}"],
+                       reprobe_allowed=(status == "VALUE_INDEPENDENT"))
+        else:
+            try:
+                rec = post_probe_gate(probe)
+                rec["reprobe_allowed"] = False
+            except ProbeRejected as e:
+                rec = dict(K=None, seal_allowed=False, reasons=[f"ProbeRejected: {e}"],
+                           reprobe_allowed=e.value_independent)
+        rec["probe_status"] = status
         # R8-3: reducer provenance -- probe.json must carry the sha256 of the registered reducer next to this file
         prov = raw.get("provenance") if isinstance(raw.get("provenance"), dict) else {}
         red_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "n2_probe_reduce.py")
@@ -553,6 +574,15 @@ def main(argv=None):
             rec["reasons"] = list(rec.get("reasons", [])) + ["reducer sha256 missing or differs from registered reducer"]
         rec["probe_sha256"] = _sha256_file(probe_path)
         rec["calculator_sha256"] = _sha256_file(__file__)
+        # R9-4: the tools must be the ones frozen by the pre-probe commit; any post-probe change -> no seal, report
+        frozen = {}
+        if freeze_path is not None:
+            with open(freeze_path) as fh:
+                frozen = json.load(fh, object_pairs_hook=_no_duplicate_keys)
+        rec["freeze"] = frozen
+        if frozen.get("n2_feasibility.py") != rec["calculator_sha256"] or frozen.get("n2_probe_reduce.py") != local_red:
+            rec["seal_allowed"] = False
+            rec["reasons"] = list(rec["reasons"]) + ["calculator/reducer sha256 missing from or differs from the pre-probe freeze manifest"]
         with open(out_path, "w") as fh:
             json.dump(rec, fh, indent=1, sort_keys=True, default=str)
         print(json.dumps({"K": rec["K"], "seal_allowed": rec["seal_allowed"], "reasons": rec["reasons"]}))

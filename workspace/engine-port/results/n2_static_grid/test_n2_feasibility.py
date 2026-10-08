@@ -38,12 +38,32 @@ def n3_like_probe(theta64=5693.0, kappas=(1.3, 1.3), tau_ratio=1.0, outlier=Fals
     tc = {cell: {"s_per_median_ms": _model_ms(*cell) * tau_ratio, "window_iters": 128} for cell in f.BINDING_EA_CELLS}
     if tau_extra:
         tc.update(tau_extra)
-    kc = {cell: {"c_median_ms": k * 10.0, "a_on_ms": 10.0, "window_iters": 128, "a_on_window_iters": 128}
+    kc = {cell: {"kappa_median": k, "window_iters": 128, "a_on_window_iters": 128}
           for cell, k in zip(f.BINDING_EA_CELLS, kappas)}
     if extra_kappa:
         kc.update(extra_kappa)
     return {"theta_spans": {64: sp64, 92: sp92}, "tau_cells": tc, "kappa_cells": kc,
             "l_lag_iters": [32], "delta_l_s": [0.0], "fix_s": [22.48]}
+
+
+def cli_inputs(td, p, status="OK", freeze=True, reducer_sha=None):
+    """Write probe.json (+ provenance, probe_status) and a pre-probe freeze manifest; return CLI argv (R9-1, R9-4)."""
+    raw = {k: ({json.dumps(list(kk)) if isinstance(kk, tuple) else str(kk): vv for kk, vv in v.items()}
+               if isinstance(v, dict) else v) for k, v in p.items()}
+    raw["provenance"] = {"reducer_sha256": reducer_sha or red.self_sha256(), "raw_files": {}}
+    raw["probe_status"] = status
+    pi, po, fz = (os.path.join(td, n) for n in ("probe.json", "K_POST_PROBE.json", "FREEZE.json"))
+    with open(pi, "w") as fh:
+        json.dump(raw, fh)
+    argv = ["--probe", pi, "--out", po]
+    if freeze is not None:
+        man = {"n2_feasibility.py": f._sha256_file(f.__file__), "n2_probe_reduce.py": red.self_sha256()}
+        if freeze is not True:
+            man.update(freeze)
+        with open(fz, "w") as fh:
+            json.dump(man, fh)
+        argv += ["--freeze", fz]
+    return argv, pi, po
 
 
 def dispersed_probe():
@@ -53,8 +73,8 @@ def dispersed_probe():
     tc = {(16, 32, 8192): {"s_per_median_ms": _model_ms(16, 32, 8192) * 1.1, "window_iters": 128},
           (44, 32, 8192): {"s_per_median_ms": _model_ms(44, 32, 8192) * 1.2, "window_iters": 128},
           (16, 8, 2048): {"s_per_median_ms": _model_ms(16, 8, 2048) * 0.8, "window_iters": 128}}
-    kc = {cell: {"c_median_ms": c, "a_on_ms": 10.0, "window_iters": 128, "a_on_window_iters": 128}
-          for cell, c in (((16, 32, 8192), 13.0), ((44, 32, 8192), 15.0), ((16, 8, 2048), 11.0))}
+    kc = {cell: {"kappa_median": k, "window_iters": 128, "a_on_window_iters": 128}
+          for cell, k in (((16, 32, 8192), 1.3), ((44, 32, 8192), 1.5), ((16, 8, 2048), 1.1))}
     return {"theta_spans": {64: sp64, 92: sp92}, "tau_cells": tc, "kappa_cells": kc,
             "l_lag_iters": [30, 40], "delta_l_s": [0.5, 0.2], "fix_s": [20, 22, 30]}
 
@@ -174,7 +194,7 @@ class TestProbeMapping(_Iso):
         p = n3_like_probe(); p["tau_cells"][(16, 32, 8192)]["s_per_median_ms"] = [50.0, 51.0, 900.0]
         with self.assertRaises(f.ProbeRejected):
             f.apply_probe(p)
-        p = n3_like_probe(); p["kappa_cells"][(44, 32, 8192)]["c_median_ms"] = [18.8, 1366.8]
+        p = n3_like_probe(); p["kappa_cells"][(44, 32, 8192)]["kappa_median"] = [1.88, 136.68]
         with self.assertRaises(f.ProbeRejected):
             f.apply_probe(p)
 
@@ -202,7 +222,7 @@ class TestProbeMapping(_Iso):
         self.assertAlmostEqual(f.COEF["env"]["d_factor"][108], 0.75 * 0.9)     # min(s16, s44)
 
     def test_kappa_direction_three_cells(self):
-        extra = {(16, 8, 2048): {"c_median_ms": 15.0, "a_on_ms": 10.0, "window_iters": 128, "a_on_window_iters": 128}}
+        extra = {(16, 8, 2048): {"kappa_median": 1.5, "window_iters": 128, "a_on_window_iters": 128}}
         f.apply_probe(n3_like_probe(kappas=(1.2, 1.3), extra_kappa=extra))     # elements 1.2, 1.3, 1.5
         self.assertAlmostEqual(f.COEF["rho"]["kappa_dn"], 1.5)                   # max (R6-4 (6))
         self.assertAlmostEqual(f.COEF["env"]["kappa_dn"], 1.2)
@@ -219,7 +239,7 @@ class TestProbeMapping(_Iso):
 class TestDirections(_Iso):
     def _probe_with_spread(self):
         extra = {(16, 8, 2048): {"s_per_median_ms": _model_ms(16, 8, 2048) * 0.8, "window_iters": 128}}
-        extra_k = {(16, 8, 2048): {"c_median_ms": 11.0, "a_on_ms": 10.0, "window_iters": 128, "a_on_window_iters": 128}}
+        extra_k = {(16, 8, 2048): {"kappa_median": 1.1, "window_iters": 128, "a_on_window_iters": 128}}
         sp = n3_like_probe(tau_ratio=1.1, tau_extra=extra, extra_kappa=extra_k)
         sp["theta_spans"][92] = [x * 1.1 for x in sp["theta_spans"][92]]   # p=92 faster -> theta rho/env differ
         return sp
@@ -278,11 +298,11 @@ class TestRev8(_Iso):
             elif mut == "zero_tau":
                 p["tau_cells"][(16, 32, 8192)]["s_per_median_ms"] = 0.0
             elif mut == "nan_kappa":
-                p["kappa_cells"][(44, 32, 8192)]["c_median_ms"] = float("nan")
+                p["kappa_cells"][(44, 32, 8192)]["kappa_median"] = float("nan")
             elif mut == "p7":
                 p["theta_spans"][7] = [100.0] * 25
             elif mut == "kappa_d108":
-                p["kappa_cells"][(108, 32, 8192)] = {"c_median_ms": 13.0, "a_on_ms": 10.0, "window_iters": 128,
+                p["kappa_cells"][(108, 32, 8192)] = {"kappa_median": 1.3, "window_iters": 128,
                                                      "a_on_window_iters": 128}
             elif mut == "tau_b_off_grid":
                 p["tau_cells"][(16, 30, 8192)] = {"s_per_median_ms": 50.0, "window_iters": 128}
@@ -357,35 +377,24 @@ class TestSealGate(_Iso):
         self.assertIsNone(g["K"][44])
 
     def test_cli_writes_single_k_source(self):
-        p = n3_like_probe()
-        raw = {k: ({json.dumps(list(kk)) if isinstance(kk, tuple) else str(kk): vv for kk, vv in v.items()}
-                   if isinstance(v, dict) else v) for k, v in p.items()}
-        raw["provenance"] = {"reducer_sha256": red.self_sha256(), "raw_files": {}}
         with tempfile.TemporaryDirectory() as td:
-            pi, po = os.path.join(td, "probe.json"), os.path.join(td, "K_POST_PROBE.json")
-            with open(pi, "w") as fh:
-                json.dump(raw, fh)
-            rc = f.main(["--probe", pi, "--out", po])
+            argv, pi, po = cli_inputs(td, n3_like_probe())
+            rc = f.main(argv)
             with open(po) as fh:
                 rec = json.load(fh)
             psha = f._sha256_file(pi)
-        self.assertEqual(rc, 0)
+        self.assertEqual(rc, 0, rec["reasons"])
         self.assertEqual(rec["K"], {"16": 22, "44": 10})
         self.assertEqual(rec["probe_sha256"], psha)                                   # R7-4 A10
         self.assertEqual(rec["calculator_sha256"], f._sha256_file(f.__file__))
         self.assertNotEqual(rec["probe_sha256"], rec["calculator_sha256"])
         self.assertIn("derived", rec)
+        self.assertFalse(rec["reprobe_allowed"])
 
     def test_cli_rc2_when_not_sealable(self):                                         # R7-4 A11
-        p = n3_like_probe(theta64=4500.0, tau_ratio=0.5)
-        raw = {k: ({json.dumps(list(kk)) if isinstance(kk, tuple) else str(kk): vv for kk, vv in v.items()}
-                   if isinstance(v, dict) else v) for k, v in p.items()}
-        raw["provenance"] = {"reducer_sha256": red.self_sha256(), "raw_files": {}}
         with tempfile.TemporaryDirectory() as td:
-            pi, po = os.path.join(td, "probe.json"), os.path.join(td, "out.json")
-            with open(pi, "w") as fh:
-                json.dump(raw, fh)
-            self.assertEqual(f.main(["--probe", pi, "--out", po]), 2)
+            argv, pi, po = cli_inputs(td, n3_like_probe(theta64=4500.0, tau_ratio=0.5))
+            self.assertEqual(f.main(argv), 2)
 
     def test_cli_rejects_duplicate_keys(self):
         with tempfile.TemporaryDirectory() as td:
@@ -394,6 +403,58 @@ class TestSealGate(_Iso):
                 fh.write('{"l_lag_iters": [1], "l_lag_iters": [2]}')
             with self.assertRaises(f.ProbeRejected):
                 f.main(["--probe", pi, "--out", os.path.join(td, "o.json")])
+
+
+class TestRev10Cli(_Iso):
+    def _run(self, p, **kw):
+        with tempfile.TemporaryDirectory() as td:
+            argv, pi, po = cli_inputs(td, p, **kw)
+            rc = f.main(argv)
+            with open(po) as fh:
+                return rc, json.load(fh)
+
+    def test_status_censored_no_seal_no_reprobe(self):                # R9-1
+        for st, re_ok in (("KAPPA_CENSORED", False), ("VALUE_DEPENDENT", False), ("VALUE_INDEPENDENT", True),
+                          (None, False)):
+            rc, rec = self._run(n3_like_probe(), status=st)
+            self.assertEqual(rc, 2)
+            self.assertIsNone(rec["K"])
+            self.assertEqual(rec["reprobe_allowed"], re_ok, st)
+
+    def test_value_independent_reject_allows_reprobe(self):           # n < 20 is value-independent (R9-1)
+        p = n3_like_probe(); p["theta_spans"][64] = p["theta_spans"][64][:19]
+        rc, rec = self._run(p)
+        self.assertEqual(rc, 2)
+        self.assertTrue(rec["reprobe_allowed"])
+        p = n3_like_probe(); p["kappa_cells"][(44, 32, 8192)]["kappa_median"] = -1.0   # value-dependent input fault
+        rc, rec = self._run(p)
+        self.assertFalse(rec["reprobe_allowed"])
+
+    def test_freeze_manifest_required_and_matched(self):              # R9-4
+        rc, rec = self._run(n3_like_probe(), freeze=None)
+        self.assertEqual(rc, 2)
+        rc, rec = self._run(n3_like_probe(), freeze={"n2_feasibility.py": "0" * 64})
+        self.assertEqual(rc, 2)
+        self.assertTrue(any("freeze" in x for x in rec["reasons"]))
+        rc, rec = self._run(n3_like_probe(), freeze={"n2_probe_reduce.py": "0" * 64})
+        self.assertEqual(rc, 2)
+        rc, rec = self._run(n3_like_probe())
+        self.assertEqual(rc, 0, rec["reasons"])
+
+    def test_l_lag_zero_valid_negative_rejected(self):              # rev10: count from raw data
+        p = n3_like_probe(); p["l_lag_iters"] = [0, 0]
+        f.apply_probe(p)
+        self.assertEqual(f.L_LAG, 0)
+        p = n3_like_probe(); p["l_lag_iters"] = [3, -1]
+        with self.assertRaises(f.ProbeRejected):
+            f.apply_probe(p)
+
+    def test_kappa_median_is_the_element(self):                       # rev10: equal-weight per-measurement median
+        p = n3_like_probe(kappas=(1.8, 1.3))
+        p["kappa_cells"][(16, 32, 8192)]["c_median_ms"] = 16.0       # descriptive fields are ignored
+        p["kappa_cells"][(16, 32, 8192)]["a_on_ms"] = 10.0
+        f.apply_probe(p)
+        self.assertAlmostEqual(f.COEF["rho"]["kappa_dn"], 1.8)
 
 
 class TestBudget(_Iso):
