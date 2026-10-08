@@ -47,10 +47,12 @@ mkdir -p "${RUN}"/{meta,logs,cache} "${OUT}"
 utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 echo "start_utc=$(utc)" > "${RUN}/meta/timing.txt"
 clk_pid=""
+energy_pid=""
 
 finish() {
   local rc=$?
   [[ -n "${clk_pid}" ]] && kill "${clk_pid}" 2>/dev/null
+  [[ -n "${energy_pid}" ]] && kill "${energy_pid}" 2>/dev/null
   echo "end_utc=$(utc)" >> "${RUN}/meta/timing.txt"
   { echo "# at end $(utc)"; cat /sys/fs/cgroup/cpu.stat 2>/dev/null; } >> "${RUN}/meta/cgroup_cpu.txt"
   echo "${rc}" > "${RUN}/meta/exit_code"
@@ -155,6 +157,87 @@ printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(utc)" "${PDMUX_CAMPAIGN}" "${PDMUX_JOB_NAME
 nvidia-smi --query-gpu=timestamp,clocks.sm,power.draw,temperature.gpu,clocks_throttle_reasons.active \
   --format=csv -lms 100 > "${RUN}/meta/clk.csv" 2>/dev/null &
 clk_pid=$!
+# GPU power/energy (NVML, read-only, no extra privilege).  Three files:
+#  meta/energy.csv        : board energy counter (mJ) polled every 100 ms (counter updates ~100 ms but
+#                           integrates continuously -> interval totals exact; probe job-absefkt9e88x)
+#  meta/power_samples.csv : NVML buffered power samples (nvmlDeviceGetSamples NVML_TOTAL_POWER_SAMPLES,
+#                           driver timestamps, ~20 ms apart, step response 12-34 ms; probe job-tkgxusf12n0v)
+#                           drained every 200 ms -- the only sub-100 ms power signal on this substrate
+#  meta/sm_clk_samples.csv: NVML buffered SM clock samples (NVML_PROCESSOR_CLK_SAMPLES, MHz) drained the same
+#                           way, so power-cap clock drops can be aligned with power at the same resolution
+# Best-effort: a missing pynvml / unsupported call writes a note and never fails the job.
+# Cost (local RTX 5060 Ti, 2026-10-08): ~8 % of one CPU core, ~34 MB RSS.  Opt out with PDMUX_ENERGY_SAMPLER=0.
+if [[ "${PDMUX_ENERGY_SAMPLER:-1}" != "0" ]]; then   # opt-out only (unset = on); 0 disables the whole block
+python3 - "${RUN}/meta/energy.csv" "${RUN}/meta/power_samples.csv" "${RUN}/meta/sm_clk_samples.csv" > "${RUN}/meta/energy_sampler.log" 2>&1 <<'PY' &
+import sys, time
+out, out_s, out_c = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    import pynvml as n
+    n.nvmlInit(); h = n.nvmlDeviceGetHandleByIndex(0)
+    n.nvmlDeviceGetTotalEnergyConsumption(h)
+except Exception as e:  # noqa: BLE001
+    print("ENERGY_SAMPLER_UNAVAILABLE", repr(e), flush=True); raise SystemExit(0)
+have_s, last = True, 0
+try:
+    n.nvmlDeviceGetSamples(h, n.NVML_TOTAL_POWER_SAMPLES, 0)
+except n.NVMLError_NotFound:
+    pass                                     # supported, buffer momentarily empty
+except Exception as e:  # noqa: BLE001
+    have_s = False; print("POWER_SAMPLES_UNAVAILABLE", repr(e), flush=True)
+fs = open(out_s, "w", buffering=1) if have_s else None
+if fs:
+    fs.write("t_us,power_mW\n")
+have_c, last_c = True, 0
+try:
+    n.nvmlDeviceGetSamples(h, n.NVML_PROCESSOR_CLK_SAMPLES, 0)
+except n.NVMLError_NotFound:
+    pass
+except Exception as e:  # noqa: BLE001
+    have_c = False; print("CLK_SAMPLES_UNAVAILABLE", repr(e), flush=True)
+fc = open(out_c, "w", buffering=1) if have_c else None
+if fc:
+    fc.write("t_us,sm_mhz\n")
+with open(out, "w", buffering=1) as f:
+    f.write("epoch_s,energy_mJ\n")
+    k = 0; nerr = 0
+    while True:
+        try:
+            f.write(f"{time.time():.3f},{n.nvmlDeviceGetTotalEnergyConsumption(h)}\n")
+        except Exception as e:  # noqa: BLE001
+            nerr += 1
+            if nerr <= 20:                    # cap the log: a persistent failure must not flood the run dir
+                print("ENERGY_READ_ERROR", repr(e), flush=True)
+        if fs and k % 2 == 0:
+            try:
+                _, smp = n.nvmlDeviceGetSamples(h, n.NVML_TOTAL_POWER_SAMPLES, last)
+                for x in smp:
+                    if x.timeStamp > last:
+                        fs.write(f"{x.timeStamp},{x.sampleValue.uiVal}\n"); last = x.timeStamp
+            except n.NVMLError_NotFound:      # no new sample since `last` -- normal, not an error
+                pass
+            except Exception as e:  # noqa: BLE001
+                nerr += 1
+                if nerr <= 20:
+                    print("POWER_SAMPLES_READ_ERROR", repr(e), flush=True)
+        if fc and k % 2 == 0:
+            try:
+                _, smp = n.nvmlDeviceGetSamples(h, n.NVML_PROCESSOR_CLK_SAMPLES, last_c)
+                for x in smp:
+                    if x.timeStamp > last_c:
+                        fc.write(f"{x.timeStamp},{x.sampleValue.uiVal}\n"); last_c = x.timeStamp
+            except n.NVMLError_NotFound:
+                pass
+            except Exception as e:  # noqa: BLE001
+                nerr += 1
+                if nerr <= 20:
+                    print("CLK_SAMPLES_READ_ERROR", repr(e), flush=True)
+        k += 1
+        time.sleep(0.1)
+PY
+energy_pid=$!
+else
+  echo "energy sampler disabled (PDMUX_ENERGY_SAMPLER=0)" > "${RUN}/meta/energy_sampler.log"
+fi
 
 # ---- 4. run the target ---------------------------------------------------------------
 export HF_HOME="${DATA}/hf" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONUNBUFFERED=1
