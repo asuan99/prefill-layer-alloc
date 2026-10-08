@@ -1,6 +1,40 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-10-07 (doc-steward — **게이트 #245 doc_facts 구조 수리 (i) 해소 등재**[사용자 승인 "C 진행", 앵커 `27bbae7`=155, 새 성능 판정 0건·Claim 등급·게이트 #6·HE0 불변; E2 r2 결과 문서 §9 대조는 2026-10-06 배너로 이미 완료 확인]). 직전 갱신: 2026-10-06 (doc-steward — **N3 shape B 3회차(rev6) 완주·결과 감사 반영**, VESSL 컨테이너 3.838 h, 새 성능 판정 0건, 게이트 #6 **불변(부분 측정, 미닫힘)**·λ0R-8(iii)·HE0·Claim 등급 불변).
+최종 갱신: 2026-10-08 (doc-steward — **N3 shape B 4회차(rev7) 완주·결과 감사 반영 + N2(3-a) 사전등록 draft rev8 상태 등재**, VESSL 컨테이너 3.409 h·새 성능 판정 0건·게이트 #6 불변(부분 측정, 미닫힘)·λ0R-8(iii)·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #262–263)
+
+이전 최종 갱신(2026-10-07, 이 줄 아래 (a″) 절은 2026-10-08 신설): 2026-10-07 (doc-steward — **게이트 #245 doc_facts 구조 수리 (i) 해소 등재**[사용자 승인 "C 진행", 앵커 `27bbae7`=155, 새 성능 판정 0건·Claim 등급·게이트 #6·HE0 불변; E2 r2 결과 문서 §9 대조는 2026-10-06 배너로 이미 완료 확인]). 직전 갱신: 2026-10-06 (doc-steward — **N3 shape B 3회차(rev6) 완주·결과 감사 반영**, VESSL 컨테이너 3.838 h, 새 성능 판정 0건, 게이트 #6 **불변(부분 측정, 미닫힘)**·λ0R-8(iii)·HE0·Claim 등급 불변).
+
+
+**(a″) N3(게이트 #6 SLO 용량) shape B 4회차(rev7) — 완주(48/48 boot, 결측 0)·결과 감사 완료(死因 0), 등록 라벨 3개 기계적 `CONFIRMED`, 게이트 #6은 부분 측정·미닫힘. (2026-10-08 신설)**
+
+**rev7 경위(요약)**: 3회차(rev6)의 k=5/10 결측(예산 예보 실패) 뒤 사용자 결정(2026-10-07 "권장 사항대로 진행") = rev6 재개(`RESUME_FROM`) 포기, **새 Job 48 unit 전체**, shape B 하드캡 17,100 s, 델타 감사 W-5를 length 모드로 반영. rev7 델타 감사 `workspace/engine-port/results/n3_capacity/VERDICT_n3_rev7_delta_2026-10-07.md` `GO-with-caveats`(N3C-34…41), 봉인 커밋 `93c3cca`. 3회차 열린 결정 (i)(ii)(iv)는 이로써 해소, (iii) shape A는 여전히 사용자 결정(`CONSENSUS.md` §5 항목 20·21).
+
+**4회차 Job 집행(2026-10-07/08)**: Job `pdmux-n3-capacity-93c3cca-20261007064124`(제출 `f8414f5`, 회수 `b28676c`, 결과 감사 `02a6431`; VESSL A100-SXM4-80GB `GPU-024bced7-ac00-f2b7-26dc-7e3af26d64dc` — **3회차(`c36b3c0c`)와 다른 GPU**, 컨테이너 3.409 h, exit 0, 회수 sha256 708/708, 봉인 16/16). 결과 감사 `VERDICT_result_n3_B_r4_2026-10-08.md`(claims-auditor, 읽기 전용): 死因 0, 라벨 3개 기계적 `CONFIRMED`(`N3_RESULT.json`·`T_K.json`·`T_K_TAIL.json`·`UNITS.txt` 바이트 재현), 해석 범위는 caveat N3VR-12…20으로 좁힘. 핵심: 등록 관측자 판정 `OBSERVER_FAIL`(TTFT CI 0 미포함) → 모든 인용은 "PHASE_EVENTS ON 조건에서" 접두; k=5/10 용량 셀 `UNSTABLE` → 크기 인용 불가; 3회차 k=3과의 일치는 **재현이 아니다**(등록 다름, Job 효과 36/36 셀 한 방향, N3VR-17); 3회차 k=5/10은 계속 `UNRESOLVED_N_BELOW_4`(Job 혼합 금지).
+
+결과 감사 §9 허용 문안을 문자 그대로 옮긴다:
+
+> "PHASE_EVENTS ON 조건에서, N3 shape B 4회차 Job `pdmux-n3-capacity-93c3cca-20261007064124`(VESSL A100-SXM4-80GB `GPU-024bced7-ac00-f2b7-26dc-7e3af26d64dc` — 3회차와 다른 GPU, 사전등록 rev7 봉인 `93c3cca`, 48/48 boot 완료·결측 0, 라벨 바이트 재현)은 target-D44 sticky-OFF B1의 λ\*\_SLO(k) — shape B(8192/64), ITL SLO 50 ms, attainment ≥ 90%, T_k = k × floor(floor 0.9067 s, 같은 Job 첫 블록, rev7+W5:length 판정 유효; T_3 = 2.720 s, T_5 = 4.533 s, T_10 = 9.067 s) — 을 냈다: k=3 `CAPACITY_BRACKETED_3` 구간 [0.15, 0.22) req/s(절대), seed 짝 bootstrap 95% [0.15, 0.30](n=4), attainment 0.15: 78/80 = 0.975 · 0.22: 79/88 = 0.898(실패 셀이 1요청 차로 실패), 용량 셀 정상성 `STATIONARY`; k=5 `CAPACITY_BRACKETED_5` 구간 [0.45, 0.53), bootstrap [0.45, 0.53], 용량 셀 `UNSTABLE`(크기 인용 불가, 절벽 구간 안); k=10 `CAPACITY_BRACKETED_10` 구간 [0.69, 0.77), bootstrap [0.69, 0.69], 용량 셀 `UNSTABLE`(크기 인용 불가, 절벽 구간 안, 100 s 창 측정). 구속 설정: cap 48 = mamba 48, `max_prefill_tokens` 16384, `max_total_num_tokens` 2,721,290(47 boot; 비채점 bridge 1 boot 2,721,287, P3 (ii) 허용오차 통과). 용량 셀 실현 분할(쌍 (64,44), A2 규약, seed 범위, 관측자 효과 미검증 하 기술값): k=3(0.15) E-cnt 13.8–17.0% / E-time 23.8–29.3% / E-iter 15.3–19.2% / E-qcond 66.7–100%, W-idx (0,108) 0.83–0.85·(108,0) 0.10–0.11·(64,44) 0.04–0.07, X-tok 19.5–27.3%; k=5(0.45) E-time 59.2–67.0%, W-idx (64,44) 0.39–0.43; k=10(0.69) E-time 86.9–91.0%, W-idx (64,44) 0.85–0.93; dropped_events 0 — 어느 k에서도 D44 측정이 아니며 용량 셀의 실현 혼합은 k마다 다르다. 관측자 `OBSERVER_FAIL`(rate 0.30, TTFT +0.41% [+0.05, +0.84], ITL −0.72% [−1.53, +0.13]), CG2 PASS, bench 창 power cap 노출 0.15: 11.5–12.5%·0.45: 31.1–38.3%·0.69: 42.1–47.4%. 3회차 Job과는 Job 단위로만 나란히 적는다(같은 seed 공통 격자 36셀에서 이 Job의 통과 수가 모든 k에서 36/36 셀 ≥ 3회차 — Job 효과 존재, 기전 미확정). best static 판정 아님. 게이트 #6은 닫히지 않는다(shape A 미실행, 5-a 전제 미판정, k=5/10 크기 인용 불가, OBSERVER_FAIL, Job n=1)."
+
+**필수 병기**: 등록 caveat N3C-1·2·5·7·8·10·11·12·13·14·15·17·20·21·22·29·30·31·34·35·36·37·38·39·40·41, DS-1·DS-4; 3회차 caveat 중 구조 문장만 승계 N3VR-3(같은 seed는 rate 간 척도 변환, S2는 후반 악화만 발화)·N3VR-6(재개 = Job 혼합)·N3VR-11(n=4 재표집 공간 35개), 3회차 수치(N3VR-1·2·4·5·7·8·9·10)는 3회차 행에만; 아래 N3VR-12…20.
+
+결과 감사 정정 R-1…R-5(§10): **R-1** "관측기 ITL OK(TTFT 미확인)"는 틀림 — 등록 판정 **`OBSERVER_FAIL`**(`N3_RESULT.json` `observer.verdict`, `target.log` "observer: OBSERVER_FAIL"), TTFT CI [+0.05%, +0.84%] 0 미포함. 등록 결과("PHASE_EVENTS ON 조건에서" 접두, 분할 수치 = 관측자 효과 미검증 하 기술값)가 Job 전체에 적용. **R-2** k=3 bootstrap 누락 — **[0.15, 0.30]**(3회차 [0.15, 0.22]보다 넓음); k=5 [0.45, 0.53], k=10 [0.69, 0.69]. **R-3** "throttle 22887/122209"는 컨테이너 전 구간 비율(유휴·부팅 포함). 인용 항목은 bench 창 노출(§5). **R-4** "남은 4315 s"는 `remaining_at_loop_end_s`, 분석 뒤 `N3_DONE remaining_s`는 4228 s. **R-5** "P3 PASS"에 토큰 distinct 2(1 boot 2,721,287)가 숨어 있음(N3VR-19).
+
+**금지 문안 18항목**: 전문은 `CONSENSUS.md` §1 행 37(출처 판정서 §9)에 문자 그대로 있다. 최상위 항목만 재게시한다 — 게이트 #6 닫음/해소 서술, '용량 0.15 req/s'·'D44 용량'·'k=5 용량 0.45'·'k=10 용량 0.69' 단독 인용, k=5/10 용량 셀 attainment·TTFT 크기 인용, '3회차 k=3 재현/두 Job에서 견고/다른 GPU에서도 같다', 두 Job pooled·'8 seed'·'91 셀', '관측자 OK/PHASE_EVENTS 무영향'(등록 판정 `OBSERVER_FAIL`), '입장 라벨 경쟁 해소/단일 토큰 정지 없음'(Job 의존), '예산 모형 검증됨', best static·정책 비교 서술.
+
+**확정 조건(결과 감사 §12 — 처방 아님, 사용자 결정 + 새 사전등록 + 규칙층 감사 필요)**: ① k=3 위치 — 같은 Job 안 0.15·0.22·0.30에 seed n ≥ 8 또는 셀당 ≥ 80요청/seed(어림 추가 12 unit ≈ 0.8 h, 다른 GPU면 N3VR-18 변동) ② k=10 창 의존 — 0.61·0.69·0.77에서 span 300 s 이상과 100 s를 같은 Job 안에 병치 ③ σ_Job — 같은 등록으로 GPU가 다른 Job ≥ 3개, 또는 5-a는 모든 arm을 한 Job 안에(N3VR-17) ④ 관측자 — rate 0.30 ON/OFF 짝 n ≥ 8 ⑤ 입장 라벨 경쟁·단일 토큰 정지의 Job 의존 기전은 engine-porter 계측 과제(감사 범위 밖).
+
+**불변 선언**: 게이트 #6(SLO 용량 — **부분 측정, 미닫힘**: shape A 미실행·k=5/10 크기 인용 불가·OBSERVER_FAIL·5-a 전제 미판정·Job n=1)·λ0R-8(iii)·HE0·layer-type 死·정책 순위·Claim D/E(미검증)·P2 블로커 ②③·게이트 #13/#16·switch-cost '닫았다' 금지·C2 인용정지(a)(b)·`CONSENSUS §1-24` 모두 불변. **새 성능 판정 0건.**
+
+**신규 방법론 게이트 2건(#262–263, `CONSENSUS §3` 항목286–287과 짝, 출처 claims-auditor 결과 감사 + doc-steward 등재)**: **#262** — 같은 seed·같은 채점 경로라도 Job(GPU) 효과가 한 방향으로 공통 격자 36/36 셀에 나타날 수 있다(통과 수 ≥ 36/36, TTFT p50 36/36 낮음, boot 104→52 s). 두 Job의 라벨 일치(k=3 구간 동일)를 재현으로 쓰지 말고, Job이 다른 arm 비교는 이 크기의 교락을 지므로 5-a는 같은 Job 안에서만 비교한다(N3VR-17). **#263** — 관측자 판정의 "CI가 0을 포함하지 않는다" 조건은 효과 크기가 허용 안(±3%)이어도 FAIL을 낸다 — 러너 요약("ITL OK, TTFT 미확인")을 판정으로 옮기지 말고 등록 산출(`N3_RESULT.json` `observer.verdict`)을 읽어라(R-1). 두 건 모두 상세 `VERDICT_result_n3_B_r4_2026-10-08.md §10·§11`.
+
+원자료 `workspace/engine-port/results/n3_capacity/n3b_pdmux-n3-capacity-93c3cca-20261007064124/`(회수 메타 `.../vessl/pdmux-n3-capacity-93c3cca-20261007064124/`, sha256 708/708; `meta/clk.csv`는 git 밖). 결과 문서(`RESULT_*`)는 아직 없다 — 작성 시 위 허용·금지 문안과 대조할 것.
+
+**(b″) N2(3-a, 정적 격자) 사전등록 draft — rev8까지 감사 8회, 미봉인, rev9 작성 중. (2026-10-08 등재, GPU 0·새 성능 판정 0건)** 초안 `workspace/engine-port/results/n2_static_grid/PREREG_N2_3A_2026-10-07.md`, 판정서 `VERDICT_n2_3a_*`(rules·rev2…rev8). 감사 이력: rules(rev1) `NO-GO` D-1 → rev2 `NO-GO` D-2…D-6 → rev3 `NO-GO` D-7 → rev4 `NO-GO` D-8 → rev5 `GO-with-caveats` → rev6 `NO-GO` D-9 → rev7 `GO-with-caveats` → rev8 `GO-with-caveats`(死因 0, 필수 수리 R8-1…R8-7은 프로브 전, 신규 caveat N2C-45…47; "프로브 실행 전 규칙층이 반전 없이 닫혔다"는 뜻일 뿐 봉인 승인·K 확정이 아님). 미봉인 체크포인트 커밋 `29916d4`. **사용자 결정(2026-10-07)**: D-8 수리 = d16 E-α의 K 증가(메인 세션이 K=18로 두되 ρ_max ≥ 2.0은 메인 세션 설정 등록 요구), X = ŝ + 145, Job-PROFILE(28 boot)·Job-EA(16 boot) 분리, U-2 보정 프로브 실시, **프로브 없는 봉인 금지**, K는 프로브 뒤 등록 규칙 `choose_k`(U-9 (나), 메인 세션 선택)로 정한다. **다음 gate = N2 rev9 델타 감사 → 하네스 구현 → U-2 프로브 → post_probe_gate → 재승인 → 봉인.** E2VR-6 승계 범위(위 본문)는 불변. 반복 교훈: 8회 감사 동안 매번 이전 감사가 보지 않은 축에서 死因이 나왔다(산포 0 → π → O → W_co D16 → 축약 추정량) — 이전 감사 표·처방을 등록 상수로 승격하지 말고 재계산하라(게이트 #110 재확인), 처방자도 함께 죽는다(#113 재확인) — `CONSENSUS §3` 항목288(새 게이트 번호 없음).
+
+**(c″) 기타(범위 판단만)**: power cap 트랙(`reports/power_cap_viability_2026-10-07.md`, `results/power_cap/`)은 2026-10-07 별도 신설된 독립 평가 트랙이며 기술적·정본 인용 금지(자체 RESULT가 명시), Claim 등급·게이트·다음 gate를 바꾸지 않는다 ⇒ **정본 반영 대상 아님**(이 줄은 포인터일 뿐, 트랙 파일은 건드리지 않음).
+
+**다음 gate(2026-10-08)**: N2(3-a) rev9 → 상기 순서. N3 shape A 착수 여부와 결과 감사 §12 확정 조건 ①–④의 실행 여부는 열린 사용자 결정(`CONSENSUS.md` §5 항목 20·21).
+
 
 **(a′) N3(게이트 #6 SLO 용량) shape B 3회차(rev6) — 완주(43/48 boot)·결과 감사 완료(死因 0), 등록 라벨 기계적 `CONFIRMED`, 게이트 #6은 부분 측정·미닫힘.**
 
