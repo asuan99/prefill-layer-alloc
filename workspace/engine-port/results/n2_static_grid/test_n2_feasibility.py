@@ -46,24 +46,21 @@ def n3_like_probe(theta64=5693.0, kappas=(1.3, 1.3), tau_ratio=1.0, outlier=Fals
             "l_lag_iters": [32], "delta_l_s": [0.0], "fix_s": [22.48]}
 
 
-def cli_inputs(td, p, status="OK", freeze=True, reducer_sha=None):
-    """Write probe.json (+ provenance, probe_status) and a pre-probe freeze manifest; return CLI argv (R9-1, R9-4)."""
-    raw = {k: ({json.dumps(list(kk)) if isinstance(kk, tuple) else str(kk): vv for kk, vv in v.items()}
-               if isinstance(v, dict) else v) for k, v in p.items()}
-    raw["provenance"] = {"reducer_sha256": reducer_sha or red.self_sha256(), "raw_files": {}}
-    raw["probe_status"] = status
-    pi, po, fz = (os.path.join(td, n) for n in ("probe.json", "K_POST_PROBE.json", "FREEZE.json"))
-    with open(pi, "w") as fh:
-        json.dump(raw, fh)
-    argv = ["--probe", pi, "--out", po]
-    if freeze is not None:
-        man = {"n2_feasibility.py": f._sha256_file(f.__file__), "n2_probe_reduce.py": red.self_sha256()}
-        if freeze is not True:
-            man.update(freeze)
-        with open(fz, "w") as fh:
-            json.dump(man, fh)
-        argv += ["--freeze", fz]
-    return argv, pi, po
+def raw_cli(cells=None, manifest=None):
+    """Registered path end to end (rev11): raw files -> n2_probe_reduce.reduce_probe -> to_json -> calculator CLI with
+    a freeze manifest (re-reduction R10-3, H-2). Returns (rc, K_POST_PROBE record, probe path)."""
+    import test_n2_probe_reduce as tr
+    with tempfile.TemporaryDirectory() as td:
+        p = red.reduce_probe(tr.full_boots(td, cells))
+        pi, po = os.path.join(td, "probe.json"), os.path.join(td, "K.json")
+        with open(pi, "w") as fh:
+            fh.write(red.to_json(p))
+        psha = f._sha256_file(pi)
+        rc = f.main(["--probe", pi, "--out", po, "--freeze", tr.write_manifest(td, **(manifest or {}))])
+        with open(po) as fh:
+            rec = json.load(fh)
+    rec["_probe_sha_expected"] = psha
+    return rc, rec, pi
 
 
 def dispersed_probe():
@@ -377,24 +374,21 @@ class TestSealGate(_Iso):
         self.assertIsNone(g["K"][44])
 
     def test_cli_writes_single_k_source(self):
-        with tempfile.TemporaryDirectory() as td:
-            argv, pi, po = cli_inputs(td, n3_like_probe())
-            rc = f.main(argv)
-            with open(po) as fh:
-                rec = json.load(fh)
-            psha = f._sha256_file(pi)
+        rc, rec, pi = raw_cli()
         self.assertEqual(rc, 0, rec["reasons"])
         self.assertEqual(rec["K"], {"16": 22, "44": 10})
-        self.assertEqual(rec["probe_sha256"], psha)                                   # R7-4 A10
+        self.assertEqual(rec["probe_sha256"], rec["_probe_sha_expected"])               # R7-4 A10
         self.assertEqual(rec["calculator_sha256"], f._sha256_file(f.__file__))
         self.assertNotEqual(rec["probe_sha256"], rec["calculator_sha256"])
         self.assertIn("derived", rec)
         self.assertFalse(rec["reprobe_allowed"])
 
     def test_cli_rc2_when_not_sealable(self):                                         # R7-4 A11
-        with tempfile.TemporaryDirectory() as td:
-            argv, pi, po = cli_inputs(td, n3_like_probe(theta64=4500.0, tau_ratio=0.5))
-            self.assertEqual(f.main(argv), 2)
+        import test_n2_probe_reduce as tr
+        rc, rec, _ = raw_cli(cells=tr.full_cells(tau_ratio=0.5, theta64=4500.0))
+        self.assertEqual(rc, 2)
+        self.assertFalse(rec["seal_allowed"])
+        self.assertTrue(any("limits_check" in x for x in rec["reasons"]))
 
     def test_cli_rejects_duplicate_keys(self):
         with tempfile.TemporaryDirectory() as td:
@@ -406,40 +400,40 @@ class TestSealGate(_Iso):
 
 
 class TestRev10Cli(_Iso):
-    def _run(self, p, **kw):
-        with tempfile.TemporaryDirectory() as td:
-            argv, pi, po = cli_inputs(td, p, **kw)
-            rc = f.main(argv)
-            with open(po) as fh:
-                return rc, json.load(fh)
+    def test_status_routes(self):                                     # R9-1 / R10-1 via raw files
+        import test_n2_probe_reduce as tr
+        good = tr.full_cells()
+        for cells, re_ok in ((good + [dict(n_c=100)], False),
+                             (good[:-1] + [dict(good[-1], non_co_after=True)], False),
+                             (good[:-1] + [dict(good[-1], _omit=("fix_s",))], True)):
+            rc, rec, _ = raw_cli(cells=cells)
+            self.assertEqual((rc, rec["K"], rec["reprobe_allowed"]), (2, None, re_ok))
 
-    def test_status_censored_no_seal_no_reprobe(self):                # R9-1
-        for st, re_ok in (("KAPPA_CENSORED", False), ("VALUE_DEPENDENT", False), ("VALUE_INDEPENDENT", True),
-                          (None, False)):
-            rc, rec = self._run(n3_like_probe(), status=st)
-            self.assertEqual(rc, 2)
-            self.assertIsNone(rec["K"])
-            self.assertEqual(rec["reprobe_allowed"], re_ok, st)
+    def test_calc_reject_routing(self):                               # reprobe_allowed = e.value_independent
+        orig = f.post_probe_gate
+        for vi in (False, True):
+            def boom(probe, vi=vi):
+                raise f.ProbeRejected("synthetic", value_independent=vi)
+            f.post_probe_gate = boom
+            try:
+                rc, rec, _ = raw_cli()
+            finally:
+                f.post_probe_gate = orig
+            self.assertEqual((rc, rec["reprobe_allowed"]), (2, vi))
 
-    def test_value_independent_reject_allows_reprobe(self):           # n < 20 is value-independent (R9-1)
+    def test_value_independent_flags(self):                           # n < 20 is value-independent (R9-1)
         p = n3_like_probe(); p["theta_spans"][64] = p["theta_spans"][64][:19]
-        rc, rec = self._run(p)
-        self.assertEqual(rc, 2)
-        self.assertTrue(rec["reprobe_allowed"])
-        p = n3_like_probe(); p["kappa_cells"][(44, 32, 8192)]["kappa_median"] = -1.0   # value-dependent input fault
-        rc, rec = self._run(p)
-        self.assertFalse(rec["reprobe_allowed"])
-
-    def test_freeze_manifest_required_and_matched(self):              # R9-4
-        rc, rec = self._run(n3_like_probe(), freeze=None)
-        self.assertEqual(rc, 2)
-        rc, rec = self._run(n3_like_probe(), freeze={"n2_feasibility.py": "0" * 64})
-        self.assertEqual(rc, 2)
-        self.assertTrue(any("freeze" in x for x in rec["reasons"]))
-        rc, rec = self._run(n3_like_probe(), freeze={"n2_probe_reduce.py": "0" * 64})
-        self.assertEqual(rc, 2)
-        rc, rec = self._run(n3_like_probe())
-        self.assertEqual(rc, 0, rec["reasons"])
+        with self.assertRaises(f.ProbeRejected) as cm:
+            f.apply_probe(p)
+        self.assertTrue(cm.exception.value_independent)
+        p = n3_like_probe(); del p["kappa_cells"][(44, 32, 8192)]
+        with self.assertRaises(f.ProbeRejected) as cm:
+            f.apply_probe(p)
+        self.assertTrue(cm.exception.value_independent)
+        p = n3_like_probe(); p["kappa_cells"][(44, 32, 8192)]["kappa_median"] = -1.0
+        with self.assertRaises(f.ProbeRejected) as cm:
+            f.apply_probe(p)
+        self.assertFalse(cm.exception.value_independent)
 
     def test_l_lag_zero_valid_negative_rejected(self):              # rev10: count from raw data
         p = n3_like_probe(); p["l_lag_iters"] = [0, 0]

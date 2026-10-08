@@ -1,4 +1,4 @@
-"""CPU tests for n2_probe_reduce.py (PREREG_N2_3A rev10: R7-1, R8-1/2/3, R9-1/2/5/6/8).
+"""CPU tests for n2_probe_reduce.py (PREREG_N2_3A rev11: R7-1, R8-1/2/3, R9-1/2/5/6/8, R10-1…R10-5).
 Registered run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_n2_probe_reduce -v
 (The N3 positive control loads ~2 GB of JSONL into one process; run suites sequentially, R9-8.)"""
 import hashlib
@@ -39,7 +39,8 @@ def one_span_run_boot():
 
 
 def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200, leaks=0, on_leaks=0,
-             contaminated_snapshot=True, t0=0.0, q0=0, seq0=0, lag=0, non_co_after=False, a2_inflight=0):
+             contaminated_snapshot=True, t0=0.0, q0=0, seq0=0, lag=0, non_co_after=False, a2_inflight=0,
+             w_off=0, inflight_off_leaks=0, co_spans=1, span_tok_s=None, span_req=2):
     """Synthetic RAW sticky-ON probe cell starting at time t0 / iter_seq q0: burst span, alone segment through the
     ctx band, coload_sent, (lag alone iterations), co span with n_c C iterations (+ `leaks` (0,108) OFF-type and
     `on_leaks` PAIR[d] ON-type not-in-flight iterations inside W_co), then A2: 16 trim + 128 at a2_ms, then 100 at
@@ -59,8 +60,8 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
         q += 1; t += step_ms / 1000.0
         recs.append(dict(event="decode_iteration", iter_seq=q, t_launch=t, bs=bs, prefill_in_flight=in_flight,
                          prefill_sms=pr[0], decode_sms=pr[1]))
-    for _ in range(230):
-        it(alone_ms, False, pair)
+    for k in range(230):                       # iter_seq 81..208 is the ctx band; w_off of them run unsplit (0,108)
+        it(alone_ms, False, pair108 if 100 <= k < 100 + w_off else pair)
     marks = {"coload_sent": t + 0.0005}
     t += 0.001
     for _ in range(lag):
@@ -71,8 +72,16 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
                  dict(event="prefill_span_end", span_seq=seq0 + 3, timestamp_monotonic_s=t + 0.0002)]
         t += 0.0003
     tc0 = t + 0.0005
-    recs.append(dict(event="prefill_span_start", span_seq=seq0 + 2, timestamp_monotonic_s=tc0, extend_tokens=16384,
-                     n_new=2))
+    if span_tok_s is not None:                 # co_spans contiguous 2-request spans at throughput span_tok_s
+        D = 8192.0 * span_req / span_tok_s
+        n_c = int(co_spans * D * 1000.0 / co_ms) - 1
+        for k in range(co_spans):
+            recs += [dict(event="prefill_span_start", span_seq=seq0 + 4 + k, timestamp_monotonic_s=tc0 + k * D,
+                          extend_tokens=8192 * span_req, n_new=span_req),
+                     dict(event="prefill_span_end", span_seq=seq0 + 4 + k, timestamp_monotonic_s=tc0 + (k + 1) * D)]
+    else:
+        recs.append(dict(event="prefill_span_start", span_seq=seq0 + 2, timestamp_monotonic_s=tc0,
+                         extend_tokens=16384, n_new=2))
     t = tc0
     if contaminated_snapshot:
         recs.append(dict(event="runtime_snapshot", timestamp_monotonic_s=t, decode_iterations=q + 5, context_p50=8193,
@@ -83,9 +92,14 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
         it(10.0, False, pair108)
     for _ in range(on_leaks):
         it(10.0, False, pair)
-    t1 = t + 0.001
-    recs.append(dict(event="prefill_span_end", span_seq=seq0 + 2, timestamp_monotonic_s=t1))
-    t = t1
+    for _ in range(inflight_off_leaks):
+        it(10.0, True, pair108)
+    if span_tok_s is not None:
+        t = tc0 + co_spans * 8192.0 * span_req / span_tok_s + 0.0005
+    else:
+        t1 = t + 0.001
+        recs.append(dict(event="prefill_span_end", span_seq=seq0 + 2, timestamp_monotonic_s=t1))
+        t = t1
     for i in range(144):
         if i == 20:
             for _ in range(a2_inflight):
@@ -97,20 +111,33 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
     return recs, marks
 
 
-def write_boot(td, name, cells=(), theta=None, delta_l=0.0, fix_s=22.0, drop_mark=None):
-    """Write one probe boot (telemetry JSONL + marks) to td. cells: list of raw_cell kwargs dicts, laid out
-    sequentially; each kappa cell is also one load call (harness spec). theta: (records, calls) appended after."""
+def write_boot(td, name, cells=(), theta=None, delta_l=0.0, fix_s=22.0, drop_mark=None, extra_lines=(),
+               telemetry_tail=None):
+    """Write one probe boot (telemetry JSONL + marks, §14-2 MARK FORMAT) to td. cells: raw_cell kwargs dicts laid out
+    sequentially, each wrapped by its own load call; per-cell test knobs: _omit (mark tags to leave out), _abort
+    (cell_abort reason), _id (cell id), _no_marks (write no marks for the cell), _no_call (no load-call wrap).
+    theta: (records, calls) appended after the cells. telemetry_tail: raw text appended to the JSONL (truncation)."""
     recs, lines, t, q, seq = [], [], 0.0, 0, 0
     for i, kw in enumerate(cells):
+        kw = dict(kw)
+        omit, abort = set(kw.pop("_omit", ())), kw.pop("_abort", None)
+        cid, no_marks, no_call = kw.pop("_id", f"{name}_c{i}"), kw.pop("_no_marks", False), kw.pop("_no_call", False)
         d, b, c = kw.get("d", 44), kw.get("b", 32), kw.get("c", 8192)
         cr, mk = raw_cell(t0=t, q0=q, seq0=seq, **kw)
         recs += cr
-        cid = f"{name}_c{i}"
-        lines += [f"cell_start {cid} {d} {b} {c} {t}", f"coload_sent {cid} {mk['coload_sent']}",
-                  f"cell_end {cid} {mk['t1']}", f"delta_l {cid} {delta_l}", f"fix_s {cid} {fix_s}",
-                  f"load_call_start {cid} {mk['coload_sent']}", f"load_call_end {cid} {mk['t1']}"]
+        cl = [("cell_start", f"cell_start {cid} {d} {b} {c} {t}"),
+              ("coload_sent", f"coload_sent {cid} {mk['coload_sent']}"),
+              ("cell_end", f"cell_end {cid} {mk['t1']}"), ("delta_l", f"delta_l {cid} {delta_l}"),
+              ("fix_s", f"fix_s {cid} {fix_s}")]
+        if abort:
+            cl.append(("cell_abort", f"cell_abort {cid} {abort}"))
+        if not no_call:
+            cl += [("load_call_start", f"load_call_start {cid} {mk['coload_sent'] - 0.0001}"),
+                   ("load_call_end", f"load_call_end {cid} {mk['t1']}")]
+        if not no_marks:
+            lines += [ln for tag, ln in cl if tag not in omit]
         q = max(e.get("iter_seq", 0) for e in cr) + 10
-        seq += 10
+        seq += 100
         t = mk["t1"] + 5.0
     if theta is not None:
         trecs, tcalls = theta
@@ -127,19 +154,66 @@ def write_boot(td, name, cells=(), theta=None, delta_l=0.0, fix_s=22.0, drop_mar
             lines += [f"load_call_start th{j} {a + off}", f"load_call_end th{j} {bb + off}"]
     if drop_mark:
         lines = [ln for ln in lines if not ln.startswith(drop_mark)]
+    lines += list(extra_lines)
     tp, mp = os.path.join(td, f"tel_{name}.jsonl"), os.path.join(td, f"marks_{name}.txt")
     with open(tp, "w") as fh:
-        fh.write("\n".join(json.dumps(e) for e in recs) + "\n")
+        fh.write("\n".join(json.dumps(e) for e in recs) + "\n" + (telemetry_tail or ""))
     with open(mp, "w") as fh:
         fh.write("\n".join(lines) + "\n")
     return dict(boot_id=name, telemetry=tp, marks=mp)
 
 
-def theta_boots():
+def expected_of(cells):
+    out = {16: 0, 44: 0}
+    for kw in cells:
+        if not kw.get("_no_marks"):
+            out[kw.get("d", 44)] = out.get(kw.get("d", 44), 0) + 1
+    return out
+
+
+def full_cells(kappa=1.3, tau_ratio=1.0, theta64=5693.0, spans=(4, 9)):
+    """The registered probe: 14 binding-cell calls at d = 44 and 7 at d = 16 (R9-7); each call's co-load is
+    `spans` contiguous 2-request spans (K 8 -> 4, K 18 -> 9) whose throughput is theta64 (p = 64) or
+    theta64 * 92/64 (p = 92) -- theta comes only from the calls' own co spans, as registered."""
+    out = []
+    for d, n, ns, th in ((44, r.PROBE_CALLS[44], spans[0], theta64), (16, r.PROBE_CALLS[16], spans[1], theta64 * 92 / 64)):
+        ms = f.tau_alone(d, 32, 8192, "DN") * 1000 * tau_ratio
+        out += [dict(d=d, alone_ms=ms, a2_ms=ms, co_ms=ms * kappa, co_spans=ns, span_tok_s=th) for _ in range(n)]
+    return out
+
+
+def full_boots(td, cells=None, **kw):
+    return [write_boot(td, "k", full_cells() if cells is None else cells, **kw)]
+
+
+def write_manifest(td, drop=(), override=None, writers=True):
+    """FREEZE_N2_PROBE.json fixture (H-2): calculator, reducer, both tests, mutants and a harness mark writer."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    files = {}
+    for fn in ("n2_feasibility.py", "n2_probe_reduce.py", "test_n2_feasibility.py", "test_n2_probe_reduce.py"):
+        files[os.path.relpath(os.path.join(here, fn), td)] = hashlib.sha256(open(os.path.join(here, fn), "rb").read()).hexdigest()
+    with open(os.path.join(td, "mark_writer.py"), "w") as fh:
+        fh.write("# stand-in for the harness mark writer\n")
+    files["mark_writer.py"] = hashlib.sha256(open(os.path.join(td, "mark_writer.py"), "rb").read()).hexdigest()
+    files = {k: v for k, v in files.items() if os.path.basename(k) not in drop}
+    files.update(override or {})
+    man = {"commit": "0" * 40, "files": files, "harness_mark_writers": ["mark_writer.py"] if writers else []}
+    path = os.path.join(td, "FREEZE.json")
+    with open(path, "w") as fh:
+        json.dump(man, fh)
+    return path
+
+
+def theta_boots(theta64=5693.0, n92=22):
     (_, recs64, calls64), = one_span_run_boot()
+    if theta64 != 5693.0:
+        recs64, calls64, t = [], [], 0.0
+        for i in range(26):
+            ev, t1 = _span(i + 1, t, theta64); recs64 += ev; t = t1 + 0.01
+        calls64 = [(0.0, t)]
     recs, t, a = [], 10000.0, 10000.0
-    for i in range(22):
-        ev, t = _span(1000 + i, t, 5693.0 * 92 / 64, p=92); recs += ev; t += 0.01
+    for i in range(n92):
+        ev, t = _span(1000 + i, t, theta64 * 92 / 64, p=92); recs += ev; t += 0.01
     return (recs64, calls64), (recs, [(a, t)])
 
 
@@ -273,39 +347,144 @@ class TestWindows(unittest.TestCase):
 
 
 class TestReduceProbe(unittest.TestCase):
-    def _reduce(self, cells, theta=False, **kw):
+    def _reduce(self, cells, theta=False, expected=None, **kw):
         with tempfile.TemporaryDirectory() as td:
             boots = [write_boot(td, "k", cells, **kw)]
             if theta:
                 t64, t92 = theta_boots()
                 boots += [write_boot(td, "t64", theta=t64), write_boot(td, "t92", theta=t92)]
-            p = r.reduce_probe(boots)
+            p = r.reduce_probe(boots, expected_calls=expected_of(cells) if expected is None else expected)
             shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
                     for k in ("telemetry", "marks")}
         return p, shas
 
+    def _st(self, p):
+        return [m["status"] for m in p["measurements"]]
+
     def test_completeness_and_censoring(self):                     # R9-1, kills X04
         p, _ = self._reduce([dict(), dict(n_c=100), dict()])
-        st = [m["status"] for m in p["measurements"]]
-        self.assertEqual(st, ["REDUCED", r.KAPPA_CENSORED, "REDUCED"])
+        self.assertEqual(self._st(p), ["REDUCED", r.KAPPA_CENSORED, "REDUCED"])
         self.assertEqual(p["probe_status"], r.KAPPA_CENSORED)
         self.assertEqual(p["kappa_cells"][(44, 32, 8192)]["n_measurements"], 2)
 
+    def test_censor_records_w_co_and_filter_losses(self):          # R10-5, kills Y04
+        p, _ = self._reduce([dict(n_c=100, leaks=300)])
+        m = p["measurements"][0]
+        self.assertEqual(m["status"], r.KAPPA_CENSORED)
+        self.assertEqual(m["censor_detail"], dict(w_co=400, c=100, loss_bs_ne_b=0, loss_not_in_flight=300,
+                                                  loss_pair_mismatch=0))
+
+    def test_censor_boundary_127_128(self):                        # kills Y10
+        p, _ = self._reduce([dict(n_c=127), dict(n_c=128)])
+        self.assertEqual(self._st(p), [r.KAPPA_CENSORED, "REDUCED"])
+
     def test_value_dependent_reject_non_co_span(self):             # R9-3 X09, §7-2(c)
         p, _ = self._reduce([dict(), dict(non_co_after=True)])
-        self.assertEqual([m["status"] for m in p["measurements"]], ["REDUCED", r.VALUE_DEPENDENT])
+        self.assertEqual(self._st(p), ["REDUCED", r.VALUE_DEPENDENT])
         self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
 
-    def test_value_independent_missing_mark(self):
-        p, _ = self._reduce([dict()], drop_mark="coload_sent")
-        self.assertEqual(p["measurements"][0]["status"], r.VALUE_INDEPENDENT)
-        self.assertEqual(p["probe_status"], r.VALUE_INDEPENDENT)
+    def test_partial_split_window_rejected(self):                  # kills X10 (PE 0.906 < 0.99)
+        p, _ = self._reduce([dict(w_off=12)])
+        self.assertEqual(self._st(p), [r.VALUE_DEPENDENT])
+        self.assertIn("PE-iter", p["measurements"][0]["reason"])
+
+    def test_c_excludes_in_flight_unsplit_leaks(self):             # kills X06
+        p, _ = self._reduce([dict(inflight_off_leaks=300)])
+        self.assertEqual(self._st(p), ["REDUCED"])
+        self.assertAlmostEqual(p["measurements"][0]["c_median_ms"], 26.0, places=6)
+
+    # ---- R10-1: class = most severe applicable check; mark loss never launders censored / VD into VI ----
+    def test_mark_loss_does_not_launder(self):                     # audit S1-S3, S6
+        for omit, want in ((("fix_s",), r.KAPPA_CENSORED), (("delta_l",), r.KAPPA_CENSORED),
+                           (("cell_end",), r.VALUE_DEPENDENT), (("coload_sent",), r.VALUE_DEPENDENT)):
+            p, _ = self._reduce([dict(n_c=100, _omit=omit)])
+            self.assertEqual(p["probe_status"], want, omit)
+        p, _ = self._reduce([dict(non_co_after=True, _omit=("fix_s",))])
+        self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
+
+    def test_missing_scalar_mark_on_good_cell_is_vi(self):         # kills Y05
+        p, _ = self._reduce([dict(_omit=("fix_s",))])
+        self.assertEqual(self._st(p), [r.VALUE_INDEPENDENT])
+
+    def test_abort_reason_table(self):                             # H-1 reason -> class
+        for reason, want in (("server_down", r.VALUE_INDEPENDENT), ("cell_timeout", r.VALUE_DEPENDENT),
+                             ("whatever", r.VALUE_DEPENDENT)):
+            p, _ = self._reduce([dict(_abort=reason, _omit=("cell_end",))])
+            self.assertEqual(self._st(p), [want], reason)
+
+    def test_vd_and_vi_mixed_status_is_vd(self):                   # kills Y01
+        p, _ = self._reduce([dict(non_co_after=True), dict(_omit=("fix_s",))])
+        self.assertEqual(sorted(self._st(p)), sorted([r.VALUE_DEPENDENT, r.VALUE_INDEPENDENT]))
+        self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
 
     def test_censored_dominates_status(self):
-        p, _ = self._reduce([dict(n_c=100), dict(non_co_after=True)], drop_mark=None)
+        p, _ = self._reduce([dict(n_c=100), dict(non_co_after=True)])
         self.assertEqual(p["probe_status"], r.KAPPA_CENSORED)
 
-    def test_kappa_equal_weight_median(self):                      # rev10 estimator, kills X01 / X02 variants
+    def test_probe_d_violation_vi(self):                           # kills Y06
+        p, _ = self._reduce([dict(d=24)], expected={16: 0, 44: 0})
+        self.assertEqual(self._st(p), [r.VALUE_INDEPENDENT])
+
+    def test_malformed_mark_line_vi(self):                         # kills Y07
+        p, _ = self._reduce([dict()], extra_lines=["cell_end oops"])
+        self.assertEqual(p["probe_status"], r.VALUE_INDEPENDENT)
+
+    # ---- R10-2: completeness against the raw co spans, unique ids, exact counts, load-call wrapping ----
+    def test_omitted_cell_is_orphan_co_span(self):                 # audit S4
+        p, _ = self._reduce([dict(), dict(n_c=100, _no_marks=True)])
+        self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
+        self.assertTrue(any("co span" in x["reason"] for x in p["boot_issues"]))
+
+    def test_cell_id_reuse_rejected(self):                         # audit S5b
+        p, _ = self._reduce([dict(_id="x"), dict(_id="x")])
+        self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
+        self.assertTrue(any("duplicate" in x["reason"] for x in p["boot_issues"]))
+
+    def test_exact_call_counts(self):                              # audit S7
+        cells = [dict(), dict()]
+        for exp, want in (({16: 0, 44: 3}, r.VALUE_DEPENDENT), ({16: 0, 44: 1}, r.VALUE_DEPENDENT),
+                          ({16: 1, 44: 2}, r.VALUE_DEPENDENT), ({16: 0, 44: 2}, "OK")):
+            p, _ = self._reduce(cells, expected=exp)
+            self.assertEqual(p["probe_status"], want, exp)
+        p, _ = self._reduce(cells, expected={16: 0, 44: 3}, telemetry_tail='{"event": "decode_it')
+        self.assertEqual(p["probe_status"], r.VALUE_INDEPENDENT)      # boot death: shortfall is VI
+
+    def test_boot_abort_death(self):                               # H-1 boot_abort reason table
+        p, _ = self._reduce([dict()], expected={16: 0, 44: 3}, extra_lines=["boot_abort node_failure"])
+        self.assertEqual(p["probe_status"], r.VALUE_INDEPENDENT)
+        p, _ = self._reduce([dict()], expected={16: 0, 44: 3}, extra_lines=["boot_abort cell_timeout"])
+        self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
+
+    def test_registered_counts_default(self):
+        self.assertEqual(r.PROBE_CALLS, {16: 7, 44: 14})
+        with tempfile.TemporaryDirectory() as td:                   # default = registered 14 / 7
+            p = r.reduce_probe([write_boot(td, "k", [dict()])])
+        self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
+        self.assertEqual(p["provenance"]["expected_calls"], {16: 7, 44: 14})
+
+    def test_cell_must_be_in_one_load_call(self):
+        p, _ = self._reduce([dict(_no_call=True)])
+        self.assertEqual(self._st(p), [r.VALUE_DEPENDENT])
+
+    def test_raw_failures_classified(self):                        # R10-1 crash handling
+        p, _ = self._reduce([dict()], telemetry_tail='{"event": "decode_it')
+        self.assertEqual(self._st(p), ["REDUCED"])
+        self.assertEqual(p["probe_status"], r.VALUE_INDEPENDENT)
+        with tempfile.TemporaryDirectory() as td:
+            b = write_boot(td, "k", [dict()])
+            with open(b["telemetry"]) as fh:
+                lines = fh.read().split("\n")
+            lines[5] = lines[5][:10]
+            with open(b["telemetry"], "w") as fh:
+                fh.write("\n".join(lines))
+            self.assertEqual(r.reduce_probe([b], expected_calls={16: 0, 44: 1})["probe_status"], r.VALUE_DEPENDENT)
+            b2 = dict(b, telemetry=os.path.join(td, "absent.jsonl"))
+            self.assertEqual(r.reduce_probe([b2], expected_calls={16: 0, 44: 0})["probe_status"], r.VALUE_INDEPENDENT)
+            b3 = write_boot(td, "u", [dict()], extra_lines=["load_call_start orphan 1.0"])
+            self.assertEqual(r.reduce_probe([b3], expected_calls={16: 0, 44: 1})["probe_status"], r.VALUE_DEPENDENT)
+
+    # ---- estimator / sources ----
+    def test_kappa_equal_weight_median(self):                      # kills X01 / X02 variants
         cells = [dict(alone_ms=20.0, a2_ms=20.0, co_ms=32.0, n_c=500),   # kappa 1.6, long C
                  dict(alone_ms=20.0, a2_ms=20.0, co_ms=40.0, n_c=200),   # kappa 2.0
                  dict(alone_ms=20.0, a2_ms=20.0, co_ms=40.0, n_c=200)]   # kappa 2.0
@@ -314,17 +493,23 @@ class TestReduceProbe(unittest.TestCase):
         self.assertAlmostEqual(k["kappa_median"], 2.0, places=6)   # pooled C would give 1.6, mean 1.867
         self.assertEqual(k["n_measurements"], 3)
 
-    def test_tau_from_kappa_a1(self):                              # R9-2
-        p, _ = self._reduce(binding_cells())
+    def test_kappa_even_n_median(self):                            # kills Y02 (median_low) / Y03 (max)
+        cells = [dict(alone_ms=20.0, a2_ms=20.0, co_ms=ms) for ms in (32.0, 32.0, 40.0, 40.0)]
+        p, _ = self._reduce(cells)
+        self.assertAlmostEqual(p["kappa_cells"][(44, 32, 8192)]["kappa_median"], 1.8, places=6)
+
+    def test_tau_from_kappa_a1(self):                              # R9-2; kills Y12 (a2_ms != alone_ms)
+        cells = [dict(d=d, alone_ms=20.0, a2_ms=30.0, co_ms=26.0) for d in (16, 44)]
+        p, _ = self._reduce(cells)
         self.assertEqual(set(p["tau_cells"]), {(16, 32, 8192), (44, 32, 8192)})
-        self.assertAlmostEqual(p["tau_cells"][(44, 32, 8192)]["s_per_median_ms"],
-                               f.tau_alone(44, 32, 8192, "DN") * 1000, places=6)
+        self.assertAlmostEqual(p["tau_cells"][(44, 32, 8192)]["s_per_median_ms"], 20.0, places=6)
 
     def test_provenance_self_computed(self):                       # R9-5
         self.assertNotIn("reducer_sha256", inspect.signature(r.reduce_probe).parameters)
         p, shas = self._reduce([dict()])
         self.assertEqual(p["provenance"]["reducer_sha256"], r.self_sha256())
         self.assertEqual(p["provenance"]["raw_files"], shas)
+        self.assertEqual(len(p["provenance"]["boots"]), 1)
         m = p["measurements"][0]
         self.assertEqual(m["cell"], [44, 32, 8192])
         self.assertIn("C", m["ranges"])
@@ -339,39 +524,91 @@ class TestReduceProbe(unittest.TestCase):
         with self.assertRaises(r.ReduceRejected):
             r.loads_strict('{"a": 1, "a": 2}')
 
-    def _cli(self, p, tamper=None):
+
+class TestCalculatorCli(unittest.TestCase):
+    """raw files -> reduce_probe -> to_json -> calculator CLI (re-reduction R10-3, freeze manifest H-2).
+    The CLI mutates calculator module state (one process per real run); each test restores it."""
+    from test_n2_feasibility import _STATE
+
+    def setUp(self):
+        import copy
+        self._snap = {n: copy.deepcopy(getattr(f, n)) for n in self._STATE}
+
+    def tearDown(self):
+        import copy
+        for n, v in self._snap.items():
+            cur = getattr(f, n)
+            if isinstance(cur, dict):
+                cur.clear(); cur.update(copy.deepcopy(v))
+            else:
+                setattr(f, n, copy.deepcopy(v))
+
+    def _run(self, cells=None, tamper=None, manifest=None, **kw):
         with tempfile.TemporaryDirectory() as td:
-            pi, po, fz = (os.path.join(td, n) for n in ("probe.json", "K.json", "FREEZE.json"))
+            boots = full_boots(td, cells, **kw)
+            p = r.reduce_probe(boots)
+            pi, po = os.path.join(td, "probe.json"), os.path.join(td, "K.json")
             txt = r.to_json(p)
             if tamper:
-                d = json.loads(txt); tamper(d); txt = json.dumps(d)
+                d = json.loads(txt); tamper(d); txt = json.dumps(d, indent=1, sort_keys=True)
             with open(pi, "w") as fh:
                 fh.write(txt)
-            with open(fz, "w") as fh:
-                json.dump({"n2_feasibility.py": f._sha256_file(f.__file__), "n2_probe_reduce.py": r.self_sha256()}, fh)
-            rc = f.main(["--probe", pi, "--out", po, "--freeze", fz])
+            fz = write_manifest(td, **(manifest or {})) if manifest is not False else None
+            argv = ["--probe", pi, "--out", po] + (["--freeze", fz] if fz else [])
+            rc = f.main(argv)
             with open(po) as fh:
-                return rc, json.load(fh)
+                return rc, json.load(fh), p
 
     def test_round_trip_through_calculator_cli(self):              # kills B21; end to end raw files -> K
-        p, _ = self._reduce(binding_cells(), theta=True)
+        rc, rec, p = self._run()
         self.assertEqual(p["probe_status"], "OK")
-        rc, rec = self._cli(p)
         self.assertEqual(rc, 0, rec.get("reasons"))
         self.assertEqual(rec["K"], {"16": 22, "44": 10})
         self.assertEqual(rec["reducer_sha256"], r.self_sha256())
         self.assertIn("budget", rec)
+        self.assertFalse(rec["reprobe_allowed"])
 
-    def test_reducer_sha_mismatch_blocks_seal(self):               # R8-3
-        p, _ = self._reduce(binding_cells(), theta=True)
-        rc, rec = self._cli(p, tamper=lambda d: d["provenance"].update(reducer_sha256="f" * 64))
+    def test_tampered_probe_json_rejected(self):                   # R10-3 (audit tamper.py)
+        cells = full_cells() + [dict(n_c=100)]
+        def launder(d):
+            d["measurements"] = [m for m in d["measurements"] if m["status"] != r.KAPPA_CENSORED]
+            d["probe_status"] = "OK"
+        rc, rec, p = self._run(cells, tamper=launder)
+        self.assertEqual(p["probe_status"], r.KAPPA_CENSORED)
+        self.assertEqual((rc, rec["K"], rec["reprobe_allowed"]), (2, None, False))
+        self.assertTrue(any("re-reduction" in x for x in rec["reasons"]))
+
+    def test_reducer_sha_mismatch_blocks_seal(self):               # R8-3 (also caught by re-reduction)
+        rc, rec, _ = self._run(tamper=lambda d: d["provenance"].update(reducer_sha256="f" * 64))
         self.assertEqual(rc, 2)
 
-    def test_censored_probe_cli_no_reprobe(self):                  # R9-1 end to end
-        cells = binding_cells() + [dict(n_c=100)]
-        p, _ = self._reduce(cells, theta=True)
-        rc, rec = self._cli(p)
-        self.assertEqual((rc, rec["K"], rec["reprobe_allowed"]), (2, None, False))
+    def test_status_routes(self):                                  # R9-1 end to end
+        for cells, want in ((full_cells() + [dict(n_c=100)], False),
+                            (full_cells()[:-1] + [dict(full_cells()[-1], non_co_after=True)], False),
+                            (full_cells()[:-1] + [dict(full_cells()[-1], _omit=("fix_s",))], True)):
+            rc, rec, p = self._run(cells)
+            self.assertEqual((rc, rec["K"], rec["reprobe_allowed"]), (2, None, want), p["probe_status"])
+
+    def test_theta_short_value_independent(self):                  # n < 20 -> re-probe allowed
+        cells = [dict(kw, span_req=1, co_spans=18) if kw["d"] == 16 else kw for kw in full_cells()]
+        rc, rec, p = self._run(cells=cells)                       # d16 all 1-request spans: n(p=92) = 0 (N2C-56)
+        self.assertEqual(p["probe_status"], "OK")
+        self.assertEqual(rc, 2)
+        self.assertTrue(rec["reprobe_allowed"])
+
+    def test_not_sealable_rc2(self):                               # A11
+        rc, rec, _ = self._run(cells=full_cells(tau_ratio=0.5, theta64=4500.0))
+        self.assertEqual(rc, 2)
+        self.assertFalse(rec["seal_allowed"])
+
+    def test_freeze_manifest(self):                                # R9-4 / H-2
+        for man in (False, dict(drop=("n2_feasibility.py",)), dict(drop=("n2_probe_reduce.py",)),
+                    dict(writers=False), dict(override={"extra_frozen.py": "0" * 64})):
+            rc, rec, _ = self._run(manifest=man)
+            self.assertEqual(rc, 2, man)
+            self.assertTrue(rec["reasons"])
+        rc, rec, _ = self._run(manifest={})
+        self.assertEqual(rc, 0, rec["reasons"])
 
 
 if __name__ == "__main__":

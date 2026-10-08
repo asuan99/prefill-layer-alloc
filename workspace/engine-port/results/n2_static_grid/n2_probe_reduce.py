@@ -127,9 +127,19 @@ VALUE_INDEPENDENT = "VALUE_INDEPENDENT"  # missing / malformed marks, harness de
 
 
 class MeasurementRejected(ReduceRejected):
-    def __init__(self, klass, msg):
+    def __init__(self, klass, msg, detail=None):
         super().__init__(msg)
         self.klass = klass
+        self.detail = detail or {}
+
+
+SEVERITY = {KAPPA_CENSORED: 3, VALUE_DEPENDENT: 2, VALUE_INDEPENDENT: 1}
+PROBE_CALLS = {16: 7, 44: 14}        # R9-7 exact call (= kappa cell) counts, enforced from the marks + raw (R10-2)
+# R10-1 / H-1: registered cell_abort / boot_abort reasons -> class. Any other reason is VALUE_DEPENDENT.
+ABORT_REASONS = {"server_down": VALUE_INDEPENDENT, "client_crash": VALUE_INDEPENDENT,
+                 "http_connection_error": VALUE_INDEPENDENT, "node_failure": VALUE_INDEPENDENT,
+                 "cell_timeout": VALUE_DEPENDENT, "coload_payload_invalid": VALUE_DEPENDENT,
+                 "stream_cancel_failed": VALUE_DEPENDENT}
 
 
 def _ts(e):
@@ -228,8 +238,12 @@ def extract_cell_windows(records, marks, cell):
     wco = [e for e in iters if t_co0 <= e["t_launch"] <= t_co1]           # W_co: before the bs filter (R5-7)
     cwin = [e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]
     if len(cwin) < WINDOW_ITERS:
-        raise MeasurementRejected(KAPPA_CENSORED, f"C has {len(cwin)} < {WINDOW_ITERS} iterations: kappa above the "
-                                                  f"probe ceiling kappa* at the probe K (censored, R9-1)")
+        bs_eq = [e for e in wco if e["bs"] == b]
+        inflt = [e for e in bs_eq if e["prefill_in_flight"]]
+        detail = dict(w_co=len(wco), c=len(cwin), loss_bs_ne_b=len(wco) - len(bs_eq),
+                      loss_not_in_flight=len(bs_eq) - len(inflt), loss_pair_mismatch=len(inflt) - len(cwin))
+        raise MeasurementRejected(KAPPA_CENSORED, f"C has {len(cwin)} < {WINDOW_ITERS} iterations (W_co {len(wco)}; "
+                                                  f"censored at the probe K, R9-1 / R10-5)", detail)
     a2 = _alone(iters, b, t_co1, float("inf"), pair)[:WINDOW_ITERS]
     if len(a2) < WINDOW_ITERS:
         raise MeasurementRejected(VALUE_DEPENDENT, "A2 window short")
@@ -289,88 +303,194 @@ def load_calls_from_marks(marks_lines):
     return [(starts[k], ends[k]) for k in sorted(starts, key=lambda k: starts[k])]
 
 
-def cells_from_marks(marks_lines):
-    """Cell enumeration from the runner's marks (R9-1): 'cell_start <id> <d> <b> <c> <t>', 'cell_end <id> <t>',
-    'coload_sent <id> <t>', and the client-measured 'delta_l <id> <s>' / 'fix_s <id> <s>'. Every cell_start is a
-    measurement that must end up either reduced or recorded as rejected (completeness)."""
-    cells, defects = {}, []
+def parse_marks(marks_lines):
+    """MARK FORMAT (§14-2, registered; H-1). One mark per line, fields separated by single spaces, times are client /
+    runner CLOCK_MONOTONIC seconds (same clock as the engine's timestamp_monotonic_s):
+      cell_start <cell_id> <d> <b> <c> <t>    runner, before the cell's burst is sent
+      coload_sent <cell_id> <t>               client, read immediately BEFORE the first co-load request is sent
+      cell_end <cell_id> <t>                  runner, in `finally` after the cell is drained (always written)
+      cell_abort <cell_id> <reason>           runner, in `finally` when the cell did not complete (reason table)
+      delta_l <cell_id> <s> / fix_s <cell_id> <s>   client-measured scalars, after the cell
+      load_call_start <call_id> <t> / load_call_end <call_id> <t>   client, wrapping each probe call (= one cell)
+      boot_abort <reason>                     runner, in `finally` when the boot died (reason table)
+    Returns (cells {id: {...}}, issues [(klass, reason)]) -- duplicates and malformed lines are issues, never dropped."""
+    cells, issues, boot_aborts = {}, [], []
+    keys = {"cell_start": 5, "cell_end": 2, "coload_sent": 2, "delta_l": 2, "fix_s": 2, "cell_abort": 2}
     for line in marks_lines:
         parts = line.split()
         if not parts:
             continue
         tag, rest = parts[0], parts[1:]
-        if tag == "cell_start" and len(rest) == 5:
-            cells.setdefault(rest[0], {}).update(cell=(int(rest[1]), int(rest[2]), int(rest[3])), t0=float(rest[4]))
-        elif tag in ("cell_end", "coload_sent", "delta_l", "fix_s") and len(rest) == 2:
-            key = {"cell_end": "t1"}.get(tag, tag)
-            cells.setdefault(rest[0], {})[key] = float(rest[1])
-        elif tag.startswith("cell") or tag in ("coload_sent", "delta_l", "fix_s"):
-            defects.append(line)
-    return cells, defects
+        if tag in ("load_call_start", "load_call_end", "bench_start", "bench_end"):
+            continue                                                          # parsed by load_calls_from_marks
+        if tag == "boot_abort" and len(rest) == 1:
+            boot_aborts.append(rest[0]); continue
+        if tag not in keys or len(rest) != keys[tag]:
+            issues.append((VALUE_INDEPENDENT, f"malformed mark: {line}")); continue
+        cm = cells.setdefault(rest[0], {})
+        if tag in cm:
+            issues.append((VALUE_DEPENDENT, f"duplicate {tag} for cell id {rest[0]}")); cm.setdefault("dup", True)
+            continue
+        try:
+            if tag == "cell_start":
+                cm[tag] = ((int(rest[1]), int(rest[2]), int(rest[3])), float(rest[4]))
+            elif tag == "cell_abort":
+                cm[tag] = rest[1]
+            else:
+                cm[tag] = float(rest[1])
+        except ValueError:
+            issues.append((VALUE_INDEPENDENT, f"malformed mark: {line}"))
+    return cells, issues, boot_aborts
 
 
 def _slice(records, t0, t1):
     return [e for e in records if t0 <= _ts(e) <= t1]
 
 
-def reduce_probe(boots):
+def _read_telemetry(path):
+    """Strict JSONL; a non-parsable LAST line is a truncated write (boot death) and is dropped and reported.
+    Any other unparsable line is corruption (ReduceRejected)."""
+    with open(path) as fh:
+        lines = [ln for ln in fh.read().split("\n") if ln.strip()]
+    out, truncated = [], False
+    for k, ln in enumerate(lines):
+        try:
+            out.append(loads_strict(ln))
+        except (ValueError, ReduceRejected):
+            if k == len(lines) - 1:
+                truncated = True
+            else:
+                raise ReduceRejected(f"corrupt telemetry line {k + 1}")
+    return out, truncated
+
+
+def _worst(issues):
+    return max(issues, key=lambda x: SEVERITY[x[0]])[0] if issues else None
+
+
+def _measure(cid, cm, records, calls):
+    """R10-1: every applicable check runs; the cell's class is the MOST severe (censored > VD > VI)."""
+    issues, out = [], None
+    if cm.get("dup"):
+        issues.append((VALUE_DEPENDENT, "duplicate cell id"))
+    if "cell_start" not in cm:
+        issues.append((VALUE_DEPENDENT, "marks for a cell id without cell_start"))
+        return issues, None
+    cell, t0 = cm["cell_start"]
+    abort = cm.get("cell_abort")
+    if abort is not None:                         # an aborted cell is classified by its registered reason only
+        issues.append((ABORT_REASONS.get(abort, VALUE_DEPENDENT), f"cell_abort {abort}"))
+        return issues, None
+    for key in ("cell_end", "coload_sent"):       # without cell_abort a missing cell_end / coload_sent is VD
+        if key not in cm:
+            issues.append((VALUE_DEPENDENT, f"{key} mark missing without cell_abort"))
+    if cell[0] not in PROBE_D:
+        issues.append((VALUE_INDEPENDENT, f"probe cell d={cell[0]} not in {PROBE_D}"))
+    if "coload_sent" in cm:
+        n_calls = sum(1 for a, b in calls if a <= cm["coload_sent"] <= b)
+        if n_calls != 1:
+            issues.append((VALUE_DEPENDENT, f"coload_sent inside {n_calls} load calls (must be exactly 1)"))
+    if cell[0] in PROBE_D and "cell_end" in cm and "coload_sent" in cm:
+        try:
+            win = extract_cell_windows(_slice(records, t0, cm["cell_end"]), {"coload_sent": cm["coload_sent"]}, cell)
+            c_med, a_on = kappa_parts(win)
+            out = dict(win=win, c_med=c_med, a_on=a_on)
+        except MeasurementRejected as e:
+            issues.append((e.klass, str(e)) + ((e.detail,) if e.detail else ()))
+    for key in ("delta_l", "fix_s"):              # evaluated AFTER extraction (R10-1)
+        if key not in cm:
+            issues.append((VALUE_INDEPENDENT, f"{key} mark missing"))
+    return issues, out
+
+
+def reduce_probe(boots, expected_calls=None):
     """boots: [dict(boot_id=str, telemetry=path, marks=path)] -- the ONLY registered path raw files -> probe.json.
-    Raw-file sha256 are computed here from the file bytes (R9-5); calls and cells are enumerated from the marks;
-    every measurement is reduced or recorded with its reject class (R9-1); probe_status is derived mechanically."""
-    raw_files, theta_boots, measurements, tau_w, kap = {}, [], [], {}, {}
+    Raw-file sha256 from the bytes (R9-5); calls and cells from the marks (H-1 format); every measurement REDUCED
+    or recorded with its most severe class (R10-1); completeness against the RAW co spans, unique ids and the exact
+    call counts PROBE_CALLS (R10-2); probe_status = most severe issue anywhere. expected_calls defaults to the
+    registered PROBE_CALLS and is recorded (the calculator re-reduces with the default, R10-3)."""
+    expected = dict(PROBE_CALLS if expected_calls is None else expected_calls)
+    raw_files, theta_boots, measurements, boot_issues, tau_w, kap = {}, [], [], [], {}, {}
     l_lag, delta_l, fix_s = [], [], []
-    n_cells = 0
+    counts, dead, n_cells = {d: 0 for d in PROBE_D}, False, 0
     for bt in boots:
         bid = bt["boot_id"]
-        for k in ("telemetry", "marks"):
-            raw_files[bt[k]] = sha256_file(bt[k])
-        records = read_jsonl_strict(bt["telemetry"])
-        with open(bt["marks"]) as fh:
-            mlines = [ln for ln in fh.read().splitlines() if ln.strip()]
-        calls = load_calls_from_marks(mlines)
+        try:
+            for k in ("telemetry", "marks"):
+                raw_files[bt[k]] = sha256_file(bt[k])
+        except OSError as e:
+            boot_issues.append(dict(boot=bid, status=VALUE_INDEPENDENT, reason=f"raw file missing: {e}"))
+            dead = True
+            continue
+        try:
+            records, truncated = _read_telemetry(bt["telemetry"])
+            with open(bt["marks"]) as fh:
+                mlines = [ln for ln in fh.read().splitlines() if ln.strip()]
+            calls = load_calls_from_marks(mlines)
+        except Exception as e:                                                  # R10-1: not raw absence -> VD
+            boot_issues.append(dict(boot=bid, status=VALUE_DEPENDENT, reason=f"reducer failure: {e!r}"))
+            continue
+        if truncated:
+            boot_issues.append(dict(boot=bid, status=VALUE_INDEPENDENT, reason="telemetry truncated (boot death)"))
+            dead = True
+        cells, mark_issues, boot_aborts = parse_marks(mlines)
+        for ab in boot_aborts:
+            cls = ABORT_REASONS.get(ab, VALUE_DEPENDENT)
+            boot_issues.append(dict(boot=bid, status=cls, reason=f"boot_abort {ab}"))
+            dead = dead or cls == VALUE_INDEPENDENT
+        for cls, why in mark_issues:
+            boot_issues.append(dict(boot=bid, status=cls, reason=why))
         theta_boots.append((bid, records, calls))
-        cells, defects = cells_from_marks(mlines)
+        # R10-2: every raw co-type span must start inside exactly one marked cell window
+        wins = [(cm["cell_start"][1], cm.get("cell_end", float("inf"))) for cm in cells.values() if "cell_start" in cm]
+        starts = {e["span_seq"]: e for e in records if e.get("event") == "prefill_span_start"}
+        for e in starts.values():
+            if e.get("n_new", 0) >= 1 and e.get("extend_tokens") == e["n_new"] * CO_INPUT:
+                n_in = sum(1 for a, b in wins if a <= e["timestamp_monotonic_s"] <= b)
+                if n_in != 1:
+                    boot_issues.append(dict(boot=bid, status=VALUE_DEPENDENT,
+                                            reason=f"co span {e['span_seq']} inside {n_in} marked cells"))
         n_cells += len(cells)
-        for line in defects:
-            measurements.append(dict(boot=bid, cell_id=None, status=VALUE_INDEPENDENT, reason=f"malformed mark: {line}"))
-        for cid in sorted(cells, key=lambda k: cells[k].get("t0", float("inf"))):
+        for cid in sorted(cells, key=lambda k: cells[k].get("cell_start", ((), float("inf")))[1]):
             cm = cells[cid]
-            rec = dict(boot=bid, cell_id=cid, cell=list(cm.get("cell", ())))
-            try:
-                if "cell" not in cm or "t0" not in cm or "t1" not in cm:
-                    raise MeasurementRejected(VALUE_INDEPENDENT, "cell_start/cell_end marks incomplete")
-                cell = cm["cell"]
-                if cell[0] not in PROBE_D:
-                    raise MeasurementRejected(VALUE_INDEPENDENT, f"probe cell d={cell[0]} not in {PROBE_D}")
-                for key in ("delta_l", "fix_s"):
-                    if key not in cm:
-                        raise MeasurementRejected(VALUE_INDEPENDENT, f"{key} mark missing")
-                win = extract_cell_windows(_slice(records, cm["t0"], cm["t1"]),
-                                           {"coload_sent": cm.get("coload_sent")}, cell)
-                c_med, a_on = kappa_parts(win)
-            except MeasurementRejected as e:
-                measurements.append(dict(rec, status=e.klass, reason=str(e)))
+            if "cell_start" in cm and cm["cell_start"][0][0] in counts:
+                counts[cm["cell_start"][0][0]] += 1
+            issues, out = _measure(cid, cm, records, calls)
+            rec = dict(boot=bid, cell_id=cid, cell=list(cm["cell_start"][0]) if "cell_start" in cm else [])
+            if issues:
+                worst = max(issues, key=lambda x: SEVERITY[x[0]])
+                measurements.append(dict(rec, status=worst[0], reason=worst[1],
+                                         all_issues=[list(x[:2]) for x in issues],
+                                         **({"censor_detail": worst[2]} if len(worst) > 2 else {})))
                 continue
+            win, cell = out["win"], tuple(cm["cell_start"][0])
             tau_w.setdefault(cell, []).append(win["W"])                           # R9-2: tau from the kappa A1 window
-            kap.setdefault(cell, []).append(c_med / a_on)
+            kap.setdefault(cell, []).append(out["c_med"] / out["a_on"])
             l_lag.append(win["l_lag_iters"]); delta_l.append(cm["delta_l"]); fix_s.append(cm["fix_s"])
-            measurements.append(dict(rec, status="REDUCED", kappa=c_med / a_on, c_median_ms=c_med, a_on_ms=a_on,
-                                     ctx_mid=win["ctx_mid"], ranges={k: list(v) for k, v in win["ranges"].items()},
+            measurements.append(dict(rec, status="REDUCED", kappa=out["c_med"] / out["a_on"], c_median_ms=out["c_med"],
+                                     a_on_ms=out["a_on"], ctx_mid=win["ctx_mid"],
+                                     ranges={k: list(v) for k, v in win["ranges"].items()},
                                      l_lag_iters=win["l_lag_iters"]))
-    n_marked = sum(1 for m in measurements if m["cell_id"] is not None)
-    if n_marked != n_cells:                                                     # completeness invariant (R9-1)
-        raise ReduceRejected(f"completeness: {n_cells} marked cells but {n_marked} reduced + rejected")
+    if len(measurements) != n_cells:                                            # reducer-internal no-drop check
+        raise ReduceRejected(f"internal: {n_cells} marked cells but {len(measurements)} recorded")
+    for d in PROBE_D:                                                           # R10-2 exact call counts
+        if counts[d] != expected.get(d, 0):
+            short = counts[d] < expected.get(d, 0)
+            boot_issues.append(dict(boot=None, status=VALUE_INDEPENDENT if (short and dead) else VALUE_DEPENDENT,
+                                    reason=f"d={d}: {counts[d]} cells marked, registered {expected.get(d, 0)}"))
     theta, excluded, dropped = reduce_theta(theta_boots)
     tau = {cell: {"s_per_median_ms": pooled_median_ms(ws), "window_iters": min(len(w) for w in ws)}
            for cell, ws in tau_w.items()}
     kappa = {cell: {"kappa_median": statistics.median(ks), "n_measurements": len(ks),
                     "window_iters": WINDOW_ITERS, "a_on_window_iters": WINDOW_ITERS} for cell, ks in kap.items()}
-    statuses = {m["status"] for m in measurements}
+    statuses = {m["status"] for m in measurements} | {m["status"] for m in boot_issues}
     status = next((s for s in (KAPPA_CENSORED, VALUE_DEPENDENT, VALUE_INDEPENDENT) if s in statuses), "OK")
     return {"theta_spans": theta, "theta_excluded": excluded, "theta_dropped": dropped,
             "tau_cells": tau, "kappa_cells": kappa, "l_lag_iters": l_lag, "delta_l_s": delta_l, "fix_s": fix_s,
-            "probe_status": status, "measurements": measurements,
-            "provenance": dict(reducer_sha256=self_sha256(), raw_files=raw_files,
+            "probe_status": status, "measurements": measurements, "boot_issues": boot_issues,
+            "provenance": dict(reducer_sha256=self_sha256(), raw_files=raw_files, expected_calls=expected,
+                               boots=[dict(boot_id=b["boot_id"], telemetry=b["telemetry"], marks=b["marks"])
+                                      for b in boots],
                                load_calls={bid: [list(w) for w in calls] for bid, _r, calls in theta_boots})}
 
 

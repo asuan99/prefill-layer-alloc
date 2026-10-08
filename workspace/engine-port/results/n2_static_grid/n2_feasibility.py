@@ -1,6 +1,6 @@
 """N2(3-a) design-time feasibility & budget calculator (CPU only, no GPU).
 
-Status: DESIGN CALCULATOR for PREREG_N2_3A rev10 (unsealed). Every number it prints is a design
+Status: DESIGN CALCULATOR for PREREG_N2_3A rev11 (unsealed). Every number it prints is a design
 forecast from the coefficients below -- NOT a measurement and NOT citable (N2C-12, N2C-18).
 
 Coefficient DIRECTIONS (rev7, R6-5). One probe yields three coefficient sets, each conservative for
@@ -538,10 +538,71 @@ def k_sensitivity(k16s=(18, 19, 20, 21, 22), k44s=(8, 9, 10)):
     return rows
 
 
+def check_freeze_manifest(freeze_path, calculator_sha, reducer_sha):
+    """H-2 / R9-4: the manifest written at the pre-probe freeze commit (FREEZE_N2_PROBE.json):
+    {"commit": <git sha>, "files": {<path relative to the manifest>: <sha256>}, "harness_mark_writers": [<path>, ...]}.
+    EVERY listed file must exist with that sha256; the calculator and reducer entries must match the running tools;
+    at least one harness mark writer must be listed. This detects drift; it cannot prove the gate code itself was
+    not edited together with this check (self-check, lesson 9) -- the closing defence is the clean-worktree freeze
+    checkout + K recomputation by the delta audit (R10-3, text)."""
+    if freeze_path is None:
+        return ["no pre-probe freeze manifest given (--freeze)"]
+    with open(freeze_path) as fh:
+        man = json.load(fh, object_pairs_hook=_no_duplicate_keys)
+    base = os.path.dirname(os.path.abspath(freeze_path))
+    files = man.get("files") if isinstance(man.get("files"), dict) else {}
+    bad = []
+    if not man.get("commit"):
+        bad.append("freeze manifest: commit missing")
+    for rel, sha in files.items():
+        path = os.path.join(base, rel)
+        if not os.path.exists(path) or _sha256_file(path) != sha:
+            bad.append(f"freeze manifest: {rel} missing or sha256 differs")
+    by_name = {os.path.basename(rel): sha for rel, sha in files.items()}
+    if by_name.get("n2_feasibility.py") != calculator_sha or by_name.get("n2_probe_reduce.py") != reducer_sha:
+        bad.append("freeze manifest: calculator/reducer sha256 missing or differs from the running tools")
+    writers = man.get("harness_mark_writers")
+    if not isinstance(writers, list) or not writers or any(w not in files for w in writers):
+        bad.append("freeze manifest: harness mark writer(s) missing from the frozen file list")
+    return bad
+
+
+def reproduce_probe(probe_path, raw):
+    """R10-3: re-reduce from provenance.boots with the registered reducer next to this file and compare the
+    to_json bytes with the probe file. Returns None if identical, else the reason."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import n2_probe_reduce as red
+        boots = (raw.get("provenance") or {}).get("boots")
+        if not isinstance(boots, list) or not boots:
+            return "probe.json has no provenance.boots to re-reduce"
+        again = red.to_json(red.reduce_probe(boots))
+    except Exception as e:
+        return f"re-reduction failed: {e!r}"
+    finally:
+        sys.path.pop(0)
+    with open(probe_path) as fh:
+        if fh.read() != again:
+            return "probe.json differs from the re-reduction of its raw files"
+    return None
+
+
+def _git_info():
+    import subprocess
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=here, capture_output=True, text=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain", "--", "."], cwd=here, capture_output=True,
+                               text=True).stdout.strip()
+        return dict(head=head or None, dirty_paths=dirty.splitlines() if dirty else [])
+    except OSError:
+        return dict(head=None, dirty_paths=None)
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv[:1] == ["--probe"]:
-        # post-probe CLI: python3 n2_feasibility.py --probe probe.json --out K_POST_PROBE.json
+        # post-probe CLI: python3 n2_feasibility.py --probe probe.json --out K_POST_PROBE.json --freeze FREEZE.json
         probe_path, out_path = argv[1], argv[3]
         freeze_path = argv[5] if argv[4:5] == ["--freeze"] else None
         with open(probe_path) as fh:
@@ -549,7 +610,11 @@ def main(argv=None):
         probe = {k: ({tuple(json.loads(kk)) if kk.startswith("[") else int(kk): vv for kk, vv in v.items()}
                      if isinstance(v, dict) else v) for k, v in raw.items() if k in REQUIRED_PROBE_KEYS}
         status = raw.get("probe_status")
-        if status != "OK":
+        irreproducible = reproduce_probe(probe_path, raw)
+        if irreproducible is not None:
+            # R10-3: a probe.json that its own raw files do not reproduce is not evidence -> no K, no re-probe
+            rec = dict(K=None, seal_allowed=False, reasons=[irreproducible], reprobe_allowed=False)
+        elif status != "OK":
             # R9-1: KAPPA_CENSORED / VALUE_DEPENDENT -> no seal and NO re-probe (user decision); VALUE_INDEPENDENT ->
             # re-probe allowed. The gate is not run on a non-OK probe (no K is produced from it).
             rec = dict(K=None, seal_allowed=False, reasons=[f"probe_status {status}"],
@@ -574,15 +639,13 @@ def main(argv=None):
             rec["reasons"] = list(rec.get("reasons", [])) + ["reducer sha256 missing or differs from registered reducer"]
         rec["probe_sha256"] = _sha256_file(probe_path)
         rec["calculator_sha256"] = _sha256_file(__file__)
-        # R9-4: the tools must be the ones frozen by the pre-probe commit; any post-probe change -> no seal, report
-        frozen = {}
-        if freeze_path is not None:
-            with open(freeze_path) as fh:
-                frozen = json.load(fh, object_pairs_hook=_no_duplicate_keys)
-        rec["freeze"] = frozen
-        if frozen.get("n2_feasibility.py") != rec["calculator_sha256"] or frozen.get("n2_probe_reduce.py") != local_red:
+        # R9-4 / H-2: every frozen file (incl. the harness mark writers) must match the pre-probe freeze manifest
+        bad = check_freeze_manifest(freeze_path, rec["calculator_sha256"], local_red)
+        rec["freeze_problems"] = bad
+        if bad:
             rec["seal_allowed"] = False
-            rec["reasons"] = list(rec["reasons"]) + ["calculator/reducer sha256 missing from or differs from the pre-probe freeze manifest"]
+            rec["reasons"] = list(rec["reasons"]) + bad
+        rec["git"] = _git_info()                    # recorded only; the clean-checkout rule is procedural (§14-2)
         with open(out_path, "w") as fh:
             json.dump(rec, fh, indent=1, sort_keys=True, default=str)
         print(json.dumps({"K": rec["K"], "seal_allowed": rec["seal_allowed"], "reasons": rec["reasons"]}))
