@@ -1,0 +1,37 @@
+2026-10-07T08:36:00.404Z # 2026-10-07T08:36:00Z uid=0 user=root
+2026-10-07T08:36:00.405Z CapInh:	0000000000000000
+2026-10-07T08:36:00.405Z CapPrm:	00000000a80425fb
+2026-10-07T08:36:00.405Z CapEff:	00000000a80425fb
+2026-10-07T08:36:00.405Z CapBnd:	00000000a80425fb
+2026-10-07T08:36:00.405Z CapAmb:	0000000000000000
+2026-10-07T08:36:00.408Z 0x00000000a80425fb=cap_chown,cap_dac_override,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_net_bind_service,cap_net_raw,cap_sys_chroot,cap_mknod,cap_audit_write,cap_setfcap
+2026-10-07T08:36:00.410Z crw-rw-rw-. 1 root root 195,   0 Oct  7 08:36 /dev/nvidia0
+2026-10-07T08:36:00.410Z crw-rw-rw-. 1 root root 195, 255 Oct  7 08:36 /dev/nvidiactl
+2026-10-07T08:36:00.412Z ModifyDeviceFiles: 0
+2026-10-07T08:36:00.412Z DeviceFileMode: 438
+2026-10-07T08:36:01.287Z name, driver_version, power.limit [W], power.default_limit [W], power.min_limit [W], power.max_limit [W], persistence_mode, clocks.current.sm [MHz], clocks.max.sm [MHz]
+2026-10-07T08:36:01.296Z NVIDIA A100-SXM4-80GB, 580.105.08, 400.00 W, 400.00 W, 100.00 W, 400.00 W, Enabled, 210 MHz, 1410 MHz
+2026-10-07T08:36:01.331Z ## nvidia-smi -pl 400 (no-op: same as current)
+2026-10-07T08:36:01.355Z Failed to set power management limit for GPU 00000000:10:1C.0: Insufficient Permissions
+2026-10-07T08:36:01.355Z Terminating early due to previous errors.
+2026-10-07T08:36:01.356Z rc=4
+2026-10-07T08:36:01.356Z ## nvidia-smi -lgc 1410,1410 (expected: permission denied)
+2026-10-07T08:36:01.378Z The current user does not have permission to change clocks for GPU 00000000:10:1C.0.
+2026-10-07T08:36:01.378Z Terminating early due to previous errors.
+2026-10-07T08:36:01.380Z rc=4
+2026-10-07T08:36:01.380Z ## nvidia-smi -rgc
+2026-10-07T08:36:01.404Z The current user does not have permission to change clocks for GPU 00000000:10:1C.0.
+2026-10-07T08:36:01.404Z Terminating early due to previous errors.
+2026-10-07T08:36:01.405Z rc=4
+2026-10-07T08:36:01.405Z ## nvidia-smi -pm 1
+2026-10-07T08:36:01.429Z Persistence mode is already Enabled for GPU 00000000:10:1C.0.
+2026-10-07T08:36:01.429Z All done.
+2026-10-07T08:36:01.430Z rc=0
+2026-10-07T08:36:01.430Z ## pynvml nvmlDeviceSetPowerManagementLimit (same value)
+2026-10-07T08:36:02.325Z /opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+2026-10-07T08:36:02.325Z   import pynvml  # type: ignore[import]
+2026-10-07T08:36:03.457Z set-same-value: NVMLError Insufficient Permissions
+2026-10-07T08:36:03.457Z constraints [100000, 400000]
+2026-10-07T08:36:04.011Z ## after
+2026-10-07T08:36:05.114Z 400.00 W, Enabled, 210 MHz
+2026-10-07T08:36:05.121Z PROBE_DONE

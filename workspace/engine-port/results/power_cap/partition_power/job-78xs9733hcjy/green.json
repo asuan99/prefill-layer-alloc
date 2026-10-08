@@ -1,0 +1,44 @@
+{
+ "P92D16": {
+  "target": [
+   92,
+   16
+  ],
+  "prefill": {
+   "rc": 0,
+   "smCount": 92
+  },
+  "decode": {
+   "rc": 0,
+   "smCount": 16
+  }
+ },
+ "P64D44": {
+  "target": [
+   64,
+   44
+  ],
+  "prefill": {
+   "rc": 0,
+   "smCount": 64
+  },
+  "decode": {
+   "rc": 0,
+   "smCount": 44
+  }
+ },
+ "P16D92": {
+  "target": [
+   16,
+   92
+  ],
+  "prefill": {
+   "rc": 0,
+   "smCount": 16
+  },
+  "decode": {
+   "rc": 0,
+   "smCount": 92
+  }
+ }
+}

@@ -1,0 +1,100 @@
+2026-10-08T04:50:42.945Z /opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+2026-10-08T04:50:42.946Z   import pynvml  # type: ignore[import]
+2026-10-08T04:50:47.205Z /opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+2026-10-08T04:50:47.205Z   import pynvml  # type: ignore[import]
+2026-10-08T04:50:47.273Z /opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+2026-10-08T04:50:47.273Z   import pynvml  # type: ignore[import]
+2026-10-08T04:50:50.165Z MATMUL_N 4096 QUEUE 1
+2026-10-08T04:51:46.228Z MATMUL_MS 0.57
+2026-10-08T04:51:46.357Z SUMMARY {
+2026-10-08T04:51:46.357Z  "n_samples": 14775,
+2026-10-08T04:51:46.357Z  "poll_dt_ms_p50": 3.2529830932617188,
+2026-10-08T04:51:46.357Z  "poll_dt_ms_p99": 11.590957641601562,
+2026-10-08T04:51:46.357Z  "sources": {
+2026-10-08T04:51:46.357Z   "usage_mW": {
+2026-10-08T04:51:46.357Z    "update_ms_p10": 97.51701354980469,
+2026-10-08T04:51:46.357Z    "update_ms_p50": 100.89707374572754,
+2026-10-08T04:51:46.357Z    "n_changes": 534
+2026-10-08T04:51:46.357Z   },
+2026-10-08T04:51:46.357Z   "inst_mW": {
+2026-10-08T04:51:46.357Z    "update_ms_p10": 97.51701354980469,
+2026-10-08T04:51:46.357Z    "update_ms_p50": 100.89707374572754,
+2026-10-08T04:51:46.357Z    "n_changes": 534
+2026-10-08T04:51:46.357Z   },
+2026-10-08T04:51:46.357Z   "avg_mW": "unavailable",
+2026-10-08T04:51:46.357Z   "energy_mJ": {
+2026-10-08T04:51:46.357Z    "update_ms_p10": 97.48506546020508,
+2026-10-08T04:51:46.357Z    "update_ms_p50": 100.7925271987915,
+2026-10-08T04:51:46.357Z    "n_changes": 575
+2026-10-08T04:51:46.357Z   }
+2026-10-08T04:51:46.357Z  },
+2026-10-08T04:51:46.357Z  "periods": {
+2026-10-08T04:51:46.357Z   "400": {
+2026-10-08T04:51:46.357Z    "n_halves": 14,
+2026-10-08T04:51:46.357Z    "usage_mW_on_minus_off_W": 38.153486830293055,
+2026-10-08T04:51:46.357Z    "inst_mW_on_minus_off_W": 38.153486830293055,
+2026-10-08T04:51:46.357Z    "on_half_ms_p50": 200.09708404541016,
+2026-10-08T04:51:46.357Z    "counter_on_minus_off_W": 114.10162952940594,
+2026-10-08T04:51:46.357Z    "usage_mW_depth": 0.12297402672010951,
+2026-10-08T04:51:46.357Z    "inst_mW_depth": 0.12297402672010951,
+2026-10-08T04:51:46.357Z    "counter_depth": 0.3657299076641313
+2026-10-08T04:51:46.357Z   },
+2026-10-08T04:51:46.357Z   "200": {
+2026-10-08T04:51:46.357Z    "n_halves": 30,
+2026-10-08T04:51:46.357Z    "usage_mW_on_minus_off_W": -149.77867899516903,
+2026-10-08T04:51:46.357Z    "inst_mW_on_minus_off_W": -149.77867899516903,
+2026-10-08T04:51:46.357Z    "on_half_ms_p50": 100.08907318115234,
+2026-10-08T04:51:46.357Z    "counter_on_minus_off_W": -59.71294392344111,
+2026-10-08T04:51:46.357Z    "usage_mW_depth": -0.4827576403378791,
+2026-10-08T04:51:46.357Z    "inst_mW_depth": -0.4827576403378791,
+2026-10-08T04:51:46.357Z    "counter_depth": -0.19139787536378117
+2026-10-08T04:51:46.357Z   },
+2026-10-08T04:51:46.357Z   "100": {
+2026-10-08T04:51:46.357Z    "n_halves": 60,
+2026-10-08T04:51:46.357Z    "usage_mW_on_minus_off_W": -1.6280594444444287,
+2026-10-08T04:51:46.357Z    "inst_mW_on_minus_off_W": -1.6280594444444287,
+2026-10-08T04:51:46.357Z    "on_half_ms_p50": 49.80945587158203,
+2026-10-08T04:51:46.357Z    "counter_on_minus_off_W": -187.98531636989608,
+2026-10-08T04:51:46.357Z    "usage_mW_depth": -0.005247463397344699,
+2026-10-08T04:51:46.357Z    "inst_mW_depth": -0.005247463397344699,
+2026-10-08T04:51:46.357Z    "counter_depth": -0.6025492596532646
+2026-10-08T04:51:46.357Z   },
+2026-10-08T04:51:46.357Z   "50": {
+2026-10-08T04:51:46.357Z    "n_halves": 120,
+2026-10-08T04:51:46.357Z    "usage_mW_on_minus_off_W": 0.09496055555556086,
+2026-10-08T04:51:46.358Z    "inst_mW_on_minus_off_W": 0.09496055555556086,
+2026-10-08T04:51:46.358Z    "on_half_ms_p50": 25.146484375,
+2026-10-08T04:51:46.358Z    "counter_on_minus_off_W": 51.882814129623235,
+2026-10-08T04:51:46.358Z    "usage_mW_depth": 0.0003060711580094471,
+2026-10-08T04:51:46.358Z    "inst_mW_depth": 0.0003060711580094471,
+2026-10-08T04:51:46.358Z    "counter_depth": 0.1662999634557558
+2026-10-08T04:51:46.358Z   },
+2026-10-08T04:51:46.358Z   "20": {
+2026-10-08T04:51:46.358Z    "n_halves": 296,
+2026-10-08T04:51:46.358Z    "usage_mW_on_minus_off_W": -0.234261261261272,
+2026-10-08T04:51:46.358Z    "inst_mW_on_minus_off_W": -0.234261261261272,
+2026-10-08T04:51:46.358Z    "on_half_ms_p50": 10.045409202575684,
+2026-10-08T04:51:46.358Z    "counter_on_minus_off_W": 12.999716380091938,
+2026-10-08T04:51:46.358Z    "usage_mW_depth": -0.0007550568242941623,
+2026-10-08T04:51:46.358Z    "inst_mW_depth": -0.0007550568242941623,
+2026-10-08T04:51:46.358Z    "counter_depth": 0.04166798573306645
+2026-10-08T04:51:46.358Z   },
+2026-10-08T04:51:46.358Z   "10": {
+2026-10-08T04:51:46.358Z    "n_halves": 592,
+2026-10-08T04:51:46.358Z    "usage_mW_on_minus_off_W": -0.0403778038242308,
+2026-10-08T04:51:46.358Z    "inst_mW_on_minus_off_W": -0.0403778038242308,
+2026-10-08T04:51:46.358Z    "on_half_ms_p50": 5.018949508666992,
+2026-10-08T04:51:46.358Z    "counter_on_minus_off_W": 28.828152936002734,
+2026-10-08T04:51:46.358Z    "usage_mW_depth": -0.00013014331163142497,
+2026-10-08T04:51:46.358Z    "inst_mW_depth": -0.00013014331163142497,
+2026-10-08T04:51:46.358Z    "counter_depth": 0.09240286711851511
+2026-10-08T04:51:46.358Z   }
+2026-10-08T04:51:46.358Z  },
+2026-10-08T04:51:46.358Z  "reference_continuous_load": {
+2026-10-08T04:51:46.358Z   "usage_mW_on_minus_off_W": 310.2564651081231,
+2026-10-08T04:51:46.358Z   "inst_mW_on_minus_off_W": 310.2564651081231,
+2026-10-08T04:51:46.358Z   "counter_on_minus_off_W": 311.983316481165
+2026-10-08T04:51:46.358Z  }
+2026-10-08T04:51:46.358Z }
+2026-10-08T04:51:46.360Z PROBE_DONE
+2026-10-08T04:51:46.848Z EXIT=0

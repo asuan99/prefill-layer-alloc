@@ -1,0 +1,19 @@
+2026-10-08T01:48:54.171Z # 2026-10-08T01:48:54Z uid=0
+2026-10-08T01:48:54.190Z NVIDIA A100-SXM4-80GB, 580.105.08, 400.00 W
+2026-10-08T01:48:54.793Z /opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+2026-10-08T01:48:54.793Z   import pynvml  # type: ignore[import]
+2026-10-08T01:48:55.531Z ENERGY_READ_OK 155166505318
+2026-10-08T01:48:57.532Z IDLE_COUNTER_CHANGES 19 median_gap_ms 103.1
+2026-10-08T01:49:27.809Z PHASE idle0 dur_s 5.003 dE_J 449.2 mean_W 89.8
+2026-10-08T01:49:27.809Z PHASE load dur_s 20.019 dE_J 7900.2 mean_W 394.6
+2026-10-08T01:49:27.809Z PHASE idle1 dur_s 5.003 dE_J 458.7 mean_W 91.7
+2026-10-08T01:49:30.484Z /opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+2026-10-08T01:49:30.484Z   import pynvml  # type: ignore[import]
+2026-10-08T01:49:31.203Z SMI_ROWS 356 err: 
+2026-10-08T01:49:31.203Z COMPARE idle0 counter_J 449.2 int_power.draw_J 440.0 int_instant_J 440.0 ratio_draw 98.0 ratio_instant 98.0
+2026-10-08T01:49:31.203Z COMPARE load counter_J 7900.2 int_power.draw_J 7852.5 int_instant_J 7852.5 ratio_draw 99.4 ratio_instant 99.4
+2026-10-08T01:49:31.203Z COMPARE idle1 counter_J 458.7 int_power.draw_J 466.6 int_instant_J 466.6 ratio_draw 101.7 ratio_instant 101.7
+2026-10-08T01:49:31.555Z ## RAPL (informational: shared host, not attributable)
+2026-10-08T01:49:31.557Z ls: cannot access '/sys/class/powercap': No such file or directory
+2026-10-08T01:49:31.558Z cat: '/sys/class/powercap/intel-rapl:0/energy_uj': No such file or directory
+2026-10-08T01:49:31.558Z PROBE_DONE

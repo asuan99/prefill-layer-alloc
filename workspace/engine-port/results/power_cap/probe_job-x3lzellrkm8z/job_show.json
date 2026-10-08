@@ -1,0 +1,34 @@
+{
+  "clusterName": "betelgeuse-na",
+  "clusterSlug": "cluster-betelgeuse",
+  "clusterVolumes": [],
+  "command": "echo IyEvdXNyL2Jpbi9lbnYgYmFzaAojIENvbnRhaW5lci1wYXRoIHBvd2VyLWNhcCBwcm9iZSAoVkVTU0wgV29ya3NwYWNlL0pvYiwgfjEgbWluIG9uIGEgR1BVIHNwZWMpLiAgTk9UIGV4ZWN1dGVkIHlldCDigJQKIyBzdWJtaXNzaW9uIG5lZWRzIHRoZSBvcGVyYXRpbmctbW9kZWwgYXBwcm92YWwgKGxhdW5jaCBkcnktcnVuIC0+IHVzZXIgYXBwcm92YWwpLiAgUmVhZC1vbmx5IGV4Y2VwdAojIGZvciBvbmUgKm5vLW9wKiBzZXQ6IGAtcGwgPGN1cnJlbnQgbGltaXQ+YCAoc2FtZSB2YWx1ZSkgc28gbm90aGluZyBjaGFuZ2VzIGV2ZW4gaWYgaXQgc3VjY2VlZHMuCiMgUmVjb3JkcyB3aGF0IHRoZSAyMDI2LTEwLTA0IHN1YnN0cmF0ZSBwcm9iZSBkaWQgbm90OiBlZmZlY3RpdmUgY2FwYWJpbGl0aWVzIGFuZCB0aGUgZXhhY3QgTlZNTCBlcnJvcgojIGZvciBwb3dlci1saW1pdCAvIGNsb2NrIC8gcGVyc2lzdGVuY2Ugb3BlcmF0aW9ucy4Kc2V0IC11Ck9VVD0iJHsxOi0vdG1wL3Bvd2VyX2NhcF9wcm9iZX0iOyBta2RpciAtcCAiJE9VVCIKewogIGVjaG8gIiMgJChkYXRlIC11ICslRlQlVFopIHVpZD0kKGlkIC11KSB1c2VyPSQoaWQgLXVuKSIKICBncmVwIC1FICdeQ2FwKEluaHxQcm18RWZmfEJuZHxBbWIpJyAvcHJvYy9zZWxmL3N0YXR1cwogIGNvbW1hbmQgLXYgY2Fwc2ggPi9kZXYvbnVsbCAmJiBjYXBzaCAtLWRlY29kZT0iJChncmVwIENhcEVmZiAvcHJvYy9zZWxmL3N0YXR1cyB8IGF3ayAne3ByaW50ICQyfScpIgogIGxzIC1sIC9kZXYvbnZpZGlhY3RsIC9kZXYvbnZpZGlhMCAyPiYxCiAgY2F0IC9wcm9jL2RyaXZlci9udmlkaWEvcGFyYW1zIDI+L2Rldi9udWxsIHwgZ3JlcCAtaUUgJ01vZGlmeURldmljZUZpbGVzfERldmljZUZpbGVNb2RlJyB8fCB0cnVlCiAgbnZpZGlhLXNtaSAtLXF1ZXJ5LWdwdT1uYW1lLGRyaXZlcl92ZXJzaW9uLHBvd2VyLmxpbWl0LHBvd2VyLmRlZmF1bHRfbGltaXQscG93ZXIubWluX2xpbWl0LHBvd2VyLm1heF9saW1pdCxwZXJzaXN0ZW5jZV9tb2RlLGNsb2Nrcy5zbSxjbG9ja3MubWF4LnNtIC0tZm9ybWF0PWNzdgogIENVUj0kKG52aWRpYS1zbWkgLS1xdWVyeS1ncHU9cG93ZXIubGltaXQgLS1mb3JtYXQ9Y3N2LG5vaGVhZGVyLG5vdW5pdHMgfCBoZWFkIC0xIHwgY3V0IC1kLiAtZjEpCiAgZWNobyAiIyMgbnZpZGlhLXNtaSAtcGwgJENVUiAobm8tb3A6IHNhbWUgYXMgY3VycmVudCkiOyBudmlkaWEtc21pIC1wbCAiJENVUiI7IGVjaG8gInJjPSQ/IgogIGVjaG8gIiMjIG52aWRpYS1zbWkgLWxnYyAxNDEwLDE0MTAgKGV4cGVjdGVkOiBwZXJtaXNzaW9uIGRlbmllZCkiOyBudmlkaWEtc21pIC1sZ2MgMTQxMCwxNDEwOyBlY2hvICJyYz0kPyIKICBlY2hvICIjIyBudmlkaWEtc21pIC1yZ2MiOyBudmlkaWEtc21pIC1yZ2M7IGVjaG8gInJjPSQ/IgogIGVjaG8gIiMjIG52aWRpYS1zbWkgLXBtIDEiOyBudmlkaWEtc21pIC1wbSAxOyBlY2hvICJyYz0kPyIKICBlY2hvICIjIyBweW52bWwgbnZtbERldmljZVNldFBvd2VyTWFuYWdlbWVudExpbWl0IChzYW1lIHZhbHVlKSIKICBweXRob24zIC0gPDwnUFknCnRyeToKICAgIGltcG9ydCBweW52bWwgYXMgbgogICAgbi5udm1sSW5pdCgpOyBoID0gbi5udm1sRGV2aWNlR2V0SGFuZGxlQnlJbmRleCgwKQogICAgY3VyID0gbi5udm1sRGV2aWNlR2V0UG93ZXJNYW5hZ2VtZW50TGltaXQoaCkKICAgIHRyeToKICAgICAgICBuLm52bWxEZXZpY2VTZXRQb3dlck1hbmFnZW1lbnRMaW1pdChoLCBjdXIpOyBwcmludCgic2V0LXNhbWUtdmFsdWU6IE9LIiwgY3VyKQogICAgZXhjZXB0IG4uTlZNTEVycm9yIGFzIGU6CiAgICAgICAgcHJpbnQoInNldC1zYW1lLXZhbHVlOiBOVk1MRXJyb3IiLCBlKQogICAgcHJpbnQoImNvbnN0cmFpbnRzIiwgbi5udm1sRGV2aWNlR2V0UG93ZXJNYW5hZ2VtZW50TGltaXRDb25zdHJhaW50cyhoKSkKZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgcHJpbnQoInB5bnZtbCB1bmF2YWlsYWJsZToiLCBlKQpQWQogIGVjaG8gIiMjIGFmdGVyIjsgbnZpZGlhLXNtaSAtLXF1ZXJ5LWdwdT1wb3dlci5saW1pdCxwZXJzaXN0ZW5jZV9tb2RlLGNsb2Nrcy5zbSAtLWZvcm1hdD1jc3Ysbm9oZWFkZXIKfSAyPiYxIHwgdGVlICIkT1VUL3Byb2JlLnR4dCIK | base64 -d \u003e /tmp/probe.sh \u0026\u0026 bash /tmp/probe.sh /tmp/pc; echo PROBE_DONE",
+  "completedAt": "2026-10-07T08:36:09Z",
+  "createdDt": "2026-10-07T08:35:43.231498Z",
+  "creatorName": "Wonho",
+  "envVars": [],
+  "hourlyCreditForCompute": 1.48,
+  "imagePullPolicy": "IfNotPresent",
+  "imageUri": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "jobType": "k8s-job",
+  "name": "pdmux-power-cap-probe-20261007083542",
+  "objectVolumes": [],
+  "region": "us-west-2",
+  "resourceSpecAcceleratorCount": 1,
+  "resourceSpecAcceleratorName": "A100 SXM",
+  "resourceSpecCpuCount": 11,
+  "resourceSpecEphemeralStorageBytes": 200000000000,
+  "resourceSpecMemoryBytes": 128000000000,
+  "resourceSpecName": "VESSL A100 SXM ×1",
+  "resourceSpecSlug": "resourcespec-a100x1",
+  "slug": "job-x3lzellrkm8z",
+  "startedAt": "2026-10-07T08:35:47Z",
+  "tags": [
+    {
+      "color": "#808080",
+      "slug": "tag-fih3cctlo5of",
+      "value": "power-cap"
+    }
+  ],
+  "workloadState": "succeeded"
+}
