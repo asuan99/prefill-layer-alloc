@@ -1,4 +1,4 @@
-"""N2(3-a) registered reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev12 (R7-1, R8-1/2/3,
+"""N2(3-a) registered reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev13 (R7-1, R8-1/2/3,
 R9-1/2/5/6, R10-1/2/5, R11-1/2/3/5).
 
 The U-2 (a) Workspace probe is NOT a measurement and is never cited (N2C-35, N2C-40). This tool is the ONLY
@@ -139,10 +139,15 @@ PROBE_CALLS = {16: 7, 44: 14}        # R9-7 exact call (= kappa cell) counts, en
 K_PROBE = {16: 18, 44: 8}            # R11-1 registered probe co-load size (= pre-probe K, §4-2); sum n_new per cell
 BIND_CELL = (32, 8192)               # R11-1 the only registered probe (b, c)
 # R10-1 / H-1 / H-5: registered cell_abort / boot_abort reasons -> class. Any other reason is VALUE_DEPENDENT.
-ABORT_REASONS = {"server_down": VALUE_INDEPENDENT, "client_crash": VALUE_INDEPENDENT,
-                 "http_connection_error": VALUE_INDEPENDENT, "node_failure": VALUE_INDEPENDENT,
+ABORT_REASONS = {"server_down": VALUE_INDEPENDENT, "http_connection_error": VALUE_INDEPENDENT,
                  "cell_timeout": VALUE_DEPENDENT, "coload_payload_invalid": VALUE_DEPENDENT,
-                 "stream_cancel_failed": VALUE_DEPENDENT, "runner_stop": VALUE_DEPENDENT}
+                 "stream_cancel_failed": VALUE_DEPENDENT, "runner_stop": VALUE_DEPENDENT,
+                 "client_exception": VALUE_DEPENDENT, "wiring_check_failed": VALUE_DEPENDENT,
+                 "boot_health_timeout": VALUE_DEPENDENT}
+# rev13 G-8: boot_health_timeout is VALUE_INDEPENDENT only as a boot_abort of a boot that started NO cell (no
+# measurement exists to hide); anywhere else it is VALUE_DEPENDENT. G-9: client_crash / node_failure removed (the
+# harness can never write them).
+BOOT_ONLY_VI_REASONS = frozenset({"boot_health_timeout"})
 # R11-5: the registered, stable reason_code enumeration (the re-probe stop rule compares these, never free text)
 REASON_CODES = frozenset({
     "WINDOW_SHORT", "WINDOW_NO_PAIR", "WINDOW_EMPTY", "ALONE_PE_LOW", "COLOAD_SENT_MISSING",
@@ -519,8 +524,11 @@ def reduce_probe(boots, expected_calls=None):
         if truncated:
             boot_issues.append(_issue(bid, VALUE_INDEPENDENT, "TELEMETRY_TRUNCATED", "telemetry truncated (boot death)"))
             death_t = max((_ts(e) for e in records), default=float("-inf"))
+        any_cell = any("cell_start" in cm for cm in cells.values())
         for ab, t_ab in boot_aborts:
             cls = ABORT_REASONS.get(ab, VALUE_DEPENDENT)
+            if ab in BOOT_ONLY_VI_REASONS and not any_cell:
+                cls = VALUE_INDEPENDENT
             boot_issues.append(_issue(bid, cls, abort_code(ab), f"boot_abort {ab}"))
             if cls == VALUE_INDEPENDENT:
                 death_t = t_ab if death_t is None else min(death_t, t_ab)

@@ -18,8 +18,10 @@ One attempt = <probe-root>/probe_attempt_<n>/ (n = 1, 2, ...; created exclusivel
   later on the clean freeze checkout); substrate.json (sampler on/off, R11-7); ATTEMPT_SUMMARY.json.
 Re-probe stop rule (H-7, §14-2 (d)): a new attempt is refused unless the previous attempt's gate result allows a
 re-probe, and two consecutive re-probe-allowed attempts with the SAME reason_codes SET stop the probe.
-Abort policy (harness choice, reported): a cell abort ends its boot (boot_abort with the cell's reason); after a
+Abort policy (rev13 G-10, registered): a cell abort ends its boot (boot_abort with the cell's reason); after a
 VALUE_INDEPENDENT boot death the next boot still runs; after a VALUE_DEPENDENT abort no further boot runs.
+One attempt per invocation (G-15); a re-probe is a manual re-run allowed ONLY by the official gate's reprobe_allowed
+(K_POST_PROBE.json of the clean-freeze-checkout gate run) -- GATE_PREVIEW.json never decides it.
 """
 from __future__ import annotations
 
@@ -52,7 +54,7 @@ MODEL_REVISION = "dc0661c829b14e5b9246c05cfa89094a0875e052"
 CONFIG_REL = "results/n3_capacity/configs/pdmux_n3_A_agn.yml"
 CONFIG_DIGEST = "01675b2d7fa8ff23bb1cb142ff66fa4dfd0c021722ae9b8e7acedc2f4d38fca1"
 STICKY_IDX = {16: 1, 24: 2, 34: 3, 44: 4}          # §3-1 sticky target index
-BOOT_ORDER = (44, 16)                               # harness choice (unregistered, reported)
+BOOT_ORDER = (44, 16)                               # rev13 G-14 registered: boot 1 = d44 (14 cells), boot 2 = d16 (7)
 FLUSH_INTERVAL_S = 1.0                              # engine AsyncJsonlTelemetry default (H-5: wait 2 x this)
 WARMUP_N, WARMUP_SEED, WARMUP_OUT = 8, 7, 64        # §3-1 warm-up: 8 requests, concurrency 1, seed 7
 F6_INPUT, F6_OUT = 512, 8                           # §6-4 F-6 trailing non-measured request
@@ -172,9 +174,11 @@ def attempt_dirs(root):
     return sorted(out)
 
 
-def gate_result(attempt_dir):
-    """The gate output of an attempt: K_POST_PROBE.json (official) if present, else GATE_PREVIEW.json."""
-    for fn in ("K_POST_PROBE.json", "GATE_PREVIEW.json"):
+def gate_result(attempt_dir, official_only=True):
+    """The gate output of an attempt. rev13 G-15: the re-probe decision reads ONLY the official K_POST_PROBE.json (the
+    post_probe_gate run on the clean freeze checkout, copied into the attempt directory); GATE_PREVIEW.json is a
+    descriptive preview and is read only when official_only=False (attempt summary)."""
+    for fn in ("K_POST_PROBE.json",) if official_only else ("K_POST_PROBE.json", "GATE_PREVIEW.json"):
         p = os.path.join(attempt_dir, fn)
         if os.path.exists(p):
             with open(p) as fh:
@@ -190,7 +194,7 @@ def next_attempt_allowed(results):
         return True, "first attempt"
     last = results[-1]
     if last is None:
-        return False, "previous attempt has no gate result (run the gate preview / post_probe_gate first)"
+        return False, "previous attempt has no official gate result (run post_probe_gate on the freeze checkout; GATE_PREVIEW does not count)"
     if not last.get("reprobe_allowed"):
         return False, "previous attempt does not allow a re-probe (value-dependent / censored / sealed / irreproducible)"
     if len(results) >= 2 and results[-2] is not None and results[-2].get("reprobe_allowed") \
@@ -481,7 +485,7 @@ def gate_preview(adir, freeze=None):
                        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
     with open(os.path.join(adir, "GATE_PREVIEW.log"), "x") as fh:
         fh.write(f"rc={r.returncode}\n{r.stdout}\n{r.stderr}")
-    return gate_result(adir), r.returncode
+    return gate_result(adir, official_only=False), r.returncode
 
 
 # ---- one attempt ------------------------------------------------------------------------------------------------
@@ -504,7 +508,7 @@ async def run_attempt(root, plan, make_server, opts):
         res = await run_boot(adir, boot_id, d, calls[d], plan["cells"][str(d)], make_server(), registry, n, opts)
         boots.append(boot_id)
         results.append(res)
-        if res["aborted"] is not None and _reason_class(res["aborted"]) != "VALUE_INDEPENDENT":
+        if res["aborted"] is not None and _reason_class(res["aborted"], len(res["cells"])) != "VALUE_INDEPENDENT":
             break                                    # VD abort: the probe is already rejected, no further GPU time
     probe = reduce_attempt(adir, boots, opts.get("expected_calls"))
     preview, rc = (gate_preview(adir, opts.get("freeze")) if opts.get("gate_preview", True) else (None, None))
@@ -518,8 +522,10 @@ async def run_attempt(root, plan, make_server, opts):
     return adir, summary
 
 
-def _reason_class(reason):
+def _reason_class(reason, n_cells=0):
     red = load_by_path(REDUCER, "_n2_reason_class_reducer")
+    if reason in red.BOOT_ONLY_VI_REASONS and n_cells == 0:                 # rev13 G-8 (same rule as the reducer)
+        return "VALUE_INDEPENDENT"
     return red.ABORT_REASONS.get(reason, "VALUE_DEPENDENT")
 
 

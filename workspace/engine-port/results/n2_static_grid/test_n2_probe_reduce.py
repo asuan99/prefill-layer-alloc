@@ -487,10 +487,10 @@ class TestReduceProbe(unittest.TestCase):
         self.assertEqual(p["probe_status"], r.VALUE_INDEPENDENT)   # this boot died after its last cell
         self.assertIn("CELL_COUNT_SHORT_DEATH", self._codes(p))
         p, _ = self._reduce([dict()], plan={44: 3}, expected={16: 0, 44: 3},
-                            extra_lines=["boot_abort node_failure 1e12"])
+                            extra_lines=["boot_abort server_down 1e12"])
         self.assertEqual(p["probe_status"], r.VALUE_INDEPENDENT)
         p, _ = self._reduce([dict(), dict()], plan={44: 3}, expected={16: 0, 44: 3},
-                            extra_lines=["boot_abort node_failure 0.5"])        # died BEFORE its last cell -> VD
+                            extra_lines=["boot_abort server_down 0.5"])        # died BEFORE its last cell -> VD
         self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
         p, _ = self._reduce([dict(), dict()], plan={44: 1}, expected={16: 0, 44: 1}, telemetry_tail=tail)
         self.assertIn("CELL_COUNT_EXCESS", self._codes(p))       # excess + death stays VD (Z06)
@@ -502,8 +502,23 @@ class TestReduceProbe(unittest.TestCase):
         self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
         self.assertIn("CELL_COUNT_SHORT", self._codes(p))
 
+    def test_boot_health_timeout_rule(self):                        # rev13 G-8
+        with tempfile.TemporaryDirectory() as td:                    # no cell started in this boot -> VI
+            b = write_boot(td, "k", [], plan={44: 1}, extra_lines=["boot_abort boot_health_timeout 5.0"])
+            p = r.reduce_probe([b], expected_calls={16: 0, 44: 1})
+        self.assertEqual(p["probe_status"], r.VALUE_INDEPENDENT)
+        self.assertIn("CELL_COUNT_SHORT_DEATH", self._codes(p))
+        p, _ = self._reduce([dict()], extra_lines=["boot_abort boot_health_timeout 1e12"])   # a cell exists -> VD
+        self.assertEqual(p["probe_status"], r.VALUE_DEPENDENT)
+        for reason in ("client_exception", "wiring_check_failed", "boot_health_timeout"):     # as cell aborts -> VD
+            p, _ = self._reduce([dict(_abort=reason)])
+            self.assertEqual(self._st(p), [r.VALUE_DEPENDENT], reason)
+        self.assertEqual(set(r.ABORT_REASONS), {"server_down", "http_connection_error", "cell_timeout",
+                                                "coload_payload_invalid", "stream_cancel_failed", "runner_stop",
+                                                "client_exception", "wiring_check_failed", "boot_health_timeout"})
+
     def test_boot_abort_reasons(self):                              # H-5 runner_stop, Z15
-        for line, want in (("boot_abort node_failure 1e12", r.VALUE_INDEPENDENT),
+        for line, want in (("boot_abort server_down 1e12", r.VALUE_INDEPENDENT),
                            ("boot_abort runner_stop 1e12", r.VALUE_DEPENDENT),
                            ("boot_abort budget_stop 1e12", r.VALUE_DEPENDENT)):
             p, _ = self._reduce([dict()], extra_lines=[line])

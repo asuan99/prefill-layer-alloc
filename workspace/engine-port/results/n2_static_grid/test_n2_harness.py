@@ -179,9 +179,14 @@ class TestClassify(unittest.TestCase):                                # H-4, reg
         self.assertEqual(lg.classify_exception(lg.RunnerStop("x"), lambda: 1), "runner_stop")
         self.assertEqual(lg.classify_exception(ValueError("x")), "client_exception")
         self.assertEqual(lg.classify_exception(lg.WiringCheckFailed("x")), "wiring_check_failed")
-        for r in ("client_exception", "wiring_check_failed", "boot_health_timeout"):
-            self.assertEqual(RED.abort_code(r), "ABORT_UNREGISTERED")
-            self.assertEqual(RED.ABORT_REASONS.get(r, RED.VALUE_DEPENDENT), RED.VALUE_DEPENDENT)
+        for r in ("client_exception", "wiring_check_failed", "boot_health_timeout"):     # rev13 G-8: registered VD
+            self.assertEqual(RED.abort_code(r), "ABORT_" + r.upper())
+            self.assertEqual(RED.ABORT_REASONS[r], RED.VALUE_DEPENDENT)
+        self.assertEqual(n2_marks.UNREGISTERED_REASONS, ())
+        self.assertEqual(pr._reason_class("boot_health_timeout", 0), RED.VALUE_INDEPENDENT)
+        self.assertEqual(pr._reason_class("boot_health_timeout", 1), RED.VALUE_DEPENDENT)
+        for r in ("client_crash", "node_failure"):                                    # G-9: removed
+            self.assertNotIn(r, RED.ABORT_REASONS)
 
     def test_coload_payload_trace_rule(self):                        # §3-1 ABORT_TRACE
         self.assertEqual(lg.payload([1, 2], 1, "r", coload=True)["sampling_params"]["max_new_tokens"], 1)
@@ -417,12 +422,16 @@ class TestRunner(unittest.TestCase):
     def test_attempt_dirs_exclusive(self):                             # H-6
         with tempfile.TemporaryDirectory() as td:
             n, p1 = pr.new_attempt_dir(td)
-            with open(os.path.join(p1, "GATE_PREVIEW.json"), "w") as fh:
+            with open(os.path.join(p1, "GATE_PREVIEW.json"), "w") as fh:                 # rev13 G-15: a preview
+                json.dump({"reprobe_allowed": True, "reason_codes": ["RAW_MISSING"]}, fh)   # never allows a re-probe
+            with self.assertRaises(SystemExit):
+                pr.new_attempt_dir(td)
+            with open(os.path.join(p1, "K_POST_PROBE.json"), "w") as fh:
                 json.dump({"reprobe_allowed": True, "reason_codes": ["RAW_MISSING"]}, fh)
             n2, p2 = pr.new_attempt_dir(td)
             self.assertEqual((n, n2), (1, 2))
             self.assertNotEqual(p1, p2)
-            with open(os.path.join(p2, "GATE_PREVIEW.json"), "w") as fh:
+            with open(os.path.join(p2, "K_POST_PROBE.json"), "w") as fh:
                 json.dump({"reprobe_allowed": True, "reason_codes": ["RAW_MISSING"]}, fh)
             with self.assertRaises(SystemExit):
                 pr.new_attempt_dir(td)

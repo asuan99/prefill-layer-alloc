@@ -27,11 +27,11 @@ import time
 ARITY = {"boot_plan": 2, "cell_start": 5, "load_call_start": 2, "coload_sent": 2, "cell_abort": 3,
          "abort_detail": 2, "cell_end": 2, "load_call_end": 2, "delta_l": 2, "fix_s": 2, "boot_abort": 2}
 # Registered abort reason names (§14-2 "중단 사유 → 부류 표"; == n2_probe_reduce.ABORT_REASONS keys, pinned by test).
-REGISTERED_REASONS = ("server_down", "client_crash", "http_connection_error", "node_failure",
-                      "cell_timeout", "coload_payload_invalid", "stream_cancel_failed", "runner_stop")
-# Names this harness may emit that are NOT in the table (H-4 (6): "표에 없는 사유 이름" -> VALUE_DEPENDENT,
-# reason_code ABORT_UNREGISTERED). Kept explicit so a typo cannot silently create a new name.
-UNREGISTERED_REASONS = ("client_exception", "wiring_check_failed", "boot_health_timeout")
+REGISTERED_REASONS = ("server_down", "http_connection_error", "cell_timeout", "coload_payload_invalid",
+                      "stream_cancel_failed", "runner_stop", "client_exception", "wiring_check_failed",
+                      "boot_health_timeout")                                      # rev13 G-8 / G-9
+# rev13 G-8: every name this harness can emit is now registered; none is left unregistered (a typo is refused).
+UNREGISTERED_REASONS = ()
 _ID = re.compile(r"^[A-Za-z0-9_.:-]+$")
 
 

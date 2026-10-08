@@ -35,7 +35,7 @@ EA_CANCEL_TOKENS = 16 + 128              # A2 trim + window; + delta (§4-2 step
 SOCK_CONNECT_S = 60.0                    # = trace_loadgen.py ClientTimeout
 SOCK_READ_S = 600.0                      # = trace_loadgen.py ClientTimeout (aiohttp ServerTimeoutError -> TimeoutError)
 # ---- harness constants NOT in the registration (reported as contract gaps; values are harness choices) ----------
-TOKEN_LO, TOKEN_HI = 1000, 100000        # seed-token id range (§4-2 registers the seed, not the generator)
+TOKEN_LO, TOKEN_HI = 1000, 100000        # seed-token id range (rev13 G-1: generator registered in §4-2)
 CELL_TIMEOUT_S = 1800.0                  # per-cell wall cap -> TimeoutError -> cell_timeout (VD)
 DRAIN_TIMEOUT_S = 120.0                  # engine-idle evidence wait -> StreamCancelFailed -> stream_cancel_failed (VD)
 SERVER_EXIT_GRACE_S = 5.0                # wait for an exit code before rule (3) server_down is decided
@@ -105,11 +105,12 @@ class ServerExited(Exception):
 
 
 class BootHealthTimeout(Exception):
-    """Boot level: /health never answered 200 and no exit code -- unregistered name 'boot_health_timeout' (VD)."""
+    """Boot level: /health never answered 200 and no exit code -- 'boot_health_timeout' (rev13 G-8: VI only as the
+    boot_abort of a boot that started no cell, else VD)."""
 
 
 class WiringCheckFailed(Exception):
-    """Boot level: the sticky wiring line is absent from the server log -- 'wiring_check_failed' (VD)."""
+    """Boot level: the sticky wiring line is absent from the server log -- 'wiring_check_failed' (registered VD)."""
 
 
 def _connector_errors():
@@ -126,8 +127,8 @@ def classify_exception(exc, server_exit_code=lambda: None):
     ClientConnectionError and TimeoutError); (2) connection establishment failure before ANY response byte of that
     request (aiohttp.ClientConnectorError / refused) -> http_connection_error; (3) ONLY if the server process exit code
     is observed -> server_down; (4) co-load assertion (F3) -> coload_payload_invalid; (5) cell-boundary cancel failure
-    -> stream_cancel_failed; (6) anything else (incl. mid-response disconnects) -> 'client_exception' (unregistered
-    name -> VALUE_DEPENDENT, reason_code ABORT_UNREGISTERED)."""
+    -> stream_cancel_failed; (6) anything else (incl. mid-response disconnects) -> 'client_exception' (registered,
+    VALUE_DEPENDENT -- rev13 G-8)."""
     if isinstance(exc, (n2_marks.CellAborted, n2_marks.Classified)):
         return exc.reason
     if isinstance(exc, RunnerStop):
@@ -332,7 +333,7 @@ async def wait_engine_idle(tail, start_offset, t_closed, timeout_s=DRAIN_TIMEOUT
 
 
 def delta_l_from(events, decode_req, t_co_recv, t_co_sent):
-    """Δℓ = ℓ_d − ℓ_co (§8-4, R4-3), seconds. HARNESS OPERATIONALISATION (not registered -- contract gap G-5):
+    """Δℓ = ℓ_d − ℓ_co (§8-4, R4-3), seconds. Registered estimator (rev13 G-5, §14-2):
     ℓ_co = receive time of the last co response − engine time of the last co span's prefill_span_end;
     ℓ_d  = median over the lower-median decode request's tokens received after t_co_recv of
            (receive time − t_sync of the latest decode_iteration with t_sync <= receive time).

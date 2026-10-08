@@ -229,7 +229,8 @@ class TestProbeMapping(_Iso):
         oh = dict(f.BOOT_OVERHEAD_S)
         p = n3_like_probe(); p.update({"l_lag_iters": [10, 41.2], "delta_l_s": [0.01, 0.03], "fix_s": [10, 12, 30]})
         f.apply_probe(p)
-        self.assertEqual((f.L_LAG, f.DELTA_L_S, f.FIX_S["nom"], f.FIX_S["worst"]), (42, 0.03, 12, 30))
+        self.assertEqual((f.L_LAG, f.DELTA_L_S), (42, 0.03))
+        self.assertEqual(f.FIX_S, {"nom": 22.48, "worst": 35.5})     # rev13 G-6: probe fix_s never feeds FIX_S
         self.assertEqual(f.BOOT_OVERHEAD_S, oh)
 
 
@@ -271,9 +272,10 @@ class TestRev8(_Iso):
         f.apply_probe(dispersed_probe())
         ea = f.job_budget(f.boots_ea_job(), True, 0)["worst"]["per_boot"]
         pr = f.job_budget(f.boots_profile_job(), True, 5)["worst"]["per_boot"]
-        for k, v in {"ON16": 823.54, "ON44": 767.153, "OFF16": 685.447, "OFF44": 704.432}.items():
+        # rev13 G-6: FIX_S stays at the registered worst 35.5 s (the probe's fix_s no longer replaces it)
+        for k, v in {"ON16": 845.54, "ON44": 789.153, "OFF16": 707.447, "OFF44": 726.432}.items():
             self.assertAlmostEqual(ea[k], v, places=2)
-        for k, v in {"ON16": 1301.948, "ON24": 1371.863, "ON44": 1293.451, "OFF16": 1434.868, "OBS44": 346.958}.items():
+        for k, v in {"ON16": 1367.948, "ON24": 1437.863, "ON44": 1359.451, "OFF16": 1500.868, "OBS44": 357.958}.items():
             self.assertAlmostEqual(pr[k], v, places=2)
 
     def test_exec_delta_env_budget_delta_budget(self):          # R7-5 / A13
@@ -288,7 +290,7 @@ class TestRev8(_Iso):
                 f.apply_probe(p)
 
     def test_reject_bad_values(self):                            # R7-6 incl. negative theta (no infinite loop)
-        for mut in ("neg_theta", "zero_tau", "nan_kappa", "p7", "kappa_d108", "tau_b_off_grid", "empty_fix"):
+        for mut in ("neg_theta", "zero_tau", "nan_kappa", "p7", "kappa_d108", "tau_b_off_grid"):
             p = n3_like_probe()
             if mut == "neg_theta":
                 p["theta_spans"][64] = [-5693.0] * 25
@@ -303,8 +305,6 @@ class TestRev8(_Iso):
                                                      "a_on_window_iters": 128}
             elif mut == "tau_b_off_grid":
                 p["tau_cells"][(16, 30, 8192)] = {"s_per_median_ms": 50.0, "window_iters": 128}
-            elif mut == "empty_fix":
-                p["fix_s"] = []
             with self.assertRaises(f.ProbeRejected, msg=mut):
                 f.apply_probe(p)
 
@@ -346,9 +346,10 @@ class TestRev9(_Iso):
         self.assertNotEqual(e["delta_off_A2"], f.delta_tokens(108, 8, 2048))   # budget-direction value is 31
 
     def test_budget_record_single_source(self):                   # R8-4
+        f.FIX_S.update(nom=20.0, worst=31.0)                      # as a later Job-runner measurement would set it
         g = f.post_probe_gate(dispersed_probe())
         b = g["budget"]
-        self.assertEqual(b["FIX_S"], {"nom": 22, "worst": 30})
+        self.assertEqual(b["FIX_S"], {"nom": 20.0, "worst": 31.0})
         for job, boots, probes in (("PROFILE", f.boots_profile_job(), 5), ("EA", f.boots_ea_job(), 0)):
             for mode, cancel in (("a", False), ("b", True)):
                 r = f.job_budget(boots, cancel, probes)
@@ -434,6 +435,17 @@ class TestRev10Cli(_Iso):
         with self.assertRaises(f.ProbeRejected) as cm:
             f.apply_probe(p)
         self.assertFalse(cm.exception.value_independent)
+
+    def test_probe_fix_s_is_descriptive_only(self):                # rev13 G-6
+        self.assertNotIn("fix_s", f.REQUIRED_PROBE_KEYS)
+        for fx in ([1.0, 2.0, 500.0], []):
+            p = n3_like_probe(); p["fix_s"] = fx
+            f.apply_probe(p)
+            self.assertEqual(f.FIX_S, {"nom": 22.48, "worst": 35.5})
+        p = n3_like_probe(); del p["fix_s"]
+        f.apply_probe(p)
+        g = f.post_probe_gate(n3_like_probe())
+        self.assertEqual(g["budget"]["FIX_S"], {"nom": 22.48, "worst": 35.5})
 
     def test_l_lag_zero_valid_negative_rejected(self):              # rev10: count from raw data
         p = n3_like_probe(); p["l_lag_iters"] = [0, 0]

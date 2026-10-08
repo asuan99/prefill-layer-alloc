@@ -1,4 +1,4 @@
-"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev12 (R8-5, R9-3, R9-8, R10-4, R11-6; N2C-47 issue: every registered mutant
+"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev13 (R8-5, R9-3, R9-8, R10-4, R11-6, G-6/8/9/15 + harness H01-H32; N2C-47 issue: every registered mutant
 must be re-runnable by an auditor).
 
 Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_mutants.py [N3_RAW_DIR]
@@ -18,6 +18,12 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 FE, RD = "n2_feasibility.py", "n2_probe_reduce.py"
 TESTS = ("test_n2_feasibility.py", "test_n2_probe_reduce.py")
+# rev13: the U-2 probe harness is part of the registered tool set. Every mutant directory gets all of these files;
+# a mutant of a CORE file (calculator / reducer) runs the core suites, a mutant of a HARNESS file runs the harness
+# suite (the core suites import no harness module, so they cannot kill a harness mutant); the control runs all three.
+MK, LG, RN = "n2_marks.py", "n2_loadgen.py", "n2_probe_run.py"
+HARNESS_SUPPORT = (MK, LG, RN, "fake_n2_engine.py")
+HARNESS_TESTS = ("test_n2_harness.py",)
 
 # (id, description, expect, [(file, old, new), ...]); expect = "kill" or "equivalent"
 MUTANTS = [
@@ -162,6 +168,12 @@ MUTANTS = [
     ("N20", 'aborted-cell censoring promotion removed', "kill", [(RD, '            if n_c < WINDOW_ITERS:', '            if False:')]),
     ("N21", 'promotion even if aborted before the co-load ended', "kill", [(RD, 'all(e is not None and e["timestamp_monotonic_s"] <= t_ab for _s, e in co)', 'True')]),
     ("N22", 'CLI drops the probe reason_codes', "kill", [(FE, 'reason_codes=list(raw.get("reason_codes", [])))', 'reason_codes=[])')]),
+    # ---- rev13 (G-6, G-8, G-9) ----
+    ("N23", 'G-6: probe fix_s feeds FIX_S', "kill", [(FE, '    COEF.clear(); COEF.update(new)\n    L_LAG, DELTA_L_S = l_lag, max(0.0, dl)', '    COEF.clear(); COEF.update(new)\n    L_LAG, DELTA_L_S = l_lag, max(0.0, dl)\n    FIX_S["nom"], FIX_S["worst"] = statistics.median(probe["fix_s"]), max(probe["fix_s"])')]),
+    ("N24", 'G-6: fix_s required again', "kill", [(FE, 'REQUIRED_PROBE_KEYS = ("theta_spans", "tau_cells", "kappa_cells", "l_lag_iters", "delta_l_s")', 'REQUIRED_PROBE_KEYS = ("theta_spans", "tau_cells", "kappa_cells", "l_lag_iters", "delta_l_s", "fix_s")')]),
+    ("N25", 'G-8: boot_health_timeout VI even after a cell started', "kill", [(RD, '            if ab in BOOT_ONLY_VI_REASONS and not any_cell:', '            if ab in BOOT_ONLY_VI_REASONS:')]),
+    ("N26", 'G-8: boot_health_timeout VI as a cell abort', "kill", [(RD, '                 "boot_health_timeout": VALUE_DEPENDENT}', '                 "boot_health_timeout": VALUE_INDEPENDENT}')]),
+    ("N27", 'G-8: client_exception -> VI', "kill", [(RD, '"client_exception": VALUE_DEPENDENT,', '"client_exception": VALUE_INDEPENDENT,')]),
     ("X06", "C filter drops the pair condition", "kill", [(RD, 'e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair]', 'e["bs"] == b and e["prefill_in_flight"]]')]),
     ("X10", "alone PE threshold 0.5", "kill", [(RD, "ALONE_PE_MIN = 0.99", "ALONE_PE_MIN = 0.5")]),
     ("X11", "centered window accepts >= 128", "equivalent", [(RD, "    if len(w) != WINDOW_ITERS:", "    if len(w) < WINDOW_ITERS:")]),
@@ -172,15 +184,38 @@ MUTANTS = [
 ]
 
 
-def run(n3_dir=None):
-    src = {fn: open(os.path.join(HERE, fn)).read() for fn in (FE, RD)}
-    tests = {fn: open(os.path.join(HERE, fn)).read() for fn in TESTS}
-    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+def _harness_mutants():
+    """H01-H30 live in n2_harness_mutants.py (implementer's list); H31-H32 are the rev13 additions."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_n2_harness_mutants", os.path.join(HERE, "n2_harness_mutants.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return list(mod.HARNESS_MUTANTS) + [
+        ("H31", "G-15: stop rule reads GATE_PREVIEW (official_only default False)", "kill",
+         [(RN, "def gate_result(attempt_dir, official_only=True):", "def gate_result(attempt_dir, official_only=False):")]),
+        ("H32", "G-8: runner ignores the no-cell boot_health_timeout VI rule", "kill",
+         [(RN, "    if reason in red.BOOT_ONLY_VI_REASONS and n_cells == 0:", "    if False:")]),
+    ]
+
+
+def run(n3_dir=None, only=None):
+    names = (FE, RD) + HARNESS_SUPPORT
+    src = {fn: open(os.path.join(HERE, fn)).read() for fn in names}
+    tests = {fn: open(os.path.join(HERE, fn)).read() for fn in TESTS + HARNESS_TESTS}
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1",
+           "N2_N3_SH": os.path.join(HERE, "..", "n3_capacity", "n3_capacity.sh")}
     if n3_dir:
         env["N2_N3_DIR"] = os.path.abspath(n3_dir)
     rows = []
-    for mid, desc, expect, reps in [("CTRL", "no mutation", "pass", [])] + MUTANTS:
+    allm = [("CTRL", "no mutation", "pass", [])] + MUTANTS + _harness_mutants()
+    for mid, desc, expect, reps in [m for m in allm if not only or m[0] in only or m[0] == "CTRL"]:
         files = dict(src)
+        if mid == "CTRL":
+            suites = TESTS + HARNESS_TESTS
+        elif all(fn in (FE, RD) for fn, _o, _n in reps):
+            suites = TESTS
+        else:
+            suites = HARNESS_TESTS
         for fn, old, new in reps:
             if files[fn].count(old) != 1:
                 rows.append((mid, desc, "BROKEN-MUTANT", f"anchor count {files[fn].count(old)}"))
@@ -193,7 +228,7 @@ def run(n3_dir=None):
                     with open(os.path.join(d, fn), "w") as fh:
                         fh.write(c)
                 try:
-                    r = subprocess.run([sys.executable, "-m", "unittest", *[t[:-3] for t in TESTS]], cwd=d, env=env,
+                    r = subprocess.run([sys.executable, "-m", "unittest", *[t[:-3] for t in suites]], cwd=d, env=env,
                                        capture_output=True, text=True, timeout=900)
                 except subprocess.TimeoutExpired:                 # R9-8: a timeout is a row, never a kill
                     rows.append((mid, desc, "TIMEOUT", "900 s"))
@@ -217,4 +252,4 @@ def run(n3_dir=None):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1] if len(sys.argv) > 1 else None)
+    run(sys.argv[1] if len(sys.argv) > 1 else None, set(sys.argv[2:]) or None)

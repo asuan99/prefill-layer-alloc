@@ -1,6 +1,6 @@
 """N2(3-a) design-time feasibility & budget calculator (CPU only, no GPU).
 
-Status: DESIGN CALCULATOR for PREREG_N2_3A rev12 (unsealed). Every number it prints is a design
+Status: DESIGN CALCULATOR for PREREG_N2_3A rev13 (unsealed). Every number it prints is a design
 forecast from the coefficients below -- NOT a measurement and NOT citable (N2C-12, N2C-18).
 
 Coefficient DIRECTIONS (rev7, R6-5). One probe yields three coefficient sets, each conservative for
@@ -70,7 +70,9 @@ CAP_FACTOR = 1.1
 THETA_MIN_SPANS = 20
 THETA_REQUIRED_P = (64, 92)
 THETA_ALLOWED_P = (64, 74, 84, 92)     # R7-6: prefill SMs of the A-agn splits
-REQUIRED_PROBE_KEYS = ("theta_spans", "tau_cells", "kappa_cells", "l_lag_iters", "delta_l_s", "fix_s")
+REQUIRED_PROBE_KEYS = ("theta_spans", "tau_cells", "kappa_cells", "l_lag_iters", "delta_l_s")
+# rev13 G-6: the probe's per-cell fixed cost (fix_s) is DESCRIPTIVE ONLY -- the probe's in-process loadgen is not the
+# Job runner's invocation, so FIX_S (budget) keeps its registered N3-derived values and is never fed by the probe.
 WINDOW_ITERS = 128
 
 CORNERS = [(p, d) for p in ("PN", "PW") for d in ("DN", "DW")]
@@ -331,7 +333,7 @@ def apply_probe(probe):
                    kappa_median = EQUAL-WEIGHT median over the cell's measurements of kappa_i = median S-per(C_i) /
                    A_on_i(ctx_mid(C_i)) (rev10, rho_on form); cross-cell: rho/budget = MAX, env = MIN ;
                    kappa_DW = kappa_DN*1.6/1.3
-      l_lag_iters: [scalars] -> MAX ; delta_l_s: [scalars] -> MAX ; fix_s: [scalars] -> nom MEDIAN, worst MAX
+      l_lag_iters: [scalars] -> MAX ; delta_l_s: [scalars] -> MAX ; fix_s: descriptive only, NOT mapped (rev13 G-6)
     Required: tau_cells and kappa_cells each include BINDING_EA_CELLS. s_hat / N_co,max are never given -- they are
     recomputed from the env set. Boot overhead is never changed."""
     global L_LAG, DELTA_L_S
@@ -405,10 +407,8 @@ def apply_probe(probe):
     l_lag = int(math.ceil(max(lags)))
     # delta-l is a SIGNED difference l_d - l_co: finite required; <= 0 means no disadvantage (clipped to 0 by delta)
     dl = max(_scalar(x, "delta_l", positive=False) for x in _nonempty("delta_l_s"))
-    xs = [_scalar(x, "fix") for x in _nonempty("fix_s")]
     COEF.clear(); COEF.update(new)
     L_LAG, DELTA_L_S = l_lag, max(0.0, dl)
-    FIX_S["nom"], FIX_S["worst"] = statistics.median(xs), max(xs)
 
 
 # ---- U-9 rule (R5-4), R6-2 (no artificial search cap), R6-7 (seal gate) ------------------------------
