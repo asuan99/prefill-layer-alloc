@@ -60,3 +60,13 @@ N3 shape B 3회차 Job(Nemotron-H, 8192→64, D44 sticky-OFF, PHASE_EVENTS=1 유
 ## 그림
 
 - `figures/preview_power_by_state.png`: 기존 N3 데이터의 엔진 상태별 전력 분포(왼쪽 위), batch별(오른쪽 위), 요청 단위 시계열(아래)
+
+## 6. 추가 (2026-10-09) — N2 전력 분석기 준비 완료
+
+`results/power_cap/n2_decode_power/pc_n2_decode_power.py`가 N2 Job 회수 즉시 돌 수 있게 준비됐다(GPU 0).
+- 창 정의는 N2 자신의 등록 함수 `n2_probe_reduce.cell_windows`를 파일 경로로 읽어 그대로 쓴다(독자 정의 없음, N2 판정 불변).
+  W = co-load 전 decode 단독 128 step, **C = 같은 분할 쌍에서 prefill과 동거한 첫 128 step**, A2 = co-load 후 decode 단독 128 step. N2 상태가 VALID인 창만 쓴다.
+  ⇒ B안이 노렸던 "고정 분할에서 decode 단독 vs prefill 동거" 대비가 N2 E-α 셀에서 부산물로 나온다(prefill만 상태는 여전히 없음).
+- 시계: N2 harness의 `wall_<boot>.txt`(time.time, monotonic 쌍)로 정렬, fake 시도에서 쌍 간 편차 ~1 µs.
+- 창이 1–3 s로 짧아 20 ms 버퍼 샘플 평균이 1차, 100 ms 카운터는 교차 확인.
+- selftest: 합성 셀(J/step ±3 % 복원, 시계 부호 오류·prefill 오염 변이 검출) + **N2 실제 harness·fake engine을 거친 시도**(창 3종 VALID, 단독 ~250 W, 동거 +80 W 대비 복원). prefill 무전력 변이는 대비 +2–3 W로 실패 처리됨.
