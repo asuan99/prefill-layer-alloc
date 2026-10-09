@@ -9,6 +9,7 @@
   "kappa_star_required": 3.0,
   "tau": "design incl. DW corner",
   "theta_rho": 5705.0,
+  "theta_rho_estimator": "larger of the N3 r3/r4 per-Job medians of realized 16,384-token span throughput (run-first spans excluded) = r4 median 5,705.4 (kept 357/excl 30/drop 0); n2_probe_reduce.n3_theta_positive_control(<r4 dir>)",
   "window": 128
  },
  "K_matches_derivation": true,
@@ -114,7 +115,7 @@
    "section_worst": 33337.82064155918
   }
  },
- "calculator_sha256": "be9b430f22c724d603857df457140bd6f5746d4d151ec07cf01e8ac51d64b57a",
+ "calculator_sha256": "1ee3338dd1f2be7eceaa5e514510199a9d5ac25176b41c5edad27ae205ab0c60",
  "derive_fixed_k": {
   "16": 33,
   "44": 15

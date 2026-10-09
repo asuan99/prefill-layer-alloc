@@ -1,12 +1,13 @@
-"""N2(3-a) reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev14 (R7-1, R8-1/2/3,
+"""N2(3-a) reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev15 (R7-1, R8-1/2/3,
 R9-1/2/5/6, R10-1/2/5, R11-1/2/3/5).
 
 rev14 (A') STATUS: the U-2 probe is an OPTIONAL post-seal, NON-GATING harness smoke. Nothing this module computes is a
 judgment input or a registered constant source (K is the registration-time constant n2_feasibility.K_CO; L_lag and
 delta are fixed allowances). What REMAINS registered here is the shared window implementation that the main-measurement
-analyzer (n2_analyze / n2_window) imports: extract_cell_windows (alone W/A1, W_co, the C VALUE WINDOW = FIRST 128
+analyzer (n2_analyze / n2_window) imports: cell_windows (rev15 R14-8: per-window pi, per-window §9-1 status, PROFILE
+cells without co-load, pre-filter iter_seq recorder continuity [R14-2]; alone W/A1, W_co, the C VALUE WINDOW = FIRST 128
 co-located iterations in iter_seq order [rev14 truncation], A2), s_per_intervals (iter_seq-adjacent pairs), ctx_of,
-a_on_interp (§10-2). The probe is NOT a measurement and is never cited (N2C-35, N2C-40).
+a_on_interp (§10-2). extract_cell_windows is the sticky-ON E-alpha wrapper used by the smoke. The probe is NOT a measurement and is never cited (N2C-35, N2C-40).
 
 theta (prefill throughput) sample composition (R7-1, registered):
   * a "16,384-token span" = prefill_span_start/_end pair (same span_seq) with extend_tokens == 16384;
@@ -159,7 +160,7 @@ REASON_CODES = frozenset({
     "WINDOW_SHORT", "WINDOW_NO_PAIR", "WINDOW_EMPTY", "ALONE_PE_LOW", "COLOAD_SENT_MISSING",
     "NON_CO_SPAN_AFTER_TRIGGER", "NO_CO_SPAN", "CENTER_WINDOW", "C_CENSORED", "C_CENSORED_ABORTED", "A2_SHORT",
     "AON_CONTAINMENT", "RAW_MISSING", "TELEMETRY_TRUNCATED", "REDUCER_FAILURE", "MARK_MALFORMED", "MARK_DUPLICATE",
-    "CELL_START_MISSING", "CELL_END_MISSING", "SCALAR_MARK_MISSING", "PROBE_D_INVALID", "CELL_BC_INVALID",
+    "CELL_START_MISSING", "CELL_END_MISSING", "RECORDER_GAP", "B_FINISHED", "COLOC_PE_LOW", "SCALAR_MARK_MISSING", "PROBE_D_INVALID", "CELL_BC_INVALID",
     "COLOAD_SIZE_MISMATCH", "CALL_WRAP", "CALL_CELLS", "CALL_DUPLICATE", "CALL_UNPAIRED", "CO_SPAN_CELLS",
     "BOOT_PLAN_MISSING", "BOOT_PLAN_SUM", "CELL_COUNT_EXCESS", "CELL_COUNT_SHORT", "CELL_COUNT_SHORT_DEATH",
     "ABORT_UNREGISTERED", "UNSPECIFIED"} | {f"ABORT_{k.upper()}" for k in ABORT_REASONS})
@@ -233,62 +234,157 @@ def _check_alone_pair(win, pair, what):
                                   code="ALONE_PE_LOW")
 
 
-def extract_cell_windows(records, marks, cell):
-    """records: PHASE_EVENTS + runtime_snapshot of ONE probe cell (sliced by the reducer from the cell marks);
-    marks: dict with 'coload_sent' (client CLOCK_MONOTONIC); cell = (d, b, c), sticky ON, d in PROBE_D.
-    Returns the windows W(=A1), W_co, C, A2, their realized ctx means (ctx_mid) and iter_seq ranges, and L_lag.
-    Raises MeasurementRejected with the registered class (R9-1)."""
+PE_ALONE_MIN, PE_COLOC_MIN = ALONE_PE_MIN, 0.95     # §7-1 (b) alone 0.99, §7-2 (b) co-located 0.95
+CTX_UNREALIZED_START = 80                            # §9-1 alone_status: start ctx > c - 80 -> CTX_UNREALIZED else WINDOW_SHORT
+
+
+def _iter_seq_gap(iters_all, lo, hi):
+    """R14-2: recorder continuity = the PRE-FILTER decode_iteration sequence of the cell is contiguous over the
+    window's iter_seq range [lo, hi]. Filtered-out iterations (bs != b, leaks, pair mismatch) are NOT gaps."""
+    seqs = {e["iter_seq"] for e in iters_all}
+    return any(q not in seqs for q in range(lo, hi + 1))
+
+
+def _pe(win, pair):
+    return sum(1 for e in win if _pair(e) == pair) / len(win) if win else 0.0
+
+
+def _ctx_mid(ctx, ws):
+    vals = [ctx[e["iter_seq"]] for e in ws if e["iter_seq"] in ctx]
+    return statistics.mean(vals) if vals else None
+
+
+def cell_windows(records, marks, cell, pi_alone, pi_coloc=None, coload=True):
+    """rev15 (R14-8): the SHARED window implementation for every cell kind, imported by n2_window / n2_analyze.
+    records = PHASE_EVENTS + runtime_snapshot of ONE cell (cut by the runner's cell marks); marks has 'coload_sent'
+    for E-alpha cells; cell = (d, b, c); pi_alone = realized pair of the alone windows (ON/OBS boot: PAIR[d];
+    OFF boot: PAIR[108]); pi_coloc = PAIR[d] (E-alpha only); coload=False for PROFILE/OBS cells (no C / A2).
+    Returns dict(status={W, C, A2}, W, W_co, C, C_all, A2, ctx_mid, ranges, detail, l_lag_iters, n_colocated_all).
+    Window statuses follow §9-1 priority and never raise:
+      alone (W, A2): RECORDER_UNPROVEN (pre-filter iter_seq gap) > WINDOW_SHORT / CTX_UNREALIZED > D_UNREALIZED > VALID
+      C: RECORDER_UNPROVEN > WINDOW_SHORT (non-co span after trigger / no co span) > BS_UNREALIZED (B_FINISHED) >
+         CO_WINDOW_SHORT (first-128 value window short, with |W_co| + filter-loss breakdown, H14-4) >
+         COLOC_UNREALIZED (PE_coloc < 0.95 over W_co bs == b) > VALID
+    Only a malformed input (E-alpha cell without a coload_sent mark) raises MeasurementRejected."""
     d, b, c = cell
-    iters = [e for e in records if e.get("event") == "decode_iteration"]
+    iters = sorted((e for e in records if e.get("event") == "decode_iteration"), key=lambda e: e["iter_seq"])
     snaps = [e for e in records if e.get("event") == "runtime_snapshot"]
     starts = {e["span_seq"]: e for e in records if e.get("event") == "prefill_span_start"}
     ends = {e["span_seq"]: e for e in records if e.get("event") == "prefill_span_end"}
     spans = sorted((starts[k]["timestamp_monotonic_s"], ends[k]["timestamp_monotonic_s"], starts[k])
                    for k in starts if k in ends)
-    t_co = marks.get("coload_sent")
-    if t_co is None:
-        raise MeasurementRejected(VALUE_DEPENDENT, "kappa cell needs a coload_sent mark", code="COLOAD_SENT_MISSING")
-    burst = [sp for sp in spans if sp[0] < t_co]
-    co = [sp for sp in spans if sp[0] >= t_co and sp[2]["extend_tokens"] == sp[2]["n_new"] * CO_INPUT]
-    if any(sp for sp in spans if sp[0] >= t_co and sp not in co):
-        raise MeasurementRejected(VALUE_DEPENDENT, "non-co span after coload_sent (A1 not complete before trigger)",
-                                  code="NON_CO_SPAN_AFTER_TRIGGER")
-    if not co:
-        raise MeasurementRejected(VALUE_DEPENDENT, "no co span", code="NO_CO_SPAN")
+    out = dict(status={}, detail={}, ctx_mid={}, ranges={})
+    t_co = marks.get("coload_sent") if coload else None
+    if coload and t_co is None:
+        raise MeasurementRejected(VALUE_INDEPENDENT, "E-alpha cell needs a coload_sent mark", code="COLOAD_SENT_MISSING")
+    burst = [sp for sp in spans if t_co is None or sp[0] < t_co]
+    co = [sp for sp in spans if t_co is not None and sp[0] >= t_co and sp[2]["extend_tokens"] == sp[2]["n_new"] * CO_INPUT]
+    non_co_after = any(sp for sp in spans if t_co is not None and sp[0] >= t_co and sp not in co)
     t_burst_end = max((sp[1] for sp in burst), default=float("-inf"))
-    t_co0 = min(sp[0] for sp in co)
-    t_co1 = max(sp[1] for sp in co)
-    pair = PAIR[d]
+    t_co0 = min((sp[0] for sp in co), default=float("inf"))
+    t_co1 = max((sp[1] for sp in co), default=float("inf"))
     ctx = ctx_of(iters, snaps, b)
-    seg = _alone(iters, b, t_burst_end, t_co0, pair)
+
+    def alone_status(seg, w, centered):
+        if w and _iter_seq_gap(iters, w[0]["iter_seq"], w[-1]["iter_seq"]):
+            return "RECORDER_UNPROVEN", "iter_seq gap (pre-filter) inside the window"
+        if len(w) != WINDOW_ITERS:
+            if centered:
+                start_ctx = ctx.get(seg[0]["iter_seq"]) if seg else None
+                if start_ctx is not None and start_ctx > c - CTX_UNREALIZED_START:
+                    return "CTX_UNREALIZED", f"alone segment starts at ctx {start_ctx} > c - {CTX_UNREALIZED_START}"
+            return "WINDOW_SHORT", f"{len(w)} != {WINDOW_ITERS} iterations"
+        pe = _pe(w, pi_alone)
+        if pe < PE_ALONE_MIN:
+            return "D_UNREALIZED", f"PE-iter {pe:.3f} < {PE_ALONE_MIN} at {pi_alone}"
+        return "VALID", ""
+
+    # ---- W / A1: alone, after the last burst span, before the first co span, centered band [c - 64, c + 63]
+    seg = _alone(iters, b, t_burst_end, t_co0, pi_alone)
     w = [e for e in seg if e["iter_seq"] in ctx and c - BAND_LO <= ctx[e["iter_seq"]] <= c + BAND_HI]
-    if len(w) != WINDOW_ITERS:
-        raise MeasurementRejected(VALUE_DEPENDENT, f"centered window has {len(w)} != {WINDOW_ITERS} iterations",
-                                  code="CENTER_WINDOW")
-    _check_alone_pair(w, pair, "W/A1")
-    wco = [e for e in iters if t_co0 <= e["t_launch"] <= t_co1]           # W_co: before the bs filter (R5-7)
-    call = sorted((e for e in wco if e["bs"] == b and e["prefill_in_flight"] and _pair(e) == pair),
-                  key=lambda e: e["iter_seq"])                              # all co-located iterations (descriptive)
-    cwin = call[:WINDOW_ITERS]                                              # rev14 (A'): C VALUE WINDOW = first 128
-    if len(cwin) < WINDOW_ITERS:
-        bs_eq = [e for e in wco if e["bs"] == b]
-        inflt = [e for e in bs_eq if e["prefill_in_flight"]]
-        detail = dict(w_co=len(wco), c=len(cwin), loss_bs_ne_b=len(wco) - len(bs_eq),
-                      loss_not_in_flight=len(bs_eq) - len(inflt), loss_pair_mismatch=len(inflt) - len(cwin))
-        raise MeasurementRejected(KAPPA_CENSORED, f"C has {len(cwin)} < {WINDOW_ITERS} iterations (W_co {len(wco)}; "
-                                                  f"censored at the probe K, R9-1 / R10-5)", detail, code="C_CENSORED")
-    a2 = _alone(iters, b, t_co1, float("inf"), pair)[:WINDOW_ITERS]
-    if len(a2) < WINDOW_ITERS:
-        raise MeasurementRejected(VALUE_DEPENDENT, "A2 window short", code="A2_SHORT")
-    _check_alone_pair(a2, pair, "A2")
-    out = dict(W=w, W_co=wco, C=cwin, C_all=call, A2=a2)
-    out["ctx_mid"] = {k: statistics.mean(ctx[e["iter_seq"]] for e in ws if e["iter_seq"] in ctx)
-                      for k, ws in (("A1", w), ("A2", a2), ("C", cwin), ("C_all", call))}
-    out["ranges"] = {k: (min(e["iter_seq"] for e in out[k]), max(e["iter_seq"] for e in out[k]))
-                     for k in ("W", "W_co", "C", "C_all", "A2")}
-    out["n_colocated_all"] = len(call)                                      # descriptive: whole-W_co co-located count
+    out["W"] = w
+    out["status"]["W"], out["detail"]["W"] = alone_status(seg, w, True)
+    if w:
+        out["ctx_mid"]["A1"] = _ctx_mid(ctx, w)
+        out["ranges"]["W"] = (w[0]["iter_seq"], w[-1]["iter_seq"])
+    if not coload:
+        return out
+    # ---- C: pre-filter W_co, then the §9-1 priority
+    wco = [e for e in iters if t_co0 <= e["t_launch"] <= t_co1]
+    bs_eq = [e for e in wco if e["bs"] == b]
+    inflt = [e for e in bs_eq if e["prefill_in_flight"]]
+    call = [e for e in inflt if _pair(e) == pi_coloc]
+    cwin = call[:WINDOW_ITERS]                                        # (A') C value window = first 128
+    out.update(W_co=wco, C=cwin, C_all=call, n_colocated_all=len(call))
     out["l_lag_iters"] = sum(1 for e in iters if t_co <= e["t_launch"] < t_co0)
+    if not co:
+        out["status"]["C"], out["detail"]["C"] = "WINDOW_SHORT", "no co span"
+    elif wco and _iter_seq_gap(iters, wco[0]["iter_seq"], wco[-1]["iter_seq"]):
+        out["status"]["C"], out["detail"]["C"] = "RECORDER_UNPROVEN", "iter_seq gap (pre-filter) inside W_co"
+    elif non_co_after:
+        out["status"]["C"], out["detail"]["C"] = "WINDOW_SHORT", "non-co span after coload_sent (A1 not complete before trigger)"
+    elif any(e["bs"] < b for e in wco if e["t_launch"] < t_co1):
+        out["status"]["C"], out["detail"]["C"] = "BS_UNREALIZED", "B_FINISHED: bs < b inside W_co before the last co span end"
+    elif len(cwin) < WINDOW_ITERS:
+        out["status"]["C"] = "CO_WINDOW_SHORT"
+        out["detail"]["C"] = dict(w_co=len(wco), c=len(call), loss_bs_ne_b=len(wco) - len(bs_eq),
+                                  loss_not_in_flight=len(bs_eq) - len(inflt), loss_pair_mismatch=len(inflt) - len(call))
+    elif len(call) / len(bs_eq) < PE_COLOC_MIN:
+        out["status"]["C"], out["detail"]["C"] = "COLOC_UNREALIZED", f"PE_coloc {len(call) / len(bs_eq):.3f} < {PE_COLOC_MIN}"
+    else:
+        out["status"]["C"], out["detail"]["C"] = "VALID", ""
+    if cwin:
+        out["ctx_mid"]["C"] = _ctx_mid(ctx, cwin)
+        out["ctx_mid"]["C_all"] = _ctx_mid(ctx, call)
+        out["ranges"]["C"] = (cwin[0]["iter_seq"], cwin[-1]["iter_seq"])
+        out["ranges"]["C_all"] = (call[0]["iter_seq"], call[-1]["iter_seq"])
+    if wco:
+        out["ranges"]["W_co"] = (wco[0]["iter_seq"], wco[-1]["iter_seq"])
+    # ---- A2: alone after the last co span, trim 16, first 128 (ctx-independent)
+    seg2 = _alone(iters, b, t_co1, float("inf"), pi_alone) if co else []
+    a2 = seg2[:WINDOW_ITERS]
+    out["A2"] = a2
+    out["status"]["A2"], out["detail"]["A2"] = alone_status(seg2, a2, False) if co else ("WINDOW_SHORT", "no co span")
+    if a2:
+        out["ctx_mid"]["A2"] = _ctx_mid(ctx, a2)
+        out["ranges"]["A2"] = (a2[0]["iter_seq"], a2[-1]["iter_seq"])
     return out
+
+
+_SMOKE_CODES = {("W", "RECORDER_UNPROVEN"): (VALUE_DEPENDENT, "RECORDER_GAP"),
+                ("W", "WINDOW_SHORT"): (VALUE_DEPENDENT, "CENTER_WINDOW"),
+                ("W", "CTX_UNREALIZED"): (VALUE_DEPENDENT, "CENTER_WINDOW"),
+                ("W", "D_UNREALIZED"): (VALUE_DEPENDENT, "ALONE_PE_LOW"),
+                ("C", "RECORDER_UNPROVEN"): (VALUE_DEPENDENT, "RECORDER_GAP"),
+                ("C", "WINDOW_SHORT"): (VALUE_DEPENDENT, "NON_CO_SPAN_AFTER_TRIGGER"),
+                ("C", "BS_UNREALIZED"): (VALUE_DEPENDENT, "B_FINISHED"),
+                ("C", "CO_WINDOW_SHORT"): (KAPPA_CENSORED, "C_CENSORED"),
+                ("C", "COLOC_UNREALIZED"): (VALUE_DEPENDENT, "COLOC_PE_LOW"),
+                ("A2", "RECORDER_UNPROVEN"): (VALUE_DEPENDENT, "RECORDER_GAP"),
+                ("A2", "WINDOW_SHORT"): (VALUE_DEPENDENT, "A2_SHORT"),
+                ("A2", "D_UNREALIZED"): (VALUE_DEPENDENT, "ALONE_PE_LOW")}
+
+
+def extract_cell_windows(records, marks, cell):
+    """Sticky-ON E-alpha cell (the smoke's only cell kind): cell_windows(pi_alone = pi_coloc = PAIR[d]) and the
+    FIRST non-VALID window in the order C(no co span / non-co span) -> W -> C -> A2 raised as MeasurementRejected
+    with the smoke's reason class/code (smoke behaviour unchanged). The Job analyzer uses cell_windows directly."""
+    d = cell[0]
+    win = cell_windows(records, marks, cell, PAIR[d], PAIR[d], coload=True)
+    st, det = win["status"], win["detail"]
+    order = []
+    if st["C"] == "WINDOW_SHORT":
+        order.append("C")
+    order += ["W", "C", "A2"]
+    for k in order:
+        if st[k] != "VALID":
+            klass, code = _SMOKE_CODES[(k, st[k])]
+            if k == "C" and st[k] == "WINDOW_SHORT" and det[k] == "no co span":
+                code = "NO_CO_SPAN"
+            detail = det[k] if isinstance(det[k], dict) else {}
+            msg = f"{k}: {st[k]} ({det[k] if not detail else 'C has ' + str(detail['c']) + ' < 128 (W_co ' + str(detail['w_co']) + ')'})"
+            raise MeasurementRejected(klass, msg, detail, code=code)
+    return win
 
 
 def a_on_interp(a1_ms, x1, a2_ms, x2, x):

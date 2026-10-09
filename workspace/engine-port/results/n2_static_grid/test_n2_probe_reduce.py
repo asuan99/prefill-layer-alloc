@@ -40,28 +40,37 @@ def one_span_run_boot():
 
 def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200, leaks=0, on_leaks=0,
              contaminated_snapshot=True, t0=0.0, q0=0, seq0=0, lag=0, non_co_after=False, a2_inflight=0,
-             w_off=0, inflight_off_leaks=0, co_spans=1, span_tok_s=None, span_req=2, coload=None):
+             w_off=0, inflight_off_leaks=0, co_spans=1, span_tok_s=None, span_req=2, coload=None,
+             boot="ON", ealpha=True, co_ms_after=None, b_finish_after=None, seq_gap_at=None, ctx0=None, n_alone=230,
+             leaks_mid=0):
     """Synthetic RAW sticky-ON probe cell starting at time t0 / iter_seq q0: burst span, alone segment through the
     ctx band, coload_sent, (lag alone iterations), co span with n_c C iterations (+ `leaks` (0,108) OFF-type and
     `on_leaks` PAIR[d] ON-type not-in-flight iterations inside W_co), then A2: 16 trim + 128 at a2_ms, then 100 at
     40 ms (so a wrong A2 position is visible), optionally `a2_inflight` in-flight iterations after the first 20.
     Returns (records, marks dict)."""
-    pair, pair108 = r.PAIR[d], r.PAIR[108]
+    pair108 = r.PAIR[108]
+    pair = r.PAIR[d] if boot == "ON" else pair108          # alone pair (OFF boot: decode alone at (0,108))
+    pair_co = r.PAIR[d]                                      # the co-located pair is PAIR[d] in both arms
     recs, t, q = [], t0, q0
     recs += [dict(event="prefill_span_start", span_seq=seq0 + 1, timestamp_monotonic_s=t0 + 0.0001,
                   extend_tokens=b * 100, n_new=b),
              dict(event="prefill_span_end", span_seq=seq0 + 1, timestamp_monotonic_s=t0 + 1.0)]
     t = t0 + 1.0
     recs.append(dict(event="runtime_snapshot", timestamp_monotonic_s=t, decode_iterations=q0 + 1,
-                     context_p50=c - 144, active_decode_sequences=b))
+                     context_p50=(c - 144) if ctx0 is None else ctx0, active_decode_sequences=b))
 
     def it(step_ms, in_flight, pr, bs=b):
         nonlocal t, q
-        q += 1; t += step_ms / 1000.0
+        q += 1
+        if seq_gap_at is not None and q == q0 + seq_gap_at:
+            q += 1                                           # one iter_seq number missing (recorder gap)
+        t += step_ms / 1000.0
         recs.append(dict(event="decode_iteration", iter_seq=q, t_launch=t, bs=bs, prefill_in_flight=in_flight,
                          prefill_sms=pr[0], decode_sms=pr[1]))
-    for k in range(230):                       # iter_seq 81..208 is the ctx band; w_off of them run unsplit (0,108)
+    for k in range(n_alone):                   # iter_seq 81..208 is the ctx band; w_off of them run unsplit (0,108)
         it(alone_ms, False, pair108 if 100 <= k < 100 + w_off else pair)
+    if not ealpha:                             # PROFILE / OBS cell: no co-load, the cell ends after the alone segment
+        return recs, {"t1": t + 0.01}
     marks = {"coload_sent": t + 0.0005}
     t += 0.001
     for _ in range(lag):
@@ -87,12 +96,16 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
     if contaminated_snapshot:
         recs.append(dict(event="runtime_snapshot", timestamp_monotonic_s=t, decode_iterations=q + 5, context_p50=8193,
                          active_decode_sequences=b + 2))
-    for _ in range(n_c):
-        it(co_ms, True, pair)
+    for i in range(n_c):
+        if i == 50:
+            for _ in range(leaks_mid):                       # (0,108) leaks INSIDE the co-located run (filtered out)
+                it(10.0, False, pair108)
+        ms = co_ms if (co_ms_after is None or i < 128) else co_ms_after
+        it(ms, True, pair_co, bs=(b - 1) if (b_finish_after is not None and i >= b_finish_after) else b)
     for _ in range(leaks):
         it(10.0, False, pair108)
     for _ in range(on_leaks):
-        it(10.0, False, pair)
+        it(10.0, False, pair_co)
     for _ in range(inflight_off_leaks):
         it(10.0, True, pair108)
     if span_tok_s is not None:
@@ -303,9 +316,13 @@ class TestTheta(unittest.TestCase):
 
 
 class TestWindows(unittest.TestCase):
-    def _win(self, **kw):
+    def _raw(self, **kw):
         recs, mk = raw_cell(**kw)
-        return r.extract_cell_windows(recs, {"coload_sent": mk["coload_sent"]}, (kw.get("d", 44), 32, 8192))
+        return recs, ({"coload_sent": mk["coload_sent"]} if "coload_sent" in mk else {})
+
+    def _win(self, **kw):
+        recs, mk = self._raw(**kw)
+        return r.extract_cell_windows(recs, mk, (kw.get("d", 44), 32, 8192))
 
     def test_s_per_consecutive_pairs_only(self):                 # R8-2, kills B06-type
         w = [dict(iter_seq=q, t_launch=q * 0.010) for q in range(1, 161) if q % 10 != 0]   # gaps every 10th
@@ -342,17 +359,25 @@ class TestWindows(unittest.TestCase):
         self.assertAlmostEqual(win["ctx_mid"]["C"], 8048 + 293.5, places=6)      # ctx of seq 231..358
         self.assertAlmostEqual(win["ctx_mid"]["C_all"], 8048 + 329.5, places=6)
 
-    def test_c_window_excludes_off_type_leaks(self):               # C14
-        win = self._win(leaks=300)
-        self.assertEqual(len(win["C"]), 128)
-        self.assertEqual(win["n_colocated_all"], 200)
+    def test_c_window_excludes_off_type_leaks(self):               # C14 / X05: a few (0,108) non-in-flight leaks
+        win = self._win(leaks=5)
+        self.assertEqual((len(win["C"]), win["n_colocated_all"]), (128, 200))
         self.assertAlmostEqual(statistics.median(r.s_per_intervals(win["C"])), 26.0, places=6)
+        with self.assertRaises(r.MeasurementRejected) as cm:        # 10 leaks + 120 co-located: the filter decides
+            self._win(leaks=10, n_c=120)
+        self.assertEqual(cm.exception.code, "C_CENSORED")
 
-    def test_c_window_excludes_on_type_leaks(self):                # R9-3 X05: ON leaks carry PAIR[d]
-        win = self._win(on_leaks=300)
-        self.assertEqual(len(win["C"]), 128)
-        self.assertEqual(win["n_colocated_all"], 200)
-        self.assertAlmostEqual(statistics.median(r.s_per_intervals(win["C"])), 26.0, places=6)
+    def test_c_window_excludes_on_type_leaks(self):                # R9-3 X05: ON leaks carry PAIR[d], not in flight
+        win = self._win(on_leaks=5)
+        self.assertEqual((len(win["C"]), win["n_colocated_all"]), (128, 200))
+        with self.assertRaises(r.MeasurementRejected) as cm:
+            self._win(on_leaks=10, n_c=120)
+        self.assertEqual(cm.exception.code, "C_CENSORED")
+
+    def test_many_leaks_are_coloc_unrealized(self):               # §7-2 (b) PE_coloc < 0.95 (rev15 generalized status)
+        win = r.cell_windows(*self._raw(leaks=300), (44, 32, 8192), r.PAIR[44], r.PAIR[44])
+        self.assertEqual(win["status"]["C"], "COLOC_UNREALIZED")
+        self.assertEqual((win["status"]["W"], win["status"]["A2"]), ("VALID", "VALID"))
 
     def test_alone_windows_exclude_in_flight_and_trim(self):       # R9-3 X14 / X07: A2 position pinned
         win = self._win(a2_inflight=20)
@@ -379,6 +404,76 @@ class TestWindows(unittest.TestCase):
     def test_same_cell_multiple_windows_pooled(self):
         mk = lambda n, ms: [dict(iter_seq=q, t_launch=q * ms / 1000.0) for q in range(n)]
         self.assertAlmostEqual(r.pooled_median_ms([mk(129, 10.0), mk(129, 10.0), mk(600, 30.0)]), 30.0, places=6)
+
+
+class TestGeneralizedWindows(unittest.TestCase):
+    """rev15 R14-8: cell_windows for OFF E-alpha, PROFILE and the §9-1 priority (shared implementation)."""
+    CELL = (44, 32, 8192)
+
+    def _cw(self, boot="ON", ealpha=True, **kw):
+        recs, mk = raw_cell(boot=boot, ealpha=ealpha, **kw)
+        marks = {"coload_sent": mk["coload_sent"]} if "coload_sent" in mk else {}
+        pa = r.PAIR[44] if boot == "ON" else r.PAIR[108]
+        return r.cell_windows(recs, marks, self.CELL, pa, r.PAIR[44], coload=ealpha)
+
+    def test_off_ealpha_cell_valid(self):                          # kills J14: alone windows at (0,108), C at PAIR[d]
+        win = self._cw(boot="OFF")
+        self.assertEqual(win["status"], {"W": "VALID", "C": "VALID", "A2": "VALID"})
+        c_med, a_on = r.kappa_parts(win)
+        self.assertAlmostEqual(c_med, 26.0, places=6)
+        self.assertTrue(20.0 < a_on < 22.0)
+        recs, mk = raw_cell(boot="OFF")
+        with self.assertRaises(r.MeasurementRejected) as cm:        # the sticky-ON smoke wrapper rejects an OFF cell
+            r.extract_cell_windows(recs, {"coload_sent": mk["coload_sent"]}, self.CELL)
+        self.assertEqual(cm.exception.code, "ALONE_PE_LOW")
+
+    def test_profile_cell_without_coload(self):                    # kills J15
+        win = self._cw(ealpha=False)
+        self.assertEqual(win["status"], {"W": "VALID"})
+        self.assertEqual(len(win["W"]), 128)
+        self.assertNotIn("C", win)
+        win = self._cw(ealpha=False, boot="OFF")                   # OFF PROFILE boot = 108 point, alone at (0,108)
+        self.assertEqual(win["status"], {"W": "VALID"})
+
+    def test_recorder_continuity_is_pre_filter(self):              # R14-2; kills J16
+        win = self._cw(boot="OFF", leaks_mid=3)                    # (0,108) leaks inside the C run: filtered, not a gap
+        self.assertEqual(win["status"]["C"], "VALID")
+        self.assertNotEqual(win["C"][50]["iter_seq"], win["C"][49]["iter_seq"] + 1)   # the filtered C itself has a gap
+        win = self._cw(seq_gap_at=300)                             # a missing iter_seq inside W_co -> recorder
+        self.assertEqual(win["status"]["C"], "RECORDER_UNPROVEN")
+        win = self._cw(seq_gap_at=150)                             # inside the alone band -> W recorder
+        self.assertEqual(win["status"]["W"], "RECORDER_UNPROVEN")
+
+    def test_b_finished_before_co_window_short(self):              # §9-1 priority; kills J17
+        win = self._cw(b_finish_after=150)
+        self.assertEqual(win["status"]["C"], "BS_UNREALIZED")
+        win = self._cw(n_c=100, b_finish_after=50)                 # B_FINISHED is judged before CO_WINDOW_SHORT
+        self.assertEqual(win["status"]["C"], "BS_UNREALIZED")
+
+    def test_co_window_short_detail(self):                         # H14-4; kills J19
+        win = self._cw(n_c=100, leaks=10)
+        self.assertEqual(win["status"]["C"], "CO_WINDOW_SHORT")
+        self.assertEqual(win["detail"]["C"], dict(w_co=110, c=100, loss_bs_ne_b=0, loss_not_in_flight=10,
+                                                  loss_pair_mismatch=0))
+        win = self._cw(n_c=100, inflight_off_leaks=4)
+        self.assertEqual(win["detail"]["C"]["loss_pair_mismatch"], 4)
+
+    def test_coloc_unrealized_threshold(self):                     # kills J18
+        self.assertEqual(self._cw(leaks=11)["status"]["C"], "COLOC_UNREALIZED")   # 200/211 = 0.948 < 0.95
+        self.assertEqual(self._cw(leaks=10)["status"]["C"], "VALID")               # 200/210 = 0.952
+
+    def test_kappa_parts_uses_value_window_not_all(self):          # kills Q05
+        win = self._cw(n_c=300, co_ms_after=40.0)                  # first 128 at 26 ms, the rest at 40 ms
+        c_med, _ = r.kappa_parts(win)
+        self.assertAlmostEqual(c_med, 26.0, places=6)
+        self.assertGreater(statistics.median(r.s_per_intervals(win["C_all"])), 30.0)
+
+    def test_alone_short_vs_ctx_unrealized(self):                  # §9-1 alone_status split
+        self.assertEqual(self._cw(ealpha=False, n_alone=150)["status"]["W"], "WINDOW_SHORT")
+        self.assertEqual(self._cw(ealpha=False, ctx0=8192 - 70)["status"]["W"], "CTX_UNREALIZED")
+
+    def test_alone_pe_d_unrealized(self):
+        self.assertEqual(self._cw(ealpha=False, w_off=12)["status"]["W"], "D_UNREALIZED")
 
 
 class TestReduceProbe(unittest.TestCase):
@@ -424,13 +519,14 @@ class TestReduceProbe(unittest.TestCase):
         self.assertIn("PE-iter", p["measurements"][0]["reason"])
 
     def test_c_excludes_in_flight_unsplit_leaks(self):             # kills X06 (pair condition) under the rev14 truncation
-        p, _ = self._reduce([dict(inflight_off_leaks=300)])
+        p, _ = self._reduce([dict(inflight_off_leaks=5)])
         self.assertEqual(self._st(p), ["REDUCED"])
         self.assertAlmostEqual(p["measurements"][0]["c_median_ms"], 26.0, places=6)
-        win = r.extract_cell_windows(*(lambda recs, mk: (recs, {"coload_sent": mk["coload_sent"]}, (44, 32, 8192)))(*raw_cell(inflight_off_leaks=300)))
+        recs, mk = raw_cell(inflight_off_leaks=5)
+        win = r.extract_cell_windows(recs, {"coload_sent": mk["coload_sent"]}, (44, 32, 8192))
         self.assertEqual(win["n_colocated_all"], 200)             # in-flight (0,108) leaks are not co-located iterations
-        p, _ = self._reduce([dict(n_c=100, inflight_off_leaks=300)])
-        self.assertEqual(self._st(p), [r.KAPPA_CENSORED])        # without the pair filter the leaks would fill C
+        p, _ = self._reduce([dict(n_c=120, inflight_off_leaks=10)])
+        self.assertEqual(self._st(p), [r.KAPPA_CENSORED])        # without the pair filter the leaks would fill C (130)
 
     # ---- R10-1: class = most severe applicable check; mark loss never launders censored / VD into VI ----
     def test_mark_loss_does_not_launder(self):                     # audit S1-S3, S6

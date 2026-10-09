@@ -1,5 +1,5 @@
 {
- "calculator_sha256": "be9b430f22c724d603857df457140bd6f5746d4d151ec07cf01e8ac51d64b57a",
+ "calculator_sha256": "1ee3338dd1f2be7eceaa5e514510199a9d5ac25176b41c5edad27ae205ab0c60",
  "calls": {
   "16": 7,
   "44": 14
@@ -30,5 +30,5 @@
  },
  "kind": "PROBE",
  "note": "rev14 smoke plan: K = smoke co-load K_PROBE (not the E-alpha K_CO); O_EA/c_in/delta = registered design values (N2C-12/18: design forecast, not a measurement); the smoke derives no constant",
- "reducer_sha256": "fd1957335d08b18801770d7afce8f09ca6ceb4d0c4c8846b9a85a73ab87f968f"
+ "reducer_sha256": "f768936aafe8236c4f6d0f9e3b1cd0cf7194fa4a3f12b9df7609ad589c107580"
 }
