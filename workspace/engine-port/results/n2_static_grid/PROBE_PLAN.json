@@ -30,5 +30,5 @@
  },
  "kind": "PROBE",
  "note": "rev14 smoke plan: K = smoke co-load K_PROBE (not the E-alpha K_CO); O_EA/c_in/delta = registered design values (N2C-12/18: design forecast, not a measurement); the smoke derives no constant",
- "reducer_sha256": "f768936aafe8236c4f6d0f9e3b1cd0cf7194fa4a3f12b9df7609ad589c107580"
+ "reducer_sha256": "8ef0c8cc6b0ba273ab684a8e297441598ffd70453138ee1f10713a8948d4282d"
 }

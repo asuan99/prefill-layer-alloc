@@ -1,5 +1,5 @@
-"""N2(3-a) reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev15 (R7-1, R8-1/2/3,
-R9-1/2/5/6, R10-1/2/5, R11-1/2/3/5).
+"""N2(3-a) reducer: raw probe telemetry -> probe.json (CPU only). PREREG_N2_3A rev16 (R7-1, R8-1/2/3,
+R9-1/2/5/6, R10-1/2/5, R11-1/2/3/5; rev16 H14-3 warm-up orphan exemption, H15-1 PE-time / §7-1 (c) / §7-2 (b)).
 
 rev14 (A') STATUS: the U-2 probe is an OPTIONAL post-seal, NON-GATING harness smoke. Nothing this module computes is a
 judgment input or a registered constant source (K is the registration-time constant n2_feasibility.K_CO; L_lag and
@@ -160,7 +160,7 @@ REASON_CODES = frozenset({
     "WINDOW_SHORT", "WINDOW_NO_PAIR", "WINDOW_EMPTY", "ALONE_PE_LOW", "COLOAD_SENT_MISSING",
     "NON_CO_SPAN_AFTER_TRIGGER", "NO_CO_SPAN", "CENTER_WINDOW", "C_CENSORED", "C_CENSORED_ABORTED", "A2_SHORT",
     "AON_CONTAINMENT", "RAW_MISSING", "TELEMETRY_TRUNCATED", "REDUCER_FAILURE", "MARK_MALFORMED", "MARK_DUPLICATE",
-    "CELL_START_MISSING", "CELL_END_MISSING", "RECORDER_GAP", "B_FINISHED", "COLOC_PE_LOW", "SCALAR_MARK_MISSING", "PROBE_D_INVALID", "CELL_BC_INVALID",
+    "CELL_START_MISSING", "CELL_END_MISSING", "RECORDER_GAP", "WARMUP_UNPAIRED", "WARMUP_IN_CELL", "B_FINISHED", "COLOC_PE_LOW", "SCALAR_MARK_MISSING", "PROBE_D_INVALID", "CELL_BC_INVALID",
     "COLOAD_SIZE_MISMATCH", "CALL_WRAP", "CALL_CELLS", "CALL_DUPLICATE", "CALL_UNPAIRED", "CO_SPAN_CELLS",
     "BOOT_PLAN_MISSING", "BOOT_PLAN_SUM", "CELL_COUNT_EXCESS", "CELL_COUNT_SHORT", "CELL_COUNT_SHORT_DEATH",
     "ABORT_UNREGISTERED", "UNSPECIFIED"} | {f"ABORT_{k.upper()}" for k in ABORT_REASONS})
@@ -249,6 +249,24 @@ def _pe(win, pair):
     return sum(1 for e in win if _pair(e) == pair) / len(win) if win else 0.0
 
 
+def _pe_time(win, pred):
+    """rev16 H15-1: S-per-WEIGHTED fraction (§7-1 (b) PE-time, §7-2 (b)). The weight of iteration i is its S-per
+    interval t_launch[i+1] - t_launch[i], defined only when iter_seq i+1 is also in `win` (the same consecutive-pair
+    rule as s_per_intervals, R8-2); an iteration without such a successor carries no weight. No weighted pair -> 0.0
+    (fail-closed)."""
+    by = {e["iter_seq"]: e for e in win}
+    num = den = 0.0
+    for q, e in by.items():
+        n = by.get(q + 1)
+        if n is None:
+            continue
+        wgt = n["t_launch"] - e["t_launch"]
+        den += wgt
+        if pred(e):
+            num += wgt
+    return num / den if den > 0 else 0.0
+
+
 def _ctx_mid(ctx, ws):
     vals = [ctx[e["iter_seq"]] for e in ws if e["iter_seq"] in ctx]
     return statistics.mean(vals) if vals else None
@@ -261,10 +279,13 @@ def cell_windows(records, marks, cell, pi_alone, pi_coloc=None, coload=True):
     OFF boot: PAIR[108]); pi_coloc = PAIR[d] (E-alpha only); coload=False for PROFILE/OBS cells (no C / A2).
     Returns dict(status={W, C, A2}, W, W_co, C, C_all, A2, ctx_mid, ranges, detail, l_lag_iters, n_colocated_all).
     Window statuses follow §9-1 priority and never raise:
-      alone (W, A2): RECORDER_UNPROVEN (pre-filter iter_seq gap) > WINDOW_SHORT / CTX_UNREALIZED > D_UNREALIZED > VALID
+      alone (W, A2): RECORDER_UNPROVEN (pre-filter iter_seq gap; a window iteration without t_sync) >
+         WINDOW_SHORT / CTX_UNREALIZED > [E-alpha A1 only] WINDOW_SHORT if a non-co span starts after coload_sent
+         (§7-2 (c) R4-4, rev16 H15-1) > D_UNREALIZED (§7-1 (b) PE-iter < 0.99, then PE-time [S-per-weighted] < 0.99,
+         then §7-1 (c) any prefill_span_start/_end event in [first t_launch, last t_sync]) > VALID
       C: RECORDER_UNPROVEN > WINDOW_SHORT (non-co span after trigger / no co span) > BS_UNREALIZED (B_FINISHED) >
          CO_WINDOW_SHORT (first-128 value window short, with |W_co| + filter-loss breakdown, H14-4) >
-         COLOC_UNREALIZED (PE_coloc < 0.95 over W_co bs == b) > VALID
+         COLOC_UNREALIZED (§7-2 (b) over W_co bs == b: iteration fraction < 0.95, then S-per-weighted < 0.95) > VALID
     Only a malformed input (E-alpha cell without a coload_sent mark) raises MeasurementRejected."""
     d, b, c = cell
     iters = sorted((e for e in records if e.get("event") == "decode_iteration"), key=lambda e: e["iter_seq"])
@@ -273,6 +294,8 @@ def cell_windows(records, marks, cell, pi_alone, pi_coloc=None, coload=True):
     ends = {e["span_seq"]: e for e in records if e.get("event") == "prefill_span_end"}
     spans = sorted((starts[k]["timestamp_monotonic_s"], ends[k]["timestamp_monotonic_s"], starts[k])
                    for k in starts if k in ends)
+    # §7-1 (c): EVERY prefill span event of the cell (paired or not -- an unpaired start/end is still a prefill event)
+    span_ts = [e["timestamp_monotonic_s"] for e in records if e.get("event") in ("prefill_span_start", "prefill_span_end")]
     out = dict(status={}, detail={}, ctx_mid={}, ranges={})
     t_co = marks.get("coload_sent") if coload else None
     if coload and t_co is None:
@@ -285,25 +308,36 @@ def cell_windows(records, marks, cell, pi_alone, pi_coloc=None, coload=True):
     t_co1 = max((sp[1] for sp in co), default=float("inf"))
     ctx = ctx_of(iters, snaps, b)
 
-    def alone_status(seg, w, centered):
+    def alone_status(seg, w, centered, pre_trigger_incomplete=False):
         if w and _iter_seq_gap(iters, w[0]["iter_seq"], w[-1]["iter_seq"]):
             return "RECORDER_UNPROVEN", "iter_seq gap (pre-filter) inside the window"
+        if w and any("t_sync" not in e for e in w):                        # rev16 H15-1: §7-1 (c) needs t_sync
+            return "RECORDER_UNPROVEN", "decode_iteration without t_sync inside the window"
         if len(w) != WINDOW_ITERS:
             if centered:
                 start_ctx = ctx.get(seg[0]["iter_seq"]) if seg else None
                 if start_ctx is not None and start_ctx > c - CTX_UNREALIZED_START:
                     return "CTX_UNREALIZED", f"alone segment starts at ctx {start_ctx} > c - {CTX_UNREALIZED_START}"
             return "WINDOW_SHORT", f"{len(w)} != {WINDOW_ITERS} iterations"
+        if pre_trigger_incomplete:                                          # rev16 H15-1: §7-2 (c) R4-4 fail-closed
+            return "WINDOW_SHORT", "non-co span after coload_sent: A1 not complete before the trigger"
         pe = _pe(w, pi_alone)
         if pe < PE_ALONE_MIN:
             return "D_UNREALIZED", f"PE-iter {pe:.3f} < {PE_ALONE_MIN} at {pi_alone}"
+        pe_t = _pe_time(w, lambda e: _pair(e) == pi_alone)
+        if pe_t < PE_ALONE_MIN:
+            return "D_UNREALIZED", f"PE-time {pe_t:.3f} < {PE_ALONE_MIN} at {pi_alone}"
+        lo_t, hi_t = w[0]["t_launch"], w[-1]["t_sync"]
+        n_pf = sum(1 for t in span_ts if lo_t <= t <= hi_t)
+        if n_pf:
+            return "D_UNREALIZED", f"{n_pf} prefill span event(s) inside [first t_launch, last t_sync] (§7-1 (c))"
         return "VALID", ""
 
     # ---- W / A1: alone, after the last burst span, before the first co span, centered band [c - 64, c + 63]
     seg = _alone(iters, b, t_burst_end, t_co0, pi_alone)
     w = [e for e in seg if e["iter_seq"] in ctx and c - BAND_LO <= ctx[e["iter_seq"]] <= c + BAND_HI]
     out["W"] = w
-    out["status"]["W"], out["detail"]["W"] = alone_status(seg, w, True)
+    out["status"]["W"], out["detail"]["W"] = alone_status(seg, w, True, pre_trigger_incomplete=non_co_after)
     if w:
         out["ctx_mid"]["A1"] = _ctx_mid(ctx, w)
         out["ranges"]["W"] = (w[0]["iter_seq"], w[-1]["iter_seq"])
@@ -331,6 +365,9 @@ def cell_windows(records, marks, cell, pi_alone, pi_coloc=None, coload=True):
                                   loss_not_in_flight=len(bs_eq) - len(inflt), loss_pair_mismatch=len(inflt) - len(call))
     elif len(call) / len(bs_eq) < PE_COLOC_MIN:
         out["status"]["C"], out["detail"]["C"] = "COLOC_UNREALIZED", f"PE_coloc {len(call) / len(bs_eq):.3f} < {PE_COLOC_MIN}"
+    elif _pe_time(bs_eq, lambda e: e["prefill_in_flight"] and _pair(e) == pi_coloc) < PE_COLOC_MIN:
+        pct = _pe_time(bs_eq, lambda e: e["prefill_in_flight"] and _pair(e) == pi_coloc)
+        out["status"]["C"], out["detail"]["C"] = "COLOC_UNREALIZED", f"PE_coloc S-per-weighted {pct:.3f} < {PE_COLOC_MIN}"
     else:
         out["status"]["C"], out["detail"]["C"] = "VALID", ""
     if cwin:
@@ -435,7 +472,10 @@ def load_calls_from_marks(marks_lines):
     return [(starts[k], ends[k]) for k in sorted(starts, key=lambda k: starts[k])]
 
 
-def parse_marks(marks_lines):
+WARMUP_ARITY = {"warmup_start": 2, "warmup_end": 2}   # rev16 H14-3 (kept apart from `arity`, which n2_marks pins)
+
+
+def parse_marks(marks_lines, warmups=None):
     """MARK FORMAT (§14-2, registered; H-1, rev12 R11-1/2/3). One mark per line, single-space fields, times are
     CLOCK_MONOTONIC seconds of the same container as the engine (time.monotonic / perf_counter):
       boot_plan <d> <n>                       runner, at boot start, once per d it will run (R11-2)
@@ -448,8 +488,11 @@ def parse_marks(marks_lines):
       load_call_end <call_id> <t>             client, in `finally` after the last response / cancellation
       delta_l <cell_id> <s> / fix_s <cell_id> <s>   client-measured scalars, after the cell
       boot_abort <reason> <t>                 runner, in `finally` when the boot died or was stopped (reason table)
+      warmup_start <boot> <t> / warmup_end <boot> <t>   runner, around the per-boot co-shape warm-up (§14-2 G-3 (b),
+                                              rev16 H14-3; WARMUP_ARITY -- parsed only when `warmups` is a dict)
     Returns (cells, calls, plan, boot_aborts, issues). Duplicates and malformed lines are issues, never dropped or
-    overwritten. issues: (klass, code, text)."""
+    overwritten. issues: (klass, code, text). If `warmups` is a dict it is filled {boot: {tag: t}}; otherwise warm-up
+    tags are malformed (the pre-rev16 format)."""
     cells, calls, plan, boot_aborts, issues = {}, {}, {}, [], []
     arity = {"cell_start": 5, "cell_end": 2, "coload_sent": 2, "delta_l": 2, "fix_s": 2, "cell_abort": 3,
              "abort_detail": 2, "load_call_start": 2, "load_call_end": 2, "boot_plan": 2, "boot_abort": 2}
@@ -458,6 +501,16 @@ def parse_marks(marks_lines):
         if not parts:
             continue
         tag, rest = parts[0], parts[1:]
+        if warmups is not None and tag in WARMUP_ARITY and len(rest) == WARMUP_ARITY[tag]:
+            try:
+                tw = float(rest[1])
+            except ValueError:
+                issues.append((VALUE_INDEPENDENT, "MARK_MALFORMED", f"malformed warm-up mark: {line}")); continue
+            wm = warmups.setdefault(rest[0], {})
+            if tag in wm:
+                issues.append((VALUE_DEPENDENT, "MARK_DUPLICATE", f"duplicate {tag} for boot {rest[0]}")); continue
+            wm[tag] = tw
+            continue
         if tag not in arity or len(rest) != arity[tag]:
             issues.append((VALUE_INDEPENDENT, "MARK_MALFORMED", f"malformed mark: {line}")); continue
         try:
@@ -616,7 +669,8 @@ def reduce_probe(boots, expected_calls=None):
             boot_issues.append(_issue(bid, VALUE_DEPENDENT, "REDUCER_FAILURE", f"reducer failure: {e!r}"))
             plans_known = False
             continue
-        cells, calls_d, plan, boot_aborts, mark_issues = parse_marks(mlines)
+        warm_d = {}
+        cells, calls_d, plan, boot_aborts, mark_issues = parse_marks(mlines, warm_d)
         for cls, code, why in mark_issues:
             boot_issues.append(_issue(bid, cls, code, why))
         calls = []
@@ -641,9 +695,22 @@ def reduce_probe(boots, expected_calls=None):
         theta_boots.append((bid, records, calls))
         # R10-2: every raw co-type span must start inside exactly one marked cell window
         wins = [(cm["cell_start"][1], cm.get("cell_end", float("inf"))) for cm in cells.values() if "cell_start" in cm]
+        # rev16 H14-3: paired warm-up intervals (§14-2 G-3 (b)) lie outside every cell; a co-type span inside one is
+        # exempt from the orphan rule (n_in == 0 only). Unpaired marks / a warm-up overlapping a cell are VD issues.
+        warm = []
+        for wb, wm in warm_d.items():
+            if "warmup_start" in wm and "warmup_end" in wm and wm["warmup_start"] <= wm["warmup_end"]:
+                warm.append((wm["warmup_start"], wm["warmup_end"]))
+            else:
+                boot_issues.append(_issue(bid, VALUE_DEPENDENT, "WARMUP_UNPAIRED", f"unpaired/inverted warm-up marks {wb}"))
+        for a, b in warm:
+            if any(a <= cb and ca <= b for ca, cb in wins):
+                boot_issues.append(_issue(bid, VALUE_DEPENDENT, "WARMUP_IN_CELL", f"warm-up [{a}, {b}] overlaps a cell"))
         for e in (x for x in records if x.get("event") == "prefill_span_start"):
             if e.get("n_new", 0) >= 1 and e.get("extend_tokens") == e["n_new"] * CO_INPUT:
                 n_in = sum(1 for a, b in wins if a <= e["timestamp_monotonic_s"] <= b)
+                if n_in == 0 and any(a <= e["timestamp_monotonic_s"] <= b for a, b in warm):
+                    continue
                 if n_in != 1:
                     boot_issues.append(_issue(bid, VALUE_DEPENDENT, "CO_SPAN_CELLS",
                                               f"co span {e['span_seq']} inside {n_in} marked cells"))

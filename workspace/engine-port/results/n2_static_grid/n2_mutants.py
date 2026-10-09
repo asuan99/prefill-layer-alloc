@@ -1,7 +1,11 @@
-"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev15 ((A') fixed K: judgment-path group J + theta-provenance group T + smoke group S; R8-5, R9-3, R9-8, R10-4, R11-6, G-6/8/9/15, harness H01-H32; N2C-47 issue: every registered mutant
+"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev16 ((A') fixed K: judgment-path group J + theta-provenance group T + smoke group S; R8-5, R9-3, R9-8, R10-4, R11-6, G-6/8/9/15, harness H01-H32; N2C-47 issue: every registered mutant
 must be re-runnable by an auditor).
 
-Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_mutants.py [N3_RAW_DIR]
+Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_mutants.py [--set core|harness|all] [N3_RAW_DIR] [IDs...]
+rev16 (R15-1 (2) option (b)): the ledger is split. `--set core` (default) = RULE-SEAL ledger: the core mutants (MUTANTS
+below, calculator / reducer only) on the rule-sealed files alone -- no harness file is read, copied, imported or run,
+and the control runs only test_n2_feasibility + test_n2_probe_reduce (N3 positive control included when N3_RAW_DIR is
+given). `--set harness` = HARNESS-SEAL ledger (H01-H32, re-run at the harness seal). `--set all` = rev15 behaviour.
 rev15 (R14-9): three groups are printed per row -- J (judgment path), T (theta_rho provenance: theta sample
 composition of the shared span-pairing implementation), S (smoke tool chain). A CONTROL-FAILED row aborts the run
 (lesson 254: a failing unmutated suite voids every later row). N2_N3_SH is resolved location-independently
@@ -199,6 +203,19 @@ MUTANTS = [
     ("J18", 'COLOC_UNREALIZED (PE_coloc 0.95) check dropped', "kill", [(RD, '    elif len(call) / len(bs_eq) < PE_COLOC_MIN:', '    elif False:')]),
     ("J19", 'CO_WINDOW_SHORT loses the filter-loss breakdown (H14-4)', "kill", [(RD, 'loss_not_in_flight=len(bs_eq) - len(inflt), loss_pair_mismatch=len(inflt) - len(call))', 'loss_not_in_flight=0, loss_pair_mismatch=0)')]),
     # ---- rev14 (A') judgment-path constants and the C value-window truncation ----
+    # rev16 H15-1 / H15-2 (judgment path, shared window implementation)
+    ("J20", 'alone PE threshold 0.99 -> 0.95 in cell_windows (audit A5)', "kill", [(RD, 'PE_ALONE_MIN, PE_COLOC_MIN = ALONE_PE_MIN, 0.95', 'PE_ALONE_MIN, PE_COLOC_MIN = 0.95, 0.95')]),
+    ("J21", 'alone PE-time (S-per weighted) check dropped', "kill", [(RD, '        if pe_t < PE_ALONE_MIN:', '        if False:')]),
+    ("J22", '§7-1 (c) no-prefill-in-window check dropped', "kill", [(RD, '        if n_pf:', '        if False:')]),
+    ("J23", '§7-1 (c) window end = last t_launch instead of last t_sync', "kill", [(RD, 'lo_t, hi_t = w[0]["t_launch"], w[-1]["t_sync"]', 'lo_t, hi_t = w[0]["t_launch"], w[-1]["t_launch"]')]),
+    ("J24", 'window iteration without t_sync accepted', "kill", [(RD, '        if w and any("t_sync" not in e for e in w):', '        if False:')]),
+    ("J25", 'E-alpha A1 ignores a non-co span after the trigger (fail-open, §7-2 (c) R4-4)', "kill", [(RD, 'alone_status(seg, w, True, pre_trigger_incomplete=non_co_after)', 'alone_status(seg, w, True)')]),
+    ("J26", '§7-2 (b) S-per-weighted 0.95 check dropped', "kill", [(RD, '    elif _pe_time(bs_eq, lambda e: e["prefill_in_flight"] and _pair(e) == pi_coloc) < PE_COLOC_MIN:', '    elif False:')]),
+    ("J27", 'PE-time weight attributed to the successor iteration', "kill", [(RD, '        if pred(e):\n            num += wgt', '        if pred(n):\n            num += wgt')]),
+    # rev16 H14-3 (smoke: warm-up orphan exemption)
+    ("W01", 'orphan co-type span exempt without a warm-up interval', "kill", [(RD, '                if n_in == 0 and any(a <= e["timestamp_monotonic_s"] <= b for a, b in warm):', '                if n_in == 0:')]),
+    ("W02", 'warm-up exemption removed', "kill", [(RD, '                if n_in == 0 and any(a <= e["timestamp_monotonic_s"] <= b for a, b in warm):', '                if False:')]),
+    ("W03", 'warm-up overlapping a cell accepted', "kill", [(RD, '            if any(a <= cb and ca <= b for ca, cb in wins):', '            if False:')]),
     ("J13", 'smoke mapping assigns L_LAG from the probe (rev14: allowance must stay fixed)', "kill", [(FE, '    COEF.clear(); COEF.update(new)\n    return dict(l_lag_observed_max=int(math.ceil(max(lags))))', '    global L_LAG\n    COEF.clear(); COEF.update(new)\n    L_LAG = int(math.ceil(max(lags)))\n    return dict(l_lag_observed_max=int(math.ceil(max(lags))))')]),
     ("J01", 'theta_rho fixed input 5,693 instead of 5,705', "kill", [(FE, 'THETA_RHO_FIXED = 5705.0', 'THETA_RHO_FIXED = 5693.0')]),
     ("J02", 'kappa_floor 1.3 (lower-side guarantee weakened)', "kill", [(FE, 'KAPPA_FLOOR = 0.9 ', 'KAPPA_FLOOR = 1.3 ')]),
@@ -230,7 +247,7 @@ JUDGMENT_IDS = frozenset({"R01", "R02", "R03", "R04", "R06", "R08", "R09", "R10"
                           "B06", "B16", "B18", "B19", "C14", "M03", "M04", "X05", "X06", "X07", "X08", "X10", "X11", "X14",
                           "X16", "B09", "B11", "M05", "N13", "Y04", "Y10", "Y11", "Y12",
                           "Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q10", "Q11", "M13", "M14"}
-                         | {f"J{k:02d}" for k in range(1, 20)})
+                         | {f"J{k:02d}" for k in range(1, 28)})
 # rev15 (R14-9): theta_rho PROVENANCE group -- theta sample composition of the shared span-pairing implementation
 # (reproduces the registered theta_rho source); theta_rho itself is a hard-coded constant, so these bind the
 # reproduction path, not the judgment path. A12 is a smoke-gate check (S group).
@@ -268,19 +285,35 @@ def _harness_mutants():
     ]
 
 
-def run(n3_dir=None, only=None):
-    names = (FE, RD) + HARNESS_SUPPORT
-    src = {fn: open(os.path.join(HERE, fn)).read() for fn in names}
-    tests = {fn: open(os.path.join(HERE, fn)).read() for fn in TESTS + HARNESS_TESTS}
+SETS = ("core", "harness", "all")
+
+
+def run(n3_dir=None, only=None, mset="core"):
+    """rev16 (R15-1 (2) option (b)): mset = "core" (RULE-SEAL ledger: only the rule-sealed calculator, reducer and the
+    two rule test files are read, copied and executed -- no harness file is imported, copied or run; the control runs
+    the two rule test files incl. the N3 positive control), "harness" (HARNESS-SEAL ledger: H01-H32 on the harness
+    files; control = all three suites) or "all" (both, the rev15 behaviour)."""
+    if mset not in SETS:
+        raise SystemExit(f"--set must be one of {SETS}")
+    names = (FE, RD) + (HARNESS_SUPPORT if mset != "core" else ())
+    src = {}
+    for fn in names:
+        with open(os.path.join(HERE, fn)) as fh:
+            src[fn] = fh.read()
+    tests = {}
+    for fn in TESTS + (HARNESS_TESTS if mset != "core" else ()):
+        with open(os.path.join(HERE, fn)) as fh:
+            tests[fn] = fh.read()
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "N2_N3_SH": n3_sh_path()}
     if n3_dir:
         env["N2_N3_DIR"] = os.path.abspath(n3_dir)
     rows = []
-    allm = [("CTRL", "no mutation", "pass", [])] + MUTANTS + _harness_mutants()
+    allm = [("CTRL", "no mutation", "pass", [])] + (MUTANTS if mset != "harness" else []) + \
+        (_harness_mutants() if mset != "core" else [])
     for mid, desc, expect, reps in [m for m in allm if not only or m[0] in only or m[0] == "CTRL"]:
         files = dict(src)
         if mid == "CTRL":
-            suites = TESTS + HARNESS_TESTS
+            suites = TESTS + (HARNESS_TESTS if mset != "core" else ())
         elif all(fn in (FE, RD) for fn, _o, _n in reps):
             suites = TESTS
         else:
@@ -324,4 +357,8 @@ def run(n3_dir=None, only=None):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1] if len(sys.argv) > 1 else None, set(sys.argv[2:]) or None)
+    args = sys.argv[1:]
+    mset = "core"
+    if args[:1] == ["--set"]:
+        mset, args = args[1], args[2:]
+    run(args[0] if args else None, set(args[1:]) or None, mset)

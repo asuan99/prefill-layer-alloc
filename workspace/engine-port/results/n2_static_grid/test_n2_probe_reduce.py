@@ -42,11 +42,14 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
              contaminated_snapshot=True, t0=0.0, q0=0, seq0=0, lag=0, non_co_after=False, a2_inflight=0,
              w_off=0, inflight_off_leaks=0, co_spans=1, span_tok_s=None, span_req=2, coload=None,
              boot="ON", ealpha=True, co_ms_after=None, b_finish_after=None, seq_gap_at=None, ctx0=None, n_alone=230,
-             leaks_mid=0):
+             leaks_mid=0, w_off_ms=None, leak_ms=10.0, a2_wrong=0):
     """Synthetic RAW sticky-ON probe cell starting at time t0 / iter_seq q0: burst span, alone segment through the
     ctx band, coload_sent, (lag alone iterations), co span with n_c C iterations (+ `leaks` (0,108) OFF-type and
     `on_leaks` PAIR[d] ON-type not-in-flight iterations inside W_co), then A2: 16 trim + 128 at a2_ms, then 100 at
     40 ms (so a wrong A2 position is visible), optionally `a2_inflight` in-flight iterations after the first 20.
+    rev16: every iteration carries t_sync = t_launch + 0.1 ms (§7-1 (c) window end); `w_off_ms` = the S-per of the
+    iteration FOLLOWING each w_off (0,108) iteration (PE-time); `leak_ms` = step of the leaks_mid iterations;
+    `a2_wrong` = number of A2 window iterations (after the trim) at the wrong pair.
     Returns (records, marks dict)."""
     pair108 = r.PAIR[108]
     pair = r.PAIR[d] if boot == "ON" else pair108          # alone pair (OFF boot: decode alone at (0,108))
@@ -65,10 +68,11 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
         if seq_gap_at is not None and q == q0 + seq_gap_at:
             q += 1                                           # one iter_seq number missing (recorder gap)
         t += step_ms / 1000.0
-        recs.append(dict(event="decode_iteration", iter_seq=q, t_launch=t, bs=bs, prefill_in_flight=in_flight,
-                         prefill_sms=pr[0], decode_sms=pr[1]))
+        recs.append(dict(event="decode_iteration", iter_seq=q, t_launch=t, t_sync=t + 0.0001, bs=bs,
+                         prefill_in_flight=in_flight, prefill_sms=pr[0], decode_sms=pr[1]))
     for k in range(n_alone):                   # iter_seq 81..208 is the ctx band; w_off of them run unsplit (0,108)
-        it(alone_ms, False, pair108 if 100 <= k < 100 + w_off else pair)
+        slow = w_off_ms is not None and 101 <= k < 101 + w_off
+        it(w_off_ms if slow else alone_ms, False, pair108 if 100 <= k < 100 + w_off else pair)
     if not ealpha:                             # PROFILE / OBS cell: no co-load, the cell ends after the alone segment
         return recs, {"t1": t + 0.01}
     marks = {"coload_sent": t + 0.0005}
@@ -99,7 +103,7 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
     for i in range(n_c):
         if i == 50:
             for _ in range(leaks_mid):                       # (0,108) leaks INSIDE the co-located run (filtered out)
-                it(10.0, False, pair108)
+                it(leak_ms, False, pair108)
         ms = co_ms if (co_ms_after is None or i < 128) else co_ms_after
         it(ms, True, pair_co, bs=(b - 1) if (b_finish_after is not None and i >= b_finish_after) else b)
     for _ in range(leaks):
@@ -114,11 +118,12 @@ def raw_cell(d=44, b=32, c=8192, alone_ms=20.0, co_ms=26.0, a2_ms=22.0, n_c=200,
         t1 = t + 0.001
         recs.append(dict(event="prefill_span_end", span_seq=seq0 + 2, timestamp_monotonic_s=t1))
         t = t1
+    wrong = pair_co if pair == pair108 else pair108
     for i in range(144):
         if i == 20:
             for _ in range(a2_inflight):
                 it(50.0, True, pair)
-        it(a2_ms, False, pair)
+        it(a2_ms, False, wrong if 16 + 30 <= i < 16 + 30 + a2_wrong else pair)
     for _ in range(100):
         it(40.0, False, pair)
     marks["t1"] = t + 0.01
@@ -475,6 +480,72 @@ class TestGeneralizedWindows(unittest.TestCase):
     def test_alone_pe_d_unrealized(self):
         self.assertEqual(self._cw(ealpha=False, w_off=12)["status"]["W"], "D_UNREALIZED")
 
+    # ---- rev16 H15-2: alone PE boundary (kills audit A5 = J20) and the OFF E-alpha A1 / A2 paths
+    def test_alone_pe_boundary_099(self):                          # kills J20 (0.99 -> 0.95)
+        self.assertEqual(self._cw(ealpha=False, w_off=1)["status"]["W"], "VALID")          # 127/128 = 0.992
+        self.assertEqual(self._cw(ealpha=False, w_off=2)["status"]["W"], "D_UNREALIZED")   # 126/128 = 0.984
+        self.assertEqual(self._cw(boot="OFF", a2_wrong=1)["status"]["A2"], "VALID")        # A2 at (0,108): 127/128
+        self.assertEqual(self._cw(boot="OFF", a2_wrong=2)["status"]["A2"], "D_UNREALIZED") # OFF A2 D_UNREALIZED path
+
+    def test_off_ealpha_a1_ctx_unrealized_and_a2_recorder(self):   # H15-2 OFF E-alpha paths
+        win = self._cw(boot="OFF", ctx0=8192 - 70)
+        self.assertEqual(win["status"]["W"], "CTX_UNREALIZED")
+        win = self._cw(boot="OFF", seq_gap_at=500)                 # a missing iter_seq inside the OFF A2 window
+        self.assertEqual(win["status"], {"W": "VALID", "C": "VALID", "A2": "RECORDER_UNPROVEN"})
+
+    # ---- rev16 H15-1: PE-time (S-per weighted), §7-1 (c), E-alpha A1 with a non-co span after the trigger, §7-2 (b)
+    def test_alone_pe_time(self):                                  # kills J21
+        win = self._cw(ealpha=False, w_off=1, w_off_ms=400.0)      # PE-iter 0.992 passes, PE-time ~0.86 fails
+        self.assertEqual(win["status"]["W"], "D_UNREALIZED")
+        self.assertIn("PE-time", win["detail"]["W"])
+        self.assertEqual(self._cw(ealpha=False, w_off=1, w_off_ms=20.0)["status"]["W"], "VALID")
+
+    def _inject(self, recs, t):
+        return recs + [dict(event="prefill_span_start", span_seq=777777, timestamp_monotonic_s=t, extend_tokens=100,
+                            n_new=1)]
+
+    def test_alone_no_prefill_in_window(self):                     # §7-1 (c); kills J22, J23
+        recs, mk = raw_cell(ealpha=False)
+        w = r.cell_windows(recs, {}, self.CELL, r.PAIR[44], coload=False)["W"]
+        mid = w[60]["t_launch"]
+        win = r.cell_windows(self._inject(recs, mid), {}, self.CELL, r.PAIR[44], coload=False)
+        self.assertEqual(win["status"]["W"], "D_UNREALIZED")
+        self.assertIn("§7-1 (c)", win["detail"]["W"])
+        last = w[-1]
+        inside = (last["t_launch"] + last["t_sync"]) / 2           # after the last t_launch, before its t_sync
+        self.assertEqual(r.cell_windows(self._inject(recs, inside), {}, self.CELL, r.PAIR[44],
+                                        coload=False)["status"]["W"], "D_UNREALIZED")
+        after = last["t_sync"] + 0.0001                            # after the window's last t_sync: not in the window
+        self.assertEqual(r.cell_windows(self._inject(recs, after), {}, self.CELL, r.PAIR[44],
+                                        coload=False)["status"]["W"], "VALID")
+        recs, mk = raw_cell(boot="OFF")                            # the same check on the OFF E-alpha A2 window
+        mks = {"coload_sent": mk["coload_sent"]}
+        a2 = r.cell_windows(recs, mks, self.CELL, r.PAIR[108], r.PAIR[44])["A2"]
+        win = r.cell_windows(self._inject(recs, a2[40]["t_launch"]), mks, self.CELL, r.PAIR[108], r.PAIR[44])
+        self.assertEqual(win["status"]["A2"], "D_UNREALIZED")
+
+    def test_window_without_t_sync_is_recorder(self):              # kills J24
+        recs, _ = raw_cell(ealpha=False)
+        w = r.cell_windows(recs, {}, self.CELL, r.PAIR[44], coload=False)["W"]
+        q = w[60]["iter_seq"]
+        recs = [{k: v for k, v in e.items() if not (k == "t_sync" and e.get("iter_seq") == q)} for e in recs]
+        win = r.cell_windows(recs, {}, self.CELL, r.PAIR[44], coload=False)
+        self.assertEqual(win["status"]["W"], "RECORDER_UNPROVEN")
+
+    def test_ealpha_a1_with_non_co_span_after_trigger(self):       # §7-2 (c) R4-4 fail-closed; kills J25
+        for boot in ("ON", "OFF"):
+            win = self._cw(boot=boot, non_co_after=True)
+            self.assertEqual(win["status"]["C"], "WINDOW_SHORT", boot)
+            self.assertEqual(win["status"]["W"], "WINDOW_SHORT", boot)
+            self.assertIn("non-co span", win["detail"]["W"])
+        self.assertEqual(self._cw(non_co_after=False)["status"]["W"], "VALID")
+
+    def test_coloc_s_per_weighted_095(self):                       # §7-2 (b) S-per weighted; kills J26
+        win = self._cw(leaks_mid=5, leak_ms=500.0)                 # 200/205 = 0.976 by iterations, ~0.74 by S-per
+        self.assertEqual(win["status"]["C"], "COLOC_UNREALIZED")
+        self.assertIn("S-per-weighted", win["detail"]["C"])
+        self.assertEqual(self._cw(leaks_mid=5)["status"]["C"], "VALID")
+
 
 class TestReduceProbe(unittest.TestCase):
     def _reduce(self, cells, theta=False, expected=None, **kw):
@@ -673,6 +744,29 @@ class TestReduceProbe(unittest.TestCase):
         self.assertIn("CO_SPAN_CELLS", self._codes(p))
         p, _ = self._reduce([dict()], extra_lines=["load_call_start extra 0.0", "load_call_end extra 1e9"])
         self.assertIn("CALL_WRAP", [x[1] for x in p["measurements"][0]["all_issues"]])
+
+    def test_warmup_orphan_exemption(self):                         # rev16 H14-3; kills S mutants W01-W03
+        span = [dict(event="prefill_span_start", span_seq=99001, timestamp_monotonic_s=-5.0, extend_tokens=8192,
+                     n_new=1),
+                dict(event="prefill_span_end", span_seq=99001, timestamp_monotonic_s=-4.0)]
+        tail = "\n".join(json.dumps(e) for e in span) + "\n"
+        p, _ = self._reduce([dict()], telemetry_tail=tail)        # orphan co-type span, no warm-up marks
+        self.assertIn("CO_SPAN_CELLS", self._codes(p))
+        p, _ = self._reduce([dict()], telemetry_tail=tail, extra_lines=["warmup_start k -10.0", "warmup_end k -1.0"])
+        self.assertEqual((self._codes(p), self._st(p)), (set(), ["REDUCED"]))
+        p, _ = self._reduce([dict()], telemetry_tail=tail, extra_lines=["warmup_start k -10.0", "warmup_end k -6.0"])
+        self.assertIn("CO_SPAN_CELLS", self._codes(p))            # the span is outside the warm-up interval
+        p, _ = self._reduce([dict()], telemetry_tail=tail, extra_lines=["warmup_start k -10.0"])
+        self.assertIn("WARMUP_UNPAIRED", self._codes(p))
+        self.assertIn("CO_SPAN_CELLS", self._codes(p))            # an unpaired warm-up exempts nothing
+        p, _ = self._reduce([dict()], telemetry_tail=tail, extra_lines=["warmup_start k -10.0", "warmup_end k 0.5"])
+        self.assertIn("WARMUP_IN_CELL", self._codes(p))
+        p, _ = self._reduce([dict()], telemetry_tail=tail,
+                            extra_lines=["warmup_start k -10.0", "warmup_start k -9.0", "warmup_end k -1.0"])
+        self.assertIn("MARK_DUPLICATE", self._codes(p))
+        p, _ = self._reduce([dict(_end_extra=1000.0), dict()],    # a co span inside TWO cells is never exempt
+                            extra_lines=["warmup_start k -10.0", "warmup_end k -1.0"])
+        self.assertIn("CO_SPAN_CELLS", self._codes(p))
 
     def test_abort_reasons_and_censor_promotion(self):              # R11-3, Z01, Z02
         for reason in ("coload_payload_invalid", "stream_cancel_failed", "cell_timeout", "runner_stop"):
