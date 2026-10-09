@@ -26,7 +26,7 @@ N3 shape B 3회차 Job(Nemotron-H, 8192→64, D44 sticky-OFF, PHASE_EVENTS=1 유
 
 | 필요 | 현재 | 조치 |
 |---|---|---|
-| 20 ms 전력 | `job_entry.sh`가 `meta/power_samples.csv` 기록(2026-10-08 추가, **미커밋**) | 커밋 전에는 어떤 Job에도 적용되지 않음(`launch.sh`가 dirty tree 거부) |
+| 20 ms 전력 | `job_entry.sh`가 `meta/power_samples.csv` 기록(커밋 `2196642`, 2026-10-08) | 이후 제출 Job부터 적용 |
 | 20 ms SM 클럭(cap 하강 확인) | `meta/sm_clk_samples.csv` 시도(NVML `PROCESSOR_CLK_SAMPLES`), 로컬 GPU 미지원 · A100 미확인 | 미지원이면 100 ms `clk.csv`로 대체 |
 | 시계 정렬 | srv.log 짝 맞춤으로 유닛별 ≤ 52 ms | runner가 bench 직전에 `(time.monotonic(), time.time())` 쌍을 한 번 기록하면 µs 단위. 엔진 수정 불필요 |
 | 상태 ≠ 분할 분리 | sticky OFF에서는 겹침 | **sticky ON 고정 분할**에서 decode만 / prefill만 / 동거를 같은 (P,D)로 측정 |
@@ -53,8 +53,8 @@ N3 shape B 3회차 Job(Nemotron-H, 8192→64, D44 sticky-OFF, PHASE_EVENTS=1 유
 
 ## 5. 사용자 결정
 
-1. `job_entry.sh` 샘플러 변경(에너지 카운터 + 20 ms 전력 + 20 ms 클럭 시도)을 커밋할지.
-2. A(N2에 얹기, 감사 고지 필요)를 할지.
+1. ~~`job_entry.sh` 샘플러 변경을 커밋할지~~ — 2026-10-08 사용자 "A 진행"으로 커밋 `2196642`.
+2. ~~A(N2에 얹기)~~ — 진행. 고지 `results/n2_static_grid/NOTICE_substrate_power_sampler_2026-10-08.md`가 N2 rev12부터 §3-3·N2C-61로 반영됨(샘플러 on/off를 `substrate.json`에 기록, 영향 주장 금지). 전력 분석은 N2 Job 회수 뒤.
 3. B(전용 Job) 사전등록을 시작할지.
 
 ## 그림
