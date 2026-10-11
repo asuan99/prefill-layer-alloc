@@ -159,7 +159,10 @@ nvidia-smi --query-gpu=timestamp,clocks.sm,power.draw,temperature.gpu,clocks_thr
 clk_pid=$!
 # GPU power/energy (NVML, read-only, no extra privilege).  Three files:
 #  meta/energy.csv        : board energy counter (mJ) polled every 100 ms (counter updates ~100 ms but
-#                           integrates continuously -> interval totals exact; probe job-absefkt9e88x)
+#                           integrates continuously -> interval totals exact; probe job-absefkt9e88x).
+#                           Columns epoch_s, mono_s, energy_mJ: mono_s = time.monotonic() of the same read, i.e.
+#                           CLOCK_MONOTONIC, the clock of engine telemetry (perf_counter) -- an exact bridge from
+#                           power/energy (epoch) to telemetry (monotonic) without srv.log pairing.
 #  meta/power_samples.csv : NVML buffered power samples (nvmlDeviceGetSamples NVML_TOTAL_POWER_SAMPLES,
 #                           driver timestamps, ~20 ms apart, step response 12-34 ms; probe job-tkgxusf12n0v)
 #                           drained every 200 ms -- the only sub-100 ms power signal on this substrate
@@ -198,11 +201,12 @@ fc = open(out_c, "w", buffering=1) if have_c else None
 if fc:
     fc.write("t_us,sm_mhz\n")
 with open(out, "w", buffering=1) as f:
-    f.write("epoch_s,energy_mJ\n")
+    f.write("epoch_s,mono_s,energy_mJ\n")
     k = 0; nerr = 0
     while True:
         try:
-            f.write(f"{time.time():.3f},{n.nvmlDeviceGetTotalEnergyConsumption(h)}\n")
+            e_ = n.nvmlDeviceGetTotalEnergyConsumption(h)
+            f.write(f"{time.time():.6f},{time.monotonic():.6f},{e_}\n")
         except Exception as e:  # noqa: BLE001
             nerr += 1
             if nerr <= 20:                    # cap the log: a persistent failure must not flood the run dir

@@ -242,18 +242,39 @@ def dump(obj, path: Path):
 
 # ---------------------------------------------------------------- energy.csv (NVML counter, job_entry >= 2026-10-08)
 def parse_energy(path: Path):
-    """-> sorted list of (epoch_s, energy_mJ) from meta/energy.csv (NVML total energy counter)."""
+    """-> sorted list of (epoch_s, energy_mJ) from meta/energy.csv (NVML total energy counter).
+    Accepts the 2-column (epoch_s, energy_mJ) and the 3-column (epoch_s, mono_s, energy_mJ) layouts."""
     rows = []
     with open(path) as f:
         next(f, None)
         for ln in f:
+            p = ln.strip().split(",")
             try:
-                t, e = ln.strip().split(",")
-                rows.append((float(t), int(e)))
-            except ValueError:
+                rows.append((float(p[0]), int(p[-1])))
+            except (ValueError, IndexError):
                 continue
     rows.sort()
     return rows
+
+
+def mono_to_epoch_offset(path: Path):
+    """From a 3-column meta/energy.csv: offset O with epoch = mono + O (median over rows) and its spread.
+    Returns None for the 2-column layout (no monotonic column)."""
+    offs = []
+    with open(path) as f:
+        hdr = next(f, "").strip().split(",")
+        if "mono_s" not in hdr:
+            return None
+        for ln in f:
+            p = ln.strip().split(",")
+            try:
+                offs.append(float(p[0]) - float(p[1]))
+            except (ValueError, IndexError):
+                continue
+    if not offs:
+        return None
+    offs.sort()
+    return {"O": offs[len(offs) // 2], "spread_s": offs[-1] - offs[0], "n": len(offs)}
 
 
 def _counter_at(rows, t):
