@@ -1,6 +1,18 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-10-08 (doc-steward — **N3 shape B 4회차(rev7) 완주·결과 감사 반영 + N2(3-a) 사전등록 draft rev8 상태 등재**, VESSL 컨테이너 3.409 h·새 성능 판정 0건·게이트 #6 불변(부분 측정, 미닫힘)·λ0R-8(iii)·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #262–263)
+최종 갱신: 2026-10-11 (doc-steward — **N2(3-a) 규칙 봉인 `fcc0b9e`·Job-PROFILE 하네스 `1037655`(미봉인) 상태 등재**; 새 성능 판정 0건·게이트 #6·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #264 = `CONSENSUS §3` 항목289 = 교훈 277). 아래 (a‴) 절은 2026-10-11 신설.
+
+**(a‴) N2(3-a, 정적 격자) — 설계 결정·규칙 봉인·하네스 단계 (2026-10-11 신설, GPU 0·새 성능 판정 0건)**
+
+**설계 결정(사용자, 2026-10-08)**: ① 실행 순서 = **프로파일 Job(Job-PROFILE) 먼저, 동거 측정(Job-EA, E-α) 나중**(설계 비교 감사 `REVIEW_ealpha_coload_design_2026-10-08.md`의 권고와 반대 — 사용자 결정) ② E-α는 **(A′) 고정 K = (33, 15)**(K_16 = 33, K_44 = 15; 봉인 전 1회 유도해 상수화, C 창 = 처음 128 동거 iteration) ③ **D 민감도**("hybrid decode는 attention보다 compute 집약" 가설)는 **부속 estimand**로만 등록(같은 round 안 D 쌍 paired, 예측 F-N2-D1…D3, "attention보다" 표현 금지) ④ **프로브→K 장치는 판정 경로에서 제외**(U-2 프로브는 선택적 비게이트 smoke).
+
+**규칙 봉인**: 커밋 `fcc0b9e`, `workspace/engine-port/results/n2_static_grid/REGISTRATION_SHA256.txt`, 7개 규칙 파일, 봉인 digest `fbb13b15fc63e595e7588eac64fcde71e1dd98d08e96595d46f88ad6b0889512`(n2_static_grid 안에서 `sha256sum <7 files> | sha256sum`), 규칙 시험 141·코어 변이 192(183 사살·9 등가). **Job-PROFILE 하네스** 커밋 `1037655` — **미봉인**, 가짜 엔진에서만 검증(전규모 e2e 296/296 VALID; 가짜 엔진은 D 무관이라 D 민감도 값은 무의미), 실엔진 동작 미확인. **rev17**(§18-2-c 규칙 재개봉 1회차)이 `PREREG_N2_3A_2026-10-07.md`·`n2_mutants.py`·`test_n2_probe_reduce.py`에서 **진행 중·미커밋**(규칙 봉인 파일이므로 완성·감사 전 커밋 금지).
+
+**다음 gate(순서)**: rev17 완성 → 규칙 델타 감사 + 하네스층 감사(한 번에) → 하네스 봉인(`## HARNESS SEAL`) → Job-PROFILE dry-run(`launch.sh` dry-run → 사용자 승인 → `--submit`). Job-EA 전 하드캡 재승인(E14-1)·블라인드 규칙(Job-PROFILE 동거 원자료 κ 분석 금지). 근거 핸드오프 `handoff-report/session_handoff_2026-10-11.md`.
+
+**신규 방법론 게이트 #264(`CONSENSUS §3` 항목289, 교훈 277과 짝)**: 측정 도구의 운영 손잡이(창 길이 K)를 파일럿 측정값으로 정하는 규칙은 그 파일럿을 판정 입력으로 만들어 시행 장치가 무한히 커진다 — 처치·측정량에 영향이 없는 손잡이는 넉넉한 상수로 미리 고정하라(N2 rev6–rev13 사례, 설계 비교 감사 `REVIEW_ealpha_coload_design_2026-10-08.md`). 새 성능 판정 0건, 게이트 #6·HE0·Claim D/E 불변.
+
+이전 최종 갱신(2026-10-08): (doc-steward — **N3 shape B 4회차(rev7) 완주·결과 감사 반영 + N2(3-a) 사전등록 draft rev8 상태 등재**, VESSL 컨테이너 3.409 h·새 성능 판정 0건·게이트 #6 불변(부분 측정, 미닫힘)·λ0R-8(iii)·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #262–263)
 
 이전 최종 갱신(2026-10-07, 이 줄 아래 (a″) 절은 2026-10-08 신설): 2026-10-07 (doc-steward — **게이트 #245 doc_facts 구조 수리 (i) 해소 등재**[사용자 승인 "C 진행", 앵커 `27bbae7`=155, 새 성능 판정 0건·Claim 등급·게이트 #6·HE0 불변; E2 r2 결과 문서 §9 대조는 2026-10-06 배너로 이미 완료 확인]). 직전 갱신: 2026-10-06 (doc-steward — **N3 shape B 3회차(rev6) 완주·결과 감사 반영**, VESSL 컨테이너 3.838 h, 새 성능 판정 0건, 게이트 #6 **불변(부분 측정, 미닫힘)**·λ0R-8(iii)·HE0·Claim 등급 불변).
 
@@ -10927,6 +10939,7 @@ prefill admission을 영구 차단할 수 있다(clear 경로 부재) — **사�
     CLAIM_EVIDENCE_MATRIX.md}` 2026-10-04 갱신.
 
 19. ★★**(2026-10-06 신설, doc-steward — E2 r2 결과 감사 + N3 제출 상태) 다음 gate = N2(3-a) 사전등록(E2VR-6 승계) · N3 rev6 사용자 결정.** (A) **E2 r2 완료**(Job `pdmux-e2-sticky-vessl-22c8c64-20261006020317`, 死因 0, R1 `OFF_BASELINE_ABOVE_BAND`·R2 두 셀 `LAMBDA_MOVES_DOWN`·R3/R4/R4′/R5 PASS·R4″ `B_RESULT_AXIS_WITHIN`·P13 byte-identical; 허용·금지 문안은 최상단 배너와 `CONSENSUS.md` §1 행 35). Q1·기전 귀속 `NOT-YET-SUPPORTED`, λ0R-8(iii)·게이트 #6 불변. N2(3-a) 사전등록이 "가져갈 수 있는 것/없는 것"(E2VR-6)을 문자 그대로 승계. [★확인(2026-10-07, doc-steward): `RESULT_e2_vessl_r2_2026-10-06.md` §9 감사 대조는 이미 2026-10-06 doc-steward 배너(금지 #1–#16 저촉/비저촉 전수 + result-analyst 정정 2건 반영)로 완료 — 열린 항목 아님, 새 배너 불필요.] (B) **N3 shape B**: rev5 델타 감사 `GO-with-caveats`(N3C-23…27, 커밋 `5c58dbc`), 2회 제출 모두 셀 측정 0(1회차 `ABORT_SELFTEST` 경로 결함→rev5 수리, 2회차 `ABORT_FLOOR` 입장 시점 라벨≠실현 분할). **rev6(floor 판정을 실현 증거로)은 사용자 결정 대기** [★해소 — 이 문장은 1차 시점 기록, 아래 ★갱신(2026-10-06 2차) 참조], 진단 `workspace/engine-port/results/n3_capacity/SUBMISSIONS_2026-10-06.md`. N3 shape A는 B 결과 감사 뒤 별도 승인. (C) 별도 대기: doc_facts 구조 수리 (i) 사용자 승인(10차 재발) [★해소(2026-10-07): 사용자 승인 "C 진행"으로 (i) 적용 완료 — 게이트 #245 ★해소 追記 참조], E-1 cap 대조 사용자 결정 3건(위 #18). 새 성능 판정 0건. 상세 `CONSENSUS.md` rev88. ★**갱신(2026-10-06 2차, rev89)**: rev6 승인(사용자 'a') → 델타 감사 `GO-with-caveats` → 3회차 Job `pdmux-n3-capacity-38ed3f4-20261006092813` 완주(43/48 boot, 컨테이너 3.838 h, 死因 0, 라벨 기계적 `CONFIRMED`: k=3 `CAPACITY_BRACKETED_3` [0.15, 0.22), k=5/10 `UNRESOLVED_N_BELOW_4`). 게이트 #6은 **부분 측정·미닫힘**. **열린 사용자 결정 4건**: (i) 결측 4 unit+floor_tail을 재개 Job/새 Job/보류 (ii) 예산 상수 재추정=rev7+델타 감사 (iii) shape A 착수 (iv) W-5 반영. 허용·금지 문안은 위 (a′)와 `CONSENSUS.md` §1 행 36. 다음 실험 gate의 **N2(3-a) 사전등록**은 불변. 새 성능 판정 0건.
+20. ★★**(2026-10-11 신설, doc-steward — N2(3-a) 규칙 봉인·하네스 단계) 다음 gate = N2(3-a)**: rev17(§18-2-c 규칙 재개봉 1회차, 진행 중·미커밋) 완성 → 규칙 델타 감사 + 하네스층 감사 → 하네스 봉인 → Job-PROFILE dry-run → 사용자 승인 → `--submit`. 규칙 봉인 `fcc0b9e`(digest `fbb13b15…`), 하네스 `1037655` 미봉인. 새 성능 판정 0건·게이트 #6·HE0·Claim D/E 불변. 상세 위 (a‴).
 
 실험·통계·fallback의 상세 정본은
 [`EXPERIMENT_ROADMAP.md`](reports/paper/EXPERIMENT_ROADMAP.md)다.
