@@ -16,9 +16,13 @@ ABORT_REG_SOURCE (§15, rev15 H14-2, rev16 H15-5) -- `load_registered()` refuses
       calculator sha (RULE_FILES), limits.ok is not true, or K != derive_fixed_k recorded in the same file.
 `verify_rule_seal()` additionally re-hashes the 7 rule-seal files and recomputes the rule-seal digest
 (sha256 of the `sha256sum` listing of the 7 files in registration order) against REGISTRATION_SHA256.txt.
-`verify_harness_seal()` reads the "## HARNESS SEAL" section of REGISTRATION_SHA256.txt (written at the harness seal --
-format in HARNESS_SECTION_FORMAT) and checks every listed harness file and the recorded rule-seal digest; a missing
-section is ABORT_HARNESS_UNSEALED (dry-run only notes it). The harness digest is NOT a constant in this file (this
+`verify_harness_seal(scope=...)` reads the "## HARNESS SEAL" sections of REGISTRATION_SHA256.txt (written at the
+harness seals -- format in HARNESS_SECTION_FORMAT). The harness seal is TWO-STAGE (rev17 R17-2 / H17-6): every section
+carries a scope tag `scope PROFILE` or `scope EA`; a Job-PROFILE needs the PROFILE section, a Job-EA needs BOTH the
+PROFILE and the EA section (REQUIRED_SCOPES). Every required section must be well formed, be the only section of its
+scope, carry the current rule-seal digest and list harness files whose CURRENT bytes match (so a harness change after
+the PROFILE seal needs a re-issued PROFILE section -- fail-closed, HARNESS CHOICE reported). A missing required
+section is UNSEALED (ABORT_HARNESS_UNSEALED; PROFILE dry-run/test mode only notes it, Job-EA is refused always). The harness digest is NOT a constant in this file (this
 file is itself a harness file -- a self-referencing digest is impossible).
 
 Units (§5-1): Job-PROFILE = 28 boots, round-major registered permutation; cells inside a boot ordered by the §5-3 /
@@ -44,19 +48,19 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ENG = os.path.abspath(os.path.join(HERE, "..", ".."))
 
-# ---------------------------------------------------------------------------- rule seal (commit fcc0b9e)
+# ---------------------------------------------------------------------------- rule seal (rev17 commit 5e29990; rev16 fcc0b9e)
 REGISTERED_JSON = os.path.join(HERE, "N2_REGISTERED.json")
 REGISTRATION_TXT = os.path.join(HERE, "REGISTRATION_SHA256.txt")
 REGISTERED_JSON_SHA256 = "e7d743c85e6adb007aa940342a3188cdb35568b2135ecd678f3ee6e4ae3087e7"
-RULE_SEAL_DIGEST = "fbb13b15fc63e595e7588eac64fcde71e1dd98d08e96595d46f88ad6b0889512"
+RULE_SEAL_DIGEST = "fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069"
 RULE_FILES = (                                   # registration order (the digest is order-sensitive)
-    ("PREREG_N2_3A_2026-10-07.md", "f030a9052df7e19bd9600195ee53b168b703010f21236d8416f88da660ae8b05"),
+    ("PREREG_N2_3A_2026-10-07.md", "62fbfff912cf43db7c5ac548018b95c2cf5462890a9311facb947ca204fbf549"),
     ("n2_feasibility.py", "1ee3338dd1f2be7eceaa5e514510199a9d5ac25176b41c5edad27ae205ab0c60"),
     ("n2_probe_reduce.py", "8ef0c8cc6b0ba273ab684a8e297441598ffd70453138ee1f10713a8948d4282d"),
     ("N2_REGISTERED.json", REGISTERED_JSON_SHA256),
     ("test_n2_feasibility.py", "331c7b0ff6efaa0b7d4cc2f5f92e30597455bbb068d165cddb93930c4d786da6"),
-    ("test_n2_probe_reduce.py", "7f35d244b47d004a23058269d52dc14c45a8c0a54dadd0bf4556ab3bd476d06a"),
-    ("n2_mutants.py", "2c502d0c5602cfc4867a7c08ff3a989db061e8d2128f99fa82e44282c664af72"),
+    ("test_n2_probe_reduce.py", "a796980c71604d8b7ef94610c2d007d11c6c05e9c3dc899373b894573f2ca171"),
+    ("n2_mutants.py", "ffb4d6f38a50c754fa89525e78193cd9352c8dfc8c9873864cfb5e9d5db6fa8d"),
 )
 CALCULATOR_SHA256 = dict(RULE_FILES)["n2_feasibility.py"]
 REDUCER_FILE = os.path.join(HERE, "n2_probe_reduce.py")
@@ -67,7 +71,10 @@ HARNESS_FILES = ("n2_marks.py", "n2_loadgen.py", "n2_probe_run.py", "fake_n2_eng
                  "n2_harness_mutants.py", "n2_capacity.sh", "n2_plan.py", "n2_job.py", "n2_window.py",
                  "n2_signature.py", "n2_realized_mix.py", "n2_analyze.py", "n2_reach_tests.py", "test_n2_job.py",
                  "n2_job_mutants.py")
+HARNESS_SCOPES = ("PROFILE", "EA")
+REQUIRED_SCOPES = {"PROFILE": ("PROFILE",), "EA": ("PROFILE", "EA")}   # rev17 R17-2: Job-EA needs both sections
 HARNESS_SECTION_FORMAT = """## HARNESS SEAL
+scope PROFILE|EA                   (rev17 H17-6 two-stage seal: one section per scope, PROFILE first)
 rule_seal_digest <64 hex>          (the RULE SEAL DIGEST this harness was built and tested on)
 <64 hex>  <harness file>           (one line per HARNESS_FILES entry, this order)
 harness_digest <64 hex>            (sha256 of the listing lines above, sha256sum format)"""
@@ -241,30 +248,30 @@ def harness_listing(here=HERE, files=HARNESS_FILES):
     return "".join(f"{sha256_file(os.path.join(here, fn))}  {fn}\n" for fn in files)
 
 
-def parse_harness_section(txt):
-    """-> (rule_digest, {file: sha}, harness_digest) or None when the section is absent."""
-    if "## HARNESS SEAL" not in txt:
-        return None
-    sec = txt.split("## HARNESS SEAL", 1)[1]
-    sec = sec.split("\n## ", 1)[0]
-    rd = re.search(r"^rule_seal_digest ([0-9a-f]{64})$", sec, re.M)
-    hd = re.search(r"^harness_digest ([0-9a-f]{64})$", sec, re.M)
-    files = dict((m.group(2), m.group(1)) for m in re.finditer(r"^([0-9a-f]{64})  (\S+)$", sec, re.M))
-    return (rd.group(1) if rd else None), files, (hd.group(1) if hd else None)
+def parse_harness_sections(txt):
+    """-> list of dict(scope, rule_digest, files {file: sha}, harness_digest, problems) -- one per '## HARNESS SEAL'
+    section, file order; empty when there is none."""
+    out = []
+    for blk in re.split(r"^## ", txt, flags=re.M)[1:]:
+        if not blk.startswith("HARNESS SEAL"):
+            continue
+        sc = re.findall(r"^scope (\S+)$", blk, re.M)
+        rd = re.search(r"^rule_seal_digest ([0-9a-f]{64})$", blk, re.M)
+        hd = re.search(r"^harness_digest ([0-9a-f]{64})$", blk, re.M)
+        files = dict((m.group(2), m.group(1)) for m in re.finditer(r"^([0-9a-f]{64})  (\S+)$", blk, re.M))
+        probs = []
+        if len(sc) != 1:
+            probs.append(f"section needs exactly one 'scope' line (got {sc})")
+        elif sc[0] not in HARNESS_SCOPES:
+            probs.append(f"unknown scope {sc[0]!r}")
+        out.append(dict(scope=sc[0] if len(sc) == 1 else None, rule_digest=rd.group(1) if rd else None, files=files,
+                        harness_digest=hd.group(1) if hd else None, problems=probs))
+    return out
 
 
-def verify_harness_seal(here=HERE, registration_txt=None):
-    """(status, problems): status 'SEALED' / 'UNSEALED' / 'BROKEN'."""
-    try:
-        with open(registration_txt or os.path.join(here, "REGISTRATION_SHA256.txt")) as fh:
-            txt = fh.read()
-    except OSError:
-        return "UNSEALED", ["REGISTRATION_SHA256.txt unreadable"]
-    sec = parse_harness_section(txt)
-    if sec is None:
-        return "UNSEALED", ["no '## HARNESS SEAL' section (harness seal pending)"]
-    rd, files, hd = sec
-    bad = []
+def _verify_section(here, sec):
+    bad = list(sec["problems"])
+    rd, files, hd = sec["rule_digest"], sec["files"], sec["harness_digest"]
     if rd != RULE_SEAL_DIGEST:
         bad.append(f"harness built on rule digest {rd} != current {RULE_SEAL_DIGEST} (§18-2-c: re-run the harness ledger)")
     if list(files) != list(HARNESS_FILES):
@@ -277,7 +284,38 @@ def verify_harness_seal(here=HERE, registration_txt=None):
     listing = "".join(f"{files[fn]}  {fn}\n" for fn in files)
     if hd != sha256_bytes(listing.encode()):
         bad.append("harness_digest != sha256 of the listed lines")
-    return ("SEALED" if not bad else "BROKEN"), bad
+    return [f"[scope {sec['scope']}] {b}" for b in bad]
+
+
+def verify_harness_seal(here=HERE, registration_txt=None, scope="PROFILE"):
+    """(status, problems) for a Job of `scope`: status 'SEALED' / 'UNSEALED' (a required section is absent) /
+    'BROKEN' (any section malformed, a duplicated or unknown scope, or a required section that does not verify)."""
+    if scope not in REQUIRED_SCOPES:
+        return "BROKEN", [f"unknown Job scope {scope!r}"]
+    try:
+        with open(registration_txt or os.path.join(here, "REGISTRATION_SHA256.txt")) as fh:
+            txt = fh.read()
+    except OSError:
+        return "UNSEALED", ["REGISTRATION_SHA256.txt unreadable"]
+    secs = parse_harness_sections(txt)
+    bad = [f"[section {i}] {p}" for i, s_ in enumerate(secs) for p in s_["problems"]]
+    by = {}
+    for s_ in secs:
+        if s_["scope"] is not None:
+            by.setdefault(s_["scope"], []).append(s_)
+    for sc, lst in by.items():
+        if len(lst) != 1:
+            bad.append(f"scope {sc} sealed {len(lst)} times (one section per scope)")
+    missing = [sc for sc in REQUIRED_SCOPES[scope] if sc not in by]
+    for sc in REQUIRED_SCOPES[scope]:
+        if sc in by and len(by[sc]) == 1:
+            bad += _verify_section(here, by[sc][0])
+    if bad:
+        return "BROKEN", bad
+    if missing:
+        return "UNSEALED", [f"no '## HARNESS SEAL' section with 'scope {sc}' (required for a Job-{scope}; "
+                            f"harness seal pending)" for sc in missing]
+    return "SEALED", []
 
 
 # ---------------------------------------------------------------------------- units
@@ -608,6 +646,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--verify-registration", action="store_true")
     ap.add_argument("--verify-harness-seal", action="store_true")
+    ap.add_argument("--scope", default="PROFILE", choices=sorted(REQUIRED_SCOPES),
+                    help="Job scope for --verify-harness-seal (PROFILE: PROFILE section; EA: PROFILE + EA sections)")
     ap.add_argument("--units", metavar="JOB")
     ap.add_argument("--emit-plan", nargs=2, metavar=("OUT", "JOB"))
     ap.add_argument("--budget", metavar="JOB")
@@ -632,8 +672,8 @@ def main(argv=None):
         print(f"REG_OK N2_REGISTERED sha {REGISTERED_JSON_SHA256} rule_seal {RULE_SEAL_DIGEST} K {reg['K']}")
         return 0
     if a.verify_harness_seal:
-        st, bad = verify_harness_seal()
-        print(st + ("" if not bad else " " + "; ".join(bad)))
+        st, bad = verify_harness_seal(scope=a.scope)
+        print(f"{st} scope={a.scope}" + ("" if not bad else " " + "; ".join(bad)))
         return 0 if st == "SEALED" else 3
     if a.const:
         print(globals()[a.const])

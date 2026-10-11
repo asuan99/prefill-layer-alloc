@@ -1,8 +1,8 @@
 # N2(3-a) REGISTRATION — RULE SEAL (rev17 update 2026-10-11; first sealed rev16 2026-10-09 at fcc0b9e)
 # basis: rev17 (§18-2-c rule reopen #1). verdicts: VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md (GO-with-caveats, R17-1..3)
 #        + VERDICT_n2_3a_rev17_redelta_2026-10-11.md (GO-with-caveats, R17-4/5, 死因 0). PREREG audited bytes 31150489… + R17-4/R17-5/N2C-80·81 only.
-# harness seal: NOT YET — two-stage (scope PROFILE / scope EA, §18-2 R17-2). PROFILE pending H17-7 (n2_plan constants), H17-8, harness ledgers rerun, harness delta audit.
-#               dry-run requires rule seal + harness seal (scope PROFILE) built on THIS rule digest.
+# harness seal: scope PROFILE SEALED (2026-10-11, verdict VERDICT_n2_3a_harness_profile_seal_2026-10-11.md GO-with-caveats after H17-9; N2C-80..83). scope EA: NOT YET.
+#               Job-PROFILE dry-run requires rule seal + HARNESS SEAL scope PROFILE on THIS rule digest; Job-EA requires PROFILE + EA sections.
 
 ## RULE SEAL FILES (sha256)
 62fbfff912cf43db7c5ac548018b95c2cf5462890a9311facb947ca204fbf549  PREREG_N2_3A_2026-10-07.md
@@ -26,7 +26,36 @@ ledger: scratchpad r17/mut_core.txt, `n2_mutants.py --set core ../n3_capacity/n3
 CTRL OK (skipped=1 exactly), 194 rows: J 85 (77 killed / 8 equivalent), T 12 (12 killed), S 97 (96 killed / 1 equivalent); J28·J29 killed; 0 unexpected / TIMEOUT / BROKEN / .pyc
 input mtimes: test_n2_probe_reduce.py & n2_mutants.py 15:41:17 (before start); calculator & reducer unchanged since rev16 seal. Rule tests 143/143, skip 0 (in place).
 
+## HARNESS SEAL
+scope PROFILE
+rule_seal_digest fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069
+abe9c67363baf1f30ceaa9fd438d623ba0d75d3d6596450dcaf0e9986df29f21  n2_marks.py
+37c20c330a0420674334867b7adaf782e98b17687f48f1e22fa47cdc8f1c1e6b  n2_loadgen.py
+b505925b1b7410eab855ee3a2e6e9627cb8b0cfa89240635ff701b9ddf095fff  n2_probe_run.py
+0e052e63b9b638dbc5670ec1a7e80822b466119e2e83f727682d85a4cf8f0656  fake_n2_engine.py
+96e737e481dcc71f09058f753f04b9b4dcfa17e1dc92d91ebe59a046ade6808c  test_n2_harness.py
+56af0f958ca9d94b9766f1378473653904aa61ad072a1b9ee98a09b059f4ff52  n2_harness_mutants.py
+fe2d79f6430dc8588e726c60b50fbad882c47d99dd03b583a4fdc7e1a227fd5d  n2_capacity.sh
+b28ad7a955e411b2a91133b4a494e1c4c8e8a3ee686dd2182fff3552da5aee28  n2_plan.py
+ea3dde32c10c2c2a6564a668606c92057ff348200aa16162a8f97d9f8a77b33e  n2_job.py
+4a68dd8313b0ba56a22f6b45d0c2b4cfa82f1562c236a84db6d5aa74778b317c  n2_window.py
+bbf351d9329589d3b8ac8f0d8fb60ac64731f4e106fc51aa3fa6e682e141e3b8  n2_signature.py
+188bce985dcc75ef7212d991889b5dda3f9bf2968b1869b3559a94f66e4c6dad  n2_realized_mix.py
+5f60bed1fd851bdf564505d449102a961e4abb3100ead8db7cc2c313695ffd0d  n2_analyze.py
+853e41e460351bc062ad85c7b41b07bc72529ff25805ea4b448c4228c3cb1ea4  n2_reach_tests.py
+31788057cf73787c0540b25bcaa298364864b8e0a32485b11dd53650867bf4d7  test_n2_job.py
+ba063ae2482acf4363cb4182155f46e811a5359f93e25d939b16f6befe722691  n2_job_mutants.py
+harness_digest 89f975c5d99c545a80751f5b5e7d1a1d9e8e8cdd18e2f3841eea60689f9bce31
+
+## HARNESS LEDGER PROVENANCE (scope PROFILE)
+built on rule seal 5e29990 (digest fc9e6404…); files = the HARNESS SEAL scope PROFILE listing above
+tests in place: test_n2_harness 36 · test_n2_job 58 · n2_reach_tests 37 (rule 143, skip 0)
+H01–H32: n2_mutants.py --set harness ../n3_capacity/n3b_pdmux-n3-capacity-38ed3f4-20261006092813, 2026-10-11 21:51:50–22:16:32 KST, CTRL OK (skipped=1), 32/32 KILLED
+JH01–JH94: n2_job_mutants.py, 2026-10-11 22:16:32–23:34:14 KST, CTRL OK, 94/94 KILLED, 0 not killed
+ledger input bytes = sealed bytes (prerun sha re-diff empty); latest input mtime 21:51:15 (test_n2_job.py, H17-9) < start 21:51:50
+counts: PREREG rev17 states test_n2_job 57 / JH 93 (rule-seal-time wording); H17-8 +1 test +JH94; H17-9 edits one test (count unchanged). See N2C-82.
+
 ## HISTORY (not seal bytes)
 rev16 rule seal (fcc0b9e, 2026-10-09): digest fbb13b15fc63e595e7588eac64fcde71e1dd98d08e96595d46f88ad6b0889512
   PREREG f030a905…, test_n2_probe_reduce 7f35d244…, n2_mutants 2c502d0c… (others as above); core ledger r16 192 rows 183 killed / 9 equivalent
-VERDICT_n2_3a_rev16_seal_2026-10-09.md · VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md · VERDICT_n2_3a_rev17_redelta_2026-10-11.md — audit verdicts (history)
+VERDICT_n2_3a_rev16_seal_2026-10-09.md · VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md · VERDICT_n2_3a_rev17_redelta_2026-10-11.md · VERDICT_n2_3a_harness_profile_seal_2026-10-11.md — audit verdicts (history)

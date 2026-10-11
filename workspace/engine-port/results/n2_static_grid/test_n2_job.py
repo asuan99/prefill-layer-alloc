@@ -7,6 +7,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -115,30 +116,54 @@ class TestRegSource(unittest.TestCase):
                 fh.write("\n# tamper\n")
             self.assertTrue(any("n2_probe_reduce.py" in x for x in P.verify_rule_seal(td)))
 
-    def test_harness_seal_section(self):
+    def test_harness_seal_section(self):                                 # rev17 R17-2 / H17-6: two-stage seal
         st, bad = P.verify_harness_seal()
         self.assertIn(st, ("UNSEALED", "SEALED"))
         with tempfile.TemporaryDirectory() as td:
             for fn in P.HARNESS_FILES:
                 shutil.copy(os.path.join(HERE, fn), td)
-            listing = P.harness_listing(td)
-            txt = (f"## RULE SEAL DIGEST\n{P.RULE_SEAL_DIGEST}\n\n## HARNESS SEAL\nrule_seal_digest {P.RULE_SEAL_DIGEST}\n"
-                   f"{listing}harness_digest {_sha(listing.encode())}\n")
+            prof, ea = seal_section(td, "PROFILE"), seal_section(td, "EA")
+            head = f"## RULE SEAL DIGEST\n{P.RULE_SEAL_DIGEST}\n\n"
             reg_txt = os.path.join(td, "REGISTRATION_SHA256.txt")
-            with open(reg_txt, "w") as fh:
-                fh.write(txt)
-            self.assertEqual(P.verify_harness_seal(td, reg_txt), ("SEALED", []))
-            with open(reg_txt, "w") as fh:
-                fh.write(txt.replace(f"rule_seal_digest {P.RULE_SEAL_DIGEST}", "rule_seal_digest " + "0" * 64))
-            self.assertEqual(P.verify_harness_seal(td, reg_txt)[0], "BROKEN")
-            with open(reg_txt, "w") as fh:
-                fh.write(txt)
+
+            def check(txt, scope):
+                with open(reg_txt, "w") as fh:
+                    fh.write(head + txt)
+                return P.verify_harness_seal(td, reg_txt, scope=scope)
+            self.assertEqual(check(prof, "PROFILE"), ("SEALED", []))
+            self.assertEqual(check(prof, "EA")[0], "UNSEALED")                  # EA needs the EA section too
+            self.assertEqual(check(prof + "\n" + ea, "EA"), ("SEALED", []))
+            self.assertEqual(check(ea + "\n" + prof, "EA"), ("SEALED", []))
+            self.assertEqual(check(ea, "EA")[0], "UNSEALED")                    # ... and the PROFILE section
+            self.assertEqual(check(ea, "PROFILE")[0], "UNSEALED")
+            self.assertEqual(check(prof + "\n" + prof, "PROFILE")[0], "BROKEN")    # one section per scope
+            self.assertEqual(check(prof.replace("scope PROFILE\n", ""), "PROFILE")[0], "BROKEN")   # no scope tag
+            self.assertEqual(check(prof.replace("scope PROFILE", "scope ALL"), "PROFILE")[0], "BROKEN")
+            self.assertEqual(check(prof.replace("scope PROFILE\n", "scope PROFILE\nscope EA\n"), "EA")[0], "BROKEN")
+            self.assertEqual(check(prof.replace(f"rule_seal_digest {P.RULE_SEAL_DIGEST}", "rule_seal_digest " + "0" * 64),
+                                   "PROFILE")[0], "BROKEN")
+            self.assertEqual(check(prof + "\n" + ea.replace(f"rule_seal_digest {P.RULE_SEAL_DIGEST}",
+                                                             "rule_seal_digest " + "0" * 64), "EA")[0], "BROKEN")
+            self.assertEqual(check(prof + "\n" + ea.replace(f"rule_seal_digest {P.RULE_SEAL_DIGEST}",   # EA content
+                                                             "rule_seal_digest " + "0" * 64), "PROFILE"),   # is not
+                             ("SEALED", []))                                                    # a PROFILE input
             with open(os.path.join(td, "n2_window.py"), "a") as fh:
                 fh.write("\n#x\n")
-            self.assertEqual(P.verify_harness_seal(td, reg_txt)[0], "BROKEN")
-            with open(reg_txt, "w") as fh:
-                fh.write("## RULE SEAL DIGEST\n")
-            self.assertEqual(P.verify_harness_seal(td, reg_txt)[0], "UNSEALED")
+            self.assertEqual(check(prof, "PROFILE")[0], "BROKEN")
+            self.assertEqual(check(prof + "\n" + ea, "EA")[0], "BROKEN")
+            self.assertEqual(check("", "PROFILE")[0], "UNSEALED")
+            self.assertEqual(P.verify_harness_seal(td, reg_txt, scope="BOTH")[0], "BROKEN")
+            r = subprocess.run([sys.executable, os.path.join(HERE, "n2_plan.py"), "--verify-harness-seal", "--scope", "EA"],
+                               capture_output=True, text=True, env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"))
+            self.assertIn("scope=EA", r.stdout)
+            self.assertEqual(r.returncode, 0 if r.stdout.startswith("SEALED") else 3)
+
+
+def seal_section(here, scope):
+    """A well-formed harness-seal section of `scope` over the CURRENT bytes of the harness files in `here`."""
+    listing = P.harness_listing(here)
+    return (f"## HARNESS SEAL\nscope {scope}\nrule_seal_digest {P.RULE_SEAL_DIGEST}\n{listing}"
+            f"harness_digest {_sha(listing.encode())}\n")
 
 
 class TestUnits(unittest.TestCase):
@@ -343,6 +368,22 @@ class TestWindowUnits(unittest.TestCase):
                                        cell)[0])
         self.assertFalse(NW.bench_valid(dict(aborted="cell_timeout"), cell)[0])
 
+    def test_warmup_cg_canary(self):                                      # §18-2-d #16 (H17-3), pure
+        a, z = (1000.0, 10.0), (1010.0, 20.0)                             # wall = 990 + mono
+        T, F = "Decode batch, #running-req: 1, cuda graph: True", "Decode batch, #running-req: 1, cuda graph: False"
+        lines = [(1000, F), (1009, F), (1001, T), (1008, T), (1005, "Prefill batch, #new-seq: 1, cuda graph: False")]
+        self.assertEqual(NW.warmup_cg_canary(lines, a, z, 10.5, 19.5), (True, 2, 0, 1001, 1008))   # [ceil, floor - 1]
+        self.assertEqual(NW.warmup_cg_canary(lines + [(1004, F)], a, z, 10.5, 19.5)[:3], (False, 3, 1))
+        self.assertEqual(NW.warmup_cg_canary(lines[:2], a, z, 10.5, 19.5)[:3], (False, 0, 0))    # none inside
+        self.assertEqual(NW.warmup_cg_canary([(1001, "Decode batch, #running-req: 1")], a, z, 10.5, 19.5)[:3],
+                         (False, 1, 1))                                   # no cuda-graph field = not True
+        self.assertFalse(NW.warmup_cg_canary(lines, None, z, 10.5, 19.5)[0])
+        self.assertEqual(NW.warmup_cg_canary(lines, a, None, 10.5, 19.5)[3:], (1001, 1008))    # start offset only
+        gm = 9 * 3600                                                     # log stamps are local time (§18-2-d #15)
+        ll = NW.parse_log(time.strftime("[%Y-%m-%d %H:%M:%S] ", time.gmtime(1001 + gm)) + T + "\n", gm)
+        self.assertEqual(ll, [(1001, T)])
+        self.assertTrue(NW.warmup_cg_canary(ll, a, z, 10.5, 19.5)[0])
+
     def test_obs_client_window(self):                                     # §11-4
         mk = lambda n, dt: dict(times=[1.0 + k * dt for k in range(n)])
         c, n = NW.obs_client_window(dict(requests=[mk(200, 0.01), mk(200, 0.01)], t_cancel=None))
@@ -483,6 +524,11 @@ class TestRunnerAborts(unittest.TestCase):
         self.assertEqual((cm.exception.code, cm.exception.tag), (6, "ABORT_STICKY"))
         self.assertIn(["boot_abort", "wiring_check_failed"], [x[:2] for x in marks(self.td, "r1_ON44")])
         self.assertFalse(os.path.exists(os.path.join(self.td, "marks_r1_OFF44.txt")))
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            led = json.load(fh)
+        self.assertEqual((led["stopped"], led["job_abort"]["tag"]), ("job_abort", "ABORT_STICKY"))
+        res = A.analyze(self.td, reg=REG)                                   # H17-2 / §18-2-d #10
+        self.assertEqual(res["forecasts"]["F-N2-7P"], "UNRESOLVED")
 
     def test_green_abort_exit6(self):
         with self.assertRaises(J.JobAbort) as cm:
@@ -511,12 +557,15 @@ class TestRunnerAborts(unittest.TestCase):
         self.assertEqual((led[0]["aborted"], led[0]["abort_class"]), ("server_down", "VALUE_INDEPENDENT"))
         self.assertEqual((led[1]["status"], led[1]["aborted"]), ("ADMITTED", None))
 
-    def test_vd_cell_abort_stops_job(self):                                # G-10: cell abort ends the boot; VD stops
+    def test_vd_cell_abort_next_boot_runs(self):                          # G-10 Job (§18-2-d #7, rev17 user decision)
         led = run_mini(self.td, ["r1_ON44", "r1_OFF44"], [(1, 512), (1, 2048)],
                        handles={"r1_ON44": dict(engine_kw=dict(drop_after=100))})   # warm-up output 64 < 100
         self.assertEqual((led[0]["aborted"], led[0]["abort_class"]), ("client_exception", "VALUE_DEPENDENT"))
         self.assertEqual(led[0]["cells_done"], 0)
-        self.assertEqual(led[1]["status"], "NOT_ATTEMPTED_VD_ABORT")
+        self.assertEqual((led[1]["status"], led[1].get("aborted"), led[1].get("cells_done")), ("ADMITTED", None, 2))
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            jl = json.load(fh)
+        self.assertEqual((jl["stopped"], jl["job_abort"]), (None, None))
         m = marks(self.td, "r1_ON44")
         self.assertIn("cell_abort", [x[0] for x in m])
         self.assertEqual([x[0] for x in m].count("cell_start"), 1)          # the boot ended at the aborted cell
@@ -524,6 +573,107 @@ class TestRunnerAborts(unittest.TestCase):
         st = {r["cell_id"]: (r["status"], r["reason"]) for r in res["replicates"]}
         self.assertEqual(st["r1_ON44-b1-c512"][0], "BENCH_INVALID")
         self.assertEqual(st["r1_ON44-b1-c2048"], ("BENCH_INVALID", "not_attempted_boot_aborted"))
+        self.assertEqual(st["r1_OFF44-b1-c512"][0], "VALID")
+        self.assertEqual(st["r1_OFF44-b1-c2048"][0], "VALID")
+
+    def test_runner_crash_marks_crash_and_f7p_unresolved(self):          # H17-8 (§18-2-d #10)
+        class Crash(fk.FakeServerHandle):
+            def start(self, env, log_path):
+                raise OSError("synthetic runner crash")
+        with self.assertRaises(OSError):
+            run_mini(self.td, ["r1_ON44", "r1_OFF44"], self.CELLS,
+                     handles={"r1_OFF44": Crash(dict(FAST, wall=J.ScaledWall(200.0)), job_mode=True)})
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            jl = json.load(fh)
+        self.assertEqual((jl["stopped"], jl["job_abort"]), ("crash", None))
+        res = A.analyze(self.td, reg=REG)
+        self.assertEqual(res["forecasts"]["F-N2-7P"], "UNRESOLVED")
+
+    def test_runner_stop_in_last_boot_marks_budget(self):                 # runner_stop ends the cell section
+        box = {}
+        sw = J.ScaledWall(200.0)
+
+        def make(u):
+            h = fk.FakeServerHandle(dict(FAST, wall=sw, tau_s=0.004), job_mode=True)
+            orig = h.wait_healthy
+
+            async def wh(session):
+                ok = await orig(session)
+                asyncio.get_running_loop().call_later(0.6, box["opts"]["on_term"])
+                return ok
+            h.wait_healthy = wh
+            return h
+        us = J.select_test_units(UNITS, {"r1_OFF44"}, {(1, 512), (1, 2048)})
+        box["opts"] = dict(reg=REG, wall=sw, flush_interval_s=0.02, warmup_n=1, install_signals=False,
+                           cell_kw=dict(drain_poll_s=0.02, drain_settle_s=0.05, drain_timeout_s=20))
+        led = asyncio.run(J.run_job(self.td, us, make, box["opts"]))
+        self.assertEqual(led[0]["aborted"], "runner_stop")
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            self.assertEqual(json.load(fh)["stopped"], "budget")
+
+    def test_cg_canary_cuda_graph_false_exit3(self):                       # §18-2-d #16 (H17-3)
+        with self.assertRaises(J.JobAbort) as cm:
+            run_mini(self.td, ["r1_OFF44", "r1_ON44"], self.CELLS,
+                     handles={"r1_OFF44": dict(engine_kw=dict(cuda_graph=False))})
+        self.assertEqual((cm.exception.code, cm.exception.tag), (3, "ABORT_CG_CANARY"))
+        self.assertFalse(os.path.exists(os.path.join(self.td, "marks_r1_ON44.txt")))     # the Job stopped
+        m = marks(self.td, "r1_OFF44")
+        self.assertNotIn("cell_start", [x[0] for x in m])                    # aborted before any cell
+        with open(os.path.join(self.td, "boot_r1_OFF44.json")) as fh:
+            rec = json.load(fh)
+        self.assertFalse(rec["cg_canary"]["ok"])
+        self.assertGreaterEqual(rec["cg_canary"]["decode_lines"], 1)
+        self.assertEqual(rec["cg_canary"]["not_cuda_graph_true"], rec["cg_canary"]["decode_lines"])
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            self.assertEqual(json.load(fh)["job_abort"]["tag"], "ABORT_CG_CANARY")
+
+    def test_cg_canary_one_false_line_exit3(self):                          # "그 줄 전부" True
+        with self.assertRaises(J.JobAbort) as cm:
+            run_mini(self.td, ["r1_OFF44"], self.CELLS,
+                     handles={"r1_OFF44": dict(engine_kw=dict(cg_false_at_iter=48))})   # warm-up tail only
+        self.assertEqual(cm.exception.tag, "ABORT_CG_CANARY")
+        with open(os.path.join(self.td, "boot_r1_OFF44.json")) as fh:
+            rec = json.load(fh)["cg_canary"]
+        self.assertGreater(rec["decode_lines"], rec["not_cuda_graph_true"])
+        self.assertGreaterEqual(rec["not_cuda_graph_true"], 1)
+
+    def test_cg_canary_no_decode_line_exit3(self):                          # ">= 1 line" (zero is not a pass)
+        with self.assertRaises(J.JobAbort) as cm:
+            run_mini(self.td, ["r1_OFF44"], self.CELLS,
+                     handles={"r1_OFF44": dict(engine_kw=dict(decode_log_every=10 ** 9))})
+        self.assertEqual(cm.exception.tag, "ABORT_CG_CANARY")
+        with open(os.path.join(self.td, "boot_r1_OFF44.json")) as fh:
+            self.assertEqual(json.load(fh)["cg_canary"]["decode_lines"], 0)
+
+    def test_cg_canary_passes_cells_keep_cg_unproven(self):                # canary = cost guard, not a judgment
+        led = run_mini(self.td, ["r1_OFF44"], self.CELLS,
+                       handles={"r1_OFF44": dict(engine_kw=dict(cg_false_at_iter=80))})   # after the warm-up
+        self.assertEqual((led[0]["status"], led[0]["aborted"]), ("ADMITTED", None))
+        with open(os.path.join(self.td, "boot_r1_OFF44.json")) as fh:
+            self.assertTrue(json.load(fh)["cg_canary"]["ok"])
+        res = A.analyze(self.td, reg=REG)
+        st = {r["cell_id"]: r["status"] for r in res["replicates"]}
+        self.assertEqual(st["r1_OFF44-b1-c512"], "CG_UNPROVEN")
+
+    def test_greedy_output_ids_absent_recorded_and_unresolved(self):       # §18-2-d #4 (H17-1): label, not abort
+        led = run_mini(self.td, ["r1_ON44", "r1_OFF16"], self.CELLS,
+                       engine_kw=dict(greedy_mode="no_ids"))
+        self.assertEqual([r["status"] for r in led], ["ADMITTED", "ADMITTED"])
+        with open(os.path.join(self.td, "boot_r1_ON44.json")) as fh:
+            self.assertEqual(json.load(fh)["greedy_output_ids_absent"], 6)
+        with open(os.path.join(self.td, "GREEDY_OUTPUT_IDS.txt")) as fh:
+            txt = fh.read()
+        self.assertIn("r1_ON44 outputs=6 output_ids_absent_or_empty=6", txt)
+        res = A.analyze(self.td, reg=REG)
+        self.assertEqual(res["sticky_correctness"]["44"]["label"], "STICKY_CORRECTNESS_UNRESOLVED_D44")
+        self.assertEqual(res["sticky_correctness"]["44"]["why"], "output_ids absent")
+
+    def test_greedy_with_ids_byte_identical(self):                          # the positive side of the same path
+        run_mini(self.td, ["r1_ON44", "r1_OFF16"], self.CELLS)
+        with open(os.path.join(self.td, "boot_r1_ON44.json")) as fh:
+            self.assertEqual(json.load(fh)["greedy_output_ids_absent"], 0)
+        res = A.analyze(self.td, reg=REG)
+        self.assertEqual(res["sticky_correctness"]["44"]["label"], "STICKY_CORRECTNESS_BYTE_IDENTICAL_D44")
 
     def test_runner_stop_on_watchdog_term_mid_cell(self):                 # SIGTERM path -> runner_stop (H-5)
         box = {}
@@ -553,11 +703,13 @@ class TestRunnerAborts(unittest.TestCase):
     def test_flush_wait_before_stop(self):                                  # H-5
         hs = {}
 
+        sw = J.ScaledWall(200.0)                     # one wall clock for the fake's log stamps and the runner (CG canary)
+
         def keep(u):
-            hs[u] = fk.FakeServerHandle(dict(FAST, wall=J.ScaledWall(200.0)), job_mode=True)
+            hs[u] = fk.FakeServerHandle(dict(FAST, wall=sw), job_mode=True)
             return hs[u]
         us = J.select_test_units(UNITS, {"r1_OBS44"}, {(1, 2048)})
-        opts = dict(reg=REG, flush_interval_s=0.3, warmup_n=1, install_signals=False,
+        opts = dict(reg=REG, wall=sw, flush_interval_s=0.3, warmup_n=1, install_signals=False,
                     cell_kw=dict(drain_poll_s=0.02, drain_settle_s=0.05, drain_timeout_s=20))
         asyncio.run(J.run_job(self.td, us, lambda u: keep(u["name"]), opts))
         last_end = max(float(x[2]) for x in marks(self.td, "r1_OBS44") if x[0] == "cell_end")
@@ -645,6 +797,8 @@ class TestCapacityScript(unittest.TestCase):
         self.assertEqual(txt.count("  cell "), 296)
         with open(os.path.join(out, "REG_CHECK.txt")) as fh:
             self.assertIn("REG_OK", fh.read())
+        with open(os.path.join(out, "HARNESS_SEAL_CHECK.txt")) as fh:
+            self.assertIn("scope=PROFILE", fh.read())
 
     def test_tampered_registered_file_aborts(self):                         # ABORT_REG_SOURCE (runner side)
         p = os.path.join(self.here, "N2_REGISTERED.json")
@@ -665,9 +819,29 @@ class TestCapacityScript(unittest.TestCase):
         r = sh(self.proj, dict(PDMUX_N2_JOB="PROFILE", PDMUX_N2_DRYRUN="1", PDMUX_COMMIT="abc"), self.td)
         self.assertEqual(r.returncode, 2)
         self.assertIn("ABORT_TEST_KNOB_IN_MEASUREMENT", r.stdout)
-        r = sh(self.proj, dict(PDMUX_N2_JOB="EA"), self.td)
+        r = sh(self.proj, dict(PDMUX_N2_JOB="EA", PDMUX_N2_DRYRUN="1"), self.td)        # H17-6: every mode
         self.assertEqual(r.returncode, 3)
-        self.assertIn("ABORT_EA_NOT_IMPLEMENTED", r.stdout)
+        self.assertIn("ABORT_HARNESS_UNSEALED_EA", r.stdout)
+        self.assertNotIn("ABORT_EA_NOT_IMPLEMENTED", r.stdout)
+        r = sh(self.proj, dict(PDMUX_N2_JOB="XX"), self.td)
+        self.assertEqual(r.returncode, 2)
+
+    def test_ea_needs_profile_and_ea_sections(self):                        # rev17 R17-2 / H17-6
+        reg = os.path.join(self.here, "REGISTRATION_SHA256.txt")
+        with open(reg) as fh:                                               # H17-9: drop any existing harness section
+            base = "".join(b for b in re.split(r"(?m)^(?=## )", fh.read()) if not b.startswith("## HARNESS SEAL"))
+        prof, ea = seal_section(self.here, "PROFILE"), seal_section(self.here, "EA")
+        for txt, tag in ((prof, "ABORT_HARNESS_UNSEALED_EA"), (ea, "ABORT_HARNESS_UNSEALED_EA"),
+                         (prof + "\n" + ea, "ABORT_EA_NOT_IMPLEMENTED")):
+            with open(reg, "w") as fh:
+                fh.write(base + "\n" + txt)
+            shutil.rmtree(os.path.join(self.here, "n2p_t1"), ignore_errors=True)
+            r = sh(self.proj, dict(PDMUX_N2_JOB="EA", PDMUX_N2_DRYRUN="1"), self.td)
+            self.assertEqual(r.returncode, 3, (tag, r.stdout))
+            self.assertIn(tag, r.stdout)
+            if tag == "ABORT_EA_NOT_IMPLEMENTED":
+                self.assertNotIn("ABORT_HARNESS_UNSEALED", r.stdout)
+            self.assertFalse(os.path.exists(os.path.join(self.here, "n2p_t1", "REG_CHECK.txt")))   # refused first
 
     def test_fake_job_end_to_end(self):                                     # the whole script on the CPU fake
         r = sh(self.proj, dict(PDMUX_N2_JOB="PROFILE", PDMUX_N2_TEST_FAKE="1", PDMUX_N2_TEST_UNITS="r1_ON44,r1_OFF44",

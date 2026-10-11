@@ -11,9 +11,17 @@ Per boot (one telemetry file per boot, R-3):  boot_plan <D> <n> (before the serv
 requests, concurrency 1, label 'n2|WARMUP|0|0|7', input c_in(boot, 32, 8192), output 64) inside warmup_start/_end ->
 §11-2 greedy probe (ON-D r1, OFF16 r1; empty output = exit 9) -> cells (n2_loadgen.run_profile_cell, cpu.stat before
 /after, wall pairs G-11) -> F-6 trailing non-measured request (512 in / 8 out, outside every cell) -> H-5 idle
-2 x flush_interval_s -> stop. Abort policy = G-10 read literally (registered): a cell abort ends its boot
-(boot_abort with the cell's reason); after a VALUE_INDEPENDENT boot death the next boot runs; after a VALUE_DEPENDENT
-abort no further boot runs (CONTRACT GAP reported: G-10's rationale is probe-specific).
+2 x flush_interval_s -> stop. Abort policy = G-10 as registered for the Job (§18-2-d #7, user decision 2026-10-11): a
+cell abort ends its boot (boot_abort with the cell's reason; the boot's remaining cells = BENCH_INVALID
+not_attempted_boot_aborted); after a VALUE_INDEPENDENT boot death AND after a VALUE_DEPENDENT abort the next boot runs.
+Only the hard cap (watchdog / deadline -> runner_stop), the admission refusal and the ABORT_* family (seals, §11-1
+wiring, P3, CG_BS, CG canary §18-2-d #16, correctness) stop the Job.
+CG canary (§18-2-d #16, rev17 H17-3): after the warm-up, the server-log `Decode batch` lines inside the warm-up seconds
+(warmup_start..warmup_end marks, mapped to wall seconds with the runner's wall pairs and the boot's tz_gmtoff_s) must
+be >= 1 and ALL `cuda graph: True`; otherwise Job abort ABORT_CG_CANARY (exit 3). Cost protection only -- the analysis
+CG_UNPROVEN rule is unchanged.
+Greedy output_ids (§18-2-d #4, rev17 H17-1): their absence is RECORDED (boot record + GREEDY_OUTPUT_IDS.txt), not an
+abort -- the analyzer labels such a D STICKY_CORRECTNESS_UNRESOLVED_D{d}.
 Admission (§14-3 STOP rule): before every boot, remaining = cell deadline - now >= that boot's worst-corner cost
 (N2_REGISTERED budget, U-1 (b)); the first refusal stops the Job -- that boot and every later boot are
 NOT_ATTEMPTED_BUDGET. The cell deadline = cell-section start + PROFILE_b cap (HARNESS READING: §14-2 "셀 마감 하드캡"
@@ -37,6 +45,7 @@ sys.path.insert(0, HERE)
 import n2_loadgen as lg      # noqa: E402
 import n2_marks              # noqa: E402
 import n2_plan               # noqa: E402
+import n2_window as nw       # noqa: E402
 
 FLUSH_INTERVAL_S = 1.0                 # engine AsyncJsonlTelemetry default; H-5 waits 2 x this
 WARMUP_N, WARMUP_LABEL, WARMUP_OUT = 8, "n2|WARMUP|0|0|7", 64
@@ -257,13 +266,30 @@ async def run_boot(out, unit, server, registry, opts):
                 base = server.base
                 wcin = warmup_c_in(unit, reg)
                 warm = lg.seed_tokens(lg.seed_of(WARMUP_LABEL), wcin)
-                with mw.warmup(b):                                         # G-3 (a), outside every cell
+                wall_pair("warmup_start", b)
+                wa = (wall(), time.monotonic())
+                with mw.warmup(b) as ws:                                   # G-3 (a), outside every cell
                     for j in range(opts.get("warmup_n", WARMUP_N)):
                         await lg.simple_request(session, base, warm, WARMUP_OUT, f"{b}-warm{j}")
+                wz = (wall(), time.monotonic())
+                wall_pair("warmup_end", b)
+                ok_cg, n_cg, bad_cg, lo_cg, hi_cg = nw.warmup_cg_canary(
+                    nw.parse_log(server.log_text(), rec["tz_gmtoff_s"]), wa, wz, ws.t0, ws.t1)
+                rec["cg_canary"] = dict(ok=ok_cg, decode_lines=n_cg, not_cuda_graph_true=bad_cg, wall_lo=lo_cg,
+                                        wall_hi=hi_cg)
+                if not ok_cg:                                              # §18-2-d #16
+                    job_abort = JobAbort(3, "ABORT_CG_CANARY", f"warm-up Decode batch lines {n_cg}, not "
+                                         f"'cuda graph: True' {bad_cg} (wall seconds [{lo_cg}, {hi_cg}])")
+                    raise lg.HarnessError(job_abort.msg)
                 if unit["greedy"]:                                         # §11-2
                     outs = await lg.run_greedy(session, base, b)
                     with open(p["greedy"], "x") as fh:
                         json.dump(dict(boot=b, kind=unit["kind"], D=unit["D"], outputs=outs), fh, sort_keys=True)
+                    n_noids = sum(1 for o in outs if not (isinstance(o.get("output_ids"), list) and o["output_ids"]))
+                    rec["greedy_output_ids_absent"] = n_noids                # §18-2-d #4: recorded, not an abort
+                    with open(os.path.join(out, "GREEDY_OUTPUT_IDS.txt"), "a") as fh:
+                        fh.write(f"{b} outputs={len(outs)} output_ids_absent_or_empty={n_noids}"
+                                 f"{' -> STICKY_CORRECTNESS_UNRESOLVED (H17-1)' if n_noids else ''}\n")
                     if any(not (o.get("text") or o.get("output_ids")) for o in outs):
                         job_abort = JobAbort(9, "ABORT_CORRECTNESS", "empty greedy output")
                         raise lg.HarnessError("empty greedy output")
@@ -339,7 +365,7 @@ async def run_job(out, units, make_server, opts):
     registry = n2_marks.IdRegistry()
     if opts.get("deadline") is None:
         opts["deadline"] = time.monotonic() + n2_plan.budget(job, reg)["cap_s"]
-    ledger, stopped = [], None
+    ledger, stopped, job_abort = [], None, None
     loop = asyncio.get_running_loop()
 
     def on_term(*_):
@@ -378,16 +404,20 @@ async def run_job(out, units, make_server, opts):
             res = await run_boot(out, u, make_server(u), registry, opts)
             row.update(aborted=res["aborted"], abort_class=res["abort_class"], cells_done=len(res["cells_done"]))
             if res["aborted"] == "runner_stop":
-                stopped = "budget"
-            elif res["aborted"] is not None and res["abort_class"] != RED.VALUE_INDEPENDENT:
-                stopped = "vd_abort"                    # G-10 (registered, read literally)
+                stopped = "budget"                      # watchdog / deadline inside a boot: the cell section is over
+            # G-10 (§18-2-d #7, user decision 2026-10-11): any other boot abort (VI or VD) -> the next boot runs
     except JobAbort as e:
-        ledger.append(dict(job_abort=dict(code=e.code, tag=e.tag, msg=e.msg)))
+        job_abort = dict(code=e.code, tag=e.tag, msg=e.msg)
+        ledger.append(dict(job_abort=job_abort))
+        stopped = "job_abort"
+        raise
+    except BaseException:                       # H17-8 (§18-2-d #10): runner crash -> F-N2-7P UNRESOLVED, not FALSIFIED
+        stopped = stopped or "crash"
         raise
     finally:
         with open(os.path.join(out, "JOB_LEDGER.json"), "w") as fh:
-            json.dump(dict(job=job, ledger=ledger, stopped=stopped, cap_s=n2_plan.budget(job, reg)["cap_s"]), fh,
-                      indent=1, sort_keys=True)
+            json.dump(dict(job=job, ledger=ledger, stopped=stopped, cap_s=n2_plan.budget(job, reg)["cap_s"],
+                           job_abort=job_abort), fh, indent=1, sort_keys=True)
     return ledger
 
 
@@ -461,7 +491,7 @@ def main(argv=None):
         opts["deadline"] = time.monotonic() + (a.deadline_epoch - time.time())
     if a.fake:
         import fake_n2_engine as fk
-        sw = ScaledWall(float(os.environ.get("PDMUX_N2_TEST_WALL_SCALE", "20")))
+        sw = ScaledWall(float(os.environ.get("PDMUX_N2_TEST_WALL_SCALE", "200")))   # warm-up must span log seconds
         opts.update(wall=sw, flush_interval_s=0.02, warmup_n=1,
                     cell_kw=dict(drain_poll_s=0.02, drain_settle_s=0.05, drain_timeout_s=20))
         kw = dict(chunk_every=1, tau_s=0.0005, burst_span_s=0.001, wall=sw, decode_log_every=8)

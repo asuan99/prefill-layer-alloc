@@ -75,6 +75,8 @@ class SynthJob:
         self.ledger_status = {}     # boot -> status
         self.obs_factor = {}        # round -> OBS C-itl factor (observer effect)
         self.on_skip = set()
+        self.ledger_top = {}        # extra JOB_LEDGER.json top-level fields (stopped / job_abort, H17-2)
+        self.ledger_tail = []       # extra ledger rows (e.g. the runner's {"job_abort": ...} row)
 
     # ------------------------------------------------------------------ writers
     def write(self):
@@ -89,7 +91,8 @@ class SynthJob:
                 continue
             t = self._boot(u, t) + 50.0
         with open(os.path.join(self.out, "JOB_LEDGER.json"), "w") as fh:
-            json.dump(dict(job="PROFILE", ledger=rows, stopped=None, cap_s=36700.0), fh)
+            json.dump(dict(dict(job="PROFILE", ledger=rows + self.ledger_tail, stopped=None, cap_s=36700.0),
+                           **self.ledger_top), fh)
 
     def _boot(self, u, t):
         name, bk = u["name"], self.boot_kw.get(u["name"], {})
@@ -131,6 +134,12 @@ class SynthJob:
         if u["greedy"]:
             outs = [dict(text=f"t{k}" + ("x" if bk.get("greedy_diverge") else ""),
                          output_ids=[k, k + 1 + (1 if bk.get("greedy_ids_diverge") else 0)]) for k in range(6)]
+            if "greedy_ids" in bk:                                 # H17-1: None / [] / missing key on output k
+                for k, v in bk["greedy_ids"].items():
+                    if v == "drop":
+                        outs[k].pop("output_ids")
+                    else:
+                        outs[k]["output_ids"] = v
             with open(p("greedy", "json"), "w") as fh:
                 json.dump(dict(boot=name, outputs=outs), fh)
         return t
@@ -536,6 +545,44 @@ class TestLabelRows(_Base):
         self.assertEqual(res["sticky_correctness"]["34"]["label"], "STICKY_CORRECTNESS_DIVERGED_D34")
         self.assertEqual(res["sticky_correctness"]["16"]["label"], "STICKY_CORRECTNESS_BYTE_IDENTICAL_D16")
         self.assertEqual(res["sticky_wired"]["34"]["label"], "STICKY_WIRING_NOT_ESTABLISHED_D34")
+
+    def test_sticky_correctness_output_ids_absent(self):            # §18-2-d #4 (H17-1): None == None never passes
+        j = self.job()
+        none_all = {k: None for k in range(6)}
+        j.boot_kw["r1_OFF16"] = dict(greedy_ids=none_all)                # reference side: every D is affected
+        res = run(j)
+        for D in (16, 24, 34, 44):
+            self.assertEqual(res["sticky_correctness"][str(D)]["label"], f"STICKY_CORRECTNESS_UNRESOLVED_D{D}")
+            self.assertEqual(res["sticky_correctness"][str(D)]["why"], "output_ids absent")
+        j = self.job()
+        j.boot_kw["r1_OFF16"] = dict(greedy_ids=none_all)
+        j.boot_kw["r1_ON44"] = dict(greedy_ids=none_all)                 # both sides None (text equal)
+        j.boot_kw["r1_ON24"] = dict(greedy_ids={3: []})                  # empty list on one output
+        j.boot_kw["r1_ON16"] = dict(greedy_ids={5: "drop"})              # key missing on one output
+        res = run(j)
+        self.assertEqual(res["sticky_correctness"]["44"]["label"], "STICKY_CORRECTNESS_UNRESOLVED_D44")
+        j = self.job()
+        j.boot_kw["r1_ON24"] = dict(greedy_ids={3: []})
+        j.boot_kw["r1_ON16"] = dict(greedy_ids={5: "drop"})
+        res = run(j)
+        self.assertEqual(res["sticky_correctness"]["24"]["label"], "STICKY_CORRECTNESS_UNRESOLVED_D24")
+        self.assertEqual(res["sticky_correctness"]["16"]["label"], "STICKY_CORRECTNESS_UNRESOLVED_D16")
+        self.assertEqual(res["sticky_correctness"]["44"]["label"], "STICKY_CORRECTNESS_BYTE_IDENTICAL_D44")
+
+    def test_f_n2_7p_non_budget_stop_unresolved(self):              # §18-2-d #10 (H17-2)
+        for top, tail in ((dict(stopped="job_abort"), []), (dict(stopped="vd_abort"), []),
+                          (dict(job_abort=dict(code=3, tag="ABORT_CG_CANARY", msg="x")), []),
+                          ({}, [dict(job_abort=dict(code=6, tag="ABORT_STICKY", msg="x"))])):
+            j = self.job()
+            j.ledger_top, j.ledger_tail = top, tail
+            self.assertEqual(run(j)["forecasts"]["F-N2-7P"], "UNRESOLVED", (top, tail))
+        j = self.job()
+        j.ledger_top = dict(stopped="budget")
+        self.assertEqual(run(j)["forecasts"]["F-N2-7P"], "HELD")       # budget stop with all 28 admitted
+        j = self.job()
+        j.ledger_top = dict(stopped="budget", job_abort=None)
+        j.ledger_status["r4_OBS44"] = "NOT_ATTEMPTED_BUDGET"
+        self.assertEqual(run(j)["forecasts"]["F-N2-7P"], "FALSIFIED")
 
     def test_dsens_label_variety(self):                            # §9-6: WITHIN / INVERTED / UNRESOLVED / n = 3
         j = self.job()

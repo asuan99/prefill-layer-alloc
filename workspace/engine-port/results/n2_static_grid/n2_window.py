@@ -169,13 +169,33 @@ def to_wall(boot, cell_id, t):
     """§3-2: map a CLOCK_MONOTONIC time of this cell to wall seconds with the runner's (time.time, monotonic) pairs
     taken at the cell boundaries (G-11): linear between the cell_start and cell_end pairs, the start pair's offset
     when only that one exists. None without a start pair."""
-    a = boot["wall"].get(("cell_start", cell_id))
-    z = boot["wall"].get(("cell_end", cell_id))
+    return pair_to_wall(boot["wall"].get(("cell_start", cell_id)), boot["wall"].get(("cell_end", cell_id)), t)
+
+
+def pair_to_wall(a, z, t):
+    """The §3-2 / G-11 mapping of a CLOCK_MONOTONIC time `t` to wall seconds from two (time.time, monotonic) pairs
+    `a` (start) and `z` (end): linear between them, `a`'s offset alone when `z` is missing; None without `a`."""
     if a is None:
         return None
     if z is None or z[1] == a[1]:
         return t + (a[0] - a[1])
     return a[0] + (t - a[1]) * (z[0] - a[0]) / (z[1] - a[1])
+
+
+def warmup_cg_canary(log_lines, wall_start, wall_end, t0, t1):
+    """§18-2-d #16 CG canary (rev17 H17-3, Job abort ABORT_CG_CANARY -- cost protection, NOT a judgment input; the
+    per-cell `cg_evidence` / CG_UNPROVEN is unchanged). `log_lines` = parse_log(server log, boot tz_gmtoff_s);
+    `wall_start` / `wall_end` = the runner's (time.time, monotonic) pairs taken around the warm-up; t0 / t1 = the
+    `warmup_start` / `warmup_end` mark times (monotonic). The warm-up seconds use the same boundary convention as
+    cg_evidence: [ceil(wall(t0)), floor(wall(t1)) - 1]. Returns (ok, n_decode_lines, n_not_true, lo, hi) with
+    ok := at least ONE `Decode batch` line in those seconds AND every one of them carries `cuda graph: True`."""
+    w0, w1 = pair_to_wall(wall_start, wall_end, t0), pair_to_wall(wall_start, wall_end, t1)
+    if w0 is None or w1 is None:
+        return False, 0, 0, None, None
+    lo, hi = math.ceil(w0), math.floor(w1) - 1
+    canary = [txt for ts, txt in log_lines if txt.startswith("Decode batch") and lo <= ts <= hi]
+    n_bad = sum(1 for txt in canary if "cuda graph: True" not in txt)
+    return (bool(canary) and n_bad == 0), len(canary), n_bad, lo, hi
 
 
 def cg_evidence(boot, cell_id):

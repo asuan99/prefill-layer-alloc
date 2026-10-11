@@ -14,7 +14,8 @@ Job extensions (rev17 harness, all default-off so the smoke tests are unchanged)
 cuda graph: True` every `decode_log_every` iterations with a wall-clock stamp from `wall`, `Prefill batch ... cuda
 graph: False`, P3 banners, capture-bs line), green read-out JSON, PHASE_EVENTS off (snapshots only), recorder defects
 (`drop_iters`: iter_seqs whose decode_iteration is dropped and counted in dropped_events; `r7_at_iter`: PHASE_EVENTS
-disabled after that iteration with the R7 log line), `retract_at_iter`, `cg_false_at_iter`, greedy modes.
+disabled after that iteration with the R7 log line), `retract_at_iter`, `cg_false_at_iter`, `cuda_graph=False` (every Decode batch line `cuda graph: False` -- CG canary
+§18-2-d #16), greedy modes (`empty`, `diverge`, `no_ids` = text without output_ids, H17-1).
 Failure modes for the exception tests: hang, bad_coload, ignore_abort, drop_after, exit_on_drop, no_idle_snapshot.
 """
 from __future__ import annotations
@@ -58,7 +59,7 @@ class FakeEngine:
                  idle_snapshot_s=0.01, chunk_every=1, mode=None, drop_after=None, sticky_log=True,
                  co_response_delay_s=0.0, sticky=True, phase_events=True, wall=time.time, decode_log_every=40,
                  drop_iters=(), r7_at_iter=None, retract_at_iter=None, cg_false_at_iter=None, greedy_mode=None,
-                 alone_tau_s=None):
+                 alone_tau_s=None, cuda_graph=True):
         self.d, self.tau_s, self.kappa = d, tau_s, kappa
         self.alone_tau_s = tau_s if alone_tau_s is None else alone_tau_s
         self.burst_span_s, self.co_span_s = burst_span_s, co_span_s
@@ -72,6 +73,7 @@ class FakeEngine:
         self.drop_iters, self.r7_at_iter = set(drop_iters), r7_at_iter
         self.retract_at_iter, self.cg_false_at_iter = retract_at_iter, cg_false_at_iter
         self.greedy_mode = greedy_mode
+        self.cuda_graph = cuda_graph            # False: EVERY Decode batch line says `cuda graph: False` (CG canary)
         self.dropped = 0
         self.waiting, self.running = [], []
         self.prefill = None
@@ -191,8 +193,8 @@ class FakeEngine:
                     self.phase_events = False
                     self.logline("PDMUX_PHASE_EVENTS disabled after failure: RuntimeError('fake')")
                 if self.iter_seq % self.decode_log_every == 0:
-                    cg = "False" if (self.cg_false_at_iter is not None
-                                     and self.iter_seq >= self.cg_false_at_iter) else "True"
+                    cg = "False" if (not self.cuda_graph or (self.cg_false_at_iter is not None
+                                                             and self.iter_seq >= self.cg_false_at_iter)) else "True"
                     retr = (", #retracted_reqs: 1" if (self.retract_at_iter is not None
                                                         and self.iter_seq >= self.retract_at_iter
                                                         and self.iter_seq - self.decode_log_every < self.retract_at_iter)
@@ -236,6 +238,11 @@ class FakeEngine:
         mx = int(body["sampling_params"]["max_new_tokens"])
         if body.get("stream") is False:                    # §11-2 greedy probe (no telemetry, no batching)
             out = self._greedy(list(body["input_ids"]), mx)
+            if self.greedy_mode == "no_ids":                   # a server that returns text but no output_ids
+                return web.json_response({"text": " ".join(str(x) for x in out),
+                                          "meta_info": {"prompt_tokens": len(body["input_ids"]),
+                                                        "completion_tokens": len(out), "id": rid,
+                                                        "finish_reason": {"type": "length", "length": len(out)}}})
             return web.json_response({"text": " ".join(str(x) for x in out), "output_ids": out,
                                       "meta_info": {"prompt_tokens": len(body["input_ids"]),
                                                     "completion_tokens": len(out), "id": rid,

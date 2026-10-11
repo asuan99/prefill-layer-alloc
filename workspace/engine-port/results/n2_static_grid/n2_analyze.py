@@ -79,7 +79,7 @@ def _ledger(out):
 
 def collect(out, units):
     """Every registered replicate of the Job, with its §9-1 status. A boot the ledger marks NOT_ATTEMPTED_BUDGET
-    gives NOT_ATTEMPTED_BUDGET replicates; a boot never started for another reason (Job abort, VD stop) gives
+    gives NOT_ATTEMPTED_BUDGET replicates; a boot never started for another reason (Job abort) gives
     BENCH_INVALID 'not_attempted_*' replicates (HARNESS READING, reported)."""
     rows, ledger_full = _ledger(out)
     reps, boots = [], {}
@@ -204,7 +204,16 @@ def profile_label(dl, neg, pts):
 
 
 # ===================================================================================================== §11-2 / §11-4
+def _has_ids(o):
+    """§18-2-d #4 (rev17 H17-1): output_ids must be a NON-EMPTY list -- None == None / [] == [] never pass."""
+    ids = o.get("output_ids")
+    return isinstance(ids, list) and len(ids) > 0
+
+
 def sticky_correctness(boots):
+    """§11-2 / §18-2-d #4: BYTE_IDENTICAL only when text AND output_ids are equal for all 6 prompts, and only when
+    every output on BOTH sides carries non-empty output_ids; otherwise (ids absent) UNRESOLVED -- a text-only match
+    is not the registered comparison."""
     ref = (boots.get("r1_OFF16") or {}).get("greedy")
     out = {}
     for D in n2_plan.D_ON:
@@ -213,6 +222,9 @@ def sticky_correctness(boots):
             out[D] = dict(label=f"STICKY_CORRECTNESS_UNRESOLVED_D{D}", why="greedy record missing (boot not run)")
             continue
         a, b = g["outputs"], ref["outputs"]
+        if not all(_has_ids(o) for o in list(a) + list(b)):
+            out[D] = dict(label=f"STICKY_CORRECTNESS_UNRESOLVED_D{D}", why="output_ids absent", n=len(a))
+            continue
         same = len(a) == len(b) == 6 and all(x.get("text") == y.get("text") and x.get("output_ids") == y.get("output_ids")
                                              for x, y in zip(a, b))
         out[D] = dict(label=(f"STICKY_CORRECTNESS_BYTE_IDENTICAL_D{D}" if same
@@ -360,9 +372,13 @@ def forecasts(pts, reps, ds, ledger_full, n_units):
             else:
                 diffs.append(abs(math.log(a / z)))
     f["F-N2-6"] = ("FALSIFIED" if any(d >= LN3 for d in diffs) else "UNRESOLVED" if miss else "HELD")
-    # F-N2-7P: 28/28 boots admitted
-    adm = sum(1 for r in (ledger_full or {}).get("ledger", []) if r.get("status") == "ADMITTED")
-    f["F-N2-7P"] = "UNRESOLVED" if ledger_full is None else ("HELD" if adm == n_units else "FALSIFIED")
+    # F-N2-7P: 28/28 boots admitted -- UNRESOLVED when the Job stopped for a non-budget reason (§18-2-d #10, H17-2)
+    led = ledger_full or {}
+    adm = sum(1 for r in led.get("ledger", []) if r.get("status") == "ADMITTED")
+    non_budget_stop = (led.get("stopped") not in (None, "budget") or led.get("job_abort") is not None
+                       or any("job_abort" in r for r in led.get("ledger", [])))
+    f["F-N2-7P"] = ("UNRESOLVED" if ledger_full is None or non_budget_stop
+                    else "HELD" if adm == n_units else "FALSIFIED")
     mx = ds["mean_x"]
     # F-N2-D1: D16 vs D44 mean x at b = 48 > b = 1 for every c
     v = [(mx.get(f"16,44,48,{c}"), mx.get(f"16,44,1,{c}")) for c in C_GRID]

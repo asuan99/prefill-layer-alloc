@@ -1,6 +1,9 @@
 #!/bin/bash
-# N2(3-a) Job entry (Job-PROFILE) -- PREREG_N2_3A_2026-10-07.md rev16 (rule seal fcc0b9e, digest fbb13b15…).
-# HARNESS-SEAL file. Job-EA is refused until its harness (cell client with co-load, rho_off assembly H15-3) exists.
+# N2(3-a) Job entry (Job-PROFILE) -- PREREG_N2_3A_2026-10-07.md rev17 (rule seal 5e29990, digest fc9e6404…; first sealed rev16 fcc0b9e).
+# HARNESS-SEAL file. Two-stage harness seal (rev17 R17-2 / H17-6): a Job-PROFILE needs the `scope PROFILE` section of
+# REGISTRATION_SHA256.txt, a Job-EA needs BOTH the PROFILE and the EA section -- Job-EA is refused by that seal check
+# (ABORT_HARNESS_UNSEALED_EA, in every mode) and, behind it, by ABORT_EA_NOT_IMPLEMENTED until the Job-EA runner
+# (cell client with co-load, rho_off assembly H15-3) exists.
 #
 # usage (inside a VESSL Job via scripts/vessl/launch.sh; never by hand on a GPU):
 #   launch.sh --campaign n2_static_grid --env PDMUX_N2_JOB=PROFILE \
@@ -11,12 +14,13 @@
 #                        the whole Job path on the CPU fake engine -- NOT A MEASUREMENT; refused inside a VESSL Job.
 #
 # FLOW: knob allowlist -> ABORT_REG_SOURCE (N2_REGISTERED.json bytes == rule-seal value; 7 rule files; rule-seal digest)
-#   -> harness seal (REGISTRATION_SHA256.txt "## HARNESS SEAL"; absent = ABORT_HARNESS_UNSEALED outside dry-run/test)
+#   -> harness seal (REGISTRATION_SHA256.txt "## HARNESS SEAL" scope PROFILE; absent = ABORT_HARNESS_UNSEALED outside
+#   dry-run/test) [Job-EA: PROFILE + EA sections checked right after the knob allowlist, refused in every mode]
 #   -> external digests (config / analyze.py / profile.py) + config parser check -> substrate record (B0, model
 #   revision, clock, sampler state §3-3) -> engine tree manifest + thread-local role patch -> preflight tests ->
 #   cell section (hard cap = N2_REGISTERED budget PROFILE_b cap, from the section start; watchdog SIGTERM ->
 #   runner_stop; admission STOP rule inside n2_job.py) -> analysis (tail, unbounded) -> N2_DONE line.
-# Exit codes: 2 env/knob, 3 registration/plan/substrate/cg-bs, 4 preflight tests, 5 port, 6 sticky/green, 8 P3,
+# Exit codes: 2 env/knob, 3 registration/seal/plan/substrate/cg-bs/cg-canary, 4 preflight tests, 5 port, 6 sticky/green, 8 P3,
 #   9 correctness.  job_entry.sh exports results/ (files newer than its start marker) + SHA256SUMS + DONE.
 set -uo pipefail
 
@@ -30,9 +34,8 @@ DRYRUN="${PDMUX_N2_DRYRUN:-0}"
 FAKE="${PDMUX_N2_TEST_FAKE:-0}"
 JOBID="${PDMUX_JOB_NAME:-local$$}"
 case "$JOB" in
-  PROFILE) ;;
-  EA) echo "ABORT_EA_NOT_IMPLEMENTED Job-EA harness is not implemented (H15-3; harness seal pending)"; exit 3 ;;
-  *) echo "ABORT_ENV PDMUX_N2_JOB must be PROFILE (got '$JOB')"; exit 2 ;;
+  PROFILE|EA) ;;
+  *) echo "ABORT_ENV PDMUX_N2_JOB must be PROFILE or EA (got '$JOB')"; exit 2 ;;
 esac
 OUT="${PDMUX_N2_TEST_OUT_ROOT:-$HERE}/n2p_${JOBID}"
 mkdir -p "$OUT"
@@ -60,6 +63,11 @@ for v in $(compgen -e | grep '^PDMUX_' || true); do
   case "$ALLOW" in *" $v "*) ;; *) fail "ABORT_ENV unregistered knob $v is set" 2;; esac
 done
 [ -n "${PDMUX_ARRAY_SPEC:-}" ] && fail "ABORT_ENV PDMUX_ARRAY_SPEC must be empty (one Job per measurement)" 2
+if [ "$JOB" = EA ]; then           # rev17 H17-6: Job-EA needs the PROFILE + EA harness-seal sections (every mode)
+  python3 "$PLAN" --verify-harness-seal --scope EA | tee "$OUT/HARNESS_SEAL_CHECK_EA.txt"
+  [ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_HARNESS_UNSEALED_EA $(cat "$OUT/HARNESS_SEAL_CHECK_EA.txt")" 3
+  fail "ABORT_EA_NOT_IMPLEMENTED Job-EA runner is not implemented (H15-3)" 3
+fi
 for v in PDMUX_N2_TEST_FAKE PDMUX_N2_TEST_UNITS PDMUX_N2_TEST_CELLS PDMUX_N2_TEST_OUT_ROOT PDMUX_N2_TEST_SKIP_PREFLIGHT \
          PDMUX_N2_TEST_CAP_S PDMUX_N2_TEST_WALL_SCALE PDMUX_N2_DRYRUN; do
   if [ -n "${!v:-}" ] && [ -n "${PDMUX_COMMIT:-}" ]; then fail "ABORT_TEST_KNOB_IN_MEASUREMENT $v inside a VESSL Job" 2; fi
@@ -73,7 +81,7 @@ unset SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN PDMUX_TRUE_DUAL_WORKER PDMUX_DUA
 # ------------------------------------------------------------------ ABORT_REG_SOURCE + seals (§15, §18-2)
 python3 "$PLAN" --verify-registration | tee "$OUT/REG_CHECK.txt"
 [ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_REG_SOURCE (see REG_CHECK.txt)" 3
-python3 "$PLAN" --verify-harness-seal | tee "$OUT/HARNESS_SEAL_CHECK.txt"
+python3 "$PLAN" --verify-harness-seal --scope PROFILE | tee "$OUT/HARNESS_SEAL_CHECK.txt"
 [ "${PIPESTATUS[0]}" -eq 0 ] || note_or_abort "ABORT_HARNESS_UNSEALED $(cat "$OUT/HARNESS_SEAL_CHECK.txt")" 3
 python3 "$PLAN" --external-digests | tee "$OUT/EXTERNAL_DIGESTS.txt"
 [ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_REG_DRIFT config / analyze.py / profile.py bytes differ" 3
@@ -195,7 +203,7 @@ case "$RRC" in
   6) fail "ABORT_STICKY/ABORT_GREEN (§11-1, RUNNER.log)" 6 ;;
   8) fail "ABORT_P3 (§3-2, RUNNER.log)" 8 ;;
   9) fail "ABORT_CORRECTNESS (§11-2, RUNNER.log)" 9 ;;
-  3) fail "ABORT (registration / CG_BS / trace, RUNNER.log)" 3 ;;
+  3) fail "ABORT (registration / CG_BS / CG_CANARY §18-2-d #16 / trace, RUNNER.log)" 3 ;;
   *) echo "RUNNER_EXIT $RRC (watchdog / timeout / crash) -- analysis still runs on what exists" ;;
 esac
 
