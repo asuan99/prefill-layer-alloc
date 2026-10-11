@@ -29,7 +29,7 @@ async def replay(
     requests: List[Dict[str, object]],
     output_path: Path,
     ttft_slo_ms: float,
-    itl_slo_ms: float,
+    itl_slo_ms: float, connector_limit: "int | None" = None,
 ) -> Dict[str, float]:
     try:
         import aiohttp
@@ -41,7 +41,7 @@ async def replay(
     results: List[Dict[str, object]] = []
 
     async with aiohttp.ClientSession(
-        timeout=aiohttp.ClientTimeout(total=None, sock_connect=60, sock_read=600)
+        timeout=aiohttp.ClientTimeout(total=None, sock_connect=60, sock_read=600), **({} if connector_limit is None else {"connector": aiohttp.TCPConnector(limit=connector_limit)})
     ) as session:
         result_lock = asyncio.Lock()
 
@@ -153,6 +153,11 @@ def main() -> None:
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--ttft-slo-ms", type=float, required=True)
     parser.add_argument("--itl-slo-ms", type=float, required=True)
+    # connector_limit: None keeps aiohttp's default connector (100 simultaneous connections) =
+    # the behaviour before 2026-10-12.  A multi-GPU cell holds more open streams than that (48
+    # running per GPU plus the server-side queue); the default then queues the excess IN THE
+    # CLIENT and TTFT measures the client (M1.5, results/multigpu_probe).  0 = unlimited.
+    parser.add_argument("--connector-limit", type=int, default=None)
     args = parser.parse_args()
     summary = asyncio.run(
         replay(
@@ -161,6 +166,7 @@ def main() -> None:
             args.output,
             args.ttft_slo_ms,
             args.itl_slo_ms,
+            args.connector_limit,
         )
     )
     args.summary.write_text(

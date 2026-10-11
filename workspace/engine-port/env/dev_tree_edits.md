@@ -452,3 +452,47 @@ measurement only.
     6 mutants via `PDMUX_MIXIN_UNDER_TEST`, unmutated control). GPU output-equivalence
     gate (CG2, greedy 16 prompts ON vs OFF) runs at the start of every E-1 Job --
     **written, not submitted**.
+
+## Multi-GPU M2: TP fail-fast, per-rank outputs, device assert (2026-10-12, GPU 0, uncommitted draft, branch `multigpu-scaling`)
+
+Design `reports/multigpu_scaling_design_2026-10-12.md` sec 2-1/2-5/4-1, audit R-3/R-4.
+All installed by `sync_engine_tree.sh`; reproduced on `sglang_engine_dev_multigpu`
+(manifest 27 entries, second sync byte-identical = idempotent).
+
+26. **NEW** `multiplex/multigpu_guard.py` <- `src/multiplex/multigpu_guard.py` (stdlib only).
+    `tp_pdmux_violations(tp_size, env)`: for tp_size > 1 allowed = legacy loop AND
+    `PDMUX_R2_POLICY` unset/fixed AND `PDMUX_SLO_SCHED`/`PDMUX_LA_COORD`/
+    `PDMUX_TRUE_DUAL_WORKER` unset (literal: absent or ""); dp_size > 1 not refused
+    (independent replicas, reasoning in the module docstring). `rank_suffixed_path` /
+    `rank_fields`: `.dp{d}` then `.tp{t}` before the last suffix; at tp=dp=1 the path
+    string is returned untouched and the field dict is empty.
+27. `multiplex/multiplexing_mixin.py` (sha `ba5835aa...` -> `c2483a14...`). **Line-neutral**:
+    four same-line edits (`init_pdmux` first statement = `_pdmux_multigpu_init(self)`, before
+    `initialize_stream_groups`; trace path suffix; `static_fields=` on the telemetry writer;
+    green read-out path suffix + rank fields) and helpers appended at the module end.
+    `check_line_citations.py --check --all` = 201 compared, 0 violations (run through a
+    symlinked workspace whose `sglang_engine_dev` -> the M2-synced tree).
+28. `multiplex/telemetry.py`: optional `static_fields` merged into every record by
+    `setdefault` (explicit emit fields win). Default empty -> byte-identical records
+    (golden line pinned in `tests/test_multigpu_guard.py`, verified against the pre-change file).
+29. `multiplex/holb_probe.py`, `multiplex/chunk_probe.py`: path naming gains `.dp{rank}` when
+    dp_size > 1 (before: every DP replica appended to one file); `.tp{rank}` naming and the
+    tp=dp=1 path unchanged; `dp_rank` tag only when dp_size > 1. Line-neutral same-line edits.
+30. Tracked patch `src/patches/pdmux_context_device_assert.patch` -> `multiplex/pdmux_context.py`
+    (previously pristine and unhashed; now manifest entry 26, `multigpu_guard.py` = entry 27,
+    both APPENDED). One `assert device == gpu_id` inside the `divide_sm` (auto-grid) branch,
+    the only reader of `current_device()`; manual_divisions configs never execute it.
+    Line-neutral (`pdmux_context.py:124-138` citation intact). Under TP/DP > 1 on the stock
+    launcher it fires for every gpu_id != 0 (init_pdmux precedes ModelRunner.set_device) --
+    by design; workaround = manual_divisions or `SGLANG_ONE_VISIBLE_DEVICE_PER_PROCESS=1`.
+- **Cross-track effect.** Changes 4 of the 25 registered entries and adds 2. Every sealed
+  registration that compares the full entry set (N2 `n2_plan.engine_check`, N3, E2 VESSL
+  `ENGINE_ALLOWED_DIFF`) refuses a tree built from this change -- intended fail-closed;
+  those campaigns must run from a pre-M2 commit. `tests/test_e2_vessl.py`
+  `test_head_mixin_is_src_mirror` fails on this branch for exactly that reason.
+- **cudagraph.** Init-time Python and file naming only: no new stream group, capture shape,
+  switch point or eager path. TP>1 PD-mux correctness itself is **unverified** (M2g, not run).
+CPU regression: `tests/test_multigpu_guard.py` (31 tests: hand-written predicate table,
+9 mutants killed + unmutated control, init_pdmux wiring AST + mutant, golden telemetry
+line, device-assert behaviour on fake torch incl. pristine negative control) and
+`tests/test_m2g_skeleton.py` (M2g comparator skeleton).

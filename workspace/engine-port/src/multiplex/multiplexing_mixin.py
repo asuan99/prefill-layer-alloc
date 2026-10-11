@@ -147,7 +147,7 @@ def resolve_worker_grad_guard(value: Optional[str] = None) -> str:
 class SchedulerMultiplexMixin:
 
     def init_pdmux(self: Scheduler):
-        # The current split prefill batch
+        _pdmux_multigpu_init(self)  # M2 (2026-10-12): TP>1 fail-fast + per-rank output naming, see module end. The current split prefill batch:
         self.split_prefill_batch: Optional[ScheduleBatch] = None
 
         # for pd_multiplexing, Init stream_groups, exclude normal stream for prefill only and decode only
@@ -170,7 +170,7 @@ class SchedulerMultiplexMixin:
         trace_path = os.environ.get(
             "PDMUX_TELEMETRY_PATH",
             os.environ.get("PDMUX_DUAL_WORKER_TRACE", ""),
-        )
+        ); trace_path = _pdmux_rank_path(self, trace_path)  # M2: .dp{r}/.tp{r} suffix iff dp/tp > 1, else unchanged
         try:
             trace_every = max(1, int(os.environ.get("PDMUX_DUAL_WORKER_TRACE_EVERY", "32")))
         except ValueError:
@@ -224,7 +224,7 @@ class SchedulerMultiplexMixin:
         self.pdmux_telemetry = AsyncJsonlTelemetry(
             Path(trace_path) if trace_path else None,
             run_id=os.environ.get("PDMUX_RUN_ID", "unlabeled"),
-            workload_id=os.environ.get("PDMUX_WORKLOAD_ID", "unlabeled"),
+            workload_id=os.environ.get("PDMUX_WORKLOAD_ID", "unlabeled"), static_fields=_pdmux_rank_fields(self),  # M2: {} at tp=dp=1
         )
         self.pdmux_experiment_phase = "startup"
         self.r2_policy_name = os.environ.get("PDMUX_R2_POLICY", "").strip().lower()
@@ -344,7 +344,7 @@ class SchedulerMultiplexMixin:
             return
         self._green_readout = readout
         logger.info("PD-mux green read-out: %s", readout)
-        path = os.environ.get("PDMUX_GREEN_READOUT_PATH", "")
+        path = _pdmux_rank_path(self, os.environ.get("PDMUX_GREEN_READOUT_PATH", "")); readout.update(_pdmux_rank_fields(self))  # M2: was "w" by every rank onto one file
         if not path:
             return
         try:
@@ -2299,3 +2299,58 @@ def resolve_phase_events(trace_path: str, env=None) -> bool:
             "coordinated per-type loop (PDMUX_LA_COORD)"
         )
     return True
+
+
+# ----------------------------------------------------------------------------
+# Multi-GPU (TP>1 / DP>1) wiring -- M2, 2026-10-12
+# ----------------------------------------------------------------------------
+# APPENDED at module end and called through same-line edits in `init_pdmux` /
+# `_maybe_emit_green_readout`, so no earlier line of this file moves and the
+# snapshotted citations in scripts/discipline/line_citations.json still hold
+# (same convention as the PDMUX_PHASE_EVENTS block above).  The decision logic
+# lives in the stdlib-only `multigpu_guard.py` so CPU tests can exercise it
+# without torch/sgl_kernel; these wrappers only read the scheduler's rank
+# attributes (getattr with single-GPU defaults, so fakes without them behave
+# exactly as before).
+#
+# * `_pdmux_multigpu_init` runs FIRST in `init_pdmux`, before any stream group
+#   is created: for tp_size > 1 it refuses every PD-mux mode except legacy loop
+#   + PDMUX_R2_POLICY unset/fixed + PDMUX_SLO_SCHED/PDMUX_LA_COORD/
+#   PDMUX_TRUE_DUAL_WORKER unset (design rev2 sec 2-1, audit R-3).  dp_size > 1
+#   is not refused -- see multigpu_guard's docstring for why.
+# * `_pdmux_rank_path` / `_pdmux_rank_fields` give each scheduler process its
+#   own telemetry / green read-out file and stamp tp_rank/dp_rank into records.
+#   At tp=dp=1 the path string and every record are unchanged.
+#
+# CORRECTNESS ONLY.  Nothing here changes a partition, a batch or an admission
+# decision.  Passing this guard does NOT mean TP PD-mux is correct: that is the
+# M2g GPU gate, which has not run.
+def _pdmux_guard_module():
+    try:
+        from sglang.srt.multiplex import multigpu_guard
+    except ImportError:  # loaded as a loose file by a CPU test
+        import multigpu_guard  # type: ignore[no-redef]
+    return multigpu_guard
+
+
+def _pdmux_ranks(sched):
+    return (
+        int(getattr(sched, "tp_size", 1) or 1),
+        getattr(sched, "tp_rank", 0),
+        int(getattr(sched, "dp_size", 1) or 1),
+        getattr(sched, "dp_rank", None),
+    )
+
+
+def _pdmux_multigpu_init(sched) -> None:
+    _pdmux_guard_module().check_tp_pdmux_combination(
+        int(getattr(sched, "tp_size", 1) or 1), os.environ
+    )
+
+
+def _pdmux_rank_path(sched, path: str) -> str:
+    return _pdmux_guard_module().rank_suffixed_path(path, *_pdmux_ranks(sched))
+
+
+def _pdmux_rank_fields(sched) -> dict:
+    return _pdmux_guard_module().rank_fields(*_pdmux_ranks(sched))

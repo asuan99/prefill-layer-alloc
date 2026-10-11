@@ -1,0 +1,55 @@
+PD-mux capability/device consistency assert (multi-GPU M2, 2026-10-12).
+
+Design: reports/multigpu_scaling_design_2026-10-12.md sec 2-5; audit R-4
+(reports/audit/2026-10-12_multigpu_design/AUDIT_multigpu_design_rev1_2026-10-12.md).
+
+WHAT IT GUARDS.  `initialize_stream_groups(gpu_id, config)` reads
+`device = torch.cuda.current_device()` and uses it for exactly one thing:
+`torch.cuda.get_device_capability(device)` handed to `divide_sm`, i.e. the
+AUTO-GRID branch taken when the PD-mux config has no `manual_divisions`
+(e.g. triage/pdmux_a100_smoke.yml).  Everything else in the
+function -- SM total, green-context streams, plain streams -- is built from
+`gpu_id` explicitly.  So a current_device/gpu_id mismatch can change a result
+ONLY in the auto-grid branch, and only if the two GPUs differ in compute
+capability; the assert sits inside that branch and nowhere else.
+`manual_divisions` campaigns (55/59 of the *pdmux*.yml configs, scope audit
+2026-09-22) never execute the line and are byte-for-byte unaffected.
+
+WHY IT FIRES UNDER TP/DP > 1.  Scheduler.__init__ calls init_pdmux BEFORE the
+TpModelWorker/ModelRunner is built, and ModelRunner is where
+`torch.cuda.set_device(gpu_id)` happens (model_runner.py init_torch_distributed).
+Nothing earlier in the spawned scheduler process sets the device, so at this
+point current_device() is 0 for every rank (code-path reading; to be confirmed
+on GPU in M2g).  With the stock launcher (gpu_id = base + dp*tp + tp_rank) every
+scheduler with gpu_id != 0 therefore FAILS this assert in the auto-grid branch
+-- deliberately: on a homogeneous node the capability read would happen to be
+right, but by accident.  Two ways to run N>1 legitimately: a manual_divisions
+config, or SGLANG_ONE_VISIBLE_DEVICE_PER_PROCESS=1 (maybe_reindex_device_id
+then hands every process gpu_id 0 with a one-GPU CUDA_VISIBLE_DEVICES, so
+device == gpu_id == 0).
+
+LINE-NEUTRAL: two same-line edits, so `pdmux_context.py:124-138` (cited in
+results/hybrid_sched_s0/engine_porter_review_2026-09-30.md) does not move.
+Applied by scripts/bootstrap/sync_engine_tree.sh (grep guard on
+"PD-mux auto grid (divide_sm)") and hashed as manifest entry 26.
+
+--- a/sglang/srt/multiplex/pdmux_context.py
++++ b/sglang/srt/multiplex/pdmux_context.py
+@@ -105,7 +105,7 @@
+     from sgl_kernel import spatial
+ 
+     global STREAM_GROUPS, SM_COUNTS, SM_GROUP_NUM, CURRENT_STREAM_IDX, CURRENT_STREAM_GROUP
+-    # for pd_multiplexing, Init stream_groups
++    # for pd_multiplexing, Init stream_groups.  `device` below feeds ONLY the divide_sm (auto-grid) capability read; see the assert there (M2, 2026-10-12).
+     device = torch.cuda.current_device()
+     total_sm_count = spatial.get_sm_available(gpu_id)
+     # (prefill_sm_count, decode_sm_count)
+@@ -115,7 +115,7 @@
+             for prefill_sm, decode_sm, _ in config.manual_divisions
+         ]
+     else:
+-        divisions = divide_sm(
++        assert device == gpu_id, f"PD-mux auto grid (divide_sm): torch.cuda.current_device()={device} != gpu_id={gpu_id}, so get_device_capability would describe another GPU. Only this branch reads it (manual_divisions configs never get here). Under TP/DP>1 init_pdmux runs before ModelRunner.set_device, so on the stock launcher every scheduler with gpu_id != 0 fails here: use a manual_divisions config or SGLANG_ONE_VISIBLE_DEVICE_PER_PROCESS=1"; divisions = divide_sm(
+             total_sm_count,
+             torch.cuda.get_device_capability(device),
+             config.sm_group_num - 2,

@@ -220,29 +220,44 @@ def parse_gpu_csv(text):
     vals = [c.strip() for c in lines[0].split(",")]
     rec = dict(zip(keys, vals))
     rec["gpu_count"] = len(lines)
+    # Per-row view for N-GPU judging (2026-10-12 multi-GPU track, M2).  The scalar keys above
+    # stay the FIRST row's, exactly as before, so 1-GPU consumers see no change.
+    if len(lines) > 1:   # absent for 1 GPU => 1-GPU records are byte-identical to before
+        rec["rows"] = [dict(zip(keys, [c.strip() for c in ln.split(",")])) for ln in lines]
     return rec
 
 
-def judge_b0(gpu, py):
-    """Gating: one A100 cc 8.0, MIG off, 108 SM by both torch and sgl_kernel,
-    CUDA available, sgl_kernel.spatial importable."""
+def judge_b0(gpu, py, expected_gpus=1):
+    """Gating: ``expected_gpus`` (default 1 = the original behaviour) A100 cc 8.0, MIG off,
+    108 SM by both torch and sgl_kernel, CUDA available, sgl_kernel.spatial importable.
+    With expected_gpus > 1 every row must satisfy the A100/cc/MIG/driver checks and all UUIDs
+    must be distinct; the python facts (torch/sgl_kernel SM count) are those of device 0 only."""
     facts, why = {}, []
     if not gpu:
         return {"status": FAIL, "reason": "nvidia-smi query produced no GPU row", "facts": {}}
     if not py:
         return {"status": FAIL, "reason": "python facts missing", "facts": {"gpu": gpu}}
     facts["gpu"] = gpu
+    rows = gpu.get("rows") or [gpu]
     checks = {
-        "single_gpu": gpu.get("gpu_count") == 1,
-        "name_is_A100": "A100" in (gpu.get("name") or ""),
-        "compute_cap_8_0": gpu.get("compute_cap") == EXPECT_CC,
-        "mig_disabled": (gpu.get("mig_mode") or "").strip() in ("Disabled", "[N/A]", "N/A"),
+        ("single_gpu" if expected_gpus == 1 else "gpu_count_is_expected"):
+            gpu.get("gpu_count") == expected_gpus,
+        "name_is_A100": all("A100" in (r.get("name") or "") for r in rows),
+        "compute_cap_8_0": all(r.get("compute_cap") == EXPECT_CC for r in rows),
+        "mig_disabled": all((r.get("mig_mode") or "").strip() in ("Disabled", "[N/A]", "N/A")
+                            for r in rows),
         "cuda_available": py.get("cuda_available") is True,
         "torch_cc_8_0": py.get("compute_capability") == EXPECT_CC,
         "torch_sm_108": py.get("multi_processor_count") == EXPECT_SM,
         "sgl_kernel_spatial_import": "sgl_kernel_error" not in py,
         "get_sm_available_108": py.get("get_sm_available_0") == EXPECT_SM,
     }
+    if expected_gpus != 1:
+        uuids = [r.get("uuid") for r in rows]
+        checks["uuids_distinct"] = len(set(uuids)) == len(uuids)
+        checks["driver_uniform"] = len({r.get("driver_version") for r in rows}) == 1
+        facts["expected_gpus"] = expected_gpus
+        facts["uuids"] = uuids
     facts["checks"] = checks
     facts["versions"] = {k: py.get(k) for k in ("torch_version", "torch_cuda",
                                                 "dist_triton", "dist_sglang-kernel",
@@ -260,7 +275,7 @@ def judge_b0(gpu, py):
 
 def cmd_score_b0(a):
     gpu = parse_gpu_csv(open(a.gpu_csv).read() if os.path.exists(a.gpu_csv) else "")
-    v = judge_b0(gpu, _load(a.py_json))
+    v = judge_b0(gpu, _load(a.py_json), expected_gpus=a.expected_gpus)
     v["stage"] = "B0"
     _dump(v, a.status)
     print(v["status"], v["reason"])
@@ -1051,6 +1066,7 @@ def main(argv=None):
     s = sub.add_parser("score-b0")
     s.add_argument("--gpu-csv", required=True); s.add_argument("--py-json", required=True)
     s.add_argument("--status", required=True)
+    s.add_argument("--expected-gpus", type=int, default=1)   # N-GPU gate; default keeps 1-GPU behaviour
     s = sub.add_parser("b3-grid")
     s.add_argument("--configs", default=",".join(GRID_CONFIGS))
     s.add_argument("--out", required=True); s.add_argument("--outdir", required=True)
