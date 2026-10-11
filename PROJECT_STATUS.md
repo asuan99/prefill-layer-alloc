@@ -1,6 +1,6 @@
 # `prefill-layer-alloc` project status
 
-최종 갱신: 2026-10-11 (doc-steward — **N2(3-a) 규칙 봉인 `fcc0b9e`·Job-PROFILE 하네스 `1037655`(미봉인) 상태 등재**; 새 성능 판정 0건·게이트 #6·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #264 = `CONSENSUS §3` 항목289 = 교훈 277). 아래 (a‴) 절은 2026-10-11 신설.
+최종 갱신: 2026-10-11 (doc-steward — **N2(3-a) 규칙 봉인 `fcc0b9e`·Job-PROFILE 하네스 `1037655`(미봉인) 상태 등재**; 새 성능 판정 0건·게이트 #6·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #264 = `CONSENSUS §3` 항목289 = 교훈 277). 아래 (a‴) 절은 2026-10-11 신설. **추가(2026-10-11, doc-steward, 2차)**: (a⁗) AMD 병행 트랙 제안 등재 — 측정 0·새 성능 판정 0·Claim/게이트 #6/HE0/§1-3/§1-4 불변, 신규 게이트 #265–266.
 
 **(a‴) N2(3-a, 정적 격자) — 설계 결정·규칙 봉인·하네스 단계 (2026-10-11 신설, GPU 0·새 성능 판정 0건)**
 
@@ -11,6 +11,16 @@
 **다음 gate(순서)**: rev17 완성 → 규칙 델타 감사 + 하네스층 감사(한 번에) → 하네스 봉인(`## HARNESS SEAL`) → Job-PROFILE dry-run(`launch.sh` dry-run → 사용자 승인 → `--submit`). Job-EA 전 하드캡 재승인(E14-1)·블라인드 규칙(Job-PROFILE 동거 원자료 κ 분석 금지). 근거 핸드오프 `handoff-report/session_handoff_2026-10-11.md`.
 
 **신규 방법론 게이트 #264(`CONSENSUS §3` 항목289, 교훈 277과 짝)**: 측정 도구의 운영 손잡이(창 길이 K)를 파일럿 측정값으로 정하는 규칙은 그 파일럿을 판정 입력으로 만들어 시행 장치가 무한히 커진다 — 처치·측정량에 영향이 없는 손잡이는 넉넉한 상수로 미리 고정하라(N2 rev6–rev13 사례, 설계 비교 감사 `REVIEW_ealpha_coload_design_2026-10-08.md`). 새 성능 판정 0건, 게이트 #6·HE0·Claim D/E 불변.
+
+**(a⁗) AMD(Attention–Mamba Disaggregation) 병행 트랙 **제안** — 설계 논의 문서 등재 (2026-10-11 신설, GPU 0·측정 0·새 성능 판정 0건)**
+
+사용자 지시 논의(2026-10-11)의 산출 `reports/amd_design_discussion_2026-10-11.md`(rev2) = 설계 기준선의 **부속 논의 문서**이며 **측정이 아니다**(GPU 0 · 새 성능 판정 0 · 엔진 코드 변경 0). claims-auditor 감사 `reports/audit/2026-10-11_amd_design/AUDIT_amd_design_memo_rev1_2026-10-11.md`는 rev1을 `MIXED`(死因 4: D1 "ITL 비용 > TTFT 절감 1차 결론" REFUTED as evidence · D2 "§1-24 stall이 모든 2-GPU 레이아웃에서 소멸" REFUTED(L-B) · D3 per-type decode 백분율 NOT-YET-SUPPORTED · D4 "B의 ITL 경감" REFUTED)로 판정했고, 처방 전부를 rev2에 반영하며 rev1 주장은 철회했다(대조표 메모 §10). 1차 계산기 `workspace/engine-port/results/amd_track/amd_firstorder_calc.py`·`amd_firstorder_calc_2026-10-11.md`(커널 시간 0건, "가정 하 가산 비용, 상한·예측 아님"), 그림 `reports/figures/amd_firstorder_2026-10-11.png`. 사용자 결정 3건(2026-10-11): 산출 = 메모+계산 부록 · 모델 = Nemotron-H 주·Zamba2 대극 · 기판 = NVLink·PCIe 병기.
+
+요지(메모 §0): ① 전제 수정 — AMD는 현존 기법이 아니다는 **틀림**: SQD(arXiv 2609.13134, NVIDIA/Harvard, 2026-09)가 decode를 full-attention vs Mamba+FFN 층으로 분리(8×B200 homogeneous 프록시, full-attention을 prefill과 동거) — 남는 차별점은 SLO goodput 판정 + admission 사슬 이동 측정뿐 ② entanglement(§1-4)는 디바이스 분리로 없어지지 않고 P→D 핸드오프·B-GPU state pool로 자리만 옮긴다 ③ dense hybrid에는 AFD 이득 원천(MoE sparsity)이 없다 — 이득 후보는 KV가 배치를 묶는 긴 ctx × MHA 모델 영역뿐이고 그 밖은 1-GPU `max_running_requests` 상향과 구별 안 됨(대조군 (iv)) ④ L-B(GPU-A = prefill+decode-attention, GPU-B = decode mamba+MLP)는 per-token ITL을 줄일 수 없고 §1-24 stall을 A에 재도입할 위험(1순위, 미측정) ⑤ 1차 계산은 결론이 아니라 **뒤집힘 조건 지도**(ctx 4096·출력 256·NVLink·L0 65 µs에서 R≈0.002–0.017, ctx≥8k·짧은 출력·PCIe·작은 L0에서 R>1) — V4 직접 측정만 답 ⑥ per-type decode 백분율 일체 인용 금지(조성 재측정 전). 검증 사다리 V0–V4는 **제안**이며 실행은 사용자 결정; **다음 gate = V0 기판 프로브 — 사용자 결정 대기**.
+
+**불변**: Claim 등급·게이트 #6·HE0·§1-3(layer-type 死)·§1-4(entanglement)·CLAIM_EVIDENCE_MATRIX 전부 변경 0. **금지 서술 추가(메모 §8 문자 그대로 승계)**: "AMD는 현존 기법이 아니다" · "homogeneous GPU/PD 결합이 남는 공백" · "진짜 여유는 디바이스 사이에 있다"(§1-20) · "hybrid는 KV가 작다" · "layer-type 정책 부활" · "HE0 재논쟁" · C2/λ\*/Diff B 수치의 2-GPU 이식 · Zamba2 ctx16k attn 비중 · **per-type decode 백분율 일체** · λ0 시간가중 열 · "2-GPU가 1-GPU를 이긴다" · 계산표를 "상한/예측/결론"으로 인용 · §1-24 stall 제거를 AMD 효과로 귀속 · "L-B가 ITL을 줄인다" · "B 풀 수 손잡이는 AMD 고유"(대조군 (iv) 전).
+
+**신규 방법론 게이트 2건(#265–266, `CONSENSUS §3` 항목290–291, 교훈 278–279와 짝)**: **#265** — D1(설계 논의 문서도 '1차 결론'을 내는 순간 감사 대상이다 — 계산기의 고른 점(ctx·출력 길이·기판·L0) 하나로 결론 부호가 뒤집히면 결론이 아니라 뒤집힘 격자를 적어라). **#266** — D3(같은 저장소의 미감사 조성 수치라도 원 파일이 해석을 금지했으면 '방향'이라는 이름으로도 못 쓴다). 사례/출처 `reports/audit/2026-10-11_amd_design/AUDIT_amd_design_memo_rev1_2026-10-11.md` §D1·§D3.
 
 이전 최종 갱신(2026-10-08): (doc-steward — **N3 shape B 4회차(rev7) 완주·결과 감사 반영 + N2(3-a) 사전등록 draft rev8 상태 등재**, VESSL 컨테이너 3.409 h·새 성능 판정 0건·게이트 #6 불변(부분 측정, 미닫힘)·λ0R-8(iii)·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #262–263)
 
