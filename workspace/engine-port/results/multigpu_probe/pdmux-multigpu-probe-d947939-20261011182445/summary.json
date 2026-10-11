@@ -1,0 +1,29 @@
+{
+  "stages": [
+    {
+      "reason": "GPUs visible: 8; classes: {}",
+      "stage": "F1",
+      "status": "PASS"
+    },
+    {
+      "reason": "all-reduce measured: 2(torch.distributed) 4(torch.distributed) 8(torch.distributed) (descriptor, see f2/)",
+      "stage": "F2",
+      "status": "PASS"
+    },
+    {
+      "reason": "peer-access matrix + copy GB/s + small-message latency recorded (f3/)",
+      "stage": "F3",
+      "status": "PASS"
+    },
+    {
+      "reason": "all pairs created on all 8/8 GPUs (created != realized; census TODO)",
+      "stage": "F4",
+      "status": "PASS"
+    },
+    {
+      "reason": "infiniband devices: 0; mooncake absent (descriptor; RDMA usability not tested)",
+      "stage": "F5",
+      "status": "PASS"
+    }
+  ]
+}

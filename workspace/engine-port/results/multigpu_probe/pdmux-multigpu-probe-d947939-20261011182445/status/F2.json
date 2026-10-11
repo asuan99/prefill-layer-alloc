@@ -1,0 +1,5 @@
+{
+  "stage": "F2",
+  "status": "PASS",
+  "reason": "all-reduce measured: 2(torch.distributed) 4(torch.distributed) 8(torch.distributed) (descriptor, see f2/)"
+}

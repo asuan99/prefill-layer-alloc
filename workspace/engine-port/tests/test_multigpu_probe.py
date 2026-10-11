@@ -33,6 +33,17 @@ class T(unittest.TestCase):
         self.assertFalse(r["all_pairs_nvlink"])
         self.assertEqual(r["classes"]["SYS"], 2)
 
+    def test_parse_topo_ansi_header(self):
+        # real VESSL a100x8 output (2026-10-12): header underlined with ESC[4m ... ESC[0m
+        t = "\t\x1b[4mGPU0\tGPU1\tCPU Affinity\tNUMA Affinity\x1b[0m\nGPU0\t X \tNV12\t0-23\t0\nGPU1\tNV12\t X \t0-23\t0\n"
+        r = H.parse_topo(t)
+        self.assertEqual(r["n_gpu"], 2)
+        self.assertTrue(r["all_pairs_nvlink"])
+        self.assertEqual(r["classes"], {"NVLINK(12)": 2})
+
+    def test_parse_topo_single_column_not_vacuous(self):
+        self.assertFalse(H.parse_topo("\tGPU0\tCPU Affinity\nGPU0\t X \t0-23\n")["all_pairs_nvlink"])
+
     def test_parse_topo_all_nvlink_and_garbage(self):
         t = "\tGPU0\tGPU1\nGPU0\t X \tNV8\nGPU1\tNV8\t X \n"
         self.assertTrue(H.parse_topo(t)["all_pairs_nvlink"])

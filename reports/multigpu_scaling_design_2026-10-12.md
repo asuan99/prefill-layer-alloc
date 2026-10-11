@@ -33,7 +33,7 @@
 
 | 항목 | 단일 A100에서의 상태 | N>1에서의 문제 | 처리 |
 |---|---|---|---|
-| 노드 형상 | `resourcespec-a100x1` | **2026-10-12 `vesslctl resource-spec list` 조회**: `resourcespec-a100x{2,4,8}` 존재·USABLE, 전부 cluster-betelgeuse, CPU는 GPU당 11(x8 = 88), **x8 가용성 `low`**(스케줄 지연·실패 가능). NVLink/NVSwitch vs PCIe는 스펙 목록으로 알 수 없음(`reports/amd_design_discussion_2026-10-11.md:153`) | M1 프로브(`EP/scripts/vessl/multigpu_probe.sh` 초안, 미커밋): `topo -m`, nvlink, P2P, all-reduce 대역폭 |
+| 노드 형상 | `resourcespec-a100x1` | **2026-10-12 `vesslctl resource-spec list` 조회**: `resourcespec-a100x{2,4,8}` 존재·USABLE, 전부 cluster-betelgeuse, CPU는 GPU당 11(x8 = 88), **x8 가용성 `low`**(스케줄 지연·실패 가능). NVLink/NVSwitch vs PCIe는 스펙 목록으로 알 수 없음(`reports/amd_design_discussion_2026-10-11.md:153`) | **M1 완료(2026-10-12, Job `pdmux-multigpu-probe-d947939-20261011182445`)**: 전 쌍 NV12(NVLink), GPU0–3 NUMA0·GPU4–7 NUMA1, cgroup 88 CPU, IB 없음·mooncake 없음, green ctx 8/8. 상세·함의는 `EP/results/multigpu_probe/RESULT_m1_v0_probe_2026-10-12.md` |
 | Job 효과 | 교훈 274 | N별 Job 분리 시 N 효과 = Job 효과 | x8 한 Job 안 N 부분집합. 블록을 나누면 블록마다 N=1 앵커(C-9) |
 | **노드 부하 상관** | 해당 없음 | N=8은 노드 전력·열·NVSwitch·호스트 메모리를 쓰고 N=1은 7장이 유휴 → 노드 클럭·throttle이 N과 공변. 부분집합 동시 실행 시 상호 간섭 | 부분집합은 **순차** 실행. GPU별 클럭·throttle 사유를 셀마다 공변량으로 병기(C-1) |
 | **부분집합 위상** | 해당 없음 | N=2/4 GPU 집합이 NVLink 위상·NUMA 소켓·CPU 친화도와 교락 | 부분집합 GPU ID를 사전등록하고 위상 기록(C-1) |

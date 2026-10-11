@@ -1,0 +1,11 @@
+# at end 18:28:13
+usage_usec 436435097
+user_usec 348267430
+system_usec 88167667
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 1636
+nr_throttled 3
+throttled_usec 192401
+nr_bursts 0
+burst_usec 0

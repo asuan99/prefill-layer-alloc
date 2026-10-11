@@ -1,0 +1,9 @@
+{
+  "mode": "gpu",
+  "run": "pdmux-multigpu-probe-d947939-20261011182445",
+  "start_utc": "2026-10-11T18:25:41Z",
+  "host": "job-t3yp83vl6792-7jfvq",
+  "spec": "resourcespec-a100x8",
+  "commit": "d947939c118c775fc2e2b991b4cfc7bf0201a05c",
+  "ns_requested": "2 4 8"
+}

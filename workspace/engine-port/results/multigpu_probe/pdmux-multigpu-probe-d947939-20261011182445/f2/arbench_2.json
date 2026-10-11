@@ -1,0 +1,50 @@
+{
+  "gpus": [
+    0,
+    1
+  ],
+  "iters": 20,
+  "kind": "multigpu_ar_bench",
+  "n": 2,
+  "note": "substrate descriptor; GPUs 0..n-1 only (other subsets are TODO)",
+  "rows": [
+    {
+      "algbw_GBps": 0.027,
+      "busbw_GBps": 0.027,
+      "size_B": 1024,
+      "time_us": 37.79
+    },
+    {
+      "algbw_GBps": 2.051,
+      "busbw_GBps": 2.051,
+      "size_B": 65536,
+      "time_us": 31.95
+    },
+    {
+      "algbw_GBps": 22.334,
+      "busbw_GBps": 22.334,
+      "size_B": 1048576,
+      "time_us": 46.95
+    },
+    {
+      "algbw_GBps": 131.229,
+      "busbw_GBps": 131.229,
+      "size_B": 16777216,
+      "time_us": 127.85
+    },
+    {
+      "algbw_GBps": 177.088,
+      "busbw_GBps": 177.088,
+      "size_B": 134217728,
+      "time_us": 757.91
+    },
+    {
+      "algbw_GBps": 191.734,
+      "busbw_GBps": 191.734,
+      "size_B": 536870912,
+      "time_us": 2800.08
+    }
+  ],
+  "source": "torch.distributed NCCL (nccl-tests absent)",
+  "warmup": 5
+}

@@ -1,0 +1,9 @@
+# /sys/class/infiniband
+total 0
+# ibv_devinfo
+(ibv_devinfo not on PATH)
+# net links
+eth0
+lo
+# rdma link
+(rdma tool not on PATH)

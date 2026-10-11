@@ -1,0 +1,5 @@
+{
+  "stage": "F4",
+  "status": "PASS",
+  "reason": "all pairs created on all 8/8 GPUs (created != realized; census TODO)"
+}

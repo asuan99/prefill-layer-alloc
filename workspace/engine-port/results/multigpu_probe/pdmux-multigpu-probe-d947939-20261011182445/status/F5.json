@@ -1,0 +1,5 @@
+{
+  "stage": "F5",
+  "status": "PASS",
+  "reason": "infiniband devices: 0; mooncake absent (descriptor; RDMA usability not tested)"
+}

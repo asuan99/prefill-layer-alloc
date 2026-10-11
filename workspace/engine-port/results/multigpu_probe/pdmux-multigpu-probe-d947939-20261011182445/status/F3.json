@@ -1,0 +1,5 @@
+{
+  "stage": "F3",
+  "status": "PASS",
+  "reason": "peer-access matrix + copy GB/s + small-message latency recorded (f3/)"
+}

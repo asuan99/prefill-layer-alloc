@@ -1,0 +1,10 @@
+{
+  "all_pairs_nvlink": true,
+  "classes": {},
+  "links": [
+    [
+      "NVLINK(12)"
+    ]
+  ],
+  "n_gpu": 1
+}

@@ -48,10 +48,12 @@ def link_class(tok: str) -> str:
 
 def parse_topo(text: str) -> dict:
     """Parse `nvidia-smi topo -m`.  Returns {n_gpu, links[i][j], classes{class: count of ordered pairs}}."""
+    text = re.sub(r"\x1b\[[0-9;]*m", "", text)  # nvidia-smi underlines the header row with ANSI codes
     lines = [l.rstrip() for l in text.splitlines() if l.strip()]
     hdr = None
     for i, l in enumerate(lines):
-        if re.match(r"^\s*GPU0\b", l):
+        # header row: column labels only (GPU0 GPU1 ...); a data row also starts with GPU0 but is followed by X/NV#
+        if re.match(r"^\s*GPU0\b", l) and (len(l.split()) < 2 or re.fullmatch(r"GPU\d+|CPU", l.split()[1])):
             hdr = i
             break
     if hdr is None:
@@ -71,7 +73,7 @@ def parse_topo(text: str) -> dict:
             if i != j:
                 classes[c] = classes.get(c, 0) + 1
     return {"n_gpu": n, "links": links, "classes": classes,
-            "all_pairs_nvlink": bool(links) and all(c.startswith("NVLINK") for i, r in enumerate(links)
+            "all_pairs_nvlink": n >= 2 and len(links) == n and all(c.startswith("NVLINK") for i, r in enumerate(links)
                                                     for j, c in enumerate(r) if i != j)}
 
 

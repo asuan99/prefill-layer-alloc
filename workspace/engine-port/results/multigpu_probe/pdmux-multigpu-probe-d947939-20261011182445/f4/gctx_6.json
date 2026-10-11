@@ -1,0 +1,105 @@
+{
+  "complete": true,
+  "get_sm_available": 108,
+  "gpu": 6,
+  "kind": "multigpu_greenctx_one",
+  "pairs": [
+    {
+      "created": true,
+      "driver": {
+        "decode": {
+          "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+          "cuGreenCtxGetDevResource_rc": 0,
+          "cuStreamGetGreenCtx_rc": 0,
+          "green_ctx_is_null": false,
+          "green_sm": {
+            "minSmPartitionSize": 2,
+            "smCoscheduledAlignment": 2,
+            "smCount": 92
+          }
+        },
+        "prefill": {
+          "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+          "cuGreenCtxGetDevResource_rc": 0,
+          "cuStreamGetGreenCtx_rc": 0,
+          "green_ctx_is_null": false,
+          "green_sm": {
+            "minSmPartitionSize": 4,
+            "smCoscheduledAlignment": 2,
+            "smCount": 16
+          }
+        }
+      },
+      "error": null,
+      "requested": [
+        16,
+        92
+      ]
+    },
+    {
+      "created": true,
+      "driver": {
+        "decode": {
+          "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+          "cuGreenCtxGetDevResource_rc": 0,
+          "cuStreamGetGreenCtx_rc": 0,
+          "green_ctx_is_null": false,
+          "green_sm": {
+            "minSmPartitionSize": 2,
+            "smCoscheduledAlignment": 2,
+            "smCount": 64
+          }
+        },
+        "prefill": {
+          "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+          "cuGreenCtxGetDevResource_rc": 0,
+          "cuStreamGetGreenCtx_rc": 0,
+          "green_ctx_is_null": false,
+          "green_sm": {
+            "minSmPartitionSize": 4,
+            "smCoscheduledAlignment": 2,
+            "smCount": 44
+          }
+        }
+      },
+      "error": null,
+      "requested": [
+        44,
+        64
+      ]
+    },
+    {
+      "created": true,
+      "driver": {
+        "decode": {
+          "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+          "cuGreenCtxGetDevResource_rc": 0,
+          "cuStreamGetGreenCtx_rc": 0,
+          "green_ctx_is_null": false,
+          "green_sm": {
+            "minSmPartitionSize": 2,
+            "smCoscheduledAlignment": 2,
+            "smCount": 16
+          }
+        },
+        "prefill": {
+          "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+          "cuGreenCtxGetDevResource_rc": 0,
+          "cuStreamGetGreenCtx_rc": 0,
+          "green_ctx_is_null": false,
+          "green_sm": {
+            "minSmPartitionSize": 4,
+            "smCoscheduledAlignment": 2,
+            "smCount": 92
+          }
+        }
+      },
+      "error": null,
+      "requested": [
+        92,
+        16
+      ]
+    }
+  ],
+  "sgl_kernel_spatial": true
+}
