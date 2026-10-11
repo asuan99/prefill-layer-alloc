@@ -151,8 +151,12 @@ if [ "${PDMUX_N2_TEST_SKIP_PREFLIGHT:-0}" != 1 ]; then
   PSTATE="${SGLANG_ENGINE_DEV:-/opt/pdmux/sglang_engine_dev/python}/sglang/srt/distributed/parallel_state.py"
   [ "$TESTMODE" = 1 ] || grep -q "def pdmux_role_is_thread_local" "$PSTATE" 2>/dev/null \
     || fail "ABORT_ENGINE thread-local role patch absent (correctness gate 3)" 3
-  (cd "$HERE" && timeout -k 10 1800 python3 -m unittest test_n2_feasibility test_n2_probe_reduce test_n2_harness \
-     test_n2_job n2_reach_tests) > "$OUT/PREFLIGHT_TESTS.txt" 2>&1 \
+  # H17-10: the N3 r3 raw dir is a git-tracked directory WITHOUT its JSONL (git-ignored) in a Job clone, so the
+  # rule test's N3 positive control would read an empty dir and FAIL; point it at an absent path so it is an
+  # explicit skip (N2C-78: in-Job positive controls are skipped; the evidence is the local rule-seal ledger).
+  echo "N2_N3_DIR=$OUT/N3_RAW_NOT_IN_JOB (positive control skipped by design, N2C-78)" > "$OUT/PREFLIGHT_ENV.txt"
+  (cd "$HERE" && N2_N3_DIR="$OUT/N3_RAW_NOT_IN_JOB" timeout -k 10 1800 python3 -m unittest test_n2_feasibility \
+     test_n2_probe_reduce test_n2_harness test_n2_job n2_reach_tests) > "$OUT/PREFLIGHT_TESTS.txt" 2>&1 \
     || { tail -20 "$OUT/PREFLIGHT_TESTS.txt"; fail "ABORT_PREFLIGHT unit tests (PREFLIGHT_TESTS.txt)" 4; }
   if [ "$TESTMODE" != 1 ]; then
     python3 "$ENG/benchmarks/pdmux_eval/profile_cli.py" engine-source-hash > "$OUT/ENGINE_SOURCE_HASH.txt" 2>&1 \

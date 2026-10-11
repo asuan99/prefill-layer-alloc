@@ -33,7 +33,13 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ENG = os.path.abspath(os.path.join(HERE, "..", ".."))
+# Job layout (lesson 270): workspace/engine-port/results is a SYMLINK to /data/runs/<job>/results, and a module
+# imported via the cwd ('' on sys.path, e.g. the preflight `cd $HERE && python3 -m unittest`) gets a __file__ under
+# the PHYSICAL run dir (getcwd resolves symlinks) -> HERE/../.. leaves the clone and loses benchmarks/ (Job
+# pdmux-n2-static-grid-52a3b97-20261011182211, ABORT_PREFLIGHT).  PDMUX_PROJECT_ROOT (exported by job_entry.sh,
+# required by n2_capacity.sh) names the clone; without it (local runs) the file-relative root is used.
+ENG = (os.path.join(os.path.abspath(os.environ["PDMUX_PROJECT_ROOT"]), "workspace", "engine-port")
+       if os.environ.get("PDMUX_PROJECT_ROOT") else os.path.abspath(os.path.join(HERE, "..", "..")))
 LAM0V_ARCHIVE = os.path.join(ENG, "results/r2_eval/lambda0_vessl/lam0v_pdmux-lambda0-vessl-1d47d3e-20261004084945")
 N3_MIX = os.path.join(ENG, "results/n3_capacity/n3_realized_mix.py")
 SELFTEST_CELLS = ("a_r0", "a_r2", "a_r4", "a_r4_s2", "b_r0", "b_r3", "b_r3_s2")

@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-n2-static-grid-52a3b97-20261011182211
+Slug:                 job-tbiw2keh85zd
+State:                failed
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/52a3b979432e3c18866bbffb4dfb8a43e124767f/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-11T18:22:17Z
+Started At:           2026-10-11T18:22:21Z
+Completed At:         2026-10-11T18:23:15Z
+Duration:             54s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=52a3b979432e3c18866bbffb4dfb8a43e124767f, PDMUX_JOB_NAME=pdmux-n2-static-grid-52a3b97-20261011182211, PDMUX_CAMPAIGN=n2_static_grid, PDMUX_TARGET=workspace/engine-port/results/n2_static_grid/n2_capacity.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1, PDMUX_N2_JOB=PROFILE
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

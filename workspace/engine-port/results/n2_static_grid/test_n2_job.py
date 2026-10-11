@@ -826,6 +826,40 @@ class TestCapacityScript(unittest.TestCase):
         r = sh(self.proj, dict(PDMUX_N2_JOB="XX"), self.td)
         self.assertEqual(r.returncode, 2)
 
+    def test_preflight_cwd_import_in_symlinked_job_layout(self):             # H17-10 (Job 52a3b97 ABORT_PREFLIGHT)
+        cwd = os.path.join(self.proj, "workspace", "engine-port", "results", "n2_static_grid")   # logical (symlink)
+        code = "import n2_analyze, n2_realized_mix as M; print(n2_analyze.ENG); print(M.ENG)"
+        base = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
+        base.update(PYTHONDONTWRITEBYTECODE="1")
+        bad = subprocess.run([sys.executable, "-c", code], cwd=cwd, env=base, capture_output=True, text=True)
+        self.assertNotEqual(bad.returncode, 0, "layout must reproduce the Job failure without PDMUX_PROJECT_ROOT")
+        self.assertIn("analyze.py", bad.stderr)
+        ok = subprocess.run([sys.executable, "-c", code], cwd=cwd, env=dict(base, PDMUX_PROJECT_ROOT=self.proj),
+                            capture_output=True, text=True)
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        want = os.path.join(os.path.abspath(self.proj), "workspace", "engine-port")
+        self.assertEqual(ok.stdout.split(), [want, want])
+
+    def test_preflight_n3_dir_without_jsonl(self):                           # H17-10: Job clone has no N3 JSONL
+        n3b = os.path.join(self.proj, "workspace", "engine-port", "results", "n3_capacity",
+                           "n3b_pdmux-n3-capacity-38ed3f4-20261006092813")
+        os.makedirs(n3b)
+        with open(os.path.join(n3b, "RESULT.md"), "w") as fh:                # tracked non-JSONL file only
+            fh.write("x\n")
+        cwd = os.path.join(self.proj, "workspace", "engine-port", "results", "n2_static_grid")
+        env = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_") and k != "N2_N3_DIR"}
+        env.update(PYTHONDONTWRITEBYTECODE="1", PDMUX_PROJECT_ROOT=self.proj)
+        t = "test_n2_probe_reduce.TestTheta.test_positive_control_n3"
+        bad = subprocess.run([sys.executable, "-m", "unittest", t], cwd=cwd, env=env, capture_output=True, text=True)
+        self.assertNotEqual(bad.returncode, 0, "an empty tracked N3 dir must fail the positive control (the hazard)")
+        with open(os.path.join(HERE, "n2_capacity.sh")) as fh:
+            m = re.search(r'cd "\$HERE" && N2_N3_DIR="(\$OUT/[A-Z0-9_]+)" timeout', fh.read())
+        self.assertIsNotNone(m, "preflight must override N2_N3_DIR")
+        ok = subprocess.run([sys.executable, "-m", "unittest", "-v", t], cwd=cwd, capture_output=True, text=True,
+                            env=dict(env, N2_N3_DIR=m.group(1).replace("$OUT", self.td)))
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        self.assertIn("skipped", ok.stderr)
+
     def test_ea_needs_profile_and_ea_sections(self):                        # rev17 R17-2 / H17-6
         reg = os.path.join(self.here, "REGISTRATION_SHA256.txt")
         with open(reg) as fh:                                               # H17-9: drop any existing harness section

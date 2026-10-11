@@ -253,6 +253,12 @@ JOB_MUTANTS = [
      [(SH, '  fail "ABORT_EA_NOT_IMPLEMENTED Job-EA runner is not implemented (H15-3)" 3', '  :')]),
     ("JH94", "H17-8: runner crash leaves stopped=None (F-N2-7P false FALSIFIED)", "kill",
      [(JB, '        stopped = stopped or "crash"', '        pass')]),
+    ("JH95", "H17-10: n2_plan.ENG ignores PDMUX_PROJECT_ROOT (file-relative root in a symlinked Job layout)", "kill",
+     [(PL, '       if os.environ.get("PDMUX_PROJECT_ROOT") else', '       if False else')]),
+    ("JH96", "H17-10: n2_realized_mix.ENG ignores PDMUX_PROJECT_ROOT", "kill",
+     [(MX, '       if os.environ.get("PDMUX_PROJECT_ROOT") else', '       if False else')]),
+    ("JH97", "H17-10: preflight does not override N2_N3_DIR (empty tracked N3 dir fails the positive control)", "kill",
+     [(SH, '(cd "$HERE" && N2_N3_DIR="$OUT/N3_RAW_NOT_IN_JOB" timeout', '(cd "$HERE" && timeout')]),
 ]
 
 def _tree(tmp, files):
