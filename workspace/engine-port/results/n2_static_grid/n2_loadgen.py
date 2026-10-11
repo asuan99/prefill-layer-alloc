@@ -497,3 +497,140 @@ def new_session(**kw):
     timeout = aiohttp.ClientTimeout(total=None, sock_connect=kw.pop("sock_connect", SOCK_CONNECT_S),
                                     sock_read=kw.pop("sock_read", SOCK_READ_S))
     return aiohttp.ClientSession(timeout=timeout, connector=aiohttp.TCPConnector(limit=0, limit_per_host=0))
+
+
+# =================================================================================================================
+# Job cell clients (PREREG_N2_3A rev16 §4-2, §6-1, §11-2, §11-4, §14-2 G-1…G-13) -- harness-seal extension.
+# The smoke cell above (run_probe_cell) is unchanged; the Job-PROFILE cell is a co-load-free burst cell.
+# =================================================================================================================
+GREEDY_N, GREEDY_INPUT, GREEDY_OUT = 6, 256, 32       # §11-2 "고정 프롬프트 6개" -- HARNESS CHOICE (lengths unregistered)
+
+
+class ProfileSpec:
+    """One PROFILE / OBS cell (§4-2): b requests, input c_in (the first c_in tokens of the cell seed sequence
+    'n2|<seed_kind>|<b>|<c>|<r>'), max_new_tokens O (= ceil(O_P), G-4), ignore_eos, T = 0. `d` is the boot's D
+    written in the cell_start mark (OFF boots: the FIXED value, §14-2 Job application)."""
+
+    def __init__(self, d, b, c, c_in, o, r, seed_kind="PROFILE"):
+        self.d, self.b, self.c, self.c_in, self.o, self.r, self.seed_kind = d, b, c, int(c_in), int(o), r, seed_kind
+
+
+def _req_record(r):
+    meta = r.meta or {}
+    fr = meta.get("finish_reason")
+    return dict(rid=r.rid, n=r.n, times=list(r.times), prompt_tokens=meta.get("prompt_tokens"),
+                completion_tokens=meta.get("completion_tokens"),
+                finish=(fr.get("type") if isinstance(fr, dict) else fr), done=r.done, cancelled=r.cancelled)
+
+
+async def run_profile_cell(session, base, mw, spec, cell_id, call_id, classify, tail=None, clock=time.monotonic,
+                           cell_timeout_s=CELL_TIMEOUT_S, drain_timeout_s=DRAIN_TIMEOUT_S, drain_poll_s=0.25,
+                           drain_settle_s=0.5):
+    """ONE Job PROFILE / OBS cell = one load call (§4-2 steps 1-3, 5, 6; no co-load). Marks, in order: cell_start,
+    load_call_start, load_call_end (finally), [cell_abort + abort_detail], cell_end (finally), then fix_s.
+    Cancel rule (§4-2 step 5, PROFILE·OBS, U-1 (b)): the first moment the client-side LOWER median
+    L_(int((b-1)*0.5)) of L_i = c_in + tokens received is >= c + 63 + 8 (= c + TRIGGER_EXTRA), every remaining
+    stream is cancelled. If every stream ends first (O reached) nothing is cancelled. Returns the client record
+    (per-request token receive times, CLOCK_MONOTONIC) used by n2_window (bench validity, C-itl)."""
+    url = f"{base}/generate"
+    reqs, tasks = [], []
+    st = dict(stop=asyncio.Event(), t_first_send=None, t_active_end=None, t_cancel=None)
+
+    def on_profile_token(_req):
+        if st["t_cancel"] is None and reqs and spec.c_in + lower_median([q.n for q in reqs]) >= spec.c + TRIGGER_EXTRA:
+            st["t_cancel"] = clock()
+            st["stop"].set()
+
+    async def body():
+        prompt = decode_prompt(spec.seed_kind, spec.b, spec.c, spec.r, spec.c_in)
+        bodies = [payload(prompt, spec.o, f"{cell_id}-d{i}") for i in range(spec.b)]
+        mw.load_call_start(call_id)
+        try:
+            st["t_first_send"] = clock()
+            for bd in bodies:                                                  # all b at t = 0 (burst)
+                q = Req(bd["rid"], spec.c_in)
+                reqs.append(q)
+                tasks.append(asyncio.ensure_future(stream(session, url, q, bd, on_profile_token, clock)))
+            fired = await _wait_or_fail(st["stop"], tasks, "profile-cancel")   # False = every stream ended (O)
+            st["t_active_end"] = clock()
+            st["cancel_fired"] = bool(fired)
+        finally:
+            for t in tasks:
+                if not t.done():
+                    t.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            mw.load_call_end(call_id)
+
+    async def drain(aborted):
+        off_close = tail.offset() if tail is not None else 0
+        for t in tasks:
+            if not t.done():
+                t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await _abort_requests(session, base, [q.rid for q in reqs if not q.done])
+        st["t_closed"] = clock()
+        if tail is not None and not aborted:
+            st["t_idle"] = await wait_engine_idle(tail, off_close, st["t_closed"], drain_timeout_s, drain_poll_s,
+                                                  drain_settle_s, clock)
+
+    async with mw.cell(cell_id, spec.d, spec.b, spec.c, classify) as cell:
+        cell.drain = drain
+        await asyncio.wait_for(body(), timeout=cell_timeout_s)
+    overhead = (cell.t_end - cell.t_start) - (st["t_active_end"] - st["t_first_send"])   # G-6 descriptive
+    mw.fix_s(cell_id, overhead)
+    return dict(cell_id=cell_id, call_id=call_id, b=spec.b, c=spec.c, c_in=spec.c_in, O=spec.o, r=spec.r,
+                t_start=cell.t_start, t_end=cell.t_end, t_first_send=st["t_first_send"],
+                t_active_end=st["t_active_end"], t_cancel=st["t_cancel"], cancel_fired=st.get("cancel_fired"),
+                t_idle=st.get("t_idle"), fix_s=overhead, requests=[_req_record(q) for q in reqs])
+
+
+async def greedy_request(session, base, input_ids, max_new_tokens, rid):
+    """§11-2 non-streaming greedy request (concurrency 1, T = 0): returns text, output ids (when the server returns
+    them) and meta_info. Any HTTP error raises (the runner records it; empty output -> ABORT_CORRECTNESS)."""
+    body = {"input_ids": list(input_ids),
+            "sampling_params": {"max_new_tokens": int(max_new_tokens), "temperature": 0.0},
+            "stream": False, "rid": str(rid)}
+    async with session.post(f"{base}/generate", json=body) as resp:
+        resp.raise_for_status()
+        out = await resp.json()
+    if isinstance(out, list):
+        out = out[0]
+    return dict(text=out.get("text"), output_ids=out.get("output_ids"), meta=out.get("meta_info") or {})
+
+
+def greedy_prompts():
+    return [seed_tokens(seed_of(f"n2|GREEDY|{k}"), GREEDY_INPUT) for k in range(GREEDY_N)]
+
+
+async def run_greedy(session, base, boot_id):
+    outs = []
+    for k, ids in enumerate(greedy_prompts()):                                 # strictly one at a time
+        outs.append(await greedy_request(session, base, ids, GREEDY_OUT, f"{boot_id}-greedy{k}"))
+    return outs
+
+
+async def run_coshape_warmup(session, base, mw, boot_id, d, c_in, o_ea, clock=time.monotonic):
+    """§14-2 G-3 (b) co-shape warm-up (Job-EA boots only; implemented, NOT used by Job-PROFILE): one decode request
+    (seed label 'n2|WARMUP_CO|<d>|<boot>', input c_in(d, 8, 2048), max_new_tokens ceil(O_EA(d, 8, 2048))) runs while
+    ONE 8192-token co request (one 1-request span) and then TWO concurrent ones (one 2-request span, 16,384 tokens)
+    are sent (labels 'n2|WARMUP_CO|<d>|<boot>|<j>', j = 0..2, max_new_tokens 1), all inside warmup_start/_end; the
+    decode request is cancelled after the second span. Not a measurement; belongs to no cell window."""
+    url = f"{base}/generate"
+    with mw.warmup(boot_id):
+        dec = Req(f"{boot_id}-wco-d", c_in)
+        first = asyncio.Event()
+        dec_task = asyncio.ensure_future(stream(
+            session, url, dec, payload(seed_tokens(seed_of(f"n2|WARMUP_CO|{d}|{boot_id}"), c_in), o_ea,
+                                       dec.rid), lambda q: first.set(), clock))
+        try:
+            await _wait_or_fail(first, [dec_task], "warmup-co decode")
+            for group in ((0,), (1, 2)):
+                co = [Req(f"{boot_id}-wco-{j}", CO_INPUT, coload=True) for j in group]
+                await asyncio.gather(*[stream(session, url, q, payload(
+                    seed_tokens(seed_of(f"n2|WARMUP_CO|{d}|{boot_id}|{j}"), CO_INPUT), 1, q.rid, coload=True))
+                    for q, j in zip(co, group)])
+        finally:
+            if not dec_task.done():
+                dec_task.cancel()
+            await asyncio.gather(dec_task, return_exceptions=True)
+            await _abort_requests(session, base, [dec.rid])

@@ -109,8 +109,29 @@ class TestMarkWriter(unittest.TestCase):
         src = _rd(pr.REDUCER)
         m = re.search(r"arity = (\{[^}]*\})", src)
         self.assertEqual(eval(m.group(1)), n2_marks.ARITY)
+        # rev16 H14-3 / harness-seal precondition: the pin is ARITY ∪ WARMUP_ARITY (the reducer keeps the warm-up
+        # tags in its own WARMUP_ARITY, parsed only when a warm-up dict is passed)
+        self.assertEqual(n2_marks.WARMUP_ARITY, RED.WARMUP_ARITY)
+        self.assertEqual({**n2_marks.ARITY, **n2_marks.WARMUP_ARITY}, {**eval(m.group(1)), **RED.WARMUP_ARITY})
+        self.assertFalse(set(n2_marks.ARITY) & set(n2_marks.WARMUP_ARITY))
         self.assertEqual(set(n2_marks.REGISTERED_REASONS), set(RED.ABORT_REASONS))
         self.assertFalse(set(n2_marks.UNREGISTERED_REASONS) & set(RED.ABORT_REASONS))
+
+    def test_warmup_scope_marks_paired_and_parsed(self):            # G-3 / H14-3 (Job warm-up interval)
+        with tempfile.TemporaryDirectory() as td:
+            mw = n2_marks.MarkWriter(os.path.join(td, "m.txt"))
+            with self.assertRaises(ValueError):
+                with mw.warmup("bootA"):
+                    raise ValueError("warm-up failed")          # warmup_end is still written (paired)
+            mw.close()
+            lines = [ln for ln in _rd(os.path.join(td, "m.txt")).splitlines()]
+            self.assertEqual([ln.split()[0] for ln in lines], ["warmup_start", "warmup_end"])
+            warm = {}
+            _c, _cl, _p, _ab, issues = RED.parse_marks(lines, warm)
+            self.assertEqual(issues, [])
+            self.assertLessEqual(warm["bootA"]["warmup_start"], warm["bootA"]["warmup_end"])
+            _c, _cl, _p, _ab, issues = RED.parse_marks(lines)           # without a warm-up dict: pre-rev16 format
+            self.assertEqual([i[1] for i in issues], ["MARK_MALFORMED", "MARK_MALFORMED"])
 
     def test_unregistered_tag_and_reason_refused(self):
         with tempfile.TemporaryDirectory() as td:

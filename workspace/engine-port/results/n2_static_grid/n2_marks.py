@@ -26,6 +26,10 @@ import time
 # Registered tag -> number of fields after the tag (== n2_probe_reduce.parse_marks arity; test_n2_harness pins it).
 ARITY = {"boot_plan": 2, "cell_start": 5, "load_call_start": 2, "coload_sent": 2, "cell_abort": 3,
          "abort_detail": 2, "cell_end": 2, "load_call_end": 2, "delta_l": 2, "fix_s": 2, "boot_abort": 2}
+# rev16 H14-3 / §14-2 G-3 (b): per-boot warm-up interval marks `warmup_start <boot> <t>` / `warmup_end <boot> <t>`
+# (== n2_probe_reduce.WARMUP_ARITY, kept apart from ARITY exactly as the reducer keeps it apart from `arity`;
+# test_n2_harness C1 pins ARITY ∪ WARMUP_ARITY).
+WARMUP_ARITY = {"warmup_start": 2, "warmup_end": 2}
 # Registered abort reason names (§14-2 "중단 사유 → 부류 표"; == n2_probe_reduce.ABORT_REASONS keys, pinned by test).
 REGISTERED_REASONS = ("server_down", "http_connection_error", "cell_timeout", "coload_payload_invalid",
                       "stream_cancel_failed", "runner_stop", "client_exception", "wiring_check_failed",
@@ -74,10 +78,11 @@ class MarkWriter:
 
     # -- low level ------------------------------------------------------------------------------------------
     def write(self, tag, *fields):
-        if tag not in ARITY:
+        arity = ARITY.get(tag, WARMUP_ARITY.get(tag))
+        if arity is None:
             raise MarkError(f"unregistered mark tag {tag!r}")
-        if len(fields) != ARITY[tag]:
-            raise MarkError(f"mark {tag} needs {ARITY[tag]} fields, got {len(fields)}")
+        if len(fields) != arity:
+            raise MarkError(f"mark {tag} needs {arity} fields, got {len(fields)}")
         parts = [str(f) for f in fields]
         if any((not p) or any(ch.isspace() for ch in p) for p in parts):
             raise MarkError(f"mark {tag} field with whitespace or empty: {parts}")
@@ -134,12 +139,23 @@ class MarkWriter:
             raise MarkError(f"boot_abort reason {reason!r} is neither registered nor a declared unregistered name")
         return self.write("boot_abort", reason, _num(self.now() if t is None else t))
 
+    def warmup_start(self, boot_id, t=None):
+        return self.write("warmup_start", boot_id, _num(self.now() if t is None else t))
+
+    def warmup_end(self, boot_id, t=None):
+        return self.write("warmup_end", boot_id, _num(self.now() if t is None else t))
+
     # -- protocols ----------------------------------------------------------------------------------------
     def cell(self, cell_id, d, b, c, classify):
         return _CellScope(self, cell_id, d, b, c, classify)
 
     def boot(self, plan, classify):
         return _BootScope(self, plan, classify)
+
+    def warmup(self, boot_id):
+        """§14-2 G-3: `warmup_start` before, `warmup_end` ALWAYS (finally) after the per-boot warm-up, so the
+        interval is paired even when the warm-up raises (an unpaired mark is WARMUP_UNPAIRED in the reducer)."""
+        return _WarmupScope(self, boot_id)
 
 
 class CellAborted(Exception):
@@ -198,6 +214,22 @@ class Classified(Exception):
     def __init__(self, reason, cause):
         super().__init__(f"{reason} ({type(cause).__name__}: {cause})")
         self.reason, self.cause = reason, cause
+
+
+class _WarmupScope:
+    def __init__(self, mw, boot_id):
+        self.mw, self.boot_id = mw, boot_id
+        self.t0 = self.t1 = None
+
+    def __enter__(self):
+        self.t0 = self.mw.now()
+        self.mw.warmup_start(self.boot_id, self.t0)
+        return self
+
+    def __exit__(self, et, ev, tb):
+        self.t1 = self.mw.now()
+        self.mw.warmup_end(self.boot_id, self.t1)
+        return False
 
 
 class _BootScope:
