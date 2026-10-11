@@ -1,26 +1,32 @@
-# N2(3-a) REGISTRATION — RULE SEAL (2026-10-09)
-# basis commit: c54d5c5 (rev16). seal verdict: VERDICT_n2_3a_rev16_seal_2026-10-09.md = 규칙 봉인 가능 (GO-with-caveats, N2C-75).
-# harness seal: NOT YET (H14-1, H15-3/4/5, H16-1, warm-up marks, C1 pin) — dry-run requires both seals (§18-2-c).
+# N2(3-a) REGISTRATION — RULE SEAL (rev17 update 2026-10-11; first sealed rev16 2026-10-09 at fcc0b9e)
+# basis: rev17 (§18-2-c rule reopen #1). verdicts: VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md (GO-with-caveats, R17-1..3)
+#        + VERDICT_n2_3a_rev17_redelta_2026-10-11.md (GO-with-caveats, R17-4/5, 死因 0). PREREG audited bytes 31150489… + R17-4/R17-5/N2C-80·81 only.
+# harness seal: NOT YET — two-stage (scope PROFILE / scope EA, §18-2 R17-2). PROFILE pending H17-7 (n2_plan constants), H17-8, harness ledgers rerun, harness delta audit.
+#               dry-run requires rule seal + harness seal (scope PROFILE) built on THIS rule digest.
 
 ## RULE SEAL FILES (sha256)
-f030a9052df7e19bd9600195ee53b168b703010f21236d8416f88da660ae8b05  PREREG_N2_3A_2026-10-07.md
+62fbfff912cf43db7c5ac548018b95c2cf5462890a9311facb947ca204fbf549  PREREG_N2_3A_2026-10-07.md
 1ee3338dd1f2be7eceaa5e514510199a9d5ac25176b41c5edad27ae205ab0c60  n2_feasibility.py
 8ef0c8cc6b0ba273ab684a8e297441598ffd70453138ee1f10713a8948d4282d  n2_probe_reduce.py
 e7d743c85e6adb007aa940342a3188cdb35568b2135ecd678f3ee6e4ae3087e7  N2_REGISTERED.json
 331c7b0ff6efaa0b7d4cc2f5f92e30597455bbb068d165cddb93930c4d786da6  test_n2_feasibility.py
-7f35d244b47d004a23058269d52dc14c45a8c0a54dadd0bf4556ab3bd476d06a  test_n2_probe_reduce.py
-2c502d0c5602cfc4867a7c08ff3a989db061e8d2128f99fa82e44282c664af72  n2_mutants.py
+a796980c71604d8b7ef94610c2d007d11c6c05e9c3dc899373b894573f2ca171  test_n2_probe_reduce.py
+ffb4d6f38a50c754fa89525e78193cd9352c8dfc8c9873864cfb5e9d5db6fa8d  n2_mutants.py
 
-## RULE SEAL DIGEST (sha256 of the list above)
-fbb13b15fc63e595e7588eac64fcde71e1dd98d08e96595d46f88ad6b0889512
+## RULE SEAL DIGEST (sha256 of the list above; `sha256sum <7 files in this order> | sha256sum` inside n2_static_grid)
+fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069
 
 ## EXTERNAL DEPENDENCIES (§18-2-b)
 n3_capacity.sh sha256 b20f71e131364296d5bdcef659a5fe23d3317f43b4665e2f0cab7c7b3a218b4e
-N3 r3 manifest bec2cba5… (626 files), N3 r4 manifest b76d3fae… (695 files) — definition in PREREG §18-2-b; re-verified by seal audit
+N3 r3 manifest bec2cba5… (626 files; valid input = n3b_ flat dir only, R17-3), N3 r4 manifest b76d3fae… (695 files) — definition in PREREG §18-2-b
+config pdmux_n3_A_agn.yml 01675b2d…, analyze.py 1be49511…, profile.py d7b6a807… — PREREG §18-2-b is the source (rev17)
 
-## CORE MUTANT LEDGER PROVENANCE (S-2)
-ledger: scratchpad r16/mut_core.txt finished 2026-10-09 16:49:50; CTRL OK, 192 rows, 183 killed / 9 equivalent, 0 unexpected
-rule code mtimes (all before ledger run): n2_feasibility.py 04:35, test_n2_feasibility.py 04:51, test_n2_probe_reduce.py 15:13, n2_mutants.py 15:14, n2_probe_reduce.py 15:14 — unchanged through commit c54d5c5 (16:57); sha256 as listed above (reducer 8ef0c8cc…, mutants 2c502d0c…)
+## CORE MUTANT LEDGER PROVENANCE (S-2 / R17-3)
+ledger: scratchpad r17/mut_core.txt, `n2_mutants.py --set core ../n3_capacity/n3b_pdmux-n3-capacity-38ed3f4-20261006092813`, start 2026-10-11 18:03:10 KST, end 19:34:06;
+CTRL OK (skipped=1 exactly), 194 rows: J 85 (77 killed / 8 equivalent), T 12 (12 killed), S 97 (96 killed / 1 equivalent); J28·J29 killed; 0 unexpected / TIMEOUT / BROKEN / .pyc
+input mtimes: test_n2_probe_reduce.py & n2_mutants.py 15:41:17 (before start); calculator & reducer unchanged since rev16 seal. Rule tests 143/143, skip 0 (in place).
 
 ## HISTORY (not seal bytes)
-VERDICT_n2_3a_rev16_seal_2026-10-09.md — seal audit verdict (history)
+rev16 rule seal (fcc0b9e, 2026-10-09): digest fbb13b15fc63e595e7588eac64fcde71e1dd98d08e96595d46f88ad6b0889512
+  PREREG f030a905…, test_n2_probe_reduce 7f35d244…, n2_mutants 2c502d0c… (others as above); core ledger r16 192 rows 183 killed / 9 equivalent
+VERDICT_n2_3a_rev16_seal_2026-10-09.md · VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md · VERDICT_n2_3a_rev17_redelta_2026-10-11.md — audit verdicts (history)

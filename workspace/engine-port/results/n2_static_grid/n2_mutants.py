@@ -1,4 +1,4 @@
-"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev16 ((A') fixed K: judgment-path group J + theta-provenance group T + smoke group S; R8-5, R9-3, R9-8, R10-4, R11-6, G-6/8/9/15, harness H01-H32; N2C-47 issue: every registered mutant
+"""N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev17 ((A') fixed K: judgment-path group J + theta-provenance group T + smoke group S; R8-5, R9-3, R9-8, R10-4, R11-6, G-6/8/9/15, harness H01-H32; N2C-47 issue: every registered mutant
 must be re-runnable by an auditor).
 
 Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_mutants.py [--set core|harness|all] [N3_RAW_DIR] [IDs...]
@@ -212,6 +212,9 @@ MUTANTS = [
     ("J25", 'E-alpha A1 ignores a non-co span after the trigger (fail-open, §7-2 (c) R4-4)', "kill", [(RD, 'alone_status(seg, w, True, pre_trigger_incomplete=non_co_after)', 'alone_status(seg, w, True)')]),
     ("J26", '§7-2 (b) S-per-weighted 0.95 check dropped', "kill", [(RD, '    elif _pe_time(bs_eq, lambda e: e["prefill_in_flight"] and _pair(e) == pi_coloc) < PE_COLOC_MIN:', '    elif False:')]),
     ("J27", 'PE-time weight attributed to the successor iteration', "kill", [(RD, '        if pred(e):\n            num += wgt', '        if pred(n):\n            num += wgt')]),
+    # rev17 H16-1 (rev16 seal audit AU1 / AU3, N2C-75)
+    ("J28", 'PE-time with zero weight returns 1.0 (fail-open, audit AU1)', "kill", [(RD, "    return num / den if den > 0 else 0.0", "    return num / den if den > 0 else 1.0")]),
+    ("J29", '§7-1 (c) window endpoints excluded (audit AU3)', "kill", [(RD, "        n_pf = sum(1 for t in span_ts if lo_t <= t <= hi_t)", "        n_pf = sum(1 for t in span_ts if lo_t < t < hi_t)")]),
     # rev16 H14-3 (smoke: warm-up orphan exemption)
     ("W01", 'orphan co-type span exempt without a warm-up interval', "kill", [(RD, '                if n_in == 0 and any(a <= e["timestamp_monotonic_s"] <= b for a, b in warm):', '                if n_in == 0:')]),
     ("W02", 'warm-up exemption removed', "kill", [(RD, '                if n_in == 0 and any(a <= e["timestamp_monotonic_s"] <= b for a, b in warm):', '                if False:')]),
@@ -247,7 +250,7 @@ JUDGMENT_IDS = frozenset({"R01", "R02", "R03", "R04", "R06", "R08", "R09", "R10"
                           "B06", "B16", "B18", "B19", "C14", "M03", "M04", "X05", "X06", "X07", "X08", "X10", "X11", "X14",
                           "X16", "B09", "B11", "M05", "N13", "Y04", "Y10", "Y11", "Y12",
                           "Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q10", "Q11", "M13", "M14"}
-                         | {f"J{k:02d}" for k in range(1, 28)})
+                         | {f"J{k:02d}" for k in range(1, 30)})
 # rev15 (R14-9): theta_rho PROVENANCE group -- theta sample composition of the shared span-pairing implementation
 # (reproduces the registered theta_rho source); theta_rho itself is a hard-coded constant, so these bind the
 # reproduction path, not the judgment path. A12 is a smoke-gate check (S group).

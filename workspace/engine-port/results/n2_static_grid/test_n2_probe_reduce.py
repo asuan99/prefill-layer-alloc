@@ -540,6 +540,20 @@ class TestGeneralizedWindows(unittest.TestCase):
             self.assertIn("non-co span", win["detail"]["W"])
         self.assertEqual(self._cw(non_co_after=False)["status"]["W"], "VALID")
 
+    # ---- H16-1 (rev16 seal audit): AU1 / AU3 boundary tests (N2C-75)
+    def test_pe_time_zero_weight_is_fail_closed(self):            # kills AU1 (zero weight -> 1.0)
+        w = [dict(iter_seq=q, t_launch=q * 0.02, t_sync=q * 0.02 + 0.0001, prefill_sms=64, decode_sms=44)
+             for q in range(0, 256, 2)]                           # 128 iterations, no iter_seq-consecutive pair
+        self.assertEqual(r._pe(w, (64, 44)), 1.0)                 # PE-iter alone would pass
+        self.assertEqual(r._pe_time(w, lambda e: r._pair(e) == (64, 44)), 0.0)
+
+    def test_alone_prefill_at_window_endpoints(self):              # kills AU3 (endpoints excluded)
+        recs, _ = raw_cell(ealpha=False)
+        w = r.cell_windows(recs, {}, self.CELL, r.PAIR[44], coload=False)["W"]
+        for t in (w[0]["t_launch"], w[-1]["t_sync"]):              # exactly on the first t_launch / last t_sync
+            win = r.cell_windows(self._inject(recs, t), {}, self.CELL, r.PAIR[44], coload=False)
+            self.assertEqual(win["status"]["W"], "D_UNREALIZED", t)
+
     def test_coloc_s_per_weighted_095(self):                       # §7-2 (b) S-per weighted; kills J26
         win = self._cw(leaks_mid=5, leak_ms=500.0)                 # 200/205 = 0.976 by iterations, ~0.74 by S-per
         self.assertEqual(win["status"]["C"], "COLOC_UNREALIZED")
