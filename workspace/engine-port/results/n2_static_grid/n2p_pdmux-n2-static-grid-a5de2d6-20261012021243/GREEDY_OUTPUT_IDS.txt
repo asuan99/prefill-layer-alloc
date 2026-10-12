@@ -1,0 +1,5 @@
+r1_ON44 outputs=6 output_ids_absent_or_empty=0
+r1_ON24 outputs=6 output_ids_absent_or_empty=0
+r1_ON16 outputs=6 output_ids_absent_or_empty=0
+r1_OFF16 outputs=6 output_ids_absent_or_empty=0
+r1_ON34 outputs=6 output_ids_absent_or_empty=0

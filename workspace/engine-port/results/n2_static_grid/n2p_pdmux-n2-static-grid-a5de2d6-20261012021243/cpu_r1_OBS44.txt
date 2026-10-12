@@ -1,0 +1,48 @@
+# before r1_OBS44-b1-c2048 mono=4138098.940715486
+usage_usec 653721735
+user_usec 588361401
+system_usec 65360334
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 4126
+nr_throttled 115
+throttled_usec 398657753
+nr_bursts 0
+burst_usec 0
+
+# after r1_OBS44-b1-c2048 mono=4138103.64886348
+usage_usec 658846081
+user_usec 593243859
+system_usec 65602221
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 4173
+nr_throttled 115
+throttled_usec 398657753
+nr_bursts 0
+burst_usec 0
+
+# before r1_OBS44-b32-c2048 mono=4138103.649676209
+usage_usec 658848747
+user_usec 593246260
+system_usec 65602487
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 4173
+nr_throttled 115
+throttled_usec 398657753
+nr_bursts 0
+burst_usec 0
+
+# after r1_OBS44-b32-c2048 mono=4138143.237522709
+usage_usec 706402666
+user_usec 638568945
+system_usec 67833720
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 4569
+nr_throttled 115
+throttled_usec 398657753
+nr_bursts 0
+burst_usec 0
+

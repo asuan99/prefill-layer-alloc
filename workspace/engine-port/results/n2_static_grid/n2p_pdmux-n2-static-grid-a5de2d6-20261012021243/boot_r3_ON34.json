@@ -1,0 +1,71 @@
+{
+ "abort_class": null,
+ "aborted": null,
+ "capture_bs": [
+  1,
+  2,
+  4,
+  8,
+  12,
+  16,
+  24,
+  32,
+  40,
+  48
+ ],
+ "cells_done": [
+  "r3_ON34-b48-c512",
+  "r3_ON34-b48-c2048",
+  "r3_ON34-b48-c8192",
+  "r3_ON34-b32-c512",
+  "r3_ON34-b32-c2048",
+  "r3_ON34-b32-c8192",
+  "r3_ON34-b8-c512",
+  "r3_ON34-b8-c2048",
+  "r3_ON34-b8-c8192",
+  "r3_ON34-b1-c512",
+  "r3_ON34-b1-c2048",
+  "r3_ON34-b1-c8192"
+ ],
+ "cg_canary": {
+  "decode_lines": 11,
+  "not_cuda_graph_true": 0,
+  "ok": true,
+  "wall_hi": 1791779407,
+  "wall_lo": 1791779394
+ },
+ "job_abort": null,
+ "n_planned": 12,
+ "name": "r3_ON34",
+ "p3": "PASS mamba=48 tokens_min=2721290 tokens_max=2721290 rel=0.000e+00 tol=0.0001 n_boots=18",
+ "server_log": {
+  "banners": [
+   48,
+   2721290
+  ],
+  "decode_lines": 293,
+  "r7": false
+ },
+ "t_admit_mono": 4145846.961473648,
+ "t_health_mono": 4145898.046023928,
+ "t_stop_mono": 4146372.634232811,
+ "tz_gmtoff_s": 0,
+ "tz_name": "UTC",
+ "unit": {
+  "D": 34,
+  "alone_D": 34,
+  "cost_key": "ON34",
+  "fixed_dsm": 34,
+  "greedy": false,
+  "job": "PROFILE",
+  "kind": "ON",
+  "name": "r3_ON34",
+  "phase_events": true,
+  "round": 3,
+  "sticky": true
+ },
+ "wiring": {
+  "green_problems": [],
+  "log_problems": []
+ }
+}

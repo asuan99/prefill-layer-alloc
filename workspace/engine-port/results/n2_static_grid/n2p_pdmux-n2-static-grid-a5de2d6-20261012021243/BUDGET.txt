@@ -1,0 +1,4 @@
+column=PROFILE_b cap_s=36700 (cell section, from its start; NOT a billing cap; tail unbounded)
+section_t0_epoch=1791771464 deadline_epoch=1791808164
+start_utc=2026-10-12T02:13:01Z
+runner_rc=0 remaining_s=23325

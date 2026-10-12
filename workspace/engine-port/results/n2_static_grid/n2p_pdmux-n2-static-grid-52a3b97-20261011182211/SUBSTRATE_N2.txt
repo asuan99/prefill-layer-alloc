@@ -1,0 +1,13 @@
+nproc=96
+cgroup_cpu_max=1100000 100000
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+perf_counter_clock=clock_gettime(CLOCK_MONOTONIC)
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+monotonic_clock=clock_gettime(CLOCK_MONOTONIC)
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+tz=UTC gmtoff=0
+nvidia_smi=NVIDIA A100-SXM4-80GB, GPU-39e4d2d0-60e9-d53d-0b6e-ba990115c072, 580.105.08, 1410 MHz, 400.00 W
+hf_refs_main=dc0661c829b14e5b9246c05cfa89094a0875e052

@@ -1,0 +1,288 @@
+# before r3_OFF16-b48-c512 mono=4146435.105959951
+usage_usec 11706341274
+user_usec 10947196120
+system_usec 759145153
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 87488
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b48-c512 mono=4146446.228276475
+usage_usec 11719986666
+user_usec 10960133198
+system_usec 759853468
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 87599
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b48-c2048 mono=4146446.238920654
+usage_usec 11720002024
+user_usec 10960148555
+system_usec 759853468
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 87599
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b48-c2048 mono=4146487.860596697
+usage_usec 11776689487
+user_usec 11014140633
+system_usec 762548854
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 88015
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b48-c8192 mono=4146487.900287209
+usage_usec 11776768785
+user_usec 11014209974
+system_usec 762558811
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 88016
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b48-c8192 mono=4146636.95038717
+usage_usec 12035040683
+user_usec 11261905540
+system_usec 773135143
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 89506
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b32-c512 mono=4146637.112642915
+usage_usec 12035351144
+user_usec 11262215338
+system_usec 773135805
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 89508
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b32-c512 mono=4146644.361579672
+usage_usec 12044093688
+user_usec 11270511658
+system_usec 773582029
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 89580
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b32-c2048 mono=4146644.366031661
+usage_usec 12044098722
+user_usec 11270516370
+system_usec 773582352
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 89580
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b32-c2048 mono=4146676.603062735
+usage_usec 12086321365
+user_usec 11310644630
+system_usec 775676735
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 89903
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b32-c8192 mono=4146676.629441915
+usage_usec 12086366844
+user_usec 11310680396
+system_usec 775686448
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 89903
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b32-c8192 mono=4146797.918178952
+usage_usec 12280186158
+user_usec 11496244653
+system_usec 783941505
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91116
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b8-c512 mono=4146798.007435747
+usage_usec 12280360003
+user_usec 11496399525
+system_usec 783960477
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91117
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b8-c512 mono=4146802.570189117
+usage_usec 12285622151
+user_usec 11501370264
+system_usec 784251886
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91162
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b8-c2048 mono=4146802.571436799
+usage_usec 12285622151
+user_usec 11501370264
+system_usec 784251886
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91162
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b8-c2048 mono=4146808.93139465
+usage_usec 12292903332
+user_usec 11508188818
+system_usec 784714514
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91226
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b8-c8192 mono=4146808.932624712
+usage_usec 12292903332
+user_usec 11508188818
+system_usec 784714514
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91226
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b8-c8192 mono=4146835.139583327
+usage_usec 12323472138
+user_usec 11537281550
+system_usec 786190587
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91488
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b1-c512 mono=4146835.14679371
+usage_usec 12323480684
+user_usec 11537290097
+system_usec 786190587
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91488
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b1-c512 mono=4146838.875477644
+usage_usec 12327611269
+user_usec 11541227578
+system_usec 786383690
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91525
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b1-c2048 mono=4146838.876027454
+usage_usec 12327611269
+user_usec 11541227578
+system_usec 786383690
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91525
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b1-c2048 mono=4146842.794357856
+usage_usec 12331997151
+user_usec 11545408648
+system_usec 786588502
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91565
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# before r3_OFF16-b1-c8192 mono=4146842.794902814
+usage_usec 12331997203
+user_usec 11545408697
+system_usec 786588506
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91565
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+
+# after r3_OFF16-b1-c8192 mono=4146847.346897766
+usage_usec 12337130832
+user_usec 11550161427
+system_usec 786969404
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 91610
+nr_throttled 275
+throttled_usec 1016458683
+nr_bursts 0
+burst_usec 0
+

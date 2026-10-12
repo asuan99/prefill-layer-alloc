@@ -1,0 +1,72 @@
+{
+ "abort_class": null,
+ "aborted": null,
+ "capture_bs": [
+  1,
+  2,
+  4,
+  8,
+  12,
+  16,
+  24,
+  32,
+  40,
+  48
+ ],
+ "cells_done": [
+  "r1_ON24-b1-c512",
+  "r1_ON24-b1-c2048",
+  "r1_ON24-b1-c8192",
+  "r1_ON24-b8-c512",
+  "r1_ON24-b8-c2048",
+  "r1_ON24-b8-c8192",
+  "r1_ON24-b32-c512",
+  "r1_ON24-b32-c2048",
+  "r1_ON24-b32-c8192",
+  "r1_ON24-b48-c512",
+  "r1_ON24-b48-c2048",
+  "r1_ON24-b48-c8192"
+ ],
+ "cg_canary": {
+  "decode_lines": 12,
+  "not_cuda_graph_true": 0,
+  "ok": true,
+  "wall_hi": 1791772746,
+  "wall_lo": 1791772729
+ },
+ "greedy_output_ids_absent": 0,
+ "job_abort": null,
+ "n_planned": 12,
+ "name": "r1_ON24",
+ "p3": "PASS mamba=48 tokens_min=2721290 tokens_max=2721290 rel=0.000e+00 tol=0.0001 n_boots=4",
+ "server_log": {
+  "banners": [
+   48,
+   2721290
+  ],
+  "decode_lines": 245,
+  "r7": false
+ },
+ "t_admit_mono": 4139182.204400683,
+ "t_health_mono": 4139233.333900323,
+ "t_stop_mono": 4139729.744354591,
+ "tz_gmtoff_s": 0,
+ "tz_name": "UTC",
+ "unit": {
+  "D": 24,
+  "alone_D": 24,
+  "cost_key": "ON24",
+  "fixed_dsm": 24,
+  "greedy": true,
+  "job": "PROFILE",
+  "kind": "ON",
+  "name": "r1_ON24",
+  "phase_events": true,
+  "round": 1,
+  "sticky": true
+ },
+ "wiring": {
+  "green_problems": [],
+  "log_problems": []
+ }
+}

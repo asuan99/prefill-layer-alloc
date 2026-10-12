@@ -1,0 +1,71 @@
+{
+ "abort_class": null,
+ "aborted": null,
+ "capture_bs": [
+  1,
+  2,
+  4,
+  8,
+  12,
+  16,
+  24,
+  32,
+  40,
+  48
+ ],
+ "cells_done": [
+  "r4_OFF44-b48-c8192",
+  "r4_OFF44-b48-c2048",
+  "r4_OFF44-b48-c512",
+  "r4_OFF44-b32-c8192",
+  "r4_OFF44-b32-c2048",
+  "r4_OFF44-b32-c512",
+  "r4_OFF44-b8-c8192",
+  "r4_OFF44-b8-c2048",
+  "r4_OFF44-b8-c512",
+  "r4_OFF44-b1-c8192",
+  "r4_OFF44-b1-c2048",
+  "r4_OFF44-b1-c512"
+ ],
+ "cg_canary": {
+  "decode_lines": 12,
+  "not_cuda_graph_true": 0,
+  "ok": true,
+  "wall_hi": 1791783755,
+  "wall_lo": 1791783746
+ },
+ "job_abort": null,
+ "n_planned": 12,
+ "name": "r4_OFF44",
+ "p3": "PASS mamba=48 tokens_min=2721290 tokens_max=2721290 rel=0.000e+00 tol=0.0001 n_boots=26",
+ "server_log": {
+  "banners": [
+   48,
+   2721290
+  ],
+  "decode_lines": 424,
+  "r7": false
+ },
+ "t_admit_mono": 4150204.804779535,
+ "t_health_mono": 4150250.880067327,
+ "t_stop_mono": 4150685.227902099,
+ "tz_gmtoff_s": 0,
+ "tz_name": "UTC",
+ "unit": {
+  "D": 44,
+  "alone_D": 108,
+  "cost_key": "OFF44",
+  "fixed_dsm": 44,
+  "greedy": false,
+  "job": "PROFILE",
+  "kind": "OFF",
+  "name": "r4_OFF44",
+  "phase_events": true,
+  "round": 4,
+  "sticky": false
+ },
+ "wiring": {
+  "green_problems": [],
+  "log_problems": []
+ }
+}

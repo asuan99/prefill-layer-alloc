@@ -1,0 +1,288 @@
+# before r4_ON44-b48-c8192 mono=4150750.639608389
+usage_usec 17343018620
+user_usec 16245295526
+system_usec 1097723093
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 130643
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b48-c8192 mono=4150921.998385863
+usage_usec 17578969860
+user_usec 16471424728
+system_usec 1107545131
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 132357
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b48-c2048 mono=4150922.098418794
+usage_usec 17579174939
+user_usec 16471599467
+system_usec 1107575472
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 132358
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b48-c2048 mono=4150974.19518013
+usage_usec 17642565142
+user_usec 16532081309
+system_usec 1110483833
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 132879
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b48-c512 mono=4150974.240195323
+usage_usec 17642654955
+user_usec 16532161758
+system_usec 1110493196
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 132879
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b48-c512 mono=4150990.075413116
+usage_usec 17661070515
+user_usec 16549748542
+system_usec 1111321972
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 133037
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b32-c8192 mono=4150990.08424293
+usage_usec 17661090027
+user_usec 16549768054
+system_usec 1111321972
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 133037
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b32-c8192 mono=4151120.934843516
+usage_usec 17840164276
+user_usec 16721505164
+system_usec 1118659111
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 134346
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b32-c2048 mono=4151120.99997357
+usage_usec 17840303116
+user_usec 16721644005
+system_usec 1118659111
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 134347
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b32-c2048 mono=4151160.888709139
+usage_usec 17888834615
+user_usec 16767829433
+system_usec 1121005181
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 134745
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b32-c512 mono=4151160.90947411
+usage_usec 17888866776
+user_usec 16767861461
+system_usec 1121005315
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 134746
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b32-c512 mono=4151170.930248806
+usage_usec 17900470085
+user_usec 16778879719
+system_usec 1121590365
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 134846
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b8-c8192 mono=4151170.934412158
+usage_usec 17900474061
+user_usec 16778883446
+system_usec 1121590614
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 134846
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b8-c8192 mono=4151200.615117975
+usage_usec 17934315054
+user_usec 16811148764
+system_usec 1123166290
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135143
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b8-c2048 mono=4151200.621109371
+usage_usec 17934324521
+user_usec 16811158230
+system_usec 1123166290
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135143
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b8-c2048 mono=4151208.522547324
+usage_usec 17943143065
+user_usec 16819493853
+system_usec 1123649212
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135222
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b8-c512 mono=4151208.523738055
+usage_usec 17943145659
+user_usec 16819496284
+system_usec 1123649375
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135222
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b8-c512 mono=4151214.240074879
+usage_usec 17949537017
+user_usec 16825563892
+system_usec 1123973125
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135279
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b1-c8192 mono=4151214.241323779
+usage_usec 17949537017
+user_usec 16825563892
+system_usec 1123973125
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135279
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b1-c8192 mono=4151219.658551109
+usage_usec 17955474914
+user_usec 16831188861
+system_usec 1124286053
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135333
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b1-c2048 mono=4151219.658905612
+usage_usec 17955474914
+user_usec 16831188861
+system_usec 1124286053
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135333
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b1-c2048 mono=4151224.380721659
+usage_usec 17960632621
+user_usec 16836107440
+system_usec 1124525181
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135380
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# before r4_ON44-b1-c512 mono=4151224.381078837
+usage_usec 17960632621
+user_usec 16836107440
+system_usec 1124525181
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135380
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+
+# after r4_ON44-b1-c512 mono=4151228.932282207
+usage_usec 17965610037
+user_usec 16840843863
+system_usec 1124766173
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 135426
+nr_throttled 348
+throttled_usec 1276650698
+nr_bursts 0
+burst_usec 0
+

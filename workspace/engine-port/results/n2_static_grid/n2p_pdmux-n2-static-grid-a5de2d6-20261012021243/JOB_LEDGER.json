@@ -1,0 +1,288 @@
+{
+ "cap_s": 36700.0,
+ "job": "PROFILE",
+ "job_abort": null,
+ "ledger": [
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 2,
+   "n_cells": 2,
+   "need_s": 359.3995185185185,
+   "remaining_s": 36697.85095783463,
+   "status": "ADMITTED",
+   "unit": "r1_OBS44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1384.5271300925926,
+   "remaining_s": 36520.74120943155,
+   "status": "ADMITTED",
+   "unit": "r1_ON44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1321.706436276455,
+   "remaining_s": 35973.29212497035,
+   "status": "ADMITTED",
+   "unit": "r1_OFF44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1290.8725873222334,
+   "remaining_s": 35486.78894840367,
+   "status": "ADMITTED",
+   "unit": "r1_ON24"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1278.8493616961891,
+   "remaining_s": 34938.22035837732,
+   "status": "ADMITTED",
+   "unit": "r1_ON16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1321.706436276455,
+   "remaining_s": 34301.2130983714,
+   "status": "ADMITTED",
+   "unit": "r1_OFF16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1324.8936902073501,
+   "remaining_s": 33825.9474912025,
+   "status": "ADMITTED",
+   "unit": "r1_ON34"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1324.8936902073501,
+   "remaining_s": 33296.073674603365,
+   "status": "ADMITTED",
+   "unit": "r2_ON34"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1321.706436276455,
+   "remaining_s": 32769.428330740426,
+   "status": "ADMITTED",
+   "unit": "r2_OFF16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1278.8493616961891,
+   "remaining_s": 32293.981484001502,
+   "status": "ADMITTED",
+   "unit": "r2_ON16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1290.8725873222334,
+   "remaining_s": 31662.36952299066,
+   "status": "ADMITTED",
+   "unit": "r2_ON24"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1321.706436276455,
+   "remaining_s": 31116.510519614443,
+   "status": "ADMITTED",
+   "unit": "r2_OFF44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1384.5271300925926,
+   "remaining_s": 30627.9928008453,
+   "status": "ADMITTED",
+   "unit": "r2_ON44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 2,
+   "n_cells": 2,
+   "need_s": 359.3995185185185,
+   "remaining_s": 30079.58676032955,
+   "status": "ADMITTED",
+   "unit": "r2_OBS44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 2,
+   "n_cells": 2,
+   "need_s": 359.3995185185185,
+   "remaining_s": 29967.588929445483,
+   "status": "ADMITTED",
+   "unit": "r3_OBS44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1384.5271300925926,
+   "remaining_s": 29856.351589258295,
+   "status": "ADMITTED",
+   "unit": "r3_ON44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1321.706436276455,
+   "remaining_s": 29308.691060803365,
+   "status": "ADMITTED",
+   "unit": "r3_OFF44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1324.8936902073501,
+   "remaining_s": 28822.031974977348,
+   "status": "ADMITTED",
+   "unit": "r3_ON34"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1321.706436276455,
+   "remaining_s": 28295.34375620354,
+   "status": "ADMITTED",
+   "unit": "r3_OFF16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1278.8493616961891,
+   "remaining_s": 27818.96305672545,
+   "status": "ADMITTED",
+   "unit": "r3_ON16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1290.8725873222334,
+   "remaining_s": 27186.653571959585,
+   "status": "ADMITTED",
+   "unit": "r3_ON24"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1290.8725873222334,
+   "remaining_s": 26639.783483725507,
+   "status": "ADMITTED",
+   "unit": "r4_ON24"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1324.8936902073501,
+   "remaining_s": 26093.345461313613,
+   "status": "ADMITTED",
+   "unit": "r4_ON34"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1278.8493616961891,
+   "remaining_s": 25565.07273773942,
+   "status": "ADMITTED",
+   "unit": "r4_ON16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1321.706436276455,
+   "remaining_s": 24934.545416058507,
+   "status": "ADMITTED",
+   "unit": "r4_OFF16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1321.706436276455,
+   "remaining_s": 24464.188637782354,
+   "status": "ADMITTED",
+   "unit": "r4_OFF44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 12,
+   "n_cells": 12,
+   "need_s": 1384.5271300925926,
+   "remaining_s": 23982.74883682467,
+   "status": "ADMITTED",
+   "unit": "r4_ON44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 2,
+   "n_cells": 2,
+   "need_s": 359.3995185185185,
+   "remaining_s": 23436.84317064332,
+   "status": "ADMITTED",
+   "unit": "r4_OBS44"
+  }
+ ],
+ "stopped": null
+}

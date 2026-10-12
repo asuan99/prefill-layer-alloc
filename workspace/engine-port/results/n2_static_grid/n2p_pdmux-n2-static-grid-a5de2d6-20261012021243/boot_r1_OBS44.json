@@ -1,0 +1,61 @@
+{
+ "abort_class": null,
+ "aborted": null,
+ "capture_bs": [
+  1,
+  2,
+  4,
+  8,
+  12,
+  16,
+  24,
+  32,
+  40,
+  48
+ ],
+ "cells_done": [
+  "r1_OBS44-b1-c2048",
+  "r1_OBS44-b32-c2048"
+ ],
+ "cg_canary": {
+  "decode_lines": 11,
+  "not_cuda_graph_true": 0,
+  "ok": true,
+  "wall_hi": 1791771592,
+  "wall_lo": 1791771581
+ },
+ "job_abort": null,
+ "n_planned": 2,
+ "name": "r1_OBS44",
+ "p3": "PASS mamba=48 tokens_min=2721290 tokens_max=2721290 rel=0.000e+00 tol=0.0001 n_boots=1",
+ "server_log": {
+  "banners": [
+   48,
+   2721290
+  ],
+  "decode_lines": 49,
+  "r7": false
+ },
+ "t_admit_mono": 4137971.261612515,
+ "t_health_mono": 4138085.392909729,
+ "t_stop_mono": 4138147.24008552,
+ "tz_gmtoff_s": 0,
+ "tz_name": "UTC",
+ "unit": {
+  "D": 44,
+  "alone_D": 44,
+  "cost_key": "OBS44",
+  "fixed_dsm": 44,
+  "greedy": false,
+  "job": "PROFILE",
+  "kind": "OBS",
+  "name": "r1_OBS44",
+  "phase_events": false,
+  "round": 1,
+  "sticky": true
+ },
+ "wiring": {
+  "green_problems": [],
+  "log_problems": []
+ }
+}

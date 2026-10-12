@@ -1,0 +1,22 @@
+{
+  "gpu": {
+    "name": "NVIDIA A100-SXM4-80GB",
+    "uuid": "GPU-ac22349b-7275-4e9c-8b70-42f6527300b4",
+    "driver_version": "580.105.08",
+    "compute_cap": "8.0",
+    "memory_total": "81920 MiB",
+    "clocks_max_sm": "1410 MHz",
+    "power_limit": "400.00 W",
+    "mig_mode": "Disabled"
+  },
+  "hostname": "job-25r6ie85sicq-9j2n9",
+  "commit": "a5de2d62823dfdf25071c0faaedaceebe984e508",
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "spec": "resourcespec-a100x1",
+  "job_name": "pdmux-n2-static-grid-a5de2d6-20261012021243",
+  "campaign": "n2_static_grid",
+  "target": "workspace/engine-port/results/n2_static_grid/n2_capacity.sh",
+  "array_spec": "",
+  "image_pip_freeze.txt_sha256": "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324",
+  "image_python_torch.txt_sha256": "25072b0933afd254cc50b78a7aa43e34e43af33034036709169f08788d8686d3"
+}

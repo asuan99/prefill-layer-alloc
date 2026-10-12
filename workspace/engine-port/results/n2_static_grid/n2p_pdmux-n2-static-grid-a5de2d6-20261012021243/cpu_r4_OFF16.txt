@@ -1,0 +1,288 @@
+# before r4_OFF16-b48-c8192 mono=4149795.954195798
+usage_usec 15913066741
+user_usec 14900995038
+system_usec 1012071703
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 121096
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b48-c8192 mono=4149941.982224289
+usage_usec 16166667055
+user_usec 15144489465
+system_usec 1022177589
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 122556
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b48-c2048 mono=4149942.11152667
+usage_usec 16166933549
+user_usec 15144736177
+system_usec 1022197371
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 122558
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b48-c2048 mono=4149982.895447387
+usage_usec 16221577177
+user_usec 15196702725
+system_usec 1024874452
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 122966
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b48-c512 mono=4149982.935497315
+usage_usec 16221651010
+user_usec 15196776558
+system_usec 1024874452
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 122966
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b48-c512 mono=4149993.956385805
+usage_usec 16234975703
+user_usec 15209422162
+system_usec 1025553540
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 123076
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b32-c8192 mono=4149993.965326301
+usage_usec 16234995526
+user_usec 15209441985
+system_usec 1025553540
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 123076
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b32-c8192 mono=4150113.100712879
+usage_usec 16418729967
+user_usec 15385672553
+system_usec 1033057414
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124268
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b32-c2048 mono=4150113.184449646
+usage_usec 16418943374
+user_usec 15385806297
+system_usec 1033137076
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124268
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b32-c2048 mono=4150145.299985286
+usage_usec 16460887665
+user_usec 15425715206
+system_usec 1035172458
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124590
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b32-c512 mono=4150145.326912855
+usage_usec 16460934192
+user_usec 15425761325
+system_usec 1035172866
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124590
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b32-c512 mono=4150152.424246762
+usage_usec 16469369036
+user_usec 15433695262
+system_usec 1035673773
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124661
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b8-c8192 mono=4150152.428395851
+usage_usec 16469374509
+user_usec 15433700391
+system_usec 1035674117
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124661
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b8-c8192 mono=4150178.836787912
+usage_usec 16499837760
+user_usec 15462757050
+system_usec 1037080709
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124925
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b8-c2048 mono=4150178.846353184
+usage_usec 16499858799
+user_usec 15462778026
+system_usec 1037080773
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124925
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b8-c2048 mono=4150184.943163359
+usage_usec 16506742195
+user_usec 15469303812
+system_usec 1037438382
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124986
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b8-c512 mono=4150184.944456698
+usage_usec 16506744650
+user_usec 15469306112
+system_usec 1037438537
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 124986
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b8-c512 mono=4150189.470917223
+usage_usec 16511860980
+user_usec 15474194669
+system_usec 1037666310
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 125031
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b1-c8192 mono=4150189.472236942
+usage_usec 16511862848
+user_usec 15474196420
+system_usec 1037666428
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 125031
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b1-c8192 mono=4150194.041846924
+usage_usec 16516928522
+user_usec 15478940469
+system_usec 1037988053
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 125077
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b1-c2048 mono=4150194.04221104
+usage_usec 16516928522
+user_usec 15478940469
+system_usec 1037988053
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 125077
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b1-c2048 mono=4150197.92804707
+usage_usec 16521217646
+user_usec 15483017831
+system_usec 1038199815
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 125116
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# before r4_OFF16-b1-c512 mono=4150197.928393976
+usage_usec 16521217646
+user_usec 15483017831
+system_usec 1038199815
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 125116
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
+# after r4_OFF16-b1-c512 mono=4150201.620706416
+usage_usec 16525288535
+user_usec 15486904980
+system_usec 1038383555
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 125153
+nr_throttled 328
+throttled_usec 1210670541
+nr_bursts 0
+burst_usec 0
+
