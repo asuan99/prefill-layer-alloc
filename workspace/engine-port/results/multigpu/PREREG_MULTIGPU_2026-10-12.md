@@ -1,4 +1,4 @@
-# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev5)
+# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev6)
 
 > **지위**: 설계 문서 `reports/multigpu_scaling_design_2026-10-12.md`(rev2)의 M2.5. 감사 판정
 > `reports/audit/2026-10-12_multigpu_design/AUDIT_multigpu_design_rev1_2026-10-12.md`(`MIXED`)의 MG-0이 요구하는 **결정 규칙 등록**이다.
@@ -9,7 +9,8 @@
 > **rev4**: rev3 델타 감사(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md`, `MIXED`: M2g `GO-with-caveats` 유지, M3 `NO-GO` — D7 fused prefill 우선으로
 > shape B Decode 줄 고갈, D8 NVML memory.used 폴백이 PD-mux 캡처 메모리를 불일치로 판정)를 반영했다. 대조표 §11. MGP-26…MGP-32 추가 승계.
 > **rev5**(사용자 결정 2026-10-12): MGP-29(arm 간 스케줄 노브 비대칭) 대응으로 대칭 대조군 `fused_sym` arm을 추가하고 1차 estimand를 G\_sym = agnostic/fused\_sym으로 바꿨다. 대조표 §12.
-> **규칙층 델타 감사 대기(범위: rev4의 D7·D8·Q\_c 반전 시험 + rev5 arm 추가·estimand 변경).** `GO`/`GO-with-caveats` 전에는 M2g·M3 Job을 `--submit`하지 않는다(교훈 34). 하네스(plan·label 스크립트)는
+> **rev4+rev5 델타 감사**(`VERDICT_prereg_rules_rev5_delta_2026-10-12.md`): **M2g·M3 모두 `GO-with-caveats`**(死因 0). MGP-0의 'M3 `NO-GO`'는 해제됐다.
+> 이 등급은 규칙 실행 허가이지 'M3가 PD-mux 스케일링을 판정할 수 있다'는 뜻이 아니다. **rev6**은 그 판정서 §8-1의 경량 반영(표 행·caveat·고정 조건·예산)이며, 하네스 H1–H10 작성과 하네스층 감사가 다음 gate다. 제출은 사용자 승인. `GO`/`GO-with-caveats` 전에는 M2g·M3 Job을 `--submit`하지 않는다(교훈 34). 하네스(plan·label 스크립트)는
 > 규칙 감사 뒤에 작성하고 별도로 하네스층 감사를 받는다.
 > 작성 시점: GPU 지출 = M1 프로브 1건뿐, 서빙 측정 0, 성능 판정 0, Claim 변경 0.
 > 브랜치 `multigpu-scaling`(worktree `prefill-layer-alloc-multigpu`), 기준 커밋 `c0e200d`. 이 브랜치의 엔진 트리는 N2/N3/E2 봉인 digest와
@@ -39,6 +40,9 @@ arm별 포화 처리율 λ\*를 재어 **1차 estimand G(N, mode) = λ\*\_agnost
 | 통신 env | `NCCL_*`, `CUDA_DEVICE_MAX_CONNECTIONS`, `SGLANG_CUSTOM_ALLREDUCE_ALGO` = **unset**(기록만). `SGLANG_USE_JIT_ALL_REDUCE` unset 강제(설정되면 runner rc 3) | C-10. `comm_env.json`에 셀마다 기록 |
 | 클라이언트 | `trace_loadgen.py --connector-limit 0`(연결 상한 해제) | M1.5 로컬: 기본 상한 100에서 32 req/s부터 클라이언트 큐잉 |
 | GPU 부분집합(주) | N=1 `{0}`, N=2 `{0,1}`, N=4 `{0,1,2,3}`, N=8 `{0..7}`. 부분집합은 **순차** 실행(동시 실행 금지) | C-1. NUMA 교차는 N=8에만 생긴다 → §4-6 민감도 블록 |
+| attention backend | `flashinfer`(`PDMUX_ATTENTION_BACKEND`, 셀마다 기록). runner 기본 triton은 NemotronH assert로 거부된다(`server_args.py:1959-1962`) | H4 |
+| 클라이언트 timeout·fd | `trace_loadgen` `sock_read` = 600 s 유지(MGP-35 문턱의 전제), 클라이언트 `RLIMIT_NOFILE` soft ≥ 8192로 상향하고 `ulimit -n`을 셀마다 기록 | H5, H6 |
+| piecewise CUDA graph | 엔진 기본값 유지(별도 인자 없음). 셀마다 `disable_piecewise_cuda_graph`·`piecewise_cuda_graph_tokens`·캡처 로그 기록 — fused(8192)만 piecewise 캡처 경로에 들어감(MGP-36) | H8 |
 | 서버 로그 | `--decode-log-interval 40`(SGLang 기본값을 명시 등록), `SGLANG_LOG_MS=1`(밀리초 타임스탬프). 판정에는 `Decode batch` 줄만 쓴다(§4-3) | D3 처방 |
 | 기록 | GPU별 clk·throttle(job_entry `clk.csv` index 열), `cpu.stat` 셀 전후, `cell_meta.json`(max_total_tokens·mamba cache·effective cap), realized split telemetry(rank 접미사) | C-1, C-4, C-5 |
 
@@ -61,18 +65,19 @@ arm별 포화 처리율 λ\*를 재어 **1차 estimand G(N, mode) = λ\*\_agnost
 
 | 게이트 | 내용 | PASS 조건(등록) |
 |---|---|---|
-| **G0 boot·거부** | (i) TP∈{2,4,8}, DP∈{2,4,8} × arm{fused, fused\_sym, agnostic, d44} 서버가 기동하고 `/health` 응답. (ii) TP=2에서 금지 env **5종을 하나씩**: `PDMUX_R2_POLICY=generic`, `PDMUX_R2_POLICY=hybrid`(+ 더미 profile), `PDMUX_SLO_SCHED=1`, `PDMUX_LA_COORD=1`, `PDMUX_TRUE_DUAL_WORKER=1`. (iii) TP=2 + 자동 격자 config | (i) 기동 제한시간 1800 s 안에 health. (ii) 5종 모두 서버 로그에 `multigpu_guard` 등록 에러 문자열 + 프로세스 비정상 종료. (iii) device assert 문자열 + 비정상 종료 |
+| **G0 boot·거부** | (i) TP∈{2,4,8}, DP∈{2,4,8} × arm{fused, fused\_sym, agnostic, d44} 서버가 기동하고 `/health` 응답. (ii) TP=2에서 금지 env **5종을 하나씩**: `PDMUX_R2_POLICY=generic`, `PDMUX_R2_POLICY=hybrid`(+ 더미 profile), `PDMUX_SLO_SCHED=1`, `PDMUX_LA_COORD=1`, `PDMUX_TRUE_DUAL_WORKER=1`. (iii) TP=2 + 자동 격자 config | (i) 기동 제한시간 1800 s 안에 health(runner 대기 상한을 1800 s로 맞춘다, H2; 그보다 짧은 대기에서 난 실패는 `NOT_TESTED`, MGP-23). (ii) 5종 모두 서버 로그에 `multigpu_guard` 등록 에러 문자열 + 프로세스 비정상 종료. (iii) device assert 문자열 + 비정상 종료 |
 | **G1 PD-mux OFF↔ON 출력** | 같은 (mode, N)에서 `fused`↔`agnostic`, `fused`↔`d44`. 등록 prompt 64개(r2_correctness_client S/O tier, seed 고정), greedy, max_new_tokens 128, 동시 요청 32 | **대조군 G1-ctl**(N=1 같은 비교)을 같은 Job에서 먼저 잰다. 지표 ① prompt별 첫 불일치 이전 일치 토큰 비율 m, ② 불일치 prompt 비율 q(m < 1인 prompt의 비율). PASS ⇔ m 중앙값 ≥ G1-ctl m 중앙값 − 0.05 **그리고** q ≤ G1-ctl q + 0.10 **그리고** 출력 길이 0·비정상 종료 0. 노출 비율(분할 group에 있던 decode step 비율, telemetry)을 병기한다(MGP-2). G1-ctl의 m 중앙값 < 0.5이면 G1은 `UNINFORMATIVE`(FAIL 아님, 정확성 문장 금지) |
 | **G2 TP=N↔TP=1 teacher-forced** | `fused` arm, 같은 64 prompt, TP=1 greedy 출력 열을 teacher-forced로 TP=N에 넣어 위치별 top-1 logprob 비교 | 바닥 = TP=1 동일 서버 2회 반복의 같은 지표. PASS ⇔ \|Δlogprob\| p99 ≤ max(4 × 바닥 p99, 0.05 nat) 그리고 top-1 불일치율 ≤ 2%. FAIL은 `TP_NUMERIC_DIVERGENT` 표기만 하고 제외하지 않는다(MGP-3) |
 | **G3 comm 역순 스트레스** | `m2g_comm_reverse_stress.py`: TP=N마다 두 pynccl comm(prefill/decode)을 짝·홀 rank가 반대 순서로 발행, plain stream과 green stream(16/92, 44/64) 각각 | 반복 R = 500/조합, watchdog 120 s. PASS ⇔ hang 0 **그리고** 정수 합 all-reduce 검산 오류 0 |
 | **G3b 서빙 스트레스** | TP=N × arm{agnostic, d44}, shape A, offered = 1.5 × (N × 2.99) req/s, 600 s | 완료 요청 > 0, 서버 생존, 마지막 60 s 안 토큰 진행 |
 | **G4 캡처·커널 식별** | stream group별 cudagraph 캡처 로그. 짧은 nsys 프로브(TP=2,8 × d44, 30 s)로 실제 all-reduce 커널 이름 | 캡처 성공 = PASS 조건. 커널 이름은 기술치 |
-| **G5 파티션** | (a) agnostic manual 등가표 ↔ 자동 격자 선택 함수의 등가성: **결정적 CPU 시험**(decode_bs 0…512 전수에서 두 경로의 `stream_idx`·`SM_COUNTS` 일치, 하네스 회귀 테스트). GPU에서는 N=1 auto vs manual의 선택 분포를 **기술치**로만 기록(MGP-5). (b) DP=N 복제본별 telemetry의 실현 `(p,d)`가 그 arm의 등록 표 안의 값인지. (c) arm 간 메모리 조건(MGP-12, P-D5): 같은 config 안 세 arm에 대해 `MEMORY_MISMATCH` ⇔ (i) mamba cache 슬롯 수 ≠ effective cap(정확 비교), 또는 (ii) `max_total_num_tokens` < effective cap × (ISL+OSL)(KV 구속: A 36,864·N, B 396,288·N 토큰 — TP는 엔진 인스턴스 cap 48N 기준, DP는 복제본 cap 48 기준), 또는 (iii) arm 간 `max_total_num_tokens` 상대차 > 1%. 그 외 차이는 기술치(MGP-18). 오염 검사(P-D8): (가) 각 boot 전 부분집합 GPU의 NVML `memory.used` < 1 GiB(빈 GPU 확인), (나) NVML `nvmlDeviceGetComputeRunningProcesses` **항목 수**가 GPU당 기대 프로세스 수와 같음(PID 네임스페이스 무관). 항목 수조차 0으로 숨겨지면 (가)만 쓴다. 어느 하나라도 어긋나면 `GPU_CONTAMINATED`(그 셀 판정 제외). arm 간 `memory.used` 비교는 **기술치**(boot 직후·셀 종료 시 기록)이며 `MEMORY_MISMATCH` 조건이 아니다 — PD-mux는 SM group마다 cudagraph를 캡처해 구조적으로 더 쓴다(MGP-32 기판 고지) | (a) CPU 시험 실패 → 하네스 봉인 불가. (b) 실패 → 해당 DP=N 제외. (c) 실패 → 해당 (mode, N)에 `MEMORY_MISMATCH`, M3 G 인용 금지(측정은 진행) |
+| **G5 파티션** | (a) agnostic manual 등가표 ↔ 자동 격자 선택 함수의 등가성: **결정적 CPU 시험**(decode_bs 0…512 전수에서 두 경로의 `stream_idx`·`SM_COUNTS` 일치, 하네스 회귀 테스트). GPU에서는 N=1 auto vs manual의 선택 분포를 **기술치**로만 기록(MGP-5). (b) DP=N 복제본별 telemetry의 실현 `(p,d)`가 그 arm의 등록 표 안의 값인지. (c) arm 간 메모리 조건(MGP-12, P-D5): 같은 config 안 네 arm에 대해 `MEMORY_MISMATCH` ⇔ (i) mamba cache 슬롯 수 ≠ effective cap(정확 비교), 또는 (ii) `max_total_num_tokens` < effective cap × (ISL+OSL)(KV 구속: A 36,864·N, B 396,288·N 토큰 — TP는 엔진 인스턴스 cap 48N 기준, DP는 복제본 cap 48 기준), 또는 (iii) arm 간 `max_total_num_tokens` 상대차 > 1%. 그 외 차이는 기술치(MGP-18). 오염 검사(P-D8): (가) 각 boot 전 부분집합 GPU의 NVML `memory.used` < 1 GiB(빈 GPU 확인), (나) NVML `nvmlDeviceGetComputeRunningProcesses` **항목 수**가 GPU당 기대 프로세스 수와 같음(PID 네임스페이스 무관). 항목 수조차 0으로 숨겨지면 (가)만 쓴다. 어느 하나라도 어긋나면 `GPU_CONTAMINATED`(그 셀 판정 제외). arm 간 `memory.used` 비교는 **기술치**(boot 직후·셀 종료 시 기록)이며 `MEMORY_MISMATCH` 조건이 아니다 — PD-mux는 SM group마다 cudagraph를 캡처해 구조적으로 더 쓴다(MGP-32 기판 고지) | (a) CPU 시험 실패 → 하네스 봉인 불가. (b) 실패 → 해당 DP=N 제외. (c) 실패 → 해당 (mode, N)에 `MEMORY_MISMATCH`, M3 G 인용 금지(측정은 진행) |
 
 ### 3-1. FAIL 단위와 처리 (MGP-1)
 | 결과 | 제외 범위 |
 |---|---|
 | G0(i) `fused` 기동 실패 | 그 (mode, N) 전체 |
+| G0(i) `fused_sym` 기동 실패 | 그 (mode, N)의 fused\_sym arm → G\_sym 미정의(G\_def를 대입하지 않는다, MGP-38). G\_def·G\_d44 계열 보조 라벨은 유지 |
 | G0(i) `agnostic` 또는 `d44` 기동 실패 | 그 (mode, N)의 해당 arm만 |
 | G0(ii) 5종 중 하나라도 거부 실패 | **TP 축 전체**(guard가 작동하지 않으면 TP 결정 분기 위험이 남는다). DP 축은 영향 없음 |
 | G0(iii) 거부 실패 | 제외 없음(M3는 자동 격자를 쓰지 않는다). 발견으로 기록 |
@@ -118,7 +123,7 @@ M2g Job은 `M2G_PASS_TABLE.json`((mode, N, arm) → 포함/제외 + 사유)을 �
 ### 4-4. 1차 estimand와 판정
 - **1차 estimand**: G\_sym(N, mode, shape) = λ\*\_agnostic / λ\*\_fused\_sym(같은 스케줄 노브 대비 PD-mux 기능의 용량비). **2차**: G\_def = λ\*\_agnostic / λ\*\_fused(운영 기본값 대비), G\_d44,sym = λ\*\_d44 / λ\*\_fused\_sym, 기술치 S = λ\*\_fused\_sym / λ\*\_fused(스케줄 노브 효과). 각 비는 두 arm 모두 `KNEE_BRACKETED`, `HARNESS_LIMITED` 아님, config에 `MEMORY_MISMATCH`·`GPU_CONTAMINATED` 없음일 때만 정의된다. 아래 CI·추세·크기·예측 규칙은 G\_sym에 적용하는 것이 판정이고, G\_def·G\_d44,sym에는 같은 계산을 **보조 라벨**로 붙인다(다중 비교: 판정 문장은 G\_sym만). 이하 'G'는 G\_sym을 뜻한다.
 - **G(1)은 N=1 1회차 값**이다(MGP-10). 2회차는 드리프트 검사에만 쓴다.
-- **CI**: seed 4개를 짝으로(같은 seed의 agnostic/fused achieved 비) bootstrap 10,000회(seed 1), 95% 백분위 CI. 이 CI는 boot 산포를 포함하지 않는다(MGP-7).
+- **CI**: seed 4개를 짝으로(같은 seed의 agnostic/fused\_sym achieved 비; 보조 라벨은 해당 분모) bootstrap 10,000회(seed 1), 95% 백분위 CI. 이 CI는 boot 산포를 포함하지 않는다(MGP-7).
 - **추세**: mode마다 log G를 log₂N(정의된 N ∈ {1,2,4,8})에 최소제곱 회귀한 기울기 s. **재표집 단위 = seed 색인**: 한 번의 bootstrap에서 seed 색인 4개를 복원추출하고, 그 색인을 그 mode의 **모든 N과 두 arm에 공동 적용**한다(MGP-10). 정의된 점 < 3이면 `TREND_UNDEFINED`.
   - CI가 0 포함 → `NO_TREND_DETECTED`, CI > 0 → `G_INCREASES_WITH_N`, CI < 0 → `G_DECREASES_WITH_N`.
 - **크기 규칙**: 분모 = G(1), 분자 = G(N\_max), N\_max = 그 mode에서 G가 정의된 가장 큰 N(보고에 명시). G(1)이 정의되지 않으면 크기 규칙은 적용하지 않는다(방향 라벨만, `MAGNITUDE_UNDEFINED`). |G(N\_max)/G(1) − 1| < 3%이면 방향 라벨도 방향의 증거로 인용하지 않는다(MGP-7).
@@ -126,8 +131,8 @@ M2g Job은 `M2G_PASS_TABLE.json`((mode, N, arm) → 포함/제외 + 사유)을 �
 - e(N, mode, arm) = λ\*(N)/(N·λ\*(1))은 기술치로만 보고한다.
 
 ### 4-5. 블록 앵커
-- N=1 2회차의 λ\*(fused, A)와 G(1, A) 중 **하나라도** 1회차와 > 3% 다르면 `ANCHOR_DRIFT`를 붙이고 N-추세 라벨에 드리프트 공시를 의무로 붙인다(MGP-10).
-- Job을 블록으로 나누면 블록마다 N=1 fused·agnostic shape A HI(seed 4개)를 앵커로 다시 재고 같은 규칙을 적용한다(C-9 후단).
+- N=1 2회차의 λ\*(fused, A), λ\*(fused\_sym, A), G\_sym(1, A) 중 **하나라도** 1회차와 > 3% 다르면 `ANCHOR_DRIFT`를 붙이고 N-추세 라벨에 드리프트 공시를 의무로 붙인다(MGP-10).
+- Job을 블록으로 나누면 블록마다 N=1 fused·fused\_sym·agnostic shape A HI(seed 4개)를 앵커로 다시 재고 같은 규칙을 적용한다(C-9 후단).
 
 ### 4-6. 기술 블록 (판정 아님)
 - **GPU 편차(C-2)**: N=1 `fused` shape A HI rung seed 4386을 GPU 0..7 각각에서 1회(boot 8회). 최대/최소 achieved 차이 > 3%이면 `GPU_HETEROGENEOUS`를 붙이고 N=1 앵커를 "GPU0 값"으로만 쓴다. 이 블록은 M3 Job의 맨 앞에서 실행한다.
@@ -150,6 +155,7 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 ### 6-1. 규모(추정, 하네스 dry-run이 확정)
 - M2g: 서빙 boot ≈ 6 config × 4 arm + 대조 + 거부 시험 ≈ 25회, G3 마이크로벤치. 벽시계 추정 3–5 h.
 - M3: boot 7 config × 4 arm × 2(HI·LO 분리, §4-2) + 앵커 + GPU 편차 8 + NUMA 2 + nsys 1 ≈ 70회. 셀 = (7×4×2 shape × (4 HI + 2 LO)) + 기술 블록 ≈ 290개. 벽시계 추정 15–25 h.
+- rev5 감사 예보: λ = prior 가정에서 M3 ≈ 28–31 h, TP에서 λ < prior면 ≈ 31–35 h — 확장 없이도 하드캡 30 h를 넘을 가능성이 높다. 블록 분할 시 §4-5 앵커(fused·fused\_sym·agnostic)가 발동한다.
 - **하네스 dry-run 예산이 하드캡 30 h를 넘으면 제출 전에 사용자에게 블록 분할을 묻는다.**
 - 추정치는 1-GPU 경험(셀당 3–5 분, boot 3–5 분)에서 외삽한 것이라 신뢰구간이 넓다. TP=8 boot·캡처 시간은 미실측이다.
 
@@ -172,6 +178,7 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 - M2g PASS를 "TP PD-mux 정확성 일반"으로 쓰는 것.
 - rev1 감사 caveat MGP-0…MGP-16(`VERDICT_prereg_rules_rev1_2026-10-12.md` §7) 전부 — 문자 그대로 승계. 특히 MGP-15(d44는 비조율 arm, 설계 §5-3의 N별 선택에서 이탈)와 MGP-16(x8의 G(1)은 정본 P1.7의 재검정이 아님).
 - 원시 ratio(achieved/offered)를 포화·비포화 근거로 쓰는 것(MGP-8).
+- rev5 델타 감사 caveat MGP-26′·MGP-27′(수치 갱신본이 MGP-26·27을 대체)·MGP-33…MGP-39(`VERDICT_prereg_rules_rev5_delta_2026-10-12.md` §5) 전부 — 문자 그대로 승계.
 - rev3 델타 감사 caveat MGP-26…MGP-32(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md` §5) 전부 — 문자 그대로 승계. 특히 MGP-29: fused arm은 overlap ON·chunked 8192, PD-mux arm은 overlap OFF·chunked −1이므로 G(N)을 'SM 분할 효과'·'PD 분리 효과'로 귀속하지 않는다.
 - rev2 델타 감사 caveat MGP-17…MGP-25(`VERDICT_prereg_rules_rev2_delta_2026-10-12.md` §5) 전부 — 문자 그대로 승계.
 
@@ -235,3 +242,15 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 | `fused_sym` arm 추가(vanilla + `--chunked-prefill-size -1 --disable-overlap-schedule`) | §2, §3 G0, §4-1, §5, §6-1 | MGP-29: fused(overlap ON·chunked 8192)와 PD-mux(overlap OFF·chunked −1)의 노브 비대칭 |
 | 1차 estimand G = agnostic/fused\_sym, G\_def·G\_d44,sym은 보조 라벨, S = fused\_sym/fused 기술치 | §4-4 | 노브를 맞춘 비가 PD-mux 기능 귀속에 더 가깝다. 단 SM 분할 **단독** 귀속은 여전히 아니다(split prefill·입장 기계 포함) |
 | x\_lo 기준은 그대로 fused(운영 기본값) HI 중앙값 | §4-2 | 변경 없음 — 네 arm 공동 |
+
+## 13. rev5 → rev6 대조표 (rev5 델타 감사 §8-1 경량 반영)
+
+| 항목 | 반영 |
+|---|---|
+| H2 health 대기, MGP-23 | §3 G0(i) |
+| H4 attention backend, H5 sock_read, H6 fd, H8 piecewise 기록 | §1 고정 조건 3행 |
+| MGP-38 fused\_sym 기동 실패 행, 앵커 | §3-1, §4-5 |
+| G5(c) 네 arm, §4-4 CI 문장 | §3, §4-4 |
+| §6-1 예산 재예보 | §6-1 |
+| MGP-26′·27′·33…39 승계 | §7 |
+| 선택 처방(arm별 x\_lo) | **채택 안 함**(공동 x\_lo 유지, MGP-34 병기로 처리). 바꾸려면 사용자 결정 + 델타 감사 |
