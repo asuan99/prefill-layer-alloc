@@ -1,0 +1,567 @@
+{
+  "host": {
+    "params": [
+      "RmProfilingAdminOnly: 1"
+    ],
+    "Uid": "0\t0\t0\t0",
+    "CapEff": "00000000a80425fb"
+  },
+  "cupti_inventory": {
+    "files": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13",
+      "/usr/local/cuda-13.0/lib64/libcupti.so",
+      "/usr/local/cuda-13.0/lib64/libcupti.so.13",
+      "/usr/local/cuda-13.0/lib64/libcupti.so.2025.3.1",
+      "/usr/local/cuda-13.0/lib64/libcupti_static.a",
+      "/usr/local/cuda-13/lib64/libcupti.so",
+      "/usr/local/cuda-13/lib64/libcupti.so.13",
+      "/usr/local/cuda-13/lib64/libcupti.so.2025.3.1",
+      "/usr/local/cuda-13/lib64/libcupti_static.a",
+      "/usr/local/cuda/lib64/libcupti.so",
+      "/usr/local/cuda/lib64/libcupti.so.13",
+      "/usr/local/cuda/lib64/libcupti.so.2025.3.1",
+      "/usr/local/cuda/lib64/libcupti_static.a"
+    ],
+    "ldconfig_cupti": [],
+    "LD_LIBRARY_PATH": "/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+  },
+  "kineto_plain": {
+    "stream": "plain",
+    "partition": {
+      "mode": "plain",
+      "n_sm_req": 1000000,
+      "n_sm_realized": 108,
+      "device_sm": 108
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {},
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_592.json",
+      "INFO:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:12:33 592:592 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:12:33 592:592 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:12:33 592:592 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:12:33 592:592 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:12:33 592:592 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:12:33 592:592 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:12:33 592:592 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain.json",
+      "INFO:2026-10-12 14:12:33 592:592 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain.json",
+      "INFO:2026-10-12 14:12:33 592:592 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain.json"
+    ]
+  },
+  "kineto_green": {
+    "stream": "green",
+    "partition": {
+      "mode": "green",
+      "n_sm_req": 44,
+      "device_sm": 108,
+      "readout": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "green_ctx_is_null": false,
+        "cuGreenCtxGetDevResource_rc": 0,
+        "green_sm": {
+          "smCount": 44,
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2
+        }
+      },
+      "n_sm_realized": 44
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {},
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_661.json",
+      "INFO:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:12:56 661:661 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:12:56 661:661 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:12:56 661:661 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:12:56 661:661 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:12:56 661:661 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:12:56 661:661 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:12:56 661:661 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green.json",
+      "INFO:2026-10-12 14:12:56 661:661 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green.json",
+      "INFO:2026-10-12 14:12:56 661:661 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green.json"
+    ]
+  },
+  "nsight": {
+    "which": {
+      "ncu": "/usr/local/cuda/bin/ncu",
+      "nsys": null,
+      "nvidia-smi": "/usr/bin/nvidia-smi"
+    },
+    "ncu_version": {
+      "cmd": [
+        "/usr/local/cuda/bin/ncu",
+        "--version"
+      ],
+      "rc": 0,
+      "stdout": "NVIDIA (R) Nsight Compute Command Line Profiler\nCopyright (c) 2018-2025 NVIDIA Corporation\nVersion 2025.3.1.0 (build 36398880) (public-release)\n",
+      "stderr": ""
+    },
+    "ncu_launch_sections": {
+      "cmd": [
+        "/usr/local/cuda/bin/ncu",
+        "--section",
+        "LaunchStats",
+        "--section",
+        "Occupancy",
+        "--launch-count",
+        "1",
+        "/opt/conda/bin/python3",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/probe_gemm.py"
+      ],
+      "rc": 1,
+      "stdout": "==PROF== Connected to process 845 (/opt/conda/bin/python3.14)\n==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM\ngemm ok\n==PROF== Disconnected from process 845\n",
+      "stderr": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+      "mentions_ERR_NVGPUCTRPERM": true
+    },
+    "ncu_counter_metric": {
+      "cmd": [
+        "/usr/local/cuda/bin/ncu",
+        "--metrics",
+        "sm__throughput.avg.pct_of_peak_sustained_elapsed",
+        "--launch-count",
+        "1",
+        "/opt/conda/bin/python3",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/probe_gemm.py"
+      ],
+      "rc": 1,
+      "stdout": "==PROF== Connected to process 938 (/opt/conda/bin/python3.14)\n==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM\ngemm ok\n==PROF== Disconnected from process 938\n",
+      "stderr": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+      "mentions_ERR_NVGPUCTRPERM": true
+    }
+  },
+  "kineto_plain_ldpath0": {
+    "stream": "plain",
+    "partition": {
+      "mode": "plain",
+      "n_sm_req": 1000000,
+      "n_sm_realized": 108,
+      "device_sm": 108
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {
+      "LD_LIBRARY_PATH": "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+    },
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_1007.json",
+      "INFO:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:13:06 1007:1007 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:13:06 1007:1007 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:13:06 1007:1007 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:13:06 1007:1007 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:13:06 1007:1007 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:13:06 1007:1007 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:13:06 1007:1007 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld0.json",
+      "INFO:2026-10-12 14:13:06 1007:1007 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld0.json",
+      "INFO:2026-10-12 14:13:06 1007:1007 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld0.json"
+    ]
+  },
+  "kineto_green_ldpath0": {
+    "stream": "green",
+    "partition": {
+      "mode": "green",
+      "n_sm_req": 44,
+      "device_sm": 108,
+      "readout": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "green_ctx_is_null": false,
+        "cuGreenCtxGetDevResource_rc": 0,
+        "green_sm": {
+          "smCount": 44,
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2
+        }
+      },
+      "n_sm_realized": 44
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {
+      "LD_LIBRARY_PATH": "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+    },
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_1076.json",
+      "INFO:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:13:10 1076:1076 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:13:10 1076:1076 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:13:10 1076:1076 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:13:10 1076:1076 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:13:10 1076:1076 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:13:10 1076:1076 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:13:10 1076:1076 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld0.json",
+      "INFO:2026-10-12 14:13:10 1076:1076 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld0.json",
+      "INFO:2026-10-12 14:13:10 1076:1076 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld0.json"
+    ]
+  },
+  "kineto_plain_ldpath1": {
+    "stream": "plain",
+    "partition": {
+      "mode": "plain",
+      "n_sm_req": 1000000,
+      "n_sm_realized": 108,
+      "device_sm": 108
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {
+      "LD_LIBRARY_PATH": "/usr/local/cuda-13.0/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+    },
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_1147.json",
+      "INFO:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:13:13 1147:1147 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:13:13 1147:1147 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:13:13 1147:1147 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:13:13 1147:1147 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:13:13 1147:1147 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:13:13 1147:1147 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:13:13 1147:1147 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld1.json",
+      "INFO:2026-10-12 14:13:13 1147:1147 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld1.json",
+      "INFO:2026-10-12 14:13:13 1147:1147 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld1.json"
+    ]
+  },
+  "kineto_green_ldpath1": {
+    "stream": "green",
+    "partition": {
+      "mode": "green",
+      "n_sm_req": 44,
+      "device_sm": 108,
+      "readout": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "green_ctx_is_null": false,
+        "cuGreenCtxGetDevResource_rc": 0,
+        "green_sm": {
+          "smCount": 44,
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2
+        }
+      },
+      "n_sm_realized": 44
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {
+      "LD_LIBRARY_PATH": "/usr/local/cuda-13.0/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+    },
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_1216.json",
+      "INFO:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:13:17 1216:1216 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:13:17 1216:1216 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:13:17 1216:1216 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:13:17 1216:1216 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:13:17 1216:1216 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:13:17 1216:1216 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:13:17 1216:1216 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld1.json",
+      "INFO:2026-10-12 14:13:17 1216:1216 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld1.json",
+      "INFO:2026-10-12 14:13:17 1216:1216 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld1.json"
+    ]
+  },
+  "kineto_plain_ldpath2": {
+    "stream": "plain",
+    "partition": {
+      "mode": "plain",
+      "n_sm_req": 1000000,
+      "n_sm_realized": 108,
+      "device_sm": 108
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {
+      "LD_LIBRARY_PATH": "/usr/local/cuda-13/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+    },
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_1287.json",
+      "INFO:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:13:20 1287:1287 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:13:20 1287:1287 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:13:20 1287:1287 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:13:20 1287:1287 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:13:20 1287:1287 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:13:20 1287:1287 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:13:20 1287:1287 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld2.json",
+      "INFO:2026-10-12 14:13:20 1287:1287 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld2.json",
+      "INFO:2026-10-12 14:13:20 1287:1287 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld2.json"
+    ]
+  },
+  "kineto_green_ldpath2": {
+    "stream": "green",
+    "partition": {
+      "mode": "green",
+      "n_sm_req": 44,
+      "device_sm": 108,
+      "readout": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "green_ctx_is_null": false,
+        "cuGreenCtxGetDevResource_rc": 0,
+        "green_sm": {
+          "smCount": 44,
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2
+        }
+      },
+      "n_sm_realized": 44
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {
+      "LD_LIBRARY_PATH": "/usr/local/cuda-13/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+    },
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_1356.json",
+      "INFO:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:13:24 1356:1356 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:13:24 1356:1356 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:13:24 1356:1356 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:13:24 1356:1356 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:13:24 1356:1356 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:13:24 1356:1356 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:13:24 1356:1356 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld2.json",
+      "INFO:2026-10-12 14:13:24 1356:1356 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld2.json",
+      "INFO:2026-10-12 14:13:24 1356:1356 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld2.json"
+    ]
+  },
+  "kineto_plain_ldpath3": {
+    "stream": "plain",
+    "partition": {
+      "mode": "plain",
+      "n_sm_req": 1000000,
+      "n_sm_realized": 108,
+      "device_sm": 108
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {
+      "LD_LIBRARY_PATH": "/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+    },
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_1427.json",
+      "INFO:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:13:27 1427:1427 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:13:27 1427:1427 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:13:27 1427:1427 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:13:27 1427:1427 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:13:27 1427:1427 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:13:27 1427:1427 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:13:27 1427:1427 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld3.json",
+      "INFO:2026-10-12 14:13:27 1427:1427 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld3.json",
+      "INFO:2026-10-12 14:13:27 1427:1427 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_plain_ld3.json"
+    ]
+  },
+  "kineto_green_ldpath3": {
+    "stream": "green",
+    "partition": {
+      "mode": "green",
+      "n_sm_req": 44,
+      "device_sm": 108,
+      "readout": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "green_ctx_is_null": false,
+        "cuGreenCtxGetDevResource_rc": 0,
+        "green_sm": {
+          "smCount": 44,
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2
+        }
+      },
+      "n_sm_realized": 44
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "n_launch_events": 0,
+    "sample": [],
+    "kineto_available": true,
+    "cupti_mapped": [
+      "/opt/conda/lib/python3.14/site-packages/nvidia/cu13/lib/libcupti.so.13"
+    ],
+    "rc": 0,
+    "env_extra": {
+      "LD_LIBRARY_PATH": "/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
+    },
+    "stderr_profiler_lines": [
+      "INFO:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000",
+      "  Log file: /tmp/libkineto_activities_1496.json",
+      "INFO:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)",
+      "VERBOSE:2026-10-12 14:13:31 1496:1496 CuptiActivityApi.cpp:331] Not enabling per-thread activity buffer",
+      "INFO:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s",
+      "INFO:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s",
+      "STAGE:2026-10-12 14:13:31 1496:1496 ActivityProfilerController.cpp:381] Completed Stage: Warm Up",
+      "VERBOSE:2026-10-12 14:13:31 1496:1496 CuptiActivityApi.cpp:166] CUPTI buffer requested",
+      "STAGE:2026-10-12 14:13:31 1496:1496 ActivityProfilerController.cpp:388] Completed Stage: Collection",
+      "INFO:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers",
+      "WARNING:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:365] GPU trace is empty!",
+      "INFO:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0",
+      "INFO:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:",
+      "INFO:2026-10-12 14:13:31 1496:1496 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded",
+      "STAGE:2026-10-12 14:13:31 1496:1496 ActivityProfilerController.cpp:393] Completed Stage: Post Processing",
+      "INFO:2026-10-12 14:13:31 1496:1496 output_json.cpp:175] Tracing to temporary file /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld3.json",
+      "INFO:2026-10-12 14:13:31 1496:1496 output_json.cpp:685] Chrome Trace written to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld3.json",
+      "INFO:2026-10-12 14:13:31 1496:1496 output_json.cpp:737] Renamed the trace file to /opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-dd405fe-20261012141151/probe/kineto_green_ld3.json"
+    ]
+  }
+}
