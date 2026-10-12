@@ -1,4 +1,4 @@
-# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev4)
+# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev5)
 
 > **지위**: 설계 문서 `reports/multigpu_scaling_design_2026-10-12.md`(rev2)의 M2.5. 감사 판정
 > `reports/audit/2026-10-12_multigpu_design/AUDIT_multigpu_design_rev1_2026-10-12.md`(`MIXED`)의 MG-0이 요구하는 **결정 규칙 등록**이다.
@@ -8,7 +8,8 @@
 > D4 arm 비대칭 표본, D5 메모리 정확 일치, D6 `ps %cpu`)를 반영했다. 대조표 §10. MGP-17…MGP-25 추가 승계.
 > **rev4**: rev3 델타 감사(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md`, `MIXED`: M2g `GO-with-caveats` 유지, M3 `NO-GO` — D7 fused prefill 우선으로
 > shape B Decode 줄 고갈, D8 NVML memory.used 폴백이 PD-mux 캡처 메모리를 불일치로 판정)를 반영했다. 대조표 §11. MGP-26…MGP-32 추가 승계.
-> **규칙층 델타 감사 대기(범위: D7, D8, Q\_c 추정량 반전 시험 — 오류 요청 처리·DP 집계).** `GO`/`GO-with-caveats` 전에는 M2g·M3 Job을 `--submit`하지 않는다(교훈 34). 하네스(plan·label 스크립트)는
+> **rev5**(사용자 결정 2026-10-12): MGP-29(arm 간 스케줄 노브 비대칭) 대응으로 대칭 대조군 `fused_sym` arm을 추가하고 1차 estimand를 G\_sym = agnostic/fused\_sym으로 바꿨다. 대조표 §12.
+> **규칙층 델타 감사 대기(범위: rev4의 D7·D8·Q\_c 반전 시험 + rev5 arm 추가·estimand 변경).** `GO`/`GO-with-caveats` 전에는 M2g·M3 Job을 `--submit`하지 않는다(교훈 34). 하네스(plan·label 스크립트)는
 > 규칙 감사 뒤에 작성하고 별도로 하네스층 감사를 받는다.
 > 작성 시점: GPU 지출 = M1 프로브 1건뿐, 서빙 측정 0, 성능 판정 0, Claim 변경 0.
 > 브랜치 `multigpu-scaling`(worktree `prefill-layer-alloc-multigpu`), 기준 커밋 `c0e200d`. 이 브랜치의 엔진 트리는 N2/N3/E2 봉인 digest와
@@ -45,7 +46,8 @@ arm별 포화 처리율 λ\*를 재어 **1차 estimand G(N, mode) = λ\*\_agnost
 
 | arm | 정의 | 비고 |
 |---|---|---|
-| `fused` | `PDMUX_ENGINE_MODE=vanilla`(PD-mux off) | policy_adapter `vanilla:vanilla` |
+| `fused` | `PDMUX_ENGINE_MODE=vanilla`(PD-mux off), 엔진 기본 스케줄(overlap ON, chunked prefill 8192) | policy_adapter `vanilla:vanilla`. **운영 기본값 대조군** |
+| `fused_sym` | `PDMUX_ENGINE_MODE=vanilla`(PD-mux off) + PD-mux arm과 **같은 스케줄 노브** `--chunked-prefill-size -1 --disable-overlap-schedule`(runner가 PD-mux arm에 붙이는 인자와 바이트 동일) | **대칭 대조군**(사용자 결정 2026-10-12, MGP-29 대응). PD-mux arm과의 차이는 PD-mux 기능 전체(SM 분할 + split prefill + 입장 기계)이며 'SM 분할 단독'은 아니다 |
 | `agnostic` | PD-mux on, **R2 정책 없음**(stock 임계표), config = `pdmux_agnostic_manual.yml`: `sm_group_num 4`, `manual_divisions [[74,34,0],[54,54,36]]`, `decode_bs_divisor 36` | A100 자동 격자 `divide_sm(108, (8,0), 2)` = [(74,34),(54,54)], idx = max(1, min(2, decode_bs·2//36))와 **같은 선택 함수**를 manual 표로 옮긴 것. 자동 격자 경로는 TP/DP>1에서 device assert로 거부되므로(M2 발견) manual 등가표를 쓴다. 등가성은 M2g G5에서 N=1 auto vs manual realized 선택 일치로 검증 |
 | `d44` | PD-mux on, `PDMUX_R2_POLICY=fixed`, `PDMUX_R2_FIXED_DSM=44`, config `pdmux_r2.yml` | 1-GPU decode-heavy static 권고의 D. **N마다 재조율하지 않는다** — 이 arm에 대한 결론은 "1-GPU에서 고른 D44를 N에 그대로 쓴 경우"로 범위를 한정한다(C-6) |
 
@@ -59,7 +61,7 @@ arm별 포화 처리율 λ\*를 재어 **1차 estimand G(N, mode) = λ\*\_agnost
 
 | 게이트 | 내용 | PASS 조건(등록) |
 |---|---|---|
-| **G0 boot·거부** | (i) TP∈{2,4,8}, DP∈{2,4,8} × arm{fused, agnostic, d44} 서버가 기동하고 `/health` 응답. (ii) TP=2에서 금지 env **5종을 하나씩**: `PDMUX_R2_POLICY=generic`, `PDMUX_R2_POLICY=hybrid`(+ 더미 profile), `PDMUX_SLO_SCHED=1`, `PDMUX_LA_COORD=1`, `PDMUX_TRUE_DUAL_WORKER=1`. (iii) TP=2 + 자동 격자 config | (i) 기동 제한시간 1800 s 안에 health. (ii) 5종 모두 서버 로그에 `multigpu_guard` 등록 에러 문자열 + 프로세스 비정상 종료. (iii) device assert 문자열 + 비정상 종료 |
+| **G0 boot·거부** | (i) TP∈{2,4,8}, DP∈{2,4,8} × arm{fused, fused\_sym, agnostic, d44} 서버가 기동하고 `/health` 응답. (ii) TP=2에서 금지 env **5종을 하나씩**: `PDMUX_R2_POLICY=generic`, `PDMUX_R2_POLICY=hybrid`(+ 더미 profile), `PDMUX_SLO_SCHED=1`, `PDMUX_LA_COORD=1`, `PDMUX_TRUE_DUAL_WORKER=1`. (iii) TP=2 + 자동 격자 config | (i) 기동 제한시간 1800 s 안에 health. (ii) 5종 모두 서버 로그에 `multigpu_guard` 등록 에러 문자열 + 프로세스 비정상 종료. (iii) device assert 문자열 + 비정상 종료 |
 | **G1 PD-mux OFF↔ON 출력** | 같은 (mode, N)에서 `fused`↔`agnostic`, `fused`↔`d44`. 등록 prompt 64개(r2_correctness_client S/O tier, seed 고정), greedy, max_new_tokens 128, 동시 요청 32 | **대조군 G1-ctl**(N=1 같은 비교)을 같은 Job에서 먼저 잰다. 지표 ① prompt별 첫 불일치 이전 일치 토큰 비율 m, ② 불일치 prompt 비율 q(m < 1인 prompt의 비율). PASS ⇔ m 중앙값 ≥ G1-ctl m 중앙값 − 0.05 **그리고** q ≤ G1-ctl q + 0.10 **그리고** 출력 길이 0·비정상 종료 0. 노출 비율(분할 group에 있던 decode step 비율, telemetry)을 병기한다(MGP-2). G1-ctl의 m 중앙값 < 0.5이면 G1은 `UNINFORMATIVE`(FAIL 아님, 정확성 문장 금지) |
 | **G2 TP=N↔TP=1 teacher-forced** | `fused` arm, 같은 64 prompt, TP=1 greedy 출력 열을 teacher-forced로 TP=N에 넣어 위치별 top-1 logprob 비교 | 바닥 = TP=1 동일 서버 2회 반복의 같은 지표. PASS ⇔ \|Δlogprob\| p99 ≤ max(4 × 바닥 p99, 0.05 nat) 그리고 top-1 불일치율 ≤ 2%. FAIL은 `TP_NUMERIC_DIVERGENT` 표기만 하고 제외하지 않는다(MGP-3) |
 | **G3 comm 역순 스트레스** | `m2g_comm_reverse_stress.py`: TP=N마다 두 pynccl comm(prefill/decode)을 짝·홀 rank가 반대 순서로 발행, plain stream과 green stream(16/92, 44/64) 각각 | 반복 R = 500/조합, watchdog 120 s. PASS ⇔ hang 0 **그리고** 정수 합 all-reduce 검산 오류 0 |
@@ -88,15 +90,15 @@ M2g Job은 `M2G_PASS_TABLE.json`((mode, N, arm) → 포함/제외 + 사유)을 �
 
 ### 4-1. 셀 구성
 - 구성(config) 7개: N=1, DP={2,4,8}, TP={2,4,8} 중 `M2G_PASS_TABLE`이 포함한 것.
-- arm 3개, shape 2개(A, B).
+- arm 4개(fused, fused\_sym, agnostic, d44), shape 2개(A, B).
 - 서버 기동은 (config, arm)마다 1회. shape A·B와 seed 반복은 같은 boot 안에서 순차로 돈다. **boot 효과와 seed 효과는 분리되지 않는다**(MGP-7).
 - 실행 순서(하드캡 절단 시 추세 점이 남도록, MGP-14): GPU 편차 블록 → **N=1(1회차)** → TP8 → DP8 → TP2 → DP2 → TP4 → DP4 → NUMA 블록 → nsys → **N=1(2회차)**. arm 순서는 config마다 seed 20261012 기반 무작위 순열.
 
 ### 4-2. 측정 rung (shape·arm마다)
 - prior(N, shape) = N × λ\*\_VESSL(shape)(A 2.99, B 0.690 req/s). rung 위치를 정하는 데만 쓴다.
 - **HI rung**: offered x\_hi = 1.6 × prior, 요청 수 = clamp(round10(x\_hi × 170 s), 40, 4000), seed 4개(4386, 4162, 251, 2630).
-- **LO rung**: offered x\_lo = 0.60 × (그 (config, shape)에서 **fused** HI achieved seed 중앙값), 요청 수 = clamp(round10(x\_lo × 170 s), 40, 4000), seed 2개(4386, 4162). 같은 (config, shape)의 세 arm이 **같은 x\_lo·요청 수**를 쓴다(MGP-9). boot 배치: (config, arm)마다 **boot 1** = shape A·B의 HI(seed 4개씩). 세 arm의 boot 1이 모두 끝나 x\_lo가 정해진 뒤 (config, arm)마다 **boot 2** = shape A·B의 LO(seed 2개씩). 따라서 boot는 (config, arm)당 2회이고, HI와 LO는 서로 다른 boot다(범위 공시).
-- **확장 규칙(1회, 공동)**: (config, shape)의 **어느 한 arm이라도** HI에서 g < 0.10(§4-3)이면 그 (config, shape)의 **세 arm 모두** x\_hi를 2배로 올려 HI를 다시 잰다(arm마다 새 boot 1′, x\_lo는 확장 후 fused HI 중앙값으로 정한다). `SATURATION_UNRESOLVED`·`CLIENT_ERROR`는 확장을 발화하지 않고 라벨로 남긴다(교훈 21). 확장 뒤에도 g < 0.10인 arm은 `LADDER_TOO_LOW`.
+- **LO rung**: offered x\_lo = 0.60 × (그 (config, shape)에서 **fused** HI achieved seed 중앙값), 요청 수 = clamp(round10(x\_lo × 170 s), 40, 4000), seed 2개(4386, 4162). 같은 (config, shape)의 네 arm이 **같은 x\_lo·요청 수**를 쓴다(MGP-9). boot 배치: (config, arm)마다 **boot 1** = shape A·B의 HI(seed 4개씩). 네 arm의 boot 1이 모두 끝나 x\_lo가 정해진 뒤 (config, arm)마다 **boot 2** = shape A·B의 LO(seed 2개씩). 따라서 boot는 (config, arm)당 2회이고, HI와 LO는 서로 다른 boot다(범위 공시).
+- **확장 규칙(1회, 공동)**: (config, shape)의 **어느 한 arm이라도** HI에서 g < 0.10(§4-3)이면 그 (config, shape)의 **네 arm 모두** x\_hi를 2배로 올려 HI를 다시 잰다(arm마다 새 boot 1′, x\_lo는 확장 후 fused HI 중앙값으로 정한다). `SATURATION_UNRESOLVED`·`CLIENT_ERROR`는 확장을 발화하지 않고 라벨로 남긴다(교훈 21). 확장 뒤에도 g < 0.10인 arm은 `LADDER_TOO_LOW`.
 - ratio(achieved/offered)는 **기술치**이며, 분모는 셀의 **realized 도착률**(요청 수 ÷ 첫 전송~마지막 전송 구간)로 쓴다.
 
 ### 4-3. 라벨 (shape·config·arm마다) — 독립 포화 증거 (P-D1, λ0R-4·MGP-8)
@@ -114,7 +116,7 @@ M2g Job은 `M2G_PASS_TABLE.json`((mode, N, arm) → 포함/제외 + 사유)을 �
 - **E-time(P-D2)**: decode-busy = `decode_running_batch_size` > 0(A2 술어), 시간 가중 = 다음 non-startup 스냅샷까지의 간격(e2 규약), **분자 = `stream_index` ∉ {0, real_sm_group_num−1}**(분할 group 전체). arm별 `sm_counts`를 green readout과 대조하고, 불일치하면 그 셀만 `MIX_FAILED`(ABORT 안 함). TP는 rank 0, DP는 복제본 평균. PD-mux arm의 HI 4 seed 중앙값 E-time < 0.5이면 `PARTITION_NOT_EXERCISED`(MGP-6). `e2_realized_mix.py`의 `D44_STREAM_INDEX = 2` 하드코딩은 이 등록에 쓰지 않는다 — 새 추정 함수를 하네스에 두고 "idx == 2 문자 그대로" 변이본이 agnostic·r2 합성 telemetry에서 KILLED 됨을 회귀 테스트로 보인다.
 
 ### 4-4. 1차 estimand와 판정
-- G(N, mode, shape) = λ\*\_agnostic / λ\*\_fused. 두 arm 모두 `KNEE_BRACKETED`, `HARNESS_LIMITED` 아님, config에 `MEMORY_MISMATCH` 없음일 때만 정의된다. 보조 G\_d44도 같은 규칙.
+- **1차 estimand**: G\_sym(N, mode, shape) = λ\*\_agnostic / λ\*\_fused\_sym(같은 스케줄 노브 대비 PD-mux 기능의 용량비). **2차**: G\_def = λ\*\_agnostic / λ\*\_fused(운영 기본값 대비), G\_d44,sym = λ\*\_d44 / λ\*\_fused\_sym, 기술치 S = λ\*\_fused\_sym / λ\*\_fused(스케줄 노브 효과). 각 비는 두 arm 모두 `KNEE_BRACKETED`, `HARNESS_LIMITED` 아님, config에 `MEMORY_MISMATCH`·`GPU_CONTAMINATED` 없음일 때만 정의된다. 아래 CI·추세·크기·예측 규칙은 G\_sym에 적용하는 것이 판정이고, G\_def·G\_d44,sym에는 같은 계산을 **보조 라벨**로 붙인다(다중 비교: 판정 문장은 G\_sym만). 이하 'G'는 G\_sym을 뜻한다.
 - **G(1)은 N=1 1회차 값**이다(MGP-10). 2회차는 드리프트 검사에만 쓴다.
 - **CI**: seed 4개를 짝으로(같은 seed의 agnostic/fused achieved 비) bootstrap 10,000회(seed 1), 95% 백분위 CI. 이 CI는 boot 산포를 포함하지 않는다(MGP-7).
 - **추세**: mode마다 log G를 log₂N(정의된 N ∈ {1,2,4,8})에 최소제곱 회귀한 기울기 s. **재표집 단위 = seed 색인**: 한 번의 bootstrap에서 seed 색인 4개를 복원추출하고, 그 색인을 그 mode의 **모든 N과 두 arm에 공동 적용**한다(MGP-10). 정의된 점 < 3이면 `TREND_UNDEFINED`.
@@ -138,7 +140,7 @@ M2g Job은 `M2G_PASS_TABLE.json`((mode, N, arm) → 포함/제외 + 사유)을 �
 M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. M4 Job은 M3 결과 감사 뒤 별도로 승인받는다.
 - **대상**: G(N)이 정의된 (mode, N)만.
 - **정규화**: offered rate = ρ × λ\*\_fused(config, A). ρ\_LO = 0.30, ρ\_HI = 0.85(두 phase 모두 fused 용량 아래 — 과부하 비교 회피, C-3).
-- **trace**: LO 120 s → HI 120 s를 3라운드. phase 길이는 **초 단위로 고정**한다(phase당 요청 수는 λ\* 비례). 도착은 Poisson, seed 4개(§4-2와 같은 seed), 각 seed가 1 rep. arm은 `fused`·`agnostic`·`d44`, 같은 Job.
+- **trace**: LO 120 s → HI 120 s를 3라운드. phase 길이는 **초 단위로 고정**한다(phase당 요청 수는 λ\* 비례). 도착은 Poisson, seed 4개(§4-2와 같은 seed), 각 seed가 1 rep. arm은 `fused`·`fused_sym`·`agnostic`·`d44`, 같은 Job.
 - **SLO**: TTFT ≤ 3 s ∧ 요청 내부 token-ITL p95 ≤ 50 ms(게이트 4). duration은 라운드 합산, DP 복제본은 공유 벽시계(`analyze_concurrent`).
 - **보고량**: 같은 offered rate에서 arm 간 good 비율 차이(seed 짝 bootstrap CI). goodput/GPU의 N-추세는 e(N)과 분리해서 보고한다. 3% 미만은 headline이 아니다. 셀마다 SLO 실패 분해를 붙인다.
 - M4에서 `agnostic > fused`가 나와도 그것을 "multi-GPU 고유 기전"으로 귀속하지 않는다. 기전 귀속은 §4-6 nsys 기술치와 별도 기전 arm 등록이 필요하다.
@@ -146,8 +148,8 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 ## 6. 예산·하드캡·중단
 
 ### 6-1. 규모(추정, 하네스 dry-run이 확정)
-- M2g: 서빙 boot ≈ 6 config × 3 arm + 대조 + 거부 시험 ≈ 25회, G3 마이크로벤치. 벽시계 추정 3–5 h.
-- M3: boot 7 config × 3 arm × 2(HI·LO 분리, §4-2) + 앵커 + GPU 편차 8 + NUMA 2 + nsys 1 ≈ 56회. 셀 = (7×3×2 shape × (4 HI + 2 LO)) + 기술 블록 ≈ 290개. 벽시계 추정 15–25 h.
+- M2g: 서빙 boot ≈ 6 config × 4 arm + 대조 + 거부 시험 ≈ 25회, G3 마이크로벤치. 벽시계 추정 3–5 h.
+- M3: boot 7 config × 4 arm × 2(HI·LO 분리, §4-2) + 앵커 + GPU 편차 8 + NUMA 2 + nsys 1 ≈ 70회. 셀 = (7×4×2 shape × (4 HI + 2 LO)) + 기술 블록 ≈ 290개. 벽시계 추정 15–25 h.
 - **하네스 dry-run 예산이 하드캡 30 h를 넘으면 제출 전에 사용자에게 블록 분할을 묻는다.**
 - 추정치는 1-GPU 경험(셀당 3–5 분, boot 3–5 분)에서 외삽한 것이라 신뢰구간이 넓다. TP=8 boot·캡처 시간은 미실측이다.
 
@@ -225,3 +227,11 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 | MGP-28 출처 정정 | §10 문단 취소선 + 정정, §4-3 문턱 출처 명시 |
 | MGP-31 throttle 분모 | §4-3 `HARNESS_LIMITED` = nr\_throttled/nr\_periods 증가분 |
 | MGP-26, 27, 29, 30, 32 | §4-3·§7 승계 |
+
+## 12. rev4 → rev5 대조표 (사용자 결정, 감사 처방 아님)
+
+| 변경 | 위치 | 이유 |
+|---|---|---|
+| `fused_sym` arm 추가(vanilla + `--chunked-prefill-size -1 --disable-overlap-schedule`) | §2, §3 G0, §4-1, §5, §6-1 | MGP-29: fused(overlap ON·chunked 8192)와 PD-mux(overlap OFF·chunked −1)의 노브 비대칭 |
+| 1차 estimand G = agnostic/fused\_sym, G\_def·G\_d44,sym은 보조 라벨, S = fused\_sym/fused 기술치 | §4-4 | 노브를 맞춘 비가 PD-mux 기능 귀속에 더 가깝다. 단 SM 분할 **단독** 귀속은 여전히 아니다(split prefill·입장 기계 포함) |
+| x\_lo 기준은 그대로 fused(운영 기본값) HI 중앙값 | §4-2 | 변경 없음 — 네 arm 공동 |
