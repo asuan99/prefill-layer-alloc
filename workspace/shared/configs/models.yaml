@@ -185,3 +185,28 @@ falcon_h1_3b:
     attn_layer_fraction: 1.0
   mlp:
     intermediate_size: 6144         # intermediate_size
+
+nemotron_nano_9b_v2:             # VESSL ladder model (N2/E2/λ0 serve this checkpoint)
+  full_name: "NVIDIA-Nemotron-Nano-9B-v2-Base"
+  hf_repo: "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base"
+  hf_revision: "dc0661c829b14e5b9246c05cfa89094a0875e052"
+  config_status: verified        # every field copied from config.json at hf_revision (fetched 2026-10-12)
+  hidden_size: 4480
+  num_layers: 56
+  # hybrid_override_pattern: M=Mamba2 mixer, *=Attention, -=MLP (relu2), one mixer per layer
+  layer_pattern: "M-M-M-MM-M-M-M*-M-M-M*-M-M-M-M*-M-M-M-M*-M-MM-M-M-M-M-M-"
+  rms_norm_eps: 1.0e-5
+  ssm:
+    n_heads: 128            # mamba_num_heads
+    head_dim: 80            # mamba_head_dim; 128 × 80 = 10240 (mamba intermediate)
+    d_state: 128            # ssm_state_size
+    chunk_size: 128         # chunk_size
+    n_groups: 8             # n_groups / mamba_num_groups
+    conv_kernel: 4          # conv_kernel (use_conv_bias: true)
+    expand: null            # not a config field here; intermediate = n_heads*head_dim
+  attention:
+    num_heads: 40           # num_attention_heads
+    num_kv_heads: 8         # num_key_value_heads (GQA group 5)
+    head_dim: 128           # head_dim; 40 × 128 = 5120 ≠ hidden_size
+  mlp:
+    intermediate_size: 15680  # relu2, no gate (up/down only)
