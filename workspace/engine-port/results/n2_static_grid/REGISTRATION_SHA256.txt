@@ -2,7 +2,7 @@
 # basis: rev18 (§18-2-c rule reopen #2). verdicts: VERDICT_n2_3a_rev18_delta_ea_harness_2026-10-12.md (rule GO-with-caveats, R18-1..4)
 #        + VERDICT_n2_3a_rev18_redelta_2026-10-13.md (rule GO-with-caveats, R18-5, 死因 0). User decisions 2026-10-12: K/C/κ* frozen, §10-2 extrapolation
 #        + containment report, E14-1 16,100 s re-approved, EA semantic canary #32 adopted (H18-R2/R3 not adopted).
-# harness seal: NONE CURRENT (scope PROFILE and EA to be issued together on this rule digest after the canonical harness ledger; H18-5/H18-6).
+# harness seal: scope PROFILE + scope EA SEALED (2026-10-13, harness_digest 9257845f…, issued together on rule digest 56473d6f… after the canonical harness ledger).
 #               The previous PROFILE section (a5de2d6) is archived below under PREVIOUS HARNESS SEAL (provenance of Job-PROFILE a5de2d6, N2C-91).
 
 ## RULE SEAL FILES (sha256)
@@ -28,6 +28,56 @@ start 2026-10-13 00:30:05 KST, end 02:09:39; runner n2_mutants.py 12b2726b…; s
 CTRL OK (skipped=1 exactly); 194 rows J 85 (77 killed / 8 equivalent), T 12, S 97 (96 / 1); 0 unexpected / TIMEOUT / BROKEN / .pyc;
 row-by-row identical to the rev17 ledger (ledgers/rev17_core_ledger_2026-10-11.txt, old runner ffb4d6f3…) — regression check of `--no-targeted` = rev17 behaviour;
 input bytes = sealed bytes (ledgers/rev18_core_prerun_sha.txt re-diff empty). Rule tests 143/143, skip 0 (in place).
+
+## HARNESS SEAL
+scope PROFILE
+rule_seal_digest 56473d6fc1954abdf56f20ccf6cd5cd88d7ea4eeac281124d02803b677645cad
+abe9c67363baf1f30ceaa9fd438d623ba0d75d3d6596450dcaf0e9986df29f21  n2_marks.py
+945ab9251e262834852d22d87382dbc92b3934af62d8018fce43abfe66f40584  n2_loadgen.py
+b505925b1b7410eab855ee3a2e6e9627cb8b0cfa89240635ff701b9ddf095fff  n2_probe_run.py
+90a9cb3092e7984a605addf350d60f1e036bb8edbc6ad6a08732c74180dff180  fake_n2_engine.py
+96e737e481dcc71f09058f753f04b9b4dcfa17e1dc92d91ebe59a046ade6808c  test_n2_harness.py
+56af0f958ca9d94b9766f1378473653904aa61ad072a1b9ee98a09b059f4ff52  n2_harness_mutants.py
+57fdf74f476d9100c17e3f552265c4e8a9287178332111435306ba7ced24f724  n2_capacity.sh
+557143b61cb8c000d615693180ad01d0def360ddae76d0f0939dfbd7fee144a1  n2_plan.py
+a533b380047bb4365a290f51b43eae4f54443c9b085f381ce5b217178691e267  n2_job.py
+c011ea604629d2d4bf56ba41fab1ab0fbbf830192a339553b26972434e9f66b8  n2_window.py
+bbf351d9329589d3b8ac8f0d8fb60ac64731f4e106fc51aa3fa6e682e141e3b8  n2_signature.py
+2a978ecbb24d30b9293ee3b2fedad86fef655fd4a56b91bb7116e9605186bb81  n2_realized_mix.py
+233881d7fa1ef1909650e0ddb63c914c4e88763950bbbc877a6db60fde585872  n2_analyze.py
+3b84fdd2f3ee142e4d64bb14a5e6538d64fa542e930b4b907b08b8bb6579669e  n2_reach_tests.py
+6275d9eb399e30b1a3100bd127e114e61c1cb6ff6c258bd6fa8cff2f94e3e39c  test_n2_job.py
+28c0cfbda22943a42f202360f8ce31e74a4c8f3d7ab9fbe2397e8e3d1aae8a2a  n2_job_mutants.py
+harness_digest 9257845fd67eefb0114cd7303d44f7a78385c15b675fd5ebee28dcb0810fd92b
+
+## HARNESS SEAL
+scope EA
+rule_seal_digest 56473d6fc1954abdf56f20ccf6cd5cd88d7ea4eeac281124d02803b677645cad
+abe9c67363baf1f30ceaa9fd438d623ba0d75d3d6596450dcaf0e9986df29f21  n2_marks.py
+945ab9251e262834852d22d87382dbc92b3934af62d8018fce43abfe66f40584  n2_loadgen.py
+b505925b1b7410eab855ee3a2e6e9627cb8b0cfa89240635ff701b9ddf095fff  n2_probe_run.py
+90a9cb3092e7984a605addf350d60f1e036bb8edbc6ad6a08732c74180dff180  fake_n2_engine.py
+96e737e481dcc71f09058f753f04b9b4dcfa17e1dc92d91ebe59a046ade6808c  test_n2_harness.py
+56af0f958ca9d94b9766f1378473653904aa61ad072a1b9ee98a09b059f4ff52  n2_harness_mutants.py
+57fdf74f476d9100c17e3f552265c4e8a9287178332111435306ba7ced24f724  n2_capacity.sh
+557143b61cb8c000d615693180ad01d0def360ddae76d0f0939dfbd7fee144a1  n2_plan.py
+a533b380047bb4365a290f51b43eae4f54443c9b085f381ce5b217178691e267  n2_job.py
+c011ea604629d2d4bf56ba41fab1ab0fbbf830192a339553b26972434e9f66b8  n2_window.py
+bbf351d9329589d3b8ac8f0d8fb60ac64731f4e106fc51aa3fa6e682e141e3b8  n2_signature.py
+2a978ecbb24d30b9293ee3b2fedad86fef655fd4a56b91bb7116e9605186bb81  n2_realized_mix.py
+233881d7fa1ef1909650e0ddb63c914c4e88763950bbbc877a6db60fde585872  n2_analyze.py
+3b84fdd2f3ee142e4d64bb14a5e6538d64fa542e930b4b907b08b8bb6579669e  n2_reach_tests.py
+6275d9eb399e30b1a3100bd127e114e61c1cb6ff6c258bd6fa8cff2f94e3e39c  test_n2_job.py
+28c0cfbda22943a42f202360f8ce31e74a4c8f3d7ab9fbe2397e8e3d1aae8a2a  n2_job_mutants.py
+harness_digest 9257845fd67eefb0114cd7303d44f7a78385c15b675fd5ebee28dcb0810fd92b
+
+## HARNESS LEDGER PROVENANCE (scope PROFILE + EA, rev18)
+issued 2026-10-13 on rule seal 5ea2a60 (digest 56473d6f…); both sections list the same 16 harness files (R18-2); not the provenance of Job-PROFILE a5de2d6 (N2C-91, archived section below)
+H18-5 no-mutation controls (same shell env, before the ledgers): test_n2_job + n2_reach_tests + test_n2_harness 3/3 OK, 192 tests each, skip 0 (ledgers/rev18_H18-5_controls.txt)
+H01–H32: n2_mutants.py --no-targeted --jobs 1 --set harness ../n3_capacity/n3b_pdmux-n3-capacity-38ed3f4-20261006092813, 2026-10-13 02:19:49–02:45:01 KST, CTRL OK (skipped=1), 32/32 KILLED
+JH01–JH184: n2_job_mutants.py --no-targeted --jobs 1, 02:45:01–06:42:53 KST, CTRL OK, 183 KILLED + JH183 EQUIVALENT-SURVIVED (expected), 0 unexpected / TIMEOUT / BROKEN / .pyc
+runner n2_mutants.py 12b2726b…; shell env: no PDMUX_* variables, N2_N3_DIR unset; ledger input bytes = sealed bytes (ledgers/rev18_harness_prerun_sha.txt re-diff empty); latest input mtime 02:10:38 < start 02:19:49
+tests in place (UNSEALED, before issue): rule 143 + harness 192 = 335 OK, skip 0. Counts: this record is canonical (N2C-82); KILLED rows do not name the killing test (N2C-99); ledger ran UNSEALED (N2C-100)
 
 ## PREVIOUS HARNESS SEAL (archived 2026-10-13, H18-6 — NOT a current seal; provenance of Job-PROFILE pdmux-n2-static-grid-a5de2d6-20261012021243)
 commit a5de2d6, rule seal digest fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069, harness_digest 97334df9977557248a9f80be9aa62eed7ee08f3009501640270fb5691e9c01d2
