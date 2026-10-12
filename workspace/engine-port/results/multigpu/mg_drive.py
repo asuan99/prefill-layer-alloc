@@ -32,7 +32,7 @@ import sys
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent
 ENGINE = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ENGINE / "scripts" / "multigpu"))

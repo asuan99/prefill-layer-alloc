@@ -41,6 +41,8 @@ CPU only.  Reads files, writes only --out.
 
 from __future__ import annotations
 
+import os
+
 import argparse
 import hashlib
 import json
@@ -49,7 +51,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent
 SYNC_SCRIPT = HERE / "sync_engine_tree.sh"
 SCHEME = "pathless-v1"
 EXPECTED_ENTRIES = 27  # sync_engine_tree.sh since 2026-10-12 (entries 26-27 appended)

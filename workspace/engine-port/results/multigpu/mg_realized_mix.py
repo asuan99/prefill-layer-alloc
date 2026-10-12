@@ -30,6 +30,8 @@ mg_label.py.  CPU only.
 
 from __future__ import annotations
 
+import os
+
 import argparse
 import importlib.util
 import json
@@ -39,7 +41,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
-ENG = Path(__file__).resolve().parents[2]
+ENG = Path(os.path.abspath(__file__)).parents[2]
 
 # sec 2 arm table.  The sm_counts are the engine layout [(total,0)] + divisions + [(0,total)]
 # (pdmux_context.initialize_stream_groups); tests assert these equal the parsed config files.

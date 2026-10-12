@@ -59,7 +59,7 @@ from types import SimpleNamespace
 from typing import Callable, Dict, List, Optional
 from unittest import mock
 
-ENG = Path(__file__).resolve().parents[2]
+ENG = Path(os.path.abspath(__file__)).parents[2]
 DECODE_BS_MAX = 512  # PREREG rev6 sec 3 G5(a): "decode_bs 0...512 전수"
 A100_SM = 108  # sec 2 agnostic row: divide_sm(108, (8,0), 2)
 A100_CC = (8, 0)
@@ -72,7 +72,7 @@ def runtime_candidates() -> List[Path]:
     env = os.environ.get("SGLANG_ENGINE_DEV")
     if env:  # declared -> that tree only; never fall back to a sibling tree silently
         return [Path(env)]
-    kisti = Path(__file__).resolve().parents[5]
+    kisti = Path(os.path.abspath(__file__)).parents[5]
     # Local development: the multigpu branch's own tree first, then the default sibling tree.
     return [kisti / "sglang_engine_dev_multigpu" / "python", kisti / "sglang_engine_dev" / "python"]
 
@@ -271,7 +271,7 @@ def sealed_tree_record(res: Dict, runtime: Path, mixin: Path, manual: Path, auto
         want = entries.get(ENGINE_INPUT_RELS[name])
         inputs[name] = {"path": str(path), "rel": ENGINE_INPUT_RELS[name], "sha256": h,
                         "manifest_entry_sha256": want, "is_manifest_entry": h is not None and h == want}
-    for name, path in (("manual_cfg", manual), ("auto_cfg", auto), ("g5a_script", Path(__file__).resolve())):
+    for name, path in (("manual_cfg", manual), ("auto_cfg", auto), ("g5a_script", Path(os.path.abspath(__file__)))):
         inputs[name] = {"path": str(path), "sha256": _sha(path)}
     exp = "".join((expect_digest or "").split()).lower() or None
     match = None if exp is None else (tree["engine_digest"] is not None and exp == tree["engine_digest"])

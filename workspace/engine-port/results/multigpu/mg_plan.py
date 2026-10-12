@@ -18,6 +18,8 @@ TIME MODEL (an ESTIMATE, not a registered rule; rev5 audit "boot 4 min, n/lambda
 
 from __future__ import annotations
 
+import os
+
 import argparse
 import hashlib
 import json
@@ -26,7 +28,7 @@ import random
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent
 sys.path.insert(0, str(HERE))
 import mg_const as C  # noqa: E402
 

@@ -8,7 +8,7 @@
   },
   "g5a_script": {
    "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc-multigpu/workspace/engine-port/scripts/multigpu/g5a_selector_equiv.py",
-   "sha256": "dd14d13f1fad62b4597e75d786987d4e7255417194fd9ca2ddd66a1587c98200"
+   "sha256": "b63988d568050d527c003cd2eb5641752ce115592ced7e72275cce8f9a286c2e"
   },
   "manual_cfg": {
    "path": "/home/wonho/Experiments/KISTI/prefill-layer-alloc-multigpu/workspace/engine-port/benchmarks/configs/pdmux_agnostic_manual.yml",

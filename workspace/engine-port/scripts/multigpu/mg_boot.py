@@ -42,7 +42,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent
 ENGINE = HERE.parents[1]
 sys.path.insert(0, str(ENGINE / "results" / "multigpu"))
 sys.path.insert(0, str(ENGINE / "scripts" / "r2_eval"))

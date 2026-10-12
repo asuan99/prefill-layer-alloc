@@ -1,0 +1,158 @@
+{
+  "status": "PASS",
+  "reason": "A100 cc8.0, 108 SM (torch and sgl_kernel), MIG off",
+  "facts": {
+    "gpu": {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-7622a41e-d21d-4f99-7c71-64bffc3aed53",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "compute_mode": "Default",
+      "gpu_count": 8,
+      "rows": [
+        {
+          "name": "NVIDIA A100-SXM4-80GB",
+          "uuid": "GPU-7622a41e-d21d-4f99-7c71-64bffc3aed53",
+          "driver_version": "580.105.08",
+          "compute_cap": "8.0",
+          "memory_total": "81920 MiB",
+          "clocks_max_sm": "1410 MHz",
+          "power_limit": "400.00 W",
+          "mig_mode": "Disabled",
+          "compute_mode": "Default"
+        },
+        {
+          "name": "NVIDIA A100-SXM4-80GB",
+          "uuid": "GPU-10c42085-494a-b696-c10d-94545d64bbb9",
+          "driver_version": "580.105.08",
+          "compute_cap": "8.0",
+          "memory_total": "81920 MiB",
+          "clocks_max_sm": "1410 MHz",
+          "power_limit": "400.00 W",
+          "mig_mode": "Disabled",
+          "compute_mode": "Default"
+        },
+        {
+          "name": "NVIDIA A100-SXM4-80GB",
+          "uuid": "GPU-1d5d1732-2184-5230-862f-ccc4020f0d05",
+          "driver_version": "580.105.08",
+          "compute_cap": "8.0",
+          "memory_total": "81920 MiB",
+          "clocks_max_sm": "1410 MHz",
+          "power_limit": "400.00 W",
+          "mig_mode": "Disabled",
+          "compute_mode": "Default"
+        },
+        {
+          "name": "NVIDIA A100-SXM4-80GB",
+          "uuid": "GPU-2233cde8-1d24-4375-8f34-7f77b60ddc2c",
+          "driver_version": "580.105.08",
+          "compute_cap": "8.0",
+          "memory_total": "81920 MiB",
+          "clocks_max_sm": "1410 MHz",
+          "power_limit": "400.00 W",
+          "mig_mode": "Disabled",
+          "compute_mode": "Default"
+        },
+        {
+          "name": "NVIDIA A100-SXM4-80GB",
+          "uuid": "GPU-b35f5993-312d-7363-27ce-7709f7f37627",
+          "driver_version": "580.105.08",
+          "compute_cap": "8.0",
+          "memory_total": "81920 MiB",
+          "clocks_max_sm": "1410 MHz",
+          "power_limit": "400.00 W",
+          "mig_mode": "Disabled",
+          "compute_mode": "Default"
+        },
+        {
+          "name": "NVIDIA A100-SXM4-80GB",
+          "uuid": "GPU-e8e62ec2-8167-3fa9-d0c9-bf13581790ef",
+          "driver_version": "580.105.08",
+          "compute_cap": "8.0",
+          "memory_total": "81920 MiB",
+          "clocks_max_sm": "1410 MHz",
+          "power_limit": "400.00 W",
+          "mig_mode": "Disabled",
+          "compute_mode": "Default"
+        },
+        {
+          "name": "NVIDIA A100-SXM4-80GB",
+          "uuid": "GPU-6419d5b8-018a-0fb5-2a15-eba1d8ff725f",
+          "driver_version": "580.105.08",
+          "compute_cap": "8.0",
+          "memory_total": "81920 MiB",
+          "clocks_max_sm": "1410 MHz",
+          "power_limit": "400.00 W",
+          "mig_mode": "Disabled",
+          "compute_mode": "Default"
+        },
+        {
+          "name": "NVIDIA A100-SXM4-80GB",
+          "uuid": "GPU-ba46e93f-701e-6dee-6033-db2447763aac",
+          "driver_version": "580.105.08",
+          "compute_cap": "8.0",
+          "memory_total": "81920 MiB",
+          "clocks_max_sm": "1410 MHz",
+          "power_limit": "400.00 W",
+          "mig_mode": "Disabled",
+          "compute_mode": "Default"
+        }
+      ]
+    },
+    "expected_gpus": 8,
+    "uuids": [
+      "GPU-7622a41e-d21d-4f99-7c71-64bffc3aed53",
+      "GPU-10c42085-494a-b696-c10d-94545d64bbb9",
+      "GPU-1d5d1732-2184-5230-862f-ccc4020f0d05",
+      "GPU-2233cde8-1d24-4375-8f34-7f77b60ddc2c",
+      "GPU-b35f5993-312d-7363-27ce-7709f7f37627",
+      "GPU-e8e62ec2-8167-3fa9-d0c9-bf13581790ef",
+      "GPU-6419d5b8-018a-0fb5-2a15-eba1d8ff725f",
+      "GPU-ba46e93f-701e-6dee-6033-db2447763aac"
+    ],
+    "checks": {
+      "gpu_count_is_expected": true,
+      "name_is_A100": true,
+      "compute_cap_8_0": true,
+      "mig_disabled": true,
+      "cuda_available": true,
+      "torch_cc_8_0": true,
+      "torch_sm_108": true,
+      "sgl_kernel_spatial_import": true,
+      "get_sm_available_108": true,
+      "uuids_distinct": true,
+      "driver_uniform": true
+    },
+    "versions": {
+      "torch_version": "2.9.1+cu130",
+      "torch_cuda": "13.0",
+      "dist_triton": "3.5.1",
+      "dist_sglang-kernel": "0.4.1+cu130",
+      "dist_flashinfer-python": "0.6.10"
+    },
+    "get_sm_available_0": 108,
+    "vs_VESSL_A100_CONTEXT": {
+      "driver_version": {
+        "expected": "580.105.08",
+        "observed": "580.105.08",
+        "same": true
+      },
+      "clocks_max_sm": {
+        "expected": "1410 MHz",
+        "observed": "1410 MHz",
+        "same": true
+      },
+      "power_limit": {
+        "expected": "400.00 W",
+        "observed": "400.00 W",
+        "same": true
+      }
+    }
+  },
+  "stage": "B0"
+}

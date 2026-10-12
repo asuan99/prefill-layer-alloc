@@ -45,7 +45,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent
 ENG = HERE.parents[1]
 MG_DIR = ENG / "results" / "multigpu"
 sys.path.insert(0, str(MG_DIR))

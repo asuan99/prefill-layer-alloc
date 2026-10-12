@@ -40,7 +40,7 @@ from pathlib import Path
 
 import numpy as np
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent
 sys.path.insert(0, str(HERE))
 import mg_const as C  # noqa: E402
 

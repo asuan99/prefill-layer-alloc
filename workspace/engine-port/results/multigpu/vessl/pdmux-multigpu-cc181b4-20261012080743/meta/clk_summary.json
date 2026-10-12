@@ -1,0 +1,47 @@
+{
+  "samples": 4928,
+  "throttle_active_samples": 0,
+  "throttle_flag": false,
+  "per_gpu": {
+    "0": {
+      "samples": 616,
+      "throttle_active_samples": 0,
+      "throttle_flag": false
+    },
+    "1": {
+      "samples": 616,
+      "throttle_active_samples": 0,
+      "throttle_flag": false
+    },
+    "2": {
+      "samples": 616,
+      "throttle_active_samples": 0,
+      "throttle_flag": false
+    },
+    "3": {
+      "samples": 616,
+      "throttle_active_samples": 0,
+      "throttle_flag": false
+    },
+    "4": {
+      "samples": 616,
+      "throttle_active_samples": 0,
+      "throttle_flag": false
+    },
+    "5": {
+      "samples": 616,
+      "throttle_active_samples": 0,
+      "throttle_flag": false
+    },
+    "6": {
+      "samples": 616,
+      "throttle_active_samples": 0,
+      "throttle_flag": false
+    },
+    "7": {
+      "samples": 616,
+      "throttle_active_samples": 0,
+      "throttle_flag": false
+    }
+  }
+}

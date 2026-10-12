@@ -17,6 +17,7 @@ Outputs in DIR: requests.jsonl, summary.json, fd_limit.json, loadgen_clock.json.
 """
 
 import argparse
+import os
 import asyncio
 import json
 import resource
@@ -24,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-ENGINE = Path(__file__).resolve().parents[2]
+ENGINE = Path(os.path.abspath(__file__)).parents[2]
 sys.path.insert(0, str(ENGINE / "benchmarks"))
 sys.path.insert(0, str(ENGINE / "results" / "multigpu"))
 import mg_const as C  # noqa: E402
