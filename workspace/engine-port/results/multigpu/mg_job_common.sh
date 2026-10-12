@@ -76,12 +76,13 @@ MANDATORY_REG=(
   "$ENG"/benchmarks/configs/pdmux_agnostic_manual.yml "$ENG"/benchmarks/configs/pdmux_r2.yml
   "$ENG"/triage/pdmux_a100_smoke.yml                                      # G0(iii) auto-grid config + G5(a) GPU boot
   "$ENG"/tests/test_mg_harness.py "$ENG"/tests/test_m2g_gate.py "$ENG"/tests/test_mg_agnostic_manual_equiv.py "$ENG"/tests/test_mg_realized_mix.py
+  "$ENG"/tests/test_mg_symlink_layout.py                                  # rev11 R-2: Job-layout regression (symlinked results/)
   "$ENG"/scripts/bootstrap/engine_digest.py "$ENG"/scripts/bootstrap/sync_engine_tree.sh   # R2: engine-tree digest/sync tools
   "$ENG"/tests/test_engine_digest.py "$HERE"/ENGINE_DIGEST.txt                             # R2: the sealed ENGINE_DIGEST + its test
 )
 OPTIONAL_REG=("$HERE/G5A_PASS.json")
 {
-  echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md (rev10)"
+  echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md (rev11)"
   missing=0
   for f in "${MANDATORY_REG[@]}"; do
     if [ -f "$f" ]; then sha256sum "$f"; else echo "MISSING $f"; missing=$((missing + 1)); fi

@@ -13,7 +13,7 @@ import random
 import sys
 
 PREREG = "PREREG_MULTIGPU_2026-10-12.md"
-PREREG_REV = 10
+PREREG_REV = 11
 
 # ---- §1 fixed conditions ---------------------------------------------------------------------
 MODEL = "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base"

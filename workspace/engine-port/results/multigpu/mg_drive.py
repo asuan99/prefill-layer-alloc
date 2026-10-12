@@ -54,8 +54,12 @@ class Ctx:
         self.notes = []
         self.g3_python = None                      # tests: interpreter handed to `run-g3 --python` (default sys.executable)
         self.g5a_argv = None                       # tests: replaces the G5(a) CPU unit test command
+        self.nsys_path = "auto"                    # tests: a path / None replaces `command -v nsys`
         (self.out / "specs").mkdir(parents=True, exist_ok=True)
         (self.out / "gates").mkdir(parents=True, exist_ok=True)
+
+    def nsys_available(self):
+        return bool(shutil.which("nsys") if self.nsys_path == "auto" else self.nsys_path)
 
     def remaining(self):
         return self.deadline - time.time()
@@ -71,8 +75,8 @@ def run_boot(ctx, spec, expected_counts=None):
     """Admission + run.  Returns the runner rc, or None when not attempted."""
     need = P.boot_need_s(spec, 1.0) if not spec.get("expect_refusal") else 150.0
     if not ctx.dry and ctx.remaining() < need:
-        ctx.not_attempted.append({"boot_id": spec["boot_id"], "need_s": need, "remaining_s": ctx.remaining(),
-                                  "reason": "NOT_ATTEMPTED_BUDGET"})
+        ctx.not_attempted.append({"boot_id": spec["boot_id"], "config": spec.get("config"), "arm": spec.get("arm"), "block": spec.get("block", "main"),
+                                  "need_s": need, "remaining_s": ctx.remaining(), "reason": "NOT_ATTEMPTED_BUDGET"})
         ctx.event(boot=spec["boot_id"], status="NOT_ATTEMPTED_BUDGET", need_s=need, remaining_s=ctx.remaining())
         return None
     spec = dict(spec, out_root=str(ctx.out), deadline_epoch=ctx.deadline)
@@ -100,7 +104,8 @@ def run_boot_group(ctx, specs):
     need = max(P.boot_need_s(sp, 1.0) for sp in specs)
     if not ctx.dry and ctx.remaining() < need:
         for sp in specs:
-            ctx.not_attempted.append({"boot_id": sp["boot_id"], "need_s": need, "remaining_s": ctx.remaining(), "reason": "NOT_ATTEMPTED_BUDGET"})
+            ctx.not_attempted.append({"boot_id": sp["boot_id"], "config": sp.get("config"), "arm": sp.get("arm"), "block": sp.get("block", "main"),
+                                      "need_s": need, "remaining_s": ctx.remaining(), "reason": "NOT_ATTEMPTED_BUDGET"})
         ctx.event(group="gpu_dev", status="NOT_ATTEMPTED_BUDGET", need_s=need)
         return None
     procs, t = [], time.time()
@@ -118,9 +123,11 @@ def run_boot_group(ctx, specs):
         except subprocess.TimeoutExpired:
             os.killpg(p.pid, signal.SIGKILL)
             rcs[bid] = -9
-    if any(rc == -9 for rc in rcs.values()):
+    # R-1 (rev10 audit): the per-boot `^sglang::` sweep is disabled for a concurrent group (it would kill the siblings), so the sweep happens
+    # ONCE here, after every member has exited -- unconditionally, not only after a -9 timeout (orphan scheduler children survive a clean rc).
+    if not ctx.dry:
         subprocess.run(["pkill", "-9", "-f", "sglang.launch_server|^sglang::"], check=False)
-    ctx.event(group="gpu_dev", rcs=rcs, seconds=time.time() - t)
+    ctx.event(group="gpu_dev", rcs=rcs, seconds=time.time() - t, global_sweep=not ctx.dry)
     return rcs
 
 
@@ -230,7 +237,8 @@ def run_m3(ctx, table, j2_table=None, j2_note=None):
         ext = {sh: (1 if sh in ext_shapes else 0) for sh in ("A", "B")}
         if x_lo and not ext_ok:                                       # F10: an incomplete extension forbids entering boot2 (LO)
             for spec in P.boots_boot2(cfg, x_lo, ext, exclude=ex):
-                ctx.not_attempted.append({"boot_id": spec["boot_id"], "reason": "NOT_ATTEMPTED_EXT_INCOMPLETE",
+                ctx.not_attempted.append({"boot_id": spec["boot_id"], "config": spec.get("config"), "arm": spec.get("arm"),
+                                          "block": spec.get("block", "main"), "reason": "NOT_ATTEMPTED_EXT_INCOMPLETE",
                                           "detail": decisions[cfg].get("ext_incomplete_reason")})
                 ctx.event(boot=spec["boot_id"], status="NOT_ATTEMPTED_EXT_INCOMPLETE")
         elif x_lo:
@@ -246,7 +254,7 @@ def finish(ctx, table, decisions=None):
     doc = ML.aggregate(cells, (table or {}).get("cells"), flags, (table or {}).get("configs"), job=ctx.job)
     doc["n_cells"] = len(cells)
     doc["covariates"] = ML.job_covariates(ctx.out)                      # §16-3: this Job's cpu.max (per-cell throttle ratios are in doc["keys"])
-    doc["driver"] = {"decisions": decisions, "not_attempted": ctx.not_attempted,
+    doc["driver"] = {"decisions": decisions, "not_attempted": ctx.not_attempted, "partial_boots": ML.partial_boots_of(ctx.out),
                      "truncated_cells": [c["cell_id"] for c in cells if c.get("truncated")],
                      "hard_cap_deadline_epoch": ctx.deadline, "t0_epoch": ctx.t0}
     (ctx.out / "LABELS.json").write_text(json.dumps(doc, indent=1, sort_keys=True, default=float) + "\n")
@@ -455,6 +463,12 @@ def run_m2g(ctx):
             tp = _tp_of_boot(spec["boot_id"])
             ctx.not_attempted.append({"boot_id": spec["boot_id"], "tp": tp, "reason": "NOT_ATTEMPTED_G3_EXCLUDED"})
             ctx.event(boot=spec["boot_id"], status="NOT_ATTEMPTED_G3_EXCLUDED", tp=tp)
+            continue
+        if spec.get("nsys") and not ctx.dry and not ctx.nsys_available():
+            # R-3 (rev10 audit): the image has no nsys -> the G4 nsys boot cannot produce its kernel-name evidence; record NOT_RUN, do not boot
+            # (a started server would wrap `nsys launch` and die).  MGH-24': G4 'PASS' then means the main boot's cudagraph capture only.
+            ctx.not_attempted.append({"boot_id": spec["boot_id"], "reason": "NOT_RUN_NSYS_ABSENT", "block": spec.get("block")})
+            ctx.event(boot=spec["boot_id"], status="NOT_RUN_NSYS_ABSENT")
             continue
         run_boot(ctx, spec)
     if not ctx.dry:

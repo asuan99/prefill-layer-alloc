@@ -62,6 +62,34 @@ echo "job name : ${name}"
 echo "commit   : ${commit}"
 echo "rate     : \$${PDMUX_VESSL_RATE_USD_H}/h (${PDMUX_VESSL_SPEC}) -- billed while running"
 printf 'command  :'; printf ' %q' "${cmd[@]}"; echo
+# rev11 R-5: an M3 Job on J4/J8 needs J2's committed pass table + its sha256 (G0(ii) result for the TP axis); make their presence visible in the dry-run.
+# Missing either one does not abort the Job -- it silently turns the Job's TP configs into NOT_TESTED -- so the approver must see it here.
+if [[ "${target}" == */m3_job.sh ]]; then
+  mgjob=""; own_sha=""; j2_sha=""
+  for kv in "${extra_env[@]+"${extra_env[@]}"}"; do
+    case "${kv}" in
+      PDMUX_MG_JOB=*) mgjob="${kv#*=}" ;;
+      PDMUX_M2G_PASS_SHA256=*) own_sha="${kv#*=}" ;;
+      PDMUX_M2G_PASS_SHA256_J2=*) j2_sha="${kv#*=}" ;;
+    esac
+  done
+  mgdir="${repo}/workspace/engine-port/results/multigpu"
+  tabstate () {   # $1 = table basename: tracked+clean in HEAD?
+    local t="${mgdir}/$1" c; c="${mgdir}/$1.sha256"
+    [[ -f "${t}" ]] && printf 'table present' || printf 'table ABSENT'
+    if git -C "${repo}" ls-files --error-unmatch "${c}" >/dev/null 2>&1 && git -C "${repo}" diff --quiet HEAD -- "${c}" 2>/dev/null; then
+      printf ', committed .sha256 tracked+clean'
+    else printf ', committed .sha256 NOT tracked/clean'; fi
+    if [[ -f "${t}" && -f "${c}" ]]; then
+      [[ "$(sha256sum "${t}" | cut -d' ' -f1)" == "$(cut -d' ' -f1 < "${c}")" ]] && printf ', file sha == committed' || printf ', file sha != committed (MISMATCH)'
+    fi
+  }
+  echo "m3 job   : PDMUX_MG_JOB=${mgjob:-<unset>}"
+  echo "own table: M2G_PASS_TABLE_${mgjob:-?}.json -- $(tabstate "M2G_PASS_TABLE_${mgjob:-?}.json"); env PDMUX_M2G_PASS_SHA256 $([[ -n "${own_sha}" ]] && echo "set (${#own_sha} chars)" || echo "NOT SET -> the Job aborts ABORT_M2G_NOT_PASSED")"
+  if [[ "${mgjob}" == J4 || "${mgjob}" == J8 ]]; then
+    echo "J2 table : M2G_PASS_TABLE_J2.json -- $(tabstate M2G_PASS_TABLE_J2.json); env PDMUX_M2G_PASS_SHA256_J2 $([[ -n "${j2_sha}" ]] && echo "set (${#j2_sha} chars)" || echo "NOT SET -> TP configs NOT_TESTED (DP only)")"
+  fi
+fi
 if [[ "${submit}" -ne 1 ]]; then
   echo "(dry-run: nothing uploaded or created; add --submit after approval)"
   exit 0

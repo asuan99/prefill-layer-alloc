@@ -54,7 +54,7 @@ class TestRegisteredConstants(unittest.TestCase):
         self.assertEqual(M2G.HARD_CAP_S, 4 * 3600)               # rev8: M2g 4 h per Job
         self.assertEqual(set(M2G.C.HARD_CAP_S["m2g"].values()), {4 * 3600})
         self.assertEqual(M2G.C.HARD_CAP_S["m3"], {"J1": 10 * 3600, "J2": 14 * 3600, "J4": 14 * 3600, "J8": 14 * 3600})
-        self.assertEqual(M2G.C.PREREG_REV, 10)
+        self.assertEqual(M2G.C.PREREG_REV, 11)
 
     def test_stress_script_uses_the_same_registered_values(self):
         self.assertEqual(STRESS.G3_REPEATS, M2G.G3_REPEATS)

@@ -9,6 +9,7 @@ path from __file__ still points at the repo tree.  Mutation check: putting `.res
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -35,7 +36,13 @@ MODULES = [
     ("results/multigpu/mg_plan.py", "HERE", 2),
     ("results/multigpu/mg_label.py", "HERE", 2),
     ("results/multigpu/mg_realized_mix.py", "ENG", 0),
+    ("results/multigpu/mg_drive.py", "HERE", 2),            # rev11 R-2: the rev10 audit found these two covered by the literal guard only
+    ("results/multigpu/mg_substrate.py", "HERE", 2),
+    ("results/multigpu/mg_substrate.py", "ENG", 0),
 ]
+
+# rev11 R-2: any path-canonicalising call in a harness module breaks the Job layout (results/ is a symlink into /data/runs/<job>)
+CANON = re.compile(r"\bresolve\s*\(|\brealpath\b")
 
 
 class JobSymlinkLayout(unittest.TestCase):
@@ -75,12 +82,27 @@ class JobSymlinkLayout(unittest.TestCase):
                 self.assertTrue((root / "scripts" / "multigpu" / "m2g_correctness_gate.py").exists())
                 self.assertTrue((root / "scripts" / "multigpu" / "g5a_selector_equiv.py").exists())
 
-    def test_no_resolve_on_file_paths(self):
-        # static guard: no harness module derives a path from __file__ via .resolve()
-        files = list((ENG / "results" / "multigpu").glob("*.py")) + list((ENG / "scripts" / "multigpu").glob("*.py")) \
+    def _harness_files(self):
+        return list((ENG / "results" / "multigpu").glob("*.py")) + list((ENG / "scripts" / "multigpu").glob("*.py")) \
             + [ENG / "scripts" / "bootstrap" / "engine_digest.py"]
-        bad = [str(f) for f in files if "Path(__file__).resolve()" in f.read_text()]
+
+    def test_no_resolve_on_file_paths(self):
+        # static guard (regex, not the literal "Path(__file__).resolve()"): no harness module calls resolve( or realpath at all
+        bad = [f"{f}:{m.group(0)}" for f in self._harness_files() for m in CANON.finditer(f.read_text())]
         self.assertEqual(bad, [])
+
+    def test_static_guard_regex_catches_the_variants_the_literal_guard_missed(self):
+        for variant in ("Path(__file__).resolve()", "p = Path(x)\nROOT = p.resolve().parents[1]", "os.path.realpath(__file__)",
+                        "from os.path import realpath", "Path( __file__ ).resolve ()"):
+            self.assertTrue(CANON.search(variant), variant)
+        for fine in ("Path(os.path.abspath(__file__)).parent", "# resolved at import"):
+            self.assertIsNone(CANON.search(fine), fine)
+
+    def test_this_test_is_in_the_registered_digest_list(self):
+        # rev11 R-2: the registered set (mg_job_common.sh MANDATORY_REG) must contain this regression test
+        src = (ENG / "results" / "multigpu" / "mg_job_common.sh").read_text()
+        self.assertIn("test_mg_symlink_layout.py", src[src.index("MANDATORY_REG=("):src.index("OPTIONAL_REG=")])
+        self.assertTrue((ENG / "results" / "multigpu" / "mg_substrate.py").exists())
 
 
 if __name__ == "__main__":

@@ -538,6 +538,11 @@ def key_labels(cells, ext_fired=False):
     else:
         out["boot1_hi_label"] = "HI_SATURATED" if all(by0[s]["g"] is not None and by0[s]["g"] >= C.G_HI for s in C.HI_SEEDS) else "HI_NOT_SATURATED"
     out["client_error_hi"] = any(c["status"] == "CLIENT_ERROR" for c in hi)
+    # rev11 M-2: the Job-effect reference flags are read from the SAME cells as boot1_lambda_star / boot1_hi_label -- the ext-0 HI cells --
+    # never from the final (extension-rung) set, and never from LO cells.
+    hi0 = [c for c in hi_all if int(c["meta"].get("ext", 0)) == 0]
+    out["boot1_harness_limited"] = any(c.get("harness_limited") for c in hi0)
+    out["boot1_client_error"] = any(c["status"] == "CLIENT_ERROR" for c in hi0)
     if ext_missing:
         out["hi_label"] = "HI_NOT_JUDGED"
         out["reasons"].append("HI_NOT_JUDGED(EXT_NOT_RUN)")
@@ -761,14 +766,22 @@ def trend(points, reps=None, anchors=None, job_flags=None, ref_g1=None, _mut=Non
 def p_dp_status(trends, _mut=None):
     """rev10 P10 / H-1: P-DP is evaluated PER SHAPE and combined BROKEN > UNTESTED > HELD (any BROKEN fires MGP-13; another shape's UNTESTED
     cannot suppress it).  Shape s is BROKEN iff its G_sym DP trend is defined, G_sym(1, s) is defined and the label is directional
-    (G_INCREASES/G_DECREASES -- a TREND_JOB_SENSITIVE label is not).  UNTESTED (P9-c) = TREND_JOB_SENSITIVE / TREND_UNDEFINED /
+    (G_INCREASES/G_DECREASES -- for the ANCHOR shape A a TREND_JOB_SENSITIVE label is not; for shape B the RAW label decides, rev11 §18).  UNTESTED (P9-c) = TREND_JOB_SENSITIVE / TREND_UNDEFINED /
     G1_UNDEFINED_NO_JOB_CHECK / G(1) undefined / no DP trend.  HELD = NO_TREND_DETECTED.  UNTESTED is not 'not broken'; it does NOT fire MGP-13
-    and obliges the 'P-DP 미검정' disclosure on every TP label.   `_mut` 'untested_first' (tests only): UNTESTED outranks BROKEN."""
+    and obliges the 'P-DP 미검정' disclosure on every TP label.   `_mut` 'untested_first' (tests only): UNTESTED outranks BROKEN; 'same_shape_only' = the rev10 reading (cross-shape correction lowers shape B to UNTESTED)."""
     dp = {k: t for k, t in trends.items() if k.startswith("G_sym|DP|")}
-    per = {}
+    per, via = {}, {}
     for k, t in dp.items():
         lab = t["label"]
         g1 = t.get("g1_defined", True)
+        shape = k.rsplit("|", 1)[1]
+        # rev11 §18 (M-4, user decision, fail-closed): the cross-shape correction (shape-A anchors, G_sym) is NOT a same-shape correction.
+        # For a shape other than the anchor's, P-DP reads the RAW DP trend: defined + G(1, shape) defined + directional raw label -> BROKEN,
+        # even when the corrected trend turned the published label into TREND_JOB_SENSITIVE.  The anchor shape keeps its same-shape correction.
+        if shape != C.ANCHOR_SHAPE and _mut != "same_shape_only":
+            lab = t.get("raw_label", lab) if lab == TREND_JOB_SENSITIVE else lab
+            if lab != t["label"]:
+                via[k] = "RAW_LABEL(cross-shape correction does not lower BROKEN)"
         if lab in DIRECTIONAL and g1:
             per[k] = "BROKEN"
         elif lab == "NO_TREND_DETECTED" and g1:
@@ -789,7 +802,7 @@ def p_dp_status(trends, _mut=None):
     labels = {k: t["label"] for k, t in dp.items()}
     why = sorted(k for k, v in per.items() if v == "UNTESTED")
     return {"status": status, "broken": status == "BROKEN", "per_shape": per, "shapes": sorted(k for k, v in per.items() if v == "BROKEN"),
-            "labels": labels, "untested_because": why, "MGP13_fired": status == "BROKEN",
+            "labels": labels, "raw_label_used": via, "untested_because": why, "MGP13_fired": status == "BROKEN",
             "MGP13_TP_labels_not_citable": status == "BROKEN",
             "TP_labels_need_P_DP_UNTESTED_disclosure": status == "UNTESTED"}
 
@@ -938,7 +951,8 @@ def ref_entry(lab):
     if lab is None:
         return {"present": False}
     return {"present": True, "boot1_lambda_star": lab.get("boot1_lambda_star"), "boot1_hi_label": lab.get("boot1_hi_label"),
-            "harness_limited": bool(lab.get("harness_limited")), "client_error": bool(lab.get("client_error_hi")),
+            "boot1_harness_limited": bool(lab.get("boot1_harness_limited")), "boot1_client_error": bool(lab.get("boot1_client_error")),
+            "harness_limited": bool(lab.get("harness_limited")), "client_error": bool(lab.get("client_error_hi")),    # FINAL set: carried only so a test can show the check never reads it
             "final_lambda_star": lab.get("lambda_star"), "final_ext": lab.get("ext"),
             "boot1_achieved_by_seed": lab.get("boot1_achieved_by_seed")}
 
@@ -959,7 +973,8 @@ def job_effect(ref, anc, tol=None, _mut=None):
     CLEAR / FIRED / UNTESTED.  UNTESTED when the anchor cell is not HI_SATURATED, is HARNESS_LIMITED / CLIENT_ERROR / TRUNCATED /
     contaminated, lacks an arm or a lambda*, or when the reference lacks one.  FIRED iff |G_anchor/G_ref - 1| > 3 % or
     |lambda*_anchor(fused_sym)/lambda*_ref(fused_sym) - 1| > 3 %.
-    `_mut` 'ii' (tests only) = compare against J1's FINAL (extension-rung) value instead of boot1."""
+    `_mut` 'ii' (tests only) = compare against J1's FINAL (extension-rung) value instead of boot1; 'flags_final' = read harness_limited /
+    client_error of J1's FINAL cell set (rev11 M-2 mutant)."""
     tol = C.JOB_EFFECT_TOL if tol is None else tol
     why = []
     arms = (anc or {}).get("arms") or {}
@@ -988,9 +1003,13 @@ def job_effect(ref, anc, tol=None, _mut=None):
             continue
         if e.get("boot1_hi_label") != "HI_SATURATED":
             why.append(f"{a}:J1_REFERENCE_{e.get('boot1_hi_label')}")
-        if e.get("harness_limited"):
+        hl_k, ce_k = (("harness_limited", "client_error") if _mut == "flags_final" else ("boot1_harness_limited", "boot1_client_error"))
+        if hl_k not in e or ce_k not in e:                       # fail-closed: a reference without the boot1 flags is not a clean cell
+            why.append(f"{a}:J1_REFERENCE_BOOT1_FLAGS_MISSING")
+            continue
+        if e.get(hl_k):
             why.append(f"{a}:J1_REFERENCE_HARNESS_LIMITED")
-        if e.get("client_error"):
+        if e.get(ce_k):
             why.append(f"{a}:J1_REFERENCE_CLIENT_ERROR")
     if why:
         return {"status": "UNTESTED", "reasons": why}
@@ -1008,6 +1027,73 @@ def _g_of_arrays(anc_arms):
     return anc_arms["agnostic"]["achieved_by_seed"], anc_arms["fused_sym"]["achieved_by_seed"]
 
 
+_BOOT_ID = re.compile(r"^m3_(?P<cfg>N1|TP\d+|DP\d+)_(?P<arm>fused_sym|fused|agnostic|d44)_(?P<kind>[A-Za-z0-9]+)")
+CUT_REASONS = ("NOT_ATTEMPTED_BUDGET", "NOT_ATTEMPTED_EXT_INCOMPLETE")        # mg_drive.not_attempted reasons that mean "the hard cap cut this boot"
+
+
+def driver_cut_arms(doc):
+    """rev11 M-1: the (config, arm) units the Job's HARD CAP cut, read from the DRIVER'S OWN RECORDS -- never from an estimand's reason text:
+      * driver.not_attempted with reason NOT_ATTEMPTED_BUDGET (admission refused) or NOT_ATTEMPTED_EXT_INCOMPLETE (boot2 not entered);
+      * driver.partial_boots (a boot with a NOT_STARTED_DEADLINE step / rc 6, mg_boot.py);
+      * a cell the runner flagged TRUNCATED (doc["keys"][...]["truncated"]).
+    Only main-block boots count (an anchor / GPU-deviation boot is not a trend point); TP_NOT_TESTED / M2g exclusions are not truncation.
+    Returns {(config, arm): sorted sources}."""
+    cut = {}
+
+    def add(cfg, arm, why):
+        cut.setdefault((cfg, arm), set()).add(why)
+
+    drv = (doc or {}).get("driver") or {}
+
+    def unit(x):
+        cfg, arm, block = x.get("config"), x.get("arm"), x.get("block")
+        if cfg is None or arm is None:
+            m = _BOOT_ID.match(str(x.get("boot_id", "")))
+            if not m:
+                return None
+            cfg, arm = m.group("cfg"), m.group("arm")
+            block = block or ("anchor" if m.group("kind") == "anchor" else "main")
+        return (cfg, arm) if block in (None, "main") else None
+
+    for x in drv.get("not_attempted") or []:
+        if x.get("reason") in CUT_REASONS and unit(x):
+            add(*unit(x), x["reason"])
+    for x in drv.get("partial_boots") or []:
+        if unit(x):
+            add(*unit(x), "PARTIAL_BOOT")
+    for key, lab in ((doc or {}).get("keys") or {}).items():
+        if lab.get("truncated"):
+            cfg, arm = key.split("|")[:2]
+            if cfg != C.ANCHOR_CONFIG:
+                add(cfg, arm, "TRUNCATED_CELL")
+    return {k: sorted(v) for k, v in cut.items()}
+
+
+def partial_boots_of(root):
+    """Boots of one Job directory that the deadline interrupted: boots/<id>/boot.json has a NOT_STARTED_DEADLINE step (mg_boot.py).
+    Joined with specs/<id>.json for (config, arm, block).  Written into LABELS.json driver.partial_boots by mg_drive.finish."""
+    root = Path(root)
+    out = []
+    for bj in sorted((root / "boots").glob("*/boot.json")) if (root / "boots").exists() else []:
+        try:
+            b = json.loads(bj.read_text())
+        except ValueError:
+            continue
+        if not any(st.get("status") == "NOT_STARTED_DEADLINE" for st in b.get("steps") or []):
+            continue
+        bid = bj.parent.name
+        rec = {"boot_id": bid}
+        sp = root / "specs" / f"{bid}.json"
+        if sp.exists():
+            try:
+                sd = json.loads(sp.read_text())
+                rec.update(config=sd.get("config"), arm=sd.get("arm"), block=sd.get("block", "main"))
+            except ValueError:
+                pass
+        out.append(rec)
+    return out
+
+
 def aggregate_jobs(docs, job_meta=None, _mut=None):
     """Join the per-Job documents {J1: doc, J2: doc, ...} into trends.  N=1 points come from J1 ONLY; N=2/4/8 from the Job of that size.
     P9-a  G_sym(1, shape) undefined -> that shape's every trend is G1_UNDEFINED_NO_JOB_CHECK, every J_N JOB_EFFECT_UNTESTED, P-DP UNTESTED.
@@ -1017,6 +1103,12 @@ def aggregate_jobs(docs, job_meta=None, _mut=None):
     out = {"prereg": f"{C.PREREG} rev{C.PREREG_REV}", "jobs": {}, "trends": {}, "job_effect": {}, "P_DP": None}
     j1 = docs.get("J1")
     ref = (j1 or {}).get("ref") or {}
+    _cut_cache = {}
+
+    def cut_of(d):
+        if id(d) not in _cut_cache:
+            _cut_cache[id(d)] = driver_cut_arms(d)
+        return _cut_cache[id(d)]
     g1_def = lambda name, shape: bool(j1 and ((((j1.get("estimands") or {}).get(name) or {}).get("N1") or {}).get(shape) or {}).get("defined"))
     for J in C.JOBS:
         d = docs.get(J)
@@ -1075,10 +1167,15 @@ def aggregate_jobs(docs, job_meta=None, _mut=None):
                                 anc_by_N[n_gpus] = anchors[ju]
                     else:
                         rs = (ent or {"undefined_reasons": ["NOT_RUN"]})["undefined_reasons"]
-                        na = [x for x in (((d or {}).get("driver") or {}).get("not_attempted") or [])
-                              if str(x.get("boot_id", "")).startswith(f"m3_{cfg}_") and x.get("reason") in ("NOT_ATTEMPTED_BUDGET", "NOT_ATTEMPTED_EXT_INCOMPLETE")]
-                        trunc = any("TRUNCATED" in r for r in rs) or (any("NOT_RUN" in r for r in rs) and bool(na))      # H-2: cut by the hard cap
-                        undefined.append({"config": cfg, "job": J, "reasons": rs, "truncated": trunc})
+                        pair = PAIRS[name]
+                        src = {a: cut_of(d).get((cfg, a), []) for a in pair}
+                        trunc = any(src.values())                  # M-1: (cfg, arm) cut by the hard cap, from the driver's records
+                        if _mut == "trunc_reason":                 # mutant: the rev10 predicate -- reason TEXT ("TRUNCATED" / "NOT_RUN" substring)
+                            na = [x for x in (((d or {}).get("driver") or {}).get("not_attempted") or [])
+                                  if str(x.get("boot_id", "")).startswith(f"m3_{cfg}_") and x.get("reason") in CUT_REASONS]
+                            trunc = any("TRUNCATED" in r for r in rs) or (any("NOT_RUN" in r for r in rs) and bool(na))
+                        undefined.append({"config": cfg, "job": J, "reasons": rs, "truncated": trunc,
+                                          "cut_by": {a: v for a, v in src.items() if v} if _mut != "trunc_reason" else {}})
                 own_g1 = any(p[0] == 1 for p in pts)
                 g1_ok = own_g1 and g1_def("G_sym", shape)
                 if not g1_ok:
@@ -1108,7 +1205,7 @@ def aggregate_jobs(docs, job_meta=None, _mut=None):
                 t["g1_defined"] = g1_ok
                 t["jobs"] = {int(n): j for n, j in sorted(jobs_of.items())}
                 out["trends"][f"{name}|{mode}|{shape}"] = t
-    out["P_DP"] = p_dp_status(out["trends"])
+    out["P_DP"] = p_dp_status(out["trends"], _mut=("same_shape_only" if _mut == "same_shape_only" else None))
     # ---- rev10 P11 (b) / H-2: a DP trend that is TREND_UNDEFINED BECAUSE OF TRUNCATED cells, with P-DP UNTESTED as the consequence, forbids
     # citing the TP direction labels even with the disclosure.  A non-truncation reason keeps the P9-c path (disclose, then cite).
     # The reverse (TP cut by truncation) leaves the DP labels for the P-DP verdict only.
@@ -1258,27 +1355,46 @@ def _syn_anchor(G, lam_fs=1.0, **over):
 def _syn_ref(g_ref=1.0, final_mult=1.0, **over):
     """J1 boot1 reference: fused_sym lambda* 1.0, agnostic lambda* g_ref; `final_mult` scales the extension-rung (final) lambda*."""
     arm = lambda lam: dict(present=True, boot1_lambda_star=lam, final_lambda_star=lam * final_mult, boot1_hi_label="HI_SATURATED",
-                           harness_limited=False, client_error=False, boot1_achieved_by_seed=[lam] * 4)
+                           harness_limited=False, client_error=False, boot1_harness_limited=False, boot1_client_error=False,
+                           boot1_achieved_by_seed=[lam] * 4)
     r = {"fused_sym": arm(1.0), "agnostic": arm(g_ref)}
     for a, kv in over.items():
         r[a].update(kv)
     return r
 
 
-def _syn_docs(g1, series, anchors, shape="A", ref=None):
+def _syn_docs(g1, series, anchors, shape="A", ref=None, drivers=None, series_b=None, g1_b=1.0):
     """g1: G(1) (extension-rung/final value the trend uses) or None (undefined).  series: {cfg: G | ('undef', reason...)} e.g. {'DP2': 1.0}.
-    anchors: {N: G_anchor | None (anchor absent)}."""
+    anchors: {N: G_anchor | None (anchor absent)}.  drivers: {N: driver record of that Job} (rev11 M-1: truncation is read from it).
+    series_b: {cfg: G} -- the same configs' shape-B estimands (rev11 M-4); N=1 shape-B point = g1_b."""
     ests = {}
+    series_b = dict(series) if series_b == "same" else series_b          # "same": shape B mirrors shape A (a real aggregate() always has both shapes)
     for cfg, v in series.items():
         ests.setdefault(int("".join(ch for ch in cfg if ch.isdigit())), {})[cfg] = _syn_undef(*v[1:]) if isinstance(v, tuple) else _syn_ent(v)
-    docs = {"J1": {"estimands": {"G_sym": ({"N1": {shape: _syn_ent(g1)}} if g1 is not None else {})}, "ref": ref or _syn_ref(), "n_cells": 1, "anchor": {}}}
+    n1 = {shape: _syn_ent(g1)} if g1 is not None else {}
+    if series_b is not None:
+        n1["B"] = _syn_ent(g1_b)
+    docs = {"J1": {"estimands": {"G_sym": ({"N1": n1} if n1 else {})}, "ref": ref or _syn_ref(), "n_cells": 1, "anchor": {}}}
     for n, cfgs in ests.items():
         J = f"J{n}"
         docs[J] = {"estimands": {"G_sym": {cfg: {shape: e} for cfg, e in cfgs.items()}}, "ref": {}, "n_cells": 1,
                    "anchor": ({} if anchors.get(n) is None else _syn_anchor(anchors[n]))}
+        if series_b is not None:
+            for cfg in cfgs:
+                if cfg in series_b:
+                    v = series_b[cfg]
+                    docs[J]["estimands"]["G_sym"][cfg]["B"] = _syn_undef(*v[1:]) if isinstance(v, tuple) else _syn_ent(v)
+        if drivers and n in drivers:
+            docs[J]["driver"] = drivers[n]
     return docs
 
 
+def _syn_cut(*cfg_arm_boot, reason="NOT_ATTEMPTED_BUDGET"):
+    """A driver record: boots (cfg, arm, kind) the hard cap refused -- the shape mg_drive.run_boot writes (boot_id / need_s / reason)."""
+    return {"not_attempted": [{"boot_id": f"m3_{c}_{a}_{k}", "need_s": 5000.0, "remaining_s": 100.0, "reason": reason} for c, a, k in cfg_arm_boot]}
+
+
+_LO_REFUSED = "KNEE_NOT_BRACKETED[LO_NOT_JUDGED:4385=MISSING,4386=MISSING,4387=MISSING,4388=MISSING]"     # what a refused boot2 looks like in aggregate()
 _lab = lambda t: t["label"]
 JOB_MUT_SCENARIOS = {
     # name -> (docs, series key, expected outcome, outcome extractor, {mutant tag: kw for aggregate_jobs _mut})
@@ -1290,16 +1406,37 @@ JOB_MUT_SCENARIOS = {
     "S_h3_boot1_vs_extension_G1": (_syn_docs(1.10, {"DP2": 1.10, "DP4": 1.20}, {2: 1.0, 4: 1.10}), "G_sym|DP|A", TREND_JOB_SENSITIVE, _lab),
     # H-4: the J2 anchor is absent (UNTESTED) -> J2 leaves the corrected trend, 2 points remain -> TREND_UNDEFINED -> P9-b fails
     "S_h4_untested_anchor_point_excluded": (_syn_docs(1.0, {"DP2": 1.08, "DP4": 1.08}, {2: None, 4: 1.04}), "G_sym|DP|A", TREND_JOB_SENSITIVE, _lab),
-    # H-2: DP cut by the hard cap (TRUNCATED) -> DP TREND_UNDEFINED -> P-DP UNTESTED -> TP direction not citable
-    "S_h2_truncated_dp_blocks_tp": (_syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:TRUNCATED"), "DP8": ("undef", "agnostic:TRUNCATED"),
-                                                     "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0}),
+    # H-2 / rev11 M-1: DP boot2 admission refused by the hard cap (driver: NOT_ATTEMPTED_BUDGET) -> aggregate() reports only
+    # KNEE_NOT_BRACKETED[LO_NOT_JUDGED..] (no "TRUNCATED" text) -> DP TREND_UNDEFINED -> P-DP UNTESTED -> TP direction not citable
+    "S_h2_truncated_dp_blocks_tp": (_syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:" + _LO_REFUSED), "DP8": ("undef", "agnostic:" + _LO_REFUSED),
+                                                     "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0},
+                                    drivers={4: _syn_cut(("DP4", "agnostic", "boot2")), 8: _syn_cut(("DP8", "agnostic", "boot2"))}, series_b="same"),
                                     "G_sym|TP|A", "TP_UNCONTROLLED_TRUNCATION", _lab),
-    # H-2 (control side): the same gap for a NON-truncation reason keeps the P9-c path (disclose, then cite)
+    # rev11 M-1 (b): TP boot2 refused (TP4/TP8) while DP is fine -> DP labels are used for the P-DP verdict only
+    "S_h2_tp_cut_marks_dp_p_dp_only": (_syn_docs(1.0, {"DP2": 1.0, "DP4": 1.0, "DP8": 1.0,
+                                                       "TP2": 1.04, "TP4": ("undef", "agnostic:" + _LO_REFUSED), "TP8": ("undef", "agnostic:" + _LO_REFUSED)},
+                                                 {2: 1.0, 4: 1.0, 8: 1.0},
+                                                 drivers={4: _syn_cut(("TP4", "agnostic", "boot2")), 8: _syn_cut(("TP8", "agnostic", "boot2"))}, series_b="same"),
+                                       "G_sym|DP|A", True, lambda t: bool(t.get("used_for_p_dp_only"))),
+    # a cut of an arm OUTSIDE the pair (d44 is not in G_sym) is not a truncation of G_sym
+    "S_h2_cut_arm_outside_pair": (_syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:" + _LO_REFUSED), "DP8": ("undef", "agnostic:" + _LO_REFUSED),
+                                                  "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0},
+                                  drivers={4: _syn_cut(("DP4", "d44", "boot2")), 8: _syn_cut(("DP8", "d44", "boot2"))}, series_b="same"),
+                                  "G_sym|TP|A", "G_INCREASES_WITH_N", _lab),
+    # H-2 (control side): the same gap for a NON-truncation reason (no driver cut record) keeps the P9-c path (disclose, then cite)
     "S_h2_nontruncation_dp_gap_cites_tp": (_syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:KNEE_NOT_BRACKETED"), "DP8": ("undef", "agnostic:KNEE_NOT_BRACKETED"),
-                                                           "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0}),
+                                                           "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0}, series_b="same"),
                                            "G_sym|TP|A", "G_INCREASES_WITH_N", _lab),
+    # rev11 M-4 (user decision, fail-closed): the verdict-audit reversal scenario.  Anchors J2 1.00 CLEAR, J4 1.10 FIRED, J8 1.21 FIRED;
+    # DP-A 1,1,1,1 / DP-B 1,1,1.10,1.21 / TP-A 1,1.2,1.5,2.0.  The cross-shape (shape-A anchor) correction turns DP-B into TREND_JOB_SENSITIVE,
+    # but P-DP reads the RAW shape-B trend -> BROKEN (MGP-13 fires), not UNTESTED.
+    "S_m4_shape_b_raw_increase_cross_shape_corrected": (
+        _syn_docs(1.0, {"DP2": 1.0, "DP4": 1.0, "DP8": 1.0, "TP2": 1.2, "TP4": 1.5, "TP8": 2.0}, {2: 1.00, 4: 1.10, 8: 1.21},
+                  series_b={"DP2": 1.0, "DP4": 1.10, "DP8": 1.21}),
+        None, ("BROKEN", True), lambda d: (d["P_DP"]["status"], d["P_DP"]["MGP13_fired"])),
 }
-JOB_MUT_TAGS = {"i": "i", "iii": "iii", "iv": "iv", "h3": "h3", "h4": "h4", "h2_ignore_truncation": "trunc"}
+JOB_MUT_TAGS = {"i": "i", "iii": "iii", "iv": "iv", "h3": "h3", "h4": "h4", "h2_ignore_truncation": "trunc", "h2_reason_text": "trunc_reason",
+                "m4_same_shape_only": "same_shape_only"}
 
 # H-1: per-shape P-DP.  name -> (inputs {shape: (label, g1_defined)}, expected status)
 PDP_SCENARIOS = {
@@ -1308,6 +1445,9 @@ PDP_SCENARIOS = {
     "P_both_no_trend": ({"A": ("NO_TREND_DETECTED", True), "B": ("NO_TREND_DETECTED", True)}, "HELD"),
     "P_A_no_trend_B_job_sensitive": ({"A": ("NO_TREND_DETECTED", True), "B": ("TREND_JOB_SENSITIVE", True)}, "UNTESTED"),
     "P_A_undefined_B_no_trend": ({"A": ("TREND_UNDEFINED", True), "B": ("NO_TREND_DETECTED", True)}, "UNTESTED"),
+    # rev11 M-4: shape B corrected to TREND_JOB_SENSITIVE by the cross-shape correction, raw directional -> BROKEN; shape A keeps its same-shape correction
+    "P_B_raw_increase_corrected_job_sensitive": ({"A": ("NO_TREND_DETECTED", True), "B": ("TREND_JOB_SENSITIVE", True, "G_INCREASES_WITH_N")}, "BROKEN"),
+    "P_A_raw_increase_corrected_job_sensitive": ({"A": ("TREND_JOB_SENSITIVE", True, "G_INCREASES_WITH_N"), "B": ("NO_TREND_DETECTED", True)}, "UNTESTED"),
 }
 
 # H-5: rule (iii) removed, rule (ii) kept.  name -> (arm facts, expected memory_mismatch)
@@ -1329,17 +1469,26 @@ def run_job_mutation_checks():
     (v gate-name partial match: mg_substrate.run_mutation_checks; config-order initial [DP, TP]: mg_plan selftest)."""
     per, verdict = {}, {}
     for name, (docs, key, expected, fn) in JOB_MUT_SCENARIOS.items():
-        row = {"expected": expected, "CONTROL": fn(aggregate_jobs(docs)["trends"][key])}
+        pick = (lambda d, key=key: d["trends"][key]) if key else (lambda d: d)         # key None: the extractor reads the whole joined document
+        row = {"expected": expected, "CONTROL": fn(pick(aggregate_jobs(docs)))}
         for tag, m in JOB_MUT_TAGS.items():
-            row[tag] = fn(aggregate_jobs(docs, _mut=m)["trends"][key])
+            row[tag] = fn(pick(aggregate_jobs(docs, _mut=m)))
         per[name] = row
     ref, anc = _syn_ref(1.0, final_mult=1.3), _syn_anchor(1.0)
     per["S_ii_extension_rung_reference"] = {"expected": "CLEAR", "CONTROL": job_effect(ref, anc)["status"], "ii": job_effect(ref, anc, _mut="ii")["status"]}
-    for nm, kv in (("not_saturated", dict(boot1_hi_label="HI_NOT_SATURATED")), ("harness_limited", dict(harness_limited=True)), ("client_error", dict(client_error=True))):
+    for nm, kv in (("not_saturated", dict(boot1_hi_label="HI_NOT_SATURATED")), ("harness_limited", dict(boot1_harness_limited=True)), ("client_error", dict(boot1_client_error=True))):
         per[f"S_h3_reference_cell_{nm}"] = {"expected": "UNTESTED", "CONTROL": job_effect(_syn_ref(1.0, fused_sym=kv), _syn_anchor(1.0))["status"]}
+    # rev11 M-2: J1 boot1 cells are HARNESS_LIMITED / CLIENT_ERROR, the FINAL (extension-rung) set is clean -> UNTESTED; reading the final set -> CLEAR
+    for nm, kv in (("harness_limited", dict(boot1_harness_limited=True)), ("client_error", dict(boot1_client_error=True))):
+        rf = _syn_ref(1.0, fused_sym=dict(kv, harness_limited=False, client_error=False), agnostic=dict(kv, harness_limited=False, client_error=False))
+        per[f"S_m2_boot1_flag_{nm}_final_set_clean"] = {"expected": "UNTESTED", "CONTROL": job_effect(rf, _syn_anchor(1.0))["status"],
+                                                        "m2_flags_final": job_effect(rf, _syn_anchor(1.0), _mut="flags_final")["status"]}
     for name, (inp, expected) in PDP_SCENARIOS.items():
-        tr = {f"G_sym|DP|{sh}": {"label": lab, "g1_defined": g1} for sh, (lab, g1) in inp.items()}
-        per[name] = {"expected": expected, "CONTROL": p_dp_status(tr)["status"], "untested_first": p_dp_status(tr, _mut="untested_first")["status"]}
+        tr = {}
+        for sh, v in inp.items():
+            tr[f"G_sym|DP|{sh}"] = {"label": v[0], "g1_defined": v[1], **({"raw_label": v[2]} if len(v) > 2 else {})}
+        per[name] = {"expected": expected, "CONTROL": p_dp_status(tr)["status"], "untested_first": p_dp_status(tr, _mut="untested_first")["status"],
+                     "m4_same_shape_only": p_dp_status(tr, _mut="same_shape_only")["status"]}
     for name, (facts, expected) in MEM_SCENARIOS.items():
         cf = memory_check(facts)
         row = {"expected": expected, "CONTROL": cf["memory_mismatch"], "mem_iii_present": memory_check(facts, _mut="iii")["memory_mismatch"],
@@ -1350,7 +1499,8 @@ def run_job_mutation_checks():
             row["mem_iii_present"] = (row["mem_iii_present"], True)
             row["mem_ii_removed"] = (row["mem_ii_removed"], True)
         per[name] = row
-    for m in ("i", "ii", "iii", "iv", "h3", "h4", "h2_ignore_truncation", "untested_first", "mem_iii_present", "mem_ii_removed", "CONTROL"):
+    for m in ("i", "ii", "iii", "iv", "h3", "h4", "h2_ignore_truncation", "h2_reason_text", "m4_same_shape_only", "m2_flags_final", "untested_first",
+              "mem_iii_present", "mem_ii_removed", "CONTROL"):
         killed_on = [n for n, r in per.items() if m in r and r[m] != r["expected"]]
         verdict[m] = {"killed_on": killed_on, "killed": bool(killed_on)}
     ok = all(v["killed"] for k, v in verdict.items() if k != "CONTROL") and not verdict["CONTROL"]["killed"]
@@ -1480,6 +1630,69 @@ def selftest():
     return 0 if not fails else 1
 
 
+class JoinRefused(Exception):
+    """rev11 M-3: a Job directory is not admissible to the cross-Job join (no / unverified pass table, wrong Job, aborted)."""
+
+
+def _sha256_file(path):
+    import hashlib
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def job_dir_admission(J, d, committed_sha_dir=None, _mut=None):
+    """rev11 M-3 (decision: the `--jobs` join re-loads each Job's own M2G_PASS_TABLE.used.json -- the table the Job itself ran against -- and
+    labels the Job with it; it does NOT consume LABELS.json).  Admission, all of which must hold:
+      * `<d>/BUDGET.txt` exists and its `job=` field equals the CLI's J (MGH-29: the Job name carries no J; BUDGET.txt `job=` is the attribution),
+        and `kind=m3`;
+      * no `<d>/ABORT`, no `<d>/DRYRUN` marker;
+      * `<d>/M2G_PASS_TABLE.used.json` exists and its sha256 equals the COMMITTED `results/multigpu/M2G_PASS_TABLE_<J>.json.sha256`
+        (`committed_sha_dir`, default this directory) -- a table that was edited after the Job, or the wrong Job's table, is refused;
+      * the table parses and has a `cells` dict;
+      * `<d>/LABELS.json` carries the driver's `driver` record (not_attempted / partial boots: the M-1 truncation judgement reads it).
+    Returns (path of the used table, parsed table).  `_mut` 'no_table' (tests only) skips the table (the rev10 behaviour)."""
+    d = Path(d)
+    if not d.is_dir():
+        raise JoinRefused(f"{J}: {d} is not a directory")
+    if (d / "ABORT").exists():
+        raise JoinRefused(f"{J}: {d}/ABORT present ({(d / 'ABORT').read_text().strip()[:120]})")
+    if (d / "DRYRUN").exists():
+        raise JoinRefused(f"{J}: {d}/DRYRUN present (a dry run is not a measurement)")
+    bt = d / "BUDGET.txt"
+    if not bt.exists():
+        raise JoinRefused(f"{J}: {d}/BUDGET.txt missing (cannot attribute the directory to a Job)")
+    kv = dict(tok.split("=", 1) for tok in bt.read_text().split() if "=" in tok)
+    if kv.get("kind") != "m3":
+        raise JoinRefused(f"{J}: BUDGET.txt kind={kv.get('kind')!r}, an M3 Job directory is required")
+    if kv.get("job") != J:
+        raise JoinRefused(f"{J}: BUDGET.txt job={kv.get('job')!r} != CLI {J}")
+    lj = d / "LABELS.json"
+    try:
+        has_driver = isinstance(json.loads(lj.read_text()).get("driver"), dict)
+    except (OSError, ValueError):
+        has_driver = False
+    if not has_driver:                           # the truncation judgement (M-1) is read from the driver's records
+        raise JoinRefused(f"{J}: {lj} missing or without a `driver` record (hard-cap truncation cannot be judged)")
+    if _mut == "no_table":
+        return None, {}
+    used = d / "M2G_PASS_TABLE.used.json"
+    if not used.exists():
+        raise JoinRefused(f"{J}: {used} missing -- no pass table, no join")
+    csd = Path(committed_sha_dir) if committed_sha_dir else HERE
+    cs = csd / f"M2G_PASS_TABLE_{J}.json.sha256"
+    if not cs.exists():
+        raise JoinRefused(f"{J}: committed {cs} missing -- cannot verify the used table")
+    want = cs.read_text().split()[:1]
+    got = _sha256_file(used)
+    if want != [got]:
+        raise JoinRefused(f"{J}: sha256(M2G_PASS_TABLE.used.json)={got[:16]}.. != committed .sha256 {(want or ['<empty>'])[0][:16]}..")
+    try:
+        t = json.loads(used.read_text())
+        assert isinstance(t.get("cells"), dict)
+    except (ValueError, AssertionError):
+        raise JoinRefused(f"{J}: {used} is not a pass table (no `cells` dict)")
+    return used, t
+
+
 def label_job_dir(root, job=None, pass_table=None):
     """One Job directory -> aggregate() document (+ covariates).  pass_table: path or None."""
     cells = [load_cell(d) for d in find_cells(root)]
@@ -1495,6 +1708,8 @@ def label_job_dir(root, job=None, pass_table=None):
             doc["driver"] = json.loads(drv.read_text()).get("driver")
         except ValueError:
             pass
+    if isinstance(doc.get("driver"), dict) and "partial_boots" not in doc["driver"]:     # M-1: older LABELS.json -> recompute from the boot records
+        doc["driver"]["partial_boots"] = partial_boots_of(root)
     return doc
 
 
@@ -1504,6 +1719,7 @@ def main(argv=None):
     ap.add_argument("--job", default=None, choices=C.JOBS)
     ap.add_argument("--jobs", nargs="*", default=[], help="J1=<dir> J2=<dir> ... : join the Jobs (aggregate_jobs)")
     ap.add_argument("--pass-table", default="")
+    ap.add_argument("--committed-sha-dir", default="", help="--jobs: directory holding the committed M2G_PASS_TABLE_<J>.json.sha256 (default: results/multigpu)")
     ap.add_argument("--out", default="")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args(argv)
@@ -1513,7 +1729,14 @@ def main(argv=None):
         docs, meta = {}, {}
         for kv in a.jobs:
             J, d = kv.split("=", 1)
-            docs[J] = label_job_dir(d, J)
+            if J not in C.JOBS or J in docs:
+                ap.error(f"--jobs: bad or duplicate Job id {J!r}")
+            try:
+                used, _t = job_dir_admission(J, d, a.committed_sha_dir or None)
+            except JoinRefused as e:
+                sys.stderr.write(f"JOIN_REFUSED {e}\n")
+                return 3
+            docs[J] = label_job_dir(d, J, used)
             meta[J] = {k: v for k, v in docs[J]["covariates"].items()}
         doc = aggregate_jobs(docs, meta)
         if a.out:
