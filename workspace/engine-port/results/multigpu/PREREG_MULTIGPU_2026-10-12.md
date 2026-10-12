@@ -1,4 +1,4 @@
-# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev7)
+# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12/13, rev8)
 
 > **지위**: 설계 문서 `reports/multigpu_scaling_design_2026-10-12.md`(rev2)의 M2.5. 감사 판정
 > `reports/audit/2026-10-12_multigpu_design/AUDIT_multigpu_design_rev1_2026-10-12.md`(`MIXED`)의 MG-0이 요구하는 **결정 규칙 등록**이다.
@@ -9,6 +9,7 @@
 > **rev4**: rev3 델타 감사(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md`, `MIXED`: M2g `GO-with-caveats` 유지, M3 `NO-GO` — D7 fused prefill 우선으로
 > shape B Decode 줄 고갈, D8 NVML memory.used 폴백이 PD-mux 캡처 메모리를 불일치로 판정)를 반영했다. 대조표 §11. MGP-26…MGP-32 추가 승계.
 > **rev5**(사용자 결정 2026-10-12): MGP-29(arm 간 스케줄 노브 비대칭) 대응으로 대칭 대조군 `fused_sym` arm을 추가하고 1차 estimand를 G\_sym = agnostic/fused\_sym으로 바꿨다. 대조표 §12.
+> **rev8**(사용자 결정 2026-10-12): **Job을 구성별 적정 크기로 나눈다**(x8 한 Job 순차 실행 폐기 — 예약 GPU 사용률 M2g 실측 59%, M3 예보 약 50%로 크레딧 낭비). rev7 M2g 3회차 Job(`pdmux-multigpu-f515970-20261012142501`)은 실행 40분 만에 사용자 결정으로 취소(산출물 없음, 측정 0). 상세 §15 — §15가 §1 '기판'·'GPU 부분집합'·§4-1 실행 순서·§4-5 앵커·§4-6 기술 블록·§6을 대체한다. **규칙층 델타 감사 대기.**
 > **rev7**(사용자 결정 2026-10-12, M2g 2회차 `RESULT_m2g_c1395d0_2026-10-12.md` 대응): fused arm에 `--disable-piecewise-cuda-graph`. 그 결과 fused와 fused\_sym의 차이는 overlap·chunked **두 노브**로 줄어든다(MGP-36의 세 번째 노브 제거 — MGP-36 문장 중 'piecewise' 부분은 rev7 아래에서 해당 없음, S는 여전히 두 노브의 합성). M2g는 이 정의로 **전부 재실행**한다(같은 Job 원칙). 대조표 §14. **규칙층 델타 감사 대기.**
 > **rev4+rev5 델타 감사**(`VERDICT_prereg_rules_rev5_delta_2026-10-12.md`): **M2g·M3 모두 `GO-with-caveats`**(死因 0). MGP-0의 'M3 `NO-GO`'는 해제됐다.
 > 이 등급은 규칙 실행 허가이지 'M3가 PD-mux 스케일링을 판정할 수 있다'는 뜻이 아니다. **rev6**은 그 판정서 §8-1의 경량 반영(표 행·caveat·고정 조건·예산)이며, 하네스 H1–H10 작성과 하네스층 감사가 다음 gate다. 제출은 사용자 승인. `GO`/`GO-with-caveats` 전에는 M2g·M3 Job을 `--submit`하지 않는다(교훈 34). 하네스(plan·label 스크립트)는
@@ -265,3 +266,41 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 | MGP-36의 piecewise 노브 | 해당 없음 처리 | fused와 fused\_sym 모두 piecewise 미사용. S = λ\*\_fused\_sym/λ\*\_fused는 overlap·chunked 두 노브의 합성(여전히 'overlap 효과' 단독으로 쓰지 않음) |
 | M2g 재실행 | — | 같은 Job 원칙. 2회차 PASS(G3, G0(ii)/(iii), G3b, G5(b))는 재사용하지 않고 다시 잰다 |
 | G4 공허 PASS(boot 실패 arm) | 하네스 수정 | 판정 규칙 변경 아님 — boot status ≠ OK면 G4 = NOT_TESTED |
+
+## 15. rev8 — 구성별 적정 크기 Job (사용자 결정 2026-10-12)
+
+### 15-1. Job 배치
+| Job | 스펙 | 담는 config | 앵커 |
+|---|---|---|---|
+| J1 | `resourcespec-a100x1` | N=1 | (자기 자신이 기준) |
+| J2 | `resourcespec-a100x2` | TP2, DP2 | N=1 앵커(GPU 0) |
+| J4 | `resourcespec-a100x4` | TP4, DP4 | N=1 앵커(GPU 0) |
+| J8 | `resourcespec-a100x8` | TP8, DP8 | N=1 앵커(GPU 0) |
+
+- 네 Job은 서로 다른 노드에서 **동시에** 실행해도 된다(벽시계 단축). M2g와 M3 각각 이 4-Job 배치를 쓴다.
+- 한 config의 네 arm은 **반드시 같은 Job** 안에 둔다(1차 estimand G\_sym은 같은 Job 안 arm 비율이라 Job 공통 배율 효과가 상쇄된다).
+- Job 안 순서: preflight → (M2g) G5(a) CPU·G3·거부 boot / (M3) 앵커 → config(TP 먼저, DP 다음; 순서는 Job마다 seed 20261012로 무작위) → 끝. N=1 2회차 앵커와 NUMA 블록은 **없앤다**.
+- 부분집합: J\_N 안에서 TP·DP는 노드의 GPU 0..N−1 전부를 쓴다. 노드 위상(`nvidia-smi topo -m`)을 preflight에서 기록하고, Job 안 GPU 쌍 중 NVLink가 아닌 쌍이 있으면 `TOPOLOGY_NOT_NVLINK` 플래그를 그 Job 결과 전체에 붙인다(차단 아님; M1 프로브는 x8 노드만 확인했다).
+
+### 15-2. M2g 배분
+- J\_N에 그 N의 G3(TP=N), G0(i) 4 arm×{TP,DP}, G1·G2·G3b·G4·G5(b)(c)를 둔다. **G1-ctl과 G2 바닥(TP=1 2회)은 각 Job의 N=1 앵커 boot에서 그 Job 안에서 잰다**(같은 Job 원칙 유지).
+- G0(ii) 금지 env 5종과 G0(iii) 자동 격자 거부(TP=2 필요)는 J2에 둔다. G0(ii) 실패 시 TP 축 전체 제외 규칙(§3-1)은 J2 결과로 J4·J8의 TP에도 적용한다.
+- G5(a) CPU 시험은 Job마다 실행한다.
+- PASS 표는 Job마다 하나(`M2G_PASS_TABLE_J{N}.json` + `.sha256`), 커밋 뒤 M3 J\_N이 자기 N의 표와 J2 표(G0(ii) 결과)를 3자 대조로 읽는다(F17·R5 규칙을 Job별로 적용).
+
+### 15-3. M3 배분과 Job 효과 처리
+- J\_N(N≥2)은 config 측정 전에 N=1 앵커를 잰다: GPU 0 단독, arm {fused\_sym, agnostic}, shape A HI(seed 4개) — G\_sym,anchor(J\_N) 산출.
+- J1의 N=1이 기준 G\_sym(1)이다.
+- **Job 효과 검사**: |G\_sym,anchor(J\_N)/G\_sym(1) − 1| > 3%이거나 앵커 λ\*(fused\_sym, A)가 J1과 3% 넘게 다르면 `JOB_EFFECT(J_N)` 플래그. 추세 라벨에 플래그가 하나라도 붙으면 (i) 원 추세와 (ii) 앵커 보정 추세(G\_sym(N)·G\_sym(1)/G\_sym,anchor(J\_N))를 **둘 다** 보고하고, 둘의 라벨이 다르면 `TREND_JOB_SENSITIVE`로 방향 라벨을 인용하지 않는다.
+- 앵커가 측정되지 않은 Job(입장 거부·기동 실패)은 `JOB_EFFECT_UNTESTED`이며 그 N의 점은 추세에 들어가되 공시를 의무로 붙인다.
+- 기술 블록: GPU 편차 블록은 J8에서 GPU 0..7에 **동시에** 8개 N=1 fused HI(seed 4386)로 잰다(동시 부하 하 기술치로 명시). NUMA 블록 폐지. nsys 블록은 이미지에 nsys가 없으므로(MGH-24) `NOT_RUN`.
+
+### 15-4. 하드캡·예산(예보, 하네스 dry-run이 확정)
+- Job별 하드캡: M2g J\_N 각 4 h, M3 J1 8 h·J2/J4/J8 각 14 h.
+- 예약 대비 사용률: config 측정 중 100%, 앵커 구간만 1/N. M3 예보 총 약 120 GPU-h(이전 x8 단일 Job 약 240 GPU-h 예약), 벽시계 최장 Job 약 8–9 h.
+- 하드캡에 걸린 Job의 잘린 config는 `TRUNCATED`, 다른 Job에 영향 없음.
+
+### 15-5. 이 변경이 바꾸는 caveat
+- C-1(노드 부하·부분집합 위상)은 "Job마다 노드가 다르다"로 바뀐다 — N 간 비교에는 Job 효과가 들어가며 §15-3 앵커로만 검사된다. 교훈 274(Job 효과)를 정면으로 받는 설계다.
+- MGH-6·MGH-20(앵커 절단)·MGH-7(30 h 단일 Job에서 추세 미정의 예보)은 해당 없음으로 바뀐다(Job별 하드캡). MGP-14(N=8 우선 절단)도 해당 없음.
+- 새 금지 서술: "N 간 G 차이는 N 효과다"(Job 효과 검사·앵커 보정 병기 전), "앵커 보정 추세가 원 추세보다 정확하다"(보정은 G 배율 모형 가정).
