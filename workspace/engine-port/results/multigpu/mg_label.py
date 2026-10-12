@@ -1904,6 +1904,8 @@ def label_job_dir(root, job=None, pass_table=None, _mut=None):
             pass
     if not isinstance(doc.get("driver"), dict):                                          # D-B: the driver died before finish() -> reconstruct (fail-closed)
         doc["driver"] = reconstruct_driver(root, job or doc.get("job") or "J2", excluded=excl_arms)
+        if any(ev.get("status") == "DRIVER_EXCEPTION_FINISH_IN_FINALLY" for ev in _read_driver_log(root)):
+            doc["driver"]["exception"] = True                                            # D-D R-1: finish() died before writing LABELS.json -> still disclose
     elif isinstance(doc.get("driver"), dict) and (doc["driver"].get("exception") or any(ev.get("status") == "DRIVER_EXCEPTION_FINISH_IN_FINALLY" for ev in _read_driver_log(root))):
         # rev11 D-D: finish() written from `finally` after an exception is NOT a complete record -- boots the driver never reached are absent from not_attempted.
         # Reconstruct and ADD (never replace) the RECONSTRUCTED_NO_BOOT_RECORD entries, de-duplicated by boot_id.

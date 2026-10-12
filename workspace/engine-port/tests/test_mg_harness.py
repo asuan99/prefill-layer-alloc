@@ -1410,6 +1410,17 @@ class Rev11DeltaDD(unittest.TestCase):
             docs[J]["driver"] = ld["driver"]
         return docs
 
+    def test_r1_no_labels_json_but_exception_logged_still_discloses(self):
+        """D-D R-1: finish() died before writing LABELS.json (D-B reconstruct branch) -> the exception logged in DRIVER_LOG is still flagged."""
+        for logged in (True, False):
+            with tempfile.TemporaryDirectory() as td:
+                d = self.job_dir(td, "J8", boot_missing={("TP8", a) for a in C.ARMS},
+                                 log=[{"config": "DP8", "decision": {"x_lo": {}}}] + ([{"status": "DRIVER_EXCEPTION_FINISH_IN_FINALLY"}] if logged else []))
+                (d / "LABELS.json").unlink()
+                drv = self.label(d, "J8")["driver"]
+                self.assertTrue(drv["not_attempted"])                                            # reconstructed (fail-closed) either way
+                self.assertEqual(bool(drv.get("exception")), logged)
+
     def test_exception_job_is_reconstructed_and_tp_is_uncontrolled_truncation(self):
         for marker in ("log", "field"):
             with tempfile.TemporaryDirectory() as td:
