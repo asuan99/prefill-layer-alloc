@@ -1,4 +1,4 @@
-# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12/13, rev10)
+# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12/13, rev11)
 
 > **지위**: 설계 문서 `reports/multigpu_scaling_design_2026-10-12.md`(rev2)의 M2.5. 감사 판정
 > `reports/audit/2026-10-12_multigpu_design/AUDIT_multigpu_design_rev1_2026-10-12.md`(`MIXED`)의 MG-0이 요구하는 **결정 규칙 등록**이다.
@@ -9,6 +9,7 @@
 > **rev4**: rev3 델타 감사(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md`, `MIXED`: M2g `GO-with-caveats` 유지, M3 `NO-GO` — D7 fused prefill 우선으로
 > shape B Decode 줄 고갈, D8 NVML memory.used 폴백이 PD-mux 캡처 메모리를 불일치로 판정)를 반영했다. 대조표 §11. MGP-26…MGP-32 추가 승계.
 > **rev5**(사용자 결정 2026-10-12): MGP-29(arm 간 스케줄 노브 비대칭) 대응으로 대칭 대조군 `fused_sym` arm을 추가하고 1차 estimand를 G\_sym = agnostic/fused\_sym으로 바꿨다. 대조표 §12.
+> **rev11**(2026-10-13): 하네스층 감사(`VERDICT_harness_rev10_0898540_2026-10-13.md`) M-4 규칙 해석을 사용자 결정(보수적, fail-closed)으로 고정. §18. MGH-27·29·24′ 승계(MGH-28은 미적용). 우선순위 §18 > §17 > §16 > §3·§4·§15.
 > **rev10**(2026-10-13): rev9 경량 감사(`VERDICT_rules_rev9_2026-10-13.md`, `MIXED` — M3 死因 D10 P-DP shape 축 누락, D11 미등록 config 순서 유도식) 처방 P10·P11 반영. §17. MGP-43′·49′·50′·51–55 승계. **규칙층 경량 델타 감사 대기.**
 > **rev9**(2026-10-13): rev8 규칙층 감사(`VERDICT_rules_rev8_2026-10-13.md`, `MIXED` — M3 死因 D9: G(1) 미정의 시 교차 Job 추세 fail-open) 처방 P9-a–d 반영 + 사용자 결정 3건(메모리 규칙 (iii) 폐지[사후 변경 공시], Job별 하드캡 예상치 기준, J1을 x2 노드 GPU 0 단독). 상세 §16 — §17 > §16 > §3·§4·§15 순으로 우선(rev10 정정, H-6·E-1). MGP-42…50 승계. **규칙층 경량 델타 감사 대기.**
 > **rev8**(사용자 결정 2026-10-12): **Job을 구성별 적정 크기로 나눈다**(x8 한 Job 순차 실행 폐기 — 예약 GPU 사용률 M2g 실측 59%, M3 예보 약 50%로 크레딧 낭비). rev7 M2g 3회차 Job(`pdmux-multigpu-f515970-20261012142501`)은 실행 40분 만에 사용자 결정으로 취소(산출물 없음, 측정 0). 상세 §15 — §15가 §1 '기판'·'GPU 부분집합'·§4-1 실행 순서·§4-5 앵커·§4-6 기술 블록·§6을 대체한다. **규칙층 델타 감사 대기.**
@@ -342,3 +343,8 @@ P-DP는 shape별로 상태를 낸다. shape s의 G\_sym DP 추세가 정의되�
 
 ### 17-3. 하네스 조건 추가 (rev9 감사 §6)
 H-1(P10 변이), H-2(순서 상수·dry-run 대조·절단 무시 변이), H-3(기준 셀 포화 미달 → 전 J\_N JOB_EFFECT_UNTESTED, 확장 rung 보정 변이), H-4(앵커 UNTESTED 점 보정 추세 제외, 원값 대입 변이), H-5(G5(c) (iii) 제거·상대차 두 분모·`MEMORY_RULE_III_COUNTERFACTUAL`, "(iii) 잔존"·"(ii) 제거" 변이). 모두 KILLED + 무변이 대조군. H-7(권고): M3 제출 전 x2 노드 위상·`cpu.max` 짧은 프로브.
+
+## 18. rev11 (2026-10-13, 사용자 결정)
+
+- **P10 × 교차 shape 보정(M-4, fail-closed)**: shape B·보조 계열의 방향 **인용**은 현행 P9-b를 따른다. 그러나 **P10 BROKEN 판정에서 교차 shape 보정(shape A·G\_sym 앵커로 만든 보정)은 raw 방향 라벨을 UNTESTED로 낮추지 못한다** — shape B의 raw DP 추세가 정의되고(G\_sym(1, B) 정의), raw 방향 라벨(G\_INCREASES/G\_DECREASES)이면 그 shape는 BROKEN이다. shape A의 동일 shape 보정은 현행(P9-b·P10) 그대로다.
+- 이 변경은 MGP-13 발화를 늘리는 방향으로만 작동한다(TP 인용 감소, 새 fail-open 없음).
