@@ -1,0 +1,3 @@
+"# value_kind: measured=n_sm_realized,ms_median,ms_p10,ms_p90,ms_mean; derived=gbps; metadata=n_sm_req,partition_mode,bytes_moved,n"
+n_sm_req__metadata,n_sm_realized__measured,partition_mode__metadata,bytes_moved__metadata,ms_median__measured,ms_p10__measured,ms_p90__measured,ms_mean__measured,n__metadata,gbps__derived
+104,"{'smCount': 104, 'minSmPartitionSize': 4, 'smCoscheduledAlignment': 2}",green,2147483648,1.2323839664459229,1.2288000583648682,1.235967993736267,1.2327253222465515,30,1742.5442933935085

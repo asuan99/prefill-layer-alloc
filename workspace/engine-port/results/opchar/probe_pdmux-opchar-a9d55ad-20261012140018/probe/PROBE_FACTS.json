@@ -1,0 +1,104 @@
+{
+  "host": {
+    "params": [
+      "RmProfilingAdminOnly: 1"
+    ],
+    "Uid": "0\t0\t0\t0",
+    "CapEff": "00000000a80425fb"
+  },
+  "kineto_plain": {
+    "stream": "plain",
+    "partition": {
+      "mode": "plain",
+      "n_sm_req": 1000000,
+      "n_sm_realized": 108,
+      "device_sm": 108
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "sample": [],
+    "rc": 0
+  },
+  "kineto_green": {
+    "stream": "green",
+    "partition": {
+      "mode": "green",
+      "n_sm_req": 44,
+      "device_sm": 108,
+      "readout": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "green_ctx_is_null": false,
+        "cuGreenCtxGetDevResource_rc": 0,
+        "green_sm": {
+          "smCount": 44,
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2
+        }
+      },
+      "n_sm_realized": {
+        "smCount": 44,
+        "minSmPartitionSize": 4,
+        "smCoscheduledAlignment": 2
+      }
+    },
+    "n_kernel_events": 0,
+    "n_attributed": 0,
+    "has_grid": false,
+    "has_regs": false,
+    "has_smem": false,
+    "sample": [],
+    "rc": 0
+  },
+  "nsight": {
+    "which": {
+      "ncu": "/usr/local/cuda/bin/ncu",
+      "nsys": null,
+      "nvidia-smi": "/usr/bin/nvidia-smi"
+    },
+    "ncu_version": {
+      "cmd": [
+        "/usr/local/cuda/bin/ncu",
+        "--version"
+      ],
+      "rc": 0,
+      "stdout": "NVIDIA (R) Nsight Compute Command Line Profiler\nCopyright (c) 2018-2025 NVIDIA Corporation\nVersion 2025.3.1.0 (build 36398880) (public-release)\n",
+      "stderr": ""
+    },
+    "ncu_launch_sections": {
+      "cmd": [
+        "/usr/local/cuda/bin/ncu",
+        "--section",
+        "LaunchStats",
+        "--section",
+        "Occupancy",
+        "--launch-count",
+        "1",
+        "/opt/conda/bin/python3",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/probe/probe_gemm.py"
+      ],
+      "rc": 1,
+      "stdout": "==PROF== Connected to process 844 (/opt/conda/bin/python3.14)\n==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM\ngemm ok\n==PROF== Disconnected from process 844\n",
+      "stderr": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+      "mentions_ERR_NVGPUCTRPERM": true
+    },
+    "ncu_counter_metric": {
+      "cmd": [
+        "/usr/local/cuda/bin/ncu",
+        "--metrics",
+        "sm__throughput.avg.pct_of_peak_sustained_elapsed",
+        "--launch-count",
+        "1",
+        "/opt/conda/bin/python3",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/probe/probe_gemm.py"
+      ],
+      "rc": 1,
+      "stdout": "==PROF== Connected to process 937 (/opt/conda/bin/python3.14)\n==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM\ngemm ok\n==PROF== Disconnected from process 937\n",
+      "stderr": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+      "mentions_ERR_NVGPUCTRPERM": true
+    }
+  }
+}

@@ -55,20 +55,29 @@ def open_partition(n_sm: int):
     dev = torch.cuda.current_device()
     total = torch.cuda.get_device_properties(dev).multi_processor_count
     if n_sm >= total:
-        return torch.cuda.current_stream(), {"mode": "plain", "n_sm_req": n_sm,
-                                              "n_sm_realized": total, "device_sm": total}
+        # a fresh NON-default stream: graph capture is refused on the legacy default stream
+        return torch.cuda.Stream(), {"mode": "plain", "n_sm_req": n_sm,
+                                     "n_sm_realized": total, "device_sm": total}
     from sgl_kernel import spatial
     sa, sb = spatial.create_greenctx_stream_by_value(n_sm, total - n_sm, dev)
     info = {"mode": "green", "n_sm_req": n_sm, "device_sm": total}
     try:
         rd = _green_readout().green_sm_readout(int(sa.cuda_stream))
         info["readout"] = rd
-        info["n_sm_realized"] = rd.get("green_sm", rd.get("smCount"))
+        info["n_sm_realized"] = realized_sm(rd)
     except Exception as exc:  # noqa: BLE001
         info["readout_error"] = repr(exc)
         info["n_sm_realized"] = None
     info["_other_stream"] = sb
     return sa, info
+
+
+def realized_sm(readout: dict):
+    """smCount from green_readout.green_sm_readout (nested under 'green_sm'); None if absent."""
+    g = readout.get("green_sm")
+    if isinstance(g, dict):
+        g = g.get("smCount")
+    return int(g) if isinstance(g, (int, float)) else None
 
 
 def time_fn(fn, stream, n_warmup: int, n_measure: int, inner: int):
@@ -174,7 +183,11 @@ def run_ops(a, stream, info, out_dir: Path):
                                 "n": 0, "tflops_derived": None, "gbps_derived": None})
                 rows.append(row)
         if a.profile:
-            kernel_rows += profile_ops(a, ops, stream, info, size, tag, out_dir, TP)
+            try:
+                kernel_rows += profile_ops(a, ops, stream, info, size, tag, out_dir, TP)
+            except Exception as exc:  # noqa: BLE001 -- timing rows must survive a profiler failure
+                notes.append({"size": size, "profile_error": repr(exc),
+                              "tb": traceback.format_exc()[-2000:]})
         notes.append({"size": size, "meta": {k: v for k, v in meta.items() if not k.startswith("_")}})
         del ops, meta
         torch.cuda.empty_cache()

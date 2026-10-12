@@ -173,6 +173,16 @@ class TraceAttribution(unittest.TestCase):
         self.assertEqual(ops["BatchPrefillWithRaggedKVCacheKernel"], "*:attn")
 
 
+class WorkerHelpers(unittest.TestCase):
+    def test_realized_sm_reads_nested_green_readout(self):
+        # shape recorded by job-3fdczheaizqq (green_readout.green_sm_readout); a dict here crashed
+        from experiments.opchar import worker as W
+        rd = {"cuStreamGetGreenCtx_rc": 0,
+              "green_sm": {"smCount": 44, "minSmPartitionSize": 4, "smCoscheduledAlignment": 2}}
+        self.assertEqual(W.realized_sm(rd), 44)
+        self.assertIsNone(W.realized_sm({"error": "x"}))
+
+
 class Plan(unittest.TestCase):
     def test_grid(self):
         for sm in R.SM_GRID:

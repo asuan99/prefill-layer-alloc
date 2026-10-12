@@ -1,0 +1,309 @@
+{
+  "mode": "probe",
+  "model": "nemotron_nano_9b_v2",
+  "sm_grid": [
+    16,
+    24,
+    32,
+    44,
+    54,
+    64,
+    74,
+    84,
+    92,
+    104,
+    108
+  ],
+  "prefill_L": [
+    1024,
+    2048,
+    4096,
+    16384,
+    32768
+  ],
+  "decode_B": [
+    32,
+    64,
+    96,
+    128
+  ],
+  "decode_ctx": 2048,
+  "runs": [
+    {
+      "label": "probe",
+      "rc": 0,
+      "wall_s": 35.5,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/probe.py",
+        "--green-sm",
+        "44",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/probe"
+      ]
+    },
+    {
+      "label": "memcpy_sm16",
+      "rc": 0,
+      "wall_s": 3.6,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "16",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm24",
+      "rc": 0,
+      "wall_s": 3.5,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "24",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm32",
+      "rc": 0,
+      "wall_s": 3.7,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "32",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm44",
+      "rc": 0,
+      "wall_s": 3.6,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "44",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm54",
+      "rc": 0,
+      "wall_s": 3.6,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "54",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm64",
+      "rc": 0,
+      "wall_s": 3.7,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "64",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm74",
+      "rc": 0,
+      "wall_s": 3.7,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "74",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm84",
+      "rc": 0,
+      "wall_s": 3.5,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "84",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm92",
+      "rc": 0,
+      "wall_s": 3.5,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "92",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm104",
+      "rc": 0,
+      "wall_s": 3.5,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "104",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "memcpy_sm108",
+      "rc": 0,
+      "wall_s": 3.5,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "memcpy",
+        "--sm",
+        "108",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "smoke_prefill_sm108",
+      "rc": 0,
+      "wall_s": 50.0,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "prefill",
+        "--sizes",
+        "1024",
+        "--sm",
+        "108",
+        "--n-measure",
+        "5",
+        "--profile",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "smoke_decode_sm108",
+      "rc": 0,
+      "wall_s": 11.0,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "decode",
+        "--sizes",
+        "32",
+        "--ctx",
+        "2048",
+        "--sm",
+        "108",
+        "--n-measure",
+        "5",
+        "--profile",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "smoke_prefill_sm44",
+      "rc": 1,
+      "wall_s": 10.6,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "prefill",
+        "--sizes",
+        "1024",
+        "--sm",
+        "44",
+        "--n-measure",
+        "5",
+        "--profile",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    },
+    {
+      "label": "smoke_decode_sm44",
+      "rc": 1,
+      "wall_s": 10.6,
+      "cmd": [
+        "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+        "--model",
+        "nemotron_nano_9b_v2",
+        "--phase",
+        "decode",
+        "--sizes",
+        "32",
+        "--ctx",
+        "2048",
+        "--sm",
+        "44",
+        "--n-measure",
+        "5",
+        "--profile",
+        "--out-dir",
+        "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/probe_pdmux-opchar-a9d55ad-20261012140018/data"
+      ]
+    }
+  ]
+}
