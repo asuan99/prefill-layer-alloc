@@ -21,8 +21,10 @@ BLIND (rev16 H15-4, §5-4 (ii)(나), N2C-73): Job-PROFILE boots contain co-locat
 boot-scope pair-wise estimators (E-time / E-iter by pair) would carry co-located per-iteration time (a κ pilot).
 `estimators(scope=...)` therefore REFUSES scope "cell" / "boot" for a Job-PROFILE input unless the caller passes
 blind_exception=True, which stamps the output with the N2C-73 caveat; n2_analyze calls only scope "window" (the
-alone window W, which by §7-1 (c) contains no prefill). §7-3 asks for cell/boot-scope values -- that part is
-deferred until after the Job-EA result seal (CONTRACT GAP, reported with a minimal wording).
+alone window W, which by §7-1 (c) contains no prefill). §7-3 (산출 시점, §18-2-d #11): the Job-PROFILE cell / boot
+scope is computed only after the Job-EA result seal -- `estimators(..., ea_result_seal=<record>)` lifts the refusal
+only for a VERIFIED seal record (n2_analyze.verify_ea_result_seal; `n2_analyze.py --job PROFILE --post-ea-seal`), and
+stamps the seal record instead of N2C-73. Job-EA inputs (job="EA") are never blinded.
 """
 from __future__ import annotations
 
@@ -124,13 +126,23 @@ def w_idx(events, lo, hi):
     return {k: v / tot for k, v in sorted(held.items())} if tot else {}
 
 
-def estimators(events, pi, scope, lo=None, hi=None, job="PROFILE", blind_exception=False):
+def ea_seal_lifts_blind(ea_result_seal):
+    """§7-3 산출 시점 (rev17 H15-4, §18-2-d #11): the Job-PROFILE cell / boot scope is computed only AFTER the Job-EA
+    result seal. `ea_result_seal` = the record returned by n2_analyze.verify_ea_result_seal (the seal file's recorded
+    sha256 re-checked against the sealed Job-EA result bytes); only a verified record lifts the blind."""
+    return isinstance(ea_result_seal, dict) and ea_result_seal.get("verified") is True and \
+        bool(ea_result_seal.get("ea_result_sha256"))
+
+
+def estimators(events, pi, scope, lo=None, hi=None, job="PROFILE", blind_exception=False, ea_result_seal=None):
     """scope 'window' (A2-pair-W + W-idx over [lo, hi]); scope 'cell' / 'boot' = whole input (A2-pair + W-idx over
-    the work-event span) -- refused for Job-PROFILE (H15-4) unless blind_exception=True (then N2C-73 is stamped)."""
+    the work-event span) -- refused for Job-PROFILE (H15-4) unless blind_exception=True (then N2C-73 is stamped) or a
+    VERIFIED Job-EA result seal is passed (then the seal record is stamped instead -- §7-3 산출 시점)."""
     if scope not in ("window", "cell", "boot"):
         raise ValueError(scope)
     if scope != "window" and job == "PROFILE" and not blind_exception:
-        raise BlindedScope(f"{scope}-scope pair-wise estimators of Job-PROFILE are blinded (§5-4 (ii)(나), H15-4)")
+        if not ea_seal_lifts_blind(ea_result_seal):
+            raise BlindedScope(f"{scope}-scope pair-wise estimators of Job-PROFILE are blinded (§5-4 (ii)(나), H15-4)")
     if scope == "window":
         res = a2_pair(events, pi, lo, hi)
         for k in ("e_cnt", "e_time", "e_iter", "e_qcond"):
@@ -146,8 +158,10 @@ def estimators(events, pi, scope, lo=None, hi=None, job="PROFILE", blind_excepti
     res = a2_pair(events, pi)
     res["w_idx"] = w_idx(events, min(work), max(work)) if work else {}
     res["convention"] = f"A2-pair ({scope} scope)"
-    if job == "PROFILE":
+    if job == "PROFILE" and blind_exception:
         res["blind_exception"] = N2C_73
+    elif job == "PROFILE":
+        res["post_ea_result_seal"] = dict(ea_result_seal)
     return res
 
 

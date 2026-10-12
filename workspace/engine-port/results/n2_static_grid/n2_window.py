@@ -11,7 +11,13 @@ reason combination. No second window implementation.
 
 measurement_ok order (§9-1): NOT_ATTEMPTED_BUDGET (ledger) > BENCH_INVALID > [E-alpha: COLOAD_PAYLOAD_INVALID] >
 RETRACT > RECORDER_UNPROVEN (boot R7) > RECORDER_UNPROVEN (cell Δdropped != 0 or no record after the cell) >
-CG_UNPROVEN. Then PROFILE: the window status of cell_windows(W) (§9-1 alone_status); OBS: the client window.
+CG_UNPROVEN. Then PROFILE: the window status of cell_windows(W) (§9-1 alone_status); OBS: the client window;
+EALPHA (Job-EA, `ealpha_replicate`): the A1 / A2 / C states of cell_windows plus, in the §9-1 C order, the co-span
+composition (§7-2 (c)) and the JOINED signature (§7-2 (f), n2_signature).
+EA HARNESS READINGS (reported, not yet in §18-2-d): a cell_abort with reason coload_payload_invalid is
+COLOAD_PAYLOAD_INVALID (not BENCH_INVALID); the client co-load record (K responses, completion_tokens 1, length) is
+re-checked after bench validity; a completed E-alpha cell without coload_sent is BENCH_INVALID; a co-span composition
+failure is a C-window WINDOW_SHORT; S2 reads the PRE-FILTER first 128 iterations after the last co span end.
 
 HARNESS READINGS (unregistered details, reported): bench validity under U-1 (b) cancellation = every one of the b
 requests answered without an exception, prompt_tokens == c_in, >= 1 token, and either finished at max_new_tokens
@@ -45,6 +51,8 @@ def _load_reducer():
 
 
 RED = _load_reducer()
+sys.path.insert(0, HERE)
+import n2_signature as SG    # noqa: E402  (§7-2 (f) S1-S3, Job-EA)
 PAIR = RED.PAIR
 WIN = RED.WINDOW_ITERS
 CTX_MISMATCH_FRAC = 0.1                       # §10-2 (Job-EA)
@@ -243,6 +251,20 @@ def bench_valid(client, cell):
     return True, ""
 
 
+def coload_payload_ok(client, cell):
+    """§9-1 coload_payload_ok (F3): the client record holds exactly K co-load responses, each finished with
+    completion_tokens == 1 and finish_reason length."""
+    co = (client or {}).get("co_requests")
+    if co is None:
+        return False, "no co-load record"
+    if len(co) != cell["K"]:
+        return False, f"{len(co)} co-load responses != K {cell['K']}"
+    for q in co:
+        if not (q.get("done") and q.get("completion_tokens") == 1 and q.get("n") == 1 and q.get("finish") == "length"):
+            return False, f"{q.get('rid')}: completion_tokens {q.get('completion_tokens')} finish {q.get('finish')}"
+    return True, ""
+
+
 def measurement_ok(boot, cell, not_attempted=False):
     """§9-1 measurement stage (all cell kinds), first failing reason or None; plus a detail string."""
     cid = cell["cell_id"]
@@ -251,11 +273,18 @@ def measurement_ok(boot, cell, not_attempted=False):
     cm = boot["cells"].get(cid) or {}
     if "cell_start" not in cm:
         return "BENCH_INVALID", "not_attempted_boot_aborted"
+    ea = cell.get("kind") == "EALPHA"
+    if ea and (cm.get("cell_abort") or ("",))[0] == "coload_payload_invalid":
+        return "COLOAD_PAYLOAD_INVALID", "cell_abort coload_payload_invalid (F3: the client aborted the cell)"
     if "cell_abort" in cm:
         return "BENCH_INVALID", f"cell_abort {cm['cell_abort'][0]}"
     ok, why = bench_valid(boot["client"].get(cid), cell)
     if not ok:
         return "BENCH_INVALID", why
+    if ea:
+        ok, why = coload_payload_ok(boot["client"].get(cid), cell)
+        if not ok:
+            return "COLOAD_PAYLOAD_INVALID", why
     if retract_count(boot, cid) > 0:
         return "RETRACT", "retracted requests in the cell's log seconds"
     if r7(boot):
@@ -414,4 +443,143 @@ def cpu_delta(boot, cell_id):
             out[k] = int(vals["after"][k]) - int(vals["before"][k])
         except (KeyError, ValueError):
             out[k] = None
+    return out
+
+
+# ------------------------------------------------------------------------------------------- Job-EA (§7-2, §9-1, §10)
+CO_INPUT = 8192
+JOINABLE_C = ("BS_UNREALIZED", "CO_WINDOW_SHORT", "COLOC_UNREALIZED", "VALID")   # §9-1: JOINED sits after RECORDER /
+#                                                                                   non-co span, before B_FINISHED
+
+
+def co_span_composition(records, t_co, k):
+    """§7-2 (c) co-span composition (engine edit 4): span_seq unique among the starts and among the ends of the cell,
+    every co span (start at/after coload_sent, extend_tokens == n_new x 8192) paired with its end, each co span
+    n_new <= 2, sum n_new == K. Returns the problems (empty = as registered). HARNESS READING (EA, reported): a
+    violation is a C-window WINDOW_SHORT (predicate failure) placed after RECORDER / non-co span in the §9-1 order --
+    the registration lists the condition but no label for its failure."""
+    starts = [e for e in records if e.get("event") == "prefill_span_start"]
+    ends = [e for e in records if e.get("event") == "prefill_span_end"]
+    bad = []
+    for what, evs in (("start", starts), ("end", ends)):
+        seqs = [e["span_seq"] for e in evs]
+        if len(seqs) != len(set(seqs)):
+            bad.append(f"duplicate span_seq among prefill_span_{what}")
+    end_seqs = {e["span_seq"] for e in ends}
+    co = [s for s in starts if s["timestamp_monotonic_s"] >= t_co and s.get("n_new", 0) >= 1
+          and s.get("extend_tokens") == s["n_new"] * CO_INPUT]
+    unpaired = [s["span_seq"] for s in co if s["span_seq"] not in end_seqs]
+    if unpaired:
+        bad.append(f"co span(s) without prefill_span_end: {unpaired[:5]}")
+    big = [s["n_new"] for s in co if s["n_new"] > 2]
+    if big:
+        bad.append(f"co span n_new > 2: {big[:5]}")
+    tot = sum(s["n_new"] for s in co)
+    if tot != k:
+        bad.append(f"sum n_new {tot} != K {k}")
+    return bad
+
+
+def _intervals_desc(w):
+    """DESCRIPTIVE ONLY (§10-2 / §12-4 whole-W_co and front/back-half rho): the S-per consecutive-iter_seq rule of
+    RED.s_per_intervals without its 128-iteration minimum (a half of the co-located set can be shorter). Never a label
+    input -- the judgment values (C, A1, A2) always go through RED.s_per_intervals."""
+    if len(w) >= WIN:
+        return RED.s_per_intervals(w)
+    by = {e["iter_seq"]: e for e in w}
+    return [(by[q + 1]["t_launch"] - e["t_launch"]) * 1000.0 for q, e in sorted(by.items()) if q + 1 in by]
+
+
+def _window_values(w, pi, ctx_mid):
+    if len(w) != WIN:
+        return dict(n=len(w))
+    base = dict(n=len(w), ctx_mid=ctx_mid, pe_iter=RED._pe(w, pi), pe_iter_idx5=RED._pe(w, PAIR[108]),
+                t_lo=w[0]["t_launch"], t_hi=w[-1].get("t_sync", w[-1]["t_launch"]),
+                iter_seq=(w[0]["iter_seq"], w[-1]["iter_seq"]))
+    try:
+        iv = RED.s_per_intervals(w)
+    except RED.MeasurementRejected as e:
+        return dict(base, error=str(e))
+    med = statistics.median(iv)
+    return dict(base, s_per_median=med, s_per_p50=quantile(iv, 0.5), s_per_p95=quantile(iv, 0.95),
+                n_intervals=len(iv), stalls_gt5=sum(1 for x in iv if x > STALL_MULTS[0] * med),
+                stalls_gt10=sum(1 for x in iv if x > STALL_MULTS[1] * med))
+
+
+def ealpha_replicate(boot, unit, cell, not_attempted=False):
+    """One E-alpha replicate (§9-1 replicate_status for cell.kind == EALPHA): the measurement stage, then the window
+    states A1 / A2 / C from the RULE-SEALED cell_windows (π per window, §7-1: ON A1/A2 = idx(d), OFF A1/A2 = idx5;
+    C = idx(d)), with the two harness-side C steps in the §9-1 order: co-span composition (§7-2 (c)) and the JOINED
+    signature (§7-2 (f): S1 over co span ends, S2 over the PRE-FILTER W_co and the first 128 PRE-FILTER iterations
+    after the last co span end -- the filtered A2 window would make S2 vacuous). Values for rho (§10-2) are the
+    S-per medians and ctx_mid of A1 / A2 / C; descriptives (§12-4) are kept apart."""
+    d, b, c = unit["D"], cell["b"], cell["c"]
+    off = unit["kind"] == "OFF"
+    pi_alone, pi_coloc = (PAIR[108] if off else PAIR[d]), PAIR[d]
+    out = dict(boot=boot["name"] if boot else unit["name"], unit=unit["name"], cell_id=cell["cell_id"], kind="EALPHA",
+               D=d, alone_D=108 if off else d, b=b, c=c, round=unit["round"], boot_kind=unit["kind"], K=cell["K"],
+               cell_key=f"{d},{b},{c}")
+    m, why = measurement_ok(boot, cell, not_attempted) if boot is not None else ("BENCH_INVALID", "no boot")
+    if m:
+        out.update(status=m, reason=why, measurement=m, windows={k: m for k in ("A1", "A2", "C")}, details={})
+        return out
+    cm = boot["cells"][cell["cell_id"]]
+    t_co = cm.get("coload_sent")
+    if t_co is None:                    # HARNESS READING (EA): a completed cell without coload_sent = client protocol
+        out.update(status="BENCH_INVALID", reason="coload_sent mark missing", measurement="BENCH_INVALID",
+                   windows={k: "BENCH_INVALID" for k in ("A1", "A2", "C")}, details={})
+        return out
+    recs = cell_slice(boot["records"], *cell_bounds(boot, cell["cell_id"]))
+    win = RED.cell_windows(recs, {"coload_sent": t_co}, (cm["cell_start"][0][0], b, c), pi_alone, pi_coloc,
+                           coload=True)
+    st = {"A1": win["status"]["W"], "A2": win["status"]["A2"], "C": win["status"]["C"]}
+    det = {"A1": win["detail"]["W"], "A2": win["detail"]["A2"], "C": win["detail"]["C"]}
+    comp = co_span_composition(recs, t_co, cell["K"])
+    if comp and st["C"] not in ("RECORDER_UNPROVEN", "WINDOW_SHORT"):
+        st["C"], det["C"] = "WINDOW_SHORT", "co span composition: " + "; ".join(comp)
+    iters = sorted((e for e in recs if e.get("event") == "decode_iteration"), key=lambda e: e["iter_seq"])
+    co_sp = SG.co_spans(recs, t_co)
+    sig = None
+    if co_sp:
+        t_last = max(en["timestamp_monotonic_s"] for _s, en in co_sp)
+        a2_pre = [e for e in iters if e["t_launch"] > t_last][:WIN]
+        sig = SG.signature(recs, t_co, b, win["W_co"], a2_pre)
+        if sig["signature"] == "JOINED" and st["C"] in JOINABLE_C:
+            st["C"], det["C"] = "BS_UNREALIZED", f"JOINED (S1 {sig['s1']}, S2 bs>b {sig['s2_bs_gt_b']})"
+    snaps = [e for e in recs if e.get("event") == "runtime_snapshot"]
+    ctx = RED.ctx_of(iters, snaps, b)
+    vals = {"A1": _window_values(win["W"], pi_alone, win["ctx_mid"].get("A1")),
+            "A2": _window_values(win["A2"], pi_alone, win["ctx_mid"].get("A2")),
+            "C": _window_values(win["C"], pi_coloc, win["ctx_mid"].get("C"))}
+    wco = win["W_co"]
+    bs_eq = [e for e in wco if e["bs"] == b]
+    call = win["C_all"]
+    desc = dict(w_co=len(wco), n_colocated_all=len(call), l_lag_iters=win.get("l_lag_iters"),
+                bs_ne_b=sum(1 for e in wco if e["bs"] != b),
+                bs_ne_b_hist={str(k): sum(1 for e in wco if e["bs"] == k) for k in sorted({e["bs"] for e in wco
+                                                                                          if e["bs"] != b})},
+                pe_coloc_iter=(len(call) / len(bs_eq)) if bs_eq else None,
+                pe_coloc_time=RED._pe_time(bs_eq, lambda e: e["prefill_in_flight"] and RED._pair(e) == pi_coloc)
+                if bs_eq else None,
+                kernel_done_wait_frac=(sum(1 for e in win["C"] if e.get("prefill_kernel_done_wait")) / len(win["C"]))
+                if win["C"] else None,
+                co_spans=len(co_sp), n_new=[s["n_new"] for s, _e in co_sp],
+                backlog_realized=all((en.get("queue_len") or 0) > 0 for _s, en in co_sp[:-1]) if co_sp else None,
+                composition_problems=comp, delta_l=cm.get("delta_l"), fix_s=cm.get("fix_s"))
+    if call:
+        iv = _intervals_desc(call)
+        desc["c_all"] = dict(n=len(call), s_per_median=statistics.median(iv) if iv else None,
+                             ctx_mid=RED._ctx_mid(ctx, call))
+        h = len(call) // 2
+        for name, part in (("front", call[:h]), ("back", call[h:])):
+            iv = _intervals_desc(part)
+            desc[name] = dict(n=len(part), s_per_median=statistics.median(iv) if iv else None,
+                              ctx_mid=RED._ctx_mid(ctx, part))
+    cl = boot["client"].get(cell["cell_id"]) or {}
+    desc.update(cancel_fired=cl.get("cancel_fired"), t_cancel=cl.get("t_cancel"), base=cl.get("base"))
+    out.update(status="MEASURED", reason="", measurement=None, windows=st, details=det, values=vals, desc=desc,
+               signature=sig, co_span_present=bool(co_sp),
+               window_len={"A1": len(win["W"]), "A2": len(win["A2"]), "C": len(win["C"])},
+               split_transitions=sum(1 for e in recs if e.get("event") == "split_transition"),
+               _records=recs)
     return out

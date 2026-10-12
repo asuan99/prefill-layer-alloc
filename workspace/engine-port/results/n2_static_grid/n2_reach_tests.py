@@ -665,5 +665,264 @@ class TestPureRules(unittest.TestCase):
         self.assertFalse(NW.ctx_mismatch(2400 + 204, 2000, 2400, 2048))
 
 
+# ===================================================================================================== Job-EA rows
+UNITS_EA = n2_plan.units("EA", REG)
+
+
+def ea_unit(kind, d, r=1):
+    return next(u for u in UNITS_EA if u["name"] == f"r{r}_{kind}{d}")
+
+
+def ea_cell_boot(kind="ON", d=44, b=8, c=2048, r=1, co_iters=20, joined_at=None, s2_bs=None, comp="ok",
+                 payload_ct=1, abort=None, co_pair=None, a2_alone=200, alone_tau=0.02):
+    """ONE synthetic E-alpha cell in the exact in-memory boot format of n2_window.load_boot (records, parsed marks,
+    client record, wall pairs, log lines): burst span -> alone iterations through the A1 band -> coload_sent at the
+    client trigger (ctx c + 71) -> ceil(K / 2) co spans (n_new 2, last 1) with `co_iters` co-located iterations each
+    -> `a2_alone` alone iterations. Knobs: joined_at (an iteration right after that co span end with bs = b + 1, S1),
+    s2_bs (one pre-filter iteration after the last co span with bs = s2_bs, S2), comp ('ok' / 'sum' = one co request
+    missing / 'big' = an n_new 3 span), payload_ct (co completion_tokens), abort (a cell_abort reason)."""
+    u = ea_unit(kind, d, r)
+    cell = next(x for x in u["cells"] if (x["b"], x["c"]) == (b, c))
+    K, c_in, cid = cell["K"], cell["c_in"], cell["cell_id"]
+    pi_alone = PAIR[108] if kind == "OFF" else PAIR[d]
+    pi_co = co_pair or PAIR[d]
+    t0 = 1000.0
+    recs, seq, span = [], [0], [0]
+    t = [t0 + 0.05]
+
+    def it(pair, in_flight, bs=b):
+        seq[0] += 1
+        recs.append(dict(event="decode_iteration", iter_seq=seq[0], t_launch=t[0], t_sync=t[0] + alone_tau / 2, bs=bs,
+                         stream_idx=IDX_OF[pair], prefill_sms=pair[0], decode_sms=pair[1], prefill_in_flight=in_flight,
+                         prefill_kernel_done_wait=False, dropped_events=0, timestamp_monotonic_s=t[0]))
+        if seq[0] % 32 == 1 and bs == b:
+            recs.append(dict(event="runtime_snapshot", phase="benchmark", timestamp_monotonic_s=t[0] + alone_tau / 4,
+                             decode_iterations=seq[0], active_decode_sequences=b, decode_running_batch_size=b,
+                             context_p50=c_in + seq[0], prefill_sms=pair[0], decode_sms=pair[1],
+                             prefill_queue_depth=0, dropped_events=0))
+        t[0] += alone_tau
+
+    def spn(n_new, tokens, bs_run, qlen):
+        span[0] += 1
+        recs.append(dict(event="prefill_span_start", span_seq=span[0], timestamp_monotonic_s=t[0], n_new=n_new,
+                         extend_tokens=tokens, running_bs=bs_run, queue_len=qlen, dropped_events=0,
+                         prefill_sms=pi_co[0], decode_sms=pi_co[1]))
+        t[0] += 0.001
+        return span[0]
+
+    def spn_end(s, n_done, bs_run, qlen):
+        recs.append(dict(event="prefill_span_end", span_seq=s, timestamp_monotonic_s=t[0], n_done=n_done,
+                         running_bs=bs_run, queue_len=qlen, dropped_events=0))
+        t[0] += 0.001
+    s = spn(b, b * c_in, 0, 0)
+    spn_end(s, b, 0, 0)
+    while c_in + seq[0] < c + TRIGGER:                                # alone until the client trigger ctx
+        it(pi_alone, False)
+    t_co = t[0]
+    t[0] += 0.002
+    groups = [2] * (K // 2) + ([1] if K % 2 else [])
+    if comp == "sum":
+        groups = groups[:-1]                                              # one co request never spans (sum < K)
+    if comp == "big":
+        groups = [3] + groups[2:] + ([1] if sum([3] + groups[2:]) < K else [])
+    left = K
+    for k, n in enumerate(groups):
+        left -= n
+        s = spn(n, n * 8192, b, left)
+        for _ in range(co_iters):
+            it(pi_co, True)
+        spn_end(s, n, b, left)
+        if joined_at == k:
+            it(pi_co, True, bs=b + n)                                     # merged co request decodes (S1)
+    if s2_bs is not None:
+        it(pi_alone, False, bs=s2_bs)
+    for _ in range(a2_alone):
+        it(pi_alone, False)
+    t_end = t[0] + 0.05
+    recs.append(dict(event="runtime_snapshot", phase="benchmark", timestamp_monotonic_s=t_end + 1.0,
+                     decode_iterations=seq[0], active_decode_sequences=0, decode_running_batch_size=0, context_p50=1,
+                     prefill_sms=108, decode_sms=0, prefill_queue_depth=0, dropped_events=0))
+    marks = [f"boot_plan {d} 4", f"cell_start {cid} {d} {b} {c} {t0!r}", f"coload_sent {cid} {t_co!r}"]
+    if abort:
+        marks.append(f"cell_abort {cid} {abort} {t_end - 0.01!r}")
+    marks.append(f"cell_end {cid} {t_end!r}")
+    cells, _calls, plan, aborts, issues = NW.RED.parse_marks(marks, {})
+    assert not issues, issues
+    log = [(math.floor(t0 + WALL_OFF) + k, f"Decode batch, #running-req: {b}, cuda graph: True")
+           for k in range(int(t_end - t0) + 2)]
+    client = dict(cell_id=cid, cancel_fired=True, requests=[dict(rid=f"{cid}-d{i}", n=10, prompt_tokens=c_in, done=False,
+                                                                 finish=None) for i in range(b)],
+                  co_requests=[dict(rid=f"{cid}-co{j}", n=1, completion_tokens=payload_ct, done=True, finish="length")
+                               for j in range(K)])
+    boot = dict(name=u["name"], records=recs, cells=cells, client={cid: client}, log="", log_lines=log,
+                wall={("cell_start", cid): (t0 + WALL_OFF, t0), ("cell_end", cid): (t_end + WALL_OFF, t_end)},
+                boot={}, cpu="")
+    return boot, u, cell
+
+
+TRIGGER = 71
+
+
+class TestEAReplicateRows(unittest.TestCase):                                # §9-1 EALPHA rows, §7-2 (c)(f)
+    def test_on_and_off_clean_cells_valid(self):                           # D-3: OFF A1/A2 (0,108), C (64,44)
+        for kind in ("ON", "OFF"):
+            boot, u, cell = ea_cell_boot(kind)
+            r = NW.ealpha_replicate(boot, u, cell)
+            self.assertEqual(r["windows"], {"A1": "VALID", "A2": "VALID", "C": "VALID"}, (kind, r["details"]))
+            self.assertEqual(r["signature"]["signature"], "NOT_JOINED")
+            self.assertEqual(r["desc"]["co_spans"], 8)
+            self.assertEqual(r["desc"]["composition_problems"], [])
+        self.assertEqual(r["values"]["A1"]["pe_iter_idx5"], 1.0)
+
+    def test_c_value_window_first_128(self):                                # §6-1 (A'): C = first 128 co-located
+        boot, u, cell = ea_cell_boot("ON", co_iters=25)
+        r = NW.ealpha_replicate(boot, u, cell)
+        self.assertEqual((r["desc"]["n_colocated_all"], r["window_len"]["C"]), (200, 128))
+
+    def test_co_span_composition(self):                                     # §7-2 (c): sum n_new == K, n_new <= 2
+        for comp in ("sum", "big"):
+            boot, u, cell = ea_cell_boot("ON", comp=comp)
+            r = NW.ealpha_replicate(boot, u, cell)
+            self.assertEqual(r["windows"]["C"], "WINDOW_SHORT", comp)
+            self.assertIn("co span composition", r["details"]["C"])
+            self.assertEqual(r["windows"]["A1"], "VALID")
+
+    def test_joined_s1_and_s2_prefilter(self):                              # §7-2 (f) + §9-1 JOINED -> BS_UNREALIZED
+        boot, u, cell = ea_cell_boot("OFF", joined_at=2)
+        r = NW.ealpha_replicate(boot, u, cell)
+        self.assertEqual(r["signature"]["signature"], "JOINED")
+        self.assertEqual(r["windows"]["C"], "BS_UNREALIZED")
+        self.assertIn("JOINED", r["details"]["C"])
+        boot, u, cell = ea_cell_boot("OFF", s2_bs=9)                       # bs > b only AFTER the last co span
+        r = NW.ealpha_replicate(boot, u, cell)
+        self.assertEqual(r["signature"]["s2_bs_gt_b"], 1)                  # pre-filter A2 region (filtered A2 = 0)
+        self.assertEqual(r["windows"]["C"], "BS_UNREALIZED")
+
+    def test_payload_rows(self):                                            # F3 -> COLOAD_PAYLOAD_INVALID
+        boot, u, cell = ea_cell_boot("ON", payload_ct=2)
+        self.assertEqual(NW.ealpha_replicate(boot, u, cell)["status"], "COLOAD_PAYLOAD_INVALID")
+        boot, u, cell = ea_cell_boot("ON", abort="coload_payload_invalid")
+        self.assertEqual(NW.ealpha_replicate(boot, u, cell)["status"], "COLOAD_PAYLOAD_INVALID")
+        boot, u, cell = ea_cell_boot("ON", abort="client_exception")
+        self.assertEqual(NW.ealpha_replicate(boot, u, cell)["status"], "BENCH_INVALID")
+
+    def test_coloc_pair_leak_is_coloc_unrealized(self):                    # §7-2 (b) 0.95 over bs == b in W_co
+        boot, u, cell = ea_cell_boot("OFF", co_pair=PAIR[108])
+        r = NW.ealpha_replicate(boot, u, cell)
+        self.assertEqual(r["windows"]["C"], "CO_WINDOW_SHORT")             # first-128 filter needs the target pair
+
+
+def ea_rep(kind, rnd, a1=(10.0, 2000.0), a2=(10.5, 2400.0), cmed=10.6, xc=2200.0, st=None, d=44, b=8, c=2048):
+    """A replicate dict as n2_window.ealpha_replicate returns it (only the fields rho assembly reads)."""
+    w = {**dict(A1="VALID", A2="VALID", C="VALID"), **(st or {})}
+    return dict(cell_key=f"{d},{b},{c}", boot_kind=kind, round=rnd, boot=f"r{rnd}_{kind}{d}", windows=w,
+                status="MEASURED", values=dict(A1=dict(s_per_median=a1[0], ctx_mid=a1[1]),
+                                               A2=dict(s_per_median=a2[0], ctx_mid=a2[1]),
+                                               C=dict(s_per_median=cmed, ctx_mid=xc)), desc={})
+
+
+class TestRhoAssembly(unittest.TestCase):                                    # H15-3: rho_off across two boots
+    def test_value_is_c_median_over_on_a_on(self):
+        on, off = ea_rep("ON", 1), ea_rep("OFF", 1, a1=(99.0, 1.0), a2=(99.0, 1.0), cmed=11.0, xc=2300.0)
+        p = A.rho_pair(on, off, 2048)                                       # OFF A1/A2 never enter rho_off (D-3)
+        a_on = NW.RED.a_on_interp(10.0, 2000.0, 10.5, 2400.0, 2300.0)
+        self.assertTrue(p["valid"] and p["aon_contained"])
+        self.assertAlmostEqual(p["ln_rho"], math.log(11.0 / a_on))
+        self.assertAlmostEqual(A.rho_pair(on, on, 2048)["ln_rho"], math.log(10.6 / NW.RED.a_on_interp(
+            10.0, 2000.0, 10.5, 2400.0, 2200.0)))
+
+    def test_cross_boot_containment_is_recorded_not_a_label_input(self):   # §10-2 extrapolation within 0.1 c
+        on, off = ea_rep("ON", 1), ea_rep("OFF", 1, cmed=11.0, xc=2500.0)          # 100 > 0 outside, < 0.1 c = 204.8
+        p = A.rho_pair(on, off, 2048)
+        self.assertTrue(p["valid"])
+        self.assertFalse(p["aon_contained"])
+        self.assertAlmostEqual(p["a_on"], 10.0 + 0.5 * (2500.0 - 2000.0) / 400.0)   # the same line, extrapolated
+        with self.assertRaises(NW.RED.MeasurementRejected):                 # the sealed function itself refuses
+            NW.RED.a_on_interp(10.0, 2000.0, 10.5, 2400.0, 2500.0)
+        reps = [ea_rep("ON", r) for r in (1, 2, 3, 4)] + [ea_rep("OFF", r, cmed=11.0, xc=2500.0 if r == 1 else 2200.0)
+                                                         for r in (1, 2, 3, 4)]
+        cr = A.ea_cells(reps)["44,8,2048"]["rho_off"]
+        self.assertEqual((cr["n"], cr["aon_containment_outside"]), (4, 1))
+        self.assertEqual(cr["missing_hist"]["AON_CONTAINMENT(valid, extrapolated)"], 1)
+        self.assertEqual(cr["label"], "COLOC_SLOWER_GE3")
+        self.assertEqual(cr["label_if_containment_rejects"], "UNRESOLVED_N_BELOW_4")
+        self.assertAlmostEqual(cr["aon_containment_rate"], 0.25)
+
+    def test_ctx_mismatch_and_validity_order(self):                        # §9-1 rho_off_valid order
+        on = ea_rep("ON", 1)
+        self.assertEqual(A.rho_pair(on, ea_rep("OFF", 1, xc=2400.0 + 205.0), 2048)["reason"], "CTX_MISMATCH")
+        self.assertTrue(A.rho_pair(on, ea_rep("OFF", 1, xc=2400.0 + 204.0), 2048)["valid"])
+        bad_on = ea_rep("ON", 1, st=dict(A2="WINDOW_SHORT"))
+        p = A.rho_pair(bad_on, ea_rep("OFF", 1, xc=9999.0), 2048)              # A_on invalid wins over CTX_MISMATCH
+        self.assertTrue(p["reason"].startswith("A_on invalid"))
+        p = A.rho_pair(on, ea_rep("OFF", 1, st=dict(C="CO_WINDOW_SHORT"), xc=9999.0), 2048)
+        self.assertEqual(p["reason"], "C CO_WINDOW_SHORT")
+        self.assertEqual(A.rho_pair(None, ea_rep("OFF", 1), 2048)["reason"], "replicate missing")
+
+    def test_off_a1_a2_do_not_gate_rho_off(self):                           # D-3: OFF A1/A2 are descriptive
+        reps = [ea_rep("ON", r) for r in (1, 2, 3, 4)] + [ea_rep("OFF", r, st=dict(A1="D_UNREALIZED", A2="WINDOW_SHORT"),
+                                                         cmed=10.0) for r in (1, 2, 3, 4)]
+        cr = A.ea_cells(reps)["44,8,2048"]
+        self.assertEqual(cr["rho_off"]["n"], 4)
+        self.assertEqual(cr["rho_off"]["label"], "COLOC_WITHIN_3")
+
+    def test_labels_ci_and_ds3(self):                                       # §10-3 4/4 + descriptive CI, §10-4
+        reps = []
+        for r in (1, 2, 3, 4):
+            reps += [ea_rep("ON", r, cmed=10.25 * 1.05), ea_rep("OFF", r, cmed=10.25 * (1.10 + 0.01 * r))]
+        cr = A.ea_cells(reps)["44,8,2048"]
+        self.assertEqual(cr["rho_off"]["label"], "COLOC_SLOWER_GE3")
+        self.assertEqual(cr["rho_on"]["label"], "COLOC_SLOWER_GE3")
+        self.assertEqual(cr["rho_off"]["ci"]["pairs"], 4.0)
+        self.assertAlmostEqual(cr["rho_off"]["ci"]["mean_effect"], statistics_mean(cr["rho_off"]["ln_rho"]))
+        reps[1] = dict(reps[1], windows=dict(reps[1]["windows"], C="COLOC_UNREALIZED"))
+        self.assertEqual(A.ea_cells(reps)["44,8,2048"]["rho_off"]["label"], "UNRESOLVED_N_BELOW_4")
+        labels = ["COLOC_WITHIN_3"] * 7 + ["COLOC_FASTER_GE3"]
+        self.assertEqual(A.ds3_summary(labels), "DS3_MISMATCH_OBSERVED_1")
+
+
+def statistics_mean(xs):
+    return sum(xs) / len(xs)
+
+
+class TestEAJobLabels(unittest.TestCase):                                    # NEG_CONTROL_EA, COLOAD, forecasts
+    def _r(self, kind, cid, a1=1.0, a2=1.0, st=None, meas="MEASURED", co=True, sig="NOT_JOINED", s3=("MERGED",)):
+        w = {**dict(A1="VALID", A2="VALID", C="VALID"), **(st or {})}
+        return dict(cell_id=cid, cell_key="44,8,2048", boot_kind=kind, round=1, status=meas, windows=w,
+                    window_len=dict(A1=128, A2=128, C=128), co_span_present=co,
+                    values=dict(A1=dict(pe_iter_idx5=a1), A2=dict(pe_iter_idx5=a2)),
+                    signature=dict(signature=sig, s3=list(s3)), desc=dict(pe_coloc_iter=1.0))
+
+    def test_neg_control_ea(self):                                          # §11-3 on the OFF E-alpha windows
+        ok = [self._r("OFF", "a"), self._r("ON", "b", a1=0.0)]               # ON windows never enter
+        self.assertEqual(A.neg_control_ea(ok)["label"], "NEG_CONTROL_EA_HELD")
+        bad = [self._r("OFF", "a", a2=0.90, st=dict(A2="D_UNREALIZED"))]    # population is not the VALID set
+        self.assertEqual(A.neg_control_ea(bad)["label"], "NEG_CONTROL_EA_FAILED")
+        rec = [self._r("OFF", "a", a1=0.5, st=dict(A1="RECORDER_UNPROVEN", A2="RECORDER_UNPROVEN"))]
+        self.assertEqual(A.neg_control_ea(rec)["label"], "NEG_CONTROL_EA_UNRESOLVED")
+        self.assertEqual(A.neg_control_ea([self._r("OFF", "a", meas="RETRACT")])["label"], "NEG_CONTROL_EA_UNRESOLVED")
+
+    def test_coload_population_is_measured_set(self):                       # D-4 (ii): not the VALID set
+        pop = [self._r("ON", f"c{i}", sig="JOINED", st=dict(C="BS_UNREALIZED")) for i in range(31)]
+        pop.append(self._r("OFF", "x"))
+        pop.append(self._r("OFF", "y", meas="CG_UNPROVEN", sig="JOINED"))   # outside M
+        pop.append(self._r("OFF", "z", co=False, sig="JOINED"))             # no co span: outside M
+        col = A.coload_label(pop)
+        self.assertEqual((col["label"], col["k"], col["n"]), ("COLOAD_JOINED_31_of_32", 31, 32))
+
+    def test_f7e_and_f8(self):
+        led = dict(ledger=[dict(unit=u["name"], status="ADMITTED") for u in UNITS_EA], stopped=None, job_abort=None)
+        self.assertEqual(A._f7(led, 16), "HELD")
+        self.assertEqual(A._f7(dict(led, stopped="crash"), 16), "UNRESOLVED")
+        self.assertEqual(A._f7(dict(led, ledger=led["ledger"][:15]), 16), "FALSIFIED")
+        cells = A.ea_cells([])
+        f = A.forecasts_ea(cells, [], dict(label="COLOAD_NOT_JOINED", s3_merged=3, s3_b=1, s3_total=4), led, 16)
+        self.assertEqual((f["F-N2-8"], f["F-N2-7E"], f["F-N2-9"]), ("HELD", "HELD", "UNRESOLVED"))
+        f = A.forecasts_ea(cells, [], dict(label="COLOAD_NOT_JOINED", s3_merged=0, s3_b=4, s3_total=4), led, 16)
+        self.assertEqual(f["F-N2-8"], "FALSIFIED")
+        f = A.forecasts_ea(cells, [], dict(label="COLOAD_JOINED_1_of_4", s3_merged=4, s3_b=0, s3_total=4), led, 16)
+        self.assertEqual(f["F-N2-8"], "FALSIFIED")
+
+
 if __name__ == "__main__":
     unittest.main()

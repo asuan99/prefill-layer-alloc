@@ -15,8 +15,14 @@ Paired CI = benchmarks/pdmux_eval/analyze.paired_bootstrap_ci(baseline, proposed
 path, real signature).
 BLIND (§5-4 (ii)(나)): this analyzer computes NO co-located statistic from Job-PROFILE raw data -- only the alone
 window W of each cell is read (the output carries `blind.coloc_statistics_computed = false`).
-Job-EA parts (rho_off assembly H15-3, COLOC_* / DS3_* over real E-alpha replicates) are NOT implemented: coloc_label
-and ds3_summary exist as pure functions; `rho_off_assembly` raises NotImplementedError.
+Job-EA (`--job EA`, EA harness -- not yet sealed): E-alpha replicate window states (n2_window.ealpha_replicate over the
+rule-sealed cell_windows), COLOAD_* (§7-2 (f)), rho_off / rho_on assembly H15-3 (`rho_pair`: §9-1 rho_*_valid order
+A_on_valid > C VALID > CTX_MISMATCH, value = median S-per(C) / A_on(ctx_mid(C)); A_on interpolated by the rule-sealed
+a_on_interp inside [ctx_mid(A1), ctx_mid(A2)] and extrapolated within the CTX_MISMATCH tolerance (§10-2); the
+AON_CONTAINMENT count / rate and the label a strict containment guard would give are REPORTED in the missing
+histogram, not label inputs -- H15-3 vs §10-2 tension, reported), COLOC_* 4/4 (§10-3), DS3_* (§10-4),
+NEG_CONTROL_EA_* (§11-3), forecasts F-N2-1/2/3/7E/8/9 (§13). Job-EA result seal: `--seal-ea-result` writes
+EA_RESULT_SEAL.json; only `--post-ea-seal <seal>` (verified sha256) lifts the Job-PROFILE cell/boot blind (§7-3).
 """
 from __future__ import annotations
 
@@ -33,6 +39,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import n2_plan                   # noqa: E402
 import n2_realized_mix as mix    # noqa: E402
+import n2_signature as SG        # noqa: E402
 import n2_window as nw           # noqa: E402
 
 ENG = n2_plan.ENG
@@ -373,12 +380,7 @@ def forecasts(pts, reps, ds, ledger_full, n_units):
                 diffs.append(abs(math.log(a / z)))
     f["F-N2-6"] = ("FALSIFIED" if any(d >= LN3 for d in diffs) else "UNRESOLVED" if miss else "HELD")
     # F-N2-7P: 28/28 boots admitted -- UNRESOLVED when the Job stopped for a non-budget reason (§18-2-d #10, H17-2)
-    led = ledger_full or {}
-    adm = sum(1 for r in led.get("ledger", []) if r.get("status") == "ADMITTED")
-    non_budget_stop = (led.get("stopped") not in (None, "budget") or led.get("job_abort") is not None
-                       or any("job_abort" in r for r in led.get("ledger", [])))
-    f["F-N2-7P"] = ("UNRESOLVED" if ledger_full is None or non_budget_stop
-                    else "HELD" if adm == n_units else "FALSIFIED")
+    f["F-N2-7P"] = _f7(ledger_full, n_units)
     mx = ds["mean_x"]
     # F-N2-D1: D16 vs D44 mean x at b = 48 > b = 1 for every c
     v = [(mx.get(f"16,44,48,{c}"), mx.get(f"16,44,1,{c}")) for c in C_GRID]
@@ -507,10 +509,392 @@ def ds3_summary(cell_labels):
     return "DS3_UNRESOLVED"
 
 
-def rho_off_assembly(*_a, **_k):
-    """H15-3 (harness-seal precondition, Job-EA): C_off median / ON replicate A_on(ctx_mid(C_off)) with the
-    cross-boot containment guard (AON_CONTAINMENT into the missing histogram) and CTX_MISMATCH. NOT IMPLEMENTED."""
-    raise NotImplementedError("rho_off assembly (H15-3) is Job-EA work, not implemented in the PROFILE harness")
+EA_CELL_KEYS = tuple((d, b, c) for d in (16, 44) for (b, c) in n2_plan.EA_CELLS)
+
+
+def collect_ea(out, units):
+    """Every registered E-alpha replicate of a Job-EA output, with its §9-1 window states (n2_window.ealpha_replicate).
+    NOT_ATTEMPTED_BUDGET / never-started boots as in collect()."""
+    rows, ledger_full = _ledger(out)
+    reps, boots = [], {}
+    for u in units:
+        st = (rows.get(u["name"]) or {}).get("status")
+        started = st == "ADMITTED" and os.path.exists(os.path.join(out, f"marks_{u['name']}.txt"))
+        boot = nw.load_boot(out, u["name"]) if started else None
+        if boot is not None:
+            boots[u["name"]] = boot
+        for cell in u["cells"]:
+            if boot is None:
+                s = "NOT_ATTEMPTED_BUDGET" if st == "NOT_ATTEMPTED_BUDGET" else "BENCH_INVALID"
+                why = "stop rule (§14-3)" if s == "NOT_ATTEMPTED_BUDGET" else f"not_attempted ({st or 'no ledger row'})"
+                reps.append(dict(boot=u["name"], unit=u["name"], cell_id=cell["cell_id"], kind="EALPHA", D=u["D"],
+                                 alone_D=u["alone_D"], b=cell["b"], c=cell["c"], round=u["round"], boot_kind=u["kind"],
+                                 K=cell["K"], cell_key=f"{u['D']},{cell['b']},{cell['c']}", status=s, reason=why,
+                                 measurement=s, windows={k: s for k in ("A1", "A2", "C")}, details={}))
+                continue
+            rep = nw.ealpha_replicate(boot, u, cell)
+            rep["_cell"] = cell
+            reps.append(rep)
+    return reps, boots, ledger_full
+
+
+def a_on_valid(on_rep):
+    """§9-1 A_on_valid(cell, r) := the ON replicate's A1 and A2 are both VALID."""
+    w = (on_rep or {}).get("windows") or {}
+    return w.get("A1") == "VALID" and w.get("A2") == "VALID"
+
+
+def a_on_at(on_rep, x):
+    """§10-2 A_on(r; x): the ON replicate's A1 / A2 S-per medians placed at their ctx_mid, linear in x. Inside
+    [ctx_mid(A1), ctx_mid(A2)] the RULE-SEALED n2_probe_reduce.a_on_interp is used (it raises AON_CONTAINMENT outside);
+    outside, §10-2 '본 측정의 ρ에서는 … 허용 폭 안에서는 외삽한다' -- the same line extrapolated (the CTX_MISMATCH
+    tolerance 0.1 x c is checked by the caller first). Returns (value, contained)."""
+    v1, v2 = on_rep["values"]["A1"], on_rep["values"]["A2"]
+    x1, a1, x2, a2 = v1["ctx_mid"], v1["s_per_median"], v2["ctx_mid"], v2["s_per_median"]
+    if min(x1, x2) <= x <= max(x1, x2):
+        return nw.RED.a_on_interp(a1, x1, a2, x2, x), True
+    if x2 == x1:
+        return (a1 + a2) / 2.0, False
+    return a1 + (a2 - a1) * (x - x1) / (x2 - x1), False
+
+
+def rho_pair(on_rep, c_rep, c):
+    """H15-3: ONE rho of a cell and round -- §9-1 rho_*_valid in its registered order, then the §10-2 value.
+    on_rep = the ON-d replicate of round r (A_on); c_rep = the replicate whose C window is the numerator (rho_on: the
+    same ON replicate -- same boot; rho_off: the paired OFF-d replicate of round r -- a DIFFERENT boot, so the
+    'A1 < C < A2 in time' containment argument does not hold and containment is recorded per pair).
+      invalid reasons (first failing, §9-1): 'replicate missing' > 'A_on invalid' (ON A1 / A2 not VALID) >
+      'C <state>' (numerator C not VALID) > 'CTX_MISMATCH' (ctx_mid(C) outside [ctx_mid(A1), ctx_mid(A2)] by > 0.1 c).
+    A valid pair carries ln_rho = ln(median S-per(C) / A_on(ctx_mid(C))) and aon_contained (False = the
+    'AON_CONTAINMENT' event: ctx_mid(C) outside the A1/A2 interval, value extrapolated within the tolerance)."""
+    if on_rep is None or c_rep is None:
+        return dict(valid=False, reason="replicate missing")
+    if not a_on_valid(on_rep):
+        return dict(valid=False, reason=f"A_on invalid (A1 {on_rep['windows'].get('A1')}, "
+                                        f"A2 {on_rep['windows'].get('A2')})")
+    if c_rep["windows"].get("C") != "VALID":
+        return dict(valid=False, reason=f"C {c_rep['windows'].get('C')}")
+    v1, v2, vc = on_rep["values"]["A1"], on_rep["values"]["A2"], c_rep["values"]["C"]
+    xc, cmed = vc["ctx_mid"], vc["s_per_median"]
+    out = dict(ctx_c=xc, ctx_a1=v1["ctx_mid"], ctx_a2=v2["ctx_mid"], c_med=cmed, a1_med=v1["s_per_median"],
+               a2_med=v2["s_per_median"], on_boot=on_rep["boot"], c_boot=c_rep["boot"])
+    if nw.ctx_mismatch(xc, v1["ctx_mid"], v2["ctx_mid"], c):
+        return dict(out, valid=False, reason="CTX_MISMATCH")
+    a_on, contained = a_on_at(on_rep, xc)
+    return dict(out, valid=True, reason="", a_on=a_on, rho=cmed / a_on, ln_rho=math.log(cmed / a_on),
+                aon_contained=contained)
+
+
+def _half_rhos(on_rep, c_rep):
+    """§10-2 / §12-4 DESCRIPTIVE: rho of the whole co-located set and of its front / back halves, each half at its own
+    ctx_mid (A_on extrapolated when outside -- descriptive only)."""
+    out = {}
+    for name in ("c_all", "front", "back"):
+        h = (c_rep.get("desc") or {}).get(name) or {}
+        if h.get("s_per_median") and h.get("ctx_mid") is not None:
+            a, contained = a_on_at(on_rep, h["ctx_mid"])
+            out[name] = dict(ln_rho=math.log(h["s_per_median"] / a), n=h.get("n"), ctx_mid=h["ctx_mid"],
+                             aon_contained=contained)
+    return out
+
+
+def ea_cells(reps):
+    """Per E-alpha cell (§10-1..§10-3): rho_off (primary) and rho_on (secondary) pairs over rounds 1-4, the 4/4 label,
+    the descriptive paired bootstrap CI (baseline {r: ln A_on}, proposed {r: ln median S-per(C)}), the missing
+    histogram (first failing reason per round, plus the AON_CONTAINMENT count among the valid pairs and the label the
+    strict containment reading would give -- H15-3: reported, not a label input; §9-1 has no containment term)."""
+    by = {(r["cell_key"], r["boot_kind"], r["round"]): r for r in reps}
+    cells = {}
+    for d, b, c in EA_CELL_KEYS:
+        key = f"{d},{b},{c}"
+        res = dict(d=d, b=b, c=c)
+        for which, num_kind in (("rho_off", "OFF"), ("rho_on", "ON")):
+            pairs, halves = {}, {}
+            for r in (1, 2, 3, 4):
+                on, num = by.get((key, "ON", r)), by.get((key, num_kind, r))
+                pairs[r] = rho_pair(on, num, c)
+                if pairs[r]["valid"]:
+                    halves[r] = _half_rhos(on, num)
+            valid = {r: p for r, p in pairs.items() if p["valid"]}
+            lns = [valid[r]["ln_rho"] for r in sorted(valid)]
+            hist = {}
+            for p in pairs.values():
+                k = "VALID" if p["valid"] else p["reason"].split(" (")[0]
+                hist[k] = hist.get(k, 0) + 1
+            n_out = sum(1 for p in valid.values() if not p["aon_contained"])
+            if n_out:
+                hist["AON_CONTAINMENT(valid, extrapolated)"] = n_out
+            strict = [valid[r]["ln_rho"] for r in sorted(valid) if valid[r]["aon_contained"]]
+            ci = paired_ci({r: math.log(valid[r]["a_on"]) for r in valid}, {r: math.log(valid[r]["c_med"]) for r in valid})
+            res[which] = dict(label=coloc_label(lns), n=len(lns), rounds=sorted(valid), ln_rho=lns, ci=ci,
+                              pairs={str(r): p for r, p in pairs.items()}, missing_hist=hist,
+                              aon_containment_outside=n_out, aon_containment_rate=(n_out / len(valid)) if valid else None,
+                              label_if_containment_rejects=coloc_label(strict),
+                              halves={str(r): h for r, h in halves.items()})
+        cells[key] = res
+    return cells
+
+
+def neg_control_ea(reps):
+    """§11-3 applied to the Job-EA OFF E-alpha A1 / A2 windows (NEG_CONTROL_EA_*): population = OFF-boot A1 / A2
+    windows past measurement_ok whose (R) passed (state != RECORDER_UNPROVEN) and |window| = 128, VALID or not."""
+    pop = []
+    for r in reps:
+        if r["boot_kind"] != "OFF" or r.get("status") != "MEASURED":
+            continue
+        for k in ("A1", "A2"):
+            if r["windows"][k] != "RECORDER_UNPROVEN" and r["window_len"][k] == nw.WIN:
+                pop.append(dict(cell_id=r["cell_id"], window=k, pe_iter_idx5=r["values"][k]["pe_iter_idx5"]))
+    if not pop:
+        return dict(label="NEG_CONTROL_EA_UNRESOLVED", n=0, windows=[])
+    low = [p for p in pop if p["pe_iter_idx5"] < PE_MIN]
+    return dict(label="NEG_CONTROL_EA_FAILED" if low else "NEG_CONTROL_EA_HELD", n=len(pop), below=low,
+                min_pe_idx5=min(p["pe_iter_idx5"] for p in pop), windows=pop)
+
+
+def coload_label(reps):
+    """§7-2 (f) Job label over M = E-alpha replicates past the measurement stage with >= 1 co span (D-4 (ii)),
+    regardless of signature / predicate."""
+    pop = [r["signature"] for r in reps if r.get("status") == "MEASURED" and r.get("co_span_present")]
+    lab, k, n = SG.job_label(pop)
+    s3 = [x for s in pop for x in s["s3"]]
+    return dict(label=lab, k=k, n=n, s3_merged=sum(1 for x in s3 if x == "MERGED"), s3_b=sum(1 for x in s3 if x == "B"),
+                s3_total=len(s3))
+
+
+def _f7(ledger_full, n_units):
+    """F-N2-7P (Job-PROFILE, 28 boots) / F-N2-7E (Job-EA, 16 boots), one rule (§13, §18-2-d #10): every boot
+    admitted -> HELD, else FALSIFIED; UNRESOLVED when there is no ledger or the Job stopped for a non-budget reason
+    (stopped not in {None, "budget"} -- incl. H17-8 "crash" -- or a job_abort, H17-2)."""
+    led = ledger_full or {}
+    adm = sum(1 for r in led.get("ledger", []) if r.get("status") == "ADMITTED")
+    non_budget_stop = (led.get("stopped") not in (None, "budget") or led.get("job_abort") is not None
+                       or any("job_abort" in r for r in led.get("ledger", [])))
+    return ("UNRESOLVED" if ledger_full is None or non_budget_stop
+            else "HELD" if adm == n_units else "FALSIFIED")
+
+
+def forecasts_ea(cells, reps, col, ledger_full, n_units):
+    """§13 Job-EA forecasts F-N2-1 / 2 / 3 / 7E / 8 / 9 (HELD / FALSIFIED / UNRESOLVED; never label inputs).
+    Operationalisation (EA HARNESS CHOICES, reported -- not in §18-2-d #10): F-N2-1 over every measured OFF replicate's
+    §7-2 (b) iteration fraction (any < 0.99 -> FALSIFIED; a cell without one -> UNRESOLVED); F-N2-2 per round with
+    both rho_off and rho_on valid, |ln rho_off - ln rho_on| < ln 1.03 (any violation -> FALSIFIED; a cell without
+    such a round -> UNRESOLVED); F-N2-3 = cells whose rho_on has n = 4 and 4/4 ln rho_on > 0: >= 6 -> HELD, that
+    count + the cells with n < 4 < 6 -> FALSIFIED, else UNRESOLVED; F-N2-7E as F-N2-7P with 16 boots (§18-2-d #10
+    H17-2/H17-8 rule); F-N2-8 = COLOAD_NOT_JOINED and S3 MERGED in a majority of the pooled k >= 2 co spans -> HELD,
+    COLOAD_JOINED_* or S3 always b -> FALSIFIED, else UNRESOLVED; F-N2-9 over every valid rho_off / rho_on pair with
+    both halves: |ln rho_front - ln rho_back| < ln 1.03."""
+    f = {}
+    vals, miss = [], 0
+    for key in (f"{d},{b},{c}" for d, b, c in EA_CELL_KEYS):
+        v = [r["desc"]["pe_coloc_iter"] for r in reps if r["cell_key"] == key and r["boot_kind"] == "OFF"
+             and r.get("status") == "MEASURED" and r["desc"].get("pe_coloc_iter") is not None]
+        miss += not v
+        vals += v
+    f["F-N2-1"] = "FALSIFIED" if any(x < PE_MIN for x in vals) else ("UNRESOLVED" if miss else "HELD")
+    bad, miss = 0, 0
+    for cr in cells.values():
+        both = [r for r in ("1", "2", "3", "4") if cr["rho_off"]["pairs"][r]["valid"] and cr["rho_on"]["pairs"][r]["valid"]]
+        miss += not both
+        bad += sum(1 for r in both if abs(cr["rho_off"]["pairs"][r]["ln_rho"] - cr["rho_on"]["pairs"][r]["ln_rho"]) >= LN3)
+    f["F-N2-2"] = "FALSIFIED" if bad else ("UNRESOLVED" if miss else "HELD")
+    held = sum(1 for cr in cells.values() if cr["rho_on"]["n"] == MIN_N and all(x > 0 for x in cr["rho_on"]["ln_rho"]))
+    short = sum(1 for cr in cells.values() if cr["rho_on"]["n"] < MIN_N)
+    f["F-N2-3"] = "HELD" if held >= 6 else ("FALSIFIED" if held + short < 6 else "UNRESOLVED")
+    f["F-N2-7E"] = _f7(ledger_full, n_units)
+    if col["label"].startswith("COLOAD_JOINED") or (col["s3_total"] and col["s3_b"] == col["s3_total"]):
+        f["F-N2-8"] = "FALSIFIED"
+    elif col["label"] == "COLOAD_NOT_JOINED" and col["s3_merged"] * 2 > col["s3_total"]:
+        f["F-N2-8"] = "HELD"
+    else:
+        f["F-N2-8"] = "UNRESOLVED"
+    diffs = []
+    for cr in cells.values():
+        for which in ("rho_off", "rho_on"):
+            for h in cr[which]["halves"].values():
+                if "front" in h and "back" in h:
+                    diffs.append(abs(h["front"]["ln_rho"] - h["back"]["ln_rho"]))
+    f["F-N2-9"] = "UNRESOLVED" if not diffs else ("FALSIFIED" if any(x >= LN3 for x in diffs) else "HELD")
+    return f
+
+
+def ea_window_descriptives(reps, boots=None, clk_rows=None):
+    """§7-3 / §12-2 (descriptive): A2-pair-W + W-idx per E-alpha window (Job-EA is not blinded -- job='EA'), plus
+    cell-scope A2-pair at π_alone and π_coloc."""
+    out = []
+    for r in reps:
+        if r.get("status") != "MEASURED":
+            continue
+        pa, pc = nw.PAIR[r["alone_D"]], nw.PAIR[r["D"]]
+        rec = dict(cell_id=r["cell_id"], windows={})
+        for k, pi in (("A1", pa), ("A2", pa), ("C", pc)):
+            v = r["values"][k]
+            if "t_lo" in v:
+                rec["windows"][k] = mix.estimators(r["_records"], pi, "window", v["t_lo"], v["t_hi"], job="EA")
+        rec["cell_scope"] = {f"{p[0]},{p[1]}": mix.estimators(r["_records"], p, "cell", job="EA") for p in {pa, pc}}
+        b = (boots or {}).get(r["boot"])
+        if b is not None:                                         # §3-3 / §12-6 substrate exposure (descriptive)
+            rec["cpu"] = nw.cpu_delta(b, r["cell_id"])
+            if clk_rows is not None:
+                rec["clock"] = {}
+                for k in ("A1", "A2", "C"):
+                    v = r["values"][k]
+                    wr = nw.window_wall_range(b, r["cell_id"], v["t_lo"], v["t_hi"]) if "t_lo" in v else None
+                    rec["clock"][k] = clock_exposure(clk_rows, *wr) if wr else None
+        out.append(rec)
+    return out
+
+
+def analyze_ea(out, reg=None, substrate=None, clk=None):
+    """The Job-EA analysis (§5-2 labels): replicate window states, COLOAD_*, COLOC_* (rho_off primary / rho_on), DS3_*,
+    NEG_CONTROL_EA_*, forecasts F-N2-1/2/3/7E/8/9, missing histograms, descriptives (§12-4)."""
+    reg = reg or n2_plan.load_registered()
+    units = n2_plan.units("EA", reg)
+    reps, boots, ledger_full = collect_ea(out, units)
+    cells = ea_cells(reps)
+    neg = neg_control_ea(reps)
+    col = coload_label(reps)
+    ds3 = ds3_summary([cells[f"{d},{b},{c}"]["rho_off"]["label"] for d, b, c in EA_CELL_KEYS])
+    sub = {}
+    if substrate and os.path.exists(substrate):
+        with open(substrate) as fh:
+            sub = json.load(fh)
+    led_rows = (ledger_full or {}).get("ledger", [])
+    missing = [dict(unit=r["unit"], status=r["status"], need_s=r["need_s"]) for r in led_rows
+               if r.get("status", "").startswith("NOT_ATTEMPTED")]
+    rank = sorted({m["need_s"] for m in missing}, reverse=True)
+    for m in missing:
+        m["cost_rank"] = rank.index(m["need_s"]) + 1
+    win_hist = {}
+    for r in reps:
+        for k, s in r["windows"].items():
+            win_hist.setdefault(k, {})
+            win_hist[k][s] = win_hist[k].get(s, 0) + 1
+    meas = [r for r in reps if r.get("measurement")]
+    return dict(
+        job="EA", job_name=os.environ.get("PDMUX_JOB_NAME", os.path.basename(os.path.abspath(out))),
+        gpu_uuid=(sub.get("gpu") or {}).get("uuid", "UNKNOWN"), rule_seal_digest=n2_plan.RULE_SEAL_DIGEST,
+        registered_sha256=n2_plan.REGISTERED_JSON_SHA256, K=reg["K"],
+        kappa_star_worst={k: v["worst"] for k, v in reg["kappa_star"].items()},
+        replicates=[_strip(r) for r in reps], cells=cells, ds3=ds3, neg_control_ea=neg, coload=col,
+        forecasts=forecasts_ea(cells, reps, col, ledger_full, len(units)),
+        window_state_hist=win_hist,
+        replicate_class_counts=dict(
+            measurement_failure=len(meas),
+            c_measurement_failure=sum(1 for r in reps if r["windows"]["C"] in nw.MEASUREMENT_FAILURE),
+            c_predicate_failure=sum(1 for r in reps if r["windows"]["C"] in nw.PREDICATE_FAILURE),
+            c_valid=sum(1 for r in reps if r["windows"]["C"] == "VALID")),
+        windows=ea_window_descriptives(reps, boots, read_clk(clk, next((b["tz_gmtoff_s"] for b in boots.values()), 0))
+                                       if clk else None), missing_boots=missing, ledger=ledger_full)
+
+
+def render_text_ea(res):
+    """§16-1 E-alpha 허용 문안 틀 filled mechanically + the §16-2 E-alpha 병기 items."""
+    L = [f"# N2 Job-EA labels (mechanical; job {res['job_name']}, GPU {res['gpu_uuid']}, rule seal "
+         f"{res['rule_seal_digest'][:16]}…) — 성능 판정 아님", ""]
+    neg = res["neg_control_ea"]
+    for d, b, c in EA_CELL_KEYS:
+        key = f"{d},{b},{c}"
+        cr = res["cells"][key]
+        ro, rn = cr["rho_off"], cr["rho_on"]
+        ci = ro["ci"] or {}
+        ctx_c = [round(p["ctx_c"], 1) for _r, p in sorted(ro["pairs"].items()) if p.get("valid")]
+        stalls = [(x["values"]["C"]["stalls_gt5"], x["values"]["C"]["stalls_gt10"]) for x in res["replicates"]
+                  if x["cell_key"] == key and x.get("status") == "MEASURED" and "stalls_gt5" in x["values"]["C"]]
+        L.append(f"E-α 셀 ({d}, {b}, {c})에서 ρ_off는 `{ro['label']}`(짝 n = {ro['n']}, ln ρ 값 "
+                 f"{[round(x, 4) for x in ro['ln_rho']]}, 기술 병기 95% paired bootstrap "
+                 f"[{ci.get('ci95_low')}, {ci.get('ci95_high')}], 재표집 35개, 4/4 부호 = 정확 부호검정 단측 1/16)이었다 — "
+                 f"같은 Job 안 [sticky ON 단독] 대 [sticky OFF + prefill backlog 동거]의 boot 간 step 시간 비이며, sticky "
+                 f"상태와 동거를 함께 바꾼 비다(ρ_on = `{rn['label']}` {[round(x, 4) for x in rn['ln_rho']]}, N2C-4). 다른 "
+                 f"(d, b, c)로 일반화하지 않는다. [K = {res['K'][str(d)]}, 표 8-6-ρ 최악 코너 κ* = "
+                 f"{res['kappa_star_worst'].get(key, float('nan')):.2f}(EAK-3), ctx_mid(C) {ctx_c}(EAK-2), 결측 "
+                 f"{ro['missing_hist']}, AON_CONTAINMENT(외삽) {ro['aon_containment_outside']}, C 정지 수 "
+                 f"(>5×, >10×) {stalls}(EAK-4)]")
+    L.append("")
+    L.append(f"DS3: `{res['ds3']}` — E-α 8셀 밖의 동거 대표성은 미검증")
+    L.append(f"COLOAD: `{res['coload']['label']}` ({res['coload']['k']}/{res['coload']['n']} JOINED; S3 MERGED "
+             f"{res['coload']['s3_merged']}/{res['coload']['s3_total']})")
+    L.append(f"NEG_CONTROL_EA: `{neg['label']}` (n = {neg['n']}, OFF A1·A2 idx5 최솟값 {neg.get('min_pe_idx5')}) — "
+             f"E-α 라벨 인용 시 필수 병기(N2C-22)")
+    L.append("예보: " + json.dumps(res["forecasts"], ensure_ascii=False))
+    L.append("필수 병기(§16-2): N2C-1…16, DS-1·DS-3·DS-4, E2VR-6, NEG_CONTROL_EA 라벨과 짝 OFF A1·A2 idx5 비율, 셀별 K와 "
+             "κ* 상한(EAK-3), 복제별 ctx_mid(C)(EAK-2), 정지 사건 수(EAK-4), 결측 boot 목록, Job 이름과 GPU UUID.")
+    return "\n".join(L) + "\n"
+
+
+# ===================================================================================================== EA result seal
+EA_RESULT_FILES = ("N2_EA_RESULT.json", "N2_EA_LABELS.txt")
+EA_SEAL_FILE = "EA_RESULT_SEAL.json"
+
+
+def seal_ea_result(ea_out, now=None):
+    """§7-3 산출 시점 / §5-4 (ii)(나) (EA HARNESS CHOICE, reported): the 'Job-EA result seal' is recorded as
+    EA_RESULT_SEAL.json in the Job-EA output directory -- the sha256 of the EA result files at seal time. The file is
+    created once (mode 'x'); the governance part of the seal (result audit, commit) is outside this function."""
+    import datetime
+    rec = dict(kind="N2_JOB_EA_RESULT_SEAL", rule_seal_digest=n2_plan.RULE_SEAL_DIGEST,
+               sealed_utc=now or datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+    for fn in EA_RESULT_FILES:
+        rec[fn] = n2_plan.sha256_file(os.path.join(ea_out, fn))
+    rec["ea_result_sha256"] = rec["N2_EA_RESULT.json"]
+    with open(os.path.join(ea_out, EA_SEAL_FILE), "x") as fh:
+        json.dump(rec, fh, indent=1, sort_keys=True)
+    return rec
+
+
+def verify_ea_result_seal(seal_path):
+    """-> dict(verified, problems, ...): every recorded sha256 equals the CURRENT bytes of the file next to the seal;
+    the seal's rule digest equals the current rule-seal digest."""
+    try:
+        with open(seal_path) as fh:
+            rec = json.load(fh)
+    except (OSError, ValueError) as e:
+        return dict(verified=False, problems=[f"seal unreadable: {e!r}"])
+    d = os.path.dirname(os.path.abspath(seal_path))
+    bad = []
+    if rec.get("kind") != "N2_JOB_EA_RESULT_SEAL":
+        bad.append(f"kind {rec.get('kind')!r}")
+    if rec.get("rule_seal_digest") != n2_plan.RULE_SEAL_DIGEST:
+        bad.append("rule seal digest differs")
+    for fn in EA_RESULT_FILES:
+        p = os.path.join(d, fn)
+        got = n2_plan.sha256_file(p) if os.path.exists(p) else "MISSING"
+        if rec.get(fn) != got:
+            bad.append(f"{fn}: {got} != sealed {rec.get(fn)}")
+    if rec.get("ea_result_sha256") != rec.get("N2_EA_RESULT.json"):
+        bad.append("ea_result_sha256 != N2_EA_RESULT.json sha")
+    return dict(rec, verified=not bad, problems=bad, seal_path=os.path.abspath(seal_path))
+
+
+def profile_post_ea(out, seal_path, reg=None):
+    """§7-3 산출 시점 (§18-2-d #11): Job-PROFILE cell- and boot-scope A2-pair estimators (burst co-location included),
+    computed ONLY with a verified Job-EA result seal (otherwise BlindedScope). Per started cell: π_alone and, on OFF
+    boots, the boot's FIXED pair; per boot: the same pairs over the whole boot telemetry."""
+    seal = verify_ea_result_seal(seal_path)
+    if not seal["verified"]:
+        raise mix.BlindedScope(f"Job-EA result seal not verified: {seal['problems']}")
+    reg = reg or n2_plan.load_registered()
+    units = n2_plan.units("PROFILE", reg)
+    rows, _led = _ledger(out)
+    cells, boots_out = [], []
+    for u in units:
+        if (rows.get(u["name"]) or {}).get("status") != "ADMITTED" or \
+                not os.path.exists(os.path.join(out, f"marks_{u['name']}.txt")):
+            continue
+        boot = nw.load_boot(out, u["name"])
+        pis = {nw.PAIR[u["alone_D"]]} | ({nw.PAIR[u["D"]]} if u["kind"] == "OFF" else set())
+        for cell in u["cells"]:
+            bd = nw.cell_bounds(boot, cell["cell_id"])
+            if bd is None:
+                continue
+            recs = nw.cell_slice(boot["records"], *bd)
+            cells.append(dict(cell_id=cell["cell_id"], estimators={
+                f"{p[0]},{p[1]}": mix.estimators(recs, p, "cell", job="PROFILE", ea_result_seal=seal) for p in pis}))
+        boots_out.append(dict(boot=u["name"], estimators={
+            f"{p[0]},{p[1]}": mix.estimators(boot["records"], p, "boot", job="PROFILE", ea_result_seal=seal)
+            for p in pis}))
+    return dict(job="PROFILE", scope="cell+boot (post Job-EA result seal)", ea_result_seal=seal, cells=cells,
+                boots=boots_out)
 
 
 # ===================================================================================================== output
@@ -626,13 +1010,46 @@ def main(argv=None):
     ap.add_argument("--clk", default=None)
     ap.add_argument("--substrate", default=None)
     ap.add_argument("--json-out", default=None)
+    ap.add_argument("--seal-ea-result", action="store_true",
+                    help="write EA_RESULT_SEAL.json over N2_EA_RESULT.json / N2_EA_LABELS.txt of --out-dir (Job-EA)")
+    ap.add_argument("--post-ea-seal", default=None, metavar="EA_RESULT_SEAL.json",
+                    help="Job-PROFILE cell/boot-scope A2-pair estimators, only with a verified Job-EA result seal")
     a = ap.parse_args(argv)
-    if a.job != "PROFILE":
-        print("ABORT_EA_NOT_IMPLEMENTED")
-        return 3
+    if a.job not in ("PROFILE", "EA"):
+        print(f"ANALYZE_BAD_JOB {a.job}")
+        return 2
     if not os.path.isdir(a.out_dir):
         print(f"ANALYZE_NO_OUT_DIR {a.out_dir}")
         return 2
+    if a.seal_ea_result:
+        if a.job != "EA":
+            print("ANALYZE_SEAL_NEEDS_EA")
+            return 2
+        rec = seal_ea_result(a.out_dir)
+        print(f"EA_RESULT_SEALED {rec['ea_result_sha256']}")
+        return 0
+    if a.post_ea_seal:
+        if a.job != "PROFILE":
+            print("ANALYZE_POST_EA_SEAL_NEEDS_PROFILE")
+            return 2
+        try:
+            res = profile_post_ea(a.out_dir, a.post_ea_seal)
+        except mix.BlindedScope as e:
+            print(f"ABORT_BLIND {e}")
+            return 3
+        with open(os.path.join(a.out_dir, "N2_PROFILE_POST_EA.json"), "x") as fh:
+            json.dump(res, fh, indent=1, sort_keys=True, default=str)
+        print(f"PROFILE_POST_EA cells={len(res['cells'])} boots={len(res['boots'])}")
+        return 0
+    if a.job == "EA":
+        res = analyze_ea(a.out_dir, substrate=a.substrate, clk=a.clk)
+        with open(a.json_out or os.path.join(a.out_dir, "N2_EA_RESULT.json"), "w") as fh:
+            json.dump(res, fh, indent=1, sort_keys=True, default=str)
+        with open(os.path.join(a.out_dir, "N2_EA_LABELS.txt"), "w") as fh:
+            fh.write(render_text_ea(res))
+        print(f"DS3={res['ds3']} COLOAD={res['coload']['label']} NEG_EA={res['neg_control_ea']['label']} "
+              f"rho_off_labels={[res['cells'][f'{d},{b},{c}']['rho_off']['label'] for d, b, c in EA_CELL_KEYS]}")
+        return 0
     res = analyze(a.out_dir, a.job, clk=a.clk, substrate=a.substrate)
     jp = a.json_out or os.path.join(a.out_dir, "N2_PROFILE_RESULT.json")
     with open(jp, "w") as fh:

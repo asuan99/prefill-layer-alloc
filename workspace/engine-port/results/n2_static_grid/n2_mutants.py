@@ -1,7 +1,11 @@
 """N2(3-a) registered mutant runner (CPU only) -- PREREG_N2_3A rev17 ((A') fixed K: judgment-path group J + theta-provenance group T + smoke group S; R8-5, R9-3, R9-8, R10-4, R11-6, G-6/8/9/15, harness H01-H32; N2C-47 issue: every registered mutant
 must be re-runnable by an auditor).
 
-Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_mutants.py [--set core|harness|all] [N3_RAW_DIR] [IDs...]
+Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_mutants.py [--jobs N] [--no-targeted] [--set core|harness|all] [N3_RAW_DIR] [IDs...]
+rev18 CANDIDATE (rule reopen, user approval 2026-10-12): targeted tests first, the full suites only for survivors (a
+targeted kill counts only if the same selection passes unmutated); --jobs N > 1 = N workers after N concurrent
+no-mutation controls; --no-targeted = the rev17 behaviour (full suites for every mutant). See the block comment above
+`targeted_tests`. The R9-8 'sequential and alone' requirement stays the default (--jobs 1).
 rev16 (R15-1 (2) option (b)): the ledger is split. `--set core` (default) = RULE-SEAL ledger: the core mutants (MUTANTS
 below, calculator / reducer only) on the rule-sealed files alone -- no harness file is read, copied, imported or run,
 and the control runs only test_n2_feasibility + test_n2_probe_reduce (N3 positive control included when N3_RAW_DIR is
@@ -288,14 +292,238 @@ def _harness_mutants():
     ]
 
 
+# =====================================================================================================================
+# rev18 CANDIDATE (rule reopen; user approval 2026-10-12 "변이 러너 단축"): targeted tests first, the full suites only for
+# survivors, optional parallel workers. LEDGER MEANING UNCHANGED: a mutant is KILLED iff some registered test fails on
+# it. A targeted failure counts as a kill only when the SAME targeted selection passes on the unmutated tree (cached
+# per selection -- an isolation artefact of running a subset can never manufacture a kill); every other mutant (targeted
+# pass, no selection, targeted control failure, targeted timeout) runs the full registered suites exactly as before.
+# Expected-equivalent mutants and the no-mutation control always run the full suites.
+# Parallel (--jobs N > 1): N concurrent no-mutation controls run first (all must pass -- timing-sensitive tests are
+# checked under the same concurrency the ledger will use; any failure = CONTROL-FAILED, abort); rows are printed as
+# they complete and once more in table order at the end. With an N3 raw directory each worker loads ~2 GB (R9-8) --
+# keep --jobs 1 for the rule-seal ledger unless the machine has the memory.
+# =====================================================================================================================
+import ast
+import re
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+TARGET_MAX_FRACTION = 0.9              # a selection covering >= 90 % of the tests is not run (no saving): full only
+
+
+def _refs(node):
+    """Names a node mentions: identifiers, attribute names and file-name-like tokens of short string constants."""
+    out = set()
+    for n in ast.walk(node):
+        if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load):
+            out.add(n.id)
+        elif isinstance(n, ast.Attribute):
+            out.add(n.attr)
+        elif isinstance(n, ast.Constant) and isinstance(n.value, str) and len(n.value) < 400:
+            out.update(re.findall(r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*", n.value))
+    return out
+
+
+def _defs(fn, text, classes=True):
+    """[(name, lineno, end_lineno, refs, owner)] for every top-level def / class / method / module-level assignment of
+    a Python source (owner = the class of a method, else None); classes=False (test files) keeps only the module-level
+    helpers and assignments -- test classes are selection units, not callers."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
+    out = []
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            out.append((node.name, node.lineno, node.end_lineno, _refs(node), None))
+        elif isinstance(node, ast.ClassDef) and classes:
+            out.append((node.name, node.lineno, node.end_lineno, _refs(node), None))
+            for sub in node.body:
+                if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    out.append((sub.name, sub.lineno, sub.end_lineno, _refs(sub), node.name))
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            tg = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for t in tg:
+                for n in ast.walk(t):
+                    if isinstance(n, ast.Name):
+                        out.append((n.id, node.lineno, node.end_lineno,
+                                    _refs(node.value) if node.value else set(), None))
+    return out
+
+
+def _key(name, owner, counts):
+    """The name a def contributes to the closure: its own name when it is defined once across the indexed files,
+    else (a generic method name such as stop / start / run) its class name -- never a name defined twice."""
+    if counts.get(name, 0) <= 1:
+        return name
+    return owner
+
+
+def _enclosing(fn, text, old, counts):
+    """The closure seed of an anchor: the innermost enclosing def (its _key); a non-Python file -> its file name."""
+    if not fn.endswith(".py"):
+        return {fn}
+    line = text[:text.index(old)].count("\n") + 1
+    hits = sorted((e - s, name, owner) for name, s, e, _r, owner in _defs(fn, text) if s <= line <= e)
+    for _w, name, owner in hits:
+        k = _key(name, owner, counts)
+        if k:
+            return {k}
+    return set()
+
+
+def targeted_tests(files, tests, reps):
+    """Test ids 'module.Class.method' that (transitively) reference the code a mutant touches: the innermost def of
+    every anchor, closed over every def of `files` (and the module-level helpers of `tests`) that references a name
+    already in the set; names defined more than once (generic methods) enter only through their class. [] = no
+    selection (the full suites run) -- also when the selection covers >= TARGET_MAX_FRACTION of the tests."""
+    defs = ([d for fn, text in files.items() if fn.endswith(".py") for d in _defs(fn, text)]
+            + [d for fn, text in tests.items() for d in _defs(fn, text, classes=False)])
+    counts = {}
+    for name, _s, _e, _r, _o in defs:
+        counts[name] = counts.get(name, 0) + 1
+    relevant = set()
+    for fn, old, _new in reps:
+        relevant |= _enclosing(fn, (files.get(fn) or tests.get(fn)), old, counts)
+    if not relevant:
+        return []
+    grew = True
+    while grew:
+        grew = False
+        for name, _s, _e, refs, owner in defs:
+            k = _key(name, owner, counts)
+            if k and k not in relevant and refs & relevant:
+                relevant.add(k)
+                grew = True
+    out, total = [], 0
+    for fn, text in tests.items():
+        mod = fn[:-3]
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            return []
+        for node in tree.body:
+            if not isinstance(node, ast.ClassDef):
+                continue
+            meths = [m for m in node.body if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))]
+            shared = set().union(*([_refs(m) for m in meths if not m.name.startswith("test")] or [set()]))
+            for m in meths:
+                if m.name.startswith("test"):
+                    total += 1
+                    if (_refs(m) | shared) & relevant:
+                        out.append(f"{mod}.{node.name}.{m.name}")
+    if not out or len(out) >= TARGET_MAX_FRACTION * max(total, 1):
+        return []
+    return sorted(out)
+
+
+def run_unittest(d, env, names, timeout=900, failfast=False):
+    """(failed, tail, timed_out) of `python -m unittest [-f] <names>` in `d` (failfast only for the targeted phase:
+    a kill needs one failure; the full phase keeps the registered FAIL counts)."""
+    try:
+        r = subprocess.run([sys.executable, "-m", "unittest", *(["-f"] if failfast else []), *names], cwd=d, env=env,
+                           capture_output=True, text=True,
+                           timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return True, f"{timeout} s", True
+    tail = [ln for ln in r.stderr.strip().split("\n") if ln.startswith(("OK", "FAILED"))]
+    tail = tail[-1] if tail else r.stderr[-200:].replace("\n", " ")
+    return r.returncode != 0, tail, False
+
+
+class TargetControls:
+    """Per-selection no-mutation runs of a targeted selection (lazy, cached, one run per selection)."""
+
+    def __init__(self, make_tree, env):
+        self.make_tree, self.env = make_tree, env
+        self.cache, self.lock, self.locks = {}, threading.Lock(), {}
+
+    def passes(self, names):
+        key = tuple(names)
+        with self.lock:
+            lk = self.locks.setdefault(key, threading.Lock())
+        with lk:
+            if key not in self.cache:
+                d, cleanup = self.make_tree()
+                try:
+                    failed, _tail, _to = run_unittest(d, self.env, names)
+                finally:
+                    cleanup()
+                self.cache[key] = not failed
+            return self.cache[key]
+
+
+def judge(mid, desc, expect, run_full, targets, run_targets, controls):
+    """One ledger row with the registered meaning. run_full() / run_targets(names) -> (failed, tail, timed_out)."""
+    phase = ""
+    if expect == "kill" and targets:
+        failed, tail, to = run_targets(targets)
+        if failed and not to:
+            if controls.passes(targets):
+                return (mid, desc, "KILLED", f"[targeted {len(targets)}, failfast] {tail}")
+            phase = "[targeted control failed -> full] "
+        elif to:
+            phase = "[targeted timeout -> full] "
+        else:
+            phase = f"[targeted {len(targets)} survived -> full] "
+    failed, tail, to = run_full()
+    if to:
+        return (mid, desc, "TIMEOUT", tail)
+    if expect == "pass":
+        status = "CONTROL-OK" if not failed else "CONTROL-FAILED"
+    elif expect == "kill":
+        status = "KILLED" if failed else "SURVIVED"
+    else:
+        status = "EQUIVALENT-SURVIVED" if not failed else "EQUIVALENT-KILLED"
+    return (mid, desc, status, phase + tail)
+
+
+def run_rows(tasks, jobs, emit):
+    """tasks = [(index, callable -> row)]; runs them with `jobs` workers, emit(row) as each completes, returns the rows
+    in task order."""
+    out = {}
+    if jobs <= 1:
+        for i, fn in tasks:
+            out[i] = fn()
+            emit(out[i])
+        return [out[i] for i, _ in tasks]
+    with ThreadPoolExecutor(max_workers=jobs) as ex:
+        futs = {ex.submit(fn): i for i, fn in tasks}
+        for f in as_completed(futs):
+            out[futs[f]] = f.result()
+            emit(out[futs[f]])
+    return [out[i] for i, _ in tasks]
+
+
+def parse_runner_opts(args):
+    """--jobs N (default 1) and --no-targeted, anywhere in argv; returns (jobs, targeted, rest)."""
+    jobs, targeted, rest, i = 1, True, [], 0
+    while i < len(args):
+        if args[i] == "--jobs":
+            jobs = int(args[i + 1])
+            i += 2
+            continue
+        if args[i] == "--no-targeted":
+            targeted = False
+        else:
+            rest.append(args[i])
+        i += 1
+    if jobs < 1:
+        raise SystemExit("--jobs must be >= 1")
+    return jobs, targeted, rest
+
+
 SETS = ("core", "harness", "all")
 
 
-def run(n3_dir=None, only=None, mset="core"):
+def run(n3_dir=None, only=None, mset="core", jobs=1, targeted=True):
     """rev16 (R15-1 (2) option (b)): mset = "core" (RULE-SEAL ledger: only the rule-sealed calculator, reducer and the
     two rule test files are read, copied and executed -- no harness file is imported, copied or run; the control runs
     the two rule test files incl. the N3 positive control), "harness" (HARNESS-SEAL ledger: H01-H32 on the harness
-    files; control = all three suites) or "all" (both, the rev15 behaviour)."""
+    files; control = all three suites) or "all" (both, the rev15 behaviour).
+    rev18 candidate: `targeted` (default on) = targeted tests first, full suites for survivors; `jobs` workers (default
+    1; > 1 runs `jobs` concurrent no-mutation controls first). The ledger meaning is unchanged (block comment above)."""
     if mset not in SETS:
         raise SystemExit(f"--set must be one of {SETS}")
     names = (FE, RD) + (HARNESS_SUPPORT if mset != "core" else ())
@@ -310,58 +538,77 @@ def run(n3_dir=None, only=None, mset="core"):
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "N2_N3_SH": n3_sh_path()}
     if n3_dir:
         env["N2_N3_DIR"] = os.path.abspath(n3_dir)
-    rows = []
-    allm = [("CTRL", "no mutation", "pass", [])] + (MUTANTS if mset != "harness" else []) + \
-        (_harness_mutants() if mset != "core" else [])
-    for mid, desc, expect, reps in [m for m in allm if not only or m[0] in only or m[0] == "CTRL"]:
-        files = dict(src)
-        if mid == "CTRL":
-            suites = TESTS + (HARNESS_TESTS if mset != "core" else ())
-        elif all(fn in (FE, RD) for fn, _o, _n in reps):
-            suites = TESTS
-        else:
-            suites = HARNESS_TESTS
-        for fn, old, new in reps:
-            if files[fn].count(old) != 1:
-                rows.append((mid, desc, "BROKEN-MUTANT", f"anchor count {files[fn].count(old)}"))
-                break
-            files[fn] = files[fn].replace(old, new)
-        else:
-            d = tempfile.mkdtemp(prefix=f"n2mut_{mid}_")
+    allm = (MUTANTS if mset != "harness" else []) + (_harness_mutants() if mset != "core" else [])
+    muts = [m for m in allm if not only or m[0] in only]
+    lock = threading.Lock()
+
+    def emit(row):
+        grp = "J" if row[0] in JUDGMENT_IDS else ("T" if row[0] in THETA_IDS else ("-" if row[0].startswith("CTRL") else "S"))
+        with lock:
+            print(f"{row[0]:5s} {grp} {row[1]:45s} {row[2]:20s} {row[3]}", flush=True)
+
+    def tree(files, mid):
+        d = tempfile.mkdtemp(prefix=f"n2mut_{mid}_")
+        for fn, c in {**files, **tests}.items():
+            with open(os.path.join(d, fn), "w") as fh:
+                fh.write(c)
+        return d
+
+    def full(d, suites):
+        failed, tail, to = run_unittest(d, env, [t[:-3] for t in suites])
+        pyc = any(x.endswith(".pyc") for _, _, fs in os.walk(d) for x in fs)
+        return failed, f"{tail}{' pyc!' if pyc else ''}", to
+
+    ctrl_suites = TESTS + (HARNESS_TESTS if mset != "core" else ())
+
+    def control(k):
+        def go():
+            d = tree(src, f"CTRL{k}")
             try:
-                for fn, c in {**files, **tests}.items():
-                    with open(os.path.join(d, fn), "w") as fh:
-                        fh.write(c)
-                try:
-                    r = subprocess.run([sys.executable, "-m", "unittest", *[t[:-3] for t in suites]], cwd=d, env=env,
-                                       capture_output=True, text=True, timeout=900)
-                except subprocess.TimeoutExpired:                 # R9-8: a timeout is a row, never a kill
-                    rows.append((mid, desc, "TIMEOUT", "900 s"))
-                    print(f"{mid:5s} {desc:45s} {'TIMEOUT':20s} 900 s", flush=True)
-                    continue
-                pyc = any(x.endswith(".pyc") for _, _, fs in os.walk(d) for x in fs)
-                tail = [ln for ln in r.stderr.strip().split("\n") if ln.startswith(("OK", "FAILED"))]
-                tail = tail[-1] if tail else r.stderr[-200:]
-                failed = r.returncode != 0
-                if expect == "pass":
-                    status = "CONTROL-OK" if not failed else "CONTROL-FAILED"
-                elif expect == "kill":
-                    status = "KILLED" if failed else "SURVIVED"
-                else:
-                    status = "EQUIVALENT-SURVIVED" if not failed else "EQUIVALENT-KILLED"
-                rows.append((mid, desc, status, f"{tail}{' pyc!' if pyc else ''}"))
+                return judge("CTRL" if k == 0 else f"CTRL{k}", "no mutation", "pass", lambda: full(d, ctrl_suites),
+                             [], None, None)
             finally:
                 shutil.rmtree(d, ignore_errors=True)
-        grp = "J" if rows[-1][0] in JUDGMENT_IDS else ("T" if rows[-1][0] in THETA_IDS else ("-" if rows[-1][0] == "CTRL" else "S"))
-        print(f"{rows[-1][0]:5s} {grp} {rows[-1][1]:45s} {rows[-1][2]:20s} {rows[-1][3]}", flush=True)
-        if rows[-1][2] == "CONTROL-FAILED":                # R14-9 (lesson 254): a failed control voids every later row
-            raise SystemExit("CONTROL-FAILED: the unmutated suite does not pass in this environment -- aborting")
+        return go
+    rows = run_rows([(k, control(k)) for k in range(jobs)], jobs, emit)
+    if any(r[2] != "CONTROL-OK" for r in rows):        # R14-9 (lesson 254): a failed control voids every later row
+        raise SystemExit("CONTROL-FAILED: the unmutated suite does not pass in this environment"
+                         + (f" ({jobs} concurrent controls)" if jobs > 1 else "") + " -- aborting")
+
+    def ctrl_tree():
+        d = tree(src, "TCTRL")
+        return d, (lambda: shutil.rmtree(d, ignore_errors=True))
+    controls = TargetControls(ctrl_tree, env)
+
+    def task(m):
+        mid, desc, expect, reps = m
+
+        def go():
+            files = dict(src)
+            for fn, old, new in reps:
+                if files[fn].count(old) != 1:
+                    return (mid, desc, "BROKEN-MUTANT", f"anchor count {files[fn].count(old)}")
+                files[fn] = files[fn].replace(old, new)
+            suites = TESTS if all(fn in (FE, RD) for fn, _o, _n in reps) else HARNESS_TESTS
+            sel = targeted_tests({k: v for k, v in src.items()}, {t: tests[t] for t in suites}, reps) if targeted else []
+            d = tree(files, mid)
+            try:
+                return judge(mid, desc, expect, lambda: full(d, suites), sel,
+                             lambda nm: run_unittest(d, env, nm, failfast=True), controls)
+            finally:
+                shutil.rmtree(d, ignore_errors=True)
+        return go
+    rows += run_rows([(i, task(m)) for i, m in enumerate(muts)], jobs, emit)
+    if jobs > 1:                                       # the table again, in registration order
+        print("# ---- rows in table order", flush=True)
+        for r in rows:
+            emit(r)
     return rows
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
+    jobs, targeted, args = parse_runner_opts(sys.argv[1:])
     mset = "core"
     if args[:1] == ["--set"]:
         mset, args = args[1], args[2:]
-    run(args[0] if args else None, set(args[1:]) or None, mset)
+    run(args[0] if args else None, set(args[1:]) or None, mset, jobs=jobs, targeted=targeted)

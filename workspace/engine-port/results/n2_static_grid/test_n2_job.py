@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import re
 import shutil
@@ -577,17 +578,100 @@ class TestRunnerAborts(unittest.TestCase):
         self.assertEqual(st["r1_OFF44-b1-c2048"][0], "VALID")
 
     def test_runner_crash_marks_crash_and_f7p_unresolved(self):          # H17-8 (§18-2-d #10)
-        class Crash(fk.FakeServerHandle):
-            def start(self, env, log_path):
+        # D6: a server.start failure is now a CLASSIFIED boot abort (test_start_failure_is_classified_boot_abort);
+        # the runner crash path is exercised by a failure OUTSIDE run_boot (the server factory of run_job).
+        sw = J.ScaledWall(200.0)
+        us = sorted(J.select_test_units(UNITS, {"r1_ON44", "r1_OFF44"}, set(self.CELLS)),
+                    key=lambda u: u["name"] != "r1_ON44")
+
+        def make(u):
+            if u["name"] == "r1_OFF44":
                 raise OSError("synthetic runner crash")
+            return fk.FakeServerHandle(dict(FAST, wall=sw), job_mode=True)
+        opts = dict(reg=REG, wall=sw, flush_interval_s=0.02, warmup_n=1, install_signals=False,
+                    cell_kw=dict(drain_poll_s=0.02, drain_settle_s=0.05, drain_timeout_s=20))
         with self.assertRaises(OSError):
-            run_mini(self.td, ["r1_ON44", "r1_OFF44"], self.CELLS,
-                     handles={"r1_OFF44": Crash(dict(FAST, wall=J.ScaledWall(200.0)), job_mode=True)})
+            asyncio.run(J.run_job(self.td, us, make, opts))
         with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
             jl = json.load(fh)
         self.assertEqual((jl["stopped"], jl["job_abort"]), ("crash", None))
         res = A.analyze(self.td, reg=REG)
         self.assertEqual(res["forecasts"]["F-N2-7P"], "UNRESOLVED")
+
+    def test_start_failure_is_classified_boot_abort(self):                # D6: settle / start inside the try
+        stopped = {}
+
+        class StartFails(fk.FakeServerHandle):
+            def start(self, env, log_path):
+                raise OSError("synthetic start failure")
+
+            async def stop(self):
+                stopped[True] = time.monotonic()
+                await super().stop()
+
+        class SettleFails(fk.FakeServerHandle):
+            async def settle(self, baseline_mib, record_path):
+                raise RuntimeError("synthetic settle failure")
+        sw = J.ScaledWall(200.0)
+        led = run_mini(self.td, ["r1_ON44", "r1_ON24", "r1_OFF44"], self.CELLS,
+                       handles={"r1_ON44": StartFails(dict(FAST, wall=sw), job_mode=True),
+                                "r1_ON24": SettleFails(dict(FAST, wall=sw), job_mode=True)})
+        self.assertEqual([(r["aborted"], r["abort_class"]) for r in led[:2]],
+                         [("client_exception", "VALUE_DEPENDENT")] * 2)
+        self.assertIn(True, stopped)                                     # stop() ran although start never did
+        self.assertEqual((led[2]["status"], led[2].get("aborted"), led[2].get("cells_done")), ("ADMITTED", None, 1))
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            self.assertEqual(json.load(fh)["stopped"], None)             # not a runner crash
+        for b in ("r1_ON44", "r1_ON24"):
+            self.assertIn(["boot_abort", "client_exception"], [x[:2] for x in marks(self.td, b)])
+            with open(os.path.join(self.td, f"boot_{b}.json")) as fh:
+                self.assertIn("synthetic", json.load(fh)["error"])
+
+    def test_stop_flag_honoured_before_warmup(self):                       # D5: health / warm-up loops
+        sw = J.ScaledWall(200.0)
+        box = {}
+
+        class StopAtHealth(fk.FakeServerHandle):
+            async def wait_healthy(self, session):
+                ok = await super().wait_healthy(session)
+                box["opts"]["stop"]["flag"] = True                         # watchdog SIGTERM during the /health wait
+                return ok
+        h = StopAtHealth(dict(FAST, wall=sw), job_mode=True)
+        us = J.select_test_units(UNITS, {"r1_OFF44"}, set(self.CELLS))
+        box["opts"] = dict(reg=REG, wall=sw, flush_interval_s=0.02, warmup_n=2, install_signals=False, stop={},
+                           cell_kw=dict(drain_poll_s=0.02, drain_settle_s=0.05, drain_timeout_s=20))
+        led = asyncio.run(J.run_job(self.td, us, lambda u: h, box["opts"]))
+        self.assertEqual(led[0]["aborted"], "runner_stop")
+        self.assertFalse([r for r in h.engine.arrivals if "warm" in r])  # no warm-up request after the stop
+        self.assertNotIn("warmup_start", [x[0] for x in marks(self.td, "r1_OFF44")])
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            self.assertEqual(json.load(fh)["stopped"], "budget")
+
+    def test_stop_flag_inside_warmup_loop(self):                           # D5: checked per warm-up request
+        sw = J.ScaledWall(200.0)
+        box = {}
+        h = fk.FakeServerHandle(dict(FAST, wall=sw), job_mode=True)
+        us = J.select_test_units(UNITS, {"r1_OFF44"}, set(self.CELLS))
+        box["opts"] = dict(reg=REG, wall=sw, flush_interval_s=0.02, warmup_n=3, install_signals=False, stop={},
+                           cell_kw=dict(drain_poll_s=0.02, drain_settle_s=0.05, drain_timeout_s=20))
+        orig_simple = lg.simple_request
+        calls = []
+
+        async def counting(session, base, ids, mx, rid):
+            calls.append(rid)
+            r = await orig_simple(session, base, ids, mx, rid)
+            box["opts"]["stop"]["flag"] = True
+            return r
+        lg.simple_request = counting
+        try:
+            led = asyncio.run(J.run_job(self.td, us, lambda u: h, box["opts"]))
+        finally:
+            lg.simple_request = orig_simple
+        self.assertEqual(led[0]["aborted"], "runner_stop")
+        self.assertEqual(calls, ["r1_OFF44-warm0"])                       # the 2nd / 3rd warm-up request never sent
+        m = [x[0] for x in marks(self.td, "r1_OFF44")]
+        self.assertEqual(m.count("warmup_start"), m.count("warmup_end"))   # the warm-up interval stays paired
+        self.assertNotIn("cell_start", m)
 
     def test_runner_stop_in_last_boot_marks_budget(self):                 # runner_stop ends the cell section
         box = {}
@@ -716,6 +800,72 @@ class TestRunnerAborts(unittest.TestCase):
         self.assertGreaterEqual(hs["r1_OBS44"].stop_called_at - last_end, 2 * 0.3)
 
 
+class TestProcessServer(unittest.TestCase):                                 # D4 / D5 (work-review carry-over)
+    def _group_alive(self, pgid):
+        try:
+            os.killpg(pgid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+
+    def test_stop_cleans_dead_leader_group_and_closes_log(self):          # D4: poll() is not a reason to skip
+        with tempfile.TemporaryDirectory() as td:
+            srv = J.ProcessServer("cfg", 1)
+            srv.log = open(os.path.join(td, "srv.log"), "x")
+            # leader exits at once, its child keeps the process group alive (an orphaned sglang worker)
+            srv.proc = subprocess.Popen(["/usr/bin/bash", "-c", "sleep 300 & exit 0"], start_new_session=True)
+            srv.proc.wait(timeout=10)
+            pgid = srv.proc.pid
+            self.assertIsNotNone(srv.proc.poll())
+            self.assertTrue(self._group_alive(pgid))
+            asyncio.run(srv.stop(term_grace_s=0.5))
+            for _ in range(50):
+                if not self._group_alive(pgid):
+                    break
+                time.sleep(0.1)
+            self.assertFalse(self._group_alive(pgid), "the dead leader's group must be killed")
+            self.assertTrue(srv.log.closed)
+
+    def test_stop_without_start_is_safe(self):                              # D4 + D6: stop() after a failed start
+        srv = J.ProcessServer("cfg", 1)
+        asyncio.run(srv.stop(term_grace_s=0.1))
+        self.assertEqual(srv.log_text(), "")
+
+    def test_settle_is_async_and_honours_stop(self):                       # D5
+        with tempfile.TemporaryDirectory() as td:
+            rec = os.path.join(td, "SETTLE.txt")
+            stop = {}
+            srv = J.ProcessServer("cfg", 1, stop_flag=stop)
+            ticks = []
+
+            async def go():
+                async def ticker():
+                    for _ in range(10):
+                        ticks.append(time.monotonic())
+                        await asyncio.sleep(0.02)
+                    stop["flag"] = True
+                t = asyncio.ensure_future(ticker())
+                t0 = time.monotonic()
+                with self.assertRaises(lg.RunnerStop):
+                    await srv.settle(None, rec, max_s=60.0, poll_s=0.05)   # baseline None: never settles by itself
+                await t
+                return time.monotonic() - t0
+            dt = asyncio.run(go())
+            self.assertEqual(len(ticks), 10)                                 # the loop kept running (no time.sleep)
+            self.assertLess(dt, 10.0)
+            with open(rec) as fh:
+                self.assertIn("end=stop_flag", fh.read())
+
+    def test_wait_healthy_honours_stop(self):                               # D5: not held for 1200 s
+        srv = J.ProcessServer("cfg", 1, stop_flag={"flag": True})
+        srv.proc = subprocess.Popen(["/usr/bin/bash", "-c", "sleep 30"], start_new_session=True)
+        try:
+            with self.assertRaises(lg.RunnerStop):
+                asyncio.run(srv.wait_healthy(None, poll_s=0.05))
+        finally:
+            asyncio.run(srv.stop(term_grace_s=1.0))
+
+
 class TestCoShapeWarmup(unittest.TestCase):                                # G-3 (b) (Job-EA, implemented here)
     def test_one_then_two_request_spans_inside_warmup(self):
         async def go(td):
@@ -751,6 +901,409 @@ class TestCoShapeWarmup(unittest.TestCase):                                # G-3
             t0, t1 = warm["bootX"]["warmup_start"], warm["bootX"]["warmup_end"]
             self.assertTrue(all(t0 <= e["timestamp_monotonic_s"] <= t1 for e in ev
                                 if e["event"] == "prefill_span_start" and e["n_new"] * 8192 == e["extend_tokens"]))
+
+
+# ===================================================================================================== Job-EA
+UNITS_EA = P.units("EA", REG)
+
+
+class TestEAPlan(unittest.TestCase):                                         # §5-2, §4-2, §3-1 co-load row
+    def test_structure_and_registered_values(self):
+        self.assertEqual(P.plan_problems("EA", UNITS_EA, REG), [])
+        self.assertEqual(J.ea_payload_problems(UNITS_EA), [])
+        self.assertEqual([u["name"] for u in UNITS_EA[:4]], ["r1_ON44", "r1_OFF44", "r1_ON16", "r1_OFF16"])
+        for u in UNITS_EA:
+            self.assertEqual((u["sticky"], u["phase_events"], u["greedy"]), (u["kind"] == "ON", True, False))
+            self.assertEqual(u["fixed_dsm"], u["D"])
+            self.assertEqual([(c["b"], c["c"]) for c in u["cells"]], list(P.EA_CELLS))
+            for c in u["cells"]:
+                e = REG["derived"]["ealpha"][f"{u['D']},{c['b']},{c['c']}"]
+                self.assertEqual((c["K"], c["delta"], c["c_in"], c["O"]),
+                                 (REG["K"][str(u["D"])], REG["DELTA_FIXED"], e["c_in"], math.ceil(e["O_EA"])))
+                self.assertEqual(c["seed_kind"], "EALPHA")
+        on = {(u["round"], c["b"], c["c"]): c["c_in"] for u in UNITS_EA if u["kind"] == "ON" and u["D"] == 16
+              for c in u["cells"]}
+        off = {(u["round"], c["b"], c["c"]): c["c_in"] for u in UNITS_EA if u["kind"] == "OFF" and u["D"] == 16
+               for c in u["cells"]}
+        self.assertEqual(on, off)                                            # R5-2: the pair shares c_in(d)
+
+    def test_structure_violations_detected(self):
+        bad = [dict(u) for u in UNITS_EA]
+        bad[0], bad[1] = bad[1], bad[0]                                       # r1 order OFF44, ON44
+        self.assertTrue(any("EA round 1 order" in x for x in P.plan_problems("EA", bad, REG)))
+        k = [dict(u, cells=[dict(c, K=c["K"] - 1) for c in u["cells"]]) if i == 0 else u
+             for i, u in enumerate(UNITS_EA)]
+        self.assertTrue(any("K 14 != registered K_44 15" in x for x in P.plan_problems("EA", k, REG)))
+        dl = [dict(u, cells=[dict(c, delta=8) for c in u["cells"]]) if i == 0 else u for i, u in enumerate(UNITS_EA)]
+        self.assertTrue(any("delta 8" in x for x in P.plan_problems("EA", dl, REG)))
+        cin = [dict(u, cells=[dict(c, c_in=c["c_in"] + 1) for c in u["cells"]]) if i == 1 else u
+               for i, u in enumerate(UNITS_EA)]                               # OFF with its own c_in (rev5 defect)
+        self.assertTrue(any("c_in/O" in x for x in P.plan_problems("EA", cin, REG)))
+        order = [dict(u, cells=list(reversed(u["cells"]))) if i == 0 else u for i, u in enumerate(UNITS_EA)]
+        self.assertTrue(any("E-alpha cell order" in x for x in P.plan_problems("EA", order, REG)))
+
+    def test_payload_trace_check(self):                                     # F1/F2: max_new_tokens == 1 explicit
+        orig = lg.payload
+
+        def zero(ids, mx, rid, coload=False):
+            out = orig(ids, mx, rid, coload)
+            if coload:
+                out["sampling_params"]["max_new_tokens"] = 0
+            return out
+        lg.payload = zero
+        try:
+            self.assertTrue(J.ea_payload_problems(UNITS_EA[:1]))
+        finally:
+            lg.payload = orig
+        with self.assertRaises(lg.TraceInvalid):
+            lg.payload([1, 2], None, "x", coload=True)
+
+    def test_warmup_inputs(self):                                            # G-3 (a)/(b) for Job-EA boots
+        for u in UNITS_EA[:4]:
+            c = J.warmup_c_in(u, REG)
+            self.assertEqual(c, REG["derived"]["ealpha"][f"{u['D']},32,8192"]["c_in"])
+            self.assertNotEqual(c % 8192, 0)
+            cw = J.coshape_warmup_args(u, REG)
+            e = REG["derived"]["ealpha"][f"{u['D']},8,2048"]
+            self.assertEqual(cw, (e["c_in"], math.ceil(e["O_EA"])))
+
+    def test_dryrun_cli(self):
+        with tempfile.TemporaryDirectory() as td:
+            env = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_") or k == "PDMUX_PROJECT_ROOT"}
+            env["PYTHONDONTWRITEBYTECODE"] = "1"
+            r = subprocess.run([sys.executable, os.path.join(HERE, "n2_job.py"), "--job", "EA", "--out", td,
+                                "--dry-run"], capture_output=True, text=True, env=env)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("DRYRUN 16 boots, 64 cells", r.stdout)
+            with open(os.path.join(td, "DRYRUN_COMMANDS.txt")) as fh:
+                txt = fh.read()
+            self.assertEqual(txt.count("co_max_new_tokens=1"), 64)
+            self.assertEqual(txt.count("K=33 "), 32)
+            self.assertEqual(txt.count("K=15 "), 32)
+            r = subprocess.run([sys.executable, os.path.join(HERE, "n2_job.py"), "--job", "XX", "--out", td,
+                                "--dry-run"], capture_output=True, text=True, env=env)
+            self.assertEqual(r.returncode, 2)
+
+
+EA_FAST = dict(FAST, co_span_s=0.04)
+
+
+def run_mini_ea(td, names, cells, engine_kw=None, handles=None, **opt):
+    sw = J.ScaledWall(200.0)
+    us = sorted(J.select_test_units(UNITS_EA, set(names), set(cells)), key=lambda u: names.index(u["name"]))
+    kw = dict(EA_FAST, wall=sw, **(engine_kw or {}))
+
+    def make(u):
+        h = (handles or {}).get(u["name"])
+        if isinstance(h, dict):
+            return fk.FakeServerHandle(dict(kw, **h.get("engine_kw", {})), job_mode=True)
+        return h or fk.FakeServerHandle(dict(kw), job_mode=True)
+    opts = dict(reg=REG, wall=sw, flush_interval_s=0.02, warmup_n=1, install_signals=False,
+                cell_kw=dict(drain_poll_s=0.02, drain_settle_s=0.05, drain_timeout_s=20), **opt)
+    return asyncio.run(J.run_job(td, us, make, opts))
+
+
+class TestRunnerEA(unittest.TestCase):                                       # Job-EA end to end on the CPU fake
+    @classmethod
+    def setUpClass(cls):
+        cls.td = tempfile.mkdtemp(prefix="n2job_ea_")
+        cls.names = ["r1_ON44", "r1_OFF44"]
+        cls.led = run_mini_ea(cls.td, cls.names, [(8, 2048), (32, 2048)])
+        cls.res = A.analyze_ea(cls.td, reg=REG)
+        cls.reps = {r["cell_id"]: r for r in cls.res["replicates"]}
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.td, ignore_errors=True)
+
+    def test_ledger_budget_column(self):
+        self.assertEqual([r["status"] for r in self.led], ["ADMITTED"] * 2)
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            jl = json.load(fh)
+        self.assertEqual((jl["job"], jl["cap_s"]), ("EA", float(REG["budget"]["EA_b"]["cap"])))
+        self.assertEqual(self.led[0]["need_s"], REG["budget"]["EA_b"]["per_boot_worst"]["ON44"])
+
+    def test_one_warmup_interval_holds_both_warmups(self):                 # G-3 (a) + (b), §7-2 (R)
+        m = marks(self.td, "r1_OFF44")
+        tags = [x[0] for x in m]
+        self.assertEqual(tags[:3], ["boot_plan", "warmup_start", "warmup_end"])
+        self.assertEqual(tags.count("warmup_start"), 1)
+        w0, w1 = float(m[1][2]), float(m[2][2])
+        ev = tel(self.td, "r1_OFF44")
+        co_w = [e for e in ev if e["event"] == "prefill_span_start" and e["extend_tokens"] == e["n_new"] * 8192
+                and w0 <= e["timestamp_monotonic_s"] <= w1]
+        self.assertEqual(sum(e["n_new"] for e in co_w), 3)                  # 1 + 2 co-shape requests
+        cells, _calls, _plan, _ab, issues = J.RED.parse_marks([" ".join(x) for x in m], {})
+        self.assertEqual(issues, [])
+        self.assertTrue(all(cm["cell_start"][1] > w1 for cm in cells.values()))
+
+    def test_cell_marks_and_client_record(self):                            # §4-2 steps 4-5 (E-alpha rule)
+        m = marks(self.td, "r1_ON44")
+        cells, *_ = J.RED.parse_marks([" ".join(x) for x in m], {})
+        self.assertEqual(sorted(cm["cell_start"][0] for cm in cells.values()), [(44, 8, 2048), (44, 32, 2048)])
+        self.assertTrue(all("coload_sent" in cm and "fix_s" in cm for cm in cells.values()))
+        with open(os.path.join(self.td, "client_r1_ON44.jsonl")) as fh:
+            recs = {r["cell_id"]: r for r in map(json.loads, fh)}
+        r = recs["r1_ON44-ea-b8-c2048"]
+        self.assertEqual((len(r["requests"]), len(r["co_requests"]), r["K"]), (8, 15, 15))
+        self.assertEqual({q["completion_tokens"] for q in r["co_requests"]}, {1})
+        self.assertTrue(r["cancel_fired"])
+        self.assertGreaterEqual(r["median_at_cancel"], r["base"] + 16 + 128 + 64)
+        self.assertLessEqual(r["t_coload"], min(q["times"][0] for q in r["co_requests"]))
+        cm = cells["r1_ON44-ea-b8-c2048"]
+        ev = tel(self.td, "r1_ON44")
+        lo = [e for e in ev if e["event"] == "prefill_span_start" and e["timestamp_monotonic_s"] >= cm["coload_sent"]
+              and e["timestamp_monotonic_s"] <= cm["cell_end"]]
+        self.assertEqual(sum(e["n_new"] for e in lo), 15)                    # K co requests, nothing else
+
+    def test_trigger_after_a1_window(self):                                 # §4-2 step 4: trigger c + 71
+        with open(os.path.join(self.td, "client_r1_OFF44.jsonl")) as fh:
+            r = {x["cell_id"]: x for x in map(json.loads, fh)}["r1_OFF44-ea-b8-c2048"]
+        before = [sum(1 for t in q["times"] if t < r["t_coload"]) for q in r["requests"]]
+        self.assertGreaterEqual(r["c_in"] + lg.lower_median(before), 2048 + 71)
+
+    def test_windows_and_rho_end_to_end(self):                              # runner -> n2_window -> n2_analyze
+        for cid in ("r1_ON44-ea-b8-c2048", "r1_OFF44-ea-b8-c2048", "r1_ON44-ea-b32-c2048", "r1_OFF44-ea-b32-c2048"):
+            self.assertEqual(self.reps[cid]["windows"], {"A1": "VALID", "A2": "VALID", "C": "VALID"}, cid)
+        off = self.reps["r1_OFF44-ea-b8-c2048"]
+        self.assertGreaterEqual(off["values"]["A1"]["pe_iter_idx5"], 0.99)  # OFF alone on (0,108)
+        self.assertEqual(off["values"]["C"]["pe_iter"], 1.0)                # OFF C on (64,44)
+        cr = self.res["cells"]["44,8,2048"]
+        for which in ("rho_off", "rho_on"):
+            p = cr[which]["pairs"]["1"]
+            self.assertTrue(p["valid"], p)
+            self.assertAlmostEqual(p["ln_rho"], math.log(p["c_med"] / p["a_on"]))
+            self.assertEqual(p["on_boot"], "r1_ON44")
+        self.assertEqual(cr["rho_off"]["pairs"]["1"]["c_boot"], "r1_OFF44")
+        self.assertEqual(cr["rho_on"]["pairs"]["1"]["c_boot"], "r1_ON44")      # rho_on: same boot (boot effect out)
+        self.assertEqual(cr["rho_off"]["label"], "UNRESOLVED_N_BELOW_4")
+        self.assertEqual(self.res["coload"]["label"], "COLOAD_NOT_JOINED")
+        self.assertEqual(self.res["neg_control_ea"]["label"], "NEG_CONTROL_EA_HELD")
+        self.assertEqual(self.res["neg_control_ea"]["n"], 4)
+        self.assertEqual(self.res["ds3"], "DS3_UNRESOLVED")
+
+    def test_cli_writes_ea_outputs_and_seal(self):                          # --job EA, --seal-ea-result
+        env = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_") or k == "PDMUX_PROJECT_ROOT"}
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        with tempfile.TemporaryDirectory() as td:
+            out = os.path.join(td, "ea")
+            shutil.copytree(self.td, out)
+            r = subprocess.run([sys.executable, os.path.join(HERE, "n2_analyze.py"), "--job", "EA", "--out-dir", out],
+                               capture_output=True, text=True, env=env)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            for f in A.EA_RESULT_FILES:
+                self.assertTrue(os.path.exists(os.path.join(out, f)))
+            r = subprocess.run([sys.executable, os.path.join(HERE, "n2_analyze.py"), "--job", "EA", "--out-dir", out,
+                                "--seal-ea-result"], capture_output=True, text=True, env=env)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            seal = A.verify_ea_result_seal(os.path.join(out, A.EA_SEAL_FILE))
+            self.assertTrue(seal["verified"], seal["problems"])
+            with open(os.path.join(out, "N2_EA_LABELS.txt"), "a") as fh:  # tampering after the seal
+                fh.write("x\n")
+            self.assertFalse(A.verify_ea_result_seal(os.path.join(out, A.EA_SEAL_FILE))["verified"])
+
+
+class TestEAAborts(unittest.TestCase):
+    def setUp(self):
+        self.td = tempfile.mkdtemp(prefix="n2job_eaab_")
+
+    def tearDown(self):
+        shutil.rmtree(self.td, ignore_errors=True)
+
+    def test_coload_payload_invalid_ends_boot(self):                        # F3 -> H-4 (4) -> G-10 Job
+        led = run_mini_ea(self.td, ["r1_ON44", "r1_OFF44"], [(8, 2048), (32, 2048)],
+                          handles={"r1_ON44": dict(engine_kw=dict(mode=("bad_coload",)))})
+        self.assertEqual((led[0]["aborted"], led[0]["abort_class"], led[0]["cells_done"]),
+                         ("coload_payload_invalid", "VALUE_DEPENDENT", 0))
+        self.assertEqual((led[1]["status"], led[1].get("aborted"), led[1].get("cells_done")), ("ADMITTED", None, 2))
+        res = A.analyze_ea(self.td, reg=REG)
+        st = {r["cell_id"]: (r["status"], r["reason"]) for r in res["replicates"]}
+        self.assertEqual(st["r1_ON44-ea-b8-c2048"][0], "COLOAD_PAYLOAD_INVALID")
+        self.assertEqual(st["r1_ON44-ea-b32-c2048"], ("BENCH_INVALID", "not_attempted_boot_aborted"))
+        self.assertEqual(st["r1_OFF44-ea-b8-c2048"][0], "MEASURED")
+        self.assertEqual(res["cells"]["44,8,2048"]["rho_off"]["pairs"]["1"]["reason"].split(" (")[0], "A_on invalid")
+
+
+class TestPostEASeal(unittest.TestCase):                                     # §7-3 산출 시점 / §18-2-d #11
+    def test_profile_cell_boot_scope_only_after_a_verified_ea_seal(self):
+        with tempfile.TemporaryDirectory() as td:
+            prof, ea = os.path.join(td, "prof"), os.path.join(td, "ea")
+            os.makedirs(prof)
+            os.makedirs(ea)
+            run_mini(prof, ["r1_OFF44"], [(1, 512)])
+            seal_path = os.path.join(ea, A.EA_SEAL_FILE)
+            with self.assertRaisesRegex(MX.BlindedScope, "not verified"):     # no seal yet
+                A.profile_post_ea(prof, seal_path, reg=REG)
+            for f in A.EA_RESULT_FILES:
+                with open(os.path.join(ea, f), "w") as fh:
+                    fh.write("{}\n")
+            A.seal_ea_result(ea)
+            res = A.profile_post_ea(prof, seal_path, reg=REG)
+            self.assertEqual(len(res["cells"]), 1)
+            est = res["cells"][0]["estimators"]
+            self.assertEqual(sorted(est), ["0,108", "64,44"])                 # OFF boot: alone + FIXED pair
+            self.assertTrue(all("post_ea_result_seal" in v and "blind_exception" not in v for v in est.values()))
+            self.assertEqual(len(res["boots"]), 1)
+            with open(os.path.join(ea, "N2_EA_RESULT.json"), "a") as fh:      # result changed after the seal
+                fh.write(" ")
+            with self.assertRaisesRegex(MX.BlindedScope, "not verified"):
+                A.profile_post_ea(prof, seal_path, reg=REG)
+            with self.assertRaises(FileExistsError):                          # the seal is written once
+                A.seal_ea_result(ea)
+
+    def test_estimators_refuse_unverified_seal(self):
+        ev = [dict(event="runtime_snapshot", phase="benchmark", timestamp_monotonic_s=1.0, decode_running_batch_size=1,
+                   prefill_sms=64, decode_sms=44, decode_iterations=1)]
+        with self.assertRaises(MX.BlindedScope):
+            MX.estimators(ev, (64, 44), "cell", job="PROFILE", ea_result_seal=dict(verified=False,
+                                                                                     ea_result_sha256="x"))
+        out = MX.estimators(ev, (64, 44), "cell", job="PROFILE", ea_result_seal=dict(verified=True,
+                                                                                      ea_result_sha256="x"))
+        self.assertIn("post_ea_result_seal", out)
+        self.assertNotIn("blind_exception", out)
+        out = MX.estimators(ev, (64, 44), "cell", job="EA")
+        self.assertNotIn("blind_exception", out)
+
+
+# ===================================================================================================== mutant runner
+def _runner():
+    spec = importlib.util.spec_from_file_location("_n2_mutants_rt", os.path.join(HERE, "n2_mutants.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+TOY = '''def add(a, b):
+    return a + b
+
+
+def twice(x):
+    return add(x, x)
+
+
+class Box:
+    def stop(self):
+        return 1
+
+
+def other():
+    return 0
+'''
+TOY_TEST = '''import unittest
+import toy
+
+
+class TestAdd(unittest.TestCase):
+    def test_add(self):
+        self.assertEqual(toy.add(1, 2), 3)
+
+
+class TestTwice(unittest.TestCase):
+    def test_twice(self):
+        self.assertEqual(toy.twice(2), 4)
+
+
+class TestOther(unittest.TestCase):
+    def test_other(self):
+        self.assertEqual(toy.other(), 0)
+
+    def test_other2(self):
+        self.assertEqual(toy.other(), 0)
+
+    def test_other3(self):
+        self.assertEqual(toy.other(), 0)
+'''
+
+
+class TestMutantRunner(unittest.TestCase):                                  # rev18 candidate (user approval 2026-10-12)
+    """The shared targeted / parallel runner (n2_mutants.py, used by n2_job_mutants.py) on a toy package -- no
+    registered mutant is executed here."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.R = _runner()
+
+    def test_selection_follows_callers_only(self):
+        sel = self.R.targeted_tests({"toy.py": TOY}, {"test_toy.py": TOY_TEST}, [("toy.py", "return a + b", "x")])
+        self.assertEqual(sel, ["test_toy.TestAdd.test_add", "test_toy.TestTwice.test_twice"])
+        sel = self.R.targeted_tests({"toy.py": TOY}, {"test_toy.py": TOY_TEST}, [("toy.py", "return add(x, x)", "x")])
+        self.assertEqual(sel, ["test_toy.TestTwice.test_twice"])
+
+    def test_large_selection_runs_full(self):                              # >= 90 % of the tests: no targeted phase
+        big = TOY_TEST.replace("toy.other()", "toy.add(0, 0) * 0 + toy.other()")
+        self.assertEqual(self.R.targeted_tests({"toy.py": TOY}, {"test_toy.py": big},
+                                               [("toy.py", "return a + b", "x")]), [])
+
+    def _judge(self, mutated, expect="kill"):
+        with tempfile.TemporaryDirectory() as td:
+            ctrl, mut = os.path.join(td, "ctrl"), os.path.join(td, "mut")
+            for d, text in ((ctrl, TOY), (mut, mutated)):
+                os.makedirs(d)
+                with open(os.path.join(d, "toy.py"), "w") as fh:
+                    fh.write(text)
+                with open(os.path.join(d, "test_toy.py"), "w") as fh:
+                    fh.write(TOY_TEST)
+            env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+            controls = self.R.TargetControls(lambda: (ctrl, lambda: None), env)
+            calls = []
+
+            def full():
+                calls.append("full")
+                return self.R.run_unittest(mut, env, ["test_toy"])
+
+            def targets(nm):
+                calls.append("targeted")
+                return self.R.run_unittest(mut, env, nm, failfast=True)
+            sel = self.R.targeted_tests({"toy.py": TOY}, {"test_toy.py": TOY_TEST}, [("toy.py", "return add(x, x)", "")])
+            return self.R.judge("M1", "toy", expect, full, sel, targets, controls), calls
+
+    def test_targeted_kill_needs_no_full_run(self):
+        row, calls = self._judge(TOY.replace("return add(x, x)", "return add(x, 1)"))
+        self.assertEqual((row[2], calls), ("KILLED", ["targeted"]))
+        self.assertIn("[targeted 1, failfast]", row[3])
+
+    def test_targeted_survivor_runs_the_full_suite(self):                  # ledger meaning: ANY test failing kills
+        row, calls = self._judge(TOY.replace("return add(x, x)", "return add(x, x)\n\n\nX = 1")
+                                 .replace("return 0", "return 9"))          # only an untargeted test fails
+        self.assertEqual((row[2], calls), ("KILLED", ["targeted", "full"]))
+        self.assertIn("survived -> full", row[3])
+        row, calls = self._judge(TOY)                                      # nothing fails anywhere
+        self.assertEqual((row[2], calls), ("SURVIVED", ["targeted", "full"]))
+
+    def test_targeted_failure_with_failing_control_is_not_a_kill(self):    # isolation artefact never kills
+        R = self.R
+
+        class Never:
+            def passes(self, names):
+                return False
+        env = dict(os.environ)
+        row = R.judge("M2", "toy", "kill", lambda: (False, "OK", False), ["x"], lambda nm: (True, "FAILED", False),
+                      Never())
+        self.assertEqual(row[2], "SURVIVED")
+        self.assertIn("targeted control failed -> full", row[3])
+        row = R.judge("M3", "toy", "equivalent", lambda: (False, "OK", False), ["x"], lambda nm: (True, "FAILED", False),
+                      Never())
+        self.assertEqual(row[2], "EQUIVALENT-SURVIVED")                     # equivalents always run the full suites
+        del env
+
+    def test_run_rows_order_and_parallel(self):
+        import threading
+        seen = []
+        lock = threading.Lock()
+
+        def mk(i):
+            def go():
+                time.sleep(0.05 * (3 - i))
+                return (f"M{i}", "", "KILLED", "")
+            return go
+        rows = self.R.run_rows([(i, mk(i)) for i in range(3)], 3, lambda r: (lock.acquire(), seen.append(r[0]),
+                                                                              lock.release()))
+        self.assertEqual([r[0] for r in rows], ["M0", "M1", "M2"])          # table order kept
+        self.assertEqual(sorted(seen), ["M0", "M1", "M2"])
+        self.assertEqual(self.R.parse_runner_opts(["--jobs", "4", "--set", "core", "--no-targeted", "x"]),
+                         (4, False, ["--set", "core", "x"]))
+        with self.assertRaises(SystemExit):
+            self.R.parse_runner_opts(["--jobs", "0"])
 
 
 # ===================================================================================================== n2_capacity.sh
@@ -819,10 +1372,10 @@ class TestCapacityScript(unittest.TestCase):
         r = sh(self.proj, dict(PDMUX_N2_JOB="PROFILE", PDMUX_N2_DRYRUN="1", PDMUX_COMMIT="abc"), self.td)
         self.assertEqual(r.returncode, 2)
         self.assertIn("ABORT_TEST_KNOB_IN_MEASUREMENT", r.stdout)
+        self._write_sections("")            # the layout copy may carry real seal sections (H17-9 class): drop them
         r = sh(self.proj, dict(PDMUX_N2_JOB="EA", PDMUX_N2_DRYRUN="1"), self.td)        # H17-6: every mode
         self.assertEqual(r.returncode, 3)
         self.assertIn("ABORT_HARNESS_UNSEALED_EA", r.stdout)
-        self.assertNotIn("ABORT_EA_NOT_IMPLEMENTED", r.stdout)
         r = sh(self.proj, dict(PDMUX_N2_JOB="XX"), self.td)
         self.assertEqual(r.returncode, 2)
 
@@ -860,22 +1413,54 @@ class TestCapacityScript(unittest.TestCase):
         self.assertEqual(ok.returncode, 0, ok.stderr)
         self.assertIn("skipped", ok.stderr)
 
-    def test_ea_needs_profile_and_ea_sections(self):                        # rev17 R17-2 / H17-6
+    def _write_sections(self, txt):
         reg = os.path.join(self.here, "REGISTRATION_SHA256.txt")
         with open(reg) as fh:                                               # H17-9: drop any existing harness section
             base = "".join(b for b in re.split(r"(?m)^(?=## )", fh.read()) if not b.startswith("## HARNESS SEAL"))
+        with open(reg, "w") as fh:
+            fh.write(base + "\n" + txt)
+
+    def test_ea_needs_profile_and_ea_sections(self):                        # rev17 R17-2 / H17-6 (every mode)
         prof, ea = seal_section(self.here, "PROFILE"), seal_section(self.here, "EA")
-        for txt, tag in ((prof, "ABORT_HARNESS_UNSEALED_EA"), (ea, "ABORT_HARNESS_UNSEALED_EA"),
-                         (prof + "\n" + ea, "ABORT_EA_NOT_IMPLEMENTED")):
-            with open(reg, "w") as fh:
-                fh.write(base + "\n" + txt)
+        for txt, fake in ((prof, False), (ea, False), (prof, True), ("", True)):
+            self._write_sections(txt)
             shutil.rmtree(os.path.join(self.here, "n2p_t1"), ignore_errors=True)
-            r = sh(self.proj, dict(PDMUX_N2_JOB="EA", PDMUX_N2_DRYRUN="1"), self.td)
-            self.assertEqual(r.returncode, 3, (tag, r.stdout))
-            self.assertIn(tag, r.stdout)
-            if tag == "ABORT_EA_NOT_IMPLEMENTED":
-                self.assertNotIn("ABORT_HARNESS_UNSEALED", r.stdout)
-            self.assertFalse(os.path.exists(os.path.join(self.here, "n2p_t1", "REG_CHECK.txt")))   # refused first
+            mode = dict(PDMUX_N2_TEST_FAKE="1") if fake else dict(PDMUX_N2_DRYRUN="1")
+            r = sh(self.proj, dict(PDMUX_N2_JOB="EA", **mode), self.td)
+            self.assertEqual(r.returncode, 3, (txt[:40], r.stdout))
+            self.assertIn("ABORT_HARNESS_UNSEALED_EA", r.stdout)
+            out = os.path.join(self.here, "n2p_t1")
+            with open(os.path.join(out, "REG_CHECK.txt")) as fh:            # the registration check ran first
+                self.assertIn("REG_OK", fh.read())
+            self.assertFalse(os.path.exists(os.path.join(out, "UNITS.txt")))    # refused AT the seal check
+        self._write_sections(prof + "\n" + ea)
+        shutil.rmtree(os.path.join(self.here, "n2p_t1"), ignore_errors=True)
+        r = sh(self.proj, dict(PDMUX_N2_JOB="EA", PDMUX_N2_DRYRUN="1"), self.td)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        out = os.path.join(self.here, "n2p_t1")
+        with open(os.path.join(out, "HARNESS_SEAL_CHECK.txt")) as fh:
+            self.assertIn("SEALED scope=EA", fh.read())
+        with open(os.path.join(out, "DRYRUN_COMMANDS.txt")) as fh:
+            txt = fh.read()
+        self.assertEqual((txt.count("BOOT "), txt.count("  cell ")), (16, 64))
+        with open(os.path.join(out, "BUDGET.txt")) as fh:
+            self.assertIn(f"column=EA_b cap_s={REG['budget']['EA_b']['cap']}", fh.read())
+        self.assertIn("N2_DONE_EA_t1", r.stdout)
+
+    def test_fake_ea_job_end_to_end(self):                                  # the whole script, Job-EA, CPU fake
+        self._write_sections(seal_section(self.here, "PROFILE") + "\n" + seal_section(self.here, "EA"))
+        r = sh(self.proj, dict(PDMUX_N2_JOB="EA", PDMUX_N2_TEST_FAKE="1", PDMUX_N2_TEST_UNITS="r1_ON44,r1_OFF44",
+                               PDMUX_N2_TEST_CELLS="8,2048", PDMUX_N2_TEST_WALL_SCALE="200"), self.td)
+        self.assertEqual(r.returncode, 0, r.stdout[-3000:] + r.stderr[-2000:])
+        out = os.path.join(self.here, "n2p_t1")
+        with open(os.path.join(out, "N2_EA_RESULT.json")) as fh:
+            res = json.load(fh)
+        st = {x["cell_id"]: x["windows"] for x in res["replicates"]}
+        for cid in ("r1_ON44-ea-b8-c2048", "r1_OFF44-ea-b8-c2048"):
+            self.assertEqual(st[cid], {"A1": "VALID", "A2": "VALID", "C": "VALID"}, (cid, st[cid]))
+        self.assertTrue(res["cells"]["44,8,2048"]["rho_off"]["pairs"]["1"]["valid"])
+        self.assertTrue(os.path.exists(os.path.join(out, "N2_EA_LABELS.txt")))
+        self.assertIn("N2_DONE_EA_t1", r.stdout)
 
     def test_fake_job_end_to_end(self):                                     # the whole script on the CPU fake
         r = sh(self.proj, dict(PDMUX_N2_JOB="PROFILE", PDMUX_N2_TEST_FAKE="1", PDMUX_N2_TEST_UNITS="r1_ON44,r1_OFF44",

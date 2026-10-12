@@ -2,8 +2,17 @@
 """N2(3-a) Job runner -- the boot loop of a VESSL measurement Job (PREREG_N2_3A rev16 §3, §5, §6-4, §11-1/2,
 §14-2 G-1…G-13 / H-4…H-6, §14-3). Called by n2_capacity.sh AFTER its preflight; never by hand on a GPU.
 
-HARNESS-SEAL file (rev17 Job harness). Job-PROFILE only: `--job EA` is refused (ABORT_EA_NOT_IMPLEMENTED) until the
-Job-EA cell client / rho_off assembly (H15-3) is implemented and sealed.
+HARNESS-SEAL file (rev17 Job harness; Job-EA path added for the EA harness seal -- NOT YET SEALED: n2_capacity.sh
+refuses a Job-EA unless REGISTRATION_SHA256.txt carries both the PROFILE and the EA harness-seal section, H17-6).
+Job-EA boots (§5-2): the same boot protocol, plus the G-3 (b) co-shape warm-up inside the SAME warmup_start/_end
+interval as G-3 (a) (engine warm-up input = the E-alpha (d, 32, 8192) c_in -- EA HARNESS CHOICE, reported), no greedy
+probe, and E-alpha cells (n2_loadgen.run_ealpha_cell: trigger c + 71, K_d co requests at once, cancel K responses +
+16 + 128 + delta). A co-load payload violation (F3) is a cell abort (H-4 (4) coload_payload_invalid) and ends the boot
+(G-10 Job, §18-2-d #7).
+D4-D6 (work-review carry-over): ProcessServer.stop() always cleans up (killpg TERM/KILL + pkill + log close, whatever
+poll() says); the settle wait is async and, like the /health and warm-up loops, honours the stop flag (RunnerStop);
+settle / start run inside the classifying try (a start failure is a classified boot abort with stop() in finally,
+not a runner crash).
 
 Per boot (one telemetry file per boot, R-3):  boot_plan <D> <n> (before the server starts) -> server launch -> /health
 -> §11-1 wiring (log ENABLED line + green read-out; failure = boot_abort wiring_check_failed + Job abort exit 6) ->
@@ -34,6 +43,7 @@ import argparse
 import asyncio
 import importlib.util
 import json
+import math
 import os
 import signal
 import subprocess
@@ -86,10 +96,13 @@ def _read(path):
 
 
 class ProcessServer:
-    """The real SGLang server: setsid process group; SIGTERM then SIGKILL; '^sglang::' children (N3 O3)."""
+    """The real SGLang server: setsid process group; SIGTERM then SIGKILL; '^sglang::' children (N3 O3).
+    `stop_flag` = the runner's stop dict (opts["stop"]): the settle wait and the /health wait check it every poll and
+    raise RunnerStop (-> runner_stop) instead of blocking the watchdog's SIGTERM path (D5)."""
 
-    def __init__(self, cfg, port, python="python", health_timeout_s=HEALTH_TIMEOUT_S):
+    def __init__(self, cfg, port, python="python", health_timeout_s=HEALTH_TIMEOUT_S, stop_flag=None):
         self.cfg, self.port, self.python, self.health_timeout_s = cfg, port, python, health_timeout_s
+        self.stop_flag = stop_flag if stop_flag is not None else {}
         self.proc = None
         self.log = None
 
@@ -97,19 +110,27 @@ class ProcessServer:
     def base(self):
         return f"http://127.0.0.1:{self.port}"
 
-    def settle(self, baseline_mib, record_path, max_s=180.0):
+    async def settle(self, baseline_mib, record_path, max_s=180.0, poll_s=5.0):
         """N3 O4 (RECORDED, not a gate): before a launch wait until no SGLang process is alive and GPU used memory
-        is back at the pre-first-boot baseline + 64 MiB, at most `max_s`."""
-        t0, used, alive = time.monotonic(), None, None
+        is back at the pre-first-boot baseline + 64 MiB, at most `max_s`. D5: an ASYNC wait (the event loop -- and
+        with it the SIGTERM handler -- keeps running) that stops at once when the runner's stop flag is set
+        (RunnerStop after the record line is written)."""
+        t0, used, alive, why = time.monotonic(), None, None, "max_s"
         while time.monotonic() - t0 < max_s:
+            if self.stop_flag.get("flag"):
+                why = "stop_flag"
+                break
             alive = subprocess.run(["pgrep", "-f", "sglang.launch_server|^sglang::"], capture_output=True).returncode == 0
             used = gpu_used_mib()
             if not alive and used is not None and baseline_mib is not None and used <= baseline_mib + 64:
+                why = "settled"
                 break
-            time.sleep(5.0)
+            await asyncio.sleep(poll_s)
         with open(record_path, "a") as fh:
             fh.write(f"settle used_mib={used} base_mib={baseline_mib} sglang_alive={alive} "
-                     f"waited_s={time.monotonic() - t0:.1f}\n")
+                     f"waited_s={time.monotonic() - t0:.1f} end={why}\n")
+        if why == "stop_flag":
+            raise lg.RunnerStop("stop requested during the pre-launch settle wait")
 
     def start(self, env, log_path):
         argv = [self.python, "-m", "sglang.launch_server", *n2_plan.server_flags(self.cfg),
@@ -125,9 +146,11 @@ class ProcessServer:
         except subprocess.TimeoutExpired:
             return None
 
-    async def wait_healthy(self, session):
+    async def wait_healthy(self, session, poll_s=5.0):
         deadline = time.monotonic() + self.health_timeout_s
         while time.monotonic() < deadline:
+            if self.stop_flag.get("flag"):                          # D5: the watchdog stop is not held for 1200 s
+                raise lg.RunnerStop("stop requested while waiting for /health")
             if self.exit_code() is not None:
                 return False
             try:
@@ -136,30 +159,31 @@ class ProcessServer:
                         return True
             except Exception:
                 pass
-            await asyncio.sleep(5.0)
+            await asyncio.sleep(poll_s)
         return False
 
     def log_text(self):
-        return _read(self.log.name) or ""
+        return (_read(self.log.name) or "") if self.log is not None else ""
 
-    async def stop(self):
-        if self.proc is None or self.proc.poll() is not None:
-            return
-        try:
-            os.killpg(self.proc.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            return
-        for _ in range(60):
-            if self.proc.poll() is not None:
-                break
-            await asyncio.sleep(0.5)
-        if self.proc.poll() is None:
-            try:
-                os.killpg(self.proc.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
+    async def stop(self, term_grace_s=30.0):
+        """D4: ALWAYS clean up, whatever poll() says -- a dead group leader can leave live children in its process
+        group (and '^sglang::' workers), and the log handle must be closed. SIGTERM to the group, wait up to
+        `term_grace_s` for the leader, SIGKILL to the group (ProcessLookupError = the group is already empty), pkill
+        the '^sglang::' children, reap, close the log."""
+        if self.proc is not None:
+            for sig in (signal.SIGTERM, signal.SIGKILL):
+                try:
+                    os.killpg(self.proc.pid, sig)
+                except (ProcessLookupError, PermissionError):
+                    pass
+                if sig == signal.SIGTERM:
+                    t_end = time.monotonic() + term_grace_s
+                    while self.proc.poll() is None and time.monotonic() < t_end:
+                        await asyncio.sleep(0.5)
+            self.proc.poll()                                       # reap
         subprocess.run(["pkill", "-9", "-f", "^sglang::"], capture_output=True)
-        self.log.close()
+        if self.log is not None and not self.log.closed:
+            self.log.close()
 
 
 def gpu_used_mib():
@@ -188,10 +212,39 @@ def free_port(lo=20000, span=800):
 
 def warmup_c_in(unit, reg):
     """G-3 (a) 'input = c_in(d)' read for the Job: c_in of the boot's own (32, 8192) cell (ON-D: D, OFF: 108, OBS:
-    44) -- never a multiple of 8192 (asserted). HARNESS READING of an unregistered Job detail (reported)."""
-    c = int(reg["derived"]["profile"][f"{unit['alone_D']},32,8192"]["c_in"])
+    44) -- never a multiple of 8192 (asserted). HARNESS READING of an unregistered Job detail (§18-2-d #3).
+    Job-EA boots (EA HARNESS CHOICE, reported -- not yet in §18-2-d): the E-alpha (d, 32, 8192) c_in of the boot's d
+    on ON and OFF boots alike (an E-alpha boot has no 108 cell; R5-2 gives both sides c_in(d))."""
+    if unit.get("job") == "EA":
+        c = int(reg["derived"]["ealpha"][f"{unit['D']},32,8192"]["c_in"])
+    else:
+        c = int(reg["derived"]["profile"][f"{unit['alone_D']},32,8192"]["c_in"])
     assert c % 8192 != 0
     return c
+
+
+def coshape_warmup_args(unit, reg):
+    """G-3 (b) (Job-EA boots): decode input c_in(d, 8, 2048) and max_new_tokens ceil(O_EA(d, 8, 2048))."""
+    e = reg["derived"]["ealpha"][f"{unit['D']},8,2048"]
+    return int(e["c_in"]), int(math.ceil(e["O_EA"]))
+
+
+def ea_payload_problems(units_):
+    """§3-1 co-load payload row (ABORT_TRACE): build the FIRST co-load body of every E-alpha cell through the
+    registered payload builder and require max_new_tokens == 1 explicitly in the body (F1/F2; 0 or absent refused)."""
+    bad = []
+    for u in units_:
+        for c in u["cells"]:
+            if c.get("kind") != "EALPHA":
+                continue
+            try:
+                body = lg.payload(lg.coload_prompt(c["b"], c["c"], c["r"], 0), 1, f"{c['cell_id']}-co0", coload=True)
+            except lg.TraceInvalid as e:
+                bad.append(f"{c['cell_id']}: {e}")
+                continue
+            if body["sampling_params"].get("max_new_tokens") != 1:
+                bad.append(f"{c['cell_id']}: co-load max_new_tokens {body['sampling_params'].get('max_new_tokens')!r}")
+    return bad
 
 
 # --------------------------------------------------------------------------------------------- one boot
@@ -234,14 +287,18 @@ async def run_boot(out, unit, server, registry, opts):
             env = n2_plan.boot_env(opts.get("environ", os.environ), unit, os.path.abspath(p["tel"]),
                                    os.path.abspath(p["green"]), f"n2_{b}_{opts.get('job_id', 'local')}")
             rec["t_admit_mono"] = time.monotonic()
-            if hasattr(server, "settle"):                                   # real server only (O4, recorded)
-                server.settle(opts.get("gpu_base_mib"), os.path.join(out, "SETTLE.txt"))
-            server.start(env, p["srv"])
-            try:
+            started = False
+            try:                         # D6: settle / start inside the classifying try (H-4 now; stop() in finally)
+                if hasattr(server, "settle"):                               # real server only (O4, recorded)
+                    await server.settle(opts.get("gpu_base_mib"), os.path.join(out, "SETTLE.txt"))
+                server.start(env, p["srv"])
+                started = True
                 if not await server.wait_healthy(session):
                     if server.exit_code(grace) is not None:
                         raise lg.ServerExited("server exited before /health")
                     raise lg.BootHealthTimeout("server did not become healthy")
+                if stop.get("flag"):                                        # D5: stop requested during the wait
+                    raise lg.RunnerStop("stop requested before the warm-up")
                 rec["t_health_mono"] = time.monotonic()
                 log = server.log_text()
                 green = json.loads(_read(p["green"]) or "{}")
@@ -270,7 +327,14 @@ async def run_boot(out, unit, server, registry, opts):
                 wa = (wall(), time.monotonic())
                 with mw.warmup(b) as ws:                                   # G-3 (a), outside every cell
                     for j in range(opts.get("warmup_n", WARMUP_N)):
+                        if stop.get("flag"):                                # D5: no further warm-up after a stop
+                            raise lg.RunnerStop("stop requested during the warm-up")
                         await lg.simple_request(session, base, warm, WARMUP_OUT, f"{b}-warm{j}")
+                    if unit.get("job") == "EA":                             # G-3 (b), same warm-up interval
+                        if stop.get("flag"):
+                            raise lg.RunnerStop("stop requested during the warm-up")
+                        cw_in, cw_o = coshape_warmup_args(unit, reg)
+                        await lg.run_coshape_warmup(session, base, mw, b, unit["D"], cw_in, cw_o, own_scope=False)
                 wz = (wall(), time.monotonic())
                 wall_pair("warmup_end", b)
                 ok_cg, n_cg, bad_cg, lo_cg, hi_cg = nw.warmup_cg_canary(
@@ -299,11 +363,17 @@ async def run_boot(out, unit, server, registry, opts):
                         stop["flag"] = True
                     if stop.get("flag"):
                         raise lg.RunnerStop("stop requested / deadline before the next cell")
-                    spec = lg.ProfileSpec(d=unit["D"], b=cell["b"], c=cell["c"], c_in=cell["c_in"], o=cell["O"],
-                                          r=cell["r"], seed_kind=cell["seed_kind"])
+                    if cell["kind"] == "EALPHA":                             # Job-EA cell (§4-2 steps 1-6, §10-1)
+                        spec = lg.EalphaSpec(d=unit["D"], b=cell["b"], c=cell["c"], c_in=cell["c_in"], o=cell["O"],
+                                             k=cell["K"], delta=cell["delta"], r=cell["r"], seed_kind=cell["seed_kind"])
+                        cell_fn = lg.run_ealpha_cell
+                    else:
+                        spec = lg.ProfileSpec(d=unit["D"], b=cell["b"], c=cell["c"], c_in=cell["c_in"], o=cell["O"],
+                                              r=cell["r"], seed_kind=cell["seed_kind"])
+                        cell_fn = lg.run_profile_cell
                     cpu(f"before {cell['cell_id']}")
                     wall_pair("cell_start", cell["cell_id"])
-                    task = asyncio.ensure_future(lg.run_profile_cell(
+                    task = asyncio.ensure_future(cell_fn(
                         session, base, mw, spec, cell["cell_id"], f"call-{cell['cell_id']}", classify, tail,
                         **opts.get("cell_kw", {})))
                     opts["current"] = task
@@ -328,10 +398,10 @@ async def run_boot(out, unit, server, registry, opts):
             except Exception as e:                                         # classify NOW (H-4 (3)), before stop
                 raise n2_marks.Classified(classify(e), e) from e
             finally:
-                if server.exit_code() is None:
+                if started and server.exit_code() is None:
                     await asyncio.sleep(2 * opts.get("flush_interval_s", FLUSH_INTERVAL_S))   # H-5
                 rec["t_stop_mono"] = time.monotonic()
-                await server.stop()
+                await server.stop()                                        # D4/D6: always, even if start failed
     except (n2_marks.CellAborted, n2_marks.Classified) as e:
         rec["error"] = repr(e.cause)
     finally:
@@ -456,12 +526,12 @@ def main(argv=None):
     ap.add_argument("--test-cells", default="")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
-    if a.job != "PROFILE":
-        print("ABORT_EA_NOT_IMPLEMENTED Job-EA runner is not implemented (harness seal pending, H15-3)")
-        return 3
+    if a.job not in ("PROFILE", "EA"):
+        print(f"ABORT_ENV --job must be PROFILE or EA (got {a.job!r})")
+        return 2
     reg = n2_plan.load_registered()
     units = n2_plan.units(a.job, reg)
-    bad = n2_plan.plan_problems(a.job, units)
+    bad = n2_plan.plan_problems(a.job, units, reg) + ea_payload_problems(units)
     if bad:
         print("ABORT_TRACE " + "; ".join(bad))
         return 3
@@ -481,12 +551,18 @@ def main(argv=None):
                          f"server: python -m sglang.launch_server {' '.join(n2_plan.server_flags(cfg))}\n")
                 fh.write("  env: " + " ".join(f"{k}={v}" for k, v in sorted(env.items()) if k.startswith("PDMUX_"))
                          + "\n")
+                if u["job"] == "EA":
+                    cw_in, cw_o = coshape_warmup_args(u, reg)
+                    fh.write(f"  warmup (a) input={warmup_c_in(u, reg)} x{WARMUP_N} out={WARMUP_OUT}; (b) co-shape "
+                             f"decode input={cw_in} max_new={cw_o} + co 1 then 2 x 8192 (one warm-up interval)\n")
                 for c in u["cells"]:
                     fh.write(f"  cell {c['cell_id']} b={c['b']} c={c['c']} c_in={c['c_in']} O={c['O']} "
-                             f"seed=n2|{c['seed_kind']}|{c['b']}|{c['c']}|{c['r']}\n")
+                             f"seed=n2|{c['seed_kind']}|{c['b']}|{c['c']}|{c['r']}"
+                             + (f" K={c['K']} co_max_new_tokens=1 cancel=+{16 + 128}+{c['delta']}"
+                                if c.get("kind") == "EALPHA" else "") + "\n")
         print(f"DRYRUN {len(units)} boots, {sum(len(u['cells']) for u in units)} cells")
         return 0
-    opts = dict(reg=reg, job_id=os.environ.get("PDMUX_JOB_NAME", "local"))
+    opts = dict(reg=reg, job_id=os.environ.get("PDMUX_JOB_NAME", "local"), stop={})
     if a.deadline_epoch is not None:
         opts["deadline"] = time.monotonic() + (a.deadline_epoch - time.time())
     if a.fake:
@@ -495,6 +571,8 @@ def main(argv=None):
         opts.update(wall=sw, flush_interval_s=0.02, warmup_n=1,
                     cell_kw=dict(drain_poll_s=0.02, drain_settle_s=0.05, drain_timeout_s=20))
         kw = dict(chunk_every=1, tau_s=0.0005, burst_span_s=0.001, wall=sw, decode_log_every=8)
+        if a.job == "EA":
+            kw["co_span_s"] = 0.04                                     # TEST ONLY: shorter co spans on the CPU fake
 
         def make(u):
             return fk.FakeServerHandle(dict(kw), job_mode=True)
@@ -503,7 +581,7 @@ def main(argv=None):
         opts["gpu_base_mib"] = gpu_used_mib()
 
         def make(u):
-            return ProcessServer(cfg, free_port(), a.python)
+            return ProcessServer(cfg, free_port(), a.python, stop_flag=opts["stop"])
     try:
         asyncio.run(run_job(a.out, units, make, opts))
     except JobAbort as e:

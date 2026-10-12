@@ -4,7 +4,10 @@ n2_harness_mutants.HARNESS_MUTANTS: (id, description, expect, [(file, old, new),
 HARNESS-SEAL file. The smoke-harness ledger H01-H32 stays in n2_harness_mutants.py / `n2_mutants.py --set harness`
 (rule-sealed runner, unchanged); THIS ledger is the Job harness's own (JH01…).
 
-Run (sequential, alone):  PYTHONDONTWRITEBYTECODE=1 python3 n2_job_mutants.py [IDs...]
+Run:  PYTHONDONTWRITEBYTECODE=1 python3 n2_job_mutants.py [--jobs N] [--no-targeted] [IDs...]
+(rev18 candidate, user approval 2026-10-12: targeted tests first, full suites only for survivors -- a targeted kill
+counts only if the same selection passes unmutated; --jobs N > 1 runs N concurrent no-mutation controls first, then
+N workers; the machinery is n2_mutants.py's (rule-sealed file, loaded by path). Default --jobs 1 = sequential, alone.)
 Each mutant: a fresh temp tree <tmp>/workspace/engine-port/results/n2_static_grid/ holding copies of every file of
 this directory (rule-sealed files copied unmodified), with results/n3_capacity, results/r2_eval, benchmarks, src,
 scripts symlinked read-only to the real tree; the mutation is applied to the copy; anchors must match exactly once
@@ -206,9 +209,9 @@ JOB_MUTANTS = [
      [(SH, '  if [ -n "${!v:-}" ] && [ -n "${PDMUX_COMMIT:-}" ]; then', '  if false; then')]),
     ("JH73", "ABORT_REG_SOURCE result ignored", "kill",
      [(SH, '[ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_REG_SOURCE (see REG_CHECK.txt)" 3', ':')]),
-    ("JH74", "Job-EA harness-seal check (PROFILE + EA sections) ignored by the entry script (H17-6)", "kill",
-     [(SH, '  [ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_HARNESS_UNSEALED_EA $(cat "$OUT/HARNESS_SEAL_CHECK_EA.txt")" 3',
-       '  :')]),
+    ("JH74", "Job-EA harness-seal check (PROFILE + EA sections) only NOTED in dry-run / test mode (H17-6: every mode)"
+             " [re-anchored, EA harness]", "kill",
+     [(SH, '    fail "ABORT_HARNESS_UNSEALED_EA $(cat "$OUT/HARNESS_SEAL_CHECK.txt")" 3\n', '    :\n')]),
     # ---- rev17 harness-audit repairs (VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md; PREREG §18-2-d #4/#10/#16,
     #      §18-2 two-stage harness seal)
     ("JH77", "H17-1: output_ids presence not required (None == None / text-only -> BYTE_IDENTICAL)", "kill",
@@ -217,9 +220,10 @@ JOB_MUTANTS = [
      [(AN, "    return isinstance(ids, list) and len(ids) > 0", "    return isinstance(ids, list)")]),
     ("JH79", "H17-1: runner does not record greedy output_ids absence", "kill",
      [(JB, '                    rec["greedy_output_ids_absent"] = n_noids', '                    rec["greedy_output_ids_absent"] = 0')]),
-    ("JH80", "H17-2: F-N2-7P ignores a non-budget stop (stopped / job_abort)", "kill",
-     [(AN, '    f["F-N2-7P"] = ("UNRESOLVED" if ledger_full is None or non_budget_stop',
-       '    f["F-N2-7P"] = ("UNRESOLVED" if ledger_full is None')]),
+    ("JH80", "H17-2: F-N2-7P / 7E ignore a non-budget stop (stopped / job_abort) [re-anchored to the shared _f7]",
+     "kill",
+     [(AN, '    return ("UNRESOLVED" if ledger_full is None or non_budget_stop',
+       '    return ("UNRESOLVED" if ledger_full is None')]),
     ("JH81", "H17-2: F-N2-7P ignores the top-level job_abort field", "kill",
      [(AN, ' or led.get("job_abort") is not None', '')]),
     ("JH82", "H17-2: runner leaves JOB_LEDGER.stopped None after a Job abort", "kill",
@@ -246,11 +250,13 @@ JOB_MUTANTS = [
        '            sc = sc[:1] or ["PROFILE"]')]),
     ("JH91", "H17-6: an unknown scope tag is accepted", "kill",
      [(PL, "        elif sc[0] not in HARNESS_SCOPES:", "        elif False:")]),
-    ("JH92", "H17-6: a Job-PROFILE's harness-seal check asks for the wrong scope", "kill",
-     [(SH, 'python3 "$PLAN" --verify-harness-seal --scope PROFILE | tee "$OUT/HARNESS_SEAL_CHECK.txt"',
-       'python3 "$PLAN" --verify-harness-seal --scope EA | tee "$OUT/HARNESS_SEAL_CHECK.txt"')]),
-    ("JH93", "H17-6: a sealed Job-EA falls through into the PROFILE flow (no ABORT_EA_NOT_IMPLEMENTED)", "kill",
-     [(SH, '  fail "ABORT_EA_NOT_IMPLEMENTED Job-EA runner is not implemented (H15-3)" 3', '  :')]),
+    ("JH92", "H17-6: the harness-seal check asks for the PROFILE scope on every Job (a Job-EA passes with the PROFILE"
+             " section alone) [re-anchored, EA harness]", "kill",
+     [(SH, 'python3 "$PLAN" --verify-harness-seal --scope "$JOB" | tee "$OUT/HARNESS_SEAL_CHECK.txt"',
+       'python3 "$PLAN" --verify-harness-seal --scope PROFILE | tee "$OUT/HARNESS_SEAL_CHECK.txt"')]),
+    ("JH93", "a sealed Job-EA falls into the PROFILE runner flow (--job PROFILE) [re-anchored: ABORT_EA_NOT_IMPLEMENTED"
+             " retired by the EA harness]", "kill",
+     [(SH, 'RUNNER=(python3 "$HERE/n2_job.py" --job "$JOB" --out', 'RUNNER=(python3 "$HERE/n2_job.py" --job PROFILE --out')]),
     ("JH94", "H17-8: runner crash leaves stopped=None (F-N2-7P false FALSIFIED)", "kill",
      [(JB, '        stopped = stopped or "crash"', '        pass')]),
     ("JH95", "H17-10: n2_plan.ENG ignores PDMUX_PROJECT_ROOT (file-relative root in a symlinked Job layout)", "kill",
@@ -259,6 +265,126 @@ JOB_MUTANTS = [
      [(MX, '       if os.environ.get("PDMUX_PROJECT_ROOT") else', '       if False else')]),
     ("JH97", "H17-10: preflight does not override N2_N3_DIR (empty tracked N3 dir fails the positive control)", "kill",
      [(SH, '(cd "$HERE" && N2_N3_DIR="$OUT/N3_RAW_NOT_IN_JOB" timeout', '(cd "$HERE" && timeout')]),
+    # ---- work-review carry-over D4-D6 (ProcessServer / run_boot, 2026-10-12)
+    ("JH98", "D4: stop() skips the group kill when the leader already exited (poll() not None)", "kill",
+     [(JB, "        if self.proc is not None:\n            for sig in (signal.SIGTERM, signal.SIGKILL):",
+       "        if self.proc is not None and self.proc.poll() is None:\n            for sig in (signal.SIGTERM, signal.SIGKILL):")]),
+    ("JH99", "D4: stop() leaves the server log handle open", "kill",
+     [(JB, "            self.log.close()", "            pass")]),
+    ("JH100", "D5: settle ignores the stop flag", "kill",
+     [(JB, '            if self.stop_flag.get("flag"):\n                why = "stop_flag"',
+       '            if False:\n                why = "stop_flag"')]),
+    ("JH101", "D5: settle waits with a BLOCKING time.sleep (event loop / SIGTERM handler frozen)", "kill",
+     [(JB, "            await asyncio.sleep(poll_s)\n        with open(record_path",
+       "            time.sleep(poll_s)\n        with open(record_path")]),
+    ("JH102", "D5: the /health wait ignores the stop flag", "kill",
+     [(JB, '            if self.stop_flag.get("flag"):                          # D5',
+       '            if False:                          # D5')]),
+    ("JH103", "D5: no stop-flag check between /health and the warm-up", "kill",
+     [(JB, '                if stop.get("flag"):                                        # D5: stop requested during the wait',
+       '                if False:                                        # D5: stop requested during the wait')]),
+    ("JH104", "D5: the warm-up loop ignores the stop flag", "kill",
+     [(JB, '                        if stop.get("flag"):                                # D5: no further warm-up after a stop',
+       '                        if False:                                # D5: no further warm-up after a stop')]),
+    ("JH105", "D6: settle / start back OUTSIDE the classifying try (a start failure crashes the runner)", "kill",
+     [(JB, "            try:                         # D6: settle / start inside the classifying try (H-4 now; stop() in finally)\n"
+           "                if hasattr(server, \"settle\"):                               # real server only (O4, recorded)\n"
+           "                    await server.settle(opts.get(\"gpu_base_mib\"), os.path.join(out, \"SETTLE.txt\"))\n"
+           "                server.start(env, p[\"srv\"])\n                started = True\n",
+       "            if hasattr(server, \"settle\"):\n"
+           "                await server.settle(opts.get(\"gpu_base_mib\"), os.path.join(out, \"SETTLE.txt\"))\n"
+           "            server.start(env, p[\"srv\"])\n            started = True\n            try:\n")]),
+    ("JH106", "D6: stop() only when the server started", "kill",
+     [(JB, "                await server.stop()                                        # D4/D6: always, even if start failed",
+       "                if started:\n                    await server.stop()")]),
+    # ---- Job-EA harness (H14-1 EA part, H15-3, E14-3; 2026-10-12)
+    ("JH107", "EA trigger at c (not c + 71)", "kill",
+     [(LG, "lower_median(lengths()) >= spec.c + TRIGGER_EXTRA:", "lower_median(lengths()) >= spec.c:")]),
+    ("JH108", "EA cancel ignores delta (K responses + 144 only)", "kill",
+     [(LG, 'st["base"] + EA_CANCEL_TOKENS + spec.delta)', 'st["base"] + EA_CANCEL_TOKENS)')]),
+    ("JH109", "EA co-load K - 1 requests", "kill",
+     [(LG, "                     for j in range(int(spec.k))]", "                     for j in range(int(spec.k) - 1)]")]),
+    ("JH110", "EA coload_sent read AFTER the co requests were sent", "kill",
+     [(LG, "            mw.coload_sent(cell_id, t_co)\n            for co_body in co_bodies:",
+       "            for co_body in co_bodies:"),
+      (LG, "            all_co = asyncio.Event()\n",
+       "            await asyncio.sleep(0.2)\n            st[\"t_coload\"] = t_co = clock()\n"
+       "            mw.coload_sent(cell_id, t_co)\n            all_co = asyncio.Event()\n")]),
+    ("JH111", "EA cells seeded with the PROFILE label", "kill",
+     [(PL, 'kind="EALPHA", seed_kind="EALPHA", b=b, c=c,', 'kind="EALPHA", seed_kind="PROFILE", b=b, c=c,')]),
+    ("JH112", "EA OFF boots use another d's E-alpha values (R5-2 pair c_in broken)", "kill",
+     [(PL, '                    e = der["ealpha"][f"{d},{b},{c}"]',
+       '                    e = der["ealpha"][f"{44 if kind == \'OFF\' else d},{b},{c}"]')]),
+    ("JH113", "EA trace: K not checked against the registered K_d", "kill",
+     [(PL, '        if c.get("K") != int(reg["K"][str(d)]):', '        if False:')]),
+    ("JH114", "EA trace: delta not checked", "kill",
+     [(PL, '        if c.get("delta") != int(reg["DELTA_FIXED"]):', '        if False:')]),
+    ("JH115", "EA trace: co-load max_new_tokens not checked (ABORT_TRACE)", "kill",
+     [(JB, '            if body["sampling_params"].get("max_new_tokens") != 1:', '            if False:')]),
+    ("JH116", "EA: G-3 (b) co-shape warm-up not run", "kill",
+     [(JB, '                    if unit.get("job") == "EA":                             # G-3 (b), same warm-up interval',
+       '                    if False:                             # G-3 (b), same warm-up interval')]),
+    ("JH117", "EA: G-3 (b) in its own second warm-up interval (duplicate warmup marks)", "kill",
+     [(JB, "cw_in, cw_o, own_scope=False)", "cw_in, cw_o, own_scope=True)")]),
+    ("JH118", "EA: G-3 (a) engine warm-up input from the PROFILE table (OFF -> 108)", "kill",
+     [(JB, '    if unit.get("job") == "EA":\n        c = int(reg["derived"]["ealpha"]',
+       '    if False:\n        c = int(reg["derived"]["ealpha"]')]),
+    ("JH119", "EA: cells dispatched to the PROFILE client", "kill",
+     [(JB, '                    if cell["kind"] == "EALPHA":', '                    if False:')]),
+    ("JH120", "EA measurement: co-load payload record not checked (F3)", "kill",
+     [(WN, "    if ea:\n        ok, why = coload_payload_ok(", "    if False:\n        ok, why = coload_payload_ok(")]),
+    ("JH121", "EA measurement: a coload_payload_invalid cell abort reported as BENCH_INVALID", "kill",
+     [(WN, '    if ea and (cm.get("cell_abort") or ("",))[0] == "coload_payload_invalid":', '    if False:')]),
+    ("JH122", "EA: co-span composition not checked (§7-2 (c))", "kill",
+     [(WN, '    if comp and st["C"] not in ("RECORDER_UNPROVEN", "WINDOW_SHORT"):', '    if False:')]),
+    ("JH123", "EA: co-span composition sum n_new == K not checked", "kill",
+     [(WN, "    if tot != k:", "    if False:")]),
+    ("JH124", "EA: JOINED signature not inserted in the C order (BS_UNREALIZED)", "kill",
+     [(WN, '        if sig["signature"] == "JOINED" and st["C"] in JOINABLE_C:', '        if False:')]),
+    ("JH125", "EA: S2 over the FILTERED A2 window (vacuous)", "kill",
+     [(WN, '        a2_pre = [e for e in iters if e["t_launch"] > t_last][:WIN]', '        a2_pre = win["A2"]')]),
+    ("JH126", "H15-3: rho_off denominator from the OFF replicate's own A1 / A2 (D-3 regression)", "kill",
+     [(AN, '                on, num = by.get((key, "ON", r)), by.get((key, num_kind, r))',
+       '                on, num = by.get((key, num_kind, r)), by.get((key, num_kind, r))')]),
+    ("JH127", "H15-3: AON_CONTAINMENT made a validity condition (strict containment, not §9-1)", "kill",
+     [(AN, "    a_on, contained = a_on_at(on_rep, xc)\n    return dict(out, valid=True",
+       "    a_on, contained = a_on_at(on_rep, xc)\n    if not contained:\n"
+       "        return dict(out, valid=False, reason=\"AON_CONTAINMENT\")\n    return dict(out, valid=True")]),
+    ("JH128", "H15-3: A_on outside [A1, A2] clamped to the nearer window (not extrapolated, §10-2)", "kill",
+     [(AN, "    return a1 + (a2 - a1) * (x - x1) / (x2 - x1), False",
+       "    return (a1 if abs(x - x1) < abs(x - x2) else a2), False")]),
+    ("JH129", "H15-3: CTX_MISMATCH not applied", "kill",
+     [(AN, '    if nw.ctx_mismatch(xc, v1["ctx_mid"], v2["ctx_mid"], c):', '    if False:')]),
+    ("JH130", "A_on_valid requires A1 only", "kill",
+     [(AN, '    return w.get("A1") == "VALID" and w.get("A2") == "VALID"', '    return w.get("A1") == "VALID"')]),
+    ("JH131", "rho_on numerator from the OFF boot (boot effect not removed)", "kill",
+     [(AN, '(("rho_off", "OFF"), ("rho_on", "ON"))', '(("rho_off", "OFF"), ("rho_on", "OFF"))')]),
+    ("JH132", "NEG_CONTROL_EA population = VALID windows only", "kill",
+     [(AN, '            if r["windows"][k] != "RECORDER_UNPROVEN" and r["window_len"][k] == nw.WIN:',
+       '            if r["windows"][k] == "VALID" and r["window_len"][k] == nw.WIN:')]),
+    ("JH133", "NEG_CONTROL_EA empty population -> HELD", "kill",
+     [(AN, '        return dict(label="NEG_CONTROL_EA_UNRESOLVED", n=0, windows=[])',
+       '        return dict(label="NEG_CONTROL_EA_HELD", n=0, windows=[], min_pe_idx5=None)')]),
+    ("JH134", "NEG_CONTROL_EA ON-side windows in the population", "kill",
+     [(AN, '        if r["boot_kind"] != "OFF" or r.get("status") != "MEASURED":',
+       '        if r.get("status") != "MEASURED":')]),
+    ("JH135", "COLOAD population = C-VALID replicates (D-4 (ii) identity)", "kill",
+     [(AN, 'if r.get("status") == "MEASURED" and r.get("co_span_present")]',
+       'if r.get("status") == "MEASURED" and r.get("co_span_present") and r["windows"]["C"] == "VALID"]')]),
+    ("JH136", "§7-3: the post-EA PROFILE path does not verify the Job-EA result seal", "kill",
+     [(AN, '    if not seal["verified"]:\n        raise mix.BlindedScope', '    if False:\n        raise mix.BlindedScope')]),
+    ("JH137", "§7-3: estimators lift the blind for ANY seal record (verified or not)", "kill",
+     [(MX, "        if not ea_seal_lifts_blind(ea_result_seal):", "        if ea_result_seal is None:")]),
+    ("JH138", "EA result seal verification ignores the file bytes", "kill",
+     [(AN, "        if rec.get(fn) != got:", "        if False:")]),
+    ("JH139", "F-N2-8: 'S3 always b' no longer falsifies", "kill",
+     [(AN, '    if col["label"].startswith("COLOAD_JOINED") or (col["s3_total"] and col["s3_b"] == col["s3_total"]):',
+       '    if col["label"].startswith("COLOAD_JOINED"):')]),
+    ("JH140", "entry script: Job-EA budget from the PROFILE column", "kill",
+     [(SH, 'python3 "$PLAN" --budget "$JOB" > "$OUT/BUDGET_TABLE.json"',
+       'python3 "$PLAN" --budget PROFILE > "$OUT/BUDGET_TABLE.json"')]),
+    ("JH141", "entry script: analysis always as Job-PROFILE", "kill",
+     [(SH, 'python3 "$HERE/n2_analyze.py" --job "$JOB" --out-dir', 'python3 "$HERE/n2_analyze.py" --out-dir')]),
 ]
 
 def _tree(tmp, files):
@@ -287,56 +413,89 @@ def _sources():
     return out
 
 
-def run(selected=None):
+def _shared_runner():
+    """The rule-sealed runner machinery (n2_mutants.py: targeted_tests / judge / run_rows / TargetControls) -- one
+    implementation for both ledgers (loaded by path; importing n2_mutants runs nothing)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_n2_mutants_runner", os.path.join(HERE, "n2_mutants.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def run(selected=None, jobs=1, targeted=True):
+    """The JH ledger. rev18 candidate (user approval 2026-10-12): targeted tests first, full suites for survivors
+    (a targeted kill counts only if the same selection passes unmutated); `jobs` workers, with `jobs` concurrent
+    no-mutation controls first when jobs > 1. Ledger meaning unchanged: KILLED iff some registered test fails."""
+    R = _shared_runner()
     src = _sources()
     env = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    rows = []
     muts = [m for m in JOB_MUTANTS if not selected or m[0] in selected]
-    for mid, desc, expect, reps in [("CTRL", "no mutation", "pass", [])] + muts:
-        files = dict(src)
-        broken = False
-        for fn, old, new in reps:
-            if files[fn].count(old) != 1:
-                rows.append((mid, desc, "BROKEN-MUTANT", f"anchor count {files[fn].count(old)} in {fn}"))
-                broken = True
-                break
-            files[fn] = files[fn].replace(old, new)
-        if not broken:
-            tmp = tempfile.mkdtemp(prefix=f"n2jmut_{mid}_")
+    lock = R.threading.Lock()
+
+    def emit(row):
+        with lock:
+            print(f"{row[0]:5s} {row[1]:70s} {row[2]:20s} {row[3]}", flush=True)
+
+    def full(d, suites):
+        failed, tail, to = R.run_unittest(d, env, list(suites))
+        pyc = any(x.endswith(".pyc") for _, _, fs in os.walk(d) for x in fs)
+        return failed, f"{tail}{' pyc!' if pyc else ''}", to
+
+    def mk(files, mid):
+        tmp = tempfile.mkdtemp(prefix=f"n2jmut_{mid}_")
+        return tmp, _tree(tmp, files)
+
+    def control(k):
+        def go():
+            tmp, d = mk(src, f"CTRL{k}")
             try:
-                d = _tree(tmp, files)
-                if mid == "CTRL":
-                    suites = SUITES_ALL
-                elif any(fn in (MK, LG) for fn, _o, _n in reps):
-                    suites = ("test_n2_harness", "test_n2_job")
-                else:
-                    suites = ("test_n2_job", "n2_reach_tests")
-                try:
-                    r = subprocess.run([sys.executable, "-m", "unittest", *suites], cwd=d, env=env,
-                                       capture_output=True, text=True, timeout=900)
-                except subprocess.TimeoutExpired:
-                    rows.append((mid, desc, "TIMEOUT", "900 s"))
-                    print(f"{mid:5s} {desc:70s} {'TIMEOUT':20s} 900 s", flush=True)
-                    continue
-                pyc = any(x.endswith(".pyc") for _, _, fs in os.walk(d) for x in fs)
-                tail = [ln for ln in r.stderr.strip().split("\n") if ln.startswith(("OK", "FAILED"))]
-                tail = tail[-1] if tail else r.stderr[-200:].replace("\n", " ")
-                failed = r.returncode != 0
-                if expect == "pass":
-                    status = "CONTROL-OK" if not failed else "CONTROL-FAILED"
-                elif expect == "kill":
-                    status = "KILLED" if failed else "SURVIVED"
-                else:
-                    status = "EQUIVALENT-SURVIVED" if not failed else "EQUIVALENT-KILLED"
-                rows.append((mid, desc, status, f"{tail}{' pyc!' if pyc else ''}"))
+                return R.judge("CTRL" if k == 0 else f"CTRL{k}", "no mutation", "pass", lambda: full(d, SUITES_ALL),
+                               [], None, None)
             finally:
                 shutil.rmtree(tmp, ignore_errors=True)
-        print(f"{rows[-1][0]:5s} {rows[-1][1]:70s} {rows[-1][2]:20s} {rows[-1][3]}", flush=True)
-        if rows[-1][2] == "CONTROL-FAILED":
-            raise SystemExit("CONTROL-FAILED: the unmutated suites do not pass in the mutant tree -- aborting")
+        return go
+    rows = R.run_rows([(k, control(k)) for k in range(jobs)], jobs, emit)
+    if any(r[2] != "CONTROL-OK" for r in rows):
+        raise SystemExit("CONTROL-FAILED: the unmutated suites do not pass in the mutant tree"
+                         + (f" ({jobs} concurrent controls)" if jobs > 1 else "") + " -- aborting")
+
+    def ctrl_tree():
+        tmp, d = mk(src, "TCTRL")
+        return d, (lambda: shutil.rmtree(tmp, ignore_errors=True))
+    controls = R.TargetControls(ctrl_tree, env)
+    py = {fn: txt for fn, txt in src.items() if fn.endswith(".py") or fn == SH}
+
+    def task(m):
+        mid, desc, expect, reps = m
+
+        def go():
+            files = dict(src)
+            for fn, old, new in reps:
+                if files[fn].count(old) != 1:
+                    return (mid, desc, "BROKEN-MUTANT", f"anchor count {files[fn].count(old)} in {fn}")
+                files[fn] = files[fn].replace(old, new)
+            suites = (("test_n2_harness", "test_n2_job") if any(fn in (MK, LG) for fn, _o, _n in reps)
+                      else ("test_n2_job", "n2_reach_tests"))
+            sel = (R.targeted_tests({k: v for k, v in py.items() if not k.startswith("test_") and k != "n2_reach_tests.py"
+                                     and not k.endswith("mutants.py")},
+                                    {f"{t}.py": src[f"{t}.py"] for t in suites}, reps) if targeted else [])
+            tmp, d = mk(files, mid)
+            try:
+                return R.judge(mid, desc, expect, lambda: full(d, suites), sel,
+                               lambda nm: R.run_unittest(d, env, nm, failfast=True), controls)
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
+        return go
+    rows += R.run_rows([(i, task(m)) for i, m in enumerate(muts)], jobs, emit)
+    if jobs > 1:
+        print("# ---- rows in table order", flush=True)
+        for r in rows:
+            emit(r)
     return rows
 
 
 if __name__ == "__main__":
-    run(set(sys.argv[1:]) or None)
+    _jobs, _targeted, _rest = _shared_runner().parse_runner_opts(sys.argv[1:])
+    run(set(_rest) or None, jobs=_jobs, targeted=_targeted)

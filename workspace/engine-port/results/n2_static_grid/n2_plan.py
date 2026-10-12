@@ -29,7 +29,10 @@ Units (§5-1): Job-PROFILE = 28 boots, round-major registered permutation; cells
 §14-3 alternation (b order r1·r2 ascending, r3·r4 descending; c order r1·r3 ascending, r2·r4 descending) with
 **b as the outer loop and c as the inner loop** (HARNESS CHOICE -- the registration does not state the nesting; the
 Job-EA fixed order (8,2048),(8,8192),(32,2048),(32,8192) is b-outer, so the same nesting is used; reported).
-Job-EA units are generated for completeness (§5-2) but the runner refuses Job-EA (harness seal pending, H15-3).
+Job-EA units (§5-2): 16 boots, round-major EA_ORDER, the fixed E-alpha cell order (R-7) on every boot, K / delta /
+c_in / O_EA from N2_REGISTERED only (ON and OFF use c_in(d), R5-2); `plan_problems("EA", units, reg)` checks the
+structure and `ea_trace_problems` the per-cell registered values (ABORT_TRACE). The Job-EA runner exists (EA harness
+work, not yet sealed): n2_capacity.sh still refuses a Job-EA without BOTH harness-seal sections (H17-6).
 
 CLI (used by n2_capacity.sh): --verify-registration, --verify-harness-seal, --units JOB, --budget JOB,
 --need JOB UNIT, --const NAME, --check-config CFG, --check-substrate CSV SM, --check-green JSON CFG KIND D,
@@ -412,9 +415,55 @@ def trace_problems(unit):
     return bad
 
 
-def plan_problems(job, units_):
-    """Structure checks (§5): boot count, round permutation, OBS44 adjacent to ON44 in every round, cell count."""
+def ea_trace_problems(unit, reg):
+    """ABORT_TRACE checks specific to a Job-EA boot (§4-2, §10-1, §3-1 co-load row): every cell is an E-alpha cell of
+    the registered fixed order (R-7), its K is the registered K_d of the boot's d (the SAME K on ON and OFF boots),
+    its delta is the registered fixed allowance, and c_in / O_EA are the registered E-alpha values of d (ON and OFF
+    use c_in(d), R5-2)."""
     bad = []
+    d = unit["D"]
+    if [(c["b"], c["c"]) for c in unit["cells"]] != list(EA_CELLS):
+        bad.append(f"{unit['name']}: E-alpha cell order {[(c['b'], c['c']) for c in unit['cells']]} != {list(EA_CELLS)}")
+    for c in unit["cells"]:
+        e = reg["derived"]["ealpha"][f"{d},{c['b']},{c['c']}"]
+        if c.get("kind") != "EALPHA":
+            bad.append(f"{c['cell_id']}: kind {c.get('kind')} != EALPHA")
+        if c.get("K") != int(reg["K"][str(d)]):
+            bad.append(f"{c['cell_id']}: K {c.get('K')} != registered K_{d} {reg['K'][str(d)]}")
+        if c.get("delta") != int(reg["DELTA_FIXED"]):
+            bad.append(f"{c['cell_id']}: delta {c.get('delta')} != registered {reg['DELTA_FIXED']}")
+        if c["c_in"] != int(e["c_in"]) or c["O"] != int(math.ceil(e["O_EA"])):
+            bad.append(f"{c['cell_id']}: c_in/O {c['c_in']}/{c['O']} != registered E-alpha {e['c_in']}/{e['O_EA']}")
+    return bad
+
+
+def plan_problems(job, units_, reg=None):
+    """Structure checks (§5): boot count, round permutation, OBS44 adjacent to ON44 in every round, cell count;
+    Job-EA (§5-2): 16 boots / 64 cells, the registered round permutation, every E-alpha pair (ON-d, OFF-d) adjacent
+    in every round, ON first twice and OFF first twice per d, and (with `reg`) the EA trace checks."""
+    bad = []
+    if job == "EA":
+        if len(units_) != 16:
+            bad.append(f"EA boots {len(units_)} != 16")
+        if sum(len(u["cells"]) for u in units_) != 64:
+            bad.append("EA cells != 64")
+        first = {16: [], 44: []}
+        for r in (1, 2, 3, 4):
+            tags = [u["cost_key"] for u in units_ if u["round"] == r]
+            if tags != list(EA_ORDER[r]):
+                bad.append(f"EA round {r} order {tags} != registered")
+                continue
+            for d in (16, 44):
+                i, j = tags.index(f"ON{d}"), tags.index(f"OFF{d}")
+                if abs(i - j) != 1:
+                    bad.append(f"EA round {r}: ON{d} not adjacent to OFF{d}")
+                first[d].append("ON" if i < j else "OFF")
+        for d, seq in first.items():
+            if len(seq) == 4 and sorted(seq) != ["OFF", "OFF", "ON", "ON"]:
+                bad.append(f"EA d={d}: ON first {seq.count('ON')} times (registered 2 / 2)")
+        if reg is not None:
+            for u in units_:
+                bad += ea_trace_problems(u, reg)
     if job == "PROFILE":
         if len(units_) != 28:
             bad.append(f"PROFILE boots {len(units_)} != 28")
@@ -703,7 +752,7 @@ def main(argv=None):
     reg = load_registered()
     if a.units:
         us = units(a.units, reg)
-        bad = plan_problems(a.units, us)
+        bad = plan_problems(a.units, us, reg)
         if bad:
             print("ABORT_TRACE " + "; ".join(bad))
             return 3
@@ -714,7 +763,7 @@ def main(argv=None):
     if a.emit_plan:
         out, job = a.emit_plan
         us = units(job, reg)
-        bad = plan_problems(job, us)
+        bad = plan_problems(job, us, reg)
         if bad:
             print("ABORT_TRACE " + "; ".join(bad))
             return 3

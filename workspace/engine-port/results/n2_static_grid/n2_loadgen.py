@@ -609,14 +609,17 @@ async def run_greedy(session, base, boot_id):
     return outs
 
 
-async def run_coshape_warmup(session, base, mw, boot_id, d, c_in, o_ea, clock=time.monotonic):
+async def run_coshape_warmup(session, base, mw, boot_id, d, c_in, o_ea, clock=time.monotonic, own_scope=True):
     """§14-2 G-3 (b) co-shape warm-up (Job-EA boots only; implemented, NOT used by Job-PROFILE): one decode request
     (seed label 'n2|WARMUP_CO|<d>|<boot>', input c_in(d, 8, 2048), max_new_tokens ceil(O_EA(d, 8, 2048))) runs while
     ONE 8192-token co request (one 1-request span) and then TWO concurrent ones (one 2-request span, 16,384 tokens)
     are sent (labels 'n2|WARMUP_CO|<d>|<boot>|<j>', j = 0..2, max_new_tokens 1), all inside warmup_start/_end; the
-    decode request is cancelled after the second span. Not a measurement; belongs to no cell window."""
+    decode request is cancelled after the second span. Not a measurement; belongs to no cell window.
+    own_scope=False: the caller already holds the boot's warm-up interval (n2_job Job-EA boots run G-3 (a) and (b)
+    inside ONE warmup_start/_end pair -- the reducer accepts one pair per boot; HARNESS CHOICE, reported)."""
     url = f"{base}/generate"
-    with mw.warmup(boot_id):
+    import contextlib
+    with (mw.warmup(boot_id) if own_scope else contextlib.nullcontext()):
         dec = Req(f"{boot_id}-wco-d", c_in)
         first = asyncio.Event()
         dec_task = asyncio.ensure_future(stream(
@@ -634,3 +637,133 @@ async def run_coshape_warmup(session, base, mw, boot_id, d, c_in, o_ea, clock=ti
                 dec_task.cancel()
             await asyncio.gather(dec_task, return_exceptions=True)
             await _abort_requests(session, base, [dec.rid])
+
+
+# =================================================================================================================
+# Job-EA cell client (PREREG_N2_3A rev17 §4-2 steps 1-6, §10-1, §14-2 G-1/G-2/G-4/G-13; Job-EA harness, H14-1 EA part).
+# The smoke cell (run_probe_cell) is unchanged; this is the registered Job E-alpha cell.
+# =================================================================================================================
+class EalphaSpec:
+    """One Job E-alpha cell (§4-2, §10-1): b decode requests (input c_in(d, b, c) = the first c_in tokens of the cell
+    seed sequence 'n2|EALPHA|<b>|<c>|<r>' -- ON and OFF boots use the SAME c_in(d) and O_EA(d), R5-2), max_new_tokens
+    ceil(O_EA) (G-4), ignore_eos, T = 0; K co-load requests (labels 'n2|COLOAD|<b>|<c>|<r>|<j>', j = 0..K-1, input
+    8192, max_new_tokens 1 -- K = the registered K_d); delta = the registered fixed allowance (64)."""
+
+    def __init__(self, d, b, c, c_in, o, k, delta, r, seed_kind="EALPHA"):
+        self.d, self.b, self.c, self.c_in, self.o = d, b, c, int(c_in), int(o)
+        self.k, self.delta, self.r, self.seed_kind = int(k), int(delta), r, seed_kind
+
+
+async def run_ealpha_cell(session, base, mw, spec, cell_id, call_id, classify, tail=None, clock=time.monotonic,
+                          cell_timeout_s=CELL_TIMEOUT_S, drain_timeout_s=DRAIN_TIMEOUT_S, drain_poll_s=0.25,
+                          drain_settle_s=0.5):
+    """ONE Job E-alpha cell = one load call. Marks, in order: cell_start, load_call_start, coload_sent (time read
+    BEFORE the first co request), load_call_end (finally), [cell_abort + abort_detail], cell_end (finally), then
+    fix_s and delta_l (descriptive, G-5/G-6).
+    Trigger (§4-2 step 4, G-13): the first moment the LOWER median of L_i = c_in + tokens received reaches c + 71 ->
+    K co requests at once (no pacing). F3: every co response must be completion_tokens == 1 and finish_reason length,
+    else CoLoadPayloadInvalid (H-4 (4) -> coload_payload_invalid). Cancel (§4-2 step 5, E-alpha rule, U-1 (b)): after
+    ALL K co responses arrived, base := the lower median of the decode token counts; cancel every remaining stream when
+    that lower median reaches base + 16 + 128 + delta. If every decode stream ends first (O reached) nothing is
+    cancelled. Returns the client record (per-request token receive times, co responses) used by n2_window."""
+    url = f"{base}/generate"
+    dec, co, tasks, co_tasks = [], [], [], []
+    st = dict(trigger=asyncio.Event(), cancel=asyncio.Event(), base=None, t_co_recv=None, t_first_send=None,
+              t_active_end=None, t_coload=None, t_cancel=None)
+    off0 = tail.offset() if tail is not None else 0
+
+    def lengths():
+        return [spec.c_in + q.n for q in dec]
+
+    def on_dec(_q):
+        if not st["trigger"].is_set() and dec and lower_median(lengths()) >= spec.c + TRIGGER_EXTRA:
+            st["trigger"].set()
+        if (st["base"] is not None and st["t_cancel"] is None
+                and lower_median([q.n for q in dec]) >= st["base"] + EA_CANCEL_TOKENS + spec.delta):
+            st["t_cancel"] = clock()
+            st["cancel"].set()
+
+    def on_co(_q):
+        if co and all(q.done for q in co) and st["base"] is None:
+            st["t_co_recv"] = max(q.t_done for q in co)
+            st["base"] = lower_median([q.n for q in dec])
+            on_dec(None)
+
+    async def body():
+        prompt = decode_prompt(spec.seed_kind, spec.b, spec.c, spec.r, spec.c_in)
+        bodies = [payload(prompt, spec.o, f"{cell_id}-d{i}") for i in range(spec.b)]
+        co_bodies = [payload(coload_prompt(spec.b, spec.c, spec.r, j), 1, f"{cell_id}-co{j}", coload=True)
+                     for j in range(int(spec.k))]                    # built and asserted (ABORT_TRACE) BEFORE sending
+        mw.load_call_start(call_id)
+        try:
+            st["t_first_send"] = clock()
+            for bd in bodies:                                            # all b at t = 0 (burst)
+                q = Req(bd["rid"], spec.c_in)
+                dec.append(q)
+                tasks.append(asyncio.ensure_future(stream(session, url, q, bd, on_dec, clock)))
+            if not await _wait_or_fail(st["trigger"], tasks, "ea-trigger"):
+                raise HarnessError("every decode stream ended before the co-load trigger")
+            t_co = clock()                                               # read BEFORE the first co request
+            st["t_coload"] = t_co
+            mw.coload_sent(cell_id, t_co)
+            for co_body in co_bodies:                                    # K at once, no pacing
+                q = Req(co_body["rid"], CO_INPUT, coload=True)
+                co.append(q)
+                co_tasks.append(asyncio.ensure_future(stream(session, url, q, co_body, on_co, clock)))
+            all_co = asyncio.Event()
+
+            def _one_done(_t):
+                if all(t.done() for t in co_tasks):
+                    all_co.set()
+            for t in co_tasks:
+                t.add_done_callback(_one_done)
+            if not await _wait_or_fail(all_co, tasks + co_tasks, "ea-coload"):
+                raise HarnessError("decode streams ended before the co-load completed")
+            for t in co_tasks:
+                if t.exception() is not None:
+                    raise t.exception()
+            violations = [q.rid for q in co if not _co_payload_ok(q)]
+            if violations:                                               # F3 -> H-4 (4) coload_payload_invalid
+                raise CoLoadPayloadInvalid(f"co-load responses violate completion_tokens == 1 / length: {violations[:3]}")
+            on_co(None)                                                  # idempotent (callback order)
+            fired = await _wait_or_fail(st["cancel"], tasks, "ea-cancel")   # False = every decode stream ended (O)
+            st["t_active_end"] = clock()
+            st["cancel_fired"] = bool(fired)
+            st["median_at_cancel"] = lower_median([q.n for q in dec])
+        finally:
+            for t in tasks + co_tasks:
+                if not t.done():
+                    t.cancel()
+            await asyncio.gather(*tasks, *co_tasks, return_exceptions=True)
+            mw.load_call_end(call_id)
+
+    async def drain(aborted):
+        off_close = tail.offset() if tail is not None else 0
+        for t in tasks + co_tasks:
+            if not t.done():
+                t.cancel()
+        await asyncio.gather(*tasks, *co_tasks, return_exceptions=True)
+        await _abort_requests(session, base, [q.rid for q in dec + co if not q.done])
+        st["t_closed"] = clock()
+        if tail is not None and not aborted:
+            st["t_idle"] = await wait_engine_idle(tail, off_close, st["t_closed"], drain_timeout_s, drain_poll_s,
+                                                  drain_settle_s, clock)
+
+    async with mw.cell(cell_id, spec.d, spec.b, spec.c, classify) as cell:
+        cell.drain = drain
+        await asyncio.wait_for(body(), timeout=cell_timeout_s)
+    overhead = (cell.t_end - cell.t_start) - (st["t_active_end"] - st["t_first_send"])   # G-6 descriptive
+    mw.fix_s(cell_id, overhead)
+    info = dict(cell_id=cell_id, call_id=call_id, kind="EALPHA", d=spec.d, b=spec.b, c=spec.c, c_in=spec.c_in,
+                O=spec.o, K=spec.k, delta=spec.delta, r=spec.r, t_start=cell.t_start, t_end=cell.t_end,
+                t_first_send=st["t_first_send"], t_coload=st["t_coload"], t_co_recv=st["t_co_recv"],
+                base=st["base"], t_cancel=st["t_cancel"], cancel_fired=st.get("cancel_fired"),
+                median_at_cancel=st.get("median_at_cancel"), t_active_end=st["t_active_end"], t_idle=st.get("t_idle"),
+                fix_s=overhead, requests=[_req_record(q) for q in dec], co_requests=[_req_record(q) for q in co])
+    if tail is not None:
+        med = sorted(dec, key=lambda q: q.n)[int((len(dec) - 1) * 0.5)] if dec else None
+        dl = delta_l_from(tail.read(off0, kinds=TelemetryTail.KEEP[:3]), med, st["t_co_recv"], st["t_coload"])
+        if dl is not None and math.isfinite(dl):
+            mw.delta_l(cell_id, dl)
+            info["delta_l"] = dl
+    return info
