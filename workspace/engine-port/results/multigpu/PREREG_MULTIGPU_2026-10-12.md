@@ -1,4 +1,4 @@
-# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12/13, rev9)
+# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12/13, rev10)
 
 > **지위**: 설계 문서 `reports/multigpu_scaling_design_2026-10-12.md`(rev2)의 M2.5. 감사 판정
 > `reports/audit/2026-10-12_multigpu_design/AUDIT_multigpu_design_rev1_2026-10-12.md`(`MIXED`)의 MG-0이 요구하는 **결정 규칙 등록**이다.
@@ -9,7 +9,8 @@
 > **rev4**: rev3 델타 감사(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md`, `MIXED`: M2g `GO-with-caveats` 유지, M3 `NO-GO` — D7 fused prefill 우선으로
 > shape B Decode 줄 고갈, D8 NVML memory.used 폴백이 PD-mux 캡처 메모리를 불일치로 판정)를 반영했다. 대조표 §11. MGP-26…MGP-32 추가 승계.
 > **rev5**(사용자 결정 2026-10-12): MGP-29(arm 간 스케줄 노브 비대칭) 대응으로 대칭 대조군 `fused_sym` arm을 추가하고 1차 estimand를 G\_sym = agnostic/fused\_sym으로 바꿨다. 대조표 §12.
-> **rev9**(2026-10-13): rev8 규칙층 감사(`VERDICT_rules_rev8_2026-10-13.md`, `MIXED` — M3 死因 D9: G(1) 미정의 시 교차 Job 추세 fail-open) 처방 P9-a–d 반영 + 사용자 결정 3건(메모리 규칙 (iii) 폐지[사후 변경 공시], Job별 하드캡 예상치 기준, J1을 x2 노드 GPU 0 단독). 상세 §16 — §16이 §15와 충돌하면 §16이 우선. MGP-42…50 승계. **규칙층 경량 델타 감사 대기.**
+> **rev10**(2026-10-13): rev9 경량 감사(`VERDICT_rules_rev9_2026-10-13.md`, `MIXED` — M3 死因 D10 P-DP shape 축 누락, D11 미등록 config 순서 유도식) 처방 P10·P11 반영. §17. MGP-43′·49′·50′·51–55 승계. **규칙층 경량 델타 감사 대기.**
+> **rev9**(2026-10-13): rev8 규칙층 감사(`VERDICT_rules_rev8_2026-10-13.md`, `MIXED` — M3 死因 D9: G(1) 미정의 시 교차 Job 추세 fail-open) 처방 P9-a–d 반영 + 사용자 결정 3건(메모리 규칙 (iii) 폐지[사후 변경 공시], Job별 하드캡 예상치 기준, J1을 x2 노드 GPU 0 단독). 상세 §16 — §16·§17이 §3·§4·§15와 충돌하면 §16·§17이 우선(rev10 정정, H-6). MGP-42…50 승계. **규칙층 경량 델타 감사 대기.**
 > **rev8**(사용자 결정 2026-10-12): **Job을 구성별 적정 크기로 나눈다**(x8 한 Job 순차 실행 폐기 — 예약 GPU 사용률 M2g 실측 59%, M3 예보 약 50%로 크레딧 낭비). rev7 M2g 3회차 Job(`pdmux-multigpu-f515970-20261012142501`)은 실행 40분 만에 사용자 결정으로 취소(산출물 없음, 측정 0). 상세 §15 — §15가 §1 '기판'·'GPU 부분집합'·§4-1 실행 순서·§4-5 앵커·§4-6 기술 블록·§6을 대체한다. **규칙층 델타 감사 대기.**
 > **rev7**(사용자 결정 2026-10-12, M2g 2회차 `RESULT_m2g_c1395d0_2026-10-12.md` 대응): fused arm에 `--disable-piecewise-cuda-graph`. 그 결과 fused와 fused\_sym의 차이는 overlap·chunked **두 노브**로 줄어든다(MGP-36의 세 번째 노브 제거 — MGP-36 문장 중 'piecewise' 부분은 rev7 아래에서 해당 없음, S는 여전히 두 노브의 합성). M2g는 이 정의로 **전부 재실행**한다(같은 Job 원칙). 대조표 §14. **규칙층 델타 감사 대기.**
 > **rev4+rev5 델타 감사**(`VERDICT_prereg_rules_rev5_delta_2026-10-12.md`): **M2g·M3 모두 `GO-with-caveats`**(死因 0). MGP-0의 'M3 `NO-GO`'는 해제됐다.
@@ -129,7 +130,7 @@ M2g Job은 `M2G_PASS_TABLE.json`((mode, N, arm) → 포함/제외 + 사유)을 �
 - **CI**: seed 4개를 짝으로(같은 seed의 agnostic/fused\_sym achieved 비; 보조 라벨은 해당 분모) bootstrap 10,000회(seed 1), 95% 백분위 CI. 이 CI는 boot 산포를 포함하지 않는다(MGP-7).
 - **추세**: mode마다 log G를 log₂N(정의된 N ∈ {1,2,4,8})에 최소제곱 회귀한 기울기 s. **재표집 단위 = seed 색인**: 한 번의 bootstrap에서 seed 색인 4개를 복원추출하고, 그 색인을 그 mode의 **모든 N과 두 arm에 공동 적용**한다(MGP-10). 정의된 점 < 3이면 `TREND_UNDEFINED`.
   - CI가 0 포함 → `NO_TREND_DETECTED`, CI > 0 → `G_INCREASES_WITH_N`, CI < 0 → `G_DECREASES_WITH_N`.
-- **크기 규칙**: 분모 = G(1), 분자 = G(N\_max), N\_max = 그 mode에서 G가 정의된 가장 큰 N(보고에 명시). G(1)이 정의되지 않으면 크기 규칙은 적용하지 않는다(방향 라벨만, `MAGNITUDE_UNDEFINED`). |G(N\_max)/G(1) − 1| < 3%이면 방향 라벨도 방향의 증거로 인용하지 않는다(MGP-7).
+- **크기 규칙**: 분모 = G(1), 분자 = G(N\_max), N\_max = 그 mode에서 G가 정의된 가장 큰 N(보고에 명시). ~~G(1)이 정의되지 않으면 크기 규칙은 적용하지 않는다(방향 라벨만, `MAGNITUDE_UNDEFINED`).~~ **(rev9 폐기 → §16-1 P9-a: G(1) 미정의면 그 shape 방향 라벨 인용 불가)** |G(N\_max)/G(1) − 1| < 3%이면 방향 라벨도 방향의 증거로 인용하지 않는다(MGP-7).
 - **등록 예측**: P-DP — G\_DP(N) 추세 `NO_TREND_DETECTED` 예측. 깨지면 MGP-13: 새로 등록·감사받은 진단 전까지 TP 라벨 인용 금지. P-TP — 방향 예측 없음(탐색). G(N) < 1도 유효한 결과(MGP-16).
 - e(N, mode, arm) = λ\*(N)/(N·λ\*(1))은 기술치로만 보고한다.
 
@@ -328,3 +329,16 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 - 변이 KILLED: (i) G(1) 미정의인데 방향 인용 (ii) 확장 rung 값과 앵커 비교 (iii) 다른 Job 앵커로 보정 (iv) 보정 추세에서 크기 규칙 제거 (v) gate 이름 부분 일치.
 - M3 J\_N은 자기 PASS 표와 J2 표를 3자 대조로 읽는다. J2 표가 없으면 TP는 `NOT_TESTED`, DP만 진행(Job 전체 ABORT 아님).
 - M2g의 Job별 N=1 앵커 boot에는 G1-ctl용 fused·agnostic·d44 N=1 arm을 모두 포함한다.
+
+## 17. rev10 (2026-10-13)
+
+### 17-1. P10 — P-DP의 shape별 상태 (D10)
+P-DP는 shape별로 상태를 낸다. shape s의 G\_sym DP 추세가 정의되고, G\_sym(1, s)가 정의되며, `TREND_JOB_SENSITIVE`가 아닌 방향 라벨(G\_INCREASES/G\_DECREASES)이면 그 shape는 BROKEN이다. P9-c의 세 조건에 해당하면 그 shape는 UNTESTED이고, 두 shape 모두 `NO_TREND_DETECTED`면 HELD다. P-DP 전체 상태는 BROKEN > UNTESTED > HELD 순으로 정한다. 어느 한 shape라도 BROKEN이면 MGP-13이 발화하며, 다른 shape의 UNTESTED가 이를 억제하지 않는다.
+
+### 17-2. P11 — config 순서와 절단 (D11)
+- **(a) 순서 유도식(등록 상수)**: `o = ["TP", "DP"]; random.Random(f"20261012:J{N}:config_order").shuffle(o)` (Python 3 `random`). 결과(2026-10-13 계산): **J2 = [DP, TP], J4 = [DP, TP], J8 = [DP, TP]**. 하네스 dry-run 출력이 이 순서와 다르면 봉인하지 않는다.
+- **(b)** DP 추세가 `TRUNCATED` 셀 때문에 `TREND_UNDEFINED`이고 그 결과 P-DP가 UNTESTED이면, TP 방향 라벨은 공시를 붙여도 인용하지 않는다(`TP_UNCONTROLLED_TRUNCATION`). 반대로 TP가 절단으로 미정의일 때 DP 라벨은 P-DP 판정에만 쓴다. 비절단 사유(KNEE\_NOT\_BRACKETED 등)로 DP가 미정의인 경우는 P9-c 처리(공시 후 TP 인용)를 유지한다.
+- 공시: 위 순서상 S3 절단이 일어나면 두 번째 config인 **TP**가 먼저 잘린다(MGP-49′).
+
+### 17-3. 하네스 조건 추가 (rev9 감사 §6)
+H-1(P10 변이), H-2(순서 상수·dry-run 대조·절단 무시 변이), H-3(기준 셀 포화 미달 → 전 J\_N JOB_EFFECT_UNTESTED, 확장 rung 보정 변이), H-4(앵커 UNTESTED 점 보정 추세 제외, 원값 대입 변이), H-5(G5(c) (iii) 제거·상대차 두 분모·`MEMORY_RULE_III_COUNTERFACTUAL`, "(iii) 잔존"·"(ii) 제거" 변이). 모두 KILLED + 무변이 대조군. H-7(권고): M3 제출 전 x2 노드 위상·`cpu.max` 짧은 프로브.
