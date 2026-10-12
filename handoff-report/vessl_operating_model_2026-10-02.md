@@ -297,3 +297,9 @@ vesslctl job logs <slug> | grep -E 'ABORT_|FAIL|ERROR' | tail   # 중단 사유
 노브: `PDMUX_HEARTBEAT_S`(초, 0 = 끔), `PDMUX_LOG_MIRROR=0`(이전의 파일 전용 동작). 대상 종료 코드는 거울과 무관하게
 보존된다(`PIPESTATUS[0]`; 로컬 mock에서 rc 7 보존·하트비트 프로세스 정리 확인, 2026-10-12). 이 변경은 측정 경로를
 건드리지 않는다(대상의 stdout 소비 방식만 바뀜 — 파이프 버퍼가 대상 출력을 막지 않도록 `grep --line-buffered`·`sed -u`).
+
+§12 보강(2026-10-12, 작업 검토 D2·D3·D7 반영): 로깅 노브(`PDMUX_LOG_MIRROR`, `PDMUX_HEARTBEAT_S`)는 job_entry가 읽은 뒤
+**환경에서 제거**한다(n2/n3_capacity.sh의 노브 허용목록이 `ABORT_ENV`로 막지 않도록) — 값은 `meta/log_mirror.txt`에 기록.
+`tee -p`로 거울(grep/sed)이 죽어도 대상은 SIGPIPE를 받지 않고 `target.log`는 끝까지 기록된다(로컬 mock: 거울 kill 뒤 rc 5 보존,
+target.log 완전). 하트비트는 박동당 `find` 1회. **주의**: 새 대상 스크립트가 서버 등 자식 프로세스를 `&`로 띄울 때 stdout을
+파일로 돌리지 않으면, 그 자식이 파이프를 쥐어 job_entry가 자식 종료까지 끝나지 않는다 — 자식 출력은 항상 파일로(현행 대상은 전부 그렇게 함).

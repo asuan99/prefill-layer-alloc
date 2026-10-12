@@ -97,8 +97,10 @@ def read_energy(p):
     rows = []
     for ln in open(p):
         f = ln.strip().split(",")
-        if len(f) == 2 and f[0][:1].isdigit():
-            rows.append((float(f[0]), int(f[1])))
+        # 2-column (epoch_s, energy_mJ) or, since job_entry 52a3b97, 3-column (epoch_s, mono_s, energy_mJ):
+        # epoch first, counter last (a 2-column-only reader returned 0 rows on 3-column files, silently).
+        if len(f) in (2, 3) and f[0][:1].isdigit():
+            rows.append((float(f[0]), int(f[-1])))
     return sorted(rows)
 
 

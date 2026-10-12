@@ -271,23 +271,33 @@ run_target() {
     bash "${target}"
   fi
 }
+# Logging knobs are job_entry-only: read them here, record them (they add co-resident processes during the
+# measurement -> substrate record), and remove them from the environment so a campaign script's knob allowlist
+# (n2/n3_capacity.sh: ABORT_ENV unregistered knob) never sees them (review 2026-10-12 D3, D7).
+log_mirror="${PDMUX_LOG_MIRROR:-1}"; hb_s="${PDMUX_HEARTBEAT_S:-300}"
+unset PDMUX_LOG_MIRROR PDMUX_HEARTBEAT_S
+echo "log_mirror=${log_mirror} heartbeat_s=${hb_s}" > "${RUN}/meta/log_mirror.txt"
 heartbeat() {   # newest file this run wrote under results/ (cells, marks, ledgers) + its last line
-  local t0=$SECONDS newest line n
-  while sleep "${PDMUX_HEARTBEAT_S:-300}"; do
-    newest=$(find "${RUN}/results" -type f -newer "${RUN}/meta/start.marker" ! -path '*/.triton_cache/*' \
-               -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
-    n=$(find "${RUN}/results" -type f -newer "${RUN}/meta/start.marker" 2>/dev/null | wc -l)
+  local t0=$SECONDS newest line n listing
+  while sleep "${hb_s}"; do
+    listing=$(find "${RUN}/results" -type f -newer "${RUN}/meta/start.marker" ! -path '*/.triton_cache/*' \
+                -printf '%T@ %p\n' 2>/dev/null | sort -n)            # one scan per beat
+    n=$(printf '%s' "${listing}" | grep -c . || true)
+    newest=$(printf '%s\n' "${listing}" | tail -1 | cut -d' ' -f2-)
     line=""; [[ -n "${newest}" ]] && line=$(tail -c 400 "${newest}" 2>/dev/null | tail -1 | tr -d '\r' | cut -c1-240)
     echo "[HB $(utc) +$((SECONDS - t0))s] new_files=${n} newest=${newest#"${RUN}/results/"} :: ${line}"
   done
 }
 phase "target start: ${PDMUX_TARGET}"
-if [[ "${PDMUX_LOG_MIRROR:-1}" == 0 ]]; then
+if [[ "${log_mirror}" == 0 ]]; then
   run_target > "${RUN}/logs/target.log" 2>&1
   target_rc=$?
 else
-  [[ "${PDMUX_HEARTBEAT_S:-300}" != 0 ]] && { heartbeat & hb_pid=$!; }
-  run_target 2>&1 | tee "${RUN}/logs/target.log" \
+  [[ "${hb_s}" != 0 ]] && { heartbeat & hb_pid=$!; }
+  # tee -p (--output-error=warn-nopipe): if the mirror (grep/sed) dies, tee keeps writing target.log and the
+  # target never gets SIGPIPE (review 2026-10-12 D2).  Fallback to plain tee only if this tee lacks -p.
+  tee_opt=(-p); tee -p </dev/null >/dev/null 2>&1 || tee_opt=()
+  run_target 2>&1 | tee "${tee_opt[@]}" "${RUN}/logs/target.log" \
     | { grep --line-buffered -v -e 'pynvml package is deprecated' -e 'import pynvml  # type: ignore' \
         | sed -u 's/^/[T] /'; true; }
   target_rc=${PIPESTATUS[0]}
