@@ -1,4 +1,4 @@
-# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev3)
+# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev4)
 
 > **지위**: 설계 문서 `reports/multigpu_scaling_design_2026-10-12.md`(rev2)의 M2.5. 감사 판정
 > `reports/audit/2026-10-12_multigpu_design/AUDIT_multigpu_design_rev1_2026-10-12.md`(`MIXED`)의 MG-0이 요구하는 **결정 규칙 등록**이다.
@@ -6,7 +6,9 @@
 > 반영했다. 대조표 §9. MGP-0…MGP-16을 문자 그대로 승계한다. **델타 감사 대상 = D1·D2·MGP-1·MGP-10.**
 > **rev3**: rev2 델타 감사(`VERDICT_prereg_rules_rev2_delta_2026-10-12.md`, `MIXED`: M2g `GO-with-caveats` 유지, M3 `NO-GO` — D3 입장 기계 항등식,
 > D4 arm 비대칭 표본, D5 메모리 정확 일치, D6 `ps %cpu`)를 반영했다. 대조표 §10. MGP-17…MGP-25 추가 승계.
-> **규칙층 델타 감사 대기(범위: D3–D6, g 문턱 0.10/0.05, 메모리 허용 오차 1%).** `GO`/`GO-with-caveats` 전에는 M2g·M3 Job을 `--submit`하지 않는다(교훈 34). 하네스(plan·label 스크립트)는
+> **rev4**: rev3 델타 감사(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md`, `MIXED`: M2g `GO-with-caveats` 유지, M3 `NO-GO` — D7 fused prefill 우선으로
+> shape B Decode 줄 고갈, D8 NVML memory.used 폴백이 PD-mux 캡처 메모리를 불일치로 판정)를 반영했다. 대조표 §11. MGP-26…MGP-32 추가 승계.
+> **규칙층 델타 감사 대기(범위: D7, D8, Q\_c 추정량 반전 시험 — 오류 요청 처리·DP 집계).** `GO`/`GO-with-caveats` 전에는 M2g·M3 Job을 `--submit`하지 않는다(교훈 34). 하네스(plan·label 스크립트)는
 > 규칙 감사 뒤에 작성하고 별도로 하네스층 감사를 받는다.
 > 작성 시점: GPU 지출 = M1 프로브 1건뿐, 서빙 측정 0, 성능 판정 0, Claim 변경 0.
 > 브랜치 `multigpu-scaling`(worktree `prefill-layer-alloc-multigpu`), 기준 커밋 `c0e200d`. 이 브랜치의 엔진 트리는 N2/N3/E2 봉인 digest와
@@ -63,7 +65,7 @@ arm별 포화 처리율 λ\*를 재어 **1차 estimand G(N, mode) = λ\*\_agnost
 | **G3 comm 역순 스트레스** | `m2g_comm_reverse_stress.py`: TP=N마다 두 pynccl comm(prefill/decode)을 짝·홀 rank가 반대 순서로 발행, plain stream과 green stream(16/92, 44/64) 각각 | 반복 R = 500/조합, watchdog 120 s. PASS ⇔ hang 0 **그리고** 정수 합 all-reduce 검산 오류 0 |
 | **G3b 서빙 스트레스** | TP=N × arm{agnostic, d44}, shape A, offered = 1.5 × (N × 2.99) req/s, 600 s | 완료 요청 > 0, 서버 생존, 마지막 60 s 안 토큰 진행 |
 | **G4 캡처·커널 식별** | stream group별 cudagraph 캡처 로그. 짧은 nsys 프로브(TP=2,8 × d44, 30 s)로 실제 all-reduce 커널 이름 | 캡처 성공 = PASS 조건. 커널 이름은 기술치 |
-| **G5 파티션** | (a) agnostic manual 등가표 ↔ 자동 격자 선택 함수의 등가성: **결정적 CPU 시험**(decode_bs 0…512 전수에서 두 경로의 `stream_idx`·`SM_COUNTS` 일치, 하네스 회귀 테스트). GPU에서는 N=1 auto vs manual의 선택 분포를 **기술치**로만 기록(MGP-5). (b) DP=N 복제본별 telemetry의 실현 `(p,d)`가 그 arm의 등록 표 안의 값인지. (c) arm 간 메모리 조건(MGP-12, P-D5): 같은 config 안 세 arm에 대해 `MEMORY_MISMATCH` ⇔ (i) mamba cache 슬롯 수 ≠ effective cap(정확 비교), 또는 (ii) `max_total_num_tokens` < effective cap × (ISL+OSL)(KV 구속: A 36,864·N, B 396,288·N 토큰 — TP는 엔진 인스턴스 cap 48N 기준, DP는 복제본 cap 48 기준), 또는 (iii) arm 간 `max_total_num_tokens` 상대차 > 1%. 그 외 차이는 기술치(MGP-18). GPU별 프로세스 검사: M2g 맨 앞에서 `nvidia-smi --query-compute-apps=gpu_uuid,pid,used_memory` 가시성 프로브, PID가 보이면 GPU당 기대 프로세스 수와 대조, 안 보이면 NVML GPU별 `memory.used`를 arm 간 비교(상대차 > 1%면 `MEMORY_MISMATCH`) | (a) CPU 시험 실패 → 하네스 봉인 불가. (b) 실패 → 해당 DP=N 제외. (c) 실패 → 해당 (mode, N)에 `MEMORY_MISMATCH`, M3 G 인용 금지(측정은 진행) |
+| **G5 파티션** | (a) agnostic manual 등가표 ↔ 자동 격자 선택 함수의 등가성: **결정적 CPU 시험**(decode_bs 0…512 전수에서 두 경로의 `stream_idx`·`SM_COUNTS` 일치, 하네스 회귀 테스트). GPU에서는 N=1 auto vs manual의 선택 분포를 **기술치**로만 기록(MGP-5). (b) DP=N 복제본별 telemetry의 실현 `(p,d)`가 그 arm의 등록 표 안의 값인지. (c) arm 간 메모리 조건(MGP-12, P-D5): 같은 config 안 세 arm에 대해 `MEMORY_MISMATCH` ⇔ (i) mamba cache 슬롯 수 ≠ effective cap(정확 비교), 또는 (ii) `max_total_num_tokens` < effective cap × (ISL+OSL)(KV 구속: A 36,864·N, B 396,288·N 토큰 — TP는 엔진 인스턴스 cap 48N 기준, DP는 복제본 cap 48 기준), 또는 (iii) arm 간 `max_total_num_tokens` 상대차 > 1%. 그 외 차이는 기술치(MGP-18). 오염 검사(P-D8): (가) 각 boot 전 부분집합 GPU의 NVML `memory.used` < 1 GiB(빈 GPU 확인), (나) NVML `nvmlDeviceGetComputeRunningProcesses` **항목 수**가 GPU당 기대 프로세스 수와 같음(PID 네임스페이스 무관). 항목 수조차 0으로 숨겨지면 (가)만 쓴다. 어느 하나라도 어긋나면 `GPU_CONTAMINATED`(그 셀 판정 제외). arm 간 `memory.used` 비교는 **기술치**(boot 직후·셀 종료 시 기록)이며 `MEMORY_MISMATCH` 조건이 아니다 — PD-mux는 SM group마다 cudagraph를 캡처해 구조적으로 더 쓴다(MGP-32 기판 고지) | (a) CPU 시험 실패 → 하네스 봉인 불가. (b) 실패 → 해당 DP=N 제외. (c) 실패 → 해당 (mode, N)에 `MEMORY_MISMATCH`, M3 G 인용 금지(측정은 진행) |
 
 ### 3-1. FAIL 단위와 처리 (MGP-1)
 | 결과 | 제외 범위 |
@@ -94,19 +96,20 @@ M2g Job은 `M2G_PASS_TABLE.json`((mode, N, arm) → 포함/제외 + 사유)을 �
 - prior(N, shape) = N × λ\*\_VESSL(shape)(A 2.99, B 0.690 req/s). rung 위치를 정하는 데만 쓴다.
 - **HI rung**: offered x\_hi = 1.6 × prior, 요청 수 = clamp(round10(x\_hi × 170 s), 40, 4000), seed 4개(4386, 4162, 251, 2630).
 - **LO rung**: offered x\_lo = 0.60 × (그 (config, shape)에서 **fused** HI achieved seed 중앙값), 요청 수 = clamp(round10(x\_lo × 170 s), 40, 4000), seed 2개(4386, 4162). 같은 (config, shape)의 세 arm이 **같은 x\_lo·요청 수**를 쓴다(MGP-9). boot 배치: (config, arm)마다 **boot 1** = shape A·B의 HI(seed 4개씩). 세 arm의 boot 1이 모두 끝나 x\_lo가 정해진 뒤 (config, arm)마다 **boot 2** = shape A·B의 LO(seed 2개씩). 따라서 boot는 (config, arm)당 2회이고, HI와 LO는 서로 다른 boot다(범위 공시).
-- **확장 규칙(1회, 공동)**: (config, shape)의 **어느 한 arm이라도** HI 독립 포화 증거(§4-3)를 못 얻으면 그 (config, shape)의 **세 arm 모두** x\_hi를 2배로 올려 HI를 다시 잰다(arm마다 새 boot 1′, LO의 x\_lo는 확장 후 fused HI 중앙값으로 정한다). 그래도 포화 증거가 없는 arm은 `LADDER_TOO_LOW`.
+- **확장 규칙(1회, 공동)**: (config, shape)의 **어느 한 arm이라도** HI에서 g < 0.10(§4-3)이면 그 (config, shape)의 **세 arm 모두** x\_hi를 2배로 올려 HI를 다시 잰다(arm마다 새 boot 1′, x\_lo는 확장 후 fused HI 중앙값으로 정한다). `SATURATION_UNRESOLVED`·`CLIENT_ERROR`는 확장을 발화하지 않고 라벨로 남긴다(교훈 21). 확장 뒤에도 g < 0.10인 arm은 `LADDER_TOO_LOW`.
 - ratio(achieved/offered)는 **기술치**이며, 분모는 셀의 **realized 도착률**(요청 수 ÷ 첫 전송~마지막 전송 구간)로 쓴다.
 
 ### 4-3. 라벨 (shape·config·arm마다) — 독립 포화 증거 (P-D1, λ0R-4·MGP-8)
-- **샘플** = 서버 로그의 `Decode batch` 줄만(`Prefill batch` 줄은 merge 전 `#running-req`를 찍어 cap에 구조적으로 도달하지 못하므로 쓰지 않는다). 그 셀의 **송신 창** [첫 요청 전송, 마지막 요청 전송] 안의 줄. TP는 ` TP0` 줄, DP는 ` DP{k}` 접두로 복제본별. 판정 줄 수 < 20이면 그 셀은 `SATURATION_UNRESOLVED`.
-- **대기열 증가 통계 g**(arm 대칭, P-D3/D4): 송신 창을 시간으로 3등분해 g = (마지막 1/3의 평균 `#queue-req` − 첫 1/3의 평균 `#queue-req`) / ((2T/3) × r), T = 송신 창 길이, r = 그 엔진 인스턴스의 realized 도착률(TP·N=1: 전체 요청 수 ÷ T, DP: 전체 ÷ (N·T)). 유체 근사에서 x > λ\* 이면 g ≈ 1 − λ\*/x, x < λ\* 이면 g ≈ 0이다(저자 재도출: 대기열이 송신 창 동안 (x − λ\*)의 속도로 쌓인다).
-- **HI 포화**: 4 seed 모두 g ≥ 0.10(DP는 모든 복제본)이면 `HI_SATURATED`. g ≥ 0.10 ⇔ 유체 근사에서 x\_hi ≥ 1.11 λ\*.
-- **LO 비포화**: 2 seed 모두 g ≤ 0.05(DP는 모든 복제본)이면 `LO_UNSATURATED`.
-- `#running-req` = cap 비율과 `#queue-req` = 0 비율은 **기술치**로만 남긴다(MGP-17). 셀 자신의 마지막 요청 지연으로 drain을 보정하는 계산은 쓰지 않는다(교훈 9).
-- 하네스 변이 검사(교훈 53): PD-mux 합성 로그에서 "running==cap 술어", "Prefill 줄 포함", "decode_log_interval 1 vs 40에서 라벨이 바뀜" 변이본이 각각 KILLED.
+- **대기열 원천 = 클라이언트 측 시스템 내 대기 수**(P-D7, arm 대칭): Q\_c(t) = #{요청: sent\_s ≤ t} − #{요청: sent\_s + ttft ≤ t}(첫 토큰을 아직 받지 못한 요청 수). `requests.jsonl`의 `sent_s`·`ttft_ms`로 계산한다. 서버 로그·시계 다리가 필요 없고, 송신 창 안의 사건만 쓴다. TTFT가 없는 오류 요청은 Q\_c에서 빼고 개수를 기록한다. 오류 요청이 셀 요청의 1%를 넘으면 그 셀은 `CLIENT_ERROR`(판정 제외).
+- **g**: 송신 창 [첫 sent\_s, 마지막 sent\_s], 길이 T를 시간으로 3등분하고, 각 구간에서 Q\_c의 **시간 적분 평균**을 낸다. g = (마지막 1/3 평균 − 첫 1/3 평균) / ((2T/3) × r), r = n/T(엔진 전체; DP도 엔진 전체로 판정하고 복제본 균형은 서버 로그 기반 기술치). 셀의 송신 창 안 요청 수 < 20이면 `SATURATION_UNRESOLVED`.
+- **HI 포화**: 4 seed 모두 g ≥ 0.10이면 `HI_SATURATED`. 이 라벨은 x\_hi/λ\*의 수치 하한을 주지 않는다(MGP-26).
+- **LO 비포화**: 2 seed 모두 g ≤ 0.05이면 `LO_UNSATURATED`. 이 라벨은 x\_lo < λ\*를 보증하지 않는다(MGP-27).
+- 문턱 0.10/0.05의 출처는 rev2 델타 감사 처방 P-D3/D4다(MGP-28). 대기열 원천은 rev3의 서버 Decode 줄에서 rev4의 클라이언트 Q\_c로 바뀌었고 문턱은 유지했다.
+- 서버 로그의 `#running-req`·`#queue-req`(Decode·Prefill 줄)는 **기술치**로만 기록한다(MGP-17). 셀 자신의 마지막 요청 지연으로 drain을 보정하는 계산은 쓰지 않는다(교훈 9).
+- 하네스 변이 검사(교훈 53): (a) "서버 Decode 줄만 쓰는 추정량" 변이본이 fused prefill 우선 합성 로그(cap까지 Prefill만 → 63-step burst)에서 KILLED, (b) "표본 평균(시간 적분 아님)" 변이본이 burst 도착 합성 trace에서 KILLED, (c) "오류 요청을 Q\_c에 남김" 변이본 KILLED, (d) "running==cap 술어" 변이본 KILLED.
 - λ\*(config, arm, shape) = HI 4 seed achieved 처리율(요청 수 ÷ 첫 전송~마지막 완료)의 **중앙값**, 4값 범위 병기.
 - `KNEE_BRACKETED` ⇔ `HI_SATURATED` ∧ `LO_UNSATURATED`. 아니면 `KNEE_NOT_BRACKETED`(λ\* 기록, G 판정 제외).
-- `HARNESS_LIMITED` ⇔ 셀 중 하나라도 클라이언트 전송 지연 p99 > 5 ms 또는 셀 구간 cgroup throttled 시간 비율 > 1%.
+- `HARNESS_LIMITED` ⇔ 셀 중 하나라도 클라이언트 전송 지연 p99 > 5 ms 또는 셀 구간 cgroup **nr\_throttled 증가분 / nr\_periods 증가분 > 1%**(분모 등록, MGP-31). throttled\_usec/벽시계도 함께 기록하되 판정에는 쓰지 않는다.
 - `FRONTEND_SATURATED`(MGP-11, P-D6) ⇔ HI 셀 송신 창에서 launch\_server 주 프로세스(TokenizerManager), detokenizer, DP controller 중 하나라도 `/proc/<pid>/stat` utime+stime의 **1 s 구간 델타**가 0.90 코어 이상인 초의 비율 ≥ 20%. `ps %cpu`(수명 평균)는 쓰지 않는다(MGP-19). 이 표기가 붙은 config의 G·λ\*는 "GPU 확장성"·"PD-mux 스케일링"으로 쓰지 않는다(측정·라벨은 유지).
 - **E-time(P-D2)**: decode-busy = `decode_running_batch_size` > 0(A2 술어), 시간 가중 = 다음 non-startup 스냅샷까지의 간격(e2 규약), **분자 = `stream_index` ∉ {0, real_sm_group_num−1}**(분할 group 전체). arm별 `sm_counts`를 green readout과 대조하고, 불일치하면 그 셀만 `MIX_FAILED`(ABORT 안 함). TP는 rank 0, DP는 복제본 평균. PD-mux arm의 HI 4 seed 중앙값 E-time < 0.5이면 `PARTITION_NOT_EXERCISED`(MGP-6). `e2_realized_mix.py`의 `D44_STREAM_INDEX = 2` 하드코딩은 이 등록에 쓰지 않는다 — 새 추정 함수를 하네스에 두고 "idx == 2 문자 그대로" 변이본이 agnostic·r2 합성 telemetry에서 KILLED 됨을 회귀 테스트로 보인다.
 
@@ -167,6 +170,7 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 - M2g PASS를 "TP PD-mux 정확성 일반"으로 쓰는 것.
 - rev1 감사 caveat MGP-0…MGP-16(`VERDICT_prereg_rules_rev1_2026-10-12.md` §7) 전부 — 문자 그대로 승계. 특히 MGP-15(d44는 비조율 arm, 설계 §5-3의 N별 선택에서 이탈)와 MGP-16(x8의 G(1)은 정본 P1.7의 재검정이 아님).
 - 원시 ratio(achieved/offered)를 포화·비포화 근거로 쓰는 것(MGP-8).
+- rev3 델타 감사 caveat MGP-26…MGP-32(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md` §5) 전부 — 문자 그대로 승계. 특히 MGP-29: fused arm은 overlap ON·chunked 8192, PD-mux arm은 overlap OFF·chunked −1이므로 G(N)을 'SM 분할 효과'·'PD 분리 효과'로 귀속하지 않는다.
 - rev2 델타 감사 caveat MGP-17…MGP-25(`VERDICT_prereg_rules_rev2_delta_2026-10-12.md` §5) 전부 — 문자 그대로 승계.
 
 ## 8. 감사자가 봐야 할 자유 표면 (자기 공시)
@@ -210,4 +214,14 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 | D6 `ps %cpu` | §4-3 `/proc` 1 s 델타 |
 | MGP-17…25 | §7 승계 |
 
-g 문턱 0.10/0.05는 감사자 모형 예보(HI g 0.21–0.44, LO g ≤ 0.037)를 등록 상수로 승격한 것이 아니라, 저자의 유체 근사 g ≈ 1 − λ\*/x(HI x\_hi = 1.6 × prior에서 λ\* ≤ 1.44 × prior이면 g ≥ 0.10)와 정상 대기열 g ≈ 0에서 정했다. 반전 시험은 델타 감사 대상이다.
+~~g 문턱 0.10/0.05는 감사자 모형 예보를 등록 상수로 승격한 것이 아니라 저자의 유체 근사로 정했다~~ — **rev4 정정(MGP-28)**: g의 정의와 문턱 0.10/0.05는 rev2 델타 감사 처방 P-D3/D4를 문자 그대로 채택한 것이다. 유체 근사 g ≈ 1 − λ\*/x는 사후 정당화이며 0.05를 도출하지 않는다.
+
+## 11. rev3 → rev4 대조표
+
+| 감사 항목 | 반영 |
+|---|---|
+| D7 fused prefill 우선 → shape B Decode 줄 고갈, 확장 결정적 발화·예산 절단 | §4-3 대기열 원천을 클라이언트 Q\_c(시간 적분 평균)로, §4-2 확장 트리거 = g < 0.10만, 변이 검사 (a)–(d) 갱신, 예산은 하네스 dry-run에서 재예보 |
+| D8 NVML memory.used 1% 폴백 | §3 G5(c) 오염 검사 (가)(나), arm 간 memory.used는 기술치 |
+| MGP-28 출처 정정 | §10 문단 취소선 + 정정, §4-3 문턱 출처 명시 |
+| MGP-31 throttle 분모 | §4-3 `HARNESS_LIMITED` = nr\_throttled/nr\_periods 증가분 |
+| MGP-26, 27, 29, 30, 32 | §4-3·§7 승계 |
