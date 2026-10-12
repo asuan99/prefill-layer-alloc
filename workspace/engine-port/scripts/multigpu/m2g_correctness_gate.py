@@ -529,6 +529,10 @@ def run_g3_combo(n: int, streams: str, split, out_dir: Path, env: Optional[Mappi
                 except subprocess.TimeoutExpired:
                     _kill_group(proc, kill_grace_s)
                     rec.update(status="TIMEOUT", rc=proc.poll())
+                    # H-rec: rank workers can leave the launcher's process group; reap stragglers so the next boot's
+                    # NVML-empty check (G5(c)(가)) is not polluted by a hung stress rank.
+                    subprocess.run(["pkill", "-9", "-f", "m2g_comm_reverse_stress.py"], check=False)
+                    rec["pkill_stress"] = True
     rec["elapsed_s"] = time.monotonic() - t0
     (out_dir / "launcher.json").write_text(json.dumps(rec, indent=1, sort_keys=True, default=str) + "\n")
     row = score_g3_combo(out_dir, n, G3_REPEATS)
@@ -1264,6 +1268,14 @@ def cli_score_g3(gates: Path, n: int) -> Dict:
         combos[name] = score_g3_combo(gates / f"g3_TP{n}_{G3_DIR_TAGS[name]}", n, G3_REPEATS)
     r = score_g3(combos)
     r["tp"] = n
+    # merge: a re-score must not erase what run_g3 recorded (preflight, not_attempted)
+    try:
+        old = json.loads((gates / f"g3_TP{n}.json").read_text())
+    except (OSError, ValueError):
+        old = {}
+    for k in ("preflight", "not_attempted"):
+        if k in old and k not in r:
+            r[k] = old[k]
     _write(gates / f"g3_TP{n}.json", r)
     return r
 

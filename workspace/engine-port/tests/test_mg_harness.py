@@ -301,11 +301,19 @@ class PassTable(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / "t.json"
             self.assertEqual(P.load_pass_table(p, "x")[1], "ABORT_M2G_NOT_PASSED")                 # missing
-            raw = json.dumps({"cells": {"TP2:fused": {"included": True}}})
+            raw = json.dumps({"cells": {"TP2:fused": {"included": True}}, "g5a_unit_test": "PASS"})
             p.write_text(raw)
             sha = hashlib.sha256(raw.encode()).hexdigest()
             self.assertIsNone(P.load_pass_table(p, sha)[1])
             self.assertEqual(P.load_pass_table(p, "0" * 64)[1], "ABORT_M2G_NOT_PASSED")           # digest mismatch
+            for bad in ("NOT_TESTED", "FAIL", "TREE_MISSING", "SKIPPED_DRYRUN", None):             # R5: g5a unit test must be PASS
+                d = {"cells": {}}
+                if bad is not None:
+                    d["g5a_unit_test"] = bad
+                raw2 = json.dumps(d)
+                p.write_text(raw2)
+                self.assertEqual(P.load_pass_table(p, hashlib.sha256(raw2.encode()).hexdigest())[1], "ABORT_M2G_NOT_PASSED", bad)
+            p.write_text(raw)
             self.assertEqual(P.load_pass_table(p, "")[1], "ABORT_M2G_NOT_PASSED")                 # no registered digest
             p.write_text("{not json")
             self.assertEqual(P.load_pass_table(p, hashlib.sha256(b"{not json").hexdigest())[1], "ABORT_M2G_NOT_PASSED")
@@ -531,6 +539,65 @@ class Labels(unittest.TestCase):
         self.assertTrue(doc["estimands"]["G_sym"]["TP8"]["A"]["undefined_reasons"][0].startswith("agnostic:M2G_EXCLUDED"))
         self.assertTrue(doc["estimands"]["G_def"]["TP8"]["A"]["undefined_reasons"][0].startswith("agnostic:M2G_EXCLUDED"))
 
+    def test_r3_memory_not_tested_arm_makes_only_its_pairs_undefined(self):                  # R3
+        cells = self.build_cells()
+        flags = {"TP4": {"memory_not_tested_arms": ["d44"]}}
+        doc = L.aggregate(cells, None, flags)
+        for est in doc["estimands"].values():
+            for shape in ("A", "B"):
+                ent = est.get("TP4", {}).get(shape)
+                if ent is None:
+                    continue
+                pair_has_d44 = any("d44" in r for r in ent["undefined_reasons"])
+                if not ent["defined"]:
+                    self.assertTrue(pair_has_d44 or any("NOT_RUN" in r or "KNEE" in r or "M2G" in r for r in ent["undefined_reasons"]))
+        und = [(n, sh) for n, est in doc["estimands"].items() for sh, e in est.get("TP4", {}).items()
+               if "d44:MEMORY_NOT_TESTED" in e["undefined_reasons"]]
+        self.assertTrue(und)
+        # a pair WITHOUT d44 stays defined (pair outside arm: unaffected)
+        base = L.aggregate(self.build_cells(), None, {})
+        for n, est in doc["estimands"].items():
+            for sh, e in est.get("TP4", {}).items():
+                if "d44:MEMORY_NOT_TESTED" not in e["undefined_reasons"]:
+                    self.assertEqual(e["defined"], base["estimands"][n]["TP4"][sh]["defined"])
+
+    def test_r3_mutation_ignoring_memory_not_tested_arms_is_killed(self):
+        cells = self.build_cells()
+        flags = {"TP4": {"memory_not_tested_arms": ["d44"]}}
+        doc = L.aggregate(cells, None, flags)
+        mut = L.aggregate(cells, None, {"TP4": {"memory_not_tested_arms": []}})                # = the removed R3 branch
+        self.assertNotEqual(json.dumps(doc["estimands"], sort_keys=True), json.dumps(mut["estimands"], sort_keys=True))
+
+    def test_r4_gpu_contaminated_is_scoped_to_pairs_containing_the_boot_arm(self):           # R4
+        cells = self.build_cells()
+        flags = {"DP2": {"gpu_contaminated": True, "contam_arms": ["d44"]}}
+        doc = L.aggregate(cells, None, flags)
+        base = L.aggregate(self.build_cells(), None, {})
+        hit = clean = 0
+        for n, est in doc["estimands"].items():
+            for sh, e in est.get("DP2", {}).items():
+                if "d44:GPU_CONTAMINATED" in e["undefined_reasons"]:
+                    hit += 1
+                    self.assertFalse(e["defined"])
+                else:
+                    clean += 1
+                    self.assertFalse(any("GPU_CONTAMINATED" in r for r in e["undefined_reasons"]))
+                    self.assertEqual(e["defined"], base["estimands"][n]["DP2"][sh]["defined"])
+        self.assertTrue(hit and clean)
+        # legacy flag without contam_arms keeps the conservative whole-config reading
+        leg = L.aggregate(self.build_cells(), None, {"DP2": {"gpu_contaminated": True}})
+        self.assertIn("GPU_CONTAMINATED", leg["estimands"]["G_sym"]["DP2"]["B"]["undefined_reasons"])
+
+    def test_r4_build_config_flags_records_the_boot_arm(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "specs").mkdir()
+            (root / "specs" / "b1.json").write_text(json.dumps({"boot_id": "b1", "config": "DP2", "arm": "d44", "steps": []}))
+            (root / "boots" / "b1").mkdir(parents=True)
+            (root / "boots" / "b1" / "contam.json").write_text(json.dumps({"gpu_contaminated": True}))
+            fl = L.build_config_flags(root, [])
+            self.assertEqual(fl["DP2"]["contam_arms"], ["d44"])
+
     def test_frontend_saturated_flag_is_do_not_cite_not_undefined(self):
         cells = self.build_cells()
         for c in cells:
@@ -648,7 +715,7 @@ class DriverWithFakeRunner(unittest.TestCase):
         out = Path(td) / "out"
         env = dict(os.environ, PDMUX_MG_RUNNER=str(fake), MG_RESULTS_DIR=str(ENGINE / "results/multigpu"),
                    FAKE_RATIO=str(ratio), FAKE_AGN_BOOST=str(boost), PYTHONDONTWRITEBYTECODE="1")
-        raw = json.dumps({"cells": {}})
+        raw = json.dumps({"cells": {}, "g5a_unit_test": "PASS"})
         tbl = Path(td) / "t.json"
         tbl.write_text(raw)
         import hashlib
@@ -1002,6 +1069,7 @@ class ConfigFlagScopes(unittest.TestCase):                                      
             fl = L.build_config_flags(root, [])["DP2"]
             self.assertTrue(fl["contam_unverified"] and not fl["gpu_contaminated"])
             self.assertEqual(fl["unverified_boots"], ["c_boot1"])
+            fl = dict(fl, memory_not_tested_arms=[])        # R3: this fake boot set has no memory facts for the other arms; isolate the disclosure
             doc = L.aggregate(Labels.build_cells(self), None, {"DP2": fl})
             self.assertIn("CONTAM_UNVERIFIED", doc["estimands"]["G_sym"]["DP2"]["A"]["disclosures"])
 
@@ -1044,7 +1112,7 @@ class PlanF4F15F17(unittest.TestCase):
         import hashlib
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / "t.json"
-            raw = json.dumps({"cells": {}})
+            raw = json.dumps({"cells": {}, "g5a_unit_test": "PASS"})
             p.write_text(raw)
             sha = hashlib.sha256(raw.encode()).hexdigest()
             cs = Path(td) / "t.json.sha256"
@@ -1236,6 +1304,50 @@ class M2gJobPath(unittest.TestCase):
         self.assertTrue(table["cells"]["TP2:fused"]["included"])
         self.assertTrue((out / "gates" / "g3_logs" / "run_g3_TP4.txt").exists())
 
+    def test_r1_g3_not_pass_tp_serving_boots_are_not_attempted_and_pass_tp_runs(self):         # R1
+        table, out, order, ctx = self.run_job(FAKE_G3_BROKEN="TP4")
+        booted = [ln.split()[1] for ln in order if ln.split()[0] == "BOOT"]
+        self.assertFalse([b for b in booted if b.startswith("m2g_TP4_") or b.startswith("m2g_g4_TP4_")], booted)
+        skipped = {e["boot_id"] for e in ctx.not_attempted if e.get("reason") == "NOT_ATTEMPTED_G3_EXCLUDED"}
+        want = {b["boot_id"] for b in P.m2g_boots() if b["boot_id"].startswith(("m2g_TP4_", "m2g_g4_TP4_"))}
+        self.assertTrue(want and skipped == want, (want, skipped))
+        self.assertFalse((out / "boots" / "m2g_TP4_fused").exists())
+        for n in (2, 8):                                                                     # negative control: G3 PASS TPs run
+            self.assertIn(f"m2g_TP{n}_fused", booted)
+        self.assertIn("m2g_DP4_fused", booted)                                              # DP has no G3 dependence
+        self.assertFalse(table["cells"]["TP4:fused"]["included"])
+
+    def test_r1_mutation_without_the_skip_boots_the_excluded_tp(self):                       # R1 mutation: KILLED
+        from unittest import mock
+        with mock.patch.object(D, "g3_excluded_boot", lambda bid, ex: False):
+            table, out, order, ctx = self.run_job(FAKE_G3_BROKEN="TP4")
+        booted = [ln.split()[1] for ln in order if ln.split()[0] == "BOOT"]
+        self.assertTrue(any(b.startswith("m2g_TP4_") for b in booted))                       # the R1 test above would fail -> KILLED
+
+    def test_r1_rescore_keeps_preflight_and_not_attempted(self):                              # recommendation: merge
+        table, out, order, ctx = self.run_job()
+        g = json.loads((out / "gates" / "g3_TP2.json").read_text())
+        self.assertIn("preflight", g)
+        self.assertIn("not_attempted", g)
+        import subprocess as sp
+        sp.run([sys.executable, str(ENGINE / "scripts" / "multigpu" / "m2g_correctness_gate.py"), "score-g3", "--out",
+                str(out / "gates"), "--tp", "2"], check=True, capture_output=True)
+        g2 = json.loads((out / "gates" / "g3_TP2.json").read_text())
+        self.assertEqual(g2["preflight"], g["preflight"])
+        self.assertEqual(g2["not_attempted"], g["not_attempted"])
+
+    def test_preboot_nvml_check_is_recorded_once_before_the_first_boot(self):
+        from unittest import mock
+        import m2g_correctness_gate as G
+        calls = []
+        def fake(ids, nv=None):
+            calls.append(1)
+            return {int(g): {"memory_used_mib": 5.0, "n_procs": 0} for g in ids}
+        with mock.patch.object(G, "nvml_snapshot", fake):
+            table, out, order, ctx = self.run_job()
+        rec = json.loads((out / "gates" / "nvml_preboot.json").read_text())
+        self.assertTrue(rec["checked"] and rec["not_empty"] == [] and rec["attempts"] == 1)
+
     def test_no_interpreter_for_the_launcher_leaves_every_tp_not_tested(self):
         with tempfile.TemporaryDirectory() as td:
             ctx = D.Ctx(Path(td), False, time.time() + 8 * 3600, time.time(), "m2g")
@@ -1268,7 +1380,7 @@ class M3ExtensionDriver(unittest.TestCase):                                     
             (Path(td) / "fake.py").write_text(fake_py)
             fake.write_text(f'#!/bin/bash\nexec python3 {td}/fake.py "$@"\n')
             import hashlib
-            raw = json.dumps({"cells": {}})
+            raw = json.dumps({"cells": {}, "g5a_unit_test": "PASS"})
             tbl = Path(td) / "t.json"
             tbl.write_text(raw)
             env = dict(os.environ, PDMUX_MG_RUNNER=str(fake), MG_RESULTS_DIR=str(ENGINE / "results/multigpu"), FAKE_RATIO="1.7",

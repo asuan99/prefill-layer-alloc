@@ -64,6 +64,8 @@ MANDATORY_REG=(
   "$ENG"/benchmarks/configs/pdmux_agnostic_manual.yml "$ENG"/benchmarks/configs/pdmux_r2.yml
   "$ENG"/triage/pdmux_a100_smoke.yml                                      # G0(iii) auto-grid config + G5(a) GPU boot
   "$ENG"/tests/test_mg_harness.py "$ENG"/tests/test_m2g_gate.py "$ENG"/tests/test_mg_agnostic_manual_equiv.py "$ENG"/tests/test_mg_realized_mix.py
+  "$ENG"/scripts/bootstrap/engine_digest.py "$ENG"/scripts/bootstrap/sync_engine_tree.sh   # R2: engine-tree digest/sync tools
+  "$ENG"/tests/test_engine_digest.py "$HERE"/ENGINE_DIGEST.txt                             # R2: the sealed ENGINE_DIGEST + its test
 )
 OPTIONAL_REG=("$HERE/G5A_PASS.json")
 {
@@ -79,7 +81,7 @@ OPTIONAL_REG=("$HERE/G5A_PASS.json")
   echo "# mandatory_missing=$missing"
 } > "$OUT/REGISTRATION_SHA256.txt" 2>&1
 grep -q '^# mandatory_missing=0$' "$OUT/REGISTRATION_SHA256.txt" || fail "ABORT_REG a registered file is missing: $(grep '^MISSING' "$OUT/REGISTRATION_SHA256.txt" | head -3 | tr '\n' ' ')" 16
-[ "$(grep -c '^[0-9a-f]\{64\} ' "$OUT/REGISTRATION_SHA256.txt")" -ge 30 ] || fail "ABORT_REG fewer than 30 digests recorded" 16
+[ "$(grep -c '^[0-9a-f]\{64\} ' "$OUT/REGISTRATION_SHA256.txt")" -ge 32 ] || fail "ABORT_REG fewer than 32 digests recorded" 16
 
 # ---- ABORT_COMM_ENV (§1): JIT all-reduce must be unset; the other comm variables are RECORDED as inherited, then unset
 if [ -n "${SGLANG_USE_JIT_ALL_REDUCE:-}" ] && [ "${SGLANG_USE_JIT_ALL_REDUCE}" != 0 ]; then

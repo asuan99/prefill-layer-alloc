@@ -23,6 +23,9 @@ if [ "$DRYRUN" != 1 ]; then
   fi
   python3 "$HERE/mg_plan.py" check-pass-table "$TABLE" "$SHA" "$COMMITTED_SHA" | tee "$OUT/PASS_TABLE_CHECK.txt"
   [ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_M2G_NOT_PASSED table '$TABLE': file sha256 / env PDMUX_M2G_PASS_SHA256 ('$SHA') / committed .sha256 disagree or table missing" 15
+  # R5: belt and braces beside mg_plan.load_pass_table -- the G5(a) CPU unit test must be PASS in the table
+  python3 -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("g5a_unit_test")=="PASS" else 1)' "$TABLE" \
+    || fail "ABORT_M2G_NOT_PASSED table '$TABLE': g5a_unit_test != PASS" 15
   cp "$TABLE" "$OUT/M2G_PASS_TABLE.used.json"
 fi
 DRIVE=(python3 "$HERE/mg_drive.py" m3 --out "$OUT" --t0-epoch "$T0" --hard-cap-s "$HARD_CAP_S")

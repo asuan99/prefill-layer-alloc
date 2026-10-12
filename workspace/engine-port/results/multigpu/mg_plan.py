@@ -204,6 +204,9 @@ def load_pass_table(path, expected_sha256, committed_sha_path=None):
         assert isinstance(t.get("cells"), dict)
     except (ValueError, AssertionError):
         return None, "ABORT_M2G_NOT_PASSED"
+    # R5: the G5(a) CPU unit test (selector equivalence) must be recorded PASS in the table -- NOT_TESTED/FAIL/TREE_MISSING aborts M3.
+    if t.get("g5a_unit_test") != "PASS":
+        return None, "ABORT_M2G_NOT_PASSED"
     return t, None
 
 

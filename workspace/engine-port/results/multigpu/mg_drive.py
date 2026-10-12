@@ -319,6 +319,52 @@ def g5a_gpu_descriptive(ctx):
     return out
 
 
+def g3_excluded_tps(ctx):
+    """R1: TP{n} whose gates/g3_TP{n}.json verdict is not PASS (missing / unreadable file counts as not PASS) -- the serving
+    boots of that TP are not started (a comm hang there would burn the cap and, with no G3 evidence, cannot be admitted)."""
+    out = set()
+    for n in (2, 4, 8):
+        d = _json(ctx.out / "gates" / f"g3_TP{n}.json")
+        if not isinstance(d, dict) or d.get("verdict") != "PASS":
+            out.add(n)
+    return out
+
+
+def _tp_of_boot(boot_id):
+    m = re.match(r"^m2g_(?:g4_)?TP(\d+)(?:_|$)", boot_id)
+    return int(m.group(1)) if m else None
+
+
+def g3_excluded_boot(boot_id, excluded_tp):
+    tp = _tp_of_boot(boot_id)
+    return tp is not None and tp in excluded_tp
+
+
+def preboot_nvml_check(ctx):
+    """Once, after G3 and before the first serving boot: every GPU empty (memory.used < NVML_EMPTY_GPU_MIB, G5(c)(가)).  A hung G3
+    rank can still hold memory: reap stress stragglers and re-check for up to 60 s.  Recorded in gates/nvml_preboot.json; the
+    per-boot contamination check (mg_boot) still decides each boot -- this only makes the G3 residue visible/cleared."""
+    G = _gate()
+    rec = {"checked": True, "attempts": 0}
+    try:
+        for attempt in range(13):
+            snap = G.nvml_snapshot(list(range(8)))
+            rec["attempts"] = attempt + 1
+            rec["snapshot"] = {str(g): v for g, v in snap.items()}
+            bad = [g for g, v in snap.items() if not v["memory_used_mib"] < C.NVML_EMPTY_GPU_MIB]
+            rec["not_empty"] = bad
+            if not bad:
+                break
+            if attempt == 0:
+                subprocess.run(["pkill", "-9", "-f", "m2g_comm_reverse_stress.py"], check=False)
+            time.sleep(5)
+    except Exception as e:  # NVML unavailable etc.: the per-boot check reports CONTAM_UNVERIFIED
+        rec.update(checked=False, error=repr(e))
+    (ctx.out / "gates" / "nvml_preboot.json").write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n")
+    ctx.event(nvml_preboot=rec.get("not_empty"), checked=rec["checked"])
+    return rec
+
+
 def run_m2g(ctx):
     dummy = ctx.out / "DUMMY_PROFILE.json"
     dummy.write_text("{}\n")
@@ -334,7 +380,15 @@ def run_m2g(ctx):
         for n in (2, 4, 8):
             subprocess.run([sys.executable, gate, "score-g3", "--out", str(ctx.out / "gates"), "--tp", str(n)],
                            capture_output=True, text=True, check=False)
+    excluded_tp = g3_excluded_tps(ctx) if not ctx.dry else set()
+    if not ctx.dry:
+        preboot_nvml_check(ctx)
     for spec in P.m2g_boots(str(dummy)):
+        if g3_excluded_boot(spec["boot_id"], excluded_tp):
+            tp = _tp_of_boot(spec["boot_id"])
+            ctx.not_attempted.append({"boot_id": spec["boot_id"], "tp": tp, "reason": "NOT_ATTEMPTED_G3_EXCLUDED"})
+            ctx.event(boot=spec["boot_id"], status="NOT_ATTEMPTED_G3_EXCLUDED", tp=tp)
+            continue
         run_boot(ctx, spec)
     if not ctx.dry:
         g1_exposure(ctx)                                             # F3

@@ -734,9 +734,19 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None):
     def defined(cfg, shape, num_arm, den_arm, rnd=1):
         reasons = []
         fl = doc["configs"].get(cfg, {})
-        for flag in ("memory_mismatch", "gpu_contaminated"):
-            if fl.get(flag):
-                reasons.append(flag.upper())
+        if fl.get("memory_mismatch"):
+            reasons.append("MEMORY_MISMATCH")
+        if fl.get("gpu_contaminated"):
+            # R4: scope = the pairs that contain a contaminated boot's arm.  Flags without `contam_arms` (older layout) keep the
+            # conservative whole-config reading.
+            ca = fl.get("contam_arms")
+            if ca is None:
+                reasons.append("GPU_CONTAMINATED")
+            else:
+                reasons += [f"{a}:GPU_CONTAMINATED" for a in (num_arm, den_arm) if a in ca]
+        for arm in (num_arm, den_arm):                     # R3: a pair arm whose memory G5(c) was not tested
+            if arm in (fl.get("memory_not_tested_arms") or []):
+                reasons.append(f"{arm}:MEMORY_NOT_TESTED")
         for arm in (num_arm, den_arm):
             lab = keys.get((cfg, arm, shape, rnd))
             if lab is None:
@@ -936,12 +946,14 @@ def build_config_flags(root, cells, excluded=()):
     for bid, b in boots.items():
         bd = root / "boots" / bid
         g = groups.setdefault((b["config"], f"r{b['round']}/{b['block']}"),
-                              {"contaminated": False, "contam_boots": [], "contam_unverified": False, "unverified_boots": [],
+                              {"contaminated": False, "contam_boots": [], "contam_arms": [], "contam_unverified": False, "unverified_boots": [],
                                "arms": {}})
         cx = bd / "contam.json"
         if cx.exists() and json.loads(cx.read_text()).get("gpu_contaminated"):
             g["contaminated"] = True
             g["contam_boots"].append(bid)
+            if b["arm"] not in g["contam_arms"]:
+                g["contam_arms"].append(b["arm"])
         unv = False
         cpre = bd / "contam_pre.json"
         if cpre.exists():
@@ -969,6 +981,7 @@ def build_config_flags(root, cells, excluded=()):
         not_tested = [a for a in expected if a not in arms] if gname.endswith("/main") else []
         gf = {"memory_mismatch": mem["memory_mismatch"], "reasons": mem["reasons"],
               "memory_not_tested_arms": not_tested, "gpu_contaminated": g["contaminated"], "contam_boots": g["contam_boots"],
+              "contam_arms": sorted(g["contam_arms"]),
               "contam_unverified": g["contam_unverified"], "unverified_boots": g["unverified_boots"]}
         fl = flags.setdefault(cfg, {"by_group": {}})
         fl["by_group"][gname] = gf
@@ -977,7 +990,7 @@ def build_config_flags(root, cells, excluded=()):
         if main:
             fl.update({k: v for k, v in main.items()})
         else:
-            fl.update(memory_mismatch=False, reasons=[], memory_not_tested_arms=[], gpu_contaminated=False, contam_boots=[],
+            fl.update(memory_mismatch=False, reasons=[], memory_not_tested_arms=[], gpu_contaminated=False, contam_boots=[], contam_arms=[],
                       contam_unverified=False, unverified_boots=[])
     return flags
 
