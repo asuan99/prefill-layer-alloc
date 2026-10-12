@@ -1313,6 +1313,11 @@ def aggregate_jobs(docs, job_meta=None, _mut=None, not_joined=None):
                 t["g1_defined"] = g1_ok
                 t["jobs"] = {int(n): j for n, j in sorted(jobs_of.items())}
                 out["trends"][f"{name}|{mode}|{shape}"] = t
+    dx = sorted(J for J in C.JOBS if ((docs.get(J) or {}).get("driver") or {}).get("exception"))
+    if dx and _mut != "no_exception_disclosure":                    # rev11 D-D: every trend of a Job whose driver died by exception says so
+        for t in out["trends"].values():
+            t["disclosures"] = sorted(set(t["disclosures"]) | {"JOB_DRIVER_EXCEPTION(" + ",".join(dx) + ")"})
+    out["JOB_DRIVER_EXCEPTION"] = dx
     out["P_DP"] = p_dp_status(out["trends"], _mut=(_mut if _mut in ("same_shape_only", "raw_unconditional") else None))
     # ---- rev10 P11 (b) / H-2: a DP trend that is TREND_UNDEFINED BECAUSE OF TRUNCATED cells, with P-DP UNTESTED as the consequence, forbids
     # citing the TP direction labels even with the disclosure.  A non-truncation reason keeps the P9-c path (disclose, then cite).
@@ -1881,7 +1886,7 @@ def parse_jobs_args(kvs, _mut=None):
     return dirs, nj
 
 
-def label_job_dir(root, job=None, pass_table=None):
+def label_job_dir(root, job=None, pass_table=None, _mut=None):
     """One Job directory -> aggregate() document (+ covariates).  pass_table: path or None."""
     cells = [load_cell(d) for d in find_cells(root)]
     pt = json.loads(Path(pass_table).read_text()) if pass_table else {}
@@ -1899,6 +1904,20 @@ def label_job_dir(root, job=None, pass_table=None):
             pass
     if not isinstance(doc.get("driver"), dict):                                          # D-B: the driver died before finish() -> reconstruct (fail-closed)
         doc["driver"] = reconstruct_driver(root, job or doc.get("job") or "J2", excluded=excl_arms)
+    elif isinstance(doc.get("driver"), dict) and (doc["driver"].get("exception") or any(ev.get("status") == "DRIVER_EXCEPTION_FINISH_IN_FINALLY" for ev in _read_driver_log(root))):
+        # rev11 D-D: finish() written from `finally` after an exception is NOT a complete record -- boots the driver never reached are absent from not_attempted.
+        # Reconstruct and ADD (never replace) the RECONSTRUCTED_NO_BOOT_RECORD entries, de-duplicated by boot_id.
+        rec = reconstruct_driver(root, job or doc.get("job") or "J2", excluded=excl_arms, _mut=("no_missing_boot_cut" if _mut == "no_missing_boot_cut" else None))
+        have = {x.get("boot_id") for x in doc["driver"].get("not_attempted") or [] if x.get("boot_id")}
+        add = []
+        for x in rec["not_attempted"]:
+            if x.get("reason") == "RECONSTRUCTED_NO_BOOT_RECORD" and x.get("boot_id") not in have:
+                have.add(x["boot_id"])
+                add.append(x)
+        if _mut != "trust_finally":
+            doc["driver"]["not_attempted"] = list(doc["driver"].get("not_attempted") or []) + add
+        doc["driver"]["exception"] = True
+        doc["driver"]["exception_merged_boot_ids"] = [x["boot_id"] for x in add]
     if isinstance(doc.get("driver"), dict) and "partial_boots" not in doc["driver"]:     # M-1: older LABELS.json -> recompute from the boot records
         doc["driver"]["partial_boots"] = partial_boots_of(root)
     return doc

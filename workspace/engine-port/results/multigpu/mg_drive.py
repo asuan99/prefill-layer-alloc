@@ -249,7 +249,7 @@ def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
     return decisions
 
 
-def finish(ctx, table, decisions=None):
+def finish(ctx, table, decisions=None, exception=False):
     cells = cells_of(ctx)
     excl = P.excluded_set(table) if table else set()
     flags = ML.build_config_flags(ctx.out, cells, excl)
@@ -259,6 +259,8 @@ def finish(ctx, table, decisions=None):
     doc["driver"] = {"decisions": decisions, "not_attempted": ctx.not_attempted, "partial_boots": ML.partial_boots_of(ctx.out),
                      "truncated_cells": [c["cell_id"] for c in cells if c.get("truncated")],
                      "hard_cap_deadline_epoch": ctx.deadline, "t0_epoch": ctx.t0}
+    if exception:       # rev11 D-D: finish() ran from finally after the driver raised -> planned boots never reached are NOT in not_attempted; the join reconstructs them
+        doc["driver"]["exception"] = True
     (ctx.out / "LABELS.json").write_text(json.dumps(doc, indent=1, sort_keys=True, default=float) + "\n")
     (ctx.out / "LABELS.txt").write_text(ML.render_text(doc))
     status = {"kind": ctx.kind, "job": ctx.job, "finished_epoch": time.time(), "elapsed_s": time.time() - ctx.t0,
@@ -651,7 +653,7 @@ def main(argv=None):
         # (not_attempted / partial_boots) so the join never has to guess; a Job that dies harder (SIGKILL) is reconstructed by mg_label.reconstruct_driver.
         if dec is None:
             ctx.event(status="DRIVER_EXCEPTION_FINISH_IN_FINALLY")
-        finish(ctx, table, dec or box.get("decisions"))
+        finish(ctx, table, dec or box.get("decisions"), exception=(dec is None))
     return 0
 
 

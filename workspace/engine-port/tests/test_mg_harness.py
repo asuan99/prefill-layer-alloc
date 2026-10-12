@@ -1367,6 +1367,112 @@ class Rev11DeltaDB(unittest.TestCase):
             self.assertTrue((out / "DRIVER_STATUS.json").exists())
 
 
+class Rev11DeltaDD(unittest.TestCase):
+    """D-D: a driver record written by finish() from `finally` after an exception is NOT complete -- label_job_dir reconstructs and ADDS the
+    never-reached planned boots (RECONSTRUCTED_NO_BOOT_RECORD, de-duplicated by boot_id) and every trend of that Job discloses JOB_DRIVER_EXCEPTION(J)."""
+
+    @staticmethod
+    def job_dir(td, J, boot_missing=(), log=(), driver=None):
+        d = Path(td) / J
+        (d / "specs").mkdir(parents=True)
+        for cfg in P.config_order(J):
+            for a in C.ARMS:
+                if (cfg, a) in boot_missing:
+                    continue
+                bid = f"m3_{cfg}_{a}_boot1"
+                (d / "boots" / bid).mkdir(parents=True)
+                (d / "boots" / bid / "boot.json").write_text(json.dumps({"steps": [{"name": "x", "status": "OK"}]}))
+        (d / "DRIVER_LOG.jsonl").write_text("".join(json.dumps(e) + "\n" for e in log))
+        (d / "LABELS.json").write_text(json.dumps({"driver": driver if driver is not None else {"not_attempted": [], "partial_boots": []}}))
+        return d
+
+    def label(self, d, J, **kw):
+        from unittest import mock
+        with mock.patch.object(L, "find_cells", lambda root: []), mock.patch.object(L, "job_covariates", lambda root: {}):
+            return L.label_job_dir(d, J, None, **kw)
+
+    def scenario(self, td, mut=None, exc_marker="log"):
+        """J4: DP4 EXT_INCOMPLETE (a boot failed to start, boot.json present), TP4 done.  J8: the driver raised before DP8 boot2 (DP8 LO) and before
+        every TP8 boot; finally wrote an (apparently complete) driver record.  TP series N1=1, TP2=1.00, TP4=1.05, ..."""
+        lo = {"x_lo": {"agnostic": [1.0]}}
+        log4 = [{"config": c, "decision": {"x_lo": {}}} for c in P.config_order("J4")] + [{"boot": "m3_DP4_agnostic_boot2", "status": "NOT_ATTEMPTED_EXT_INCOMPLETE"}]
+        d4 = self.job_dir(td, "J4", log=log4, driver={"not_attempted": [
+            {"boot_id": "m3_DP4_agnostic_boot2", "config": "DP4", "arm": "agnostic", "block": "main", "reason": "NOT_ATTEMPTED_EXT_INCOMPLETE"}], "partial_boots": []})
+        log8 = [{"config": "DP8", "decision": lo}] + ([{"status": "DRIVER_EXCEPTION_FINISH_IN_FINALLY"}] if exc_marker == "log" else [])
+        drv8 = {"not_attempted": [], "partial_boots": []}
+        if exc_marker == "field":
+            drv8["exception"] = True
+        d8 = self.job_dir(td, "J8", boot_missing={("TP8", a) for a in C.ARMS}, log=log8, driver=drv8)
+        docs = L._syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:" + L._LO_REFUSED), "DP8": ("undef", "agnostic:" + L._LO_REFUSED),
+                                 "TP2": 1.0, "TP4": 1.05, "TP8": 1.10}, {2: 1.0, 4: 1.0, 8: 1.0}, series_b="same")
+        for J, d in (("J4", d4), ("J8", d8)):
+            ld = self.label(d, J, _mut=mut)
+            docs[J]["driver"] = ld["driver"]
+        return docs
+
+    def test_exception_job_is_reconstructed_and_tp_is_uncontrolled_truncation(self):
+        for marker in ("log", "field"):
+            with tempfile.TemporaryDirectory() as td:
+                docs = self.scenario(td, exc_marker=marker)
+                na8 = docs["J8"]["driver"]["not_attempted"]
+                self.assertTrue(na8 and all(x["reason"] == "RECONSTRUCTED_NO_BOOT_RECORD" for x in na8))
+                self.assertEqual(len({x["boot_id"] for x in na8}), len(na8))                      # de-duplicated
+                self.assertTrue(any(x["config"] == "DP8" and x["boot_id"].endswith("_boot2") for x in na8))
+                self.assertTrue(any(x["config"] == "TP8" for x in na8))
+                self.assertEqual(docs["J4"]["driver"]["not_attempted"][0]["reason"], "NOT_ATTEMPTED_EXT_INCOMPLETE")   # J4 (no exception): untouched
+                self.assertNotIn("exception", docs["J4"]["driver"])
+                doc = L.aggregate_jobs(docs)
+                t = doc["trends"]["G_sym|TP|A"]
+                self.assertEqual(t["label"], "TP_UNCONTROLLED_TRUNCATION", marker)
+                self.assertFalse(t["direction_citable"])
+                self.assertEqual(doc["JOB_DRIVER_EXCEPTION"], ["J8"])
+                self.assertTrue(all("JOB_DRIVER_EXCEPTION(J8)" in x["disclosures"] for x in doc["trends"].values()))
+
+    def test_mutant_trust_finally_record_is_killed(self):
+        with tempfile.TemporaryDirectory() as td:
+            docs = self.scenario(td, mut="trust_finally")
+            self.assertEqual(docs["J8"]["driver"]["not_attempted"], [])
+            t = L.aggregate_jobs(docs)["trends"]["G_sym|TP|A"]
+            self.assertNotEqual(t["label"], "TP_UNCONTROLLED_TRUNCATION")                         # finally record trusted -> the fail-open of D-D
+            self.assertTrue(t["direction_citable"])
+        with tempfile.TemporaryDirectory() as td:                                                  # mutant: no disclosure
+            docs = self.scenario(td)
+            doc = L.aggregate_jobs(docs, _mut="no_exception_disclosure")
+            self.assertFalse(any("JOB_DRIVER_EXCEPTION(J8)" in x["disclosures"] for x in doc["trends"].values()))
+
+    def test_merge_adds_only_and_dedups(self):
+        with tempfile.TemporaryDirectory() as td:
+            pre = {"boot_id": "m3_TP8_%s_boot1" % C.ARMS[0], "config": "TP8", "arm": C.ARMS[0], "block": "main", "reason": "NOT_ATTEMPTED_BUDGET"}
+            d = self.job_dir(td, "J8", boot_missing={("TP8", a) for a in C.ARMS}, log=[{"status": "DRIVER_EXCEPTION_FINISH_IN_FINALLY"}],
+                             driver={"not_attempted": [pre], "partial_boots": []})
+            doc = self.label(d, "J8")
+            na = doc["driver"]["not_attempted"]
+            self.assertEqual(na[0], pre)                                                          # existing record kept, not replaced
+            self.assertEqual(len([x for x in na if x["boot_id"] == pre["boot_id"]]), 1)           # no duplicate for the same boot_id
+            self.assertGreater(len(na), 1)
+
+    def test_normal_job_merges_nothing(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = self.job_dir(td, "J8", boot_missing={("TP8", a) for a in C.ARMS}, log=[{"config": "DP8", "decision": {"x_lo": {}}}])
+            doc = self.label(d, "J8")
+            self.assertEqual(doc["driver"]["not_attempted"], [])
+            self.assertNotIn("exception", doc["driver"])
+            docs = L._syn_docs(1.0, {"DP2": 1.0, "DP4": 1.0, "DP8": 1.0, "TP2": 1.0, "TP4": 1.05, "TP8": 1.10}, {2: 1.0, 4: 1.0, 8: 1.0}, series_b="same")
+            docs["J8"]["driver"] = doc["driver"]
+            out = L.aggregate_jobs(docs)
+            self.assertEqual(out["JOB_DRIVER_EXCEPTION"], [])
+            self.assertFalse(any("JOB_DRIVER_EXCEPTION" in d for t in out["trends"].values() for d in t["disclosures"]))
+
+    def test_driver_finish_writes_exception_marker(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "o"
+            with mock.patch.object(D, "run_m3", side_effect=RuntimeError("boom")):
+                with self.assertRaises(RuntimeError):
+                    D.main(["m3", "--job", "J2", "--out", str(out), "--dry-run", "--hard-cap-s", "100"])
+            self.assertTrue(json.loads((out / "LABELS.json").read_text())["driver"].get("exception"))
+
+
 class Rev11DeltaDC(unittest.TestCase):
     """D-C (i): NOT_ATTEMPTED_EXT_INCOMPLETE is a truncation only with a hard-cap record on the SAME config's extension boot."""
     ext = {"boot_id": "m3_DP4_agnostic_boot2", "config": "DP4", "arm": "agnostic", "block": "main", "reason": "NOT_ATTEMPTED_EXT_INCOMPLETE"}
