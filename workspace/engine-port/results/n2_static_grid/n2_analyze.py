@@ -788,6 +788,10 @@ def analyze_ea(out, reg=None, substrate=None, clk=None):
                                        if clk else None), missing_boots=missing, ledger=ledger_full)
 
 
+def _rate(x):
+    return "NA" if x is None else f"{x:.3f}"
+
+
 def render_text_ea(res):
     """§16-1 E-alpha 허용 문안 틀 filled mechanically + the §16-2 E-alpha 병기 items."""
     L = [f"# N2 Job-EA labels (mechanical; job {res['job_name']}, GPU {res['gpu_uuid']}, rule seal "
@@ -810,6 +814,10 @@ def render_text_ea(res):
                  f"{res['kappa_star_worst'].get(key, float('nan')):.2f}(EAK-3), ctx_mid(C) {ctx_c}(EAK-2), 결측 "
                  f"{ro['missing_hist']}, AON_CONTAINMENT(외삽) {ro['aon_containment_outside']}, C 정지 수 "
                  f"(>5×, >10×) {stalls}(EAK-4)]")
+        for nm, rr in (("ρ_off", ro), ("ρ_on", rn)):                    # H18-4 / N2C-89: per judgment quantity
+            L.append(f"  {nm} 외삽 짝(AON_CONTAINMENT) {rr['aon_containment_outside']}/{rr['n']}, "
+                     f"aon_containment_rate = {_rate(rr['aon_containment_rate'])}, 엄격 포함 시 라벨 "
+                     f"label_if_containment_rejects = `{rr['label_if_containment_rejects']}`(N2C-89)")
     L.append("")
     L.append(f"DS3: `{res['ds3']}` — E-α 8셀 밖의 동거 대표성은 미검증")
     L.append(f"COLOAD: `{res['coload']['label']}` ({res['coload']['k']}/{res['coload']['n']} JOINED; S3 MERGED "
@@ -818,7 +826,9 @@ def render_text_ea(res):
              f"E-α 라벨 인용 시 필수 병기(N2C-22)")
     L.append("예보: " + json.dumps(res["forecasts"], ensure_ascii=False))
     L.append("필수 병기(§16-2): N2C-1…16, DS-1·DS-3·DS-4, E2VR-6, NEG_CONTROL_EA 라벨과 짝 OFF A1·A2 idx5 비율, 셀별 K와 "
-             "κ* 상한(EAK-3), 복제별 ctx_mid(C)(EAK-2), 정지 사건 수(EAK-4), 결측 boot 목록, Job 이름과 GPU UUID.")
+             "κ* 상한(EAK-3), 복제별 ctx_mid(C)(EAK-2), 정지 사건 수(EAK-4), 결측 boot 목록, Job 이름과 GPU UUID, "
+             "N2C-87(블라인드 노출 — 동결은 개정 없음이지 정보 없음이 아니다), N2C-89(셀·판정량별 외삽 짝 "
+             "AON_CONTAINMENT 수·비율·엄격 포함 시 라벨).")
     return "\n".join(L) + "\n"
 
 

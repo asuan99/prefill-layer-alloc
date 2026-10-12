@@ -385,6 +385,46 @@ class TestWindowUnits(unittest.TestCase):
         self.assertEqual(ll, [(1001, T)])
         self.assertTrue(NW.warmup_cg_canary(ll, a, z, 10.5, 19.5)[0])
 
+    def test_warmup_ea_canary(self):                                      # §18-2-d #32 (H18-R1), pure
+        def span(seq, t, n, ext=None, end_dt=0.1):
+            out = [dict(event="prefill_span_start", span_seq=seq, n_new=n, timestamp_monotonic_s=t,
+                        extend_tokens=n * 8192 if ext is None else ext)]
+            if end_dt is not None:
+                out.append(dict(event="prefill_span_end", span_seq=seq, timestamp_monotonic_s=t + end_dt))
+            return out
+
+        def it(t, fl=True, idx=4):
+            return dict(event="decode_iteration", t_launch=t, timestamp_monotonic_s=t, prefill_in_flight=fl,
+                        stream_idx=idx)
+        base = span(1, 10.0, 1, ext=1903) + [it(10.05, fl=True)]           # the decode request's own span: not co
+        t12 = base + span(2, 11.0, 1) + span(3, 12.0, 2) + [it(11.05)]
+        ok, det = NW.warmup_ea_canary(t12, 10.0, 13.0, 44, P.IDX[44])
+        self.assertTrue(ok, det)
+        self.assertEqual((det["n_new"], det["co_spans"], det["coloc_iters_idx_d"]), ([1, 2], 2, 2))
+        t111 = base + span(2, 11.0, 1) + span(3, 11.5, 1) + span(4, 12.0, 1) + [it(11.05)]
+        self.assertTrue(NW.warmup_ea_canary(t111, 10.0, 13.0, 44, P.IDX[44])[0])           # {1,1,1} allowed
+        self.assertTrue(NW.warmup_ea_canary(t12, 11.0, 12.1, 44, P.IDX[44])[0])            # closed interval
+        for recs, why in ((base + span(2, 11.0, 3) + [it(11.05)], "composition"),            # {3}
+                          (base + span(2, 11.0, 1) + span(3, 12.0, 1) + [it(11.05)], "composition"),   # sum 2
+                          (t12 + span(4, 12.5, 1), "composition"),                                   # sum 4
+                          (base + span(2, 11.0, 1) + span(3, 12.0, 2, end_dt=None) + [it(11.05)], "without"),
+                          (base + span(2, 11.0, 1) + span(3, 12.0, 2, end_dt=5.0) + [it(11.05)], "without"),
+                          (base + span(2, 11.0, 1) + span(3, 12.0, 2, ext=16385) + [it(11.05)], "composition"),
+                          ([r for r in t12 if r["event"] != "decode_iteration"], "no decode_iteration"),
+                          ([dict(r, stream_idx=5) if r["event"] == "decode_iteration" else r for r in t12],
+                           "no decode_iteration"),
+                          ([dict(r, prefill_in_flight=False) if r["event"] == "decode_iteration" else r for r in t12],
+                           "no decode_iteration")):
+            ok, det = NW.warmup_ea_canary(recs, 10.0, 13.0, 44, P.IDX[44])
+            self.assertFalse(ok, (why, det))
+            self.assertTrue(any(why in x for x in det["problems"]), (why, det["problems"]))
+        outside = span(1, 5.0, 1) + span(2, 6.0, 2) + [it(5.05), it(6.05)]  # a valid shape OUTSIDE the warm-up
+        ok, det = NW.warmup_ea_canary(outside + base, 10.0, 13.0, 44, P.IDX[44])
+        self.assertFalse(ok)
+        self.assertEqual(det["n_new"], [])
+        self.assertFalse(NW.warmup_ea_canary(t12, 10.0, 11.9, 44, P.IDX[44])[0])           # span 3 after t1
+        self.assertFalse(NW.warmup_ea_canary(t12, 10.0, 13.0, 16, P.IDX[16])[0])           # idx(16) = 1, not 4
+
     def test_obs_client_window(self):                                     # §11-4
         mk = lambda n, dt: dict(times=[1.0 + k * dt for k in range(n)])
         c, n = NW.obs_client_window(dict(requests=[mk(200, 0.01), mk(200, 0.01)], t_cancel=None))
@@ -1037,6 +1077,15 @@ class TestRunnerEA(unittest.TestCase):                                       # J
         self.assertEqual(issues, [])
         self.assertTrue(all(cm["cell_start"][1] > w1 for cm in cells.values()))
 
+    def test_ea_canary_recorded_and_passed(self):                           # §18-2-d #32: both boots, every boot
+        for b in self.names:
+            with open(os.path.join(self.td, f"boot_{b}.json")) as fh:
+                ec = json.load(fh)["ea_canary"]
+            self.assertTrue(ec["ok"], ec)
+            self.assertIn(tuple(ec["n_new"]), ((1, 2), (1, 1, 1)))
+            self.assertGreaterEqual(ec["coloc_iters_idx_d"], 1)
+            self.assertEqual((ec["stream_idx"], ec["problems"]), (P.IDX[44], []))
+
     def test_cell_marks_and_client_record(self):                            # §4-2 steps 4-5 (E-alpha rule)
         m = marks(self.td, "r1_ON44")
         cells, *_ = J.RED.parse_marks([" ".join(x) for x in m], {})
@@ -1122,6 +1171,88 @@ class TestEAAborts(unittest.TestCase):
         self.assertEqual(st["r1_ON44-ea-b32-c2048"], ("BENCH_INVALID", "not_attempted_boot_aborted"))
         self.assertEqual(st["r1_OFF44-ea-b8-c2048"][0], "MEASURED")
         self.assertEqual(res["cells"]["44,8,2048"]["rho_off"]["pairs"]["1"]["reason"].split(" (")[0], "A_on invalid")
+
+
+class TestEACanaryRunner(unittest.TestCase):                                  # §18-2-d #32 on the CPU fake
+    CELLS = [(8, 2048)]
+
+    def setUp(self):
+        self.td = tempfile.mkdtemp(prefix="n2job_eacan_")
+
+    def tearDown(self):
+        shutil.rmtree(self.td, ignore_errors=True)
+
+    def _rec(self, b):
+        with open(os.path.join(self.td, f"boot_{b}.json")) as fh:
+            return json.load(fh)
+
+    def _aborts(self, engine_kw, why):
+        with self.assertRaises(J.JobAbort) as cm:
+            run_mini_ea(self.td, ["r1_ON44", "r1_OFF44"], self.CELLS, handles={"r1_ON44": dict(engine_kw=engine_kw)})
+        self.assertEqual((cm.exception.code, cm.exception.tag), (3, "ABORT_EA_CANARY"))
+        self.assertIn(why, cm.exception.msg)
+        self.assertFalse(os.path.exists(os.path.join(self.td, "marks_r1_OFF44.txt")))     # the Job stopped
+        self.assertNotIn("cell_start", [x[0] for x in marks(self.td, "r1_ON44")])        # before any cell
+        rec = self._rec("r1_ON44")
+        self.assertFalse(rec["ea_canary"]["ok"])
+        self.assertEqual(rec["ea_canary"]["reads"], J.EA_CANARY_POLLS)    # a failing check is re-read, then aborts
+        self.assertEqual(rec["job_abort"]["tag"], "ABORT_EA_CANARY")
+        with open(os.path.join(self.td, "JOB_LEDGER.json")) as fh:
+            self.assertEqual(json.load(fh)["job_abort"]["tag"], "ABORT_EA_CANARY")
+        return rec["ea_canary"]
+
+    def test_unpaired_co_span_aborts(self):                                  # (i) start/end pairing
+        self._aborts(dict(mode=("co_no_end",)), "without prefill_span_end")
+
+    def test_co_span_not_identified_aborts(self):                           # (i) extend_tokens == n_new x 8192
+        ec = self._aborts(dict(co_extend_delta=1), "composition")
+        self.assertEqual(ec["n_new"], [])
+
+    def test_coloc_iteration_on_another_stream_aborts(self):                 # (ii) stream_idx == idx(d)
+        self._aborts(dict(coloc_idx=5), "stream_idx == idx(44) = 4")
+
+    def test_no_prefill_in_flight_iteration_aborts(self):                    # (ii) prefill_in_flight
+        self._aborts(dict(mode=("no_inflight_flag",)), "no decode_iteration")
+
+    def test_both_compositions_pass(self):                                   # {1,1,1} and {1,2} are both allowed
+        for kw, want in ((dict(mode=("co_one_per_span",)), [1, 1, 1]), (dict(co_gather_s=0.05), [1, 2])):
+            shutil.rmtree(self.td, ignore_errors=True)
+            os.makedirs(self.td)
+            led = run_mini_ea(self.td, ["r1_OFF44"], self.CELLS, engine_kw=kw)
+            self.assertEqual((led[0]["status"], led[0]["aborted"]), ("ADMITTED", None), kw)
+            ec = self._rec("r1_OFF44")["ea_canary"]
+            self.assertTrue(ec["ok"], ec)
+            self.assertEqual(ec["n_new"], want, kw)
+            self.assertEqual(ec["reads"], 1)
+
+    def test_late_flush_is_not_an_abort(self):                                # the telemetry arrives after read 1
+        tp = os.path.join(self.td, "tel.jsonl")
+        open(tp, "x").close()
+        recs = [dict(event="prefill_span_start", span_seq=1, n_new=1, extend_tokens=8192, timestamp_monotonic_s=11.0),
+                dict(event="prefill_span_end", span_seq=1, timestamp_monotonic_s=11.1),
+                dict(event="prefill_span_start", span_seq=2, n_new=2, extend_tokens=16384, timestamp_monotonic_s=12.0),
+                dict(event="prefill_span_end", span_seq=2, timestamp_monotonic_s=12.1),
+                dict(event="decode_iteration", t_launch=11.05, timestamp_monotonic_s=11.05, prefill_in_flight=True,
+                     stream_idx=4)]
+
+        async def go():
+            async def late():
+                await asyncio.sleep(0.09)                                    # after the first read (2 x 0.02 s)
+                with open(tp, "a") as fh:
+                    fh.write("".join(json.dumps(r) + "\n" for r in recs))
+            w = asyncio.ensure_future(late())
+            out = await J.ea_canary(tp, 10.0, 13.0, 44, {}, 0.02)
+            await w
+            return out
+        ok, det = asyncio.run(go())
+        self.assertTrue(ok, det)
+        self.assertGreater(det["reads"], 1)
+        with self.assertRaises(lg.RunnerStop):                               # D5: the stop flag is honoured
+            asyncio.run(J.ea_canary(tp, 10.0, 13.0, 44, {"flag": True}, 0.02))
+
+    def test_profile_boots_have_no_ea_canary(self):                          # Job-PROFILE unchanged
+        run_mini(self.td, ["r1_OFF44"], [(1, 512)])
+        self.assertNotIn("ea_canary", self._rec("r1_OFF44"))
 
 
 class TestPostEASeal(unittest.TestCase):                                     # §7-3 산출 시점 / §18-2-d #11
@@ -1285,6 +1416,64 @@ class TestMutantRunner(unittest.TestCase):                                  # re
                       Never())
         self.assertEqual(row[2], "EQUIVALENT-SURVIVED")                     # equivalents always run the full suites
         del env
+
+    def test_targeted_timeout_is_not_a_kill(self):                          # H18-2 (b): a timeout never kills
+        R = self.R
+
+        class Always:
+            def passes(self, names):
+                return True
+        row = R.judge("M5", "toy", "kill", lambda: (False, "OK", False), ["x"], lambda nm: (True, "900 s", True),
+                      Always())
+        self.assertEqual(row[2], "SURVIVED")
+        self.assertIn("targeted timeout -> full", row[3])
+        row = R.judge("M6", "toy", "kill", lambda: (True, "900 s", True), ["x"], lambda nm: (True, "900 s", True),
+                      Always())
+        self.assertEqual(row[2], "TIMEOUT")                                 # ... nor does a full-suite timeout
+
+    def _controls(self, run, jobs, fail_tag=None):
+        """H18-2 (d): drive a ledger runner's no-mutation control phase with a fake run_unittest (records each call's
+        tree and interval); returns (calls, max concurrent calls)."""
+        import contextlib
+        import io
+        import threading
+        calls, lock = [], threading.Lock()
+
+        def fake(d, env, names, timeout=900, failfast=False):
+            t0 = time.monotonic()
+            time.sleep(0.25)
+            with lock:
+                calls.append((d, t0, time.monotonic()))
+            return (fail_tag is not None and fail_tag in d), "OK", False
+        with contextlib.redirect_stdout(io.StringIO()):
+            run(fake, jobs)
+        conc = max(sum(1 for _d, a, z in calls if a <= t < z) for _d, t, _z in calls)
+        return calls, conc
+
+    def _rule_runner(self, fake, jobs):
+        R = _runner()
+        R.run_unittest = fake
+        R.run(None, {"__no_mutant__"}, "core", jobs=jobs)
+
+    def _job_runner(self, fake, jobs):
+        R = _runner()
+        R.run_unittest = fake
+        spec = importlib.util.spec_from_file_location("_n2_job_mutants_rt", os.path.join(HERE, "n2_job_mutants.py"))
+        jm = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(jm)
+        jm._shared_runner = lambda: R
+        jm.run({"__no_mutant__"}, jobs=jobs)
+
+    def test_parallel_runs_n_concurrent_controls(self):                      # H18-2 (d): both ledgers
+        for run in (self._rule_runner, self._job_runner):
+            calls, conc = self._controls(run, 3)
+            self.assertEqual((len(calls), conc), (3, 3), run.__name__)
+            self.assertEqual(sorted(sum(f"CTRL{k}_" in d for d, _a, _z in calls) for k in range(3)), [1, 1, 1])
+            calls, conc = self._controls(run, 1)
+            self.assertEqual((len(calls), conc), (1, 1), run.__name__)
+            with self.assertRaises(SystemExit) as cm:                       # any failing control aborts the run
+                self._controls(run, 3, fail_tag="CTRL2_")
+            self.assertIn("3 concurrent controls", str(cm.exception))
 
     def test_run_rows_order_and_parallel(self):
         import threading

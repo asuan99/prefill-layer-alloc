@@ -17,6 +17,9 @@ graph: False`, P3 banners, capture-bs line), green read-out JSON, PHASE_EVENTS o
 disabled after that iteration with the R7 log line), `retract_at_iter`, `cg_false_at_iter`, `cuda_graph=False` (every Decode batch line `cuda graph: False` -- CG canary
 §18-2-d #16), greedy modes (`empty`, `diverge`, `no_ids` = text without output_ids, H17-1).
 Failure modes for the exception tests: hang, bad_coload, ignore_abort, drop_after, exit_on_drop, no_idle_snapshot.
+EA semantic canary (§18-2-d #32) defect / shape modes: co_no_end (no prefill_span_end for a co-load span),
+no_inflight_flag (decode_iteration never says prefill_in_flight), co_one_per_span ({1, 1, 1} co spans), and the
+co_extend_delta / coloc_idx / co_gather_s knobs.
 """
 from __future__ import annotations
 
@@ -59,7 +62,7 @@ class FakeEngine:
                  idle_snapshot_s=0.01, chunk_every=1, mode=None, drop_after=None, sticky_log=True,
                  co_response_delay_s=0.0, sticky=True, phase_events=True, wall=time.time, decode_log_every=40,
                  drop_iters=(), r7_at_iter=None, retract_at_iter=None, cg_false_at_iter=None, greedy_mode=None,
-                 alone_tau_s=None, cuda_graph=True):
+                 alone_tau_s=None, cuda_graph=True, co_extend_delta=0, coloc_idx=None, co_gather_s=0.0):
         self.d, self.tau_s, self.kappa = d, tau_s, kappa
         self.alone_tau_s = tau_s if alone_tau_s is None else alone_tau_s
         self.burst_span_s, self.co_span_s = burst_span_s, co_span_s
@@ -74,6 +77,10 @@ class FakeEngine:
         self.retract_at_iter, self.cg_false_at_iter = retract_at_iter, cg_false_at_iter
         self.greedy_mode = greedy_mode
         self.cuda_graph = cuda_graph            # False: EVERY Decode batch line says `cuda graph: False` (CG canary)
+        # EA semantic canary defects (§18-2-d #32): co_extend_delta added to a co span's extend_tokens (the 8192 x
+        # n_new identification breaks), coloc_idx = the stream_idx reported by in-flight decode iterations (None =
+        # idx(d)), co_gather_s = hold a co-load head until it has waited this long (packs concurrent co requests).
+        self.co_extend_delta, self.coloc_idx, self.co_gather_s = co_extend_delta, coloc_idx, co_gather_s
         self.dropped = 0
         self.waiting, self.running = [], []
         self.prefill = None
@@ -129,8 +136,9 @@ class FakeEngine:
             now = time.monotonic()
             if self.prefill is not None and now >= self.prefill[1]:
                 reqs = self.prefill[0]
-                self.emit("prefill_span_end", span_seq=self.span_seq, n_done=len(reqs), running_bs=len(self.running),
-                          queue_len=len(self.waiting), stream_idx=IDX[self.d])
+                if not ("co_no_end" in self.mode and all(r.n_in == 8192 for r in reqs)):
+                    self.emit("prefill_span_end", span_seq=self.span_seq, n_done=len(reqs),
+                              running_bs=len(self.running), queue_len=len(self.waiting), stream_idx=IDX[self.d])
                 for r in reqs:
                     if r.aborted:
                         continue
@@ -146,9 +154,12 @@ class FakeEngine:
                         r.q.put_nowait((1, False))
                         self.running.append(r)
                 self.prefill = None
-            if self.prefill is None and self.waiting:
+            hold = (self.co_gather_s > 0 and self.waiting and self.waiting[0].max_new == 1
+                    and now - self.arrivals.get(self.waiting[0].rid, now) < self.co_gather_s)
+            if self.prefill is None and self.waiting and not hold:
                 take, tok = [], 0
-                while self.waiting and (not take or tok + self.waiting[0].n_in <= 16384):
+                one = "co_one_per_span" in self.mode and self.waiting[0].n_in == 8192
+                while self.waiting and (not take or (tok + self.waiting[0].n_in <= 16384 and not one)):
                     r = self.waiting.pop(0)
                     if r.aborted:
                         continue
@@ -156,7 +167,8 @@ class FakeEngine:
                 if take:
                     self.span_seq += 1
                     pr, de = PAIR[self.d] if self.running else (108, 0)
-                    self.emit("prefill_span_start", span_seq=self.span_seq, n_new=len(take), extend_tokens=tok,
+                    co_ext = self.co_extend_delta if all(r.n_in == 8192 for r in take) else 0
+                    self.emit("prefill_span_start", span_seq=self.span_seq, n_new=len(take), extend_tokens=tok + co_ext,
                               running_bs=len(self.running), queue_len=len(self.waiting), cap=48,
                               stream_idx=IDX[self.d] if self.running else 0, prefill_sms=pr, decode_sms=de)
                     self.logline(f"Prefill batch, #new-seq: {len(take)}, #new-token: {tok}, #cached-token: 0, "
@@ -183,6 +195,10 @@ class FakeEngine:
                         r.finished = True
                         self.running.remove(r)
                 pair, idx = self._decode_pair(in_flight)
+                if in_flight and self.coloc_idx is not None:
+                    idx = self.coloc_idx
+                if "no_inflight_flag" in self.mode:
+                    in_flight = False
                 if self.iter_seq in self.drop_iters:
                     self.dropped += 1                          # async writer queue drop: no record, counter +1
                 else:

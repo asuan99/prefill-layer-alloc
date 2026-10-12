@@ -924,5 +924,155 @@ class TestEAJobLabels(unittest.TestCase):                                    # N
         self.assertEqual(f["F-N2-8"], "FALSIFIED")
 
 
+
+# ===================================================================================================== H18-1 / H18-4
+A_ON_AT = {2100.0: 10.125, 2200.0: 10.25, 2300.0: 10.375}       # the default ea_rep A1 / A2 line at these ctx
+
+
+def ea_fc_rep(kind, rnd, key, ln=math.log(1.05), pe=1.0, st=None, half_gap=0.0):
+    """One E-alpha replicate for the forecast tests: C at ctx 2200 with ln rho = `ln` against the ON line, desc with
+    pe_coloc_iter = `pe` and front / back halves (ctx 2100 / 2300) whose ln rho differ by `half_gap`."""
+    d, b, c = key
+    r = ea_rep(kind, rnd, cmed=A_ON_AT[2200.0] * math.exp(ln), st=st, d=d, b=b, c=c)
+    r["desc"] = dict(pe_coloc_iter=pe,
+                     front=dict(n=64, ctx_mid=2100.0, s_per_median=A_ON_AT[2100.0] * 1.05),
+                     back=dict(n=64, ctx_mid=2300.0, s_per_median=A_ON_AT[2300.0] * 1.05 * math.exp(half_gap)))
+    return r
+
+
+def ea_fc_job(over=None):
+    """All 8 E-alpha cells x rounds 1-4 x {ON, OFF}; over[(key, kind, rnd)] = ea_fc_rep kwargs (None = replicate
+    absent)."""
+    over = over or {}
+    reps = []
+    for key in A.EA_CELL_KEYS:
+        for rnd in (1, 2, 3, 4):
+            for kind in ("ON", "OFF"):
+                kw = over.get((key, kind, rnd), {})
+                if kw is not None:
+                    reps.append(ea_fc_rep(kind, rnd, key, **kw))
+    return reps
+
+
+COL_HELD = dict(label="COLOAD_NOT_JOINED", s3_merged=3, s3_b=1, s3_total=4)
+
+
+def fc(reps):
+    cells = A.ea_cells(reps)
+    led = dict(ledger=[dict(unit=u["name"], status="ADMITTED") for u in UNITS_EA], stopped=None, job_abort=None)
+    return A.forecasts_ea(cells, reps, COL_HELD, led, 16), cells
+
+
+class TestEAForecasts(unittest.TestCase):                                    # H18-1: §18-2-d #26, every branch
+    K = A.EA_CELL_KEYS
+
+    def test_clean_job_all_held(self):
+        f, _ = fc(ea_fc_job())
+        self.assertEqual({k: f[k] for k in ("F-N2-1", "F-N2-2", "F-N2-3", "F-N2-9")},
+                         {"F-N2-1": "HELD", "F-N2-2": "HELD", "F-N2-3": "HELD", "F-N2-9": "HELD"})
+
+    def test_f1_branches(self):                                             # OFF MEASURED pe_coloc_iter, any < 0.99
+        k0, k1 = self.K[0], self.K[1]
+        self.assertEqual(fc(ea_fc_job({(k0, "OFF", 2): dict(pe=0.99)}))[0]["F-N2-1"], "HELD")      # boundary: 0.99 ok
+        self.assertEqual(fc(ea_fc_job({(k0, "OFF", 2): dict(pe=0.989)}))[0]["F-N2-1"], "FALSIFIED")
+        self.assertEqual(fc(ea_fc_job({(k0, "ON", r): dict(pe=0.5) for r in (1, 2, 3, 4)}))[0]["F-N2-1"],
+                         "HELD")                                            # ON replicates are not the population
+        miss = {(k1, "OFF", r): dict(pe=None) for r in (1, 2, 3, 4)}        # a cell without any value
+        self.assertEqual(fc(ea_fc_job(miss))[0]["F-N2-1"], "UNRESOLVED")
+        self.assertEqual(fc(ea_fc_job({**miss, (k0, "OFF", 1): dict(pe=0.5)}))[0]["F-N2-1"], "FALSIFIED")
+        notmeas = ea_fc_job()                                               # a non-MEASURED OFF replicate's value
+        for r in notmeas:                                                    # never enters
+            if r["cell_key"] == "%d,%d,%d" % k0 and r["boot_kind"] == "OFF" and r["round"] == 3:
+                r.update(status="RETRACT", desc=dict(r["desc"], pe_coloc_iter=0.1))
+        self.assertEqual(fc(notmeas)[0]["F-N2-1"], "HELD")
+
+    def test_f2_branches(self):                                             # both-valid rounds only, ln 1.03
+        k0, k1 = self.K[0], self.K[1]
+        lo, hi = math.log(1.05), math.log(1.05) + math.log(1.03)
+        self.assertEqual(fc(ea_fc_job({(k0, "OFF", 2): dict(ln=hi + 1e-6)}))[0]["F-N2-2"], "FALSIFIED")
+        self.assertEqual(fc(ea_fc_job({(k0, "OFF", 2): dict(ln=hi - 1e-6)}))[0]["F-N2-2"], "HELD")
+        self.assertGreater(hi - 1e-6, lo)
+        # a round whose rho_on is invalid (ON C not VALID) does not enter -- even with a huge rho_off
+        one = {(k0, "ON", 2): dict(st=dict(C="WINDOW_SHORT")), (k0, "OFF", 2): dict(ln=5.0)}
+        f, cells = fc(ea_fc_job(one))
+        self.assertTrue(cells["%d,%d,%d" % k0]["rho_off"]["pairs"]["2"]["valid"])
+        self.assertFalse(cells["%d,%d,%d" % k0]["rho_on"]["pairs"]["2"]["valid"])
+        self.assertEqual(f["F-N2-2"], "HELD")
+        # a cell with no both-valid round -> UNRESOLVED (rho_off valid everywhere, rho_on nowhere)
+        none = {(k1, "ON", r): dict(st=dict(C="CO_WINDOW_SHORT")) for r in (1, 2, 3, 4)}
+        self.assertEqual(fc(ea_fc_job(none))[0]["F-N2-2"], "UNRESOLVED")
+        self.assertEqual(fc(ea_fc_job({**none, (k0, "OFF", 1): dict(ln=1.0)}))[0]["F-N2-2"], "FALSIFIED")
+
+    def _f3(self, h, u):
+        """h cells with rho_on n = 4 and 4/4 > 0; u cells with n < 4 (3 positive rounds); the rest n = 4 with one
+        round <= 0."""
+        over = {}
+        for i, key in enumerate(self.K):
+            if i < h:
+                continue
+            if i < h + u:
+                over[(key, "ON", 4)] = dict(st=dict(C="WINDOW_SHORT"))
+            else:
+                over[(key, "ON", 4)] = dict(ln=-0.01)
+        return fc(ea_fc_job(over))[0]["F-N2-3"]
+
+    def test_f3_boundaries(self):                                           # h >= 6 / h + u < 6 / else
+        self.assertEqual(self._f3(8, 0), "HELD")
+        self.assertEqual(self._f3(6, 0), "HELD")
+        self.assertEqual(self._f3(6, 2), "HELD")
+        self.assertEqual(self._f3(5, 1), "UNRESOLVED")
+        self.assertEqual(self._f3(5, 0), "FALSIFIED")
+        self.assertEqual(self._f3(4, 2), "UNRESOLVED")
+        self.assertEqual(self._f3(4, 1), "FALSIFIED")
+        self.assertEqual(self._f3(0, 0), "FALSIFIED")
+        zero = {(key, "ON", 1): dict(ln=0.0) for key in self.K[:3]}         # ln rho_on = 0 is not > 0
+        self.assertEqual(fc(ea_fc_job(zero))[0]["F-N2-3"], "FALSIFIED")
+
+    def test_f9_branches(self):                                             # every valid pair with both halves
+        k0 = self.K[0]
+        self.assertEqual(fc(ea_fc_job({(k0, "OFF", 3): dict(half_gap=math.log(1.03) + 1e-6)}))[0]["F-N2-9"],
+                         "FALSIFIED")
+        self.assertEqual(fc(ea_fc_job({(k0, "OFF", 3): dict(half_gap=math.log(1.03) - 1e-6)}))[0]["F-N2-9"], "HELD")
+        self.assertEqual(fc(ea_fc_job({(k0, "ON", 3): dict(half_gap=-(math.log(1.03) + 1e-6))}))[0]["F-N2-9"],
+                         "FALSIFIED")                                       # rho_on halves count too (|.|)
+        bad = ea_fc_job({(k0, "OFF", 3): dict(half_gap=1.0, st=dict(C="WINDOW_SHORT"))})
+        self.assertEqual(fc(bad)[0]["F-N2-9"], "HELD")                      # an invalid pair's halves never enter
+        nohalf = ea_fc_job()
+        for r in nohalf:
+            r["desc"].pop("back")
+        self.assertEqual(fc(nohalf)[0]["F-N2-9"], "UNRESOLVED")
+
+
+class TestEALabelText(unittest.TestCase):                                     # H18-4: N2C-89 per judgment quantity
+    def test_containment_rate_and_strict_label_per_rho(self):
+        k0 = A.EA_CELL_KEYS[0]
+        key = "%d,%d,%d" % k0
+        reps = ea_fc_job()
+        for r in reps:                                                       # OFF round 1 C outside [A1, A2]
+            if r["cell_key"] == key and r["boot_kind"] == "OFF" and r["round"] == 1:
+                r["values"]["C"]["ctx_mid"] = 2440.0
+        cells = A.ea_cells(reps)
+        ro, rn = cells[key]["rho_off"], cells[key]["rho_on"]
+        self.assertEqual((ro["aon_containment_rate"], ro["label_if_containment_rejects"]), (0.25, "UNRESOLVED_N_BELOW_4"))
+        self.assertEqual((rn["aon_containment_rate"], rn["label_if_containment_rejects"]), (0.0, "COLOC_SLOWER_GE3"))
+        res = dict(job_name="t", gpu_uuid="G", rule_seal_digest="0" * 64, cells=cells, replicates=[], K=REG["K"],
+                   kappa_star_worst={}, ds3="DS3_UNRESOLVED", coload=dict(label="COLOAD_NOT_JOINED", k=0, n=1,
+                                                                          s3_merged=0, s3_total=0),
+                   neg_control_ea=dict(label="NEG_CONTROL_EA_HELD", n=1, min_pe_idx5=1.0), forecasts={})
+        txt = A.render_text_ea(res)
+        block = txt.split(f"E-α 셀 ({k0[0]}, {k0[1]}, {k0[2]})")[1].split("E-α 셀 (")[0]
+        self.assertIn("ρ_off 외삽 짝(AON_CONTAINMENT) 1/4, aon_containment_rate = 0.250, 엄격 포함 시 라벨 "
+                      "label_if_containment_rejects = `UNRESOLVED_N_BELOW_4`", block)
+        self.assertIn("ρ_on 외삽 짝(AON_CONTAINMENT) 0/4, aon_containment_rate = 0.000, 엄격 포함 시 라벨 "
+                      "label_if_containment_rejects = `COLOC_SLOWER_GE3`", block)
+        req = [ln for ln in txt.splitlines() if ln.startswith("필수 병기(§16-2)")]
+        self.assertEqual(len(req), 1)
+        self.assertIn("N2C-87", req[0])
+        self.assertIn("N2C-89", req[0])
+        empty = A.ea_cells([])[key]["rho_off"]                              # no valid pair: rate NA, not 0
+        self.assertIsNone(empty["aon_containment_rate"])
+        self.assertIn("aon_containment_rate = NA", A.render_text_ea(dict(res, cells=A.ea_cells([]))))
+
+
 if __name__ == "__main__":
     unittest.main()

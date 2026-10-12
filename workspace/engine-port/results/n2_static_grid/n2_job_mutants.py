@@ -15,6 +15,11 @@ scripts symlinked read-only to the real tree; the mutation is applied to the cop
 CONTROL-FAILED row aborts the run (lesson 254); 900 s per mutant (TIMEOUT row, never a kill).
 Suites: mutants of n2_marks.py / n2_loadgen.py run test_n2_harness + test_n2_job; all others run test_n2_job +
 n2_reach_tests.
+H18 repair (2026-10-12): JH142-JH157 forecasts F-N2-1/2/3/9 (H18-1), JH158-JH162 EA labels text (H18-4), JH163-JH173
+EA semantic canary §18-2-d #32 (H18-R1), JH174-JH182 runner machinery (H18-2: copies of n2_mutants.py /
+n2_job_mutants.py in the mutant tree, read by test_n2_job.TestMutantRunner; never targeted -- full suites), JH183 =
+re-seal null control ('equivalent'), JH184 EA canary stop flag (D5). Mutants of the rule-sealed n2_mutants.py re-seal the mutant tree (_reseal) so the
+seal-constant tests cannot be the killer (lesson 9).
 """
 import os
 import shutil
@@ -26,6 +31,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ENG = os.path.abspath(os.path.join(HERE, "..", ".."))
 PL, JB, SH, WN, AN, MX, MK, LG = ("n2_plan.py", "n2_job.py", "n2_capacity.sh", "n2_window.py", "n2_analyze.py",
                                   "n2_realized_mix.py", "n2_marks.py", "n2_loadgen.py")
+RM, JM, FK = "n2_mutants.py", "n2_job_mutants.py", "fake_n2_engine.py"   # H18-2: runner machinery copies in the tree
+RESEAL_FILES = (RM,)          # rule-sealed files a JH mutant may touch (the mutant tree is re-sealed, see _reseal)
 SUITES_ALL = ("test_n2_harness", "test_n2_job", "n2_reach_tests")
 
 JOB_MUTANTS = [
@@ -385,6 +392,118 @@ JOB_MUTANTS = [
        'python3 "$PLAN" --budget PROFILE > "$OUT/BUDGET_TABLE.json"')]),
     ("JH141", "entry script: analysis always as Job-PROFILE", "kill",
      [(SH, 'python3 "$HERE/n2_analyze.py" --job "$JOB" --out-dir', 'python3 "$HERE/n2_analyze.py" --out-dir')]),
+    # ---- H18-1: Job-EA forecasts F-N2-1 / 2 / 3 / 9, every branch (§18-2-d #26; rev18 audit H18-1)
+    ("JH142", "F-N2-1: pe_coloc_iter == 0.99 falsifies (< became <=)", "kill",
+     [(AN, "any(x < PE_MIN for x in vals)", "any(x <= PE_MIN for x in vals)")]),
+    ("JH143", "F-N2-1: a cell without any OFF value no longer UNRESOLVED", "kill",
+     [(AN, 'f["F-N2-1"] = "FALSIFIED" if any(x < PE_MIN for x in vals) else ("UNRESOLVED" if miss else "HELD")',
+       'f["F-N2-1"] = "FALSIFIED" if any(x < PE_MIN for x in vals) else "HELD"')]),
+    ("JH144", "F-N2-1: ON replicates enter the population", "kill",
+     [(AN, 'r["cell_key"] == key and r["boot_kind"] == "OFF"', 'r["cell_key"] == key')]),
+    ("JH145", "F-N2-1: non-MEASURED OFF replicates enter the population", "kill",
+     [(AN, 'and r.get("status") == "MEASURED" and r["desc"].get("pe_coloc_iter") is not None]',
+       'and r["desc"].get("pe_coloc_iter") is not None]')]),
+    ("JH146", "F-N2-2: 'both rho valid' round condition deleted", "kill",
+     [(AN, 'both = [r for r in ("1", "2", "3", "4") if cr["rho_off"]["pairs"][r]["valid"] and cr["rho_on"]["pairs"][r]["valid"]]',
+       'both = [r for r in ("1", "2", "3", "4")]')]),
+    ("JH147", "F-N2-2: rounds with only rho_off valid enter (missing rho_on read as ln 0)", "kill",
+     [(AN, 'both = [r for r in ("1", "2", "3", "4") if cr["rho_off"]["pairs"][r]["valid"] and cr["rho_on"]["pairs"][r]["valid"]]',
+       'both = [r for r in ("1", "2", "3", "4") if cr["rho_off"]["pairs"][r]["valid"]]'),
+      (AN, '- cr["rho_on"]["pairs"][r]["ln_rho"]) >= LN3)', '- cr["rho_on"]["pairs"][r].get("ln_rho", 0.0)) >= LN3)')]),
+    ("JH148", "F-N2-2: a cell without a both-valid round no longer UNRESOLVED", "kill",
+     [(AN, 'f["F-N2-2"] = "FALSIFIED" if bad else ("UNRESOLVED" if miss else "HELD")',
+       'f["F-N2-2"] = "FALSIFIED" if bad else "HELD"')]),
+    ("JH149", "F-N2-2: threshold 2 x ln 1.03", "kill",
+     [(AN, '- cr["rho_on"]["pairs"][r]["ln_rho"]) >= LN3)', '- cr["rho_on"]["pairs"][r]["ln_rho"]) >= 2 * LN3)')]),
+    ("JH150", "F-N2-3: HELD at h >= 5", "kill",
+     [(AN, 'f["F-N2-3"] = "HELD" if held >= 6 else', 'f["F-N2-3"] = "HELD" if held >= 5 else')]),
+    ("JH151", "F-N2-3: the n < 4 cells (u) not counted (h < 6 -> FALSIFIED)", "kill",
+     [(AN, '("FALSIFIED" if held + short < 6 else "UNRESOLVED")', '("FALSIFIED" if held < 6 else "UNRESOLVED")')]),
+    ("JH152", "F-N2-3: rho_on n = 4 not required for h", "kill",
+     [(AN, 'if cr["rho_on"]["n"] == MIN_N and all(x > 0 for x in cr["rho_on"]["ln_rho"]))',
+       'if all(x > 0 for x in cr["rho_on"]["ln_rho"]))')]),
+    ("JH153", "F-N2-3: ln rho_on = 0 counted as > 0", "kill",
+     [(AN, 'all(x > 0 for x in cr["rho_on"]["ln_rho"]))', 'all(x >= 0 for x in cr["rho_on"]["ln_rho"]))')]),
+    ("JH154", "F-N2-9: threshold 2 x ln 1.03", "kill",
+     [(AN, '("FALSIFIED" if any(x >= LN3 for x in diffs) else "HELD")',
+       '("FALSIFIED" if any(x >= 2 * LN3 for x in diffs) else "HELD")')]),
+    ("JH155", "F-N2-9: rho_on halves ignored", "kill",
+     [(AN, '        for which in ("rho_off", "rho_on"):\n            for h in cr[which]["halves"].values():',
+       '        for which in ("rho_off",):\n            for h in cr[which]["halves"].values():')]),
+    ("JH156", "F-N2-9 / #25: halves computed for INVALID rho pairs", "kill",
+     [(AN, '                if pairs[r]["valid"]:\n                    halves[r] = _half_rhos(on, num)',
+       '                if on is not None and num is not None and a_on_valid(on):\n'
+       '                    halves[r] = _half_rhos(on, num)')]),
+    ("JH157", "F-N2-9: no pair with both halves -> HELD", "kill",
+     [(AN, 'f["F-N2-9"] = "UNRESOLVED" if not diffs else', 'f["F-N2-9"] = "HELD" if not diffs else')]),
+    # ---- H18-4: render_text_ea per-rho containment rate / strict label + N2C-87 / N2C-89 (N2C-89)
+    ("JH158", "EA labels text: per-rho AON_CONTAINMENT lines dropped", "kill",
+     [(AN, '        for nm, rr in (("ρ_off", ro), ("ρ_on", rn)):', '        for nm, rr in ():')]),
+    ("JH159", "EA labels text: the rho_on line prints the rho_off values", "kill",
+     [(AN, '        for nm, rr in (("ρ_off", ro), ("ρ_on", rn)):', '        for nm, rr in (("ρ_off", ro), ("ρ_on", ro)):')]),
+    ("JH160", "EA labels text: N2C-87 missing from the required line", "kill",
+     [(AN, '"N2C-87(블라인드 노출', '"(블라인드 노출')]),
+    ("JH161", "EA labels text: N2C-89 missing from the required line", "kill",
+     [(AN, 'N2C-89(셀·판정량별 외삽 짝', '(셀·판정량별 외삽 짝')]),
+    ("JH162", "EA labels text: no valid pair printed as rate 0", "kill",
+     [(AN, '    return "NA" if x is None else f"{x:.3f}"', '    return "0.000" if x is None else f"{x:.3f}"')]),
+    # ---- H18-R1: EA semantic canary (§18-2-d #32, ABORT_EA_CANARY exit 3)
+    ("JH163", "EA canary not run", "kill",
+     [(JB, '                if unit.get("job") == "EA":                                # §18-2-d #32 EA semantic canary',
+       '                if False:                                # §18-2-d #32 EA semantic canary')]),
+    ("JH164", "EA canary failure recorded but not a Job abort", "kill",
+     [(JB, '                    if not ok_ea:\n', '                    if False:\n')]),
+    ("JH165", "EA canary: a failing read is not re-read (late flush = abort)", "kill",
+     [(JB, "    for k in range(EA_CANARY_POLLS):", "    for k in range(1):")]),
+    ("JH184", "EA canary: the stop flag is not checked (D5)", "kill",
+     [(JB, '            raise lg.RunnerStop("stop requested before the EA canary")',
+       '            pass')]),
+    ("JH166", "EA canary: a passing read does not end the wait", "kill",
+     [(JB, "        if ok:\n            break\n    return ok, dict(det, reads=k + 1)",
+       "        pass\n    return ok, dict(det, reads=k + 1)")]),
+    ("JH167", "EA canary (i): co span start/end pairing not required", "kill",
+     [(WN, '    if unpaired:\n        problems.append(f"co span(s) without prefill_span_end in the warm-up',
+       '    if False:\n        problems.append(f"co span(s) without prefill_span_end in the warm-up')]),
+    ("JH168", "EA canary (i): any composition with sum 3 accepted ({3} included)", "kill",
+     [(WN, "    if comp not in EA_CANARY_COMPOSITIONS:", "    if sum(comp) != 3:")]),
+    ("JH169", "EA canary (i): any non-empty composition accepted (sum not checked)", "kill",
+     [(WN, "    if comp not in EA_CANARY_COMPOSITIONS:", "    if not comp:")]),
+    ("JH170", "EA canary (i): co span identified without extend_tokens == n_new x 8192", "kill",
+     [(WN, '    co = [s for s in starts if s.get("n_new", 0) >= 1 and s.get("extend_tokens") == s["n_new"] * CO_INPUT]',
+       '    co = [s for s in starts if s.get("n_new", 0) >= 1]')]),
+    ("JH171", "EA canary (ii): stream_idx == idx(d) not checked", "kill",
+     [(WN, '                and e.get("stream_idx") == idx)', '                )')]),
+    ("JH172", "EA canary (ii): prefill_in_flight not checked", "kill",
+     [(WN, 'e.get("event") == "decode_iteration" and e.get("prefill_in_flight")\n                and e.get("stream_idx") == idx)',
+       'e.get("event") == "decode_iteration"\n                and e.get("stream_idx") == idx)')]),
+    ("JH173", "EA canary reads the whole boot telemetry, not [warmup_start, warmup_end]", "kill",
+     [(WN, "    sl = cell_slice(records, t0, t1)\n    starts =", "    sl = list(records)\n    starts =")]),
+    # ---- H18-2: the shared mutant-runner machinery (copies in the tree; the toy tests of test_n2_job read them --
+    # mutants of the rule-sealed n2_mutants.py re-seal the mutant tree, so a seal-constant test is never the killer)
+    ("JH174", "runner: targeted kill without the no-mutation selection control (controls.passes deleted)", "kill",
+     [(RM, "            if controls.passes(targets):", "            if True:")]),
+    ("JH175", "runner: a targeted TIMEOUT counts as a kill", "kill",
+     [(RM, "        if failed and not to:", "        if failed:")]),
+    ("JH176", "runner: a targeted survivor is not re-judged on the full suites", "kill",
+     [(RM, '            phase = f"[targeted {len(targets)} survived -> full] "',
+       '            return (mid, desc, "SURVIVED", "[targeted survived]")')]),
+    ("JH177", "rule ledger: --jobs N > 1 runs ONE no-mutation control", "kill",
+     [(RM, "    rows = run_rows([(k, control(k)) for k in range(jobs)], jobs, emit)",
+       "    rows = run_rows([(k, control(k)) for k in range(1)], jobs, emit)")]),
+    ("JH178", "rule ledger: the N controls run one after another (not concurrently)", "kill",
+     [(RM, "    rows = run_rows([(k, control(k)) for k in range(jobs)], jobs, emit)",
+       "    rows = run_rows([(k, control(k)) for k in range(jobs)], 1, emit)")]),
+    ("JH179", "rule ledger: only the first of the N controls is checked", "kill",
+     [(RM, '    if any(r[2] != "CONTROL-OK" for r in rows):', '    if rows[0][2] != "CONTROL-OK":')]),
+    ("JH180", "JH ledger: --jobs N > 1 runs ONE no-mutation control", "kill",
+     [(JM, "for k in range(jobs)], jobs, emit)\n    if any(", "for k in range(1)], jobs, emit)\n    if any(")]),
+    ("JH181", "JH ledger: the N controls run one after another (not concurrently)", "kill",
+     [(JM, "for k in range(jobs)], jobs, emit)\n    if any(", "for k in range(jobs)], 1, emit)\n    if any(")]),
+    ("JH182", "JH ledger: only the first of the N controls is checked", "kill",
+     [(JM, '    if any(r[2] != "CONTROL-OK" for r in rows):\n        raise SystemExit("CONTROL-FAILED: the unmutated suites',
+       '    if rows[0][2] != "CONTROL-OK":\n        raise SystemExit("CONTROL-FAILED: the unmutated suites')]),
+    ("JH183", "re-seal null control: a comment-only change of n2_mutants.py (the re-seal itself kills nothing)",
+     "equivalent", [(RM, '\nif __name__ == "__main__":\n', '\n# JH183 null change\nif __name__ == "__main__":\n')]),
 ]
 
 def _tree(tmp, files):
@@ -411,6 +530,38 @@ def _sources():
             with open(p) as fh:
                 out[fn] = fh.read()
     return out
+
+
+def _reseal(src, files):
+    """H18-2: a mutant of a rule-sealed file (RESEAL_FILES) would be killed by the seal-constant tests alone
+    (test_n2_job.TestRegSource, the ABORT_REG_SOURCE step of n2_capacity.sh) -- an identity kill (lesson 9). So the
+    mutant tree is re-sealed: the file's sha256 in n2_plan.RULE_FILES and in REGISTRATION_SHA256.txt, and the rule
+    listing digest (n2_plan.RULE_SEAL_DIGEST, the REGISTRATION RULE SEAL DIGEST / rule_seal_digest lines) are
+    replaced by the values of the mutated bytes. Works only when the source tree's constants equal its bytes (after
+    the rule-seal commit); otherwise returns the problem (the row is BROKEN-MUTANT -- the control fails there anyway).
+    The null-change mutant JH183 ('equivalent') shows the re-seal itself kills nothing."""
+    import hashlib
+    import re
+
+    def sha(t):
+        return hashlib.sha256(t.encode()).hexdigest()
+    m = re.search(r"^RULE_FILES = \((.*?)^\)", src[PL], re.M | re.S)
+    if not m:
+        return "re-seal: RULE_FILES block not found in n2_plan.py"
+    order = re.findall(r'^\s*\("([^"]+)",', m.group(1), re.M)
+
+    def digest(fs):
+        return sha("".join(f"{sha(fs[fn])}  {fn}\n" for fn in order))
+    old_d, new_d = digest(src), digest(files)
+    pairs = [(sha(src[fn]), sha(files[fn])) for fn in RESEAL_FILES if files[fn] != src[fn]] + [(old_d, new_d)]
+    for old, new in pairs:
+        if files[PL].count(old) != 1:
+            return f"re-seal: {old[:12]}… occurs {files[PL].count(old)} times in n2_plan.py (constants != bytes?)"
+        if old not in files["REGISTRATION_SHA256.txt"]:
+            return f"re-seal: {old[:12]}… not in REGISTRATION_SHA256.txt"
+        files[PL] = files[PL].replace(old, new)
+        files["REGISTRATION_SHA256.txt"] = files["REGISTRATION_SHA256.txt"].replace(old, new)
+    return None
 
 
 def _shared_runner():
@@ -476,11 +627,17 @@ def run(selected=None, jobs=1, targeted=True):
                 if files[fn].count(old) != 1:
                     return (mid, desc, "BROKEN-MUTANT", f"anchor count {files[fn].count(old)} in {fn}")
                 files[fn] = files[fn].replace(old, new)
+            if any(fn in RESEAL_FILES for fn, _o, _n in reps):
+                why = _reseal(src, files)
+                if why:
+                    return (mid, desc, "BROKEN-MUTANT", why)
             suites = (("test_n2_harness", "test_n2_job") if any(fn in (MK, LG) for fn, _o, _n in reps)
                       else ("test_n2_job", "n2_reach_tests"))
-            sel = (R.targeted_tests({k: v for k, v in py.items() if not k.startswith("test_") and k != "n2_reach_tests.py"
-                                     and not k.endswith("mutants.py")},
-                                    {f"{t}.py": src[f"{t}.py"] for t in suites}, reps) if targeted else [])
+            idx = {k: v for k, v in py.items() if not k.startswith("test_") and k != "n2_reach_tests.py"
+                   and not k.endswith("mutants.py")}
+            # mutants of the runner machinery (*mutants.py, H18-2) are not in the targeted index: full suites only
+            sel = (R.targeted_tests(idx, {f"{t}.py": src[f"{t}.py"] for t in suites}, reps)
+                   if targeted and all(fn in idx for fn, _o, _n in reps) else [])
             tmp, d = mk(files, mid)
             try:
                 return R.judge(mid, desc, expect, lambda: full(d, suites), sel,

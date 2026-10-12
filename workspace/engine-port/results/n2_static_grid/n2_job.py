@@ -25,6 +25,10 @@ cell abort ends its boot (boot_abort with the cell's reason; the boot's remainin
 not_attempted_boot_aborted); after a VALUE_INDEPENDENT boot death AND after a VALUE_DEPENDENT abort the next boot runs.
 Only the hard cap (watchdog / deadline -> runner_stop), the admission refusal and the ABORT_* family (seals, §11-1
 wiring, P3, CG_BS, CG canary §18-2-d #16, correctness) stop the Job.
+EA semantic canary (§18-2-d #32, rev18 H18-R1, user decision 2026-10-12; Job-EA boots only): after the CG canary, the
+boot's telemetry inside [warmup_start, warmup_end] must hold paired co spans (extend_tokens == n_new x 8192) with
+sorted n_new (1, 2) or (1, 1, 1) and >= 1 decode_iteration with prefill_in_flight and stream_idx == idx(d); otherwise
+Job abort ABORT_EA_CANARY (exit 3). Cost protection only -- the per-cell §7-2 (c) / §9-1 rules are unchanged.
 CG canary (§18-2-d #16, rev17 H17-3): after the warm-up, the server-log `Decode batch` lines inside the warm-up seconds
 (warmup_start..warmup_end marks, mapped to wall seconds with the runner's wall pairs and the boot's tz_gmtoff_s) must
 be >= 1 and ALL `cuda graph: True`; otherwise Job abort ABORT_CG_CANARY (exit 3). Cost protection only -- the analysis
@@ -247,6 +251,32 @@ def ea_payload_problems(units_):
     return bad
 
 
+EA_CANARY_POLLS = 9                    # §18-2-d #32: first read after 2 x flush_interval_s, then 1 x per retry
+
+
+async def ea_canary(tel_path, t0, t1, d, stop, flush_interval_s):
+    """§18-2-d #32 (Job-EA boots): read the boot's telemetry after the warm-up and apply n2_window.warmup_ea_canary
+    to [warmup_start, warmup_end]. The engine's async writer flushes every flush_interval_s, so the first read waits
+    2 x flush_interval_s (the H-5 rule) and a failing read is retried up to EA_CANARY_POLLS reads in total, 1 x
+    flush_interval_s apart -- a pass ends the wait at once; only a check that still fails after the last read aborts
+    (a late flush is never an abort). An unreadable telemetry file counts as a failing read. Honours the stop flag
+    (D5). Returns (ok, detail)."""
+    ok, det = False, dict(problems=["not read"])
+    for k in range(EA_CANARY_POLLS):
+        if stop.get("flag"):
+            raise lg.RunnerStop("stop requested before the EA canary")
+        await asyncio.sleep((2 if k == 0 else 1) * flush_interval_s)
+        try:
+            recs, _trunc = RED._read_telemetry(tel_path)
+        except Exception as e:                                          # corrupt / unreadable: a failing read
+            ok, det = False, dict(problems=[f"telemetry unreadable: {e!r}"])
+            continue
+        ok, det = nw.warmup_ea_canary(recs, t0, t1, d, n2_plan.IDX[d])
+        if ok:
+            break
+    return ok, dict(det, reads=k + 1)
+
+
 # --------------------------------------------------------------------------------------------- one boot
 async def run_boot(out, unit, server, registry, opts):
     """One registered boot. Returns the boot record; raises JobAbort for §11-1 / P3 / CG_BS / correctness aborts
@@ -345,6 +375,14 @@ async def run_boot(out, unit, server, registry, opts):
                     job_abort = JobAbort(3, "ABORT_CG_CANARY", f"warm-up Decode batch lines {n_cg}, not "
                                          f"'cuda graph: True' {bad_cg} (wall seconds [{lo_cg}, {hi_cg}])")
                     raise lg.HarnessError(job_abort.msg)
+                if unit.get("job") == "EA":                                # §18-2-d #32 EA semantic canary (H18-R1)
+                    ok_ea, det_ea = await ea_canary(p["tel"], ws.t0, ws.t1, unit["D"], stop,
+                                                    opts.get("flush_interval_s", FLUSH_INTERVAL_S))
+                    rec["ea_canary"] = dict(det_ea, ok=ok_ea)
+                    if not ok_ea:
+                        job_abort = JobAbort(3, "ABORT_EA_CANARY",
+                                             "warm-up telemetry: " + "; ".join(det_ea["problems"]))
+                        raise lg.HarnessError(job_abort.msg)
                 if unit["greedy"]:                                         # §11-2
                     outs = await lg.run_greedy(session, base, b)
                     with open(p["greedy"], "x") as fh:

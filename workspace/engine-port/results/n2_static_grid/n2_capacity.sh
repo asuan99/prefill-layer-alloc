@@ -1,5 +1,5 @@
 #!/bin/bash
-# N2(3-a) Job entry (Job-PROFILE / Job-EA) -- PREREG_N2_3A_2026-10-07.md rev17 (rule seal 5e29990, digest fc9e6404…;
+# N2(3-a) Job entry (Job-PROFILE / Job-EA) -- PREREG_N2_3A_2026-10-07.md rev18 (rule seal digest 56473d6f…, 2026-10-13; rev17 5e29990 fc9e6404…;
 # first sealed rev16 fcc0b9e). HARNESS-SEAL file. Two-stage harness seal (rev17 R17-2 / H17-6): a Job-PROFILE needs the
 # `scope PROFILE` section of REGISTRATION_SHA256.txt, a Job-EA needs BOTH the PROFILE and the EA section. The seal check
 # runs right after ABORT_REG_SOURCE with `--scope $JOB`; a Job-EA without both sections is refused in EVERY mode
@@ -22,7 +22,7 @@
 #   revision, clock, sampler state §3-3) -> engine tree manifest + thread-local role patch -> preflight tests ->
 #   cell section (hard cap = N2_REGISTERED budget <JOB>_b cap, from the section start; watchdog SIGTERM ->
 #   runner_stop; admission STOP rule inside n2_job.py) -> analysis (tail, unbounded) -> N2_DONE line.
-# Exit codes: 2 env/knob, 3 registration/seal/plan/substrate/cg-bs/cg-canary, 4 preflight tests, 5 port, 6 sticky/green, 8 P3,
+# Exit codes: 2 env/knob, 3 registration/seal/plan/substrate/cg-bs/cg-canary/ea-canary, 4 preflight tests, 5 port, 6 sticky/green, 8 P3,
 #   9 correctness.  job_entry.sh exports results/ (files newer than its start marker) + SHA256SUMS + DONE.
 set -uo pipefail
 
@@ -209,7 +209,7 @@ case "$RRC" in
   6) fail "ABORT_STICKY/ABORT_GREEN (§11-1, RUNNER.log)" 6 ;;
   8) fail "ABORT_P3 (§3-2, RUNNER.log)" 8 ;;
   9) fail "ABORT_CORRECTNESS (§11-2, RUNNER.log)" 9 ;;
-  3) fail "ABORT (registration / CG_BS / CG_CANARY §18-2-d #16 / trace, RUNNER.log)" 3 ;;
+  3) fail "ABORT (registration / CG_BS / CG_CANARY §18-2-d #16 / EA_CANARY §18-2-d #32 / trace, RUNNER.log)" 3 ;;
   *) echo "RUNNER_EXIT $RRC (watchdog / timeout / crash) -- analysis still runs on what exists" ;;
 esac
 

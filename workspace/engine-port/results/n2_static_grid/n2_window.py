@@ -206,6 +206,40 @@ def warmup_cg_canary(log_lines, wall_start, wall_end, t0, t1):
     return (bool(canary) and n_bad == 0), len(canary), n_bad, lo, hi
 
 
+EA_CANARY_COMPOSITIONS = ((1, 2), (1, 1, 1))     # §18-2-d #32: Σn_new = 3 as {1, 2} or {1, 1, 1} (sorted n_new)
+
+
+def warmup_ea_canary(records, t0, t1, d, idx):
+    """§18-2-d #32 EA semantic canary (rev18 audit H18-R1, user decision 2026-10-12; Job abort ABORT_EA_CANARY exit 3
+    -- cost protection, NOT a judgment input: §7-2 (c) / §9-1 per cell are unchanged). `records` = the boot's
+    telemetry; t0 / t1 = the `warmup_start` / `warmup_end` mark times (CLOCK_MONOTONIC, the same clock as the
+    records -- no wall conversion); idx = idx(d) from n2_plan.IDX (the caller's registered table, not re-declared).
+    Boundary convention (HARNESS READING, reported): the §6-4 cell_slice convention on the warm-up interval --
+    records with t0 <= timestamp <= t1 -- and, as in co_span_composition, a co span = a
+    `prefill_span_start` in that slice with n_new >= 1 and extend_tokens == n_new x 8192, paired = a
+    `prefill_span_end` with the same span_seq in the same slice.
+      (i)  every co span paired, sorted n_new in {(1, 2), (1, 1, 1)} (so Σn_new = 3);
+      (ii) >= 1 `decode_iteration` in the slice with prefill_in_flight AND stream_idx == idx(d).
+    Returns (ok, detail)."""
+    sl = cell_slice(records, t0, t1)
+    starts = [e for e in sl if e.get("event") == "prefill_span_start"]
+    end_seqs = {e.get("span_seq") for e in sl if e.get("event") == "prefill_span_end"}
+    co = [s for s in starts if s.get("n_new", 0) >= 1 and s.get("extend_tokens") == s["n_new"] * CO_INPUT]
+    unpaired = [s.get("span_seq") for s in co if s.get("span_seq") not in end_seqs]
+    comp = tuple(sorted(s["n_new"] for s in co))
+    coloc = sum(1 for e in sl if e.get("event") == "decode_iteration" and e.get("prefill_in_flight")
+                and e.get("stream_idx") == idx)
+    problems = []
+    if unpaired:
+        problems.append(f"co span(s) without prefill_span_end in the warm-up: {unpaired[:5]}")
+    if comp not in EA_CANARY_COMPOSITIONS:
+        problems.append(f"co span n_new composition {list(comp)} (sum {sum(comp)}) not in {{1,2}} / {{1,1,1}}")
+    if coloc < 1:
+        problems.append(f"no decode_iteration with prefill_in_flight and stream_idx == idx({d}) = {idx}")
+    return (not problems), dict(co_spans=len(co), n_new=list(comp), unpaired=unpaired, coloc_iters_idx_d=coloc,
+                                stream_idx=idx, problems=problems, t0=t0, t1=t1)
+
+
 def cg_evidence(boot, cell_id):
     """§3-2 R-5 / F-5: `Decode batch` lines only, in the wall seconds [ceil(wall(start)), floor(wall(end)) - 1].
     Returns (proven, n_lines, n_false)."""

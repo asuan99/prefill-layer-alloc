@@ -57,19 +57,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ENG = (os.path.join(os.path.abspath(os.environ["PDMUX_PROJECT_ROOT"]), "workspace", "engine-port")
        if os.environ.get("PDMUX_PROJECT_ROOT") else os.path.abspath(os.path.join(HERE, "..", "..")))
 
-# ---------------------------------------------------------------------------- rule seal (rev17 commit 5e29990; rev16 fcc0b9e)
+# ---------------------------------------------------------------------------- rule seal (rev18 2026-10-13; rev17 5e29990; rev16 fcc0b9e)
 REGISTERED_JSON = os.path.join(HERE, "N2_REGISTERED.json")
 REGISTRATION_TXT = os.path.join(HERE, "REGISTRATION_SHA256.txt")
 REGISTERED_JSON_SHA256 = "e7d743c85e6adb007aa940342a3188cdb35568b2135ecd678f3ee6e4ae3087e7"
-RULE_SEAL_DIGEST = "fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069"
+RULE_SEAL_DIGEST = "56473d6fc1954abdf56f20ccf6cd5cd88d7ea4eeac281124d02803b677645cad"
 RULE_FILES = (                                   # registration order (the digest is order-sensitive)
-    ("PREREG_N2_3A_2026-10-07.md", "62fbfff912cf43db7c5ac548018b95c2cf5462890a9311facb947ca204fbf549"),
+    ("PREREG_N2_3A_2026-10-07.md", "1e2f54df3ae2f7012b5abc1a18f5b9e7c410816d48bc3c70df040023e3ce36fc"),
     ("n2_feasibility.py", "1ee3338dd1f2be7eceaa5e514510199a9d5ac25176b41c5edad27ae205ab0c60"),
     ("n2_probe_reduce.py", "8ef0c8cc6b0ba273ab684a8e297441598ffd70453138ee1f10713a8948d4282d"),
     ("N2_REGISTERED.json", REGISTERED_JSON_SHA256),
     ("test_n2_feasibility.py", "331c7b0ff6efaa0b7d4cc2f5f92e30597455bbb068d165cddb93930c4d786da6"),
     ("test_n2_probe_reduce.py", "a796980c71604d8b7ef94610c2d007d11c6c05e9c3dc899373b894573f2ca171"),
-    ("n2_mutants.py", "ffb4d6f38a50c754fa89525e78193cd9352c8dfc8c9873864cfb5e9d5db6fa8d"),
+    ("n2_mutants.py", "12b2726b5932fb05a5883059e50dabe2bd747ad2792c85a0c17dc937877c51c7"),
 )
 CALCULATOR_SHA256 = dict(RULE_FILES)["n2_feasibility.py"]
 REDUCER_FILE = os.path.join(HERE, "n2_probe_reduce.py")
