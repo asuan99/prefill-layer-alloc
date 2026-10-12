@@ -153,6 +153,7 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 ## 6. 예산·하드캡·중단
 
 ### 6-1. 규모(추정, 하네스 dry-run이 확정)
+- **追記(2026-10-12, 하네스층 감사 `VERDICT_harness_rev6_2026-10-12.md` §5)**: 아래 rev1 문장의 "셀 ≈290개"는 산술 오류다. rev5의 4 arm 기준 본 셀 = 7 config × 4 arm × 2 shape × (4 HI + 2 LO) = 336, 기술 블록 29(GPU 편차 8 + NUMA 8 + nsys 1 + 앵커 12)를 더해 **365개**, boot 70회다(`mg_plan.py m3-plan`). 판정 규칙은 바뀌지 않는다.
 - M2g: 서빙 boot ≈ 6 config × 4 arm + 대조 + 거부 시험 ≈ 25회, G3 마이크로벤치. 벽시계 추정 3–5 h.
 - M3: boot 7 config × 4 arm × 2(HI·LO 분리, §4-2) + 앵커 + GPU 편차 8 + NUMA 2 + nsys 1 ≈ 70회. 셀 = (7×4×2 shape × (4 HI + 2 LO)) + 기술 블록 ≈ 290개. 벽시계 추정 15–25 h.
 - rev5 감사 예보: λ = prior 가정에서 M3 ≈ 28–31 h, TP에서 λ < prior면 ≈ 31–35 h — 확장 없이도 하드캡 30 h를 넘을 가능성이 높다. 블록 분할 시 §4-5 앵커(fused·fused\_sym·agnostic)가 발동한다.

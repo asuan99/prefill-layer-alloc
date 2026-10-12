@@ -759,6 +759,7 @@ class AssemblePassTable(unittest.TestCase):
                     (d / "boot.json").write_text(json.dumps({"status": "OK", "t_health_epoch": 1, "boot_seconds": 100,
                                                              "health_wait_cap_s": 1800, "server_exit_code": None, "steps": []}))
                 (d / "server.log").write_text("Capture cuda graph begin\nCapture cuda graph end\n")
+                (d / "alive_after.json").write_text(json.dumps(__import__("m2g_correctness_gate").make_alive_record(d.name, None, 200)))     # F2
                 (d / "piecewise.json").write_text(json.dumps({"disable_piecewise_cuda_graph": "False"}))
                 cap = 48 * n if cfg.startswith("TP") else 48
                 (d / "cell_meta.json").write_text(json.dumps({"max_mamba_cache_size": [cap], "max_total_num_tokens": [900000 * n],
@@ -829,6 +830,468 @@ class AssemblePassTable(unittest.TestCase):
             self.assertEqual(P.excluded_set(t) & {"TP2:fused", "TP8:d44"}, set())
             self.assertIn("TP2", P.runnable_configs(t))
             self.assertNotIn("DP2", P.runnable_configs(t))
+
+
+# =========================================================================== rev6 harness audit F1–F17 (2026-10-12)
+def etime_ok(cells, v):
+    for c in cells:
+        if c["meta"]["rung"] == "HI":
+            c["etime"] = {"status": "OK", "e_time": v}
+    return cells
+
+
+class ExtensionRules(unittest.TestCase):                                                   # F10
+    def cells(self, trigger):
+        out = []
+        for arm in ("fused", "fused_sym", "agnostic", "d44"):
+            if arm == "agnostic" and trigger:
+                out += key_cells("TP2", arm, "A", 10.0, g_hi=0.05, ext=0)[:4]               # first pass NOT saturated -> triggers
+                out += [cell_rec("TP2", arm, "A", "HI", s, 12.0, 0.4, ext=1) for s in C.HI_SEEDS]
+                out += [cell_rec("TP2", arm, "A", "LO", s, 7.0, 0.01, ext=1) for s in C.LO_SEEDS]
+            else:
+                out += key_cells("TP2", arm, "A", 10.0)
+        return out
+
+    def test_arm_without_extension_cells_after_joint_trigger_is_ext_not_run(self):
+        doc = L.aggregate(self.cells(True), None, {})
+        lab = doc["keys"]["TP2|fused_sym|A|r1"]
+        self.assertEqual(lab["hi_label"], "HI_NOT_JUDGED")
+        self.assertIn("HI_NOT_JUDGED(EXT_NOT_RUN)", lab["reasons"])
+        self.assertIsNone(lab["lambda_star"])
+        e = doc["estimands"]["G_sym"]["TP2"]["A"]
+        self.assertFalse(e["defined"])                                                   # extended agnostic vs first-pass fused_sym: no pairing
+        self.assertTrue(any("fused_sym:KNEE_NOT_BRACKETED" in r for r in e["undefined_reasons"]))
+        self.assertEqual(doc["keys"]["TP2|agnostic|A|r1"]["hi_label"], "HI_SATURATED")  # the extended arm itself is judged
+
+    def test_no_trigger_no_penalty_and_old_behaviour_would_pair(self):
+        doc = L.aggregate(self.cells(False), None, {})
+        self.assertTrue(doc["estimands"]["G_sym"]["TP2"]["A"]["defined"])
+        # mutant: without ext_fired the not-extended arm reads as HI_SATURATED (the pre-F10 conditional reversal)
+        cs = [c for c in self.cells(True) if c["meta"]["arm"] == "fused_sym"]
+        self.assertEqual(L.key_labels(cs)["hi_label"], "HI_SATURATED")
+        self.assertEqual(L.key_labels(cs, ext_fired=True)["hi_label"], "HI_NOT_JUDGED")
+
+
+class PDPAndDisclosures(unittest.TestCase):                                                # F9, F12, F13, F14
+    build = Labels.build_cells
+
+    def test_p_dp_three_values_and_tp_disclosure(self):
+        doc = L.aggregate(self.build(), None, {})
+        self.assertEqual(doc["P_DP"]["status"], "HELD")
+        self.assertNotIn("P-DP 미검정", doc["trends"]["G_sym|TP|A"]["disclosures"])
+        drop = {(f"DP{n}", "fused_sym") for n in (2, 4, 8)}
+        doc = L.aggregate(self.build(drop=drop), None, {})
+        self.assertEqual(doc["P_DP"]["status"], "UNTESTED")
+        self.assertFalse(doc["P_DP"]["broken"])                                           # the old code said 'not broken' here
+        self.assertTrue(doc["P_DP"]["TP_labels_need_P_DP_UNTESTED_disclosure"])
+        for sh in "AB":
+            self.assertIn("P-DP 미검정", doc["trends"][f"G_sym|TP|{sh}"]["disclosures"])
+        self.assertIn("P-DP 미검정", L.render_text(doc))
+        doc = L.aggregate(self.build(agn_boost=lambda n: 1.0 + 0.1 * (n.bit_length() - 1)), None, {})
+        self.assertEqual(doc["P_DP"]["status"], "BROKEN")
+
+    def test_mix_failed_and_e_time_undefined_propagate_to_estimand_and_trend(self):
+        cs = self.build()
+        for c in cs:
+            if c["meta"]["arm"] in C.PDMUX_ARMS and c["meta"]["rung"] == "HI":
+                c["etime"] = {"status": "OK", "e_time": 0.9}
+        doc = L.aggregate(cs, None, {})
+        e = doc["estimands"]["G_sym"]["TP2"]["A"]
+        self.assertEqual(e["partition"], {"agnostic": "PARTITION_EXERCISED"})
+        self.assertFalse(e["partition_exercised_unknown"])
+        for c in cs:
+            m = c["meta"]
+            if (m["config"], m["arm"], m["shape"], m["seed"], m["rung"]) == ("TP2", "agnostic", "A", C.HI_SEEDS[1], "HI"):
+                c["etime"] = {"status": "MIX_FAILED", "e_time": None, "reasons": ["x"]}
+        doc = L.aggregate(cs, None, {})
+        e = doc["estimands"]["G_sym"]["TP2"]["A"]
+        self.assertEqual(e["partition"]["agnostic"], "E_TIME_UNDEFINED")
+        self.assertTrue(e["partition_exercised_unknown"] and e["mix_failed_arms"] == ["agnostic"])
+        self.assertTrue(e["defined"])                                                     # a flag, not an exclusion
+        t = doc["trends"]["G_sym|TP|A"]
+        self.assertTrue(t["partition_exercised_unknown"])
+        self.assertIn("E_TIME_UNDEFINED", L.render_text(doc))
+
+    def test_unmeasured_throttle_sendlag_frontend_and_missing_roles_are_explicit(self):
+        lab = L.key_labels(key_cells("DP2", "agnostic", "A", 10.0, throttle_unmeasured=True, send_lag_p99_ms=None,
+                                     frontend_unmeasured=True))
+        gaps = " ".join(lab["measurement_gaps"])
+        for tag in ("THROTTLE_UNMEASURED", "SENDLAG_UNMEASURED", "FRONTEND_UNMEASURED"):
+            self.assertIn(tag, gaps)
+        ok = key_cells("DP2", "agnostic", "A", 10.0, throttle_unmeasured=False, send_lag_p99_ms=1.0, frontend_unmeasured=False,
+                       frontend={"roles": {"tokenizer_manager": {}, "detokenizer": {}}, "frontend_saturated": False})
+        for c in ok:
+            c.update(throttle_unmeasured=False, send_lag_p99_ms=1.0, frontend_unmeasured=False)    # LO cells carry no kw in key_cells
+            c["meta"]["mode"] = "DP"
+        lab = L.key_labels(ok)
+        self.assertIn("FRONTEND_ROLE_MISSING:dp_controller", lab["measurement_gaps"])      # DP needs the controller role
+        self.assertFalse(any("UNMEASURED" in g for g in lab["measurement_gaps"]))
+        for c in ok:
+            c["meta"]["mode"] = "TP"
+        self.assertEqual(L.key_labels(ok)["measurement_gaps"], [])                         # negative control: TP needs only two roles
+
+    def test_m2g_config_flags_travel_into_labels(self):
+        mc = {"TP2": {"flags": ["TP_NUMERIC_DIVERGENT", "agnostic:G1_UNINFORMATIVE"], "memory_mismatch": False},
+              "TP4": {"flags": ["G2_NOT_TESTED"], "memory_mismatch": False},
+              "TP8": {"flags": ["MEMORY_MISMATCH(NOT_TESTED)"], "memory_mismatch": True}}
+        doc = L.aggregate(self.build(), None, {}, mc)
+        e2 = doc["estimands"]["G_sym"]["TP2"]["A"]
+        self.assertTrue(e2["defined"])
+        self.assertIn("TP_NUMERIC_DIVERGENT", e2["disclosures"])
+        self.assertIn("agnostic:G1_UNINFORMATIVE", e2["disclosures"])
+        self.assertIn("G2_NOT_TESTED", doc["estimands"]["G_sym"]["TP4"]["A"]["disclosures"])
+        e8 = doc["estimands"]["G_sym"]["TP8"]["A"]
+        self.assertFalse(e8["defined"])                                                   # M2g MEMORY_MISMATCH carries (G5(c) meaning unified)
+        self.assertIn("MEMORY_MISMATCH", e8["undefined_reasons"])
+        t = doc["trends"]["G_sym|TP|A"]
+        self.assertIn("TP_NUMERIC_DIVERGENT", t["disclosures"])                           # beside the TP trend (MGH-3)
+        self.assertEqual(doc["estimands"]["G_sym"]["DP2"]["A"]["disclosures"], [])
+
+
+class ConfigFlagScopes(unittest.TestCase):                                                 # F5, F11, F14
+    def mk(self, td, boots):
+        """boots: (boot_id, config, arm, block, round, contam, unverified, cell_meta|None)"""
+        root = Path(td)
+        (root / "specs").mkdir(exist_ok=True)
+        for bid, cfg, arm, block, rnd, contam, unv, meta in boots:
+            (root / "specs" / f"{bid}.json").write_text(json.dumps(
+                {"boot_id": bid, "config": cfg, "arm": arm, "block": block,
+                 "steps": [{"type": "cell", "round": rnd}]}))
+            bd = root / "boots" / bid
+            bd.mkdir(parents=True)
+            if contam:
+                (bd / "contam.json").write_text(json.dumps({"gpu_contaminated": True}))
+            if unv:
+                (bd / "contam_pre.json").write_text(json.dumps({"snapshot": {"available": False},
+                                                                "verdict": {"contam_unverified": True, "verified": False}}))
+            if meta:
+                (bd / "cell_meta.json").write_text(json.dumps(meta))
+        return root
+
+    OKM = {"max_mamba_cache_size": [48], "max_total_num_tokens": [900000], "max_running_requests_requested": 48}
+
+    def test_gpu_dev_numa_and_anchor_do_not_erase_round1_main_G(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self.mk(td, [
+                ("m3_gpudev_gpu3", "N1", "fused", "gpu_dev", 1, True, False, None),
+                ("m3_N1_fused_anchor2", "N1", "fused", "anchor", 2, True, False, None),
+                ("m3_TP4X_fused_numa", "TP4X", "fused", "numa", 1, True, False, None),
+                ("m3_N1_fused_boot1", "N1", "fused", "main", 1, False, False, self.OKM)])
+            fl = L.build_config_flags(root, [])
+            self.assertFalse(fl["N1"]["gpu_contaminated"])                                # round-1 main untouched
+            self.assertTrue(fl["N1"]["by_group"]["r2/anchor"]["gpu_contaminated"])
+            self.assertTrue(fl["N1"]["by_group"]["r1/gpu_dev"]["gpu_contaminated"])
+            self.assertNotIn("r1/main", fl.get("TP4X", {}).get("by_group", {}))
+
+    def test_or_summation_within_a_group_and_memory_per_boot_set(self):
+        with tempfile.TemporaryDirectory() as td:
+            bad = dict(self.OKM, max_mamba_cache_size=[24])
+            root = self.mk(td, [
+                ("a_boot1", "TP2", "fused", "main", 1, False, False, self.OKM),
+                ("a_boot2", "TP2", "fused", "main", 1, True, False, bad),                  # the LATER boot is the dirty/mismatched one
+                ("b_boot1", "TP2", "agnostic", "main", 1, False, False, self.OKM)])
+            fl = L.build_config_flags(root, [])["TP2"]
+            self.assertTrue(fl["gpu_contaminated"] and fl["memory_mismatch"])               # old code: last-writer-wins on the facts
+            self.assertEqual(fl["memory_not_tested_arms"], ["fused_sym", "d44"])           # expected arms without facts: NOT_TESTED, not FAIL
+            fl2 = L.build_config_flags(root, [], excluded={"TP2:fused_sym", "TP2:d44"})["TP2"]
+            self.assertEqual(fl2["memory_not_tested_arms"], [])
+
+    def test_contam_unverified_is_a_flag(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self.mk(td, [("c_boot1", "DP2", "fused", "main", 1, False, True, None)])
+            fl = L.build_config_flags(root, [])["DP2"]
+            self.assertTrue(fl["contam_unverified"] and not fl["gpu_contaminated"])
+            self.assertEqual(fl["unverified_boots"], ["c_boot1"])
+            doc = L.aggregate(Labels.build_cells(self), None, {"DP2": fl})
+            self.assertIn("CONTAM_UNVERIFIED", doc["estimands"]["G_sym"]["DP2"]["A"]["disclosures"])
+
+
+class PlanF4F15F17(unittest.TestCase):
+    def test_g5a_gpu_boot_is_in_the_m2g_plan(self):                                         # F4
+        b = [x for x in P.m2g_boots() if x["boot_id"] == "m2g_g5a_auto_N1"]
+        self.assertEqual(len(b), 1)
+        self.assertEqual((b[0]["arm"], b[0]["config"], b[0]["config_rel"]), ("agnostic", "N1", C.AUTO_GRID_CONFIG_REL))
+        self.assertTrue((ENGINE / C.AUTO_GRID_CONFIG_REL).exists())
+        args = B.build_server_args(dict(b[0]), 1234, str(ENGINE / C.AUTO_GRID_CONFIG_REL))
+        self.assertIn(str(ENGINE / C.AUTO_GRID_CONFIG_REL), args)
+        self.assertNotIn(str(ENGINE / C.AGNOSTIC_CONFIG_REL), args)
+
+    def test_budget_audited_model_unchanged_and_calibration_adds_time(self):                # F15
+        a = P.m3_budget()
+        self.assertAlmostEqual(a["total_h"], 29.96, 1)                                      # the audited number must not move
+        v = P.m3_budget(calib=P.CALIBS["vessl_boot"])
+        self.assertAlmostEqual(v["total_h"] - a["total_h"], 70 * C.EST_VESSL_BOOT_EXTRA_S / 3600.0, 3)
+        u = P.m3_budget(calib=P.CALIBS["vessl_boot_cell"])
+        self.assertGreater(u["total_h"], v["total_h"])
+        s3 = P.m3_budget(ratio_arm_of=P.SCENARIOS["S3 extension: agnostic 1.48"])
+        self.assertGreater(s3["boots"], a["boots"])                                          # ONE arm above 1.42 extends all four arms
+        self.assertEqual(s3["boots"] - a["boots"], 7 * 4)
+
+    def test_forecast_domain(self):
+        rows = {(r["scenario"], r["calib"]): r for r in P.m3_forecast_table()}
+        r = rows[("S1 lambda=prior (all)", "audited")]
+        self.assertEqual((r["n_done"], r["trend_TP"], r["trend_DP"], r["anchor_boots_done"]), (70, "defined", "defined", 3))
+        r = rows[("S1 lambda=prior (all)", "vessl_boot")]
+        self.assertEqual(r["anchor_boots_done"], 0)                                          # the drift-measuring anchor is what gets cut (MGH-6)
+        r = rows[("S3 extension: agnostic 1.48", "audited")]
+        self.assertEqual((r["trend_TP"], r["trend_DP"]), ("TREND_UNDEFINED", "TREND_UNDEFINED"))   # MGH-7
+        self.assertEqual(r["N_defined_TP"], [1, 8])
+        blk = {(b["scenario"], b["calib"], b["k"]): b for b in P.block_plan_table()}
+        self.assertLess(blk[("S1 lambda=prior (all)", "audited", 3)]["max_block_h"], 30.0)
+        self.assertGreater(blk[("S1 lambda=prior (all)", "audited", 3)]["total_h"], P.m3_budget()["total_h"])   # k anchors + k preflights
+
+    def test_pass_table_three_way_digest(self):                                             # F17
+        import hashlib
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "t.json"
+            raw = json.dumps({"cells": {}})
+            p.write_text(raw)
+            sha = hashlib.sha256(raw.encode()).hexdigest()
+            cs = Path(td) / "t.json.sha256"
+            cs.write_text(sha + "\n")
+            self.assertIsNone(P.load_pass_table(p, sha, cs)[1])                              # env == committed == bytes
+            cs.write_text("0" * 64 + "\n")
+            self.assertEqual(P.load_pass_table(p, sha, cs)[1], "ABORT_M2G_NOT_PASSED")      # committed differs
+            cs.unlink()
+            self.assertEqual(P.load_pass_table(p, sha, cs)[1], "ABORT_M2G_NOT_PASSED")       # committed missing
+            self.assertIsNone(P.load_pass_table(p, sha)[1])                                  # legacy 2-way call still works
+            self.assertEqual(P.load_pass_table(p, "1" * 64, None)[1], "ABORT_M2G_NOT_PASSED")
+
+
+class BootLiveness(unittest.TestCase):                                                      # F2, F5 unit level
+    class Fake:
+        def __init__(self, rc):
+            self.rc = rc
+
+        def poll(self):
+            return self.rc
+
+    def rec(self, rc, td):
+        import m2g_correctness_gate as G
+        steps = [{"type": "cmd"}]
+        B.write_alive(td, "b1", self.Fake(rc), 1, steps, [{"step": steps[0], "status": "OK"}])
+        return G.alive_after(Path(td)), json.loads((Path(td) / "alive_after.json").read_text())
+
+    def test_alive_record_cases(self):
+        with tempfile.TemporaryDirectory() as td:
+            alive, rec = self.rec(137, td)                                                  # exited: never asked, never alive
+            self.assertFalse(alive)
+            self.assertEqual((rec["poll_returncode"], rec["after_step"]["status"], rec["steps_total"]), (137, "OK", 1))
+        with tempfile.TemporaryDirectory() as td:
+            alive, rec = self.rec(None, td)                                                 # running but /health unreachable: not alive
+            self.assertFalse(alive)
+            self.assertIsNone(rec["poll_returncode"])
+        with tempfile.TemporaryDirectory() as td:                                           # writer failure -> absent record, never 'alive'
+            import m2g_correctness_gate as G
+            B.write_alive(Path("/proc/forbidden"), "b", self.Fake(None), 1, [], [])
+            self.assertIsNone(G.alive_after(Path("/proc/forbidden")))
+
+    def test_nvml_unavailable_is_contam_unverified_not_clean(self):
+        v = B.contamination_verdict({"available": False, "error": "x"}, False)
+        self.assertTrue(v["contam_unverified"] and v["flag"] == "CONTAM_UNVERIFIED" and not v["verified"])
+        self.assertFalse(v["gpu_contaminated"])
+        self.assertFalse(B.contamination_verdict({"available": True, "gpus": {"0": {"used_mib": 1.0, "n_compute_procs": 0}}},
+                                                  False)["contam_unverified"])
+
+
+# ---- F8: the JOB path (mg_drive.run_m2g + assemble_pass_table) against a fake runner and a fake torchrun
+FAKE_M2G_RUNNER_PY = r'''
+import json, os, sys, time
+from pathlib import Path
+ENG = Path(os.environ["MG_ENGINE"])
+sys.path[:0] = [str(ENG / "results/multigpu"), str(ENG / "scripts/multigpu"), str(ENG / "tests")]
+import mg_label as L, mg_const as C, mg_realized_mix as RM
+import m2g_correctness_gate as G
+import test_mg_realized_mix as T
+spec = json.load(open(sys.argv[1]))
+if "--dry-run" in sys.argv: sys.exit(0)
+out = Path(spec["out_root"]); bid = spec["boot_id"]; bd = out / "boots" / bid; bd.mkdir(parents=True, exist_ok=True)
+with open(os.environ["FAKE_ORDER_LOG"], "a") as f: f.write("BOOT " + bid + "\n")
+dead_final = os.environ.get("FAKE_DEAD", "").split(",")
+no_alive = os.environ.get("FAKE_NO_ALIVE", "").split(",")
+kind = spec.get("kind"); cfg = spec["config"]; arm = spec["arm"]; n = spec["N"]
+log = bd / "server.log"
+if kind in ("g0ii", "g0iii"):
+    json.dump({"kind": kind, "status": "REFUSED_AS_EXPECTED", "t_health_epoch": None, "server_exit_code": 1, "health_wait_cap_s": 1800}, open(bd / "boot.json", "w"))
+    log.write_text(("RuntimeError: " + spec["expect_refusal"] + " ...\n") + (G.DEVICE_ASSERT_TEXT + "\n" if kind == "g0iii" else ""))
+    sys.exit(0)
+json.dump({"status": "OK", "t_health_epoch": 1, "boot_seconds": 100, "health_wait_cap_s": 1800, "server_exit_code": None, "steps": []}, open(bd / "boot.json", "w"))
+log.write_text("Capture cuda graph begin\nCapture cuda graph end\n")
+json.dump({"disable_piecewise_cuda_graph": "False"}, open(bd / "piecewise.json", "w"))
+cap = 48 * n if spec["mode"] == "TP" else 48
+json.dump({"max_mamba_cache_size": [cap], "max_total_num_tokens": [900000 * (n if spec["mode"] == "TP" else 1)], "max_running_requests_requested": cap}, open(bd / "cell_meta.json", "w"))
+json.dump({"0": 1}, open(bd / "proc_counts_post_boot.json", "w"))
+json.dump({"snapshot": {"available": True, "gpus": {"0": {"used_mib": 5.0, "n_compute_procs": 0}}}, "verdict": {"verified": True}}, open(bd / "contam_pre.json", "w"))
+if bid not in no_alive:                                    # the gate module's own record writer: one schema
+    dead = bid in dead_final
+    json.dump(G.make_alive_record(bid, -9 if dead else None, None if dead else 200), open(bd / "alive_after.json", "w"))
+(out / "gates").mkdir(exist_ok=True)
+json.dump({"outputs": {f"r{i}": [1, 2, 3, 4 + i] for i in range(64)}, "errors": 0, "config": cfg, "arm": arm,
+           "g1_window_perf_counter_s": [-0.5, 3.5]}, open(out / "gates" / f"g1_out_{cfg}_{arm}.json", "w"))
+if arm in C.PDMUX_ARMS and spec["mode"] in ("TP", "DP"):
+    mode = spec["mode"].lower()
+    rows, sm = (T.AGN_ROWS, T.AGN) if arm == "agnostic" else (T.R2_ROWS, T.R2)
+    for tf, gf in zip(RM.rank_files(str(bd / "tel.jsonl"), mode, n), RM.rank_files(str(bd / "green.json"), mode, n)):
+        T.write_tel(tf, rows, sm)
+        json.dump(T.green(sm), open(gf, "w"))
+    json.dump({"t0_mono": -0.5, "t1_mono": 3.5, "status": "OK"}, open(bd / f"cmd_g1_{arm}.window.json", "w"))
+if spec["mode"] == "TP" and arm in C.G3B_ARMS:
+    cd = out / "cells" / f"{bid}__A_G3B_s4386"; cd.mkdir(parents=True, exist_ok=True)
+    with open(cd / "requests.jsonl", "w") as f:
+        for r in L._fifo_cell(3.0, 3.6, 600.0): f.write(json.dumps(r) + "\n")
+'''
+
+FAKE_TORCHRUN_PY = r'''
+import json, os, sys, time
+from pathlib import Path
+a = sys.argv[1:]
+n = int(a[a.index("--nproc-per-node") + 1]); out = Path(a[a.index("--out") + 1])
+with open(os.environ["FAKE_ORDER_LOG"], "a") as f: f.write(f"G3 TP{n} {out.name}\n")
+if f"TP{n}" in os.environ.get("FAKE_G3_BROKEN", "").split(","):
+    out.mkdir(parents=True, exist_ok=True)                  # directory exists, no rank file, no HANG: the harness never ran the script
+    sys.exit(7)
+out.mkdir(parents=True, exist_ok=True)
+for r in range(n):
+    json.dump({"rank": r, "world": n, "repeats": 500, "completed": 500, "errors": 0, "elapsed_s": 1.0}, open(out / f"rank{r}.json", "w"))
+'''
+
+
+class M2gJobPath(unittest.TestCase):
+    """F8: order (G3 first), liveness (F2), exposure (F3), G3 launcher failure (F1) through the real run_m2g / assemble_pass_table."""
+
+    def run_job(self, **env):
+        from unittest import mock
+        td = tempfile.TemporaryDirectory()
+        self.addCleanup(td.cleanup)
+        root = Path(td.name)
+        (root / "fake_runner.py").write_text(FAKE_M2G_RUNNER_PY)
+        (root / "fake_runner.sh").write_text(f'#!/bin/bash\nexec python3 {root}/fake_runner.py "$@"\n')
+        (root / "fake_torchrun.py").write_text(FAKE_TORCHRUN_PY)
+        (root / "fakepy.sh").write_text(f'#!/bin/bash\nif [ "$1" = "-c" ]; then exit 0; fi\n'
+                                        f'if [ "$1" = "-m" ]; then shift 2; exec python3 {root}/fake_torchrun.py "$@"; fi\nexit 9\n')
+        os.chmod(root / "fakepy.sh", 0o755)
+        order = root / "order.log"
+        e = {"MG_ENGINE": str(ENGINE), "FAKE_ORDER_LOG": str(order), "PYTHONDONTWRITEBYTECODE": "1"}
+        e.update(env)
+        out = root / "out"
+        out.mkdir()
+        ctx = D.Ctx(out, False, time.time() + 8 * 3600, time.time(), "m2g")
+        ctx.g3_python = str(root / "fakepy.sh")                  # `fakepy.sh -m torch.distributed.run ...` -> fake_torchrun.py
+        ctx.g5a_argv = [sys.executable, "-c", "print('g5a ok')"]
+        with mock.patch.dict(os.environ, e), mock.patch.object(D, "RUNNER", str(root / "fake_runner.sh")):
+            table = D.run_m2g(ctx)
+        return table, out, order.read_text().splitlines(), ctx
+
+    def test_order_g3_before_every_serving_boot_and_clean_pass(self):
+        table, out, order, ctx = self.run_job()
+        kinds = [ln.split()[0] for ln in order]
+        self.assertEqual(kinds.count("G3"), 9)                                                # 3 TP x 3 combinations
+        self.assertEqual(max(i for i, k in enumerate(kinds) if k == "G3") + 1, 9)             # all G3 lines precede ...
+        self.assertTrue(all(k == "BOOT" for k in kinds[9:]))                                  # ... every BOOT line
+        self.assertEqual(sum(1 for k in kinds if k == "BOOT"), len(P.m2g_boots()))
+        self.assertTrue(all(table["cells"][f"TP{n}:{a}"]["included"] for n in (2, 4, 8) for a in C.ARMS),
+                        {k: v["reason"] for k, v in table["cells"].items() if k.startswith("TP") and not v["included"]})
+        self.assertEqual(table["g5a_unit_test"], "PASS")
+        self.assertEqual(table["g5a_gpu_descriptive"], "RECORDED")                           # F4: the GPU boot ran and was read
+        self.assertTrue((out / "gates" / "g3_launch.json").exists() and len(list((out / "gates" / "g3_logs").glob("run_g3_TP*.txt"))) == 3)
+        self.assertTrue((out / "gates" / "g3_TP4_g44_64" / "launcher.json").exists())          # per-combination launcher record (gate module)
+        self.assertEqual(table["contam_unverified"], [])
+
+    def test_server_dead_after_the_last_step_fails_g3b_and_unknown_liveness_is_not_tested(self):    # F2
+        table, out, order, ctx = self.run_job(FAKE_DEAD="m2g_TP2_d44", FAKE_NO_ALIVE="m2g_TP4_agnostic")
+        self.assertFalse(table["cells"]["TP2:fused"]["included"])
+        self.assertIn("G3b d44 FAIL", table["cells"]["TP2:fused"]["reason"])
+        self.assertIn("G1 fused<->d44 FAIL", table["cells"]["TP2:d44"]["reason"])             # a pair with a dead server is an abnormal exit
+        self.assertIn("G3b agnostic NOT_TESTED", table["cells"]["TP4:fused"]["reason"])       # no record != alive
+        self.assertIn("G1 fused<->agnostic NOT_TESTED", table["cells"]["TP4:agnostic"]["reason"])
+        self.assertTrue(table["cells"]["TP8:fused"]["included"])                              # negative control: the others are untouched
+
+    def test_abnormal_exit_fails_g1_while_the_other_arm_of_the_config_passes(self):          # F2, G1 '비정상 종료 0'
+        table, out, order, ctx = self.run_job(FAKE_DEAD="m2g_DP2_agnostic")
+        g1 = json.loads((out / "gates" / "g1_DP2.json").read_text())
+        self.assertEqual((g1["verdicts"]["fused|agnostic"], g1["verdicts"]["fused|d44"]), ("FAIL", "PASS"))
+        self.assertTrue(g1["detail"]["fused|agnostic"]["abnormal_exit"])
+        self.assertIn("G1 fused<->agnostic FAIL", table["cells"]["DP2:agnostic"]["reason"])
+        self.assertNotIn("G1 fused<->d44", table["cells"]["DP2:d44"]["reason"])
+
+    def test_g1_window_exposure_is_computed_and_delivered(self):                              # F3
+        table, out, order, ctx = self.run_job()
+        e = json.loads((out / "gates" / "g1_exposure_TP2.json").read_text())                 # the driver's own (cmd-window) cross-check
+        # hand-derived from tests/test_mg_realized_mix.py rows: window [-0.5, 3.5] keeps 4 snapshots (agnostic: split 30 of 40 steps;
+        # d44: 10 of 20); the WHOLE telemetry would give 0.8 / 0.6667 -- the window matters
+        self.assertAlmostEqual(e["agnostic"]["exposure_steps"], 0.75, 6)
+        self.assertAlmostEqual(e["d44"]["exposure_steps"], 0.5, 6)
+        g1 = json.loads((out / "gates" / "g1_TP2.json").read_text())                          # what the scorer received (G1 window of serve-g1)
+        self.assertAlmostEqual(g1["detail"]["fused|agnostic"]["exposure_split_steps"], 0.75, 6)
+        self.assertAlmostEqual(g1["detail"]["fused|d44"]["exposure_split_steps"], 0.5, 6)
+        self.assertAlmostEqual(table["g1_exposure_split_steps"]["TP2:agnostic"], 0.75, 6)
+        self.assertEqual(json.loads((out / "gates" / "g1_exposure_DP4.json").read_text())["d44"]["status"], "OK")
+
+    def test_g3_launcher_failure_is_not_tested_harness_error_not_fail(self):                  # F1
+        table, out, order, ctx = self.run_job(FAKE_G3_BROKEN="TP4")
+        g3 = json.loads((out / "gates" / "g3_TP4.json").read_text())
+        self.assertEqual(g3["verdict"], "NOT_TESTED")                                         # lesson 21: not FAIL
+        self.assertIn("HARNESS_ERROR", json.dumps(g3))
+        self.assertIn("G3 comm stress NOT_TESTED", table["cells"]["TP4:fused"]["reason"])
+        self.assertTrue(table["cells"]["TP2:fused"]["included"])
+        self.assertTrue((out / "gates" / "g3_logs" / "run_g3_TP4.txt").exists())
+
+    def test_no_interpreter_for_the_launcher_leaves_every_tp_not_tested(self):
+        with tempfile.TemporaryDirectory() as td:
+            ctx = D.Ctx(Path(td), False, time.time() + 8 * 3600, time.time(), "m2g")
+            ctx.g3_python = "/nonexistent/python"
+            s = D.run_g3(ctx)
+            self.assertEqual(set(s), {"TP2", "TP4", "TP8"})
+            for n in (2, 4, 8):
+                self.assertEqual(json.loads((Path(td) / "gates" / f"g3_TP{n}.json").read_text())["verdict"], "NOT_TESTED")
+
+    def test_nvml_unavailable_cell_is_listed_and_not_included(self):                          # F5
+        table, out, order, ctx = self.run_job()
+        # re-assemble after rewriting one pre-boot record as 'NVML unavailable'
+        p = out / "boots" / "m2g_TP2_agnostic" / "contam_pre.json"
+        p.write_text(json.dumps({"snapshot": {"available": False, "error": "x"}, "verdict": {"contam_unverified": True, "verified": False}}))
+        t2 = D.assemble_pass_table(out)
+        self.assertEqual(t2["contam_unverified"], ["TP2:agnostic"])
+        self.assertFalse(t2["cells"]["TP2:agnostic"]["included"])
+        self.assertIn("CONTAM_UNVERIFIED", t2["cells"]["TP2:agnostic"]["reason"])
+        self.assertTrue(table["cells"]["TP2:agnostic"]["included"])                              # before the rewrite it was included
+
+
+class M3ExtensionDriver(unittest.TestCase):                                                  # F10 driver half
+    def test_incomplete_extension_blocks_boot2_and_labels_the_arm(self):
+        with tempfile.TemporaryDirectory() as td:
+            drv = DriverWithFakeRunner()
+            skip = "m3_TP8_agnostic_boot1ext"
+            fake_py = FAKE_RUNNER_PY.replace('spec = json.load(open(sys.argv[1]))',
+                                             'spec = json.load(open(sys.argv[1]))\nif spec["boot_id"] == os.environ.get("FAKE_SKIP"): sys.exit(1)')
+            fake = Path(td) / "fake_runner.sh"
+            (Path(td) / "fake.py").write_text(fake_py)
+            fake.write_text(f'#!/bin/bash\nexec python3 {td}/fake.py "$@"\n')
+            import hashlib
+            raw = json.dumps({"cells": {}})
+            tbl = Path(td) / "t.json"
+            tbl.write_text(raw)
+            env = dict(os.environ, PDMUX_MG_RUNNER=str(fake), MG_RESULTS_DIR=str(ENGINE / "results/multigpu"), FAKE_RATIO="1.7",
+                       FAKE_AGN_BOOST="1.0", FAKE_SKIP=skip, PYTHONDONTWRITEBYTECODE="1")
+            out = Path(td) / "out"
+            p = subprocess.run([sys.executable, str(ENGINE / "results/multigpu/mg_drive.py"), "m3", "--out", str(out),
+                                "--pass-table", str(tbl), "--pass-sha256", hashlib.sha256(raw.encode()).hexdigest()],
+                               env=env, capture_output=True, text=True)
+            self.assertEqual(p.returncode, 0, p.stderr[-1500:])
+            doc = json.loads((out / "LABELS.json").read_text())
+            dec = doc["driver"]["decisions"]["TP8"]
+            self.assertFalse(dec["ext_complete"])
+            self.assertIn("agnostic", dec["ext_incomplete_reason"])
+            self.assertEqual(list((out / "specs").glob("m3_TP8_*_boot2.json")), [])             # boot2 never entered
+            self.assertEqual(list((out / "cells").glob("m3_TP8_*_boot2__*")), [])               # no TP8 LO cell was run
+            self.assertTrue(list((out / "cells").glob("m3_TP2_*_boot2__*")))                    # negative control: other configs still ran LO
+            reasons = [x["reason"] for x in doc["driver"]["not_attempted"] if x["boot_id"].startswith("m3_TP8_")]
+            self.assertEqual(reasons, ["NOT_ATTEMPTED_EXT_INCOMPLETE"] * 4)
+            lab = doc["keys"]["TP8|agnostic|A|r1"]
+            self.assertEqual(lab["hi_label"], "HI_NOT_JUDGED")                                  # first-pass cells exist, extension does not
+            self.assertIn("HI_NOT_JUDGED(EXT_NOT_RUN)", lab["reasons"])
+            self.assertFalse(doc["estimands"]["G_sym"]["TP8"]["A"]["defined"])
+            self.assertTrue(doc["estimands"]["G_sym"]["TP2"]["A"]["defined"])
 
 
 class JobScriptsDryRun(unittest.TestCase):
@@ -1040,3 +1503,26 @@ class RunBootFakeServer(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_alive_after_and_cmd_window_are_written_by_the_real_boot(self):                  # F2, F3
+        import m2g_correctness_gate as G
+        steps = [{"type": "cmd", "name": "g1_d44", "argv": [sys.executable, "-c", "print('g1')"]}]
+        spec = self.spec(steps=steps)
+        self.assertEqual(B.run_boot(spec), 0)
+        bd = self.root / "out/boots" / spec["boot_id"]
+        self.assertTrue(G.alive_after(bd))                                                    # running + /health 200 AFTER the last step
+        rec = json.loads((bd / "alive_after.json").read_text())
+        self.assertEqual((rec["after_step"]["type"], rec["after_step"]["status"], rec["steps_total"]), ("cmd", "OK", 1))
+        w = json.loads((bd / "cmd_g1_d44.window.json").read_text())
+        self.assertLess(w["t0_mono"], w["t1_mono"])
+        self.assertLess(abs(w["t1_mono"] - time.monotonic()), 120)                           # CLOCK_MONOTONIC, comparable with the telemetry clock
+
+    def test_nvml_unavailable_boot_runs_but_is_marked_contam_unverified(self):               # F5
+        from unittest import mock
+        with mock.patch.object(B, "nvml_snapshot", return_value={"available": False, "error": "no nvml"}):
+            spec = self.spec(boot_id="bu")
+            self.assertEqual(B.run_boot(spec), 0)
+        bd = self.root / "out/boots/bu"
+        self.assertEqual(json.loads((bd / "boot.json").read_text())["contam_status"], "CONTAM_UNVERIFIED")
+        self.assertTrue(json.loads((bd / "contam_pre.json").read_text())["verdict"]["contam_unverified"])
+        self.assertFalse((bd / "contam.json").exists())                                      # not 'contaminated', not 'clean': unverified

@@ -18,6 +18,9 @@ SPEC (JSON, --spec FILE)
   expect_refusal    text that must appear in the server log when the boot is EXPECTED to die (G0(ii)/(iii))
   nsys              wrap the server in `nsys launch` (descriptive block; steps carry nsys start/stop cmds)
 Writes under <out_root>/boots/<boot_id>/ and <out_root>/cells/<boot_id>__<cell>/ ; see module constants.
+Per boot (rev6 harness audit 2026-10-12): alive_after.json (F2, schema m2g_alive_after/v1 of the gate module: poll() + GET /health after
+the LAST step, before teardown), cmd_<name>.window.json for every cmd step ({t0_mono,t1_mono} on CLOCK_MONOTONIC = the telemetry clock,
+F3), contam_pre.json / boot.json contam_status = CONTAM_UNVERIFIED when NVML is unavailable (F5: the check did not run; not 'clean').
 Exit: 0 ok · 1 boot failed · 2 spec error · 3 ABORT_COMM_ENV · 5 GPU_CONTAMINATED (pre-boot) · 6 nothing ran (deadline)
 `--dry-run` (or PDMUX_MG_DRYRUN=1) writes server_args.txt / env.json / steps.json and returns -- no GPU, no network.
 """
@@ -180,14 +183,17 @@ def contamination_verdict(snap, proc_count_hidden):
     """(가) used < 1 GiB on every subset GPU; (나) compute-process count == expected (0 before boot) unless the
     count is hidden (container PID namespace) in which case only (가) counts."""
     if not snap.get("available"):
-        return {"gpu_contaminated": False, "verified": False, "reason": "NVML unavailable (UNVERIFIED)"}
+        # F5: NVML unavailable == the contamination check did NOT run.  It is never "clean": the flag CONTAM_UNVERIFIED travels
+        # to boot.json, the M2g table and LABELS (the Job preflight also aborts a real run without NVML, ABORT_SUBSTRATE).
+        return {"gpu_contaminated": False, "verified": False, "contam_unverified": True, "flag": "CONTAM_UNVERIFIED",
+                "reason": "NVML unavailable (CONTAM_UNVERIFIED)"}
     bad = []
     for i, g in snap["gpus"].items():
         if g["used_mib"] >= C.NVML_EMPTY_GPU_MIB:
             bad.append(f"gpu{i}: memory.used {g['used_mib']:.0f} MiB >= {C.NVML_EMPTY_GPU_MIB}")
         if not proc_count_hidden and g["n_compute_procs"] not in (None, 0):
             bad.append(f"gpu{i}: {g['n_compute_procs']} compute processes before boot (expected 0)")
-    return {"gpu_contaminated": bool(bad), "verified": True, "reasons": bad}
+    return {"gpu_contaminated": bool(bad), "verified": True, "contam_unverified": False, "reasons": bad}
 
 
 # =========================================================================== process plumbing
@@ -217,6 +223,22 @@ def kill_group(proc, grace=10):
         try:
             os.killpg(proc.pid, signal.SIGKILL)
         except ProcessLookupError:
+            pass
+
+
+def write_alive(boot_dir, boot_id, server, port, spec_steps, steps_done):
+    """F2: ONE survival record per boot, after the LAST step and BEFORE teardown: `poll()` + GET /health.  The writer and the readers
+    (G1 '비정상 종료 0', G3b '서버 생존') are the gate module's single implementation (m2g_correctness_gate.record_alive_after /
+    alive_after, schema m2g_alive_after/v1).  If it cannot be written the file is simply absent -> the gates read NOT_TESTED, never alive."""
+    try:
+        import m2g_correctness_gate as GATE
+        last = steps_done[-1] if steps_done else None
+        after = ({"index": len(steps_done) - 1, "type": last["step"]["type"], "status": last["status"]} if last else None)
+        GATE.record_alive_after(boot_dir, boot_id, server, f"http://127.0.0.1:{port}", after, len(spec_steps))
+    except Exception as e:  # noqa: BLE001
+        try:
+            (Path(boot_dir) / "alive_after.error").write_text(repr(e) + "\n")
+        except OSError:
             pass
 
 
@@ -291,6 +313,7 @@ def run_boot(spec, dry=False):
         time.sleep(5)
     jdump(boot_dir / "contam_pre.json", {"snapshot": snap, "verdict": verdict})
     boot["contamination_pre"] = verdict
+    boot["contam_status"] = "CONTAM_UNVERIFIED" if verdict.get("contam_unverified") else "VERIFIED"
     if verdict["gpu_contaminated"]:
         jdump(boot_dir / "contam.json", {"gpu_contaminated": True, "phase": "pre-boot", **verdict})
         boot["status"] = "GPU_CONTAMINATED"
@@ -404,6 +427,7 @@ def run_boot(spec, dry=False):
         boot["steps"] = [{"type": s["step"]["type"], "status": s["status"],
                           **({"cell": f"{s['step'].get('shape')}_{s['step'].get('rung')}_s{s['step'].get('seed')}"}
                              if s["step"]["type"] == "cell" else {})} for s in steps_done]
+        write_alive(boot_dir, spec["boot_id"], server, port, spec.get("steps", []), steps_done)      # F2: after the last step, before teardown
         kill_group(server)
         sweep_sglang_children()
         t = time.time()
@@ -499,17 +523,23 @@ def run_cmd(st, boot_dir, out_root, port, deadline):
         for k, v in subs.items():
             x = x.replace(k, v)
         argv.append(x)
-    log = boot_dir / f"cmd_{st.get('name', 'x')}.log"
+    name = st.get("name", "x")
+    log = boot_dir / f"cmd_{name}.log"
     tmo = st.get("timeout_s") or (None if not deadline else max(1.0, deadline - time.time()))
+    t0m = time.monotonic()                                   # F3: the step window on CLOCK_MONOTONIC (= the telemetry clock)
     try:
         p = subprocess.run(argv, timeout=tmo, capture_output=True, text=True, check=False)
         log.write_text(p.stdout + "\n" + p.stderr)
-        return "OK" if p.returncode == 0 else f"CMD_RC_{p.returncode}"
+        status = "OK" if p.returncode == 0 else f"CMD_RC_{p.returncode}"
     except subprocess.TimeoutExpired:
-        return "CMD_TIMEOUT"
+        status = "CMD_TIMEOUT"
     except FileNotFoundError as e:
         log.write_text(repr(e))
-        return "CMD_NOT_FOUND"
+        status = "CMD_NOT_FOUND"
+    t1m = time.monotonic()
+    jdump(boot_dir / f"cmd_{name}.window.json", {"t0_mono": t0m, "t1_mono": t1m, "status": status,
+                                                  "t0_epoch": time.time() - (t1m - t0m), "t1_epoch": time.time()})
+    return status
 
 
 def main(argv=None):

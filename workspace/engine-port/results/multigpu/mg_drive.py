@@ -8,6 +8,10 @@
 Responsibilities: stage order (§4-1), arm order, joint extension (§4-2), x_lo from the fused HI median (MGP-9),
 admission against the wall-clock hard cap, TRUNCATED bookkeeping, label + estimand output (mg_label).
 Every boot runs through scripts/multigpu/mg_runner.sh (override PDMUX_MG_RUNNER for CPU tests).
+JOB PATH vs REFERENCE PATH (F8): the Job runs `run_m2g` + `assemble_pass_table` below.  `m2g_correctness_gate.M2gRun` (the
+unit-tested reference sequence with an injectable io) is NOT executed by the Job -- its order/liveness/exposure rules are
+re-implemented here and pinned by tests/test_mg_harness.py::M2gJobPath (fake runner + fake torchrun).  G3 runs BEFORE any
+serving boot (M2gRun order; a hang-heavy G3 must not be starved by the 8 h cap).
 Hard cap (§6-2): the deadline is passed to the runner, which stops starting steps at the deadline and kills the
 running cell (TRUNCATED); a boot is only ADMITTED when its estimated need fits in the remaining time
 (implementation choice, listed in the hand-off: it avoids spending the last hour on a boot that cannot finish).
@@ -20,6 +24,8 @@ import hashlib
 import json
 import os
 import re
+import inspect
+import shutil
 import signal
 import subprocess
 import sys
@@ -43,6 +49,8 @@ class Ctx:
         self.log = []
         self.not_attempted = []
         self.notes = []
+        self.g3_python = None                      # tests: interpreter handed to `run-g3 --python` (default sys.executable)
+        self.g5a_argv = None                       # tests: replaces the G5(a) CPU unit test command
         (self.out / "specs").mkdir(parents=True, exist_ok=True)
         (self.out / "gates").mkdir(parents=True, exist_ok=True)
 
@@ -94,13 +102,28 @@ def cells_of(ctx, cfg=None, rnd=None):
     return out
 
 
-def key_summaries(ctx, cfg, rnd=1):
+def key_summaries(ctx, cfg, rnd=1, fired=()):
     groups = {}
     for c in cells_of(ctx, cfg, rnd):
         m = c["meta"]
         if m.get("block", "main") in ("main", "anchor") and m["rung"] in ("HI", "LO"):
             groups.setdefault((m["arm"], m["shape"]), []).append(c)
-    return {k: ML.key_labels(v) for k, v in groups.items()}
+    return {k: ML.key_labels(v, ext_fired=(k[1] in fired)) for k, v in groups.items()}
+
+
+def ext_complete(ctx, cfg, shapes, arms):
+    """F10: did EVERY expected arm finish all four extension HI cells of every extended shape?  (A cell that was truncated or
+    never started is not 'complete'; a judged-but-failed cell such as CLIENT_ERROR is complete -- its label says so.)"""
+    cs = [c for c in cells_of(ctx, cfg, 1) if c["meta"].get("block", "main") == "main" and c["meta"]["rung"] == "HI"
+          and int(c["meta"].get("ext", 0)) >= 1]
+    for a in arms:
+        for sh in shapes:
+            got = {int(c["meta"]["seed"]): c for c in cs if c["meta"]["arm"] == a and c["meta"]["shape"] == sh}
+            for sd in C.HI_SEEDS:
+                c = got.get(sd)
+                if c is None or c["status"] == "EMPTY" or c.get("truncated"):
+                    return False, f"{a}/{sh}/seed{sd}:{'MISSING' if c is None else c['status']}"
+    return True, None
 
 
 def run_m3(ctx, table):
@@ -125,10 +148,14 @@ def run_m3(ctx, table):
         summ = key_summaries(ctx, cfg)
         ext_shapes = sorted({sh for (arm, sh), lab in summ.items() if lab["ext_trigger"]})
         decisions[cfg] = {"ext_shapes": ext_shapes}
+        ext_ok = True
         if ext_shapes:                                                # joint extension of all four arms (MGP-9)
             for spec in P.boots_ext(cfg, tuple(ext_shapes), exclude=ex):
                 go(spec)
-            summ = key_summaries(ctx, cfg)
+            if not ctx.dry:
+                ext_ok, why = ext_complete(ctx, cfg, ext_shapes, [a for a in C.ARMS if f"{cfg}:{a}" not in ex])
+                decisions[cfg].update(ext_complete=ext_ok, ext_incomplete_reason=why)
+            summ = key_summaries(ctx, cfg, fired=ext_shapes)
         x_lo, skipped = {}, []
         for sh in ("A", "B"):
             lab = summ.get(("fused", sh))
@@ -142,7 +169,12 @@ def run_m3(ctx, table):
         decisions[cfg].update(x_lo=x_lo, lo_skipped_fused_hi_undefined=skipped)
         ctx.event(config=cfg, decision=decisions[cfg])
         ext = {sh: (1 if sh in ext_shapes else 0) for sh in ("A", "B")}
-        if x_lo:
+        if x_lo and not ext_ok:                                       # F10: an incomplete extension forbids entering boot2 (LO)
+            for spec in P.boots_boot2(cfg, x_lo, ext, exclude=ex):
+                ctx.not_attempted.append({"boot_id": spec["boot_id"], "reason": "NOT_ATTEMPTED_EXT_INCOMPLETE",
+                                          "detail": decisions[cfg].get("ext_incomplete_reason")})
+                ctx.event(boot=spec["boot_id"], status="NOT_ATTEMPTED_EXT_INCOMPLETE")
+        elif x_lo:
             for spec in P.boots_boot2(cfg, x_lo, ext, exclude=ex):
                 go(spec)
     for spec in P.boots_numa():
@@ -156,8 +188,9 @@ def run_m3(ctx, table):
 
 def finish(ctx, table, decisions=None):
     cells = cells_of(ctx)
-    flags = ML.build_config_flags(ctx.out, cells)
-    doc = ML.aggregate(cells, (table or {}).get("cells"), flags)
+    excl = P.excluded_set(table) if table else set()
+    flags = ML.build_config_flags(ctx.out, cells, excl)
+    doc = ML.aggregate(cells, (table or {}).get("cells"), flags, (table or {}).get("configs"))
     doc["n_cells"] = len(cells)
     doc["driver"] = {"decisions": decisions, "not_attempted": ctx.not_attempted,
                      "truncated_cells": [c["cell_id"] for c in cells if c.get("truncated")],
@@ -172,39 +205,144 @@ def finish(ctx, table, decisions=None):
 
 
 # =========================================================================== M2g
+G3_COMBOS = (("plain", ["--streams", "plain"]), ("g16_92", ["--streams", "green", "--split", "16", "92"]),
+             ("g44_64", ["--streams", "green", "--split", "44", "64"]))
+
+
+def run_g3(ctx):
+    """G3 (§3), F1.  Runs BEFORE the serving boots.  One implementation: the gate module's `run-g3` (preflight that
+    `python -m torch.distributed.run` imports, per-combination process-group timeout, launcher.json / stdout / stderr per
+    combination, a directory with no rank file and no HANG file = NOT_TESTED(HARNESS_ERROR), unattempted combos absent).  This only
+    calls it per TP, keeps each call's output under gates/g3_logs/, and survives a missing/odd interpreter or a timeout of the call
+    itself (the TP then stays NOT_TESTED).  The Job preflight (mg_job_common.sh) already aborts a real run without a launcher."""
+    gates = ctx.out / "gates"
+    logs = gates / "g3_logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    gate = str(ENGINE / "scripts" / "multigpu" / "m2g_correctness_gate.py")
+    python = ctx.g3_python or sys.executable
+    summary = {}
+    for n in (2, 4, 8):
+        ent = {"rc": None, "exception": None}
+        summary[f"TP{n}"] = ent
+        if ctx.remaining() < 900:
+            ctx.not_attempted.append({"gate": "G3", "tp": n, "reason": "NOT_ATTEMPTED_BUDGET"})
+            ent["exception"] = "NOT_ATTEMPTED_BUDGET"
+            continue
+        argv = [sys.executable, gate, "run-g3", "--out", str(gates), "--tp", str(n), "--python", python,
+                "--deadline-epoch", str(ctx.deadline)]
+        ctx.event(g3=f"TP{n}", status="START")
+        try:
+            r = subprocess.run(argv, capture_output=True, text=True, check=False, timeout=max(60.0, ctx.remaining()))
+            ent["rc"] = r.returncode
+            (logs / f"run_g3_TP{n}.txt").write_text(r.stdout + "\n--- stderr ---\n" + r.stderr)
+        except (OSError, subprocess.TimeoutExpired) as e:
+            ent["exception"] = repr(e)
+            (logs / f"run_g3_TP{n}.txt").write_text(repr(e) + "\n")
+        ctx.event(g3=f"TP{n}", status="DONE", rc=ent["rc"], exception=ent["exception"])
+    (gates / "g3_launch.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
+    return summary
+
+
+def g1_exposure(ctx):
+    """F3: the exposure ratio of the G1 window -- fraction of decode iterations executed inside a split (division) group while
+    the G1 prompts were being served -- per PD-mux arm boot, from the telemetry restricted to the G1 step window (mg_boot writes
+    cmd_g1_<arm>.window.json on CLOCK_MONOTONIC) via mg_realized_mix.cell_e_time.  Written to gates/g1_exposure_<cfg>.json.
+    Not computable (no window / telemetry / MIX_FAILED) -> exposure null with the status; it is reported, never invented."""
+    import mg_realized_mix as RM
+    G = _gate()
+    out = {}
+    for cfg in P.M2G_CFGS:
+        mode, n = G.cfg_mode_n(cfg)
+        per = {}
+        for arm in C.PDMUX_ARMS:
+            bd = ctx.out / "boots" / f"m2g_{cfg}_{arm}"
+            w = _json(bd / f"cmd_g1_{arm}.window.json")
+            if w is None:
+                per[arm] = {"exposure_steps": None, "e_time": None, "status": "NO_G1_WINDOW"}
+                continue
+            try:
+                et = RM.cell_e_time(arm, mode, n, str(bd / "tel.jsonl"), str(bd / "green.json"), (w["t0_mono"], w["t1_mono"]))
+                per[arm] = {"exposure_steps": et.get("exposure_steps"), "e_time": et.get("e_time"), "status": et.get("status"),
+                            "reasons": (et.get("reasons") or [])[:5]}
+            except Exception as e:  # noqa: BLE001
+                per[arm] = {"exposure_steps": None, "e_time": None, "status": "MIX_FAILED", "reasons": [repr(e)]}
+        out[cfg] = per
+        (ctx.out / "gates" / f"g1_exposure_{cfg}.json").write_text(json.dumps(per, indent=1, sort_keys=True) + "\n")
+    return out
+
+
+def score_g1_all(ctx):
+    """score-g1 per config, in-process through the gate's `cli_score_g1` (single implementation of the scorer).  It reads the survival
+    records itself (alive_after.json of the fused boot and of the arm's boot: a missing record -> NOT_TESTED, a dead server -> FAIL)
+    and, with exposure_from_boots, computes the exposure of the G1 window recorded by serve-g1 (`g1_window_perf_counter_s`).  If the
+    installed gate has no such option the exposure computed by `g1_exposure` (cmd window) is passed explicitly instead."""
+    G = _gate()
+    gates = ctx.out / "gates"
+    fn = G.cli_score_g1
+    params = inspect.signature(fn).parameters
+    for cfg in ("N1",) + P.M2G_CFGS:
+        kw = {}
+        if "exposure_from_boots" in params:
+            kw.update(boots=ctx.out / "boots", exposure_from_boots=True)
+        elif "exposure" in params:
+            expo = _json(gates / f"g1_exposure_{cfg}.json") or {}
+            kw["exposure"] = {a: (v or {}).get("exposure_steps") for a, v in expo.items()}
+        try:
+            fn(gates, cfg, **kw)
+        except Exception as e:  # noqa: BLE001 - recorded; the cell stays NOT_TESTED
+            (gates / f"g1_score_error_{cfg}.txt").write_text(repr(e) + "\n")
+
+
+def g5a_gpu_descriptive(ctx):
+    """F4 / MGP-5: the GPU half of G5(a), DESCRIPTIVE: N=1 agnostic under the AUTO-grid config, decode-busy stream-index
+    histogram beside the manual N=1 agnostic boot's.  No verdict, no exclusion."""
+    import mg_realized_mix as RM
+    out = {"gate": "G5a_gpu_descriptive", "verdict": "DESCRIPTIVE"}
+    bj = _json(ctx.out / "boots" / "m2g_g5a_auto_N1" / "boot.json")
+    if bj is None:
+        out["status"] = "NOT_RUN"
+    elif not bj.get("t_health_epoch"):
+        out["status"] = "BOOT_FAILED"
+    else:
+        out["status"] = "RECORDED"
+
+        def hist(bid):
+            bd = ctx.out / "boots" / bid
+            try:
+                et = RM.cell_e_time("agnostic", "n1", 1, str(bd / "tel.jsonl"), str(bd / "green.json"))
+                return {"status": et.get("status"), "hist": [(r.get("estimate") or {}).get("busy_index_hist") for r in et.get("per_rank", [])]}
+            except Exception as e:  # noqa: BLE001
+                return {"status": "ERROR", "error": repr(e)}
+        out["auto_grid"] = hist("m2g_g5a_auto_N1")
+        out["manual_grid"] = hist("m2g_N1_agnostic")
+    (ctx.out / "gates" / "g5a_gpu.json").write_text(json.dumps(out, indent=1, sort_keys=True) + "\n")
+    return out
+
+
 def run_m2g(ctx):
     dummy = ctx.out / "DUMMY_PROFILE.json"
     dummy.write_text("{}\n")
-    # G5(a): deterministic CPU test g5a_selector_equiv.py (rc 0 PASS / 1 FAIL / 2 engine tree missing) -- recorded
-    r = subprocess.run([sys.executable, str(ENGINE / "scripts/multigpu/g5a_selector_equiv.py")],
-                       capture_output=True, text=True, check=False) if not ctx.dry else None
+    # G5(a) CPU half: deterministic test g5a_selector_equiv.py (rc 0 PASS / 1 FAIL / 2 engine tree missing) -- recorded
+    g5a = ctx.g5a_argv or [sys.executable, str(ENGINE / "scripts/multigpu/g5a_selector_equiv.py")]
+    r = subprocess.run(g5a, capture_output=True, text=True, check=False) if not ctx.dry else None
     verdict = "SKIPPED_DRYRUN" if r is None else {0: "PASS", 1: "FAIL", 2: "TREE_MISSING"}.get(r.returncode, f"RC_{r.returncode}")
     (ctx.out / "gates" / "g5a.json").write_text(json.dumps(
         {"gate": "G5a", "verdict": verdict, "tail": None if r is None else (r.stdout + r.stderr)[-600:]}) + "\n")
-    for spec in P.m2g_boots(str(dummy)):
-        run_boot(ctx, spec)
-    # G1/G2 scoring across arms (engine-porter hook, contract in the module docstring of m2g_job.sh)
     gate = str(ENGINE / "scripts" / "multigpu" / "m2g_correctness_gate.py")
     if not ctx.dry:
-        for cfg in ("N1",) + P.M2G_CFGS:
-            subprocess.run([sys.executable, gate, "score-g1", "--out", str(ctx.out / "gates"), "--config", cfg],
-                           capture_output=True, text=True, check=False)
-            subprocess.run([sys.executable, gate, "score-g2", "--out", str(ctx.out / "gates"), "--config", cfg],
-                           capture_output=True, text=True, check=False)
-        # G3: two comms in reversed order, 3 TP x (plain + green 16/92 + green 44/64)
+        run_g3(ctx)                                                  # F1: BEFORE any serving boot (M2gRun order)
         for n in (2, 4, 8):
-            for tag, extra in (("plain", ["--streams", "plain"]), ("g16_92", ["--streams", "green", "--split", "16", "92"]),
-                               ("g44_64", ["--streams", "green", "--split", "44", "64"])):
-                od = ctx.out / "gates" / f"g3_TP{n}_{tag}"
-                if ctx.remaining() < 900:
-                    ctx.not_attempted.append({"gate": "G3", "tp": n, "tag": tag, "reason": "NOT_ATTEMPTED_BUDGET"})
-                    continue
-                env = dict(os.environ, CUDA_VISIBLE_DEVICES=C.GPU_SUBSETS[f"TP{n}"])
-                subprocess.run(["torchrun", "--nproc-per-node", str(n), str(ENGINE / "scripts/multigpu/m2g_comm_reverse_stress.py"),
-                                *extra, "--out", str(od)], env=env, capture_output=True, text=True, check=False,
-                               timeout=max(60.0, ctx.remaining()))
             subprocess.run([sys.executable, gate, "score-g3", "--out", str(ctx.out / "gates"), "--tp", str(n)],
                            capture_output=True, text=True, check=False)
+    for spec in P.m2g_boots(str(dummy)):
+        run_boot(ctx, spec)
+    if not ctx.dry:
+        g1_exposure(ctx)                                             # F3
+        score_g1_all(ctx)
+        for cfg in ("N1",) + P.M2G_CFGS:
+            subprocess.run([sys.executable, gate, "score-g2", "--out", str(ctx.out / "gates"), "--config", cfg],
+                           capture_output=True, text=True, check=False)
+        g5a_gpu_descriptive(ctx)
     return assemble_pass_table(ctx.out)
 
 
@@ -220,7 +358,10 @@ def _gate():
 
 def assemble_pass_table(out):
     """Job artifacts -> engine-porter's `res` layout -> `m2g_correctness_gate.build_pass_table` (§3-1 mapping and every
-    gate scorer live THERE, tested; this function only reads files).  Missing artifact == NOT_TESTED == excluded."""
+    gate scorer live THERE, tested; this function only reads files).  Missing artifact == NOT_TESTED == excluded.
+    Liveness (F2) is read by the gate scorers from boots/<id>/alive_after.json (G3b: that boot; G1: the fused boot and the arm's
+    boot; missing -> NOT_TESTED, dead -> FAIL).  NVML unavailable at the pre-boot check
+    (CONTAM_UNVERIFIED, F5) is NOT 'clean': the cell's G5(c) contamination check is NOT_TESTED (excluded) and it is listed."""
     G = _gate()
     out = Path(out)
     cfgs = ("N1",) + P.M2G_CFGS
@@ -237,6 +378,7 @@ def assemble_pass_table(out):
                 "log_text": txt(out / "boots" / bid / "server.log") or ""}
 
     res = {k: {} for k in ("g0i", "g1", "g2", "g3", "g3b", "g4", "g5b", "g5c", "contam", "nvml_post", "meta")}
+    unverified, exposure_tab = [], {}
     ref_ids = sorted(b.name for b in (out / "boots").glob("m2g_refuse_*")) if (out / "boots").exists() else []
     res["g0ii"] = G.score_g0_ii([d for d in map(boot_dict, ref_ids) if d is not None])
     res["g0iii"] = G.score_g0_refusal(boot_dict("m2g_autogrid_TP2"), G.DEVICE_ASSERT_TEXT)
@@ -257,23 +399,24 @@ def assemble_pass_table(out):
                 res["nvml_post"][k] = {int(g): int(c or 0) for g, c in pc.items()}
         if cfg != "N1":
             g1 = _json(out / "gates" / f"g1_{cfg}.json") or {}
+            expo = _json(out / "gates" / f"g1_exposure_{cfg}.json") or {}
             for arm in C.PDMUX_ARMS:
                 v = (g1.get("verdicts") or {}).get(f"fused|{arm}")
-                if v is not None:
-                    res["g1"][G.cell_key(cfg, arm)] = {"verdict": v}
+                if v is None:
+                    continue
+                det = (g1.get("detail") or {}).get(f"fused|{arm}") or {}
+                res["g1"][G.cell_key(cfg, arm)] = {"verdict": v}        # abnormal exit / unknown liveness were applied by the scorer
+                e = det.get("exposure_split_steps")
+                exposure_tab[G.cell_key(cfg, arm)] = e if e is not None else (expo.get(arm) or {}).get("exposure_steps")
         if mode == "tp":
             for name, sec in (("g2", f"g2_{cfg}.json"), ("g3", f"g3_TP{n}.json")):
                 d = _json(out / "gates" / sec)
                 if d is not None:
                     res[name][cfg] = d
             for arm in C.G3B_ARMS:
-                cds = list((out / "cells").glob(f"m2g_{cfg}_{arm}__A_G3B_s*")) if (out / "cells").exists() else []
-                rq = cds[0] / "requests.jsonl" if cds else None
-                if rq is not None and rq.exists():
-                    bj = _json(out / "boots" / f"m2g_{cfg}_{arm}" / "boot.json") or {}
-                    alive = not (bj.get("status") in ("BOOT_FAILED", "BOOT_TIMEOUT")
-                                 or any(s.get("status") == "SERVER_DIED" for s in bj.get("steps", [])))
-                    res["g3b"][G.cell_key(cfg, arm)] = G.score_g3b(ML.load_requests(rq), alive, g_fn=ML.g_of)
+                if (out / "cells").exists() and list((out / "cells").glob(f"m2g_{cfg}_{arm}__A_G3B_s*")):
+                    # requests + the survival record after the LAST step of that boot (a missing record -> NOT_TESTED)
+                    res["g3b"][G.cell_key(cfg, arm)] = G.score_g3b_artifacts(out, cfg, arm, g_fn=ML.g_of, load_requests=ML.load_requests)
         if mode == "dp":
             arms = {}
             for arm in C.PDMUX_ARMS:
@@ -289,14 +432,24 @@ def assemble_pass_table(out):
             if cp is None:
                 continue
             snap = (cp.get("snapshot") or {}).get("gpus") or {}
+            ver = cp.get("verdict") or {}
+            if (cp.get("snapshot") or {}).get("available") is False or ver.get("contam_unverified") or not snap:
+                unverified.append(k)                  # F5: the check did not run -> not 'clean'; contam stays absent == NOT_TESTED
+                continue
             pre = {int(g): {"memory_used_mib": v["used_mib"], "n_procs": v["n_compute_procs"] or 0} for g, v in snap.items()}
-            res["contam"][k] = G.check_contamination(pre, procs_visible=visible) if pre else {"gpu_contaminated": False,
-                                                                                               "problems": ["NVML unavailable"]}
+            res["contam"][k] = G.check_contamination(pre, procs_visible=visible)
             cx = _json(out / "boots" / f"m2g_{cfg}_{arm}" / "contam.json")
             if cx and cx.get("gpu_contaminated"):
                 res["contam"][k] = {"gpu_contaminated": True, "problems": [str(cx)]}
     table = G.build_pass_table(res)
     table["g5a_unit_test"] = (_json(out / "gates" / "g5a.json") or {}).get("verdict", "NOT_TESTED")
+    table["g5a_gpu_descriptive"] = (_json(out / "gates" / "g5a_gpu.json") or {}).get("status", "NOT_RUN")
+    table["contam_unverified"] = sorted(unverified)
+    for k in unverified:
+        if k in table["cells"]:
+            table["cells"][k].setdefault("reasons", []).append("CONTAM_UNVERIFIED")
+            table["cells"][k]["reason"] = "; ".join(table["cells"][k]["reasons"])
+    table["g1_exposure_split_steps"] = exposure_tab
     sha = G.write_pass_table(table, out / C.M2G_PASS_TABLE)
     (out / (C.M2G_PASS_TABLE + ".sha256")).write_text(sha + "\n")
     (out / "M2G_GATE_RESULTS.json").write_text(json.dumps({k: v for k, v in res.items() if k != "meta"}, indent=1,
@@ -313,6 +466,7 @@ def main(argv=None):
     ap.add_argument("--t0-epoch", type=float, default=None)
     ap.add_argument("--pass-table", default="")
     ap.add_argument("--pass-sha256", default="")
+    ap.add_argument("--committed-sha-file", default="", help="F17: committed results/multigpu/M2G_PASS_TABLE.json.sha256")
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -330,7 +484,7 @@ def main(argv=None):
         return 0
     table = None
     if a.pass_table or not a.dry_run:
-        table, abort = P.load_pass_table(a.pass_table, a.pass_sha256)
+        table, abort = P.load_pass_table(a.pass_table, a.pass_sha256, a.committed_sha_file or None)
         if abort:
             print(abort, file=sys.stderr)
             (out / "ABORT").write_text(abort + "\n")

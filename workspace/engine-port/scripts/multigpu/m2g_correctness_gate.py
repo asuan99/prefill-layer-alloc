@@ -15,6 +15,12 @@ LAYOUT
             with a fake.  Required io methods are listed in `IO_METHODS`.
   build_pass_table   sec 3-1 FAIL units -> M2G_PASS_TABLE.json (fail-closed: a gate
             with no result is NOT_TESTED and excludes its coverage like a FAIL).
+  run_g3    F1 (harness verdict 2026-10-12): G3 launcher -- `python -m torch.distributed.run`,
+            preflight, timeout + process-group kill, launcher.json/stdout/stderr per combination;
+            a result directory with no rank file and no HANG file is NOT_TESTED(HARNESS_ERROR).
+  alive_after.json   F2: survival record written by the boot runner after the LAST step of every
+            boot (make_alive_record / record_alive_after); G1 '비정상 종료 0' and G3b '서버 생존'
+            read it; a missing record is NOT_TESTED, never a silent pass.
   G5(a)     is the deterministic CPU test scripts/multigpu/g5a_selector_equiv.py
             (sealing precondition, not a Job step); the Job records the N=1
             auto-vs-manual selection distribution as a DESCRIPTIVE value only (MGP-5).
@@ -30,7 +36,10 @@ import hashlib
 import importlib.util
 import json
 import math
+import os
+import signal
 import statistics
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -89,6 +98,14 @@ CAPTURE_END = "Capture cuda graph end"
 CAPTURE_FAILED = "Capture cuda graph failed"  # cuda_graph_runner.py
 PIECEWISE_BEGIN = "Capture piecewise CUDA graph begin"  # H8 descriptive
 PIECEWISE_END = "Capture piecewise CUDA graph end"
+G3_COMBO_TIMEOUT_S = 900.0  # F1: outer wall-clock cap per (TP, combo) launcher run; the registered
+                            # 120 s progress watchdog is INSIDE the ranks.  Harness choice, audit it.
+G3_KILL_GRACE_S = 10.0  # SIGTERM -> SIGKILL grace for the launcher's process group on timeout
+G3_LAUNCHER_MODULE = "torch.distributed.run"  # F1: `python -m torch.distributed.run` (no `torchrun` on PATH needed)
+G3_STRESS_SCRIPT = HERE / "m2g_comm_reverse_stress.py"
+HARNESS_ERROR = "HARNESS_ERROR"  # F1 / lesson 21: a measurement failure is NOT_TESTED, never FAIL
+ALIVE_RECORD_NAME = "alive_after.json"  # F2: written by mg_boot after the LAST step of every boot
+ALIVE_SCHEMA = "m2g_alive_after/v1"
 
 PASS, FAIL, NOT_TESTED, UNINFORMATIVE = "PASS", "FAIL", "NOT_TESTED", "UNINFORMATIVE"
 
@@ -175,20 +192,33 @@ def g1_metrics(off: Mapping[str, Sequence[int]], on: Mapping[str, Sequence[int]]
             "zero_length": zero, "first_diff": first_diff}
 
 
-def score_g1(pair: Optional[Mapping], ctl: Optional[Mapping], abnormal_exit: bool = False,
+def score_g1(pair: Optional[Mapping], ctl: Optional[Mapping], abnormal_exit: Optional[bool] = None,
              exposure: Optional[float] = None) -> Dict:
     """sec 3 G1 against the same comparison at N=1 (G1-ctl) measured in the same Job.
 
+    abnormal_exit is TRI-STATE (F2): True = a survival record shows the fused or the PD-mux
+    server dead after its last step; False = both records show it alive; None = a record is
+    missing -> "비정상 종료 0" cannot be established -> NOT_TESTED (never silently False).
+
     Order: an abnormal exit or a zero-length output in the TESTED pair is FAIL regardless
     of the control; a broken control (zero-length outputs or missing) makes the pair
-    NOT_TESTED; a control with m median < 0.5 makes the pair UNINFORMATIVE (not FAIL,
-    no correctness sentence)."""
-    out = {"exposure_split_steps": exposure}  # MGP-2: reported beside the verdict
+    NOT_TESTED; a control with m median < 0.5 makes the pair UNINFORMATIVE (not FAIL, no
+    correctness sentence).  A missing survival record turns every outcome except an
+    observed FAIL (output divergence beyond the margins) into NOT_TESTED -- a seen failure
+    is not relabelled as untested."""
+    out = {"exposure_split_steps": exposure, "abnormal_exit": abnormal_exit}  # MGP-2: reported beside the verdict
     if pair is None:
         return {**out, "verdict": NOT_TESTED, "why": "pair outputs missing"}
-    if abnormal_exit or pair["zero_length"] or pair["n"] < G1_N_PROMPTS:
+    if abnormal_exit is True or pair["zero_length"] or pair["n"] < G1_N_PROMPTS:
         return {**out, "verdict": FAIL, "why": "abnormal exit / zero-length output / prompts missing",
                 "zero_length": pair["zero_length"], "n": pair["n"]}
+    if abnormal_exit is None:
+        r = score_g1(pair, ctl, False, exposure)
+        r["abnormal_exit"] = None
+        if r["verdict"] != FAIL:
+            r.update(verdict=NOT_TESTED, why="survival record (alive_after.json) missing -> abnormal exit unknown",
+                     verdict_if_alive=r["verdict"])
+        return r
     if ctl is None or ctl["zero_length"] or ctl["n"] < G1_N_PROMPTS:
         return {**out, "verdict": NOT_TESTED, "why": "G1-ctl missing or broken"}
     out.update(m_median=pair["m_median"], q=pair["q"], ctl_m_median=ctl["m_median"], ctl_q=ctl["q"])
@@ -196,6 +226,85 @@ def score_g1(pair: Optional[Mapping], ctl: Optional[Mapping], abnormal_exit: boo
         return {**out, "verdict": UNINFORMATIVE}
     ok = (pair["m_median"] >= ctl["m_median"] - G1_M_MARGIN) and (pair["q"] <= ctl["q"] + G1_Q_MARGIN)
     return {**out, "verdict": PASS if ok else FAIL}
+
+
+# ------------------------------------------------------------------ survival record (F2)
+def make_alive_record(boot_id: str, poll_returncode: Optional[int], health_http_status: Optional[int],
+                      health_error: Optional[str] = None, after_step: Optional[Mapping] = None,
+                      steps_total: Optional[int] = None, t_epoch: Optional[float] = None) -> Dict:
+    """Schema m2g_alive_after/v1 (one file per boot: boots/<boot_id>/alive_after.json).
+
+      schema              "m2g_alive_after/v1"
+      boot_id             str, e.g. "m2g_TP2_agnostic"
+      t_epoch             float, time of the check (after the last step returned)
+      after_step          {"index": int, "type": str, "status": str} of the LAST step in the boot's
+                          step list (whatever its status), or null when the boot had no step
+      steps_total         int, number of steps in the boot's step list
+      poll_returncode     server Popen.poll() at the check: null = still running, int = exited
+      health_http_status  HTTP status of GET <endpoint>/health (timeout 10 s), null = no response
+      health_error        repr of the request exception, or null
+      alive               derived = (poll_returncode is null AND health_http_status == 200);
+                          readers RE-DERIVE it from the two raw fields and ignore this copy."""
+    return {"schema": ALIVE_SCHEMA, "boot_id": boot_id, "t_epoch": time.time() if t_epoch is None else t_epoch,
+            "after_step": dict(after_step) if after_step is not None else None, "steps_total": steps_total,
+            "poll_returncode": poll_returncode, "health_http_status": health_http_status,
+            "health_error": health_error,
+            "alive": poll_returncode is None and health_http_status == 200}
+
+
+def _http_health(endpoint: str, timeout_s: float) -> Tuple[Optional[int], Optional[str]]:
+    import urllib.error
+    import urllib.request
+    try:
+        with urllib.request.urlopen(endpoint.rstrip("/") + "/health", timeout=timeout_s) as resp:
+            return int(resp.status), None
+    except urllib.error.HTTPError as exc:
+        return int(exc.code), repr(exc)
+    except Exception as exc:  # noqa: BLE001 - recorded, never raised
+        return None, repr(exc)
+
+
+def record_alive_after(boot_dir: Path, boot_id: str, proc: Any, endpoint: str,
+                       after_step: Optional[Mapping] = None, steps_total: Optional[int] = None,
+                       timeout_s: float = 10.0, health: Optional[Callable] = None) -> Dict:
+    """Call ONCE per boot, after the last step and BEFORE teardown: proc.poll() + GET /health ->
+    boot_dir/alive_after.json.  `health(endpoint, timeout_s) -> (status, error)` injectable."""
+    rc = proc.poll() if proc is not None else -1
+    st, err = (health or _http_health)(endpoint, timeout_s) if rc is None else (None, "process exited before check")
+    rec = make_alive_record(boot_id, rc, st, err, after_step, steps_total)
+    Path(boot_dir).mkdir(parents=True, exist_ok=True)
+    (Path(boot_dir) / ALIVE_RECORD_NAME).write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n")
+    return rec
+
+
+def read_alive_after(boot_dir: Path) -> Optional[Dict]:
+    """The record, or None when absent / unreadable / wrong schema / raw fields missing."""
+    f = Path(boot_dir) / ALIVE_RECORD_NAME
+    try:
+        rec = json.loads(f.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(rec, dict) or rec.get("schema") != ALIVE_SCHEMA \
+            or "poll_returncode" not in rec or "health_http_status" not in rec:
+        return None
+    return rec
+
+
+def alive_after(boot_dir: Path) -> Optional[bool]:
+    """True = alive after the last step, False = dead, None = no valid record (-> NOT_TESTED)."""
+    rec = read_alive_after(boot_dir)
+    if rec is None:
+        return None
+    return rec["poll_returncode"] is None and rec["health_http_status"] == 200
+
+
+def abnormal_exit_of(*alive: Optional[bool]) -> Optional[bool]:
+    """G1 '비정상 종료 0' over the boots of a pair: any dead -> True; else any unknown -> None; else False."""
+    if any(a is False for a in alive):
+        return True
+    if any(a is None for a in alive):
+        return None
+    return False
 
 
 # ============================================================================ G2
@@ -259,21 +368,51 @@ def score_g2(tp1_a: Optional[Mapping], tp1_b: Optional[Mapping], tpn: Optional[M
 
 
 # ============================================================================ G3
+def _nt_label(row: Optional[Mapping]) -> str:
+    """Verdict text for the pass table: NOT_TESTED carries its sub-reason, e.g. NOT_TESTED(HARNESS_ERROR)."""
+    if not row:
+        return NOT_TESTED
+    v = row.get("verdict", NOT_TESTED)
+    r = row.get("not_tested_reason")
+    return f"{v}({r})" if v == NOT_TESTED and r else v
+
+
 def score_g3_combo(out_dir: Path, world: int, repeats: int = G3_REPEATS,
                    launcher_rc: Optional[int] = None) -> Dict:
     """One (TP=N, streams, split) run of m2g_comm_reverse_stress.py.
-    PASS <=> no HANG file AND every rank file present with completed == repeats and errors == 0."""
+
+    PASS     <=> no HANG file AND every rank file present with completed == repeats and errors == 0.
+    FAIL     <=> a HANG file, or SOME rank evidence (>= 1 readable rank file) that is incomplete/wrong.
+    NOT_TESTED: directory absent (not attempted), or directory present with NO readable rank file
+              and NO HANG file -> not_tested_reason HARNESS_ERROR (launcher missing, timeout before
+              any rank result, import error ...; lesson 21: not a gate failure).  Exclusion is the
+              same as FAIL (sec 3-1 last row); only the label differs.
+    launcher.json (written by run_g3_combo) is read when present and reported."""
     out_dir = Path(out_dir)
     if not out_dir.is_dir():
         return {"verdict": NOT_TESTED, "why": f"{out_dir} absent"}
+    launcher = None
+    lj = out_dir / "launcher.json"
+    if lj.exists():
+        try:
+            launcher = json.loads(lj.read_text())
+        except ValueError:
+            launcher = {"status": "LAUNCHER_JSON_UNREADABLE"}
+    if launcher_rc is None and launcher:
+        launcher_rc = launcher.get("rc")
     hangs = sorted(p.name for p in out_dir.glob("HANG.rank*.json"))
-    ranks, bad = {}, []
+    ranks, bad, unreadable = {}, [], []
     for r in range(world):
         p = out_dir / f"rank{r}.json"
         if not p.exists():
             bad.append(f"rank{r}: no result file")
             continue
-        d = json.loads(p.read_text())
+        try:
+            d = json.loads(p.read_text())
+        except ValueError:
+            unreadable.append(r)
+            bad.append(f"rank{r}: unreadable result file")
+            continue
         ranks[r] = d
         if d.get("repeats") != repeats or d.get("completed") != repeats:
             bad.append(f"rank{r}: completed {d.get('completed')} / repeats {d.get('repeats')} != {repeats}")
@@ -281,20 +420,151 @@ def score_g3_combo(out_dir: Path, world: int, repeats: int = G3_REPEATS,
             bad.append(f"rank{r}: {d.get('errors')} integer-sum errors")
         if d.get("world") != world:
             bad.append(f"rank{r}: world {d.get('world')} != {world}")
-    v = PASS if not hangs and not bad else FAIL
-    return {"verdict": v, "hangs": hangs, "problems": bad, "launcher_rc": launcher_rc,
+    base = {"hangs": hangs, "problems": bad, "launcher_rc": launcher_rc,
+            "launcher_status": (launcher or {}).get("status"),
             "elapsed_s": {r: d.get("elapsed_s") for r, d in ranks.items()}}
+    if not hangs and not ranks:
+        return {**base, "verdict": NOT_TESTED, "not_tested_reason": HARNESS_ERROR,
+                "why": f"{HARNESS_ERROR}: result directory present but no readable rank file and no HANG file"
+                       f" (launcher status {base['launcher_status']}, rc {launcher_rc})"}
+    return {**base, "verdict": PASS if not hangs and not bad else FAIL}
 
 
 def score_g3(combos: Mapping[str, Optional[Mapping]]) -> Dict:
-    """All three registered combinations must PASS for the TP=N."""
+    """All three registered combinations must PASS for the TP=N.  An observed FAIL in any
+    combination is FAIL even if another combination is NOT_TESTED (a seen hang is not
+    relabelled as untested); otherwise any NOT_TESTED -> NOT_TESTED, carrying HARNESS_ERROR
+    when a combination's run was a harness error.  Exclusion (sec 3-1) is identical."""
     want = [combo_name(s, sp) for s, sp in G3_COMBOS]
     rows = {k: combos.get(k) for k in want}
-    if any(r is None or r["verdict"] == NOT_TESTED for r in rows.values()):
-        v = NOT_TESTED
+    out: Dict[str, Any] = {"combos": rows}
+    if any(r is not None and r.get("verdict") == FAIL for r in rows.values()):
+        out["verdict"] = FAIL
+    elif any(r is None or r.get("verdict") == NOT_TESTED for r in rows.values()):
+        out["verdict"] = NOT_TESTED
+        if any(r is not None and r.get("not_tested_reason") == HARNESS_ERROR for r in rows.values()):
+            out["not_tested_reason"] = HARNESS_ERROR
     else:
-        v = PASS if all(r["verdict"] == PASS for r in rows.values()) else FAIL
-    return {"verdict": v, "combos": rows}
+        out["verdict"] = PASS
+    return out
+
+
+# ------------------------------------------------------------------ G3 execution (F1)
+def g3_launcher_argv(n: int, streams: str, split, out_dir: Path, python: str = sys.executable,
+                     repeats: int = G3_REPEATS, watchdog_s: float = G3_WATCHDOG_S) -> List[str]:
+    """`python -m torch.distributed.run --standalone --nproc-per-node N m2g_comm_reverse_stress.py ...`."""
+    argv = [python, "-m", G3_LAUNCHER_MODULE, "--standalone", "--nproc-per-node", str(int(n)),
+            str(G3_STRESS_SCRIPT), "--streams", streams]
+    if split is not None:
+        argv += ["--split", str(int(split[0])), str(int(split[1]))]
+    return argv + ["--repeats", str(int(repeats)), "--timeout-s", str(float(watchdog_s)), "--out", str(out_dir)]
+
+
+def g3_preflight(python: str = sys.executable, modules: Sequence[str] = (G3_LAUNCHER_MODULE,),
+                 timeout_s: float = 120.0, env: Optional[Mapping[str, str]] = None) -> Dict:
+    """Can this interpreter import the launcher?  Never raises.  ok False -> every G3 combination of
+    the call is NOT_TESTED(HARNESS_ERROR) without a launch attempt."""
+    code = "import importlib, sys\nfor m in sys.argv[1:]:\n    importlib.import_module(m)\n"
+    out = {"python": python, "modules": list(modules), "stress_script": str(G3_STRESS_SCRIPT),
+           "stress_script_present": G3_STRESS_SCRIPT.is_file()}
+    try:
+        r = subprocess.run([python, "-c", code, *modules], capture_output=True, text=True, timeout=timeout_s,
+                           check=False, env=dict(env) if env is not None else None)
+        out.update(rc=r.returncode, stderr_tail=r.stderr[-2000:], status="RAN")
+    except subprocess.TimeoutExpired:
+        out.update(rc=None, status="TIMEOUT", stderr_tail="")
+    except (FileNotFoundError, PermissionError, OSError) as exc:
+        out.update(rc=None, status="LAUNCHER_NOT_FOUND" if isinstance(exc, FileNotFoundError) else "OSERROR",
+                   stderr_tail=repr(exc))
+    out["ok"] = out.get("rc") == 0 and out["stress_script_present"]
+    return out
+
+
+def _kill_group(proc, grace_s: float) -> None:
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(proc.pid, sig)
+        except (ProcessLookupError, PermissionError):
+            return
+        try:
+            proc.wait(timeout=grace_s)
+            return
+        except subprocess.TimeoutExpired:
+            continue
+
+
+def run_g3_combo(n: int, streams: str, split, out_dir: Path, env: Optional[Mapping[str, str]] = None,
+                 timeout_s: float = G3_COMBO_TIMEOUT_S, python: str = sys.executable,
+                 argv: Optional[Sequence[str]] = None, preflight: Optional[Mapping] = None,
+                 kill_grace_s: float = G3_KILL_GRACE_S) -> Dict:
+    """Launch ONE combination and score it.  Never raises for launcher problems.
+
+    Writes into out_dir: launcher.json {argv, status, rc, timeout_s, t_start_epoch, elapsed_s, preflight},
+    launcher.stdout.txt, launcher.stderr.txt.  status: RAN | TIMEOUT (process group killed) |
+    LAUNCHER_NOT_FOUND (FileNotFoundError) | OSERROR | PREFLIGHT_FAILED (not launched).
+    Returns score_g3_combo(out_dir, n) (+ the launcher record)."""
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    argv = list(argv) if argv is not None else g3_launcher_argv(n, streams, split, out_dir, python)
+    rec: Dict[str, Any] = {"argv": argv, "timeout_s": timeout_s, "t_start_epoch": time.time(), "rc": None,
+                           "preflight": dict(preflight) if preflight is not None else None}
+    t0 = time.monotonic()
+    if preflight is not None and not preflight.get("ok"):
+        rec["status"] = "PREFLIGHT_FAILED"
+        (out_dir / "launcher.stdout.txt").write_text("")
+        (out_dir / "launcher.stderr.txt").write_text(str(preflight.get("stderr_tail") or ""))
+    else:
+        with open(out_dir / "launcher.stdout.txt", "wb") as so, open(out_dir / "launcher.stderr.txt", "wb") as se:
+            try:
+                proc = subprocess.Popen(argv, stdout=so, stderr=se, env=dict(env) if env is not None else None,
+                                        start_new_session=True)
+            except FileNotFoundError as exc:
+                rec.update(status="LAUNCHER_NOT_FOUND", error=repr(exc))
+            except OSError as exc:
+                rec.update(status="OSERROR", error=repr(exc))
+            else:
+                try:
+                    rec["rc"] = proc.wait(timeout=timeout_s)
+                    rec["status"] = "RAN"
+                except subprocess.TimeoutExpired:
+                    _kill_group(proc, kill_grace_s)
+                    rec.update(status="TIMEOUT", rc=proc.poll())
+    rec["elapsed_s"] = time.monotonic() - t0
+    (out_dir / "launcher.json").write_text(json.dumps(rec, indent=1, sort_keys=True, default=str) + "\n")
+    row = score_g3_combo(out_dir, n, G3_REPEATS)
+    row["launcher"] = rec
+    return row
+
+
+def g3_combo_dir(gates: Path, n: int, streams: str, split) -> Path:
+    return Path(gates) / f"g3_TP{int(n)}_{G3_DIR_TAGS[combo_name(streams, split)]}"
+
+
+def run_g3(n: int, gates: Path, cuda_visible_devices: Optional[str] = None,
+           timeout_s: float = G3_COMBO_TIMEOUT_S, python: str = sys.executable,
+           base_env: Optional[Mapping[str, str]] = None, deadline_epoch: Optional[float] = None,
+           preflight: Optional[Mapping] = None) -> Dict:
+    """F1 entry point for mg_drive: TP=N x three registered combinations, then score -> gates/g3_TP{N}.json.
+
+    cuda_visible_devices defaults to mg_const.GPU_SUBSETS[f"TP{N}"].  deadline_epoch: a combination is
+    not started when now + timeout_s > deadline (its directory is not created -> NOT_TESTED, listed in
+    `not_attempted`).  preflight: pass one g3_preflight() result to reuse it across N; None -> run it here."""
+    gates = Path(gates)
+    gates.mkdir(parents=True, exist_ok=True)
+    env = dict(base_env if base_env is not None else os.environ)
+    env["CUDA_VISIBLE_DEVICES"] = cuda_visible_devices or C.GPU_SUBSETS[f"TP{int(n)}"]
+    pf = dict(preflight) if preflight is not None else g3_preflight(python, env=env)
+    not_attempted = []
+    for streams, split in G3_COMBOS:
+        if deadline_epoch is not None and time.time() + timeout_s > deadline_epoch:
+            not_attempted.append(combo_name(streams, split))
+            continue
+        run_g3_combo(n, streams, split, g3_combo_dir(gates, n, streams, split), env, timeout_s, python,
+                     preflight=pf)
+    r = cli_score_g3(gates, n)
+    r.update(preflight=pf, not_attempted=not_attempted)
+    _write(gates / f"g3_TP{int(n)}.json", r)
+    return r
 
 
 def combo_name(streams: str, split) -> str:
@@ -498,10 +768,10 @@ def build_pass_table(res: Mapping) -> Dict:
             if g0ii != PASS:
                 cfg_reasons.append(f"G0(ii) guard refusal {g0ii} (TP axis)")
             if v("g3", cfg) != PASS:
-                cfg_reasons.append(f"G3 comm stress {v('g3', cfg)}")
+                cfg_reasons.append(f"G3 comm stress {_nt_label((res.get('g3') or {}).get(cfg))}")
             for arm in G3B_ARMS:
                 if v("g3b", cell_key(cfg, arm)) != PASS:
-                    cfg_reasons.append(f"G3b {arm} {v('g3b', cell_key(cfg, arm))}")
+                    cfg_reasons.append(f"G3b {arm} {_nt_label((res.get('g3b') or {}).get(cell_key(cfg, arm)))}")
             g2v = v("g2", cfg)
             if g2v == FAIL:
                 flags.append("TP_NUMERIC_DIVERGENT")
@@ -751,7 +1021,9 @@ class M2gRun:
                     continue
                 ctl = self.res["descriptive"].get("g1_ctl", {}).get(arm)
                 exp = self.res["descriptive"].get("exposure", {}).get(cell_key(cfg, arm))
-                ab = any(self.res.get("_abnormal", {}).get(cell_key(cfg, x), False) for x in ("fused", arm))
+                abn = self.res.get("_abnormal", {})
+                ab = abnormal_exit_of(*[None if cell_key(cfg, x) not in abn else not abn[cell_key(cfg, x)]
+                                        for x in ("fused", arm)])
                 self.res["g1"][cell_key(cfg, arm)] = score_g1(pair, ctl, ab, exp)
             if mode == "tp":
                 g2 = self.res.get("_g2", {})
@@ -870,7 +1142,11 @@ def teacher_agreement(run: Mapping[str, Sequence[Mapping]]) -> Optional[float]:
 # Adapters for experiment-runner's mg_plan/mg_drive step contract (gates/ directory):
 #   serve-g1 --endpoint E --out GATES --config CFG --arm ARM    -> g1_out_{CFG}_{ARM}.json
 #   serve-g2 --endpoint E --out GATES --config CFG --repeats K  -> g2_tf_{CFG}_r{i}.json
-#   score-g1 --out GATES --config CFG                           -> g1_{CFG}.json  {"verdicts": {"fused|agnostic", "fused|d44"}}
+#   score-g1 --out GATES --config CFG [--boots DIR] [--exposure-json F | --exposure-from-boots]
+#                                                               -> g1_{CFG}.json  {"verdicts": {"fused|agnostic", "fused|d44"}}
+#   run-g3   --out GATES --tp N [--timeout-s S] [--python PY] [--gpus 0,1] [--deadline-epoch T]
+#                                                               -> g3_TP{N}_{plain,g16_92,g44_64}/ + g3_TP{N}.json
+#   g3-preflight [--python PY]                                  -> JSON on stdout, rc 0 ok / 1 not ok
 #   score-g2 --out GATES --config CFG                           -> g2_{CFG}.json
 #   score-g3 --out GATES --tp N                                 -> g3_TP{N}.json  (reads g3_TP{N}_{plain,g16_92,g44_64}/)
 G3_DIR_TAGS = {"plain": "plain", "green_16_92": "g16_92", "green_44_64": "g44_64"}
@@ -885,12 +1161,42 @@ def _write(p: Path, doc) -> None:
     p.write_text(json.dumps(doc, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
 
 
-def cli_score_g1(gates: Path, cfg: str, exposure: Optional[Mapping[str, float]] = None) -> Dict:
+BOOT_ID_FMT = "m2g_{cfg}_{arm}"  # mg_plan boot ids (boots/<id>/), as read by mg_drive.assemble_pass_table
+
+
+def g1_exposure(boots: Path, cfg: str, arm: str, window: Optional[Sequence[float]]) -> Dict:
+    """F3 / MGP-2: the share of decode steps in a split group (mg_realized_mix `exposure_steps`)
+    and the E-time, over the G1 send window ONLY (telemetry clock = time.perf_counter, CLOCK_MONOTONIC,
+    which serve-g1 records as `g1_window_perf_counter_s`).  Descriptive: never changes a verdict.
+    No window -> status NO_G1_WINDOW, value None (the whole-boot value would include other steps)."""
+    mode, n = cfg_mode_n(cfg)
+    bd = Path(boots) / BOOT_ID_FMT.format(cfg=cfg, arm=arm)
+    if not window or len(window) != 2:
+        return {"status": "NO_G1_WINDOW", "exposure_steps": None, "e_time": None, "window": None}
+    et = _mix().cell_e_time(arm, mode, n, str(bd / "tel.jsonl"), str(bd / "green.json"),
+                            (float(window[0]), float(window[1])))
+    return {"status": et.get("status"), "exposure_steps": et.get("exposure_steps") if et.get("status") == "OK" else None,
+            "e_time": et.get("e_time"), "window": [float(window[0]), float(window[1])],
+            "reasons": et.get("reasons", [])}
+
+
+def cli_score_g1(gates: Path, cfg: str, exposure: Optional[Mapping[str, float]] = None,
+                 boots: Optional[Path] = None, exposure_from_boots: bool = False) -> Dict:
+    """score-g1 adapter.  Survival (F2): reads boots/<m2g_{cfg}_fused>/alive_after.json and
+    boots/<m2g_{cfg}_{arm}>/alive_after.json (boots defaults to gates/../boots); a missing record
+    -> that pair NOT_TESTED.  Exposure (F3): `exposure` {arm: value} given explicitly wins;
+    else with exposure_from_boots the G1-window value is computed (g1_exposure)."""
+    gates = Path(gates)
+    boots = Path(boots) if boots is not None else gates.parent / "boots"
+
+    def doc_of(c, a):
+        return _read(gates / f"g1_out_{c}_{a}.json")
+
     def outs(c, a):
-        d = _read(gates / f"g1_out_{c}_{a}.json")
+        d = doc_of(c, a)
         return None if d is None else d.get("outputs")
 
-    doc = {"config": cfg, "verdicts": {}, "detail": {}}
+    doc = {"config": cfg, "verdicts": {}, "detail": {}, "boots_dir": str(boots)}
     for arm in PDMUX_ARMS:
         f, a = outs(cfg, "fused"), outs(cfg, arm)
         pair = g1_metrics(f, a) if f is not None and a is not None else None
@@ -900,11 +1206,47 @@ def cli_score_g1(gates: Path, cfg: str, exposure: Optional[Mapping[str, float]] 
             continue
         cf, ca = outs("N1", "fused"), outs("N1", arm)
         ctl = g1_metrics(cf, ca) if cf is not None and ca is not None else None
-        r = score_g1(pair, ctl, False, (exposure or {}).get(arm))
+        alive = {x: alive_after(boots / BOOT_ID_FMT.format(cfg=cfg, arm=x)) for x in ("fused", arm)}
+        exp_detail = None
+        if exposure is not None and arm in exposure:
+            exp_val = exposure[arm]
+            exp_detail = {"status": "GIVEN", "exposure_steps": exp_val}
+        elif exposure_from_boots:
+            exp_detail = g1_exposure(boots, cfg, arm, (doc_of(cfg, arm) or {}).get("g1_window_perf_counter_s"))
+            exp_val = exp_detail["exposure_steps"]
+        else:
+            exp_val = None
+        r = score_g1(pair, ctl, abnormal_exit_of(alive["fused"], alive[arm]), exp_val)
+        r["alive_after"] = alive
+        r["exposure_detail"] = exp_detail
         doc["verdicts"][f"fused|{arm}"] = r["verdict"]
         doc["detail"][f"fused|{arm}"] = r
     _write(gates / f"g1_{cfg}.json", doc)
     return doc
+
+
+def score_g3b_artifacts(out: Path, cfg: str, arm: str, g_fn: Optional[Callable] = None,
+                        load_requests: Optional[Callable] = None) -> Dict:
+    """G3b from Job artifacts (F2): requests = cells/m2g_{cfg}_{arm}__A_G3B_s*/requests.jsonl,
+    server alive = boots/m2g_{cfg}_{arm}/alive_after.json (after the LAST step of that boot, hence
+    after the G3b cell).  Missing requests or survival record -> NOT_TESTED."""
+    out = Path(out)
+    cds = sorted((out / "cells").glob(f"{BOOT_ID_FMT.format(cfg=cfg, arm=arm)}__A_G3B_s*")) \
+        if (out / "cells").exists() else []
+    rq = cds[0] / "requests.jsonl" if len(cds) == 1 else None
+    reqs = None
+    if rq is not None and rq.exists():
+        if load_requests is not None:
+            reqs = load_requests(rq)
+        else:
+            reqs = [json.loads(ln) for ln in rq.read_text().splitlines() if ln.strip()]
+    alive = alive_after(out / "boots" / BOOT_ID_FMT.format(cfg=cfg, arm=arm))
+    r = score_g3b(reqs, alive, G3B_DURATION_S, g_fn)
+    if len(cds) > 1:
+        r["why"] = f"{len(cds)} G3b cell directories (expected 1) -> NOT_TESTED"
+    if alive is None and reqs is not None:
+        r["why"] = "survival record (alive_after.json) missing -> server alive unknown"
+    return r
 
 
 def cli_score_g2(gates: Path, cfg: str) -> Dict:
@@ -938,10 +1280,26 @@ def main(argv=None) -> int:
             p.add_argument("--arm", required=True, choices=ARMS)
         else:
             p.add_argument("--repeats", type=int, default=1)
-    for name in ("score-g1", "score-g2"):
-        p = sub.add_parser(name)
-        p.add_argument("--out", required=True)
-        p.add_argument("--config", required=True)
+    p = sub.add_parser("score-g1")
+    p.add_argument("--out", required=True)
+    p.add_argument("--config", required=True)
+    p.add_argument("--boots", help="boot directories root (default: OUT/../boots) -- alive_after.json, tel.jsonl")
+    ge = p.add_mutually_exclusive_group()
+    ge.add_argument("--exposure-json", help='{"agnostic": x, "d44": y} given exposure (MGP-2)')
+    ge.add_argument("--exposure-from-boots", action="store_true",
+                    help="compute the G1-window exposure from boots/<id>/tel.jsonl + green.json (F3)")
+    p = sub.add_parser("score-g2")
+    p.add_argument("--out", required=True)
+    p.add_argument("--config", required=True)
+    p = sub.add_parser("run-g3", help="F1: launch the three G3 combinations for TP=N and score them")
+    p.add_argument("--out", required=True)
+    p.add_argument("--tp", type=int, required=True, choices=(2, 4, 8))
+    p.add_argument("--timeout-s", type=float, default=G3_COMBO_TIMEOUT_S)
+    p.add_argument("--python", default=sys.executable)
+    p.add_argument("--gpus", help="CUDA_VISIBLE_DEVICES (default mg_const.GPU_SUBSETS['TP<N>'])")
+    p.add_argument("--deadline-epoch", type=float)
+    p = sub.add_parser("g3-preflight")
+    p.add_argument("--python", default=sys.executable)
     p = sub.add_parser("score-g3")
     p.add_argument("--out", required=True)
     p.add_argument("--tp", type=int, required=True)
@@ -952,8 +1310,12 @@ def main(argv=None) -> int:
     p.add_argument("--gpus", required=True)
     a = ap.parse_args(argv)
     if a.cmd == "serve-g1":
-        doc = http_generate(a.endpoint, registered_prompts())
-        doc.update(config=a.config, arm=a.arm)
+        prompts = registered_prompts()
+        t0 = time.perf_counter()  # same clock as the engine telemetry timestamp_monotonic_s (F3 window)
+        doc = http_generate(a.endpoint, prompts)
+        t1 = time.perf_counter()
+        doc.update(config=a.config, arm=a.arm, g1_window_perf_counter_s=[t0, t1],
+                   g1_window_clock="time.perf_counter (CLOCK_MONOTONIC; engine telemetry timestamp_monotonic_s)")
         _write(Path(a.out) / f"g1_out_{a.config}_{a.arm}.json", doc)
         return 0 if not doc["errors"] else 1
     if a.cmd == "serve-g2":
@@ -966,8 +1328,18 @@ def main(argv=None) -> int:
             _write(Path(a.out) / f"g2_tf_{a.config}_r{i}.json", http_teacher_forced(a.endpoint, prompts, ref["outputs"]))
         return 0
     if a.cmd == "score-g1":
-        cli_score_g1(Path(a.out), a.config)
+        exp = json.loads(Path(a.exposure_json).read_text()) if a.exposure_json else None
+        cli_score_g1(Path(a.out), a.config, exp, Path(a.boots) if a.boots else None, a.exposure_from_boots)
         return 0
+    if a.cmd == "run-g3":
+        r = run_g3(a.tp, Path(a.out), a.gpus, a.timeout_s, a.python, deadline_epoch=a.deadline_epoch)
+        print(json.dumps({"tp": a.tp, "verdict": r["verdict"], "not_tested_reason": r.get("not_tested_reason"),
+                          "not_attempted": r["not_attempted"], "preflight_ok": r["preflight"]["ok"]}))
+        return {PASS: 0, FAIL: 1}.get(r["verdict"], 3)
+    if a.cmd == "g3-preflight":
+        pf = g3_preflight(a.python)
+        print(json.dumps(pf, indent=1, sort_keys=True))
+        return 0 if pf["ok"] else 1
     if a.cmd == "score-g2":
         cli_score_g2(Path(a.out), a.config)
         return 0

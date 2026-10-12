@@ -11,6 +11,7 @@ Supersedes tests/test_m2g_skeleton.py (the skeleton's comparators were replaced)
 import importlib.util
 import json
 import math
+import os
 import sys
 import tempfile
 import unittest
@@ -112,6 +113,11 @@ def outs(n=64, length=128, diverge=None):
     return a, b
 
 
+def sg1(pair, ctl, abnormal_exit=False, exposure=None):
+    """score_g1 with an explicit 'both servers alive' survival input (the scorer's default is now None)."""
+    return M2G.score_g1(pair, ctl, abnormal_exit, exposure)
+
+
 class TestG1(unittest.TestCase):
     def test_metrics_by_hand(self):
         a, b = outs(4, 10, {0: 5, 1: 0})
@@ -131,7 +137,7 @@ class TestG1(unittest.TestCase):
         return M2G.g1_metrics(*outs(diverge=diverge))
 
     def test_identical_passes(self):
-        self.assertEqual(M2G.score_g1(self.ctl(), self.ctl())["verdict"], "PASS")
+        self.assertEqual(sg1(self.ctl(), self.ctl())["verdict"], "PASS")
 
     def _pair_with_median(self, k_half):
         # 33 of 64 prompts diverge at position p -> m median = p/128
@@ -141,41 +147,64 @@ class TestG1(unittest.TestCase):
         ctl = M2G.g1_metrics(*outs(diverge={i: 128 - 32 for i in range(33)}))  # median 0.75
         at = self._pair_with_median(128 - 32 - 6)  # median 90/128 = 0.703 -> >= 0.70 PASS... q equal
         below = self._pair_with_median(128 - 32 - 7)  # 89/128 = 0.6953 < 0.70 FAIL
-        self.assertEqual(M2G.score_g1(at, ctl)["verdict"], "PASS")
-        self.assertEqual(M2G.score_g1(below, ctl)["verdict"], "FAIL")
+        self.assertEqual(sg1(at, ctl)["verdict"], "PASS")
+        self.assertEqual(sg1(below, ctl)["verdict"], "FAIL")
         with mock.patch.object(M2G, "G1_M_MARGIN", 0.0):  # mutant: margin dropped
-            self.assertEqual(M2G.score_g1(at, ctl)["verdict"], "FAIL")
+            self.assertEqual(sg1(at, ctl)["verdict"], "FAIL")
         with mock.patch.object(M2G, "G1_M_MARGIN", 0.10):  # mutant: margin widened
-            self.assertEqual(M2G.score_g1(below, ctl)["verdict"], "PASS")
+            self.assertEqual(sg1(below, ctl)["verdict"], "PASS")
 
     def test_q_margin_boundary_and_mutant(self):
         ctl = M2G.g1_metrics(*outs(diverge={i: 127 for i in range(6)}))  # q = 6/64
         ok = M2G.g1_metrics(*outs(diverge={i: 127 for i in range(12)}))  # q 12/64 = 0.1875 <= 0.09375+0.10
         bad = M2G.g1_metrics(*outs(diverge={i: 127 for i in range(13)}))  # 13/64 = 0.203 > 0.19375
-        self.assertEqual(M2G.score_g1(ok, ctl)["verdict"], "PASS")
-        self.assertEqual(M2G.score_g1(bad, ctl)["verdict"], "FAIL")
+        self.assertEqual(sg1(ok, ctl)["verdict"], "PASS")
+        self.assertEqual(sg1(bad, ctl)["verdict"], "FAIL")
         with mock.patch.object(M2G, "G1_Q_MARGIN", 0.0):
-            self.assertEqual(M2G.score_g1(ok, ctl)["verdict"], "FAIL")
+            self.assertEqual(sg1(ok, ctl)["verdict"], "FAIL")
 
     def test_uninformative_control(self):
         ctl = M2G.g1_metrics(*outs(diverge={i: 10 for i in range(40)}))  # median 10/128 < 0.5
         pair = M2G.g1_metrics(*outs(diverge={i: 0 for i in range(64)}))
-        self.assertEqual(M2G.score_g1(pair, ctl)["verdict"], "UNINFORMATIVE")
+        self.assertEqual(sg1(pair, ctl)["verdict"], "UNINFORMATIVE")
         with mock.patch.object(M2G, "G1_CTL_UNINFORMATIVE_BELOW", 0.0):  # mutant: rule removed
-            self.assertEqual(M2G.score_g1(pair, ctl)["verdict"], "FAIL")
+            self.assertEqual(sg1(pair, ctl)["verdict"], "FAIL")
 
     def test_hard_conditions(self):
         a, b = outs()
         b["P00"] = []
-        self.assertEqual(M2G.score_g1(M2G.g1_metrics(a, b), self.ctl())["verdict"], "FAIL")
-        self.assertEqual(M2G.score_g1(self.ctl(), self.ctl(), abnormal_exit=True)["verdict"], "FAIL")
-        self.assertEqual(M2G.score_g1(None, self.ctl())["verdict"], "NOT_TESTED")
-        self.assertEqual(M2G.score_g1(self.ctl(), None)["verdict"], "NOT_TESTED")
+        self.assertEqual(sg1(M2G.g1_metrics(a, b), self.ctl())["verdict"], "FAIL")
+        self.assertEqual(sg1(self.ctl(), self.ctl(), abnormal_exit=True)["verdict"], "FAIL")
+        self.assertEqual(sg1(None, self.ctl())["verdict"], "NOT_TESTED")
+        self.assertEqual(sg1(self.ctl(), None)["verdict"], "NOT_TESTED")
         few = M2G.g1_metrics(*outs(n=10))
-        self.assertEqual(M2G.score_g1(few, self.ctl())["verdict"], "FAIL")
+        self.assertEqual(sg1(few, self.ctl())["verdict"], "FAIL")
 
     def test_exposure_reported(self):
-        self.assertEqual(M2G.score_g1(self.ctl(), self.ctl(), exposure=0.42)["exposure_split_steps"], 0.42)
+        self.assertEqual(sg1(self.ctl(), self.ctl(), exposure=0.42)["exposure_split_steps"], 0.42)
+
+    def test_survival_is_tristate_and_default_fails_closed(self):
+        """F2: the old Job path passed a hardcoded False; now None (no record) is NOT_TESTED."""
+        c = self.ctl()
+        self.assertEqual(M2G.score_g1(c, c)["verdict"], "NOT_TESTED")  # default = no survival record
+        self.assertEqual(M2G.score_g1(c, c, None)["verdict"], "NOT_TESTED")
+        self.assertEqual(M2G.score_g1(c, c, False)["verdict"], "PASS")  # control
+        self.assertEqual(M2G.score_g1(c, c, True)["verdict"], "FAIL")
+        a, b = outs()
+        b["P00"] = []
+        self.assertEqual(M2G.score_g1(M2G.g1_metrics(a, b), c, None)["verdict"], "FAIL")  # zero-length still FAIL
+        div = M2G.g1_metrics(*outs(diverge={i: 0 for i in range(64)}))  # every prompt diverges at 0
+        self.assertEqual(M2G.score_g1(div, c, None)["verdict"], "FAIL")  # observed divergence is not relabelled
+        r = M2G.score_g1(c, c, None)
+        self.assertEqual((r["verdict"], r["verdict_if_alive"]), ("NOT_TESTED", "PASS"))
+
+    def test_abnormal_exit_of_truth_table(self):
+        f = M2G.abnormal_exit_of
+        self.assertIs(f(True, True), False)
+        self.assertIs(f(True, False), True)
+        self.assertIs(f(None, False), True)  # a seen death wins over a missing record
+        self.assertIsNone(f(True, None))
+        self.assertIsNone(f(None, None))
 
 
 # ------------------------------------------------------------------------------ G2
@@ -262,6 +291,10 @@ class TestG3(unittest.TestCase):
         self.assertEqual(M2G.cli_score_g3(self.d, 4)["verdict"], "FAIL")
         import shutil
         shutil.rmtree(self.d / "g3_TP4_g16_92")
+        # an observed hang is not relabelled NOT_TESTED by a missing sibling combination
+        self.assertEqual(M2G.cli_score_g3(self.d, 4)["verdict"], "FAIL")
+        shutil.rmtree(self.d / "g3_TP4_g44_64")
+        write_g3(self.d / "g3_TP4_g44_64", 4)
         self.assertEqual(M2G.cli_score_g3(self.d, 4)["verdict"], "NOT_TESTED")
 
     def test_progress_watchdog_fires_only_without_progress(self):
@@ -711,10 +744,20 @@ class TestM2gRun(unittest.TestCase):
 
 
 # ------------------------------------------------------------------------- CLI adapters
+def green_doc(sm):
+    return {"sticky_target_index": None, "groups": [
+        {"stream_index": i, "target_prefill_sm": p, "target_decode_sm": d,
+         "prefill": ({"green_ctx_is_null": False, "green_sm": {"smCount": p}} if 0 < i < len(sm) - 1
+                     else {"green_ctx_is_null": True}),
+         "decode": ({"green_ctx_is_null": False, "green_sm": {"smCount": d}} if 0 < i < len(sm) - 1
+                    else {"green_ctx_is_null": True})} for i, (p, d) in enumerate(sm)]}
+
+
 class TestCliAdapters(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.g = Path(self.tmp.name)
+        self.g = Path(self.tmp.name) / "gates"  # Job layout: OUT/gates next to OUT/boots
+        self.g.mkdir()
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -722,16 +765,122 @@ class TestCliAdapters(unittest.TestCase):
     def put(self, cfg, arm, outs_):
         (self.g / f"g1_out_{cfg}_{arm}.json").write_text(json.dumps({"outputs": outs_, "errors": {}}))
 
+    def alive(self, cfg, arm, rc=None, status=200, boots=None):
+        bd = (boots or self.g.parent / "boots") / f"m2g_{cfg}_{arm}"
+        bd.mkdir(parents=True, exist_ok=True)
+        (bd / "alive_after.json").write_text(json.dumps(M2G.make_alive_record(f"m2g_{cfg}_{arm}", rc, status)))
+
     def test_score_g1_contract(self):
         a, b = outs()
         for cfg in ("N1", "TP2"):
             for arm in M2G.ARMS:
                 self.put(cfg, arm, a)
         self.put("TP2", "d44", {k: v[:64] + [-1] * 64 for k, v in a.items()})  # every prompt diverges at 64
+        # F2: no survival record anywhere -> NOT_TESTED (the old hardcoded False said PASS/FAIL here)
+        self.assertEqual(M2G.cli_score_g1(self.g, "TP2")["verdicts"],
+                         {"fused|agnostic": "NOT_TESTED", "fused|d44": "FAIL"})  # d44 FAIL: outputs diverge
+        for arm in M2G.ARMS:
+            self.alive("TP2", arm)
         doc = M2G.cli_score_g1(self.g, "TP2")
         self.assertEqual(doc["verdicts"], {"fused|agnostic": "PASS", "fused|d44": "FAIL"})
         self.assertTrue((self.g / "g1_TP2.json").exists())
         self.assertEqual(M2G.cli_score_g1(self.g, "DP2")["verdicts"]["fused|agnostic"], "NOT_TESTED")
+
+    def test_score_g1_survival_from_records_and_mutant(self):
+        a, _ = outs()
+        for cfg in ("N1", "TP4"):
+            for arm in M2G.ARMS:
+                self.put(cfg, arm, a)
+        for arm in M2G.ARMS:
+            self.alive("TP4", arm)
+        self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|agnostic"], "PASS")  # control
+        self.alive("TP4", "agnostic", rc=-9, status=None)  # server exited after its last step
+        self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|agnostic"], "FAIL")
+        self.alive("TP4", "agnostic", rc=None, status=503)  # process up, /health not OK
+        self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|agnostic"], "FAIL")
+        (self.g.parent / "boots" / "m2g_TP4_fused" / "alive_after.json").unlink()
+        self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|d44"], "NOT_TESTED")
+        # mutant = the pre-F2 code (abnormal exit hardcoded False): the missing record would read PASS
+        with mock.patch.object(M2G, "abnormal_exit_of", lambda *x: False):
+            self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|d44"], "PASS")
+        # explicit --boots directory is honoured
+        other = Path(self.tmp.name) / "elsewhere"
+        for arm in M2G.ARMS:
+            self.alive("TP4", arm, boots=other)
+        self.assertEqual(M2G.cli_score_g1(self.g, "TP4", boots=other)["verdicts"]["fused|d44"], "PASS")
+
+    def test_score_g1_exposure_given_and_from_g1_window(self):
+        a, _ = outs()
+        for cfg in ("N1", "TP2"):
+            for arm in M2G.ARMS:
+                self.put(cfg, arm, a)
+        boots = self.g.parent / "boots"
+        for arm in M2G.ARMS:
+            self.alive("TP2", arm)
+        doc = M2G.cli_score_g1(self.g, "TP2", exposure={"agnostic": 0.25})
+        self.assertEqual(doc["detail"]["fused|agnostic"]["exposure_split_steps"], 0.25)
+        self.assertIsNone(doc["detail"]["fused|d44"]["exposure_split_steps"])
+        # telemetry of the TP2 agnostic boot (rank 0 file), steps attributed per snapshot (by hand):
+        #   t  idx di   window [0.5, 3.5] -> t1 (split, +10), t2 (idx 0, +5), t3 (split, +15) = 25/30
+        #   0   1   0   whole file          -> +10 split, +10, +5, +15, t4 idx3 (+10)  = 35/50 = 0.7
+        #   1   1  10
+        #   2   0  20
+        #   3   1  25
+        #   4   3  40
+        #   5   1  50
+        sm = MIX.REGISTERED_SM_COUNTS["agnostic"]
+        bd = boots / "m2g_TP2_agnostic"
+        tel = MIX.rank_files(str(bd / "tel.jsonl"), "tp", 2)[0]
+        grn = MIX.rank_files(str(bd / "green.json"), "tp", 2)[0]
+        rows = [(0, 1, 0), (1, 1, 10), (2, 0, 20), (3, 1, 25), (4, 3, 40), (5, 1, 50)]
+        Path(tel).write_text("".join(json.dumps({
+            "event": "runtime_snapshot", "phase": "benchmark", "timestamp_monotonic_s": float(t),
+            "decode_running_batch_size": 4, "stream_index": i, "prefill_sms": sm[i][0], "decode_sms": sm[i][1],
+            "decode_iterations": di}) + "\n" for t, i, di in rows))
+        Path(grn).write_text(json.dumps(green_doc(sm)))
+        # no G1 window recorded -> NO_G1_WINDOW, value None (never the whole-boot value)
+        d0 = M2G.cli_score_g1(self.g, "TP2", exposure_from_boots=True)["detail"]["fused|agnostic"]
+        self.assertEqual(d0["exposure_detail"]["status"], "NO_G1_WINDOW")
+        self.assertIsNone(d0["exposure_split_steps"])
+        out_doc = json.loads((self.g / "g1_out_TP2_agnostic.json").read_text())
+        out_doc["g1_window_perf_counter_s"] = [0.5, 3.5]
+        (self.g / "g1_out_TP2_agnostic.json").write_text(json.dumps(out_doc))
+        d1 = M2G.cli_score_g1(self.g, "TP2", exposure_from_boots=True)["detail"]["fused|agnostic"]
+        self.assertEqual(d1["exposure_detail"]["status"], "OK")
+        self.assertAlmostEqual(d1["exposure_split_steps"], 25 / 30)
+        self.assertEqual(d1["verdict"], "PASS")  # descriptive only
+        # mutant: window dropped -> whole-boot value 0.7, killed by the 25/30 expectation
+        real = M2G._mix
+
+        def no_window():
+            m = real()
+            orig = m.cell_e_time
+            m.cell_e_time = lambda arm, mode, n, t, g, window=None, sm_counts=None: orig(arm, mode, n, t, g, None)
+            return m
+        with mock.patch.object(M2G, "_mix", no_window):
+            dm = M2G.cli_score_g1(self.g, "TP2", exposure_from_boots=True)["detail"]["fused|agnostic"]
+        self.assertAlmostEqual(dm["exposure_split_steps"], 0.7)
+        self.assertNotAlmostEqual(dm["exposure_split_steps"], 25 / 30)
+        # window outside the telemetry span -> MIX_FAILED, None
+        out_doc["g1_window_perf_counter_s"] = [100.0, 200.0]
+        (self.g / "g1_out_TP2_agnostic.json").write_text(json.dumps(out_doc))
+        d2 = M2G.cli_score_g1(self.g, "TP2", exposure_from_boots=True)["detail"]["fused|agnostic"]
+        self.assertEqual(d2["exposure_detail"]["status"], "MIX_FAILED")
+        self.assertIsNone(d2["exposure_split_steps"])
+
+    def test_cli_score_g1_flags(self):
+        a, _ = outs()
+        for cfg in ("N1", "TP2"):
+            for arm in M2G.ARMS:
+                self.put(cfg, arm, a)
+        for arm in M2G.ARMS:
+            self.alive("TP2", arm)
+        ej = Path(self.tmp.name) / "exp.json"
+        ej.write_text(json.dumps({"agnostic": 0.5, "d44": 0.6}))
+        self.assertEqual(M2G.main(["score-g1", "--out", str(self.g), "--config", "TP2", "--exposure-json", str(ej)]), 0)
+        doc = json.loads((self.g / "g1_TP2.json").read_text())
+        self.assertEqual(doc["detail"]["fused|d44"]["exposure_split_steps"], 0.6)
+        self.assertEqual(doc["verdicts"]["fused|d44"], "PASS")
 
     def test_score_g2_contract_and_alignment_guard(self):
         a = tf(64, 4, lambda i, j: -0.1)
@@ -764,6 +913,304 @@ class TestCliAdapters(unittest.TestCase):
         self.assertEqual(tfr["A"], [{"teacher_token": 5, "top1_id": 5, "top1_lp": -0.2},
                                     {"teacher_token": 6, "top1_id": 6, "top1_lp": -0.2}])
         self.assertEqual(M2G.teacher_agreement(tfr), 1.0)
+
+# ------------------------------------------------------------------ F1: G3 execution
+FAKE_PY = """#!/usr/bin/env python3
+# Stand-in for `python`: `-c CODE mods...` = preflight (ok), `-m torch.distributed.run ... --out D` =
+# launcher.  FAKE_G3_MODE: pass | hang_rank1 | crash | sleep | spawn_sleep
+import json, os, subprocess, sys, time
+a = sys.argv[1:]
+if a[0] == "-c":
+    sys.exit(int(os.environ.get("FAKE_PREFLIGHT_RC", "0")))
+assert a[:2] == ["-m", "torch.distributed.run"], a
+n = int(a[a.index("--nproc-per-node") + 1]); out = a[a.index("--out") + 1]; R = int(a[a.index("--repeats") + 1])
+os.makedirs(out, exist_ok=True)
+mode = os.environ.get("FAKE_G3_MODE", "pass")
+print("launcher argv", a); print("stderr line", file=sys.stderr)
+if mode == "sleep":
+    time.sleep(60)
+if mode == "spawn_sleep":
+    c = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    open(os.path.join(out, "grandchild.pid"), "w").write(str(c.pid)); time.sleep(60)
+if mode == "crash":
+    sys.exit(1)
+for r in range(n):
+    if mode == "hang_rank1" and r == 1:
+        json.dump({"rank": r}, open(os.path.join(out, "HANG.rank1.json"), "w")); continue
+    json.dump({"rank": r, "world": n, "repeats": R, "completed": R, "errors": 0, "elapsed_s": 0.1,
+               "visible": os.environ.get("CUDA_VISIBLE_DEVICES")}, open(os.path.join(out, f"rank{r}.json"), "w"))
+sys.exit(3 if mode == "hang_rank1" else 0)
+"""
+
+
+def _alive_pid(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    try:  # zombie = dead
+        return Path(f"/proc/{pid}/stat").read_text().split()[2] != "Z"
+    except OSError:
+        return False
+
+
+class TestG3Execution(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+        self.py = self.d / "fakepython"
+        self.py.write_text(FAKE_PY.replace("#!/usr/bin/env python3", "#!" + sys.executable))
+        self.py.chmod(0o755)
+        self.env = {"PATH": os.environ.get("PATH", "")}
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def env_mode(self, mode, **kw):
+        return dict(self.env, FAKE_G3_MODE=mode, **kw)
+
+    def test_launcher_argv_uses_python_m_and_parses_in_the_stress_script(self):
+        argv = M2G.g3_launcher_argv(4, "green", (16, 92), self.d / "o", python="PY")
+        self.assertEqual(argv[:6], ["PY", "-m", "torch.distributed.run", "--standalone", "--nproc-per-node", "4"])
+        self.assertEqual(argv[6], str(M2G.G3_STRESS_SCRIPT))
+        tail = argv[7:]
+        self.assertEqual(tail[tail.index("--split") + 1:tail.index("--split") + 3], ["16", "92"])
+        self.assertEqual(tail[tail.index("--repeats") + 1], "500")
+        # the stress script's own argparse accepts exactly these flags (parse succeeds, then `import torch` fails)
+        with mock.patch.dict(sys.modules, {"torch": None}):
+            with self.assertRaises(ImportError):
+                STRESS.main(tail)
+            with self.assertRaises(SystemExit):  # control: an unregistered split is refused by the parser
+                STRESS.main(["--streams", "green", "--split", "16", "90", "--out", "x"])
+        plain = M2G.g3_launcher_argv(2, "plain", None, self.d / "o", python="PY")
+        self.assertNotIn("--split", plain)
+
+    def test_preflight(self):
+        self.assertTrue(M2G.g3_preflight(sys.executable, modules=("json",))["ok"])
+        bad = M2G.g3_preflight(sys.executable, modules=("no_such_module_m2g_xyz",))
+        self.assertFalse(bad["ok"])
+        self.assertIn("no_such_module_m2g_xyz", bad["stderr_tail"])
+        nf = M2G.g3_preflight(str(self.d / "nonexistent_python"))
+        self.assertEqual((nf["ok"], nf["status"]), (False, "LAUNCHER_NOT_FOUND"))
+
+    def run_combo(self, mode, timeout=30.0, **kw):
+        od = self.d / f"combo_{mode}"
+        return M2G.run_g3_combo(2, "plain", None, od, self.env_mode(mode), timeout, str(self.py), **kw), od
+
+    def test_pass_and_files_saved(self):
+        r, od = self.run_combo("pass")
+        self.assertEqual(r["verdict"], "PASS")
+        self.assertEqual(r["launcher_status"], "RAN")
+        self.assertIn("launcher argv", (od / "launcher.stdout.txt").read_text())
+        self.assertIn("stderr line", (od / "launcher.stderr.txt").read_text())
+        self.assertEqual(json.loads((od / "launcher.json").read_text())["rc"], 0)
+
+    def test_hang_is_fail(self):
+        r, _ = self.run_combo("hang_rank1")
+        self.assertEqual(r["verdict"], "FAIL")
+        self.assertEqual(r["hangs"], ["HANG.rank1.json"])
+
+    def test_crash_without_any_rank_file_is_harness_error(self):
+        r, _ = self.run_combo("crash")
+        self.assertEqual((r["verdict"], r["not_tested_reason"]), ("NOT_TESTED", "HARNESS_ERROR"))
+
+    def test_launcher_not_found_is_harness_error(self):
+        od = self.d / "nf"
+        r = M2G.run_g3_combo(2, "plain", None, od, self.env, 5.0, str(self.d / "no_python_here"))
+        self.assertEqual((r["verdict"], r["not_tested_reason"], r["launcher_status"]),
+                         ("NOT_TESTED", "HARNESS_ERROR", "LAUNCHER_NOT_FOUND"))
+        self.assertTrue((od / "launcher.json").exists())
+
+    def test_timeout_kills_the_process_group(self):
+        r, od = self.run_combo("spawn_sleep", timeout=1.5)
+        self.assertEqual((r["verdict"], r["not_tested_reason"], r["launcher_status"]),
+                         ("NOT_TESTED", "HARNESS_ERROR", "TIMEOUT"))
+        gpid = int((od / "grandchild.pid").read_text())
+        import time
+        for _ in range(50):
+            if not _alive_pid(gpid):
+                break
+            time.sleep(0.1)
+        self.assertFalse(_alive_pid(gpid), "grandchild (a rank) survived the launcher timeout")
+
+    def test_preflight_failure_does_not_launch(self):
+        r, od = self.run_combo("pass", preflight={"ok": False, "stderr_tail": "No module named torch"})
+        self.assertEqual((r["verdict"], r["not_tested_reason"], r["launcher_status"]),
+                         ("NOT_TESTED", "HARNESS_ERROR", "PREFLIGHT_FAILED"))
+        self.assertFalse((od / "rank0.json").exists())
+
+    def test_partial_rank_evidence_stays_fail_and_unreadable_only_is_harness_error(self):
+        write_g3(self.d / "partial", 2, drop=1)
+        self.assertEqual(M2G.score_g3_combo(self.d / "partial", 2)["verdict"], "FAIL")
+        (self.d / "garbled").mkdir()
+        (self.d / "garbled" / "rank0.json").write_text("{trunc")
+        r = M2G.score_g3_combo(self.d / "garbled", 2)
+        self.assertEqual((r["verdict"], r.get("not_tested_reason")), ("NOT_TESTED", "HARNESS_ERROR"))
+        (self.d / "empty").mkdir()
+        self.assertEqual(M2G.score_g3_combo(self.d / "empty", 2).get("not_tested_reason"), "HARNESS_ERROR")
+
+    def test_mutant_old_rule_empty_dir_is_fail_killed(self):
+        """lesson 53: re-introducing 'no rank file = FAIL' must flip the empty-directory case."""
+        (self.d / "empty").mkdir()
+        src = (ENG / "scripts" / "multigpu" / "m2g_correctness_gate.py").read_text()
+        old = "    if not hangs and not ranks:\n"
+        self.assertEqual(src.count(old), 1)
+        mut = _load_src("m2g_mut_g3", src.replace(old, "    if False:\n"))
+        self.assertEqual(mut.score_g3_combo(self.d / "empty", 2)["verdict"], "FAIL")  # mutant
+        self.assertEqual(M2G.score_g3_combo(self.d / "empty", 2)["verdict"], "NOT_TESTED")  # control
+
+    def test_run_g3_end_to_end_and_cli(self):
+        gates = self.d / "gates"
+        with mock.patch.dict(os.environ, self.env_mode("pass")):
+            r = M2G.run_g3(4, gates, python=str(self.py), timeout_s=30.0, base_env=self.env_mode("pass"))
+        self.assertEqual(r["verdict"], "PASS")
+        self.assertTrue(r["preflight"]["ok"])
+        for tag in ("plain", "g16_92", "g44_64"):
+            rk = json.loads((gates / f"g3_TP4_{tag}" / "rank3.json").read_text())
+            self.assertEqual(rk["visible"], M2G.C.GPU_SUBSETS["TP4"])  # registered GPU subset
+        lj = json.loads((gates / "g3_TP4_g44_64" / "launcher.json").read_text())
+        self.assertEqual(lj["argv"][lj["argv"].index("--split") + 1:][:2], ["44", "64"])
+        self.assertEqual(json.loads((gates / "g3_TP4.json").read_text())["verdict"], "PASS")
+        # preflight failure -> all three NOT_TESTED(HARNESS_ERROR), table label carries the reason
+        r2 = M2G.run_g3(2, gates, python=str(self.py), timeout_s=30.0,
+                        base_env=self.env_mode("pass", FAKE_PREFLIGHT_RC="1"))
+        self.assertEqual((r2["verdict"], r2["not_tested_reason"]), ("NOT_TESTED", "HARNESS_ERROR"))
+        # deadline: nothing started -> NOT_TESTED without HARNESS_ERROR, listed as not attempted
+        r3 = M2G.run_g3(8, gates, python=str(self.py), timeout_s=30.0, base_env=self.env_mode("pass"),
+                        deadline_epoch=0.0)
+        self.assertEqual((r3["verdict"], r3.get("not_tested_reason"), len(r3["not_attempted"])), ("NOT_TESTED", None, 3))
+        self.assertFalse((gates / "g3_TP8_plain").exists())
+        import contextlib
+        import io as _io
+        buf = _io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = M2G.main(["run-g3", "--out", str(self.d / "g2"), "--tp", "2", "--python", str(self.py)])
+        self.assertEqual((rc, json.loads(buf.getvalue())["verdict"]), (0, "PASS"))
+
+    def test_pass_table_labels_harness_error(self):
+        res = all_pass_results()
+        res["g3"]["TP4"] = {"verdict": "NOT_TESTED", "not_tested_reason": "HARNESS_ERROR"}
+        t = M2G.build_pass_table(json.loads(json.dumps(res)))
+        self.assertEqual(excluded(t), cells_of(["TP4"]))  # excluded like FAIL (sec 3-1 last row)
+        cell = t["cells"]["TP4:agnostic"]
+        self.assertIn("G3 comm stress NOT_TESTED(HARNESS_ERROR)", cell["reasons"])
+        self.assertTrue(cell["not_tested"])
+        res["g3"]["TP4"] = {"verdict": "FAIL"}
+        cell = M2G.build_pass_table(json.loads(json.dumps(res)))["cells"]["TP4:agnostic"]
+        self.assertFalse(cell["not_tested"])
+
+    def test_score_g3_fail_dominates_and_reason_propagates(self):
+        P, F = {"verdict": "PASS"}, {"verdict": "FAIL"}
+        H = {"verdict": "NOT_TESTED", "not_tested_reason": "HARNESS_ERROR"}
+        self.assertEqual(M2G.score_g3({"plain": P, "green_16_92": F, "green_44_64": H})["verdict"], "FAIL")
+        r = M2G.score_g3({"plain": P, "green_16_92": P, "green_44_64": H})
+        self.assertEqual((r["verdict"], r["not_tested_reason"]), ("NOT_TESTED", "HARNESS_ERROR"))
+        r = M2G.score_g3({"plain": P, "green_16_92": P})
+        self.assertEqual((r["verdict"], r.get("not_tested_reason")), ("NOT_TESTED", None))
+
+
+def _load_src(name, src):
+    mod = type(sys)(name)
+    mod.__file__ = str(ENG / "scripts" / "multigpu" / "m2g_correctness_gate.py")
+    exec(compile(src, mod.__file__, "exec"), mod.__dict__)
+    return mod
+
+
+# ------------------------------------------------------------------ F2: survival record
+class FakeProc:
+    def __init__(self, rc):
+        self.rc = rc
+
+    def poll(self):
+        return self.rc
+
+
+class TestAliveRecord(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_record_and_read(self):
+        calls = []
+
+        def health(ep, t):
+            calls.append(ep)
+            return 200, None
+        rec = M2G.record_alive_after(self.d / "b", "m2g_TP2_d44", FakeProc(None), "http://127.0.0.1:1",
+                                     {"index": 3, "type": "cell", "status": "OK"}, 4, health=health)
+        self.assertTrue(rec["alive"])
+        self.assertEqual(calls, ["http://127.0.0.1:1"])
+        on_disk = json.loads((self.d / "b" / "alive_after.json").read_text())
+        self.assertEqual(on_disk["schema"], "m2g_alive_after/v1")
+        self.assertEqual(set(on_disk), {"schema", "boot_id", "t_epoch", "after_step", "steps_total",
+                                        "poll_returncode", "health_http_status", "health_error", "alive"})
+        self.assertIs(M2G.alive_after(self.d / "b"), True)
+
+    def test_dead_process_skips_health(self):
+        rec = M2G.record_alive_after(self.d / "b", "x", FakeProc(-11), "http://e",
+                                     health=lambda *a: self.fail("health must not be called"))
+        self.assertFalse(rec["alive"])
+        self.assertIs(M2G.alive_after(self.d / "b"), False)
+
+    def test_health_not_ok(self):
+        M2G.record_alive_after(self.d / "b", "x", FakeProc(None), "http://e", health=lambda *a: (None, "refused"))
+        self.assertIs(M2G.alive_after(self.d / "b"), False)
+
+    def test_reader_rederives_and_fails_closed(self):
+        self.assertIsNone(M2G.alive_after(self.d / "none"))
+        (self.d / "b").mkdir()
+        f = self.d / "b" / "alive_after.json"
+        rec = M2G.make_alive_record("x", 1, None)
+        rec["alive"] = True  # forged derived field: ignored
+        f.write_text(json.dumps(rec))
+        self.assertIs(M2G.alive_after(self.d / "b"), False)
+        f.write_text(json.dumps({"schema": "other", "poll_returncode": None, "health_http_status": 200}))
+        self.assertIsNone(M2G.alive_after(self.d / "b"))
+        f.write_text("{garbled")
+        self.assertIsNone(M2G.alive_after(self.d / "b"))
+        f.write_text(json.dumps({"schema": "m2g_alive_after/v1", "alive": True}))  # raw fields missing
+        self.assertIsNone(M2G.alive_after(self.d / "b"))
+
+    def test_real_health_probe_against_a_closed_port(self):
+        import socket
+        s_ = socket.socket()
+        s_.bind(("127.0.0.1", 0))
+        port = s_.getsockname()[1]
+        s_.close()
+        st, err = M2G._http_health(f"http://127.0.0.1:{port}", 2.0)
+        self.assertIsNone(st)
+        self.assertIsNotNone(err)
+
+
+class TestG3bArtifacts(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.o = Path(self.tmp.name)
+        cd = self.o / "cells" / "m2g_TP2_agnostic__A_G3B_s1"
+        cd.mkdir(parents=True)
+        (cd / "requests.jsonl").write_text(json.dumps(req(550.0, 1000.0, [100.0] * 5)) + "\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def alive(self, rc, st):
+        bd = self.o / "boots" / "m2g_TP2_agnostic"
+        bd.mkdir(parents=True, exist_ok=True)
+        (bd / "alive_after.json").write_text(json.dumps(M2G.make_alive_record("m2g_TP2_agnostic", rc, st)))
+
+    def test_survival_after_last_step(self):
+        r = M2G.score_g3b_artifacts(self.o, "TP2", "agnostic")
+        self.assertEqual(r["verdict"], "NOT_TESTED")  # no record
+        self.alive(None, 200)
+        self.assertEqual(M2G.score_g3b_artifacts(self.o, "TP2", "agnostic")["verdict"], "PASS")
+        self.alive(-9, None)
+        self.assertEqual(M2G.score_g3b_artifacts(self.o, "TP2", "agnostic")["verdict"], "FAIL")
+        self.assertEqual(M2G.score_g3b_artifacts(self.o, "TP2", "d44")["verdict"], "NOT_TESTED")  # no cell
+        g = M2G.score_g3b_artifacts(self.o, "TP2", "agnostic", g_fn=lambda rs: (0.5, 10.0, [1.0]))
+        self.assertEqual(g["g_descriptive"]["g"], 0.5)
 
 
 if __name__ == "__main__":

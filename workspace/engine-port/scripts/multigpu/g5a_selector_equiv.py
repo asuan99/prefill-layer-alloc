@@ -27,6 +27,18 @@ FAIL, not a skip.
 
 Exit 0 = equivalent, 1 = not equivalent / guard failed, 2 = runtime tree not
 found (NOT a verdict).  A failure blocks harness sealing (sec 3 G5(a)).
+
+SEALED-TREE RECORD (harness verdict 2026-10-12 F6).  `--record OUT.json` writes the
+result together with the tree it was computed on: the pathless-v1 ENGINE_DIGEST of
+the runtime tree (scripts/bootstrap/engine_digest.py, the same function the Job
+uses), every manifest entry hash, and the sha256 of each input actually read
+(pdmux_context.py, the mixin, both configs, this script) with a check that the two
+engine inputs ARE the tree's manifest entries.  `--expect-digest HEX` (or
+`--expect-digest-file ENGINE_DIGEST.txt`) states which tree is sealed; then
+`sealed_tree_pass` is true only for PASS on exactly that tree.  Exit 3 = the
+equivalence verdict is PASS but it is not a PASS on the sealed tree (digest
+differs / uncomputable / an input is not the manifest entry) -- not a G5(a) FAIL,
+but it cannot be cited as the sealing precondition.
 """
 
 from __future__ import annotations
@@ -35,6 +47,8 @@ import __future__ as _future
 import argparse
 import ast
 import copy
+import hashlib
+import importlib.util
 import json
 import os
 import sys
@@ -219,6 +233,58 @@ def compare(runtime: Path, mixin_path: Path, manual_cfg: Path = MANUAL_CFG, auto
     }
 
 
+def _sha(path: Path) -> Optional[str]:
+    try:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def _digest_module():
+    spec = importlib.util.spec_from_file_location(
+        "engine_digest_g5a", ENG / "scripts" / "bootstrap" / "engine_digest.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+ENGINE_INPUT_RELS = {"pdmux_context": "sglang/srt/multiplex/pdmux_context.py",
+                     "mixin": "sglang/srt/multiplex/multiplexing_mixin.py"}
+
+
+def sealed_tree_record(res: Dict, runtime: Path, mixin: Path, manual: Path, auto: Path,
+                       expect_digest: Optional[str] = None) -> Dict:
+    """F6: bind a G5(a) result to the tree it ran on (manifest entry hashes + pathless digest)."""
+    ed = _digest_module()
+    tree: Dict = {"scheme": ed.SCHEME, "runtime_python": str(runtime)}
+    entries: Dict[str, str] = {}
+    try:
+        ents = ed.load_entries(runtime=str(runtime))
+        entries = dict(ents)
+        tree.update(engine_digest=ed.digest_of_entries(ents),
+                    entries=[{"rel": r, "sha256": h} for r, h in ents], error=None)
+    except ed.DigestInputError as exc:
+        tree.update(engine_digest=None, entries=[], error=str(exc))
+    inputs = {}
+    for name, path in (("pdmux_context", runtime / ENGINE_INPUT_RELS["pdmux_context"]), ("mixin", mixin)):
+        h = _sha(path)
+        want = entries.get(ENGINE_INPUT_RELS[name])
+        inputs[name] = {"path": str(path), "rel": ENGINE_INPUT_RELS[name], "sha256": h,
+                        "manifest_entry_sha256": want, "is_manifest_entry": h is not None and h == want}
+    for name, path in (("manual_cfg", manual), ("auto_cfg", auto), ("g5a_script", Path(__file__).resolve())):
+        inputs[name] = {"path": str(path), "sha256": _sha(path)}
+    exp = "".join((expect_digest or "").split()).lower() or None
+    match = None if exp is None else (tree["engine_digest"] is not None and exp == tree["engine_digest"])
+    passed = res.get("verdict") == "PASS" and bool(res.get("sm_counts_match_registered"))
+    sealed_pass = (passed and match is True and tree["engine_digest"] is not None
+                   and all(inputs[k]["is_manifest_entry"] for k in ("pdmux_context", "mixin")))
+    return {"gate": "G5a", "record_schema": "g5a_sealed_tree/v1",
+            "verdict": res.get("verdict"), "equivalence_pass": passed, "result": res,
+            "tree": tree, "inputs": inputs,
+            "sealed": {"expected_digest": exp, "match": match},
+            "sealed_tree_pass": sealed_pass}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--runtime", help="<sglang>/python (default: SGLANG_ENGINE_DEV, then sibling trees)")
@@ -226,6 +292,10 @@ def main(argv=None) -> int:
                                     "(default: the runtime tree's copy)")
     ap.add_argument("--manual", default=str(MANUAL_CFG))
     ap.add_argument("--auto", default=str(AUTO_CFG))
+    ap.add_argument("--record", help="write the sealed-tree record JSON here (F6)")
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--expect-digest", help="pathless-v1 ENGINE_DIGEST of the sealed tree")
+    g.add_argument("--expect-digest-file", help="file holding it (e.g. results/multigpu/ENGINE_DIGEST.txt)")
     a = ap.parse_args(argv)
     runtime = find_runtime(a.runtime)
     if runtime is None:
@@ -236,7 +306,23 @@ def main(argv=None) -> int:
     res["runtime"], res["mixin"] = str(runtime), str(mixin)
     print(json.dumps(res, indent=1, default=list))
     # sm_counts_match_registered is part of the verdict: the table must also be the sec 2 table.
-    return 0 if res["verdict"] == "PASS" and res["sm_counts_match_registered"] else 1
+    rc = 0 if res["verdict"] == "PASS" and res["sm_counts_match_registered"] else 1
+    expect = a.expect_digest
+    if a.expect_digest_file:
+        try:
+            expect = Path(a.expect_digest_file).read_text(encoding="utf-8")
+        except OSError:
+            expect = "ABSENT"
+    if a.record or expect is not None:
+        rec = sealed_tree_record(res, runtime, mixin, Path(a.manual), Path(a.auto), expect)
+        if a.record:
+            Path(a.record).parent.mkdir(parents=True, exist_ok=True)
+            Path(a.record).write_text(json.dumps(rec, indent=1, sort_keys=True, default=list) + "\n", encoding="utf-8")
+        print(f"G5A sealed_tree_pass={rec['sealed_tree_pass']} engine_digest={rec['tree']['engine_digest']} "
+              f"expected={rec['sealed']['expected_digest']}", file=sys.stderr)
+        if rc == 0 and expect is not None and not rec["sealed_tree_pass"]:
+            rc = 3
+    return rc
 
 
 if __name__ == "__main__":

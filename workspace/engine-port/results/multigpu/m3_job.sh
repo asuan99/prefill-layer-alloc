@@ -11,18 +11,26 @@ KIND=m3
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/mg_job_common.sh"
 TABLE="${PDMUX_M2G_PASS_TABLE:-$HERE/$(K M2G_PASS_TABLE)}"
+COMMITTED_SHA_DRY="$HERE/$(K M2G_PASS_TABLE).sha256"
 SHA="${PDMUX_M2G_PASS_SHA256:-}"
 if [ "$DRYRUN" != 1 ]; then
-  python3 "$HERE/mg_plan.py" check-pass-table "$TABLE" "$SHA" | tee "$OUT/PASS_TABLE_CHECK.txt"
-  [ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_M2G_NOT_PASSED table '$TABLE' missing or sha256 != PDMUX_M2G_PASS_SHA256 ('$SHA')" 15
+  # F17: THREE digests must agree -- env PDMUX_M2G_PASS_SHA256, the COMMITTED results/multigpu/M2G_PASS_TABLE.json.sha256, sha256 of
+  # the table file bytes -- and that committed .sha256 must be tracked and unmodified in the checked-out tree.
+  COMMITTED_SHA="$HERE/$(K M2G_PASS_TABLE).sha256"
+  if ! git -C "$ROOT" ls-files --error-unmatch "$COMMITTED_SHA" > /dev/null 2>&1 \
+     || ! git -C "$ROOT" diff --quiet HEAD -- "$COMMITTED_SHA" 2>/dev/null; then
+    fail "ABORT_M2G_NOT_PASSED committed M2G_PASS_TABLE.json.sha256 is not tracked/clean in the tree ($COMMITTED_SHA)" 15
+  fi
+  python3 "$HERE/mg_plan.py" check-pass-table "$TABLE" "$SHA" "$COMMITTED_SHA" | tee "$OUT/PASS_TABLE_CHECK.txt"
+  [ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_M2G_NOT_PASSED table '$TABLE': file sha256 / env PDMUX_M2G_PASS_SHA256 ('$SHA') / committed .sha256 disagree or table missing" 15
   cp "$TABLE" "$OUT/M2G_PASS_TABLE.used.json"
 fi
 DRIVE=(python3 "$HERE/mg_drive.py" m3 --out "$OUT" --t0-epoch "$T0" --hard-cap-s "$HARD_CAP_S")
 if [ "$DRYRUN" = 1 ]; then
   DRIVE+=(--dry-run)
-  [ -f "$TABLE" ] && [ -n "$SHA" ] && DRIVE+=(--pass-table "$TABLE" --pass-sha256 "$SHA")
+  [ -f "$TABLE" ] && [ -n "$SHA" ] && DRIVE+=(--pass-table "$TABLE" --pass-sha256 "$SHA" --committed-sha-file "$COMMITTED_SHA_DRY")
 else
-  DRIVE+=(--pass-table "$TABLE" --pass-sha256 "$SHA")
+  DRIVE+=(--pass-table "$TABLE" --pass-sha256 "$SHA" --committed-sha-file "$COMMITTED_SHA")
 fi
 "${DRIVE[@]}"; rc=$?
 python3 "$HERE/mg_plan.py" m3-budget > "$OUT/BUDGET_DRYRUN.txt" 2>&1 || true

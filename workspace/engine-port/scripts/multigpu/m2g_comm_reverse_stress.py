@@ -4,8 +4,12 @@ on plain vs green-context streams (PREREG_MULTIGPU_2026-10-12.md rev6 sec 3 G3).
 
 GPU ONLY; never executed as of 2026-10-12 (engine-porter).  Not a test module.
 
-    torchrun --nproc-per-node N m2g_comm_reverse_stress.py \
+    python -m torch.distributed.run --standalone --nproc-per-node N m2g_comm_reverse_stress.py \
         --streams {plain,green} [--split P D] --out DIR          # R and watchdog default to the registered values
+
+The Job launches it ONLY through `m2g_correctness_gate.run_g3` / `run-g3` (F1, 2026-10-12): preflight
+import of the launcher, outer timeout with process-group kill, per-combination launcher.json and
+stdout/stderr files, and "no rank file and no HANG file" scored NOT_TESTED(HARNESS_ERROR), not FAIL.
 
 REGISTERED (sec 3 G3): R = 500 repeats per combination, watchdog 120 s, combinations
 = plain streams and green streams at the two splits 16/92 and 44/64, for every

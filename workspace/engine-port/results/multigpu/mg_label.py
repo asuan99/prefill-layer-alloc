@@ -476,21 +476,57 @@ def _et(c):
     return e.get("e_time", e.get("etime"))
 
 
-def key_labels(cells):
-    """cells: list of analyzed-cell records of ONE key.  Final HI set = the HI cells with the largest `ext`."""
+def _gaps_of(hi, lo):
+    """F13: measurements that did NOT happen are listed, never read as 'false'.  throttle/send-lag over HI+LO cells (they feed
+    HARNESS_LIMITED), FRONTEND (sampler rows, registered roles) over HI cells (the registered FRONTEND_SATURATED window)."""
+    allc = hi + lo
+    gaps = []
+    n_thr = sum(1 for c in allc if c.get("throttle_unmeasured"))
+    if n_thr:
+        gaps.append(f"THROTTLE_UNMEASURED({n_thr}/{len(allc)} cells)")
+    n_lag = sum(1 for c in allc if c.get("send_lag_p99_ms") is None)
+    if n_lag:
+        gaps.append(f"SENDLAG_UNMEASURED({n_lag}/{len(allc)} cells)")
+    n_fe = sum(1 for c in hi if c.get("frontend_unmeasured"))
+    if n_fe:
+        gaps.append(f"FRONTEND_UNMEASURED({n_fe}/{len(hi)} HI cells)")
+    missing = set()
+    for c in hi:
+        fe = c.get("frontend")
+        if not fe:
+            continue
+        need = C.REQUIRED_FRONTEND_ROLES.get(str((c.get("meta") or {}).get("mode", "N1")).upper(), ())
+        missing |= {r for r in need if r not in fe.get("roles", {})}
+    for r in sorted(missing):
+        gaps.append(f"FRONTEND_ROLE_MISSING:{r}")
+    return gaps
+
+
+def key_labels(cells, ext_fired=False):
+    """cells: list of analyzed-cell records of ONE key.  Final HI set = the HI cells with the largest `ext`.
+    ext_fired (F10): the JOINT extension fired for this (config, shape, round) -- some arm triggered it or ran an extension.
+    A key that has NO extension HI cells then is HI_NOT_JUDGED(EXT_NOT_RUN): its first-pass HI set is not a judged ladder and
+    its lambda* is undefined (the first-pass verdict of a not-extended arm must not be paired with extended arms)."""
     hi_all = [c for c in cells if c["meta"]["rung"] == "HI"]
     lo_all = [c for c in cells if c["meta"]["rung"] == "LO"]
     ext = max((int(c["meta"].get("ext", 0)) for c in hi_all), default=0)
     hi = [c for c in hi_all if int(c["meta"].get("ext", 0)) == ext]
     lo_ext = max((int(c["meta"].get("ext", 0)) for c in lo_all), default=0)
     lo = [c for c in lo_all if int(c["meta"].get("ext", 0)) == lo_ext]
-    out = {"ext": ext, "n_hi": len(hi), "n_lo": len(lo), "reasons": []}
+    out = {"ext": ext, "max_ext": ext, "n_hi": len(hi), "n_lo": len(lo), "reasons": []}
+    ext_missing = bool(ext_fired and ext == 0)
+    out["ext_not_run"] = ext_missing
+    out["ext0_trigger"] = any(c["status"] == "OK" and c["g"] is not None and c["g"] < C.G_HI
+                              for c in hi_all if int(c["meta"].get("ext", 0)) == 0)
     byseed = {int(c["meta"]["seed"]): c for c in hi}
     ok_hi = [byseed.get(s) for s in C.HI_SEEDS]
     bad = [s for s, c in zip(C.HI_SEEDS, ok_hi) if c is None or c["status"] != "OK"]
     out["hi_bad_seeds"] = {int(s): (None if byseed.get(s) is None else byseed[s]["status"]) for s in bad}
     out["g_hi"] = {int(s): (byseed[s]["g"] if s in byseed else None) for s in C.HI_SEEDS}
-    if bad:
+    if ext_missing:
+        out["hi_label"] = "HI_NOT_JUDGED"
+        out["reasons"].append("HI_NOT_JUDGED(EXT_NOT_RUN)")
+    elif bad:
         out["hi_label"] = "HI_NOT_JUDGED"
         out["reasons"].append("HI_NOT_JUDGED:" + ",".join(f"{s}={out['hi_bad_seeds'][s] or 'MISSING'}" for s in map(int, bad)))
     elif all(c["g"] >= C.G_HI for c in ok_hi):
@@ -516,21 +552,33 @@ def key_labels(cells):
                    else "KNEE_NOT_BRACKETED")
     ach = [byseed[s]["achieved"] if (s in byseed and byseed[s]["status"] == "OK") else None for s in C.HI_SEEDS]
     out["achieved_by_seed"] = ach
-    if all(a is not None for a in ach):
+    if all(a is not None for a in ach) and not ext_missing:
         out["lambda_star"] = statistics.median(ach)
         out["lambda_star_range"] = [min(ach), max(ach)]
     else:
         out["lambda_star"] = None
-        out["reasons"].append("LAMBDA_STAR_UNRESOLVED_N_BELOW_4")
+        out["reasons"].append("LAMBDA_STAR_UNRESOLVED_EXT_NOT_RUN" if ext_missing else "LAMBDA_STAR_UNRESOLVED_N_BELOW_4")
     allc = hi + lo
     out["harness_limited"] = any(c.get("harness_limited") for c in allc)
     out["truncated"] = any(c.get("truncated") for c in allc)
     out["throttle_unmeasured_cells"] = sum(1 for c in allc if c.get("throttle_unmeasured"))
     out["frontend_saturated_hi_cells"] = [c["cell_id"] for c in hi if c.get("frontend_saturated")]
+    out["measurement_gaps"] = _gaps_of(hi, lo)                                       # F13
+    # ---- E-time / partition (F12).  Only PD-mux arms have an E-time; MIX_FAILED / missing E-time = E_TIME_UNDEFINED (MGH-12:
+    # "분할이 실행됐는지 미정"), carried to the estimand items -- it is neither 'exercised' nor 'not exercised'.
+    arm = (cells[0]["meta"].get("arm") if cells else None)
     ets = [_et(c) for c in hi if c.get("etime") and c["etime"].get("status") == "OK" and _et(c) is not None]
-    if any(c.get("etime") and c["etime"].get("status") == "MIX_FAILED" for c in hi):
+    mix_failed = any(c.get("etime") and c["etime"].get("status") == "MIX_FAILED" for c in hi)
+    if mix_failed:
         out["mix_failed"] = True
-    if ets and len(ets) == len(hi) and statistics.median(ets) < C.PARTITION_ETIME_MIN:
+    if arm in C.PDMUX_ARMS:
+        if len(hi) == len(C.HI_SEEDS) and len(ets) == len(hi) and not mix_failed:
+            out["partition"] = "PARTITION_NOT_EXERCISED" if statistics.median(ets) < C.PARTITION_ETIME_MIN else "PARTITION_EXERCISED"
+        else:
+            out["partition"] = "E_TIME_UNDEFINED"
+    else:
+        out["partition"] = "NOT_APPLICABLE"
+    if out["partition"] == "PARTITION_NOT_EXERCISED":
         out["partition_not_exercised"] = True
     out["etime_median"] = statistics.median(ets) if ets else None
     return out
@@ -615,16 +663,39 @@ def trend(points, reps=None):
     return out
 
 
-def aggregate(cells, pass_table=None, config_flags=None):
-    """cells: analyzed-cell records (load_cell).  Returns the full label document."""
+def p_dp_status(trends):
+    """F9 / MGH-8: P-DP is a THREE-valued fact.  BROKEN = a G_sym DP trend label is directional; HELD = every G_sym DP trend
+    (shapes A and B) is NO_TREND_DETECTED; UNTESTED = otherwise (TREND_UNDEFINED or no DP axis).  UNTESTED is not 'not broken'."""
+    dp = {k: t for k, t in trends.items() if k.startswith("G_sym|DP|")}
+    labels = {k: t["label"] for k, t in dp.items()}
+    broken = [k for k, lab in labels.items() if lab in ("G_INCREASES_WITH_N", "G_DECREASES_WITH_N")]
+    if broken:
+        status = "BROKEN"
+    elif dp and all(lab == "NO_TREND_DETECTED" for lab in labels.values()):
+        status = "HELD"
+    else:
+        status = "UNTESTED"
+    return {"status": status, "broken": status == "BROKEN", "shapes": broken, "labels": labels,
+            "MGP13_TP_labels_not_citable": status == "BROKEN",
+            "TP_labels_need_P_DP_UNTESTED_disclosure": status == "UNTESTED"}
+
+
+def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None):
+    """cells: analyzed-cell records (load_cell).  pass_table: M2G table `cells` dict.  config_flags: build_config_flags output.
+    m2g_configs: M2G table `configs` dict (F14: TP_NUMERIC_DIVERGENT, G2_NOT_TESTED, <arm>:G1_UNINFORMATIVE, MEMORY_MISMATCH)."""
     pass_table = pass_table or {}
     config_flags = config_flags or {}
+    m2g_configs = m2g_configs or {}
     groups = {}
     for c in cells:
         m = c["meta"]
         if m.get("block", "main") in ("main", "anchor") and m.get("rung") in ("HI", "LO"):
             groups.setdefault(_key(m), []).append(c)      # gpu_dev / numa / nsys / m2g blocks are descriptive
-    keys = {k: key_labels(cs) for k, cs in groups.items()}
+    first = {k: key_labels(cs) for k, cs in groups.items()}
+    # F10: the extension is JOINT over the four arms of a (config, shape, round); one arm triggering (or running) it makes
+    # every arm of that group without extension cells HI_NOT_JUDGED(EXT_NOT_RUN).
+    fired = {(k[0], k[2], k[3]) for k, lab in first.items() if lab["ext0_trigger"] or lab["max_ext"] >= 1}
+    keys = {k: key_labels(cs, ext_fired=((k[0], k[2], k[3]) in fired)) for k, cs in groups.items()}
     doc = {"prereg": f"{C.PREREG} rev{C.PREREG_REV}", "keys": {}, "configs": {}, "estimands": {}, "trends": {},
            "anchor": {}, "blocks": {}}
     for (cfg, arm, shape, rnd), lab in sorted(keys.items()):
@@ -637,7 +708,28 @@ def aggregate(cells, pass_table=None, config_flags=None):
         fl = dict(config_flags.get(cfg, {}))
         fl["frontend_saturated"] = any(lab["frontend_saturated_hi_cells"]
                                        for (c2, _a, _s, r), lab in keys.items() if c2 == cfg and r == 1)
+        mc = m2g_configs.get(cfg) or {}
+        mflags = list(mc.get("flags", []))
+        fl["m2g_flags"] = mflags
+        fl["tp_numeric_divergent"] = bool(mc.get("tp_numeric_divergent")) or "TP_NUMERIC_DIVERGENT" in mflags
+        fl["g2_not_tested"] = "G2_NOT_TESTED" in mflags
+        fl["g1_uninformative_arms"] = sorted(f.split(":")[0] for f in mflags if f.endswith(":G1_UNINFORMATIVE"))
+        fl["m2g_memory_mismatch"] = bool(mc.get("memory_mismatch")) or any(f.startswith("MEMORY_MISMATCH") for f in mflags)
+        if fl["m2g_memory_mismatch"]:
+            fl["memory_mismatch"] = True                    # M2g G5(c) FAIL / NOT_TESTED carries into M3 (OR, never overwritten)
         doc["configs"][cfg] = fl
+
+    def disclosures(cfg, arms):
+        fl = doc["configs"].get(cfg, {})
+        d = []
+        if fl.get("tp_numeric_divergent"):
+            d.append("TP_NUMERIC_DIVERGENT")
+        if fl.get("g2_not_tested"):
+            d.append("G2_NOT_TESTED")
+        d += [f"{a}:G1_UNINFORMATIVE" for a in fl.get("g1_uninformative_arms", []) if a in arms]
+        if fl.get("contam_unverified"):
+            d.append("CONTAM_UNVERIFIED")
+        return d
 
     def defined(cfg, shape, num_arm, den_arm, rnd=1):
         reasons = []
@@ -678,6 +770,15 @@ def aggregate(cells, pass_table=None, config_flags=None):
                     pne = [a for a in (na, da) if keys[(cfg, a, shape, 1)].get("partition_not_exercised")]
                     if pne and a_is_pdmux(pne):
                         ent["PARTITION_NOT_EXERCISED"] = pne
+                    # F12: the partition status of every PD-mux arm of the pair -- E_TIME_UNDEFINED / MIX_FAILED are carried, not dropped
+                    ent["partition"] = {a: keys[(cfg, a, shape, 1)]["partition"] for a in (na, da)
+                                        if keys[(cfg, a, shape, 1)]["partition"] != "NOT_APPLICABLE"}
+                    ent["mix_failed_arms"] = [a for a in (na, da) if keys[(cfg, a, shape, 1)].get("mix_failed")]
+                    ent["partition_exercised_unknown"] = any(v == "E_TIME_UNDEFINED" for v in ent["partition"].values())
+                    # F13: measurements that did not happen (throttle / send-lag / FRONTEND / roles) -- explicit, per arm
+                    ent["measurement_gaps"] = {a: keys[(cfg, a, shape, 1)]["measurement_gaps"] for a in (na, da)
+                                               if keys[(cfg, a, shape, 1)]["measurement_gaps"]}
+                    ent["disclosures"] = disclosures(cfg, (na, da))                       # F14
                 doc["estimands"].setdefault(name, {}).setdefault(cfg, {})[shape] = ent
     # trends: per quantity, mode, shape.  N=1 config is shared by TP and DP modes.
     for name in PAIRS:
@@ -685,24 +786,36 @@ def aggregate(cells, pass_table=None, config_flags=None):
             continue
         for mode in ("TP", "DP"):
             for shape in ("A", "B"):
-                pts, undefined = [], []
+                pts, undefined, disc, pnotes, gaps = [], [], set(), [], {}
                 for cfg in ["N1"] + [f"{mode}{n}" for n in (2, 4, 8)]:
                     ent = doc["estimands"].get(name, {}).get(cfg, {}).get(shape)
                     n_gpus = 1 if cfg == "N1" else int(cfg[2:])
                     if ent and ent["defined"]:
                         pts.append((n_gpus, ent["num"], ent["den"]))
+                        disc |= set(ent.get("disclosures", []))
+                        pnotes += [f"{cfg}:{a}:{v}" for a, v in ent.get("partition", {}).items() if v != "PARTITION_EXERCISED"]
+                        if ent.get("measurement_gaps"):
+                            gaps[cfg] = ent["measurement_gaps"]
                     else:
                         undefined.append({"config": cfg, "reasons": (ent or {"undefined_reasons": ["NOT_RUN"]})["undefined_reasons"]})
                 t = trend(pts)
                 t["undefined_count"] = len(undefined)
                 t["undefined"] = undefined          # MGP-34 / MGP-25: always printed beside the label
                 t["primary"] = (name == PRIMARY)
+                t["disclosures"] = sorted(disc)                                       # F14 (TP_NUMERIC_DIVERGENT ... beside TP results)
+                t["partition_notes"] = pnotes                                         # F12
+                t["partition_exercised_unknown"] = any(n.endswith(":E_TIME_UNDEFINED") for n in pnotes)
+                t["measurement_gaps"] = gaps                                          # F13
                 doc["trends"][f"{name}|{mode}|{shape}"] = t
-    # P-DP (§4-4) and MGP-13
-    broken = [k for k, t in doc["trends"].items()
-              if k.startswith("G_sym|DP|") and t["label"] in ("G_INCREASES_WITH_N", "G_DECREASES_WITH_N")]
-    doc["P_DP"] = {"broken": bool(broken), "shapes": broken,
-                   "MGP13_TP_labels_not_citable": bool(broken)}
+    # P-DP (§4-4) and MGP-13 -- F9: three values; UNTESTED forces a disclosure on every TP label
+    doc["P_DP"] = p_dp_status(doc["trends"])
+    for k, t in doc["trends"].items():
+        if "|TP|" in k:
+            t["P_DP"] = doc["P_DP"]["status"]
+            if doc["P_DP"]["status"] == "UNTESTED":
+                t["disclosures"] = sorted(set(t["disclosures"]) | {"P-DP 미검정"})        # MGH-8: no TP citation without it
+            elif doc["P_DP"]["status"] == "BROKEN":
+                t["disclosures"] = sorted(set(t["disclosures"]) | {"P-DP BROKEN: MGP-13 TP labels not citable"})
     # ANCHOR_DRIFT (§4-5): round 2 of N1 vs round 1
     a = {}
     for arm in ("fused", "fused_sym"):
@@ -714,7 +827,8 @@ def aggregate(cells, pass_table=None, config_flags=None):
     g2 = _g_sym_round("N1", keys, 2)
     if g1 and g2:
         a["G_sym_1_A"] = {"r1": g1, "r2": g2, "rel": g2 / g1 - 1.0}
-    doc["anchor"] = {"checked": a, "ANCHOR_DRIFT": any(abs(v["rel"]) > C.ANCHOR_DRIFT_TOL for v in a.values()),
+    doc["anchor"] = {"anchor_flags": (config_flags.get("N1") or {}).get("by_group", {}).get("r2/anchor"),
+                     "checked": a, "ANCHOR_DRIFT": any(abs(v["rel"]) > C.ANCHOR_DRIFT_TOL for v in a.values()),
                      "G_sym_drift_checked": "G_sym_1_A" in a,
                      "note": ("G_sym(1) drift NOT checked (fused_sym/agnostic anchor missing) -- "
                               "'no ANCHOR_DRIFT' must not be read as 'no G_sym drift' (MGP-38)") if "G_sym_1_A" not in a else ""}
@@ -757,12 +871,26 @@ def render_text(doc):
         if "slope" in t:
             s += f" slope={t['slope']:+.4f} CI=[{t['ci'][0]:+.4f},{t['ci'][1]:+.4f}] Ns={t['Ns']} magnitude={t.get('magnitude')}"
         s += f"  UNDEFINED_CELLS={t['undefined_count']}"
+        if t.get("disclosures"):
+            s += "  DISCLOSE=" + ",".join(t["disclosures"])
+        if t.get("partition_exercised_unknown"):
+            s += "  PARTITION_EXERCISED_UNKNOWN(E_TIME_UNDEFINED)"
         L.append(s)
         for u in t["undefined"]:
             L.append(f"      undefined {u['config']}: {'; '.join(u['reasons'])}")
+        for cfg, g in sorted(t.get("measurement_gaps", {}).items()):
+            L.append(f"      unmeasured {cfg}: {g}")
     L.append("")
-    L.append(f"P_DP broken={doc['P_DP']['broken']} (MGP-13 TP labels not citable={doc['P_DP']['MGP13_TP_labels_not_citable']})")
+    pd = doc["P_DP"]
+    L.append(f"P_DP status={pd['status']} broken={pd['broken']} (MGP-13 TP labels not citable={pd['MGP13_TP_labels_not_citable']}; "
+             f"TP labels need 'P-DP 미검정' disclosure={pd['TP_labels_need_P_DP_UNTESTED_disclosure']})")
     L.append(f"ANCHOR_DRIFT={doc['anchor']['ANCHOR_DRIFT']} {doc['anchor'].get('note', '')}")
+    for cfg, fl in sorted(doc["configs"].items()):
+        extra = [k for k in ("memory_mismatch", "gpu_contaminated", "contam_unverified", "tp_numeric_divergent", "g2_not_tested",
+                             "m2g_memory_mismatch", "frontend_saturated") if fl.get(k)]
+        extra += [f"{a}:G1_UNINFORMATIVE" for a in fl.get("g1_uninformative_arms", [])]
+        if extra:
+            L.append(f"config {cfg}: {', '.join(extra)}")
     for k, v in doc["blocks"].items():
         L.append(f"block {k}: {json.dumps(v, sort_keys=True)}")
     return "\n".join(L) + "\n"
@@ -773,30 +901,84 @@ def find_cells(root):
     return sorted(p.parent for p in Path(root).rglob("cell.json"))
 
 
-def build_config_flags(root, cells):
-    """Per config: memory_mismatch (G5(c)) from boot-level cell_meta.json, gpu_contaminated from contam.json."""
-    by_cfg_arm = {}
-    contaminated = set()
+def _round_of(steps):
+    rs = [int(st.get("round", 1)) for st in steps or [] if st.get("type") == "cell"]
+    return max(rs) if rs else 1
+
+
+def build_config_flags(root, cells, excluded=()):
+    """Per config flags from the boot artifacts (F5, F11, F14).
+
+    Scope (F11): a boot belongs to a (config, round, block) group -- block main / anchor / gpu_dev / numa / nsys -- taken from the
+    driver's specs/<boot>.json (fallback: its cells).  Flags are OR-summed WITHIN a group and never leak ACROSS groups: a dirty
+    gpu_dev GPU, a NUMA boot or the round-2 anchor cannot erase the round-1 main G of the same config.  The top level of
+    `flags[cfg]` is the (round 1, block main) group -- the one the estimands read; every group is under `by_group`.
+    memory_mismatch = G5(c) over the arms that were expected (not M2g-excluded); an expected arm without boot facts is listed in
+    `memory_not_tested_arms` (NOT_TESTED, distinct from FAIL; the M2g table carries its own NOT_TESTED=MEMORY_MISMATCH row).
+    contam_unverified (NVML unavailable at the pre-boot check) is a disclosure, not an exclusion."""
+    root = Path(root)
+    boots = {}
+    spec_dir = root / "specs"
+    if spec_dir.exists():
+        for sp in sorted(spec_dir.glob("*.json")):
+            try:
+                sd = json.loads(sp.read_text())
+            except ValueError:
+                continue
+            boots[sd["boot_id"]] = dict(config=sd["config"], arm=sd["arm"], block=sd.get("block", "main"),
+                                        round=_round_of(sd.get("steps")))
     for c in cells:
         m = c["meta"]
-        boot = Path(root) / m["boot_dir"] if m.get("boot_dir") else None
-        if not boot:
-            continue
-        if (boot / "contam.json").exists() and json.loads((boot / "contam.json").read_text()).get("gpu_contaminated"):
-            contaminated.add(m["config"])
-        cm = boot / "cell_meta.json"
-        if cm.exists() and m.get("block", "main") == "main":
+        bid = Path(m["boot_dir"]).name if m.get("boot_dir") else None
+        if bid and bid not in boots:
+            boots[bid] = dict(config=m["config"], arm=m["arm"], block=m.get("block", "main"), round=int(m.get("round", 1)))
+    groups = {}
+    for bid, b in boots.items():
+        bd = root / "boots" / bid
+        g = groups.setdefault((b["config"], f"r{b['round']}/{b['block']}"),
+                              {"contaminated": False, "contam_boots": [], "contam_unverified": False, "unverified_boots": [],
+                               "arms": {}})
+        cx = bd / "contam.json"
+        if cx.exists() and json.loads(cx.read_text()).get("gpu_contaminated"):
+            g["contaminated"] = True
+            g["contam_boots"].append(bid)
+        unv = False
+        cpre = bd / "contam_pre.json"
+        if cpre.exists():
+            v = (json.loads(cpre.read_text()).get("verdict") or {})
+            unv = bool(v.get("contam_unverified") or v.get("verified") is False)
+        if (bd / "boot.json").exists() and json.loads((bd / "boot.json").read_text()).get("contam_status") == "CONTAM_UNVERIFIED":
+            unv = True
+        if unv:
+            g["contam_unverified"] = True
+            g["unverified_boots"].append(bid)
+        cm = bd / "cell_meta.json"
+        if cm.exists() and b["block"] in ("main", "anchor"):
             f = json.loads(cm.read_text())
             si = f.get("server_info") or {}
             eff = f.get("max_running_requests_requested") or si.get("max_running_requests")
-            by_cfg_arm.setdefault(m["config"], {})[m["arm"]] = dict(
-                mamba=f.get("max_mamba_cache_size", []), max_total=f.get("max_total_num_tokens", []), eff_cap=eff)
+            a = g["arms"].setdefault(b["arm"], dict(mamba=[], max_total=[], eff_cap=eff))
+            a["mamba"] = a["mamba"] + list(f.get("max_mamba_cache_size", []) or [])
+            a["max_total"] = a["max_total"] + list(f.get("max_total_num_tokens", []) or [])
+            a["eff_cap"] = a["eff_cap"] if a["eff_cap"] is not None else eff
     flags = {}
-    for cfg, arms in by_cfg_arm.items():
-        flags[cfg] = memory_check(arms)
-        flags[cfg]["memory_mismatch"] = flags[cfg]["memory_mismatch"]
-    for cfg in contaminated:
-        flags.setdefault(cfg, {})["gpu_contaminated"] = True
+    for (cfg, gname), g in sorted(groups.items()):
+        arms = {a: v for a, v in g["arms"].items() if v["mamba"] or v["max_total"] or v["eff_cap"] is not None}
+        mem = memory_check(arms) if arms else {"memory_mismatch": False, "reasons": []}
+        expected = [a for a in C.ARMS if f"{cfg}:{a}" not in set(excluded)]
+        not_tested = [a for a in expected if a not in arms] if gname.endswith("/main") else []
+        gf = {"memory_mismatch": mem["memory_mismatch"], "reasons": mem["reasons"],
+              "memory_not_tested_arms": not_tested, "gpu_contaminated": g["contaminated"], "contam_boots": g["contam_boots"],
+              "contam_unverified": g["contam_unverified"], "unverified_boots": g["unverified_boots"]}
+        fl = flags.setdefault(cfg, {"by_group": {}})
+        fl["by_group"][gname] = gf
+    for cfg, fl in flags.items():
+        main = fl["by_group"].get("r1/main")
+        if main:
+            fl.update({k: v for k, v in main.items()})
+        else:
+            fl.update(memory_mismatch=False, reasons=[], memory_not_tested_arms=[], gpu_contaminated=False, contam_boots=[],
+                      contam_unverified=False, unverified_boots=[])
     return flags
 
 
@@ -840,8 +1022,10 @@ def main(argv=None):
         ap.error("--root or --selftest")
     cells = [load_cell(d) for d in find_cells(a.root)]
     pt = json.loads(Path(a.pass_table).read_text()) if a.pass_table else {}
-    doc = aggregate(cells, pt.get("cells") if isinstance(pt, dict) and "cells" in pt else pt,
-                    build_config_flags(a.root, cells))
+    ptc = pt.get("cells") if isinstance(pt, dict) and "cells" in pt else pt
+    excl = {k for k, v in (ptc or {}).items() if isinstance(v, dict) and not v.get("included", True)}
+    doc = aggregate(cells, ptc, build_config_flags(a.root, cells, excl),
+                    pt.get("configs") if isinstance(pt, dict) else None)
     doc["n_cells"] = len(cells)
     if a.out:
         Path(a.out).write_text(json.dumps(doc, indent=1, sort_keys=True, default=float) + "\n")

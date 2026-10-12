@@ -48,23 +48,38 @@ T0=""
 [ -z "$T0" ] && T0=$(date +%s)
 echo "kind=$KIND hard_cap_s=$HARD_CAP_S t0_epoch=$T0 deadline_epoch=$((T0 + HARD_CAP_S)) dryrun=$DRYRUN" | tee "$OUT/BUDGET.txt"
 
-# ---- registration digests (what this Job ran)
+# ---- registration digests (what this Job ran).  F16: the registered set is a LIST; every mandatory member must exist (ABORT_REG),
+# the g5a PASS record (taken on the SEALED tree, F6) is an optional slot written as ABSENT when the file is not there yet.
+MANDATORY_REG=(
+  "$HERE/PREREG_MULTIGPU_2026-10-12.md"
+  "$HERE"/VERDICT_*.md                                                   # every verdict kept beside the PREREG (rules + harness audits)
+  "$HERE"/mg_const.py "$HERE"/mg_label.py "$HERE"/mg_plan.py "$HERE"/mg_drive.py "$HERE"/mg_realized_mix.py
+  "$HERE"/m2g_job.sh "$HERE"/m3_job.sh "$HERE"/mg_job_common.sh
+  "$ENG"/scripts/multigpu/mg_runner.sh "$ENG"/scripts/multigpu/mg_boot.py "$ENG"/scripts/multigpu/mg_loadgen.py
+  "$ENG"/scripts/multigpu/mg_proc_sampler.py "$ENG"/scripts/multigpu/m2g_correctness_gate.py
+  "$ENG"/scripts/multigpu/m2g_comm_reverse_stress.py "$ENG"/scripts/multigpu/g5a_selector_equiv.py
+  "$ENG"/scripts/r2_eval/multigpu_cell_meta.py
+  "$ENG"/results/r2_correctness/r2_correctness_client.py                 # G1/G2 prompt source (seed 20260911)
+  "$ENG"/benchmarks/pdmux_eval/trace_loadgen.py "$ENG"/benchmarks/pdmux_eval/analyze.py
+  "$ENG"/benchmarks/configs/pdmux_agnostic_manual.yml "$ENG"/benchmarks/configs/pdmux_r2.yml
+  "$ENG"/triage/pdmux_a100_smoke.yml                                      # G0(iii) auto-grid config + G5(a) GPU boot
+  "$ENG"/tests/test_mg_harness.py "$ENG"/tests/test_m2g_gate.py "$ENG"/tests/test_mg_agnostic_manual_equiv.py "$ENG"/tests/test_mg_realized_mix.py
+)
+OPTIONAL_REG=("$HERE/G5A_PASS.json")
 {
   echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md (rev6)"
-  sha256sum "$HERE/PREREG_MULTIGPU_2026-10-12.md"
-  echo "# verdicts kept beside it"
-  sha256sum "$HERE"/VERDICT_prereg_rules_*.md
-  echo "# harness"
-  sha256sum "$HERE"/mg_const.py "$HERE"/mg_label.py "$HERE"/mg_plan.py "$HERE"/mg_drive.py "$HERE"/mg_realized_mix.py \
-            "$HERE"/m2g_job.sh "$HERE"/m3_job.sh "$HERE"/mg_job_common.sh \
-            "$ENG"/scripts/multigpu/mg_runner.sh "$ENG"/scripts/multigpu/mg_boot.py "$ENG"/scripts/multigpu/mg_loadgen.py \
-            "$ENG"/scripts/multigpu/mg_proc_sampler.py "$ENG"/scripts/multigpu/m2g_correctness_gate.py \
-            "$ENG"/scripts/multigpu/m2g_comm_reverse_stress.py "$ENG"/scripts/multigpu/g5a_selector_equiv.py "$ENG"/scripts/r2_eval/multigpu_cell_meta.py \
-            "$ENG"/benchmarks/pdmux_eval/trace_loadgen.py "$ENG"/benchmarks/configs/pdmux_agnostic_manual.yml \
-            "$ENG"/benchmarks/configs/pdmux_r2.yml
+  missing=0
+  for f in "${MANDATORY_REG[@]}"; do
+    if [ -f "$f" ]; then sha256sum "$f"; else echo "MISSING $f"; missing=$((missing + 1)); fi
+  done
+  for f in "${OPTIONAL_REG[@]}"; do
+    if [ -f "$f" ]; then sha256sum "$f"; else echo "ABSENT_OPTIONAL $f"; fi
+  done
   echo "# tree: $(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo NO_GIT) uncommitted_outside_results=$(git -C "$ROOT" status --porcelain --untracked-files=no -- . ':!workspace/engine-port/results' 2>/dev/null | grep -c .)"
+  echo "# mandatory_missing=$missing"
 } > "$OUT/REGISTRATION_SHA256.txt" 2>&1
-[ "$(grep -c '^[0-9a-f]\{64\} ' "$OUT/REGISTRATION_SHA256.txt")" -ge 20 ] || fail "ABORT_REG fewer than 20 digests recorded (a registered file is missing)" 16
+grep -q '^# mandatory_missing=0$' "$OUT/REGISTRATION_SHA256.txt" || fail "ABORT_REG a registered file is missing: $(grep '^MISSING' "$OUT/REGISTRATION_SHA256.txt" | head -3 | tr '\n' ' ')" 16
+[ "$(grep -c '^[0-9a-f]\{64\} ' "$OUT/REGISTRATION_SHA256.txt")" -ge 30 ] || fail "ABORT_REG fewer than 30 digests recorded" 16
 
 # ---- ABORT_COMM_ENV (§1): JIT all-reduce must be unset; the other comm variables are RECORDED as inherited, then unset
 if [ -n "${SGLANG_USE_JIT_ALL_REDUCE:-}" ] && [ "${SGLANG_USE_JIT_ALL_REDUCE}" != 0 ]; then
@@ -84,6 +99,27 @@ python3 "$HELPER" score-b0 --gpu-csv "$OUT/b0/gpu.csv" --py-json "$OUT/b0/b0_pyt
   --status "$OUT/b0/B0.json" --expected-gpus "$(K EXPECTED_GPUS)" | tee "$OUT/b0/score.txt"
 grep -q '^PASS' "$OUT/b0/score.txt" || dry_or_abort "ABORT_SUBSTRATE score-b0 --expected-gpus $(K EXPECTED_GPUS): $(head -c 300 "$OUT/b0/score.txt")" 11
 
+# ---- F5: the contamination check (§3 G5(c), pynvml) must be able to run, else every cell would carry CONTAM_UNVERIFIED -> ABORT_SUBSTRATE
+python3 - "$(K EXPECTED_GPUS)" > "$OUT/b0/nvml_probe.txt" 2>&1 <<'PY'
+import sys
+import pynvml
+pynvml.nvmlInit()
+n = pynvml.nvmlDeviceGetCount()
+for i in range(n):
+    h = pynvml.nvmlDeviceGetHandleByIndex(i)
+    pynvml.nvmlDeviceGetMemoryInfo(h)
+    pynvml.nvmlDeviceGetComputeRunningProcesses(h)
+assert n == int(sys.argv[1]), f"nvml sees {n} GPUs != {sys.argv[1]}"
+print("NVML_OK", n)
+PY
+grep -q '^NVML_OK' "$OUT/b0/nvml_probe.txt" || dry_or_abort "ABORT_SUBSTRATE NVML_UNAVAILABLE (contamination check cannot run -> CONTAM_UNVERIFIED): $(tail -c 200 "$OUT/b0/nvml_probe.txt" | tr '\n' ' ')" 11
+# ---- F1: M2g runs G3 through a distributed launcher -- torchrun or `python -m torch.distributed.run`
+if [ "$KIND" = m2g ]; then
+  if command -v torchrun > /dev/null 2>&1; then echo "launcher=torchrun" > "$OUT/b0/launcher.txt"
+  elif python3 -m torch.distributed.run --help > /dev/null 2>&1; then echo "launcher=python -m torch.distributed.run" > "$OUT/b0/launcher.txt"
+  else dry_or_abort "ABORT_SUBSTRATE LAUNCHER_ABSENT (neither torchrun nor python -m torch.distributed.run; G3 cannot run)" 11; fi
+fi
+
 # ---- ABORT_MODEL_REVISION (§1)
 [ "$(cat "$MODEL_DIR/refs/main" 2>/dev/null || echo ABSENT)" = "$(K MODEL_REVISION)" ] \
   || dry_or_abort "ABORT_MODEL_REVISION $MODEL_DIR/refs/main != $(K MODEL_REVISION)" 12
@@ -91,10 +127,14 @@ grep -q '^PASS' "$OUT/b0/score.txt" || dry_or_abort "ABORT_SUBSTRATE score-b0 --
 # ---- ABORT_ENGINE_DIGEST (§6-3): the installed engine tree (sync manifest written by job_entry/install_runtime) must equal the
 # digest sealed with the harness.  ENGINE_DIGEST.txt holds one token; "UNSEALED" (the committed placeholder) never passes a real run.
 MANIFEST="$DATA/runs/$JOBID/meta/runtime_source_manifest.sha256"
+# F7(b): path-free digest (pathless-v1 = sha256 of the 27 sorted entry hashes; scripts/bootstrap/engine_digest.py). The raw
+# manifest file sha is not used because its rows carry absolute install paths.
 SEALED=$(tr -d ' \n' < "$HERE/ENGINE_DIGEST.txt" 2>/dev/null || echo ABSENT)
-ACTUAL=$(sha256sum "$MANIFEST" 2>/dev/null | cut -d' ' -f1)
-echo "sealed=$SEALED actual=${ACTUAL:-NO_MANIFEST}" | tee "$OUT/ENGINE_DIGEST_CHECK.txt"
-{ [ -n "$ACTUAL" ] && [ "$SEALED" = "$ACTUAL" ]; } || dry_or_abort "ABORT_ENGINE_DIGEST sealed=$SEALED actual=${ACTUAL:-NO_MANIFEST}" 13
+python3 "$ENG/scripts/bootstrap/engine_digest.py" check --manifest "$MANIFEST" --sealed-file "$HERE/ENGINE_DIGEST.txt" \
+  --out "$OUT/ENGINE_DIGEST_CHECK.json" > "$OUT/ENGINE_DIGEST_CHECK.txt" 2>&1
+DRC=$?
+echo "sealed=$SEALED check_rc=$DRC" | tee -a "$OUT/ENGINE_DIGEST_CHECK.txt"
+[ "$DRC" -eq 0 ] || dry_or_abort "ABORT_ENGINE_DIGEST sealed=$SEALED check_rc=$DRC (see ENGINE_DIGEST_CHECK.txt)" 13
 
 # ---- CPU self-tests of the label/plan code (the mutation checks run inside the Job too)
 python3 "$HERE/mg_label.py" --selftest > "$OUT/SELFTEST_label.txt" 2>&1 || { tail -5 "$OUT/SELFTEST_label.txt"; fail "ABORT_SELFTEST mg_label" 16; }

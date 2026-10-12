@@ -139,5 +139,85 @@ class TestG5aEquivalence(unittest.TestCase):
         self.assertEqual(text.count("if decode_bs >= threshold:"), 1)
 
 
+def _independent_digest(runtime):
+    """pathless-v1 written out from its definition (engine_digest.py docstring), not via the tool:
+    sha256 over the sorted lowercase hex sha256 of the registered files, one per line."""
+    import hashlib
+    import re
+    text = (ENG / "scripts" / "bootstrap" / "sync_engine_tree.sh").read_text()
+    block = text[text.index("sha256sum \\\n"):text.index('> "${manifest_tmp}"')]
+    rels = re.findall(r'"\$\{runtime_python\}/([^"]+)"', block)
+    hs = sorted(hashlib.sha256((Path(runtime) / r).read_bytes()).hexdigest() for r in rels)
+    return len(rels), hashlib.sha256("".join(h + "\n" for h in hs).encode()).hexdigest()
+
+
+@unittest.skipIf(RUNTIME is None, "runtime tree (SGLANG_ENGINE_DEV) not found -- G5(a) record NOT RUN")
+class TestG5aSealedTreeRecord(unittest.TestCase):
+    """F6: a G5(a) PASS is bound to the tree it ran on (pathless ENGINE_DIGEST + manifest entry hashes)."""
+
+    PASSED = {"verdict": "PASS", "sm_counts_match_registered": True}
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+        self.n, self.dig = _independent_digest(RUNTIME)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def rec(self, res=None, mixin=None, expect="SELF"):
+        return G5A.sealed_tree_record(res or self.PASSED, RUNTIME, mixin or _runtime_mixin(), G5A.MANUAL_CFG,
+                                      G5A.AUTO_CFG, self.dig if expect == "SELF" else expect)
+
+    def test_control_sealed_tree_pass(self):
+        r = self.rec()
+        self.assertEqual(self.n, 27)
+        self.assertEqual(r["tree"]["engine_digest"], self.dig)
+        self.assertEqual(len(r["tree"]["entries"]), 27)
+        self.assertTrue(r["inputs"]["pdmux_context"]["is_manifest_entry"])
+        self.assertTrue(r["inputs"]["mixin"]["is_manifest_entry"])
+        self.assertTrue(r["sealed_tree_pass"])
+
+    def test_wrong_or_absent_expected_digest(self):
+        self.assertFalse(self.rec(expect="0" * 64)["sealed_tree_pass"])
+        r = self.rec(expect=None)
+        self.assertIsNone(r["sealed"]["match"])
+        self.assertFalse(r["sealed_tree_pass"])
+        self.assertFalse(self.rec(expect="UNSEALED")["sealed_tree_pass"])
+
+    def test_fail_result_is_never_sealed_pass(self):
+        self.assertFalse(self.rec(res={"verdict": "FAIL", "sm_counts_match_registered": True})["sealed_tree_pass"])
+        self.assertFalse(self.rec(res={"verdict": "PASS", "sm_counts_match_registered": False})["sealed_tree_pass"])
+
+    def test_mixin_outside_the_tree(self):
+        same = self.d / "same_mixin.py"
+        same.write_bytes(_runtime_mixin().read_bytes())
+        self.assertTrue(self.rec(mixin=same)["sealed_tree_pass"])  # control: identical bytes
+        other = self.d / "other_mixin.py"
+        other.write_bytes(_runtime_mixin().read_bytes() + b"\n# drift\n")
+        r = self.rec(mixin=other)
+        self.assertFalse(r["inputs"]["mixin"]["is_manifest_entry"])
+        self.assertFalse(r["sealed_tree_pass"])
+
+    def test_cli_record_and_rc(self):
+        import contextlib
+        import io
+        import json
+        out = self.d / "g5a_pass.json"
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            rc = G5A.main(["--runtime", str(RUNTIME), "--record", str(out), "--expect-digest", self.dig])
+            rc_bad = G5A.main(["--runtime", str(RUNTIME), "--expect-digest", "f" * 64])
+            ed = self.d / "ENGINE_DIGEST.txt"
+            ed.write_text(self.dig + "\n")
+            rc_file = G5A.main(["--runtime", str(RUNTIME), "--expect-digest-file", str(ed)])
+            rc_plain = G5A.main(["--runtime", str(RUNTIME)])
+        self.assertEqual((rc, rc_bad, rc_file, rc_plain), (0, 3, 0, 0))
+        doc = json.loads(out.read_text())
+        self.assertEqual(doc["record_schema"], "g5a_sealed_tree/v1")
+        self.assertTrue(doc["sealed_tree_pass"])
+        self.assertEqual(doc["result"]["verdict"], "PASS")
+
+
 if __name__ == "__main__":
     unittest.main()

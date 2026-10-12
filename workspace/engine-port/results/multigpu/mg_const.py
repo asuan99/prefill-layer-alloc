@@ -108,6 +108,18 @@ EST_BOOT_S = 240.0
 EST_DRAIN_S = {"A": 25.0, "B": 8.0}
 EST_WARMUP_S = {"A": 12.0, "B": 6.0}
 EST_CELL_GAP_S = 10.0                    # loadgen start-up + sampler flush between cells
+# F15 recalibration (rev6 harness audit 2026-10-12).  Source: N3 shape B 3rd run, VERDICT_result_n3_B_r3_2026-10-06.md §3-2
+# (original repository, read-only): unit overhead outside the bench 170 s (boot 104 + health->bench 42 + after-bench 17 +
+# between units 7) vs model constant 121 s = +49 s (+40 %).  The 49 s is attributed PER BOOT here (boot + health->bench
+# is the only part that scales with boots); the 24 s (17 + 7) after/between part is the per-CELL upper variant.
+# Not registered; used only by mg_plan.m3-forecast and by the boot-admission need (conservative).
+EST_VESSL_BOOT_EXTRA_S = 49.0
+EST_VESSL_CELL_GAP_S = 24.0
+EST_PREFLIGHT_S = 224.0                  # N3 r3 measured t0 -> first admission (median); one per Job
+EXT_TRIGGER_RATIO = 1.42                 # rev5 audit: lambda/prior at which an HI cell stops being saturated (g < 0.10)
+G5A_AUTO_S = 60.0                        # F4: length of the decode-busy cell of the G5(a) GPU descriptive boot
+REQUIRED_FRONTEND_ROLES = {"N1": ("tokenizer_manager", "detokenizer"), "TP": ("tokenizer_manager", "detokenizer"),
+                           "DP": ("tokenizer_manager", "detokenizer", "dp_controller")}     # F13 (sampler role names)
 
 
 def get(key):

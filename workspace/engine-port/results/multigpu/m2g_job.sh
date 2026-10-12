@@ -5,6 +5,8 @@
 # Output: results/multigpu/m2g_<job>/{M2G_PASS_TABLE.json(+.sha256), gates/, boots/, cells/, DRIVER_*}
 # Hard cap 8 h (mg_const.HARD_CAP_S["m2g"]) enforced by mg_drive.py (deadline passed to every boot).
 #
+# Order (F1): G5(a) CPU test -> G3 (run-g3 per TP, BEFORE any serving boot) -> serving boots (incl. the G5(a) GPU boot) -> G1 exposure +
+# score-g1/g2 -> G5(a) GPU descriptive -> M2G_PASS_TABLE.  Job path = mg_drive.run_m2g + assemble_pass_table (M2gRun is the reference only).
 # ENGINE-PORTER INTERFACE (scripts/multigpu/m2g_correctness_gate.py; verified present 2026-10-12, CPU-tested by engine-porter):
 #   serve-g1 --endpoint URL --out DIR --config CFG --arm ARM    run on the LIVE server of each boot (mg_plan.m2g_boots `cmd` steps)
 #   serve-g2 --endpoint URL --out DIR --config CFG --repeats K
