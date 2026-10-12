@@ -1,0 +1,118 @@
+{
+ "params": {
+  "points": "4:0,8:0,8:1",
+  "ttft_base_ms": 200.0,
+  "itl_ms": 32.0,
+  "server_workers": 8,
+  "out": "/tmp/claude-1000/-home-wonho-Experiments-KISTI/2230548c-6044-4751-93bd-f043458df962/scratchpad/h10_result.json"
+ },
+ "host_cpus": 28,
+ "points": [
+  {
+   "n_gpus": 4,
+   "ext": 0,
+   "offered_req_s": 19.136,
+   "n_req": 3250,
+   "slots": 192,
+   "peak_open_connections_client": 1522,
+   "errors": 0,
+   "sched_lag_ms": {
+    "p50": 0.4328723033513171,
+    "p99": 3.6269833891175454,
+    "max": 11.728742014383897
+   },
+   "loop_lag_ms": {
+    "p50": 0.3879879997111856,
+    "p99": 3.1019842275418275,
+    "max": 33.51769701577723
+   },
+   "client_cpu_util": 0.14401995298427947,
+   "itl_ms": {
+    "p50": 32.63037701253779,
+    "p95": 33.9106335028191,
+    "p99": 36.17119527567411
+   },
+   "itl_p95_inflation_ms": 1.9106335028191026,
+   "fd_limit": {
+    "soft_before": 1048576,
+    "hard": 1048576,
+    "required": 8192,
+    "soft_after": 1048576,
+    "ok": true
+   },
+   "send_window_s": 169.71205627699965,
+   "PASS_candidate": true
+  },
+  {
+   "n_gpus": 8,
+   "ext": 0,
+   "offered_req_s": 38.272,
+   "n_req": 3851,
+   "slots": 384,
+   "peak_open_connections_client": 1815,
+   "errors": 0,
+   "sched_lag_ms": {
+    "p50": 0.1691926525921872,
+    "p99": 0.9604178975557431,
+    "max": 25.5774216699578
+   },
+   "loop_lag_ms": {
+    "p50": 0.2249599975766613,
+    "p99": 1.0299931865301915,
+    "max": 55.456912993686274
+   },
+   "client_cpu_util": 0.22988820060506543,
+   "itl_ms": {
+    "p50": 32.63083499041386,
+    "p95": 33.05904500302859,
+    "p99": 33.46622120006941
+   },
+   "itl_p95_inflation_ms": 1.0590450030285865,
+   "fd_limit": {
+    "soft_before": 1048576,
+    "hard": 1048576,
+    "required": 8192,
+    "soft_after": 1048576,
+    "ok": true
+   },
+   "send_window_s": 104.40184933700948,
+   "PASS_candidate": true
+  },
+  {
+   "n_gpus": 8,
+   "ext": 1,
+   "offered_req_s": 76.544,
+   "n_req": 3851,
+   "slots": 384,
+   "peak_open_connections_client": 2964,
+   "errors": 0,
+   "sched_lag_ms": {
+    "p50": 0.20931418061209683,
+    "p99": 1.0395207123004013,
+    "max": 48.360593824732234
+   },
+   "loop_lag_ms": {
+    "p50": 0.2755395008716731,
+    "p99": 1.044128773501143,
+    "max": 59.11088700406253
+   },
+   "client_cpu_util": 0.2154937798763579,
+   "itl_ms": {
+    "p50": 32.74828600115143,
+    "p95": 33.08018599636853,
+    "p99": 33.5705701902043
+   },
+   "itl_p95_inflation_ms": 1.0801859963685274,
+   "fd_limit": {
+    "soft_before": 1048576,
+    "hard": 1048576,
+    "required": 8192,
+    "soft_after": 1048576,
+    "ok": true
+   },
+   "send_window_s": 52.19837538502179,
+   "PASS_candidate": true
+  }
+ ],
+ "note": "local upper bound; VESSL client shares an ~11-CPU quota"
+}

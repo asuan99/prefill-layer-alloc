@@ -495,4 +495,4 @@ All installed by `sync_engine_tree.sh`; reproduced on `sglang_engine_dev_multigp
 CPU regression: `tests/test_multigpu_guard.py` (31 tests: hand-written predicate table,
 9 mutants killed + unmutated control, init_pdmux wiring AST + mutant, golden telemetry
 line, device-assert behaviour on fake torch incl. pristine negative control) and
-`tests/test_m2g_skeleton.py` (M2g comparator skeleton).
+`tests/test_m2g_skeleton.py` (M2g comparator skeleton; superseded 2026-10-12 by `tests/test_m2g_gate.py`, skeleton file removed).
