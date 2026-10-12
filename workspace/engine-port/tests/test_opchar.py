@@ -183,6 +183,78 @@ class WorkerHelpers(unittest.TestCase):
         self.assertIsNone(W.realized_sm({"error": "x"}))
 
 
+class TritonLaunch(unittest.TestCase):
+    """Recorder against a fake triton.compiler.compiler with the 3.5.1 call signature."""
+
+    def setUp(self):
+        import types
+        from experiments.opchar import triton_launch as TL
+        self.TL = TL
+        calls = self.calls = []
+
+        class CompiledKernel:
+            def __init__(self, name, warps, shared, regs):
+                self.name, self.n_regs, self.n_spills = name, regs, 0
+                self.metadata = types.SimpleNamespace(num_warps=warps, shared=shared, num_ctas=1)
+                self.inited = False
+
+            def _init_handles(self):
+                self.inited = True
+
+            def launch_metadata(self, grid, stream, *args):
+                calls.append((self.name, tuple(grid), stream, args))
+                return "orig"
+        self.CK = CompiledKernel
+        mod = types.ModuleType(TL.TRITON_COMPILER_MODULE)
+        mod.CompiledKernel = CompiledKernel
+        self._saved = {k: sys.modules.get(k) for k in ("triton", "triton.compiler", TL.TRITON_COMPILER_MODULE)}
+        sys.modules["triton"] = types.ModuleType("triton")
+        sys.modules["triton.compiler"] = types.ModuleType("triton.compiler")
+        sys.modules[TL.TRITON_COMPILER_MODULE] = mod
+
+    def tearDown(self):
+        for k, v in self._saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+
+    def test_records_only_inside_op_and_passes_through(self):
+        rec = self.TL.TritonLaunchRecorder().install()
+        k = self.CK("_chunk_scan_fwd_kernel", 4, 32768, 128)
+        self.assertEqual(k.launch_metadata((216, 1), "s", 7), "orig")      # outside op: not recorded
+        rec.begin_op("M:ssd_scan")
+        k.launch_metadata((216,), "s", 7)
+        k.launch_metadata((216, 2, 1), "s", 7)
+        rec.end_op()
+        rec.uninstall()
+        k.launch_metadata((1,), "s")                                       # after uninstall
+        self.assertEqual(len(self.calls), 4)                               # original always called
+        self.assertEqual([r["grid"] for r in rec.records], [[216, 1, 1], [216, 2, 1]])
+        self.assertTrue(k.inited)
+        self.assertEqual(rec.records[0]["n_regs"], 128)
+        self.assertFalse(getattr(self.CK.launch_metadata, "_opchar_wrapped", False))
+
+    def test_double_install_refused(self):
+        rec = self.TL.TritonLaunchRecorder().install()
+        with self.assertRaises(RuntimeError):
+            self.TL.TritonLaunchRecorder().install()
+        rec.uninstall()
+
+    def test_launch_table(self):
+        recs = [{"op": "M:ssd_scan", "kernel": "k", "grid": [109, 1, 1], "num_warps": 4, "num_ctas": 1,
+                 "shared": 0, "n_regs": 32, "n_spills": 0},
+                {"op": "M:ssd_scan", "kernel": "k", "grid": [109, 1, 1], "num_warps": 4, "num_ctas": 1,
+                 "shared": 0, "n_regs": 32, "n_spills": 0}]
+        rows = self.TL.launch_table(recs, {0: 1.0, 1: 3.0}, {"M:ssd_scan": 2}, sm_count=108)
+        self.assertEqual(len(rows), 1)
+        r = rows[0]
+        self.assertEqual((r["calls"], r["calls_per_iter"], r["segment_ms_per_iter"]), (2, 1.0, 2.0))
+        self.assertEqual(r["resident_blocks_per_sm"], 16)                  # 128 thr, 32 regs
+        self.assertEqual(r["waves"], 1)
+        self.assertAlmostEqual(self.TL.op_idle(rows)["M:ssd_scan"], r["idle_ratio"])
+
+
 class Plan(unittest.TestCase):
     def test_grid(self):
         for sm in R.SM_GRID:
@@ -190,7 +262,7 @@ class Plan(unittest.TestCase):
         full = R.plan("full")
         n = len(R.SM_GRID)
         self.assertEqual(len(full), 3 * n)
-        self.assertTrue(all("--profile" in c for l, c in full if not l.startswith("memcpy")))
+        self.assertTrue(all("--launch-log" in c for l, c in full if not l.startswith("memcpy")))
         probe = R.plan("probe")
         self.assertEqual(probe[0][0], "probe")
         self.assertTrue(any(l.startswith("smoke_decode") for l, _ in probe))

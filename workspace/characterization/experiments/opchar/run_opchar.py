@@ -45,18 +45,18 @@ def plan(mode: str) -> list:
             jobs.append((f"memcpy_sm{sm}", w + ["--phase", "memcpy", "--sm", str(sm)]))
         for sm in (108, 44):
             jobs.append((f"smoke_prefill_sm{sm}", w + ["--phase", "prefill", "--sizes", "1024", "--sm", str(sm),
-                                                      "--n-measure", "5", "--profile"]))
+                                                      "--n-measure", "5", "--launch-log"]))
             jobs.append((f"smoke_decode_sm{sm}", w + ["--phase", "decode", "--sizes", "32", "--ctx",
                                                      str(DECODE_CTX), "--sm", str(sm), "--n-measure", "5",
-                                                     "--profile"]))
+                                                     "--launch-log"]))
     elif mode == "full":
         for sm in SM_GRID:
             jobs.append((f"memcpy_sm{sm}", w + ["--phase", "memcpy", "--sm", str(sm)]))
         for sm in SM_GRID:
             jobs.append((f"prefill_sm{sm}", w + ["--phase", "prefill", "--sizes", *map(str, PREFILL_L),
-                                                "--sm", str(sm), "--profile"]))
+                                                "--sm", str(sm), "--launch-log"]))
             jobs.append((f"decode_sm{sm}", w + ["--phase", "decode", "--sizes", *map(str, DECODE_B),
-                                               "--ctx", str(DECODE_CTX), "--sm", str(sm), "--profile"]))
+                                               "--ctx", str(DECODE_CTX), "--sm", str(sm), "--launch-log"]))
     else:
         raise ValueError(mode)
     return jobs

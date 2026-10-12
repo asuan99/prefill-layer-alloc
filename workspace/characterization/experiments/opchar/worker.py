@@ -154,7 +154,7 @@ def run_ops(a, stream, info, out_dir: Path):
     from experiments.opchar import trace_parse as TP
     cfg = S.cfg_from_models_yaml(a.model)
     a._counts = S.layer_counts(cfg.pattern)
-    rows, kernel_rows, notes = [], [], []
+    rows, kernel_rows, launch_rows, notes = [], [], [], []
     for size in a.sizes:
         tag = f"{a.phase}_{size}" + (f"_ctx{a.ctx}" if a.phase == "decode" else "") + f"_sm{a.sm}"
         try:
@@ -182,6 +182,12 @@ def run_ops(a, stream, info, out_dir: Path):
                                 "ms_median": None, "ms_p10": None, "ms_p90": None, "ms_mean": None,
                                 "n": 0, "tflops_derived": None, "gbps_derived": None})
                 rows.append(row)
+        if a.launch_log:
+            try:
+                launch_rows += launch_log_ops(a, ops, stream, info, size)
+            except Exception as exc:  # noqa: BLE001
+                notes.append({"size": size, "launch_log_error": repr(exc),
+                              "tb": traceback.format_exc()[-2000:]})
         if a.profile:
             try:
                 kernel_rows += profile_ops(a, ops, stream, info, size, tag, out_dir, TP)
@@ -191,7 +197,41 @@ def run_ops(a, stream, info, out_dir: Path):
         notes.append({"size": size, "meta": {k: v for k, v in meta.items() if not k.startswith("_")}})
         del ops, meta
         torch.cuda.empty_cache()
-    return rows, kernel_rows, notes
+    return rows, kernel_rows, launch_rows, notes
+
+
+SCHEMA_LAUNCH = {
+    "model": X, "phase": X, "size": X, "ctx": X, "n_sm_req": X, "n_sm_realized": M, "op": X,
+    "kernel": X, "grid": M, "grid_blocks": M, "threads": M, "regs": M, "smem": M, "num_ctas": M,
+    "calls": M, "calls_per_iter": D, "segment_ms_sum": D, "segment_ms_per_iter": D,
+    "segment_missing": X, "resident_blocks_per_sm": D, "waves": D, "tail_sms": D, "idle_ratio": D,
+}
+
+
+def launch_log_ops(a, ops, stream, info, size):
+    """Triton launch-config pass (counter-free, CUPTI-free): each op K times."""
+    import torch
+    from experiments.opchar import triton_launch as TL
+    K = a.profile_iters
+    rec = TL.TritonLaunchRecorder().install()
+    try:
+        rec.stream = stream
+        for spec, fn in ops:
+            torch.cuda.synchronize()
+            with torch.cuda.stream(stream):
+                rec.begin_op(spec.key)
+                for _ in range(K):
+                    fn()
+                rec.end_op()
+        torch.cuda.synchronize()
+        seg = rec.segment_ms()
+    finally:
+        rec.uninstall()
+    n_sm = int(info.get("n_sm_realized") or info["n_sm_req"])
+    table = TL.launch_table(rec.records, seg, {spec.key: K for spec, _ in ops}, n_sm)
+    base = {"model": a.model, "phase": a.phase, "size": size, "ctx": a.ctx if a.phase == "decode" else 0,
+            "n_sm_req": info["n_sm_req"], "n_sm_realized": info.get("n_sm_realized")}
+    return [{**base, **{k: r.get(k) for k in SCHEMA_LAUNCH if k not in base}} for r in table]
 
 
 SCHEMA_KERNELS = {
@@ -262,7 +302,8 @@ def main(argv=None):
     p.add_argument("--n-warmup", type=int, default=5)
     p.add_argument("--n-measure", type=int, default=30)
     p.add_argument("--inner", type=int, default=0)
-    p.add_argument("--profile", action="store_true")
+    p.add_argument("--profile", action="store_true", help="Kineto/CUPTI pass (empty on the VESSL image)")
+    p.add_argument("--launch-log", action="store_true", help="Triton launch-config pass (CUPTI-free)")
     p.add_argument("--profile-iters", type=int, default=3)
     p.add_argument("--memcpy-bytes", type=int, default=1 << 30)
     p.add_argument("--out-dir", required=True)
@@ -280,10 +321,12 @@ def main(argv=None):
     if a.phase == "memcpy":
         write_labeled_csv(out_dir / f"{stem}.csv", run_memcpy(a, stream, info), SCHEMA_MEMCPY)
     else:
-        rows, krows, notes = run_ops(a, stream, info, out_dir)
+        rows, krows, lrows, notes = run_ops(a, stream, info, out_dir)
         meta["notes"] = notes
         if rows:
             write_labeled_csv(out_dir / f"ops_{stem}.csv", rows, SCHEMA_OPS)
+        if lrows:
+            write_labeled_csv(out_dir / f"launch_{stem}.csv", lrows, SCHEMA_LAUNCH)
         if krows:
             write_labeled_csv(out_dir / f"kernels_{stem}.csv", krows,
                               {k: v for k, v in SCHEMA_KERNELS.items() if k in krows[0]})
