@@ -10,7 +10,7 @@
 > shape B Decode 줄 고갈, D8 NVML memory.used 폴백이 PD-mux 캡처 메모리를 불일치로 판정)를 반영했다. 대조표 §11. MGP-26…MGP-32 추가 승계.
 > **rev5**(사용자 결정 2026-10-12): MGP-29(arm 간 스케줄 노브 비대칭) 대응으로 대칭 대조군 `fused_sym` arm을 추가하고 1차 estimand를 G\_sym = agnostic/fused\_sym으로 바꿨다. 대조표 §12.
 > **rev10**(2026-10-13): rev9 경량 감사(`VERDICT_rules_rev9_2026-10-13.md`, `MIXED` — M3 死因 D10 P-DP shape 축 누락, D11 미등록 config 순서 유도식) 처방 P10·P11 반영. §17. MGP-43′·49′·50′·51–55 승계. **규칙층 경량 델타 감사 대기.**
-> **rev9**(2026-10-13): rev8 규칙층 감사(`VERDICT_rules_rev8_2026-10-13.md`, `MIXED` — M3 死因 D9: G(1) 미정의 시 교차 Job 추세 fail-open) 처방 P9-a–d 반영 + 사용자 결정 3건(메모리 규칙 (iii) 폐지[사후 변경 공시], Job별 하드캡 예상치 기준, J1을 x2 노드 GPU 0 단독). 상세 §16 — §16·§17이 §3·§4·§15와 충돌하면 §16·§17이 우선(rev10 정정, H-6). MGP-42…50 승계. **규칙층 경량 델타 감사 대기.**
+> **rev9**(2026-10-13): rev8 규칙층 감사(`VERDICT_rules_rev8_2026-10-13.md`, `MIXED` — M3 死因 D9: G(1) 미정의 시 교차 Job 추세 fail-open) 처방 P9-a–d 반영 + 사용자 결정 3건(메모리 규칙 (iii) 폐지[사후 변경 공시], Job별 하드캡 예상치 기준, J1을 x2 노드 GPU 0 단독). 상세 §16 — §17 > §16 > §3·§4·§15 순으로 우선(rev10 정정, H-6·E-1). MGP-42…50 승계. **규칙층 경량 델타 감사 대기.**
 > **rev8**(사용자 결정 2026-10-12): **Job을 구성별 적정 크기로 나눈다**(x8 한 Job 순차 실행 폐기 — 예약 GPU 사용률 M2g 실측 59%, M3 예보 약 50%로 크레딧 낭비). rev7 M2g 3회차 Job(`pdmux-multigpu-f515970-20261012142501`)은 실행 40분 만에 사용자 결정으로 취소(산출물 없음, 측정 0). 상세 §15 — §15가 §1 '기판'·'GPU 부분집합'·§4-1 실행 순서·§4-5 앵커·§4-6 기술 블록·§6을 대체한다. **규칙층 델타 감사 대기.**
 > **rev7**(사용자 결정 2026-10-12, M2g 2회차 `RESULT_m2g_c1395d0_2026-10-12.md` 대응): fused arm에 `--disable-piecewise-cuda-graph`. 그 결과 fused와 fused\_sym의 차이는 overlap·chunked **두 노브**로 줄어든다(MGP-36의 세 번째 노브 제거 — MGP-36 문장 중 'piecewise' 부분은 rev7 아래에서 해당 없음, S는 여전히 두 노브의 합성). M2g는 이 정의로 **전부 재실행**한다(같은 Job 원칙). 대조표 §14. **규칙층 델타 감사 대기.**
 > **rev4+rev5 델타 감사**(`VERDICT_prereg_rules_rev5_delta_2026-10-12.md`): **M2g·M3 모두 `GO-with-caveats`**(死因 0). MGP-0의 'M3 `NO-GO`'는 해제됐다.
@@ -281,7 +281,7 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 
 - 네 Job은 서로 다른 노드에서 **동시에** 실행해도 된다(벽시계 단축). M2g와 M3 각각 이 4-Job 배치를 쓴다.
 - 한 config의 네 arm은 **반드시 같은 Job** 안에 둔다(1차 estimand G\_sym은 같은 Job 안 arm 비율이라 Job 공통 배율 효과가 상쇄된다).
-- Job 안 순서: preflight → (M2g) G5(a) CPU·G3·거부 boot / (M3) 앵커 → config(TP 먼저, DP 다음; 순서는 Job마다 seed 20261012로 무작위) → 끝. N=1 2회차 앵커와 NUMA 블록은 **없앤다**.
+- Job 안 순서: preflight → (M2g) G5(a) CPU·G3·거부 boot / (M3) 앵커 → config(~~TP 먼저, DP 다음; 순서는 Job마다 seed 20261012로 무작위~~ **rev10: §17-2(a) 등록 유도식, J2/J4/J8 = [DP, TP]**) → 끝. N=1 2회차 앵커와 NUMA 블록은 **없앤다**.
 - 부분집합: J\_N 안에서 TP·DP는 노드의 GPU 0..N−1 전부를 쓴다. 노드 위상(`nvidia-smi topo -m`)을 preflight에서 기록하고, Job 안 GPU 쌍 중 NVLink가 아닌 쌍이 있으면 `TOPOLOGY_NOT_NVLINK` 플래그를 그 Job 결과 전체에 붙인다(차단 아님; M1 프로브는 x8 노드만 확인했다).
 
 ### 15-2. M2g 배분
@@ -318,7 +318,7 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 
 ### 16-2. 사용자 결정 (2026-10-13)
 1. **메모리 규칙 (iii) 폐지 — 사후 변경**: §3 G5(c)·§4-4의 `MEMORY_MISMATCH` 조건 중 (iii) "arm 간 `max_total_num_tokens` 상대차 > 1%"를 삭제한다. (i) mamba 슬롯 ≠ effective cap, (ii) `max_total_num_tokens` < effective cap × (ISL+OSL)(KV 구속)만 남는다. **공시**: 이 변경은 M2g 2회차(`m2g_pdmux-multigpu-c1395d0-20261012081851`)의 `max_total_num_tokens` 값(TP4 1.34–1.38%, TP8 1.29–1.33%, TP2 0.9989%)을 본 뒤에 이루어졌다. 근거는 KV 풀이 구속되지 않는다는 것(TP4 필요 약 1.59 M 토큰 vs 가용 약 13.7 M)이다. 결과 문서는 이 사후 변경과 (iii) 기준이었다면 미정의였을 셀을 함께 적는다. arm 간 상대차는 기술치로 계속 기록한다.
-2. **하드캡**: J1 10 h, J2·J4·J8 각 14 h(예상치 기준). 공동 확장(S3)이 발화하면 DP2·DP8 LO 등이 잘릴 수 있다(MGP-49) — 잘린 셀은 `TRUNCATED`로 공시.
+2. **하드캡**: J1 10 h, J2·J4·J8 각 14 h(예상치 기준). ~~공동 확장(S3)이 발화하면 DP2·DP8 LO 등이 잘릴 수 있다(MGP-49)~~ **(rev10 정정: 등록 순서 [DP, TP]에서는 TP가 먼저 잘린다 — §17-2, MGP-56)** — 잘린 셀은 `TRUNCATED`로 공시.
 3. **J1 스펙**: `resourcespec-a100x2`에서 GPU 0만 사용(GPU 1 유휴). CPU quota·노드 종류를 J2와 맞추기 위한 것. J1의 GPU 1은 측정에 쓰지 않는다.
 
 ### 16-3. 하네스 조건 (rev8 감사 §6 승계)
