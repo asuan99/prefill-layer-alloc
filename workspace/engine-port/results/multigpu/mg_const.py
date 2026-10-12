@@ -40,6 +40,9 @@ ARMS = ("fused", "fused_sym", "agnostic", "d44")
 PDMUX_ARMS = ("agnostic", "d44")
 # the two scheduler knobs shared BYTE-IDENTICALLY by fused_sym and both PD-mux arms (§2, H3)
 SCHED_KNOBS = ("--chunked-prefill-size", "-1", "--disable-overlap-schedule")
+# fused = vanilla engine defaults + this one flag (user decision 2026-10-12: piecewise CUDA graph is py3.14
+# typing.Union-incompatible, M2g round-2 7/7 fused boot failures; KISTI precedent).  Not applied to fused_sym / PD-mux.
+FUSED_EXTRA_FLAGS = ("--disable-piecewise-cuda-graph",)
 D44_FIXED_DSM = 44                                                       # §2
 AGNOSTIC_CONFIG_REL = "benchmarks/configs/pdmux_agnostic_manual.yml"     # §2 (engine-porter's file)
 D44_CONFIG_REL = "benchmarks/configs/pdmux_r2.yml"                       # §2

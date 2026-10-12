@@ -82,6 +82,8 @@ def build_server_args(spec, port, config_abs=None):
         a += ["--enable-pdmux", "--pdmux-config-path", config_abs or cfg]
     if arm in C.PDMUX_ARMS or arm == "fused_sym":
         a += list(C.SCHED_KNOBS)            # byte-identical for fused_sym and both PD-mux arms (H3)
+    if arm == "fused":
+        a += list(C.FUSED_EXTRA_FLAGS)      # fused = vanilla + --disable-piecewise-cuda-graph (only)
     a += ["--decode-log-interval", str(C.DECODE_LOG_INTERVAL)]
     if tp > 1:
         a += ["--tp-size", str(tp)]

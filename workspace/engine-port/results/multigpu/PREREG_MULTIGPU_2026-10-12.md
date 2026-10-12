@@ -1,4 +1,4 @@
-# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev6)
+# 사전등록 — Multi-GPU(A100 ×1/2/4/8, DP·TP) 정확성 게이트 M2g + 용량비 M3 + 변화 trace M4 (2026-10-12, rev7)
 
 > **지위**: 설계 문서 `reports/multigpu_scaling_design_2026-10-12.md`(rev2)의 M2.5. 감사 판정
 > `reports/audit/2026-10-12_multigpu_design/AUDIT_multigpu_design_rev1_2026-10-12.md`(`MIXED`)의 MG-0이 요구하는 **결정 규칙 등록**이다.
@@ -9,6 +9,7 @@
 > **rev4**: rev3 델타 감사(`VERDICT_prereg_rules_rev3_delta_2026-10-12.md`, `MIXED`: M2g `GO-with-caveats` 유지, M3 `NO-GO` — D7 fused prefill 우선으로
 > shape B Decode 줄 고갈, D8 NVML memory.used 폴백이 PD-mux 캡처 메모리를 불일치로 판정)를 반영했다. 대조표 §11. MGP-26…MGP-32 추가 승계.
 > **rev5**(사용자 결정 2026-10-12): MGP-29(arm 간 스케줄 노브 비대칭) 대응으로 대칭 대조군 `fused_sym` arm을 추가하고 1차 estimand를 G\_sym = agnostic/fused\_sym으로 바꿨다. 대조표 §12.
+> **rev7**(사용자 결정 2026-10-12, M2g 2회차 `RESULT_m2g_c1395d0_2026-10-12.md` 대응): fused arm에 `--disable-piecewise-cuda-graph`. 그 결과 fused와 fused\_sym의 차이는 overlap·chunked **두 노브**로 줄어든다(MGP-36의 세 번째 노브 제거 — MGP-36 문장 중 'piecewise' 부분은 rev7 아래에서 해당 없음, S는 여전히 두 노브의 합성). M2g는 이 정의로 **전부 재실행**한다(같은 Job 원칙). 대조표 §14. **규칙층 델타 감사 대기.**
 > **rev4+rev5 델타 감사**(`VERDICT_prereg_rules_rev5_delta_2026-10-12.md`): **M2g·M3 모두 `GO-with-caveats`**(死因 0). MGP-0의 'M3 `NO-GO`'는 해제됐다.
 > 이 등급은 규칙 실행 허가이지 'M3가 PD-mux 스케일링을 판정할 수 있다'는 뜻이 아니다. **rev6**은 그 판정서 §8-1의 경량 반영(표 행·caveat·고정 조건·예산)이며, 하네스 H1–H10 작성과 하네스층 감사가 다음 gate다. 제출은 사용자 승인. `GO`/`GO-with-caveats` 전에는 M2g·M3 Job을 `--submit`하지 않는다(교훈 34). 하네스(plan·label 스크립트)는
 > 규칙 감사 뒤에 작성하고 별도로 하네스층 감사를 받는다.
@@ -42,7 +43,7 @@ arm별 포화 처리율 λ\*를 재어 **1차 estimand G(N, mode) = λ\*\_agnost
 | GPU 부분집합(주) | N=1 `{0}`, N=2 `{0,1}`, N=4 `{0,1,2,3}`, N=8 `{0..7}`. 부분집합은 **순차** 실행(동시 실행 금지) | C-1. NUMA 교차는 N=8에만 생긴다 → §4-6 민감도 블록 |
 | attention backend | `flashinfer`(`PDMUX_ATTENTION_BACKEND`, 셀마다 기록). runner 기본 triton은 NemotronH assert로 거부된다(`server_args.py:1959-1962`) | H4 |
 | 클라이언트 timeout·fd | `trace_loadgen` `sock_read` = 600 s 유지(MGP-35 문턱의 전제), 클라이언트 `RLIMIT_NOFILE` soft ≥ 8192로 상향하고 `ulimit -n`을 셀마다 기록 | H5, H6 |
-| piecewise CUDA graph | 엔진 기본값 유지(별도 인자 없음). 셀마다 `disable_piecewise_cuda_graph`·`piecewise_cuda_graph_tokens`·캡처 로그 기록 — fused(8192)만 piecewise 캡처 경로에 들어감(MGP-36) | H8 |
+| piecewise CUDA graph | **rev7: fused arm만 `--disable-piecewise-cuda-graph`**(나머지 arm은 chunked −1이라 원래 piecewise 경로에 들어가지 않음). 셀마다 `disable_piecewise_cuda_graph`·`piecewise_cuda_graph_tokens`·캡처 로그 기록 | H8, rev7 |
 | 서버 로그 | `--decode-log-interval 40`(SGLang 기본값을 명시 등록), `SGLANG_LOG_MS=1`(밀리초 타임스탬프). 판정에는 `Decode batch` 줄만 쓴다(§4-3) | D3 처방 |
 | 기록 | GPU별 clk·throttle(job_entry `clk.csv` index 열), `cpu.stat` 셀 전후, `cell_meta.json`(max_total_tokens·mamba cache·effective cap), realized split telemetry(rank 접미사) | C-1, C-4, C-5 |
 
@@ -50,7 +51,7 @@ arm별 포화 처리율 λ\*를 재어 **1차 estimand G(N, mode) = λ\*\_agnost
 
 | arm | 정의 | 비고 |
 |---|---|---|
-| `fused` | `PDMUX_ENGINE_MODE=vanilla`(PD-mux off), 엔진 기본 스케줄(overlap ON, chunked prefill 8192) | policy_adapter `vanilla:vanilla`. **운영 기본값 대조군** |
+| `fused` | `PDMUX_ENGINE_MODE=vanilla`(PD-mux off), 엔진 기본 스케줄(overlap ON, chunked prefill 8192) + **`--disable-piecewise-cuda-graph`**(rev7) | policy_adapter `vanilla:vanilla`. **운영 기본값 대조군**(단 piecewise CUDA graph는 끈다 — 이 이미지의 Python 3.14 + torch 조합에서 piecewise 캡처가 `typing.Union.__module__` 비호환으로 기동 실패, M2g 2회차 7/7. KISTI fused cudagraph-ON 선례와 동일) |
 | `fused_sym` | `PDMUX_ENGINE_MODE=vanilla`(PD-mux off) + PD-mux arm과 **같은 스케줄 노브** `--chunked-prefill-size -1 --disable-overlap-schedule`(runner가 PD-mux arm에 붙이는 인자와 바이트 동일) | **대칭 대조군**(사용자 결정 2026-10-12, MGP-29 대응). PD-mux arm과의 차이는 PD-mux 기능 전체(SM 분할 + split prefill + 입장 기계)이며 'SM 분할 단독'은 아니다 |
 | `agnostic` | PD-mux on, **R2 정책 없음**(stock 임계표), config = `pdmux_agnostic_manual.yml`: `sm_group_num 4`, `manual_divisions [[74,34,0],[54,54,36]]`, `decode_bs_divisor 36` | A100 자동 격자 `divide_sm(108, (8,0), 2)` = [(74,34),(54,54)], idx = max(1, min(2, decode_bs·2//36))와 **같은 선택 함수**를 manual 표로 옮긴 것. 자동 격자 경로는 TP/DP>1에서 device assert로 거부되므로(M2 발견) manual 등가표를 쓴다. 등가성은 M2g G5에서 N=1 auto vs manual realized 선택 일치로 검증 |
 | `d44` | PD-mux on, `PDMUX_R2_POLICY=fixed`, `PDMUX_R2_FIXED_DSM=44`, config `pdmux_r2.yml` | 1-GPU decode-heavy static 권고의 D. **N마다 재조율하지 않는다** — 이 arm에 대한 결론은 "1-GPU에서 고른 D44를 N에 그대로 쓴 경우"로 범위를 한정한다(C-6) |
@@ -255,3 +256,12 @@ M4는 M3 결과를 입력으로 하는 다음 결정적 규칙만 등록한다. 
 | §6-1 예산 재예보 | §6-1 |
 | MGP-26′·27′·33…39 승계 | §7 |
 | 선택 처방(arm별 x\_lo) | **채택 안 함**(공동 x\_lo 유지, MGP-34 병기로 처리). 바꾸려면 사용자 결정 + 델타 감사 |
+
+## 14. rev6 → rev7 대조표 (사용자 결정, M2g 2회차 결과 대응)
+
+| 변경 | 위치 | 이유 |
+|---|---|---|
+| fused = vanilla + `--disable-piecewise-cuda-graph` | §1 piecewise 행, §2 fused 행 | M2g 2회차: piecewise 캡처가 py3.14 `typing.Union.__module__` 비호환으로 fused 7/7 기동 실패 → PASS 표 28칸 전부 제외 |
+| MGP-36의 piecewise 노브 | 해당 없음 처리 | fused와 fused\_sym 모두 piecewise 미사용. S = λ\*\_fused\_sym/λ\*\_fused는 overlap·chunked 두 노브의 합성(여전히 'overlap 효과' 단독으로 쓰지 않음) |
+| M2g 재실행 | — | 같은 Job 원칙. 2회차 PASS(G3, G0(ii)/(iii), G3b, G5(b))는 재사용하지 않고 다시 잰다 |
+| G4 공허 PASS(boot 실패 arm) | 하네스 수정 | 판정 규칙 변경 아님 — boot status ≠ OK면 G4 = NOT_TESTED |

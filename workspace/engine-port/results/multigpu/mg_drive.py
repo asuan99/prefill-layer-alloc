@@ -446,7 +446,8 @@ def assemble_pass_table(out):
             sa = {"disable_cuda_graph": pw.get("disable_cuda_graph") == "True",
                   "disable_piecewise_cuda_graph": pw.get("disable_piecewise_cuda_graph"),
                   "piecewise_cuda_graph_tokens": pw.get("piecewise_cuda_graph_tokens")}
-            res["g4"][k] = G.score_g4(txt(bd / "server.log"), sa)
+            if res["g0i"][k]["verdict"] == G.PASS:      # a boot that never became healthy has no capture to judge: G4 absent == NOT_TESTED
+                res["g4"][k] = G.score_g4(txt(bd / "server.log"), sa)
             res["meta"][k] = _json(bd / "cell_meta.json")
             pc = _json(bd / "proc_counts_post_boot.json")
             if pc is not None:

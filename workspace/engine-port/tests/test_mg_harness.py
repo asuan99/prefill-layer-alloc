@@ -45,6 +45,22 @@ class ServerArgs(unittest.TestCase):
             ag, fs = self.args(cfg, "agnostic"), self.args(cfg, "fused_sym")
             self.assertEqual([x for x in ag if x not in ("--enable-pdmux", "--pdmux-config-path", "/cfg.yml")], fs)
 
+    def test_fused_vs_fused_sym_server_args_diff_is_pinned(self):
+        """fused = vanilla + --disable-piecewise-cuda-graph; vs fused_sym the ONLY differences are
+        {chunked_prefill_size, disable_overlap_schedule (fused_sym sets them)} and {disable_piecewise_cuda_graph (fused sets it)}."""
+        def flags(args):
+            return {x for x in args if x.startswith("--")}
+        for cfg in ("N1", "TP2", "TP8", "DP4"):
+            f, fs = self.args(cfg, "fused"), self.args(cfg, "fused_sym")
+            self.assertEqual(flags(f) ^ flags(fs), {"--chunked-prefill-size", "--disable-overlap-schedule",
+                                                    "--disable-piecewise-cuda-graph"})
+            self.assertIn("--disable-piecewise-cuda-graph", f)
+            self.assertNotIn("--disable-piecewise-cuda-graph", fs)
+            self.assertEqual([x for x in f if x != "--disable-piecewise-cuda-graph"],
+                             [x for x in fs if x not in C.SCHED_KNOBS])
+        for arm in ("fused_sym", "agnostic", "d44"):                                  # negative control: not on the other arms
+            self.assertNotIn("--disable-piecewise-cuda-graph", self.args("TP2", arm))
+
     def test_h3_knobs_byte_identical_in_text(self):
         knobs = " ".join(C.SCHED_KNOBS)
         self.assertEqual(knobs, "--chunked-prefill-size -1 --disable-overlap-schedule")
@@ -843,6 +859,15 @@ class AssemblePassTable(unittest.TestCase):
                     cd.mkdir(parents=True)
                     reqs = L._fifo_cell(3.0, 3.6, 600.0)
                     (cd / "requests.jsonl").write_text("\n".join(json.dumps(r) for r in reqs) + "\n")
+
+    def test_g4_not_tested_when_boot_not_ok(self):
+        """A boot that never became healthy has no capture to judge: G4 NOT_TESTED, even if its log has capture lines."""
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            self.build(out, drop_boot={("TP2", "fused")})
+            t = D.assemble_pass_table(out)
+            self.assertIn("G4 capture NOT_TESTED", t["cells"]["TP2:fused"]["reasons"])
+            self.assertNotIn("G4 capture NOT_TESTED", " ".join(t["cells"]["TP2:d44"]["reasons"]))   # negative control: healthy boot
 
     def test_full_pass_and_per_gate_exclusions(self):
         with tempfile.TemporaryDirectory() as td:
