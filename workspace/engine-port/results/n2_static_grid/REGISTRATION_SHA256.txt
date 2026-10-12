@@ -1,64 +1,72 @@
-# N2(3-a) REGISTRATION — RULE SEAL (rev17 update 2026-10-11; first sealed rev16 2026-10-09 at fcc0b9e)
-# basis: rev17 (§18-2-c rule reopen #1). verdicts: VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md (GO-with-caveats, R17-1..3)
-#        + VERDICT_n2_3a_rev17_redelta_2026-10-11.md (GO-with-caveats, R17-4/5, 死因 0). PREREG audited bytes 31150489… + R17-4/R17-5/N2C-80·81 only.
-# harness seal: scope PROFILE SEALED (reissued 2026-10-12 after H17-10, VERDICT_n2_3a_harness_h17_10_2026-10-12.md; first 2026-10-11 97a91b5). scope EA: NOT YET.
-#               Job-PROFILE dry-run requires rule seal + HARNESS SEAL scope PROFILE on THIS rule digest; Job-EA requires PROFILE + EA sections.
+# N2(3-a) REGISTRATION — RULE SEAL (rev18 update 2026-10-13; rev17 5e29990 fc9e6404…; first sealed rev16 fcc0b9e)
+# basis: rev18 (§18-2-c rule reopen #2). verdicts: VERDICT_n2_3a_rev18_delta_ea_harness_2026-10-12.md (rule GO-with-caveats, R18-1..4)
+#        + VERDICT_n2_3a_rev18_redelta_2026-10-13.md (rule GO-with-caveats, R18-5, 死因 0). User decisions 2026-10-12: K/C/κ* frozen, §10-2 extrapolation
+#        + containment report, E14-1 16,100 s re-approved, EA semantic canary #32 adopted (H18-R2/R3 not adopted).
+# harness seal: NONE CURRENT (scope PROFILE and EA to be issued together on this rule digest after the canonical harness ledger; H18-5/H18-6).
+#               The previous PROFILE section (a5de2d6) is archived below under PREVIOUS HARNESS SEAL (provenance of Job-PROFILE a5de2d6, N2C-91).
 
 ## RULE SEAL FILES (sha256)
-62fbfff912cf43db7c5ac548018b95c2cf5462890a9311facb947ca204fbf549  PREREG_N2_3A_2026-10-07.md
+1e2f54df3ae2f7012b5abc1a18f5b9e7c410816d48bc3c70df040023e3ce36fc  PREREG_N2_3A_2026-10-07.md
 1ee3338dd1f2be7eceaa5e514510199a9d5ac25176b41c5edad27ae205ab0c60  n2_feasibility.py
 8ef0c8cc6b0ba273ab684a8e297441598ffd70453138ee1f10713a8948d4282d  n2_probe_reduce.py
 e7d743c85e6adb007aa940342a3188cdb35568b2135ecd678f3ee6e4ae3087e7  N2_REGISTERED.json
 331c7b0ff6efaa0b7d4cc2f5f92e30597455bbb068d165cddb93930c4d786da6  test_n2_feasibility.py
 a796980c71604d8b7ef94610c2d007d11c6c05e9c3dc899373b894573f2ca171  test_n2_probe_reduce.py
-ffb4d6f38a50c754fa89525e78193cd9352c8dfc8c9873864cfb5e9d5db6fa8d  n2_mutants.py
+12b2726b5932fb05a5883059e50dabe2bd747ad2792c85a0c17dc937877c51c7  n2_mutants.py
 
 ## RULE SEAL DIGEST (sha256 of the list above; `sha256sum <7 files in this order> | sha256sum` inside n2_static_grid)
-fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069
+56473d6fc1954abdf56f20ccf6cd5cd88d7ea4eeac281124d02803b677645cad
 
 ## EXTERNAL DEPENDENCIES (§18-2-b)
 n3_capacity.sh sha256 b20f71e131364296d5bdcef659a5fe23d3317f43b4665e2f0cab7c7b3a218b4e
 N3 r3 manifest bec2cba5… (626 files; valid input = n3b_ flat dir only, R17-3), N3 r4 manifest b76d3fae… (695 files) — definition in PREREG §18-2-b
 config pdmux_n3_A_agn.yml 01675b2d…, analyze.py 1be49511…, profile.py d7b6a807… — PREREG §18-2-b is the source (rev17)
 
-## CORE MUTANT LEDGER PROVENANCE (S-2 / R17-3)
-ledger: scratchpad r17/mut_core.txt, `n2_mutants.py --set core ../n3_capacity/n3b_pdmux-n3-capacity-38ed3f4-20261006092813`, start 2026-10-11 18:03:10 KST, end 19:34:06;
-CTRL OK (skipped=1 exactly), 194 rows: J 85 (77 killed / 8 equivalent), T 12 (12 killed), S 97 (96 killed / 1 equivalent); J28·J29 killed; 0 unexpected / TIMEOUT / BROKEN / .pyc
-input mtimes: test_n2_probe_reduce.py & n2_mutants.py 15:41:17 (before start); calculator & reducer unchanged since rev16 seal. Rule tests 143/143, skip 0 (in place).
+## CORE MUTANT LEDGER PROVENANCE (rev18, R18 / §3 of the re-audit)
+ledger: ledgers/rev18_core_ledger_2026-10-13.txt, `n2_mutants.py --no-targeted --jobs 1 --set core ../n3_capacity/n3b_pdmux-n3-capacity-38ed3f4-20261006092813`,
+start 2026-10-13 00:30:05 KST, end 02:09:39; runner n2_mutants.py 12b2726b…; shell env: no PDMUX_* variables, N2_N3_DIR unset
+CTRL OK (skipped=1 exactly); 194 rows J 85 (77 killed / 8 equivalent), T 12, S 97 (96 / 1); 0 unexpected / TIMEOUT / BROKEN / .pyc;
+row-by-row identical to the rev17 ledger (ledgers/rev17_core_ledger_2026-10-11.txt, old runner ffb4d6f3…) — regression check of `--no-targeted` = rev17 behaviour;
+input bytes = sealed bytes (ledgers/rev18_core_prerun_sha.txt re-diff empty). Rule tests 143/143, skip 0 (in place).
 
-## HARNESS SEAL
-scope PROFILE
-rule_seal_digest fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069
-abe9c67363baf1f30ceaa9fd438d623ba0d75d3d6596450dcaf0e9986df29f21  n2_marks.py
-37c20c330a0420674334867b7adaf782e98b17687f48f1e22fa47cdc8f1c1e6b  n2_loadgen.py
-b505925b1b7410eab855ee3a2e6e9627cb8b0cfa89240635ff701b9ddf095fff  n2_probe_run.py
-0e052e63b9b638dbc5670ec1a7e80822b466119e2e83f727682d85a4cf8f0656  fake_n2_engine.py
-96e737e481dcc71f09058f753f04b9b4dcfa17e1dc92d91ebe59a046ade6808c  test_n2_harness.py
-56af0f958ca9d94b9766f1378473653904aa61ad072a1b9ee98a09b059f4ff52  n2_harness_mutants.py
-70781fab1dea1ded43df0aef18d3c748cced8feafd88172f291121e0825936c2  n2_capacity.sh
-8ca29a9fe843dd1237b064bdbf9783c72b50c7d77d1539c2ad08d38a8626cdec  n2_plan.py
-ea3dde32c10c2c2a6564a668606c92057ff348200aa16162a8f97d9f8a77b33e  n2_job.py
-4a68dd8313b0ba56a22f6b45d0c2b4cfa82f1562c236a84db6d5aa74778b317c  n2_window.py
-bbf351d9329589d3b8ac8f0d8fb60ac64731f4e106fc51aa3fa6e682e141e3b8  n2_signature.py
-cb91648982f3c6e2b0c3e1b134733eeebc9d1fd4dc1b99f3f405f50c45313861  n2_realized_mix.py
-5f60bed1fd851bdf564505d449102a961e4abb3100ead8db7cc2c313695ffd0d  n2_analyze.py
-853e41e460351bc062ad85c7b41b07bc72529ff25805ea4b448c4228c3cb1ea4  n2_reach_tests.py
-7d4d7e7a47f9191dec07abc69b74706301da80453babdca14b108d2161f4f5f3  test_n2_job.py
-390b34ebccd38eeb30f52a643b889d26b35e589efcc015cf91cca078a4e148d8  n2_job_mutants.py
-harness_digest 97334df9977557248a9f80be9aa62eed7ee08f3009501640270fb5691e9c01d2
+## PREVIOUS HARNESS SEAL (archived 2026-10-13, H18-6 — NOT a current seal; provenance of Job-PROFILE pdmux-n2-static-grid-a5de2d6-20261012021243)
+commit a5de2d6, rule seal digest fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069, harness_digest 97334df9977557248a9f80be9aa62eed7ee08f3009501640270fb5691e9c01d2
+  ## HARNESS SEAL
+  scope PROFILE
+  rule_seal_digest fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069
+  abe9c67363baf1f30ceaa9fd438d623ba0d75d3d6596450dcaf0e9986df29f21  n2_marks.py
+  37c20c330a0420674334867b7adaf782e98b17687f48f1e22fa47cdc8f1c1e6b  n2_loadgen.py
+  b505925b1b7410eab855ee3a2e6e9627cb8b0cfa89240635ff701b9ddf095fff  n2_probe_run.py
+  0e052e63b9b638dbc5670ec1a7e80822b466119e2e83f727682d85a4cf8f0656  fake_n2_engine.py
+  96e737e481dcc71f09058f753f04b9b4dcfa17e1dc92d91ebe59a046ade6808c  test_n2_harness.py
+  56af0f958ca9d94b9766f1378473653904aa61ad072a1b9ee98a09b059f4ff52  n2_harness_mutants.py
+  70781fab1dea1ded43df0aef18d3c748cced8feafd88172f291121e0825936c2  n2_capacity.sh
+  8ca29a9fe843dd1237b064bdbf9783c72b50c7d77d1539c2ad08d38a8626cdec  n2_plan.py
+  ea3dde32c10c2c2a6564a668606c92057ff348200aa16162a8f97d9f8a77b33e  n2_job.py
+  4a68dd8313b0ba56a22f6b45d0c2b4cfa82f1562c236a84db6d5aa74778b317c  n2_window.py
+  bbf351d9329589d3b8ac8f0d8fb60ac64731f4e106fc51aa3fa6e682e141e3b8  n2_signature.py
+  cb91648982f3c6e2b0c3e1b134733eeebc9d1fd4dc1b99f3f405f50c45313861  n2_realized_mix.py
+  5f60bed1fd851bdf564505d449102a961e4abb3100ead8db7cc2c313695ffd0d  n2_analyze.py
+  853e41e460351bc062ad85c7b41b07bc72529ff25805ea4b448c4228c3cb1ea4  n2_reach_tests.py
+  7d4d7e7a47f9191dec07abc69b74706301da80453babdca14b108d2161f4f5f3  test_n2_job.py
+  390b34ebccd38eeb30f52a643b889d26b35e589efcc015cf91cca078a4e148d8  n2_job_mutants.py
+  harness_digest 97334df9977557248a9f80be9aa62eed7ee08f3009501640270fb5691e9c01d2
 
-## HARNESS LEDGER PROVENANCE (scope PROFILE)
-reissue 2026-10-12 after H17-10 (Job pdmux-n2-static-grid-52a3b97-20261011182211 ABORT_PREFLIGHT, cell measurements 0 — not a result, N2C-85);
-verdict VERDICT_n2_3a_harness_h17_10_2026-10-12.md (GO-with-caveats, N2C-84..86); previous PROFILE seal 97a91b5 (harness_digest 89f975c5…) superseded
-built on rule seal 5e29990 (digest fc9e6404…, unchanged); files = the HARNESS SEAL scope PROFILE listing above
-tests in place (PDMUX_PROJECT_ROOT unset, N2_N3_DIR unset): rule 143 · test_n2_harness 36 · test_n2_job 60 · n2_reach_tests 37 = 276 OK, skip 0
-ledger shell env: PDMUX_PROJECT_ROOT unset, N2_N3_DIR unset (no PDMUX_* variables)
-H01–H32: n2_mutants.py --set harness ../n3_capacity/n3b_pdmux-n3-capacity-38ed3f4-20261006092813, 2026-10-12 03:40:55–04:05:40 KST, CTRL OK (skipped=1), 32/32 KILLED
-JH01–JH97: n2_job_mutants.py, 2026-10-12 04:05:40–05:27:03 KST, CTRL OK, 97/97 KILLED, 0 not killed
-ledger input bytes = sealed bytes (prerun sha re-diff empty); latest input mtime 03:31:15 (n2_job_mutants.py) < start 03:40:55
-counts: PREREG rev17 states test_n2_job 57 / JH 93 (rule-seal-time wording); H17-8 +1 test +JH94; H17-10 +2 tests +JH95..97 -> 60 / 97 here (canonical, N2C-82)
+  ## HARNESS LEDGER PROVENANCE (scope PROFILE)
+  reissue 2026-10-12 after H17-10 (Job pdmux-n2-static-grid-52a3b97-20261011182211 ABORT_PREFLIGHT, cell measurements 0 — not a result, N2C-85);
+  verdict VERDICT_n2_3a_harness_h17_10_2026-10-12.md (GO-with-caveats, N2C-84..86); previous PROFILE seal 97a91b5 (harness_digest 89f975c5…) superseded
+  built on rule seal 5e29990 (digest fc9e6404…, unchanged); files = the HARNESS SEAL scope PROFILE listing above
+  tests in place (PDMUX_PROJECT_ROOT unset, N2_N3_DIR unset): rule 143 · test_n2_harness 36 · test_n2_job 60 · n2_reach_tests 37 = 276 OK, skip 0
+  ledger shell env: PDMUX_PROJECT_ROOT unset, N2_N3_DIR unset (no PDMUX_* variables)
+  H01–H32: n2_mutants.py --set harness ../n3_capacity/n3b_pdmux-n3-capacity-38ed3f4-20261006092813, 2026-10-12 03:40:55–04:05:40 KST, CTRL OK (skipped=1), 32/32 KILLED
+  JH01–JH97: n2_job_mutants.py, 2026-10-12 04:05:40–05:27:03 KST, CTRL OK, 97/97 KILLED, 0 not killed
+  ledger input bytes = sealed bytes (prerun sha re-diff empty); latest input mtime 03:31:15 (n2_job_mutants.py) < start 03:40:55
+  counts: PREREG rev17 states test_n2_job 57 / JH 93 (rule-seal-time wording); H17-8 +1 test +JH94; H17-10 +2 tests +JH95..97 -> 60 / 97 here (canonical, N2C-82)
+
 
 ## HISTORY (not seal bytes)
+rev17 rule seal (5e29990, 2026-10-11): digest fc9e64046b8f748de1769dc7032757628f5414815e0573fa77772243075c4069 (PREREG 62fbfff9…, n2_mutants ffb4d6f3…); core ledger ledgers/rev17_core_ledger_2026-10-11.txt
+VERDICT_n2_3a_rev18_delta_ea_harness_2026-10-12.md · VERDICT_n2_3a_rev18_redelta_2026-10-13.md — rev18 audit verdicts
 rev16 rule seal (fcc0b9e, 2026-10-09): digest fbb13b15fc63e595e7588eac64fcde71e1dd98d08e96595d46f88ad6b0889512
   PREREG f030a905…, test_n2_probe_reduce 7f35d244…, n2_mutants 2c502d0c… (others as above); core ledger r16 192 rows 183 killed / 9 equivalent
 VERDICT_n2_3a_rev16_seal_2026-10-09.md · VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md · VERDICT_n2_3a_rev17_redelta_2026-10-11.md · VERDICT_n2_3a_harness_profile_seal_2026-10-11.md · VERDICT_n2_3a_harness_h17_10_2026-10-12.md — audit verdicts (history)
