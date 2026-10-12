@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Cell / boot plan, M2g plan, budget dry-run and M2G_PASS_TABLE handling (PREREG_MULTIGPU rev6 §3, §4-1, §4-2, §6).
+"""Cell / boot plan, M2g plan, budget dry-run and M2G_PASS_TABLE handling (PREREG_MULTIGPU rev10 §3, §4-1, §4-2, §6, §15, §16, §17).
 
 Pure planning: no GPU, no network.  The Job drivers (mg_drive.py) turn the specs into mg_boot.py runs.
 
-  python3 mg_plan.py m3-plan                 print the static M3 boot/cell skeleton (counts)
-  python3 mg_plan.py m3-budget [--ratio R]   per-stage time model -> total vs the 30 h hard cap
-  python3 mg_plan.py m2g-plan | m2g-budget
-  python3 mg_plan.py m3-forecast             F15: scenario x calibration table (30 h cut, trend domain) + k-Job alternative
+  python3 mg_plan.py m3-plan --job J2        print the Job's static M3 boot/cell skeleton (counts)
+  python3 mg_plan.py m3-budget --job J2 [--ratio R]   per-stage time model -> Job total vs the Job hard cap + reservation utilization
+  python3 mg_plan.py m2g-plan --job J2 | m2g-budget --job J2
+  python3 mg_plan.py m3-forecast --job J2    F15: scenario x calibration table (Job cap cut, configs that keep a complete pair)
+  python3 mg_plan.py job-table               all four Jobs, M2g and M3: est. hours, cap, reserved / used GPU-h, utilization, cost
+  python3 mg_plan.py config-order --job J8   the logged random TP/DP order of the Job (seed 20261012)
   python3 mg_plan.py check-pass-table PATH SHA256 [COMMITTED_SHA256_FILE]     ABORT_M2G_NOT_PASSED logic (F17: 3-way digest)
   python3 mg_plan.py --selftest
 
@@ -34,11 +36,9 @@ import mg_const as C  # noqa: E402
 
 # ----------------------------------------------------------------------------- configs
 def config_spec(cfg):
-    """(mode, N, tp, dp, gpu_ids).  TP4X = the NUMA-crossing sensitivity subset (§4-6)."""
+    """(mode, N, tp, dp, gpu_ids)."""
     if cfg == "N1":
         return dict(config="N1", mode="N1", N=1, tp=1, dp=1, gpu_ids=C.GPU_SUBSETS["N1"])
-    if cfg == "TP4X":
-        return dict(config="TP4X", mode="TP", N=4, tp=4, dp=1, gpu_ids=C.NUMA_SUBSET_TP4)
     mode, n = cfg[:2], int(cfg[2:])
     return dict(config=cfg, mode=mode, N=n, tp=n if mode == "TP" else 1, dp=n if mode == "DP" else 1,
                 gpu_ids=C.GPU_SUBSETS[cfg])
@@ -130,14 +130,44 @@ def lo_steps(cfg, arm, x_lo_by_shape, ext=0, rnd=1):
     return steps
 
 
+def config_order(job):
+    """§17-2 (a): the order of a Job's TP/DP configs is the REGISTERED derivation mg_const.config_order_types (result J2=J4=J8=[DP, TP]).
+    The Job driver logs it and aborts (ABORT_CONFIG_ORDER) if it differs from mg_const.CONFIG_ORDER_EXPECTED.  J1 has the single config N1."""
+    n = C.JOB_N[job]
+    if job == "J1":
+        return ["N1"]
+    return [f"{t}{n}" for t in C.config_order_types(n)]
+
+
+def assert_config_order_registered(_initial=None):
+    """H-2: dry-run / selftest guard -- the derived order must equal the order written in the PREREG."""
+    for n, want in C.CONFIG_ORDER_EXPECTED.items():
+        got = C.config_order_types(n, _initial)
+        assert got == want, f"config order J{n}: derived {got} != registered {want}"
+    return True
+
+
+def anchor_arm_order(job):
+    a = list(C.ANCHOR_ARMS)
+    random.Random(f"{C.ARM_ORDER_SEED}:{job}:anchor").shuffle(a)
+    return a
+
+
+def has_anchor(job):
+    """J1 is the reference itself; J2/J4/J8 measure an N=1 anchor on GPU 0 (§15-3)."""
+    return job != "J1"
+
+
 def boots_gpu_dev():
-    """§4-6: N=1 fused shape A HI seed 4386 on GPU 0..7 (boot 8x).  Runs FIRST in the M3 Job."""
+    """§4-6 / §15-3: N=1 fused shape A HI seed 4386 on GPU 0..7, the 8 servers CONCURRENTLY (J8 only, FIRST).  Descriptive
+    under simultaneous 8-server load; no outcome branch (MGP-47)."""
     out = []
-    for g in range(C.EXPECTED_GPUS):
+    for g in range(8):
         spec = dict(config_spec("N1"), gpu_ids=str(g))
         N = 1
         st = [{"type": "warmup", "shape": "A"}, _cell("A", "HI", C.GPU_DEV_SEED, N, 0, 1, "gpu_dev", gpu=g)]
-        out.append(dict(spec, arm="fused", kind="gpudev", block="gpu_dev", boot_id=f"m3_gpudev_gpu{g}", steps=st))
+        out.append(dict(spec, arm="fused", kind="gpudev", block="gpu_dev", boot_id=f"m3_gpudev_gpu{g}", steps=st,
+                        concurrent_group="gpu_dev", port=20000 + 700 + g))
     return out
 
 
@@ -156,28 +186,13 @@ def boots_boot2(cfg, x_lo_by_shape, ext=0, arms=None, exclude=()):
             if f"{cfg}:{a}" not in exclude]
 
 
-def boots_numa():
-    out = []
-    for a in ("fused", "agnostic"):
-        out.append(_boot("TP4X", a, "numa", hi_steps("TP4X", a, ("A",), block="numa"), block="numa"))
-    return out
-
-
-def boots_nsys():
-    N = 8
-    x = hi_rung(N, "A")["offered"]
-    n30 = max(C.N_REQ_CLAMP[0], round10(x * C.G4_NSYS_S))
-    st = [{"type": "warmup", "shape": "A"},
-          {"type": "cmd", "name": "nsys_start", "argv": ["nsys", "start", "-o", "{BOOT}/nsys_tp8_d44", "--force-overwrite=true"]},
-          _cell("A", "HI", C.GPU_DEV_SEED, N, 0, 1, "nsys", offered=x, n_req=n30),
-          {"type": "cmd", "name": "nsys_stop", "argv": ["nsys", "stop"]}]
-    return [_boot("TP8", "d44", "nsys", st, block="nsys", nsys=True)]
-
-
-def boots_anchor2():
-    """§4-5: N=1 round 2 -- fused, fused_sym, agnostic shape A HI (4 seeds)."""
-    return [_boot("N1", a, "anchor2", hi_steps("N1", a, ("A",), ext=0, rnd=2, block="anchor"), block="anchor")
-            for a in ("fused", "fused_sym", "agnostic")]
+def boots_anchor(job, exclude=()):
+    """§15-3 / §16-3: the J_N N=1 anchor = GPU 0 alone, arms {fused_sym, agnostic}, shape A, HI rung = THE SAME 1.6 x prior(1) rung as
+    J1 boot1 (ext 0 -- an anchor is never extended), 4 seeds.  Two boots, run before the configs of the Job.  J1 has none."""
+    if not has_anchor(job):
+        return []
+    return [_boot("N1", a, "anchor", hi_steps("N1", a, (C.ANCHOR_SHAPE,), ext=0, rnd=1, block="anchor"), block="anchor")
+            for a in anchor_arm_order(job) if f"N1:{a}" not in exclude]
 
 
 # ----------------------------------------------------------------------------- M2G pass table
@@ -217,10 +232,26 @@ def excluded_set(table):
     return {k for k, v in table["cells"].items() if not v.get("included", True)}
 
 
-def runnable_configs(table):
-    """Configs whose fused arm is included (N1 too: the table carries its G0(i)/G4/contamination rows)."""
+def runnable_configs(table, job):
+    """Configs of `job` (in the Job's random order) whose fused arm is included in the Job's own table (N1 for J1)."""
     ex = excluded_set(table)
-    return [c for c in C.CONFIG_ORDER if table_key(c, "fused") not in ex]
+    return [c for c in config_order(job) if table_key(c, "fused") not in ex]
+
+
+def anchor_exclude(table):
+    """'N1:<arm>' keys of the anchor arms the Job's table excludes (the anchor boot is then not run -> JOB_EFFECT_UNTESTED)."""
+    ex = excluded_set(table) if table else set()
+    return {k for k in ex if k.startswith("N1:")}
+
+
+def tp_allowed_by_j2(j2_table):
+    """§15-2 / §16-3: the G0(ii) guard-refusal result is J2's.  Returns (allowed, reason).  A missing / non-PASS J2 table -> the Job's TP
+    configs are NOT_TESTED (DP proceeds); never an ABORT of the whole Job."""
+    if not j2_table:
+        return False, "J2 PASS TABLE ABSENT (G0(ii) unknown) -> TP NOT_TESTED"
+    if j2_table.get("g0ii") != "PASS":
+        return False, f"J2 G0(ii)={j2_table.get('g0ii')} -> TP axis excluded (§3-1)"
+    return True, None
 
 
 # ----------------------------------------------------------------------------- budget model
@@ -264,12 +295,22 @@ def ext_fires(ratio_of, ratio_arm_of, cfg, assume_ext=None):
     return 1 if any(_arm_ratio(ratio_of, ratio_arm_of, cfg, a) > C.EXT_TRIGGER_RATIO for a in C.ARMS) else 0
 
 
-def m3_static_boots(ratio_of=None, assume_ext=None, lo_given=True, ratio_arm_of=None):
-    """The full M3 boot list for a given assumed capacity ratio (ratio_of(cfg) -> lambda/prior, or ratio_arm_of(cfg, arm)).
+def boot_gpus_used(spec):
+    """GPUs a boot occupies: the config's N for a main boot, the single GPU of an anchor / gpu_dev boot."""
+    return len(str(spec["gpu_ids"]).split(","))
+
+
+def m3_static_boots(job, ratio_of=None, assume_ext=None, lo_given=True, ratio_arm_of=None):
+    """The full M3 boot list of ONE Job for a given assumed capacity ratio (ratio_of(cfg) -> lambda/prior, or ratio_arm_of(cfg, arm)).
+    Order (§16-3): [J8: GPU-deviation block, concurrent] -> N=1 anchor boots (J2/J4/J8) -> the Job's configs in config_order(job).
     x_lo uses the assumed FUSED HI achieved = ratio * prior.  Extension is assumed iff any arm's ratio > 1.42 (audit)."""
     ratio_of = ratio_of or (lambda cfg: 1.0)
-    stages = [("gpu_dev", boots_gpu_dev())]
-    for cfg in C.CONFIG_ORDER:
+    stages = []
+    if job == "J8":
+        stages.append(("gpu_dev", boots_gpu_dev()))
+    if has_anchor(job):
+        stages.append(("anchor", boots_anchor(job)))
+    for cfg in config_order(job):
         N = config_spec(cfg)["N"]
         ext = ext_fires(ratio_of, ratio_arm_of, cfg, assume_ext)
         r = _arm_ratio(ratio_of, ratio_arm_of, cfg, "fused")
@@ -279,28 +320,51 @@ def m3_static_boots(ratio_of=None, assume_ext=None, lo_given=True, ratio_arm_of=
             stages.append((f"{cfg}.boot1ext", boots_ext(cfg, ("A", "B"))))
         xlo = {sh: lo_rung(lam[sh]) for sh in ("A", "B")}
         stages.append((f"{cfg}.boot2", boots_boot2(cfg, xlo, ext)))
-    stages += [("numa", boots_numa()), ("nsys", boots_nsys()), ("anchor2", boots_anchor2())]
     return stages
 
 
 def _boot_true_seconds(b, ratio_of, ratio_arm_of, calib):
-    lam_of = lambda N, sh, b=b: _arm_ratio(ratio_of, ratio_arm_of, b["config"], b["arm"]) * prior(N, sh)
+    cfg_for_ratio = b["config"]
+    lam_of = lambda N, sh, b=b: _arm_ratio(ratio_of, ratio_arm_of, cfg_for_ratio, b["arm"]) * prior(N, sh)
     return boot_seconds(b, lam_of, calib=calib)
 
 
-def m3_budget(ratio_of=None, assume_ext=None, ratio_arm_of=None, calib=None):
+def stage_seconds(boots, ratio_of, ratio_arm_of, calib):
+    """(wall_s, used_gpu_s).  A concurrent_group (gpu_dev) takes the MAX of its boots' time (8 servers at once); everything else is sequential."""
+    if not boots:
+        return 0.0, 0.0
+    ts = [_boot_true_seconds(b, ratio_of, ratio_arm_of, calib) for b in boots]
+    used = sum(t * boot_gpus_used(b) for t, b in zip(ts, boots))
+    if all(b.get("concurrent_group") for b in boots):
+        return max(ts), used
+    return sum(ts), used
+
+
+def m3_budget(job, ratio_of=None, assume_ext=None, ratio_arm_of=None, calib=None):
     ratio_of = ratio_of or (lambda cfg: 1.0)
-    rows, total, n_boots, n_cells = [], 0.0, 0, 0
-    for name, boots in m3_static_boots(ratio_of, assume_ext, ratio_arm_of=ratio_arm_of):
-        t = 0.0
+    rows, total, used_total, n_boots, n_cells = [], 0.0, 0.0, 0, 0
+    for name, boots in m3_static_boots(job, ratio_of, assume_ext, ratio_arm_of=ratio_arm_of):
+        wall, used = stage_seconds(boots, ratio_of, ratio_arm_of, calib)
         for b in boots:
-            t += _boot_true_seconds(b, ratio_of, ratio_arm_of, calib)
             n_cells += sum(1 for s in b["steps"] if s["type"] == "cell")
         n_boots += len(boots)
-        rows.append((name, len(boots), t))
-        total += t
-    return {"stages": rows, "total_s": total, "total_h": total / 3600.0, "boots": n_boots, "cells": n_cells,
-            "cap_h": C.HARD_CAP_S["m3"] / 3600.0, "over_cap": total > C.HARD_CAP_S["m3"]}
+        rows.append((name, len(boots), wall, used))
+        total += wall
+        used_total += used
+    return _budget_doc(job, "m3", rows, total, used_total, n_boots, n_cells)
+
+
+def _budget_doc(job, kind, rows, total, used_total, n_boots, n_cells):
+    """Reservation view.  Job wall = preflight (EST_PREFLIGHT_S, no GPU use) + stages.  reserved GPU-s = spec GPUs x Job wall."""
+    job_s = total + C.EST_PREFLIGHT_S
+    reserved = C.JOB_EXPECTED_GPUS[job] * job_s
+    cap = C.hard_cap(kind, job)
+    return {"job": job, "kind": kind, "stages": rows, "total_s": total, "total_h": total / 3600.0, "job_s": job_s,
+            "job_h": job_s / 3600.0, "boots": n_boots, "cells": n_cells, "cap_h": cap / 3600.0, "over_cap": job_s > cap,
+            "used_gpu_h": used_total / 3600.0, "reserved_gpu_h": reserved / 3600.0,
+            "utilization": (used_total / reserved if reserved else 0.0),
+            "spec": C.JOB_SPEC[job], "rate_usd_h": C.JOB_RATE_USD_H[job],
+            "cost_usd": C.JOB_RATE_USD_H[job] * job_s / 3600.0}
 
 
 def boot_need_s(spec, ratio=0.5):
@@ -309,7 +373,7 @@ def boot_need_s(spec, ratio=0.5):
     return boot_seconds(spec, lambda N, sh: ratio * prior(N, sh), calib=CALIBS["vessl_boot"])
 
 
-# ----------------------------------------------------------------------------- F15 forecast (30 h cut, trend domain)
+# ----------------------------------------------------------------------------- F15 forecast (per-Job cap cut)
 SCENARIOS = {                  # name -> ratio_arm_of(cfg, arm)  (lambda_true / prior)
     "S1 lambda=prior (all)": lambda cfg, arm: 1.0,
     "S2 TP lambda=0.7 prior": lambda cfg, arm: 0.7 if cfg.startswith("TP") else 1.0,
@@ -317,11 +381,11 @@ SCENARIOS = {                  # name -> ratio_arm_of(cfg, arm)  (lambda_true / 
 }
 
 
-def m3_timeline(ratio_arm_of, calib, cap_s=None, preflight_s=0.0, drop_stages=()):
-    """Sequential simulation of the driver (§4-1 order, admission against the remaining time, F10 rules).
+def m3_timeline(job, ratio_arm_of, calib, cap_s=None, preflight_s=0.0):
+    """Sequential simulation of ONE Job's driver (§16-3 order, admission against the remaining time, F10 rules).
     A boot is ADMITTED iff boot_need_s(spec, 1.0) <= remaining (mg_drive.run_boot); it then takes its scenario duration and
     is PARTIAL if that crosses the cap (the runner kills the running cell).  Returns the boot records."""
-    cap_s = C.HARD_CAP_S["m3"] if cap_s is None else cap_s
+    cap_s = C.hard_cap("m3", job) if cap_s is None else cap_s
     ratio_of = lambda cfg: 1.0
     t, recs = float(preflight_s), []
 
@@ -343,9 +407,28 @@ def m3_timeline(ratio_arm_of, calib, cap_s=None, preflight_s=0.0, drop_stages=()
         recs.append(rec)
         return rec["status"] == "DONE"
 
-    for spec in boots_gpu_dev():
-        run(spec, "gpu_dev")
-    for cfg in C.CONFIG_ORDER:
+    def run_group(specs, stage):
+        """Concurrent boots: admitted iff the largest need fits; they take the max duration."""
+        nonlocal t
+        need = max(boot_need_s(s, 1.0) for s in specs)
+        if cap_s - t < need:
+            for s in specs:
+                recs.append({"stage": stage, "config": s["config"], "arm": s["arm"], "block": s.get("block", "main"),
+                             "start_s": t, "need_s": need, "status": "NOT_ATTEMPTED", "end_s": t})
+            return False
+        d = max(_boot_true_seconds(s, ratio_of, ratio_arm_of, calib) for s in specs)
+        end = min(cap_s, t + d)
+        for s in specs:
+            recs.append({"stage": stage, "config": s["config"], "arm": s["arm"], "block": s.get("block", "main"),
+                         "start_s": t, "need_s": need, "status": "DONE" if t + d <= cap_s else "PARTIAL", "end_s": end})
+        t = end
+        return t + 0 <= cap_s
+
+    if job == "J8":
+        run_group(boots_gpu_dev(), "gpu_dev")
+    for spec in boots_anchor(job):
+        run(spec, "anchor")
+    for cfg in config_order(job):
         N = config_spec(cfg)["N"]
         b1 = [run(s, f"{cfg}.boot1") for s in boots_boot1(cfg)]
         ext = ext_fires(ratio_of, ratio_arm_of, cfg)
@@ -366,104 +449,55 @@ def m3_timeline(ratio_arm_of, calib, cap_s=None, preflight_s=0.0, drop_stages=()
             for s in boots_boot2(cfg, {sh: lo_rung(prior(N, sh)) for sh in ("A", "B")}, ext):
                 recs.append({"stage": f"{cfg}.boot2", "config": cfg, "arm": s["arm"], "block": "main", "start_s": t,
                              "end_s": t, "need_s": 0.0, "status": "NOT_ATTEMPTED_FUSED_HI_UNDEFINED"})
-    for stage, boots in (("numa", boots_numa()), ("nsys", boots_nsys()), ("anchor2", boots_anchor2())):
-        for s in boots:
-            run(s, stage)
     return recs
 
 
-def forecast_summary(recs, ratio_arm_of=None):
-    """Which stages are cut and which G_sym points / primary trends survive (all shapes alike in the static model)."""
+def forecast_summary(job, recs):
+    """Which stages of THIS Job are cut and which of its configs keep a complete G_sym pair (HI + LO for fused_sym and agnostic)."""
     done = lambda cfg, arm, stage_suffix: any(r["config"] == cfg and r["arm"] == arm and r["stage"].endswith(stage_suffix)
                                               and r["status"] == "DONE" for r in recs)
     ext_of = lambda cfg: any(r["stage"] == f"{cfg}.boot1ext" for r in recs)
     defined = []
-    for cfg in C.CONFIG_ORDER:
+    for cfg in config_order(job):
         ok = all(done(cfg, a, ".boot1") and (not ext_of(cfg) or done(cfg, a, ".boot1ext")) and done(cfg, a, ".boot2")
                  for a in ("agnostic", "fused_sym"))
         if ok:
             defined.append(cfg)
-    Ns = lambda mode: sorted(([1] if "N1" in defined else []) + [int(c[2:]) for c in defined if c.startswith(mode)])
     cut = {}
     for r in recs:
         if r["status"] != "DONE":
             cut.setdefault(r["stage"], []).append(f"{r['arm']}:{r['status']}")
-    lab = lambda ns: "TREND_UNDEFINED" if len(ns) < C.TREND_MIN_POINTS else "defined"
-    anchor_done = [r for r in recs if r["stage"] == "anchor2"]
-    return {"end_h": max((r["end_s"] for r in recs), default=0.0) / 3600.0,
+    anchor_done = [r for r in recs if r["stage"] == "anchor"]
+    return {"job": job, "end_h": max((r["end_s"] for r in recs), default=0.0) / 3600.0,
             "n_done": sum(1 for r in recs if r["status"] == "DONE"), "n_boots": len(recs),
-            "cut": cut, "N_defined_TP": Ns("TP"), "N_defined_DP": Ns("DP"),
-            "trend_TP": lab(Ns("TP")), "trend_DP": lab(Ns("DP")),
+            "cut": cut, "configs_defined": defined, "configs_total": list(config_order(job)),
             "anchor_boots_done": sum(1 for r in anchor_done if r["status"] == "DONE"), "anchor_boots": len(anchor_done)}
 
 
-def m3_forecast_table(cap_h=None, preflight_s=0.0):
-    """F15 decision table: scenario x calibration -> total (model, uncapped), cut stages at the cap, surviving trend domain."""
+def m3_forecast_table(job, cap_h=None, preflight_s=None):
+    """Scenario x calibration -> total (model, uncapped), cut stages at the Job cap, configs that keep a complete pair."""
     rows = []
     cap_s = (cap_h * 3600.0) if cap_h else None
+    pf = C.EST_PREFLIGHT_S if preflight_s is None else preflight_s
     for sc, fn in SCENARIOS.items():
         for cname, calib in CALIBS.items():
-            tot = m3_budget(ratio_arm_of=fn, calib=calib)["total_h"]
-            recs = m3_timeline(fn, calib, cap_s, preflight_s)
-            rows.append({"scenario": sc, "calib": cname, "total_h_uncapped": tot, **forecast_summary(recs)})
+            b = m3_budget(job, ratio_arm_of=fn, calib=calib)
+            recs = m3_timeline(job, fn, calib, cap_s, pf)
+            rows.append({"scenario": sc, "calib": cname, "total_h_uncapped": b["job_h"], "util": b["utilization"],
+                         **forecast_summary(job, recs)})
     return rows
 
 
-def block_plan_table(nblocks_list=(2, 3), preflight_s=None):
-    """F15 alternative: split the campaign into `k` Jobs (blocks).  Contiguous partition of the §4-1 sequence (gpu_dev, N1, TP8,
-    DP8, TP2, DP2, TP4, DP4) balanced on model time; NUMA + nsys ride in the LAST block; EVERY block ends with its own anchor
-    (N=1 fused / fused_sym / agnostic shape A HI, §4-5 C-9) and pays one preflight.  Total = single-Job work + k anchors + k preflights.
-    NOT audited (blocks need a new harness + audit)."""
-    preflight_s = C.EST_PREFLIGHT_S if preflight_s is None else preflight_s
-    out = []
-    for sc, fn in SCENARIOS.items():
-        for cname, calib in CALIBS.items():
-            ratio_of = lambda cfg: 1.0
-            unit = []                                    # (label, seconds) in §4-1 order
-            gd = sum(_boot_true_seconds(b, ratio_of, fn, calib) for b in boots_gpu_dev())
-            unit.append(("gpu_dev", gd))
-            stages = m3_static_boots(ratio_of, ratio_arm_of=fn)
-            for cfg in C.CONFIG_ORDER:
-                unit.append((cfg, sum(_boot_true_seconds(b, ratio_of, fn, calib)
-                                      for nm, bs in stages if nm.startswith(cfg + ".") for b in bs)))
-            tail = sum(_boot_true_seconds(b, ratio_of, fn, calib) for nm, bs in stages if nm in ("numa", "nsys") for b in bs)
-            anchor = sum(_boot_true_seconds(b, ratio_of, fn, calib) for b in boots_anchor2())
-            import itertools
-            for k in nblocks_list:
-                best = None
-                for cuts in itertools.combinations(range(1, len(unit)), k - 1):      # min-max contiguous partition (brute force)
-                    edges = (0,) + cuts + (len(unit),)
-                    parts = [unit[edges[i]:edges[i + 1]] for i in range(k)]
-                    ts = [sum(u[1] for u in pt) for pt in parts]
-                    ts[-1] += tail
-                    if best is None or max(ts) < best[0]:
-                        best = (max(ts), parts, ts)
-                _, parts, ts = best
-                blocks = [([u[0] for u in pt] + (["numa+nsys"] if i == k - 1 else []), ts[i]) for i, pt in enumerate(parts)]
-                hs = [(b[0], (b[1] + anchor + preflight_s) / 3600.0) for b in blocks]
-                out.append({"scenario": sc, "calib": cname, "k": k, "blocks": hs,
-                            "total_h": sum(h for _, h in hs), "max_block_h": max(h for _, h in hs),
-                            "anchor_h_each": anchor / 3600.0})
-    return out
-
-
-def fmt_forecast(rows, blocks):
-    L = ["== F15 forecast (model estimates, NOT measurements; MGH-6/MGH-7) ==",
-         f"cap {C.HARD_CAP_S['m3'] / 3600:.0f} h; calibrations: audited = model of the audited 29.96 h; vessl_boot = +{C.EST_VESSL_BOOT_EXTRA_S:.0f} s/boot "
+def fmt_forecast(job, rows):
+    L = [f"== F15 forecast, Job {job} (model estimates, NOT measurements; MGP-49) ==",
+         f"cap {C.hard_cap('m3', job) / 3600:.0f} h; calibrations: audited = model of the audited run; vessl_boot = +{C.EST_VESSL_BOOT_EXTRA_S:.0f} s/boot "
          f"(N3 r3: 170 s vs 121 s); vessl_boot_cell = also +{C.EST_VESSL_CELL_GAP_S - C.EST_CELL_GAP_S:.0f} s/cell (upper)",
-         f"{'scenario':30s} {'calib':16s} {'total_h':>8s} {'end_h':>6s} {'boots done':>10s} {'N def TP':>10s} {'N def DP':>10s} "
-         f"{'trendTP':>16s} {'trendDP':>16s} {'anchor':>7s}  cut"]
+         f"{'scenario':30s} {'calib':16s} {'job_h':>7s} {'end_h':>6s} {'boots done':>10s} {'util':>5s} {'anchor':>6s}  configs complete / cut"]
     for r in rows:
         cut = "; ".join(f"{k}[{len(v)}]" for k, v in r["cut"].items()) or "-"
-        L.append(f"{r['scenario']:30s} {r['calib']:16s} {r['total_h_uncapped']:8.2f} {r['end_h']:6.2f} "
-                 f"{r['n_done']:4d}/{r['n_boots']:<5d} {str(r['N_defined_TP']):>10s} {str(r['N_defined_DP']):>10s} "
-                 f"{r['trend_TP']:>16s} {r['trend_DP']:>16s} {r['anchor_boots_done']}/{r['anchor_boots']:<5d} {cut}")
-    L.append("")
-    L.append("== F15 alternative: k Jobs (blocks), each with its own anchor + preflight (not audited) ==")
-    L.append(f"{'scenario':30s} {'calib':16s} {'k':>2s} {'total_h':>8s} {'max_block_h':>11s}  blocks (h each)")
-    for b in blocks:
-        L.append(f"{b['scenario']:30s} {b['calib']:16s} {b['k']:2d} {b['total_h']:8.2f} {b['max_block_h']:11.2f}  "
-                 + " | ".join(f"{'+'.join(lab)}={h:.1f}" for lab, h in b["blocks"]))
+        L.append(f"{r['scenario']:30s} {r['calib']:16s} {r['total_h_uncapped']:7.2f} {r['end_h']:6.2f} "
+                 f"{r['n_done']:4d}/{r['n_boots']:<5d} {100 * r['util']:4.0f}% {r['anchor_boots_done']}/{r['anchor_boots']:<4d} "
+                 f"{r['configs_defined']}/{r['configs_total']}  cut: {cut}")
     return "\n".join(L)
 
 
@@ -476,18 +510,21 @@ def sockread_warnings(ratio):
 
 
 # ----------------------------------------------------------------------------- M2g plan
-M2G_CFGS = ("TP2", "TP4", "TP8", "DP2", "DP4", "DP8")
+def m2g_configs(job):
+    """§15-2: J_N carries the N=1 anchor boot set (G1-ctl / G2 floor / G0(i) rows for M3's anchor) and, for N>=2, TP_N and DP_N."""
+    return ("N1",) + tuple(C.JOB_CONFIGS[job]) if job != "J1" else ("N1",)
 
 
-def m2g_boots(dummy_profile="<DUMMY_PROFILE.json>"):
-    """§3.  One boot per (config, arm) carries G0(i) health + G1 prompts + (TP agnostic/d44) G3b stress + (fused) G2
-    teacher-forced; the N1 boots are the G1-ctl / G2 reference.  Refusal boots G0(ii)/(iii); G4 nsys boots."""
+def m2g_boots(job, dummy_profile="<DUMMY_PROFILE.json>"):
+    """§3 + §15-2, ONE Job.  One boot per (config, arm) carries G0(i) health + G1 prompts + (TP agnostic/d44) G3b stress + (fused) G2
+    teacher-forced; the N1 boots are the G1-ctl / G2 floor reference of THIS Job (same-Job principle).  J2 only: the G0(ii)/(iii)
+    refusal boots.  J1 only: the G5(a) GPU descriptive boot.  G4 nsys boots where the registered TP in G4_NSYS_TPS is the Job's N."""
     boots = []
     g1_cmd = lambda tag, cfg: {"type": "cmd", "name": f"g1_{tag}",
                                "argv": ["python3", "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
                                         "serve-g1", "--endpoint", "{ENDPOINT}", "--out", "{OUT}/gates",
                                         "--config", cfg, "--arm", tag]}
-    for cfg in ("N1",) + M2G_CFGS:
+    for cfg in m2g_configs(job):
         cs = config_spec(cfg)
         for arm in arm_order(cfg):
             steps = [g1_cmd(arm, cfg)]
@@ -501,24 +538,27 @@ def m2g_boots(dummy_profile="<DUMMY_PROFILE.json>"):
                           dict(type="cell", shape="A", rung="G3B", seed=C.HI_SEEDS[0], ext=0, round=1,
                                block="m2g_g3b", offered=round(x, 6), n_req=int(round(x * C.G3B_DURATION_S)))]
             boots.append(dict(cs, arm=arm, kind="g0", block="m2g", boot_id=f"m2g_{cfg}_{arm}", steps=steps))
-    # F4: G5(a) GPU descriptive boot (§3 G5(a), MGP-5): N=1 agnostic under the AUTO-grid config; its decode-busy stream-index
-    # histogram is recorded beside the manual run's (mg_drive.g5a_gpu_descriptive).  No exclusion rides on it.
-    x5 = prior(1, "A") * C.HI_MULT
-    boots.append(dict(config_spec("N1"), arm="agnostic", kind="g5a", block="m2g", boot_id="m2g_g5a_auto_N1",
-                      config_rel=C.AUTO_GRID_CONFIG_REL,
-                      steps=[{"type": "warmup", "shape": "A"},
-                             dict(type="cell", shape="A", rung="G5A", seed=C.HI_SEEDS[0], ext=0, round=1, block="m2g_g5a",
-                                  offered=round(x5, 6), n_req=int(round(x5 * C.G5A_AUTO_S)))]))
-    for env_k, env_v in C.G0_REFUSED_ENVS:
-        extra = {env_k: env_v}
-        if (env_k, env_v) == ("PDMUX_R2_POLICY", "hybrid"):
-            extra["PDMUX_MODEL_PROFILE"] = dummy_profile
-        boots.append(dict(config_spec("TP2"), arm="agnostic", kind="g0ii", block="m2g",
-                          boot_id=f"m2g_refuse_{env_k}_{env_v}".replace("=", "_"), steps=[], extra_env=extra,
-                          expect_refusal="PD-mux with tp_size="))
-    boots.append(dict(config_spec("TP2"), arm="agnostic", kind="g0iii", block="m2g", boot_id="m2g_autogrid_TP2",
-                      steps=[], config_rel=C.AUTO_GRID_CONFIG_REL, expect_refusal="PD-mux auto grid (divide_sm)"))
+    if job == "J1":
+        # F4: G5(a) GPU descriptive boot (§3 G5(a), MGP-5): N=1 agnostic under the AUTO-grid config; its decode-busy stream-index
+        # histogram is recorded beside the manual run's (mg_drive.g5a_gpu_descriptive).  No exclusion rides on it.
+        x5 = prior(1, "A") * C.HI_MULT
+        boots.append(dict(config_spec("N1"), arm="agnostic", kind="g5a", block="m2g", boot_id="m2g_g5a_auto_N1",
+                          config_rel=C.AUTO_GRID_CONFIG_REL,
+                          steps=[{"type": "warmup", "shape": "A"},
+                                 dict(type="cell", shape="A", rung="G5A", seed=C.HI_SEEDS[0], ext=0, round=1, block="m2g_g5a",
+                                      offered=round(x5, 6), n_req=int(round(x5 * C.G5A_AUTO_S)))]))
+    if job == C.G0II_JOB:
+        for env_k, env_v in C.G0_REFUSED_ENVS:
+            extra = {env_k: env_v}
+            if (env_k, env_v) == ("PDMUX_R2_POLICY", "hybrid"):
+                extra["PDMUX_MODEL_PROFILE"] = dummy_profile
+            boots.append(dict(config_spec("TP2"), arm="agnostic", kind="g0ii", block="m2g", boot_id=f"m2g_refuse_{env_k}_{env_v}".replace("=", "_"),
+                              steps=[], extra_env=extra, expect_refusal="PD-mux with tp_size="))
+        boots.append(dict(config_spec("TP2"), arm="agnostic", kind="g0iii", block="m2g", boot_id="m2g_autogrid_TP2",
+                          steps=[], config_rel=C.AUTO_GRID_CONFIG_REL, expect_refusal="PD-mux auto grid (divide_sm)"))
     for n in C.G4_NSYS_TPS:
+        if job == "J1" or n != C.JOB_N[job]:
+            continue
         cs = config_spec(f"TP{n}")
         x = prior(n, "A") * C.HI_MULT
         st = [{"type": "warmup", "shape": "A"},
@@ -535,9 +575,9 @@ M2G_G1_S = 150.0              # estimate: 64 prompts x 128 tokens, concurrency 3
 M2G_G2_S = 240.0
 
 
-def m2g_budget():
-    total, rows = 0.0, []
-    for b in m2g_boots():
+def m2g_budget(job):
+    total, used, rows = 0.0, 0.0, []
+    for b in m2g_boots(job):
         t = C.EST_BOOT_S if not b.get("expect_refusal") else 120.0
         for st in b["steps"]:
             if st["type"] == "cmd":
@@ -549,19 +589,37 @@ def m2g_budget():
                      if st["rung"] in ("G4", "G5A") else (st["n_req"] / st["offered"]) + C.EST_DRAIN_S["A"] + C.EST_CELL_GAP_S
         rows.append((b["boot_id"], t))
         total += t
-    comm = len(("TP2", "TP4", "TP8")) * M2G_G3_COMM_S
+        used += t * boot_gpus_used(b)
+    n = C.JOB_N[job]
+    comm = M2G_G3_COMM_S if n >= 2 else 0.0
     total += comm
-    return {"boots": len(rows), "rows": rows, "g3_comm_s": comm, "total_s": total, "total_h": total / 3600.0,
-            "cap_h": C.HARD_CAP_S["m2g"] / 3600.0, "over_cap": total > C.HARD_CAP_S["m2g"]}
+    used += comm * n
+    doc = _budget_doc(job, "m2g", [(bid, 1, t, 0.0) for bid, t in rows], total, used, len(rows), 0)
+    doc.update(rows=rows, g3_comm_s=comm, total_s=total, total_h=total / 3600.0)
+    return doc
 
 
 # ----------------------------------------------------------------------------- printing / CLI
 def fmt_budget(b, title):
     L = [f"== {title} =="]
-    for name, nb, t in b["stages"]:
-        L.append(f"  {name:16s} boots={nb:3d}  {t / 3600.0:6.2f} h")
-    L.append(f"  TOTAL boots={b['boots']} cells={b['cells']}  {b['total_h']:.2f} h   hard cap {b['cap_h']:.0f} h   "
-             f"{'OVER CAP' if b['over_cap'] else 'within cap'}")
+    for name, nb, t, used in b["stages"]:
+        L.append(f"  {name:22s} boots={nb:3d}  {t / 3600.0:6.2f} h   used {used / 3600.0:6.2f} GPU-h")
+    L.append(f"  TOTAL boots={b['boots']} cells={b['cells']}  stages {b['total_h']:.2f} h + preflight {C.EST_PREFLIGHT_S / 3600:.2f} h = "
+             f"Job {b['job_h']:.2f} h   hard cap {b['cap_h']:.0f} h   {'OVER CAP' if b['over_cap'] else 'within cap'}")
+    L.append(f"  RESERVATION  spec {b['spec']} ({C.JOB_EXPECTED_GPUS[b['job']]} GPU)  reserved {b['reserved_gpu_h']:.1f} GPU-h  "
+             f"used {b['used_gpu_h']:.1f} GPU-h  utilization {100 * b['utilization']:.0f}%  est. cost ${b['cost_usd']:.1f} "
+             f"(model estimate, not a measurement)")
+    return "\n".join(L)
+
+
+def job_table():
+    """All four Jobs, M2g and M3 (lambda = prior, audited model) -- the dry-run table the launcher output lacks."""
+    L = [f"{'kind':4s} {'Job':3s} {'spec':20s} {'est_h':>6s} {'cap_h':>5s} {'reserved':>9s} {'used':>7s} {'util':>5s} {'est_$':>7s}  (GPU-h columns; lambda=prior, audited model)"]
+    for kind in ("m2g", "m3"):
+        for j in C.JOBS:
+            b = m2g_budget(j) if kind == "m2g" else m3_budget(j)
+            L.append(f"{kind:4s} {j:3s} {C.JOB_SPEC[j]:20s} {b['job_h']:6.2f} {b['cap_h']:5.0f} {b['reserved_gpu_h']:9.1f} {b['used_gpu_h']:7.1f} "
+                     f"{100 * b['utilization']:4.0f}% {b['cost_usd']:7.1f}")
     return "\n".join(L)
 
 
@@ -570,19 +628,25 @@ def selftest():
     assert n_req_for(1.6 * 8 * 2.99) == 4000 and n_req_for(0.01) == 40
     assert len(arm_order("TP8")) == 4 and arm_order("TP8") == arm_order("TP8")
     assert hi_rung(8, "A", 1)["offered"] == round(2 * 1.6 * 8 * 2.99, 6)
-    b = m3_budget()
-    assert b["boots"] == 8 + 7 * 8 + 2 + 1 + 3, b["boots"]
+    nb = lambda j: m3_budget(j)["boots"]
+    assert nb("J1") == 4 * 2, nb("J1")                                        # N1: boot1 + boot2 per arm
+    assert nb("J2") == 2 + 2 * 8 and nb("J4") == 2 + 2 * 8 and nb("J8") == 8 + 2 + 2 * 8
+    assert [b["arm"] for b in boots_anchor("J2")] and boots_anchor("J1") == []
+    assert all(b["gpu_ids"] == "0" and b["block"] == "anchor" for b in boots_anchor("J4"))
     t = {"cells": {"TP2:agnostic": {"included": False}}}
-    assert "TP2:agnostic" in excluded_set(t) and runnable_configs(t) == list(C.CONFIG_ORDER)
-    assert "TP2" not in runnable_configs({"cells": {"TP2:fused": {"included": False}}})
+    assert "TP2:agnostic" in excluded_set(t) and sorted(runnable_configs(t, "J2")) == ["DP2", "TP2"]
+    assert "TP2" not in runnable_configs({"cells": {"TP2:fused": {"included": False}}}, "J2")
+    assert assert_config_order_registered() and config_order("J8") == ["DP8", "TP8"] and config_order("J2") == ["DP2", "TP2"] and config_order("J1") == ["N1"]
     print("mg_plan selftest PASS")
     return 0
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("cmd", nargs="?", choices=("m3-plan", "m3-budget", "m3-forecast", "m2g-plan", "m2g-budget", "check-pass-table"))
+    ap.add_argument("cmd", nargs="?", choices=("m3-plan", "m3-budget", "m3-forecast", "m2g-plan", "m2g-budget", "job-table",
+                                               "config-order", "check-pass-table"))
     ap.add_argument("rest", nargs="*")
+    ap.add_argument("--job", choices=C.JOBS, default=None, help="PDMUX_MG_JOB (J1 | J2 | J4 | J8)")
     ap.add_argument("--ratio", type=float, default=None, help="lambda/prior for every config")
     ap.add_argument("--ratio-tp", type=float, default=None)
     ap.add_argument("--ratio-dp", type=float, default=None)
@@ -590,14 +654,22 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.selftest:
         return selftest()
+    if a.cmd in ("m3-plan", "m3-budget", "m3-forecast", "m2g-plan", "m2g-budget", "config-order") and not a.job:
+        ap.error(f"{a.cmd} needs --job")
+    if a.cmd == "job-table":
+        print(job_table())
+        return 0
+    if a.cmd == "config-order":
+        assert_config_order_registered()
+        print(" ".join(config_order(a.job)), "(registered J2=J4=J8=[DP,TP]: assertion passed)")
+        return 0
     if a.cmd == "m3-plan":
-        stages = m3_static_boots()
-        for name, boots in stages:
+        for name, boots in m3_static_boots(a.job):
             cells = sum(1 for b in boots for s in b["steps"] if s["type"] == "cell")
             print(f"{name:16s} boots={len(boots):2d} cells={cells:3d}  arms={[b['arm'] for b in boots]}")
         return 0
     if a.cmd == "m3-forecast":
-        print(fmt_forecast(m3_forecast_table(), block_plan_table()))
+        print(fmt_forecast(a.job, m3_forecast_table(a.job)))
         return 0
     if a.cmd == "m3-budget":
         def ratio_of(cfg, a=a):
@@ -608,16 +680,14 @@ def main(argv=None):
             if cfg.startswith("DP") and a.ratio_dp is not None:
                 return a.ratio_dp
             return 1.0
-        print(fmt_budget(m3_budget(ratio_of), f"M3 budget dry-run (ratio TP/DP/N1 = {ratio_of('TP2')}/{ratio_of('DP2')}/{ratio_of('N1')})"))
+        print(fmt_budget(m3_budget(a.job, ratio_of), f"M3 budget dry-run {a.job} (ratio TP/DP/N1 = {ratio_of('TP2')}/{ratio_of('DP2')}/{ratio_of('N1')})"))
         return 0
     if a.cmd == "m2g-plan":
-        for b in m2g_boots():
+        for b in m2g_boots(a.job):
             print(b["boot_id"], b["arm"], [s.get("name", s["type"]) for s in b["steps"]])
         return 0
     if a.cmd == "m2g-budget":
-        r = m2g_budget()
-        print(f"M2g: boots={r['boots']} g3_comm={r['g3_comm_s'] / 3600:.2f} h total={r['total_h']:.2f} h cap={r['cap_h']:.0f} h "
-              f"{'OVER CAP' if r['over_cap'] else 'within cap'}")
+        print(fmt_budget(m2g_budget(a.job), f"M2g budget dry-run {a.job}"))
         return 0
     if a.cmd == "check-pass-table":
         t, abort = load_pass_table(a.rest[0], a.rest[1], a.rest[2] if len(a.rest) > 2 else None)

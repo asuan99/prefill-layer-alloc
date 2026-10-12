@@ -1,4 +1,4 @@
-"""Multi-GPU harness H1–H10 (PREREG_MULTIGPU rev6): launcher, plan, budget, labels, drivers.  All CPU.
+"""Multi-GPU harness H1–H10 (PREREG_MULTIGPU rev10: one Job = one N): launcher, plan, budget, labels, drivers.  All CPU.
 
 Every behaviour is paired with its negative control (lesson 53/254).  The two integration tests run the Job
 scripts end to end against a FAKE runner / `--dry-run` (no GPU, no server).
@@ -231,14 +231,44 @@ class Plan(unittest.TestCase):
         self.assertAlmostEqual(P.hi_rung(4, "B")["offered"], 1.6 * 4 * 0.69, 6)
         self.assertAlmostEqual(P.hi_rung(2, "A", 1)["offered"], 2 * 1.6 * 2 * 2.99, 5)
 
-    def test_order_gpu_dev_first_and_counts(self):
-        st = P.m3_static_boots()
-        self.assertEqual(st[0][0], "gpu_dev")
+    def test_job_plans_order_counts_and_blocks(self):
+        # J8: gpu_dev (8 concurrent) -> anchor (2) -> the two configs in the REGISTERED order [DP, TP]; no numa / nsys / anchor2
+        st = P.m3_static_boots("J8")
+        self.assertEqual([n for n, _ in st[:2]], ["gpu_dev", "anchor"])
         self.assertEqual(len(st[0][1]), 8)
-        self.assertEqual([n.split(".")[0] for n, _ in st[1:15:2]], list(C.CONFIG_ORDER))
-        self.assertEqual([n for n, _ in st[-3:]], ["numa", "nsys", "anchor2"])
-        self.assertEqual(sum(len(b) for _, b in st), 70)
-        self.assertEqual(sum(1 for _, bs in st for b in bs for s in b["steps"] if s["type"] == "cell"), 365)
+        self.assertEqual(len(st[1][1]), 2)
+        self.assertEqual([n.split(".")[0] for n, _ in st[2::2]], ["DP8", "TP8"])
+        self.assertEqual(sum(len(b) for _, b in st), 8 + 2 + 16)
+        self.assertEqual(sum(1 for _, bs in st for b in bs for s in b["steps"] if s["type"] == "cell"), 8 + 8 + 2 * 4 * 2 * 6 + 0 * 1 + 0)
+        for banned in ("numa", "nsys", "anchor2"):
+            self.assertFalse(any(n.startswith(banned) for n, _ in st))
+        # J2 / J4: no gpu_dev block; J1: neither gpu_dev nor anchor (it is the reference), N=1 only
+        self.assertEqual([n for n, _ in P.m3_static_boots("J2")][:1], ["anchor"])
+        self.assertEqual([n for n, _ in P.m3_static_boots("J1")], ["N1.boot1", "N1.boot2"])
+        self.assertEqual(sum(len(b) for _, b in P.m3_static_boots("J1")), 8)
+
+    def test_anchor_boots_h_spec(self):
+        for job in ("J2", "J4", "J8"):
+            bs = P.boots_anchor(job)
+            self.assertEqual(sorted(b["arm"] for b in bs), ["agnostic", "fused_sym"])          # exactly two boots, §16-3
+            for b in bs:
+                cells = [s for s in b["steps"] if s["type"] == "cell"]
+                self.assertEqual((b["gpu_ids"], b["block"], b["N"]), ("0", "anchor", 1))
+                self.assertEqual({(c["shape"], c["rung"], c["seed"], c["ext"]) for c in cells}, {("A", "HI", sd, 0) for sd in C.HI_SEEDS})
+                # THE SAME rung as J1 boot1 (1.6 x prior(1), shape A, ext 0)
+                j1 = [s for s in P.boots_boot1("N1")[0]["steps"] if s["type"] == "cell" and s["shape"] == "A"][0]
+                self.assertEqual((cells[0]["offered"], cells[0]["n_req"]), (j1["offered"], j1["n_req"]))
+        self.assertEqual(P.boots_anchor("J1"), [])
+
+    def test_registered_config_order_and_its_mutant_H2(self):
+        self.assertEqual(C.config_order_types(2), ["DP", "TP"])
+        for n in (2, 4, 8):
+            self.assertEqual(C.config_order_types(n), C.CONFIG_ORDER_EXPECTED[n])
+        self.assertEqual({j: P.config_order(j) for j in C.JOBS}, {"J1": ["N1"], "J2": ["DP2", "TP2"], "J4": ["DP4", "TP4"], "J8": ["DP8", "TP8"]})
+        self.assertTrue(P.assert_config_order_registered())
+        with self.assertRaises(AssertionError):                                          # mutant: initial order [DP, TP] flips the shuffle -> KILLED
+            P.assert_config_order_registered(["DP", "TP"])
+        self.assertEqual(C.config_order_types(2, ["DP", "TP"]), ["TP", "DP"])
 
     def test_gpu_dev_cell_is_fused_A_seed4386_each_gpu(self):
         for g, b in enumerate(P.boots_gpu_dev()):
@@ -270,45 +300,64 @@ class Plan(unittest.TestCase):
     def test_exclusion_drops_boots(self):
         self.assertEqual(len(P.boots_boot1("TP2", exclude={"TP2:d44"})), 3)
 
-    def test_numa_and_anchor_blocks(self):
-        self.assertEqual({b["gpu_ids"] for b in P.boots_numa()}, {"0,1,4,5"})
-        self.assertEqual([b["arm"] for b in P.boots_anchor2()], ["fused", "fused_sym", "agnostic"])
-        self.assertTrue(all(s["round"] == 2 for b in P.boots_anchor2() for s in b["steps"] if s["type"] == "cell"))
-
-
 class Budget(unittest.TestCase):
-    def test_lambda_eq_prior_in_audit_band_and_tp_below_prior_over_cap(self):
-        b1 = P.m3_budget()
-        lo, hi = C.AUDIT_FORECAST_H["lambda_eq_prior"]
-        self.assertTrue(lo - 1.0 <= b1["total_h"] <= hi + 1.0, b1["total_h"])
-        b2 = P.m3_budget(lambda cfg: 0.7 if cfg.startswith("TP") else 1.0)
-        self.assertGreater(b2["total_h"], b1["total_h"])
-        self.assertTrue(b2["over_cap"])
-        self.assertLess(P.m3_budget(lambda c: 1.0)["total_h"], P.m3_budget(lambda c: 0.5)["total_h"])    # monotone
+    def test_job_budgets_within_job_caps_and_audited_band(self):
+        # lambda = prior, audited model: J1 ~4.0 h, J2 ~8.8 h, J4 ~8.7 h, J8 ~7.9 h (rev8 audit MGP-49: 4.0-4.3 / 8.8-9.4 / 8.7-9.4 / 7.9-8.6 h)
+        got = {j: P.m3_budget(j) for j in C.JOBS}
+        for j, (lo, hi) in {"J1": (3.9, 4.4), "J2": (8.6, 9.5), "J4": (8.5, 9.5), "J8": (7.7, 8.7)}.items():
+            self.assertTrue(lo <= got[j]["job_h"] <= hi, (j, got[j]["job_h"]))
+            self.assertFalse(got[j]["over_cap"], j)
+        self.assertEqual({j: got[j]["cap_h"] for j in C.JOBS}, {"J1": 10.0, "J2": 14.0, "J4": 14.0, "J8": 14.0})
+        # reservation view: reserved = spec GPUs x Job wall; J1 uses 1 of its 2 reserved GPUs
+        self.assertAlmostEqual(got["J1"]["reserved_gpu_h"], 2 * got["J1"]["job_h"], 6)
+        self.assertLess(got["J1"]["utilization"], 0.51)
+        for j in ("J2", "J4", "J8"):
+            self.assertGreater(got[j]["utilization"], 0.85)
+        # TP below prior and S3 extension push a Job over its cap (MGP-49)
+        self.assertGreater(P.m3_budget("J2", lambda cfg: 0.7 if cfg.startswith("TP") else 1.0)["total_h"], got["J2"]["total_h"])
+        self.assertLess(P.m3_budget("J2", lambda c: 1.0)["total_h"], P.m3_budget("J2", lambda c: 0.5)["total_h"])    # monotone
+
+    def test_s3_extension_cuts_configs_per_job(self):
+        rows = P.m3_forecast_table("J2")
+        s3 = [r for r in rows if r["scenario"].startswith("S3")]
+        self.assertTrue(all(r["total_h_uncapped"] > 14.0 for r in s3))
+        self.assertTrue(all(len(r["configs_defined"]) < len(r["configs_total"]) for r in s3))      # the Job cap cuts the SECOND (TP) config first
 
     def test_extension_adds_boots(self):
-        base = P.m3_budget()
-        ext = P.m3_budget(assume_ext=True)
+        base = P.m3_budget("J4")
+        ext = P.m3_budget("J4", assume_ext=True)
         self.assertGreater(ext["boots"], base["boots"])
         self.assertGreater(ext["total_h"], base["total_h"])
 
-    def test_m2g_within_cap(self):
-        r = P.m2g_budget()
-        self.assertFalse(r["over_cap"])
-        self.assertGreater(r["boots"], 30)
+    def test_m2g_within_cap_per_job(self):
+        for j in C.JOBS:
+            r = P.m2g_budget(j)
+            self.assertFalse(r["over_cap"], j)
+            self.assertEqual(r["cap_h"], 4.0)
+            self.assertGreater(r["boots"], 3)
+        self.assertEqual(P.m2g_budget("J2")["boots"], len(P.m2g_boots("J2")))
 
     def test_m2g_covers_every_registered_boot(self):
-        ids = [b["boot_id"] for b in P.m2g_boots()]
-        for cfg in ("N1",) + P.M2G_CFGS:
-            for arm in C.ARMS:
-                self.assertIn(f"m2g_{cfg}_{arm}", ids)
-        self.assertEqual(sum(1 for b in P.m2g_boots() if b["kind"] == "g0ii"), 5)
-        self.assertEqual(sum(1 for b in P.m2g_boots() if b["kind"] == "g0iii"), 1)
-        self.assertEqual(sum(1 for b in P.m2g_boots() if b["kind"] == "g4"), 2)
-        g3b = [b for b in P.m2g_boots() if any(s.get("rung") == "G3B" for s in b["steps"])]
-        self.assertEqual(len(g3b), 3 * 2)                                                  # TP{2,4,8} x {agnostic,d44}
-        s = next(s for s in g3b[0]["steps"] if s.get("rung") == "G3B")
-        self.assertAlmostEqual(s["offered"] / (1.5 * g3b[0]["N"] * 2.99), 1.0, 5)
+        for job, cfgs in (("J1", ("N1",)), ("J2", ("N1", "TP2", "DP2")), ("J4", ("N1", "TP4", "DP4")), ("J8", ("N1", "TP8", "DP8"))):
+            ids = [b["boot_id"] for b in P.m2g_boots(job)]
+            for cfg in cfgs:
+                for arm in C.ARMS:
+                    self.assertIn(f"m2g_{cfg}_{arm}", ids)           # N1 carries fused / fused_sym / agnostic / d44 in EVERY Job (G1-ctl, G2 floor)
+            kinds = lambda k: sum(1 for b in P.m2g_boots(job) if b["kind"] == k)
+            self.assertEqual((kinds("g0ii"), kinds("g0iii")), (5, 1) if job == "J2" else (0, 0))      # G0(ii)/(iii) only in J2
+            self.assertEqual(kinds("g5a"), 1 if job == "J1" else 0)
+            self.assertEqual(kinds("g4"), {"J1": 0, "J2": 1, "J4": 0, "J8": 1}[job])
+            g3b = [b for b in P.m2g_boots(job) if any(s.get("rung") == "G3B" for s in b["steps"])]
+            self.assertEqual(len(g3b), 0 if job == "J1" else 2)                                  # TP_N x {agnostic, d44}
+            for b in g3b:
+                s = next(s for s in b["steps"] if s.get("rung") == "G3B")
+                self.assertAlmostEqual(s["offered"] / (1.5 * b["N"] * 2.99), 1.0, 5)
+
+    def test_job_table_prints_every_job_with_reservation_columns(self):
+        t = P.job_table()
+        for j in C.JOBS:
+            self.assertIn(j, t)
+        self.assertIn("util", t)
 
 
 class PassTable(unittest.TestCase):
@@ -348,6 +397,32 @@ def key_cells(cfg, arm, shape, lam, g_hi=0.4, g_lo=0.01, seed_noise=(1.0, 1.01, 
     out = [cell_rec(cfg, arm, shape, "HI", s, lam * n, g_hi, rnd=rnd, **kw) for s, n in zip(C.HI_SEEDS, seed_noise)]
     out += [cell_rec(cfg, arm, shape, "LO", s, lam * 0.6, g_lo, rnd=rnd) for s in C.LO_SEEDS]
     return out
+
+
+def job_docs(cells, anchor_G=lambda n: 1.0, anchor_over=None, mcs=None, driver=None):
+    """Split a flat cell list (config N1 / TPn / DPn) into the four Jobs, add the N=1 anchor cells (block "anchor", config N1, shape A HI) to
+    J2/J4/J8 -- agnostic anchor = anchor_G(n) x fused_sym anchor, anchor_G(n) None -> no anchor -- and label each Job."""
+    by = {j: [] for j in C.JOBS}
+    for c in cells:
+        cfg = c["meta"]["config"]
+        by["J1" if cfg == "N1" else f"J{int(cfg[2:])}"].append(c)
+    for n in (2, 4, 8):
+        g = anchor_G(n)
+        if g is None:
+            continue
+        for arm in C.ANCHOR_ARMS:
+            lam = P.prior(1, "A") * (g if arm == "agnostic" else 1.0)
+            cs = [cell_rec("N1", arm, "A", "HI", sd, lam * nz, 0.4) for sd, nz in zip(C.HI_SEEDS, (1.0, 1.01, 0.99, 1.005))]
+            for c in cs:
+                c["meta"]["block"] = "anchor"
+                c.update((anchor_over or {}).get((n, arm), {}))
+            by[f"J{n}"] += cs
+    docs = {}
+    for j in C.JOBS:
+        docs[j] = L.aggregate(by[j], None, {}, mcs, job=j)
+        if driver and j in driver:
+            docs[j]["driver"] = driver[j]
+    return docs
 
 
 class Labels(unittest.TestCase):
@@ -487,7 +562,8 @@ class Labels(unittest.TestCase):
         dn = [(1, [4.5] * 4, [1] * 4), (2, [3] * 4, [1] * 4), (4, [2] * 4, [1] * 4)]
         self.assertEqual(L.trend(dn)["label"], "G_DECREASES_WITH_N")
         self.assertEqual(L.trend(up[:2])["label"], "TREND_UNDEFINED")
-        self.assertEqual(L.trend(up[1:] + [(8, [5, 5, 5, 5], [1] * 4)])["magnitude"], "MAGNITUDE_UNDEFINED")   # no N=1
+        t = L.trend(up[1:] + [(8, [5, 5, 5, 5], [1] * 4)])                         # no N=1: P9-a, the rev8 'direction label only' rule is retired
+        self.assertEqual((t["label"], t["magnitude"], t["direction_citable"]), (L.G1_UNDEFINED, L.G1_UNDEFINED, False))
         # magnitude 2.25x -> citable
         self.assertTrue(L.trend(up)["direction_citable"])
 
@@ -505,29 +581,37 @@ class Labels(unittest.TestCase):
         return cells
 
     def test_aggregate_defined_ratio_and_trend(self):
-        doc = L.aggregate(self.build_cells(agn_boost=lambda n: 1.0 + 0.1 * (n.bit_length() - 1)), None, {})
-        e = doc["estimands"]["G_sym"]["TP4"]["A"]
+        cells = self.build_cells(agn_boost=lambda n: 1.0 + 0.1 * (n.bit_length() - 1))
+        docs = job_docs(cells)
+        e = docs["J4"]["estimands"]["G_sym"]["TP4"]["A"]
         self.assertTrue(e["defined"])
         self.assertAlmostEqual(e["point"], 1.2, 6)
+        self.assertEqual(set(docs["J4"]["estimands"]["G_sym"]), {"TP4", "DP4"})              # a Job labels only its own configs
+        self.assertNotIn("N1@anchor", docs["J4"]["estimands"]["G_sym"])                     # the anchor is never an estimand config / trend point
+        doc = L.aggregate_jobs(docs)
         t = doc["trends"]["G_sym|TP|A"]
-        self.assertEqual(t["label"], "G_INCREASES_WITH_N")
+        self.assertEqual((t["label"], t["Ns"]), ("G_INCREASES_WITH_N", [1, 2, 4, 8]))
+        self.assertEqual({J: s["status"] for J, s in doc["job_effect"].items()}, {"J2": "CLEAR", "J4": "CLEAR", "J8": "CLEAR"})
         self.assertEqual(t["undefined_count"], 0)
         self.assertTrue(doc["trends"]["G_sym|TP|A"]["primary"] and not doc["trends"]["G_def|TP|A"]["primary"])
         self.assertTrue(doc["P_DP"]["broken"] and doc["P_DP"]["MGP13_TP_labels_not_citable"])      # same boost on DP
 
     def test_aggregate_flat_dp_keeps_p_dp(self):
-        doc = L.aggregate(self.build_cells(), None, {})
+        doc = L.aggregate_jobs(job_docs(self.build_cells()))
         self.assertEqual(doc["trends"]["G_sym|DP|B"]["label"], "NO_TREND_DETECTED")
         self.assertFalse(doc["P_DP"]["broken"])
+        self.assertEqual(doc["P_DP"]["status"], "HELD")
 
     def test_undefined_cells_listed_with_reasons_MGP34(self):
         cells = self.build_cells(drop={("TP2", "fused_sym")})
-        doc = L.aggregate(cells, None, {})
-        self.assertFalse(doc["estimands"]["G_sym"]["TP2"]["A"]["defined"])
+        docs = job_docs(cells)
+        self.assertFalse(docs["J2"]["estimands"]["G_sym"]["TP2"]["A"]["defined"])
+        doc = L.aggregate_jobs(docs)
         t = doc["trends"]["G_sym|TP|A"]
         self.assertEqual(t["undefined_count"], 1)
         self.assertIn("fused_sym:NOT_RUN", t["undefined"][0]["reasons"])
-        self.assertTrue(doc["estimands"]["G_def"]["TP2"]["A"]["defined"])          # G_def NOT substituted for G_sym (MGP-38)
+        self.assertEqual(t["undefined"][0]["job"], "J2")
+        self.assertTrue(docs["J2"]["estimands"]["G_def"]["TP2"]["A"]["defined"])          # G_def NOT substituted for G_sym (MGP-38)
         self.assertEqual(doc["trends"]["G_def|TP|A"]["undefined_count"], 0)
 
     def test_knee_not_bracketed_and_harness_limited_make_g_undefined(self):
@@ -623,19 +707,58 @@ class Labels(unittest.TestCase):
         e = doc["estimands"]["G_sym"]["DP8"]["A"]
         self.assertTrue(e["defined"] and e["frontend_saturated_do_not_cite_as_scaling"])
 
-    def test_anchor_drift(self):
+    def test_job_effect_clear_fired_untested_from_cells(self):
+        base = lambda **kw: L.aggregate_jobs(job_docs(self.build_cells(), **kw))
+        self.assertEqual(base()["job_effect"]["J4"]["status"], "CLEAR")
+        fired = base(anchor_G=lambda n: 1.05 if n == 4 else 1.0)["job_effect"]
+        self.assertEqual((fired["J4"]["status"], fired["J2"]["status"]), ("FIRED", "CLEAR"))
+        self.assertAlmostEqual(fired["J4"]["G_rel"], 0.05, 6)
+        # the fused_sym lambda* alone can fire it: both anchor arms +4 % -> G unchanged, lambda*(fused_sym) +4 % > 3 %
+        docs = job_docs(self.build_cells())
+        for arm in C.ANCHOR_ARMS:
+            e = docs["J8"]["anchor"]["arms"][arm]
+            e["lambda_star"] *= 1.04
+        self.assertEqual(L.aggregate_jobs(docs)["job_effect"]["J8"]["status"], "FIRED")
+        # no anchor / anchor cell not saturated / HARNESS_LIMITED / CLIENT_ERROR / reference cell not clean -> UNTESTED (H-3, §16-1)
+        self.assertEqual(base(anchor_G=lambda n: None if n == 2 else 1.0)["job_effect"]["J2"]["status"], "UNTESTED")
+        for field, val in (("g", 0.05), ("harness_limited", True), ("status", "CLIENT_ERROR")):
+            d = base(anchor_over={(4, "agnostic"): {field: val}})["job_effect"]
+            self.assertEqual(d["J4"]["status"], "UNTESTED", field)
+            self.assertEqual(d["J2"]["status"], "CLEAR", field)                       # scoped to the Job that owns the anchor
+        for field, val in (("g", 0.05), ("harness_limited", True), ("status", "CLIENT_ERROR")):       # H-3: the J1 boot1 reference cell
+            cells = self.build_cells()
+            for c in cells:
+                m = c["meta"]
+                if (m["config"], m["arm"], m["shape"], m["rung"]) == ("N1", "fused_sym", "A", "HI"):
+                    c[field] = val
+            d = L.aggregate_jobs(job_docs(cells))["job_effect"]
+            self.assertEqual({d[j]["status"] for j in ("J2", "J4", "J8")}, {"UNTESTED"}, field)
+
+    def test_job_effect_reference_is_boot1_never_the_extension_rung(self):
         cells = self.build_cells()
-        cells += key_cells("N1", "fused", "A", 10.0 * P.prior(1, "A") / 10.0 * 1.04, rnd=2)
-        cells += key_cells("N1", "fused_sym", "A", P.prior(1, "A"), rnd=2)
-        cells += key_cells("N1", "agnostic", "A", P.prior(1, "A"), rnd=2)
-        doc = L.aggregate(cells, None, {})
-        self.assertTrue(doc["anchor"]["ANCHOR_DRIFT"])                         # fused moved +4 %
-        self.assertTrue(doc["anchor"]["G_sym_drift_checked"])
-        cells2 = self.build_cells() + key_cells("N1", "fused", "A", P.prior(1, "A"), rnd=2)
-        doc2 = L.aggregate(cells2, None, {})
-        self.assertFalse(doc2["anchor"]["ANCHOR_DRIFT"])
-        self.assertFalse(doc2["anchor"]["G_sym_drift_checked"])
-        self.assertIn("MGP-38", doc2["anchor"]["note"])
+        for c in cells:                                 # J1 fused_sym/agnostic shape A: ext-0 HI at 1.0 x prior is NOT saturated; ext-1 at 1.3 x
+            m = c["meta"]
+            if m["config"] == "N1" and m["shape"] == "A" and m["arm"] in C.ANCHOR_ARMS and m["rung"] == "HI":
+                c["g"] = 0.05
+        for arm in C.ANCHOR_ARMS:
+            cells += [cell_rec("N1", arm, "A", "HI", s, P.prior(1, "A") * 1.3 * nz, 0.4, ext=1) for s, nz in zip(C.HI_SEEDS, (1.0, 1.01, 0.99, 1.005))]
+        docs = job_docs(cells)
+        ref = docs["J1"]["ref"]["fused_sym"]
+        self.assertAlmostEqual(ref["boot1_lambda_star"], P.prior(1, "A") * 1.0025, 6)
+        self.assertAlmostEqual(ref["final_lambda_star"], P.prior(1, "A") * 1.3 * 1.0025, 6)
+        self.assertEqual(ref["boot1_hi_label"], "HI_NOT_SATURATED")          # H-3 reference-cell condition fires on the boot1 cell
+        self.assertEqual(L.aggregate_jobs(docs)["job_effect"]["J2"]["status"], "UNTESTED")
+
+    def test_p9a_g1_undefined_fail_closed(self):
+        docs = job_docs(self.build_cells(drop={("N1", "fused_sym")}))
+        doc = L.aggregate_jobs(docs)
+        for k, t in doc["trends"].items():
+            if k.startswith("G_sym|"):
+                self.assertEqual(t["label"], L.G1_UNDEFINED, k)
+                self.assertFalse(t["direction_citable"])
+        self.assertTrue(all(s["status"] == "UNTESTED" for s in doc["job_effect"].values()))
+        self.assertEqual(doc["P_DP"]["status"], "UNTESTED")
+        self.assertFalse(doc["P_DP"]["broken"])
 
     def test_gpu_heterogeneous_block(self):
         cells = self.build_cells()
@@ -654,16 +777,108 @@ class Labels(unittest.TestCase):
         self.assertTrue(L.memory_check(bad)["memory_mismatch"])                                   # (i)
         bad = dict(ok, d44=dict(mamba=[96], max_total=[10000], eff_cap=96))
         self.assertTrue(L.memory_check(bad)["memory_mismatch"])                                   # (ii)
-        bad = dict(ok, d44=dict(mamba=[96], max_total=[860000], eff_cap=96))
-        self.assertTrue(L.memory_check(bad)["memory_mismatch"])                                   # (iii) 4 % spread
+        wide = dict(ok, d44=dict(mamba=[96], max_total=[860000], eff_cap=96))
+        r = L.memory_check(wide)
+        self.assertFalse(r["memory_mismatch"])                                                    # (iii) RETIRED (rev9, post-hoc): 4 % spread is no reason
+        self.assertEqual(r["MEMORY_RULE_III_COUNTERFACTUAL"], {"denominator_fused_sym": True, "denominator_min_arm": True})
+        self.assertAlmostEqual(r["arm_rel_diff"]["fused_sym"], 40000 / 900000, 9)
+        self.assertAlmostEqual(r["arm_rel_diff"]["min_arm"], 40000 / 860000, 9)                   # the two denominators differ
         near = dict(ok, d44=dict(mamba=[96], max_total=[895000], eff_cap=96))
-        self.assertFalse(L.memory_check(near)["memory_mismatch"])                                 # 0.6 % tolerated (not exact)
+        r = L.memory_check(near)
+        self.assertFalse(r["memory_mismatch"] or r["rule_iii_would_have_flagged"])                # 0.6 % is below the counterfactual threshold
+        self.assertTrue(L.memory_check(wide, _mut="iii")["memory_mismatch"])                      # mutant '(iii) still present' KILLED
+        self.assertFalse(L.memory_check(dict(ok, d44=dict(mamba=[96], max_total=[10000], eff_cap=96)), _mut="ii")["memory_mismatch"])   # mutant '(ii) removed' KILLED
 
     def test_server_log_descriptive_never_changes_label(self):
         s = L.synthetic_scenarios()["S1_saturated_fifo"]
         d = L.server_log_descriptive(s["log"], 48)
         self.assertGreater(d["decode_lines"], 10)
         self.assertEqual(L.correct_class(s), "HI")
+
+
+# =========================================================================== rev9 / rev10 Job layer: mutants KILLED, controls survive
+class Rev10JobLayer(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ok, cls.verdict, cls.per = L.run_job_mutation_checks()
+
+    def test_all_mutants_killed_and_control_unkilled(self):
+        self.assertTrue(self.ok, json.dumps(self.verdict, sort_keys=True))
+        self.assertFalse(self.verdict["CONTROL"]["killed"], self.verdict["CONTROL"])           # lesson 254: the unmutated control matches ALL scenarios
+        for m in ("i", "ii", "iii", "iv", "h3", "h4", "h2_ignore_truncation", "untested_first", "mem_iii_present", "mem_ii_removed"):
+            self.assertTrue(self.verdict[m]["killed"], m)
+
+    def test_each_mutant_dies_on_its_own_scenario(self):
+        k = lambda m: set(self.verdict[m]["killed_on"])
+        self.assertIn("S_i_g1_undefined_J8_plus2pct", k("i"))                    # (i) P9-a: G(1) undefined + J8 +2 % must not be cited
+        self.assertIn("S_ii_extension_rung_reference", k("ii"))                   # (ii) reference = boot1, not the extension rung
+        self.assertIn("S_iii_other_jobs_anchor", k("iii"))                        # (iii) another Job's anchor
+        self.assertIn("S_iv_corrected_below_3pct", k("iv"))                       # (iv) corrected trend needs the 3 % rule too
+        self.assertIn("S_h3_boot1_vs_extension_G1", k("h3"))                      # H-3 correction ratio from the extended-rung G(1)
+        self.assertIn("S_h4_untested_anchor_point_excluded", k("h4"))             # H-4 raw value substituted for an anchor-UNTESTED point
+        self.assertIn("S_h2_truncated_dp_blocks_tp", k("h2_ignore_truncation"))   # H-2 truncation reason ignored
+        self.assertTrue({"P_A_job_sensitive_B_citable_increase", "P_A_g1_undefined_B_increase"} <= k("untested_first"))   # H-1
+        self.assertIn("M_iii_spread_only", k("mem_iii_present"))                  # H-5
+        self.assertIn("M_ii_kv_bound_violated", k("mem_ii_removed"))
+
+    def test_scenario_outcomes_spelled_out(self):
+        self.assertEqual(self.per["S_i_g1_undefined_J8_plus2pct"]["CONTROL"], L.G1_UNDEFINED)
+        self.assertEqual(self.per["S_i_g1_undefined_J8_plus2pct"]["i"], "G_INCREASES_WITH_N")      # what the retired rule would have cited
+        self.assertEqual(self.per["S_iii_other_jobs_anchor"]["iii"], "G_INCREASES_WITH_N")
+        self.assertEqual(self.per["S_h3_boot1_vs_extension_G1"]["CONTROL"], L.TREND_JOB_SENSITIVE)
+        self.assertEqual(self.per["S_h2_truncated_dp_blocks_tp"]["CONTROL"], "TP_UNCONTROLLED_TRUNCATION")
+        self.assertEqual(self.per["S_h2_nontruncation_dp_gap_cites_tp"]["CONTROL"], "G_INCREASES_WITH_N")   # P9-c: disclose, then cite
+        self.assertEqual(self.per["P_A_job_sensitive_B_citable_increase"]["CONTROL"], "BROKEN")
+        self.assertEqual(self.per["P_A_g1_undefined_B_increase"]["untested_first"], "UNTESTED")
+
+    def test_h2_tp_blocked_only_with_the_disclosure_and_p_dp_untested(self):
+        docs, key, _, _ = L.JOB_MUT_SCENARIOS["S_h2_truncated_dp_blocks_tp"]
+        doc = L.aggregate_jobs(docs)
+        t = doc["trends"][key]
+        self.assertEqual((t["label"], t["direction_citable"], t["label_before_truncation_rule"]), ("TP_UNCONTROLLED_TRUNCATION", False, "G_INCREASES_WITH_N"))
+        self.assertIn("TP_UNCONTROLLED_TRUNCATION", t["disclosures"])
+        self.assertEqual(doc["P_DP"]["status"], "UNTESTED")
+        self.assertTrue(doc["truncation"]["dp_trend_undefined_by_truncation"])
+        docs, key, _, _ = L.JOB_MUT_SCENARIOS["S_h2_nontruncation_dp_gap_cites_tp"]
+        t = L.aggregate_jobs(docs)["trends"][key]
+        self.assertEqual((t["label"], t["direction_citable"]), ("G_INCREASES_WITH_N", True))
+        self.assertIn("P-DP 미검정", t["disclosures"])
+
+    def test_h1_per_shape_p_dp_any_broken_fires_mgp13(self):
+        tr = {"G_sym|DP|A": {"label": "TREND_JOB_SENSITIVE", "g1_defined": True}, "G_sym|DP|B": {"label": "G_INCREASES_WITH_N", "g1_defined": True}}
+        r = L.p_dp_status(tr)
+        self.assertEqual((r["status"], r["MGP13_fired"], r["per_shape"]["G_sym|DP|A"]), ("BROKEN", True, "UNTESTED"))
+        tr["G_sym|DP|B"]["g1_defined"] = False                 # B directional but G(1,B) undefined -> not BROKEN
+        self.assertEqual(L.p_dp_status(tr)["status"], "UNTESTED")
+        self.assertFalse(L.p_dp_status(tr)["MGP13_fired"])
+
+    def test_h4_correction_trend_points_are_excluded_not_substituted(self):
+        docs, key, _, _ = L.JOB_MUT_SCENARIOS["S_h4_untested_anchor_point_excluded"]
+        t = L.aggregate_jobs(docs)["trends"][key]
+        self.assertEqual(t["label"], L.TREND_JOB_SENSITIVE)
+        self.assertEqual(t["corrected"]["label"], "TREND_UNDEFINED")
+        self.assertEqual(t["corrected"]["Ns"], [1, 4])
+        self.assertIn("CORRECTED_TREND_UNDEFINED", t["job_sensitive_reason"])
+
+    def test_p9c_non_truncation_reason_and_registered_order(self):
+        self.assertEqual(P.config_order("J2")[0], "DP2")                       # DP is cut LAST, TP first (MGP-49')
+
+    def test_substrate_gate_mutant_v_killed_and_exact_name(self):
+        import mg_substrate as S
+        ok, verdict, per = S.run_mutation_checks()
+        self.assertTrue(ok, verdict)
+        self.assertEqual(per["pcie_J2"]["CONTROL"], "ABORT_SUBSTRATE")
+        self.assertEqual(per["pcie_J2"]["v"], "PASS")                           # the substring test would have passed the PCIe card
+        self.assertEqual(per["count_J1_needs_2"]["CONTROL"], "ABORT_SUBSTRATE")  # J1 is judged on the x2 SPEC's 2 GPUs
+        self.assertEqual(per["ok_J1_two_gpus"]["CONTROL"], "PASS")
+        self.assertEqual(S.judge_substrate(S._csv(C.EXACT_GPU_NAME, 2), S._topo(2, "SYS"), "J2")["status"], "ABORT_SUBSTRATE")    # not NV#
+
+    def test_launcher_has_no_global_sweep_for_a_concurrent_group_and_preassigned_ports(self):
+        src = (ENGINE / "scripts/multigpu/mg_boot.py").read_text()
+        self.assertIn('if not spec.get("concurrent_group")', src)
+        self.assertIn('spec.get("port")', src)
+        ports = [b["port"] for b in P.boots_gpu_dev()]
+        self.assertEqual((len(set(ports)), all(b["concurrent_group"] == "gpu_dev" for b in P.boots_gpu_dev())), (8, True))
 
 
 # =========================================================================== sampler (real /proc)
@@ -699,6 +914,7 @@ from pathlib import Path
 sys.path.insert(0, os.environ["MG_RESULTS_DIR"])
 import mg_label as L, mg_plan as P, mg_const as C
 spec = json.load(open(sys.argv[1]))
+if spec["boot_id"] == os.environ.get("FAKE_SKIP"): sys.exit(1)
 if "--dry-run" in sys.argv: sys.exit(0)
 out = Path(spec["out_root"]); bd = out / "boots" / spec["boot_id"]; bd.mkdir(parents=True, exist_ok=True)
 ratio = float(os.environ.get("FAKE_RATIO", "1.0"))
@@ -724,114 +940,181 @@ for st in spec["steps"]:
 
 
 class DriverWithFakeRunner(unittest.TestCase):
-    def run_driver(self, td, ratio, boost, extra_args=(), configs_note=""):
+    def run_driver(self, td, ratio, boost, extra_args=(), job="J2", table=None, j2_table=None, out_name="out", fake_skip=""):
+        import hashlib
         fake = Path(td) / "fake_runner.sh"
         (Path(td) / "fake.py").write_text(FAKE_RUNNER_PY)
         fake.write_text(f'#!/bin/bash\nexec python3 {td}/fake.py "$@"\n')
-        out = Path(td) / "out"
+        out = Path(td) / out_name
         env = dict(os.environ, PDMUX_MG_RUNNER=str(fake), MG_RESULTS_DIR=str(ENGINE / "results/multigpu"),
-                   FAKE_RATIO=str(ratio), FAKE_AGN_BOOST=str(boost), PYTHONDONTWRITEBYTECODE="1")
-        raw = json.dumps({"cells": {}, "g5a_unit_test": "PASS"})
-        tbl = Path(td) / "t.json"
+                   FAKE_RATIO=str(ratio), FAKE_AGN_BOOST=str(boost), FAKE_SKIP=fake_skip, PYTHONDONTWRITEBYTECODE="1")
+        raw = json.dumps(table or {"cells": {}, "g5a_unit_test": "PASS", "g0ii": "PASS"})
+        tbl = Path(td) / f"t_{job}_{out_name}.json"
         tbl.write_text(raw)
-        import hashlib
-        p = subprocess.run([sys.executable, str(ENGINE / "results/multigpu/mg_drive.py"), "m3", "--out", str(out),
-                            "--pass-table", str(tbl), "--pass-sha256", hashlib.sha256(raw.encode()).hexdigest(),
-                            *extra_args], env=env, capture_output=True, text=True)
+        args = ["m3", "--job", job, "--out", str(out), "--pass-table", str(tbl), "--pass-sha256", hashlib.sha256(raw.encode()).hexdigest()]
+        if j2_table is None and job in ("J4", "J8"):
+            j2_table = {"cells": {}, "g5a_unit_test": "PASS", "g0ii": "PASS"}            # default: J2 released the TP axis
+        if j2_table is not None and j2_table is not False:
+            raw2 = json.dumps(j2_table)
+            t2 = Path(td) / f"j2_{out_name}.json"
+            t2.write_text(raw2)
+            args += ["--j2-pass-table", str(t2), "--j2-pass-sha256", hashlib.sha256(raw2.encode()).hexdigest()]
+        p = subprocess.run([sys.executable, str(ENGINE / "results/multigpu/mg_drive.py"), *args, *extra_args], env=env, capture_output=True, text=True)
         return p, out
 
-    def test_no_extension_when_lambda_equals_prior_and_lo_shared_across_arms(self):
+    def events(self, out):
+        return [json.loads(l) for l in (out / "DRIVER_LOG.jsonl").read_text().splitlines()]
+
+    def test_j2_order_anchor_first_no_extension_and_lo_shared_across_arms(self):
         with tempfile.TemporaryDirectory() as td:
-            p, out = self.run_driver(td, 1.0, 1.0)
+            p, out = self.run_driver(td, 1.0, 1.0, job="J2")
             self.assertEqual(p.returncode, 0, p.stderr[-2000:])
             doc = json.loads((out / "LABELS.json").read_text())
-            self.assertEqual(doc["n_cells"], 365)
-            self.assertTrue(all(not d["ext_shapes"] for d in doc["driver"]["decisions"].values()))
-            e = doc["estimands"]["G_sym"]["TP8"]["A"]
+            self.assertEqual(doc["job"], "J2")
+            self.assertEqual(doc["n_cells"], 8 + 2 * 4 * 2 * 6)                                   # 2 anchor boots x 4 + (DP2, TP2) x 4 arms x 2 shapes x 6
+            ev = self.events(out)
+            self.assertEqual(next(e for e in ev if "config_order" in e)["config_order"], ["DP2", "TP2"])      # registered order, logged
+            boots = [e["boot"] for e in ev if "boot" in e and "rc" in e]
+            self.assertTrue(all(b.startswith("m3_N1_") and b.endswith("_anchor") for b in boots[:2]), boots[:3])    # anchors BEFORE any config
+            first_cfg = next(i for i, b in enumerate(boots) if not b.startswith("m3_N1_"))
+            self.assertTrue(boots[first_cfg].startswith("m3_DP2_") and not any(b.startswith("m3_TP2_") for b in boots[:first_cfg]))
+            self.assertEqual(sorted(d["ext_shapes"] for k, d in doc["driver"]["decisions"].items() if k in ("DP2", "TP2")), [[], []])
+            e = doc["estimands"]["G_sym"]["TP2"]["A"]
             self.assertTrue(e["defined"], e)
             self.assertAlmostEqual(e["point"], 1.0, 2)
-            for cfg in C.CONFIG_ORDER:                      # x_lo identical across the four arms (MGP-9)
+            for cfg in ("DP2", "TP2"):                      # x_lo identical across the four arms (MGP-9)
                 for sh in "AB":
                     xs = set()
                     for d in (out / "cells").glob(f"m3_{cfg}_*_boot2__{sh}_LO_s4386"):
                         m = json.loads((d / "cell.json").read_text())
                         xs.add((m["offered"], m["n_req"]))
                     self.assertEqual(len(xs), 1, (cfg, sh, xs))
-            self.assertFalse(doc["anchor"]["ANCHOR_DRIFT"])
-            self.assertEqual(doc["trends"]["G_sym|DP|A"]["label"], "NO_TREND_DETECTED")
+            for banned in ("numa", "nsys", "anchor2"):
+                self.assertFalse(list((out / "specs").glob(f"*{banned}*")))
+            a = doc["anchor"]["arms"]
+            self.assertTrue(all(a[x]["hi_label"] == "HI_SATURATED" and a[x]["present"] for x in C.ANCHOR_ARMS), a)
+            self.assertIn("N1@anchor", doc["keys"] and {k.split("|")[0] for k in doc["keys"]})
+            self.assertNotIn("N1@anchor", doc["configs"])
+
+    def test_j1_n1_only_no_anchor_and_j8_gpu_dev_block_first(self):
+        with tempfile.TemporaryDirectory() as td:
+            p, out = self.run_driver(td, 1.0, 1.0, job="J1")
+            self.assertEqual(p.returncode, 0, p.stderr[-2000:])
+            doc = json.loads((out / "LABELS.json").read_text())
+            self.assertEqual((doc["n_cells"], doc["anchor"], sorted(doc["estimands"]["G_sym"])), (48, {}, ["N1"]))
+            self.assertTrue(doc["ref"]["fused_sym"]["present"] and doc["ref"]["agnostic"]["boot1_lambda_star"])
+            p, out = self.run_driver(td, 1.0, 1.0, job="J8", out_name="out8")
+            self.assertEqual(p.returncode, 0, p.stderr[-2000:])
+            doc = json.loads((out / "LABELS.json").read_text())
+            self.assertEqual(doc["n_cells"], 8 + 8 + 96)
+            self.assertEqual(doc["blocks"]["gpu_dev"]["n_gpus"], 8)
+            ev = self.events(out)
+            grp = next(i for i, e in enumerate(ev) if e.get("group") == "gpu_dev")
+            self.assertTrue(all(not (("boot" in e) and e["boot"].startswith("m3_N1_")) for e in ev[:grp]))      # nothing before the concurrent block
+            self.assertEqual(sorted(json.loads(sp.read_text())["port"] for sp in (out / "specs").glob("m3_gpudev_*.json")), list(range(20700, 20708)))
+            self.assertEqual(next(e for e in ev if "config_order" in e)["config_order"], ["DP8", "TP8"])
 
     def test_joint_extension_when_lambda_far_above_prior(self):
         with tempfile.TemporaryDirectory() as td:
-            p, out = self.run_driver(td, 1.7, 1.0)
+            p, out = self.run_driver(td, 1.7, 1.0, job="J4")
             self.assertEqual(p.returncode, 0, p.stderr[-2000:])
             doc = json.loads((out / "LABELS.json").read_text())
-            dec = doc["driver"]["decisions"]
+            dec = {k: v for k, v in doc["driver"]["decisions"].items() if k in ("DP4", "TP4")}
             self.assertTrue(all(d["ext_shapes"] == ["A", "B"] for d in dec.values()), dec)
-            self.assertTrue(list((out / "specs").glob("m3_TP8_*_boot1ext.json")))
-            specs = [json.loads(p.read_text()) for p in (out / "specs").glob("m3_TP8_*_boot1ext.json")]
+            specs = [json.loads(p.read_text()) for p in (out / "specs").glob("m3_TP4_*_boot1ext.json")]
             self.assertEqual(len(specs), 4)                     # all four arms jointly (MGP-9)
-            # x_lo derives from the extended fused HI median, ext=1 on LO cells
-            self.assertTrue(all(s["ext"] == 1 for sp in (out / "specs").glob("m3_TP8_*_boot2.json")
+            self.assertFalse(list((out / "specs").glob("m3_N1_*ext*")))        # an anchor is never extended
+            self.assertTrue(all(s["ext"] == 1 for sp in (out / "specs").glob("m3_TP4_*_boot2.json")
                                 for s in json.loads(sp.read_text())["steps"] if s["type"] == "cell"))
 
-    def test_constant_boost_tiny_slope_is_not_citable_under_3pct_rule(self):
-        """Deterministic synthetic data: even a ~0.1 % N-dependence has a CI excluding 0; the magnitude rule (§4-4) is
-        what keeps it from being cited as a direction."""
+    def test_four_jobs_join_constant_boost_job_effect_clear_and_magnitude_rule(self):
+        """Deterministic synthetic data through all four Job drivers and the cross-Job join: a CONSTANT 1.15x boost -> every anchor equals
+        the J1 reference (JOB_EFFECT CLEAR) and no N-trend is citable under the 3 % rule (a ~0.1 % N-dependence may still have a CI excluding 0)."""
         with tempfile.TemporaryDirectory() as td:
-            p, out = self.run_driver(td, 1.0, 1.15)
-            self.assertEqual(p.returncode, 0, p.stderr[-2000:])
-            doc = json.loads((out / "LABELS.json").read_text())
-            self.assertAlmostEqual(doc["estimands"]["G_sym"]["DP2"]["A"]["point"], 1.15, 1)
+            docs = {}
+            for j in C.JOBS:
+                p, out = self.run_driver(td, 1.0, 1.15, job=j, out_name=f"o{j}")
+                self.assertEqual(p.returncode, 0, p.stderr[-2000:])
+                docs[j] = json.loads((out / "LABELS.json").read_text())
+            self.assertAlmostEqual(docs["J2"]["estimands"]["G_sym"]["DP2"]["A"]["point"], 1.15, 1)
+            doc = L.aggregate_jobs(docs)
+            self.assertEqual({j: s["status"] for j, s in doc["job_effect"].items()}, {"J2": "CLEAR", "J4": "CLEAR", "J8": "CLEAR"})
             t = doc["trends"]["G_sym|TP|A"]
-            self.assertEqual(t["undefined_count"], 0)
+            self.assertEqual((t["undefined_count"], t["Ns"]), (0, [1, 2, 4, 8]))
             if t["label"] != "NO_TREND_DETECTED":
                 self.assertEqual(t["magnitude"], "DIRECTION_NOT_CITABLE_UNDER_3PCT")
                 self.assertLess(abs(t["magnitude_ratio"] - 1.0), 0.03)
+            self.assertIn("JOB_EFFECT", L.render_jobs_text(doc))
 
     def test_hard_cap_admission_records_not_attempted(self):
         with tempfile.TemporaryDirectory() as td:
-            p, out = self.run_driver(td, 1.0, 1.0, ["--hard-cap-s", "1500"])
+            p, out = self.run_driver(td, 1.0, 1.0, ["--hard-cap-s", "1500"], job="J2")
             self.assertEqual(p.returncode, 0, p.stderr[-2000:])
             st = json.loads((out / "DRIVER_STATUS.json").read_text())
-            self.assertGreater(st["not_attempted"], 20)
+            self.assertGreater(st["not_attempted"], 5)
             doc = json.loads((out / "LABELS.json").read_text())
             self.assertTrue(doc["driver"]["not_attempted"])
-            self.assertLess(doc["n_cells"], 365)
+            self.assertLess(doc["n_cells"], 104)
 
     def test_missing_pass_table_aborts(self):
         with tempfile.TemporaryDirectory() as td:
             out = Path(td) / "out"
-            p = subprocess.run([sys.executable, str(ENGINE / "results/multigpu/mg_drive.py"), "m3", "--out", str(out),
+            p = subprocess.run([sys.executable, str(ENGINE / "results/multigpu/mg_drive.py"), "m3", "--job", "J2", "--out", str(out),
                                 "--pass-table", str(Path(td) / "none.json"), "--pass-sha256", "0" * 64],
                                capture_output=True, text=True)
             self.assertEqual(p.returncode, 3)
             self.assertIn("ABORT_M2G_NOT_PASSED", (out / "ABORT").read_text())
 
+    def test_tp_axis_needs_j2_g0ii_and_missing_j2_table_leaves_dp_running(self):
+        """J4/J8 read J2's table for G0(ii): no table -> TP NOT_TESTED, DP proceeds, NO abort.  J2's own table decides J2's TP."""
+        tbl4 = {"cells": {}, "g5a_unit_test": "PASS", "g0ii": "NOT_RUN_IN_JOB"}
+        with tempfile.TemporaryDirectory() as td:
+            p, out = self.run_driver(td, 1.0, 1.0, job="J4", table=tbl4, j2_table=False)                      # no J2 table at all
+            self.assertEqual(p.returncode, 0, p.stderr[-2000:])
+            self.assertFalse(list((out / "specs").glob("m3_TP4_*")))
+            self.assertTrue(list((out / "specs").glob("m3_DP4_*")))
+            na = json.loads((out / "LABELS.json").read_text())["driver"]["not_attempted"]
+            self.assertTrue(any(x.get("config") == "TP4" and x["reason"] == "TP_NOT_TESTED" for x in na))
+            p, out = self.run_driver(td, 1.0, 1.0, job="J4", table=tbl4, j2_table={"cells": {}, "g5a_unit_test": "PASS", "g0ii": "PASS"}, out_name="ok")
+            self.assertTrue(list((out / "specs").glob("m3_TP4_*")))                          # control: a PASS J2 table releases TP
+            p, out = self.run_driver(td, 1.0, 1.0, job="J4", table=tbl4, j2_table={"cells": {}, "g5a_unit_test": "PASS", "g0ii": "FAIL"}, out_name="fail")
+            self.assertFalse(list((out / "specs").glob("m3_TP4_*")))
+            p, out = self.run_driver(td, 1.0, 1.0, job="J2", table={"cells": {}, "g5a_unit_test": "PASS", "g0ii": "FAIL"}, out_name="j2fail")
+            self.assertFalse(list((out / "specs").glob("m3_TP2_*")))
+            self.assertTrue(list((out / "specs").glob("m3_DP2_*")))
+
 
 class AssemblePassTable(unittest.TestCase):
-    """mg_drive.assemble_pass_table reads Job files and delegates scoring + the §3-1 mapping to m2g_correctness_gate."""
+    """mg_drive.assemble_pass_table(out, job) reads ONE Job's files and delegates scoring + the §3-1 mapping to m2g_correctness_gate."""
 
     def test_nothing_run_excludes_everything_not_tested(self):
         with tempfile.TemporaryDirectory() as td:
-            t = D.assemble_pass_table(Path(td))
+            t = D.assemble_pass_table(Path(td), "J2")
+            self.assertEqual(sorted({k.split(":")[0] for k in t["cells"]}), ["DP2", "N1", "TP2"])          # only this Job's configs
             self.assertTrue(all(not v["included"] for v in t["cells"].values()))
             self.assertIn("NOT_TESTED", t["cells"]["TP2:fused"]["reason"])
-            self.assertEqual(len((Path(td) / "M2G_PASS_TABLE.json.sha256").read_text().strip()), 64)
+            self.assertEqual(len((Path(td) / "M2G_PASS_TABLE_J2.json.sha256").read_text().strip()), 64)
+            self.assertFalse((Path(td) / "M2G_PASS_TABLE.json").exists())
+            j1 = D.assemble_pass_table(Path(td), "J1")
+            self.assertEqual(sorted({k.split(":")[0] for k in j1["cells"]}), ["N1"])
 
     @staticmethod
-    def build(out, drop_boot=()):
-        for k in range(5):
-            d = out / "boots" / f"m2g_refuse_{k}"
+    def build(out, job="J2", drop_boot=()):
+        """Healthy artifacts for ONE Job: its configs (N1 + TP_N / DP_N); J2 additionally has the five G0(ii) refusals and the G0(iii) boot."""
+        if job == "J2":
+            for k in range(5):
+                d = out / "boots" / f"m2g_refuse_{k}"
+                d.mkdir(parents=True)
+                (d / "boot.json").write_text(json.dumps({"kind": "g0ii", "status": "REFUSED_AS_EXPECTED", "t_health_epoch": None,
+                                                         "server_exit_code": 1, "health_wait_cap_s": 1800}))
+                (d / "server.log").write_text("RuntimeError: PD-mux with tp_size=2 is only defined ...\n")
+            d = out / "boots" / "m2g_autogrid_TP2"
             d.mkdir(parents=True)
-            (d / "boot.json").write_text(json.dumps({"kind": "g0ii", "status": "REFUSED_AS_EXPECTED", "t_health_epoch": None,
-                                                     "server_exit_code": 1, "health_wait_cap_s": 1800}))
-            (d / "server.log").write_text("RuntimeError: PD-mux with tp_size=2 is only defined ...\n")
-        d = out / "boots" / "m2g_autogrid_TP2"
-        d.mkdir(parents=True)
-        (d / "boot.json").write_text(json.dumps({"kind": "g0iii", "t_health_epoch": None, "server_exit_code": 1, "health_wait_cap_s": 1800}))
-        (d / "server.log").write_text("AssertionError: PD-mux auto grid (divide_sm) ...\n")
+            (d / "boot.json").write_text(json.dumps({"kind": "g0iii", "t_health_epoch": None, "server_exit_code": 1, "health_wait_cap_s": 1800}))
+            (d / "server.log").write_text("AssertionError: PD-mux auto grid (divide_sm) ...\n")
         (out / "gates").mkdir(exist_ok=True)
-        for cfg in ("N1",) + P.M2G_CFGS:
+        (out / "boots").mkdir(exist_ok=True)
+        for cfg in P.m2g_configs(job):
             n = 1 if cfg == "N1" else int(cfg[2:])
             for arm in C.ARMS:
                 d = out / "boots" / f"m2g_{cfg}_{arm}"
@@ -864,52 +1147,67 @@ class AssemblePassTable(unittest.TestCase):
         """A boot that never became healthy has no capture to judge: G4 NOT_TESTED, even if its log has capture lines."""
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
-            self.build(out, drop_boot={("TP2", "fused")})
-            t = D.assemble_pass_table(out)
+            self.build(out, "J2", drop_boot={("TP2", "fused")})
+            t = D.assemble_pass_table(out, "J2")
             self.assertIn("G4 capture NOT_TESTED", t["cells"]["TP2:fused"]["reasons"])
             self.assertNotIn("G4 capture NOT_TESTED", " ".join(t["cells"]["TP2:d44"]["reasons"]))   # negative control: healthy boot
 
-    def test_full_pass_and_per_gate_exclusions(self):
+    def test_j2_full_pass_and_per_gate_exclusions(self):
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
-            self.build(out)
-            t = D.assemble_pass_table(out)
-            self.assertTrue(all(t["cells"][f"TP{n}:{a}"]["included"] for n in (2, 4, 8) for a in C.ARMS),
-                            t["cells"]["TP2:fused"])
+            self.build(out, "J2")
+            t = D.assemble_pass_table(out, "J2")
+            self.assertEqual((t["job"], t["g0ii"]), ("J2", "PASS"))
+            self.assertTrue(all(t["cells"][f"TP2:{a}"]["included"] for a in C.ARMS), t["cells"]["TP2:fused"])
             self.assertTrue(all(t["cells"][f"N1:{a}"]["included"] for a in C.ARMS))
             # DP: no telemetry for the realized-partition check -> G5(b) NOT_TESTED excludes the whole DP=N (§3-1)
-            self.assertTrue(all(not t["cells"][f"DP{n}:fused"]["included"] and "G5(b)" in t["cells"][f"DP{n}:fused"]["reason"]
-                                for n in (2, 4, 8)))
+            self.assertTrue(all(not t["cells"][f"DP2:{a}"]["included"] and "G5(b)" in t["cells"][f"DP2:{a}"]["reason"] for a in C.ARMS))
             self.assertFalse(t["configs"]["TP2"]["memory_mismatch"])
             self.assertTrue(t["nvml_procs_visible"])
             self.assertEqual(t["nvml_expected_procs"]["TP2:d44"], {"0": 1})
             # negative controls: each failed gate removes exactly its registered range
             (out / "gates" / "g1_TP2.json").write_text(json.dumps({"verdicts": {"fused|agnostic": "FAIL", "fused|d44": "UNINFORMATIVE"}}))
-            (out / "gates" / "g3_TP4.json").write_text(json.dumps({"verdict": "FAIL"}))
-            (out / "boots" / "m2g_TP8_fused_sym" / "boot.json").write_text(json.dumps({"status": "BOOT_FAILED", "health_wait_cap_s": 1800,
-                                                                                         "server_exit_code": 1}))
             (out / "boots" / "m2g_refuse_0" / "boot.json").write_text(json.dumps({"kind": "g0ii", "t_health_epoch": 1, "server_exit_code": None,
                                                                                     "health_wait_cap_s": 1800}))
-            t = D.assemble_pass_table(out)
-            self.assertTrue(all(not t["cells"][f"TP{n}:fused"]["included"] for n in (2, 4, 8)))        # G0(ii) -> TP axis out
+            t = D.assemble_pass_table(out, "J2")
+            self.assertTrue(all(not t["cells"][f"TP2:{a}"]["included"] for a in C.ARMS))              # G0(ii) -> TP axis out
+            self.assertTrue(t["cells"]["N1:fused"]["included"])
             (out / "boots" / "m2g_refuse_0" / "boot.json").write_text(json.dumps({"kind": "g0ii", "t_health_epoch": None,
                                                                                     "server_exit_code": 1, "health_wait_cap_s": 1800}))
-            t = D.assemble_pass_table(out)
+            t = D.assemble_pass_table(out, "J2")
             self.assertTrue(t["cells"]["TP2:fused"]["included"] and t["cells"]["TP2:d44"]["included"])  # UNINFORMATIVE excludes nothing
             self.assertFalse(t["cells"]["TP2:agnostic"]["included"])
             self.assertTrue(t["cells"]["TP2:fused_sym"]["included"])
-            self.assertFalse(t["cells"]["TP4:fused"]["included"])                                       # G3 FAIL: whole TP4
-            self.assertFalse(t["cells"]["TP8:fused_sym"]["included"])                                   # G0(i): that arm only
-            self.assertTrue(t["cells"]["TP8:fused"]["included"] and t["cells"]["TP8:agnostic"]["included"])
-            self.assertTrue(t["configs"]["TP8"]["g_sym_undefined"])
+
+    def test_j4_table_does_not_judge_g0ii_and_scopes_g3_boot_failures_to_its_units(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            self.build(out, "J4")
+            t = D.assemble_pass_table(out, "J4")
+            self.assertEqual((t["g0ii"], t["g0iii"]), ("NOT_RUN_IN_JOB", "NOT_RUN_IN_JOB"))
+            self.assertTrue(all(t["cells"][f"TP4:{a}"]["included"] for a in C.ARMS))             # no refusal boots in J4 -> no TP exclusion from them
+            self.assertEqual(sorted({k.split(":")[0] for k in t["cells"]}), ["DP4", "N1", "TP4"])
+            (out / "gates" / "g3_TP4.json").write_text(json.dumps({"verdict": "FAIL"}))
+            (out / "boots" / "m2g_TP4_fused_sym" / "boot.json").write_text(json.dumps({"status": "BOOT_FAILED", "health_wait_cap_s": 1800,
+                                                                                         "server_exit_code": 1}))
+            t = D.assemble_pass_table(out, "J4")
+            self.assertFalse(t["cells"]["TP4:fused"]["included"])                                  # G3 FAIL: whole TP4
+            self.assertTrue(t["cells"]["N1:fused"]["included"])
+            (out / "gates" / "g3_TP4.json").write_text(json.dumps({"verdict": "PASS"}))
+            t = D.assemble_pass_table(out, "J4")
+            self.assertFalse(t["cells"]["TP4:fused_sym"]["included"])                              # G0(i): that arm only
+            self.assertTrue(t["cells"]["TP4:fused"]["included"] and t["cells"]["TP4:agnostic"]["included"])
+            self.assertTrue(t["configs"]["TP4"]["g_sym_undefined"])
+            self.assertEqual(D.job_tps("J1"), ())
+            self.assertEqual(D.job_tps("J8"), (8,))
 
     def test_short_health_wait_is_not_tested_not_fail(self):                                           # MGP-23
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
-            self.build(out)
+            self.build(out, "J2")
             (out / "boots" / "m2g_TP2_d44" / "boot.json").write_text(json.dumps({"status": "BOOT_TIMEOUT", "health_wait_cap_s": 300,
                                                                                   "server_exit_code": None}))
-            t = D.assemble_pass_table(out)
+            t = D.assemble_pass_table(out, "J2")
             r = t["cells"]["TP2:d44"]
             self.assertFalse(r["included"])
             self.assertTrue(r["not_tested"])
@@ -917,11 +1215,15 @@ class AssemblePassTable(unittest.TestCase):
     def test_m3_reads_the_table_it_got(self):
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
-            self.build(out)
-            t = D.assemble_pass_table(out)
-            self.assertEqual(P.excluded_set(t) & {"TP2:fused", "TP8:d44"}, set())
-            self.assertIn("TP2", P.runnable_configs(t))
-            self.assertNotIn("DP2", P.runnable_configs(t))
+            self.build(out, "J2")
+            t = D.assemble_pass_table(out, "J2")
+            self.assertEqual(P.excluded_set(t) & {"TP2:fused", "TP2:d44"}, set())
+            self.assertEqual(P.runnable_configs(t, "J2"), ["TP2"])                                  # DP2 excluded by G5(b); order = registered [DP, TP]
+            self.assertEqual(P.anchor_exclude(t), set())
+            self.assertEqual(P.tp_allowed_by_j2(t), (True, None))
+            self.assertFalse(P.tp_allowed_by_j2(None)[0])
+            self.assertFalse(P.tp_allowed_by_j2(dict(t, g0ii="FAIL"))[0])
+            self.assertFalse(P.tp_allowed_by_j2({"g0ii": "NOT_RUN_IN_JOB"})[0])
 
 
 # =========================================================================== rev6 harness audit F1–F17 (2026-10-12)
@@ -968,18 +1270,18 @@ class PDPAndDisclosures(unittest.TestCase):                                     
     build = Labels.build_cells
 
     def test_p_dp_three_values_and_tp_disclosure(self):
-        doc = L.aggregate(self.build(), None, {})
+        doc = L.aggregate_jobs(job_docs(self.build()))
         self.assertEqual(doc["P_DP"]["status"], "HELD")
         self.assertNotIn("P-DP 미검정", doc["trends"]["G_sym|TP|A"]["disclosures"])
         drop = {(f"DP{n}", "fused_sym") for n in (2, 4, 8)}
-        doc = L.aggregate(self.build(drop=drop), None, {})
+        doc = L.aggregate_jobs(job_docs(self.build(drop=drop)))
         self.assertEqual(doc["P_DP"]["status"], "UNTESTED")
         self.assertFalse(doc["P_DP"]["broken"])                                           # the old code said 'not broken' here
         self.assertTrue(doc["P_DP"]["TP_labels_need_P_DP_UNTESTED_disclosure"])
         for sh in "AB":
             self.assertIn("P-DP 미검정", doc["trends"][f"G_sym|TP|{sh}"]["disclosures"])
-        self.assertIn("P-DP 미검정", L.render_text(doc))
-        doc = L.aggregate(self.build(agn_boost=lambda n: 1.0 + 0.1 * (n.bit_length() - 1)), None, {})
+        self.assertIn("P-DP 미검정", L.render_jobs_text(doc))
+        doc = L.aggregate_jobs(job_docs(self.build(agn_boost=lambda n: 1.0 + 0.1 * (n.bit_length() - 1))))
         self.assertEqual(doc["P_DP"]["status"], "BROKEN")
 
     def test_mix_failed_and_e_time_undefined_propagate_to_estimand_and_trend(self):
@@ -987,7 +1289,8 @@ class PDPAndDisclosures(unittest.TestCase):                                     
         for c in cs:
             if c["meta"]["arm"] in C.PDMUX_ARMS and c["meta"]["rung"] == "HI":
                 c["etime"] = {"status": "OK", "e_time": 0.9}
-        doc = L.aggregate(cs, None, {})
+        docs = job_docs(cs)
+        doc = docs["J2"]
         e = doc["estimands"]["G_sym"]["TP2"]["A"]
         self.assertEqual(e["partition"], {"agnostic": "PARTITION_EXERCISED"})
         self.assertFalse(e["partition_exercised_unknown"])
@@ -995,14 +1298,14 @@ class PDPAndDisclosures(unittest.TestCase):                                     
             m = c["meta"]
             if (m["config"], m["arm"], m["shape"], m["seed"], m["rung"]) == ("TP2", "agnostic", "A", C.HI_SEEDS[1], "HI"):
                 c["etime"] = {"status": "MIX_FAILED", "e_time": None, "reasons": ["x"]}
-        doc = L.aggregate(cs, None, {})
+        docs = job_docs(cs)
+        doc = docs["J2"]
         e = doc["estimands"]["G_sym"]["TP2"]["A"]
         self.assertEqual(e["partition"]["agnostic"], "E_TIME_UNDEFINED")
         self.assertTrue(e["partition_exercised_unknown"] and e["mix_failed_arms"] == ["agnostic"])
         self.assertTrue(e["defined"])                                                     # a flag, not an exclusion
-        t = doc["trends"]["G_sym|TP|A"]
+        t = L.aggregate_jobs(docs)["trends"]["G_sym|TP|A"]
         self.assertTrue(t["partition_exercised_unknown"])
-        self.assertIn("E_TIME_UNDEFINED", L.render_text(doc))
 
     def test_unmeasured_throttle_sendlag_frontend_and_missing_roles_are_explicit(self):
         lab = L.key_labels(key_cells("DP2", "agnostic", "A", 10.0, throttle_unmeasured=True, send_lag_p99_ms=None,
@@ -1026,7 +1329,8 @@ class PDPAndDisclosures(unittest.TestCase):                                     
         mc = {"TP2": {"flags": ["TP_NUMERIC_DIVERGENT", "agnostic:G1_UNINFORMATIVE"], "memory_mismatch": False},
               "TP4": {"flags": ["G2_NOT_TESTED"], "memory_mismatch": False},
               "TP8": {"flags": ["MEMORY_MISMATCH(NOT_TESTED)"], "memory_mismatch": True}}
-        doc = L.aggregate(self.build(), None, {}, mc)
+        docs = job_docs(self.build(), mcs=mc)
+        doc = {"estimands": {n: {c: e for J in docs.values() for c, e in J["estimands"][n].items()} for n in docs["J2"]["estimands"]}}
         e2 = doc["estimands"]["G_sym"]["TP2"]["A"]
         self.assertTrue(e2["defined"])
         self.assertIn("TP_NUMERIC_DIVERGENT", e2["disclosures"])
@@ -1035,7 +1339,7 @@ class PDPAndDisclosures(unittest.TestCase):                                     
         e8 = doc["estimands"]["G_sym"]["TP8"]["A"]
         self.assertFalse(e8["defined"])                                                   # M2g MEMORY_MISMATCH carries (G5(c) meaning unified)
         self.assertIn("MEMORY_MISMATCH", e8["undefined_reasons"])
-        t = doc["trends"]["G_sym|TP|A"]
+        t = L.aggregate_jobs(docs)["trends"]["G_sym|TP|A"]
         self.assertIn("TP_NUMERIC_DIVERGENT", t["disclosures"])                           # beside the TP trend (MGH-3)
         self.assertEqual(doc["estimands"]["G_sym"]["DP2"]["A"]["disclosures"], [])
 
@@ -1100,9 +1404,10 @@ class ConfigFlagScopes(unittest.TestCase):                                      
 
 
 class PlanF4F15F17(unittest.TestCase):
-    def test_g5a_gpu_boot_is_in_the_m2g_plan(self):                                         # F4
-        b = [x for x in P.m2g_boots() if x["boot_id"] == "m2g_g5a_auto_N1"]
+    def test_g5a_gpu_boot_is_in_the_m2g_plan(self):                                         # F4 (J1 only: §15-2, the GPU half is not per Job)
+        b = [x for x in P.m2g_boots("J1") if x["boot_id"] == "m2g_g5a_auto_N1"]
         self.assertEqual(len(b), 1)
+        self.assertFalse([x for j in ("J2", "J4", "J8") for x in P.m2g_boots(j) if x["boot_id"] == "m2g_g5a_auto_N1"])
         self.assertEqual((b[0]["arm"], b[0]["config"], b[0]["config_rel"]), ("agnostic", "N1", C.AUTO_GRID_CONFIG_REL))
         self.assertTrue((ENGINE / C.AUTO_GRID_CONFIG_REL).exists())
         args = B.build_server_args(dict(b[0]), 1234, str(ENGINE / C.AUTO_GRID_CONFIG_REL))
@@ -1110,28 +1415,27 @@ class PlanF4F15F17(unittest.TestCase):
         self.assertNotIn(str(ENGINE / C.AGNOSTIC_CONFIG_REL), args)
 
     def test_budget_audited_model_unchanged_and_calibration_adds_time(self):                # F15
-        a = P.m3_budget()
-        self.assertAlmostEqual(a["total_h"], 29.96, 1)                                      # the audited number must not move
-        v = P.m3_budget(calib=P.CALIBS["vessl_boot"])
-        self.assertAlmostEqual(v["total_h"] - a["total_h"], 70 * C.EST_VESSL_BOOT_EXTRA_S / 3600.0, 3)
-        u = P.m3_budget(calib=P.CALIBS["vessl_boot_cell"])
+        a = P.m3_budget("J2")
+        self.assertAlmostEqual(a["total_h"], 8.76 - C.EST_PREFLIGHT_S / 3600.0, 1)         # the audited per-Job number must not move
+        v = P.m3_budget("J2", calib=P.CALIBS["vessl_boot"])
+        self.assertAlmostEqual(v["total_h"] - a["total_h"], a["boots"] * C.EST_VESSL_BOOT_EXTRA_S / 3600.0, 3)
+        u = P.m3_budget("J2", calib=P.CALIBS["vessl_boot_cell"])
         self.assertGreater(u["total_h"], v["total_h"])
-        s3 = P.m3_budget(ratio_arm_of=P.SCENARIOS["S3 extension: agnostic 1.48"])
+        s3 = P.m3_budget("J2", ratio_arm_of=P.SCENARIOS["S3 extension: agnostic 1.48"])
         self.assertGreater(s3["boots"], a["boots"])                                          # ONE arm above 1.42 extends all four arms
-        self.assertEqual(s3["boots"] - a["boots"], 7 * 4)
+        self.assertEqual(s3["boots"] - a["boots"], 2 * 4)                                    # 2 configs x 4 arms; the anchors do not extend
 
     def test_forecast_domain(self):
-        rows = {(r["scenario"], r["calib"]): r for r in P.m3_forecast_table()}
+        rows = {(r["scenario"], r["calib"]): r for r in P.m3_forecast_table("J2")}
         r = rows[("S1 lambda=prior (all)", "audited")]
-        self.assertEqual((r["n_done"], r["trend_TP"], r["trend_DP"], r["anchor_boots_done"]), (70, "defined", "defined", 3))
-        r = rows[("S1 lambda=prior (all)", "vessl_boot")]
-        self.assertEqual(r["anchor_boots_done"], 0)                                          # the drift-measuring anchor is what gets cut (MGH-6)
+        self.assertEqual((r["n_done"], r["anchor_boots_done"], r["configs_defined"]), (18, 2, ["DP2", "TP2"]))
         r = rows[("S3 extension: agnostic 1.48", "audited")]
-        self.assertEqual((r["trend_TP"], r["trend_DP"]), ("TREND_UNDEFINED", "TREND_UNDEFINED"))   # MGH-7
-        self.assertEqual(r["N_defined_TP"], [1, 8])
-        blk = {(b["scenario"], b["calib"], b["k"]): b for b in P.block_plan_table()}
-        self.assertLess(blk[("S1 lambda=prior (all)", "audited", 3)]["max_block_h"], 30.0)
-        self.assertGreater(blk[("S1 lambda=prior (all)", "audited", 3)]["total_h"], P.m3_budget()["total_h"])   # k anchors + k preflights
+        self.assertEqual(r["configs_defined"], ["DP2"])                                      # the SECOND config in the registered order (TP) is cut first (MGP-49')
+        self.assertTrue(any(k.startswith("TP2") for k in r["cut"]))
+        self.assertEqual(r["anchor_boots_done"], 2)                                          # anchors run first and survive the cut
+        self.assertGreater(r["total_h_uncapped"], 14.0)
+        j1 = {(r["scenario"], r["calib"]): r for r in P.m3_forecast_table("J1")}[("S1 lambda=prior (all)", "audited")]
+        self.assertEqual((j1["anchor_boots"], j1["configs_defined"]), (0, ["N1"]))
 
     def test_pass_table_three_way_digest(self):                                             # F17
         import hashlib
@@ -1252,7 +1556,7 @@ for r in range(n):
 class M2gJobPath(unittest.TestCase):
     """F8: order (G3 first), liveness (F2), exposure (F3), G3 launcher failure (F1) through the real run_m2g / assemble_pass_table."""
 
-    def run_job(self, **env):
+    def run_job(self, job="J2", **env):
         from unittest import mock
         td = tempfile.TemporaryDirectory()
         self.addCleanup(td.cleanup)
@@ -1268,7 +1572,7 @@ class M2gJobPath(unittest.TestCase):
         e.update(env)
         out = root / "out"
         out.mkdir()
-        ctx = D.Ctx(out, False, time.time() + 8 * 3600, time.time(), "m2g")
+        ctx = D.Ctx(out, False, time.time() + 4 * 3600, time.time(), "m2g", job)
         ctx.g3_python = str(root / "fakepy.sh")                  # `fakepy.sh -m torch.distributed.run ...` -> fake_torchrun.py
         ctx.g5a_argv = [sys.executable, "-c", "print('g5a ok')"]
         with mock.patch.dict(os.environ, e), mock.patch.object(D, "RUNNER", str(root / "fake_runner.sh")):
@@ -1276,31 +1580,48 @@ class M2gJobPath(unittest.TestCase):
         return table, out, order.read_text().splitlines(), ctx
 
     def test_order_g3_before_every_serving_boot_and_clean_pass(self):
-        table, out, order, ctx = self.run_job()
+        table, out, order, ctx = self.run_job("J4")
         kinds = [ln.split()[0] for ln in order]
-        self.assertEqual(kinds.count("G3"), 9)                                                # 3 TP x 3 combinations
-        self.assertEqual(max(i for i, k in enumerate(kinds) if k == "G3") + 1, 9)             # all G3 lines precede ...
-        self.assertTrue(all(k == "BOOT" for k in kinds[9:]))                                  # ... every BOOT line
-        self.assertEqual(sum(1 for k in kinds if k == "BOOT"), len(P.m2g_boots()))
-        self.assertTrue(all(table["cells"][f"TP{n}:{a}"]["included"] for n in (2, 4, 8) for a in C.ARMS),
+        self.assertEqual(kinds.count("G3"), 3)                                                # ONLY this Job's TP (4) x 3 combinations
+        self.assertTrue(all(ln.split()[1] == "TP4" for ln in order if ln.startswith("G3")))
+        self.assertEqual(max(i for i, k in enumerate(kinds) if k == "G3") + 1, 3)             # all G3 lines precede ...
+        self.assertTrue(all(k == "BOOT" for k in kinds[3:]))                                  # ... every BOOT line
+        self.assertEqual(sum(1 for k in kinds if k == "BOOT"), len(P.m2g_boots("J4")))
+        self.assertTrue(all(table["cells"][f"TP4:{a}"]["included"] for a in C.ARMS),
                         {k: v["reason"] for k, v in table["cells"].items() if k.startswith("TP") and not v["included"]})
+        self.assertEqual(sorted({k.split(":")[0] for k in table["cells"]}), ["DP4", "N1", "TP4"])
+        self.assertEqual((table["job"], table["g0ii"]), ("J4", "NOT_RUN_IN_JOB"))
         self.assertEqual(table["g5a_unit_test"], "PASS")
-        self.assertEqual(table["g5a_gpu_descriptive"], "RECORDED")                           # F4: the GPU boot ran and was read
-        self.assertTrue((out / "gates" / "g3_launch.json").exists() and len(list((out / "gates" / "g3_logs").glob("run_g3_TP*.txt"))) == 3)
+        self.assertEqual(table["g5a_gpu_descriptive"], "NOT_IN_THIS_JOB")                    # the GPU descriptive boot is J1's (§15-2)
+        self.assertTrue((out / "M2G_PASS_TABLE_J4.json").exists() and (out / "M2G_PASS_TABLE_J4.json.sha256").exists())
+        self.assertTrue((out / "gates" / "g3_launch.json").exists() and len(list((out / "gates" / "g3_logs").glob("run_g3_TP*.txt"))) == 1)
         self.assertTrue((out / "gates" / "g3_TP4_g44_64" / "launcher.json").exists())          # per-combination launcher record (gate module)
         self.assertEqual(table["contam_unverified"], [])
 
+    def test_j1_has_no_g3_runs_the_g5a_gpu_boot_and_j2_runs_the_refusals(self):
+        table, out, order, ctx = self.run_job("J1")
+        self.assertFalse([ln for ln in order if ln.startswith("G3")])
+        self.assertEqual(table["g5a_gpu_descriptive"], "RECORDED")                           # F4: the GPU boot ran and was read
+        self.assertEqual(sorted({k.split(":")[0] for k in table["cells"]}), ["N1"])
+        self.assertTrue(all(table["cells"][f"N1:{a}"]["included"] for a in C.ARMS))
+        table, out, order, ctx = self.run_job("J2")
+        booted = [ln.split()[1] for ln in order if ln.startswith("BOOT")]
+        self.assertEqual(sum(1 for b in booted if b.startswith("m2g_refuse_")), 5)
+        self.assertIn("m2g_autogrid_TP2", booted)
+        self.assertEqual(table["g0ii"], "PASS")
+        self.assertTrue(all(table["cells"][f"TP2:{a}"]["included"] for a in C.ARMS))
+
     def test_server_dead_after_the_last_step_fails_g3b_and_unknown_liveness_is_not_tested(self):    # F2
-        table, out, order, ctx = self.run_job(FAKE_DEAD="m2g_TP2_d44", FAKE_NO_ALIVE="m2g_TP4_agnostic")
+        table, out, order, ctx = self.run_job("J2", FAKE_DEAD="m2g_TP2_d44", FAKE_NO_ALIVE="m2g_TP2_agnostic")
         self.assertFalse(table["cells"]["TP2:fused"]["included"])
         self.assertIn("G3b d44 FAIL", table["cells"]["TP2:fused"]["reason"])
         self.assertIn("G1 fused<->d44 FAIL", table["cells"]["TP2:d44"]["reason"])             # a pair with a dead server is an abnormal exit
-        self.assertIn("G3b agnostic NOT_TESTED", table["cells"]["TP4:fused"]["reason"])       # no record != alive
-        self.assertIn("G1 fused<->agnostic NOT_TESTED", table["cells"]["TP4:agnostic"]["reason"])
-        self.assertTrue(table["cells"]["TP8:fused"]["included"])                              # negative control: the others are untouched
+        self.assertIn("G3b agnostic NOT_TESTED", table["cells"]["TP2:fused"]["reason"])       # no record != alive
+        self.assertIn("G1 fused<->agnostic NOT_TESTED", table["cells"]["TP2:agnostic"]["reason"])
+        self.assertTrue(table["cells"]["N1:fused"]["included"])                               # negative control: the others are untouched
 
     def test_abnormal_exit_fails_g1_while_the_other_arm_of_the_config_passes(self):          # F2, G1 '비정상 종료 0'
-        table, out, order, ctx = self.run_job(FAKE_DEAD="m2g_DP2_agnostic")
+        table, out, order, ctx = self.run_job("J2", FAKE_DEAD="m2g_DP2_agnostic")
         g1 = json.loads((out / "gates" / "g1_DP2.json").read_text())
         self.assertEqual((g1["verdicts"]["fused|agnostic"], g1["verdicts"]["fused|d44"]), ("FAIL", "PASS"))
         self.assertTrue(g1["detail"]["fused|agnostic"]["abnormal_exit"])
@@ -1308,7 +1629,7 @@ class M2gJobPath(unittest.TestCase):
         self.assertNotIn("G1 fused<->d44", table["cells"]["DP2:d44"]["reason"])
 
     def test_g1_window_exposure_is_computed_and_delivered(self):                              # F3
-        table, out, order, ctx = self.run_job()
+        table, out, order, ctx = self.run_job("J2")
         e = json.loads((out / "gates" / "g1_exposure_TP2.json").read_text())                 # the driver's own (cmd-window) cross-check
         # hand-derived from tests/test_mg_realized_mix.py rows: window [-0.5, 3.5] keeps 4 snapshots (agnostic: split 30 of 40 steps;
         # d44: 10 of 20); the WHOLE telemetry would give 0.8 / 0.6667 -- the window matters
@@ -1318,39 +1639,40 @@ class M2gJobPath(unittest.TestCase):
         self.assertAlmostEqual(g1["detail"]["fused|agnostic"]["exposure_split_steps"], 0.75, 6)
         self.assertAlmostEqual(g1["detail"]["fused|d44"]["exposure_split_steps"], 0.5, 6)
         self.assertAlmostEqual(table["g1_exposure_split_steps"]["TP2:agnostic"], 0.75, 6)
-        self.assertEqual(json.loads((out / "gates" / "g1_exposure_DP4.json").read_text())["d44"]["status"], "OK")
+        self.assertEqual(json.loads((out / "gates" / "g1_exposure_DP2.json").read_text())["d44"]["status"], "OK")
 
     def test_g3_launcher_failure_is_not_tested_harness_error_not_fail(self):                  # F1
-        table, out, order, ctx = self.run_job(FAKE_G3_BROKEN="TP4")
+        table, out, order, ctx = self.run_job("J4", FAKE_G3_BROKEN="TP4")
         g3 = json.loads((out / "gates" / "g3_TP4.json").read_text())
         self.assertEqual(g3["verdict"], "NOT_TESTED")                                         # lesson 21: not FAIL
         self.assertIn("HARNESS_ERROR", json.dumps(g3))
         self.assertIn("G3 comm stress NOT_TESTED", table["cells"]["TP4:fused"]["reason"])
-        self.assertTrue(table["cells"]["TP2:fused"]["included"])
+        self.assertTrue(table["cells"]["N1:fused"]["included"])
         self.assertTrue((out / "gates" / "g3_logs" / "run_g3_TP4.txt").exists())
 
     def test_r1_g3_not_pass_tp_serving_boots_are_not_attempted_and_pass_tp_runs(self):         # R1
-        table, out, order, ctx = self.run_job(FAKE_G3_BROKEN="TP4")
+        table, out, order, ctx = self.run_job("J4", FAKE_G3_BROKEN="TP4")
         booted = [ln.split()[1] for ln in order if ln.split()[0] == "BOOT"]
         self.assertFalse([b for b in booted if b.startswith("m2g_TP4_") or b.startswith("m2g_g4_TP4_")], booted)
         skipped = {e["boot_id"] for e in ctx.not_attempted if e.get("reason") == "NOT_ATTEMPTED_G3_EXCLUDED"}
-        want = {b["boot_id"] for b in P.m2g_boots() if b["boot_id"].startswith(("m2g_TP4_", "m2g_g4_TP4_"))}
+        want = {b["boot_id"] for b in P.m2g_boots("J4") if b["boot_id"].startswith(("m2g_TP4_", "m2g_g4_TP4_"))}
         self.assertTrue(want and skipped == want, (want, skipped))
         self.assertFalse((out / "boots" / "m2g_TP4_fused").exists())
-        for n in (2, 8):                                                                     # negative control: G3 PASS TPs run
-            self.assertIn(f"m2g_TP{n}_fused", booted)
         self.assertIn("m2g_DP4_fused", booted)                                              # DP has no G3 dependence
+        self.assertIn("m2g_N1_fused", booted)
         self.assertFalse(table["cells"]["TP4:fused"]["included"])
+        table, out, order, ctx = self.run_job("J4")                                          # negative control: G3 PASS -> TP4 boots run
+        self.assertIn("m2g_TP4_fused", [ln.split()[1] for ln in order if ln.split()[0] == "BOOT"])
 
     def test_r1_mutation_without_the_skip_boots_the_excluded_tp(self):                       # R1 mutation: KILLED
         from unittest import mock
         with mock.patch.object(D, "g3_excluded_boot", lambda bid, ex: False):
-            table, out, order, ctx = self.run_job(FAKE_G3_BROKEN="TP4")
+            table, out, order, ctx = self.run_job("J4", FAKE_G3_BROKEN="TP4")
         booted = [ln.split()[1] for ln in order if ln.split()[0] == "BOOT"]
         self.assertTrue(any(b.startswith("m2g_TP4_") for b in booted))                       # the R1 test above would fail -> KILLED
 
     def test_r1_rescore_keeps_preflight_and_not_attempted(self):                              # recommendation: merge
-        table, out, order, ctx = self.run_job()
+        table, out, order, ctx = self.run_job("J2")
         g = json.loads((out / "gates" / "g3_TP2.json").read_text())
         self.assertIn("preflight", g)
         self.assertIn("not_attempted", g)
@@ -1369,25 +1691,26 @@ class M2gJobPath(unittest.TestCase):
             calls.append(1)
             return {int(g): {"memory_used_mib": 5.0, "n_procs": 0} for g in ids}
         with mock.patch.object(G, "nvml_snapshot", fake):
-            table, out, order, ctx = self.run_job()
+            table, out, order, ctx = self.run_job("J2")
         rec = json.loads((out / "gates" / "nvml_preboot.json").read_text())
         self.assertTrue(rec["checked"] and rec["not_empty"] == [] and rec["attempts"] == 1)
 
     def test_no_interpreter_for_the_launcher_leaves_every_tp_not_tested(self):
         with tempfile.TemporaryDirectory() as td:
-            ctx = D.Ctx(Path(td), False, time.time() + 8 * 3600, time.time(), "m2g")
+            ctx = D.Ctx(Path(td), False, time.time() + 4 * 3600, time.time(), "m2g", "J4")
             ctx.g3_python = "/nonexistent/python"
             s = D.run_g3(ctx)
-            self.assertEqual(set(s), {"TP2", "TP4", "TP8"})
-            for n in (2, 4, 8):
-                self.assertEqual(json.loads((Path(td) / "gates" / f"g3_TP{n}.json").read_text())["verdict"], "NOT_TESTED")
+            self.assertEqual(set(s), {"TP4"})                                                # only the Job's own TP
+            self.assertEqual(json.loads((Path(td) / "gates" / "g3_TP4.json").read_text())["verdict"], "NOT_TESTED")
+        with tempfile.TemporaryDirectory() as td:
+            self.assertEqual(D.run_g3(D.Ctx(Path(td), False, time.time() + 4 * 3600, time.time(), "m2g", "J1")), {})
 
     def test_nvml_unavailable_cell_is_listed_and_not_included(self):                          # F5
-        table, out, order, ctx = self.run_job()
+        table, out, order, ctx = self.run_job("J2")
         # re-assemble after rewriting one pre-boot record as 'NVML unavailable'
         p = out / "boots" / "m2g_TP2_agnostic" / "contam_pre.json"
         p.write_text(json.dumps({"snapshot": {"available": False, "error": "x"}, "verdict": {"contam_unverified": True, "verified": False}}))
-        t2 = D.assemble_pass_table(out)
+        t2 = D.assemble_pass_table(out, "J2")
         self.assertEqual(t2["contam_unverified"], ["TP2:agnostic"])
         self.assertFalse(t2["cells"]["TP2:agnostic"]["included"])
         self.assertIn("CONTAM_UNVERIFIED", t2["cells"]["TP2:agnostic"]["reason"])
@@ -1398,74 +1721,91 @@ class M3ExtensionDriver(unittest.TestCase):                                     
     def test_incomplete_extension_blocks_boot2_and_labels_the_arm(self):
         with tempfile.TemporaryDirectory() as td:
             drv = DriverWithFakeRunner()
-            skip = "m3_TP8_agnostic_boot1ext"
-            fake_py = FAKE_RUNNER_PY.replace('spec = json.load(open(sys.argv[1]))',
-                                             'spec = json.load(open(sys.argv[1]))\nif spec["boot_id"] == os.environ.get("FAKE_SKIP"): sys.exit(1)')
-            fake = Path(td) / "fake_runner.sh"
-            (Path(td) / "fake.py").write_text(fake_py)
-            fake.write_text(f'#!/bin/bash\nexec python3 {td}/fake.py "$@"\n')
-            import hashlib
-            raw = json.dumps({"cells": {}, "g5a_unit_test": "PASS"})
-            tbl = Path(td) / "t.json"
-            tbl.write_text(raw)
-            env = dict(os.environ, PDMUX_MG_RUNNER=str(fake), MG_RESULTS_DIR=str(ENGINE / "results/multigpu"), FAKE_RATIO="1.7",
-                       FAKE_AGN_BOOST="1.0", FAKE_SKIP=skip, PYTHONDONTWRITEBYTECODE="1")
-            out = Path(td) / "out"
-            p = subprocess.run([sys.executable, str(ENGINE / "results/multigpu/mg_drive.py"), "m3", "--out", str(out),
-                                "--pass-table", str(tbl), "--pass-sha256", hashlib.sha256(raw.encode()).hexdigest()],
-                               env=env, capture_output=True, text=True)
+            p, out = drv.run_driver(td, 1.7, 1.0, job="J2", fake_skip="m3_TP2_agnostic_boot1ext")
             self.assertEqual(p.returncode, 0, p.stderr[-1500:])
             doc = json.loads((out / "LABELS.json").read_text())
-            dec = doc["driver"]["decisions"]["TP8"]
+            dec = doc["driver"]["decisions"]["TP2"]
             self.assertFalse(dec["ext_complete"])
             self.assertIn("agnostic", dec["ext_incomplete_reason"])
-            self.assertEqual(list((out / "specs").glob("m3_TP8_*_boot2.json")), [])             # boot2 never entered
-            self.assertEqual(list((out / "cells").glob("m3_TP8_*_boot2__*")), [])               # no TP8 LO cell was run
-            self.assertTrue(list((out / "cells").glob("m3_TP2_*_boot2__*")))                    # negative control: other configs still ran LO
-            reasons = [x["reason"] for x in doc["driver"]["not_attempted"] if x["boot_id"].startswith("m3_TP8_")]
+            self.assertEqual(list((out / "specs").glob("m3_TP2_*_boot2.json")), [])             # boot2 never entered
+            self.assertEqual(list((out / "cells").glob("m3_TP2_*_boot2__*")), [])               # no TP2 LO cell was run
+            self.assertTrue(list((out / "cells").glob("m3_DP2_*_boot2__*")))                    # negative control: the other config still ran LO
+            reasons = [x["reason"] for x in doc["driver"]["not_attempted"] if str(x.get("boot_id", "")).startswith("m3_TP2_")]
             self.assertEqual(reasons, ["NOT_ATTEMPTED_EXT_INCOMPLETE"] * 4)
-            lab = doc["keys"]["TP8|agnostic|A|r1"]
+            lab = doc["keys"]["TP2|agnostic|A|r1"]
             self.assertEqual(lab["hi_label"], "HI_NOT_JUDGED")                                  # first-pass cells exist, extension does not
             self.assertIn("HI_NOT_JUDGED(EXT_NOT_RUN)", lab["reasons"])
-            self.assertFalse(doc["estimands"]["G_sym"]["TP8"]["A"]["defined"])
-            self.assertTrue(doc["estimands"]["G_sym"]["TP2"]["A"]["defined"])
+            self.assertFalse(doc["estimands"]["G_sym"]["TP2"]["A"]["defined"])
+            self.assertTrue(doc["estimands"]["G_sym"]["DP2"]["A"]["defined"])
 
 
 class JobScriptsDryRun(unittest.TestCase):
-    def run_job(self, name):
+    def run_job(self, name, job="J2", **extra):
         with tempfile.TemporaryDirectory() as td:
             env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
-            env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_MG_DRYRUN="1", PDMUX_MG_TEST_OUT_ROOT=td,
+            env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_MG_DRYRUN="1", PDMUX_MG_TEST_OUT_ROOT=td, PDMUX_MG_JOB=job,
                        PDMUX_JOB_NAME="unit", PDMUX_DATA=str(Path(td) / "data"))
+            env.update(extra)
             p = subprocess.run(["bash", str(ENGINE / "results/multigpu" / name)], env=env, capture_output=True, text=True)
             out = Path(td) / f"{name.split('_')[0]}_unit"
             files = {f.name for f in out.iterdir()} if out.exists() else set()
             boots = sorted(x.name for x in (out / "boots").glob("*")) if (out / "boots").exists() else []
             notes = (out / "DRYRUN_NOTES.txt").read_text() if (out / "DRYRUN_NOTES.txt").exists() else ""
-            return p, files, boots, notes
+            order = (out / "CONFIG_ORDER.txt").read_text() if (out / "CONFIG_ORDER.txt").exists() else ""
+            budget = (out / "BUDGET.txt").read_text() if (out / "BUDGET.txt").exists() else ""
+            return p, files, boots, notes, order, budget
 
-    def test_m3_dry_run(self):
-        p, files, boots, notes = self.run_job("m3_job.sh")
-        self.assertEqual(p.returncode, 0, p.stderr[-1500:] + p.stdout[-800:])
-        self.assertEqual(len(boots), 70)
-        for a in ("ABORT_SUBSTRATE", "ABORT_MODEL_REVISION", "ABORT_ENGINE_DIGEST"):
-            self.assertIn(a, notes)                              # would abort a real run on this machine
-        self.assertIn("DRYRUN", files)
-        self.assertIn("BUDGET_DRYRUN.txt", files)
+    def test_m3_dry_run_every_job(self):
+        want = {"J1": 8, "J2": 18, "J4": 18, "J8": 26}
+        caps = {"J1": 36000, "J2": 50400, "J4": 50400, "J8": 50400}
+        gpus = {"J1": 2, "J2": 2, "J4": 4, "J8": 8}
+        for job, nboots in want.items():
+            p, files, boots, notes, order, budget = self.run_job("m3_job.sh", job)
+            self.assertEqual(p.returncode, 0, (job, p.stderr[-1500:] + p.stdout[-800:]))
+            self.assertEqual(len(boots), nboots, job)
+            for a in ("ABORT_SUBSTRATE", "ABORT_MODEL_REVISION", "ABORT_ENGINE_DIGEST"):
+                self.assertIn(a, notes)                              # would abort a real run on this machine
+            self.assertIn("DRYRUN", files)
+            self.assertIn("BUDGET_DRYRUN.txt", files)
+            self.assertIn("registered J2=J4=J8=[DP,TP]", order)       # H-2: the dry-run prints the order and asserts it
+            self.assertIn("N1" if job == "J1" else f"DP{job[1:]} TP{job[1:]}", order)
+            self.assertIn(f"job={job}", budget)
+            self.assertIn(f"hard_cap_s={caps[job]}", budget)
+            self.assertIn(f"expected_gpus={gpus[job]}", budget)
 
-    def test_m2g_dry_run(self):
-        p, files, boots, notes = self.run_job("m2g_job.sh")
-        self.assertEqual(p.returncode, 0, p.stderr[-1500:] + p.stdout[-800:])
-        self.assertEqual(len(boots), len(P.m2g_boots()))
-        self.assertIn("M2G_PASS_TABLE.json", files)
+    def test_m2g_dry_run_every_job(self):
+        for job in C.JOBS:
+            p, files, boots, notes, order, budget = self.run_job("m2g_job.sh", job)
+            self.assertEqual(p.returncode, 0, (job, p.stderr[-1500:] + p.stdout[-800:]))
+            self.assertEqual(len(boots), len(P.m2g_boots(job)), job)
+            self.assertIn(f"M2G_PASS_TABLE_{job}.json", files)
+            self.assertIn("hard_cap_s=14400", budget)
+
+    def test_job_selection_is_mandatory_and_spec_must_match(self):
+        p, *_ = self.run_job("m3_job.sh", job="")
+        self.assertEqual(p.returncode, 16, p.stdout[-400:])                                  # no PDMUX_MG_JOB -> ABORT_ENV
+        p, *_ = self.run_job("m3_job.sh", job="J9")
+        self.assertEqual(p.returncode, 16)
+        with tempfile.TemporaryDirectory() as td:                                            # real run: J4 submitted on the x2 spec -> ABORT_ENV
+            env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
+            env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_JOB_NAME="unitspec", PDMUX_DATA=str(Path(td) / "data"), PDMUX_MG_JOB="J4",
+                       PDMUX_SPEC="resourcespec-a100x2")
+            p = subprocess.run(["bash", str(ENGINE / "results/multigpu/m3_job.sh")], env=env, capture_output=True, text=True, cwd=td)
+            out = ENGINE / "results/multigpu/m3_unitspec"
+            try:
+                self.assertEqual(p.returncode, 16, p.stdout[-600:])
+                self.assertIn("wants spec resourcespec-a100x4", p.stdout)
+            finally:
+                import shutil
+                shutil.rmtree(out, ignore_errors=True)
 
     def test_real_run_aborts_without_hardware(self):
         with tempfile.TemporaryDirectory() as td:
             env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
-            env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_JOB_NAME="unitreal", PDMUX_DATA=str(Path(td) / "data"))
+            env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_JOB_NAME="unitreal", PDMUX_DATA=str(Path(td) / "data"), PDMUX_MG_JOB="J2")
             p = subprocess.run(["bash", str(ENGINE / "results/multigpu/m3_job.sh")], env=env, capture_output=True, text=True,
                                cwd=td)
-            self.assertEqual(p.returncode, 11, p.stdout[-600:])                       # ABORT_SUBSTRATE (no 8x A100 here)
+            self.assertEqual(p.returncode, 11, p.stdout[-600:])                       # ABORT_SUBSTRATE (no 2x A100 here)
             out = ENGINE / "results/multigpu/m3_unitreal"
             try:
                 self.assertIn("ABORT_SUBSTRATE", (out / "ABORT").read_text())
@@ -1476,7 +1816,7 @@ class JobScriptsDryRun(unittest.TestCase):
     def test_jit_all_reduce_aborts_comm_env(self):
         with tempfile.TemporaryDirectory() as td:
             env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
-            env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_JOB_NAME="unitjit", PDMUX_DATA=str(Path(td) / "data"),
+            env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_JOB_NAME="unitjit", PDMUX_DATA=str(Path(td) / "data"), PDMUX_MG_JOB="J2",
                        SGLANG_USE_JIT_ALL_REDUCE="1")
             p = subprocess.run(["bash", str(ENGINE / "results/multigpu/m2g_job.sh")], env=env, capture_output=True, text=True, cwd=td)
             out = ENGINE / "results/multigpu/m2g_unitjit"

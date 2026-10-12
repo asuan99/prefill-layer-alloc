@@ -1,9 +1,9 @@
 #!/bin/bash
-# M2g Job (PREREG_MULTIGPU rev6 §3): correctness gate on VESSL resourcespec-a100x8.  job_entry.sh target.
-#   launch.sh --campaign multigpu --target workspace/engine-port/results/multigpu/m2g_job.sh   (dry-run first; --submit only after approval)
-#   env: PDMUX_VESSL_SPEC=resourcespec-a100x8 PDMUX_VESSL_ENV=workspace/engine-port/scripts/vessl/vessl.multigpu.env
-# Output: results/multigpu/m2g_<job>/{M2G_PASS_TABLE.json(+.sha256), gates/, boots/, cells/, DRIVER_*}
-# Hard cap 8 h (mg_const.HARD_CAP_S["m2g"]) enforced by mg_drive.py (deadline passed to every boot).
+# M2g Job (PREREG_MULTIGPU rev10 §3): correctness gate on VESSL resourcespec-a100x8.  job_entry.sh target.
+#   PDMUX_VESSL_SPEC=<Job spec> launch.sh --campaign multigpu --target workspace/engine-port/results/multigpu/m2g_job.sh --env PDMUX_MG_JOB=J2   (dry-run first)
+#   Jobs: J1 resourcespec-a100x2 (GPU 0 only) · J2 x2 · J4 x4 · J8 x8.  env: PDMUX_VESSL_SPEC=<that spec> PDMUX_VESSL_ENV=workspace/engine-port/scripts/vessl/vessl.multigpu.env
+# Output: results/multigpu/m2g_<job>/{M2G_PASS_TABLE_J{N}.json(+.sha256), gates/, boots/, cells/, DRIVER_*}
+# Hard cap 4 h per Job (mg_const.HARD_CAP_S["m2g"][JOB]) enforced by mg_drive.py (deadline passed to every boot).
 #
 # Order (F1): G5(a) CPU test -> G3 (run-g3 per TP, BEFORE any serving boot) -> serving boots (incl. the G5(a) GPU boot) -> G1 exposure +
 # score-g1/g2 -> G5(a) GPU descriptive -> M2G_PASS_TABLE.  Job path = mg_drive.run_m2g + assemble_pass_table (M2gRun is the reference only).
@@ -18,11 +18,12 @@ set -uo pipefail
 KIND=m2g
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/mg_job_common.sh"
-DRIVE=(python3 "$HERE/mg_drive.py" m2g --out "$OUT" --t0-epoch "$T0" --hard-cap-s "$HARD_CAP_S")
+DRIVE=(python3 "$HERE/mg_drive.py" m2g --job "$JOB" --out "$OUT" --t0-epoch "$T0" --hard-cap-s "$HARD_CAP_S")
 [ "$DRYRUN" = 1 ] && DRIVE+=(--dry-run)
 "${DRIVE[@]}"; rc=$?
-if [ "$rc" -eq 0 ] && [ -f "$OUT/$(K M2G_PASS_TABLE)" ]; then
-  echo "M2G_PASS_TABLE sha256: $(cat "$OUT/$(K M2G_PASS_TABLE).sha256")  (register it as PDMUX_M2G_PASS_SHA256 for the M3 submit)"
+TABLE_NAME="M2G_PASS_TABLE_${JOB}.json"
+if [ "$rc" -eq 0 ] && [ -f "$OUT/$TABLE_NAME" ]; then
+  echo "$TABLE_NAME sha256: $(cat "$OUT/$TABLE_NAME.sha256")  (commit both files beside the harness; register it as PDMUX_M2G_PASS_SHA256 for M3 $JOB; J2's also as PDMUX_M2G_PASS_SHA256_J2 for J4/J8)"
 fi
 rm -rf "$HERE/__pycache__" "$ENG/scripts/multigpu/__pycache__" "$ENG/benchmarks/pdmux_eval/__pycache__" 2>/dev/null
 exit "$rc"

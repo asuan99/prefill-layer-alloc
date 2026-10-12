@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Job driver for M2g and M3 (PREREG_MULTIGPU rev6 §3, §4-1, §4-2, §6-2).  Called by m2g_job.sh / m3_job.sh.
+"""Job driver for M2g and M3 (PREREG_MULTIGPU rev10 §3, §4-1, §4-2, §6-2, §15-§17).  Called by m2g_job.sh / m3_job.sh.
 
-  mg_drive.py m3  --out DIR [--dry-run] [--hard-cap-s S] [--t0-epoch E]
-  mg_drive.py m2g --out DIR [--dry-run] [--hard-cap-s S] [--t0-epoch E]
-  mg_drive.py assemble-pass-table --out DIR           (M2g outputs -> M2G_PASS_TABLE.json)
+  mg_drive.py m3  --job J2 --out DIR [--dry-run] [--hard-cap-s S] [--t0-epoch E] [--pass-table T --pass-sha256 H --committed-sha-file F]
+                                     [--j2-pass-table T --j2-pass-sha256 H --j2-committed-sha-file F]
+  mg_drive.py m2g --job J2 --out DIR [--dry-run] [--hard-cap-s S] [--t0-epoch E]
+  mg_drive.py assemble-pass-table --job J2 --out DIR  (M2g outputs -> M2G_PASS_TABLE_J2.json)
+ONE Job = ONE N (J1 N=1 on the x2 spec GPU 0 only, J2, J4, J8).  The cross-Job join is mg_label.py --jobs.
 
 Responsibilities: stage order (§4-1), arm order, joint extension (§4-2), x_lo from the fused HI median (MGP-9),
 admission against the wall-clock hard cap, TRUNCATED bookkeeping, label + estimand output (mg_label).
@@ -44,8 +46,9 @@ RUNNER = os.environ.get("PDMUX_MG_RUNNER") or str(ENGINE / "scripts" / "multigpu
 
 
 class Ctx:
-    def __init__(self, out, dry, deadline, t0, kind):
+    def __init__(self, out, dry, deadline, t0, kind, job="J2"):
         self.out, self.dry, self.deadline, self.t0, self.kind = Path(out), dry, deadline, t0, kind
+        self.job = job
         self.log = []
         self.not_attempted = []
         self.notes = []
@@ -91,6 +94,36 @@ def run_boot(ctx, spec, expected_counts=None):
     return rc
 
 
+def run_boot_group(ctx, specs):
+    """§15-3 GPU-deviation block: the 8 N=1 servers run CONCURRENTLY (one per GPU).  Admission against the largest need; ports are preassigned
+    (spec["port"]) so the boots cannot race for one; the global `sglang::` sweep is disabled for a concurrent group (spec concurrent_group)."""
+    need = max(P.boot_need_s(sp, 1.0) for sp in specs)
+    if not ctx.dry and ctx.remaining() < need:
+        for sp in specs:
+            ctx.not_attempted.append({"boot_id": sp["boot_id"], "need_s": need, "remaining_s": ctx.remaining(), "reason": "NOT_ATTEMPTED_BUDGET"})
+        ctx.event(group="gpu_dev", status="NOT_ATTEMPTED_BUDGET", need_s=need)
+        return None
+    procs, t = [], time.time()
+    for sp in specs:
+        sp = dict(sp, out_root=str(ctx.out), deadline_epoch=ctx.deadline)
+        path = ctx.out / "specs" / f"{sp['boot_id']}.json"
+        path.write_text(json.dumps(sp, indent=1, sort_keys=True))
+        cmd = ["bash", RUNNER, str(path)] + (["--dry-run"] if ctx.dry else [])
+        procs.append((sp["boot_id"], subprocess.Popen(cmd, start_new_session=True, stdout=open(ctx.out / "specs" / f"{sp['boot_id']}.stdout", "wb"),
+                                                      stderr=subprocess.STDOUT)))
+    rcs = {}
+    for bid, p in procs:
+        try:
+            rcs[bid] = p.wait(timeout=max(60.0, ctx.remaining() + 240.0))
+        except subprocess.TimeoutExpired:
+            os.killpg(p.pid, signal.SIGKILL)
+            rcs[bid] = -9
+    if any(rc == -9 for rc in rcs.values()):
+        subprocess.run(["pkill", "-9", "-f", "sglang.launch_server|^sglang::"], check=False)
+    ctx.event(group="gpu_dev", rcs=rcs, seconds=time.time() - t)
+    return rcs
+
+
 # =========================================================================== M3
 def cells_of(ctx, cfg=None, rnd=None):
     out = []
@@ -126,22 +159,48 @@ def ext_complete(ctx, cfg, shapes, arms):
     return True, None
 
 
-def run_m3(ctx, table):
+def run_m3(ctx, table, j2_table=None, j2_note=None):
+    """ONE Job (ctx.job).  Order (§16-3): [J8: GPU-deviation block, concurrent] -> N=1 anchor boots (J2/J4/J8) -> the Job's configs in the
+    registered order (mg_plan.config_order; asserted equal to the PREREG result, else ABORT_CONFIG_ORDER).  TP configs additionally need J2's
+    G0(ii) PASS (`j2_table`); a missing/invalid J2 table makes the Job's TP configs NOT_TESTED while DP proceeds (no ABORT)."""
+    job = ctx.job
+    try:
+        P.assert_config_order_registered()
+    except AssertionError as e:
+        (ctx.out / "ABORT").write_text(f"ABORT_CONFIG_ORDER {e}\n")
+        raise SystemExit(16)
+    order = P.config_order(job)
+    ctx.event(config_order=order, job=job, seed=C.ARM_ORDER_SEED, registered=C.CONFIG_ORDER_EXPECTED.get(C.JOB_N[job]))
     ex = P.excluded_set(table) if table else set()
     counts = (table or {}).get("nvml_expected_procs", {}) if (table or {}).get("nvml_procs_visible") else {}
-    cfgs = P.runnable_configs(table) if table else list(C.CONFIG_ORDER)
+    cfgs = P.runnable_configs(table, job) if table else list(order)
+    tp_ok, tp_why = (True, None)
+    if any(c.startswith("TP") for c in order):
+        if job == C.G0II_JOB:
+            tp_ok, tp_why = P.tp_allowed_by_j2(table) if table else (True, None)
+        elif table is not None or not ctx.dry:
+            tp_ok, tp_why = P.tp_allowed_by_j2(j2_table)
+            if j2_note:
+                tp_why = f"{tp_why}; {j2_note}" if tp_why else j2_note
+        ctx.event(tp_axis_allowed=tp_ok, why=tp_why)
 
     def go(spec):
-        # (나) expected counts only apply to boots on the registered GPU subset of that config (not the gpu_dev / NUMA boots)
+        # expected counts only apply to boots on the registered GPU subset of that config (not the gpu_dev boots)
         use = spec.get("gpu_ids") == C.GPU_SUBSETS.get(spec["config"]) and spec.get("block") in ("main", "anchor")
         return run_boot(ctx, spec, counts.get(f"{spec['config']}:{spec['arm']}") if use else None)
 
-    for spec in P.boots_gpu_dev():                                    # §4-6, FIRST
+    if job == "J8":
+        run_boot_group(ctx, P.boots_gpu_dev())                          # §4-6, FIRST, concurrent
+    for spec in P.boots_anchor(job, exclude=P.anchor_exclude(table)):
         go(spec)
-    decisions = {}
-    for cfg in C.CONFIG_ORDER:                                        # §4-1 order
+    decisions = {"config_order": order, "tp_axis_allowed": tp_ok, "tp_axis_why": tp_why}
+    for cfg in order:
         if cfg not in cfgs:
             ctx.event(config=cfg, status="EXCLUDED_BY_M2G_PASS_TABLE")
+            continue
+        if cfg.startswith("TP") and not tp_ok:
+            ctx.event(config=cfg, status="TP_NOT_TESTED", why=tp_why)
+            ctx.not_attempted.append({"config": cfg, "reason": "TP_NOT_TESTED", "detail": tp_why})
             continue
         for spec in P.boots_boot1(cfg, exclude=ex):
             go(spec)
@@ -177,12 +236,6 @@ def run_m3(ctx, table):
         elif x_lo:
             for spec in P.boots_boot2(cfg, x_lo, ext, exclude=ex):
                 go(spec)
-    for spec in P.boots_numa():
-        go(spec)
-    for spec in P.boots_nsys():
-        go(spec)
-    for spec in P.boots_anchor2():
-        go(spec)
     return decisions
 
 
@@ -190,14 +243,15 @@ def finish(ctx, table, decisions=None):
     cells = cells_of(ctx)
     excl = P.excluded_set(table) if table else set()
     flags = ML.build_config_flags(ctx.out, cells, excl)
-    doc = ML.aggregate(cells, (table or {}).get("cells"), flags, (table or {}).get("configs"))
+    doc = ML.aggregate(cells, (table or {}).get("cells"), flags, (table or {}).get("configs"), job=ctx.job)
     doc["n_cells"] = len(cells)
+    doc["covariates"] = ML.job_covariates(ctx.out)                      # §16-3: this Job's cpu.max (per-cell throttle ratios are in doc["keys"])
     doc["driver"] = {"decisions": decisions, "not_attempted": ctx.not_attempted,
                      "truncated_cells": [c["cell_id"] for c in cells if c.get("truncated")],
                      "hard_cap_deadline_epoch": ctx.deadline, "t0_epoch": ctx.t0}
     (ctx.out / "LABELS.json").write_text(json.dumps(doc, indent=1, sort_keys=True, default=float) + "\n")
     (ctx.out / "LABELS.txt").write_text(ML.render_text(doc))
-    status = {"kind": ctx.kind, "finished_epoch": time.time(), "elapsed_s": time.time() - ctx.t0,
+    status = {"kind": ctx.kind, "job": ctx.job, "finished_epoch": time.time(), "elapsed_s": time.time() - ctx.t0,
               "not_attempted": len(ctx.not_attempted), "n_cells": len(cells),
               "hard_cap_s": ctx.deadline - ctx.t0, "dry_run": ctx.dry}
     (ctx.out / "DRIVER_STATUS.json").write_text(json.dumps(status, indent=1) + "\n")
@@ -207,6 +261,16 @@ def finish(ctx, table, decisions=None):
 # =========================================================================== M2g
 G3_COMBOS = (("plain", ["--streams", "plain"]), ("g16_92", ["--streams", "green", "--split", "16", "92"]),
              ("g44_64", ["--streams", "green", "--split", "44", "64"]))
+
+
+def job_tps(job):
+    """TP sizes G3 / G3b / G2 cover in this Job: only its own N (J1: none)."""
+    return (C.JOB_N[job],) if C.JOB_N[job] >= 2 else ()
+
+
+def job_multi_cfgs(job):
+    """TP_N / DP_N of the Job (no N1)."""
+    return tuple(c for c in P.m2g_configs(job) if c != "N1")
 
 
 def run_g3(ctx):
@@ -221,7 +285,7 @@ def run_g3(ctx):
     gate = str(ENGINE / "scripts" / "multigpu" / "m2g_correctness_gate.py")
     python = ctx.g3_python or sys.executable
     summary = {}
-    for n in (2, 4, 8):
+    for n in job_tps(ctx.job):
         ent = {"rc": None, "exception": None}
         summary[f"TP{n}"] = ent
         if ctx.remaining() < 900:
@@ -251,7 +315,7 @@ def g1_exposure(ctx):
     import mg_realized_mix as RM
     G = _gate()
     out = {}
-    for cfg in P.M2G_CFGS:
+    for cfg in job_multi_cfgs(ctx.job):
         mode, n = G.cfg_mode_n(cfg)
         per = {}
         for arm in C.PDMUX_ARMS:
@@ -280,7 +344,7 @@ def score_g1_all(ctx):
     gates = ctx.out / "gates"
     fn = G.cli_score_g1
     params = inspect.signature(fn).parameters
-    for cfg in ("N1",) + P.M2G_CFGS:
+    for cfg in P.m2g_configs(ctx.job):
         kw = {}
         if "exposure_from_boots" in params:
             kw.update(boots=ctx.out / "boots", exposure_from_boots=True)
@@ -299,7 +363,9 @@ def g5a_gpu_descriptive(ctx):
     import mg_realized_mix as RM
     out = {"gate": "G5a_gpu_descriptive", "verdict": "DESCRIPTIVE"}
     bj = _json(ctx.out / "boots" / "m2g_g5a_auto_N1" / "boot.json")
-    if bj is None:
+    if ctx.job != "J1":
+        out["status"] = "NOT_IN_THIS_JOB"                          # §15-2: the GPU descriptive half lives in J1 only
+    elif bj is None:
         out["status"] = "NOT_RUN"
     elif not bj.get("t_health_epoch"):
         out["status"] = "BOOT_FAILED"
@@ -319,11 +385,11 @@ def g5a_gpu_descriptive(ctx):
     return out
 
 
-def g3_excluded_tps(ctx):
+def g3_excluded_tps(ctx):   # noqa: D401
     """R1: TP{n} whose gates/g3_TP{n}.json verdict is not PASS (missing / unreadable file counts as not PASS) -- the serving
     boots of that TP are not started (a comm hang there would burn the cap and, with no G3 evidence, cannot be admitted)."""
     out = set()
-    for n in (2, 4, 8):
+    for n in job_tps(ctx.job):
         d = _json(ctx.out / "gates" / f"g3_TP{n}.json")
         if not isinstance(d, dict) or d.get("verdict") != "PASS":
             out.add(n)
@@ -348,7 +414,7 @@ def preboot_nvml_check(ctx):
     rec = {"checked": True, "attempts": 0}
     try:
         for attempt in range(13):
-            snap = G.nvml_snapshot(list(range(8)))
+            snap = G.nvml_snapshot(list(range(C.JOB_EXPECTED_GPUS[ctx.job])))
             rec["attempts"] = attempt + 1
             rec["snapshot"] = {str(g): v for g, v in snap.items()}
             bad = [g for g, v in snap.items() if not v["memory_used_mib"] < C.NVML_EMPTY_GPU_MIB]
@@ -377,13 +443,14 @@ def run_m2g(ctx):
     gate = str(ENGINE / "scripts" / "multigpu" / "m2g_correctness_gate.py")
     if not ctx.dry:
         run_g3(ctx)                                                  # F1: BEFORE any serving boot (M2gRun order)
-        for n in (2, 4, 8):
+        for n in job_tps(ctx.job):
             subprocess.run([sys.executable, gate, "score-g3", "--out", str(ctx.out / "gates"), "--tp", str(n)],
                            capture_output=True, text=True, check=False)
     excluded_tp = g3_excluded_tps(ctx) if not ctx.dry else set()
     if not ctx.dry:
         preboot_nvml_check(ctx)
-    for spec in P.m2g_boots(str(dummy)):
+    ctx.event(m2g_job=ctx.job, configs=list(P.m2g_configs(ctx.job)))
+    for spec in P.m2g_boots(ctx.job, str(dummy)):
         if g3_excluded_boot(spec["boot_id"], excluded_tp):
             tp = _tp_of_boot(spec["boot_id"])
             ctx.not_attempted.append({"boot_id": spec["boot_id"], "tp": tp, "reason": "NOT_ATTEMPTED_G3_EXCLUDED"})
@@ -393,11 +460,11 @@ def run_m2g(ctx):
     if not ctx.dry:
         g1_exposure(ctx)                                             # F3
         score_g1_all(ctx)
-        for cfg in ("N1",) + P.M2G_CFGS:
+        for cfg in P.m2g_configs(ctx.job):
             subprocess.run([sys.executable, gate, "score-g2", "--out", str(ctx.out / "gates"), "--config", cfg],
                            capture_output=True, text=True, check=False)
         g5a_gpu_descriptive(ctx)
-    return assemble_pass_table(ctx.out)
+    return assemble_pass_table(ctx.out, ctx.job)
 
 
 def _json(p):
@@ -410,7 +477,7 @@ def _gate():
     return G
 
 
-def assemble_pass_table(out):
+def assemble_pass_table(out, job):
     """Job artifacts -> engine-porter's `res` layout -> `m2g_correctness_gate.build_pass_table` (§3-1 mapping and every
     gate scorer live THERE, tested; this function only reads files).  Missing artifact == NOT_TESTED == excluded.
     Liveness (F2) is read by the gate scorers from boots/<id>/alive_after.json (G3b: that boot; G1: the fused boot and the arm's
@@ -418,7 +485,8 @@ def assemble_pass_table(out):
     (CONTAM_UNVERIFIED, F5) is NOT 'clean': the cell's G5(c) contamination check is NOT_TESTED (excluded) and it is listed."""
     G = _gate()
     out = Path(out)
-    cfgs = ("N1",) + P.M2G_CFGS
+    cfgs = P.m2g_configs(job)
+    own_g0ii = (job == C.G0II_JOB)
 
     def txt(p):
         return Path(p).read_text(errors="replace") if Path(p).exists() else None
@@ -434,8 +502,9 @@ def assemble_pass_table(out):
     res = {k: {} for k in ("g0i", "g1", "g2", "g3", "g3b", "g4", "g5b", "g5c", "contam", "nvml_post", "meta")}
     unverified, exposure_tab = [], {}
     ref_ids = sorted(b.name for b in (out / "boots").glob("m2g_refuse_*")) if (out / "boots").exists() else []
-    res["g0ii"] = G.score_g0_ii([d for d in map(boot_dict, ref_ids) if d is not None])
-    res["g0iii"] = G.score_g0_refusal(boot_dict("m2g_autogrid_TP2"), G.DEVICE_ASSERT_TEXT)
+    if own_g0ii:                                    # §15-2: G0(ii)/(iii) are J2's; other Jobs record NOT_RUN_IN_JOB and M3 reads J2's table
+        res["g0ii"] = G.score_g0_ii([d for d in map(boot_dict, ref_ids) if d is not None])
+        res["g0iii"] = G.score_g0_refusal(boot_dict("m2g_autogrid_TP2"), G.DEVICE_ASSERT_TEXT)
     for cfg in cfgs:
         mode, n = G.cfg_mode_n(cfg)
         for arm in C.ARMS:
@@ -496,7 +565,7 @@ def assemble_pass_table(out):
             cx = _json(out / "boots" / f"m2g_{cfg}_{arm}" / "contam.json")
             if cx and cx.get("gpu_contaminated"):
                 res["contam"][k] = {"gpu_contaminated": True, "problems": [str(cx)]}
-    table = G.build_pass_table(res)
+    table = G.build_pass_table(res, cfg_list=cfgs, g0ii_in_job=own_g0ii, job=job)
     table["g5a_unit_test"] = (_json(out / "gates" / "g5a.json") or {}).get("verdict", "NOT_TESTED")
     table["g5a_gpu_descriptive"] = (_json(out / "gates" / "g5a_gpu.json") or {}).get("status", "NOT_RUN")
     table["contam_unverified"] = sorted(unverified)
@@ -505,8 +574,9 @@ def assemble_pass_table(out):
             table["cells"][k].setdefault("reasons", []).append("CONTAM_UNVERIFIED")
             table["cells"][k]["reason"] = "; ".join(table["cells"][k]["reasons"])
     table["g1_exposure_split_steps"] = exposure_tab
-    sha = G.write_pass_table(table, out / C.M2G_PASS_TABLE)
-    (out / (C.M2G_PASS_TABLE + ".sha256")).write_text(sha + "\n")
+    name = C.m2g_pass_table_name(job)
+    sha = G.write_pass_table(table, out / name)
+    (out / (name + ".sha256")).write_text(sha + "\n")
     (out / "M2G_GATE_RESULTS.json").write_text(json.dumps({k: v for k, v in res.items() if k != "meta"}, indent=1,
                                                           sort_keys=True, default=str) + "\n")
     return table
@@ -515,26 +585,30 @@ def assemble_pass_table(out):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("cmd", choices=("m3", "m2g", "assemble-pass-table"))
+    ap.add_argument("--job", required=True, choices=C.JOBS)
     ap.add_argument("--out", required=True)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--hard-cap-s", type=float, default=None)
     ap.add_argument("--t0-epoch", type=float, default=None)
     ap.add_argument("--pass-table", default="")
     ap.add_argument("--pass-sha256", default="")
-    ap.add_argument("--committed-sha-file", default="", help="F17: committed results/multigpu/M2G_PASS_TABLE.json.sha256")
+    ap.add_argument("--committed-sha-file", default="", help="F17: committed results/multigpu/M2G_PASS_TABLE_J{N}.json.sha256")
+    ap.add_argument("--j2-pass-table", default="", help="J2's table (G0(ii) result) for the TP axis of J4/J8")
+    ap.add_argument("--j2-pass-sha256", default="")
+    ap.add_argument("--j2-committed-sha-file", default="")
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     if a.cmd == "assemble-pass-table":
-        t = assemble_pass_table(out)
+        t = assemble_pass_table(out, a.job)
         print(json.dumps({k: v for k, v in t.items() if k != "proc_counts"}, indent=1))
         return 0
     t0 = a.t0_epoch or time.time()
-    cap = a.hard_cap_s or C.HARD_CAP_S[a.cmd]
-    ctx = Ctx(out, a.dry_run, t0 + cap, t0, a.cmd)
+    cap = a.hard_cap_s or C.hard_cap(a.cmd, a.job)
+    ctx = Ctx(out, a.dry_run, t0 + cap, t0, a.cmd, a.job)
     if a.cmd == "m2g":
         run_m2g(ctx)
-        st = {"kind": "m2g", "not_attempted": ctx.not_attempted}
+        st = {"kind": "m2g", "job": a.job, "not_attempted": ctx.not_attempted}
         (out / "DRIVER_STATUS.json").write_text(json.dumps(st, indent=1) + "\n")
         return 0
     table = None
@@ -544,7 +618,16 @@ def main(argv=None):
             print(abort, file=sys.stderr)
             (out / "ABORT").write_text(abort + "\n")
             return 3
-    dec = run_m3(ctx, table)
+    j2_table, j2_note = None, None
+    if a.job == C.G0II_JOB:
+        j2_table = table
+    elif a.job in ("J4", "J8"):
+        if a.j2_pass_table:
+            j2_table, ab = P.load_pass_table(a.j2_pass_table, a.j2_pass_sha256, a.j2_committed_sha_file or None)
+            j2_note = None if j2_table else f"J2 table rejected: {ab}"
+        else:
+            j2_note = "J2 table not given"
+    dec = run_m3(ctx, table, j2_table, j2_note)
     finish(ctx, table, dec)
     return 0
 

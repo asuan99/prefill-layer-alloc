@@ -88,7 +88,7 @@ G3B_ARMS = C.G3B_ARMS  # sec 3 G3b: agnostic, d44
 G4_NSYS_TPS = C.G4_NSYS_TPS  # sec 3 G4: TP=2,8 x d44, 30 s (descriptive)
 G4_NSYS_S = C.G4_NSYS_S
 NVML_EMPTY_GPU_MIB = C.NVML_EMPTY_GPU_MIB  # sec 3 G5(c)(가): memory.used < 1 GiB before each boot
-HARD_CAP_S = C.HARD_CAP_S["m2g"]  # sec 6-2: M2g 8 h
+HARD_CAP_S = max(C.HARD_CAP_S["m2g"].values())  # sec 6-2 / rev8: M2g 4 h per Job (same for J1/J2/J4/J8)
 
 # ----------------------------------------------- IMPLEMENTATION block (NOT registered)
 TEARDOWN_POLL_CAP_S = 300.0  # H7: poll memory release after teardown; harness choice, audit it
@@ -748,7 +748,7 @@ def procs_visible_from_table(table: Mapping[str, Mapping]) -> bool:
 
 
 # ============================================================================ sec 3-1
-def build_pass_table(res: Mapping) -> Dict:
+def build_pass_table(res: Mapping, cfg_list: Optional[Sequence[str]] = None, g0ii_in_job: bool = True, job: Optional[str] = None) -> Dict:
     """sec 3-1 FAIL units -> M2G_PASS_TABLE (fail-closed: missing result = NOT_TESTED).
 
     `res` layout (what run_m2g produces):
@@ -763,13 +763,16 @@ def build_pass_table(res: Mapping) -> Dict:
     cells, configs = {}, {}
     g0ii = (res.get("g0ii") or {}).get("verdict", NOT_TESTED)
     g0iii = (res.get("g0iii") or {}).get("verdict", NOT_TESTED)
-    for cfg in ("N1",) + CONFIGS_MULTI:
+    # rev8/rev9: ONE table per Job.  `cfg_list` = that Job's configs (N1 + TPn/DPn); `g0ii_in_job` False (J4/J8, J1): the G0(ii) guard-refusal
+    # result is J2's, read by M3 as a THREE-way digest check of J2's table -- this table does not judge the TP axis on it (g0ii recorded as
+    # NOT_RUN_IN_JOB).
+    for cfg in (tuple(cfg_list) if cfg_list is not None else ("N1",) + CONFIGS_MULTI):
         mode, n = cfg_mode_n(cfg)
         cfg_reasons, flags = [], []
         if v("g0i", cell_key(cfg, "fused")) != PASS:
             cfg_reasons.append(f"G0(i) fused boot {v('g0i', cell_key(cfg, 'fused'))}")
         if mode == "tp":
-            if g0ii != PASS:
+            if g0ii_in_job and g0ii != PASS:
                 cfg_reasons.append(f"G0(ii) guard refusal {g0ii} (TP axis)")
             if v("g3", cfg) != PASS:
                 cfg_reasons.append(f"G3 comm stress {_nt_label((res.get('g3') or {}).get(cfg))}")
@@ -808,19 +811,23 @@ def build_pass_table(res: Mapping) -> Dict:
             cells[k] = {"included": not reasons, "reason": "; ".join(reasons), "reasons": reasons,
                         "not_tested": any("NOT_TESTED" in r for r in reasons)}
         configs[cfg] = {"flags": flags, "memory_mismatch": mem_mismatch,
+                        "arm_rel_diff": (g5c or {}).get("arm_rel_diff"),
+                        "MEMORY_RULE_III_COUNTERFACTUAL": (g5c or {}).get("MEMORY_RULE_III_COUNTERFACTUAL"),
+                        "rule_iii_would_have_flagged": bool((g5c or {}).get("rule_iii_would_have_flagged")),
                         "tp_numeric_divergent": "TP_NUMERIC_DIVERGENT" in flags,
                         "g_sym_undefined": not (cells[cell_key(cfg, "agnostic")]["included"]
                                                 and cells[cell_key(cfg, "fused_sym")]["included"])}
     nvml_post = res.get("nvml_post") or {}
     findings = []
-    if g0iii != PASS:
+    if g0ii_in_job and g0iii != PASS:
         findings.append(f"G0(iii) auto-grid device assert {g0iii} (no exclusion, sec 3-1)")
     return {
         "prereg": f"{C.PREREG} rev{C.PREREG_REV}",
         "schema": "cells[f'{config}:{arm}'] = {included, reason, reasons, not_tested}",
         "cells": cells,
         "configs": configs,
-        "g0ii": g0ii, "g0iii": g0iii,
+        "job": job,
+        "g0ii": g0ii if g0ii_in_job else "NOT_RUN_IN_JOB", "g0iii": g0iii if g0ii_in_job else "NOT_RUN_IN_JOB",
         "findings": findings,
         # H7: post-boot compute-process item count per (config, arm) per GPU; M3 compares against it.
         "nvml_expected_procs": {k: {str(g): c for g, c in sorted(v_.items())} for k, v_ in sorted(nvml_post.items())},

@@ -268,7 +268,7 @@ def run_boot(spec, dry=False):
     boot = {"boot_id": spec["boot_id"], "config": spec["config"], "arm": spec["arm"], "kind": spec.get("kind"),
             "gpu_ids": gpu_ids, "tp": tp, "dp": dp, "effective_cap": effective_cap(tp, dp), "status": "STARTED",
             "t_start_epoch": time.time(), "host": socket.gethostname()}
-    port = 0 if dry else pick_port()
+    port = 0 if dry else (int(spec["port"]) if spec.get("port") else pick_port())      # concurrent_group boots get preassigned ports
     cfg_rel = spec.get("config_rel") or (C.AGNOSTIC_CONFIG_REL if spec["arm"] == "agnostic" else C.D44_CONFIG_REL)
     cfg_abs = str(ENGINE / cfg_rel)
     sargs = build_server_args(spec, port or 0, cfg_abs if spec["arm"] in C.PDMUX_ARMS else None)
@@ -431,7 +431,8 @@ def run_boot(spec, dry=False):
                              if s["step"]["type"] == "cell" else {})} for s in steps_done]
         write_alive(boot_dir, spec["boot_id"], server, port, spec.get("steps", []), steps_done)      # F2: after the last step, before teardown
         kill_group(server)
-        sweep_sglang_children()
+        if not spec.get("concurrent_group"):          # the global `pkill ^sglang::` would kill the sibling servers of a concurrent group
+            sweep_sglang_children()
         t = time.time()
         post_ids_snapshot = None
         while time.time() - t < 180:             # O4: wait until the memory is back (recorded; the next boot's (가) is the gate)

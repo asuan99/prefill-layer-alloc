@@ -51,7 +51,10 @@ class TestRegisteredConstants(unittest.TestCase):
                          (1.5, 2.99, 600, 60.0))
         self.assertEqual(M2G.HEALTH_WAIT_S, 1800)
         self.assertEqual(M2G.NVML_EMPTY_GPU_MIB, 1024)
-        self.assertEqual(M2G.HARD_CAP_S, 8 * 3600)
+        self.assertEqual(M2G.HARD_CAP_S, 4 * 3600)               # rev8: M2g 4 h per Job
+        self.assertEqual(set(M2G.C.HARD_CAP_S["m2g"].values()), {4 * 3600})
+        self.assertEqual(M2G.C.HARD_CAP_S["m3"], {"J1": 10 * 3600, "J2": 14 * 3600, "J4": 14 * 3600, "J8": 14 * 3600})
+        self.assertEqual(M2G.C.PREREG_REV, 10)
 
     def test_stress_script_uses_the_same_registered_values(self):
         self.assertEqual(STRESS.G3_REPEATS, M2G.G3_REPEATS)
@@ -429,11 +432,18 @@ class TestG5cMemory(unittest.TestCase):
         # (ii) KV bound: TP2 cap 96 x 8256 = 792,576 (= B 396,288 x 2)
         self.assertEqual(M2G.score_g5c_memory({a: meta(max_total=[792576]) for a in M2G.ARMS})["verdict"], "PASS")
         self.assertEqual(M2G.score_g5c_memory({a: meta(max_total=[792575]) for a in M2G.ARMS})["verdict"], "FAIL")
-        # (iii) arm spread > 1 %
-        spread = dict(ok, agnostic=meta(max_total=[800000 * 0.985]))
-        self.assertEqual(M2G.score_g5c_memory(spread)["verdict"], "FAIL")
-        tight = dict(ok, agnostic=meta(max_total=[800000 * 0.995]))
-        self.assertEqual(M2G.score_g5c_memory(tight)["verdict"], "PASS")
+        # (iii) RETIRED (rev9 §16-2 item 1, post-hoc): an arm spread > 1 % is no longer a MEMORY_MISMATCH -- it is recorded under both
+        # denominators as MEMORY_RULE_III_COUNTERFACTUAL.  (Large totals so rule (ii) cannot fire.)
+        big = {a: meta(max_total=[900000]) for a in M2G.ARMS}
+        spread = dict(big, agnostic=meta(max_total=[900000 * 0.985]))
+        r = M2G.score_g5c_memory(spread)
+        self.assertEqual(r["verdict"], "PASS")
+        self.assertEqual(r["MEMORY_RULE_III_COUNTERFACTUAL"], {"denominator_fused_sym": True, "denominator_min_arm": True})
+        self.assertAlmostEqual(r["arm_rel_diff"]["fused_sym"], 0.015, places=6)
+        self.assertAlmostEqual(r["arm_rel_diff"]["min_arm"], 0.015 / 0.985, places=6)
+        tight = dict(big, agnostic=meta(max_total=[900000 * 0.995]))
+        r = M2G.score_g5c_memory(tight)
+        self.assertEqual((r["verdict"], r["rule_iii_would_have_flagged"]), ("PASS", False))
         # four arms required
         r = M2G.score_g5c_memory({a: meta() for a in M2G.ARMS[:3]})
         self.assertEqual((r["verdict"], r["memory_mismatch"]), ("NOT_TESTED", True))
@@ -528,6 +538,18 @@ class TestPassTable(unittest.TestCase):
         if mutate:
             mutate(res)
         return M2G.build_pass_table(json.loads(json.dumps(res)))  # JSON round trip, as on disk
+
+    def test_job_scoped_table_covers_only_its_configs_and_g0ii_is_j2s(self):
+        res = json.loads(json.dumps(all_pass_results()))
+        res["g0ii"], res["g0iii"] = {}, {}                              # J4 never ran the refusal boots
+        t = M2G.build_pass_table(res, cfg_list=("N1", "TP4", "DP4"), g0ii_in_job=False, job="J4")
+        self.assertEqual(sorted({k.split(":")[0] for k in t["cells"]}), ["DP4", "N1", "TP4"])
+        self.assertEqual(excluded(t), [])                               # no TP exclusion from a G0(ii) this Job did not run
+        self.assertEqual((t["job"], t["g0ii"], t["g0iii"]), ("J4", "NOT_RUN_IN_JOB", "NOT_RUN_IN_JOB"))
+        self.assertEqual(t["findings"], [])
+        res2 = json.loads(json.dumps(all_pass_results()))
+        res2["g0ii"] = {"verdict": "FAIL"}
+        self.assertEqual(excluded(M2G.build_pass_table(res2, cfg_list=("N1", "TP2", "DP2"), job="J2")), cells_of(["TP2"]))   # J2 judges it itself
 
     def test_control_all_included(self):
         t = self.table()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Label / estimand code of PREREG_MULTIGPU_2026-10-12.md (rev6) §4-3…§4-6.  CPU only, stdlib+numpy.
+"""Label / estimand code of PREREG_MULTIGPU_2026-10-12.md (rev10) §4-3…§4-6, §15-3, §16.  CPU only, stdlib+numpy.
 
   per cell   Q_c(t), g, CLIENT_ERROR, SATURATION_UNRESOLVED, send-lag p99, cgroup throttle ratio,
              HARNESS_LIMITED, FRONTEND_SATURATED (+ per-thread max, MGP-30), achieved throughput
@@ -8,8 +8,10 @@
   per config MEMORY_MISMATCH (G5(c)), GPU_CONTAMINATED, FRONTEND_SATURATED, M2g exclusions
   estimands  G_sym (primary) = lambda*_agnostic / lambda*_fused_sym ; G_def, G_d44,sym, S (auxiliary)
              seed-paired bootstrap CI (10000, seed 1), trend slope of log G on log2 N (seed index
-             resampled JOINTLY over all N and both arms), magnitude rule, ANCHOR_DRIFT,
-             GPU_HETEROGENEOUS, P-DP check, undefined-cell count + reasons beside every trend (MGP-34/25)
+             resampled JOINTLY over all N and both arms), magnitude rule, GPU_HETEROGENEOUS, P-DP check,
+             undefined-cell count + reasons beside every trend (MGP-34/25)
+  rev9       ONE Job = ONE N.  `aggregate` labels one Job's cells (keys, estimands, N=1 anchor summary); `aggregate_jobs`
+             joins the four Jobs: JOB_EFFECT check (anchor vs J1 boot1, §15-3), corrected trend, P9-a/b/c, P-DP.
 
 H9 CONVENTION (explicit; PREREG §4-3 says only "TTFT가 없는 오류 요청은 Q_c에서 뺀다"):
   * an ERROR REQUEST is a record with a non-empty `error`, OR `ttft_ms is None`.  All of them count
@@ -467,7 +469,10 @@ def load_cell(cell_dir):
 
 # =========================================================================== key-level labels
 def _key(m):
-    return (m["config"], m["arm"], m["shape"], int(m.get("round", 1)))
+    """(config, arm, shape, round).  A J_N N=1 anchor boot (block == "anchor") is config ANCHOR_CONFIG: it must never merge with, or
+    become, the N=1 point of a trend (the N=1 point is J1's)."""
+    cfg = C.ANCHOR_CONFIG if m.get("block", "main") == "anchor" else m["config"]
+    return (cfg, m["arm"], m["shape"], int(m.get("round", 1)))
 
 
 def _et(c):
@@ -523,6 +528,16 @@ def key_labels(cells, ext_fired=False):
     bad = [s for s, c in zip(C.HI_SEEDS, ok_hi) if c is None or c["status"] != "OK"]
     out["hi_bad_seeds"] = {int(s): (None if byseed.get(s) is None else byseed[s]["status"]) for s in bad}
     out["g_hi"] = {int(s): (byseed[s]["g"] if s in byseed else None) for s in C.HI_SEEDS}
+    # rev9 §15-3 / §16-1: the Job-effect REFERENCE is the J1 boot1 value at the 1.6x rung (ext == 0), never the extension rung.
+    by0 = {int(c["meta"]["seed"]): c for c in hi_all if int(c["meta"].get("ext", 0)) == 0}
+    ach0 = [by0[s]["achieved"] if (s in by0 and by0[s]["status"] == "OK") else None for s in C.HI_SEEDS]
+    out["boot1_achieved_by_seed"] = ach0
+    out["boot1_lambda_star"] = statistics.median(ach0) if all(a is not None for a in ach0) else None
+    if any(a is None for a in ach0):
+        out["boot1_hi_label"] = "HI_NOT_JUDGED"
+    else:
+        out["boot1_hi_label"] = "HI_SATURATED" if all(by0[s]["g"] is not None and by0[s]["g"] >= C.G_HI for s in C.HI_SEEDS) else "HI_NOT_SATURATED"
+    out["client_error_hi"] = any(c["status"] == "CLIENT_ERROR" for c in hi)
     if ext_missing:
         out["hi_label"] = "HI_NOT_JUDGED"
         out["reasons"].append("HI_NOT_JUDGED(EXT_NOT_RUN)")
@@ -562,6 +577,11 @@ def key_labels(cells, ext_fired=False):
     out["harness_limited"] = any(c.get("harness_limited") for c in allc)
     out["truncated"] = any(c.get("truncated") for c in allc)
     out["throttle_unmeasured_cells"] = sum(1 for c in allc if c.get("throttle_unmeasured"))
+    # §16-3 covariate: the per-cell cgroup throttle ratio (dnr_throttled / dnr_periods) is printed beside every key
+    thr = {c["cell_id"]: c.get("throttle_ratio") for c in allc if c.get("throttle_ratio") is not None}
+    out["throttle_ratio_cells"] = thr
+    out["throttle_ratio_max"] = max(thr.values()) if thr else None
+    out["throttle_ratio_median"] = statistics.median(thr.values()) if thr else None
     out["frontend_saturated_hi_cells"] = [c["cell_id"] for c in hi if c.get("frontend_saturated")]
     out["measurement_gaps"] = _gaps_of(hi, lo)                                       # F13
     # ---- E-time / partition (F12).  Only PD-mux arms have an E-time; MIX_FAILED / missing E-time = E_TIME_UNDEFINED (MGH-12:
@@ -585,23 +605,35 @@ def key_labels(cells, ext_fired=False):
 
 
 # =========================================================================== G5(c) memory + contamination (config level)
-def memory_check(arm_facts, shapes=("A", "B")):
-    """arm_facts: arm -> dict(mamba=[...], max_total=[...], eff_cap=int, mode, N).  PREREG §3 G5(c) (i)-(iii)."""
+def memory_check(arm_facts, shapes=("A", "B"), _mut=None):
+    """arm_facts: arm -> dict(mamba=[...], max_total=[...], eff_cap=int, mode, N).  PREREG §3 G5(c) (i)-(ii) (rev9 §16-2 item 1, rev10 H-5).
+    Rule (iii) (arm-to-arm max_total_num_tokens relative difference > 1 %) was RETIRED by user decision 2026-10-13 -- a POST-HOC change made
+    after the M2g round-2 values were seen.  It is no longer a MEMORY_MISMATCH reason.  The arm-to-arm relative difference is still recorded
+    under BOTH denominators (fused_sym; the minimum arm) and `MEMORY_RULE_III_COUNTERFACTUAL` says, per denominator, whether rule (iii) would
+    have flagged the config, so the result document can disclose the cells it would have made undefined.
+    `_mut` (tests only): 'iii' = rule (iii) still present; 'ii' = rule (ii) removed."""
     reasons = []
     mt_min = {}
     for arm, f in arm_facts.items():
         if any(x != f["eff_cap"] for x in f.get("mamba", [])) or not f.get("mamba"):
             reasons.append(f"{arm}: mamba cache slots {f.get('mamba')} != effective cap {f['eff_cap']}")
         need = max(f["eff_cap"] * sum(C.SHAPE_IO[s]) for s in shapes)
-        if not f.get("max_total") or min(f["max_total"]) < need:
+        if _mut != "ii" and (not f.get("max_total") or min(f["max_total"]) < need):
             reasons.append(f"{arm}: max_total_num_tokens {f.get('max_total')} < cap*(ISL+OSL)={need}")
         if f.get("max_total"):
             mt_min[arm] = min(f["max_total"])
+    diff = {}
     if len(mt_min) >= 2:
-        hi, lo = max(mt_min.values()), min(mt_min.values())
-        if (hi - lo) / hi > C.MEMORY_REL_TOL:
-            reasons.append(f"arm max_total_num_tokens relative spread {(hi - lo) / hi:.4f} > {C.MEMORY_REL_TOL}")
-    return {"memory_mismatch": bool(reasons), "reasons": reasons}
+        if "fused_sym" in mt_min:
+            ref = mt_min["fused_sym"]
+            diff["fused_sym"] = max(abs(v - ref) for v in mt_min.values()) / ref
+        lo = min(mt_min.values())
+        diff["min_arm"] = (max(mt_min.values()) - lo) / lo
+    cf = {f"denominator_{k}": v > C.MEMORY_REL_DESCRIPTIVE for k, v in diff.items()}
+    if _mut == "iii" and any(cf.values()):
+        reasons.append(f"arm max_total_num_tokens relative difference {diff} > {C.MEMORY_REL_DESCRIPTIVE}")
+    return {"memory_mismatch": bool(reasons), "reasons": reasons, "arm_rel_diff": diff,
+            "MEMORY_RULE_III_COUNTERFACTUAL": cf, "rule_iii_would_have_flagged": any(cf.values())}
 
 
 # =========================================================================== estimands
@@ -626,36 +658,27 @@ def paired_ratio_ci(num, den, reps=None, seed=None):
     return float(np.median(num) / np.median(den)), float(lo), float(hi)
 
 
-def trend(points, reps=None):
-    """points: list of (N, num[4], den[4]).  slope of log G on log2 N, SEED INDEX resampled jointly over all N
-    and both arms (MGP-10).  Returns dict."""
-    reps = reps or C.BOOTSTRAP_REPS
-    pts = sorted(points, key=lambda p: p[0])
-    if len(pts) < C.TREND_MIN_POINTS:
-        return {"label": "TREND_UNDEFINED", "n_points": len(pts), "Ns": [p[0] for p in pts]}
-    x = np.log2([p[0] for p in pts])
+G1_UNDEFINED = "G1_UNDEFINED_NO_JOB_CHECK"       # P9-a
+TREND_JOB_SENSITIVE = "TREND_JOB_SENSITIVE"       # P9-b
+DIRECTIONAL = ("G_INCREASES_WITH_N", "G_DECREASES_WITH_N")
+
+
+def _slope_stats(Ns, logg, point_logg):
+    """slope of log G on log2 N + percentile CI over the joint seed-index bootstrap (logg: reps x nN) + the magnitude rule
+    G(N_max)/G(1) (needs N=1: the caller guarantees it, P9-a)."""
+    x = np.log2(Ns)
     xc = x - x.mean()
     denom = float((xc ** 2).sum())
-    nums = np.array([p[1] for p in pts], float)     # (nN, 4)
-    dens = np.array([p[2] for p in pts], float)
-    k = nums.shape[1]
-    rng = np.random.default_rng(C.BOOTSTRAP_SEED)
-    idx = rng.integers(0, k, size=(reps, k))
-    logg = np.stack([np.log(np.median(nums[i][idx], axis=1) / np.median(dens[i][idx], axis=1))
-                     for i in range(len(pts))], axis=1)           # (reps, nN)
     slopes = (logg * xc).sum(axis=1) / denom
-    point_logg = np.log(np.median(nums, axis=1) / np.median(dens, axis=1))
     s = float((point_logg * xc).sum() / denom)
     lo, hi = (float(v) for v in np.percentile(slopes, C.CI_PCT))
     label = "NO_TREND_DETECTED" if lo <= 0.0 <= hi else ("G_INCREASES_WITH_N" if lo > 0 else "G_DECREASES_WITH_N")
-    # magnitude rule (§4-4): G(N_max)/G(1); needs N=1
-    out = {"label": label, "slope": s, "ci": [lo, hi], "n_points": len(pts), "Ns": [p[0] for p in pts],
-           "G_by_N": {int(p[0]): float(np.exp(v)) for p, v in zip(pts, point_logg)}}
-    if pts[0][0] == 1:
+    out = {"label": label, "slope": s, "ci": [lo, hi], "n_points": len(Ns), "Ns": [int(n) for n in Ns],
+           "G_by_N": {int(n): float(np.exp(v)) for n, v in zip(Ns, point_logg)}}
+    if int(Ns[0]) == 1:
         ratio = float(np.exp(point_logg[-1] - point_logg[0]))
         rb = np.exp(logg[:, -1] - logg[:, 0])
-        out.update(N_max=int(pts[-1][0]), magnitude_ratio=ratio,
-                   magnitude_ci=[float(v) for v in np.percentile(rb, C.CI_PCT)],
+        out.update(N_max=int(Ns[-1]), magnitude_ratio=ratio, magnitude_ci=[float(v) for v in np.percentile(rb, C.CI_PCT)],
                    direction_citable=abs(ratio - 1.0) >= C.MAGNITUDE_BAND)
         out["magnitude"] = "OK" if out["direction_citable"] else "DIRECTION_NOT_CITABLE_UNDER_3PCT"
     else:
@@ -663,25 +686,116 @@ def trend(points, reps=None):
     return out
 
 
-def p_dp_status(trends):
-    """F9 / MGH-8: P-DP is a THREE-valued fact.  BROKEN = a G_sym DP trend label is directional; HELD = every G_sym DP trend
-    (shapes A and B) is NO_TREND_DETECTED; UNTESTED = otherwise (TREND_UNDEFINED or no DP axis).  UNTESTED is not 'not broken'."""
-    dp = {k: t for k, t in trends.items() if k.startswith("G_sym|DP|")}
-    labels = {k: t["label"] for k, t in dp.items()}
-    broken = [k for k, lab in labels.items() if lab in ("G_INCREASES_WITH_N", "G_DECREASES_WITH_N")]
-    if broken:
-        status = "BROKEN"
-    elif dp and all(lab == "NO_TREND_DETECTED" for lab in labels.values()):
-        status = "HELD"
+def trend(points, reps=None, anchors=None, job_flags=None, ref_g1=None, _mut=None):
+    """points: list of (N, num[4], den[4]).  slope of log G on log2 N, SEED INDEX resampled jointly over all N and both arms (MGP-10).
+
+    rev9/rev10:
+      P9-a  no N=1 point (G(1) undefined) -> label G1_UNDEFINED_NO_JOB_CHECK, direction never citable (the rev8 'MAGNITUDE_UNDEFINED, direction
+            label only' sentence is retired).
+      P9-b  `job_flags` {N: FIRED|CLEAR|UNTESTED...} (JOB_EFFECT of the Job that measured N), `anchors` {N: (anchor_num[4], anchor_den[4])}
+            (that SAME Job's own N=1 anchor, shape A; only Jobs whose anchor is usable are present) and `ref_g1` (J1 boot1 agnostic / fused_sym
+            achieved arrays, the SAME 1.6x rung as the anchors).  If any JOB_EFFECT FIRED the corrected trend is computed with the factor
+            G_ref(boot1) / G_anchor(J_N), the seed index resampled JOINTLY over trend points, reference and anchor arrays.  The direction is
+            citable only if the RAW and the CORRECTED trend both pass the 3 % magnitude rule AND carry the same label, else TREND_JOB_SENSITIVE.
+      H-4   points of a J_N whose anchor is UNTESTED are EXCLUDED from the corrected trend; with fewer than 3 corrected points it is
+            TREND_UNDEFINED and P9-b fails (TREND_JOB_SENSITIVE).
+    `_mut` (tests only): 'i' = keep the retired G(1)-undefined path; 'iv' = drop the magnitude rule from the corrected trend;
+    'h3' = correction ratio from the extension-rung G(1) instead of the boot1 reference; 'h4' = raw value substituted for excluded points."""
+    reps = reps or C.BOOTSTRAP_REPS
+    pts = sorted(points, key=lambda p: p[0])
+    if len(pts) < C.TREND_MIN_POINTS:
+        return {"label": "TREND_UNDEFINED", "n_points": len(pts), "Ns": [p[0] for p in pts], "direction_citable": False}
+    Ns = [p[0] for p in pts]
+    nums = np.array([p[1] for p in pts], float)     # (nN, 4)
+    dens = np.array([p[2] for p in pts], float)
+    k = nums.shape[1]
+    rng = np.random.default_rng(C.BOOTSTRAP_SEED)
+    idx = rng.integers(0, k, size=(reps, k))
+    logg = np.stack([np.log(np.median(nums[i][idx], axis=1) / np.median(dens[i][idx], axis=1)) for i in range(len(pts))], axis=1)
+    point_logg = np.log(np.median(nums, axis=1) / np.median(dens, axis=1))
+    raw = _slope_stats(Ns, logg, point_logg)
+    if Ns[0] != 1:
+        if _mut == "i":                                              # the retired rev8 rule: direction label only
+            return dict(raw, direction_citable=None, magnitude="MAGNITUDE_UNDEFINED")
+        return dict(raw, label=G1_UNDEFINED, raw_label=raw["label"], direction_citable=False, magnitude=G1_UNDEFINED)
+    flags = job_flags or {}
+    anchors = anchors or {}
+    fired = sorted(n for n in Ns if n >= 2 and flags.get(n) == "FIRED")
+    out = dict(raw, raw_label=raw["label"], job_effect_fired_N=fired, corrected=None)
+    if not fired:
+        return out
+    if ref_g1 is None and _mut != "h3":
+        return dict(out, label=TREND_JOB_SENSITIVE, direction_citable=False,
+                    job_sensitive_reason="CORRECTION_UNDEFINED(J1 boot1 reference arrays absent)")
+    if _mut == "h3" or ref_g1 is None:
+        log_ref, point_ref = logg[:, 0], point_logg[0]            # mutant: the extension-rung G(1) (what the trend uses for N=1)
     else:
+        rn, rd = (np.asarray(v, float) for v in ref_g1)
+        log_ref, point_ref = np.log(np.median(rn[idx], axis=1) / np.median(rd[idx], axis=1)), float(np.log(np.median(rn) / np.median(rd)))
+    keep = [i for i, n in enumerate(Ns) if n == 1 or n in anchors] if _mut != "h4" else list(range(len(Ns)))
+    cl, cpl = logg.copy(), point_logg.copy()
+    for i, n in enumerate(Ns):
+        if n >= 2 and n in anchors:
+            an, ad = (np.asarray(v, float) for v in anchors[n])
+            cl[:, i] = logg[:, i] + log_ref - np.log(np.median(an[idx], axis=1) / np.median(ad[idx], axis=1))
+            cpl[i] = point_logg[i] + point_ref - np.log(np.median(an) / np.median(ad))
+    excluded = [n for i, n in enumerate(Ns) if i not in keep]
+    if len(keep) < C.TREND_MIN_POINTS:
+        corr = {"label": "TREND_UNDEFINED", "n_points": len(keep), "Ns": [Ns[i] for i in keep], "direction_citable": False}
+        return dict(out, corrected=corr, label=TREND_JOB_SENSITIVE, direction_citable=False,
+                    job_sensitive_reason=f"CORRECTED_TREND_UNDEFINED(<{C.TREND_MIN_POINTS} points; excluded anchor-UNTESTED N={excluded})")
+    corr = _slope_stats([Ns[i] for i in keep], cl[:, keep], cpl[keep])
+    corr["excluded_N"] = excluded
+    out["corrected"] = corr
+    if _mut == "iv":                                                 # mutant: corrected trend not held to the magnitude rule
+        ok = bool(raw["direction_citable"]) and raw["label"] == corr["label"]
+    else:
+        ok = bool(raw["direction_citable"]) and bool(corr["direction_citable"]) and raw["label"] == corr["label"]
+    if ok:
+        return dict(out, direction_citable=True)
+    why = ("RAW_AND_CORRECTED_LABELS_DIFFER" if raw["label"] != corr["label"] else "MAGNITUDE_RULE_FAILED(" +
+           ",".join(n for n, d in (("raw", raw), ("corrected", corr)) if not d["direction_citable"]) + ")")
+    return dict(out, label=TREND_JOB_SENSITIVE, direction_citable=False, job_sensitive_reason=why)
+
+
+def p_dp_status(trends, _mut=None):
+    """rev10 P10 / H-1: P-DP is evaluated PER SHAPE and combined BROKEN > UNTESTED > HELD (any BROKEN fires MGP-13; another shape's UNTESTED
+    cannot suppress it).  Shape s is BROKEN iff its G_sym DP trend is defined, G_sym(1, s) is defined and the label is directional
+    (G_INCREASES/G_DECREASES -- a TREND_JOB_SENSITIVE label is not).  UNTESTED (P9-c) = TREND_JOB_SENSITIVE / TREND_UNDEFINED /
+    G1_UNDEFINED_NO_JOB_CHECK / G(1) undefined / no DP trend.  HELD = NO_TREND_DETECTED.  UNTESTED is not 'not broken'; it does NOT fire MGP-13
+    and obliges the 'P-DP 미검정' disclosure on every TP label.   `_mut` 'untested_first' (tests only): UNTESTED outranks BROKEN."""
+    dp = {k: t for k, t in trends.items() if k.startswith("G_sym|DP|")}
+    per = {}
+    for k, t in dp.items():
+        lab = t["label"]
+        g1 = t.get("g1_defined", True)
+        if lab in DIRECTIONAL and g1:
+            per[k] = "BROKEN"
+        elif lab == "NO_TREND_DETECTED" and g1:
+            per[k] = "HELD"
+        else:
+            per[k] = "UNTESTED"
+    vals = set(per.values())
+    if not per:
         status = "UNTESTED"
-    return {"status": status, "broken": status == "BROKEN", "shapes": broken, "labels": labels,
+    elif _mut == "untested_first":
+        status = "UNTESTED" if "UNTESTED" in vals else ("BROKEN" if "BROKEN" in vals else "HELD")
+    elif "BROKEN" in vals:
+        status = "BROKEN"
+    elif "UNTESTED" in vals:
+        status = "UNTESTED"
+    else:
+        status = "HELD"
+    labels = {k: t["label"] for k, t in dp.items()}
+    why = sorted(k for k, v in per.items() if v == "UNTESTED")
+    return {"status": status, "broken": status == "BROKEN", "per_shape": per, "shapes": sorted(k for k, v in per.items() if v == "BROKEN"),
+            "labels": labels, "untested_because": why, "MGP13_fired": status == "BROKEN",
             "MGP13_TP_labels_not_citable": status == "BROKEN",
             "TP_labels_need_P_DP_UNTESTED_disclosure": status == "UNTESTED"}
 
 
-def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None):
-    """cells: analyzed-cell records (load_cell).  pass_table: M2G table `cells` dict.  config_flags: build_config_flags output.
+def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=None):
+    """ONE Job's labels (rev9: one Job = one N).  cells: analyzed-cell records (load_cell).  pass_table: M2G table `cells` dict.  config_flags: build_config_flags output.
     m2g_configs: M2G table `configs` dict (F14: TP_NUMERIC_DIVERGENT, G2_NOT_TESTED, <arm>:G1_UNINFORMATIVE, MEMORY_MISMATCH)."""
     pass_table = pass_table or {}
     config_flags = config_flags or {}
@@ -694,16 +808,16 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None):
     first = {k: key_labels(cs) for k, cs in groups.items()}
     # F10: the extension is JOINT over the four arms of a (config, shape, round); one arm triggering (or running) it makes
     # every arm of that group without extension cells HI_NOT_JUDGED(EXT_NOT_RUN).
-    fired = {(k[0], k[2], k[3]) for k, lab in first.items() if lab["ext0_trigger"] or lab["max_ext"] >= 1}
+    fired = {(k[0], k[2], k[3]) for k, lab in first.items() if k[0] != C.ANCHOR_CONFIG and (lab["ext0_trigger"] or lab["max_ext"] >= 1)}   # an anchor never extends
     keys = {k: key_labels(cs, ext_fired=((k[0], k[2], k[3]) in fired)) for k, cs in groups.items()}
-    doc = {"prereg": f"{C.PREREG} rev{C.PREREG_REV}", "keys": {}, "configs": {}, "estimands": {}, "trends": {},
-           "anchor": {}, "blocks": {}}
+    doc = {"prereg": f"{C.PREREG} rev{C.PREREG_REV}", "job": job, "keys": {}, "configs": {}, "estimands": {}, "anchor": {}, "ref": {},
+           "blocks": {}}
     for (cfg, arm, shape, rnd), lab in sorted(keys.items()):
-        excl = pass_table.get(f"{cfg}:{arm}")
+        excl = pass_table.get(f"{'N1' if cfg == C.ANCHOR_CONFIG else cfg}:{arm}")
         if excl is not None and not excl.get("included", True):
             lab["m2g_excluded"] = excl.get("reason", "excluded")
         doc["keys"][f"{cfg}|{arm}|{shape}|r{rnd}"] = lab
-    cfgs = sorted({k[0] for k in keys})
+    cfgs = sorted({k[0] for k in keys if k[0] != C.ANCHOR_CONFIG})
     for cfg in cfgs:
         fl = dict(config_flags.get(cfg, {}))
         fl["frontend_saturated"] = any(lab["frontend_saturated_hi_cells"]
@@ -717,7 +831,16 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None):
         fl["m2g_memory_mismatch"] = bool(mc.get("memory_mismatch")) or any(f.startswith("MEMORY_MISMATCH") for f in mflags)
         if fl["m2g_memory_mismatch"]:
             fl["memory_mismatch"] = True                    # M2g G5(c) FAIL / NOT_TESTED carries into M3 (OR, never overwritten)
+        mc_iii = bool(mc.get("rule_iii_would_have_flagged"))
+        fl["rule_iii_would_have_flagged"] = bool(fl.get("rule_iii_would_have_flagged")) or mc_iii       # rule (iii) retired, disclosed
+        if mc.get("MEMORY_RULE_III_COUNTERFACTUAL") and not fl.get("MEMORY_RULE_III_COUNTERFACTUAL"):
+            fl["MEMORY_RULE_III_COUNTERFACTUAL"], fl["arm_rel_diff"] = mc["MEMORY_RULE_III_COUNTERFACTUAL"], mc.get("arm_rel_diff")
         doc["configs"][cfg] = fl
+    doc["memory_rule_iii"] = {
+        "status": "RETIRED_POST_HOC (user decision 2026-10-13, after the M2g round-2 max_total_num_tokens values were seen)",
+        "configs_iii_would_have_made_undefined": sorted(c for c, f in doc["configs"].items() if f.get("rule_iii_would_have_flagged")),
+        "MEMORY_RULE_III_COUNTERFACTUAL_by_config": {c: {"flags": f.get("MEMORY_RULE_III_COUNTERFACTUAL"), "arm_rel_diff": f.get("arm_rel_diff")}
+                                                     for c, f in doc["configs"].items() if f.get("MEMORY_RULE_III_COUNTERFACTUAL")}}
 
     def disclosures(cfg, arms):
         fl = doc["configs"].get(cfg, {})
@@ -790,76 +913,234 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None):
                                                if keys[(cfg, a, shape, 1)]["measurement_gaps"]}
                     ent["disclosures"] = disclosures(cfg, (na, da))                       # F14
                 doc["estimands"].setdefault(name, {}).setdefault(cfg, {})[shape] = ent
-    # trends: per quantity, mode, shape.  N=1 config is shared by TP and DP modes.
-    for name in PAIRS:
-        if name == "S":
-            continue
-        for mode in ("TP", "DP"):
-            for shape in ("A", "B"):
-                pts, undefined, disc, pnotes, gaps = [], [], set(), [], {}
-                for cfg in ["N1"] + [f"{mode}{n}" for n in (2, 4, 8)]:
-                    ent = doc["estimands"].get(name, {}).get(cfg, {}).get(shape)
-                    n_gpus = 1 if cfg == "N1" else int(cfg[2:])
-                    if ent and ent["defined"]:
-                        pts.append((n_gpus, ent["num"], ent["den"]))
-                        disc |= set(ent.get("disclosures", []))
-                        pnotes += [f"{cfg}:{a}:{v}" for a, v in ent.get("partition", {}).items() if v != "PARTITION_EXERCISED"]
-                        if ent.get("measurement_gaps"):
-                            gaps[cfg] = ent["measurement_gaps"]
-                    else:
-                        undefined.append({"config": cfg, "reasons": (ent or {"undefined_reasons": ["NOT_RUN"]})["undefined_reasons"]})
-                t = trend(pts)
-                t["undefined_count"] = len(undefined)
-                t["undefined"] = undefined          # MGP-34 / MGP-25: always printed beside the label
-                t["primary"] = (name == PRIMARY)
-                t["disclosures"] = sorted(disc)                                       # F14 (TP_NUMERIC_DIVERGENT ... beside TP results)
-                t["partition_notes"] = pnotes                                         # F12
-                t["partition_exercised_unknown"] = any(n.endswith(":E_TIME_UNDEFINED") for n in pnotes)
-                t["measurement_gaps"] = gaps                                          # F13
-                doc["trends"][f"{name}|{mode}|{shape}"] = t
-    # P-DP (§4-4) and MGP-13 -- F9: three values; UNTESTED forces a disclosure on every TP label
-    doc["P_DP"] = p_dp_status(doc["trends"])
-    for k, t in doc["trends"].items():
-        if "|TP|" in k:
-            t["P_DP"] = doc["P_DP"]["status"]
-            if doc["P_DP"]["status"] == "UNTESTED":
-                t["disclosures"] = sorted(set(t["disclosures"]) | {"P-DP 미검정"})        # MGH-8: no TP citation without it
-            elif doc["P_DP"]["status"] == "BROKEN":
-                t["disclosures"] = sorted(set(t["disclosures"]) | {"P-DP BROKEN: MGP-13 TP labels not citable"})
-    # ANCHOR_DRIFT (§4-5): round 2 of N1 vs round 1
-    a = {}
-    for arm in ("fused", "fused_sym"):
-        k1, k2 = ("N1", arm, "A", 1), ("N1", arm, "A", 2)
-        if k1 in keys and k2 in keys and keys[k1]["lambda_star"] and keys[k2]["lambda_star"]:
-            a[f"lambda_star_{arm}_A"] = {"r1": keys[k1]["lambda_star"], "r2": keys[k2]["lambda_star"],
-                                         "rel": keys[k2]["lambda_star"] / keys[k1]["lambda_star"] - 1.0}
-    g1 = _g_sym_round("N1", keys, 1)
-    g2 = _g_sym_round("N1", keys, 2)
-    if g1 and g2:
-        a["G_sym_1_A"] = {"r1": g1, "r2": g2, "rel": g2 / g1 - 1.0}
-    doc["anchor"] = {"anchor_flags": (config_flags.get("N1") or {}).get("by_group", {}).get("r2/anchor"),
-                     "checked": a, "ANCHOR_DRIFT": any(abs(v["rel"]) > C.ANCHOR_DRIFT_TOL for v in a.values()),
-                     "G_sym_drift_checked": "G_sym_1_A" in a,
-                     "note": ("G_sym(1) drift NOT checked (fused_sym/agnostic anchor missing) -- "
-                              "'no ANCHOR_DRIFT' must not be read as 'no G_sym drift' (MGP-38)") if "G_sym_1_A" not in a else ""}
-    # GPU heterogeneity (§4-6) and NUMA (descriptive)
+    # ---- rev9: the Job-effect reference (J1 boot1, ext 0) and the N=1 anchor (J2/J4/J8) as plain facts of THIS Job; aggregate_jobs joins them.
+    doc["ref"] = {arm: ref_entry(keys.get(("N1", arm, C.ANCHOR_SHAPE, 1))) for arm in C.ANCHOR_ARMS} if any(k[0] == "N1" for k in keys) else {}
+    afl = ((config_flags.get("N1") or {}).get("by_group") or {}).get("r1/anchor") or {}
+    doc["anchor"] = {"arms": {arm: anchor_entry(keys.get((C.ANCHOR_CONFIG, arm, C.ANCHOR_SHAPE, 1))) for arm in C.ANCHOR_ARMS},
+                     "gpu_contaminated_arms": afl.get("contam_arms", []), "contam_unverified": bool(afl.get("contam_unverified"))} \
+        if any(k[0] == C.ANCHOR_CONFIG for k in keys) else {}
+    # GPU heterogeneity (§4-6, J8 only; descriptive under 8 concurrent servers, no outcome branch -- MGP-47)
     gd = [c for c in cells if c["meta"].get("block") == "gpu_dev" and c["status"] == "OK" and c.get("achieved")]
     if gd:
         v = [c["achieved"] for c in gd]
         spread = (max(v) - min(v)) / min(v)
         doc["blocks"]["gpu_dev"] = {"n_gpus": len(v), "spread": spread,
                                     "GPU_HETEROGENEOUS": spread > C.GPU_DEV_TOL,
-                                    "by_gpu": {str(c["meta"].get("gpu")): c["achieved"] for c in gd}}
-    nu = [c for c in cells if c["meta"].get("block") == "numa" and c["status"] == "OK" and c.get("achieved")]
-    if nu:
-        by = {}
-        for c in nu:
-            by.setdefault(c["meta"]["arm"], []).append(c["achieved"])
-        if "fused" in by and "agnostic" in by:
-            doc["blocks"]["numa"] = {"G_def_cross_numa_median": statistics.median(by["agnostic"]) / statistics.median(by["fused"]),
-                                     "n_per_arm": {a: len(x) for a, x in by.items()},
-                                     "note": "descriptive; compare with the main TP4 G_def (no judgement)"}
+                                    "by_gpu": {str(c["meta"].get("gpu")): c["achieved"] for c in gd},
+                                    "note": "descriptive, measured with 8 servers running concurrently; no result branch in rev9 (MGP-47); "
+                                            "the GPU 0 anchor is NOT this node's N=1 representative"}
     return doc
+
+
+def ref_entry(lab):
+    """What the Job-effect check reads from a J1 key: the boot1 (ext 0, 1.6x rung) value.  `final_*` is the extension-rung value that the
+    trend uses -- it is carried only so that a test can show the check never reads it (mutant ii)."""
+    if lab is None:
+        return {"present": False}
+    return {"present": True, "boot1_lambda_star": lab.get("boot1_lambda_star"), "boot1_hi_label": lab.get("boot1_hi_label"),
+            "harness_limited": bool(lab.get("harness_limited")), "client_error": bool(lab.get("client_error_hi")),
+            "final_lambda_star": lab.get("lambda_star"), "final_ext": lab.get("ext"),
+            "boot1_achieved_by_seed": lab.get("boot1_achieved_by_seed")}
+
+
+def anchor_entry(lab):
+    """What the Job-effect check reads from a J_N anchor key (shape A, HI, 4 seeds, ext 0)."""
+    if lab is None:
+        return {"present": False}
+    return {"present": True, "lambda_star": lab.get("lambda_star"), "hi_label": lab.get("hi_label"),
+            "achieved_by_seed": lab.get("achieved_by_seed"), "harness_limited": bool(lab.get("harness_limited")),
+            "client_error": bool(lab.get("client_error_hi")), "truncated": bool(lab.get("truncated")),
+            "throttle_ratio_max": lab.get("throttle_ratio_max"), "ext": lab.get("ext")}
+
+
+# =========================================================================== rev9: Job effect (§15-3, §16-1) and the cross-Job join
+def job_effect(ref, anc, tol=None, _mut=None):
+    """JOB_EFFECT(J_N) status from J1's boot1 reference `ref` (doc["ref"] of J1) and J_N's anchor `anc` (doc["anchor"] of J_N).
+    CLEAR / FIRED / UNTESTED.  UNTESTED when the anchor cell is not HI_SATURATED, is HARNESS_LIMITED / CLIENT_ERROR / TRUNCATED /
+    contaminated, lacks an arm or a lambda*, or when the reference lacks one.  FIRED iff |G_anchor/G_ref - 1| > 3 % or
+    |lambda*_anchor(fused_sym)/lambda*_ref(fused_sym) - 1| > 3 %.
+    `_mut` 'ii' (tests only) = compare against J1's FINAL (extension-rung) value instead of boot1."""
+    tol = C.JOB_EFFECT_TOL if tol is None else tol
+    why = []
+    arms = (anc or {}).get("arms") or {}
+    for a in C.ANCHOR_ARMS:
+        e = arms.get(a) or {"present": False}
+        if not e.get("present"):
+            why.append(f"{a}:ANCHOR_ABSENT")
+            continue
+        if e.get("hi_label") != "HI_SATURATED":
+            why.append(f"{a}:ANCHOR_{e.get('hi_label')}")
+        if e.get("harness_limited"):
+            why.append(f"{a}:ANCHOR_HARNESS_LIMITED")
+        if e.get("client_error"):
+            why.append(f"{a}:ANCHOR_CLIENT_ERROR")
+        if e.get("truncated"):
+            why.append(f"{a}:ANCHOR_TRUNCATED")
+        if e.get("lambda_star") is None:
+            why.append(f"{a}:ANCHOR_LAMBDA_STAR_UNRESOLVED")
+        if a in ((anc or {}).get("gpu_contaminated_arms") or []):
+            why.append(f"{a}:ANCHOR_GPU_CONTAMINATED")
+    refkey = "final_lambda_star" if _mut == "ii" else "boot1_lambda_star"
+    for a in C.ANCHOR_ARMS:                                      # H-3: the J1 boot1 reference cell must itself be a clean saturated cell
+        e = (ref or {}).get(a) or {"present": False}
+        if not e.get("present") or e.get(refkey) is None:
+            why.append(f"{a}:J1_REFERENCE_UNDEFINED")
+            continue
+        if e.get("boot1_hi_label") != "HI_SATURATED":
+            why.append(f"{a}:J1_REFERENCE_{e.get('boot1_hi_label')}")
+        if e.get("harness_limited"):
+            why.append(f"{a}:J1_REFERENCE_HARNESS_LIMITED")
+        if e.get("client_error"):
+            why.append(f"{a}:J1_REFERENCE_CLIENT_ERROR")
+    if why:
+        return {"status": "UNTESTED", "reasons": why}
+    lam = lambda d, a, k: d[a][k]
+    g_ref = ref["agnostic"][refkey] / ref["fused_sym"][refkey]
+    g_anc = arms["agnostic"]["lambda_star"] / arms["fused_sym"]["lambda_star"]
+    g_rel = g_anc / g_ref - 1.0
+    l_rel = arms["fused_sym"]["lambda_star"] / ref["fused_sym"][refkey] - 1.0
+    fired = abs(g_rel) > tol or abs(l_rel) > tol
+    return {"status": "FIRED" if fired else "CLEAR", "reasons": [], "G_anchor": g_anc, "G_ref": g_ref, "G_rel": g_rel,
+            "lambda_fused_sym_rel": l_rel, "tolerance": tol}
+
+
+def _g_of_arrays(anc_arms):
+    return anc_arms["agnostic"]["achieved_by_seed"], anc_arms["fused_sym"]["achieved_by_seed"]
+
+
+def aggregate_jobs(docs, job_meta=None, _mut=None):
+    """Join the per-Job documents {J1: doc, J2: doc, ...} into trends.  N=1 points come from J1 ONLY; N=2/4/8 from the Job of that size.
+    P9-a  G_sym(1, shape) undefined -> that shape's every trend is G1_UNDEFINED_NO_JOB_CHECK, every J_N JOB_EFFECT_UNTESTED, P-DP UNTESTED.
+    P9-b / P9-c: see trend() and p_dp_status().
+    The anchor of J_N is used ONLY for J_N's own point (mutant iii borrows another Job's anchor)."""
+    job_meta = job_meta or {}
+    out = {"prereg": f"{C.PREREG} rev{C.PREREG_REV}", "jobs": {}, "trends": {}, "job_effect": {}, "P_DP": None}
+    j1 = docs.get("J1")
+    ref = (j1 or {}).get("ref") or {}
+    g1_def = lambda name, shape: bool(j1 and ((((j1.get("estimands") or {}).get(name) or {}).get("N1") or {}).get(shape) or {}).get("defined"))
+    for J in C.JOBS:
+        d = docs.get(J)
+        out["jobs"][J] = {"present": d is not None, "n_cells": (d or {}).get("n_cells"), **(job_meta.get(J) or {})}
+    # ---- Job effect per Job (shape A anchor).  P9-a: G_sym(1, A) undefined -> every Job UNTESTED.
+    status = {}
+    for J in C.JOBS[1:]:
+        d = docs.get(J)
+        if not g1_def("G_sym", C.ANCHOR_SHAPE):
+            status[J] = {"status": "UNTESTED", "reasons": [G1_UNDEFINED + " (P9-a: G_sym(1, A) undefined)"]}
+        elif d is None:
+            status[J] = {"status": "UNTESTED", "reasons": ["JOB_NOT_RUN"]}
+        else:
+            status[J] = job_effect(ref, d.get("anchor"), _mut=_mut)
+    out["job_effect"] = status
+    ra, rf = (ref.get("agnostic") or {}).get("boot1_achieved_by_seed"), (ref.get("fused_sym") or {}).get("boot1_achieved_by_seed")
+    ref_g1 = (ra, rf) if (ra and rf and all(v is not None for v in list(ra) + list(rf))) else None      # J1 boot1 arrays (H-3)
+    anchors = {}
+    for J in C.JOBS[1:]:
+        d = docs.get(J)
+        arms = ((d or {}).get("anchor") or {}).get("arms") or {}
+        ok = all((arms.get(a) or {}).get("present") and (arms.get(a) or {}).get("hi_label") == "HI_SATURATED"
+                 and not (arms.get(a) or {}).get("harness_limited") and not (arms.get(a) or {}).get("client_error")
+                 and (arms.get(a) or {}).get("achieved_by_seed") and all(v is not None for v in (arms[a]["achieved_by_seed"]))
+                 and a not in (d["anchor"].get("gpu_contaminated_arms") or []) for a in C.ANCHOR_ARMS)
+        if ok:
+            anchors[J] = _g_of_arrays(d["anchor"]["arms"])
+    for name in PAIRS:
+        if name == "S":
+            continue
+        for mode in ("TP", "DP"):
+            for shape in ("A", "B"):
+                pts, undefined, disc, pnotes, gaps, flags, anc_by_N, jobs_of = [], [], set(), [], {}, {}, {}, {}
+                for J in C.JOBS:
+                    n_gpus = C.JOB_N[J]
+                    if J == "J1" and mode == "TP":
+                        cfg = "N1"
+                    elif J == "J1":
+                        cfg = "N1"
+                    else:
+                        cfg = f"{mode}{n_gpus}"
+                    d = docs.get(J)
+                    ent = (((d or {}).get("estimands") or {}).get(name) or {}).get(cfg, {}).get(shape) if d else None
+                    if ent and ent.get("defined"):
+                        pts.append((n_gpus, ent["num"], ent["den"]))
+                        jobs_of[n_gpus] = J
+                        disc |= set(ent.get("disclosures", []))
+                        pnotes += [f"{cfg}:{a}:{v}" for a, v in ent.get("partition", {}).items() if v != "PARTITION_EXERCISED"]
+                        if ent.get("measurement_gaps"):
+                            gaps[cfg] = ent["measurement_gaps"]
+                        if J != "J1":
+                            st = status[J]["status"]
+                            flags[n_gpus] = st
+                            ju = J if _mut != "iii" else (sorted(anchors) or [J])[0]      # mutant iii: another Job's anchor
+                            if ju in anchors:
+                                anc_by_N[n_gpus] = anchors[ju]
+                    else:
+                        rs = (ent or {"undefined_reasons": ["NOT_RUN"]})["undefined_reasons"]
+                        na = [x for x in (((d or {}).get("driver") or {}).get("not_attempted") or [])
+                              if str(x.get("boot_id", "")).startswith(f"m3_{cfg}_") and x.get("reason") in ("NOT_ATTEMPTED_BUDGET", "NOT_ATTEMPTED_EXT_INCOMPLETE")]
+                        trunc = any("TRUNCATED" in r for r in rs) or (any("NOT_RUN" in r for r in rs) and bool(na))      # H-2: cut by the hard cap
+                        undefined.append({"config": cfg, "job": J, "reasons": rs, "truncated": trunc})
+                own_g1 = any(p[0] == 1 for p in pts)
+                g1_ok = own_g1 and g1_def("G_sym", shape)
+                if not g1_ok:
+                    pts = [p for p in pts if p[0] != 1]            # trend() then returns G1_UNDEFINED_NO_JOB_CHECK (needs >= 3 points)
+                # scope of the Job-effect check for this series (MGP-46): the anchor is shape A / G_sym; elsewhere a CLEAR is UNTESTED-scope
+                flags_series = {}
+                for n, st in flags.items():
+                    flags_series[n] = ("UNTESTED_SCOPE" if (st == "CLEAR" and not (name == PRIMARY and shape == C.ANCHOR_SHAPE)) else st)
+                if not g1_ok:
+                    flags_series = {n: "UNTESTED" for n in flags_series}
+                t = trend(pts, anchors=anc_by_N, job_flags=flags_series, ref_g1=ref_g1, _mut=_mut)
+                if not g1_ok and len([p for p in pts]) < C.TREND_MIN_POINTS and t["label"] == "TREND_UNDEFINED":
+                    t = dict(t, label=G1_UNDEFINED, raw_label="TREND_UNDEFINED", direction_citable=False)   # G(1) missing outranks "too few points"
+                t["undefined_count"] = len(undefined)
+                t["undefined"] = undefined          # MGP-34 / MGP-25: always printed beside the label
+                t["primary"] = (name == PRIMARY)
+                t["disclosures"] = sorted(disc)
+                t["partition_notes"] = pnotes
+                t["partition_exercised_unknown"] = any(n.endswith(":E_TIME_UNDEFINED") for n in pnotes)
+                t["measurement_gaps"] = gaps
+                t["job_effect_by_N"] = {int(n): flags_series.get(n, "n/a") for n in sorted(jobs_of) if n != 1}
+                untested = sorted(f"{jobs_of[n]}" for n, st in flags_series.items() if st.startswith("UNTESTED"))
+                if untested:                                       # §15-3: the point stays in the trend, the disclosure is mandatory
+                    t["disclosures"] = sorted(set(t["disclosures"]) | {"JOB_EFFECT_UNTESTED(" + ",".join(untested) + ")"})
+                if not g1_ok:
+                    t["disclosures"] = sorted(set(t["disclosures"]) | {G1_UNDEFINED})
+                t["g1_defined"] = g1_ok
+                t["jobs"] = {int(n): j for n, j in sorted(jobs_of.items())}
+                out["trends"][f"{name}|{mode}|{shape}"] = t
+    out["P_DP"] = p_dp_status(out["trends"])
+    # ---- rev10 P11 (b) / H-2: a DP trend that is TREND_UNDEFINED BECAUSE OF TRUNCATED cells, with P-DP UNTESTED as the consequence, forbids
+    # citing the TP direction labels even with the disclosure.  A non-truncation reason keeps the P9-c path (disclose, then cite).
+    # The reverse (TP cut by truncation) leaves the DP labels for the P-DP verdict only.
+    isund = lambda t: "TREND_UNDEFINED" in (t["label"], t.get("raw_label"))
+    cut = lambda t: isund(t) and any(u.get("truncated") for u in t["undefined"])
+    dp_trunc = [k for k, t in out["trends"].items() if k.startswith("G_sym|DP|") and cut(t)]
+    tp_trunc = [k for k, t in out["trends"].items() if k.startswith("G_sym|TP|") and cut(t)]
+    out["truncation"] = {"dp_trend_undefined_by_truncation": dp_trunc, "tp_trend_undefined_by_truncation": tp_trunc}
+    if dp_trunc and out["P_DP"]["status"] == "UNTESTED" and _mut != "trunc":
+        for k, t in out["trends"].items():
+            if "|TP|" in k and t["label"] not in ("TREND_UNDEFINED", G1_UNDEFINED):
+                t.update(label_before_truncation_rule=t["label"], label="TP_UNCONTROLLED_TRUNCATION", direction_citable=False)
+                t["disclosures"] = sorted(set(t["disclosures"]) | {"TP_UNCONTROLLED_TRUNCATION"})
+        out["P_DP"]["TP_UNCONTROLLED_TRUNCATION"] = True
+    if tp_trunc:
+        for k, t in out["trends"].items():
+            if "|DP|" in k:
+                t["used_for_p_dp_only"] = True
+    for k, t in out["trends"].items():
+        if "|TP|" in k:
+            t["P_DP"] = out["P_DP"]["status"]
+            if out["P_DP"]["status"] == "UNTESTED":
+                t["disclosures"] = sorted(set(t["disclosures"]) | {"P-DP 미검정"})        # MGH-8 / P9-c: no TP citation without it
+            elif out["P_DP"]["status"] == "BROKEN":
+                t["disclosures"] = sorted(set(t["disclosures"]) | {"P-DP BROKEN: MGP-13 TP labels not citable"})
+    out["memory_rule_iii"] = {"status": "RETIRED_POST_HOC (user decision 2026-10-13; the M2g round-2 values had been seen)",
+                              "configs_iii_would_have_made_undefined": {J: (docs[J].get("memory_rule_iii") or {}).get("configs_iii_would_have_made_undefined", [])
+                                                                        for J in C.JOBS if J in docs},
+                              "MEMORY_RULE_III_COUNTERFACTUAL": {J: (docs[J].get("memory_rule_iii") or {}).get("MEMORY_RULE_III_COUNTERFACTUAL_by_config", {})
+                                                                 for J in C.JOBS if J in docs}}
+    out["gpu_dev"] = (docs.get("J8") or {}).get("blocks", {}).get("gpu_dev")
+    return out
 
 
 def a_is_pdmux(arms):
@@ -873,37 +1154,207 @@ def _g_sym_round(cfg, keys, rnd):
     return None
 
 
+def job_covariates(out_dir):
+    """§16-3: the Job's cgroup cpu.max (and visible cores) from its preflight record SUBSTRATE_CPU.txt -- a covariate printed beside every result."""
+    p = Path(out_dir) / "SUBSTRATE_CPU.txt"
+    cov = {"cpu_max": None, "nproc": None}
+    if p.exists():
+        for ln in p.read_text(errors="replace").splitlines():
+            if ln.startswith("cgroup_cpu_max="):
+                cov["cpu_max"] = ln.split("=", 1)[1].strip()
+            elif ln.startswith("nproc="):
+                cov["nproc"] = ln.split("=", 1)[1].split()[0]
+    return cov
+
+
 def render_text(doc):
-    L = [f"# multi-GPU labels ({doc['prereg']})", ""]
-    for k, t in sorted(doc["trends"].items()):
-        mark = "PRIMARY" if t["primary"] else "auxiliary"
-        s = f"{k:20s} [{mark}] {t['label']}"
-        if "slope" in t:
-            s += f" slope={t['slope']:+.4f} CI=[{t['ci'][0]:+.4f},{t['ci'][1]:+.4f}] Ns={t['Ns']} magnitude={t.get('magnitude')}"
-        s += f"  UNDEFINED_CELLS={t['undefined_count']}"
-        if t.get("disclosures"):
-            s += "  DISCLOSE=" + ",".join(t["disclosures"])
-        if t.get("partition_exercised_unknown"):
-            s += "  PARTITION_EXERCISED_UNKNOWN(E_TIME_UNDEFINED)"
-        L.append(s)
-        for u in t["undefined"]:
-            L.append(f"      undefined {u['config']}: {'; '.join(u['reasons'])}")
-        for cfg, g in sorted(t.get("measurement_gaps", {}).items()):
-            L.append(f"      unmeasured {cfg}: {g}")
-    L.append("")
-    pd = doc["P_DP"]
-    L.append(f"P_DP status={pd['status']} broken={pd['broken']} (MGP-13 TP labels not citable={pd['MGP13_TP_labels_not_citable']}; "
-             f"TP labels need 'P-DP 미검정' disclosure={pd['TP_labels_need_P_DP_UNTESTED_disclosure']})")
-    L.append(f"ANCHOR_DRIFT={doc['anchor']['ANCHOR_DRIFT']} {doc['anchor'].get('note', '')}")
+    """One Job's document (aggregate)."""
+    L = [f"# multi-GPU labels, Job {doc.get('job')} ({doc['prereg']})", ""]
+    cov = doc.get("covariates") or {}
+    L.append(f"covariate cpu.max={cov.get('cpu_max')} nproc={cov.get('nproc')}")
+    for name in PAIRS:
+        for cfg, per in sorted((doc["estimands"].get(name) or {}).items()):
+            for shape, e in sorted(per.items()):
+                s = f"{name:9s} {cfg:4s} {shape}: "
+                s += (f"G={e['point']:.4f} CI=[{e['ci'][0]:.4f},{e['ci'][1]:.4f}]" if e.get("defined") else "UNDEFINED " + "; ".join(e["undefined_reasons"]))
+                if e.get("disclosures"):
+                    s += "  DISCLOSE=" + ",".join(e["disclosures"])
+                L.append(s)
+    for k, lab in sorted(doc["keys"].items()):
+        L.append(f"key {k}: knee={lab['knee']} lambda*={lab['lambda_star']} harness_limited={lab['harness_limited']} "
+                 f"throttle max={lab.get('throttle_ratio_max')} median={lab.get('throttle_ratio_median')}")
+    if doc.get("anchor"):
+        L.append("anchor " + json.dumps(doc["anchor"], sort_keys=True, default=str))
     for cfg, fl in sorted(doc["configs"].items()):
         extra = [k for k in ("memory_mismatch", "gpu_contaminated", "contam_unverified", "tp_numeric_divergent", "g2_not_tested",
                              "m2g_memory_mismatch", "frontend_saturated") if fl.get(k)]
         extra += [f"{a}:G1_UNINFORMATIVE" for a in fl.get("g1_uninformative_arms", [])]
         if extra:
             L.append(f"config {cfg}: {', '.join(extra)}")
+    mr = doc.get("memory_rule_iii") or {}
+    L.append(f"memory rule (iii) {mr.get('status')}: configs it would have made undefined = {mr.get('configs_iii_would_have_made_undefined')} "
+             f"MEMORY_RULE_III_COUNTERFACTUAL={json.dumps(mr.get('MEMORY_RULE_III_COUNTERFACTUAL_by_config'), sort_keys=True)}")
     for k, v in doc["blocks"].items():
         L.append(f"block {k}: {json.dumps(v, sort_keys=True)}")
     return "\n".join(L) + "\n"
+
+
+def render_jobs_text(doc):
+    """The cross-Job document (aggregate_jobs)."""
+    L = [f"# multi-GPU labels, Jobs joined ({doc['prereg']})", ""]
+    for J, m in doc["jobs"].items():
+        L.append(f"job {J}: present={m['present']} cpu.max={m.get('cpu_max')} nproc={m.get('nproc')} n_cells={m.get('n_cells')}")
+    for J, st in doc["job_effect"].items():
+        L.append(f"JOB_EFFECT {J}: {st['status']} {('; '.join(st['reasons'])) if st['reasons'] else ''} "
+                 + (f"G_rel={st['G_rel']:+.4f} lambda_fused_sym_rel={st['lambda_fused_sym_rel']:+.4f}" if "G_rel" in st else ""))
+    L.append("")
+    for k, t in sorted(doc["trends"].items()):
+        mark = "PRIMARY" if t["primary"] else "auxiliary"
+        s = f"{k:20s} [{mark}] {t['label']}"
+        if "slope" in t:
+            s += f" slope={t['slope']:+.4f} CI=[{t['ci'][0]:+.4f},{t['ci'][1]:+.4f}] Ns={t['Ns']} magnitude={t.get('magnitude')}"
+        if t.get("corrected"):
+            c = t["corrected"]
+            s += f"  CORRECTED {c['label']} slope={c['slope']:+.4f} CI=[{c['ci'][0]:+.4f},{c['ci'][1]:+.4f}] magnitude={c.get('magnitude')}"
+        if t.get("job_sensitive_reason"):
+            s += f"  ({t['job_sensitive_reason']})"
+        s += f"  direction_citable={t.get('direction_citable')}  UNDEFINED_CELLS={t['undefined_count']}"
+        if t.get("disclosures"):
+            s += "  DISCLOSE=" + ",".join(t["disclosures"])
+        L.append(s)
+        for u in t["undefined"]:
+            L.append(f"      undefined {u['config']} ({u['job']}): {'; '.join(u['reasons'])}")
+    L.append("")
+    pd = doc["P_DP"]
+    L.append(f"P_DP status={pd['status']} per_shape={pd['per_shape']} broken={pd['broken']} untested_because={pd['untested_because']} "
+             f"(MGP-13 TP labels not citable={pd['MGP13_TP_labels_not_citable']}; TP labels need 'P-DP 미검정' disclosure={pd['TP_labels_need_P_DP_UNTESTED_disclosure']})")
+    mr = doc.get("memory_rule_iii") or {}
+    L.append(f"memory rule (iii) {mr.get('status')}")
+    for J, cl in (mr.get("configs_iii_would_have_made_undefined") or {}).items():
+        L.append(f"   cells rule (iii) would have made undefined, {J}: {cl}")
+    if doc.get("gpu_dev"):
+        L.append("block gpu_dev: " + json.dumps(doc["gpu_dev"], sort_keys=True))
+    return "\n".join(L) + "\n"
+
+
+# =========================================================================== rev9 mutation harness (Job layer; lesson 53 + 254)
+def _syn_ent(G, noise=0.0):
+    num = [G * (1.0 + noise * k) for k in range(4)]
+    return {"defined": True, "num": num, "den": [1.0] * 4, "undefined_reasons": [], "disclosures": [], "partition": {}}
+
+
+def _syn_undef(*reasons):
+    return {"defined": False, "undefined_reasons": list(reasons) or ["NOT_RUN"]}
+
+
+def _syn_anchor(G, lam_fs=1.0, **over):
+    arm = lambda lam: dict(present=True, lambda_star=lam, hi_label="HI_SATURATED", achieved_by_seed=[lam] * 4, harness_limited=False,
+                           client_error=False, truncated=False)
+    d = {"arms": {"fused_sym": arm(lam_fs), "agnostic": arm(G * lam_fs)}, "gpu_contaminated_arms": []}
+    d["arms"]["fused_sym"].update(over)
+    return d
+
+
+def _syn_ref(g_ref=1.0, final_mult=1.0, **over):
+    """J1 boot1 reference: fused_sym lambda* 1.0, agnostic lambda* g_ref; `final_mult` scales the extension-rung (final) lambda*."""
+    arm = lambda lam: dict(present=True, boot1_lambda_star=lam, final_lambda_star=lam * final_mult, boot1_hi_label="HI_SATURATED",
+                           harness_limited=False, client_error=False, boot1_achieved_by_seed=[lam] * 4)
+    r = {"fused_sym": arm(1.0), "agnostic": arm(g_ref)}
+    for a, kv in over.items():
+        r[a].update(kv)
+    return r
+
+
+def _syn_docs(g1, series, anchors, shape="A", ref=None):
+    """g1: G(1) (extension-rung/final value the trend uses) or None (undefined).  series: {cfg: G | ('undef', reason...)} e.g. {'DP2': 1.0}.
+    anchors: {N: G_anchor | None (anchor absent)}."""
+    ests = {}
+    for cfg, v in series.items():
+        ests.setdefault(int("".join(ch for ch in cfg if ch.isdigit())), {})[cfg] = _syn_undef(*v[1:]) if isinstance(v, tuple) else _syn_ent(v)
+    docs = {"J1": {"estimands": {"G_sym": ({"N1": {shape: _syn_ent(g1)}} if g1 is not None else {})}, "ref": ref or _syn_ref(), "n_cells": 1, "anchor": {}}}
+    for n, cfgs in ests.items():
+        J = f"J{n}"
+        docs[J] = {"estimands": {"G_sym": {cfg: {shape: e} for cfg, e in cfgs.items()}}, "ref": {}, "n_cells": 1,
+                   "anchor": ({} if anchors.get(n) is None else _syn_anchor(anchors[n]))}
+    return docs
+
+
+_lab = lambda t: t["label"]
+JOB_MUT_SCENARIOS = {
+    # name -> (docs, series key, expected outcome, outcome extractor, {mutant tag: kw for aggregate_jobs _mut})
+    "S_clean_direction": (_syn_docs(1.0, {"DP2": 1.04, "DP4": 1.08}, {2: 1.0, 4: 1.0}), "G_sym|DP|A", "G_INCREASES_WITH_N", _lab),
+    "S_i_g1_undefined_J8_plus2pct": (_syn_docs(None, {"DP2": 1.00, "DP4": 1.00, "DP8": 1.02}, {2: 1.0, 4: 1.0, 8: 1.0}), "G_sym|DP|A", G1_UNDEFINED, _lab),
+    "S_iii_other_jobs_anchor": (_syn_docs(1.0, {"DP2": 1.00, "DP4": 1.08}, {2: 1.0, 4: 1.08}), "G_sym|DP|A", TREND_JOB_SENSITIVE, _lab),
+    "S_iv_corrected_below_3pct": (_syn_docs(1.0, {"DP2": 1.04, "DP4": 1.08}, {2: 1.0, 4: 1.05}), "G_sym|DP|A", TREND_JOB_SENSITIVE, _lab),
+    # H-3: J1 boot1 G_ref = 1.0 but the extension-rung G(1) the trend uses is 1.10 -> the correction ratio must come from boot1
+    "S_h3_boot1_vs_extension_G1": (_syn_docs(1.10, {"DP2": 1.10, "DP4": 1.20}, {2: 1.0, 4: 1.10}), "G_sym|DP|A", TREND_JOB_SENSITIVE, _lab),
+    # H-4: the J2 anchor is absent (UNTESTED) -> J2 leaves the corrected trend, 2 points remain -> TREND_UNDEFINED -> P9-b fails
+    "S_h4_untested_anchor_point_excluded": (_syn_docs(1.0, {"DP2": 1.08, "DP4": 1.08}, {2: None, 4: 1.04}), "G_sym|DP|A", TREND_JOB_SENSITIVE, _lab),
+    # H-2: DP cut by the hard cap (TRUNCATED) -> DP TREND_UNDEFINED -> P-DP UNTESTED -> TP direction not citable
+    "S_h2_truncated_dp_blocks_tp": (_syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:TRUNCATED"), "DP8": ("undef", "agnostic:TRUNCATED"),
+                                                     "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0}),
+                                    "G_sym|TP|A", "TP_UNCONTROLLED_TRUNCATION", _lab),
+    # H-2 (control side): the same gap for a NON-truncation reason keeps the P9-c path (disclose, then cite)
+    "S_h2_nontruncation_dp_gap_cites_tp": (_syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:KNEE_NOT_BRACKETED"), "DP8": ("undef", "agnostic:KNEE_NOT_BRACKETED"),
+                                                           "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0}),
+                                           "G_sym|TP|A", "G_INCREASES_WITH_N", _lab),
+}
+JOB_MUT_TAGS = {"i": "i", "iii": "iii", "iv": "iv", "h3": "h3", "h4": "h4", "h2_ignore_truncation": "trunc"}
+
+# H-1: per-shape P-DP.  name -> (inputs {shape: (label, g1_defined)}, expected status)
+PDP_SCENARIOS = {
+    "P_A_job_sensitive_B_citable_increase": ({"A": ("TREND_JOB_SENSITIVE", True), "B": ("G_INCREASES_WITH_N", True)}, "BROKEN"),
+    "P_A_g1_undefined_B_increase": ({"A": (G1_UNDEFINED, False), "B": ("G_INCREASES_WITH_N", True)}, "BROKEN"),
+    "P_both_no_trend": ({"A": ("NO_TREND_DETECTED", True), "B": ("NO_TREND_DETECTED", True)}, "HELD"),
+    "P_A_no_trend_B_job_sensitive": ({"A": ("NO_TREND_DETECTED", True), "B": ("TREND_JOB_SENSITIVE", True)}, "UNTESTED"),
+    "P_A_undefined_B_no_trend": ({"A": ("TREND_UNDEFINED", True), "B": ("NO_TREND_DETECTED", True)}, "UNTESTED"),
+}
+
+# H-5: rule (iii) removed, rule (ii) kept.  name -> (arm facts, expected memory_mismatch)
+def _mem_arms(mt):
+    return {a: dict(mamba=[48], max_total=[v], eff_cap=48) for a, v in mt.items()}
+
+
+MEM_SCENARIOS = {
+    "M_iii_spread_only": (_mem_arms({"fused": 10_000_000, "fused_sym": 10_000_000, "agnostic": 9_866_000, "d44": 9_866_000}), False),   # 1.34 % spread
+    "M_ii_kv_bound_violated": (_mem_arms({"fused": 10_000, "fused_sym": 10_000, "agnostic": 10_000, "d44": 10_000}), True),
+}
+
+
+def run_job_mutation_checks():
+    """Each rev9/rev10 mutant must DIFFER from the expected outcome on >= 1 scenario (KILLED); the unmutated control must match on ALL.
+    i  G(1)-undefined direction cited · ii Job-effect reference = extension rung · iii correction by another Job's anchor ·
+    iv corrected trend without the 3 % rule · h3 correction ratio from the extension-rung G(1) · h4 raw value substituted for anchor-UNTESTED
+    points · h2_ignore_truncation TP cited despite truncation · untested_first (H-1) · mem_iii_present / mem_ii_removed (H-5) ·
+    (v gate-name partial match: mg_substrate.run_mutation_checks; config-order initial [DP, TP]: mg_plan selftest)."""
+    per, verdict = {}, {}
+    for name, (docs, key, expected, fn) in JOB_MUT_SCENARIOS.items():
+        row = {"expected": expected, "CONTROL": fn(aggregate_jobs(docs)["trends"][key])}
+        for tag, m in JOB_MUT_TAGS.items():
+            row[tag] = fn(aggregate_jobs(docs, _mut=m)["trends"][key])
+        per[name] = row
+    ref, anc = _syn_ref(1.0, final_mult=1.3), _syn_anchor(1.0)
+    per["S_ii_extension_rung_reference"] = {"expected": "CLEAR", "CONTROL": job_effect(ref, anc)["status"], "ii": job_effect(ref, anc, _mut="ii")["status"]}
+    for nm, kv in (("not_saturated", dict(boot1_hi_label="HI_NOT_SATURATED")), ("harness_limited", dict(harness_limited=True)), ("client_error", dict(client_error=True))):
+        per[f"S_h3_reference_cell_{nm}"] = {"expected": "UNTESTED", "CONTROL": job_effect(_syn_ref(1.0, fused_sym=kv), _syn_anchor(1.0))["status"]}
+    for name, (inp, expected) in PDP_SCENARIOS.items():
+        tr = {f"G_sym|DP|{sh}": {"label": lab, "g1_defined": g1} for sh, (lab, g1) in inp.items()}
+        per[name] = {"expected": expected, "CONTROL": p_dp_status(tr)["status"], "untested_first": p_dp_status(tr, _mut="untested_first")["status"]}
+    for name, (facts, expected) in MEM_SCENARIOS.items():
+        cf = memory_check(facts)
+        row = {"expected": expected, "CONTROL": cf["memory_mismatch"], "mem_iii_present": memory_check(facts, _mut="iii")["memory_mismatch"],
+               "mem_ii_removed": memory_check(facts, _mut="ii")["memory_mismatch"]}
+        if name == "M_iii_spread_only":
+            row["CONTROL"] = (cf["memory_mismatch"], cf["MEMORY_RULE_III_COUNTERFACTUAL"] == {"denominator_fused_sym": True, "denominator_min_arm": True})
+            row["expected"] = (False, True)
+            row["mem_iii_present"] = (row["mem_iii_present"], True)
+            row["mem_ii_removed"] = (row["mem_ii_removed"], True)
+        per[name] = row
+    for m in ("i", "ii", "iii", "iv", "h3", "h4", "h2_ignore_truncation", "untested_first", "mem_iii_present", "mem_ii_removed", "CONTROL"):
+        killed_on = [n for n, r in per.items() if m in r and r[m] != r["expected"]]
+        verdict[m] = {"killed_on": killed_on, "killed": bool(killed_on)}
+    ok = all(v["killed"] for k, v in verdict.items() if k != "CONTROL") and not verdict["CONTROL"]["killed"]
+    return ok, verdict, per
 
 
 # =========================================================================== CLI + selftest
@@ -980,6 +1431,8 @@ def build_config_flags(root, cells, excluded=()):
         expected = [a for a in C.ARMS if f"{cfg}:{a}" not in set(excluded)]
         not_tested = [a for a in expected if a not in arms] if gname.endswith("/main") else []
         gf = {"memory_mismatch": mem["memory_mismatch"], "reasons": mem["reasons"],
+              "arm_rel_diff": mem.get("arm_rel_diff"), "MEMORY_RULE_III_COUNTERFACTUAL": mem.get("MEMORY_RULE_III_COUNTERFACTUAL"),
+              "rule_iii_would_have_flagged": bool(mem.get("rule_iii_would_have_flagged")),
               "memory_not_tested_arms": not_tested, "gpu_contaminated": g["contaminated"], "contam_boots": g["contam_boots"],
               "contam_arms": sorted(g["contam_arms"]),
               "contam_unverified": g["contam_unverified"], "unverified_boots": g["unverified_boots"]}
@@ -1011,35 +1464,65 @@ def selftest():
     # bootstrap determinism + CI contains point for a clean ratio
     p, lo, hi = paired_ratio_ci([2.0, 2.1, 1.9, 2.0], [1.0, 1.0, 1.0, 1.0])
     assert lo <= p <= hi and abs(p - 2.0) < 0.06
+    ok2, verdict2, per2 = run_job_mutation_checks()
+    for m, v in verdict2.items():
+        print(f"job-layer mutant {m:22s} killed={v['killed']} on {v['killed_on']}")
+    if not ok2:
+        fails.append("job-layer mutation checks")
     t = trend([(1, [2, 2, 2, 2], [1, 1, 1, 1]), (2, [2, 2, 2, 2], [1, 1, 1, 1]), (4, [2, 2, 2, 2], [1, 1, 1, 1])])
     assert t["label"] == "NO_TREND_DETECTED" and t["magnitude"] == "DIRECTION_NOT_CITABLE_UNDER_3PCT"
     t = trend([(1, [1, 1, 1, 1.01], [1, 1, 1, 1]), (2, [1.5, 1.5, 1.5, 1.5], [1, 1, 1, 1]),
                (4, [2, 2, 2, 2.02], [1, 1, 1, 1])])
     assert t["label"] == "G_INCREASES_WITH_N", t
     assert trend([(2, [1] * 4, [1] * 4), (4, [1] * 4, [1] * 4)])["label"] == "TREND_UNDEFINED"
-    assert trend([(2, [1] * 4, [1] * 4), (4, [1] * 4, [1] * 4), (8, [1] * 4, [1] * 4)])["magnitude"] == "MAGNITUDE_UNDEFINED"
+    assert trend([(2, [1] * 4, [1] * 4), (4, [1] * 4, [1] * 4), (8, [1] * 4, [1] * 4)])["label"] == G1_UNDEFINED
     print("selftest:", "PASS" if not fails else f"FAIL {fails}")
     return 0 if not fails else 1
 
 
+def label_job_dir(root, job=None, pass_table=None):
+    """One Job directory -> aggregate() document (+ covariates).  pass_table: path or None."""
+    cells = [load_cell(d) for d in find_cells(root)]
+    pt = json.loads(Path(pass_table).read_text()) if pass_table else {}
+    ptc = pt.get("cells") if isinstance(pt, dict) and "cells" in pt else pt
+    excl = {k for k, v in (ptc or {}).items() if isinstance(v, dict) and not v.get("included", True)}
+    doc = aggregate(cells, ptc, build_config_flags(root, cells, excl), pt.get("configs") if isinstance(pt, dict) else None, job=job)
+    doc["n_cells"] = len(cells)
+    doc["covariates"] = job_covariates(root)
+    drv = Path(root) / "LABELS.json"
+    if drv.exists():
+        try:
+            doc["driver"] = json.loads(drv.read_text()).get("driver")
+        except ValueError:
+            pass
+    return doc
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--root", help="directory scanned recursively for cell.json")
+    ap.add_argument("--root", help="ONE Job directory scanned recursively for cell.json")
+    ap.add_argument("--job", default=None, choices=C.JOBS)
+    ap.add_argument("--jobs", nargs="*", default=[], help="J1=<dir> J2=<dir> ... : join the Jobs (aggregate_jobs)")
     ap.add_argument("--pass-table", default="")
     ap.add_argument("--out", default="")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args(argv)
     if a.selftest:
         return selftest()
+    if a.jobs:
+        docs, meta = {}, {}
+        for kv in a.jobs:
+            J, d = kv.split("=", 1)
+            docs[J] = label_job_dir(d, J)
+            meta[J] = {k: v for k, v in docs[J]["covariates"].items()}
+        doc = aggregate_jobs(docs, meta)
+        if a.out:
+            Path(a.out).write_text(json.dumps(doc, indent=1, sort_keys=True, default=float) + "\n")
+        sys.stdout.write(render_jobs_text(doc))
+        return 0
     if not a.root:
-        ap.error("--root or --selftest")
-    cells = [load_cell(d) for d in find_cells(a.root)]
-    pt = json.loads(Path(a.pass_table).read_text()) if a.pass_table else {}
-    ptc = pt.get("cells") if isinstance(pt, dict) and "cells" in pt else pt
-    excl = {k for k, v in (ptc or {}).items() if isinstance(v, dict) and not v.get("included", True)}
-    doc = aggregate(cells, ptc, build_config_flags(a.root, cells, excl),
-                    pt.get("configs") if isinstance(pt, dict) else None)
-    doc["n_cells"] = len(cells)
+        ap.error("--root, --jobs or --selftest")
+    doc = label_job_dir(a.root, a.job, a.pass_table or None)
     if a.out:
         Path(a.out).write_text(json.dumps(doc, indent=1, sort_keys=True, default=float) + "\n")
     sys.stdout.write(render_text(doc))
