@@ -1,0 +1,3 @@
+"# value_kind: measured=n_sm_realized,ms_median,ms_p10,ms_p90,ms_mean; derived=gbps; metadata=n_sm_req,partition_mode,bytes_moved,n"
+n_sm_req__metadata,n_sm_realized__measured,partition_mode__metadata,bytes_moved__metadata,ms_median__measured,ms_p10__measured,ms_p90__measured,ms_mean__measured,n__metadata,gbps__derived
+108,108,plain,2147483648,1.2339199781417847,1.230847954750061,1.2390400171279907,1.234500249226888,30,1740.37513456423
