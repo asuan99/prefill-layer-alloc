@@ -45,12 +45,21 @@ if [[ -e "${OUT}/DONE" ]]; then
 fi
 mkdir -p "${RUN}"/{meta,logs,cache} "${OUT}"
 utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+# ---- progress visible in `vesslctl job logs <slug>` (container stdout) ------------------------------
+#   [PHASE] lines mark each job_entry stage; [T] lines mirror the target's stdout/stderr (the file
+#   logs/target.log stays the complete record; known-noise lines are not mirrored); [HB] heartbeat every
+#   PDMUX_HEARTBEAT_S (default 300 s, 0 = off) names the newest result file this run wrote and its last line.
+#   PDMUX_LOG_MIRROR=0 restores the old file-only behaviour.  Mirroring never changes the target's exit code.
+phase() { echo "[PHASE $(utc)] $*"; }
+hb_pid=""
 echo "start_utc=$(utc)" > "${RUN}/meta/timing.txt"
 clk_pid=""
 energy_pid=""
 
 finish() {
   local rc=$?
+  [[ -n "${hb_pid}" ]] && kill "${hb_pid}" 2>/dev/null
+  phase "finish rc=${rc} (exporting results; DONE written last)"
   [[ -n "${clk_pid}" ]] && kill "${clk_pid}" 2>/dev/null
   [[ -n "${energy_pid}" ]] && kill "${energy_pid}" 2>/dev/null
   echo "end_utc=$(utc)" >> "${RUN}/meta/timing.txt"
@@ -105,15 +114,18 @@ rm -rf "${PROJECT}/workspace/engine-port/results"
 ln -s "${RUN}/results" "${PROJECT}/workspace/engine-port/results"
 ln -sfn "${DATA}/hf" "${PROJECT}/hf_cache"                # legacy $ROOT/hf_cache convention
 touch "${RUN}/meta/start.marker"
+phase "checkout ${PDMUX_COMMIT:0:7} ok; results -> ${RUN}/results"
 
 # ---- 2. install this commit's engine code into the PUBLIC (pristine-SGLang) image ---
 export PDMUX_ROOT="${OPT}" PDMUX_PROJECT_ROOT="${PROJECT}"
 if [[ -n "${PDMUX_TEST_SKIP_SYNC:-}" ]]; then        # local mock test only -- flagged in meta
   echo "install skipped (PDMUX_TEST_SKIP_SYNC) -- NOT A VALID MEASUREMENT RUN" > "${RUN}/meta/SYNC_SKIPPED_TEST"
 else
+  phase "install_runtime start"
   bash "${PROJECT}/workspace/engine-port/scripts/vessl/install_runtime.sh" \
     "${RUN}/meta/runtime_source_manifest.sha256" > "${RUN}/logs/install_runtime.log" 2>&1 \
-    || { echo "ERROR: install_runtime.sh (see logs/install_runtime.log)" >&2; exit 4; }
+    || { echo "ERROR: install_runtime.sh (see logs/install_runtime.log)" >&2; tail -20 "${RUN}/logs/install_runtime.log"; exit 4; }
+  phase "install_runtime done"
 fi
 
 # ---- 3. substrate stamp (B0) + clock/throttle trace ---------------------------------
@@ -251,10 +263,34 @@ mkdir -p "${TRITON_CACHE_DIR}" "${XDG_CACHE_HOME}" "${FLASHINFER_WORKSPACE_BASE}
 cd "${PROJECT}"
 target="${PROJECT}/${PDMUX_TARGET}"
 [[ -f "${target}" ]] || { echo "ERROR: target not found: ${PDMUX_TARGET}" >&2; exit 2; }
-if [[ -n "${PDMUX_ARRAY_SPEC:-}" ]]; then
-  PDMUX_RUN_LOG_DIR="${RUN}/logs/array" \
-    bash "${PROJECT}/workspace/engine-port/scripts/run/array_runner.sh" "${target}" "${PDMUX_ARRAY_SPEC}" \
-    > "${RUN}/logs/target.log" 2>&1
+run_target() {
+  if [[ -n "${PDMUX_ARRAY_SPEC:-}" ]]; then
+    PDMUX_RUN_LOG_DIR="${RUN}/logs/array" \
+      bash "${PROJECT}/workspace/engine-port/scripts/run/array_runner.sh" "${target}" "${PDMUX_ARRAY_SPEC}"
+  else
+    bash "${target}"
+  fi
+}
+heartbeat() {   # newest file this run wrote under results/ (cells, marks, ledgers) + its last line
+  local t0=$SECONDS newest line n
+  while sleep "${PDMUX_HEARTBEAT_S:-300}"; do
+    newest=$(find "${RUN}/results" -type f -newer "${RUN}/meta/start.marker" ! -path '*/.triton_cache/*' \
+               -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+    n=$(find "${RUN}/results" -type f -newer "${RUN}/meta/start.marker" 2>/dev/null | wc -l)
+    line=""; [[ -n "${newest}" ]] && line=$(tail -c 400 "${newest}" 2>/dev/null | tail -1 | tr -d '\r' | cut -c1-240)
+    echo "[HB $(utc) +$((SECONDS - t0))s] new_files=${n} newest=${newest#"${RUN}/results/"} :: ${line}"
+  done
+}
+phase "target start: ${PDMUX_TARGET}"
+if [[ "${PDMUX_LOG_MIRROR:-1}" == 0 ]]; then
+  run_target > "${RUN}/logs/target.log" 2>&1
+  target_rc=$?
 else
-  bash "${target}" > "${RUN}/logs/target.log" 2>&1
+  [[ "${PDMUX_HEARTBEAT_S:-300}" != 0 ]] && { heartbeat & hb_pid=$!; }
+  run_target 2>&1 | tee "${RUN}/logs/target.log" \
+    | { grep --line-buffered -v -e 'pynvml package is deprecated' -e 'import pynvml  # type: ignore' \
+        | sed -u 's/^/[T] /'; true; }
+  target_rc=${PIPESTATUS[0]}
 fi
+phase "target end rc=${target_rc}"
+exit "${target_rc}"

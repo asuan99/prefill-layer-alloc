@@ -275,3 +275,25 @@ Object volume   pdmux-io   (setup plan의 pdmux-out을 양방향으로 개명)  
 - **B5 통과 ⇒ 캠페인 제출 전제(B0–B5)가 충족됐다.** 다만 기판 동등성(KISTI 수치와의 비교 가능성)과 캠페인 사전등록·규칙층 감사는 별도이며 사용자 결정 사항이다.
 - 남은 미검증: `FLASHINFER_WORKSPACE_BASE` 변수명. JIT 캐시는 `cache/flashinfer/.cache/flashinfer/`에 생겼으므로 XDG 경로로 분리가 된 것으로 보이지만, 변수 자체가 적용됐는지는 미확인이다.
 
+
+## 12. 진행 상황 모니터링 — `vesslctl job logs` (2026-10-12 추가)
+
+이전에는 `job_entry.sh`가 대상 스크립트 출력을 `logs/target.log` 파일로만 보내서, `vesslctl job logs`에는
+`repo.bundle: OK` 한 줄만 보였다(실행 중 진행 상황은 회수 전까지 알 수 없었다). 2026-10-12부터
+컨테이너 stdout에 다음 세 종류의 줄이 나온다(`logs/target.log`는 그대로 완전한 기록).
+
+| 접두 | 내용 |
+|---|---|
+| `[PHASE <UTC>]` | job_entry 단계: checkout · install_runtime start/done(실패 시 install 로그 마지막 20줄) · target start · target end rc · finish rc |
+| `[T]` | 대상 스크립트 stdout/stderr 거울(알려진 잡음 `pynvml deprecated` 두 줄만 제외) |
+| `[HB <UTC> +Ns]` | 하트비트(기본 300 s): 이번 run이 `results/` 아래 새로 쓴 파일 수, 가장 최근 파일, 그 마지막 줄 — 예: N2는 `marks_<boot>.txt`의 `cell_end …`, N3는 셀 산출물 |
+
+```bash
+vesslctl job show <slug>                                   # State
+vesslctl job logs <slug> | grep -E '^\[(PHASE|HB)'         # 단계 + 하트비트만
+vesslctl job logs <slug> | grep -E 'ABORT_|FAIL|ERROR' | tail   # 중단 사유
+```
+
+노브: `PDMUX_HEARTBEAT_S`(초, 0 = 끔), `PDMUX_LOG_MIRROR=0`(이전의 파일 전용 동작). 대상 종료 코드는 거울과 무관하게
+보존된다(`PIPESTATUS[0]`; 로컬 mock에서 rc 7 보존·하트비트 프로세스 정리 확인, 2026-10-12). 이 변경은 측정 경로를
+건드리지 않는다(대상의 stdout 소비 방식만 바뀜 — 파이프 버퍼가 대상 출력을 막지 않도록 `grep --line-buffered`·`sed -u`).
