@@ -69,7 +69,7 @@ MANDATORY_REG=(
 )
 OPTIONAL_REG=("$HERE/G5A_PASS.json")
 {
-  echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md (rev6)"
+  echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md (rev7)"
   missing=0
   for f in "${MANDATORY_REG[@]}"; do
     if [ -f "$f" ]; then sha256sum "$f"; else echo "MISSING $f"; missing=$((missing + 1)); fi

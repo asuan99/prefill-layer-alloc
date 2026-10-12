@@ -12,7 +12,7 @@ import json
 import sys
 
 PREREG = "PREREG_MULTIGPU_2026-10-12.md"
-PREREG_REV = 6
+PREREG_REV = 7
 
 # ---- §1 fixed conditions ---------------------------------------------------------------------
 MODEL = "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base"
