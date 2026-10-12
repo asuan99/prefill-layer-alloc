@@ -1096,7 +1096,7 @@ class Rev11JoinM3(unittest.TestCase):
             dirs[J] = d
         return dirs, shas
 
-    def run_cli(self, dirs, shas, extra=()):
+    def run_cli(self, dirs, shas, extra=(), explicit_omission=True):
         """The real CLI entry (main) with load_cell/find_cells replaced by synthetic cells of the Job's own N."""
         from unittest import mock
         import io
@@ -1112,7 +1112,8 @@ class Rev11JoinM3(unittest.TestCase):
              mock.patch.object(L, "load_cell", lambda cd: which[str(Path(cd).parent)][int(Path(cd).name[1:])]), \
              mock.patch.object(L, "job_covariates", lambda root: {}), \
              mock.patch("sys.stdout", out), mock.patch("sys.stderr", err):
-            rc = L.main(["--jobs", *[f"{J}={d}" for J, d in dirs.items()], "--committed-sha-dir", str(shas), *extra])
+            omit = [f"{J}=NOT_SUBMITTED" for J in C.JOBS if J not in dirs] if explicit_omission else []          # rev11 D-B: omission is explicit
+            rc = L.main(["--jobs", *[f"{J}={d}" for J, d in dirs.items()], *omit, "--committed-sha-dir", str(shas), *extra])
         return rc, out.getvalue(), err.getvalue()
 
     def test_clean_join_uses_each_jobs_used_table(self):
@@ -1165,12 +1166,15 @@ class Rev11JoinM3(unittest.TestCase):
             dirs, shas = self.make_jobs(td)
             (dirs["J1"] / "DRYRUN").write_text("x")
             self.assertEqual(self.run_cli(dirs, shas)[0], 3)
-        with tempfile.TemporaryDirectory() as td:
+        with tempfile.TemporaryDirectory() as td:                         # rev11 D-B: no driver record is RECONSTRUCTED, not refused
             dirs, shas = self.make_jobs(td)
             (dirs["J2"] / "LABELS.json").unlink()
             rc, _o, err = self.run_cli(dirs, shas)
-            self.assertEqual(rc, 3)
-            self.assertIn("driver", err)
+            self.assertEqual(rc, 0, err)
+            used, _t = L.job_dir_admission("J2", dirs["J2"], shas)                                  # control: admitted
+            self.assertTrue(str(used).endswith("M2G_PASS_TABLE.used.json"))
+            with self.assertRaises(L.JoinRefused):                                                  # mutant "refuse a driver-less Job": KILLED
+                L.job_dir_admission("J2", dirs["J2"], shas, _mut="require_driver")
 
 
 class Rev11PDPM4(unittest.TestCase):
@@ -1207,6 +1211,198 @@ class Rev11PDPM4(unittest.TestCase):
         self.assertEqual(L.p_dp_status(tr)["status"], "UNTESTED")
         tr["G_sym|DP|B"] = {"label": L.TREND_JOB_SENSITIVE, "raw_label": "TREND_UNDEFINED", "g1_defined": True}      # raw trend not defined -> not BROKEN
         self.assertEqual(L.p_dp_status(tr)["status"], "UNTESTED")
+
+
+class Rev11DeltaDA(unittest.TestCase):
+    """Harness delta audit 2026-10-13, D-A: the cross-shape raw-label substitution is limited to a DIRECTIONAL raw label."""
+    def doc(self, **kw):
+        docs = L.JOB_MUT_SCENARIOS["S_da_shape_b_tjs_raw_no_trend_is_untested"][0]
+        return L.aggregate_jobs(docs, **kw)
+
+    def test_a_held_b_tjs_raw_no_trend_is_untested_through_aggregate_jobs(self):
+        doc = self.doc()
+        self.assertEqual({J: doc["job_effect"][J]["status"] for J in ("J2", "J4", "J8")}, {"J2": "CLEAR", "J4": "FIRED", "J8": "FIRED"})
+        a, b, tp = doc["trends"]["G_sym|DP|A"], doc["trends"]["G_sym|DP|B"], doc["trends"]["G_sym|TP|A"]
+        self.assertEqual(a["label"], "NO_TREND_DETECTED")                              # shape A: HELD on its own
+        self.assertEqual((b["label"], b["raw_label"]), (L.TREND_JOB_SENSITIVE, "NO_TREND_DETECTED"))
+        self.assertEqual(doc["P_DP"]["per_shape"], {"G_sym|DP|A": "HELD", "G_sym|DP|B": "UNTESTED"})
+        self.assertEqual(doc["P_DP"]["status"], "UNTESTED")
+        self.assertEqual(doc["P_DP"]["raw_label_used"], {})                            # recorded only when the substitution promoted a shape to BROKEN
+        self.assertIn("P-DP 미검정", tp["disclosures"])
+        self.assertTrue(tp["direction_citable"])                                       # TP stays citable WITH the disclosure (P9-c)
+
+    def test_raw_unconditional_mutant_is_killed(self):
+        mut = self.doc(_mut="raw_unconditional")
+        self.assertEqual(mut["P_DP"]["status"], "HELD")                                # the rev11 fail-open
+        self.assertNotIn("P-DP 미검정", mut["trends"]["G_sym|TP|A"]["disclosures"])
+
+    def test_raw_label_used_only_on_broken_promotion(self):
+        tr = {"G_sym|DP|A": {"label": "NO_TREND_DETECTED", "g1_defined": True},
+              "G_sym|DP|B": {"label": L.TREND_JOB_SENSITIVE, "raw_label": "G_INCREASES_WITH_N", "g1_defined": True}}
+        r = L.p_dp_status(tr)
+        self.assertEqual((r["status"], list(r["raw_label_used"])), ("BROKEN", ["G_sym|DP|B"]))
+        for raw in ("NO_TREND_DETECTED", "TREND_UNDEFINED"):
+            tr["G_sym|DP|B"]["raw_label"] = raw
+            r = L.p_dp_status(tr)
+            self.assertEqual((r["status"], r["raw_label_used"]), ("UNTESTED", {}), raw)
+
+
+class Rev11DeltaDB(unittest.TestCase):
+    """D-B: --jobs names every Job (omission only as <J>=NOT_SUBMITTED -> JOB_NOT_JOINED); a driver-less Job is reconstructed fail-closed;
+    finish() runs in a finally."""
+    def test_parse_jobs_args(self):
+        self.assertEqual(L.parse_jobs_args(["J1=a", "J2=b", "J4=c", "J8=d"]), ({"J1": "a", "J2": "b", "J4": "c", "J8": "d"}, {}))
+        self.assertEqual(L.parse_jobs_args(["J1=a", "J2=b", "J4=c", "J8=NOT_SUBMITTED"])[1], {"J8": "NOT_SUBMITTED"})
+        with self.assertRaises(L.JoinRefused):
+            L.parse_jobs_args(["J1=a", "J2=b", "J4=c"])                                # silent subset refused
+        self.assertEqual(L.parse_jobs_args(["J1=a", "J2=b", "J4=c"], _mut="subset_ok")[1], {})      # mutant accepts it: KILLED by the line above
+        for bad in (["J1=a", "J1=b", "J2=c", "J4=d", "J8=e"], ["J3=a"], ["J1"]):
+            with self.assertRaises(L.JoinRefused):
+                L.parse_jobs_args(bad)
+
+    def test_j8_omission_scenario_broken_never_silently_held(self):
+        series = {"DP2": 1.0, "DP4": 1.0, "DP8": 1.10, "TP2": 1.05, "TP4": 1.10, "TP8": 1.20}
+        full = L.aggregate_jobs(L._syn_docs(1.0, series, {2: 1.0, 4: 1.0, 8: 1.0}, series_b="same"))
+        self.assertEqual(full["P_DP"]["status"], "BROKEN")
+        self.assertEqual(full["JOB_NOT_JOINED"], {})
+        part = {k: v for k, v in series.items() if not k.endswith("8")}
+        docs = L._syn_docs(1.0, part, {2: 1.0, 4: 1.0}, series_b="same")
+        self.assertNotIn("J8", docs)
+        omitted = L.aggregate_jobs(docs, not_joined={"J8": "NOT_SUBMITTED"})
+        self.assertEqual(omitted["P_DP"]["status"], "HELD")                            # the number alone says HELD ...
+        self.assertEqual(omitted["JOB_NOT_JOINED"], {"J8": "NOT_SUBMITTED"})           # ... the document and every trend say it was computed without J8
+        self.assertTrue(all("JOB_NOT_JOINED(J8)" in t["disclosures"] for t in omitted["trends"].values()))
+        self.assertIn("JOB_NOT_JOINED", L.render_jobs_text(omitted))
+
+    def test_cli_refuses_silent_omission_and_accepts_explicit(self):
+        jm = Rev11JoinM3()
+        with tempfile.TemporaryDirectory() as td:
+            dirs, shas = jm.make_jobs(td)
+            rc, _o, err = jm.run_cli(dirs, shas, explicit_omission=False)
+            self.assertEqual(rc, 3)
+            self.assertIn("omits", err)
+            rc, _o, err = jm.run_cli(dirs, shas, ["--out", str(Path(td) / "j.json")])
+            self.assertEqual(rc, 0, err)
+            doc = json.loads((Path(td) / "j.json").read_text())
+            self.assertEqual(sorted(doc["JOB_NOT_JOINED"]), ["J4", "J8"])
+            self.assertTrue(all(any(d.startswith("JOB_NOT_JOINED(J4,J8)") for d in t["disclosures"]) for t in doc["trends"].values()))
+
+    # ---- reconstruction
+    def make_dir(self, td, boot_missing=(), log=(), partial=(), specs=()):
+        d = Path(td) / "J2"
+        (d / "specs").mkdir(parents=True)
+        for cfg in P.config_order("J2"):
+            for a in C.ARMS:
+                bid = f"m3_{cfg}_{a}_boot1"
+                if (cfg, a) in boot_missing:
+                    continue
+                (d / "boots" / bid).mkdir(parents=True)
+                steps = [{"name": "x", "status": "NOT_STARTED_DEADLINE"}] if (cfg, a) in partial else [{"name": "x", "status": "OK"}]
+                (d / "boots" / bid / "boot.json").write_text(json.dumps({"steps": steps}))
+        for bid in specs:
+            (d / "specs" / f"{bid}.json").write_text("{}")
+        (d / "DRIVER_LOG.jsonl").write_text("".join(json.dumps(e) + "\n" for e in log))
+        return d
+
+    @staticmethod
+    def decisions(**x_lo):
+        return [{"config": c, "decision": {"x_lo": x_lo.get(c, {})}} for c in P.config_order("J2")]
+
+    def test_reconstruct_events_partial_and_missing_boot_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            a0 = C.ARMS[0]
+            d = self.make_dir(td, boot_missing={("TP2", C.ARMS[1])}, partial={("DP2", C.ARMS[2])}, log=self.decisions() + [
+                {"boot": f"m3_DP2_{a0}_boot2", "status": "NOT_ATTEMPTED_BUDGET"}, {"group": "gpu_dev", "status": "NOT_ATTEMPTED_BUDGET"}])
+            drv = L.reconstruct_driver(d, "J2")
+            self.assertTrue(drv["reconstructed"])
+            self.assertEqual([(x["config"], x["arm"], x["reason"]) for x in drv["not_attempted"]],
+                             [("DP2", a0, "NOT_ATTEMPTED_BUDGET"), ("TP2", C.ARMS[1], "RECONSTRUCTED_NO_BOOT_RECORD")])
+            self.assertEqual([(x["config"], x["arm"]) for x in drv["partial_boots"]] if drv["partial_boots"][0].get("config") else [x["boot_id"] for x in drv["partial_boots"]],
+                             [("DP2", C.ARMS[2])] if drv["partial_boots"][0].get("config") else [f"m3_DP2_{C.ARMS[2]}_boot1"])
+            cut = L.driver_cut_arms({"driver": drv})
+            self.assertEqual(cut[("TP2", C.ARMS[1])], ["RECONSTRUCTED_NO_BOOT_RECORD"])
+            self.assertEqual(cut[("DP2", a0)], ["NOT_ATTEMPTED_BUDGET"])
+            self.assertEqual(cut[("DP2", C.ARMS[2])], ["PARTIAL_BOOT"])
+            # mutant: a missing boot record is not a truncation -> KILLED
+            self.assertNotIn(("TP2", C.ARMS[1]), L.driver_cut_arms({"driver": L.reconstruct_driver(d, "J2", _mut="no_missing_boot_cut")}))
+
+    def test_reconstruct_failed_start_with_boot_json_is_not_a_cut_and_no_driver_log_cuts_everything(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = self.make_dir(td, log=self.decisions())
+            self.assertEqual(L.driver_cut_arms({"driver": L.reconstruct_driver(d, "J2")}), {})        # every boot has a boot.json (a failed start included)
+        with tempfile.TemporaryDirectory() as td:
+            d = self.make_dir(td, boot_missing={(c, a) for c in P.config_order("J2") for a in C.ARMS})
+            (d / "DRIVER_LOG.jsonl").unlink()
+            cut = L.driver_cut_arms({"driver": L.reconstruct_driver(d, "J2")})
+            self.assertEqual(len(cut), 2 * len(C.ARMS))                                              # no log at all: every planned main boot is cut
+            ex = {f"{c}:{a}" for c in P.config_order("J2") for a in C.ARMS[:1]}
+            cut = L.driver_cut_arms({"driver": L.reconstruct_driver(d, "J2", excluded=ex)})
+            self.assertEqual(len(cut), 2 * (len(C.ARMS) - 1))                                         # pass-table-excluded arms are not planned
+
+    def test_reconstruct_tp_not_tested_config_is_not_cut(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = self.make_dir(td, boot_missing={("TP2", a) for a in C.ARMS},
+                              log=[e for e in self.decisions() if e["config"] != "TP2"] + [{"config": "TP2", "status": "TP_NOT_TESTED"}])
+            self.assertEqual(L.driver_cut_arms({"driver": L.reconstruct_driver(d, "J2")}), {})
+
+    def test_label_job_dir_reconstructs_when_labels_json_has_no_driver(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as td:
+            d = self.make_dir(td, boot_missing={("TP2", C.ARMS[1])}, log=self.decisions())
+            with mock.patch.object(L, "find_cells", lambda root: []), mock.patch.object(L, "job_covariates", lambda root: {}):
+                doc = L.label_job_dir(d, "J2", None)
+            self.assertTrue(doc["driver"]["reconstructed"])
+            self.assertIn(("TP2", C.ARMS[1]), L.driver_cut_arms(doc))
+
+    def test_driver_main_runs_finish_in_a_finally(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "o"
+            with mock.patch.object(D, "run_m3", side_effect=RuntimeError("boom")):
+                with self.assertRaises(RuntimeError):
+                    D.main(["m3", "--job", "J2", "--out", str(out), "--dry-run", "--hard-cap-s", "100"])
+            doc = json.loads((out / "LABELS.json").read_text())
+            self.assertIn("driver", doc)
+            self.assertIn("DRIVER_EXCEPTION_FINISH_IN_FINALLY", (out / "DRIVER_LOG.jsonl").read_text())
+            self.assertTrue((out / "DRIVER_STATUS.json").exists())
+
+
+class Rev11DeltaDC(unittest.TestCase):
+    """D-C (i): NOT_ATTEMPTED_EXT_INCOMPLETE is a truncation only with a hard-cap record on the SAME config's extension boot."""
+    ext = {"boot_id": "m3_DP4_agnostic_boot2", "config": "DP4", "arm": "agnostic", "block": "main", "reason": "NOT_ATTEMPTED_EXT_INCOMPLETE"}
+
+    def cut(self, drv, keys=None, **kw):
+        return L.driver_cut_arms({"driver": drv, "keys": keys or {}}, **kw)
+
+    def test_start_failure_is_not_a_truncation_and_the_unconditional_mutant_is_killed(self):
+        self.assertEqual(self.cut({"not_attempted": [self.ext]}), {})
+        self.assertEqual(self.cut({"not_attempted": [self.ext]}, _mut="ext_unconditional"), {("DP4", "agnostic"): ["NOT_ATTEMPTED_EXT_INCOMPLETE"]})
+
+    def test_ext_boot_hard_cap_record_makes_it_a_truncation(self):
+        ext_budget = {"boot_id": "m3_DP4_fused_sym_boot1ext", "config": "DP4", "arm": "fused_sym", "block": "main", "reason": "NOT_ATTEMPTED_BUDGET"}
+        want = {("DP4", "agnostic"): ["NOT_ATTEMPTED_EXT_INCOMPLETE"], ("DP4", "fused_sym"): ["NOT_ATTEMPTED_BUDGET"]}
+        self.assertEqual(self.cut({"not_attempted": [self.ext, ext_budget]}), want)
+        pb = {"boot_id": "m3_DP4_fused_sym_boot1ext", "config": "DP4", "arm": "fused_sym", "block": "main"}
+        self.assertEqual(self.cut({"not_attempted": [self.ext], "partial_boots": [pb]})[("DP4", "agnostic")], ["NOT_ATTEMPTED_EXT_INCOMPLETE"])
+        keys = {"DP4|fused_sym|A|r1": {"truncated": True, "max_ext": 1}}
+        self.assertEqual(self.cut({"not_attempted": [self.ext]}, keys)[("DP4", "agnostic")], ["NOT_ATTEMPTED_EXT_INCOMPLETE"])
+        self.assertEqual(self.cut({"not_attempted": [self.ext]}, keys)[("DP4", "fused_sym")], ["TRUNCATED_CELL"])
+        self.assertIn("NOT_ATTEMPTED_EXT_INCOMPLETE", self.cut({"not_attempted": [self.ext]}, keys, _mut="ext_unconditional")[("DP4", "agnostic")])
+
+    def test_negative_controls_evidence_must_be_the_same_configs_extension(self):
+        other_cfg = {"boot_id": "m3_DP8_fused_sym_boot1ext", "config": "DP8", "arm": "fused_sym", "block": "main", "reason": "NOT_ATTEMPTED_BUDGET"}
+        boot1_cut = {"boot_id": "m3_DP4_fused_sym_boot1", "config": "DP4", "arm": "fused_sym", "block": "main", "reason": "NOT_ATTEMPTED_BUDGET"}
+        c = self.cut({"not_attempted": [self.ext, other_cfg, boot1_cut]})
+        self.assertNotIn("NOT_ATTEMPTED_EXT_INCOMPLETE", c.get(("DP4", "agnostic"), []))        # another config's / a boot1 cut is not extension evidence
+        keys = {"DP4|fused_sym|A|r1": {"truncated": True, "max_ext": 0}}
+        self.assertNotIn(("DP4", "agnostic"), self.cut({"not_attempted": [self.ext]}, keys))
+
+    def test_through_aggregate_jobs_scenarios(self):
+        for name in ("S_dc_ext_incomplete_start_failure_is_not_truncation", "S_dc_ext_incomplete_with_ext_boot_cut_is_truncation"):
+            docs, key, expected, fn = L.JOB_MUT_SCENARIOS[name]
+            self.assertEqual(fn(L.aggregate_jobs(docs)["trends"][key]), expected, name)
+        docs, key, expected, fn = L.JOB_MUT_SCENARIOS["S_dc_ext_incomplete_start_failure_is_not_truncation"]
+        self.assertNotEqual(fn(L.aggregate_jobs(docs, _mut="ext_unconditional")["trends"][key]), expected)
 
 
 class Rev11Misc(unittest.TestCase):

@@ -768,7 +768,8 @@ def p_dp_status(trends, _mut=None):
     cannot suppress it).  Shape s is BROKEN iff its G_sym DP trend is defined, G_sym(1, s) is defined and the label is directional
     (G_INCREASES/G_DECREASES -- for the ANCHOR shape A a TREND_JOB_SENSITIVE label is not; for shape B the RAW label decides, rev11 §18).  UNTESTED (P9-c) = TREND_JOB_SENSITIVE / TREND_UNDEFINED /
     G1_UNDEFINED_NO_JOB_CHECK / G(1) undefined / no DP trend.  HELD = NO_TREND_DETECTED.  UNTESTED is not 'not broken'; it does NOT fire MGP-13
-    and obliges the 'P-DP 미검정' disclosure on every TP label.   `_mut` 'untested_first' (tests only): UNTESTED outranks BROKEN; 'same_shape_only' = the rev10 reading (cross-shape correction lowers shape B to UNTESTED)."""
+    and obliges the 'P-DP 미검정' disclosure on every TP label.   `_mut` 'untested_first' (tests only): UNTESTED outranks BROKEN; 'same_shape_only' = the rev10 reading (cross-shape correction lowers shape B to UNTESTED);
+    'raw_unconditional' = the rev11 fail-open (D-A: a raw NO_TREND_DETECTED replaces TREND_JOB_SENSITIVE -> HELD)."""
     dp = {k: t for k, t in trends.items() if k.startswith("G_sym|DP|")}
     per, via = {}, {}
     for k, t in dp.items():
@@ -778,9 +779,16 @@ def p_dp_status(trends, _mut=None):
         # rev11 §18 (M-4, user decision, fail-closed): the cross-shape correction (shape-A anchors, G_sym) is NOT a same-shape correction.
         # For a shape other than the anchor's, P-DP reads the RAW DP trend: defined + G(1, shape) defined + directional raw label -> BROKEN,
         # even when the corrected trend turned the published label into TREND_JOB_SENSITIVE.  The anchor shape keeps its same-shape correction.
-        if shape != C.ANCHOR_SHAPE and _mut != "same_shape_only":
-            lab = t.get("raw_label", lab) if lab == TREND_JOB_SENSITIVE else lab
-            if lab != t["label"]:
+        # rev11 D-A (harness delta audit 2026-10-13): the raw label is substituted ONLY when it is directional (it can only RAISE UNTESTED to
+        # BROKEN).  A raw NO_TREND_DETECTED / TREND_UNDEFINED under a TREND_JOB_SENSITIVE published label stays UNTESTED (P9-c), it is not HELD.
+        # `raw_label_used` is recorded only when the substitution promoted the shape to BROKEN.
+        if shape != C.ANCHOR_SHAPE and _mut != "same_shape_only" and lab == TREND_JOB_SENSITIVE:
+            raw = t.get("raw_label", lab)
+            if _mut == "raw_unconditional":                       # mutant (D-A): the rev11 fail-open -- raw label whatever it is
+                lab = raw
+            elif raw in DIRECTIONAL:
+                lab = raw
+            if lab in DIRECTIONAL and g1 and lab != t["label"]:
                 via[k] = "RAW_LABEL(cross-shape correction does not lower BROKEN)"
         if lab in DIRECTIONAL and g1:
             per[k] = "BROKEN"
@@ -1028,17 +1036,24 @@ def _g_of_arrays(anc_arms):
 
 
 _BOOT_ID = re.compile(r"^m3_(?P<cfg>N1|TP\d+|DP\d+)_(?P<arm>fused_sym|fused|agnostic|d44)_(?P<kind>[A-Za-z0-9]+)")
-CUT_REASONS = ("NOT_ATTEMPTED_BUDGET", "NOT_ATTEMPTED_EXT_INCOMPLETE")        # mg_drive.not_attempted reasons that mean "the hard cap cut this boot"
+HARD_CAP_REASONS = ("NOT_ATTEMPTED_BUDGET", "RECONSTRUCTED_NO_BOOT_RECORD")      # unconditional "the hard cap cut this boot"
+EXT_INCOMPLETE = "NOT_ATTEMPTED_EXT_INCOMPLETE"                                   # CONDITIONAL (rev11 D-C): boot2 not entered because the extension was incomplete
+CUT_REASONS = HARD_CAP_REASONS + (EXT_INCOMPLETE,)
 
 
-def driver_cut_arms(doc):
-    """rev11 M-1: the (config, arm) units the Job's HARD CAP cut, read from the DRIVER'S OWN RECORDS -- never from an estimand's reason text:
-      * driver.not_attempted with reason NOT_ATTEMPTED_BUDGET (admission refused) or NOT_ATTEMPTED_EXT_INCOMPLETE (boot2 not entered);
+def driver_cut_arms(doc, _mut=None):
+    """rev11 M-1 / D-C: the (config, arm) units the Job's HARD CAP cut, read from the DRIVER'S OWN RECORDS -- never from an estimand's reason text:
+      * driver.not_attempted with reason NOT_ATTEMPTED_BUDGET (admission refused) or RECONSTRUCTED_NO_BOOT_RECORD (reconstructed driver: a planned
+        main boot with no boots/<id>/boot.json -- fail-closed);
       * driver.partial_boots (a boot with a NOT_STARTED_DEADLINE step / rc 6, mg_boot.py);
-      * a cell the runner flagged TRUNCATED (doc["keys"][...]["truncated"]).
+      * a cell the runner flagged TRUNCATED (doc["keys"][...]["truncated"]);
+      * D-C: NOT_ATTEMPTED_EXT_INCOMPLETE (boot2 not entered) counts ONLY when the SAME config's extension boot (kind boot1ext) has a hard-cap record --
+        a NOT_ATTEMPTED_BUDGET / a partial boot of that extension boot, or a TRUNCATED_CELL of a key with extension cells (max_ext >= 1).  An extension
+        that is incomplete because a boot FAILED TO START has no such record: not a truncation (registered section 17-2(b) / P9-c path).
     Only main-block boots count (an anchor / GPU-deviation boot is not a trend point); TP_NOT_TESTED / M2g exclusions are not truncation.
-    Returns {(config, arm): sorted sources}."""
+    `_mut` 'ext_unconditional' (tests only) = the rev11 predicate (EXT_INCOMPLETE always cuts).  Returns {(config, arm): sorted sources}."""
     cut = {}
+    ext_evidence = set()
 
     def add(cfg, arm, why):
         cut.setdefault((cfg, arm), set()).add(why)
@@ -1055,18 +1070,103 @@ def driver_cut_arms(doc):
             block = block or ("anchor" if m.group("kind") == "anchor" else "main")
         return (cfg, arm) if block in (None, "main") else None
 
+    def is_ext(x):
+        m = _BOOT_ID.match(str(x.get("boot_id", "")))
+        return bool(m and m.group("kind") == "boot1ext")
+
     for x in drv.get("not_attempted") or []:
-        if x.get("reason") in CUT_REASONS and unit(x):
-            add(*unit(x), x["reason"])
+        u = unit(x)
+        if x.get("reason") in HARD_CAP_REASONS and u:
+            add(*u, x["reason"])
+            if is_ext(x):
+                ext_evidence.add(u[0])
     for x in drv.get("partial_boots") or []:
-        if unit(x):
-            add(*unit(x), "PARTIAL_BOOT")
+        u = unit(x)
+        if u:
+            add(*u, "PARTIAL_BOOT")
+            if is_ext(x):
+                ext_evidence.add(u[0])
     for key, lab in ((doc or {}).get("keys") or {}).items():
         if lab.get("truncated"):
             cfg, arm = key.split("|")[:2]
             if cfg != C.ANCHOR_CONFIG:
                 add(cfg, arm, "TRUNCATED_CELL")
+                if int(lab.get("max_ext", 1) or 0) >= 1:
+                    ext_evidence.add(cfg)
+    for x in drv.get("not_attempted") or []:
+        u = unit(x)
+        if x.get("reason") == EXT_INCOMPLETE and u and (u[0] in ext_evidence or _mut == "ext_unconditional"):
+            add(*u, EXT_INCOMPLETE)
     return {k: sorted(v) for k, v in cut.items()}
+
+
+def _read_driver_log(root):
+    out = []
+    lg = Path(root) / "DRIVER_LOG.jsonl"
+    if lg.exists():
+        for ln in lg.read_text().splitlines():
+            try:
+                ev = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(ev, dict):
+                out.append(ev)
+    return out
+
+
+def reconstruct_driver(root, job, excluded=(), _mut=None):
+    """rev11 D-B: a Job directory WITHOUT a `driver` record in LABELS.json (the driver died before finish()) is RECONSTRUCTED, not refused:
+      * DRIVER_LOG.jsonl events NOT_ATTEMPTED_BUDGET / NOT_ATTEMPTED_EXT_INCOMPLETE (key `boot` = boot_id) -> driver.not_attempted, the boot_id split
+        by the same regex as driver_cut_arms;
+      * partial_boots_of(root) (boot.json steps) -> driver.partial_boots;
+      * fail-closed: a PLANNED main boot (mg_plan: boot1 of every config the log does not show as EXCLUDED / TP_NOT_TESTED, arms not excluded by the
+        pass table) -- or a boot2 the config's logged decision (x_lo non-empty, or no decision logged at all) implies, or any boot with a specs/<id>.json --
+        that has no boots/<id>/boot.json is a TRUNCATION (reason RECONSTRUCTED_NO_BOOT_RECORD).  A boot that HAS a boot.json (e.g. a failed start)
+        is not.   `excluded`: pass-table 'cfg:arm' keys.   `_mut` 'no_missing_boot_cut' (tests only) drops the last rule."""
+    import mg_plan as P
+    root = Path(root)
+    ex = set(excluded)
+    events = _read_driver_log(root)
+    na, seen = [], set()
+    skipped, decisions = set(), {}
+    for ev in events:
+        st, bid = ev.get("status"), ev.get("boot")
+        if st in ("NOT_ATTEMPTED_BUDGET", EXT_INCOMPLETE) and bid and bid not in seen:
+            m = _BOOT_ID.match(str(bid))
+            if not m:
+                continue
+            seen.add(bid)
+            na.append({"boot_id": bid, "config": m.group("cfg"), "arm": m.group("arm"),
+                       "block": "anchor" if m.group("kind") == "anchor" else "main", "reason": st, "reconstructed": True})
+        if ev.get("config") and st in ("EXCLUDED_BY_M2G_PASS_TABLE", "TP_NOT_TESTED"):
+            skipped.add(ev["config"])
+        if ev.get("config") and isinstance(ev.get("decision"), dict):
+            decisions[ev["config"]] = ev["decision"]
+    ext_cfg = {x["config"] for x in na if x["reason"] == EXT_INCOMPLETE}
+    have = lambda bid: (root / "boots" / bid / "boot.json").exists()
+
+    def miss(cfg, arm, kind):
+        bid = f"m3_{cfg}_{arm}_{kind}"
+        if bid in seen or have(bid) or _mut == "no_missing_boot_cut":
+            return
+        seen.add(bid)
+        na.append({"boot_id": bid, "config": cfg, "arm": arm, "block": "main", "reason": "RECONSTRUCTED_NO_BOOT_RECORD", "reconstructed": True})
+
+    for cfg in P.config_order(job):
+        if cfg in skipped:
+            continue
+        arms = [a for a in P.arm_order(cfg) if f"{cfg}:{a}" not in ex]
+        for a in arms:
+            miss(cfg, a, "boot1")
+        dec = decisions.get(cfg)
+        boot2_implied = (dec is None) or bool((dec or {}).get("x_lo"))
+        for a in arms:
+            if (root / "specs" / f"m3_{cfg}_{a}_boot1ext.json").exists():
+                miss(cfg, a, "boot1ext")
+            if (root / "specs" / f"m3_{cfg}_{a}_boot2.json").exists() or (boot2_implied and cfg not in ext_cfg):
+                miss(cfg, a, "boot2")
+    return {"decisions": {"reconstructed": True, "from": "DRIVER_LOG.jsonl + boots/ + specs/", "config_decisions": decisions},
+            "not_attempted": na, "partial_boots": partial_boots_of(root), "truncated_cells": [], "reconstructed": True}
 
 
 def partial_boots_of(root):
@@ -1094,25 +1194,31 @@ def partial_boots_of(root):
     return out
 
 
-def aggregate_jobs(docs, job_meta=None, _mut=None):
+def aggregate_jobs(docs, job_meta=None, _mut=None, not_joined=None):
     """Join the per-Job documents {J1: doc, J2: doc, ...} into trends.  N=1 points come from J1 ONLY; N=2/4/8 from the Job of that size.
     P9-a  G_sym(1, shape) undefined -> that shape's every trend is G1_UNDEFINED_NO_JOB_CHECK, every J_N JOB_EFFECT_UNTESTED, P-DP UNTESTED.
     P9-b / P9-c: see trend() and p_dp_status().
-    The anchor of J_N is used ONLY for J_N's own point (mutant iii borrows another Job's anchor)."""
+    The anchor of J_N is used ONLY for J_N's own point (mutant iii borrows another Job's anchor).
+    rev11 D-B: `not_joined` {J: reason} = Jobs the caller explicitly left out (CLI `J8=NOT_SUBMITTED`).  Every Job with no document is listed in
+    out["JOB_NOT_JOINED"] and every trend carries the disclosure JOB_NOT_JOINED(<Js>) -- a trend over a subset of the registered Ns is never silent."""
     job_meta = job_meta or {}
     out = {"prereg": f"{C.PREREG} rev{C.PREREG_REV}", "jobs": {}, "trends": {}, "job_effect": {}, "P_DP": None}
+    nj = {J: (dict(not_joined or {}).get(J) or "NO_DOCUMENT") for J in C.JOBS if docs.get(J) is None}
+    out["JOB_NOT_JOINED"] = nj
     j1 = docs.get("J1")
     ref = (j1 or {}).get("ref") or {}
     _cut_cache = {}
 
     def cut_of(d):
         if id(d) not in _cut_cache:
-            _cut_cache[id(d)] = driver_cut_arms(d)
+            _cut_cache[id(d)] = driver_cut_arms(d, _mut="ext_unconditional" if _mut == "ext_unconditional" else None)
         return _cut_cache[id(d)]
     g1_def = lambda name, shape: bool(j1 and ((((j1.get("estimands") or {}).get(name) or {}).get("N1") or {}).get(shape) or {}).get("defined"))
     for J in C.JOBS:
         d = docs.get(J)
         out["jobs"][J] = {"present": d is not None, "n_cells": (d or {}).get("n_cells"), **(job_meta.get(J) or {})}
+        if J in nj:
+            out["jobs"][J]["JOB_NOT_JOINED"] = nj[J]
     # ---- Job effect per Job (shape A anchor).  P9-a: G_sym(1, A) undefined -> every Job UNTESTED.
     status = {}
     for J in C.JOBS[1:]:
@@ -1202,10 +1308,12 @@ def aggregate_jobs(docs, job_meta=None, _mut=None):
                     t["disclosures"] = sorted(set(t["disclosures"]) | {"JOB_EFFECT_UNTESTED(" + ",".join(untested) + ")"})
                 if not g1_ok:
                     t["disclosures"] = sorted(set(t["disclosures"]) | {G1_UNDEFINED})
+                if nj:
+                    t["disclosures"] = sorted(set(t["disclosures"]) | {"JOB_NOT_JOINED(" + ",".join(sorted(nj)) + ")"})
                 t["g1_defined"] = g1_ok
                 t["jobs"] = {int(n): j for n, j in sorted(jobs_of.items())}
                 out["trends"][f"{name}|{mode}|{shape}"] = t
-    out["P_DP"] = p_dp_status(out["trends"], _mut=("same_shape_only" if _mut == "same_shape_only" else None))
+    out["P_DP"] = p_dp_status(out["trends"], _mut=(_mut if _mut in ("same_shape_only", "raw_unconditional") else None))
     # ---- rev10 P11 (b) / H-2: a DP trend that is TREND_UNDEFINED BECAUSE OF TRUNCATED cells, with P-DP UNTESTED as the consequence, forbids
     # citing the TP direction labels even with the disclosure.  A non-truncation reason keeps the P9-c path (disclose, then cite).
     # The reverse (TP cut by truncation) leaves the DP labels for the P-DP verdict only.
@@ -1299,6 +1407,8 @@ def render_text(doc):
 def render_jobs_text(doc):
     """The cross-Job document (aggregate_jobs)."""
     L = [f"# multi-GPU labels, Jobs joined ({doc['prereg']})", ""]
+    if doc.get("JOB_NOT_JOINED"):
+        L.append(f"JOB_NOT_JOINED {doc['JOB_NOT_JOINED']} -- the trends below are computed WITHOUT these Ns (P-DP status and TP citability can differ if they had run)")
     for J, m in doc["jobs"].items():
         L.append(f"job {J}: present={m['present']} cpu.max={m.get('cpu_max')} nproc={m.get('nproc')} n_cells={m.get('n_cells')}")
     for J, st in doc["job_effect"].items():
@@ -1389,6 +1499,19 @@ def _syn_docs(g1, series, anchors, shape="A", ref=None, drivers=None, series_b=N
     return docs
 
 
+def _syn_noisy(docs, noise, seed):
+    """Deterministic per-seed noise on every defined numerator (shape-A DP/N1 at `noise`, TP at noise/3) so a bootstrap CI has a width."""
+    rng = np.random.default_rng(seed)
+    for d in docs.values():
+        for per in (d.get("estimands") or {}).values():
+            for cfg, shp in per.items():
+                for e in shp.values():
+                    if e.get("defined"):
+                        sc = noise if (cfg.startswith("DP") or cfg == "N1") else noise / 3
+                        e["num"] = [v * (1 + sc * float(rng.uniform(-1, 1))) for v in e["num"]]
+    return docs
+
+
 def _syn_cut(*cfg_arm_boot, reason="NOT_ATTEMPTED_BUDGET"):
     """A driver record: boots (cfg, arm, kind) the hard cap refused -- the shape mg_drive.run_boot writes (boot_id / need_s / reason)."""
     return {"not_attempted": [{"boot_id": f"m3_{c}_{a}_{k}", "need_s": 5000.0, "remaining_s": 100.0, "reason": reason} for c, a, k in cfg_arm_boot]}
@@ -1434,16 +1557,42 @@ JOB_MUT_SCENARIOS = {
         _syn_docs(1.0, {"DP2": 1.0, "DP4": 1.0, "DP8": 1.0, "TP2": 1.2, "TP4": 1.5, "TP8": 2.0}, {2: 1.00, 4: 1.10, 8: 1.21},
                   series_b={"DP2": 1.0, "DP4": 1.10, "DP8": 1.21}),
         None, ("BROKEN", True), lambda d: (d["P_DP"]["status"], d["P_DP"]["MGP13_fired"])),
+    # rev11 D-A (harness delta audit): A HELD + B TJS with RAW NO_TREND -> UNTESTED, TP carries 'P-DP 미검정'.  Anchors J2 1.00 CLEAR, J4 0.90 FIRED,
+    # J8 0.80 FIRED; DP-A 1,1,.95,.90 (raw NO_TREND under seed noise), DP-B flat (raw NO_TREND, 3 % magnitude rule fails -> TJS), TP-A 1,1.05,1.10,1.20.
+    "S_da_shape_b_tjs_raw_no_trend_is_untested": (
+        _syn_noisy(_syn_docs(1.0, {"DP2": 1.0, "DP4": .95, "DP8": .90, "TP2": 1.05, "TP4": 1.10, "TP8": 1.20}, {2: 1.00, 4: .90, 8: .80},
+                             series_b={"DP2": 1.0, "DP4": 1.0, "DP8": 1.0}), 0.15, 4),
+        None, ("UNTESTED", True), lambda d: (d["P_DP"]["status"], "P-DP 미검정" in d["trends"]["G_sym|TP|A"]["disclosures"])),
+    # rev11 D-C: NOT_ATTEMPTED_EXT_INCOMPLETE with NO hard-cap record on the config's extension boot (the extension is incomplete because a boot
+    # failed to START) is not a truncation -> P9-c path: the DP gap keeps the TP direction citable (with the disclosure).
+    "S_dc_ext_incomplete_start_failure_is_not_truncation": (
+        _syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:" + _LO_REFUSED), "DP8": ("undef", "agnostic:" + _LO_REFUSED),
+                        "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0},
+                  drivers={4: _syn_cut(("DP4", "agnostic", "boot2"), reason="NOT_ATTEMPTED_EXT_INCOMPLETE"),
+                           8: _syn_cut(("DP8", "agnostic", "boot2"), reason="NOT_ATTEMPTED_EXT_INCOMPLETE")}, series_b="same"),
+        "G_sym|TP|A", "G_INCREASES_WITH_N", _lab),
+    # ... and the same EXT_INCOMPLETE WITH a hard-cap record on the same config's extension boot (NOT_ATTEMPTED_BUDGET of boot1ext) IS a truncation
+    "S_dc_ext_incomplete_with_ext_boot_cut_is_truncation": (
+        _syn_docs(1.0, {"DP2": 1.0, "DP4": ("undef", "agnostic:" + _LO_REFUSED), "DP8": ("undef", "agnostic:" + _LO_REFUSED),
+                        "TP2": 1.04, "TP4": 1.08, "TP8": 1.12}, {2: 1.0, 4: 1.0, 8: 1.0},
+                  drivers={4: {"not_attempted": _syn_cut(("DP4", "fused_sym", "boot1ext"))["not_attempted"]
+                                                + _syn_cut(("DP4", "agnostic", "boot2"), reason="NOT_ATTEMPTED_EXT_INCOMPLETE")["not_attempted"]},
+                           8: {"not_attempted": _syn_cut(("DP8", "fused_sym", "boot1ext"))["not_attempted"]
+                                                + _syn_cut(("DP8", "agnostic", "boot2"), reason="NOT_ATTEMPTED_EXT_INCOMPLETE")["not_attempted"]}}, series_b="same"),
+        "G_sym|TP|A", "TP_UNCONTROLLED_TRUNCATION", _lab),
 }
 JOB_MUT_TAGS = {"i": "i", "iii": "iii", "iv": "iv", "h3": "h3", "h4": "h4", "h2_ignore_truncation": "trunc", "h2_reason_text": "trunc_reason",
-                "m4_same_shape_only": "same_shape_only"}
+                "m4_same_shape_only": "same_shape_only", "da_raw_unconditional": "raw_unconditional",
+                "dc_ext_unconditional": "ext_unconditional"}
 
 # H-1: per-shape P-DP.  name -> (inputs {shape: (label, g1_defined)}, expected status)
 PDP_SCENARIOS = {
     "P_A_job_sensitive_B_citable_increase": ({"A": ("TREND_JOB_SENSITIVE", True), "B": ("G_INCREASES_WITH_N", True)}, "BROKEN"),
     "P_A_g1_undefined_B_increase": ({"A": (G1_UNDEFINED, False), "B": ("G_INCREASES_WITH_N", True)}, "BROKEN"),
     "P_both_no_trend": ({"A": ("NO_TREND_DETECTED", True), "B": ("NO_TREND_DETECTED", True)}, "HELD"),
-    "P_A_no_trend_B_job_sensitive": ({"A": ("NO_TREND_DETECTED", True), "B": ("TREND_JOB_SENSITIVE", True)}, "UNTESTED"),
+    "P_A_no_trend_B_job_sensitive": ({"A": ("NO_TREND_DETECTED", True), "B": ("TREND_JOB_SENSITIVE", True, "NO_TREND_DETECTED")}, "UNTESTED"),
+    # D-A: raw NO_TREND under TJS stays UNTESTED; a raw label that is itself TREND_UNDEFINED likewise
+    "P_A_no_trend_B_tjs_raw_undefined": ({"A": ("NO_TREND_DETECTED", True), "B": ("TREND_JOB_SENSITIVE", True, "TREND_UNDEFINED")}, "UNTESTED"),
     "P_A_undefined_B_no_trend": ({"A": ("TREND_UNDEFINED", True), "B": ("NO_TREND_DETECTED", True)}, "UNTESTED"),
     # rev11 M-4: shape B corrected to TREND_JOB_SENSITIVE by the cross-shape correction, raw directional -> BROKEN; shape A keeps its same-shape correction
     "P_B_raw_increase_corrected_job_sensitive": ({"A": ("NO_TREND_DETECTED", True), "B": ("TREND_JOB_SENSITIVE", True, "G_INCREASES_WITH_N")}, "BROKEN"),
@@ -1475,6 +1624,17 @@ def run_job_mutation_checks():
             row[tag] = fn(pick(aggregate_jobs(docs, _mut=m)))
         per[name] = row
     ref, anc = _syn_ref(1.0, final_mult=1.3), _syn_anchor(1.0)
+    # rev11 D-B: --jobs must name every Job; an omission is the explicit <J>=NOT_SUBMITTED, never silent
+    def _join(kvs, mut=None):
+        try:
+            return "ACCEPTED" if parse_jobs_args(kvs, _mut=mut) else "ACCEPTED"
+        except JoinRefused:
+            return "REFUSED"
+    sub = ["J1=a", "J2=b", "J4=c"]
+    per["S_db_silent_subset_refused"] = {"expected": "REFUSED", "CONTROL": _join(sub), "db_subset_ok": _join(sub, "subset_ok")}
+    per["S_db_explicit_omission_accepted"] = {"expected": "ACCEPTED", "CONTROL": _join(sub + ["J8=NOT_SUBMITTED"]),
+                                              "db_subset_ok": _join(sub + ["J8=NOT_SUBMITTED"], "subset_ok")}
+    per["S_db_full_set_accepted"] = {"expected": "ACCEPTED", "CONTROL": _join(sub + ["J8=d"]), "db_subset_ok": _join(sub + ["J8=d"], "subset_ok")}
     per["S_ii_extension_rung_reference"] = {"expected": "CLEAR", "CONTROL": job_effect(ref, anc)["status"], "ii": job_effect(ref, anc, _mut="ii")["status"]}
     for nm, kv in (("not_saturated", dict(boot1_hi_label="HI_NOT_SATURATED")), ("harness_limited", dict(boot1_harness_limited=True)), ("client_error", dict(boot1_client_error=True))):
         per[f"S_h3_reference_cell_{nm}"] = {"expected": "UNTESTED", "CONTROL": job_effect(_syn_ref(1.0, fused_sym=kv), _syn_anchor(1.0))["status"]}
@@ -1488,7 +1648,8 @@ def run_job_mutation_checks():
         for sh, v in inp.items():
             tr[f"G_sym|DP|{sh}"] = {"label": v[0], "g1_defined": v[1], **({"raw_label": v[2]} if len(v) > 2 else {})}
         per[name] = {"expected": expected, "CONTROL": p_dp_status(tr)["status"], "untested_first": p_dp_status(tr, _mut="untested_first")["status"],
-                     "m4_same_shape_only": p_dp_status(tr, _mut="same_shape_only")["status"]}
+                     "m4_same_shape_only": p_dp_status(tr, _mut="same_shape_only")["status"],
+                     "da_raw_unconditional": p_dp_status(tr, _mut="raw_unconditional")["status"]}
     for name, (facts, expected) in MEM_SCENARIOS.items():
         cf = memory_check(facts)
         row = {"expected": expected, "CONTROL": cf["memory_mismatch"], "mem_iii_present": memory_check(facts, _mut="iii")["memory_mismatch"],
@@ -1499,7 +1660,7 @@ def run_job_mutation_checks():
             row["mem_iii_present"] = (row["mem_iii_present"], True)
             row["mem_ii_removed"] = (row["mem_ii_removed"], True)
         per[name] = row
-    for m in ("i", "ii", "iii", "iv", "h3", "h4", "h2_ignore_truncation", "h2_reason_text", "m4_same_shape_only", "m2_flags_final", "untested_first",
+    for m in ("i", "ii", "iii", "iv", "h3", "h4", "h2_ignore_truncation", "h2_reason_text", "m4_same_shape_only", "da_raw_unconditional", "dc_ext_unconditional", "db_subset_ok", "m2_flags_final", "untested_first",
               "mem_iii_present", "mem_ii_removed", "CONTROL"):
         killed_on = [n for n, r in per.items() if m in r and r[m] != r["expected"]]
         verdict[m] = {"killed_on": killed_on, "killed": bool(killed_on)}
@@ -1648,7 +1809,7 @@ def job_dir_admission(J, d, committed_sha_dir=None, _mut=None):
       * `<d>/M2G_PASS_TABLE.used.json` exists and its sha256 equals the COMMITTED `results/multigpu/M2G_PASS_TABLE_<J>.json.sha256`
         (`committed_sha_dir`, default this directory) -- a table that was edited after the Job, or the wrong Job's table, is refused;
       * the table parses and has a `cells` dict;
-      * `<d>/LABELS.json` carries the driver's `driver` record (not_attempted / partial boots: the M-1 truncation judgement reads it).
+      * (rev11 D-B) a missing `driver` record in `<d>/LABELS.json` is reconstructed, not refused (reconstruct_driver).
     Returns (path of the used table, parsed table).  `_mut` 'no_table' (tests only) skips the table (the rev10 behaviour)."""
     d = Path(d)
     if not d.is_dir():
@@ -1665,13 +1826,14 @@ def job_dir_admission(J, d, committed_sha_dir=None, _mut=None):
         raise JoinRefused(f"{J}: BUDGET.txt kind={kv.get('kind')!r}, an M3 Job directory is required")
     if kv.get("job") != J:
         raise JoinRefused(f"{J}: BUDGET.txt job={kv.get('job')!r} != CLI {J}")
-    lj = d / "LABELS.json"
-    try:
-        has_driver = isinstance(json.loads(lj.read_text()).get("driver"), dict)
-    except (OSError, ValueError):
-        has_driver = False
-    if not has_driver:                           # the truncation judgement (M-1) is read from the driver's records
-        raise JoinRefused(f"{J}: {lj} missing or without a `driver` record (hard-cap truncation cannot be judged)")
+    if _mut == "require_driver":                 # mutant (D-B): the rev11 refusal of a Job directory without a driver record
+        try:
+            has_driver = isinstance(json.loads((d / "LABELS.json").read_text()).get("driver"), dict)
+        except (OSError, ValueError):
+            has_driver = False
+        if not has_driver:
+            raise JoinRefused(f"{J}: {d}/LABELS.json missing or without a `driver` record")
+    # rev11 D-B: no driver record is NOT a refusal -- label_job_dir RECONSTRUCTS it from DRIVER_LOG.jsonl + boots/ + specs/ (reconstruct_driver)
     if _mut == "no_table":
         return None, {}
     used = d / "M2G_PASS_TABLE.used.json"
@@ -1693,12 +1855,39 @@ def job_dir_admission(J, d, committed_sha_dir=None, _mut=None):
     return used, t
 
 
+NOT_JOINED_TOKENS = ("NOT_SUBMITTED",)
+
+
+def parse_jobs_args(kvs, _mut=None):
+    """rev11 D-B: `--jobs` must name EVERY registered Job (J1, J2, J4, J8) exactly once.  A Job may be left out only by an explicit argument
+    `J8=NOT_SUBMITTED` (its value is a token, not a directory); the join then reports JOB_NOT_JOINED.  A silent subset is refused: a trend over
+    {1,2,4} is not the registered {1,2,4,8} trend (rev11 audit D-B: DP-A 1,1,1,1.10 BROKEN became 1,1,1 HELD).
+    Returns ({J: dir}, {J: token}).  `_mut` 'subset_ok' (tests only) = the rev11 behaviour (any subset accepted)."""
+    dirs, nj = {}, {}
+    for kv in kvs:
+        if "=" not in kv:
+            raise JoinRefused(f"bad or duplicate Job argument {kv!r}")
+        J, d = kv.split("=", 1)
+        if J not in C.JOBS or J in dirs or J in nj:
+            raise JoinRefused(f"bad or duplicate Job id {J!r}")
+        if d in NOT_JOINED_TOKENS:
+            nj[J] = d
+        else:
+            dirs[J] = d
+    missing = [J for J in C.JOBS if J not in dirs and J not in nj]
+    if missing and _mut != "subset_ok":
+        raise JoinRefused(f"--jobs omits {missing}: every Job of {list(C.JOBS)} is required; an intended omission is the explicit argument "
+                          f"<J>=NOT_SUBMITTED")
+    return dirs, nj
+
+
 def label_job_dir(root, job=None, pass_table=None):
     """One Job directory -> aggregate() document (+ covariates).  pass_table: path or None."""
     cells = [load_cell(d) for d in find_cells(root)]
     pt = json.loads(Path(pass_table).read_text()) if pass_table else {}
     ptc = pt.get("cells") if isinstance(pt, dict) and "cells" in pt else pt
     excl = {k for k, v in (ptc or {}).items() if isinstance(v, dict) and not v.get("included", True)}
+    excl_arms = set(excl)
     doc = aggregate(cells, ptc, build_config_flags(root, cells, excl), pt.get("configs") if isinstance(pt, dict) else None, job=job)
     doc["n_cells"] = len(cells)
     doc["covariates"] = job_covariates(root)
@@ -1708,6 +1897,8 @@ def label_job_dir(root, job=None, pass_table=None):
             doc["driver"] = json.loads(drv.read_text()).get("driver")
         except ValueError:
             pass
+    if not isinstance(doc.get("driver"), dict):                                          # D-B: the driver died before finish() -> reconstruct (fail-closed)
+        doc["driver"] = reconstruct_driver(root, job or doc.get("job") or "J2", excluded=excl_arms)
     if isinstance(doc.get("driver"), dict) and "partial_boots" not in doc["driver"]:     # M-1: older LABELS.json -> recompute from the boot records
         doc["driver"]["partial_boots"] = partial_boots_of(root)
     return doc
@@ -1727,10 +1918,14 @@ def main(argv=None):
         return selftest()
     if a.jobs:
         docs, meta = {}, {}
-        for kv in a.jobs:
-            J, d = kv.split("=", 1)
-            if J not in C.JOBS or J in docs:
-                ap.error(f"--jobs: bad or duplicate Job id {J!r}")
+        try:
+            dirs, nj = parse_jobs_args(a.jobs)
+        except JoinRefused as e:
+            if "bad or duplicate" in str(e):
+                ap.error(f"--jobs: {e}")
+            sys.stderr.write(f"JOIN_REFUSED {e}\n")
+            return 3
+        for J, d in dirs.items():
             try:
                 used, _t = job_dir_admission(J, d, a.committed_sha_dir or None)
             except JoinRefused as e:
@@ -1738,7 +1933,7 @@ def main(argv=None):
                 return 3
             docs[J] = label_job_dir(d, J, used)
             meta[J] = {k: v for k, v in docs[J]["covariates"].items()}
-        doc = aggregate_jobs(docs, meta)
+        doc = aggregate_jobs(docs, meta, not_joined=nj)
         if a.out:
             Path(a.out).write_text(json.dumps(doc, indent=1, sort_keys=True, default=float) + "\n")
         sys.stdout.write(render_jobs_text(doc))

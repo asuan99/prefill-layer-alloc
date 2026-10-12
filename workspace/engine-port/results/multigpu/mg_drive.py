@@ -166,7 +166,7 @@ def ext_complete(ctx, cfg, shapes, arms):
     return True, None
 
 
-def run_m3(ctx, table, j2_table=None, j2_note=None):
+def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
     """ONE Job (ctx.job).  Order (§16-3): [J8: GPU-deviation block, concurrent] -> N=1 anchor boots (J2/J4/J8) -> the Job's configs in the
     registered order (mg_plan.config_order; asserted equal to the PREREG result, else ABORT_CONFIG_ORDER).  TP configs additionally need J2's
     G0(ii) PASS (`j2_table`); a missing/invalid J2 table makes the Job's TP configs NOT_TESTED while DP proceeds (no ABORT)."""
@@ -201,6 +201,8 @@ def run_m3(ctx, table, j2_table=None, j2_note=None):
     for spec in P.boots_anchor(job, exclude=P.anchor_exclude(table)):
         go(spec)
     decisions = {"config_order": order, "tp_axis_allowed": tp_ok, "tp_axis_why": tp_why}
+    if box is not None:
+        box["decisions"] = decisions                                 # main(): finish() runs in a finally and still sees the decisions made so far
     for cfg in order:
         if cfg not in cfgs:
             ctx.event(config=cfg, status="EXCLUDED_BY_M2G_PASS_TABLE")
@@ -641,8 +643,15 @@ def main(argv=None):
             j2_note = None if j2_table else f"J2 table rejected: {ab}"
         else:
             j2_note = "J2 table not given"
-    dec = run_m3(ctx, table, j2_table, j2_note)
-    finish(ctx, table, dec)
+    box, dec = {}, None
+    try:
+        dec = run_m3(ctx, table, j2_table, j2_note, box=box)
+    finally:
+        # rev11 D-B: finish() is GUARANTEED (exception / SystemExit / KeyboardInterrupt in the driver): LABELS.json carries a `driver` record
+        # (not_attempted / partial_boots) so the join never has to guess; a Job that dies harder (SIGKILL) is reconstructed by mg_label.reconstruct_driver.
+        if dec is None:
+            ctx.event(status="DRIVER_EXCEPTION_FINISH_IN_FINALLY")
+        finish(ctx, table, dec or box.get("decisions"))
     return 0
 
 
