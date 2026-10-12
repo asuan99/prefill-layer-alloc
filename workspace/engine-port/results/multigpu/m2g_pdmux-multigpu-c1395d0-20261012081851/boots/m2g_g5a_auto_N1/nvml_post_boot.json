@@ -1,0 +1,9 @@
+{
+ "available": true,
+ "gpus": {
+  "0": {
+   "n_compute_procs": 1,
+   "used_mib": 69708.8125
+  }
+ }
+}

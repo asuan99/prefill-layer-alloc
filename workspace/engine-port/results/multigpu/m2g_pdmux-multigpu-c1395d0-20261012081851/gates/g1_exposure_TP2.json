@@ -1,0 +1,14 @@
+{
+ "agnostic": {
+  "e_time": 0.653464280707285,
+  "exposure_steps": 0.5517241379310345,
+  "reasons": [],
+  "status": "OK"
+ },
+ "d44": {
+  "e_time": 0.7416207344651607,
+  "exposure_steps": 0.7261724659606656,
+  "reasons": [],
+  "status": "OK"
+ }
+}

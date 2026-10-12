@@ -1,0 +1,19 @@
+{
+ "capture_log_lines": 6,
+ "chunked_prefill_size": "-1",
+ "cuda_graph_max_bs": "256",
+ "disable_cuda_graph": "False",
+ "disable_overlap_schedule": "True",
+ "disable_piecewise_cuda_graph": "False",
+ "piecewise_cuda_graph_max_tokens": "-1",
+ "piecewise_cuda_graph_tokens": "[]",
+ "piecewise_lines": 1,
+ "sample": [
+  "[2026-10-12 08:25:07.320] Capture cuda graph begin. This can take up to several minutes. avail mem=13.57 GB",
+  "[2026-10-12 08:25:07.321] Capture cuda graph bs [1, 2, 4, 8, 12, 16, 24, 32, 40, 48]",
+  "[2026-10-12 08:25:11.424] Capture cuda graph end. Time elapsed: 4.10 s. mem usage=0.23 GB. avail mem=13.34 GB.",
+  "[2026-10-12 08:25:11.424] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 08:25:15.152] Prefill batch, #new-seq: 1, #new-token: 7, #cached-token: 0, full token usage: 0.00, mamba usage: 0.02, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 0.00",
+  "[2026-10-12 08:25:15.786] Prefill batch, #new-seq: 1, #new-token: 1, #cached-token: 0, full token usage: 0.00, mamba usage: 0.00, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 11.03"
+ ]
+}

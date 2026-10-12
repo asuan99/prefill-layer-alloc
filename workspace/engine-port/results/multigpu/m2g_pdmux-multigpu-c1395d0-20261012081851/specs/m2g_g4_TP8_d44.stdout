@@ -1,0 +1,25 @@
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Traceback (most recent call last):
+  File "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/mg_boot.py", line 555, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/mg_boot.py", line 551, in main
+    return run_boot(spec, dry=a.dry_run)
+  File "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/mg_boot.py", line 329, in run_boot
+    server = subprocess.Popen(srv_cmd, stdout=lf, stderr=subprocess.STDOUT, env=env, start_new_session=True)
+  File "/opt/conda/lib/python3.14/subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.14/subprocess.py", line 1990, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'nsys'

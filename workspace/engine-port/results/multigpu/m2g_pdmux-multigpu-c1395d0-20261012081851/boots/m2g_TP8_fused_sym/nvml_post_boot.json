@@ -1,0 +1,37 @@
+{
+ "available": true,
+ "gpus": {
+  "0": {
+   "n_compute_procs": 1,
+   "used_mib": 70542.9375
+  },
+  "1": {
+   "n_compute_procs": 1,
+   "used_mib": 70830.9375
+  },
+  "2": {
+   "n_compute_procs": 1,
+   "used_mib": 70830.9375
+  },
+  "3": {
+   "n_compute_procs": 1,
+   "used_mib": 70830.9375
+  },
+  "4": {
+   "n_compute_procs": 1,
+   "used_mib": 70830.9375
+  },
+  "5": {
+   "n_compute_procs": 1,
+   "used_mib": 70830.9375
+  },
+  "6": {
+   "n_compute_procs": 1,
+   "used_mib": 70830.9375
+  },
+  "7": {
+   "n_compute_procs": 1,
+   "used_mib": 70542.9375
+  }
+ }
+}

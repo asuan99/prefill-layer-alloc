@@ -1,0 +1,11 @@
+{
+ "after_step": null,
+ "alive": false,
+ "boot_id": "m2g_TP2_fused",
+ "health_error": "process exited before check",
+ "health_http_status": null,
+ "poll_returncode": -9,
+ "schema": "m2g_alive_after/v1",
+ "steps_total": 2,
+ "t_epoch": 1791795711.5717819
+}

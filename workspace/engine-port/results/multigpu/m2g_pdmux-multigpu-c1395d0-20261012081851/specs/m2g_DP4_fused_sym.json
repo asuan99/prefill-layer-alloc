@@ -1,0 +1,33 @@
+{
+ "N": 4,
+ "arm": "fused_sym",
+ "block": "m2g",
+ "boot_id": "m2g_DP4_fused_sym",
+ "config": "DP4",
+ "deadline_epoch": 1791821951.0,
+ "dp": 4,
+ "gpu_ids": "0,1,2,3",
+ "kind": "g0",
+ "mode": "DP",
+ "out_root": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-c1395d0-20261012081851",
+ "steps": [
+  {
+   "argv": [
+    "python3",
+    "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
+    "serve-g1",
+    "--endpoint",
+    "{ENDPOINT}",
+    "--out",
+    "{OUT}/gates",
+    "--config",
+    "DP4",
+    "--arm",
+    "fused_sym"
+   ],
+   "name": "g1_fused_sym",
+   "type": "cmd"
+  }
+ ],
+ "tp": 1
+}

@@ -1,0 +1,29 @@
+{
+ "capture_log_lines": 16,
+ "chunked_prefill_size": "-1",
+ "cuda_graph_max_bs": "512",
+ "disable_cuda_graph": "False",
+ "disable_overlap_schedule": "True",
+ "disable_piecewise_cuda_graph": "False",
+ "piecewise_cuda_graph_max_tokens": "-1",
+ "piecewise_cuda_graph_tokens": "[]",
+ "piecewise_lines": 4,
+ "sample": [
+  "[2026-10-12 09:23:25.447 TP1] Capture cuda graph begin. This can take up to several minutes. avail mem=13.39 GB",
+  "[2026-10-12 09:23:25.449 TP2] Capture cuda graph begin. This can take up to several minutes. avail mem=13.39 GB",
+  "[2026-10-12 09:23:25.452 TP0] Capture cuda graph begin. This can take up to several minutes. avail mem=13.53 GB",
+  "[2026-10-12 09:23:25.452 TP0] Capture cuda graph bs [1, 2, 4, 8, 12, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192]",
+  "[2026-10-12 09:23:25.453 TP3] Capture cuda graph begin. This can take up to several minutes. avail mem=13.53 GB",
+  "[2026-10-12 09:23:31.873 TP0] Registering 1596 cuda graph addresses",
+  "[2026-10-12 09:23:32.208 TP0] Capture cuda graph end. Time elapsed: 6.76 s. mem usage=0.71 GB. avail mem=12.82 GB.",
+  "[2026-10-12 09:23:32.208 TP0] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 09:23:32.278 TP3] Capture cuda graph end. Time elapsed: 6.83 s. mem usage=0.71 GB. avail mem=12.82 GB.",
+  "[2026-10-12 09:23:32.278 TP3] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 09:23:32.312 TP1] Capture cuda graph end. Time elapsed: 6.87 s. mem usage=0.71 GB. avail mem=12.68 GB.",
+  "[2026-10-12 09:23:32.312 TP1] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 09:23:32.332 TP2] Capture cuda graph end. Time elapsed: 6.88 s. mem usage=0.71 GB. avail mem=12.68 GB.",
+  "[2026-10-12 09:23:32.332 TP2] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 09:23:36.581 TP0] Prefill batch, #new-seq: 1, #new-token: 7, #cached-token: 0, full token usage: 0.00, mamba usage: 0.01, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 0.00",
+  "[2026-10-12 09:23:37.875 TP0] Prefill batch, #new-seq: 1, #new-token: 1, #cached-token: 0, full token usage: 0.00, mamba usage: 0.00, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 5.41"
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "boots_dir": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-c1395d0-20261012081851/boots",
+ "config": "N1",
+ "detail": {
+  "fused|agnostic": null,
+  "fused|d44": null
+ },
+ "verdicts": {
+  "fused|agnostic": "CTL",
+  "fused|d44": "CTL"
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "capture_log_lines": 19,
+ "chunked_prefill_size": "-1",
+ "cuda_graph_max_bs": "512",
+ "disable_cuda_graph": "False",
+ "disable_overlap_schedule": "True",
+ "disable_piecewise_cuda_graph": "False",
+ "piecewise_cuda_graph_max_tokens": "-1",
+ "piecewise_cuda_graph_tokens": "[]",
+ "piecewise_lines": 4,
+ "sample": [
+  "[2026-10-12 09:03:24.663 TP3] Capture cuda graph begin. This can take up to several minutes. avail mem=12.83 GB",
+  "[2026-10-12 09:03:24.670 TP1] Capture cuda graph begin. This can take up to several minutes. avail mem=12.55 GB",
+  "[2026-10-12 09:03:24.679 TP2] Capture cuda graph begin. This can take up to several minutes. avail mem=12.55 GB",
+  "[2026-10-12 09:03:24.679 TP0] Capture cuda graph begin. This can take up to several minutes. avail mem=12.83 GB",
+  "[2026-10-12 09:03:24.679 TP0] Capture cuda graph bs [1, 2, 4, 8, 12, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192]",
+  "[2026-10-12 09:03:38.838 TP0] Registering 1596 cuda graph addresses",
+  "[2026-10-12 09:03:42.065 TP0] Registering 1596 cuda graph addresses",
+  "[2026-10-12 09:03:45.213 TP0] Registering 1596 cuda graph addresses",
+  "[2026-10-12 09:03:48.358 TP0] Registering 1596 cuda graph addresses",
+  "[2026-10-12 09:03:48.761 TP3] Capture cuda graph end. Time elapsed: 24.10 s. mem usage=2.62 GB. avail mem=10.21 GB.",
+  "[2026-10-12 09:03:48.761 TP3] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 09:03:48.777 TP1] Capture cuda graph end. Time elapsed: 24.11 s. mem usage=2.62 GB. avail mem=9.93 GB.",
+  "[2026-10-12 09:03:48.778 TP1] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 09:03:48.815 TP2] Capture cuda graph end. Time elapsed: 24.14 s. mem usage=2.62 GB. avail mem=9.93 GB.",
+  "[2026-10-12 09:03:48.815 TP2] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 09:03:48.817 TP0] Capture cuda graph end. Time elapsed: 24.14 s. mem usage=2.62 GB. avail mem=10.21 GB.",
+  "[2026-10-12 09:03:48.817 TP0] Disable piecewise CUDA graph because the capture size is not set",
+  "[2026-10-12 09:03:53.092 TP0] Prefill batch, #new-seq: 1, #new-token: 7, #cached-token: 0, full token usage: 0.00, mamba usage: 0.01, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 0.00",
+  "[2026-10-12 09:03:54.309 TP0] Prefill batch, #new-seq: 1, #new-token: 1, #cached-token: 0, full token usage: 0.00, mamba usage: 0.00, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 5.75"
+ ]
+}
