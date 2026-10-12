@@ -1,6 +1,7 @@
 # Document status
 
-최종 갱신: 2026-09-13(2)(doc-steward — ★세 번째 사용자 결정
+최종 갱신: 2026-10-12 (doc-steward — changelog 기록뿐, Canonical/Historical/Superseded 분류표 무변경. N2(3-a) 상태 정본 반영: `PROJECT_STATUS.md` (a⁵)·게이트 #267, `CONSENSUS.md` rev94(§3 항목292·§5 항목22), `EXPERIMENT_ROADMAP.md` 헤더. 규칙 봉인 `5e29990`/`fc9e6404…`, 하네스 재봉인 `a5de2d6`; 이전 `fcc0b9e`·`97a91b5`·`1037655`는 superseded 이력. 두 번째 Job `pdmux-n2-static-grid-a5de2d6-20261012021243` 완주·회수 OK·결과 감사 대기. 새 성능 판정 0건·Claim D/E 등급 불변. 커밋은 메인 세션.)
+이전: 2026-09-13(2)(doc-steward — ★세 번째 사용자 결정
 (attention 백엔드 triton→flashinfer 전환) + engine-porter
 Nano-9B-v2-Base 모델 지원 검증 `GO`(job 905835 재인용, GPU 0
 이 세션) + λ* 기존 측정 확인(arm별 5× 상이, 단일 스칼라 설계
