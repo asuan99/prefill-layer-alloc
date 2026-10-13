@@ -185,3 +185,55 @@
 | pdmux-multigpu-9df4a0a-20261013081304 (M2g J4 재실행) | a100x4 | 9df4a0a | succeeded(전 arm 포함) | DONE+sha256 | 0.966 |
 | pdmux-multigpu-06eea19-20261013081322 (M2g J8 재실행) | a100x8 | 06eea19 | succeeded(전 arm 포함) | DONE+sha256 | 1.051 |
 이미지: `ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b…` 전 Job 공통. 켜 둔 Workspace 없음.
+
+---
+
+# (D) 읽기 전용 연구 감사 세션 — decode SM 포화·layer-type 스케일링·워크로드 범위·multi-GPU 재측정 지점 (2026-10-12 수행, 2026-10-13 기록)
+
+## 이번 세션 요약
+
+사용자 요청(READ-ONLY 연구 감사)으로 "hybrid 모델의 실행 특성 때문에 기존 PD-mux의 예측·결정이 실제로 틀리는가"를 정본·결과·코드·git 이력으로 추적했다. 하위 에이전트 7개(RQ1 포화·RQ2 layer-type·RQ3 per-type 실패·RQ4/5 예측기·N2/E2/N3 범위·워크로드 범위 지도·shape B 전수)를 병렬로 돌려 종합했고, 그 뒤 사용자 질문 두 개(워크로드 범위 / shape B 판단과 multi-GPU 재측정 지점)에 답했다. **파일 수정·Job 제출 0, 새 성능·정책 판정 0, claims-auditor 미경유**(아래 내용은 전부 감사 의견이지 정본 판정이 아니다). 이 기록 커밋이 유일한 변경이다.
+
+★**시점 주의**: 감사는 2026-10-12에 수행했고, 그 시점엔 Job-EA 미실행·Job-PROFILE 미감사였다. 같은 날짜 파일 (A)절대로 이후 Job-EA가 완주·결과 감사(ρ≈1.13–1.18, 동거+전력 한도 합성)됐고 PROFILE은 경량 확인으로 처리됐다. 아래 "Job-EA 미실행" 류 서술은 그 시점 기준이며 (A)절이 현재다.
+
+## 결정·측정 (감사 의견, 판정 아님)
+
+**RQ 종합 판정(감사자 라벨)**
+1. Hybrid layer-type 스케일링 차이 실증 — **아니다.** prefill Diff A(비용비)만 scoped(Zamba2·triton·no-cg micro, `reports/prefill_attn_ssm_length_review_2026-10-01.md:13-25`). Diff B(민감도비)는 정책 단위 ≈1. decode per-type 유효 측정 0건(835571·858811 결함 계열, 873783 UNAUDITED·GATE N FAIL). C2는 모델-무관.
+2. Hybrid 운영점 decode SM 포화 — **확인 안 됨.** HBM 카운터 측정 0건(ncu는 green-ctx 하 exit 9, `results/kernel_mech/p1_probe/P1_VERDICT_2026-08-20.md`), 추정 BW SM92 45–58%(포화 서술 금지). N2 PROFILE(감사 전, 단독) 44→108 짝지은 비 1.30–1.61× — plateau 없음. d_min 미측정(N2 d 표 인용 금지 N2C-15).
+3. "generic 예측기로 충분" 반대 가설 — **기각되지 않음.** A4 판정 K2(단일 모델 SM별 재적합 = 재매개화, D≡0, `results/hybrid_sched_s0/audit_a4_split_2026-10-01/VERDICT.md`)와 같은 방향. 코드: `generic`=예측기 없는 반응형(`controller.py:410-457`), `hybrid`=points bilinear 표(layer type 미사용, `profile.py:197-363`), SQUEEZE/PAUSE `src/` 0건.
+4. Hybrid-aware PD-mux 독립 기여 근거 — **현재 없음**(예측기 수준 확장은 자명 쪽). 남는 후보는 hybrid 비고유(pause manager·방법론·비용 특성화).
+- 증거 사슬 Layer-type scaling → cost surface → generic error → d_min → action → goodput은 **첫 화살표에서 끊김**.
+- per-type 실패 기전 근거의 성격: 19-window = 코드 구조(타이밍 미수집), 124→85ms = sync 제거+pinning 제거 동시 ablation(기여 미분리), overlap 손실 귀속은 v4(95ms, 더 나쁨)와 미정합, cudagraph 비양립 "근본적" 주장 미시도. 42ms 앵커는 다른 job(834914/834927). whole-phase 예측은 이 실패로 반증되지 않음(경로 분리: `multiplexing_mixin.py:1151-1209` vs `:1546-1900`).
+
+**CPU 탐색 계산(감사 전 N2 PROFILE 데이터, 인용 불가, 스크래치에만)**: D별 `T = a + b·bs + c·bs·ctx`(b>1) 적합 R² ≥ 0.996. D16/D108 계수비 상수 2.51× · bs항 4.63× · ctx항 1.95× → 항별 SM 스케일링이 달라 SM 단일 α generic은 (b48,c8192)를 −14~−16% 과소예측하나 bs-vs-상수(가중치) 차이라 hybrid 고유 증거 아님. ctx항 비중: b48·c8192에서 8–14%, **shape B 영역(b≈2)에서 ≈1%**.
+
+**워크로드 범위 감사**
+- 정본 정책 결론의 근거 워크로드 = (a) Zamba2-2.7B ShareGPT 짧은 입력(in mean 341–352, ≥4000 0건, ctx 4096) — HE0·§1-13/16/17·얽힘·decode-heavy static 기본값, (b) 합성 중간 in2000/o96·in3600/o32 — P1.7·R0d·gate2. 저장소의 "shape A"(256/512, Nemotron)는 λ0·E2에만 쓰였다. "실 워크로드 mean 352"는 벤치 자신의 ShareGPT 표본(독립 trace 아님).
+- ★확인 사실: HE0 "변화 trace"는 LO·HI가 **순차 별개 `bench_serving` 호출(단계 사이 드레인, 같은 200 프롬프트)** — `results/slo_sched/sharegpt_vary_bench.sbatch:66-75`. 정본 caveat 존재 여부 NOT VERIFIED.
+- shape B(8192/64) 측정 = λ\*(B)(KISTI 908623·VESSL), N3 3·4회차 SLO 용량, 기술 통계. **정책 비교는 B에서 0건**(5-a 포함). 인접 측정(probe C 905835, Q-A REGRET)은 arm 순위 인용 금지이나 둘 다 decode-heavy 기본값과 반대 방향 정황(열린 긴장, 판정 아님).
+
+**shape B 판단과 multi-GPU(사용자 질문 2)**
+- shape B의 decode batch 1–2·결정 사실상 static은 **1-GPU 한계가 아니라 출력 길이(Little의 법칙: ≈0.69 req/s × 64 tok × ~20 ms ≈ 1) + 설정 `max_prefill_tokens` 16384(prefill 1회 2요청)** 때문(산술, 측정 아님). DP는 복제본당 불변, TP는 ≤N배. 1-GPU 고유 한계는 긴 입력 TTFT 하한·16k 초과 문맥·큰 decode batch 도달성.
+- 입출력 둘 다 긴 구조(가칭 **shape C**, 예 8192/512): 추정 decode 동시 수 GPU당 7–10, ctx 8–9k, 동거 지속 — PD-mux가 decode를 보호하는 영역이자 hybrid ctx항이 의미를 갖는 유일 영역. 1-GPU·multi-GPU 어디서도 등록·측정되지 않음.
+- multi-GPU PREREG(브랜치 `multigpu-scaling`)에 빠진 것: ① shape C 부재(M3는 A·B만, `PREREG_MULTIGPU_2026-10-12.md:34,98`) ② `max_prefill_tokens` 미등록(기본 16384 고정 → TP8도 prefill 1회 2요청) ③ TP에서 동적 arm 제외 → HE0형 비교는 DP로만 ④ N3식 k×floor SLO는 기판 상대 정의 → N 간 비교엔 절대 SLO 필요 ⑤ TP에서 GPU당 decode SM 요구 변화(CA v1 36 CTA vs decode 16 SM 파티션) → N2형 프로파일 재측정 필요 ⑥ DP=무처치 대조군, TP="1-GPU 한계였나"를 묻는 축.
+
+## 코드·문서 변경
+
+- 이 절 추가(`handoff-report/session_handoff_2026-10-13.md`)만. 정본·메모리 미변경 — 새 경험적 판정 없음(handoff 규율 §3 "단순 상태면 문서만").
+
+## 열린 항목 / 다음 세션 시작점
+
+사용자 결정 대기(처방 아님):
+- (a) 타겟 워크로드를 "긴 문서 요약(≈B)" → "긴 입력+긴 출력(C)"으로 재정의할지(`reports/system_design_anchor_2026-09-30.md:91-92`의 "reasoning은 분할 무관"은 짧은 입력 서술).
+- (b) shape C 구체값(8192/512 vs 8192/1024 등). (c) `max_prefill_tokens` 고정 상수 vs 축. (d) multi-GPU M3 PREREG 개정(shape C·노브·절대 SLO) — M2g와 독립.
+- 권고 순서(감사 의견): 1-GPU shape C 포함 5-a(A·B·C × static{16,24,34,44,108}+agnostic+fused_sym, 같은 Job, n≥4, 절대 SLO) → M3 PREREG 개정·재감사 → 16k 초과는 TP 전제 별도 사전등록. layer-type 분할은 재측정 권고 안 함.
+
+## 미완·주의
+
+- 위 판정·계산은 **claims-auditor 미경유**. 정본 인용 전 감사 필요. N2 탐색 회귀는 감사 전 데이터라 인용 불가.
+- 문서 위생 후보(doc-steward 회부 후보, 미처리): `reports/per_layer_type_postmortem.md`에 stale 배너 없음(철회된 decode Diff B·WIDE 단일값·858811 floor 서술 잔존 [CS-OK: 금지 사실 서술]); `reports/plot_killchain.py`가 858811 데이터 사용; live 코드 `_slo_knee_itl`(`multiplexing_mixin.py:954-959`)이 결함 job 835571 값을 하드코딩(Zamba2 9/54 조성) — 현행 arm 사용 여부 NOT VERIFIED; CONSENSUS §1-15 잔차 귀속이 v4 미인용; HE0 변화 trace 드레인 caveat 정본 존재 여부 미확인; `ttft_slo_longctx_survey_2026-10-04.md:68` "shape B no-load TTFT 측정 없음"은 P2 0.9104 s·N3 floor와 불일치.
+
+## GPU 실행 기록(VESSL)
+
+- 이 감사 세션: 제출·회수 0, Workspace 0.
