@@ -36,3 +36,31 @@ Also: commit fff9b1d "prefill stays smooth" is wrong (L=1k green-only steps exis
 order with 108 bracketed + per-run UTC stamps (C6 throttle); b via cuOccupancyMaxActiveBlocksPerMultiprocessor
 on the census CUfunction (C5 attn); CUBLASLT_LOG_LEVEL=5 eager GEMM choice (C2 eager); ncu LaunchStats alone
 (C1); L2-flush decode arm + graph/back-to-back prefill at L=1k + end-to-end forward calibration (C4).
+
+## Resolution run — ctrl2 Job job-h0ro98uvs4gx (050483c, 2026-10-13), GPU UUID GPU-6ca4a276… (a SECOND GPU)
+Facts from the run; grading changes below are the run's mechanical outcome against the predictions
+registered in commit 050483c, not a new audit.
+
+- **C3 (registered prediction HELD, second GPU).** One process, arms interleaved over 10 shuffled rounds
+  (n=100 pooled per arm/op): decode B=128 o_proj 104g 0.0688 / **106g 0.0471** / 108p 0.0468 ms;
+  down_proj 0.1744 / **0.1127** / 0.1124; out_proj 0.1197 / **0.0779** / 0.0779; 1-wave control in_proj
+  0.1395 / 0.1398 / 0.1400. Census: main split-K GEMM 1 wave at 106 and 108, 2 at 104 (b=1 driver).
+  Prefill out_proj (432 CTAs) goes the other way as its waves predict (5 @104/106, 4 @108: 0.478/0.490/0.406).
+  → the 104↔108 step is wave quantization; green-vs-plain shows no effect at equal waves (isolated kernels).
+- **C2 eager (resolved).** CUBLASLT_LOG_LEVEL=5 on eager prefill (L 1k/16k): every heuristic query carries
+  `smCountTarget=108` on the 104-SM green partition too; the chosen algo (id/tile/stages/splitK) is
+  identical for all 12 GEMM shapes at 104 and 108.
+- **C1 (resolved).** `ncu --section LaunchStats` alone: ERR_NVGPUCTRPERM. ncu is unusable on this image.
+- **C5 attention residency.** Driver occupancy b=2 for the FlashInfer ragged prefill kernel at L=16384
+  (smem 65568) = calc. The L=1024 variant (smem 69664, the flip case) was not in this run → still not citable.
+  All 288 census kernels now carry driver b.
+- **C6 order confound (removed; cause open).** SM order shuffled, 108 first and last (drift ≤1.2%).
+  Prefill L=16384 per-SM efficiency (speedup ÷ linear) still ~1.12 flat to 64 SM, then 1.10/1.05/1.01/1.00
+  at 74/92/104/108. Power-cap events occur only in runs at ≥74 SM regardless of run position (11–18% of
+  samples), but the median SM clock in those runs is still 1410 MHz → time order excluded; a power-limit
+  cause is NOT established.
+- Two-GPU replication now exists for decode GEMM values (o_proj 108p: 0.0453–0.0456 on GPU-32e4…, 0.0468 here).
+
+Safe wording addition (same scope rules): "On a 106-SM green partition the 105-CTA split-K decode GEMMs time
+within 0.6% of the 108-SM plain stream and ~1.5× faster than on 104 SM, as their recorded wave count predicts;
+cuBLASLt targets 108 SMs (smCountTarget=108) and picks identical algorithms on 104-SM green partitions."

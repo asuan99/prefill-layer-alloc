@@ -1,0 +1,2 @@
+name, uuid, driver_version, clocks.max.sm [MHz], power.limit [W]
+NVIDIA A100-SXM4-80GB, GPU-6ca4a276-2b83-9c27-7af1-287c310b4617, 580.105.08, 1410 MHz, 400.00 W
