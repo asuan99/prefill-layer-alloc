@@ -19,7 +19,8 @@ SPEC (JSON, --spec FILE)
   nsys              wrap the server in `nsys launch` (descriptive block; steps carry nsys start/stop cmds)
 Writes under <out_root>/boots/<boot_id>/ and <out_root>/cells/<boot_id>__<cell>/ ; see module constants.
 Per boot (rev6 harness audit 2026-10-12): alive_after.json (F2, schema m2g_alive_after/v1 of the gate module: poll() + GET /health after
-the LAST step, before teardown), cmd_<name>.window.json for every cmd step ({t0_mono,t1_mono} on CLOCK_MONOTONIC = the telemetry clock,
+the LAST step, before teardown), alive_after_<cmd step name>.json right after every cmd step (2026-10-13 repair: G1 reads the one of its
+own step), cmd_<name>.window.json for every cmd step ({t0_mono,t1_mono} on CLOCK_MONOTONIC = the telemetry clock,
 F3), contam_pre.json / boot.json contam_status = CONTAM_UNVERIFIED when NVML is unavailable (F5: the check did not run; not 'clean').
 Exit: 0 ok · 1 boot failed · 2 spec error · 3 ABORT_COMM_ENV · 5 GPU_CONTAMINATED (pre-boot) · 6 nothing ran (deadline)
 `--dry-run` (or PDMUX_MG_DRYRUN=1) writes server_args.txt / env.json / steps.json and returns -- no GPU, no network.
@@ -228,6 +229,25 @@ def kill_group(proc, grace=10):
             pass
 
 
+def write_alive_step(boot_dir, boot_id, server, port, spec_steps, steps_done):
+    """2026-10-13 repair (J4/J8 rev11): survival record right after a CMD step -> alive_after_<step name>.json (same schema,
+    after_step.name = the step name).  G1 '비정상 종료 0' reads the record of the boot's G1 step, so a server that dies in a
+    LATER step (G2 on the fused boot) is not charged to G1.  Only cmd steps (no extra /health request between M3 cells).
+    A write failure leaves the file absent -> the G1 reader says NOT_TESTED, never alive."""
+    try:
+        import m2g_correctness_gate as GATE
+        last = steps_done[-1]
+        name = last["step"].get("name", "x")
+        after = {"index": len(steps_done) - 1, "type": last["step"]["type"], "status": last["status"], "name": name}
+        GATE.record_alive_after(boot_dir, boot_id, server, f"http://127.0.0.1:{port}", after, len(spec_steps),
+                                record_name=GATE.alive_step_record_name(name))
+    except Exception as e:  # noqa: BLE001
+        try:
+            (Path(boot_dir) / "alive_after_step.error").write_text(repr(e) + "\n")
+        except OSError:
+            pass
+
+
 def write_alive(boot_dir, boot_id, server, port, spec_steps, steps_done):
     """F2: ONE survival record per boot, after the LAST step and BEFORE teardown: `poll()` + GET /health.  The writer and the readers
     (G1 '비정상 종료 0', G3b '서버 생존') are the gate module's single implementation (m2g_correctness_gate.record_alive_after /
@@ -408,6 +428,8 @@ def run_boot(spec, dry=False):
             if server.poll() is not None:
                 steps_done.append({"step": st, "status": "SERVER_DIED"})
                 rc = 1
+                if st["type"] == "cmd":                # the step's own survival record says dead (not absent)
+                    write_alive_step(boot_dir, spec["boot_id"], server, port, spec.get("steps", []), steps_done)
                 continue
             if st["type"] == "warmup":
                 steps_done.append({"step": st, "status": run_warmup(spec, st, boot_dir, port, n_gpus, deadline)})
@@ -419,6 +441,7 @@ def run_boot(spec, dry=False):
                 steps_done.append({"step": st, "status": run_cell(spec, st, boot_dir, out_root, port, server.pid, deadline)})
             elif st["type"] == "cmd":
                 steps_done.append({"step": st, "status": run_cmd(st, boot_dir, out_root, port, deadline)})
+                write_alive_step(boot_dir, spec["boot_id"], server, port, spec.get("steps", []), steps_done)   # right after THIS step
             else:
                 steps_done.append({"step": st, "status": "UNKNOWN_STEP_TYPE"})
         boot["status"] = "OK" if all(s["status"] in ("OK", "NOT_STARTED_DEADLINE") for s in steps_done) else "STEP_FAILURES"

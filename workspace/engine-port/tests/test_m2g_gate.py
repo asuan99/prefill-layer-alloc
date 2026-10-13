@@ -255,6 +255,153 @@ class TestG2(unittest.TestCase):
         self.assertEqual(M2G.score_g2(None, a, a)["verdict"], "NOT_TESTED")
 
 
+def tf_api(n_prompts, n_pos, lp_fn, id_fn=lambda i, j: 7):
+    """The record shape the engine actually returns (rev11 J2/J4/J8 g2_tf_*.json): position 0 has no logprob."""
+    d = tf(n_prompts, n_pos, lp_fn, id_fn)
+    for v in d.values():
+        v[0].update(top1_id=None, top1_lp=None)
+    return d
+
+
+J4_DIR = ENG / "results" / "multigpu" / "m2g_pdmux-multigpu-99b5e5e-20261013062404"
+
+
+class TestG2LeadingPosition(unittest.TestCase):                    # 2026-10-13 repair (rev11: G2 NOT_TESTED on every TP)
+    def test_api_none_at_position_0_is_excluded_and_counted(self):
+        a = tf_api(64, 128, lambda i, j: -0.1)
+        r = M2G.score_g2(a, a, a)
+        self.assertEqual(r["verdict"], "PASS")
+        self.assertEqual((r["floor"]["excluded_positions"], r["test"]["excluded_positions"]), (64, 64))
+        self.assertEqual(r["floor"]["positions"], 64 * 127)
+        self.assertEqual(M2G.teacher_agreement(a), 1.0)
+        # mutant = no exclusion (the rev11 behaviour): non-finite position 0 -> floor invalid -> NOT_TESTED.  KILLED:
+        with mock.patch.object(M2G, "G2_LEADING_NO_LOGPROB", 0):
+            self.assertEqual(M2G.score_g2(a, a, a)["verdict"], "NOT_TESTED")
+
+    def test_non_finite_elsewhere_is_still_a_problem(self):
+        a = tf_api(4, 8, lambda i, j: -0.1)
+        hole = tf_api(4, 8, lambda i, j: math.nan if (i, j) == (2, 5) else -0.1)
+        r = M2G.score_g2(a, hole, a)                                   # floor with a NaN at position 5
+        self.assertEqual(r["verdict"], "NOT_TESTED")
+        self.assertIn("P2[5]: non-finite logprob", r["floor"]["problems"])
+        self.assertEqual(M2G.score_g2(a, a, hole)["verdict"], "FAIL")   # in the TP=N run: still FAIL
+        none1 = tf_api(4, 8, lambda i, j: None if j == 1 else -0.1)   # the exclusion is position 0 only
+        self.assertEqual(M2G.score_g2(a, none1, a)["verdict"], "NOT_TESTED")
+
+    def test_finite_position_0_is_compared(self):
+        a = tf(4, 8, lambda i, j: -0.1)                                # if the API ever fills position 0 it is used, not dropped
+        b = tf(4, 8, lambda i, j: -0.1 - (1.0 if j == 0 else 0.0))
+        r = M2G.score_g2(a, a, b)
+        self.assertEqual((r["verdict"], r["test"]["excluded_positions"]), ("FAIL", 0))
+
+    def test_empty_tpn_record_is_not_tested_not_divergent(self):
+        a = tf_api(4, 8, lambda i, j: -0.1)
+        oom = {k: [] for k in a}                                       # the rev11 fused TP4/TP8 G2 run (server OOM): every record empty
+        r = M2G.score_g2(a, a, oom)
+        self.assertEqual((r["verdict"], r["label"]), ("NOT_TESTED", None))
+        part = dict(a, P1=[])
+        self.assertEqual(M2G.score_g2(a, a, part)["verdict"], "NOT_TESTED")
+
+    @unittest.skipUnless((J4_DIR / "gates" / "g2_tf_N1_r1.json").exists(), "J4 rev11 artifacts absent")
+    def test_j4_rev11_floor_records(self):
+        """Real J4 N1 floor records (two TP=1 repeats): every prompt's position 0 is None, nothing else non-finite."""
+        r0 = json.loads((J4_DIR / "gates" / "g2_tf_N1_r0.json").read_text())
+        r1 = json.loads((J4_DIR / "gates" / "g2_tf_N1_r1.json").read_text())
+        fl = M2G.g2_deltas(r0, r1)
+        self.assertEqual((fl["problems"], fl["excluded_positions"]), ([], 64))
+        with mock.patch.object(M2G, "G2_LEADING_NO_LOGPROB", 0):        # mutant: the rev11 scorer
+            self.assertEqual(len(M2G.g2_deltas(r0, r1)["problems"]), 64)
+        tp4 = json.loads((J4_DIR / "gates" / "g2_tf_TP4_r0.json").read_text())
+        self.assertEqual(M2G.score_g2(r0, r1, tp4)["verdict"], "NOT_TESTED")   # OOM-empty TP4 run: not a numeric divergence
+
+
+class TestG1SurvivalAfterG1Step(unittest.TestCase):                  # 2026-10-13 repair (rev11 J4/J8: G2 OOM charged to G1)
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.o = Path(self.tmp.name)
+        (self.o / "gates").mkdir()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def rec(self, cfg, arm, g1, end):
+        bd = self.o / "boots" / f"m2g_{cfg}_{arm}"
+        bd.mkdir(parents=True, exist_ok=True)
+        if g1 is not None:
+            (bd / f"alive_after_g1_{arm}.json").write_text(json.dumps(M2G.make_alive_record(
+                bd.name, *g1, after_step={"index": 0, "type": "cmd", "status": "OK", "name": f"g1_{arm}"})))
+        if end is not None:
+            (bd / "alive_after.json").write_text(json.dumps(M2G.make_alive_record(
+                bd.name, *end, after_step={"index": 1, "type": "cmd", "status": "OK"}, steps_total=2)))
+
+    def j4_shape(self, outputs_from=None):
+        """J4 rev11 shape: TP4 fused alive right after G1, dead (rc -9) after G2; the PD-mux arm boots alive throughout."""
+        a, _ = outs()
+        for cfg in ("N1", "TP4"):
+            for arm in M2G.ARMS:
+                src = outputs_from(cfg, arm) if outputs_from else None
+                (self.o / "gates" / f"g1_out_{cfg}_{arm}.json").write_text(
+                    src if src is not None else json.dumps({"outputs": a, "errors": {}}))
+        self.rec("TP4", "fused", (None, 200), (-9, None))
+        for arm in M2G.PDMUX_ARMS:
+            self.rec("TP4", arm, (None, 200), (None, 200))
+
+    def test_death_in_a_later_step_is_not_charged_to_g1(self):
+        self.j4_shape()
+        doc = M2G.cli_score_g1(self.o / "gates", "TP4")
+        for arm in M2G.PDMUX_ARMS:
+            d = doc["detail"][f"fused|{arm}"]
+            self.assertEqual((d["verdict"], d["abnormal_exit"]), ("PASS", False))
+            self.assertEqual(d["alive_after_boot_end"]["fused"], False)              # reported beside, not used
+        # mutant = read the boot-END record (the rev11 code): the G2 OOM becomes a G1 abnormal exit.  KILLED:
+        with mock.patch.object(M2G, "alive_after_step", lambda bd, step: M2G.alive_after(bd)):
+            doc = M2G.cli_score_g1(self.o / "gates", "TP4")
+        self.assertEqual(doc["verdicts"], {"fused|agnostic": "FAIL", "fused|d44": "FAIL"})
+
+    def test_death_during_g1_is_still_fail_and_missing_is_not_tested(self):
+        self.j4_shape()
+        self.rec("TP4", "fused", (-9, None), None)                                  # died by the end of its G1 step
+        self.assertEqual(M2G.cli_score_g1(self.o / "gates", "TP4")["verdicts"]["fused|agnostic"], "FAIL")
+        (self.o / "boots" / "m2g_TP4_fused" / "alive_after_g1_fused.json").unlink()
+        self.rec("TP4", "fused", None, (None, 200))                                  # only a boot-end record: alive -- NOT a substitute
+        self.assertEqual(M2G.cli_score_g1(self.o / "gates", "TP4")["verdicts"]["fused|agnostic"], "NOT_TESTED")
+
+    def test_record_of_another_step_is_rejected(self):
+        bd = self.o / "boots" / "m2g_TP4_fused"
+        bd.mkdir(parents=True)
+        (bd / "alive_after_g1_fused.json").write_text(json.dumps(M2G.make_alive_record(
+            bd.name, None, 200, after_step={"index": 1, "type": "cmd", "status": "OK", "name": "g2"})))
+        self.assertIsNone(M2G.alive_after_step(bd, "g1_fused"))
+        self.assertTrue(M2G.alive_after(bd, "alive_after_g1_fused.json"))            # control: same file, no step check
+
+    @unittest.skipUnless((J4_DIR / "boots" / "m2g_TP4_fused" / "alive_after.json").exists(), "J4 rev11 artifacts absent")
+    def test_j4_rev11_artifacts(self):
+        """Real J4 outputs + real boot-end records (fused dead after G2, rc -9) + a G1-step record 'alive' for each boot (rev11 had
+        none; G2 requests were answered 200 after the G1 window, cmd_g2.window.json).  New scorer: abnormal_exit False.  Mutant
+        (boot-end record): abnormal_exit True -> FAIL, the rev11 outcome."""
+        import shutil
+        end = json.loads((J4_DIR / "boots" / "m2g_TP4_fused" / "alive_after.json").read_text())
+        self.assertEqual((end["poll_returncode"], end["after_step"]["index"]), (-9, 1))
+        for cfg in ("N1", "TP4"):
+            for arm in M2G.ARMS:
+                shutil.copy(J4_DIR / "gates" / f"g1_out_{cfg}_{arm}.json", self.o / "gates")
+        for arm in ("fused",) + tuple(M2G.PDMUX_ARMS):
+            bd = self.o / "boots" / f"m2g_TP4_{arm}"
+            bd.mkdir(parents=True)
+            shutil.copy(J4_DIR / "boots" / f"m2g_TP4_{arm}" / "alive_after.json", bd)
+            (bd / f"alive_after_g1_{arm}.json").write_text(json.dumps(M2G.make_alive_record(
+                bd.name, None, 200, after_step={"index": 0, "type": "cmd", "status": "OK", "name": f"g1_{arm}"})))
+        doc = M2G.cli_score_g1(self.o / "gates", "TP4")
+        for arm in M2G.PDMUX_ARMS:
+            d = doc["detail"][f"fused|{arm}"]
+            self.assertIs(d["abnormal_exit"], False)
+            self.assertNotIn("abnormal exit", d.get("why") or "")
+        with mock.patch.object(M2G, "alive_after_step", lambda bd, step: M2G.alive_after(bd)):
+            doc = M2G.cli_score_g1(self.o / "gates", "TP4")
+        for arm in M2G.PDMUX_ARMS:
+            self.assertEqual((doc["detail"][f"fused|{arm}"]["abnormal_exit"], doc["verdicts"][f"fused|{arm}"]), (True, "FAIL"))
+
+
 # ------------------------------------------------------------------------------ G3
 def write_g3(d, world, repeats=500, errors=0, completed=None, hang=None, drop=None):
     d.mkdir(parents=True, exist_ok=True)
@@ -787,10 +934,15 @@ class TestCliAdapters(unittest.TestCase):
     def put(self, cfg, arm, outs_):
         (self.g / f"g1_out_{cfg}_{arm}.json").write_text(json.dumps({"outputs": outs_, "errors": {}}))
 
-    def alive(self, cfg, arm, rc=None, status=200, boots=None):
+    def alive(self, cfg, arm, rc=None, status=200, boots=None, end=None):
+        """The record right after the boot's G1 step (what G1 reads) + the boot-end record (`end` = (rc, status), default same)."""
         bd = (boots or self.g.parent / "boots") / f"m2g_{cfg}_{arm}"
         bd.mkdir(parents=True, exist_ok=True)
-        (bd / "alive_after.json").write_text(json.dumps(M2G.make_alive_record(f"m2g_{cfg}_{arm}", rc, status)))
+        step = f"g1_{arm}"
+        (bd / f"alive_after_{step}.json").write_text(json.dumps(M2G.make_alive_record(
+            f"m2g_{cfg}_{arm}", rc, status, after_step={"index": 0, "type": "cmd", "status": "OK", "name": step})))
+        erc, est = end if end is not None else (rc, status)
+        (bd / "alive_after.json").write_text(json.dumps(M2G.make_alive_record(f"m2g_{cfg}_{arm}", erc, est)))
 
     def test_score_g1_contract(self):
         a, b = outs()
@@ -816,11 +968,12 @@ class TestCliAdapters(unittest.TestCase):
         for arm in M2G.ARMS:
             self.alive("TP4", arm)
         self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|agnostic"], "PASS")  # control
-        self.alive("TP4", "agnostic", rc=-9, status=None)  # server exited after its last step
+        self.alive("TP4", "agnostic", rc=-9, status=None)  # server exited by the end of its G1 step
         self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|agnostic"], "FAIL")
         self.alive("TP4", "agnostic", rc=None, status=503)  # process up, /health not OK
         self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|agnostic"], "FAIL")
-        (self.g.parent / "boots" / "m2g_TP4_fused" / "alive_after.json").unlink()
+        (self.g.parent / "boots" / "m2g_TP4_fused" / "alive_after_g1_fused.json").unlink()
+        self.assertTrue((self.g.parent / "boots" / "m2g_TP4_fused" / "alive_after.json").exists())   # boot-end record is NOT a substitute
         self.assertEqual(M2G.cli_score_g1(self.g, "TP4")["verdicts"]["fused|d44"], "NOT_TESTED")
         # mutant = the pre-F2 code (abnormal exit hardcoded False): the missing record would read PASS
         with mock.patch.object(M2G, "abnormal_exit_of", lambda *x: False):
@@ -919,22 +1072,82 @@ class TestCliAdapters(unittest.TestCase):
         self.assertEqual(len({r for r, _ in p}), 64)
         self.assertEqual(p, M2G.registered_prompts())  # seed fixed -> identical
 
-    def test_http_clients_with_fake_post(self):
+    @staticmethod
+    def engine_fake(prompt_ids, vocab_top=lambda ids, i: ids[i], calls=None, oom_positions=None):
+        """A /generate + /tokenize stand-in that follows the engine tree's construction (2026-10-13 repair):
+        input_token_logprobs[k] = (lp, origin_input_ids[start + k]) with entry 0's lp None, input_top_logprobs = [None] +
+        tops[start + 1 ...] (scheduler_output_processor_mixin._process_input_*_logprobs).  `oom_positions`: a request
+        asking for more logprob positions than this raises (the fused TP4 OOM, 8192 x vocab fp32)."""
         def post(endpoint, body):
-            if "text" in body and body.get("return_logprob"):
-                return {"meta_info": {"input_token_logprobs": [[None, 11, None], [-0.5, 12, None]]}}
-            if "text" in body:
-                return {"output_ids": [1, 2, 3]}
-            ids = body["input_ids"]
-            start = body["logprob_start_len"]
-            self.assertEqual(ids[:2], [11, 12])
-            return {"meta_info": {"input_top_logprobs": [[[-0.2, t, None]] for t in ids[start:]]}}
+            ids = list(prompt_ids[body["text"]]) if "text" in body else list(body["input_ids"])
+            if calls is not None:
+                calls.append(dict(body))
+            if not body.get("return_logprob"):
+                return {"output_ids": [1, 2, 3], "meta_info": {"prompt_tokens": len(ids)}}
+            start = body.get("logprob_start_len", -1)
+            start = len(ids) if start == -1 else start
+            if oom_positions is not None and len(ids) - start > oom_positions:
+                raise RuntimeError("CUDA out of memory. Tried to allocate 4.00 GiB")
+            itl = [[None if k == 0 else -0.5, ids[start + k], None] for k in range(len(ids) - start)]
+            out = {"meta_info": {"prompt_tokens": len(ids), "input_token_logprobs": itl}}
+            if body.get("top_logprobs_num"):
+                out["meta_info"]["input_top_logprobs"] = [None] + [[[-0.2, vocab_top(ids, start + k), None]]
+                                                                   for k in range(1, len(ids) - start)]
+            return out
+
+        def tokenize(endpoint, text):
+            return list(prompt_ids[text])
+        return post, tokenize
+
+    def test_http_clients_with_fake_post(self):
+        pids = {"t": [11, 12, 13], "u": [21, 22]}
+        calls = []
+        post, tok = self.engine_fake(pids, calls=calls)
         g = M2G.http_generate("http://x", [("A", "t"), ("B", "u")], post=post)
         self.assertEqual(g["outputs"], {"A": [1, 2, 3], "B": [1, 2, 3]})
-        tfr = M2G.http_teacher_forced("http://x", [("A", "t")], {"A": [5, 6]}, post=post)
-        self.assertEqual(tfr["A"], [{"teacher_token": 5, "top1_id": 5, "top1_lp": -0.2},
-                                    {"teacher_token": 6, "top1_id": 6, "top1_lp": -0.2}])
-        self.assertEqual(M2G.teacher_agreement(tfr), 1.0)
+        tfr = M2G.http_teacher_forced("http://x", [("A", "t")], {"A": [5, 6, 7]}, post=post, tokenize=tok)
+        # entry 0 is None by API construction; entries 1.. predict the teacher token
+        self.assertEqual(tfr["A"], [{"teacher_token": 5, "top1_id": None, "top1_lp": None},
+                                    {"teacher_token": 6, "top1_id": 6, "top1_lp": -0.2},
+                                    {"teacher_token": 7, "top1_id": 7, "top1_lp": -0.2}])
+        self.assertEqual(M2G.teacher_agreement(tfr), 1.0)          # the API-None position is not a disagreement
+        lp_calls = [c for c in calls if c.get("return_logprob")]
+        self.assertEqual([c["logprob_start_len"] for c in lp_calls], [0, 3])     # tail check (k = min(16, 3)), then from len(prompt)
+
+    def test_g2_client_never_asks_whole_prompt_logprobs_and_is_serial(self):     # 2026-10-13 repair (fused TP4/TP8 OOM)
+        long_ids = list(range(100, 100 + 3000))                                   # ~ the longest registered prompt in tokens
+        pids = {f"text{i}": long_ids[: 2000 + i] for i in range(4)}
+        post, tok = self.engine_fake(pids, oom_positions=256)                      # > 256 logprob positions in one request = OOM
+        conts = {f"P{i}": list(range(7, 7 + 128)) for i in range(4)}
+        prompts = [(f"P{i}", f"text{i}") for i in range(4)]
+        errs = {}
+        tfr = M2G.http_teacher_forced("http://x", prompts, conts, post=post, tokenize=tok, errors=errs)
+        self.assertEqual(errs, {})
+        self.assertTrue(all(len(v) == 128 for v in tfr.values()))
+        self.assertEqual(M2G.G2_CONCURRENCY, 1)
+        # mutant = the pre-repair prompt-id request (logprob_start_len 0 over the whole prompt): every prompt OOMs -> empty records
+        def old_prompt_ids(endpoint, text, post_, tokenize=None):
+            out = post_(endpoint, {"text": text, "sampling_params": {"temperature": 0.0, "max_new_tokens": 1},
+                                   "return_logprob": True, "logprob_start_len": 0})
+            return [int(t[1]) for t in out["meta_info"]["input_token_logprobs"]]
+        errs = {}
+        with mock.patch.object(M2G, "_prompt_ids", old_prompt_ids):
+            bad = M2G.http_teacher_forced("http://x", prompts, conts, post=post, tokenize=tok, errors=errs)
+        self.assertEqual(sum(1 for v in bad.values() if not v), 4)
+        self.assertTrue(all("out of memory" in e for e in errs.values()))
+
+    def test_tokenize_cross_check_fails_closed(self):
+        pids = {"t": [11, 12, 13, 14]}
+        post, _ = self.engine_fake(pids)
+        errs = {}
+        bos = lambda ep, text: [1] + pids[text]                                    # /tokenize adds a BOS the /generate path does not
+        r = M2G.http_teacher_forced("http://x", [("A", "t")], {"A": [5, 6]}, post=post, tokenize=bos, errors=errs)
+        self.assertEqual(r["A"], [])
+        self.assertIn("disagree", errs["A"])
+        swap = lambda ep, text: [11, 12, 14, 13]                                   # same length, tail differs
+        errs = {}
+        self.assertEqual(M2G.http_teacher_forced("http://x", [("A", "t")], {"A": [5]}, post=post, tokenize=swap, errors=errs)["A"], [])
+        self.assertIn("A", errs)
 
 # ------------------------------------------------------------------ F1: G3 execution
 FAKE_PY = """#!/usr/bin/env python3

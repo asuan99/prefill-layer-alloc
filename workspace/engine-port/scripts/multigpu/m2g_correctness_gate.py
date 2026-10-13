@@ -19,8 +19,12 @@ LAYOUT
             preflight, timeout + process-group kill, launcher.json/stdout/stderr per combination;
             a result directory with no rank file and no HANG file is NOT_TESTED(HARNESS_ERROR).
   alive_after.json   F2: survival record written by the boot runner after the LAST step of every
-            boot (make_alive_record / record_alive_after); G1 '비정상 종료 0' and G3b '서버 생존'
-            read it; a missing record is NOT_TESTED, never a silent pass.
+            boot (make_alive_record / record_alive_after); G3b '서버 생존' reads it; a missing record is
+            NOT_TESTED, never a silent pass.
+  alive_after_<step>.json   (2026-10-13 repair, J4/J8 rev11): the same record written right after EVERY cmd
+            step (<step> = the cmd step name, e.g. g1_fused).  G1 '비정상 종료 0' reads the record written right
+            after that boot's G1 step (alive_after_g1_<arm>.json, after_step.name checked) -- NOT the boot-end
+            record: a later step (G2 on the fused boot) dying must not be charged to G1.  Missing -> NOT_TESTED.
   G5(a)     is the deterministic CPU test scripts/multigpu/g5a_selector_equiv.py
             (sealing precondition, not a Job step); the Job records the N=1
             auto-vs-manual selection distribution as a DESCRIPTIVE value only (MGP-5).
@@ -106,6 +110,8 @@ G3_STRESS_SCRIPT = HERE / "m2g_comm_reverse_stress.py"
 HARNESS_ERROR = "HARNESS_ERROR"  # F1 / lesson 21: a measurement failure is NOT_TESTED, never FAIL
 ALIVE_RECORD_NAME = "alive_after.json"  # F2: written by mg_boot after the LAST step of every boot
 ALIVE_SCHEMA = "m2g_alive_after/v1"
+ALIVE_STEP_FMT = "alive_after_{step}.json"  # per cmd step record (mg_boot), same schema; after_step.name = <step>
+G1_STEP_FMT = "g1_{arm}"  # mg_plan.m2g_boots: the G1 cmd step of boot m2g_<cfg>_<arm> is named g1_<arm>
 
 PASS, FAIL, NOT_TESTED, UNINFORMATIVE = "PASS", "FAIL", "NOT_TESTED", "UNINFORMATIVE"
 
@@ -197,7 +203,7 @@ def score_g1(pair: Optional[Mapping], ctl: Optional[Mapping], abnormal_exit: Opt
     """sec 3 G1 against the same comparison at N=1 (G1-ctl) measured in the same Job.
 
     abnormal_exit is TRI-STATE (F2): True = a survival record shows the fused or the PD-mux
-    server dead after its last step; False = both records show it alive; None = a record is
+    server dead right after its G1 step; False = both records show it alive; None = a record is
     missing -> "비정상 종료 0" cannot be established -> NOT_TESTED (never silently False).
 
     Order: an abnormal exit or a zero-length output in the TESTED pair is FAIL regardless
@@ -216,7 +222,7 @@ def score_g1(pair: Optional[Mapping], ctl: Optional[Mapping], abnormal_exit: Opt
         r = score_g1(pair, ctl, False, exposure)
         r["abnormal_exit"] = None
         if r["verdict"] != FAIL:
-            r.update(verdict=NOT_TESTED, why="survival record (alive_after.json) missing -> abnormal exit unknown",
+            r.update(verdict=NOT_TESTED, why="survival record after the G1 step (alive_after_g1_<arm>.json) missing -> abnormal exit unknown",
                      verdict_if_alive=r["verdict"])
         return r
     if ctl is None or ctl["zero_length"] or ctl["n"] < G1_N_PROMPTS:
@@ -266,20 +272,28 @@ def _http_health(endpoint: str, timeout_s: float) -> Tuple[Optional[int], Option
 
 def record_alive_after(boot_dir: Path, boot_id: str, proc: Any, endpoint: str,
                        after_step: Optional[Mapping] = None, steps_total: Optional[int] = None,
-                       timeout_s: float = 10.0, health: Optional[Callable] = None) -> Dict:
-    """Call ONCE per boot, after the last step and BEFORE teardown: proc.poll() + GET /health ->
-    boot_dir/alive_after.json.  `health(endpoint, timeout_s) -> (status, error)` injectable."""
+                       timeout_s: float = 10.0, health: Optional[Callable] = None,
+                       record_name: str = ALIVE_RECORD_NAME) -> Dict:
+    """Boot end (default record_name): ONCE per boot, after the last step and BEFORE teardown.  Per cmd step
+    (record_name = alive_step_record_name(<step>)): right after that step returned.  proc.poll() + GET /health ->
+    boot_dir/<record_name>.  `health(endpoint, timeout_s) -> (status, error)` injectable."""
     rc = proc.poll() if proc is not None else -1
     st, err = (health or _http_health)(endpoint, timeout_s) if rc is None else (None, "process exited before check")
     rec = make_alive_record(boot_id, rc, st, err, after_step, steps_total)
     Path(boot_dir).mkdir(parents=True, exist_ok=True)
-    (Path(boot_dir) / ALIVE_RECORD_NAME).write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n")
+    (Path(boot_dir) / record_name).write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n")
     return rec
 
 
-def read_alive_after(boot_dir: Path) -> Optional[Dict]:
-    """The record, or None when absent / unreadable / wrong schema / raw fields missing."""
-    f = Path(boot_dir) / ALIVE_RECORD_NAME
+def alive_step_record_name(step: str) -> str:
+    return ALIVE_STEP_FMT.format(step=step)
+
+
+def read_alive_after(boot_dir: Path, record_name: str = ALIVE_RECORD_NAME,
+                     expect_step: Optional[str] = None) -> Optional[Dict]:
+    """The record, or None when absent / unreadable / wrong schema / raw fields missing, or (expect_step given)
+    when its after_step.name is not that step (a record of another step is not evidence for this one)."""
+    f = Path(boot_dir) / record_name
     try:
         rec = json.loads(f.read_text())
     except (OSError, ValueError):
@@ -287,15 +301,23 @@ def read_alive_after(boot_dir: Path) -> Optional[Dict]:
     if not isinstance(rec, dict) or rec.get("schema") != ALIVE_SCHEMA \
             or "poll_returncode" not in rec or "health_http_status" not in rec:
         return None
+    if expect_step is not None and (rec.get("after_step") or {}).get("name") != expect_step:
+        return None
     return rec
 
 
-def alive_after(boot_dir: Path) -> Optional[bool]:
-    """True = alive after the last step, False = dead, None = no valid record (-> NOT_TESTED)."""
-    rec = read_alive_after(boot_dir)
+def alive_after(boot_dir: Path, record_name: str = ALIVE_RECORD_NAME, expect_step: Optional[str] = None) -> Optional[bool]:
+    """True = alive after the last step (or after `expect_step` for a per-step record), False = dead,
+    None = no valid record (-> NOT_TESTED)."""
+    rec = read_alive_after(boot_dir, record_name, expect_step)
     if rec is None:
         return None
     return rec["poll_returncode"] is None and rec["health_http_status"] == 200
+
+
+def alive_after_step(boot_dir: Path, step: str) -> Optional[bool]:
+    """Survival right after cmd step `step` (alive_after_<step>.json written by mg_boot after that step)."""
+    return alive_after(boot_dir, alive_step_record_name(step), expect_step=step)
 
 
 def abnormal_exit_of(*alive: Optional[bool]) -> Optional[bool]:
@@ -319,17 +341,36 @@ def percentile(vals: Sequence[float], pct: float) -> float:
     return xs[lo] + (xs[hi] - xs[lo]) * (k - lo)
 
 
+# IMPLEMENTATION (2026-10-13 repair, code fact of the engine tree, not a registered constant): SGLang returns
+# input_top_logprobs[0] = None BY CONSTRUCTION -- scheduler_output_processor_mixin._process_input_top_logprobs starts
+# the list with [None] and pops the last entry, so entry j (j >= 1) is the distribution predicting input token
+# logprob_start_len + j and entry 0 has no value.  With logprob_start_len = len(prompt ids) that is continuation
+# position 0.  The first G2_LEADING_NO_LOGPROB positions of each prompt are therefore EXCLUDED from the comparison
+# when they carry no finite value (counted in `excluded_positions`); a non-finite value anywhere else is still a
+# structural problem.
+G2_LEADING_NO_LOGPROB = 1
+
+
+def _finite(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+
+
 def g2_deltas(ref: Mapping[str, Sequence[Mapping]], test: Mapping[str, Sequence[Mapping]]) -> Dict:
     """Per teacher-forced position: |top1_lp(test) - top1_lp(ref)| and top-1 id mismatch.
 
     Position record: {"top1_id": int, "top1_lp": float[, "teacher_token": int]} -- the
     top-1 entry of the input_top_logprobs at that position.  Structural problems (missing
     prompt, length mismatch, different teacher token, non-finite value) are reported and
-    make the comparison invalid (FAIL), never skipped."""
-    deltas, mism, problems = [], 0, []
+    make the comparison invalid (FAIL), never skipped -- EXCEPT the leading position(s) the API returns
+    without a logprob (G2_LEADING_NO_LOGPROB), which are excluded and counted (`excluded_positions`)."""
+    deltas, mism, problems, excluded, missing = [], 0, [], 0, []
     for rid in sorted(set(ref) | set(test)):
         a, b = ref.get(rid), test.get(rid)
-        if not a or not b or len(a) != len(b):
+        if not a or not b:
+            problems.append(f"{rid}: presence")
+            missing.append(rid)
+            continue
+        if len(a) != len(b):
             problems.append(f"{rid}: presence/length")
             continue
         for i, (x, y) in enumerate(zip(a, b)):
@@ -337,14 +378,17 @@ def g2_deltas(ref: Mapping[str, Sequence[Mapping]], test: Mapping[str, Sequence[
                 problems.append(f"{rid}[{i}]: teacher token differs")
                 continue
             lx, ly = x.get("top1_lp"), y.get("top1_lp")
-            if not (isinstance(lx, (int, float)) and isinstance(ly, (int, float))
-                    and math.isfinite(lx) and math.isfinite(ly)):
-                problems.append(f"{rid}[{i}]: non-finite logprob")
+            if not (_finite(lx) and _finite(ly)):
+                if i < G2_LEADING_NO_LOGPROB:
+                    excluded += 1                     # no logprob by API construction (see G2_LEADING_NO_LOGPROB)
+                else:
+                    problems.append(f"{rid}[{i}]: non-finite logprob")
                 continue
             deltas.append(abs(float(ly) - float(lx)))
             mism += int(x.get("top1_id") != y.get("top1_id"))
     n = len(deltas)
-    return {"positions": n, "problems": problems,
+    return {"positions": n, "problems": problems, "excluded_positions": excluded, "missing_records": missing,
+            "excluded_rule": f"position index < {G2_LEADING_NO_LOGPROB} without a finite logprob (API: input_top_logprobs[0] is None)",
             "p99": percentile(deltas, G2_PCTL) if n else None,
             "top1_mismatch_rate": (mism / n) if n else None}
 
@@ -359,6 +403,11 @@ def score_g2(tp1_a: Optional[Mapping], tp1_b: Optional[Mapping], tpn: Optional[M
     if floor["problems"] or floor["positions"] == 0:
         return {"verdict": NOT_TESTED, "why": "floor run invalid", "floor": floor}
     thr = max(G2_FLOOR_MULT * floor["p99"], G2_ABS_NAT)
+    if test["missing_records"]:
+        # 2026-10-13 repair: a prompt with NO record (client error / server died mid-run, e.g. the rev11 fused OOM) is a
+        # measurement failure, not a numeric divergence -> NOT_TESTED, never TP_NUMERIC_DIVERGENT (lesson 21)
+        return {"verdict": NOT_TESTED, "label": None, "why": f"{len(test['missing_records'])} prompt(s) without a TP=N record "
+                "(measurement failure)", "threshold_nat": thr, "floor": floor, "test": test}
     if test["problems"] or test["positions"] == 0:
         v = FAIL
     else:
@@ -1055,6 +1104,10 @@ G1_N_S, G1_N_O = 32, 32  # 64 = S tier 32 + O tier 32 prompt TEXTS (sent at conc
 G2_ALIGN_MIN = 0.5  # IMPLEMENTATION guard (not registered): TP=1 top-1 must agree with its own greedy
                     # teacher on >= half the positions, else the position alignment is wrong -> NOT_TESTED
 HTTP_TIMEOUT_S = 600.0  # IMPLEMENTATION: per request
+G2_CONCURRENCY = 1  # IMPLEMENTATION (2026-10-13 repair, J4/J8 rev11 fused OOM): G2 requests are sent ONE AT A TIME.
+                    # Not registered (PREREG sec 3 G2 fixes prompts / teacher / metric / floor, not the send concurrency);
+                    # the floor (TP=1 x2) and the test (TP=N) use the same serial client.
+G2_TOKCHECK_TAIL = 16  # IMPLEMENTATION: tail positions used to cross-check /tokenize against the /generate tokenisation
 
 
 def registered_prompts() -> List[Tuple[str, str]]:
@@ -1067,9 +1120,9 @@ def registered_prompts() -> List[Tuple[str, str]]:
     return [(it["id"], it["text"]) for it in seq + over]
 
 
-def _post(endpoint: str, body: Mapping, timeout_s: float = HTTP_TIMEOUT_S) -> Dict:
+def _post(endpoint: str, body: Mapping, timeout_s: float = HTTP_TIMEOUT_S, path: str = "/generate") -> Dict:
     import urllib.request
-    req = urllib.request.Request(endpoint.rstrip("/") + "/generate", data=json.dumps(body).encode(),
+    req = urllib.request.Request(endpoint.rstrip("/") + path, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout_s) as resp:
         return json.load(resp)
@@ -1096,21 +1149,47 @@ def http_generate(endpoint: str, prompts: Sequence[Tuple[str, str]], max_new: in
     return {"outputs": {r: ids for r, ids, _ in rows}, "errors": {r: e for r, _, e in rows if e}}
 
 
-def _prompt_ids(endpoint, text, post):
+def _tokenize(endpoint: str, text: str) -> List[int]:
+    """Server's own tokenizer via POST /tokenize (entrypoints/openai/serving_tokenize.py: tokenizer_manager.tokenizer.encode
+    with add_special_tokens=True -- the same tokenizer object and the HF default the /generate text path uses).  No GPU work."""
+    out = _post(endpoint, {"prompt": text, "add_special_tokens": True}, path="/tokenize")
+    return [int(t) for t in out["tokens"]]
+
+
+def _prompt_ids(endpoint, text, post, tokenize: Callable = _tokenize):
+    """Prompt ids of the server's own tokenisation WITHOUT input logprobs over the whole prompt.
+
+    2026-10-13 repair (J4/J8 rev11): the old form sent logprob_start_len=0, so the prefill computed fp32 logits for EVERY
+    prompt position (logits_processor._get_pruned_states keeps positions >= logprob_start_len; _copy_logits_to_buffer
+    `.float()`), 8192 positions x vocab 131072 x 4 B = 4 GiB in one chunked-prefill batch -> fused TP4/TP8 OOM.
+    Now: /tokenize, then a cross-check against the /generate tokenisation on the LAST G2_TOKCHECK_TAIL positions only
+    (logprob_start_len = len - k: k positions of logits) plus the prompt length (meta_info.prompt_tokens).  A mismatch
+    raises -> the prompt's record is empty -> presence problem -> the comparison is invalid (fail-closed)."""
+    ids = [int(t) for t in tokenize(endpoint, text)]
+    k = min(G2_TOKCHECK_TAIL, len(ids))
     out = post(endpoint, {"text": text, "sampling_params": {"temperature": 0.0, "max_new_tokens": 1},
-                          "return_logprob": True, "logprob_start_len": 0})
-    return [int(t[1]) for t in (out.get("meta_info") or {}).get("input_token_logprobs") or []]
+                          "return_logprob": True, "logprob_start_len": len(ids) - k})
+    mi = out.get("meta_info") or {}
+    tail = [int(t[1]) for t in mi.get("input_token_logprobs") or []]
+    if mi.get("prompt_tokens") != len(ids) or tail != ids[len(ids) - k:]:
+        raise ValueError(f"/tokenize ids disagree with the /generate tokenisation (len {len(ids)} vs prompt_tokens "
+                         f"{mi.get('prompt_tokens')}; tail match {tail == ids[len(ids) - k:]})")
+    return ids
 
 
 def http_teacher_forced(endpoint: str, prompts: Sequence[Tuple[str, str]], continuations: Mapping[str, Sequence[int]],
-                        concurrency: int = G1_CONCURRENCY, post: Callable = _post) -> Dict[str, List[Dict]]:
+                        concurrency: int = G2_CONCURRENCY, post: Callable = _post, tokenize: Callable = _tokenize,
+                        errors: Optional[Dict[str, str]] = None) -> Dict[str, List[Dict]]:
     """sec 3 G2: score prompt ids (server's own tokenisation) + the TP=1 greedy continuation;
-    one position per continuation token: top-1 (id, logprob) of input_top_logprobs."""
+    one position per continuation token: top-1 (id, logprob) of input_top_logprobs.  Logprobs are requested only from
+    logprob_start_len = len(prompt ids) (continuation positions), one request at a time (G2_CONCURRENCY).  Entry 0 of
+    input_top_logprobs is None by API construction (see G2_LEADING_NO_LOGPROB); it is recorded as is (top1 None) and
+    excluded by the scorer.  A failed prompt -> [] and its repr in `errors` (when given)."""
     def one(item):
         rid, text = item
         cont = [int(x) for x in continuations.get(rid) or []]
         try:
-            pids = _prompt_ids(endpoint, text, post)
+            pids = _prompt_ids(endpoint, text, post, tokenize)
             out = post(endpoint, {"input_ids": pids + cont,
                                   "sampling_params": {"temperature": 0.0, "max_new_tokens": 1},
                                   "return_logprob": True, "logprob_start_len": len(pids), "top_logprobs_num": 1})
@@ -1123,7 +1202,9 @@ def http_teacher_forced(endpoint: str, prompts: Sequence[Tuple[str, str]], conti
                             "top1_id": int(first[1]) if first else None,
                             "top1_lp": float(first[0]) if first and first[0] is not None else None})
             return rid, pos
-        except Exception:  # noqa: BLE001 - recorded as an empty list -> presence problem -> invalid
+        except Exception as exc:  # noqa: BLE001 - recorded as an empty list -> presence problem -> invalid
+            if errors is not None:
+                errors[rid] = repr(exc)
             return rid, []
     return dict(_pool_map(one, prompts, concurrency))
 
@@ -1143,7 +1224,9 @@ def score_g2_guarded(tp1_a, tp1_b, tpn) -> Dict:
 def teacher_agreement(run: Mapping[str, Sequence[Mapping]]) -> Optional[float]:
     n = hit = 0
     for pos in run.values():
-        for x in pos:
+        for j, x in enumerate(pos):
+            if j < G2_LEADING_NO_LOGPROB and not _finite(x.get("top1_lp")):
+                continue                              # same exclusion as g2_deltas (no logprob by API construction)
             n += 1
             hit += int(x.get("top1_id") == x.get("teacher_token"))
     return hit / n if n else None
@@ -1193,9 +1276,11 @@ def g1_exposure(boots: Path, cfg: str, arm: str, window: Optional[Sequence[float
 
 def cli_score_g1(gates: Path, cfg: str, exposure: Optional[Mapping[str, float]] = None,
                  boots: Optional[Path] = None, exposure_from_boots: bool = False) -> Dict:
-    """score-g1 adapter.  Survival (F2): reads boots/<m2g_{cfg}_fused>/alive_after.json and
-    boots/<m2g_{cfg}_{arm}>/alive_after.json (boots defaults to gates/../boots); a missing record
-    -> that pair NOT_TESTED.  Exposure (F3): `exposure` {arm: value} given explicitly wins;
+    """score-g1 adapter.  Survival (F2, 2026-10-13 repair): reads the record written right after the G1 step of
+    each boot of the pair -- boots/<m2g_{cfg}_fused>/alive_after_g1_fused.json and
+    boots/<m2g_{cfg}_{arm}>/alive_after_g1_{arm}.json (boots defaults to gates/../boots); a missing record
+    -> that pair NOT_TESTED.  The boot-end record (alive_after.json) is reported beside it, never used: a later
+    step of the same boot (G2 on the fused boot, G3b on the arm boot) is not part of G1.  Exposure (F3): `exposure` {arm: value} given explicitly wins;
     else with exposure_from_boots the G1-window value is computed (g1_exposure)."""
     gates = Path(gates)
     boots = Path(boots) if boots is not None else gates.parent / "boots"
@@ -1217,7 +1302,9 @@ def cli_score_g1(gates: Path, cfg: str, exposure: Optional[Mapping[str, float]] 
             continue
         cf, ca = outs("N1", "fused"), outs("N1", arm)
         ctl = g1_metrics(cf, ca) if cf is not None and ca is not None else None
-        alive = {x: alive_after(boots / BOOT_ID_FMT.format(cfg=cfg, arm=x)) for x in ("fused", arm)}
+        alive = {x: alive_after_step(boots / BOOT_ID_FMT.format(cfg=cfg, arm=x), G1_STEP_FMT.format(arm=x))
+                 for x in ("fused", arm)}
+        alive_end = {x: alive_after(boots / BOOT_ID_FMT.format(cfg=cfg, arm=x)) for x in ("fused", arm)}
         exp_detail = None
         if exposure is not None and arm in exposure:
             exp_val = exposure[arm]
@@ -1228,7 +1315,8 @@ def cli_score_g1(gates: Path, cfg: str, exposure: Optional[Mapping[str, float]] 
         else:
             exp_val = None
         r = score_g1(pair, ctl, abnormal_exit_of(alive["fused"], alive[arm]), exp_val)
-        r["alive_after"] = alive
+        r["alive_after"] = alive                       # right after each boot's G1 step (the G1 evidence)
+        r["alive_after_boot_end"] = alive_end          # descriptive only (a death in a later step is that step's)
         r["exposure_detail"] = exp_detail
         doc["verdicts"][f"fused|{arm}"] = r["verdict"]
         doc["detail"][f"fused|{arm}"] = r
@@ -1344,7 +1432,13 @@ def main(argv=None) -> int:
             print("serve-g2: g1_out_N1_fused.json absent (TP=1 teacher missing) -> G2 NOT_TESTED", file=sys.stderr)
             return 2
         for i in range(a.repeats):
-            _write(Path(a.out) / f"g2_tf_{a.config}_r{i}.json", http_teacher_forced(a.endpoint, prompts, ref["outputs"]))
+            errs: Dict[str, str] = {}
+            t0 = time.time()
+            _write(Path(a.out) / f"g2_tf_{a.config}_r{i}.json",
+                   http_teacher_forced(a.endpoint, prompts, ref["outputs"], errors=errs))
+            _write(Path(a.out) / f"g2_tf_{a.config}_r{i}.client.json",
+                   {"concurrency": G2_CONCURRENCY, "tokenize": "/tokenize + tail check", "tokcheck_tail": G2_TOKCHECK_TAIL,
+                    "logprob_start_len": "len(prompt ids)", "errors": errs, "seconds": time.time() - t0})
         return 0
     if a.cmd == "score-g1":
         exp = json.loads(Path(a.exposure_json).read_text()) if a.exposure_json else None

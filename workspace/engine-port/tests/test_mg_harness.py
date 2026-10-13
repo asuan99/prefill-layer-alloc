@@ -2220,7 +2220,8 @@ spec = json.load(open(sys.argv[1]))
 if "--dry-run" in sys.argv: sys.exit(0)
 out = Path(spec["out_root"]); bid = spec["boot_id"]; bd = out / "boots" / bid; bd.mkdir(parents=True, exist_ok=True)
 with open(os.environ["FAKE_ORDER_LOG"], "a") as f: f.write("BOOT " + bid + "\n")
-dead_final = os.environ.get("FAKE_DEAD", "").split(",")
+dead_final = os.environ.get("FAKE_DEAD", "").split(",")          # dead from the G1 step on (both records dead)
+dead_late = os.environ.get("FAKE_DEAD_LATE", "").split(",")      # alive right after G1, dead at the boot end (rev11 J4/J8 fused: G2 OOM)
 no_alive = os.environ.get("FAKE_NO_ALIVE", "").split(",")
 kind = spec.get("kind"); cfg = spec["config"]; arm = spec["arm"]; n = spec["N"]
 log = bd / "server.log"
@@ -2237,7 +2238,12 @@ json.dump({"0": 1}, open(bd / "proc_counts_post_boot.json", "w"))
 json.dump({"snapshot": {"available": True, "gpus": {"0": {"used_mib": 5.0, "n_compute_procs": 0}}}, "verdict": {"verified": True}}, open(bd / "contam_pre.json", "w"))
 if bid not in no_alive:                                    # the gate module's own record writer: one schema
     dead = bid in dead_final
-    json.dump(G.make_alive_record(bid, -9 if dead else None, None if dead else 200), open(bd / "alive_after.json", "w"))
+    dead_end = dead or bid in dead_late
+    step = f"g1_{arm}"
+    json.dump(G.make_alive_record(bid, -9 if dead else None, None if dead else 200,
+                                  after_step={"index": 0, "type": "cmd", "status": "OK", "name": step}),
+              open(bd / G.alive_step_record_name(step), "w"))
+    json.dump(G.make_alive_record(bid, -9 if dead_end else None, None if dead_end else 200), open(bd / "alive_after.json", "w"))
 (out / "gates").mkdir(exist_ok=True)
 json.dump({"outputs": {f"r{i}": [1, 2, 3, 4 + i] for i in range(64)}, "errors": 0, "config": cfg, "arm": arm,
            "g1_window_perf_counter_s": [-0.5, 3.5]}, open(out / "gates" / f"g1_out_{cfg}_{arm}.json", "w"))
@@ -2335,6 +2341,21 @@ class M2gJobPath(unittest.TestCase):
         self.assertIn("G3b agnostic NOT_TESTED", table["cells"]["TP2:fused"]["reason"])       # no record != alive
         self.assertIn("G1 fused<->agnostic NOT_TESTED", table["cells"]["TP2:agnostic"]["reason"])
         self.assertTrue(table["cells"]["N1:fused"]["included"])                               # negative control: the others are untouched
+
+    def test_death_after_g1_in_the_fused_g2_step_is_not_a_g1_failure(self):                  # 2026-10-13 repair (rev11 J4/J8)
+        table, out, order, ctx = self.run_job("J4", FAKE_DEAD_LATE="m2g_TP4_fused")
+        g1 = json.loads((out / "gates" / "g1_TP4.json").read_text())
+        self.assertEqual(g1["verdicts"], {"fused|agnostic": "PASS", "fused|d44": "PASS"})
+        self.assertIs(g1["detail"]["fused|agnostic"]["alive_after_boot_end"]["fused"], False)
+        self.assertTrue(table["cells"]["TP4:agnostic"]["included"] and table["cells"]["TP4:d44"]["included"],
+                        {k: v["reason"] for k, v in table["cells"].items() if not v["included"]})
+        # mutant = the rev11 scorer (boot-END record): TP4 agnostic and d44 excluded by G1 FAIL, the J4/J8 rev11 outcome.  KILLED:
+        import m2g_correctness_gate as G
+        from unittest import mock
+        with mock.patch.object(G, "alive_after_step", lambda bd, step: G.alive_after(bd)):
+            table_m, out_m, _, _ = self.run_job("J4", FAKE_DEAD_LATE="m2g_TP4_fused")
+        self.assertIn("G1 fused<->agnostic FAIL", table_m["cells"]["TP4:agnostic"]["reason"])
+        self.assertIn("G1 fused<->d44 FAIL", table_m["cells"]["TP4:d44"]["reason"])
 
     def test_abnormal_exit_fails_g1_while_the_other_arm_of_the_config_passes(self):          # F2, G1 '비정상 종료 0'
         table, out, order, ctx = self.run_job("J2", FAKE_DEAD="m2g_DP2_agnostic")
@@ -2571,8 +2592,10 @@ async def generate(req):
         await resp.write(b"data: " + json.dumps({"text": "t" * k, "meta_info": {"completion_tokens": k}}).encode() + b"\n\n")
         await asyncio.sleep(itl)
     await resp.write(b"data: [DONE]\n\n"); await resp.write_eof(); return resp
+async def die(_r):                                  # test hook: the server dies shortly after answering (a later step's crash)
+    asyncio.get_event_loop().call_later(0.05, os._exit, 137); return web.Response(text="bye")
 app = web.Application(); app.router.add_get("/health", health); app.router.add_get("/model_info", info)
-app.router.add_get("/server_info", info); app.router.add_post("/generate", generate)
+app.router.add_get("/server_info", info); app.router.add_post("/generate", generate); app.router.add_post("/die", die)
 web.run_app(app, host="127.0.0.1", port=port, print=None, access_log=None)
 """
 
@@ -2694,9 +2717,6 @@ class RunBootFakeServer(unittest.TestCase):
         self.assertFalse((bd / "server.log").exists())              # nothing was launched on a contaminated GPU
 
 
-if __name__ == "__main__":
-    unittest.main()
-
     def test_alive_after_and_cmd_window_are_written_by_the_real_boot(self):                  # F2, F3
         import m2g_correctness_gate as G
         steps = [{"type": "cmd", "name": "g1_d44", "argv": [sys.executable, "-c", "print('g1')"]}]
@@ -2710,6 +2730,24 @@ if __name__ == "__main__":
         self.assertLess(w["t0_mono"], w["t1_mono"])
         self.assertLess(abs(w["t1_mono"] - time.monotonic()), 120)                           # CLOCK_MONOTONIC, comparable with the telemetry clock
 
+    def test_per_step_alive_records_g1_alive_then_a_later_step_kills_the_server(self):      # 2026-10-13 repair (rev11 J4/J8)
+        import m2g_correctness_gate as G
+        kill = ("import time, urllib.request; urllib.request.urlopen(urllib.request.Request('{ENDPOINT}/die', data=b'', "
+                "method='POST'), timeout=5).read(); time.sleep(1.5)")
+        steps = [{"type": "cmd", "name": "g1_fused", "argv": [sys.executable, "-c", "print('g1')"]},
+                 {"type": "cmd", "name": "g2", "argv": [sys.executable, "-c", kill]},
+                 {"type": "cmd", "name": "after", "argv": [sys.executable, "-c", "print('x')"]}]
+        spec = self.spec(arm="fused", steps=steps, boot_id="bk")
+        B.run_boot(spec)
+        bd = self.root / "out/boots/bk"
+        self.assertIs(G.alive_after_step(bd, "g1_fused"), True)                                # right after G1: alive
+        self.assertIs(G.alive_after_step(bd, "g2"), False)                                     # the later step's own record: dead
+        self.assertIs(G.alive_after_step(bd, "after"), False)                                  # SERVER_DIED step: recorded dead, not absent
+        self.assertIs(G.alive_after(bd), False)                                                # boot end (G3b's record): dead
+        rec = json.loads((bd / "alive_after_g1_fused.json").read_text())
+        self.assertEqual((rec["after_step"]["name"], rec["after_step"]["index"], rec["steps_total"]), ("g1_fused", 0, 3))
+        self.assertEqual([s_["status"] for s_ in json.loads((bd / "boot.json").read_text())["steps"]], ["OK", "OK", "SERVER_DIED"])
+
     def test_nvml_unavailable_boot_runs_but_is_marked_contam_unverified(self):               # F5
         from unittest import mock
         with mock.patch.object(B, "nvml_snapshot", return_value={"available": False, "error": "no nvml"}):
@@ -2719,3 +2757,7 @@ if __name__ == "__main__":
         self.assertEqual(json.loads((bd / "boot.json").read_text())["contam_status"], "CONTAM_UNVERIFIED")
         self.assertTrue(json.loads((bd / "contam_pre.json").read_text())["verdict"]["contam_unverified"])
         self.assertFalse((bd / "contam.json").exists())                                      # not 'contaminated', not 'clean': unverified
+
+
+if __name__ == "__main__":
+    unittest.main()

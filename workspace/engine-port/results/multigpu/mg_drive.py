@@ -349,7 +349,9 @@ def g1_exposure(ctx):
 
 def score_g1_all(ctx):
     """score-g1 per config, in-process through the gate's `cli_score_g1` (single implementation of the scorer).  It reads the survival
-    records itself (alive_after.json of the fused boot and of the arm's boot: a missing record -> NOT_TESTED, a dead server -> FAIL)
+    records itself (alive_after_g1_<arm>.json written right after the G1 step of the fused boot and of the arm's boot -- 2026-10-13
+    repair: NOT the boot-end alive_after.json, so a death in a later step (G2) is not charged to G1; a missing record -> NOT_TESTED,
+    a dead server -> FAIL)
     and, with exposure_from_boots, computes the exposure of the G1 window recorded by serve-g1 (`g1_window_perf_counter_s`).  If the
     installed gate has no such option the exposure computed by `g1_exposure` (cmd window) is passed explicitly instead."""
     G = _gate()
@@ -498,8 +500,9 @@ def _gate():
 def assemble_pass_table(out, job):
     """Job artifacts -> engine-porter's `res` layout -> `m2g_correctness_gate.build_pass_table` (§3-1 mapping and every
     gate scorer live THERE, tested; this function only reads files).  Missing artifact == NOT_TESTED == excluded.
-    Liveness (F2) is read by the gate scorers from boots/<id>/alive_after.json (G3b: that boot; G1: the fused boot and the arm's
-    boot; missing -> NOT_TESTED, dead -> FAIL).  NVML unavailable at the pre-boot check
+    Liveness (F2) is read by the gate scorers (G3b: boots/<id>/alive_after.json of that boot, after its last step; G1: the record
+    right after the G1 step, boots/<id>/alive_after_g1_<arm>.json, of the fused boot and the arm's boot; missing -> NOT_TESTED,
+    dead -> FAIL).  NVML unavailable at the pre-boot check
     (CONTAM_UNVERIFIED, F5) is NOT 'clean': the cell's G5(c) contamination check is NOT_TESTED (excluded) and it is listed."""
     G = _gate()
     out = Path(out)
