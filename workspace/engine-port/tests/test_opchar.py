@@ -28,11 +28,12 @@ from experiments.opchar import trace_parse as TP  # noqa: E402
 
 
 class WaveQuantization(unittest.TestCase):
-    def test_bullet_table2_positive_control(self):
+    def test_bullet_table2_arithmetic_identity(self):
         # Llama-3.1-8B on A100 (108 SM), b=1, 128x256 output tiles. Bullet Table 2 columns
         # QKV (N=6144) and O (N=4096), rows seq 1024/2048/4096/16384, in %.
-        # NOTE: the tile shape is an assumption chosen so the published table is reproduced;
-        # one shape matching all 8 cells pins the formula implementation, not cuBLAS tiling.
+        # IDENTITY CHECK (claims-auditor 2026-10-13): the tile was CHOSEN so the published table is
+        # reproduced, so this pins only the idle-formula arithmetic -- it says nothing about which
+        # tile cuBLAS uses (the recorded graph census contradicts the assumed tile on this image).
         bullet = {1024: (11.1, 40.7), 2048: (11.1, 21.0), 4096: (11.1, 5.2), 16384: (1.9, 0.2)}
         for L, (qkv, o) in bullet.items():
             got_qkv = 100 * WM.wave_quantization(WM.gemm_tile_blocks(L, 6144, 128, 256), 108)["idle_ratio"]

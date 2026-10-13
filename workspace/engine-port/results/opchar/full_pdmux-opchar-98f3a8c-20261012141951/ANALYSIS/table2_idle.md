@@ -1,3 +1,5 @@
+> **REFUTED (claims-auditor 2026-10-13): the GEMM cells (`*`) use an ASSUMED tile and are contradicted by the recorded graph census (e.g. out_proj @108 L=1024: 33.3% assumed vs 0.0% recorded). Do not cite. Use `ctrl_pdmux-opchar-fff9b1d-20261013062641/ANALYSIS/table2_idle.md`. See `../../AUDIT_opchar_2026-10-13.md`.**
+
 # Table 2 analogue — wave-quantization SM idle % (DERIVED), job full_pdmux-opchar-98f3a8c-20261012141951
 
 Triton ops (conv1d, SSD scan): recorded launch grid/regs/smem, segment-time weighted. GEMMs: ASSUMED 128x256 tiles, b=1 (not observed). Attention/norm/elementwise not covered (no CUPTI on this image).
