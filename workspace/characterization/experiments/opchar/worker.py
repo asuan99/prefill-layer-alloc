@@ -210,7 +210,7 @@ SCHEMA_CENSUS = {
     "model": X, "phase": X, "size": X, "ctx": X, "n_sm_req": X, "n_sm_realized": M,
     "partition_mode": X, "op": X, "capture": X, "node": X, "node_kind": M, "kernel": M, "grid": M,
     "grid_blocks": M, "threads": M, "regs": M, "smem": M, "resident_blocks_per_sm": D,
-    "waves": D, "tail_sms": D, "idle_ratio": D,
+    "b_calc": D, "b_source": X, "waves": D, "tail_sms": D, "idle_ratio": D,
 }
 
 
@@ -319,7 +319,7 @@ SCHEMA_MEMCPY = {"n_sm_req": X, "n_sm_realized": M, "partition_mode": X, "bytes_
 def main(argv=None):
     p = argparse.ArgumentParser(description="opchar per-partition worker")
     p.add_argument("--model", default="nemotron_nano_9b_v2")
-    p.add_argument("--phase", choices=("prefill", "decode", "memcpy"), required=True)
+    p.add_argument("--phase", choices=("prefill", "decode", "memcpy", "abx"), required=True)
     p.add_argument("--sizes", type=int, nargs="*", default=[])
     p.add_argument("--ctx", type=int, default=2048)
     p.add_argument("--sm", type=int, required=True)
@@ -339,6 +339,22 @@ def main(argv=None):
     if not torch.cuda.is_available():
         raise SystemExit("CUDA required")
     t0 = time.time()
+    if a.phase == "abx":
+        from experiments.opchar import abx
+        cfg = S.cfg_from_models_yaml(a.model)
+        summ, cen, meta_abx = abx.run(cfg)
+        write_labeled_csv(out_dir / "abx_timing.csv", summ,
+                          {"arm": X, "phase": X, "op": X, "n": X, "ms_median": M, "ms_p10": M, "ms_p90": M})
+        cschema = {"arm": X, "phase": X, "op": X, **{k: v for k, v in SCHEMA_CENSUS.items()
+                                                     if k in ("node", "node_kind", "kernel", "grid", "grid_blocks",
+                                                              "threads", "regs", "smem", "resident_blocks_per_sm",
+                                                              "b_calc", "b_source", "waves", "tail_sms", "idle_ratio")}}
+        write_labeled_csv(out_dir / "abx_census.csv", cen, cschema)
+        meta_abx.update({"argv": sys.argv, "versions": _versions(), "device": torch.cuda.get_device_name(),
+                         "wall_s": time.time() - t0})
+        (out_dir / "meta_abx.json").write_text(json.dumps(meta_abx, indent=2, default=str) + "\n")
+        print(f"[opchar-worker] abx done in {time.time() - t0:.1f}s")
+        return
     stream, info = open_partition(a.sm)
     stem = f"{a.phase}_sm{a.sm}" + (f"_ctx{a.ctx}" if a.phase == "decode" else "")
     meta = {"argv": sys.argv, "versions": _versions(), "device": torch.cuda.get_device_name(),

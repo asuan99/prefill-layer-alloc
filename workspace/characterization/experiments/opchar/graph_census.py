@@ -89,6 +89,24 @@ class _Driver:
             return None
         return s.value.decode(errors="replace") if s.value else None
 
+    def occupancy(self, p: KernelNodeParamsV2, threads: int, dyn_smem: int) -> Optional[int]:
+        """cuOccupancyMaxActiveBlocksPerMultiprocessor on the node's function (driver-computed b,
+        honours the function's carveout/attributes; still a calculation, not a runtime observation)."""
+        func = p.func
+        try:
+            if not func and p.kern:
+                f = ctypes.c_void_p()
+                self.call("cuKernelGetFunction", ctypes.byref(f), ctypes.c_void_p(p.kern))
+                func = f.value
+            if not func:
+                return None
+            n = ctypes.c_int(-1)
+            self.call("cuOccupancyMaxActiveBlocksPerMultiprocessor", ctypes.byref(n), ctypes.c_void_p(func),
+                      ctypes.c_int(threads), ctypes.c_size_t(dyn_smem))
+            return n.value
+        except (RuntimeError, AttributeError):
+            return None
+
     def func_attr(self, p: KernelNodeParamsV2, key: str, device: int = 0) -> Optional[int]:
         v = ctypes.c_int(-1)
         try:
@@ -123,7 +141,10 @@ def census(graph: int, drv: Optional[_Driver] = None, _depth: int = 0) -> List[d
                         "dyn_smem": int(p.sharedMemBytes),
                         "static_smem": drv.func_attr(p, "static_smem"),
                         "regs": drv.func_attr(p, "regs"),
-                        "max_threads": drv.func_attr(p, "max_threads")})
+                        "max_threads": drv.func_attr(p, "max_threads"),
+                        "occ_driver": (drv.occupancy(p, p.blockDimX * p.blockDimY * p.blockDimZ,
+                                                     int(p.sharedMemBytes))
+                                       if hasattr(drv, "occupancy") else None)})
         out.append(rec)
     return out
 
@@ -151,17 +172,20 @@ def census_rows(nodes: List[dict], sm_count: int) -> List[dict]:
         if n["node_kind"] != "kernel":
             rows.append({"node": idx, "node_kind": n["node_kind"], "kernel": None, "grid": None,
                          "grid_blocks": None, "threads": None, "regs": None, "smem": None,
-                         "resident_blocks_per_sm": None, "waves": None, "tail_sms": None,
-                         "idle_ratio": None})
+                         "resident_blocks_per_sm": None, "b_calc": None, "b_source": None,
+                         "waves": None, "tail_sms": None, "idle_ratio": None})
             continue
         blocks = int(math.prod(n["grid"]))
         threads = int(math.prod(n["block"]))
         smem = (n["dyn_smem"] or 0) + (n["static_smem"] or 0)
-        b = (resident_blocks_per_sm(threads, n["regs"], smem)
-             if n["regs"] is not None and n["regs"] >= 0 and threads > 0 else None)
+        b_calc = (resident_blocks_per_sm(threads, n["regs"], smem)
+                  if n["regs"] is not None and n["regs"] >= 0 and threads > 0 else None)
+        occ = n.get("occ_driver")
+        b, b_src = (occ, "driver") if isinstance(occ, int) and occ > 0 else (b_calc, "calc-upper-bound")
         wq = wave_quantization(blocks, sm_count, b) if b else {"waves": None, "tail_sms": None,
                                                                "idle_ratio": None}
         rows.append({"node": idx, "node_kind": "kernel", "kernel": (n["kernel"] or "?")[:240],
                      "grid": "x".join(map(str, n["grid"])), "grid_blocks": blocks, "threads": threads,
-                     "regs": n["regs"], "smem": smem, "resident_blocks_per_sm": b, **wq})
+                     "regs": n["regs"], "smem": smem, "resident_blocks_per_sm": b, "b_calc": b_calc,
+                     "b_source": b_src if b else None, **wq})
     return rows

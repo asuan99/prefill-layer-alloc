@@ -126,6 +126,20 @@ def nsight_check(out_dir: Path) -> dict:
     return rec
 
 
+def ncu_launchstats_only(out_dir: Path) -> dict:
+    """Audit C1: is ncu refused even with ONLY the LaunchStats section (no Occupancy)?"""
+    ncu = shutil.which("ncu")
+    snippet = out_dir / "probe_gemm.py"
+    snippet.write_text(GEMM_SNIPPET)
+    if not ncu:
+        return {"ncu": None}
+    r = _run([ncu, "--section", "LaunchStats", "--launch-count", "1", sys.executable, str(snippet)])
+    txt = r.get("stdout", "") + r.get("stderr", "")
+    r["mentions_ERR_NVGPUCTRPERM"] = "ERR_NVGPUCTRPERM" in txt
+    r["has_grid_size_line"] = "Grid Size" in txt
+    return r
+
+
 def host_context() -> dict:
     rec = {}
     try:
@@ -158,9 +172,16 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--green-sm", type=int, default=44)
+    ap.add_argument("--ncu-launchstats-only", action="store_true")
     a = ap.parse_args(argv)
     out = Path(a.out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    if a.ncu_launchstats_only:
+        r = ncu_launchstats_only(out)
+        (out / "NCU_LAUNCHSTATS_ONLY.json").write_text(json.dumps(r, indent=2, default=str) + "\n")
+        print(f"[opchar-probe] ncu LaunchStats only: rc={r.get('rc')} ERRPERM={r.get('mentions_ERR_NVGPUCTRPERM')} "
+              f"grid_line={r.get('has_grid_size_line')}")
+        return
     inv = cupti_inventory()
     rec = {"host": host_context(), "cupti_inventory": inv,
            "kineto_plain": kineto_check("plain", a.green_sm, out),

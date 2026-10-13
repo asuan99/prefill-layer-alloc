@@ -304,6 +304,53 @@ class GraphCensus(unittest.TestCase):
         self.assertEqual(out[0]["grid"], [10, 1, 1])
 
 
+class AbxAndOccupancy(unittest.TestCase):
+    def test_abx_summary_pools_rounds(self):
+        from experiments.opchar import abx
+        rows = abx.summarize({("green106", "decode", "*:o_proj"): [0.05, 0.045, 0.046, 0.044],
+                              ("plain108", "decode", "*:o_proj"): [0.045]})
+        r = {x["arm"]: x for x in rows}
+        self.assertEqual(r["green106"]["n"], 4)
+        self.assertAlmostEqual(r["green106"]["ms_median"], 0.0455)
+        self.assertEqual([a for a, _ in abx.ARMS], ["green104", "green106", "plain108"])
+
+    def test_census_prefers_driver_occupancy(self):
+        from experiments.opchar import graph_census as GC
+        node = {"node_kind": "kernel", "kernel": "attn", "grid": [216, 1, 1], "block": [128, 1, 1],
+                "dyn_smem": 69664, "static_smem": 0, "regs": 96, "max_threads": 1024}
+        calc = GC.census_rows([node], 108)[0]
+        self.assertEqual((calc["resident_blocks_per_sm"], calc["b_source"]), (2, "calc-upper-bound"))
+        meas = GC.census_rows([dict(node, occ_driver=1)], 108)[0]
+        self.assertEqual((meas["resident_blocks_per_sm"], meas["b_source"], meas["b_calc"]), (1, "driver", 2))
+        self.assertEqual(meas["waves"], 2)                 # 216 blocks at b=1 on 108 SMs
+        self.assertEqual(calc["waves"], 1)
+
+
+class RunnerDispatch(unittest.TestCase):
+    def test_env_subdir_and_timestamps(self):
+        from unittest import mock
+        calls = []
+
+        def fake_run(cmd, stdout=None, stderr=None, timeout=None, env=None):
+            calls.append((cmd, env))
+            return mock.Mock(returncode=0)
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(R.subprocess, "run", fake_run):
+            self.assertEqual(R.main(["--mode", "ctrl2", "--out-root", d]), 0)
+            man = json.load(open(os.path.join(d, "RUN_MANIFEST.json")))
+            log = [c for c in calls if "cublaslog/sm104" in " ".join(c[0])]
+            self.assertEqual(len(log), 1)
+            cmd, env = log[0]
+            self.assertNotIn("--out-subdir", cmd)
+            self.assertEqual(cmd[cmd.index("--out-dir") + 1], os.path.join(d, "data", "cublaslog", "sm104"))
+            self.assertEqual(env["CUBLASLT_LOG_FILE"], os.path.join(d, "cublaslog", "sm104", "cublasLt_%i.log"))
+            self.assertTrue(os.path.isdir(os.path.join(d, "cublaslog", "sm104")))
+            plain = [c for c in calls if "order/o00" in " ".join(c[0])][0]
+            self.assertNotIn("CUBLASLT_LOG_LEVEL", {k for k in plain[1] if k not in os.environ})
+            self.assertTrue(all(r["start_utc"].endswith("Z") and r["end_utc"] for r in man["runs"]))
+            ncu = [c for c in calls if "--ncu-launchstats-only" in c[0]][0]
+            self.assertEqual(ncu[0][ncu[0].index("--out-dir") + 1], os.path.join(d, "probe"))
+
+
 class Plan(unittest.TestCase):
     def test_grid(self):
         for sm in R.SM_GRID:
@@ -317,6 +364,16 @@ class Plan(unittest.TestCase):
         self.assertIn(104, R.CTRL_SM)
         self.assertIn(108, R.CTRL_SM)
         self.assertTrue(all("--graph-census" in c for _, c in ctrl))
+        c2 = R.plan("ctrl2")
+        order = [int(l.rsplit("sm", 1)[1]) for l, *_ in c2 if l.startswith("order_") and "_prefill_" in l]
+        self.assertEqual(order[0], 108)
+        self.assertEqual(order[-1], 108)
+        self.assertEqual(sorted(order[1:-1]), sorted(R.ORDER_SM))
+        self.assertNotEqual(order[1:-1], sorted(R.ORDER_SM))          # actually shuffled
+        logs = [j for j in c2 if j[0].startswith("cublaslog")]
+        self.assertEqual(len(logs), 2)
+        self.assertEqual(logs[0][2]["CUBLASLT_LOG_LEVEL"], "5")
+        self.assertTrue(any(j[0] == "abx_104g_106g_108p" for j in c2))
         probe = R.plan("probe")
         self.assertEqual(probe[0][0], "probe")
         self.assertTrue(any(l.startswith("smoke_decode") for l, _ in probe))

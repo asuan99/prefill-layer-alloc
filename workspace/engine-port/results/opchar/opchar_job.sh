@@ -12,7 +12,7 @@
 set -uo pipefail
 ROOT="${PDMUX_PROJECT_ROOT:?PDMUX_PROJECT_ROOT must be set (job_entry.sh exports it)}"
 MODE="${PDMUX_OPCHAR_MODE:-}"
-case "$MODE" in probe|full|ctrl) ;; *) echo "ABORT_ENV PDMUX_OPCHAR_MODE must be probe, full or ctrl (got '$MODE')"; exit 2;; esac
+case "$MODE" in probe|full|ctrl|ctrl2) ;; *) echo "ABORT_ENV PDMUX_OPCHAR_MODE must be probe, full, ctrl or ctrl2 (got '$MODE')"; exit 2;; esac
 ALLOW=" PDMUX_COMMIT PDMUX_JOB_NAME PDMUX_CAMPAIGN PDMUX_TARGET PDMUX_IMAGE PDMUX_SPEC PDMUX_ROOT PDMUX_PROJECT_ROOT \
 PDMUX_IO PDMUX_DATA PDMUX_OPT PDMUX_TEST_SKIP_SYNC PDMUX_ENERGY_SAMPLER PDMUX_OPCHAR_MODE "
 for v in $(compgen -e | grep '^PDMUX_' || true); do
