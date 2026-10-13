@@ -135,3 +135,54 @@
 | pdmux-partition-power-20261008052457 | job-78xs9733hcjy | green-ctx 파티션 전력(합성) | succeeded | `partition_power/job-78xs9733hcjy/` |
 
 미회수 Job과 켜 둔 Workspace는 없다(이번 세션 기준).
+
+---
+
+# (C) multi-GPU 확장 트랙 세션 핸드오프 (작업 기간 2026-10-11 ~ 2026-10-13, 브랜치 `multigpu-scaling`)
+
+> 이 트랙의 모든 커밋은 **git worktree `~/Experiments/KISTI/prefill-layer-alloc-multigpu`, 브랜치 `multigpu-scaling`**에 있다(main에 merge 안 함 — 엔진 파일 변경이 N2/N3/E2 봉인 digest를 깨므로 그 캠페인이 끝나기 전 merge 금지). 엔진 dev tree 사본은 `~/Experiments/KISTI/sglang_engine_dev_multigpu`. 정본(PROJECT_STATUS·CONSENSUS)은 이번 세션에 갱신하지 않았다 — 성능 판정 0, 결론 변화 없음.
+
+## 이번 세션 요약
+사용자 요청으로 단일 A100 결과를 A100 1/2/4/8대(DP·TP)로 확장하는 설계를 검토·사전등록·하네스 구현하고 정확성 게이트 M2g를 실행했다. 설계 rev2 → PREREG rev1–rev11, 규칙층·하네스층 감사 다수(死因 → 처방 반복, 교훈 276 패턴). 사용자 결정으로 x8 한 Job 순차 실행(예약 GPU 사용률 59%)을 폐기하고 **구성별 적정 크기 Job(J1 x2·GPU0 / J2 x2 / J4 x4 / J8 x8)**으로 재구성했다. M2g 첫 4-Job 실행에서 J1·J2는 전부 통과, J4·J8의 TP agnostic·d44는 하네스 결함(G2 단계 fused OOM이 G1 실패로 전가)으로 제외 → 하네스 수리·감사 후 **J4·J8 재실행 제출(진행 중, 회수 전)**.
+
+## 결정·측정
+- 사용자 결정: 확장 축 DP+TP 둘 다 / 관측 = PD-mux 이득 N-스케일링 + 고유 기전 / M1+AMD V0 프로브 묶음 / TP cap 48·N / x8 미확보 시 보류 / 대칭 대조군 `fused_sym` 추가(1차 estimand G\_sym = λ\*agnostic/λ\*fused\_sym) / fused는 piecewise CUDA graph OFF(이미지 py3.14 비호환) / 구성별 적정 크기 Job / 메모리 규칙 (iii) 폐지(사후 변경, 공시) / 하드캡 J1 10 h·J2·J4·J8 14 h / J1 = x2 GPU0 단독 / 교차 shape 보정은 BROKEN을 낮추지 못함(fail-closed).
+- M1+V0 프로브(x8): 전 쌍 NV12, NUMA0 = GPU0–3·NUMA1 = GPU4–7, cgroup 88 CPU, IB·mooncake 없음, green ctx 8/8. `results/multigpu_probe/RESULT_m1_v0_probe_2026-10-12.md`.
+- M2g 2회차(x8 단일 Job, rev6): fused 7/7 기동 실패(piecewise + py3.14 `typing.Union`) → `RESULT_m2g_c1395d0_2026-10-12.md`.
+- M2g rev11 4-Job: J1 N1 4 arm 포함, J2 12셀 전부 포함(G0(ii)·(iii)·G1·G3·G3b·G5 PASS), J4·J8은 TP agnostic·d44 G1 FAIL — 원인은 G2 단계 fused OOM(4 GiB = 8192×131072×fp32)이 boot 끝 생존 기록으로 G1에 전가, G2는 위치 0 None으로 전 TP NOT_TESTED. `results/multigpu/RESULT_m2g_rev11_jobs_2026-10-13.md`.
+- 성능·스케일링 판정은 아직 하나도 없다(M3 미실행).
+
+## 코드·문서 변경 (브랜치 `multigpu-scaling`, 전부 커밋됨, HEAD 2976ea8)
+- 설계 `reports/multigpu_scaling_design_2026-10-12.md`(rev2), 사전등록 `workspace/engine-port/results/multigpu/PREREG_MULTIGPU_2026-10-12.md`(rev11), 감사 판정서 `results/multigpu/VERDICT_*.md`·`reports/audit/2026-10-12_multigpu_design/`.
+- 엔진: `src/multiplex/multigpu_guard.py`(TP>1 금지 정책 거부), telemetry rank 접미사, `pdmux_context_device_assert.patch`.
+- 하네스: `results/multigpu/{mg_const,mg_plan,mg_label,mg_drive,mg_realized_mix,mg_substrate}.py`, `m2g_job.sh`·`m3_job.sh`·`mg_job_common.sh`, `scripts/multigpu/{m2g_correctness_gate,m2g_comm_reverse_stress,g5a_selector_equiv,mg_boot,mg_loadgen,mg_proc_sampler}.py`, `scripts/bootstrap/engine_digest.py`, `benchmarks/configs/pdmux_agnostic_manual.yml`, `scripts/vessl/{multigpu_probe.sh,vessl.multigpu.env}`, `analyze_concurrent.py`, 테스트 `tests/test_mg_*.py`·`test_m2g_gate.py`·`test_engine_digest.py`·`test_multigpu_*.py`(368 OK).
+- 봉인: ENGINE_DIGEST pathless-v1 `82a5fc5b…`, `G5A_PASS.json`(sealed_tree_pass=True).
+
+## 열린 항목 / 다음 세션 시작점
+1. **J4·J8 M2g 재실행 회수**: `cd ~/Experiments/KISTI/prefill-layer-alloc-multigpu/workspace/engine-port && bash scripts/vessl/fetch.sh multigpu pdmux-multigpu-9df4a0a-20261013081304` 및 `…-06eea19-20261013081322`. 확인: TP4/TP8 agnostic·d44 포함 여부, `boots/m2g_TP{4,8}_*/alive_after_g1_*.json` 존재·step 이름, `gates/g2_tf_*_r*.client.json` errors 0, fused TP4/8 boot 끝 생존(기술치). 판정서 `VERDICT_harness_m2g_repair_a41e725_2026-10-13.md` C1–C5 승계.
+2. **PASS 표 봉인**: `results/multigpu/M2G_PASS_TABLE_J{1,2,4,8}.json` + `.sha256` 커밋(J1·J2는 `m2g_pdmux-multigpu-313be0a-…`·`…2fc3880-…` 산출물 바이트 그대로, J4·J8은 재실행 산출물만).
+3. **M3 제출**(사용자 승인 필요): 4 Job 동시, 모형 예보 예약 약 124 GPU-h·최장 약 9 h, 하드캡 J1 10 h·나머지 14 h. dry-run → 승인 → 직렬 제출(job 이름 초 단위 충돌 — 원장 커밋 사이에 두고 제출).
+4. 이후: `mg_label.py --jobs J1=… J2=… J4=… J8=…` 결합 → result-analyst → claims-auditor 결과 감사. M4는 M3 결과 감사 뒤 별도 승인.
+
+## 미완·주의
+- **vesslctl 인증 만료**(2026-10-13 세션 끝, `token refresh failed`) — J4·J8 상태 확인 불가. 다음 세션 시작 시 `vesslctl auth login` 필요. 백그라운드 상태 대기 루프는 인증 만료로 끝나지 않으니 무시.
+- J4·J8 재실행은 **회수 전**. 실패 시 원인 확인 후 재제출은 사용자 결정.
+- 네 PASS 표는 서로 다른 커밋의 산물(J1·J2 수리 전, J4·J8 수리 후) — C5.
+- M3 TP 추세 판정 가능성은 공동 확장(S3) 시 소멸(MGP-56); x2·x4 노드 위상·CPU quota 미실측(H-7 권고 프로브 미실행).
+- `fetch.sh`의 `cost.txt`는 vessl.env 기본 단가(x1)를 써 multi-GPU Job에서 과소 기록된다(단가 필드만; 컨테이너 시간은 정확).
+- 이 트랙의 caveat 전체는 PREREG §7·§15–§18과 각 VERDICT 파일에 있다. 결과 문서는 문자 그대로 승계해야 한다.
+
+## GPU 실행 기록(VESSL, 이 트랙)
+| Job | 스펙 | 커밋 | 상태 | fetch | container_hours |
+|---|---|---|---|---|---|
+| pdmux-multigpu-probe-d947939-20261011182445 (M1+V0) | a100x8 | d947939 | succeeded | DONE+sha256 | 0.046 |
+| pdmux-multigpu-cc181b4-20261012080743 (M2g 1회차) | a100x8 | cc181b4 | failed(하네스 경로 결함) | DONE | 0.022 |
+| pdmux-multigpu-c1395d0-20261012081851 (M2g 2회차) | a100x8 | c1395d0 | succeeded(전 셀 제외) | DONE+sha256 | 2.818 |
+| pdmux-multigpu-f515970-20261012142501 (M2g 3회차) | a100x8 | f515970 | 사용자 결정으로 취소(약 40분) | 산출물 없음 | — |
+| pdmux-multigpu-313be0a-20261013062324 (M2g J1) | a100x2 | 313be0a | succeeded | DONE+sha256 | 0.176 |
+| pdmux-multigpu-2fc3880-20261013062351 (M2g J2) | a100x2 | 2fc3880 | succeeded | DONE+sha256 | 0.879 |
+| pdmux-multigpu-99b5e5e-20261013062404 (M2g J4) | a100x4 | 99b5e5e | succeeded(TP 2 arm 제외) | DONE+sha256 | 0.967 |
+| pdmux-multigpu-d9e7743-20261013062419 (M2g J8) | a100x8 | d9e7743 | succeeded(TP 2 arm 제외) | DONE+sha256 | 1.036 |
+| **pdmux-multigpu-9df4a0a-20261013081304 (M2g J4 재실행)** | a100x4 | 9df4a0a | **실행 중/미확인** | **미회수** | — |
+| **pdmux-multigpu-06eea19-20261013081322 (M2g J8 재실행)** | a100x8 | 06eea19 | **실행 중/미확인** | **미회수** | — |
+이미지: `ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b…` 전 Job 공통. 켜 둔 Workspace 없음.
