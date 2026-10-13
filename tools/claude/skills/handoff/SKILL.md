@@ -1,68 +1,42 @@
 ---
 name: handoff
-description: 세션을 마무리하거나 중간 체크포인트를 남길 때, 이번 세션의 결정·측정·코드/문서 변경·열린 항목을 dated handoff 문서 + 메모리에 저장해 다음 세션이 catch-up으로 이어받게 한다. "정리하고 마무리", "핸드오프 남겨", "저장해두자", "체크포인트" 할 때 사용. 정본 갱신·메모리 반영은 doc-steward 규율에 위임. catch-up 스킬의 짝.
+description: 세션을 마무리하거나 체크포인트를 남길 때 이 세션 트랙의 TRACK.md를 갱신하고 그 worktree에 커밋한다. "정리하고 마무리", "핸드오프 남겨", "저장해두자", "체크포인트" 할 때 사용. 정본(PROJECT_STATUS·CONSENSUS·COSTMODEL)과 MEMORY.md는 건드리지 않는다 — 그건 main 세션의 promote 몫. catch-up의 짝.
 ---
 
-# handoff — 세션 체크포인트
+# handoff — 트랙 체크포인트 (2026-10-13 개정)
 
-목적: **이번 세션의 작업 델타를 durable하게 저장**해, 새 세션의 `catch-up`이 문맥을
-복원할 수 있게 한다. 저장 안 하면 아직 정본에 안 들어간 결정·상태가 유실된다.
+원칙: **트랙 세션은 자기 TRACK.md와 자기 결과 디렉터리에만 쓴다.** 공유 파일(정본·MEMORY.md·
+날짜별 handoff 문서)에 쓰지 않으므로 병행 세션끼리 충돌하지 않는다. (2026-10-13 이전에는 네 세션이
+한 날짜 파일 `session_handoff_2026-10-13.md`에 덮어쓰고 복원하는 일이 있었다.)
 
-## 1. 이번 세션 델타 수집
+## 1. 델타 수집
 
 ```bash
-REPO=~/Experiments/KISTI/prefill-layer-alloc   # 작업 루트가 바뀌면 이 줄만 고친다
-git -C "$REPO" log --oneline -15
-git -C "$REPO" status --short          # 미커밋
-git -C "$REPO" diff --stat             # 무엇이 바뀜
-ls -t "$REPO"/workspace/engine-port/results/*/ | head
+W=<이 트랙 worktree>   # catch-up 표 참조
+git -C $W log --oneline -15; git -C $W status --short; git -C $W diff --stat
 ```
-그리고 **대화에서 실제로 도달한 것**을 정리한다: 내린 결정, 돌린 실험/측정, 만든/고친
-코드·문서, 남은 열린 항목·다음 단계.
+대화에서 실제로 도달한 결정·측정·변경·열린 항목을 정리한다.
 
-## 2. dated handoff 문서 작성
+## 2. 트랙 파일(`<worktree>/tracks/<트랙>.md`, 이하 TRACK.md) 갱신 (60줄 예산 — 양식은 `tools/claude/TRACK_TEMPLATE.md`)
 
-경로: **`prefill-layer-alloc/handoff-report/session_handoff_<YYYY-MM-DD>.md`**
-(핸드오프 **전용** 디렉터리 — 다른 reports와 섞지 않는다. 관리·활용 편의). 디렉터리가
-없으면 생성. 오늘 날짜 = 세션 컨텍스트의 currentDate, **절대 날짜**. 같은 날짜 문서가 이미
-있으면 append/갱신. 섹션:
+- "현재 상태" "다음 행동" "사용자 결정 대기" "실행 중·미회수 Job"은 **덮어쓴다**(append 아님).
+- "최근 로그"에 한 줄 추가, 5개를 넘으면 오래된 것부터 지운다.
+- 이번 세션에 결과 분석이 있었으면 그 분석의 **"cost model 기여" 절**을 "cost model 기여" 절에 한두 줄로
+  반영하고 `promote 필요: 예`로 표시한다.
+- 사용자 결정 대기 항목은 3줄 형식: **무엇 / 왜 지금 / 선택지 + 권고**. 처리된 결정은 지운다.
+- 60줄을 넘으면 서술을 줄인다(이력은 git, 세부는 결과 디렉터리 문서로 링크).
+- GPU Job 기록(job name·커밋·상태·fetch 여부)은 캠페인 결과 디렉터리의 원장에 두고 TRACK.md엔 미회수·실행 중만.
 
-- **이번 세션 요약** — 1문단.
-- **결정·측정** — 무엇을, 어떤 근거로. 수치는 결과 경로와 함께(문서엔 요약, 원자료는 `results/<campaign>/`).
-- **코드·문서 변경** — 파일 경로 + 무엇이 왜 바뀜. 미커밋이면 명시.
-- **열린 항목 / 다음 세션 시작점** — 구체적으로. 다음 실험 gate·필요한 런 수·블로커.
-- **미완·주의** — 검증 안 된 것, claims-auditor에 아직 안 건 주장, 방치된 job.
-- **GPU 실행 기록(VESSL)** — 이번 세션에 제출·회수한 Job마다 job name · 캠페인 · 커밋 · 이미지 digest ·
-  상태 · fetch 여부(DONE+sha256) · cost.txt 값. 켜 둔 Workspace가 있으면 이름과 상태(pause 했는지).
-  미회수 Job·켜진 Workspace는 "미완·주의"에도 올린다.
+## 3. 커밋 (묻지 않는다, push 금지)
 
-## 3. 정본·메모리 반영 (doc-steward에 위임)
+그 worktree에서 `python3 workspace/engine-port/scripts/discipline/check_citation_stops.py` 0위반 확인 →
+TRACK.md + 이번 세션 산출물 커밋. 루트 `.out`/`.err` 제외. push는 하지 않고 묻지도 보고하지도 않는다.
 
-세션에서 **경험적 결론이 확정/철회**됐거나 프로젝트 상태가 실질적으로 바뀌었으면
-**doc-steward** 에이전트에 위임해 규율대로 반영한다:
+## 4. 출력 (5줄)
 
-- PROJECT_STATUS.md(확정된 결과/철회된 가설/증거 수준/다음 실험 gate) 및 해당 트랙 보고서 갱신.
-- `MEMORY.md` 인덱스 + 관련 메모리 파일 갱신(비자명한 판정·방법론 교훈만; 코드/깃으로
-  재현 가능한 건 넣지 않음). 메모리 경로:
-  `~/.claude/projects/-home-wonho-Experiments-KISTI/memory/`(= 작업 루트 경로의 `/`를 `-`로 바꾼 slug).
-- 절대 날짜, 증거 수준어(부분 지지/강한 지지(범위 한정)/미검증/철회) 일치, stale 배너.
+커밋 해시 · 다음 시작점 한 줄 · 사용자 결정 대기 수 · promote 필요 여부 · 실행 중 Job.
 
-단순 작업 상태(결론 변화 없음)면 handoff 문서만으로 충분 — 정본을 건드리지 마라.
+## 하지 않는 것
 
-## 4. 규율 (필수)
-
-- **overclaim 금지.** 결과를 "확정"으로 쓰려면 서빙 직접 측정 + n≥4 + paired CI가 있어야
-  한다. 애매하면 **claims-auditor**에 먼저 반증을 걸고, 통과 못 하면 "미검증/부분 지지"로 기록.
-- 정책 비교 수치를 handoff에 쓸 땐 변화 trace·switch_count·TTFT/ITL percentile 유무를 명시.
-- ★**커밋은 바로 한다 — 묻지 마라**(2026-08-25 지시). handoff 문서와 그에 딸린 정본·메모리
-  변경을 **한 커밋으로 묶어** 저장한다. 이유: handoff는 세션 종료 체크포인트이므로 커밋을
-  미루면 다음 세션 `catch-up`이 **미커밋 상태를 물려받는다** — durable하게 만드는 것이
-  목적인데 확인 왕복이 그 목적과 어긋난다.
-  순서: 문서 작성 → doc-steward 반영 → `check_citation_stops.py` **0위반 확인** → 커밋.
-  (루트 `.out`/`.err`는 커밋 대상 아님 — 스테이징에서 제외.)
-- ★★**push는 하지 않는다.** 묻지도, 보고하지도 마라(원격 URL에 토큰이 평문 노출돼 있다).
-
-## 5. 마무리 출력
-
-작성한 handoff 문서 경로, **커밋 해시**, doc-steward가 갱신한 정본/메모리 목록, 실행 중
-job(있으면), 그리고 **다음 세션이 `catch-up`으로 이어받을 시작점** 한 줄을 보고한다.
+날짜별 `handoff-report/session_handoff_*.md` 생성(폐지 — 옛 파일은 이력으로 남김) ·
+PROJECT_STATUS/CONSENSUS/COSTMODEL/MEMORY.md 수정 · doc-steward 호출.

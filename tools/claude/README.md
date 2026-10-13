@@ -33,7 +33,7 @@ tools/claude/sync_claude_tools.sh --manifest  # 추적 사본 SHA-256 재생성
 tools/claude/test_sync_claude_tools.sh        # 드리프트 검사 자신의 변이 테스트 10케이스
 ```
 
-`claude_tools.manifest.sha256` = 추적 사본 11개 파일의 해시. 정본 문서가 툴 파일을 인용할 때
+`claude_tools.manifest.sha256` = 추적 사본 12개 파일(2026-10-13 `promote` 스킬 추가)의 해시. 정본 문서가 툴 파일을 인용할 때
 이 파일의 해시를 쓰면 손으로 붙여 넣은 해시 한 줄보다 낫다(커밋 SHA로 같이 고정된다).
 
 ## 정직한 한계

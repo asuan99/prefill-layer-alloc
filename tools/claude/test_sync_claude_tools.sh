@@ -38,7 +38,7 @@ case_ () {  # $1 name, $2 expected rc, $3 expected grep pattern ("" = none)
   echo "ok   ${name}"
 }
 
-reset; case_ "M0 pristine copies agree" 0 "^OK  11 tool files identical"
+reset; case_ "M0 pristine copies agree" 0 "^OK  12 tool files identical"
 reset; printf '\n# drift\n' >> "$tmp/live/.claude/agents/doc-steward.md"
 case_ "M1 live agent edited" 3 "^DRIFT +agents/doc-steward\.md"
 reset; printf '\n# drift\n' >> "$tmp/live/CLAUDE.md"
@@ -56,11 +56,11 @@ case_ "M7 tracked copy deleted" 3 "^UNTRACKED_LIVE +agents/venue-strategist\.md"
 reset; rm -f "$tmp/live/.claude/agents/engine-porter.md"
 CLAUDE_TOOLS_LIVE="$tmp/live" CLAUDE_TOOLS_TRACK="$tmp/track" \
   /usr/bin/bash "$here/sync_claude_tools.sh" --install > /dev/null 2>&1
-case_ "M8 --install restores a deleted live file" 0 "^OK  11 tool files identical"
+case_ "M8 --install restores a deleted live file" 0 "^OK  12 tool files identical"
 reset; printf '\n# live is right\n' >> "$tmp/live/.claude/agents/claims-auditor.md"
 CLAUDE_TOOLS_LIVE="$tmp/live" CLAUDE_TOOLS_TRACK="$tmp/track" \
   /usr/bin/bash "$here/sync_claude_tools.sh" --import > /dev/null 2>&1
-case_ "M9 --import captures a live edit" 0 "^OK  11 tool files identical"
+case_ "M9 --import captures a live edit" 0 "^OK  12 tool files identical"
 
 echo
 if (( fails )); then echo "$fails case(s) FAILED"; exit 1; fi

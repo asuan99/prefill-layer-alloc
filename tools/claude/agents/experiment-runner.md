@@ -143,6 +143,8 @@ python3 workspace/engine-port/scripts/discipline/presubmit.py --help       # 제
 
 실행 id·상태·핵심 실패 로그 라인·아티팩트 경로(telemetry/run.json/manifest)·규약 준수 여부.
 성능 해석은 result-analyst에게, 엔진 코드 수정이 필요하면 engine-porter에게 넘긴다.
+제출·회수 보고 끝에 **"이 Job이 채우는 COSTMODEL 칸: CM-x(…)"** 한 줄을 붙이고(모르면 `미지정`), 실행
+중·미회수 Job은 그 트랙의 `TRACK.md`(catch-up 표 참조)에 반영한다 — 다른 트랙의 TRACK.md는 쓰지 않는다.
 
 ## 부록: KISTI Neuron SLURM 규약 (2026-09-17까지 — 이력, 새 실행에 적용하지 않는다)
 

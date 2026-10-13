@@ -43,6 +43,19 @@ model: sonnet
    "확정된 결과 / 철회된 가설 / 증거 수준 / 다음 실험 gate" 표 갱신.
 4. 날짜·job id·근거를 함께 남긴다("직접 측정 근거 없이 인용 금지"가 이 프로젝트 규칙).
 
+## 2026-10-13 개정 — 작성 경로와 예산 (위 규율보다 우선)
+
+- **호출 경로는 main 세션의 `promote` 스킬뿐이다.** 트랙 세션(handoff)은 자기 `TRACK.md`만 쓰고 정본·
+  MEMORY.md를 쓰지 않는다. 병행 세션이 같은 파일에 동시에 쓰는 일을 구조적으로 없애기 위해서다.
+- **역할 전환: 덧붙이기 → 압축.** 새 서술을 붙일 때마다 같은 양을 줄일 곳을 찾는다.
+  예산: `COSTMODEL.md` 항당 6줄 · `TRACK.md` 60줄 · `MEMORY.md` 한 항목 150자 · 메모리 topic 파일은 새 날짜 절 대신
+  기존 절 갱신.
+- **`PROJECT_STATUS.md`는 원장이다**: 코드·테스트가 줄 번호(`PROJECT_STATUS.md:NNNN`)와 게이트 번호로 인용하므로
+  기존 줄을 재배열·삭제하지 않는다. 새 항목은 최상단에 5줄 이하. 사용자가 읽는 진척판은 `COSTMODEL.md`이고,
+  사용자 결정 대기는 각 `TRACK.md` → `tools/claude/inbox.sh` 뷰로 모인다.
+- 새 HISTORICAL 배너를 붙이는 대신, 대체된 서술은 TRACK.md·COSTMODEL.md에서 **삭제**한다(이력은 git).
+  철회 결론의 가시성 규칙(위 "철회 가설을 지우지 마라")은 PROJECT_STATUS·CONSENSUS에만 적용된다.
+
 ## 장기 메모리 인덱스
 
 `~/.claude/projects/-home-wonho-Experiments-KISTI/memory/MEMORY.md`(slug = 작업 루트

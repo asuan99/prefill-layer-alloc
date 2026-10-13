@@ -10,6 +10,13 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
 
 > 세션 시작 시 결론을 재도출하지 말 것. 아래 정본을 먼저 읽는다.
 
+## 사용자가 읽는 곳 (2026-10-13 신설 — 정본 위계와 별개인 "읽는 순서")
+
+- **`prefill-layer-alloc/COSTMODEL.md`** — 지금까지 성립한 비용 구조 진척판(CM-1…CM-7). 측정이 비용 구조를
+  얼마나 세웠는지 보이는 곳. 결과 판정은 아래 정본 위계를 따른다.
+- **트랙 파일 `tracks/<트랙>.md`**(각 트랙 worktree 안 — main·power-cap은 main, amd·multigpu·opchar는 각 worktree) — 트랙 현재 상태 ≤60줄.
+- **사용자 결정 대기** = `tools/claude/inbox.sh`(각 트랙 파일의 결정 대기 절을 모은 뷰, 파일 아님).
+
 ## 정본 위계 (충돌 시 위가 우선)
 
 1. **`prefill-layer-alloc/PROJECT_STATUS.md`** — 프로젝트 전체 현재 상태의 유일 정본.
@@ -158,15 +165,18 @@ completeness·단일 전체그림 판정). 개별 에이전트 사이의 **연�
 > `--install`. 드리프트 검사는 `--check`(테스트 `test_sync_claude_tools.sh` 10케이스).
 > 작업 루트는 기본적으로 저장소의 부모로 자동 결정되며 `CLAUDE_TOOLS_LIVE=<dir>`로 덮어쓴다.
 
-## 세션 연속성 (`.claude/skills/`)
+## 세션 연속성 (`.claude/skills/`, 2026-10-13 트랙 모델로 개정)
 
-새 세션이 문맥을 이어받게 하는 닫힌 루프:
+병행 세션(main N2 · amd · multigpu · opchar · power-cap)이 서로의 문맥과 파일을 얽지 않게 하는 구조:
 
-- **세션 시작** → `catch-up` 스킬. 정본·메모리·최근 git/결과에서 현재 상태를
-  재구성해 브리핑(확정 결론은 재도출 않고 요약만).
-- **세션 종료/체크포인트** → `handoff` 스킬. 이번 세션의 결정·측정·코드/문서 변경·열린
-  항목을 `prefill-layer-alloc/handoff-report/session_handoff_<YYYY-MM-DD>.md` + 메모리에 저장(정본·메모리 반영은
-  doc-steward 규율 위임). 이게 다음 세션의 catch-up이 읽을 대상이다.
+- **세션 시작** → `catch-up <트랙>`. 그 트랙 파일 + `COSTMODEL.md` 진척표만 읽고 15줄로 브리핑.
+  인자 없으면 트랙 목록과 결정 대기(inbox)만.
+- **세션 종료/체크포인트** → `handoff`. **자기 트랙 파일(`tracks/<트랙>.md`)만** 갱신·커밋(정본·MEMORY.md·날짜별
+  handoff 문서는 쓰지 않는다 — 옛 `handoff-report/session_handoff_*.md`는 이력).
+- **정본 반영** → `promote`(main 세션 전용, 한 번에 하나). 트랙 파일의 `promote 필요: 예` 항목을
+  COSTMODEL·PROJECT_STATUS·CONSENSUS·MEMORY.md에 압축 반영. 정본·메모리의 **유일한 작성 경로**.
+- 결과 분석(result-analyst)은 마지막 절에 **"cost model 기여"**를 쓰고, 감사(claims-auditor)는 같은 대상에
+  **최대 2회** 후 사용자 결정으로 넘긴다.
 
 ## 메모리
 
