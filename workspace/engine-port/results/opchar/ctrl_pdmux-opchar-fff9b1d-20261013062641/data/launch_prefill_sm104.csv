@@ -1,0 +1,16 @@
+"# value_kind: measured=n_sm_realized,grid,grid_blocks,threads,regs,smem,num_ctas,calls; derived=calls_per_iter,segment_ms_sum,segment_ms_per_iter,resident_blocks_per_sm,waves,tail_sms,idle_ratio; metadata=model,phase,size,ctx,n_sm_req,op,kernel,segment_missing"
+model__metadata,phase__metadata,size__metadata,ctx__metadata,n_sm_req__metadata,n_sm_realized__measured,op__metadata,kernel__metadata,grid__measured,grid_blocks__measured,threads__measured,regs__measured,smem__measured,num_ctas__measured,calls__measured,calls_per_iter__derived,segment_ms_sum__derived,segment_ms_per_iter__derived,segment_missing__metadata,resident_blocks_per_sm__derived,waves__derived,tail_sms__derived,idle_ratio__derived
+nemotron_nano_9b_v2,prefill,1024,0,104,104,M:conv1d,_causal_conv1d_fwd_kernel,1x128x48,6144,128,40,2048,1,3,1.0,0.3020799905061722,0.10069333016872406,0,12,5,96,0.015384615384615385
+nemotron_nano_9b_v2,prefill,1024,0,104,104,M:ssd_scan,_chunk_state_fwd_kernel,40x8x128,40960,128,39,2944,1,3,1.0,1.601535975933075,0.533845325311025,0,12,33,86,0.005244755244755245
+nemotron_nano_9b_v2,prefill,1024,0,104,104,M:ssd_scan,_chunk_scan_fwd_kernel,40x8x128,40960,128,48,12288,1,3,1.0,1.3527039885520935,0.4509013295173645,0,10,40,40,0.015384615384615385
+nemotron_nano_9b_v2,prefill,1024,0,104,104,M:ssd_scan,_state_passing_fwd_kernel,640x1x128,81920,128,22,0,1,3,1.0,0.9512960016727448,0.31709866722424823,0,16,50,24,0.015384615384615385
+nemotron_nano_9b_v2,prefill,1024,0,104,104,M:ssd_scan,_chunk_state_varlen_kernel,40x1x128,5120,128,40,2816,1,3,1.0,0.25599999725818634,0.08533333241939545,0,12,5,11,0.17884615384615385
+nemotron_nano_9b_v2,prefill,1024,0,104,104,M:ssd_scan,_chunk_cumsum_fwd_kernel,1x8x8,64,128,42,4096,1,3,1.0,0.12902400083839893,0.04300800027946631,0,10,1,7,0.9326923076923077
+nemotron_nano_9b_v2,prefill,1024,0,104,104,M:ssd_scan,_bmm_chunk_fwd_kernel,64x1x64,4096,128,31,2048,1,3,1.0,0.11673599481582642,0.03891199827194214,0,16,3,48,0.1794871794871795
+nemotron_nano_9b_v2,prefill,16384,0,104,104,M:conv1d,_causal_conv1d_fwd_kernel,1x2048x48,98304,128,40,2048,1,3,1.0,2.2937600016593933,0.7645866672197977,0,12,79,80,0.0029211295034079843
+nemotron_nano_9b_v2,prefill,16384,0,104,104,M:ssd_scan,_chunk_state_fwd_kernel,40x128x128,655360,128,39,2944,1,3,1.0,26.387455940246582,8.795818646748861,0,12,526,14,0.0016452178999707516
+nemotron_nano_9b_v2,prefill,16384,0,104,104,M:ssd_scan,_chunk_scan_fwd_kernel,40x128x128,655360,128,48,12288,1,3,1.0,22.188032150268555,7.396010716756185,0,10,631,16,0.0013409728148238449
+nemotron_nano_9b_v2,prefill,16384,0,104,104,M:ssd_scan,_state_passing_fwd_kernel,640x1x128,81920,128,22,0,1,3,1.0,14.237696170806885,4.745898723602295,0,16,50,24,0.015384615384615385
+nemotron_nano_9b_v2,prefill,16384,0,104,104,M:ssd_scan,_bmm_chunk_fwd_kernel,64x1x1024,65536,128,31,2048,1,3,1.0,1.521664023399353,0.5072213411331177,0,16,40,40,0.015384615384615385
+nemotron_nano_9b_v2,prefill,16384,0,104,104,M:ssd_scan,_chunk_state_varlen_kernel,40x1x128,5120,128,40,2816,1,3,1.0,0.2682880014181137,0.0894293338060379,0,12,5,11,0.17884615384615385
+nemotron_nano_9b_v2,prefill,16384,0,104,104,M:ssd_scan,_chunk_cumsum_fwd_kernel,1x128x8,1024,128,42,4096,1,3,1.0,0.15359999798238277,0.05119999932746092,0,10,1,103,0.009615384615384616

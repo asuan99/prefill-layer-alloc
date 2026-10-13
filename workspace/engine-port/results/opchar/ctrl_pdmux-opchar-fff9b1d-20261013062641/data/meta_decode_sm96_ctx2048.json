@@ -1,0 +1,62 @@
+{
+  "argv": [
+    "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+    "--model",
+    "nemotron_nano_9b_v2",
+    "--phase",
+    "decode",
+    "--sizes",
+    "32",
+    "128",
+    "--ctx",
+    "2048",
+    "--sm",
+    "96",
+    "--graph-census",
+    "--out-dir",
+    "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/ctrl_pdmux-opchar-fff9b1d-20261013062641/data"
+  ],
+  "versions": {
+    "python": "3.14.6",
+    "torch": "2.9.1+cu130",
+    "flashinfer": "0.6.10",
+    "sgl_kernel": "0.4.1",
+    "sglang": "0.0.0.dev0",
+    "triton": "3.5.1"
+  },
+  "device": "NVIDIA A100-SXM4-80GB",
+  "partition": {
+    "mode": "green",
+    "n_sm_req": 96,
+    "device_sm": 108,
+    "readout": {
+      "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+      "cuStreamGetGreenCtx_rc": 0,
+      "green_ctx_is_null": false,
+      "cuGreenCtxGetDevResource_rc": 0,
+      "green_sm": {
+        "smCount": 96,
+        "minSmPartitionSize": 4,
+        "smCoscheduledAlignment": 2
+      }
+    },
+    "n_sm_realized": 96
+  },
+  "notes": [
+    {
+      "size": 32,
+      "meta": {
+        "fidelity": "engine-kernels;eager;tp1;contig-kv;single-request-prefill",
+        "*use_tensor_cores": true
+      }
+    },
+    {
+      "size": 128,
+      "meta": {
+        "fidelity": "engine-kernels;eager;tp1;contig-kv;single-request-prefill",
+        "*use_tensor_cores": true
+      }
+    }
+  ],
+  "wall_s": 10.445113182067871
+}

@@ -61,7 +61,8 @@ def load(run_dir: Path):
     ops = [r for p in glob.glob(str(data / "ops_*.csv")) for r in read_labeled(p)]
     launch = [r for p in glob.glob(str(data / "launch_*.csv")) for r in read_labeled(p)]
     mem = [r for p in glob.glob(str(data / "memcpy_*.csv")) for r in read_labeled(p)]
-    return ops, launch, mem
+    cen = [r for p in glob.glob(str(data / "census_*.csv")) for r in read_labeled(p)]
+    return ops, launch, mem, cen
 
 
 def best_ms(rows):
@@ -103,24 +104,46 @@ def write_csv(path, rows):
         w.writerows(rows)
 
 
-def table2(launch, ms, cfg, sizes, sms):
-    """Idle % per op: Triton ops from RECORDED launches (segment-weighted), GEMMs from ASSUMED tile."""
+def census_idle(cen_rows):
+    """Op idle from graph census when unambiguous without timing: the op has ONE kernel node, or it
+    is a GEMM (main *gemm* kernel; a splitKreduce epilogue is excluded and flagged)."""
+    ks = [r for r in cen_rows if r["node_kind"] == "kernel"]
+    if len(ks) == 1:
+        return fnum(ks[0]["idle_ratio"]), "census"
+    g = [r for r in ks if "gemm" in (r["kernel"] or "").lower()]
+    if len(g) == 1:
+        return fnum(g[0]["idle_ratio"]), "census-gemm" + ("+splitK" if len(ks) > 1 else "")
+    return None, None
+
+
+def table2(launch, ms, cfg, sizes, sms, cen=()):
+    """Idle % per op. Source priority: Triton launch log (segment-weighted) > graph census
+    (single kernel / main GEMM) > ASSUMED GEMM tile."""
     by = defaultdict(list)
     for r in launch:
         if r["phase"] == "prefill":
             by[(int(r["size"]), int(r["n_sm_req"]), r["op"])].append(r)
+    cby = defaultdict(list)
+    for r in cen:
+        if r["phase"] == "prefill":
+            cby[(int(r["size"]), int(r["n_sm_req"]), r["op"])].append(r)
     out = []
     for L in sizes:
         spec = {o.key: o for ops in S.prefill_ops(cfg, L).values() for o in ops}
         for sm in sms:
             row = {"L": L, "sm": sm}
             for key, o in spec.items():
-                if o.category == "gemm":
+                recs = by.get((L, sm, key), [])
+                if not recs and cby.get((L, sm, key)):
+                    v, src = census_idle(cby[(L, sm, key)])
+                    if v is not None:
+                        row[key], row[key + "#src"] = 100 * v, src
+                        continue
+                if o.category == "gemm" and not recs:
                     m, n = o.shape["m"], o.shape["n"]
                     row[key] = 100 * wave_quantization(gemm_tile_blocks(m, n, *GEMM_TILE), sm)["idle_ratio"]
                     row[key + "#src"] = "assumed-tile"
                     continue
-                recs = by.get((L, sm, key), [])
                 num = den = 0.0
                 for r in recs:
                     idle, seg = fnum(r["idle_ratio"]), fnum(r["segment_ms_sum"]) or 0.0
@@ -139,7 +162,7 @@ def main(run_dir):
     job = run_dir.name
     cfg = S.cfg_from_models_yaml("nemotron_nano_9b_v2")
     counts = S.layer_counts(cfg.pattern)
-    ops, launch, mem = load(run_dir)
+    ops, launch, mem, cen = load(run_dir)
     ms = best_ms(ops)
     an = run_dir / "ANALYSIS"
     sizes_p = sorted({k[1] for k in ms if k[0] == "prefill"})
@@ -174,25 +197,29 @@ def main(run_dir):
 
     # ---- Table 2
     t2 = table2(launch, ms, cfg, [L for L in sizes_p if L in (1024, 2048, 4096, 16384)] or sizes_p,
-                [s for s in sms if s in (108, 44, 16)])
+                [s for s in sms if s in (108, 104, 44, 16)], cen)
     write_csv(an / "table2_idle.csv", t2)
-    cols = ["M:in_proj", "M:conv1d", "M:ssd_scan", "M:out_proj", "*:qkv_proj", "*:o_proj",
+    cols = ["M:in_proj", "M:conv1d", "M:ssd_scan", "M:out_proj", "*:qkv_proj", "*:attn", "*:o_proj",
             "-:up_proj", "-:down_proj"]
     with open(an / "table2_idle.md", "w") as f:
         f.write(f"# Table 2 analogue — wave-quantization SM idle % (DERIVED), job {job}\n\n")
-        f.write("Triton ops (conv1d, SSD scan): recorded launch grid/regs/smem, segment-time weighted. "
-                f"GEMMs: ASSUMED {GEMM_TILE[0]}x{GEMM_TILE[1]} tiles, b=1 (not observed). "
-                "Attention/norm/elementwise not covered (no CUPTI on this image).\n\n")
+        f.write("Source per cell: no mark = Triton launch log (recorded grid/regs/smem, segment-time "
+                "weighted); `c` = CUDA-graph census (recorded launch of the single kernel / main GEMM; "
+                "`c+` = split-K reduce epilogue excluded); `*` = ASSUMED "
+                f"{GEMM_TILE[0]}x{GEMM_TILE[1]} GEMM tile, b=1 (not observed). Residency b = occupancy "
+                "calculator (max smem carveout, upper bound).\n\n")
         f.write("| L | SM | " + " | ".join(LABEL.get(c, c) for c in cols) + " |\n")
         f.write("|---|---|" + "---|" * len(cols) + "\n")
         for r in t2:
             cells = []
             for c in cols:
                 v = r.get(c)
-                tag = "" if r.get(c + "#src") == "triton-launch" else "*"
+                src = r.get(c + "#src")
+                tag = {"triton-launch": "", "census": "c", "census-gemm": "c",
+                       "census-gemm+splitK": "c+"}.get(src, "*")
                 cells.append("—" if v is None else f"{v:.1f}{tag}")
             f.write(f"| {r['L']} | {r['sm']} | " + " | ".join(cells) + " |\n")
-        f.write("\n`*` = assumed GEMM tile.\n")
+        f.write("\n")
 
     # ---- Fig 3 speedups
     sp_rows = []
@@ -207,11 +234,11 @@ def main(run_dir):
 
     ns = sorted({int(r["n"]) for r in ops if r["status"] == "ok" and r["n"]})
     n_txt = f"n={ns[0]}" if len(ns) == 1 else f"n={ns[0]}–{ns[-1]}"
-    plot(job, cfg, counts, ms, share_rows, util_rows, sp_rows, memcpy, sizes_p, sizes_d, sms, n_txt)
+    plot(job, cfg, counts, ms, share_rows, util_rows, sp_rows, memcpy, sizes_p, sizes_d, sms, n_txt, cen)
     print(f"analysis -> {an}")
 
 
-def plot(job, cfg, counts, ms, share_rows, util_rows, sp_rows, memcpy, sizes_p, sizes_d, sms, n_txt):
+def plot(job, cfg, counts, ms, share_rows, util_rows, sp_rows, memcpy, sizes_p, sizes_d, sms, n_txt, cen=()):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -286,6 +313,8 @@ def plot(job, cfg, counts, ms, share_rows, util_rows, sp_rows, memcpy, sizes_p, 
 
     # ---------------- memcpy (Bullet Fig 8a analogue)
     _memcpy(plt, c, job, memcpy, n_txt)
+    if cen:
+        _waves(plt, c, job, foot, ms, cen)
 
 
 def _fig3(plt, c, job, foot, sp_rows, sizes_p, sizes_d, sms, op_style, key, ref, tag):
@@ -321,6 +350,51 @@ def _fig3(plt, c, job, foot, sp_rows, sizes_p, sizes_d, sms, op_style, key, ref,
     fig.text(0.01, 0.005, foot, fontsize=7, color=c["muted"])
     fig.tight_layout(rect=(0, 0.02, 1, 0.97))
     fig.savefig(HERE / f"opchar_fig3{tag}_{job}.png", dpi=140)
+    plt.close(fig)
+
+
+def _waves(plt, c, job, foot, ms, cen):
+    """Decode GEMM time vs SM next to the recorded main-GEMM wave count (graph census)."""
+    gemms = ["M:in_proj", "M:out_proj", "*:qkv_proj", "*:o_proj", "-:up_proj", "-:down_proj"]
+    sizes = sorted({int(r["size"]) for r in cen if r["phase"] == "decode"})
+    if not sizes:
+        return
+    fig, axes = plt.subplots(len(sizes), len(gemms), figsize=(16, 3.3 * len(sizes)), squeeze=False)
+    for i, B in enumerate(sizes):
+        for j, op in enumerate(gemms):
+            ax = axes[i, j]
+            pts, wv, grid = [], [], None
+            for sm in sorted({int(r["n_sm_req"]) for r in cen}):
+                t = ms.get(("decode", B, sm, op))
+                g = [r for r in cen if r["phase"] == "decode" and int(r["size"]) == B and int(r["n_sm_req"]) == sm
+                     and r["op"] == op and r["node_kind"] == "kernel" and "gemm" in (r["kernel"] or "").lower()]
+                if t and g:
+                    pts.append((sm, t[0] * 1e3))
+                    wv.append((sm, int(float(g[0]["waves"]))))
+                    grid = g[0]["grid"]
+            if not pts:
+                ax.axis("off")
+                continue
+            ax.plot(*zip(*pts), marker="o", color=c["series"][0], lw=1.8, label="측정 µs (graph)")
+            ax.set_ylim(0, max(p[1] for p in pts) * 1.25)
+            ax2 = ax.twinx()
+            ax2.step(*zip(*wv), where="mid", color=c["series"][1], ls="--", lw=1.4, label="waves (census)")
+            ax2.set_ylim(0, max(w for _, w in wv) + 1)
+            ax2.set_yticks(range(0, max(w for _, w in wv) + 2))
+            ax2.grid(False)
+            ax.set_title(f"B={B} {LABEL.get(op, op)}  grid {grid}", loc="left", fontsize=9)
+            ax.set_xlabel("SM")
+            if j == 0:
+                ax.set_ylabel("µs / call")
+            if i == 0 and j == 0:
+                h1, l1 = ax.get_legend_handles_labels()
+                h2, l2 = ax2.get_legend_handles_labels()
+                ax.legend(h1 + h2, l1 + l2, frameon=False, fontsize=7, loc="lower left")
+    fig.suptitle("decode GEMM: 같은 cuBLAS 커널·grid가 모든 분할에서 그대로 → 시간이 wave 수를 따라 계단형 "
+                 "(104 green ↔ 108 plain 점프의 원인)", x=0.01, ha="left", fontsize=11)
+    fig.text(0.01, 0.005, foot, fontsize=7, color=c["muted"])
+    fig.tight_layout(rect=(0, 0.02, 1, 0.95))
+    fig.savefig(HERE / f"opchar_waves_{job}.png", dpi=140)
     plt.close(fig)
 
 
