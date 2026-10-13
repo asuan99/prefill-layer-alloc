@@ -1,0 +1,54 @@
+{
+ "arm": "agnostic",
+ "boot_id": "m2g_TP8_agnostic",
+ "boot_seconds": 67.03056812286377,
+ "config": "TP8",
+ "contam_status": "VERIFIED",
+ "contamination_pre": {
+  "contam_unverified": false,
+  "gpu_contaminated": false,
+  "reasons": [],
+  "verified": true
+ },
+ "dp": 1,
+ "effective_cap": 384,
+ "gpu_ids": "0,1,2,3,4,5,6,7",
+ "health_wait_cap_s": 1800.0,
+ "health_wait_s_used": 67.02986693382263,
+ "host": "job-pv3k7mdlvas7-zxgbm",
+ "kind": "g0",
+ "port": 20583,
+ "registered": {
+  "SGLANG_LOG_MS": "1",
+  "attention_backend": "flashinfer",
+  "decode_log_interval": 40,
+  "fd_soft_min": 8192,
+  "health_wait_s": 1800,
+  "sock_read_s": 600
+ },
+ "server_exit_code": null,
+ "server_pid": 24881,
+ "status": "OK",
+ "steps": [
+  {
+   "status": "OK",
+   "type": "cmd"
+  },
+  {
+   "status": "OK",
+   "type": "warmup"
+  },
+  {
+   "cell": "A_G3B_s4386",
+   "status": "OK",
+   "type": "cell"
+  }
+ ],
+ "t_end_epoch": 1791875939.2602832,
+ "t_health_epoch": 1791874684.0136418,
+ "t_start_epoch": 1791874616.868908,
+ "teardown_settle_s": 6.58813214302063,
+ "tp": 8,
+ "ulimit_n_hard": 1048576,
+ "ulimit_n_soft": 1048576
+}

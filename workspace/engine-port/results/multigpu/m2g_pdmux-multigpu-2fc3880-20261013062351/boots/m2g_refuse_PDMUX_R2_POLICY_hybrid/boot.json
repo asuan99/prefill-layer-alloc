@@ -1,0 +1,45 @@
+{
+ "arm": "agnostic",
+ "boot_id": "m2g_refuse_PDMUX_R2_POLICY_hybrid",
+ "config": "TP2",
+ "contam_status": "VERIFIED",
+ "contamination_pre": {
+  "contam_unverified": false,
+  "gpu_contaminated": false,
+  "reasons": [],
+  "verified": true
+ },
+ "dp": 1,
+ "effective_cap": 96,
+ "gpu_ids": "0,1",
+ "health_wait_cap_s": 1800.0,
+ "health_wait_s_used": 18.014302492141724,
+ "host": "job-040n52fuujq1-sx6jh",
+ "kind": "g0ii",
+ "port": 20648,
+ "refusal": {
+  "expected_text": "PD-mux with tp_size=",
+  "health_ok": false,
+  "outcome": "REFUSED_AS_EXPECTED",
+  "process_died": true,
+  "text_found": true
+ },
+ "registered": {
+  "SGLANG_LOG_MS": "1",
+  "attention_backend": "flashinfer",
+  "decode_log_interval": 40,
+  "fd_soft_min": 8192,
+  "health_wait_s": 1800,
+  "sock_read_s": 600
+ },
+ "server_exit_code": -9,
+ "server_pid": 19691,
+ "status": "REFUSED_AS_EXPECTED",
+ "steps": [],
+ "t_end_epoch": 1791875721.1083915,
+ "t_start_epoch": 1791875703.0389626,
+ "teardown_settle_s": 0.0008270740509033203,
+ "tp": 2,
+ "ulimit_n_hard": 1048576,
+ "ulimit_n_soft": 1048576
+}

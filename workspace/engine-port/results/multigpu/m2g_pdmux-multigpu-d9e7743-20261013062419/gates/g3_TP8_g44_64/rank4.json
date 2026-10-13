@@ -1,0 +1,23 @@
+{
+ "completed": 500,
+ "elapsed_s": 0.5487219851929694,
+ "errors": 0,
+ "first_error_iteration": null,
+ "nccl_env": {
+  "NCCL_VERSION": "2.28.3-1",
+  "SGLANG_ENGINE_DEV": "/opt/pdmux/sglang_engine_dev/python"
+ },
+ "numel": [
+  8388608,
+  16384
+ ],
+ "rank": 4,
+ "repeats": 500,
+ "split": [
+  44,
+  64
+ ],
+ "streams": "green",
+ "watchdog_s": 120.0,
+ "world": 8
+}

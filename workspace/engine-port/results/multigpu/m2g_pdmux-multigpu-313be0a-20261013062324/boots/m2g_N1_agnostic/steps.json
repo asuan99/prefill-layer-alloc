@@ -1,0 +1,19 @@
+[
+ {
+  "argv": [
+   "python3",
+   "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
+   "serve-g1",
+   "--endpoint",
+   "{ENDPOINT}",
+   "--out",
+   "{OUT}/gates",
+   "--config",
+   "N1",
+   "--arm",
+   "agnostic"
+  ],
+  "name": "g1_agnostic",
+  "type": "cmd"
+ }
+]

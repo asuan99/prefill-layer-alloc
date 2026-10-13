@@ -1,0 +1,68 @@
+{
+ "capacity_recorded": true,
+ "cuda_graph_capture_log": "cuda_graph_capture.log",
+ "dp_size": 1,
+ "gpu_ids": "0,1",
+ "kv_cache_tokens": [
+  6451460,
+  6451460
+ ],
+ "mamba_lines_note": "mamba allocation is logged per TP rank and DP replica; compare across ranks, do not sum",
+ "max_mamba_cache_size": [
+  96,
+  96
+ ],
+ "max_running_requests_logged": [
+  96,
+  96
+ ],
+ "max_running_requests_requested": 96,
+ "max_total_num_tokens": [
+  6451460
+ ],
+ "piecewise": {
+  "capture_log_lines": 10,
+  "chunked_prefill_size": "-1",
+  "cuda_graph_max_bs": "256",
+  "disable_cuda_graph": "False",
+  "disable_overlap_schedule": "True",
+  "disable_piecewise_cuda_graph": "False",
+  "piecewise_cuda_graph_max_tokens": "-1",
+  "piecewise_cuda_graph_tokens": "[]",
+  "piecewise_lines": 2,
+  "sample": [
+   "[2026-10-13 07:09:14.070 TP1] Capture cuda graph begin. This can take up to several minutes. avail mem=13.47 GB",
+   "[2026-10-13 07:09:14.070 TP0] Capture cuda graph begin. This can take up to several minutes. avail mem=13.47 GB",
+   "[2026-10-13 07:09:14.070 TP0] Capture cuda graph bs [1, 2, 4, 8, 12, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96]",
+   "[2026-10-13 07:09:19.134 TP0] Registering 912 cuda graph addresses",
+   "[2026-10-13 07:09:19.500 TP1] Capture cuda graph end. Time elapsed: 5.43 s. mem usage=0.41 GB. avail mem=13.07 GB.",
+   "[2026-10-13 07:09:19.500 TP1] Disable piecewise CUDA graph because the capture size is not set",
+   "[2026-10-13 07:09:19.529 TP0] Capture cuda graph end. Time elapsed: 5.46 s. mem usage=0.41 GB. avail mem=13.07 GB.",
+   "[2026-10-13 07:09:19.529 TP0] Disable piecewise CUDA graph because the capture size is not set",
+   "[2026-10-13 07:09:23.692 TP0] Prefill batch, #new-seq: 1, #new-token: 7, #cached-token: 0, full token usage: 0.00, mamba usage: 0.01, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 0.00",
+   "[2026-10-13 07:09:25.375 TP0] Prefill batch, #new-seq: 1, #new-token: 1, #cached-token: 0, full token usage: 0.00, mamba usage: 0.00, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 4.16"
+  ]
+ },
+ "scheduler_lines": 1,
+ "scheduler_lines_expected": 1,
+ "scheduler_lines_match_dp": true,
+ "server_info": {
+  "dp_size": 1,
+  "effective_max_running_requests_per_dp": [
+   96
+  ],
+  "load_balance_method": "round_robin",
+  "max_req_input_len": 16378,
+  "max_running_requests": 96,
+  "max_total_num_tokens": 6451460,
+  "token_capacity": [
+   6451460
+  ],
+  "tp_size": 2
+ },
+ "tp_size": 2,
+ "ulimit_n": [
+  1048576,
+  1048576
+ ]
+}

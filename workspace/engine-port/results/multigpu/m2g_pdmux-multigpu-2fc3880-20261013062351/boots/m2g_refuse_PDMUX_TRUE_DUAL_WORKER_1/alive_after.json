@@ -1,0 +1,11 @@
+{
+ "after_step": null,
+ "alive": false,
+ "boot_id": "m2g_refuse_PDMUX_TRUE_DUAL_WORKER_1",
+ "health_error": "process exited before check",
+ "health_http_status": null,
+ "poll_returncode": -9,
+ "schema": "m2g_alive_after/v1",
+ "steps_total": 0,
+ "t_epoch": 1791875785.7243266
+}

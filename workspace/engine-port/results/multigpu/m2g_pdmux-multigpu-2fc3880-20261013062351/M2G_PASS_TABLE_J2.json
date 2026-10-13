@@ -1,0 +1,187 @@
+{
+ "cells": {
+  "DP2:agnostic": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "DP2:d44": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "DP2:fused": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "DP2:fused_sym": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:agnostic": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:d44": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:fused": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:fused_sym": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "TP2:agnostic": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "TP2:d44": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "TP2:fused": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "TP2:fused_sym": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  }
+ },
+ "configs": {
+  "DP2": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": false
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.0009174729585951319,
+    "min_arm": 0.0009183154882230356
+   },
+   "flags": [],
+   "g_sym_undefined": false,
+   "memory_mismatch": false,
+   "rule_iii_would_have_flagged": false,
+   "tp_numeric_divergent": false
+  },
+  "N1": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": false
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.0009174719480840843,
+    "min_arm": 0.000918314475855201
+   },
+   "flags": [],
+   "g_sym_undefined": false,
+   "memory_mismatch": false,
+   "rule_iii_would_have_flagged": false,
+   "tp_numeric_divergent": false
+  },
+  "TP2": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": true
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.009989211744318341,
+    "min_arm": 0.010090002919986879
+   },
+   "flags": [
+    "G2_NOT_TESTED"
+   ],
+   "g_sym_undefined": false,
+   "memory_mismatch": false,
+   "rule_iii_would_have_flagged": true,
+   "tp_numeric_divergent": false
+  }
+ },
+ "contam_unverified": [],
+ "findings": [],
+ "g0ii": "PASS",
+ "g0iii": "PASS",
+ "g1_exposure_split_steps": {
+  "DP2:agnostic": 0.47763351992419134,
+  "DP2:d44": 0.6187322180493912,
+  "TP2:agnostic": 0.5773195876288659,
+  "TP2:d44": 0.6334310850439883
+ },
+ "g5a_gpu_descriptive": "NOT_IN_THIS_JOB",
+ "g5a_unit_test": "PASS",
+ "job": "J2",
+ "nvml_expected_procs": {
+  "DP2:agnostic": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:d44": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:fused": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:fused_sym": {
+   "0": 1,
+   "1": 1
+  },
+  "N1:agnostic": {
+   "0": 1
+  },
+  "N1:d44": {
+   "0": 1
+  },
+  "N1:fused": {
+   "0": 1
+  },
+  "N1:fused_sym": {
+   "0": 1
+  },
+  "TP2:agnostic": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:d44": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:fused": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:fused_sym": {
+   "0": 1,
+   "1": 1
+  }
+ },
+ "nvml_procs_visible": true,
+ "prereg": "PREREG_MULTIGPU_2026-10-12.md rev11",
+ "schema": "cells[f'{config}:{arm}'] = {included, reason, reasons, not_tested}"
+}

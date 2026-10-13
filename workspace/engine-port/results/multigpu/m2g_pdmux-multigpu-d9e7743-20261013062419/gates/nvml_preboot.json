@@ -1,0 +1,39 @@
+{
+ "attempts": 1,
+ "checked": true,
+ "not_empty": [],
+ "snapshot": {
+  "0": {
+   "memory_used_mib": 767.25,
+   "n_procs": 0
+  },
+  "1": {
+   "memory_used_mib": 767.25,
+   "n_procs": 0
+  },
+  "2": {
+   "memory_used_mib": 767.25,
+   "n_procs": 0
+  },
+  "3": {
+   "memory_used_mib": 767.25,
+   "n_procs": 0
+  },
+  "4": {
+   "memory_used_mib": 767.25,
+   "n_procs": 0
+  },
+  "5": {
+   "memory_used_mib": 767.25,
+   "n_procs": 0
+  },
+  "6": {
+   "memory_used_mib": 767.25,
+   "n_procs": 0
+  },
+  "7": {
+   "memory_used_mib": 767.25,
+   "n_procs": 0
+  }
+ }
+}

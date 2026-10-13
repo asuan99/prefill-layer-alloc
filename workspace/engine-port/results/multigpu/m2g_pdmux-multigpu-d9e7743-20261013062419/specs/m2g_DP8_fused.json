@@ -1,0 +1,50 @@
+{
+ "N": 8,
+ "arm": "fused",
+ "block": "m2g",
+ "boot_id": "m2g_DP8_fused",
+ "config": "DP8",
+ "deadline_epoch": 1791887086.0,
+ "dp": 8,
+ "gpu_ids": "0,1,2,3,4,5,6,7",
+ "kind": "g0",
+ "mode": "DP",
+ "out_root": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-d9e7743-20261013062419",
+ "steps": [
+  {
+   "argv": [
+    "python3",
+    "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
+    "serve-g1",
+    "--endpoint",
+    "{ENDPOINT}",
+    "--out",
+    "{OUT}/gates",
+    "--config",
+    "DP8",
+    "--arm",
+    "fused"
+   ],
+   "name": "g1_fused",
+   "type": "cmd"
+  },
+  {
+   "argv": [
+    "python3",
+    "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
+    "serve-g2",
+    "--endpoint",
+    "{ENDPOINT}",
+    "--out",
+    "{OUT}/gates",
+    "--config",
+    "DP8",
+    "--repeats",
+    "1"
+   ],
+   "name": "g2",
+   "type": "cmd"
+  }
+ ],
+ "tp": 1
+}

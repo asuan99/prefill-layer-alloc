@@ -1,0 +1,51 @@
+{
+  "gpu": {
+    "name": "NVIDIA A100-SXM4-80GB",
+    "uuid": "GPU-d5292f35-e39e-b73f-a38a-520fa8861c68",
+    "driver_version": "580.105.08",
+    "compute_cap": "8.0",
+    "memory_total": "81920 MiB",
+    "clocks_max_sm": "1410 MHz",
+    "power_limit": "400.00 W",
+    "mig_mode": "Disabled"
+  },
+  "gpu_count": 2,
+  "gpus": [
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-d5292f35-e39e-b73f-a38a-520fa8861c68",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 0
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-64eb2c3c-3659-f685-5c0a-4f4b9220ba18",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 1
+    }
+  ],
+  "gpu_uuids": [
+    "GPU-d5292f35-e39e-b73f-a38a-520fa8861c68",
+    "GPU-64eb2c3c-3659-f685-5c0a-4f4b9220ba18"
+  ],
+  "hostname": "job-040n52fuujq1-sx6jh",
+  "commit": "2fc388096c5eedd40812237739d718b59b4b12ef",
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "spec": "resourcespec-a100x2",
+  "job_name": "pdmux-multigpu-2fc3880-20261013062351",
+  "campaign": "multigpu",
+  "target": "workspace/engine-port/results/multigpu/m2g_job.sh",
+  "array_spec": "",
+  "image_pip_freeze.txt_sha256": "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324",
+  "image_python_torch.txt_sha256": "25072b0933afd254cc50b78a7aa43e34e43af33034036709169f08788d8686d3"
+}

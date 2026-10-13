@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-multigpu-99b5e5e-20261013062404
+Slug:                 job-75umct8f7sg6
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/99b5e5ef9f9ec7a0c80c38a6ec8777f609d2a927/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x4
+Job Type:             k8s-job
+Created:              2026-10-13T06:24:13Z
+Started At:           2026-10-13T06:24:16Z
+Completed At:         2026-10-13T07:22:41Z
+Duration:             58m25s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=99b5e5ef9f9ec7a0c80c38a6ec8777f609d2a927, PDMUX_JOB_NAME=pdmux-multigpu-99b5e5e-20261013062404, PDMUX_CAMPAIGN=multigpu, PDMUX_TARGET=workspace/engine-port/results/multigpu/m2g_job.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x4, PDMUX_MG_JOB=J4
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

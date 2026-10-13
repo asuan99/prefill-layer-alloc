@@ -1,0 +1,39 @@
+{
+ "argv": [
+  "/opt/conda/bin/python3",
+  "-m",
+  "torch.distributed.run",
+  "--standalone",
+  "--nproc-per-node",
+  "8",
+  "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py",
+  "--streams",
+  "green",
+  "--split",
+  "16",
+  "92",
+  "--repeats",
+  "500",
+  "--timeout-s",
+  "120.0",
+  "--out",
+  "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-d9e7743-20261013062419/gates/g3_TP8_g16_92"
+ ],
+ "elapsed_s": 15.602683338802308,
+ "preflight": {
+  "modules": [
+   "torch.distributed.run"
+  ],
+  "ok": true,
+  "python": "/opt/conda/bin/python3",
+  "rc": 0,
+  "status": "RAN",
+  "stderr_tail": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+  "stress_script": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py",
+  "stress_script_present": true
+ },
+ "rc": 0,
+ "status": "RAN",
+ "t_start_epoch": 1791872779.4856105,
+ "timeout_s": 900.0
+}

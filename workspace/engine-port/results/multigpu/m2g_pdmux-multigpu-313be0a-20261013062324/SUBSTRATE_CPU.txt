@@ -1,0 +1,10 @@
+nproc=96 cpu_affinity=0-95
+cgroup_cpu_max=2200000 100000
+cgroup_mem_max=256000000000
+mem_total_kb=1176300472
+numa_nodes=2
+ulimit_n_soft=65536 ulimit_n_hard=1048576
+nsys=ABSENT
+torch=2.9.1+cu130 13.0
+perf_counter_clock=clock_gettime(CLOCK_MONOTONIC)
+monotonic_clock=clock_gettime(CLOCK_MONOTONIC)

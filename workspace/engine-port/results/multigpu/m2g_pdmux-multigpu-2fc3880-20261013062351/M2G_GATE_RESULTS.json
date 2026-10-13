@@ -1,0 +1,665 @@
+{
+ "contam": {
+  "DP2:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP2:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP2:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP2:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP2:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP2:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP2:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP2:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  }
+ },
+ "g0i": {
+  "DP2:agnostic": {
+   "health_s": 55.02854871749878,
+   "verdict": "PASS"
+  },
+  "DP2:d44": {
+   "health_s": 57.023897647857666,
+   "verdict": "PASS"
+  },
+  "DP2:fused": {
+   "health_s": 53.02472805976868,
+   "verdict": "PASS"
+  },
+  "DP2:fused_sym": {
+   "health_s": 53.02451038360596,
+   "verdict": "PASS"
+  },
+  "N1:agnostic": {
+   "health_s": 110.15093445777893,
+   "verdict": "PASS"
+  },
+  "N1:d44": {
+   "health_s": 47.023184061050415,
+   "verdict": "PASS"
+  },
+  "N1:fused": {
+   "health_s": 47.1136257648468,
+   "verdict": "PASS"
+  },
+  "N1:fused_sym": {
+   "health_s": 41.02095556259155,
+   "verdict": "PASS"
+  },
+  "TP2:agnostic": {
+   "health_s": 49.02303147315979,
+   "verdict": "PASS"
+  },
+  "TP2:d44": {
+   "health_s": 59.0273015499115,
+   "verdict": "PASS"
+  },
+  "TP2:fused": {
+   "health_s": 43.022207498550415,
+   "verdict": "PASS"
+  },
+  "TP2:fused_sym": {
+   "health_s": 43.02557826042175,
+   "verdict": "PASS"
+  }
+ },
+ "g0ii": {
+  "per_env": [
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   },
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   },
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   },
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   },
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   }
+  ],
+  "verdict": "PASS"
+ },
+ "g0iii": {
+  "died_abnormally": true,
+  "exit_code": -9,
+  "healthy": false,
+  "marker_found": true,
+  "verdict": "PASS"
+ },
+ "g1": {
+  "DP2:agnostic": {
+   "verdict": "PASS"
+  },
+  "DP2:d44": {
+   "verdict": "PASS"
+  },
+  "TP2:agnostic": {
+   "verdict": "PASS"
+  },
+  "TP2:d44": {
+   "verdict": "PASS"
+  }
+ },
+ "g2": {
+  "TP2": {
+   "config": "TP2",
+   "floor": {
+    "p99": 0.05922987580299364,
+    "positions": 8128,
+    "problems": [
+     "O00[0]: non-finite logprob",
+     "O01[0]: non-finite logprob",
+     "O02[0]: non-finite logprob",
+     "O03[0]: non-finite logprob",
+     "O04[0]: non-finite logprob",
+     "O05[0]: non-finite logprob",
+     "O06[0]: non-finite logprob",
+     "O07[0]: non-finite logprob",
+     "O08[0]: non-finite logprob",
+     "O09[0]: non-finite logprob",
+     "O10[0]: non-finite logprob",
+     "O11[0]: non-finite logprob",
+     "O12[0]: non-finite logprob",
+     "O13[0]: non-finite logprob",
+     "O14[0]: non-finite logprob",
+     "O15[0]: non-finite logprob",
+     "O16[0]: non-finite logprob",
+     "O17[0]: non-finite logprob",
+     "O18[0]: non-finite logprob",
+     "O19[0]: non-finite logprob",
+     "O20[0]: non-finite logprob",
+     "O21[0]: non-finite logprob",
+     "O22[0]: non-finite logprob",
+     "O23[0]: non-finite logprob",
+     "O24[0]: non-finite logprob",
+     "O25[0]: non-finite logprob",
+     "O26[0]: non-finite logprob",
+     "O27[0]: non-finite logprob",
+     "O28[0]: non-finite logprob",
+     "O29[0]: non-finite logprob",
+     "O30[0]: non-finite logprob",
+     "O31[0]: non-finite logprob",
+     "S00[0]: non-finite logprob",
+     "S01[0]: non-finite logprob",
+     "S02[0]: non-finite logprob",
+     "S03[0]: non-finite logprob",
+     "S04[0]: non-finite logprob",
+     "S05[0]: non-finite logprob",
+     "S06[0]: non-finite logprob",
+     "S07[0]: non-finite logprob",
+     "S08[0]: non-finite logprob",
+     "S09[0]: non-finite logprob",
+     "S10[0]: non-finite logprob",
+     "S11[0]: non-finite logprob",
+     "S12[0]: non-finite logprob",
+     "S13[0]: non-finite logprob",
+     "S14[0]: non-finite logprob",
+     "S15[0]: non-finite logprob",
+     "S16[0]: non-finite logprob",
+     "S17[0]: non-finite logprob",
+     "S18[0]: non-finite logprob",
+     "S19[0]: non-finite logprob",
+     "S20[0]: non-finite logprob",
+     "S21[0]: non-finite logprob",
+     "S22[0]: non-finite logprob",
+     "S23[0]: non-finite logprob",
+     "S24[0]: non-finite logprob",
+     "S25[0]: non-finite logprob",
+     "S26[0]: non-finite logprob",
+     "S27[0]: non-finite logprob",
+     "S28[0]: non-finite logprob",
+     "S29[0]: non-finite logprob",
+     "S30[0]: non-finite logprob",
+     "S31[0]: non-finite logprob"
+    ],
+    "top1_mismatch_rate": 0.002583661417322835
+   },
+   "teacher_agreement_tp1": 0.990478515625,
+   "verdict": "NOT_TESTED",
+   "why": "floor run invalid"
+  }
+ },
+ "g3": {
+  "TP2": {
+   "combos": {
+    "green_16_92": {
+     "elapsed_s": {
+      "0": 0.4579372019506991,
+      "1": 0.45784347876906395
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    },
+    "green_44_64": {
+     "elapsed_s": {
+      "0": 0.5239023622125387,
+      "1": 0.5237828860990703
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    },
+    "plain": {
+     "elapsed_s": {
+      "0": 0.3972679181024432,
+      "1": 0.39726207917556167
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    }
+   },
+   "not_attempted": [],
+   "preflight": {
+    "modules": [
+     "torch.distributed.run"
+    ],
+    "ok": true,
+    "python": "/opt/conda/bin/python3",
+    "rc": 0,
+    "status": "RAN",
+    "stderr_tail": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+    "stress_script": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py",
+    "stress_script_present": true
+   },
+   "tp": 2,
+   "verdict": "PASS"
+  }
+ },
+ "g3b": {
+  "TP2:agnostic": {
+   "completed": 5382,
+   "g_descriptive": {
+    "T": 602.9283432918601,
+    "g": 0.3566704076939522,
+    "q_means": [
+     242.48874519288103,
+     820.4161056823135,
+     1522.2221679987815
+    ]
+   },
+   "n": 5382,
+   "server_alive": true,
+   "token_in_last_60s": true,
+   "verdict": "PASS"
+  },
+  "TP2:d44": {
+   "completed": 5382,
+   "g_descriptive": {
+    "T": 602.9281071298756,
+    "g": 0.3710067869727083,
+    "q_means": [
+     262.563425524038,
+     865.2719296042486,
+     1593.7357771821153
+    ]
+   },
+   "n": 5382,
+   "server_alive": true,
+   "token_in_last_60s": true,
+   "verdict": "PASS"
+  }
+ },
+ "g4": {
+  "DP2:agnostic": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP2:d44": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP2:fused": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "True",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 1280, 1536, 1792, 2048, 2304, 2560, 2816, 3072, 3328, 3584, 3840, 4096, 4608, 5120, 5632, 6144, 6656, 7168, 7680, 8192]"
+   },
+   "verdict": "PASS"
+  },
+  "DP2:fused_sym": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:agnostic": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:d44": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:fused": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "True",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 1280, 1536, 1792, 2048, 2304, 2560, 2816, 3072, 3328, 3584, 3840, 4096, 4608, 5120, 5632, 6144, 6656, 7168, 7680, 8192]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:fused_sym": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP2:agnostic": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP2:d44": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP2:fused": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "True",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 1280, 1536, 1792, 2048, 2304, 2560, 2816, 3072, 3328, 3584, 3840, 4096, 4608, 5120, 5632, 6144, 6656, 7168, 7680, 8192]"
+   },
+   "verdict": "PASS"
+  },
+  "TP2:fused_sym": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "g5b": {
+  "DP2": {
+   "arms": {
+    "agnostic": {
+     "problems": [],
+     "realized": {
+      "0": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "1": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ]
+     },
+     "verdict": "PASS"
+    },
+    "d44": {
+     "problems": [],
+     "realized": {
+      "0": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "1": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ]
+     },
+     "verdict": "PASS"
+    }
+   },
+   "verdict": "PASS"
+  }
+ },
+ "g5c": {
+  "DP2": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": false
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.0009174729585951319,
+    "min_arm": 0.0009183154882230356
+   },
+   "memory_mismatch": false,
+   "reasons": [],
+   "rule_iii_would_have_flagged": false,
+   "verdict": "PASS"
+  },
+  "N1": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": false
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.0009174719480840843,
+    "min_arm": 0.000918314475855201
+   },
+   "memory_mismatch": false,
+   "reasons": [],
+   "rule_iii_would_have_flagged": false,
+   "verdict": "PASS"
+  },
+  "TP2": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": true
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.009989211744318341,
+    "min_arm": 0.010090002919986879
+   },
+   "memory_mismatch": false,
+   "reasons": [],
+   "rule_iii_would_have_flagged": true,
+   "verdict": "PASS"
+  }
+ },
+ "nvml_post": {
+  "DP2:agnostic": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:d44": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:fused": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:fused_sym": {
+   "0": 1,
+   "1": 1
+  },
+  "N1:agnostic": {
+   "0": 1
+  },
+  "N1:d44": {
+   "0": 1
+  },
+  "N1:fused": {
+   "0": 1
+  },
+  "N1:fused_sym": {
+   "0": 1
+  },
+  "TP2:agnostic": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:d44": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:fused": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:fused_sym": {
+   "0": 1,
+   "1": 1
+  }
+ }
+}

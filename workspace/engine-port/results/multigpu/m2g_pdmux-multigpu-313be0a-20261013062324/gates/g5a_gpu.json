@@ -1,0 +1,25 @@
+{
+ "auto_grid": {
+  "hist": [
+   {
+    "1": 7,
+    "2": 33,
+    "3": 208
+   }
+  ],
+  "status": "OK"
+ },
+ "gate": "G5a_gpu_descriptive",
+ "manual_grid": {
+  "hist": [
+   {
+    "0": 1,
+    "1": 24,
+    "3": 14
+   }
+  ],
+  "status": "OK"
+ },
+ "status": "RECORDED",
+ "verdict": "DESCRIPTIVE"
+}
