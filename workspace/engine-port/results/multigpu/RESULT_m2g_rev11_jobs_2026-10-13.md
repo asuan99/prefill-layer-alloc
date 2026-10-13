@@ -19,3 +19,9 @@
 ## 결론(사실만)
 - TP4·TP8의 agnostic·d44 제외는 PD-mux 정확성 문제를 나타내지 않는다(출력 비교 미수행). 그대로 M3에 쓰면 TP4·TP8의 G\_sym이 미정의라 TP 추세는 {1,2}만 남는다.
 - 수리 후보: (a) G1 생존을 G1 단계 직후에 기록, (b) G2 요청을 OOM-안전하게(요청 단위 직렬·logprob 범위 제한), (c) G2 위치 0 제외. 수리 뒤 J4·J8 재실행 필요 여부는 사용자 결정.
+
+## 추가: J4·J8 재실행(하네스 a41e725, 2026-10-13) 결과
+- Job: J4 `pdmux-multigpu-9df4a0a-20261013081304`(x4, 0.966 h), J8 `pdmux-multigpu-06eea19-20261013081322`(x8, 1.051 h), 둘 다 exit 0, fetch DONE+sha256.
+- **TP4·TP8 네 arm 모두 포함**(G1 agnostic·d44 PASS, G3·G3b PASS, G5(a) PASS). G1 직후 생존 기록 존재·전부 alive, fused TP4/8 boot 끝 생존도 alive(기술치). G2 클라이언트 errors 0(4파일씩).
+- G2: TP4·TP8 모두 `TP_NUMERIC_DIVERGENT`(표기 전용, 제외 아님). 직렬 송신 바닥 p99 = 0.0(TP=1 직렬 2회가 완전 일치) → 임계 max(4×0, 0.05) = 0.05, 시험 p99 TP4 0.0656·TP8 0.0656, top-1 불일치 0.25%·0.23%(< 2%). 판정서 C4 예보(직렬 바닥이 임계를 0.05로 낮춤)대로다 — 결함 판정 아님(MGP-3), M3 TP 결과 옆 병기 의무(MGH-3).
+- PASS 표 봉인: `results/multigpu/M2G_PASS_TABLE_J{1,2,4,8}.json` + `.sha256`(각 Job 산출물 바이트 그대로: J1 eba277c5…, J2 f67ae7bb…, J4 c087067f…, J8 b1c1bf8a…). 옛 J4·J8(99b5e5e·d9e7743) 표는 쓰지 않는다. C5: 네 표는 서로 다른 커밋의 산물.

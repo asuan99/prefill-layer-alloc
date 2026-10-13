@@ -1,0 +1,25 @@
+{
+ "config": "DP4",
+ "floor": {
+  "excluded_positions": 64,
+  "excluded_rule": "position index < 1 without a finite logprob (API: input_top_logprobs[0] is None)",
+  "missing_records": [],
+  "p99": 0.0,
+  "positions": 8128,
+  "problems": [],
+  "top1_mismatch_rate": 0.0
+ },
+ "label": null,
+ "teacher_agreement_tp1": 0.9965551181102362,
+ "test": {
+  "excluded_positions": 64,
+  "excluded_rule": "position index < 1 without a finite logprob (API: input_top_logprobs[0] is None)",
+  "missing_records": [],
+  "p99": 0.0,
+  "positions": 8128,
+  "problems": [],
+  "top1_mismatch_rate": 0.0
+ },
+ "threshold_nat": 0.05,
+ "verdict": "PASS"
+}

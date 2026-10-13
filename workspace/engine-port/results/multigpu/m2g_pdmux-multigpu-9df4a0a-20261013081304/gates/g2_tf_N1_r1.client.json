@@ -1,0 +1,8 @@
+{
+ "concurrency": 1,
+ "errors": {},
+ "logprob_start_len": "len(prompt ids)",
+ "seconds": 21.643482208251953,
+ "tokcheck_tail": 16,
+ "tokenize": "/tokenize + tail check"
+}

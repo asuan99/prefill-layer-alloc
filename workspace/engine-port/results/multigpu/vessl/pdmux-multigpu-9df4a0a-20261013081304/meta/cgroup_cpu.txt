@@ -1,0 +1,24 @@
+# at start 2026-10-13T08:13:49Z
+nproc=96
+cpu.max=4400000 100000
+usage_usec 22797818
+user_usec 19788314
+system_usec 3009504
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 164
+nr_throttled 2
+throttled_usec 1737046
+nr_bursts 0
+burst_usec 0
+# at end 2026-10-13T09:11:29Z
+usage_usec 14820100994
+user_usec 13878258851
+system_usec 941842143
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 34770
+nr_throttled 117
+throttled_usec 227951138
+nr_bursts 0
+burst_usec 0

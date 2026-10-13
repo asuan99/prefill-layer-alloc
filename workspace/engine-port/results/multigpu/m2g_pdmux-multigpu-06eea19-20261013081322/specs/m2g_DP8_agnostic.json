@@ -1,0 +1,33 @@
+{
+ "N": 8,
+ "arm": "agnostic",
+ "block": "m2g",
+ "boot_id": "m2g_DP8_agnostic",
+ "config": "DP8",
+ "deadline_epoch": 1791893631.0,
+ "dp": 8,
+ "gpu_ids": "0,1,2,3,4,5,6,7",
+ "kind": "g0",
+ "mode": "DP",
+ "out_root": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-06eea19-20261013081322",
+ "steps": [
+  {
+   "argv": [
+    "python3",
+    "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
+    "serve-g1",
+    "--endpoint",
+    "{ENDPOINT}",
+    "--out",
+    "{OUT}/gates",
+    "--config",
+    "DP8",
+    "--arm",
+    "agnostic"
+   ],
+   "name": "g1_agnostic",
+   "type": "cmd"
+  }
+ ],
+ "tp": 1
+}

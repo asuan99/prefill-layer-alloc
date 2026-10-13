@@ -1,0 +1,75 @@
+{
+  "gpu": {
+    "name": "NVIDIA A100-SXM4-80GB",
+    "uuid": "GPU-d1fd3eed-f0bf-507b-9ed4-ef8457970eae",
+    "driver_version": "580.105.08",
+    "compute_cap": "8.0",
+    "memory_total": "81920 MiB",
+    "clocks_max_sm": "1410 MHz",
+    "power_limit": "400.00 W",
+    "mig_mode": "Disabled"
+  },
+  "gpu_count": 4,
+  "gpus": [
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-d1fd3eed-f0bf-507b-9ed4-ef8457970eae",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 0
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-80986f7c-9a7e-0013-6cb8-5d9fe33b5261",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 1
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-a37eb13c-6889-ac30-21bb-95620214f253",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 2
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-9563abab-7ee7-cddc-4d9e-89cf63b3bdd1",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 3
+    }
+  ],
+  "gpu_uuids": [
+    "GPU-d1fd3eed-f0bf-507b-9ed4-ef8457970eae",
+    "GPU-80986f7c-9a7e-0013-6cb8-5d9fe33b5261",
+    "GPU-a37eb13c-6889-ac30-21bb-95620214f253",
+    "GPU-9563abab-7ee7-cddc-4d9e-89cf63b3bdd1"
+  ],
+  "hostname": "job-ymb6ssbhblz4-pgcwx",
+  "commit": "9df4a0a48d59e8149bb4bffed08037f2500cbaeb",
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "spec": "resourcespec-a100x4",
+  "job_name": "pdmux-multigpu-9df4a0a-20261013081304",
+  "campaign": "multigpu",
+  "target": "workspace/engine-port/results/multigpu/m2g_job.sh",
+  "array_spec": "",
+  "image_pip_freeze.txt_sha256": "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324",
+  "image_python_torch.txt_sha256": "25072b0933afd254cc50b78a7aa43e34e43af33034036709169f08788d8686d3"
+}

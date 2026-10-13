@@ -1,0 +1,1 @@
+{"model_path":"nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base","tokenizer_path":"nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base","is_generation":true,"preferred_sampling_params":null,"weight_version":"default","has_image_understanding":false,"has_audio_understanding":false,"model_type":"nemotron_h","architectures":["NemotronHForCausalLM"]}

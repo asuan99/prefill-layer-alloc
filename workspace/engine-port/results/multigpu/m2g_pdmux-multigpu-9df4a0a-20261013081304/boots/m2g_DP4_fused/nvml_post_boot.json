@@ -1,0 +1,21 @@
+{
+ "available": true,
+ "gpus": {
+  "0": {
+   "n_compute_procs": 1,
+   "used_mib": 68352.875
+  },
+  "1": {
+   "n_compute_procs": 1,
+   "used_mib": 68330.875
+  },
+  "2": {
+   "n_compute_procs": 1,
+   "used_mib": 68330.875
+  },
+  "3": {
+   "n_compute_procs": 1,
+   "used_mib": 68330.875
+  }
+ }
+}
