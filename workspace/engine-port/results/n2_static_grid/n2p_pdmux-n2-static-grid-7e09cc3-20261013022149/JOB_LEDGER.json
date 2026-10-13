@@ -1,0 +1,168 @@
+{
+ "cap_s": 16100.0,
+ "job": "EA",
+ "job_abort": null,
+ "ledger": [
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 925.4576041666667,
+   "remaining_s": 16098.059588828124,
+   "status": "ADMITTED",
+   "unit": "r1_ON44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 858.6595920138889,
+   "remaining_s": 15634.641284218058,
+   "status": "ADMITTED",
+   "unit": "r1_OFF44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 995.3314710681697,
+   "remaining_s": 15290.474827110767,
+   "status": "ADMITTED",
+   "unit": "r1_ON16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 860.1096765801128,
+   "remaining_s": 14789.630814458244,
+   "status": "ADMITTED",
+   "unit": "r1_OFF16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 860.1096765801128,
+   "remaining_s": 14452.217159382068,
+   "status": "ADMITTED",
+   "unit": "r2_OFF16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 995.3314710681697,
+   "remaining_s": 14114.29755443614,
+   "status": "ADMITTED",
+   "unit": "r2_ON16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 858.6595920138889,
+   "remaining_s": 13613.749322440475,
+   "status": "ADMITTED",
+   "unit": "r2_OFF44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 925.4576041666667,
+   "remaining_s": 13268.779567316175,
+   "status": "ADMITTED",
+   "unit": "r2_ON44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 858.6595920138889,
+   "remaining_s": 12871.245422266424,
+   "status": "ADMITTED",
+   "unit": "r3_OFF44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 925.4576041666667,
+   "remaining_s": 12526.42204086855,
+   "status": "ADMITTED",
+   "unit": "r3_ON44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 995.3314710681697,
+   "remaining_s": 12126.397851546295,
+   "status": "ADMITTED",
+   "unit": "r3_ON16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 860.1096765801128,
+   "remaining_s": 11625.253772052936,
+   "status": "ADMITTED",
+   "unit": "r3_OFF16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 860.1096765801128,
+   "remaining_s": 11287.99036696367,
+   "status": "ADMITTED",
+   "unit": "r4_OFF16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 995.3314710681697,
+   "remaining_s": 10950.368736227974,
+   "status": "ADMITTED",
+   "unit": "r4_ON16"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 925.4576041666667,
+   "remaining_s": 10450.131709126756,
+   "status": "ADMITTED",
+   "unit": "r4_ON44"
+  },
+  {
+   "abort_class": null,
+   "aborted": null,
+   "cells_done": 4,
+   "n_cells": 4,
+   "need_s": 858.6595920138889,
+   "remaining_s": 10051.745436821133,
+   "status": "ADMITTED",
+   "unit": "r4_OFF44"
+  }
+ ],
+ "stopped": null
+}

@@ -1,0 +1,901 @@
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+........................../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxl3r31nd/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxl3r31nd/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxl3r31nd/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxl3r31nd/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxl3r31nd/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["ProbeRejected: synthetic"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmptde79h3q/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmptde79h3q/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmptde79h3q/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmptde79h3q/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmptde79h3q/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["ProbeRejected: synthetic"]}
+..../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxsg8eycz/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxsg8eycz/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxsg8eycz/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxsg8eycz/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxsg8eycz/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe_status KAPPA_CENSORED"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpju4s3qnb/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpju4s3qnb/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpju4s3qnb/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpju4s3qnb/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpju4s3qnb/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe_status VALUE_DEPENDENT"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7y5_ti7w/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7y5_ti7w/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7y5_ti7w/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7y5_ti7w/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7y5_ti7w/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe_status VALUE_INDEPENDENT"]}
+...{"K": {"16": 33, "44": 15}, "K_matches_derivation": true, "limits_ok": true}
+..{"K": {"16": 32, "44": 15}, "K_matches_derivation": false, "limits_ok": true}
+..{"K": {"16": 33, "44": 15}, "K_matches_derivation": true, "limits_ok": true}
+{"ok": true, "problems": []}
+{"ok": false, "problems": ["registered file sha256 differs from the sealed digest"]}
+{"ok": false, "problems": ["registered file bytes differ from the record regenerated by this calculator"]}
+.............../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp203g4b_h/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp203g4b_h/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp203g4b_h/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp203g4b_h/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp203g4b_h/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["limits_check failed: ('PROFILE', 108, 32, 8192) len 16617"]}
+../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpe5llp7h9/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpe5llp7h9/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpe5llp7h9/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpe5llp7h9/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpe5llp7h9/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": true, "reasons": []}
+..../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:1006: ResourceWarning: unclosed file <_io.TextIOWrapper name='/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/n2_probe_reduce.py' mode='r' encoding='UTF-8'>
+  src = open(r.__file__).read().replace('kap.setdefault(cell, []).append(out["c_med"] / out["a_on"])',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpoznsstb4/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpoznsstb4/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpoznsstb4/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpoznsstb4/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpoznsstb4/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe.json differs from the re-reduction of its raw files", "reducer sha256 missing or differs from registered reducer"]}
+.{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["no pre-probe freeze manifest given (--freeze)"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4n1mitor/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4n1mitor/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4n1mitor/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4n1mitor/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["freeze manifest: calculator/reducer sha256 missing or differs from the running tools"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpcgz1_el8/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpcgz1_el8/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpcgz1_el8/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpcgz1_el8/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["freeze manifest: calculator/reducer sha256 missing or differs from the running tools"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpukm91vj3/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpukm91vj3/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpukm91vj3/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpukm91vj3/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpukm91vj3/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["freeze manifest: harness mark writer(s) missing from the frozen file list"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3v598bnc/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3v598bnc/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3v598bnc/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3v598bnc/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3v598bnc/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["freeze manifest: extra_frozen.py missing or sha256 differs"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp8l1rdhcq/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp8l1rdhcq/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp8l1rdhcq/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp8l1rdhcq/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp8l1rdhcq/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": true, "reasons": []}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpywjnrfz3/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpywjnrfz3/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpywjnrfz3/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpywjnrfz3/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpywjnrfz3/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["freeze manifest: git HEAD is not manifest.commit (gate must run on the freeze checkout)"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvg02_zh1/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvg02_zh1/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvg02_zh1/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvg02_zh1/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvg02_zh1/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["freeze manifest: frozen files have uncommitted changes in the freeze checkout"]}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp9w9_2er1/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp9w9_2er1/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp9w9_2er1/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp9w9_2er1/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp9w9_2er1/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": false, "reasons": ["limits_check failed: ('PROFILE', 108, 32, 8192) len 16617"]}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpg9fgva5k/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpg9fgva5k/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpg9fgva5k/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpg9fgva5k/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpg9fgva5k/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["recorded raw path(s) do not open at the gate location: ['/tmp/tmpg9fgva5k/marks_k.txt']"]}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmps8uhpuax/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmps8uhpuax/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmps8uhpuax/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmps8uhpuax/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmps8uhpuax/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe.json differs from the re-reduction of its raw files", "reducer sha256 missing or differs from registered reducer"]}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4mfux5r6/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4mfux5r6/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4mfux5r6/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4mfux5r6/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4mfux5r6/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": {"16": 33, "44": 15}, "seal_allowed": true, "reasons": []}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp1f9pzwj2/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp1f9pzwj2/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp1f9pzwj2/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp1f9pzwj2/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp1f9pzwj2/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe_status KAPPA_CENSORED"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv9r54v7d/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv9r54v7d/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv9r54v7d/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv9r54v7d/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv9r54v7d/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe_status VALUE_DEPENDENT"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp01v_39d7/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp01v_39d7/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp01v_39d7/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp01v_39d7/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp01v_39d7/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe_status VALUE_INDEPENDENT"]}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpehrt1av6/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpehrt1av6/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpehrt1av6/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpehrt1av6/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpehrt1av6/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe.json differs from the re-reduction of its raw files"]}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4foctruv/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4foctruv/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4foctruv/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4foctruv/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4foctruv/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["ProbeRejected: theta spans missing for p=92"]}
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp09uo8vhw/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp09uo8vhw/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp09uo8vhw/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp09uo8vhw/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp09uo8vhw/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe.json differs from the re-reduction of its raw files"]}
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpa6c_eeg1/frz/n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpa6c_eeg1/frz/n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpa6c_eeg1/frz/test_n2_feasibility.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpa6c_eeg1/frz/test_n2_probe_reduce.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:239: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpa6c_eeg1/frz/mark_writer.py'>
+  sha = lambda fn: hashlib.sha256(open(os.path.join(repo, fn), "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"K": null, "seal_allowed": false, "reasons": ["probe.json differs from the re-reduction of its raw files"]}
+.................../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmphx7wq7lt/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmphx7wq7lt/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmplt5se_td/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmplt5se_td/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvps3x07s/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvps3x07s/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmphhex1z_0/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmphhex1z_0/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxvgka1xc/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpxvgka1xc/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp_uk5zps8/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp_uk5zps8/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmppmnttjmr/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmppmnttjmr/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpisd00guy/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpisd00guy/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpzuirp4lb/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpzuirp4lb/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvqjwd8bd/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvqjwd8bd/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpi3quv66h/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpi3quv66h/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpncxhvvcr/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpncxhvvcr/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv5oluwrc/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv5oluwrc/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3xxi384a/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3xxi384a/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpyukxav22/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpyukxav22/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp5_v9buya/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp5_v9buya/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpzp_ivhkb/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpzp_ivhkb/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpw_3rnlv7/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpw_3rnlv7/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpb42zgva6/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpb42zgva6/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpuknskby7/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpuknskby7/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpqwubzb0o/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpqwubzb0o/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmphb8rkldc/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmphb8rkldc/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmppb4xpz8_/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmppb4xpz8_/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp2psvff77/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp2psvff77/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpyfoztclf/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpyfoztclf/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpmq1d2nka/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpmq1d2nka/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpgos61ax7/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpgos61ax7/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpt592tahh/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpt592tahh/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpagfg5068/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpagfg5068/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpddnehn69/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpddnehn69/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvax0r21q/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpvax0r21q/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp882glmwj/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp882glmwj/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpf3gykcnb/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpf3gykcnb/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpl1vi3sns/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpl1vi3sns/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp_jxchtii/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp_jxchtii/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7dletr49/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7dletr49/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpr3kk_ln0/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpr3kk_ln0/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv6v3my0y/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpv6v3my0y/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4e0yr5n_/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4e0yr5n_/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpyhodi5x8/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpyhodi5x8/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpjpf3_65r/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpjpf3_65r/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpcyf4zc56/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpcyf4zc56/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpd0kakf34/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpd0kakf34/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpr7z_dail/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpr7z_dail/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpqqw7m6rv/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpqqw7m6rv/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpr848q6yw/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpr848q6yw/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp6a0iyjge/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp6a0iyjge/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7qkgiocv/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp7qkgiocv/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp9o1o_2u_/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp9o1o_2u_/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpyj8l2f6_/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpyj8l2f6_/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpbavdd2ho/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpbavdd2ho/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp_7yzrz_v/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp_7yzrz_v/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpghy4_adc/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpghy4_adc/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpsa8dzmp4/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpsa8dzmp4/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpo4cz5ccn/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpo4cz5ccn/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpql8jnu7i/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpql8jnu7i/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpr_vurxyi/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpr_vurxyi/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpiz5d7uo6/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpiz5d7uo6/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmppkuscjd4/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmppkuscjd4/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpt6t8k06l/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpt6t8k06l/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.../data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpjkv6zymg/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpjkv6zymg/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3shc117l/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp3shc117l/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpwoygd34y/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpwoygd34y/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpkhvy7h79/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpkhvy7h79/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmphllvf6uq/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmphllvf6uq/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp2uiw1nda/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp2uiw1nda/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpmlp2wtz2/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpmlp2wtz2/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpnq0b_wzl/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpnq0b_wzl/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpi679ep02/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpi679ep02/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpo9du4qeu/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpo9du4qeu/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpnxskt6or/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmpnxskt6or/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp66fcrysz/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp66fcrysz/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4zjns48e/tel_k.jsonl'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/runs/pdmux-n2-static-grid-7e09cc3-20261013022149/results/n2_static_grid/test_n2_probe_reduce.py:572: ResourceWarning: unclosed file <_io.BufferedReader name='/tmp/tmp4zjns48e/marks_k.txt'>
+  shas = {b[k]: hashlib.sha256(open(b[k], "rb").read()).hexdigest() for b in boots
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+......s................................Task was destroyed but it is pending!
+task: <Task pending name='Task-5678' coro=<RequestHandler.start() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:602> wait_for=<Task pending name='Task-5832' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]> cb=[Server.connection_lost.<locals>.<lambda>() at /opt/conda/lib/python3.14/site-packages/aiohttp/web_server.py:50]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-5679' coro=<RequestHandler.start() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:602> wait_for=<Task pending name='Task-5833' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]> cb=[Server.connection_lost.<locals>.<lambda>() at /opt/conda/lib/python3.14/site-packages/aiohttp/web_server.py:50]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-5832' coro=<RequestHandler._handle_request() done, defined at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:500> wait_for=<Future cancelled> cb=[Task.task_wakeup()]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-5833' coro=<RequestHandler._handle_request() done, defined at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:500> wait_for=<Future cancelled> cb=[Task.task_wakeup()]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-6791' coro=<RequestHandler.start() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:602> wait_for=<Task pending name='Task-6961' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]> cb=[Server.connection_lost.<locals>.<lambda>() at /opt/conda/lib/python3.14/site-packages/aiohttp/web_server.py:50]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-6792' coro=<RequestHandler.start() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:602> wait_for=<Task pending name='Task-6962' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]> cb=[Server.connection_lost.<locals>.<lambda>() at /opt/conda/lib/python3.14/site-packages/aiohttp/web_server.py:50]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-6961' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-6962' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-7072' coro=<RequestHandler.start() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:602> wait_for=<Task pending name='Task-7242' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]> cb=[Server.connection_lost.<locals>.<lambda>() at /opt/conda/lib/python3.14/site-packages/aiohttp/web_server.py:50]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-7073' coro=<RequestHandler.start() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:602> wait_for=<Task pending name='Task-7243' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]> cb=[Server.connection_lost.<locals>.<lambda>() at /opt/conda/lib/python3.14/site-packages/aiohttp/web_server.py:50]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-7242' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]>
+Task was destroyed but it is pending!
+task: <Task pending name='Task-7243' coro=<RequestHandler._handle_request() running at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:510> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]>
+unhandled exception during asyncio.run() shutdown
+task: <Task finished name='Task-6792' coro=<RequestHandler.start() done, defined at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:543> exception=RuntimeError('cannot reuse already awaited coroutine')>
+RuntimeError: cannot reuse already awaited coroutine
+unhandled exception during asyncio.run() shutdown
+task: <Task finished name='Task-7072' coro=<RequestHandler.start() done, defined at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:543> exception=RuntimeError('cannot reuse already awaited coroutine')>
+RuntimeError: cannot reuse already awaited coroutine
+unhandled exception during asyncio.run() shutdown
+task: <Task finished name='Task-6791' coro=<RequestHandler.start() done, defined at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:543> exception=RuntimeError('cannot reuse already awaited coroutine')>
+RuntimeError: cannot reuse already awaited coroutine
+unhandled exception during asyncio.run() shutdown
+task: <Task finished name='Task-7073' coro=<RequestHandler.start() done, defined at /opt/conda/lib/python3.14/site-packages/aiohttp/web_protocol.py:543> exception=RuntimeError('cannot reuse already awaited coroutine')>
+RuntimeError: cannot reuse already awaited coroutine
+...............................................................s..............................................................................................................
+----------------------------------------------------------------------
+Ran 335 tests in 342.090s
+
+OK (skipped=2)

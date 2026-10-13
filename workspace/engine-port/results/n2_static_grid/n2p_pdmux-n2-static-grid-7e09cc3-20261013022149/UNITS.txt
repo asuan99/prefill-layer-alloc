@@ -1,0 +1,16 @@
+r1_ON44 kind=ON D=44 sticky=1 pe=1 cells=4 greedy=0
+r1_OFF44 kind=OFF D=44 sticky=0 pe=1 cells=4 greedy=0
+r1_ON16 kind=ON D=16 sticky=1 pe=1 cells=4 greedy=0
+r1_OFF16 kind=OFF D=16 sticky=0 pe=1 cells=4 greedy=0
+r2_OFF16 kind=OFF D=16 sticky=0 pe=1 cells=4 greedy=0
+r2_ON16 kind=ON D=16 sticky=1 pe=1 cells=4 greedy=0
+r2_OFF44 kind=OFF D=44 sticky=0 pe=1 cells=4 greedy=0
+r2_ON44 kind=ON D=44 sticky=1 pe=1 cells=4 greedy=0
+r3_OFF44 kind=OFF D=44 sticky=0 pe=1 cells=4 greedy=0
+r3_ON44 kind=ON D=44 sticky=1 pe=1 cells=4 greedy=0
+r3_ON16 kind=ON D=16 sticky=1 pe=1 cells=4 greedy=0
+r3_OFF16 kind=OFF D=16 sticky=0 pe=1 cells=4 greedy=0
+r4_OFF16 kind=OFF D=16 sticky=0 pe=1 cells=4 greedy=0
+r4_ON16 kind=ON D=16 sticky=1 pe=1 cells=4 greedy=0
+r4_ON44 kind=ON D=44 sticky=1 pe=1 cells=4 greedy=0
+r4_OFF44 kind=OFF D=44 sticky=0 pe=1 cells=4 greedy=0

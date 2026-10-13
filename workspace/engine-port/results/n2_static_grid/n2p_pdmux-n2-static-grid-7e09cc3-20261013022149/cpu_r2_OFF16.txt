@@ -1,0 +1,96 @@
+# before r2_OFF16-ea-b8-c2048 mono=4226762.247458225
+usage_usec 2868058070
+user_usec 2641086019
+system_usec 226972050
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 21261
+nr_throttled 228
+throttled_usec 780404023
+nr_bursts 0
+burst_usec 0
+
+# after r2_OFF16-ea-b8-c2048 mono=4226806.936179628
+usage_usec 2918221748
+user_usec 2688696316
+system_usec 229525431
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 21708
+nr_throttled 228
+throttled_usec 780404023
+nr_bursts 0
+burst_usec 0
+
+# before r2_OFF16-ea-b8-c8192 mono=4226806.942615035
+usage_usec 2918229656
+user_usec 2688704224
+system_usec 229525431
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 21708
+nr_throttled 228
+throttled_usec 780404023
+nr_bursts 0
+burst_usec 0
+
+# after r2_OFF16-ea-b8-c8192 mono=4226862.910327913
+usage_usec 2981290727
+user_usec 2748812038
+system_usec 232478688
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 22267
+nr_throttled 228
+throttled_usec 780404023
+nr_bursts 0
+burst_usec 0
+
+# before r2_OFF16-ea-b32-c2048 mono=4226862.918451705
+usage_usec 2981298427
+user_usec 2748819137
+system_usec 232479289
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 22267
+nr_throttled 228
+throttled_usec 780404023
+nr_bursts 0
+burst_usec 0
+
+# after r2_OFF16-ea-b32-c2048 mono=4226922.917027767
+usage_usec 3052425652
+user_usec 2816572098
+system_usec 235853553
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 22867
+nr_throttled 228
+throttled_usec 780404023
+nr_bursts 0
+burst_usec 0
+
+# before r2_OFF16-ea-b32-c8192 mono=4226922.941551699
+usage_usec 3052471905
+user_usec 2816618351
+system_usec 235853553
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 22868
+nr_throttled 228
+throttled_usec 780404023
+nr_bursts 0
+burst_usec 0
+
+# after r2_OFF16-ea-b32-c8192 mono=4227026.959826743
+usage_usec 3181283965
+user_usec 2939370395
+system_usec 241913570
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 23908
+nr_throttled 228
+throttled_usec 780404023
+nr_bursts 0
+burst_usec 0
+

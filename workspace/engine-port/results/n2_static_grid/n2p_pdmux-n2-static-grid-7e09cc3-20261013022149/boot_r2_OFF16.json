@@ -1,0 +1,79 @@
+{
+ "abort_class": null,
+ "aborted": null,
+ "capture_bs": [
+  1,
+  2,
+  4,
+  8,
+  12,
+  16,
+  24,
+  32,
+  40,
+  48
+ ],
+ "cells_done": [
+  "r2_OFF16-ea-b8-c2048",
+  "r2_OFF16-ea-b8-c8192",
+  "r2_OFF16-ea-b32-c2048",
+  "r2_OFF16-ea-b32-c8192"
+ ],
+ "cg_canary": {
+  "decode_lines": 14,
+  "not_cuda_graph_true": 0,
+  "ok": true,
+  "wall_hi": 1791860254,
+  "wall_lo": 1791860239
+ },
+ "ea_canary": {
+  "co_spans": 3,
+  "coloc_iters_idx_d": 75,
+  "n_new": [
+   1,
+   1,
+   1
+  ],
+  "ok": true,
+  "problems": [],
+  "reads": 1,
+  "stream_idx": 1,
+  "t0": 4226743.871720808,
+  "t1": 4226760.124158453,
+  "unpaired": []
+ },
+ "job_abort": null,
+ "n_planned": 4,
+ "name": "r2_OFF16",
+ "p3": "PASS mamba=48 tokens_min=2721290 tokens_max=2721290 rel=0.000e+00 tol=0.0001 n_boots=5",
+ "server_log": {
+  "banners": [
+   48,
+   2721290
+  ],
+  "decode_lines": 176,
+  "r7": false
+ },
+ "t_admit_mono": 4226692.776316041,
+ "t_health_mono": 4226743.868371757,
+ "t_stop_mono": 4227029.174359843,
+ "tz_gmtoff_s": 0,
+ "tz_name": "UTC",
+ "unit": {
+  "D": 16,
+  "alone_D": 108,
+  "cost_key": "OFF16",
+  "fixed_dsm": 16,
+  "greedy": false,
+  "job": "EA",
+  "kind": "OFF",
+  "name": "r2_OFF16",
+  "phase_events": true,
+  "round": 2,
+  "sticky": false
+ },
+ "wiring": {
+  "green_problems": [],
+  "log_problems": []
+ }
+}

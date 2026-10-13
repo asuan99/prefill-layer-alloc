@@ -1,0 +1,96 @@
+# before r3_ON16-ea-b8-c2048 mono=4229100.458839529
+usage_usec 5886870840
+user_usec 5455420613
+system_usec 431450227
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 44643
+nr_throttled 282
+throttled_usec 998013667
+nr_bursts 0
+burst_usec 0
+
+# after r3_ON16-ea-b8-c2048 mono=4229156.90456298
+usage_usec 5949769544
+user_usec 5515507671
+system_usec 434261873
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 45207
+nr_throttled 282
+throttled_usec 998013667
+nr_bursts 0
+burst_usec 0
+
+# before r3_ON16-ea-b8-c8192 mono=4229156.91259831
+usage_usec 5949786832
+user_usec 5515524959
+system_usec 434261873
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 45207
+nr_throttled 282
+throttled_usec 998013667
+nr_bursts 0
+burst_usec 0
+
+# after r3_ON16-ea-b8-c8192 mono=4229232.936272478
+usage_usec 6034210056
+user_usec 5595915568
+system_usec 438294487
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 45968
+nr_throttled 282
+throttled_usec 998013667
+nr_bursts 0
+burst_usec 0
+
+# before r3_ON16-ea-b32-c2048 mono=4229232.944655364
+usage_usec 6034219972
+user_usec 5595925484
+system_usec 438294487
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 45968
+nr_throttled 282
+throttled_usec 998013667
+nr_bursts 0
+burst_usec 0
+
+# after r3_ON16-ea-b32-c2048 mono=4229328.657008493
+usage_usec 6143111642
+user_usec 5699686176
+system_usec 443425465
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 46925
+nr_throttled 282
+throttled_usec 998013667
+nr_bursts 0
+burst_usec 0
+
+# before r3_ON16-ea-b32-c8192 mono=4229328.681052133
+usage_usec 6143158418
+user_usec 5699732953
+system_usec 443425465
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 46925
+nr_throttled 282
+throttled_usec 998013667
+nr_bursts 0
+burst_usec 0
+
+# after r3_ON16-ea-b32-c8192 mono=4229515.836649755
+usage_usec 6362267286
+user_usec 5909176143
+system_usec 453091142
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 48797
+nr_throttled 282
+throttled_usec 998013667
+nr_bursts 0
+burst_usec 0
+

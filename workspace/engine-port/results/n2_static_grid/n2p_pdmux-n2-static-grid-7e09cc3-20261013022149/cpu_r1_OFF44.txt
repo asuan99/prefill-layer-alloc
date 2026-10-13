@@ -1,0 +1,96 @@
+# before r1_OFF44-ea-b8-c2048 mono=4225579.62551278
+usage_usec 1398454093
+user_usec 1273707723
+system_usec 124746370
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 9434
+nr_throttled 203
+throttled_usec 680967943
+nr_bursts 0
+burst_usec 0
+
+# after r1_OFF44-ea-b8-c2048 mono=4225612.966978704
+usage_usec 1436955894
+user_usec 1310190785
+system_usec 126765108
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 9768
+nr_throttled 203
+throttled_usec 680967943
+nr_bursts 0
+burst_usec 0
+
+# before r1_OFF44-ea-b8-c8192 mono=4225612.978812226
+usage_usec 1436970955
+user_usec 1310205847
+system_usec 126765108
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 9768
+nr_throttled 203
+throttled_usec 680967943
+nr_bursts 0
+burst_usec 0
+
+# after r1_OFF44-ea-b8-c8192 mono=4225664.847658678
+usage_usec 1497720207
+user_usec 1367878993
+system_usec 129841214
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 10287
+nr_throttled 203
+throttled_usec 680967943
+nr_bursts 0
+burst_usec 0
+
+# before r1_OFF44-ea-b32-c2048 mono=4225664.85892932
+usage_usec 1497742351
+user_usec 1367900922
+system_usec 129841428
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 10287
+nr_throttled 203
+throttled_usec 680967943
+nr_bursts 0
+burst_usec 0
+
+# after r1_OFF44-ea-b32-c2048 mono=4225722.304134812
+usage_usec 1573258850
+user_usec 1439789986
+system_usec 133468863
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 10861
+nr_throttled 203
+throttled_usec 680967943
+nr_bursts 0
+burst_usec 0
+
+# before r1_OFF44-ea-b32-c8192 mono=4225722.340748366
+usage_usec 1573332832
+user_usec 1439855364
+system_usec 133477468
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 10862
+nr_throttled 203
+throttled_usec 680967943
+nr_bursts 0
+burst_usec 0
+
+# after r1_OFF44-ea-b32-c8192 mono=4225851.241439834
+usage_usec 1765820246
+user_usec 1623556326
+system_usec 142263920
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 12151
+nr_throttled 203
+throttled_usec 680967943
+nr_bursts 0
+burst_usec 0
+

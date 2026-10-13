@@ -1,0 +1,96 @@
+# before r2_ON16-ea-b8-c2048 mono=4227112.550493742
+usage_usec 3293846000
+user_usec 3036607548
+system_usec 257238452
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 24764
+nr_throttled 236
+throttled_usec 812546011
+nr_bursts 0
+burst_usec 0
+
+# after r2_ON16-ea-b8-c2048 mono=4227169.035302011
+usage_usec 3356563875
+user_usec 3096288571
+system_usec 260275304
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 25329
+nr_throttled 236
+throttled_usec 812546011
+nr_bursts 0
+burst_usec 0
+
+# before r2_ON16-ea-b8-c8192 mono=4227169.042872937
+usage_usec 3356576850
+user_usec 3096301546
+system_usec 260275304
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 25329
+nr_throttled 236
+throttled_usec 812546011
+nr_bursts 0
+burst_usec 0
+
+# after r2_ON16-ea-b8-c8192 mono=4227244.759659431
+usage_usec 3440293095
+user_usec 3176114103
+system_usec 264178991
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 26086
+nr_throttled 236
+throttled_usec 812546011
+nr_bursts 0
+burst_usec 0
+
+# before r2_ON16-ea-b32-c2048 mono=4227244.767196492
+usage_usec 3440300551
+user_usec 3176121559
+system_usec 264178991
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 26086
+nr_throttled 236
+throttled_usec 812546011
+nr_bursts 0
+burst_usec 0
+
+# after r2_ON16-ea-b32-c2048 mono=4227340.249675123
+usage_usec 3548973130
+user_usec 3279877376
+system_usec 269095753
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 27041
+nr_throttled 236
+throttled_usec 812546011
+nr_bursts 0
+burst_usec 0
+
+# before r2_ON16-ea-b32-c8192 mono=4227340.273980777
+usage_usec 3549018778
+user_usec 3279923025
+system_usec 269095753
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 27041
+nr_throttled 236
+throttled_usec 812546011
+nr_bursts 0
+burst_usec 0
+
+# after r2_ON16-ea-b32-c8192 mono=4227527.830750425
+usage_usec 3769231986
+user_usec 3490706288
+system_usec 278525697
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 28916
+nr_throttled 236
+throttled_usec 812546011
+nr_bursts 0
+burst_usec 0
+

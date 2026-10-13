@@ -1,0 +1,1 @@
+ip_local_port_range=32768 60999 listen_port_window=20000-20799

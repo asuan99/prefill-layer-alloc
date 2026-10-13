@@ -1,0 +1,4 @@
+column=EA_b cap_s=16100 (cell section, from its start; NOT a billing cap; tail unbounded)
+section_t0_epoch=1791858540 deadline_epoch=1791874640
+start_utc=2026-10-13T02:22:11Z
+runner_rc=0 remaining_s=9708

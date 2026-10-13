@@ -1,0 +1,12 @@
+{
+ "energy_sampler": {
+  "PDMUX_ENERGY_SAMPLER": null,
+  "note": "\u00a73-3 / N2C-61: no same-Job on/off contrast -- sampler effect not claimed",
+  "outputs_present": {
+   "energy.csv": true,
+   "power_samples.csv": true,
+   "sm_clk_samples.csv": true
+  },
+  "state": "on (job_entry.sh default)"
+ }
+}
