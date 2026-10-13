@@ -33,6 +33,9 @@ PREFILL_L = [1024, 2048, 4096, 16384, 32768]
 DECODE_B = [32, 64, 96, 128]
 DECODE_CTX = 2048
 MODEL = "nemotron_nano_9b_v2"
+CTRL_SM = [44, 64, 92, 96, 100, 104, 108]
+CTRL_L = [1024, 16384]
+CTRL_B = [32, 128]
 
 
 def plan(mode: str) -> list:
@@ -57,6 +60,15 @@ def plan(mode: str) -> list:
                                                 "--sm", str(sm), "--launch-log"]))
             jobs.append((f"decode_sm{sm}", w + ["--phase", "decode", "--sizes", *map(str, DECODE_B),
                                                "--ctx", str(DECODE_CTX), "--sm", str(sm), "--launch-log"]))
+    elif mode == "ctrl":
+        # caveat control for the full Job (98f3a8c): which kernels/grids does each op launch at
+        # 104 green vs 108 plain, and does a fine 92..104 sweep show the decode GEMM step?
+        for sm in CTRL_SM:
+            jobs.append((f"ctrl_prefill_sm{sm}", w + ["--phase", "prefill", "--sizes", *map(str, CTRL_L),
+                                                     "--sm", str(sm), "--graph-census", "--launch-log"]))
+            jobs.append((f"ctrl_decode_sm{sm}", w + ["--phase", "decode", "--sizes", *map(str, CTRL_B),
+                                                    "--ctx", str(DECODE_CTX), "--sm", str(sm),
+                                                    "--graph-census"]))
     else:
         raise ValueError(mode)
     return jobs
@@ -64,7 +76,7 @@ def plan(mode: str) -> list:
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=("probe", "full"), required=True)
+    ap.add_argument("--mode", choices=("probe", "full", "ctrl"), required=True)
     ap.add_argument("--out-root", required=True)
     ap.add_argument("--timeout-s", type=int, default=3600)
     ap.add_argument("--dry-run", action="store_true")

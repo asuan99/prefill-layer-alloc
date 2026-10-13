@@ -154,7 +154,7 @@ def run_ops(a, stream, info, out_dir: Path):
     from experiments.opchar import trace_parse as TP
     cfg = S.cfg_from_models_yaml(a.model)
     a._counts = S.layer_counts(cfg.pattern)
-    rows, kernel_rows, launch_rows, notes = [], [], [], []
+    rows, kernel_rows, launch_rows, cen_rows, notes = [], [], [], [], []
     for size in a.sizes:
         tag = f"{a.phase}_{size}" + (f"_ctx{a.ctx}" if a.phase == "decode" else "") + f"_sm{a.sm}"
         try:
@@ -182,6 +182,12 @@ def run_ops(a, stream, info, out_dir: Path):
                                 "ms_median": None, "ms_p10": None, "ms_p90": None, "ms_mean": None,
                                 "n": 0, "tflops_derived": None, "gbps_derived": None})
                 rows.append(row)
+        if a.graph_census:
+            for spec, fn in ops:
+                try:
+                    cen_rows += census_op(a, spec, fn, stream, info, size)
+                except Exception as exc:  # noqa: BLE001
+                    notes.append({"size": size, "op": spec.key, "census_error": repr(exc)[:300]})
         if a.launch_log:
             try:
                 launch_rows += launch_log_ops(a, ops, stream, info, size)
@@ -197,7 +203,25 @@ def run_ops(a, stream, info, out_dir: Path):
         notes.append({"size": size, "meta": {k: v for k, v in meta.items() if not k.startswith("_")}})
         del ops, meta
         torch.cuda.empty_cache()
-    return rows, kernel_rows, launch_rows, notes
+    return rows, kernel_rows, launch_rows, cen_rows, notes
+
+
+SCHEMA_CENSUS = {
+    "model": X, "phase": X, "size": X, "ctx": X, "n_sm_req": X, "n_sm_realized": M,
+    "partition_mode": X, "op": X, "capture": X, "node": X, "node_kind": M, "kernel": M, "grid": M,
+    "grid_blocks": M, "threads": M, "regs": M, "smem": M, "resident_blocks_per_sm": D,
+    "waves": D, "tail_sms": D, "idle_ratio": D,
+}
+
+
+def census_op(a, spec, fn, stream, info, size):
+    """Graph-capture one call of the op and read every kernel node's launch config."""
+    from experiments.opchar import graph_census as GC
+    n_sm = int(info.get("n_sm_realized") or info["n_sm_req"])
+    base = {"model": a.model, "phase": a.phase, "size": size, "ctx": a.ctx if a.phase == "decode" else 0,
+            "n_sm_req": info["n_sm_req"], "n_sm_realized": info.get("n_sm_realized"),
+            "partition_mode": info["mode"], "op": spec.key, "capture": "graph"}
+    return [{**base, **r} for r in GC.census_rows(GC.capture_census(fn, stream), n_sm)]
 
 
 SCHEMA_LAUNCH = {
@@ -304,6 +328,7 @@ def main(argv=None):
     p.add_argument("--inner", type=int, default=0)
     p.add_argument("--profile", action="store_true", help="Kineto/CUPTI pass (empty on the VESSL image)")
     p.add_argument("--launch-log", action="store_true", help="Triton launch-config pass (CUPTI-free)")
+    p.add_argument("--graph-census", action="store_true", help="CUDA-graph kernel-node launch census (CUPTI-free)")
     p.add_argument("--profile-iters", type=int, default=3)
     p.add_argument("--memcpy-bytes", type=int, default=1 << 30)
     p.add_argument("--out-dir", required=True)
@@ -321,10 +346,12 @@ def main(argv=None):
     if a.phase == "memcpy":
         write_labeled_csv(out_dir / f"{stem}.csv", run_memcpy(a, stream, info), SCHEMA_MEMCPY)
     else:
-        rows, krows, lrows, notes = run_ops(a, stream, info, out_dir)
+        rows, krows, lrows, crows, notes = run_ops(a, stream, info, out_dir)
         meta["notes"] = notes
         if rows:
             write_labeled_csv(out_dir / f"ops_{stem}.csv", rows, SCHEMA_OPS)
+        if crows:
+            write_labeled_csv(out_dir / f"census_{stem}.csv", crows, SCHEMA_CENSUS)
         if lrows:
             write_labeled_csv(out_dir / f"launch_{stem}.csv", lrows, SCHEMA_LAUNCH)
         if krows:

@@ -255,6 +255,54 @@ class TritonLaunch(unittest.TestCase):
         self.assertAlmostEqual(self.TL.op_idle(rows)["M:ssd_scan"], r["idle_ratio"])
 
 
+class GraphCensus(unittest.TestCase):
+    def test_struct_layout_matches_cuda_h(self):
+        import ctypes
+        from experiments.opchar import graph_census as GC
+        P = GC.KernelNodeParamsV2
+        self.assertEqual(ctypes.sizeof(P), 72)                  # 8 + 7*4 (+4 pad) + 4*8
+        self.assertEqual(P.kernelParams.offset, 40)
+        self.assertEqual(P.kern.offset, 56)
+
+    def test_census_rows_waves_on_partition(self):
+        from experiments.opchar import graph_census as GC
+
+        def k(grid, threads, regs, dyn=0, static=0):
+            return {"node_kind": "kernel", "kernel": "k", "grid": [grid, 1, 1], "block": [threads, 1, 1],
+                    "dyn_smem": dyn, "static_smem": static, "regs": regs, "max_threads": 1024}
+        # a grid sized for the full device (108 CTAs, 1 resident/SM via smem) on a 104-SM partition
+        nodes = [k(108, 128, 64, dyn=100 * 1024), {"node_kind": "memset"}, k(104, 256, 32)]
+        rows = GC.census_rows(nodes, sm_count=104)
+        self.assertEqual([r["node_kind"] for r in rows], ["kernel", "memset", "kernel"])
+        self.assertEqual(rows[0]["resident_blocks_per_sm"], 1)
+        self.assertEqual((rows[0]["waves"], rows[0]["tail_sms"]), (2, 4))
+        self.assertAlmostEqual(rows[0]["idle_ratio"], 100 / 208)
+        self.assertEqual(GC.census_rows(nodes[:1], sm_count=108)[0]["waves"], 1)   # same grid, full GPU
+        self.assertEqual(rows[2]["waves"], 1)
+
+    def test_census_walk_with_fake_driver(self):
+        from experiments.opchar import graph_census as GC
+
+        class P:
+            def __init__(self, grid):
+                self.gridDimX, self.gridDimY, self.gridDimZ = grid
+                self.blockDimX, self.blockDimY, self.blockDimZ = (128, 1, 1)
+                self.sharedMemBytes = 0
+
+        class FakeDrv:
+            def nodes(self, g): return {1: [10, 11, 12], 2: [20]}[g]
+            def node_type(self, n): return {10: 0, 11: 2, 12: 4, 20: 0}[n]
+            def child_graph(self, n): return 2
+            def kernel_params(self, n): return P((n, 1, 1))
+            def func_name(self, p): return f"k{p.gridDimX}"
+            def func_attr(self, p, key, device=0): return {"static_smem": 0, "regs": 40, "max_threads": 1024}[key]
+
+        out = GC.census(1, FakeDrv())
+        self.assertEqual([o["node_kind"] for o in out], ["kernel", "memset", "kernel"])
+        self.assertEqual(out[2]["kernel"], "k20")                 # child graph flattened
+        self.assertEqual(out[0]["grid"], [10, 1, 1])
+
+
 class Plan(unittest.TestCase):
     def test_grid(self):
         for sm in R.SM_GRID:
@@ -263,6 +311,11 @@ class Plan(unittest.TestCase):
         n = len(R.SM_GRID)
         self.assertEqual(len(full), 3 * n)
         self.assertTrue(all("--launch-log" in c for l, c in full if not l.startswith("memcpy")))
+        ctrl = R.plan("ctrl")
+        self.assertEqual(len(ctrl), 2 * len(R.CTRL_SM))
+        self.assertIn(104, R.CTRL_SM)
+        self.assertIn(108, R.CTRL_SM)
+        self.assertTrue(all("--graph-census" in c for _, c in ctrl))
         probe = R.plan("probe")
         self.assertEqual(probe[0][0], "probe")
         self.assertTrue(any(l.startswith("smoke_decode") for l, _ in probe))

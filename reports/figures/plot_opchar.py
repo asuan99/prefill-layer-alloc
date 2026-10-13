@@ -30,6 +30,7 @@ from experiments.opchar import ops_spec as S  # noqa: E402
 PEAK_TFLOPS_BF16 = 312.0          # A100 dense bf16 spec sheet (derived util denominator)
 GEMM_TILE = (128, 256)            # ASSUMED cuBLAS tile (reproduces Bullet Table 2; not observed)
 FULL = 108
+GREEN_REF = 104                   # largest green partition: green-vs-green reference (no plain stream)
 
 OP_ORDER = ["M:in_proj", "M:conv1d", "M:conv_update", "M:ssd_scan", "M:ssm_update", "M:gated_norm",
             "M:out_proj", "*:qkv_proj", "*:kv_write", "*:attn", "*:o_proj", "-:up_proj", "-:relu2",
@@ -197,8 +198,10 @@ def main(run_dir):
     sp_rows = []
     for (phase, sz, sm, op), (t, _, mode) in ms.items():
         base = ms.get((phase, sz, FULL, op))
+        b104 = ms.get((phase, sz, GREEN_REF, op))
         if base and t:
             sp_rows.append({"phase": phase, "size": sz, "sm": sm, "op": op, "speedup_vs_108": base[0] / t,
+                            "speedup_vs_104green": (b104[0] / t) if (b104 and sm <= GREEN_REF) else None,
                             "timing": mode})
     write_csv(an / "fig3_speedup.csv", sp_rows)
 
@@ -278,7 +281,14 @@ def plot(job, cfg, counts, ms, share_rows, util_rows, sp_rows, memcpy, sizes_p, 
     fig.savefig(HERE / f"opchar_fig2_{job}.png", dpi=140)
     plt.close(fig)
 
-    # ---------------- Fig 3
+    for key, ref, tag in (("speedup_vs_108", FULL, ""), ("speedup_vs_104green", GREEN_REF, "_ref104")):
+        _fig3(plt, c, job, foot, sp_rows, sizes_p, sizes_d, sms, op_style, key, ref, tag)
+
+    # ---------------- memcpy (Bullet Fig 8a analogue)
+    _memcpy(plt, c, job, memcpy, n_txt)
+
+
+def _fig3(plt, c, job, foot, sp_rows, sizes_p, sizes_d, sms, op_style, key, ref, tag):
     panels = [("prefill", s) for s in sizes_p if s in (1024, 4096, 16384, 32768)] + \
              [("decode", s) for s in sizes_d if s in (32, 128)]
     ncol = 3
@@ -286,11 +296,11 @@ def plot(job, cfg, counts, ms, share_rows, util_rows, sp_rows, memcpy, sizes_p, 
     fig, axes = plt.subplots(nrow, ncol, figsize=(15, 4.2 * nrow), squeeze=False)
     for ax, (phase, sz) in zip(axes.flat, panels):
         ratio = [s / FULL for s in sms]
-        ax.plot([16 / FULL, 1], [16 / FULL, 1], ls=":", color=c["muted"], lw=1)
+        ax.plot([16 / ref, 1], [16 / ref, 1], ls=":", color=c["muted"], lw=1)
         present = [op for op in OP_ORDER if op != "norm" and any(r["op"] == op and r["phase"] == phase and r["size"] == sz for r in sp_rows)] + ["M:norm"]
         for i, op in enumerate(present):
-            pts = sorted((r["sm"] / FULL, r["speedup_vs_108"]) for r in sp_rows
-                         if r["phase"] == phase and r["size"] == sz and r["op"] == op)
+            pts = sorted((r["sm"] / ref, r[key]) for r in sp_rows
+                         if r["phase"] == phase and r["size"] == sz and r["op"] == op and r[key] is not None)
             if not pts:
                 continue
             col, _ = op_style("norm" if op == "M:norm" else op, i)
@@ -298,20 +308,23 @@ def plot(job, cfg, counts, ms, share_rows, util_rows, sp_rows, memcpy, sizes_p, 
             ax.plot(*zip(*pts), ls=ls, marker="o", ms=3, color=col, lw=1.6, label=LABEL.get(op, "RMSNorm"))
         ax.set_ylim(0, 1.08)
         ax.set_xlim(0, 1.02)
-        ax.set_xlabel("SM 비율 (green partition / 108)")
-        ax.set_ylabel("speedup (108 SM = 1)")
+        ax.set_xlabel(f"SM 비율 (green partition / {ref})")
+        ax.set_ylabel(f"speedup ({ref} SM{' green' if ref != FULL else ' plain'} = 1)")
         lab = f"L={sz}" if phase == "prefill" else f"B={sz}, ctx 2048, graph"
         ax.set_title(f"{phase} {lab}", loc="left", fontsize=10)
         ax.legend(frameon=False, fontsize=6.5, ncol=2, loc="lower right")
     for ax in list(axes.flat)[len(panels):]:
         ax.axis("off")
-    fig.suptitle("Fig 3 대응 — 연산자별 SM 비율 대비 speedup (격리 실행, 점선 = 선형)", x=0.01, ha="left", fontsize=12)
+    title = ("Fig 3 대응 — 연산자별 SM 비율 대비 speedup (격리 실행, 점선 = 선형)" if ref == FULL else
+             f"Fig 3 대응 (보조) — {ref} SM green 기준 정규화 (plain-stream 108 점 제외, green 끼리 비교)")
+    fig.suptitle(title, x=0.01, ha="left", fontsize=12)
     fig.text(0.01, 0.005, foot, fontsize=7, color=c["muted"])
     fig.tight_layout(rect=(0, 0.02, 1, 0.97))
-    fig.savefig(HERE / f"opchar_fig3_{job}.png", dpi=140)
+    fig.savefig(HERE / f"opchar_fig3{tag}_{job}.png", dpi=140)
     plt.close(fig)
 
-    # ---------------- memcpy (Bullet Fig 8a analogue)
+
+def _memcpy(plt, c, job, memcpy, n_txt):
     if memcpy:
         fig, ax = plt.subplots(figsize=(6.5, 4))
         xs = sorted(memcpy)
