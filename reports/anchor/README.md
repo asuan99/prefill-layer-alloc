@@ -1,7 +1,7 @@
 # `reports/anchor/` — 읽는 순서용 지도
 
-- `axes_map.html` — artifact **"서빙 축 지도"**(https://claude.ai/artifact/9eXREM836RYTxWu9SnNSik, 비공개, 2026-10-15 v4)의 저장소 사본.
-  축 11개(E 엔진 6 · M 모델 1 · U 워크로드 1 · H 기판 1 · S 측정 2), 축 간 결합 14개, claim ↔ 축, 트랙 5개, 인용 규율, 문서 지도.
+- `axes_map.html` — artifact **"서빙 축 지도"**(https://claude.ai/artifact/9eXREM836RYTxWu9SnNSik, 비공개, 2026-10-15 v5)의 저장소 사본.
+  축 11개(E 엔진 6 · M 모델 1 · U 워크로드 1 · H 기판 1 · S 측정 2), 축 간 결합 14개, claim ↔ 축, 트랙 5개, 문서 지도.
   v4부터 축마다 흐름도(축 안의 기전, `axes[].flow`의 노드·간선 데이터)와 관계도(결합 목록에서 자동 생성)를, §3에 전체 관계도를 그린다.
 
 ## 지위
@@ -23,15 +23,9 @@
 python3 workspace/engine-port/scripts/discipline/check_citation_stops.py --file reports/anchor/axes_map.html
 ```
 
-## 2026-10-15 v1 작성 때 드러난 stale 지점 (지도에 `stale` 칩으로 표시, 수리는 각 담당 몫)
-
-- `tracks/main.md`가 Q1을 아직 "결정 대기"로 적음 — 실제 결정은 `handoff_review_2026-10-15/DECISIONS_Q1_consolidated_2026-10-15.md:4` (handoff 몫).
-- `PROJECT_STATUS.md` "최종 갱신" 줄 2026-10-13, Q1 결정·2회차 감사 미반영 (promote 몫).
-- `reports/paper/CLAIM_EVIDENCE_MATRIX.md` 2026-10-04 이후 미갱신 (promote 몫).
-- `reports/paper/DOCUMENT_STATUS.md:127-175`가 CONSENSUS를 historical로 분류하나 실제로는 rev95까지 갱신 중 (doc-steward 몫).
-
 ## 검토 이력
 
 - 2026-10-15 v1→v3: doc-steward 읽기 전용 대조 1회. 등급 칩 과장 6건(serving→code/scoped 등), 누락 단서 4건, 포인터 7건 수정.
   `check_citation_stops.py --file` 위반 1건(claim C 크기 문구) 제거 → 0건.
 - 2026-10-15 v4: 사용자 요청으로 축별 흐름도·관계도와 전체 관계도 추가. headless Chrome으로 데스크톱 1200px·폰 400px 렌더 확인(흐름도는 폰에서 상자 안 가로 스크롤).
+- 2026-10-15 v5: 사용자 요청으로 인용 규율 절(인용 가능 수치·인용 정지·금지 문장)과 날짜·stale 표시를 페이지에서 뺐다. 인용 규율 원문은 `reports/CONSENSUS.md`·`PROJECT_STATUS.md`에 그대로 있다. 날짜 갱신 문제는 에이전트·스킬 수정 논의로 넘김.

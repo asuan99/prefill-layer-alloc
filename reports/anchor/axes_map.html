@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: 좌측 고정 목차가 없는 한 줄 기둥. 위에서 아래로 "어디를 보나 → 좌표계 → 축 11개 → 결합 → claim → 트랙 → 인용 규율 → 문서 지도".
+/* Layout: 좌측 고정 목차가 없는 한 줄 기둥. 위에서 아래로 "어디를 보나 → 좌표계 → 축 11개 → 결합 → claim → 트랙 → 문서 지도".
    층 색 5개(E/M/U/H/측정)가 페이지 전체의 유일한 색 언어다. */
 :root{
   --bg:#f5f6f4; --surface:#ffffff; --sunk:#eceeea; --fg:#1b1f1d; --muted:#5b625e; --line:#d5d9d3;
@@ -171,15 +171,15 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     <span>저장소 사본 <code>reports/anchor/axes_map.html</code></span>
   </div>
   <nav class="toc" aria-label="목차">
-    <a href="#now">지금 어디를 보나</a><a href="#coord">좌표계</a><a href="#axes">축 11개</a><a href="#couple">축의 결합</a><a href="#claims">claim ↔ 축</a><a href="#tracks">트랙</a><a href="#cite">인용 규율</a><a href="#docs">문서 지도</a>
+    <a href="#now">지금 어디를 보나</a><a href="#coord">좌표계</a><a href="#axes">축 11개</a><a href="#couple">축의 결합</a><a href="#claims">claim ↔ 축</a><a href="#tracks">트랙</a><a href="#docs">문서 지도</a>
   </nav>
 </header>
 
 <section id="now">
   <h2>지금 어디를 보나 <span class="sec">§0</span></h2>
-  <p class="lede">날짜 파일이 쌓여도 최신 근거가 있는 곳은 몇 군데뿐입니다. 아래 표의 "상태" 열은 2026-10-15에 파일을 직접 열어 확인한 결과입니다.</p>
-  <div class="tbl"><table id="now-tbl"><thead><tr><th>알고 싶은 것</th><th>읽을 곳</th><th>상태 (2026-10-15 확인)</th></tr></thead><tbody></tbody></table></div>
-  <p class="note"><b>오늘 실제 최신 상태.</b> Q1(N2 종료)은 2026-10-15에 "전부 권고대로 진행"으로 결정됐습니다. N2·N3·E2는 새 Job 없이 종료되고 봉인 태그가 붙었습니다. 공통 측정 명세 v0.1은 규칙층 감사 2회차(마지막)에서 NO-GO가 나서 사용자 결정으로 넘어왔습니다. 남은 死因은 D-C′ 하나이고, R8-2d 동률 규칙이 G_mixed 분모 문제를 다시 엽니다. 종료 선언과 D9 기지 실패 목록은 GO-with-caveats이고, merge는 조건부 가입니다. 근거는 <code>handoff_review_2026-10-15/VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md</code> §1이며, 이 파일은 아직 커밋되지 않았습니다.</p>
+  <p class="lede">이 프로젝트를 볼 때 여는 곳은 아래 몇 군데입니다.</p>
+  <div class="tbl"><table id="now-tbl"><thead><tr><th>알고 싶은 것</th><th>읽을 곳</th></tr></thead><tbody></tbody></table></div>
+  <p class="note"><b>2026-10-15 현재.</b> Q1(N2 종료)은 2026-10-15에 "전부 권고대로 진행"으로 결정됐습니다. N2·N3·E2는 새 Job 없이 종료되고 봉인 태그가 붙었습니다. 공통 측정 명세 v0.1은 규칙층 감사 2회차(마지막)에서 NO-GO가 나서 사용자 결정으로 넘어왔습니다. 남은 死因은 D-C′ 하나이고, R8-2d 동률 규칙이 G_mixed 분모 문제를 다시 엽니다. 종료 선언과 D9 기지 실패 목록은 GO-with-caveats이고, merge는 조건부 가입니다. 근거는 <code>handoff_review_2026-10-15/VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md</code> §1입니다.</p>
 </section>
 
 <section id="coord">
@@ -219,7 +219,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
 
 <section id="axes">
   <h2>축 11개 — 혼자서는 어떤 세계인가 <span class="sec">§2</span></h2>
-  <p class="lede">카드마다 위에 그 축 안의 흐름도(무엇이 무엇을 거쳐 어느 지표로 가는가)를, 아래 왼쪽에 관계도(이 축이 다른 어느 축과 어떤 결합으로 묶이는가)를 그렸습니다. 옆에는 그 축의 어휘, 확정된 것(등급과 함께 써야 하는 조건 포함), 열린 것, 대응하는 비용 항(CM-n), 담당 트랙, 근거 위치를 적었습니다. 등급 칩은 <span class="chip g-serving">serving</span> 서빙 실측, <span class="chip g-scoped">scoped</span> 범위 한정 확정, <span class="chip g-structure">structure</span> 구조·방향만 확정, <span class="chip g-code">code</span> 코드 사실, <span class="chip g-derived">derived</span> 유도값, <span class="chip g-decided">decided</span> 사용자 결정, <span class="chip g-nogo">NO-GO</span> 감사 불통과, <span class="chip g-open">open</span> 미검증입니다.</p>
+  <p class="lede">카드마다 위에 그 축 안의 흐름도(무엇이 무엇을 거쳐 어느 지표로 가는가)를, 아래 왼쪽에 관계도(이 축이 다른 어느 축과 어떤 결합으로 묶이는가)를 그렸습니다. 옆에는 그 축의 어휘, 확정된 것(등급과 적용 범위 포함), 열린 것, 대응하는 비용 항(CM-n), 담당 트랙, 근거 위치를 적었습니다. 등급 칩은 <span class="chip g-serving">serving</span> 서빙 실측, <span class="chip g-scoped">scoped</span> 범위 한정 확정, <span class="chip g-structure">structure</span> 구조·방향만 확정, <span class="chip g-code">code</span> 코드 사실, <span class="chip g-derived">derived</span> 유도값, <span class="chip g-decided">decided</span> 사용자 결정, <span class="chip g-nogo">NO-GO</span> 감사 불통과, <span class="chip g-open">open</span> 미검증입니다.</p>
   <div class="figkey" aria-label="그림 범례">
     <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" rx="3" style="fill:var(--sunk);stroke:var(--line)"/></svg>입력·설정</span>
     <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" rx="3" style="fill:var(--surface);stroke:var(--muted)"/></svg>기전</span>
@@ -235,10 +235,10 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   <h2>축의 결합 — 맞물릴 때 생기는 것 <span class="sec">§3</span></h2>
   <p class="lede">정본이 이름을 붙인 결합만 실었습니다. 격자에서 칸을 누르면 그 두 축이 함께 걸린 결합만 남고, 같은 칸을 다시 누르면 전부 보입니다. 이 프로젝트의 단일-GPU 동적 제어가 진 이유는 대부분 이 표에 있습니다.</p>
   <div>
-    <div class="eyebrow" style="margin-bottom:6px">가장 많이 인용되는 결합 · entanglement 사슬 (CONSENSUS §1-4)</div>
+    <div class="eyebrow" style="margin-bottom:6px">가장 자주 등장하는 결합 · entanglement 사슬 (CONSENSUS §1-4)</div>
     <div class="chain"><span class="n">decode 굶김</span><span class="a">→</span><span class="n">ITL ↑</span><span class="a">→</span><span class="n">batch 정체</span><span class="a">→</span><span class="n">슬롯 안 풀림 · admission 차단</span><span class="a">→</span><span class="n">TTFT 폭발</span></div>
   </div>
-  <figure id="net"><div class="fig-k">축 관계도 전체</div><div class="svgbox" id="net-svg"></div><figcaption>11개 축과 정본이 명시한 결합 14개. 선이 굵을수록 두 축을 함께 묶는 결합이 많습니다. SM 분할(E2)과 phase(E1)가 가장 많은 결합의 교차점이고, 그래서 이 두 축의 결론은 다른 축의 조건 없이 따로 인용할 수 없습니다.</figcaption></figure>
+  <figure id="net"><div class="fig-k">축 관계도 전체</div><div class="svgbox" id="net-svg"></div><figcaption>11개 축과 정본이 명시한 결합 14개. 선이 굵을수록 두 축을 함께 묶는 결합이 많습니다. SM 분할(E2)과 phase(E1)가 가장 많은 결합의 교차점이고, 그래서 이 두 축의 결론은 다른 축의 조건과 떼어서 읽을 수 없습니다.</figcaption></figure>
   <div class="mx-wrap">
     <div class="mx" id="mx"></div>
     <div class="cpl-list">
@@ -260,26 +260,15 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   <div class="tracks" id="tracks-grid"></div>
 </section>
 
-<section id="cite">
-  <h2>인용 규율 <span class="sec">§6</span></h2>
-  <p class="lede">아래 수치만 인용할 수 있고, 오른쪽 열의 조건을 반드시 함께 적어야 합니다. 그 아래 문장들은 인용 정지나 금지 상태입니다.</p>
-  <div class="tbl"><table id="cite-tbl"><thead><tr><th>인용 가능 수치</th><th>반드시 함께 적을 것</th><th>근거</th></tr></thead><tbody></tbody></table></div>
-  <div class="two">
-    <div><h3 style="margin-bottom:8px">인용 정지 (C2, 공식 명칭)</h3><ul class="ban" id="stop-list"></ul></div>
-    <div><h3 style="margin-bottom:8px">인용 금지 문장</h3><ul class="ban" id="ban-list"></ul></div>
-  </div>
-</section>
 
 <section id="docs">
   <h2>문서 지도 <span class="sec">§7</span></h2>
-  <p class="lede">정본 위계는 <code>PROJECT_STATUS.md</code> &gt; <code>reports/paper/</code> &gt; <code>reports/CONSENSUS.md</code> &gt; <code>workspace/engine-port/RESUME.md</code> &gt; 그 밖입니다. 날짜가 붙은 파일은 기본적으로 이력이고, 결론은 이미 정본에 흡수돼 있습니다.</p>
+  <p class="lede">정본 위계는 <code>PROJECT_STATUS.md</code> &gt; <code>reports/paper/</code> &gt; <code>reports/CONSENSUS.md</code> &gt; <code>workspace/engine-port/RESUME.md</code> &gt; 그 밖입니다.</p>
   <div class="two">
     <div class="tbl"><table id="docs-tbl"><thead><tr><th>알고 싶은 것</th><th>파일</th></tr></thead><tbody></tbody></table></div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <h3>읽지 말 것 · 새 분석의 근거로 쓰지 말 것</h3>
+      <h3>이력 보관용 (현재 결론 아님)</h3>
       <ul class="ban" id="nouse-list"></ul>
-      <h3>날짜 파일을 다루는 규칙</h3>
-      <ul class="ban" id="date-rules" style="--bad:var(--accent)"></ul>
     </div>
   </div>
 </section>
@@ -465,7 +454,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     {
      "t": "decode는 SM에 둔감하지 않다. prefill 16 SM 고정, decode ITL SM16→92에서 2.36–2.91×, 4 arm 모델 무관(pure Mamba2 포함)",
      "g": "scoped",
-     "c": "C2 CONFIRMED(scoped). 레버가 존재한다는 뜻이지 정책 이득이 아님. arm 간 순위·ε·CI는 인용 정지",
+     "c": "C2 CONFIRMED(scoped), 레버가 존재한다는 뜻이지 정책 이득이 아님",
      "s": "COSTMODEL.md:32"
     },
     {
@@ -493,7 +482,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
      "s": "COSTMODEL.md:34-37"
     },
     {
-     "t": "H100 등 다른 기판의 실제 SM 입도는 green-context probe로 실측해야 함(코드 상수 인용 금지)",
+     "t": "H100 등 다른 기판의 실제 SM 입도는 green-context probe로 실측해야 함",
      "s": "../CLAUDE.md (환경 절)"
     }
    ],
@@ -1170,7 +1159,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     {
      "t": "격리 연산자 시간 합 기준 decode에서 SSM state update 비중이 B 32→128에서 36%→64%(ctx 2048)",
      "g": "scoped",
-     "c": "opchar, 격리 커널, 서빙 함의 없음, '모델 시간의 %'로 인용 금지",
+     "c": "opchar, 격리 커널, 서빙 함의 없음",
      "s": "COSTMODEL.md:38-40"
     }
    ],
@@ -1987,7 +1976,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   {
    "id": "C",
    "t": "decode 굶김은 TTFT도 악화시킨다",
-   "st": "running-batch 경로 강함 · KV 경로 부분 · d16 TTFT 크기 인용 금지(방향만)",
+   "st": "running-batch 경로 강함 · KV 경로 부분",
    "g": "scoped",
    "ax": [
     "E1",
@@ -2053,7 +2042,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   {
    "id": "C2",
    "t": "decode-SM 레버가 4 arm 전부에 존재한다",
-   "st": "CONFIRMED(scoped) · 인용 정지 (a)(b)",
+   "st": "CONFIRMED(scoped)",
    "g": "scoped",
    "ax": [
     "E2",
@@ -2111,7 +2100,6 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     "명세 v0.1 D-C′ 처리(R8-2d 동률 규칙) — Q4–Q24는 2026-10-15 권고 열 전부 채택됨",
     "기존 유지: radix OFF+편차 공시, 128k 프로브, 장문 hold-out 모델"
    ],
-   "stale": "tracks/main.md는 Q1을 아직 '결정 대기'로 적고 있음(handoff 갱신 전)",
    "s": "tracks/main.md"
   },
   {
@@ -2177,170 +2165,6 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
    "s": "tracks/power-cap.md"
   }
  ],
- "cite": [
-  {
-   "t": "PD-mux vs 미조율 fused: Zamba2 +40.5%(r2) · +185.8%(r3), Granite +27.0%(r4)",
-   "c": "미조율 fused 대비 · 3-플래그 묶음 · 기전 귀속 미확립 · 중앙 ITL 5–45% 비용",
-   "s": "reports/CONSENSUS.md:3680"
-  },
-  {
-   "t": "HE0: d44 3.220±0.013 > d34 3.171 > bind+GATE 3.132±0.019, 5.4σ",
-   "c": "변화 trace 한정 · mean-ITL 채점 · HI phase −6.8~−6.9%",
-   "s": "reports/CONSENSUS.md:3686"
-  },
-  {
-   "t": "tight SLO: d44 73.2% ≫ bind+GATE 44.3%",
-   "c": "chat 300/50 ms · rate 8",
-   "s": "reports/CONSENSUS.md:3722"
-  },
-  {
-   "t": "layer-type coordinated per-type: TPOT 42→124 ms",
-   "c": "현 구현 범위",
-   "s": "reports/CONSENSUS.md:3682"
-  },
-  {
-   "t": "cudagraph: TPOT 41→12 ms, goodput 약 1.5–2×",
-   "c": "—",
-   "s": "reports/CONSENSUS.md:3681"
-  },
-  {
-   "t": "decode ITL SM16→92: 2.36–2.91×",
-   "c": "레버 존재만 · arm 간 순위·CI 인용 정지",
-   "s": "COSTMODEL.md:32"
-  },
-  {
-   "t": "switch s ≤ 0.04 ms/전환, d ≤ 0.07 ms/경계",
-   "c": "agnostic 경로 · 2모델 · 이 config · 컨트롤러 구동 전환 경로 미측정",
-   "s": "COSTMODEL.md:51-52"
-  },
-  {
-   "t": "컨트롤러 CPU mean 32–36 µs/call",
-   "c": "—",
-   "s": "reports/CONSENSUS.md:3691"
-  },
-  {
-   "t": "λ*(A) ≈ 3.05 req/s",
-   "c": "D44 측정 아님",
-   "s": "PROJECT_STATUS.md:932"
-  },
-  {
-   "t": "N2 Job-EA 동거 감속",
-   "c": "허용 문안 (A)(B) 문자 그대로만 · 크기 진술 아님",
-   "s": "COSTMODEL.md:56-59"
-  }
- ],
- "stops": [
-  {
-   "t": "(a) [본문 라벨 D] arm별 ε 값과 arm 간 순위·격차. 슬라이스를 바꾸면 순서가 뒤집힘. 인용 가능한 것은 '레버가 4 arm 전부에 존재'까지.",
-   "s": "reports/CONSENSUS.md:5121-5145"
-  },
-  {
-   "t": "(b) [본문 라벨 E] 깨끗한 셀의 CI와 'n=4' 표기. 실제 n_indep=1(의사반복). 점추정은 n_indep=1을 적으면 인용 가능.",
-   "s": "reports/CONSENSUS.md:5135-5145"
-  }
- ],
- "bans": [
-  {
-   "t": "PD-mux가 4모델 전부에서 fused 대비 약 3배 [CS-OK] — 철회",
-   "s": "PROJECT_STATUS.md:6664-6750"
-  },
-  {
-   "t": "'PD 분리 자체는 항상 이득' — 반증",
-   "s": "reports/CONSENSUS.md:3680"
-  },
-  {
-   "t": "d16 TTFT 7.24 s 크기 [CS-OK] — 폐기 벤치·n=1, 방향만",
-   "s": "reports/CONSENSUS.md:3683"
-  },
-  {
-   "t": "ρ ≈ 1.16을 '동거 간섭의 크기'로 쓰기 [CS-OK], ρ를 HE0의 원인으로 쓰기",
-   "s": "PROJECT_STATUS.md:31"
-  },
-  {
-   "t": "'3% 게이트 미만'(HE0 크기) — REFUTED",
-   "s": "reports/CONSENSUS.md:3664-3672"
-  },
-  {
-   "t": "'decode 과다공급은 무해'를 조건 없이",
-   "s": "reports/CONSENSUS.md:3685"
-  },
-  {
-   "t": "gate를 'one-way ratchet'으로 부르기",
-   "s": "reports/CONSENSUS.md:3689"
-  },
-  {
-   "t": "knee를 floor 공식에 대입, attn 비중 수치",
-   "s": "reports/CONSENSUS.md:3684"
-  },
-  {
-   "t": "'true dual이 얽힘을 깬다'",
-   "s": "PROJECT_STATUS.md:9282-9321"
-  },
-  {
-   "t": "'이미 검증됐다', P_gen+recal 없이 얻은 우세",
-   "s": "reports/system_design_anchor_2026-09-30.md:24"
-  },
-  {
-   "t": "sim/micro의 per-layer 이득(1.37–2.02×)을 실엔진 결론으로 [CS-OK]",
-   "s": "../CLAUDE.md (방법론 게이트 1)"
-  }
- ],
- "now": [
-  {
-   "q": "축과 결합을 한 장으로",
-   "f": "이 페이지",
-   "st": "2026-10-15 신설",
-   "g": "current"
-  },
-  {
-   "q": "프로젝트 전체 현재 상태",
-   "f": "PROJECT_STATUS.md 상단 1–180행 배너 (최신이 맨 위)",
-   "st": "'최종 갱신' 줄은 2026-10-13. 10-15 F3·F4 배너는 있음, Q1 결정·2회차 감사는 아직 없음",
-   "g": "stale"
-  },
-  {
-   "q": "비용 구조가 얼마나 섰나",
-   "f": "COSTMODEL.md",
-   "st": "최신 (2026-10-13 CM-4 반영)",
-   "g": "current"
-  },
-  {
-   "q": "트랙별 현재",
-   "f": "tracks/<트랙>.md (각 worktree)",
-   "st": "main.md는 Q1을 아직 대기로 표기",
-   "g": "stale"
-  },
-  {
-   "q": "사용자 결정 대기",
-   "f": "tools/claude/inbox.sh",
-   "st": "트랙 파일을 그대로 모으므로 main.md 지연을 그대로 물려받음",
-   "g": "stale"
-  },
-  {
-   "q": "10-15 결정·감사 원문",
-   "f": "workspace/engine-port/results/handoff_review_2026-10-15/",
-   "st": "가장 최신. DECISIONS_Q1, VERDICT round2는 미커밋",
-   "g": "current"
-  },
-  {
-   "q": "claim 등급",
-   "f": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:607-642",
-   "st": "2026-10-04 이후 미갱신. 그 뒤 결과는 STATUS 배너·CONSENSUS §1 행 37·38",
-   "g": "stale"
-  },
-  {
-   "q": "확정 문장·인용 금지 전문",
-   "f": "reports/CONSENSUS.md (rev95)",
-   "st": "최신. 단 DOCUMENT_STATUS.md는 이 파일을 historical로 분류(불일치)",
-   "g": "scoped"
-  },
-  {
-   "q": "스케줄러 설계 좌표계",
-   "f": "reports/system_design_anchor_2026-09-30.md",
-   "st": "고정 설계 기준선. 결과 정본 아님",
-   "g": "code"
-  }
- ],
  "docs": [
   {
    "q": "전체 현재 상태",
@@ -2379,16 +2203,12 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
    "f": "handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md §4"
   },
   {
-   "q": "확정 문장·인용 금지",
-   "f": "reports/CONSENSUS.md"
-  },
-  {
    "q": "VESSL 실행 규약",
    "f": "handoff-report/vessl_operating_model_2026-10-02.md"
   },
   {
    "q": "환경·패치·부팅",
-   "f": "workspace/engine-port/RESUME.md (연구 상태 절은 stale)"
+   "f": "workspace/engine-port/RESUME.md"
   }
  ],
  "nouse": [
@@ -2397,7 +2217,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
    "s": "deprecated/README.md"
   },
   {
-   "t": "deprecated_v2/ — triton × Zamba2 스코프 없이는 인용 금지인 수치 모음. Nemotron-H로 옮겨 쓰지 말 것",
+   "t": "deprecated_v2/ — triton × Zamba2 스코프 한정 수치 모음. Nemotron-H로 옮겨 쓰지 말 것",
    "s": "deprecated_v2/README.md"
   },
   {
@@ -2409,22 +2229,42 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
    "s": "reports/"
   },
   {
-   "t": "reports/research_arc.md, reports/synthesis_2026-09-22/, layertype_dynamic_*_2026-08-04.md — 이력 서사, 일부 문장 인용 금지",
+   "t": "reports/research_arc.md, reports/synthesis_2026-09-22/, layertype_dynamic_*_2026-08-04.md — 이력 서사",
    "s": "reports/"
   }
  ],
- "daterules": [
+ "now": [
   {
-   "t": "handoff-report/의 날짜 파일 65개는 최신 1개를 빼면 이력. 2026-10-15 세션 인계물은 handoff-report가 아니라 workspace/engine-port/results/handoff_review_2026-10-15/에 있다.",
-   "s": "handoff-report/"
+   "q": "축과 결합을 한 장으로",
+   "f": "이 페이지"
   },
   {
-   "t": "같은 주제의 날짜 파일이 여럿이면 정본(STATUS·CONSENSUS·COSTMODEL)이 가리키는 것만 현재다. 정본이 가리키지 않으면 이력으로 본다.",
-   "s": "정본 위계"
+   "q": "비용 구조가 얼마나 섰나",
+   "f": "COSTMODEL.md"
   },
   {
-   "t": "VERDICT 파일은 회차 번호가 큰 것이 우선이고, 같은 대상 감사는 최대 2회 뒤 사용자 결정으로 넘어간다. 예: VERDICT_spec_v0_1_and_closure_round2가 VERDICT_spec_v0_and_closure를 대체, SPEC …_preaudit_snapshot은 이력.",
-   "s": "memory: track-model-harness.md"
+   "q": "트랙별 현재 상태",
+   "f": "tracks/<트랙>.md (각 worktree)"
+  },
+  {
+   "q": "사용자 결정 대기",
+   "f": "tools/claude/inbox.sh"
+  },
+  {
+   "q": "프로젝트 전체 현재 상태",
+   "f": "PROJECT_STATUS.md 상단 배너 (최신이 맨 위)"
+  },
+  {
+   "q": "2026-10-15 결정·감사 원문",
+   "f": "workspace/engine-port/results/handoff_review_2026-10-15/"
+  },
+  {
+   "q": "claim 등급",
+   "f": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:607-642"
+  },
+  {
+   "q": "스케줄러 설계 좌표계",
+   "f": "reports/system_design_anchor_2026-09-30.md"
   }
  ]
 }
@@ -2533,7 +2373,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
 
   // now table
   var nt=document.querySelector('#now-tbl tbody');
-  D.now.forEach(function(r){nt.appendChild(el('tr',null,'<td>'+esc(r.q)+'</td><td class="src">'+esc(r.f)+'</td><td>'+chip(r.g)+' '+esc(r.st)+'</td>'));});
+  D.now.forEach(function(r){nt.appendChild(el('tr',null,'<td>'+esc(r.q)+'</td><td class="src">'+esc(r.f)+'</td>'));});
 
   // axis groups
   var G=document.getElementById('groups');
@@ -2548,7 +2388,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
       h+='<div class="vocab">'+esc(a.vocab)+'</div>';
       h+='<figure class="fl"><div class="fig-k">흐름도 · 이 축 안에서</div><div class="svgbox">'+flowSVG(a)+'</div><figcaption>'+esc(a.flow.cap)+'</figcaption></figure>';
       h+='<div class="lower"><figure class="rel"><div class="fig-k">관계도 · 다른 축과</div><div class="svgbox">'+relSVG(a)+'</div><figcaption>오른쪽 이름은 §3 결합 목록의 이름입니다. 선이 굵을수록 그 축과 묶인 결합이 많고, 붉은 선은 얽힘 사슬이나 결합 3개 이상입니다.</figcaption></figure>';
-      h+='<div class="lists"><div><div class="k">확정·결정</div><ul>'+a.facts.map(function(f){return '<li>'+chip(f.g)+' '+esc(f.t)+(f.c?'<span class="cav">함께 적을 것: '+esc(f.c)+'</span>':'')+'<span class="sp">'+esc(f.s)+'</span></li>';}).join('')+'</ul></div>';
+      h+='<div class="lists"><div><div class="k">확정·결정</div><ul>'+a.facts.map(function(f){return '<li>'+chip(f.g)+' '+esc(f.t)+(f.c?'<span class="cav">범위: '+esc(f.c)+'</span>':'')+'<span class="sp">'+esc(f.s)+'</span></li>';}).join('')+'</ul></div>';
       h+='<div><div class="k">열린 것</div><ul>'+a.open.map(function(f){return '<li>'+esc(f.t)+'<span class="sp">'+esc(f.s)+'</span></li>';}).join('')+'</ul></div></div></div>';
       h+='<div class="foot">'+a.cm.map(function(x){return '<span class="pill">'+esc(x)+'</span>';}).join('')+a.tracks.map(function(x){return '<span class="pill">트랙 '+esc(x)+'</span>';}).join('')+'</div>';
       c.innerHTML=h; cs.appendChild(c);
@@ -2604,11 +2444,8 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     TG.appendChild(el('article','track',h));
   });
 
-  // cite
-  var ci=document.querySelector('#cite-tbl tbody');
-  D.cite.forEach(function(r){ci.appendChild(el('tr',null,'<td>'+esc(r.t)+'</td><td>'+esc(r.c)+'</td><td class="src">'+esc(r.s)+'</td>'));});
-  function list(id,arr){var u=document.getElementById(id); arr.forEach(function(r){u.appendChild(el('li',null,esc(r.t.replace(' [CS-OK]',''))+'<span class="sp">'+esc(r.s)+'</span>'));});}
-  list('stop-list',D.stops); list('ban-list',D.bans); list('nouse-list',D.nouse); list('date-rules',D.daterules);
+  function list(id,arr){var u=document.getElementById(id); arr.forEach(function(r){u.appendChild(el('li',null,esc(r.t)+'<span class="sp">'+esc(r.s)+'</span>'));});}
+  list('nouse-list',D.nouse);
   var dt=document.querySelector('#docs-tbl tbody');
   D.docs.forEach(function(r){dt.appendChild(el('tr',null,'<td>'+esc(r.q)+'</td><td class="src">'+esc(r.f)+'</td>'));});
 })();
