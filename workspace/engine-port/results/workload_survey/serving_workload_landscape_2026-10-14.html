@@ -1,0 +1,366 @@
+<title>서빙 워크로드 지형</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column (1100px). Summary → length map → group tables → trends → recommendation → unverified. */
+:root{
+  --bg:#f5f6f4; --panel:#ffffff; --fg:#1d2320; --muted:#5d6762; --line:#d6dbd7; --soft:#eceeeb;
+  --accent:#2f6b57;
+  --g-pd:#2f6b9a; --g-gen:#7a6a3a; --g-lc:#a2452f; --g-hy:#6d4fa3; --g-us:#1f8a5b;
+  --ok:#2f7d4f; --warn:#9a6400; --bad:#ad3b2f;
+  --font:"IBM Plex Sans KR",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141816; --panel:#1b201e; --fg:#e3e8e5; --muted:#9aa5a0; --line:#2d3531; --soft:#232a27;
+  --accent:#6cc0a0; --g-pd:#6aa9d8; --g-gen:#c9b06a; --g-lc:#e48468; --g-hy:#ad92e0; --g-us:#5fd09a;
+  --ok:#62c48b; --warn:#e2a548; --bad:#e57a6e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141816; --panel:#1b201e; --fg:#e3e8e5; --muted:#9aa5a0; --line:#2d3531; --soft:#232a27;
+  --accent:#6cc0a0; --g-pd:#6aa9d8; --g-gen:#c9b06a; --g-lc:#e48468; --g-hy:#ad92e0; --g-us:#5fd09a;
+  --ok:#62c48b; --warn:#e2a548; --bad:#e57a6e; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.6}
+.wrap{max-width:1100px;margin:0 auto;padding-block:28px 64px;padding-inline:16px}
+header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:27px;margin:4px 0 8px;text-wrap:balance}
+h2{font-size:19px;margin:40px 0 10px;text-wrap:balance}
+h3{font-size:15px;margin:0 0 6px}
+p{max-width:74ch;margin:0 0 10px}
+.lede{color:var(--muted);max-width:82ch}
+code{font-family:var(--mono);font-size:.9em}
+.answer{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--g-us);border-radius:6px;padding:14px 18px;margin:18px 0}
+.answer p{margin:0 0 6px}
+.answer strong{color:var(--g-us)}
+figure{margin:12px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;overflow-x:auto}
+figure svg{display:block;min-width:900px;width:100%;height:auto}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px;max-width:95ch}
+svg text{font-family:var(--font);fill:currentColor}
+svg .pp{font-size:14px;font-weight:600}
+svg .wl{font-size:12.5px;fill:var(--muted)}
+svg .axl{font-size:12px;fill:var(--muted)}
+svg .ann{font-size:12.5px;font-weight:600}
+svg .ann.us{fill:var(--g-us)} svg .ann.lm{fill:var(--bad)}
+svg .plotbg{fill:var(--soft);opacity:.45}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .sep{stroke:var(--soft);stroke-width:1}
+svg .xover{stroke:var(--g-us);stroke-width:2;stroke-dasharray:6 4}
+svg .lim{stroke:var(--bad);stroke-width:2;stroke-dasharray:6 4}
+svg .dot{stroke:var(--panel);stroke-width:1.5}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);margin:8px 0 0}
+.legend span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;margin:10px 0 4px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--soft);color:var(--muted);font-weight:600;font-size:12.5px;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.p{font-weight:600;white-space:nowrap}
+.grp{display:flex;align-items:baseline;gap:10px;margin-top:26px}
+.grp i{display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--c);flex:none;transform:translateY(1px)}
+.grp h3{font-size:16px;margin:0}
+.grp small{color:var(--muted);font-size:13px}
+.pill{display:inline-block;font-size:11.5px;padding:0 7px;border-radius:10px;border:1px solid currentColor;white-space:nowrap;line-height:1.6}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)} .mut{color:var(--muted)}
+.trends{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px;margin-top:10px}
+.trend{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.trend h3{display:flex;gap:8px;align-items:baseline}
+.trend h3 b{font-family:var(--mono);color:var(--accent);font-size:13px}
+.trend p{font-size:14px;margin:0}
+.reco{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px}
+.tier{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:6px;padding:12px 14px;min-width:0}
+.tier .role{font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.tier h3{margin:2px 0 6px}
+.tier ul{margin:0;padding-left:17px;font-size:13.5px}
+.tier li{margin:3px 0}
+.unv{columns:2 340px;column-gap:24px;font-size:13.5px;padding-left:18px}
+.unv li{break-inside:avoid;margin:0 0 7px}
+.src{font-size:12.5px;color:var(--muted);columns:2 360px;column-gap:24px;padding-left:18px}
+.src li{break-inside:avoid;margin-bottom:3px}
+.src a{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">문헌 조사 · 2026-10-14 · 원문 확인 19편 (일부 수치는 그림에서만 보고됨)</div>
+  <h1>서빙 워크로드 지형</h1>
+  <p class="lede">LLM 서빙 스케줄링 연구가 어떤 워크로드로 평가하는지를 연구 계열별로 모았다. 질문은 하나다. 이 프로젝트(Nemotron-Nano-9B-v2, A100 한 장, green-context PD-mux)가 일반 워크로드로 평가해야 하는가, long-context 워크로드로 평가해야 하는가.</p>
+</header>
+
+<div class="answer">
+  <p><strong>결론: 둘 중 하나를 고르는 문제가 아니다.</strong> 가장 가까운 선행(PD-mux 계열 4편)은 전부 일반 워크로드와 장문 워크로드를 <em>한 세트</em>로 평가한다. 최근접 선행 MuxWise와 DuetServe는 이미 <strong>Mooncake Conversation</strong>을 쓰고 있다.</p>
+  <p>권고하는 세트는 네 가지다. ShareGPT는 기존 결과와 연결하는 앵커, <strong>Mooncake Conversation은 주 워크로드</strong>, OpenThoughts(추론)는 출력이 긴 축, LooGLE은 MuxWise 장문 설정과 직접 비교하는 용도다. 128k를 넘는 초장문은 다른 계열(SP/CP, GPU 여러 장)의 영역이라 main에 넣지 않는다.</p>
+</div>
+
+<h2>1. 연구별 평가 입력 길이</h2>
+<p>각 막대는 논문이 보고한 입력 길이 범위다. 계열마다 다루는 길이대가 뚜렷이 갈린다. 초록 세로선은 Nano-9B-v2에서 요청당 KV 메모리가 Mamba state 메모리를 넘어서는 지점이고, 빨간 세로선은 모델의 최대 문맥이다.</p>
+<figure>
+<svg viewBox="0 0 1000 1018" role="img" aria-label="선행 연구별 평가 워크로드의 입력 길이 범위(로그 축). PD-mux 계열은 1k–120k, long-context 계열은 100k–10M에 분포한다.">
+<rect x="300" y="64" width="675" height="902" class="plotbg"/>
+<line x1="300.0" y1="64" x2="300.0" y2="966" class="grid"/>
+<text x="300.0" y="58" text-anchor="middle" class="axl">100</text>
+<text x="300.0" y="982" text-anchor="middle" class="axl">100</text>
+<line x1="435.0" y1="64" x2="435.0" y2="966" class="grid"/>
+<text x="435.0" y="58" text-anchor="middle" class="axl">1k</text>
+<text x="435.0" y="982" text-anchor="middle" class="axl">1k</text>
+<line x1="570.0" y1="64" x2="570.0" y2="966" class="grid"/>
+<text x="570.0" y="58" text-anchor="middle" class="axl">10k</text>
+<text x="570.0" y="982" text-anchor="middle" class="axl">10k</text>
+<line x1="705.0" y1="64" x2="705.0" y2="966" class="grid"/>
+<text x="705.0" y="58" text-anchor="middle" class="axl">100k</text>
+<text x="705.0" y="982" text-anchor="middle" class="axl">100k</text>
+<line x1="840.0" y1="64" x2="840.0" y2="966" class="grid"/>
+<text x="840.0" y="58" text-anchor="middle" class="axl">1M</text>
+<text x="840.0" y="982" text-anchor="middle" class="axl">1M</text>
+<line x1="975.0" y1="64" x2="975.0" y2="966" class="grid"/>
+<text x="975.0" y="58" text-anchor="middle" class="axl">10M</text>
+<text x="975.0" y="982" text-anchor="middle" class="axl">10M</text>
+<line x1="561.2" y1="34" x2="561.2" y2="966" class="xover"/>
+<text x="555.2" y="30" text-anchor="end" class="ann us">KV = state 경계 ≈8.6k</text>
+<line x1="720.9" y1="16" x2="720.9" y2="966" class="lim"/>
+<text x="726.9" y="26" class="ann lm">Nano-9B-v2 최대 131k</text>
+<text x="300" y="16" class="axl">입력 토큰 수 (로그 축)</text>
+<rect x="8" y="69.0" width="11" height="11" rx="2" fill="var(--g-pd)"/>
+<text x="26" y="80.0" class="pp">MuxWise (ASPLOS'26)</text>
+<text x="288" y="102.0" text-anchor="end" class="wl">ShareGPT</text>
+<line x1="300.0" y1="97.0" x2="436.4" y2="97.0" stroke="var(--g-pd)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<path d="M303 97.0 l7 -5 v10 z" fill="var(--g-pd)"/>
+<circle cx="347.8" cy="97.0" r="5" fill="var(--g-pd)" class="dot"/>
+<text x="288" y="124.0" text-anchor="end" class="wl">LooGLE</text>
+<line x1="506.4" y1="119.0" x2="692.6" y2="119.0" stroke="var(--g-pd)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="634.4" cy="119.0" r="5" fill="var(--g-pd)" class="dot"/>
+<text x="288" y="146.0" text-anchor="end" class="wl">OpenThoughts (추론)</text>
+<line x1="366.5" y1="141.0" x2="524.9" y2="141.0" stroke="var(--g-pd)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="414.8" cy="141.0" r="5" fill="var(--g-pd)" class="dot"/>
+<text x="288" y="168.0" text-anchor="end" class="wl">Mooncake Conversation</text>
+<line x1="428.2" y1="163.0" x2="717.1" y2="163.0" stroke="var(--g-pd)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="553.4" cy="163.0" r="5" fill="var(--g-pd)" class="dot"/>
+<text x="288" y="190.0" text-anchor="end" class="wl">Mooncake Tool&Agent</text>
+<line x1="428.2" y1="185.0" x2="717.1" y2="185.0" stroke="var(--g-pd)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="561.1" cy="185.0" r="5" fill="var(--g-pd)" class="dot"/>
+<line x1="8" y1="196.0" x2="975" y2="196.0" class="sep"/>
+<rect x="8" y="201.0" width="11" height="11" rx="2" fill="var(--g-pd)"/>
+<text x="26" y="212.0" class="pp">Bullet (ASPLOS'26)</text>
+<text x="288" y="234.0" text-anchor="end" class="wl">ShareGPT · Azure-Code · arXiv-Sum</text>
+<line x1="340.6" y1="229.0" x2="638.2" y2="229.0" stroke="var(--g-pd)" stroke-width="6" stroke-linecap="round" stroke-dasharray="5 4" opacity=".8"/>
+<circle cx="475.6" cy="229.0" r="5" fill="var(--g-pd)" class="dot"/>
+<line x1="8" y1="240.0" x2="975" y2="240.0" class="sep"/>
+<rect x="8" y="245.0" width="11" height="11" rx="2" fill="var(--g-pd)"/>
+<text x="26" y="256.0" class="pp">DuetServe (ICML'26)</text>
+<text x="288" y="278.0" text-anchor="end" class="wl">Azure-Code / Azure-Conv</text>
+<circle cx="477.0" cy="273.0" r="5" fill="var(--g-pd)" class="dot"/>
+<text x="288" y="300.0" text-anchor="end" class="wl">Mooncake Conversation (1k 샘플)</text>
+<circle cx="580.9" cy="295.0" r="5" fill="var(--g-pd)" class="dot"/>
+<line x1="8" y1="306.0" x2="975" y2="306.0" class="sep"/>
+<rect x="8" y="311.0" width="11" height="11" rx="2" fill="var(--g-pd)"/>
+<text x="26" y="322.0" class="pp">Nexus (arXiv 2507.06608)</text>
+<text x="288" y="344.0" text-anchor="end" class="wl">ShareGPT / ArXiv-Sum</text>
+<line x1="385.8" y1="339.0" x2="548.2" y2="339.0" stroke="var(--g-pd)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="513.8" cy="339.0" r="5" fill="var(--g-pd)" class="dot"/>
+<text x="288" y="366.0" text-anchor="end" class="wl">Long Data Collections</text>
+<line x1="534.5" y1="361.0" x2="568.9" y2="361.0" stroke="var(--g-pd)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="539.1" cy="361.0" r="5" fill="var(--g-pd)" class="dot"/>
+<line x1="8" y1="372.0" x2="975" y2="372.0" class="sep"/>
+<rect x="8" y="377.0" width="11" height="11" rx="2" fill="var(--g-gen)"/>
+<text x="26" y="388.0" class="pp">DistServe (OSDI'24)</text>
+<text x="288" y="410.0" text-anchor="end" class="wl">ShareGPT · HumanEval · LongBench(≤2048)</text>
+<line x1="300.0" y1="405.0" x2="477.0" y2="405.0" stroke="var(--g-gen)" stroke-width="6" stroke-linecap="round" stroke-dasharray="5 4" opacity=".8"/>
+<path d="M303 405.0 l7 -5 v10 z" fill="var(--g-gen)"/>
+<circle cx="421.9" cy="405.0" r="5" fill="var(--g-gen)" class="dot"/>
+<line x1="8" y1="416.0" x2="975" y2="416.0" class="sep"/>
+<rect x="8" y="421.0" width="11" height="11" rx="2" fill="var(--g-gen)"/>
+<text x="26" y="432.0" class="pp">Sarathi-Serve (OSDI'24)</text>
+<text x="288" y="454.0" text-anchor="end" class="wl">sharegpt4 (≤8k)</text>
+<line x1="467.1" y1="449.0" x2="558.3" y2="449.0" stroke="var(--g-gen)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="467.1" cy="449.0" r="5" fill="var(--g-gen)" class="dot"/>
+<text x="288" y="476.0" text-anchor="end" class="wl">arxiv_summarization (≤16k)</text>
+<line x1="549.6" y1="471.0" x2="598.9" y2="471.0" stroke="var(--g-gen)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="549.6" cy="471.0" r="5" fill="var(--g-gen)" class="dot"/>
+<line x1="8" y1="482.0" x2="975" y2="482.0" class="sep"/>
+<rect x="8" y="487.0" width="11" height="11" rx="2" fill="var(--g-gen)"/>
+<text x="26" y="498.0" class="pp">Mooncake (FAST'25)</text>
+<text x="288" y="520.0" text-anchor="end" class="wl">Kimi Conversation</text>
+<line x1="580.9" y1="515.0" x2="718.6" y2="515.0" stroke="var(--g-gen)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="580.9" cy="515.0" r="5" fill="var(--g-gen)" class="dot"/>
+<line x1="8" y1="526.0" x2="975" y2="526.0" class="sep"/>
+<rect x="8" y="531.0" width="11" height="11" rx="2" fill="var(--g-lc)"/>
+<text x="26" y="542.0" class="pp">LoongServe (SOSP'24)</text>
+<text x="288" y="564.0" text-anchor="end" class="wl">L-Eval</text>
+<line x1="493.2" y1="559.0" x2="748.6" y2="559.0" stroke="var(--g-lc)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<text x="288" y="586.0" text-anchor="end" class="wl">LV-Eval</text>
+<line x1="594.2" y1="581.0" x2="799.0" y2="581.0" stroke="var(--g-lc)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<line x1="8" y1="592.0" x2="975" y2="592.0" class="sep"/>
+<rect x="8" y="597.0" width="11" height="11" rx="2" fill="var(--g-lc)"/>
+<text x="26" y="608.0" class="pp">Medha (arXiv 2409.17264)</text>
+<text x="288" y="630.0" text-anchor="end" class="wl">Medha-SWE (자체 구축)</text>
+<line x1="785.2" y1="625.0" x2="829.7" y2="625.0" stroke="var(--g-lc)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="785.2" cy="625.0" r="5" fill="var(--g-lc)" class="dot"/>
+<text x="288" y="652.0" text-anchor="end" class="wl">혼합 long 5% (최대 10M)</text>
+<line x1="719.5" y1="647.0" x2="975.0" y2="647.0" stroke="var(--g-lc)" stroke-width="6" stroke-linecap="round" stroke-dasharray="5 4" opacity=".8"/>
+<line x1="8" y1="658.0" x2="975" y2="658.0" class="sep"/>
+<rect x="8" y="663.0" width="11" height="11" rx="2" fill="var(--g-lc)"/>
+<text x="26" y="674.0" class="pp">Vertumnus (arXiv 2609.04774)</text>
+<text x="288" y="696.0" text-anchor="end" class="wl">L-Eval / Tool-Agent / Production</text>
+<line x1="561.1" y1="691.0" x2="693.2" y2="691.0" stroke="var(--g-lc)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="561.1" cy="691.0" r="5" fill="var(--g-lc)" class="dot"/>
+<line x1="8" y1="702.0" x2="975" y2="702.0" class="sep"/>
+<rect x="8" y="707.0" width="11" height="11" rx="2" fill="var(--g-lc)"/>
+<text x="26" y="718.0" class="pp">P-PAS (arXiv 2608.15171)</text>
+<text x="288" y="740.0" text-anchor="end" class="wl">고정 20k–30k / 출력 32</text>
+<line x1="610.6" y1="735.0" x2="634.4" y2="735.0" stroke="var(--g-lc)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="623.7" cy="735.0" r="5" fill="var(--g-lc)" class="dot"/>
+<line x1="8" y1="746.0" x2="975" y2="746.0" class="sep"/>
+<rect x="8" y="751.0" width="11" height="11" rx="2" fill="var(--g-lc)"/>
+<text x="26" y="762.0" class="pp">Context Parallelism (MLSys'25)</text>
+<text x="288" y="784.0" text-anchor="end" class="wl">고정 128k–1M</text>
+<line x1="719.5" y1="779.0" x2="840.0" y2="779.0" stroke="var(--g-lc)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<line x1="8" y1="790.0" x2="975" y2="790.0" class="sep"/>
+<rect x="8" y="795.0" width="11" height="11" rx="2" fill="var(--g-hy)"/>
+<text x="26" y="806.0" class="pp">Marconi (MLSys'25)</text>
+<text x="288" y="828.0" text-anchor="end" class="wl">LMSys · ShareGPT · SWE-bench</text>
+<line x1="364.4" y1="823.0" x2="634.4" y2="823.0" stroke="var(--g-hy)" stroke-width="6" stroke-linecap="round" stroke-dasharray="5 4" opacity=".8"/>
+<circle cx="529.4" cy="823.0" r="5" fill="var(--g-hy)" class="dot"/>
+<line x1="8" y1="834.0" x2="975" y2="834.0" class="sep"/>
+<rect x="8" y="839.0" width="11" height="11" rx="2" fill="var(--g-hy)"/>
+<text x="26" y="850.0" class="pp">Jenga (arXiv 2503.18292)</text>
+<text x="288" y="872.0" text-anchor="end" class="wl">arXiv-QA (Ministral 평균 92k)</text>
+<line x1="669.9" y1="867.0" x2="710.6" y2="867.0" stroke="var(--g-hy)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="700.4" cy="867.0" r="5" fill="var(--g-hy)" class="dot"/>
+<line x1="8" y1="878.0" x2="975" y2="878.0" class="sep"/>
+<rect x="8" y="883.0" width="11" height="11" rx="2" fill="var(--g-hy)"/>
+<text x="26" y="894.0" class="pp">SQD (arXiv 2609.13134)</text>
+<text x="288" y="916.0" text-anchor="end" class="wl">Chat 32k / RAG 256k / Agentic 1M</text>
+<line x1="638.2" y1="911.0" x2="840.0" y2="911.0" stroke="var(--g-hy)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<line x1="8" y1="922.0" x2="975" y2="922.0" class="sep"/>
+<rect x="8" y="927.0" width="11" height="11" rx="2" fill="var(--g-us)"/>
+<text x="26" y="938.0" class="pp">이 프로젝트 (제안)</text>
+<text x="288" y="960.0" text-anchor="end" class="wl">Mooncake Conversation × Nano-9B-v2</text>
+<line x1="300.0" y1="955.0" x2="718.6" y2="955.0" stroke="var(--g-us)" stroke-width="6" stroke-linecap="round"  opacity=".8"/>
+<circle cx="548.3" cy="955.0" r="5" fill="var(--g-us)" class="dot"/>
+<text x="300" y="1004" class="axl">막대 = 보고된 최소(또는 중앙값)~최대 · 점 = 평균 또는 중앙값 · 점선 = 그림에서 읽은 근사 · ◀ = 100 미만에서 시작</text>
+</svg>
+<figcaption>PD-mux 계열(파랑)은 1k–120k에 모인다. 보고값이 가장 긴 것은 MuxWise의 Mooncake trace(최대 123k)다. long-context 계열(주황)은 100k–10M에 있고 대부분 GPU 여러 장을 쓴다. hybrid 구조 계열(보라)은 캐싱·메모리·장치 분리 연구이며 스케줄링 연구는 없다. 제안하는 워크로드(초록)는 KV=state 경계를 가로질러 모델 한도 안에 들어간다. Bullet과 Marconi의 범위는 그림(CDF)에서 읽은 근사값이다.</figcaption>
+</figure>
+<div class="legend">
+  <span style="--c:var(--g-pd)">PD-mux · GPU 내부 SM 분할</span><span style="--c:var(--g-gen)">범용 서빙(PD 분리 · chunked prefill)</span><span style="--c:var(--g-lc)">long-context 목표</span><span style="--c:var(--g-hy)">hybrid · 이종 구조</span><span style="--c:var(--g-us)">이 프로젝트 제안</span>
+</div>
+
+<h2>2. 계열별 평가 설정</h2>
+
+<div class="grp" style="--c:var(--g-pd)"><i></i><h3>A. PD-mux · GPU 내부 SM 분할</h3><small>최근접 선행. 이 프로젝트와 같은 문제를 푼다.</small></div>
+<div class="tablewrap"><table>
+<tr><th>연구</th><th>워크로드 (입력 / 출력)</th><th>도착 과정</th><th>모델 · GPU</th><th>SLO</th><th>SM 분할 수단</th></tr>
+<tr><td class="p">MuxWise<br><span class="mut">ASPLOS'26</span></td><td>ShareGPT 4/226/1024 · 195 평균<br><b>LooGLE</b> 3.4k/30k/81k · 15 평균<br><b>OpenThoughts</b> 311/709/4.6k · <b>8,374 평균, 최대 32k</b><br><b>Mooncake Conversation</b> 891/7,538/123k · 342 (재사용 문맥 평균 4,496 별도)<br><b>Mooncake Tool&amp;Agent</b> 891/8,596/123k · 182<br><span class="mut">값은 최소/평균/최대</span></td><td>합성: Poisson, 속도 증가<br>실 trace: 축소 재생(1분 안 최대 13배 burst)</td><td>Llama3-8B·70B, Qwen3-235B<br>A100·H100·H200 8장, A100 1장 실험 포함</td><td>TTFT p99, TBT 50 ms(8B)·100 ms(70B)</td><td>green context (워크로드별 분할표 제공)</td></tr>
+<tr><td class="p">Bullet<br><span class="mut">ASPLOS'26</span></td><td>ShareGPT · <b>Azure-Code</b> · <b>arXiv-Summary</b>(장문 요약)<br><span class="mut">수치는 CDF 그림으로만 제공, profiling은 32k까지</span></td><td>Poisson</td><td>Llama3.1-8B·70B, Qwen3-235B-A22B<br>A100·H100·H20 8장 (TP)</td><td><b>정규화 TTFT</b>(ms/token: 3.0 / 1.5 / 1.5), TPOT 150–200 ms</td><td>SM 분할 (예측기 기반)</td></tr>
+<tr><td class="p">DuetServe<br><span class="mut">ICML'26</span></td><td>Azure-Code ISL 2,047 / OSL 28<br>Azure-Conv 1,155 / 211<br><b>Mooncake Conversation</b> 12,035 / 343 (1,000건 표본)</td><td>Poisson</td><td>Qwen3-8B (TP1), 14B (TP2)<br>H100 2장</td><td>평균 TTFT·TBT, 처리량</td><td><b>libsmctrl</b> (green context 아님)</td></tr>
+<tr><td class="p">Nexus<br><span class="mut">arXiv 2507.06608</span></td><td>ShareGPT 평균 496 · ArXiv-Sum 3,832 · <b>Long Data Collections</b> 5,905 (p99 9.8k)<br>Mixed = ShareGPT 60% + LDC 40%</td><td>Poisson</td><td>Qwen2.5-3B·14B, Llama3.1-8B<br>L20 1–2장</td><td>TTFT·TBT 평균/p95, 정규화 지연</td><td>동적 SM 재배분</td></tr>
+</table></div>
+
+<div class="grp" style="--c:var(--g-gen)"><i></i><h3>B. 범용 서빙 · PD 분리 · chunked prefill</h3><small>스케줄링 표준 기준선.</small></div>
+<div class="tablewrap"><table>
+<tr><th>연구</th><th>워크로드</th><th>도착 과정</th><th>모델 · GPU</th><th>SLO</th></tr>
+<tr><td class="p">DistServe<br><span class="mut">OSDI'24</span></td><td>ShareGPT · HumanEval · <b>LongBench 요약</b>(OPT 위치 임베딩 한도로 2,048에서 자름)</td><td>Poisson (timestamp 없음)</td><td>OPT-13B/66B/175B, A100 32장</td><td>앱별 TTFT·TPOT (요약 TTFT 15 s), 90% 달성</td></tr>
+<tr><td class="p">Sarathi-Serve<br><span class="mut">OSDI'24</span></td><td>openchat_sharegpt4 중앙값 1,730 (≤8k로 거름) / 출력 415<br><b>arxiv_summarization</b> 중앙값 7,059 (≤16k로 거름) / 출력 208</td><td>Poisson</td><td>Mistral-7B (A100 1장) ~ Falcon-180B</td><td>P99 TBT = decode 1회 시간의 5×/25×</td></tr>
+<tr><td class="p">Mooncake<br><span class="mut">FAST'25</span></td><td>Kimi 자사 trace (conversation 평균 12,035 / 343)</td><td>timestamp 재생</td><td>A800 8장 노드 16대</td><td>TTFT·TBT</td></tr>
+</table></div>
+
+<div class="grp" style="--c:var(--g-lc)"><i></i><h3>C. long-context 목표</h3><small>문맥 병렬화(SP/CP)와 HOL 차단이 주제다. 대부분 GPU 여러 장.</small></div>
+<div class="tablewrap"><table>
+<tr><th>연구</th><th>워크로드</th><th>도착 과정</th><th>모델 · GPU</th><th>SLO</th></tr>
+<tr><td class="p">LoongServe<br><span class="mut">SOSP'24</span></td><td>ShareGPT · <b>L-Eval</b> 2.7k–210k · <b>LV-Eval</b> 15k–497k · Mixed(셋을 같은 확률로)</td><td>Poisson</td><td>LWM-1M (Llama-2-7B 구조), A800 8–16장</td><td>토큰당 정규화 지연, SLO = 추론 지연의 25배</td></tr>
+<tr><td class="p">Medha<br><span class="mut">arXiv 2409.17264</span></td><td>ShareGPT4 + <b>Medha-SWE</b>(직접 구축: prefill p50 393k / p90 839k, decode p50 518), long 요청 5% 혼합, 최대 10M<br><span class="mut">L-Eval·LV-Eval은 decode가 짧다는 이유로 쓰지 않음</span></td><td>QPS 스윕</td><td>Llama-3 8B/70B (RoPE 확장), A100 16장 / H100 128장</td><td>TTFT·TPOT p50/p90, deadline goodput</td></tr>
+<tr><td class="p">Vertumnus<br><span class="mut">arXiv 2609.04774</span></td><td>L-Eval (평균 13,728) · <b>Mooncake Tool-Agent</b> (8,596 / p99 61,671) · 자사 production (6,952 / p99 81,724)</td><td>L-Eval Poisson, 나머지 timestamp</td><td>DeepSeek-V4-Flash, Qwen3-30B-A3B, H20 64장</td><td><b>입력 길이 구간별 TTFT</b> (&lt;8K / 8–32K / ≥32K)</td></tr>
+<tr><td class="p">FlowPrefill<br><span class="mut">arXiv 2602.16603</span></td><td><b>QwenTrace</b> production (작업 유형 4종, 검색·파일은 장문) + ShareGPT 표본</td><td>timestamp</td><td>Llama3-8B 외</td><td>작업 유형별 SLO</td></tr>
+<tr><td class="p">P-PAS<br><span class="mut">arXiv 2608.15171</span></td><td>고정 25k 입력 / 32 출력 (20k–30k 변형)</td><td>Poisson, 정상↔burst 10초 교대</td><td>Qwen2.5-3B, RTX 5090·A100·H100 (vLLM)</td><td>평균·p95</td></tr>
+<tr><td class="p">Context Parallelism<br><span class="mut">MLSys'25</span></td><td>고정 128k–1M 지연 측정</td><td>—</td><td>Llama3-405B, H100 128장</td><td>지연</td></tr>
+<tr><td class="p">Helix<br><span class="mut">arXiv 2507.07120</span></td><td>수백만 토큰 decode, 고정 문맥 (시뮬레이터)</td><td>—</td><td>DeepSeek-R1, GB200 시뮬레이션</td><td>토큰 지연</td></tr>
+</table></div>
+
+<div class="grp" style="--c:var(--g-hy)"><i></i><h3>D. hybrid · 이종 구조 서빙</h3><small>캐싱·메모리·장치 분리를 다룬다. GPU 내부 스케줄링 연구는 이번 조사에서 없었다.</small></div>
+<div class="tablewrap"><table>
+<tr><th>연구</th><th>문제</th><th>워크로드</th><th>모델 · GPU</th></tr>
+<tr><td class="p">Marconi<br><span class="mut">MLSys'25</span></td><td>hybrid prefix 캐싱</td><td>LMSys · ShareGPT (멀티턴) · SWE-Agent on SWE-bench (수백~수만 토큰)</td><td>7B hybrid (attention:SSM 1:2 / 1:4 / 1:8), Jamba-1.5-Mini</td></tr>
+<tr><td class="p">Jenga<br><span class="mut">arXiv 2503.18292</span></td><td>이종 레이어 메모리 관리</td><td>MMLU-Pro (≤3k) · <b>arXiv-QA</b> (Ministral 평균 92k) · 55k–110k 합성</td><td>Jamba-1.5 52B (FP8), Gemma-2, Ministral 등, H100·L4</td></tr>
+<tr><td class="p">SQD<br><span class="mut">arXiv 2609.13134</span></td><td>2차 vs 준2차 attention 층의 장치 분리</td><td>고정 패턴: Chat 32k / RAG 256k / Agentic 1M</td><td>GLM-5.2, <b>Nemotron 3 Ultra</b> (108층 중 attention 12층), Gemma 4; B200 8장 프록시</td></tr>
+</table></div>
+
+<h2>3. 관측되는 흐름</h2>
+<div class="trends">
+  <div class="trend"><h3><b>T1</b> 장문은 이제 표준 축이다</h3><p>PD-mux 4편이 모두 장문 워크로드를 하나 이상 넣는다(LooGLE, arXiv-Summary, Long Data Collections, Mooncake). "일반이냐 장문이냐"가 아니라 <b>세트 안에 장문이 있느냐</b>가 심사 기준이다.</p></div>
+  <div class="trend"><h3><b>T2</b> Mooncake trace가 공통 기준이 되고 있다</h3><p>MuxWise·DuetServe(PD-mux)와 Vertumnus(long-context)가 Mooncake trace를 쓴다. MuxWise의 Conversation 평균 입력 7,538에 재사용 문맥 4,496을 더하면 12,034가 되어, 제가 직접 계산한 전체 평균 12,035와 맞는다.</p></div>
+  <div class="trend"><h3><b>T3</b> 벤치마크 장문은 출력이 짧다</h3><p>LooGLE 출력 평균 15, L-Eval·LV-Eval은 QA 위주다. Medha는 이 이유로 자체 SWE 워크로드를 만들었다. 출력이 긴 축은 <b>추론 워크로드</b>(MuxWise OpenThoughts 평균 8,374)로 따로 들어온다.</p></div>
+  <div class="trend"><h3><b>T4</b> 초장문은 다른 계열의 영역이다</h3><p>100k를 넘는 연구는 거의 모두 GPU 8–128장에서 SP·CP를 쓴다. GPU 한 장에서 SM을 나누는 연구가 이 영역에서 싸우면 비교 대상이 맞지 않는다.</p></div>
+  <div class="trend"><h3><b>T5</b> TTFT SLO는 길이로 정규화한다</h3><p>Bullet은 ms/token, LoongServe는 길이로 나눈 지연, Vertumnus는 입력 길이 구간별 목표, DistServe는 앱별 목표를 쓴다. 우리 A′ 방식(길이별 floor × k)이 이 흐름과 같다.</p></div>
+  <div class="trend"><h3><b>T6</b> 실 trace는 재생하고, 벤치마크는 Poisson을 붙인다</h3><p>timestamp가 있는 trace는 축소 재생(MuxWise, Vertumnus), 없는 데이터셋은 Poisson이다. 우리 방법론 게이트 #2(변화 trace)는 실 trace 재생으로 자연스럽게 충족된다.</p></div>
+  <div class="trend"><h3><b>T7</b> hybrid × GPU 내부 스케줄링은 비어 보인다</h3><p>PD-mux 계열은 전부 transformer, hybrid 계열은 캐싱·메모리·장치 분리다. 이번 조사 범위에서 둘이 만나는 연구는 찾지 못했다. "최초"라고 쓰려면 별도 감사가 필요하다(교훈 260).</p></div>
+</div>
+
+<h2>4. 권고: 워크로드 세트</h2>
+<p>모든 구성의 기준은 Nano-9B-v2, A100 한 장, radix OFF(현행 결정)다. 네 워크로드가 각각 다른 질문을 맡는다.</p>
+<div class="reco">
+  <div class="tier" style="--c:var(--g-us)"><div class="role">주 워크로드</div><h3>Mooncake Conversation</h3><ul>
+    <li>실 trace, 12,031건, 입력 p50 6.9k / p99 85k / 최대 126k, 출력 평균 343</li>
+    <li>모델 한도 안에 전부 들어감 (자르기 0%)</li>
+    <li>KV=state 경계(8.6k)를 가로지름 → hybrid 메모리 특성을 시험</li>
+    <li>MuxWise·DuetServe와 같은 trace → 직접 비교 가능</li>
+    <li>편차: 블록 재사용 36.6%를 radix OFF로 다시 prefill함 (명시 필요)</li>
+  </ul></div>
+  <div class="tier" style="--c:var(--g-pd)"><div class="role">앵커</div><h3>ShareGPT</h3><ul>
+    <li>기존 HE0·얽힘 결과의 기판 워크로드</li>
+    <li>PD-mux 4편 중 3편이 사용</li>
+    <li>짧은 입력에서 hybrid가 transformer와 다르지 않다는 대조군 역할</li>
+  </ul></div>
+  <div class="tier" style="--c:var(--g-hy)"><div class="role">출력이 긴 축</div><h3>OpenThoughts (추론)</h3><ul>
+    <li>MuxWise와 같은 데이터, 출력 평균 8,374 / 최대 32k</li>
+    <li>decode 문맥이 생성 중에 수십 k까지 커짐 → decode attention 비중 증가(CM-1)</li>
+    <li>대안: ServeGen DeepSeek-R1 분포 (도착 trace 없음)</li>
+  </ul></div>
+  <div class="tier" style="--c:var(--g-lc)"><div class="role">선택 · 선행 비교</div><h3>LooGLE</h3><ul>
+    <li>MuxWise가 장문용 분할표를 따로 제공한 데이터</li>
+    <li>입력 평균 30k, 출력 평균 15 → decode가 거의 없음</li>
+    <li>"선행 장문 설정 재현" 용도로만, 판정 워크로드로는 쓰지 않음</li>
+  </ul></div>
+</div>
+<div class="tablewrap" style="margin-top:14px"><table>
+<tr><th>넣지 않는 것</th><th>이유</th><th>어디로</th></tr>
+<tr><td class="p">TraceLab · Medha-SWE (100k+)</td><td>문맥 중앙값이 이미 모델 한도 근처이거나 초과, radix ON 전제</td><td>multigpu 트랙 · Nemotron-3-Nano TP2 · radix ON 결정 뒤</td></tr>
+<tr><td class="p">LV-Eval · 1M 고정 shape</td><td>SP/CP 계열의 비교 영역, GPU 한 장 SM 분할과 비교 대상이 다름</td><td>CP를 multigpu 축에 넣을 때 검토</td></tr>
+<tr><td class="p">고정 길이 shape (8k/1k 등)</td><td>정책 비교 근거로는 약함 (P-PAS류). 기전 측정에는 유효</td><td>128k 단일 요청 프로브 같은 기전 측정에만</td></tr>
+</table></div>
+
+<h2>5. 확인하지 못한 것과 한계</h2>
+<ul class="unv">
+  <li><b>Bullet</b>: 워크로드별 길이 수치가 본문에 없고 CDF 그림으로만 있다. 그림 막대는 profiling 범위(32k)를 근거로 한 근사다.</li>
+  <li><b>Marconi</b>: 길이 분포가 그림으로만 있다. "수백~수만 토큰"은 본문 서술 기준이다.</li>
+  <li><b>FlowPrefill</b>: QwenTrace의 구체 길이 통계는 확인하지 못했다(본문 Table 1을 추출하지 않음).</li>
+  <li><b>Splitwise</b>(Azure 2023 trace)는 이번에 원문을 확인하지 않았다.</li>
+  <li><b>DuetServe</b>: ISL/OSL이 평균인지 중앙값인지 논문이 밝히지 않는다. Mooncake 값은 전체 trace 평균과 같다.</li>
+  <li><b>Context Parallelism · Helix</b>: 서빙 trace가 아니라 고정 길이 지연 측정이다(Helix는 시뮬레이터).</li>
+  <li><b>SQD</b>: 측정은 B200에서 decode 풀을 16 SM으로 제한한 프록시이고, 1M 지점은 모델이 서빙된 262k를 넘는다(저자 공시).</li>
+  <li><b>Jenga</b>: hybrid 모델(Jamba)은 짧은 MMLU-Pro에서만 평가했다. 장문 arXiv-QA는 transformer(Gemma-2, Ministral)다.</li>
+  <li><b>조사 범위</b>: 19편은 원문 평가 절을 확인했다. "hybrid × PD-mux × 실 장문 trace 연구가 없다"는 이 범위에서 찾지 못했다는 뜻이며, 체계적 문헌 조사가 아니다.</li>
+  <li><b>Mooncake 통계</b>: 공개 jsonl을 직접 내려받아 계산했다(conversation 12,031건, toolagent 23,608건). Vertumnus Table 1과 일치한다.</li>
+</ul>
+
+<h2>출처</h2>
+<ol class="src">
+  <li><a href="https://arxiv.org/html/2504.14489">MuxWise — Towards High-Goodput LLM Serving with PD Multiplexing (ASPLOS'26)</a></li>
+  <li><a href="https://arxiv.org/html/2504.19516">Bullet (arXiv 2504.19516)</a></li>
+  <li><a href="https://arxiv.org/html/2511.04791v1">DuetServe (arXiv 2511.04791, ICML'26)</a></li>
+  <li><a href="https://arxiv.org/pdf/2507.06608v3">Nexus (arXiv 2507.06608)</a></li>
+  <li><a href="https://arxiv.org/html/2401.09670">DistServe (OSDI'24)</a></li>
+  <li><a href="https://arxiv.org/html/2403.02310">Sarathi-Serve (OSDI'24)</a></li>
+  <li><a href="https://www.usenix.org/system/files/fast25-qin.pdf">Mooncake (FAST'25)</a></li>
+  <li><a href="https://github.com/kvcache-ai/Mooncake/tree/main/FAST25-release/traces">Mooncake FAST25 traces</a></li>
+  <li><a href="https://arxiv.org/html/2404.09526v2">LoongServe (SOSP'24)</a></li>
+  <li><a href="https://arxiv.org/html/2409.17264v5">Medha (arXiv 2409.17264)</a></li>
+  <li><a href="https://arxiv.org/pdf/2609.04774">Vertumnus — Adaptive Context Parallelism (arXiv 2609.04774)</a></li>
+  <li><a href="https://arxiv.org/pdf/2602.16603">FlowPrefill (arXiv 2602.16603)</a></li>
+  <li><a href="https://arxiv.org/pdf/2608.15171">P-PAS (arXiv 2608.15171)</a></li>
+  <li><a href="https://arxiv.org/html/2411.01783v2">Context Parallelism for Million-Token Inference (MLSys'25)</a></li>
+  <li><a href="https://arxiv.org/html/2507.07120v1">Helix Parallelism (arXiv 2507.07120)</a></li>
+  <li><a href="https://proceedings.mlsys.org/paper_files/paper/2025/hash/7c180af017258d239bac6248d1eb26ac-Abstract-Conference.html">Marconi (MLSys'25)</a></li>
+  <li><a href="https://arxiv.org/html/2503.18292v1">Jenga (arXiv 2503.18292)</a></li>
+  <li><a href="https://arxiv.org/html/2609.13134">SQD (arXiv 2609.13134)</a></li>
+  <li><a href="https://arxiv.org/html/2505.09999v2">ServeGen (NSDI'26)</a></li>
+  <li><a href="https://arxiv.org/html/2606.30560v2">TraceLab (arXiv 2606.30560)</a></li>
+</ol>
+</div>

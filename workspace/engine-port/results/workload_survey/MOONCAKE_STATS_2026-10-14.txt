@@ -1,0 +1,24 @@
+conversation.jsonl n=12031 dur=3537s rate=3.40/s
+  in  mean 12035 p50 6909 p90 27367 p99 85401 max 126195 | >32k 6.9% >64k 2.1% >128k 0.00%
+  out mean 343 p50 350 p90 597 p99 1120 max 2000
+  block reuse 36.6%  corr(in,out) 0.07
+  decode tokens/s demand 1165 ; prefill tokens/s demand 40937
+toolagent.jsonl n=23608 dur=3537s rate=6.67/s
+  in  mean 8596 p50 6346 p90 16810 p99 61671 max 126195 | >32k 3.1% >64k 0.9% >128k 0.00%
+  out mean 182 p50 30 p90 507 p99 898 max 2000
+  block reuse 55.3%  corr(in,out) 0.27
+  decode tokens/s demand 1216 ; prefill tokens/s demand 57376
+synthetic.jsonl n=3993 dur=1022s rate=3.91/s
+  in  mean 15325 p50 11587 p90 38615 p99 66458 max 191378 | >32k 16.2% >64k 1.2% >128k 0.25%
+  out mean 149 p50 69 p90 389 p99 769 max 893
+  block reuse 64.0%  corr(in,out) -0.37
+  decode tokens/s demand 583 ; prefill tokens/s demand 59876
+arxiv.jsonl n=23608 dur=3600s rate=6.56/s
+  in  mean 8590 p50 6345 p90 16794 p99 61623 max 125546 | >32k 3.1% >64k 0.9% >128k 0.00%
+  out mean 182 p50 30 p90 507 p99 898 max 2000
+  block reuse 55.3%  corr(in,out) 0.27
+  decode tokens/s demand 1194 ; prefill tokens/s demand 56331
+b434f1816a707f4bac697235588184ebc374c9907cb981bb65fb0643471fe711  arxiv.jsonl
+b8cbb061a85206d729d91cdc2981f43c9e0d99209dce588d3af5f7934408b9df  conversation.jsonl
+bd070915a98fc0ed264d7cfef2ce746002eb3076a695ec31ba2674c0111ec131  synthetic.jsonl
+48a2db1a13d3bc05e6330140c64f604ba366df20d3c9e128b5c35a01c1fa5f71  toolagent.jsonl
