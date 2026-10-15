@@ -7,7 +7,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 ## cost model 기여
 - 채우는 칸: CM-1(`s_attn` vs `s_ssm`), CM-4(`δ(p,d)` + lockstep span 정지 분리), CM-5(장문 KV vs mamba 슬롯, cap 결합), (확장) N·TP 통신 항
 - 이번에 알게 된 것: 측정 0. 규칙층(명세 v0.2, 감사 2회)과 캠페인 종료·merge만.
-- promote 필요: **예** — N2·N3·E2 종료(측정 결론 아님, 게이트 #6 미닫힘), merge `dc06c870`, 명세 v0.2 지위(정본 아님·PREREG 입력), multigpu 이양, COSTMODEL CM-4 "아직 답하지 못한 것"에 F-4(ρ의 D·b·c 무관성) 추가
+- promote 필요: 아니오 (2026-10-15 2차 promote 완료)
 ## 현재 상태 (2026-10-15)
 - 결정: F1–F4 · Q1 (a) N2·N3·E2 새 Job 없이 종료(`CLOSURE_*_2026-10-15.md`, 태그 `seal/*`) · Q2 P-C · Q3 arXiv-Sum 16k 표준 셀 · D-1…D-16(`results/handoff_review_2026-10-15/DECISIONS_Q1_consolidated_2026-10-15.md`)
   - D-3/D-15 fused 튜닝 11 config(비혼합 6 + SGLang mixed-chunk 5), 1차 = G_mixed, 분모 = 엄격 argmax λ\*_SLO(D-16)
@@ -17,7 +17,6 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 - **merge** `multigpu-scaling` → main `dc06c870`(조건부 가, `VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md` §6). ENGINE_DIGEST `82a5fc5b…`. 트랙 문서 후속 merge `351c904`.
 - multigpu 승계: M2g 정확성 게이트 PASS 4표 봉인(99ed704). TP4·TP8 G2 `TP_NUMERIC_DIVERGENT` 병기 의무(MGH-3). M3 PREREG rev11·하네스 봉인 — merge로 `job_entry.sh` 로그 미러·heartbeat가 측정 경로에 들어와 "M3 경로 무변경" 확인은 무효.
 ## 다음 행동
-1. promote(위 항목) → 정본·MEMORY 정리
 2. §6-1 preflight(G0·M3 공용 1회): 설계 진행 중 `PREFLIGHT_merge_cl3_design_2026-10-15.md` → 사용자 승인 → VESSL 실행 → `PREFLIGHT_PASS`여야 GPU 측정 Job
 3. M3 PREREG 개정(Q23: 명세 인용·arXiv-Sum shape·`max_prefill_tokens`·span 예산·절대 SLO·로그 knob `PDMUX_HEARTBEAT_S=0`) → 재감사 → M3 dry-run·승인
 4. G0 계측 패치 I-1–I-5 + mixed-chunk 정확성 gate(engine-porter) → G0 PREREG(Q24)
