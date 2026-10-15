@@ -1,0 +1,40 @@
+docs 6440
+
+Qwen_Qwen3.5-9B
+  all in : mean    8490 p50 6960 p90 15413 p99 30092 max 105713
+  keep<=16384: 5889/6440 = 91.4% (empty 0)
+  kept in: mean    7130 p10 2881 p50 6520 p90 12400 p99 15689
+  kept out(abstract): mean   199 p50 191 p90 306 p99 390
+    kept in > 2048: 94.9%
+    kept in > 4096: 79.1%
+    kept in > 8192: 34.7%
+    kept in > 8760: 30.3%
+    kept in > 12288: 10.5%
+
+nvidia_NVIDIA-Nemotron-Nano-9B-v2
+  all in : mean    8438 p50 6909 p90 15240 p99 30175 max 105674
+  keep<=16384: 5906/6440 = 91.7% (empty 0)
+  kept in: mean    7116 p10 2877 p50 6484 p90 12369 p99 15722
+  kept out(abstract): mean   203 p50 195 p90 312 p99 399
+    kept in > 2048: 95.0%
+    kept in > 4096: 79.0%
+    kept in > 8192: 34.4%
+    kept in > 8760: 30.0%
+    kept in > 12288: 10.4%
+
+unsloth_Meta-Llama-3.1-8B
+  all in : mean    7986 p50 6623 p90 14331 p99 27579 max 101551
+  keep<=16384: 6002/6440 = 93.2% (empty 0)
+  kept in: mean    6922 p10 2777 p50 6321 p90 12107 p99 15752
+  kept out(abstract): mean   198 p50 191 p90 303 p99 373
+    kept in > 2048: 94.6%
+    kept in > 4096: 77.5%
+    kept in > 8192: 32.4%
+    kept in > 8760: 28.0%
+    kept in > 12288: 9.4%
+
+source: https://huggingface.co/datasets/ccdv/arxiv-summarization document/test-00000-of-00001.parquet
+b34529dfeab4aabd4754cecc1603336a3449f66efee87f9b37192aa4c9dd91a1  test.parquet
+3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f  tok/nvidia_NVIDIA-Nemotron-Nano-9B-v2.json
+5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42  tok/Qwen_Qwen3.5-9B.json
+6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b  tok/unsloth_Meta-Llama-3.1-8B.json

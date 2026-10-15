@@ -1,0 +1,354 @@
+[
+ {
+  "model": "Nano-9B-v2",
+  "set": "A",
+  "mixer": "Mamba-2",
+  "ctx": 131072,
+  "params_B": 8.89,
+  "weights_GB": 17.8,
+  "n_rec": 27,
+  "n_attn": 4,
+  "kv_per_tok_KiB": 16.0,
+  "state_per_seq_MiB": 136.9,
+  "L8K": {
+   "Bmax": 195,
+   "tok_s": 3936,
+   "step_ms_B1": 8.35,
+   "share_at_Bmax": {
+    "Mamba-2": 0.63,
+    "Dense FFN": 0.09,
+    "Attention": 0.26,
+    "LM head": 0.01
+   }
+  },
+  "L128K": {
+   "Bmax": 23,
+   "tok_s": 646,
+   "step_ms_B1": 9.34,
+   "share_at_Bmax": {
+    "Mamba-2": 0.2,
+    "Dense FFN": 0.1,
+    "Attention": 0.69,
+    "LM head": 0.02
+   }
+  }
+ },
+ {
+  "model": "Qwen3.5-9B",
+  "set": "A",
+  "mixer": "GDN",
+  "ctx": 262144,
+  "params_B": 8.95,
+  "weights_GB": 17.9,
+  "n_rec": 24,
+  "n_attn": 8,
+  "kv_per_tok_KiB": 32.0,
+  "state_per_seq_MiB": 49.1,
+  "L8K": {
+   "Bmax": 169,
+   "tok_s": 4314,
+   "step_ms_B1": 7.97,
+   "share_at_Bmax": {
+    "GDN": 0.26,
+    "Dense FFN": 0.13,
+    "Attention": 0.58,
+    "LM head": 0.03
+   }
+  },
+  "L128K": {
+   "Bmax": 12,
+   "tok_s": 356,
+   "step_ms_B1": 9.94,
+   "share_at_Bmax": {
+    "GDN": 0.07,
+    "Dense FFN": 0.14,
+    "Attention": 0.76,
+    "LM head": 0.03
+   }
+  }
+ },
+ {
+  "model": "Olmo-Hybrid-7B",
+  "set": "A",
+  "mixer": "GDN",
+  "ctx": 65536,
+  "params_B": 7.43,
+  "weights_GB": 14.9,
+  "n_rec": 24,
+  "n_attn": 8,
+  "kv_per_tok_KiB": 120.0,
+  "state_per_seq_MiB": 52.2,
+  "L8K": {
+   "Bmax": 53,
+   "tok_s": 1475,
+   "step_ms_B1": 7.46,
+   "share_at_Bmax": {
+    "GDN": 0.14,
+    "Dense FFN": 0.11,
+    "Attention": 0.74,
+    "LM head": 0.01
+   }
+  },
+  "L128K": null
+ },
+ {
+  "model": "Llama-3.1-8B",
+  "set": "A",
+  "mixer": "none",
+  "ctx": 131072,
+  "params_B": 8.03,
+  "weights_GB": 16.1,
+  "n_rec": 0,
+  "n_attn": 32,
+  "kv_per_tok_KiB": 128.0,
+  "state_per_seq_MiB": 0.0,
+  "L8K": {
+   "Bmax": 52,
+   "tok_s": 1497,
+   "step_ms_B1": 7.89,
+   "share_at_Bmax": {
+    "Attention": 0.83,
+    "Dense FFN": 0.16,
+    "LM head": 0.01
+   }
+  },
+  "L128K": {
+   "Bmax": 3,
+   "tok_s": 92,
+   "step_ms_B1": 15.79,
+   "share_at_Bmax": {
+    "Attention": 0.81,
+    "Dense FFN": 0.17,
+    "LM head": 0.02
+   }
+  }
+ },
+ {
+  "model": "Qwen3.5-0.8B",
+  "set": "D",
+  "mixer": "GDN",
+  "ctx": 262144,
+  "params_B": 0.75,
+  "weights_GB": 1.5,
+  "n_rec": 18,
+  "n_attn": 6,
+  "kv_per_tok_KiB": 12.0,
+  "state_per_seq_MiB": 18.6,
+  "L8K": {
+   "Bmax": 586,
+   "tok_s": 13841,
+   "step_ms_B1": 0.81,
+   "share_at_Bmax": {
+    "GDN": 0.27,
+    "Dense FFN": 0.02,
+    "Attention": 0.68,
+    "LM head": 0.02
+   }
+  },
+  "L128K": {
+   "Bmax": 43,
+   "tok_s": 1210,
+   "step_ms_B1": 1.55,
+   "share_at_Bmax": {
+    "GDN": 0.03,
+    "Dense FFN": 0.01,
+    "Attention": 0.96,
+    "LM head": 0.01
+   }
+  }
+ },
+ {
+  "model": "Qwen3.5-2B",
+  "set": "D",
+  "mixer": "GDN",
+  "ctx": 262144,
+  "params_B": 1.88,
+  "weights_GB": 3.8,
+  "n_rec": 18,
+  "n_attn": 6,
+  "kv_per_tok_KiB": 12.0,
+  "state_per_seq_MiB": 18.6,
+  "L8K": {
+   "Bmax": 567,
+   "tok_s": 12754,
+   "step_ms_B1": 1.91,
+   "share_at_Bmax": {
+    "GDN": 0.25,
+    "Dense FFN": 0.07,
+    "Attention": 0.63,
+    "LM head": 0.04
+   }
+  },
+  "L128K": {
+   "Bmax": 41,
+   "tok_s": 1171,
+   "step_ms_B1": 2.65,
+   "share_at_Bmax": {
+    "GDN": 0.03,
+    "Dense FFN": 0.03,
+    "Attention": 0.93,
+    "LM head": 0.01
+   }
+  }
+ },
+ {
+  "model": "Qwen3.5-4B",
+  "set": "D",
+  "mixer": "GDN",
+  "ctx": 262144,
+  "params_B": 4.21,
+  "weights_GB": 8.4,
+  "n_rec": 24,
+  "n_attn": 8,
+  "kv_per_tok_KiB": 32.0,
+  "state_per_seq_MiB": 49.1,
+  "L8K": {
+   "Bmax": 198,
+   "tok_s": 4825,
+   "step_ms_B1": 4.31,
+   "share_at_Bmax": {
+    "GDN": 0.27,
+    "Dense FFN": 0.07,
+    "Attention": 0.64,
+    "LM head": 0.02
+   }
+  },
+  "L128K": {
+   "Bmax": 14,
+   "tok_s": 408,
+   "step_ms_B1": 6.28,
+   "share_at_Bmax": {
+    "GDN": 0.05,
+    "Dense FFN": 0.06,
+    "Attention": 0.87,
+    "LM head": 0.02
+   }
+  }
+ },
+ {
+  "model": "Qwen3.5-27B",
+  "set": "D",
+  "mixer": "GDN",
+  "ctx": 262144,
+  "params_B": 26.9,
+  "weights_GB": 53.8,
+  "n_rec": 48,
+  "n_attn": 16,
+  "kv_per_tok_KiB": 64.0,
+  "state_per_seq_MiB": 146.8,
+  "L8K": {
+   "Bmax": 26,
+   "tok_s": 724,
+   "step_ms_B1": 25.55,
+   "share_at_Bmax": {
+    "GDN": 0.26,
+    "Dense FFN": 0.47,
+    "Attention": 0.24,
+    "LM head": 0.03
+   }
+  },
+  "L128K": {
+   "Bmax": 2,
+   "tok_s": 59,
+   "step_ms_B1": 29.5,
+   "share_at_Bmax": {
+    "GDN": 0.17,
+    "Dense FFN": 0.5,
+    "Attention": 0.3,
+    "LM head": 0.04
+   }
+  }
+ },
+ {
+  "model": "Nano-12B-v2",
+  "set": "E",
+  "mixer": "Mamba-2",
+  "ctx": 131072,
+  "params_B": 12.31,
+  "weights_GB": 24.6,
+  "n_rec": 28,
+  "n_attn": 6,
+  "kv_per_tok_KiB": 24.0,
+  "state_per_seq_MiB": 142.0,
+  "L8K": {
+   "Bmax": 135,
+   "tok_s": 3037,
+   "step_ms_B1": 11.66,
+   "share_at_Bmax": {
+    "Mamba-2": 0.55,
+    "Dense FFN": 0.13,
+    "Attention": 0.31,
+    "LM head": 0.01
+   }
+  },
+  "L128K": {
+   "Bmax": 14,
+   "tok_s": 394,
+   "step_ms_B1": 13.14,
+   "share_at_Bmax": {
+    "Mamba-2": 0.19,
+    "Dense FFN": 0.16,
+    "Attention": 0.63,
+    "LM head": 0.02
+   }
+  }
+ },
+ {
+  "model": "Nemotron3-Nano-4B",
+  "set": "E",
+  "mixer": "Mamba-2",
+  "ctx": 262144,
+  "params_B": 3.97,
+  "weights_GB": 7.9,
+  "n_rec": 21,
+  "n_attn": 4,
+  "kv_per_tok_KiB": 16.0,
+  "state_per_seq_MiB": 79.9,
+  "L8K": {
+   "Bmax": 293,
+   "tok_s": 6049,
+   "step_ms_B1": 3.64,
+   "share_at_Bmax": {
+    "Mamba-2": 0.53,
+    "Dense FFN": 0.05,
+    "Attention": 0.4,
+    "LM head": 0.02
+   }
+  },
+  "L128K": {
+   "Bmax": 28,
+   "tok_s": 794,
+   "step_ms_B1": 4.63,
+   "share_at_Bmax": {
+    "Mamba-2": 0.11,
+    "Dense FFN": 0.04,
+    "Attention": 0.84,
+    "LM head": 0.01
+   }
+  }
+ },
+ {
+  "model": "Nemotron-H-8B",
+  "set": "aux",
+  "mixer": "Mamba-2",
+  "ctx": 8192,
+  "params_B": 8.1,
+  "weights_GB": 16.2,
+  "n_rec": 24,
+  "n_attn": 4,
+  "kv_per_tok_KiB": 16.0,
+  "state_per_seq_MiB": 97.4,
+  "L8K": {
+   "Bmax": 236,
+   "tok_s": 4803,
+   "step_ms_B1": 7.58,
+   "share_at_Bmax": {
+    "Mamba-2": 0.53,
+    "Dense FFN": 0.13,
+    "Attention": 0.32,
+    "LM head": 0.02
+   }
+  },
+  "L128K": null
+ }
+]
