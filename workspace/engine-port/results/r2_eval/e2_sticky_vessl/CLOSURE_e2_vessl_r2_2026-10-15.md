@@ -28,7 +28,7 @@
 ## 4. 승계 caveat·금지 서술 (링크로만)
 - E2VR-1…8: [VERDICT_result_e2_vessl_r2_2026-10-06.md](VERDICT_result_e2_vessl_r2_2026-10-06.md), [RESULT_e2_vessl_r2_2026-10-06.md](RESULT_e2_vessl_r2_2026-10-06.md).
 - 봉인 캠페인 수치와 merge 뒤 엔진의 수치는 비교 금지.
-- D9: 봉인 시험은 (가) "기지 실패 목록 공시". 시험 파일 무편집. 기지 실패 목록은 C-R1–C-R4 수리 진행 중이며 감사 2회차 대상이다(목록 파일 링크는 확정 후). 금지(C-4): "시험 merge에서 회귀 0건".
+- D9: 봉인 시험은 (가) "기지 실패 목록 공시". 시험 파일 무편집. 기지 실패 목록 = `handoff_review_2026-10-15/MERGE_TRIAL_known_failures_2026-10-15.md` v2(C-R1–C-R4 수리판, 감사 2회차 GO-with-caveats, `VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md` §5·§6). 미검증 범위는 CL-3(13 id + venv로 멈춘 17건 + zamba2 instrumentation), merge 조건은 같은 판정서 §6이다(목록 파일 링크는 확정 후). 금지(C-4): "시험 merge에서 회귀 0건".
 - `tests/test_e2_vessl.py:208`(`this_head`)은 merge 즉시 실패가 예상되는 기지 실패 후보다(확정은 목록에서). 이 시험을 고치면 `test_e2_vessl_r2.py`의 바이트 고정이 깨지므로 수정 불가.
 
 ## 5. 미확인

@@ -1,0 +1,348 @@
+{
+ "test_campaign_provenance.TestCudaGraphFieldIsRead.test_cuda_graph_false_adds_the_disable_flags": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestCudaGraphFieldIsRead.test_cuda_graph_true_means_no_disable_flags": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestCudaGraphFieldIsRead.test_mutant_ignoring_the_field_makes_it_decoration_again": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_agreeing_env_model_is_accepted": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_context_length_comes_from_the_record": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_model_comes_from_the_record": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_null_context_length_derives_the_model_limit": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_v1_record_still_runs_through_the_env": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestRunRecordIsCopiedVerbatim.test_run_json_keeps_the_declared_fields": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_campaign_provenance.TestRunRecordIsCopiedVerbatim.test_server_args_txt_records_the_realized_tuple": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_holb_probe.TestSchedulerHooksInstalled.test_class_level_default_is_none": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "test_holb_probe.TestSchedulerHooksInstalled.test_hooks_present_in_all_three_dispatch_branches": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "test_holb_probe.TestSchedulerHooksInstalled.test_off_path_is_a_none_check": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "test_holb_probe.TestSchedulerHooksInstalled.test_patch_reapplies_the_hooks_and_nothing_else": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "test_lambda_star_per_shape.CliSurfaces.test_workloads_cli_optin_writes_the_caveats_into_the_header": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "FileNotFoundError"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Traceback (most recent call last):",
+  "tail": "FileNotFoundError: no lambda* table at <path>  no per-shape lambda* table was supplied.  lambda* is measured in campaign stage 0 (lambda*는 캠페인 0단계에서 측정된다) and has NOT been measured for this model/back"
+ },
+ "test_lambda_star_per_shape.CliSurfaces.test_workloads_cli_refuses_the_unmeasured_template": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "FileNotFoundError"
+  ],
+  "kind": "FAIL",
+  "msg": "'REFUSED' not found in 'Traceback (most recent call last):\\n  File \"<frozen runpy>\", line N, in _run_module_as_main\\n  File \"<frozen runpy>\", line N, in _run_code\\n  File \"<path> line N, in <module>\\n",
+  "tail": "AssertionError: 'REFUSED' not found in 'Traceback (most recent call last):\\n  File \"<frozen runpy>\", line N, in _run_module_as_main\\n  File \"<frozen runpy>\", line N, in _run_code\\n  File \"<path> line "
+ },
+ "test_lambda_star_per_shape.FailClosed.test_shipped_template_loads_and_is_entirely_unmeasured": {
+  "drift": "",
+  "exc": "FileNotFoundError",
+  "keys": [
+   "FileNotFoundError"
+  ],
+  "kind": "ERROR",
+  "msg": "no lambda* table at <path>  no per-shape lambda* table was supplied.  lambda* is measured in campaign stage 0 (lambda*는 캠페인 0단계에서 측정된다) and has NOT been measured for this model/backend/context; the ca",
+  "tail": "FileNotFoundError: no lambda* table at <path>  no per-shape lambda* table was supplied.  lambda* is measured in campaign stage 0 (lambda*는 캠페인 0단계에서 측정된다) and has NOT been measured for this model/back"
+ },
+ "test_lambda_star_per_shape.SbatchReadsTheField.test_measured_record_boots": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_lambda_star_per_shape.SbatchReadsTheField.test_mutant_dropping_the_read_makes_the_field_decoration_again": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_lambda_star_per_shape.SbatchReadsTheField.test_unmeasured_record_boots_with_the_explicit_optin": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_lambda_star_per_shape.ShellRefusals.test_generate_campaign_refuses_the_unmeasured_template": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "FileNotFoundError"
+  ],
+  "kind": "FAIL",
+  "msg": "'REFUSED' not found in 'Traceback (most recent call last):\\n  File \"<frozen runpy>\", line N, in _run_module_as_main\\n  File \"<frozen runpy>\", line N, in _run_code\\n  File \"<path> line N, in <module>\\n",
+  "tail": "AssertionError: 'REFUSED' not found in 'Traceback (most recent call last):\\n  File \"<frozen runpy>\", line N, in _run_module_as_main\\n  File \"<frozen runpy>\", line N, in _run_code\\n  File \"<path> line "
+ },
+ "test_r2_correctness_ctx.TestCachedModelsResolveAsExpected.test_zamba2_2_7b_still_derives_4096": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [],
+  "kind": "FAIL",
+  "msg": "2 != 0 : context pre-flight failed: LocalEntryNotFoundError('An error happened while trying to locate the file on the Hub and we cannot find the requested files in the local cache. Please check your c",
+  "tail": "ERROR: could not derive a context length for Zyphra/Zamba2-N.NB"
+ },
+ "test_r2_eval_runner.TestSbatchPathResolution.test_a_spool_copy_unrelated_cwd": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_r2_eval_runner.TestSbatchPathResolution.test_b_login_node_direct_run": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_r2_eval_runner.TestSbatchPathResolution.test_c_array_task_selects_its_own_run": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [
+   "sha256"
+  ],
+  "kind": "FAIL",
+  "msg": "1 != 0 : Synced PD-mux runtime: <path>",
+  "tail": "<path> line N: <path> No such file or directory"
+ },
+ "test_r2_eval_runner.TestSbatchPathResolution.test_mutant_dropping_context_preflight_reintroduces_16384": {
+  "drift": "",
+  "exc": "AssertionError",
+  "keys": [],
+  "kind": "FAIL",
+  "msg": "1 != 0 : <path> line N: <path> No such file or directory",
+  "tail": "AssertionError: 1 != 0 : <path> line N: <path> No such file or directory"
+ },
+ "unittest.loader._FailedTest.test_chunk_probe": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "unittest.loader._FailedTest.test_mem_telemetry_symmetry": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "unittest.loader._FailedTest.test_phase_events": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "unittest.loader._FailedTest.test_r2_admission_latch": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "unittest.loader._FailedTest.test_r2_admission_persistence": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "unittest.loader._FailedTest.test_sticky_partition": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "unittest.loader._FailedTest.test_trace_force_prefill": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "unittest.loader._FailedTest.test_true_dual_prefill_ownership": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ },
+ "unittest.loader._FailedTest.test_worker_grad_guard": {
+  "drift": "",
+  "exc": "ModuleNotFoundError",
+  "keys": [
+   "No module named"
+  ],
+  "kind": "ERROR",
+  "msg": "No module named 'sgl_kernel'",
+  "tail": "ModuleNotFoundError: No module named 'sgl_kernel'"
+ }
+}
