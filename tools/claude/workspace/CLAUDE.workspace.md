@@ -12,6 +12,8 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
 
 ## 사용자가 읽는 곳 (2026-10-13 신설 — 정본 위계와 별개인 "읽는 순서")
 
+- **`prefill-layer-alloc/reports/anchor/axes_map.html`** (artifact "서빙 축 지도", 2026-10-15) — 서빙 축 11개(E/M/U/H/측정)·축 간
+  결합·claim↔축·트랙·인용 규율·최신본 위치를 한 장에. 정본 아님(새 판정 0), 갱신은 promote 직후 데이터 블록만 고쳐 같은 URL로 재발행.
 - **`prefill-layer-alloc/COSTMODEL.md`** — 지금까지 성립한 비용 구조 진척판(CM-1…CM-7). 측정이 비용 구조를
   얼마나 세웠는지 보이는 곳. 결과 판정은 아래 정본 위계를 따른다.
 - **트랙 파일 `tracks/<트랙>.md`**(각 트랙 worktree 안 — main·power-cap은 main, amd·multigpu·opchar는 각 worktree) — 트랙 현재 상태 ≤60줄.
