@@ -1,0 +1,14 @@
+# L2 = ids that PASS before and FAIL after the merge (sealed-sha mirror checks); source: pin_post.json minus pin_pre.json, MERGE_TRIAL_known_failures v2 sec 2.
+# one test id per line. membership is by id; the VESSL pre/post pairing, not pin_post.json, decides.
+test_e2_vessl.TestEngineTree.test_head_mixin_is_src_mirror
+test_n3_capacity.TestAbortBranchesBehaviour.test_config_without_fixed_dsm_aborts
+test_n3_capacity.TestAbortBranchesBehaviour.test_unbroken_copy_runs
+test_n3_capacity.TestBudgetEnforcer.test_control_both_kill_layers_removed_overruns
+test_n3_capacity.TestBudgetEnforcer.test_equivalent_mutant_watchdog_removed_still_cuts
+test_n3_capacity.TestBudgetEnforcer.test_overrunning_unit_is_cut
+test_n3_capacity.TestJobSymlinkLayout.test_symlinked_results_layout
+test_n3_capacity.TestR2R7Runner.test_r2_dryrun_placeholder_never_admits_an_arm_unit
+test_n3_capacity.TestRegistration.test_live_repo_matches_registered_digests
+test_n3_capacity.TestRegistration.test_plan_selftest
+test_n3_capacity.TestResume.test_resume_and_its_controls
+test_n3_capacity.TestRunnerEnv.test_inherited_phase_events_allowed_and_overwritten
