@@ -21,7 +21,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. M3 PREREG 개정(Q23: 명세 인용·arXiv-Sum shape·`max_prefill_tokens`·span 예산·절대 SLO·로그 knob `PDMUX_HEARTBEAT_S=0`) → 재감사 → M3 dry-run·승인
 4. G0 계측 패치 I-1–I-5 + mixed-chunk 정확성 gate(engine-porter) → G0 PREREG(Q24)
 ## 사용자 결정 대기
-- **main dev tree 동기화** — `sglang_engine_dev`가 merge src 미동기화(`multigpu_guard.py` 없음, digest rc=2). amd·opchar 스크립트도 이 경로를 기본값으로 참조 / 지금 merge manifest로 sync · 사본 트리만 쓰고 원본 보존(권고: sync — 엔진 트리 통일이 Q1의 목적, amd·opchar는 자기 사본 경로 지정)
+- (해소 2026-10-15) main dev tree 동기화 완료 — ENGINE_DIGEST `82a5fc5b…` 일치. amd·opchar 로컬 영향 공지 `handoff-report/NOTICE_engine_tree_sync_2026-10-15.md`(각 트랙 세션이 `SGLANG_ENGINE_DEV`를 자기 사본으로 지정해야 함)
 - **M3 PREREG 개정 범위** — 명세 v0.2 R-16대로 rev11 결과에 소급 금지 / 개정 후 재감사(권고) · 현행 rev11 제출(로그 knob·절대 SLO 미반영)
 - **M3 제출 승인** — 모형 예보 예약 약 124 GPU-h, 최장 약 9 h(개정 뒤 재산정)
 - **D-10** `CAP_BINDING` 문턱 10% 확정 — G0 PREREG 봉인 전
