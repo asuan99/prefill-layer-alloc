@@ -22,6 +22,10 @@ PD-mux 이득의 N-스케일링(1차 estimand G_sym = λ*_agnostic / λ*_fused_s
 ## 사용자 결정 대기
 - **M3 PREREG 개정 여부** (main Q23으로 이관, D-15 선행) — 연구 감사 의견(main 핸드오프 (D)절): shape C 부재·`max_prefill_tokens` 미등록·N 간 비교엔 절대 SLO 필요·TP에서 GPU당 decode SM 요구 변화 / 현행 M3 제출 · PREREG 개정 후 재감사(권고: 개정 범위만 먼저 결정)
 - **M3 제출 승인** — 모형 예보 예약 약 124 GPU-h, 최장 약 9 h
+- **[main 세션 확인 요청 ①] 이 파일 최신본 = multigpu worktree 쪽** — main branch의 `tracks/multigpu.md`는 merge 시점(`dc06c870`) 사본이라 낡았다. 이후 multigpu 커밋은 이 파일만 바꾼다 / 다음 merge 때 `git merge multigpu-scaling`(충돌 없음 예상) · 그 전엔 worktree 쪽을 읽기
+- **[main ②] 측정 Job 로그 knob 미등록** — merge 트리의 `job_entry.sh`는 기본값으로 tee 미러 + 300 s heartbeat(`find`)를 측정 중에 띄운다(`meta/log_mirror.txt`에 기록만). SPEC v0.2에 없음 → G0·M3 둘 다 해당 / SPEC 공통 계측에 등록 · PREREG마다 등록. 권고: SPEC에 "측정 Job `PDMUX_HEARTBEAT_S=0`, 미러는 값 기록"
+- **[main ③] §6-1 preflight를 G0·M3 공용 1회로** — 같은 merge 트리라 CL-3 전후 짝 대조는 한 번이면 둘 다 덮는다 / main이 설계(권고) · multigpu가 설계
+- **[main ④] main dev tree `sglang_engine_dev` 미동기화** — `multigpu_guard.py` 없음(ENGINE_DIGEST 대조 rc=2). SPEC v0.2 65행 "merge 전 G0·M3 N=1 바이너리 다름" 문장도 merge 후 상태로 갱신 필요 / main의 엔진 트리 통일 때 처리
 ## 실행 중·미회수 Job
 - 없음(M2g J4·J8 재실행 회수 완료)
 ## 금지 서술 (링크만)
