@@ -9,6 +9,7 @@ PD-mux 이득의 N-스케일링(1차 estimand G_sym = λ*_agnostic / λ*_fused_s
 - 이번에 알게 된 것: 없음(M2g는 정확성 게이트, 성능 판정 0)
 - promote 필요: 아니오
 ## 현재 상태
+- **사용자 결정 F3·F4(2026-10-15)**: main의 lockstep PD-mux 구조가 그대로 이 트랙의 multi-GPU PD-mux 기판. true dual worker는 AMD 전용. 단일 GPU 결과는 lockstep 기판 범위.
 - M2g 정확성 게이트: J1·J2 통과, J4·J8 하네스 수리(a41e725) 후 재실행으로 TP4·TP8 4 arm 포함. PASS 표 4개 봉인(99ed704).
 - TP4·TP8 G2 `TP_NUMERIC_DIVERGENT`는 결함 판정 아님 — M3 TP 결과 옆 병기 의무(MGH-3, C4).
 - 브랜치의 `src/multiplex` 변경은 N2/N3/E2 봉인 digest를 깨므로 그 캠페인 종료 전 main merge 금지.
