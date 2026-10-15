@@ -1,7 +1,8 @@
 # `reports/anchor/` — 읽는 순서용 지도
 
-- `axes_map.html` — artifact **"서빙 축 지도"**(https://claude.ai/artifact/9eXREM836RYTxWu9SnNSik, 비공개, 2026-10-15 v3)의 저장소 사본.
+- `axes_map.html` — artifact **"서빙 축 지도"**(https://claude.ai/artifact/9eXREM836RYTxWu9SnNSik, 비공개, 2026-10-15 v4)의 저장소 사본.
   축 11개(E 엔진 6 · M 모델 1 · U 워크로드 1 · H 기판 1 · S 측정 2), 축 간 결합 14개, claim ↔ 축, 트랙 5개, 인용 규율, 문서 지도.
+  v4부터 축마다 흐름도(축 안의 기전, `axes[].flow`의 노드·간선 데이터)와 관계도(결합 목록에서 자동 생성)를, §3에 전체 관계도를 그린다.
 
 ## 지위
 
@@ -13,9 +14,10 @@
 
 ## 갱신 규칙
 
-1. 데이터는 HTML 안 `<script type="application/json" id="axes-data">` 블록 하나다. 고칠 때는 그 블록만 고친다.
-2. 정본이 바뀌면(promote 직후) 블록을 갱신하고 **같은 URL로 재발행**한다. 파일명에 날짜를 붙이지 않는다.
-3. 커밋 전: 근거 포인터 존재 검사(아래) + `check_citation_stops.py`.
+1. 흐름도는 `axes[].flow`(`n`: [id, 열, 행, 라벨, 종류 in/mech/out/bad/open], `e`: [출발, 도착, 라벨, hot/open])로 그린다. 노드·간선 라벨은 정본 문장의 요약이므로 새 판정을 넣지 않는다.
+2. 데이터는 HTML 안 `<script type="application/json" id="axes-data">` 블록 하나다. 고칠 때는 그 블록만 고친다.
+3. 정본이 바뀌면(promote 직후) 블록을 갱신하고 **같은 URL로 재발행**한다. 파일명에 날짜를 붙이지 않는다.
+4. 커밋 전: 근거 포인터 존재 검사(아래) + `check_citation_stops.py`.
 
 ```bash
 python3 workspace/engine-port/scripts/discipline/check_citation_stops.py --file reports/anchor/axes_map.html
@@ -32,3 +34,4 @@ python3 workspace/engine-port/scripts/discipline/check_citation_stops.py --file 
 
 - 2026-10-15 v1→v3: doc-steward 읽기 전용 대조 1회. 등급 칩 과장 6건(serving→code/scoped 등), 누락 단서 4건, 포인터 7건 수정.
   `check_citation_stops.py --file` 위반 1건(claim C 크기 문구) 제거 → 0건.
+- 2026-10-15 v4: 사용자 요청으로 축별 흐름도·관계도와 전체 관계도 추가. headless Chrome으로 데스크톱 1200px·폰 400px 렌더 확인(흐름도는 폰에서 상자 안 가로 스크롤).

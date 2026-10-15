@@ -134,6 +134,26 @@ td.src{font-family:var(--f-mono);font-size:.76rem;color:var(--muted);word-break:
 .ban{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .ban li{font-size:.86rem;padding:7px 10px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:6px}
 .ban li .sp{display:block;font-family:var(--f-mono);font-size:.7rem;color:var(--muted)}
+
+/* 축 카드: 흐름도 + 관계도 */
+.cards{grid-template-columns:1fr}
+.card .lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.card .lists{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (max-width:860px){.card .lower{grid-template-columns:1fr}}
+figure.fl svg{max-width:980px;min-width:620px;margin:0 auto}
+figure{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+figure .fig-k{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+figure .svgbox{overflow-x:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px}
+figure svg{display:block;width:100%;height:auto;min-width:420px;color:var(--fg)}
+figure.rel svg{min-width:380px;max-width:560px}
+figcaption{font-size:.8rem;color:var(--muted);line-height:1.5}
+svg .nt{font-family:var(--f-body);font-size:11.5px;fill:var(--fg)}
+svg .et{font-family:var(--f-body);font-size:10.5px;fill:var(--muted);paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
+svg .et.hot{fill:var(--bad);font-weight:500}
+.figkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--muted);align-items:center}
+.figkey span{display:inline-flex;gap:6px;align-items:center}
+.figkey svg{width:34px;height:14px;min-width:0}
+#net svg{min-width:360px;max-width:640px;margin:0 auto}
 footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:.8rem;display:flex;flex-direction:column;gap:6px}
 @media (prefers-reduced-motion:no-preference){.cpl{transition:opacity .15s}}
 </style>
@@ -199,7 +219,15 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
 
 <section id="axes">
   <h2>축 11개 — 혼자서는 어떤 세계인가 <span class="sec">§2</span></h2>
-  <p class="lede">카드마다 그 축의 어휘, 확정된 것(등급과 함께 써야 하는 조건 포함), 열린 것, 대응하는 비용 항(CM-n), 담당 트랙, 근거 위치를 적었습니다. 등급 칩은 <span class="chip g-serving">serving</span> 서빙 실측, <span class="chip g-scoped">scoped</span> 범위 한정 확정, <span class="chip g-structure">structure</span> 구조·방향만 확정, <span class="chip g-code">code</span> 코드 사실, <span class="chip g-derived">derived</span> 유도값, <span class="chip g-decided">decided</span> 사용자 결정, <span class="chip g-nogo">NO-GO</span> 감사 불통과, <span class="chip g-open">open</span> 미검증입니다.</p>
+  <p class="lede">카드마다 위에 그 축 안의 흐름도(무엇이 무엇을 거쳐 어느 지표로 가는가)를, 아래 왼쪽에 관계도(이 축이 다른 어느 축과 어떤 결합으로 묶이는가)를 그렸습니다. 옆에는 그 축의 어휘, 확정된 것(등급과 함께 써야 하는 조건 포함), 열린 것, 대응하는 비용 항(CM-n), 담당 트랙, 근거 위치를 적었습니다. 등급 칩은 <span class="chip g-serving">serving</span> 서빙 실측, <span class="chip g-scoped">scoped</span> 범위 한정 확정, <span class="chip g-structure">structure</span> 구조·방향만 확정, <span class="chip g-code">code</span> 코드 사실, <span class="chip g-derived">derived</span> 유도값, <span class="chip g-decided">decided</span> 사용자 결정, <span class="chip g-nogo">NO-GO</span> 감사 불통과, <span class="chip g-open">open</span> 미검증입니다.</p>
+  <div class="figkey" aria-label="그림 범례">
+    <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" rx="3" style="fill:var(--sunk);stroke:var(--line)"/></svg>입력·설정</span>
+    <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" rx="3" style="fill:var(--surface);stroke:var(--muted)"/></svg>기전</span>
+    <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" rx="3" style="fill:var(--E-t);stroke:var(--E)"/></svg>지표·출력(층 색)</span>
+    <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" rx="3" style="fill:var(--bad-t);stroke:var(--bad)"/></svg>문제가 생기는 지점</span>
+    <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" rx="3" style="fill:none;stroke:var(--muted);stroke-dasharray:3 2"/></svg>미검증</span>
+    <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" style="stroke:var(--bad);stroke-width:2"/></svg>결론을 가른 고리</span>
+  </div>
   <div class="groups" id="groups"></div>
 </section>
 
@@ -210,6 +238,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     <div class="eyebrow" style="margin-bottom:6px">가장 많이 인용되는 결합 · entanglement 사슬 (CONSENSUS §1-4)</div>
     <div class="chain"><span class="n">decode 굶김</span><span class="a">→</span><span class="n">ITL ↑</span><span class="a">→</span><span class="n">batch 정체</span><span class="a">→</span><span class="n">슬롯 안 풀림 · admission 차단</span><span class="a">→</span><span class="n">TTFT 폭발</span></div>
   </div>
+  <figure id="net"><div class="fig-k">축 관계도 전체</div><div class="svgbox" id="net-svg"></div><figcaption>11개 축과 정본이 명시한 결합 14개. 선이 굵을수록 두 축을 함께 묶는 결합이 많습니다. SM 분할(E2)과 phase(E1)가 가장 많은 결합의 교차점이고, 그래서 이 두 축의 결론은 다른 축의 조건 없이 따로 인용할 수 없습니다.</figcaption></figure>
   <div class="mx-wrap">
     <div class="mx" id="mx"></div>
     <div class="cpl-list">
@@ -263,217 +292,2141 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
 
 <script type="application/json" id="axes-data">
 {
-"layers":[
- {"k":"E","name":"엔진·시스템","desc":"엔진이 런타임에 고르는 것. 설계 대상은 여기에 있다."},
- {"k":"M","name":"모델 구조","desc":"배포 시 상수. 한 모델 안에서는 변수가 아니다."},
- {"k":"U","name":"워크로드","desc":"요청 쪽. 엔진이 고를 수 없다."},
- {"k":"H","name":"기판","desc":"GPU 세대·SM 수·전력·GPU 수. 바뀌면 격자와 λ*가 그대로 성립하지 않는다."},
- {"k":"S","name":"측정층","desc":"결론을 읽는 눈금과 계측. 여기서 틀리면 결론이 뒤집힌다(두 번 실제로 뒤집혔다)."}
-],
-"axes":[
- {"id":"E1","L":"E","name":"Phase (prefill ↔ decode)","vocab":"PD-mux, fused, agnostic, split-prefill span, lockstep, true dual worker, PDMUX_TRUE_DUAL_WORKER",
-  "facts":[
-   {"t":"미조율 fused 대비 PD-mux 활성화의 꼬리 SLO goodput 우위: Zamba2 +40.5%(r2)·+185.8%(r3), Granite-4.0-h-micro +27.0%(r4)","g":"scoped","c":"cudagraph-ON, 미조율 fused 대비, 3-플래그 묶음 처치, 기전 귀속 미확립. 비용은 중앙값 쪽: 정상상태 per-token decode 5–45% 느림","s":"reports/CONSENSUS.md:3680"},
-   {"t":"F3: true dual worker는 AMD 트랙 전용. F4: main의 lockstep PD-mux 구조를 그대로 multi-GPU로 이양","g":"decided","c":"단일 GPU 결과의 범위 = lockstep 기판. lockstep 정지는 특성화 대상","s":"tracks/main.md:16-17"}],
-  "open":[
-   {"t":"Claim D(true dual이 coupling을 줄인다) 미검증. 데이터·자원 plane을 공유하므로 control-plane 범위로 축소됨","s":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:612; PROJECT_STATUS.md:9303-9311"},
-   {"t":"§1-24의 '고칠 수 없다'가 lockstep 구현의 성질일 수 있다는 가설(감사 전)","s":"tracks/main.md:26"}],
-  "cm":["CM-3","CM-4"],"tracks":["main","amd"]},
- {"id":"E2","L":"E","name":"SM 분할 (green context)","vocab":"(p,d) division, D16/24/34/44 + 108 기준점, manual_divisions vs divide_sm, sticky, λ*, realized vs target, cudagraph",
-  "facts":[
-   {"t":"decode는 SM에 둔감하지 않다. prefill 16 SM 고정, decode ITL SM16→92에서 2.36–2.91×, 4 arm 모델 무관(pure Mamba2 포함)","g":"scoped","c":"C2 CONFIRMED(scoped). 레버가 존재한다는 뜻이지 정책 이득이 아님. arm 간 순위·ε·CI는 인용 정지","s":"COSTMODEL.md:32"},
-   {"t":"cudagraph-ON이 운영점: TPOT 41→12 ms, goodput 약 1.5–2×","g":"serving","c":"no-cudagraph 수치는 전부 하한","s":"reports/CONSENSUS.md:3681"},
-   {"t":"셀 라벨 [P,D]는 목표값. decode가 비면 무분할로 자동 복귀","g":"code","c":"관측·코드 사실, 성능 판정 아님","s":"reports/CONSENSUS.md:3695"},
-   {"t":"λ*(A) ≈ 3.05 req/s는 D44 측정이 아님. 실현 분할 (0,108)이 82.8–91.0%","g":"scoped","c":"'D44 측정 아님'을 함께 적을 것","s":"PROJECT_STATUS.md:932"}],
-  "open":[
-   {"t":"s_attn(SM) ≠ s_ssm(SM)인가. hybrid 고유 항이 있는지는 아직 증거 사슬의 첫 화살표에서 끊김","s":"COSTMODEL.md:34-37"},
-   {"t":"H100 등 다른 기판의 실제 SM 입도는 green-context probe로 실측해야 함(코드 상수 인용 금지)","s":"../CLAUDE.md (환경 절)"}],
-  "cm":["CM-1","CM-3"],"tracks":["main","opchar"]},
- {"id":"E3","L":"E","name":"정책·제어","vocab":"static d44, bind, bind+GATE, SLO-aware, PDMUX_R2_POLICY, P_gen / P_gen+recal / P_hyb, PAUSE, F1 재정렬",
-  "facts":[
-   {"t":"HE0: 동적 제어는 best-static을 넘지 못함. d44 3.220±0.013 > d34 3.171 > bind+GATE 3.132±0.019 (5.4σ)","g":"scoped","c":"변화 trace 한정. 하네스는 mean-ITL로 채점. 2026-10-02 범위 축소: 크기는 HI phase −6.8~−6.9%","s":"reports/CONSENSUS.md:3686"},
-   {"t":"tight SLO(chat 300/50 ms, rate 8): d44 73.2% ≫ bind+GATE 44.3%","g":"scoped","c":"rate 8 한 점","s":"reports/CONSENSUS.md:3722"},
-   {"t":"실패 원인은 switch overhead가 아니라 positioning + entanglement. 컨트롤러 CPU 32–36 µs/call","g":"serving","c":"'달성된' 동적 제어가 열위라는 것만 확정. 달성 가능한 천장은 별개 명제","s":"reports/CONSENSUS.md:3717, 3691"},
-   {"t":"실무 기본값 = peak decode 부하 기준 decode-heavy static 고정","g":"scoped","c":"'decode-heavy'는 격자 안 상대 라벨","s":"reports/CONSENSUS.md:3729"}],
-  "open":[
-   {"t":"주장 1: generic 예측기가 hybrid에서 다른 결정을 내는가(Claim E / H-Policy). S0 rev1은 NO-GO","s":"reports/system_design_anchor_2026-09-30.md:13-24"},
-   {"t":"사다리 3-a → 3-b → S0′ → S1 → 5-a → 5-b 중 3-a 이후 미실행","s":"reports/system_design_anchor_2026-09-30.md:107-113"}],
-  "cm":["(E)","CM-6"],"tracks":["main"]},
- {"id":"E4","L":"E","name":"Prefill 입도 (span / chunk)","vocab":"span = 65,536 token-layer 예산, chunked prefill(-1 강제), max_prefill_tokens 16384, HOL, split_forward_token_budget",
-  "facts":[
-   {"t":"ITL 꼬리는 decode step 시간이 아니라 un-chunked prefill이 decode를 멈춘 시간이 지배. 크기는 decode SM D에 단조 증가","g":"structure","c":"구조 확정, 크기는 seed 1개","s":"reports/CONSENSUS.md:3698"},
-   {"t":"PD-mux는 chunked prefill과 비양립(엔진 assert)","g":"code","c":"기판 전제","s":"COSTMODEL.md:55"},
-   {"t":"span 하나의 정지 크기는 입력 길이와 대체로 무관. 길이가 늘리는 것은 정지 횟수","g":"derived","c":"코드 식 대입","s":"workspace/engine-port/results/handoff_review_2026-10-15/DESIGN_span_and_integration_2026-10-15.md §2 (AGENDA §4 정정 줄 134-135)"}],
-  "open":[
-   {"t":"split_forward_token_budget 스윕 0회. 82개 config 전부 기본값","s":"workspace/engine-port/results/handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md:172"},
-   {"t":"MuxWise N_PL 층 균일 가정이 비용 가중 층 수로 바뀌어야 하는가","s":"COSTMODEL.md:48"}],
-  "cm":["CM-2","CM-4"],"tracks":["main"]},
- {"id":"E5","L":"E","name":"메모리·admission","vocab":"max_running_requests = mamba 슬롯, KV 풀, mem_fraction_static, cap 48, retract",
-  "facts":[
-   {"t":"radix OFF ∧ max_running_requests이면 max_mamba_cache_size = max_running_requests. 슬롯 상한 ≡ running 상한","g":"code","c":"성능 판정 아님","s":"reports/CONSENSUS.md:3697"},
-   {"t":"hybrid KV가 오히려 8.6× 크고, 구속 자원은 mamba 슬롯","g":"scoped","c":"'hybrid는 KV가 작아 배치 여유가 크다'는 REFUTED","s":"COSTMODEL.md:64"},
-   {"t":"cap 48은 근거 없이 상속된 값. Nano-9B-v2에서 ctx ≈ 52k 이하면 cap이 KV보다 먼저 묶임","g":"derived","c":"유도값, 측정 0","s":"tracks/main.md:10, 27"}],
-  "open":[
-   {"t":"긴 ctx에서 KV와 슬롯 중 무엇이 먼저 묶이는지 실측 점유(X-6)","s":"COSTMODEL.md:65"},
-   {"t":"admission 거절 사유(KV/cap/slot)와 retract가 텔레메트리에 없음","s":"workspace/engine-port/results/handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md:193-196"}],
-  "cm":["CM-5"],"tracks":["main","amd"]},
- {"id":"E6","L":"E","name":"엔진 패치 (SGLang v0.5.10)","vocab":"--enable-pdmux, chunk −1, overlap off, PDMUX_* 런타임 모드, manifest sha256, devtree_manual_edits.patch",
-  "facts":[
-   {"t":"--enable-pdmux가 chunk −1·overlap off를 assert로 강제 → 3-플래그 묶음 처치. aux 두 플래그는 원인에서 배제, 'SM 분할 자체'는 아직 분리 안 됨","g":"scoped","c":"귀속 상한 = pdmux 서브시스템 전체. aux 배제는 사후 계산(A2 vs A4)이라 provenance 병기 필수","s":"reports/CONSENSUS.md:3680, 3208-3216; reports/paper/CLAIM_EVIDENCE_MATRIX.md:642"},
-   {"t":"upstream PD-mux는 MuxWise의 단순화판: 정적 65,536 token-layer span, lockstep","g":"code","c":"","s":"tracks/main.md:25-27"}],
-  "open":[
-   {"t":"pause manager와 F1 재정렬 훅은 설계만 있고 미구현","s":"reports/system_design_anchor_2026-09-30.md:55-76"},
-   {"t":"multigpu 브랜치의 src/multiplex 변경은 N2/N3/E2 봉인 digest를 깸. merge는 조건부 가(2회차 감사)","s":"../prefill-layer-alloc-multigpu/tracks/multigpu.md:15"}],
-  "cm":["—"],"tracks":["main","multigpu"]},
- {"id":"M7","L":"M","name":"모델 조성 (attention ↔ SSM)","vocab":"Nemotron-Nano-9B-v2(주), Zamba2-2.7B, Granite-4.0-h-micro, Falcon-H1, pure Mamba2(음성대조), Qwen2.5(양성대조)",
-  "facts":[
-   {"t":"layer-type 런타임 정책은 全형태 死. coordinated per-type 구현에서 TPOT 42→124 ms","g":"serving","c":"시뮬레이터의 per-layer 이득은 실엔진으로 전이되지 않음","s":"reports/CONSENSUS.md:3682"},
-   {"t":"원인은 결정 비용이 아니라 실행 시 granularity","g":"serving","c":"","s":"reports/CONSENSUS.md:3719"},
-   {"t":"격리 연산자 시간 합 기준 decode에서 SSM state update 비중이 B 32→128에서 36%→64%(ctx 2048)","g":"scoped","c":"opchar, 격리 커널, 서빙 함의 없음, '모델 시간의 %'로 인용 금지","s":"COSTMODEL.md:38-40"}],
-  "open":[
-   {"t":"조성 효과의 귀속은 모델 hold-out(A11, ≥3모델)으로만 가능","s":"reports/cost_model_design_space_2026-10-01.md:29-51"},
-   {"t":"'generic 예측기로 충분' 가설은 기각되지 않음(A4 K2와 같은 방향)","s":"COSTMODEL.md:34-37"}],
-  "cm":["CM-1","CM-2"],"tracks":["opchar","main"]},
- {"id":"U8","L":"U","name":"워크로드","vocab":"shape A (256,512), shape B (8192,64), 변화 trace rate 3↔12, W2/W4/W5, arXiv-Sum 16k, Mooncake(문헌만)",
-  "facts":[
-   {"t":"stationary ShareGPT r8은 정책 비교 벤치에서 폐기(static조차 ±1.3)","g":"serving","c":"정책 비교는 변화 trace, 3라운드 평균","s":"reports/CONSENSUS.md:3773"},
-   {"t":"정책 간 차이의 대부분은 과부하 phase에서 나옴: LO 2.3% vs HI 43%","g":"serving","c":"","s":"reports/CONSENSUS.md:3711"},
-   {"t":"Q2·Q3: 포지션 P-C + arXiv-Sum 16k를 G0·G2 표준 셀로","g":"decided","c":"Q1 일괄 결정의 전제","s":"workspace/engine-port/results/handoff_review_2026-10-15/DECISIONS_Q1_consolidated_2026-10-15.md:4"},
-   {"t":"arXiv-Sum 16k 실측 평균 입력 7.1k, 30%가 8.76k 경계를 넘음","g":"derived","c":"데이터셋 통계, 서빙 측정 아님","s":"tracks/main.md:21"}],
-  "open":[
-   {"t":"입력·출력이 모두 긴 구조(가칭 shape C)는 어디서도 등록·측정 안 됨","s":"COSTMODEL.md:90-91"},
-   {"t":"'워크로드 트렌드가 residency를 키운다'는 주장 불가(1차 공개 데이터 0건)","s":"PROJECT_STATUS.md:664-679"}],
-  "cm":["CM-6"],"tracks":["main","multigpu"]},
- {"id":"H9","L":"H","name":"기판","vocab":"A100 80GB 108 SM (VESSL us-west-2), H100 132 SM, AMD 2-GPU 층 배치, N-GPU DP/TP, 전력 cap, -pl/-lgc 불가",
-  "facts":[
-   {"t":"N2 Job-EA: 분할해도 지속 prefill과 동거한 decode step은 단독보다 길다(8/8 COLOC_SLOWER_GE3)","g":"scoped","c":"ρ는 동거 + 전력 한도 클럭 하락의 합성값(C 창 64/64 cap 노출). 크기 진술 아님","s":"PROJECT_STATUS.md:13"},
-   {"t":"VESSL 컨테이너에서 -pl·-lgc·-rgc 불가(2026-10-07 환경 실측)","g":"code","c":"서빙 측정 아님. 전력 처치 불가 → power-cap 트랙 휴면","s":"PROJECT_STATUS.md:39; tracks/power-cap.md:3"},
-   {"t":"A100 roofline은 H100의 0.6배, 순위는 같음","g":"derived","c":"","s":"tracks/main.md:22"}],
-  "open":[
-   {"t":"전력 무관 간섭 크기 δ(p,d) 분리(F-1·F-2는 명세 계측으로 이관)","s":"COSTMODEL.md:89"},
-   {"t":"multi-GPU M3 제출과 PREREG 개정 범위는 사용자 결정 대기","s":"../prefill-layer-alloc-multigpu/tracks/multigpu.md:20-21"}],
-  "cm":["CM-4","확장"],"tracks":["multigpu","amd","power-cap"]},
- {"id":"S10","L":"S","name":"SLO·지표","vocab":"goodput 술어, A′ = k·floor(L) (k∈{3,5,10}), ITL p95 50 ms, metric cliff, n≥4, paired bootstrap, attainment 90% 용량",
-  "facts":[
-   {"t":"stationary r8의 '시스템 노이즈'는 실은 TTFT 임계 절벽(metric cliff)","g":"serving","c":"섭동은 thru 3%·ITL 8%뿐인데 goodput 2×","s":"reports/CONSENSUS.md:3712"},
-   {"t":"N3 게이트 #6(SLO 용량) shape B: k=3 구간 기계적 CONFIRMED, k=5/10 UNSTABLE","g":"scoped","c":"게이트 #6은 부분 측정·미닫힘","s":"PROJECT_STATUS.md:84"},
-   {"t":"F5: TTFT SLO = A′, ITL p95 50 ms","g":"decided","c":"T는 처치가 아니라 판독 눈금","s":"workspace/engine-port/results/handoff_review_2026-10-15/DISCUSSION_INDEX_2026-10-15.md:18"},
-   {"t":"공통 측정 명세 v0.1: 규칙층 감사 2회차 NO-GO → 사용자 결정 필요(死因 1건 D-C′, R8-2d 동률 규칙)","g":"nogo","c":"1회차 死因 D-A·D-B는 닫힘. 감사 상한 2회 소진","s":"workspace/engine-port/results/handoff_review_2026-10-15/VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md:9-16"}],
-  "open":[
-   {"t":"요청 내부 p95 ITL이 PAUSE가 만드는 드문 큰 간격을 가림(D-7)","s":"reports/definition_blind_spots_2026-10-01.md"},
-   {"t":"짧은 출력 워크로드에서는 p95가 사실상 최댓값이 됨","s":"workspace/engine-port/results/handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md:125"}],
-  "cm":["CM-6"],"tracks":["main"]},
- {"id":"S11","L":"S","name":"계측·봉인","vocab":"realized vs target, 텔레메트리, 봉인 태그(seal/n2-3a-rev18 등), 규칙층 감사 ≤2회, check_citation_stops",
-  "facts":[
-   {"t":"decode 축 라벨은 4–19%만 실현되고, 기존 pin 게이트는 항등식이었음","g":"scoped","c":"텔레메트리 분석, 성능 판정 아님. pin은 realized로 검증","s":"reports/CONSENSUS.md:3699"},
-   {"t":"N2·N3·E2 종료 선언 GO-with-caveats, D9 기지 실패 목록 v2 GO-with-caveats, merge 조건부 가","g":"scoped","c":"merge 조건 3개는 판정서 §6","s":"workspace/engine-port/results/handoff_review_2026-10-15/VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md:9-16, §6"}],
-  "open":[
-   {"t":"관측 공백: span별 prefill GPU 시간, decode 커널만의 CUDA event, cudagraph 패딩 bs, iteration 단위 Σctx","s":"workspace/engine-port/results/handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md:216-224"}],
-  "cm":["—"],"tracks":["main"]}
-],
-"couplings":[
- {"n":"Entanglement 사슬","ax":["E1","E5","S10"],"p":"decode 굶김 → ITL↑ → batch 정체 → admission 차단 → TTFT 폭발. TTFT 차이의 95% 이상이 공유 대기열에 있음(산술 CONFIRMED). 그 대기열을 cap 48 포화로 귀속하는 것은 NOT-YET-SUPPORTED.","s":"reports/CONSENSUS.md:3683, 184"},
- {"n":"Positioning","ax":["E3","E2","U8"],"p":"동적 제어가 지는 것은 오버헤드 때문이 아니라 앉은 위치 때문. reactive·대칭 제어라 16–24 SM에서 진동하고 44에 닿지 못함. '달성된' 동적 제어가 열위라는 것만 확정, 달성 가능한 천장은 별개 명제.","s":"reports/CONSENSUS.md:3717"},
- {"n":"비대칭","ax":["E2","U8"],"p":"decode 과소공급은 고부하에서 파국, 과다공급의 손실은 조건부로 작음. 그래서 최적 split = max(모델 floor, 부하항 ∝ λ×출력길이), 형태만 확정.","s":"reports/CONSENSUS.md:3685"},
- {"n":"반대 부호 레버","ax":["E2","E4","S10"],"p":"decode SM D를 늘리면 T_dec는 줄지만 prefill SM(108−D)이 줄어 prefill 정지가 길어짐. conjunctive goodput의 ITL 항이 decode-SM 레버와 반대 부호 항을 내장.","s":"reports/CONSENSUS.md:3698"},
- {"n":"Lockstep 결합","ax":["E6","E1","E4"],"p":"lockstep에서는 span 시간이 곧 prefill 창 안의 ITL. F4로 단일 GPU 결과의 범위가 'lockstep 기판'으로 고정됨.","s":"tracks/main.md:25-26"},
- {"n":"3-플래그 묶음 처치","ax":["E6","E1","E2"],"p":"--enable-pdmux가 chunk −1·overlap off를 강제하므로 PD-mux의 이득을 'SM 분할 자체'로 귀속할 수 없음. 귀속 상한 = pdmux 서브시스템 전체.","s":"reports/CONSENSUS.md:3680, 3208-3216; reports/paper/CLAIM_EVIDENCE_MATRIX.md:642"},
- {"n":"Coupling tax","ax":["E1","E2","H9"],"p":"decoupled oracle은 +16%이지만 116 SM > 108이 필요해 단일 GPU로는 불가능하고 disaggregation의 몫. 등급은 강등됐고 rate-swing 격자에서 크기 재현 안 됨.","s":"reports/CONSENSUS.md:3714"},
- {"n":"전력 cap 교락","ax":["H9","E1","S11"],"p":"동거 감속 ρ는 동거 + 전력 한도 클럭 하락의 합성값이고 처치와 완전히 공변. 단일 GPU 비용 모형에 전력 항이 필요할 수 있음(크기 미분리).","s":"PROJECT_STATUS.md:13-23"},
- {"n":"기판 교체 = 격자 무효","ax":["H9","E2"],"p":"GPU 세대·SM 수·드라이버가 바뀌면 격자와 λ*가 그대로 성립하지 않음. 132 SM 분할표는 A100에 이식 불가. 기판 간 수치 혼합 금지.","s":"reports/CONSENSUS.md:1452-1460"},
- {"n":"realized ≠ target","ax":["E2","U8","S11"],"p":"decode가 비면 무분할로 복귀하므로 셀 라벨은 목표값. 저부하 셀일수록 실현 분할이 (0,108)로 쏠려 A/B 정규화가 교락됨.","s":"reports/CONSENSUS.md:3695"},
- {"n":"U × E = 배치 ctx 분포","ax":["U8","M7","E3"],"p":"hybrid가 바꾸는 것은 decode 비용에서 ctx(U 성분)의 비중. 그래서 P_gen과 P_hyb의 차이는 U만 변하는 trace에서만 드러날 수 있음.","s":"reports/cost_model_design_space_2026-10-01.md:39-51"},
- {"n":"슬롯 = running 상한 (hybrid 전용)","ax":["E5","M7"],"p":"hybrid에서 cap은 admission과 state pool을 동시에 움직이고, 순수 Transformer에선 admission만 움직임. 선행 admission 모델(X-6)이 놓치는 변수.","s":"COSTMODEL.md:63"},
- {"n":"Metric cliff × 운영 rate","ax":["S10","U8"],"p":"TTFT가 SLO 경계에 앉는 rate에서는 3% 섭동이 2배 신호로 증폭됨. 용량을 먼저 재고 절벽을 피해 측정(게이트 #6).","s":"reports/CONSENSUS.md:3712"},
- {"n":"cudagraph × 정책 결론","ax":["E6","E2","E1"],"p":"fused 실패의 死因(TPOT 60 ms 벽)을 cudagraph가 제거함. no-cudagraph 조건에서 나온 이득은 confound.","s":"reports/CONSENSUS.md:3688"}
-],
-"claims":[
- {"id":"A","t":"decode 수요는 hybrid 조성·ctx·부하에 따라 변한다","st":"부분 지지 · Stage 0 근거 철회","g":"scoped","ax":["M7","U8"],"s":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:609"},
- {"id":"B","t":"층 단위 재구성은 ITL critical path와 CUDA Graph를 훼손한다","st":"강한 지지 · 현 구현 범위","g":"serving","ax":["E2","M7"],"s":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:610"},
- {"id":"C","t":"decode 굶김은 TTFT도 악화시킨다","st":"running-batch 경로 강함 · KV 경로 부분 · d16 TTFT 크기 인용 금지(방향만)","g":"scoped","ax":["E1","S10"],"s":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:611"},
- {"id":"D","t":"실행 상태 분리(dual worker)가 single-worker 결합을 줄인다","st":"미검증 · 성능 증거 0","g":"open","ax":["E1","E6"],"s":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:612-639"},
- {"id":"E","t":"hybrid 정보를 쓴 decode floor가 generic/static보다 SLO goodput이 높다","st":"미검증 핵심 가설 (anchor 주장 1)","g":"open","ax":["E3","M7"],"s":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:640"},
- {"id":"F","t":"short-ctx conflict 영역에 동적 제어가 이길 escape hatch가 있다","st":"강한 지지(범위 한정) · escape hatch 없음 확정 (scoped negative, 2026-07-25)","g":"scoped","ax":["E3","U8"],"s":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:641"},
- {"id":"G","t":"PD-mux 활성화가 fused 대비 goodput 이득을 낸다","st":"부분 지지 · 2모델·워크로드 한정","g":"scoped","ax":["E1","E2"],"s":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:642"},
- {"id":"HE0","t":"동적 제어는 best-static을 넘지 못한다","st":"n≥4 견고 · 변화 trace 한정 · 2026-10-02 범위 축소(HI −6.8~−6.9%, mean-ITL 채점)","g":"scoped","ax":["E3","U8"],"s":"reports/CONSENSUS.md:3686"},
- {"id":"C2","t":"decode-SM 레버가 4 arm 전부에 존재한다","st":"CONFIRMED(scoped) · 인용 정지 (a)(b)","g":"scoped","ax":["E2","M7"],"s":"reports/CONSENSUS.md:5121"},
- {"id":"N2-EA","t":"분할 후에도 동거 decode step이 단독보다 길다","st":"존재 CONFIRMED(scoped) · 크기 NOT-YET-SUPPORTED","g":"scoped","ax":["E1","H9"],"s":"PROJECT_STATUS.md:13"},
- {"id":"N3","t":"게이트 #6 SLO 용량(shape B)","st":"k=3 CONFIRMED · 게이트 미닫힘","g":"scoped","ax":["S10","U8"],"s":"PROJECT_STATUS.md:84"},
- {"id":"layer-type","t":"layer-type 런타임 정책이 이득을 낸다","st":"全형태 死","g":"refuted","ax":["M7","E2"],"s":"reports/CONSENSUS.md:3682"}
-],
-"tracks":[
- {"n":"main","wt":"prefill-layer-alloc · main","h":"단일 A100 lockstep 기판, 주 모델 Nano-9B-v2","axes":["E1","E3","E5","S10"],"st":"측정 0. N2·N3·E2 종료(Q1 결정, 2026-10-15). 공통 측정 명세 v0.1 2회차 감사 NO-GO → 사용자 결정 필요.","dec":["명세 v0.1 D-C′ 처리(R8-2d 동률 규칙) — Q4–Q24는 2026-10-15 권고 열 전부 채택됨","기존 유지: radix OFF+편차 공시, 128k 프로브, 장문 hold-out 모델"],"stale":"tracks/main.md는 Q1을 아직 '결정 대기'로 적고 있음(handoff 갱신 전)","s":"tracks/main.md"},
- {"n":"amd","wt":"prefill-layer-alloc-amd · amd-disagg","h":"attention 층과 mamba+MLP 층을 다른 GPU에 두는 층 배치","axes":["H9","E1","E5"],"st":"V1 T-NCCL CAPTURE_OK(캡처 경로만, 2026-10-12). 서빙 성능 주장 0. F3로 true dual worker 전용.","dec":["V2 PD-disagg 대조군 정의","amd-disagg → main 병합 시점","V2′ / V3 착수 여부"],"s":"../prefill-layer-alloc-amd/tracks/amd.md"},
- {"n":"multigpu","wt":"prefill-layer-alloc-multigpu · multigpu-scaling","h":"A100 ×1/2/4/8, DP·TP. G_sym = λ*_agnostic / λ*_fused_sym","axes":["H9","E2","E6"],"st":"M2g 정확성 게이트 통과(PASS 표 4개 봉인, 2026-10-13). 성능 판정 0. TP4·TP8 TP_NUMERIC_DIVERGENT 병기 필수.","dec":["M3 PREREG 개정 범위","M3 제출 승인 (예보 약 124 GPU-h)"],"s":"../prefill-layer-alloc-multigpu/tracks/multigpu.md"},
- {"n":"opchar","wt":"prefill-layer-alloc-opchar · opchar","h":"Bullet Fig 2 / Table 2 / Fig 3 대응 연산자 특성화","axes":["M7","E2"],"st":"감사 완료(2026-10-13): C2 CONFIRMED(scoped), Table 2 GEMM 칸 REFUTED. 104→108 SM 점프 = wave quantization.","dec":["opchar → main 병합 시점","74 SM 이상 SM당 효율 하락 원인 조사 여부"],"s":"../prefill-layer-alloc-opchar/tracks/opchar.md"},
- {"n":"power-cap","wt":"prefill-layer-alloc · main (worktree 없음)","h":"전력 cap 개입 여지, CM-4 전력 채널","axes":["H9"],"st":"휴면. VESSL 컨테이너 -pl 불가. N2 전력 분석기 준비됨, 미실행.","dec":["cap 처치용 기판 (권고: 휴면 유지)","B안 전용 서빙 Job · J/req · venue — 기판 결정 뒤"],"s":"tracks/power-cap.md"}
-],
-"cite":[
- {"t":"PD-mux vs 미조율 fused: Zamba2 +40.5%(r2) · +185.8%(r3), Granite +27.0%(r4)","c":"미조율 fused 대비 · 3-플래그 묶음 · 기전 귀속 미확립 · 중앙 ITL 5–45% 비용","s":"reports/CONSENSUS.md:3680"},
- {"t":"HE0: d44 3.220±0.013 > d34 3.171 > bind+GATE 3.132±0.019, 5.4σ","c":"변화 trace 한정 · mean-ITL 채점 · HI phase −6.8~−6.9%","s":"reports/CONSENSUS.md:3686"},
- {"t":"tight SLO: d44 73.2% ≫ bind+GATE 44.3%","c":"chat 300/50 ms · rate 8","s":"reports/CONSENSUS.md:3722"},
- {"t":"layer-type coordinated per-type: TPOT 42→124 ms","c":"현 구현 범위","s":"reports/CONSENSUS.md:3682"},
- {"t":"cudagraph: TPOT 41→12 ms, goodput 약 1.5–2×","c":"—","s":"reports/CONSENSUS.md:3681"},
- {"t":"decode ITL SM16→92: 2.36–2.91×","c":"레버 존재만 · arm 간 순위·CI 인용 정지","s":"COSTMODEL.md:32"},
- {"t":"switch s ≤ 0.04 ms/전환, d ≤ 0.07 ms/경계","c":"agnostic 경로 · 2모델 · 이 config · 컨트롤러 구동 전환 경로 미측정","s":"COSTMODEL.md:51-52"},
- {"t":"컨트롤러 CPU mean 32–36 µs/call","c":"—","s":"reports/CONSENSUS.md:3691"},
- {"t":"λ*(A) ≈ 3.05 req/s","c":"D44 측정 아님","s":"PROJECT_STATUS.md:932"},
- {"t":"N2 Job-EA 동거 감속","c":"허용 문안 (A)(B) 문자 그대로만 · 크기 진술 아님","s":"COSTMODEL.md:56-59"}
-],
-"stops":[
- {"t":"(a) [본문 라벨 D] arm별 ε 값과 arm 간 순위·격차. 슬라이스를 바꾸면 순서가 뒤집힘. 인용 가능한 것은 '레버가 4 arm 전부에 존재'까지.","s":"reports/CONSENSUS.md:5121-5145"},
- {"t":"(b) [본문 라벨 E] 깨끗한 셀의 CI와 'n=4' 표기. 실제 n_indep=1(의사반복). 점추정은 n_indep=1을 적으면 인용 가능.","s":"reports/CONSENSUS.md:5135-5145"}
-],
-"bans":[
- {"t":"PD-mux가 4모델 전부에서 fused 대비 약 3배 [CS-OK] — 철회","s":"PROJECT_STATUS.md:6664-6750"},
- {"t":"'PD 분리 자체는 항상 이득' — 반증","s":"reports/CONSENSUS.md:3680"},
- {"t":"d16 TTFT 7.24 s 크기 [CS-OK] — 폐기 벤치·n=1, 방향만","s":"reports/CONSENSUS.md:3683"},
- {"t":"ρ ≈ 1.16을 '동거 간섭의 크기'로 쓰기 [CS-OK], ρ를 HE0의 원인으로 쓰기","s":"PROJECT_STATUS.md:31"},
- {"t":"'3% 게이트 미만'(HE0 크기) — REFUTED","s":"reports/CONSENSUS.md:3664-3672"},
- {"t":"'decode 과다공급은 무해'를 조건 없이","s":"reports/CONSENSUS.md:3685"},
- {"t":"gate를 'one-way ratchet'으로 부르기","s":"reports/CONSENSUS.md:3689"},
- {"t":"knee를 floor 공식에 대입, attn 비중 수치","s":"reports/CONSENSUS.md:3684"},
- {"t":"'true dual이 얽힘을 깬다'","s":"PROJECT_STATUS.md:9282-9321"},
- {"t":"'이미 검증됐다', P_gen+recal 없이 얻은 우세","s":"reports/system_design_anchor_2026-09-30.md:24"},
- {"t":"sim/micro의 per-layer 이득(1.37–2.02×)을 실엔진 결론으로 [CS-OK]","s":"../CLAUDE.md (방법론 게이트 1)"}
-],
-"now":[
- {"q":"축과 결합을 한 장으로","f":"이 페이지","st":"2026-10-15 신설","g":"current"},
- {"q":"프로젝트 전체 현재 상태","f":"PROJECT_STATUS.md 상단 1–180행 배너 (최신이 맨 위)","st":"'최종 갱신' 줄은 2026-10-13. 10-15 F3·F4 배너는 있음, Q1 결정·2회차 감사는 아직 없음","g":"stale"},
- {"q":"비용 구조가 얼마나 섰나","f":"COSTMODEL.md","st":"최신 (2026-10-13 CM-4 반영)","g":"current"},
- {"q":"트랙별 현재","f":"tracks/<트랙>.md (각 worktree)","st":"main.md는 Q1을 아직 대기로 표기","g":"stale"},
- {"q":"사용자 결정 대기","f":"tools/claude/inbox.sh","st":"트랙 파일을 그대로 모으므로 main.md 지연을 그대로 물려받음","g":"stale"},
- {"q":"10-15 결정·감사 원문","f":"workspace/engine-port/results/handoff_review_2026-10-15/","st":"가장 최신. DECISIONS_Q1, VERDICT round2는 미커밋","g":"current"},
- {"q":"claim 등급","f":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:607-642","st":"2026-10-04 이후 미갱신. 그 뒤 결과는 STATUS 배너·CONSENSUS §1 행 37·38","g":"stale"},
- {"q":"확정 문장·인용 금지 전문","f":"reports/CONSENSUS.md (rev95)","st":"최신. 단 DOCUMENT_STATUS.md는 이 파일을 historical로 분류(불일치)","g":"scoped"},
- {"q":"스케줄러 설계 좌표계","f":"reports/system_design_anchor_2026-09-30.md","st":"고정 설계 기준선. 결과 정본 아님","g":"code"}
-],
-"docs":[
- {"q":"전체 현재 상태","f":"PROJECT_STATUS.md 1–180행"},
- {"q":"비용 항 진척 CM-1…7","f":"COSTMODEL.md"},
- {"q":"claim 등급","f":"reports/paper/CLAIM_EVIDENCE_MATRIX.md:607-642"},
- {"q":"다음 gate","f":"reports/paper/EXPERIMENT_ROADMAP.md + handoff_review_2026-10-15/DISCUSSION_INDEX_2026-10-15.md"},
- {"q":"설계 좌표계·사다리","f":"reports/system_design_anchor_2026-09-30.md"},
- {"q":"비용 설계 공간","f":"reports/cost_model_design_space_2026-10-01.md"},
- {"q":"정의의 사각지대","f":"reports/definition_blind_spots_2026-10-01.md"},
- {"q":"SLO·TTFT 정의 근거","f":"reports/slo_definition_rationale_2026-10-04.md"},
- {"q":"정적·런타임 요인 지도","f":"handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md §4"},
- {"q":"확정 문장·인용 금지","f":"reports/CONSENSUS.md"},
- {"q":"VESSL 실행 규약","f":"handoff-report/vessl_operating_model_2026-10-02.md"},
- {"q":"환경·패치·부팅","f":"workspace/engine-port/RESUME.md (연구 상태 절은 stale)"}
-],
-"nouse":[
- {"t":"deprecated/ — historical_root(옛 루트 reports, PAPER_RESULTS·FINAL_SUMMARY 포함), quarantine_*, results/arxiv, logs","s":"deprecated/README.md"},
- {"t":"deprecated_v2/ — triton × Zamba2 스코프 없이는 인용 금지인 수치 모음. Nemotron-H로 옮겨 쓰지 말 것","s":"deprecated_v2/README.md"},
- {"t":"CLAUDE_CODE_SESSION_SUMMARY.md (2026-07-22, R1/R2 이전) · REORG_PLAN.md (2026-07-24 원안)","s":"저장소 루트"},
- {"t":"reports/ 안 Superseded 7개: realtrace_findings_and_open_branches, slo_aware_scheduling_design, policy_comparison, system_vs_engine_vs_sim, prefill_vs_decode_execution, r1_dual_worker_progress, r1_dual_worker/job_862512","s":"reports/"},
- {"t":"reports/research_arc.md, reports/synthesis_2026-09-22/, layertype_dynamic_*_2026-08-04.md — 이력 서사, 일부 문장 인용 금지","s":"reports/"}
-],
-"daterules":[
- {"t":"handoff-report/의 날짜 파일 65개는 최신 1개를 빼면 이력. 2026-10-15 세션 인계물은 handoff-report가 아니라 workspace/engine-port/results/handoff_review_2026-10-15/에 있다.","s":"handoff-report/"},
- {"t":"같은 주제의 날짜 파일이 여럿이면 정본(STATUS·CONSENSUS·COSTMODEL)이 가리키는 것만 현재다. 정본이 가리키지 않으면 이력으로 본다.","s":"정본 위계"},
- {"t":"VERDICT 파일은 회차 번호가 큰 것이 우선이고, 같은 대상 감사는 최대 2회 뒤 사용자 결정으로 넘어간다. 예: VERDICT_spec_v0_1_and_closure_round2가 VERDICT_spec_v0_and_closure를 대체, SPEC …_preaudit_snapshot은 이력.","s":"memory: track-model-harness.md"}
-]
+ "layers": [
+  {
+   "k": "E",
+   "name": "엔진·시스템",
+   "desc": "엔진이 런타임에 고르는 것. 설계 대상은 여기에 있다."
+  },
+  {
+   "k": "M",
+   "name": "모델 구조",
+   "desc": "배포 시 상수. 한 모델 안에서는 변수가 아니다."
+  },
+  {
+   "k": "U",
+   "name": "워크로드",
+   "desc": "요청 쪽. 엔진이 고를 수 없다."
+  },
+  {
+   "k": "H",
+   "name": "기판",
+   "desc": "GPU 세대·SM 수·전력·GPU 수. 바뀌면 격자와 λ*가 그대로 성립하지 않는다."
+  },
+  {
+   "k": "S",
+   "name": "측정층",
+   "desc": "결론을 읽는 눈금과 계측. 여기서 틀리면 결론이 뒤집힌다(두 번 실제로 뒤집혔다)."
+  }
+ ],
+ "axes": [
+  {
+   "id": "E1",
+   "L": "E",
+   "name": "Phase (prefill ↔ decode)",
+   "vocab": "PD-mux, fused, agnostic, split-prefill span, lockstep, true dual worker, PDMUX_TRUE_DUAL_WORKER",
+   "facts": [
+    {
+     "t": "미조율 fused 대비 PD-mux 활성화의 꼬리 SLO goodput 우위: Zamba2 +40.5%(r2)·+185.8%(r3), Granite-4.0-h-micro +27.0%(r4)",
+     "g": "scoped",
+     "c": "cudagraph-ON, 미조율 fused 대비, 3-플래그 묶음 처치, 기전 귀속 미확립. 비용은 중앙값 쪽: 정상상태 per-token decode 5–45% 느림",
+     "s": "reports/CONSENSUS.md:3680"
+    },
+    {
+     "t": "F3: true dual worker는 AMD 트랙 전용. F4: main의 lockstep PD-mux 구조를 그대로 multi-GPU로 이양",
+     "g": "decided",
+     "c": "단일 GPU 결과의 범위 = lockstep 기판. lockstep 정지는 특성화 대상",
+     "s": "tracks/main.md:16-17"
+    }
+   ],
+   "open": [
+    {
+     "t": "Claim D(true dual이 coupling을 줄인다) 미검증. 데이터·자원 plane을 공유하므로 control-plane 범위로 축소됨",
+     "s": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:612; PROJECT_STATUS.md:9303-9311"
+    },
+    {
+     "t": "§1-24의 '고칠 수 없다'가 lockstep 구현의 성질일 수 있다는 가설(감사 전)",
+     "s": "tracks/main.md:26"
+    }
+   ],
+   "cm": [
+    "CM-3",
+    "CM-4"
+   ],
+   "tracks": [
+    "main",
+    "amd"
+   ],
+   "flow": {
+    "cap": "lockstep PD-mux에서 요청이 지나는 길. prefill은 span 단위로 쪼개 돌고, decode는 매 반복 그 span과 맞물려 돈다. span 사이 대기가 곧 prefill 창 안의 ITL이다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "도착 요청",
+      "in"
+     ],
+     [
+      "b",
+      1,
+      0,
+      "prefill 배치\n한 번에 하나",
+      "mech"
+     ],
+     [
+      "c",
+      2,
+      0,
+      "span 실행\n108−D SM",
+      "mech"
+     ],
+     [
+      "f",
+      3,
+      0,
+      "TTFT",
+      "out"
+     ],
+     [
+      "d",
+      1,
+      1,
+      "running batch",
+      "mech"
+     ],
+     [
+      "e",
+      2,
+      1,
+      "decode step\nD SM",
+      "mech"
+     ],
+     [
+      "g",
+      3,
+      1,
+      "ITL",
+      "out"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "b",
+      "admission",
+      ""
+     ],
+     [
+      "b",
+      "c",
+      "span 단위",
+      ""
+     ],
+     [
+      "c",
+      "f",
+      "마지막 span",
+      ""
+     ],
+     [
+      "c",
+      "d",
+      "완료 합류",
+      ""
+     ],
+     [
+      "d",
+      "e",
+      "매 반복",
+      ""
+     ],
+     [
+      "e",
+      "g",
+      "",
+      ""
+     ],
+     [
+      "c",
+      "e",
+      "lockstep 대기",
+      "hot"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "E2",
+   "L": "E",
+   "name": "SM 분할 (green context)",
+   "vocab": "(p,d) division, D16/24/34/44 + 108 기준점, manual_divisions vs divide_sm, sticky, λ*, realized vs target, cudagraph",
+   "facts": [
+    {
+     "t": "decode는 SM에 둔감하지 않다. prefill 16 SM 고정, decode ITL SM16→92에서 2.36–2.91×, 4 arm 모델 무관(pure Mamba2 포함)",
+     "g": "scoped",
+     "c": "C2 CONFIRMED(scoped). 레버가 존재한다는 뜻이지 정책 이득이 아님. arm 간 순위·ε·CI는 인용 정지",
+     "s": "COSTMODEL.md:32"
+    },
+    {
+     "t": "cudagraph-ON이 운영점: TPOT 41→12 ms, goodput 약 1.5–2×",
+     "g": "serving",
+     "c": "no-cudagraph 수치는 전부 하한",
+     "s": "reports/CONSENSUS.md:3681"
+    },
+    {
+     "t": "셀 라벨 [P,D]는 목표값. decode가 비면 무분할로 자동 복귀",
+     "g": "code",
+     "c": "관측·코드 사실, 성능 판정 아님",
+     "s": "reports/CONSENSUS.md:3695"
+    },
+    {
+     "t": "λ*(A) ≈ 3.05 req/s는 D44 측정이 아님. 실현 분할 (0,108)이 82.8–91.0%",
+     "g": "scoped",
+     "c": "'D44 측정 아님'을 함께 적을 것",
+     "s": "PROJECT_STATUS.md:932"
+    }
+   ],
+   "open": [
+    {
+     "t": "s_attn(SM) ≠ s_ssm(SM)인가. hybrid 고유 항이 있는지는 아직 증거 사슬의 첫 화살표에서 끊김",
+     "s": "COSTMODEL.md:34-37"
+    },
+    {
+     "t": "H100 등 다른 기판의 실제 SM 입도는 green-context probe로 실측해야 함(코드 상수 인용 금지)",
+     "s": "../CLAUDE.md (환경 절)"
+    }
+   ],
+   "cm": [
+    "CM-1",
+    "CM-3"
+   ],
+   "tracks": [
+    "main",
+    "opchar"
+   ],
+   "flow": {
+    "cap": "분할 표가 고른 목표 (p,d)는 그대로 실현되지 않는다. decode가 비면 무분할로 돌아가고, D를 늘리면 decode는 빨라지지만 prefill은 느려진다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "분할 표\nmanual_divisions",
+      "in"
+     ],
+     [
+      "b",
+      1,
+      0,
+      "목표 (p,d)",
+      "mech"
+     ],
+     [
+      "c",
+      2,
+      0,
+      "실현 분할",
+      "mech"
+     ],
+     [
+      "e",
+      3,
+      0,
+      "T_dec ↓\n(D↑)",
+      "out"
+     ],
+     [
+      "g",
+      4,
+      0,
+      "cudagraph\nbs 목록",
+      "in"
+     ],
+     [
+      "d",
+      1,
+      1,
+      "decode 비면\n(0,108) 복귀",
+      "bad"
+     ],
+     [
+      "f",
+      3,
+      1,
+      "S_prefill ↑\n(D↑)",
+      "out"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "b",
+      "전환 시점",
+      ""
+     ],
+     [
+      "b",
+      "c",
+      "green ctx",
+      ""
+     ],
+     [
+      "b",
+      "d",
+      "decode 0",
+      ""
+     ],
+     [
+      "d",
+      "c",
+      "realized≠target",
+      "hot"
+     ],
+     [
+      "c",
+      "e",
+      "decode SM",
+      ""
+     ],
+     [
+      "c",
+      "f",
+      "prefill SM",
+      ""
+     ],
+     [
+      "g",
+      "e",
+      "bs 패딩",
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "id": "E3",
+   "L": "E",
+   "name": "정책·제어",
+   "vocab": "static d44, bind, bind+GATE, SLO-aware, PDMUX_R2_POLICY, P_gen / P_gen+recal / P_hyb, PAUSE, F1 재정렬",
+   "facts": [
+    {
+     "t": "HE0: 동적 제어는 best-static을 넘지 못함. d44 3.220±0.013 > d34 3.171 > bind+GATE 3.132±0.019 (5.4σ)",
+     "g": "scoped",
+     "c": "변화 trace 한정. 하네스는 mean-ITL로 채점. 2026-10-02 범위 축소: 크기는 HI phase −6.8~−6.9%",
+     "s": "reports/CONSENSUS.md:3686"
+    },
+    {
+     "t": "tight SLO(chat 300/50 ms, rate 8): d44 73.2% ≫ bind+GATE 44.3%",
+     "g": "scoped",
+     "c": "rate 8 한 점",
+     "s": "reports/CONSENSUS.md:3722"
+    },
+    {
+     "t": "실패 원인은 switch overhead가 아니라 positioning + entanglement. 컨트롤러 CPU 32–36 µs/call",
+     "g": "serving",
+     "c": "'달성된' 동적 제어가 열위라는 것만 확정. 달성 가능한 천장은 별개 명제",
+     "s": "reports/CONSENSUS.md:3717, 3691"
+    },
+    {
+     "t": "실무 기본값 = peak decode 부하 기준 decode-heavy static 고정",
+     "g": "scoped",
+     "c": "'decode-heavy'는 격자 안 상대 라벨",
+     "s": "reports/CONSENSUS.md:3729"
+    }
+   ],
+   "open": [
+    {
+     "t": "주장 1: generic 예측기가 hybrid에서 다른 결정을 내는가(Claim E / H-Policy). S0 rev1은 NO-GO",
+     "s": "reports/system_design_anchor_2026-09-30.md:13-24"
+    },
+    {
+     "t": "사다리 3-a → 3-b → S0′ → S1 → 5-a → 5-b 중 3-a 이후 미실행",
+     "s": "reports/system_design_anchor_2026-09-30.md:107-113"
+    }
+   ],
+   "cm": [
+    "(E)",
+    "CM-6"
+   ],
+   "tracks": [
+    "main"
+   ],
+   "flow": {
+    "cap": "동적 컨트롤러는 관측에 반응해 D를 고르지만 16–24 SM 사이에서 진동하고 44에 닿지 못한다. 미리 고정한 decode-heavy static이 이긴다(HE0). 예측기로 D를 정하는 경로는 아직 검증 전이다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "관측\nqueue·ITL",
+      "in"
+     ],
+     [
+      "b",
+      1,
+      0,
+      "컨트롤러\n32–36 µs",
+      "mech"
+     ],
+     [
+      "c",
+      2,
+      0,
+      "D 선택",
+      "mech"
+     ],
+     [
+      "f",
+      3,
+      0,
+      "16–24 진동\n44 미도달",
+      "bad"
+     ],
+     [
+      "g",
+      1,
+      1,
+      "예측기\nP_gen / P_hyb",
+      "open"
+     ],
+     [
+      "e",
+      2,
+      1,
+      "static d44\npeak 기준",
+      "mech"
+     ],
+     [
+      "d",
+      3,
+      1,
+      "goodput",
+      "out"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "b",
+      "reactive",
+      ""
+     ],
+     [
+      "b",
+      "c",
+      "",
+      ""
+     ],
+     [
+      "c",
+      "f",
+      "positioning",
+      "hot"
+     ],
+     [
+      "f",
+      "d",
+      "열위 (HE0)",
+      "hot"
+     ],
+     [
+      "e",
+      "d",
+      "best-static",
+      ""
+     ],
+     [
+      "g",
+      "c",
+      "주장 1 미검증",
+      "open"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "E4",
+   "L": "E",
+   "name": "Prefill 입도 (span / chunk)",
+   "vocab": "span = 65,536 token-layer 예산, chunked prefill(-1 강제), max_prefill_tokens 16384, HOL, split_forward_token_budget",
+   "facts": [
+    {
+     "t": "ITL 꼬리는 decode step 시간이 아니라 un-chunked prefill이 decode를 멈춘 시간이 지배. 크기는 decode SM D에 단조 증가",
+     "g": "structure",
+     "c": "구조 확정, 크기는 seed 1개",
+     "s": "reports/CONSENSUS.md:3698"
+    },
+    {
+     "t": "PD-mux는 chunked prefill과 비양립(엔진 assert)",
+     "g": "code",
+     "c": "기판 전제",
+     "s": "COSTMODEL.md:55"
+    },
+    {
+     "t": "span 하나의 정지 크기는 입력 길이와 대체로 무관. 길이가 늘리는 것은 정지 횟수",
+     "g": "derived",
+     "c": "코드 식 대입",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/DESIGN_span_and_integration_2026-10-15.md §2 (AGENDA §4 정정 줄 134-135)"
+    }
+   ],
+   "open": [
+    {
+     "t": "split_forward_token_budget 스윕 0회. 82개 config 전부 기본값",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md:172"
+    },
+    {
+     "t": "MuxWise N_PL 층 균일 가정이 비용 가중 층 수로 바뀌어야 하는가",
+     "s": "COSTMODEL.md:48"
+    }
+   ],
+   "cm": [
+    "CM-2",
+    "CM-4"
+   ],
+   "tracks": [
+    "main"
+   ],
+   "flow": {
+    "cap": "prefill 배치 토큰 수가 span 하나의 층 수를 정하고, 긴 입력일수록 span이 많아져 decode 정지 횟수가 늘어난다. chunked prefill로 쪼갤 수 없어 이 정지가 ITL 꼬리를 지배한다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "prefill 배치\n토큰 N",
+      "in"
+     ],
+     [
+      "b",
+      1,
+      0,
+      "span 층 수\n65536 // N",
+      "mech"
+     ],
+     [
+      "c",
+      2,
+      0,
+      "span 수",
+      "mech"
+     ],
+     [
+      "d",
+      3,
+      0,
+      "decode\n정지 횟수",
+      "mech"
+     ],
+     [
+      "g",
+      1,
+      1,
+      "HOL\n긴 요청이 막음",
+      "bad"
+     ],
+     [
+      "e",
+      2,
+      1,
+      "chunk 불가\nassert",
+      "in"
+     ],
+     [
+      "f",
+      3,
+      1,
+      "ITL 꼬리",
+      "out"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "b",
+      "",
+      ""
+     ],
+     [
+      "b",
+      "c",
+      "N↑ → 층↓",
+      ""
+     ],
+     [
+      "c",
+      "d",
+      "경계마다",
+      ""
+     ],
+     [
+      "d",
+      "f",
+      "지배항",
+      "hot"
+     ],
+     [
+      "e",
+      "f",
+      "un-chunked",
+      ""
+     ],
+     [
+      "a",
+      "g",
+      "한 번에 하나",
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "id": "E5",
+   "L": "E",
+   "name": "메모리·admission",
+   "vocab": "max_running_requests = mamba 슬롯, KV 풀, mem_fraction_static, cap 48, retract",
+   "facts": [
+    {
+     "t": "radix OFF ∧ max_running_requests이면 max_mamba_cache_size = max_running_requests. 슬롯 상한 ≡ running 상한",
+     "g": "code",
+     "c": "성능 판정 아님",
+     "s": "reports/CONSENSUS.md:3697"
+    },
+    {
+     "t": "hybrid KV가 오히려 8.6× 크고, 구속 자원은 mamba 슬롯",
+     "g": "scoped",
+     "c": "'hybrid는 KV가 작아 배치 여유가 크다'는 REFUTED",
+     "s": "COSTMODEL.md:64"
+    },
+    {
+     "t": "cap 48은 근거 없이 상속된 값. Nano-9B-v2에서 ctx ≈ 52k 이하면 cap이 KV보다 먼저 묶임",
+     "g": "derived",
+     "c": "유도값, 측정 0",
+     "s": "tracks/main.md:10, 27"
+    }
+   ],
+   "open": [
+    {
+     "t": "긴 ctx에서 KV와 슬롯 중 무엇이 먼저 묶이는지 실측 점유(X-6)",
+     "s": "COSTMODEL.md:65"
+    },
+    {
+     "t": "admission 거절 사유(KV/cap/slot)와 retract가 텔레메트리에 없음",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md:193-196"
+    }
+   ],
+   "cm": [
+    "CM-5"
+   ],
+   "tracks": [
+    "main",
+    "amd"
+   ],
+   "flow": {
+    "cap": "radix OFF에서는 running 상한이 곧 mamba 슬롯 수다. ctx가 약 52k 이하이면 슬롯이 KV보다 먼저 묶이고, admission이 막히면 대기열이 TTFT로 번진다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "max_running\n= cap 48",
+      "in"
+     ],
+     [
+      "b",
+      1,
+      0,
+      "mamba 슬롯 수",
+      "mech"
+     ],
+     [
+      "d",
+      2,
+      0,
+      "admission",
+      "mech"
+     ],
+     [
+      "e",
+      3,
+      0,
+      "W_queue\n→ TTFT",
+      "out"
+     ],
+     [
+      "f",
+      0,
+      1,
+      "mem_fraction\n_static",
+      "in"
+     ],
+     [
+      "c",
+      1,
+      1,
+      "KV 풀 토큰",
+      "mech"
+     ],
+     [
+      "g",
+      2,
+      1,
+      "retract\nSSM 재-prefill",
+      "bad"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "b",
+      "≡",
+      ""
+     ],
+     [
+      "b",
+      "d",
+      "슬롯 부족",
+      "hot"
+     ],
+     [
+      "f",
+      "c",
+      "",
+      ""
+     ],
+     [
+      "c",
+      "d",
+      "KV 부족",
+      ""
+     ],
+     [
+      "c",
+      "g",
+      "KV 고갈",
+      ""
+     ],
+     [
+      "d",
+      "e",
+      "차단",
+      ""
+     ],
+     [
+      "g",
+      "e",
+      "오염",
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "id": "E6",
+   "L": "E",
+   "name": "엔진 패치 (SGLang v0.5.10)",
+   "vocab": "--enable-pdmux, chunk −1, overlap off, PDMUX_* 런타임 모드, manifest sha256, devtree_manual_edits.patch",
+   "facts": [
+    {
+     "t": "--enable-pdmux가 chunk −1·overlap off를 assert로 강제 → 3-플래그 묶음 처치. aux 두 플래그는 원인에서 배제, 'SM 분할 자체'는 아직 분리 안 됨",
+     "g": "scoped",
+     "c": "귀속 상한 = pdmux 서브시스템 전체. aux 배제는 사후 계산(A2 vs A4)이라 provenance 병기 필수",
+     "s": "reports/CONSENSUS.md:3680, 3208-3216; reports/paper/CLAIM_EVIDENCE_MATRIX.md:642"
+    },
+    {
+     "t": "upstream PD-mux는 MuxWise의 단순화판: 정적 65,536 token-layer span, lockstep",
+     "g": "code",
+     "c": "",
+     "s": "tracks/main.md:25-27"
+    }
+   ],
+   "open": [
+    {
+     "t": "pause manager와 F1 재정렬 훅은 설계만 있고 미구현",
+     "s": "reports/system_design_anchor_2026-09-30.md:55-76"
+    },
+    {
+     "t": "multigpu 브랜치의 src/multiplex 변경은 N2/N3/E2 봉인 digest를 깸. merge는 조건부 가(2회차 감사)",
+     "s": "../prefill-layer-alloc-multigpu/tracks/multigpu.md:15"
+    }
+   ],
+   "cm": [
+    "—"
+   ],
+   "tracks": [
+    "main",
+    "multigpu"
+   ],
+   "flow": {
+    "cap": "--enable-pdmux 하나가 두 플래그를 강제로 켠다. 두 보조 플래그는 사후 계산으로 원인에서 빠졌지만, 남은 이득이 SM 분할 때문인지 span 실행 때문인지는 갈라지지 않았다.",
+    "n": [
+     [
+      "f",
+      0,
+      0,
+      "PDMUX_* env",
+      "in"
+     ],
+     [
+      "d",
+      1,
+      0,
+      "pdmux 서브시스템\nSM 분할 + span",
+      "mech"
+     ],
+     [
+      "a",
+      0,
+      1,
+      "--enable-pdmux",
+      "in"
+     ],
+     [
+      "b",
+      1,
+      1,
+      "chunk −1",
+      "mech"
+     ],
+     [
+      "e",
+      2,
+      1,
+      "이득 귀속",
+      "out"
+     ],
+     [
+      "c",
+      1,
+      2,
+      "overlap off",
+      "mech"
+     ]
+    ],
+    "e": [
+     [
+      "f",
+      "d",
+      "런타임 모드",
+      ""
+     ],
+     [
+      "a",
+      "d",
+      "",
+      ""
+     ],
+     [
+      "a",
+      "b",
+      "assert",
+      ""
+     ],
+     [
+      "a",
+      "c",
+      "assert",
+      ""
+     ],
+     [
+      "d",
+      "e",
+      "분리 안 됨",
+      "hot"
+     ],
+     [
+      "b",
+      "e",
+      "배제(사후)",
+      "open"
+     ],
+     [
+      "c",
+      "e",
+      "배제(사후)",
+      "open"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "M7",
+   "L": "M",
+   "name": "모델 조성 (attention ↔ SSM)",
+   "vocab": "Nemotron-Nano-9B-v2(주), Zamba2-2.7B, Granite-4.0-h-micro, Falcon-H1, pure Mamba2(음성대조), Qwen2.5(양성대조)",
+   "facts": [
+    {
+     "t": "layer-type 런타임 정책은 全형태 死. coordinated per-type 구현에서 TPOT 42→124 ms",
+     "g": "serving",
+     "c": "시뮬레이터의 per-layer 이득은 실엔진으로 전이되지 않음",
+     "s": "reports/CONSENSUS.md:3682"
+    },
+    {
+     "t": "원인은 결정 비용이 아니라 실행 시 granularity",
+     "g": "serving",
+     "c": "",
+     "s": "reports/CONSENSUS.md:3719"
+    },
+    {
+     "t": "격리 연산자 시간 합 기준 decode에서 SSM state update 비중이 B 32→128에서 36%→64%(ctx 2048)",
+     "g": "scoped",
+     "c": "opchar, 격리 커널, 서빙 함의 없음, '모델 시간의 %'로 인용 금지",
+     "s": "COSTMODEL.md:38-40"
+    }
+   ],
+   "open": [
+    {
+     "t": "조성 효과의 귀속은 모델 hold-out(A11, ≥3모델)으로만 가능",
+     "s": "reports/cost_model_design_space_2026-10-01.md:29-51"
+    },
+    {
+     "t": "'generic 예측기로 충분' 가설은 기각되지 않음(A4 K2와 같은 방향)",
+     "s": "COSTMODEL.md:34-37"
+    }
+   ],
+   "cm": [
+    "CM-1",
+    "CM-2"
+   ],
+   "tracks": [
+    "opchar",
+    "main"
+   ],
+   "flow": {
+    "cap": "Nano-9B-v2의 층 종류마다 decode 비용이 다른 변수에 매인다. attention은 ctx에, Mamba는 batch에만. 이 차이를 SM 스케일링 차이로 잇는 화살표는 아직 증거가 없고, 런타임 per-type 분할은 이미 죽었다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "attn 층 ×4",
+      "in"
+     ],
+     [
+      "c",
+      1,
+      0,
+      "KV ∝ ctx",
+      "mech"
+     ],
+     [
+      "e",
+      2,
+      0,
+      "T_dec attn 항\n∝ bs·ctx",
+      "mech"
+     ],
+     [
+      "g",
+      3,
+      0,
+      "s_attn ≠ s_ssm ?",
+      "open"
+     ],
+     [
+      "b",
+      0,
+      1,
+      "Mamba 층 ×27",
+      "in"
+     ],
+     [
+      "d",
+      1,
+      1,
+      "state 고정\n/요청",
+      "mech"
+     ],
+     [
+      "f",
+      2,
+      1,
+      "T_dec SSM 항\n∝ bs",
+      "mech"
+     ],
+     [
+      "h",
+      3,
+      1,
+      "per-type 분할\nTPOT 42→124 ms",
+      "bad"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "c",
+      "",
+      ""
+     ],
+     [
+      "c",
+      "e",
+      "decode",
+      ""
+     ],
+     [
+      "b",
+      "d",
+      "",
+      ""
+     ],
+     [
+      "d",
+      "f",
+      "decode",
+      ""
+     ],
+     [
+      "e",
+      "g",
+      "",
+      "open"
+     ],
+     [
+      "f",
+      "g",
+      "",
+      "open"
+     ],
+     [
+      "f",
+      "h",
+      "死",
+      "hot"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "U8",
+   "L": "U",
+   "name": "워크로드",
+   "vocab": "shape A (256,512), shape B (8192,64), 변화 trace rate 3↔12, W2/W4/W5, arXiv-Sum 16k, Mooncake(문헌만)",
+   "facts": [
+    {
+     "t": "stationary ShareGPT r8은 정책 비교 벤치에서 폐기(static조차 ±1.3)",
+     "g": "serving",
+     "c": "정책 비교는 변화 trace, 3라운드 평균",
+     "s": "reports/CONSENSUS.md:3773"
+    },
+    {
+     "t": "정책 간 차이의 대부분은 과부하 phase에서 나옴: LO 2.3% vs HI 43%",
+     "g": "serving",
+     "c": "",
+     "s": "reports/CONSENSUS.md:3711"
+    },
+    {
+     "t": "Q2·Q3: 포지션 P-C + arXiv-Sum 16k를 G0·G2 표준 셀로",
+     "g": "decided",
+     "c": "Q1 일괄 결정의 전제",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/DECISIONS_Q1_consolidated_2026-10-15.md:4"
+    },
+    {
+     "t": "arXiv-Sum 16k 실측 평균 입력 7.1k, 30%가 8.76k 경계를 넘음",
+     "g": "derived",
+     "c": "데이터셋 통계, 서빙 측정 아님",
+     "s": "tracks/main.md:21"
+    }
+   ],
+   "open": [
+    {
+     "t": "입력·출력이 모두 긴 구조(가칭 shape C)는 어디서도 등록·측정 안 됨",
+     "s": "COSTMODEL.md:90-91"
+    },
+    {
+     "t": "'워크로드 트렌드가 residency를 키운다'는 주장 불가(1차 공개 데이터 0건)",
+     "s": "PROJECT_STATUS.md:664-679"
+    }
+   ],
+   "cm": [
+    "CM-6"
+   ],
+   "tracks": [
+    "main",
+    "multigpu"
+   ],
+   "flow": {
+    "cap": "사용자가 정하는 길이와 도착률이 엔진의 배치 구성과 만나 ctx 분포가 된다. 정책 간 차이는 대부분 과부하 phase에서 나온다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "입력 길이 L",
+      "in"
+     ],
+     [
+      "d",
+      1,
+      0,
+      "배치 ctx 분포\n= U × E",
+      "mech"
+     ],
+     [
+      "f",
+      2,
+      0,
+      "decode 비용\nattn 항",
+      "out"
+     ],
+     [
+      "b",
+      0,
+      1,
+      "도착 rate\n3 ↔ 12",
+      "in"
+     ],
+     [
+      "e",
+      1,
+      1,
+      "phase LO / HI",
+      "mech"
+     ],
+     [
+      "g",
+      2,
+      1,
+      "정책 차이\n대부분 HI",
+      "out"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "d",
+      "",
+      ""
+     ],
+     [
+      "b",
+      "d",
+      "엔진 배치",
+      ""
+     ],
+     [
+      "d",
+      "f",
+      "ctx",
+      ""
+     ],
+     [
+      "b",
+      "e",
+      "변화 trace",
+      ""
+     ],
+     [
+      "e",
+      "g",
+      "HI 43%",
+      "hot"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "H9",
+   "L": "H",
+   "name": "기판",
+   "vocab": "A100 80GB 108 SM (VESSL us-west-2), H100 132 SM, AMD 2-GPU 층 배치, N-GPU DP/TP, 전력 cap, -pl/-lgc 불가",
+   "facts": [
+    {
+     "t": "N2 Job-EA: 분할해도 지속 prefill과 동거한 decode step은 단독보다 길다(8/8 COLOC_SLOWER_GE3)",
+     "g": "scoped",
+     "c": "ρ는 동거 + 전력 한도 클럭 하락의 합성값(C 창 64/64 cap 노출). 크기 진술 아님",
+     "s": "PROJECT_STATUS.md:13"
+    },
+    {
+     "t": "VESSL 컨테이너에서 -pl·-lgc·-rgc 불가(2026-10-07 환경 실측)",
+     "g": "code",
+     "c": "서빙 측정 아님. 전력 처치 불가 → power-cap 트랙 휴면",
+     "s": "PROJECT_STATUS.md:39; tracks/power-cap.md:3"
+    },
+    {
+     "t": "A100 roofline은 H100의 0.6배, 순위는 같음",
+     "g": "derived",
+     "c": "",
+     "s": "tracks/main.md:22"
+    }
+   ],
+   "open": [
+    {
+     "t": "전력 무관 간섭 크기 δ(p,d) 분리(F-1·F-2는 명세 계측으로 이관)",
+     "s": "COSTMODEL.md:89"
+    },
+    {
+     "t": "multi-GPU M3 제출과 PREREG 개정 범위는 사용자 결정 대기",
+     "s": "../prefill-layer-alloc-multigpu/tracks/multigpu.md:20-21"
+    }
+   ],
+   "cm": [
+    "CM-4",
+    "확장"
+   ],
+   "tracks": [
+    "multigpu",
+    "amd",
+    "power-cap"
+   ],
+   "flow": {
+    "cap": "기판은 격자와 λ*의 정의 자체를 바꾼다. 같은 A100에서도 전력 한도가 클럭을 떨어뜨려 동거 감속 ρ와 섞이므로, ρ의 크기는 간섭만의 값이 아니다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "A100 108 SM",
+      "in"
+     ],
+     [
+      "c",
+      1,
+      0,
+      "분할 격자 · λ*",
+      "mech"
+     ],
+     [
+      "g",
+      2,
+      0,
+      "재측정 필요",
+      "out"
+     ],
+     [
+      "f",
+      0,
+      1,
+      "다른 기판\n132 SM · N-GPU",
+      "in"
+     ],
+     [
+      "b",
+      1,
+      1,
+      "전력 한도",
+      "in"
+     ],
+     [
+      "d",
+      2,
+      1,
+      "클럭 하락",
+      "mech"
+     ],
+     [
+      "e",
+      3,
+      1,
+      "ρ 동거 감속\n(합성값)",
+      "bad"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "c",
+      "정의",
+      ""
+     ],
+     [
+      "f",
+      "c",
+      "무효",
+      "hot"
+     ],
+     [
+      "c",
+      "g",
+      "",
+      ""
+     ],
+     [
+      "b",
+      "d",
+      "cap 64/64",
+      ""
+     ],
+     [
+      "d",
+      "e",
+      "교락",
+      "hot"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "S10",
+   "L": "S",
+   "name": "SLO·지표",
+   "vocab": "goodput 술어, A′ = k·floor(L) (k∈{3,5,10}), ITL p95 50 ms, metric cliff, n≥4, paired bootstrap, attainment 90% 용량",
+   "facts": [
+    {
+     "t": "stationary r8의 '시스템 노이즈'는 실은 TTFT 임계 절벽(metric cliff)",
+     "g": "serving",
+     "c": "섭동은 thru 3%·ITL 8%뿐인데 goodput 2×",
+     "s": "reports/CONSENSUS.md:3712"
+    },
+    {
+     "t": "N3 게이트 #6(SLO 용량) shape B: k=3 구간 기계적 CONFIRMED, k=5/10 UNSTABLE",
+     "g": "scoped",
+     "c": "게이트 #6은 부분 측정·미닫힘",
+     "s": "PROJECT_STATUS.md:84"
+    },
+    {
+     "t": "F5: TTFT SLO = A′, ITL p95 50 ms",
+     "g": "decided",
+     "c": "T는 처치가 아니라 판독 눈금",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/DISCUSSION_INDEX_2026-10-15.md:18"
+    },
+    {
+     "t": "공통 측정 명세 v0.1: 규칙층 감사 2회차 NO-GO → 사용자 결정 필요(死因 1건 D-C′, R8-2d 동률 규칙)",
+     "g": "nogo",
+     "c": "1회차 死因 D-A·D-B는 닫힘. 감사 상한 2회 소진",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md:9-16"
+    }
+   ],
+   "open": [
+    {
+     "t": "요청 내부 p95 ITL이 PAUSE가 만드는 드문 큰 간격을 가림(D-7)",
+     "s": "reports/definition_blind_spots_2026-10-01.md"
+    },
+    {
+     "t": "짧은 출력 워크로드에서는 p95가 사실상 최댓값이 됨",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md:125"
+    }
+   ],
+   "cm": [
+    "CM-6"
+   ],
+   "tracks": [
+    "main"
+   ],
+   "flow": {
+    "cap": "요청 하나가 합격하려면 TTFT와 요청 내부 ITL p95 두 조건을 모두 넘어야 한다. TTFT가 SLO 경계에 앉는 rate에서는 작은 섭동이 큰 goodput 차이로 증폭된다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "요청 TTFT",
+      "in"
+     ],
+     [
+      "c",
+      1,
+      0,
+      "≤ A′\nk·floor(L)",
+      "mech"
+     ],
+     [
+      "e",
+      2,
+      0,
+      "goodput\nAND",
+      "mech"
+     ],
+     [
+      "f",
+      3,
+      0,
+      "용량 λ*_SLO\nattainment 90%",
+      "out"
+     ],
+     [
+      "b",
+      0,
+      1,
+      "요청 내부\ntoken ITL p95",
+      "in"
+     ],
+     [
+      "d",
+      1,
+      1,
+      "≤ 50 ms",
+      "mech"
+     ],
+     [
+      "g",
+      2,
+      1,
+      "metric cliff\nTTFT ≈ SLO",
+      "bad"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "c",
+      "",
+      ""
+     ],
+     [
+      "b",
+      "d",
+      "",
+      ""
+     ],
+     [
+      "c",
+      "e",
+      "",
+      ""
+     ],
+     [
+      "d",
+      "e",
+      "",
+      ""
+     ],
+     [
+      "e",
+      "f",
+      "rate 사다리",
+      ""
+     ],
+     [
+      "g",
+      "e",
+      "섭동 증폭",
+      "hot"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "S11",
+   "L": "S",
+   "name": "계측·봉인",
+   "vocab": "realized vs target, 텔레메트리, 봉인 태그(seal/n2-3a-rev18 등), 규칙층 감사 ≤2회, check_citation_stops",
+   "facts": [
+    {
+     "t": "decode 축 라벨은 4–19%만 실현되고, 기존 pin 게이트는 항등식이었음",
+     "g": "scoped",
+     "c": "텔레메트리 분석, 성능 판정 아님. pin은 realized로 검증",
+     "s": "reports/CONSENSUS.md:3699"
+    },
+    {
+     "t": "N2·N3·E2 종료 선언 GO-with-caveats, D9 기지 실패 목록 v2 GO-with-caveats, merge 조건부 가",
+     "g": "scoped",
+     "c": "merge 조건 3개는 판정서 §6",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md:9-16, §6"
+    }
+   ],
+   "open": [
+    {
+     "t": "관측 공백: span별 prefill GPU 시간, decode 커널만의 CUDA event, cudagraph 패딩 bs, iteration 단위 Σctx",
+     "s": "workspace/engine-port/results/handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md:216-224"
+    }
+   ],
+   "cm": [
+    "—"
+   ],
+   "tracks": [
+    "main"
+   ],
+   "flow": {
+    "cap": "설정한 라벨이 실제로 실현됐는지는 텔레메트리로만 알 수 있다. 검증 도구가 항등식이면 아무것도 걸러내지 못한다. span별 GPU 시간처럼 아직 재지 않는 값도 남아 있다.",
+    "n": [
+     [
+      "a",
+      0,
+      0,
+      "목표 라벨",
+      "in"
+     ],
+     [
+      "b",
+      1,
+      0,
+      "텔레메트리\nrealized",
+      "mech"
+     ],
+     [
+      "c",
+      2,
+      0,
+      "pin 검증",
+      "mech"
+     ],
+     [
+      "d",
+      3,
+      0,
+      "결과 감사\n≤ 2회",
+      "out"
+     ],
+     [
+      "e",
+      1,
+      1,
+      "봉인 태그\ndigest",
+      "in"
+     ],
+     [
+      "f",
+      2,
+      1,
+      "관측 공백\nspan GPU 시간",
+      "open"
+     ]
+    ],
+    "e": [
+     [
+      "a",
+      "b",
+      "4–19%",
+      "hot"
+     ],
+     [
+      "b",
+      "c",
+      "",
+      ""
+     ],
+     [
+      "c",
+      "d",
+      "",
+      ""
+     ],
+     [
+      "e",
+      "d",
+      "재현",
+      ""
+     ],
+     [
+      "f",
+      "c",
+      "미계측",
+      "open"
+     ]
+    ]
+   }
+  }
+ ],
+ "couplings": [
+  {
+   "n": "Entanglement 사슬",
+   "ax": [
+    "E1",
+    "E5",
+    "S10"
+   ],
+   "p": "decode 굶김 → ITL↑ → batch 정체 → admission 차단 → TTFT 폭발. TTFT 차이의 95% 이상이 공유 대기열에 있음(산술 CONFIRMED). 그 대기열을 cap 48 포화로 귀속하는 것은 NOT-YET-SUPPORTED.",
+   "s": "reports/CONSENSUS.md:3683, 184",
+   "k": "얽힘"
+  },
+  {
+   "n": "Positioning",
+   "ax": [
+    "E3",
+    "E2",
+    "U8"
+   ],
+   "p": "동적 제어가 지는 것은 오버헤드 때문이 아니라 앉은 위치 때문. reactive·대칭 제어라 16–24 SM에서 진동하고 44에 닿지 못함. '달성된' 동적 제어가 열위라는 것만 확정, 달성 가능한 천장은 별개 명제.",
+   "s": "reports/CONSENSUS.md:3717",
+   "k": "positioning"
+  },
+  {
+   "n": "비대칭",
+   "ax": [
+    "E2",
+    "U8"
+   ],
+   "p": "decode 과소공급은 고부하에서 파국, 과다공급의 손실은 조건부로 작음. 그래서 최적 split = max(모델 floor, 부하항 ∝ λ×출력길이), 형태만 확정.",
+   "s": "reports/CONSENSUS.md:3685",
+   "k": "비대칭"
+  },
+  {
+   "n": "반대 부호 레버",
+   "ax": [
+    "E2",
+    "E4",
+    "S10"
+   ],
+   "p": "decode SM D를 늘리면 T_dec는 줄지만 prefill SM(108−D)이 줄어 prefill 정지가 길어짐. conjunctive goodput의 ITL 항이 decode-SM 레버와 반대 부호 항을 내장.",
+   "s": "reports/CONSENSUS.md:3698",
+   "k": "반대 부호"
+  },
+  {
+   "n": "Lockstep 결합",
+   "ax": [
+    "E6",
+    "E1",
+    "E4"
+   ],
+   "p": "lockstep에서는 span 시간이 곧 prefill 창 안의 ITL. F4로 단일 GPU 결과의 범위가 'lockstep 기판'으로 고정됨.",
+   "s": "tracks/main.md:25-26",
+   "k": "lockstep"
+  },
+  {
+   "n": "3-플래그 묶음 처치",
+   "ax": [
+    "E6",
+    "E1",
+    "E2"
+   ],
+   "p": "--enable-pdmux가 chunk −1·overlap off를 강제하므로 PD-mux의 이득을 'SM 분할 자체'로 귀속할 수 없음. 귀속 상한 = pdmux 서브시스템 전체.",
+   "s": "reports/CONSENSUS.md:3680, 3208-3216; reports/paper/CLAIM_EVIDENCE_MATRIX.md:642",
+   "k": "3-플래그"
+  },
+  {
+   "n": "Coupling tax",
+   "ax": [
+    "E1",
+    "E2",
+    "H9"
+   ],
+   "p": "decoupled oracle은 +16%이지만 116 SM > 108이 필요해 단일 GPU로는 불가능하고 disaggregation의 몫. 등급은 강등됐고 rate-swing 격자에서 크기 재현 안 됨.",
+   "s": "reports/CONSENSUS.md:3714",
+   "k": "coupling tax"
+  },
+  {
+   "n": "전력 cap 교락",
+   "ax": [
+    "H9",
+    "E1",
+    "S11"
+   ],
+   "p": "동거 감속 ρ는 동거 + 전력 한도 클럭 하락의 합성값이고 처치와 완전히 공변. 단일 GPU 비용 모형에 전력 항이 필요할 수 있음(크기 미분리).",
+   "s": "PROJECT_STATUS.md:13-23",
+   "k": "전력 교락"
+  },
+  {
+   "n": "기판 교체 = 격자 무효",
+   "ax": [
+    "H9",
+    "E2"
+   ],
+   "p": "GPU 세대·SM 수·드라이버가 바뀌면 격자와 λ*가 그대로 성립하지 않음. 132 SM 분할표는 A100에 이식 불가. 기판 간 수치 혼합 금지.",
+   "s": "reports/CONSENSUS.md:1452-1460",
+   "k": "기판 무효"
+  },
+  {
+   "n": "realized ≠ target",
+   "ax": [
+    "E2",
+    "U8",
+    "S11"
+   ],
+   "p": "decode가 비면 무분할로 복귀하므로 셀 라벨은 목표값. 저부하 셀일수록 실현 분할이 (0,108)로 쏠려 A/B 정규화가 교락됨.",
+   "s": "reports/CONSENSUS.md:3695",
+   "k": "realized"
+  },
+  {
+   "n": "U × E = 배치 ctx 분포",
+   "ax": [
+    "U8",
+    "M7",
+    "E3"
+   ],
+   "p": "hybrid가 바꾸는 것은 decode 비용에서 ctx(U 성분)의 비중. 그래서 P_gen과 P_hyb의 차이는 U만 변하는 trace에서만 드러날 수 있음.",
+   "s": "reports/cost_model_design_space_2026-10-01.md:39-51",
+   "k": "U×E"
+  },
+  {
+   "n": "슬롯 = running 상한 (hybrid 전용)",
+   "ax": [
+    "E5",
+    "M7"
+   ],
+   "p": "hybrid에서 cap은 admission과 state pool을 동시에 움직이고, 순수 Transformer에선 admission만 움직임. 선행 admission 모델(X-6)이 놓치는 변수.",
+   "s": "COSTMODEL.md:63",
+   "k": "슬롯=cap"
+  },
+  {
+   "n": "Metric cliff × 운영 rate",
+   "ax": [
+    "S10",
+    "U8"
+   ],
+   "p": "TTFT가 SLO 경계에 앉는 rate에서는 3% 섭동이 2배 신호로 증폭됨. 용량을 먼저 재고 절벽을 피해 측정(게이트 #6).",
+   "s": "reports/CONSENSUS.md:3712",
+   "k": "cliff"
+  },
+  {
+   "n": "cudagraph × 정책 결론",
+   "ax": [
+    "E6",
+    "E2",
+    "E1"
+   ],
+   "p": "fused 실패의 死因(TPOT 60 ms 벽)을 cudagraph가 제거함. no-cudagraph 조건에서 나온 이득은 confound.",
+   "s": "reports/CONSENSUS.md:3688",
+   "k": "cudagraph"
+  }
+ ],
+ "claims": [
+  {
+   "id": "A",
+   "t": "decode 수요는 hybrid 조성·ctx·부하에 따라 변한다",
+   "st": "부분 지지 · Stage 0 근거 철회",
+   "g": "scoped",
+   "ax": [
+    "M7",
+    "U8"
+   ],
+   "s": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:609"
+  },
+  {
+   "id": "B",
+   "t": "층 단위 재구성은 ITL critical path와 CUDA Graph를 훼손한다",
+   "st": "강한 지지 · 현 구현 범위",
+   "g": "serving",
+   "ax": [
+    "E2",
+    "M7"
+   ],
+   "s": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:610"
+  },
+  {
+   "id": "C",
+   "t": "decode 굶김은 TTFT도 악화시킨다",
+   "st": "running-batch 경로 강함 · KV 경로 부분 · d16 TTFT 크기 인용 금지(방향만)",
+   "g": "scoped",
+   "ax": [
+    "E1",
+    "S10"
+   ],
+   "s": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:611"
+  },
+  {
+   "id": "D",
+   "t": "실행 상태 분리(dual worker)가 single-worker 결합을 줄인다",
+   "st": "미검증 · 성능 증거 0",
+   "g": "open",
+   "ax": [
+    "E1",
+    "E6"
+   ],
+   "s": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:612-639"
+  },
+  {
+   "id": "E",
+   "t": "hybrid 정보를 쓴 decode floor가 generic/static보다 SLO goodput이 높다",
+   "st": "미검증 핵심 가설 (anchor 주장 1)",
+   "g": "open",
+   "ax": [
+    "E3",
+    "M7"
+   ],
+   "s": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:640"
+  },
+  {
+   "id": "F",
+   "t": "short-ctx conflict 영역에 동적 제어가 이길 escape hatch가 있다",
+   "st": "강한 지지(범위 한정) · escape hatch 없음 확정 (scoped negative, 2026-07-25)",
+   "g": "scoped",
+   "ax": [
+    "E3",
+    "U8"
+   ],
+   "s": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:641"
+  },
+  {
+   "id": "G",
+   "t": "PD-mux 활성화가 fused 대비 goodput 이득을 낸다",
+   "st": "부분 지지 · 2모델·워크로드 한정",
+   "g": "scoped",
+   "ax": [
+    "E1",
+    "E2"
+   ],
+   "s": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:642"
+  },
+  {
+   "id": "HE0",
+   "t": "동적 제어는 best-static을 넘지 못한다",
+   "st": "n≥4 견고 · 변화 trace 한정 · 2026-10-02 범위 축소(HI −6.8~−6.9%, mean-ITL 채점)",
+   "g": "scoped",
+   "ax": [
+    "E3",
+    "U8"
+   ],
+   "s": "reports/CONSENSUS.md:3686"
+  },
+  {
+   "id": "C2",
+   "t": "decode-SM 레버가 4 arm 전부에 존재한다",
+   "st": "CONFIRMED(scoped) · 인용 정지 (a)(b)",
+   "g": "scoped",
+   "ax": [
+    "E2",
+    "M7"
+   ],
+   "s": "reports/CONSENSUS.md:5121"
+  },
+  {
+   "id": "N2-EA",
+   "t": "분할 후에도 동거 decode step이 단독보다 길다",
+   "st": "존재 CONFIRMED(scoped) · 크기 NOT-YET-SUPPORTED",
+   "g": "scoped",
+   "ax": [
+    "E1",
+    "H9"
+   ],
+   "s": "PROJECT_STATUS.md:13"
+  },
+  {
+   "id": "N3",
+   "t": "게이트 #6 SLO 용량(shape B)",
+   "st": "k=3 CONFIRMED · 게이트 미닫힘",
+   "g": "scoped",
+   "ax": [
+    "S10",
+    "U8"
+   ],
+   "s": "PROJECT_STATUS.md:84"
+  },
+  {
+   "id": "layer-type",
+   "t": "layer-type 런타임 정책이 이득을 낸다",
+   "st": "全형태 死",
+   "g": "refuted",
+   "ax": [
+    "M7",
+    "E2"
+   ],
+   "s": "reports/CONSENSUS.md:3682"
+  }
+ ],
+ "tracks": [
+  {
+   "n": "main",
+   "wt": "prefill-layer-alloc · main",
+   "h": "단일 A100 lockstep 기판, 주 모델 Nano-9B-v2",
+   "axes": [
+    "E1",
+    "E3",
+    "E5",
+    "S10"
+   ],
+   "st": "측정 0. N2·N3·E2 종료(Q1 결정, 2026-10-15). 공통 측정 명세 v0.1 2회차 감사 NO-GO → 사용자 결정 필요.",
+   "dec": [
+    "명세 v0.1 D-C′ 처리(R8-2d 동률 규칙) — Q4–Q24는 2026-10-15 권고 열 전부 채택됨",
+    "기존 유지: radix OFF+편차 공시, 128k 프로브, 장문 hold-out 모델"
+   ],
+   "stale": "tracks/main.md는 Q1을 아직 '결정 대기'로 적고 있음(handoff 갱신 전)",
+   "s": "tracks/main.md"
+  },
+  {
+   "n": "amd",
+   "wt": "prefill-layer-alloc-amd · amd-disagg",
+   "h": "attention 층과 mamba+MLP 층을 다른 GPU에 두는 층 배치",
+   "axes": [
+    "H9",
+    "E1",
+    "E5"
+   ],
+   "st": "V1 T-NCCL CAPTURE_OK(캡처 경로만, 2026-10-12). 서빙 성능 주장 0. F3로 true dual worker 전용.",
+   "dec": [
+    "V2 PD-disagg 대조군 정의",
+    "amd-disagg → main 병합 시점",
+    "V2′ / V3 착수 여부"
+   ],
+   "s": "../prefill-layer-alloc-amd/tracks/amd.md"
+  },
+  {
+   "n": "multigpu",
+   "wt": "prefill-layer-alloc-multigpu · multigpu-scaling",
+   "h": "A100 ×1/2/4/8, DP·TP. G_sym = λ*_agnostic / λ*_fused_sym",
+   "axes": [
+    "H9",
+    "E2",
+    "E6"
+   ],
+   "st": "M2g 정확성 게이트 통과(PASS 표 4개 봉인, 2026-10-13). 성능 판정 0. TP4·TP8 TP_NUMERIC_DIVERGENT 병기 필수.",
+   "dec": [
+    "M3 PREREG 개정 범위",
+    "M3 제출 승인 (예보 약 124 GPU-h)"
+   ],
+   "s": "../prefill-layer-alloc-multigpu/tracks/multigpu.md"
+  },
+  {
+   "n": "opchar",
+   "wt": "prefill-layer-alloc-opchar · opchar",
+   "h": "Bullet Fig 2 / Table 2 / Fig 3 대응 연산자 특성화",
+   "axes": [
+    "M7",
+    "E2"
+   ],
+   "st": "감사 완료(2026-10-13): C2 CONFIRMED(scoped), Table 2 GEMM 칸 REFUTED. 104→108 SM 점프 = wave quantization.",
+   "dec": [
+    "opchar → main 병합 시점",
+    "74 SM 이상 SM당 효율 하락 원인 조사 여부"
+   ],
+   "s": "../prefill-layer-alloc-opchar/tracks/opchar.md"
+  },
+  {
+   "n": "power-cap",
+   "wt": "prefill-layer-alloc · main (worktree 없음)",
+   "h": "전력 cap 개입 여지, CM-4 전력 채널",
+   "axes": [
+    "H9"
+   ],
+   "st": "휴면. VESSL 컨테이너 -pl 불가. N2 전력 분석기 준비됨, 미실행.",
+   "dec": [
+    "cap 처치용 기판 (권고: 휴면 유지)",
+    "B안 전용 서빙 Job · J/req · venue — 기판 결정 뒤"
+   ],
+   "s": "tracks/power-cap.md"
+  }
+ ],
+ "cite": [
+  {
+   "t": "PD-mux vs 미조율 fused: Zamba2 +40.5%(r2) · +185.8%(r3), Granite +27.0%(r4)",
+   "c": "미조율 fused 대비 · 3-플래그 묶음 · 기전 귀속 미확립 · 중앙 ITL 5–45% 비용",
+   "s": "reports/CONSENSUS.md:3680"
+  },
+  {
+   "t": "HE0: d44 3.220±0.013 > d34 3.171 > bind+GATE 3.132±0.019, 5.4σ",
+   "c": "변화 trace 한정 · mean-ITL 채점 · HI phase −6.8~−6.9%",
+   "s": "reports/CONSENSUS.md:3686"
+  },
+  {
+   "t": "tight SLO: d44 73.2% ≫ bind+GATE 44.3%",
+   "c": "chat 300/50 ms · rate 8",
+   "s": "reports/CONSENSUS.md:3722"
+  },
+  {
+   "t": "layer-type coordinated per-type: TPOT 42→124 ms",
+   "c": "현 구현 범위",
+   "s": "reports/CONSENSUS.md:3682"
+  },
+  {
+   "t": "cudagraph: TPOT 41→12 ms, goodput 약 1.5–2×",
+   "c": "—",
+   "s": "reports/CONSENSUS.md:3681"
+  },
+  {
+   "t": "decode ITL SM16→92: 2.36–2.91×",
+   "c": "레버 존재만 · arm 간 순위·CI 인용 정지",
+   "s": "COSTMODEL.md:32"
+  },
+  {
+   "t": "switch s ≤ 0.04 ms/전환, d ≤ 0.07 ms/경계",
+   "c": "agnostic 경로 · 2모델 · 이 config · 컨트롤러 구동 전환 경로 미측정",
+   "s": "COSTMODEL.md:51-52"
+  },
+  {
+   "t": "컨트롤러 CPU mean 32–36 µs/call",
+   "c": "—",
+   "s": "reports/CONSENSUS.md:3691"
+  },
+  {
+   "t": "λ*(A) ≈ 3.05 req/s",
+   "c": "D44 측정 아님",
+   "s": "PROJECT_STATUS.md:932"
+  },
+  {
+   "t": "N2 Job-EA 동거 감속",
+   "c": "허용 문안 (A)(B) 문자 그대로만 · 크기 진술 아님",
+   "s": "COSTMODEL.md:56-59"
+  }
+ ],
+ "stops": [
+  {
+   "t": "(a) [본문 라벨 D] arm별 ε 값과 arm 간 순위·격차. 슬라이스를 바꾸면 순서가 뒤집힘. 인용 가능한 것은 '레버가 4 arm 전부에 존재'까지.",
+   "s": "reports/CONSENSUS.md:5121-5145"
+  },
+  {
+   "t": "(b) [본문 라벨 E] 깨끗한 셀의 CI와 'n=4' 표기. 실제 n_indep=1(의사반복). 점추정은 n_indep=1을 적으면 인용 가능.",
+   "s": "reports/CONSENSUS.md:5135-5145"
+  }
+ ],
+ "bans": [
+  {
+   "t": "PD-mux가 4모델 전부에서 fused 대비 약 3배 [CS-OK] — 철회",
+   "s": "PROJECT_STATUS.md:6664-6750"
+  },
+  {
+   "t": "'PD 분리 자체는 항상 이득' — 반증",
+   "s": "reports/CONSENSUS.md:3680"
+  },
+  {
+   "t": "d16 TTFT 7.24 s 크기 [CS-OK] — 폐기 벤치·n=1, 방향만",
+   "s": "reports/CONSENSUS.md:3683"
+  },
+  {
+   "t": "ρ ≈ 1.16을 '동거 간섭의 크기'로 쓰기 [CS-OK], ρ를 HE0의 원인으로 쓰기",
+   "s": "PROJECT_STATUS.md:31"
+  },
+  {
+   "t": "'3% 게이트 미만'(HE0 크기) — REFUTED",
+   "s": "reports/CONSENSUS.md:3664-3672"
+  },
+  {
+   "t": "'decode 과다공급은 무해'를 조건 없이",
+   "s": "reports/CONSENSUS.md:3685"
+  },
+  {
+   "t": "gate를 'one-way ratchet'으로 부르기",
+   "s": "reports/CONSENSUS.md:3689"
+  },
+  {
+   "t": "knee를 floor 공식에 대입, attn 비중 수치",
+   "s": "reports/CONSENSUS.md:3684"
+  },
+  {
+   "t": "'true dual이 얽힘을 깬다'",
+   "s": "PROJECT_STATUS.md:9282-9321"
+  },
+  {
+   "t": "'이미 검증됐다', P_gen+recal 없이 얻은 우세",
+   "s": "reports/system_design_anchor_2026-09-30.md:24"
+  },
+  {
+   "t": "sim/micro의 per-layer 이득(1.37–2.02×)을 실엔진 결론으로 [CS-OK]",
+   "s": "../CLAUDE.md (방법론 게이트 1)"
+  }
+ ],
+ "now": [
+  {
+   "q": "축과 결합을 한 장으로",
+   "f": "이 페이지",
+   "st": "2026-10-15 신설",
+   "g": "current"
+  },
+  {
+   "q": "프로젝트 전체 현재 상태",
+   "f": "PROJECT_STATUS.md 상단 1–180행 배너 (최신이 맨 위)",
+   "st": "'최종 갱신' 줄은 2026-10-13. 10-15 F3·F4 배너는 있음, Q1 결정·2회차 감사는 아직 없음",
+   "g": "stale"
+  },
+  {
+   "q": "비용 구조가 얼마나 섰나",
+   "f": "COSTMODEL.md",
+   "st": "최신 (2026-10-13 CM-4 반영)",
+   "g": "current"
+  },
+  {
+   "q": "트랙별 현재",
+   "f": "tracks/<트랙>.md (각 worktree)",
+   "st": "main.md는 Q1을 아직 대기로 표기",
+   "g": "stale"
+  },
+  {
+   "q": "사용자 결정 대기",
+   "f": "tools/claude/inbox.sh",
+   "st": "트랙 파일을 그대로 모으므로 main.md 지연을 그대로 물려받음",
+   "g": "stale"
+  },
+  {
+   "q": "10-15 결정·감사 원문",
+   "f": "workspace/engine-port/results/handoff_review_2026-10-15/",
+   "st": "가장 최신. DECISIONS_Q1, VERDICT round2는 미커밋",
+   "g": "current"
+  },
+  {
+   "q": "claim 등급",
+   "f": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:607-642",
+   "st": "2026-10-04 이후 미갱신. 그 뒤 결과는 STATUS 배너·CONSENSUS §1 행 37·38",
+   "g": "stale"
+  },
+  {
+   "q": "확정 문장·인용 금지 전문",
+   "f": "reports/CONSENSUS.md (rev95)",
+   "st": "최신. 단 DOCUMENT_STATUS.md는 이 파일을 historical로 분류(불일치)",
+   "g": "scoped"
+  },
+  {
+   "q": "스케줄러 설계 좌표계",
+   "f": "reports/system_design_anchor_2026-09-30.md",
+   "st": "고정 설계 기준선. 결과 정본 아님",
+   "g": "code"
+  }
+ ],
+ "docs": [
+  {
+   "q": "전체 현재 상태",
+   "f": "PROJECT_STATUS.md 1–180행"
+  },
+  {
+   "q": "비용 항 진척 CM-1…7",
+   "f": "COSTMODEL.md"
+  },
+  {
+   "q": "claim 등급",
+   "f": "reports/paper/CLAIM_EVIDENCE_MATRIX.md:607-642"
+  },
+  {
+   "q": "다음 gate",
+   "f": "reports/paper/EXPERIMENT_ROADMAP.md + handoff_review_2026-10-15/DISCUSSION_INDEX_2026-10-15.md"
+  },
+  {
+   "q": "설계 좌표계·사다리",
+   "f": "reports/system_design_anchor_2026-09-30.md"
+  },
+  {
+   "q": "비용 설계 공간",
+   "f": "reports/cost_model_design_space_2026-10-01.md"
+  },
+  {
+   "q": "정의의 사각지대",
+   "f": "reports/definition_blind_spots_2026-10-01.md"
+  },
+  {
+   "q": "SLO·TTFT 정의 근거",
+   "f": "reports/slo_definition_rationale_2026-10-04.md"
+  },
+  {
+   "q": "정적·런타임 요인 지도",
+   "f": "handoff_review_2026-10-15/AGENDA_methodology_2026-10-15.md §4"
+  },
+  {
+   "q": "확정 문장·인용 금지",
+   "f": "reports/CONSENSUS.md"
+  },
+  {
+   "q": "VESSL 실행 규약",
+   "f": "handoff-report/vessl_operating_model_2026-10-02.md"
+  },
+  {
+   "q": "환경·패치·부팅",
+   "f": "workspace/engine-port/RESUME.md (연구 상태 절은 stale)"
+  }
+ ],
+ "nouse": [
+  {
+   "t": "deprecated/ — historical_root(옛 루트 reports, PAPER_RESULTS·FINAL_SUMMARY 포함), quarantine_*, results/arxiv, logs",
+   "s": "deprecated/README.md"
+  },
+  {
+   "t": "deprecated_v2/ — triton × Zamba2 스코프 없이는 인용 금지인 수치 모음. Nemotron-H로 옮겨 쓰지 말 것",
+   "s": "deprecated_v2/README.md"
+  },
+  {
+   "t": "CLAUDE_CODE_SESSION_SUMMARY.md (2026-07-22, R1/R2 이전) · REORG_PLAN.md (2026-07-24 원안)",
+   "s": "저장소 루트"
+  },
+  {
+   "t": "reports/ 안 Superseded 7개: realtrace_findings_and_open_branches, slo_aware_scheduling_design, policy_comparison, system_vs_engine_vs_sim, prefill_vs_decode_execution, r1_dual_worker_progress, r1_dual_worker/job_862512",
+   "s": "reports/"
+  },
+  {
+   "t": "reports/research_arc.md, reports/synthesis_2026-09-22/, layertype_dynamic_*_2026-08-04.md — 이력 서사, 일부 문장 인용 금지",
+   "s": "reports/"
+  }
+ ],
+ "daterules": [
+  {
+   "t": "handoff-report/의 날짜 파일 65개는 최신 1개를 빼면 이력. 2026-10-15 세션 인계물은 handoff-report가 아니라 workspace/engine-port/results/handoff_review_2026-10-15/에 있다.",
+   "s": "handoff-report/"
+  },
+  {
+   "t": "같은 주제의 날짜 파일이 여럿이면 정본(STATUS·CONSENSUS·COSTMODEL)이 가리키는 것만 현재다. 정본이 가리키지 않으면 이력으로 본다.",
+   "s": "정본 위계"
+  },
+  {
+   "t": "VERDICT 파일은 회차 번호가 큰 것이 우선이고, 같은 대상 감사는 최대 2회 뒤 사용자 결정으로 넘어간다. 예: VERDICT_spec_v0_1_and_closure_round2가 VERDICT_spec_v0_and_closure를 대체, SPEC …_preaudit_snapshot은 이력.",
+   "s": "memory: track-model-harness.md"
+  }
+ ]
 }
 </script>
 
@@ -487,6 +2440,92 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   var GL = {current:'최신',serving:'serving',scoped:'scoped',structure:'structure',code:'code',derived:'derived',open:'open',refuted:'refuted',nogo:'NO-GO',decided:'decided',stale:'stale'};
   function chip(g){return '<span class="chip '+(g==='stale'?'stale':g==='current'?'g-serving':'g-'+g)+'">'+esc(GL[g]||g)+'</span>';}
   function mini(id){var a=axById[id]; return '<span class="mini" style="background:'+LC[a.L]+'" title="'+esc(a.name)+'">'+id+'</span>';}
+
+
+  var LT = {E:'var(--E-t)',M:'var(--M-t)',U:'var(--U-t)',H:'var(--H-t)',S:'var(--S-t)'};
+  var SN={E1:'Phase',E2:'SM 분할',E3:'정책·제어',E4:'Prefill 입도',E5:'Admission',E6:'엔진 패치',M7:'모델 조성',U8:'워크로드',H9:'기판',S10:'SLO·지표',S11:'계측·봉인'};
+  function shortName(a){return SN[a.id]||a.name.split(' (')[0];}
+  function txt(x,y,lines,cls,anchor){
+    var lh=14, y0=y-(lines.length-1)*lh/2+4;
+    return lines.map(function(l,i){return '<text class="'+cls+'" x="'+x+'" y="'+(y0+i*lh)+'" text-anchor="'+(anchor||'middle')+'">'+esc(l)+'</text>';}).join('');
+  }
+  function markers(pfx){
+    function mk(id,col){return '<marker id="'+pfx+id+'" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" style="fill:'+col+'"/></marker>';}
+    return '<defs>'+mk('n','var(--muted)')+mk('h','var(--bad)')+'</defs>';
+  }
+  function clip(dx,dy,hw,hh){var ax=Math.abs(dx),ay=Math.abs(dy); var t=Math.min(ax?hw/ax:1e9, ay?hh/ay:1e9); return t;}
+  function flowSVG(a){
+    var f=a.flow, CW=200, RH=86, NW=130, NH=46;
+    var cols=0, rows=0, pos={};
+    f.n.forEach(function(n){cols=Math.max(cols,n[1]+1); rows=Math.max(rows,n[2]+1);});
+    var W=cols*CW, H=rows*RH+6;
+    f.n.forEach(function(n){pos[n[0]]={x:n[1]*CW+CW/2, y:n[2]*RH+RH/2+3, k:n[4], t:n[3]};});
+    var pfx='m'+a.id+'f';
+    var o='<svg viewBox="0 0 '+W+' '+H+'" style="max-width:'+Math.round(W*1.15)+'px" role="img" aria-label="'+esc(a.name+' 흐름도: '+f.cap)+'">'+markers(pfx);
+    f.e.forEach(function(e){
+      var A=pos[e[0]], B=pos[e[1]], dx=B.x-A.x, dy=B.y-A.y, L=Math.sqrt(dx*dx+dy*dy);
+      var ta=clip(dx,dy,NW/2+3,NH/2+3), tb=clip(dx,dy,NW/2+4,NH/2+4);
+      var x1=A.x+dx*ta, y1=A.y+dy*ta, x2=B.x-dx*tb, y2=B.y-dy*tb;
+      var st=e[3]==='hot'?'stroke:var(--bad);stroke-width:2':(e[3]==='open'?'stroke:var(--muted);stroke-width:1.3;stroke-dasharray:4 3':'stroke:var(--muted);stroke-width:1.3');
+      o+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" style="'+st+';fill:none" marker-end="url(#'+pfx+(e[3]==='hot'?'h':'n')+')"/>';
+      if(e[2]){
+        var mx=(x1+x2)/2, my=(y1+y2)/2;
+        if(Math.abs(dy)<1){my-=7;} else if(Math.abs(dx)<1){mx+=6;}
+        o+='<text class="et'+(e[3]==='hot'?' hot':'')+'" x="'+mx.toFixed(1)+'" y="'+my.toFixed(1)+'" text-anchor="'+(Math.abs(dx)<1?'start':'middle')+'">'+esc(e[2])+'</text>';
+      }
+    });
+    f.n.forEach(function(n){
+      var P=pos[n[0]], k=n[4], st;
+      if(k==='in') st='fill:var(--sunk);stroke:var(--line)';
+      else if(k==='out') st='fill:'+LT[a.L]+';stroke:'+LC[a.L];
+      else if(k==='bad') st='fill:var(--bad-t);stroke:var(--bad)';
+      else if(k==='open') st='fill:var(--bg);stroke:var(--muted);stroke-dasharray:4 3';
+      else st='fill:var(--surface);stroke:var(--muted)';
+      o+='<rect x="'+(P.x-NW/2)+'" y="'+(P.y-NH/2)+'" width="'+NW+'" height="'+NH+'" rx="7" style="'+st+';stroke-width:1.2"/>';
+      o+=txt(P.x,P.y,P.t.split('\n'),'nt');
+    });
+    return o+'</svg>';
+  }
+  function neighbors(id){
+    var m={}, order=[];
+    D.couplings.forEach(function(c){ if(c.ax.indexOf(id)<0) return; c.ax.forEach(function(x){ if(x===id) return; if(!m[x]){m[x]=[];order.push(x);} m[x].push(c.k);});});
+    order.sort(function(x,y){return ids0.indexOf(x)-ids0.indexOf(y);});
+    return order.map(function(x){return {id:x,ks:m[x]};});
+  }
+  var ids0=D.axes.map(function(a){return a.id;});
+  function relSVG(a){
+    var nb=neighbors(a.id), RH=38, top=12, n=Math.max(nb.length,1), H=top*2+n*RH, W=520;
+    var cx=70, cy=H/2, CWd=124, NX=200, NW=112, NH=28;
+    var o='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(a.name+' 관계도: '+nb.map(function(q){return axById[q.id].name+'('+q.ks.join(', ')+')';}).join(', '))+'">';
+    nb.forEach(function(q,i){
+      var y=top+i*RH+RH/2, hot=q.ks.indexOf('얽힘')>=0||q.ks.length>=3, w=1+0.9*q.ks.length;
+      var x1=cx+CWd/2, x2=NX;
+      o+='<path d="M'+x1+','+cy+' C'+(x1+50)+','+cy+' '+(x2-50)+','+y+' '+x2+','+y+'" style="fill:none;stroke:'+(hot?'var(--bad)':'var(--muted)')+';stroke-width:'+w+';opacity:.8"/>';
+    });
+    nb.forEach(function(q,i){
+      var y=top+i*RH+RH/2, b=axById[q.id], hot=q.ks.indexOf('얽힘')>=0||q.ks.length>=3;
+      o+='<rect x="'+NX+'" y="'+(y-NH/2)+'" width="'+NW+'" height="'+NH+'" rx="14" style="fill:'+LT[b.L]+';stroke:'+LC[b.L]+';stroke-width:1.2"/>';
+      o+=txt(NX+NW/2,y,[q.id+' '+shortName(b)],'nt');
+      o+='<text class="et'+(hot?' hot':'')+'" x="'+(NX+NW+10)+'" y="'+(y+4)+'" text-anchor="start">'+esc(q.ks.join(' · '))+'</text>';
+    });
+    o+='<rect x="'+(cx-CWd/2)+'" y="'+(cy-20)+'" width="'+CWd+'" height="40" rx="20" style="fill:'+LC[a.L]+';stroke:'+LC[a.L]+'"/>';
+    o+='<text class="nt" x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" style="fill:var(--bg);font-weight:700">'+esc(a.id+' '+shortName(a))+'</text>';
+    if(!nb.length) o+='<text class="et" x="'+NX+'" y="'+(cy+4)+'">정본이 명시한 결합 없음</text>';
+    return o+'</svg>';
+  }
+  function netSVG(){
+    var W=600, H=460, cx=W/2, cy=H/2, R=190, NW=118, NH=30, P={};
+    ids0.forEach(function(id,i){var t=-Math.PI/2+2*Math.PI*i/ids0.length; P[id]={x:cx+R*1.12*Math.cos(t), y:cy+R*Math.sin(t)};});
+    var cnt={};
+    D.couplings.forEach(function(c){for(var i=0;i<c.ax.length;i++)for(var j=i+1;j<c.ax.length;j++){var k=[c.ax[i],c.ax[j]].sort().join('|'); cnt[k]=(cnt[k]||0)+1;}});
+    var o='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="축 11개와 결합 14개의 전체 관계도. E1 phase와 E2 SM 분할에 결합이 가장 많이 몰린다.">';
+    Object.keys(cnt).forEach(function(k){var ab=k.split('|'), A=P[ab[0]], B=P[ab[1]], n=cnt[k];
+      o+='<line x1="'+A.x.toFixed(1)+'" y1="'+A.y.toFixed(1)+'" x2="'+B.x.toFixed(1)+'" y2="'+B.y.toFixed(1)+'" style="stroke:'+(n>=3?'var(--bad)':'var(--muted)')+';stroke-width:'+(0.8+1.1*n)+';opacity:'+(n>=2?.85:.45)+'"/>';});
+    ids0.forEach(function(id){var a=axById[id], p=P[id];
+      o+='<rect x="'+(p.x-NW/2).toFixed(1)+'" y="'+(p.y-NH/2).toFixed(1)+'" width="'+NW+'" height="'+NH+'" rx="15" style="fill:'+LT[a.L]+';stroke:'+LC[a.L]+';stroke-width:1.3"/>';
+      o+=txt(p.x,p.y,[id+' '+shortName(a)],'nt');});
+    return o+'</svg>';
+  }
 
   // legend
   var lg=document.getElementById('legend');
@@ -507,14 +2546,17 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
       var c=el('article','card'); c.style.setProperty('--c',LC[a.L]); c.id='ax-'+a.id;
       var h='<div class="top"><h3>'+esc(a.name)+'</h3><span class="id">'+a.id+'</span></div>';
       h+='<div class="vocab">'+esc(a.vocab)+'</div>';
-      h+='<div><div class="k">확정·결정</div><ul>'+a.facts.map(function(f){return '<li>'+chip(f.g)+' '+esc(f.t)+(f.c?'<span class="cav">함께 적을 것: '+esc(f.c)+'</span>':'')+'<span class="sp">'+esc(f.s)+'</span></li>';}).join('')+'</ul></div>';
-      h+='<div><div class="k">열린 것</div><ul>'+a.open.map(function(f){return '<li>'+esc(f.t)+'<span class="sp">'+esc(f.s)+'</span></li>';}).join('')+'</ul></div>';
+      h+='<figure class="fl"><div class="fig-k">흐름도 · 이 축 안에서</div><div class="svgbox">'+flowSVG(a)+'</div><figcaption>'+esc(a.flow.cap)+'</figcaption></figure>';
+      h+='<div class="lower"><figure class="rel"><div class="fig-k">관계도 · 다른 축과</div><div class="svgbox">'+relSVG(a)+'</div><figcaption>오른쪽 이름은 §3 결합 목록의 이름입니다. 선이 굵을수록 그 축과 묶인 결합이 많고, 붉은 선은 얽힘 사슬이나 결합 3개 이상입니다.</figcaption></figure>';
+      h+='<div class="lists"><div><div class="k">확정·결정</div><ul>'+a.facts.map(function(f){return '<li>'+chip(f.g)+' '+esc(f.t)+(f.c?'<span class="cav">함께 적을 것: '+esc(f.c)+'</span>':'')+'<span class="sp">'+esc(f.s)+'</span></li>';}).join('')+'</ul></div>';
+      h+='<div><div class="k">열린 것</div><ul>'+a.open.map(function(f){return '<li>'+esc(f.t)+'<span class="sp">'+esc(f.s)+'</span></li>';}).join('')+'</ul></div></div></div>';
       h+='<div class="foot">'+a.cm.map(function(x){return '<span class="pill">'+esc(x)+'</span>';}).join('')+a.tracks.map(function(x){return '<span class="pill">트랙 '+esc(x)+'</span>';}).join('')+'</div>';
       c.innerHTML=h; cs.appendChild(c);
     });
     g.appendChild(cs); G.appendChild(g);
   });
 
+  document.getElementById('net-svg').innerHTML=netSVG();
   // couplings
   var CL=document.getElementById('cpl');
   var cards=D.couplings.map(function(c){
