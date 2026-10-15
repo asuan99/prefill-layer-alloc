@@ -8,7 +8,7 @@ anchor(`reports/system_design_anchor_2026-09-30.md`) 주장 1 — generic 예측
 ## cost model 기여
 - 채우는 칸: CM-1(`s_attn` vs `s_ssm`), CM-4(`δ(p,d)` + lockstep span 정지 분리), CM-5(장문 KV vs mamba 슬롯, cap 결합)
 - 이번에 알게 된 것: 측정 0. 유도값으로 cap 실현 창 `λ·E[out]·E[ITL] ≤ C ≤ min(C_mem, C_SLO)`을 정리했다. Nano-9B-v2에서 cap 48은 ctx≈52k 이하에서 KV보다 먼저 문다. 근거: `results/handoff_review_2026-10-15/COSTMODEL_running_cap_2026-10-15.md`
-- promote 필요: 예 — 측정 아님. 아래 문서 정정과 결정 F3·F4 반영만 해당
+- promote 필요: 아니오 (2026-10-15 promote 완료)
 ## 현재 상태
 - **사용자 결정(2026-10-15)**:
   - (F1) 옛 환경 전제(SLURM·KISTI)는 무시하고 실행은 VESSL.
@@ -36,7 +36,7 @@ anchor(`reports/system_design_anchor_2026-09-30.md`) 주장 1 — generic 예측
 - **Q4–Q24** — DISCUSSION_INDEX 표의 권고 열 참조(공통 명세, lockstep 특성화, cap, 비용 모델, 통합 순서)
 - 기존 유지: radix(OFF+편차 공시) · 128k 프로브(Q6 floor 측정과 결합 가능) · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## promote 때 반영 (main 전용)
-`CLAUDE.md` "4모델 전부 fused를 이김" 정정 · 메모리 `engine-port-p0-triage.md:42` 정정 · F3·F4를 MEMORY·`tracks/amd.md`·`tracks/multigpu.md`에
+완료(2026-10-15): CLAUDE.md fused 문장·메모리 `engine-port-p0-triage.md` 정정, F3·F4를 MEMORY·PROJECT_STATUS·amd·multigpu 트랙에 기록
 ## 실행 중·미회수 Job
 - 없음 (Workspace `pdmux-probe`·`pdmux-build` standby)
 ## 금지 서술 (링크만)

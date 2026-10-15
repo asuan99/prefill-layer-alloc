@@ -2,6 +2,9 @@
 
 최종 갱신: 2026-10-13 (doc-steward — **N2(3-a) Job-EA(E-α 동거 측정) `pdmux-n2-static-grid-7e09cc3-20261013022149` 재집계·결과 감사 반영: 死因 0·등록 라벨 반전 0·기계적 `CONFIRMED`; ρ ≈ 1.16은 '동거 + 전력 한도 클럭 하락' 합성값(C 창 64/64 SW power cap 노출)으로 크기 해석 분리; 규칙 봉인 rev18 `5ea2a60`(digest `56473d6f…`)·하네스 봉인 PROFILE+EA `7e09cc3`(`9257845f…`)**; 새 성능·정책 판정 0건·게이트 #6·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #268–270 = `CONSENSUS §3` 항목293–295 = 교훈 281–283(세 번호 축은 서로 다름). 아래 (a⁶) 절은 2026-10-13 신설, (a⁵)의 규칙 봉인 `5e29990`/하네스 `a5de2d6`/"결과 감사 대기"·다음 gate 서술은 HISTORICAL). 이전 최종 갱신(2026-10-12, HISTORICAL — 현재 상태는 위·(a⁶)): 2026-10-12 (doc-steward — **N2(3-a) 규칙 봉인 갱신 `5e29990`(digest `fc9e6404…`)·Job-PROFILE 하네스 재봉인 `a5de2d6`(harness_digest `97334df9…`)·두 번째 Job 완주 exit 0 + 회수 sha256 OK, 결과 감사 대기**; 새 성능 판정 0건·게이트 #6·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #267 = `CONSENSUS §3` 항목292 = 교훈 280(세 번호는 서로 다른 축). 아래 (a⁵) 절은 2026-10-12 신설, (a‴)의 규칙 봉인·다음 gate 서술은 HISTORICAL). 이전 최종 갱신(2026-10-11, HISTORICAL — 현재 상태는 위·(a⁵)): 2026-10-11 (doc-steward — **N2(3-a) 규칙 봉인 `fcc0b9e`·Job-PROFILE 하네스 `1037655`(미봉인) 상태 등재**; 새 성능 판정 0건·게이트 #6·HE0·Claim D/E 등급 불변; 신규 방법론 게이트 #264 = `CONSENSUS §3` 항목289 = 교훈 277). 아래 (a‴) 절은 2026-10-11 신설. **추가(2026-10-11, doc-steward, 2차)**: (a⁗) AMD 병행 트랙 제안 등재 — 측정 0·새 성능 판정 0·Claim/게이트 #6/HE0/§1-3/§1-4 불변, 신규 게이트 #265–266.
 
+**(2026-10-15, doc-steward — F3·F4 결정 등재·CLAUDE.md fused 문장 정정; 측정 0·판정 불변)** 사용자 결정 F3 = true dual worker는 AMD 트랙 전용, F4 = main의 lockstep PD-mux 구조를 multi-GPU PD-mux로 이양(단일 GPU 결과 = lockstep 기판 범위; 근거 `workspace/engine-port/results/handoff_review_2026-10-15/`).
+작업 루트 `CLAUDE.md` "4모델 전부 fused를 이김" 문장을 본 문서 6664-6750(2026-08-05 정정)·CONSENSUS §1-1 허용 문장(Zamba2 +40.5%/+185.8%, Granite +27.0%, 미조율 fused 대비, 기전 귀속 미확립)으로 정정. 이 정정은 정본을 바꾸지 않고 하위 문서를 정본에 맞춘 것이며 새 성능 주장·게이트 #6·HE0·Claim D/E 등급 불변.
+
 
 **(a⁶) N2(3-a, 정적 격자) Job-EA(E-α 동거 측정) — 완주·재집계·결과 감사 완료: 死因 0, 등록 라벨 반전 0, 기계적 `CONFIRMED`; ρ의 크기 해석은 분리됨 (2026-10-13 신설, 이 세션 GPU 0·새 성능·정책 판정 0건 — 성분 측정 결과 감사)**
 

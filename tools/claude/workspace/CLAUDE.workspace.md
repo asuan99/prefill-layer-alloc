@@ -32,7 +32,7 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
 
 ## 현재 결론 (재도출 금지 — 이미 확정된 것)
 
-- PD 분리(agnostic PD-mux) 자체는 4모델 전부서 fused를 이김. **운영점 = cudagraph-ON**.
+- A100·cudagraph-ON에서, 미조율 기본 fused 대비 PD-mux 활성화의 꼬리 SLO goodput 우위는 Zamba2-2.7B +40.5%(r2)·+185.8%(r3), Granite-4.0-h-micro +27.0%(r4)다. 기전 귀속은 미확립. "4모델 전부·~3×"는 철회됨(묶음 처치 3-플래그, fused 미조율; PROJECT_STATUS.md:6664-6750 2026-08-05 정정, CONSENSUS §1-1, 2026-10-15 REVIEW_handoff_prompt §1). **운영점 = cudagraph-ON**.
 - **layer-type 런타임 정책은 全형태 死**(서빙 직접 측정으로 반증; coordinated per-type
   TPOT 42→124ms). 시뮬레이터의 per-layer 이득(1.37–2.02×)은 실엔진으로 전이되지 않음.
 - **단일-GPU 동적 제어(SLO-aware/binding-first/gate)는 best decode-heavy static을 못 넘음**
