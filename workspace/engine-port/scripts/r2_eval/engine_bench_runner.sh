@@ -4,6 +4,50 @@ set -euo pipefail
 
 run_record="${1:?run record required}"
 run_dir="${2:?run directory required}"
+shift 2
+# ---- multi-GPU options (2026-10-12, multi-GPU track M2).  ALL default to the single-GPU
+# behaviour: with none of them given, server_args.txt is byte-identical to before.
+#   --tp-size N     tensor parallel over N GPUs.  --max-running-requests becomes 48*N, i.e. the run
+#                   record's (per-GPU) value times N (user decision 2026-10-12, design section 9-4).
+#   --dp-size N     N independent replicas, round_robin routing (fixed).  Without DP-attention,
+#                   SGLang's --max-running-requests is PER REPLICA (model_runner_kv_cache_mixin.py
+#                   divides by dp_size only when enable_dp_attention; scheduler reports
+#                   effective_max_running_requests_per_dp), so the record's value (48) is passed
+#                   unchanged: 48 per replica.
+#   --gpu-ids L     comma list, e.g. 0,1,2,3 -> CUDA_VISIBLE_DEVICES (pre-registrable subset of an
+#                   x8 node).  Its length must equal tp*dp.
+# Env fallbacks PDMUX_TP_SIZE / PDMUX_DP_SIZE / PDMUX_GPU_IDS (a flag wins).  TP and DP are not mixed.
+tp_size="${PDMUX_TP_SIZE:-1}"
+dp_size="${PDMUX_DP_SIZE:-1}"
+gpu_ids="${PDMUX_GPU_IDS:-}"
+while (( $# )); do
+  case "$1" in
+    --tp-size) tp_size="${2:?--tp-size needs a value}"; shift 2 ;;
+    --dp-size) dp_size="${2:?--dp-size needs a value}"; shift 2 ;;
+    --gpu-ids) gpu_ids="${2:?--gpu-ids needs a value}"; shift 2 ;;
+    *) echo "ERROR: unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+if ! [[ "${tp_size}" =~ ^[1-9][0-9]*$ && "${dp_size}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --tp-size/--dp-size must be positive integers (got tp=${tp_size} dp=${dp_size})" >&2
+  exit 2
+fi
+if (( tp_size > 1 && dp_size > 1 )); then
+  echo "ERROR: TP and DP are not mixed in one cell (tp=${tp_size} dp=${dp_size})" >&2
+  exit 2
+fi
+n_gpus=$(( tp_size * dp_size ))
+if [[ -n "${gpu_ids}" ]]; then
+  if ! [[ "${gpu_ids}" =~ ^[0-9]+(,[0-9]+)*$ ]]; then
+    echo "ERROR: --gpu-ids must be a comma list of GPU indices (got '${gpu_ids}')" >&2; exit 2
+  fi
+  n_ids=$(awk -F, '{print NF}' <<<"${gpu_ids}")
+  n_distinct=$(tr ',' '\n' <<<"${gpu_ids}" | sort -u | wc -l)
+  if (( n_ids != n_gpus || n_distinct != n_ids )); then
+    echo "ERROR: --gpu-ids '${gpu_ids}' must list exactly tp*dp=${n_gpus} distinct GPUs" >&2; exit 2
+  fi
+  export CUDA_VISIBLE_DEVICES="${gpu_ids}"
+fi
 mkdir -p "${run_dir}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 engine_root="$(cd "${script_dir}/../.." && pwd)"
@@ -72,6 +116,12 @@ source "${venv_dir}/bin/activate"
 export PYTHONPATH="${engine_root}/benchmarks${PYTHONPATH:+:${PYTHONPATH}}"
 export PDMUX_WORKLOAD_ID="${workload}"
 
+# Effective cap: TP scales with N (48*N); DP and N=1 keep the record's value (per replica).
+max_running_effective="${max_running}"
+if (( tp_size > 1 )); then
+  max_running_effective=$(( max_running * tp_size ))
+fi
+
 server_args=(
   --model-path "${model}"
   --trust-remote-code
@@ -86,7 +136,7 @@ server_args=(
   --attention-backend "${PDMUX_ATTENTION_BACKEND:-triton}"
   --disable-radix-cache
   --mem-fraction-static "${PDMUX_MEM_FRACTION:-0.82}"
-  --max-running-requests "${max_running}"
+  --max-running-requests "${max_running_effective}"
   --context-length "${PDMUX_CONTEXT_LENGTH:-16384}"
   --random-seed "${server_seed}"
   --host 127.0.0.1
@@ -103,6 +153,14 @@ fi
 if [[ "${PDMUX_DISABLE_CUDA_GRAPH:-0}" == 1 ]]; then
   server_args+=(--disable-cuda-graph --disable-piecewise-cuda-graph)
 fi
+if (( tp_size > 1 )); then
+  server_args+=(--tp-size "${tp_size}")
+fi
+if (( dp_size > 1 )); then
+  # round_robin is the registered routing (design section 4-3); shortest-queue-style methods
+  # are a sensitivity arm and would need their own, explicit launcher change.
+  server_args+=(--dp-size "${dp_size}" --load-balance-method round_robin)
+fi
 
 # Provenance: the exact tuple this boot was launched with, one argument per
 # line, written BEFORE the launch so it exists even if the server dies during
@@ -112,6 +170,22 @@ fi
 # fact.  PDMUX_DRY_RUN=1 stops here, so the tuple can be inspected on a login
 # node with no GPU and no model load.
 printf '%s\n' "${server_args[@]}" >"${run_dir}/server_args.txt"
+# Communication env: record "unset" by default (a value is a PREREG decision; a PREREG can pin
+# values through PDMUX_COMM_ENV_PIN="K=V,K=V", exported here so record and run cannot differ).
+if [[ -n "${PDMUX_COMM_ENV_PIN:-}" ]]; then
+  while IFS='=' read -r pin_k pin_v; do
+    [[ -n "${pin_k}" ]] && export "${pin_k}=${pin_v}"
+  done < <(tr ',' '\n' <<<"${PDMUX_COMM_ENV_PIN}")
+fi
+jit_flag=()
+[[ "${PDMUX_ALLOW_JIT_ALL_REDUCE:-0}" == 1 ]] && jit_flag=(--allow-jit-all-reduce)
+if (( n_gpus > 1 )); then
+  python "${script_dir}/multigpu_cell_meta.py" comm-env --out "${run_dir}/comm_env.json" \
+    ${jit_flag[@]+"${jit_flag[@]}"} || exit $?
+else
+  python "${script_dir}/multigpu_cell_meta.py" comm-env --out "${run_dir}/comm_env.json" \
+    --allow-jit-all-reduce || true
+fi
 if [[ "${PDMUX_DRY_RUN:-0}" == 1 ]]; then
   printf '%s\n' "${server_args[@]}"
   exit 0
@@ -142,6 +216,12 @@ done
 curl -fsS "http://127.0.0.1:${port}/health" >/dev/null
 curl -fsS "http://127.0.0.1:${port}/model_info" \
   >"${run_dir}/model_info.json"
+# KV / mamba capacity the server actually got (audit C-5) -- recorded for every cell.
+curl -fsS "http://127.0.0.1:${port}/server_info" >"${run_dir}/server_info.json" 2>/dev/null || true
+python "${script_dir}/multigpu_cell_meta.py" server-facts --log "${run_dir}/server.log" \
+  --server-info "${run_dir}/server_info.json" --out "${run_dir}/cell_meta.json" \
+  --tp "${tp_size}" --dp "${dp_size}" --max-running-requested "${max_running_effective}" \
+  --gpu-ids "${gpu_ids}" || true
 
 python -m pdmux_eval.trace_loadgen \
   --endpoint "http://127.0.0.1:${port}/generate" \
@@ -149,4 +229,5 @@ python -m pdmux_eval.trace_loadgen \
   --output "${run_dir}/requests.jsonl" \
   --summary "${run_dir}/summary.json" \
   --ttft-slo-ms "${ttft_slo}" \
-  --itl-slo-ms "${itl_slo}"
+  --itl-slo-ms "${itl_slo}" \
+  ${PDMUX_CLIENT_CONNECTOR_LIMIT:+--connector-limit "${PDMUX_CLIENT_CONNECTOR_LIMIT}"}

@@ -1,0 +1,7 @@
+{
+ "soft_before": 1048576,
+ "hard": 1048576,
+ "required": 8192,
+ "soft_after": 1048576,
+ "ok": true
+}

@@ -1,0 +1,17 @@
+[
+ {
+  "shape": "A",
+  "type": "warmup"
+ },
+ {
+  "block": "m2g_g5a",
+  "ext": 0,
+  "n_req": 287,
+  "offered": 4.784,
+  "round": 1,
+  "rung": "G5A",
+  "seed": 4386,
+  "shape": "A",
+  "type": "cell"
+ }
+]

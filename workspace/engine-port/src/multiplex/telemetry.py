@@ -67,8 +67,15 @@ class AsyncJsonlTelemetry:
         max_events: int = 65536,
         flush_every: int = 128,
         flush_interval_s: float = 1.0,
+        static_fields: Optional[Dict[str, Any]] = None,
     ):
         self.path = Path(path) if path else None
+        # Per-process constant fields merged into EVERY record (2026-10-12,
+        # multi-GPU M2: `tp_rank`/`dp_rank` from multigpu_guard.rank_fields).
+        # Default None/empty adds no key, so a single-GPU record is
+        # byte-identical to the pre-change schema.  A field the caller passes
+        # to `emit` explicitly wins (setdefault).
+        self.static_fields: Dict[str, Any] = dict(static_fields or {})
         self.run_id = run_id
         self.workload_id = workload_id
         self.flush_every = max(1, int(flush_every))
@@ -99,6 +106,8 @@ class AsyncJsonlTelemetry:
         if self._closed or self.path is None:
             return False
         fields.setdefault("dropped_events", self.dropped_events)
+        for key, value in self.static_fields.items():
+            fields.setdefault(key, value)
         item = RuntimeEvent(
             run_id=self.run_id,
             workload_id=self.workload_id,

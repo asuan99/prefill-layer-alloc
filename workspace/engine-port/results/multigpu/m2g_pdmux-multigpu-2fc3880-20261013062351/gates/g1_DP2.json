@@ -1,0 +1,56 @@
+{
+ "boots_dir": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-2fc3880-20261013062351/boots",
+ "config": "DP2",
+ "detail": {
+  "fused|agnostic": {
+   "abnormal_exit": false,
+   "alive_after": {
+    "agnostic": true,
+    "fused": true
+   },
+   "ctl_m_median": 1.0,
+   "ctl_q": 0.3125,
+   "exposure_detail": {
+    "e_time": 0.5732552264139764,
+    "exposure_steps": 0.47763351992419134,
+    "reasons": [],
+    "status": "OK",
+    "window": [
+     3890070.144642936,
+     3890080.743910647
+    ]
+   },
+   "exposure_split_steps": 0.47763351992419134,
+   "m_median": 1.0,
+   "q": 0.3125,
+   "verdict": "PASS"
+  },
+  "fused|d44": {
+   "abnormal_exit": false,
+   "alive_after": {
+    "d44": true,
+    "fused": true
+   },
+   "ctl_m_median": 1.0,
+   "ctl_q": 0.296875,
+   "exposure_detail": {
+    "e_time": 0.7019293208481155,
+    "exposure_steps": 0.6187322180493912,
+    "reasons": [],
+    "status": "OK",
+    "window": [
+     3890145.485296647,
+     3890156.134352335
+    ]
+   },
+   "exposure_split_steps": 0.6187322180493912,
+   "m_median": 1.0,
+   "q": 0.328125,
+   "verdict": "PASS"
+  }
+ },
+ "verdicts": {
+  "fused|agnostic": "PASS",
+  "fused|d44": "PASS"
+ }
+}

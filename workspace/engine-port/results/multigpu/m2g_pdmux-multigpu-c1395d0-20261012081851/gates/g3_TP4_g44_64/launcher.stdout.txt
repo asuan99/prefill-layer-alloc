@@ -1,0 +1,12 @@
+[Gloo] Rank [Gloo] Rank 21 is connected to  is connected to 33 peer ranks.  peer ranks. Expected number of connected peer ranks is : Expected number of connected peer ranks is : 3[Gloo] Rank 3
+0
+ is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 3 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 1 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 0 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 3[Gloo] Rank  is connected to 32 peer ranks.  is connected to Expected number of connected peer ranks is : 33 peer ranks. 
+Expected number of connected peer ranks is : 3
+[Gloo] Rank [Gloo] Rank 1[Gloo] Rank  is connected to 0[Gloo] Rank 32 is connected to 3 peer ranks.  is connected to 3 is connected to Expected number of connected peer ranks is : 3 peer ranks. 33 peer ranks. Expected number of connected peer ranks is :  peer ranks. 
+Expected number of connected peer ranks is : 3Expected number of connected peer ranks is : 3
+3
+

@@ -1,0 +1,105 @@
+{
+  "dp_rank": 1,
+  "groups": [
+    {
+      "decode": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94480826647344,
+        "green_ctx_is_null": true
+      },
+      "is_sticky_target": false,
+      "prefill": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94480826606496,
+        "green_ctx_is_null": true
+      },
+      "stream_index": 0,
+      "target_decode_sm": 0,
+      "target_prefill_sm": 108
+    },
+    {
+      "decode": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuGreenCtxGetDevResource_rc": 0,
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94480829965520,
+        "green_ctx_is_null": false,
+        "green_sm": {
+          "minSmPartitionSize": 2,
+          "smCoscheduledAlignment": 2,
+          "smCount": 34
+        }
+      },
+      "is_sticky_target": false,
+      "prefill": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuGreenCtxGetDevResource_rc": 0,
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94480832866992,
+        "green_ctx_is_null": false,
+        "green_sm": {
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2,
+          "smCount": 74
+        }
+      },
+      "stream_index": 1,
+      "target_decode_sm": 34,
+      "target_prefill_sm": 74
+    },
+    {
+      "decode": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuGreenCtxGetDevResource_rc": 0,
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94480828098976,
+        "green_ctx_is_null": false,
+        "green_sm": {
+          "minSmPartitionSize": 2,
+          "smCoscheduledAlignment": 2,
+          "smCount": 54
+        }
+      },
+      "is_sticky_target": false,
+      "prefill": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuGreenCtxGetDevResource_rc": 0,
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94480838645472,
+        "green_ctx_is_null": false,
+        "green_sm": {
+          "minSmPartitionSize": 4,
+          "smCoscheduledAlignment": 2,
+          "smCount": 54
+        }
+      },
+      "stream_index": 2,
+      "target_decode_sm": 54,
+      "target_prefill_sm": 54
+    },
+    {
+      "decode": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94480826698272,
+        "green_ctx_is_null": true
+      },
+      "is_sticky_target": false,
+      "prefill": {
+        "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+        "cuStreamGetGreenCtx_rc": 0,
+        "cuda_stream_ptr": 94480826697504,
+        "green_ctx_is_null": true
+      },
+      "stream_index": 3,
+      "target_decode_sm": 108,
+      "target_prefill_sm": 0
+    }
+  ],
+  "note": "engine-side driver read-out; nsys is deliberately NOT consulted",
+  "probe": "pdmux_green_readout",
+  "sticky_target_index": null,
+  "tp_rank": 0
+}

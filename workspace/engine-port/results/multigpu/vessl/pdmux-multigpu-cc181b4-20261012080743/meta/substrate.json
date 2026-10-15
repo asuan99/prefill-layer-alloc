@@ -1,0 +1,123 @@
+{
+  "gpu": {
+    "name": "NVIDIA A100-SXM4-80GB",
+    "uuid": "GPU-7622a41e-d21d-4f99-7c71-64bffc3aed53",
+    "driver_version": "580.105.08",
+    "compute_cap": "8.0",
+    "memory_total": "81920 MiB",
+    "clocks_max_sm": "1410 MHz",
+    "power_limit": "400.00 W",
+    "mig_mode": "Disabled"
+  },
+  "gpu_count": 8,
+  "gpus": [
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-7622a41e-d21d-4f99-7c71-64bffc3aed53",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 0
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-10c42085-494a-b696-c10d-94545d64bbb9",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 1
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-1d5d1732-2184-5230-862f-ccc4020f0d05",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 2
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-2233cde8-1d24-4375-8f34-7f77b60ddc2c",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 3
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-b35f5993-312d-7363-27ce-7709f7f37627",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 4
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-e8e62ec2-8167-3fa9-d0c9-bf13581790ef",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 5
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-6419d5b8-018a-0fb5-2a15-eba1d8ff725f",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 6
+    },
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-ba46e93f-701e-6dee-6033-db2447763aac",
+      "driver_version": "580.105.08",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 7
+    }
+  ],
+  "gpu_uuids": [
+    "GPU-7622a41e-d21d-4f99-7c71-64bffc3aed53",
+    "GPU-10c42085-494a-b696-c10d-94545d64bbb9",
+    "GPU-1d5d1732-2184-5230-862f-ccc4020f0d05",
+    "GPU-2233cde8-1d24-4375-8f34-7f77b60ddc2c",
+    "GPU-b35f5993-312d-7363-27ce-7709f7f37627",
+    "GPU-e8e62ec2-8167-3fa9-d0c9-bf13581790ef",
+    "GPU-6419d5b8-018a-0fb5-2a15-eba1d8ff725f",
+    "GPU-ba46e93f-701e-6dee-6033-db2447763aac"
+  ],
+  "hostname": "job-arri0jqy74p3-bg6pc",
+  "commit": "cc181b4b1351e4fd3be339b3317e255398503aab",
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "spec": "resourcespec-a100x8",
+  "job_name": "pdmux-multigpu-cc181b4-20261012080743",
+  "campaign": "multigpu",
+  "target": "workspace/engine-port/results/multigpu/m2g_job.sh",
+  "array_spec": "",
+  "image_pip_freeze.txt_sha256": "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324",
+  "image_python_torch.txt_sha256": "25072b0933afd254cc50b78a7aa43e34e43af33034036709169f08788d8686d3"
+}

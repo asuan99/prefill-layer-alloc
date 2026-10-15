@@ -1,0 +1,45 @@
+{
+ "arm": "fused_sym",
+ "boot_id": "m2g_TP4_fused_sym",
+ "boot_seconds": 43.024882078170776,
+ "config": "TP4",
+ "contam_status": "VERIFIED",
+ "contamination_pre": {
+  "contam_unverified": false,
+  "gpu_contaminated": false,
+  "reasons": [],
+  "verified": true
+ },
+ "dp": 1,
+ "effective_cap": 192,
+ "gpu_ids": "0,1,2,3",
+ "health_wait_cap_s": 1800.0,
+ "health_wait_s_used": 43.02455282211304,
+ "host": "job-75umct8f7sg6-28cqs",
+ "kind": "g0",
+ "port": 20047,
+ "registered": {
+  "SGLANG_LOG_MS": "1",
+  "attention_backend": "flashinfer",
+  "decode_log_interval": 40,
+  "fd_soft_min": 8192,
+  "health_wait_s": 1800,
+  "sock_read_s": 600
+ },
+ "server_exit_code": null,
+ "server_pid": 14826,
+ "status": "OK",
+ "steps": [
+  {
+   "status": "OK",
+   "type": "cmd"
+  }
+ ],
+ "t_end_epoch": 1791874457.47178,
+ "t_health_epoch": 1791874443.6832051,
+ "t_start_epoch": 1791874400.612251,
+ "teardown_settle_s": 5.3624608516693115,
+ "tp": 4,
+ "ulimit_n_hard": 1048576,
+ "ulimit_n_soft": 1048576
+}

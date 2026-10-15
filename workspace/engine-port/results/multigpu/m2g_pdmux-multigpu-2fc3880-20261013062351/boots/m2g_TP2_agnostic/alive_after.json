@@ -1,0 +1,15 @@
+{
+ "after_step": {
+  "index": 2,
+  "status": "OK",
+  "type": "cell"
+ },
+ "alive": true,
+ "boot_id": "m2g_TP2_agnostic",
+ "health_error": null,
+ "health_http_status": 200,
+ "poll_returncode": null,
+ "schema": "m2g_alive_after/v1",
+ "steps_total": 3,
+ "t_epoch": 1791875242.928306
+}

@@ -1,0 +1,29 @@
+{
+ "snapshot": {
+  "available": true,
+  "gpus": {
+   "0": {
+    "n_compute_procs": 0,
+    "used_mib": 767.25
+   },
+   "1": {
+    "n_compute_procs": 0,
+    "used_mib": 767.25
+   },
+   "2": {
+    "n_compute_procs": 0,
+    "used_mib": 767.25
+   },
+   "3": {
+    "n_compute_procs": 0,
+    "used_mib": 767.25
+   }
+  }
+ },
+ "verdict": {
+  "contam_unverified": false,
+  "gpu_contaminated": false,
+  "reasons": [],
+  "verified": true
+ }
+}

@@ -76,9 +76,21 @@ def _throttled(v):  # bit 0x1 = GpuIdle (not a throttle); any other active bit c
     except ValueError:
         return False
 active = [r for r in body if _throttled(r[4])]
-(meta / "clk_summary.json").write_text(json.dumps(
-    {"samples": len(body), "throttle_active_samples": len(active),
-     "throttle_flag": bool(active)}, indent=2) + "\n")
+summary = {"samples": len(body), "throttle_active_samples": len(active),
+           "throttle_flag": bool(active)}
+# Multi-GPU (2026-10-12): clk.csv has the GPU `index` as column 6 (appended, so columns 1-5 keep
+# their positions).  The three keys above stay the all-GPU totals (identical to before for 1 GPU);
+# per_gpu adds the same counts per index so a throttled GPU on an x8 node is visible.
+if body and all(len(r) >= 6 for r in body):
+    per = {}
+    for r in body:
+        d = per.setdefault(r[5].strip(), {"samples": 0, "throttle_active_samples": 0})
+        d["samples"] += 1
+        d["throttle_active_samples"] += int(_throttled(r[4]))
+    for d in per.values():
+        d["throttle_flag"] = d["throttle_active_samples"] > 0
+    summary["per_gpu"] = dict(sorted(per.items(), key=lambda kv: (len(kv[0]), kv[0])))
+(meta / "clk_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 PY
   # Export: run metadata + logs, and only the result files this run created/changed.
   mkdir -p "${OUT}/meta" "${OUT}/logs" "${OUT}/results"
@@ -132,13 +144,23 @@ fi
 nvidia-smi --query-gpu=name,uuid,driver_version,compute_cap,memory.total,clocks.max.sm,power.limit,mig.mode.current \
   --format=csv,noheader > "${RUN}/meta/gpu.csv" 2>&1
 nvcc --version > "${RUN}/meta/nvcc.txt" 2>&1
+# Multi-GPU (2026-10-12): device list + interconnect topology of THIS container's GPUs, raw
+# (the topo parser lives in multigpu_probe_helper.py; raw text is the record).
+nvidia-smi -L > "${RUN}/meta/gpu_list.txt" 2>&1
+nvidia-smi topo -m > "${RUN}/meta/topo_m.txt" 2>&1
 python3 - "${RUN}/meta" <<'PY'
 import json, os, pathlib, platform, sys
 meta = pathlib.Path(sys.argv[1])
-gpu = [c.strip() for c in (meta / "gpu.csv").read_text().splitlines()[0].split(",")]
 keys = ["name", "uuid", "driver_version", "compute_cap", "memory_total", "clocks_max_sm",
         "power_limit", "mig_mode"]
-rec = {"gpu": dict(zip(keys, gpu)), "hostname": platform.node(),
+# One row per visible GPU.  rec["gpu"] stays the FIRST row (every 1-GPU consumer reads that);
+# gpus / gpu_count / gpu_uuids are the all-GPU view (the old code recorded GPU 0 only).
+rows = [[c.strip() for c in ln.split(",")]
+        for ln in (meta / "gpu.csv").read_text().splitlines() if ln.strip()]
+gpu = rows[0]
+gpus = [dict(zip(keys, r), index=i) for i, r in enumerate(rows)]
+rec = {"gpu": dict(zip(keys, gpu)), "gpu_count": len(gpus), "gpus": gpus,
+       "gpu_uuids": [g["uuid"] for g in gpus], "hostname": platform.node(),
        "commit": os.environ["PDMUX_COMMIT"], "image": os.environ["PDMUX_IMAGE"],
        "spec": os.environ["PDMUX_SPEC"], "job_name": os.environ["PDMUX_JOB_NAME"],
        "campaign": os.environ["PDMUX_CAMPAIGN"], "target": os.environ["PDMUX_TARGET"],
@@ -151,7 +173,7 @@ for f in ("pip_freeze.txt", "python_torch.txt"):
 (meta / "substrate.json").write_text(json.dumps(rec, indent=2) + "\n")
 PY
 hist="${DATA}/substrate_history.tsv"
-read -r uuid drv < <(python3 -c 'import json,sys; g=json.load(open(sys.argv[1]))["gpu"]; print(g["uuid"], g["driver_version"])' "${RUN}/meta/substrate.json")
+read -r uuid drv < <(python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); print(",".join(r.get("gpu_uuids") or [r["gpu"]["uuid"]]), r["gpu"]["driver_version"])' "${RUN}/meta/substrate.json")
 if [[ -f "${hist}" ]]; then
   prev_drv="$(awk -F'\t' -v c="${PDMUX_CAMPAIGN}" '$2==c{d=$5} END{print d}' "${hist}")"
   if [[ -n "${prev_drv}" && "${prev_drv}" != "${drv}" ]]; then
@@ -166,7 +188,7 @@ printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(utc)" "${PDMUX_CAMPAIGN}" "${PDMUX_JOB_NAME
 # nr_throttled/throttled_usec) at start and end so CPU throttling is visible, not inferred.
 { echo "# at start $(utc)"; echo "nproc=$(nproc)"; echo "cpu.max=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null)";
   cat /sys/fs/cgroup/cpu.stat 2>/dev/null; } > "${RUN}/meta/cgroup_cpu.txt"
-nvidia-smi --query-gpu=timestamp,clocks.sm,power.draw,temperature.gpu,clocks_throttle_reasons.active \
+nvidia-smi --query-gpu=timestamp,clocks.sm,power.draw,temperature.gpu,clocks_throttle_reasons.active,index \
   --format=csv -lms 100 > "${RUN}/meta/clk.csv" 2>/dev/null &
 clk_pid=$!
 # GPU power/energy (NVML, read-only, no extra privilege).  Three files:

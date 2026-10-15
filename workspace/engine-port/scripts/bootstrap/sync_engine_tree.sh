@@ -60,7 +60,8 @@ for source in \
   "${track_root}/src/multiplex/telemetry.py" \
   "${track_root}/src/multiplex/holb_probe.py" \
   "${track_root}/src/multiplex/chunk_probe.py" \
-  "${track_root}/src/multiplex/green_readout.py"; do
+  "${track_root}/src/multiplex/green_readout.py" \
+  "${track_root}/src/multiplex/multigpu_guard.py"; do
   target="${runtime_python}/sglang/srt/multiplex/$(basename "${source}")"
   install -D -m 0644 "${source}" "${target}"
 done
@@ -134,8 +135,19 @@ if ! grep -q 'model_arch in \["Mamba2ForCausalLM"\]' \
   patch --forward --batch -p1 -d "${runtime_python}" < "${mamba2_patch}"
 fi
 
+# PD-mux capability/device assert (multi-GPU M2, 2026-10-12; design sec 2-5,
+# audit R-4).  One same-line assert inside the divide_sm (auto-grid) branch of
+# pdmux_context.initialize_stream_groups -- the only place current_device() is
+# read.  manual_divisions configs never execute it.  See the patch header for
+# why it fires for gpu_id != 0 under TP/DP > 1.  Idempotent: grep guard.
+device_assert_patch="${track_root}/src/patches/pdmux_context_device_assert.patch"
+if ! grep -q "PD-mux auto grid (divide_sm)" \
+  "${runtime_python}/sglang/srt/multiplex/pdmux_context.py"; then
+  patch --forward --batch -p1 -d "${runtime_python}" < "${device_assert_patch}"
+fi
+
 mkdir -p "$(dirname "${manifest_path}")"
-# MANIFEST (2026-09-13: 17 -> 24 -> 25 entries).  Two kinds of line:
+# MANIFEST (2026-09-13: 17 -> 24 -> 25 entries; 2026-10-12: -> 27).  Two kinds of line:
 #   (a) installed from tracked source  -- multiplex/*, configs/{mamba2,zamba2},
 #       models/{mamba2,zamba2,nemotron_h,falcon_h1,granitemoehybrid}; the sync
 #       above rewrites these, so a mismatch means the tracked source changed.
@@ -158,6 +170,14 @@ mkdir -p "$(dirname "${manifest_path}")"
 #       `flashinfer` wheel -- that version is recorded separately in the
 #       r2_correctness provenance dump.  Recording them cannot prevent drift,
 #       but it makes drift visible instead of silent.
+# 2026-10-12 (multi-GPU M2): entries 26-27 APPENDED -- multiplex/pdmux_context.py
+# (now patched: device assert above; before this it was pristine upstream and
+# unhashed although it decides the stream groups) and multiplex/multigpu_guard.py
+# (new tracked source: TP>1 fail-fast predicate + per-rank output naming).
+# ★A registration that compares the WHOLE entry set (n2_plan.engine_check,
+# n3_plan, e2_vessl_plan) will report these two as installed-but-unregistered:
+# that is the intended fail-closed outcome for a tree built from this change,
+# not a defect -- those campaigns pin the pre-M2 engine.
 # The first 17 lines and their order are UNCHANGED, so `sha256sum -c` of a
 # pre-2026-09-13 manifest (job_907100 / job_907456) still verifies exactly the
 # same 17 files; entries 18-24 and now 25 are APPENDED, never inserted, so every
@@ -191,6 +211,8 @@ sha256sum \
   "${runtime_python}/sglang/srt/configs/granitemoehybrid.py" \
   "${runtime_python}/sglang/srt/configs/mamba_utils.py" \
   "${runtime_python}/sglang/srt/layers/attention/flashinfer_backend.py" \
+  "${runtime_python}/sglang/srt/multiplex/pdmux_context.py" \
+  "${runtime_python}/sglang/srt/multiplex/multigpu_guard.py" \
   > "${manifest_tmp}"
 mv -f "${manifest_tmp}" "${manifest_path}"
 trap - EXIT

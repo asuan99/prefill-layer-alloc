@@ -1,0 +1,64 @@
+{
+ "boots_dir": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-9df4a0a-20261013081304/boots",
+ "config": "TP4",
+ "detail": {
+  "fused|agnostic": {
+   "abnormal_exit": false,
+   "alive_after": {
+    "agnostic": true,
+    "fused": true
+   },
+   "alive_after_boot_end": {
+    "agnostic": true,
+    "fused": true
+   },
+   "ctl_m_median": 1.0,
+   "ctl_q": 0.328125,
+   "exposure_detail": {
+    "e_time": 0.536491621694281,
+    "exposure_steps": 0.5039370078740157,
+    "reasons": [],
+    "status": "OK",
+    "window": [
+     1922966.967889126,
+     1922973.260592411
+    ]
+   },
+   "exposure_split_steps": 0.5039370078740157,
+   "m_median": 1.0,
+   "q": 0.359375,
+   "verdict": "PASS"
+  },
+  "fused|d44": {
+   "abnormal_exit": false,
+   "alive_after": {
+    "d44": true,
+    "fused": true
+   },
+   "alive_after_boot_end": {
+    "d44": true,
+    "fused": true
+   },
+   "ctl_m_median": 1.0,
+   "ctl_q": 0.28125,
+   "exposure_detail": {
+    "e_time": 0.6103228893832134,
+    "exposure_steps": 0.5694915254237288,
+    "reasons": [],
+    "status": "OK",
+    "window": [
+     1924327.36999436,
+     1924333.687025503
+    ]
+   },
+   "exposure_split_steps": 0.5694915254237288,
+   "m_median": 1.0,
+   "q": 0.28125,
+   "verdict": "PASS"
+  }
+ },
+ "verdicts": {
+  "fused|agnostic": "PASS",
+  "fused|d44": "PASS"
+ }
+}

@@ -248,6 +248,28 @@ class B0Judgment(unittest.TestCase):
         self.assertEqual(H.judge_b0(H.parse_gpu_csv(self.CSV * 2), self.PY)["status"], "FAIL")
         self.assertEqual(H.judge_b0(None, self.PY)["status"], "FAIL")
 
+    def test_n_gpu_gate(self):
+        """Multi-GPU track M2: expected_gpus (default 1) generalises the count gate."""
+        row = lambda u, extra="": self.CSV.replace("GPU-abc", u) + extra
+        two = row("GPU-a") + row("GPU-b")
+        self.assertEqual(H.judge_b0(H.parse_gpu_csv(two), self.PY, expected_gpus=2)["status"], "PASS")
+        # default still 1 -> two GPUs fail; and 1 GPU fails when 2 are expected
+        self.assertEqual(H.judge_b0(H.parse_gpu_csv(two), self.PY)["status"], "FAIL")
+        self.assertEqual(H.judge_b0(H.parse_gpu_csv(self.CSV), self.PY, expected_gpus=2)["status"], "FAIL")
+        # a non-A100 / MIG-enabled / duplicate-UUID / mixed-driver second GPU must be caught
+        bad2 = row("GPU-a") + row("GPU-b").replace("A100-SXM4-80GB", "H100")
+        self.assertEqual(H.judge_b0(H.parse_gpu_csv(bad2), self.PY, expected_gpus=2)["status"], "FAIL")
+        bad3 = row("GPU-a") + row("GPU-b").replace("Disabled", "Enabled")
+        self.assertEqual(H.judge_b0(H.parse_gpu_csv(bad3), self.PY, expected_gpus=2)["status"], "FAIL")
+        bad4 = row("GPU-a") + row("GPU-a")
+        self.assertEqual(H.judge_b0(H.parse_gpu_csv(bad4), self.PY, expected_gpus=2)["status"], "FAIL")
+        bad5 = row("GPU-a") + row("GPU-b").replace("580.105.08", "590.1")
+        self.assertEqual(H.judge_b0(H.parse_gpu_csv(bad5), self.PY, expected_gpus=2)["status"], "FAIL")
+        # 1-GPU record unchanged: no "rows" key, key name "single_gpu" kept
+        v = H.judge_b0(H.parse_gpu_csv(self.CSV), self.PY)
+        self.assertNotIn("rows", v["facts"]["gpu"])
+        self.assertIn("single_gpu", v["facts"]["checks"])
+
     def test_driver_drift_is_recorded_not_failed(self):
         v = H.judge_b0(H.parse_gpu_csv(self.CSV.replace("580.105.08", "590.1")), self.PY)
         self.assertEqual(v["status"], "PASS")

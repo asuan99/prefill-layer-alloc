@@ -1,0 +1,15 @@
+{
+ "after_step": {
+  "index": 0,
+  "status": "OK",
+  "type": "cmd"
+ },
+ "alive": true,
+ "boot_id": "m2g_DP4_d44",
+ "health_error": null,
+ "health_http_status": 200,
+ "poll_returncode": null,
+ "schema": "m2g_alive_after/v1",
+ "steps_total": 1,
+ "t_epoch": 1791882421.659309
+}

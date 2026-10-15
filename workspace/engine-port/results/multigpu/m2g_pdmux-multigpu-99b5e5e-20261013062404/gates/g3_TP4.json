@@ -1,0 +1,58 @@
+{
+ "combos": {
+  "green_16_92": {
+   "elapsed_s": {
+    "0": 0.5258401189930737,
+    "1": 0.5259475451894104,
+    "2": 0.526951267849654,
+    "3": 0.5271270642988384
+   },
+   "hangs": [],
+   "launcher_rc": 0,
+   "launcher_status": "RAN",
+   "problems": [],
+   "verdict": "PASS"
+  },
+  "green_44_64": {
+   "elapsed_s": {
+    "0": 0.4496912029571831,
+    "1": 0.44943433906883,
+    "2": 0.4506660997867584,
+    "3": 0.4507109927944839
+   },
+   "hangs": [],
+   "launcher_rc": 0,
+   "launcher_status": "RAN",
+   "problems": [],
+   "verdict": "PASS"
+  },
+  "plain": {
+   "elapsed_s": {
+    "0": 0.46422610338777304,
+    "1": 0.4642039928585291,
+    "2": 0.46421839855611324,
+    "3": 0.46424348885193467
+   },
+   "hangs": [],
+   "launcher_rc": 0,
+   "launcher_status": "RAN",
+   "problems": [],
+   "verdict": "PASS"
+  }
+ },
+ "not_attempted": [],
+ "preflight": {
+  "modules": [
+   "torch.distributed.run"
+  ],
+  "ok": true,
+  "python": "/opt/conda/bin/python3",
+  "rc": 0,
+  "status": "RAN",
+  "stderr_tail": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+  "stress_script": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py",
+  "stress_script_present": true
+ },
+ "tp": 4,
+ "verdict": "PASS"
+}

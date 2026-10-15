@@ -1,0 +1,81 @@
+{
+ "capacity_recorded": true,
+ "cuda_graph_capture_log": "cuda_graph_capture.log",
+ "dp_size": 1,
+ "gpu_ids": "0,1,2,3",
+ "kv_cache_tokens": [
+  13748110,
+  13748110,
+  13748110,
+  13748110
+ ],
+ "mamba_lines_note": "mamba allocation is logged per TP rank and DP replica; compare across ranks, do not sum",
+ "max_mamba_cache_size": [
+  192,
+  192,
+  192,
+  192
+ ],
+ "max_running_requests_logged": [
+  192,
+  192
+ ],
+ "max_running_requests_requested": 192,
+ "max_total_num_tokens": [
+  13748110
+ ],
+ "piecewise": {
+  "capture_log_lines": 19,
+  "chunked_prefill_size": "-1",
+  "cuda_graph_max_bs": "512",
+  "disable_cuda_graph": "False",
+  "disable_overlap_schedule": "True",
+  "disable_piecewise_cuda_graph": "False",
+  "piecewise_cuda_graph_max_tokens": "-1",
+  "piecewise_cuda_graph_tokens": "[]",
+  "piecewise_lines": 4,
+  "sample": [
+   "[2026-10-13 08:22:35.523 TP2] Capture cuda graph begin. This can take up to several minutes. avail mem=12.55 GB",
+   "[2026-10-13 08:22:35.523 TP1] Capture cuda graph begin. This can take up to several minutes. avail mem=12.55 GB",
+   "[2026-10-13 08:22:35.530 TP3] Capture cuda graph begin. This can take up to several minutes. avail mem=12.83 GB",
+   "[2026-10-13 08:22:35.534 TP0] Capture cuda graph begin. This can take up to several minutes. avail mem=12.83 GB",
+   "[2026-10-13 08:22:35.534 TP0] Capture cuda graph bs [1, 2, 4, 8, 12, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192]",
+   "[2026-10-13 08:22:49.796 TP0] Registering 1596 cuda graph addresses",
+   "[2026-10-13 08:22:53.090 TP0] Registering 1596 cuda graph addresses",
+   "[2026-10-13 08:22:56.274 TP0] Registering 1596 cuda graph addresses",
+   "[2026-10-13 08:22:59.428 TP0] Registering 1596 cuda graph addresses",
+   "[2026-10-13 08:22:59.781 TP0] Capture cuda graph end. Time elapsed: 24.25 s. mem usage=2.62 GB. avail mem=10.21 GB.",
+   "[2026-10-13 08:22:59.781 TP0] Disable piecewise CUDA graph because the capture size is not set",
+   "[2026-10-13 08:22:59.856 TP2] Capture cuda graph end. Time elapsed: 24.33 s. mem usage=2.62 GB. avail mem=9.93 GB.",
+   "[2026-10-13 08:22:59.856 TP2] Disable piecewise CUDA graph because the capture size is not set",
+   "[2026-10-13 08:22:59.889 TP3] Capture cuda graph end. Time elapsed: 24.36 s. mem usage=2.62 GB. avail mem=10.21 GB.",
+   "[2026-10-13 08:22:59.889 TP3] Disable piecewise CUDA graph because the capture size is not set",
+   "[2026-10-13 08:22:59.893 TP1] Capture cuda graph end. Time elapsed: 24.37 s. mem usage=2.62 GB. avail mem=9.93 GB.",
+   "[2026-10-13 08:22:59.893 TP1] Disable piecewise CUDA graph because the capture size is not set",
+   "[2026-10-13 08:23:04.316 TP0] Prefill batch, #new-seq: 1, #new-token: 7, #cached-token: 0, full token usage: 0.00, mamba usage: 0.01, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 0.00",
+   "[2026-10-13 08:23:06.163 TP0] Prefill batch, #new-seq: 1, #new-token: 1, #cached-token: 0, full token usage: 0.00, mamba usage: 0.00, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 3.79"
+  ]
+ },
+ "scheduler_lines": 1,
+ "scheduler_lines_expected": 1,
+ "scheduler_lines_match_dp": true,
+ "server_info": {
+  "dp_size": 1,
+  "effective_max_running_requests_per_dp": [
+   192
+  ],
+  "load_balance_method": "round_robin",
+  "max_req_input_len": 16378,
+  "max_running_requests": 192,
+  "max_total_num_tokens": 13748110,
+  "token_capacity": [
+   13748110
+  ],
+  "tp_size": 4
+ },
+ "tp_size": 4,
+ "ulimit_n": [
+  1048576,
+  1048576
+ ]
+}

@@ -1,0 +1,455 @@
+{
+ "cells": {
+  "DP2:agnostic": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->agnostic NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->agnostic NOT_TESTED"
+   ]
+  },
+  "DP2:d44": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->d44 NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->d44 NOT_TESTED"
+   ]
+  },
+  "DP2:fused": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "DP2:fused_sym": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "DP4:agnostic": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->agnostic NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->agnostic NOT_TESTED"
+   ]
+  },
+  "DP4:d44": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->d44 NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->d44 NOT_TESTED"
+   ]
+  },
+  "DP4:fused": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "DP4:fused_sym": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "DP8:agnostic": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->agnostic NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->agnostic NOT_TESTED"
+   ]
+  },
+  "DP8:d44": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->d44 NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->d44 NOT_TESTED"
+   ]
+  },
+  "DP8:fused": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "DP8:fused_sym": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "N1:agnostic": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "N1:d44": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "N1:fused": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "N1:fused_sym": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "TP2:agnostic": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->agnostic NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->agnostic NOT_TESTED"
+   ]
+  },
+  "TP2:d44": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->d44 NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->d44 NOT_TESTED"
+   ]
+  },
+  "TP2:fused": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "TP2:fused_sym": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "TP4:agnostic": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->agnostic NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->agnostic NOT_TESTED"
+   ]
+  },
+  "TP4:d44": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->d44 NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->d44 NOT_TESTED"
+   ]
+  },
+  "TP4:fused": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "TP4:fused_sym": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "TP8:agnostic": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->agnostic NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->agnostic NOT_TESTED"
+   ]
+  },
+  "TP8:d44": {
+   "included": false,
+   "not_tested": true,
+   "reason": "G0(i) fused boot FAIL; G1 fused<->d44 NOT_TESTED",
+   "reasons": [
+    "G0(i) fused boot FAIL",
+    "G1 fused<->d44 NOT_TESTED"
+   ]
+  },
+  "TP8:fused": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  },
+  "TP8:fused_sym": {
+   "included": false,
+   "not_tested": false,
+   "reason": "G0(i) fused boot FAIL",
+   "reasons": [
+    "G0(i) fused boot FAIL"
+   ]
+  }
+ },
+ "configs": {
+  "DP2": {
+   "flags": [
+    "MEMORY_MISMATCH(NOT_TESTED)"
+   ],
+   "g_sym_undefined": true,
+   "memory_mismatch": true,
+   "tp_numeric_divergent": false
+  },
+  "DP4": {
+   "flags": [
+    "MEMORY_MISMATCH(NOT_TESTED)"
+   ],
+   "g_sym_undefined": true,
+   "memory_mismatch": true,
+   "tp_numeric_divergent": false
+  },
+  "DP8": {
+   "flags": [
+    "MEMORY_MISMATCH(NOT_TESTED)"
+   ],
+   "g_sym_undefined": true,
+   "memory_mismatch": true,
+   "tp_numeric_divergent": false
+  },
+  "N1": {
+   "flags": [
+    "MEMORY_MISMATCH(NOT_TESTED)"
+   ],
+   "g_sym_undefined": true,
+   "memory_mismatch": true,
+   "tp_numeric_divergent": false
+  },
+  "TP2": {
+   "flags": [
+    "G2_NOT_TESTED",
+    "MEMORY_MISMATCH(NOT_TESTED)"
+   ],
+   "g_sym_undefined": true,
+   "memory_mismatch": true,
+   "tp_numeric_divergent": false
+  },
+  "TP4": {
+   "flags": [
+    "G2_NOT_TESTED",
+    "MEMORY_MISMATCH(NOT_TESTED)"
+   ],
+   "g_sym_undefined": true,
+   "memory_mismatch": true,
+   "tp_numeric_divergent": false
+  },
+  "TP8": {
+   "flags": [
+    "G2_NOT_TESTED",
+    "MEMORY_MISMATCH(NOT_TESTED)"
+   ],
+   "g_sym_undefined": true,
+   "memory_mismatch": true,
+   "tp_numeric_divergent": false
+  }
+ },
+ "contam_unverified": [],
+ "findings": [],
+ "g0ii": "PASS",
+ "g0iii": "PASS",
+ "g1_exposure_split_steps": {
+  "DP2:agnostic": 0.47807889062698183,
+  "DP2:d44": 0.5682628740431455,
+  "DP4:agnostic": 0.3505162868076308,
+  "DP4:d44": 0.4554302077706333,
+  "DP8:agnostic": 0.20278516753567566,
+  "DP8:d44": 0.25036442309604456,
+  "TP2:agnostic": 0.5517241379310345,
+  "TP2:d44": 0.7261724659606656,
+  "TP4:agnostic": 0.5140562248995983,
+  "TP4:d44": 0.5957446808510638,
+  "TP8:agnostic": 0.46017699115044247,
+  "TP8:d44": 0.5172413793103449
+ },
+ "g5a_gpu_descriptive": "RECORDED",
+ "g5a_unit_test": "PASS",
+ "nvml_expected_procs": {
+  "DP2:agnostic": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:d44": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:fused_sym": {
+   "0": 1,
+   "1": 1
+  },
+  "DP4:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "DP4:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "DP4:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "DP8:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "DP8:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "DP8:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "N1:agnostic": {
+   "0": 1
+  },
+  "N1:d44": {
+   "0": 1
+  },
+  "N1:fused_sym": {
+   "0": 1
+  },
+  "TP2:agnostic": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:d44": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:fused_sym": {
+   "0": 1,
+   "1": 1
+  },
+  "TP4:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "TP4:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "TP4:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "TP8:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "TP8:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "TP8:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  }
+ },
+ "nvml_procs_visible": true,
+ "prereg": "PREREG_MULTIGPU_2026-10-12.md rev6",
+ "schema": "cells[f'{config}:{arm}'] = {included, reason, reasons, not_tested}"
+}

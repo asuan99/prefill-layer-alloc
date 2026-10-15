@@ -1,0 +1,18 @@
+{
+ "expected_gpus": 4,
+ "job": "J4",
+ "names": [
+  "NVIDIA A100-SXM4-80GB"
+ ],
+ "power_limit_w": [
+  400.0,
+  400.0,
+  400.0,
+  400.0
+ ],
+ "reasons": [],
+ "status": "PASS",
+ "topology_classes": {
+  "NVLINK(12)": 12
+ }
+}

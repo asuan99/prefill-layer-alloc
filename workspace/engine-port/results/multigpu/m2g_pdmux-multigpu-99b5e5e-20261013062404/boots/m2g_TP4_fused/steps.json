@@ -1,0 +1,36 @@
+[
+ {
+  "argv": [
+   "python3",
+   "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
+   "serve-g1",
+   "--endpoint",
+   "{ENDPOINT}",
+   "--out",
+   "{OUT}/gates",
+   "--config",
+   "TP4",
+   "--arm",
+   "fused"
+  ],
+  "name": "g1_fused",
+  "type": "cmd"
+ },
+ {
+  "argv": [
+   "python3",
+   "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
+   "serve-g2",
+   "--endpoint",
+   "{ENDPOINT}",
+   "--out",
+   "{OUT}/gates",
+   "--config",
+   "TP4",
+   "--repeats",
+   "1"
+  ],
+  "name": "g2",
+  "type": "cmd"
+ }
+]

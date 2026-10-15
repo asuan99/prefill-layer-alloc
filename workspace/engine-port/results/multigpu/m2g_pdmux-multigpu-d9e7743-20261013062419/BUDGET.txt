@@ -1,0 +1,1 @@
+kind=m2g job=J8 spec=resourcespec-a100x8 expected_gpus=8 hard_cap_s=14400 t0_epoch=1791872686 deadline_epoch=1791887086 dryrun=0

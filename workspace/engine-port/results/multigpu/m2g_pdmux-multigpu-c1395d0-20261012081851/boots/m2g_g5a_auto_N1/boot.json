@@ -1,0 +1,50 @@
+{
+ "arm": "agnostic",
+ "boot_id": "m2g_g5a_auto_N1",
+ "boot_seconds": 45.0267219543457,
+ "config": "N1",
+ "contam_status": "VERIFIED",
+ "contamination_pre": {
+  "contam_unverified": false,
+  "gpu_contaminated": false,
+  "reasons": [],
+  "verified": true
+ },
+ "dp": 1,
+ "effective_cap": 48,
+ "gpu_ids": "0",
+ "health_wait_cap_s": 1800.0,
+ "health_wait_s_used": 45.02640128135681,
+ "host": "job-psyxqm48mgzi-bcnfx",
+ "kind": "g5a",
+ "port": 20390,
+ "registered": {
+  "SGLANG_LOG_MS": "1",
+  "attention_backend": "flashinfer",
+  "decode_log_interval": 40,
+  "fd_soft_min": 8192,
+  "health_wait_s": 1800,
+  "sock_read_s": 600
+ },
+ "server_exit_code": null,
+ "server_pid": 69392,
+ "status": "OK",
+ "steps": [
+  {
+   "status": "OK",
+   "type": "warmup"
+  },
+  {
+   "cell": "A_G5A_s4386",
+   "status": "OK",
+   "type": "cell"
+  }
+ ],
+ "t_end_epoch": 1791803130.1076713,
+ "t_health_epoch": 1791803021.1733325,
+ "t_start_epoch": 1791802976.1108973,
+ "teardown_settle_s": 0.0003139972686767578,
+ "tp": 1,
+ "ulimit_n_hard": 1048576,
+ "ulimit_n_soft": 1048576
+}

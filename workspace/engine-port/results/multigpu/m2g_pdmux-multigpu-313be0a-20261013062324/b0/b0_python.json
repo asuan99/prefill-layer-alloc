@@ -1,0 +1,22 @@
+{
+  "kind": "substrate_probe_b0_python",
+  "utc": "2026-10-13T06:24:16Z",
+  "host": "job-7720qjdh6n3s-x7sq2",
+  "python": "3.14.6",
+  "dist_torch": "2.9.1+cu130",
+  "dist_triton": "3.5.1",
+  "dist_sglang-kernel": "0.4.1+cu130",
+  "dist_sglang": "0.0.0.dev0",
+  "dist_flashinfer-python": "0.6.10",
+  "torch_version": "2.9.1+cu130",
+  "torch_cuda": "13.0",
+  "cuda_available": true,
+  "device_name": "NVIDIA A100-SXM4-80GB",
+  "compute_capability": "8.0",
+  "multi_processor_count": 108,
+  "total_memory_bytes": 85094825984,
+  "sgl_kernel_spatial_file": "/opt/conda/lib/python3.14/site-packages/sgl_kernel/spatial.py",
+  "sgl_kernel_spatial_sha256": "687898eefeb3b267ce9c0476b2877b72ff7fa8308d9cbe369294fe9893686aa3",
+  "get_sm_available_0": 108,
+  "pdmux_context_sha256": "fd565cb564c6d41fe03a7143ad844e2fd2605c314af3e2ff1fcd48473c4b03df"
+}

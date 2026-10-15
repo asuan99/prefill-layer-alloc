@@ -1,0 +1,11 @@
+{
+ "kind": "m2g",
+ "job": "J2",
+ "not_attempted": [
+  {
+   "boot_id": "m2g_g4_TP2_d44",
+   "reason": "NOT_RUN_NSYS_ABSENT",
+   "block": "m2g"
+  }
+ ]
+}

@@ -964,7 +964,7 @@ def build_config_echo(scheduler: Any) -> Dict[str, Any]:
         in ("1", "true", "True"),
         "enable_overlap": bool(getattr(scheduler, "enable_overlap", False)),
         "disable_cuda_graph": getattr(server_args, "disable_cuda_graph", None),
-        "tp_rank": int(getattr(scheduler, "tp_rank", 0) or 0),
+        "tp_rank": int(getattr(scheduler, "tp_rank", 0) or 0), **_probe_dp_tag(scheduler),
     }
     cfg.update(_piecewise_echo(server_args))
     return cfg
@@ -986,8 +986,8 @@ def maybe_install_chunk_probe(scheduler: Any) -> Optional[ChunkProbe]:
     path = Path(path_str)
     tp_rank = int(getattr(scheduler, "tp_rank", 0) or 0)
     tp_size = int(getattr(scheduler, "tp_size", 1) or 1)
-    if tp_size > 1:
-        path = path.with_name(f"{path.stem}.tp{tp_rank}{path.suffix}")
+    if tp_size > 1 or int(getattr(scheduler, "dp_size", 1) or 1) > 1:  # M2: + .dp{rank} under --dp-size
+        path = path.with_name(f"{path.stem}{_probe_rank_suffix(scheduler)}{path.suffix}")
 
     cfg = build_config_echo(scheduler)
     probe = ChunkProbe(
@@ -1031,3 +1031,29 @@ def maybe_install_chunk_probe(scheduler: Any) -> Optional[ChunkProbe]:
         path,
     )
     return probe
+
+
+# M2 (2026-10-12): per-process path naming for multi-GPU.  Before this the
+# probe path got `.tp{rank}` only, so under --dp-size every DP replica (tp=1)
+# appended to ONE file.  `multigpu_guard.rank_suffix` adds `.dp{dp_rank}` when
+# dp_size > 1 (outer level first) and keeps the old `.tp{rank}` naming, so a
+# tp>1/dp=1 path is unchanged and a tp=dp=1 path gets no suffix at all.
+# Appended at module end and called from same-line edits so no line moves.
+def _probe_rank_suffix(scheduler) -> str:
+    try:
+        from sglang.srt.multiplex.multigpu_guard import rank_suffix
+    except ImportError:  # loaded as a loose file by a CPU test
+        from multigpu_guard import rank_suffix  # type: ignore[no-redef]
+    return rank_suffix(
+        int(getattr(scheduler, "tp_size", 1) or 1),
+        getattr(scheduler, "tp_rank", 0),
+        int(getattr(scheduler, "dp_size", 1) or 1),
+        getattr(scheduler, "dp_rank", None),
+    )
+
+
+def _probe_dp_tag(scheduler) -> dict:
+    """{'dp_rank': d} only when dp_size > 1, so dp=1 records keep their keys."""
+    if int(getattr(scheduler, "dp_size", 1) or 1) <= 1:
+        return {}
+    return {"dp_rank": int(getattr(scheduler, "dp_rank", 0) or 0)}

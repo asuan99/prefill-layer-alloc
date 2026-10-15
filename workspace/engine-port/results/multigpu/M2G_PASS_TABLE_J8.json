@@ -1,0 +1,235 @@
+{
+ "cells": {
+  "DP8:agnostic": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "DP8:d44": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "DP8:fused": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "DP8:fused_sym": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:agnostic": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:d44": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:fused": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:fused_sym": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "TP8:agnostic": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "TP8:d44": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "TP8:fused": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "TP8:fused_sym": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  }
+ },
+ "configs": {
+  "DP8": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": false
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.0009171071693696485,
+    "min_arm": 0.0009179490270034293
+   },
+   "flags": [],
+   "g_sym_undefined": false,
+   "memory_mismatch": false,
+   "rule_iii_would_have_flagged": false,
+   "tp_numeric_divergent": false
+  },
+  "N1": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": false
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.0009174719480840843,
+    "min_arm": 0.000918314475855201
+   },
+   "flags": [],
+   "g_sym_undefined": false,
+   "memory_mismatch": false,
+   "rule_iii_would_have_flagged": false,
+   "tp_numeric_divergent": false
+  },
+  "TP8": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": true,
+    "denominator_min_arm": true
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.013277582699890636,
+    "min_arm": 0.013456249160955558
+   },
+   "flags": [
+    "TP_NUMERIC_DIVERGENT"
+   ],
+   "g_sym_undefined": false,
+   "memory_mismatch": false,
+   "rule_iii_would_have_flagged": true,
+   "tp_numeric_divergent": true
+  }
+ },
+ "contam_unverified": [],
+ "findings": [],
+ "g0ii": "NOT_RUN_IN_JOB",
+ "g0iii": "NOT_RUN_IN_JOB",
+ "g1_exposure_split_steps": {
+  "DP8:agnostic": 0.19634342479521372,
+  "DP8:d44": 0.23562110822674065,
+  "TP8:agnostic": 0.43935926773455375,
+  "TP8:d44": 0.4686192468619247
+ },
+ "g5a_gpu_descriptive": "NOT_IN_THIS_JOB",
+ "g5a_unit_test": "PASS",
+ "job": "J8",
+ "nvml_expected_procs": {
+  "DP8:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "DP8:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "DP8:fused": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "DP8:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "N1:agnostic": {
+   "0": 1
+  },
+  "N1:d44": {
+   "0": 1
+  },
+  "N1:fused": {
+   "0": 1
+  },
+  "N1:fused_sym": {
+   "0": 1
+  },
+  "TP8:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "TP8:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "TP8:fused": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "TP8:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  }
+ },
+ "nvml_procs_visible": true,
+ "prereg": "PREREG_MULTIGPU_2026-10-12.md rev11",
+ "schema": "cells[f'{config}:{arm}'] = {included, reason, reasons, not_tested}"
+}

@@ -1,0 +1,45 @@
+{
+ "arm": "d44",
+ "boot_id": "m2g_DP2_d44",
+ "boot_seconds": 57.023897647857666,
+ "config": "DP2",
+ "contam_status": "VERIFIED",
+ "contamination_pre": {
+  "contam_unverified": false,
+  "gpu_contaminated": false,
+  "reasons": [],
+  "verified": true
+ },
+ "dp": 2,
+ "effective_cap": 48,
+ "gpu_ids": "0,1",
+ "health_wait_cap_s": 1800.0,
+ "health_wait_s_used": 57.023457765579224,
+ "host": "job-040n52fuujq1-sx6jh",
+ "kind": "g0",
+ "port": 20438,
+ "registered": {
+  "SGLANG_LOG_MS": "1",
+  "attention_backend": "flashinfer",
+  "decode_log_interval": 40,
+  "fd_soft_min": 8192,
+  "health_wait_s": 1800,
+  "sock_read_s": 600
+ },
+ "server_exit_code": null,
+ "server_pid": 16743,
+ "status": "OK",
+ "steps": [
+  {
+   "status": "OK",
+   "type": "cmd"
+  }
+ ],
+ "t_end_epoch": 1791875608.5814192,
+ "t_health_epoch": 1791875594.1151369,
+ "t_start_epoch": 1791875537.0627534,
+ "teardown_settle_s": 0.00036525726318359375,
+ "tp": 1,
+ "ulimit_n_hard": 1048576,
+ "ulimit_n_soft": 1048576
+}

@@ -1,0 +1,54 @@
+{
+ "arm": "d44",
+ "boot_id": "m2g_TP2_d44",
+ "boot_seconds": 59.0273015499115,
+ "config": "TP2",
+ "contam_status": "VERIFIED",
+ "contamination_pre": {
+  "contam_unverified": false,
+  "gpu_contaminated": false,
+  "reasons": [],
+  "verified": true
+ },
+ "dp": 1,
+ "effective_cap": 96,
+ "gpu_ids": "0,1",
+ "health_wait_cap_s": 1800.0,
+ "health_wait_s_used": 59.02687215805054,
+ "host": "job-040n52fuujq1-sx6jh",
+ "kind": "g0",
+ "port": 20511,
+ "registered": {
+  "SGLANG_LOG_MS": "1",
+  "attention_backend": "flashinfer",
+  "decode_log_interval": 40,
+  "fd_soft_min": 8192,
+  "health_wait_s": 1800,
+  "sock_read_s": 600
+ },
+ "server_exit_code": null,
+ "server_pid": 9757,
+ "status": "OK",
+ "steps": [
+  {
+   "status": "OK",
+   "type": "cmd"
+  },
+  {
+   "status": "OK",
+   "type": "warmup"
+  },
+  {
+   "cell": "A_G3B_s4386",
+   "status": "OK",
+   "type": "cell"
+  }
+ ],
+ "t_end_epoch": 1791874217.0354779,
+ "t_health_epoch": 1791873210.5798705,
+ "t_start_epoch": 1791873151.5229306,
+ "teardown_settle_s": 0.00041675567626953125,
+ "tp": 2,
+ "ulimit_n_hard": 1048576,
+ "ulimit_n_soft": 1048576
+}

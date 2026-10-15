@@ -1,0 +1,36 @@
+[
+ {
+  "shape": "A",
+  "type": "warmup"
+ },
+ {
+  "argv": [
+   "nsys",
+   "start",
+   "-o",
+   "{BOOT}/nsys",
+   "--force-overwrite=true"
+  ],
+  "name": "nsys_start",
+  "type": "cmd"
+ },
+ {
+  "block": "m2g_g4",
+  "ext": 0,
+  "n_req": 287,
+  "offered": 9.568,
+  "round": 1,
+  "rung": "G4",
+  "seed": 4386,
+  "shape": "A",
+  "type": "cell"
+ },
+ {
+  "argv": [
+   "nsys",
+   "stop"
+  ],
+  "name": "nsys_stop",
+  "type": "cmd"
+ }
+]

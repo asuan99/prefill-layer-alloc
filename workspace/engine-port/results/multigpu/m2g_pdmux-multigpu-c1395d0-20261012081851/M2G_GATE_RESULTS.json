@@ -1,0 +1,1629 @@
+{
+ "contam": {
+  "DP2:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP2:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP2:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP2:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP4:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP4:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP4:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP4:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP8:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP8:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP8:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "DP8:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP2:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP2:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP2:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP2:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP4:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP4:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP4:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP4:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP8:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP8:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP8:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "TP8:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  }
+ },
+ "g0i": {
+  "DP2:agnostic": {
+   "health_s": 55.02651381492615,
+   "verdict": "PASS"
+  },
+  "DP2:d44": {
+   "health_s": 57.0259907245636,
+   "verdict": "PASS"
+  },
+  "DP2:fused": {
+   "exit_code": 1,
+   "verdict": "FAIL",
+   "why": "no /health within the registered wait"
+  },
+  "DP2:fused_sym": {
+   "health_s": 51.02664113044739,
+   "verdict": "PASS"
+  },
+  "DP4:agnostic": {
+   "health_s": 61.03118324279785,
+   "verdict": "PASS"
+  },
+  "DP4:d44": {
+   "health_s": 65.02873945236206,
+   "verdict": "PASS"
+  },
+  "DP4:fused": {
+   "exit_code": 1,
+   "verdict": "FAIL",
+   "why": "no /health within the registered wait"
+  },
+  "DP4:fused_sym": {
+   "health_s": 57.027400732040405,
+   "verdict": "PASS"
+  },
+  "DP8:agnostic": {
+   "health_s": 85.03374290466309,
+   "verdict": "PASS"
+  },
+  "DP8:d44": {
+   "health_s": 95.03613305091858,
+   "verdict": "PASS"
+  },
+  "DP8:fused": {
+   "exit_code": 1,
+   "verdict": "FAIL",
+   "why": "no /health within the registered wait"
+  },
+  "DP8:fused_sym": {
+   "health_s": 85.03695774078369,
+   "verdict": "PASS"
+  },
+  "N1:agnostic": {
+   "health_s": 108.04693579673767,
+   "verdict": "PASS"
+  },
+  "N1:d44": {
+   "health_s": 47.0290584564209,
+   "verdict": "PASS"
+  },
+  "N1:fused": {
+   "exit_code": -9,
+   "verdict": "FAIL",
+   "why": "no /health within the registered wait"
+  },
+  "N1:fused_sym": {
+   "health_s": 41.02251172065735,
+   "verdict": "PASS"
+  },
+  "TP2:agnostic": {
+   "health_s": 47.02762174606323,
+   "verdict": "PASS"
+  },
+  "TP2:d44": {
+   "health_s": 59.02998685836792,
+   "verdict": "PASS"
+  },
+  "TP2:fused": {
+   "exit_code": -9,
+   "verdict": "FAIL",
+   "why": "no /health within the registered wait"
+  },
+  "TP2:fused_sym": {
+   "health_s": 41.026302337646484,
+   "verdict": "PASS"
+  },
+  "TP4:agnostic": {
+   "health_s": 59.02921748161316,
+   "verdict": "PASS"
+  },
+  "TP4:d44": {
+   "health_s": 59.029695987701416,
+   "verdict": "PASS"
+  },
+  "TP4:fused": {
+   "exit_code": -9,
+   "verdict": "FAIL",
+   "why": "no /health within the registered wait"
+  },
+  "TP4:fused_sym": {
+   "health_s": 43.0265257358551,
+   "verdict": "PASS"
+  },
+  "TP8:agnostic": {
+   "health_s": 69.03271293640137,
+   "verdict": "PASS"
+  },
+  "TP8:d44": {
+   "health_s": 90.05915021896362,
+   "verdict": "PASS"
+  },
+  "TP8:fused": {
+   "exit_code": -9,
+   "verdict": "FAIL",
+   "why": "no /health within the registered wait"
+  },
+  "TP8:fused_sym": {
+   "health_s": 49.060582399368286,
+   "verdict": "PASS"
+  }
+ },
+ "g0ii": {
+  "per_env": [
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   },
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   },
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   },
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   },
+   {
+    "died_abnormally": true,
+    "exit_code": -9,
+    "healthy": false,
+    "marker_found": true,
+    "verdict": "PASS"
+   }
+  ],
+  "verdict": "PASS"
+ },
+ "g0iii": {
+  "died_abnormally": true,
+  "exit_code": -9,
+  "healthy": false,
+  "marker_found": true,
+  "verdict": "PASS"
+ },
+ "g1": {
+  "DP2:agnostic": {
+   "verdict": "NOT_TESTED"
+  },
+  "DP2:d44": {
+   "verdict": "NOT_TESTED"
+  },
+  "DP4:agnostic": {
+   "verdict": "NOT_TESTED"
+  },
+  "DP4:d44": {
+   "verdict": "NOT_TESTED"
+  },
+  "DP8:agnostic": {
+   "verdict": "NOT_TESTED"
+  },
+  "DP8:d44": {
+   "verdict": "NOT_TESTED"
+  },
+  "TP2:agnostic": {
+   "verdict": "NOT_TESTED"
+  },
+  "TP2:d44": {
+   "verdict": "NOT_TESTED"
+  },
+  "TP4:agnostic": {
+   "verdict": "NOT_TESTED"
+  },
+  "TP4:d44": {
+   "verdict": "NOT_TESTED"
+  },
+  "TP8:agnostic": {
+   "verdict": "NOT_TESTED"
+  },
+  "TP8:d44": {
+   "verdict": "NOT_TESTED"
+  }
+ },
+ "g2": {
+  "TP2": {
+   "config": "TP2",
+   "teacher_agreement_tp1": null,
+   "verdict": "NOT_TESTED",
+   "why": "missing teacher-forced run"
+  },
+  "TP4": {
+   "config": "TP4",
+   "teacher_agreement_tp1": null,
+   "verdict": "NOT_TESTED",
+   "why": "missing teacher-forced run"
+  },
+  "TP8": {
+   "config": "TP8",
+   "teacher_agreement_tp1": null,
+   "verdict": "NOT_TESTED",
+   "why": "missing teacher-forced run"
+  }
+ },
+ "g3": {
+  "TP2": {
+   "combos": {
+    "green_16_92": {
+     "elapsed_s": {
+      "0": 0.47222142410464585,
+      "1": 0.47225995385088027
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    },
+    "green_44_64": {
+     "elapsed_s": {
+      "0": 0.40103063615970314,
+      "1": 0.4011076770257205
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    },
+    "plain": {
+     "elapsed_s": {
+      "0": 0.4162218449637294,
+      "1": 0.4163701278157532
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    }
+   },
+   "not_attempted": [],
+   "preflight": {
+    "modules": [
+     "torch.distributed.run"
+    ],
+    "ok": true,
+    "python": "/opt/conda/bin/python3",
+    "rc": 0,
+    "status": "RAN",
+    "stderr_tail": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+    "stress_script": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py",
+    "stress_script_present": true
+   },
+   "tp": 2,
+   "verdict": "PASS"
+  },
+  "TP4": {
+   "combos": {
+    "green_16_92": {
+     "elapsed_s": {
+      "0": 0.5144249880686402,
+      "1": 0.5143297400791198,
+      "2": 0.514583014883101,
+      "3": 0.5143175930716097
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    },
+    "green_44_64": {
+     "elapsed_s": {
+      "0": 0.492339801043272,
+      "1": 0.49248094903305173,
+      "2": 0.48991887690499425,
+      "3": 0.4898946590255946
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    },
+    "plain": {
+     "elapsed_s": {
+      "0": 0.44729817705228925,
+      "1": 0.44728187494911253,
+      "2": 0.4472625709604472,
+      "3": 0.44737773202359676
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    }
+   },
+   "not_attempted": [],
+   "preflight": {
+    "modules": [
+     "torch.distributed.run"
+    ],
+    "ok": true,
+    "python": "/opt/conda/bin/python3",
+    "rc": 0,
+    "status": "RAN",
+    "stderr_tail": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+    "stress_script": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py",
+    "stress_script_present": true
+   },
+   "tp": 4,
+   "verdict": "PASS"
+  },
+  "TP8": {
+   "combos": {
+    "green_16_92": {
+     "elapsed_s": {
+      "0": 0.6719995869789273,
+      "1": 0.671606024960056,
+      "2": 0.6708252071402967,
+      "3": 0.6707151769660413,
+      "4": 0.6707339680287987,
+      "5": 0.6719392170198262,
+      "6": 0.6721189939416945,
+      "7": 0.6723741248715669
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    },
+    "green_44_64": {
+     "elapsed_s": {
+      "0": 0.5492072578053921,
+      "1": 0.5511375460773706,
+      "2": 0.5487410870846361,
+      "3": 0.5512210291344672,
+      "4": 0.5527860841248184,
+      "5": 0.5522062249947339,
+      "6": 0.5524895971175283,
+      "7": 0.5526824069675058
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    },
+    "plain": {
+     "elapsed_s": {
+      "0": 0.5355487400665879,
+      "1": 0.5355958959553391,
+      "2": 0.5355076480191201,
+      "3": 0.5355916130356491,
+      "4": 0.5356288270559162,
+      "5": 0.5355372519697994,
+      "6": 0.5355035657994449,
+      "7": 0.5355092550162226
+     },
+     "hangs": [],
+     "launcher_rc": 0,
+     "launcher_status": "RAN",
+     "problems": [],
+     "verdict": "PASS"
+    }
+   },
+   "not_attempted": [],
+   "preflight": {
+    "modules": [
+     "torch.distributed.run"
+    ],
+    "ok": true,
+    "python": "/opt/conda/bin/python3",
+    "rc": 0,
+    "status": "RAN",
+    "stderr_tail": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+    "stress_script": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py",
+    "stress_script_present": true
+   },
+   "tp": 8,
+   "verdict": "PASS"
+  }
+ },
+ "g3b": {
+  "TP2:agnostic": {
+   "completed": 5382,
+   "g_descriptive": {
+    "T": 602.927219780162,
+    "g": 0.33378175510947916,
+    "q_means": [
+     226.28017039396255,
+     767.024570162956,
+     1423.8891077267738
+    ]
+   },
+   "n": 5382,
+   "server_alive": true,
+   "token_in_last_60s": true,
+   "verdict": "PASS"
+  },
+  "TP2:d44": {
+   "completed": 5382,
+   "g_descriptive": {
+    "T": 602.9310255891178,
+    "g": 0.36792426735804645,
+    "q_means": [
+     247.58856298456837,
+     848.0524869527931,
+     1567.700834265239
+    ]
+   },
+   "n": 5382,
+   "server_alive": true,
+   "token_in_last_60s": true,
+   "verdict": "PASS"
+  },
+  "TP4:agnostic": {
+   "completed": 10764,
+   "g_descriptive": {
+    "T": 594.4684570918325,
+    "g": 0.45780621093179,
+    "q_means": [
+     620.6346018273777,
+     2134.6078972734,
+     3905.8519714739027
+    ]
+   },
+   "n": 10764,
+   "server_alive": true,
+   "token_in_last_60s": true,
+   "verdict": "PASS"
+  },
+  "TP4:d44": {
+   "completed": 10764,
+   "g_descriptive": {
+    "T": 594.4684659750201,
+    "g": 0.4797781464495658,
+    "q_means": [
+     654.0405380873049,
+     2269.1384158699398,
+     4096.928517009389
+    ]
+   },
+   "n": 10764,
+   "server_alive": true,
+   "token_in_last_60s": true,
+   "verdict": "PASS"
+  },
+  "TP8:agnostic": {
+   "completed": 10036,
+   "g_descriptive": {
+    "T": 592.3723190140445,
+    "g": 0.0713358530694385,
+    "q_means": [
+     1686.8024053578097,
+     3467.592418106566,
+     2710.614568610391
+    ]
+   },
+   "n": 21528,
+   "server_alive": true,
+   "token_in_last_60s": true,
+   "verdict": "PASS"
+  },
+  "TP8:d44": {
+   "completed": 9634,
+   "g_descriptive": {
+    "T": 592.4032980538905,
+    "g": 0.05526058453172773,
+    "q_means": [
+     1763.5752301175573,
+     3369.459297066477,
+     2556.675139316914
+    ]
+   },
+   "n": 21528,
+   "server_alive": true,
+   "token_in_last_60s": true,
+   "verdict": "PASS"
+  }
+ },
+ "g4": {
+  "DP2:agnostic": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP2:d44": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP2:fused": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 2,
+    "disable_piecewise_cuda_graph": null,
+    "end": 0,
+    "piecewise_cuda_graph_tokens": null
+   },
+   "verdict": "PASS"
+  },
+  "DP2:fused_sym": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP4:agnostic": {
+   "capture_begin": 4,
+   "capture_end": 4,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP4:d44": {
+   "capture_begin": 4,
+   "capture_end": 4,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP4:fused": {
+   "capture_begin": 4,
+   "capture_end": 4,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 4,
+    "disable_piecewise_cuda_graph": null,
+    "end": 0,
+    "piecewise_cuda_graph_tokens": null
+   },
+   "verdict": "PASS"
+  },
+  "DP4:fused_sym": {
+   "capture_begin": 4,
+   "capture_end": 4,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP8:agnostic": {
+   "capture_begin": 8,
+   "capture_end": 8,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP8:d44": {
+   "capture_begin": 8,
+   "capture_end": 8,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "DP8:fused": {
+   "capture_begin": 8,
+   "capture_end": 8,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 8,
+    "disable_piecewise_cuda_graph": null,
+    "end": 0,
+    "piecewise_cuda_graph_tokens": null
+   },
+   "verdict": "PASS"
+  },
+  "DP8:fused_sym": {
+   "capture_begin": 8,
+   "capture_end": 8,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:agnostic": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:d44": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:fused": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 1,
+    "disable_piecewise_cuda_graph": null,
+    "end": 0,
+    "piecewise_cuda_graph_tokens": null
+   },
+   "verdict": "PASS"
+  },
+  "N1:fused_sym": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP2:agnostic": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP2:d44": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP2:fused": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 2,
+    "disable_piecewise_cuda_graph": null,
+    "end": 0,
+    "piecewise_cuda_graph_tokens": null
+   },
+   "verdict": "PASS"
+  },
+  "TP2:fused_sym": {
+   "capture_begin": 2,
+   "capture_end": 2,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP4:agnostic": {
+   "capture_begin": 4,
+   "capture_end": 4,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP4:d44": {
+   "capture_begin": 4,
+   "capture_end": 4,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP4:fused": {
+   "capture_begin": 4,
+   "capture_end": 4,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 4,
+    "disable_piecewise_cuda_graph": null,
+    "end": 0,
+    "piecewise_cuda_graph_tokens": null
+   },
+   "verdict": "PASS"
+  },
+  "TP4:fused_sym": {
+   "capture_begin": 4,
+   "capture_end": 4,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP8:agnostic": {
+   "capture_begin": 8,
+   "capture_end": 8,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP8:d44": {
+   "capture_begin": 8,
+   "capture_end": 8,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "TP8:fused": {
+   "capture_begin": 8,
+   "capture_end": 8,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 8,
+    "disable_piecewise_cuda_graph": null,
+    "end": 0,
+    "piecewise_cuda_graph_tokens": null
+   },
+   "verdict": "PASS"
+  },
+  "TP8:fused_sym": {
+   "capture_begin": 8,
+   "capture_end": 8,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "g5b": {
+  "DP2": {
+   "arms": {
+    "agnostic": {
+     "problems": [],
+     "realized": {
+      "0": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "1": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ]
+     },
+     "verdict": "PASS"
+    },
+    "d44": {
+     "problems": [],
+     "realized": {
+      "0": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "1": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ]
+     },
+     "verdict": "PASS"
+    }
+   },
+   "verdict": "PASS"
+  },
+  "DP4": {
+   "arms": {
+    "agnostic": {
+     "problems": [],
+     "realized": {
+      "0": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "1": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "2": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "3": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ]
+     },
+     "verdict": "PASS"
+    },
+    "d44": {
+     "problems": [],
+     "realized": {
+      "0": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "1": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "2": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "3": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ]
+     },
+     "verdict": "PASS"
+    }
+   },
+   "verdict": "PASS"
+  },
+  "DP8": {
+   "arms": {
+    "agnostic": {
+     "problems": [],
+     "realized": {
+      "0": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "1": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "2": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "3": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "4": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "5": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "6": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "7": [
+       [
+        0,
+        108
+       ],
+       [
+        74,
+        34
+       ],
+       [
+        108,
+        0
+       ]
+      ]
+     },
+     "verdict": "PASS"
+    },
+    "d44": {
+     "problems": [],
+     "realized": {
+      "0": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "1": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "2": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "3": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "4": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "5": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "6": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ],
+      "7": [
+       [
+        0,
+        108
+       ],
+       [
+        64,
+        44
+       ],
+       [
+        108,
+        0
+       ]
+      ]
+     },
+     "verdict": "PASS"
+    }
+   },
+   "verdict": "PASS"
+  }
+ },
+ "g5c": {
+  "DP2": {
+   "memory_mismatch": true,
+   "verdict": "NOT_TESTED",
+   "why": "arms measured ['agnostic', 'd44', 'fused_sym'] != ['fused', 'fused_sym', 'agnostic', 'd44']"
+  },
+  "DP4": {
+   "memory_mismatch": true,
+   "verdict": "NOT_TESTED",
+   "why": "arms measured ['agnostic', 'd44', 'fused_sym'] != ['fused', 'fused_sym', 'agnostic', 'd44']"
+  },
+  "DP8": {
+   "memory_mismatch": true,
+   "verdict": "NOT_TESTED",
+   "why": "arms measured ['agnostic', 'd44', 'fused_sym'] != ['fused', 'fused_sym', 'agnostic', 'd44']"
+  },
+  "N1": {
+   "memory_mismatch": true,
+   "verdict": "NOT_TESTED",
+   "why": "arms measured ['agnostic', 'd44', 'fused_sym'] != ['fused', 'fused_sym', 'agnostic', 'd44']"
+  },
+  "TP2": {
+   "memory_mismatch": true,
+   "verdict": "NOT_TESTED",
+   "why": "arms measured ['agnostic', 'd44', 'fused_sym'] != ['fused', 'fused_sym', 'agnostic', 'd44']"
+  },
+  "TP4": {
+   "memory_mismatch": true,
+   "verdict": "NOT_TESTED",
+   "why": "arms measured ['agnostic', 'd44', 'fused_sym'] != ['fused', 'fused_sym', 'agnostic', 'd44']"
+  },
+  "TP8": {
+   "memory_mismatch": true,
+   "verdict": "NOT_TESTED",
+   "why": "arms measured ['agnostic', 'd44', 'fused_sym'] != ['fused', 'fused_sym', 'agnostic', 'd44']"
+  }
+ },
+ "nvml_post": {
+  "DP2:agnostic": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:d44": {
+   "0": 1,
+   "1": 1
+  },
+  "DP2:fused_sym": {
+   "0": 1,
+   "1": 1
+  },
+  "DP4:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "DP4:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "DP4:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "DP8:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "DP8:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "DP8:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "N1:agnostic": {
+   "0": 1
+  },
+  "N1:d44": {
+   "0": 1
+  },
+  "N1:fused_sym": {
+   "0": 1
+  },
+  "TP2:agnostic": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:d44": {
+   "0": 1,
+   "1": 1
+  },
+  "TP2:fused_sym": {
+   "0": 1,
+   "1": 1
+  },
+  "TP4:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "TP4:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "TP4:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1
+  },
+  "TP8:agnostic": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "TP8:d44": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  },
+  "TP8:fused_sym": {
+   "0": 1,
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1,
+   "6": 1,
+   "7": 1
+  }
+ }
+}

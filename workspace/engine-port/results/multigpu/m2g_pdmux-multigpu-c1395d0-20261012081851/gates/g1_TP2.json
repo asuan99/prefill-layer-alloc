@@ -1,0 +1,50 @@
+{
+ "boots_dir": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-c1395d0-20261012081851/boots",
+ "config": "TP2",
+ "detail": {
+  "fused|agnostic": {
+   "abnormal_exit": true,
+   "alive_after": {
+    "agnostic": true,
+    "fused": false
+   },
+   "exposure_detail": {
+    "e_time": 0.653464280707285,
+    "exposure_steps": 0.5517241379310345,
+    "reasons": [],
+    "status": "OK",
+    "window": [
+     1873840.285865908,
+     1873850.022748023
+    ]
+   },
+   "exposure_split_steps": 0.5517241379310345,
+   "verdict": "NOT_TESTED",
+   "why": "pair outputs missing"
+  },
+  "fused|d44": {
+   "abnormal_exit": true,
+   "alive_after": {
+    "d44": true,
+    "fused": false
+   },
+   "exposure_detail": {
+    "e_time": 0.7416207344651607,
+    "exposure_steps": 0.7261724659606656,
+    "reasons": [],
+    "status": "OK",
+    "window": [
+     1872814.339057193,
+     1872824.833206015
+    ]
+   },
+   "exposure_split_steps": 0.7261724659606656,
+   "verdict": "NOT_TESTED",
+   "why": "pair outputs missing"
+  }
+ },
+ "verdicts": {
+  "fused|agnostic": "NOT_TESTED",
+  "fused|d44": "NOT_TESTED"
+ }
+}

@@ -1,0 +1,1 @@
+kind=m2g job=J4 spec=resourcespec-a100x4 expected_gpus=4 hard_cap_s=14400 t0_epoch=1791872663 deadline_epoch=1791887063 dryrun=0

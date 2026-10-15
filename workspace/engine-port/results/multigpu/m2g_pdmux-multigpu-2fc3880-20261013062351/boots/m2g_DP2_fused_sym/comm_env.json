@@ -1,0 +1,58 @@
+{
+ "jit_all_reduce_enabled": false,
+ "pinned": {},
+ "vars": {
+  "CUDA_DEVICE_MAX_CONNECTIONS": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_ALGO": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_DEBUG": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_IB_DISABLE": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_MAX_NCHANNELS": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_MIN_NCHANNELS": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_NVLS_ENABLE": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_P2P_DISABLE": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_P2P_LEVEL": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_PROTO": {
+   "state": "unset",
+   "value": null
+  },
+  "NCCL_SHM_DISABLE": {
+   "state": "unset",
+   "value": null
+  },
+  "SGLANG_CUSTOM_ALLREDUCE_ALGO": {
+   "state": "unset",
+   "value": null
+  },
+  "SGLANG_USE_JIT_ALL_REDUCE": {
+   "state": "unset",
+   "value": null
+  }
+ }
+}

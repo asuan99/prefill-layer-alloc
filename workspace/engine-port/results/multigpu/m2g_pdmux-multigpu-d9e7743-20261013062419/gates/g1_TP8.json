@@ -1,0 +1,54 @@
+{
+ "boots_dir": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/multigpu/m2g_pdmux-multigpu-d9e7743-20261013062419/boots",
+ "config": "TP8",
+ "detail": {
+  "fused|agnostic": {
+   "abnormal_exit": true,
+   "alive_after": {
+    "agnostic": true,
+    "fused": false
+   },
+   "exposure_detail": {
+    "e_time": 0.5405595440695247,
+    "exposure_steps": 0.47380410022779046,
+    "reasons": [],
+    "status": "OK",
+    "window": [
+     1953788.308129695,
+     1953792.438104854
+    ]
+   },
+   "exposure_split_steps": 0.47380410022779046,
+   "n": 64,
+   "verdict": "FAIL",
+   "why": "abnormal exit / zero-length output / prompts missing",
+   "zero_length": []
+  },
+  "fused|d44": {
+   "abnormal_exit": true,
+   "alive_after": {
+    "d44": true,
+    "fused": false
+   },
+   "exposure_detail": {
+    "e_time": 0.44557657089151653,
+    "exposure_steps": 0.47558386411889597,
+    "reasons": [],
+    "status": "OK",
+    "window": [
+     1952401.834049955,
+     1952406.838559115
+    ]
+   },
+   "exposure_split_steps": 0.47558386411889597,
+   "n": 64,
+   "verdict": "FAIL",
+   "why": "abnormal exit / zero-length output / prompts missing",
+   "zero_length": []
+  }
+ },
+ "verdicts": {
+  "fused|agnostic": "FAIL",
+  "fused|d44": "FAIL"
+ }
+}

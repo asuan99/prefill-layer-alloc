@@ -1,0 +1,34 @@
+[
+ {
+  "argv": [
+   "python3",
+   "workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py",
+   "serve-g1",
+   "--endpoint",
+   "{ENDPOINT}",
+   "--out",
+   "{OUT}/gates",
+   "--config",
+   "TP2",
+   "--arm",
+   "d44"
+  ],
+  "name": "g1_d44",
+  "type": "cmd"
+ },
+ {
+  "shape": "A",
+  "type": "warmup"
+ },
+ {
+  "block": "m2g_g3b",
+  "ext": 0,
+  "n_req": 5382,
+  "offered": 8.97,
+  "round": 1,
+  "rung": "G3B",
+  "seed": 4386,
+  "shape": "A",
+  "type": "cell"
+ }
+]

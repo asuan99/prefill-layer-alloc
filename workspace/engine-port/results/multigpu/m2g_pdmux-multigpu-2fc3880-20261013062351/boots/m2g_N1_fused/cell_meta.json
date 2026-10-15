@@ -1,0 +1,62 @@
+{
+ "capacity_recorded": true,
+ "cuda_graph_capture_log": "cuda_graph_capture.log",
+ "dp_size": 1,
+ "gpu_ids": "0",
+ "kv_cache_tokens": [
+  2723789
+ ],
+ "mamba_lines_note": "mamba allocation is logged per TP rank and DP replica; compare across ranks, do not sum",
+ "max_mamba_cache_size": [
+  48
+ ],
+ "max_running_requests_logged": [
+  48,
+  48
+ ],
+ "max_running_requests_requested": 48,
+ "max_total_num_tokens": [
+  2723789
+ ],
+ "piecewise": {
+  "capture_log_lines": 6,
+  "chunked_prefill_size": "8192",
+  "cuda_graph_max_bs": "256",
+  "disable_cuda_graph": "False",
+  "disable_overlap_schedule": "False",
+  "disable_piecewise_cuda_graph": "True",
+  "piecewise_cuda_graph_max_tokens": "8192",
+  "piecewise_cuda_graph_tokens": "[4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 1280, 1536, 1792, 2048, 2304, 2560, 2816, 3072, 3328, 3584, 3840, 4096, 4608, 5120, 5632, 6144, 6656, 7168, 7680, 8192]",
+  "piecewise_lines": 1,
+  "sample": [
+   "[2026-10-13 06:31:05.336] Capture cuda graph begin. This can take up to several minutes. avail mem=13.57 GB",
+   "[2026-10-13 06:31:05.336] Capture cuda graph bs [1, 2, 4, 8, 12, 16, 24, 32, 40, 48]",
+   "[2026-10-13 06:31:09.375] Capture cuda graph end. Time elapsed: 4.04 s. mem usage=0.23 GB. avail mem=13.34 GB.",
+   "[2026-10-13 06:31:09.376] Disable piecewise CUDA graph because --disable-piecewise-cuda-graph is set",
+   "[2026-10-13 06:31:19.364] Prefill batch, #new-seq: 1, #new-token: 7, #cached-token: 0, full token usage: 0.00, mamba usage: 0.02, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 0.00",
+   "[2026-10-13 06:31:19.515] Prefill batch, #new-seq: 1, #new-token: 1, #cached-token: 0, full token usage: 0.00, mamba usage: 0.00, #running-req: 0, #queue-req: 0, cuda graph: False, input throughput (token/s): 46.48"
+  ]
+ },
+ "scheduler_lines": 1,
+ "scheduler_lines_expected": 1,
+ "scheduler_lines_match_dp": true,
+ "server_info": {
+  "dp_size": 1,
+  "effective_max_running_requests_per_dp": [
+   48
+  ],
+  "load_balance_method": "round_robin",
+  "max_req_input_len": 16378,
+  "max_running_requests": 48,
+  "max_total_num_tokens": 2723789,
+  "token_capacity": [
+   2723789
+  ],
+  "tp_size": 1
+ },
+ "tp_size": 1,
+ "ulimit_n": [
+  1048576,
+  1048576
+ ]
+}

@@ -1,0 +1,131 @@
+{
+ "contam": {
+  "N1:agnostic": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:d44": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:fused": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  },
+  "N1:fused_sym": {
+   "gpu_contaminated": false,
+   "problems": [],
+   "procs_visible": true
+  }
+ },
+ "g0i": {
+  "N1:agnostic": {
+   "health_s": 108.1914005279541,
+   "verdict": "PASS"
+  },
+  "N1:d44": {
+   "health_s": 49.027912855148315,
+   "verdict": "PASS"
+  },
+  "N1:fused": {
+   "health_s": 51.161407470703125,
+   "verdict": "PASS"
+  },
+  "N1:fused_sym": {
+   "health_s": 45.169700622558594,
+   "verdict": "PASS"
+  }
+ },
+ "g1": {},
+ "g2": {},
+ "g3": {},
+ "g3b": {},
+ "g4": {
+  "N1:agnostic": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:d44": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:fused": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "True",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 1280, 1536, 1792, 2048, 2304, 2560, 2816, 3072, 3328, 3584, 3840, 4096, 4608, 5120, 5632, 6144, 6656, 7168, 7680, 8192]"
+   },
+   "verdict": "PASS"
+  },
+  "N1:fused_sym": {
+   "capture_begin": 1,
+   "capture_end": 1,
+   "capture_failed_text": false,
+   "disable_cuda_graph": false,
+   "piecewise": {
+    "begin": 0,
+    "disable_piecewise_cuda_graph": "False",
+    "end": 0,
+    "piecewise_cuda_graph_tokens": "[]"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "g5b": {},
+ "g5c": {
+  "N1": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": false
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.0009189404906180325,
+    "min_arm": 0.0009197857189578751
+   },
+   "memory_mismatch": false,
+   "reasons": [],
+   "rule_iii_would_have_flagged": false,
+   "verdict": "PASS"
+  }
+ },
+ "nvml_post": {
+  "N1:agnostic": {
+   "0": 1
+  },
+  "N1:d44": {
+   "0": 1
+  },
+  "N1:fused": {
+   "0": 1
+  },
+  "N1:fused_sym": {
+   "0": 1
+  }
+ }
+}

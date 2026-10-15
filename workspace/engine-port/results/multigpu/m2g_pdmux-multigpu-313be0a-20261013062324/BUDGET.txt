@@ -1,0 +1,1 @@
+kind=m2g job=J1 spec=resourcespec-a100x2 expected_gpus=2 hard_cap_s=14400 t0_epoch=1791872630 deadline_epoch=1791887030 dryrun=0

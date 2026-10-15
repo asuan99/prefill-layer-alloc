@@ -1,0 +1,70 @@
+{
+ "cells": {
+  "N1:agnostic": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:d44": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:fused": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  },
+  "N1:fused_sym": {
+   "included": true,
+   "not_tested": false,
+   "reason": "",
+   "reasons": []
+  }
+ },
+ "configs": {
+  "N1": {
+   "MEMORY_RULE_III_COUNTERFACTUAL": {
+    "denominator_fused_sym": false,
+    "denominator_min_arm": false
+   },
+   "arm_rel_diff": {
+    "fused_sym": 0.0009189404906180325,
+    "min_arm": 0.0009197857189578751
+   },
+   "flags": [],
+   "g_sym_undefined": false,
+   "memory_mismatch": false,
+   "rule_iii_would_have_flagged": false,
+   "tp_numeric_divergent": false
+  }
+ },
+ "contam_unverified": [],
+ "findings": [],
+ "g0ii": "NOT_RUN_IN_JOB",
+ "g0iii": "NOT_RUN_IN_JOB",
+ "g1_exposure_split_steps": {},
+ "g5a_gpu_descriptive": "RECORDED",
+ "g5a_unit_test": "PASS",
+ "job": "J1",
+ "nvml_expected_procs": {
+  "N1:agnostic": {
+   "0": 1
+  },
+  "N1:d44": {
+   "0": 1
+  },
+  "N1:fused": {
+   "0": 1
+  },
+  "N1:fused_sym": {
+   "0": 1
+  }
+ },
+ "nvml_procs_visible": true,
+ "prereg": "PREREG_MULTIGPU_2026-10-12.md rev11",
+ "schema": "cells[f'{config}:{arm}'] = {included, reason, reasons, not_tested}"
+}

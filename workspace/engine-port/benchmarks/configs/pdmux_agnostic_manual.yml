@@ -1,0 +1,21 @@
+# M2/M3 multi-GPU `agnostic` arm (PREREG_MULTIGPU_2026-10-12.md rev6 sec 2).
+#
+# The A100 auto grid `divide_sm(108, (8, 0), sm_group_num - 2 = 2)` gives
+# [(74, 34), (54, 54)] and the auto selector is
+#     idx = max(1, min(2, decode_bs * 2 // decode_bs_divisor))
+# i.e. idx 1 for decode_bs < 36 and idx 2 for decode_bs >= 36.  The manual
+# scan in `adjust_stream_groups` takes the LAST row whose threshold
+# decode_bs >= threshold, so thresholds [0, 36] reproduce the same selector.
+# The auto path is refused under TP/DP > 1 (device assert, M2), hence this
+# manual equivalent.  Equivalence over decode_bs 0..512 is the G5(a)
+# deterministic CPU test: tests/test_mg_agnostic_manual_equiv.py.
+#
+# sm_counts = [(108, 0), (74, 34), (54, 54), (0, 108)].
+# decode_bs_divisor is unused by the manual path; kept at 36 so the file states
+# the auto selector it replaces.
+sm_group_num: 4
+manual_divisions:
+  - [74, 34, 0]
+  - [54, 54, 36]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36

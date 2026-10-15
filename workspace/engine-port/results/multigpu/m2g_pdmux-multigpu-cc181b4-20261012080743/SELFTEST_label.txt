@@ -1,0 +1,8 @@
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+mutant a_server_decode_lines        killed=True on ['S4_prefill_priority_saturated']
+mutant b_sample_mean                killed=True on ['S3_burst_unsaturated']
+mutant c_keep_errors_in_Qc          killed=True on ['S7_errors_near_threshold']
+mutant d_running_eq_cap             killed=True on ['S1_saturated_fifo', 'S4_prefill_priority_saturated', 'S5_cap_bound_unsaturated', 'S6_saturated_low_running']
+mutant CONTROL_unmutated            killed=False on []
+selftest: PASS

@@ -1,0 +1,70 @@
+{
+ "combos": {
+  "green_16_92": {
+   "elapsed_s": {
+    "0": 0.6719995869789273,
+    "1": 0.671606024960056,
+    "2": 0.6708252071402967,
+    "3": 0.6707151769660413,
+    "4": 0.6707339680287987,
+    "5": 0.6719392170198262,
+    "6": 0.6721189939416945,
+    "7": 0.6723741248715669
+   },
+   "hangs": [],
+   "launcher_rc": 0,
+   "launcher_status": "RAN",
+   "problems": [],
+   "verdict": "PASS"
+  },
+  "green_44_64": {
+   "elapsed_s": {
+    "0": 0.5492072578053921,
+    "1": 0.5511375460773706,
+    "2": 0.5487410870846361,
+    "3": 0.5512210291344672,
+    "4": 0.5527860841248184,
+    "5": 0.5522062249947339,
+    "6": 0.5524895971175283,
+    "7": 0.5526824069675058
+   },
+   "hangs": [],
+   "launcher_rc": 0,
+   "launcher_status": "RAN",
+   "problems": [],
+   "verdict": "PASS"
+  },
+  "plain": {
+   "elapsed_s": {
+    "0": 0.5355487400665879,
+    "1": 0.5355958959553391,
+    "2": 0.5355076480191201,
+    "3": 0.5355916130356491,
+    "4": 0.5356288270559162,
+    "5": 0.5355372519697994,
+    "6": 0.5355035657994449,
+    "7": 0.5355092550162226
+   },
+   "hangs": [],
+   "launcher_rc": 0,
+   "launcher_status": "RAN",
+   "problems": [],
+   "verdict": "PASS"
+  }
+ },
+ "not_attempted": [],
+ "preflight": {
+  "modules": [
+   "torch.distributed.run"
+  ],
+  "ok": true,
+  "python": "/opt/conda/bin/python3",
+  "rc": 0,
+  "status": "RAN",
+  "stderr_tail": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+  "stress_script": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py",
+  "stress_script_present": true
+ },
+ "tp": 8,
+ "verdict": "PASS"
+}
