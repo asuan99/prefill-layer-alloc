@@ -7,8 +7,10 @@
 - 원문: [DECISIONS_Q1_consolidated_2026-10-15.md](../../handoff_review_2026-10-15/DECISIONS_Q1_consolidated_2026-10-15.md). 근거: [Q1_N2_CLOSURE_PREP_2026-10-15.md](../../handoff_review_2026-10-15/Q1_N2_CLOSURE_PREP_2026-10-15.md) §3, §5–6.
 
 ## 2. 종료의 의미
+- **허용 문안**: N2(rev18)·N3(rev7)·E2(VESSL r2)는 2026-10-15 사용자 결정으로 새 Job 없이 종료했다. 종료는 완결이나 지지를 뜻하지 않으며, 게이트 #6은 부분 측정·미닫힘이다.
 - **이 봉인으로 새 Job을 내지 않는다.** 예정 Job은 원래 없었다(E2VR-6은 N2가 승계).
 - 아카이브만 쓰는 CPU 분석은 종료 뒤에도 허용한다(Job 종료와 분석 종료의 분리).
+- **아카이브 분석 규약**(감사 1회차 C-R10, [판정서](../../handoff_review_2026-10-15/VERDICT_spec_v0_and_closure_2026-10-15.md) §5): 종료 뒤 아카이브 분석은 **사후·비등록 탐색**이다. 등록 라벨 이름으로 새 라벨을 만들지 않고, 결과 감사 전에는 인용하지 않는다.
 - Q1(sticky의 D44 실현)·R2 기전은 `NOT-YET-SUPPORTED`로 남는다. 종료는 지지가 아니다.
 
 ## 3. 봉인 커밋·digest (파일에서 직접 확인)
@@ -21,12 +23,12 @@
 | `test_e2_vessl.py` 고정값 | `d163d7020cbe4d737904036b906d63be548529c452e84f924bca415b5a99207c` | VERDICT_e2_vessl_rules_rev2:48 |
 | Job | `e2v_pdmux-e2-sticky-vessl-22c8c64-20261006020317` (20/20 boot, exit 0) | 결과 감사 문서 |
 | 결과 감사 | [VERDICT_result_e2_vessl_r2_2026-10-06.md](VERDICT_result_e2_vessl_r2_2026-10-06.md) (死因 0, 라벨 기계적 `CONFIRMED`; 등록 25/25 일치) | 문서 본문 |
-| 로컬 태그(D10) | `seal/e2-vessl-r2` → `22c8c64` (로컬만) | 아래 §5 |
+| 로컬 태그(D10) | `seal/e2-vessl-r2` → `22c8c64` (로컬만) | 판정서 §0: 태그가 의도한 커밋을 가리킴(감사 직접 확인) |
 
 ## 4. 승계 caveat·금지 서술 (링크로만)
 - E2VR-1…8: [VERDICT_result_e2_vessl_r2_2026-10-06.md](VERDICT_result_e2_vessl_r2_2026-10-06.md), [RESULT_e2_vessl_r2_2026-10-06.md](RESULT_e2_vessl_r2_2026-10-06.md).
 - 봉인 캠페인 수치와 merge 뒤 엔진의 수치는 비교 금지.
-- D9: 봉인 시험은 (가) "기지 실패 목록 공시". 시험 파일 무편집. 목록 파일 확정 후 링크: **(자리 표시 — 미작성)**.
+- D9: 봉인 시험은 (가) "기지 실패 목록 공시". 시험 파일 무편집. 기지 실패 목록은 C-R1–C-R4 수리 진행 중이며 감사 2회차 대상이다(목록 파일 링크는 확정 후). 금지(C-4): "시험 merge에서 회귀 0건".
 - `tests/test_e2_vessl.py:208`(`this_head`)은 merge 즉시 실패가 예상되는 기지 실패 후보다(확정은 목록에서). 이 시험을 고치면 `test_e2_vessl_r2.py`의 바이트 고정이 깨지므로 수정 불가.
 
 ## 5. 미확인
