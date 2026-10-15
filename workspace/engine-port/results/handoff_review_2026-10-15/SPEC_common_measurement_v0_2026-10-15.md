@@ -62,7 +62,8 @@ Q2 포지션 = P-C(혼합) · Q3 G0·G2 표준 셀 = arXiv-Sum 16k [결정 2026-
 **공통 기판 규칙** (모든 절에 앞선다):
 - 한 비교의 arm은 한 Job 안에 두고, **같은 Job 안 공통 rate 격자**(절대 req/s, 데이터 보기 전 등록)에서 잰다(운영 모델 · #262 · R-1). 다른 Job의 arm 값은 비교하지 않는다.
 - 기판 gate는 MG §16-3과 같다: GPU 이름 정확히 "NVIDIA A100-SXM4-80GB", power limit 400 W, 기대 GPU 수 일치, 어긋나면 `ABORT_SUBSTRATE`.
-- 엔진 트리 digest를 셀마다 기록한다. `multigpu-scaling` merge 전에는 G0와 M3 N=1 앵커의 바이너리가 달라 **직접 비교 금지**(D §3.2-6).
+- 엔진 트리 digest를 셀마다 기록한다. [2026-10-15 갱신] `multigpu-scaling`은 main `dc06c870`에 merge됐다(조건부 가, 감사 2회차 §6). merge 트리의 ENGINE_DIGEST는 `82a5fc5b…`(multigpu 세션 재대조)이고 merge 이후 main 쪽 엔진 src 변경은 0이다 [측정, 트랙 기록]. G0와 M3 N=1 앵커는 **같은 ENGINE_DIGEST일 때만** 같은 바이너리로 본다. 그래도 Job이 다르면 수준 비교는 금지다(운영 모델·#262). merge 전 바이너리로 잰 봉인 캠페인(N2/N3/E2) 수치와 비교 금지(N2 금지 41, N3 #262).
+- **측정 Job 로그 knob(2026-10-15 추가, multigpu 이양 요청 ②)**: merge 트리의 `job_entry.sh`는 기본값으로 로그 tee 미러(`PDMUX_LOG_MIRROR=1`)와 300 s heartbeat(`PDMUX_HEARTBEAT_S=300`, 주기적 `find`)를 측정 중에 띄운다 [코드, `job_entry.sh:51-52, 299`]. 측정 Job은 **`PDMUX_HEARTBEAT_S=0`**으로 고정하고, `PDMUX_LOG_MIRROR` 값은 `meta/log_mirror.txt`에 기록·공시한다 [결정 대기 아님 — 관측자 상주 프로세스를 줄이는 보수 방향, PREREG마다 값 등록]. bring-up·프로브 Job은 기본값 허용.
 - 고정 노브: cudagraph ON, radix OFF, `mem_fraction_static 0.82`, `max_running_requests` = cap, **`max_mamba_cache_size` = cap 명시**(§1-23), attention backend `flashinfer`, `mamba_ssm_dtype` 명시 고정(R §3.1: dtype이 B\_max 순위를 바꾼다).
 
 ---

@@ -1,6 +1,8 @@
 # TRACK: multigpu — A100 ×1/2/4/8 DP·TP 확장   (worktree `prefill-layer-alloc-multigpu`, branch `multigpu-scaling`)
 
-> 이 트랙의 현재 상태 유일본(60줄). 이력은 git, 세부는 링크. 정본 반영은 main의 promote.
+> **2026-10-15 main 세션으로 이양(사용자 지시).** 현재 상태·다음 행동·결정 대기는 `tracks/main.md`가 유일본이다. 이 파일은 이양 시점 기록으로만 남는다(결정 대기 절은 main으로 옮김). main 세션 확인 요청 ①–④ 처리: ① 트랙 문서 merge `351c904` ② 로그 knob을 명세 v0.2 공통 기판 규칙에 등록(측정 Job `PDMUX_HEARTBEAT_S=0`) ③ §6-1 preflight를 G0·M3 공용 1회로 설계 중(`results/handoff_review_2026-10-15/PREFLIGHT_merge_cl3_design_2026-10-15.md`) ④ main dev tree 동기화는 사용자 결정 대기(`tracks/main.md`).
+
+> (이양 전) 이 트랙의 현재 상태 유일본(60줄). 이력은 git, 세부는 링크. 정본 반영은 main의 promote.
 
 ## 목표
 PD-mux 이득의 N-스케일링(1차 estimand G_sym = λ*_agnostic / λ*_fused_sym) + multi-GPU 고유 기전.
@@ -19,7 +21,7 @@ PD-mux 이득의 N-스케일링(1차 estimand G_sym = λ*_agnostic / λ*_fused_s
 1. M3는 main의 Q23(M3 PREREG 개정)·D-15(1차 분모) 결정 뒤에. 개정에 `PDMUX_LOG_MIRROR`/`PDMUX_HEARTBEAT_S` 값 등록(권고: 측정 Job은 `PDMUX_HEARTBEAT_S=0`)을 포함
 1-b. 첫 GPU Job 전에 §6-1 preflight: VESSL에서 CL-3 미검증 시험을 전(`7b15214`)·후(merge) 짝으로 (id, 서명) 대조, L2 밖 신규 실패 시 중단 → 이후 dry-run → 승인 → 직렬 제출
 2. 이후 `mg_label.py` 결합 → result-analyst → claims-auditor 결과 감사
-## 사용자 결정 대기
+## (이력) 결정 대기 — main으로 이관됨
 - **M3 PREREG 개정 여부** (main Q23으로 이관, D-15 선행) — 연구 감사 의견(main 핸드오프 (D)절): shape C 부재·`max_prefill_tokens` 미등록·N 간 비교엔 절대 SLO 필요·TP에서 GPU당 decode SM 요구 변화 / 현행 M3 제출 · PREREG 개정 후 재감사(권고: 개정 범위만 먼저 결정)
 - **M3 제출 승인** — 모형 예보 예약 약 124 GPU-h, 최장 약 9 h
 - **[main 세션 확인 요청 ①] 이 파일 최신본 = multigpu worktree 쪽** — main branch의 `tracks/multigpu.md`는 merge 시점(`dc06c870`) 사본이라 낡았다. 이후 multigpu 커밋은 이 파일만 바꾼다 / 다음 merge 때 `git merge multigpu-scaling`(충돌 없음 예상) · 그 전엔 worktree 쪽을 읽기
