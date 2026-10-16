@@ -34,6 +34,20 @@ With `max_req_len = min(context_len - 1, pool - 1)` and
                 asked for.  This is the dangerous one: the run "succeeds", its
                 ITL/TTFT are recorded, and the decode work an arm was supposed
                 to be compared under is quietly different per arm composition.
+                [2026-10-16 correction] Two different engine paths fall under
+                this predicate.  `input + output >= context_len` is REFUSED by
+                `tokenizer_manager._validate_one_request` (validate_total_tokens);
+                on a streaming request that arrives as HTTP 200 + one
+                `{"error": ...}` SSE chunk, which trace_loadgen before 2026-10-16
+                recorded as a 1-token success.  `input + output == context_len - 1`
+                is accepted and the scheduler clamps max_new_tokens by one
+                (`init_req_max_new_tokens`).  Both are refused here; at run time
+                trace_loadgen now classifies them as SSE_ERROR / OUTPUT_SHORT.
+
+`--fit-only --context-length N` (2026-10-16) checks only the trace predicates
+against N and does not read the model config: it is the per-cell pre-flight of
+`engine_bench_runner.sh` (ABORT_CONTEXT_TOO_SHORT), which must not need the HF
+cache.  The model-limit check stays the job of the r2_eval.sbatch pre-flight.
 
 Both are pre-flight refusals, not warnings.  A campaign that cannot be served
 at the model's real context length is an experiment-design question (pick a
@@ -205,9 +219,57 @@ def check(
     return resolved, problems
 
 
+def fit_problems(context_length: int, traces: Sequence[Path]) -> List[str]:
+    """Trace-vs-context problems only (no model config).  Empty = every request fits.
+
+    Fits means: input < context_length - INPUT_SLACK and
+    input + output <= context_length - TOTAL_SLACK, for every request of every trace.
+    A trace with no request records is itself a problem (nothing was checked).
+    """
+    problems: List[str] = []
+    if int(context_length) < 1:
+        problems.append(f"context-length {context_length} is not positive")
+        return problems
+    if not traces:
+        problems.append("no trace given")
+    for trace in traces:
+        if not trace.is_file():
+            problems.append(f"{trace}: trace file not found")
+            continue
+        if not read_trace_requests(trace):
+            problems.append(f"{trace.name}: no request records")
+            continue
+        rejected, truncated, max_input, max_total = trace_violations(trace, int(context_length))
+        if rejected or truncated:
+            problems.append(
+                f"{trace.name}: {len(rejected)} request(s) with input >= "
+                f"context_length-{INPUT_SLACK} and {len(truncated)} with "
+                f"input+output > context_length-{TOTAL_SLACK} (max input {max_input}, "
+                f"max input+output {max_total}, context_length {context_length}; "
+                f"need context_length >= {max(max_total + TOTAL_SLACK, max_input + INPUT_SLACK + 1)})"
+            )
+    return problems
+
+
+def fit_main(context_length: Optional[int], traces: Sequence[Path]) -> int:
+    if context_length is None:
+        print("ABORT_CONTEXT_TOO_SHORT --fit-only needs --context-length", file=sys.stderr)
+        return 2
+    try:
+        problems = fit_problems(context_length, traces)
+    except Exception as exc:                       # noqa: BLE001 - reported, not hidden
+        problems = [f"trace read failed: {exc!r}"]
+    for problem in problems:
+        print(f"ABORT_CONTEXT_TOO_SHORT {problem}", file=sys.stderr)
+    if problems:
+        return 2
+    print(int(context_length))
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--model", required=True)
+    parser.add_argument("--model", default=None)
     parser.add_argument(
         "--context-length",
         type=int,
@@ -215,8 +277,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="requested context length; default = the model's derived limit",
     )
     parser.add_argument("--trace", type=Path, action="append", default=[])
+    parser.add_argument(
+        "--fit-only",
+        action="store_true",
+        help="check only the trace predicates against --context-length "
+        "(no model config read; --model ignored)",
+    )
     args = parser.parse_args(argv)
 
+    if args.fit_only:
+        return fit_main(args.context_length, args.trace)
+    if args.model is None:
+        parser.error("--model is required unless --fit-only")
     try:
         resolved, problems = check(args.model, args.context_length, args.trace)
     except Exception as exc:                       # noqa: BLE001 - reported, not hidden

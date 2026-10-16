@@ -191,6 +191,25 @@ if [[ "${PDMUX_DRY_RUN:-0}" == 1 ]]; then
   exit 0
 fi
 
+# ---- context-length pre-flight (2026-10-16, M3 rev12 audit R-2/R-3; M3 + G0 shared).
+# Every trace request must fit the context length THIS boot is launched with (read back from
+# server_args, not re-derived): input < ctx-6 and input+output <= ctx-2.  Otherwise SGLang
+# refuses it after acceptance (streaming: HTTP 200 + an "error" chunk) or clamps max_new_tokens
+# by one, and the cell measures something other than the trace.  Fail closed before the boot.
+# The value itself is not chosen here (PREREG/spec decide it; PDMUX_CONTEXT_LENGTH carries it).
+# Necessary, not sufficient: the KV-pool bound (max_req_len = min(ctx-1, pool-1)) is only known
+# after boot; trace_loadgen classifies what slips through as SSE_ERROR / OUTPUT_SHORT.
+ctx_effective=""
+for (( i = 0; i + 1 < ${#server_args[@]}; i++ )); do
+  [[ "${server_args[i]}" == --context-length ]] && ctx_effective="${server_args[i+1]}"
+done
+if ! python -m pdmux_eval.context_limit --fit-only --context-length "${ctx_effective}" \
+      --trace "${trace_path}" >"${run_dir}/context_preflight.txt" 2>&1; then
+  cat "${run_dir}/context_preflight.txt" >&2
+  echo "ABORT_CONTEXT_TOO_SHORT trace=${trace_path} context_length=${ctx_effective}" >&2
+  exit 5
+fi
+
 cleanup() {
   if [[ -n "${server_pid:-}" ]]; then
     kill "${server_pid}" 2>/dev/null || true
