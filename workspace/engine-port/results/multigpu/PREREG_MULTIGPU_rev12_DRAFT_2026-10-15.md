@@ -1,22 +1,23 @@
 # 사전등록 개정안 초안 — PREREG_MULTIGPU rev12 (M3·M4), 2026-10-15
 
-> **rev12 DRAFT r1 — 감사 1회차 수리판 (2026-10-16).** 1회차 판정서 `VERDICT_m3_rev12_draft_r1_2026-10-15.md`(이하 VR1, **NO-GO**, 死因 D-1)의 필수 R-1–R-5와 권고 R-6–R-9를 모두 반영했다. 수리 전 r0 = 246줄판, sha256 `29dd7d2f73b9edbe…`(미커밋). **r1+**(2026-10-16): 커밋 `8e121cd`의 r1(300줄)에 DECISIONS §5 사용자 결정(R-8 입력 내용·U13·U14)과 loadgen 수정 커밋 `0eca947`을 반영했다.
-> 근거 결정: `../handoff_review_2026-10-15/DECISIONS_Q1_consolidated_2026-10-15.md` §4(사용자 결정 2026-10-16 "진행"): 순서, R-1 대 D-7 해석, U3, venv (c), D-10, cap 특성화, context 20480. §5(2026-10-16 "진행"): R-8 실제 문서 토큰, U13, U14.
-> **지위: DRAFT r1+. 미봉인. 감사 1회차 NO-GO 뒤 수리, 2회차(상한) 대기.** 대상 `PREREG_MULTIGPU_2026-10-12.md` rev11(sha256 앞 16자리 `8b617d3d59d6cb63`, 봉인 `313be0a`)은 **고치지 않는다**.
+> **rev12 DRAFT r2 — 규칙층 감사 2회 완료(상한), D-1′ 사용자 결정 (a)로 해소, 다음 = 하네스 수정 → 하네스층 감사 → 재봉인 (2026-10-16).** 2회차 판정서 `VERDICT_m3_rev12_draft_r2_2026-10-16.md`(이하 VR2, NO-GO → 사용자 결정, 死因 D-1′)에 대한 DECISIONS §6((a) 합산 1%, F-1–F-8 전부 반영)을 반영했다.
+> 이력: r0(246줄, sha256 `29dd7d2f73b9edbe…`, 미커밋) → r1(`8e121cd`, 1회차 판정서 `VERDICT_m3_rev12_draft_r1_2026-10-15.md` = VR1의 R-1–R-9) → r1+(`3f48a29`, DECISIONS §5·loadgen `0eca947`) → r2(이 판, 미커밋).
+> 근거 결정: `../handoff_review_2026-10-15/DECISIONS_Q1_consolidated_2026-10-15.md` §4(사용자 결정 2026-10-16 "진행"): 순서, R-1 대 D-7 해석, U3, venv (c), D-10, cap 특성화, context 20480. §5(2026-10-16 "진행"): R-8 실제 문서 토큰, U13, U14. §6(2026-10-16 "진행"): D-1′ = (a), F-1–F-8.
+> **지위: DRAFT r2. 미봉인. 규칙층 감사는 상한(2회)에 도달해 3회차는 없다. r2 반영 바이트는 감사받지 않은 diff이며 하네스층 감사의 변이 시험(§19-12)으로 확인한다(VR2 §1).** 대상 `PREREG_MULTIGPU_2026-10-12.md` rev11(sha256 앞 16자리 `8b617d3d59d6cb63`, 봉인 `313be0a`)은 **고치지 않는다**.
 > rev12가 채택되면 이 초안의 §19를 새 판 PREREG에 붙이고 우선순위를 **§19 > §18 > §17 > §16 > §3·§4·§15**로 둔다. M2g(§3)와 PASS 표 4개(`99ed704`)는 바꾸지 않는다.
 > 근거: 사용자 결정(2026-10-15) "M3 PREREG 개정 후 재감사" · IDX Q23 · 명세 v0.2+(`../handoff_review_2026-10-15/SPEC_common_measurement_v0_2026-10-15.md`, 이하 SP, DRAFT·정본 아님) ·
 > 판정서 V(1회차) §3 A-13 ①–⑤, V2(2회차) §6 · DESIGN §3.2–3.3 · main 핸드오프 (D)절 ①–⑥(`handoff-report/session_handoff_2026-10-13.md:219`).
-> 작성 시점 상태: GPU 사용 0, 서빙 측정 0, 성능 판정 0, 커밋 0. 수치 라벨은 SP와 같다: [측정]·[유도]·[코드]·[결정]·[제안]. VR1의 반전 시험 수치는 **모형 예보**이며 측정으로 인용하지 않는다.
+> 작성 시점 상태: GPU 사용 0, 서빙 측정 0, 성능 판정 0, 커밋 0. 수치 라벨은 SP와 같다: [측정]·[유도]·[코드]·[결정]·[제안]. VR1·VR2의 반전 시험 수치는 **모형 예보**이며 측정으로 인용하지 않는다.
 > 이 초안의 모든 수치는 VESSL A100 SXM 80GB(108 SM) 기판 범위이며 KISTI 수치와 섞지 않는다.
 
 **수리 색인 (VR1 §5 → 이 판의 절)**
 
 | 수리 | 내용 | 고친 곳 |
 |---|---|---|
-| R-1 (死因 D-1) | λ\*\_thr: HI 셀 서버 측 오류 > 1% → `SERVER_ERROR_HI`, 그 arm λ\* = `UNRESOLVED`, G 짝 무효. 변이 시험 등록. D-7과의 관계(사용자 승인 해석) | §19-1 R7-3 행, §19-1b, §19-12 |
+| R-1 (死因 D-1) | λ\*\_thr: HI 셀 서버 측 오류 > 1% → `SERVER_ERROR_HI`, 그 arm λ\* = `UNRESOLVED`, G 짝 무효. 변이 시험 등록. D-7과의 관계(사용자 승인 해석). **r2: 합산 1%로 대체(D-1′ (a))** | §19-1 R7-3 행, §19-1b, §19-12 |
 | R-2 | 공용 loadgen: SSE `error` 키 = 서버 측 오류, `OUTPUT_SHORT`. 커밋 `<sha 미정>`을 등록 요구로(**r1+: `0eca947`로 채움**) | §19-1b, §19-12 |
 | R-3 | U2 = (a) context 20480, 근거 수치, U2(b) 실행 불가, G5(c)(ii) X 항, `mg_const.CONTEXT_LENGTH` 변경 지점 | §19-2 라벨, §19-3, §19-12, §19-13 |
-| R-4 | `mamba_ssm_dtype`: 키 없으면 float32, `torch_dtype` 폴백 금지, boot마다 `server_info` 대조 | §19-3 |
+| R-4 | `mamba_ssm_dtype`: 키 없으면 float32, `torch_dtype` 폴백 금지, boot마다 `server_info` 대조(**r2 F-4: 인자 기록으로 정정, 실효값은 부팅 로그**) | §19-3 |
 | R-5 | 제출 gate = `PREFLIGHT_PASS` ∧ 이미지 digest ∧ 경로 diff 빈 출력, POST = loadgen·runner 수정 커밋, C7 "저장소에 없음" → `d138e7f` 정정, 대조 경로 판단 | §19-6, §19-13 U13 |
 | R-6 (권고, 채택) | floor\_N 블록을 config boot1의 fused\_sym·agnostic 둘 다에 → MG12-6 비적용 | §19-4, §19-10, §19-11 |
 | R-7 (권고, 채택) | §19-1 표에 R5-5 행, "판정 절차 그대로" 문장에 C5·floor·dtype 영향 명시 | §19-1 |
@@ -24,7 +25,20 @@
 | R-9 (권고, 채택) | λ\*\_SLO 분석기를 M3 fetch 전 커밋·sha 기록 | §19-9 |
 | U3 | 하드캡 J1 14 h, J2·J4·J8 16 h [결정 2026-10-16] | §19-10, §19-13 |
 | VR1 §6·§7 | MG12-1–MG12-10 문자 그대로, 금지 문안 §19-11 추가 | §19-11 |
-| **r1+ (2026-10-16 사용자 결정, DECISIONS §5)** | R-8 X 입력 = 실제 arXiv-Sum 문서 토큰(사전 토큰화 파일 sha 등록), floor prompt도 실제 문서 절단 · U13 preflight = 2회차 감사 뒤, POST 후보 `0eca947`, 최종 POST = gate 경로 하네스 커밋 · U14 X 앵커 HI 4 seed(Job당 8셀) + X Job 효과 규칙 · R-2 커밋 `0eca947` 등록, `mg_boot` context 검사, MANDATORY\_REG 재봉인, docstring 정정, `test_loadgen_outcome` | §0, §19-1b, §19-2, §19-3, §19-4, §19-6, §19-10–§19-15 |
+| **r1+ (2026-10-16 사용자 결정, DECISIONS §5)** | R-8 X 입력 = 실제 arXiv-Sum 문서 토큰(사전 토큰화 파일 sha 등록), floor prompt도 실제 문서 절단 · U13 preflight = 2회차 감사 뒤, POST 후보 `0eca947`, 최종 POST = gate 경로 하네스 커밋(r2 F-1로 정정) · U14 X 앵커 HI 4 seed(Job당 8셀) + X Job 효과 규칙 · R-2 커밋 `0eca947` 등록, `mg_boot` context 검사, MANDATORY\_REG 재봉인, docstring 정정, `test_loadgen_outcome` | §0, §19-1b, §19-2, §19-3, §19-4, §19-6, §19-10–§19-15 |
+
+**수리 색인 r2 (VR2 §4·§9 → 이 판의 절)**
+
+| 수리 | 내용 | 고친 곳 |
+|---|---|---|
+| D-1′ (a) [결정, DECISIONS §6] | 합산 1%: (서버 + 클라이언트) 오류/셀 요청 수 > 1% → 짝 무효, 우세 분류 라벨, 두 건수 기록. 근거 문장 정정(+2.21% [모형 예보]), 변이 시험 등록 | §0 C5, §19-1 (1)·R7-3 행, §19-1b, §19-12, §19-13 |
+| F-1 | 최종 POST = 7개 경로 중 하나라도 바꾼 마지막 커밋(재봉인·하네스층 감사 수리 뒤), preflight는 그 뒤 1회. U13 구체화 부분 표기 [결정] → [제안] | §0 순서, §19-6, §19-12 시점 열, §19-13 U13 |
+| F-2 | timeout = `CLIENT_EXCEPTION`(클라이언트 측) | §19-1b |
+| F-3 | X 송신은 `replay`/`StreamState` 안, floor 요청도 분류기·`fit_problems`, 변이 2종 | §19-2 하네스 변경, §19-4, §19-12 |
+| F-4 | dtype boot 기록 = 인자 기록, 실효값은 부팅 로그 mamba 메모리·슬롯 대조, 없으면 `DTYPE_UNVERIFIED` | §19-1 (3), §19-3, §19-12 |
+| F-5 | 합산 규칙을 A 앵커·J1 기준 셀(A·X)에도, X 기준 셀 포화 미달 → 전 J\_N `JOB_EFFECT_UNTESTED(J_N, X)` | §19-1b, §19-2 앵커 항, §19-12 |
+| F-6 · F-7 · F-8 | 하한 16,746·16,394 · `tokenizers` 버전·길이 배열 sha256·floor 문서 선택 절차 · MG12-4 → MG12-4′ | §19-3·§19-4 · §19-2·§19-4 · §19-11 |
+| VR2 §6·§7 | MG12-4′·MG12-12–MG12-15 문자 그대로(MG12-11 제외), 허용·금지 문안 추가, §19-14 감사 질문 → 완료 기록 | §19-11, §19-14 |
 
 ## 0. rev11 대비 변경 색인
 
@@ -34,7 +48,7 @@
 | C2 | shape X = arXiv-Sum 16k 추가(3 shape) | §1 shape 행, §4-1, §4-2, §17-1 | §19-2 | **예** |
 | C3 | `max_prefill_tokens`·`split_forward_token_budget`·`context_length`·mamba 노브 명시 등록 | §1 | §19-3 | **예**(runner 인자) |
 | C4 | floor 측정 블록(N=1·N별, 두 arm 대칭), 절대 T(A′) 기술값, M4 SLO 3 s → A′ | §4-6, §5, §8 항목 9 | §19-4 | **예**(floor 블록) |
-| C5 | `CLIENT_ERROR` 1%를 클라이언트 측 오류에만 + **λ\*\_thr의 `SERVER_ERROR_HI`(r1)** | §4-3 | §19-1 R7-3 행, §19-1b | **예** |
+| C5 | 오류를 서버·클라이언트 측으로 분류 기록 + **λ\*\_thr HI 셀 합산 1% 짝 무효(r2, D-1′ (a); 라벨 `SERVER_ERROR_HI`/`CLIENT_ERROR`)** | §4-3 | §19-1 R7-3 행, §19-1b | **예** |
 | C6 | 로그 knob `PDMUX_HEARTBEAT_S=0`, `PDMUX_LOG_MIRROR` 값 등록·기록 | 없음 | §19-5 | 예(launch env·meta 검사) |
 | C7 | 엔진 digest 재등록, preflight `PREFLIGHT_PASS` + 경로 diff gate(r1) | §6-3, 머리 | §19-6 | 예(중단 코드 2개) |
 | C8 | TP에서 GPU당 decode SM 요구 변화 → 미해결 공시 | 없음 | §19-7 | 아니오 |
@@ -44,7 +58,7 @@
 | C12 | 금지 서술 추가 | §7 | §19-11 | — |
 
 **하네스 재봉인: 필요.** C2–C7·C11이 `mg_const.py`·`mg_plan.py`·`mg_drive.py`·`mg_label.py`·`scripts/multigpu/mg_loadgen.py`·`engine_bench_runner.sh`·`m3_job.sh`와 공용 `benchmarks/pdmux_eval/trace_loadgen.py`(R-2)를 바꾼다. rev11 하네스의 `MANDATORY_REG`(`mg_job_common.sh:65-82` [코드])가 `trace_loadgen.py`를 등록 집합으로 고정하므로, 이미 들어간 `0eca947`의 수정만으로도 rev11 등록 바이트가 깨져 **rev12 재봉인 대상**이다.
-순서 [결정, DECISIONS §4·§5 U13]: rev12 R-1–R-9 반영(r1) → 공용 loadgen·runner 수정 커밋 **`0eca947`**(R-2·R-3, M3·G0 공용, 완료) → r1+(이 판) → **rev12 2회차 감사** → gate 경로(§19-6 (iii))에 닿는 하네스 변경 커밋 = **최종 POST** → 그 커밋에서 preflight 1회 → 나머지 하네스 수정·하네스층 감사 → `PREREG_REV = 12`로 재봉인 → dry-run → 사용자 승인 → 제출(교훈 34). preflight는 2회차 감사 전에는 제출하지 않는다(U13: 감사가 gate 경로를 다시 고쳐 preflight를 재실행하는 일을 피함). λ\*\_SLO를 하네스 밖에 두는 결정(C10)은 재봉인을 피하려는 것이 아니다(§19-9).
+순서 [결정, DECISIONS §4·§5 U13·§6; POST 구체화는 제안, VR2 F-1]: r1(R-1–R-9) → 공용 loadgen·runner 수정 **`0eca947`**(R-2·R-3, M3·G0 공용, 완료) → r1+ → rev12 2회차 감사(완료, VR2) → **r2(이 판)** → 하네스 수정(§19-12 전부, gate 경로 포함) → 하네스층 감사·수리 → `PREREG_REV = 12`로 재봉인 → **최종 POST = M3 제출 전 §19-6 (iii)의 7개 경로 중 하나라도 바꾼 마지막 커밋**(재봉인이 `tests/test_mg_harness.py:1527`의 `PREREG_REV` 단언을 바꾸므로 실제로는 재봉인·하네스층 감사 수리가 끝난 커밋) → 그 뒤 preflight 1회 → dry-run → 사용자 승인 → 제출(교훈 34). U13 문언("2회차 감사 뒤 제출")과 모순 없음. r1+의 "최종 POST → preflight → 재봉인"은 재봉인이 `tests/`를 바꿔 (iii)을 거짓으로 만드므로 실행 불가였다(VR2 Q4, fail-closed). λ\*\_SLO를 하네스 밖에 두는 결정(C10)은 재봉인을 피하려는 것이 아니다(§19-9).
 
 ## 19. rev12
 
@@ -52,9 +66,9 @@
 
 원칙: rev12는 SP를 **아래 표에 적은 규칙만** 인용한다. 표에 없는 SP 규칙은 M3·M4에 적용하지 않는다. SP는 DRAFT이므로 인용 대상은 **rev12 봉인 시점의 SP 바이트**(v0.2+ 2026-10-16 판 이후, 봉인 때 sha256 등록)이고, SP가 그 뒤 promote로 바뀌면 rev13 개정 없이는 따라가지 않는다.
 **1차 estimand는 G\_sym(N, mode, shape) = λ\*\_thr,agnostic / λ\*\_thr,fused\_sym 그대로다**(F6 [결정], SP R8-3 표 "multi-GPU 1차"). 판정 절차(seed 짝 bootstrap CI, log₂N 추세, 3% 크기 규칙, P9·P10·P11·§18)는 rev11 그대로이나, **판정에 들어가는 셀의 유효성과 boot 사전 조건은 세 곳에서 바뀐다**(VR1 Q13, R-7):
-(1) C5 + R-1: `CLIENT_ERROR`는 클라이언트 측만, 대신 λ\*\_thr HI 셀의 서버 측 오류 > 1%는 `SERVER_ERROR_HI`로 짝 무효(§19-1b) — rev11의 "모든 오류 > 1% 짝 무효"와 같은 방향(fail-closed)이나 분류가 둘로 갈린다.
+(1) C5 + D-1′ (a): 오류를 서버 측·클라이언트 측으로 나눠 기록하되, λ\*\_thr HI 셀 유효성은 두 분류 **합산** > 1%면 짝 무효(§19-1b) — rev11 "모든 오류 > 1% 짝 무효"와 같은 상한이고, 라벨만 우세 분류(`SERVER_ERROR_HI`/`CLIENT_ERROR`)로 갈린다.
 (2) floor 블록: 판정 boot 시작부에 floor 블록이 들어간다. r1은 config boot1의 두 arm 모두에 두어 N=1과 N>1에서 두 arm의 boot 사전 조건이 대칭이다(§19-4, R-6).
-(3) `mamba_ssm_dtype` 명시: 키 없으면 float32(§19-3, R-4) = M2g 실효값이라 처치 불변으로 유도되나 boot마다 대조한다. shape 순서 3원소화는 rev11 예보 비교만 바꾸고 판정은 바꾸지 않는다.
+(3) `mamba_ssm_dtype` 명시: 키 없으면 float32(§19-3, R-4) = M2g 실효값이라 처치 불변으로 유도된다. boot의 `server_info` 기록은 인자 기록일 뿐이고 실효값은 부팅 로그로 대조한다(F-4). shape 순서 3원소화는 rev11 예보 비교만 바꾸고 판정은 바꾸지 않는다.
 
 | SP 규칙 | M3 | M4 | 처리 |
 |---|---|---|---|
@@ -72,7 +86,7 @@
 | R6-5 길이 3분위·가산형 | 적용(기술값, 분석기) | 적용(기술값) | shape X에서만 의미 있음 |
 | R7-1 ITL P95 계산법 | 적용 | 적용 | `numpy.percentile` linear |
 | R7-2 재채점 범위 | 적용 | 적용 | M3 4 arm은 모두 SLO를 읽지 않는 stock arm |
-| R7-3 오류 분류 | **적용(C5) + λ\*\_thr 예외(R-1)** | 적용 | §4-3 `CLIENT_ERROR`는 **클라이언트 측 오류**(송신 전 연결 실패, loadgen 예외, 예정 대비 발송 지연 > 0.5 s, 분류 불가)만 센다(SP R7 multi-GPU 차이). 서버 측 오류는 건수 기록 + achieved 분자에서 빠진다(`mg_label.py:426` [코드]) — 가변 길이 X에서는 긴 요청이 선택적으로 빠져 achieved가 부푼다(VR1 死因 D-1) → **λ\*\_thr HI 셀에는 §19-1b `SERVER_ERROR_HI`를 적용**한다. 한 arm이 `CLIENT_ERROR` 또는 `SERVER_ERROR_HI`면 그 (config, shape)의 G 짝이 미정의 |
+| R7-3 오류 분류 | **적용(C5) + λ\*\_thr 합산 규칙(D-1′ (a))** | 적용 | 클라이언트 측 오류 = 송신 전 연결 실패, loadgen 예외(timeout 포함), 예정 대비 발송 지연 > 0.5 s, 분류 불가(SP R7 multi-GPU 차이). 서버 측 오류는 건수 기록 + achieved 분자에서 빠진다(`mg_label.py:426` [코드]) — 가변 길이 X에서는 긴 요청이 선택적으로 빠져 achieved가 부푼다(VR1 死因 D-1) → **λ\*\_thr HI 셀에는 §19-1b 합산 규칙**(서버 + 클라이언트 > 1%, 우세 분류 라벨)을 적용한다. 한 arm이 `CLIENT_ERROR` 또는 `SERVER_ERROR_HI`면 그 (config, shape)의 G 짝이 미정의 |
 | R7-3 client timeout 하한 | 적용 | 적용 | `sock_read` 600 s ≥ 25·floor(16k) [유도: floor(16k)가 24 s 미만이면 성립, 측정 후 확인] |
 | R7-4·R7-5 n\_ITL·실패 분해 | 적용(기술값) | 적용 | n\_ITL [유도]: A ≈ 511, B ≈ 63, X ≈ 194 |
 | R8-1 arm 정의 | 적용 | 적용 | 바이트 동일(SP가 MG §2를 따름) |
@@ -89,16 +103,16 @@
 | R16-1 cap·mamba 명시 | 적용(**M3 cap = F7 48·48N·DP 48 유지**) | 같음 | §19-3. SP v0.2+의 "G0 cap = cap 특성화 Job 결과"는 G0 범위이고 M3 cap을 바꾸지 않는다 |
 | R16-2 `CAP_BINDING`(D-10 확정 2026-10-16) | 적용 → 전 셀 `CAP_BINDING_UNRESOLVED` | 같음 | I-5 없음. 서버 로그 `#running-req`는 기술값(MGP-17) |
 
-### 19-1b. λ\*\_thr의 서버 측 오류 규칙 (R-1, 死因 D-1 수리; R-2 선행)
+### 19-1b. λ\*\_thr의 오류 합산 규칙 (R-1 → D-1′ (a), 死因 D-1·D-1′ 수리; R-2 선행)
 
-- **규칙**: λ\*\_thr를 정하는 HI 셀(§4-2 확장 셀 포함, 전 shape A·B·X)에서 서버 측 오류 비율(분자 = 서버 측 오류 요청 수, 분모 = 그 셀 요청 수) **> 1%**면 그 셀에 `SERVER_ERROR_HI`를 붙이고, **그 arm의 λ\* = `UNRESOLVED`**, 그 (config, shape)의 **G 짝을 무효**로 한다(`CLIENT_ERROR`와 같은 대칭 무효, 건너뛰기·대체 seed 금지). 1%는 rev11 §4-3의 승계 상수이며 새 상수가 아니다.
-  근거 [모형 예보, VR1 §2 — 측정 아님]: 최악 선택(가장 긴 문서부터 오류)에서도 1% 이하 오류의 achieved 부풀림은 3% 크기 규칙보다 작다. LO 셀의 서버 측 오류 건수는 기술값으로만 적는다.
-- **서버 측 오류의 범위**: 수락 뒤 timeout, HTTP 5xx, abort, **스트리밍 응답 안의 SSE `"error"` 청크**, **`OUTPUT_SHORT`·`OUTPUT_LONG`**(`ignore_eos` 요청에서 관측 출력 토큰 수 ≠ 요청 수). 뒤 둘은 R-2 loadgen 수정이 있어야 보인다(VR1 §4-1: 거절이 HTTP 200 + error 청크로 와서 수정 전 loadgen은 1토큰 성공으로 기록 [코드, `entrypoints/http_server.py:665-676`, 수정 전 `trace_loadgen.py:53-89`]).
+- **규칙 [결정, D-1′ = (a), DECISIONS §6 2026-10-16]**: λ\*\_thr를 정하는 HI 셀(§4-2 확장 셀, shape A·X 앵커 셀, J1 기준 셀 포함, 전 shape A·B·X)에서 **(서버 측 오류 요청 수 + 클라이언트 측 오류 요청 수) / 그 셀 요청 수 > 1%**면 **그 arm의 λ\* = `UNRESOLVED`**, 그 (config, shape)의 **G 짝을 무효**로 한다(대칭 무효, 건너뛰기·대체 seed 금지). 라벨은 우세 분류 — 서버 측 건수가 많으면 `SERVER_ERROR_HI`, 클라이언트 측이 많으면 `CLIENT_ERROR`(동수면 `CLIENT_ERROR` [제안, rev11 라벨 승계; 무효 여부는 같음]) — 이고 **두 건수를 모두** 셀 기록에 남긴다. 1%는 rev11 §4-3 승계 상수이며 새 상수가 없다. r1의 분류별 각각 1%(셀당 최대 2%)는 폐기한다.
+  근거 [모형 예보, VR2 §2 — 측정 아님]: 합산 규칙에서 두 arm 반대 방향 최악 G 편향은 **+2.21%**(rev11 "모든 오류 > 1%"와 같음) < 3% 크기 규칙. 분류별 각각 1%면 +4.43%로 3%를 넘었다(死因 D-1′). **정정**: r1 근거 문장 "최악 선택에서도 1% 이하 오류의 achieved 부풀림은 3% 크기 규칙보다 작다"는 **G 비에서 거짓**이었다(VR2 §2). LO 셀의 서버 측 오류 건수는 기술값으로만 적는다(MG12-14).
+- **서버 측 오류의 범위**: HTTP 5xx, abort, **스트리밍 응답 안의 SSE `"error"` 청크**, **`OUTPUT_SHORT`·`OUTPUT_LONG`**(`ignore_eos` 요청에서 관측 출력 토큰 수 ≠ 요청 수). **timeout(`sock_read` 포함)은 `0eca947`에서 `CLIENT_EXCEPTION` = 클라이언트 측**이다(`classify`에서 예외가 모든 서버 신호보다 우선 [코드, VR2 Q1(v)], F-2). 합산 규칙에서는 어느 쪽이든 같은 1%에 들어가 판정 무관. 뒤 둘은 R-2 loadgen 수정이 있어야 보인다(VR1 §4-1: 거절이 HTTP 200 + error 청크로 와서 수정 전 loadgen은 1토큰 성공으로 기록 [코드, `entrypoints/http_server.py:665-676`, 수정 전 `trace_loadgen.py:53-89`]).
 - **R-2 등록(M3·G0 공용) — 공용 loadgen 커밋 `0eca947`** [코드, 커밋 diff·메시지; 이 문서 작성 중 시험 재실행 안 함]: 요청 기록에 `error_kind`·`error_side`(server/client) 추가. 서버 측 분류 = `SSE_ERROR`(HTTP 200 스트림 안 `{"error": …}` 청크, 토큰으로 세지 않음, 서버 메시지 보존)·`SERVER_ABORT`(`meta_info.finish_reason` abort)·`OUTPUT_SHORT`·`OUTPUT_LONG`(`ignore_eos` 요청이 정상 종료했는데 관측 ≠ 요청). `error`는 모든 실패에서 비어 있지 않아 기존 `not r["error"]`·`mg_label.is_error` 소비자는 불변, 요약에 `server_error_requests`·`client_error_requests`. `sock_read=600` 유지(`trace_loadgen.py:44`, H5).
-  runner 경계(`context_limit.fit_problems`, `engine_bench_runner.sh`가 boot 전 셀마다 검사, 위반 시 `ABORT_CONTEXT_TOO_SHORT` exit 5): **입력 + 출력 ≤ ctx − 2, 입력 < ctx − 6**(`INPUT_SLACK` 6·`TOTAL_SLACK` 2). ctx 20480에서 X 최대 16,744·floor 16k 16,392 모두 통과 [유도]. 시험 `tests/test_loadgen_outcome.py` 19건, 변이 "error 청크를 토큰으로 셈"·"`OUTPUT_SHORT` 검사 제거"·"runner 사전검사 제거" KILLED + 대조군 생존 → 요구 (a)–(d) 충족 [코드, 커밋 메시지]. **이 커밋은 preflight POST 후보이며 최종 POST는 §19-6.** M3는 runner를 타지 않으므로 같은 경계를 `mg_boot`에 둔다(§19-12).
+  runner 경계(`context_limit.fit_problems`, `engine_bench_runner.sh`가 boot 전 셀마다 검사, 위반 시 `ABORT_CONTEXT_TOO_SHORT` exit 5): **입력 + 출력 ≤ ctx − 2, 입력 < ctx − 6**(`INPUT_SLACK` 6·`TOTAL_SLACK` 2). ctx 20480에서 X 최대 16,744·floor 16k 16,392 모두 통과 [유도]. 시험 `tests/test_loadgen_outcome.py` 19건, 변이 "error 청크를 토큰으로 셈"·"`OUTPUT_SHORT` 검사 제거"·"runner 사전검사 제거" KILLED + 대조군 생존 → 요구 (a)–(d) 충족 [코드, 커밋 메시지; VR2 Q2 로컬 CPU 재실행 19건 통과]. **최종 POST는 이 커밋이 아니라 §19-6(F-1).** M3는 runner를 타지 않으므로 같은 경계를 `mg_boot`에 둔다(§19-12).
   공시: N2/N3/E2 봉인 캠페인은 수정 전 loadgen으로 돌았다. 이 수정을 그 결과에 소급 적용하지 않는다.
 - **D-7과의 관계 [결정, 사용자 승인 해석 2026-10-16, DECISIONS §4]**: D-7(1% 문턱은 클라이언트 측 오류에만)은 **λ\*\_SLO·attainment 채점 범위**의 결정이다. 그 범위에서 서버 측 오류 = 불합격(SP R7-3)은 그대로 유지한다. R-1은 M3 **λ\*\_thr 셀 유효성** 규칙이라 D-7과 충돌하지 않는다.
-- **변이 시험(하네스, §19-12)**: "한 arm X HI 셀의 가장 긴 3%가 서버 측 오류인데 라벨이 그대로" 변이본 KILLED, 무변이 대조군 통과. 추가: "`OUTPUT_SHORT`를 성공으로 셈" 변이본 KILLED.
+- **변이 시험(하네스, §19-12; r2 바이트 확인은 하네스층 감사 몫)**: **"서버 0.9% + 클라이언트 0.9%인데 라벨 그대로" 변이본 KILLED, 무변이 대조군 통과**(D-1′ (a)). 승계: "한 arm X HI 셀의 가장 긴 3%가 서버 측 오류인데 라벨이 그대로"·"`OUTPUT_SHORT`를 성공으로 셈" KILLED.
 
 ### 19-2. shape X = arXiv-Sum 16k (C2)
 
@@ -108,6 +122,7 @@
   - 데이터 sha256 불일치 → `ABORT_DATASET`(GPU 작업 전, 새 중단 코드) [하네스]. 최대 입력+출력이 ctx − 2를 넘어도 `ABORT_DATASET`.
 - **입력 토큰 내용 (R-8) [결정, DECISIONS §5 2026-10-16]**: shape X 요청은 **실제 arXiv-Sum 문서 토큰**을 `input_ids`로 보낸다. `[1]*L` 합성 입력(r1 [제안])은 채택하지 않는다. 출력은 abstract 길이로 강제(`ignore_eos`)한다. shape A·B 입력은 rev11 그대로 `[1]*L`이다(바이트 불변).
   - **사전 토큰화 파일 생성(CPU, 봉인 전 1회)**: 원 parquet(`document/test-00000-of-00001.parquet`, sha256 `b34529df…`)과 Nano-9B-v2 `tokenizer.json`(sha256 `3277c00f…`)만 입력으로, `tokenizers.Tokenizer.encode_batch(…, add_special_tokens=False)`(ARXSUM\_STATS `arxsum_stats.py`와 같은 호출 → 길이가 위 [측정]과 같아야 함)로 문서별 `{doc_id(parquet 행 번호), input_ids, output_tokens = abstract 토큰 수}`를 쓴다. 유지 규칙(0 < 입력 ≤ 16,384, 출력 ≥ 2)을 적용한 유지분과 floor 문서(§19-4)를 한 파일에 담고, 생성 스크립트·파일의 sha256을 봉인 때 등록한다. 유지 수가 5,906이 아니거나 길이 통계가 ARXSUM\_STATS와 다르면 봉인하지 않는다.
+    **함께 등록(F-7)**: 생성 환경의 `tokenizers` 패키지 버전(`tokenizers.__version__` 문자열; 로컬 0.22.1은 참고 [측정, VR2 Q7]), 유지분 문서별 (input, output) 길이 배열(`doc_id` 오름차순, int64 리틀엔디언 [제안])의 sha256. 재생성 대조는 이 sha 일치로 한다(유지 수·통계 일치만으로는 부족).
   - **Job에서 읽는 경로(등록 요구)**: 파일 크기 [유도: 유지분 입력 합 ≈ 5,906 × 7,116 ≈ 42 M 토큰]상 git 밖에 둔다. 이미지(또는 마운트) 안 절대 경로 `<등록 요구, 미정>`과 sha256을 rev12에 적고, 하네스가 GPU 작업 전 sha를 대조한다(불일치·부재 → `ABORT_DATASET`). trace는 토큰열 대신 `doc_id`를 싣고 loadgen이 이 파일에서 `input_ids`를 꺼내며, 요청마다 송신 토큰 수 = 등록 `input_tokens`를 단언한다.
   - 공시: 채팅 템플릿·요약 지시·특수 토큰 없이 본문 토큰열만 보낸다. shape 간 입력 내용이 다르다(A·B 합성, X 실제) — shape 간 비교는 판정 대상이 아니며 범위 문장(의무): "shape X 입력은 arXiv-Sum 본문을 Nano-9B-v2 토크나이저로 토큰화한 원 토큰열이고, A·B는 합성 토큰이다."
 - **trace (R-8)**: seed s마다 유지분 문서 ID(오름차순)의 등록 순열 π\_s(seed 20261012 + s에서 생성, 봉인 때 sha 기록)를 한 번 만들고, 요청 수 n인 셀은 **π\_s의 앞 n개**를 쓴다. 따라서 같은 seed에서 N이 작은 config의 표본은 N이 큰 config 표본의 부분집합이다(N 간 중첩). 확장 셀(§4-2)은 같은 π\_s의 앞 n\_ext개, LO 셀도 같은 π\_s의 앞 n\_LO개. Poisson 도착은 seed별. 같은 (config, shape, seed)의 네 arm은 같은 바이트 trace를 쓴다. 중첩이어도 N이 다르면 표본 집합이 다르다(MG12-10).
@@ -121,10 +136,12 @@
   공시: shape가 셋이면 우연한 DP 방향 라벨로 BROKEN이 날 확률이 커지고 그만큼 TP 인용이 줄어든다(검정력 비용, MG12-3).
 - **앵커 (U14 [결정, DECISIONS §5 2026-10-16])**: J\_N(N≥2) 앵커 boot(GPU 0 단독, fused\_sym·agnostic)에 shape A HI 4 seed와 함께 **shape X HI 4 seed**를 잰다(Job당 8셀, ≈0.5 h [유도]; 하네스 모형 +0.65 h, §19-10). X 앵커 셀 = J1 boot1 X와 같은 1.6×prior\_X(1) rung(n = 200), 확장 없음, 같은 π\_s prefix. 앵커 boot 안 shape 순서는 본 boot와 같은 `shape_order` 방식 [제안]. shape A 앵커 규칙(§15-3, §16-1)은 바뀌지 않는다.
   - **X 앵커 Job 효과 검사**(§15-3 shape A 규칙과 같은 형식): |G\_sym,anchor(J\_N, X)/G\_sym(1, X) − 1| > 3%이거나 앵커 λ\*(fused\_sym, X)가 J1과 3% 넘게 다르면 `JOB_EFFECT(J_N, X)`. X 추세 라벨에 플래그가 하나라도 붙으면 (i) 원 추세와 (ii) X 앵커 보정 추세(G\_sym(N, X)·G\_sym(1, X)/G\_sym,anchor(J\_N, X))를 **둘 다** 보고하고 P9-b대로 둘 다 크기 규칙을 통과하고 방향 라벨이 같을 때만 방향을 인용한다(아니면 `TREND_JOB_SENSITIVE`).
-  - 기준값 = J1 boot1(확장 전 1.6× rung)의 G\_sym(X)·λ\*(fused\_sym, X)(§16-1과 같음). 앵커 X 셀이 `HI_SATURATED`가 아니거나 `HARNESS_LIMITED`·`CLIENT_ERROR`·`SERVER_ERROR_HI`이면, 또는 앵커가 측정되지 않으면 `JOB_EFFECT_UNTESTED(J_N, X)`(그 N의 X 점은 추세에 들어가되 공시 의무). 보정 bootstrap은 앵커 seed 색인을 같은 색인으로 함께 재표집한다. G\_sym(1, X) 미정의면 P9-a 그대로.
+  - 기준값 = J1 boot1(확장 전 1.6× rung)의 G\_sym(X)·λ\*(fused\_sym, X)(§16-1과 같음). 앵커 X 셀이 `HI_SATURATED`가 아니거나 `HARNESS_LIMITED`·`CLIENT_ERROR`·`SERVER_ERROR_HI`이면, 또는 앵커가 측정되지 않으면 `JOB_EFFECT_UNTESTED(J_N, X)`(그 N의 X 점은 추세에 들어가되 공시 의무).
+  - **F-5**: §19-1b 합산 규칙(`SERVER_ERROR_HI`/`CLIENT_ERROR`)은 shape A 앵커 셀과 J1 기준 셀(A·X)에도 적용하고, 발화하면 그 앵커 비교를 `JOB_EFFECT_UNTESTED`로 만든다(§16-1 문언의 `HARNESS_LIMITED`·`CLIENT_ERROR`에 더함). **X 기준 셀(J1 boot1 X, 확장 전 rung)이 `HI_SATURATED`가 아니면(포화 미달) 전 J\_N에 `JOB_EFFECT_UNTESTED(J_N, X)`**(변이 "H-3 X판" KILLED, MG12-12). 보정 bootstrap은 앵커 seed 색인을 같은 색인으로 함께 재표집한다. G\_sym(1, X) 미정의면 P9-a 그대로.
   - shape A 앵커의 `JOB_EFFECT(J_N)`는 X 추세에 공시로 병기한다. shape B는 계속 A 앵커 기준이다. **P10 BROKEN 판정에서 X는 비앵커 shape 취급을 유지한다**(§18 M-4 fail-closed: X 동일 shape 보정이 raw 방향 라벨을 UNTESTED로 낮추지 못함) [제안 — U14가 정하지 않은 부분, 2회차 감사 Q7].
 - **M2g 범위**: M2g G1·G2는 등록 prompt 64개·max\_new\_tokens 128로 쟀다. 16k 입력은 M2g PASS 범위 밖이다(C-8, MG12-5). rev12는 M2g를 다시 돌리지 않고 범위 공시로 처리한다(U7). TP4·TP8 `TP_NUMERIC_DIVERGENT` 병기 의무(MGH-3)는 X에도 붙는다.
 - **하네스 변경 지점** [코드 확인분]: `mg_const.SHAPE_IO`·`PRIOR_PER_GPU`·`EST_DRAIN_S`·`EST_WARMUP_S`에 X, `mg_plan.shape_order`·`boots_boot1`·`m3_static_boots`·`m3_timeline`의 `("A","B")` 하드코딩, `mg_drive.py:239`의 `("A","B")`, loadgen의 길이 표본 경로(고정 길이 → 순열 prefix 문서), **X 실제 토큰 송신 경로(`doc_id` → 사전 토큰화 파일 `input_ids`, A·B는 `[1]*L` 바이트 불변)**, `mg_plan.boots_anchor`의 `(C.ANCHOR_SHAPE,)`(→ A, X), `mg_label`의 앵커 기준값·`JOB_EFFECT`를 shape별로, G5(c)(ii) 식, P10 shape 루프(`mg_label.py`), 변이 시험 "X를 빠뜨린 P10"·"X에 `[1]*L` 송신"·"A·B payload가 rev11과 다름"·"X 앵커 누락" KILLED.
+  **F-3**: X `input_ids` 송신은 `trace_loadgen.replay`(`StreamState`) 경로 **안에서** 한다 — 현 `replay`는 `"input_ids": [1] * L` 하드코딩 [코드, VR2 Q2]이므로 `replay`가 요청별 `input_ids`를 받게 고치고, `replay` 밖 별도 송신 경로는 두지 않는다(그 변경이 `benchmarks/pdmux_eval`에 들어가면 §19-6 F-1 순서). 변이 **"X 경로에서 error 청크를 토큰으로 셈" KILLED**.
 
 ### 19-3. `max_prefill_tokens`·span 예산·context 길이 명시 등록 (C3)
 
@@ -132,9 +149,9 @@
 |---|---|---|---|
 | `--max-prefill-tokens` | **16384**(명시 인자) | 전 arm·전 config·전 shape | SP §10. 엔진 기본값과 같음 [코드, `server_args.py:349`]. 첫 요청은 상한을 넘어도 들어가고 둘째부터 상한을 본다 [코드, `schedule_policy.py:767,790`] → B·X에서 prefill 1회당 1–2요청 [유도] |
 | `split_forward_token_budget` | **65536** | agnostic·d44 | SP R13-1 headline 고정. 두 config 파일에 이미 있음 [코드, `pdmux_agnostic_manual.yml`·`pdmux_r2.yml`]. 하네스가 boot마다 config 바이트 sha256과 값을 기록, 다르면 `ABORT_CONFIG_DRIFT` |
-| `--context-length` | **20480** [결정, U2 = (a), 2026-10-16] | 전 boot | 필요 하한: X 최대 입력+출력 16,744 → ctx ≥ 16,745, floor 16k 점 16,384 + `max_new_tokens` 8 = 16,392 → ctx ≥ 16,393 [측정·유도, VR1 §4-3]. 20480은 둘을 덮고 여유 3,736. 거절 경로: 입력 + max\_new ≥ ctx면 `ValueError`(`validate_total_tokens` 기본 True, `allow_auto_truncate` 기본 off [코드, `tokenizer_manager.py:252, 785-834`]) |
+| `--context-length` | **20480** [결정, U2 = (a), 2026-10-16] | 전 boot | 필요 하한(`fit_problems`의 입력+출력 ≤ ctx − 2 기준, F-6): X 최대 입력+출력 16,744 → **ctx ≥ 16,746**, floor 16k 점 16,384 + `max_new_tokens` 8 = 16,392 → **ctx ≥ 16,394** [측정·유도, VR2 §2; r1+의 16,745·16,393은 VR1 승계 오차로 1 작았다]. 20480은 둘을 덮는다. 거절 경로: 입력 + max\_new ≥ ctx면 `ValueError`(`validate_total_tokens` 기본 True, `allow_auto_truncate` 기본 off [코드, `tokenizer_manager.py:252, 785-834`]) |
 | `--max-mamba-cache-size` | effective cap(N=1 48, TP 48N, DP 복제본당 48) | 전 boot | SP §0·R16-1(M3는 F7). rev11은 자동값이었고 G5(c)(i)에서 slot = cap 확인 [측정, M2g PASS] |
-| `--mamba-ssm-dtype` | **고정 revision(`dc0661c…`)의 `config.json`에 `mamba_ssm_dtype` 키가 없으면 `float32`(엔진 기본 = M2g 실효값), 있으면 그 값. `torch_dtype` 폴백 금지** (R-4) | 전 boot | Nano-9B-v2 HF config에 키 없음, `torch_dtype` bf16 [코드, VR1 Q8, `configs/mamba_utils.py:45-105`]. `-Base` revision의 키 유무는 미확인 → 하네스가 그 revision 파일에서 읽어 결정·기록. **boot마다 `server_info.json`의 실효 dtype과 대조**, 다르면 `ABORT_CONFIG_DRIFT` |
+| `--mamba-ssm-dtype` | **고정 revision(`dc0661c…`)의 `config.json`에 `mamba_ssm_dtype` 키가 없으면 `float32`(엔진 기본 = M2g 실효값), 있으면 그 값. `torch_dtype` 폴백 금지** (R-4) | 전 boot | Nano-9B-v2 HF config에 키 없음, `torch_dtype` bf16 [코드, VR1 Q8, `configs/mamba_utils.py:45-105`]. `-Base` revision의 키 유무는 미확인 → 하네스가 그 revision 파일에서 읽어 결정·기록. **boot마다 `server_info.json`의 `mamba_ssm_dtype`을 기록하되 이것은 인자 기록(인자 대 인자 항등식)이다**(M2g `server_info.json` 값 `None` [측정, VR2 §2]; 인자가 등록값과 다르면 `ABORT_CONFIG_DRIFT`). **실효값 대조(F-4)** = 부팅 로그의 mamba 상태 메모리·슬롯을 M2g 같은 (config, arm) 값과 비교(`KV_POOL_DRIFT` 경로). 로그에 값이 없으면 `DTYPE_UNVERIFIED` 공시(MG12-15) |
 
 - **U2(b)는 쓰인 대로 실행 불가**(VR1 §4-3): "16384 유지 + 입력+출력 < 16384 필터"는 floor 16k 점(16,392)을 깨고, 필터 경계 16,383은 스케줄러가 `max_new_tokens`를 `max_req_len − 입력 − 1`로 1토큰 깎아 ≤ 16,382여야 한다 [코드, `scheduler.py:1636-1644`]. 그래서 (a)만 등록한다.
 - **변경 지점**: runner는 `--context-length`를 이미 `PDMUX_CONTEXT_LENGTH`/record 필드로 받는다 [코드, `engine_bench_runner.sh:96-97, 140`] → runner 기본값 16384는 그대로 둔다(N2/N3 재현; G0가 20480을 넘긴다). **M3는 runner가 아니라 `mg_boot.py`로 부팅하고 `--context-length`를 `mg_const.CONTEXT_LENGTH`에서 받는다** [코드, `mg_boot.py:66-80`(r1+ 정정)] → **`mg_const.CONTEXT_LENGTH = 16384`(`mg_const.py:127`) → 20480**, 나머지 노브 3개(`--max-prefill-tokens`·`--max-mamba-cache-size`·`--mamba-ssm-dtype`)도 M3에서는 `mg_boot.build_server_args`가 넘긴다(runner 전달 추가는 G0 몫). runner의 `0eca947` context 사전검사를 M3는 타지 않으므로 `mg_boot`에 같은 검사를 둔다(§19-12).
@@ -145,7 +162,9 @@
 ### 19-4. 절대 SLO와 floor (C4)
 
 - **floor 블록(R6-2, R10-2)**: 각 Job의 **N=1(GPU 0) fused\_sym boot 시작부**(J1은 fused\_sym boot1, J2/J4/J8은 fused\_sym 앵커 boot)에서 무경합 단일 요청 TTFT를 입력 길이 {1k, 2k, 4k, 8k, 12k, 16k} × 16회 순차로 잰다.
-  prompt = **실제 arXiv-Sum 문서를 정확히 L 토큰으로 자른 것**(r0 방식 복원, R-8 [결정 §5]): §19-2 사전 토큰화 파일의 floor 문서 = 같은 토큰화로 길이 ≥ 16,384인 원 parquet 문서 중 seed 20261012로 고른 1개(유지분은 ≤ 16,384라 16k 점을 못 줌), 모든 L·16회가 그 문서의 앞 L 토큰 [제안]. radix cache off라 반복 prompt의 prefix 재사용 없음 [코드, `mg_boot.py:75`]. `max_new_tokens` 8 [제안]. 공시: shape A·B의 T는 실제 문서 floor에서 오지만 A·B 요청은 `[1]*L`이다. 16k 점은 ctx ≥ 16,393이 필요하며 20480이 덮는다(§19-3). 중앙값을 초 단위로 동결해 `FLOOR.json`(sha256)으로 남긴다. 같은 블록을 agnostic N=1 boot에도 둔다(R6-4 (a) 비, 기술값).
+  prompt = **실제 arXiv-Sum 문서를 정확히 L 토큰으로 자른 것**(r0 방식 복원, R-8 [결정 §5]): §19-2 사전 토큰화 파일의 floor 문서 1개(유지분은 ≤ 16,384라 16k 점을 못 줌), 모든 L·16회가 그 문서의 앞 L 토큰 [제안]. radix cache off라 반복 prompt의 prefix 재사용 없음 [코드, `mg_boot.py:75`]. `max_new_tokens` 8 [제안]. 공시: shape A·B의 T는 실제 문서 floor에서 오지만 A·B 요청은 `[1]*L`이다. 16k 점은 ctx ≥ 16,394가 필요하며 20480이 덮는다(§19-3, F-6).
+  **floor 문서 선택 절차(F-7, 문자 그대로 등록) [제안]**: 후보 = 원 parquet 행 중 §19-2와 같은 토큰화(`add_special_tokens=False`)로 토큰 수 ≥ 16,384인 행(VR2 계수 534건 [측정, VR2 §2]), 행 번호 오름차순 정렬 → `numpy.random.default_rng(20261012)`를 만들어 `integers(0, len(후보))`를 **1회** 호출 → 그 색인의 행. RNG 종류·호출 문자열·선택 행 번호를 생성 스크립트와 함께 봉인 때 등록한다.
+  **F-3**: floor 블록 요청도 X와 같은 분류기(`replay`/`StreamState`)를 거치고, boot 전 `fit_problems` 대상에 넣는다(trace 밖 요청이라 별도 등록). 변이 **"floor 요청 fit 검사 누락" KILLED**. 중앙값을 초 단위로 동결해 `FLOOR.json`(sha256)으로 남긴다. 같은 블록을 agnostic N=1 boot에도 둔다(R6-4 (a) 비, 기술값).
   **R10-3 기술값용 floor\_N은 각 N>1 config의 boot1 시작부에서 fused\_sym과 agnostic 둘 다** 같은 절차로 잰다(R-6 채택). 블록 수 [유도] = J1 2 + 앵커 2×3 + config 2×6 = **20**(r0 14, +6 블록 ≈ 0.27 h [유도, VR1 R-6]).
   이 배치에서 G\_sym 두 arm의 boot 사전 조건은 N=1과 N>1에서 모두 대칭이다 → **MG12-6은 적용되지 않는다**(§19-11에 원문은 싣되 비적용 표시).
 - **T 정의**: T\_i = k·floor\_{N=1}(L\_i), floor = **그 Job의** N=1 fused\_sym 블록 값(R10-2), log–log 보간, 범위 밖 외삽 금지, L < 1k는 floor(1k)(R6-3).
@@ -170,7 +189,7 @@
   rev12 봉인 때 **merge 트리에서 다시 실측**해 등록한다. 같으면 `82a5fc5b…`를 그대로 적고, 다르면 새 값을 적고 M2g PASS 표의 유효 범위를 사용자에게 다시 묻는다(PASS 표는 `82a5fc5b…` 트리에서 잰 것). 불일치 시 `ABORT_ENGINE_DIGEST`(rev11 §6-3).
   G0 계측 패치(I-2–I-5, ★)가 M3 전에 들어가면 digest가 바뀐다 → 순서는 U6.
 - **preflight(V2 §6 조건 1, G0와 공용 1회)**: 설계 = `../handoff_review_2026-10-15/PREFLIGHT_merge_cl3_design_2026-10-15.md`(**저장소 커밋 `d138e7f`**; r0의 "저장소에 없다"는 거짓이었다 — VR1 Q9 정정). VESSL 컨테이너에서 CL-3 미검증 시험((1) 13 id, (2) `test_zamba2_instrumentation`, (3) venv로 멈춘 17건)을 PRE(`7b15214`)·POST 짝으로 (id, 서명) 대조하고, L2 밖 새 실패가 0이고 구멍이 0일 때 `PREFLIGHT_PASS`.
-  **POST [결정 U13, DECISIONS §5]**: 후보 = 공용 loadgen·runner 수정 커밋 **`0eca947`**(R-2·R-3). 단 **최종 POST = rev12 하네스 변경 중 gate 경로((iii)의 `scripts/multigpu`·`tests/`, X 실제 토큰 송신을 `benchmarks/pdmux_eval`에 넣으면 그것도)가 들어간 커밋**이다(그 변경이 없으면 `0eca947`). `dc06c870` 고정이 아니다. preflight는 **rev12 2회차 감사 뒤**, 최종 POST 커밋 뒤에 제출한다. preflight 시험 목록(`preflight_cl3_targets.txt`)에 **`test_loadgen_outcome`**을 추가하도록 등록한다(도구 수정은 이 문서 밖). venv 후보 (c)(`--system-site-packages` venv 생성)는 사용자 허용 [결정 2026-10-16], 모드는 `meta/venv_mode.txt`.
+  **POST [제안, VR2 F-1 — U13 결정 문언은 "preflight는 rev12 2회차 감사 뒤 제출"뿐이고 아래 구체화는 결정이 아니다]**: **최종 POST = M3 제출 전에 (iii)의 7개 경로 중 하나라도 바꾼 마지막 커밋**(실제로는 재봉인·하네스층 감사 수리가 끝난 커밋; 근거 `tests/test_mg_harness.py:1527` `assertEqual(C.PREREG_REV, 11)` — 재봉인과 §19-12 변이 시험이 `tests/`를 바꾼다). `0eca947`·`dc06c870`은 POST가 아니다. preflight는 최종 POST 뒤 **1회** 제출한다. preflight 시험 목록(`preflight_cl3_targets.txt`)에 **`test_loadgen_outcome`**을 추가하도록 등록한다(도구 수정은 이 문서 밖). venv 후보 (c)(`--system-site-packages` venv 생성)는 사용자 허용 [결정 2026-10-16], 모드는 `meta/venv_mode.txt`.
 - **M3 제출 gate (R-5)** — 셋 다 참일 때만 GPU 작업을 시작한다. `m3_job.sh`가 셀 전에 대조하고, 하나라도 거짓이면 `ABORT_PREFLIGHT_NOT_PASSED`(사유 기록):
   (i) `PREFLIGHT_PASS` 산출물과 그 sha256이 커밋되어 있고 그 산출물의 merge 트리 digest가 rev12 등록 digest와 같음
   (ii) preflight Job과 M3 Job의 **이미지 digest 동일**
@@ -178,8 +197,8 @@
 - **대조 경로 판단(VR1 R-5의 5경로 + 2경로)**: 원칙 = "preflight가 실행한 바이트 중 M3 Job이 실행하는 것은 전부 gate 안에 둔다". PASS는 그 바이트에 대해서만 말한다.
   - `benchmarks/pdmux_eval` **추가**: runner가 `python -m pdmux_eval.trace_loadgen`으로 부르고(`engine_bench_runner.sh:116, 226` [코드]) R-2 수정이 여기 들어간다. preflight 스위트가 이 패키지를 import하는 시험(`test_benchmark_tools`·`test_campaign_provenance`·`test_lambda_star_per_shape`·`test_n3_capacity` 등 [코드, grep])을 돌린다. 빼면 POST 뒤 loadgen 변경이 PASS를 그대로 받는다 — VR1 Q9가 runner에 대해 찾은 구멍과 같은 구조이며 감사가 놓친 경로다. G0도 같은 loadgen을 쓰므로 공용 경로다.
   - `scripts/multigpu` **추가(M3 전용)**: `mg_loadgen.py`가 `trace_loadgen.replay`를 감싸고 `mg_runner.sh`가 boot를 띄우며, `tests/test_mg_harness.py`가 둘을 import·실행한다 [코드, `test_mg_harness.py:19-21, 144`]. G0는 쓰지 않으므로 G0 gate에는 넣지 않아도 된다(preflight 설계 §6).
-  - `results/multigpu/`(`mg_const`·`mg_plan`·`mg_drive`·`mg_label`·`m3_job.sh`) **넣지 않음**: 이 하네스는 preflight **뒤** 재봉인 단계에서 바뀐다(순서 [결정]). 넣으면 gate가 항상 거짓이 된다. 이 바이트의 검증은 하네스층 감사 + 재봉인 sha + 재봉인 커밋의 CPU 회귀가 맡고, preflight PASS는 이 하네스에 대해 아무것도 말하지 않는다(§19-11 금지).
-  - **결과적 순서 제약 [결정 U13]**: rev12 하네스 변경 중 gate 경로에 닿는 것 — `scripts/multigpu/mg_loadgen.py`(순열 prefix 문서·X 실제 토큰·요청별 기록·docstring 정정)·`mg_boot.py`(context 검사·노브 3개)와 `tests/` 아래 하네스 시험(`test_mg_harness.py` 변이 시험) — 은 **최종 POST 커밋에 함께 들어간다**. 2회차 감사 뒤에 만들므로 감사 수리로 그 경로가 다시 바뀌는 일은 POST 전에 끝난다. 그 뒤(하네스층 감사·재봉인)에 그 경로를 다시 고치면 (iii)이 거짓 → preflight를 새 POST에서 다시 돈다(fail-closed, ≈1 GPU-h [유도, 설계 §7]). 그래서 gate 경로 부분의 하네스층 감사는 preflight 전에 받기를 권고한다 [제안].
+  - `results/multigpu/`(`mg_const`·`mg_plan`·`mg_drive`·`mg_label`·`m3_job.sh`) **넣지 않음**(VR2 Q4 정당 판정): preflight 스위트는 이 하네스 바이트를 검증 대상으로 삼지 않고, 이 바이트는 gate가 아니라 재봉인 sha가 고정한다. 이 바이트의 검증은 하네스층 감사 + 재봉인 sha + 재봉인 커밋의 CPU 회귀가 맡고, preflight PASS는 이 하네스에 대해 아무것도 말하지 않는다(§19-11 금지).
+  - **결과적 순서 제약 [제안, F-1]**: gate 경로에 닿는 rev12 변경 — `scripts/multigpu/mg_loadgen.py`(순열 prefix 문서·X 실제 토큰·요청별 기록·docstring 정정)·`mg_boot.py`(context 검사·노브 3개)·`tests/` 하네스 시험·재봉인의 `PREREG_REV` 단언, X 송신을 넣는 `benchmarks/pdmux_eval/trace_loadgen.py`(F-3) — 과 그 하네스층 감사 수리는 **모두 preflight 전에 끝낸다**. preflight 뒤 7개 경로를 다시 고치면 (iii)이 거짓 → 새 POST에서 preflight 재실행(fail-closed, ≈1 GPU-h [유도, 설계 §7]).
 - 17건이 VESSL에서도 닿지 않으면(venv 후보 (a)–(c) 모두 실패) "검증 불가"로 남기고 사용자에게 다시 올린다(V2 §6). 이 경우 M3 제출은 보류한다.
 - 문장 제약: preflight 통과를 merge 전후 회귀가 없다는 근거로 쓰지 않는다(판정서 C-4 금지 문안 승계, V2 §6-3).
 
@@ -239,10 +258,11 @@
 - loadgen 요약의 TTFT 3 s 기준 값을 인용하는 것.
 - preflight 통과를 merge 회귀 부재의 근거로 쓰는 것(판정서 C-4 승계). "preflight PASS가 rev12 하네스(`results/multigpu/`)를 검증했다"(§19-6 gate 밖).
 - `max_prefill_tokens` 16384·span 65536 아래의 TP 결과를 "TP의 prefill 용량 이점" 일반으로 쓰는 것.
-- `SERVER_ERROR_HI`로 무효가 된 짝을 "효과 없음"이나 "그 arm이 졌다"로 쓰는 것.
+- `SERVER_ERROR_HI`·`CLIENT_ERROR`로 무효가 된 짝을 "효과 없음"이나 "그 arm이 졌다"로 쓰는 것.
 - **VR1 §7 금지 문안(문자 그대로)**: "TP에서 PD-mux 분할(agnostic 표·D44)이 더/덜 적합하다", "G\_sym(N) 추세는 SM 분할 크기 때문이다"(양방향) · "λ\*\_thr(X)는 토큰 처리율 우위를 뜻한다" · "M3가 context 16384에서도 같다" · "preflight PASS가 rev12 runner를 검증했다"(R-5 이전) · 이번 반전 시험의 예보 수치(편향 ≤ 1.1%, BROKEN 29–33%, 부풀림 +3.45%)를 측정값으로 인용.
+- **VR2 §7 금지 문안(문자 그대로)**: "R-1/`SERVER_ERROR_HI`가 오류에 의한 G 편향을 3% 아래로 묶는다"((a) 반영과 하네스층 변이 시험 전) · "`0eca947`이 서빙에서 조용한 실패를 없앴다"(GPU 실측 0) · "boot 대조로 mamba dtype이 M2g와 같음을 확인했다"(F-4 전) · "preflight PASS가 rev12 재봉인 하네스·`tests/`를 검증했다"(F-1 전) · "U14로 X의 Job 효과가 없음을 보였다" · 이번 반전 시험 예보 수치(+4.43%, +3.25%, +2.21%, m 임계 0.8·0.9·1.3·1.5, 확장 비율)를 측정값으로 인용.
 
-VR1 §7 허용 문안: "rev12 M3는 이 Job에서 shape A·B·X(arXiv-Sum, 입력 ≤ 16k, 출력 p50 195)의 λ\*\_thr 기반 G\_sym(N)을 잰다. 이는 같은 스케줄 노브에서 PD-mux 기능 전체의 효과이고 multi-GPU 1차·단일 GPU 2차 가족이다."
+VR1 §7 허용 문안: "rev12 M3는 이 Job에서 shape A·B·X(arXiv-Sum, 입력 ≤ 16k, 출력 p50 195)의 λ\*\_thr 기반 G\_sym(N)을 잰다. 이는 같은 스케줄 노브에서 PD-mux 기능 전체의 효과이고 multi-GPU 1차·단일 GPU 2차 가족이다." VR2 §7 추가 허용: "공용 loadgen(`0eca947`)은 SSE error 청크와 `ignore_eos` 출력 길이 불일치를 서버 측 오류로 기록한다(CPU 시험 19건, 서빙 정확성 주장 아님)."
 
 **승계 caveat (VR1 §6, 문자 그대로)**:
 
@@ -250,7 +270,7 @@ VR1 §7 허용 문안: "rev12 M3는 이 Job에서 shape A·B·X(arXiv-Sum, 입�
 - **MG12-2** "shape X의 가변 길이는 LO g 산포를 키운다(모형 예보: 두 arm 기준 `KNEE_NOT_BRACKETED` 5–35%). X의 G 미정의는 효과 없음이 아니다."
 - **MG12-3** "P10을 세 shape로 넓히면 귀무에서도 BROKEN 확률이 커진다(모형 예보: shape당 11–12%, 세 shape 독립 상한 29–33%). TP 라벨 인용 불가는 TP 효과 부재가 아니다."
 - **MG12-4** "shape X의 Job 효과는 검출되지 않았다. X의 N-추세 라벨은 shape A 앵커 기준 Job 효과 검사 아래의 값이다."
-  - 주석(r1+): U14 채택으로 X 앵커 셀이 생겨 Job 효과 검사가 X에도 적용됨 — MG12-4는 [적용 범위 축소]. (남는 범위: X 앵커가 `JOB_EFFECT_UNTESTED(J_N, X)`인 Job의 X 점, P10 BROKEN 판정의 X raw 라벨, §19-2.)
+  - **r2: MG12-4는 이 판에서 MG12-4′로 대체된다(F-8, VR2 Q7(c): 원문은 r1+에서 부분적으로 거짓).** 원문은 VR1과의 바이트 대조를 위해 그대로 싣는다.
 - **MG12-5** "M3는 context\_length 20480과 mamba 노브 명시 인자로 돌았고, M2g PASS는 16384와 자동값에서 잰 것이다. 코드상 KV 풀·mamba 슬롯·커널 수치는 바뀌지 않는 것으로 유도되나, M2g PASS를 이 인자 조합이나 16k 입력의 정확성으로 쓰지 않는다."
 - **MG12-6** (R-6 미채택 시) "N>1 config에서 floor 블록은 fused\_sym boot1에만 있어 G\_sym 두 arm의 boot 사전 조건이 N=1과 다르다. G\_sym(N) 추세에 이 비대칭 성분이 섞여 있을 수 있다."
 - **MG12-7** "M3 λ\*\_SLO는 2 rung(비 약 2.7, HI는 과포화 비정상 셀) 위의 비등록 사후 기술값이다. R9-3을 충족하지 않으며 크기·부호 문장에 쓰지 않는다."
@@ -260,20 +280,30 @@ VR1 §7 허용 문안: "rev12 M3는 이 Job에서 shape A·B·X(arXiv-Sum, 입�
 
 비고: MG12-6은 R-6 채택(§19-4, config boot1의 두 arm 모두에 floor\_N 블록)으로 **이 판에서는 적용되지 않는다**. 원문은 VR1과의 바이트 대조를 위해 그대로 싣는다.
 
+**신규 caveat (VR2 §6, 문자 그대로)**:
+
+- **MG12-4′** "shape X의 Job 효과는 J\_N 앵커(1.6×prior\_X(1) rung, 확장 없음)로만 검사되었다. `JOB_EFFECT_UNTESTED(J_N, X)`인 Job의 X 점과 P10 BROKEN 판정의 X raw 라벨은 Job 효과 검사 밖의 값이다."
+- **MG12-12** "U14 X 앵커는 참 λ\*/prior\_X가 약 1.3 이상이면(모형 예보: 1.3에서 절반, 1.5 이상에서 거의 전부) 기준 셀 포화 미달로 `JOB_EFFECT_UNTESTED`가 된다. X Job 효과 미검사는 Job 효과 부재가 아니다."
+- **MG12-13** "TP 구간 완료 예보(S2 여유 0.43 h)는 X 참 용량이 prior\_X의 약 0.9배 이상이고 1.42배 이하일 때만 성립한다(모형 예보). 그 밖에서는 TP가 등록 순서대로 잘리고 DP는 완료된다. TP 결과 부재는 TP 효과 부재가 아니다."
+- **MG12-14** "LO 셀의 서버 측 오류는 상한 없는 기술값이다. LO 브래킷 인증은 오류를 제외한 요청 위에서 이루어졌다."
+- **MG12-15** "`mamba_ssm_dtype`의 boot 기록은 서버 인자의 기록이며 실효 dtype의 측정이 아니다(F-4 대조가 있을 때만 실효값 확인)."
+
+MG12-11은 넣지 않는다: VR2 §6이 "(b)를 택할 때만"으로 한정했고 사용자는 (a) 합산 1%를 택했다(DECISIONS §6).
+
 ### 19-12. 하네스·공용 코드 변경 목록 (재봉인 대상)
 
 | 파일 | 변경 | 회귀·변이 시험 | 시점 |
 |---|---|---|---|
-| `benchmarks/pdmux_eval/trace_loadgen.py`·`context_limit.py`(공용) | R-2: `SSE_ERROR`·`SERVER_ABORT`·`OUTPUT_SHORT`·`OUTPUT_LONG`, `error_side`, `sock_read=600` 유지; `fit_problems`(입력+출력 ≤ ctx−2, 입력 < ctx−6) | `tests/test_loadgen_outcome.py` 19건, 변이 3종 KILLED + 대조군 [코드, 커밋 메시지] | **완료 `0eca947`**(POST 후보) |
+| `benchmarks/pdmux_eval/trace_loadgen.py`·`context_limit.py`(공용) | R-2: `SSE_ERROR`·`SERVER_ABORT`·`OUTPUT_SHORT`·`OUTPUT_LONG`, `error_side`, `sock_read=600` 유지; `fit_problems`(입력+출력 ≤ ctx−2, 입력 < ctx−6). **남은 것(F-3)**: `replay`가 요청별 `input_ids`(X 실제 토큰)를 받아 `StreamState`로 송신 | `tests/test_loadgen_outcome.py` 19건, 변이 3종 KILLED + 대조군 [코드, 커밋 메시지]. F-3: "X 경로에서 error 청크를 토큰으로 셈" KILLED | R-2 **완료 `0eca947`**, F-3 = 하네스 수정 단계(최종 POST 전, F-1) |
 | `scripts/r2_eval/engine_bench_runner.sh`(공용) | `0eca947`: 셀별 context 사전검사(`ABORT_CONTEXT_TOO_SHORT`, exit 5). 남은 것: `--max-prefill-tokens`·`--max-mamba-cache-size`·`--mamba-ssm-dtype` 전달(G0용, M3는 `mg_boot`) | 기존 runner 시험 + 인자 출력 dry-run. runner 변경은 M2g 등록 digest 밖임을 공시 | 사전검사 `0eca947`, 노브 전달 = G0 쪽 커밋 |
-| `scripts/multigpu/mg_loadgen.py`·`mg_runner.sh` | 순열 prefix 문서 trace, **X `doc_id` → 사전 토큰화 파일 `input_ids` 송신**(A·B `[1]*L` 불변), 요청별 (수락 여부, `error_kind`·`error_side`, 예정·실제 발송 시각) 기록. **docstring "trace_loadgen.py itself is NOT modified"(`mg_loadgen.py:4`)는 `0eca947` 뒤 거짓 → 정정** | 분류 불가 → 클라이언트 측. "X에 `[1]*L`"·"A·B payload 변경" 변이 KILLED | **최종 POST 커밋**(§19-6, U13) |
-| `scripts/multigpu/mg_boot.py` | **boot 전 그 boot의 trace 전부에 `context_limit.fit_problems(C.CONTEXT_LENGTH, traces)` 재사용 검사**(위반 → `ABORT_CONTEXT_TOO_SHORT`, GPU 작업 전), 노브 3개를 `build_server_args`에 추가 | "검사 제거" 변이 KILLED, ctx 16384에서 X·floor 16k 거절 대조 | **최종 POST 커밋** |
-| `tests/` 아래 하네스 시험 | 아래 행들의 변이 시험 | — | **최종 POST 커밋**(U13) |
+| `scripts/multigpu/mg_loadgen.py`·`mg_runner.sh` | 순열 prefix 문서 trace, **X `doc_id` → 사전 토큰화 파일 `input_ids` 송신**(A·B `[1]*L` 불변), 요청별 (수락 여부, `error_kind`·`error_side`, 예정·실제 발송 시각) 기록. **docstring "trace_loadgen.py itself is NOT modified"(`mg_loadgen.py:4`)는 `0eca947` 뒤 거짓 → 정정** | 분류 불가 → 클라이언트 측. "X에 `[1]*L`"·"A·B payload 변경" 변이 KILLED | 하네스 수정 단계(최종 POST 전, §19-6 F-1) |
+| `scripts/multigpu/mg_boot.py` | **boot 전 그 boot의 trace 전부에 `context_limit.fit_problems(C.CONTEXT_LENGTH, traces)` 재사용 검사**(위반 → `ABORT_CONTEXT_TOO_SHORT`, GPU 작업 전), **floor 블록 요청 포함(F-3)**, 노브 3개를 `build_server_args`에 추가 | "검사 제거"·"floor 요청 fit 검사 누락" 변이 KILLED, ctx 16384에서 X·floor 16k 거절 대조 | 하네스 수정 단계(최종 POST 전) |
+| `tests/` 아래 하네스 시험 | 아래 행들의 변이 시험, 재봉인 `PREREG_REV` 단언(`test_mg_harness.py:1527`) | — | 하네스 수정·재봉인(최종 POST 전, F-1) |
 | `mg_job_common.sh` | `MANDATORY_REG`(`:65-82`): rev12 PREREG, `trace_loadgen.py` 새 sha(`0eca947`), **`context_limit.py`·`tests/test_loadgen_outcome.py`·사전 토큰화 생성 스크립트 추가** [제안] | `test_mg_symlink_layout` 등록 집합 시험 갱신 | 재봉인 |
 | `mg_const.py` | `PREREG_REV = 12`, shape X 상수, 데이터·토큰화 파일 sha·경로, 노브 5개, **`CONTEXT_LENGTH` 16384 → 20480(`:127`)**, `HARD_CAP_S["m3"]` 14/16 h, `ANCHOR_SHAPE` → (A, X), 새 중단 코드 | selftest 갱신 | 재봉인 |
 | `mg_plan.py` | 3 shape, floor 블록 step(20개), 앵커 boot에 X(U14), 셀 수 단언(**560**), 예산 | "shape 2개로 계획"·"앵커에 X 없음" 변이 KILLED | 재봉인 |
-| `mg_drive.py` | `:239` shape 튜플, floor 블록 실행·`FLOOR.json`, `PREFLIGHT_PASS`·로그 knob·dtype 대조 | 중단 경로 시험 | 재봉인 |
-| `mg_label.py` | P10 3 shape, X를 비앵커 shape로, `CLIENT_ERROR` 클라이언트 측 분류, **`SERVER_ERROR_HI`**, `JOB_EFFECT(J_N, X)`·`JOB_EFFECT_UNTESTED(J_N, X)`(U14), `FLOOR_JOB_EFFECT`, `LOG_KNOB_MISMATCH`, `KV_POOL_DRIFT` | "서버 오류를 CLIENT\_ERROR로 셈"·"X HI 가장 긴 3% 서버 오류인데 라벨 그대로"·"`OUTPUT_SHORT`를 성공으로 셈"·"X 누락 P10"·"J1 floor로 채점" 변이 KILLED + 무변이 대조군 | 재봉인 |
+| `mg_drive.py` | `:239` shape 튜플, floor 블록 실행·`FLOOR.json`, `PREFLIGHT_PASS`·로그 knob, dtype 인자 기록·부팅 로그 mamba 메모리·슬롯 대조(F-4) | 중단 경로 시험 | 재봉인 |
+| `mg_label.py` | P10 3 shape, X를 비앵커 shape로, **합산 오류 규칙(서버 + 클라이언트 > 1%, 우세 분류 라벨 `SERVER_ERROR_HI`/`CLIENT_ERROR`, 두 건수 기록; 앵커·J1 기준 셀 포함, F-5)**, `JOB_EFFECT(J_N, X)`·`JOB_EFFECT_UNTESTED(J_N, X)`(U14, X 기준 셀 포화 미달 포함), `FLOOR_JOB_EFFECT`, `LOG_KNOB_MISMATCH`, `KV_POOL_DRIFT`, `DTYPE_UNVERIFIED` | **"서버 0.9% + 클라이언트 0.9%인데 라벨 그대로"**·"H-3 X판(X 기준 셀 포화 미달인데 UNTESTED 없음)"·"우세 분류가 서버인데 CLIENT\_ERROR로 셈"·"X HI 가장 긴 3% 서버 오류인데 라벨 그대로"·"`OUTPUT_SHORT`를 성공으로 셈"·"X 누락 P10"·"J1 floor로 채점" 변이 KILLED + 무변이 대조군 | 재봉인 |
 | `m3_job.sh` | gate (i)–(iii) 대조(§19-6), `PDMUX_HEARTBEAT_S=0` 확인 | 셸 시험(gate 경로 diff 비지 않음 → ABORT) | 재봉인 |
 
 ### 19-13. 사용자 결정 항목
@@ -292,26 +322,18 @@ VR1 §7 허용 문안: "rev12 M3는 이 Job에서 shape A·B·X(arXiv-Sum, 입�
 | U10 | TP GPU당 decode SM | 미해결 공시 / N별 D 스윕 | 미결, 초안 권고 미해결 공시 |
 | U11 | λ\*\_SLO 위치 | 봉인 밖 사후 기술값 / 하네스 등록 | 미결, 초안 권고 봉인 밖(분석기 fetch 전 커밋) |
 | U12 | P10 3 shape 확장의 검정력 비용 | fail-closed 확장 / X를 P-DP 판정에서 빼고 기술값 | 미결, 초안 권고 fail-closed 확장 |
-| **U13** | gate 경로에 닿는 rev12 하네스 변경의 시점(§19-6) | (a) `scripts/multigpu`·`tests/` 하네스 변경을 POST 커밋에 함께 / (b) 재봉인 커밋에서 preflight 재실행(≈1 GPU-h [유도]) | **결정 2026-10-16(DECISIONS §5)**: preflight는 **2회차 감사 뒤** 제출, 최종 POST = gate 경로 하네스 변경 커밋(후보 `0eca947`) — (a)형. 그 뒤 gate 경로를 고치면 (b)로 떨어짐(fail-closed) |
+| **U13** | preflight 시점(§19-6) | (a) 2회차 감사 뒤 1회 / (b) 재봉인 뒤 재실행(≈1 GPU-h [유도]) | **결정 2026-10-16(DECISIONS §5)**: preflight는 **2회차 감사 뒤** 제출. 최종 POST 정의(7개 경로 중 하나라도 바꾼 마지막 커밋 = 재봉인·하네스층 감사 수리 뒤, preflight는 그 뒤 1회)는 **[제안, VR2 F-1]**이다(r1+의 "[결정 U13]" 표기·후보 `0eca947` 정정). preflight 뒤 gate 경로를 고치면 재실행(fail-closed) |
 | **U14** | X Job 효과 앵커(VR1 Q5 권고) | 넣지 않음 / J\_N 앵커 boot에 X HI 4 seed(Job당 ≈0.5 h [유도]) | **결정 2026-10-16(DECISIONS §5): 추가**(Job당 8셀, §19-2 앵커 항, §19-10) |
 | R-8 입력 | X 입력 내용 | `[1]*L` 합성 / 실제 문서 토큰 | **결정 2026-10-16(DECISIONS §5): 실제 문서 토큰**(Nano 토크나이저 사전 토큰화 파일 sha 등록) |
+| **D-1′** | λ\*\_thr HI 셀 오류 무효 문턱(VR2 §9) | (a) 합산 1% / (b) 분류별 각 1% + MG12-11 / (c) 분류별 각 0.5% | **결정 2026-10-16(DECISIONS §6): (a) 합산 1%**(§19-1b), F-1–F-8 전부 반영 |
 
-### 19-14. claims-auditor 재감사 질문 (규칙층, 2회차 — r0 대비 diff만)
+### 19-14. 규칙층 감사 (완료 — 상한 2회)
 
-- Q1 (R-1): §19-1b `SERVER_ERROR_HI`가 D-1 반전 경로(X HI 셀의 선택적 서버 측 오류로 achieved 부풀림)를 닫는가. 확장 셀 포함·전 shape 적용·LO 기술값 처리가 새 fail-open을 만들지 않는가. D-7과의 관계 서술이 사용자 승인 해석과 맞는가.
-- Q2 (R-2): 공용 loadgen 커밋 `0eca947`의 분류(`SSE_ERROR`·`SERVER_ABORT`·`OUTPUT_SHORT`·`OUTPUT_LONG`, `error_side`)와 경계(입력+출력 ≤ ctx−2, 입력 < ctx−6)가 VR1 §4-1의 조용한 1토큰 성공 경로를 덮는가. M3가 runner 사전검사를 타지 않는 구멍을 `mg_boot` 검사가 닫는가.
-- Q3 (R-3·R-4): context 20480 근거 수치, U2(b) 실행 불가 서술, G5(c)(ii) X 항, `mamba_ssm_dtype` 규칙(키 부재 → float32, 폴백 금지, boot 대조)이 VR1 §4·Q8과 맞는가.
-- Q4 (R-5): gate (i)–(iii)과 대조 경로 7개(`benchmarks/pdmux_eval`·`scripts/multigpu` 추가, `results/multigpu` 제외)가 "바뀐 파일을 덮지 않는 gate" 결함을 닫는가. U13의 순서 제약이 fail-closed인가. §19-9 분석기 위치가 gate와 충돌하지 않는가.
-- Q5 (R-6·R-8): floor\_N 두 arm 배치로 MG12-6 비대칭이 실제로 사라지는가. 순열 prefix 중첩이 N 간 표본 상관이라는 새 교란을 만드는가.
-- Q6 (범위): r1이 수리 색인 밖에서 rev11·r0 판정 의미를 바꾼 곳이 있는가(r0 sha256 `29dd7d2f…` 대비 diff).
-- **Q7 (r1+ diff, 커밋 `8e121cd` r1 대비)** — 사용자 결정 §5와 `0eca947` 반영분만:
-  (a) R-8: 사전 토큰화 절차(parquet `b34529df…`, 토크나이저 `3277c00f…`, `add_special_tokens=False`, 5,906 재현 조건)와 이미지 경로 등록 요구가 재현 가능하고 fail-closed인가. 실제 토큰(X)·합성(A·B) 혼재, A·B의 T가 실제 문서 floor에서 오는 것이 판정을 오염시키는가. floor 문서 1개를 유지분 밖에서 고른 것이 r0 "유지분 문서 절단"과 어긋나는가. `-Base` 토크나이저 불일치 처리.
-  (b) U13: 최종 POST 정의(gate 경로 하네스 커밋, 후보 `0eca947`)와 "2회차 감사 뒤 preflight" 순서가 gate (iii)과 맞는가. `tests/`(최종 POST)와 `mg_job_common.sh`(재봉인)가 서로를 단언하는 시험(`test_mg_symlink_layout`의 `MANDATORY_REG` 검사)이 순서상 중간 커밋에서 깨지지 않는가.
-  (c) U14: X 앵커 Job 효과 규칙이 §15-3·§16-1 shape A 규칙과 같은 형식인가. P10 BROKEN에서 X를 비앵커로 남긴 [제안]이 맞는가(아니면 A처럼 동일 shape 보정). MG12-4 주석의 남는 범위 서술이 맞는가. 예산 +0.65 h/Job과 S2 여유 0.43 h가 캡 16 h에 비해 충분한가.
-  (d) `0eca947` 반영: `MANDATORY_REG` 재봉인 사유, `mg_loadgen.py:4` docstring 정정 등록, `mg_boot` 검사·노브 3개를 `mg_boot`로 옮긴 §19-3 정정, preflight 목록의 `test_loadgen_outcome` 추가가 빠짐없는가.
+- 1회차 VR1: NO-GO(死因 D-1) → r1·r1+. 2회차 VR2: NO-GO → 사용자 결정(死因 D-1′; Q1 REFUTED(부분)·Q2 CONFIRMED(코드 범위)·Q3·Q4·Q5 PLAUSIBLE·Q6 반증 실패·Q7 (a)·(c)·(d) PLAUSIBLE, (b) REFUTED(실행 가능성) → F-1) → DECISIONS §6 (a) → r2. VR2 기준 (a) 반영 시 나머지 死因 0, `GO-with-caveats` 요건 = F-1–F-8 + §19-11 caveat.
+- 2회차 질문 Q1–Q7 원문은 r1+ 판(커밋 `3f48a29`) §19-14에 있다. 규칙층 3회차는 없다. r2 diff(합산 규칙·F-1–F-8 반영 바이트)는 하네스층 감사의 변이 시험(§19-12)으로 확인한다.
 
 ### 19-15. 이 초안이 하지 않은 것
 
-- rev11 PREREG·하네스·PASS 표·명세·정본·트랙 파일 수정, 커밋, GPU 사용, 제출. 예산 표는 scratchpad의 하네스 사본 계산이다(봉인 하네스는 읽기와 `job-table` 출력만).
+- rev11 PREREG·하네스·PASS 표·명세·정본·트랙 파일 수정, 커밋, GPU 사용, 제출. r2는 이 문서만 고쳤다(하네스 수정·변이 시험·사전 토큰화 파일 생성은 다음 단계). 예산 표는 scratchpad의 하네스 사본 계산이다(봉인 하네스는 읽기와 `job-table` 출력만).
 - 공용 loadgen·runner 수정(`0eca947`, engine-porter; 이 문서는 커밋 diff·메시지만 읽었고 시험을 다시 돌리지 않음), 사전 토큰화 파일 생성, preflight 도구의 POST 기본값(`preflight_cl3.sh:30` `dc06c870`)·`post_vs_job_head` 경로 목록(`:136-137`, 5경로)·시험 목록(`test_loadgen_outcome`) 갱신 — 도구 수정은 이 문서 밖.
 - M4의 나머지 세부(shape 집합, ρ 재검토), G0 PREREG와의 공용 floor 코드 확정.
