@@ -90,3 +90,11 @@
 | D-10 | `CAP_BINDING` 10% 확정 + 짝 규칙(한 arm이라도 묶이면 짝 G 조건부) + decode iteration 가중(running ≥ cap iteration 비율) + 연속값·{5,10,20}% 사다리 병기 | |
 | cap 특성화 | G0 앞에 cap 특성화 Job(SP R16-3 {48, C_mem/2, C_mem}, C_mem 부팅 로그 실측) 삽입. G0 cap은 그 결과로 결정(48 고정 해제) | CM-5 검증 Job과 겸함 |
 | context | G0·M3 `context_length` 20480(≥ 16,745 근거: 유지분 최대 입력+출력 16,744, floor 16k + max_new) | 감사 R-3 |
+
+## 5. rev12 r1 뒤 사용자 결정 (2026-10-16 "진행")
+
+| # | 결정 |
+|---|---|
+| R-8 입력 내용 | shape X 입력 = **실제 arXiv-Sum 문서 토큰**(Nano 토크나이저, 사전 토큰화 파일 등록), `[1]*L` 합성 불채택 |
+| U13 | preflight는 **rev12 2회차 감사 뒤** 제출(그 사이 gate 경로 변경 시 재실행 회피) |
+| U14 | J_N 앵커 boot(fused_sym, agnostic)에 shape X HI 4 seed 셀 추가(Job당 8셀, ≈0.5 h [유도]) |
