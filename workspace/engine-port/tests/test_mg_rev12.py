@@ -1324,6 +1324,50 @@ class PreflightGateJobLayout(MutationCase):
         """the auditor's M6 ("gate 깨끗함 검사 제거"), re-sited on the repaired code."""
         self.assert_killed(PLAN_SRC, "G3", "        if not ok_q:", "        if False:", lambda mod: self._chk(mod, "plain"))
 
+    # ---- gate (i) "PASS file sha256 == committed .sha256" (harness audit r2 §5-3 A14 test gap, 2026-10-16)
+    A14_OLD = "    if shaf.read_text().split()[:1] != [hashlib.sha256(raw).hexdigest()]:"
+    SHA_MISMATCH = "(i) PREFLIGHT_PASS sha256 != committed .sha256"
+
+    @staticmethod
+    def _commit_mismatch(r, which):
+        """Commit a .json and a .sha256 that disagree, BOTH tracked and clean at HEAD (so committed_matches_head holds for each and
+        only the cross-check can see it).  which = "json": the record gains a field, its .sha256 is left at the old digest;
+        which = "sha": the record is untouched, its .sha256 names another digest."""
+        pf = r / "workspace/engine-port/results/multigpu/PREFLIGHT_PASS.json"
+        if which == "json":
+            rec = json.loads(pf.read_bytes())
+            rec["note"] = "json re-committed without its .sha256"
+            pf.write_bytes(json.dumps(rec).encode())
+        else:
+            Path(str(pf) + ".sha256").write_text("ab" * 32 + "\n")
+        commit_all(r, f"mismatch-{which}")
+
+    def _chk_mismatch(self, mod, layout):
+        for which in ("json", "sha"):
+            with tempfile.TemporaryDirectory() as td:
+                r, _pf, _ed = PreflightGate()._repo(td)
+                self._commit_mismatch(r, which)
+                root = r if layout == "plain" else job_layout(r, Path(td) / "job")[0]
+                m = root / "workspace/engine-port/results/multigpu"
+                for n in ("PREFLIGHT_PASS.json", "PREFLIGHT_PASS.json.sha256"):            # precondition: both committed and clean
+                    if P.committed_matches_head(root, m / n) != (True, ""):
+                        return f"{layout}/{which}: precondition broken, {n} not committed-clean"
+                ok, why = self._gate(mod, root)
+                if ok or why != [self.SHA_MISMATCH]:
+                    return f"{layout}/{which}: committed .json/.sha256 mismatch not rejected by the cross-check alone ({ok}, {why})"
+        return None
+
+    def test_committed_json_sha256_mismatch_rejected_both_layouts(self):
+        self.assertIsNone(self._chk(P, "plain"))                      # the valid committed pair passes (same fixture)
+        self.assertIsNone(self._chk_mismatch(P, "plain"))
+        self.assertIsNone(self._chk_mismatch(P, "job"))
+
+    def test_mutant_A14_sha_cross_check_removed_killed_plain(self):
+        self.assert_killed(PLAN_SRC, "A14p", self.A14_OLD, "    if False:", lambda mod: self._chk_mismatch(mod, "plain"))
+
+    def test_mutant_A14_sha_cross_check_removed_killed_job(self):
+        self.assert_killed(PLAN_SRC, "A14j", self.A14_OLD, "    if False:", lambda mod: self._chk_mismatch(mod, "job"))
+
     # ---- m3_job.sh check_committed (rev11 F17, inherited): the same layout defect, the same repair
     OLD_SH = '  git -C "$ROOT" ls-files --error-unmatch "$1" > /dev/null 2>&1 && git -C "$ROOT" diff --quiet HEAD -- "$1" 2>/dev/null'
     NEW_SH = '  python3 "$HERE/mg_plan.py" committed-clean "$ROOT" "$1" > /dev/null 2>&1'
