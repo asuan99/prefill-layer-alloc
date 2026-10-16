@@ -1,0 +1,114 @@
+# M3 PREREG rev12 REGISTRATION -- RULE SEAL + HARNESS SEAL (2026-10-16, main session / engine-porter)
+# basis: rules-layer audit x2 (VERDICT_m3_rev12_draft_r1_2026-10-15.md, VERDICT_m3_rev12_draft_r2_2026-10-16.md + user decision D-1' (a))
+#        + harness-layer audit x2 (VERDICT_m3_rev12_harness_r1_2026-10-16.md, VERDICT_m3_rev12_harness_r2_2026-10-16.md: reseal-ready, 0 fatal).
+# rev11 (PREREG_MULTIGPU_2026-10-12.md 8b617d3d..., sealed 313be0a; M2g PASS tables 99ed704) is NOT modified; its bytes are rule file 1 below.
+# digest definition: sha256 over the section's lines "<sha256>  <repo-relative path>\n" in the listed order (tests/test_mg_rev12_seal.py).
+# MANDATORY_REG (mg_job_common.sh) = RULE SEAL FILES followed by HARNESS SEAL FILES, exactly in Job order; OPTIONAL_REG listed separately.
+# The list is what `m3_job.sh` (PDMUX_MG_DRYRUN=1, J1) registered on the sealed tree; the M3 Job's own REGISTRATION_SHA256.txt must equal it.
+# Not registered here (outside MANDATORY_REG): this file, tests/test_mg_rev12_seal.py, RH7_tokenizer_upload_2026-10-16.md.
+
+## RULE SEAL FILES
+8b617d3d59d6cb632ecc928ea39e54f3b3edb5a52183dadafefce307d45751d5  workspace/engine-port/results/multigpu/PREREG_MULTIGPU_2026-10-12.md
+d098c23e8b8eeb4048fc8012d2ca59b712cc386f3e36989bd498e89e268bb84a  workspace/engine-port/results/multigpu/PREREG_MULTIGPU_rev12_2026-10-15.md
+
+## HARNESS SEAL FILES
+4cd443b6c48e44c1f2eb9c97f1a91dced4d0321daba34aca5af9433b49f2f5e4  workspace/engine-port/results/multigpu/M2G_SERVER_REFERENCE.json
+b70db844d27af51c00cecb0a9f988c330318a8f2484b5db5b2799888e5880160  workspace/engine-port/results/multigpu/mg_m2g_reference.py
+f33c7579cdb1600a321cbaf7124e2e800337fe75ce0bf853beb8ccbf59f43121  workspace/engine-port/benchmarks/pdmux_eval/context_limit.py
+06a7295e3a869d838cca787ee1daaa5e71c0f676f301ce80d979ace6b9c747f9  workspace/engine-port/tests/test_loadgen_outcome.py
+afa7946d12445b8a093b8a1b2e6a09f4444ef016263f361abd1d585917633c74  workspace/engine-port/scripts/multigpu/mg_x_pretokenize.py
+6df1b9d7ee0ca5b1b90634e5bcd52f120ed11012cc382dc2db7333094a16dba3  workspace/engine-port/scripts/multigpu/mg_xcheck.py
+cd8fdeb2f3cf23a1302cf476f433a8f61fc1b814cc1ec2b0a7715300c39123f7  workspace/engine-port/results/multigpu/X_TOKENS_BUILD_REPORT.json
+6ce7a381078b746635ed84565c5cf14e7d4d211edd444d61da6c69c8a0d5ae38  workspace/engine-port/tests/test_mg_rev12.py
+3284c2c642d897ae6901d3bc69216c7b6085a465dc58c5ef4774794c139e09da  workspace/engine-port/results/multigpu/VERDICT_delta_rev7_f3da641_2026-10-12.md
+1257013e8a59961794a89f8f57abee4ae01e432fba347d8b265c8466ca0fcfda  workspace/engine-port/results/multigpu/VERDICT_harness_delta_0958b10_2026-10-13.md
+5a6a77a93b9586e678f7f4fab8e9e58bd27987192e3f8e93436af6831d1ad9b7  workspace/engine-port/results/multigpu/VERDICT_harness_delta_64b3d63_2026-10-13.md
+0e65b0d2432ef8204719329747a718b4f1cb4fb0f213bba909cc5d27fea6a279  workspace/engine-port/results/multigpu/VERDICT_harness_delta_6f3611c_2026-10-13.md
+6fe02ac3728f06c75ec8f8f75f8d00ac1096fc4c6c38c3c204ae1c708d5c4f12  workspace/engine-port/results/multigpu/VERDICT_harness_delta_ebdadd3_2026-10-12.md
+38680f6f3b188eda2049cdc57c3cf32898de8ecd2badafd94066ea0b5c7084ee  workspace/engine-port/results/multigpu/VERDICT_harness_m2g_repair_a41e725_2026-10-13.md
+0da8faa6d6e54f610f55c6bbcdf87c880efd1283a9dcae11e7e61b6554a64eff  workspace/engine-port/results/multigpu/VERDICT_harness_rev10_0898540_2026-10-13.md
+f5d4f9cd5a5222f65102d2ca191acd749ee303b5f2f54989cdb4894176c4b0ff  workspace/engine-port/results/multigpu/VERDICT_harness_rev6_2026-10-12.md
+730cd97571f524a16237444d16e02fece13ce633fa98d0607e98c92a754d88a3  workspace/engine-port/results/multigpu/VERDICT_m3_rev12_draft_r1_2026-10-15.md
+ce04ef717d2c591e29d7e51dcd891d559ca65d88eb6f80f289f1ad1c3b4946c6  workspace/engine-port/results/multigpu/VERDICT_m3_rev12_draft_r2_2026-10-16.md
+d0210b6b502e3200986e73ada433ac3e46cef0e2040f4119afc46c37d77b1ba7  workspace/engine-port/results/multigpu/VERDICT_m3_rev12_harness_r1_2026-10-16.md
+427fd40320baa73b86494c06f61d039ee1baae2887da7f5e99ac388528678b9a  workspace/engine-port/results/multigpu/VERDICT_m3_rev12_harness_r2_2026-10-16.md
+4b3357287a7a8d568a443200306a007024750fe497fb1287931c503032ba75b7  workspace/engine-port/results/multigpu/VERDICT_prereg_rules_rev1_2026-10-12.md
+5668bac4e9a19195979797c693c930c1b08056e185ca3d10983e9e587331e321  workspace/engine-port/results/multigpu/VERDICT_prereg_rules_rev2_delta_2026-10-12.md
+56846903256e9ea6402773a09c1adf5f3d3f7048bf24bc74dfbc4777450cb0c5  workspace/engine-port/results/multigpu/VERDICT_prereg_rules_rev3_delta_2026-10-12.md
+3e22f4491064987c6cc4b7597a2577db1da34556e9e6a78a1bd7d6d07ac02ecc  workspace/engine-port/results/multigpu/VERDICT_prereg_rules_rev5_delta_2026-10-12.md
+d487465b81769ab4f282019b0311349bdab0ac4f3279b5bb51accc2c2f25539e  workspace/engine-port/results/multigpu/VERDICT_rules_rev10_2026-10-13.md
+4585a742106d3ae5d880ebf646fa6f76dbbf70df3e8ae7255e5f931b90164c22  workspace/engine-port/results/multigpu/VERDICT_rules_rev8_2026-10-13.md
+d49a704cfac56907d34ab93efe013849d2084c5b67e2489f53cda6fd46ea307c  workspace/engine-port/results/multigpu/VERDICT_rules_rev9_2026-10-13.md
+836fe4a15f8689e23c3476afece6bb9499ef4b707548e39233167603a9a0ceb9  workspace/engine-port/results/multigpu/mg_const.py
+ef9fb73657d0ac2b3d19dde987af2e75d084a8a2f3c54ef2586af33d0e8794fe  workspace/engine-port/results/multigpu/mg_label.py
+7519e6f692736fe8845c3b6f9b5fe838fbb008d665ccfb952733473a3f0266fd  workspace/engine-port/results/multigpu/mg_plan.py
+bd9a0f72adf93ff4c5b29b555ba7228a8b67a37a8c726e89cc0113b7a09387ff  workspace/engine-port/results/multigpu/mg_drive.py
+39679265c1726728258eb99e75298c08856428c7c002d9a50c4a55af35d15d09  workspace/engine-port/results/multigpu/mg_realized_mix.py
+fad0a4000b8954aa8d7c506db52aca42eab902a3e18d68a7034f4c4400a463bb  workspace/engine-port/results/multigpu/mg_substrate.py
+b43ee86d3efbb9c8b555409c377d76e4f53dae5249469bcc963e9fef9d8977dd  workspace/engine-port/results/multigpu/m2g_job.sh
+374431d2dd926109dc9741f9486489765a569e828bd0ac53d0706109cf414b70  workspace/engine-port/results/multigpu/m3_job.sh
+00ede0d497b5f57d0fdee981ab2e1d399da9b02a7ceb428f17be2862ce81f4d8  workspace/engine-port/results/multigpu/mg_job_common.sh
+82d22a694938628a0052a6798a847b07fecab0edc2f7943cbfbb0426c4993d3c  workspace/engine-port/scripts/multigpu/mg_runner.sh
+8f235259e7907a66496a6d1dc4523197c6a6a3da9e4260465087b838e723f74c  workspace/engine-port/scripts/multigpu/mg_boot.py
+482915b98c4a22b48fc4b300be46a9298d885bcaa907bb2faa3978e098e474a9  workspace/engine-port/scripts/multigpu/mg_loadgen.py
+4077c86b12ceb92a4d78402229ddbc43352b50b5be327f8b8316f23dbcbd5212  workspace/engine-port/scripts/multigpu/mg_proc_sampler.py
+a202b87cc2c37317f1c4ded463c732f96429070e7a7464a71de62f07dfe0fb5f  workspace/engine-port/scripts/multigpu/m2g_correctness_gate.py
+8fb45b060fcf790f4a48fa4152aec5c5de2e43152fc7ed599048ea61a9ddaed2  workspace/engine-port/scripts/multigpu/m2g_comm_reverse_stress.py
+b63988d568050d527c003cd2eb5641752ce115592ced7e72275cce8f9a286c2e  workspace/engine-port/scripts/multigpu/g5a_selector_equiv.py
+31a8f2a2be2c5538a4d3bc5aaca36cf9bcffe5310784c0eb6ef8b4b61958cbf9  workspace/engine-port/scripts/r2_eval/multigpu_cell_meta.py
+95e10b492ed6239d83cae20ad7898bdbbcce1713a37d42c2bfa111f7347ec367  workspace/engine-port/results/r2_correctness/r2_correctness_client.py
+8da9157416ecb687534595be8580e8dcef2f53e820ef353cdc5ae0dc86bdcce6  workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py
+1be495110ea67c95f275b6c8ab7e7af25d0778c2910bf6a830170dbc078aeaa2  workspace/engine-port/benchmarks/pdmux_eval/analyze.py
+73b8f983a9da95524ce2c1d3741804d8f8a49672b407f63742b8a45679e42b29  workspace/engine-port/benchmarks/configs/pdmux_agnostic_manual.yml
+454125c3e6998c267e5b8028197b80363d601ca81c92bd3d7dd94911bc47eca7  workspace/engine-port/benchmarks/configs/pdmux_r2.yml
+8e99131810fe1136fc8f8694e386f460e002224d4bf039b33ccc5b54fb7e3c5f  workspace/engine-port/triage/pdmux_a100_smoke.yml
+8392b4caf42a67ab5488014d885c60da5341657e14ee25d216acbb67204244e4  workspace/engine-port/tests/test_mg_harness.py
+2c219966d946a4d63527d8d43b0a8d94d522675be7186ff44ac00fb80a1b4079  workspace/engine-port/tests/test_m2g_gate.py
+9bb8302f88b8f5504b83b78d8cf2768facb150ec96b7e4bb0952eab0cb44a3fa  workspace/engine-port/tests/test_mg_agnostic_manual_equiv.py
+66aa166a6e318efec4f17d97d88fb2e912b41c68e0f91d4833878e2545e2794f  workspace/engine-port/tests/test_mg_realized_mix.py
+7cc9c059f7440f3f44f4347075b9aae8f81328a1b515a6a03e5d206ffcc34c63  workspace/engine-port/tests/test_mg_symlink_layout.py
+ec8c899e3a4659095fd73a9c05ff503cbe1538154a52a65285f358688c10bada  workspace/engine-port/scripts/bootstrap/engine_digest.py
+2435907cfd12e1e4b10c97923d74ac92a6f9ea6b35a5e07fd3b746d9718c0660  workspace/engine-port/scripts/bootstrap/sync_engine_tree.sh
+2791fb59fed37cd3c3c36550b0600b878c090efda50205765f644eab76c7a353  workspace/engine-port/tests/test_engine_digest.py
+a6136bc25fa05da58d525e7c57e0603e7e1ba3be6f197db8d9b9e17a9a3cdc7d  workspace/engine-port/results/multigpu/ENGINE_DIGEST.txt
+
+## OPTIONAL_REG
+b8b9e5d5b5cf01fade12ae1a87f304d3d4a3be5f6730f6246689a58e5626adec  workspace/engine-port/results/multigpu/G5A_PASS.json
+
+## CITED SPEC
+# §19-1: rev12 cites the SP bytes at the rev12 seal (DRAFT spec v0.2+); a later promote does not apply without rev13.
+08eb3f3251106de3726dbe416fe9105b0e2579c73d2f64db9e3fdeca7bdc85e3  workspace/engine-port/results/handoff_review_2026-10-15/SPEC_common_measurement_v0_2026-10-15.md
+
+## DIGESTS
+rule_seal_digest 7e4e5e19cdc3b11680acf7689ad16c75ed5ac67fb2a789d44ff06a681dbdc1e8
+harness_seal_digest 323c208180bc8688ee01580bdb4dbe073d07cc9c6f27aa85de8440c7073afde0
+mandatory_reg_count 61
+engine_digest 82a5fc5b5f587464e0df8037b64791900a013f61024d128e451818793526781c
+engine_digest_scheme pathless-v1
+model_revision dc0661c829b14e5b9246c05cfa89094a0875e052
+x_tokens_sha256 4c32f1af8eff07d7d0ad39006423163895181381c0d83a73a5f0f5b1ce76888f
+x_tokens_rel datasets/arxsum_x/arxsum_x_tokens_v1.bin
+x_tokenizer_json_sha256 3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f
+x_tokenizers_version 0.22.1
+x_lengths_sha256 acea3902602c7cb8d6796b8ea516dc8696d0e5da30ae276c548a3f520faf336a
+x_parquet_sha256 b34529dfeab4aabd4754cecc1603336a3449f66efee87f9b37192aa4c9dd91a1
+x_floor_doc_id 3066
+x_perm_sha256_seed4386 91901990d1a3fa6360a588282c7070b1fc53071f0daa45d22654b147fcf6b0bd
+x_perm_sha256_seed4162 acacc35fc2c9b200deea777bc40aba0a7f71079f854a8549c6eb3561a6150f3f
+x_perm_sha256_seed251 fdad94d40ec8e2e6cb5f36ef40ec2ed276c237ea9694eced622f2aab36682f79
+x_perm_sha256_seed2630 19e34e419cd41f84643d08f6c2618dcdbf8fe7c70c3ef51deedb215f9757cc7c
+
+## PROVENANCE (not seal bytes)
+# engine digest re-measured 2026-10-16 on HEAD e5af208e (merge tree; git archive of src/ scripts/ env/), CPU, local:
+#   (a) pristine SGLang v0.5.10 clone (sglang_engine_dev @1519acf, unmodified checkout) + scripts/vessl/install_runtime.sh
+#       (sync -> devtree_manual_edits.patch a4ec4d63... applied -> re-sync): manifest 27 entries, pathless-v1 = 82a5fc5b...
+#   (b) byte copy of the live ~/Experiments/KISTI/sglang_engine_dev + the same install_runtime.sh (manual patch already-applied): 82a5fc5b...
+#   (a) and (b): engine_digest.py digest --manifest == digest --runtime == ENGINE_DIGEST.txt; `check --sealed-file` rc 0 match=True.
+#   The original dev tree was not modified (per-file sha256 listing before/after identical).
+#   => equal to the rev11 seal value; M2g PASS tables (99ed704, measured on the 82a5fc5b... tree) keep their scope (§19-6).
+# M2g PASS tables (unchanged): J1 eba277c5... J2 f67ae7bb... J4 c087067f... J8 b1c1bf8a... (each == its committed .sha256).
+# X token file: local build re-hashed 4c32f1af...; per-seed permutations recomputed from the file header (random.Random(20261012+s)) == x_perm_sha256_seed*;
+#   cluster copy /data/datasets/arxsum_x/arxsum_x_tokens_v1.bin sha == 4c32f1af... and tokenizer.json at model revision dc0661c8... == 3277c00f...
+#   (R-H7: RH7_tokenizer_upload_2026-10-16.md, Workspace pdmux-build, 2026-10-16).
+# shared loadgen fix 0eca9477772ec008da574d3c45721fc072c53526 (R-2/R-3) is inside the sealed bytes (benchmarks/pdmux_eval/*).
+# Next (§19-6, F-1): final POST = the last commit touching the 7 gate paths -> preflight once (PDMUX_PF_POST = that sha) -> M3 dry-run -> user approval.

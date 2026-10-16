@@ -64,7 +64,7 @@ echo "kind=$KIND job=$JOB spec=$SPEC_WANT expected_gpus=$EXPECTED_GPUS hard_cap_
 # the g5a PASS record (taken on the SEALED tree, F6) is an optional slot written as ABSENT when the file is not there yet.
 MANDATORY_REG=(
   "$HERE/PREREG_MULTIGPU_2026-10-12.md"
-  "$HERE/$(K PREREG_REV12)"                                              # rev12 §19 (DRAFT r2 until the reseal names the adopted file)
+  "$HERE/$(K PREREG_REV12)"                                              # rev12 §19 (sealed 2026-10-16, REGISTRATION_rev12_SEAL.txt)
   "$HERE"/M2G_SERVER_REFERENCE.json "$HERE"/mg_m2g_reference.py          # rev12 F-4 / §19-3: M2g KV + mamba-state reference
   "$ENG"/benchmarks/pdmux_eval/context_limit.py "$ENG"/tests/test_loadgen_outcome.py   # rev12 R-2 / R-3 (0eca947)
   "$ENG"/scripts/multigpu/mg_x_pretokenize.py "$ENG"/scripts/multigpu/mg_xcheck.py   # rev12 R-8 / F-7 token file builder + U7 step
@@ -88,7 +88,7 @@ MANDATORY_REG=(
 )
 OPTIONAL_REG=("$HERE/G5A_PASS.json")
 {
-  echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md + $(K PREREG_REV12) (rev$(K PREREG_REV); unsealed until the rev12 reseal)"
+  echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md + $(K PREREG_REV12) (rev$(K PREREG_REV); sealed 2026-10-16, REGISTRATION_rev12_SEAL.txt)"
   missing=0
   for f in "${MANDATORY_REG[@]}"; do
     if [ -f "$f" ]; then sha256sum "$f"; else echo "MISSING $f"; missing=$((missing + 1)); fi

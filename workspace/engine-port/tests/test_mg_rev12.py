@@ -1522,7 +1522,7 @@ class M3JobScript(unittest.TestCase):
         for a in ("ABORT_LOG_KNOB", "ABORT_PREFLIGHT_NOT_PASSED", "ABORT_DATASET"):
             self.assertIn(a, notes)
         self.assertIn("MAMBA_SSM_DTYPE.txt", files)
-        for f in ("PREREG_MULTIGPU_rev12_DRAFT_2026-10-15.md", "context_limit.py", "test_loadgen_outcome.py", "mg_x_pretokenize.py",
+        for f in (C.PREREG_REV12, "context_limit.py", "test_loadgen_outcome.py", "mg_x_pretokenize.py",
                   "M2G_SERVER_REFERENCE.json", "test_mg_rev12.py", "mg_xcheck.py"):
             self.assertIn(f, reg)
         self.assertIn("rev12", reg)

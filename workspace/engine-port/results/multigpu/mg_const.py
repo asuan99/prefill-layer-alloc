@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Registered constants of PREREG_MULTIGPU_2026-10-12.md (rev11 §1-§18) + the rev12 §19 draft -- ONE place, section-numbered.
+"""Registered constants of PREREG_MULTIGPU_2026-10-12.md (rev11 §1-§18) + PREREG_MULTIGPU_rev12_2026-10-15.md (rev12 §19) -- ONE place, section-numbered.
 
-rev12 (2026-10-16, UNSEALED checkpoint: harness edited per rev12 DRAFT r2 §19-12; the reseal follows the harness-layer audit).
+rev12 (2026-10-16, SEALED after rules-layer audit x2 + harness-layer audit x2; seal record REGISTRATION_rev12_SEAL.txt).
 
 Every value here is copied from the PREREG text; none is tuned.  Values the PREREG does NOT
 register but the harness needs are in the IMPLEMENTATION block at the bottom and are labelled
@@ -16,7 +16,7 @@ import sys
 
 PREREG = "PREREG_MULTIGPU_2026-10-12.md"
 PREREG_REV = 12
-PREREG_REV12 = "PREREG_MULTIGPU_rev12_DRAFT_2026-10-15.md"     # §19 (DRAFT r2; the reseal names the adopted file -- update here then)
+PREREG_REV12 = "PREREG_MULTIGPU_rev12_2026-10-15.md"           # §19, sealed 2026-10-16 (r2+ ⑬: was PREREG_MULTIGPU_rev12_DRAFT_2026-10-15.md)
 
 # ---- §1 fixed conditions ---------------------------------------------------------------------
 MODEL = "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base"
