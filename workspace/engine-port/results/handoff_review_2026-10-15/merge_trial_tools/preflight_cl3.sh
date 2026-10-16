@@ -28,6 +28,10 @@
 # Job mode also writes OUT/PREFLIGHT_PASS.json (+ .sha256) with preflight_judge.py `record` (R-H2): the exact bytes the M3 gate
 # (mg_plan.preflight_gate (i)) reads once committed as results/multigpu/PREFLIGHT_PASS.json(+.sha256) -- copied, never retyped.
 # NEVER dumps the environment: only PDMUX_* names+values are recorded.
+# r2 (2026-10-17, judge revision; design doc sec 10): suites run through pf_unittest_runner.py (same -v text + LOG.status.json from
+# the TestResult callbacks; the judge gets --require-structured); the CPU-spec decision (PDMUX_CPU_ONLY=1 or PDMUX_SPEC=
+# resourcespec-a100cpu, AND no GPU visible) is written to meta/spec_decision.txt and passes --cpu-spec, which is the ONLY way the
+# pre-declared CPU-timing ids (preflight_cl3_cpu_timing_declared.txt) leave the judgement; a CPU spec with a visible GPU is INVALID.
 set -uo pipefail
 
 PRE_DEFAULT=7b15214b2d554ec7f8394485892980af8271734c
@@ -39,7 +43,7 @@ case "${1:-}" in
   --dry-run) MODE=dry ;;
   --dry-run-trees) MODE=dry_trees ;;
   --judge-only) MODE=judge; JUDGE_PRE="${2:?}"; JUDGE_POST="${3:?}" ;;
-  -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
+  -h|--help) sed -n '2,34p' "$0"; exit 0 ;;
   "") ;;
   *) echo "unknown argument: $1" >&2; exit 2 ;;
 esac
@@ -82,7 +86,8 @@ say "mode=${MODE} job=${JOB} out=${OUT}"
 
 # ---- 0. what ran (provenance) ---------------------------------------------------------------------------------
 { echo "script_sha256=$(sha256sum "${BASH_SOURCE[0]}" | cut -d' ' -f1)"
-  for f in preflight_judge.py sigcmp.py preflight_cl3_l2_ids.txt preflight_cl3_targets.txt; do
+  for f in preflight_judge.py sigcmp.py pf_unittest_runner.py preflight_cl3_l2_ids.txt preflight_cl3_targets.txt \
+           preflight_cl3_cpu_timing_declared.txt; do
     echo "${f}_sha256=$(sha256sum "${TOOLS}/${f}" | cut -d' ' -f1)"; done
   echo "pre=${PRE}"; echo "post=${POST}"; echo "reps=${REPS}"; echo "modules=${MODS:-<all>}"
   echo "job_head=$(git -C "${PROJECT}" rev-parse HEAD 2>/dev/null)"
@@ -96,6 +101,13 @@ PYE
   nvidia-smi -L 2>&1 | head -3
   env | grep '^PDMUX_' | grep -v -i 'token\|secret' | sort | sed 's/^/env /'
 } > "${OUT}/meta/provenance.txt" 2>&1
+
+# ---- 0b. spec decision (r2): the CPU-timing declaration applies only on a CPU spec with no GPU in sight ----------------------
+GPU_SEEN=0
+nvidia-smi -L 2>/dev/null | grep -q '^GPU ' && GPU_SEEN=1
+"${PY}" -c 'import sys, torch; sys.exit(0 if torch.cuda.is_available() else 1)' >/dev/null 2>&1 && GPU_SEEN=1
+"${PY}" "${TOOLS}/preflight_judge.py" spec --gpu-seen "${GPU_SEEN}" > "${OUT}/meta/spec_decision.txt" 2>&1; SPEC_RC=$?
+CPU_SPEC=0; [[ ${SPEC_RC} -eq 0 ]] && CPU_SPEC=1
 
 # ---- 1. static checks (all modes) --------------------------------------------------------------------------------
 bash -n "${BASH_SOURCE[0]}" || INVALID+=("script syntax")
@@ -116,7 +128,11 @@ for i in ids:
     if i not in pin_post: bad.append('target id not a known local failure: ' + i)
 for m in [v for s, k, v in tg if s == 'A_import9']:
     if 'unittest.loader._FailedTest.' + m not in pin_post: bad.append('module not a known local import failure: ' + m)
-print('l2', len(l2), 'targets', len(tg), 'bad', bad); sys.exit(1 if bad else 0)
+dec = [l.strip() for l in open(os.path.join(t, 'preflight_cl3_cpu_timing_declared.txt')) if l.strip() and not l.startswith('#')]
+if len(dec) != 5 or len(set(dec)) != 5: bad.append('CPU-timing declaration != 5 distinct ids')
+if [d for d in dec if d.startswith('test_n3_capacity.') and d not in l2]: bad.append('declared n3 id not an L2 id')
+if [d for d in dec if d in ids or d.split('.', 1)[0] in mods]: bad.append('declared id overlaps a CL-3 target')
+print('l2', len(l2), 'targets', len(tg), 'declared', len(dec), 'bad', bad); sys.exit(1 if bad else 0)
 PYE
 cat "${OUT}/meta/lists_check.txt"
 "${PY}" "${TOOLS}/preflight_judge_selftest.py" > "${OUT}/meta/judge_selftest.txt" 2>&1 \
@@ -151,8 +167,10 @@ if [[ "${MODE}" == dry ]]; then
  pre=${PRE:0:8} post=${POST:0:8}  reps=${REPS}  order: $( [[ ${REPS} -ge 2 ]] && echo "pre,post,post,pre (ABBA)" || echo "pre,post")
  per arm: git worktree of the commit under ${WORK}/<arm>/prefill-layer-alloc; dev tree = copy of ${SGLANG_ENGINE_DEV:-<image SGLANG_ENGINE_DEV>};
           pre arm: reverse device-assert patch + remove multigpu_guard.py, then that tree's install_runtime.sh; post arm: install_runtime.sh
- tests  : python -m unittest discover -s workspace/engine-port/tests -v   (cwd = arm worktree; PDMUX_ROOT = arm root; PDMUX_PROJECT_ROOT unset)
- judge  : preflight_judge.py   allowed tree diff: $(wc -l < "${OUT}/meta/allowed_tree_diff.txt" 2>/dev/null) file(s)
+ tests  : pf_unittest_runner.py --status-json LOG.status.json discover -s workspace/engine-port/tests  (= python -m unittest discover -v,
+          plus per-id JSON; cwd = arm worktree; PDMUX_ROOT = arm root; PDMUX_PROJECT_ROOT unset)
+ judge  : preflight_judge.py --require-structured --declared-cpu-timing (5 ids) $( [[ ${CPU_SPEC} == 1 ]] && echo --cpu-spec || echo "(not a CPU spec: declaration not applied)" )
+          allowed tree diff: $(wc -l < "${OUT}/meta/allowed_tree_diff.txt" 2>/dev/null) file(s)
  invalid: ${INVALID[*]:-none}
 PLAN
   [[ ${#INVALID[@]} -eq 0 ]] && exit 0 || exit 2
@@ -245,8 +263,11 @@ run_suite() {   # arm rep
   local -a unset_args=() cmd
   for v in $(compgen -e | grep '^PDMUX_'); do unset_args+=(-u "${v}"); done
   before="$(tree_hash "${arm}")"
-  if [[ -n "${MODS}" ]]; then cmd=("${PY}" -m unittest -v ${MODS}); cd "${WT[$arm]}/workspace/engine-port/tests" || return 1
-  else cmd=("${PY}" -m unittest discover -s workspace/engine-port/tests -v); cd "${WT[$arm]}" || return 1; fi
+  # r2 F3: the structured runner prints the same -v text and writes ${log}.status.json (per-id status from the TestResult callbacks)
+  if [[ -n "${MODS}" ]]; then cmd=("${PY}" "${TOOLS}/pf_unittest_runner.py" --status-json "${log}.status.json" names ${MODS})
+    cd "${WT[$arm]}/workspace/engine-port/tests" || return 1
+  else cmd=("${PY}" "${TOOLS}/pf_unittest_runner.py" --status-json "${log}.status.json" discover -s workspace/engine-port/tests)
+    cd "${WT[$arm]}" || return 1; fi
   say "suite ${arm} rep${rep} start"
   env ${unset_args[@]+"${unset_args[@]}"} PDMUX_ROOT="${AROOT[$arm]}" SGLANG_ENGINE_DEV="${DEV[$arm]}" PYTHONPATH="${DEV[$arm]}" \
       ${VENV:+PDMUX_VENV="${VENV}"} timeout -k 30 "${T_SUITE}" "${cmd[@]}" > "${log}" 2>&1
@@ -270,10 +291,14 @@ fi
 # ---- 5. judge --------------------------------------------------------------------------------------------------------
 inv_args=(); for x in "${INVALID[@]+"${INVALID[@]}"}"; do inv_args+=(--invalid "${x}"); done
 [[ -n "${MODS}" ]] && inv_args+=(--invalid "PDMUX_PF_MODULES smoke subset: not a full preflight")
+[[ ${SPEC_RC} -eq 0 || ${SPEC_RC} -eq 1 ]] || inv_args+=(--invalid "spec decision rc ${SPEC_RC}: $(tr '\n' ' ' < "${OUT}/meta/spec_decision.txt")")
+DECL="${TOOLS}/preflight_cl3_cpu_timing_declared.txt"
+judge_r2=(--require-structured --declared-cpu-timing "${DECL}"); [[ ${CPU_SPEC} == 1 ]] && judge_r2+=(--cpu-spec)
 if [[ ${#PRE_LOGS[@]} -eq 0 || ${#POST_LOGS[@]} -eq 0 ]]; then
   echo "PREFLIGHT_UNVERIFIABLE" > "${OUT}/PREFLIGHT_LABEL"; printf 'invalid: %s\n' "${INVALID[@]}" >> "${OUT}/PREFLIGHT_LABEL"; jrc=3
 else
-  "${PY}" "${TOOLS}/preflight_judge.py" --pre "${PRE_LOGS[@]}" --post "${POST_LOGS[@]}" "${inv_args[@]+"${inv_args[@]}"}" --json "${OUT}/judge.json" > "${OUT}/PREFLIGHT_LABEL" 2>&1
+  "${PY}" "${TOOLS}/preflight_judge.py" --pre "${PRE_LOGS[@]}" --post "${POST_LOGS[@]}" "${inv_args[@]+"${inv_args[@]}"}" \
+    "${judge_r2[@]}" --json "${OUT}/judge.json" > "${OUT}/PREFLIGHT_LABEL" 2>&1
   jrc=$?
 fi
 cat "${OUT}/PREFLIGHT_LABEL" | head -30
@@ -285,7 +310,8 @@ if [[ "${MODE}" == job ]]; then
   "${PY}" "${TOOLS}/preflight_judge.py" record --judge-json "${OUT}/judge.json" --post-commit "${POST}" \
     --merge-manifest "${OUT}/meta/arm_post/manifest.sha256" \
     --engine-digest-py "${WT[post]:-/nonexistent}/workspace/engine-port/scripts/bootstrap/engine_digest.py" \
-    --image "${PDMUX_IMAGE:-}" --job-name "${JOB}" --out "${OUT}/PREFLIGHT_PASS.json" > "${OUT}/meta/pass_record.txt" 2>&1
+    --image "${PDMUX_IMAGE:-}" --job-name "${JOB}" --declared-cpu-timing "${DECL}" \
+    --out "${OUT}/PREFLIGHT_PASS.json" > "${OUT}/meta/pass_record.txt" 2>&1
   prc=$?; cat "${OUT}/meta/pass_record.txt"
   [[ ${prc} -ne 0 && ${jrc} -eq 0 ]] && jrc=3              # a PASS label without a complete gate record is not a PASS
 fi

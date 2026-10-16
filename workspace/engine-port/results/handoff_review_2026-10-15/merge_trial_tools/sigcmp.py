@@ -2,21 +2,57 @@
 """C-R2: failure signature (id, signature) extraction + pre/post comparison.
 usage: sigcmp.py PRE_LOG POST_LOG [--json OUT]
 signature = (kind FAIL|ERROR, exception type, masked first message line, keyword set, DRIFT-line digest)
+r2 (2026-10-17, judge revision F3/F5; PREFLIGHT_FAILNEW_ANALYSIS_2026-10-16 sec 7):
+  F5  mask() also replaces a preflight arm root ".../pf_work/pre" or ".../pf_work/post" (container /data/runs/<job>/pf_work/<arm>)
+      by "<arm>" and keeps the rest of the path, so one cause gives one signature in both arms while a different file still differs.
+  F3  status from the -v text is read STRICTLY: the segment of a test runs from its header line "<name> (<id>)" to the next
+      header / separator / "Ran N" line, and its status is read only if the segment holds EXACTLY ONE status token (" ... <tok>"
+      at a line end, or a line that is only "<tok>").  Zero or several tokens -> status unread (absent from the dict); the
+      judge turns unread into a HOLE, never into a pass.  Interleaved stdout / warnings between header and token are allowed.
+      The authoritative status is the runner's JSON (pf_unittest_runner.py); the text status is a cross-check.
 """
 import re, sys, json, hashlib
 KEYS = ["ABORT_REG_DRIFT","ABORT_CONFIG","DIGESTS DRIFT","mirror_check","No module named","undefined symbol",
         "FileNotFoundError","Not enough SMs","child never became ready","runtime tree absent","sha256","unbound variable"]
+ARM_RE = re.compile(r'(?:/[^\s/\'"]+)*/pf_work/(?:pre|post)(?=[/\s\'":]|$)')
 def mask(s):
+    s = ARM_RE.sub('<arm>', s)
     s = re.sub(r'/(tmp|home)/\S+','<path>',s)
     s = re.sub(r'\bline \d+','line N',s)
     s = re.sub(r'\d+\.\d+','N.N',s); s = re.sub(r'\b(?=[0-9a-f]*[a-f])[0-9a-f]{12,64}\b','<hex>',s); s = re.sub(r'\d{5,}','N',s)
     return s.strip()[:200]
+HOLDERS = ('setUpClass', 'tearDownClass', 'setUpModule', 'tearDownModule')
+HEAD_RE = re.compile(r'^(\S+) \(([\w.]+)\)')
+TOK = r"(ok|FAIL|ERROR|skipped (?:'[^\n]*'|\"[^\n]*\")|expected failure|unexpected success)"
+TOK_END = re.compile(r' \.\.\. ' + TOK + r'\s*$')
+TOK_ALONE = re.compile(r'^' + TOK + r'\s*$')
+STOP_RE = re.compile(r'^(?:={60,}|-{60,}|Ran \d+ tests?\b)')
+def is_header(line):
+    """-> test id or None.  A header names a test whose last id component is its name (or a class/module fixture holder)."""
+    m = HEAD_RE.match(line)
+    if not m: return None
+    name, tid = m.group(1), m.group(2)
+    if name in HOLDERS or tid.rsplit('.', 1)[-1] == name: return tid
+    return None
+def parse_status(t):
+    """{id: status} for every test whose segment holds exactly one status token (strict; see module doc)."""
+    status, cur, toks = {}, None, []
+    def close():
+        if cur is not None and len(toks) == 1: status[cur] = toks[0]
+        elif cur is not None: status.pop(cur, None)
+    for line in t.split('\n'):
+        tid = is_header(line)
+        if tid is not None or STOP_RE.match(line):
+            close(); cur, toks = tid, []
+            if tid is None: continue
+        if cur is None: continue
+        m = TOK_END.search(line) or TOK_ALONE.match(line)
+        if m: toks.append(m.group(1))
+    close()
+    return status
 def parse(path):
     t = open(path, encoding='utf-8', errors='replace').read()
-    status = {}
-    # per-test status lines (-v). allow a docstring line between name and "... status"
-    for m in re.finditer(r"^(\S+) \(([\w.]+)\)(?:\n[^\n]*?)? \.\.\. (ok|FAIL|ERROR|skipped '[^\n]*'|expected failure|unexpected success)\s*$", t, re.M):
-        status[m.group(2)] = m.group(3)
+    status = parse_status(t)
     sigs = {}
     parts = re.split(r'\n={60,}\n', t)
     for b in parts[1:]:

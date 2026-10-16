@@ -1,0 +1,15 @@
+# CPU-spec known timing failures -- PRE-DECLARED before the next preflight run (2026-10-17, judge r2).
+# Decision: user, DECISIONS_Q1_consolidated_2026-10-15.md sec 8 "timing tests (na)": register before the run, exclude from
+#   the label, disclose as UNVERIFIED (CPU timing).  This list was chosen AFTER seeing run pdmux-preflight-cl3-68f386b-20261016114954
+#   (free surface -> claims-auditor audit required).  Basis: PREFLIGHT_SPEC_ASSESSMENT_2026-10-17.md sec 3 (wall-clock assertions,
+#   CPU 3.5 vCPU, 4/4 deterministic repetitions) and PREFLIGHT_FAILNEW_ANALYSIS_2026-10-16.md sec 5-1.
+# Scope: applied by preflight_judge.py ONLY with --cpu-spec (preflight_cl3.sh: PDMUX_CPU_ONLY=1 or PDMUX_SPEC=resourcespec-a100cpu,
+#   AND no GPU visible).  On a GPU spec this file is recorded but not applied.
+# The three test_n3_capacity ids are also L2 ids; when applied they leave the L2 set as well (L2 is then judged on the other 9).
+# Changing this file changes its sha256, which judge.json and PREFLIGHT_PASS.json record (declared_cpu_timing.sha256).
+# one test id per line
+test_e1_cap_vessl.TestBudgetEnforcer.test_overrunning_run_is_cut_at_the_deadline
+test_e1_cap_vessl.TestBudgetEnforcer.test_equivalent_mutant_one_layer_removed_still_cuts
+test_n3_capacity.TestBudgetEnforcer.test_overrunning_unit_is_cut
+test_n3_capacity.TestBudgetEnforcer.test_control_both_kill_layers_removed_overruns
+test_n3_capacity.TestBudgetEnforcer.test_equivalent_mutant_watchdog_removed_still_cuts
