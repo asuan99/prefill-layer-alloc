@@ -20,13 +20,15 @@ cfg="${PDMUX_VESSL_ENV:-${here}/vessl.env}"
 # shellcheck disable=SC1090
 source "${cfg}"
 
-campaign="" target="" array="" submit=0 extra_env=()
+campaign="" target="" array="" submit=0 extra_env=() spec_override=0 rate_given=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --campaign) campaign="$2"; shift 2 ;;
     --target)   target="$2"; shift 2 ;;
     --array)    array="$2"; shift 2 ;;
     --env)      extra_env+=("$2"); shift 2 ;;
+    --spec)     PDMUX_VESSL_SPEC="$2"; spec_override=1; shift 2 ;;   # e.g. resourcespec-a100cpu (CPU-only Job)
+    --rate)     PDMUX_VESSL_RATE_USD_H="$2"; rate_given=1; shift 2 ;;
     --submit)   submit=1; shift ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
@@ -34,6 +36,13 @@ done
 [[ -n "${campaign}" && -n "${target}" ]] || { echo "need --campaign and --target" >&2; exit 2; }
 [[ "${campaign}" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || { echo "campaign: lowercase [a-z0-9_-]" >&2; exit 2; }
 [[ -f "${repo}/${target}" ]] || { echo "target not in repo: ${target}" >&2; exit 2; }
+if [[ "${spec_override}" == 1 ]]; then   # a spec other than vessl.env's A100: the rate must be given or known
+  if [[ "${PDMUX_VESSL_SPEC}" == resourcespec-a100cpu && "${rate_given}" == 0 ]]; then
+    PDMUX_VESSL_RATE_USD_H=0.30           # CPU Only, betelgeuse, 3.5 CPU / 13 GiB (resource-spec list 2026-10-16)
+  elif [[ "${rate_given}" == 0 ]]; then
+    echo "WARNING: spec ${PDMUX_VESSL_SPEC}: rate shown is vessl.env's (not this spec's) -- pass --rate" >&2
+  fi
+fi
 for v in PDMUX_VESSL_SPEC PDMUX_VESSL_RATE_USD_H PDMUX_VESSL_CLUSTER_VOLUME \
          PDMUX_VESSL_OBJECT_VOLUME PDMUX_VESSL_IMAGE; do
   [[ -n "${!v:-}" && "${!v}" != *"<"* ]] || { echo "ERROR: ${v} not filled in ${cfg}" >&2; exit 2; }

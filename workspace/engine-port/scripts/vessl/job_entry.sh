@@ -38,6 +38,10 @@ PROJECT="${OPT}/prefill-layer-alloc"              # same path the image already 
 RUN="${DATA}/runs/${PDMUX_JOB_NAME}"              # persistent while the job runs
 OUT="${IO}/results/${PDMUX_JOB_NAME}"             # what launch/fetch.sh downloads
 CODE="${IO}/code/${PDMUX_COMMIT}"
+# CPU-only mode (2026-10-16): CPU resource spec or PDMUX_CPU_ONLY=1.  Skips the GPU substrate stamp, clock and
+# energy samplers (step 3) and records that in meta/CPU_ONLY.txt.  GPU Jobs (neither condition) run the original path.
+cpu_only=0
+if [[ "${PDMUX_CPU_ONLY:-}" == 1 || "${PDMUX_SPEC}" == resourcespec-a100cpu ]]; then cpu_only=1; fi
 
 if [[ -e "${OUT}/DONE" ]]; then
   echo "ERROR: ${OUT}/DONE already exists; job names must be unique" >&2
@@ -141,6 +145,29 @@ else
 fi
 
 # ---- 3. substrate stamp (B0) + clock/throttle trace ---------------------------------
+if [[ "${cpu_only}" == 1 ]]; then
+  # No GPU in this container: libcuda.so.1 is absent from the loader path, so `import sgl_kernel` fails
+  # (probe 2026-10-16, pdmux-build).  The image ships the CUDA forward-compat libcuda; put it on the path
+  # only if it exists, and record what was done.
+  compat=/usr/local/cuda-13.0/compat
+  if [[ -e "${compat}/libcuda.so.1" ]]; then
+    export LD_LIBRARY_PATH="${compat}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"; compat_note="added ${compat}"
+  else compat_note="NOT added (${compat}/libcuda.so.1 missing)"; fi
+  { echo "cpu_only=1 reason=$([[ "${PDMUX_CPU_ONLY:-}" == 1 ]] && echo PDMUX_CPU_ONLY || echo cpu_spec) spec=${PDMUX_SPEC}"
+    echo "skipped: nvidia-smi substrate stamp, nvcc, topo, substrate_history.tsv row, clk sampler, energy sampler"
+    echo "LD_LIBRARY_PATH compat: ${compat_note}"; } > "${RUN}/meta/CPU_ONLY.txt"
+  phase "CPU-only mode: GPU substrate stamp and clock/energy samplers skipped; LD_LIBRARY_PATH compat ${compat_note}"
+  python3 - "${RUN}/meta" <<'PY'
+import json, os, pathlib, platform, sys
+rec = {"cpu_only": True, "gpu": None, "hostname": platform.node(), "commit": os.environ["PDMUX_COMMIT"],
+       "image": os.environ["PDMUX_IMAGE"], "spec": os.environ["PDMUX_SPEC"], "job_name": os.environ["PDMUX_JOB_NAME"],
+       "campaign": os.environ["PDMUX_CAMPAIGN"], "target": os.environ["PDMUX_TARGET"],
+       "array_spec": os.environ.get("PDMUX_ARRAY_SPEC", "")}
+(pathlib.Path(sys.argv[1]) / "substrate.json").write_text(json.dumps(rec, indent=2) + "\n")
+PY
+  { echo "# at start $(utc)"; echo "nproc=$(nproc)"; echo "cpu.max=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null)";
+    cat /sys/fs/cgroup/cpu.stat 2>/dev/null; } > "${RUN}/meta/cgroup_cpu.txt"
+else
 nvidia-smi --query-gpu=name,uuid,driver_version,compute_cap,memory.total,clocks.max.sm,power.limit,mig.mode.current \
   --format=csv,noheader > "${RUN}/meta/gpu.csv" 2>&1
 nvcc --version > "${RUN}/meta/nvcc.txt" 2>&1
@@ -276,6 +303,7 @@ energy_pid=$!
 else
   echo "energy sampler disabled (PDMUX_ENERGY_SAMPLER=0)" > "${RUN}/meta/energy_sampler.log"
 fi
+fi   # cpu_only
 
 # ---- 4. run the target ---------------------------------------------------------------
 export HF_HOME="${DATA}/hf" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONUNBUFFERED=1
