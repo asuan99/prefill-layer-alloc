@@ -5,9 +5,10 @@
                                                              two passes -- "c" (the 4 requests concurrently) and "s" (one at a time)
   score --gates DIR --boots DIR --pair BASE_BOOT_ID TREAT_BOOT_ID [--out XCHECK.json]
 
-WHERE (implementation of U7): the N=1 fused_sym and agnostic boots that open a Job -- the anchor boots of J2/J4/J8, the boot1 of N1
-in J1 -- after the floor block and before the cells.  Verdict per Job -> gates/XCHECK.json; mg_label marks EVERY shape-X estimand
-of that Job X_CORRECTNESS_FAIL (or X_CORRECTNESS_NOT_TESTED) when the verdict is not PASS (fail-closed).
+WHERE (implementation of U7, corrected 2026-10-16): the fused_sym and agnostic boot1 of every config -- N1 in J1, TP_N and DP_N in
+J_N (on the N-GPU server) -- after the floor block and before the cells.  Verdict per (Job, config) -> gates/XCHECK_<config>.json;
+mg_label marks the shape-X estimands of THAT config only X_CORRECTNESS_FAIL (or _NOT_TESTED / _NOT_RUN) when it is not PASS
+(fail-closed); the other mode's X and every A/B estimand are untouched.  The xcheck requests are in mg_boot's fit pre-check.
 DOCUMENTS [제안]: the XC_N_DOCS longest retained documents of the registered token file (ties: smaller doc_id) -- the long-prompt
   (split prefill) path is the one M2g never exercised.
 REQUEST: POST /generate {"input_ids", "sampling_params": {"temperature": 0, "max_new_tokens": XC_MAX_NEW, "ignore_eos": true},
@@ -136,15 +137,15 @@ def score(base, treat, base_alive, treat_alive, first_n=None, _mut=None):
     return dict(out, verdict=PASS)
 
 
-def score_job(gates, boots, base_boot, treat_boot):
+def score_job(gates, boots, base_boot, treat_boot, config="N1"):
     import m2g_correctness_gate as G
     rd = lambda bid: (json.loads((Path(boots) / bid / "xcheck.json").read_text())
                       if (Path(boots) / bid / "xcheck.json").exists() else None)
     al = lambda bid, arm: G.alive_after_step(Path(boots) / bid, f"xcheck_{arm}")
     r = score(rd(base_boot), rd(treat_boot), al(base_boot, "fused_sym"), al(treat_boot, "agnostic"))
-    r.update(base_boot=base_boot, treat_boot=treat_boot, rule="U7 G-M2-style: D1 >= D0-1, first-N agree, no crash/NaN/error")
+    r.update(base_boot=base_boot, treat_boot=treat_boot, config=config, rule="U7 G-M2-style: D1 >= D0-1, first-N agree, no crash/NaN/error")
     Path(gates).mkdir(parents=True, exist_ok=True)
-    (Path(gates) / "XCHECK.json").write_text(json.dumps(r, indent=1, sort_keys=True) + "\n")
+    (Path(gates) / f"XCHECK_{config}.json").write_text(json.dumps(r, indent=1, sort_keys=True) + "\n")
     return r
 
 
@@ -159,10 +160,11 @@ def main(argv=None):
     c.add_argument("--gates", required=True)
     c.add_argument("--boots", required=True)
     c.add_argument("--pair", nargs=2, required=True)
+    c.add_argument("--config", default="N1")
     a = ap.parse_args(argv)
     if a.cmd == "serve":
         return serve(a.endpoint, a.tokens, a.out)
-    r = score_job(a.gates, a.boots, *a.pair)
+    r = score_job(a.gates, a.boots, *a.pair, config=a.config)
     print(json.dumps(r, indent=1, sort_keys=True))
     return 0
 

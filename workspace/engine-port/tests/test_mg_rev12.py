@@ -335,18 +335,26 @@ class XJobEffect(MutationCase):
 class Plan12(MutationCase):
     def test_counts_560_floor_20_xcheck_and_order(self):
         c = P.assert_plan_registered()
-        self.assertEqual((c["cells"], c["floor_blocks"], c["x_anchor_cells"], c["xcheck_steps"], c["boots"]), (560, 20, 24, 8, 70))
+        self.assertEqual((c["cells"], c["floor_blocks"], c["x_anchor_cells"], c["xcheck_steps"], c["boots"]), (560, 20, 24, 14, 70))
         for job in ("J2", "J4", "J8"):
-            for b in P.boots_anchor(job):
+            for b in P.boots_anchor(job):                                                    # anchors: floor, no xcheck (N=1)
+                self.assertEqual(b["steps"][0]["type"], "floor")
+                self.assertFalse(any(str(s.get("name", "")).startswith("xcheck") for s in b["steps"]))
+        for cfg in ("N1", "TP2", "DP2", "TP4", "DP4", "TP8", "DP8"):                          # U7 on every config boot1 (N-GPU server)
+            for b in P.boots_boot1(cfg):
                 kinds = [s["type"] if s["type"] != "cmd" else s["name"] for s in b["steps"][:2]]
-                self.assertEqual(kinds, ["floor", f"xcheck_{b['arm']}"])                     # floor first, then U7, then the cells
-        for b in P.boots_boot1("N1"):
-            has = [s["type"] for s in b["steps"]].count("floor")
-            self.assertEqual(has, 1 if b["arm"] in ("fused_sym", "agnostic") else 0, b["arm"])
-        for b in P.boots_boot1("TP4"):                                                       # R-6: config boot1, both arms, no xcheck
-            self.assertEqual([s["type"] for s in b["steps"]].count("floor"), 1 if b["arm"] in ("fused_sym", "agnostic") else 0)
-            self.assertFalse(any(s.get("name", "").startswith("xcheck") for s in b["steps"]))
+                want = ["floor", f"xcheck_{b['arm']}"] if b["arm"] in ("fused_sym", "agnostic") else ["warmup", "cell"]
+                self.assertEqual(kinds, want, (cfg, b["arm"]))
+                self.assertEqual(b["gpu_ids"], C.GPU_SUBSETS[cfg])
         self.assertTrue(all(sorted(P.shape_order(c_, "fused", "t")) == ["A", "B", "X"] for c_ in C.CONFIGS))
+
+    def test_mutant_X4_xcheck_only_at_n1_killed(self):
+        def chk(mod):
+            tp = [s for b in mod.boots_boot1("TP8") if b["arm"] == "agnostic" for s in b["steps"] if str(s.get("name", "")).startswith("xcheck")]
+            n = mod.m3_plan_counts()["xcheck_steps"]
+            return None if (tp and n == 14) else f"xcheck steps {n}, TP8 agnostic boot1 xcheck {len(tp)}"
+        self.assert_killed(PLAN_SRC, "X4", '        if kind == "boot1":\n            st.append(xcheck_step(arm))',
+                           '        if kind == "boot1" and cfg == "N1":\n            st.append(xcheck_step(arm))', chk)
 
     def test_mutant_S1_two_shapes_killed(self):
         chk = lambda mod: None if mod.m3_plan_counts()["cells"] == 560 else f"cells {mod.m3_plan_counts()['cells']}"
@@ -499,18 +507,18 @@ class XCorrectness(MutationCase):
         first = lambda mod: None if mod.score(base, xrec(outs(3, diverge_at=5)), True, True)["verdict"] == "FAIL" else "first-N mismatch passed"
         self.assert_killed(XC_SRC, "X3", '    if _mut != "first_n_rule" and first_bad:', "    if False:", first)
 
-    def _cells_x(self):
+    def _cells_x(self, cfgs=("DP2",)):
         cells = []
-        for arm in ("fused_sym", "agnostic"):
+        for cfg, arm in [(c, a) for c in cfgs for a in ("fused_sym", "agnostic")]:
             for sh in ("A", "X"):
                 for sd in C.HI_SEEDS:
-                    cells.append({"cell_id": f"{arm}{sh}{sd}", "status": "OK", "g": 0.4, "achieved": 2.0, "truncated": False,
+                    cells.append({"cell_id": f"{cfg}{arm}{sh}{sd}", "status": "OK", "g": 0.4, "achieved": 2.0, "truncated": False,
                                   "harness_limited": False, "frontend_saturated": False, "server_error_hi": False,
-                                  "meta": dict(config="DP2", arm=arm, shape=sh, rung="HI", seed=sd, ext=0, round=1, block="main")})
+                                  "meta": dict(config=cfg, arm=arm, shape=sh, rung="HI", seed=sd, ext=0, round=1, block="main")})
                 for sd in C.LO_SEEDS:
-                    cells.append({"cell_id": f"lo{arm}{sh}{sd}", "status": "OK", "g": 0.01, "achieved": 1.0, "truncated": False,
+                    cells.append({"cell_id": f"lo{cfg}{arm}{sh}{sd}", "status": "OK", "g": 0.01, "achieved": 1.0, "truncated": False,
                                   "harness_limited": False, "frontend_saturated": False,
-                                  "meta": dict(config="DP2", arm=arm, shape=sh, rung="LO", seed=sd, ext=0, round=1, block="main")})
+                                  "meta": dict(config=cfg, arm=arm, shape=sh, rung="LO", seed=sd, ext=0, round=1, block="main")})
         return cells
 
     def _chk_x1(self, mod):
@@ -530,8 +538,28 @@ class XCorrectness(MutationCase):
         e = L.aggregate(self._cells_x(), job="J2", xcheck=None)["estimands"]["G_sym"]["DP2"]["X"]
         self.assertIn("X_CORRECTNESS_NOT_RUN", e["undefined_reasons"])                    # fail-closed when the step never ran
 
+    def _chk_scope(self, mod):
+        doc = mod.aggregate(self._cells_x(("DP2", "TP2")), job="J2", xcheck={"DP2": {"verdict": "PASS"}, "TP2": {"verdict": "FAIL"}})
+        e = doc["estimands"]["G_sym"]
+        got = (e["TP2"]["X"]["defined"], e["DP2"]["X"]["defined"], e["TP2"]["A"]["defined"], e["DP2"]["A"]["defined"])
+        return None if got == (False, True, True, True) else f"(TP2 X, DP2 X, TP2 A, DP2 A) defined = {got}"
+
+    def test_scope_is_the_failing_mode_only(self):
+        self.assertIsNone(self._chk_scope(L))
+        e = L.aggregate(self._cells_x(("DP2", "TP2")), job="J2", xcheck={"DP2": {"verdict": "PASS"}})["estimands"]["G_sym"]
+        self.assertIn("X_CORRECTNESS_NOT_RUN", e["TP2"]["X"]["undefined_reasons"])           # a config without its record: fail-closed
+        self.assertTrue(e["DP2"]["X"]["defined"])
+
+    def test_mutant_X5_failure_voids_every_mode_killed(self):
+        self.assert_killed(LABEL_SRC, "X5",
+                           '        if shape == "X" and x_correctness_reason(xcheck_of(xcheck, cfg)):\n'
+                           '            reasons.append(x_correctness_reason(xcheck_of(xcheck, cfg)))',
+                           '        if shape == "X" and any(x_correctness_reason(v) for v in (xcheck or {}).values()):\n'
+                           '            reasons.append("X_CORRECTNESS_FAIL")', self._chk_scope)
+
     def test_mutant_X1_label_unchanged_killed(self):
-        self.assert_killed(LABEL_SRC, "X1", '        if shape == "X" and x_correctness_reason(xcheck):', "        if False:", self._chk_x1)
+        self.assert_killed(LABEL_SRC, "X1", '        if shape == "X" and x_correctness_reason(xcheck_of(xcheck, cfg)):', "        if False:",
+                           self._chk_x1)
 
     def test_select_docs_longest_four(self):
         h = {"docs": [[1, 0, 100, 5], [2, 0, 900, 5], [3, 0, 900, 5], [4, 0, 50, 5], [5, 0, 800, 5], [6, 0, 700, 5]]}
@@ -548,8 +576,8 @@ def free_port():
 class FakeGen:
     """/generate: stream (SSE) or not; logs every raw request body; rid prefix 'err' -> SSE error chunk."""
 
-    def __init__(self, diverge=False):
-        self.port, self.bodies, self.diverge = free_port(), [], diverge
+    def __init__(self, diverge=False, error=None):
+        self.port, self.bodies, self.diverge, self.error = free_port(), [], diverge, error
         self.loop = asyncio.new_event_loop()
         self.ready = threading.Event()
         self.thread = threading.Thread(target=self._run, daemon=True)
@@ -560,6 +588,10 @@ class FakeGen:
         body = json.loads(raw)
         n = int(body["sampling_params"]["max_new_tokens"])
         ids = body.get("input_ids") or []
+        if not body.get("stream") and self.error == "json":
+            return web.json_response({"error": {"message": "context too long"}})
+        if not body.get("stream") and self.error == "http":
+            return web.json_response({"object": "error", "message": "bad"}, status=400)
         if not body.get("stream"):
             out = [(sum(ids) + 7 * k + (1 if (self.diverge and k > 2) else 0)) % 1000 for k in range(n)]
             return web.json_response({"output_ids": out, "meta_info": {"output_token_logprobs": [[-0.5, t, None] for t in out]}})
@@ -668,6 +700,23 @@ class ReplayPayload(MutationCase):
             body = json.loads(a.bodies[0])
             self.assertEqual(body["sampling_params"], {"temperature": 0.0, "max_new_tokens": 32, "ignore_eos": True})
 
+    def test_xcheck_error_responses_fail(self):
+        """An error answer (JSON error body or HTTP 400) is recorded and the verdict is FAIL (never PASS, never silently NOT_TESTED)."""
+        with tempfile.TemporaryDirectory() as td:
+            tok = make_token_file(Path(td) / "t.bin")
+            with FakeGen() as a, FakeGen(error="json") as e1, FakeGen(error="http") as e2:
+                self.assertEqual(XC.serve(f"http://127.0.0.1:{a.port}", tok, Path(td) / "fs.json"), 0)
+                for srv, name in ((e1, "e1"), (e2, "e2")):
+                    self.assertEqual(XC.serve(f"http://127.0.0.1:{srv.port}", tok, Path(td) / f"{name}.json"), 1)
+            rd = lambda n: json.loads((Path(td) / f"{n}.json").read_text())
+            for name in ("e1", "e2"):
+                rec = rd(name)
+                self.assertTrue(all(v["error"] for v in rec["passes"]["c"].values()), name)
+                r = XC.score(rd("fs"), rec, True, True)
+                self.assertEqual(r["verdict"], "FAIL", name)
+                self.assertTrue(any(":ERROR" in w for w in r["reasons"]), r)
+                self.assertEqual(XC.score(rec, rd("fs"), True, True)["verdict"], "FAIL", name)
+
 
 # =========================================================================== token file + mg_boot pre-checks
 def make_token_file(path, n_docs=12, long_len=None, floor_n=16384):
@@ -765,6 +814,19 @@ class BootPrechecks(MutationCase):
                 self.assertEqual(B.run_boot(spec, dry=True), B.RC_CONFIG_DRIFT)
             self.assertEqual(B.config_span_budget(ENGINE / C.AGNOSTIC_CONFIG_REL), 65536)
             self.assertEqual(B.config_span_budget(ENGINE / C.D44_CONFIG_REL), 65536)
+
+    def test_xcheck_requests_are_fit_checked(self):
+        """U7 requests (the 4 longest documents + 32 tokens) are in mg_boot's pre-check: with a 20,460-token document and ctx 20480 the
+        xcheck request (20,460 + 32 > 20,478) is refused (ABORT_CONTEXT_TOO_SHORT) even when the file-level bound is not the trigger."""
+        with tempfile.TemporaryDirectory() as td:
+            tok = make_token_file(Path(td) / "t.bin", long_len=20460)
+            spec = boot_spec(td, [P.xcheck_step("fused_sym")], kind="boot1", tok=tok)
+            with mock.patch.object(C, "CONTEXT_LENGTH", 20480 + 40):
+                self.assertEqual(B.run_boot(dict(spec, boot_id="a"), dry=True), 0)          # control: 20,492 <= 20,518
+            with mock.patch.object(B, "load_x_header", lambda sp: (XT.read_header(tok), None)):
+                self.assertEqual(B.run_boot(dict(spec, boot_id="b"), dry=True), B.RC_CONTEXT)
+                pre = json.loads((Path(td) / "out/boots/b/precheck.json").read_text())
+                self.assertTrue(any("input+output" in p_ for p_ in pre["fit_problems"]), pre)
 
     def test_mutant_B1_check_removed_killed(self):
         chk = lambda mod: None if self._rc(mod, [floor_step(), a_cell(), x_cell()], 16384) == mod.RC_CONTEXT else "ctx 16384 not refused"

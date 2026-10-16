@@ -865,9 +865,28 @@ X_CORRECTNESS_PREFIX = "X_CORRECTNESS_"
 
 
 def x_correctness_reason(xcheck):
-    """U7: None when the Job's X correctness verdict is PASS, else the fail-closed reason carried by every shape-X estimand of the Job."""
+    """U7: None when the X correctness verdict is PASS, else the fail-closed reason carried by the shape-X estimands it covers."""
     v = (xcheck or {}).get("verdict") or "NOT_RUN"
     return None if v == "PASS" else f"{X_CORRECTNESS_PREFIX}{v}"
+
+
+def xcheck_of(xcheck, cfg):
+    """U7 scope (corrected 2026-10-16): the verdict that covers config `cfg`.  `xcheck` = {config: XCHECK_<config>.json record} (the Job
+    layout), or a single record with a `verdict` key (applies to every config; synthetic tests).  No record for cfg -> None (NOT_RUN)."""
+    if isinstance(xcheck, dict) and "verdict" in xcheck:
+        return xcheck
+    return (xcheck or {}).get(cfg)
+
+
+def load_xchecks(root):
+    """{config: record} from <root>/gates/XCHECK_<config>.json."""
+    out = {}
+    for f in sorted((Path(root) / "gates").glob("XCHECK_*.json")) if (Path(root) / "gates").exists() else []:
+        try:
+            out[f.stem[len("XCHECK_"):]] = json.loads(f.read_text())
+        except ValueError:
+            out[f.stem[len("XCHECK_"):]] = {"verdict": "UNREADABLE"}
+    return out
 
 
 # ---- rev12 U12 (user decision 2026-10-16, REVIEW_U4_U12): P10 per group.  {A, B} keep the rev11 rule TOGETHER (a BROKEN A makes the B
@@ -894,8 +913,9 @@ def p_dp_groups(trends, _mut=None):
 def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=None, xcheck=None):
     """ONE Job's labels (rev9: one Job = one N).  cells: analyzed-cell records (load_cell).  pass_table: M2G table `cells` dict.  config_flags: build_config_flags output.
     m2g_configs: M2G table `configs` dict (F14: TP_NUMERIC_DIVERGENT, G2_NOT_TESTED, <arm>:G1_UNINFORMATIVE, MEMORY_MISMATCH).
-    xcheck (rev12 U7): the Job's gates/XCHECK.json; any verdict but PASS makes every shape-X estimand of the Job undefined
-    (X_CORRECTNESS_FAIL / _NOT_TESTED / _NOT_RUN) and the X anchor / reference unusable (JOB_EFFECT_UNTESTED(J_N, X))."""
+    xcheck (rev12 U7, corrected 2026-10-16): {config: XCHECK_<config>.json record} (load_xchecks); a verdict other than PASS makes the
+    shape-X estimands of THAT config undefined (X_CORRECTNESS_FAIL / _NOT_TESTED / _NOT_RUN); other configs' X and every A/B estimand are
+    untouched.  The N1 verdict (J1) also makes the X Job-effect reference unusable; the J_N N=1 X anchor is not covered by a J_N xcheck."""
     pass_table = pass_table or {}
     config_flags = config_flags or {}
     m2g_configs = m2g_configs or {}
@@ -910,7 +930,7 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=N
     fired = {(k[0], k[2], k[3]) for k, lab in first.items() if k[0] != C.ANCHOR_CONFIG and (lab["ext0_trigger"] or lab["max_ext"] >= 1)}   # an anchor never extends
     keys = {k: key_labels(cs, ext_fired=((k[0], k[2], k[3]) in fired)) for k, cs in groups.items()}
     doc = {"prereg": f"{C.PREREG} rev{C.PREREG_REV}", "job": job, "keys": {}, "configs": {}, "estimands": {}, "anchor": {}, "ref": {},
-           "blocks": {}, "anchor_x": {}, "ref_x": {}, "xcheck": xcheck, "x_correctness": x_correctness_reason(xcheck) or "PASS"}
+           "blocks": {}, "anchor_x": {}, "ref_x": {}, "xcheck": xcheck}
     for (cfg, arm, shape, rnd), lab in sorted(keys.items()):
         excl = pass_table.get(f"{'N1' if cfg == C.ANCHOR_CONFIG else cfg}:{arm}")
         if excl is not None and not excl.get("included", True):
@@ -990,8 +1010,8 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=N
                 reasons.append(f"{arm}:LAMBDA_STAR_UNRESOLVED")
             if lab.get("server_error_hi"):
                 reasons.append(f"{arm}:SERVER_ERROR_HI")             # rev12 §19-1b (explicit; the HI_NOT_JUDGED text carries it too)
-        if shape == "X" and x_correctness_reason(xcheck):
-            reasons.append(x_correctness_reason(xcheck))            # U7 fail-closed
+        if shape == "X" and x_correctness_reason(xcheck_of(xcheck, cfg)):
+            reasons.append(x_correctness_reason(xcheck_of(xcheck, cfg)))      # U7 fail-closed, scope = this config
         return (not reasons), reasons
 
     for name, (na, da) in PAIRS.items():
@@ -1027,11 +1047,11 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=N
                      "gpu_contaminated_arms": afl.get("contam_arms", []), "contam_unverified": bool(afl.get("contam_unverified"))} \
         if any(k[0] == C.ANCHOR_CONFIG for k in keys) else {}
     # rev12 U14: the X Job-effect reference (J1 boot1 X, ext 0) and the X anchor (J_N); U7 makes both unusable unless XCHECK PASS
-    xr = x_correctness_reason(xcheck)
+    xr = x_correctness_reason(xcheck_of(xcheck, "N1"))
     if any(k[0] == "N1" and k[2] == "X" for k in keys):
         doc["ref_x"] = {arm: dict(ref_entry(keys.get(("N1", arm, "X", 1))), x_correctness=xr) for arm in C.ANCHOR_ARMS}
     if any(k[0] == C.ANCHOR_CONFIG and k[2] == "X" for k in keys):
-        doc["anchor_x"] = {"arms": {arm: dict(anchor_entry(keys.get((C.ANCHOR_CONFIG, arm, "X", 1))), x_correctness=xr) for arm in C.ANCHOR_ARMS},
+        doc["anchor_x"] = {"arms": {arm: anchor_entry(keys.get((C.ANCHOR_CONFIG, arm, "X", 1))) for arm in C.ANCHOR_ARMS},
                            "gpu_contaminated_arms": afl.get("contam_arms", []), "contam_unverified": bool(afl.get("contam_unverified"))}
     # GPU heterogeneity (§4-6, J8 only; descriptive under 8 concurrent servers, no outcome branch -- MGP-47)
     gd = [c for c in cells if c["meta"].get("block") == "gpu_dev" and c["status"] == "OK" and c.get("achieved")]
@@ -2202,8 +2222,7 @@ def label_job_dir(root, job=None, pass_table=None, _mut=None):
     ptc = pt.get("cells") if isinstance(pt, dict) and "cells" in pt else pt
     excl = {k for k, v in (ptc or {}).items() if isinstance(v, dict) and not v.get("included", True)}
     excl_arms = set(excl)
-    xc = Path(root) / "gates" / "XCHECK.json"
-    xcheck = json.loads(xc.read_text()) if xc.exists() else None
+    xcheck = load_xchecks(root)
     doc = aggregate(cells, ptc, build_config_flags(root, cells, excl, load_reference(), job), pt.get("configs") if isinstance(pt, dict) else None,
                     job=job, xcheck=xcheck)
     doc["n_cells"] = len(cells)

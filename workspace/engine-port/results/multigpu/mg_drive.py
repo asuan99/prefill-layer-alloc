@@ -212,19 +212,17 @@ def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
         use = spec.get("gpu_ids") == C.GPU_SUBSETS.get(spec["config"]) and spec.get("block") in ("main", "anchor")
         return run_boot(ctx, dict(spec, **ctx.m3_spec_extra), counts.get(f"{spec['config']}:{spec['arm']}") if use else None)
 
-    def score_xcheck(kind):
-        """U7: after the Job's opening N=1 fused_sym + agnostic boots (J1 boot1, J_N anchors)."""
+    def score_xcheck(cfg):
+        """U7: after the config's boot1 (fused_sym + agnostic carry the xcheck step) -> gates/XCHECK_<cfg>.json."""
         import mg_xcheck as XC
-        r = XC.score_job(ctx.out / "gates", ctx.out / "boots", f"m3_N1_fused_sym_{kind}", f"m3_N1_agnostic_{kind}")
-        ctx.event(xcheck=r.get("verdict"), reasons=r.get("reasons"))
+        r = XC.score_job(ctx.out / "gates", ctx.out / "boots", f"m3_{cfg}_fused_sym_boot1", f"m3_{cfg}_agnostic_boot1", config=cfg)
+        ctx.event(xcheck=r.get("verdict"), config=cfg, reasons=r.get("reasons"))
         return r
 
     if job == "J8":
         run_boot_group(ctx, P.boots_gpu_dev())                          # §4-6, FIRST, concurrent
     for spec in P.boots_anchor(job, exclude=P.anchor_exclude(table)):
         go(spec)
-    if P.has_anchor(job):
-        score_xcheck("anchor")
     decisions = {"config_order": order, "tp_axis_allowed": tp_ok, "tp_axis_why": tp_why}
     if box is not None:
         box["decisions"] = decisions                                 # main(): finish() runs in a finally and still sees the decisions made so far
@@ -238,8 +236,7 @@ def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
             continue
         for spec in P.boots_boot1(cfg, exclude=ex):
             go(spec)
-        if cfg == "N1":
-            score_xcheck("boot1")                                     # J1: its boot1 is the opening N=1 boot pair
+        score_xcheck(cfg)                                             # U7 per config (N1 in J1; TP_N / DP_N on the N-GPU server)
         summ = key_summaries(ctx, cfg)
         ext_shapes = sorted({sh for (arm, sh), lab in summ.items() if lab["ext_trigger"]})
         decisions[cfg] = {"ext_shapes": ext_shapes}
@@ -280,9 +277,8 @@ def finish(ctx, table, decisions=None, exception=False):
     cells = cells_of(ctx)
     excl = P.excluded_set(table) if table else set()
     flags = ML.build_config_flags(ctx.out, cells, excl, ML.load_reference(), ctx.job)
-    xc = ctx.out / "gates" / "XCHECK.json"
     doc = ML.aggregate(cells, (table or {}).get("cells"), flags, (table or {}).get("configs"), job=ctx.job,
-                       xcheck=json.loads(xc.read_text()) if xc.exists() else None)
+                       xcheck=ML.load_xchecks(ctx.out))
     doc["n_cells"] = len(cells)
     doc.update(ML.job_dir_rev12_facts(ctx.out, ctx.job))
     (ctx.out / "CLOCK_BY_CELL.json").write_text(json.dumps(ML.clock_by_cell(ctx.clk_csv, cells), indent=1, sort_keys=True) + "\n")

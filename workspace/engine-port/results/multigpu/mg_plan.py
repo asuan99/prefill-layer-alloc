@@ -104,12 +104,13 @@ def xcheck_step(arm):
 
 def opening_steps(cfg, arm, kind):
     """rev12: what opens a boot BEFORE its cells.  Floor block: both FLOOR_ARMS of N1 boot1 (J1), of every anchor boot and of every
-    N>1 config boot1 (R-6: symmetric, 20 blocks).  X correctness (U7): the N=1 fused_sym / agnostic boots that open a Job
-    (J1 boot1, J_N anchors), after the floor block."""
+    N>1 config boot1 (R-6: symmetric, 20 blocks).  X correctness (U7, corrected 2026-10-16): the fused_sym / agnostic boot1 of every
+    config -- J1: N1 boot1; J_N: the first (= only) boot1 of each mode, TP_N and DP_N, i.e. ON THE N-GPU SERVER (the TP split-prefill
+    path of a 16k prompt is the path M2g never tested; the N=1 anchor boots do not exercise it) -- after the floor block."""
     st = []
     if arm in C.FLOOR_ARMS and kind in ("boot1", "anchor"):
         st.append(floor_step())
-        if cfg == "N1":
+        if kind == "boot1":
             st.append(xcheck_step(arm))
     return st
 
@@ -748,7 +749,7 @@ def selftest():
     nb = lambda j: m3_budget(j)["boots"]
     assert nb("J1") == 4 * 2, nb("J1")                                        # N1: boot1 + boot2 per arm
     pc = assert_plan_registered()                                             # rev12: 560 cells, 20 floor blocks, 24 X anchor cells
-    assert pc["xcheck_steps"] == 2 * len(C.JOBS), pc                          # U7: J1 boot1 + J_N anchors, fused_sym and agnostic
+    assert pc["xcheck_steps"] == 2 * (1 + 2 * 3), pc                          # U7: fused_sym + agnostic of N1 (J1) and of TP_N, DP_N (J2/J4/J8)
     assert nb("J2") == 2 + 2 * 8 and nb("J4") == 2 + 2 * 8 and nb("J8") == 8 + 2 + 2 * 8
     assert [b["arm"] for b in boots_anchor("J2")] and boots_anchor("J1") == []
     assert all(b["gpu_ids"] == "0" and b["block"] == "anchor" for b in boots_anchor("J4"))
