@@ -78,3 +78,15 @@
 | merge | multigpu-scaling → main | **지금 로컬 merge**(push 없음). 조건: 감사 2회차 §6 1–3(GPU Job 전 VESSL에서 미검증 시험 전후 짝 실행·L2 밖 신규 실패 시 G0 중단, 로컬 회귀는 사본 트리에서만, citation stop 예외는 `cs_fixed.py` 고정값 일치 시만) |
 
 감사 판정: 1회차 `VERDICT_spec_v0_and_closure_2026-10-15.md`, 2회차(상한) `VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md`. 승계 caveat CL-1–CL-3은 2회차 판정서 §7.
+
+## 4. M3 rev12 감사 1회차 뒤 사용자 결정 (2026-10-16 "진행")
+
+| # | 결정 | 내용 |
+|---|---|---|
+| 순서 | rev12 R-1–R-9 반영 → loadgen·runner 수정(R-2·R-3, M3·G0 공용) → 그 커밋에서 preflight 1회 → rev12 2회차 감사 → 하네스 재봉인 → M3 dry-run → 제출 승인 | preflight는 runner·loadgen 수정 커밋 전에는 제출하지 않음(감사 R-5) |
+| R-1 vs D-7 | R-1(λ\*_thr: HI 셀 서버 측 오류 > 1% → 짝 무효)은 D-7과 충돌하지 않음 — D-7은 λ\*_SLO·attainment 채점 범위 | 메인 세션 해석을 사용자가 승인 |
+| U3 | M3 하드캡 J1 14 h, J2·J4·J8 16 h | 초안 권고 |
+| venv | preflight venv 후보 (c)(`--system-site-packages` venv 생성) 허용, `meta/venv_mode.txt` 기록 | |
+| D-10 | `CAP_BINDING` 10% 확정 + 짝 규칙(한 arm이라도 묶이면 짝 G 조건부) + decode iteration 가중(running ≥ cap iteration 비율) + 연속값·{5,10,20}% 사다리 병기 | |
+| cap 특성화 | G0 앞에 cap 특성화 Job(SP R16-3 {48, C_mem/2, C_mem}, C_mem 부팅 로그 실측) 삽입. G0 cap은 그 결과로 결정(48 고정 해제) | CM-5 검증 Job과 겸함 |
+| context | G0·M3 `context_length` 20480(≥ 16,745 근거: 유지분 최대 입력+출력 16,744, floor 16k + max_new) | 감사 R-3 |

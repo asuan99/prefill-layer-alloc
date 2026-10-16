@@ -1,9 +1,10 @@
-# 공통 측정 명세 v0.2 — 단일 GPU·multi-GPU 공용 (2군 Q4–Q12 + 3군 Q13·Q14·Q16 명세분) (2026-10-15)
+# 공통 측정 명세 v0.2+ — 단일 GPU·multi-GPU 공용 (2군 Q4–Q12 + 3군 Q13·Q14·Q16 명세분) (2026-10-15)
 
+> **v0.2+ (2026-10-16) — 사용자 결정(`DECISIONS_Q1_consolidated_2026-10-15.md` §4) 반영판**: D-10 확정(R16-2), cap 특성화 Job을 G0 앞에(R16-3, G0 cap 48 고정 해제), `context_length` 20480·loadgen R-2 선행(§0). 규칙층 감사 3회차에 올리지 않는다(§14, G0·M3 PREREG 단계 감사로). v0.2(409줄) sha256 `64b4cf4c5c31b8a3…`(미커밋).
 > **v0.2 — 사용자 결정(2026-10-15: D-C′ (a)·D-6·D-15·D-7) + 감사 2회차 반영판.** 2회차 판정서 `VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md`(이하 V2, 명세 v0.1 NO-GO → 사용자 결정 필요, 死因 D-C′)의 §3 B-9(K7)·§7 승계 caveat K1–K9를 반영했다. v0.1(381줄) sha256 `8c967fa8ffb3b918…`(미커밋).
 > **v0.1 — 감사 1회차 수리판.** 1회차 판정서 `VERDICT_spec_v0_and_closure_2026-10-15.md`(이하 V, 명세 NO-GO, 死因 D-A·D-B·D-C)의 §6 명세 수리 R-1–R-16과 §4 지적을 반영했다.
 > 수리 전 v0 = 이 파일 293줄판, sha256 `cc582ff867b38e8c…`(미커밋; 커밋 9a2a679의 286줄판과 다름).
-> **지위: DRAFT v0.2. 규칙층 감사 2회 완료(상한, §14). 정본이 아니다.** 측정 0, 새 성능 판정 0.
+> **지위: DRAFT v0.2+. 규칙층 감사 2회 완료(상한, §14). 정본이 아니다.** 측정 0, 새 성능 판정 0.
 > 정본화 경로는 DISCUSSION_INDEX Q22: 2군 사용자 결정 → 규칙층 감사 → main `promote`. 트랙(G0·M3)은 링크만 건다.
 > 출발점: `DISCUSSION_INDEX_2026-10-15.md`(이하 IDX) §1 2군·3군 표, §5. 약어: A = `AGENDA_methodology`, D = `DESIGN_span_and_integration`,
 > K = `COSTMODEL_running_cap`, R = `REVIEW_handoff_prompt`, C = `COMPARE_span_sync_muxwise_bullet`, CK = `CHECK_mixed_chunk_semantics`(모두 같은 폴더),
@@ -41,6 +42,7 @@
 | **v0.2** V2 B-9 (K7) | R7-2를 게이트 8에 맞게 되돌림: SLO를 읽는 정책·튜닝 arm 재채점은 기술값으로도 싣지 않음 | §4 R7-2 |
 | **v0.2** V2 §7 K1–K9 | 승계 caveat 문자 그대로(K1 §8 R9-2, K2 R9-1, K3 R9-6, K4 §9 gate (b), K5 §2 R5-3b, K6 §4 R7-3, K7 R7-2, K8 §11 R13-4, K9 §6 R8-4) | 각 규칙 옆 |
 | **v0.2** V2 B-7 (K8) | P4 "≈ 0" 동등성 여유 = G0 PREREG 등록 필수 [미등록] | §11 R13-4, §15 |
+| **v0.2+ (2026-10-16)** D-10·cap 특성화·context | D-10 확정(10%, 짝 규칙, decode iteration 가중, 연속값·{5,10,20}% 사다리) · G0 앞 cap 특성화 Job, G0 cap = 그 결과(결정 규칙 [미등록]) · `context_length` 20480, floor 16k 오염 경로 공시, loadgen R-2 선행 · M3 판정서 R-2(서버 측 오류 범위) | §0, §4 R7-3, §6 R8-2·R8-2c, §9 I-6, §12 R16-1–R16-3, §13 D-10·D-15·D-17·D-18, §15 |
 
 ## 0. 범위·전제·상태
 
@@ -48,7 +50,7 @@
 rate 사다리 값·seed 목록·Job 하드캡·셀 수는 각 PREREG의 몫이다(이 명세는 그 값이 지켜야 할 조건만 정한다).
 
 **확정 전제** [결정]: F2 주 모델 = Nemotron-Nano-9B-v2(multi-GPU는 `-Base` revision `dc0661c…`, MG §1) · F3 true dual worker = AMD 전용 ·
-F4 lockstep PD-mux가 multi-GPU로 이양, 단일 GPU 결과의 범위는 "lockstep 기판" · F5 A′ · F6 multi-GPU arm 4종·multi-GPU 1차 estimand G\_sym · F7 TP cap 48·N · F8 radix OFF ·
+F4 lockstep PD-mux가 multi-GPU로 이양, 단일 GPU 결과의 범위는 "lockstep 기판" · F5 A′ · F6 multi-GPU arm 4종·multi-GPU 1차 estimand G\_sym · F7 TP cap 48·N(multi-GPU; G0 cap은 R16-1) · F8 radix OFF ·
 Q2 포지션 = P-C(혼합) · Q3 G0·G2 표준 셀 = arXiv-Sum 16k [결정 2026-10-15, §13 머리].
 
 **미결 전제(바뀌면 표시한 절을 다시 연다)**:
@@ -64,7 +66,10 @@ Q2 포지션 = P-C(혼합) · Q3 G0·G2 표준 셀 = arXiv-Sum 16k [결정 2026-
 - 기판 gate는 MG §16-3과 같다: GPU 이름 정확히 "NVIDIA A100-SXM4-80GB", power limit 400 W, 기대 GPU 수 일치, 어긋나면 `ABORT_SUBSTRATE`.
 - 엔진 트리 digest를 셀마다 기록한다. [2026-10-15 갱신] `multigpu-scaling`은 main `dc06c870`에 merge됐다(조건부 가, 감사 2회차 §6). merge 트리의 ENGINE_DIGEST는 `82a5fc5b…`(multigpu 세션 재대조)이고 merge 이후 main 쪽 엔진 src 변경은 0이다 [측정, 트랙 기록]. G0와 M3 N=1 앵커는 **같은 ENGINE_DIGEST일 때만** 같은 바이너리로 본다. 그래도 Job이 다르면 수준 비교는 금지다(운영 모델·#262). merge 전 바이너리로 잰 봉인 캠페인(N2/N3/E2) 수치와 비교 금지(N2 금지 41, N3 #262).
 - **측정 Job 로그 knob(2026-10-15 추가, multigpu 이양 요청 ②)**: merge 트리의 `job_entry.sh`는 기본값으로 로그 tee 미러(`PDMUX_LOG_MIRROR=1`)와 300 s heartbeat(`PDMUX_HEARTBEAT_S=300`, 주기적 `find`)를 측정 중에 띄운다 [코드, `job_entry.sh:51-52, 299`]. 측정 Job은 **`PDMUX_HEARTBEAT_S=0`**으로 고정하고, `PDMUX_LOG_MIRROR` 값은 `meta/log_mirror.txt`에 기록·공시한다 [결정 대기 아님 — 관측자 상주 프로세스를 줄이는 보수 방향, PREREG마다 값 등록]. bring-up·프로브 Job은 기본값 허용.
-- 고정 노브: cudagraph ON, radix OFF, `mem_fraction_static 0.82`, `max_running_requests` = cap, **`max_mamba_cache_size` = cap 명시**(§1-23), attention backend `flashinfer`, `mamba_ssm_dtype` 명시 고정(R §3.1: dtype이 B\_max 순위를 바꾼다).
+- 고정 노브: cudagraph ON, radix OFF, `mem_fraction_static 0.82`, `max_running_requests` = cap, **`max_mamba_cache_size` = cap 명시**(§1-23), attention backend `flashinfer`, `mamba_ssm_dtype` 명시 고정(R §3.1: dtype이 B\_max 순위를 바꾼다; 모델 config에 키가 없으면 float32, `torch_dtype` 폴백 금지, boot마다 `server_info` 대조 — M3 판정서 R-4),
+  **`context_length` 20480** [결정 2026-10-16]: 필요 하한 = arXiv-Sum 유지분 최대 입력+출력 16,744 [측정, M3 판정서 §4] → ≥ 16,745, floor 16k 점 16,384 + `max_new_tokens` 8 = 16,392 → ≥ 16,393 [유도]. runner 기본 16384 [코드, `engine_bench_runner.sh:140`]는 쓰지 않는다.
+- **R6-2 floor 16k 오염 경로 공시** [코드, M3 판정서 §4-1·4-2]: ctx 16384에서는 입력 + max\_new ≥ ctx 요청이 `ValueError`로 거절되는데, 스트리밍에서는 HTTP 200 + `data: {"error": …}` 청크로 와 현 loadgen이 **TTFT = 거절 지연(ms), 출력 1토큰, 오류 없음**으로 기록한다 → floor(16k)와 12k–16k 요청의 T가 거의 0으로 오염된다(유지분 21/5,906 = 0.36%는 조용한 1토큰 성공 [측정, 같은 곳]). 20480과 아래 loadgen 수정이 이 경로를 막는다.
+- **공용 계측 선행 조건(loadgen R-2)**: 공용 loadgen(`benchmarks/pdmux_eval/trace_loadgen.py`)이 SSE `"error"` 키를 서버 측 오류로, `ignore_eos` 요청의 관측 출력 토큰 수 ≠ 요청 수를 서버 측 `OUTPUT_SHORT`로 기록하는 커밋(`<sha 미정>`, 변이 "error 청크를 토큰으로 셈" KILLED)이 G0·M3 측정보다 먼저 들어가야 한다. 이 커밋이 merge preflight의 POST다(`PREFLIGHT_merge_cl3_design` §2·§6).
 
 ---
 
@@ -146,7 +151,7 @@ mean-ITL 술어는 secondary이고 **같은 문장·표 칸에 섞지 않는다*
 **SLO를 입력으로 읽는 정책 arm과 튜닝 arm(`fused_tuned`·`fused_mixed_tuned`·`d_tuned`, A′·ITL 50 ms로 고른 config)의 ITL 사다리·k 곡선 재채점은 재스코어(게이트 8)이므로 기술값으로도 싣지 않는다.** 다른 SLO에서의 값이 필요하면 그 SLO로 재튜닝해 직접 잰다. 정본(게이트 8)이 이 명세보다 우선한다.
 **K7** "SLO를 입력으로 읽는 정책 arm의 ITL 사다리·k 곡선 재채점은 기술값으로도 싣지 않는다(게이트 8)."
 **R7-3 (요청 처리, R-3)**: 출력 길이는 데이터셋 값으로 고정(`ignore_eos`), 출력 < 2토큰 요청은 표본 추출 단계에서 제외하고 건수 공시. 오류는 원인 쪽으로 나눈다:
-- **서버 측**(서버가 요청을 수락한 뒤의 timeout, HTTP 5xx, abort) = attainment **불합격**. 셀 무효 사유가 아니다.
+- **서버 측**(서버가 요청을 수락한 뒤의 timeout, HTTP 5xx, abort, 스트리밍 SSE `error` 청크, `OUTPUT_SHORT` — 뒤 둘은 loadgen R-2 선행, §0) = attainment **불합격**. 셀 무효 사유가 아니다.
 - **클라이언트 측**(송신 전 연결 실패, loadgen 예외, 예정 발송 시각 대비 발송 지연 > 0.5 s [제안]) 비율이 한 rung에서 어느 arm이든 > 1%면, 그 rung의 **비교 두 arm 짝을 함께 무효**로 하고 그 Job의 해당 λ\* = `UNRESOLVED`(R5-3 J\_eff에서 빠짐).
   무효 rung을 **건너뛰고 다음 rung으로 보간·첫 실패를 정하지 않는다**. 1% 문턱은 클라이언트 측 오류에만 적용한다 [결정, D-7 범위 축소 — 사용자 확인 2026-10-15].
 **K6** "R7-3의 '해당 λ\*'는 교차 rung 위쪽의 무효 rung에도 적용된다(보수적으로 읽는다)."
@@ -158,7 +163,7 @@ mean-ITL 술어는 secondary이고 **같은 문장·표 칸에 섞지 않는다*
 - 근거: A §3.1(`analyze.py:34-38`: ITL 빈 요청은 NaN → 불합격), A §3.3-2·3, SLO-R §3-5. V A-4·D-B(셀 무효가 arm 한쪽에만 걸리면 λ\* 사다리가 fail-open).
 - 표본 수 [유도]: arXiv-Sum 출력 mean 203·p50 195 [측정, ARXSUM_STATS] → n\_ITL ≈ 194. Mooncake toolagent 출력 p50 30 → n\_ITL ≈ 29, LooGLE 출력 ~15 → ~14(A §3.3).
 - 대안·기각: (a) "오류 > 0이면 셀 무효" → 표본이 선택적으로 빠진다. (b) "모든 오류 = 불합격만" → 하네스 문제와 시스템 문제를 못 가른다. (c) v0의 "오류 > 1% 셀 무효(arm별)" → 서버 측 실패가 많은 arm의 나쁜 rung이 지워져 그 arm에 유리(fail-open). 셋 다 기각.
-- multi-GPU 차이: 없음. MG의 기술값 "TTFT 3 s"만 §5 규칙으로 바꾼다. MG §4-3 `CLIENT_ERROR` 문턱(1%)은 클라이언트 측 오류에만 적용된다고 Q23 개정에서 맞춘다.
+- multi-GPU 차이: 없음. MG의 기술값 "TTFT 3 s"만 §5 규칙으로 바꾼다. MG §4-3 `CLIENT_ERROR` 문턱(1%)은 클라이언트 측 오류에만 적용된다고 Q23 개정에서 맞춘다. 단 M3 λ\*\_thr HI 셀에는 rev12 `SERVER_ERROR_HI`(서버 측 오류 > 1% → 그 arm λ\* `UNRESOLVED`, 짝 무효)가 따로 걸린다 — D-7은 λ\*\_SLO·attainment 채점 범위라 충돌하지 않는다(사용자 승인 해석 2026-10-16, M3 판정서 R-1).
 - 예상 비판 1: "50 ms는 chat 관행값이다." → 대응: SLO-R §5 공시 그대로 + stock arm 사다리 병기. lockstep 기판에서 ITL 술어는 사실상 "토큰의 몇 %가 prefill 창에 걸리는가"를 잰다 — 이 해석을 결과에 명시한다(D §2.2–2.4).
 - 예상 비판 2: "짧은 출력에서 P95는 최댓값이다." → 대응: R7-4 공시. 5-a 짧은 출력 별도 규약은 5-a PREREG 결정(D-11).
 
@@ -184,8 +189,8 @@ mean-ITL 술어는 secondary이고 **같은 문장·표 칸에 섞지 않는다*
 - `agnostic` = PD-mux on, R2 정책 없음, `pdmux_agnostic_manual.yml`(manual 등가표 [[74,34,0],[54,54,36]], divisor 36).
 - `d44` = PD-mux on, `PDMUX_R2_POLICY=fixed`, `PDMUX_R2_FIXED_DSM=44`. sticky OFF(D-SEM [결정] 2026-10-04).
 **R8-2 (단일 GPU 선택 arm)**: `fused_tuned(k)` = 등록된 유한 E-D 스윕에서 k마다 λ\*\_SLO(k)가 가장 큰 fused config. 비혼합 후보 [제안]:
-`chunked-prefill-size` {2048, 4096, 8192} × `num-continuous-decode-steps` {1, 4}(cap 48 고정) = 6 config. 이 6개는 **SGLang 기본 스케줄러의 비혼합 구조**(`enable_mixed_chunk` 기본 False [코드, `server_args.py:630`])의 노브 값만 바꾼 것이다.
-바꾸지 않는 것: `max-running-requests` 48, radix off, overlap on, mem-fraction 0.82. `prefill-max-requests`·schedule-conservativeness는 미시험 노브로 공시한다.
+`chunked-prefill-size` {2048, 4096, 8192} × `num-continuous-decode-steps` {1, 4}(cap = G0 cap 고정, R16-1) = 6 config. 이 6개는 **SGLang 기본 스케줄러의 비혼합 구조**(`enable_mixed_chunk` 기본 False [코드, `server_args.py:630`])의 노브 값만 바꾼 것이다.
+바꾸지 않는 것: `max-running-requests` = G0 cap(R16-1), radix off, overlap on, mem-fraction 0.82. `prefill-max-requests`·schedule-conservativeness는 미시험 노브로 공시한다.
 선택은 **별도 튜닝 Job**에서 하고, 판정 Job에서 선택된 config를 다시 잰다(승자의 저주 회피). 같은 SLO(A′, ITL 50 ms)로 튜닝한다(게이트 8).
 대칭으로 PD-mux 쪽 튜닝 = static D ∈ {24, 34, 44} [제안] 중 k별 최선(`d_tuned(k)`). **양쪽 튜닝 config 수를 결과에 같이 적는다.**
 **S-2** "튜닝 공간은 fused 9 config 대 PD-mux 3 config로 비대칭이다. 'PD-mux가 fused보다 못하다'는 PD-mux 쪽 미튜닝(span 예산·임계표 고정)을 정책의 본질로 귀속하는 문장으로 쓰지 않는다."
@@ -195,8 +200,8 @@ mean-ITL 술어는 secondary이고 **같은 문장·표 칸에 섞지 않는다*
 선행 조건: (i) Nano-9B-v2(mamba state)에서 혼합 배치의 출력 정확성 — engine-porter correctness gate(CK §4 G-M1–G-M4, 미실행). (ii) 의미 대조 — 완료(CK). 예산 의미는 decode 토큰 포함 반복당 총 예산이나, 혼합이 조건부이고(logprob·input\_embeds면 꺼짐) 혼합 반복은 decode 메모리 검사·retract를 건너뛰므로 **호칭은 "SGLang mixed-chunk"만** 쓴다. "Sarathi와 같은 예산 의미"는 괄호 설명으로만.
 **R8-2c (mixed-chunk 운용 규약)**:
 - 모든 요청은 logprob·input\_embeds 없이 보낸다(혼합 유효 조건).
-- 예산 C 중 prefill 몫은 C − 실행 중 decode 수(최대 48)다. 튜닝 공간은 {512, 1024, 2048, 4096, 8192} 5점으로 등록한다 [결정, D-15 2026-10-15].
-- 작은 예산 공시 [유도]: 실행 중 decode가 cap 48이면 반복당 prefill 몫은 C=512에서 512 − 48 = 464토큰(예산의 90.6%), C=1024에서 1024 − 48 = 976토큰(95.3%)이다. arXiv-Sum 유지분 입력 p50 6,484토큰 [측정, §10]을 이 몫으로 나누면 C=512에서 한 요청의 prefill이 여러 반복에 걸친다. 이것이 TTFT·λ\*에 주는 영향은 **예측하지 않고 공시만** 한다.
+- 예산 C 중 prefill 몫은 C − 실행 중 decode 수(최대 G0 cap c)다. 튜닝 공간은 {512, 1024, 2048, 4096, 8192} 5점으로 등록한다 [결정, D-15 2026-10-15].
+- 작은 예산 공시 [유도]: 실행 중 decode가 cap c까지 차면 반복당 prefill 몫은 C − c다. (c = 48일 때의 예: C=512에서 464토큰(예산의 90.6%), C=1024에서 976토큰(95.3%).) c는 cap 특성화 Job 뒤 G0 PREREG에서 정해지므로(R16-3) 이 값은 그때 다시 낸다. **c ≥ C인 예산점**에서는 decode가 c 가까이 차면 prefill 몫이 0 이하가 될 수 있다 — 그 점의 처리(튜닝 공간 유지·제외·공시)는 [미등록 — G0 PREREG 몫]이며 데이터를 보기 전에 정한다. arXiv-Sum 유지분 입력 p50 6,484토큰 [측정, §10]을 이 몫으로 나누면 C=512에서 한 요청의 prefill이 여러 반복에 걸친다. 이것이 TTFT·λ\*에 주는 영향은 **예측하지 않고 공시만** 한다.
 - PD-mux arm에서 `enable_mixed_chunk`가 켜지지 않도록 launch 단계에서 assert한다(상호 배제 검사 없음, PD-mux loop도 같은 함수 호출 [코드, `multiplexing_mixin.py:1227`]). radix ON·mamba extra\_buffer와 결합하지 않는다(`schedule_batch.py:2291`).
 - G\_mixed 결과 **의무 꼬리표**: (1) "혼합 반복의 decode 토큰은 mamba prefill 커널(chunk-scan)로, piecewise cudagraph off에서 eager로 처리됨" [코드, `mamba2_metadata.py:194-196`, `forward_batch_info.py:167-173`] (2) "logprob 없음" (3) "혼합 반복은 retract 검사 생략" (4) "piecewise 불가 이미지".
 - `fused_mixed`는 (i) gate 통과 전에는 튜닝·판정 Job에 넣지 않는다. (i) 판정 기준은 완화형(G-M2: off 대 off 기준선 대비 완전일치 비율 하락 ≤ 1요청, 첫 32토큰 100% 일치, 크래시·NaN 0)이다. 혼합 실현은 holb\_probe의 MIXED forward 수로 확인한다(G-M1).
@@ -234,7 +239,7 @@ fused → agnostic 비교에는 "묶음 처치(PROJECT\_STATUS 게이트 #13)" �
 
 - 근거: A §5-5, D §3.1–3.2-2, R §1(정본: fused 미조율, T2 주장 금지, 미시험 노브 6개 이상), R §4.1 게이트 8·#13, MG §2·§4-4, CK §2·§5, V A-6·A-7·A-7b·D-C.
 - 대안·기각: (a) 기본 fused만 → 미조율 confound 재생산. (b) fused\_sym만 → 대조군이지 베이스라인이 아니다. (d) 무한/적응적 튜닝 → 사전등록 불가. (e) 혼합 5만 분모 → 비혼합 쪽이 더 나은 k에서 분모가 낮아져 PD-mux에 유리(D-C). (f) v0.1 동률 띠 + λ\*\_thr 1차 기준 → 분모가 처리율 최선 config로 돌아가 G\_mixed 부호가 띠 폭에 따라 갈림(V2 D-C′). 모두 기각.
-- 비대칭 방향(V A-7): 11 대 3(v0.1의 9 대 3에서 D-15로 확대)은 "PD-mux 우위" 문장에는 보수적, "PD-mux 열위" 문장에는 비보수적이다 → S-2.
+- 비대칭 방향(V A-7): 11 대 3(v0.1의 9 대 3에서 D-15로 확대)은 "PD-mux 우위" 문장에는 보수적, "PD-mux 열위" 문장에는 비보수적이다 → S-2. cap은 모든 arm에 같은 한 값이라 config 수 비대칭은 cap 결정과 무관하나, 작은 혼합 예산의 prefill 몫(R8-2c)과 그 예산점이 튜닝에서 갖는 의미는 G0 cap에 따라 달라진다. cap을 고르는 규칙이 특정 arm 데이터만 보면 arm 비대칭 선택 경로가 생긴다(R16-3).
 - multi-GPU 차이: R8-2(튜닝 스윕)는 비용 때문에 multi-GPU에 넣지 않는다 [제안]. multi-GPU 문장은 G\_sym·G\_def 범위이고 d44는 "1-GPU에서 고른 D44를 N에 그대로 쓴 값"(MGP-15)이다.
 - 예상 비판 1: "fused\_sym은 허수아비 대조군이다." → 대응: headline 분모가 아니라 같은 노브 대조군(2차 가족)이다. G\_def = S·G\_sym은 경로 분해(회계 항등식)일 뿐 기전 분해가 아니다(S-4).
 - 예상 비판 2: "튜닝 공간 11개도 작다." → 대응: 맞다. 공간을 문장에 명시하고 T2(조율 공간 소진)는 계속 금지한다. 공간 확장은 PREREG 개정으로만.
@@ -287,7 +292,7 @@ fused → agnostic 비교에는 "묶음 처치(PROJECT\_STATUS 게이트 #13)" �
 - 근거: D §3.2-3, A §3.1·§5-6, MG §4-2·4-3, A §1(N3 첫 실패 규칙·cliff), V D-A(3% 문턱이 rung 해상도보다 작아 양자화 λ\*로는 분산 0 → t 퇴화).
 - 대안·기각: λ\*\_thr만 → 사용자 관점 지연이 없다. 첫 실패 rung 라벨을 판정값으로 → D-A. 로지스틱 등 모형 적합 → 자유 표면 증가. goodput req/s 곡선 주 지표 → 용량 정보 없음. 모두 기각.
 - multi-GPU 차이: M3는 λ\*\_thr가 판정이고 SLO는 기술값이다(D-9 [결정]). λ\*\_SLO를 M3 봉인 하네스에 넣으면 하네스 digest가 바뀐다 → M3에서는 **봉인 밖 분석기의 "비등록 사후 기술값"**으로만 산출한다(V A-13 ②).
-- 예상 비판 1: "cap 48이 구속하면 λ\*\_thr가 cap 비율로 수렴해 G → 1로 퇴화한다(MG §8-2)." → 대응: §12 R16-2 공시 + I-5.
+- 예상 비판 1: "cap이 구속하면 λ\*\_thr가 cap 비율로 수렴해 G → 1로 퇴화한다(MG §8-2)." → 대응: §12 R16-2 공시 + I-5.
 - 예상 비판 2: "보간은 rung 사이 attainment가 선형이라고 가정한다." → 대응: 맞다. 그래서 R9-2 CI와 R9-6 해상도로 그 가정의 영향 범위 안에서만 크기를 쓴다.
 
 ## 9. 계측 필수 목록 (Q11·Q14) — 단일·multi GPU 공용
@@ -301,7 +306,7 @@ fused → agnostic 비교에는 "묶음 처치(PROJECT\_STATUS 게이트 #13)" �
 | I-3 | span GPU 시간 ★ | prefill stream CUDA event로 span 시작·끝, 층 범위 [split\_index, next), 배치 토큰 | S\_prefill·정지 분해, §11 P3·P4 | **필수** |
 | I-4 | decode 커널 GPU 시간 ★ | decode stream CUDA event로 decode forward만. 기존 `t_launch→t_sync`와 별도 필드 | CM-1 vs CM-4 분리 | **필수** |
 | I-5 | admission 거절 사유 ★ | 스케줄 결정마다 사유 ∈ {KV, cap, mamba 슬롯, prefill 자리 점유, `max_prefill_tokens`, R2 latch}, retract 이벤트, EXTEND 반복의 running\_bs(R8-4) | §12 cap 구속, X-6, 혼합 실현 분모 | **필수** |
-| I-6 | cudagraph 패딩 ★ | decode iteration마다 bs\_real, bs\_padded, graph hit / eager | ITL 분해 | 선택(G0 안 권고) |
+| I-6 | cudagraph 패딩 ★ | decode iteration마다 bs\_real, bs\_padded, graph hit / eager | ITL 분해, R16-2 원천 후보 | 선택(G0 안 권고). R16-2 원천으로 쓰면 필수 |
 | I-7 | iteration Σctx·ctx p95 ★ | 32 sync 표본 → iteration 단위 | CM-1 ctx 항 | 후속 |
 
 - 근거: A §4.4, D §2.4-4, K §3-3, IDX Q14. 번호 모호성(A §4.4 번호 대 IDX 나열 순서)은 합집합(I-1–I-5) 필수로 처리했다(D-5 [결정]).
@@ -320,7 +325,7 @@ fused → agnostic 비교에는 "묶음 처치(PROJECT\_STATUS 게이트 #13)" �
 
 - 데이터: `ccdv/arxiv-summarization` document/test, sha256 `b34529df…` [측정, ARXSUM_STATS]. 필터 = Nano-9B-v2 토크나이저 입력 ≤ 16,384 → 유지 5,906/6,440 = 91.7% [측정].
 - 유지분 입력 mean 7,116 · p50 6,484 · p90 12,369 · p99 15,722, 출력 mean 203 · p50 195 [측정]. 유지분 중 > 8,192 토큰 34.4% [측정], > 8,760 토큰(KV = state 경계) 30.0% [측정 비율, 경계값은 유도].
-- 표본 추출: seed별 비복원 추출, 도착 Poisson(R4-1), 출력 길이 = abstract 길이(R7-3). `max_prefill_tokens` 값을 PREREG에 명시 등록(기본 16384, MG 개정 대기 항목).
+- 표본 추출: seed별 비복원 추출, 도착 Poisson(R4-1), 출력 길이 = abstract 길이(R7-3). `max_prefill_tokens` 값을 PREREG에 명시 등록(기본 16384, MG rev12 §19-3). `context_length` 20480(§0).
 - 모델 간 비교(G2)는 문서 ID 교집합을 쓴다(D-12 [결정]; 길이 차이 ≤ 3% [측정, R §2.1]이나 유지 문서 집합이 달라지므로).
 
 ## 11. span 예산 스윕(Q13)을 G0에 넣는 방식
@@ -349,19 +354,22 @@ P1·P2 지지를 어느 가설의 지지로도 쓰지 않는다. P1이 깨지면
 
 ## 12. cap 처리(Q16)를 G0에 넣는 방식
 
-**규칙 R16-1**: G0·M3의 cap = 48(단일·N=1), TP 48·N, DP 복제본당 48 [결정 F7]. `max_mamba_cache_size` = cap을 명시 인자로 준다(§1-23). 부팅 로그의 `max_total_num_tokens`·mamba 슬롯 수를 셀마다 기록.
-**R16-2 (구속 공시, R-12)**: `CAP_BINDING` 판정은 **λ\*\_SLO 교차 rung(r\_l, r\_u) 셀과 LO rung에서만**, **running = cap 시간 비율 ≥ 10%** [제안, D-10]로 한다. "cap 사유 거절 > 0" 조건은 쓰지 않는다(HI 포화 rung에서 항등식에 가까움).
-시간 비율은 I-5 기록으로 계산한다. I-5가 없거나 0행이면 `CAP_BINDING_UNRESOLVED`. `CAP_BINDING` 셀의 λ\*·G는 "cap 48 조건부"로만 쓴다. I-5 거절 사유별 건수는 모든 셀에서 기술값으로 적는다.
-**R16-3 (cap 스윕은 G0 밖)**: {48, C\_mem/2, C\_mem} 스윕은 비용 모델 검증 Job(Q17–Q19)의 몫이다. C\_mem은 roofline 값(~183 [유도, K §2])이 아니라 **부팅 로그 실측**으로 정한다. cap을 바꾸면 cudagraph 캡처 bs 목록도 바뀌므로(K §1) I-6을 켠다.
-
+**규칙 R16-1 (v0.2+)**: **G0 cap = cap 특성화 Job(R16-3) 결과, G0 PREREG에 등록** [결정 2026-10-16 — 48 고정 해제]. M3 cap = 48(N=1), TP 48·N, DP 복제본당 48 [결정 F7, 불변]. 그래서 G0와 M3 N=1 앵커는 같은 ENGINE\_DIGEST여도 cap이 다를 수 있다(Job 간 수준 비교 금지는 §0 그대로). `max_mamba_cache_size` = cap을 명시 인자로 준다(§1-23). 부팅 로그의 `max_total_num_tokens`·mamba 슬롯 수를 셀마다 기록.
+**R16-2 (구속 공시, R-12 → D-10 결정 2026-10-16)**: `CAP_BINDING` 판정은 **λ\*\_SLO 교차 rung(r\_l, r\_u) 셀과 LO rung에서만** 한다. "cap 사유 거절 > 0" 조건은 쓰지 않는다(HI 포화 rung에서 항등식에 가까움).
+- **시간 정의(decode iteration 가중)**: 구속률 b = (그 셀 창 안 decode iteration 중 running ≥ cap인 iteration 수) / (그 셀 창 안 decode iteration 수). **b ≥ 10%면 `CAP_BINDING`** [결정, D-10]. 원천 = decode iteration마다의 running 수(I-6 `bs_real` 또는 I-5에 같은 필드 추가 — 어느 쪽인지 [미등록, G0 계측 패치 몫]). 없거나 0행이면 `CAP_BINDING_UNRESOLVED`.
+- **짝 규칙**: 비교하는 두 arm 중 **한 arm이라도** `CAP_BINDING`이면 그 짝의 G는 "cap c 조건부"로만 쓴다(c = 그 Job의 등록 cap). `CAP_BINDING_UNRESOLVED`도 같은 짝 규칙을 받는다(보수적).
+- **병기(기술값)**: 셀마다 b 연속값과 문턱 사다리 {5, 10, 20}%에서의 라벨을 함께 적는다. 사다리는 인용 범위만 바꾸고 판정 문턱(10%)을 바꾸지 않는다. I-5 거절 사유별 건수는 모든 셀에서 기술값으로 적는다.
+**R16-3 (cap 특성화 Job — G0 앞, v0.2+)** [결정 2026-10-16, CM-5 검증 Job과 겸함]: G0 **앞에** cap 특성화 Job을 둔다. 후보 = {48, C\_mem/2, C\_mem}. C\_mem은 roofline 값(~183 [유도, K §2], 측정 아님)이 아니라 **부팅 로그 실측**으로 정한다(측정 절차는 그 PREREG). cap을 바꾸면 cudagraph 캡처 bs 목록도 바뀌므로(K §1) I-6을 켠다.
+- G0 cap 결정 규칙(어떤 지표·어떤 arm·어떤 rate로 세 후보 중 하나를 고르는가, 동률 처리) = **[미등록 — cap 특성화 PREREG 몫]**. 그 PREREG는 이 규칙을 **데이터를 보기 전에** 등록해야 한다. 등록 없이 특성화 결과를 본 뒤 cap을 고르면 G0 처치값을 사후에 고르는 자유가 생기며, 그렇게 정한 cap으로 낸 G0 결과는 판정에 쓰지 않는다. 규칙이 한 arm의 데이터만 보면 그 arm을 등록하고 비대칭을 공시한다(§6 비대칭 방향).
+- K §2 실현 가능 창 λ·E[out]·E[ITL] ≤ C ≤ min(C\_mem(L), C\_SLO(L, D))는 이 Job이 **검증할 예측**이다. 창식의 출력(미검증 비용 모델 값)을 그대로 결정 규칙으로 쓰지 않는다(게이트 1, 아래 대안 (b) 기각 근거와 같음). 창의 하한 항(수요 하한 ~60 > 48 [유도, K §2(3)])이 실측과 맞는지는 그 Job의 기술값이다.
 - 근거: K §1–4, MG §1·§8-2, V A-11. cap 48은 근거 없이 상속된 값 [코드/이력, K §1]. 수요 하한 C ≥ λ·E[out]·E[ITL]이 lockstep 정지 수준 ITL(~200 ms)에서 ~60 > 48 [유도, K §2(3)].
-- 대안·기각: (b) 워크로드별 도출 cap 등록 → 미검증 비용 모델 출력을 처치값으로 씀(게이트 1). (c) G0에서 스윕 → G0 질문이 흐려진다. 둘 다 기각.
-- 예상 비판 1: "cap 48은 PD-mux에 불리/유리할 수 있다." → 대응: 모든 arm이 같은 cap이다(MG §8-2). 구속 여부를 셀마다 공시한다.
+- 대안·기각: (b) 워크로드별 도출 cap 등록 → 미검증 비용 모델 출력을 처치값으로 씀(게이트 1). (c) G0 안에서 스윕 → G0 질문이 흐려진다. 둘 다 기각. v0.2의 "G0 cap 48 고정"은 사용자 결정(2026-10-16)으로 R16-3 특성화 결과로 바뀌었다.
+- 예상 비판 1: "cap은 PD-mux에 불리/유리할 수 있다." → 대응: 한 Job 안 모든 arm이 같은 cap이다(MG §8-2). 구속 여부를 셀마다 공시한다(R16-2 짝 규칙).
 - 예상 비판 2: "hybrid에서 cap은 state 예약(48 × 0.1435 GB ≈ 6.9 GB [유도])까지 정하므로 사실상 처치다." → 대응: 그래서 cap 스윕을 비용 모델 검증의 독립 Job으로 둔다.
 
 ---
 
-## 13. 사용자 결정 항목 (2026-10-15 사용자 결정: D-1…D-14 권고안 채택, Q2 = P-C, Q3 = arXiv-Sum 16k. 감사 2회차 뒤 같은 날 D-6·D-7·D-15·D-16 결정됨. 남은 [제안] 상태 = D-10)
+## 13. 사용자 결정 항목 (2026-10-15 사용자 결정: D-1…D-14 권고안 채택, Q2 = P-C, Q3 = arXiv-Sum 16k. 감사 2회차 뒤 같은 날 D-6·D-7·D-15·D-16 결정됨. 2026-10-16 D-10·D-17·D-18 결정됨)
 
 | # | 항목 | 선택지 | 상태 |
 |---|---|---|---|
@@ -374,12 +382,14 @@ P1·P2 지지를 어느 가설의 지지로도 쓰지 않는다. P1이 깨지면
 | D-7 | 오류 요청 처리(R7-3) | 오류 > 0 무효 / 1% 문턱 / 불합격만 | [결정] 1% 문턱 + 불합격 계산 → R-3로 적용 대상을 클라이언트 측 오류로 한정, 짝 무효·`UNRESOLVED`. **결정됨 2026-10-15: 범위 축소 사용자 확인** |
 | D-8 | L < 1k 처리(R6-3) | floor(1k) 고정 / 512 측정점 추가 | [결정] floor(1k) 고정 + 비율 공시 |
 | D-9 | M3 용량 판정(§8) | λ\*\_thr 유지 / λ\*\_SLO 승격 | [결정] **λ\*\_thr 유지, λ\*\_SLO 봉인 밖 비등록 사후 기술값** |
-| D-10 | `CAP_BINDING` 문턱(R16-2) | 10% / 다른 값 | 10% [제안]. 2회차 감사(V2 B-8)에서 R16-2 문구 이상 없음. 값은 사용자 확정 전 [제안] 유지 — G0 PREREG 봉인 전 확정 |
+| **D-10** | `CAP_BINDING` 문턱(R16-2) | 10% / 다른 값 | **결정됨 2026-10-16**: 10% + 짝 규칙(한 arm이라도 묶이면 짝 G "cap 조건부") + decode iteration 가중(running ≥ cap iteration 비율) + 연속값·{5,10,20}% 사다리 기술값 |
 | D-11 | 짧은 출력 ITL 규약(5-a) | P95 유지 + 공시 / 별도 술어 | [결정] 5-a PREREG에서 결정 |
 | D-12 | G2 문서 집합(§10) | 모델별 필터 / 교집합 | [결정] 교집합 |
 | D-13 | `fused_mixed` 선행 확인 | engine-porter에 맡김 / 생략 | [결정] **맡김**. (i)은 G0 계측 패치 gate Job에 동승(CK §4) |
 | D-14 | vLLM 참고 열 | 넣지 않음 / 참고 열만 | [결정] 넣지 않음 |
-| **D-15** | mixed-chunk 작은 예산(512/1024) | 추가 안 함 / 추가(3 → 5점) | **결정됨 2026-10-15: 추가**(초안 권고 "추가 안 함"과 반대). 예산 {512, 1024, 2048, 4096, 8192}, 합집합 11 config, 비대칭 11 대 3(S-2 주석), 작은 예산 prefill 몫 공시(R8-2c) |
+| **D-15** | mixed-chunk 작은 예산(512/1024) | 추가 안 함 / 추가(3 → 5점) | **결정됨 2026-10-15: 추가**(초안 권고 "추가 안 함"과 반대). 예산 {512, 1024, 2048, 4096, 8192}, 합집합 11 config, 비대칭 11 대 3(S-2 주석), 작은 예산 prefill 몫 공시(R8-2c, 값은 G0 cap 의존 → cap 특성화 뒤 재산정) |
+| **D-17** | G0 cap(R16-1·R16-3) | 48 고정 / cap 특성화 Job 결과 | **결정됨 2026-10-16**: G0 앞 특성화 Job {48, C\_mem/2, C\_mem}(C\_mem 부팅 로그 실측), 결정 규칙 [미등록 — 그 PREREG가 사전 등록] |
+| **D-18** | `context_length`(§0) | 16384 / 20480 | **결정됨 2026-10-16**: 20480(≥ 16,745), G0·M3 공용 |
 | **D-16** | G\_mixed 동률 규칙(R8-2d, V2 死因 D-C′) | (a) 엄격 argmax / (b) 상수 띠 ≤ 1% + λ\*\_SLO 점추정 / (c) G\_mixed 기술값 강등, 1차 = G\_sym | **결정됨 2026-10-15: (a)**. 정확 동률만, 결정적 순서 비혼합 → 큰 chunk → 작은 decode-steps(`d_tuned`는 큰 D). λ\*\_thr 동률 기준 금지 |
 
 ## 14. 규칙층 감사
@@ -390,19 +400,12 @@ P1·P2 지지를 어느 가설의 지지로도 쓰지 않는다. P1이 깨지면
 **2회차 판정 요약(2026-10-15, 마지막)**: 명세 v0.1 **NO-GO → 사용자 결정 필요**, 死因 1건 D-C′(R8-2d 동률 띠 + λ\*\_thr 1차 기준이 D-C를 다시 엶, N2). D-A·D-B 닫힘. B-9: R7-2 완화가 게이트 8과 충돌(K7). 승계 caveat K1–K9. 전문 → `VERDICT_spec_v0_1_and_closure_round2_2026-10-15.md`.
 **감사 2회 완료(상한). D-C′는 사용자 결정 (a)로 해소. 이후 규칙 변경은 PREREG 단계 감사로.** v0.2의 R8-2d(D-16)·D-15·D-6 반영분은 G0 PREREG 감사에서 함께 본다(이 명세를 3회차 감사에 다시 올리지 않는다).
 
-**2회차에 넘겼던 질문(이력; 답은 V2 §3)**:
-- B-1 (R-1): §8 R9-1 보간 규칙이 D-A 반전 경로(오프셋만 다른 두 격자에서 확정/0으로 갈림)를 닫는가. `BELOW/ABOVE_LADDER`·무효 rung의 `UNRESOLVED`가 새 fail-open을 만들지 않는가. R9-1b dry-run이 봉인 전 단계로 충분히 고정됐는가.
-- B-2 (R-2): R5-3b 임계표 값과 Holm 절차가 맞는가. 1차 가족 = G\_mixed 합집합판 + gate 불통과 시 G\_tuned 대체가 "데이터 보기 전 전환"으로 정당한가. multi-GPU 1차(G\_sym, F6)와 다른 점이 문장 충돌을 만드는가.
-- B-3 (R-3): R7-3 서버/클라이언트 분류에 남은 fail-open이 있는가(예: 서버 과부하가 클라이언트 연결 실패로 보이는 경우 → 짝 무효화가 한 arm의 실패를 지우는가). 발송 지연 0.5 s [제안]와 "분류 불가 = 클라이언트 측" 규칙의 방향성.
-- B-4 (R-4): R8-2d 합집합 최대·동률 규칙(λ\*\_thr → 비혼합 → 큰 chunk)이 D-C 반전을 닫는가. 동률 판정에 R9-6 해상도를 쓰는 것이 순환인가.
-- B-5 (R-6·R-8·R-14): 혼합 실현 지표 분모, `CLIFF_ADJACENT` 식, λ\* 해상도 식이 각각 정의 가능하고 항등식이 아닌가.
-- B-6 (R-9): TOST ±1.5%·짝 n ≥ 8 계열별·계측 최소 수준 정의가 A-12 결함을 닫는가.
-- B-7 (R-10): P4가 lockstep-GPU와 CPU-launch를 실제로 가르는가(같은 층 수 묶음에서 I-3 token-layer 시간의 변동 폭이 충분한가). D-6 미결 상태에서 G0-S 봉인 보류가 다른 절을 막는가.
-- B-8 (V §4·R-7·R-11·R-12·R-13·R-15·R-16): ABBA 배치, 합산 방식(R5-6), R7-2 재스코어 범위, R10-2, R16-2, Samuelson 근거, 경로 분해 호칭, R-16 문장이 판정서 문구와 어긋나지 않는가. S-1–S-8이 문자 그대로인가.
-- B-9 (범위): 수리 색인 밖에서 판정 의미가 바뀐 곳이 있는가(v0 sha256 `cc582ff8…` 대비 diff).
+**2회차에 넘겼던 질문 B-1–B-9(이력)**: 질문과 답은 V2 §3에 있다(v0.2+에서 본문 목록을 줄였다; v0.2 sha `64b4cf4c…` 판에 원문).
+**v0.2+ 변경분(D-10·D-17·D-18, R16-1–R16-3, §0 context·loadgen)**은 이 명세의 3회차 감사가 아니라 cap 특성화 PREREG·G0 PREREG·M3 rev12 2회차 감사에서 본다.
 
 ## 15. 이 초안이 하지 않은 것
 
+- **v0.2+ [미등록]**: G0 cap 결정 규칙·C\_mem 실측 절차(cap 특성화 PREREG), c ≥ C 혼합 예산점 처리(R8-2c), R16-2 running 수 원천 필드(I-5 또는 I-6) → 각 PREREG·계측 패치의 몫.
 - rate 사다리 값, seed 목록, 셀 수, Job 하드캡·시간 예산(G0-S 포함, R13-2), GPU 사용률 계산, P4 "≈ 0" 동등성 여유·기울기 CI(K8, [미등록]), 혼합 실현 문턱, J\_eff ≥ 5 Holm 임계표, 튜닝 Job에서 λ\*\_SLO가 `UNRESOLVED`인 config의 argmax 후보 처리(R8-2d) → G0 PREREG(Q24)와 M3 개정(Q23)의 몫.
 - Q15(§1-24 범위 재서술), Q17–Q21(비용 모델 항) → 이 명세는 계측·스윕 배치만 정했다.
 - 종료 규약 수리(V §6 C-R1–C-R11)는 이 명세 밖이다(CLOSURE·DECISIONS·MERGE\_TRIAL 문서의 몫).
