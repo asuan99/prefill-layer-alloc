@@ -25,6 +25,17 @@ H9 CONVENTION (explicit; PREREG §4-3 says only "TTFT가 없는 오류 요청은
 
 The estimators the PREREG forbids (§4-3 mutation list) live below as _MUT_* functions and are run by
 `--selftest` against synthetic scenarios; each must be KILLED and the unmutated control must not be.
+
+rev12 (§19, unsealed checkpoint 2026-10-16):
+  * §19-1b D-1' (a): on an HI cell, (server-side + client-side error requests) / cell requests > 1 % -> the cell is invalid; label =
+    the dominant side (SERVER_ERROR_HI if server > client, else CLIENT_ERROR -- a tie is CLIENT_ERROR [제안]); both counts recorded.
+    Server side = error_side "server" (trace_loadgen 0eca947: HTTP_STATUS, SSE_ERROR, SERVER_ABORT, OUTPUT_SHORT, OUTPUT_LONG).
+    Client side = every other error request (CLIENT_EXCEPTION incl. timeout, unclassified/legacy, no TTFT without error) PLUS a
+    successful request sent > SEND_LATE_S (0.5 s) after its schedule (SP R7-3 multi-GPU list).  LO cells: only the client side
+    invalidates (> 1 %); the server-side count is descriptive (MG12-14).  Other rungs (M2g G3B/G4/G5A): rev11 rule (all errors).
+  * shapes A, B, X; X Job effect from the X anchor (U14, F-5), X correctness step (U7 -> X_CORRECTNESS_*), P10 per group (U12:
+    {A, B} bound together as rev11, {X} alone), KV_POOL_DRIFT / DTYPE_UNVERIFIED (F-4, disclosures), FLOOR_JOB_EFFECT,
+    LOG_KNOB_MISMATCH, per-cell GPU clock descriptive table (U6).
 """
 
 from __future__ import annotations
@@ -400,13 +411,44 @@ def run_mutation_checks():
 
 
 # =========================================================================== cell analysis
+SEND_LATE_S = 0.5            # rev12 §19-1 R7-3 row: a request sent > 0.5 s after its schedule is a client-side error (SP R7-3)
+
+
+def error_split(reqs):
+    """(n_server, n_client) error requests of a cell, rev12 §19-1b.  Each request counts at most once."""
+    srv = cli = 0
+    for r in reqs:
+        if is_error(r):
+            if r.get("error_side") == "server":
+                srv += 1
+            else:
+                cli += 1                       # CLIENT_EXCEPTION, unclassified / legacy record, no TTFT without an error string
+        elif r.get("scheduled_arrival_s") is not None and r.get("sent_s") is not None \
+                and float(r["sent_s"]) - float(r["scheduled_arrival_s"]) > SEND_LATE_S:
+            cli += 1
+    return srv, cli
+
+
+def cell_error_status(n, n_server, n_client, rung):
+    """rev12 §19-1b D-1' (a).  Returns the invalidating status or None."""
+    if n <= 0:
+        return None
+    if rung == "LO":                                             # MG12-14: LO server-side errors are descriptive
+        return "CLIENT_ERROR" if n_client / n > C.CLIENT_ERROR_FRAC else None
+    if (n_server + n_client) / n > C.CLIENT_ERROR_FRAC:          # HI (and the rev11 rule for the other rungs): the SUM
+        return "SERVER_ERROR_HI" if n_server > n_client else "CLIENT_ERROR"     # dominant side; a tie -> CLIENT_ERROR [제안]
+    return None
+
+
 def analyze_cell(reqs, meta, cpu_before="", cpu_after="", proc_csv=None, win_mono=None, etime=None):
     """meta: cell.json dict.  Returns the per-cell record used by the aggregation."""
     n = len(reqs)
     errs = [r for r in reqs if is_error(r)]
     err_no_ttft = [r for r in errs if r.get("ttft_ms") is None]
+    n_srv, n_cli = error_split(reqs)
     rec = {"cell_id": meta.get("cell_id"), "n_sent": n, "n_errors": len(errs),
            "n_errors_without_ttft": len(err_no_ttft), "n_errors_with_ttft": len(errs) - len(err_no_ttft),
+           "n_server_errors": n_srv, "n_client_errors": n_cli,
            "truncated": bool(meta.get("truncated"))}
     if n == 0:
         rec.update(status="EMPTY", g=None)
@@ -415,8 +457,9 @@ def analyze_cell(reqs, meta, cpu_before="", cpu_after="", proc_csv=None, win_mon
     T = t1 - t0
     g, _, means = g_of(reqs)
     rec.update(T=T, r_realized=(n / T if T > 0 else None), q_means=means, g=g)
-    if len(errs) / n > C.CLIENT_ERROR_FRAC:
-        rec["status"] = "CLIENT_ERROR"
+    est = cell_error_status(n, n_srv, n_cli, meta.get("rung"))
+    if est:
+        rec["status"] = est
     elif n < C.MIN_WINDOW_REQS:
         rec["status"] = "SATURATION_UNRESOLVED"
     elif rec["truncated"]:
@@ -537,12 +580,15 @@ def key_labels(cells, ext_fired=False):
         out["boot1_hi_label"] = "HI_NOT_JUDGED"
     else:
         out["boot1_hi_label"] = "HI_SATURATED" if all(by0[s]["g"] is not None and by0[s]["g"] >= C.G_HI for s in C.HI_SEEDS) else "HI_NOT_SATURATED"
-    out["client_error_hi"] = any(c["status"] == "CLIENT_ERROR" for c in hi)
+    out["client_error_hi"] = any(c["status"] in ("CLIENT_ERROR", "SERVER_ERROR_HI") for c in hi)     # rev12: either label voids the key
+    out["server_error_hi"] = any(c["status"] == "SERVER_ERROR_HI" for c in hi)
+    out["error_counts_hi"] = {c["cell_id"]: [c.get("n_server_errors"), c.get("n_client_errors")] for c in hi}   # both counts (§19-1b)
     # rev11 M-2: the Job-effect reference flags are read from the SAME cells as boot1_lambda_star / boot1_hi_label -- the ext-0 HI cells --
     # never from the final (extension-rung) set, and never from LO cells.
     hi0 = [c for c in hi_all if int(c["meta"].get("ext", 0)) == 0]
     out["boot1_harness_limited"] = any(c.get("harness_limited") for c in hi0)
     out["boot1_client_error"] = any(c["status"] == "CLIENT_ERROR" for c in hi0)
+    out["boot1_server_error_hi"] = any(c["status"] == "SERVER_ERROR_HI" for c in hi0)              # rev12 F-5
     if ext_missing:
         out["hi_label"] = "HI_NOT_JUDGED"
         out["reasons"].append("HI_NOT_JUDGED(EXT_NOT_RUN)")
@@ -610,7 +656,7 @@ def key_labels(cells, ext_fired=False):
 
 
 # =========================================================================== G5(c) memory + contamination (config level)
-def memory_check(arm_facts, shapes=("A", "B"), _mut=None):
+def memory_check(arm_facts, shapes=C.FIXED_SHAPES, _mut=None):
     """arm_facts: arm -> dict(mamba=[...], max_total=[...], eff_cap=int, mode, N).  PREREG §3 G5(c) (i)-(ii) (rev9 §16-2 item 1, rev10 H-5).
     Rule (iii) (arm-to-arm max_total_num_tokens relative difference > 1 %) was RETIRED by user decision 2026-10-13 -- a POST-HOC change made
     after the M2g round-2 values were seen.  It is no longer a MEMORY_MISMATCH reason.  The arm-to-arm relative difference is still recorded
@@ -622,7 +668,7 @@ def memory_check(arm_facts, shapes=("A", "B"), _mut=None):
     for arm, f in arm_facts.items():
         if any(x != f["eff_cap"] for x in f.get("mamba", [])) or not f.get("mamba"):
             reasons.append(f"{arm}: mamba cache slots {f.get('mamba')} != effective cap {f['eff_cap']}")
-        need = max(f["eff_cap"] * sum(C.SHAPE_IO[s]) for s in shapes)
+        need = max(f["eff_cap"] * C.SHAPE_KV_BOUND[s] for s in shapes)          # rev12 R-3: X = 16384 + 616
         if _mut != "ii" and (not f.get("max_total") or min(f["max_total"]) < need):
             reasons.append(f"{arm}: max_total_num_tokens {f.get('max_total')} < cap*(ISL+OSL)={need}")
         if f.get("max_total"):
@@ -815,9 +861,41 @@ def p_dp_status(trends, _mut=None):
             "TP_labels_need_P_DP_UNTESTED_disclosure": status == "UNTESTED"}
 
 
-def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=None):
+X_CORRECTNESS_PREFIX = "X_CORRECTNESS_"
+
+
+def x_correctness_reason(xcheck):
+    """U7: None when the Job's X correctness verdict is PASS, else the fail-closed reason carried by every shape-X estimand of the Job."""
+    v = (xcheck or {}).get("verdict") or "NOT_RUN"
+    return None if v == "PASS" else f"{X_CORRECTNESS_PREFIX}{v}"
+
+
+# ---- rev12 U12 (user decision 2026-10-16, REVIEW_U4_U12): P10 per group.  {A, B} keep the rev11 rule TOGETHER (a BROKEN A makes the B
+# TP labels non-citable and vice versa); {X} is its own group (an X BROKEN makes ONLY the X TP labels non-citable).
+P10_GROUPS = {"AB": ("A", "B"), "X": ("X",)}
+
+
+def p10_group_of(shape):
+    for g, ss in P10_GROUPS.items():
+        if shape in ss:
+            return g
+    return shape
+
+
+def p_dp_groups(trends, _mut=None):
+    """{group: p_dp_status over the G_sym DP trends of that group's shapes}."""
+    out = {}
+    for g, ss in P10_GROUPS.items():
+        sub = {k: t for k, t in trends.items() if k.startswith("G_sym|DP|") and k.rsplit("|", 1)[1] in ss}
+        out[g] = dict(p_dp_status(sub, _mut=_mut), shapes_in_group=list(ss))
+    return out
+
+
+def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=None, xcheck=None):
     """ONE Job's labels (rev9: one Job = one N).  cells: analyzed-cell records (load_cell).  pass_table: M2G table `cells` dict.  config_flags: build_config_flags output.
-    m2g_configs: M2G table `configs` dict (F14: TP_NUMERIC_DIVERGENT, G2_NOT_TESTED, <arm>:G1_UNINFORMATIVE, MEMORY_MISMATCH)."""
+    m2g_configs: M2G table `configs` dict (F14: TP_NUMERIC_DIVERGENT, G2_NOT_TESTED, <arm>:G1_UNINFORMATIVE, MEMORY_MISMATCH).
+    xcheck (rev12 U7): the Job's gates/XCHECK.json; any verdict but PASS makes every shape-X estimand of the Job undefined
+    (X_CORRECTNESS_FAIL / _NOT_TESTED / _NOT_RUN) and the X anchor / reference unusable (JOB_EFFECT_UNTESTED(J_N, X))."""
     pass_table = pass_table or {}
     config_flags = config_flags or {}
     m2g_configs = m2g_configs or {}
@@ -832,7 +910,7 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=N
     fired = {(k[0], k[2], k[3]) for k, lab in first.items() if k[0] != C.ANCHOR_CONFIG and (lab["ext0_trigger"] or lab["max_ext"] >= 1)}   # an anchor never extends
     keys = {k: key_labels(cs, ext_fired=((k[0], k[2], k[3]) in fired)) for k, cs in groups.items()}
     doc = {"prereg": f"{C.PREREG} rev{C.PREREG_REV}", "job": job, "keys": {}, "configs": {}, "estimands": {}, "anchor": {}, "ref": {},
-           "blocks": {}}
+           "blocks": {}, "anchor_x": {}, "ref_x": {}, "xcheck": xcheck, "x_correctness": x_correctness_reason(xcheck) or "PASS"}
     for (cfg, arm, shape, rnd), lab in sorted(keys.items()):
         excl = pass_table.get(f"{'N1' if cfg == C.ANCHOR_CONFIG else cfg}:{arm}")
         if excl is not None and not excl.get("included", True):
@@ -873,6 +951,10 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=N
         d += [f"{a}:G1_UNINFORMATIVE" for a in fl.get("g1_uninformative_arms", []) if a in arms]
         if fl.get("contam_unverified"):
             d.append("CONTAM_UNVERIFIED")
+        if fl.get("kv_pool_drift"):
+            d.append("KV_POOL_DRIFT")                       # rev12 §19-3 / F-4 (disclosure, the verdict is unchanged)
+        if fl.get("dtype_unverified"):
+            d.append("DTYPE_UNVERIFIED")                    # MG12-15
         return d
 
     def defined(cfg, shape, num_arm, den_arm, rnd=1):
@@ -906,11 +988,15 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=N
                 reasons.append(f"{arm}:TRUNCATED")
             if lab["lambda_star"] is None:
                 reasons.append(f"{arm}:LAMBDA_STAR_UNRESOLVED")
+            if lab.get("server_error_hi"):
+                reasons.append(f"{arm}:SERVER_ERROR_HI")             # rev12 §19-1b (explicit; the HI_NOT_JUDGED text carries it too)
+        if shape == "X" and x_correctness_reason(xcheck):
+            reasons.append(x_correctness_reason(xcheck))            # U7 fail-closed
         return (not reasons), reasons
 
     for name, (na, da) in PAIRS.items():
         for cfg in cfgs:
-            for shape in ("A", "B"):
+            for shape in C.SHAPES:
                 ok, why = defined(cfg, shape, na, da)
                 ent = {"defined": ok, "undefined_reasons": why}
                 if ok:
@@ -940,6 +1026,13 @@ def aggregate(cells, pass_table=None, config_flags=None, m2g_configs=None, job=N
     doc["anchor"] = {"arms": {arm: anchor_entry(keys.get((C.ANCHOR_CONFIG, arm, C.ANCHOR_SHAPE, 1))) for arm in C.ANCHOR_ARMS},
                      "gpu_contaminated_arms": afl.get("contam_arms", []), "contam_unverified": bool(afl.get("contam_unverified"))} \
         if any(k[0] == C.ANCHOR_CONFIG for k in keys) else {}
+    # rev12 U14: the X Job-effect reference (J1 boot1 X, ext 0) and the X anchor (J_N); U7 makes both unusable unless XCHECK PASS
+    xr = x_correctness_reason(xcheck)
+    if any(k[0] == "N1" and k[2] == "X" for k in keys):
+        doc["ref_x"] = {arm: dict(ref_entry(keys.get(("N1", arm, "X", 1))), x_correctness=xr) for arm in C.ANCHOR_ARMS}
+    if any(k[0] == C.ANCHOR_CONFIG and k[2] == "X" for k in keys):
+        doc["anchor_x"] = {"arms": {arm: dict(anchor_entry(keys.get((C.ANCHOR_CONFIG, arm, "X", 1))), x_correctness=xr) for arm in C.ANCHOR_ARMS},
+                           "gpu_contaminated_arms": afl.get("contam_arms", []), "contam_unverified": bool(afl.get("contam_unverified"))}
     # GPU heterogeneity (§4-6, J8 only; descriptive under 8 concurrent servers, no outcome branch -- MGP-47)
     gd = [c for c in cells if c["meta"].get("block") == "gpu_dev" and c["status"] == "OK" and c.get("achieved")]
     if gd:
@@ -960,6 +1053,7 @@ def ref_entry(lab):
         return {"present": False}
     return {"present": True, "boot1_lambda_star": lab.get("boot1_lambda_star"), "boot1_hi_label": lab.get("boot1_hi_label"),
             "boot1_harness_limited": bool(lab.get("boot1_harness_limited")), "boot1_client_error": bool(lab.get("boot1_client_error")),
+            "boot1_server_error_hi": bool(lab.get("boot1_server_error_hi")),                                       # rev12 F-5
             "harness_limited": bool(lab.get("harness_limited")), "client_error": bool(lab.get("client_error_hi")),    # FINAL set: carried only so a test can show the check never reads it
             "final_lambda_star": lab.get("lambda_star"), "final_ext": lab.get("ext"),
             "boot1_achieved_by_seed": lab.get("boot1_achieved_by_seed")}
@@ -972,6 +1066,7 @@ def anchor_entry(lab):
     return {"present": True, "lambda_star": lab.get("lambda_star"), "hi_label": lab.get("hi_label"),
             "achieved_by_seed": lab.get("achieved_by_seed"), "harness_limited": bool(lab.get("harness_limited")),
             "client_error": bool(lab.get("client_error_hi")), "truncated": bool(lab.get("truncated")),
+            "server_error_hi": bool(lab.get("server_error_hi")),                                                       # rev12 F-5
             "throttle_ratio_max": lab.get("throttle_ratio_max"), "ext": lab.get("ext")}
 
 
@@ -997,6 +1092,10 @@ def job_effect(ref, anc, tol=None, _mut=None):
             why.append(f"{a}:ANCHOR_HARNESS_LIMITED")
         if e.get("client_error"):
             why.append(f"{a}:ANCHOR_CLIENT_ERROR")
+        if e.get("server_error_hi"):
+            why.append(f"{a}:ANCHOR_SERVER_ERROR_HI")                # rev12 F-5
+        if e.get("x_correctness"):
+            why.append(f"{a}:ANCHOR_{e['x_correctness']}")          # U7 (X anchor only)
         if e.get("truncated"):
             why.append(f"{a}:ANCHOR_TRUNCATED")
         if e.get("lambda_star") is None:
@@ -1019,6 +1118,12 @@ def job_effect(ref, anc, tol=None, _mut=None):
             why.append(f"{a}:J1_REFERENCE_HARNESS_LIMITED")
         if e.get(ce_k):
             why.append(f"{a}:J1_REFERENCE_CLIENT_ERROR")
+        if "boot1_server_error_hi" not in e:                        # rev12 F-5, fail-closed like the other boot1 flags
+            why.append(f"{a}:J1_REFERENCE_BOOT1_FLAGS_MISSING")
+        elif e.get("boot1_server_error_hi"):
+            why.append(f"{a}:J1_REFERENCE_SERVER_ERROR_HI")
+        if e.get("x_correctness"):
+            why.append(f"{a}:J1_REFERENCE_{e['x_correctness']}")
     if why:
         return {"status": "UNTESTED", "reasons": why}
     lam = lambda d, a, k: d[a][k]
@@ -1230,23 +1335,50 @@ def aggregate_jobs(docs, job_meta=None, _mut=None, not_joined=None):
         else:
             status[J] = job_effect(ref, d.get("anchor"), _mut=_mut)
     out["job_effect"] = status
-    ra, rf = (ref.get("agnostic") or {}).get("boot1_achieved_by_seed"), (ref.get("fused_sym") or {}).get("boot1_achieved_by_seed")
-    ref_g1 = (ra, rf) if (ra and rf and all(v is not None for v in list(ra) + list(rf))) else None      # J1 boot1 arrays (H-3)
-    anchors = {}
+    # ---- rev12 U14 / F-5: the shape-X Job effect, from the X anchor (J_N) against J1 boot1 X (ext 0).  P9-a: G_sym(1, X) undefined -> UNTESTED.
+    ref_x = (j1 or {}).get("ref_x") or {}
+    status_x = {}
     for J in C.JOBS[1:]:
         d = docs.get(J)
-        arms = ((d or {}).get("anchor") or {}).get("arms") or {}
-        ok = all((arms.get(a) or {}).get("present") and (arms.get(a) or {}).get("hi_label") == "HI_SATURATED"
-                 and not (arms.get(a) or {}).get("harness_limited") and not (arms.get(a) or {}).get("client_error")
-                 and (arms.get(a) or {}).get("achieved_by_seed") and all(v is not None for v in (arms[a]["achieved_by_seed"]))
-                 and a not in (d["anchor"].get("gpu_contaminated_arms") or []) for a in C.ANCHOR_ARMS)
-        if ok:
-            anchors[J] = _g_of_arrays(d["anchor"]["arms"])
+        if not g1_def("G_sym", "X"):
+            status_x[J] = {"status": "UNTESTED", "reasons": [G1_UNDEFINED + " (P9-a: G_sym(1, X) undefined)"]}
+        elif d is None:
+            status_x[J] = {"status": "UNTESTED", "reasons": ["JOB_NOT_RUN"]}
+        elif not ((d.get("anchor_x") or {}).get("arms")):
+            status_x[J] = {"status": "UNTESTED", "reasons": ["X_ANCHOR_NOT_MEASURED"]}
+        else:
+            status_x[J] = job_effect(ref_x, d.get("anchor_x"), _mut=_mut)
+    out["job_effect_x"] = status_x
+
+    def ref_arrays(rf_):
+        a_, f_ = (rf_.get("agnostic") or {}).get("boot1_achieved_by_seed"), (rf_.get("fused_sym") or {}).get("boot1_achieved_by_seed")
+        return (a_, f_) if (a_ and f_ and all(v is not None for v in list(a_) + list(f_))) else None
+    ref_g1 = ref_arrays(ref)                                         # J1 boot1 arrays (H-3)
+    ref_g1_x = ref_arrays(ref_x) if not any((ref_x.get(a) or {}).get("x_correctness") for a in C.ANCHOR_ARMS) else None
+
+    def usable_anchors(key):
+        res = {}
+        for J in C.JOBS[1:]:
+            d = docs.get(J)
+            anc = (d or {}).get(key) or {}
+            arms = anc.get("arms") or {}
+            ok = bool(arms) and all((arms.get(a) or {}).get("present") and (arms.get(a) or {}).get("hi_label") == "HI_SATURATED"
+                                    and not (arms.get(a) or {}).get("harness_limited") and not (arms.get(a) or {}).get("client_error")
+                                    and not (arms.get(a) or {}).get("server_error_hi") and not (arms.get(a) or {}).get("x_correctness")
+                                    and (arms.get(a) or {}).get("achieved_by_seed") and all(v is not None for v in (arms[a]["achieved_by_seed"]))
+                                    and a not in (anc.get("gpu_contaminated_arms") or []) for a in C.ANCHOR_ARMS)
+            if ok:
+                res[J] = _g_of_arrays(arms)
+        return res
+    anchors = usable_anchors("anchor")
+    anchors_x = usable_anchors("anchor_x")
     for name in PAIRS:
         if name == "S":
             continue
         for mode in ("TP", "DP"):
-            for shape in ("A", "B"):
+            for shape in C.SHAPES:
+                sx = (shape == "X")                                # rev12: X reads its own Job effect / anchors / reference (U14)
+                st_of, anc_src = (status_x, anchors_x) if sx else (status, anchors)
                 pts, undefined, disc, pnotes, gaps, flags, anc_by_N, jobs_of = [], [], set(), [], {}, {}, {}, {}
                 for J in C.JOBS:
                     n_gpus = C.JOB_N[J]
@@ -1266,11 +1398,11 @@ def aggregate_jobs(docs, job_meta=None, _mut=None, not_joined=None):
                         if ent.get("measurement_gaps"):
                             gaps[cfg] = ent["measurement_gaps"]
                         if J != "J1":
-                            st = status[J]["status"]
+                            st = st_of[J]["status"]
                             flags[n_gpus] = st
-                            ju = J if _mut != "iii" else (sorted(anchors) or [J])[0]      # mutant iii: another Job's anchor
-                            if ju in anchors:
-                                anc_by_N[n_gpus] = anchors[ju]
+                            ju = J if _mut != "iii" else (sorted(anc_src) or [J])[0]      # mutant iii: another Job's anchor
+                            if ju in anc_src:
+                                anc_by_N[n_gpus] = anc_src[ju]
                     else:
                         rs = (ent or {"undefined_reasons": ["NOT_RUN"]})["undefined_reasons"]
                         pair = PAIRS[name]
@@ -1289,10 +1421,10 @@ def aggregate_jobs(docs, job_meta=None, _mut=None, not_joined=None):
                 # scope of the Job-effect check for this series (MGP-46): the anchor is shape A / G_sym; elsewhere a CLEAR is UNTESTED-scope
                 flags_series = {}
                 for n, st in flags.items():
-                    flags_series[n] = ("UNTESTED_SCOPE" if (st == "CLEAR" and not (name == PRIMARY and shape == C.ANCHOR_SHAPE)) else st)
+                    flags_series[n] = ("UNTESTED_SCOPE" if (st == "CLEAR" and not (name == PRIMARY and shape in C.ANCHOR_SHAPES)) else st)
                 if not g1_ok:
                     flags_series = {n: "UNTESTED" for n in flags_series}
-                t = trend(pts, anchors=anc_by_N, job_flags=flags_series, ref_g1=ref_g1, _mut=_mut)
+                t = trend(pts, anchors=anc_by_N, job_flags=flags_series, ref_g1=(ref_g1_x if sx else ref_g1), _mut=_mut)
                 if not g1_ok and len([p for p in pts]) < C.TREND_MIN_POINTS and t["label"] == "TREND_UNDEFINED":
                     t = dict(t, label=G1_UNDEFINED, raw_label="TREND_UNDEFINED", direction_citable=False)   # G(1) missing outranks "too few points"
                 t["undefined_count"] = len(undefined)
@@ -1305,7 +1437,12 @@ def aggregate_jobs(docs, job_meta=None, _mut=None, not_joined=None):
                 t["job_effect_by_N"] = {int(n): flags_series.get(n, "n/a") for n in sorted(jobs_of) if n != 1}
                 untested = sorted(f"{jobs_of[n]}" for n, st in flags_series.items() if st.startswith("UNTESTED"))
                 if untested:                                       # §15-3: the point stays in the trend, the disclosure is mandatory
-                    t["disclosures"] = sorted(set(t["disclosures"]) | {"JOB_EFFECT_UNTESTED(" + ",".join(untested) + ")"})
+                    tag = "JOB_EFFECT_UNTESTED(" + (",".join(f"{u}, X" for u in untested) if sx else ",".join(untested)) + ")"
+                    t["disclosures"] = sorted(set(t["disclosures"]) | {tag})
+                if sx:                                             # §19-2: the shape-A JOB_EFFECT(J_N) is disclosed beside every X trend
+                    t["disclosures"] = sorted(set(t["disclosures"]) | {"SHAPE_A_JOB_EFFECT(" + ",".join(
+                        f"{J}={status[J]['status']}" for J in C.JOBS[1:] if J in status) + ")"})
+                    t["job_effect_x_by_N"] = t.pop("job_effect_by_N")
                 if not g1_ok:
                     t["disclosures"] = sorted(set(t["disclosures"]) | {G1_UNDEFINED})
                 if nj:
@@ -1318,32 +1455,55 @@ def aggregate_jobs(docs, job_meta=None, _mut=None, not_joined=None):
         for t in out["trends"].values():
             t["disclosures"] = sorted(set(t["disclosures"]) | {"JOB_DRIVER_EXCEPTION(" + ",".join(dx) + ")"})
     out["JOB_DRIVER_EXCEPTION"] = dx
-    out["P_DP"] = p_dp_status(out["trends"], _mut=(_mut if _mut in ("same_shape_only", "raw_unconditional") else None))
+    # rev12 U12: P10 per group -- {A, B} together (rev11 rule), {X} alone.  out["P_DP"] = the A/B group (rev11 layout) + "groups".
+    groups = p_dp_groups(out["trends"], _mut=(_mut if _mut in ("same_shape_only", "raw_unconditional") else None))
     # ---- rev10 P11 (b) / H-2: a DP trend that is TREND_UNDEFINED BECAUSE OF TRUNCATED cells, with P-DP UNTESTED as the consequence, forbids
     # citing the TP direction labels even with the disclosure.  A non-truncation reason keeps the P9-c path (disclose, then cite).
-    # The reverse (TP cut by truncation) leaves the DP labels for the P-DP verdict only.
+    # The reverse (TP cut by truncation) leaves the DP labels for the P-DP verdict only.  rev12: applied WITHIN each P10 group.
     isund = lambda t: "TREND_UNDEFINED" in (t["label"], t.get("raw_label"))
     cut = lambda t: isund(t) and any(u.get("truncated") for u in t["undefined"])
+    shape_of = lambda k: k.rsplit("|", 1)[1]
     dp_trunc = [k for k, t in out["trends"].items() if k.startswith("G_sym|DP|") and cut(t)]
     tp_trunc = [k for k, t in out["trends"].items() if k.startswith("G_sym|TP|") and cut(t)]
     out["truncation"] = {"dp_trend_undefined_by_truncation": dp_trunc, "tp_trend_undefined_by_truncation": tp_trunc}
-    if dp_trunc and out["P_DP"]["status"] == "UNTESTED" and _mut != "trunc":
-        for k, t in out["trends"].items():
-            if "|TP|" in k and t["label"] not in ("TREND_UNDEFINED", G1_UNDEFINED):
-                t.update(label_before_truncation_rule=t["label"], label="TP_UNCONTROLLED_TRUNCATION", direction_citable=False)
-                t["disclosures"] = sorted(set(t["disclosures"]) | {"TP_UNCONTROLLED_TRUNCATION"})
-        out["P_DP"]["TP_UNCONTROLLED_TRUNCATION"] = True
-    if tp_trunc:
-        for k, t in out["trends"].items():
-            if "|DP|" in k:
-                t["used_for_p_dp_only"] = True
+    for g, gs in groups.items():
+        if any(p10_group_of(shape_of(k)) == g for k in dp_trunc) and gs["status"] == "UNTESTED" and _mut != "trunc":
+            for k, t in out["trends"].items():
+                if "|TP|" in k and p10_group_of(shape_of(k)) == g and t["label"] not in ("TREND_UNDEFINED", G1_UNDEFINED):
+                    t.update(label_before_truncation_rule=t["label"], label="TP_UNCONTROLLED_TRUNCATION", direction_citable=False)
+                    t["disclosures"] = sorted(set(t["disclosures"]) | {"TP_UNCONTROLLED_TRUNCATION"})
+            gs["TP_UNCONTROLLED_TRUNCATION"] = True
+        if any(p10_group_of(shape_of(k)) == g for k in tp_trunc):
+            for k, t in out["trends"].items():
+                if "|DP|" in k and p10_group_of(shape_of(k)) == g:
+                    t["used_for_p_dp_only"] = True
+    out["P_DP"] = dict(groups.get(p10_group_of(C.ANCHOR_SHAPE)) or p_dp_status({}), groups=groups)
     for k, t in out["trends"].items():
         if "|TP|" in k:
-            t["P_DP"] = out["P_DP"]["status"]
-            if out["P_DP"]["status"] == "UNTESTED":
+            g = p10_group_of(shape_of(k))
+            st = (groups.get(g) or {}).get("status", "NOT_IN_P10")        # a shape outside every P10 group: no P-DP statement at all
+            t["P_DP"], t["P_DP_group"] = st, g
+            if st == "UNTESTED":
                 t["disclosures"] = sorted(set(t["disclosures"]) | {"P-DP 미검정"})        # MGH-8 / P9-c: no TP citation without it
-            elif out["P_DP"]["status"] == "BROKEN":
+            elif st == "BROKEN":
                 t["disclosures"] = sorted(set(t["disclosures"]) | {"P-DP BROKEN: MGP-13 TP labels not citable"})
+                t["MGP13_not_citable"] = True                                       # per-trend marker of the group's MGP-13
+    # ---- rev12 §19-5: the four Jobs must carry the same log knobs (PDMUX_LOG_MIRROR / PDMUX_HEARTBEAT_S); a mismatch or a missing record
+    # (in a Job document built from a Job directory, i.e. with a `log_knobs` key) makes every trend label non-citable.
+    lk = {J: d.get("log_knobs") for J, d in docs.items() if d is not None and "log_knobs" in d}
+    out["log_knobs"] = lk
+    if lk:
+        vals = {json.dumps(v, sort_keys=True) for v in lk.values()}
+        mism = any(v is None for v in lk.values()) or len(vals) > 1
+        out["LOG_KNOB_MISMATCH"] = mism
+        notreg = sorted(J for J, v in lk.items() if v and v.get("log_mirror") != C.LOG_MIRROR_REGISTERED)
+        for t in out["trends"].values():
+            if mism:
+                t["direction_citable"] = False
+                t["disclosures"] = sorted(set(t["disclosures"]) | {"LOG_KNOB_MISMATCH"})
+            if notreg:
+                t["disclosures"] = sorted(set(t["disclosures"]) | {"LOG_MIRROR_NOT_REGISTERED(" + ",".join(notreg) + ")"})
+    out["floor_job_effect"] = floor_job_effects(docs)
     out["memory_rule_iii"] = {"status": "RETIRED_POST_HOC (user decision 2026-10-13; the M2g round-2 values had been seen)",
                               "configs_iii_would_have_made_undefined": {J: (docs[J].get("memory_rule_iii") or {}).get("configs_iii_would_have_made_undefined", [])
                                                                         for J in C.JOBS if J in docs},
@@ -1351,6 +1511,134 @@ def aggregate_jobs(docs, job_meta=None, _mut=None, not_joined=None):
                                                                  for J in C.JOBS if J in docs}}
     out["gpu_dev"] = (docs.get("J8") or {}).get("blocks", {}).get("gpu_dev")
     return out
+
+
+# =========================================================================== rev12 §19-4 floor (descriptive) / U6 clock (descriptive)
+def floor_points(floor_doc):
+    """[(L, floor_s)] of a FLOOR.json, ascending L; None when the block is missing or incomplete (fail-closed)."""
+    if not floor_doc or not floor_doc.get("complete"):
+        return None
+    pts = sorted((int(L), v.get("floor_s")) for L, v in (floor_doc.get("points") or {}).items())
+    return pts if pts and all(f is not None and f > 0 for _, f in pts) else None
+
+
+def floor_T(floor_doc, L, k, _mut=None):
+    """§19-4 R6-3: T = k * floor(L) from THE JOB'S OWN N=1 fused_sym floor block; log-log interpolation; L below the smallest point ->
+    floor(smallest); above the largest -> None (no extrapolation)."""
+    pts = floor_points(floor_doc)
+    if pts is None:
+        return None
+    L = float(L)
+    if L <= pts[0][0]:
+        return k * pts[0][1]
+    if L > pts[-1][0]:
+        return None
+    for (l0, f0), (l1, f1) in zip(pts, pts[1:]):
+        if l0 <= L <= l1:
+            w = (math.log(L) - math.log(l0)) / (math.log(l1) - math.log(l0))
+            return k * math.exp(math.log(f0) + w * (math.log(f1) - math.log(f0)))
+    return None
+
+
+def job_floor(docs, J, _mut=None):
+    """R10-2 (same Job): the floor a Job's requests are scored with is that Job's own N=1 fused_sym block.  `_mut` 'j1' (tests only) =
+    always J1's floor (the 'J1 floor로 J_N 채점' mutant)."""
+    return (docs.get("J1" if _mut == "j1" else J) or {}).get("floor")
+
+
+def floor_job_effects(docs):
+    """§19-4: FLOOR_JOB_EFFECT(J_N) = any length point of J_N's anchor fused_sym floor > 3 % from J1's.  Disclosure for SLO sentences only
+    (never a λ*_thr / G input)."""
+    out = {}
+    f1 = floor_points((docs.get("J1") or {}).get("floor"))
+    for J in C.JOBS[1:]:
+        d = docs.get(J)
+        if d is None:
+            continue
+        fN = floor_points(d.get("floor"))
+        if f1 is None or fN is None or [L for L, _ in f1] != [L for L, _ in fN]:
+            out[J] = {"status": "UNTESTED", "reason": "floor block missing / incomplete in J1 or " + J}
+            continue
+        rel = {L: b / a - 1.0 for (L, a), (_L, b) in zip(f1, fN)}
+        out[J] = {"status": "FIRED" if any(abs(v) > C.FLOOR_JOB_EFFECT_TOL for v in rel.values()) else "CLEAR",
+                  "rel_by_L": rel, "label": "FLOOR_JOB_EFFECT(" + J + ")"}
+    return out
+
+
+def _clk_epoch(ts):
+    ts = ts.strip().replace("/", "-")
+    fmt = "%Y-%m-%d %H:%M:%S.%f" if "." in ts else "%Y-%m-%d %H:%M:%S"
+    return _dt.datetime.strptime(ts, fmt).replace(tzinfo=_dt.timezone.utc).timestamp()
+
+
+def clock_by_cell(clk_csv, cells):
+    """U6 (descriptive, never a label input): job_entry.sh meta/clk.csv (nvidia-smi -lms 100: timestamp, clocks.sm, power.draw,
+    temperature, throttle reasons, index) aggregated per cell window (cell.json t_start_epoch..t_end_epoch) over the cell's GPUs:
+    median SM clock, median power, fraction of samples with a throttle bit other than GpuIdle.  Timestamps are read as UTC
+    (container clock; the assumption is written into the output)."""
+    p = Path(clk_csv) if clk_csv else None
+    if not p or not p.exists():
+        return {"status": "CLK_ABSENT", "cells": {}}
+    rows = []
+    with open(p, newline="") as f:
+        for i, row in enumerate(csv.reader(f)):
+            if i == 0 or len(row) < 6:
+                continue
+            try:
+                t = _clk_epoch(row[0])
+                mhz = float(row[1].split()[0])
+                w = float(row[2].split()[0])
+                thr = (int(row[4].strip(), 16) & ~0x1) != 0
+                rows.append((t, int(row[5].strip()), mhz, w, thr))
+            except (ValueError, IndexError):
+                continue
+    out = {"status": "OK", "tz_assumed": "UTC", "samples": len(rows), "cells": {}}
+    for c in cells:
+        m = c.get("meta") or {}
+        t0, t1 = m.get("t_start_epoch"), m.get("t_end_epoch")
+        if t0 is None or t1 is None:
+            continue
+        gpus = {int(x) for x in str(m.get("gpu_ids", "0")).split(",") if x.strip().isdigit()}
+        sel = [r_ for r_ in rows if t0 <= r_[0] <= t1 and r_[1] in gpus]
+        if not sel:
+            out["cells"][c["cell_id"]] = {"samples": 0}
+            continue
+        out["cells"][c["cell_id"]] = {"arm": m.get("arm"), "config": m.get("config"), "shape": m.get("shape"), "rung": m.get("rung"),
+                                      "samples": len(sel), "sm_clock_mhz_median": statistics.median(r_[2] for r_ in sel),
+                                      "power_w_median": statistics.median(r_[3] for r_ in sel),
+                                      "throttle_frac": sum(1 for r_ in sel if r_[4]) / len(sel)}
+    return out
+
+
+def kv_dtype_flags(job, cfg, arm, cell_meta, mamba_facts, reference):
+    """rev12 §19-3 / F-4: (kv_pool_drift reasons, dtype_unverified) of one M3 boot vs the M2g PASS run's same (Job, config, arm).
+    max_total_num_tokens relative difference > 0.1 % -> KV_POOL_DRIFT.  ssm_state size (the effective-dtype witness) different by more
+    than SSM_STATE_GB_TOL -> KV_POOL_DRIFT(ssm_state); no Mamba line in the boot log or no reference -> DTYPE_UNVERIFIED."""
+    ref = ((reference or {}).get("entries") or {}).get(f"{job}|{cfg}|{arm}")
+    drift, unverified = [], False
+    if ref is None:
+        return ["KV_REFERENCE_ABSENT"], True
+    mt, rt = (cell_meta or {}).get("max_total_num_tokens") or [], ref.get("max_total_num_tokens") or []
+    if mt and rt:
+        rel = max(abs(a / b - 1.0) for a, b in zip(sorted(mt), sorted(rt)))
+        if rel > C.KV_POOL_DRIFT_TOL or len(mt) != len(rt):
+            drift.append(f"max_total_num_tokens {mt} vs M2g {rt} (rel {rel:.4%})")
+    else:
+        drift.append("max_total_num_tokens unrecorded")
+    ss, rs = (mamba_facts or {}).get("ssm_state_gb") or [], ref.get("ssm_state_gb") or []
+    if not ss or not rs:
+        unverified = True
+    elif len(ss) != len(rs) or max(abs(a - b) for a, b in zip(sorted(ss), sorted(rs))) > C.SSM_STATE_GB_TOL:
+        drift.append(f"ssm_state_gb {ss} vs M2g {rs}")
+    return drift, unverified
+
+
+def load_reference(path=None):
+    p = Path(path) if path else HERE / C.M2G_SERVER_REFERENCE
+    try:
+        return json.loads(p.read_text())
+    except (OSError, ValueError):
+        return None
 
 
 def a_is_pdmux(arms):
@@ -1471,7 +1759,7 @@ def _syn_ref(g_ref=1.0, final_mult=1.0, **over):
     """J1 boot1 reference: fused_sym lambda* 1.0, agnostic lambda* g_ref; `final_mult` scales the extension-rung (final) lambda*."""
     arm = lambda lam: dict(present=True, boot1_lambda_star=lam, final_lambda_star=lam * final_mult, boot1_hi_label="HI_SATURATED",
                            harness_limited=False, client_error=False, boot1_harness_limited=False, boot1_client_error=False,
-                           boot1_achieved_by_seed=[lam] * 4)
+                           boot1_server_error_hi=False, boot1_achieved_by_seed=[lam] * 4)
     r = {"fused_sym": arm(1.0), "agnostic": arm(g_ref)}
     for a, kv in over.items():
         r[a].update(kv)
@@ -1683,7 +1971,7 @@ def _round_of(steps):
     return max(rs) if rs else 1
 
 
-def build_config_flags(root, cells, excluded=()):
+def build_config_flags(root, cells, excluded=(), reference=None, job=None):
     """Per config flags from the boot artifacts (F5, F11, F14).
 
     Scope (F11): a boot belongs to a (config, round, block) group -- block main / anchor / gpu_dev / numa / nsys -- taken from the
@@ -1692,7 +1980,9 @@ def build_config_flags(root, cells, excluded=()):
     `flags[cfg]` is the (round 1, block main) group -- the one the estimands read; every group is under `by_group`.
     memory_mismatch = G5(c) over the arms that were expected (not M2g-excluded); an expected arm without boot facts is listed in
     `memory_not_tested_arms` (NOT_TESTED, distinct from FAIL; the M2g table carries its own NOT_TESTED=MEMORY_MISMATCH row).
-    contam_unverified (NVML unavailable at the pre-boot check) is a disclosure, not an exclusion."""
+    contam_unverified (NVML unavailable at the pre-boot check) is a disclosure, not an exclusion.
+    rev12: `reference` (M2G_SERVER_REFERENCE.json) + `job` -> per group kv_pool_drift (list of reasons) / dtype_unverified, from each boot's
+    cell_meta.json and mamba_facts.json (kv_dtype_flags).  Without a job / reference every M3 boot is DTYPE_UNVERIFIED (fail-closed)."""
     root = Path(root)
     boots = {}
     spec_dir = root / "specs"
@@ -1714,7 +2004,7 @@ def build_config_flags(root, cells, excluded=()):
         bd = root / "boots" / bid
         g = groups.setdefault((b["config"], f"r{b['round']}/{b['block']}"),
                               {"contaminated": False, "contam_boots": [], "contam_arms": [], "contam_unverified": False, "unverified_boots": [],
-                               "arms": {}})
+                               "arms": {}, "kv_pool_drift": [], "dtype_unverified": False})
         cx = bd / "contam.json"
         if cx.exists() and json.loads(cx.read_text()).get("gpu_contaminated"):
             g["contaminated"] = True
@@ -1740,10 +2030,15 @@ def build_config_flags(root, cells, excluded=()):
             a["mamba"] = a["mamba"] + list(f.get("max_mamba_cache_size", []) or [])
             a["max_total"] = a["max_total"] + list(f.get("max_total_num_tokens", []) or [])
             a["eff_cap"] = a["eff_cap"] if a["eff_cap"] is not None else eff
+            if (bd / "precheck.json").exists() or (bd / "mamba_facts.json").exists():          # an M3 rev12 boot
+                mf = json.loads((bd / "mamba_facts.json").read_text()) if (bd / "mamba_facts.json").exists() else {}
+                dr, unv = kv_dtype_flags(job, b["config"], b["arm"], f, mf, reference)
+                g["kv_pool_drift"] += [f"{bid}: {x}" for x in dr]
+                g["dtype_unverified"] = g["dtype_unverified"] or unv
     flags = {}
     for (cfg, gname), g in sorted(groups.items()):
         arms = {a: v for a, v in g["arms"].items() if v["mamba"] or v["max_total"] or v["eff_cap"] is not None}
-        mem = memory_check(arms) if arms else {"memory_mismatch": False, "reasons": []}
+        mem = memory_check(arms, shapes=C.SHAPES) if arms else {"memory_mismatch": False, "reasons": []}     # rev12: M3 G5(c)(ii) incl. X (R-3)
         expected = [a for a in C.ARMS if f"{cfg}:{a}" not in set(excluded)]
         not_tested = [a for a in expected if a not in arms] if gname.endswith("/main") else []
         gf = {"memory_mismatch": mem["memory_mismatch"], "reasons": mem["reasons"],
@@ -1751,7 +2046,8 @@ def build_config_flags(root, cells, excluded=()):
               "rule_iii_would_have_flagged": bool(mem.get("rule_iii_would_have_flagged")),
               "memory_not_tested_arms": not_tested, "gpu_contaminated": g["contaminated"], "contam_boots": g["contam_boots"],
               "contam_arms": sorted(g["contam_arms"]),
-              "contam_unverified": g["contam_unverified"], "unverified_boots": g["unverified_boots"]}
+              "contam_unverified": g["contam_unverified"], "unverified_boots": g["unverified_boots"],
+              "kv_pool_drift": g["kv_pool_drift"], "dtype_unverified": g["dtype_unverified"]}
         fl = flags.setdefault(cfg, {"by_group": {}})
         fl["by_group"][gname] = gf
     for cfg, fl in flags.items():
@@ -1886,6 +2182,19 @@ def parse_jobs_args(kvs, _mut=None):
     return dirs, nj
 
 
+def job_dir_rev12_facts(root, job):
+    """floor (the Job's N=1 fused_sym block: J1 boot1, J_N anchor), log knobs (LOG_KNOBS.txt written by m3_job.sh), clock table."""
+    root = Path(root)
+    kind = "boot1" if job == "J1" else "anchor"
+    fl = root / "boots" / f"m3_N1_fused_sym_{kind}" / "FLOOR.json"
+    lk = root / "LOG_KNOBS.txt"
+    knobs = None
+    if lk.exists():
+        kv = dict(tok.split("=", 1) for tok in lk.read_text().split() if "=" in tok)
+        knobs = {"log_mirror": kv.get("log_mirror"), "heartbeat_s": kv.get("heartbeat_s")}
+    return {"floor": json.loads(fl.read_text()) if fl.exists() else None, "log_knobs": knobs}
+
+
 def label_job_dir(root, job=None, pass_table=None, _mut=None):
     """One Job directory -> aggregate() document (+ covariates).  pass_table: path or None."""
     cells = [load_cell(d) for d in find_cells(root)]
@@ -1893,9 +2202,13 @@ def label_job_dir(root, job=None, pass_table=None, _mut=None):
     ptc = pt.get("cells") if isinstance(pt, dict) and "cells" in pt else pt
     excl = {k for k, v in (ptc or {}).items() if isinstance(v, dict) and not v.get("included", True)}
     excl_arms = set(excl)
-    doc = aggregate(cells, ptc, build_config_flags(root, cells, excl), pt.get("configs") if isinstance(pt, dict) else None, job=job)
+    xc = Path(root) / "gates" / "XCHECK.json"
+    xcheck = json.loads(xc.read_text()) if xc.exists() else None
+    doc = aggregate(cells, ptc, build_config_flags(root, cells, excl, load_reference(), job), pt.get("configs") if isinstance(pt, dict) else None,
+                    job=job, xcheck=xcheck)
     doc["n_cells"] = len(cells)
     doc["covariates"] = job_covariates(root)
+    doc.update(job_dir_rev12_facts(root, job))
     drv = Path(root) / "LABELS.json"
     if drv.exists():
         try:

@@ -64,6 +64,12 @@ echo "kind=$KIND job=$JOB spec=$SPEC_WANT expected_gpus=$EXPECTED_GPUS hard_cap_
 # the g5a PASS record (taken on the SEALED tree, F6) is an optional slot written as ABSENT when the file is not there yet.
 MANDATORY_REG=(
   "$HERE/PREREG_MULTIGPU_2026-10-12.md"
+  "$HERE/$(K PREREG_REV12)"                                              # rev12 §19 (DRAFT r2 until the reseal names the adopted file)
+  "$HERE"/M2G_SERVER_REFERENCE.json "$HERE"/mg_m2g_reference.py          # rev12 F-4 / §19-3: M2g KV + mamba-state reference
+  "$ENG"/benchmarks/pdmux_eval/context_limit.py "$ENG"/tests/test_loadgen_outcome.py   # rev12 R-2 / R-3 (0eca947)
+  "$ENG"/scripts/multigpu/mg_x_pretokenize.py "$ENG"/scripts/multigpu/mg_xcheck.py   # rev12 R-8 / F-7 token file builder + U7 step
+  "$HERE"/X_TOKENS_BUILD_REPORT.json                                      # rev12 F-7: build record (file / lengths / builder sha256, tokenizers version)
+  "$ENG"/tests/test_mg_rev12.py                                           # rev12 harness tests + mutation tests
   "$HERE"/VERDICT_*.md                                                   # every verdict kept beside the PREREG (rules + harness audits)
   "$HERE"/mg_const.py "$HERE"/mg_label.py "$HERE"/mg_plan.py "$HERE"/mg_drive.py "$HERE"/mg_realized_mix.py "$HERE"/mg_substrate.py
   "$HERE"/m2g_job.sh "$HERE"/m3_job.sh "$HERE"/mg_job_common.sh
@@ -82,7 +88,7 @@ MANDATORY_REG=(
 )
 OPTIONAL_REG=("$HERE/G5A_PASS.json")
 {
-  echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md (rev11)"
+  echo "# pre-registration in force: PREREG_MULTIGPU_2026-10-12.md + $(K PREREG_REV12) (rev$(K PREREG_REV); unsealed until the rev12 reseal)"
   missing=0
   for f in "${MANDATORY_REG[@]}"; do
     if [ -f "$f" ]; then sha256sum "$f"; else echo "MISSING $f"; missing=$((missing + 1)); fi
@@ -94,7 +100,7 @@ OPTIONAL_REG=("$HERE/G5A_PASS.json")
   echo "# mandatory_missing=$missing"
 } > "$OUT/REGISTRATION_SHA256.txt" 2>&1
 grep -q '^# mandatory_missing=0$' "$OUT/REGISTRATION_SHA256.txt" || fail "ABORT_REG a registered file is missing: $(grep '^MISSING' "$OUT/REGISTRATION_SHA256.txt" | head -3 | tr '\n' ' ')" 16
-[ "$(grep -c '^[0-9a-f]\{64\} ' "$OUT/REGISTRATION_SHA256.txt")" -ge 32 ] || fail "ABORT_REG fewer than 32 digests recorded" 16
+[ "$(grep -c '^[0-9a-f]\{64\} ' "$OUT/REGISTRATION_SHA256.txt")" -ge 40 ] || fail "ABORT_REG fewer than 40 digests recorded" 16
 
 # ---- ABORT_COMM_ENV (§1): JIT all-reduce must be unset; the other comm variables are RECORDED as inherited, then unset
 if [ -n "${SGLANG_USE_JIT_ALL_REDUCE:-}" ] && [ "${SGLANG_USE_JIT_ALL_REDUCE}" != 0 ]; then

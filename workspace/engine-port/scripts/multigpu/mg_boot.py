@@ -10,7 +10,10 @@ SPEC (JSON, --spec FILE)
   boot_id config mode N tp dp gpu_ids arm kind block   identity (cell.json copies them)
   steps: [ {type:"warmup", shape}                       discarded warm-up phase (phase separation)
          , {type:"cell", shape, rung:"HI"|"LO"|"G3B"|..., seed, offered, n_req, ext, round, block, gpu?}
-         , {type:"cmd", name, argv:[...]} ]              argv may contain {ENDPOINT} {PORT} {OUT} {BOOT}
+         , {type:"floor", lengths, repeats, max_new}     rev12 §19-4 floor block -> <boot>/FLOOR.json (+ .sha256)
+         , {type:"cmd", name, argv:[...]} ]              argv may contain {ENDPOINT} {PORT} {OUT} {BOOT} {XTOKENS}
+  mamba_ssm_dtype   rev12 §19-3 (M3 boots, required): value of --mamba-ssm-dtype resolved ONCE per Job (resolve_mamba_ssm_dtype)
+  x_tokens_path / x_tokens_sha256   rev12 §19-2: the registered shape-X token file (cells / warm-up / floor / xcheck of X)
   deadline_epoch    Job hard-cap deadline (steps not started by then are NOT_STARTED; a running cell is killed
                     and recorded TRUNCATED)
   extra_env         env set for this boot only (G0(ii) forbidden-env boots)
@@ -23,6 +26,12 @@ the LAST step, before teardown), alive_after_<cmd step name>.json right after ev
 own step), cmd_<name>.window.json for every cmd step ({t0_mono,t1_mono} on CLOCK_MONOTONIC = the telemetry clock,
 F3), contam_pre.json / boot.json contam_status = CONTAM_UNVERIFIED when NVML is unavailable (F5: the check did not run; not 'clean').
 Exit: 0 ok · 1 boot failed · 2 spec error · 3 ABORT_COMM_ENV · 5 GPU_CONTAMINATED (pre-boot) · 6 nothing ran (deadline)
+      · 7 ABORT_CONTEXT_TOO_SHORT · 8 ABORT_DATASET · 9 ABORT_CONFIG_DRIFT   (rev12: CPU pre-checks, BEFORE any GPU work; fatal for the Job)
+rev12 pre-checks (before the contamination check / server start, also in --dry-run): every request this boot will send -- warm-up,
+cells, floor block, xcheck -- is written as a trace under <boot>/precheck/ and passed to pdmux_eval.context_limit.fit_problems(
+CONTEXT_LENGTH, traces) (the runner's 0eca947 predicate: input < ctx-6, input+output <= ctx-2); the X token file sha256; the PD-mux
+config's split_forward_token_budget (65536).  After health: server_info must echo the registered knobs (ABORT_CONFIG_DRIFT), and the
+`Mamba Cache is allocated` lines are recorded (mamba_facts.json: the effective-dtype witness of F-4).
 `--dry-run` (or PDMUX_MG_DRYRUN=1) writes server_args.txt / env.json / steps.json and returns -- no GPU, no network.
 """
 
@@ -37,6 +46,7 @@ import re
 import shutil
 import signal
 import socket
+import statistics
 import subprocess
 import sys
 import time
@@ -47,8 +57,15 @@ HERE = Path(os.path.abspath(__file__)).parent
 ENGINE = HERE.parents[1]
 sys.path.insert(0, str(ENGINE / "results" / "multigpu"))
 sys.path.insert(0, str(ENGINE / "scripts" / "r2_eval"))
+sys.path.insert(0, str(ENGINE / "benchmarks"))
+sys.path.insert(0, str(HERE))
 import mg_const as C  # noqa: E402
 import multigpu_cell_meta as CM  # noqa: E402
+import mg_x_pretokenize as XT  # noqa: E402
+from pdmux_eval import context_limit as CL  # noqa: E402
+
+M3_KINDS = ("boot1", "boot1ext", "boot2", "anchor", "gpudev")       # rev12 knobs (§19-3) apply to M3 boots; M2g boots are sealed (not re-run)
+RC_CONTEXT, RC_DATASET, RC_CONFIG_DRIFT = 7, 8, 9
 
 # env names this launcher unsets for every boot (N3 precedent n3_capacity.sh: knobs of other campaigns)
 UNSET_ALWAYS = ("PDMUX_SLO_SCHED", "PDMUX_SLO_MODE", "PDMUX_LA_COORD", "PDMUX_STICKY_PARTITION",
@@ -64,6 +81,26 @@ def effective_cap(tp, dp):
     return C.CAP_PER_GPU * tp if tp > 1 else C.CAP_PER_GPU
 
 
+def resolve_mamba_ssm_dtype(config_json_path):
+    """rev12 §19-3 R-4: the fixed revision's config.json key `mamba_ssm_dtype` (top level, else text_config) if present, else
+    "float32" (engine default = M2g effective value).  `torch_dtype` is NEVER consulted.  Returns (value, source)."""
+    cfg = json.loads(Path(config_json_path).read_text())
+    for where, d in (("config.mamba_ssm_dtype", cfg), ("config.text_config.mamba_ssm_dtype", cfg.get("text_config") or {})):
+        v = d.get("mamba_ssm_dtype") if isinstance(d, dict) else None
+        if v:
+            return str(v), where
+    return C.MAMBA_SSM_DTYPE_DEFAULT, "default (key absent; torch_dtype not consulted)"
+
+
+def m3_knob_args(spec):
+    """rev12 §19-3: --max-prefill-tokens 16384, --max-mamba-cache-size = effective cap, --mamba-ssm-dtype (resolved once per Job)."""
+    if not spec.get("mamba_ssm_dtype"):
+        raise ValueError("M3 boot spec without mamba_ssm_dtype (rev12 §19-3: resolved once per Job, never defaulted per boot)")
+    return ["--max-prefill-tokens", str(C.MAX_PREFILL_TOKENS),
+            "--max-mamba-cache-size", str(effective_cap(int(spec["tp"]), int(spec["dp"]))),
+            "--mamba-ssm-dtype", str(spec["mamba_ssm_dtype"])]
+
+
 def build_server_args(spec, port, config_abs=None):
     arm, tp, dp = spec["arm"], int(spec["tp"]), int(spec["dp"])
     if arm not in C.ARMS:
@@ -75,9 +112,11 @@ def build_server_args(spec, port, config_abs=None):
          "--disable-radix-cache",
          "--mem-fraction-static", str(C.MEM_FRACTION),
          "--max-running-requests", str(effective_cap(tp, dp)),
-         "--context-length", str(C.CONTEXT_LENGTH),
-         "--random-seed", str(C.SERVER_SEED),
-         "--host", "127.0.0.1", "--port", str(port)]
+         "--context-length", str(C.CONTEXT_LENGTH)]
+    if spec.get("kind") in M3_KINDS:
+        a += m3_knob_args(spec)
+    a += ["--random-seed", str(C.SERVER_SEED),
+          "--host", "127.0.0.1", "--port", str(port)]
     if arm in C.PDMUX_ARMS:
         cfg = spec.get("config_rel") or (C.AGNOSTIC_CONFIG_REL if arm == "agnostic" else C.D44_CONFIG_REL)
         a += ["--enable-pdmux", "--pdmux-config-path", config_abs or cfg]
@@ -125,6 +164,182 @@ def gen_trace(path, shape, offered, n_req, seed, tag="mg"):
                                  "prefix_tokens": inp, "phase": tag}, sort_keys=True))
     Path(path).write_text("\n".join(lines) + "\n")
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+# ---------------------------------------------------------------------------- rev12 shape X traces (§19-2 R-8)
+def x_perm(header, seed, check=True):
+    """pi_s: retained doc_ids ascending, shuffled by random.Random(X_PERM_SEED_BASE + s).  For a registered seed the permutation's
+    sha256 (int64 LE) must equal mg_const.X_PERM_SHA256 (fail-closed: a different Python `random` would change every X sample)."""
+    from array import array
+    ids = sorted(int(d[0]) for d in header["docs"])
+    random.Random(C.X_PERM_SEED_BASE + int(seed)).shuffle(ids)
+    want = C.X_PERM_SHA256.get(int(seed))
+    if check and want is not None and header.get("lengths_sha256") == C.X_LENGTHS_SHA256:
+        a = array("q", ids)
+        if sys.byteorder != "little":
+            a.byteswap()
+        got = hashlib.sha256(a.tobytes()).hexdigest()
+        if got != want:
+            raise ValueError(f"X permutation seed {seed}: sha {got[:16]} != registered {want[:16]}")
+    return ids
+
+
+def gen_trace_x(path, offered, n_req, seed, header, tag="mg"):
+    """Shape X: Poisson arrivals (random.Random(seed), as gen_trace) over the FIRST n_req documents of pi_s; each request carries
+    doc_id and that document's (input, output) lengths; mg_loadgen sends the document's real tokens (input_ids) inside replay()."""
+    perm = x_perm(header, seed)
+    if n_req > len(perm):
+        raise ValueError(f"X cell n_req {n_req} > retained {len(perm)} (no sampling with replacement)")
+    idx = XT.doc_index(header)
+    rng = random.Random(seed)
+    now, lines = 0.0, [json.dumps({"record": "workload", "workload_id": f"{tag}-X", "seed": seed, "offered": offered,
+                                   "n_req": n_req, "shape": "X", "x_lengths_sha256": header.get("lengths_sha256")}, sort_keys=True)]
+    for i in range(n_req):
+        now += rng.expovariate(offered)
+        d = perm[i]
+        _off, inp, out = idx[d]
+        lines.append(json.dumps({"record": "request", "request_id": f"{tag}-X-{seed}-{i:06d}", "arrival_s": now, "doc_id": d,
+                                 "input_tokens": inp, "output_tokens": out, "prefix_tokens": inp, "phase": tag}, sort_keys=True))
+    Path(path).write_text("\n".join(lines) + "\n")
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def gen_floor_trace(path, lengths, repeats, max_new, tag="floor"):
+    """§19-4: L x repeats single requests (sent one at a time by mg_loadgen --sequential), prompt = the floor document's first L tokens."""
+    lines = [json.dumps({"record": "workload", "workload_id": tag, "lengths": list(lengths), "repeats": repeats, "max_new": max_new},
+                        sort_keys=True)]
+    k = 0
+    for L in lengths:
+        for j in range(repeats):
+            lines.append(json.dumps({"record": "request", "request_id": f"{tag}-{int(L):05d}-{j:02d}", "arrival_s": float(k),
+                                     "floor_len": int(L), "input_tokens": int(L), "output_tokens": int(max_new), "prefix_tokens": int(L),
+                                     "phase": tag}, sort_keys=True))
+            k += 1
+    Path(path).write_text("\n".join(lines) + "\n")
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def gen_xcheck_trace(path, header):
+    """The U7 xcheck requests as a trace (fit pre-check only; mg_xcheck.py sends them)."""
+    import mg_xcheck as XC
+    idx = XT.doc_index(header)
+    lines = [json.dumps({"record": "request", "request_id": f"xcheck-{d}", "arrival_s": 0.0, "doc_id": d, "input_tokens": idx[d][1],
+                         "output_tokens": C.XC_MAX_NEW, "phase": "xcheck"}, sort_keys=True) for d in XC.select_docs(header)]
+    Path(path).write_text("\n".join(lines) + "\n")
+
+
+def needs_x_tokens(spec):
+    for st in spec.get("steps", []):
+        if st["type"] in ("cell", "warmup") and st.get("shape") == "X":
+            return True
+        if st["type"] == "floor" or (st["type"] == "cmd" and "{XTOKENS}" in " ".join(st.get("argv", []))):
+            return True
+    return False
+
+
+def load_x_header(spec):
+    """(header, problem).  The token file must exist and its sha256 must equal spec x_tokens_sha256 (rev12 ABORT_DATASET)."""
+    path, want = spec.get("x_tokens_path"), spec.get("x_tokens_sha256")
+    if not path or not Path(path).is_file():
+        return None, f"X token file absent ({path})"
+    got = XT.sha256_file(path)
+    if not want or got != want:
+        return None, f"X token file sha256 {got[:16]} != registered {str(want)[:16]}"
+    try:
+        h = XT.read_header(path)
+    except ValueError as e:
+        return None, repr(e)
+    if h.get("stats", {}).get("max_input_plus_output", 0) > C.CONTEXT_LENGTH - CL.TOTAL_SLACK:
+        return None, f"X max input+output {h['stats']['max_input_plus_output']} > ctx-{CL.TOTAL_SLACK}"
+    return h, None
+
+
+def precheck_traces(spec, boot_dir, header):
+    """Write every request of this boot (warm-up, cells, floor, xcheck) as traces under <boot>/precheck/; returns the paths."""
+    d = Path(boot_dir) / "precheck"
+    d.mkdir(parents=True, exist_ok=True)
+    n_gpus = max(int(spec["tp"]), int(spec["dp"]))
+    out, shapes = [], set()
+    for i, st in enumerate(spec.get("steps", [])):
+        p = d / f"step{i:03d}.jsonl"
+        if st["type"] == "cell":
+            shapes.add(st["shape"])
+            if st["shape"] == "X":
+                gen_trace_x(p, float(st["offered"]), int(st["n_req"]), int(st["seed"]), header)
+            else:
+                gen_trace(p, st["shape"], float(st["offered"]), int(st["n_req"]), int(st["seed"]))
+        elif st["type"] == "warmup":
+            shapes.add(st["shape"])
+            continue
+        elif st["type"] == "floor":
+            gen_floor_trace(p, st["lengths"], st["repeats"], st["max_new"])
+        elif st["type"] == "cmd" and "{XTOKENS}" in " ".join(st.get("argv", [])):
+            gen_xcheck_trace(p, header)
+        else:
+            continue
+        out.append(p)
+    for sh in sorted(shapes):                                       # warm-up traces exactly as run_warmup generates them
+        p = d / f"warmup_{sh}.jsonl"
+        _warmup_trace(p, sh, n_gpus, header)
+        out.append(p)
+    return out
+
+
+def config_span_budget(config_abs):
+    m = re.search(r"^split_forward_token_budget:\s*(\d+)\s*$", Path(config_abs).read_text(), re.M)
+    return int(m.group(1)) if m else None
+
+
+def rev12_prechecks(spec, boot_dir, cfg_abs, dry):
+    """(rc, record).  rc 0 = pass.  CPU only, before any GPU work."""
+    rec = {"context_length": C.CONTEXT_LENGTH}
+    header = None
+    if needs_x_tokens(spec):
+        header, prob = load_x_header(spec)
+        rec["x_tokens"] = {"path": spec.get("x_tokens_path"), "sha256": spec.get("x_tokens_sha256"), "problem": prob}
+        if prob:
+            if dry and not (spec.get("x_tokens_path") and Path(spec["x_tokens_path"]).is_file()):
+                rec["x_tokens"]["dryrun_note"] = "X token file absent in a dry run: fit pre-check of X/floor/xcheck NOT done"
+            else:
+                rec["abort"] = f"ABORT_DATASET {prob}"
+                return RC_DATASET, rec
+    if spec["arm"] in C.PDMUX_ARMS:
+        bud = config_span_budget(cfg_abs)
+        rec["config_sha256"] = hashlib.sha256(Path(cfg_abs).read_bytes()).hexdigest()
+        rec["split_forward_token_budget"] = bud
+        if bud != C.SPLIT_FORWARD_TOKEN_BUDGET:
+            rec["abort"] = f"ABORT_CONFIG_DRIFT split_forward_token_budget {bud} != {C.SPLIT_FORWARD_TOKEN_BUDGET} ({cfg_abs})"
+            return RC_CONFIG_DRIFT, rec
+    if header is None and needs_x_tokens(spec):
+        steps = [st for st in spec.get("steps", []) if not (st.get("shape") == "X" or st["type"] == "floor"
+                                                           or (st["type"] == "cmd" and "{XTOKENS}" in " ".join(st.get("argv", []))))]
+        traces = precheck_traces(dict(spec, steps=steps), boot_dir, None)
+    else:
+        traces = precheck_traces(spec, boot_dir, header)
+    if traces or spec.get("steps"):
+        problems = CL.fit_problems(C.CONTEXT_LENGTH, traces) if traces else []
+        rec["fit_traces"] = len(traces)
+        rec["fit_problems"] = problems
+        if problems:
+            rec["abort"] = "ABORT_CONTEXT_TOO_SHORT " + "; ".join(problems)[:600]
+            return RC_CONTEXT, rec
+    return 0, rec
+
+
+def check_server_info_knobs(spec, server_info_path):
+    """§19-3: the server's own record of the registered knobs (an ARGUMENT echo, not the effective dtype -- F-4).
+    Returns (drift list, unverified flag)."""
+    try:
+        si = json.loads(Path(server_info_path).read_text())
+    except (OSError, ValueError):
+        return [], True
+    if not isinstance(si, dict) or "error" in si:
+        return [], True
+    want = {"context_length": C.CONTEXT_LENGTH, "max_prefill_tokens": C.MAX_PREFILL_TOKENS,
+            "max_mamba_cache_size": effective_cap(int(spec["tp"]), int(spec["dp"])), "mamba_ssm_dtype": spec.get("mamba_ssm_dtype")}
+    drift = [f"{k}: server {si.get(k)!r} != registered {v!r}" for k, v in want.items() if k in si and si.get(k) != v]
+    missing = [k for k in want if k not in si]
+    return drift, bool(missing)
 
 
 def piecewise_record(log_text):
@@ -291,7 +506,14 @@ def run_boot(spec, dry=False):
     port = 0 if dry else (int(spec["port"]) if spec.get("port") else pick_port())      # concurrent_group boots get preassigned ports
     cfg_rel = spec.get("config_rel") or (C.AGNOSTIC_CONFIG_REL if spec["arm"] == "agnostic" else C.D44_CONFIG_REL)
     cfg_abs = str(ENGINE / cfg_rel)
-    sargs = build_server_args(spec, port or 0, cfg_abs if spec["arm"] in C.PDMUX_ARMS else None)
+    try:
+        sargs = build_server_args(spec, port or 0, cfg_abs if spec["arm"] in C.PDMUX_ARMS else None)
+    except ValueError as e:
+        print(f"spec error: {e}", file=sys.stderr)
+        boot["status"] = "SPEC_ERROR"
+        boot["error"] = repr(e)
+        jdump(boot_dir / "boot.json", boot)
+        return 2
     # server_args.txt is the provenance record (port normalised so arms/boots diff cleanly; the real port is in boot.json)
     rec_args = [("<PORT>" if (i > 0 and sargs[i - 1] == "--port") else x) for i, x in enumerate(sargs)]
     (boot_dir / "server_args.txt").write_text("\n".join(rec_args) + "\n")
@@ -318,6 +540,16 @@ def run_boot(spec, dry=False):
         boot["status"] = "ABORT_COMM_ENV"
         jdump(boot_dir / "boot.json", boot)
         return 3
+    # ---- rev12 CPU pre-checks (context fit of every request, X token file, span budget) -- before any GPU work, dry run included
+    if spec.get("kind") in M3_KINDS:
+        prc, pre = rev12_prechecks(spec, boot_dir, cfg_abs, dry or os.environ.get("PDMUX_MG_DRYRUN") == "1")
+        jdump(boot_dir / "precheck.json", pre)
+        boot["precheck"] = {k: v for k, v in pre.items() if k != "fit_problems"}
+        if prc:
+            boot["status"] = pre["abort"].split()[0]
+            boot["abort"] = pre["abort"]
+            jdump(boot_dir / "boot.json", boot)
+            return prc
     if dry or os.environ.get("PDMUX_MG_DRYRUN") == "1":
         boot["status"] = "DRYRUN"
         jdump(boot_dir / "boot.json", boot)
@@ -394,6 +626,16 @@ def run_boot(spec, dry=False):
         CM.main(["server-facts", "--log", str(log_path), "--server-info", str(boot_dir / "server_info.json"),
                  "--out", str(boot_dir / "cell_meta.json"), "--tp", str(tp), "--dp", str(dp),
                  "--max-running-requested", str(effective_cap(tp, dp)), "--gpu-ids", gpu_ids])
+        if spec.get("kind") in M3_KINDS:
+            import mg_m2g_reference as MR
+            jdump(boot_dir / "mamba_facts.json", MR.mamba_facts(log_path.read_text(errors="replace")))     # F-4 effective-dtype witness
+            drift, unverified = check_server_info_knobs(spec, boot_dir / "server_info.json")
+            boot["knobs_server_info"] = {"drift": drift, "unverified": unverified, "mamba_ssm_dtype_arg": spec.get("mamba_ssm_dtype")}
+            if drift:
+                boot["status"] = "ABORT_CONFIG_DRIFT"
+                boot["abort"] = "ABORT_CONFIG_DRIFT " + "; ".join(drift)
+                rc = RC_CONFIG_DRIFT
+                return rc
         log_text = log_path.read_text(errors="replace")
         pw, cap_lines = piecewise_record(log_text)
         jdump(boot_dir / "piecewise.json", pw)
@@ -439,8 +681,10 @@ def run_boot(spec, dry=False):
                     run_warmup(spec, {"shape": st["shape"]}, boot_dir, port, n_gpus, deadline)
                     warmed.add(st["shape"])
                 steps_done.append({"step": st, "status": run_cell(spec, st, boot_dir, out_root, port, server.pid, deadline)})
+            elif st["type"] == "floor":
+                steps_done.append({"step": st, "status": run_floor(spec, st, boot_dir, port, deadline)})
             elif st["type"] == "cmd":
-                steps_done.append({"step": st, "status": run_cmd(st, boot_dir, out_root, port, deadline)})
+                steps_done.append({"step": st, "status": run_cmd(st, boot_dir, out_root, port, deadline, spec)})
                 write_alive_step(boot_dir, spec["boot_id"], server, port, spec.get("steps", []), steps_done)   # right after THIS step
             else:
                 steps_done.append({"step": st, "status": "UNKNOWN_STEP_TYPE"})
@@ -469,14 +713,26 @@ def run_boot(spec, dry=False):
         jdump(boot_dir / "boot.json", boot)
 
 
+def _warmup_trace(path, shape, n_gpus, header):
+    n = min(64, C.WARMUP_REQS_PER_GPU * n_gpus)
+    if shape == "X":
+        return gen_trace_x(path, 4.0, n, 7, header, tag="warm")          # seed 7: not a registered seed (no permutation sha)
+    return gen_trace(path, shape, 4.0, n, 7, tag="warm")                 # 4 req/s: spaced, far below capacity
+
+
+def _x_args(spec):
+    return ["--x-tokens", str(spec["x_tokens_path"]), "--x-tokens-sha256", str(spec.get("x_tokens_sha256") or "")] \
+        if spec.get("x_tokens_path") else []
+
+
 def run_warmup(spec, st, boot_dir, port, n_gpus, deadline):
     shape = st["shape"]
-    n = min(64, C.WARMUP_REQS_PER_GPU * n_gpus)
     wd = boot_dir / f"warmup_{shape}"
     wd.mkdir(exist_ok=True)
-    gen_trace(wd / "trace.jsonl", shape, 4.0, n, 7, tag="warm")        # 4 req/s: spaced, far below capacity
+    header = XT.read_header(spec["x_tokens_path"]) if shape == "X" else None
+    _warmup_trace(wd / "trace.jsonl", shape, n_gpus, header)
     cmd = [sys.executable, str(HERE / "mg_loadgen.py"), "--endpoint", f"http://127.0.0.1:{port}/generate",
-           "--trace", str(wd / "trace.jsonl"), "--cell-dir", str(wd)]
+           "--trace", str(wd / "trace.jsonl"), "--cell-dir", str(wd)] + (_x_args(spec) if shape == "X" else [])
     tmo = 900 if not deadline else max(1.0, deadline - time.time())
     p = subprocess.run(cmd, timeout=tmo, capture_output=True, text=True, check=False)
     (wd / "loadgen.log").write_text(p.stdout + p.stderr)
@@ -487,7 +743,11 @@ def run_cell(spec, st, boot_dir, out_root, port, server_pid, deadline):
     cid = f"{spec['boot_id']}__{st['shape']}_{st['rung']}{'x' if st.get('ext') else ''}_s{st['seed']}"
     cd = out_root / "cells" / cid
     cd.mkdir(parents=True, exist_ok=True)
-    thash = gen_trace(cd / "trace.tmp.jsonl", st["shape"], float(st["offered"]), int(st["n_req"]), int(st["seed"]))
+    if st["shape"] == "X":
+        thash = gen_trace_x(cd / "trace.tmp.jsonl", float(st["offered"]), int(st["n_req"]), int(st["seed"]),
+                            XT.read_header(spec["x_tokens_path"]))
+    else:
+        thash = gen_trace(cd / "trace.tmp.jsonl", st["shape"], float(st["offered"]), int(st["n_req"]), int(st["seed"]))
     (cd / "trace.sha256").write_text(thash + "\n")                     # the bytes are regenerable; the hash is the record
     meta = {"cell_id": cid, "boot_id": spec["boot_id"], "boot_dir": f"boots/{spec['boot_id']}",
             "config": spec["config"], "mode": spec["mode"], "N": spec["N"], "arm": spec["arm"], "tp": spec["tp"],
@@ -499,7 +759,7 @@ def run_cell(spec, st, boot_dir, out_root, port, server_pid, deadline):
                                 "--out", str(cd / "proc_samples.csv")], start_new_session=True)
     (cd / "cpu_stat_before.txt").write_text(read_cpu_stat())
     cmd = [sys.executable, str(HERE / "mg_loadgen.py"), "--endpoint", f"http://127.0.0.1:{port}/generate",
-           "--trace", str(cd / "trace.tmp.jsonl"), "--cell-dir", str(cd)]
+           "--trace", str(cd / "trace.tmp.jsonl"), "--cell-dir", str(cd)] + (_x_args(spec) if st["shape"] == "X" else [])
     status = "OK"
     try:
         tmo = None if not deadline else max(1.0, deadline - time.time())
@@ -541,9 +801,50 @@ def post_cell_etime(spec, st, boot_dir, cd):
     jdump(cd / "etime.json", res)
 
 
-def run_cmd(st, boot_dir, out_root, port, deadline):
+def floor_summary(reqs, lengths, repeats):
+    """FLOOR.json body: per length the median TTFT (s) of the uncontended requests.  Fail-closed: a length with any error request or
+    fewer than `repeats` successes has floor_s None (never a median over a partial set)."""
+    per = {}
+    for L in lengths:
+        rs = [r for r in reqs if int(r.get("input_tokens", -1)) == int(L)]
+        ok = [r for r in rs if not r.get("error") and r.get("ttft_ms") is not None]
+        e_srv = sum(1 for r in rs if r.get("error") and r.get("error_side") == "server")
+        complete = len(ok) == int(repeats) and len(rs) == int(repeats)
+        per[str(int(L))] = {"n": len(rs), "n_ok": len(ok), "server_errors": e_srv, "client_errors": len(rs) - len(ok) - e_srv,
+                            "floor_s": (statistics.median(float(r["ttft_ms"]) for r in ok) / 1000.0) if complete else None,
+                            "complete": complete}
+    return {"schema": "mg_floor/v1", "lengths": [int(x) for x in lengths], "repeats": int(repeats), "points": per,
+            "complete": all(v["complete"] for v in per.values())}
+
+
+def run_floor(spec, st, boot_dir, port, deadline):
+    """rev12 §19-4: the floor block, sent through mg_loadgen (-> trace_loadgen.replay / StreamState, one request at a time)."""
+    fd = Path(boot_dir) / "floor"
+    fd.mkdir(exist_ok=True)
+    gen_floor_trace(fd / "trace.jsonl", st["lengths"], st["repeats"], st["max_new"])
+    cmd = [sys.executable, str(HERE / "mg_loadgen.py"), "--endpoint", f"http://127.0.0.1:{port}/generate",
+           "--trace", str(fd / "trace.jsonl"), "--cell-dir", str(fd), "--sequential"] + _x_args(spec)
+    tmo = None if not deadline else max(1.0, deadline - time.time())
+    try:
+        p = subprocess.run(cmd, timeout=tmo, capture_output=True, text=True, check=False)
+        (fd / "loadgen.log").write_text(p.stdout + p.stderr)
+        rc = p.returncode
+    except subprocess.TimeoutExpired:
+        rc = -9
+    reqs = []
+    if (fd / "requests.jsonl").exists():
+        reqs = [json.loads(x) for x in (fd / "requests.jsonl").read_text().splitlines() if x.strip()]
+    doc = dict(floor_summary(reqs, st["lengths"], st["repeats"]), boot_id=spec["boot_id"], config=spec["config"], arm=spec["arm"],
+               block=spec.get("block", "main"), loadgen_rc=rc, max_new=int(st["max_new"]), floor_doc_id=C.FLOOR_DOC_ID)
+    raw = (json.dumps(doc, indent=1, sort_keys=True) + "\n").encode()
+    (Path(boot_dir) / "FLOOR.json").write_bytes(raw)
+    (Path(boot_dir) / "FLOOR.json.sha256").write_text(hashlib.sha256(raw).hexdigest() + "\n")
+    return "OK" if rc == 0 and doc["complete"] else f"FLOOR_INCOMPLETE_RC_{rc}"
+
+
+def run_cmd(st, boot_dir, out_root, port, deadline, spec=None):
     subs = {"{ENDPOINT}": f"http://127.0.0.1:{port}", "{PORT}": str(port), "{OUT}": str(out_root),
-            "{BOOT}": str(boot_dir)}
+            "{BOOT}": str(boot_dir), "{XTOKENS}": str((spec or {}).get("x_tokens_path") or "")}
     argv = []
     for x in st["argv"]:
         for k, v in subs.items():

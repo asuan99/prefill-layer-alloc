@@ -3,7 +3,10 @@
 #   PDMUX_VESSL_SPEC=<Job spec> launch.sh --campaign multigpu --target workspace/engine-port/results/multigpu/m3_job.sh \
 #       --env PDMUX_MG_JOB=J4 --env PDMUX_M2G_PASS_SHA256=<sha256 of the committed M2G_PASS_TABLE_J4.json> \
 #       --env PDMUX_M2G_PASS_SHA256_J2=<sha256 of the committed M2G_PASS_TABLE_J2.json>      (J4/J8 only: G0(ii) result for the TP axis)
-#   Jobs: J1 resourcespec-a100x2 (GPU 0 only, N=1) · J2 x2 · J4 x4 · J8 x8.  Hard cap: J1 10 h, J2/J4/J8 14 h (mg_const.HARD_CAP_S["m3"]).
+#       --env PDMUX_HEARTBEAT_S=0                                                              (rev12 §19-5: else ABORT_LOG_KNOB)
+#   Jobs: J1 resourcespec-a100x2 (GPU 0 only, N=1) · J2 x2 · J4 x4 · J8 x8.  Hard cap (rev12 U3): J1 14 h, J2/J4/J8 16 h (mg_const.HARD_CAP_S["m3"]).
+#   rev12 prerequisites on the cluster volume: $PDMUX_DATA/datasets/arxsum_x/arxsum_x_tokens_v1.bin (mg_const.X_TOKENS_SHA256); committed
+#   results/multigpu/PREFLIGHT_PASS.json(+.sha256) from the preflight Job on the final POST (§19-6).
 #   (PDMUX_M2G_PASS_TABLE / PDMUX_M2G_PASS_TABLE_J2 override the table paths; default results/multigpu/M2G_PASS_TABLE_<J>.json, COMMITTED before submit.)
 # Order (§16-3): [J8: GPU-deviation block, 8 servers concurrent] -> N=1 anchor boots (fused_sym, agnostic; J2/J4/J8) -> the Job's TP/DP configs in
 #   the REGISTERED order (derivation in mg_const.config_order_types; J2=J4=J8=[DP,TP]).  No N=1 round 2, no NUMA block, no nsys block.
@@ -21,7 +24,28 @@ SHA="${PDMUX_M2G_PASS_SHA256:-}"
 check_committed () {   # $1 = committed .sha256 path
   git -C "$ROOT" ls-files --error-unmatch "$1" > /dev/null 2>&1 && git -C "$ROOT" diff --quiet HEAD -- "$1" 2>/dev/null
 }
-DRIVE=(python3 "$HERE/mg_drive.py" m3 --job "$JOB" --out "$OUT" --t0-epoch "$T0" --hard-cap-s "$HARD_CAP_S")
+# ---- rev12 gates (after the shared preflight; exit 18 ABORT_LOG_KNOB · 19 ABORT_PREFLIGHT_NOT_PASSED · 20 ABORT_DATASET · 21 ABORT_CONFIG_DRIFT)
+# §19-5: job_entry.sh records the log knobs in meta/log_mirror.txt and unsets them; PDMUX_HEARTBEAT_S must have been 0.
+LK="$DATA/runs/$JOBID/meta/log_mirror.txt"
+if [ -f "$LK" ]; then cp "$LK" "$OUT/LOG_KNOBS.txt"; else echo "log_mirror=ABSENT heartbeat_s=ABSENT" > "$OUT/LOG_KNOBS.txt"; fi
+HB=$(tr ' ' '\n' < "$OUT/LOG_KNOBS.txt" | awk -F= '$1=="heartbeat_s"{print $2}')
+[ "$HB" = "$(K LOG_HEARTBEAT_REQUIRED)" ] || dry_or_abort "ABORT_LOG_KNOB PDMUX_HEARTBEAT_S=$HB (registered $(K LOG_HEARTBEAT_REQUIRED): launch.sh --env PDMUX_HEARTBEAT_S=0)" 18
+# §19-6 (i)-(iii): PREFLIGHT_PASS committed + digest, same image as the preflight Job, empty diff of the 7 gate paths since the POST.
+python3 "$HERE/mg_plan.py" preflight-gate "$ROOT" "$HERE/$(K PREFLIGHT_PASS_FILE)" "${PDMUX_IMAGE:-}" > "$OUT/PREFLIGHT_GATE.txt" 2>&1 \
+  || dry_or_abort "$(head -c 600 "$OUT/PREFLIGHT_GATE.txt")" 19
+# §19-2: the registered shape-X token file on the cluster volume (sha256), before any GPU work.
+XTOK="$DATA/$(K X_TOKENS_REL)"
+if [ -f "$XTOK" ] && [ "$(sha256sum "$XTOK" | cut -d' ' -f1)" = "$(K X_TOKENS_SHA256)" ]; then echo "x_tokens=$XTOK sha256 OK" > "$OUT/X_TOKENS_CHECK.txt"
+else echo "x_tokens=$XTOK absent or sha256 mismatch" > "$OUT/X_TOKENS_CHECK.txt"; dry_or_abort "ABORT_DATASET shape-X token file $XTOK absent or sha256 != $(K X_TOKENS_SHA256)" 20; fi
+# §19-3 R-4: --mamba-ssm-dtype from the FIXED revision's config.json (key, else float32; torch_dtype never), resolved once per Job.
+MCFG="$MODEL_DIR/snapshots/$(K MODEL_REVISION)/config.json"
+if DT=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[2]); import mg_boot as B; v, src = B.resolve_mamba_ssm_dtype(sys.argv[1]); print(v); print(src, file=sys.stderr)' \
+        "$MCFG" "$ENG/scripts/multigpu" 2> "$OUT/MAMBA_SSM_DTYPE_SOURCE.txt"); then :
+elif [ "$DRYRUN" = 1 ]; then DT=$(K MAMBA_SSM_DTYPE_DEFAULT); echo "DRYRUN_NOTE model config absent; mamba_ssm_dtype placeholder $DT" | tee -a "$OUT/DRYRUN_NOTES.txt"
+else fail "ABORT_CONFIG_DRIFT cannot read $MCFG to resolve mamba_ssm_dtype" 21; fi
+echo "mamba_ssm_dtype=$DT config=$MCFG" > "$OUT/MAMBA_SSM_DTYPE.txt"
+DRIVE=(python3 "$HERE/mg_drive.py" m3 --job "$JOB" --out "$OUT" --t0-epoch "$T0" --hard-cap-s "$HARD_CAP_S"
+       --mamba-ssm-dtype "$DT" --x-tokens "$XTOK" --x-tokens-sha256 "$(K X_TOKENS_SHA256)" --clk-csv "$DATA/runs/$JOBID/meta/clk.csv")
 if [ "$DRYRUN" != 1 ]; then
   # F17: THREE digests must agree -- env PDMUX_M2G_PASS_SHA256, the COMMITTED .sha256 beside the harness, sha256 of the table file bytes --
   # and that committed .sha256 must be tracked and unmodified in the checked-out tree.

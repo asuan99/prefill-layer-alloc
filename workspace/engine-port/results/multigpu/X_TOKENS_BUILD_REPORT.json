@@ -1,0 +1,39 @@
+{
+ "builder_sha256": "afa7946d12445b8a093b8a1b2e6a09f4444ef016263f361abd1d585917633c74",
+ "encode_call": "tokenizers.Tokenizer.from_file(tokenizer.json).encode_batch(column, add_special_tokens=False)",
+ "file_bytes": 168330617,
+ "file_sha256": "4c32f1af8eff07d7d0ad39006423163895181381c0d83a73a5f0f5b1ce76888f",
+ "floor": {
+  "candidate_rule": "article tokens >= 16384, parquet row ascending",
+  "candidates": 534,
+  "doc_id": 3066,
+  "index": 255,
+  "n_stored": 16384,
+  "n_tokens_total": 22098,
+  "rng": "numpy.random.default_rng(20261012).integers(0, len(candidates)) (one call)",
+  "token_offset": 42029528
+ },
+ "format": "pdmux-arxsum-x-tokens/v1",
+ "lengths_layout": "retained docs, doc_id ascending, int64 LE interleaved (input, output)",
+ "lengths_sha256": "acea3902602c7cb8d6796b8ea516dc8696d0e5da30ae276c548a3f520faf336a",
+ "n_excluded_output_lt2": 0,
+ "n_payload_tokens": 42045912,
+ "n_retained": 5906,
+ "n_rows": 6440,
+ "retain_rule": "0 < input <= 16384 and output >= 2",
+ "source_parquet_sha256": "b34529dfeab4aabd4754cecc1603336a3449f66efee87f9b37192aa4c9dd91a1",
+ "stats": {
+  "input_max": 16379,
+  "input_mean": 7116,
+  "input_p50": 6484,
+  "input_p99": 15722,
+  "max_input_plus_output": 16744,
+  "n": 5906,
+  "output_max": 616,
+  "output_mean": 203,
+  "output_p50": 195,
+  "output_p99": 399
+ },
+ "tokenizer_json_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+ "tokenizers_version": "0.22.1"
+}

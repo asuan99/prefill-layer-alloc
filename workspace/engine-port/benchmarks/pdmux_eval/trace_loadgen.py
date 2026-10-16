@@ -36,6 +36,14 @@ async def replay(
     except ImportError as exc:
         raise RuntimeError("trace replay requires aiohttp") from exc
 
+    # rev12 F-3 (M3 shape X / floor, 2026-10-16): an item that carries its own `input_ids` (real document tokens, attached by
+    # scripts/multigpu/mg_loadgen.py from the registered token file) is sent with THOSE tokens, through this same loop and
+    # StreamState; their count must equal the item's input_tokens (checked before the first send, ValueError otherwise).  Items
+    # without `input_ids` keep the `[1] * input_tokens` payload byte for byte (A/B, N2/N3/E2/G0 traces unchanged).
+    for item in requests:
+        if "input_ids" in item and len(item["input_ids"]) != int(item["input_tokens"]):
+            raise ValueError(f"request {item.get('request_id')}: {len(item['input_ids'])} input_ids != input_tokens "
+                             f"{int(item['input_tokens'])}")
     first_arrival = min(float(item["arrival_s"]) for item in requests)
     benchmark_started = time.perf_counter()
     results: List[Dict[str, object]] = []
@@ -50,7 +58,8 @@ async def replay(
             await asyncio.sleep(max(0.0, benchmark_started + target - time.perf_counter()))
             sent = time.perf_counter()
             payload = {
-                "input_ids": [1] * int(item["input_tokens"]),
+                "input_ids": (list(item["input_ids"]) if "input_ids" in item
+                              else [1] * int(item["input_tokens"])),
                 "sampling_params": {
                     "max_new_tokens": int(item["output_tokens"]),
                     "temperature": 0.0,

@@ -32,7 +32,7 @@ STOCK_RUNNER = ENGINE / "scripts" / "r2_eval" / "engine_bench_runner.sh"
 
 def spec_for(cfg, arm):
     cs = P.config_spec(cfg)
-    return dict(cs, arm=arm, kind="boot1", block="main", boot_id=f"t_{cfg}_{arm}", steps=[])
+    return dict(cs, arm=arm, kind="boot1", block="main", boot_id=f"t_{cfg}_{arm}", steps=[], mamba_ssm_dtype="float32")   # rev12 §19-3
 
 
 # =========================================================================== H3 / H2 / H4 / H5 / H6 / cap
@@ -239,7 +239,7 @@ class Plan(unittest.TestCase):
         self.assertEqual(len(st[1][1]), 2)
         self.assertEqual([n.split(".")[0] for n, _ in st[2::2]], ["DP8", "TP8"])
         self.assertEqual(sum(len(b) for _, b in st), 8 + 2 + 16)
-        self.assertEqual(sum(1 for _, bs in st for b in bs for s in b["steps"] if s["type"] == "cell"), 8 + 8 + 2 * 4 * 2 * 6 + 0 * 1 + 0)
+        self.assertEqual(sum(1 for _, bs in st for b in bs for s in b["steps"] if s["type"] == "cell"), 8 + 2 * 2 * 4 + 2 * 4 * 3 * 6)   # rev12: X + U14
         for banned in ("numa", "nsys", "anchor2"):
             self.assertFalse(any(n.startswith(banned) for n, _ in st))
         # J2 / J4: no gpu_dev block; J1: neither gpu_dev nor anchor (it is the reference), N=1 only
@@ -254,10 +254,13 @@ class Plan(unittest.TestCase):
             for b in bs:
                 cells = [s for s in b["steps"] if s["type"] == "cell"]
                 self.assertEqual((b["gpu_ids"], b["block"], b["N"]), ("0", "anchor", 1))
-                self.assertEqual({(c["shape"], c["rung"], c["seed"], c["ext"]) for c in cells}, {("A", "HI", sd, 0) for sd in C.HI_SEEDS})
-                # THE SAME rung as J1 boot1 (1.6 x prior(1), shape A, ext 0)
-                j1 = [s for s in P.boots_boot1("N1")[0]["steps"] if s["type"] == "cell" and s["shape"] == "A"][0]
-                self.assertEqual((cells[0]["offered"], cells[0]["n_req"]), (j1["offered"], j1["n_req"]))
+                self.assertEqual({(c["shape"], c["rung"], c["seed"], c["ext"]) for c in cells},
+                                 {(sh, "HI", sd, 0) for sh in ("A", "X") for sd in C.HI_SEEDS})            # rev12 U14: A and X
+                # THE SAME rung as J1 boot1 (1.6 x prior(1), ext 0), per shape
+                for sh in ("A", "X"):
+                    j1 = [s for s in P.boots_boot1("N1")[0]["steps"] if s["type"] == "cell" and s["shape"] == sh][0]
+                    c0 = [c for c in cells if c["shape"] == sh][0]
+                    self.assertEqual((c0["offered"], c0["n_req"]), (j1["offered"], j1["n_req"]))
         self.assertEqual(P.boots_anchor("J1"), [])
 
     def test_registered_config_order_and_its_mutant_H2(self):
@@ -280,9 +283,9 @@ class Plan(unittest.TestCase):
     def test_boot1_has_both_shapes_four_seeds_one_boot(self):                       # H1
         b = P.boots_boot1("TP4")[0]
         cells = [s for s in b["steps"] if s["type"] == "cell"]
-        self.assertEqual(len(cells), 8)
-        self.assertEqual({(c["shape"], c["seed"]) for c in cells}, {(s, d) for s in "AB" for d in C.HI_SEEDS})
-        self.assertEqual(sum(1 for s in b["steps"] if s["type"] == "warmup"), 2)    # warm-up phase separated from cells
+        self.assertEqual(len(cells), 12)                                                                 # rev12: A, B, X
+        self.assertEqual({(c["shape"], c["seed"]) for c in cells}, {(s, d) for s in "ABX" for d in C.HI_SEEDS})
+        self.assertEqual(sum(1 for s in b["steps"] if s["type"] == "warmup"), 3)    # warm-up phase separated from cells
 
     def test_arm_order_is_deterministic_permutation_and_varies_by_config(self):
         self.assertEqual(sorted(P.arm_order("TP2")), sorted(C.ARMS))
@@ -304,10 +307,11 @@ class Budget(unittest.TestCase):
     def test_job_budgets_within_job_caps_and_audited_band(self):
         # lambda = prior, audited model: J1 ~4.0 h, J2 ~8.8 h, J4 ~8.7 h, J8 ~7.9 h (rev8 audit MGP-49: 4.0-4.3 / 8.8-9.4 / 8.7-9.4 / 7.9-8.6 h)
         got = {j: P.m3_budget(j) for j in C.JOBS}
-        for j, (lo, hi) in {"J1": (3.9, 4.4), "J2": (8.6, 9.5), "J4": (8.5, 9.5), "J8": (7.7, 8.7)}.items():
+        # rev12 (X + floor 20 + U14 X anchors + U7 xcheck): J1 5.88, J2 13.18, J4 13.12, J8 12.36 h (§19-10 r1+ table 5.85/13.15/13.08/12.33 + xcheck)
+        for j, (lo, hi) in {"J1": (5.7, 6.1), "J2": (12.9, 13.5), "J4": (12.8, 13.4), "J8": (12.0, 12.7)}.items():
             self.assertTrue(lo <= got[j]["job_h"] <= hi, (j, got[j]["job_h"]))
             self.assertFalse(got[j]["over_cap"], j)
-        self.assertEqual({j: got[j]["cap_h"] for j in C.JOBS}, {"J1": 10.0, "J2": 14.0, "J4": 14.0, "J8": 14.0})
+        self.assertEqual({j: got[j]["cap_h"] for j in C.JOBS}, {"J1": 14.0, "J2": 16.0, "J4": 16.0, "J8": 16.0})        # rev12 U3
         # reservation view: reserved = spec GPUs x Job wall; J1 uses 1 of its 2 reserved GPUs
         self.assertAlmostEqual(got["J1"]["reserved_gpu_h"], 2 * got["J1"]["job_h"], 6)
         self.assertLess(got["J1"]["utilization"], 0.51)
@@ -320,7 +324,7 @@ class Budget(unittest.TestCase):
     def test_s3_extension_cuts_configs_per_job(self):
         rows = P.m3_forecast_table("J2")
         s3 = [r for r in rows if r["scenario"].startswith("S3")]
-        self.assertTrue(all(r["total_h_uncapped"] > 14.0 for r in s3))
+        self.assertTrue(all(r["total_h_uncapped"] > 16.0 for r in s3))
         self.assertTrue(all(len(r["configs_defined"]) < len(r["configs_total"]) for r in s3))      # the Job cap cuts the SECOND (TP) config first
 
     def test_extension_adds_boots(self):
@@ -772,22 +776,23 @@ class Labels(unittest.TestCase):
 
     def test_memory_check_three_conditions(self):
         ok = {a: dict(mamba=[96], max_total=[900000], eff_cap=96) for a in C.ARMS}
-        self.assertFalse(L.memory_check(ok)["memory_mismatch"])
+        mc = lambda f, **kw: L.memory_check(f, shapes=C.FIXED_SHAPES, **kw)       # rev12: rev11 shapes A/B here; the X bound -> test_mg_rev12
+        self.assertFalse(mc(ok)["memory_mismatch"])
         bad = dict(ok, d44=dict(mamba=[48], max_total=[900000], eff_cap=96))
-        self.assertTrue(L.memory_check(bad)["memory_mismatch"])                                   # (i)
+        self.assertTrue(mc(bad)["memory_mismatch"])                                   # (i)
         bad = dict(ok, d44=dict(mamba=[96], max_total=[10000], eff_cap=96))
-        self.assertTrue(L.memory_check(bad)["memory_mismatch"])                                   # (ii)
+        self.assertTrue(mc(bad)["memory_mismatch"])                                   # (ii)
         wide = dict(ok, d44=dict(mamba=[96], max_total=[860000], eff_cap=96))
-        r = L.memory_check(wide)
+        r = mc(wide)
         self.assertFalse(r["memory_mismatch"])                                                    # (iii) RETIRED (rev9, post-hoc): 4 % spread is no reason
         self.assertEqual(r["MEMORY_RULE_III_COUNTERFACTUAL"], {"denominator_fused_sym": True, "denominator_min_arm": True})
         self.assertAlmostEqual(r["arm_rel_diff"]["fused_sym"], 40000 / 900000, 9)
         self.assertAlmostEqual(r["arm_rel_diff"]["min_arm"], 40000 / 860000, 9)                   # the two denominators differ
         near = dict(ok, d44=dict(mamba=[96], max_total=[895000], eff_cap=96))
-        r = L.memory_check(near)
+        r = mc(near)
         self.assertFalse(r["memory_mismatch"] or r["rule_iii_would_have_flagged"])                # 0.6 % is below the counterfactual threshold
-        self.assertTrue(L.memory_check(wide, _mut="iii")["memory_mismatch"])                      # mutant '(iii) still present' KILLED
-        self.assertFalse(L.memory_check(dict(ok, d44=dict(mamba=[96], max_total=[10000], eff_cap=96)), _mut="ii")["memory_mismatch"])   # mutant '(ii) removed' KILLED
+        self.assertTrue(mc(wide, _mut="iii")["memory_mismatch"])                      # mutant '(iii) still present' KILLED
+        self.assertFalse(mc(dict(ok, d44=dict(mamba=[96], max_total=[10000], eff_cap=96)), _mut="ii")["memory_mismatch"])   # mutant '(ii) removed' KILLED
 
     def test_server_log_descriptive_never_changes_label(self):
         s = L.synthetic_scenarios()["S1_saturated_fifo"]
@@ -956,7 +961,8 @@ class Rev11TruncationM1(unittest.TestCase):
         self.assertTrue(doc["truncation"]["tp_trend_undefined_by_truncation"])
         self.assertTrue(all(t.get("used_for_p_dp_only") for k, t in doc["trends"].items() if "|DP|" in k and k.startswith("G_sym")))
         mut = L.aggregate_jobs(docs, _mut="trunc_reason")
-        self.assertFalse(any(t.get("used_for_p_dp_only") for k, t in mut["trends"].items() if "|DP|" in k), "mutant misses the TP-side cut")
+        self.assertFalse(any(t.get("used_for_p_dp_only") for k, t in mut["trends"].items() if "|DP|" in k and k[-1] in "AB"),
+                         "mutant misses the TP-side cut")                 # rev12: the synthetic Jobs have no X cells (X group judged apart, U12)
         # control: nothing refused -> no marker
         clean = L.aggregate_jobs(job_docs(all_cells()))
         self.assertFalse(any(t.get("used_for_p_dp_only") for t in clean["trends"].values()))
@@ -1360,7 +1366,7 @@ class Rev11DeltaDB(unittest.TestCase):
             out = Path(td) / "o"
             with mock.patch.object(D, "run_m3", side_effect=RuntimeError("boom")):
                 with self.assertRaises(RuntimeError):
-                    D.main(["m3", "--job", "J2", "--out", str(out), "--dry-run", "--hard-cap-s", "100"])
+                    D.main(["m3", "--job", "J2", "--out", str(out), "--dry-run", "--hard-cap-s", "100", "--mamba-ssm-dtype", "float32"])
             doc = json.loads((out / "LABELS.json").read_text())
             self.assertIn("driver", doc)
             self.assertIn("DRIVER_EXCEPTION_FINISH_IN_FINALLY", (out / "DRIVER_LOG.jsonl").read_text())
@@ -1480,7 +1486,7 @@ class Rev11DeltaDD(unittest.TestCase):
             out = Path(td) / "o"
             with mock.patch.object(D, "run_m3", side_effect=RuntimeError("boom")):
                 with self.assertRaises(RuntimeError):
-                    D.main(["m3", "--job", "J2", "--out", str(out), "--dry-run", "--hard-cap-s", "100"])
+                    D.main(["m3", "--job", "J2", "--out", str(out), "--dry-run", "--hard-cap-s", "100", "--mamba-ssm-dtype", "float32"])
             self.assertTrue(json.loads((out / "LABELS.json").read_text())["driver"].get("exception"))
 
 
@@ -1523,11 +1529,11 @@ class Rev11DeltaDC(unittest.TestCase):
 
 
 class Rev11Misc(unittest.TestCase):
-    def test_prereg_rev_is_11_and_documents_say_so(self):
-        self.assertEqual(C.PREREG_REV, 11)
+    def test_prereg_rev_is_12_and_documents_say_so(self):
+        self.assertEqual(C.PREREG_REV, 12)                                                 # rev12 (unsealed checkpoint; the reseal keeps 12)
         docs = job_docs(all_cells())
-        self.assertTrue(docs["J1"]["prereg"].endswith("rev11"))
-        self.assertTrue(L.aggregate_jobs(docs)["prereg"].endswith("rev11"))
+        self.assertTrue(docs["J1"]["prereg"].endswith("rev12"))
+        self.assertTrue(L.aggregate_jobs(docs)["prereg"].endswith("rev12"))
 
     def test_r1_group_sweep_runs_once_after_the_group(self):
         from unittest import mock
@@ -1667,7 +1673,8 @@ class DriverWithFakeRunner(unittest.TestCase):
         raw = json.dumps(table or {"cells": {}, "g5a_unit_test": "PASS", "g0ii": "PASS"})
         tbl = Path(td) / f"t_{job}_{out_name}.json"
         tbl.write_text(raw)
-        args = ["m3", "--job", job, "--out", str(out), "--pass-table", str(tbl), "--pass-sha256", hashlib.sha256(raw.encode()).hexdigest()]
+        args = ["m3", "--job", job, "--out", str(out), "--pass-table", str(tbl), "--pass-sha256", hashlib.sha256(raw.encode()).hexdigest(),
+                "--mamba-ssm-dtype", "float32"]                                       # rev12 §19-3
         if j2_table is None and job in ("J4", "J8"):
             j2_table = {"cells": {}, "g5a_unit_test": "PASS", "g0ii": "PASS"}            # default: J2 released the TP axis
         if j2_table is not None and j2_table is not False:
@@ -1687,7 +1694,7 @@ class DriverWithFakeRunner(unittest.TestCase):
             self.assertEqual(p.returncode, 0, p.stderr[-2000:])
             doc = json.loads((out / "LABELS.json").read_text())
             self.assertEqual(doc["job"], "J2")
-            self.assertEqual(doc["n_cells"], 8 + 2 * 4 * 2 * 6)                                   # 2 anchor boots x 4 + (DP2, TP2) x 4 arms x 2 shapes x 6
+            self.assertEqual(doc["n_cells"], 16 + 2 * 4 * 3 * 6)                                  # rev12: 2 anchor boots x (A, X) x 4 + (DP2, TP2) x 4 arms x 3 shapes x 6
             ev = self.events(out)
             self.assertEqual(next(e for e in ev if "config_order" in e)["config_order"], ["DP2", "TP2"])      # registered order, logged
             boots = [e["boot"] for e in ev if "boot" in e and "rc" in e]
@@ -1717,12 +1724,12 @@ class DriverWithFakeRunner(unittest.TestCase):
             p, out = self.run_driver(td, 1.0, 1.0, job="J1")
             self.assertEqual(p.returncode, 0, p.stderr[-2000:])
             doc = json.loads((out / "LABELS.json").read_text())
-            self.assertEqual((doc["n_cells"], doc["anchor"], sorted(doc["estimands"]["G_sym"])), (48, {}, ["N1"]))
+            self.assertEqual((doc["n_cells"], doc["anchor"], sorted(doc["estimands"]["G_sym"])), (72, {}, ["N1"]))        # rev12: 4 x 3 x 6
             self.assertTrue(doc["ref"]["fused_sym"]["present"] and doc["ref"]["agnostic"]["boot1_lambda_star"])
             p, out = self.run_driver(td, 1.0, 1.0, job="J8", out_name="out8")
             self.assertEqual(p.returncode, 0, p.stderr[-2000:])
             doc = json.loads((out / "LABELS.json").read_text())
-            self.assertEqual(doc["n_cells"], 8 + 8 + 96)
+            self.assertEqual(doc["n_cells"], 8 + 16 + 144)                                  # rev12: gpu_dev 8 + anchors (A, X) 16 + 2 configs x 4 arms x 3 shapes x 6
             self.assertEqual(doc["blocks"]["gpu_dev"]["n_gpus"], 8)
             ev = self.events(out)
             grp = next(i for i, e in enumerate(ev) if e.get("group") == "gpu_dev")
@@ -1736,7 +1743,7 @@ class DriverWithFakeRunner(unittest.TestCase):
             self.assertEqual(p.returncode, 0, p.stderr[-2000:])
             doc = json.loads((out / "LABELS.json").read_text())
             dec = {k: v for k, v in doc["driver"]["decisions"].items() if k in ("DP4", "TP4")}
-            self.assertTrue(all(d["ext_shapes"] == ["A", "B"] for d in dec.values()), dec)
+            self.assertTrue(all(d["ext_shapes"] == ["A", "B", "X"] for d in dec.values()), dec)                 # rev12: X too
             specs = [json.loads(p.read_text()) for p in (out / "specs").glob("m3_TP4_*_boot1ext.json")]
             self.assertEqual(len(specs), 4)                     # all four arms jointly (MGP-9)
             self.assertFalse(list((out / "specs").glob("m3_N1_*ext*")))        # an anchor is never extended
@@ -2132,7 +2139,7 @@ class PlanF4F15F17(unittest.TestCase):
 
     def test_budget_audited_model_unchanged_and_calibration_adds_time(self):                # F15
         a = P.m3_budget("J2")
-        self.assertAlmostEqual(a["total_h"], 8.76 - C.EST_PREFLIGHT_S / 3600.0, 1)         # the audited per-Job number must not move
+        self.assertAlmostEqual(a["total_h"], 13.18 - C.EST_PREFLIGHT_S / 3600.0, 1)        # rev12 model value (rev11 8.76); must not move silently
         v = P.m3_budget("J2", calib=P.CALIBS["vessl_boot"])
         self.assertAlmostEqual(v["total_h"] - a["total_h"], a["boots"] * C.EST_VESSL_BOOT_EXTRA_S / 3600.0, 3)
         u = P.m3_budget("J2", calib=P.CALIBS["vessl_boot_cell"])
@@ -2494,7 +2501,7 @@ class JobScriptsDryRun(unittest.TestCase):
 
     def test_m3_dry_run_every_job(self):
         want = {"J1": 8, "J2": 18, "J4": 18, "J8": 26}
-        caps = {"J1": 36000, "J2": 50400, "J4": 50400, "J8": 50400}
+        caps = {"J1": 50400, "J2": 57600, "J4": 57600, "J8": 57600}                                    # rev12 U3: 14 h / 16 h
         gpus = {"J1": 2, "J2": 2, "J4": 4, "J8": 8}
         for job, nboots in want.items():
             p, files, boots, notes, order, budget = self.run_job("m3_job.sh", job)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Job driver for M2g and M3 (PREREG_MULTIGPU rev10 §3, §4-1, §4-2, §6-2, §15-§17).  Called by m2g_job.sh / m3_job.sh.
+"""Job driver for M2g and M3 (PREREG_MULTIGPU rev10 §3, §4-1, §4-2, §6-2, §15-§17; rev12 §19).  Called by m2g_job.sh / m3_job.sh.
 
   mg_drive.py m3  --job J2 --out DIR [--dry-run] [--hard-cap-s S] [--t0-epoch E] [--pass-table T --pass-sha256 H --committed-sha-file F]
                                      [--j2-pass-table T --j2-pass-sha256 H --j2-committed-sha-file F]
@@ -9,6 +9,9 @@ ONE Job = ONE N (J1 N=1 on the x2 spec GPU 0 only, J2, J4, J8).  The cross-Job j
 
 Responsibilities: stage order (§4-1), arm order, joint extension (§4-2), x_lo from the fused HI median (MGP-9),
 admission against the wall-clock hard cap, TRUNCATED bookkeeping, label + estimand output (mg_label).
+rev12: every M3 boot spec carries mamba_ssm_dtype / x_tokens_path / x_tokens_sha256 (resolved once per Job by m3_job.sh); a boot that
+exits 7/8/9 (ABORT_CONTEXT_TOO_SHORT / ABORT_DATASET / ABORT_CONFIG_DRIFT, CPU pre-checks) aborts the Job (fail-closed, ABORT file);
+the U7 X correctness verdict is scored right after the opening N=1 boots (gates/XCHECK.json); finish() writes CLOCK_BY_CELL.json (U6).
 Every boot runs through scripts/multigpu/mg_runner.sh (override PDMUX_MG_RUNNER for CPU tests).
 JOB PATH vs REFERENCE PATH (F8): the Job runs `run_m2g` + `assemble_pass_table` below.  `m2g_correctness_gate.M2gRun` (the
 unit-tested reference sequence with an injectable io) is NOT executed by the Job -- its order/liveness/exposure rules are
@@ -55,6 +58,8 @@ class Ctx:
         self.g3_python = None                      # tests: interpreter handed to `run-g3 --python` (default sys.executable)
         self.g5a_argv = None                       # tests: replaces the G5(a) CPU unit test command
         self.nsys_path = "auto"                    # tests: a path / None replaces `command -v nsys`
+        self.m3_spec_extra = {}                    # rev12: mamba_ssm_dtype, x_tokens_path, x_tokens_sha256 (M3 boots)
+        self.clk_csv = None
         (self.out / "specs").mkdir(parents=True, exist_ok=True)
         (self.out / "gates").mkdir(parents=True, exist_ok=True)
 
@@ -69,6 +74,13 @@ class Ctx:
         self.log.append(kw)
         with open(self.out / "DRIVER_LOG.jsonl", "a") as f:
             f.write(json.dumps(kw, sort_keys=True, default=str) + "\n")
+
+
+FATAL_BOOT_RC = {7: "ABORT_CONTEXT_TOO_SHORT", 8: "ABORT_DATASET", 9: "ABORT_CONFIG_DRIFT"}
+
+
+class JobAbort(Exception):
+    pass
 
 
 def run_boot(ctx, spec, expected_counts=None):
@@ -95,6 +107,10 @@ def run_boot(ctx, spec, expected_counts=None):
         subprocess.run(["pkill", "-9", "-f", "sglang.launch_server|^sglang::"], check=False)   # the server has its own session
         rc = -9
     ctx.event(boot=spec["boot_id"], rc=rc, seconds=time.time() - t)
+    if rc in FATAL_BOOT_RC and spec.get("kind") in ("boot1", "boot1ext", "boot2", "anchor", "gpudev"):
+        bj = ctx.out / "boots" / spec["boot_id"] / "boot.json"
+        why = (json.loads(bj.read_text()).get("abort") if bj.exists() else None) or FATAL_BOOT_RC[rc]
+        raise JobAbort(f"{FATAL_BOOT_RC[rc]} boot {spec['boot_id']}: {why}")
     return rc
 
 
@@ -110,7 +126,7 @@ def run_boot_group(ctx, specs):
         return None
     procs, t = [], time.time()
     for sp in specs:
-        sp = dict(sp, out_root=str(ctx.out), deadline_epoch=ctx.deadline)
+        sp = dict(sp, out_root=str(ctx.out), deadline_epoch=ctx.deadline, **ctx.m3_spec_extra)
         path = ctx.out / "specs" / f"{sp['boot_id']}.json"
         path.write_text(json.dumps(sp, indent=1, sort_keys=True))
         cmd = ["bash", RUNNER, str(path)] + (["--dry-run"] if ctx.dry else [])
@@ -194,12 +210,21 @@ def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
     def go(spec):
         # expected counts only apply to boots on the registered GPU subset of that config (not the gpu_dev boots)
         use = spec.get("gpu_ids") == C.GPU_SUBSETS.get(spec["config"]) and spec.get("block") in ("main", "anchor")
-        return run_boot(ctx, spec, counts.get(f"{spec['config']}:{spec['arm']}") if use else None)
+        return run_boot(ctx, dict(spec, **ctx.m3_spec_extra), counts.get(f"{spec['config']}:{spec['arm']}") if use else None)
+
+    def score_xcheck(kind):
+        """U7: after the Job's opening N=1 fused_sym + agnostic boots (J1 boot1, J_N anchors)."""
+        import mg_xcheck as XC
+        r = XC.score_job(ctx.out / "gates", ctx.out / "boots", f"m3_N1_fused_sym_{kind}", f"m3_N1_agnostic_{kind}")
+        ctx.event(xcheck=r.get("verdict"), reasons=r.get("reasons"))
+        return r
 
     if job == "J8":
         run_boot_group(ctx, P.boots_gpu_dev())                          # §4-6, FIRST, concurrent
     for spec in P.boots_anchor(job, exclude=P.anchor_exclude(table)):
         go(spec)
+    if P.has_anchor(job):
+        score_xcheck("anchor")
     decisions = {"config_order": order, "tp_axis_allowed": tp_ok, "tp_axis_why": tp_why}
     if box is not None:
         box["decisions"] = decisions                                 # main(): finish() runs in a finally and still sees the decisions made so far
@@ -213,6 +238,8 @@ def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
             continue
         for spec in P.boots_boot1(cfg, exclude=ex):
             go(spec)
+        if cfg == "N1":
+            score_xcheck("boot1")                                     # J1: its boot1 is the opening N=1 boot pair
         summ = key_summaries(ctx, cfg)
         ext_shapes = sorted({sh for (arm, sh), lab in summ.items() if lab["ext_trigger"]})
         decisions[cfg] = {"ext_shapes": ext_shapes}
@@ -225,7 +252,7 @@ def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
                 decisions[cfg].update(ext_complete=ext_ok, ext_incomplete_reason=why)
             summ = key_summaries(ctx, cfg, fired=ext_shapes)
         x_lo, skipped = {}, []
-        for sh in ("A", "B"):
+        for sh in C.SHAPES:
             lab = summ.get(("fused", sh))
             lam = lab["lambda_star"] if lab else None                 # median of the 4 fused HI achieved
             if lam is None and ctx.dry:
@@ -236,7 +263,7 @@ def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
                 skipped.append(sh)
         decisions[cfg].update(x_lo=x_lo, lo_skipped_fused_hi_undefined=skipped)
         ctx.event(config=cfg, decision=decisions[cfg])
-        ext = {sh: (1 if sh in ext_shapes else 0) for sh in ("A", "B")}
+        ext = {sh: (1 if sh in ext_shapes else 0) for sh in C.SHAPES}
         if x_lo and not ext_ok:                                       # F10: an incomplete extension forbids entering boot2 (LO)
             for spec in P.boots_boot2(cfg, x_lo, ext, exclude=ex):
                 ctx.not_attempted.append({"boot_id": spec["boot_id"], "config": spec.get("config"), "arm": spec.get("arm"),
@@ -252,9 +279,13 @@ def run_m3(ctx, table, j2_table=None, j2_note=None, box=None):
 def finish(ctx, table, decisions=None, exception=False):
     cells = cells_of(ctx)
     excl = P.excluded_set(table) if table else set()
-    flags = ML.build_config_flags(ctx.out, cells, excl)
-    doc = ML.aggregate(cells, (table or {}).get("cells"), flags, (table or {}).get("configs"), job=ctx.job)
+    flags = ML.build_config_flags(ctx.out, cells, excl, ML.load_reference(), ctx.job)
+    xc = ctx.out / "gates" / "XCHECK.json"
+    doc = ML.aggregate(cells, (table or {}).get("cells"), flags, (table or {}).get("configs"), job=ctx.job,
+                       xcheck=json.loads(xc.read_text()) if xc.exists() else None)
     doc["n_cells"] = len(cells)
+    doc.update(ML.job_dir_rev12_facts(ctx.out, ctx.job))
+    (ctx.out / "CLOCK_BY_CELL.json").write_text(json.dumps(ML.clock_by_cell(ctx.clk_csv, cells), indent=1, sort_keys=True) + "\n")
     doc["covariates"] = ML.job_covariates(ctx.out)                      # §16-3: this Job's cpu.max (per-cell throttle ratios are in doc["keys"])
     doc["driver"] = {"decisions": decisions, "not_attempted": ctx.not_attempted, "partial_boots": ML.partial_boots_of(ctx.out),
                      "truncated_cells": [c["cell_id"] for c in cells if c.get("truncated")],
@@ -617,6 +648,10 @@ def main(argv=None):
     ap.add_argument("--j2-pass-table", default="", help="J2's table (G0(ii) result) for the TP axis of J4/J8")
     ap.add_argument("--j2-pass-sha256", default="")
     ap.add_argument("--j2-committed-sha-file", default="")
+    ap.add_argument("--mamba-ssm-dtype", default="", help="rev12 §19-3: resolved once per Job by m3_job.sh (required for m3)")
+    ap.add_argument("--x-tokens", default="", help="rev12 §19-2: the registered shape-X token file")
+    ap.add_argument("--x-tokens-sha256", default=C.X_TOKENS_SHA256)
+    ap.add_argument("--clk-csv", default="", help="U6: job_entry meta/clk.csv (descriptive clock table)")
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -639,6 +674,12 @@ def main(argv=None):
             print(abort, file=sys.stderr)
             (out / "ABORT").write_text(abort + "\n")
             return 3
+    if a.cmd == "m3":                                                # after the pass-table abort (rev11 precedence kept)
+        if not a.mamba_ssm_dtype:
+            (out / "ABORT").write_text("ABORT_CONFIG_DRIFT mamba_ssm_dtype not resolved (rev12 §19-3)\n")
+            return 3
+        ctx.m3_spec_extra = {"mamba_ssm_dtype": a.mamba_ssm_dtype, "x_tokens_path": a.x_tokens, "x_tokens_sha256": a.x_tokens_sha256}
+        ctx.clk_csv = a.clk_csv or None
     j2_table, j2_note = None, None
     if a.job == C.G0II_JOB:
         j2_table = table
@@ -651,13 +692,17 @@ def main(argv=None):
     box, dec = {}, None
     try:
         dec = run_m3(ctx, table, j2_table, j2_note, box=box)
+    except JobAbort as e:                                            # rev12: fatal CPU pre-check of a boot -> the Job stops
+        (out / "ABORT").write_text(str(e) + "\n")
+        ctx.event(status="JOB_ABORT", why=str(e))
+        dec = dict(box.get("decisions") or {}, job_abort=str(e))
     finally:
         # rev11 D-B: finish() is GUARANTEED (exception / SystemExit / KeyboardInterrupt in the driver): LABELS.json carries a `driver` record
         # (not_attempted / partial_boots) so the join never has to guess; a Job that dies harder (SIGKILL) is reconstructed by mg_label.reconstruct_driver.
         if dec is None:
             ctx.event(status="DRIVER_EXCEPTION_FINISH_IN_FINALLY")
         finish(ctx, table, dec or box.get("decisions"), exception=(dec is None))
-    return 0
+    return 17 if (out / "ABORT").exists() else 0
 
 
 if __name__ == "__main__":

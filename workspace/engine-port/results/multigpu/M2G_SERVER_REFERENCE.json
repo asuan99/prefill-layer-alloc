@@ -1,0 +1,971 @@
+{
+ "entries": {
+  "J1|N1|agnostic": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2722655
+   ],
+   "server_log_sha256": "71bc80f84c269c3fca4487e3a16305845f5f70dc944663457e0a14f14124c7ca",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J1|N1|d44": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2721286
+   ],
+   "server_log_sha256": "c39266547f374c0446df2948cdbdd62f8bb36c85d37f8d6661d1848352a6a10c",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J1|N1|fused": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2723785
+   ],
+   "server_log_sha256": "5822a8e47e5d0bf4f6850e7b9317e7016eb6040eb988a6d80aead2542c837c96",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J1|N1|fused_sym": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2723789
+   ],
+   "server_log_sha256": "1f6b0252643d44e243a7fc081bbd23fdd1d8cbfc5996ae5d9b4cac34ddcfbc4f",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J2|DP2|agnostic": {
+   "conv_state_gb": [
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 2,
+   "max_mamba_cache_size": [
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2722652,
+    2722652
+   ],
+   "server_log_sha256": "ead243283e89fa1b63ce29609ff3a3475647e0cf1b1d3b102a67d331881258b0",
+   "ssm_state_gb": [
+    6.46,
+    6.46
+   ]
+  },
+  "J2|DP2|d44": {
+   "conv_state_gb": [
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 2,
+   "max_mamba_cache_size": [
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2721287,
+    2721287
+   ],
+   "server_log_sha256": "b2db2c9731a013e76d72b03576d45f520b9dbf4ff22a98a9191166ddfd413c83",
+   "ssm_state_gb": [
+    6.46,
+    6.46
+   ]
+  },
+  "J2|DP2|fused": {
+   "conv_state_gb": [
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 2,
+   "max_mamba_cache_size": [
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2723786,
+    2723786
+   ],
+   "server_log_sha256": "670a77e817e7e7b299a07a9d5bc91cacc6b7721e2de28d5cbee0e9928e80d64f",
+   "ssm_state_gb": [
+    6.46,
+    6.46
+   ]
+  },
+  "J2|DP2|fused_sym": {
+   "conv_state_gb": [
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 2,
+   "max_mamba_cache_size": [
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2723786,
+    2723786
+   ],
+   "server_log_sha256": "c4392a7a8103b1b8c5c9341244be7a4d6ffbb8248a20db67a53b913e47c24072",
+   "ssm_state_gb": [
+    6.46,
+    6.46
+   ]
+  },
+  "J2|N1|agnostic": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2722652
+   ],
+   "server_log_sha256": "a45f8e270ff5f931a70d94dd60d1372a3adef4a183bb21cd184e9390b58b0751",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J2|N1|d44": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2721290
+   ],
+   "server_log_sha256": "a3fdcfbdd86fcaefe60a3d240a9bad0d329a042aa6ffcba44aaeac86492527eb",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J2|N1|fused": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2723789
+   ],
+   "server_log_sha256": "dc9a594541277656dbd62055fa5a6f408ab4f4fb1d63872b5226ed465554b831",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J2|N1|fused_sym": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2723789
+   ],
+   "server_log_sha256": "b6cba71434e99ae96c35f759c52718ae23976d018b15b1ac488987b4eb34abbe",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J2|TP2|agnostic": {
+   "conv_state_gb": [
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 2,
+   "max_mamba_cache_size": [
+    96,
+    96
+   ],
+   "max_total_num_tokens": [
+    6389744
+   ],
+   "server_log_sha256": "63efc0909f999a5a8d5e263c27f9f205c75634fae999a2114d19365c9e027f75",
+   "ssm_state_gb": [
+    6.39,
+    6.39
+   ]
+  },
+  "J2|TP2|d44": {
+   "conv_state_gb": [
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 2,
+   "max_mamba_cache_size": [
+    96,
+    96
+   ],
+   "max_total_num_tokens": [
+    6387015
+   ],
+   "server_log_sha256": "e1cf87c8d701e49b0ccc74abbfe1adf09d484269e90679fdb878941032f8adb4",
+   "ssm_state_gb": [
+    6.39,
+    6.39
+   ]
+  },
+  "J2|TP2|fused": {
+   "conv_state_gb": [
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 2,
+   "max_mamba_cache_size": [
+    96,
+    96
+   ],
+   "max_total_num_tokens": [
+    6451460
+   ],
+   "server_log_sha256": "2712cfc5652d0ccfbbc516e5e0a98d8f3e482025c3cafdbf1daa250bd35d575d",
+   "ssm_state_gb": [
+    6.39,
+    6.39
+   ]
+  },
+  "J2|TP2|fused_sym": {
+   "conv_state_gb": [
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 2,
+   "max_mamba_cache_size": [
+    96,
+    96
+   ],
+   "max_total_num_tokens": [
+    6451460
+   ],
+   "server_log_sha256": "a6071f7ed7a273e3561362752bff7c9773197c4e6ff3aaebfb14989383b228df",
+   "ssm_state_gb": [
+    6.39,
+    6.39
+   ]
+  },
+  "J4|DP4|agnostic": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 4,
+   "max_mamba_cache_size": [
+    48,
+    48,
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2722652,
+    2722652,
+    2722652,
+    2722652
+   ],
+   "server_log_sha256": "c7252a01bb2c6e3a53f260e87e152acc58e6dc8bc2b09f24daa3873553a61e80",
+   "ssm_state_gb": [
+    6.46,
+    6.46,
+    6.46,
+    6.46
+   ]
+  },
+  "J4|DP4|d44": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 4,
+   "max_mamba_cache_size": [
+    48,
+    48,
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2721287,
+    2721287,
+    2721287,
+    2721287
+   ],
+   "server_log_sha256": "1247b6033227db202dc3bc9646a0784eab976e9af4454b8e73f56e1b7835b9c4",
+   "ssm_state_gb": [
+    6.46,
+    6.46,
+    6.46,
+    6.46
+   ]
+  },
+  "J4|DP4|fused": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 4,
+   "max_mamba_cache_size": [
+    48,
+    48,
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2723786,
+    2723786,
+    2723786,
+    2723786
+   ],
+   "server_log_sha256": "a19956074580dac9879e6e874875ba5065b6545fbee59308fa5aee3d71ece2b0",
+   "ssm_state_gb": [
+    6.46,
+    6.46,
+    6.46,
+    6.46
+   ]
+  },
+  "J4|DP4|fused_sym": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 4,
+   "max_mamba_cache_size": [
+    48,
+    48,
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2723786,
+    2723786,
+    2723786,
+    2723786
+   ],
+   "server_log_sha256": "c210f81024e10e2840a38c87ce728d8319bb9bde524f29eb133c998fa6a77df2",
+   "ssm_state_gb": [
+    6.46,
+    6.46,
+    6.46,
+    6.46
+   ]
+  },
+  "J4|N1|agnostic": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2722655
+   ],
+   "server_log_sha256": "7b6ea12dbf7f6ad01860637c9e1df57e4dd670b6a1155b045642f7761f84c717",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J4|N1|d44": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2721290
+   ],
+   "server_log_sha256": "0b833dbf0362954dd02e2530b7c9f800d8865f620d5b7dcc4dafae7914aadab4",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J4|N1|fused": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2723789
+   ],
+   "server_log_sha256": "f9332e5cbf1bbee41ae4f8e8813ecb99373069f1deb39643814b905e83d1959f",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J4|N1|fused_sym": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2723789
+   ],
+   "server_log_sha256": "067e91782ab0d378d3ea1468202816fc313bb7a97bbf86a63283e54aa406c8dd",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J4|TP4|agnostic": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 4,
+   "max_mamba_cache_size": [
+    192,
+    192,
+    192,
+    192
+   ],
+   "max_total_num_tokens": [
+    13748110
+   ],
+   "server_log_sha256": "052e594ac5797d95a7fcb1de41a3ae2849a742426097d22a83cc2042a937494c",
+   "ssm_state_gb": [
+    6.36,
+    6.36,
+    6.36,
+    6.36
+   ]
+  },
+  "J4|TP4|d44": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 4,
+   "max_mamba_cache_size": [
+    192,
+    192,
+    192,
+    192
+   ],
+   "max_total_num_tokens": [
+    13742652
+   ],
+   "server_log_sha256": "4f463d19188b60f4d92e613c19f28f82a1459dc154803fc90e002e6706bbee1e",
+   "ssm_state_gb": [
+    6.36,
+    6.36,
+    6.36,
+    6.36
+   ]
+  },
+  "J4|TP4|fused": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 4,
+   "max_mamba_cache_size": [
+    192,
+    192,
+    192,
+    192
+   ],
+   "max_total_num_tokens": [
+    13935072
+   ],
+   "server_log_sha256": "ba03476cb25bec5beb9f1cca11f7d298564b5d7ef830f28901509674557276ec",
+   "ssm_state_gb": [
+    6.36,
+    6.36,
+    6.36,
+    6.36
+   ]
+  },
+  "J4|TP4|fused_sym": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 4,
+   "max_mamba_cache_size": [
+    192,
+    192,
+    192,
+    192
+   ],
+   "max_total_num_tokens": [
+    13935072
+   ],
+   "server_log_sha256": "58610b890c0aca244b6a3f69fa88996dbfa4c8eee56cffccdb746e19e2344731",
+   "ssm_state_gb": [
+    6.36,
+    6.36,
+    6.36,
+    6.36
+   ]
+  },
+  "J8|DP8|agnostic": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 8,
+   "max_mamba_cache_size": [
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2722648,
+    2722648,
+    2722648,
+    2722648,
+    2722648,
+    2722648,
+    2722648,
+    2722648
+   ],
+   "server_log_sha256": "cce42db30d31ab0b86d5f4651eedbb4062425f0832f68db262533aeac6e9269d",
+   "ssm_state_gb": [
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46
+   ]
+  },
+  "J8|DP8|d44": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 8,
+   "max_mamba_cache_size": [
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2721284,
+    2721284,
+    2721284,
+    2721284,
+    2721284,
+    2721284,
+    2721284,
+    2721284
+   ],
+   "server_log_sha256": "112a420b1290dbc41105aa792a02b2f649bd1fecc3a09e094ff578be4df6b966",
+   "ssm_state_gb": [
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46
+   ]
+  },
+  "J8|DP8|fused": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 8,
+   "max_mamba_cache_size": [
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2723782,
+    2723782,
+    2723782,
+    2723782,
+    2723782,
+    2723782,
+    2723782,
+    2723782
+   ],
+   "server_log_sha256": "e30a7032c24cfa622534fe1862db67e07bd073053d8283d70d3d912c209b5ff0",
+   "ssm_state_gb": [
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46
+   ]
+  },
+  "J8|DP8|fused_sym": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 8,
+   "max_mamba_cache_size": [
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48
+   ],
+   "max_total_num_tokens": [
+    2723782,
+    2723782,
+    2723782,
+    2723782,
+    2723782,
+    2723782,
+    2723782,
+    2723782
+   ],
+   "server_log_sha256": "092a85aa9c6584918567aa46fd0dbdf087812a07083482080fe80762de9c5efe",
+   "ssm_state_gb": [
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46,
+    6.46
+   ]
+  },
+  "J8|N1|agnostic": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2722655
+   ],
+   "server_log_sha256": "2942d78ba9a51f1e003460cc7c2faa20baa579757fed8fb5f998f3f83be1034e",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J8|N1|d44": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2721290
+   ],
+   "server_log_sha256": "88dbefb6a00129b63fa65aacad1ec5789b66b2b57b5cdec5302499309c979bb7",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J8|N1|fused": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2723789
+   ],
+   "server_log_sha256": "c1bc7dda6a820273059297770e6798d40dc633c74245deda0cdc23b195f61afd",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J8|N1|fused_sym": {
+   "conv_state_gb": [
+    0.09
+   ],
+   "mamba_lines": 1,
+   "max_mamba_cache_size": [
+    48
+   ],
+   "max_total_num_tokens": [
+    2723789
+   ],
+   "server_log_sha256": "9e73af3046c51e109e2d2c4c583a2c6bee0a65701cd7504de400658e6ff590eb",
+   "ssm_state_gb": [
+    6.46
+   ]
+  },
+  "J8|TP8|agnostic": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 8,
+   "max_mamba_cache_size": [
+    384,
+    384,
+    384,
+    384,
+    384,
+    384,
+    384,
+    384
+   ],
+   "max_total_num_tokens": [
+    28547843
+   ],
+   "server_log_sha256": "92873eb4855fba031f6b1697ede4b6607f258fa4c69024020b075de7f957c9f2",
+   "ssm_state_gb": [
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34
+   ]
+  },
+  "J8|TP8|d44": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 8,
+   "max_mamba_cache_size": [
+    384,
+    384,
+    384,
+    384,
+    384,
+    384,
+    384,
+    384
+   ],
+   "max_total_num_tokens": [
+    28536927
+   ],
+   "server_log_sha256": "1dba05a793fe79b137600593c8d2efe3a765e7f8fab93f417db861c0308933d9",
+   "ssm_state_gb": [
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34
+   ]
+  },
+  "J8|TP8|fused": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 8,
+   "max_mamba_cache_size": [
+    384,
+    384,
+    384,
+    384,
+    384,
+    384,
+    384,
+    384
+   ],
+   "max_total_num_tokens": [
+    28920927
+   ],
+   "server_log_sha256": "68d833bcb690eeab84e1965c3a4f7ed9e772c336f6a7f5adefda87b3c41d2328",
+   "ssm_state_gb": [
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34
+   ]
+  },
+  "J8|TP8|fused_sym": {
+   "conv_state_gb": [
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.09
+   ],
+   "mamba_lines": 8,
+   "max_mamba_cache_size": [
+    384,
+    384,
+    384,
+    384,
+    384,
+    384,
+    384,
+    384
+   ],
+   "max_total_num_tokens": [
+    28920927
+   ],
+   "server_log_sha256": "cbce8d3326e8e226717a088e80af347292ea67ec92b0dc54cb3f1b9a37887e32",
+   "ssm_state_gb": [
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34,
+    6.34
+   ]
+  }
+ },
+ "schema": "mg_m2g_server_reference/v1",
+ "sources": {
+  "J1": {
+   "dir": "m2g_pdmux-multigpu-313be0a-20261013062324",
+   "pass_table_sha256": "eba277c503c0dff9405f01ab9ddff07753ea0247768e4b14ab83f28d074e78f7"
+  },
+  "J2": {
+   "dir": "m2g_pdmux-multigpu-2fc3880-20261013062351",
+   "pass_table_sha256": "f67ae7bb5027049bb59c5988605a8566593ca92c4046ac584ef7689807ca785d"
+  },
+  "J4": {
+   "dir": "m2g_pdmux-multigpu-9df4a0a-20261013081304",
+   "pass_table_sha256": "c087067fdbe96baf43ff3f74aab3a8b58e44f9f5d79953da71b4bc7d00f17dd6"
+  },
+  "J8": {
+   "dir": "m2g_pdmux-multigpu-06eea19-20261013081322",
+   "pass_table_sha256": "b1c1bf8aa0aedd5b1b7045b9a675629197ffa1506a0e37e187c3ec10ba09ef30"
+  }
+ }
+}

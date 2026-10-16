@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Cell / boot plan, M2g plan, budget dry-run and M2G_PASS_TABLE handling (PREREG_MULTIGPU rev10 §3, §4-1, §4-2, §6, §15, §16, §17).
+"""Cell / boot plan, M2g plan, budget dry-run and M2G_PASS_TABLE handling (PREREG_MULTIGPU rev10 §3, §4-1, §4-2, §6, §15, §16, §17;
+rev12 §19-2 shape X + U14 X anchor cells, §19-4 floor blocks (20, both arms), U7 X correctness step, §19-10 budget).
 
 Pure planning: no GPU, no network.  The Job drivers (mg_drive.py) turn the specs into mg_boot.py runs.
 
@@ -14,7 +15,7 @@ Pure planning: no GPU, no network.  The Job drivers (mg_drive.py) turn the specs
 
 TIME MODEL (an ESTIMATE, not a registered rule; rev5 audit "boot 4 min, n/lambda, drain" method):
   cell   = max(n/x + drain, n/lambda)  (+ gap)           lambda = ratio * prior(N, shape)   [lambda0_plan.cell_duration_at]
-  boot   = EST_BOOT_S + warm-up per shape + sum(cells)
+  boot   = EST_BOOT_S + warm-up per shape + sum(cells) + floor blocks (EST_FLOOR_S) + cmd steps (xcheck EST_XCHECK_S, other 20 s)
 `ratio` is the true-capacity / prior ratio (1.0 = the audit's "lambda = prior" case, 0.7 = a TP case with lambda < prior).
 """
 
@@ -84,9 +85,33 @@ def seed_order(cfg, arm, tag, seeds):
 
 def shape_order(cfg, arm, tag):
     rng = random.Random(f"{C.ARM_ORDER_SEED}:{cfg}:{arm}:{tag}:shape")
-    s = ["A", "B"]
+    s = list(C.SHAPES)                                   # rev12: three shapes (A, B, X); the order changes vs rev11 (forecast only)
     rng.shuffle(s)
     return s
+
+
+def floor_step():
+    """rev12 §19-4: the floor block -- uncontended single requests, lengths x 16, sequential, max_new 8, the floor document's prefix."""
+    return {"type": "floor", "lengths": list(C.FLOOR_LENGTHS), "repeats": C.FLOOR_REPEATS, "max_new": C.FLOOR_MAX_NEW}
+
+
+def xcheck_step(arm):
+    """U7: shape X small correctness step (scripts/multigpu/mg_xcheck.py serve); {XTOKENS} = the Job's registered token file."""
+    return {"type": "cmd", "name": f"xcheck_{arm}",
+            "argv": ["python3", "workspace/engine-port/scripts/multigpu/mg_xcheck.py", "serve", "--endpoint", "{ENDPOINT}",
+                     "--tokens", "{XTOKENS}", "--out", "{BOOT}/xcheck.json"]}
+
+
+def opening_steps(cfg, arm, kind):
+    """rev12: what opens a boot BEFORE its cells.  Floor block: both FLOOR_ARMS of N1 boot1 (J1), of every anchor boot and of every
+    N>1 config boot1 (R-6: symmetric, 20 blocks).  X correctness (U7): the N=1 fused_sym / agnostic boots that open a Job
+    (J1 boot1, J_N anchors), after the floor block."""
+    st = []
+    if arm in C.FLOOR_ARMS and kind in ("boot1", "anchor"):
+        st.append(floor_step())
+        if cfg == "N1":
+            st.append(xcheck_step(arm))
+    return st
 
 
 def _boot(cfg, arm, kind, steps, block="main", suffix="", **extra):
@@ -121,7 +146,7 @@ def lo_steps(cfg, arm, x_lo_by_shape, ext=0, rnd=1):
     """x_lo_by_shape: shape -> {offered, n_req} (SAME for the four arms of a (config, shape), MGP-9)."""
     steps = []
     ext_of = (lambda sh: ext.get(sh, 0)) if isinstance(ext, dict) else (lambda sh: ext)    # extension is per (config, shape)
-    for sh in shape_order(cfg, arm, f"lo{ext_of('A')}{ext_of('B')}{rnd}"):
+    for sh in shape_order(cfg, arm, "lo" + "".join(str(ext_of(s)) for s in C.SHAPES) + str(rnd)):
         if sh not in x_lo_by_shape:
             continue
         steps.append({"type": "warmup", "shape": sh})
@@ -172,7 +197,7 @@ def boots_gpu_dev():
 
 
 def boots_boot1(cfg, arms=None, exclude=()):
-    return [_boot(cfg, a, "boot1", hi_steps(cfg, a, ("A", "B"))) for a in (arms or arm_order(cfg))
+    return [_boot(cfg, a, "boot1", opening_steps(cfg, a, "boot1") + hi_steps(cfg, a, C.SHAPES)) for a in (arms or arm_order(cfg))
             if f"{cfg}:{a}" not in exclude]
 
 
@@ -187,11 +212,13 @@ def boots_boot2(cfg, x_lo_by_shape, ext=0, arms=None, exclude=()):
 
 
 def boots_anchor(job, exclude=()):
-    """§15-3 / §16-3: the J_N N=1 anchor = GPU 0 alone, arms {fused_sym, agnostic}, shape A, HI rung = THE SAME 1.6 x prior(1) rung as
-    J1 boot1 (ext 0 -- an anchor is never extended), 4 seeds.  Two boots, run before the configs of the Job.  J1 has none."""
+    """§15-3 / §16-3: the J_N N=1 anchor = GPU 0 alone, arms {fused_sym, agnostic}, shapes A and X (rev12 U14), HI rung = THE SAME
+    1.6 x prior(1) rung as J1 boot1 (ext 0 -- an anchor is never extended), 4 seeds.  Two boots, run before the configs of the Job.
+    rev12: each anchor boot opens with the floor block and the U7 X correctness step.  J1 has none."""
     if not has_anchor(job):
         return []
-    return [_boot("N1", a, "anchor", hi_steps("N1", a, (C.ANCHOR_SHAPE,), ext=0, rnd=1, block="anchor"), block="anchor")
+    return [_boot("N1", a, "anchor", opening_steps("N1", a, "anchor") + hi_steps("N1", a, C.ANCHOR_SHAPES, ext=0, rnd=1, block="anchor"),
+                  block="anchor")
             for a in anchor_arm_order(job) if f"N1:{a}" not in exclude]
 
 
@@ -279,8 +306,10 @@ def boot_seconds(spec, lam_of, x_lo_of=None, calib=None):
             t += C.EST_WARMUP_S[st["shape"]]
         elif st["type"] == "cell":
             t += cell_seconds(st["shape"], st["offered"], st["n_req"], lam_of(N, st["shape"]), calib["cell_gap_s"])
+        elif st["type"] == "floor":
+            t += C.EST_FLOOR_S
         elif st["type"] == "cmd":
-            t += 20.0
+            t += C.EST_XCHECK_S if str(st.get("name", "")).startswith("xcheck") else 20.0
     return t
 
 
@@ -314,11 +343,11 @@ def m3_static_boots(job, ratio_of=None, assume_ext=None, lo_given=True, ratio_ar
         N = config_spec(cfg)["N"]
         ext = ext_fires(ratio_of, ratio_arm_of, cfg, assume_ext)
         r = _arm_ratio(ratio_of, ratio_arm_of, cfg, "fused")
-        lam = {sh: r * prior(N, sh) for sh in ("A", "B")}
+        lam = {sh: r * prior(N, sh) for sh in C.SHAPES}
         stages.append((f"{cfg}.boot1", boots_boot1(cfg)))
         if ext:
-            stages.append((f"{cfg}.boot1ext", boots_ext(cfg, ("A", "B"))))
-        xlo = {sh: lo_rung(lam[sh]) for sh in ("A", "B")}
+            stages.append((f"{cfg}.boot1ext", boots_ext(cfg, C.SHAPES)))
+        xlo = {sh: lo_rung(lam[sh]) for sh in C.SHAPES}
         stages.append((f"{cfg}.boot2", boots_boot2(cfg, xlo, ext)))
     return stages
 
@@ -434,19 +463,19 @@ def m3_timeline(job, ratio_arm_of, calib, cap_s=None, preflight_s=0.0):
         ext = ext_fires(ratio_of, ratio_arm_of, cfg)
         ext_ok = True
         if ext:
-            ext_ok = all([run(s, f"{cfg}.boot1ext") for s in boots_ext(cfg, ("A", "B"))])
+            ext_ok = all([run(s, f"{cfg}.boot1ext") for s in boots_ext(cfg, C.SHAPES)])
         fused_i = arm_order(cfg).index("fused")
         fused_ok = b1[fused_i] and (ext_ok if ext else True)
         if not ext_ok:                                           # F10: an incomplete extension forbids entering boot2 (LO)
-            for s in boots_boot2(cfg, {sh: lo_rung(prior(N, sh)) for sh in ("A", "B")}, ext):
+            for s in boots_boot2(cfg, {sh: lo_rung(prior(N, sh)) for sh in C.SHAPES}, ext):
                 recs.append({"stage": f"{cfg}.boot2", "config": cfg, "arm": s["arm"], "block": "main", "start_s": t,
                              "end_s": t, "need_s": 0.0, "status": "NOT_ATTEMPTED_EXT_INCOMPLETE"})
         elif fused_ok:
-            lam = {sh: _arm_ratio(ratio_of, ratio_arm_of, cfg, "fused") * prior(N, sh) for sh in ("A", "B")}
-            for s in boots_boot2(cfg, {sh: lo_rung(lam[sh]) for sh in ("A", "B")}, ext):
+            lam = {sh: _arm_ratio(ratio_of, ratio_arm_of, cfg, "fused") * prior(N, sh) for sh in C.SHAPES}
+            for s in boots_boot2(cfg, {sh: lo_rung(lam[sh]) for sh in C.SHAPES}, ext):
                 run(s, f"{cfg}.boot2")
         else:                                                    # fused HI undefined -> x_lo undefined -> LO skipped (MGH-11)
-            for s in boots_boot2(cfg, {sh: lo_rung(prior(N, sh)) for sh in ("A", "B")}, ext):
+            for s in boots_boot2(cfg, {sh: lo_rung(prior(N, sh)) for sh in C.SHAPES}, ext):
                 recs.append({"stage": f"{cfg}.boot2", "config": cfg, "arm": s["arm"], "block": "main", "start_s": t,
                              "end_s": t, "need_s": 0.0, "status": "NOT_ATTEMPTED_FUSED_HI_UNDEFINED"})
     return recs
@@ -599,6 +628,94 @@ def m2g_budget(job):
     return doc
 
 
+def m3_plan_counts():
+    """rev12 §19-2 / §19-4: static plan (no extension) over the four Jobs -> cells (registered 560), floor blocks (20), X anchor cells,
+    U7 xcheck steps, boots.  Asserted by the selftest and the dry-run."""
+    cells = floors = xanchor = xcheck = boots = 0
+    by_job = {}
+    for job in C.JOBS:
+        jc = 0
+        for _name, bs in m3_static_boots(job):
+            for b in bs:
+                boots += 1
+                for st in b["steps"]:
+                    if st["type"] == "cell":
+                        cells += 1
+                        jc += 1
+                        if b.get("block") == "anchor" and st["shape"] == "X":
+                            xanchor += 1
+                    elif st["type"] == "floor":
+                        floors += 1
+                    elif st["type"] == "cmd" and str(st.get("name", "")).startswith("xcheck"):
+                        xcheck += 1
+        by_job[job] = jc
+    return {"cells": cells, "floor_blocks": floors, "x_anchor_cells": xanchor, "xcheck_steps": xcheck, "boots": boots, "cells_by_job": by_job}
+
+
+def assert_plan_registered():
+    c = m3_plan_counts()
+    assert c["cells"] == C.M3_CELLS_EXPECTED, f"M3 static cells {c['cells']} != registered {C.M3_CELLS_EXPECTED}"
+    assert c["floor_blocks"] == C.FLOOR_BLOCKS_EXPECTED, f"floor blocks {c['floor_blocks']} != registered {C.FLOOR_BLOCKS_EXPECTED}"
+    assert c["x_anchor_cells"] == 3 * 2 * 4, f"X anchor cells {c['x_anchor_cells']} != 24 (U14: 3 Jobs x 2 arms x 4 seeds)"
+    return c
+
+
+# ----------------------------------------------------------------------------- rev12 §19-6 M3 submission gate (R-5, F-1)
+def preflight_gate(repo, pass_file, image, head="HEAD", engine_digest_file=None, git=None):
+    """(ok, reasons).  All three must hold, else ABORT_PREFLIGHT_NOT_PASSED:
+      (i)   PASS_FILE (results/multigpu/PREFLIGHT_PASS.json [제안 schema: verdict, post_commit, merge_tree_engine_digest, image]) and its
+            .sha256 are tracked and clean, the file sha256 equals the .sha256, verdict == "PREFLIGHT_PASS", and the recorded merge-tree
+            engine digest equals the sealed ENGINE_DIGEST.txt;
+      (ii)  the recorded preflight image (…@sha256:…) equals this Job's image (PDMUX_IMAGE);
+      (iii) `git diff --stat <post_commit> <head> -- workspace/engine-port/{7 gate paths}` is EMPTY.
+    `git` (tests): callable(args list) -> (rc, stdout)."""
+    import subprocess as _sp
+    repo = Path(repo)
+    pf = Path(pass_file)
+
+    def _git(args):
+        if git:
+            return git(args)
+        r_ = _sp.run(["git", "-C", str(repo)] + list(args), capture_output=True, text=True, check=False)
+        return r_.returncode, r_.stdout
+    why = []
+    shaf = Path(str(pf) + ".sha256")
+    rel = lambda q: os.path.relpath(os.path.abspath(str(q)), os.path.abspath(str(repo)))      # no symlink resolution (Job layout, rev11 R-2)
+    if not pf.exists() or not shaf.exists():
+        return False, [f"(i) {pf.name} or its .sha256 absent"]
+    for q in (pf, shaf):
+        rc1, _ = _git(["ls-files", "--error-unmatch", rel(q)])
+        rc2, _ = _git(["diff", "--quiet", "HEAD", "--", rel(q)])
+        if rc1 != 0 or rc2 != 0:
+            why.append(f"(i) {q.name} not tracked/clean")
+    raw = pf.read_bytes()
+    if shaf.read_text().split()[:1] != [hashlib.sha256(raw).hexdigest()]:
+        why.append("(i) PREFLIGHT_PASS sha256 != committed .sha256")
+    try:
+        rec = json.loads(raw)
+    except ValueError:
+        return False, why + ["(i) PREFLIGHT_PASS not JSON"]
+    if rec.get("verdict") != "PREFLIGHT_PASS":
+        why.append(f"(i) verdict {rec.get('verdict')!r} != PREFLIGHT_PASS")
+    edf = Path(engine_digest_file) if engine_digest_file else HERE / "ENGINE_DIGEST.txt"
+    sealed = edf.read_text().strip() if edf.exists() else "ABSENT"
+    if rec.get("merge_tree_engine_digest") != sealed:
+        why.append(f"(i) merge-tree digest {str(rec.get('merge_tree_engine_digest'))[:16]} != sealed {sealed[:16]}")
+    dig = lambda x: str(x or "").split("@sha256:")[-1] if "@sha256:" in str(x or "") else None
+    if not dig(image) or dig(rec.get("image")) != dig(image):
+        why.append(f"(ii) image digest {dig(rec.get('image'))} != Job image {dig(image)}")
+    post = rec.get("post_commit")
+    if not post:
+        why.append("(iii) post_commit missing")
+    else:
+        rc, out = _git(["diff", "--stat", post, head, "--"] + [f"workspace/engine-port/{x}" for x in C.PREFLIGHT_GATE_PATHS])
+        if rc != 0:
+            why.append(f"(iii) git diff failed (rc {rc})")
+        elif out.strip():
+            why.append("(iii) gate paths changed since the preflight POST: " + out.strip().splitlines()[-1])
+    return (not why), why
+
+
 # ----------------------------------------------------------------------------- printing / CLI
 def fmt_budget(b, title):
     L = [f"== {title} =="]
@@ -630,6 +747,8 @@ def selftest():
     assert hi_rung(8, "A", 1)["offered"] == round(2 * 1.6 * 8 * 2.99, 6)
     nb = lambda j: m3_budget(j)["boots"]
     assert nb("J1") == 4 * 2, nb("J1")                                        # N1: boot1 + boot2 per arm
+    pc = assert_plan_registered()                                             # rev12: 560 cells, 20 floor blocks, 24 X anchor cells
+    assert pc["xcheck_steps"] == 2 * len(C.JOBS), pc                          # U7: J1 boot1 + J_N anchors, fused_sym and agnostic
     assert nb("J2") == 2 + 2 * 8 and nb("J4") == 2 + 2 * 8 and nb("J8") == 8 + 2 + 2 * 8
     assert [b["arm"] for b in boots_anchor("J2")] and boots_anchor("J1") == []
     assert all(b["gpu_ids"] == "0" and b["block"] == "anchor" for b in boots_anchor("J4"))
@@ -644,7 +763,7 @@ def selftest():
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("cmd", nargs="?", choices=("m3-plan", "m3-budget", "m3-forecast", "m2g-plan", "m2g-budget", "job-table",
-                                               "config-order", "check-pass-table"))
+                                               "config-order", "check-pass-table", "plan-counts", "preflight-gate"))
     ap.add_argument("rest", nargs="*")
     ap.add_argument("--job", choices=C.JOBS, default=None, help="PDMUX_MG_JOB (J1 | J2 | J4 | J8)")
     ap.add_argument("--ratio", type=float, default=None, help="lambda/prior for every config")
@@ -658,6 +777,13 @@ def main(argv=None):
         ap.error(f"{a.cmd} needs --job")
     if a.cmd == "job-table":
         print(job_table())
+        return 0
+    if a.cmd == "preflight-gate":                                 # rest: REPO PASS_FILE IMAGE
+        ok, why = preflight_gate(a.rest[0], a.rest[1], a.rest[2] if len(a.rest) > 2 else "")
+        print("PREFLIGHT_GATE_OK" if ok else "ABORT_PREFLIGHT_NOT_PASSED " + " | ".join(why))
+        return 0 if ok else 3
+    if a.cmd == "plan-counts":
+        print(json.dumps(assert_plan_registered(), sort_keys=True))
         return 0
     if a.cmd == "config-order":
         assert_config_order_registered()
