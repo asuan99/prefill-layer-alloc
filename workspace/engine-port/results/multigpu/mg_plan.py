@@ -215,7 +215,8 @@ def boots_boot2(cfg, x_lo_by_shape, ext=0, arms=None, exclude=()):
 def boots_anchor(job, exclude=()):
     """§15-3 / §16-3: the J_N N=1 anchor = GPU 0 alone, arms {fused_sym, agnostic}, shapes A and X (rev12 U14), HI rung = THE SAME
     1.6 x prior(1) rung as J1 boot1 (ext 0 -- an anchor is never extended), 4 seeds.  Two boots, run before the configs of the Job.
-    rev12: each anchor boot opens with the floor block and the U7 X correctness step.  J1 has none."""
+    rev12: each anchor boot opens with the floor block only -- the U7 X correctness step is NOT on the anchor boots (corrected
+    2026-10-16, 0b541c74): it runs on the fused_sym / agnostic boot1 of every config (opening_steps).  J1 has no anchor."""
     if not has_anchor(job):
         return []
     return [_boot("N1", a, "anchor", opening_steps("N1", a, "anchor") + hi_steps("N1", a, C.ANCHOR_SHAPES, ext=0, rnd=1, block="anchor"),
@@ -662,11 +663,36 @@ def assert_plan_registered():
 
 
 # ----------------------------------------------------------------------------- rev12 §19-6 M3 submission gate (R-5, F-1)
+def committed_matches_head(repo, path, head="HEAD"):
+    """(ok, why): `path` (inside `repo`) is tracked at `head` with EXACTLY the bytes on disk.  Harness audit r1 R-H1 (2026-10-16):
+    `git cat-file -e <head>:<rel>` + sha256(`git show <head>:<rel>`) == sha256(the file bytes, read through any symlink).
+    `ls-files` + `git diff --quiet HEAD` is NOT used: inside a VESSL Job results/ is a symlink to /data/runs/<job>/results
+    (job_entry.sh `cp -a` + `ln -s`), git reports every tracked file behind it as deleted, and that check was always false there.
+    `rel` is taken WITHOUT resolving symlinks (the Job layout, rev11 R-2)."""
+    import subprocess as _sp
+    rel = os.path.relpath(os.path.abspath(str(path)), os.path.abspath(str(repo)))
+    if rel.startswith(".."):
+        return False, f"{path} is outside the repository"
+    if not Path(path).is_file():
+        return False, f"{rel} absent"
+    r1 = _sp.run(["git", "-C", str(repo), "cat-file", "-e", f"{head}:{rel}"], capture_output=True, check=False)
+    if r1.returncode != 0:
+        return False, f"{rel} not tracked at {head}"
+    r2 = _sp.run(["git", "-C", str(repo), "show", f"{head}:{rel}"], capture_output=True, check=False)
+    if r2.returncode != 0:
+        return False, f"git show {head}:{rel} failed (rc {r2.returncode})"
+    if hashlib.sha256(r2.stdout).hexdigest() != hashlib.sha256(Path(path).read_bytes()).hexdigest():
+        return False, f"{rel} bytes differ from {head}"
+    return True, ""
+
+
 def preflight_gate(repo, pass_file, image, head="HEAD", engine_digest_file=None, git=None):
     """(ok, reasons).  All three must hold, else ABORT_PREFLIGHT_NOT_PASSED:
-      (i)   PASS_FILE (results/multigpu/PREFLIGHT_PASS.json [제안 schema: verdict, post_commit, merge_tree_engine_digest, image]) and its
-            .sha256 are tracked and clean, the file sha256 equals the .sha256, verdict == "PREFLIGHT_PASS", and the recorded merge-tree
-            engine digest equals the sealed ENGINE_DIGEST.txt;
+      (i)   PASS_FILE (results/multigpu/PREFLIGHT_PASS.json [schema: verdict, post_commit, merge_tree_engine_digest, image, job_name,
+            judge_json_sha256 -- written inside the preflight Job by preflight_judge.py `record`, R-H2]) and its .sha256 are committed at
+            `head` with exactly the bytes on disk (committed_matches_head: holds in the Job's symlinked results/ layout, R-H1), the file
+            sha256 equals the .sha256, verdict == "PREFLIGHT_PASS", and the recorded merge-tree engine digest equals the sealed
+            ENGINE_DIGEST.txt;
       (ii)  the recorded preflight image (…@sha256:…) equals this Job's image (PDMUX_IMAGE);
       (iii) `git diff --stat <post_commit> <head> -- workspace/engine-port/{7 gate paths}` is EMPTY.
     `git` (tests): callable(args list) -> (rc, stdout)."""
@@ -685,10 +711,9 @@ def preflight_gate(repo, pass_file, image, head="HEAD", engine_digest_file=None,
     if not pf.exists() or not shaf.exists():
         return False, [f"(i) {pf.name} or its .sha256 absent"]
     for q in (pf, shaf):
-        rc1, _ = _git(["ls-files", "--error-unmatch", rel(q)])
-        rc2, _ = _git(["diff", "--quiet", "HEAD", "--", rel(q)])
-        if rc1 != 0 or rc2 != 0:
-            why.append(f"(i) {q.name} not tracked/clean")
+        ok_q, why_q = committed_matches_head(repo, q, head)
+        if not ok_q:
+            why.append(f"(i) {q.name} not tracked/clean ({why_q or rel(q)})")
     raw = pf.read_bytes()
     if shaf.read_text().split()[:1] != [hashlib.sha256(raw).hexdigest()]:
         why.append("(i) PREFLIGHT_PASS sha256 != committed .sha256")
@@ -764,7 +789,7 @@ def selftest():
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("cmd", nargs="?", choices=("m3-plan", "m3-budget", "m3-forecast", "m2g-plan", "m2g-budget", "job-table",
-                                               "config-order", "check-pass-table", "plan-counts", "preflight-gate"))
+                                               "config-order", "check-pass-table", "plan-counts", "preflight-gate", "committed-clean"))
     ap.add_argument("rest", nargs="*")
     ap.add_argument("--job", choices=C.JOBS, default=None, help="PDMUX_MG_JOB (J1 | J2 | J4 | J8)")
     ap.add_argument("--ratio", type=float, default=None, help="lambda/prior for every config")
@@ -783,6 +808,10 @@ def main(argv=None):
         ok, why = preflight_gate(a.rest[0], a.rest[1], a.rest[2] if len(a.rest) > 2 else "")
         print("PREFLIGHT_GATE_OK" if ok else "ABORT_PREFLIGHT_NOT_PASSED " + " | ".join(why))
         return 0 if ok else 3
+    if a.cmd == "committed-clean":                                # rest: REPO FILE  (m3_job.sh check_committed, R-H1)
+        ok, why = committed_matches_head(a.rest[0], a.rest[1])
+        print("COMMITTED_CLEAN" if ok else "NOT_COMMITTED_CLEAN " + why)
+        return 0 if ok else 1
     if a.cmd == "plan-counts":
         print(json.dumps(assert_plan_registered(), sort_keys=True))
         return 0

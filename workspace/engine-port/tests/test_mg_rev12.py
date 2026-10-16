@@ -15,12 +15,20 @@ its check fail (KILLED) while the unmutated control passes.  Mutants (names = PR
   F1  "J1 floor로 J_N 채점"           F2  "config boot1 agnostic floor 블록 누락"     S1  "shape 2개로 계획"
   L1  "X에 [1]*L 송신"                L2  "A·B payload가 rev11과 다름"                L3  "X 경로에서 error 청크를 토큰으로 셈" (F-3)
   B1  "mg_boot context 검사 제거"     B2  "floor 요청 fit 검사 누락" (F-3)            B3  torch_dtype fallback (R-4)
+Harness audit r1 (VERDICT_m3_rev12_harness_r1_2026-10-16 §5) repairs, auditor mutant names:
+  R-H1  G1 "옛 diff --quiet HEAD로 되돌림" (mg_plan gate (i)), G2 the same in m3_job.sh check_committed, G3 "gate 깨끗함 검사 제거" (M6 re-sited)
+  R-H2  G4 "FAIL_NEW를 PASS로 기록" (preflight_judge record)
+  R-H3  M20 ref_x from A cells, M21 anchor_x from A cells, M22 X trend reads the A Job effect / anchors, M23 X correction from A arrays
+  R-H4  M1 "출력 32토큰 미만 PASS", M12 DTYPE_UNVERIFIED dropped, M13 floor median over a partial set
+  R-H5  M24 "logprob 부재 PASS"         (M8, equivalent end to end, is pinned at the job_effect() contract)
 """
 
 import asyncio
 import hashlib
+import shutil
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -48,6 +56,9 @@ LABEL_SRC = ENGINE / "results/multigpu/mg_label.py"
 PLAN_SRC = ENGINE / "results/multigpu/mg_plan.py"
 BOOT_SRC = ENGINE / "scripts/multigpu/mg_boot.py"
 XC_SRC = ENGINE / "scripts/multigpu/mg_xcheck.py"
+M3_JOB_SH = ENGINE / "results/multigpu/m3_job.sh"
+PF_TOOLS = ENGINE / "results/handoff_review_2026-10-15/merge_trial_tools"
+PF_JUDGE_SRC = PF_TOOLS / "preflight_judge.py"
 LOADGEN_SRC = ENGINE / "benchmarks/pdmux_eval/trace_loadgen.py"
 
 try:
@@ -431,6 +442,64 @@ class FloorAndKnobs(MutationCase):
         self.assertEqual(L.kv_dtype_flags("J2", "TP2", "agnostic", cm, {}, ref), ([], True))   # no Mamba line -> DTYPE_UNVERIFIED
         self.assertEqual(L.kv_dtype_flags("J2", "TP2", "agnostic", cm, mf, None)[1], True)
 
+    def test_mutant_M13_floor_partial_set_killed(self):
+        """R-H4 M13: fewer than FLOOR_REPEATS successes at a length -> floor_s None (never a median over a partial set)."""
+        L0, rep = C.FLOOR_LENGTHS[0], C.FLOOR_REPEATS
+        ok = [{"input_tokens": L0, "ttft_ms": 50.0, "error": ""} for _ in range(rep - 1)]
+        one_err = ok + [{"input_tokens": L0, "ttft_ms": None, "error": "SSE_ERROR: x", "error_kind": "SSE_ERROR", "error_side": "server"}]
+        full = ok + [{"input_tokens": L0, "ttft_ms": 50.0, "error": ""}]
+
+        def chk(mod):
+            if mod.floor_summary(full, [L0], rep)["points"][str(L0)]["floor_s"] != 0.05:
+                return "control: 16 successes did not give the median"
+            for name, reqs in (("15 ok + 1 server error", one_err), ("15 sent, all ok", ok)):
+                pt = mod.floor_summary(reqs, [L0], rep)["points"][str(L0)]
+                if pt["floor_s"] is not None or pt["complete"]:
+                    return f"{name}: floor_s {pt['floor_s']} complete {pt['complete']}"
+            return None
+        self.assert_killed(BOOT_SRC, "M13",
+                           '"floor_s": (statistics.median(float(r["ttft_ms"]) for r in ok) / 1000.0) if complete else None,',
+                           '"floor_s": (statistics.median(float(r["ttft_ms"]) for r in ok) / 1000.0) if ok else None,', chk)
+
+    def _dtype_root(self, td, with_ssm):
+        """Two M3 rev12 boots (fused_sym, agnostic) of J2 DP2 whose cell_meta equals the M2g reference; mamba_facts has the ssm_state
+        line only if `with_ssm`."""
+        root = Path(td)
+        ref = L.load_reference()
+        for arm in ("fused_sym", "agnostic"):
+            bid = f"m3_DP2_{arm}_boot1"
+            (root / "specs").mkdir(parents=True, exist_ok=True)
+            (root / "specs" / f"{bid}.json").write_text(json.dumps({"boot_id": bid, "config": "DP2", "arm": arm, "block": "main", "steps": []}))
+            bd = root / "boots" / bid
+            bd.mkdir(parents=True)
+            e = ref["entries"][f"J2|DP2|{arm}"]
+            (bd / "cell_meta.json").write_text(json.dumps({"max_mamba_cache_size": e["max_mamba_cache_size"],
+                                                            "max_total_num_tokens": e["max_total_num_tokens"],
+                                                            "max_running_requests_requested": 48}))
+            (bd / "precheck.json").write_text("{}")
+            (bd / "mamba_facts.json").write_text(json.dumps({"ssm_state_gb": e["ssm_state_gb"]} if with_ssm else {}))
+        return root, ref
+
+    def _chk_dtype(self, mod):
+        cells = xw_cells("DP2", {"A": 1.0, "X": 1.0})
+        for with_ssm, want in ((True, False), (False, True)):
+            with tempfile.TemporaryDirectory() as td:
+                root, ref = self._dtype_root(td, with_ssm)
+                fl = mod.build_config_flags(root, cells, reference=ref, job="J2")
+                doc = mod.aggregate(cells, config_flags=fl, job="J2", xcheck={"DP2": {"verdict": "PASS"}})
+                for shape in ("A", "X"):
+                    e = doc["estimands"]["G_sym"]["DP2"][shape]
+                    if not e["defined"]:
+                        return f"{shape} undefined: {e['undefined_reasons']}"
+                    if ("DTYPE_UNVERIFIED" in e["disclosures"]) != want:
+                        return f"mamba line {'present' if with_ssm else 'absent'}: {shape} disclosures {e['disclosures']}"
+        return None
+
+    def test_mutant_M12_dtype_unverified_reaches_the_estimand_killed(self):
+        """R-H4 M12: boot without a Mamba ssm_state line -> build_config_flags dtype_unverified -> DTYPE_UNVERIFIED in the estimand
+        disclosures (MG12-15); with the line (= the M2g reference) the disclosure is absent."""
+        self.assert_killed(LABEL_SRC, "M12", '            d.append("DTYPE_UNVERIFIED")', "            pass", self._chk_dtype)
+
     def test_memory_check_x_bound(self):
         f = {a: dict(mamba=[48], max_total=[48 * 17000], eff_cap=48) for a in C.ARMS}
         self.assertFalse(L.memory_check(f, shapes=C.SHAPES)["memory_mismatch"])
@@ -458,10 +527,113 @@ class FloorAndKnobs(MutationCase):
             self.assertEqual(L.clock_by_cell(Path(td) / "none.csv", cells)["status"], "CLK_ABSENT")
 
 
+# =========================================================================== R-H3: X wiring aggregate() -> aggregate_jobs()
+def xw_cell(cfg, arm, shape, rung, seed, achieved, block="main"):
+    return {"cell_id": f"{block}|{cfg}|{arm}|{shape}|{rung}|{seed}", "status": "OK", "g": 0.4 if rung == "HI" else 0.01, "achieved": achieved,
+            "truncated": False, "harness_limited": False, "frontend_saturated": False, "server_error_hi": False,
+            "meta": dict(config=cfg, arm=arm, shape=shape, rung=rung, seed=seed, ext=0, round=1, block=block)}
+
+
+def xw_cells(cfg, g_by_shape, block="main", lam_fs=1.0):
+    """HI (4 seeds, g 0.4) + LO (2 seeds, g 0.01) cells of fused_sym (achieved lam_fs) and agnostic (achieved G * lam_fs) per shape."""
+    out = []
+    for shape, G in g_by_shape.items():
+        for arm, ach in (("fused_sym", lam_fs), ("agnostic", G * lam_fs)):
+            out += [xw_cell(cfg, arm, shape, "HI", sd, ach, block) for sd in C.HI_SEEDS]
+            out += [xw_cell(cfg, arm, shape, "LO", sd, ach / 4.0, block) for sd in C.LO_SEEDS]
+    return out
+
+
+def jobs_from_cells(mod, g1, series, anchors):
+    """The four Job documents built by mod.aggregate from synthetic CELLS (not injected ref/anchor dicts), joined by mod.aggregate_jobs.
+    g1 {shape: G(1)} (J1 N1 boot1), series {shape: [G(2), G(4), G(8)]} (DP and TP alike), anchors {shape: G of the J_N N=1 anchor}."""
+    pas = {"verdict": "PASS"}
+    docs = {"J1": mod.aggregate(xw_cells("N1", g1), job="J1", xcheck={"N1": pas})}
+    for i, n in enumerate((2, 4, 8)):
+        cells = xw_cells("N1", anchors, block="anchor")
+        for m in ("DP", "TP"):
+            cells += xw_cells(f"{m}{n}", {sh: v[i] for sh, v in series.items()})
+        docs[f"J{n}"] = mod.aggregate(cells, job=f"J{n}", xcheck={f"DP{n}": pas, f"TP{n}": pas})
+    return mod.aggregate_jobs(docs)
+
+
+class XWiringEndToEnd(MutationCase):
+    """U14 / F-5 wiring (harness audit r1 R-H3): the X Job effect, X anchors and the X correction must be built from shape-X cells.
+    The X anchor/reference values differ from the A ones, so reading A anywhere on the X path changes the result."""
+
+    # S1: G(1, X) = 1.2 = every X anchor; A everywhere 1.0  ->  every Job effect (A and X) CLEAR
+    S1 = dict(g1={"A": 1.0, "B": 1.0, "X": 1.2}, series={"A": [1.0] * 3, "B": [1.0] * 3, "X": [1.2] * 3}, anchors={"A": 1.0, "X": 1.2})
+    # S2: G(1, X) = 1.2, X anchors 1.0 (FIRED, -16.7 %), X points 1.0  ->  raw X trend decreases, the corrected one (x 1.2 / 1.0) is flat
+    S2 = dict(g1={"A": 1.0, "B": 1.0, "X": 1.2}, series={"A": [1.0] * 3, "B": [1.0] * 3, "X": [1.0] * 3}, anchors={"A": 1.02, "X": 1.0})
+
+    def _chk_s1(self, mod):
+        d = jobs_from_cells(mod, **self.S1)
+        sx = {J: v["status"] for J, v in d["job_effect_x"].items()}
+        sa = {J: v["status"] for J, v in d["job_effect"].items()}
+        if set(sx.values()) != {"CLEAR"}:
+            return f"X Job effect {sx} (X anchor 1.2 == X reference 1.2 must be CLEAR)"
+        if set(sa.values()) != {"CLEAR"}:
+            return f"A Job effect {sa}"
+        return None
+
+    def _chk_s2(self, mod):
+        d = jobs_from_cells(mod, **self.S2)
+        sx = {J: v["status"] for J, v in d["job_effect_x"].items()}
+        if set(sx.values()) != {"FIRED"}:
+            return f"X Job effect {sx} (X anchor 1.0 vs X reference 1.2 must FIRE)"
+        if {J: v["status"] for J, v in d["job_effect"].items()} != {"J2": "CLEAR", "J4": "CLEAR", "J8": "CLEAR"}:
+            return "A Job effect not CLEAR"
+        tx, ta = d["trends"]["G_sym|DP|X"], d["trends"]["G_sym|DP|A"]
+        if tx["label"] != L.TREND_JOB_SENSITIVE or tx["direction_citable"] or tx["raw_label"] != "G_DECREASES_WITH_N":
+            return f"X trend {tx['label']} raw {tx.get('raw_label')} citable {tx['direction_citable']} (must be TREND_JOB_SENSITIVE)"
+        if (tx.get("corrected") or {}).get("label") != "NO_TREND_DETECTED":
+            return f"X corrected trend {(tx.get('corrected') or {}).get('label')} (the J1 X reference must correct it to flat)"
+        if ta["label"] != "NO_TREND_DETECTED":
+            return f"A trend {ta['label']}"
+        return None
+
+    def test_controls(self):
+        self.assertIsNone(self._chk_s1(L))
+        self.assertIsNone(self._chk_s2(L))
+
+    def _chk_m8(self, mod):
+        ref = L._syn_ref(g_ref=1.2, fused_sym=dict(x_correctness="X_CORRECTNESS_FAIL"), agnostic=dict(x_correctness="X_CORRECTNESS_FAIL"))
+        st = mod.job_effect(ref, L._syn_anchor(1.2))
+        return None if st["status"] == "UNTESTED" and any("J1_REFERENCE_X_CORRECTNESS_FAIL" in r for r in st["reasons"]) else f"{st}"
+
+    def test_mutant_M8_reference_x_correctness_ignored_killed(self):
+        """M8 is EQUIVALENT end to end (J1 xcheck not PASS -> G_sym(1, X) undefined -> P9-a UNTESTED first, auditor's reproduction);
+        pinned here at the job_effect() contract so that the P9-a path is not its only guard."""
+        self.assert_killed(LABEL_SRC, "M8", '        if e.get("x_correctness"):\n            why.append(f"{a}:J1_REFERENCE_',
+                           '        if False:\n            why.append(f"{a}:J1_REFERENCE_', self._chk_m8)
+
+    def test_mutant_M20_ref_x_from_A_killed(self):
+        self.assert_killed(LABEL_SRC, "M20",
+                           'doc["ref_x"] = {arm: dict(ref_entry(keys.get(("N1", arm, "X", 1))), x_correctness=xr)',
+                           'doc["ref_x"] = {arm: dict(ref_entry(keys.get(("N1", arm, "A", 1))), x_correctness=xr)', self._chk_s1)
+
+    def test_mutant_M21_anchor_x_from_A_killed(self):
+        self.assert_killed(LABEL_SRC, "M21",
+                           'doc["anchor_x"] = {"arms": {arm: anchor_entry(keys.get((C.ANCHOR_CONFIG, arm, "X", 1)))',
+                           'doc["anchor_x"] = {"arms": {arm: anchor_entry(keys.get((C.ANCHOR_CONFIG, arm, "A", 1)))', self._chk_s1)
+
+    def test_mutant_M22_x_trend_reads_A_job_effect_killed(self):
+        self.assert_killed(LABEL_SRC, "M22",
+                           '                st_of, anc_src = (status_x, anchors_x) if sx else (status, anchors)',
+                           '                st_of, anc_src = (status, anchors)', self._chk_s2)
+
+    def test_mutant_M23_x_correction_from_A_arrays_killed(self):
+        self.assert_killed(LABEL_SRC, "M23",
+                           't = trend(pts, anchors=anc_by_N, job_flags=flags_series, ref_g1=(ref_g1_x if sx else ref_g1), _mut=_mut)',
+                           't = trend(pts, anchors=anc_by_N, job_flags=flags_series, ref_g1=ref_g1, _mut=_mut)', self._chk_s2)
+
+
 # =========================================================================== U7 X correctness
-def xrec(outs_c, outs_s=None, err=None, nonfinite=0):
+def xrec(outs_c, outs_s=None, err=None, nonfinite=0, n_logprobs=None):
+    """n_logprobs: None = one logprob per output token (what mg_xcheck._one records); an int = that count on every request."""
     docs = sorted(outs_c)
-    mk = lambda o: {str(d): {"output_ids": list(o[d]), "error": (err if d == docs[0] and err else ""), "nonfinite": nonfinite}
+    mk = lambda o: {str(d): {"output_ids": list(o[d]), "error": (err if d == docs[0] and err else ""), "nonfinite": nonfinite,
+                             "n_logprobs": len(o[d]) if n_logprobs is None else n_logprobs}
                     for d in docs}
     return {"docs": docs, "passes": {"c": mk(outs_c), "s": mk(outs_s or outs_c)}}
 
@@ -560,6 +732,43 @@ class XCorrectness(MutationCase):
     def test_mutant_X1_label_unchanged_killed(self):
         self.assert_killed(LABEL_SRC, "X1", '        if shape == "X" and x_correctness_reason(xcheck_of(xcheck, cfg)):', "        if False:",
                            self._chk_x1)
+
+    def test_mutant_M1_short_output_killed(self):
+        """R-H4 M1: every pass returns the SAME 31 tokens (D0 = D1 = 4, first 16 agree); the length rule alone must FAIL it.  The
+        logprob count is held at XC_MAX_NEW so that the R-H5 rule cannot mask this mutant."""
+        short = {d: v[:C.XC_MAX_NEW - 1] for d, v in outs(3).items()}
+        mk = lambda: xrec(short, n_logprobs=C.XC_MAX_NEW)
+        chk = lambda mod: None if mod.score(mk(), mk(), True, True)["verdict"] == "FAIL" else "31-token outputs passed"
+        self.assert_killed(XC_SRC, "M1", '                elif len(v.get("output_ids") or []) != C.XC_MAX_NEW:', "                elif False:", chk)
+
+    def _chk_logprobs(self, mod):
+        full = xrec(outs(3))
+        if mod.score(full, xrec(outs(3)), True, True)["verdict"] != "PASS":
+            return "control record with 32 logprobs per request did not PASS"
+        for n_lp in (0, C.XC_MAX_NEW - 1):
+            r = mod.score(full, xrec(outs(3), n_logprobs=n_lp), True, True)
+            if r["verdict"] != "FAIL" or not any(f"LOGPROBS_{n_lp}" in w for w in r["reasons"]):
+                return f"{n_lp} logprobs per request: {r['verdict']} {r.get('reasons')}"
+        legacy = xrec(outs(3))
+        for v in legacy["passes"]["c"].values():
+            v.pop("n_logprobs")
+        if mod.score(legacy, xrec(outs(3)), True, True)["verdict"] != "FAIL":
+            return "a record without n_logprobs passed"
+        return None
+
+    def test_mutant_M24_logprobs_absent_pass_killed(self):
+        """R-H5: every request must carry exactly XC_MAX_NEW output-token logprobs, else FAIL (the NaN check is vacuous otherwise)."""
+        self.assert_killed(XC_SRC, "M24", '                if not v.get("error") and int(v.get("n_logprobs") or 0) != C.XC_MAX_NEW:',
+                           "                if False:", self._chk_logprobs)
+
+    def test_serve_records_one_logprob_per_token(self):
+        def post(_ep, body):
+            out = list(range(body["sampling_params"]["max_new_tokens"]))
+            return {"output_ids": out, "meta_info": {"output_token_logprobs": [[-0.2, t, None] for t in out]}}
+        rid, v = XC._one("http://x", "1", [1, 2, 3], post)
+        self.assertEqual((v["n_logprobs"], v["nonfinite"]), (C.XC_MAX_NEW, 0))
+        rid, v = XC._one("http://x", "1", [1, 2, 3], lambda _e, b: {"output_ids": [1] * C.XC_MAX_NEW, "meta_info": {}})
+        self.assertEqual(v["n_logprobs"], 0)
 
     def test_select_docs_longest_four(self):
         h = {"docs": [[1, 0, 100, 5], [2, 0, 900, 5], [3, 0, 900, 5], [4, 0, 50, 5], [5, 0, 800, 5], [6, 0, 700, 5]]}
@@ -1034,6 +1243,217 @@ class PreflightGate(unittest.TestCase):
             ok, why = P.preflight_gate(r, pf, "reg/img@sha256:feed", engine_digest_file=ed)
             self.assertFalse(ok)
             self.assertTrue(any("not tracked/clean" in w for w in why), why)
+
+
+def job_layout(src_repo, td):
+    """job_entry.sh step 1 (bundle clone + checkout of the exact commit; results/ copied to the run volume and REPLACED BY A SYMLINK).
+    -> (project root, run-volume results dir)."""
+    td = Path(td)
+    td.mkdir(parents=True, exist_ok=True)
+    head = git(src_repo, "rev-parse", "HEAD")
+    bundle = td / "repo.bundle"
+    git(src_repo, "bundle", "create", str(bundle), "HEAD")
+    proj = td / "opt" / "project"
+    subprocess.run(["git", "clone", "-q", "--no-checkout", str(bundle), str(proj)], check=True, capture_output=True)
+    git(proj, "checkout", "-q", head)
+    run = td / "data" / "runs" / "job" / "results"
+    res = proj / "workspace/engine-port/results"
+    shutil.copytree(res, run, symlinks=True)
+    shutil.rmtree(res)
+    res.symlink_to(run)
+    return proj, run
+
+
+def commit_all(r, msg):
+    git(r, "-c", "user.email=t@t", "-c", "user.name=t", "add", "-A")
+    git(r, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", msg)
+
+
+class PreflightGateJobLayout(MutationCase):
+    """Harness audit r1 R-H1: gate (i) and m3_job.sh check_committed must hold in the Job layout (results/ is a symlink)."""
+    IMG = "reg/img@sha256:feed"
+    OLD_GATE = ('        ok_q, why_q = (_git(["ls-files", "--error-unmatch", rel(q)])[0] == 0 and '
+                '_git(["diff", "--quiet", "HEAD", "--", rel(q)])[0] == 0), ""')
+
+    def _gate(self, mod, root):
+        m = root / "workspace/engine-port/results/multigpu"
+        return mod.preflight_gate(root, m / "PREFLIGHT_PASS.json", self.IMG, engine_digest_file=m / "ENGINE_DIGEST.txt")
+
+    @staticmethod
+    def _tamper(results_multigpu):
+        """verdict text changed AND the .sha256 rewritten to match: only the committed-bytes check can see it."""
+        pf = results_multigpu / "PREFLIGHT_PASS.json"
+        raw = pf.read_bytes().replace(b'"post"', b'"post" ')
+        rec = json.loads(raw)
+        rec["note"] = "edited after commit"
+        raw = json.dumps(rec).encode()
+        pf.write_bytes(raw)
+        Path(str(pf) + ".sha256").write_text(hashlib.sha256(raw).hexdigest() + "\n")
+
+    def _chk(self, mod, layout):
+        with tempfile.TemporaryDirectory() as td:
+            r, _pf, _ed = PreflightGate()._repo(td)
+            root = r if layout == "plain" else job_layout(r, Path(td) / "job")[0]
+            ok, why = self._gate(mod, root)
+            if not ok:
+                return f"{layout} layout: valid committed PREFLIGHT_PASS rejected: {why}"
+            self._tamper(root / "workspace/engine-port/results/multigpu")
+            ok, why = self._gate(mod, root)
+            if ok or not any("not tracked/clean" in w for w in why):
+                return f"{layout} layout: PREFLIGHT_PASS edited after the commit accepted ({why})"
+        return None
+
+    def test_job_layout_valid_true_tampered_false(self):
+        self.assertIsNone(self._chk(P, "plain"))
+        self.assertIsNone(self._chk(P, "job"))
+        with tempfile.TemporaryDirectory() as td:                    # the defect itself: the old git check is false in this layout
+            r, _pf, _ed = PreflightGate()._repo(td)
+            proj, run = job_layout(r, Path(td) / "job")
+            self.assertTrue((proj / "workspace/engine-port/results").is_symlink())
+            rel = "workspace/engine-port/results/multigpu/PREFLIGHT_PASS.json"
+            self.assertNotEqual(subprocess.run(["git", "-C", str(proj), "diff", "--quiet", "HEAD", "--", rel]).returncode, 0)
+            self.assertEqual(P.committed_matches_head(proj, proj / rel), (True, ""))
+            (run / "multigpu" / "NEW.json").write_text("{}")
+            self.assertFalse(P.committed_matches_head(proj, proj / "workspace/engine-port/results/multigpu/NEW.json")[0])   # untracked
+
+    def test_mutant_G1_old_diff_quiet_killed(self):
+        self.assert_killed(PLAN_SRC, "G1", "        ok_q, why_q = committed_matches_head(repo, q, head)", self.OLD_GATE,
+                           lambda mod: self._chk(mod, "job"))
+
+    def test_mutant_G3_clean_check_removed_killed(self):
+        """the auditor's M6 ("gate 깨끗함 검사 제거"), re-sited on the repaired code."""
+        self.assert_killed(PLAN_SRC, "G3", "        if not ok_q:", "        if False:", lambda mod: self._chk(mod, "plain"))
+
+    # ---- m3_job.sh check_committed (rev11 F17, inherited): the same layout defect, the same repair
+    OLD_SH = '  git -C "$ROOT" ls-files --error-unmatch "$1" > /dev/null 2>&1 && git -C "$ROOT" diff --quiet HEAD -- "$1" 2>/dev/null'
+    NEW_SH = '  python3 "$HERE/mg_plan.py" committed-clean "$ROOT" "$1" > /dev/null 2>&1'
+
+    @staticmethod
+    def _check_committed_rc(script_text, root, f):
+        fn = re.search(r"^check_committed \(\) \{.*?^\}", script_text, re.M | re.S).group(0)
+        env = dict(os.environ, ROOT=str(root), HERE=str(ENGINE / "results/multigpu"))
+        return subprocess.run(["bash", "-c", fn + '\ncheck_committed "$1"', "_", str(f)], env=env, capture_output=True).returncode
+
+    def _chk_sh(self, script_text):
+        with tempfile.TemporaryDirectory() as td:
+            r, _pf, _ed = PreflightGate()._repo(td)
+            m = r / "workspace/engine-port/results/multigpu"
+            (m / "M2G_PASS_TABLE_J2.json.sha256").write_text("ab" * 32 + "\n")
+            commit_all(r, "table")
+            proj, run = job_layout(r, Path(td) / "job")
+            f = proj / "workspace/engine-port/results/multigpu/M2G_PASS_TABLE_J2.json.sha256"
+            if self._check_committed_rc(script_text, proj, f) != 0:
+                return "Job layout: committed, unmodified .sha256 rejected (would be exit 15 ABORT_M2G_NOT_PASSED)"
+            (run / "multigpu" / "M2G_PASS_TABLE_J2.json.sha256").write_text("cd" * 32 + "\n")
+            if self._check_committed_rc(script_text, proj, f) == 0:
+                return "Job layout: .sha256 edited after the commit accepted"
+            (run / "multigpu" / "M2G_PASS_TABLE_J4.json.sha256").write_text("ef" * 32 + "\n")
+            if self._check_committed_rc(script_text, proj, proj / "workspace/engine-port/results/multigpu/M2G_PASS_TABLE_J4.json.sha256") == 0:
+                return "Job layout: untracked .sha256 accepted"
+        return None
+
+    def test_m3_job_check_committed_and_mutant_G2_killed(self):
+        src = M3_JOB_SH.read_text()
+        self.assertIsNone(self._chk_sh(src), "CONTROL")                     # behaviour of the shipped m3_job.sh first
+        self.assertEqual(src.count(self.NEW_SH), 1, "mutation site for G2 must occur once")
+        self.assertIsNotNone(self._chk_sh(src.replace(self.NEW_SH, self.OLD_SH)), "mutant G2 (old git diff --quiet) SURVIVED")
+
+
+class PreflightToolRecord(MutationCase):
+    """Harness audit r1 R-H2: the preflight tool writes PREFLIGHT_PASS.json itself, in the shape preflight_gate reads, and those bytes,
+    once committed, pass the gate in BOTH layouts; a FAIL_NEW / UNVERIFIABLE judge label never does."""
+    IMG = "reg/img@sha256:feed"
+
+    @staticmethod
+    def _manifest(td):
+        spec = __import__("importlib.util").util.spec_from_file_location("_ed_t", ENGINE / "scripts/bootstrap/engine_digest.py")
+        ed = __import__("importlib.util").util.module_from_spec(spec)
+        spec.loader.exec_module(ed)
+        rels = ed.registered_relpaths()
+        mf = Path(td) / "arm_post_manifest.sha256"
+        mf.write_text("".join(f"{hashlib.sha256(r.encode()).hexdigest()}  /opt/x/python/{r}\n" for r in rels))
+        return mf, ed.digest_of_entries(ed.load_entries(manifest=str(mf)))
+
+    def _repo_with(self, td, write_record):
+        """POST commit (gate paths) -> the tool writes the record -> its bytes + ENGINE_DIGEST are committed beside the harness."""
+        r = Path(td) / "repo"
+        (r / "workspace/engine-port/src").mkdir(parents=True)
+        (r / "workspace/engine-port/results/multigpu").mkdir(parents=True)
+        (r / "workspace/engine-port/src/a.py").write_text("x = 1\n")
+        git(r, "init", "-q")
+        commit_all(r, "post")
+        post = git(r, "rev-parse", "HEAD")
+        out = Path(td) / "pf_out"
+        out.mkdir()
+        digest = write_record(post, out / "PREFLIGHT_PASS.json")
+        m = r / "workspace/engine-port/results/multigpu"
+        for n in ("PREFLIGHT_PASS.json", "PREFLIGHT_PASS.json.sha256"):
+            shutil.copyfile(out / n, m / n)                                  # copied byte for byte, never retyped
+        (m / "ENGINE_DIGEST.txt").write_text(digest + "\n")
+        commit_all(r, "pass")
+        return r
+
+    def _gates(self, r, td):
+        res = {}
+        for layout in ("plain", "job"):
+            root = r if layout == "plain" else job_layout(r, Path(td) / "job")[0]
+            m = root / "workspace/engine-port/results/multigpu"
+            res[layout] = P.preflight_gate(root, m / "PREFLIGHT_PASS.json", self.IMG, engine_digest_file=m / "ENGINE_DIGEST.txt")
+        return res
+
+    def _cli_writer(self, td, label):
+        jj = Path(td) / f"judge_{label}.json"
+        jj.write_text(json.dumps({"label": label}))
+        mf, digest = self._manifest(td)
+
+        def write(post, out):
+            p_ = subprocess.run([sys.executable, str(PF_JUDGE_SRC), "record", "--judge-json", str(jj), "--post-commit", post,
+                                 "--merge-manifest", str(mf), "--engine-digest-py", str(ENGINE / "scripts/bootstrap/engine_digest.py"),
+                                 "--image", self.IMG, "--job-name", "pf-job", "--out", str(out)], capture_output=True, text=True)
+            self.assertEqual(p_.returncode, 0 if label == "PREFLIGHT_PASS" else 3, p_.stdout + p_.stderr)
+            return digest
+        return write
+
+    def test_tool_output_passes_the_gate_in_both_layouts(self):
+        with tempfile.TemporaryDirectory() as td:
+            g = self._gates(self._repo_with(td, self._cli_writer(td, "PREFLIGHT_PASS")), td)
+            self.assertEqual(g, {"plain": (True, []), "job": (True, [])})
+        for label in ("PREFLIGHT_FAIL_NEW", "PREFLIGHT_UNVERIFIABLE"):
+            with tempfile.TemporaryDirectory() as td:
+                g = self._gates(self._repo_with(td, self._cli_writer(td, label)), td)
+                for layout, (ok, why) in g.items():
+                    self.assertFalse(ok, f"{label} {layout}")
+                    self.assertTrue(any(f"verdict '{label}'" in w for w in why), why)
+
+    def _chk_g4(self, mod):
+        with tempfile.TemporaryDirectory() as td:
+            jj = Path(td) / "judge.json"
+            jj.write_text(json.dumps({"label": "PREFLIGHT_FAIL_NEW"}))
+
+            def write(post, out):
+                mod.write_pass_record(str(out), mod.pass_record(str(jj), post, "c" * 64, self.IMG, "pf-job"))
+                return "c" * 64
+            g = self._gates(self._repo_with(td, write), td)
+            return None if not any(ok for ok, _ in g.values()) else f"FAIL_NEW judge passed the gate: {g}"
+
+    def test_mutant_G4_fail_new_recorded_as_pass_killed(self):
+        self.assert_killed(PF_JUDGE_SRC, "G4", "    verdict = label if label in LABELS else 'PREFLIGHT_UNVERIFIABLE'",
+                           "    verdict = PASS_LABEL", self._chk_g4)
+
+    def test_shell_tool_registered_paths_post_and_targets(self):
+        sh = (PF_TOOLS / "preflight_cl3.sh").read_text()
+        self.assertFalse("POST_DEFAULT" in sh or "PDMUX_PF_POST:-$" in sh, "POST must have no default")       # R-H2
+        self.assertIn('POST="${PDMUX_PF_POST:-}"', sh)
+        blk = re.search(r'diff --stat "\$\{POST\}" HEAD -- (.*?)> "\$\{OUT\}/meta/post_vs_job_head.txt"', sh, re.S).group(1)
+        self.assertEqual(sorted(re.findall(r"workspace/engine-port/([\w/]+)", blk)), sorted(C.PREFLIGHT_GATE_PATHS))
+        tg = [l.split("\t") for l in (PF_TOOLS / "preflight_cl3_targets.txt").read_text().splitlines() if l and not l.startswith("#")]
+        self.assertIn(["E_rev12", "module", "test_loadgen_outcome"], tg)
+        env = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
+        p_ = subprocess.run(["bash", str(PF_TOOLS / "preflight_cl3.sh"), "--dry-run"], env=env, capture_output=True, text=True)
+        self.assertEqual(p_.returncode, 2)
+        self.assertIn("PDMUX_PF_POST must be the full 40-hex sha", p_.stderr)
+        sel = subprocess.run([sys.executable, str(PF_TOOLS / "preflight_judge_selftest.py")], capture_output=True, text=True)
+        self.assertEqual(sel.returncode, 0, sel.stdout[-2000:])
 
 
 class M3JobScript(unittest.TestCase):

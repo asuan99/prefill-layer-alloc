@@ -19,8 +19,10 @@ VERDICT (G-M2-style relaxed rule; the parts marked [제안] are proposals, not d
                             (same boot, same requests, different batch composition)
   treatment D1           = exact-match count fused_sym pass "c" vs agnostic pass "c"
   PASS iff (a) D1 >= D0 - XC_DROP_TOL (1 request), (b) every document's first XC_FIRST_N [제안: 16] tokens agree between
-  fused_sym "c" and agnostic "c", (c) no request error, every output exactly XC_MAX_NEW tokens, every logprob finite, and both
-  servers alive right after their xcheck step (alive_after_xcheck_<arm>.json).  Any of (a)-(c) observed false -> FAIL.
+  fused_sym "c" and agnostic "c", (c) no request error, every output exactly XC_MAX_NEW tokens, every request carrying exactly
+  XC_MAX_NEW output-token logprobs (harness audit r1 R-H5: a response without logprobs would make the finiteness check vacuous) and
+  all of them finite, and both servers alive right after their xcheck step (alive_after_xcheck_<arm>.json).  Any of (a)-(c)
+  observed false -> FAIL.
   A missing record (output file, survival record) -> NOT_TESTED.  Only PASS keeps the Job's X cells citable.
 """
 from __future__ import annotations
@@ -117,6 +119,8 @@ def score(base, treat, base_alive, treat_alive, first_n=None, _mut=None):
                     why.append(f"{name}:{p}:{d}:LEN_{len(v.get('output_ids') or [])}")
                 if int(v.get("nonfinite") or 0):
                     why.append(f"{name}:{p}:{d}:NONFINITE")
+                if not v.get("error") and int(v.get("n_logprobs") or 0) != C.XC_MAX_NEW:
+                    why.append(f"{name}:{p}:{d}:LOGPROBS_{int(v.get('n_logprobs') or 0)}")       # R-H5: absent / short logprobs -> FAIL
     for name, al in (("fused_sym", base_alive), ("agnostic", treat_alive)):
         if al is False:
             why.append(f"{name}:SERVER_DEAD_AFTER_XCHECK")

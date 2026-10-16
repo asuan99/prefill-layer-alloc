@@ -21,8 +21,9 @@ TNAME="M2G_PASS_TABLE_${JOB}.json"
 TABLE="${PDMUX_M2G_PASS_TABLE:-$HERE/$TNAME}"
 COMMITTED_SHA="$HERE/$TNAME.sha256"
 SHA="${PDMUX_M2G_PASS_SHA256:-}"
-check_committed () {   # $1 = committed .sha256 path
-  git -C "$ROOT" ls-files --error-unmatch "$1" > /dev/null 2>&1 && git -C "$ROOT" diff --quiet HEAD -- "$1" 2>/dev/null
+check_committed () {   # $1 = committed .sha256 path: tracked at HEAD with exactly these bytes (harness audit r1 R-H1: in the Job results/ is
+  # a symlink -- job_entry.sh -- and `git diff --quiet HEAD` reports every file behind it as deleted; mg_plan.committed_matches_head)
+  python3 "$HERE/mg_plan.py" committed-clean "$ROOT" "$1" > /dev/null 2>&1
 }
 # ---- rev12 gates (after the shared preflight; exit 18 ABORT_LOG_KNOB · 19 ABORT_PREFLIGHT_NOT_PASSED · 20 ABORT_DATASET · 21 ABORT_CONFIG_DRIFT)
 # §19-5: job_entry.sh records the log knobs in meta/log_mirror.txt and unsets them; PDMUX_HEARTBEAT_S must have been 0.
@@ -48,7 +49,7 @@ DRIVE=(python3 "$HERE/mg_drive.py" m3 --job "$JOB" --out "$OUT" --t0-epoch "$T0"
        --mamba-ssm-dtype "$DT" --x-tokens "$XTOK" --x-tokens-sha256 "$(K X_TOKENS_SHA256)" --clk-csv "$DATA/runs/$JOBID/meta/clk.csv")
 if [ "$DRYRUN" != 1 ]; then
   # F17: THREE digests must agree -- env PDMUX_M2G_PASS_SHA256, the COMMITTED .sha256 beside the harness, sha256 of the table file bytes --
-  # and that committed .sha256 must be tracked and unmodified in the checked-out tree.
+  # and that committed .sha256 must be tracked at HEAD with the same bytes (check_committed; Job-layout proof, R-H1).
   check_committed "$COMMITTED_SHA" || fail "ABORT_M2G_NOT_PASSED committed $TNAME.sha256 is not tracked/clean in the tree ($COMMITTED_SHA)" 15
   python3 "$HERE/mg_plan.py" check-pass-table "$TABLE" "$SHA" "$COMMITTED_SHA" | tee "$OUT/PASS_TABLE_CHECK.txt"
   [ "${PIPESTATUS[0]}" -eq 0 ] || fail "ABORT_M2G_NOT_PASSED table '$TABLE': file sha256 / env PDMUX_M2G_PASS_SHA256 ('$SHA') / committed .sha256 disagree or table missing" 15

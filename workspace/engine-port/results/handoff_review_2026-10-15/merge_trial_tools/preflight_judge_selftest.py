@@ -92,8 +92,39 @@ def main():
     allok &= case('M10 setup flag from the shell script', B[0], B[1], 'PREFLIGHT_UNVERIFIABLE', invalid=['pre tree not reconstructed'])
     pe = [(i, k, e, m) for i, k, e, m in post_entries() if i != L2[0]]
     allok &= case('M11 one L2 id absent from post (only 0 reproduced is invalid)', B[0], build(pe), 'PREFLIGHT_PASS')
+    allok &= record_cases()
     print('SELFTEST', 'PASS' if allok else 'FAIL')
     return 0 if allok else 1
+
+def record_cases():
+    """R-H2: the PREFLIGHT_PASS.json writer.  Only a judge label of exactly PREFLIGHT_PASS with every field present is written as PASS."""
+    import json as _json
+    post, dig, img = 'a' * 40, 'b' * 64, 'reg/img@sha256:feed'
+    ok = True
+    with tempfile.TemporaryDirectory() as d:
+        n = [0]
+        def jj(label):                                   # one file per case (the cases are built before they are scored)
+            n[0] += 1; p = os.path.join(d, f'judge{n[0]}.json'); _json.dump({'label': label}, open(p, 'w')); return p
+        cases = [('R0 control: judge PASS', jj('PREFLIGHT_PASS'), post, dig, img, 'job', 'PREFLIGHT_PASS'),
+                 ('R1 judge FAIL_NEW is never PASS', jj('PREFLIGHT_FAIL_NEW'), post, dig, img, 'job', 'PREFLIGHT_FAIL_NEW'),
+                 ('R2 judge UNVERIFIABLE is never PASS', jj('PREFLIGHT_UNVERIFIABLE'), post, dig, img, 'job', 'PREFLIGHT_UNVERIFIABLE'),
+                 ('R3 no judge.json', os.path.join(d, 'none.json'), post, dig, img, 'job', 'PREFLIGHT_UNVERIFIABLE'),
+                 ('R4 unknown label text', jj('PREFLIGHT_PASS '), post, dig, img, 'job', 'PREFLIGHT_UNVERIFIABLE'),
+                 ('R5 image without digest', jj('PREFLIGHT_PASS'), post, dig, 'reg/img:latest', 'job', 'PREFLIGHT_UNVERIFIABLE'),
+                 ('R6 merge-tree digest missing', jj('PREFLIGHT_PASS'), post, None, img, 'job', 'PREFLIGHT_UNVERIFIABLE'),
+                 ('R7 short post sha', jj('PREFLIGHT_PASS'), 'dc06c870', dig, img, 'job', 'PREFLIGHT_UNVERIFIABLE')]
+        for name, j, pc, dg, im, jn, want in cases:
+            rec = J.pass_record(j, pc, dg, im, jn)
+            good = rec['verdict'] == want
+            print(('ok   ' if good else 'FAIL ') + f"{name}: {rec['verdict']} (want {want})")
+            ok &= good
+        out = os.path.join(d, 'PREFLIGHT_PASS.json')
+        raw = J.write_pass_record(out, J.pass_record(jj('PREFLIGHT_PASS'), post, dig, img, 'job'))
+        import hashlib as _h
+        good = open(out + '.sha256').read().split()[0] == _h.sha256(raw).hexdigest() and _json.loads(raw)['verdict'] == 'PREFLIGHT_PASS'
+        print(('ok   ' if good else 'FAIL ') + 'R8 written bytes match the .sha256')
+        ok &= good
+    return ok
 
 if __name__ == '__main__':
     sys.exit(main())

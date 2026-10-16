@@ -32,7 +32,9 @@ rev12 (§19, unsealed checkpoint 2026-10-16):
     Server side = error_side "server" (trace_loadgen 0eca947: HTTP_STATUS, SSE_ERROR, SERVER_ABORT, OUTPUT_SHORT, OUTPUT_LONG).
     Client side = every other error request (CLIENT_EXCEPTION incl. timeout, unclassified/legacy, no TTFT without error) PLUS a
     successful request sent > SEND_LATE_S (0.5 s) after its schedule (SP R7-3 multi-GPU list).  LO cells: only the client side
-    invalidates (> 1 %); the server-side count is descriptive (MG12-14).  Other rungs (M2g G3B/G4/G5A): rev11 rule (all errors).
+    invalidates (> 1 %); the server-side count is descriptive (MG12-14).  Other rungs (M2g G3B/G4/G5A): every error request (the rev11
+    rule) PLUS the late-send count above (error_split is shared) -- NOT the pure rev11 rule (corrected 2026-10-16, harness audit r1 D4).
+    M2g is not re-run under rev12; the sealed rev11 M2g PASS tables were labelled by the rev11 code and are untouched by this.
   * shapes A, B, X; X Job effect from the X anchor (U14, F-5), X correctness step (U7 -> X_CORRECTNESS_*), P10 per group (U12:
     {A, B} bound together as rev11, {X} alone), KV_POOL_DRIFT / DTYPE_UNVERIFIED (F-4, disclosures), FLOOR_JOB_EFFECT,
     LOG_KNOB_MISMATCH, per-cell GPU clock descriptive table (U6).
@@ -435,7 +437,7 @@ def cell_error_status(n, n_server, n_client, rung):
         return None
     if rung == "LO":                                             # MG12-14: LO server-side errors are descriptive
         return "CLIENT_ERROR" if n_client / n > C.CLIENT_ERROR_FRAC else None
-    if (n_server + n_client) / n > C.CLIENT_ERROR_FRAC:          # HI (and the rev11 rule for the other rungs): the SUM
+    if (n_server + n_client) / n > C.CLIENT_ERROR_FRAC:          # HI and the other rungs (rev11 all-error rule + late sends, D4): the SUM
         return "SERVER_ERROR_HI" if n_server > n_client else "CLIENT_ERROR"     # dominant side; a tie -> CLIENT_ERROR [제안]
     return None
 

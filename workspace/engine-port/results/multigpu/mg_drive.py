@@ -11,7 +11,9 @@ Responsibilities: stage order (§4-1), arm order, joint extension (§4-2), x_lo 
 admission against the wall-clock hard cap, TRUNCATED bookkeeping, label + estimand output (mg_label).
 rev12: every M3 boot spec carries mamba_ssm_dtype / x_tokens_path / x_tokens_sha256 (resolved once per Job by m3_job.sh); a boot that
 exits 7/8/9 (ABORT_CONTEXT_TOO_SHORT / ABORT_DATASET / ABORT_CONFIG_DRIFT, CPU pre-checks) aborts the Job (fail-closed, ABORT file);
-the U7 X correctness verdict is scored right after the opening N=1 boots (gates/XCHECK.json); finish() writes CLOCK_BY_CELL.json (U6).
+the U7 X correctness verdict is scored per config right after that config's boot1 (fused_sym + agnostic carry the xcheck step; N1 in J1,
+TP_N / DP_N on the N-GPU server in J_N) -> gates/XCHECK_<config>.json (corrected 2026-10-16, harness audit r1 D6); finish() writes
+CLOCK_BY_CELL.json (U6).
 Every boot runs through scripts/multigpu/mg_runner.sh (override PDMUX_MG_RUNNER for CPU tests).
 JOB PATH vs REFERENCE PATH (F8): the Job runs `run_m2g` + `assemble_pass_table` below.  `m2g_correctness_gate.M2gRun` (the
 unit-tested reference sequence with an injectable io) is NOT executed by the Job -- its order/liveness/exposure rules are

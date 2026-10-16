@@ -3,7 +3,8 @@
 #
 # WHAT.  VERDICT_spec_v0_1_and_closure_round2 sec 6 cond. 1: before the first GPU Job on the merge tree (G0 or M3),
 # run the CL-3 tests that cannot run locally (sgl_kernel import, venv path) on the PRE tree (main 7b15214) and the
-# POST tree (merge dc06c870) IN THE SAME CONTAINER, pair them by (test id, signature), and label:
+# POST tree (PDMUX_PF_POST, required; the 2026-10-15 draft targeted the merge dc06c870) IN THE SAME CONTAINER, pair them by
+# (test id, signature), and label:
 #   PREFLIGHT_PASS | PREFLIGHT_FAIL_NEW | PREFLIGHT_UNVERIFIABLE      (rules: preflight_judge.py header)
 # This is a CORRECTNESS probe, not a measurement: no number from it is a performance result.
 # Design + decisions: handoff_review_2026-10-15/PREFLIGHT_merge_cl3_design_2026-10-15.md.
@@ -18,16 +19,18 @@
 #                      $PDMUX_PF_SRC_DEV) and run the tree checks.  No test suite is run.  Needs $PDMUX_PF_SRC_DEV.
 #   --judge-only PRE_LOG[+LOG] POST_LOG[+LOG]   re-judge fetched logs (one repetition each)
 # ENV (all PDMUX_*, so launch.sh --env accepts them)
-#   PDMUX_PF_PRE / PDMUX_PF_POST   full shas (defaults below)       PDMUX_PF_REPS   repetitions per arm (default 2, ABBA)
+#   PDMUX_PF_PRE                   full sha (default below)          PDMUX_PF_REPS   repetitions per arm (default 2, ABBA)
+#   PDMUX_PF_POST                  REQUIRED full sha of the final POST (no default since M3 rev12 harness audit r1 R-H2, 2026-10-16)
 #   PDMUX_PF_MODULES               space list -> run only those test modules (smoke; judge result then NOT a preflight)
 #   PDMUX_PF_WORK                  scratch root (default $PDMUX_DATA/runs/$JOB/pf_work)   PDMUX_PF_SUITE_TIMEOUT (s, 3000)
 #   PDMUX_VENV                     venv path the sbatch-driven tests should source (see venv probe)
 # Exit code = judge: 0 PASS, 1 FAIL_NEW, 3 UNVERIFIABLE (Job shows failed on non-PASS; DONE+SHA256SUMS are written anyway).
+# Job mode also writes OUT/PREFLIGHT_PASS.json (+ .sha256) with preflight_judge.py `record` (R-H2): the exact bytes the M3 gate
+# (mg_plan.preflight_gate (i)) reads once committed as results/multigpu/PREFLIGHT_PASS.json(+.sha256) -- copied, never retyped.
 # NEVER dumps the environment: only PDMUX_* names+values are recorded.
 set -uo pipefail
 
 PRE_DEFAULT=7b15214b2d554ec7f8394485892980af8271734c
-POST_DEFAULT=dc06c870ac9efce782b77e62782f0ae3a1991d8c
 PRISTINE_PDMUX_CONTEXT_SHA=b4e6ff1aa10a19f9cdd285088424b9388574fd291edfd466e155cbaa8e876b9e  # local main dev tree (unpatched), 2026-10-15
 PIN_PATCH=workspace/engine-port/src/patches/pdmux_context_device_assert.patch
 
@@ -42,7 +45,7 @@ case "${1:-}" in
 esac
 
 TOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PRE="${PDMUX_PF_PRE:-$PRE_DEFAULT}"; POST="${PDMUX_PF_POST:-$POST_DEFAULT}"
+PRE="${PDMUX_PF_PRE:-$PRE_DEFAULT}"; POST="${PDMUX_PF_POST:-}"
 REPS="${PDMUX_PF_REPS:-2}"; MODS="${PDMUX_PF_MODULES:-}"; T_SUITE="${PDMUX_PF_SUITE_TIMEOUT:-3000}"
 PY="${PDMUX_PF_PY:-python}"; [[ "${MODE}" == job ]] || PY="${PDMUX_PF_PY:-python3}"
 utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }
@@ -51,6 +54,8 @@ say() { echo "[PF $(utc)] $*"; }
 if [[ "${MODE}" == judge ]]; then
   exec "${PY}" "${TOOLS}/preflight_judge.py" --pre "${JUDGE_PRE}" --post "${JUDGE_POST}"
 fi
+# R-H2: the POST under test is always named explicitly (the old default dc06c870 is not the rev12 POST)
+[[ "${POST}" =~ ^[0-9a-f]{40}$ ]] || { echo "PDMUX_PF_POST must be the full 40-hex sha of the final POST (got '${POST}')" >&2; exit 2; }
 
 if [[ "${MODE}" == job ]]; then
   PROJECT="${PDMUX_PROJECT_ROOT:?run through job_entry.sh (PDMUX_PROJECT_ROOT)}"
@@ -133,8 +138,10 @@ if [[ ${#INVALID[@]} -eq 0 ]]; then
   grep 'src/patches/' "${OUT}/meta/src_diff_pre_post.txt" | grep -v 'pdmux_context_device_assert.patch' \
     > "${OUT}/meta/unmodelled_patch_changes.txt" && INVALID+=("src/patches changed beyond the device-assert patch")
   # the Job HEAD engine bytes vs POST: the arms are rebuilt from POST, so this is a note, not a failure
+  # (R-H2) the same 7 gate paths as mg_const.PREFLIGHT_GATE_PATHS / mg_plan.preflight_gate (iii)
   git -C "${PROJECT}" diff --stat "${POST}" HEAD -- workspace/engine-port/src workspace/engine-port/tests \
-    workspace/engine-port/scripts/bootstrap workspace/engine-port/scripts/r2_eval workspace/engine-port/env > "${OUT}/meta/post_vs_job_head.txt" 2>&1
+    workspace/engine-port/scripts/bootstrap workspace/engine-port/scripts/r2_eval workspace/engine-port/env \
+    workspace/engine-port/benchmarks/pdmux_eval workspace/engine-port/scripts/multigpu > "${OUT}/meta/post_vs_job_head.txt" 2>&1
 fi
 
 say "static checks done; invalid so far: ${#INVALID[@]}"
@@ -270,6 +277,18 @@ else
   jrc=$?
 fi
 cat "${OUT}/PREFLIGHT_LABEL" | head -30
+
+# ---- 6. gate artifact (M3 rev12 §19-6 (i), harness audit r1 R-H2): PREFLIGHT_PASS.json written HERE from judge.json -------------
+#      verdict = the judge label (PASS only if the label is PREFLIGHT_PASS and every field is present); image = PDMUX_IMAGE;
+#      merge_tree_engine_digest = pathless-v1 of the POST arm's install manifest (the ENGINE_DIGEST.txt procedure, POST tree's tool).
+if [[ "${MODE}" == job ]]; then
+  "${PY}" "${TOOLS}/preflight_judge.py" record --judge-json "${OUT}/judge.json" --post-commit "${POST}" \
+    --merge-manifest "${OUT}/meta/arm_post/manifest.sha256" \
+    --engine-digest-py "${WT[post]:-/nonexistent}/workspace/engine-port/scripts/bootstrap/engine_digest.py" \
+    --image "${PDMUX_IMAGE:-}" --job-name "${JOB}" --out "${OUT}/PREFLIGHT_PASS.json" > "${OUT}/meta/pass_record.txt" 2>&1
+  prc=$?; cat "${OUT}/meta/pass_record.txt"
+  [[ ${prc} -ne 0 && ${jrc} -eq 0 ]] && jrc=3              # a PASS label without a complete gate record is not a PASS
+fi
 echo "elapsed_s=${SECONDS}" > "${OUT}/meta/elapsed.txt"
 say "label: $(head -1 "${OUT}/PREFLIGHT_LABEL") (rc ${jrc})"
 exit "${jrc}"
