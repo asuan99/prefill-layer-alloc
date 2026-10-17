@@ -1,6 +1,10 @@
 # M3 PREREG rev12 REGISTRATION -- RULE SEAL + HARNESS SEAL (2026-10-16, main session / engine-porter)
 # basis: rules-layer audit x2 (VERDICT_m3_rev12_draft_r1_2026-10-15.md, VERDICT_m3_rev12_draft_r2_2026-10-16.md + user decision D-1' (a))
 #        + harness-layer audit x2 (VERDICT_m3_rev12_harness_r1_2026-10-16.md, VERDICT_m3_rev12_harness_r2_2026-10-16.md: reseal-ready, 0 fatal).
+#        + reissue 1 basis: multigpu_verdicts/VERDICT_preflight_judge_r2_and_reseal_2026-10-17.md (claims-auditor r1, GO-with-caveats; caveat C-B1).
+# REISSUE 1 (2026-10-17, user-approved): row tests/test_mg_harness.py 8392b4caf42a67ab5488014d885c60da5341657e14ee25d216acbb67204244e4 -> f97cc94529df52bb191d605ec516ed2bb1d55a6612d4c8aa5a315955dc4fb387;
+#   previous harness_seal_digest 323c208180bc8688ee01580bdb4dbe073d07cc9c6f27aa85de8440c7073afde0 SUPERSEDED; rule digest 7e4e5e19... unchanged; harness execution bytes unchanged.
+#   reason: F2 HF_* hermetic env in 5 places of test_mg_harness.py (F4 = tests/test_holb_probe.py, outside the seal); patch sha256 7192b2af919a6e3d...
 # rev11 (PREREG_MULTIGPU_2026-10-12.md 8b617d3d..., sealed 313be0a; M2g PASS tables 99ed704) is NOT modified; its bytes are rule file 1 below.
 # digest definition: sha256 over the section's lines "<sha256>  <repo-relative path>\n" in the listed order (tests/test_mg_rev12_seal.py).
 # MANDATORY_REG (mg_job_common.sh) = RULE SEAL FILES followed by HARNESS SEAL FILES, exactly in Job order; OPTIONAL_REG listed separately.
@@ -62,7 +66,7 @@ b63988d568050d527c003cd2eb5641752ce115592ced7e72275cce8f9a286c2e  workspace/engi
 73b8f983a9da95524ce2c1d3741804d8f8a49672b407f63742b8a45679e42b29  workspace/engine-port/benchmarks/configs/pdmux_agnostic_manual.yml
 454125c3e6998c267e5b8028197b80363d601ca81c92bd3d7dd94911bc47eca7  workspace/engine-port/benchmarks/configs/pdmux_r2.yml
 8e99131810fe1136fc8f8694e386f460e002224d4bf039b33ccc5b54fb7e3c5f  workspace/engine-port/triage/pdmux_a100_smoke.yml
-8392b4caf42a67ab5488014d885c60da5341657e14ee25d216acbb67204244e4  workspace/engine-port/tests/test_mg_harness.py
+f97cc94529df52bb191d605ec516ed2bb1d55a6612d4c8aa5a315955dc4fb387  workspace/engine-port/tests/test_mg_harness.py
 2c219966d946a4d63527d8d43b0a8d94d522675be7186ff44ac00fb80a1b4079  workspace/engine-port/tests/test_m2g_gate.py
 9bb8302f88b8f5504b83b78d8cf2768facb150ec96b7e4bb0952eab0cb44a3fa  workspace/engine-port/tests/test_mg_agnostic_manual_equiv.py
 66aa166a6e318efec4f17d97d88fb2e912b41c68e0f91d4833878e2545e2794f  workspace/engine-port/tests/test_mg_realized_mix.py
@@ -81,7 +85,7 @@ b8b9e5d5b5cf01fade12ae1a87f304d3d4a3be5f6730f6246689a58e5626adec  workspace/engi
 
 ## DIGESTS
 rule_seal_digest 7e4e5e19cdc3b11680acf7689ad16c75ed5ac67fb2a789d44ff06a681dbdc1e8
-harness_seal_digest 323c208180bc8688ee01580bdb4dbe073d07cc9c6f27aa85de8440c7073afde0
+harness_seal_digest cd00fe05132ba691c16b3d34de16d70af7560af45f661a9dcec089ac848f2f1d
 mandatory_reg_count 61
 engine_digest 82a5fc5b5f587464e0df8037b64791900a013f61024d128e451818793526781c
 engine_digest_scheme pathless-v1

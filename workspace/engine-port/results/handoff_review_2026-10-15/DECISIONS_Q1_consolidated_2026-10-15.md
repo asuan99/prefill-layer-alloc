@@ -109,3 +109,11 @@
 ## 7. M3 rev12 U4–U12 (2026-10-16 "권고대로 진행")
 
 검토 문서 `results/multigpu/REVIEW_U4_U12_2026-10-16.md`의 권고 전부 채택: U4 미러 1 · U5 J1 x2 유지 · U6 M3 먼저 + GPU별 클럭 기술값 · **U7 X 소형 정확성 단계 추가(초안 권고에서 변경)** · U8 M4 감사로 보류 · U9 범위 문장 · U10 미해결 공시 · U11 봉인 밖 · **U12 P10 shape별 범위(초안 권고에서 변경)**. U7·U12는 규칙 변경이라 하네스층 감사에서 확인.
+
+## 8. preflight 재실행 방식 (2026-10-17 "권고대로 진행")
+
+| # | 결정 |
+|---|---|
+| F7 실행 스펙 | **CPU 유지**(`resourcespec-a100cpu`). 근거 `results/multigpu_verdicts/PREFLIGHT_SPEC_ASSESSMENT_2026-10-17.md`: sgl_kernel은 CPU·A100 모두 `sm100/common_ops` 로드, CL-3 32개는 GPU 경로를 타지 않음, GPU 고유 경로는 M2g(digest `82a5fc5b`)·M3 Job 내부 gate가 덮음 |
+| 타이밍 시험 | **(나) 사전 선언 제외** — e1 BudgetEnforcer 2건 + n3 TestBudgetEnforcer 3건을 "CPU 스펙 기지 타이밍 실패"로 다음 실행 **전** 등록, 판정에서 빼고 미검증 공시. 데이터 본 뒤 정한 규칙이라 claims-auditor 감사 필수 |
+| 수정 | 시험(F2 HF_HOME 밀폐, F4 미닫힌 파일) → 판정기 개정(F3 구조화 상태 파싱, F5 컨테이너 arm 경로 마스킹, F6 PRE 실패 L2 fail-closed) + 결론 범위 선언(CPU 컨테이너·sm100·커널 실행 0) → 감사 → 새 POST → CPU preflight 1회. 이번 실행(`68f386b`)은 개정 판정기로 재판정하지 않음 |

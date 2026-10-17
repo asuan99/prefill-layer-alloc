@@ -664,11 +664,12 @@ class TestSchedulerHooksInstalled(unittest.TestCase):
             target.mkdir(parents=True)
             (target / "scheduler.py").write_text(installed)
             for direction in ("--reverse", "--forward"):
-                r = subprocess.run(
-                    ["patch", direction, "--batch", "-p1", "-d", tmp],
-                    stdin=patch_file.open("rb"),
-                    capture_output=True,
-                )
+                with patch_file.open("rb") as patch_in:
+                    r = subprocess.run(
+                        ["patch", direction, "--batch", "-p1", "-d", tmp],
+                        stdin=patch_in,
+                        capture_output=True,
+                    )
                 self.assertEqual(r.returncode, 0, r.stderr.decode())
             self.assertEqual((target / "scheduler.py").read_text(), installed)
 

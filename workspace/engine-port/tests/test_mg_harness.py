@@ -27,6 +27,16 @@ import mg_label as L  # noqa: E402
 import mg_plan as P  # noqa: E402
 
 REPO = ENGINE.parents[1]
+
+
+def hermetic_env(td):
+    """Child env for the job/runner scripts: drop PDMUX_/SGLANG_/NCCL_ and every HF cache variable, and pin HF_HOME to an
+    empty dir under td.  mg_job_common.sh does HF_HOME="${HF_HOME:-$DATA/hf}", so an inherited HF_HOME (VESSL job_entry.sh
+    exports /data/hf) made the dry-run notes depend on the machine's model cache (preflight 68f386b, F2)."""
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_", "HF_", "HUGGINGFACE_", "TRANSFORMERS_"))}
+    env["HF_HOME"] = str(Path(td) / "hf_empty")
+    return env
 STOCK_RUNNER = ENGINE / "scripts" / "r2_eval" / "engine_bench_runner.sh"
 
 
@@ -140,7 +150,7 @@ class RunnerDry(unittest.TestCase):
             spec = dict(spec_for("TP2", "fused_sym"), out_root=td)
             sp = Path(td) / "s.json"
             sp.write_text(json.dumps(spec))
-            env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
+            env = hermetic_env(td)
             p = subprocess.run(["bash", str(ENGINE / "scripts/multigpu/mg_runner.sh"), str(sp), "--dry-run"],
                                env=env, capture_output=True, text=True)
             self.assertEqual(p.returncode, 0, p.stderr)
@@ -2486,7 +2496,7 @@ class M3ExtensionDriver(unittest.TestCase):                                     
 class JobScriptsDryRun(unittest.TestCase):
     def run_job(self, name, job="J2", **extra):
         with tempfile.TemporaryDirectory() as td:
-            env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
+            env = hermetic_env(td)
             env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_MG_DRYRUN="1", PDMUX_MG_TEST_OUT_ROOT=td, PDMUX_MG_JOB=job,
                        PDMUX_JOB_NAME="unit", PDMUX_DATA=str(Path(td) / "data"))
             env.update(extra)
@@ -2531,7 +2541,7 @@ class JobScriptsDryRun(unittest.TestCase):
         p, *_ = self.run_job("m3_job.sh", job="J9")
         self.assertEqual(p.returncode, 16)
         with tempfile.TemporaryDirectory() as td:                                            # real run: J4 submitted on the x2 spec -> ABORT_ENV
-            env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
+            env = hermetic_env(td)
             env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_JOB_NAME="unitspec", PDMUX_DATA=str(Path(td) / "data"), PDMUX_MG_JOB="J4",
                        PDMUX_SPEC="resourcespec-a100x2")
             p = subprocess.run(["bash", str(ENGINE / "results/multigpu/m3_job.sh")], env=env, capture_output=True, text=True, cwd=td)
@@ -2545,7 +2555,7 @@ class JobScriptsDryRun(unittest.TestCase):
 
     def test_real_run_aborts_without_hardware(self):
         with tempfile.TemporaryDirectory() as td:
-            env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
+            env = hermetic_env(td)
             env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_JOB_NAME="unitreal", PDMUX_DATA=str(Path(td) / "data"), PDMUX_MG_JOB="J2")
             p = subprocess.run(["bash", str(ENGINE / "results/multigpu/m3_job.sh")], env=env, capture_output=True, text=True,
                                cwd=td)
@@ -2559,7 +2569,7 @@ class JobScriptsDryRun(unittest.TestCase):
 
     def test_jit_all_reduce_aborts_comm_env(self):
         with tempfile.TemporaryDirectory() as td:
-            env = {k: v for k, v in os.environ.items() if not k.startswith(("PDMUX_", "SGLANG_", "NCCL_"))}
+            env = hermetic_env(td)
             env.update(PDMUX_PROJECT_ROOT=str(REPO), PDMUX_JOB_NAME="unitjit", PDMUX_DATA=str(Path(td) / "data"), PDMUX_MG_JOB="J2",
                        SGLANG_USE_JIT_ALL_REDUCE="1")
             p = subprocess.run(["bash", str(ENGINE / "results/multigpu/m2g_job.sh")], env=env, capture_output=True, text=True, cwd=td)
