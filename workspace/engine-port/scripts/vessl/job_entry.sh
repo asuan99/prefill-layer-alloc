@@ -157,14 +157,16 @@ if [[ "${cpu_only}" == 1 ]]; then
     echo "skipped: nvidia-smi substrate stamp, nvcc, topo, substrate_history.tsv row, clk sampler, energy sampler"
     echo "LD_LIBRARY_PATH compat: ${compat_note}"; } > "${RUN}/meta/CPU_ONLY.txt"
   phase "CPU-only mode: GPU substrate stamp and clock/energy samplers skipped; LD_LIBRARY_PATH compat ${compat_note}"
-  python3 - "${RUN}/meta" <<'PY'
+  # Delimiter CPU_PY, not PY (2026-10-17): tests/test_multigpu_launcher._heredoc("substrate.json") takes the FIRST
+  # PY-delimited heredoc naming substrate.json; it must resolve to the GPU stamp below, not to this CPU record.
+  python3 - "${RUN}/meta" <<'CPU_PY'
 import json, os, pathlib, platform, sys
 rec = {"cpu_only": True, "gpu": None, "hostname": platform.node(), "commit": os.environ["PDMUX_COMMIT"],
        "image": os.environ["PDMUX_IMAGE"], "spec": os.environ["PDMUX_SPEC"], "job_name": os.environ["PDMUX_JOB_NAME"],
        "campaign": os.environ["PDMUX_CAMPAIGN"], "target": os.environ["PDMUX_TARGET"],
        "array_spec": os.environ.get("PDMUX_ARRAY_SPEC", "")}
 (pathlib.Path(sys.argv[1]) / "substrate.json").write_text(json.dumps(rec, indent=2) + "\n")
-PY
+CPU_PY
   { echo "# at start $(utc)"; echo "nproc=$(nproc)"; echo "cpu.max=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null)";
     cat /sys/fs/cgroup/cpu.stat 2>/dev/null; } > "${RUN}/meta/cgroup_cpu.txt"
 else

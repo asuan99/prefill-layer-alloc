@@ -29,15 +29,19 @@ root="${stage}"; [[ -f "${root}/DONE" ]] || root="${stage}/results/${name}"   # 
 [[ -f "${root}/DONE" ]] || { echo "NOT DONE: no DONE marker (job still running or export failed)" >&2; exit 3; }
 (cd "${root}" && sha256sum --quiet -c SHA256SUMS) || { echo "CHECKSUM FAILED" >&2; exit 3; }
 
-conflicts=0
+conflicts=0; pyc_skipped=0
 while IFS= read -r -d '' f; do
   rel="${f#"${root}/results/"}"
   dst="${results}/${rel}"
+  # Bytecode caches (gitignored) written by Python inside the Job are not results: a differing local .pyc is
+  # not a conflict (preflight 9c3ea47, 2026-10-17: exit 4 on 2 pyc).  cp -an below never overwrites one.
+  if [[ "/${rel}" == */__pycache__/* ]]; then pyc_skipped=$((pyc_skipped + 1)); continue; fi
   if [[ -e "${dst}" ]] && ! cmp -s "${f}" "${dst}"; then
     echo "CONFLICT (not overwritten): ${rel}" >&2; conflicts=$((conflicts + 1))
   fi
 done < <(find "${root}/results" -type f -print0 2>/dev/null)
 [[ "${conflicts}" -eq 0 ]] || { echo "${conflicts} conflict(s); staging kept at ${root}" >&2; exit 4; }
+[[ "${pyc_skipped}" -eq 0 ]] || echo "note: ${pyc_skipped} __pycache__ file(s) excluded from the conflict check (existing ones kept)"
 [[ -d "${root}/results" ]] && cp -an "${root}/results/." "${results}/"
 
 dest="${results}/${campaign}/vessl/${name}"
