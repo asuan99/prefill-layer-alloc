@@ -8784,3 +8784,9 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 | E. hybrid 정보 decode floor가 generic/static보다 SLO goodput이 높다 | 미검증 핵심 가설 (anchor 주장 1) | MATRIX:640 |
 | F. short-ctx conflict 영역에 동적 제어의 escape hatch가 있다 | 강한 지지(범위 한정) — CONFIRMED closure, scoped negative: escape hatch 없음 (2026-07-25) | MATRIX:641 |
 | G. PD-mux 활성화 자체가 fused 대비 이득의 원인이다 | 부분 지지(모델·워크로드 한정); "SM 분할 자체" 형태는 NOT-YET-SUPPORTED | MATRIX:642 |
+
+판정서 포인터(2026-10-19 promote, 등급 변경 0): Claim E — `workspace/engine-port/results/anchor_audit/VERDICT_claimE_first_arrow_2026-10-19.md`(미검증 유지, 연결 근거 부재 ≠ 반증); Claim G·headline 비중 — 사용자 결정 `.../anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`(결정이며 등급 근거 아님).
+
+## 7. 방법론 추가 항목 (파일 끝 — 줄 번호 보존)
+
+296. ★★(2026-10-19, M3 J1(N=1) 분석 감사 `workspace/engine-port/results/multigpu_verdicts/AUDIT_J1_N1_analysis_2026-10-19.md`, doc-steward 등재; §3 항목 295 다음) **HI 포화 rung의 토큰 합산 ITL p99로 arm 순서를 말하지 말라. achieved가 같은 rung에서 게이트 4 지표(요청 ITL p95 통과율)로 보라.** 과부하 확장 rung은 arm마다 achieved가 달라(fused 1.06–1.11 vs PD-mux 0.70–0.86) 처리율 비교가 부하 비교가 되고, 토큰 합산 p99는 prefill 멈춤 꼬리(≈ 입력 하나의 prefill 시간)를 그대로 싣는다. 같은 achieved의 LO rung에서는 요청 ITL p95 통과율이 fused_sym = PD-mux였다. 이 꼬리는 미조율 fused 노브(chunk 8192, mixed-chunk off) 효과일 수 있어 G0에 튜닝된 fused arm을 포함해야 한다.

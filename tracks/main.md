@@ -7,7 +7,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 ## cost model 기여
 - 채우는 칸: CM-1(`s_attn` vs `s_ssm`), CM-4(`δ(p,d)` + lockstep span 정지), CM-5(장문 KV vs mamba 슬롯, cap), (확장) N·TP 통신 항
 - 이번에 알게 된 것: 판정 0(M3 미완). 사실만 — J1 GPU0 샘플 61%가 기본 400 W 한도 throttle(0x4, 클럭 중앙 1380 MHz, 59 °C); 하네스 시간 모형이 확장 셀을 빠뜨려 rev12 예산 190 GPU-h가 과소(J1 실측 보정 시 J_N 20–21 h > 캡 16 h)
-- promote 필요: 예 — J1(N=1) 분석 `workspace/engine-port/results/multigpu_verdicts/ANALYSIS_J1_N1_2026-10-19.md`(CM-6 처리율↔ITL 역순, CM-2 무경합 prefill ~9.0k tok/s, CM-4 클럭 가정 shape 의존); 예 (결정) — headline G·shape C 편입·E 확장 필요 인정(`workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`); 예 (감사) — Claim E 첫 화살표 판정(아래 현재 상태 첫 줄); 예 — merge preflight `PREFLIGHT_PASS`(caveat C-A1–C-B3), rev12 봉인·재발행 1, M3 J2·J4·J8 외부 종료(전 N G_sym 미정의), 예산 모형 과소 교훈
+- promote 필요: 아니오 — 2026-10-19 반영 완료: J1(N=1) 분석·감사 허용 문안 1–5(COSTMODEL CM-2·4·6, CONSENSUS §3 항목296), Claim E 첫 화살표 판정(CM-1 정정, §6 등급 불변), 사용자 결정 1–7·8′(CM-5, PROJECT_STATUS 최상단 5줄), preflight PASS·rev12 봉인·M3 J2/J4/J8 외부 종료·예산 모형 과소 교훈(확장 행)
 ## 현재 상태 (2026-10-19)
 - **J1(N=1) 분석** `workspace/engine-port/results/multigpu_verdicts/ANALYSIS_J1_N1_2026-10-19.md` + 감사 `AUDIT_J1_N1_analysis_2026-10-19.md`: CM-2 floor(9 ms + 0.111 ms/토큰×L) CONFIRMED · CM-6 처리율↔ITL 역순·CM-4 클럭 반대 **REFUTED**(HI 과부하·achieved 상이·미조율 fused 노브; 같은 achieved LO에선 요청 ITL p95 통과율 동일) · xcheck 원인 PLAUSIBLE·규칙 (b) 결함 CONFIRMED · throttle X HI 80–99% · G0에 튜닝(mixed-chunk) fused arm 포함 검토.
 - **(다) 허수아비 점검**(venue-strategist): 엔진 층 Q18은 허수아비(SGLang·vLLM이 state 예약·admission 반영), Bullet/MuxWise는 오예측이 아니라 변수 부재 → 권고 문안 = 후보2(cap 결합 특성화) 본문 + 후보1(이식 시 빠진 변수가 슬롯 상한) anchor, 실험은 R16-3에 거절 사유 계측+cap×ctx 스윕.
