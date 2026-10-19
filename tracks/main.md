@@ -7,8 +7,9 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 ## cost model 기여
 - 채우는 칸: CM-1(`s_attn` vs `s_ssm`), CM-4(`δ(p,d)` + lockstep span 정지), CM-5(장문 KV vs mamba 슬롯, cap), (확장) N·TP 통신 항
 - 이번에 알게 된 것: 판정 0(M3 미완). 사실만 — J1 GPU0 샘플 61%가 기본 400 W 한도 throttle(0x4, 클럭 중앙 1380 MHz, 59 °C); 하네스 시간 모형이 확장 셀을 빠뜨려 rev12 예산 190 GPU-h가 과소(J1 실측 보정 시 J_N 20–21 h > 캡 16 h)
-- promote 필요: 예 — merge preflight `PREFLIGHT_PASS`(caveat C-A1–C-B3), rev12 봉인·재발행 1, M3 J2·J4·J8 외부 종료(전 N G_sym 미정의), 예산 모형 과소 교훈
+- promote 필요: 예 (감사) — Claim E 첫 화살표 판정(아래 현재 상태 첫 줄); 예 — merge preflight `PREFLIGHT_PASS`(caveat C-A1–C-B3), rev12 봉인·재발행 1, M3 J2·J4·J8 외부 종료(전 N G_sym 미정의), 예산 모형 과소 교훈
 ## 현재 상태 (2026-10-19)
+- **Claim E 첫 화살표 감사(claims-auditor 1회차)** `workspace/engine-port/results/anchor_audit/VERDICT_claimE_first_arrow_2026-10-19.md`: 10-12 의견 "첫 화살표에서 끊긴다" = 반증 아닌 **부재**(decode per-type 유효 측정 0; Diff B·C2·opchar는 s_attn≈s_ssm 근거 아님) · a는 E의 필요조건 아님(REFUTED; 우회 α 조성 오귀속·β Q18 state 예약) · A4 K2 hold-out 필요 CONFIRMED · shape B ctx ~1% NOT-YET-SUPPORTED. 우선순위 전제는 "E 미검증, hold-out 서빙 필요·고비용"까지만. COSTMODEL:34-37 문안 정정 대상(promote).
 - **M3 rev12**: 규칙층 감사 2 + 하네스층 감사 2 → 봉인 `e43749c`, 재발행 1 `9c3ea47`. merge preflight(CPU, 3회차) **PASS** `results/multigpu/PREFLIGHT_PASS.json`(POST `2aaf2aa`, digest `82a5fc5b`). 판정서 `results/multigpu_verdicts/VERDICT_preflight_judge_r2_and_reseal_2026-10-17.md`, 결과 `PREFLIGHT_RESULT_2026-10-18.md`.
 - **M3 실행**: J1(N=1) 완주 104셀. J2·J4·J8은 2026-10-18 21:14 UTC **외부 종료**(크레딧 소진 추정) — DP 어느 config도 미완(fused_sym 또는 agnostic boot2 누락), TP 미시작 → **G_sym 전 N 미정의**. 원시 회수 `results/multigpu/manual_retrieval/<job>/`(git-ignore, 17 GB, 원격·로컬 sha 일치, Job DONE 없음 — J1도 object volume 내보내기 절단).
 - **xcheck**: N1(J1)·DP2(J2) FAIL(doc 2693 첫 16토큰; fused_sym 자체 동시≠순차), DP4·DP8 PASS → X shape 방향 라벨 전부 인용 불가(P9-a). "요청마다 logprob 32개"는 실측 확인.
@@ -21,7 +22,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. J1(N=1) 결과 분석(result-analyst, CPU): N=1 G_sym, xcheck doc 2693 원인, throttle 공시 — 크기 문장 금지
 4. G0: cap 특성화 Job(R16-3, 결정 규칙 사전등록) → G0 계측 패치 I-1–I-5 + mixed-chunk 정확성 gate → G0 PREREG
 ## 사용자 결정 대기
-- **우선 논증점** / power cap은 핵심이 아니라는 사용자 판단 / 다음 세션에서 무엇을 먼저 할지 특정
+- **headline 비중(P-C 안 Claim G vs E) + E 경로(a 직접·α hold-out·β Q18 claim 재정의·shape C)** / 우선 논증점의 실체, M3 가치가 이것에 종속(M3는 TP guard상 E 시험 불가, G 일반화 절만) / 비교표 작성 후 논의 중(2026-10-19)
 - **M3 계속 여부·범위** / J2·J4·J8 전부 무효, 예산 모형 과소 / S1f(~128 GPU-h) · 더 축소(N=8 제외 시 추세점 3개 위험) · 보류
 - **J1 결과 분석 착수** / 재실행과 무관하게 유효, CPU 작업 / 착수(권고) · 보류
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 128k 프로브 · 장문 hold-out 모델 · CONSENSUS §1 행 38
