@@ -11,7 +11,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 ## 현재 상태 (2026-10-19)
 - **J1(N=1) 분석** `workspace/engine-port/results/multigpu_verdicts/ANALYSIS_J1_N1_2026-10-19.md`: 12/12 KNEE_BRACKETED, 비는 기술값만(크기 문장 금지) · A는 분할 미실행(PARTITION_NOT_EXERCISED) · B·X는 처리율 fused>PD-mux인데 ITL p99는 역순 → G0는 λ\*_SLO 판정 필수 · xcheck 2693 = 수치 비결정성(규칙 (b) 설계 결함, rev13 몫) · throttle은 shape 의존 매개 성분(B·X 비 SUBSTRATE_COVARIES) · G0: arm별 prior, 확장 발화 기본 시나리오.
 - **(다) 허수아비 점검**(venue-strategist): 엔진 층 Q18은 허수아비(SGLang·vLLM이 state 예약·admission 반영), Bullet/MuxWise는 오예측이 아니라 변수 부재 → 권고 문안 = 후보2(cap 결합 특성화) 본문 + 후보1(이식 시 빠진 변수가 슬롯 상한) anchor, 실험은 R16-3에 거절 사유 계측+cap×ctx 스윕.
-- **사용자 결정 2026-10-19** `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`: headline = Claim G 중심 · shape C 공통 워크로드 편입 · E를 memory/admission 예측까지 넓힐 필요 인정 · 후속: G0에 순수 attention 대조 모델 편입, shape C = G0 두 번째 표준 셀, M3는 G0 뒤로 연기(J1 분석만 먼저), E = 열린 질문 + β 계측.
+- **사용자 결정 2026-10-19** `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`: headline = Claim G 중심 · shape C 공통 워크로드 편입 · E를 memory/admission 예측까지 넓힐 필요 인정 · 후속: G0에 순수 attention 대조 모델 편입, shape C = G0 두 번째 표준 셀, M3는 G0 뒤로 연기(J1 분석만 먼저), E = 열린 질문 + β 계측 · (다) E′ 문안 = 후보2 본문 + 후보1 anchor(결정 8).
 - **Claim E 첫 화살표 감사(claims-auditor 1회차)** `workspace/engine-port/results/anchor_audit/VERDICT_claimE_first_arrow_2026-10-19.md`: 10-12 의견 "첫 화살표에서 끊긴다" = 반증 아닌 **부재**(decode per-type 유효 측정 0; Diff B·C2·opchar는 s_attn≈s_ssm 근거 아님) · a는 E의 필요조건 아님(REFUTED; 우회 α 조성 오귀속·β Q18 state 예약) · A4 K2 hold-out 필요 CONFIRMED · shape B ctx ~1% NOT-YET-SUPPORTED. 우선순위 전제는 "E 미검증, hold-out 서빙 필요·고비용"까지만. COSTMODEL:34-37 문안 정정 대상(promote).
 - **M3 rev12**: 규칙층 감사 2 + 하네스층 감사 2 → 봉인 `e43749c`, 재발행 1 `9c3ea47`. merge preflight(CPU, 3회차) **PASS** `results/multigpu/PREFLIGHT_PASS.json`(POST `2aaf2aa`, digest `82a5fc5b`). 판정서 `results/multigpu_verdicts/VERDICT_preflight_judge_r2_and_reseal_2026-10-17.md`, 결과 `PREFLIGHT_RESULT_2026-10-18.md`.
 - **M3 실행**: J1(N=1) 완주 104셀. J2·J4·J8은 2026-10-18 21:14 UTC **외부 종료**(크레딧 소진 추정) — DP 어느 config도 미완(fused_sym 또는 agnostic boot2 누락), TP 미시작 → **G_sym 전 N 미정의**. 원시 회수 `results/multigpu/manual_retrieval/<job>/`(git-ignore, 17 GB, 원격·로컬 sha 일치, Job DONE 없음 — J1도 object volume 내보내기 절단).
@@ -25,7 +25,6 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. J1(N=1) 결과 분석(result-analyst, CPU): N=1 G_sym, xcheck doc 2693 원인, throttle 공시 — 크기 문장 금지
 4. G0: cap 특성화 Job(R16-3, 결정 규칙 사전등록) → G0 계측 패치 I-1–I-5 + mixed-chunk 정확성 gate → G0 PREREG
 ## 사용자 결정 대기
-- **(다) Claim E 확장 문안** / 허수아비 점검 완료 / 후보2+1 조합(권고) · 다른 조합 — 사용자 확인 대기
 - **shape C 데이터셋·구체값, 대조 모델 확정** / 편입 결정됨 / G0 PREREG에서 정함 · M3는 G0 뒤 재개 여부 재결정
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 128k 프로브 · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
