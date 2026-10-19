@@ -20,11 +20,12 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 - 인프라: `job_entry.sh` CPU 모드(`68f386b`, heredoc 회귀 수정 `2aaf2aa` — 주석에 `<<'PY'` 쓰지 말 것), `fetch.sh` pycache 제외, `launch.sh`는 추적 파일 미커밋이면 제출 거부(Job 원장도 매 제출 뒤 커밋), 로컬 `sglang_engine_dev`는 merge 트리로 동기화(amd·opchar 공지 `handoff-report/NOTICE_engine_tree_sync_2026-10-15.md`).
 - 공통 측정 명세 v0.2+ `results/handoff_review_2026-10-15/SPEC_common_measurement_v0_2026-10-15.md`(G0 입력), 결정 기록 `DECISIONS_Q1_consolidated_2026-10-15.md` §1–§8.
 ## 다음 행동
-1. 사용자가 "power cap보다 우선 처리할 논증점이 있다"고 함 — 다음 세션 첫 질문으로 무엇인지 특정
-2. M3 계속 여부·범위 결정 → (계속 시) rev13(범위 축소·외부 종료 처리 규칙·내보내기 절단 수정) → 규칙·하네스 감사 → 재봉인 → CPU preflight → 제출
-3. J1(N=1) 결과 분석(result-analyst, CPU): N=1 G_sym, xcheck doc 2693 원인, throttle 공시 — 크기 문장 금지
-4. G0: cap 특성화 Job(R16-3, 결정 규칙 사전등록) → G0 계측 패치 I-1–I-5 + mixed-chunk 정확성 gate → G0 PREREG
+1. I-5 거절 사유 계측(engine-porter 조사·구현 중, CPU) → GPU correctness gate — cap 특성화·G0 공용 선행
+2. cap 특성화 설계 초안 `workspace/engine-port/results/cap_char/DESIGN_cap_characterization_v0_2026-10-19.md` §6 열린 질문 5개 결정 → PREREG → 감사 → 봉인 → preflight → 제출
+3. shape C 데이터셋·attention 대조 모델 확정(cap 특성화·G0 공용, 한 번만)
+4. G0 PREREG(cap = cap 특성화 결과, λ*_SLO 판정, arm별 prior·확장 발화 기본 시나리오 — J1 분석 반영) · M3는 G0 뒤 재결정
 ## 사용자 결정 대기
+- **cap 특성화 열린 질문 5개(설계 §6: shape C 선행 여부·128k/context_length·경계 arm·radix ON 비율 arm 제외·대조 교락)** / PREREG 전 / 설계 초안 권고안
 - **shape C 데이터셋·구체값, 대조 모델 확정** / 편입 결정됨 / G0 PREREG에서 정함 · M3는 G0 뒤 재개 여부 재결정
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 128k 프로브 · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
