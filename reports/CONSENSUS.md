@@ -1,4 +1,4 @@
-# CONSENSUS — engine-port PD-mux 연구의 합의점 (2026-07-19 historical)
+# CONSENSUS — engine-port PD-mux 연구의 합의점 (2026-10-19부터 정본 위계 2순위 · claim 등급 정본은 맨 끝 §6)
 
 > **현재 전체 정본:** [`../PROJECT_STATUS.md`](../PROJECT_STATUS.md).
 > 이 문서는 dual-worker/R2 이전까지 확정된 phase separation, layer-granular
@@ -8765,3 +8765,22 @@ layer-type 기반 정책은 全형태 死. 동적(SLO-aware/binding-first/feasib
 [HISTORICAL — 2026-10-13 항목 23으로 대체] 22. ★★**(2026-10-12 신설, doc-steward — N2(3-a) 현재 상태, §1에 판정 행 없음) 다음 gate = 두 번째 Job 결과 감사.** **사용자 결정(2026-10-11)**: N3 shape A 보류(N2 먼저); G-10 = VD 중단 시 그 boot만 종료하고 다음 boot 진행; CG 카나리아(H17-3) 채택; H17-4/5 미채택(N2C-79). **규칙 봉인 갱신**: rev17(§18-2-c 규칙 재개봉) 감사 `workspace/engine-port/results/n2_static_grid/VERDICT_n2_3a_rev17_delta_harness_2026-10-11.md`·`VERDICT_n2_3a_rev17_redelta_2026-10-11.md`(둘 다 `GO-with-caveats`, 死因 0) → 커밋 **`5e29990`, 규칙 봉인 digest `fc9e6404…`**(rev16 `fcc0b9e`/`fbb13b15…`는 **이력·superseded**); caveat N2C-76·78·79·80·81 등재, N2C-77 미등재. **하네스 봉인**: PROFILE `97a91b5`(harness_digest `89f975c5…`, `VERDICT_n2_3a_harness_profile_seal_2026-10-11.md`, N2C-82·83) → 첫 Job `pdmux-n2-static-grid-52a3b97-20261011182211` preflight exit 4·셀 0(**결과 아님**, N2C-85) → H17-10 → **재봉인 `a5de2d6`**(harness_digest `97334df9…`, `VERDICT_n2_3a_harness_h17_10_2026-10-12.md`, N2C-84~86); `97a91b5`는 superseded. Job-EA 하네스 봉인(scope EA)은 아직 없다. **Job 2건 상태**: ① `52a3b97…` 셀 0·결과 아님 ② `pdmux-n2-static-grid-a5de2d6-20261012021243` — 완주(exit 0, VESSL 컨테이너 3.801 h)했고 회수는 DONE+sha256 OK(커밋 `b184b10`)이며, **결과 감사 대기**다. 인프라: `7e43c61`(`vesslctl job logs` 진행 표시)·`dc59129`(리뷰 D1–D3/D7 수리: 3열 energy.csv 리더, `tee -p`, 로깅 노브 unset). Job `pdmux-n2-static-grid-a5de2d6-20261012021243`는 완주(exit 0, VESSL 컨테이너 3.801 h)했고 회수는 DONE+sha256 OK(커밋 `b184b10`)이며, **결과 감사 대기**다. **금지**: 러너 요약 수치(셀 통과 수, `OBSERVER_OK`, `NEG_CONTROL_HELD`, throttle 경고 등)를 정본·보고에 인용하지 않는다(재집계·결과 감사 전, 기계적 라벨조차 아직 `CONFIRMED` 아님). `PROFILE_PARTIAL`을 판정처럼 쓰지 않는다. 두 셀 (D34,b8,c2048)·(D34,b32,c512)의 `WINDOW_SHORT` 원인·throttle 영향·`SETTLE.txt` 0 값의 의미는 **미판정**이다. 블라인드 규칙: Job-PROFILE 동거 원자료로 κ를 분석하지 않는다. 직전 Job `pdmux-n2-static-grid-52a3b97-20261011182211`은 preflight exit 4·셀 0 — **결과 아님**(N2C-85), 하네스 근거로 인용하지 않는다. **다음 gate(2026-10-12, 이전 gate 순서를 대체)**: (1) 위 Job 결과 감사 — result-analyst 재집계 → claims-auditor 결과 감사(확인 대상: 두 셀 `WINDOW_SHORT` 원인, throttle 영향, `SETTLE.txt` 0 값; 블라인드 규칙 준수). (2) Job-EA 전 하드캡 재승인(E14-1)·Job-EA 하네스 구현(scope EA 봉인은 아직 없음)·하네스 실행 버그 D4·D5·D6(`n2_job.py` `stop()`의 죽은 서버 정리 생략, 셀 밖 SIGTERM 지연, 기동 `OSError`가 Job crash — 작업 검토[review-lead, 2026-10-12], 미발화·봉인 파일이라 **Job-EA 재개봉 회차로 이월**). 항목292, `PROJECT_STATUS.md` (a⁵). 새 성능 판정 0건·Claim D/E·HE0·게이트 #6 불변.
 
 23. ★★**(2026-10-13 신설, doc-steward — 위 §1 행 38과 짝) N2(3-a) Job-EA 결과 감사 반영 — 다음 gate = 후속 측정 F-1…F-4(처방 아님, 전부 사용자 결정 대기).** Job `pdmux-n2-static-grid-7e09cc3-20261013022149`(규칙 봉인 rev18 `5ea2a60`/`56473d6f…`, 하네스 봉인 PROFILE+EA `7e09cc3`/`9257845f…`, exit 0, 1.893 h, 회수·결과 봉인 `49c933b`, 재집계 `074d1d5`, 결과 감사 `fa454c4`)의 판정·허용 문안·금지·caveat는 §1 행 38과 `PROJECT_STATUS.md` (a⁶). 후속 후보(판정서 §10): F-1 같은 boot 안 전력 정합 대조 arm(C_burn; 실현 조건 미확인) · F-2 `clocks.mem`·NVML 버퍼 SM 클럭 수집 확인 · F-3 운영 rate trace 부하 동거/단독 S-dev 비·cap 노출(N2C-107을 닫는 유일 경로, 별도 사전등록) · F-4 무관성은 b ∈ {1,48}, c 512, D24/34 확장 + 등록 동등성 라벨로만. VESSL 컨테이너는 `-pl`·`-lgc`·`-rgc` 불가(2026-10-07 실측). N2(3-a)는 미완결(N2C-10); Job-PROFILE 셀·boot 4추정량 산출 허용 여부는 사용자/claims-auditor 거버넌스 확인 사항(PREREG §7-3: EA 결과 봉인 뒤, 봉인·EA 결과 감사 완료, N2C-87·95·98 고려). 동거 관문은 철회(사용자 안 0, 2026-10-12). 새 성능·정책 판정 0건·Claim D/E·HE0·게이트 #6 불변. ★종료(2026-10-15, 사용자 결정·새 Job 없이): N2 rev18 — 태그 `seal/n2-3a-rev18`, 게이트 #6 미닫힘, F-1…F-4 후속은 새 캠페인으로만, 결론 문장 불변. 근거 `workspace/engine-port/results/handoff_review_2026-10-15/` CLOSURE.
+
+---
+
+## 6. Claim 등급 (A–G) — 정본 (2026-10-19 이관, 사용자 결정)
+
+정본 위계 개정으로 `reports/paper/`(CLAIM_EVIDENCE_MATRIX·EXPERIMENT_ROADMAP·DOCUMENT_STATUS)는 동결 이력이 됐고, claim 등급의
+정본은 이 절이다. 판정어는 `reports/paper/CLAIM_EVIDENCE_MATRIX.md:607-642`에서 그대로 옮겼으며 이관할 때 등급 변경은 0건이다.
+각 claim의 근거·부족 증거·필요 실험 원문은 그 행에 있다. 이후 등급 변경은 `promote` 때 이 표에만 반영한다.
+이 절을 파일 끝에 둔 것은 기존 줄 번호 인용(`CONSENSUS.md:NNNN`)을 깨지 않기 위해서다.
+
+| Claim | 현재 판정 | 동결 원문 |
+|---|---|---|
+| A. hybrid 조성·ctx·부하에 따라 decode 수요가 변한다 | 부분 지지 (Stage 0 근거는 2026-07-28 철회) | MATRIX:609 |
+| B. 층 단위 재구성은 ITL critical path와 CUDA Graph를 훼손한다 | 강한 지지, 현 구현 범위 한정 | MATRIX:610 |
+| C. decode 굶김은 TTFT도 악화시킨다 | running-batch 경로 강함; KV 경로 부분 | MATRIX:611 |
+| D. 실행 상태 분리가 single-worker 결합을 줄인다 | 미검증 (control-plane 범위로 축소) | MATRIX:612-639 |
+| E. hybrid 정보 decode floor가 generic/static보다 SLO goodput이 높다 | 미검증 핵심 가설 (anchor 주장 1) | MATRIX:640 |
+| F. short-ctx conflict 영역에 동적 제어의 escape hatch가 있다 | 강한 지지(범위 한정) — CONFIRMED closure, scoped negative: escape hatch 없음 (2026-07-25) | MATRIX:641 |
+| G. PD-mux 활성화 자체가 fused 대비 이득의 원인이다 | 부분 지지(모델·워크로드 한정); "SM 분할 자체" 형태는 NOT-YET-SUPPORTED | MATRIX:642 |

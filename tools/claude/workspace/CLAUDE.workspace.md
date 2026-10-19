@@ -21,12 +21,12 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
 
 ## 정본 위계 (충돌 시 위가 우선)
 
-1. **`prefill-layer-alloc/PROJECT_STATUS.md`** — 프로젝트 전체 현재 상태의 유일 정본.
-2. **`prefill-layer-alloc/reports/paper/`** — 현재 claim/evidence/roadmap
-   (`CLAIM_EVIDENCE_MATRIX.md`, `EXPERIMENT_ROADMAP.md`, `R1_REANALYSIS.md`).
-3. **`.../reports/CONSENSUS.md`** — dual-worker/R2 이전까지 확정된 phase-separation·
-   layer-granular negative result·entanglement·single-worker dynamic 결과의 정본.
-4. `prefill-layer-alloc/workspace/engine-port/RESUME.md` — 환경·패치·부팅·재현.
+1. **`prefill-layer-alloc/PROJECT_STATUS.md`** — 프로젝트 전체 현재 상태의 유일 정본(원장).
+2. **`prefill-layer-alloc/reports/CONSENSUS.md`** — 확정 결론(§1)·철회(§2)·방법론(§3)·**claim 등급(§6)**의 정본.
+   (2026-10-19 위계 개정, 사용자 결정: 실제로 계속 갱신되는 곳을 2순위로 올렸다.)
+3. `prefill-layer-alloc/workspace/engine-port/RESUME.md` — 환경·패치·부팅·재현.
+4. `prefill-layer-alloc/reports/paper/` — **2026-10-19부터 동결 이력**(`CLAIM_EVIDENCE_MATRIX.md`는 10-04,
+   `EXPERIMENT_ROADMAP.md`는 10-13 시점). 줄 번호는 근거 포인터로 유효하나 갱신하지 않는다. `R1_REANALYSIS.md` 판정 원문은 유효.
 5. `deprecated/` (2026-07-24 통합 격리: `reports/historical_root/` = 옛 루트 `reports/`,
    `PAPER_RESULTS.md`·`FINAL_SUMMARY.md` 포함 · `reports/quarantine_root/` · `reports/
    quarantine_engine_port/` · `results/arxiv/` · `logs/`) = **이력용**. 현재 결론과 충돌
@@ -175,8 +175,12 @@ completeness·단일 전체그림 판정). 개별 에이전트 사이의 **연�
   인자 없으면 트랙 목록과 결정 대기(inbox)만.
 - **세션 종료/체크포인트** → `handoff`. **자기 트랙 파일(`tracks/<트랙>.md`)만** 갱신·커밋(정본·MEMORY.md·날짜별
   handoff 문서는 쓰지 않는다 — 옛 `handoff-report/session_handoff_*.md`는 이력).
-- **정본 반영** → `promote`(main 세션 전용, 한 번에 하나). 트랙 파일의 `promote 필요: 예` 항목을
-  COSTMODEL·PROJECT_STATUS·CONSENSUS·MEMORY.md에 압축 반영. 정본·메모리의 **유일한 작성 경로**.
+  ★2026-10-19: **사용자 결정이나 감사 판정이 나온 그 자리에서** `handoff 결정`(경량 모드)으로 트랙 파일의
+  "현재 상태"·"사용자 결정 대기" 두 절만 덮어쓰고 `promote 필요: 예`를 붙인다. 세션 끝까지 기다리지 않는다.
+- **정본 반영** → `promote`(main 세션 전용, 한 번에 하나). 트랙 파일의 `promote 필요: 예` 항목(결과 분석·
+  사용자 결정·감사 판정)을 COSTMODEL·PROJECT_STATUS·CONSENSUS(§6 claim 등급 포함)·MEMORY.md에 압축 반영하고,
+  마지막에 축 지도(`reports/anchor/axes_map.html`) 데이터 블록을 갱신·재발행한다. 정본·메모리의 **유일한 작성 경로**.
+- **지연 경보**: `tools/claude/inbox.sh`가 트랙 파일보다 그 트랙 결과 디렉터리의 커밋이 새로우면 경고 한 줄을 낸다.
 - 결과 분석(result-analyst)은 마지막 절에 **"cost model 기여"**를 쓰고, 감사(claims-auditor)는 같은 대상에
   **최대 2회** 후 사용자 결정으로 넘긴다.
 

@@ -12,7 +12,7 @@ model: opus
 
 ## 먼저 읽어라 (정직한 현재 상태)
 
-- `PROJECT_STATUS.md`, `reports/CONSENSUS.md`(§0 한 줄, §1 확정), `reports/paper/CLAIM_EVIDENCE_MATRIX.md`.
+- `PROJECT_STATUS.md`, `reports/CONSENSUS.md`(§0 한 줄, §1 확정, §6 claim 등급), `reports/paper/CLAIM_EVIDENCE_MATRIX.md`(동결 이력, 근거 원문).
 - 이미 받은 prior art: `workspace/engine-port/external/{bullet, muxwise, muxwise-zenodo, sglang-latest}` —
   Bullet(libsmctrl layer-span), MuxWise(layer-span bubble-free)는 **가장 가까운 선행/baseline**.
 

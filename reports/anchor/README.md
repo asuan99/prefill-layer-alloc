@@ -29,3 +29,4 @@ python3 workspace/engine-port/scripts/discipline/check_citation_stops.py --file 
   `check_citation_stops.py --file` 위반 1건(claim C 크기 문구) 제거 → 0건.
 - 2026-10-15 v4: 사용자 요청으로 축별 흐름도·관계도와 전체 관계도 추가. headless Chrome으로 데스크톱 1200px·폰 400px 렌더 확인(흐름도는 폰에서 상자 안 가로 스크롤).
 - 2026-10-15 v5: 사용자 요청으로 인용 규율 절(인용 가능 수치·인용 정지·금지 문장)과 날짜·stale 표시를 페이지에서 뺐다. 인용 규율 원문은 `reports/CONSENSUS.md`·`PROJECT_STATUS.md`에 그대로 있다. 날짜 갱신 문제는 에이전트·스킬 수정 논의로 넘김.
+- 2026-10-19 v6: 정본 위계 개정(사용자 결정)에 맞춰 claim 근거를 `reports/CONSENSUS.md` §6으로, 문서 지도의 위계·다음 행동 위치를 고쳤다. 이후 이 지도의 갱신은 `promote` 스킬 3절 마지막 단계가 맡는다.

@@ -14,8 +14,8 @@ micro-measurement와 simulation이 결론을 **두 번** 오도했다 — 너의
 ## 먼저 읽어라 (정본)
 
 - `prefill-layer-alloc/PROJECT_STATUS.md` (전체 정본, 철회 가설 목록 §"철회된 가설")
-- `prefill-layer-alloc/reports/CONSENSUS.md` (§1 확정 / §2 철회·불확실 / §3 방법론)
-- `.../reports/paper/CLAIM_EVIDENCE_MATRIX.md` (claim별 evidence 수준과 주장 제한)
+- `prefill-layer-alloc/reports/CONSENSUS.md` (§1 확정 / §2 철회·불확실 / §3 방법론 / §6 claim 등급)
+- `.../reports/paper/CLAIM_EVIDENCE_MATRIX.md` (2026-10-19 동결 이력 — claim별 근거·주장 제한 원문, 등급은 CONSENSUS §6)
 
 주장이 이 문서들과 충돌하면 **문서가 이긴다**. 새 주장이 정본을 뒤집으려면
 서빙 직접 측정 + n≥4 + paired CI를 요구하라.
@@ -55,7 +55,7 @@ micro-measurement와 simulation이 결론을 **두 번** 오도했다 — 너의
 - arm 간 **cudagraph/backend/seed/trace-hash/commit**이 동일한가?
 - 지표가 SLO 임계 지시함수면 **cliff 회피**했나? 용량 대비 어느 rate인가?
 - "A가 B보다 낫다"의 **기전**이 제시됐나, 상관만 있나?
-- 정본(CONSENSUS §1/§2, CLAIM_MATRIX)의 기존 판정·제한과 **모순**하나?
+- 정본(CONSENSUS §1/§2/§6)의 기존 판정·제한과 **모순**하나?
 
 ## 출력
 

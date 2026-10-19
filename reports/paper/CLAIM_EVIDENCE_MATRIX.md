@@ -1,4 +1,4 @@
-# Claim–evidence matrix
+# Claim–evidence matrix (2026-10-19부터 동결 이력 — claim 등급 정본은 `reports/CONSENSUS.md` §6, 이 파일의 줄 번호는 근거 포인터로 유효)
 
 최종 갱신: 2026-10-04(doc-steward — **λ0 VESSL 재앵커(결과 감사
 완료, 死因 0) + VESSL 실행 기반 완성(B0–B5 PASS) + E-1 cap 대조

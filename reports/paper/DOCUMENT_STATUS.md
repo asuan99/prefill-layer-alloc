@@ -1,4 +1,4 @@
-# Document status
+# Document status (2026-10-19부터 동결 이력 — 현재 정본 위계는 작업 루트 `CLAUDE.md` "정본 위계" 절)
 
 최종 갱신: 2026-10-13 (doc-steward — changelog 기록뿐, Canonical/Historical/Superseded 분류표 무변경. N2(3-a) Job-EA `pdmux-n2-static-grid-7e09cc3-20261013022149` 결과 감사 정본 반영: `PROJECT_STATUS.md` (a⁶)·게이트 #268–270, `CONSENSUS.md` rev95(§1 행 38·§3 항목293–295·§5 항목23), `EXPERIMENT_ROADMAP.md` 헤더. 규칙 봉인 rev18 `5ea2a60`/`56473d6f…`, 하네스 봉인 PROFILE+EA `7e09cc3`/`9257845f…`; 이전 `5e29990`·`a5de2d6` 봉인은 superseded 이력. 새 성능·정책 판정 0건·Claim D/E 등급 불변. 커밋은 메인 세션.) 이전 최종 갱신(2026-10-12, HISTORICAL): 2026-10-12 (doc-steward — changelog 기록뿐, Canonical/Historical/Superseded 분류표 무변경. N2(3-a) 상태 정본 반영: `PROJECT_STATUS.md` (a⁵)·게이트 #267, `CONSENSUS.md` rev94(§3 항목292·§5 항목22), `EXPERIMENT_ROADMAP.md` 헤더. 규칙 봉인 `5e29990`/`fc9e6404…`, 하네스 재봉인 `a5de2d6`; 이전 `fcc0b9e`·`97a91b5`·`1037655`는 superseded 이력. 두 번째 Job `pdmux-n2-static-grid-a5de2d6-20261012021243` 완주·회수 OK·결과 감사 대기. 새 성능 판정 0건·Claim D/E 등급 불변. 커밋은 메인 세션.)
 이전: 2026-09-13(2)(doc-steward — ★세 번째 사용자 결정
