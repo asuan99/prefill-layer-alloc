@@ -21,11 +21,13 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 - 공통 측정 명세 v0.2+ `results/handoff_review_2026-10-15/SPEC_common_measurement_v0_2026-10-15.md`(G0 입력), 결정 기록 `DECISIONS_Q1_consolidated_2026-10-15.md` §1–§8.
 ## 다음 행동
 1. I-5 거절 사유 계측: CPU 구현·테스트 완료(`src/multiplex/admission_probe.py`, 사유 KV/cap≡슬롯 2분류) → 엔진 트리 동기화(ENGINE_DIGEST 변경) + GPU correctness gate — cap·long-ctx·G0 공용 선행
-2. 설계 v1 `workspace/engine-port/results/cap_char/DESIGN_cap_longctx_v1_2026-10-19.md`(cap 블록 + long-ctx 블록) §5 열린 질문 결정 → 128k 프로브 → PREREG → 감사 → 봉인 → preflight → 제출
+2. 설계 v1.1 `workspace/engine-port/results/cap_char/DESIGN_cap_longctx_v1_2026-10-19.md`(cap 블록 + long-ctx 블록, L*≈8.8k 단위 해소) §5 결정 → 128k 프로브 → PREREG → 감사 → 봉인 → preflight → 제출
 3. shape C 데이터셋·attention 대조 모델 확정(cap 특성화·G0 공용, 한 번만)
 4. G0 PREREG(cap = cap 특성화 결과, λ*_SLO 판정, arm별 prior·확장 발화 기본 시나리오 — J1 분석 반영) · M3는 G0 뒤 재결정
 ## 사용자 결정 대기
-- **설계 v1 열린 질문(§5)** / PREREG 전 / shape C 데이터셋 · attention 대조 모델(128k 지원) · long-ctx 워크로드(합성 1차 권고) · 128k 프로브 · 블록 배치
+- **대조 모델 · shape C 데이터셋** / 설계 v1.1 §5 조사 완료, PREREG 전 / 대조 = Llama-3.1-8B(권고)·Mistral-NeMo-12B(차선); shape C = LongProc 8K(권고)·arXiv-Sum×OpenThoughts 출력 짝(차선) — 결정 5 예시(OpenThoughts·Mooncake)는 shape C 아님
+- **튜닝 fused arm(fused_tuned) 추가** / J1 감사 1번(미조율 분모) / cap·long-ctx 블록에 추가(권고) · fused_sym만
+- **128k 프로브 · 블록 배치** / 위 두 결정 뒤 / Workspace 프로브(GPU, 승인 필요) · PREREG에서 GPU-h 계산
 - **shape C 데이터셋·구체값, 대조 모델 확정** / 편입 결정됨 / G0 PREREG에서 정함 · M3는 G0 뒤 재개 여부 재결정
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 128k 프로브 · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
