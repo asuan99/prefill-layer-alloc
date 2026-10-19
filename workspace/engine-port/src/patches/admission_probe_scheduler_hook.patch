@@ -1,0 +1,45 @@
+I-5 admission-reason probe construction hook (SPEC_common_measurement_v0 sec 9,
+2026-10-19).  NOT YET WIRED INTO sync_engine_tree.sh -- see the engine-porter
+hand-off for the sync/manifest procedure; applying it changes scheduler.py
+bytes and therefore ENGINE_DIGEST.
+
+ONE hunk, in run_scheduler_process (module level, after the Scheduler class),
+between `Scheduler(...)` construction and `pipe_writer.send(...)`.  All logic
+lives in sglang/srt/multiplex/admission_probe.py and installs itself by
+wrapping, at class level, PrefillAdder.__init__/add_one_req and
+Scheduler.get_new_batch_prefill / get_num_allocatable_reqs /
+update_running_batch / _add_request_to_queue / update_split_prefill_batch --
+only when PDMUX_ADMISSION_PATH is set.  Unset: the factory returns None, no
+wrapper is installed, the engine runs the pristine functions.
+
+WHY HERE.  (1) Arm symmetry: run_scheduler_process is the common entry of the
+fused loops and event_loop_pdmux, so the probe is not a pdmux-only hook
+(Gate-1 defect).  (2) No line of the Scheduler class moves, so the
+fingerprinted citations in scripts/discipline/line_citations.json
+(scheduler.py:2309-2313, :2382, :2447, ...) stay valid.  (3) The hunk is far
+outside the context windows of holb_probe_scheduler_hooks.patch and
+chunk_probe_scheduler_hook.patch, so their reverse-application tests are
+unaffected.  Must be applied AFTER those two (its offsets are computed on the
+tree they produce).
+
+--- a/sglang/srt/managers/scheduler.py
++++ b/sglang/srt/managers/scheduler.py
+@@ -3658,6 +3658,18 @@
+             dp_rank,
+         )
+ 
++        # I-5 admission-reason probe (arm-agnostic; default OFF).  Returns None
++        # unless PDMUX_ADMISSION_PATH is set; when set it wraps the admission
++        # entry points of Scheduler / PrefillAdder at class level, so the fused
++        # loops and event_loop_pdmux are instrumented by the same code.  Placed
++        # here (after __init__, before the event loop) so that no line of the
++        # Scheduler class moves.  See sglang/srt/multiplex/admission_probe.py.
++        from sglang.srt.multiplex.admission_probe import (
++            maybe_install_admission_probe,
++        )
++
++        scheduler.admission_probe = maybe_install_admission_probe(scheduler)
++
+         # Send initialization info back to the parent process
+         pipe_writer.send(scheduler.get_init_info())
+ 
