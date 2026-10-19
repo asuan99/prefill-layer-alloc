@@ -28,7 +28,6 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 - **대조 모델 · shape C 데이터셋** / 설계 v1.1 §5 조사 완료, PREREG 전 / 대조 = Llama-3.1-8B(권고)·Mistral-NeMo-12B(차선); shape C = LongProc 8K(권고)·arXiv-Sum×OpenThoughts 출력 짝(차선) — 결정 5 예시(OpenThoughts·Mooncake)는 shape C 아님
 - **튜닝 fused arm(fused_tuned) 추가** / J1 감사 1번(미조율 분모) / cap·long-ctx 블록에 추가(권고) · fused_sym만
 - **128k 프로브 · 블록 배치** / 위 두 결정 뒤 / Workspace 프로브(GPU, 승인 필요) · PREREG에서 GPU-h 계산
-- **shape C 데이터셋·구체값, 대조 모델 확정** / 편입 결정됨 / G0 PREREG에서 정함 · M3는 G0 뒤 재개 여부 재결정
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 128k 프로브 · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - 없음. 원장 `results/multigpu/vessl_jobs.tsv`, `results/preflight_cl3/vessl_jobs.tsv`. Workspace 둘 다 standby.
