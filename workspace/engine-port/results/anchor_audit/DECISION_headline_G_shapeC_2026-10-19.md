@@ -22,3 +22,10 @@
    - 금지: "generic 스케줄러는 mamba state를 무시한다" · "Bullet/MuxWise가 C_mem을 오예측한다" · "~52k에서 구속 전환"(유도값).
    - `handoff_review_2026-10-15/COSTMODEL_running_cap_2026-10-15.md` §3-2의 "generic 예측기(KV만 보는 모델)는 hybrid의 C_mem을 과대평가" 문장은 이 결정으로 낡았다(promote 때 정정 포인터).
 9. 실험 = cap 특성화 Job(R16-3)에 I-5 거절 사유 계측 + cap×ctx 스윕(설계 초안 `../cap_char/`).
+
+## 결정 8 개정 → 8′ (같은 날, 사용자 질의 후 승인)
+경위: (1) SGLang mamba pool은 부팅 시 정적 할당, 슬롯 고갈 = assert(프로세스 사망), radix OFF에서 슬롯 수 = cap → cap≡슬롯 결합은 **SGLang 정적 풀의 구현 결과**(Jenga/vLLM V1 통합 풀이면 소멸). 할당기는 바꾸지 않는다(사용자). (2) I-5 조사(engine-porter): radix OFF에서 슬롯 사유와 cap 사유는 항등 → 거절 사유는 KV / cap(≡슬롯) 2분류. (3) "~52k 경계"는 cap 48 아티팩트지만 long-context 구간 자체는 hybrid 의의가 큰 곳이라 유지(사용자).
+- **8′ E′ 문안**: "hybrid의 요청당 메모리는 길이 무관 고정 state s를 가져, 짧은 ctx(< s/k, Nano-9B-v2 ~9k [유도: 0.1435 GB ÷ 16 KiB = 8.8k(GB)–9.4k(GiB), 단위 확인 필요])에서는 s가, 긴 ctx에서는 (작은) KV가 지배한다. 이 비용 구조와 goodput 영향을 양 구간에서 특성화한다. SGLang 정적 풀에서는 cap이 admission·decode bs·state 예약을 함께 정한다(실험 설정 공시)."
+- 이전 8의 후보2·후보1 문안은 대체됨("슬롯 상한"은 할당기 종속이라 기여 문장에서 뺀다).
+- 실험: cap 블록 {48, C_mem} × 표준 셀 + long-ctx 블록 ctx {32k, 64k, 96k}(+128k 프로브 결과에 따라), cap = C_mem(L), ctx 비례 TTFT SLO. 설계 `../cap_char/DESIGN_cap_longctx_v1_2026-10-19.md`.
+- 금지 추가: "~52k가 hybrid 경계" · "9k 경계 실측"(유도값, config 산술).

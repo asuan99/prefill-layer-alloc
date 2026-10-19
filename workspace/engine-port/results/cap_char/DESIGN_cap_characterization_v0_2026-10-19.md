@@ -1,5 +1,7 @@
 # DESIGN v0 — cap 특성화 Job (R16-3 · CM-5 검증 · Claim E′) — 초안, PREREG 아님 (2026-10-19)
 
+> ★**대체됨(2026-10-19)**: `DESIGN_cap_longctx_v1_2026-10-19.md`가 이 초안을 대체한다(결정 8′). 이력용.
+
 > 지위: main 트랙 설계 초안. 측정 0, 감사 0. 이 문서의 수치는 [유도]·[제안]이며 판정 규칙은 PREREG에서 확정한다.
 > 근거: 사용자 결정 `../anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md` §1–9 · 명세 `../handoff_review_2026-10-15/SPEC_common_measurement_v0_2026-10-15.md`
 > §9(I-5·I-6)·§12(R16-1–R16-3) · 비용 메모 `../handoff_review_2026-10-15/COSTMODEL_running_cap_2026-10-15.md` · 감사 `../anchor_audit/VERDICT_claimE_first_arrow_2026-10-19.md`
