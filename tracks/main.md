@@ -25,8 +25,8 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. LongBench v1/v2·InfiniteBench 길이 분포 CPU 실측(Nano·Llama 토크나이저) → long-ctx 구간 표본 확정
 4. G0 PREREG(cap = cap 특성화 결과, λ*_SLO 판정, arm별 prior·확장 발화 기본 시나리오 — J1 분석 반영) · M3는 G0 뒤 재결정
 ## 사용자 결정 대기
-- **long-ctx 구간 표본·출력 수준 확정** / 결정 12 후속, 길이 실측 뒤 / 구간 {32k,64k,96k} 문서 수 충분성 · 블록별 출력 수준(PREREG GPU-h)
-- **128k 프로브 · 블록 배치** / 위 두 결정 뒤 / Workspace 프로브(GPU, 승인 필요) · PREREG에서 GPU-h 계산
+- **long-ctx 입력 = 목표 길이 절단(±10% 선별 대체)** / 실측: ±10% 선별 64k 26개 vs 절단 995개(`workspace/engine-port/results/cap_char/figures/`) / 절단(권고) · 선별
+- **128k 프로브 실행** / 계획 `workspace/engine-port/results/cap_char/PROBE_128k_PLAN_2026-10-20.md`, GPU 약 60–100분 [유도] + Llama gated 토큰 수동 입력 / 스크립트 작성 후 승인 · 보류
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 128k 프로브 · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - 없음. 원장 `results/multigpu/vessl_jobs.tsv`, `results/preflight_cl3/vessl_jobs.tsv`. Workspace 둘 다 standby.
