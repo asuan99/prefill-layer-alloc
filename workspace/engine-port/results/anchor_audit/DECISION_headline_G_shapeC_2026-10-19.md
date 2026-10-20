@@ -78,3 +78,7 @@
 - **O-5** 검증 V의 PD-mux arm은 2개다.
 - **O-7** 검증 Job은 분할한다.
 - **GPU gate는 Job 1개(약 8.5 h)가 아니라 비교 단위로 분할**한다(사용자 지적: 장시간 단일 Job과 의도적 crash가 섞이면 위험). 각 Job은 자기 비교를 Job 안에 완결한다. 앞 단계가 PASS일 때만 다음 단계를 제출한다.
+
+## 결정 17 (2026-10-20) — 감사 상한 도달 후 처리 (권고안 (a) 채택)
+- PREREG rev2 2회차 NO-GO(`../cap_char/VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md`): **항 측정(T1–T4, J-A·J-B·J-C)만 caveat를 붙여 봉인용으로 분리**한다. 검증 V는 항 데이터를 받은 뒤 **별도 PREREG로 새로 감사**받는다. 데이터를 본 뒤 구조를 고르는 위험은 그 PREREG에서 공시한다.
+- GPU gate 진행 순서: experiment-runner가 G-α/β/γ 하네스를 작성하고, 병행해서 claims-auditor가 gate 설계 감사 3건(I-4 허용 범위의 SPEC ±5% 이탈, TOST 짝당 seed 1개, ITL p95 짝 분산 미측정)을 본다. 이후 G-α dry-run → 제출 승인.
