@@ -7,7 +7,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 ## cost model 기여
 - 채우는 칸: CM-1(`s_attn` vs `s_ssm`), CM-4(`δ(p,d)` + lockstep span 정지), CM-5(장문 KV vs mamba 슬롯, cap), (확장) N·TP 통신 항
 - 이번에 알게 된 것: 판정 0(M3 미완). 사실만 — J1 GPU0 샘플 61%가 기본 400 W 한도 throttle(0x4, 클럭 중앙 1380 MHz, 59 °C); 하네스 시간 모형이 확장 셀을 빠뜨려 rev12 예산 190 GPU-h가 과소(J1 실측 보정 시 J_N 20–21 h > 캡 16 h)
-- promote 필요: 예 (감사) — PREREG rev2 2회차 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md`); PREREG rev1 규칙층 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`); 128k 프로브 감사 `workspace/engine-port/results/cap_char/probe_128k/AUDIT_probe_128k_2026-10-20.md`(허용 문안 1–7); 예 (결정) — 결정 10–18(대조 모델·fused_tuned·shape C·long-ctx 입력); 아니오(이전 항목 반영 완료) — 2026-10-19 반영 완료: J1(N=1) 분석·감사 허용 문안 1–5(COSTMODEL CM-2·4·6, CONSENSUS §3 항목296), Claim E 첫 화살표 판정(CM-1 정정, §6 등급 불변), 사용자 결정 1–7·8′(CM-5, PROJECT_STATUS 최상단 5줄), preflight PASS·rev12 봉인·M3 J2/J4/J8 외부 종료·예산 모형 과소 교훈(확장 행)
+- promote 필요: 예 (감사) — PREREG rev2 2회차 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md`); PREREG rev1 규칙층 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`); 128k 프로브 감사 `workspace/engine-port/results/cap_char/probe_128k/AUDIT_probe_128k_2026-10-20.md`(허용 문안 1–7); 예 (결정) — 결정 10–19(대조 모델·fused_tuned·shape C·long-ctx 입력); 아니오(이전 항목 반영 완료) — 2026-10-19 반영 완료: J1(N=1) 분석·감사 허용 문안 1–5(COSTMODEL CM-2·4·6, CONSENSUS §3 항목296), Claim E 첫 화살표 판정(CM-1 정정, §6 등급 불변), 사용자 결정 1–7·8′(CM-5, PROJECT_STATUS 최상단 5줄), preflight PASS·rev12 봉인·M3 J2/J4/J8 외부 종료·예산 모형 과소 교훈(확장 행)
 ## 현재 상태 (2026-10-20)
 - **G-α 1회차** `pdmux-engine-gate-alpha-0990828-20261020081434`(29분, 회수·DONE·sha OK, engsync `a3f53617`): **FAIL 1 / PASS 27** — 출력 일치(3 arm), OFF 단언, int64 ≤64k, I-4(비 0.94–1.00, host 변이 0.03로 분리), I-6, 방출, digest 3회 전부 PASS. FAIL = `i5i6_B2`: PD-mux(agnostic) stair에서 bs=40 미방문(1–39 방문, 39에서 31 iter) — 분할 prefill이 요청을 하나씩 합류시키는 동안 출력 16인 첫 요청이 끝나서 생기는 스케줄 사실로 보임(fused·Llama는 PASS). 검사 기대값 결함 의심, 판정 규칙 사후 수정 금지 → 사용자 결정.
 - **비용 항 PREREG rev1** `workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_rev1_2026-10-20.md`(약 24.5 GPU-h [유도]) → 규칙층 1회차 NO-GO → rev2(`4c45a31a`, 약 27.8 GPU-h) → **2회차 NO-GO(상한 도달)** `VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md`: 1회차 死因 둘 다 RESOLVED, 항 측정(J-A/B/C)엔 死因 없음, **V 규칙에 새 死因 2**(예측 중심 사다리×CLIFF 비단조, shape C 외삽으로 V_PASS 불가). 이전 1회차: **NO-GO** `VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`: 死因 2(T4 C_mem 산식에 ignore_eos 출력 예약 누락, V 사다리 arm별 ±2 rung 위반) + MAJOR 7. 수리 → 2회차(마지막).
@@ -30,8 +30,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. 128k 프로브 스크립트(G1–G7) 작성·CPU 회귀 → 승인 → Llama 적재 + A100 프로브
 4. G0 PREREG(cap = cap 특성화 결과, λ*_SLO 판정, arm별 prior·확장 발화 기본 시나리오 — J1 분석 반영) · M3는 G0 뒤 재결정
 ## 사용자 결정 대기
-- **G-α FAIL(i5i6_B2) 처리** / 검사 기대값이 PD-mux 스케줄과 안 맞음 / 검사 수정+G-α 재실행(권고, 약 0.5 h) · 기록 후 수용(사후 수정 위험) · 보류
-- **gamma 추가 항목** / ITL 분산 예보(LO 반복 없음, stall 5% 경계) / OFF/OFF 짝 2–3개 + stall 진단 라벨(권고)
+- (결정 19: G-α 검사 수정·재실행 승인, gamma OFF/OFF+stall 라벨) 다음 대기 = 하네스 재감사 → G-α 재실행 결과
 - (결정 16으로 O-1·2·3·5·7 처리, GPU gate 분할) 다음 대기 = PREREG rev2 2회차 감사 결과 · 분할 gate 설계 승인(GPU)
 - **LongBench v2·InfiniteBench 사용(공식 가운데 절단)** / 보류(결정 12′) / 프로브 뒤 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38

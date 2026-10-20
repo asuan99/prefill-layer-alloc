@@ -97,3 +97,11 @@
   - TOST CI를 α 분할(초기·확장 각 단측 0.025, 95%)로 한다.
   - 확장 짝은 등록된 1회 별도 Job으로 돌리고 pool-gamma로 합산한다.
 - 실행 승인: G-α 제출 → PASS면 G-β → PASS면 gamma-A·F 동시 제출(짝 수는 ITL SD 예보 뒤 확정). 각 제출 직전에 dry-run을 확인한다.
+
+## 결정 19 (2026-10-20) — G-α FAIL 처리·gamma 추가 (권고안 채택)
+- G-α 1회차 FAIL 1건(`i5i6_B2`: PD-mux stair에서 bs=40 미방문)은 검사 기대값 결함으로 보고 **검사를 수정한 뒤 G-α를 재실행**한다.
+  - PD-mux arm의 기준: bs\_real이 1부터 최댓값까지 연속이고, 그 최댓값이 I-5 admission의 동시 decode 최댓값과 일치한다.
+  - 수정은 "1회차 데이터를 본 뒤의 수정"으로 공시한다. 판정은 재실행 데이터로만 내린다.
+  - 수정 diff는 하네스층 재감사(마지막 1회)를 거친 뒤 제출한다.
+- gamma에 **계측 OFF/OFF 짝 2–3개**(같은 Job 안 흔들림 측정)와 **stall 경계 진단 라벨**(stall 비율 5%±1%p인 seed 표시, 판정 불변)을 추가한다.
+- cooperative barrier 우려(격리 문서 `deprecated/reports/quarantine_root/ssm_cooperative_barrier_context_corruption.md`): 현 엔진 SSD·conv 커널에 cooperative launch·grid sync·smid 사용이 0건이고 서빙 실측도 정상이라, 별도 감사는 하지 않는다(사용자가 외부 출처를 주면 재검토).
