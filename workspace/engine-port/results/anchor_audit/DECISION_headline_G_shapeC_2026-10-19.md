@@ -105,3 +105,11 @@
   - 수정 diff는 하네스층 재감사(마지막 1회)를 거친 뒤 제출한다.
 - gamma에 **계측 OFF/OFF 짝 2–3개**(같은 Job 안 흔들림 측정)와 **stall 경계 진단 라벨**(stall 비율 5%±1%p인 seed 표시, 판정 불변)을 추가한다.
 - cooperative barrier 우려(격리 문서 `deprecated/reports/quarantine_root/ssm_cooperative_barrier_context_corruption.md`): 현 엔진 SSD·conv 커널에 cooperative launch·grid sync·smid 사용이 0건이고 서빙 실측도 정상이라, 별도 감사는 하지 않는다(사용자가 외부 출처를 주면 재검토).
+
+## 결정 20 (2026-10-20) — G-β 하네스 수정·재실행, gamma (a) (권고안 채택)
+- G-β 1회차 FAIL(engsync `afe94ba2`)은 하네스 기대값 결함 3건으로 판단한다. 반증 증거 자체는 예측대로 나왔다. 수정은 **하네스층 감사 상한 도달 후 사용자 승인**으로 하며, 1회차 데이터를 본 뒤의 수정임을 공시한다. 판정은 재실행 데이터로만 한다.
+  - ① 단위 시험: torch 참조와 atol로 비교하던 것을 "패치본 view 출력 sha = 원본 커널 contig 출력 sha"(유효 길이) 기준으로 바꾼다. 붕괴 판정은 "원본 view ≠ 원본 contig 또는 crash"로 한다.
+  - ② w11328 사례의 offset·dim을 TP2 폭에 맞게 고친다.
+  - ③ 비차단 boot는 "illegal 서명 + 사망"만 요구한다. traceback 위치는 차단(blocking) boot에서만 요구한다.
+- gamma: **(a) OFF/OFF 진단 짝을 제외**한다(r1 gamma 설계). OO는 확장 Job으로 옮긴다. STALL\_BOUNDARY 라벨은 stage가 아닌 셀 기술값이므로 유지하되, 판정 경로(run\_gate 1521)에 들어가지 않음을 테스트로 확인한다.
+- G-β 재실행이 PASS하면 gamma-A·gamma-F를 동시에 제출한다(사전 승인).
