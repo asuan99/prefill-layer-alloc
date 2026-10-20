@@ -23,7 +23,7 @@
 #   4 nano_chunked proxy for fused_tuned: vanilla + --chunked-prefill-size 8192 --enable-mixed-chunk
 #                  (+ --disable-overlap-schedule, same as the other arms) -> G3-chunked (1 request per L).
 #                  Last on purpose: it is not in the plan's time table and is the first thing the budget skips.
-#   Common: radix OFF, mem-fraction 0.82, --max-running-requests CAP --max-mamba-cache-size CAP (Nano),
+#   Common: radix OFF, mem-fraction 0.82 (override PDMUX_PROBE_MEM_FRACTION; 2nd run 2026-10-20 = 0.6 after 0.82 activation OOM), --max-running-requests CAP --max-mamba-cache-size CAP (Nano),
 #   --disable-piecewise-cuda-graph (decode cudagraph stays ON; M3 PREREG arm table), seed 1, input_ids
 #   requests, ignore_eos, 64 forced output tokens, input + output <= 131072 asserted per request.
 #   Synthetic input: fixed-seed pseudo-text tokenized to EXACTLY L ids (rule recorded in every result json
@@ -83,7 +83,7 @@ done
 NANO="${PDMUX_PROBE_NANO:-nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base}"   # B4 / e2_sticky precedent
 LLAMA="meta-llama/Llama-3.1-8B"
 LLAMA_REV="d04e592bb4f6aa9cfee91e2e20afa771667e1d4b"
-BACKEND="flashinfer"; CTX=131072; MEM_FRACTION=0.82; SERVER_SEED=1; OUT_TOKENS=64
+BACKEND="flashinfer"; CTX=131072; MEM_FRACTION="${PDMUX_PROBE_MEM_FRACTION:-0.82}"; SERVER_SEED=1; OUT_TOKENS=64
 BOOT_TIMEOUT="${PDMUX_PROBE_BOOT_TIMEOUT:-1500}"       # seconds; plan: boot 8-20 min
 BOOT_MIN_REMAIN_MIN=12                                   # do not start a boot with less budget left
 MEM_FREE_MIB=1024                                        # teardown: GPU memory.used must fall below this
