@@ -42,3 +42,11 @@
 - **출력 길이 = 강제 출력 요인 {자연(~200), 1k, 4k}**. 근거는 데이터셋이 아니라 비용 구조(생성 중 L\* 횡단, Little 동시 수)다. 블록별 수준은 PREREG에서 GPU-h로 정한다.
 - **shape C = (입력 구간 × 출력 길이) 격자의 한 영역**이며 단일 데이터셋이 아니다. 결정 5("shape C = G0 두 번째 표준 셀")는 "arXiv-Sum 입력 × 강제 출력 {1k, 4k}"로 구체화된다.
 - 선행: LongBench v1/v2·InfiniteBench 길이 분포 CPU 실측(Nano·Llama 토크나이저).
+
+## 결정 12′ (2026-10-20, 결정 12의 long-ctx 입력 부분 개정 — 사용자 결정)
+경위: "목표 길이 T 절단"은 벤치마크를 임의로 수정하는 것으로 읽힌다(사용자). 한도 초과분을 거르면 v2는 38–42%, InfiniteBench는 46–50%가 빠진다[측정, `../cap_char/longctx_stats/`].
+- **ctx 통제 축 {32k, 64k, 96k, ~124k} = 합성 고정 길이 입력**(bench_serving random 계열, 합성임을 공시). 목표 길이 절단·±10% 선별은 쓰지 않는다.
+- **실제 분포 셀 = LongBench v1 원본 그대로**(Nano·Llama 모두 한도 안 100% [측정]).
+- **LongBench v2·InfiniteBench = 보류**(공식 가운데 절단 프로토콜 사용 여부는 나중에 결정).
+- 프로브에 G7 추가: 같은 길이에서 합성 입력 대 실제 문서의 prefill 시간 비교("내용 무관" 가정 확인).
+- Llama 가중치 적재: 로컬 HF 토큰(계정 확인, gated 접근 OK)을 적재 시점에 SSH 표준입력으로 `pdmux-build`에서 일시 로그인 → 고정 리비전으로 받기 → 즉시 logout. VESSL org secret은 만들지 않는다.
