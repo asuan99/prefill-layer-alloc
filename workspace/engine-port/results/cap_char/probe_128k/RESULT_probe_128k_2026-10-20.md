@@ -32,3 +32,20 @@
 - 그 결과 지금 설정에서 **PD-mux arm은 64k부터 불가**, fused\_sym은 96k부터, Llama는 124k에서 불가다. 반대로 chunked prefill이 있는 fused 계열은 124k까지 된다. long-ctx 블록에서는 **arm 사이 대칭이 깨진다**.
 - PD-mux가 fused\_sym보다 먼저 OOM 나는 이유(split-prefill 경로의 SSD state passing)는 미확인이다.
 - 레버 후보: `--mem-fraction-static`를 낮추면 KV 풀을 줄여 활성화 여유를 늘릴 수 있다. 모든 arm에 같은 값을 쓴다. C\_mem(124k)≈23은 KV 풀을 크게 줄여도 남을 가능성이 크다[유도]. 2회차 프로브로 확인해야 한다.
+
+---
+# 2회차 — mem-fraction 0.6 (run `longctx_probe_20261020T034615Z`, commit `63de3582`, 03:46–04:01Z, SHA256SUMS 72 OK)
+1회차는 네 arm 모두 `--mem-fraction-static 0.82`였다(각 `launch_command.txt`). 2회차는 네 arm 모두 0.6이다. 편차는 같다(libnuma1 apt).
+
+| arm | 0.82 (1회차) | 0.6 (2회차) | 0.6에서의 실패 원인 |
+|---|---|---|---|
+| Nano PD-mux (chunk -1) | 32k OK, 64k OOM | **64k OK, 96k 실패** | **Triton `illegal memory access`**, `ssd_chunk_state.py:464 _chunk_cumsum_fwd`. 메모리 부족이 아님(활성화 여유 29.0 GiB) |
+| Nano fused\_sym (chunk -1) | 64k OK, 96k OOM | 64k OK, **96k 실패** | 같은 커널, 같은 오류(여유 30.6 GiB) |
+| Nano chunked 8192 | 124k까지 OK | 124k까지 OK | — |
+| Llama fused\_sym (chunk -1) | 96k OK, 124k OOM | **124k까지 OK**, 동시 요청(G5-conc) 6/6 OK | — |
+
+- KV 풀은 Nano 1.59M 토큰, Llama 263,900 토큰이다. C\_mem(124k)는 Nano 14, Llama 2다 [측정 부팅 로그 + 산식].
+- **해석(감사 전)**: Nano의 96k 실패는 메모리가 아니라 **Mamba SSD Triton 커널이 chunk 없는 장문 단일 시퀀스에서 터지는 문제**로 보인다(int32 인덱스 넘침 같은 커널 한계로 추정, 미확인). chunked 8192는 forward 하나가 8192 토큰 이하라서 124k까지 된다.
+  - **PD-mux는 chunked prefill을 강제로 끄므로**, 이 스택(SGLang v0.5.10 + 현 Triton SSD)에서 PD-mux arm의 실현 가능한 상한은 **64k**다(mem-fraction 0.6 기준).
+- G4(장문 prefill 중 ITL), G7(합성 대 실제 문서)은 이번에도 서버가 96k에서 먼저 죽어 실행되지 못했다(단계 순서 문제).
+- 기술값(인용 금지): Nano PD-mux TTFT 16k 1.8–2.2 s, 32k 3.7–4.6 s, 64k 7.8–8.4 s. Llama 124k 27.3–27.4 s. Nano chunked 124k 18.1 s.
