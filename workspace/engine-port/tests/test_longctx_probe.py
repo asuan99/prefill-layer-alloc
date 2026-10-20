@@ -480,7 +480,14 @@ class TestPlanAndScripts(unittest.TestCase):
             os.chmod(hf, 0o755)
             open(os.path.join(d, "py", "huggingface_hub", "__init__.py"), "w").write(
                 "import os\ndef login(token, add_to_git_credential=False):\n"
-                "    open(os.environ['HF_TOKEN_PATH'],'w').write(token)\n")
+                "    open(os.environ['HF_TOKEN_PATH'],'w').write(token)\n"
+                "def snapshot_download(repo, revision, allow_patterns=None, ignore_patterns=None):\n"
+                "    s=os.path.join(os.environ['HF_HOME'],'hub','models--'+repo.replace('/','--'),'snapshots',revision)\n"
+                "    os.makedirs(s, exist_ok=True)\n"
+                "    open(os.path.join(s,'config.json'),'w').write('x')\n"
+                "    if os.environ.get('FAKE_FAIL'): raise SystemExit(1)\n"
+                "    open(os.path.join(s,'model-00001-of-00001.safetensors'),'w').write('y')\n"
+                "    open(os.environ['FAKE_LOG'],'a').write('snapshot_download\\n')\n")
             secret = "hf_UNITTESTFAKETOKEN0123456789"
             tokfile = os.path.join(d, "tok")
             open(tokfile, "w").write(secret + "\n")

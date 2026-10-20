@@ -82,10 +82,16 @@ fi
 
 # ---- 2. download: safetensors + config + tokenizer only, revision pinned
 export HF_HUB_OFFLINE=0
-if hf download "${MODEL}" --revision "${REV}" \
-     --include "*.safetensors" "model.safetensors.index.json" "config.json" "generation_config.json" \
-               "tokenizer*" "special_tokens_map.json" --exclude "original/*" \
-     > "${CRED_DIR}/download.log" 2>&1; then
+# snapshot_download with explicit allow/ignore lists: `hf download --include a b c` treated the trailing patterns
+# as filenames and skipped the safetensors (2026-10-20 first run staged 6 small files only).
+if MODEL="${MODEL}" REV="${REV}" python3 -c '
+import os
+from huggingface_hub import snapshot_download
+snapshot_download(os.environ["MODEL"], revision=os.environ["REV"],
+    allow_patterns=["*.safetensors", "model.safetensors.index.json", "config.json", "generation_config.json",
+                    "tokenizer*", "special_tokens_map.json"],
+    ignore_patterns=["original/*"])
+' > "${CRED_DIR}/download.log" 2>&1 && ls "${snap}"/*.safetensors > /dev/null 2>&1; then
   echo "STAGE_LLAMA download: ok"
 else
   sed -E 's/hf_[A-Za-z0-9]+/hf_***/g' "${CRED_DIR}/download.log" | tail -n 5 >&2
