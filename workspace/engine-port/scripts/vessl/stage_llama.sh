@@ -1,5 +1,5 @@
 #!/bin/bash
-# stage_llama.sh -- one-time staging of the contrast model meta-llama/Llama-3.1-8B-Instruct (gated) onto the
+# stage_llama.sh -- one-time staging of the contrast model meta-llama/Llama-3.1-8B (gated) onto the
 # cluster volume, revision-pinned, from the CPU Workspace `pdmux-build`.  Decision 12' (DECISION_headline_G_
 # shapeC_2026-10-19.md): the HF token travels ONLY over SSH stdin.
 #
@@ -25,8 +25,8 @@
 # ENV  HF_HOME (default /data/hf).   Needs network (this is the only script that does; Jobs/probes are offline).
 set -uo pipefail
 
-MODEL="meta-llama/Llama-3.1-8B-Instruct"
-REV="0e9e39f249a16976918f6564b8830bc894c89659"
+MODEL="meta-llama/Llama-3.1-8B"
+REV="d04e592bb4f6aa9cfee91e2e20afa771667e1d4b"
 export HF_HOME="${HF_HOME:-/data/hf}"
 export PATH="/opt/conda/bin:${PATH}"
 utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }

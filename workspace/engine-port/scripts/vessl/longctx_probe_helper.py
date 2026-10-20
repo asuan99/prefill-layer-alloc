@@ -36,8 +36,8 @@ import threading
 import time
 
 SCHEMA = "longctx_probe/v1"
-LLAMA_ID = "meta-llama/Llama-3.1-8B-Instruct"
-LLAMA_REV = "0e9e39f249a16976918f6564b8830bc894c89659"
+LLAMA_ID = "meta-llama/Llama-3.1-8B"
+LLAMA_REV = "d04e592bb4f6aa9cfee91e2e20afa771667e1d4b"
 LB1_ZIP_SHA256 = "cb45b11a4133c6bc1d6a44b0f8e701335ff1e543195db1103472e575857f7f64"  # LONGCTX_STATS header
 CONTEXT_LENGTH = 131072
 K = 1024

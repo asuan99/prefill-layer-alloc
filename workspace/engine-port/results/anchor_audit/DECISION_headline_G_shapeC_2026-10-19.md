@@ -50,3 +50,8 @@
 - **LongBench v2·InfiniteBench = 보류**(공식 가운데 절단 프로토콜 사용 여부는 나중에 결정).
 - 프로브에 G7 추가: 같은 길이에서 합성 입력 대 실제 문서의 prefill 시간 비교("내용 무관" 가정 확인).
 - Llama 가중치 적재: 로컬 HF 토큰(계정 확인, gated 접근 OK)을 적재 시점에 SSH 표준입력으로 `pdmux-build`에서 일시 로그인 → 고정 리비전으로 받기 → 즉시 logout. VESSL org secret은 만들지 않는다.
+
+## 결정 10′ (2026-10-20) — 대조 모델 Base로 정렬
+- 대조 모델 = **meta-llama/Llama-3.1-8B (base)**, rev `d04e592bb4f6aa9cfee91e2e20afa771667e1d4b`. 주 모델이 `Nemotron-Nano-9B-v2-Base`(rev `dc0661c…`)이므로 짝을 맞춘다. 아키텍처·비용은 Instruct와 같다. 로컬 HF 토큰으로 gated 접근을 확인했다.
+- 사실: `Nemotron-Nano-9B-v2-Base`와 `-v2`의 `tokenizer.json` sha가 같다(`3277c00f…`). ARXSUM_STATS·LONGCTX_STATS의 Nano 길이는 Base 모델에 그대로 적용된다(M3 PREREG rev12 :127의 미확인 대조 해소).
+- 128k 프로브 실행 승인(사용자, 2026-10-20): pdmux-build 적재 → pdmux-probe 실행, 하드캡 120분.

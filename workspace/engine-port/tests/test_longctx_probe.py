@@ -399,7 +399,7 @@ class TestPlanAndScripts(unittest.TestCase):
                 self.assertEqual(a[a.index("--max-mamba-cache-size") + 1], cap)
             else:
                 self.assertNotIn("--max-mamba-cache-size", a)
-                self.assertEqual(a[a.index("--revision") + 1], "0e9e39f249a16976918f6564b8830bc894c89659")
+                self.assertEqual(a[a.index("--revision") + 1], "d04e592bb4f6aa9cfee91e2e20afa771667e1d4b")
 
     def test_arm_definitions(self):
         pd = self.argv("nano_pdmux")
@@ -457,7 +457,7 @@ class TestPlanAndScripts(unittest.TestCase):
         src = open(os.path.join(VESSL, "stage_llama.sh")).read()
         self.assertIn("trap cleanup EXIT INT TERM", src)
         self.assertIn("hf auth logout", src)
-        self.assertIn("0e9e39f249a16976918f6564b8830bc894c89659", src)
+        self.assertIn("d04e592bb4f6aa9cfee91e2e20afa771667e1d4b", src)
         self.assertIsNone(re.search(r"--token", src))                              # never an argv token
         self.assertIsNone(re.search(r"read\s+-r?s?\s*\w*tok", src, re.I))           # bash never holds it
         self.assertIn("HF_TOKEN_PATH", src)
@@ -473,7 +473,7 @@ class TestPlanAndScripts(unittest.TestCase):
             open(hf, "w").write(
                 '#!/bin/bash\necho "hf $1 $2 $*" >> "$FAKE_LOG"\n'
                 'if [[ "$1" == download ]]; then\n'
-                ' s=$HF_HOME/hub/models--meta-llama--Llama-3.1-8B-Instruct/snapshots/0e9e39f249a16976918f6564b8830bc894c89659\n'
+                ' s=$HF_HOME/hub/models--meta-llama--Llama-3.1-8B/snapshots/d04e592bb4f6aa9cfee91e2e20afa771667e1d4b\n'
                 ' mkdir -p $s; echo x > $s/config.json; echo y > $s/model.safetensors\n'
                 ' [[ -n "$FAKE_FAIL" ]] && exit 1\nfi\n'
                 'if [[ "$1 $2" == "auth logout" ]]; then echo logout >> "$FAKE_LOG"; rm -f "$HF_TOKEN_PATH"; fi\nexit 0\n')

@@ -8,8 +8,8 @@
 #   * NO PERFORMANCE JUDGMENT.  TTFT / ITL numbers are descriptive probe values: not citable, only inputs to
 #     the Job budget / the long-ctx block design (plan sec 3).  Workspace = bring-up/probe only (operating
 #     model sec 1-1); nothing here is a campaign.
-#   * Decisions 10-12' (DECISION_headline_G_shapeC_2026-10-19.md): contrast model Llama-3.1-8B-Instruct rev
-#     0e9e39f249a16976918f6564b8830bc894c89659; control axis = synthetic fixed length; G7 = LongBench v1
+#   * Decisions 10-12' (DECISION_headline_G_shapeC_2026-10-19.md): contrast model Llama-3.1-8B rev
+#     d04e592bb4f6aa9cfee91e2e20afa771667e1d4b; control axis = synthetic fixed length; G7 = LongBench v1
 #     original; HF token only by SSH stdin (stage_llama.sh).
 #
 # BOOTS (4; each is torn down and GPU memory release is checked before the next):
@@ -81,8 +81,8 @@ done
 
 # ------------------------------------------------------------------ fixed factors
 NANO="${PDMUX_PROBE_NANO:-nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base}"   # B4 / e2_sticky precedent
-LLAMA="meta-llama/Llama-3.1-8B-Instruct"
-LLAMA_REV="0e9e39f249a16976918f6564b8830bc894c89659"
+LLAMA="meta-llama/Llama-3.1-8B"
+LLAMA_REV="d04e592bb4f6aa9cfee91e2e20afa771667e1d4b"
 BACKEND="flashinfer"; CTX=131072; MEM_FRACTION=0.82; SERVER_SEED=1; OUT_TOKENS=64
 BOOT_TIMEOUT="${PDMUX_PROBE_BOOT_TIMEOUT:-1500}"       # seconds; plan: boot 8-20 min
 BOOT_MIN_REMAIN_MIN=12                                   # do not start a boot with less budget left
