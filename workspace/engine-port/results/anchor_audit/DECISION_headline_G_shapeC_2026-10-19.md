@@ -65,3 +65,8 @@
 - **PD-mux 이득(G) = 비용 모델의 검증 대상**(G0·M3 셀이 검증 데이터).
 - **"왜 hybrid인가"(H) = 비용 모델의 hybrid 고유 항을 transformer와 대비**해 답한다. Llama는 그 항의 최소 대비 측정에만 쓰고, 모델 간 goodput 이중차분(rev0 Q-B)은 폐기한다.
 - 설계: 항별 고정 배치 마이크로 측정 → 조립 → λ\*\_SLO 검증. 계획 `../cap_char/PLAN_costmodel_terms_2026-10-20.md`(약 25–33 GPU-h [유도]). `PREREG_CAP_LONGCTX_rev0_2026-10-20.md`는 대체됨(이력).
+
+## 결정 15 (2026-10-20) — 선행 조건 (권고안 채택)
+- **I-5 엔진 동기화와 Triton causal\_conv1d int64 패치를 한 번의 ENGINE\_DIGEST 변경으로 묶는다**. GPU correctness gate도 1회로 하고, 패치 반증 실험(감사 2번 ①–③)을 그 게이트에 포함한다.
+- **fused\_tuned config는 검증(V)보다 먼저 G0 튜닝으로 정한다**. 튜닝은 Nano cap = C\_mem(mem-fraction 0.6)에서 한다. 명세 R8-2의 "cap = G0 cap" 조항 개정이 필요하다(PREREG에서 명시하고 감사로 넘긴다).
+- 다음 순서: 비용 항 PREREG 작성 → 규칙층 감사. 병행해서 engine-porter가 I-5 + int64 패치를 준비한다(CPU).
