@@ -70,3 +70,11 @@
 - **I-5 엔진 동기화와 Triton causal\_conv1d int64 패치를 한 번의 ENGINE\_DIGEST 변경으로 묶는다**. GPU correctness gate도 1회로 하고, 패치 반증 실험(감사 2번 ①–③)을 그 게이트에 포함한다.
 - **fused\_tuned config는 검증(V)보다 먼저 G0 튜닝으로 정한다**. 튜닝은 Nano cap = C\_mem(mem-fraction 0.6)에서 한다. 명세 R8-2의 "cap = G0 cap" 조항 개정이 필요하다(PREREG에서 명시하고 감사로 넘긴다).
 - 다음 순서: 비용 항 PREREG 작성 → 규칙층 감사. 병행해서 engine-porter가 I-5 + int64 패치를 준비한다(CPU).
+
+## 결정 16 (2026-10-20) — PREREG rev1 열린 결정 (권고안 채택)
+- **O-1** R8-2′ 개정 승인: fused\_tuned 튜닝은 cap\_V = C\_mem(출력 예약 항 반영 산식), mem-fraction 0.6, 자연 출력 셀에서만 한다. T4가 cap 특성화 Job(R16-3)을 대체한다.
+- **O-2** I-4(decode 커널 GPU 시간)와 I-6(cudagraph 패딩)을 I-5·int64 엔진 묶음에 포함한다. digest는 1회만 바꾼다.
+- **O-3** 96k·124k 확장은 int64 패치 gate 통과를 조건으로 넣는다.
+- **O-5** 검증 V의 PD-mux arm은 2개다.
+- **O-7** 검증 Job은 분할한다.
+- **GPU gate는 Job 1개(약 8.5 h)가 아니라 비교 단위로 분할**한다(사용자 지적: 장시간 단일 Job과 의도적 crash가 섞이면 위험). 각 Job은 자기 비교를 Job 안에 완결한다. 앞 단계가 PASS일 때만 다음 단계를 제출한다.

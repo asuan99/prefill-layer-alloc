@@ -7,7 +7,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 ## cost model 기여
 - 채우는 칸: CM-1(`s_attn` vs `s_ssm`), CM-4(`δ(p,d)` + lockstep span 정지), CM-5(장문 KV vs mamba 슬롯, cap), (확장) N·TP 통신 항
 - 이번에 알게 된 것: 판정 0(M3 미완). 사실만 — J1 GPU0 샘플 61%가 기본 400 W 한도 throttle(0x4, 클럭 중앙 1380 MHz, 59 °C); 하네스 시간 모형이 확장 셀을 빠뜨려 rev12 예산 190 GPU-h가 과소(J1 실측 보정 시 J_N 20–21 h > 캡 16 h)
-- promote 필요: 예 (감사) — PREREG rev1 규칙층 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`); 128k 프로브 감사 `workspace/engine-port/results/cap_char/probe_128k/AUDIT_probe_128k_2026-10-20.md`(허용 문안 1–7); 예 (결정) — 결정 10–15(대조 모델·fused_tuned·shape C·long-ctx 입력); 아니오(이전 항목 반영 완료) — 2026-10-19 반영 완료: J1(N=1) 분석·감사 허용 문안 1–5(COSTMODEL CM-2·4·6, CONSENSUS §3 항목296), Claim E 첫 화살표 판정(CM-1 정정, §6 등급 불변), 사용자 결정 1–7·8′(CM-5, PROJECT_STATUS 최상단 5줄), preflight PASS·rev12 봉인·M3 J2/J4/J8 외부 종료·예산 모형 과소 교훈(확장 행)
+- promote 필요: 예 (감사) — PREREG rev1 규칙층 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`); 128k 프로브 감사 `workspace/engine-port/results/cap_char/probe_128k/AUDIT_probe_128k_2026-10-20.md`(허용 문안 1–7); 예 (결정) — 결정 10–16(대조 모델·fused_tuned·shape C·long-ctx 입력); 아니오(이전 항목 반영 완료) — 2026-10-19 반영 완료: J1(N=1) 분석·감사 허용 문안 1–5(COSTMODEL CM-2·4·6, CONSENSUS §3 항목296), Claim E 첫 화살표 판정(CM-1 정정, §6 등급 불변), 사용자 결정 1–7·8′(CM-5, PROJECT_STATUS 최상단 5줄), preflight PASS·rev12 봉인·M3 J2/J4/J8 외부 종료·예산 모형 과소 교훈(확장 행)
 ## 현재 상태 (2026-10-20)
 - **비용 항 PREREG rev1** `workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_rev1_2026-10-20.md`(약 24.5 GPU-h [유도]) → 규칙층 감사 1회차 **NO-GO** `VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`: 死因 2(T4 C_mem 산식에 ignore_eos 출력 예약 누락, V 사다리 arm별 ±2 rung 위반) + MAJOR 7. 수리 → 2회차(마지막).
 - **엔진 묶음(결정 15) 준비 완료(CPU)**: worktree `prefill-layer-alloc-engsync` 브랜치 `engine-sync-i5-int64` `b0f6cfeb` — I-5 동기화 + Triton causal_conv1d int64 패치(chunk_offset·sequence_start_index 2곳; chunk_offset만으론 conv_state 꼬리 읽기가 seqlen≥94,788에서 넘침, TTIR로 확인), 예상 ENGINE_DIGEST `2b1ab054…`(29항목). digest 변경 시 M3 rev12·preflight PASS 등 fail-closed. GPU gate 설계 1 Job 약 8.5 h(미실행). upstream vLLM 0.12.0도 미수정.
@@ -29,7 +29,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. 128k 프로브 스크립트(G1–G7) 작성·CPU 회귀 → 승인 → Llama 적재 + A100 프로브
 4. G0 PREREG(cap = cap 특성화 결과, λ*_SLO 판정, arm별 prior·확장 발화 기본 시나리오 — J1 분석 반영) · M3는 G0 뒤 재결정
 ## 사용자 결정 대기
-- (결정 15로 처리됨: I-5+int64 패치 묶음, G0 튜닝 선행) 다음 대기 = 비용 항 PREREG 감사 결과
+- (결정 16으로 O-1·2·3·5·7 처리, GPU gate 분할) 다음 대기 = PREREG rev2 2회차 감사 결과 · 분할 gate 설계 승인(GPU)
 - **LongBench v2·InfiniteBench 사용(공식 가운데 절단)** / 보류(결정 12′) / 프로브 뒤 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
