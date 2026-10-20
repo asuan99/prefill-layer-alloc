@@ -49,3 +49,9 @@
   - **PD-mux는 chunked prefill을 강제로 끄므로**, 이 스택(SGLang v0.5.10 + 현 Triton SSD)에서 PD-mux arm의 실현 가능한 상한은 **64k**다(mem-fraction 0.6 기준).
 - G4(장문 prefill 중 ITL), G7(합성 대 실제 문서)은 이번에도 서버가 96k에서 먼저 죽어 실행되지 못했다(단계 순서 문제).
 - 기술값(인용 금지): Nano PD-mux TTFT 16k 1.8–2.2 s, 32k 3.7–4.6 s, 64k 7.8–8.4 s. Llama 124k 27.3–27.4 s. Nano chunked 124k 18.1 s.
+
+---
+# 3회차 — G4·G7 + 커널 임계 (run `longctx_probe_20261020T040836Z`, commit `88a73ce4`, 04:08–04:18Z, mem-fraction 0.6, `--only nano_pdmux,nano_fused`, SHA256SUMS 57 OK)
+- **커널 임계 확인**: fused\_sym(`CUDA_LAUNCH_BLOCKING=1`)에서 L = 94,500은 OK, **95,100은 실패**했다. blocking 모드 traceback은 `mamba.py:509` → **`causal_conv1d_triton.py:510 causal_conv1d_fn`**을 가리킨다. 산술 예측 경계 94,786과 맞는다 → `ANALYSIS_triton_96k_failure_2026-10-20.md`의 가설을 확인했다(1회 관측).
+- **G4** (PD-mux, 장문 prefill 1개 + 짧은 입력·출력 1024인 decode 4개, 기술값·인용 금지): 장문 prefill이 진행되는 창 안에서 decode token 간격은 32k에서 p50 25.6 ms·p95 30.3 ms·최대 1.13 s, 64k에서 p50 25.9 ms·p95 32.1 ms·최대 0.80 s다. 창 밖에서는 p50 약 14–15 ms다.
+- **G7** (PD-mux, LongBench v1 원본 대 같은 길이 합성, ABBA, 기술값): 63,032 토큰에서 real 8.50(첫 요청)/7.49 s, synth 7.50/7.46 s. 53,284 토큰에서는 real 6.21/6.23 s, synth 6.23/6.23 s. 첫 요청을 빼면 차이가 거의 없다 → 결정 12′의 "내용 무관" 가정과 모순되지 않는다(n=2/arm).
