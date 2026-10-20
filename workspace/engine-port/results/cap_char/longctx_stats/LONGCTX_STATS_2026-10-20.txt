@@ -1,0 +1,587 @@
+LONGCTX_STATS 2026-10-20  (사용자 결정 12 선행 CPU 실측; 판정 없음, 전부 [측정])
+scripts: longctx_measure.py (토큰화 -> longctx_lengths.tsv, 행=문서 인스턴스, 원문 없음), longctx_report.py (집계)
+  재현: python3 -I longctx_measure.py <data_root> longctx_lengths.tsv ; python3 -I longctx_report.py longctx_lengths.tsv
+rows 12678 = lb1 4750 + lb1/E 3668 + lb2 503 + ib 3757.  (lb1/E = LongBench-E의 *_e 과제 12개; 별도 표집이라 primary에서 분리)
+
+SOURCES (HF Hub, 2026-10-20 수신, 원시 json/jsonl만 읽음, 로딩 스크립트 미실행, 저장소 밖 scratchpad/longbench_data/<ds>/)
+  THUDM/LongBench        rev 5e628be450b7e67fb7ae6e201bd6d8f7056f7672  data.zip  cb45b11a4133c6bc1d6a44b0f8e701335ff1e543195db1103472e575857f7f64  (33 jsonl; 21과제 + _e 12)
+  THUDM/LongBench-v2     rev 2b48e494f2c7a2f0af81aae178e05c7e1dde0fe9  data.json 15d61c22d92c96900b3c4948b6aeea218d3214b676a65df48e7b8555604c7fe2  (503문항)
+  xinrongzhang2022/InfiniteBench rev 90f0394333616266d9fe85824ceaf505093cbaa5  (11개 jsonl, 1.6GB)
+    ★longbook_qa_chn.jsonl(863MB, 중국어)은 받지 않음(영어 입력 원천 목적에 무관). 나머지 11개 전량 측정.
+    sha256: code_debug 481cc7d6315af24086fd57e2ed764f113a844f3ad9d66ab1828f547fccb31f2e / code_run a542bb82a9ce4fa49746ea78bccc11e11ae95774756d4c33ff95867cbcc4cef9
+      kv_retrieval 567bebd34d103b7bbc2a9824ba7cc27b6d924a5cf5603453317b0f815d796456 / longbook_choice_eng d2e646822a3d40dc329e57894d81cf9c527503e963ba06567c3eaaccf78f87fe
+      longbook_qa_eng 7f53a3aabd5445fa29f168914f13569c348406cfc88a3e495f3f2c13a0966ca4 / longbook_sum_eng 4e4279cc06c07778f646cda1335755cf5ccdcc38fe9c8a62f1631642fc031027
+      longdialogue_qa_eng 0db600b61fb7a0fb5fd5d15e05485e60bfc7c6c8a08105a28c5aae7c90ed56bf / math_calc d607e30f24cc5e7ddc577ce3600c3e3bd8bbbef0d53eab710498dc2efc14340c
+      math_find f4f98f7a949636f9d6cf0e56cd2702429cd68defcdcedd4b21a497e1d56a5cf0 / number_string 5071c617c5955a2a2fc20165d2370be2ac0d51e12f40c82a0ac4572ab0f21ca1
+      passkey 5e2873b8563c4a98d2b339a8a08af1846fb76c25c4737b8d9367acc7b700e0ab
+TOKENIZERS (tokenizer.json만; 가중치 미수신; add_special_tokens=False, chat 템플릿 없음)
+  nano  nvidia/NVIDIA-Nemotron-Nano-9B-v2 rev 6533e8de2c68e4536bf7c411d7a3ce5734111476  tokenizer.json 3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f (ARXSUM_STATS의 Nano와 동일 해시)
+  llama meta-llama/Llama-3.1-8B-Instruct (gated 원본, 접근 성공; 미러 불필요) rev 0e9e39f249a16976918f6564b8830bc894c89659  tokenizer.json 79e3e522635f3171300913bb421464a87de6222182a0570b9b2ccba2a964b2b4
+    ★ARXSUM_STATS의 llama 행은 unsloth 미러 tokenizer(해시 6b9e4e7f…)였다. 이번은 gated 원본(해시 79e3e522…)이라 파일 해시가 다르다(토크나이저 동일성은 미검증; 두 해시가 다른 이유는 직렬화 차이일 수 있음).
+INPUT = context + "\n" + question(LB1/IB는 input 필드, LB2는 question 필드). ★LB2의 선택지 choice_A–D는 제외(포함하면 문항당 수십~수백 토큰 증가).
+FILTER 없음(전 인스턴스 측정). 구간은 k=1024: <=16k=16384, 16-32k=(16384,32768], 32k±10%=[29491,36044], 64k±10%=[58982,72089], 96k±10%=[88473,108134], <=128k=131072, >128k.
+  구간은 서로 겹친다(32k±10% 는 16-32k와 >32k 양쪽에 걸침; <=128k는 <=16k 포함). 고유 문서 = context(strip) sha256 해시가 구간에 인스턴스를 1개 이상 가진 서로 다른 해시 수.
+  문서 단위 길이는 인스턴스(context+질문) 길이로 판정; 같은 문서에 다른 질문이면 구간 경계에서 갈릴 수 있음.
+
+LITERATURE 대조(기억 기반, 미검증): InfiniteBench 논문 평균 En.Sum 171.5k / En.QA 192.6k / En.MC 184.4k / En.Dia 103.6k / Code.Debug 114.7k / Code.Run 75.2k / Math.Find 87.9k / PassKey·Number·KV ≈122k(자체 토크나이저).
+  [측정] Nano 평균: Sum 177k / QA 199k / MC 191k / Dia 112k / Debug 126k / Run 93k / Find 118k / PassKey·Number 125k / KV 170k. Math.Find·Code.Run·KV는 토크나이저 차이로 크게 다름(숫자·UUID 위주, Llama 대비 비율 0.73–0.82).
+  LongBench v1 논문 평균은 단어/문자 단위라 직접 대조 불가. LB2 카드의 "8k–2M words"는 [측정] Nano 토큰 최소 약 10k, 최대 4.57M로 토큰 단위에서 상한이 훨씬 크다.
+
+LICENSE (데이터셋 카드 기준 + 원천)
+  LongBench v1: 카드에 license 필드 없음(HF tags에도 없음). README: 과제는 기존 공개 데이터셋(NarrativeQA, Qasper, HotpotQA, 2WikiMQA, MuSiQue, DuReader, GovReport, QMSum, MultiNews, VCSum, TriviaQA, SAMSum, TREC, LSHT, LCC, RepoBench-P)과
+    자체 구성(MultiFieldQA, passage_count/retrieval)의 혼합이다. 원천별 라이선스가 다르다(기억상 SAMSum은 비상업 조건 등 — 미검증, 확인 필요).
+  LongBench v2: 카드 apache-2.0. 단 문맥은 논문·책·법률·정부문서·코드저장소·대화록 등 다양한 외부 원천이라 카드 라이선스가 원천 저작권을 덮는지는 미확인.
+  InfiniteBench: 카드 apache-2.0. 합성 과제(passkey/number/kv/math/code_run)는 자체 생성; longbook_*/longdialogue/code_debug는 소설·대본·소스코드 원천(기억 기준, 카드에 명시 없음).
+  세 데이터셋 모두 과제 원천이 섞여 있다. 논문 공개·재배포 전에 원천별 확인 필요(이번 측정은 내부 길이 통계라 영향 없음).
+
+BINS (k=1024): <=16k=[0,16384], 16-32k=[16385,32768], 32k+-10%=[29491,36044], 64k+-10%=[58982,72089], 96k+-10%=[88473,108134], <=128k=[0,131072], >128k=[131073,1000000000000]  (bins overlap by design: 32k band lies inside 16-32k? no: 32k band [29491,36045] straddles 32768)
+total rows 12678
+
+===== per dataset =====
+
+[lb1] n=4750 unique_ctx=4257
+  nano  p10    2531 p50    9374 p90   19599 p99   39056 max   68980 mean    11058
+  llama p10    2385 p50    8774 p90   18117 p99   38099 max   65287 mean    10309
+  bins(nano ): <=16k:3770  16-32k: 854  32k+-10%: 101  64k+-10%:  27  96k+-10%:   0  <=128k:4750  >128k:   0
+  bins(llama): <=16k:4111  16-32k: 542  32k+-10%:  83  64k+-10%:  27  96k+-10%:   0  <=128k:4750  >128k:   0
+  llama/nano median ratio 0.9465
+
+[lb1/E] n=3668 unique_ctx=3552
+  nano  p10    3044 p50    8415 p90   17602 p99   34781 max   58105 mean     9868
+  llama p10    2888 p50    8053 p90   16664 p99   30941 max   49193 mean     9356
+  bins(nano ): <=16k:3155  16-32k: 469  32k+-10%:  36  64k+-10%:   0  96k+-10%:   0  <=128k:3668  >128k:   0
+  bins(llama): <=16k:3283  16-32k: 356  32k+-10%:  33  64k+-10%:   0  96k+-10%:   0  <=128k:3668  >128k:   0
+  llama/nano median ratio 0.9596
+
+[lb2] n=503 unique_ctx=462
+  nano  p10   20466 p50  101692 p90  555821 p99 3487261 max 4565374 mean   273088
+  llama p10   18711 p50   98474 p90  474739 p99 3077872 max 4144398 mean   242740
+  bins(nano ): <=16k:  22  16-32k:  93  32k+-10%:  19  64k+-10%:  19  96k+-10%:  42  <=128k: 301  >128k: 202
+  bins(llama): <=16k:  30  16-32k:  88  32k+-10%:  20  64k+-10%:  21  96k+-10%:  43  <=128k: 321  >128k: 182
+  llama/nano median ratio 0.9204
+
+[ib] n=3757 unique_ctx=3192
+  nano  p10   92221 p50  125311 p90  170452 p99  410411 max  747123 mean   137995
+  llama p10   79181 p50  124177 p90  162038 p99  407153 max  744440 mean   125747
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:  13  96k+-10%: 620  <=128k:2662  >128k:1095
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:  93  96k+-10%: 678  <=128k:3192  >128k: 565
+  llama/nano median ratio 0.9581
+
+===== per task =====
+
+[ib/code_debug] n=394 unique_ctx=394
+  nano  p10   86001 p50  117499 p90  185421 p99  212426 max  212436 mean   126231
+  llama p10   80787 p50  109109 p90  171833 p99  199336 max  199346 mean   117313
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%: 120  <=128k: 243  >128k: 151
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:  73  <=128k: 267  >128k: 127
+  llama/nano median ratio 0.9368
+
+[ib/code_run] n=400 unique_ctx=400
+  nano  p10   84899 p50   95604 p90   98133 p99   98275 max   98312 mean    93449
+  llama p10   71153 p50   78343 p90   79916 p99   79999 max   80036 mean    77023
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%: 320  <=128k: 400  >128k:   0
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:  80  96k+-10%:   0  <=128k: 400  >128k:   0
+  llama/nano median ratio 0.8219
+
+[ib/kv_retrieval] n=500 unique_ctx=500
+  nano  p10  169981 p50  170140 p90  170311 p99  170422 max  170486 mean   170143
+  llama p10  123851 p50  124031 p90  124221 p99  124377 max  124462 mean   124033
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k:   0  >128k: 500
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 500  >128k:   0
+  llama/nano median ratio 0.7290
+
+[ib/longbook_choice_eng] n=229 unique_ctx=58
+  nano  p10   90516 p50  149670 p90  310766 p99  747115 max  747117 mean   191105
+  llama p10   89687 p50  148528 p90  308607 p99  744434 max  744436 mean   188808
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   4  96k+-10%:  51  <=128k:  79  >128k: 150
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   4  96k+-10%:  43  <=128k:  79  >128k: 150
+  llama/nano median ratio 0.9906
+
+[ib/longbook_qa_eng] n=351 unique_ctx=69
+  nano  p10   90512 p50  167030 p90  302299 p99  747111 max  747123 mean   199191
+  llama p10   89684 p50  163604 p90  301149 p99  744431 max  744440 mean   197210
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   5  96k+-10%:  67  <=128k: 112  >128k: 239
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   5  96k+-10%:  62  <=128k: 118  >128k: 233
+  llama/nano median ratio 0.9919
+
+[ib/longbook_sum_eng] n=103 unique_ctx=102
+  nano  p10   76866 p50  136100 p90  302291 p99  608722 max  747110 mean   177254
+  llama p10   76063 p50  134458 p90  301140 p99  604713 max  744429 mean   175579
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   4  96k+-10%:  18  <=128k:  48  >128k:  55
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   4  96k+-10%:  16  <=128k:  48  >128k:  55
+  llama/nano median ratio 0.9919
+
+[ib/longdialogue_qa_eng] n=200 unique_ctx=200
+  nano  p10  104131 p50  111914 p90  120878 p99  130232 max  130233 mean   112389
+  llama p10   98763 p50  105233 p90  113364 p99  122625 max  122643 mean   106091
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:  44  <=128k: 200  >128k:   0
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%: 134  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9439
+
+[ib/math_calc] n=50 unique_ctx=50
+  nano  p10   54068 p50   54151 p90   54239 p99   54289 max   54289 mean    54147
+  llama p10   45010 p50   45010 p90   45010 p99   45010 max   45010 mean    45010
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k:  50  >128k:   0
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k:  50  >128k:   0
+  llama/nano median ratio 0.8312
+
+[ib/math_find] n=350 unique_ctx=350
+  nano  p10  116429 p50  117032 p90  120022 p99  120022 max  120022 mean   117903
+  llama p10   90020 p50   90022 p90   90022 p99   90022 max   90022 mean    90021
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 350  >128k:   0
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%: 350  <=128k: 350  >128k:   0
+  llama/nano median ratio 0.7692
+
+[ib/number_string] n=590 unique_ctx=590
+  nano  p10  125324 p50  125324 p90  125324 p99  125324 max  125324 mean   125324
+  llama p10  125312 p50  125312 p90  125312 p99  125312 max  125312 mean   125312
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 590  >128k:   0
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 590  >128k:   0
+  llama/nano median ratio 0.9999
+
+[ib/passkey] n=590 unique_ctx=590
+  nano  p10  125311 p50  125311 p90  125311 p99  125311 max  125311 mean   125311
+  llama p10  125305 p50  125305 p90  125305 p99  125305 max  125305 mean   125305
+  bins(nano ): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 590  >128k:   0
+  bins(llama): <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 590  >128k:   0
+  llama/nano median ratio 1.0000
+
+[lb1/2wikimqa] n=200 unique_ctx=200
+  nano  p10    3815 p50    6589 p90   13471 p99   16827 max   17028 mean     7437
+  llama p10    3752 p50    6304 p90   12782 p99   16158 max   16331 mean     7113
+  bins(nano ): <=16k: 196  16-32k:   4  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9554
+
+[lb1/dureader] n=200 unique_ctx=200
+  nano  p10    9995 p50   14566 p90   19781 p99   24979 max   26626 mean    14866
+  llama p10    8545 p50   12565 p90   17050 p99   21657 max   22685 mean    12709
+  bins(nano ): <=16k: 136  16-32k:  64  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 170  16-32k:  30  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.8537
+
+[lb1/gov_report] n=200 unique_ctx=200
+  nano  p10    4260 p50    9118 p90   18720 p99   46443 max   53284 mean    10768
+  llama p10    4137 p50    8716 p90   18106 p99   43385 max   51392 mean    10240
+  bins(nano ): <=16k: 172  16-32k:  25  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 175  16-32k:  22  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9566
+
+[lb1/hotpotqa] n=200 unique_ctx=200
+  nano  p10    6681 p50   15097 p90   17107 p99   17723 max   18195 mean    13446
+  llama p10    6336 p50   14263 p90   16262 p99   16339 max   16342 mean    12799
+  bins(nano ): <=16k: 138  16-32k:  62  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9511
+
+[lb1/lcc] n=500 unique_ctx=500
+  nano  p10    1642 p50    2473 p90    6221 p99   18530 max   34408 mean     3423
+  llama p10    1501 p50    2271 p90    5779 p99   17781 max   30150 mean     3166
+  bins(nano ): <=16k: 495  16-32k:   4  32k+-10%:   1  64k+-10%:   0  96k+-10%:   0  <=128k: 500  >128k:   0
+  bins(llama): <=16k: 495  16-32k:   5  32k+-10%:   1  64k+-10%:   0  96k+-10%:   0  <=128k: 500  >128k:   0
+  llama/nano median ratio 0.9292
+
+[lb1/lsht] n=200 unique_ctx=200
+  nano  p10   10723 p50   20519 p90   32716 p99   39145 max   42519 mean    21283
+  llama p10    9179 p50   17820 p90   28558 p99   33631 max   36144 mean    18327
+  bins(nano ): <=16k:  61  16-32k: 120  32k+-10%:  28  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k:  90  16-32k: 107  32k+-10%:  14  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.8604
+
+[lb1/multi_news] n=200 unique_ctx=200
+  nano  p10     875 p50    2078 p90    4857 p99   14262 max   14403 mean     2691
+  llama p10     850 p50    2012 p90    4814 p99   13866 max   13935 mean     2608
+  bins(nano ): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9691
+
+[lb1/multifieldqa_en] n=150 unique_ctx=112
+  nano  p10    2818 p50    7331 p90   11687 p99   15474 max   15913 mean     7089
+  llama p10    2699 p50    6960 p90   11721 p99   14356 max   14960 mean     6901
+  bins(nano ): <=16k: 150  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 150  >128k:   0
+  bins(llama): <=16k: 150  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 150  >128k:   0
+  llama/nano median ratio 0.9762
+
+[lb1/multifieldqa_zh] n=200 unique_ctx=142
+  nano  p10    2781 p50    5783 p90   11147 p99   12871 max   12872 mean     6286
+  llama p10    2342 p50    4865 p90    9158 p99   10414 max   10775 mean     5289
+  bins(nano ): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.8295
+
+[lb1/musique] n=200 unique_ctx=200
+  nano  p10   15153 p50   16728 p90   17356 p99   17841 max   17882 mean    16296
+  llama p10   14760 p50   16130 p90   16312 p99   16349 max   16349 mean    15562
+  bins(nano ): <=16k:  58  16-32k: 142  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9564
+
+[lb1/narrativeqa] n=200 unique_ctx=20
+  nano  p10   11254 p50   31917 p90   63032 p99   68979 max   68980 mean    30968
+  llama p10   11218 p50   31297 p90   59776 p99   65287 max   65287 mean    29787
+  bins(nano ): <=16k:  61  16-32k:  48  32k+-10%:  49  64k+-10%:  27  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k:  61  16-32k:  54  32k+-10%:  49  64k+-10%:  27  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9798
+
+[lb1/passage_count] n=200 unique_ctx=200
+  nano  p10    8682 p50   15804 p90   21513 p99   25431 max   29142 mean    15331
+  llama p10    8454 p50   15367 p90   20746 p99   24837 max   28965 mean    14879
+  bins(nano ): <=16k: 108  16-32k:  92  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 116  16-32k:  84  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9705
+
+[lb1/passage_retrieval_en] n=200 unique_ctx=200
+  nano  p10   11274 p50   12741 p90   14428 p99   15500 max   15547 mean    12844
+  llama p10   10880 p50   12430 p90   13989 p99   15133 max   15145 mean    12458
+  bins(nano ): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9705
+
+[lb1/passage_retrieval_zh] n=200 unique_ctx=200
+  nano  p10    5392 p50    6237 p90    7287 p99    8556 max    8806 mean     6299
+  llama p10    4745 p50    5505 p90    6493 p99    7541 max    7876 mean     5547
+  bins(nano ): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.8822
+
+[lb1/qasper] n=200 unique_ctx=148
+  nano  p10    2705 p50    4724 p90    7311 p99   20263 max   22038 mean     5094
+  llama p10    2565 p50    4568 p90    7361 p99   19383 max   21118 mean     4930
+  bins(nano ): <=16k: 197  16-32k:   3  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 197  16-32k:   3  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9674
+
+[lb1/qmsum] n=200 unique_ctx=35
+  nano  p10    6587 p50   13050 p90   25214 p99   30603 max   30604 mean    13848
+  llama p10    6571 p50   12953 p90   25362 p99   30384 max   30389 mean    13868
+  bins(nano ): <=16k: 140  16-32k:  60  32k+-10%:   9  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 148  16-32k:  52  32k+-10%:   9  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9980
+
+[lb1/repobench-p] n=500 unique_ctx=500
+  nano  p10    4348 p50    9827 p90   21102 p99   36768 max   42654 mean    11843
+  llama p10    4043 p50    9188 p90   19574 p99   33742 max   39125 mean    10805
+  bins(nano ): <=16k: 386  16-32k: 104  32k+-10%:  11  64k+-10%:   0  96k+-10%:   0  <=128k: 500  >128k:   0
+  bins(llama): <=16k: 411  16-32k:  83  32k+-10%:   8  64k+-10%:   0  96k+-10%:   0  <=128k: 500  >128k:   0
+  llama/nano median ratio 0.9309
+
+[lb1/samsum] n=200 unique_ctx=200
+  nano  p10    3414 p50   10382 p90   16994 p99   19703 max   19943 mean    10133
+  llama p10    3048 p50    9425 p90   15299 p99   17815 max   17974 mean     9149
+  bins(nano ): <=16k: 177  16-32k:  23  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 190  16-32k:  10  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9026
+
+[lb1/trec] n=200 unique_ctx=200
+  nano  p10    2860 p50    6918 p90   10669 p99   11406 max   11531 mean     6849
+  llama p10    2833 p50    6830 p90   10549 p99   11262 max   11379 mean     6769
+  bins(nano ): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 200  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9884
+
+[lb1/triviaqa] n=200 unique_ctx=200
+  nano  p10    3431 p50   12296 p90   20323 p99   24163 max   24513 mean    12251
+  llama p10    3323 p50   11784 p90   19653 p99   23158 max   23299 mean    11752
+  bins(nano ): <=16k: 142  16-32k:  58  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 147  16-32k:  53  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.9593
+
+[lb1/vcsum] n=200 unique_ctx=200
+  nano  p10    4063 p50   10901 p90   23068 p99   33102 max   35746 mean    12452
+  llama p10    3573 p50    9698 p90   20597 p99   30707 max   31567 mean    10956
+  bins(nano ): <=16k: 153  16-32k:  45  32k+-10%:   3  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  bins(llama): <=16k: 161  16-32k:  39  32k+-10%:   2  64k+-10%:   0  96k+-10%:   0  <=128k: 200  >128k:   0
+  llama/nano median ratio 0.8791
+
+[lb1/E/2wikimqa_e] n=300 unique_ctx=300
+  nano  p10    4292 p50    8023 p90   16149 p99   17224 max   17285 mean     9241
+  llama p10    4130 p50    7738 p90   15506 p99   16302 max   16331 mean     8849
+  bins(nano ): <=16k: 278  16-32k:  22  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 300  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9538
+
+[lb1/E/gov_report_e] n=300 unique_ctx=300
+  nano  p10    2874 p50    7315 p90   16900 p99   28021 max   28841 mean     8548
+  llama p10    2707 p50    6914 p90   16023 p99   26730 max   27686 mean     8160
+  bins(nano ): <=16k: 267  16-32k:  33  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 272  16-32k:  28  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9571
+
+[lb1/E/hotpotqa_e] n=300 unique_ctx=300
+  nano  p10    3985 p50    9877 p90   16617 p99   17314 max   17507 mean     9926
+  llama p10    3821 p50    9461 p90   15935 p99   16267 max   16329 mean     9458
+  bins(nano ): <=16k: 262  16-32k:  38  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 300  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9524
+
+[lb1/E/lcc_e] n=300 unique_ctx=300
+  nano  p10    1969 p50   14087 p90   26516 p99   51758 max   58105 mean    14490
+  llama p10    1821 p50   13005 p90   24739 p99   47808 max   49193 mean    13516
+  bins(nano ): <=16k: 169  16-32k: 118  32k+-10%:  10  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 178  16-32k: 113  32k+-10%:  11  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9390
+
+[lb1/E/multi_news_e] n=294 unique_ctx=294
+  nano  p10    1243 p50    6853 p90   15447 p99   37172 max   41273 mean     8205
+  llama p10    1180 p50    6582 p90   14836 p99   35763 max   38320 mean     7881
+  bins(nano ): <=16k: 270  16-32k:  20  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 294  >128k:   0
+  bins(llama): <=16k: 272  16-32k:  18  32k+-10%:   3  64k+-10%:   0  96k+-10%:   0  <=128k: 294  >128k:   0
+  llama/nano median ratio 0.9662
+
+[lb1/E/multifieldqa_en_e] n=150 unique_ctx=112
+  nano  p10    2818 p50    7331 p90   11687 p99   15474 max   15913 mean     7089
+  llama p10    2699 p50    6960 p90   11721 p99   14356 max   14960 mean     6901
+  bins(nano ): <=16k: 150  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 150  >128k:   0
+  bins(llama): <=16k: 150  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 150  >128k:   0
+  llama/nano median ratio 0.9762
+
+[lb1/E/passage_count_e] n=300 unique_ctx=300
+  nano  p10    3952 p50    8370 p90   13366 p99   18240 max   23030 mean     8465
+  llama p10    3864 p50    8089 p90   12988 p99   17576 max   22944 mean     8226
+  bins(nano ): <=16k: 295  16-32k:   5  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 296  16-32k:   4  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9732
+
+[lb1/E/passage_retrieval_en_e] n=300 unique_ctx=300
+  nano  p10    4454 p50    8184 p90   12915 p99   14508 max   15305 mean     8416
+  llama p10    4353 p50    8024 p90   12559 p99   13996 max   14487 mean     8176
+  bins(nano ): <=16k: 300  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 300  16-32k:   0  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9723
+
+[lb1/E/qasper_e] n=224 unique_ctx=146
+  nano  p10    2927 p50    5722 p90   10626 p99   20268 max   22038 mean     6423
+  llama p10    2831 p50    5489 p90   10487 p99   19388 max   21118 mean     6214
+  bins(nano ): <=16k: 210  16-32k:  14  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 224  >128k:   0
+  bins(llama): <=16k: 210  16-32k:  14  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 224  >128k:   0
+  llama/nano median ratio 0.9668
+
+[lb1/E/repobench-p_e] n=300 unique_ctx=300
+  nano  p10    4982 p50   14585 p90   31088 p99   43808 max   44681 mean    16793
+  llama p10    4621 p50   13604 p90   28257 p99   40356 max   41008 mean    15299
+  bins(nano ): <=16k: 170  16-32k: 104  32k+-10%:  26  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 179  16-32k: 106  32k+-10%:  19  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9299
+
+[lb1/E/samsum_e] n=300 unique_ctx=300
+  nano  p10    3331 p50   10160 p90   16906 p99   19185 max   20065 mean    10005
+  llama p10    3023 p50    9186 p90   15306 p99   17128 max   18208 mean     9030
+  bins(nano ): <=16k: 261  16-32k:  39  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 291  16-32k:   9  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9022
+
+[lb1/E/trec_e] n=300 unique_ctx=300
+  nano  p10    2151 p50    8006 p90   15179 p99   17121 max   17439 mean     8278
+  llama p10    2122 p50    7906 p90   15014 p99   16901 max   17185 mean     8182
+  bins(nano ): <=16k: 282  16-32k:  18  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 285  16-32k:  15  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9886
+
+[lb1/E/triviaqa_e] n=300 unique_ctx=300
+  nano  p10    3081 p50    9053 p90   18682 p99   23447 max   37003 mean    10107
+  llama p10    2963 p50    8648 p90   17833 p99   22450 max   36213 mean     9680
+  bins(nano ): <=16k: 241  16-32k:  58  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  bins(llama): <=16k: 250  16-32k:  49  32k+-10%:   0  64k+-10%:   0  96k+-10%:   0  <=128k: 300  >128k:   0
+  llama/nano median ratio 0.9589
+
+[lb2/Code Repository Understanding] n=50 unique_ctx=49
+  nano  p10   67159 p50  599172 p90 3542447 p99 4565374 max 4565374 mean  1133355
+  llama p10   60926 p50  556055 p90 3077873 p99 4144398 max 4144398 mean  1005116
+  bins(nano ): <=16k:   0  16-32k:   2  32k+-10%:   2  64k+-10%:   1  96k+-10%:   4  <=128k:  15  >128k:  35
+  bins(llama): <=16k:   0  16-32k:   3  32k+-10%:   2  64k+-10%:   2  96k+-10%:   4  <=128k:  15  >128k:  35
+  llama/nano median ratio 0.9211
+
+[lb2/Long In-context Learning] n=81 unique_ctx=52
+  nano  p10   41303 p50  143703 p90  870302 p99 1516770 max 1516770 mean   278089
+  llama p10   37806 p50  126818 p90  841242 p99 1462030 max 1462030 mean   258630
+  bins(nano ): <=16k:   1  16-32k:   6  32k+-10%:   2  64k+-10%:   2  96k+-10%:  15  <=128k:  38  >128k:  43
+  bins(llama): <=16k:   2  16-32k:   5  32k+-10%:   1  64k+-10%:   2  96k+-10%:  15  <=128k:  41  >128k:  40
+  llama/nano median ratio 0.9360
+
+[lb2/Long Structured Data Understanding] n=33 unique_ctx=32
+  nano  p10  112882 p50  220572 p90 1237494 p99 3298720 max 3298720 mean   496276
+  llama p10  102766 p50  176366 p90 1005546 p99 2944630 max 2944630 mean   389393
+  bins(nano ): <=16k:   0  16-32k:   1  32k+-10%:   0  64k+-10%:   0  96k+-10%:   1  <=128k:   4  >128k:  29
+  bins(llama): <=16k:   0  16-32k:   1  32k+-10%:   0  64k+-10%:   1  96k+-10%:   1  <=128k:  10  >128k:  23
+  llama/nano median ratio 0.8664
+
+[lb2/Long-dialogue History Understanding] n=39 unique_ctx=38
+  nano  p10   25116 p50   65246 p90  123409 p99  127663 max  127663 mean    77274
+  llama p10   23152 p50   59858 p90  118968 p99  119363 max  119363 mean    73816
+  bins(nano ): <=16k:   0  16-32k:  12  32k+-10%:   4  64k+-10%:   1  96k+-10%:   0  <=128k:  39  >128k:   0
+  bins(llama): <=16k:   0  16-32k:  12  32k+-10%:   5  64k+-10%:   1  96k+-10%:   0  <=128k:  39  >128k:   0
+  llama/nano median ratio 0.9497
+
+[lb2/Multi-Document QA] n=125 unique_ctx=125
+  nano  p10   16880 p50   63648 p90  299784 p99  976398 max 1952943 mean   142400
+  llama p10   15156 p50   57190 p90  258744 p99  873894 max 1665288 mean   126575
+  bins(nano ): <=16k:  12  16-32k:  20  32k+-10%:   5  64k+-10%:  11  96k+-10%:   3  <=128k:  86  >128k:  39
+  bins(llama): <=16k:  14  16-32k:  19  32k+-10%:   3  64k+-10%:   9  96k+-10%:   4  <=128k:  90  >128k:  35
+  llama/nano median ratio 0.9090
+
+[lb2/Single-Document QA] n=175 unique_ctx=166
+  nano  p10   18030 p50   78168 p90  244198 p99  714231 max  879537 mean   119884
+  llama p10   16556 p50   75174 p90  211834 p99  660347 max  860228 mean   110529
+  bins(nano ): <=16k:   9  16-32k:  52  32k+-10%:   6  64k+-10%:   4  96k+-10%:  19  <=128k: 119  >128k:  56
+  bins(llama): <=16k:  14  16-32k:  48  32k+-10%:   9  64k+-10%:   6  96k+-10%:  19  <=128k: 126  >128k:  49
+  llama/nano median ratio 0.9192
+
+===== unique documents per band (distinct ctx hash with >=1 instance in band; primary = lb1 non-E + lb2 + ib) =====
+ tokenizer nano
+   lb1  inst: <=16k:3770  16-32k: 854  32k+-10%: 101  64k+-10%:  27  96k+-10%:   0  <=128k:4750  >128k:   0
+   lb1  uniq: <=16k:3452  16-32k: 761  32k+-10%:  49  64k+-10%:   3  96k+-10%:   0  <=128k:4257  >128k:   0
+   lb2  inst: <=16k:  22  16-32k:  93  32k+-10%:  19  64k+-10%:  19  96k+-10%:  42  <=128k: 301  >128k: 202
+   lb2  uniq: <=16k:  22  16-32k:  92  32k+-10%:  19  64k+-10%:  19  96k+-10%:  25  <=128k: 278  >128k: 184
+   ib   inst: <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:  13  96k+-10%: 620  <=128k:2662  >128k:1095
+   ib   uniq: <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:   4  96k+-10%: 504  <=128k:2475  >128k: 717
+   ALL  inst: <=16k:3792  16-32k: 947  32k+-10%: 120  64k+-10%:  59  96k+-10%: 662  <=128k:7713  >128k:1297
+   ALL  uniq: <=16k:3474  16-32k: 853  32k+-10%:  68  64k+-10%:  26  96k+-10%: 529  <=128k:7010  >128k: 901
+ tokenizer llama
+   lb1  inst: <=16k:4111  16-32k: 542  32k+-10%:  83  64k+-10%:  27  96k+-10%:   0  <=128k:4750  >128k:   0
+   lb1  uniq: <=16k:3786  16-32k: 451  32k+-10%:  31  64k+-10%:   3  96k+-10%:   0  <=128k:4257  >128k:   0
+   lb2  inst: <=16k:  30  16-32k:  88  32k+-10%:  20  64k+-10%:  21  96k+-10%:  43  <=128k: 321  >128k: 182
+   lb2  uniq: <=16k:  30  16-32k:  87  32k+-10%:  20  64k+-10%:  21  96k+-10%:  26  <=128k: 298  >128k: 164
+   ib   inst: <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:  93  96k+-10%: 678  <=128k:3192  >128k: 565
+   ib   uniq: <=16k:   0  16-32k:   0  32k+-10%:   0  64k+-10%:  84  96k+-10%: 574  <=128k:3000  >128k: 192
+   ALL  inst: <=16k:4141  16-32k: 630  32k+-10%: 103  64k+-10%: 141  96k+-10%: 721  <=128k:8263  >128k: 747
+   ALL  uniq: <=16k:3816  16-32k: 538  32k+-10%:  51  64k+-10%: 108  96k+-10%: 600  <=128k:7555  >128k: 356
+
+  union lb1+lb2 only (no IB), unique:
+   nano: <=16k:3474  16-32k: 853  32k+-10%:  68  64k+-10%:  22  96k+-10%:  25  <=128k:4535  >128k: 184
+   llama: <=16k:3816  16-32k: 538  32k+-10%:  51  64k+-10%:  24  96k+-10%:  26  <=128k:4555  >128k: 164
+
+  IB excluding synthetic tasks (passkey, number_string, kv_retrieval, math_*, code_run), unique:
+   nano: <=16k:3474  16-32k: 853  32k+-10%:  68  64k+-10%:  26  96k+-10%: 209  <=128k:5030  >128k: 401
+   llama: <=16k:3816  16-32k: 538  32k+-10%:  51  64k+-10%:  28  96k+-10%: 250  <=128k:5075  >128k: 356
+
+===== duplication (ctx hash) =====
+ lb1: inst 4750 uniq 4257
+ lb1/E: inst 3668 uniq 3552
+ lb2: inst 503 uniq 462
+ ib: inst 3757 uniq 3192
+ hashes appearing in >1 (group,task) across all: 449
+ hashes shared across >1 distinct task name (ignoring _e twins): 70
+ hashes shared across datasets (excluding lb1/E twin): 0
+ tasks where inst != uniq ctx:
+   ib/longbook_choice_eng: inst 229 uniq 58
+   ib/longbook_qa_eng: inst 351 uniq 69
+   ib/longbook_sum_eng: inst 103 uniq 102
+   lb1/multifieldqa_en: inst 150 uniq 112
+   lb1/multifieldqa_zh: inst 200 uniq 142
+   lb1/narrativeqa: inst 200 uniq 20
+   lb1/qasper: inst 200 uniq 148
+   lb1/qmsum: inst 200 uniq 35
+   lb2/Code Repository Understanding: inst 50 uniq 49
+   lb2/Long In-context Learning: inst 81 uniq 52
+   lb2/Long Structured Data Understanding: inst 33 uniq 32
+   lb2/Long-dialogue History Understanding: inst 39 uniq 38
+   lb2/Single-Document QA: inst 175 uniq 166
+ LongBench-E ctx hashes 3552; of which present in non-E: 379
+
+===== unique docs per long-ctx band, per task (primary + lb1/E as separate rows) =====
+ tokenizer nano   (task: 32k / 64k / 96k unique docs; instances in parens)
+   ib/code_debug                             0(0) / 0(0) / 120(120)
+   ib/code_run                               0(0) / 0(0) / 320(320)
+   ib/longbook_choice_eng                    0(0) / 1(4) / 13(51)
+   ib/longbook_qa_eng                        0(0) / 1(5) / 13(67)
+   ib/longbook_sum_eng                       0(0) / 4(4) / 18(18)
+   ib/longdialogue_qa_eng                    0(0) / 0(0) / 44(44)
+   lb1/lcc                                    1(1) / 0(0) / 0(0)
+   lb1/lsht                              [zh] 28(28) / 0(0) / 0(0)
+   lb1/narrativeqa                            4(49) / 3(27) / 0(0)
+   lb1/qmsum                                  2(9) / 0(0) / 0(0)
+   lb1/repobench-p                            11(11) / 0(0) / 0(0)
+   lb1/vcsum                             [zh] 3(3) / 0(0) / 0(0)
+   lb1/E/lcc_e                                  10(10) / 0(0) / 0(0)
+   lb1/E/repobench-p_e                          26(26) / 0(0) / 0(0)
+   lb2/Code Repository Understanding          2(2) / 1(1) / 4(4)
+   lb2/Long In-context Learning               2(2) / 2(2) / 5(15)
+   lb2/Long Structured Data Understanding     0(0) / 0(0) / 1(1)
+   lb2/Long-dialogue History Understanding     4(4) / 1(1) / 0(0)
+   lb2/Multi-Document QA                      5(5) / 11(11) / 3(3)
+   lb2/Single-Document QA                     6(6) / 4(4) / 12(19)
+ tokenizer llama   (task: 32k / 64k / 96k unique docs; instances in parens)
+   ib/code_debug                             0(0) / 0(0) / 73(73)
+   ib/code_run                               0(0) / 80(80) / 0(0)
+   ib/longbook_choice_eng                    0(0) / 1(4) / 11(43)
+   ib/longbook_qa_eng                        0(0) / 1(5) / 12(62)
+   ib/longbook_sum_eng                       0(0) / 4(4) / 16(16)
+   ib/longdialogue_qa_eng                    0(0) / 0(0) / 134(134)
+   ib/math_find                              0(0) / 0(0) / 350(350)
+   lb1/lcc                                    1(1) / 0(0) / 0(0)
+   lb1/lsht                              [zh] 14(14) / 0(0) / 0(0)
+   lb1/narrativeqa                            4(49) / 3(27) / 0(0)
+   lb1/qmsum                                  2(9) / 0(0) / 0(0)
+   lb1/repobench-p                            8(8) / 0(0) / 0(0)
+   lb1/vcsum                             [zh] 2(2) / 0(0) / 0(0)
+   lb1/E/lcc_e                                  11(11) / 0(0) / 0(0)
+   lb1/E/multi_news_e                           3(3) / 0(0) / 0(0)
+   lb1/E/repobench-p_e                          19(19) / 0(0) / 0(0)
+   lb2/Code Repository Understanding          2(2) / 2(2) / 4(4)
+   lb2/Long In-context Learning               1(1) / 2(2) / 5(15)
+   lb2/Long Structured Data Understanding     0(0) / 1(1) / 1(1)
+   lb2/Long-dialogue History Understanding     5(5) / 1(1) / 0(0)
+   lb2/Multi-Document QA                      3(3) / 9(9) / 4(4)
+   lb2/Single-Document QA                     9(9) / 6(6) / 12(19)
+
+ pools (unique docs in 32k / 64k / 96k bands):
+   lb1+lb1E+lb2 (all langs)                                   nano  [103, 22, 25]
+   lb1+lb1E+lb2 (all langs)                                   llama [84, 24, 26]
+   lb1+lb1E+lb2 (en only; zh tasks dropped)                   nano  [72, 22, 25]
+   lb1+lb1E+lb2 (en only; zh tasks dropped)                   llama [68, 24, 26]
+   lb1+lb1E+lb2+IB natural (en only)                          nano  [72, 26, 209]
+   lb1+lb1E+lb2+IB natural (en only)                          llama [68, 28, 250]
+   IB natural only (longbook_*, longdialogue, code_debug)     nano  [0, 4, 184]
+   IB natural only (longbook_*, longdialogue, code_debug)     llama [0, 4, 224]
+
+ LB2 'length' label vs nano tokens (sanity):
+   long: n=108 min 168101 p50 481226 max 4565374
+   short: n=180 min 10343 p50 27247 max 819108
+   medium: n=215 min 42200 p50 122749 max 567978
+
+ need for without-replacement fill: docs = seeds(4) x rates(R) x requests-per-cell(N) [per band]; pooled-across-rates variant = 4 x N
+   R=3 N=16: disjoint 192   per-seed-shared-across-rates 64   fully shared 16
+   R=3 N=32: disjoint 384   per-seed-shared-across-rates 128   fully shared 32
+   R=3 N=64: disjoint 768   per-seed-shared-across-rates 256   fully shared 64
+   R=5 N=16: disjoint 320   per-seed-shared-across-rates 64   fully shared 16
+   R=5 N=32: disjoint 640   per-seed-shared-across-rates 128   fully shared 32
+   R=5 N=64: disjoint 1280   per-seed-shared-across-rates 256   fully shared 64
+
+===== 판단 입력 (판정 아님) =====
+[측정] 구간별 고유 문서 수 (32k±10% / 64k±10% / 96k±10%):
+  풀                                              Nano            Llama
+  LB1+LB1E+LB2, 영어 과제만                       72 / 22 / 25    68 / 24 / 26
+  LB1+LB1E+LB2, 전 언어(중국어 과제 포함)        103 / 22 / 25    84 / 24 / 26
+  위 + IB 자연문서(영어)                          72 / 26 / 209   68 / 28 / 250
+  IB 자연문서만(longbook_*, longdialogue, code_debug)  0 / 4 / 184  0 / 4 / 224
+  LB1 단독(중국어 포함)                           49 / 3 / 0       31 / 3 / 0      (primary, E 제외)
+  LB2 단독                                        19 / 19 / 25     20 / 21 / 26
+  ※ IB 합성 과제(passkey, number_string, kv_retrieval, math_*, code_run)는 위 "자연문서"에서 제외. 합성 포함 시 96k 구간 Nano 529 / Llama 600이지만 내용이 반복 filler(문서 신규성 없음).
+[측정] 32k 구간의 구성: 영어 자연 서사 문서는 거의 없다 — LB1 32k는 repobench-p/lcc(코드 11+1, E판 26+10), lsht·vcsum(중국어 31), narrativeqa(고유 4권/인스턴스 49), qmsum(고유 2); LB2 19(Nano).
+  64k 구간은 어느 풀에서도 22–28개이고, IB 자연문서는 4개뿐(IB 책 대부분 >90k).
+  구간 "자연문서"의 토크나이저 민감도: 96k 구간 IB 자연문서가 Nano 184 vs Llama 224(longdialogue 44 vs 134), 64k 구간 합성 포함 시 Llama 108 vs Nano 26(code_run 80개가 Llama 기준 64k대). 구간 선별은 모델별 토큰 수로 해야 한다.
+[측정] seed 4 × rate 사다리 비복원 소요 (문서 수만, 구간당): 4 × R(rate 수) × N(셀당 요청 수) — R=3,N=32 → 384; R=5,N=32 → 640; R=3,N=64 → 768. 같은 문서를 rate 간 공유(seed마다만 서로 다름)면 4×N = 128(N=32)/256(N=64).
+  seed 간까지 완전 공유하면 N. 위 풀의 64k 구간(22–28)·96k 영어 자연문서(LB 25, +IB 184–224)로는 비복원 완전 분리(≥384)가 64k에서 불가능, 96k에서도 IB 보완 시에만 가능(N=32,R=3 384 > 209). 이 점은 판정이 아니라 산수다.
+[측정] InfiniteBench 보완 필요성(수치만): 32k 구간은 IB로 보완 불가(0개). 64k 구간도 IB 자연문서 4개뿐. 96k 구간만 IB가 문서 수를 25 -> 209–250으로 늘린다(단 IB 자연문서 중 longbook_* 고유 책은 구간당 약 13–18권, 같은 책의 여러 질문이 인스턴스를 부풀림; longdialogue·code_debug가 대다수).
+  LB1/LB2/IB 사이 context 해시 겹침 0(데이터셋 간 중복 없음).
+
+===== 문제점 =====
+ 1. 32k·64k 구간의 고유 문서가 적다(64k 22–28). 비복원 완전 분리 요건이면 구간 폭 확대(±10% 초과), 문서당 다중 질문 재사용, 합성 길이 병행 등은 사용자 결정 영역.
+ 2. 중복: 인스턴스 대비 고유 context가 적은 과제 — narrativeqa 200->20, qmsum 200->35, longbook_qa 351->69, longbook_choice 229->58, multifieldqa 150->112/200->142, qasper 200->148, LB2 503->462. 인스턴스 수로 표본 크기를 세면 안 된다. 과제 간 공유 context 70종(wiki 문서 계열 추정). LB1과 LongBench-E는 다른 표집이나 E 3552 중 379 컨텍스트가 non-E와 겹침.
+ 3. LB2 'length' 라벨(short/medium/long)은 단어 수 기준이라 토큰 길이와 어긋남: short인데 최대 819k 토큰, medium 최대 568k, long 최소 168k. 라벨로 구간을 고르지 말고 토큰 실측으로 고를 것.
+ 4. 중국어 과제(dureader, lsht, vcsum, multifieldqa_zh, passage_retrieval_zh)가 LB1 길이 구간을 차지한다(32k 구간 Nano 101 중 31). 영어 서사 실험에는 부적합 -> 풀에서 제외하면 위 표의 "영어" 행.
+ 5. 토큰 비 Llama/Nano 중앙값 [측정]: LB1 0.9465, LB1/E 0.9596, LB2 0.9204, IB 0.9581. 과제별 0.73(kv_retrieval)–1.00(passkey). 중국어 0.83–0.88, 코드 0.93, 책/위키 0.95–0.99. 한 비율로 환산하면 오차가 크다.
+ 6. IB passkey/number_string/kv_retrieval/math_*는 길이가 거의 고정(분산 ~0)이고 내용이 filler라 "실제 문서" 요건을 충족하지 않는다. IB 책/대본은 개체명이 치환됐을 수 있다(기억, 미확인).
+ 7. LB2 최댓값 4.57M, IB 최댓값 747k 토큰 — >128k 문서는 context_length 상한 때문에 제외 대상(LB2 202/Nano, IB 1095/Nano).
+ 8. ARXSUM_STATS는 Llama 행에 unsloth 미러를 썼고 이번은 gated 원본이다. 같은 토크나이저인지 확인 없이 두 보고서의 Llama 수치를 합치지 말 것.
+ 9. 문서 단위 길이는 질문 포함이라, 같은 문서도 질문에 따라 구간이 갈린다(예: LB2 Single-Doc 인스턴스 19 vs 고유 12).
+
+
+== 부록 (main 세션, 2026-10-20): 절단 방식용 풀 크기 [측정, longctx_lengths.tsv 재집계] ==
+풀 = LB1+LB1-E+LB2+IB, 중국어(meta=zh)와 IB 합성 과제(passkey/number_string/kv_retrieval/math_find/math_calc/code_run) 제외, 코드 포함.
+목표 T 이상인 고유 context 수 (괄호 = T ≤ 길이 ≤ 4T):
+  T=32k : Nano 1127 (726)  · Llama 1103 (747)
+  T=64k : Nano 995 (886)   · Llama 983 (882)
+  T=96k : Nano 782 (707)   · Llama 727 (661)
+  T=128k: Nano 401 (352)   · Llama 356 (311)
+용도: "목표 길이 T로 절단" 방식이면 구간당 수백 개의 고유 문서가 있다(±10% 선별은 22–72개).
