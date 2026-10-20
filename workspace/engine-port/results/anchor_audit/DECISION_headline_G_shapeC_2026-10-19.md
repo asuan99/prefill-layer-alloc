@@ -57,5 +57,5 @@
 - 128k 프로브 실행 승인(사용자, 2026-10-20): pdmux-build 적재 → pdmux-probe 실행, 하드캡 120분.
 
 ## 결정 13 (2026-10-20) — long-ctx 범위·mem-fraction (권고안 채택)
-- **long-ctx 통제 축 상한 = 64k**({16k, 32k, 64k}), **`--mem-fraction-static` 0.6을 모든 arm·블록(cap 블록·G0 포함)에 통일**. 근거 = 128k 프로브 1·2회차(`../cap_char/probe_128k/RESULT_probe_128k_2026-10-20.md`): 0.82는 chunk -1 활성화 OOM, 0.6에서 Nano chunk -1이 96k에서 Triton SSD 커널 오류.
+- **long-ctx 통제 축 상한 = 64k**({16k, 32k, 64k}), **`--mem-fraction-static` 0.6을 모든 arm·블록(cap 블록·G0 포함)에 통일**. 근거 = 128k 프로브 1·2회차(`../cap_char/probe_128k/RESULT_probe_128k_2026-10-20.md`): 0.82는 chunk -1 활성화 OOM, 0.6에서 Nano chunk -1이 약 95k 이상에서 Triton causal\_conv1d int32 오프셋 넘침 추정(감사: PLAUSIBLE 강함). ★서술 범위(감사 6번): 64k는 측정 한계가 아니라 격자 선택이고, 한계는 chunk -1 Nano arm 공통(PD-mux 고유 아님). "PD-mux는 64k를 넘을 수 없다"·"OOM 때문" 금지. 0.6에서 Llama KV 풀 263,900 토큰 → shape C KV 입장 제한 비대칭 점검 필요, 0.82 결과와 혼합 금지.
 - 3회차 짧은 프로브: G4·G7(≤64k) + 커널 오류 임계 확인(L = 94,500 / 95,100, `CUDA_LAUNCH_BLOCKING=1`).

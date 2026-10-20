@@ -1,5 +1,6 @@
 # ANALYSIS — Nano chunk -1 프리필이 96k에서 실패하는 원인 (2026-10-20, main, 코드 읽기 + 산술; 3회차 프로브로 확인 중)
 
+> ★감사(claims-auditor 1회차, `AUDIT_probe_128k_2026-10-20.md`): "메모리 아님" CONFIRMED, 기전 PLAUSIBLE(강함) — CONFIRMED는 수리 반증 실험(int64 패치로 통과 + 되돌리면 재실패) 뒤.
 > 지위: 원인 분석이다(코드 사실 + 산술). ★**3회차 확인(2026-10-20)**: L = 94,500은 OK, 95,100은 실패했다. `CUDA_LAUNCH_BLOCKING=1` traceback은 `causal_conv1d_triton.py:510 causal_conv1d_fn`이다 → 가설과 일치한다(run `longctx_probe_20261020T040836Z`, 1회 관측). 엔진은 고치지 않았다.
 
 ## 1. 관측 (2회차, mem-fraction 0.6)
@@ -13,12 +14,12 @@
 
 ## 3. 용의 커널: Triton causal conv1d의 int32 토큰 오프셋
 - conv 입력 `x = hidden_states_B_C_p.transpose(0, 1)`은 in\_proj 출력(`zxbcdt`)의 **비연속 view**다. 그래서 토큰 하나를 건너는 stride가 conv 폭 12,288이 아니라 **in\_proj 출력 폭 22,656**이다 [코드 + config: d\_inner = 128 × 80 = 10,240; in\_proj 출력 = 2·10,240 + 2·8·128 + 128 = 22,656].
-- stride가 1이 아니면 래퍼는 sgl\_kernel CUDA 대신 **Triton 경로**를 쓴다: `use_triton = not _HAS_SGL_KERNEL or (x.stride(-1) != 1 and "seq_lens_cpu" in kwargs)` [코드, `causal_conv1d.py:42-46`].
+- ~~stride가 1이 아니면 래퍼는 Triton 경로를 쓴다(`causal_conv1d.py:42-46`)~~ ★감사 정정: 실제 분기는 `causal_conv1d.py:76`이고 이 경로는 거치지 않는다. Nemotron-H는 `nemotron_h.py:415`가 Triton conv를 강제하고 `mamba.py:504-508`에서 선택된다(결론 동일). 따라서 수리안 (b) `.contiguous()`도 Triton을 그대로 타며 경계만 174k로 오른다.
 - Triton 커널 `_causal_conv1d_fwd_kernel` [코드, `causal_conv1d_triton.py`]:
   - `chunk_offset = tl.program_id(1)`(int32), `token_offset = BLOCK_M * chunk_offset`(:63)
   - `prior_tokens = x_base + (token_offset - 1) * stride_x_token`(:267), `x_ptrs = x_base + ((idx_tokens_conv - VAL) * stride_x_token)`(:213-215 부근)
   - `stride_x_token`은 `tl.constexpr` = 22,656이다. **int64 캐스트가 없다**(SSD 커널들과 다름).
-- 산술: 토큰 위치 t의 원소 오프셋은 t × 22,656이다. 이 값이 int32 최댓값 2,147,483,647을 넘는 지점은 **t > 94,786**이다.
+- 산술: 토큰 위치 t의 원소 오프셋은 t × 22,656이다. 이 값이 int32 최댓값 2,147,483,647을 넘는 지점은 **t > 94,786**이다(★감사 정정: token\_offset이 BLOCK\_M=8의 배수라 정확한 실패 경계는 **T ≥ 94,793**, 94,784까지 안전).
   - 64k(65,536 × 22,656 = 1.48e9)는 안쪽이고, 96k(98,304 × 22,656 = 2.23e9)는 바깥이다. **관측된 경계(64k OK, 96k 실패)와 정확히 맞는다.**
   - 오프셋이 음수로 넘쳐 할당 영역 밖을 읽으면 `illegal memory access`가 난다.
 - 다른 텐서 폭의 경계 [산술]: conv 출력·xBC 연속(12,288) 174,762 · MLP 중간(15,680) 136,956 · hidden(4,480) 479,349. 96k 이전에 int32를 넘는 것은 in\_proj 출력 view(22,656)뿐이다.
