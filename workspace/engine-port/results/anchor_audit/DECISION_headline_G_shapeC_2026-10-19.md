@@ -29,3 +29,8 @@
 - 이전 8의 후보2·후보1 문안은 대체됨("슬롯 상한"은 할당기 종속이라 기여 문장에서 뺀다).
 - 실험: cap 블록 {48, C_mem} × 표준 셀 + long-ctx 블록 ctx {32k, 64k, 96k}(+128k 프로브 결과에 따라), cap = C_mem(L), ctx 비례 TTFT SLO. 설계 `../cap_char/DESIGN_cap_longctx_v1_2026-10-19.md`.
 - 금지 추가: "~52k가 hybrid 경계" · "9k 경계 실측"(유도값, config 산술).
+
+## 후속 결정 (2026-10-20, 설계 v1.1 §5 권고안 채택)
+10. **attention 대조 모델 = Llama-3.1-8B-Instruct**(128k 네이티브, `--attention-backend flashinfer` 명시). 결정 4의 예시 Qwen2.5-7B를 대체. 교락(토크나이저·k 8×·attn 32층 RoPE·gated 라이선스·`ignore_eos` 필수)은 설계 v1.1 §5-2대로 공시.
+11. **fused_tuned arm 추가**(cap 블록·long-ctx 블록): G0 튜닝 argmax config(mixed-chunk 포함). 근거 = J1 감사 1번(미조율 분모).
+- shape C 데이터셋은 미정(LongProc의 서빙 선례 질의 중).
