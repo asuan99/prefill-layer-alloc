@@ -59,3 +59,9 @@
 ## 결정 13 (2026-10-20) — long-ctx 범위·mem-fraction (권고안 채택)
 - **long-ctx 통제 축 상한 = 64k**({16k, 32k, 64k}), **`--mem-fraction-static` 0.6을 모든 arm·블록(cap 블록·G0 포함)에 통일**. 근거 = 128k 프로브 1·2회차(`../cap_char/probe_128k/RESULT_probe_128k_2026-10-20.md`): 0.82는 chunk -1 활성화 OOM, 0.6에서 Nano chunk -1이 약 95k 이상에서 Triton causal\_conv1d int32 오프셋 넘침 추정(감사: PLAUSIBLE 강함). ★서술 범위(감사 6번): 64k는 측정 한계가 아니라 격자 선택이고, 한계는 chunk -1 Nano arm 공통(PD-mux 고유 아님). "PD-mux는 64k를 넘을 수 없다"·"OOM 때문" 금지. 0.6에서 Llama KV 풀 263,900 토큰 → shape C KV 입장 제한 비대칭 점검 필요, 0.82 결과와 혼합 금지.
 - 3회차 짧은 프로브: G4·G7(≤64k) + 커널 오류 임계 확인(L = 94,500 / 95,100, `CUDA_LAUNCH_BLOCKING=1`).
+
+## 결정 14 (2026-10-20) — 연구 프레이밍 (권고안 채택)
+- **주 목적 = hybrid 서빙 비용 모델(C)**: Nano 대상, 단일 GPU 기준 + N·TP 항 확장.
+- **PD-mux 이득(G) = 비용 모델의 검증 대상**(G0·M3 셀이 검증 데이터).
+- **"왜 hybrid인가"(H) = 비용 모델의 hybrid 고유 항을 transformer와 대비**해 답한다. Llama는 그 항의 최소 대비 측정에만 쓰고, 모델 간 goodput 이중차분(rev0 Q-B)은 폐기한다.
+- 설계: 항별 고정 배치 마이크로 측정 → 조립 → λ\*\_SLO 검증. 계획 `../cap_char/PLAN_costmodel_terms_2026-10-20.md`(약 25–33 GPU-h [유도]). `PREREG_CAP_LONGCTX_rev0_2026-10-20.md`는 대체됨(이력).

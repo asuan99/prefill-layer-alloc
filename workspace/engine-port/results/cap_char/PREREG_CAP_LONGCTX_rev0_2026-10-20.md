@@ -1,5 +1,7 @@
 # 사전등록 rev0 (DRAFT) — cap 블록 + long-context 블록 (Q-A…Q-D), 2026-10-20
 
+> ★**대체됨(2026-10-20, 결정 14)**: 연구 프레이밍이 "비용 모델(C) 주 목적"으로 정해져 `PLAN_costmodel_terms_2026-10-20.md`로 대체된다. Q-B 이중차분은 처치 방향이 모델마다 반대라 폐기. 이력용.
+
 > 지위: **DRAFT rev0. 미봉인, 감사 0회, 측정 0, 성능 판정 0.** 문서 작업(CPU)만 했다. 제출·GPU·커밋 없음.
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·모형 예보, 측정 아님) · [코드] · [결정](사용자 결정 문서 명시) · [제안](이 초안이 고른 값, 감사 대상) · **[미등록]**(봉인 전에 사용자 또는 addendum이 채울 칸).
 > 근거: 설계 `DESIGN_cap_longctx_v1_2026-10-19.md`(§2·§5는 아래 결정이 우선) · 결정 `../anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md` 결정 1–13 · 프로브 `probe_128k/RESULT_probe_128k_2026-10-20.md`·`ANALYSIS_triton_96k_failure_2026-10-20.md`·감사 정정(coordinator 전달, 원문 `probe_128k/AUDIT_probe_128k_2026-10-20.md`는 이 초안 작성 시 아직 없었음 → 봉인 전 대조 의무) · J1 `../multigpu_verdicts/ANALYSIS_J1_N1_2026-10-19.md`·`AUDIT_J1_N1_analysis_2026-10-19.md` · 명세 `../handoff_review_2026-10-15/SPEC_common_measurement_v0_2026-10-15.md`(이하 SP, v0.2+) · 형식 선례 `../multigpu/PREREG_MULTIGPU_rev12_2026-10-15.md`.
