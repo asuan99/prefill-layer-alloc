@@ -1,0 +1,28 @@
+{
+  "facts": {
+    "by_input": {
+      "llama_G5": {
+        "mean_ttft_s_by_L": {
+          "16384": 1.2789932056330144,
+          "32768": 3.249048875644803,
+          "65536": 9.170582953374833,
+          "98304": 17.792735329829156
+        },
+        "n_points": 4,
+        "slope_ms_per_token": 0.2022184254370987
+      },
+      "nano_pdmux_G2": {
+        "mean_ttft_s_by_L": {
+          "16384": 2.2928058858960867,
+          "32768": 3.830338408006355
+        },
+        "n_points": 2,
+        "slope_ms_per_token": 0.09384353772645682
+      }
+    },
+    "j1_floor_ms_per_token_reference": 0.111
+  },
+  "reason": "only 2 L points with ok requests",
+  "stage": "G6",
+  "status": "UNRESOLVED"
+}

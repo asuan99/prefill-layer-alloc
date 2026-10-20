@@ -1,0 +1,38 @@
+{
+  "facts": {
+    "n_expected": 5,
+    "n_records": 5,
+    "oom_log_hits": 0,
+    "per_L": {
+      "126976": {
+        "errors": [],
+        "fail": 0,
+        "ok": 1
+      },
+      "16384": {
+        "errors": [],
+        "fail": 0,
+        "ok": 1
+      },
+      "32768": {
+        "errors": [],
+        "fail": 0,
+        "ok": 1
+      },
+      "65536": {
+        "errors": [],
+        "fail": 0,
+        "ok": 1
+      },
+      "98304": {
+        "errors": [],
+        "fail": 0,
+        "ok": 1
+      }
+    },
+    "schema_problems": []
+  },
+  "reason": "5/5 requests completed with forced token counts, 0 OOM log hits",
+  "stage": "G3-chunked",
+  "status": "PASS"
+}

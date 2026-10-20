@@ -1,0 +1,6 @@
+{
+  "stage": "TD-nano_fused",
+  "status": "PASS",
+  "reason": "memory.used 0 MiB < 1024 MiB after teardown",
+  "facts": {}
+}

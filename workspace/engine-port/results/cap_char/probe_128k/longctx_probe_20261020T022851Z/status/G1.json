@@ -1,0 +1,60 @@
+{
+  "facts": {
+    "arm": "nano_pdmux",
+    "banner": {
+      "available_gpu_mem_gib": 11.72,
+      "context_len_logged": 131072,
+      "kv_cache_tokens": 2722655,
+      "kv_k_gib": 20.77,
+      "kv_v_gib": 20.77,
+      "mamba_conv_gib": 0.09,
+      "mamba_ssm_gib": 6.46,
+      "max_mamba_cache_size": 48,
+      "max_total_num_tokens": 2722655
+    },
+    "cap": 48,
+    "cmem": {
+      "by_L": {
+        "126976": {
+          "c_mem": 23,
+          "kv_token_bound": 21
+        },
+        "16384": {
+          "c_mem": 125,
+          "kv_token_bound": 166
+        },
+        "32768": {
+          "c_mem": 75,
+          "kv_token_bound": 83
+        },
+        "65536": {
+          "c_mem": 42,
+          "kv_token_bound": 41
+        },
+        "98304": {
+          "c_mem": 29,
+          "kv_token_bound": 27
+        }
+      },
+      "formula": "floor(pool_bytes / (slot_bytes + kv_bytes_per_token * L))",
+      "kv_bytes_per_token": 16382.25752765591,
+      "pool_bytes": 51636244316.159996,
+      "slot_bytes": 143530794.84081632
+    },
+    "context_len_matches": true,
+    "context_length_requested": 131072,
+    "kind": "longctx_probe_boot_facts",
+    "model": "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+    "signatures": {
+      "cuda_graph_capture_failed": 0,
+      "eager_fallback": 0,
+      "oom": 0,
+      "scheduler_exception": 0,
+      "traceback": 0
+    },
+    "utc": "2026-10-20T02:32:26Z"
+  },
+  "reason": "booted PD-mux agnostic ctx 131072 cap 48; max_total_num_tokens=2722655, mamba slots=48; C_mem table in nano_pdmux/boot_facts.json",
+  "stage": "G1",
+  "status": "PASS"
+}

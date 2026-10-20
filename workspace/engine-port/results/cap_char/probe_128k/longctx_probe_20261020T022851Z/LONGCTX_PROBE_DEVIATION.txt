@@ -1,0 +1,1 @@
+DEVIATION: libnuma1 apt-installed in workspace (image lacks it; same as 2026-10-04 substrate probe)

@@ -1,0 +1,6 @@
+{
+  "stage": "PRE",
+  "status": "PASS",
+  "reason": "manifest verified (27 entries), install commit == HEAD, models staged (Llama pinned d04e592bb4f6), 4 boot argv parse",
+  "facts": {}
+}

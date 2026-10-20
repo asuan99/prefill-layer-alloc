@@ -1,0 +1,6 @@
+{
+  "stage": "G5-conc",
+  "status": "SKIPPED",
+  "reason": "server not alive after G5",
+  "facts": {}
+}
