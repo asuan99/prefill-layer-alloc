@@ -9,6 +9,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 - 이번에 알게 된 것: 판정 0(M3 미완). 사실만 — J1 GPU0 샘플 61%가 기본 400 W 한도 throttle(0x4, 클럭 중앙 1380 MHz, 59 °C); 하네스 시간 모형이 확장 셀을 빠뜨려 rev12 예산 190 GPU-h가 과소(J1 실측 보정 시 J_N 20–21 h > 캡 16 h)
 - promote 필요: 예 (감사) — PREREG rev2 2회차 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md`); PREREG rev1 규칙층 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`); 128k 프로브 감사 `workspace/engine-port/results/cap_char/probe_128k/AUDIT_probe_128k_2026-10-20.md`(허용 문안 1–7); 예 (결정) — 결정 10–20(대조 모델·fused_tuned·shape C·long-ctx 입력); 아니오(이전 항목 반영 완료) — 2026-10-19 반영 완료: J1(N=1) 분석·감사 허용 문안 1–5(COSTMODEL CM-2·4·6, CONSENSUS §3 항목296), Claim E 첫 화살표 판정(CM-1 정정, §6 등급 불변), 사용자 결정 1–7·8′(CM-5, PROJECT_STATUS 최상단 5줄), preflight PASS·rev12 봉인·M3 J2/J4/J8 외부 종료·예산 모형 과소 교훈(확장 행)
 ## 현재 상태 (2026-10-20)
+- **gamma 결과**(11:42–14:29Z, 수동 회수 — export 절단 재발, GATE_RESULT 보존, engsync `45628e0e`): **gamma-A(agnostic) OBSERVER_EFFECT** — 계측 ON이 λ\*_thr를 −2.6%(95% CI −2.9~−2.3%), ITL p95를 +2.0%(+0.9~+3.1%) 바꿈(±1.5% 밖, n=10). **gamma-F(fused_sym) UNRESOLVED_POWER** — λ −0.65%(−1.6~+0.3%), ITL p95 SD 4.0%(예보보다 큼). agnostic seed 3개가 STALL_BOUNDARY. 엔진 묶음 gate 미완 → 사용자 결정.
 - **G-β 재실행 PASS**(engsync `ad11bcca`, 20분): 단위 36사례 — 패치본 view 출력 sha = 원본 contig(전 T), 원본 view는 94,800↑ 붕괴/crash; 서빙 98,304 통과(fused·agnostic), 되돌린 판 95,100 illegal 사망, 재적용 통과 → **int64 오프셋 넘침 원인 반증 실험 통과**(감사 전 해석). **gamma-A·gamma-F 제출**(11:41Z, 각 ≤270분, OO 제외).
 - **G-α 재실행 PASS(28/28)** engsync `b91dbded`(검사 v2, REG `b726ea3f…`; B2 M=39=I-5, 인용 금지 3문장 `AUDIT_gate_split_design_r2_2026-10-20.md`) → G-β 1회차(15분) **FAIL = 하네스 결함 3건**(단위 시험 bf16 atol 0.02 < 유효 커널 차 0.04–0.057·w11328 입력 오류·비차단 모드에서 conv traceback 요구). 반증 증거는 예측대로: 원본 view는 94,784 정상·94,800부터 붕괴/사망, 패치본은 95,100·126,976 정상이고 출력이 원본 contig와 sha 동일, 서빙 98,304 통과·되돌린 판 95,100 illegal 사망·재적용 통과(engsync `afe94ba2`). gamma는 하네스 재감사 NO-GO(OO 진단 배선 결함) → 사용자 결정.
 - **G-α 1회차** `pdmux-engine-gate-alpha-0990828-20261020081434`(29분, 회수·DONE·sha OK, engsync `a3f53617`): **FAIL 1 / PASS 27** — 출력 일치(3 arm), OFF 단언, int64 ≤64k, I-4(비 0.94–1.00, host 변이 0.03로 분리), I-6, 방출, digest 3회 전부 PASS. FAIL = `i5i6_B2`: PD-mux(agnostic) stair에서 bs=40 미방문(1–39 방문, 39에서 31 iter) — 분할 prefill이 요청을 하나씩 합류시키는 동안 출력 16인 첫 요청이 끝나서 생기는 스케줄 사실로 보임(fused·Llama는 PASS). 검사 기대값 결함 의심, 판정 규칙 사후 수정 금지 → 사용자 결정.
@@ -32,7 +33,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. 128k 프로브 스크립트(G1–G7) 작성·CPU 회귀 → 승인 → Llama 적재 + A100 프로브
 4. G0 PREREG(cap = cap 특성화 결과, λ*_SLO 판정, arm별 prior·확장 발화 기본 시나리오 — J1 분석 반영) · M3는 G0 뒤 재결정
 ## 사용자 결정 대기
-- (결정 20) 다음 대기 = gamma-A·F 결과 → 엔진 묶음 gate 완료 시 main 병합·rev3-MEAS 봉인(digest 기입) 승인
+- **gamma 관측자 효과 처리** / PD-mux에서 계측 ON이 처리량 −2.6% / (가) 계측별 분해 Job(I-4·I-5·I-6 단독 ON, 권고) · (나) 계측은 진단 boot에만 쓰고 판정 측정은 OFF · (다) 보정 계수로 수용
 - (결정 16으로 O-1·2·3·5·7 처리, GPU gate 분할) 다음 대기 = PREREG rev2 2회차 감사 결과 · 분할 gate 설계 승인(GPU)
 - **LongBench v2·InfiniteBench 사용(공식 가운데 절단)** / 보류(결정 12′) / 프로브 뒤 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38
