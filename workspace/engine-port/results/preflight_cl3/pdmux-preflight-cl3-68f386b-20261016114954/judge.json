@@ -1,0 +1,237 @@
+{
+ "label": "PREFLIGHT_FAIL_NEW",
+ "invalid": [],
+ "new_failures": [
+  "test_mg_harness.JobScriptsDryRun.test_m3_dry_run_every_job",
+  "test_n3_capacity.TestRegistration.test_plan_selftest"
+ ],
+ "signature_changed": [
+  "test_lambda0_prereg.TestArrivalRealization.test_analyzer_records_the_drain_decomposition",
+  "test_lambda0_prereg.TestArrivalRealization.test_realized_denominator_removes_the_artifact_on_archived_cells",
+  "test_lambda0_prereg.TestDrainIdentity.test_drain_identity_on_archived_cells",
+  "test_lambda0_prereg.TestShippedSelftests.test_lambda_inf_predicate_selftest",
+  "test_lambda_star_per_shape.CliSurfaces.test_workloads_cli_optin_writes_the_caveats_into_the_header",
+  "test_lambda_star_per_shape.FailClosed.test_shipped_template_loads_and_is_entirely_unmeasured",
+  "test_n3_capacity.TestBootBranchSnippets.test_t_h1_sticky",
+  "test_n3_capacity.TestBootBranchSnippets.test_t_h3_floor",
+  "test_n3_capacity.TestBudgetEnforcer.test_overrunning_unit_is_cut"
+ ],
+ "l2_reproduced": 9,
+ "l2_expected": 12,
+ "l2_not_failing_in_post": [],
+ "fixed_in_post": [
+  "test_campaign_provenance.TestCudaGraphFieldIsRead.test_cuda_graph_false_adds_the_disable_flags",
+  "test_campaign_provenance.TestCudaGraphFieldIsRead.test_cuda_graph_true_means_no_disable_flags",
+  "test_campaign_provenance.TestCudaGraphFieldIsRead.test_mutant_ignoring_the_field_makes_it_decoration_again",
+  "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_agreeing_env_model_is_accepted",
+  "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_context_length_comes_from_the_record",
+  "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_model_comes_from_the_record",
+  "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_null_context_length_derives_the_model_limit",
+  "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_v1_record_still_runs_through_the_env",
+  "test_campaign_provenance.TestRunRecordIsCopiedVerbatim.test_run_json_keeps_the_declared_fields",
+  "test_campaign_provenance.TestRunRecordIsCopiedVerbatim.test_server_args_txt_records_the_realized_tuple",
+  "test_lambda_star_per_shape.SbatchReadsTheField.test_measured_record_boots",
+  "test_lambda_star_per_shape.SbatchReadsTheField.test_mutant_dropping_the_read_makes_the_field_decoration_again",
+  "test_lambda_star_per_shape.SbatchReadsTheField.test_unmeasured_record_boots_with_the_explicit_optin",
+  "test_r2_eval_runner.TestSbatchPathResolution.test_a_spool_copy_unrelated_cwd",
+  "test_r2_eval_runner.TestSbatchPathResolution.test_b_login_node_direct_run",
+  "test_r2_eval_runner.TestSbatchPathResolution.test_c_array_task_selects_its_own_run",
+  "test_r2_eval_runner.TestSbatchPathResolution.test_mutant_dropping_context_preflight_reintroduces_16384"
+ ],
+ "holes": [
+  "B_holb4:test_holb_probe.TestSchedulerHooksInstalled.test_patch_reapplies_the_hooks_and_nothing_else"
+ ],
+ "coverage": {
+  "A_import9": {
+   "verified": 9,
+   "total": 9
+  },
+  "B_holb4": {
+   "verified": 3,
+   "total": 4
+  },
+  "C_venv17": {
+   "verified": 17,
+   "total": 17
+  },
+  "D_zamba2": {
+   "verified": 1,
+   "total": 1
+  },
+  "E_rev12": {
+   "verified": 1,
+   "total": 1
+  }
+ },
+ "coverage_detail": {
+  "A_import9": {
+   "verified": 9,
+   "total": 9,
+   "items": {
+    "test_chunk_probe": {
+     "ok": 47,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    },
+    "test_mem_telemetry_symmetry": {
+     "ok": 12,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    },
+    "test_phase_events": {
+     "ok": 7,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    },
+    "test_r2_admission_latch": {
+     "ok": 6,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    },
+    "test_r2_admission_persistence": {
+     "ok": 9,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    },
+    "test_sticky_partition": {
+     "ok": 12,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    },
+    "test_trace_force_prefill": {
+     "ok": 5,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    },
+    "test_true_dual_prefill_ownership": {
+     "ok": 4,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    },
+    "test_worker_grad_guard": {
+     "ok": 13,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    }
+   }
+  },
+  "B_holb4": {
+   "verified": 3,
+   "total": 4,
+   "items": {
+    "test_holb_probe.TestSchedulerHooksInstalled.test_class_level_default_is_none": {
+     "status": "ok"
+    },
+    "test_holb_probe.TestSchedulerHooksInstalled.test_hooks_present_in_all_three_dispatch_branches": {
+     "status": "ok"
+    },
+    "test_holb_probe.TestSchedulerHooksInstalled.test_off_path_is_a_none_check": {
+     "status": "ok"
+    },
+    "test_holb_probe.TestSchedulerHooksInstalled.test_patch_reapplies_the_hooks_and_nothing_else": {
+     "status": "absent"
+    }
+   }
+  },
+  "C_venv17": {
+   "verified": 17,
+   "total": 17,
+   "items": {
+    "test_campaign_provenance.TestCudaGraphFieldIsRead.test_cuda_graph_false_adds_the_disable_flags": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestCudaGraphFieldIsRead.test_cuda_graph_true_means_no_disable_flags": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestCudaGraphFieldIsRead.test_mutant_ignoring_the_field_makes_it_decoration_again": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_agreeing_env_model_is_accepted": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_context_length_comes_from_the_record": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_model_comes_from_the_record": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_null_context_length_derives_the_model_limit": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestRecordDrivesWhatIsServed.test_v1_record_still_runs_through_the_env": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestRunRecordIsCopiedVerbatim.test_run_json_keeps_the_declared_fields": {
+     "status": "ok"
+    },
+    "test_campaign_provenance.TestRunRecordIsCopiedVerbatim.test_server_args_txt_records_the_realized_tuple": {
+     "status": "ok"
+    },
+    "test_lambda_star_per_shape.SbatchReadsTheField.test_measured_record_boots": {
+     "status": "ok"
+    },
+    "test_lambda_star_per_shape.SbatchReadsTheField.test_mutant_dropping_the_read_makes_the_field_decoration_again": {
+     "status": "ok"
+    },
+    "test_lambda_star_per_shape.SbatchReadsTheField.test_unmeasured_record_boots_with_the_explicit_optin": {
+     "status": "ok"
+    },
+    "test_r2_eval_runner.TestSbatchPathResolution.test_a_spool_copy_unrelated_cwd": {
+     "status": "ok"
+    },
+    "test_r2_eval_runner.TestSbatchPathResolution.test_b_login_node_direct_run": {
+     "status": "ok"
+    },
+    "test_r2_eval_runner.TestSbatchPathResolution.test_c_array_task_selects_its_own_run": {
+     "status": "ok"
+    },
+    "test_r2_eval_runner.TestSbatchPathResolution.test_mutant_dropping_context_preflight_reintroduces_16384": {
+     "status": "ok"
+    }
+   }
+  },
+  "D_zamba2": {
+   "verified": 1,
+   "total": 1,
+   "items": {
+    "test_zamba2_instrumentation": {
+     "ok": 17,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    }
+   }
+  },
+  "E_rev12": {
+   "verified": 1,
+   "total": 1,
+   "items": {
+    "test_loadgen_outcome": {
+     "ok": 19,
+     "fail": 0,
+     "skipped": 0,
+     "import_error": 0
+    }
+   }
+  }
+ },
+ "pre": {
+  "ran": 989,
+  "summary": "failures=26, errors=6, skipped=41",
+  "failing_ids": 32
+ },
+ "post": {
+  "ran": 1487,
+  "summary": "failures=20, errors=6, skipped=42",
+  "failing_ids": 26
+ }
+}

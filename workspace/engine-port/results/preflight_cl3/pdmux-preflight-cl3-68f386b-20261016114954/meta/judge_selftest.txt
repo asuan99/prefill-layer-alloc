@@ -1,0 +1,25 @@
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+ok   control: PREFLIGHT_PASS (want PREFLIGHT_PASS)
+ok   M1 new failing id in post: PREFLIGHT_FAIL_NEW (want PREFLIGHT_FAIL_NEW)
+ok   M2 same failing id, other signature: PREFLIGHT_FAIL_NEW (want PREFLIGHT_FAIL_NEW)
+ok   M3 target module skipped: PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   M4a import error only after the merge (pre ok): PREFLIGHT_FAIL_NEW (want PREFLIGHT_FAIL_NEW)
+ok   M4b import error in both arms (the local situation: a hole, not a pass): PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   M5 L2 never fails (post == pre): PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   M6 post log truncated (no Ran line): PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   M7 repetitions disagree (flaky): PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   M8 venv test fails identically in both arms (shared, not a pass): PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   M9 new failure outranks a hole: PREFLIGHT_FAIL_NEW (want PREFLIGHT_FAIL_NEW)
+ok   M10 setup flag from the shell script: PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   M11 one L2 id absent from post (only 0 reproduced is invalid): PREFLIGHT_PASS (want PREFLIGHT_PASS)
+ok   R0 control: judge PASS: PREFLIGHT_PASS (want PREFLIGHT_PASS)
+ok   R1 judge FAIL_NEW is never PASS: PREFLIGHT_FAIL_NEW (want PREFLIGHT_FAIL_NEW)
+ok   R2 judge UNVERIFIABLE is never PASS: PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   R3 no judge.json: PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   R4 unknown label text: PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   R5 image without digest: PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   R6 merge-tree digest missing: PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   R7 short post sha: PREFLIGHT_UNVERIFIABLE (want PREFLIGHT_UNVERIFIABLE)
+ok   R8 written bytes match the .sha256
+SELFTEST PASS

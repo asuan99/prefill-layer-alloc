@@ -1,0 +1,12 @@
+{
+  "cpu_only": true,
+  "gpu": null,
+  "hostname": "job-pww479muugxs-kqxv9",
+  "commit": "68f386b6fdf997189432d04fe5867594ae845413",
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "spec": "resourcespec-a100cpu",
+  "job_name": "pdmux-preflight-cl3-68f386b-20261016114954",
+  "campaign": "preflight_cl3",
+  "target": "workspace/engine-port/results/handoff_review_2026-10-15/merge_trial_tools/preflight_cl3.sh",
+  "array_spec": ""
+}

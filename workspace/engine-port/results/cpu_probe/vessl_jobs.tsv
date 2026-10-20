@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-10-16T11:39:24Z	pdmux-cpu-probe-68f386b-20261016113915	68f386b6fdf997189432d04fe5867594ae845413	resourcespec-a100cpu	0.30	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/scripts/vessl/cpu_probe.sh		yes

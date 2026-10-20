@@ -1,0 +1,373 @@
+{
+  "kind": "longctx_probe_summary",
+  "meta": {
+    "L_grid": [
+      16384,
+      32768,
+      65536,
+      98304,
+      126976
+    ],
+    "budget_min": 75,
+    "cap": 48,
+    "commit": "88a73ce469d0c43f4eee1a21f4d7d1a778a3273b",
+    "context_length": 131072,
+    "git_dirty": false,
+    "host": "main-wsp-7ix1cg4xl1jd-0",
+    "keep_going": false,
+    "lb_zip": "/data/hf/raw/longbench_v1/data.zip",
+    "llama_model": "meta-llama/Llama-3.1-8B",
+    "llama_revision": "d04e592bb4f6aa9cfee91e2e20afa771667e1d4b",
+    "manifest": "/opt/pdmux/runtime_source_manifest.sha256",
+    "manifest_sha256": "6015796d7b799f6694c183fa739654ddf2ea68b6c546e8c2073c684e3a7652d3",
+    "mode": "gpu",
+    "nano_model": "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+    "out_tokens": 64,
+    "run_id": "longctx_probe_20261020T040836Z",
+    "script_sha256": {
+      "longctx_probe.sh": "2fb4ef992c3dfcf006e805b44f4c6bbbd85d200796b3d51a679176fa2a7df9be",
+      "longctx_probe_helper.py": "f320e886f1c70b9ce612864899cf9f0d1265f31070f3dcf946b5f0c691886a16"
+    },
+    "start_utc": "2026-10-20T04:08:38Z",
+    "synthetic_input_rule": {
+      "length": "text is tokenized (add_special_tokens=False) in 2048-word chunks and concatenated; the first L ids are sent as input_ids, so prompt_tokens == L exactly (no retokenization)",
+      "name": "splitmix64_pseudoword_text_v1",
+      "output": "max_new_tokens forced with ignore_eos=true, temperature 0",
+      "seed": "seed_for(L, rep) = splitmix64(BASE_SEED ^ (L << 8) ^ rep); BASE_SEED = 20261020",
+      "text": "space-joined pseudo-words (2-4 syllables from a fixed 70-syllable table), '. ' after every 12th word, newline after every 80th word; all choices from a splitmix64 stream seeded by seed_for(L, rep)"
+    }
+  },
+  "stages": {
+    "G1": {
+      "facts": {
+        "arm": "nano_pdmux",
+        "banner": {
+          "available_gpu_mem_gib": 29.04,
+          "context_len_logged": 131072,
+          "kv_cache_tokens": 1587762,
+          "kv_k_gib": 12.11,
+          "kv_v_gib": 12.11,
+          "mamba_conv_gib": 0.09,
+          "mamba_ssm_gib": 6.46,
+          "max_mamba_cache_size": 48,
+          "max_total_num_tokens": 1587762
+        },
+        "cap": 48,
+        "cmem": {
+          "by_L": {
+            "126976": {
+              "c_mem": 14,
+              "kv_token_bound": 12
+            },
+            "16384": {
+              "c_mem": 80,
+              "kv_token_bound": 96
+            },
+            "32768": {
+              "c_mem": 48,
+              "kv_token_bound": 48
+            },
+            "65536": {
+              "c_mem": 27,
+              "kv_token_bound": 24
+            },
+            "98304": {
+              "c_mem": 18,
+              "kv_token_bound": 16
+            }
+          },
+          "formula": "floor(pool_bytes / (slot_bytes + kv_bytes_per_token * L))",
+          "kv_bytes_per_token": 16379.046089577656,
+          "pool_bytes": 33039035924.48,
+          "slot_bytes": 143530794.84081632
+        },
+        "context_len_matches": true,
+        "context_length_requested": 131072,
+        "kind": "longctx_probe_boot_facts",
+        "model": "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+        "signatures": {
+          "cuda_graph_capture_failed": 0,
+          "eager_fallback": 0,
+          "oom": 0,
+          "scheduler_exception": 0,
+          "traceback": 0
+        },
+        "utc": "2026-10-20T04:12:02Z"
+      },
+      "reason": "booted PD-mux agnostic ctx 131072 cap 48; max_total_num_tokens=1587762, mamba slots=48; C_mem table in nano_pdmux/boot_facts.json",
+      "stage": "G1",
+      "status": "PASS"
+    },
+    "G2": {
+      "facts": {
+        "n_expected": 10,
+        "n_records": 4,
+        "oom_log_hits": 0,
+        "per_L": {
+          "32768": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "65536": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          }
+        },
+        "schema_problems": []
+      },
+      "reason": "4/10 requests recorded, 0 not ok (probe stopped early: timeout/budget/server death)",
+      "stage": "G2",
+      "status": "UNRESOLVED"
+    },
+    "G3": {
+      "facts": {
+        "n_expected": 5,
+        "n_records": 2,
+        "oom_log_hits": 0,
+        "per_L": {
+          "94500": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          },
+          "95100": {
+            "errors": [
+              "completion None/64 prompt None/95100 finish None"
+            ],
+            "fail": 1,
+            "ok": 0
+          }
+        },
+        "schema_problems": []
+      },
+      "reason": "2/5 requests recorded, 1 not ok (probe stopped early: timeout/budget/server death)",
+      "stage": "G3",
+      "status": "FAIL"
+    },
+    "G3-chunked": {
+      "facts": {},
+      "reason": "--only",
+      "stage": "G3-chunked",
+      "status": "SKIPPED"
+    },
+    "G4": {
+      "facts": {
+        "note": "descriptive ITL values; no threshold applied here",
+        "scenarios": [
+          {
+            "L": 32768,
+            "itl_window": [
+              {
+                "last_chunk_t": 19.3283,
+                "max_gap_in_window_s": 1.1257730000000001,
+                "n_before": 27,
+                "n_in_window": 207,
+                "p50_before_s": 0.014374999999999805,
+                "p50_in_window_s": 0.025600999999999985,
+                "p95_before_s": 0.014944000000000068,
+                "p95_in_window_s": 0.030276999999999887
+              },
+              {
+                "last_chunk_t": 19.328595,
+                "max_gap_in_window_s": 1.125486,
+                "n_before": 27,
+                "n_in_window": 207,
+                "p50_before_s": 0.014338000000000184,
+                "p50_in_window_s": 0.02567400000000042,
+                "p95_before_s": 0.014925999999999995,
+                "p95_in_window_s": 0.030273000000000216
+              },
+              {
+                "last_chunk_t": 19.32811,
+                "max_gap_in_window_s": 1.1260199999999998,
+                "n_before": 27,
+                "n_in_window": 207,
+                "p50_before_s": 0.014314999999999856,
+                "p50_in_window_s": 0.025631999999999877,
+                "p95_before_s": 0.015001000000000042,
+                "p95_in_window_s": 0.03044799999999981
+              },
+              {
+                "last_chunk_t": 19.253882,
+                "max_gap_in_window_s": 1.1263069999999997,
+                "n_before": 32,
+                "n_in_window": 207,
+                "p50_before_s": 0.01446600000000009,
+                "p50_in_window_s": 0.025577999999999435,
+                "p95_before_s": 0.025335999999999914,
+                "p95_in_window_s": 0.030207999999999124
+              }
+            ],
+            "t_long_first_token_s": 7.897795707918704,
+            "t_submit_long_s": 1.4024770599789917
+          },
+          {
+            "L": 65536,
+            "itl_window": [
+              {
+                "last_chunk_t": 21.180953,
+                "max_gap_in_window_s": 0.8014180000000001,
+                "n_before": 32,
+                "n_in_window": 433,
+                "p50_before_s": 0.014790000000000025,
+                "p50_in_window_s": 0.02585800000000038,
+                "p95_before_s": 0.02501600000000001,
+                "p95_in_window_s": 0.03206700000000051
+              },
+              {
+                "last_chunk_t": 21.267156,
+                "max_gap_in_window_s": 0.8014009999999999,
+                "n_before": 26,
+                "n_in_window": 433,
+                "p50_before_s": 0.014671000000000045,
+                "p50_in_window_s": 0.02586500000000136,
+                "p95_before_s": 0.015110000000000012,
+                "p95_in_window_s": 0.03181099999999937
+              },
+              {
+                "last_chunk_t": 21.267362,
+                "max_gap_in_window_s": 0.8016169999999999,
+                "n_before": 26,
+                "n_in_window": 433,
+                "p50_before_s": 0.014701999999999993,
+                "p50_in_window_s": 0.02582199999999979,
+                "p95_before_s": 0.015099000000000001,
+                "p95_in_window_s": 0.03207100000000018
+              },
+              {
+                "last_chunk_t": 21.267633,
+                "max_gap_in_window_s": 0.8014619999999999,
+                "n_before": 26,
+                "n_in_window": 433,
+                "p50_before_s": 0.01468400000000003,
+                "p50_in_window_s": 0.025837000000000998,
+                "p95_before_s": 0.01516300000000001,
+                "p95_in_window_s": 0.031952999999999676
+              }
+            ],
+            "t_long_first_token_s": 12.766467250417918,
+            "t_submit_long_s": 0.601473824121058
+          }
+        ]
+      },
+      "reason": "2 scenarios completed; time series in g4_mixed.json",
+      "stage": "G4",
+      "status": "PASS"
+    },
+    "G5": {
+      "facts": {},
+      "reason": "--only",
+      "stage": "G5",
+      "status": "SKIPPED"
+    },
+    "G5-conc": {
+      "facts": {},
+      "reason": "--only",
+      "stage": "G5-conc",
+      "status": "SKIPPED"
+    },
+    "G6": {
+      "facts": {
+        "by_input": {
+          "llama_G5": null,
+          "nano_pdmux_G2": {
+            "mean_ttft_s_by_L": {
+              "32768": 3.9619480830151588,
+              "65536": 7.8104589919094
+            },
+            "n_points": 2,
+            "slope_ms_per_token": 0.11744723232709475
+          }
+        },
+        "j1_floor_ms_per_token_reference": 0.111
+      },
+      "reason": "only 2 L points with ok requests",
+      "stage": "G6",
+      "status": "UNRESOLVED"
+    },
+    "G7": {
+      "facts": {
+        "docs": [
+          {
+            "_id": "9b448b0d8f056d1ddebb9503e4560a913dc529309759b358",
+            "doc_id": "narrativeqa:9b448b0d8f056d1ddebb9503e4560a913dc529309759b358",
+            "ids_sha256": "1b34829d904f0b737366e8f36a319b98a60c6731d8a6590751d86d3c4291cc4a",
+            "n_in": 63032,
+            "task": "narrativeqa"
+          },
+          {
+            "_id": "505345771a2e5b438ea4bfa7c0f238f8787f45b0ca52ef7d",
+            "doc_id": "gov_report:505345771a2e5b438ea4bfa7c0f238f8787f45b0ca52ef7d",
+            "ids_sha256": "0b5c71d247d5d5847073509ca3b492df3c122d8d06c279c7ac35d80bc8811fb5",
+            "n_in": 53284,
+            "task": "gov_report"
+          }
+        ],
+        "pairs": [
+          {
+            "doc_id": "narrativeqa:9b448b0d8f056d1ddebb9503e4560a913dc529309759b358",
+            "n_in": 63032,
+            "rel_diff_real_over_synth": 0.06865458334274988,
+            "ttft_real_s": [
+              8.498793913051486,
+              7.4854967119172215
+            ],
+            "ttft_synth_s": [
+              7.495264345780015,
+              7.4621324352920055
+            ]
+          },
+          {
+            "doc_id": "gov_report:505345771a2e5b438ea4bfa7c0f238f8787f45b0ca52ef7d",
+            "n_in": 53284,
+            "rel_diff_real_over_synth": -0.0018757576042660595,
+            "ttft_real_s": [
+              6.208244720008224,
+              6.2289672661572695
+            ],
+            "ttft_synth_s": [
+              6.234502136241645,
+              6.226082887034863
+            ]
+          }
+        ]
+      },
+      "reason": "8 requests completed (real vs synthetic ABBA); values are descriptive only",
+      "stage": "G7",
+      "status": "PASS"
+    },
+    "PRE": {
+      "facts": {},
+      "reason": "manifest verified (27 entries), install commit == HEAD, models staged (Llama pinned d04e592bb4f6), 4 boot argv parse",
+      "stage": "PRE",
+      "status": "PASS"
+    },
+    "TD-llama": {
+      "facts": {},
+      "reason": "--only",
+      "stage": "TD-llama",
+      "status": "SKIPPED"
+    },
+    "TD-nano_chunked": {
+      "facts": {},
+      "reason": "--only",
+      "stage": "TD-nano_chunked",
+      "status": "SKIPPED"
+    },
+    "TD-nano_fused": {
+      "facts": {},
+      "reason": "memory.used 0 MiB < 1024 MiB after teardown",
+      "stage": "TD-nano_fused",
+      "status": "PASS"
+    },
+    "TD-nano_pdmux": {
+      "facts": {},
+      "reason": "memory.used 0 MiB < 1024 MiB after teardown",
+      "stage": "TD-nano_pdmux",
+      "status": "PASS"
+    }
+  },
+  "utc": "2026-10-20T04:17:03Z"
+}

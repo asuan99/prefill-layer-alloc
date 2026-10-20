@@ -151,3 +151,6 @@ workspace/engine-port/results/residency_census_2026-09-21/file_list.txt
 
 # M3 manual retrieval from cluster volume (~17 GB raw, 2026-10-19) - never commit
 workspace/engine-port/results/multigpu/manual_retrieval/
+
+# 128k probe: flashinfer/triton JIT cache fetched with run dirs (2026-10-20)
+workspace/engine-port/results/cap_char/probe_128k/*/cache/

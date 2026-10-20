@@ -1,0 +1,25 @@
+{
+ "conclusion_scope": "CPU container (resourcespec-a100cpu, no GPU); sgl_kernel loads its sm100 variant (cc None branch); CUDA kernels launched: 0.  A PASS covers the unit suite on the merge tree only.  The GPU execution path is covered by M2g PASS (engine digest 82a5fc5b...) and the M3 Job-internal gates (B0, ENGINE_DIGEST, xcheck), and only while the final POST engine digest equals 82a5fc5b...",
+ "declared_cpu_timing": {
+  "applied": true,
+  "disclosure": "UNVERIFIED (CPU timing): declared before the run, excluded from the label, not a result",
+  "file": "preflight_cl3_cpu_timing_declared.txt",
+  "ids": [
+   "test_e1_cap_vessl.TestBudgetEnforcer.test_overrunning_run_is_cut_at_the_deadline",
+   "test_e1_cap_vessl.TestBudgetEnforcer.test_equivalent_mutant_one_layer_removed_still_cuts",
+   "test_n3_capacity.TestBudgetEnforcer.test_overrunning_unit_is_cut",
+   "test_n3_capacity.TestBudgetEnforcer.test_control_both_kill_layers_removed_overruns",
+   "test_n3_capacity.TestBudgetEnforcer.test_equivalent_mutant_watchdog_removed_still_cuts"
+  ],
+  "sha256": "23f60658bccfde1c94aebfaf683506e3ef7a6df23fc237d8efd5d06189fbccaa"
+ },
+ "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+ "job_name": "pdmux-preflight-cl3-9c3ea47-20261017113917",
+ "judge_json_sha256": "cab98215f6ba90c14216296de6fe5f2059028d2a88f4953e15f35b922bd8c216",
+ "judge_label": "PREFLIGHT_FAIL_NEW",
+ "merge_tree_engine_digest": "82a5fc5b5f587464e0df8037b64791900a013f61024d128e451818793526781c",
+ "post_commit": "9c3ea47d614dcb8218e193052df993e38e07dbe1",
+ "record_notes": [],
+ "schema": "preflight_pass/v2",
+ "verdict": "PREFLIGHT_FAIL_NEW"
+}

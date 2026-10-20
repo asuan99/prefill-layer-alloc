@@ -1,0 +1,19 @@
+{
+  "facts": {
+    "by_input": {
+      "llama_G5": null,
+      "nano_pdmux_G2": {
+        "mean_ttft_s_by_L": {
+          "32768": 3.9619480830151588,
+          "65536": 7.8104589919094
+        },
+        "n_points": 2,
+        "slope_ms_per_token": 0.11744723232709475
+      }
+    },
+    "j1_floor_ms_per_token_reference": 0.111
+  },
+  "reason": "only 2 L points with ok requests",
+  "stage": "G6",
+  "status": "UNRESOLVED"
+}

@@ -1,0 +1,27 @@
+script_sha256=d9cb375508f07e91039391aad5a09fb6250059738ad93f109ec7bf1dbc9f8d48
+preflight_judge.py_sha256=f4b7e88447f0650a2628dfb72d53cdd8da598a45081c8ce1336fcd02267a46e1
+sigcmp.py_sha256=0677d07f2e9a35dd5b76b6cc5c827000abec9e2b82993dbf4489c9623ed65d7b
+pf_unittest_runner.py_sha256=6a01bf655c1d0f87957275d009009dbc3db2d3671660e3eaaf33b72662231d87
+preflight_cl3_l2_ids.txt_sha256=d10620d065ff77fd1daec52e36af9ccecad132cc40968c49bedfdc4f7d85b298
+preflight_cl3_targets.txt_sha256=a79153f5126d5bed681df49d57f4e9bc66d5952cf378c5c758ab68b4bf17392e
+preflight_cl3_cpu_timing_declared.txt_sha256=23f60658bccfde1c94aebfaf683506e3ef7a6df23fc237d8efd5d06189fbccaa
+pre=7b15214b2d554ec7f8394485892980af8271734c
+post=2aaf2aae21ff1c097d61d901e3de56f1ff318cfe
+reps=2
+modules=<all>
+job_head=2aaf2aae21ff1c097d61d901e3de56f1ff318cfe
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+python 3.14.6 host job-uprrdqr7kjr2-82hn8
+torch 2.9.1+cu130 cuda 13.0 cuda_available False
+/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/handoff_review_2026-10-15/merge_trial_tools/preflight_cl3.sh: line 101: nvidia-smi: command not found
+env PDMUX_CAMPAIGN=preflight_cl3
+env PDMUX_COMMIT=2aaf2aae21ff1c097d61d901e3de56f1ff318cfe
+env PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+env PDMUX_JOB_NAME=pdmux-preflight-cl3-2aaf2aa-20261018014410
+env PDMUX_PF_POST=2aaf2aae21ff1c097d61d901e3de56f1ff318cfe
+env PDMUX_PF_SUITE_TIMEOUT=7200
+env PDMUX_PROJECT_ROOT=/opt/pdmux/prefill-layer-alloc
+env PDMUX_ROOT=/opt/pdmux
+env PDMUX_SPEC=resourcespec-a100cpu
+env PDMUX_TARGET=workspace/engine-port/results/handoff_review_2026-10-15/merge_trial_tools/preflight_cl3.sh

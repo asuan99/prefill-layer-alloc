@@ -1,0 +1,55 @@
+{
+  "arm": "llama",
+  "banner": {
+    "available_gpu_mem_gib": 30.76,
+    "context_len_logged": 131072,
+    "kv_cache_tokens": 263900,
+    "kv_k_gib": 16.11,
+    "kv_v_gib": 16.11,
+    "mamba_conv_gib": null,
+    "mamba_ssm_gib": null,
+    "max_mamba_cache_size": null,
+    "max_total_num_tokens": 263900
+  },
+  "cap": 48,
+  "cmem": {
+    "by_L": {
+      "126976": {
+        "c_mem": 2,
+        "kv_token_bound": 2
+      },
+      "16384": {
+        "c_mem": 16,
+        "kv_token_bound": 16
+      },
+      "32768": {
+        "c_mem": 8,
+        "kv_token_bound": 8
+      },
+      "65536": {
+        "c_mem": 4,
+        "kv_token_bound": 4
+      },
+      "98304": {
+        "c_mem": 2,
+        "kv_token_bound": 2
+      }
+    },
+    "formula": "floor(pool_bytes / (slot_bytes + kv_bytes_per_token * L))",
+    "kv_bytes_per_token": 131094.96615869648,
+    "pool_bytes": 34595961569.28,
+    "slot_bytes": 0.0
+  },
+  "context_len_matches": true,
+  "context_length_requested": 131072,
+  "kind": "longctx_probe_boot_facts",
+  "model": "meta-llama/Llama-3.1-8B",
+  "signatures": {
+    "cuda_graph_capture_failed": 0,
+    "eager_fallback": 0,
+    "oom": 0,
+    "scheduler_exception": 0,
+    "traceback": 0
+  },
+  "utc": "2026-10-20T03:53:44Z"
+}

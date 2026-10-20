@@ -1,0 +1,13 @@
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+PREFLIGHT_FAIL_NEW
+pre ran=989 failing=28 | post ran=1487 failing=22
+L2 reproduced 9/9; new=2 sig_changed=0 fixed_in_post=17
+  coverage A_import9: 9/9
+  coverage B_holb4: 4/4
+  coverage C_venv17: 17/17
+  coverage D_zamba2: 1/1
+  coverage E_rev12: 1/1
+  NEW     test_multigpu_launcher.JobEntrySubstrate.test_all_gpus_recorded
+  NEW     test_multigpu_launcher.JobEntrySubstrate.test_one_gpu_keeps_old_fields
+  DECLARED CPU-timing (23f60658bccf, applied=True): 5 id(s) -- UNVERIFIED (CPU timing): declared before the run, excluded from the label, not a result

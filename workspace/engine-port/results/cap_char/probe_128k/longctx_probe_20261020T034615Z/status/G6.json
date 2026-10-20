@@ -1,0 +1,30 @@
+{
+  "facts": {
+    "by_input": {
+      "llama_G5": {
+        "mean_ttft_s_by_L": {
+          "126976": 27.36644507199526,
+          "16384": 1.2891772927250713,
+          "32768": 3.4803597254212946,
+          "65536": 8.945788093376905,
+          "98304": 17.59702427033335
+        },
+        "n_points": 5,
+        "slope_ms_per_token": 0.23307373256613753
+      },
+      "nano_pdmux_G2": {
+        "mean_ttft_s_by_L": {
+          "16384": 1.9899881284218282,
+          "32768": 4.1298481149133295,
+          "65536": 8.120242695556954
+        },
+        "n_points": 3,
+        "slope_ms_per_token": 0.12429989558272934
+      }
+    },
+    "j1_floor_ms_per_token_reference": 0.111
+  },
+  "reason": "3 distinct L points measured (descriptive table in facts)",
+  "stage": "G6",
+  "status": "PASS"
+}

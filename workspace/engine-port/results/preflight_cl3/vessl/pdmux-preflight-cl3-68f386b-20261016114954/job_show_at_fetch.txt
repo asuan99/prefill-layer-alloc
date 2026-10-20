@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-preflight-cl3-68f386b-20261016114954
+Slug:                 job-pww479muugxs
+State:                failed
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/68f386b6fdf997189432d04fe5867594ae845413/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100cpu
+Job Type:             k8s-job
+Created:              2026-10-16T11:49:55Z
+Started At:           2026-10-16T11:49:58Z
+Completed At:         2026-10-16T14:33:23Z
+Duration:             2h43m25s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=68f386b6fdf997189432d04fe5867594ae845413, PDMUX_JOB_NAME=pdmux-preflight-cl3-68f386b-20261016114954, PDMUX_CAMPAIGN=preflight_cl3, PDMUX_TARGET=workspace/engine-port/results/handoff_review_2026-10-15/merge_trial_tools/preflight_cl3.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100cpu, PDMUX_PF_POST=e43749c91b350a702fbdc7487767c84d6835d793, PDMUX_PF_SUITE_TIMEOUT=7200
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

@@ -1,0 +1,37 @@
+{
+  "run_id": "longctx_probe_20261020T034615Z",
+  "mode": "gpu",
+  "start_utc": "2026-10-20T03:46:17Z",
+  "host": "main-wsp-7ix1cg4xl1jd-0",
+  "commit": "63de358261cf6688d32906f611142801828b66fd",
+  "git_dirty": false,
+  "manifest": "/opt/pdmux/runtime_source_manifest.sha256",
+  "manifest_sha256": "6015796d7b799f6694c183fa739654ddf2ea68b6c546e8c2073c684e3a7652d3",
+  "keep_going": false,
+  "budget_min": 120,
+  "cap": 48,
+  "context_length": 131072,
+  "nano_model": "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+  "llama_model": "meta-llama/Llama-3.1-8B",
+  "llama_revision": "d04e592bb4f6aa9cfee91e2e20afa771667e1d4b",
+  "lb_zip": "/data/hf/raw/longbench_v1/data.zip",
+  "L_grid": [
+    16384,
+    32768,
+    65536,
+    98304,
+    126976
+  ],
+  "out_tokens": 64,
+  "synthetic_input_rule": {
+    "name": "splitmix64_pseudoword_text_v1",
+    "text": "space-joined pseudo-words (2-4 syllables from a fixed 70-syllable table), '. ' after every 12th word, newline after every 80th word; all choices from a splitmix64 stream seeded by seed_for(L, rep)",
+    "length": "text is tokenized (add_special_tokens=False) in 2048-word chunks and concatenated; the first L ids are sent as input_ids, so prompt_tokens == L exactly (no retokenization)",
+    "seed": "seed_for(L, rep) = splitmix64(BASE_SEED ^ (L << 8) ^ rep); BASE_SEED = 20261020",
+    "output": "max_new_tokens forced with ignore_eos=true, temperature 0"
+  },
+  "script_sha256": {
+    "longctx_probe.sh": "e7a13aaa24468442b225e86be17c2b129aff1ce56dfcb98946452f64a47237d0",
+    "longctx_probe_helper.py": "f320e886f1c70b9ce612864899cf9f0d1265f31070f3dcf946b5f0c691886a16"
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "arm": "llama",
+  "context_length": 131072,
+  "groups": [
+    {
+      "L": 65536,
+      "c_mem": 4,
+      "kv_token_bound": 4,
+      "n": 4,
+      "wall_s": 37.62140081077814
+    },
+    {
+      "L": 126976,
+      "c_mem": 2,
+      "kv_token_bound": 2,
+      "n": 2,
+      "wall_s": 56.61311289714649
+    }
+  ],
+  "kind": "conc",
+  "model": "meta-llama/Llama-3.1-8B",
+  "out_tokens": 64,
+  "records": [
+    {
+      "L": 65536,
+      "arm": "llama",
+      "c_mem": 4,
+      "completion_tokens": 64,
+      "e2e_s": 37.62140081077814,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "group_n": 4,
+      "ids_sha256": "fd804e3730d188d47e8e3c6300807bc0f3b26d3175daabd4ee118b28b46c6f98",
+      "kind": "conc",
+      "log_delta": {
+        "cuda_graph_capture_failed": 0,
+        "eager_fallback": 0,
+        "oom": 0,
+        "scheduler_exception": 0,
+        "traceback": 0
+      },
+      "max_new": 64,
+      "model": "meta-llama/Llama-3.1-8B",
+      "n_in": 65536,
+      "ok": true,
+      "prompt_tokens": 65536,
+      "rep": 0,
+      "seed": 15051286121300876253,
+      "server_alive_after": true,
+      "stage": "G5-conc",
+      "t_send_utc": "2026-10-20T03:56:59Z",
+      "ttft_s": 8.963723837863654
+    },
+    {
+      "L": 65536,
+      "arm": "llama",
+      "c_mem": 4,
+      "completion_tokens": 64,
+      "e2e_s": 37.61677876720205,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "group_n": 4,
+      "ids_sha256": "ada0f5394bf4038615eb8f5d24d7d269b005abea2cafe2931908e95c8c3480f2",
+      "kind": "conc",
+      "log_delta": {
+        "cuda_graph_capture_failed": 0,
+        "eager_fallback": 0,
+        "oom": 0,
+        "scheduler_exception": 0,
+        "traceback": 0
+      },
+      "max_new": 64,
+      "model": "meta-llama/Llama-3.1-8B",
+      "n_in": 65536,
+      "ok": true,
+      "prompt_tokens": 65536,
+      "rep": 1,
+      "seed": 15971627195419459547,
+      "server_alive_after": true,
+      "stage": "G5-conc",
+      "t_send_utc": "2026-10-20T03:56:59Z",
+      "ttft_s": 35.60581022500992
+    },
+    {
+      "L": 65536,
+      "arm": "llama",
+      "c_mem": 4,
+      "completion_tokens": 64,
+      "e2e_s": 37.61168831400573,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "group_n": 4,
+      "ids_sha256": "c11ae53499f5958eedd2e42c4d0098796055f577790d88050f9155a27a307061",
+      "kind": "conc",
+      "log_delta": {
+        "cuda_graph_capture_failed": 0,
+        "eager_fallback": 0,
+        "oom": 0,
+        "scheduler_exception": 0,
+        "traceback": 0
+      },
+      "max_new": 64,
+      "model": "meta-llama/Llama-3.1-8B",
+      "n_in": 65536,
+      "ok": true,
+      "prompt_tokens": 65536,
+      "rep": 2,
+      "seed": 16607454262657919934,
+      "server_alive_after": true,
+      "stage": "G5-conc",
+      "t_send_utc": "2026-10-20T03:56:59Z",
+      "ttft_s": 17.831411759369075
+    },
+    {
+      "L": 65536,
+      "arm": "llama",
+      "c_mem": 4,
+      "completion_tokens": 64,
+      "e2e_s": 37.604044787120074,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "group_n": 4,
+      "ids_sha256": "6bef693e50c726eb9bc250185f64f29333debc37b807d098626977ac55cad6f3",
+      "kind": "conc",
+      "log_delta": {
+        "cuda_graph_capture_failed": 0,
+        "eager_fallback": 0,
+        "oom": 0,
+        "scheduler_exception": 0,
+        "traceback": 0
+      },
+      "max_new": 64,
+      "model": "meta-llama/Llama-3.1-8B",
+      "n_in": 65536,
+      "ok": true,
+      "prompt_tokens": 65536,
+      "rep": 3,
+      "seed": 3414259096810599576,
+      "server_alive_after": true,
+      "stage": "G5-conc",
+      "t_send_utc": "2026-10-20T03:56:59Z",
+      "ttft_s": 26.704422567039728
+    },
+    {
+      "L": 126976,
+      "arm": "llama",
+      "c_mem": 2,
+      "completion_tokens": 64,
+      "e2e_s": 56.61311289714649,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "group_n": 2,
+      "ids_sha256": "5737dbb55fcb44f51c123668cc4f1484c7d6e94819dd50e51c1ce8aa48d1d948",
+      "kind": "conc",
+      "log_delta": {
+        "cuda_graph_capture_failed": 0,
+        "eager_fallback": 0,
+        "oom": 0,
+        "scheduler_exception": 0,
+        "traceback": 0
+      },
+      "max_new": 64,
+      "model": "meta-llama/Llama-3.1-8B",
+      "n_in": 126976,
+      "ok": true,
+      "prompt_tokens": 126976,
+      "rep": 0,
+      "seed": 9234346134167317174,
+      "server_alive_after": true,
+      "stage": "G5-conc",
+      "t_send_utc": "2026-10-20T03:57:58Z",
+      "ttft_s": 27.364084950182587
+    },
+    {
+      "L": 126976,
+      "arm": "llama",
+      "c_mem": 2,
+      "completion_tokens": 64,
+      "e2e_s": 56.61226746579632,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "group_n": 2,
+      "ids_sha256": "32c079b8686655cb3be8f5581503fc90279e372a3d54564029578aae2acfbab0",
+      "kind": "conc",
+      "log_delta": {
+        "cuda_graph_capture_failed": 0,
+        "eager_fallback": 0,
+        "oom": 0,
+        "scheduler_exception": 0,
+        "traceback": 0
+      },
+      "max_new": 64,
+      "model": "meta-llama/Llama-3.1-8B",
+      "n_in": 126976,
+      "ok": true,
+      "prompt_tokens": 126976,
+      "rep": 1,
+      "seed": 10717273742223855949,
+      "server_alive_after": true,
+      "stage": "G5-conc",
+      "t_send_utc": "2026-10-20T03:57:58Z",
+      "ttft_s": 54.66576514299959
+    }
+  ],
+  "schema": "longctx_probe/v1",
+  "stage": "G5-conc",
+  "synth_rule": {
+    "length": "text is tokenized (add_special_tokens=False) in 2048-word chunks and concatenated; the first L ids are sent as input_ids, so prompt_tokens == L exactly (no retokenization)",
+    "name": "splitmix64_pseudoword_text_v1",
+    "output": "max_new_tokens forced with ignore_eos=true, temperature 0",
+    "seed": "seed_for(L, rep) = splitmix64(BASE_SEED ^ (L << 8) ^ rep); BASE_SEED = 20261020",
+    "text": "space-joined pseudo-words (2-4 syllables from a fixed 70-syllable table), '. ' after every 12th word, newline after every 80th word; all choices from a splitmix64 stream seeded by seed_for(L, rep)"
+  },
+  "utc_start": "2026-10-20T03:56:20Z"
+}

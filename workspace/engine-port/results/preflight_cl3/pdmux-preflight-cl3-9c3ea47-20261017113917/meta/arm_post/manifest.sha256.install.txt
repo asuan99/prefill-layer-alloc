@@ -1,0 +1,4 @@
+commit=9c3ea47d614dcb8218e193052df993e38e07dbe1
+runtime=/data/runs/pdmux-preflight-cl3-9c3ea47-20261017113917/pf_work/post/sglang_engine_dev/python
+manual_edits_patch=already-applied sha256=a4ec4d637ea1f65a50af49afecccac1fe60e05aa0047040e88f61a12ca848a00
+sync_manifest_sha256=c9233d3fbb22d740ad53331fc1d5e4bcc2e43480a3b09331858d935df7fa261f

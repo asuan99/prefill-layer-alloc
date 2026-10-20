@@ -1,0 +1,52 @@
+{
+  "kind": "longctx_probe_models",
+  "models": {
+    "meta-llama/Llama-3.1-8B": {
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "model-00001-of-00004.safetensors",
+        "model-00002-of-00004.safetensors",
+        "model-00003-of-00004.safetensors",
+        "model-00004-of-00004.safetensors",
+        "model.safetensors.index.json",
+        "special_tokens_map.json",
+        "tokenizer.json",
+        "tokenizer_config.json"
+      ],
+      "n_safetensors": 4,
+      "refs_main": "d04e592bb4f6aa9cfee91e2e20afa771667e1d4b",
+      "snapshot_present": true,
+      "tokenizer_json_sha256": "76e48799b099d43365bd24ccd8ecc5aedac831718da780552f03b0a6eb4412aa"
+    },
+    "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base": {
+      "files": [
+        ".gitattributes",
+        "README.md",
+        "bias.md",
+        "config.json",
+        "configuration_nemotron_h.py",
+        "explainability.md",
+        "generation_config.json",
+        "model-00001-of-00004.safetensors",
+        "model-00002-of-00004.safetensors",
+        "model-00003-of-00004.safetensors",
+        "model-00004-of-00004.safetensors",
+        "model.safetensors.index.json",
+        "modeling_nemotron_h.py",
+        "privacy.md",
+        "safety.md",
+        "special_tokens_map.json",
+        "tokenizer.json",
+        "tokenizer_config.json"
+      ],
+      "n_safetensors": 4,
+      "refs_main": "dc0661c829b14e5b9246c05cfa89094a0875e052",
+      "snapshot_present": true,
+      "tokenizer_json_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f"
+    }
+  },
+  "ok": true,
+  "problems": [],
+  "utc": "2026-10-20T04:08:47Z"
+}

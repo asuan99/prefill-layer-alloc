@@ -1,0 +1,39 @@
+{
+  "facts": {
+    "groups": [
+      {
+        "L": 65536,
+        "c_mem": 4,
+        "kv_token_bound": 4,
+        "n": 4,
+        "wall_s": 37.62140081077814
+      },
+      {
+        "L": 126976,
+        "c_mem": 2,
+        "kv_token_bound": 2,
+        "n": 2,
+        "wall_s": 56.61311289714649
+      }
+    ],
+    "n_expected": 6,
+    "n_records": 6,
+    "oom_log_hits": 0,
+    "per_L": {
+      "126976": {
+        "errors": [],
+        "fail": 0,
+        "ok": 2
+      },
+      "65536": {
+        "errors": [],
+        "fail": 0,
+        "ok": 4
+      }
+    },
+    "schema_problems": []
+  },
+  "reason": "6/6 requests completed with forced token counts, 0 OOM log hits",
+  "stage": "G5-conc",
+  "status": "PASS"
+}

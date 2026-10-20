@@ -1,0 +1,360 @@
+{
+  "kind": "longctx_probe_summary",
+  "meta": {
+    "L_grid": [
+      16384,
+      32768,
+      65536,
+      98304,
+      126976
+    ],
+    "budget_min": 120,
+    "cap": 48,
+    "commit": "63de358261cf6688d32906f611142801828b66fd",
+    "context_length": 131072,
+    "git_dirty": false,
+    "host": "main-wsp-7ix1cg4xl1jd-0",
+    "keep_going": false,
+    "lb_zip": "/data/hf/raw/longbench_v1/data.zip",
+    "llama_model": "meta-llama/Llama-3.1-8B",
+    "llama_revision": "d04e592bb4f6aa9cfee91e2e20afa771667e1d4b",
+    "manifest": "/opt/pdmux/runtime_source_manifest.sha256",
+    "manifest_sha256": "6015796d7b799f6694c183fa739654ddf2ea68b6c546e8c2073c684e3a7652d3",
+    "mode": "gpu",
+    "nano_model": "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+    "out_tokens": 64,
+    "run_id": "longctx_probe_20261020T034615Z",
+    "script_sha256": {
+      "longctx_probe.sh": "e7a13aaa24468442b225e86be17c2b129aff1ce56dfcb98946452f64a47237d0",
+      "longctx_probe_helper.py": "f320e886f1c70b9ce612864899cf9f0d1265f31070f3dcf946b5f0c691886a16"
+    },
+    "start_utc": "2026-10-20T03:46:17Z",
+    "synthetic_input_rule": {
+      "length": "text is tokenized (add_special_tokens=False) in 2048-word chunks and concatenated; the first L ids are sent as input_ids, so prompt_tokens == L exactly (no retokenization)",
+      "name": "splitmix64_pseudoword_text_v1",
+      "output": "max_new_tokens forced with ignore_eos=true, temperature 0",
+      "seed": "seed_for(L, rep) = splitmix64(BASE_SEED ^ (L << 8) ^ rep); BASE_SEED = 20261020",
+      "text": "space-joined pseudo-words (2-4 syllables from a fixed 70-syllable table), '. ' after every 12th word, newline after every 80th word; all choices from a splitmix64 stream seeded by seed_for(L, rep)"
+    }
+  },
+  "stages": {
+    "G1": {
+      "facts": {
+        "arm": "nano_pdmux",
+        "banner": {
+          "available_gpu_mem_gib": 29.04,
+          "context_len_logged": 131072,
+          "kv_cache_tokens": 1587762,
+          "kv_k_gib": 12.11,
+          "kv_v_gib": 12.11,
+          "mamba_conv_gib": 0.09,
+          "mamba_ssm_gib": 6.46,
+          "max_mamba_cache_size": 48,
+          "max_total_num_tokens": 1587762
+        },
+        "cap": 48,
+        "cmem": {
+          "by_L": {
+            "126976": {
+              "c_mem": 14,
+              "kv_token_bound": 12
+            },
+            "16384": {
+              "c_mem": 80,
+              "kv_token_bound": 96
+            },
+            "32768": {
+              "c_mem": 48,
+              "kv_token_bound": 48
+            },
+            "65536": {
+              "c_mem": 27,
+              "kv_token_bound": 24
+            },
+            "98304": {
+              "c_mem": 18,
+              "kv_token_bound": 16
+            }
+          },
+          "formula": "floor(pool_bytes / (slot_bytes + kv_bytes_per_token * L))",
+          "kv_bytes_per_token": 16379.046089577656,
+          "pool_bytes": 33039035924.48,
+          "slot_bytes": 143530794.84081632
+        },
+        "context_len_matches": true,
+        "context_length_requested": 131072,
+        "kind": "longctx_probe_boot_facts",
+        "model": "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+        "signatures": {
+          "cuda_graph_capture_failed": 0,
+          "eager_fallback": 0,
+          "oom": 0,
+          "scheduler_exception": 0,
+          "traceback": 0
+        },
+        "utc": "2026-10-20T03:49:36Z"
+      },
+      "reason": "booted PD-mux agnostic ctx 131072 cap 48; max_total_num_tokens=1587762, mamba slots=48; C_mem table in nano_pdmux/boot_facts.json",
+      "stage": "G1",
+      "status": "PASS"
+    },
+    "G2": {
+      "facts": {
+        "n_expected": 10,
+        "n_records": 7,
+        "oom_log_hits": 0,
+        "per_L": {
+          "16384": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "32768": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "65536": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "98304": {
+            "errors": [
+              "completion None/64 prompt None/98304 finish None"
+            ],
+            "fail": 1,
+            "ok": 0
+          }
+        },
+        "schema_problems": []
+      },
+      "reason": "7/10 requests recorded, 1 not ok (probe stopped early: timeout/budget/server death)",
+      "stage": "G2",
+      "status": "FAIL"
+    },
+    "G3": {
+      "facts": {
+        "n_expected": 5,
+        "n_records": 4,
+        "oom_log_hits": 0,
+        "per_L": {
+          "16384": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          },
+          "32768": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          },
+          "65536": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          },
+          "98304": {
+            "errors": [
+              "completion None/64 prompt None/98304 finish None"
+            ],
+            "fail": 1,
+            "ok": 0
+          }
+        },
+        "schema_problems": []
+      },
+      "reason": "4/5 requests recorded, 1 not ok (probe stopped early: timeout/budget/server death)",
+      "stage": "G3",
+      "status": "FAIL"
+    },
+    "G3-chunked": {
+      "facts": {
+        "n_expected": 5,
+        "n_records": 5,
+        "oom_log_hits": 0,
+        "per_L": {
+          "126976": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          },
+          "16384": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          },
+          "32768": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          },
+          "65536": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          },
+          "98304": {
+            "errors": [],
+            "fail": 0,
+            "ok": 1
+          }
+        },
+        "schema_problems": []
+      },
+      "reason": "5/5 requests completed with forced token counts, 0 OOM log hits",
+      "stage": "G3-chunked",
+      "status": "PASS"
+    },
+    "G4": {
+      "facts": {},
+      "reason": "server not alive after G2",
+      "stage": "G4",
+      "status": "SKIPPED"
+    },
+    "G5": {
+      "facts": {
+        "n_expected": 10,
+        "n_records": 10,
+        "oom_log_hits": 0,
+        "per_L": {
+          "126976": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "16384": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "32768": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "65536": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "98304": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          }
+        },
+        "schema_problems": []
+      },
+      "reason": "10/10 requests completed with forced token counts, 0 OOM log hits",
+      "stage": "G5",
+      "status": "PASS"
+    },
+    "G5-conc": {
+      "facts": {
+        "groups": [
+          {
+            "L": 65536,
+            "c_mem": 4,
+            "kv_token_bound": 4,
+            "n": 4,
+            "wall_s": 37.62140081077814
+          },
+          {
+            "L": 126976,
+            "c_mem": 2,
+            "kv_token_bound": 2,
+            "n": 2,
+            "wall_s": 56.61311289714649
+          }
+        ],
+        "n_expected": 6,
+        "n_records": 6,
+        "oom_log_hits": 0,
+        "per_L": {
+          "126976": {
+            "errors": [],
+            "fail": 0,
+            "ok": 2
+          },
+          "65536": {
+            "errors": [],
+            "fail": 0,
+            "ok": 4
+          }
+        },
+        "schema_problems": []
+      },
+      "reason": "6/6 requests completed with forced token counts, 0 OOM log hits",
+      "stage": "G5-conc",
+      "status": "PASS"
+    },
+    "G6": {
+      "facts": {
+        "by_input": {
+          "llama_G5": {
+            "mean_ttft_s_by_L": {
+              "126976": 27.36644507199526,
+              "16384": 1.2891772927250713,
+              "32768": 3.4803597254212946,
+              "65536": 8.945788093376905,
+              "98304": 17.59702427033335
+            },
+            "n_points": 5,
+            "slope_ms_per_token": 0.23307373256613753
+          },
+          "nano_pdmux_G2": {
+            "mean_ttft_s_by_L": {
+              "16384": 1.9899881284218282,
+              "32768": 4.1298481149133295,
+              "65536": 8.120242695556954
+            },
+            "n_points": 3,
+            "slope_ms_per_token": 0.12429989558272934
+          }
+        },
+        "j1_floor_ms_per_token_reference": 0.111
+      },
+      "reason": "3 distinct L points measured (descriptive table in facts)",
+      "stage": "G6",
+      "status": "PASS"
+    },
+    "G7": {
+      "facts": {},
+      "reason": "server not alive",
+      "stage": "G7",
+      "status": "SKIPPED"
+    },
+    "PRE": {
+      "facts": {},
+      "reason": "manifest verified (27 entries), install commit == HEAD, models staged (Llama pinned d04e592bb4f6), 4 boot argv parse",
+      "stage": "PRE",
+      "status": "PASS"
+    },
+    "TD-llama": {
+      "facts": {},
+      "reason": "memory.used 0 MiB < 1024 MiB after teardown",
+      "stage": "TD-llama",
+      "status": "PASS"
+    },
+    "TD-nano_chunked": {
+      "facts": {},
+      "reason": "memory.used 0 MiB < 1024 MiB after teardown",
+      "stage": "TD-nano_chunked",
+      "status": "PASS"
+    },
+    "TD-nano_fused": {
+      "facts": {},
+      "reason": "memory.used 0 MiB < 1024 MiB after teardown",
+      "stage": "TD-nano_fused",
+      "status": "PASS"
+    },
+    "TD-nano_pdmux": {
+      "facts": {},
+      "reason": "memory.used 0 MiB < 1024 MiB after teardown",
+      "stage": "TD-nano_pdmux",
+      "status": "PASS"
+    }
+  },
+  "utc": "2026-10-20T04:00:31Z"
+}

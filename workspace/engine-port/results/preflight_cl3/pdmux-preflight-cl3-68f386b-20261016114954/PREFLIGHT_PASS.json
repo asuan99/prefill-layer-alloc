@@ -1,0 +1,11 @@
+{
+ "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+ "job_name": "pdmux-preflight-cl3-68f386b-20261016114954",
+ "judge_json_sha256": "6a6315775d0e3639303c76d3bace7e18f02cfd01e0638d78e2a48d93a9a0f294",
+ "judge_label": "PREFLIGHT_FAIL_NEW",
+ "merge_tree_engine_digest": "82a5fc5b5f587464e0df8037b64791900a013f61024d128e451818793526781c",
+ "post_commit": "e43749c91b350a702fbdc7487767c84d6835d793",
+ "record_notes": [],
+ "schema": "preflight_pass/v1",
+ "verdict": "PREFLIGHT_FAIL_NEW"
+}

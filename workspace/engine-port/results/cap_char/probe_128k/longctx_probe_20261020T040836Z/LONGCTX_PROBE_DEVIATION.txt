@@ -1,0 +1,1 @@
+DEVIATION: libnuma1 apt-installed (image lacks it); run 3 mem-fraction 0.6, G2/G4 L=32k,64k, G3 L=94500,95100 with CUDA_LAUNCH_BLOCKING=1 on nano_fused

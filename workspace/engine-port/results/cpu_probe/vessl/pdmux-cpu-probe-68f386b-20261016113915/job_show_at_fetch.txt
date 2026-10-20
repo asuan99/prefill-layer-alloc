@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-cpu-probe-68f386b-20261016113915
+Slug:                 job-p0prpdlq8xve
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/68f386b6fdf997189432d04fe5867594ae845413/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100cpu
+Job Type:             k8s-job
+Created:              2026-10-16T11:39:23Z
+Started At:           2026-10-16T11:39:28Z
+Completed At:         2026-10-16T11:41:33Z
+Duration:             2m5s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=68f386b6fdf997189432d04fe5867594ae845413, PDMUX_JOB_NAME=pdmux-cpu-probe-68f386b-20261016113915, PDMUX_CAMPAIGN=cpu_probe, PDMUX_TARGET=workspace/engine-port/scripts/vessl/cpu_probe.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100cpu
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

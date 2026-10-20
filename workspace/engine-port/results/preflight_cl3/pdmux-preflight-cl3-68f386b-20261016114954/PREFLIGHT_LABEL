@@ -1,0 +1,22 @@
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+PREFLIGHT_FAIL_NEW
+pre ran=989 failing=32 | post ran=1487 failing=26
+L2 reproduced 9/12; new=2 sig_changed=9 fixed_in_post=17
+  coverage A_import9: 9/9
+  coverage B_holb4: 3/4
+  coverage C_venv17: 17/17
+  coverage D_zamba2: 1/1
+  coverage E_rev12: 1/1
+  NEW     test_mg_harness.JobScriptsDryRun.test_m3_dry_run_every_job
+  NEW     test_n3_capacity.TestRegistration.test_plan_selftest
+  CHANGED test_lambda0_prereg.TestArrivalRealization.test_analyzer_records_the_drain_decomposition
+  CHANGED test_lambda0_prereg.TestArrivalRealization.test_realized_denominator_removes_the_artifact_on_archived_cells
+  CHANGED test_lambda0_prereg.TestDrainIdentity.test_drain_identity_on_archived_cells
+  CHANGED test_lambda0_prereg.TestShippedSelftests.test_lambda_inf_predicate_selftest
+  CHANGED test_lambda_star_per_shape.CliSurfaces.test_workloads_cli_optin_writes_the_caveats_into_the_header
+  CHANGED test_lambda_star_per_shape.FailClosed.test_shipped_template_loads_and_is_entirely_unmeasured
+  CHANGED test_n3_capacity.TestBootBranchSnippets.test_t_h1_sticky
+  CHANGED test_n3_capacity.TestBootBranchSnippets.test_t_h3_floor
+  CHANGED test_n3_capacity.TestBudgetEnforcer.test_overrunning_unit_is_cut
+  HOLE    B_holb4:test_holb_probe.TestSchedulerHooksInstalled.test_patch_reapplies_the_hooks_and_nothing_else

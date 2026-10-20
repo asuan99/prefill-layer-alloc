@@ -1,0 +1,23 @@
+{
+  "facts": {
+    "n_expected": 10,
+    "n_records": 4,
+    "oom_log_hits": 0,
+    "per_L": {
+      "32768": {
+        "errors": [],
+        "fail": 0,
+        "ok": 2
+      },
+      "65536": {
+        "errors": [],
+        "fail": 0,
+        "ok": 2
+      }
+    },
+    "schema_problems": []
+  },
+  "reason": "4/10 requests recorded, 0 not ok (probe stopped early: timeout/budget/server death)",
+  "stage": "G2",
+  "status": "UNRESOLVED"
+}

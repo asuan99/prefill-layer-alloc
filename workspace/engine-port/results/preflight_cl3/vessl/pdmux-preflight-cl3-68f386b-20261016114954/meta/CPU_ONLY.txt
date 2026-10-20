@@ -1,0 +1,3 @@
+cpu_only=1 reason=cpu_spec spec=resourcespec-a100cpu
+skipped: nvidia-smi substrate stamp, nvcc, topo, substrate_history.tsv row, clk sampler, energy sampler
+LD_LIBRARY_PATH compat: added /usr/local/cuda-13.0/compat

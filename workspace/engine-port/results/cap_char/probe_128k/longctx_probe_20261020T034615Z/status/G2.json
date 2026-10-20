@@ -1,0 +1,35 @@
+{
+  "facts": {
+    "n_expected": 10,
+    "n_records": 7,
+    "oom_log_hits": 0,
+    "per_L": {
+      "16384": {
+        "errors": [],
+        "fail": 0,
+        "ok": 2
+      },
+      "32768": {
+        "errors": [],
+        "fail": 0,
+        "ok": 2
+      },
+      "65536": {
+        "errors": [],
+        "fail": 0,
+        "ok": 2
+      },
+      "98304": {
+        "errors": [
+          "completion None/64 prompt None/98304 finish None"
+        ],
+        "fail": 1,
+        "ok": 0
+      }
+    },
+    "schema_problems": []
+  },
+  "reason": "7/10 requests recorded, 1 not ok (probe stopped early: timeout/budget/server death)",
+  "stage": "G2",
+  "status": "FAIL"
+}

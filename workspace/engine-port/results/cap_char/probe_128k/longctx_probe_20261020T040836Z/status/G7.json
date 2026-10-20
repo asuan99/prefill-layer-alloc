@@ -1,0 +1,51 @@
+{
+  "facts": {
+    "docs": [
+      {
+        "_id": "9b448b0d8f056d1ddebb9503e4560a913dc529309759b358",
+        "doc_id": "narrativeqa:9b448b0d8f056d1ddebb9503e4560a913dc529309759b358",
+        "ids_sha256": "1b34829d904f0b737366e8f36a319b98a60c6731d8a6590751d86d3c4291cc4a",
+        "n_in": 63032,
+        "task": "narrativeqa"
+      },
+      {
+        "_id": "505345771a2e5b438ea4bfa7c0f238f8787f45b0ca52ef7d",
+        "doc_id": "gov_report:505345771a2e5b438ea4bfa7c0f238f8787f45b0ca52ef7d",
+        "ids_sha256": "0b5c71d247d5d5847073509ca3b492df3c122d8d06c279c7ac35d80bc8811fb5",
+        "n_in": 53284,
+        "task": "gov_report"
+      }
+    ],
+    "pairs": [
+      {
+        "doc_id": "narrativeqa:9b448b0d8f056d1ddebb9503e4560a913dc529309759b358",
+        "n_in": 63032,
+        "rel_diff_real_over_synth": 0.06865458334274988,
+        "ttft_real_s": [
+          8.498793913051486,
+          7.4854967119172215
+        ],
+        "ttft_synth_s": [
+          7.495264345780015,
+          7.4621324352920055
+        ]
+      },
+      {
+        "doc_id": "gov_report:505345771a2e5b438ea4bfa7c0f238f8787f45b0ca52ef7d",
+        "n_in": 53284,
+        "rel_diff_real_over_synth": -0.0018757576042660595,
+        "ttft_real_s": [
+          6.208244720008224,
+          6.2289672661572695
+        ],
+        "ttft_synth_s": [
+          6.234502136241645,
+          6.226082887034863
+        ]
+      }
+    ]
+  },
+  "reason": "8 requests completed (real vs synthetic ABBA); values are descriptive only",
+  "stage": "G7",
+  "status": "PASS"
+}

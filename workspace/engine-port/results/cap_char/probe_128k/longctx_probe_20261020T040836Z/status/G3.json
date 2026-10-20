@@ -1,0 +1,25 @@
+{
+  "facts": {
+    "n_expected": 5,
+    "n_records": 2,
+    "oom_log_hits": 0,
+    "per_L": {
+      "94500": {
+        "errors": [],
+        "fail": 0,
+        "ok": 1
+      },
+      "95100": {
+        "errors": [
+          "completion None/64 prompt None/95100 finish None"
+        ],
+        "fail": 1,
+        "ok": 0
+      }
+    },
+    "schema_problems": []
+  },
+  "reason": "2/5 requests recorded, 1 not ok (probe stopped early: timeout/budget/server death)",
+  "stage": "G3",
+  "status": "FAIL"
+}
