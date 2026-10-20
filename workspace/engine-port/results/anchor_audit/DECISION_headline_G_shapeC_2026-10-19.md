@@ -34,3 +34,11 @@
 10. **attention 대조 모델 = Llama-3.1-8B-Instruct**(128k 네이티브, `--attention-backend flashinfer` 명시). 결정 4의 예시 Qwen2.5-7B를 대체. 교락(토크나이저·k 8×·attn 32층 RoPE·gated 라이선스·`ignore_eos` 필수)은 설계 v1.1 §5-2대로 공시.
 11. **fused_tuned arm 추가**(cap 블록·long-ctx 블록): G0 튜닝 argmax config(mixed-chunk 포함). 근거 = J1 감사 1번(미조율 분모).
 - shape C 데이터셋은 미정(LongProc의 서빙 선례 질의 중).
+
+## 결정 12 (2026-10-20, shape C 재정의 — 사용자 결정)
+경위: LongProc은 서빙 선례가 없고, 출력 길이를 특정 과제군에 묶어 연구 범위를 임의로 좁힌다(사용자). 비교 메모 `../cap_char/COMPARE_shapeC_workloads_2026-10-20.md`.
+- **LongProc 제외** — 측정에도, 수치 근거로도 쓰지 않는다.
+- **입력 원천 = arXiv-Sum(≤16k 표준 셀) + LongBench v1/v2(길이 구간별)**. 구간 표본이 부족하면 InfiniteBench로 보완한다. long-ctx 블록은 합성 고정 길이 대신 **실제 문서를 길이 구간 {32k, 64k, 96k} ±10%로 선별**한다(표본 실측 후 확정).
+- **출력 길이 = 강제 출력 요인 {자연(~200), 1k, 4k}**. 근거는 데이터셋이 아니라 비용 구조(생성 중 L\* 횡단, Little 동시 수)다. 블록별 수준은 PREREG에서 GPU-h로 정한다.
+- **shape C = (입력 구간 × 출력 길이) 격자의 한 영역**이며 단일 데이터셋이 아니다. 결정 5("shape C = G0 두 번째 표준 셀")는 "arXiv-Sum 입력 × 강제 출력 {1k, 4k}"로 구체화된다.
+- 선행: LongBench v1/v2·InfiniteBench 길이 분포 CPU 실측(Nano·Llama 토크나이저).
