@@ -82,3 +82,18 @@
 ## 결정 17 (2026-10-20) — 감사 상한 도달 후 처리 (권고안 (a) 채택)
 - PREREG rev2 2회차 NO-GO(`../cap_char/VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md`): **항 측정(T1–T4, J-A·J-B·J-C)만 caveat를 붙여 봉인용으로 분리**한다. 검증 V는 항 데이터를 받은 뒤 **별도 PREREG로 새로 감사**받는다. 데이터를 본 뒤 구조를 고르는 위험은 그 PREREG에서 공시한다.
 - GPU gate 진행 순서: experiment-runner가 G-α/β/γ 하네스를 작성하고, 병행해서 claims-auditor가 gate 설계 감사 3건(I-4 허용 범위의 SPEC ±5% 이탈, TOST 짝당 seed 1개, ITL p95 짝 분산 미측정)을 본다. 이후 G-α dry-run → 제출 승인.
+
+## 결정 18 (2026-10-20) — rev3-MEAS 열린 결정·gate 하네스 이탈 (권고안 채택)
+- rev3-MEAS(`../cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`):
+  - O-12: shape C용 T1 셀 10개를 J-A에 추가한다((88, 8k) 등; (88, 9k)가 INFEASIBLE이면 (80, 9k)로 대체).
+  - O-4: TP2 96k는 gate 단위 시험으로 경계 이동을 보고, 서빙 96k는 정상 점으로 둔다.
+  - O-6: TP2 앵커는 순차 1장.
+  - O-8: T4 fused\_sym 대칭 점검을 포함한다.
+  - O-9′: 적합 기준은 [제안]값 그대로 봉인한다.
+  - O-10′: 라운드 유지(기본 2, 108v·Llama 4).
+  - O-13: T2′ 범위는 확장하지 않는다.
+- gate 하네스(engsync `9561f867`)가 설계에서 벗어난 점을 수용한다:
+  - REG sha `f3310545…` → `1c20b953…`.
+  - TOST CI를 α 분할(초기·확장 각 단측 0.025, 95%)로 한다.
+  - 확장 짝은 등록된 1회 별도 Job으로 돌리고 pool-gamma로 합산한다.
+- 실행 승인: G-α 제출 → PASS면 G-β → PASS면 gamma-A·F 동시 제출(짝 수는 ITL SD 예보 뒤 확정). 각 제출 직전에 dry-run을 확인한다.
