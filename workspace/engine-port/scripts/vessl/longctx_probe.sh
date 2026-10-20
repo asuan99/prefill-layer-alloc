@@ -50,6 +50,8 @@
 #                         [--keep-going] [--cap N] [--lb-zip PATH] [--only nano_pdmux,nano_fused,llama,nano_chunked]
 #   --print-plan  no engine, no GPU: prints the boot argv of the four boots and the per-step timeout /
 #                 expected-minutes table (the CPU test compares it with the plan).
+#   env overrides (run 3): PDMUX_PROBE_G2_LS / _G3_LS / _G4_LS = comma list of L; PDMUX_PROBE_BLOCKING_ARMS = arms
+#                 booted with CUDA_LAUNCH_BLOCKING=1; PDMUX_PROBE_MEM_FRACTION.
 #   --dry-run     PRE + argv parsing by SGLang's own CLI + model presence; no GPU work.
 # OUTPUT  <out-root>/longctx_probe_<UTC>/{SUMMARY.md, summary.json, status/, meta/, nano_pdmux/, nano_fused/,
 #         llama/, nano_chunked/, logs/, SHA256SUMS}.  Default out-root: /data/runs; the plan wants it copied
@@ -361,6 +363,8 @@ boot_server() {   # name -> sets srv_pid srv_port; returns 0 if /health 200
   export PDMUX_TELEMETRY_PATH="${dir}/tel.jsonl"; : > "${PDMUX_TELEMETRY_PATH}"
   export PDMUX_RUN_ID="${RUN_ID}" PDMUX_WORKLOAD_ID="longctx_probe_${b}"
   [[ "$(engine_mode_for "$b")" == vanilla ]] && export PDMUX_ENGINE_MODE=vanilla   # PD-mux off (M3 PREREG fused_sym)
+  # run-3 (2026-10-20): CUDA_LAUNCH_BLOCKING=1 only for the arms listed, to localise the faulting kernel
+  if [[ ",${PDMUX_PROBE_BLOCKING_ARMS:-}," == *",${b},"* ]]; then export CUDA_LAUNCH_BLOCKING=1; echo "CUDA_LAUNCH_BLOCKING=1" > "${dir}/blocking.txt"; else unset CUDA_LAUNCH_BLOCKING; fi
   echo "+ setsid $(cat "${dir}/launch_command.txt") [PORT=${srv_port}] > ${b}/server.log" >> "${RUN}/logs/commands.txt"
   setsid python -m sglang.launch_server "${av[@]}" --port "${srv_port}" > "${dir}/server.log" 2>&1 &
   srv_pid=$!
@@ -419,14 +423,14 @@ else:
 PY
     PYC=(--port "${srv_port}" --srvlog "${d}/server.log" --arm nano_pdmux --model "${NANO}" --tokenizer "${nano_tok}")
     stage_begin G2
-    run_t "${TMO[G2]}" "${d}/g2.log" python3 "${HELPER}" probe-single "${PYC[@]}" --stage G2 --out "${d}/g2_single.json"
+    run_t "${TMO[G2]}" "${d}/g2.log" python3 "${HELPER}" probe-single "${PYC[@]}" --stage G2 ${PDMUX_PROBE_G2_LS:+--Ls "${PDMUX_PROBE_G2_LS}"} --out "${d}/g2_single.json"
     python3 "${HELPER}" score-single --in "${d}/g2_single.json" --stage G2 --expect-n 10 --status-dir "${RUN}/status"
     stage_end G2
     stage_begin G4
     if [[ "$(status_of G2)" != PASS && ${KEEP_GOING} == 0 ]] && ! curl -s -o /dev/null --max-time 5 "http://127.0.0.1:${srv_port}/health"; then
       skip G4 "server not alive after G2"
     else
-      run_t "${TMO[G4]}" "${d}/g4.log" python3 "${HELPER}" probe-g4 "${PYC[@]}" --out "${d}/g4_mixed.json"
+      run_t "${TMO[G4]}" "${d}/g4.log" python3 "${HELPER}" probe-g4 "${PYC[@]}" ${PDMUX_PROBE_G4_LS:+--Ls "${PDMUX_PROBE_G4_LS}"} --out "${d}/g4_mixed.json"
       python3 "${HELPER}" score-g4 --in "${d}/g4_mixed.json" --status-dir "${RUN}/status"
     fi
     stage_end G4
@@ -461,7 +465,7 @@ else
     PYC=(--port "${srv_port}" --srvlog "${d}/server.log" --arm nano_fused --model "${NANO}" --tokenizer "${nano_tok}")
     run_t 120 "${d}/boot_facts.log" python3 "${HELPER}" boot-facts --srvlog "${d}/server.log" --arm nano_fused \
       --model "${NANO}" --cap "${CAP}" --out "${d}/boot_facts.json"
-    run_t "${TMO[G3]}" "${d}/g3.log" python3 "${HELPER}" probe-single "${PYC[@]}" --stage G3 --reps 1 --out "${d}/g3_single.json"
+    run_t "${TMO[G3]}" "${d}/g3.log" python3 "${HELPER}" probe-single "${PYC[@]}" --stage G3 --reps 1 ${PDMUX_PROBE_G3_LS:+--Ls "${PDMUX_PROBE_G3_LS}"} --out "${d}/g3_single.json"
     python3 "${HELPER}" score-single --in "${d}/g3_single.json" --stage G3 --expect-n 5 --status-dir "${RUN}/status"
   else
     set_status G3 FAIL "nano_fused did not reach /health; see nano_fused/server.log"

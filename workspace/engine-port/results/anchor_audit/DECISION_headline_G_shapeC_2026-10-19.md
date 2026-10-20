@@ -55,3 +55,7 @@
 - 대조 모델 = **meta-llama/Llama-3.1-8B (base)**, rev `d04e592bb4f6aa9cfee91e2e20afa771667e1d4b`. 주 모델이 `Nemotron-Nano-9B-v2-Base`(rev `dc0661c…`)이므로 짝을 맞춘다. 아키텍처·비용은 Instruct와 같다. 로컬 HF 토큰으로 gated 접근을 확인했다.
 - 사실: `Nemotron-Nano-9B-v2-Base`와 `-v2`의 `tokenizer.json` sha가 같다(`3277c00f…`). ARXSUM_STATS·LONGCTX_STATS의 Nano 길이는 Base 모델에 그대로 적용된다(M3 PREREG rev12 :127의 미확인 대조 해소).
 - 128k 프로브 실행 승인(사용자, 2026-10-20): pdmux-build 적재 → pdmux-probe 실행, 하드캡 120분.
+
+## 결정 13 (2026-10-20) — long-ctx 범위·mem-fraction (권고안 채택)
+- **long-ctx 통제 축 상한 = 64k**({16k, 32k, 64k}), **`--mem-fraction-static` 0.6을 모든 arm·블록(cap 블록·G0 포함)에 통일**. 근거 = 128k 프로브 1·2회차(`../cap_char/probe_128k/RESULT_probe_128k_2026-10-20.md`): 0.82는 chunk -1 활성화 OOM, 0.6에서 Nano chunk -1이 96k에서 Triton SSD 커널 오류.
+- 3회차 짧은 프로브: G4·G7(≤64k) + 커널 오류 임계 확인(L = 94,500 / 95,100, `CUDA_LAUNCH_BLOCKING=1`).
