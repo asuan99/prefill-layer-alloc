@@ -1,4 +1,5 @@
 # TRACK: multigpu — A100 ×1/2/4/8 DP·TP 확장   (worktree `prefill-layer-alloc-multigpu`, branch `multigpu-scaling`)
+<!-- track: retired -->
 
 > **2026-10-21 폐기(사용자 지시).** branch `multigpu-scaling`(`f3544d1a`)은 main의 조상이라 병합할 커밋 0 → worktree 제거·branch 삭제. worktree에만 있던 git 밖 원자료 602개(약 2.6 GB, M2g/M3 Job)는 같은 상대경로로 main worktree에 옮김(sha256 대조 통과). M3·multi-GPU 후속은 `tracks/main.md`가 유일본. 공유 엔진 트리 `sglang_engine_dev_multigpu`는 main 테스트가 참조하므로 유지.
 

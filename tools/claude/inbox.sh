@@ -53,6 +53,8 @@ done
 for f in "${files[@]}"; do
     w=${f%/tracks/*}
     name=$(basename "$f" .md); [ -n "${seen[$name]}" ] && continue; seen[$name]=1
+    # 2026-10-21: 폐기된 트랙(파일 앞 10줄에 `<!-- track: retired -->`)은 이력 파일이라 건너뛴다.
+    head -n 10 "$f" | grep -q '<!-- track: retired -->' && continue
     sec=$(awk '/^## 사용자 결정 대기/{on=1;next} /^## /{on=0} on && NF' "$f")
     warn=$(stale_line "$w" "$name")
     [ -n "$sec$warn" ] && printf '### %s  (%s)\n%s%s\n\n' "$name" "${f#$ROOT/}" "${warn:+$warn

@@ -18,4 +18,5 @@ GPU power cap의 개입 여지 평가. VESSL 컨테이너는 cap 설정 불가(�
 ## 금지 서술 (링크만)
 메모리 `power-cap-track` §금지 문안
 ## 최근 로그
+- 2026-10-21: (main 세션 확인) 지연 경보 원인 `36517fe3`(2026-10-20)은 main이 예전 미추적 power_cap csv(partition_power·sensor_bw)를 커밋한 정리 작업 — 새 측정·판정 없음, 상태 불변
 - 2026-10-12: 세션 핸드오프(`handoff-report/session_handoff_2026-10-13.md` (B)절)
