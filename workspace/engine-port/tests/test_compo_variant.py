@@ -13,6 +13,11 @@ No GPU, no network.  Each group carries a negative control so a vacuous test can
   variant.json     schema keys, weights excluded, config differs only in hybrid_override_pattern, sha256s.
   plan / argv      compo_probe.sh --print-plan: dummy flag exactly on dummy boots, PD-mux on all but the vanilla
                    boot, fixed factors, a31 retry drops --max-mamba-cache-size, time table within the budget.
+  TEL (decision 26) tel_verdict on fake tel.jsonl: PASS case and one FAIL per broken condition (no pair, no
+                   8192 span, no decode_iteration, failure line in the server log, missing file, request error),
+                   UNRESOLVED without co-residence; TEL env (PDMUX_TELEMETRY_PATH + PDMUX_PHASE_EVENTS=1) in the
+                   plan exactly on dummy_a13 / dummy_a31 / dummy_a31_retry, accepted by the engine's own
+                   resolve_phase_events (control: the OFF boots resolve to False); field names exist in the mixin.
 """
 import copy
 import hashlib
@@ -251,6 +256,128 @@ class TestBannerCheck(unittest.TestCase):
         self.assertEqual(CH.req_verdict(res, dict(zero, nan_logits=1))[0], CH.FAIL)
 
 
+def _load_resolver():
+    """resolve_phase_events + PHASE_EVENT_TYPES from the mirror src, without importing sglang."""
+    import ast
+    src = _txt(os.path.join(ENGINE, "src", "multiplex", "multiplexing_mixin.py"))
+    tree = ast.parse(src)
+    keep = [n for n in tree.body if (isinstance(n, ast.FunctionDef) and n.name == "resolve_phase_events")
+            or (isinstance(n, ast.Assign) and any(getattr(t, "id", None) == "PHASE_EVENT_TYPES" for t in n.targets))]
+    ns = {"os": os}
+    exec(compile(ast.Module(body=keep, type_ignores=[]), "multiplexing_mixin_extract", "exec"), ns)
+    return ns["resolve_phase_events"], ns["PHASE_EVENT_TYPES"], src
+
+
+RESOLVE, PHASE_TYPES, MIXIN_SRC = _load_resolver()
+
+
+def _tel_records(l_prefill=8192, pair=True, n_dec=5, co=True, extra_start=None):
+    """A fake tel.jsonl stream in the AsyncJsonlTelemetry flat schema (fields merged into the record)."""
+    base = {"schema": "pdmux.runtime-event/v1", "run_id": "r", "workload_id": "w", "phase": "startup",
+            "request_id": "", "dropped_events": 0}
+    recs = [dict(base, event="prefill_span_start", span_seq=1, n_new=8, extend_tokens=16384, running_bs=0,
+                 queue_len=0, cap=128, stream_idx=2, prefill_sms=64, decode_sms=44, timestamp_monotonic_s=1.0),
+            dict(base, event="prefill_span_end", span_seq=1, n_done=8, running_bs=0, queue_len=0, stream_idx=2,
+                 timestamp_monotonic_s=1.5)]
+    for i in range(n_dec):
+        recs.append(dict(base, event="decode_iteration", iter_seq=i, t_launch=2.0 + 0.1 * i, t_sync=2.05 + 0.1 * i,
+                         bs=8, stream_idx=2, prefill_sms=64, decode_sms=44,
+                         prefill_in_flight=bool(co and i >= 2), prefill_kernel_done_wait=False, queue_len=0,
+                         timestamp_monotonic_s=2.05 + 0.1 * i))
+    recs.append(dict(base, event="prefill_span_start", span_seq=2, n_new=1, extend_tokens=l_prefill, running_bs=8,
+                     queue_len=0, cap=128, stream_idx=2, prefill_sms=64, decode_sms=44, timestamp_monotonic_s=2.15,
+                     **(extra_start or {})))
+    if pair:
+        recs.append(dict(base, event="prefill_span_end", span_seq=2, n_done=1, running_bs=8, queue_len=0,
+                         stream_idx=2, timestamp_monotonic_s=2.9))
+    return recs
+
+
+class TestTelCheck(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="compo_tel_test_")
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def _write(self, recs, torn=False):
+        p = os.path.join(self.tmp, "tel.jsonl")
+        with open(p, "w") as f:
+            for r in recs:
+                f.write(json.dumps(r, separators=(",", ":"), sort_keys=True) + "\n")
+            if torn:
+                f.write('{"event":"decode_iter')
+        return p
+
+    def _verdict(self, recs, log="", errs=(), torn=False):
+        r, bad = CH.read_jsonl(self._write(recs, torn))
+        return CH.tel_verdict(r, bad, log, errs)
+
+    def test_pass(self):
+        st, why, f = self._verdict(_tel_records(), torn=True)
+        self.assertEqual(st, CH.PASS, why)
+        self.assertEqual(f["target_span_seq"], [2])
+        self.assertEqual(f["n_pairs"], 2)
+        self.assertEqual(f["n_decode_iteration"], 5)
+        self.assertEqual(f["n_coresident_decode_iter"], 3)          # t_launch 2.2, 2.3, 2.4 inside [2.15, 2.9]
+        self.assertEqual(f["n_unparsable_lines"], 1)                # torn last line counted, not fatal
+
+    def test_fail_cases(self):
+        log_bad = "[x] WARNING PDMUX_PHASE_EVENTS disabled after failure: boom\n"
+        cases = {
+            "no pair": dict(recs=[r for r in _tel_records() if r["event"] != "prefill_span_end"]),
+            "no 8192 span": dict(recs=_tel_records(l_prefill=8191)),
+            "8192 span unpaired": dict(recs=_tel_records(pair=False)),
+            "no decode_iteration": dict(recs=_tel_records(n_dec=0)),
+            "phase events disabled": dict(recs=_tel_records(), log=log_bad),
+            "telemetry writer disabled": dict(recs=_tel_records(),
+                                              log="dual-worker telemetry disabled after write failure: x"),
+            "request error": dict(recs=_tel_records(), errs=["prefill"]),
+        }
+        for name, c in cases.items():
+            st, why, _ = self._verdict(c["recs"], c.get("log", ""), c.get("errs", ()))
+            self.assertEqual(st, CH.FAIL, f"{name}: {why}")
+        st, why, _ = CH.tel_verdict(None, 0, "")
+        self.assertEqual(st, CH.FAIL, why)                           # tel.jsonl missing
+        self.assertEqual(CH.read_jsonl(os.path.join(self.tmp, "nope.jsonl")), (None, 0))
+
+    def test_unresolved_without_coresidence(self):
+        st, why, f = self._verdict(_tel_records(co=False))
+        self.assertEqual(st, CH.UNRES, why)
+        self.assertEqual(f["n_coresident_decode_iter"], 0)
+
+    def test_field_names_match_engine(self):
+        self.assertEqual(tuple(CH.PHASE_EVENTS), tuple(PHASE_TYPES))
+        for fld in ("span_seq=", "extend_tokens=", "prefill_in_flight=", "t_launch=", "bs=", "n_new="):
+            self.assertIn(fld, MIXIN_SRC, fld)
+        for line in CH.TEL_FAIL_LOG:
+            self.assertIn(line, MIXIN_SRC, line)
+        self.assertIn("timestamp_monotonic_s: float", _txt(os.path.join(ENGINE, "src", "multiplex", "telemetry.py")))
+        self.assertTrue(RESOLVE("/x/tel.jsonl", {"PDMUX_PHASE_EVENTS": "1", "PDMUX_TELEMETRY_PATH": "/x/tel.jsonl"}))
+        self.assertFalse(RESOLVE("", {}))
+        with self.assertRaises(RuntimeError):
+            RESOLVE("", {"PDMUX_PHASE_EVENTS": "1"})                  # ON without a path is refused
+
+    def test_summary_has_tel_table(self):
+        rd = self.tmp
+        os.makedirs(os.path.join(rd, "status"))
+        os.makedirs(os.path.join(rd, "dummy_a13"))
+        st, why, f = CH.tel_verdict(_tel_records(), 0, "")
+        CH.LH._dump({"facts": f}, os.path.join(rd, "dummy_a13", "tel_check.json"))
+        import contextlib, io
+        with contextlib.redirect_stdout(io.StringIO()):
+            CH.LH.write_status(os.path.join(rd, "status"), "TEL-dummy_a13", st, why, f)
+            CH.main(["summary", "--rundir", rd])
+        md = _txt(os.path.join(rd, "SUMMARY.md"))
+        self.assertIn("| TEL-dummy_a13 | **PASS** |", md)
+        self.assertIn("| dummy_a13 | 2 | [2] | 5 | 3 | 0 |", md)
+        self.assertEqual(_rj(os.path.join(rd, "summary.json"))["statuses"], {"TEL-dummy_a13": "PASS"})
+
+    def test_tel_load_fits_context(self):
+        self.assertLessEqual(CH.TEL_DEC_IN + CH.TEL_DEC_OUT, CH.CTX)
+        self.assertLessEqual(CH.TEL_L + CH.TEL_PF_OUT, CH.CTX)
+        self.assertEqual((CH.TEL_L, CH.TEL_N_DEC, CH.TEL_DEC_IN), (8192, 8, 2048))
+        self.assertGreaterEqual(CH.TEL_DEC_OUT, 512)
+
+
 class TestVariantJson(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="compo_variant_test_")
@@ -375,8 +502,10 @@ class TestPlanAndScript(unittest.TestCase):
         self.assertEqual(a31[:i] + a31[i + 2:], rt)
 
     def test_time_table(self):
-        budget = int(next(ln[1] for ln in self.lines if ln[0] == "BUDGET_MIN"))
-        self.assertEqual(budget, 90)
+        bl = next(ln for ln in self.lines if ln[0] == "BUDGET_MIN")
+        budget = int(bl[1])
+        self.assertEqual(bl[2:], ["boots=90", "tel_allow=6"])                       # decision 26: 90 min + TEL
+        self.assertEqual(budget, 96)
         tot = {ln[1]: (int(ln[2]), int(ln[3])) for ln in self.lines if ln[0] == "EXPECT_TOTAL_MIN"}
         self.assertLessEqual(tot["all_boots_with_a31_retry"][1], budget)
         exp = {ln[1]: (int(ln[2]), int(ln[3])) for ln in self.lines if ln[0] == "EXPECT_MIN"}
@@ -384,6 +513,11 @@ class TestPlanAndScript(unittest.TestCase):
         tmo = {ln[1]: int(ln[2]) for ln in self.lines if ln[0] == "TIMEOUT_S"}
         self.assertGreaterEqual(tmo["boot"], 10 * 60)
         self.assertGreaterEqual(tmo["REQ"], 2 * 60)
+        # TEL stage timeout must cover the helper's request timeout + decode wait + flush
+        self.assertGreaterEqual(tmo["TEL"], 240 + 60 + 30)
+        # TEL boots carry the TEL minutes, the others do not (same boot kind, same base)
+        self.assertEqual(exp["dummy_a13"][1] - exp["dummy_a22"][1], 2)
+        self.assertEqual(exp["dummy_a31_retry"], exp["dummy_a13"])
 
     def test_syntax_and_no_env_dump(self):
         r = subprocess.run(["/usr/bin/bash", "-n", os.path.join(VESSL, "compo_probe.sh")], capture_output=True, text=True)
@@ -401,6 +535,43 @@ class TestPlanAndScript(unittest.TestCase):
         src = _txt(os.path.join(VESSL, "compo_probe.sh"))
         self.assertIn("unset SGLANG_MAMBA_SSM_DTYPE SGLANG_MAMBA_CONV_DTYPE", src)     # predictions assume defaults
         self.assertIn("PDMUX_TELEMETRY_PATH", src)                                     # telemetry unset (OFF)
+        self.assertIn('done < <(env_for "$b")', src)                                   # boot env comes from env_for
+
+    def test_tel_env_only_on_tel_boots(self):
+        env = {ln[1]: (ln[2], ln[3].split()) for ln in self.lines if ln[0] == "ENV"}
+        self.assertEqual(set(env), set(self.argv))
+        tel = {"dummy_a13", "dummy_a31", "dummy_a31_retry"}
+        self.assertEqual(sorted(CH.TEL_BOOTS), sorted(tel))
+        for b, (flag, kvs) in env.items():
+            d = dict(kv.split("=", 1) for kv in kvs)
+            self.assertEqual(flag, "tel=" + ("on" if b in tel else "off"), b)
+            if b in tel:
+                self.assertEqual(d.get("PDMUX_PHASE_EVENTS"), "1", b)
+                self.assertEqual(d.get("PDMUX_TELEMETRY_PATH"), f"<RUN>/{b}/tel.jsonl", b)
+            else:
+                self.assertNotIn("PDMUX_PHASE_EVENTS", d, b)
+                self.assertNotIn("PDMUX_TELEMETRY_PATH", d, b)
+            self.assertEqual("PDMUX_ENGINE_MODE" in d, b == "dummy_a4_vanilla", b)
+            self.assertFalse(any(k.startswith("PDMUX_TRUE_DUAL") or k == "PDMUX_DUAL_WORKER" for k in d), b)
+            # the engine's own resolver (mirror src) agrees; control: OFF boots resolve to False
+            self.assertEqual(RESOLVE(d.get("PDMUX_TELEMETRY_PATH", ""), d), b in tel, b)
+        # the script's own envcheck snippet (run before any boot) accepts every plan env; control: a TEL boot
+        # with its env dropped is rejected
+        src = _txt(os.path.join(VESSL, "compo_probe.sh"))
+        snip = src[src.index("# the INSTALLED resolver"):]
+        snip = snip[:snip.index("\nPY\n")]
+        mixin = os.path.join(ENGINE, "src", "multiplex", "multiplexing_mixin.py")
+        for b, (flag, kvs) in env.items():
+            r = subprocess.run(["python3", "-c", snip, mixin, "1" if b in tel else "0"] + kvs,
+                               capture_output=True, text=True, timeout=60)
+            self.assertEqual(r.returncode, 0, (b, r.stderr))
+        r = subprocess.run(["python3", "-c", snip, mixin, "1"], capture_output=True, text=True, timeout=60)
+        self.assertNotEqual(r.returncode, 0)
+        # TEL stages exist exactly for the TEL boots, between REQ and PRED
+        so = CH.STAGE_ORDER
+        self.assertEqual([x for x in so if x.startswith("TEL-")], [f"TEL-{b}" for b in CH.BOOTS if b in tel])
+        for b in tel:
+            self.assertEqual(so.index(f"TEL-{b}"), so.index(f"REQ-{b}") + 1)
 
     def test_no_verdict_words(self):
         src = _txt(os.path.join(VESSL, "compo_probe_helper.py"))

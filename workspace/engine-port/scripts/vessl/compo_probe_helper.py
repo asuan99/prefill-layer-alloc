@@ -17,6 +17,15 @@ Statuses (mechanical): PASS | FAIL | UNRESOLVED | SKIPPED.
   PRED-<b>  banner vs the variant's [유도] prediction: weight bytes, KV bytes/token k, Mamba state/slot s
             each within +-2 % (exact-zero rule when the prediction is 0), and the layer counts implied by
             the banner equal the variant's n_attn / n_mamba (evidence that the variant config was read).
+  TEL-<b>   (TEL ON boots only: dummy_a13, dummy_a31, dummy_a31_retry; decision 26) the PREREG rev3.3 sec 4'
+            J-H2 T3 sigma -- PD-mux `prefill_span_start`/`prefill_span_end` pairs (PDMUX_PHASE_EVENTS=1 +
+            PDMUX_TELEMETRY_PATH, src/multiplex/multiplexing_mixin.py `_phase_on_prefill_start/_end`) -- is
+            emitted on a dummy variant: 8 decode requests (2048 in, 1024 forced out) run, then ONE 8192-token
+            prefill joins them.  PASS iff tel.jsonl holds >=1 start/end pair with the same span_seq, a paired
+            span with extend_tokens == 8192, >=1 decode_iteration record, all requests completed, and the server
+            log has no "PDMUX_PHASE_EVENTS disabled after failure" / "telemetry disabled after write failure"
+            line.  UNRESOLVED if all that holds but no decode_iteration with prefill_in_flight=true was launched
+            inside the 8192 span (co-residence not evidenced).  Existence check only, not a measurement.
 
 Pure functions are unit-tested on CPU (tests/test_compo_variant.py).
 """
@@ -56,9 +65,20 @@ N_REQ = 8
 TOL = 0.02
 BASE_SEED = 20261021
 BOOTS = ["real_orig", "dummy_a4", "dummy_a13", "dummy_a22", "dummy_a31", "dummy_a31_retry", "dummy_a4_vanilla"]
+TEL_BOOTS = ["dummy_a13", "dummy_a31", "dummy_a31_retry"]       # decision 26; must equal compo_probe.sh TEL_BOOTS
+TEL_L = 8192                     # the co-resident prefill
+TEL_N_DEC = 8                    # decode batch
+TEL_DEC_IN = 2048                # decode context
+TEL_DEC_OUT = 1024               # forced decode length (ignore_eos): long enough to outlive the 8192 prefill
+TEL_PF_OUT = 8
+TEL_SEED = BASE_SEED + 26
+PHASE_EVENTS = ("prefill_span_start", "prefill_span_end", "decode_iteration")   # multiplexing_mixin PHASE_EVENT_TYPES
+TEL_FAIL_LOG = ("PDMUX_PHASE_EVENTS disabled after failure", "telemetry disabled after write failure")
 BOOT_VARIANT = {"real_orig": 4, "dummy_a4": 4, "dummy_a13": 13, "dummy_a22": 22, "dummy_a31": 31,
                 "dummy_a31_retry": 31, "dummy_a4_vanilla": 4}
-STAGE_ORDER = ["PRE", "VARIANTS"] + [f"{p}-{b}" for b in BOOTS for p in ("BOOT", "REQ", "PRED", "TD")]
+STAGE_ORDER = ["PRE", "VARIANTS"] + [f"{p}-{b}" for b in BOOTS
+                                     for p in (("BOOT", "REQ", "TEL", "PRED", "TD") if b in TEL_BOOTS
+                                               else ("BOOT", "REQ", "PRED", "TD"))]
 SYNTH_RULE = dict(LH.SYNTH_RULE, seed=f"request j uses splitmix64(({BASE_SEED} ^ ({IN_LEN} << 8) ^ j)); "
                                       f"j = 0..{N_REQ - 1} plain, j = {N_REQ} logprob request")
 
@@ -242,6 +262,92 @@ def req_verdict(res, sig_delta):
 
 
 # ===========================================================================
+# TEL ON check (decision 26) -- pure parts
+# ===========================================================================
+def read_jsonl(path):
+    """-> (records or None if the file is missing, n_unparsable_lines).  A torn last line is counted, not fatal."""
+    try:
+        with open(path, errors="replace") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return None, 0
+    recs, bad = [], 0
+    for ln in lines:
+        if not ln.strip():
+            continue
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            bad += 1
+            continue
+        if isinstance(r, dict):
+            recs.append(r)
+        else:
+            bad += 1
+    return recs, bad
+
+
+def tel_facts(records, l_prefill=TEL_L):
+    """Pair prefill spans by span_seq and locate the l_prefill span (records = flat telemetry dicts)."""
+    starts, ends = {}, {}
+    n_dec, dec = 0, []
+    for r in records:
+        ev = r.get("event")
+        if ev == "prefill_span_start" and r.get("span_seq") is not None:
+            starts.setdefault(r["span_seq"], r)
+        elif ev == "prefill_span_end" and r.get("span_seq") is not None:
+            ends.setdefault(r["span_seq"], r)
+        elif ev == "decode_iteration":
+            n_dec += 1
+            dec.append(r)
+    pairs = sorted(set(starts) & set(ends))
+    target = [q for q in pairs if starts[q].get("extend_tokens") == l_prefill]
+    co = 0
+    for q in target:
+        t0, t1 = starts[q].get("timestamp_monotonic_s"), ends[q].get("timestamp_monotonic_s")
+        if t0 is None or t1 is None:
+            continue
+        co += sum(1 for d in dec if d.get("prefill_in_flight") is True
+                  and d.get("t_launch") is not None and t0 <= d["t_launch"] <= t1)
+    return {"n_records": len(records), "n_span_start": len(starts), "n_span_end": len(ends),
+            "n_pairs": len(pairs), "target_span_seq": target,
+            "target_extend_tokens": [starts[q].get("extend_tokens") for q in target],
+            "target_n_new": [starts[q].get("n_new") for q in target],
+            "extend_tokens_seen": sorted({starts[q].get("extend_tokens") for q in pairs},
+                                         key=lambda x: (x is None, x)),
+            "n_decode_iteration": n_dec, "max_decode_bs": max((d.get("bs") or 0 for d in dec), default=None),
+            "n_coresident_decode_iter": co}
+
+
+def tel_verdict(records, n_bad, srvlog_text, req_errors=(), l_prefill=TEL_L):
+    """-> (status, reason, facts).  records None = tel.jsonl missing."""
+    hits = [p for p in TEL_FAIL_LOG if p in (srvlog_text or "")]
+    if records is None:
+        return FAIL, "tel.jsonl missing (PDMUX_TELEMETRY_PATH not honoured?)", {"server_log_failure_lines": hits}
+    f = tel_facts(records, l_prefill)
+    f.update({"n_unparsable_lines": n_bad, "server_log_failure_lines": hits, "request_errors": list(req_errors)})
+    why = []
+    if hits:
+        why.append(f"server log: {hits}")
+    if req_errors:
+        why.append(f"{len(req_errors)} TEL request(s) did not complete as forced: {list(req_errors)[:3]}")
+    if f["n_pairs"] < 1:
+        why.append(f"no prefill_span_start/end pair with the same span_seq ({f['n_span_start']} starts, "
+                   f"{f['n_span_end']} ends)")
+    elif not f["target_span_seq"]:
+        why.append(f"no paired span with extend_tokens == {l_prefill} (seen {f['extend_tokens_seen'][:8]})")
+    if f["n_decode_iteration"] < 1:
+        why.append("no decode_iteration record")
+    if why:
+        return FAIL, "; ".join(why), f
+    base = (f"{f['n_pairs']} span pair(s), span_seq {f['target_span_seq']} has extend_tokens {l_prefill}, "
+            f"{f['n_decode_iteration']} decode_iteration records (max bs {f['max_decode_bs']})")
+    if f["n_coresident_decode_iter"] < 1:
+        return UNRES, base + "; but no decode_iteration with prefill_in_flight launched inside that span", f
+    return PASS, base + f", {f['n_coresident_decode_iter']} co-resident decode iterations in it", f
+
+
+# ===========================================================================
 # subcommands
 # ===========================================================================
 def cmd_variants(a):
@@ -348,6 +454,58 @@ def cmd_requests(a):
     return 0
 
 
+def cmd_tel(a):
+    """Decode batch running, then one TEL_L prefill joins it; judge tel.jsonl (no timing judgment)."""
+    encode, _ = LH.load_encoder(a.tokenizer)
+    dec_ids = [LH.synth_ids(encode, TEL_DEC_IN, LH.seed_for(TEL_DEC_IN, j, base=TEL_SEED)) for j in range(TEL_N_DEC)]
+    pf_ids = LH.synth_ids(encode, TEL_L, LH.seed_for(TEL_L, 0, base=TEL_SEED))
+    for x in dec_ids:
+        LH.check_budget(len(x), TEL_DEC_OUT, CTX)
+    LH.check_budget(len(pf_ids), TEL_PF_OUT, CTX)
+    res = {"schema": SCHEMA, "kind": "compo_tel", "boot": a.boot, "utc": LH._utc(), "tel_path": a.tel,
+           "l_prefill": TEL_L, "n_dec": TEL_N_DEC, "dec_in": TEL_DEC_IN, "dec_out": TEL_DEC_OUT,
+           "dec_ids_sha256": [LH.ids_sha256(x) for x in dec_ids], "pf_ids_sha256": LH.ids_sha256(pf_ids),
+           "decode": [None] * TEL_N_DEC, "prefill": None, "waited_for_decode_s": None, "decode_seen_bs": None}
+
+    def one(j):
+        res["decode"][j] = post_generate(a.port, dec_ids[j], TEL_DEC_OUT, a.req_timeout)
+
+    # REQ-<b> already wrote bs-8 decode_iteration records into the same file: only look past them
+    time.sleep(2)
+    n0 = len(read_jsonl(a.tel)[0] or [])
+    res["n_records_before"] = n0
+    th = [threading.Thread(target=one, args=(j,)) for j in range(TEL_N_DEC)]
+    for t in th:
+        t.start()
+    # start the prefill only once the full decode batch is iterating (telemetry flushes at least every 1 s)
+    t0 = time.perf_counter()
+    while time.perf_counter() - t0 < a.wait_decode_s:
+        recs, _ = read_jsonl(a.tel)
+        bs = [r.get("bs") or 0 for r in (recs or [])[n0:] if r.get("event") == "decode_iteration"]
+        if bs and max(bs[-50:]) >= TEL_N_DEC:
+            res["decode_seen_bs"] = max(bs[-50:])
+            break
+        time.sleep(0.5)
+    res["waited_for_decode_s"] = time.perf_counter() - t0
+    res["prefill"] = post_generate(a.port, pf_ids, TEL_PF_OUT, a.req_timeout)
+    for t in th:
+        t.join()
+    res["decode"] = [r if r is not None else {"error": "thread produced no record"} for r in res["decode"]]
+    time.sleep(3)                                   # telemetry writer flushes every 1 s when idle
+    errs = [f"decode[{j}]" for j, r in enumerate(res["decode"]) if not LH.request_ok(r, TEL_DEC_IN, TEL_DEC_OUT)]
+    if not LH.request_ok(res["prefill"], TEL_L, TEL_PF_OUT):
+        errs.append("prefill")
+    recs, nbad = read_jsonl(a.tel)
+    st, why, facts = tel_verdict(recs, nbad, LH._read(a.srvlog), errs)
+    if res["decode_seen_bs"] is None:
+        why += f" [prefill sent after {res['waited_for_decode_s']:.0f} s without seeing decode bs {TEL_N_DEC}]"
+    res["facts"] = facts
+    res["server_alive_after"] = LH.server_alive(a.port)
+    LH._dump(res, a.out)
+    LH.write_status(a.status_dir, f"TEL-{a.boot}", st, why, facts)
+    return 0
+
+
 def cmd_pred(a):
     var = LH._load(a.variant_json)
     bf = LH._load(a.boot_facts)
@@ -402,6 +560,16 @@ def cmd_summary(a):
         bs = max(f["cuda_graph_bs_lists"][-1]) if f.get("cuda_graph_bs_lists") and f["cuda_graph_bs_lists"][-1] else None
         L.append(f"| {b} | {f.get('weight_mem_usage_gib')} | {f.get('kv_cache_tokens')} | {f.get('max_mamba_cache_size')} | "
                  f"{'NA' if s is None else round(s)} | {'NA' if k is None else round(k)} | {bs} | {f.get('pdmux_stream_groups')} |")
+    L += ["", "TEL ON 확인(결정 26, 존재 검사 — 측정 아님). 나머지 boot는 계측 OFF(결정 22).", "",
+          "| boot | span pairs | extend_tokens=8192 span_seq | decode_iteration | co-resident decode iter | log failure lines |",
+          "|---|---|---|---|---|---|"]
+    for b in TEL_BOOTS:
+        tf = LH._load(os.path.join(rd, b, "tel_check.json"))
+        if not tf:
+            continue
+        f = tf.get("facts") or {}
+        L.append(f"| {b} | {f.get('n_pairs')} | {f.get('target_span_seq')} | {f.get('n_decode_iteration')} | "
+                 f"{f.get('n_coresident_decode_iter')} | {len(f.get('server_log_failure_lines') or [])} |")
     L.append("")
     with open(os.path.join(rd, "SUMMARY.md"), "w") as fh:
         fh.write("\n".join(L) + "\n")
@@ -438,6 +606,17 @@ def main(argv=None):
     s.add_argument("--out", required=True)
     s.add_argument("--status-dir", required=True)
     s.set_defaults(fn=cmd_requests)
+    s = sub.add_parser("tel")
+    s.add_argument("--port", type=int, required=True)
+    s.add_argument("--srvlog", required=True)
+    s.add_argument("--tel", required=True)
+    s.add_argument("--boot", required=True)
+    s.add_argument("--tokenizer", required=True)
+    s.add_argument("--req-timeout", type=float, default=240.0)
+    s.add_argument("--wait-decode-s", type=float, default=60.0)
+    s.add_argument("--out", required=True)
+    s.add_argument("--status-dir", required=True)
+    s.set_defaults(fn=cmd_tel)
     s = sub.add_parser("pred")
     s.add_argument("--boot", required=True)
     s.add_argument("--variant-json", required=True)

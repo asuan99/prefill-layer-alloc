@@ -10,8 +10,14 @@
 # longer fit are SKIPPED); GPU memory release is checked after every boot; the environment is NEVER dumped.
 #   * NO PERFORMANCE JUDGMENT.  Banner numbers and request times are probe values: NOT citable.  Dummy
 #     outputs are meaningless; correctness is checked only on the original model (decision 24).
-#   * Telemetry OFF in every boot (decision 22: judged measurements run with instrumentation off; this
-#     probe measures nothing, so no ON/OFF pair is needed).
+#   * Telemetry OFF in real_orig, dummy_a4, dummy_a22, dummy_a4_vanilla (decision 22).  Telemetry ON
+#     (PDMUX_TELEMETRY_PATH=<RUN>/<boot>/tel.jsonl, PDMUX_PHASE_EVENTS=1) in dummy_a13, dummy_a31 and
+#     dummy_a31_retry ONLY, for the TEL-<boot> existence check (decision 26: do the PREREG rev3.3 sec 4'
+#     J-H2 T3 sigma events -- prefill_span_start/_end pairs -- appear on a dummy variant?).  Decision 22
+#     governs JUDGED measurements; this probe judges nothing, so ON in two boots costs no comparison (no
+#     ON/OFF pair needed; their banner/request values are probe values like every other).  Riding on existing
+#     boots instead of a separate TEL boot saves ~2 boots (~10 min); a13 = mixed composition, a31 = 0 Mamba
+#     layers (the extreme where a phase-event code path could differ).
 #
 # BOOTS (in order; each torn down before the next):
 #   real_orig          real weights, original pattern (n_attn 4), PD-mux agnostic
@@ -28,7 +34,10 @@
 #   (8 concurrent requests, 2048 synthetic input ids, 64 forced output tokens, greedy, ignore_eos; + 1
 #   return_logprob request: 64 finite logprobs = no NaN/inf from dummy weights) -> PRED-<b> (banner weight
 #   bytes / k / s within +-2 % of the variant's [유도] prediction, banner-implied layer counts == variant)
-#   -> TD-<b> (GPU memory.used < 1024 MiB).
+#   -> [TEL-<b>, TEL boots only: 8 decode requests (2048 in, 1024 forced out, ignore_eos) running, then one
+#   8192-token prefill joins them; tel.jsonl must hold a prefill_span_start/_end pair with the same span_seq,
+#   a paired span with extend_tokens 8192, decode_iteration records; server log must not say phase events
+#   / telemetry were disabled after a failure] -> PRED-<b> -> TD-<b> (GPU memory.used < 1024 MiB).
 # VARIANTS stage (CPU, before any boot): make_variant.py builds a4/a13/a22/a31 under <run>/variants from the
 #   pinned snapshot (no weight files) and SGLang's own get_config(trust_remote_code=True) must read each
 #   pattern and Mamba state size as predicted.
@@ -39,7 +48,8 @@
 # USAGE
 #   bash compo_probe.sh [--dry-run] [--print-plan] [--manifest PATH] [--out-root DIR] [--budget-min N]
 #                       [--keep-going] [--cap N] [--only real_orig,dummy_a4,...]
-#   --print-plan  no engine, no GPU: boot argv of every boot (+ the a31 retry) and the timeout /
+#   --budget-min  default 96 = 90 (boots, decision 26 cap) + 6 (TEL stages incl. the a31 retry).
+#   --print-plan  no engine, no GPU: boot argv + extra env of every boot (+ the a31 retry) and the timeout /
 #                 expected-minutes table (CPU test: tests/test_compo_variant.py).
 #   --dry-run     PRE + VARIANTS + argv parsing by SGLang's own CLI; no GPU work.
 # OUTPUT  <out-root>/compo_probe_<UTC>/{SUMMARY.md, summary.json, status/, meta/, variants/, <boot>/, logs/,
@@ -47,7 +57,9 @@
 set -uo pipefail
 
 # ------------------------------------------------------------------ args
-DRY=0; PLAN=0; KEEP_GOING=0; BUDGET_MIN=90; CAP=128; ONLY=""
+DRY=0; PLAN=0; KEEP_GOING=0; CAP=128; ONLY=""
+BOOT_BUDGET_MIN=90; TEL_ALLOW_MIN=6                      # decision 26: 90-min cap + TEL stages (3 x 2 min incl. retry)
+BUDGET_MIN=$((BOOT_BUDGET_MIN + TEL_ALLOW_MIN))
 MANIFEST="${PDMUX_RUNTIME_MANIFEST:-/opt/pdmux/runtime_source_manifest.sha256}"
 OUT_ROOT="/data/runs"
 while [[ $# -gt 0 ]]; do
@@ -60,7 +72,7 @@ while [[ $# -gt 0 ]]; do
     --budget-min) BUDGET_MIN="${2:?}"; shift ;;
     --cap) CAP="${2:?}"; shift ;;
     --only) ONLY="${2:?}"; shift ;;
-    -h|--help) sed -n '2,46p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,56p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
   shift
@@ -82,6 +94,7 @@ MAKE_VARIANT="${ENGINE}/scripts/compo/make_variant.py"
 AGN_CFG="${ENGINE}/benchmarks/configs/pdmux_agnostic_manual.yml"
 VAR_ROOT="<RUN>/variants"                                # set to the run dir below (print-plan shows the placeholder)
 BOOTS=(real_orig dummy_a4 dummy_a13 dummy_a22 dummy_a31 dummy_a4_vanilla)
+TEL_BOOTS=(dummy_a13 dummy_a31 dummy_a31_retry)          # telemetry ON (decision 26); all other boots OFF (decision 22)
 
 COMMON=(--trust-remote-code --dtype bfloat16 --attention-backend "${BACKEND}" --disable-radix-cache
         --mem-fraction-static "${MEM_FRACTION}" --max-running-requests "${CAP}" --context-length "${CTX}"
@@ -103,11 +116,17 @@ argv_for() {   # boot -> argv words, one per line (after `python -m sglang.launc
 }
 engine_mode_for() { case "$1" in dummy_a4_vanilla) echo vanilla ;; *) echo pdmux ;; esac; }
 is_dummy() { [[ "$1" == dummy_* ]]; }
+tel_on() { [[ " ${TEL_BOOTS[*]} " == *" $1 "* ]]; }
+env_for() {    # boot -> extra env K=V, one per line, exported by boot_server (single source for --print-plan)
+  [[ "$(engine_mode_for "$1")" == vanilla ]] && echo "PDMUX_ENGINE_MODE=vanilla"
+  if tel_on "$1"; then echo "PDMUX_TELEMETRY_PATH=${RUN_DIR_FOR_ENV:-<RUN>}/$1/tel.jsonl"; echo "PDMUX_PHASE_EVENTS=1"; fi
+  return 0
+}
 variant_of() { case "$1" in real_orig|dummy_a4|dummy_a4_vanilla) echo a4 ;; dummy_a13) echo a13 ;; dummy_a22) echo a22 ;; dummy_a31*) echo a31 ;; esac; }
 
-declare -A TMO=( [PRE]=600 [VARIANTS]=300 [boot]="${BOOT_TIMEOUT}" [REQ]=600 [teardown]=120 )
-declare -A EXP_LO=( [PRE]=1 [VARIANTS]=1 [boot]=2 [boot_real]=3 [REQ]=1 [PRED]=0 [td]=1 )
-declare -A EXP_HI=( [PRE]=3 [VARIANTS]=2 [boot]=8 [boot_real]=10 [REQ]=2 [PRED]=0 [td]=1 )
+declare -A TMO=( [PRE]=600 [VARIANTS]=300 [boot]="${BOOT_TIMEOUT}" [REQ]=600 [TEL]=420 [teardown]=120 )
+declare -A EXP_LO=( [PRE]=1 [VARIANTS]=1 [boot]=2 [boot_real]=3 [REQ]=1 [TEL]=1 [PRED]=0 [td]=1 )
+declare -A EXP_HI=( [PRE]=3 [VARIANTS]=2 [boot]=8 [boot_real]=10 [REQ]=2 [TEL]=2 [PRED]=0 [td]=1 )
 print_plan() {
   local b k lo=0 hi=0
   for b in "${BOOTS[@]}"; do
@@ -116,20 +135,24 @@ print_plan() {
   done
   printf 'ARGV_RETRY\t%s\tengine_mode=%s\tpython -m sglang.launch_server %s --port <PORT>\n' dummy_a31_retry \
     "$(engine_mode_for dummy_a31_retry)" "$(argv_for dummy_a31_retry | tr '\n' ' ')"
-  for k in PRE VARIANTS boot REQ teardown; do printf 'TIMEOUT_S\t%s\t%s\n' "$k" "${TMO[$k]}"; done
+  for b in "${BOOTS[@]}" dummy_a31_retry; do
+    printf 'ENV\t%s\ttel=%s\t%s\n' "$b" "$(tel_on "$b" && echo on || echo off)" "$(env_for "$b" | tr '\n' ' ')"
+  done
+  for k in PRE VARIANTS boot REQ TEL teardown; do printf 'TIMEOUT_S\t%s\t%s\n' "$k" "${TMO[$k]}"; done
   for k in PRE VARIANTS; do
     printf 'EXPECT_MIN\t%s\t%s\t%s\n' "$k" "${EXP_LO[$k]}" "${EXP_HI[$k]}"; lo=$((lo + EXP_LO[$k])); hi=$((hi + EXP_HI[$k]))
   done
   for b in "${BOOTS[@]}" dummy_a31_retry; do
     local bk=boot; [[ "$b" == real_orig ]] && bk=boot_real
     local blo=$((EXP_LO[$bk] + EXP_LO[REQ] + EXP_LO[PRED] + EXP_LO[td])) bhi=$((EXP_HI[$bk] + EXP_HI[REQ] + EXP_HI[PRED] + EXP_HI[td]))
+    if tel_on "$b"; then blo=$((blo + EXP_LO[TEL])); bhi=$((bhi + EXP_HI[TEL])); fi
     printf 'EXPECT_MIN\t%s\t%s\t%s\n' "$b" "${blo}" "${bhi}"
     if [[ "$b" == dummy_a31_retry ]]; then retry_lo=${blo}; retry_hi=${bhi}; fi
     lo=$((lo + blo)); hi=$((hi + bhi))
   done
   printf 'EXPECT_TOTAL_MIN\tall_boots_with_a31_retry\t%s\t%s\n' "${lo}" "${hi}"
   printf 'EXPECT_TOTAL_MIN\tno_retry\t%s\t%s\n' "$((lo - retry_lo))" "$((hi - retry_hi))"
-  printf 'BUDGET_MIN\t%s\n' "${BUDGET_MIN}"
+  printf 'BUDGET_MIN\t%s\tboots=%s\ttel_allow=%s\n' "${BUDGET_MIN}" "${BOOT_BUDGET_MIN}" "${TEL_ALLOW_MIN}"
 }
 if [[ ${PLAN} == 1 ]]; then print_plan; exit 0; fi
 
@@ -154,7 +177,7 @@ if [[ ${DRY} == 1 && ! -d "${OUT_ROOT}" ]]; then OUT_ROOT="${TMPDIR:-/tmp}/compo
 RUN="${OUT_ROOT}/${RUN_ID}$([[ ${DRY} == 1 ]] && echo _dryrun)"
 mkdir -p "${RUN}"/{meta,logs,status,variants,cache/triton} || { echo "cannot create ${RUN}" >&2; exit 2; }
 for b in "${BOOTS[@]}" dummy_a31_retry; do mkdir -p "${RUN}/${b}"; done
-VAR_ROOT="${RUN}/variants"
+VAR_ROOT="${RUN}/variants"; RUN_DIR_FOR_ENV="${RUN}"
 export TRITON_CACHE_DIR="${RUN}/cache/triton" XDG_CACHE_HOME="${RUN}/cache/xdg" \
        FLASHINFER_WORKSPACE_BASE="${RUN}/cache/flashinfer" HF_MODULES_CACHE="${RUN}/cache/hf_modules"   # per-run JIT / remote-code caches
 mkdir -p "${XDG_CACHE_HOME}" "${FLASHINFER_WORKSPACE_BASE}" "${HF_MODULES_CACHE}"
@@ -182,7 +205,7 @@ except Exception: print("MISSING")' "${RUN}/status/$1.json"
 over_budget() { (( SECONDS > BUDGET_MIN * 60 )); }
 fits() { (( SECONDS + $1 * 60 <= BUDGET_MIN * 60 )); }
 skip() { set_status "$1" SKIPPED "$2"; }
-skip_boot() { local s; for s in BOOT REQ PRED TD; do skip "${s}-$1" "$2"; done; }
+skip_boot() { local s; for s in BOOT REQ PRED TD; do skip "${s}-$1" "$2"; done; tel_on "$1" && skip "TEL-$1" "$2"; return 0; }
 run_t() {        # secs logfile cmd...  -> rc (124 = timeout); clamped to the remaining budget (+60 s)
   local secs="$1" log="$2"; shift 2
   local left=$(( BUDGET_MIN * 60 - SECONDS + 60 )); (( left < 60 )) && left=60
@@ -245,7 +268,9 @@ rec = {"run_id": run_id, "mode": "dry-run" if dry == "1" else "gpu", "kind": "co
        "manifest": man, "manifest_sha256": sha(man), "keep_going": keep == "1", "budget_min": int(budget),
        "cap": int(cap), "context_length": int(ctx), "mem_fraction_static": float(memf),
        "nano_model": nano, "nano_revision": rev, "swap_rule": swap, "n_req": n_req, "in_len": in_len,
-       "out_tokens": out_tok, "synthetic_input_rule": rule, "telemetry": "off (decision 22)",
+       "out_tokens": out_tok, "synthetic_input_rule": rule,
+       "telemetry": "off (decision 22) except dummy_a13, dummy_a31, dummy_a31_retry: PDMUX_TELEMETRY_PATH=<boot>/tel.jsonl "
+                    "+ PDMUX_PHASE_EVENTS=1 for the TEL-<boot> existence check (decision 26; not a measurement)",
        "script_sha256": {os.path.basename(p): sha(p) for p in
                          (os.path.join(vd, "compo_probe.sh"), helper, mv, os.path.join(vd, "longctx_probe_helper.py"))}}
 json.dump(rec, open(out, "w"), indent=2)
@@ -295,7 +320,9 @@ else set_status PRE PASS "manifest verified (${n_ent} entries), install commit =
 fi
 stage_end PRE
 ALL_STAGES=(VARIANTS)
-for b in "${BOOTS[@]}" dummy_a31_retry; do ALL_STAGES+=("BOOT-${b}" "REQ-${b}" "PRED-${b}" "TD-${b}"); done
+for b in "${BOOTS[@]}" dummy_a31_retry; do
+  ALL_STAGES+=("BOOT-${b}" "REQ-${b}"); tel_on "$b" && ALL_STAGES+=("TEL-${b}"); ALL_STAGES+=("PRED-${b}" "TD-${b}")
+done
 if [[ "$(status_of PRE)" != PASS ]]; then
   for s in "${ALL_STAGES[@]}"; do skip "$s" "PRE not PASS"; done
   exit 1
@@ -322,6 +349,25 @@ assert (str(ns.load_format) == "dummy") == want_dummy, ns.load_format
 print("ok", ns.enable_pdmux, ns.load_format, ns.max_mamba_cache_size)
 PY
     then argfail="boot argv '${b}' rejected by the SGLang CLI (logs/argcheck_${b}.log)"; break; fi
+    mapfile -t _ev < <(env_for "$b")
+    if ! python3 - "${SGLANG_ENGINE_DEV}/sglang/srt/multiplex/multiplexing_mixin.py" "$(tel_on "$b" && echo 1 || echo 0)" \
+         "${_ev[@]}" > "${RUN}/logs/envcheck_${b}.log" 2>&1 <<'PY'
+# the INSTALLED resolver, extracted by AST (no sglang import: a heavy import failing here would cost the run)
+import ast, os, sys
+tree = ast.parse(open(sys.argv[1]).read())
+keep = [n for n in tree.body if (isinstance(n, ast.FunctionDef) and n.name == "resolve_phase_events")
+        or (isinstance(n, ast.Assign) and any(getattr(t, "id", None) == "PHASE_EVENT_TYPES" for t in n.targets))]
+ns = {"os": os}
+exec(compile(ast.Module(body=keep, type_ignores=[]), sys.argv[1], "exec"), ns)
+PHASE_EVENT_TYPES, resolve_phase_events = ns["PHASE_EVENT_TYPES"], ns["resolve_phase_events"]
+want = sys.argv[2] == "1"
+env = dict(kv.split("=", 1) for kv in sys.argv[3:])
+on = resolve_phase_events(env.get("PDMUX_TELEMETRY_PATH", ""), env)
+assert on == want, (on, want, env)
+assert set(PHASE_EVENT_TYPES) == {"prefill_span_start", "prefill_span_end", "decode_iteration"}, PHASE_EVENT_TYPES
+print("ok phase_events", on)
+PY
+    then argfail="boot env '${b}' not resolved as intended by resolve_phase_events (logs/envcheck_${b}.log)"; break; fi
   done
 fi
 if [[ "$(status_of VARIANTS)" != PASS || -n "${argfail}" ]]; then
@@ -360,13 +406,16 @@ boot_server() {   # boot -> sets srv_pid srv_port; returns 0 if /health 200
   [[ ${srv_port} == 0 ]] && { echo "no free port" > "${dir}/boot_error.txt"; return 1; }
   printf '%q ' python -m sglang.launch_server "${av[@]}" --port '<PORT>' > "${dir}/launch_command.txt"; echo >> "${dir}/launch_command.txt"
   # knobs this probe does NOT use (same list as longctx_probe.sh / engine_gate_driver.py UNSET_KNOBS); telemetry OFF
+  # unless env_for re-exports it (TEL boots only, decision 26)
   unset SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN PDMUX_SLO_SCHED PDMUX_SLO_MODE PDMUX_LA_COORD \
         PDMUX_FIXED_DECODE_SM_FILE PDMUX_TRACE_FORCE_PREFILL PDMUX_DUAL_WORKER_TRACE_EVERY \
         PDMUX_TRUE_DUAL_WORKER PDMUX_DUAL_WORKER PDMUX_STICKY_PARTITION PDMUX_R2_POLICY PDMUX_R2_FIXED_DSM \
         PDMUX_MODEL_PROFILE PDMUX_ENGINE_MODE PDMUX_ADMISSION_PATH PDMUX_DECODE_PROBE_PATH \
         PDMUX_DECODE_PROBE_GPU_EVENTS PDMUX_TELEMETRY_PATH PDMUX_PHASE_EVENTS CUDA_LAUNCH_BLOCKING
   export PDMUX_RUN_ID="${RUN_ID}" PDMUX_WORKLOAD_ID="compo_probe_${b}"
-  [[ "$(engine_mode_for "$b")" == vanilla ]] && export PDMUX_ENGINE_MODE=vanilla   # PD-mux off (fused_sym)
+  local kv
+  while IFS= read -r kv; do [[ -n "${kv}" ]] && export "${kv?}"; done < <(env_for "$b")   # vanilla knob / TEL ON
+  if tel_on "$b"; then rm -f "${dir}/tel.jsonl"; echo "+ env $(env_for "$b" | tr '\n' ' ')" >> "${RUN}/logs/commands.txt"; fi
   echo "+ setsid $(cat "${dir}/launch_command.txt") [PORT=${srv_port}] > ${b}/server.log" >> "${RUN}/logs/commands.txt"
   setsid python -m sglang.launch_server "${av[@]}" --port "${srv_port}" > "${dir}/server.log" 2>&1 &
   srv_pid=$!
@@ -412,6 +461,17 @@ run_boot() {   # boot -> BOOT/REQ/PRED/TD statuses
     skip "REQ-${b}" "server not healthy"
   fi
   stage_end "REQ-${b}"
+  if tel_on "$b"; then
+    stage_begin "TEL-${b}"
+    if [[ ${healthy} == 1 ]]; then
+      run_t "${TMO[TEL]}" "${d}/tel_check.log" python3 "${HELPER}" tel --port "${srv_port}" --srvlog "${d}/server.log" \
+        --tel "${d}/tel.jsonl" --boot "$b" --tokenizer "${nano_snap}" --out "${d}/tel_check.json" --status-dir "${RUN}/status"
+      [[ "$(status_of "TEL-${b}")" == MISSING ]] && set_status "TEL-${b}" FAIL "tel helper produced no status (timeout ${TMO[TEL]}s or crash; ${b}/tel_check.log)"
+    else
+      skip "TEL-${b}" "server not healthy"
+    fi
+    stage_end "TEL-${b}"
+  fi
   stage_begin "PRED-${b}"
   if [[ ${healthy} == 1 ]]; then
     python3 "${HELPER}" pred --boot "$b" --variant-json "${VAR_ROOT}/$(variant_of "$b")/variant.json" \
