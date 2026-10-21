@@ -290,6 +290,8 @@ vanilla 경로에서 `decode_forward` 방출이 확인되지 않으면(`NOT_COLL
 
 **등록 예측 [유도, 봉인]**: (P1) 배너 s·k가 위 표의 ±2% → `COMPO_MEM_HELD`. (P2) T4 실현 동시 수가 각 변형의 산식 B(§1-4, 그 변형의 s·k·풀)와 [0.90, 1.10] → `CMEM_ACCT_HELD_a{n}`. (P3) decode ctx 기울기 c(n)이 attention 층 수에 비례: `c(n)/c(4)`가 `n/4`의 ±25% 안 → `CTX_SLOPE_PROP_HELD`, 아니면 `CTX_SLOPE_PROP_MISS`(형태를 기술). (P4) prefill 비선형성 q(n)은 n에 단조 증가 → `PREFILL_Q_MONOTONE` / 위반 시 `_NOT_MONOTONE`. **예측 없음(기술값)**: D=24 대 D=64의 decode 시간 비(SM 민감도)의 조성 의존 — Claim E 첫 화살표(층 종류별 SM 스케일링 차이)와 관련되지만 **판정이 아니라 기술값**이며, 등급 변경은 claims-auditor 감사 뒤에만 논의한다.
 
+**프로브 반영(2026-10-21, `compo_probe/RESULT_compo_probe_2026-10-21.md`, 인용 불가 프로브 값 — 설계 입력으로만)**: 변형 a4·a13·a22·a31 모두 dummy·PD-mux·cudagraph·cap 128로 부팅, 배너 s·k·층 수가 위 표와 일치(±0.3% 안), a31도 원 argv로 부팅, TEL phase event 쌍이 a13·a31에서 방출. mem 0.6의 KV 풀 토큰이 조성에 따라 약 887k(a4)→419k→334k→298k(a31)로 줄어든다(k가 커지므로; 풀 바이트는 오히려 늘어남). **§3-1 실행 가능성 규칙(O+X = 498)을 이 풀에 적용하면 T1 6셀 중 (32, 32k)는 네 변형 모두 `INFEASIBLE_BY_RULE`**이므로, 변형 간 비교 격자는 공통 실행 가능 5셀(bs 8 × {2k, 8k, 32k}, bs 32 × {2k, 8k})로 고정한다 [봉인]. 실제 풀 값은 측정 Job의 부팅 로그로 다시 평가한다. 측정 Job은 이미지에 `libnuma1`이 필요하다(프로브 시도 0의 `sgl_kernel` import 실패 원인; 기존 Job 경로에서의 처리 여부를 봉인 전 확인).
+
 **rev3.3 Job 분할**: **J-H1** = A boot 전부(변형 4 + real a4 + Llama + OFF 진단; W-INDEP·P1–P4는 J-H1 안에서 판정), **J-H2** = B·C boot 전부(변형 4 × 2; SM 민감도 기술값과 T3 조성 의존은 J-H2 안에서만 비교). 두 Job 사이의 수준값은 비교하지 않는다(§0).
 **T3 조성 의존 [rev3.3, 기술값 — 예측 등록 안 함]**: 변형별 ln ρ·ln σ·q_stall 셀 표. ρ는 동거·전력 한도 클럭·부하 의존 관측자 비용의 합성값이라(CONSENSUS §1-38·§8) **변형 간 차이를 '간섭의 조성 의존 크기'로 쓰지 않는다**. 변형마다 가중치 바이트·전력 상태가 달라 클럭 공변(I-1)을 창 단위로 병기한다. a31(Mamba 0층)은 동거 대상 decode가 attention 전용이라 σ 해석이 다르다는 점을 표에 표시한다.
 
@@ -447,7 +449,7 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 | 12 | 부팅값(`new_token_ratio`·캡처 bs 목록·`split_forward_token_budget`/`max_prefill_tokens`) | 부팅 시 기록(봉인 대상 아님, 기록 규칙만 봉인) | — |
 | 13 | 봉인 S1(규칙·하네스·엔진·config digest) | 대기 | 5–11 |
 | 14 | CPU preflight → `launch.sh` dry-run → 사용자 승인 → `--submit` | 대기 | 13 |
-| 15 | (rev3.2) 조성 변형 부팅 프로브(비측정, `scripts/vessl/compo_probe.sh`) PASS — 변형 a4·a13·a22·a31이 dummy·PD-mux·cudagraph로 부팅, 배너 s·k 대조 | 코드·CPU 테스트 완료, GPU 미실행 | 사용자 승인(GPU) |
+| 15 | (rev3.2) 조성 변형 부팅 프로브(비측정, `scripts/vessl/compo_probe.sh`) PASS — 변형 a4·a13·a22·a31이 dummy·PD-mux·cudagraph로 부팅, 배너 s·k 대조 | **완료 — 전 단계 PASS**(run `compo_probe_20261021T131621Z`, 커밋 `1d7261c6`) | 사용자 승인(GPU) |
 | 16 | (rev3.2) O-16·O-17 | 완료(결정 26: O-16 포함, O-17 제외) | — |
 
 하네스 변이 시험 추가(§2-2′): "T3 셀을 T1 boot에서 실행(TEL 비대칭)" · "OFF 진단 boot에 계측 env가 남음" · "OFF 진단 비로 T1 값을 보정".
