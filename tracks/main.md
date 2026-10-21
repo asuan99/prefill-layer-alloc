@@ -8,7 +8,8 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 - 채우는 칸: CM-1(`s_attn` vs `s_ssm`), CM-4(`δ(p,d)` + lockstep span 정지), CM-5(장문 KV vs mamba 슬롯, cap), (확장) N·TP 통신 항
 - 이번에 알게 된 것: 판정 0(M3 미완). 사실만 — J1 GPU0 샘플 61%가 기본 400 W 한도 throttle(0x4, 클럭 중앙 1380 MHz, 59 °C); 하네스 시간 모형이 확장 셀을 빠뜨려 rev12 예산 190 GPU-h가 과소(J1 실측 보정 시 J_N 20–21 h > 캡 16 h)
 - promote 필요: 예 (감사) — PREREG rev2 2회차 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md`); PREREG rev1 규칙층 NO-GO(`workspace/engine-port/results/cap_char/VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`); 128k 프로브 감사 `workspace/engine-port/results/cap_char/probe_128k/AUDIT_probe_128k_2026-10-20.md`(허용 문안 1–7); 예 (결정) — 결정 10–21(대조 모델·fused_tuned·shape C·long-ctx 입력); 아니오(이전 항목 반영 완료) — 2026-10-19 반영 완료: J1(N=1) 분석·감사 허용 문안 1–5(COSTMODEL CM-2·4·6, CONSENSUS §3 항목296), Claim E 첫 화살표 판정(CM-1 정정, §6 등급 불변), 사용자 결정 1–7·8′(CM-5, PROJECT_STATUS 최상단 5줄), preflight PASS·rev12 봉인·M3 J2/J4/J8 외부 종료·예산 모형 과소 교훈(확장 행)
-## 현재 상태 (2026-10-20)
+## 현재 상태 (2026-10-21)
+- **관측자 효과 분해**(engsync `c875dc21`, 02:22–05:16Z, export 288/288 무결): agnostic·shape A·cap 48·mem 0.6, n=4 블록 진단. **λ\*_thr: TEL(기존 telemetry+phase events) −1.7%(95% CI −2.5~−1.0) FLAGGED**, I-5 −0.4·I-6 −0.6·I-4 증분 −0.3%(전부 CI∋0). **ITL p95: I-4 증분(CUDA event) +1.0%(+0.5~+1.5) FLAGGED**, 나머지 CI∋0. 점추정 합 ≈ gamma-A −2.6%와 같은 규모(가법성 가정). ★함의(감사 전): 기존 telemetry는 PD-mux 경로에서만 방출되므로 과거 PD-mux 대 fused 비교에 PD-mux 쪽 소폭 비관 편향이 있었을 수 있음 → claims-auditor 필요.
 - **gamma 결과**(11:42–14:29Z, 수동 회수 — export 절단 재발, GATE_RESULT 보존, engsync `45628e0e`): **gamma-A(agnostic) OBSERVER_EFFECT** — 계측 ON이 λ\*_thr를 −2.6%(95% CI −2.9~−2.3%), ITL p95를 +2.0%(+0.9~+3.1%) 바꿈(±1.5% 밖, n=10). **gamma-F(fused_sym) UNRESOLVED_POWER** — λ −0.65%(−1.6~+0.3%), ITL p95 SD 4.0%(예보보다 큼). agnostic seed 3개가 STALL_BOUNDARY. 엔진 묶음 gate 미완 → 사용자 결정.
 - **G-β 재실행 PASS**(engsync `ad11bcca`, 20분): 단위 36사례 — 패치본 view 출력 sha = 원본 contig(전 T), 원본 view는 94,800↑ 붕괴/crash; 서빙 98,304 통과(fused·agnostic), 되돌린 판 95,100 illegal 사망, 재적용 통과 → **int64 오프셋 넘침 원인 반증 실험 통과**(감사 전 해석). **gamma-A·gamma-F 제출**(11:41Z, 각 ≤270분, OO 제외).
 - **G-α 재실행 PASS(28/28)** engsync `b91dbded`(검사 v2, REG `b726ea3f…`; B2 M=39=I-5, 인용 금지 3문장 `AUDIT_gate_split_design_r2_2026-10-20.md`) → G-β 1회차(15분) **FAIL = 하네스 결함 3건**(단위 시험 bf16 atol 0.02 < 유효 커널 차 0.04–0.057·w11328 입력 오류·비차단 모드에서 conv traceback 요구). 반증 증거는 예측대로: 원본 view는 94,784 정상·94,800부터 붕괴/사망, 패치본은 95,100·126,976 정상이고 출력이 원본 contig와 sha 동일, 서빙 98,304 통과·되돌린 판 95,100 illegal 사망·재적용 통과(engsync `afe94ba2`). gamma는 하네스 재감사 NO-GO(OO 진단 배선 결함) → 사용자 결정.
@@ -33,7 +34,8 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. 128k 프로브 스크립트(G1–G7) 작성·CPU 회귀 → 승인 → Llama 적재 + A100 프로브
 4. G0 PREREG(cap = cap 특성화 결과, λ*_SLO 판정, arm별 prior·확장 발화 기본 시나리오 — J1 분석 반영) · M3는 G0 뒤 재결정
 ## 사용자 결정 대기
-- (결정 21) 분해 Job 하네스 준비 완료(engsync `d1f2ddbb`, 5수준 {OFF,I5,I6,I46,TEL}×4블록, 약 3.6 h, 캡 250분) — **VESSL 인증 만료로 미제출**, 사용자 `vesslctl auth login` 필요
+- **계측 정책** / TEL·I-4가 PD-mux 측정을 1–2% 움직임 / 판정 측정은 전 arm 계측 OFF, 계측은 진단 boot·Job 내 ON/OFF 짝으로 효과 공시(권고) · 계측 경량화 후 gamma 재실행 · 보정 계수 수용
+- **과거 결과 영향 감사** / telemetry가 PD-mux에만 방출 / claims-auditor에 과거 PD-mux 대 fused 비교의 편향 범위 감사 의뢰(권고)
 - (결정 16으로 O-1·2·3·5·7 처리, GPU gate 분할) 다음 대기 = PREREG rev2 2회차 감사 결과 · 분할 gate 설계 승인(GPU)
 - **LongBench v2·InfiniteBench 사용(공식 가운데 절단)** / 보류(결정 12′) / 프로브 뒤 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38
