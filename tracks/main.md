@@ -33,7 +33,7 @@ anchor 주장 1(generic 예측기가 hybrid에서 다른 결정을 내리는가)
 3. 128k 프로브 스크립트(G1–G7) 작성·CPU 회귀 → 승인 → Llama 적재 + A100 프로브
 4. G0 PREREG(cap = cap 특성화 결과, λ*_SLO 판정, arm별 prior·확장 발화 기본 시나리오 — J1 분석 반영) · M3는 G0 뒤 재결정
 ## 사용자 결정 대기
-- (결정 21: 계측별 분해 Job 승인) 다음 대기 = 분해 결과 → 해당 계측 경량화/제외 후 gamma 재실행 여부
+- (결정 21) 분해 Job 하네스 준비 완료(engsync `d1f2ddbb`, 5수준 {OFF,I5,I6,I46,TEL}×4블록, 약 3.6 h, 캡 250분) — **VESSL 인증 만료로 미제출**, 사용자 `vesslctl auth login` 필요
 - (결정 16으로 O-1·2·3·5·7 처리, GPU gate 분할) 다음 대기 = PREREG rev2 2회차 감사 결과 · 분할 gate 설계 승인(GPU)
 - **LongBench v2·InfiniteBench 사용(공식 가운데 절단)** / 보류(결정 12′) / 프로브 뒤 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38
