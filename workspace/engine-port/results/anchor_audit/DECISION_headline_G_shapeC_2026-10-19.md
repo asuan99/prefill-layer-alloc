@@ -124,3 +124,8 @@
 - **판정 측정**(arm 비교·SLO·goodput 판정)은 모든 arm에서 계측 OFF로 잰다. 계측 효과는 진단 boot와 **같은 Job 안 ON/OFF 짝**으로 재서 공시한다(보정 계수로 쓰지 않는다).
 - gamma는 **"관측자 효과 특성화 완료"로 닫는다**. G-γA·G-γF는 PASS가 아니며, 엔진 묶음 봉인 조건은 G-α·G-β PASS + 이 결정으로 대체한다.
 - 항 측정(rev3-MEAS)은 계측 레코드가 estimand의 정의라 계측을 끌 수 없다. 이 정책의 적용 형은 rev3-MEAS §2-2′(계측 매트릭스 + Job 내 OFF 진단 boot)에 둔다.
+
+## 결정 23 (2026-10-21) — 병합 방식·rev3.1 O-14·O-15·감사 후속 (권고안 채택)
+- engsync(`engine-sync-i5-int64`) → main은 **squash 병합**한다. `results/engine_gate*`의 원자료(`.so`, Triton 캐시, SGLang 소스 사본, `power_samples.csv`, 대형 `.gz`·`.csv`)는 커밋하지 않고 저장소 밖 `_vessl_fetch/<job>`에 두며, 빠진 파일 목록·sha256 manifest만 추적한다. `.gitignore`를 보강한다. 병합 전후 CPU 회귀를 대조한다.
+- rev3.1 O-14: J-C에 OFF 진단 boot를 포함한다. O-15 (b): J-B를 J-B1(H 대비)·J-B2(T4)로 나눈다.
+- telemetry 비대칭 감사(`../engine_gate_prep/AUDIT_telemetry_asymmetry_past_results_2026-10-21.md`) 후속: CPU 아카이브 확인 1건만 한다(P1-opint 엔진의 trace-path 조기 return 분기). J1 보정 GPU Job은 하지 않는다.
