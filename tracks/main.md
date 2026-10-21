@@ -24,7 +24,7 @@
 - 운영 사고·교훈: object-volume export 절단이 gamma-A·F에서 재발(분해 Job은 요약만 export해 288/288 무결) · 1회차 128k 프로브 폴링 오판으로 A100 약 60분 유휴(완료 판정은 SUMMARY/DONE 파일로) · VESSL 인증 만료 시 사용자 `vesslctl auth login`.
 ## 다음 행동
 1. (결정 23) main 회귀 베이스라인 완료 대기 → engsync squash 병합(원자료 제외·`.gitignore` 보강, git-committer) → 병합 후 회귀 대조 → digest 재확인
-   + P1-opint 엔진 trace-path 분기 CPU 확인(진행 중)
+   + P1-opint 엔진 trace-path 분기 CPU 확인 완료: 바이트 일치(`f60a1286`), OFF arm 관측 비용 0(감사서 §6)
 2. 신규 하네스 구현(§12 #7) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부

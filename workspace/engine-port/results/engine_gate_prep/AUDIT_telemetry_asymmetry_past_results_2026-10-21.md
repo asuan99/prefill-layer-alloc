@@ -57,3 +57,11 @@
 
 - 이 대상 1회차. 정본(CONSENSUS §1/§6)과 모순되는 새 판정 0, 등급 변경 제안 0. Claim G 근거 P1-opint는 이 축에서 불변.
 - 참조: engsync `results/engine_gate/pdmux-engine-gate-decomp-d1f2ddb-20261021022225/DECOMP_RESULT.json`, `…/pdmux-engine-gate-gamma-{a,f}-ad11bcc-*/GATE_RESULT.json`, `scripts/vessl/engine_gate_driver.py`(:439-445), `engine_gate_decomp.py`(:6-11, :57); `sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py`(:170-181, :224, :743-805, :2129-2300); main `results/p1_opint/p1op_run.sbatch`, `P1_OPINT_RESULT_2026-08-05.md:330`, `results/slo_sched/sharegpt_vary_bench.sbatch`, `DESIGN_S6_TELEMETRY_CONTRAST_2026-08-17.md`, `results/n2_static_grid/n2_plan.py`(:683-694), `results/multigpu/mg_const.py:157`, J1 `manual_retrieval/…/boots/*/env.json`·`FLOOR.json`, `multigpu_verdicts/ANALYSIS_J1_N1_2026-10-19.md`·`AUDIT_J1_N1_analysis_2026-10-19.md`.
+
+## 6. 후속 CPU 확인 결과 (2026-10-21, 결정 23; 읽기 전용 확인, 감사 회차 아님)
+
+- P1-opint manifest `results/p1_opint/runtime_source_manifest_{zamba2-27b_873944,granite-40-h-micro-base_873945}.sha256`(두 파일 동일)의 `multiplexing_mixin.py` sha256 `59eaafb4…`는 커밋 `f60a1286`(2026-08-03)의 `workspace/engine-port/src/multiplex/multiplexing_mixin.py`와 **바이트 일치**(그 경로 27개 리비전 중 유일). 같은 커밋의 telemetry.py·dual_worker.py·controller.py·profile.py도 manifest와 일치.
+- 분기(f60a1286 줄 번호): `_dual_worker_sync` :470-474 — dual worker도 trace path도 없으면 즉시 return(observe_scheduler O(queue) 순회·mark_phase·json emit 전부 건너뜀) · :526 trace path 있을 때만 기록 · telemetry.py :62-69 path None이면 writer 스레드 없음, :78 emit 즉시 반환 · :968 `_slo_on` False라 컨트롤러·EMA 블록 미실행.
+- OFF 근거: `p1op_run.sbatch`에 PDMUX_* export 0, agnostic 서버 로그에 observer/true-dual 활성 로그 없음, `P1_OPINT_RESULT_2026-08-05.md:330`. 셸 상속 env는 직접 확인 불가.
+- 남는 매 iteration 비용: :1092-1094 카운터 +1, :613-617 decode 배치 O(batch) `finished()` 순회(결과 폐기) — GPU 동기화 없음.
+- **결론: P1-opint agnostic arm의 telemetry 관측 비용 0 확인**(위 사소한 CPU bookkeeping 제외). plain arm은 `enable_pdmux=False`라 mixin 자체를 실행하지 않았다. §2의 P1-opint `CONFIRMED-불변` 판정을 바이트 수준에서 뒷받침한다. 남은 `synchronize`·이벤트 기록(:1073-1074, :1184, :1199, :1217)은 PD-mux 실행 기구이며 telemetry와 무관(업스트림 대조는 안 함).
