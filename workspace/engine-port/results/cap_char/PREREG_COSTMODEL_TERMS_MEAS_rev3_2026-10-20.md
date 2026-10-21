@@ -405,9 +405,9 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 | 1 | 결정 18 O-항목 반영 | 완료(§10 닫힘, §7-4 시간) | — |
 | 2 | 결정 22 계측 정책 반영 | 완료(§2-2′·§8-1·§9-2) | — |
 | 3 | O-14·O-15 | 완료(결정 23: O-14 포함, O-15 (b) J-B1·J-B2, §7-4) | — |
-| 4 | engsync → main 병합 | 결정 23: squash + 원자료 제외 + `.gitignore` 보강, 진행 중 — 병합 검토(2026-10-21): 경로 교집합 0·코드 의미 충돌 0, 단 `results/engine_gate*` 약 904 MB(`.so`·Triton 캐시·`power_samples.csv`) 정리 방식 결정 필요 | 사용자 승인 |
-| 5 | ENGINE\_DIGEST 통과값 | 대기(예상 `99bbef91…`; 병합 후 main에서 `engine_digest.py` 재계산 일치 확인) | 4 |
-| 6 | gate 설계 문서 main 경로 | 대기 | 4 |
+| 4 | engsync → main 병합 | **완료** — squash `ca1f30e7`(2026-10-21), 원자료 271개 약 217 MB 저장소 밖 이동(`engine_gate_prep/EXCLUDED_RAW_engsync_2026-10-21.sha256`), `.gitignore` 보강 | — |
+| 5 | ENGINE\_DIGEST 통과값 | **확인** — 병합 후 main 소스로 재구성한 트리(scratch 사본)에서 `99bbef91fe68…4325`, gate Job `digests.json`과 일치. 봉인 S1에 기입 | — |
+| 6 | gate 설계 문서 main 경로 | 완료 — `workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md` | — |
 | 7 | 신규 하네스(§11-2 ①–⑬ + §2-2′ 계측 매트릭스 검사·OFF 진단 boot) 구현·CPU 시험·변이 | 미착수 | 4 |
 | 8 | 하네스 경로·보고서 파일명 | 대기 | 7 |
 | 9 | config digest(D=64 index 추가본, D별) | 대기 | 7 |
