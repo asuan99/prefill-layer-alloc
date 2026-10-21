@@ -1,4 +1,4 @@
-# COSTMODEL — 지금까지 드러난 비용 구조 (진척판, 2026-10-13 신설 · 2026-10-19 갱신)
+# COSTMODEL — 지금까지 드러난 비용 구조 (진척판, 2026-10-13 신설 · 2026-10-21 갱신)
 
 > **지위**: 측정 결과를 새로 만들지 않는다. 이미 정본(`reports/CONSENSUS.md` §1, `reports/cost_model_design_space_2026-10-01.md`,
 > 감사 판정서)에 있는 사실을 **비용 항(CM-1…CM-7) 축으로 다시 배치**한 장부다. 연구 축은 `reports/system_design_anchor_2026-09-30.md`
@@ -16,14 +16,14 @@
 | 항 | 무엇 | 상태 | 다음 데이터 |
 |---|---|---|---|
 | CM-1 | decode step 시간 `T_dec(SM, bs, ctx)` | 형태 일부 확인 / **hybrid 고유 항 미입증**(연결 근거 부재, 반증 아님) | hold-out 서빙(고비용)·opchar(특성화) |
-| CM-2 | prefill span 시간 `T_span(L, SM)` | 형태 확인(마이크로벤치·격리 커널) / **서빙 floor 계수 확정(범위 한정: Nano-9B-v2 무경합)** | A1 span-SM, opchar 후속 |
+| CM-2 | prefill span 시간 `T_span(L, SM)` | 형태 확인(마이크로벤치·격리 커널) / **서빙 floor 계수 확정(범위 한정: Nano-9B-v2 무경합)** / chunk -1 장문 prefill 상한 ≈94.8k는 Triton conv int32 오프셋(수리 gate 통과, 성능 항 아님) | T2 격자(rev3.1, 미봉인) · A1 span-SM, opchar 후속 |
 | CM-3 | 전환·경계 비용 | **계수 확정(범위 한정)** — 무시 가능 | 컨트롤러 구동 경로만 미측정 |
 | CM-4 | 동거 간섭 `δ(p,d)` | **존재 확인(N2 Job-EA)** / 크기는 전력 한도와 교락 / J1: cap 노출 순서가 shape 의존이라 "PD-mux가 클럭을 낮춘다" 일반 가정 불가 | N2 후속 F-1…F-4(사용자 결정) |
-| CM-5 | 메모리·admission 예산 | **형태 확정(코드 사실)** · 고정 state s 대 KV 두 구간 특성화는 설계 v1만(측정 0) | I-5 계측 + cap×ctx 스윕 |
+| CM-5 | 메모리·admission 예산 | **형태 확정(코드 사실)** · s·k 실측(Nano: k 16,382 B/토큰, s 143.5 MB/요청, L\*≈8.8k [유도]) / 두 구간·cap 특성화는 측정 0 | T4 cap×L 격자(rev3.1, 미봉인; I-5는 gate α PASS) |
 | CM-6 | 대기열·TTFT | 구조 확인(entanglement 사슬) / 분해 규약 확정 / J1 B에서 처리율↔SLO 역순은 **미확립**(G0 몫) | N3 용량 · G0 LO·중간 rung |
 | CM-7 | prefix cache (radix ON) | 가설 | 보류(radix OFF 우선, 2026-09-24 결정) |
 | (E) | 컨트롤러·결정 비용 | **계수 확정** — 무시 가능 | — |
-| (확장) | N-GPU·TP, 층 배치(AMD), 에너지 | 가설 — 정확성 게이트·캡처 경로·merge preflight(CPU) `PREFLIGHT_PASS`만 통과(실행 바이트 보증 아님). M3는 J1(N=1)만 완주 — 비용 항 판정은 CM-2 floor 외 0, J2·J4·J8 2026-10-18 21:14 UTC 외부 종료 → **G_sym 전 N 미정의**, G0 뒤로 연기(2026-10-19 결정) | 각 트랙 TRACK.md · G0 PREREG |
+| (확장) | N-GPU·TP, 층 배치(AMD), 에너지 | 가설 — 정확성 게이트·캡처 경로·merge preflight(CPU) `PREFLIGHT_PASS`만 통과(실행 바이트 보증 아님). M3는 J1(N=1)만 완주 — 비용 항 판정은 CM-2 floor 외 0, J2·J4·J8 2026-10-18 21:14 UTC 외부 종료 → **G_sym 전 N 미정의**, G0 뒤로 연기(2026-10-19 결정); multigpu worktree 2026-10-21 폐기·main 흡수 | 각 트랙 TRACK.md · G0 PREREG |
 
 ## 항별 장부
 
@@ -38,6 +38,7 @@
 - **확정(마이크로벤치, 서빙 아님)**: attn/SSM SM 민감도 비 Diff B는 L≤512에서 열리고 L≥1024에서 ≈1.0(§1-3 WIDE 스윕). 서빙에서 그 차이를 런타임 per-type 분할로 쓰면 granularity 비용이 압도(TPOT 42→124 ms, §1-3/§1-15) ⇒ 층 종류 차이는 **존재하나 레버가 아니다**.
 - **서빙 floor 계수(J1 N=1 감사 CONFIRMED·범위 한정, 2026-10-19)**: "무경합 TTFT floor ≈ 9 ms + 0.111 ms/토큰 × L (L 1k–16k, 기울기 기준 ≈ 9.0k tok/s; Nano-9B-v2, 108 SM, chunked-prefill −1, VESSL A100, Job 4개·boot 8개에서 16k 산포 ±0.6%)."
 - 연산자 단위(opchar, 같은 범위 제한): 격리 연산자 시간 합 기준 Mamba 층이 prefill의 ~66–71%(L=1k–32k). "모델 시간의 %"로 인용 금지.
+- **장문 prefill 상한(사실, 성능 항 아님)**: chunk -1에서 Nano의 Triton `causal_conv1d` int32 오프셋이 약 94.8k(T ≥ 94,793)에서 넘친다 — 서빙 실패 경계이며 PD-mux 고유 아님. int64 패치는 gate G-β PASS(패치본 98,304 서빙 통과·되돌린 판 95,100 사망·재적용 통과)로 정확성만 확인했다. 감사 `cap_char/probe_128k/AUDIT_probe_128k_2026-10-20.md`: 기전 PLAUSIBLE(강함). 64k는 격자 선택이다. "PD-mux는 64k를 넘을 수 없다"·"OOM 때문" 금지.
 - 미감사·인용 금지: prefill 축 SM 스윕(TTFT~L 기울기비). 열린 형태 질문: MuxWise `N_PL` 층 균일 가정(X-4)이 비용 가중 층 수로 바뀌어야 하는가.
 
 ### CM-3 전환·경계 비용
@@ -54,8 +55,9 @@
 ### CM-5 메모리·admission 예산
 - **형태 확정(코드 사실)**: `disable_radix_cache ∧ max_running_requests`이면 `max_mamba_cache_size = max_running_requests`, 즉 cap≡mamba 슬롯 (§1-23). 이는 SGLang 정적 풀(부팅 시 할당, 슬롯 고갈 = assert)의 구현 결과로 할당기에 종속이며(통합 풀이면 소멸) **실험 설정으로 공시**한다. 순수 Transformer에선 admission만.
 - **확정**: hybrid KV가 오히려 큼(8.6×), 구속 자원은 mamba 슬롯(2026-09-28 감사). slot당 state 비용은 모델마다 다름(§1-23).
-- **E′ 문안(사용자 결정 8′, 2026-10-19 — 결정이며 판정 아님·측정 0)**: "hybrid의 요청당 메모리는 길이 무관 고정 state s를 가져, 짧은 ctx(< s/k, Nano-9B-v2 ~9k [유도, GB/GiB 단위 확인 필요])에서는 s가, 긴 ctx에서는 (작은) KV가 지배한다. 이 비용 구조와 goodput 영향을 양 구간에서 특성화한다. SGLang 정적 풀에서는 cap이 admission·decode bs·state 예약을 함께 정한다(실험 설정 공시)."
-- 금지: "~52k가 hybrid 경계"·"9k 경계 실측"(유도값, config 산술). I-5 거절 사유는 KV / cap(≡슬롯) 2분류 — `src/multiplex/admission_probe.py`, CPU 검증만·GPU gate 미실행.
+- **E′ 문안(사용자 결정 8′, 2026-10-19 — 결정이며 판정 아님·측정 0)**: "hybrid의 요청당 메모리는 길이 무관 고정 state s를 가져, 짧은 ctx(< s/k, Nano-9B-v2 약 8.8k [유도: 실측 k·s에서, GB 단위; GiB로 9.4k])에서는 s가, 긴 ctx에서는 (작은) KV가 지배한다. 이 비용 구조와 goodput 영향을 양 구간에서 특성화한다. SGLang 정적 풀에서는 cap이 admission·decode bs·state 예약을 함께 정한다(실험 설정 공시)."
+- **실측(128k 프로브 `cap_char/probe_128k/RESULT_probe_128k_2026-10-20.md`)**: Nano KV 16,382 B/토큰, state 143.5 MB/요청 → s/k ≈ 8.8k(GB). 이것은 부팅 로그 두 줄이며 경계 자체의 실측이 아니다.
+- 금지: "~52k가 hybrid 경계"·"9k 경계 실측"(유도값, config 산술). I-5 거절 사유는 KV / cap(≡슬롯) 2분류 — `src/multiplex/admission_probe.py`; 엔진 묶음 gate G-α 28/28 PASS(정확성 gate, 성능 claim 아님).
 - 설계 v1(cap {48, C_mem} × 표준 셀 + long-ctx {32k,64k,96k}): `workspace/engine-port/results/cap_char/DESIGN_cap_longctx_v1_2026-10-19.md`. 낡은 문장: `handoff_review_2026-10-15/COSTMODEL_running_cap_2026-10-15.md` §3-2의 "generic 예측기가 C_mem 과대평가"는 결정 8′로 폐기됨.
 
 ### CM-6 대기열·TTFT
@@ -80,6 +82,8 @@
 
 ## 아직 답하지 못한 것 (= 다음 실험이 채울 칸)
 
+- **계측 관측자 비용(측정 방법 항, 2026-10-21)**: PD-mux 쪽 telemetry 묶음(경로+PHASE_EVENTS, 몫 미분리)이 λ를 −1.7%, I-4가 ITL p95를 +1.0% 움직였다(분해 Job, shape A·agnostic·n=4 한정; 보정 계수 아님). 정책: 판정 측정은 전 arm 계측 OFF + Job 내 ON/OFF 짝 공시(결정 22). 영향 범위는 M3 J1만(P1-opint·HE0 불변; CONSENSUS §8).
+- 비용 항 측정(T1–T4)은 PREREG rev3.1 미봉인(체크리스트 6/14); 검증(V)은 항 데이터 뒤 별도 PREREG.
 - `s_attn(SM)` ≠ `s_ssm(SM)`인가 — 유효 측정 0건(Claim E 판정서 2026-10-19). 이 칸이 비어 있어도 Claim E는 반증되지 않으며, a는 E의 필요조건도 아니다(우회: 모델 hold-out 조성 귀속·memory/admission). 판정에는 hold-out 서빙이 필요하다(고비용).
 - `δ(p,d)`의 **전력 무관 크기**와 prefill 종류 의존 (N2 후속 F-1…F-4, 사용자 결정 대기). J1 GPU0 SW power cap 노출 60.6%라 multi-GPU 쪽도 총효과로만 읽힌다.
 - 워크로드 축: shape C(긴 입력 + 긴 출력)는 2026-10-19 사용자 결정으로 G0 두 번째 표준 셀로 편입됐으나(구체값은 G0 PREREG) **아직 측정 0**. hybrid ctx 항이 의미를 갖는지는 열린 질문이다.

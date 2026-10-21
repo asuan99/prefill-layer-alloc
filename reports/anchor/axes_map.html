@@ -179,7 +179,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   <h2>지금 어디를 보나 <span class="sec">§0</span></h2>
   <p class="lede">이 프로젝트를 볼 때 여는 곳은 아래 몇 군데입니다.</p>
   <div class="tbl"><table id="now-tbl"><thead><tr><th>알고 싶은 것</th><th>읽을 곳</th></tr></thead><tbody></tbody></table></div>
-  <p class="note"><b>2026-10-19 현재.</b> 사용자 결정(2026-10-19): headline은 Claim G 중심, shape C는 공통 워크로드이자 G0의 두 번째 표준 셀, G0에 순수 attention 대조 모델을 넣고, M3는 G0 뒤로 미룹니다. Claim E는 열린 질문으로 두며 §6 등급(미검증 핵심 가설)은 그대로입니다. 감사(2026-10-19): Claim E의 첫 화살표는 반증이 아니라 연결 근거 부재이고 a는 E의 필요조건이 아닙니다. M3 J1(N=1)은 완주했고 CM-2 floor만 확정(범위 한정), 처리율↔ITL 역순은 REFUTED였습니다. J2·J4·J8은 2026-10-18 외부 종료되어 G_sym이 전 N에서 미정의입니다. 근거는 <code>tracks/main.md</code>와 <code>PROJECT_STATUS.md</code> 최상단 3차 promote 5줄입니다.</p>
+  <p class="note"><b>2026-10-21 현재.</b> 사용자 결정(2026-10-19): headline은 Claim G 중심, shape C는 공통 워크로드이자 G0의 두 번째 표준 셀, G0에 순수 attention 대조 모델을 넣고, M3는 G0 뒤로 미룹니다. Claim E는 열린 질문으로 두며 §6 등급(미검증 핵심 가설)은 그대로입니다. 감사(2026-10-19): Claim E의 첫 화살표는 반증이 아니라 연결 근거 부재이고 a는 E의 필요조건이 아닙니다. M3 J1(N=1)은 완주했고 CM-2 floor만 확정(범위 한정), 처리율↔ITL 역순은 REFUTED였습니다. J2·J4·J8은 2026-10-18 외부 종료되어 G_sym이 전 N에서 미정의입니다. 2026-10-20~21 사용자 결정: 주 목적은 Nano-9B-v2 서빙 비용 모델(PD-mux 이득은 그 검증 대상), 판정 측정은 전 arm 계측 OFF + Job 내 ON/OFF 짝 공시입니다. 엔진 묶음은 main에 병합됐고(squash <code>ca1f30e7</code>) gate G-α·G-β는 PASS, G-γ는 관측자 효과 특성화로 종결(PASS 아님)입니다. telemetry 비대칭 감사(2026-10-21)는 M3 J1만 비대칭(부호 견고·크기 공시), 등급 변경 0입니다. 근거는 <code>tracks/main.md</code>와 <code>PROJECT_STATUS.md</code> 최상단 4차·3차 promote 블록입니다.</p>
 </section>
 
 <section id="coord">
@@ -2095,9 +2095,10 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     "E5",
     "S10"
    ],
-   "st": "측정 0(이 트랙 신규). 2026-10-19 사용자 결정: headline = Claim G 중심, shape C 편입, G0에 attention 대조 모델, M3는 G0 뒤. Claim E 첫 화살표 = 연결 근거 부재(감사). 설계 v1(cap 블록 + long-ctx 블록)과 I-5 계측은 CPU까지.",
+   "st": "2026-10-21: 엔진 묶음 main 병합(squash ca1f30e7), gate α·β PASS(정확성 gate), γ 관측자 효과 특성화 종결. 비용 항 PREREG rev3.1 미봉인(6/14). 사용자 결정 14: 주 목적 = Nano-9B-v2 비용 모델, G = 검증 대상. 성능 주장 0. Claim E 첫 화살표 = 연결 근거 부재(감사).",
    "dec": [
-    "설계 v1 열린 질문(§5)·shape C 데이터셋·attention 대조 모델(128k 지원)·long-ctx 워크로드",
+    "로컬 엔진 트리 재동기화 여부(amd·opchar 영향 확인 뒤)",
+    "LongBench v2·InfiniteBench(보류) · 장문 hold-out 모델",
     "기존 유지: D-10 확정, radix OFF+편차 공시, 128k 프로브, 장문 hold-out 모델"
    ],
    "s": "tracks/main.md"
@@ -2128,11 +2129,11 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     "E2",
     "E6"
    ],
-   "st": "main으로 이양(2026-10-15). M2g 통과, merge preflight PASS(CPU). M3 J1(N=1)만 완주(CM-2 floor 확정·범위 한정), J2·J4·J8 2026-10-18 외부 종료 → G_sym 전 N 미정의. M3는 G0 뒤 연기(2026-10-19).",
+   "st": "worktree 폐기·main 흡수(2026-10-21). M3 J1(N=1)만 완주(CM-2 floor 확정·범위 한정), J2·J4·J8 2026-10-18 외부 종료 → G_sym 전 N 미정의. M3는 G0 뒤 연기. J1 A shape G_sym≈1·d44 −5.3%는 telemetry 비대칭 병기 필요(감사 2026-10-21).",
    "dec": [
     "M3 재개 여부(G0 뒤 재결정)"
    ],
-   "s": "../prefill-layer-alloc-multigpu/tracks/multigpu.md"
+   "s": "tracks/main.md"
   },
   {
    "n": "opchar",
