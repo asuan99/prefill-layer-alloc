@@ -7,7 +7,7 @@
 ## cost model 기여
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2 `T_span`), CM-4(T3 ρ), CM-5(T4 메모리·admission), (확장) TP2 항
 - 이번에 알게 된 것: CM-2 floor 9 ms+0.111 ms/토큰×L(≤16k, CONFIRMED) · Nano 실측 k 16,382 B/토큰·s 143.5 MB/요청(L\*≈8.8k) · chunk -1 장문 prefill 상한은 Triton causal_conv1d int32 오프셋(≈94.8k, 반증 실험 통과·감사 전) · **관측자 효과(분해 Job, agnostic·shape A·n=4): TEL 묶음(경로+PHASE_EVENTS, 몫 미분리) λ −1.7%, I-4 ITL p95 +1.0%** — 다른 arm·부하의 보정 계수 아님
-- promote 필요: 예 (결정) — 결정 24·25
+- promote 필요: 예 (결정) — 결정 24–26
 ## 현재 상태 (2026-10-21)
 - **엔진 묶음 main 병합 완료**: squash `ca1f30e7`(engsync `c875dc21`; engsync worktree·branch는 2026-10-21 폐기, git 밖 원자료 229개는 main worktree로 이동), ENGINE_DIGEST `99bbef91…` 병합 후 재계산 일치. 원자료 271개 약 217 MB는 `_vessl_fetch/_engsync_raw/`(manifest `engine_gate_prep/EXCLUDED_RAW_engsync_2026-10-21.sha256`). M3 rev12 봉인 검증 fail-closed(의도). 로컬 엔진 트리 2개는 구판(미동기화).
 - **분할 gate**(설계 `workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`, 감사 r1 GO-with-caveats·r2 상한):
@@ -30,8 +30,6 @@
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
-- **rev3.2 O-16·O-17** / J-H 설계 / O-16 D 축(SM 민감도의 조성 의존, Claim E 첫 화살표 관련 기술값) 포함(권고)·제외 · O-17 순수 SSM a0 제외(권고)·포함
-- **조성 프로브 GPU 실행 승인** / 프로브 코드 완성 후 / `compo_probe.sh` Workspace 또는 짧은 Job(약 1.5 h 상한) 승인
 - **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38
