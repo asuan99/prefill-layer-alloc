@@ -1,0 +1,27 @@
+{
+ "cells": {
+  "default": {
+   "post": 4.059648036956787,
+   "pre": 9.180671691894531,
+   "ref": 4.061093786731362
+  },
+  "green": {
+   "post": 5.483520030975342,
+   "pre": 10.62656021118164,
+   "ref": 5.509151611477137
+  }
+ },
+ "constants": {
+  "CALIB_REL_TOL": 0.02,
+  "MATMUL_N": 8192,
+  "POST_EXCLUDES_FACTOR": 1.2,
+  "PRE_INCLUDES_FRAC": 0.8,
+  "REPS": 30,
+  "SLEEP_MS": 5.0
+ },
+ "green_error": null,
+ "green_sm": 74,
+ "on_fail": "USER DECISION (the tolerance is not adjusted after seeing data)",
+ "verdict": "PASS",
+ "why": []
+}

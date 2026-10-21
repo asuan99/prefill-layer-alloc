@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 224.0,
+ "facts": {
+  "out_sha256": "0fbb90104e8d4146fc76253be3f120573f1eadf478ef355dfaebee45c3c7ede6",
+  "outcome": "OK"
+ },
+ "reason": "patched contig w22656 T=94790: OK (expected REF): reference completed with exact state",
+ "stage": "beta0_patched_contig_w22656_T94790_r0",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:24:26Z"
+}

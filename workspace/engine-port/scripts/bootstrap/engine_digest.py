@@ -9,7 +9,7 @@ the manifest FILE can never be sealed locally and then match inside a Job
 (verdict sec 4: "로컬 sha 봉인 시 Job ABORT_ENGINE_DIGEST").
 
 DEFINITION (pathless-v1).  Let h_1..h_K be the first-column hashes of the K
-registered manifest entries (K = 27 since 2026-10-12; the entry list is PARSED
+registered manifest entries (K = 30 since 2026-10-20 [29 in the undeployed b0f6cfeb], 27 before; the entry list is PARSED
 from sync_engine_tree.sh, not copied, so the two cannot drift).  Then
 
     digest = sha256( "".join(h + "\\n" for h in sorted(h_1..h_K)) )   (ASCII, lowercase hex)
@@ -54,7 +54,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 HERE = Path(os.path.abspath(__file__)).parent
 SYNC_SCRIPT = HERE / "sync_engine_tree.sh"
 SCHEME = "pathless-v1"
-EXPECTED_ENTRIES = 27  # sync_engine_tree.sh since 2026-10-12 (entries 26-27 appended)
+EXPECTED_ENTRIES = 30  # sync_engine_tree.sh since 2026-10-20 (26-27 appended 2026-10-12; 28-29 = I-5 + conv int64, decision 15; 30 = I-4/I-6 decode_probe, decision 16 O-2)
 PREFIX_N_DEFAULT = 25  # verdict sec 6-1(b): "앞 25개는 직전 VESSL manifest와 대조"
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _JOB_TS = re.compile(r"-(\d{14})$")

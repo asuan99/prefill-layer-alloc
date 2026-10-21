@@ -1,0 +1,10 @@
+{
+ "elapsed_s": 6581.4,
+ "facts": {
+  "released": true
+ },
+ "reason": "memory.used after teardown 0 MiB",
+ "stage": "pair07_on_teardown",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T13:32:07Z"
+}

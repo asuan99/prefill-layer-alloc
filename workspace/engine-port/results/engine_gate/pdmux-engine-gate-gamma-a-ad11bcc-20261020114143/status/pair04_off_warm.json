@@ -1,0 +1,8 @@
+{
+ "elapsed_s": 3156.3,
+ "facts": {},
+ "reason": "8/8 warm-up requests ok",
+ "stage": "pair04_off_warm",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T12:35:02Z"
+}

@@ -1,0 +1,58 @@
+{
+ "levels": {
+  "I46": {
+   "PDMUX_DECODE_PROBE_GPU_EVENTS": "1",
+   "PDMUX_DECODE_PROBE_PATH": "{dir}/decode_probe.jsonl"
+  },
+  "I5": {
+   "PDMUX_ADMISSION_PATH": "{dir}/admission.jsonl"
+  },
+  "I6": {
+   "PDMUX_DECODE_PROBE_GPU_EVENTS": "0",
+   "PDMUX_DECODE_PROBE_PATH": "{dir}/decode_probe.jsonl"
+  },
+  "OFF": {},
+  "TEL": {
+   "PDMUX_PHASE_EVENTS": "1",
+   "PDMUX_TELEMETRY_PATH": "{dir}/tel.jsonl"
+  }
+ },
+ "order_sha": "18d209665a5d81511d4c8afc625b2bf9039a38e48f3da1267ecb9e1dbf09fe41",
+ "plan": [
+  [
+   "OFF",
+   "I5",
+   "I6",
+   "I46",
+   "TEL"
+  ],
+  [
+   "I5",
+   "I46",
+   "OFF",
+   "TEL",
+   "I6"
+  ],
+  [
+   "I6",
+   "TEL",
+   "I5",
+   "OFF",
+   "I46"
+  ],
+  [
+   "TEL",
+   "OFF",
+   "I46",
+   "I6",
+   "I5"
+  ]
+ ],
+ "seeds": [
+  4386,
+  4162,
+  251,
+  2630
+ ],
+ "tel_and_phase_events": "TEL level only"
+}

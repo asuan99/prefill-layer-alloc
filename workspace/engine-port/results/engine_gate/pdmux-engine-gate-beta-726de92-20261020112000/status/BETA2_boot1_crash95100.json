@@ -1,0 +1,22 @@
+{
+ "elapsed_s": 1082.2,
+ "facts": {
+  "blocking": false,
+  "broken": true,
+  "died": true,
+  "pre_boundary_94500": {
+   "error": null,
+   "ok": true
+  },
+  "request_ok": false,
+  "returncode": -9,
+  "sig_conv": false,
+  "sig_illegal": true,
+  "signature_ok": true,
+  "traceback_conv_file": false
+ },
+ "reason": "pristine tree: server died",
+ "stage": "BETA2_boot1_crash95100",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:38:44Z"
+}

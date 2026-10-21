@@ -1,0 +1,10 @@
+{
+ "elapsed_s": 1013.8,
+ "facts": {
+  "bad": []
+ },
+ "reason": "48 streamed requests, 0 not as forced; window 26.75 s",
+ "stage": "B4_iso",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T08:32:14Z"
+}

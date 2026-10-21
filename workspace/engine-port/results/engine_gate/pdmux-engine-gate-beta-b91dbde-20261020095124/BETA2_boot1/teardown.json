@@ -1,0 +1,23 @@
+{
+ "banner": {
+  "available_gpu_mem_gib": 30.61,
+  "context_len_logged": 131072,
+  "kv_cache_tokens": 1588248,
+  "kv_k_gib": 12.12,
+  "kv_v_gib": 12.12,
+  "mamba_conv_gib": 0.09,
+  "mamba_ssm_gib": 6.46,
+  "max_mamba_cache_size": 48,
+  "max_total_num_tokens": 1588248
+ },
+ "log_signatures": {
+  "cuda_graph_capture_failed": 0,
+  "eager_fallback": 0,
+  "oom": 0,
+  "scheduler_exception": 2,
+  "traceback": 2
+ },
+ "memory_used_after_mib": 0,
+ "released": true,
+ "returncode": -9
+}

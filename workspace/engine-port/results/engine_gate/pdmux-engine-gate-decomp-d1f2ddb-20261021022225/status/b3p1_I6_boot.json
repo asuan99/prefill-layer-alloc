@@ -1,0 +1,23 @@
+{
+ "elapsed_s": 5227.2,
+ "facts": {
+  "instrumentation": {
+   "arm_pdmux_in_log_irrelevant": null,
+   "files": {
+    "admission": false,
+    "decode_probe": true,
+    "telemetry": false
+   },
+   "log_admission_enabled": false,
+   "log_decode_enabled": true,
+   "log_decode_events": false,
+   "on": true,
+   "sglang_file": "/opt/pdmux/sglang_engine_dev/python/sglang/__init__.py",
+   "tree": "/opt/pdmux/sglang_engine_dev/python"
+  }
+ },
+ "reason": "instrumentation level as intended",
+ "stage": "b3p1_I6_boot",
+ "status": "PASS",
+ "t_end_utc": "2026-10-21T03:51:23Z"
+}

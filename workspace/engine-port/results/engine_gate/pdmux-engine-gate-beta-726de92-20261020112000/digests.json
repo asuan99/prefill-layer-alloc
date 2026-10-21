@@ -1,0 +1,26 @@
+[
+ {
+  "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+  "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+  "n": 1,
+  "ok": true,
+  "state": "applied",
+  "tag": "initial"
+ },
+ {
+  "expected": "9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+  "got": "9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+  "n": 2,
+  "ok": true,
+  "state": "reversed",
+  "tag": "reversed"
+ },
+ {
+  "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+  "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+  "n": 3,
+  "ok": true,
+  "state": "applied",
+  "tag": "reapplied"
+ }
+]

@@ -1,0 +1,20 @@
+{
+  "attempted_requests": 810.0,
+  "client_error_requests": 0.0,
+  "duration_s": 262.88412079401314,
+  "failed_requests": 0.0,
+  "legacy_mean_itl_goodput_req_s": 0.19780578546524455,
+  "requests": 810.0,
+  "server_error_requests": 0.0,
+  "slo_goodput_req_s": 0.19780578546524455,
+  "slo_violation_ratio": 0.9358024691358025,
+  "throughput_req_s": 3.0812055043624635,
+  "token_itl_p50_ms": 26.61940292455256,
+  "token_itl_p90_ms": 40.30212042853236,
+  "token_itl_p95_ms": 44.616271601989865,
+  "token_itl_p99_ms": 46.335981613956385,
+  "ttft_p50_ms": 43729.486976983026,
+  "ttft_p90_ms": 71509.39417132176,
+  "ttft_p95_ms": 74411.95134767331,
+  "ttft_p99_ms": 76916.02589257061
+}

@@ -1,0 +1,22 @@
+{
+ "elapsed_s": 6640.3,
+ "facts": {
+  "instrumentation": {
+   "arm_pdmux_in_log_irrelevant": null,
+   "files": {
+    "admission": false,
+    "decode_probe": false,
+    "telemetry": false
+   },
+   "log_admission_enabled": false,
+   "log_decode_enabled": false,
+   "on": false,
+   "sglang_file": "/opt/pdmux/sglang_engine_dev/python/sglang/__init__.py",
+   "tree": "/opt/pdmux/sglang_engine_dev/python"
+  }
+ },
+ "reason": "instrumentation level as intended",
+ "stage": "pair07_off_boot",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T13:33:09Z"
+}

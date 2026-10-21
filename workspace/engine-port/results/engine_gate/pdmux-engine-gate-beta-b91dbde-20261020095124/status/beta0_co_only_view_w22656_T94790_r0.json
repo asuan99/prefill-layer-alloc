@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 368.5,
+ "facts": {
+  "out_sha256": null,
+  "outcome": "MISMATCH"
+ },
+ "reason": "co_only view w22656 T=94790: MISMATCH (expected BROKEN)",
+ "stage": "beta0_co_only_view_w22656_T94790_r0",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T09:58:22Z"
+}

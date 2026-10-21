@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 689.6,
+ "facts": {
+  "out_sha256": "b7af6d71ac34108a139391a8e666ff13dde0ed66b139e9a72bab9f2b140a043f",
+  "outcome": "STATE_MISMATCH"
+ },
+ "reason": "co_only view w22656 T=95100: STATE_MISMATCH (expected BROKEN): broken as predicted (STATE_MISMATCH)",
+ "stage": "beta0_co_only_view_w22656_T95100_r0",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:32:11Z"
+}

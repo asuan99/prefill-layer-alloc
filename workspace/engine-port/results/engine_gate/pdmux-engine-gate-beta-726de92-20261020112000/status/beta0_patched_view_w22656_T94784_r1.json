@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 276.5,
+ "facts": {
+  "out_sha256": "4c5580dbbfda3eb402578c625217457f9b58c41c1d54ac57281e7f48defcdfa4",
+  "outcome": "OK"
+ },
+ "reason": "patched view w22656 T=94784: OK (expected MATCH): output sha == reference sha",
+ "stage": "beta0_patched_view_w22656_T94784_r1",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:25:18Z"
+}

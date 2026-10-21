@@ -1,0 +1,15 @@
+{
+ "elapsed_s": 4.1,
+ "facts": {
+  "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+  "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+  "n": 1,
+  "ok": true,
+  "state": "applied",
+  "tag": "initial"
+ },
+ "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+ "stage": "digest_1_initial",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T09:19:31Z"
+}

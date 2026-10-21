@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 328.3,
+ "facts": {
+  "out_sha256": null,
+  "outcome": "ERROR"
+ },
+ "reason": "pristine view w11328 T=95100: ERROR (expected MATCH)",
+ "stage": "beta0_pristine_view_w11328_T95100_r0",
+ "status": "FAIL",
+ "t_end_utc": "2026-10-20T09:57:42Z"
+}

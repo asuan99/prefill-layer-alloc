@@ -1,0 +1,8 @@
+{
+ "elapsed_s": 6025.1,
+ "facts": {},
+ "reason": "HI cell done rc=0",
+ "stage": "b3p2_TEL_hi",
+ "status": "PASS",
+ "t_end_utc": "2026-10-21T04:04:41Z"
+}

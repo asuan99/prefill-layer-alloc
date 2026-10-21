@@ -154,3 +154,12 @@ workspace/engine-port/results/multigpu/manual_retrieval/
 
 # 128k probe: flashinfer/triton JIT cache fetched with run dirs (2026-10-20)
 workspace/engine-port/results/cap_char/probe_128k/*/cache/
+
+# engsync raw exclusions (2026-10-21): binaries/JIT caches/source copies/raw samples; raw lives in _vessl_fetch/_engsync_raw (see EXCLUDED_RAW_engsync_2026-10-21.sha256)
+**/results/**/*.so
+**/results/**/triton_unit_*/
+**/results/**/kernels/pristine_tree/
+**/results/**/power_samples.csv
+workspace/engine-port/results/engine_gate*/**/*.gz
+workspace/engine-port/results/engine_gate*/**/meta/clk.csv
+workspace/engine-port/results/engine_gate*/**/meta/energy.csv

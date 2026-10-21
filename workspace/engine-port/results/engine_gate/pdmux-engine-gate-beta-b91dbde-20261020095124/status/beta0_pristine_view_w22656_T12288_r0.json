@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 224.8,
+ "facts": {
+  "out_sha256": "790df6f7aeea85ea441d14ca1b6039b28c71a594d7658ec528690aa42fca4643",
+  "outcome": "MISMATCH"
+ },
+ "reason": "pristine view w22656 T=12288: MISMATCH (expected MATCH)",
+ "stage": "beta0_pristine_view_w22656_T12288_r0",
+ "status": "FAIL",
+ "t_end_utc": "2026-10-20T09:55:58Z"
+}

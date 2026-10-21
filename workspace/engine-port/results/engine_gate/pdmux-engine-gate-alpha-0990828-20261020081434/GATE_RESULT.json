@@ -1,0 +1,493 @@
+{
+ "checks": {
+  "a_cpass_agnostic": {
+   "abnormal_exit": false,
+   "g1": "PASS",
+   "m_median": 1.0,
+   "q": 0.125,
+   "verdict": "PASS"
+  },
+  "a_cpass_fused_sym": {
+   "abnormal_exit": false,
+   "g1": "PASS",
+   "m_median": 1.0,
+   "q": 0.234375,
+   "verdict": "PASS"
+  },
+  "a_cpass_llama": {
+   "abnormal_exit": false,
+   "g1": "PASS",
+   "m_median": 1.0,
+   "q": 0.046875,
+   "verdict": "PASS"
+  },
+  "a_spass_agnostic": {
+   "differing": [],
+   "n": 64,
+   "verdict": "PASS"
+  },
+  "a_spass_fused_sym": {
+   "differing": [],
+   "n": 64,
+   "verdict": "PASS"
+  },
+  "a_spass_llama": {
+   "differing": [],
+   "n": 64,
+   "verdict": "PASS"
+  },
+  "b_int64_le64k_sanity_agnostic": {
+   "differing": [],
+   "label": "sanity: lengths <= 64k are below the ~94.8k wrap point",
+   "n": 8,
+   "triton_key": [
+    {
+     "conv_source_sha256": "d70e258543d5108a440c1d8322079b97df72039e56b500fa70dc6b366f79efc9",
+     "dir": "/data/runs/pdmux-engine-gate-alpha-0990828-20261020081434/cache/triton_patched",
+     "entries_sha256": "ef1c328008bf9c3ed80c63a33e4ccce520222ee3c44cc467b463090621951cc2",
+     "n_entries": 55
+    },
+    {
+     "conv_source_sha256": "1700fae290fb1c28d6968f1f2732067aeba26e92898653f3ec6fcbed3c24e5cb",
+     "dir": "/data/runs/pdmux-engine-gate-alpha-0990828-20261020081434/cache/triton_reversed",
+     "entries_sha256": "aeb469b729fddde8df4eabca298fd8efb73e964eb90ee87738f3b62e47ed8c4d",
+     "n_entries": 51
+    }
+   ],
+   "verdict": "PASS"
+  },
+  "b_int64_le64k_sanity_fused_sym": {
+   "differing": [],
+   "label": "sanity: lengths <= 64k are below the ~94.8k wrap point",
+   "n": 8,
+   "triton_key": [
+    {
+     "conv_source_sha256": "d70e258543d5108a440c1d8322079b97df72039e56b500fa70dc6b366f79efc9",
+     "dir": "/data/runs/pdmux-engine-gate-alpha-0990828-20261020081434/cache/triton_patched",
+     "entries_sha256": "9df879a48c8808d9ed0fa7541a8779c3a9a45abc8400fddc9462e59e504519a5",
+     "n_entries": 56
+    },
+    {
+     "conv_source_sha256": "1700fae290fb1c28d6968f1f2732067aeba26e92898653f3ec6fcbed3c24e5cb",
+     "dir": "/data/runs/pdmux-engine-gate-alpha-0990828-20261020081434/cache/triton_reversed",
+     "entries_sha256": "aeb469b729fddde8df4eabca298fd8efb73e964eb90ee87738f3b62e47ed8c4d",
+     "n_entries": 51
+    }
+   ],
+   "verdict": "PASS"
+  },
+  "cudagraph_on_honoured": {
+   "bad": [],
+   "verdict": "PASS"
+  },
+  "digest_3x": {
+   "verdict": "PASS"
+  },
+  "emission_B2": {
+   "n_admission_windows": 201,
+   "n_decode_counted": 10953,
+   "n_decode_forward_records": 10974,
+   "n_pending_last_window": 1,
+   "n_resolved": 10974,
+   "resolved_frac": 1.0019172829361818,
+   "verdict": "PASS"
+  },
+  "emission_B4": {
+   "n_admission_windows": 187,
+   "n_decode_counted": 10495,
+   "n_decode_forward_records": 10560,
+   "n_pending_last_window": 1,
+   "n_resolved": 10560,
+   "resolved_frac": 1.0061934254406861,
+   "verdict": "PASS"
+  },
+  "emission_B6": {
+   "n_admission_windows": 158,
+   "n_decode_counted": 10562,
+   "n_decode_forward_records": 10566,
+   "n_pending_last_window": 1,
+   "n_resolved": 10566,
+   "resolved_frac": 1.000378716152244,
+   "verdict": "PASS"
+  },
+  "emission_B7": {
+   "n_admission_windows": 68,
+   "n_decode_counted": 1656,
+   "n_decode_forward_records": 1668,
+   "n_pending_last_window": 1,
+   "n_resolved": 1668,
+   "resolved_frac": 1.0072463768115942,
+   "verdict": "PASS"
+  },
+  "gpu_memory_released": {
+   "bad": [],
+   "kind": null,
+   "verdict": "PASS"
+  },
+  "i4_B2": {
+   "containment_violations": 0,
+   "host_mutant": {
+    "containment_violations": 0,
+    "n": 942,
+    "ratio": 0.028383083564997292,
+    "verdict": "FAIL"
+   },
+   "n": 942,
+   "ratio": 0.9974776504744323,
+   "verdict": "PASS"
+  },
+  "i4_B4": {
+   "containment_violations": 0,
+   "host_mutant": {
+    "containment_violations": 0,
+    "n": 1021,
+    "ratio": 0.03058789213044868,
+    "verdict": "FAIL"
+   },
+   "n": 1021,
+   "ratio": 0.9573079582293795,
+   "verdict": "PASS",
+   "window": [
+    345665.438336845,
+    345692.127837915
+   ]
+  },
+  "i4_B6": {
+   "containment_violations": 0,
+   "host_mutant": {
+    "containment_violations": 0,
+    "n": 1021,
+    "ratio": 0.031701294867745373,
+    "verdict": "FAIL"
+   },
+   "n": 1021,
+   "ratio": 0.9439763646927614,
+   "verdict": "PASS",
+   "window": [
+    346073.34226683,
+    346092.030824741
+   ]
+  },
+  "i5i6_B2": {
+   "at_cap_iters": 253,
+   "cap_stops": 232,
+   "i5_max": 48,
+   "i6_max": 48,
+   "verdict": "FAIL",
+   "why": [
+    "stair bs not visited: [40]"
+   ]
+  },
+  "i5i6_B4": {
+   "at_cap_iters": 255,
+   "cap_stops": 257,
+   "i5_max": 48,
+   "i6_max": 48,
+   "verdict": "PASS",
+   "why": []
+  },
+  "i5i6_B6": {
+   "at_cap_iters": 255,
+   "cap_stops": 257,
+   "i5_max": 48,
+   "i6_max": 48,
+   "verdict": "PASS",
+   "why": []
+  },
+  "i6_B2": {
+   "n": 654,
+   "n_hit": 654,
+   "n_padded_hits": 511,
+   "verdict": "PASS"
+  },
+  "i6_B4": {
+   "n": 639,
+   "n_hit": 639,
+   "n_padded_hits": 496,
+   "verdict": "PASS"
+  },
+  "i6_B6": {
+   "n": 639,
+   "n_hit": 639,
+   "n_padded_hits": 496,
+   "verdict": "PASS"
+  },
+  "i6_B7": {
+   "bad": [],
+   "n": 1668,
+   "n_hit": 0,
+   "verdict": "PASS"
+  },
+  "instrumentation_level": {
+   "bad": [],
+   "missing": [],
+   "verdict": "PASS"
+  },
+  "schema_all_on": {
+   "errors": [],
+   "verdict": "PASS"
+  },
+  "survival_all_steps": {
+   "dead": [],
+   "missing": [],
+   "verdict": "PASS"
+  }
+ },
+ "complete": true,
+ "digests": [
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 1,
+   "ok": true,
+   "state": "applied",
+   "tag": "initial"
+  },
+  {
+   "expected": "9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+   "got": "9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+   "n": 2,
+   "ok": true,
+   "state": "reversed",
+   "tag": "reversed"
+  },
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 3,
+   "ok": true,
+   "state": "applied",
+   "tag": "reapplied"
+  }
+ ],
+ "elapsed_s": 1721.1,
+ "export": {
+  "export_mb": 5.5,
+  "limit_mb": 300.0,
+  "moved_to_cluster_volume_only": []
+ },
+ "family": null,
+ "gate": "alpha",
+ "meta": {
+  "commit": "09908284b3ab08a3cb878385ad792f1586d8bb67",
+  "hardcap_min": 120.0,
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "job": "pdmux-engine-gate-alpha-0990828-20261020081434",
+  "started_utc": "2026-10-20T08:15:20Z",
+  "tree_state_at_start": "applied"
+ },
+ "note": "a scorer verdict is a harness result on this Job's data, not a performance claim",
+ "reg_sha256": "1c20b953d57313d9451bd75351f410a2f22d90fcb765be88372f90d091edef26",
+ "stages": {
+  "B1_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B1_c_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B1_c_pass_ctl": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B1_long": {
+   "reason": "8 requests, bad: []",
+   "status": "PASS"
+  },
+  "B1_s_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B1_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "B2_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B2_c_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B2_cap": {
+   "reason": "49 streamed requests, 0 not as forced; window 10.44 s",
+   "status": "PASS"
+  },
+  "B2_green": {
+   "reason": "3 candidate green-context/SM lines (recorded, not a pass criterion)",
+   "status": "RECORDED"
+  },
+  "B2_iso": {
+   "reason": "48 streamed requests, 0 not as forced; window 24.74 s",
+   "status": "PASS"
+  },
+  "B2_s_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B2_stair": {
+   "reason": "40 streamed requests, 0 not as forced; window 14.09 s",
+   "status": "PASS"
+  },
+  "B2_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "B3_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B3_c_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B3_c_pass_ctl": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B3_long": {
+   "reason": "8 requests, bad: []",
+   "status": "PASS"
+  },
+  "B3_s_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B3_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "B4_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B4_c_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B4_cap": {
+   "reason": "49 streamed requests, 0 not as forced; window 10.40 s",
+   "status": "PASS"
+  },
+  "B4_iso": {
+   "reason": "48 streamed requests, 0 not as forced; window 26.75 s",
+   "status": "PASS"
+  },
+  "B4_s_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B4_stair": {
+   "reason": "40 streamed requests, 0 not as forced; window 13.23 s",
+   "status": "PASS"
+  },
+  "B4_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "B5_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B5_c_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B5_c_pass_ctl": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B5_s_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B5_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "B6_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B6_c_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B6_cap": {
+   "reason": "49 streamed requests, 0 not as forced; window 7.34 s",
+   "status": "PASS"
+  },
+  "B6_iso": {
+   "reason": "48 streamed requests, 0 not as forced; window 18.73 s",
+   "status": "PASS"
+  },
+  "B6_s_pass": {
+   "reason": "64 prompts, 0 empty, 0 errors",
+   "status": "PASS"
+  },
+  "B6_stair": {
+   "reason": "40 streamed requests, 0 not as forced; window 9.33 s",
+   "status": "PASS"
+  },
+  "B6_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "B7_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B7_iso": {
+   "reason": "48 streamed requests, 0 not as forced; window 34.91 s",
+   "status": "PASS"
+  },
+  "B7_stair": {
+   "reason": "40 streamed requests, 0 not as forced; window 24.19 s",
+   "status": "PASS"
+  },
+  "B7_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "B8_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B8_long": {
+   "reason": "8 requests, bad: []",
+   "status": "PASS"
+  },
+  "B8_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "B9_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "B9_long": {
+   "reason": "8 requests, bad: []",
+   "status": "PASS"
+  },
+  "B9_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "digest_1_initial": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  },
+  "digest_2_reversed": {
+   "reason": "reversed: 9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5 vs expected 9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+   "status": "PASS"
+  },
+  "digest_3_reapplied": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  }
+ },
+ "verdict": "FAIL",
+ "verdict_so_far": "PASS"
+}

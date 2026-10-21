@@ -1,0 +1,13 @@
+{
+ "facts": {
+  "files": {
+   "admission": true,
+   "decode_probe": false,
+   "telemetry": false
+  },
+  "n_admission_windows": 453
+ },
+ "level": "I5",
+ "ok": true,
+ "why": []
+}

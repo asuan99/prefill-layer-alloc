@@ -1,0 +1,12 @@
+{
+ "facts": {
+  "files": {
+   "admission": false,
+   "decode_probe": false,
+   "telemetry": false
+  }
+ },
+ "level": "OFF",
+ "ok": true,
+ "why": []
+}

@@ -172,9 +172,9 @@ class TestG5aSealedTreeRecord(unittest.TestCase):
 
     def test_control_sealed_tree_pass(self):
         r = self.rec()
-        self.assertEqual(self.n, 27)
+        self.assertEqual(self.n, 30)
         self.assertEqual(r["tree"]["engine_digest"], self.dig)
-        self.assertEqual(len(r["tree"]["entries"]), 27)
+        self.assertEqual(len(r["tree"]["entries"]), 30)
         self.assertTrue(r["inputs"]["pdmux_context"]["is_manifest_entry"])
         self.assertTrue(r["inputs"]["mixin"]["is_manifest_entry"])
         self.assertTrue(r["sealed_tree_pass"])

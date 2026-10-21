@@ -1,0 +1,11 @@
+{
+ "blocking": true,
+ "broken": true,
+ "died": false,
+ "output_equals_patched": false,
+ "request_ok": true,
+ "returncode": null,
+ "sig_conv": false,
+ "sig_illegal": false,
+ "traceback_conv_file": false
+}

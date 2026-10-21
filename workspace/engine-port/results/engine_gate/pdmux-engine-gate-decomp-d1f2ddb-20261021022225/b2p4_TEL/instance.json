@@ -1,0 +1,51 @@
+{
+ "abnormal_exit": false,
+ "arm": "agnostic",
+ "block": 2,
+ "hi": {
+  "achieved": 3.055438314849964,
+  "g": 0.2995576234926231,
+  "itl_p95_ms": 44.477435001317644,
+  "n": 810,
+  "n_client_errors": 0,
+  "n_itl": 413910,
+  "n_server_errors": 0,
+  "rate": 4.784,
+  "rc": 0,
+  "rung": "HI",
+  "seed": 4162,
+  "stall": {
+   "label": null,
+   "n": 413910,
+   "stall_frac": 0.17147205914329203
+  },
+  "status": "OK"
+ },
+ "invalid_reasons": [],
+ "k": 9,
+ "level": "TEL",
+ "level_ok": true,
+ "lo": {
+  "achieved": 1.5358509317181102,
+  "g": -0.00016862007054176925,
+  "itl_p95_ms": 31.662840838544067,
+  "n": 300,
+  "n_client_errors": 0,
+  "n_itl": 153300,
+  "n_server_errors": 0,
+  "rate": 1.794,
+  "rc": 0,
+  "rung": "LO",
+  "seed": 4162,
+  "stall": {
+   "label": "STALL_BOUNDARY",
+   "n": 153300,
+   "stall_frac": 0.056764514024788
+  },
+  "status": "OK"
+ },
+ "position": 4,
+ "released": true,
+ "seed": 4162,
+ "valid": true
+}

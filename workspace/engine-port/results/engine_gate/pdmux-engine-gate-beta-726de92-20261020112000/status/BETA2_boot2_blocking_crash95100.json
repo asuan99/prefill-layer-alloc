@@ -1,0 +1,18 @@
+{
+ "elapsed_s": 1140.5,
+ "facts": {
+  "blocking": true,
+  "broken": true,
+  "died": false,
+  "output_equals_patched": false,
+  "request_ok": true,
+  "returncode": null,
+  "sig_conv": false,
+  "sig_illegal": false,
+  "traceback_conv_file": false
+ },
+ "reason": "server survived; output differs from the patched tree's (pristine is broken)",
+ "stage": "BETA2_boot2_blocking_crash95100",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:39:42Z"
+}

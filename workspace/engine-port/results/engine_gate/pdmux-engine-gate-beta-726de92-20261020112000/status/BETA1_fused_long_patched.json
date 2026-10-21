@@ -1,0 +1,15 @@
+{
+ "elapsed_s": 895.5,
+ "facts": {
+  "labels": [],
+  "memory": {
+   "max_used_mib": 79852,
+   "period_s": 0.1,
+   "samples": 814
+  }
+ },
+ "reason": "all requests completed with non-empty output, no illegal-access signature; labels []",
+ "stage": "BETA1_fused_long_patched",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:35:37Z"
+}

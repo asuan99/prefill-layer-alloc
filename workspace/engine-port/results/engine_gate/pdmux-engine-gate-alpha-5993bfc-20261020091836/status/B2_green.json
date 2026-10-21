@@ -1,0 +1,8 @@
+{
+ "elapsed_s": 582.6,
+ "facts": {},
+ "reason": "3 candidate green-context/SM lines (recorded, not a pass criterion)",
+ "stage": "B2_green",
+ "status": "RECORDED",
+ "t_end_utc": "2026-10-20T09:29:09Z"
+}

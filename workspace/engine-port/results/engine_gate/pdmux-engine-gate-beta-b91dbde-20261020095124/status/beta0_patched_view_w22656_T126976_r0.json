@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 190.0,
+ "facts": {
+  "out_sha256": "969091485452c0b40750a2bb53d55c5acd675754c9b8a88ae5ebb2c7bd1112c3",
+  "outcome": "MISMATCH"
+ },
+ "reason": "patched view w22656 T=126976: MISMATCH (expected MATCH)",
+ "stage": "beta0_patched_view_w22656_T126976_r0",
+ "status": "FAIL",
+ "t_end_utc": "2026-10-20T09:55:24Z"
+}

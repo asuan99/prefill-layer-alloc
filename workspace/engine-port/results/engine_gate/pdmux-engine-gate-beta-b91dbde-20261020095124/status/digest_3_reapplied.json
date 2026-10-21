@@ -1,0 +1,15 @@
+{
+ "elapsed_s": 829.1,
+ "facts": {
+  "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+  "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+  "n": 3,
+  "ok": true,
+  "state": "applied",
+  "tag": "reapplied"
+ },
+ "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+ "stage": "digest_3_reapplied",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T10:06:03Z"
+}

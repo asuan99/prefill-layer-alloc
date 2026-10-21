@@ -99,6 +99,16 @@ if [[ "${target}" == */m3_job.sh ]]; then
     echo "J2 table : M2G_PASS_TABLE_J2.json -- $(tabstate M2G_PASS_TABLE_J2.json); env PDMUX_M2G_PASS_SHA256_J2 $([[ -n "${j2_sha}" ]] && echo "set (${#j2_sha} chars)" || echo "NOT SET -> TP configs NOT_TESTED (DP only)")"
   fi
 fi
+# Engine gate Jobs (design GATE_SPLIT_DESIGN_2026-10-20.md): vesslctl has no wall-clock cap flag, so the cap is self-enforced by
+# the Job (PDMUX_GATE_HARDCAP_MIN, default per gate); print it, the GPU count and the cost bound so the approver sees them.
+if [[ "${target}" == */engine_gate_alpha.sh || "${target}" == */engine_gate_beta.sh || "${target}" == */engine_gate_gamma.sh || "${target}" == */engine_gate_decomp.sh ]]; then
+  gname="${target##*/engine_gate_}"; gname="${gname%.sh}"; gfam=""; gcap=""
+  for kv in "${extra_env[@]+"${extra_env[@]}"}"; do
+    case "${kv}" in PDMUX_GATE_FAMILY=*) gfam="${kv#*=}" ;; PDMUX_GATE_HARDCAP_MIN=*) gcap="${kv#*=}" ;; esac
+  done
+  python3 "${here}/engine_gate_driver.py" plan-info "${gname}" --family "${gfam}" --rate "${PDMUX_VESSL_RATE_USD_H}" ${gcap:+--hardcap-min "${gcap}"} \
+    || echo "WARNING: engine_gate plan-info failed" >&2
+fi
 if [[ "${submit}" -ne 1 ]]; then
   echo "(dry-run: nothing uploaded or created; add --submit after approval)"
   exit 0

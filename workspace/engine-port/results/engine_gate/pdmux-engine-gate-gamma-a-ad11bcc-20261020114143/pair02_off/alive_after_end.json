@@ -1,0 +1,16 @@
+{
+ "after_step": {
+  "index": 4,
+  "name": "end",
+  "status": "done",
+  "type": "cmd"
+ },
+ "alive": true,
+ "boot_id": "pair02_off",
+ "health_error": null,
+ "health_http_status": 200,
+ "poll_returncode": null,
+ "schema": "m2g_alive_after/v1",
+ "steps_total": null,
+ "t_epoch": 1792498107.9883204
+}

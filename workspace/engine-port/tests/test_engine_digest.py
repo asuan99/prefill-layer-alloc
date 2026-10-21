@@ -1,6 +1,6 @@
 """CPU checks for scripts/bootstrap/engine_digest.py (pathless ENGINE_DIGEST, harness verdict 2026-10-12 F7(b)).
 
-The property under test: the same 27 file contents give the same digest whether they sit
+The property under test: the same 30 (27 before 2026-10-20; 29 in the undeployed b0f6cfeb) file contents give the same digest whether they sit
 under a local dev tree or under /opt/pdmux/... in a VESSL container, while any content
 change, a missing/extra/reordered entry, or a different entry set changes the digest or
 is refused.  Manifests are produced by the real `sha256sum` binary with absolute paths,
@@ -58,10 +58,15 @@ def run_cli(*argv):
 
 class TestRegisteredEntries(unittest.TestCase):
     def test_parsed_from_the_sync_script(self):
-        self.assertEqual(len(RELS), 27)
+        self.assertEqual(len(RELS), 30)
         self.assertEqual(RELS[0], "sglang/srt/distributed/parallel_state.py")
         self.assertEqual(RELS[24], "sglang/srt/layers/attention/flashinfer_backend.py")
-        self.assertEqual(RELS[25:], ["sglang/srt/multiplex/pdmux_context.py", "sglang/srt/multiplex/multigpu_guard.py"])
+        self.assertEqual(RELS[25:27], ["sglang/srt/multiplex/pdmux_context.py", "sglang/srt/multiplex/multigpu_guard.py"])
+        # 2026-10-20 (decision 15): appended, never inserted
+        self.assertEqual(RELS[27:29], ["sglang/srt/multiplex/admission_probe.py",
+                                       "sglang/srt/layers/attention/mamba/causal_conv1d_triton.py"])
+        # same day (decision 16 O-2, same digest change): I-4/I-6 probe appended last
+        self.assertEqual(RELS[29:], ["sglang/srt/multiplex/decode_probe.py"])
 
     def test_sync_script_change_is_detected(self):
         with tempfile.TemporaryDirectory() as d:

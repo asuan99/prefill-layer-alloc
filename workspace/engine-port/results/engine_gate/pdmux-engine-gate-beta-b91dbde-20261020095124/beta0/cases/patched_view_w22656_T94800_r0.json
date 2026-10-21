@@ -1,0 +1,15 @@
+{
+ "T": 94800,
+ "case_ok": false,
+ "expect": "MATCH",
+ "kernel": "patched",
+ "layout": "view",
+ "max_abs_diff": 0.05683612823486328,
+ "name": "patched_view_w22656_T94800_r0",
+ "out_sha256": "bfb4d7ad17c3df72b6a5e50b992437c20818da976fd94f13afc2087ffe190b57",
+ "outcome": "MISMATCH",
+ "rc": 1,
+ "rep": 0,
+ "stderr_tail": "thon3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+ "width": 22656
+}

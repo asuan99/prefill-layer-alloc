@@ -1,0 +1,10 @@
+{
+ "elapsed_s": 1199.6,
+ "facts": {
+  "same_as_patched": true
+ },
+ "reason": "95,100 after re-apply: ok=True, output equals patched-tree output=True",
+ "stage": "BETA2_boot3_reapplied_long_95100",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:40:41Z"
+}

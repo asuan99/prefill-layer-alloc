@@ -1,0 +1,18 @@
+{
+ "banner": {
+  "available_gpu_mem_gib": 30.61,
+  "context_len_logged": 131072,
+  "kv_cache_tokens": 1588248,
+  "kv_k_gib": 12.12,
+  "kv_v_gib": 12.12,
+  "mamba_conv_gib": 0.09,
+  "mamba_ssm_gib": 6.46,
+  "max_mamba_cache_size": 48,
+  "max_total_num_tokens": 1588248
+ },
+ "memory": {
+  "max_used_mib": 79852,
+  "period_s": 0.1,
+  "samples": 820
+ }
+}

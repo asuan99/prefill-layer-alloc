@@ -1,0 +1,15 @@
+{
+ "elapsed_s": 1011.3,
+ "facts": {
+  "expected": "9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+  "got": "9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+  "n": 2,
+  "ok": true,
+  "state": "reversed",
+  "tag": "reversed"
+ },
+ "reason": "reversed: 9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5 vs expected 9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+ "stage": "digest_2_reversed",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:37:33Z"
+}

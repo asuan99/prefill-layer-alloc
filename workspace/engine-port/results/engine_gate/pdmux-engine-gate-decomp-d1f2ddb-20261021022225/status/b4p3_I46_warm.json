@@ -1,0 +1,8 @@
+{
+ "elapsed_s": 8849.5,
+ "facts": {},
+ "reason": "8/8 warm-up requests ok",
+ "stage": "b4p3_I46_warm",
+ "status": "PASS",
+ "t_end_utc": "2026-10-21T04:51:46Z"
+}

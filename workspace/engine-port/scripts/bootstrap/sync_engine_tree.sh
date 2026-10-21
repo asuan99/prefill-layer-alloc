@@ -61,7 +61,9 @@ for source in \
   "${track_root}/src/multiplex/holb_probe.py" \
   "${track_root}/src/multiplex/chunk_probe.py" \
   "${track_root}/src/multiplex/green_readout.py" \
-  "${track_root}/src/multiplex/multigpu_guard.py"; do
+  "${track_root}/src/multiplex/multigpu_guard.py" \
+  "${track_root}/src/multiplex/admission_probe.py" \
+  "${track_root}/src/multiplex/decode_probe.py"; do
   target="${runtime_python}/sglang/srt/multiplex/$(basename "${source}")"
   install -D -m 0644 "${source}" "${target}"
 done
@@ -96,6 +98,44 @@ chunk_patch="${track_root}/src/patches/chunk_probe_scheduler_hook.patch"
 if ! grep -q "maybe_install_chunk_probe" \
   "${runtime_python}/sglang/srt/managers/scheduler.py"; then
   patch --forward --batch -p1 -d "${runtime_python}" < "${chunk_patch}"
+fi
+
+# I-5 admission-reason probe construction hook in run_scheduler_process (2026-10-19,
+# SPEC_common_measurement_v0 sec 9; wired 2026-10-20 with decision 15).  Arm-agnostic and
+# DEFAULT OFF: without PDMUX_ADMISSION_PATH `maybe_install_admission_probe` returns None and
+# installs no wrapper.  The hunk sits after the Scheduler class, so no fingerprinted
+# scheduler.py citation moves.  MUST run after the holb and chunk patches: its offsets are
+# computed on the tree they produce.  See sglang/srt/multiplex/admission_probe.py.
+admission_patch="${track_root}/src/patches/admission_probe_scheduler_hook.patch"
+if ! grep -q "maybe_install_admission_probe" \
+  "${runtime_python}/sglang/srt/managers/scheduler.py"; then
+  patch --forward --batch -p1 -d "${runtime_python}" < "${admission_patch}"
+fi
+
+# I-4 decode forward GPU time + I-6 cudagraph padding probe hook in run_scheduler_process
+# (2026-10-20, decision 16 O-2 -- same ENGINE_DIGEST change as I-5 + conv int64).  Arm-agnostic and
+# DEFAULT OFF: without PDMUX_DECODE_PROBE_PATH `maybe_install_decode_probe` returns None and the
+# target ModelRunner.forward stays pristine.  When ON it shadows forward() on that ModelRunner
+# INSTANCE, which event_loop_normal / event_loop_overlap / event_loop_pdmux all reach through
+# TpModelWorker.forward_batch_generation (vanilla fused, Llama and PD-mux recorded alike).
+# CUDA events are recorded on the forward's own stream and only polled with query() -- no
+# synchronize, no cross-stream wait (lockstep untouched; see decode_probe.py docstring).
+# MUST run after the admission patch: its context is the admission hook's last line.
+decode_patch="${track_root}/src/patches/decode_probe_scheduler_hook.patch"
+if ! grep -q "maybe_install_decode_probe" \
+  "${runtime_python}/sglang/srt/managers/scheduler.py"; then
+  patch --forward --batch -p1 -d "${runtime_python}" < "${decode_patch}"
+fi
+
+# Triton causal_conv1d prefill kernel: 64-bit token offsets (2026-10-20, decision 15).
+# Two same-line casts in _causal_conv1d_fwd_kernel (chunk_offset, sequence_start_index);
+# without them NemotronH's non-contiguous xBC view (stride 22,656) wraps int32 offsets from
+# ~94.8k tokens in one forward (chunk -1).  Upstream file, previously unhashed -> manifest
+# entry 29.  Idempotent: grep guard.  See the patch header.
+conv_int64_patch="${track_root}/src/patches/triton_causal_conv1d_int64.patch"
+if ! grep -q "int64: token offsets" \
+  "${runtime_python}/sglang/srt/layers/attention/mamba/causal_conv1d_triton.py"; then
+  patch --forward --batch -p1 -d "${runtime_python}" < "${conv_int64_patch}"
 fi
 
 # Zamba2 (Zyphra/Zamba2-*): NEW config + model files (dev_tree_edits.md items 1-2).
@@ -147,7 +187,7 @@ if ! grep -q "PD-mux auto grid (divide_sm)" \
 fi
 
 mkdir -p "$(dirname "${manifest_path}")"
-# MANIFEST (2026-09-13: 17 -> 24 -> 25 entries; 2026-10-12: -> 27).  Two kinds of line:
+# MANIFEST (2026-09-13: 17 -> 24 -> 25 entries; 2026-10-12: -> 27; 2026-10-20: -> 29 -> 30).  Two kinds of line:
 #   (a) installed from tracked source  -- multiplex/*, configs/{mamba2,zamba2},
 #       models/{mamba2,zamba2,nemotron_h,falcon_h1,granitemoehybrid}; the sync
 #       above rewrites these, so a mismatch means the tracked source changed.
@@ -178,6 +218,16 @@ mkdir -p "$(dirname "${manifest_path}")"
 # n3_plan, e2_vessl_plan) will report these two as installed-but-unregistered:
 # that is the intended fail-closed outcome for a tree built from this change,
 # not a defect -- those campaigns pin the pre-M2 engine.
+# 2026-10-20 (decision 15, ONE ENGINE_DIGEST change): entries 28-29 APPENDED --
+# multiplex/admission_probe.py (new tracked source, I-5; its scheduler.py hook is
+# already covered by entry 10) and layers/attention/mamba/causal_conv1d_triton.py
+# (pristine upstream until now, unhashed although the long-prefill limit depends on it;
+# now patched: int64 offsets above).  Every plan sealed on the 27-entry digest
+# (82a5fc5b..., M3 rev12 / PREFLIGHT_PASS / G5a) fails closed on a tree built from this.
+# 2026-10-20 (decision 16 O-2, SAME digest change as 28-29 -- the 29-entry digest 2b1ab054... was
+# never deployed): entry 30 APPENDED -- multiplex/decode_probe.py (new tracked source, I-4 + I-6; its
+# scheduler.py hook is covered by entry 10).  Predicted digest and fail-closed list: dev_tree_edits.md
+# items 34-36.
 # The first 17 lines and their order are UNCHANGED, so `sha256sum -c` of a
 # pre-2026-09-13 manifest (job_907100 / job_907456) still verifies exactly the
 # same 17 files; entries 18-24 and now 25 are APPENDED, never inserted, so every
@@ -213,6 +263,9 @@ sha256sum \
   "${runtime_python}/sglang/srt/layers/attention/flashinfer_backend.py" \
   "${runtime_python}/sglang/srt/multiplex/pdmux_context.py" \
   "${runtime_python}/sglang/srt/multiplex/multigpu_guard.py" \
+  "${runtime_python}/sglang/srt/multiplex/admission_probe.py" \
+  "${runtime_python}/sglang/srt/layers/attention/mamba/causal_conv1d_triton.py" \
+  "${runtime_python}/sglang/srt/multiplex/decode_probe.py" \
   > "${manifest_tmp}"
 mv -f "${manifest_tmp}" "${manifest_path}"
 trap - EXIT

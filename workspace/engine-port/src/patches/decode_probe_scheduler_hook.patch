@@ -1,0 +1,45 @@
+I-4 (decode forward GPU time) + I-6 (cudagraph padding) probe construction hook
+(SPEC_common_measurement_v0 sec 9; decision 16 O-2, 2026-10-20: same ENGINE_DIGEST
+change as I-5 + the Triton causal_conv1d int64 patch).  Wired into
+sync_engine_tree.sh after the admission hook (grep guard
+"maybe_install_decode_probe"); it changes scheduler.py bytes (manifest entry 10)
+and decode_probe.py is manifest entry 30.
+
+ONE hunk, in run_scheduler_process (module level, after the Scheduler class),
+right after the I-5 admission hook.  All logic lives in
+sglang/srt/multiplex/decode_probe.py; when PDMUX_DECODE_PROBE_PATH is set it
+shadows forward() on the scheduler's target ModelRunner INSTANCE.  Unset: the
+factory returns None, nothing is installed, ModelRunner.forward is pristine.
+
+WHY HERE.  (1) Arm symmetry (PREREG cost-model rev1 audit MAJOR 7): every event
+loop -- event_loop_normal, event_loop_overlap, event_loop_pdmux (decode via
+run_batch) -- reaches the model through TpModelWorker.forward_batch_generation
+-> self.model_runner.forward, so vanilla fused (Nano and Llama) and PD-mux arms
+are recorded by the same wrapper; PDMUX_PHASE_EVENTS decode_iteration exists in
+the PD-mux mixin only.  (2) After Scheduler.__init__: cudagraph capture and
+warm-up are done, so capture shapes and the graph/eager decision are untouched.
+(3) No line of the Scheduler class moves (fingerprinted citations in
+scripts/discipline/line_citations.json stay valid).  MUST be applied AFTER the
+admission hook: its context lines are the admission hook's last line.
+Line numbers below are those of the live (sync + devtree_manual_edits) tree; on
+the VESSL order (sync before manual edits) it applies at offset -3, no fuzz.
+
+--- a/sglang/srt/managers/scheduler.py
++++ b/sglang/srt/managers/scheduler.py
+@@ -3670,6 +3670,16 @@
+ 
+         scheduler.admission_probe = maybe_install_admission_probe(scheduler)
+ 
++        # I-4/I-6 decode forward probe (arm-agnostic; default OFF).  Returns None
++        # unless PDMUX_DECODE_PROBE_PATH is set; when set it wraps the target
++        # ModelRunner instance's forward, which every event loop (normal, overlap,
++        # pdmux) reaches through TpModelWorker.forward_batch_generation.  Placed
++        # after __init__ (cudagraph capture done) so capture is untouched and no
++        # Scheduler class line moves.  See sglang/srt/multiplex/decode_probe.py.
++        from sglang.srt.multiplex.decode_probe import maybe_install_decode_probe
++
++        scheduler.decode_probe = maybe_install_decode_probe(scheduler)
++
+         # Send initialization info back to the parent process
+         pipe_writer.send(scheduler.get_init_info())
+ 

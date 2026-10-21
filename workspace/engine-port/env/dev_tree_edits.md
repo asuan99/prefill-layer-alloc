@@ -496,3 +496,109 @@ CPU regression: `tests/test_multigpu_guard.py` (31 tests: hand-written predicate
 9 mutants killed + unmutated control, init_pdmux wiring AST + mutant, golden telemetry
 line, device-assert behaviour on fake torch incl. pristine negative control) and
 `tests/test_m2g_skeleton.py` (M2g comparator skeleton; superseded 2026-10-12 by `tests/test_m2g_gate.py`, skeleton file removed).
+
+## Decision 15: I-5 admission probe sync + Triton causal_conv1d int64 offsets (2026-10-20, GPU 0, uncommitted draft, branch `engine-sync-i5-int64`)
+
+ONE ENGINE_DIGEST change for both (decision 15, `results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`).
+31. **NEW** `multiplex/admission_probe.py` <- `src/multiplex/admission_probe.py` (I-5, commit 85283a06),
+    added to the sync install loop; manifest entry **28** (APPENDED).
+32. Tracked patch `src/patches/admission_probe_scheduler_hook.patch` -> `managers/scheduler.py`
+    (entry 10 changes). Applied by sync after holb + chunk (grep guard `maybe_install_admission_probe`).
+    One hunk in `run_scheduler_process`, after the Scheduler class: no class line moves. On a pristine
+    tree (VESSL order: sync -> manual edits) it applies at offset -3, no fuzz; the result is
+    byte-identical to applying it on the live manual-edited tree (scratch check 2026-10-20).
+33. Tracked patch `src/patches/triton_causal_conv1d_int64.patch` ->
+    `layers/attention/mamba/causal_conv1d_triton.py` (previously pristine upstream and unhashed; now
+    manifest entry **29**, APPENDED). Two same-line casts in `_causal_conv1d_fwd_kernel`:
+    `chunk_offset = tl.program_id(1).to(tl.int64)` (:69) and `sequence_start_index = ....to(tl.int64)`
+    (:77). Line-neutral (:83/:267/:304 audit citations intact). Both casts are needed: with the
+    chunk_offset cast alone the chunk-0 conv_state tail read `(start + idx_tokens_last) * stride_x_token`
+    stays i32 and wraps at seqlen >= 94,788 (CPU TTIR, sm_80, triton 3.5.0: 4/6 stride multiplies i32).
+    `_causal_conv1d_update_kernel` NOT changed (idx_seq * stride terms need batch > ~94k to wrap).
+- `scripts/bootstrap/engine_digest.py` EXPECTED_ENTRIES 27 -> 29 (pathless-v1 definition unchanged).
+- Predicted ENGINE_DIGEST (pathless-v1, 29 entries) = `2b1ab05434d722347a367590b976cfb2ac13476220e51f4b7429ad055a58699a`
+  for the branch bytes as of this entry -- reproduced twice on CPU: sync on a scratch copy of the live
+  tree, and `install_runtime.sh` on a `git archive` of the pristine dev-tree HEAD. Same tree with the
+  int64 patch reversed (falsification arm) = `206e95ec63a2ac95b1c506dc34dc0e883ec2b4f5579e1488dc54cc658bfaae24`.
+  Any byte change to the 29 files before commit changes it; re-derive with
+  `engine_digest.py digest --runtime <synced tree>`.
+- **Cross-track effect (fail-closed, intended).** Every plan sealed on the 27-entry digest `82a5fc5b...`
+  refuses a tree built from this change: M3 rev12 (`results/multigpu/ENGINE_DIGEST.txt`,
+  `mg_job_common.sh` ABORT_ENGINE_DIGEST, `mg_plan.preflight_gate` PREFLIGHT_PASS
+  `merge_tree_engine_digest`), G5(a) sealed-tree records, preflight_cl3 PASS records, and anything
+  comparing the full entry set (N2/N3/E2, already pinned pre-M2). The 27-entry engine_digest.py
+  cannot read a 29-entry manifest (rc 2), and vice versa.
+- **cudagraph.** admission hook = init-time, default OFF. int64 casts = prefill (extend) kernel only;
+  decode capture unaffected; no eager forcing.
+CPU regression: `tests/test_conv1d_int64_patch.py` (14 tests: forward/reverse identity, line-neutral,
+5 mutants killed + pristine negative control, sync wiring/order, TTIR i32/i64 count incl. the
+chunk_offset-only mutant, TRITON_INTERPRET self-test of the GPU unit harness `scripts/vessl/conv1d_int64_unit.py` incl. 2 harness mutants); `tests/test_engine_digest.py` / `tests/test_mg_agnostic_manual_equiv.py`
+entry counts 27 -> 29. GPU correctness gate: NOT RUN.
+
+## Decision 16 O-2: I-4 decode forward GPU time + I-6 cudagraph padding, same digest change (2026-10-20, GPU 0, uncommitted draft, branch `engine-sync-i5-int64`)
+
+Same ENGINE_DIGEST change as items 31-33 (the 29-entry `2b1ab054...` was never deployed or sealed; it is
+superseded, not a separate step). Spec: SPEC_common_measurement_v0 sec 9 I-4/I-6; arm symmetry: PREREG
+cost-model rev1 audit MAJOR 7 (decode_iteration exists only in the PD-mux mixin).
+34. **NEW** `multiplex/decode_probe.py` <- `src/multiplex/decode_probe.py`, added to the sync install loop;
+    manifest entry **30** (APPENDED). Tracked patch `src/patches/decode_probe_scheduler_hook.patch` ->
+    `managers/scheduler.py` (entry 10 changes again): one hunk in `run_scheduler_process` right after the I-5
+    admission hook (its context), applied by sync after the admission patch (grep guard
+    `maybe_install_decode_probe`); on the VESSL order (sync -> manual edits) offset -3, no fuzz; no Scheduler
+    class line moves. Default OFF: without `PDMUX_DECODE_PROBE_PATH` nothing is installed.
+    - What: per DECODE (and, labelled, MIXED) forward of the scheduler's target ModelRunner, `decode_fwd_gpu_ms`
+      (I-4, two CUDA timing events), `decode_fwd_host_ms` (same bracket, host clock; kept so gate (c) can
+      evaluate the host-time mutant on the same data), `bs_real`/`bs_padded`/`graph` hit|eager/`bs_pad_expected`/
+      `pad_check`/`eager_reason` (I-6), `pdmux_stream_idx`, `forward_pass_id`. Schema `pdmux.decode_probe/v1`,
+      async writer, 1 s window summaries (pending / dropped / skipped-capturing counters).
+    - **Arm symmetry.** Instance-level wrapper on `scheduler.tp_worker.model_runner.forward`; event_loop_normal,
+      event_loop_overlap and event_loop_pdmux (decode via `run_batch(self.running_batch)`) all reach it through
+      `TpModelWorker.forward_batch_generation`. Vanilla fused (Nano, Llama) and PD-mux are recorded by the same
+      code. The PD-mux `decode_iteration` fields `t_launch`/`t_sync` are untouched (I-4 is a separate field).
+    - **Lockstep neutrality (query/sync placement).** Events are recorded with `record()` on the CURRENT stream at
+      call time = the stream the forward's kernels go to (PD-mux: green-ctx decode stream; fused: forward stream);
+      no `wait_event`/`wait_stream`, so the stream DAG and the loop's `decode_stream.synchronize()` /
+      `prefill_exe_done.query()` points are unchanged. Completion is polled only with `Event.query()` at the next
+      recorded forward's entry, at window flushes and at close; `elapsed_time` only after `query()` is True; no
+      `synchronize` anywhere (AST-checked in the test, scanner itself mutation-tested). Pending pairs are bounded
+      (4096) and overflow is counted, never waited for.
+    - **cudagraph.** Installed after `Scheduler.__init__` (capture and warm-up done); capture calls
+      `patch_model(model_runner.model)` -> `model.forward`, never `ModelRunner.forward` (pinned in the test);
+      `torch.cuda.is_current_stream_capturing()` guard anyway. The probe reads `can_run_graph`, it does not decide
+      it: no capture shape, capture list or eager decision changes, no eager forcing.
+    - Threads: true-dual decode tasks call it from a worker thread; state under one lock.
+    - Definitional limit (disclosed): for an eager forward the event interval includes host launch gaps on that
+      stream; `graph` separates the two cases.
+35. `scripts/bootstrap/engine_digest.py` EXPECTED_ENTRIES 29 -> 30 (pathless-v1 definition unchanged).
+    - Predicted ENGINE_DIGEST (pathless-v1, **30 entries**) = `99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325`
+      for the branch bytes of this commit -- reproduced on CPU by (i) `install_runtime.sh` on a `git archive` of
+      the pristine dev-tree HEAD (`1519acf`), run twice (idempotent, same digest), and (ii) `--runtime` on that
+      tree = `--manifest` of it, and (iii) `sync_engine_tree.sh` on a scratch copy of the local live tree
+      (`~/Experiments/KISTI/sglang_engine_dev/python`). Same tree with ONLY the int64 patch reversed (G-alpha/G-beta falsification arm;
+      conv file bytes then equal pristine upstream) = `9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5`.
+      Before this item (b0f6cfeb, 29 entries) the same method gave `2b1ab054...` (re-checked today).
+    - Gate scorer registration `scripts/vessl/engine_gate_checks.py` REG sha256 =
+      `f3310545f1164ceb921573eb93c19b5c1590c331830207a0be37ec77b6469003` (`--print-reg`).
+      **Superseded 2026-10-20 (gate design audit r1, harness repair):** REG gained the TOST alpha split, invalid-pair asymmetry, fused I-4 window and I-5/I-6 constants -> `1c20b953d57313d9451bd75351f410a2f22d90fcb765be88372f90d091edef26`. `engine_gate_checks.py` is not a sync manifest entry; ENGINE_DIGEST unchanged.
+36. **Fail-closed (intended) on a tree built from this commit.**
+    - Sealed on the 27-entry digest `82a5fc5b...`: M3 rev12 (`results/multigpu/ENGINE_DIGEST.txt`,
+      `results/multigpu/PREFLIGHT_PASS.json`, `mg_job_common.sh` ABORT_ENGINE_DIGEST, `mg_plan.preflight_gate`
+      `merge_tree_engine_digest`), preflight_cl3 PASS records (`results/preflight_cl3/pdmux-preflight-cl3-
+      {68f386b,9c3ea47,2aaf2aa}-*/PREFLIGHT_PASS.json`), G5(a) sealed-tree records (`g5a_selector_equiv.py
+      --expect-digest*`), and every plan comparing the full entry set (N2 `n2_plan.engine_check`, N3, E2
+      `ENGINE_ALLOWED_DIFF`; already pinned pre-M2).
+    - Predicted-only 29-entry digest `2b1ab054...`: never sealed; quoted in this file (item 33), in
+      `sync_engine_tree.sh` comments and in main `tracks/main.md` -> obsolete (main-session promote should
+      replace the pointer). PREREG cost-model rev2 kept its digest field blank on purpose.
+    - Tools: the 30-entry `engine_digest.py` refuses 27/29-entry manifests (rc 2) and an older engine_digest.py
+      refuses this 30-entry manifest; `preflight_judge.py`/`preflight_cl3.sh`/`g5a_selector_equiv.py` compute the
+      30-entry digest on a new tree.
+CPU regression: `tests/test_decode_probe.py` (31 tests: hand tables for padding/graph fields, fake-GPU scenario
+table incl. non-blocking FIFO resolution, overflow, capture guard, mode filter; 7 source-level mutants killed --
+host-time I-4, start-after-forward, blocking resolution, bs_padded := bs_real, hit from bs <= max_bs, mixed
+dropped, eager padded -- with the unmutated control; static neutrality scan + scanner mutant; default OFF;
+schema; async writer; upstream contract pinned against the installed tree; hook patch identity/order/placement;
+sync wiring + entry 30), `tests/test_engine_gate_checks.py` (21 tests: gate scorers incl. host/pad mutants and
+UNRESOLVED on non-discriminating data); entry counts 29 -> 30 in `test_engine_digest.py`,
+`test_mg_agnostic_manual_equiv.py`, `test_conv1d_int64_patch.py`. Split GPU gate design:
+`results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`. GPU correctness gate: NOT RUN.

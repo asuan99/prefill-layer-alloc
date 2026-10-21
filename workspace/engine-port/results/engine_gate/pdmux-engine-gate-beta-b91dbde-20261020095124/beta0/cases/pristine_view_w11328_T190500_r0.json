@@ -1,0 +1,15 @@
+{
+ "T": 190500,
+ "case_ok": false,
+ "expect": "BROKEN",
+ "kernel": "pristine",
+ "layout": "view",
+ "max_abs_diff": null,
+ "name": "pristine_view_w11328_T190500_r0",
+ "out_sha256": null,
+ "outcome": "ERROR",
+ "rc": 2,
+ "rep": 0,
+ "stderr_tail": "he pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\nCONV1D_UNIT_INPUT_ERROR: slice outside the in_proj width or T < 4\n",
+ "width": 11328
+}

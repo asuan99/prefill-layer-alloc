@@ -1,0 +1,8 @@
+{
+ "elapsed_s": 27.8,
+ "facts": {},
+ "reason": "green-ctx event calibration PASS (rc 0); FAIL -> user decision, tolerances are not adjusted to data",
+ "stage": "beta0_green_event_calib",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:21:10Z"
+}

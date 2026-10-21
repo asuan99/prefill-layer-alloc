@@ -1,0 +1,115 @@
+{
+ "files": [
+  {
+   "bytes": 295,
+   "path": "alive_after_end.json",
+   "sha256": "ef98b0372902adaf258cad3ef25843805b93c90632cbfc07eeafdba20e58deeb"
+  },
+  {
+   "bytes": 294,
+   "path": "alive_after_hi.json",
+   "sha256": "bf0f93ad31cd34e51e27804a983b9add054fced3926cbd7d310f062a0c655e82"
+  },
+  {
+   "bytes": 294,
+   "path": "alive_after_lo.json",
+   "sha256": "34c2d9d12ba6303d10fae06fbc9d2b21b426a1f626ebfdae30ec0108a29ad9a5"
+  },
+  {
+   "bytes": 296,
+   "path": "alive_after_warm.json",
+   "sha256": "78624f30bb32e30b08273834bb0af72db9d4201ac93b514002437dfaf8ece150"
+  },
+  {
+   "bytes": 1756,
+   "path": "boot.json",
+   "sha256": "783a507aa5e1dcd0147d956fc68ea55428721490d90171f3f2c902222cf89de4"
+  },
+  {
+   "bytes": 327,
+   "path": "cell_HI/cell_metrics.json",
+   "sha256": "dd14eaba16e2a85e8ff0b04a7e937aa6ddd1f5dd60c44a84f0d9f027505543c2"
+  },
+  {
+   "bytes": 98,
+   "path": "cell_HI/fd_limit.json",
+   "sha256": "733659545f31c79cf6c25df021d2d1a71d3cd36edc0bc59bd0920db508edc9e7"
+  },
+  {
+   "bytes": 146,
+   "path": "cell_HI/loadgen_clock.json",
+   "sha256": "b0cf475cc290a7940af98801b1071a699cf4f46984733b40c4e41888cf2f1888"
+  },
+  {
+   "bytes": 7932945,
+   "path": "cell_HI/requests.jsonl",
+   "sha256": "a40b2730cd125f56f67c281b633b714307d3329ef3948399cd047b6a043620be"
+  },
+  {
+   "bytes": 677,
+   "path": "cell_HI/summary.json",
+   "sha256": "927b959b0063f9644093c0168aa39880839289bc4189acfd26761f93a76555b5"
+  },
+  {
+   "bytes": 107133,
+   "path": "cell_HI/trace.jsonl",
+   "sha256": "efb9fe2ef802473eecffd5d12f00eb454b6bfd64fc8d2c2590f89dd8fdcd227b"
+  },
+  {
+   "bytes": 331,
+   "path": "cell_LO/cell_metrics.json",
+   "sha256": "173c8c9c9f91654d044c5f5afd8c49c31dddee474ca647304f4d0ed26b0b1972"
+  },
+  {
+   "bytes": 98,
+   "path": "cell_LO/fd_limit.json",
+   "sha256": "733659545f31c79cf6c25df021d2d1a71d3cd36edc0bc59bd0920db508edc9e7"
+  },
+  {
+   "bytes": 145,
+   "path": "cell_LO/loadgen_clock.json",
+   "sha256": "d860c11c432eca0d8c133b12ab35b1f2bdbfd68e50dfad9e166370845a72eda3"
+  },
+  {
+   "bytes": 2945677,
+   "path": "cell_LO/requests.jsonl",
+   "sha256": "ecd7ef47ddd18234b1d620a0121f41a3083db0e5f55e5b69a5f18c81f6a454a7"
+  },
+  {
+   "bytes": 659,
+   "path": "cell_LO/summary.json",
+   "sha256": "cb9d0c17744f6d4fa09bf9148ff0133962e3f131d688df4960f5187b3176efbd"
+  },
+  {
+   "bytes": 39672,
+   "path": "cell_LO/trace.jsonl",
+   "sha256": "2979fcdcfc9eba9341322878fd2c01013c872070c2f83a57e4710623991cd64d"
+  },
+  {
+   "bytes": 907,
+   "path": "instance.json",
+   "sha256": "611db7927bc0551c6a0e0925ae3e966348674b897a9919ebe64a2647e0badc74"
+  },
+  {
+   "bytes": 352,
+   "path": "instrumentation.json",
+   "sha256": "9072880f1198742fecba3fea7562ee2cfd613f93b675a33153e7f69a966e0e00"
+  },
+  {
+   "bytes": 149,
+   "path": "level_assert.json",
+   "sha256": "8060cb5d98c1fd05dca713956f067b5b5521d020aef106b4fa802362eed7ba9d"
+  },
+  {
+   "bytes": 435274,
+   "path": "server.log",
+   "sha256": "ca6691abdff45e959d4d1a39e8643d7d0b80ba8e73610f935e14fb0b59f14258"
+  },
+  {
+   "bytes": 479,
+   "path": "teardown.json",
+   "sha256": "066f5a017489e865fca2643b37a6351cd4025412bf910cfc0f2e74e727b4d163"
+  }
+ ],
+ "raw_dir": "/data/runs/pdmux-engine-gate-decomp-d1f2ddb-20261021022225/raw/b4p2_OFF"
+}

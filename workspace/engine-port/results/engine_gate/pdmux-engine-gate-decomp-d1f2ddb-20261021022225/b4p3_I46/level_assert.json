@@ -1,0 +1,14 @@
+{
+ "facts": {
+  "files": {
+   "admission": false,
+   "decode_probe": true,
+   "telemetry": false
+  },
+  "n_decode_forward": 18257,
+  "n_gpu_ms_nonnull": 18257
+ },
+ "level": "I46",
+ "ok": true,
+ "why": []
+}

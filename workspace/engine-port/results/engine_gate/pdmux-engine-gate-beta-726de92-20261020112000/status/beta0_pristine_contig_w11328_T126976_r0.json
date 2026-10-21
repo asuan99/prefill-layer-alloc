@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 156.3,
+ "facts": {
+  "out_sha256": "27c1bc4439b73f0b9ee6808ab8005270eb2fe61a97210b9a6e863b4dffb5a2b3",
+  "outcome": "OK"
+ },
+ "reason": "pristine contig w11328 T=126976: OK (expected REF): reference completed with exact state",
+ "stage": "beta0_pristine_contig_w11328_T126976_r0",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:23:18Z"
+}

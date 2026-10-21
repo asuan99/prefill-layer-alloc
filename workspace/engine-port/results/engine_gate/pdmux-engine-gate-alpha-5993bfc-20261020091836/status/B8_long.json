@@ -1,0 +1,10 @@
+{
+ "elapsed_s": 1630.0,
+ "facts": {
+  "bad": []
+ },
+ "reason": "8 requests, bad: []",
+ "stage": "B8_long",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T09:46:37Z"
+}

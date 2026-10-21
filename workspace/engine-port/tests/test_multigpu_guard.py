@@ -533,7 +533,11 @@ class TestSyncScript(unittest.TestCase):
         self.sync = SYNC.read_text(encoding="utf-8")
 
     def test_guard_module_is_installed(self):
-        self.assertIn('"${track_root}/src/multiplex/multigpu_guard.py"; do', self.sync)
+        # inside the `for source in ... ; do` install loop (2026-10-20: no longer its last item,
+        # admission_probe.py and decode_probe.py were appended after it)
+        loop = self.sync[self.sync.index("for source in \\\n"):]
+        loop = loop[:loop.index('; do')]
+        self.assertIn('"${track_root}/src/multiplex/multigpu_guard.py"', loop)
 
     def test_patch_is_applied_under_a_guard_that_matches_its_text(self):
         self.assertIn("pdmux_context_device_assert.patch", self.sync)

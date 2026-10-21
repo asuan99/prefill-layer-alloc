@@ -1,0 +1,668 @@
+{
+ "checks": {
+  "diag_off_off": {
+   "n_valid_oo": 0,
+   "onoff_log_ratio_sd": {
+    "log_itl_p95": 0.015410326909004802,
+    "log_lambda": 0.00420246683144973
+   },
+   "pairs": [],
+   "role": "interpretation aid only; does not change any verdict",
+   "verdict": "DIAGNOSTIC"
+  },
+  "diag_stall_boundary": {
+   "cells": [
+    {
+     "label": null,
+     "level": "off",
+     "pair": 1,
+     "seed": 4386,
+     "stall_frac": 0.07512067840834964
+    },
+    {
+     "label": null,
+     "level": "on",
+     "pair": 1,
+     "seed": 4386,
+     "stall_frac": 0.07782126549249838
+    },
+    {
+     "label": "STALL_BOUNDARY",
+     "level": "off",
+     "pair": 2,
+     "seed": 4162,
+     "stall_frac": 0.05223744292237443
+    },
+    {
+     "label": "STALL_BOUNDARY",
+     "level": "on",
+     "pair": 2,
+     "seed": 4162,
+     "stall_frac": 0.05369210697977821
+    },
+    {
+     "label": "STALL_BOUNDARY",
+     "level": "off",
+     "pair": 3,
+     "seed": 251,
+     "stall_frac": 0.05414220482713633
+    },
+    {
+     "label": "STALL_BOUNDARY",
+     "level": "on",
+     "pair": 3,
+     "seed": 251,
+     "stall_frac": 0.056373124592302676
+    },
+    {
+     "label": null,
+     "level": "off",
+     "pair": 4,
+     "seed": 2630,
+     "stall_frac": 0.06844748858447489
+    },
+    {
+     "label": null,
+     "level": "on",
+     "pair": 4,
+     "seed": 2630,
+     "stall_frac": 0.06991519895629485
+    },
+    {
+     "label": null,
+     "level": "off",
+     "pair": 5,
+     "seed": 1001,
+     "stall_frac": 0.06720808871493802
+    },
+    {
+     "label": null,
+     "level": "on",
+     "pair": 5,
+     "seed": 1001,
+     "stall_frac": 0.06958251793868232
+    },
+    {
+     "label": null,
+     "level": "off",
+     "pair": 6,
+     "seed": 2002,
+     "stall_frac": 0.06283105022831051
+    },
+    {
+     "label": null,
+     "level": "on",
+     "pair": 6,
+     "seed": 2002,
+     "stall_frac": 0.06465753424657535
+    },
+    {
+     "label": null,
+     "level": "off",
+     "pair": 7,
+     "seed": 3003,
+     "stall_frac": 0.0705740378343118
+    },
+    {
+     "label": null,
+     "level": "on",
+     "pair": 7,
+     "seed": 3003,
+     "stall_frac": 0.0729484670580561
+    },
+    {
+     "label": null,
+     "level": "off",
+     "pair": 8,
+     "seed": 4004,
+     "stall_frac": 0.06180691454664057
+    },
+    {
+     "label": null,
+     "level": "on",
+     "pair": 8,
+     "seed": 4004,
+     "stall_frac": 0.0645662100456621
+    },
+    {
+     "label": null,
+     "level": "off",
+     "pair": 9,
+     "seed": 5005,
+     "stall_frac": 0.07622961513372473
+    },
+    {
+     "label": null,
+     "level": "on",
+     "pair": 9,
+     "seed": 5005,
+     "stall_frac": 0.07856490541422048
+    },
+    {
+     "label": null,
+     "level": "off",
+     "pair": 10,
+     "seed": 6006,
+     "stall_frac": 0.065955642530985
+    },
+    {
+     "label": null,
+     "level": "on",
+     "pair": 10,
+     "seed": 6006,
+     "stall_frac": 0.0690737116764514
+    }
+   ],
+   "n_boundary": 4,
+   "role": "label only; does not change any verdict",
+   "verdict": "DIAGNOSTIC"
+  },
+  "digest_3x": {
+   "verdict": "PASS"
+  },
+  "family": {
+   "look": "initial",
+   "n_pairs": 10,
+   "n_valid": 10,
+   "phase": "main",
+   "verdict": "OBSERVER_EFFECT",
+   "why": "a metric CI excludes 0 beyond equivalence"
+  },
+  "instrumentation_level": {
+   "bad": [],
+   "verdict": "PASS"
+  },
+  "invalid_pair_asymmetry": {
+   "invalid_off": 0,
+   "invalid_on": 0,
+   "verdict": "PASS"
+  },
+  "tost_itl_p95": {
+   "ci95": [
+    0.00939808071335231,
+    0.03144431650550776
+   ],
+   "delta": 0.014888612493750559,
+   "halfwidth": 0.011023117896077727,
+   "look": "initial",
+   "mean": 0.020421198609430036,
+   "n": 10,
+   "sd": 0.015410326909004802,
+   "verdict": "OBSERVER_EFFECT"
+  },
+  "tost_lambda_star_thr": {
+   "ci95": [
+    -0.029262128140167404,
+    -0.023250018519007112
+   ],
+   "delta": 0.014888612493750559,
+   "halfwidth": 0.0030060548105801475,
+   "look": "initial",
+   "mean": -0.026256073329587258,
+   "n": 10,
+   "sd": 0.00420246683144973,
+   "verdict": "OBSERVER_EFFECT"
+  }
+ },
+ "complete": true,
+ "digests": [
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 1,
+   "ok": true,
+   "state": "applied",
+   "tag": "start"
+  },
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 2,
+   "ok": true,
+   "state": "applied",
+   "tag": "middle"
+  },
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 3,
+   "ok": true,
+   "state": "applied",
+   "tag": "end"
+  }
+ ],
+ "elapsed_s": 10038.6,
+ "export": {
+  "export_mb": 160.0,
+  "limit_mb": 300.0,
+  "moved_to_cluster_volume_only": []
+ },
+ "family": "A",
+ "gate": "gamma",
+ "meta": {
+  "commit": "ad11bcca18c9bb8022f827965cd30ac0484e29d4",
+  "hardcap_min": 270.0,
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "job": "pdmux-engine-gate-gamma-a-ad11bcc-20261020114143",
+  "started_utc": "2026-10-20T11:42:26Z",
+  "tree_state_at_start": "applied"
+ },
+ "note": "a scorer verdict is a harness result on this Job's data, not a performance claim",
+ "reg_sha256": "75236e5cb01e702f32f003580d29e169f17ec10287385651b0847c2ca3511ea8",
+ "stages": {
+  "digest_1_start": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  },
+  "digest_2_middle": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  },
+  "digest_3_end": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  },
+  "pair01_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair01_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair01_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair01_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair01_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair01_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair01_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair01_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair01_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair01_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair02_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair02_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair02_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair02_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair02_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair02_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair02_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair02_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair02_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair02_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair03_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair03_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair03_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair03_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair03_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair03_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair03_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair03_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair03_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair03_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair04_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair04_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair04_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair04_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair04_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair04_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair04_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair04_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair04_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair04_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair05_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair05_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair05_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair05_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair05_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair05_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair05_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair05_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair05_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair05_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair06_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair06_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair06_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair06_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair06_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair06_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair06_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair06_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair06_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair06_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair07_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair07_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair07_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair07_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair07_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair07_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair07_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair07_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair07_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair07_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair08_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair08_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair08_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair08_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair08_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair08_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair08_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair08_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair08_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair08_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair09_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair09_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair09_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair09_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair09_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair09_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair09_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair09_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair09_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair09_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair10_off_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair10_off_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair10_off_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair10_off_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair10_off_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "pair10_on_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "pair10_on_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "pair10_on_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "pair10_on_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "pair10_on_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  }
+ },
+ "verdict": "OBSERVER_EFFECT",
+ "verdict_so_far": "PASS"
+}

@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 620.9,
+ "facts": {
+  "out_sha256": "27c1bc4439b73f0b9ee6808ab8005270eb2fe61a97210b9a6e863b4dffb5a2b3",
+  "outcome": "OK"
+ },
+ "reason": "pristine view w11328 T=126976: OK (expected MATCH): output sha == reference sha",
+ "stage": "beta0_pristine_view_w11328_T126976_r0",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:31:03Z"
+}

@@ -1,0 +1,1 @@
+MANUAL_RETRIEVAL 2026-10-20: fetch.sh reported NOT DONE/sha mismatch; object-volume export truncated (SHA256SUMS 530/582 readable). GATE_RESULT.json present. Missing per-pair raw files remain only on the cluster volume. DONE marker: absent

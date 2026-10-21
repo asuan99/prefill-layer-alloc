@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-engine-gate-decomp-d1f2ddb-20261021022225
+Slug:                 job-dmey0ak5a625
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/d1f2ddbb678d2827318e6e19000e622eb58f782c/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-21T02:22:46Z
+Started At:           2026-10-21T02:22:49Z
+Completed At:         2026-10-21T05:16:12Z
+Duration:             2h53m23s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=d1f2ddbb678d2827318e6e19000e622eb58f782c, PDMUX_JOB_NAME=pdmux-engine-gate-decomp-d1f2ddb-20261021022225, PDMUX_CAMPAIGN=engine_gate_decomp, PDMUX_TARGET=workspace/engine-port/scripts/vessl/engine_gate_decomp.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

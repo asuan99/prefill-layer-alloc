@@ -1,0 +1,19 @@
+{
+ "achieved": 1.8977772997396976,
+ "g": 0.00034073239535509795,
+ "itl_p95_ms": 39.46758454985684,
+ "n": 300,
+ "n_client_errors": 0,
+ "n_itl": 153300,
+ "n_server_errors": 0,
+ "rate": 1.794,
+ "rc": 0,
+ "rung": "LO",
+ "seed": 4386,
+ "stall": {
+  "label": null,
+  "n": 153300,
+  "stall_frac": 0.077279843444227
+ },
+ "status": "OK"
+}

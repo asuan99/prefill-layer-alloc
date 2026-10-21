@@ -1,0 +1,16 @@
+{
+ "commit": "d1f2ddbb678d2827318e6e19000e622eb58f782c",
+ "driver": "580.178.04",
+ "family": null,
+ "gpu": {
+  "name": "NVIDIA A100-SXM4-80GB",
+  "uuid": "GPU-7b1940f0-c94c-cbbc-6ecf-382c8c7da692"
+ },
+ "hostname": "job-dmey0ak5a625-crwbf",
+ "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+ "job": "pdmux-engine-gate-decomp-d1f2ddb-20261021022225",
+ "note": "per-Job substrate record (audit r1 4e); job_entry also writes meta/substrate.json + clk.csv",
+ "sglang_file": "/opt/pdmux/sglang_engine_dev/python/sglang/__init__.py",
+ "t_utc": "2026-10-21T02:24:19Z",
+ "tree": "/opt/pdmux/sglang_engine_dev/python"
+}

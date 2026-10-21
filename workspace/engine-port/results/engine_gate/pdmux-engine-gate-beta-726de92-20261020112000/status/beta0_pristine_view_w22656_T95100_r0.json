@@ -1,0 +1,11 @@
+{
+ "elapsed_s": 579.2,
+ "facts": {
+  "out_sha256": null,
+  "outcome": "CRASH"
+ },
+ "reason": "pristine view w22656 T=95100: CRASH (expected BROKEN): broken as predicted (CRASH)",
+ "stage": "beta0_pristine_view_w22656_T95100_r0",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T11:30:21Z"
+}

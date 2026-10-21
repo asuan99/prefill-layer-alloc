@@ -1,0 +1,59 @@
+Triton causal_conv1d prefill kernel: 64-bit token offsets (2026-10-20, decision 15).
+
+Cause: results/cap_char/probe_128k/ANALYSIS_triton_96k_failure_2026-10-20.md and
+AUDIT_probe_128k_2026-10-20.md item 2.  NemotronH feeds `_causal_conv1d_fwd_kernel`
+the xBC slice of the in_proj output as a NON-contiguous view, so stride_x_token =
+in_proj width (22,656 for Nemotron-Nano-9B-v2), a tl.constexpr.  Every token-index
+term the kernel multiplies by that stride is int32 in the pristine kernel
+(program_id, the int32 query_start_loc load, and seqlen derived from it), so the
+element offset wraps once t * 22,656 > 2^31 - 1, i.e. from t ~ 94,787 on
+(audit: T >= 94,793 for the token_offset path; the conv_state tail read below
+wraps at seqlen >= 94,788).
+
+TWO same-line casts, both needed (CPU TTIR check, triton 3.5.0, sm_80 target):
+  pristine           6/6 multiplies by stride_x_token are i32
+  chunk_offset only  4/6 still i32 -- incl. the chunk-0 conv_state tail read
+                     (sequence_start_index + idx_tokens_last) * stride_x_token,
+                     which wraps for seqlen >= 94,788 even though every output
+                     token offset is 64-bit (would corrupt conv_state -> decode)
+  start only         1/6 still i32 (token_offset paths)
+  this patch         6/6 i64 (and the stride_o_token store, wrap at 174,763)
+`sequence_start_index` int64 also widens seqlen (end - start) and therefore
+segment_len / idx_token / idx_tokens_last, and the x_base of later sequences in
+a multi-sequence extend batch.  Same guard style as ops/ssd_chunk_state.py:59
+("if dt is long, may cause problems, so use 64 bit", triton issue #1058).
+
+NOT changed (report only): `_causal_conv1d_update_kernel` (decode/spec path)
+still forms idx_seq * stride_x_seq / stride_o_seq / stride_retrieve_* and, when
+not continuous-batching, idx_seq * stride_conv_state_seq in int32 -- overflow
+needs batch > 2^31 / stride (~94k rows at 22,656), unreachable at any served
+batch size.  The sgl_kernel CUDA conv (uint32 index_t) is not on this path.
+
+Float math is untouched: only address arithmetic widens, so outputs below the
+wrap point are expected to be bit-identical (GPU gate (b)).  cudagraph: the
+kernel runs in the prefill (extend) path; decode capture is unaffected.
+LINE-NEUTRAL: two same-line edits, so causal_conv1d_triton.py:83/:267/:304
+(cited in the audit) do not move.  Applied by scripts/bootstrap/
+sync_engine_tree.sh (grep guard on "int64: token offsets") and hashed as
+manifest entry 29.
+
+--- a/sglang/srt/layers/attention/mamba/causal_conv1d_triton.py
++++ b/sglang/srt/layers/attention/mamba/causal_conv1d_triton.py
+@@ -66,7 +66,7 @@
+ 
+     # single-sequence id
+     idx_seq = tl.program_id(0)
+-    chunk_offset = tl.program_id(1)
++    chunk_offset = tl.program_id(1).to(tl.int64)  # int64: token offsets x stride_x_token overflow int32 for long seqs (non-contiguous in_proj view); same guard as ops/ssd_chunk_state.py:59
+ 
+     # BLOCK_N elements along the feature-dimension (channel)
+     idx_feats = tl.program_id(2) * BLOCK_N + tl.arange(0, BLOCK_N)
+@@ -74,7 +74,7 @@
+     if idx_seq == pad_slot_id:
+         return
+ 
+-    sequence_start_index = tl.load(query_start_loc_ptr + idx_seq)
++    sequence_start_index = tl.load(query_start_loc_ptr + idx_seq).to(tl.int64)  # int64: also widens seqlen, so the conv_state tail read (idx_tokens_last) and later seqs' x_base cannot wrap
+     sequence_end_index = tl.load(query_start_loc_ptr + idx_seq + 1)
+     # find the actual sequence length
+     seqlen = sequence_end_index - sequence_start_index

@@ -1,0 +1,727 @@
+{
+ "checks": {
+  "decomp": {
+   "metrics": {
+    "itl_p95": {
+     "I46_total": {
+      "candidate": false,
+      "ci95_log": [
+       -0.0006985725840197507,
+       0.023465139607122196
+      ],
+      "ci95_pct": [
+       -0.06983286389999196,
+       2.374261205490997
+      ],
+      "contrast": "I46 vs OFF",
+      "flag": "CI_CONTAINS_0",
+      "mean_log": 0.011383283511551223,
+      "n": 4,
+      "pct": 1.1448319623868592,
+      "sd_log": 0.0075938756100383245,
+      "sd_pct": 0.7593875610038324,
+      "status": "OK"
+     },
+     "I4_increment": {
+      "candidate": true,
+      "ci95_log": [
+       0.005117599435863109,
+       0.01485706913110476
+      ],
+      "ci95_pct": [
+       0.5130716714636221,
+       1.496798399186335
+      ],
+      "contrast": "I46 vs I6",
+      "flag": "FLAGGED",
+      "mean_log": 0.009987334283483935,
+      "n": 4,
+      "pct": 1.0037374156100736,
+      "sd_log": 0.0030608012870024046,
+      "sd_pct": 0.3060801287002405,
+      "status": "OK"
+     },
+     "I5": {
+      "candidate": true,
+      "ci95_log": [
+       -0.011316789832749294,
+       0.03217957784901052
+      ],
+      "ci95_pct": [
+       -1.1252995841196918,
+       3.2702939227200924
+      ],
+      "contrast": "I5 vs OFF",
+      "flag": "CI_CONTAINS_0",
+      "mean_log": 0.010431394008130614,
+      "n": 4,
+      "pct": 1.048599067324303,
+      "sd_log": 0.013669505871074739,
+      "sd_pct": 1.3669505871074739,
+      "status": "OK"
+     },
+     "I6": {
+      "candidate": true,
+      "ci95_log": [
+       -0.006499310595726773,
+       0.009291209051861296
+      ],
+      "ci95_pct": [
+       -0.6478235758638603,
+       0.9334506325468079
+      ],
+      "contrast": "I6 vs OFF",
+      "flag": "CI_CONTAINS_0",
+      "mean_log": 0.0013959492280672618,
+      "n": 4,
+      "pct": 0.13969240187242507,
+      "sd_log": 0.0049624511777460936,
+      "sd_pct": 0.49624511777460933,
+      "status": "OK"
+     },
+     "TEL": {
+      "candidate": true,
+      "ci95_log": [
+       -0.001801291860139853,
+       0.00942918624502528
+      ],
+      "ci95_pct": [
+       -0.17996705076129668,
+       0.9473781075763028
+      ],
+      "contrast": "TEL vs OFF",
+      "flag": "CI_CONTAINS_0",
+      "mean_log": 0.003813947192442714,
+      "n": 4,
+      "pct": 0.38212295442612476,
+      "sd_log": 0.0035293771543573643,
+      "sd_pct": 0.35293771543573643,
+      "status": "OK"
+     }
+    },
+    "lambda_thr": {
+     "I46_total": {
+      "candidate": false,
+      "ci95_log": [
+       -0.020432310163301493,
+       0.0019154092068671847
+      ],
+      "ci95_pct": [
+       -2.022498495928456,
+       0.19172447748495766
+      ],
+      "contrast": "I46 vs OFF",
+      "flag": "CI_CONTAINS_0",
+      "mean_log": -0.009258450478217155,
+      "n": 4,
+      "pct": -0.9215722990705503,
+      "sd_log": 0.007023167621046097,
+      "sd_pct": 0.7023167621046097,
+      "status": "OK"
+     },
+     "I4_increment": {
+      "candidate": true,
+      "ci95_log": [
+       -0.019600635275852468,
+       0.013056001057163768
+      ],
+      "ci95_pct": [
+       -1.9409791743049976,
+       1.3141602771984626
+      ],
+      "contrast": "I46 vs I6",
+      "flag": "CI_CONTAINS_0",
+      "mean_log": -0.0032723171093443507,
+      "n": 4,
+      "pct": -0.3266968914965406,
+      "sd_log": 0.010262927823072355,
+      "sd_pct": 1.0262927823072354,
+      "status": "OK"
+     },
+     "I5": {
+      "candidate": true,
+      "ci95_log": [
+       -0.01582469960997401,
+       0.007941845956883808
+      ],
+      "ci95_pct": [
+       -1.570014691956249,
+       0.7973466067405661
+      ],
+      "contrast": "I5 vs OFF",
+      "flag": "CI_CONTAINS_0",
+      "mean_log": -0.003941426826545102,
+      "n": 4,
+      "pct": -0.39336695986924625,
+      "sd_log": 0.00746905894621553,
+      "sd_pct": 0.746905894621553,
+      "status": "OK"
+     },
+     "I6": {
+      "candidate": true,
+      "ci95_log": [
+       -0.02233900617724056,
+       0.010366739439495027
+      ],
+      "ci95_pct": [
+       -2.2091338225427566,
+       1.0420660249381695
+      ],
+      "contrast": "I6 vs OFF",
+      "flag": "CI_CONTAINS_0",
+      "mean_log": -0.005986133368872766,
+      "n": 4,
+      "pct": -0.5968252170056307,
+      "sd_log": 0.0102783612874719,
+      "sd_pct": 1.02783612874719,
+      "status": "OK"
+     },
+     "TEL": {
+      "candidate": true,
+      "ci95_log": [
+       -0.02490021221779169,
+       -0.009553555602343552
+      ],
+      "ci95_pct": [
+       -2.4592759102545005,
+       -0.9508065369766181
+      ],
+      "contrast": "TEL vs OFF",
+      "flag": "FLAGGED",
+      "mean_log": -0.01722688391006762,
+      "n": 4,
+      "pct": -1.7079349546028348,
+      "sd_log": 0.004822959338607208,
+      "sd_pct": 0.48229593386072084,
+      "status": "OK"
+     }
+    }
+   },
+   "n_executed": 20,
+   "n_valid_by_level": {
+    "I46": 4,
+    "I5": 4,
+    "I6": 4,
+    "OFF": 4,
+    "TEL": 4
+   },
+   "position_drift_log": {
+    "itl_p95": {
+     "1": -0.004299703539128896,
+     "2": -0.000576220169023145,
+     "3": 0.001570869952464804,
+     "4": -0.000572210653959293,
+     "5": 0.0038772644096467523
+    },
+    "lambda_thr": {
+     "1": 0.004018226234971334,
+     "2": -0.00020784610530838465,
+     "3": 0.004956749295227159,
+     "4": -0.004181477010907375,
+     "5": -0.004585652413982733
+    }
+   },
+   "rule": "FLAGGED = CI95 excludes 0 in the degrading direction; every flagged candidate is reported; largest = largest degrading point estimate among them; none -> NONE_RESOLVED (n<=4 blocks: low power, not evidence of no effect)",
+   "selection": {
+    "itl_p95": {
+     "flagged": [
+      "I4_increment"
+     ],
+     "largest": "I4_increment"
+    },
+    "lambda_thr": {
+     "flagged": [
+      "TEL"
+     ],
+     "largest": "TEL"
+    }
+   },
+   "verdict": "DIAGNOSTIC_COMPLETE"
+  },
+  "digest_3x": {
+   "verdict": "PASS"
+  },
+  "export_size": {
+   "export_mb": 0.34,
+   "limit_mb": 40.0,
+   "n_files": 288,
+   "raw_dir": "/data/runs/pdmux-engine-gate-decomp-d1f2ddb-20261021022225/raw",
+   "spilled": [],
+   "verdict": "PASS"
+  },
+  "level_assertions": {
+   "bad": [],
+   "verdict": "PASS"
+  },
+  "order": {
+   "n_executed": 20,
+   "order_sha": "18d209665a5d81511d4c8afc625b2bf9039a38e48f3da1267ecb9e1dbf09fe41",
+   "registered_sha": "18d209665a5d81511d4c8afc625b2bf9039a38e48f3da1267ecb9e1dbf09fe41",
+   "unique_sorted": true,
+   "verdict": "PASS",
+   "violations": []
+  }
+ },
+ "complete": true,
+ "digests": [
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 1,
+   "ok": true,
+   "state": "applied",
+   "tag": "start"
+  },
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 2,
+   "ok": true,
+   "state": "applied",
+   "tag": "middle"
+  },
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 3,
+   "ok": true,
+   "state": "applied",
+   "tag": "end"
+  }
+ ],
+ "elapsed_s": 10303.6,
+ "export": {
+  "export_mb": 0.4,
+  "limit_mb": 300.0,
+  "moved_to_cluster_volume_only": []
+ },
+ "family": null,
+ "gate": "decomp",
+ "meta": {
+  "commit": "d1f2ddbb678d2827318e6e19000e622eb58f782c",
+  "hardcap_min": 250.0,
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "job": "pdmux-engine-gate-decomp-d1f2ddb-20261021022225",
+  "raw_root": "/data/runs/pdmux-engine-gate-decomp-d1f2ddb-20261021022225/raw",
+  "started_utc": "2026-10-21T02:24:16Z",
+  "tree_state_at_start": "applied"
+ },
+ "note": "a scorer verdict is a harness result on this Job's data, not a performance claim",
+ "reg_sha256": "75236e5cb01e702f32f003580d29e169f17ec10287385651b0847c2ca3511ea8",
+ "stages": {
+  "b1p1_OFF_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b1p1_OFF_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p1_OFF_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p1_OFF_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b1p1_OFF_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b1p2_I5_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b1p2_I5_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p2_I5_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p2_I5_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b1p2_I5_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b1p3_I6_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b1p3_I6_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p3_I6_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p3_I6_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b1p3_I6_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b1p4_I46_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b1p4_I46_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p4_I46_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p4_I46_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b1p4_I46_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b1p5_TEL_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b1p5_TEL_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p5_TEL_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b1p5_TEL_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b1p5_TEL_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b2p1_I5_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b2p1_I5_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p1_I5_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p1_I5_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b2p1_I5_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b2p2_I46_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b2p2_I46_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p2_I46_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p2_I46_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b2p2_I46_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b2p3_OFF_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b2p3_OFF_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p3_OFF_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p3_OFF_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b2p3_OFF_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b2p4_TEL_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b2p4_TEL_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p4_TEL_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p4_TEL_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b2p4_TEL_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b2p5_I6_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b2p5_I6_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p5_I6_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b2p5_I6_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b2p5_I6_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b3p1_I6_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b3p1_I6_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p1_I6_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p1_I6_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b3p1_I6_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b3p2_TEL_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b3p2_TEL_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p2_TEL_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p2_TEL_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b3p2_TEL_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b3p3_I5_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b3p3_I5_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p3_I5_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p3_I5_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b3p3_I5_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b3p4_OFF_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b3p4_OFF_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p4_OFF_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p4_OFF_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b3p4_OFF_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b3p5_I46_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b3p5_I46_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p5_I46_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b3p5_I46_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b3p5_I46_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b4p1_TEL_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b4p1_TEL_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p1_TEL_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p1_TEL_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b4p1_TEL_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b4p2_OFF_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b4p2_OFF_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p2_OFF_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p2_OFF_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b4p2_OFF_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b4p3_I46_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b4p3_I46_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p3_I46_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p3_I46_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b4p3_I46_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b4p4_I6_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b4p4_I6_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p4_I6_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p4_I6_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b4p4_I6_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "b4p5_I5_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "b4p5_I5_hi": {
+   "reason": "HI cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p5_I5_lo": {
+   "reason": "LO cell done rc=0",
+   "status": "PASS"
+  },
+  "b4p5_I5_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "b4p5_I5_warm": {
+   "reason": "8/8 warm-up requests ok",
+   "status": "PASS"
+  },
+  "digest_1_start": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  },
+  "digest_2_middle": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  },
+  "digest_3_end": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  }
+ },
+ "verdict": "DIAGNOSTIC_COMPLETE",
+ "verdict_so_far": "PASS"
+}

@@ -1,0 +1,12 @@
+{
+ "elapsed_s": 4.2,
+ "facts": {
+  "co_only": "53da3952b74c04ba8d4563cad0daa9e003b2809ac0940614a0d7fe8ddc70c5a6",
+  "patched": "d70e258543d5108a440c1d8322079b97df72039e56b500fa70dc6b366f79efc9",
+  "pristine": "1700fae290fb1c28d6968f1f2732067aeba26e92898653f3ec6fcbed3c24e5cb"
+ },
+ "reason": "kernel copies built",
+ "stage": "beta0_prep",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T09:52:18Z"
+}

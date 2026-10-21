@@ -1,0 +1,15 @@
+{
+ "blocking": false,
+ "broken": true,
+ "died": true,
+ "pre_boundary_94500": {
+  "error": null,
+  "ok": true
+ },
+ "request_ok": false,
+ "returncode": -9,
+ "sig_conv": false,
+ "sig_illegal": true,
+ "signature_ok": false,
+ "traceback_conv_file": false
+}

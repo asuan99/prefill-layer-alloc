@@ -1,0 +1,18 @@
+{
+ "T": 190500,
+ "case_ok": true,
+ "dim": 6144,
+ "expect": "BROKEN",
+ "kernel": "pristine",
+ "layout": "view",
+ "max_abs_diff": null,
+ "name": "pristine_view_w11328_T190500_r0",
+ "offset": 5120,
+ "out_sha256": null,
+ "outcome": "CRASH",
+ "rc": 1,
+ "ref": "pristine_contig_w11328_T190500_r0",
+ "rep": 0,
+ "stderr_tail": "time-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\n",
+ "width": 11328
+}

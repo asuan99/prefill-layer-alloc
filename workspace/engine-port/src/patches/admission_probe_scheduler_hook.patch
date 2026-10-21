@@ -1,7 +1,7 @@
 I-5 admission-reason probe construction hook (SPEC_common_measurement_v0 sec 9,
-2026-10-19).  NOT YET WIRED INTO sync_engine_tree.sh -- see the engine-porter
-hand-off for the sync/manifest procedure; applying it changes scheduler.py
-bytes and therefore ENGINE_DIGEST.
+2026-10-19).  Wired into sync_engine_tree.sh 2026-10-20 (decision 15, grep guard
+"maybe_install_admission_probe", after chunk_probe); it changes scheduler.py
+bytes (manifest entry 10) and admission_probe.py is entry 28 -> new ENGINE_DIGEST.
 
 ONE hunk, in run_scheduler_process (module level, after the Scheduler class),
 between `Scheduler(...)` construction and `pipe_writer.send(...)`.  All logic

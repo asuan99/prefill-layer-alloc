@@ -1,0 +1,322 @@
+{
+ "checks": {
+  "beta0_cases": {
+   "bad": [],
+   "criterion": "decision 20: sha(output) vs the original kernel's contiguous run; max_abs_diff descriptive",
+   "missing": [],
+   "unresolved": [],
+   "verdict": "PASS"
+  },
+  "beta0_contig_digest_equal": {
+   "patched_contig": "b7af6d71ac34108a139391a8e666ff13dde0ed66b139e9a72bab9f2b140a043f",
+   "pristine_contig": "b7af6d71ac34108a139391a8e666ff13dde0ed66b139e9a72bab9f2b140a043f",
+   "verdict": "PASS"
+  },
+  "beta0_green_event_calib": {
+   "verdict": "PASS"
+  },
+  "beta1_BETA1_agn": {
+   "labels": [],
+   "oom98304": false,
+   "verdict": "PASS"
+  },
+  "beta1_BETA1_fused": {
+   "labels": [],
+   "oom98304": false,
+   "verdict": "PASS"
+  },
+  "beta2_BETA2_boot1": {
+   "broken": true,
+   "died": true,
+   "verdict": "PASS"
+  },
+  "beta2_BETA2_boot2_blocking": {
+   "broken": true,
+   "died": false,
+   "verdict": "PASS"
+  },
+  "beta2_reapplied_ok": {
+   "verdict": "PASS"
+  },
+  "digest_3x": {
+   "verdict": "PASS"
+  },
+  "instrumentation_level": {
+   "bad": [],
+   "verdict": "PASS"
+  }
+ },
+ "complete": true,
+ "digests": [
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 1,
+   "ok": true,
+   "state": "applied",
+   "tag": "initial"
+  },
+  {
+   "expected": "9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+   "got": "9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+   "n": 2,
+   "ok": true,
+   "state": "reversed",
+   "tag": "reversed"
+  },
+  {
+   "expected": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "got": "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "n": 3,
+   "ok": true,
+   "state": "applied",
+   "tag": "reapplied"
+  }
+ ],
+ "elapsed_s": 1202.7,
+ "export": {
+  "export_mb": 7.0,
+  "limit_mb": 300.0,
+  "moved_to_cluster_volume_only": []
+ },
+ "family": null,
+ "gate": "beta",
+ "meta": {
+  "commit": "726de92531fbc07615aad52cfbcabc2ed6ae4ae5",
+  "hardcap_min": 120.0,
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "job": "pdmux-engine-gate-beta-726de92-20261020112000",
+  "started_utc": "2026-10-20T11:20:42Z",
+  "tree_state_at_start": "applied"
+ },
+ "note": "a scorer verdict is a harness result on this Job's data, not a performance claim",
+ "reg_sha256": "75236e5cb01e702f32f003580d29e169f17ec10287385651b0847c2ca3511ea8",
+ "stages": {
+  "BETA1_agn_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "BETA1_agn_long_patched": {
+   "reason": "all requests completed with non-empty output, no illegal-access signature; labels []",
+   "status": "PASS"
+  },
+  "BETA1_agn_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "BETA1_fused_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "BETA1_fused_long_patched": {
+   "reason": "all requests completed with non-empty output, no illegal-access signature; labels []",
+   "status": "PASS"
+  },
+  "BETA1_fused_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "BETA2_boot1_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "BETA2_boot1_crash95100": {
+   "reason": "pristine tree: server died",
+   "status": "PASS"
+  },
+  "BETA2_boot1_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "BETA2_boot2_blocking_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "BETA2_boot2_blocking_crash95100": {
+   "reason": "server survived; output differs from the patched tree's (pristine is broken)",
+   "status": "PASS"
+  },
+  "BETA2_boot2_blocking_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "BETA2_boot3_reapplied_boot": {
+   "reason": "instrumentation level as intended",
+   "status": "PASS"
+  },
+  "BETA2_boot3_reapplied_long_95100": {
+   "reason": "95,100 after re-apply: ok=True, output equals patched-tree output=True",
+   "status": "PASS"
+  },
+  "BETA2_boot3_reapplied_teardown": {
+   "reason": "memory.used after teardown 0 MiB",
+   "status": "PASS"
+  },
+  "beta0_co_only_view_w22656_T94790_r0": {
+   "reason": "co_only view w22656 T=94790: CRASH (expected BROKEN): broken as predicted (CRASH)",
+   "status": "PASS"
+  },
+  "beta0_co_only_view_w22656_T95100_r0": {
+   "reason": "co_only view w22656 T=95100: STATE_MISMATCH (expected BROKEN): broken as predicted (STATE_MISMATCH)",
+   "status": "PASS"
+  },
+  "beta0_green_event_calib": {
+   "reason": "green-ctx event calibration PASS (rc 0); FAIL -> user decision, tolerances are not adjusted to data",
+   "status": "PASS"
+  },
+  "beta0_patched_contig_w22656_T94790_r0": {
+   "reason": "patched contig w22656 T=94790: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_patched_contig_w22656_T95100_r0": {
+   "reason": "patched contig w22656 T=95100: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w11328_T126976_r0": {
+   "reason": "patched view w11328 T=126976: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w11328_T189000_r0": {
+   "reason": "patched view w11328 T=189000: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w11328_T190500_r0": {
+   "reason": "patched view w11328 T=190500: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w11328_T95100_r0": {
+   "reason": "patched view w11328 T=95100: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w22656_T12288_r0": {
+   "reason": "patched view w22656 T=12288: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w22656_T126976_r0": {
+   "reason": "patched view w22656 T=126976: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w22656_T94784_r0": {
+   "reason": "patched view w22656 T=94784: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w22656_T94784_r1": {
+   "reason": "patched view w22656 T=94784: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w22656_T94800_r0": {
+   "reason": "patched view w22656 T=94800: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w22656_T94800_r1": {
+   "reason": "patched view w22656 T=94800: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w22656_T95100_r0": {
+   "reason": "patched view w22656 T=95100: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_patched_view_w22656_T95100_r1": {
+   "reason": "patched view w22656 T=95100: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_prep": {
+   "reason": "kernel copies built",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w11328_T126976_r0": {
+   "reason": "pristine contig w11328 T=126976: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w11328_T189000_r0": {
+   "reason": "pristine contig w11328 T=189000: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w11328_T190500_r0": {
+   "reason": "pristine contig w11328 T=190500: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w11328_T95100_r0": {
+   "reason": "pristine contig w11328 T=95100: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w22656_T12288_r0": {
+   "reason": "pristine contig w22656 T=12288: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w22656_T126976_r0": {
+   "reason": "pristine contig w22656 T=126976: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w22656_T94784_r0": {
+   "reason": "pristine contig w22656 T=94784: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w22656_T94800_r0": {
+   "reason": "pristine contig w22656 T=94800: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_contig_w22656_T95100_r0": {
+   "reason": "pristine contig w22656 T=95100: OK (expected REF): reference completed with exact state",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w11328_T126976_r0": {
+   "reason": "pristine view w11328 T=126976: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w11328_T189000_r0": {
+   "reason": "pristine view w11328 T=189000: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w11328_T190500_r0": {
+   "reason": "pristine view w11328 T=190500: CRASH (expected BROKEN): broken as predicted (CRASH)",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w11328_T95100_r0": {
+   "reason": "pristine view w11328 T=95100: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w22656_T12288_r0": {
+   "reason": "pristine view w22656 T=12288: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w22656_T94784_r0": {
+   "reason": "pristine view w22656 T=94784: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w22656_T94784_r1": {
+   "reason": "pristine view w22656 T=94784: OK (expected MATCH): output sha == reference sha",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w22656_T94800_r0": {
+   "reason": "pristine view w22656 T=94800: CRASH (expected BROKEN): broken as predicted (CRASH)",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w22656_T94800_r1": {
+   "reason": "pristine view w22656 T=94800: CRASH (expected BROKEN): broken as predicted (CRASH)",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w22656_T95100_r0": {
+   "reason": "pristine view w22656 T=95100: CRASH (expected BROKEN): broken as predicted (CRASH)",
+   "status": "PASS"
+  },
+  "beta0_pristine_view_w22656_T95100_r1": {
+   "reason": "pristine view w22656 T=95100: CRASH (expected BROKEN): broken as predicted (CRASH)",
+   "status": "PASS"
+  },
+  "digest_1_initial": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  },
+  "digest_2_reversed": {
+   "reason": "reversed: 9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5 vs expected 9af2f2eff337514e0a7c27ad3f83a6a75a699df6850014875f3d27ece11a6bb5",
+   "status": "PASS"
+  },
+  "digest_3_reapplied": {
+   "reason": "applied: 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325 vs expected 99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325",
+   "status": "PASS"
+  }
+ },
+ "verdict": "PASS",
+ "verdict_so_far": "PASS"
+}

@@ -1,0 +1,3 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-10-20T08:14:44Z	pdmux-engine-gate-alpha-0990828-20261020081434	09908284b3ab08a3cb878385ad792f1586d8bb67	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/scripts/vessl/engine_gate_alpha.sh		yes
+2026-10-20T09:18:46Z	pdmux-engine-gate-alpha-5993bfc-20261020091836	5993bfc143cc9c8016f7ab700c4067c618c91260	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/scripts/vessl/engine_gate_alpha.sh		yes

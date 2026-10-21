@@ -1,0 +1,13 @@
+{
+ "facts": {
+  "files": {
+   "admission": false,
+   "decode_probe": false,
+   "telemetry": true
+  },
+  "n_phase_events": 21971
+ },
+ "level": "TEL",
+ "ok": true,
+ "why": []
+}

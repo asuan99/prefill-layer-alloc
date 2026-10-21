@@ -1,0 +1,10 @@
+{
+ "elapsed_s": 772.9,
+ "facts": {
+  "n": 64
+ },
+ "reason": "64 prompts, 0 empty, 0 errors",
+ "stage": "B3_c_pass_ctl",
+ "status": "PASS",
+ "t_end_utc": "2026-10-20T08:28:13Z"
+}
