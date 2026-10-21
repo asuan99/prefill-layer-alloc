@@ -7,27 +7,29 @@
 ## cost model 기여
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2 `T_span`), CM-4(T3 ρ), CM-5(T4 메모리·admission), (확장) TP2 항
 - 이번에 알게 된 것: CM-2 floor 9 ms+0.111 ms/토큰×L(≤16k, CONFIRMED) · Nano 실측 k 16,382 B/토큰·s 143.5 MB/요청(L\*≈8.8k) · chunk -1 장문 prefill 상한은 Triton causal_conv1d int32 오프셋(≈94.8k, 반증 실험 통과·감사 전) · **관측자 효과: 기존 telemetry가 PD-mux λ −1.7%, I-4 CUDA event가 ITL p95 +1.0%**(진단 n=4)
-- promote 필요: 예 (감사) — 128k 프로브 감사·PREREG rev1/rev2 규칙층 NO-GO·gate 하네스 감사 r1/r2 · 예 (결정) — 결정 10–21 · 예 — G-α/G-β PASS, gamma A/F, 관측자 효과 분해 결과 · 예 — COSTMODEL L\*≈9k 단위 정정(8.8k)
+- promote 필요: 예 (감사) — 128k 프로브 감사·PREREG rev1/rev2 규칙층 NO-GO·gate 하네스 감사 r1/r2 · 예 (결정) — 결정 10–22 · 예 — G-α/G-β PASS, gamma A/F, 관측자 효과 분해 결과 · 예 — COSTMODEL L\*≈9k 단위 정정(8.8k)
 ## 현재 상태 (2026-10-21)
 - **엔진 묶음** engsync(최신 `c875dc21`): I-5 + I-4·I-6 + Triton conv int64 패치, ENGINE_DIGEST `99bbef91…`(30항목). main 미병합. 병합 시 M3 rev12·preflight PASS·N2/N3/E2 fail-closed(의도).
 - **분할 gate**(설계 `…engsync/workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`, 감사 r1 GO-with-caveats·r2 상한):
   - G-α: 1회차 FAIL(i5i6_B2 기대값) → 검사 v2 재실행 **PASS 28/28**. bs 40 미도달은 요청 0 종료와 39개 일괄 합류의 **경합**(인용 금지 3문장, `AUDIT_gate_split_design_r2_2026-10-20.md`).
   - G-β: 1회차 FAIL(하네스 결함 3) → 수정(결정 20) 재실행 **PASS** — 패치본 view 출력 sha = 원본 contig, 원본 view 94,800↑ 붕괴, 서빙 98,304 통과·되돌린 판 95,100 사망·재적용 통과.
-  - gamma: **A(agnostic) OBSERVER_EFFECT**(계측 ON λ −2.6%, ITL p95 +2.0%) · **F(fused_sym) UNRESOLVED_POWER**(ITL SD 4%).
+  - gamma: **A(agnostic) OBSERVER_EFFECT**(계측 ON λ −2.6%, ITL p95 +2.0%) · **F(fused_sym) UNRESOLVED_POWER**(ITL SD 4%) → **결정 22로 "관측자 효과 특성화 완료" 종결**(PASS 아님; 봉인 조건 = α·β PASS + 결정 22).
   - **분해 Job**(5수준×4블록): λ는 **TEL −1.7% FLAGGED**, ITL p95는 **I-4 증분 +1.0% FLAGGED**, I-5·I-6은 CI∋0(저검정력). 결과 `…engine_gate/pdmux-engine-gate-decomp-d1f2ddb-20261021022225/DECOMP_RESULT.json`. ★기존 telemetry는 PD-mux 경로만 방출 → 과거 PD-mux 대 fused 비교에 소폭 편향 가능(감사 전).
-- **비용 항 PREREG**: rev1·rev2 규칙층 NO-GO(상한) → 결정 17로 **항 측정만 봉인 후보** `workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(J-A1·J-A2·J-B·J-C, 예약 약 16.6 GPU-h [유도], 결정 18 O-항목 반영 필요). V는 항 데이터 뒤 별도 PREREG.
+- **계측 정책(결정 22, 2026-10-21)**: 판정 측정은 전 arm 계측 OFF + Job 내 ON/OFF 짝 공시(보정 계수 아님). 원문 `…/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md` 결정 22.
+- **비용 항 PREREG rev3.1** `workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`: 결정 18·22 반영 — §2-2′ 계측 매트릭스(T3를 TEL ON 전용 boot로 분리, T1 boot는 I-4·I-6만) + Job 내 OFF 진단 boot, §12 봉인 체크리스트(14항목, 2 완료). 예약 16.6 → **약 18.7 GPU-h** [유도]. V는 항 데이터 뒤 별도 PREREG.
+- **engsync 병합 검토**(git-committer, 2026-10-21): 경로 교집합 0·의미 충돌 0(앞선 "충돌"은 git 2.34에 `merge-tree --write-tree`가 없어 난 오판). 단 `results/engine_gate*` 약 904 MB(`.so` 12·Triton 캐시·`power_samples.csv` >10 MB 3개)가 21커밋 이력에 있음. engsync CPU 회귀 1570건 중 실패 66(대부분 로컬 환경: `sgl_kernel`·엔진 트리 경로 부재로 추정) — main 베이스라인 대조 중.
+- **과거 결과 telemetry 비대칭 감사**: claims-auditor 1회차 진행 중.
 - **128k 프로브 1–3회차** `workspace/engine-port/results/cap_char/probe_128k/`(RESULT·ANALYSIS·AUDIT): 결정 13 long-ctx 상한 64k(격자 선택), mem-fraction 0.6 통일.
 - 설계 결정 원문(1–21): `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`. 비교·계획: `cap_char/COMPARE_shapeC_workloads_2026-10-20.md`, `PLAN_costmodel_terms_2026-10-20.md`, 그림 `cap_char/figures/`, 장문 길이 실측 `cap_char/longctx_stats/`.
 - 운영 사고·교훈: object-volume export 절단이 gamma-A·F에서 재발(분해 Job은 요약만 export해 288/288 무결) · 1회차 128k 프로브 폴링 오판으로 A100 약 60분 유휴(완료 판정은 SUMMARY/DONE 파일로) · VESSL 인증 만료 시 사용자 `vesslctl auth login`.
 ## 다음 행동
-1. 계측 정책 결정 → rev3-MEAS에 반영(판정 측정 계측 OFF + Job 내 ON/OFF 짝 공시) → 봉인 체크리스트 채움
-2. engsync 브랜치 main 병합(git-committer, 사용자 승인) → rev3-MEAS 봉인(digest `99bbef91…`) → CPU preflight → J-A1·J-A2·J-B·J-C 제출 승인
-3. 과거 결과 telemetry 편향 감사(claims-auditor, 읽기 전용)
+1. 병합 방식 결정 → engsync 병합(git-committer) → main 회귀 대조 → digest 재확인
+2. 신규 하네스 구현(§12 #7) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
+3. telemetry 비대칭 감사 결과 → `handoff 결정`
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
-- **계측 정책** / gamma·분해에서 TEL·I-4가 PD-mux 측정을 1–2% 움직임 / 판정 측정은 전 arm 계측 OFF + 진단 boot·Job 내 ON/OFF 짝으로 효과 공시, gamma는 "관측자 효과 특성화 완료"로 닫음(권고) · 계측 경량화 후 gamma 재실행 · 보정 계수 수용
-- **과거 결과 영향 감사** / telemetry가 PD-mux에만 방출 / claims-auditor 감사 의뢰(권고) · 보류
-- **engsync 병합·봉인 승인** / gate α·β PASS, γ는 위 정책에 종속 / 정책 결정 후 병합(권고)
+- **engsync 병합 방식** / 결과 약 904 MB(`.so`·Triton 캐시·대형 csv)가 21커밋 이력에 있음 / 결과 원자료를 걸러 squash 병합 + `.gitignore` 보강(권고) · 그대로 merge · 이력 정리 후 cherry-pick
+- **rev3.1 O-14·O-15** / 결정 22가 Job 내 ON/OFF 짝을 요구, J-B 4.9 h / O-14 J-C OFF 진단 boot 포함(권고)·제외 · O-15 J-B를 H 대비/T4로 분리(권고)·그대로
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job

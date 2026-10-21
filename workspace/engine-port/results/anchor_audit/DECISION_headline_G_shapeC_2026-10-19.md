@@ -118,3 +118,9 @@
 - gamma-A(agnostic)가 OBSERVER\_EFFECT(λ −2.6%, ITL p95 +2.0%)로 나왔다. 원인 계측을 찾기 위해 **계측별 분해 Job**을 돌린다: agnostic에서 {OFF, I-4만, I-5만, I-6만} × 4회, A100 1장, 약 3 h. 판정 Job이 아니라 진단(기술값)이며, 수준 비교는 Job 안에서만 한다.
 - fused\_sym의 확장 Job(+6짝)은 하지 않는다(ITL SD 4%로 확장해도 판정 불가 예상). 분해 결과를 보고 다시 판단한다.
 - export 절단이 재발했다(gamma-A·F). 분해 Job에서는 큰 원자료를 클러스터 볼륨에만 두고, export 대상은 요약·판정 파일로 줄인다.
+
+## 결정 22 (2026-10-21) — 계측 정책 (권고안 채택)
+- 근거: 분해 Job(engsync `results/engine_gate/pdmux-engine-gate-decomp-d1f2ddb-20261021022225/DECOMP_RESULT.json`, agnostic·n=4)에서 기존 telemetry(TEL = `PDMUX_TELEMETRY_PATH` + `PDMUX_PHASE_EVENTS`)가 λ −1.7%, I-4 증분이 ITL p95 +1.0%로 FLAGGED. I-5·I-6은 CI∋0(저검정력).
+- **판정 측정**(arm 비교·SLO·goodput 판정)은 모든 arm에서 계측 OFF로 잰다. 계측 효과는 진단 boot와 **같은 Job 안 ON/OFF 짝**으로 재서 공시한다(보정 계수로 쓰지 않는다).
+- gamma는 **"관측자 효과 특성화 완료"로 닫는다**. G-γA·G-γF는 PASS가 아니며, 엔진 묶음 봉인 조건은 G-α·G-β PASS + 이 결정으로 대체한다.
+- 항 측정(rev3-MEAS)은 계측 레코드가 estimand의 정의라 계측을 끌 수 없다. 이 정책의 적용 형은 rev3-MEAS §2-2′(계측 매트릭스 + Job 내 OFF 진단 boot)에 둔다.

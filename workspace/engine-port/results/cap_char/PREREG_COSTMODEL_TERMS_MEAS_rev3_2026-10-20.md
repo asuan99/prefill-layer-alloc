@@ -6,7 +6,8 @@
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·모형 예보, 측정 아님) · [코드] · [결정](사용자 결정 문서 명시) · [제안](이 문서가 고른 값, 봉인 시 사용자 확인) · **[봉인 시 기입]**(봉인 순간에만 알 수 있는 값: digest·경로·gate 통과값).
 > 근거: 계획 `PLAN_costmodel_terms_2026-10-20.md` · 결정 `../anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md` 1–17 · 감사 1회차 `VERDICT_prereg_costmodel_rev1_rules_r1_2026-10-20.md`·2회차 `VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md` · 프로브 `probe_128k/RESULT_probe_128k_2026-10-20.md`·`AUDIT_probe_128k_2026-10-20.md`(허용 문안 1–7)·`ANALYSIS_triton_96k_failure_2026-10-20.md` · J1 감사 `../multigpu_verdicts/AUDIT_J1_N1_analysis_2026-10-19.md` · `../anchor_audit/VERDICT_claimE_first_arrow_2026-10-19.md` · 명세 `../handoff_review_2026-10-15/SPEC_common_measurement_v0_2026-10-15.md`(이하 SP) · 항 정의 `COSTMODEL.md` CM-1…7 · gate 설계 `workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`(worktree `prefill-layer-alloc-engsync`; main 경로는 병합 후 [봉인 시 기입]).
 > 기판: VESSL A100 SXM 80GB(108 SM) 1장(TP2 Job은 2장), SGLang v0.5.10, Nemotron-Nano-9B-v2-Base(rev `dc0661c…`), cudagraph ON, radix OFF, **`--mem-fraction-static` 0.6**(결정 13). 0.82로 잰 결과(M3 J1, 프로브 1회차)와 섞지 않는다.
-> **ENGINE\_DIGEST** = 엔진 묶음 worktree `prefill-layer-alloc-engsync` 브랜치 `engine-sync-i5-int64`(`34f2acc8`, 30항목, **예상 `99bbef91…`** — 커밋 바이트 기준 예상일 뿐 gate 통과값이 아니다). 통과값 = **[봉인 시 기입 — 분할 gate G-α→G-β→G-γA∥G-γF 전부 PASS 후]**. 29항목 digest `2b1ab054…`는 폐기(배포·봉인된 적 없음). gate 안의 `ABORT_ENGINE_DIGEST`가 예상값 불일치를 막는다.
+> **ENGINE\_DIGEST** = 엔진 묶음 worktree `prefill-layer-alloc-engsync` 브랜치 `engine-sync-i5-int64`(`34f2acc8`, 30항목, **예상 `99bbef91…`** — 커밋 바이트 기준 예상일 뿐 gate 통과값이 아니다). 통과값 = **[봉인 시 기입 — G-α·G-β PASS(engsync, 2026-10-20) + G-γ는 결정 22로 "관측자 효과 특성화 완료" 종결; main 병합 후 같은 digest 재확인]**.
+> **rev3.1 개정(2026-10-21, 미봉인 문서 갱신)**: 결정 18(O-항목)을 §10·§7에, 결정 22(계측 정책)를 §2-2′·§8-1·§9-2에 반영하고 §12 봉인 체크리스트를 신설했다. 측정 0, 성능 판정 0. 29항목 digest `2b1ab054…`는 폐기(배포·봉인된 적 없음). gate 안의 `ABORT_ENGINE_DIGEST`가 예상값 불일치를 막는다.
 
 ## R. rev2 → rev3 변경 대응표
 
@@ -150,7 +151,30 @@ I-1 클럭·전력·throttle을 창마다 기록한다. SW power cap 노출률 >
 고정 배치·고정 길이를 엔진 안에서 만들고(burst로 bs개를 동시에 보내 ctx c까지 도달시킨 뒤 창을 읽는다) 서빙 부하(rate 사다리)는 쓰지 않는다. 서빙 부하(rate 사다리)는 이 문서에서 쓰지 않는다.
 
 ### 2-2. 단계 분리
-boot마다 warm-up(8요청, 같은 형상) → correctness(sticky 배선 로그 + 짧은 greedy 출력 비공백 + CG canary) → benchmark(셀들) → 후행 비측정 요청 → idle 2×flush → 종료. 계측 ON 수준은 모든 Job이 같다(관측자 효과는 gate의 TOST가 묶는다, §8-1).
+boot마다 warm-up(8요청, 같은 형상) → correctness(sticky 배선 로그 + 짧은 greedy 출력 비공백 + CG canary) → benchmark(셀들) → 후행 비측정 요청 → idle 2×flush → 종료. 계측 수준은 boot 종류별로 §2-2′ 매트릭스에 고정한다(rev3의 "관측자 효과는 gate의 TOST가 묶는다"는 결정 22로 폐기 — G-γ는 PASS가 아니라 특성화로 닫혔다).
+
+### 2-2′. 계측 정책 적용 (결정 22, rev3.1)
+결정 22의 "판정 측정은 계측 OFF"는 이 문서에 해당하는 측정이 없다(판정 0, V 이월). 이 문서의 1차 estimand는 계측 레코드로 **정의**되므로(T1 `S_eng` = `decode_forward` 간격, T3 σ = phase event 쌍, T4 사유 몫 = I-5) 계측을 끄면 estimand가 사라진다. 대신 아래 두 규칙을 봉인한다.
+
+**(1) 계측 매트릭스 [봉인]** — 같은 비교 단위 안의 boot는 계측 집합이 같다.
+
+| boot 종류 | I-1 | I-4·I-6 (`PDMUX_DECODE_PROBE_PATH`) | I-5 | TEL (`PDMUX_TELEMETRY_PATH`+`PDMUX_PHASE_EVENTS=1`) |
+|---|---|---|---|---|
+| T1·T2·T2′ boot (D 16·24·34·44·64, `108u`, `108v`, Llama, TP2·앵커) | ON | ON | OFF | **OFF** |
+| T3 전용 boot (D 24·44, PD-mux) | ON | ON | OFF | **ON**(σ에 필요) |
+| T4 boot (채우기) | ON | ON | ON | OFF |
+| OFF 진단 boot (아래 (2)) | ON | OFF | OFF | OFF |
+
+- rev3에서는 T3 셀이 D 24·44의 T1 boot 안에 있었다. TEL이 λ를 −1.7% 움직이므로(결정 22 근거) 그대로 두면 D 사다리 안에서 D 24·44만 TEL ON이 되어 비대칭이다. 그래서 **T3 셀을 D 24·44의 별도 boot로 분리**한다(J-A당 boot +2, 셀 수 불변).
+- TEL은 PD-mux 경로에서만 방출된다. T3 ρ·σ는 같은 boot 안의 동거 대 단독 비라 TEL 효과가 분자·분모에 함께 들어가지만, 상쇄된다고 가정하지 않는다 — "T3 boot는 TEL ON"을 인용 범위에 적는다.
+- I-4·I-6은 PD-mux와 vanilla에 같은 래퍼로 걸린다(§3-4, arm 대칭). I-4의 ITL p95 +1.0%[측정, agnostic 분해 Job]는 T1 값 자체에 들어가 있다 — T1은 "I-4 ON 상태의 decode step 시간"이다.
+
+**(2) Job 내 ON/OFF 진단 짝 [봉인, 셀·boot 수는 [제안]]** — 계측 효과를 같은 Job 안에서 재서 공시만 한다(보정 계수로 쓰지 않는다, 결정 22).
+- J-A1·J-A2: OFF 진단 boot 2개(D=44 PD-mux, `108v`), 각 셀 6개 = T1 (8, 2k)·(32, 2k)·(32, 8k)·(64, 8k)·(96, 2k)·(16, 16k) + T2 L ∈ {4,096, 16,384}. 같은 Job의 ON boot 같은 셀과 비교한다.
+- J-B: OFF 진단 boot 1개(Llama vanilla, 같은 셀). Nano `108v`의 OFF 짝은 J-A에 있다.
+- J-C: OFF 진단 boot 1개(TP2, T1 셀 3개). [제안 — O-14]
+- 산출(기술값): 셀별 `ln(client 간격 중앙값_ON / client 간격 중앙값_OFF)`와 T2 TTFT 비. 2차 estimand(클라이언트 간격)만 비교할 수 있다(OFF boot에는 `S_eng`가 없다). 라벨: 모든 셀에서 |비| ≤ 1.5%면 `INSTR_EFFECT_SMALL`, 아니면 `INSTR_EFFECT_DISCLOSED`(값 표 병기). 어느 쪽이든 T1–T4 값은 고치지 않는다.
+- OFF 진단 boot는 Job 안 boot 순서 무작위화(§2-3)에 포함한다.
 
 ### 2-3. 무작위화·반복
 한 Job 안에서 boot 순서는 등록 seed로 블록 무작위화, round 2는 round 1의 역순(ABBA). boot 안 셀 순서는 boot마다 등록 seed로 무작위. 프롬프트 토큰은 `SHA-256("cost|<term>|<bs>|<c>|<round>")`의 seed로 생성(D·모델과 무관 → D 간 같은 프롬프트). 동일 server seed.
@@ -303,9 +327,23 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 
 정지 시: 이미 끝난 셀은 회수하고 나머지는 새 job name으로 재실행(실패 셀만 재실행한 사실은 결과 보고에 적는다). J-A를 합치면 약 7.2 h로 6 h 목표를 넘으므로 round별 분할이다. D 사다리는 각 J-A Job 안에서만, H 대비(Nano `108v` 대 Llama)는 J-B 안에서만 성립한다. `108v`가 J-A1·J-A2·J-B에 모두 있어 Job 효과 진단값을 겸한다.
 
+### 7-4. rev3.1 재계산 (결정 18·22 반영) [유도 — §7-1 시간 모형, 측정 아님]
+
+| Job | 추가분 | 예상 h | 하드캡(×1.2) | 예약 GPU-h |
+|---|---|---|---|---|
+| J-A1 | O-12 셀 10(+0.14) · T3 boot 분리 +2 boot(+0.14) · OFF 진단 boot 2(각 약 0.18, +0.36) | 3.7 → **4.3** | 5.2 | 4.3 |
+| J-A2 | 같음(+0.64) | 3.5 → **4.1** | 5.0 | 4.1 |
+| J-B | O-8 T4 fused\_sym boot(+0.3) · Llama OFF 진단 boot(+0.18) | 4.4 → **4.9** | 5.9 | 4.9 |
+| J-C | OFF 진단 TP2 boot(boot 400 s + 셀 3, +0.15 h × 2장) [O-14] | 2.5 → **2.7** | 3.2 | 5.4 |
+| **합계** | | | **약 22.5 GPU-h(캡 합)** | **약 18.7 GPU-h** |
+
+- J-B가 §7-2의 "기대 ≤ 4.4 h" 목표를 넘는다(4.9 h, 하드캡 5.9 h는 6 h 목표 안). O-15에서 처리한다.
+- OFF 진단 boot 시간(0.18 h = boot·warm-up 0.072 + T1 셀 6 × 50 s + T2 2L × 8회)은 §7-1의 임의 모형이다.
+
+
 ## 8. 선행 조건 순서
 
-1. **GPU correctness gate — 분할 gate G-α → G-β → G-γA ∥ G-γF 전부 PASS** (결정 16). 앞 단계가 PASS일 때만 다음 단계를 제출한다. 세부는 `GATE_SPLIT_DESIGN_2026-10-20.md`(재서술하지 않음). 엔진 묶음 = I-5 동기화 + Triton causal\_conv1d **int64 패치(`chunk_offset`·`sequence_start_index` 두 곳)** + I-4·I-6; 브랜치 `engine-sync-i5-int64` `34f2acc8`, 예상 ENGINE\_DIGEST `99bbef91…`(30항목). 사후에 digest를 바꾸면 gate는 G-α부터 다시다. 이 PREREG가 gate에 요구하는 것: ON/OFF 출력 일치, 관측자 TOST(±1.5%, 계열별), 변이 시험(I-4 host 시간 변이가 FAIL해야 함), 패치 반증(패치 후 fused\_sym 96k·124k 통과 + 되돌리면 95,100 재실패 + 단위 시험(12288, 95100)·stride 22,656 + 94,784/94,800 경계), stride 11,328 변형(§5-3 (가)), **vanilla 경로(Nano·Llama)에서 `decode_forward` 방출**(§1-7), 실현 SM 로그(§1-8). **96k·124k 확장(T2-ext, TP2 96k)은 int64 gate 통과 조건부(O-3).**
+1. **GPU correctness gate — 분할 gate G-α·G-β PASS + G-γ 특성화 종결** (결정 16, rev3.1에서 결정 22로 개정: G-α PASS 28/28·G-β PASS(engsync, 2026-10-20); G-γA `OBSERVER_EFFECT`·G-γF `UNRESOLVED_POWER`는 PASS가 아니며 "관측자 효과 특성화 완료"로 닫았다. 계측 효과는 §2-2′로 공시한다). 앞 단계가 PASS일 때만 다음 단계를 제출한다. 세부는 `GATE_SPLIT_DESIGN_2026-10-20.md`(재서술하지 않음). 엔진 묶음 = I-5 동기화 + Triton causal\_conv1d **int64 패치(`chunk_offset`·`sequence_start_index` 두 곳)** + I-4·I-6; 브랜치 `engine-sync-i5-int64` `34f2acc8`, 예상 ENGINE\_DIGEST `99bbef91…`(30항목). 사후에 digest를 바꾸면 gate는 G-α부터 다시다. 이 PREREG가 gate에 요구하는 것: ON/OFF 출력 일치, 관측자 TOST(±1.5%, 계열별 — rev3.1: 미충족, 결정 22로 특성화 대체), 변이 시험(I-4 host 시간 변이가 FAIL해야 함), 패치 반증(패치 후 fused\_sym 96k·124k 통과 + 되돌리면 95,100 재실패 + 단위 시험(12288, 95100)·stride 22,656 + 94,784/94,800 경계), stride 11,328 변형(§5-3 (가)), **vanilla 경로(Nano·Llama)에서 `decode_forward` 방출**(§1-7), 실현 SM 로그(§1-8). **96k·124k 확장(T2-ext, TP2 96k)은 int64 gate 통과 조건부(O-3)** — rev3.1: 패치 반증은 G-β PASS로 충족(γ와 무관).
 2. **하네스**: 새 하네스(§11) CPU 시험·변이·가짜 엔진 e2e → Workspace smoke(비측정, 수치 인용 금지).
 3. **감사**: 항 측정은 결정 17에 따라 추가 규칙층 감사 없이 봉인 후보. 하네스층 감사는 별도(최대 2회).
 4. **봉인 S1**: 규칙·하네스·엔진 digest(gate 통과 digest)·config digest. 이 문서의 [봉인 시 기입] 칸을 채운다.
@@ -333,16 +371,20 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 - 선행 gate 전: "I-5가 거절 사유를 측정했다"(동기화·GPU gate 전), "preflight PASS가 이 하네스를 검증했다"
 
 
+추가 금지(결정 22): "엔진 묶음이 관측자 TOST를 통과했다"·"G-γ PASS"·"계측은 측정에 영향이 없다"·"T1은 계측 없는 decode step 시간이다"·분해 Job 값(λ −1.7%, ITL p95 +1.0%)을 다른 arm·모델·부하의 보정 계수로 쓰는 것.
+
 추가 금지(V 분리에 따른 것): "이 항 값으로 G·λ\*\_SLO·goodput을 설명/예측했다"(조립은 이 문서 밖), "항 측정이 비용 모델을 검증했다".
 
 ## 10. 열린 결정 (항 측정 해당분, 사용자 몫, 권고 병기)
-**닫힌 것**: 결정 16 O-1·O-2·O-3, 결정 17(V 분리). V 전용 O-5·O-7·O-9(V 부분)·O-10(k=5·소거 변형)·O-11은 V PREREG로 이월.
+**닫힌 것**: 결정 16 O-1·O-2·O-3, 결정 17(V 분리), **결정 18(2026-10-20): O-4 (가)·O-6 순차·O-8 포함·O-9′ [제안]값 봉인·O-10′ 유지·O-12 (b)·O-13 확장 안 함** — 아래 각 항목은 권고 원문 기록용이며 모두 권고안대로 닫혔다. 결정 22(계측 정책) → §2-2′. V 전용 O-5·O-7·O-9(V 부분)·O-10(k=5·소거 변형)·O-11은 V PREREG로 이월.
 - **O-4** TP2 96k 점의 의미: (가) gate 단위 시험(두 곳 패치 변형)으로 경계 이동 + 서빙 96k는 정상 점 / (나) 패치 토글 env. **권고 (가)** — 서버 사망 위험·digest 증가 없음.
 - **O-6** TP2 앵커: 순차 1장(사용률 81%) / 두 GPU 동시 독립 앵커(≈100%, 교락 공시). **권고 순차** — 앵커가 TP2 대비 비(분모)이므로 전력·열 교락이 곧 estimand 오염이다. 비용 차는 작다.
 - **O-8** T4 arm 대칭 점검(fused\_sym 한 boot 추가, +약 0.3 GPU-h). **권고 포함** — 산식 B가 "엔진 일반"이 아니라 PD-mux 부팅 한 경로의 사실임을 막는 값싼 대칭 점검.
 - **O-9′** 항 측정 채택 기준 T1(중앙 ≤ 3%·p90 ≤ 8%·외삽 ≤ 10%)·T2(≤ 5%)·CLOCK\_SENSITIVE(노출 > 20%·계수 변화 > 3%): **권고 [제안] 그대로 봉인** — 라벨만 붙고 어떤 판정도 이 값에 걸려 있지 않다.
 - **O-10′** 라운드 수: 기본 2, `108v`·Llama 4. **권고 유지**(H 대비의 판정 하한 n ≥ 4 충족, D 사다리는 기술 적합).
 - **O-12 (신규)** shape C 영역 T1 보강: 감사 2회차는 shape C(bs ≈ 83 → `bs_padded` 88, c̄ ≈ 9.1k)가 T1 볼록껍질 밖(bs 96의 c\_max 8,192)이 확실하다고 지적했다. 선택: (a) 보강 없음 — 항 데이터를 본 뒤 필요하면 새 Job(감사 선택지 (b)의 추정 약 +1 GPU-h) / (b) 지금 `bs=88` 줄 (88, 8k)·(88, 9k) × 5모드(24·34·44·108u·108v) 10셀을 J-A1·J-A2에 추가(각 Job 약 +0.14 GPU-h, 봉인 전에만 데이터 영향 없이 가능; (88, 9k)는 O+X = 498에서 88×(9,216+498) = 855k > 852k라 `INFEASIBLE_BY_RULE`이 될 수 있어 (88, 8k)와 (80, 9k)로 대체 가능). **권고 (b)** — 데이터 전 추가는 구조 선택 편향이 없고, 후에 필요해진 뒤에는 Job을 새로 내야 한다.
+- **O-14 (rev3.1 신규)** J-C OFF 진단 boot(+0.3 GPU-h): 포함 / 빼고 "TP2 계측 효과 미측정" 공시. **권고 포함** — 결정 22가 Job 내 짝을 요구하고 TP2 경로의 계측 효과는 N=1과 다를 수 있다.
+- **O-15 (rev3.1 신규)** J-B 4.9 h(목표 4.4 초과): (a) 그대로(하드캡 5.9 h < 6 h) / (b) T4 boot 10개를 J-B2로 분리(H 대비와 T4는 서로 다른 Job이 되나 T4 산식 대조는 boot 단위라 영향 없음, Llama T4 1 boot는 H 대비 ⑤ 때문에 J-B1에 남김). **권고 (b)** — 외부 정지 선례(약 9.5 h)보다 아래라도 재개 단위가 작을수록 잃는 셀이 적다; 예약 합계는 거의 같다(boot 공통 오버헤드 없음).
 - **O-13 (신규)** T2′ L 범위(4k·16k)를 T3의 L(8,192·32,768)까지 확장(+약 0.25 GPU-h): **권고 확장하지 않음** — T2′는 `T2_P_NOT_REALIZED` 조건부 대체이고 현재 규칙(밖은 `NA`)이 정직하다.
 
 ## 11. [봉인 시 기입]과 하네스
@@ -355,3 +397,23 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 신규 구현(차용 목록은 §2-4·§2-5): ① 새 디렉터리의 spec 주도 셀 클라이언트(T1 burst + 창, T3 동거, T2 단일 요청·T2′, T4 채우기) ② 창 추출·`S_eng` 계산(규칙 §1) ③ 클라이언트 토큰 간격 추정량 + **엔진 대 클라이언트 대조기(§1-7)** ④ 실행 가능성 평가(부팅 로그 → `INFEASIBLE_BY_RULE`, O+X = 498) ⑤ 캡처 bs 목록 검사(`ABORT_CG_BS`) + CG canary ⑥ D=64 index를 포함한 config와 실현 SM 배선 검사(`STICKY_WIRED_D64`; `SM_NOT_REALIZED` §1-8) ⑦ 엔진 모드 두 개(`108u`, `108v`)와 Llama 부팅 ⑧ T4 부팅 로그 파서 + 채우기 판정(**산식 A·B 동시 예측 기록, 부팅 직후 봉인**) ⑨ round 역순·boot 무작위 순서 ⑩ 맞춤 코드(상대오차 가중 최소제곱, LOO, 외삽 시험) + 분석기(fetch 전 커밋) ⑪ `SERVER_DEATH` 분류 ⑫ 재개·DONE 마커·sha ⑬ T3 분포·정지·σ·`n_it_obs` 기록기.
 변이 시험 후보: "cap 48 부팅인데 128로 기록" · "캡처 목록 밖 bs를 통과" · "ctx 띠 off-by-one" · "`INFEASIBLE_BY_RULE` 셀을 조용히 누락" · "T2에 첫 요청 워밍업 포함" · "Llama 셀을 Nano로 라벨" · "`108u`와 `108v` 합침" · "클라이언트 토큰 간격을 엔진 `S_eng`로 표기" · "`decode_fwd_host_ms`를 `decode_fwd_gpu_ms`로 대체" · "제외 round를 적합에 사용" · "대기 요청을 running으로 셈(T4)" · "TP2 앵커를 cap 128로 부팅" · "T4 예약 R을 0으로 둠(원식 회귀)" · "n\_A를 비대칭 형식으로 계산" · "불일치 bs를 제외하지 않음(§1-7)" · "정지(>5× 중앙값) 계산에서 중앙값을 동거 창으로 잡음" · "σ′와 σ를 함께 곱함" · "요청 SM을 실현 SM으로 기록".
 
+## 12. 봉인 체크리스트 (rev3.1, 2026-10-21)
+
+| # | 항목 | 상태 | 막는 것 |
+|---|---|---|---|
+| 1 | 결정 18 O-항목 반영 | 완료(§10 닫힘, §7-4 시간) | — |
+| 2 | 결정 22 계측 정책 반영 | 완료(§2-2′·§8-1·§9-2) | — |
+| 3 | O-14·O-15 | **사용자 결정 대기** | — |
+| 4 | engsync → main 병합 | 대기 — 병합 검토(2026-10-21): 경로 교집합 0·코드 의미 충돌 0, 단 `results/engine_gate*` 약 904 MB(`.so`·Triton 캐시·`power_samples.csv`) 정리 방식 결정 필요 | 사용자 승인 |
+| 5 | ENGINE\_DIGEST 통과값 | 대기(예상 `99bbef91…`; 병합 후 main에서 `engine_digest.py` 재계산 일치 확인) | 4 |
+| 6 | gate 설계 문서 main 경로 | 대기 | 4 |
+| 7 | 신규 하네스(§11-2 ①–⑬ + §2-2′ 계측 매트릭스 검사·OFF 진단 boot) 구현·CPU 시험·변이 | 미착수 | 4 |
+| 8 | 하네스 경로·보고서 파일명 | 대기 | 7 |
+| 9 | config digest(D=64 index 추가본, D별) | 대기 | 7 |
+| 10 | 하네스층 감사(최대 2회) | 대기 | 7 |
+| 11 | Workspace smoke(비측정) → boot·셀 시간 실측으로 §7-4 재확인 | 대기 | 7 |
+| 12 | 부팅값(`new_token_ratio`·캡처 bs 목록·`split_forward_token_budget`/`max_prefill_tokens`) | 부팅 시 기록(봉인 대상 아님, 기록 규칙만 봉인) | — |
+| 13 | 봉인 S1(규칙·하네스·엔진·config digest) | 대기 | 5–11 |
+| 14 | CPU preflight → `launch.sh` dry-run → 사용자 승인 → `--submit` | 대기 | 13 |
+
+하네스 변이 시험 추가(§2-2′): "T3 셀을 T1 boot에서 실행(TEL 비대칭)" · "OFF 진단 boot에 계측 env가 남음" · "OFF 진단 비로 T1 값을 보정".
