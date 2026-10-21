@@ -1,0 +1,139 @@
+{
+  "kind": "compo_variants",
+  "n_safetensors_in_snapshot": 4,
+  "refs_main": "dc0661c829b14e5b9246c05cfa89094a0875e052",
+  "revision_expected": "dc0661c829b14e5b9246c05cfa89094a0875e052",
+  "snapshot": "/data/hf/hub/models--nvidia--NVIDIA-Nemotron-Nano-9B-v2-Base/snapshots/dc0661c829b14e5b9246c05cfa89094a0875e052",
+  "utc": "2026-10-21T13:16:34Z",
+  "variants": {
+    "a13": {
+      "changed_layers": [
+        2,
+        7,
+        13,
+        20,
+        27,
+        34,
+        41,
+        46,
+        52
+      ],
+      "config_sha256": "b37c93768dfdd852d8fe892dc01208f32c206d825ed69c72e8684fd2722a2320",
+      "dir": "/data/runs/compo_probe_20261021T131621Z/variants/a13",
+      "n_attn": 13,
+      "n_mamba": 18,
+      "pattern": "M-*-M-M*-M-M-**-M-M-**-M-M-*-M*-M-*-M-M*-*-MM-*-M-M-*-M-",
+      "sglang_config": {
+        "config_class": "sglang.srt.configs.nemotron_h.NemotronHConfig",
+        "error": null,
+        "mamba_cache_per_req": 95698944,
+        "n_attn_ids": 13,
+        "n_mamba_ids": 18,
+        "pattern": "M-*-M-M*-M-M-**-M-M-**-M-M-*-M*-M-*-M-M*-*-MM-*-M-M-*-M-",
+        "state_dtype": "Mamba2StateDType(conv=torch.bfloat16, temporal=torch.float32)"
+      },
+      "weights_in_dir": []
+    },
+    "a22": {
+      "changed_layers": [
+        0,
+        4,
+        6,
+        9,
+        11,
+        16,
+        18,
+        23,
+        25,
+        29,
+        32,
+        36,
+        38,
+        43,
+        44,
+        48,
+        50,
+        54
+      ],
+      "config_sha256": "de5589cb4f4a93b06a99382049821c832ff4ba2d0053429d81eed9d200d77545",
+      "dir": "/data/runs/compo_probe_20261021T131621Z/variants/a22",
+      "n_attn": 22,
+      "n_mamba": 9,
+      "pattern": "*-M-*-*M-*-*-M*-*-*-M*-*-*-M-**-*-M-*-**-M-**-M-*-*-M-*-",
+      "sglang_config": {
+        "config_class": "sglang.srt.configs.nemotron_h.NemotronHConfig",
+        "error": null,
+        "mamba_cache_per_req": 47849472,
+        "n_attn_ids": 22,
+        "n_mamba_ids": 9,
+        "pattern": "*-M-*-*M-*-*-M*-*-*-M*-*-*-M-**-*-M-*-**-M-**-M-*-*-M-*-",
+        "state_dtype": "Mamba2StateDType(conv=torch.bfloat16, temporal=torch.float32)"
+      },
+      "weights_in_dir": []
+    },
+    "a31": {
+      "changed_layers": [
+        0,
+        2,
+        4,
+        6,
+        7,
+        9,
+        11,
+        13,
+        16,
+        18,
+        20,
+        23,
+        25,
+        27,
+        29,
+        32,
+        34,
+        36,
+        38,
+        41,
+        43,
+        44,
+        46,
+        48,
+        50,
+        52,
+        54
+      ],
+      "config_sha256": "b884847f83ac79b6a4ec00773405f7099739ae253bb991b3873bb49a7f7c51fe",
+      "dir": "/data/runs/compo_probe_20261021T131621Z/variants/a31",
+      "n_attn": 31,
+      "n_mamba": 0,
+      "pattern": "*-*-*-**-*-*-**-*-*-**-*-*-*-**-*-*-*-**-*-**-*-*-*-*-*-",
+      "sglang_config": {
+        "config_class": "sglang.srt.configs.nemotron_h.NemotronHConfig",
+        "error": null,
+        "mamba_cache_per_req": 0,
+        "n_attn_ids": 31,
+        "n_mamba_ids": 0,
+        "pattern": "*-*-*-**-*-*-**-*-*-**-*-*-*-**-*-*-*-**-*-**-*-*-*-*-*-",
+        "state_dtype": "Mamba2StateDType(conv=torch.bfloat16, temporal=torch.float32)"
+      },
+      "weights_in_dir": []
+    },
+    "a4": {
+      "changed_layers": [],
+      "config_sha256": "6940a58808ef5b51b2bac938aa812ab96d43938da657494a3c0d4287957fbcd5",
+      "dir": "/data/runs/compo_probe_20261021T131621Z/variants/a4",
+      "n_attn": 4,
+      "n_mamba": 27,
+      "pattern": "M-M-M-MM-M-M-M*-M-M-M*-M-M-M-M*-M-M-M-M*-M-MM-M-M-M-M-M-",
+      "sglang_config": {
+        "config_class": "sglang.srt.configs.nemotron_h.NemotronHConfig",
+        "error": null,
+        "mamba_cache_per_req": 143548416,
+        "n_attn_ids": 4,
+        "n_mamba_ids": 27,
+        "pattern": "M-M-M-MM-M-M-M*-M-M-M*-M-M-M-M*-M-M-M-M*-M-MM-M-M-M-M-M-",
+        "state_dtype": "Mamba2StateDType(conv=torch.bfloat16, temporal=torch.float32)"
+      },
+      "weights_in_dir": []
+    }
+  }
+}

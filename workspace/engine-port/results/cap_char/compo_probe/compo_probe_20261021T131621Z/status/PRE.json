@@ -1,0 +1,6 @@
+{
+  "stage": "PRE",
+  "status": "PASS",
+  "reason": "manifest verified (30 entries), install commit == HEAD, thread-local role patch, LoadFormat.DUMMY",
+  "facts": {}
+}

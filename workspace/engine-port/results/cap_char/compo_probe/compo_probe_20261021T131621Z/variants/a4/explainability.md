@@ -1,0 +1,14 @@
+| Field | Response |
+| :---- | :---- |
+| Intended Task/Domain: | Text generation, reasoning, and chat |
+| Model Type: | Text-to-text Mamba2-Transformer Hybrid |
+| Intended Users: | Generative AI creators working with conversational AI models and image content. |
+| Output: | Text |
+| Tools used to evaluate datasets to identify synthetic data and ensure data authenticity. | We used a Gemma-3 4B-based filtering model fine-tuned on [Nemotron Content Safety Dataset v2](https://huggingface.co/datasets/nvidia/Aegis-AI-Content-Safety-Dataset-2.0) to ensure the quality of synthetic data. |
+| Describe how the model works: | Generates text by predicting the next word or token based on the context provided in the input sequence using multiple self-attention layers. |
+| Name the adversely impacted groups this has been tested to deliver comparable outcomes regardless of: | Not Applicable |
+| Technical Limitations & Mitigation: | The model demonstrates weakness to alignment-breaking attacks. Users are advised to deploy language model guardrails alongside this model to prevent potentially harmful outputs. The Model may generate answers that are inaccurate, omit key information, or include irrelevant or redundant text. |
+| Verified to have met prescribed NVIDIA quality standards: | Yes |
+| Performance Metrics: | Accuracy, Throughput, and User-side throughput |
+| Potential Known Risks: | The model was optimized explicitly for instruction following and as such is more susceptible to prompt injection and jailbreaking in various forms as a result of its instruction tuning. This means that the model should be paired with additional rails or system filtering to limit exposure to instructions from malicious sources  \-- either directly or indirectly by retrieval (e.g. via visiting a website)  \-- as they may yield outputs that can lead to harmful, system-level outcomes up to and including remote code execution in agentic systems when effective security controls including guardrails are not in place. The model was trained on data that contains toxic language and societal biases originally crawled from the internet. Therefore, the model may amplify those biases and return toxic responses especially when prompted with toxic prompts. The model may generate answers that may be inaccurate, omit key information, or include irrelevant or redundant text producing socially unacceptable or undesirable text, even if the prompt itself does not include anything explicitly offensive. |
+| Licensing: | GOVERNING TERMS: Use of this model is governed by the [NVIDIA Open Model License Agreement](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/). |

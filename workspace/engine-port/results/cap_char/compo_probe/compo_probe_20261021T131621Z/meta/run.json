@@ -1,0 +1,39 @@
+{
+  "run_id": "compo_probe_20261021T131621Z",
+  "mode": "gpu",
+  "kind": "compo_probe (non-measurement)",
+  "start_utc": "2026-10-21T13:16:22Z",
+  "host": "main-wsp-7ix1cg4xl1jd-0",
+  "commit": "170706171c202caf82db432f1a2491fb880c6fd4",
+  "git_dirty": false,
+  "manifest": "/opt/pdmux/runtime_source_manifest.sha256",
+  "manifest_sha256": "bbcac12aab364da4ea9de73435ca6e743a6697c260d20450018fad178468d03b",
+  "keep_going": false,
+  "budget_min": 96,
+  "cap": 128,
+  "context_length": 73728,
+  "mem_fraction_static": 0.6,
+  "nano_model": "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+  "nano_revision": "dc0661c829b14e5b9246c05cfa89094a0875e052",
+  "swap_rule": {
+    "name": "spread_floor_mid_v1",
+    "formula": "o_j = floor((j + 0.5) * M / n_swap), j = 0..n_swap-1 over Mamba ordinals in depth order"
+  },
+  "n_req": 8,
+  "in_len": 2048,
+  "out_tokens": 64,
+  "synthetic_input_rule": {
+    "name": "splitmix64_pseudoword_text_v1",
+    "text": "space-joined pseudo-words (2-4 syllables from a fixed 70-syllable table), '. ' after every 12th word, newline after every 80th word; all choices from a splitmix64 stream seeded by seed_for(L, rep)",
+    "length": "text is tokenized (add_special_tokens=False) in 2048-word chunks and concatenated; the first L ids are sent as input_ids, so prompt_tokens == L exactly (no retokenization)",
+    "seed": "request j uses splitmix64((20261021 ^ (2048 << 8) ^ j)); j = 0..7 plain, j = 8 logprob request",
+    "output": "max_new_tokens forced with ignore_eos=true, temperature 0"
+  },
+  "telemetry": "off (decision 22) except dummy_a13, dummy_a31, dummy_a31_retry: PDMUX_TELEMETRY_PATH=<boot>/tel.jsonl + PDMUX_PHASE_EVENTS=1 for the TEL-<boot> existence check (decision 26; not a measurement)",
+  "script_sha256": {
+    "compo_probe.sh": "54ac80481ee89898bbe9f47a6513e3b9a25fd4ebe3938a987bc031e92b78dad9",
+    "compo_probe_helper.py": "bdec0ddc430e69b240b866129109c6af7e7347b1d9f4129594d701187e8fe11e",
+    "make_variant.py": "7c3aa729d12ef50dc90f8eea4a0466dbe17aae6f5056aaba377f6ce946a25f3f",
+    "longctx_probe_helper.py": "f320e886f1c70b9ce612864899cf9f0d1265f31070f3dcf946b5f0c691886a16"
+  }
+}

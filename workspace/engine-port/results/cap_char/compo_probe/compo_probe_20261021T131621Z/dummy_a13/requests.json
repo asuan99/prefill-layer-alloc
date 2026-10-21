@@ -1,0 +1,212 @@
+{
+  "boot": "dummy_a13",
+  "ids_sha256": [
+    "d97978047533ee80098bce7897b6cba875c88f6c832603cd8a3dc2fc264f6bda",
+    "d92a8e9b3e5b49994a55c9e11eb99b89edb6646924608c1829aa5de7526d5611",
+    "3dfb635ca20bc66fd13e231406f8d6eae0743381c7168a226d12daea27ff2f76",
+    "f90b17f57b94deb607c9181135a84dec75bf352d1a4728925e6d2b51f3603ccc",
+    "63c8f6f0ba8f9b63fbad7d2aaa086942c5bcc1cba27f70d03ca6c0446d576d22",
+    "da45cfa3aea4e2c9a2318eb9d50f5df8ec9995014829d9aff06312f037202c95",
+    "fdfa85ab46ba313844c59a238d526fde72c14ac9ca5f9a6d5d6c050bbd56a4ca",
+    "cdd53631fc69ec979263caf87970fa263b271921d9de6b1c158847aa0b6c82f1",
+    "e520eaf18e9d0292384355b2f360a898d252303eef917a8ab689b05dcacba955"
+  ],
+  "in_len": 2048,
+  "kind": "compo_requests",
+  "logprob": {
+    "completion_tokens": 64,
+    "e2e_s": 0.9679512089933269,
+    "error": null,
+    "finish_reason": {
+      "length": 64,
+      "type": "length"
+    },
+    "logprobs": [
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023,
+      -11.783483505249023
+    ],
+    "output_ids_sha256": "af03bd517195e23f62cbbc990e51f420ac2c5342355944cf811c449d9b79ade5",
+    "prompt_tokens": 2048
+  },
+  "n_req": 8,
+  "out_tokens": 64,
+  "plain": [
+    {
+      "completion_tokens": 64,
+      "e2e_s": 2.9483213310013525,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "8e15a29a631b3e5db7b6db5867bd8c4f24769303998cf1fc81634bb6df4f5350",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 64,
+      "e2e_s": 2.9471160029934254,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "bac7b6cc02669be4233ff2712b4b6c042580f683a8eaf5d730ef5d3ea4c6f3a4",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 64,
+      "e2e_s": 1.6597463079961017,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "a2e597387790faebac0832d0acbd122a1088a1f108cd4d308053fa977e39a93d",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 64,
+      "e2e_s": 2.945201010996243,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "2f52ee069aca9b1a5639d751ff4efbfb2a9bbc4281a3132b874006dbbb75155d",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 64,
+      "e2e_s": 2.945141372998478,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "382fb37a804aa3d14c03057acc7facd9e9e78e1b3aa5fafa4505251cadbdbd1a",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 64,
+      "e2e_s": 2.945012594005675,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "62bc782679806eb98cf4d7bd3cf101104ac0124248b1ca0f35c1555f2d457711",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 64,
+      "e2e_s": 2.9444500200042967,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "2dbfd069b44e014059d3500c2d444e8849563ef8301ed6b55af6ade6945f33a2",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 64,
+      "e2e_s": 2.944405131987878,
+      "error": null,
+      "finish_reason": {
+        "length": 64,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "ab54543afa1e4e93d843488e0942d3435d41976bb862a3ddc645f91cd30ee306",
+      "prompt_tokens": 2048
+    }
+  ],
+  "schema": "compo_probe/v1",
+  "server_alive_after": true,
+  "sig_delta": {
+    "cuda_graph_capture_failed": 0,
+    "device_assert": 0,
+    "eager_fallback": 0,
+    "nan_logits": 0,
+    "oom": 0,
+    "scheduler_exception": 0,
+    "traceback": 0
+  },
+  "synth_rule": {
+    "length": "text is tokenized (add_special_tokens=False) in 2048-word chunks and concatenated; the first L ids are sent as input_ids, so prompt_tokens == L exactly (no retokenization)",
+    "name": "splitmix64_pseudoword_text_v1",
+    "output": "max_new_tokens forced with ignore_eos=true, temperature 0",
+    "seed": "request j uses splitmix64((20261021 ^ (2048 << 8) ^ j)); j = 0..7 plain, j = 8 logprob request",
+    "text": "space-joined pseudo-words (2-4 syllables from a fixed 70-syllable table), '. ' after every 12th word, newline after every 80th word; all choices from a splitmix64 stream seeded by seed_for(L, rep)"
+  },
+  "utc": "2026-10-21T13:22:16Z"
+}

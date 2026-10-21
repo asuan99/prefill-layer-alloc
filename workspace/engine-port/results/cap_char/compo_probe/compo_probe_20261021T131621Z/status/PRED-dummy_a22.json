@@ -1,0 +1,48 @@
+{
+  "facts": {
+    "banner": {
+      "k_bytes_per_token": 90120.48127249815,
+      "mamba_slots": 129,
+      "s_bytes_per_slot": 47860585.17829458,
+      "weight_bytes": 14484777205.76
+    },
+    "boot": "dummy_a22",
+    "checks": {
+      "k": {
+        "rel_err": 9.411923493148193e-05,
+        "verdict": "PASS"
+      },
+      "layer_counts": {
+        "expected": {
+          "n_attn": 22,
+          "n_mamba": 9
+        },
+        "verdict": "PASS"
+      },
+      "s": {
+        "rel_err": 0.00023225289287573966,
+        "verdict": "PASS"
+      },
+      "weight": {
+        "rel_err": 0.002392546760218802,
+        "verdict": "PASS"
+      }
+    },
+    "implied_layer_counts": {
+      "n_attn": 22,
+      "n_mamba": 9
+    },
+    "note": "probe value, not citable",
+    "predicted": {
+      "k_bytes_per_token": 90112,
+      "s_bytes_per_req": 47849472,
+      "weight_bytes": 14450204416
+    },
+    "tolerance": 0.02,
+    "variant": "/data/runs/compo_probe_20261021T131621Z/variants/a22",
+    "verdict": "PASS"
+  },
+  "reason": "weight +0.239%, k +0.009%, s +0.023% (tol +-2%); implied n_attn/n_mamba 22/9 vs 22/9",
+  "stage": "PRED-dummy_a22",
+  "status": "PASS"
+}

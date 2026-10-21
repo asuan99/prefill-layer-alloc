@@ -1,0 +1,43 @@
+{
+  "banner": {
+    "k_bytes_per_token": 126946.1224124099,
+    "mamba_slots": 129,
+    "s_bytes_per_slot": 0.0,
+    "weight_bytes": 12820477378.56
+  },
+  "boot": "dummy_a31",
+  "checks": {
+    "k": {
+      "rel_err": -0.00023530106154001282,
+      "verdict": "PASS"
+    },
+    "layer_counts": {
+      "expected": {
+        "n_attn": 31,
+        "n_mamba": 0
+      },
+      "verdict": "PASS"
+    },
+    "s": {
+      "rel_err": null,
+      "verdict": "PASS"
+    },
+    "weight": {
+      "rel_err": 0.002612132670357218,
+      "verdict": "PASS"
+    }
+  },
+  "implied_layer_counts": {
+    "n_attn": 31,
+    "n_mamba": 0
+  },
+  "note": "probe value, not citable",
+  "predicted": {
+    "k_bytes_per_token": 126976,
+    "s_bytes_per_req": 0,
+    "weight_bytes": 12787075840
+  },
+  "tolerance": 0.02,
+  "variant": "/data/runs/compo_probe_20261021T131621Z/variants/a31",
+  "verdict": "PASS"
+}

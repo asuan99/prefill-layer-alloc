@@ -1,0 +1,6 @@
+{
+  "stage": "BOOT-dummy_a31_retry",
+  "status": "SKIPPED",
+  "reason": "not needed (BOOT-dummy_a31 PASS) or no budget / teardown FAIL",
+  "facts": {}
+}

@@ -1,0 +1,164 @@
+{
+  "boot": "dummy_a31",
+  "dec_ids_sha256": [
+    "2830cb437c3ded29e4272d4797bf1a8b422e5a0d1657e882454c9bd41667f9a6",
+    "88ea6ae2a156ef2e7b0e809eec98810ad97c3b611f2f337ef6d62755583397c3",
+    "fba9fbdc86b95592c8e0a58360c0c35fc3e83fc7bbc524496960c9fb63516e32",
+    "a93a84bdfa8e6e35ce5788496b788ce6845ec55be02a36c7920809b9bd8f5bb5",
+    "3e3816fc06525b7731a7cbc0cd8a3d189d37bd0286f1012c9844b222e993a437",
+    "d2fdaefd604c3d3f7a5677a4433ad4a7810122f0d3eefcaaec5a5ed41a3dc2bd",
+    "4177a905d2391295d11160b026fc987407d954a67a06e26e0bb6d510aa06f47b",
+    "2ffb8f2b8ddc45f300a7d38e7b1ef3e89f7421368f926b5a59b871aa8264f99e"
+  ],
+  "dec_in": 2048,
+  "dec_out": 1024,
+  "decode": [
+    {
+      "completion_tokens": 1024,
+      "e2e_s": 13.212096689996542,
+      "error": null,
+      "finish_reason": {
+        "length": 1024,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "c91426c00327c1a29ad6cda07f1034ecd6e027430c12683bb8819e89428648a5",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 1024,
+      "e2e_s": 12.553667442000005,
+      "error": null,
+      "finish_reason": {
+        "length": 1024,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "3af8487cb878ea553cbd5ce588a6dae73fe66c1907a0f12358820e3ebff50c91",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 1024,
+      "e2e_s": 13.210788932992727,
+      "error": null,
+      "finish_reason": {
+        "length": 1024,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "58ac781901491b9bc85f685e296659713a4bb2019b673054f22a7240183c2060",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 1024,
+      "e2e_s": 13.2102112309949,
+      "error": null,
+      "finish_reason": {
+        "length": 1024,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "fa0f3f01399baa52ce3667305161461d7dc7839c04242541e4e6c04642b7acd5",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 1024,
+      "e2e_s": 13.208574731004774,
+      "error": null,
+      "finish_reason": {
+        "length": 1024,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "ea45ee917bfb9954801897a7e16d15da86f42193d52f0670d0c044a4e627ec6c",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 1024,
+      "e2e_s": 13.208760244000587,
+      "error": null,
+      "finish_reason": {
+        "length": 1024,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "aee31c269655fc55533fda574a1c127b36345fb31275259f0a7f3f1f7fdf7ede",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 1024,
+      "e2e_s": 13.206625717008137,
+      "error": null,
+      "finish_reason": {
+        "length": 1024,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "cc88166d21bb8ec186db832420273140a134d865bbf77ab53bc9118d582d27da",
+      "prompt_tokens": 2048
+    },
+    {
+      "completion_tokens": 1024,
+      "e2e_s": 13.206203316993196,
+      "error": null,
+      "finish_reason": {
+        "length": 1024,
+        "type": "length"
+      },
+      "logprobs": null,
+      "output_ids_sha256": "2401adbd9300c413b80ef05fb061d3f123e530f7682a478ad486ca7f0e563c5c",
+      "prompt_tokens": 2048
+    }
+  ],
+  "decode_seen_bs": 8,
+  "facts": {
+    "extend_tokens_seen": [
+      1,
+      7,
+      2048,
+      8192,
+      14336
+    ],
+    "max_decode_bs": 9,
+    "n_coresident_decode_iter": 34,
+    "n_decode_iteration": 1269,
+    "n_pairs": 9,
+    "n_records": 12586,
+    "n_span_end": 9,
+    "n_span_start": 9,
+    "n_unparsable_lines": 0,
+    "request_errors": [],
+    "server_log_failure_lines": [],
+    "target_extend_tokens": [
+      8192
+    ],
+    "target_n_new": [
+      1
+    ],
+    "target_span_seq": [
+      9
+    ]
+  },
+  "kind": "compo_tel",
+  "l_prefill": 8192,
+  "n_dec": 8,
+  "n_records_before": 10023,
+  "pf_ids_sha256": "6278d1306ec036708b262a188384a93780ea33d55a1b80468c0925063747d592",
+  "prefill": {
+    "completion_tokens": 8,
+    "e2e_s": 0.7933055739995325,
+    "error": null,
+    "finish_reason": {
+      "length": 8,
+      "type": "length"
+    },
+    "logprobs": null,
+    "output_ids_sha256": "c7d5570ab984ee7aa31c443ae400e9f1cae2603180570de0b60cdb73e40f07d2",
+    "prompt_tokens": 8192
+  },
+  "schema": "compo_probe/v1",
+  "server_alive_after": true,
+  "tel_path": "/data/runs/compo_probe_20261021T131621Z/dummy_a31/tel.jsonl",
+  "utc": "2026-10-21T13:24:59Z",
+  "waited_for_decode_s": 2.817210231005447
+}

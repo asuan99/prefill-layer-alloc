@@ -1,0 +1,33 @@
+{
+  "facts": {
+    "extend_tokens_seen": [
+      1,
+      7,
+      2048,
+      8192,
+      14336
+    ],
+    "max_decode_bs": 9,
+    "n_coresident_decode_iter": 43,
+    "n_decode_iteration": 1301,
+    "n_pairs": 9,
+    "n_records": 13169,
+    "n_span_end": 9,
+    "n_span_start": 9,
+    "n_unparsable_lines": 0,
+    "request_errors": [],
+    "server_log_failure_lines": [],
+    "target_extend_tokens": [
+      8192
+    ],
+    "target_n_new": [
+      1
+    ],
+    "target_span_seq": [
+      9
+    ]
+  },
+  "reason": "9 span pair(s), span_seq [9] has extend_tokens 8192, 1301 decode_iteration records (max bs 9), 43 co-resident decode iterations in it",
+  "stage": "TEL-dummy_a13",
+  "status": "PASS"
+}

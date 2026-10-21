@@ -1,0 +1,157 @@
+{
+  "changed_layers": [
+    2,
+    7,
+    13,
+    20,
+    27,
+    34,
+    41,
+    46,
+    52
+  ],
+  "changed_mamba_ordinals": [
+    1,
+    4,
+    7,
+    10,
+    13,
+    16,
+    19,
+    22,
+    25
+  ],
+  "config_sha256": "b37c93768dfdd852d8fe892dc01208f32c206d825ed69c72e8684fd2722a2320",
+  "copied_files": [
+    {
+      "name": ".gitattributes",
+      "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930"
+    },
+    {
+      "name": "README.md",
+      "sha256": "5ba97c5b4939a0158fafcbc30a2dd86737f436cc399b158abc2c95d4e4ea72e0"
+    },
+    {
+      "name": "bias.md",
+      "sha256": "e7c616e6eb7dc4a27f67f0f9149f691b7c00cc0c0a4e15b907e1e380dcb2fc79"
+    },
+    {
+      "name": "configuration_nemotron_h.py",
+      "sha256": "18186204622431c336a7c2813a80f0d37937dde962b8aebddf24caf5bffa03f7"
+    },
+    {
+      "name": "explainability.md",
+      "sha256": "72f7bbb70a41664915719d6fa6bbafd4b19abcc54660e135ae042ef7e81e653c"
+    },
+    {
+      "name": "generation_config.json",
+      "sha256": "6eb88c393d918077aca89805984c1f6d0f2e77403769b8e5044c18be0b2c2ade"
+    },
+    {
+      "name": "modeling_nemotron_h.py",
+      "sha256": "8fed3b30c627bc5c58f1f17f5941fa2641d1ea69bf52c40bac31ec0dd67dd4a9"
+    },
+    {
+      "name": "privacy.md",
+      "sha256": "8a0a9063ec5bb637be286b3c77e42f8c954785b47b867d995c791e7ed25eafc0"
+    },
+    {
+      "name": "safety.md",
+      "sha256": "d06b21746ba990a46aaf81c7919a831e057575d3ab917b94154aeeedd2c44bbf"
+    },
+    {
+      "name": "special_tokens_map.json",
+      "sha256": "6fa06efa2785e450051989a6f8fb4416b10149ded485ddd3f127a40734f5cfd0"
+    },
+    {
+      "name": "tokenizer.json",
+      "sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f"
+    },
+    {
+      "name": "tokenizer_config.json",
+      "sha256": "f839850bc0a24d71e51b636635e02a5f363824c48a6ff209913a4d090d2add3c"
+    }
+  ],
+  "direction": "M->*",
+  "excluded_files": [
+    {
+      "name": "model-00001-of-00004.safetensors",
+      "why": "weight file (dummy load)"
+    },
+    {
+      "name": "model-00002-of-00004.safetensors",
+      "why": "weight file (dummy load)"
+    },
+    {
+      "name": "model-00003-of-00004.safetensors",
+      "why": "weight file (dummy load)"
+    },
+    {
+      "name": "model-00004-of-00004.safetensors",
+      "why": "weight file (dummy load)"
+    },
+    {
+      "name": "model.safetensors.index.json",
+      "why": "weight file (dummy load)"
+    }
+  ],
+  "load_format_required": "dummy",
+  "n_attn": 13,
+  "n_mamba": 18,
+  "n_mlp": 25,
+  "note": "prediction = [\uc720\ub3c4] from config.json, not a measurement; probe values are not citable",
+  "pattern": "M-*-M-M*-M-M-**-M-M-**-M-M-*-M*-M-*-M-M*-*-MM-*-M-M-*-M-",
+  "pattern_orig": "M-M-M-MM-M-M-M*-M-M-M*-M-M-M-M*-M-M-M-M*-M-MM-M-M-M-M-M-",
+  "prediction": {
+    "L_star_tokens": 1797.2307692307693,
+    "assumptions": {
+      "conv_state_dtype": "bfloat16",
+      "formula_k": "n_attn*n_kv*head_dim*2*2",
+      "formula_s": "n_mamba*(H_m*P*N*4 + conv_dim*(K-1)*2), conv_dim = H_m*P + 2*G*N",
+      "kv_dtype": "bfloat16",
+      "ssm_state_dtype": "float32",
+      "tp": 1,
+      "weight_dtype": "bfloat16 (A float32)"
+    },
+    "conv_dim": 12288,
+    "conv_state_bytes_per_layer": 73728,
+    "derived": true,
+    "kv_bytes_per_token_k": 53248,
+    "n_attn": 13,
+    "n_layers": 56,
+    "n_mamba": 18,
+    "n_mlp": 25,
+    "params_by_type": {
+      "attention": 715711360,
+      "embed_lmhead_finalnorm": 1174409600,
+      "mamba": 2654111232,
+      "mlp": 3512432000
+    },
+    "params_per_layer": {
+      "attention": 55054720,
+      "embed_lmhead_finalnorm": 1174409600,
+      "mamba": 147450624,
+      "mlp": 140497280
+    },
+    "params_total": 8056664192,
+    "ssm_state_bytes_per_layer": 5242880,
+    "state_bytes_per_req_s": 95698944,
+    "weight_bytes": 16113332992,
+    "weight_gib": 15.006710767745972
+  },
+  "rule": {
+    "formula": "o_j = floor((j + 0.5) * M / n_swap), j = 0..n_swap-1 over Mamba ordinals in depth order",
+    "n_attn_0": "every '*' becomes 'M' (pure-SSM extreme)",
+    "n_attn_4": "pattern unchanged (dummy original)",
+    "name": "spread_floor_mid_v1"
+  },
+  "schema": "compo_variant/v1",
+  "source": {
+    "config_sha256": "6940a58808ef5b51b2bac938aa812ab96d43938da657494a3c0d4287957fbcd5",
+    "model_id": "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+    "revision_expected": "dc0661c829b14e5b9246c05cfa89094a0875e052",
+    "revision_observed": "dc0661c829b14e5b9246c05cfa89094a0875e052",
+    "snapshot_dir": "/data/hf/hub/models--nvidia--NVIDIA-Nemotron-Nano-9B-v2-Base/snapshots/dc0661c829b14e5b9246c05cfa89094a0875e052"
+  },
+  "weights_copied": false
+}

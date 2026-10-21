@@ -1,0 +1,43 @@
+{
+  "banner": {
+    "k_bytes_per_token": 16394.224988791208,
+    "mamba_slots": 129,
+    "s_bytes_per_slot": 143581755.5348837,
+    "weight_bytes": 17802639441.92
+  },
+  "boot": "dummy_a4",
+  "checks": {
+    "k": {
+      "rel_err": 0.0006240837885258532,
+      "verdict": "PASS"
+    },
+    "layer_counts": {
+      "expected": {
+        "n_attn": 4,
+        "n_mamba": 27
+      },
+      "verdict": "PASS"
+    },
+    "s": {
+      "rel_err": 0.00023225289287558395,
+      "verdict": "PASS"
+    },
+    "weight": {
+      "rel_err": 0.0014726144356603471,
+      "verdict": "PASS"
+    }
+  },
+  "implied_layer_counts": {
+    "n_attn": 4,
+    "n_mamba": 27
+  },
+  "note": "probe value, not citable",
+  "predicted": {
+    "k_bytes_per_token": 16384,
+    "s_bytes_per_req": 143548416,
+    "weight_bytes": 17776461568
+  },
+  "tolerance": 0.02,
+  "variant": "/data/runs/compo_probe_20261021T131621Z/variants/a4",
+  "verdict": "PASS"
+}

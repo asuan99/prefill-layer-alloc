@@ -1,0 +1,28 @@
+{
+  "facts": {
+    "logprob_nonfinite": 0,
+    "plain_ok": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "server_alive_after": true,
+    "sig_delta": {
+      "cuda_graph_capture_failed": 0,
+      "device_assert": 0,
+      "eager_fallback": 0,
+      "nan_logits": 0,
+      "oom": 0,
+      "scheduler_exception": 0,
+      "traceback": 0
+    }
+  },
+  "reason": "8/8 plain requests ok, no error signature, 64/64 output logprobs finite",
+  "stage": "REQ-dummy_a4_vanilla",
+  "status": "PASS"
+}
