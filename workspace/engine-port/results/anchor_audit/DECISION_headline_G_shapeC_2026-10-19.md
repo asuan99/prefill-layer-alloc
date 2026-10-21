@@ -113,3 +113,8 @@
   - ③ 비차단 boot는 "illegal 서명 + 사망"만 요구한다. traceback 위치는 차단(blocking) boot에서만 요구한다.
 - gamma: **(a) OFF/OFF 진단 짝을 제외**한다(r1 gamma 설계). OO는 확장 Job으로 옮긴다. STALL\_BOUNDARY 라벨은 stage가 아닌 셀 기술값이므로 유지하되, 판정 경로(run\_gate 1521)에 들어가지 않음을 테스트로 확인한다.
 - G-β 재실행이 PASS하면 gamma-A·gamma-F를 동시에 제출한다(사전 승인).
+
+## 결정 21 (2026-10-21) — gamma 관측자 효과 분해 (권고 (가) 채택)
+- gamma-A(agnostic)가 OBSERVER\_EFFECT(λ −2.6%, ITL p95 +2.0%)로 나왔다. 원인 계측을 찾기 위해 **계측별 분해 Job**을 돌린다: agnostic에서 {OFF, I-4만, I-5만, I-6만} × 4회, A100 1장, 약 3 h. 판정 Job이 아니라 진단(기술값)이며, 수준 비교는 Job 안에서만 한다.
+- fused\_sym의 확장 Job(+6짝)은 하지 않는다(ITL SD 4%로 확장해도 판정 불가 예상). 분해 결과를 보고 다시 판단한다.
+- export 절단이 재발했다(gamma-A·F). 분해 Job에서는 큰 원자료를 클러스터 볼륨에만 두고, export 대상은 요약·판정 파일로 줄인다.
