@@ -28,7 +28,7 @@
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
-- **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu·amd 세션에 영향 없음을 확인한 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
+- **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
@@ -36,8 +36,8 @@
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안("PD-mux는 64k를 넘을 수 없다"·"OOM 때문"·G4 "SLO 충족") · gate 감사 r1/r2 인용 금지 문장(I-4 PASS 범위·관측자 TOST 범위·gate PASS≠이후 바이트 보증·bs 40 경합) · PREREG 감사의 "hybrid 서빙 비용 모델 일반"·"Bullet/MuxWise 오예측"·"~52k 경계" · M3 판정서 문안 · J1 크기 문장 · `results/multigpu/` 안 `VERDICT_*.md` 금지
 ## 최근 로그
+- 2026-10-21: 결정 22·23, engsync squash 병합 `ca1f30e7`(digest 일치), telemetry 비대칭 감사 r1, **multigpu worktree 폐기**(원자료 602개 main으로 이동)
 - 2026-10-21: 관측자 효과 분해 Job(TEL λ −1.7%, I-4 ITL +1.0%), handoff
 - 2026-10-20: 프레이밍 결정 14(비용 모델 주 목적) · PREREG rev0–rev3-MEAS(감사 2회 상한) · 엔진 묶음(I-5·I-4·I-6·int64) · gate α·β PASS, γ OBSERVER_EFFECT · 128k 프로브 3회(Triton conv int32 원인)
 - 2026-10-19: catch-up · Claim E 첫 화살표 감사 · headline G·shape C 결정 · J1 분석·감사 · promote 3차
 - 2026-10-17–18: preflight PASS · M3 J1 완주, J2·J4·J8 외부 종료
-- 2026-10-16: M3 rev12 감사·봉인

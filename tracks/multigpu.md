@@ -1,5 +1,7 @@
 # TRACK: multigpu — A100 ×1/2/4/8 DP·TP 확장   (worktree `prefill-layer-alloc-multigpu`, branch `multigpu-scaling`)
 
+> **2026-10-21 폐기(사용자 지시).** branch `multigpu-scaling`(`f3544d1a`)은 main의 조상이라 병합할 커밋 0 → worktree 제거·branch 삭제. worktree에만 있던 git 밖 원자료 602개(약 2.6 GB, M2g/M3 Job)는 같은 상대경로로 main worktree에 옮김(sha256 대조 통과). M3·multi-GPU 후속은 `tracks/main.md`가 유일본. 공유 엔진 트리 `sglang_engine_dev_multigpu`는 main 테스트가 참조하므로 유지.
+
 > **2026-10-15 main 세션으로 이양(사용자 지시).** 현재 상태·다음 행동·결정 대기는 `tracks/main.md`가 유일본이다. 이 파일은 이양 시점 기록으로만 남는다(결정 대기 절은 main으로 옮김). main 세션 확인 요청 ①–④ 처리: ① 트랙 문서 merge `351c904` ② 로그 knob을 명세 v0.2 공통 기판 규칙에 등록(측정 Job `PDMUX_HEARTBEAT_S=0`) ③ §6-1 preflight를 G0·M3 공용 1회로 설계 중(`results/handoff_review_2026-10-15/PREFLIGHT_merge_cl3_design_2026-10-15.md`) ④ main dev tree 동기화는 사용자 결정 대기(`tracks/main.md`).
 
 > (이양 전) 이 트랙의 현재 상태 유일본(60줄). 이력은 git, 세부는 링크. 정본 반영은 main의 promote.

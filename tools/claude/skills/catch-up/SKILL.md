@@ -1,6 +1,6 @@
 ---
 name: catch-up
-description: 세션 시작 시(또는 컨텍스트 유실 시) 한 트랙의 현재 상태를 짧게 복원한다. "/catch-up <트랙>"(main|amd|multigpu|opchar|power-cap), 인자가 없으면 트랙 목록과 사용자 결정 대기만 보여 주고 어느 트랙인지 묻는다. "어디까지 했지", "이어서 하자", 세션 처음 열 때 사용. 확정 결론을 재도출하지 않는다. handoff 스킬의 짝(handoff가 TRACK.md에 저장 → catch-up이 복원).
+description: 세션 시작 시(또는 컨텍스트 유실 시) 한 트랙의 현재 상태를 짧게 복원한다. "/catch-up <트랙>"(main|amd|opchar|power-cap), 인자가 없으면 트랙 목록과 사용자 결정 대기만 보여 주고 어느 트랙인지 묻는다. "어디까지 했지", "이어서 하자", 세션 처음 열 때 사용. 확정 결론을 재도출하지 않는다. handoff 스킬의 짝(handoff가 TRACK.md에 저장 → catch-up이 복원).
 ---
 
 # catch-up — 트랙 단위 오리엔테이션 (2026-10-13 개정)
@@ -20,7 +20,6 @@ git -C $REPO worktree list
 |---|---|
 | main (anchor 사다리·N2) | `$REPO/tracks/main.md` |
 | amd | `$ROOT/prefill-layer-alloc-amd/tracks/amd.md` |
-| multigpu | `$ROOT/prefill-layer-alloc-multigpu/tracks/multigpu.md` |
 | opchar | `$ROOT/prefill-layer-alloc-opchar/tracks/opchar.md` |
 | power-cap (worktree 없음) | `$REPO/tracks/power-cap.md` |
 

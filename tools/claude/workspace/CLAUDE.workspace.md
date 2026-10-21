@@ -16,7 +16,7 @@ green-context SM 분할**로 서빙하며, prefill↔decode multiplexing(PD-mux)
   결합·claim↔축·트랙·인용 규율·최신본 위치를 한 장에. 정본 아님(새 판정 0), 갱신은 promote 직후 데이터 블록만 고쳐 같은 URL로 재발행.
 - **`prefill-layer-alloc/COSTMODEL.md`** — 지금까지 성립한 비용 구조 진척판(CM-1…CM-7). 측정이 비용 구조를
   얼마나 세웠는지 보이는 곳. 결과 판정은 아래 정본 위계를 따른다.
-- **트랙 파일 `tracks/<트랙>.md`**(각 트랙 worktree 안 — main·power-cap은 main, amd·multigpu·opchar는 각 worktree) — 트랙 현재 상태 ≤60줄.
+- **트랙 파일 `tracks/<트랙>.md`**(각 트랙 worktree 안 — main·power-cap은 main, amd·opchar는 각 worktree; multigpu는 2026-10-21 worktree 폐기, 이력 파일만 main `tracks/multigpu.md`) — 트랙 현재 상태 ≤60줄.
 - **사용자 결정 대기** = `tools/claude/inbox.sh`(각 트랙 파일의 결정 대기 절을 모은 뷰, 파일 아님).
 
 ## 정본 위계 (충돌 시 위가 우선)
@@ -169,7 +169,7 @@ completeness·단일 전체그림 판정). 개별 에이전트 사이의 **연�
 
 ## 세션 연속성 (`.claude/skills/`, 2026-10-13 트랙 모델로 개정)
 
-병행 세션(main N2 · amd · multigpu · opchar · power-cap)이 서로의 문맥과 파일을 얽지 않게 하는 구조:
+병행 세션(main · amd · opchar · power-cap; multigpu는 2026-10-21 main에 흡수·폐기)이 서로의 문맥과 파일을 얽지 않게 하는 구조:
 
 - **세션 시작** → `catch-up <트랙>`. 그 트랙 파일 + `COSTMODEL.md` 진척표만 읽고 15줄로 브리핑.
   인자 없으면 트랙 목록과 결정 대기(inbox)만.
