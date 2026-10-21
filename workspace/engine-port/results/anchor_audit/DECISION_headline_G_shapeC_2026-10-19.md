@@ -129,3 +129,10 @@
 - engsync(`engine-sync-i5-int64`) → main은 **squash 병합**한다. `results/engine_gate*`의 원자료(`.so`, Triton 캐시, SGLang 소스 사본, `power_samples.csv`, 대형 `.gz`·`.csv`)는 커밋하지 않고 저장소 밖 `_vessl_fetch/<job>`에 두며, 빠진 파일 목록·sha256 manifest만 추적한다. `.gitignore`를 보강한다. 병합 전후 CPU 회귀를 대조한다.
 - rev3.1 O-14: J-C에 OFF 진단 boot를 포함한다. O-15 (b): J-B를 J-B1(H 대비)·J-B2(T4)로 나눈다.
 - telemetry 비대칭 감사(`../engine_gate_prep/AUDIT_telemetry_asymmetry_past_results_2026-10-21.md`) 후속: CPU 아카이브 확인 1건만 한다(P1-opint 엔진의 trace-path 조기 return 분기). J1 보정 GPU Job은 하지 않는다.
+
+## 결정 24 (2026-10-21) — H("왜 hybrid인가") 근거를 같은 골격 조성 스윕으로 (권고안 채택, 결정 14의 H 부분 개정)
+- 근거 논증: 구성요소(attention 대 SSM) 차이만으로는 서빙 결과가 달라진다는 화살표를 보일 수 없고(층별 분해 측정은 유효 0건·프로파일러 불가·격리 커널은 게이트 1), Llama 대비는 크기·층 수·RoPE·토크나이저 교락으로 귀속이 불가하다.
+- **H의 주 근거 = 같은 골격 조성 스윕**: Nemotron-Nano-9B-v2 골격(hidden·MLP·층 수 고정)에서 `hybrid_override_pattern`으로 Mamba 층 일부를 attention으로 바꾼 변형을 `--load-format dummy`(무작위 가중치)로 띄워, attention 비율 3–4점에서 비용 항(T1 decode ctx 기울기, T4 요청당 메모리·동시 수 중심)을 잰다. 바뀌는 변수 = 층 조성(공시: 층당 파라미터가 달라 가중치 바이트·KV 풀이 함께 변한다).
+- **Llama-3.1-8B는 실재 Transformer 참조점 1–2셀로 축소**한다(J-B1 축소).
+- 선행: 변형·dummy 가중치의 **부팅 프로브(비측정)**. dummy 대 실가중치 비용 동일성(원본 골격)을 측정 Job 안에서 gate로 확인한다.
+- 정확성 검사는 원본 모델에서만 한다(dummy 출력은 무의미). goodput은 원본에서만 잰다.

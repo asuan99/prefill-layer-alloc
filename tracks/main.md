@@ -7,7 +7,7 @@
 ## cost model 기여
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2 `T_span`), CM-4(T3 ρ), CM-5(T4 메모리·admission), (확장) TP2 항
 - 이번에 알게 된 것: CM-2 floor 9 ms+0.111 ms/토큰×L(≤16k, CONFIRMED) · Nano 실측 k 16,382 B/토큰·s 143.5 MB/요청(L\*≈8.8k) · chunk -1 장문 prefill 상한은 Triton causal_conv1d int32 오프셋(≈94.8k, 반증 실험 통과·감사 전) · **관측자 효과(분해 Job, agnostic·shape A·n=4): TEL 묶음(경로+PHASE_EVENTS, 몫 미분리) λ −1.7%, I-4 ITL p95 +1.0%** — 다른 arm·부하의 보정 계수 아님
-- promote 필요: 아니오 (2026-10-21 promote 4차)
+- promote 필요: 예 (결정) — 결정 24
 ## 현재 상태 (2026-10-21)
 - **엔진 묶음 main 병합 완료**: squash `ca1f30e7`(engsync `c875dc21`; engsync worktree·branch는 2026-10-21 폐기, git 밖 원자료 229개는 main worktree로 이동), ENGINE_DIGEST `99bbef91…` 병합 후 재계산 일치. 원자료 271개 약 217 MB는 `_vessl_fetch/_engsync_raw/`(manifest `engine_gate_prep/EXCLUDED_RAW_engsync_2026-10-21.sha256`). M3 rev12 봉인 검증 fail-closed(의도). 로컬 엔진 트리 2개는 구판(미동기화).
 - **분할 gate**(설계 `workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`, 감사 r1 GO-with-caveats·r2 상한):
@@ -18,6 +18,7 @@
 - **계측 정책(결정 22, 2026-10-21)**: 판정 측정은 전 arm 계측 OFF + Job 내 ON/OFF 짝 공시(보정 계수 아님). 원문 `…/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md` 결정 22.
 - **비용 항 PREREG rev3.1** `workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`: 결정 18·22 반영 — §2-2′ 계측 매트릭스(T3를 TEL ON 전용 boot로 분리, T1 boot는 I-4·I-6만) + Job 내 OFF 진단 boot, §12 봉인 체크리스트(14항목, 6 완료). 결정 23: O-14 J-C OFF 진단 포함, O-15 J-B → J-B1·J-B2. 예약 16.6 → **약 18.8 GPU-h** [유도]. V는 항 데이터 뒤 별도 PREREG.
 - **CPU 회귀(병합 후 main)**: 1577건, 실패 61(실패 42 + 오류 19). 병합 전 main 대비 새 실패 8 = M3 rev12 봉인 2(의도) + 로컬 엔진 트리 구판 5(`admission_probe.py` 부재) + `test_engine_gate_driver.TestAlpha.test_baseline_pass` 1(**비결정적**: 가짜 엔진 i4_B2 containment 위반 1/1047, engsync에서도 3회 중 2회 실패 → 병합 무관, 수리 필요). 엔진 코드 회귀 0.
+- **결정 24(2026-10-21)**: H 근거 = Nano 골격 조성 스윕(attention 비율 3–4점, dummy 가중치), Llama는 참조점 1–2셀로 축소. 선행 = 변형 부팅 프로브(비측정). rev3.2 반영 완료(PREREG §4′ J-H: 변형 a4·a13·a22·a31 × boot 3 + real a4 W-INDEP gate + Llama 참조 1 boot, J-B1 폐지, 예약 약 18.5 GPU-h [유도]). 부팅 프로브 코드 작성 중(engine-porter).
 - **telemetry 비대칭 감사 r1**(`workspace/engine-port/results/engine_gate_prep/AUDIT_telemetry_asymmetry_past_results_2026-10-21.md`): 비대칭은 코드 구조상 실재(writer가 PD-mux에서만 생성). P1-opint·HE0 = 전 arm OFF → **불변**, N2 Job-EA = 전 boot ON 대칭 → 불변(부하 의존 성분 공시 권고), CM-2 floor 불변, **M3 J1만 비대칭** → 부호 견고·크기 공시(A G_sym≈1·d44 −5.3%는 병기 없이 인용 금지). 정본 등급 변경 0. 인용 금지 6건은 감사서 §3.
 - **128k 프로브 1–3회차** `workspace/engine-port/results/cap_char/probe_128k/`(RESULT·ANALYSIS·AUDIT): 결정 13 long-ctx 상한 64k(격자 선택), mem-fraction 0.6 통일.
 - 설계 결정 원문(1–21): `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`. 비교·계획: `cap_char/COMPARE_shapeC_workloads_2026-10-20.md`, `PLAN_costmodel_terms_2026-10-20.md`, 그림 `cap_char/figures/`, 장문 길이 실측 `cap_char/longctx_stats/`.
@@ -28,6 +29,8 @@
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
+- **rev3.2 O-16·O-17** / J-H 설계 / O-16 D 축(SM 민감도의 조성 의존, Claim E 첫 화살표 관련 기술값) 포함(권고)·제외 · O-17 순수 SSM a0 제외(권고)·포함
+- **조성 프로브 GPU 실행 승인** / 프로브 코드 완성 후 / `compo_probe.sh` Workspace 또는 짧은 Job(약 1.5 h 상한) 승인
 - **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38

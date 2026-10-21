@@ -8,6 +8,7 @@
 > 기판: VESSL A100 SXM 80GB(108 SM) 1장(TP2 Job은 2장), SGLang v0.5.10, Nemotron-Nano-9B-v2-Base(rev `dc0661c…`), cudagraph ON, radix OFF, **`--mem-fraction-static` 0.6**(결정 13). 0.82로 잰 결과(M3 J1, 프로브 1회차)와 섞지 않는다.
 > **ENGINE\_DIGEST** = 엔진 묶음 worktree `prefill-layer-alloc-engsync` 브랜치 `engine-sync-i5-int64`(`34f2acc8`, 30항목, **예상 `99bbef91…`** — 커밋 바이트 기준 예상일 뿐 gate 통과값이 아니다). 통과값 = **[봉인 시 기입 — G-α·G-β PASS(engsync, 2026-10-20) + G-γ는 결정 22로 "관측자 효과 특성화 완료" 종결; main 병합 후 같은 digest 재확인]**.
 > **rev3.1 개정(2026-10-21, 미봉인 문서 갱신)**: 결정 18(O-항목)을 §10·§7에, 결정 22(계측 정책)를 §2-2′·§8-1·§9-2에 반영하고 §12 봉인 체크리스트를 신설했다. 측정 0, 성능 판정 0. 29항목 digest `2b1ab054…`는 폐기(배포·봉인된 적 없음). gate 안의 `ABORT_ENGINE_DIGEST`가 예상값 불일치를 막는다.
+> **rev3.2 개정(2026-10-21, 미봉인)**: 결정 24로 H의 주 근거를 §4′ 같은 골격 조성 스윕(J-H)으로 바꾸고, §4의 Llama 대비는 J-H 안의 참조점 1 boot로 축소했다(J-B1 폐지). §7-4·§10·§12 갱신. 측정 0.
 
 ## R. rev2 → rev3 변경 대응표
 
@@ -171,7 +172,7 @@ boot마다 warm-up(8요청, 같은 형상) → correctness(sticky 배선 로그 
 
 **(2) Job 내 ON/OFF 진단 짝 [봉인, 셀·boot 수는 [제안]]** — 계측 효과를 같은 Job 안에서 재서 공시만 한다(보정 계수로 쓰지 않는다, 결정 22).
 - J-A1·J-A2: OFF 진단 boot 2개(D=44 PD-mux, `108v`), 각 셀 6개 = T1 (8, 2k)·(32, 2k)·(32, 8k)·(64, 8k)·(96, 2k)·(16, 16k) + T2 L ∈ {4,096, 16,384}. 같은 Job의 ON boot 같은 셀과 비교한다.
-- J-B1: OFF 진단 boot 1개(Llama vanilla, 같은 셀). Nano `108v`의 OFF 짝은 J-A에 있다.
+- J-H(rev3.2, 구 J-B1): OFF 진단 boot 1개(dummy a4 vanilla, 같은 셀). Nano `108v`의 OFF 짝은 J-A에 있다.
 - J-C: OFF 진단 boot 1개(TP2, T1 셀 3개). [결정 23 — O-14 포함]
 - 산출(기술값): 셀별 `ln(client 간격 중앙값_ON / client 간격 중앙값_OFF)`와 T2 TTFT 비. 2차 estimand(클라이언트 간격)만 비교할 수 있다(OFF boot에는 `S_eng`가 없다). 라벨: 모든 셀에서 |비| ≤ 1.5%면 `INSTR_EFFECT_SMALL`, 아니면 `INSTR_EFFECT_DISCLOSED`(값 표 병기). 어느 쪽이든 T1–T4 값은 고치지 않는다.
 - OFF 진단 boot는 Job 안 boot 순서 무작위화(§2-3)에 포함한다.
@@ -267,6 +268,29 @@ vanilla 경로에서 `decode_forward` 방출이 확인되지 않으면(`NOT_COLL
 금지: "hybrid 고유"를 원인으로 쓰는 문장(Nano 1개 대 Llama 1개의 기술 차이까지만, §1-7), "~52k가 hybrid 경계", "9k 경계를 실측했다", 모델 간 goodput 비교 문장.
 
 
+## 4′. (H) 같은 골격 조성 스윕 — 결정 24 (rev3.2, §4를 대체; §4는 Llama 참조점 칸 정의로만 남는다)
+
+**원칙**: 서빙 비용(시간·메모리)은 가중치 값과 무관하다는 전제 아래(Nano는 MoE 아님, 출력은 `ignore_eos`로 고정), Nano-9B-v2 골격(hidden 4480·MLP·56층 고정)에서 Mamba 층 일부를 attention으로 바꾼 변형을 `--load-format dummy`로 띄워 비용 항을 잰다. 바뀌는 변수는 층 조성 하나다. **공시 의무**: 층당 파라미터가 달라(Mamba 약 147.4M, attention 약 55.1M [유도]) 가중치 바이트와 KV 풀이 함께 변한다. 그래서 H의 판정 대상은 **조성에 묶인 항(c, s, k, 동시 수, prefill 비선형성)**이고, 가중치 바이트에 묶인 고정항 a는 H 근거로 쓰지 않는다.
+
+**변형 [봉인 시 기입: 패턴 문자열·바뀐 층 인덱스 = `scripts/compo/make_variant.py`의 variant.json]**
+
+| 변형 | attention / Mamba 층 | 요청당 state s [유도] | KV k [유도] | L\* = s/k [유도] | 가중치 변화 [유도] |
+|---|---|---|---|---|---|
+| a4 (원본 골격) | 4 / 27 | 143.5 MB | 16,384 B/토큰 | ≈ 8.8k | 0 |
+| a13 | 13 / 18 | 95.7 MB | 53,248 B/토큰 | ≈ 1.8k | −1.66 GB |
+| a22 | 22 / 9 | 47.8 MB | 90,112 B/토큰 | ≈ 0.53k | −3.33 GB |
+| a31 (같은 골격 Transformer) | 31 / 0 | 0 | 126,976 B/토큰 | 0 | −4.99 GB |
+
+(s = Mamba 층 수 × (ssm state 128·80·128·4 B + conv 12,288·3·2 B) ≈ 5.32 MB/층, k = attention 층 수 × 8·128·2·2 B. 원본 값은 부팅 로그 실측 s 143.5 MB·k 16,382 B와 일치.)
+
+**Job J-H (단일 GPU, 계측은 §2-2′ 매트릭스)**: 변형마다 boot 3개 — (A) vanilla `108v`: T1 bs {8, 32} × ctx {2k, 8k, 32k} 6셀, T2 L {4k, 16k, 32k, 64k}(P=108), T4 부팅 배너 + 채우기 L {4k, 16k}; (B) PD-mux sticky D=24, (C) D=64: T1 bs 32 × ctx {2k, 8k} 2셀씩. 여기에 **실가중치 원본(real a4) boot A** 1개, **Llama-3.1-8B 참조점 boot A** 1개(§4 ①–④ 칸의 기술값; T4는 배너 + 채우기 L 4k), OFF 진단 boot 1개(dummy a4 vanilla, §2-2′ (2)). 무작위화·반복은 §2-3, 셀당 반복 4.
+
+**gate W-INDEP [봉인]**: 같은 Job의 real a4 대 dummy a4 boot A 같은 셀에서 T1 `S_eng` 중앙값과 T2 TTFT의 `|ln(dummy/real)| ≤ ln 1.02` → `WEIGHT_INDEP_HELD`; 아니면 `WEIGHT_DEPENDENT` — 그 항(T1 또는 T2)은 조성 비교에 쓰지 않고 기술값으로만 남긴다. T4 배너 값(s, k, 풀)은 가중치와 무관한 코드 사실이라 gate 대상이 아니다.
+
+**등록 예측 [유도, 봉인]**: (P1) 배너 s·k가 위 표의 ±2% → `COMPO_MEM_HELD`. (P2) T4 실현 동시 수가 각 변형의 산식 B(§1-4, 그 변형의 s·k·풀)와 [0.90, 1.10] → `CMEM_ACCT_HELD_a{n}`. (P3) decode ctx 기울기 c(n)이 attention 층 수에 비례: `c(n)/c(4)`가 `n/4`의 ±25% 안 → `CTX_SLOPE_PROP_HELD`, 아니면 `CTX_SLOPE_PROP_MISS`(형태를 기술). (P4) prefill 비선형성 q(n)은 n에 단조 증가 → `PREFILL_Q_MONOTONE` / 위반 시 `_NOT_MONOTONE`. **예측 없음(기술값)**: D=24 대 D=64의 decode 시간 비(SM 민감도)의 조성 의존 — Claim E 첫 화살표(층 종류별 SM 스케일링 차이)와 관련되지만 **판정이 아니라 기술값**이며, 등급 변경은 claims-auditor 감사 뒤에만 논의한다.
+
+**허용 문장 틀**: "같은 Nano-9B-v2 골격에서 attention 층을 4→13→22→31개로 바꾸면(무작위 가중치, 가중치 바이트도 함께 변함), 이 Job에서 요청당 고정 state는 …→0 MB, KV는 …→… B/토큰, decode ctx 기울기는 …배, 동시 요청 수는 L=16k에서 …→…였다." **금지**: "hybrid 고유"를 원인으로 쓰는 문장 중 조성 외 변수(가중치 바이트)를 공시하지 않은 것, dummy 변형의 출력 품질·goodput 언급, a31을 "실재 Transformer의 측정값"으로 쓰는 것(실재 참조점은 Llama 칸뿐), W-INDEP 미통과 항의 조성 비교.
+
 ## 5. TP2 항 (N 항)
 
 TP2 PD-mux는 M2G J2에서 정확성 gate를 통과했다(G0(ii)·G1·G3 PASS, `G2_NOT_TESTED`) [측정, `RESULT_m2g_rev11_jobs_2026-10-13.md`]. 이 PREREG는 TP2에서 **비용 항 측정**과 **샤딩 사실 확인**을 한다. 성능 비교(G\_sym 등)는 하지 않는다.
@@ -333,10 +357,10 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 |---|---|---|---|---|
 | J-A1 | O-12 셀 10(+0.14) · T3 boot 분리 +2 boot(+0.14) · OFF 진단 boot 2(각 약 0.18, +0.36) | 3.7 → **4.3** | 5.2 | 4.3 |
 | J-A2 | 같음(+0.64) | 3.5 → **4.1** | 5.0 | 4.1 |
-| J-B1 (H 대비 + Llama T4 1 boot) | Llama OFF 진단 boot(+0.18) · Nano T4 9 boot 분리(−0.7) | 4.4 → **3.9** | 4.7 | 3.9 |
+| ~~J-B1~~ → **J-H** (결정 24, rev3.2) | 조성 변형 4 × boot 3 + real a4 + Llama 참조 + OFF 진단 = 15 boot [유도: boot 오버헤드 1.1 h + A boot 셀 약 0.38 h × 6 + B·C boot 셀 약 0.03 h × 8] | 3.9 → **약 3.6** | 4.3 | 3.6 |
 | J-B2 (Nano T4 9 boot + O-8 fused\_sym 1 boot) | O-15 (b) 분리, 셋업 1회(+0.07) | **1.1** | 1.3 | 1.1 |
 | J-C | OFF 진단 TP2 boot(boot 400 s + 셀 3, +0.15 h × 2장) [O-14] | 2.5 → **2.7** | 3.2 | 5.4 |
-| **합계** | | | **약 22.6 GPU-h(캡 합)** | **약 18.8 GPU-h** |
+| **합계** | | | **약 22.2 GPU-h(캡 합)** | **약 18.5 GPU-h** |
 
 - J-B는 결정 23(O-15 (b))으로 J-B1·J-B2로 나눴다. T4 분량 0.7 h는 §7-3 재확인 ①의 값이다. J-B2의 T4 산식 대조는 boot 단위라 H 대비와 Job이 달라도 영향이 없고, O-8 대칭 점검(fused\_sym 대 PD-mux T4)은 J-B2 안에서 성립한다.
 - OFF 진단 boot 시간(0.18 h = boot·warm-up 0.072 + T1 셀 6 × 50 s + T2 2L × 8회)은 §7-1의 임의 모형이다.
@@ -386,6 +410,8 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 - **O-12 (신규)** shape C 영역 T1 보강: 감사 2회차는 shape C(bs ≈ 83 → `bs_padded` 88, c̄ ≈ 9.1k)가 T1 볼록껍질 밖(bs 96의 c\_max 8,192)이 확실하다고 지적했다. 선택: (a) 보강 없음 — 항 데이터를 본 뒤 필요하면 새 Job(감사 선택지 (b)의 추정 약 +1 GPU-h) / (b) 지금 `bs=88` 줄 (88, 8k)·(88, 9k) × 5모드(24·34·44·108u·108v) 10셀을 J-A1·J-A2에 추가(각 Job 약 +0.14 GPU-h, 봉인 전에만 데이터 영향 없이 가능; (88, 9k)는 O+X = 498에서 88×(9,216+498) = 855k > 852k라 `INFEASIBLE_BY_RULE`이 될 수 있어 (88, 8k)와 (80, 9k)로 대체 가능). **권고 (b)** — 데이터 전 추가는 구조 선택 편향이 없고, 후에 필요해진 뒤에는 Job을 새로 내야 한다.
 - **O-14 (rev3.1 신규, 결정 23: 포함)** J-C OFF 진단 boot(+0.3 GPU-h): 포함 / 빼고 "TP2 계측 효과 미측정" 공시. **권고 포함** — 결정 22가 Job 내 짝을 요구하고 TP2 경로의 계측 효과는 N=1과 다를 수 있다.
 - **O-15 (rev3.1 신규, 결정 23: (b))** J-B 4.9 h(목표 4.4 초과): (a) 그대로(하드캡 5.9 h < 6 h) / (b) T4 boot 10개를 J-B2로 분리(H 대비와 T4는 서로 다른 Job이 되나 T4 산식 대조는 boot 단위라 영향 없음, Llama T4 1 boot는 H 대비 ⑤ 때문에 J-B1에 남김). **권고 (b)** — 외부 정지 선례(약 9.5 h)보다 아래라도 재개 단위가 작을수록 잃는 셀이 적다; 예약 합계는 거의 같다(boot 공통 오버헤드 없음).
+- **O-16 (rev3.2 신규)** J-H의 D 축(B·C boot, +약 0.8 GPU-h): 포함 / 제외. **권고 포함** — Claim E 첫 화살표(층 종류별 SM 스케일링)에 대한 유효 측정이 0건인 상태에서 같은 골격 조성으로 재는 유일한 경로다(기술값, 판정 아님).
+- **O-17 (rev3.2 신규)** 순수 SSM 극한 a0(attention 0 / Mamba 31) 추가(+약 0.5 GPU-h): **권고 제외** — H의 질문은 attention 비율이 커질 때의 변화이며, a0은 Nano 원본보다 attention 쪽 반대편이라 우선순위가 낮다.
 - **O-13 (신규)** T2′ L 범위(4k·16k)를 T3의 L(8,192·32,768)까지 확장(+약 0.25 GPU-h): **권고 확장하지 않음** — T2′는 `T2_P_NOT_REALIZED` 조건부 대체이고 현재 규칙(밖은 `NA`)이 정직하다.
 
 ## 11. [봉인 시 기입]과 하네스
@@ -416,5 +442,7 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 | 12 | 부팅값(`new_token_ratio`·캡처 bs 목록·`split_forward_token_budget`/`max_prefill_tokens`) | 부팅 시 기록(봉인 대상 아님, 기록 규칙만 봉인) | — |
 | 13 | 봉인 S1(규칙·하네스·엔진·config digest) | 대기 | 5–11 |
 | 14 | CPU preflight → `launch.sh` dry-run → 사용자 승인 → `--submit` | 대기 | 13 |
+| 15 | (rev3.2) 조성 변형 부팅 프로브(비측정, `scripts/vessl/compo_probe.sh`) PASS — 변형 a4·a13·a22·a31이 dummy·PD-mux·cudagraph로 부팅, 배너 s·k 대조 | 프로브 코드 작성 중 | 사용자 승인(GPU) |
+| 16 | (rev3.2) O-16·O-17 | **사용자 결정 대기** | — |
 
 하네스 변이 시험 추가(§2-2′): "T3 셀을 T1 boot에서 실행(TEL 비대칭)" · "OFF 진단 boot에 계측 env가 남음" · "OFF 진단 비로 T1 값을 보정".
