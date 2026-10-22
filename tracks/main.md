@@ -7,7 +7,7 @@
 ## cost model 기여
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2 `T_span`), CM-4(T3 ρ), CM-5(T4 메모리·admission), (확장) TP2 항
 - 이번에 알게 된 것: CM-2 floor 9 ms+0.111 ms/토큰×L(≤16k, CONFIRMED) · Nano 실측 k 16,382 B/토큰·s 143.5 MB/요청(L\*≈8.8k) · chunk -1 장문 prefill 상한은 Triton causal_conv1d int32 오프셋(≈94.8k, 반증 실험 통과·감사 전) · **관측자 효과(분해 Job, agnostic·shape A·n=4): TEL 묶음(경로+PHASE_EVENTS, 몫 미분리) λ −1.7%, I-4 ITL p95 +1.0%** — 다른 arm·부하의 보정 계수 아님
-- promote 필요: 예 (결정) — 결정 24–28 · 예 — 정본 정정(§1-22 (108,0) 방향)
+- promote 필요: 예 (결정) — 결정 24–29 · 예 — 정본 정정(§1-22 (108,0) 방향)
 ## 현재 상태 (2026-10-21)
 - **엔진 묶음 main 병합 완료**: squash `ca1f30e7`(engsync `c875dc21`; engsync worktree·branch는 2026-10-21 폐기, git 밖 원자료 229개는 main worktree로 이동), ENGINE_DIGEST `99bbef91…` 병합 후 재계산 일치. 원자료 271개 약 217 MB는 `_vessl_fetch/_engsync_raw/`(manifest `engine_gate_prep/EXCLUDED_RAW_engsync_2026-10-21.sha256`). M3 rev12 봉인 검증 fail-closed(의도). 로컬 엔진 트리 2개는 구판(미동기화).
 - **분할 gate**(설계 `workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`, 감사 r1 GO-with-caveats·r2 상한):
@@ -32,9 +32,6 @@
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
-- **rev3.4 O-18 shape C 셀 손실** / 출력이 길어져 (96,8k)·(48,16k)·(64,8k/12k)·(88,8k)가 실행 불가 → shape C(bs 55–88, c 7–20k) 보간 셀 소실 / Workspace smoke에서 실제 ramp를 재 봉인 전 ramp 상한 재설정(권고) · 외삽 공시로 수용 · 요청별 max_new 차등 · mem 노브 변경(결정 13 충돌)
-- **rev3.4 O-19 J-C(TP2)** / ctx 73,728에서 96k 불가·T1 실행 가능성 재평가 필요 / 2단계에서 재설계(권고)
-- **[제안] 상수 봉인 확인** / 제외 상한 30, 합류 여유 0.25 s, σ=θ=1, vanilla ramp 64, 취소 319토큰, T2′ 확인 구간 0.25–0.75 / 하네스 감사·smoke 후 봉인 때 확인(권고)
 - **presubmit reachability 차단 2건** / `reachability_spec.json`(M4R)·`reach_spec_rev3_A.json`(TC1 rev3)이 active 상태로 전역 차단(PROJECT_STATUS 1488-1495 기존 블로커, 후속 spec 없음) — rev3.3 측정과 무관 / 범위 한정 OVERRIDE 문서 + 사용자 승인으로 제출 허용(전례 `cp_baseline/OVERRIDE_*`, 권고) · 두 spec을 폐기 결정
 - **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의

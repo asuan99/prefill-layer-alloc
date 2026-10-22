@@ -155,3 +155,9 @@
 - **A-2**: decode가 비면 prefill은 (108,0)에서 돈다(코드 사실) → T2는 P=108(vanilla·108 boot)에서만 잰다. prefill SM 축(P = 108−D)은 **T2′(bs=1 decode 동거 prefill)를 주 측정**으로 하고 L 범위를 T2와 같게 넓힌다(estimand에 decode 1개 동거 포함을 공시).
 - **A-6**: T2-ext(96k·124k) 삭제(ctx 73,728에서 불가, int64 정확성은 G-β로 확인). **A-11**: J-H T4의 거절 사유 `NOT_COLLECTED` 수용(P2는 동시 수만 필요). **A-3…A-23**: 하네스 해석을 PREREG rev3.4에 명시하고 하네스층 감사로 검토.
 - 셀 시간 증가에 따라 Job 시간·GPU-h를 다시 계산한다.
+
+## 결정 29 (2026-10-22) — rev3.4 열린 결정 (권고안 채택)
+- O-18: shape C 보간 셀 손실은 Workspace smoke에서 실제 ramp를 재고 봉인 전에 ramp 상한을 실측 기반으로 재설정해 복구를 시도한다(b). 복구되지 않는 셀은 외삽 공시.
+- O-19: J-C(TP2)는 2단계에서 재설계(ctx·96k 점·T1 실행 가능성).
+- [제안] 상수(제외 상한 30, 합류 여유 0.25 s, σ=θ=1, vanilla ramp 64, 취소 319토큰, T2′ 확인 구간)는 하네스 감사·smoke 후 봉인 때 확인한다.
+- 진행 순서: 2단계 구현 → Job entry → 하네스층 감사 → Workspace smoke → ramp 상한 재설정 → 봉인 → 제출 승인.
