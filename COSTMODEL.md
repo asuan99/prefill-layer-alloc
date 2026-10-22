@@ -9,7 +9,7 @@
 ## 축 정의 (고정)
 
 `비용 = f(E 엔진/시스템 부하, M 모델 구조, U 워크로드)` — **배치 ctx 분포 = U × E**. M은 배포 시 상수라 단일 모델 안에서는 변수가 아니다
-(조성 귀속은 모델 hold-out에서만). 상세 `cost_model_design_space_2026-10-01.md` §1.0.
+(조성 귀속은 모델 hold-out에서만). 상세 `cost_model_design_space_2026-10-01.md` §1.0. ★**수식 기반(고정, 결정 27, 2026-10-22)**: 층별 FLOPs·상주 메모리·decode 트래픽의 닫힌 식은 `reports/cost_model/ANALYTIC_COST_FORMULAS.md`(analytic-v1, 계산 단일 출처 `workspace/engine-port/scripts/costmodel/analytic_terms.py`)이고, 각 CM 항은 이 식을 사전(prior)으로 두고 측정으로 효율·PD-mux 항을 덧붙인다 — 요약은 파일 끝 절.
 
 ## 진척 요약 (한눈에)
 
@@ -90,3 +90,12 @@
 - hybrid의 고정 state s 대 KV의 두 구간(짧은 ctx에서 s, 긴 ctx에서 KV)과 cap의 goodput 영향 — 설계 v1만 있고 측정 0(I-5 계측·GPU gate 선행).
 - ρ의 D·b·c 무관성 (F-4) — 해제는 F-4 격자 등록 동등성 라벨 새 캠페인의 결과 감사로만(C-2). N2·N3·E2는 2026-10-15 종료, 게이트 #6 미닫힘.
 - N-GPU·TP(multi-GPU)와 층 배치(AMD)가 새로 만드는 항(통신·핸드오프). M3는 J2·J4·J8 외부 종료로 G_sym이 전 N에서 미정의이며 G0 뒤로 연기됨(2026-10-19 결정); 하네스 시간 모형이 확장 셀을 빠뜨려 rev12 예산(190 GPU-h)이 과소했다(`results/multigpu_verdicts/M3_SCOPE_OPTIONS_2026-10-19.md`).
+
+## 해석적 수식 기반 (고정, 결정 27 — 2026-10-22; 기존 줄 번호 보존을 위해 파일 끝에 둔다)
+
+정본 수식 문서 `reports/cost_model/ANALYTIC_COST_FORMULAS.md`(analytic-v1)의 요약. 수치는 모두 [유도]이며 변경은 그 문서의 변경 규칙을 따른다.
+- **상주 메모리**: s = n_M·(n_h·p·N·β_s + d_conv·(K−1)·β), k = n_A·2·n_kv·d_h·β, L\* = s/k. Nano: 143.5 MB · 16,384 B/토큰 · ≈ 8.8k (배너 실측과 일치) → **CM-5**.
+- **prefill**: F_pre(L) = α·L + γ·L² (+ 2dV), γ = n_A·2·n_q·d_h. Nano: α = 15.65 GFLOP/토큰, γ = 40,960, 이차항 = 선형항인 L ≈ 382k(64k에서 17%) → **CM-2**. J1 floor 기울기 0.111 ms/토큰은 실효 약 141 TFLOP/s(피크의 약 45%)에 해당.
+- **decode**: 메모리 바운드 하한 T_dec ≥ a₀ + b₀·b + c₀·b·c, a₀ = 가중치 바이트/BW(Nano 8.14 ms), b₀ = 2s/BW(0.141 ms/요청, SSM state 읽기·쓰기), c₀ = k/BW(8.0 ns/요청·토큰). state 항 = KV 항인 문맥 c\* = 2s/k ≈ 17.5k → **CM-1**의 함수형 `a + b·bs + c·bs·ctx`의 물리적 하한.
+- **조성 스케일링**: k와 c₀는 n_A에 정확히 비례, s는 n_M에 비례, prefill 비선형성은 n_A에 따라 단조 증가(조성 변형 표는 정본 수식 문서 §7) → J-H 예측 P3·P4의 근거.
+- **확장 틀**: 측정이 덧붙이는 항 = 층 종류별 효율 η_X(SM), PD-mux SM 분할, lockstep·동기화, 동거 간섭 ρ, cudagraph 패딩, SGLang 정적 두 풀 할당, TP 분할(정본 수식 문서 §8).

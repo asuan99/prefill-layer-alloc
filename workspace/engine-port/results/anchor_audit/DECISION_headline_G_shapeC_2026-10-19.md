@@ -144,3 +144,8 @@
 ## 결정 26 (2026-10-21) — rev3.3 열린 결정·프로브 실행 (권고안 채택)
 - O-16: J-H에 D 축(D 24·44의 T1 2셀) 포함. O-17: 순수 SSM 극한 a0 제외.
 - 조성 프로브에 TEL ON 확인 단계(변형에서 phase event 방출 여부, J-H2 T3의 σ 전제)를 추가한 뒤 Workspace `pdmux-probe`에서 GPU 실행을 승인한다(상한 90분 + TEL 단계, 끝나면 Workspace 정지). 수치는 인용 불가 프로브 값.
+
+## 결정 27 (2026-10-22) — 해석적 비용 수식을 정본으로 고정 (사용자 지시)
+- Attention / Mamba2(SSD) / MLP 층의 FLOPs·상주 메모리·decode 트래픽 닫힌 식(Marconi 부록 A 형식을 Nemotron-H 구조로 일반화)을 **정본에 항상 반영하고 고정적으로 쓴다.** 논문에 들어갈 수식이다.
+- 정본 문서 `reports/cost_model/ANALYTIC_COST_FORMULAS.md`(analytic-v1), 계산 단일 출처 `workspace/engine-port/scripts/costmodel/analytic_terms.py`, 시험 `workspace/engine-port/tests/test_analytic_terms.py`. 식 변경은 코드·문서 동시, 버전 증가, 이력 기록.
+- 비용 모델은 이 수식을 사전(prior)으로 두고 측정(rev3.3 T1–T4, J-H)이 효율 η·PD-mux 항·간섭·할당 구조를 덧붙이는 방식으로 정립한다.
