@@ -28,10 +28,11 @@
 - 운영 사고·교훈: object-volume export 절단이 gamma-A·F에서 재발(분해 Job은 요약만 export해 288/288 무결) · 1회차 128k 프로브 폴링 오판으로 A100 약 60분 유휴(완료 판정은 SUMMARY/DONE 파일로) · VESSL 인증 만료 시 사용자 `vesslctl auth login`.
 ## 다음 행동
 1. (완료 2026-10-22 `1943b3b6`: `test_baseline_pass` 비결정성 = 가짜 엔진 결함 2건 수리, 50/50 통과; 실서버 G-α containment 최소 여유 B2 0.132 ms(허용오차 포함)) · 로컬 엔진 트리 재동기화 여부 결정
-2. 신규 하네스 1단계 완료(`af8c0500`, CPU 33시험·변이 22/22) → 결정 28(A-1 ramp 창·실제 평균 ctx, A-2 T2′ 주 측정, A-6 삭제) → rev3.4(`e9f3903a`) → 2단계·H-1~H-6 완료(`1cfaab35`: T3·J-H2·J-C, 시험 45/45·변이 40/40, ENGINE_DIGEST 검사·smoke 모드·원자료 볼륨 보관·셀 단위 재개, 예약 약 18.9 GPU-h [유도]; 결정 30: 장문 측정점(N=1 T2-ext, TP2 96k·124k) 별도 boot로 복구·측정점 삭제 원칙 고정; launch 연결 `48dd20ed`, smoke 계획 `results/cap_char/SMOKE_PLAN_costterms_2026-10-22.md`) → 2단계(T3·J-H2·J-C) → Job entry → 하네스 감사 → smoke(J-B2 16k 채우기 위험 확인) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
+2. 신규 하네스 1단계 완료(`af8c0500`, CPU 33시험·변이 22/22) → 결정 28(A-1 ramp 창·실제 평균 ctx, A-2 T2′ 주 측정, A-6 삭제) → rev3.4(`e9f3903a`) → 2단계·H-1~H-6 완료(`1cfaab35`: T3·J-H2·J-C, 시험 45/45·변이 40/40, ENGINE_DIGEST 검사·smoke 모드·원자료 볼륨 보관·셀 단위 재개, 예약 약 18.9 GPU-h [유도]; 결정 30: 장문 측정점(N=1 T2-ext, TP2 96k·124k) 별도 boot로 복구·측정점 삭제 원칙 고정, rev3.5 확정(`e141a36e`, 시험 50/50·변이 44/44, 예약 약 19.4 GPU-h, §11-4 삭제점 전수표); launch 연결 `48dd20ed`, smoke 계획 `results/cap_char/SMOKE_PLAN_costterms_2026-10-22.md`) → 2단계(T3·J-H2·J-C) → Job entry → 하네스 감사 → smoke(J-B2 16k 채우기 위험 확인) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
+- **§11-4 미복구 설정 제약 점** / 결정 30 원칙상 기본은 복구 / L-15 J-C bs48 (2k,8k) 사유 없는 삭제 → 복구(+1.0) · L-7 J-A T1 (8,64k) context 131,072 boot(+0.44) · L-8 Llama 장문 T2(+0.35) · L-14 J-C 앵커 cap 32 boot(+0.78) · TP2 장문 PD-mux 108u boot(+0.39) — 전부 복구(권고, 합계 약 +3.0 GPU-h → 약 22.4) · L-9는 smoke 후
 - **presubmit reachability 차단 2건** / `reachability_spec.json`(M4R)·`reach_spec_rev3_A.json`(TC1 rev3)이 active 상태로 전역 차단(PROJECT_STATUS 1488-1495 기존 블로커, 후속 spec 없음) — rev3.3 측정과 무관 / 범위 한정 OVERRIDE 문서 + 사용자 승인으로 제출 허용(전례 `cp_baseline/OVERRIDE_*`, 권고) · 두 spec을 폐기 결정
 - **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의
