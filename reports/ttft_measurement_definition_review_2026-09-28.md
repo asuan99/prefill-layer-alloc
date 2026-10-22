@@ -24,7 +24,7 @@ F-E로 보유). 제안은 새 규칙이 아니라 **기존 세 장치를 결과 
 | 경로 | 도착 생성 | TTFT 시계 시작 | 요청별 기록 필드 | 송신 표류 검증 |
 |---|---|---|---|---|
 | `sglang.bench_serving`(dev tree v0.5.10, `get_request` → `limited_request_func` → backend request func) | 요청 사이 지수 간격 `asyncio.sleep` — **상대** 스케줄, 누적 표류 보정 없음 | request func 안의 `st = perf_counter()` — **세마포어 획득 뒤** | `--output-details`: `input_lens/output_lens/ttfts/itls/generated_texts/errors`뿐. 도착·송신 타임스탬프 **없음** | **불가** (Gate 2 사전등록이 F-D를 삭제한 이유와 동일: `workspace/engine-port/results/p1_gates/gate2/PREREG_GATE2_2026-08-06.md:182-186`) |
-| `benchmarks/pdmux_eval/trace_loadgen.py` | `benchmark_started + target`까지 sleep — **절대** 스케줄(`workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:49-51`) | `sent` 직후(`:93-95`) | `scheduled_arrival_s`, `sent_s`, `completion_s`, `ttft_ms`, `token_itl_ms`(`:106-109`) | **가능**: `sent_s − scheduled_arrival_s` |
+| `benchmarks/pdmux_eval/trace_loadgen.py` | `benchmark_started + target`까지 sleep — **절대** 스케줄(`workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:57-59`) | `sent` 직후(`:102-104`) | `scheduled_arrival_s`, `sent_s`, `completion_s`, `ttft_ms`, `token_itl_ms`(`:115-118`) | **가능**: `sent_s − scheduled_arrival_s` |
 
 `benchmarks/pdmux_eval/analyze.py`는 두 경로 모두 요청별 `ttft_ms`를 그대로 SLO 술어(`RequestResult.passes`)에
 넣는다(`workspace/engine-port/benchmarks/pdmux_eval/analyze.py:212-221`). 즉 **분석기는 TTFT의 출처를 구분하지 않는다.**

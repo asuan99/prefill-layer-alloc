@@ -354,7 +354,7 @@
    "anchor": "# line: under `--max-concurrency 64` that metric counts requests from send to",
    "anchor_offset": 1,
    "sha": "fd9e5a028fbb0f67",
-   "target": "prefill-layer-alloc/workspace/engine-port/results/r2_correctness/r2_correctness.sbatch"
+   "target": "prefill-layer-alloc/workspace/engine-port/results/multigpu/manual_retrieval/pdmux-multigpu-2106f42-20261018074950/results/r2_correctness/r2_correctness.sbatch"
   },
   "workspace/engine-port/benchmarks/pdmux_eval/analyze.py:212-221": {
    "anchor": "tokens = itls[index] if index < len(itls) else []",
@@ -362,22 +362,22 @@
    "sha": "79c2566161af5c70",
    "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/analyze.py"
   },
-  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:106-109": {
+  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:102-104": {
+   "anchor": "(token_times[0] - sent) * 1000.0 if token_times else math.inf",
+   "anchor_offset": 1,
+   "sha": "0e3041b9db5b4898",
+   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py"
+  },
+  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:115-118": {
    "anchor": "\"ttft_ms\": ttft_ms if math.isfinite(ttft_ms) else None,",
    "anchor_offset": 3,
    "sha": "78a27a59756710ad",
    "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py"
   },
-  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:49-51": {
+  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:57-59": {
    "anchor": "await asyncio.sleep(max(0.0, benchmark_started + target - time.perf_counter()))",
    "anchor_offset": 1,
    "sha": "4c0f12efbfab3794",
-   "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py"
-  },
-  "workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py:93-95": {
-   "anchor": "(token_times[0] - sent) * 1000.0 if token_times else math.inf",
-   "anchor_offset": 1,
-   "sha": "0e3041b9db5b4898",
    "target": "prefill-layer-alloc/workspace/engine-port/benchmarks/pdmux_eval/trace_loadgen.py"
   },
   "workspace/engine-port/results/r2_correctness/r2_correctness.sbatch:572-579": {
