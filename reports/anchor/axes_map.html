@@ -156,6 +156,32 @@ svg .et.hot{fill:var(--bad);font-weight:500}
 #net svg{min-width:360px;max-width:640px;margin:0 auto}
 footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:.8rem;display:flex;flex-direction:column;gap:6px}
 @media (prefers-reduced-motion:no-preference){.cpl{transition:opacity .15s}}
+/* §6 코드 흐름 — 단계 열 + 개입 종류 칩(A–F) */
+.kA{background:var(--sunk);color:var(--muted)}
+.kB{background:var(--E-t);color:var(--E)}
+.kC{background:var(--M-t);color:var(--M)}
+.kD{background:var(--U-t);color:var(--U)}
+.kE{background:var(--S-t);color:var(--S)}
+.kF{background:transparent;color:var(--muted);border:1px dashed var(--muted)}
+.kchip{display:inline-block;font-family:var(--f-mono);font-size:.68rem;font-weight:500;padding:1px 6px;border-radius:4px;white-space:nowrap}
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:stretch}
+@media (max-width:980px){.pipe{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.pipe{grid-template-columns:1fr}}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stage h3{font-size:.95rem;display:flex;gap:8px;align-items:baseline}
+.stage h3 .n{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);font-weight:500}
+.stage ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+.stage li{font-size:.82rem;line-height:1.4;display:flex;flex-direction:column;gap:2px}
+.stage li .row{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.stage li .sp{font-family:var(--f-mono);font-size:.68rem;color:var(--muted);word-break:break-all}
+.stage li.hot .row b{color:var(--bad)}
+.loop{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.loop ol{margin:0;padding-left:1.3rem;display:flex;flex-direction:column;gap:5px;font-size:.84rem}
+.loop .sync{font-family:var(--f-mono);font-size:.7rem;color:var(--bad);font-weight:500}
+.harness{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem}
+.harness span.h{background:var(--S-t);color:var(--S);border-radius:6px;padding:4px 9px;font-weight:500}
+.harness span.a{color:var(--muted)}
+
 </style>
 
 <div class="wrap">
@@ -164,14 +190,14 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   <h1>서빙 축 지도</h1>
   <p class="lede">Hybrid LLM(attention+SSM)을 SGLang PD-mux + green-context SM 분할로 서빙할 때 문제를 나누는 축 11개, 각 축이 혼자서 어떤 세계인지, 축이 맞물릴 때 무엇이 생기는지, 그리고 지금 어느 파일이 최신 근거인지를 한 장에 모았습니다. 새 판정은 0건이고 모든 수치와 문장은 정본에서 전사했습니다. 충돌하면 정본이 이깁니다.</p>
   <div class="meta">
-    <span>기준일 <b>2026-10-21</b></span>
+    <span>기준일 <b>2026-10-22</b></span>
     <span>측정 기판 <b>A100 80GB 1장, 108 SM</b></span>
     <span>운영점 <b>cudagraph-ON</b></span>
     <span>주 모델 <b>Nemotron-Nano-9B-v2</b> (F2)</span>
     <span>저장소 사본 <code>reports/anchor/axes_map.html</code></span>
   </div>
   <nav class="toc" aria-label="목차">
-    <a href="#now">지금 어디를 보나</a><a href="#coord">좌표계</a><a href="#axes">축 11개</a><a href="#couple">축의 결합</a><a href="#claims">claim ↔ 축</a><a href="#tracks">트랙</a><a href="#docs">문서 지도</a>
+    <a href="#now">지금 어디를 보나</a><a href="#coord">좌표계</a><a href="#axes">축 11개</a><a href="#couple">축의 결합</a><a href="#claims">claim ↔ 축</a><a href="#tracks">트랙</a><a href="#code">코드 흐름</a><a href="#docs">문서 지도</a>
   </nav>
 </header>
 
@@ -260,6 +286,72 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   <div class="tracks" id="tracks-grid"></div>
 </section>
 
+
+<section id="code">
+  <h2>코드 실행 흐름과 연구의 개입 지점 <span class="sec">§6 · SGLang v0.5.10 + PD-mux 패치</span></h2>
+  <p class="lede">요청 하나가 서버에 들어와 토큰이 나갈 때까지의 경로를 코드 위치와 함께 단계별로 놓고, 각 지점에 이 연구가 어떻게 관여하는지를 칩으로 표시했습니다. 줄 번호는 로컬 엔진 트리 <code>sglang_engine_dev/python/sglang/srt/</code> 기준이고, 2026-10-22 코드 읽기 결과입니다(새 판정 0).</p>
+  <div class="legend" aria-label="개입 종류">
+    <span class="kchip kA">A 업스트림 그대로</span>
+    <span class="kchip kB">B 항상 적용되는 패치</span>
+    <span class="kchip kC">C env로 켜는 정책</span>
+    <span class="kchip kD">D 관측만 하는 계측</span>
+    <span class="kchip kE">E 엔진 밖 하네스</span>
+    <span class="kchip kF">F 제안·미구현</span>
+  </div>
+  <div class="pipe">
+    <article class="stage"><h3><span class="n">1</span>부팅 — 상한이 정해짐</h3><ul>
+      <li class="hot"><div class="row"><span class="kchip kA">A</span><b>PD-mux 전제 assert</b></div>chunked prefill −1·overlap off 강제 → 3-플래그 묶음 처치의 출처<span class="sp">server_args.py:6125-6133</span></li>
+      <li class="hot"><div class="row"><span class="kchip kA">A</span><b>KV 대 mamba 풀 분할</b></div>radix OFF + cap이면 슬롯 = cap, 아니면 0.9:1 비율<span class="sp">model_runner_kv_cache_mixin.py:196-255</span></li>
+      <li class="hot"><div class="row"><span class="kchip kA">A</span><b>동시 수 상한</b></div>min(cap, 추정치, 슬롯 ÷ ratio)<span class="sp">model_runner_kv_cache_mixin.py:857-876</span></li>
+      <li><div class="row"><span class="kchip kA">A</span>cudagraph bs</div>기본 목록을 cap 이하로, PD-mux면 stream group마다 캡처<span class="sp">cuda_graph_runner.py:454-487, :681</span></li>
+      <li><div class="row"><span class="kchip kA">A</span>SM 분할 표</div>[(108,0)] + 분할 행 + [(0,108)], 양 끝은 일반 스트림<span class="sp">multiplex/pdmux_context.py:104-141</span></li>
+      <li><div class="row"><span class="kchip kB">B</span>hybrid 모델 split prefill</div>업스트림 v0.5.10에는 NemotronH·Zamba2·Falcon-H1·Granite에 없음 → hybrid PD-mux의 전제<span class="sp">src/models/nemotron_h.py forward_split_prefill</span></li>
+      <li><div class="row"><span class="kchip kB">B</span>수리 패치</div>ContextVar role, device assert, multigpu guard, triton v_head_dim, ngram getattr<span class="sp">src/patches/*, env/devtree_manual_edits.patch</span></li>
+    </ul></article>
+    <article class="stage"><h3><span class="n">2</span>수신·입장</h3><ul>
+      <li><div class="row"><span class="kchip kA">A</span>길이 검사</div>입력·출력이 ctx를 넘으면 거절 또는 절단<span class="sp">tokenizer_manager.py:785</span></li>
+      <li class="hot"><div class="row"><span class="kchip kA">A</span><b>입장 판정</b></div>NO_TOKEN(KV 부족, 미래 decode 몫 예약) · OTHER(prefill 예산 16,384)<span class="sp">schedule_policy.py:728-844</span></li>
+      <li><div class="row"><span class="kchip kA">A</span>ignore_eos 보수 판정</div>radix OFF에서 출력 전량 예약 → T4 산식 B의 근거<span class="sp">schedule_policy.py:641-726</span></li>
+      <li class="hot"><div class="row"><span class="kchip kA">A</span><b>mamba 슬롯 할당</b></div>슬롯 부족은 거절이 아니라 assert(크래시) → cap ≤ 슬롯으로 미리 막음<span class="sp">mem_cache/memory_pool.py:530-545</span></li>
+      <li><div class="row"><span class="kchip kD">D</span>I-5 입장 거절 사유</div>PrefillAdder 메서드를 감싸 사유만 기록<span class="sp">src/multiplex/admission_probe.py</span></li>
+      <li><div class="row"><span class="kchip kF">F</span>통합 메모리 할당기</div>state와 KV를 한 풀에서 → 범위 밖(결정 8′)<span class="sp">—</span></li>
+    </ul></article>
+    <article class="stage"><h3><span class="n">3</span>PD-mux iteration</h3><ul>
+      <li class="hot"><div class="row"><span class="kchip kA">A</span><b>분할 선택</b></div>decode+prefill → bs로 표 조회 · decode만 → (0,108) · decode 없음 → (108,0)<span class="sp">multiplexing_mixin.py:1151</span></li>
+      <li><div class="row"><span class="kchip kA">A</span>prefill span</div>span당 층 수 = 65,536 ÷ prefill 토큰, split prefill은 한 번에 1개<span class="sp">multiplexing_mixin.py:1218, :1408-1485</span></li>
+      <li><div class="row"><span class="kchip kC">C</span>정책 hook</div>SLO controller·bind·GATE(HE0에서 짐) · R2 fixed/generic/hybrid(미검증) · sticky(측정 도구) · layer-type(死)<span class="sp">multiplexing_mixin.py:1313-1357</span></li>
+      <li><div class="row"><span class="kchip kD">D</span>telemetry·phase events</div>prefill_span_start/end, decode_iteration, PD-mux 경로만 방출<span class="sp">multiplexing_mixin.py:2162-2301, telemetry.py</span></li>
+    </ul></article>
+    <article class="stage"><h3><span class="n">4</span>forward</h3><ul>
+      <li class="hot"><div class="row"><span class="kchip kA">A</span><b>cudagraph는 decode만</b></div>chunked prefill −1이라 prefill용 piecewise graph가 꺼져 PD-mux prefill은 항상 eager<span class="sp">model_runner.py:2808-2889, server_args.py:1258</span></li>
+      <li><div class="row"><span class="kchip kA">A</span>층 종류별 경로</div><code>*</code> flashinfer · <code>M</code> conv1d + SSD scan(prefill) / state update(decode) · <code>-</code> MLP<span class="sp">models/nemotron_h.py:554-559, layers/attention/mamba/mamba.py</span></li>
+      <li><div class="row"><span class="kchip kB">B</span>conv1d int64</div>약 94.8k 이상 장문 크래시 수리, 모든 arm<span class="sp">causal_conv1d_triton.py:69,77</span></li>
+      <li><div class="row"><span class="kchip kD">D</span>I-4·I-6 decode probe</div>decode 커널 GPU 시간과 패딩 bs 기록<span class="sp">src/multiplex/decode_probe.py</span></li>
+      <li><div class="row"><span class="kchip kE">E</span>조성 변형</div>패턴만 바꾼 dummy 가중치 변형 a4·a13·a22·a31<span class="sp">scripts/compo/make_variant.py</span></li>
+    </ul></article>
+    <article class="stage"><h3><span class="n">5</span>출력·해제</h3><ul>
+      <li><div class="row"><span class="kchip kA">A</span>샘플링·결과 처리</div>prefill/decode 결과 반영, 종료 판정<span class="sp">scheduler_output_processor_mixin.py:123-547</span></li>
+      <li><div class="row"><span class="kchip kA">A</span>슬롯·KV 반환</div>radix OFF면 mamba 슬롯을 여기서 돌려줌<span class="sp">mem_cache/common.py:465-515</span></li>
+      <li><div class="row"><span class="kchip kA">A</span>decode 메모리 검사</div>KV만 확인, mamba는 확인 안 함 → 부족하면 retract<span class="sp">schedule_batch.py:1937-2019</span></li>
+      <li><div class="row"><span class="kchip kF">F</span>pause·재정렬</div>anchor 설계에만 있음<span class="sp">reports/system_design_anchor_2026-09-30.md</span></li>
+    </ul></article>
+  </div>
+  <div class="loop">
+    <div class="eyebrow">PD-mux iteration 한 번의 순서 (multiplexing_mixin.py:1258-1543, 업스트림 골격)</div>
+    <ol>
+      <li>요청 수신 → prefill 입장(split prefill 배치는 동시에 1개)</li>
+      <li>분할을 바꿀 때마다 두 스트림 전체 drain <span class="sync">동기화 1</span> → <code>adjust_stream_groups</code></li>
+      <li>decode 실행(stream group별 cudagraph replay) → 같은 iteration에서 prefill span 발행(GPU 위에서 겹침)</li>
+      <li>decode 완료 대기 <span class="sync">동기화 2 · 매 iteration</span></li>
+      <li>prefill 완료 query + TP 랭크 CPU allreduce <span class="sync">동기화 3</span> → 완료면 running에 합치고 다음 iteration에서 분할 재선택</li>
+    </ol>
+  </div>
+  <div>
+    <div class="eyebrow" style="margin-bottom:6px">엔진 밖 하네스 경로 <span class="kchip kE">E</span></div>
+    <div class="harness"><span class="h">launch.sh</span><span class="a">→</span><span class="h">job_entry.sh</span><span class="a">→</span><span class="h">install_runtime.sh · ENGINE_DIGEST</span><span class="a">→</span><span class="h">캠페인 entry · trace_loadgen.py</span><span class="a">→</span><span class="h">fetch.sh (DONE + sha256)</span><span class="a">→</span><span class="h">analyze.py · 캠페인 라벨러</span><span class="a">→</span><span class="h">VERDICT → promote</span></div>
+  </div>
+  <p class="note"><b>이 연구의 위치.</b> 동작을 바꾸는 항상 적용 패치(B)는 hybrid에서 PD-mux가 돌게 하는 수리이고, env 정책(C)은 best-static에 지거나(SLO 계열) 죽었거나(layer-type) 미검증(R2 hybrid 예측기)입니다. 현재 기여는 업스트림 그대로의 동작(A)이 만드는 비용 구조를 계측(D)과 하네스(E)로 재는 특성화이며, 제안은 설정 수준(decode-heavy static, cap = C<sub>mem</sub>)과 조성 스윕의 hybrid 고유 항입니다. 메커니즘 제안(F)은 아직 구현되지 않았습니다.</p>
+</section>
 
 <section id="docs">
   <h2>문서 지도 <span class="sec">§7</span></h2>
@@ -536,7 +628,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
       "d",
       1,
       1,
-      "decode 비면\n(0,108) 복귀",
+      "decode 비면\n(108,0) 무분할",
       "bad"
      ],
      [
