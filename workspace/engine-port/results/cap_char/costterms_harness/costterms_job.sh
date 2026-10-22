@@ -1,5 +1,5 @@
 #!/bin/bash
-# Job target for the cost-term measurement, stage 1 (PREREG_COSTMODEL_TERMS_MEAS_rev3 rev3.3: J-H1, J-A T1/T2/T2' part,
+# Job target for the cost-term measurement, stage 1 (PREREG_COSTMODEL_TERMS_MEAS_rev3 rev3.4: J-H1, J-A T1/T2/T2' part,
 # J-B2).  NOT SEALED: refuses to run unless PDMUX_COSTTERMS_SEALED=1 (set only after seal S1, PREREG §12 item 13) or
 # PDMUX_COSTTERMS_TEST_MODE=1 (CPU tests with the fake engine).  Stage 2 (J-H2, J-C, T3 boots) is not wired.
 #
@@ -18,8 +18,8 @@ name="${PDMUX_JOB_NAME:-local-$(date -u +%Y%m%d%H%M%S)}"
 out="${PDMUX_COSTTERMS_OUT:-${here}/../costterms_runs/${name}}"
 
 case "${job}" in
-  J-H1) cap_min=210 ;;          # PREREG §7-4 hard caps (x1.2): J-H1 3.5 h, J-A1 5.2 h, J-A2 5.0 h, J-B2 1.3 h
-  J-A)  if [[ "${rnd}" == 1 ]]; then cap_min=312; else cap_min=300; fi ;;
+  J-H1) cap_min=245 ;;          # PREREG rev3.4 §7-4 hard caps (x1.2): J-H1 4.1 h, J-A1 4.0 h, J-A2 3.9 h, J-B2 1.3 h
+  J-A)  if [[ "${rnd}" == 1 ]]; then cap_min=243; else cap_min=234; fi ;;
   J-B2) cap_min=78 ;;
   *) echo "ABORT_CONFIG: PDMUX_COSTTERMS_JOB must be J-H1, J-A or J-B2 (stage 1); got '${job}'" >&2; exit 16 ;;
 esac

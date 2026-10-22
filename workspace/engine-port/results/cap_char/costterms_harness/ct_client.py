@@ -152,21 +152,37 @@ def _all_done(hs):
     return lambda: all(h.done for h in hs)
 
 
-def run_t1_cell(tr, cell_id, bs, c, rnd, timeout=1800.0, mark=None):
-    """§2-1 burst: bs requests at once, c_in = c - X, O tokens; returns the client record."""
+def cancel_burst(tr, hs):
+    """Abort every still-running request of a burst and wait until each stream has ended (HTTP /abort_request; the
+    next cell must start on an engine with no residual request -- checked again by the extractor, FOREIGN_RESIDUAL)."""
+    for h in hs:
+        if not h.done:
+            tr.abort(h)
+    tr.wait(_all_done(hs), 120.0)
+
+
+def run_t1_cell(tr, cell_id, bs, c, rnd, O, timeout=1800.0, mark=None):
+    """§2-1 burst (rev3.4, decision 28 A-1): bs requests at once, c_in = c - X, max_new = O (registered per cell:
+    O_BASE + ramp bound), ignore_eos.  The client waits until every request has received ABORT_AT_TOKENS tokens (the
+    ramp-aware window r0 + TRIM + WINDOW has then been executed) and aborts the burst."""
     c_in = c - S.X_TOKENS
     ids = S.prompt_ids("T1", bs, c, rnd, c_in)
-    rec = {"kind": "t1", "cell_id": cell_id, "bs": bs, "c": c, "c_in": c_in, "O": S.O_TOKENS, "round": rnd}
+    rec = {"kind": "t1", "cell_id": cell_id, "bs": bs, "c": c, "c_in": c_in, "O": int(O), "round": rnd}
     if mark:
         mark("cell_start", cell_id)
     rec["t_first_send"] = tr.now()
-    hs = [tr.start(f"{cell_id}-q{i}", ids, S.O_TOKENS) for i in range(bs)]
-    rec["completed"] = tr.wait(_all_done(hs), timeout)
+    hs = [tr.start(f"{cell_id}-q{i}", ids, int(O)) for i in range(bs)]
+
+    def tokens(h):
+        return h.chunks[-1][1] if h.chunks else 0
+    rec["window_reached"] = tr.wait(lambda: all(h.done or tokens(h) >= S.ABORT_AT_TOKENS for h in hs), timeout)
+    joined = [h.chunks[0][0] for h in hs if h.chunks]
+    rec["t_reach_client"] = max(joined) if len(joined) == bs else None
+    rec["n_ended_before_abort"] = sum(1 for h in hs if h.done)
+    rec["t_abort"] = tr.now()
+    cancel_burst(tr, hs)
+    rec["completed"] = all(h.done for h in hs)
     rec["t_end"] = tr.now()
-    if not rec["completed"]:
-        for h in hs:
-            if not h.done:
-                tr.abort(h)
     rec["requests"] = [h.record() for h in hs]
     if mark:
         mark("cell_end", cell_id)

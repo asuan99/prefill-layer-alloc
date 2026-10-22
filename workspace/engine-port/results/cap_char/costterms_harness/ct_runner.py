@@ -11,8 +11,10 @@ Job entry (experiment-runner): costterms_job.sh sets PDMUX_COSTTERMS_JOB / _ROUN
 unless the harness is sealed (PDMUX_COSTTERMS_SEALED=1) or PDMUX_COSTTERMS_TEST_MODE=1.
 
 Per boot (PREREG §2-2): boot -> facts from the log (label / cap / engine / sticky / instrumentation / capture checks)
--> realized SM (§1-8) -> feasibility of EVERY registered cell written BEFORE any cell -> T4 predictions A and B written
-and hashed into events.jsonl BEFORE the first fill -> warm-up + correctness -> cells in seeded random order -> trailer +
+-> realized SM (§1-8) -> feasibility of EVERY registered cell (per-cell O, rev3.4 §3-1) written BEFORE any cell -> T4
+predictions A and B written
+and hashed into events.jsonl BEFORE the first fill -> warm-up + correctness -> cells in seeded random order (T1 bursts
+are aborted after the ramp-aware window, decision 28 A-1) -> trailer +
 idle 2 x flush -> stop -> DONE (resume skips boots with DONE).  The analyzer re-derives every label from the logs; it
 never takes model / load format / cap / D from the plan.
 """
@@ -73,29 +75,38 @@ def sha256_file(p):
 
 # ============================================================================ plans
 def _boot(job, rnd, boot_id, kind, model, engine, cap, *, D=None, variant=4, dummy=False, t1=(), t1_reps=1, t2=(),
-          t2p=(), t4=()):
+          t2p=(), t4=(), o_family="JA"):
     mode = (f"D{D}" if engine == "pdmux_sticky" else "108u" if engine == "pdmux_108u" else "108v")
     return {"job": job, "round": rnd, "boot_id": boot_id, "kind": kind, "model": model, "engine": engine, "mode": mode,
             "D": D if engine == "pdmux_sticky" else None, "cap": cap, "variant": variant if model == "nano" else None,
             "dummy": dummy, "t1": [list(c) for c in t1], "t1_reps": t1_reps, "t2": list(t2), "t2p": list(t2p),
-            "t4": [list(f) for f in t4]}
+            "t4": [list(f) for f in t4], "o_family": o_family,
+            "t1_O": {f"{bs}x{c}": S.o_tokens(bs, c, o_family) for bs, c in t1}}
+
+
+def t2_axis(mode):
+    """Decision 28 A-2: T2 ("no other load") has a known prefill SM only where prefill runs on 108 SM -- 108u / 108v.
+    In a sticky-D boot an empty decode batch sends prefill to group 0 (108 SM) as well, so a T2 there would be a 108-SM
+    value under a D label; the plan refuses it (None)."""
+    return S.TOTAL_SM if mode in S.T2_MODES else None
 
 
 def plan_ja(rnd):
-    """J-A round rnd (stage-1 part): 7 mode boots (T1 + T2 + T2'), cap-invariance boot (round 1 only), OFF
-    diagnostic boots (D44 PD-mux, 108v).  T3 boots (D24/D44, TEL ON) are stage 2 and listed in plan['deferred']."""
+    """J-A round rnd (stage-1 part): 7 mode boots (T1 + T2' everywhere, T2 only in 108u / 108v -- decision 28 A-2),
+    cap-invariance boot (round 1 only), OFF diagnostic boots (D44 PD-mux with T2', 108v with T2).  T3 boots (D24/D44,
+    TEL ON) are stage 2 and listed in plan['deferred']."""
     job = f"J-A{rnd}"
     boots = []
     for d in S.D_GRID:
         boots.append(_boot(job, rnd, f"ja{rnd}_D{d}", "T1T2", "nano", "pdmux_sticky", S.CAP_MAIN, D=d,
-                           t1=X.t1_cells_for_mode(f"D{d}"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID))
+                           t1=X.t1_cells_for_mode(f"D{d}"), t2p=S.T2P_L_GRID))
     boots.append(_boot(job, rnd, f"ja{rnd}_108u", "T1T2", "nano", "pdmux_108u", S.CAP_MAIN,
                        t1=X.t1_cells_for_mode("108u"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID))
     boots.append(_boot(job, rnd, f"ja{rnd}_108v", "T1T2", "nano", "vanilla", S.CAP_MAIN,
                        t1=X.t1_cells_for_mode("108v"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID))
     boots.append(_boot(job, 1, "ja1_capinv_D44", "T1T2", "nano", "pdmux_sticky", S.CAP_SMALL, D=44, t1=S.CAP_INV_CELLS))
     boots.append(_boot(job, rnd, f"ja{rnd}_off_D44", "OFF", "nano", "pdmux_sticky", S.CAP_MAIN, D=44,
-                       t1=S.OFF_T1_CELLS_JA, t2=S.OFF_T2_L_JA))
+                       t1=S.OFF_T1_CELLS_JA, t2p=S.OFF_T2_L_JA))
     boots.append(_boot(job, rnd, f"ja{rnd}_off_108v", "OFF", "nano", "vanilla", S.CAP_MAIN,
                        t1=S.OFF_T1_CELLS_JA, t2=S.OFF_T2_L_JA))
     order = list(range(len(boots)))
@@ -115,13 +126,15 @@ def plan_jh1():
     for n in S.VARIANTS:
         boots.append(_boot("J-H1", 1, f"jh1_dummy_a{n}", "T1T2", "nano", "vanilla", S.CAP_MAIN, variant=n, dummy=True,
                            t1=S.JH_T1_CELLS, t1_reps=S.JH_T1_REPS, t2=S.JH_T2_L,
-                           t4=[(L, S.JH_T4_R) for L in S.JH_T4_L]))
+                           t4=[(L, S.JH_T4_R) for L in S.JH_T4_L], o_family="VANILLA"))
     boots.append(_boot("J-H1", 1, "jh1_real_a4", "T1T2", "nano", "vanilla", S.CAP_MAIN, variant=4, dummy=False,
-                       t1=S.JH_T1_CELLS, t1_reps=S.JH_T1_REPS, t2=S.JH_T2_L, t4=[(L, S.JH_T4_R) for L in S.JH_T4_L]))
+                       t1=S.JH_T1_CELLS, t1_reps=S.JH_T1_REPS, t2=S.JH_T2_L, t4=[(L, S.JH_T4_R) for L in S.JH_T4_L],
+                       o_family="VANILLA"))
     boots.append(_boot("J-H1", 1, "jh1_llama", "T1T2", "llama", "vanilla", S.CAP_MAIN,
-                       t1=S.JH_T1_CELLS, t1_reps=S.JH_T1_REPS, t2=S.JH_T2_L, t4=[(L, S.JH_T4_R) for L in S.JH_LLAMA_T4_L]))
+                       t1=S.JH_T1_CELLS, t1_reps=S.JH_T1_REPS, t2=S.JH_T2_L, t4=[(L, S.JH_T4_R) for L in S.JH_LLAMA_T4_L],
+                       o_family="VANILLA"))
     boots.append(_boot("J-H1", 1, "jh1_off_dummy_a4", "OFF", "nano", "vanilla", S.CAP_MAIN, variant=4, dummy=True,
-                       t1=S.JH_T1_CELLS, t1_reps=S.JH_T1_REPS, t2=S.JH_T2_L))
+                       t1=S.JH_T1_CELLS, t1_reps=S.JH_T1_REPS, t2=S.JH_T2_L, o_family="VANILLA"))
     order = list(range(len(boots)))
     random.Random(S.order_seed("J-H1|boots")).shuffle(order)
     return {"job": "J-H1", "boots": [boots[i] for i in order], "deferred": ["J-H2 (B/C boots, T3) -- stage 2"]}
@@ -168,6 +181,10 @@ def plan_problems(plan):
             bad.append(f"{b['boot_id']}: T4 fill in an OFF diagnostic boot")
         if b["kind"] == "T1T2" and b["t1"] and b["cap"] not in (S.CAP_MAIN, S.CAP_SMALL):
             bad.append(f"{b['boot_id']}: T1 boot cap {b['cap']}")
+        if b["t2"] and t2_axis(b["mode"]) is None:
+            bad.append(f"{b['boot_id']}: T2 in a {b['mode']} boot (decision 28 A-2: T2 only at P = 108; use T2')")
+        if any(b["t1_O"].get(f"{bs}x{c}") != S.o_tokens(bs, c, b["o_family"]) for bs, c in b["t1"]):
+            bad.append(f"{b['boot_id']}: T1 output length differs from the registered O rule")
         if b["job"].startswith("J-A") and b["kind"] == "T1T2" and b["cap"] == S.CAP_MAIN:
             want = sorted(map(list, X.t1_cells_for_mode(b["mode"])))
             if sorted(b["t1"]) != want:
@@ -400,7 +417,8 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
         (bdir / "DONE").write_text("aborted\n")
         led("boot_abort", "; ".join(aborting))
         return res
-    feas = X.feasibility([tuple(c) for c in b["t1"]], f, X.logged_cap(f))
+    o_map = {(bs, c): b["t1_O"][f"{bs}x{c}"] for bs, c in b["t1"]}
+    feas = X.feasibility([tuple(c) for c in b["t1"]], f, X.logged_cap(f), o_map)
     dump(feas, bdir / "feasibility.json")
     led("feasibility_written", sha256=sha256_file(bdir / "feasibility.json"))
     if b["t4"]:
@@ -439,7 +457,7 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
             off0 = srv.log_size()
             if kind == "t1":
                 bs, c = what
-                rec = C.run_t1_cell(tr, f"t1_b{bs}_c{c}_k{k}", bs, c, b["round"], mark=led)
+                rec = C.run_t1_cell(tr, f"t1_b{bs}_c{c}_k{k}", bs, c, b["round"], o_map[(bs, c)], mark=led)
             elif kind == "t2":
                 rec = C.run_t2(tr, f"t2_L{what}", what, b["round"], mark=led)
             elif kind == "t2p":
@@ -515,6 +533,22 @@ def boot_identity(b, f):
     return {"model": model, "load_format": lf, "cap": X.logged_cap(f), "mode": mode, "tag": tag, "n_attn": n_attn}
 
 
+def t2p_prefill_sm(b, green, sm):
+    """Prefill SM of a T2' prefill (decode busy): sticky D -> realized prefill half of the sticky division; 108u ->
+    realized prefill half of the FIXED_DSM_108U division; 108v -> 108 (vanilla prefills first, not concurrent)."""
+    if b["engine"] == "vanilla":
+        return S.TOTAL_SM
+    if b["engine"] == "pdmux_sticky":
+        return (sm or {}).get("P_real")
+    g = next((r for r in (green or {}).get("groups", []) if r.get("target_decode_sm") == S.FIXED_DSM_108U), None)
+    return (((g or {}).get("prefill") or {}).get("green_sm") or {}).get("smCount")
+
+
+def fit_ctx(w):
+    """The ctx a T1 fit uses for one window: the ACTUAL window mean (decision 28 A-1), never the nominal c."""
+    return w.get("ctx_mean")
+
+
 def ledger_order_ok(bdir):
     """T4 predictions must be sealed (hash in the ledger) before the first fill starts, and the file must still match."""
     ev = X.read_jsonl(bdir / "events.jsonl")
@@ -577,10 +611,13 @@ def analyze_boot(bdir):
         elif c["kind"] == "t2":
             t2.append(X.t2_value(c))
         elif c["kind"] == "t2p":
-            t2p.append(X.t2_value(c))
+            v_ = X.t2_value(c)
+            v_["coexist_engine"] = X.t2p_coexist(c, dec if have_engine and b["kind"] != "OFF" else [])
+            t2p.append(v_)
         elif c["kind"] == "t4":
             t4.append(X.t4_fill(c, recs, adm))
     out.update(t1_windows=t1, t2=t2, t2p=t2p, t4_fills=t4)
+    out["t2p_P"] = t2p_prefill_sm(b, load(bdir / "green.json"), sm)
     if t4:
         ok, why = ledger_order_ok(bdir)
         out["t4_prediction_order"] = why
@@ -592,12 +629,20 @@ def analyze_boot(bdir):
 
 
 def _cell_values(t1, key="S_eng_ms"):
-    """(bs, c) -> median over VALID windows of `key` (unit = (boot, cell), A-10)."""
+    """(bs, c) -> median over VALID windows of `key` (unit = (boot, cell), A-10).  key may be a callable."""
     acc = {}
     for w in t1:
-        if w.get("status") == "VALID" and w.get(key) is not None:
-            acc.setdefault((w["bs"], w["c"]), []).append(w[key])
+        v = key(w) if callable(key) else w.get(key)
+        if w.get("status") == "VALID" and v is not None:
+            acc.setdefault((w["bs"], w["c"]), []).append(v)
     return {k: X.median(v) for k, v in acc.items()}
+
+
+def _fit_points(t1, cells=None):
+    """[(bs, actual ctx, S_eng, nominal c)] per (boot, cell): the fit input of rev3.4 §1-1."""
+    vals, ctx = _cell_values(t1), _cell_values(t1, fit_ctx)
+    return [(b_, ctx[(b_, c_)], t, c_) for (b_, c_), t in sorted(vals.items())
+            if (b_, c_) in ctx and (cells is None or (b_, c_) in cells)]
 
 
 def analyze(run_dir):
@@ -627,11 +672,13 @@ def analyze(run_dir):
         key = f"{v['job']}|r{v['round']}|{ident['tag']}|{ident['mode']}|cap{ident['cap']}"
         vals = _cell_values(v["t1_windows"])
         t1_tab[key] = {"D_real": v["sm"].get("D_real"), "cells": {f"{b_}x{c_}": t for (b_, c_), t in sorted(vals.items())},
+                       "ctx_actual": {f"{b_}x{c_}": x for (b_, c_), x in sorted(_cell_values(v["t1_windows"], fit_ctx).items())},
+                       "status_counts": _status_counts(v["t1_windows"]),
                        "gpu_ms": {f"{b_}x{c_}": t for (b_, c_), t in sorted(_cell_values(v["t1_windows"], "gpu_ms").items())},
                        "feasibility": v["feasibility"], "n_registered": len(v["feasibility"]),
                        "n_infeasible": sum(1 for x in v["feasibility"] if x["label"] == "INFEASIBLE_BY_RULE"),
                        "labels": sorted({l for w in v["t1_windows"] for l in w.get("labels", [])})}
-        pts = [(b_, c_, t) for (b_, c_), t in vals.items()]
+        pts = _fit_points(v["t1_windows"])
         if len(pts) >= 4 and ident["cap"] == S.CAP_MAIN:
             fit = F.fit_t1(pts, ident["mode"])
             fits[key] = {"chosen": _strip(fit["chosen"]), "F1": _strip(fit["F1"]), "label": fit["label"]}
@@ -656,34 +703,48 @@ def analyze(run_dir):
             A["labels"]["cap_invariance"] = F.cap_invariance(_cell_values(capinv["t1_windows"]),
                                                              {k: x for k, x in _cell_values(main44["t1_windows"]).items()
                                                               if k in S.CAP_INV_CELLS})
-    # ---- T2 / T2'
+    # ---- T2 (P = 108 boots only, decision 28 A-2) / T2' (P axis)
     t2tab, t2fit, qs = {}, {}, {}
     for v in usable.values():
         if v["kind"] == "OFF" or not v.get("t2"):
             continue
         ident = v["identity"]
+        if t2_axis(ident["mode"]) is None:
+            v["problems"].append("T2_NOT_AT_P108: T2 data in a sticky-D boot ignored (decision 28 A-2)")
+            continue
         key = f"{v['job']}|r{v['round']}|{ident['tag']}|{ident['mode']}"
         pts = [(x["L"], x["ttft_ms"]) for x in v["t2"] if x["status"] == "VALID"]
-        p_claim = 108 if ident["mode"] in ("108u", "108v") else 108 - (v["sm"].get("D_real") or 0)
-        t2tab[key] = {"points": {str(L): t for L, t in pts}, "P": p_claim,
-                      "P_evidence": "vanilla/unpartitioned" if p_claim == 108 else "NOT_COLLECTED (A-2: TEL OFF)",
-                      "t2prime": {str(x["L"]): x.get("ttft_ms") for x in v.get("t2p", []) if x["status"] == "VALID"}}
+        t2tab[key] = {"points": {str(L): t for L, t in pts}, "P": S.TOTAL_SM, "P_evidence": "vanilla/unpartitioned"}
         ft = F.fit_t2(pts) if len(pts) >= 3 else None
         qi = F.q_index(pts, ft)
-        slope, slab = F.j1_slope_label(pts) if p_claim == 108 else (None, None)
-        if p_claim == 108:
-            lab = None if (ft and ft["accepted"]) else "FORM_INADEQUATE_T2_P108"
-        else:     # A-2: the P axis of a sticky-D boot's T2 is not evidenced -> no P-labelled verdict
-            lab = None
+        slope, slab = F.j1_slope_label(pts)
         t2fit[key] = {"coef": ft["coef"] if ft else None, "loo_internal": ft["loo_internal"] if ft else None,
-                      "accepted": bool(ft and ft["accepted"]), "label": lab,
-                      "status": "P=108" if p_claim == 108 else "P_UNVERIFIED (A-2)",
+                      "accepted": bool(ft and ft["accepted"]),
+                      "label": None if (ft and ft["accepted"]) else "FORM_INADEQUATE_T2_P108",
                       "q": qi, "j1_slope": slope, "j1_label": slab}
-        if p_claim == 108:
-            qs.setdefault(f"{ident['tag']}|{ident['mode']}", []).append(qi.get("q"))
+        qs.setdefault(f"{ident['tag']}|{ident['mode']}", []).append(qi.get("q"))
     A["tables"]["t2"] = t2tab
     A["fits"]["t2"] = t2fit
     A["labels"]["q"] = {k: F.q_label(v) for k, v in qs.items()}
+    t2p_tab, t2p_fit = {}, {}
+    for v in usable.values():
+        if v["kind"] == "OFF" or not v.get("t2p"):
+            continue
+        ident = v["identity"]
+        key = f"{v['job']}|r{v['round']}|{ident['tag']}|{ident['mode']}"
+        conf = {str(x["L"]): (x.get("coexist_engine") or {}).get("label") for x in v["t2p"]}
+        pts = [(x["L"], x["ttft_ms"]) for x in v["t2p"] if x["status"] == "VALID"
+               and (x.get("coexist_engine") or {}).get("confirmed")]
+        t2p_tab[key] = {"points": {str(x["L"]): x.get("ttft_ms") for x in v["t2p"] if x["status"] == "VALID"},
+                        "P": v.get("t2p_P"), "coexist": conf, "points_confirmed": {str(L): t for L, t in pts},
+                        "estimand": "single prefill TTFT with one bs=1 decode request co-resident (decision 28 A-2)"}
+        ft = F.fit_t2(pts) if len(pts) >= 3 else None
+        t2p_fit[key] = {"coef": ft["coef"] if ft else None, "accepted": bool(ft and ft["accepted"]),
+                        "label": None if (ft and ft["accepted"]) else f"FORM_INADEQUATE_T2P_P{v.get('t2p_P')}",
+                        "q": F.q_index(pts, ft)}
+    A["tables"]["t2prime"] = t2p_tab
+    A["fits"]["t2prime"] = t2p_fit
+    A["fits"]["theta_prime"] = theta_prime(t2p_tab)
     # ---- T4
     t4 = {}
     pools = {}
@@ -707,10 +768,43 @@ def analyze(run_dir):
     return A
 
 
+def _status_counts(ws):
+    out = {}
+    for w in ws:
+        out[w.get("status")] = out.get(w.get("status"), 0) + 1
+    return out
+
+
 def _strip(fit):
     if fit is None:
         return None
     return {k: v for k, v in fit.items() if k != "pred"}
+
+
+def theta_prime(t2p_tab):
+    """Descriptive (§1-2 rev3.4): per (job, round) over the sticky-D boots, through-origin LS of ln(T2'(L, P) /
+    T2'(L, P_max)) on ln(P_max / P), pooled over the confirmed L.  No label reads it."""
+    out = {}
+    groups = {}
+    for k, v in t2p_tab.items():
+        job, rnd, tag, mode = k.split("|")
+        if mode.startswith("D") and v.get("P"):
+            groups.setdefault(f"{job}|{rnd}|{tag}", []).append(v)
+    for g, vs in groups.items():
+        top = max(vs, key=lambda v: v["P"])
+        xs, ys = [], []
+        for v in vs:
+            if v is top:
+                continue
+            for L, t in v["points_confirmed"].items():
+                t0 = top["points_confirmed"].get(L)
+                if t0 and t:
+                    xs.append(math.log(top["P"] / v["P"]))
+                    ys.append(math.log(t / t0))
+        den = sum(x * x for x in xs)
+        out[g] = {"theta_prime": (sum(x * y for x, y in zip(xs, ys)) / den) if den > 0 else None, "P_ref": top["P"],
+                  "n_points": len(xs)}
+    return out
 
 
 def analyze_jh1(jh):
@@ -733,9 +827,9 @@ def analyze_jh1(jh):
         mt = v["mem"]
         p1[f"a{n}"] = F.compo_mem(n, mt["s"] if mt else None, mt["k"] if mt else None, mt["slots"] if mt else None)
         p2[f"a{n}"] = F.cmem_variant(n, v.get("t4", []))
-        vals = {k: x for k, x in _cell_values(v["t1_windows"]).items() if k in set(S.JH_COMMON_CELLS)}
-        if len(vals) == len(S.JH_COMMON_CELLS):
-            ft = F.fit_form([(b_, c_, t) for (b_, c_), t in vals.items()], "F1")
+        pts = _fit_points(v["t1_windows"], set(S.JH_COMMON_CELLS))
+        if len(pts) == len(S.JH_COMMON_CELLS):
+            ft = F.fit_form(pts, "F1")
             cs[n] = ft["coef"][2] if ft else None
         pts = [(x["L"], x["ttft_ms"]) for x in v["t2"] if x["status"] == "VALID"]
         ft2 = F.fit_t2(pts) if len(pts) >= 3 else None
@@ -762,8 +856,9 @@ def instr_effects(usable):
             continue
         off_t1 = _cell_values(v["t1_windows"], "client_gap_ms")
         on_t1 = {k: x for k, x in _cell_values(on["t1_windows"], "client_gap_ms").items() if k in off_t1}
-        off_t2 = {x["L"]: x["ttft_ms"] for x in v["t2"] if x["status"] == "VALID"}
-        on_t2 = {x["L"]: x["ttft_ms"] for x in on["t2"] if x["status"] == "VALID" and x["L"] in off_t2}
+        off_t2 = {x["L"]: x["ttft_ms"] for x in v["t2"] + v.get("t2p", []) if x["status"] == "VALID"}
+        on_t2 = {x["L"]: x["ttft_ms"] for x in (on["t2"] if v["t2"] else on.get("t2p", []))
+                 if x["status"] == "VALID" and x["L"] in off_t2}
         out[v["boot_id"]] = {"T1": F.instrument_effect(on_t1, off_t1), "T2": F.instrument_effect(on_t2, off_t2),
                              "note": "descriptive; never applied to T1-T4 (decision 22)"}
     return out

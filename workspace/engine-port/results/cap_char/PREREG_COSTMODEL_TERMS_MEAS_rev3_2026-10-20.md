@@ -10,6 +10,7 @@
 > **rev3.1 개정(2026-10-21, 미봉인 문서 갱신)**: 결정 18(O-항목)을 §10·§7에, 결정 22(계측 정책)를 §2-2′·§8-1·§9-2에 반영하고 §12 봉인 체크리스트를 신설했다. 측정 0, 성능 판정 0. 29항목 digest `2b1ab054…`는 폐기(배포·봉인된 적 없음). gate 안의 `ABORT_ENGINE_DIGEST`가 예상값 불일치를 막는다.
 > **rev3.2 개정(2026-10-21, 미봉인)**: 결정 24로 H의 주 근거를 §4′ 같은 골격 조성 스윕(J-H)으로 바꾸고, §4의 Llama 대비는 J-H 안의 참조점 1 boot로 축소했다(J-B1 폐지). §7-4·§10·§12 갱신. 측정 0.
 > **rev3.3 개정(2026-10-21, 미봉인)**: 결정 25로 J-H에 동거 간섭(T3)의 조성 의존을 추가하고 J-H를 J-H1(vanilla)·J-H2(PD-mux)로 나눴다. PD-mux boot의 D를 64→44로 바꿔 T3 격자와 공유한다. 측정 0.
+> **rev3.4 개정(2026-10-22, 미봉인)**: 결정 28(`../anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md` 끝)을 반영했다 — **A-1** T1 창을 ramp 인식 방식으로(셀별 출력 길이 O = 332 + ramp 상한, `bs_real`이 등록 bs에 처음 도달한 기록 기준 창, 창 뒤 요청 취소, 적합 입력 = 창 안 실제 평균 ctx) §1·§1-1·§3-1·§4′; **A-2** T2는 P=108 boot(`108u`·`108v`)에서만, sticky-D boot의 P 축은 T2′(bs=1 decode 동거)를 주 측정으로 승격하고 L을 T2와 같게 확장 §1-2·§1-8; **A-6** T2-ext 삭제; **A-11** J-H T4 거절 사유 `NOT_COLLECTED` 수용; **A-3…A-26** 하네스 해석 명시 §11-3. 시간·GPU-h 재계산 §7-4, 금지 문안 §9-2, 체크리스트 §12. 측정 0, 판정 0. 수치는 모두 [유도](시간 모형·사전값) 또는 가짜 엔진 값(인용 불가)이다.
 
 ## R. rev2 → rev3 변경 대응표
 
@@ -52,20 +53,21 @@
 
 ## 1. 항별 estimand와 맞춤 형태
 
-공통: 단위 = (boot, cell) 창 중앙값. 창 = N2 선례의 개념을 차용한다(burst 뒤 단독 decode, 처음 16 iteration 제외, batch 평균 ctx p50이 목표 c의 ±64 띠 안, 연속 iter\_seq 쌍, retract 0, cudagraph hit 정황). 상세 구현은 새 하네스의 몫이다(§3-2). 클럭·전력(I-1)은 창마다 공변량으로 기록하고 **제외 규칙으로 쓰지 않는다**(민감도 표만, §1-5).
+공통: 단위 = (boot, cell) 창 중앙값. 창 = **ramp 인식 창(rev3.4, 결정 28 A-1, 정의는 §1-1 "창 정의")** — burst 뒤 `bs_real`이 등록 bs에 처음 도달한 기록부터 16 기록 제외 후 연속 300 간격, 창 안 bs 변화·동거 iteration은 제외·계수, 연속 seq, retract 0, cudagraph hit 정황. rev3.3의 "batch 평균 ctx p50이 목표 c의 ±64 띠 안"은 **제외 규칙에서 내리고** 라벨(`CTX_OFF_NOMINAL`)로만 남긴다(적합 입력은 실제 평균 ctx). 클럭·전력(I-1)은 창마다 공변량으로 기록하고 **제외 규칙으로 쓰지 않는다**(민감도 표만, §1-5).
 
 
 ### 1-1. T1 — CM-1 `T_dec(D, bs, ctx)`
 
 | 항목 | 등록 |
 |---|---|
-| estimand | 결정 D(green-context로 **실현된** decode SM 수, sticky ON)·실행 batch bs·batch 평균 ctx c에서 decode step 시간(ms). 1차 = 엔진 측 decode 시간(PD-mux·vanilla **양쪽 경로**, 엔진 `decode_forward` 레코드의 연속 두 레코드 `t_host_start` 차 = `S_eng`, N2 선례 S-per와 같은 창 규칙; GPU 커널 시간 `decode_fwd_gpu_ms`[I-4]는 분해용 공변량이지 `S_eng`의 대체가 아니다 — 필드는 §3-4). 2차 = 클라이언트 steady-state 토큰 간격 중앙값(모델 간 대비의 공통 추정량, §4). 엔진 대 클라이언트 bs별 3% 대조와 불일치 bs 제외는 §1-7. 입력 bs는 실행 bs `bs_real`이 아니라 `bs_padded`(I-6, 규칙 §3-4)로도 기록 |
+| estimand | 결정 D(green-context로 **실현된** decode SM 수, sticky ON)·실행 batch bs·**창 안 실제 batch 평균 ctx**(rev3.4: 명목 c는 셀 라벨, 적합 입력은 실제값 — 결정 28 A-1)에서 decode step 시간(ms). 1차 = 엔진 측 decode 시간(PD-mux·vanilla **양쪽 경로**, 엔진 `decode_forward` 레코드의 연속 두 레코드 `t_host_start` 차 = `S_eng`, N2 선례 S-per와 같은 창 규칙; GPU 커널 시간 `decode_fwd_gpu_ms`[I-4]는 분해용 공변량이지 `S_eng`의 대체가 아니다 — 필드는 §3-4). 2차 = 클라이언트 steady-state 토큰 간격 중앙값(모델 간 대비의 공통 추정량, §4). 엔진 대 클라이언트 bs별 3% 대조와 불일치 bs 제외는 §1-7. 입력 bs는 실행 bs `bs_real`이 아니라 `bs_padded`(I-6, 규칙 §3-4)로도 기록 |
 | 격자 | D ∈ {16, 24, 34, 44, 64} sticky ON + **D=108을 두 모드로**: `108u`(PD-mux 엔진 모드, 비분할 `(0,108)`, N2 관례), `108v`(vanilla 엔진, fused 계열 decode). bs ∈ {1, 8, 32, 48, 96}, c ∈ {2k, 8k, 32k, 64k} + **16k**(D ∈ {24, 34, 44, 108u, 108v}만; shape C 구간 11–20k 보간용) + **(bs, c) = (64, 8k), (64, 12k)**(rev2 신규, 같은 5개 D·모드만; shape C 영역 bs 55–80 보간, 감사 MAJOR 4. 12k 셀은 §3-1 규칙으로 실행 여부 판정, 비실행이면 `INFEASIBLE_BY_RULE`). 실행 가능 판정은 §3-1의 규칙 |
+| **창 정의 [봉인, rev3.4]** | (1) burst: bs개 요청을 동시에(`input_ids` 길이 c\_in = c − 166, `ignore_eos`, `max_new_tokens` = 셀별 O, §3-1). (2) r0 = 그 셀 구간의 `decode_forward` 중 `bs_real` = bs인 **첫 기록**. (3) 창 = r0+16 … r0+316의 301 기록(연속 seq, 300 간격; trim 16은 r0 **뒤**에서 센다). (4) 간격 k(기록 k→k+1)는 기록 k가 `bs_real` ≠ bs(bs 변화) · `mode` ≠ decode(`mixed` = forward 안 prefill 토큰) · **클라이언트 합류 미확인**(그 시각 + 0.25 s까지 첫 토큰을 받은 셀 요청 수 ≠ bs) 중 하나면 **제외하고 사유별 개수를 기록**; 제외 > 30이면 `WINDOW_CONTAMINATED`. (5) **동거 판정 근거(TEL OFF)**: T1 boot에는 phase event가 없으므로 prefill 동거는 `decode_forward.mode` = mixed와 클라이언트 측 합류(첫 토큰 수신 시각)로만 판정한다. PD-mux는 split-prefill이 끝난 요청만 decode batch에 들어가므로(코드 사실) 셀 요청이 모두 합류한 뒤 셀 자신의 prefill은 동거할 수 없고, 남는 동거 원인은 **이전 셀의 잔여 요청**뿐이다 → 셀 구간 어디서든 `bs_real` > min(bs, 그 시각 합류한 셀 요청 수)이면 `FOREIGN_RESIDUAL`(셀 무효). (6) S\_eng = 포함 간격의 중앙값. (7) **실제 ctx** = 포함 간격 시작 기록마다 (c\_in + 그 시각까지 클라이언트가 받은 토큰 수)의 요청 평균을 다시 창 평균한 값(클라이언트 수는 엔진보다 진행 중 토큰 1개 늦을 수 있다, 편향 ≤ 1 토큰). (8) 모든 요청이 319 토큰(= 1 + 16 + 300 + 2)을 받으면 클라이언트가 HTTP `/abort_request`로 셀의 모든 요청을 취소하고 스트림 종료를 확인한 뒤 다음 셀로 간다. (9) 관측 ramp(r0 이전 기록 수)가 등록 상한을 넘으면 `RAMP_EXCEEDED_BOUND`(라벨; 창이 깨지면 `WINDOW_SHORT`/`WINDOW_CONTAMINATED`). 상태 우선순위: `BENCH_INVALID` > `FOREIGN_RESIDUAL` > `RETRACT` > `RECORDER_UNPROVEN` > `WINDOW_SHORT` > `WINDOW_CONTAMINATED` > `CG_UNPROVEN` > `PAD_MISMATCH` > VALID. **ctx 띠 결정 [봉인]**: 적합은 실제 평균 ctx, 셀 라벨은 명목 c와 실제값 병기. ±64 띠는 `CTX_OFF_NOMINAL` 라벨(제외 아님). 근거: ramp가 있으면 앞선 요청이 ramp만큼 더 생성해 실제 ctx가 c보다 커지며(가짜 엔진에서 D44 (32, 8k) 약 +650 토큰, 인용 불가), 띠를 제외 규칙으로 두면 ramp 셀이 전부 빠진다; 정본 수식상 decode 비용은 Σctx에 비례하므로 실제값으로 적합해야 c 계수가 편향되지 않는다(명목 c 적합은 가짜 엔진 진리값 대비 a −0.3%·b +1.3%·c +5.6% 편향, 변이 M22) |
 | 고정 노브 | cap = 128(V 운용 cap 근방 [유도 99–127], 결정 15), `--max-mamba-cache-size` = cap, mem 0.6, context\_length 73,728, cudagraph ON, 캡처 bs ⊇ {1, 8, 32, 48, **64**, 96}(§3-4 목록; 부팅 로그 검사, 아니면 `ABORT_CG_BS`), 같은 config 바이트(`pdmux_n3_A_agn.yml` 계열 + D=64 index 추가, digest [봉인 시 기입]) |
 | 제안 함수형 | `T_dec(D,bs,c) = a_D + b_D·bs + c_D·bs·c` — a = bs·ctx 무관 고정(가중치 sweep·launch), b = 요청당(SSM state·MLP), c = KV 읽기. 대안 형(적합도 실패 때만, 이 순서): F2 = F1 + d\_D·bs², F3 = a + b·bs^β + c·bs·c. 셋 다 실패하면 `FORM_INADEQUATE_T1_D{d}`이고, 이 항을 쓰는 후속 예측기는 **격자 안 이중선형 표 보간(log bs, log c), 외삽 금지**를 써야 한다(예측기는 이 문서 밖) |
-| 맞춤 방법 | 상대오차 가중 최소제곱(Σ((T−T̂)/T)² 최소), D·엔진 모드마다 따로. 단위 = (boot, cell) 중앙값. D 간 부속: 계수별 `κ_j(D) = κ_j(108)·(108/D)^γ_j`(j = a, b, c)를 6 D에 맞춰 γ\_j를 **기술값**으로(N2 PROFILE의 계수비는 인용 금지·재측정, 층 종류 귀속 금지) |
+| 맞춤 방법 | 상대오차 가중 최소제곱(Σ((T−T̂)/T)² 최소), D·엔진 모드마다 따로. 단위 = (boot, cell) 중앙값, **입력 ctx = 그 셀의 실제 평균 ctx(창별 값의 중앙값)**, 외삽 시험의 "수준"은 명목 c로 정한다(rev3.4). D 간 부속: 계수별 `κ_j(D) = κ_j(108)·(108/D)^γ_j`(j = a, b, c)를 6 D에 맞춰 γ\_j를 **기술값**으로(N2 PROFILE의 계수비는 인용 금지·재측정, 층 종류 귀속 금지) |
 | 적합도 보고 | (i) 표본 내 상대 잔차 중앙·최대 (ii) leave-one-cell-out 중앙·p90 (iii) **외삽 시험 [수준 봉인]**: ctx 수준 1개(32k를 먼저, 그다음 8k)와 bs 수준 1개(96을 먼저, 그다음 32)를 통째로 빼고 맞춘 뒤 뺀 수준 예측 오차. 뺀 뒤 남는 서로 다른 수준이 2개 미만인 (D, 모드)는 그 시험 `NA` (iv) 두 round를 각각 맞춘 계수의 차. **적합 채택 기준 [제안, 봉인 시 이 값 고정]**: (ii) 중앙 ≤ 3% ∧ p90 ≤ 8% ∧ (iii) 최대 ≤ 10%. 미충족은 위 라벨 |
-| 인용 범위 | 해당 D·엔진 모드·**cap 128 부팅**·이 격자 박스 안(볼록껍질 밖 조회는 후속 예측기가 `PRED_EXTRAPOLATED`로 다룰 몫 — V PREREG). 박스 밖 외삽 문장 금지. 허용: "이 Job에서 D=…, bs=…, ctx=…의 decode step 중앙값은 …ms이고, 함수형 F1의 표본 내 잔차는 …, 외삽 시험 오차는 …였다" |
+| 인용 범위 | 해당 D·엔진 모드·**cap 128 부팅**·이 격자 박스 안(rev3.4: 박스의 ctx 축은 **실제 평균 ctx** 기준)(볼록껍질 밖 조회는 후속 예측기가 `PRED_EXTRAPOLATED`로 다룰 몫 — V PREREG). 박스 밖 외삽 문장 금지. 허용: "이 Job에서 D=…, bs=…, ctx=…의 decode step 중앙값은 …ms이고, 함수형 F1의 표본 내 잔차는 …, 외삽 시험 오차는 …였다" |
 | 금지 | N2 PROFILE 계수(2.51/4.63/1.95×, −14~16%)·"shape B ctx 항 1%"·"shape C에서 hybrid 항이 유의하다"(VERDICT\_claimE 금지 문안); γ\_j를 s\_attn/s\_ssm 증거로 읽는 것; D 간 비를 "layer-type 차이"로 읽는 것 |
 
 cap 불변성 점검(J-A1 안, D=44 한 boot): cap 48로 부팅해 bs ∈ {8, 32} × c ∈ {2k, 8k} 4셀을 cap 128 boot의 같은 셀과 비교. 차 ≤ 3%면 `CAP_INVARIANT`, 아니면 `CAP_DEPENDENT`(T1 값에 "cap 128 조건부" 꼬리표, TP2 앵커는 cap 48을 쓰므로 영향 공시).
@@ -74,14 +76,14 @@ cap 불변성 점검(J-A1 안, D=44 한 boot): cap 48로 부팅해 bs ∈ {8, 32
 
 | 항목 | 등록 |
 |---|---|
-| estimand | 다른 부하가 없을 때 단일 요청 prefill 시간. 1차 = 클라이언트 TTFT(`input_ids`로 정확히 L 토큰, 출력 1토큰, `ignore_eos`) 중앙값 — J1 floor(CM-2)와 같은 정의라 모든 모델·모드에서 비교 가능. 2차 = 엔진 span 시간(Nano PD-mux만; I-3 없음) |
-| 격자 | L ∈ {1,024, 4,096, **8,800**(≈ s/k, 유도 경계 근방), 16,384, 32,768, 65,536} × 실현 prefill SM P = 108 − D ∈ {92, 84, 74, 64, 44}(D 격자 5개의 부산물, T1 boot 안에서 측정) + P = 108(`108u`·`108v`). 등록 대표 4점 P ∈ {44, 64, 74, 108}, P = 84·92는 무료 기술값. 한 (boot, L)당 8회, 앞 1회는 워밍업이라 제외 |
-| 조건부 확장 T2-ext | **int64 패치(`chunk_offset`·`sequence_start_index` 두 곳)가 분할 gate G-α→G-β→G-γA∥G-γF를 전부 통과하면(§8-1)** P = 108에서 L ∈ {98,304, 126,976}을 두 모델에 더한다(O-3 결정: gate 통과 조건부로 포함). 미통과면 없음. 결정 13의 64k는 격자 선택이며 프로브 감사 허용 문안 3–4를 승계한다 |
-| 제안 함수형 | `T_span(L,P) = u_P + v_P·L + w_P·L²`(P마다). P 의존 `(108/P)^θ`는 기술값. **모델-무관 형태 지표** `q = [T(65,536)/65,536] / [T(8,800)/8,800]` (토큰당 비용 증가비) |
+| estimand | 다른 부하가 없을 때 단일 요청 prefill 시간. 1차 = 클라이언트 TTFT(`input_ids`로 정확히 L 토큰, 출력 1토큰, `ignore_eos`) 중앙값 — J1 floor(CM-2)와 같은 정의라 모든 모델·모드에서 비교 가능. 2차 = 엔진 span 시간(Nano PD-mux만; I-3 없음). **P = 108에서만 정의된다(rev3.4, 결정 28 A-2)**: decode batch가 비면 sticky ON이어도 prefill은 stream group 0 = (108, 0)에서 돈다(코드 사실 `multiplexing_mixin.py` `adjust_stream_groups`) |
+| 격자 | L ∈ {1,024, 4,096, **8,800**(≈ s/k, 유도 경계 근방), 16,384, 32,768, 65,536} × **P = 108만**(`108u`·`108v` boot, J-H1 vanilla boot). rev3.3의 "P = 108 − D ∈ {92, 84, 74, 64, 44}(T1 boot의 부산물)"은 **폐기** — sticky-D boot의 단독 prefill은 108 SM에서 돌므로 그 값은 P = 108 − D가 아니다. prefill SM 축은 §1-8의 T2′가 맡는다. 한 (boot, L)당 8회, 앞 1회는 워밍업이라 제외. 계획 검사가 sticky-D boot의 T2를 거부한다 |
+| ~~조건부 확장 T2-ext~~ | **삭제(결정 28 A-6)**: context 73,728에서 96k·124k 입력은 불가능하고, int64 패치의 정확성은 G-β(서빙 98,304 통과·되돌린 판 95,100 사망)가 이미 확인했다 |
+| 제안 함수형 | `T_span(L,P) = u_P + v_P·L + w_P·L²`(P = 108). P 의존은 T2′에서 `(P_max/P)^θ′`로 기술값(§1-8). **모델-무관 형태 지표** `q = [T(65,536)/65,536] / [T(8,800)/8,800]` (토큰당 비용 증가비) |
 | 맞춤 방법 | 상대오차 가중 최소제곱, 단위 = boot 중앙값 |
 | 적합도 보고 | leave-one-L-out(내부 L 4개) 상대오차, 두 round 계수 차. 채택 기준 [제안, 봉인 시 고정]: 내부 L 제외 오차 ≤ 5%. 미충족 `FORM_INADEQUATE_T2_P{P}`, 표 보간(log L) 사용 |
 | 라벨 | `q ≥ 1.10` → `PREFILL_SUPERLINEAR_SCOPED`, `q < 1.10` → `PREFILL_NEAR_LINEAR_SCOPED`, 구간이 1.10을 걸치면 `Q_UNRESOLVED` [제안]. J1 기울기(0.111 ms/토큰, L ≤ 16k, **mem 0.82 결과**)와 P=108 기울기의 차는 **기술값으로만**(차 > 5%면 `T2_J1_SLOPE_DEVIATES`, 기판·mem 차이 공시 항목이지 결과·보정 근거 아님) |
-| 인용 범위 | 이 기판·이 스택·chunk −1(PD-mux 강제 조건과 같음)에서 L ≤ 64k. "초선형/선형"은 q 라벨까지만 |
+| 인용 범위 | 이 기판·이 스택·chunk −1(PD-mux 강제 조건과 같음)·**P = 108**에서 L ≤ 64k. "초선형/선형"은 q 라벨까지만 |
 | 용도 | 후속 예측기의 SLO floor 입력과 fused 청크 비용 입력(예측기는 V PREREG). 청크 prefill 비용을 `T2(pos+c) − T2(pos)`로 근사하는 가정은 **이 문서가 검증하지 않는다** — 필요하면 V PREREG가 따로 등록 |
 
 ### 1-3. T3 — CM-4 ρ (동거 간섭, **총효과**)
@@ -144,7 +146,11 @@ I-1 클럭·전력·throttle을 창마다 기록한다. SW power cap 노출률 >
 
 - **sticky 모드 고정**: J-A·J-B·J-C의 모든 PD-mux boot는 **sticky ON**(T1과 같은 config 계열 `pdmux_n3_A_agn.yml`, D별 digest [봉인 시 기입])이다. 후속 PD-mux arm도 같다. 모드가 arm·Job 사이에서 다르면 `STICKY_MODE_MISMATCH`로 그 단위를 제외한다.
 - **실현 SM 로그 검증**: 요청 SM ≠ 실현 SM(생성 성공 ≠ 요청 수신)이므로 boot마다 첫 요청 처리 전후의 realized decode/prefill SM 로그를 읽어 요청 D·P와 비교한다(**허용 규칙 [제안, 봉인]**: A100 green-context 입도 4 SM이므로 `|실현 − 요청| ≤ 4` ∧ `실현 decode + 실현 prefill ≤ 108`이면 일치; 표의 D·P 축에는 **요청값이 아니라 실현값**을 쓴다(D=34 같은 4의 배수가 아닌 값이 반올림되는 것을 포함). 4 초과 차이면 아래 라벨). 불일치 → `SM_NOT_REALIZED_D{d}`, 그 boot의 T1·T2 값은 해당 D 항에 쓰지 않는다.
-- **`T2_P_NOT_REALIZED` 대체 측정**: 단일 요청 prefill이 sticky ON에서 `P = 108 − D`로 실제 도는지 로그로 확인한다. 아니면(안 돌면 T2의 SM 축 정의 불가) **T2′ = bs=1 decode 요청(ctx 2k)이 동거하는 상태에서 잰 단일 prefill TTFT**를 쓴다. T2′는 J-A boot마다 L ∈ {4,096, 16,384}에서 **상시 수집**(8회 중 앞 1회 제외)해 두어, 라벨이 붙어도 재부팅 없이 대체한다. 대체한 D는 `T2_FALLBACK_BS1_COEXIST_D{d}`를 달고 후속 예측기가 그 D에 한해 T2′를 쓴다(허용은 V PREREG)(estimand가 "다른 부하 없음"에서 "bs=1 동거"로 바뀐 사실을 인용 범위에 적는다). **T2′의 L 범위 [봉인]**: L ∈ {4,096, 16,384}만 측정한다. 이 범위 밖 L(예: T3의 32,768)에서 T2′를 외삽하지 않으며 `T2PRIME_L_OUT_OF_RANGE`, 해당 σ′는 `NA`. 8,192는 두 점 사이 log L 선형 보간만 허용. **σ′ 정의 [봉인]** (T2′로 대체한 D에서만): `σ′ = T_span_eng(동거, T3 창) / T2′(L, P)` — 분모가 이미 bs=1 동거 효과를 포함하므로 σ′는 그 위에 얹힌 잔여 비이며, 대체 D에서는 σ(대 단독 T2) 대신 σ′만 쓴다. 둘을 곱하거나 병용하면 간섭을 두 번 센다.
+- **T2′ = prefill SM 축의 주 측정 (rev3.4, 결정 28 A-2 — rev3.3의 `T2_P_NOT_REALIZED` 조건부 대체를 승격)**: bs=1 decode 요청 1개(입력 2,048, `max_new_tokens` 60,000, `ignore_eos`)가 decode 중인 상태에서 잰 단일 요청 prefill TTFT(L 토큰, 출력 1). decode가 바쁘면 sticky-D boot의 prefill은 그 division의 prefill 절반(P = 108 − D, 실현값은 green read-out)에서 돈다(코드 사실). **L 범위 [봉인]** = T2와 같은 {1,024, 4,096, 8,800, 16,384, 32,768, 65,536}, 한 (boot, L)당 8회, 앞 1회 제외. 수집 boot = J-A의 7개 모드 boot 전부(sticky-D 5개가 P 축, `108u`는 FIXED\_DSM 44 division의 prefill 절반(P 64), `108v`는 vanilla라 prefill이 먼저 돌아 decode가 멈추는 참조점) + D44 OFF 진단 boot(L 4,096·16,384).
+- **성립 확인 라벨 [봉인]**: 클라이언트 측(decode 토큰이 prefill 송신 전과 첫 토큰 뒤에 모두 도착)은 rep 유효 조건이고, **엔진 측** = 쓰인 rep마다 TTFT 구간의 가운데 절반 [t\_send + 0.25·TTFT, t\_send + 0.75·TTFT] 안에서 시작한 `decode_forward`(`bs_real` ≥ 1)가 1개 이상이면 `T2P_COEXIST_CONFIRMED_L{L}`, 아니면 `T2P_COEXIST_UNCONFIRMED_L{L}`(구간 양 끝은 대기와 vanilla에서 prefill 직후의 decode step을 담으므로 뺀다). OFF boot는 `NOT_COLLECTED`. 적합·θ′에는 CONFIRMED 점만 쓴다. `108v`는 UNCONFIRMED가 정상(prefill-first)이며 그 값은 "decode 1개가 대기 중"인 참조다.
+- **적합(기술값)**: (boot마다) T2와 같은 이차형·채택 기준(내부 L 제외 오차 ≤ 5%, 미충족 `FORM_INADEQUATE_T2P_P{P}`), q 지표. P 의존 `θ′` = 같은 Job·round의 sticky-D boot들에서 ln(T2′(L,P)/T2′(L,P\_max))를 ln(P\_max/P)에 원점 통과 최소제곱(P\_max = D16 boot의 실현 P). 라벨 없음.
+- **estimand 변경 공시 [봉인 문장]**: "rev3.4부터 prefill SM 축(P = 108 − D)의 값은 '다른 부하가 없을 때'가 아니라 **bs=1 decode 요청 1개가 동시에 decode 중일 때**의 단일 prefill TTFT(T2′)다. decode가 비면 이 엔진은 sticky 설정과 무관하게 108 SM으로 prefill하므로 '다른 부하 없음'과 'P < 108'은 이 엔진에서 함께 성립하지 않는다. 따라서 T2′와 T2(P = 108)의 차에는 SM 감소와 decode 1개 동거 효과가 섞여 있고, 둘을 분리하지 않는다." 라벨 `T2_FALLBACK_BS1_COEXIST_D{d}`는 폐지(모든 D가 T2′)하고, 인용 시 이 문장을 붙인다.
+- **σ′ 정의 [봉인, rev3.4 갱신]**: sticky-D boot의 T3 σ는 `σ′ = T_span_eng(동거, T3 창) / T2′(L, P)`만 쓴다 — 분모가 이미 bs=1 동거를 포함한다. T3의 L 32,768은 이제 T2′ 범위 안이고, 8,192는 4,096·8,800 사이 log L 선형 보간만 허용한다. 범위 밖은 `T2PRIME_L_OUT_OF_RANGE`, σ′ `NA`. σ(대 T2)와 σ′를 곱하거나 병용하지 않는다.
 
 
 ## 2. 측정 방식
@@ -172,7 +178,7 @@ boot마다 warm-up(8요청, 같은 형상) → correctness(sticky 배선 로그 
 - I-4·I-6은 PD-mux와 vanilla에 같은 래퍼로 걸린다(§3-4, arm 대칭). I-4의 ITL p95 +1.0%[측정, agnostic 분해 Job]는 T1 값 자체에 들어가 있다 — T1은 "I-4 ON 상태의 decode step 시간"이다.
 
 **(2) Job 내 ON/OFF 진단 짝 [봉인, 셀·boot 수는 [제안]]** — 계측 효과를 같은 Job 안에서 재서 공시만 한다(보정 계수로 쓰지 않는다, 결정 22).
-- J-A1·J-A2: OFF 진단 boot 2개(D=44 PD-mux, `108v`), 각 셀 6개 = T1 (8, 2k)·(32, 2k)·(32, 8k)·(64, 8k)·(96, 2k)·(16, 16k) + T2 L ∈ {4,096, 16,384}. 같은 Job의 ON boot 같은 셀과 비교한다.
+- J-A1·J-A2: OFF 진단 boot 2개(D=44 PD-mux, `108v`), 각 셀 6개 = T1 (8, 2k)·(32, 2k)·(32, 8k)·(64, 8k)·(96, 2k)·(16, 16k) + L ∈ {4,096, 16,384}(rev3.4: `108v` OFF는 T2, D44 OFF는 **T2′** — ON D44 boot에 T2가 없으므로). 같은 Job의 ON boot 같은 셀과 비교한다. rev3.4 실행 가능성 규칙(§3-1)에서 (64, 8k)는 `INFEASIBLE_BY_RULE`(ON 짝도 비실행)이라 실제 비교 셀은 5개다. OFF boot의 T1 창은 같은 ramp 인식 규칙을 클라이언트 측으로 적용한다(합류 = 마지막 요청의 첫 토큰, 그 요청 토큰 16개 제외 후 300 토큰).
 - J-H(rev3.2, 구 J-B1): OFF 진단 boot 1개(dummy a4 vanilla, 같은 셀). Nano `108v`의 OFF 짝은 J-A에 있다.
 - J-C: OFF 진단 boot 1개(TP2, T1 셀 3개). [결정 23 — O-14 포함]
 - 산출(기술값): 셀별 `ln(client 간격 중앙값_ON / client 간격 중앙값_OFF)`와 T2 TTFT 비. 2차 estimand(클라이언트 간격)만 비교할 수 있다(OFF boot에는 `S_eng`가 없다). 라벨: 모든 셀에서 |비| ≤ 1.5%면 `INSTR_EFFECT_SMALL`, 아니면 `INSTR_EFFECT_DISCLOSED`(값 표 병기). 어느 쪽이든 T1–T4 값은 고치지 않는다.
@@ -216,18 +222,27 @@ boot마다 warm-up(8요청, 같은 형상) → correctness(sticky 배선 로그 
 
 ## 3. 셀 격자, 실행 가능성, 계측
 
-### 3-1. 실행 가능성 규칙(데이터 전에 등록, 부팅 로그로 평가)
-셀 (bs, c)는 `bs ≤ cap` ∧ `bs ∈ 캡처 bs 목록` ∧ `bs·(c + O + X) ≤ 0.95 × KV 풀 토큰(부팅 로그)`일 때만 실행한다. **O·X [제안, 봉인]**: 창 출력 O = 332 토큰(처음 16 제외 + 창 300 + 여유 16), 입력 c\_in = c − X, X = 166(창 중앙에서 batch 평균 ctx가 c가 되도록 O/2). 따라서 O + X = 498이며 아래 ○/× 판정은 이 값으로 재평가해도 같다(경계: (96, 8k) = 834k ≤ 852k, (64, 12k) = 818k ≤ 852k, (48, 16k) = 810k ≤ 852k ○) 아닌 셀은 실패가 아니라 `INFEASIBLE_BY_RULE`로 표에 남긴다. cap 128 부팅의 KV 풀 [유도 895,781 토큰 = (풀 33.04 GB − 128×143.5 MB)/16,379 B; 부팅 로그가 대체]: [CS-OK] 33.04는 풀 GB 값(우연 일치)
+### 3-1. 실행 가능성 규칙(데이터 전에 등록, 부팅 로그로 평가) — rev3.4 개정(결정 28 A-1)
+
+**규칙 [봉인]**: 셀 (bs, c)는 `bs ≤ cap` ∧ `bs ∈ 캡처 bs 목록` ∧ **`bs·(c_in + O_cell) ≤ 0.95 × KV 풀 토큰(부팅 로그)`** ∧ `c_in + O_cell ≤ context_length`일 때만 실행한다. c\_in = c − 166. 아니면 `INFEASIBLE_BY_RULE` 행으로 남긴다(실패 아님, 조용한 누락 금지).
+- **근거(코드)**: `ignore_eos` 요청의 입장 검사(`schedule_policy.py` `add_one_req_ignore_eos` :641-695)는 남은 토큰(`max_new_tokens` − 생성 수)을 오름차순으로 놓고 남은 풀이 버티는지 본다. 앞선 요청이 몇 토큰을 생성했는지는 타이밍에 달려 있으므로, 타이밍 없이 성립하는 충분조건은 "아직 아무도 생성하지 않았다"는 최악, 즉 모든 요청이 입력 + `max_new_tokens` 전량을 예약하는 경우다. rev3.3의 `bs·(c + O + X)`(O+X = 498)는 출력 332 고정을 전제한 식이었다.
+- **셀별 출력 길이 O\_cell [봉인]** = 332(= 16 + 300 + 16) + **ramp 상한**. ramp 상한 = burst의 prefill batch(FIFO, `max_prefill_tokens` 16,384를 넘기는 요청 뒤에서 닫힘)를 j = 1…m으로 놓고, decode가 도는 batch 2…m에 대해 Σ⌈T\_span\_ub(j) / T\_step\_lb(j)⌉ + 2/batch. T\_span\_ub(j) = (9 ms + 0.111 ms/토큰 × Σ L\_i·(1 + γ·L\_i/α)) × (108/P\_min)^1 [CM-2 floor(J1, CONFIRMED) + analytic\_terms의 attention 이차항 α·γ, prefill SM 선형 비례], T\_step\_lb(j) = a0 + b0·bs\_run + c0·bs\_run·c\_in [analytic\_terms HBM roofline 하한, 2.039 TB/s; bs\_run = 앞선 batch까지 합류한 요청 수]. P\_min = 그 셀을 등록한 J-A PD-mux 모드의 동시 prefill SM 중 최소(기본 격자 44 = 108 − 64, 16k 열·추가 셀 64 = D44·`108u`, 어느 모드도 등록하지 않은 OFF 셀 (16, 16k)은 44). **J-A는 같은 셀에 7개 모드(108v 포함) 모두 같은 O**(D 사다리 안에서 요청이 동일). J-H1(전 boot vanilla)은 O = 332 + 64(vanilla는 prefill-first라 ramp ≈ 0, 도착 지연 여유 64). 상한의 가정(prefill이 CM-2 floor의 SM 선형 비례보다 느리지 않음, σ = 1)이 깨지면 `RAMP_EXCEEDED_BOUND`로 드러난다. 값은 하네스 `ct_spec.o_tokens`가 계산하며 spec digest로 봉인된다 [유도, 측정 아님].
+- **O\_cell 표 [유도, cap 128]** (J-A): bs 1 전부·(8, 2k) 332 · (8, 8k) 1,583 · (8, 16k) 2,410 · (8, 32k) 7,334 · (8, 64k) 14,089 · (32, 2k) 1,464 · (32, 8k) 6,173 · (32, 16k) 8,290 · (48, 2k) 2,078 · (48, 8k) 8,428 · (48, 16k) 11,037 · (96, 2k) 3,441 · (96, 8k) 13,300 · (64, 8k) 7,202 · (64, 12k) 10,437 · (88, 8k) 8,807 · (88, 9k) 9,926 · (16, 16k, OFF) 6,691.
+
+cap 128 부팅의 KV 풀 [유도 895,781 토큰 = (풀 33.04 GB − 128×143.5 MB)/16,379 B; 부팅 로그가 대체; 조성 프로브 실측 dummy a4 886,804]: [CS-OK] 33.04는 풀 GB 값(우연 일치)
 
 | bs \ c | 2k | 8k | 16k | 32k | 64k |
 |---|---|---|---|---|---|
 | 1 | ○ | ○ | ○* | ○ | ○ |
-| 8 | ○ | ○ | ○* | ○ | ○ (526k) |
-| 32 | ○ | ○ | ○* | × (1.06M) | × |
-| 48 | ○ | ○ | ○* | × | × |
-| 96 | ○ | ○ (820k) | × | × | × |
+| 8 | ○ | ○ | ○* | ○ (320k) | **×** (c\_in + O = 79,459 > context 73,728) |
+| 32 | ○ | ○ (454k) | ○* (784k) | × | × |
+| 48 | ○ | ○ (790k) | **×** (1.31M) | × | × |
+| 96 | ○ (511k) | **×** (2.05M) | × | × | × |
+| 64 (추가) | — | **×** (975k) | — | — | — |
+| 88 (O-12) | — | **×** (1.48M) | — | — | — |
 
-(\* = D ∈ {24, 34, 44, 108u, 108v}만.) 실행 셀 수/D: 16·64 → 14, 나머지 5모드(24·34·44·108u·108v) → 18, 합 **118**개(rev1의 "100개"는 오기, T1 "240 셀실행"은 118×2 ≈ 236과 맞음) + **신규 (64, 8k)·(64, 12k) × 5모드 = 10** → **128개 고유 셀**(bs 64 줄은 신규 셀 8k·12k만 두며 2k·16k·32k·64k는 두지 않는다 — 16k는 64×16k = 1.05M > 0.95 × 895k = 851k라 ×. 12k는 64 × (12,288 + O + X) ≤ 851k, 즉 O + X ≤ 약 1,000 토큰일 때만 ○ — 이 경계 셀은 규칙 평가에 맡기고 비실행이면 `INFEASIBLE_BY_RULE`). 비어 있는 (32, 32k)·(48, 32k)·(·, 64k at bs ≥ 32)는 **cap 128·mem 0.6에서 KV가 모자라서가 아니라 격자 규칙상** 비운 것이며, 그 영역의 모델 값은 외삽이다(§1-1 인용 범위). **shape C 영역 입력 보존(결정 17, V PREREG 몫의 사실 정리)**: (64, 8k)·(64, 12k) 셀과 16k 열은 후속 V가 shape C 영역(bs 약 55–88, c 약 7–20k)에서 볼록껍질 안에 있도록 둔 것이다. 정정 사실: ① shape C KV 상한은 `floor((풀 − cap·s) / (k·(L̄_in + 4,096)))`이며 `L̄_in` = 7.1k(COMPARE :15)에서 cap 124 → **83**, cap 101 → 101이다. 감사 1회차의 "약 60"은 출력을 두 번 센 오류, rev1의 "약 81"은 다른 읽기였고 **83으로 해소**한다. ② rev2의 "어느 읽기든 KV가 cap\_V보다 먼저 구속한다"는 **폐기**한다 — R = 4,096이면 cap\_V(101)와 KV 상한(101)이 같다; 83은 cap 124 가정에서만 맞는다. ③ 캡처 목록으로는 bs 83 → 88(§3-4)인데 T1 격자에는 bs 88 줄이 없고 bs 96의 c\_max는 8,192라, shape C 평균 ctx(약 9.1k, 감사 2회차 계산)는 격자 볼록껍질 밖이다. 이 외삽 위험은 **여기서 판정하지 않고** 사용자 결정 O-12로 올린다.
+(\* = D ∈ {24, 34, 44, 108u, 108v}만. 굵은 × = rev3.3에서 ○였다가 rev3.4에서 ×.) (64, 12k) **×** (1.44M), (88, 9k) × (rev3.3에서도 ×). **셀 수 변화**: 모드별 실행 셀 rev3.3 → rev3.4 = D16·D64 14 → **12**, 나머지 5모드 21(18 + 신규 2 + O-12 1) → **15**, 합 133 → **99**(라운드당). 잃는 셀 = (8, 64k)·(96, 8k)·(48, 16k)·(64, 8k)·(64, 12k)·(88, 8k) — **shape C 보간용으로 넣은 bs 48–88 셀 전부**(rev2 감사 MAJOR 4·O-12 (b))가 다시 볼록껍질 밖으로 나간다. 실제 ctx 축은 ramp 때문에 명목보다 커진다(볼록껍질의 ctx 상단이 약간 올라감). **민감도 [유도]**: ramp 상한에 σ = 1.25를 곱하면 92셀(추가로 (48, 8k) ×), σ = 1.5면 87셀(추가로 (32, 16k) ×). 등록값은 σ = 1. J-H1 공통 5셀(bs 8 × {2k, 8k, 32k}, bs 32 × {2k, 8k})은 O = 396에서도 네 변형 모두 ○(최소 풀 a31 약 298k: (8, 32k) 264k ≤ 283k, (32, 8k) 270k)로 **불변**, Llama 칸의 ×도 불변. **이 손실은 이 문서에서 판정하지 않고 §10 O-18(사용자 결정)로 올린다.** shape C 사실 정리(rev3의 ①–③, cap\_V 83/101)는 그대로 유효하다.
+
 ### 3-2. 새 하네스 항목(차용 목록은 §2-4, 신규 구현은 §11에 나열)
 
 ### 3-3. Job 간 정렬되는 상수
@@ -257,7 +272,7 @@ vanilla 경로에서 `decode_forward` 방출이 확인되지 않으면(`NOT_COLL
 | ① 요청당 메모리 `s + k·L` | 부팅 배너 s, k, 풀(T4a) | 같은 항: s = 0, k | 부팅 로그 사실 두 줄(s·k 값), 산술 경계 `s/k ≈ 8.8k(GB)–9.4k(GiB)`[유도] | "hybrid는 KV가 작아 배치 여유가 크다"(L≈1–1.5k에서 REFUTED, 구간 확장 금지) |
 | ② 채우기 동시 수 | 채우기 실현 동시 수(T4b) L ∈ {4k, 16k} 쪽 | 같은 L 두 점(KV 한계) | "이 스택·mem 0.6·이 풀에서 L=…일 때 측정된 최대 동시 요청 수는 Nano …, Llama …이다. 가중치 바이트가 달라 풀 크기가 다르다" — 사실 병기까지 | "hybrid가 긴 L에서 배치 여유가 더 크다"를 일반 문장으로(측정 두 L·두 모델·교락 목록 안에서만) |
 | ③ decode ctx 기울기 | `T_dec` 계수 c(`108v`; 엔진 측 시간 1차, 클라이언트 간격은 §1-7 대조 통과 bs만) | 같은 형 c, 짝 셀 9개: bs 1×{2k, 8k, 16k, 32k, 64k}, bs 8×{2k, 8k, 16k}, bs 48×{2k}. bs ≥ 8의 ≥ 32k 점은 Llama KV 풀 263,900 토큰으로 실행 불가(`INFEASIBLE_BY_RULE`) | 같은 (bs, c) 셀에서의 T\_dec 비와, 고정 bs(1, 8)에서 ctx 구간 기울기 비. 방향·형태 서술 | 층 종류 귀속("attention 4/56층이라 작다"는 [가설], 층 수·크기 교락), 크기 일반화 |
-| ④ prefill L 의존 | T2 q (P=108, vanilla chunk −1) | 같은 q | `q` 라벨 두 개의 나란히 놓기: "Nano …, Llama … (L ≤ 64k)". T2-ext 통과 시 96k–124k 점 | "Llama가 64k 넘으면 초선형"(프로브 1–2회 기술값), "hybrid prefill은 선형" 일반화 |
+| ④ prefill L 의존 | T2 q (P=108, vanilla chunk −1) | 같은 q | `q` 라벨 두 개의 나란히 놓기: "Nano …, Llama … (L ≤ 64k)" (rev3.4: T2-ext 삭제, 64k 초과 점 없음) | "Llama가 64k 넘으면 초선형"(프로브 1–2회 기술값), "hybrid prefill은 선형" 일반화 |
 | ⑤ cap 결합·거절 사유 | I-5 사유 몫(T4c): cap≡슬롯 | I-5 사유 몫: KV 위주(cap은 admission만) | 코드 사실(정적 풀, 설정으로 공시)과 사유 몫 기술값 | "슬롯 상한이 hybrid 고유"·"generic 스케줄러는 mamba state를 무시한다"·"Bullet/MuxWise가 C\_mem을 오예측한다" |
 | ⑥ decode SM 민감도 | T1의 D 축 | **대비하지 않음**(Llama는 PD-mux 없이 `108v`) | Nano 안의 γ\_j 기술값만 | Llama와의 SM 민감도 비교 |
 
@@ -283,6 +298,8 @@ vanilla 경로에서 `decode_forward` 방출이 확인되지 않으면(`NOT_COLL
 | a31 (같은 골격 Transformer) | 31 / 0 | 0 | 126,976 B/토큰 | 0 | −4.99 GB |
 
 (s = Mamba 층 수 × (ssm state 128·80·128·4 B + conv 12,288·3·2 B) ≈ 5.32 MB/층, k = attention 층 수 × 8·128·2·2 B. 원본 값은 부팅 로그 실측 s 143.5 MB·k 16,382 B와 일치.)
+
+**T1 창 규칙 [봉인, rev3.4]**: J-H1의 T1(boot A, vanilla)과 J-H2의 T1도 §1-1 "창 정의"와 같은 ramp 인식 창·실제 평균 ctx 적합·창 뒤 취소를 쓴다. J-H1은 전 boot vanilla라 O = 332 + 64 = 396(§3-1), J-H2(PD-mux)의 셀별 O는 2단계 하네스에서 같은 ramp 상한 식에 변형별 analytic\_terms 사전값(a0·b0·c0·α·γ)과 그 boot의 P(84·64)를 넣어 계산한다. 공통 비교 격자 5셀은 불변(§3-1). W-INDEP(dummy 대 real a4)·P3(c 계수)는 같은 셀의 **실제 ctx로 적합한 계수**를 비교한다.
 
 **Job J-H (단일 GPU, 계측은 §2-2′ 매트릭스)**: 변형마다 boot 3개 — (A) vanilla `108v`: T1 bs {8, 32} × ctx {2k, 8k, 32k} 6셀, T2 L {4k, 16k, 32k, 64k}(P=108), T4 부팅 배너 + 채우기 L {4k, 16k}; (B) PD-mux sticky D=24, (C) D=44 [rev3.3: 64→44]: T1 bs 32 × ctx {2k, 8k} 2셀씩 + **T3(rev3.3, 결정 25)** bs {8, 32} × L {8,192, 32,768} 4셀씩(정의·m(L)·기록 항목은 §1-3과 같음, 셀당 반복 2), TEL ON(§2-2′ T3 전용 boot 규칙 — B·C boot 모두 같은 계측 집합이라 D24 대 D44 비는 대칭). 여기에 **실가중치 원본(real a4) boot A** 1개, **Llama-3.1-8B 참조점 boot A** 1개(§4 ①–④ 칸의 기술값; T4는 배너 + 채우기 L 4k), OFF 진단 boot 1개(dummy a4 vanilla, §2-2′ (2)). 무작위화·반복은 §2-3, 셀당 반복 4.
 
@@ -373,9 +390,25 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 - OFF 진단 boot 시간(0.18 h = boot·warm-up 0.072 + T1 셀 6 × 50 s + T2 2L × 8회)은 §7-1의 임의 모형이다.
 
 
+### 7-4′. rev3.4 재계산 (결정 28) [유도 — 측정 아님, Job 크기 결정용]
+
+**모형**: §7-1의 값을 셀 단위로 조립했다 — T1 셀 = Σ prefill batch 시간(batch 1은 108 SM, 나머지는 그 모드의 동시 prefill SM P에서 §7-1 TTFT 표 × (108/P)^0.8; vanilla는 전부 108) + 합류 뒤 318 step × `(12 + 0.45·bs)·(108/D)^0.5` ms + 셀 오버헤드 15.5 s; T2 = 8 × TTFT(L) + 15 s; T2′ = 8 × TTFT(L)·(108/P)^0.8 + 16 s; T3 셀 = (decode batch ramp + m(L) × TTFT(L, P) + 300 step) × 반복 2; T4 채우기 6 min/회. 실행 셀은 §3-1 rev3.4 규칙. 가짜 엔진의 ramp는 등록 상한의 약 25–45%였다(가짜 엔진 값, 인용 불가). **비교를 위해 rev3.3 설계를 같은 모형에 넣으면** J-A1 4.69 h·J-A2 4.51 h·J-H1 3.37 h다(§7-4의 4.3·4.1·2.9는 "T1 셀 평균 50 s [임의]" 모형이라 직접 비교하지 않는다). 셀 시간은 ramp 인식 창으로 거의 변하지 않는다 — rev3.3도 ramp 동안 prefill을 기다렸고(그때는 앞선 요청이 먼저 끝나 창이 깨졌을 뿐), 합류 뒤 step 수는 332 → 318이다. J-A가 줄어든 이유는 비싼 셀((96, 8k)·(48, 16k)·(64, ·)·(88, 8k)·(8, 64k))이 실행 불가가 되고 sticky-D boot의 T2(6 L)가 빠진 몫이 T2′ 확장(2 → 6 L)보다 크기 때문이다.
+
+| Job | rev3.4 변경 | 예상 h | 하드캡(×1.2) [제안] | 예약 GPU-h |
+|---|---|---|---|---|
+| J-A1 | 셀 133 → 99, sticky-D T2 삭제, T2′ 6 L × 7 boot, T3 boot 2개 포함 | **3.4** (1단계 2.88 + T3 0.48) | 4.0 | 3.4 |
+| J-A2 | 같음(cap 불변성 boot 없음) | **3.3** (2.76 + 0.48) | 3.9 | 3.3 |
+| J-H1 | 창 규칙만(O 396, 셀 불변) | **3.4** | 4.1 | 3.4 |
+| J-H2 | T1 2셀·T3의 decode batch ramp 반영(a4 속도로 근사) | **2.2** | 2.6 | 2.2 |
+| J-B2 | 변경 없음 | 1.1 | 1.3 | 1.1 |
+| J-C | 변경 없음(단, T1 셀 실행 가능성은 2단계에서 rev3.4 규칙으로 재평가 — §10 O-19) | 2.7 | 3.2 | 5.4 |
+| **합계** | | | **약 22.3 GPU-h(캡 합)** | **약 18.8 GPU-h** |
+
+모든 Job의 기대 시간이 4.4 h 목표 안이라 **Job 분할은 필요 없다**. `costterms_job.sh`의 하드캡을 J-H1 245 min · J-A r1 243 min · r2 234 min으로 고쳤다(J-B2 78 min 불변). 모형 값이므로 Workspace smoke에서 boot·셀·ramp 시간을 실측하면 봉인 전에 다시 계산한다(§12 항목 11).
+
 ## 8. 선행 조건 순서
 
-1. **GPU correctness gate — 분할 gate G-α·G-β PASS + G-γ 특성화 종결** (결정 16, rev3.1에서 결정 22로 개정: G-α PASS 28/28·G-β PASS(engsync, 2026-10-20); G-γA `OBSERVER_EFFECT`·G-γF `UNRESOLVED_POWER`는 PASS가 아니며 "관측자 효과 특성화 완료"로 닫았다. 계측 효과는 §2-2′로 공시한다). 앞 단계가 PASS일 때만 다음 단계를 제출한다. 세부는 `GATE_SPLIT_DESIGN_2026-10-20.md`(재서술하지 않음). 엔진 묶음 = I-5 동기화 + Triton causal\_conv1d **int64 패치(`chunk_offset`·`sequence_start_index` 두 곳)** + I-4·I-6; 브랜치 `engine-sync-i5-int64` `34f2acc8`, 예상 ENGINE\_DIGEST `99bbef91…`(30항목). 사후에 digest를 바꾸면 gate는 G-α부터 다시다. 이 PREREG가 gate에 요구하는 것: ON/OFF 출력 일치, 관측자 TOST(±1.5%, 계열별 — rev3.1: 미충족, 결정 22로 특성화 대체), 변이 시험(I-4 host 시간 변이가 FAIL해야 함), 패치 반증(패치 후 fused\_sym 96k·124k 통과 + 되돌리면 95,100 재실패 + 단위 시험(12288, 95100)·stride 22,656 + 94,784/94,800 경계), stride 11,328 변형(§5-3 (가)), **vanilla 경로(Nano·Llama)에서 `decode_forward` 방출**(§1-7), 실현 SM 로그(§1-8). **96k·124k 확장(T2-ext, TP2 96k)은 int64 gate 통과 조건부(O-3)** — rev3.1: 패치 반증은 G-β PASS로 충족(γ와 무관).
+1. **GPU correctness gate — 분할 gate G-α·G-β PASS + G-γ 특성화 종결** (결정 16, rev3.1에서 결정 22로 개정: G-α PASS 28/28·G-β PASS(engsync, 2026-10-20); G-γA `OBSERVER_EFFECT`·G-γF `UNRESOLVED_POWER`는 PASS가 아니며 "관측자 효과 특성화 완료"로 닫았다. 계측 효과는 §2-2′로 공시한다). 앞 단계가 PASS일 때만 다음 단계를 제출한다. 세부는 `GATE_SPLIT_DESIGN_2026-10-20.md`(재서술하지 않음). 엔진 묶음 = I-5 동기화 + Triton causal\_conv1d **int64 패치(`chunk_offset`·`sequence_start_index` 두 곳)** + I-4·I-6; 브랜치 `engine-sync-i5-int64` `34f2acc8`, 예상 ENGINE\_DIGEST `99bbef91…`(30항목). 사후에 digest를 바꾸면 gate는 G-α부터 다시다. 이 PREREG가 gate에 요구하는 것: ON/OFF 출력 일치, 관측자 TOST(±1.5%, 계열별 — rev3.1: 미충족, 결정 22로 특성화 대체), 변이 시험(I-4 host 시간 변이가 FAIL해야 함), 패치 반증(패치 후 fused\_sym 96k·124k 통과 + 되돌리면 95,100 재실패 + 단위 시험(12288, 95100)·stride 22,656 + 94,784/94,800 경계), stride 11,328 변형(§5-3 (가)), **vanilla 경로(Nano·Llama)에서 `decode_forward` 방출**(§1-7), 실현 SM 로그(§1-8). **96k·124k 확장(T2-ext, TP2 96k)은 int64 gate 통과 조건부(O-3)** — rev3.1: 패치 반증은 G-β PASS로 충족(γ와 무관). rev3.4: T2-ext는 삭제(결정 28 A-6); TP2 96k 점은 context 73,728과 충돌하므로 2단계에서 처리(§10 O-19).
 2. **하네스**: 새 하네스(§11) CPU 시험·변이·가짜 엔진 e2e → Workspace smoke(비측정, 수치 인용 금지).
 3. **감사**: 항 측정은 결정 17에 따라 추가 규칙층 감사 없이 봉인 후보. 하네스층 감사는 별도(최대 2회).
 4. **봉인 S1**: 규칙·하네스·엔진 digest(gate 통과 digest)·config digest. 이 문서의 [봉인 시 기입] 칸을 채운다.
@@ -387,7 +420,7 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 ## 9. 라벨과 금지 문안
 
 ### 9-1. 라벨
-항: `FORM_INADEQUATE_T1_D{d}`·`FORM_INADEQUATE_T2_P{P}`·`CAP_INVARIANT`/`CAP_DEPENDENT`·`CLOCK_SENSITIVE`·`PREFILL_SUPERLINEAR_SCOPED`/`PREFILL_NEAR_LINEAR_SCOPED`/`Q_UNRESOLVED`·`T2_J1_SLOPE_DEVIATES`·`RHO_D_INTERP`·`RHO_CLAMPED`·`SIGMA_NOT_COLLECTED`·`T3_WINDOW_SHORT`·**`CMEM_ACCT_HELD`/`CMEM_ACCT_MISS`/`CMEM_ORIG_OVERPREDICTS`**·`C_MEM_DRIFT`·`FILL_INCOMPLETE`·`INFEASIBLE_BY_RULE`·`TP2_NOT_BOOTABLE`·`CLIENT_ENGINE_AGREE_bs{b}`/`CLIENT_ENGINE_MISMATCH_bs{b}`/`CLIENT_ONLY_UNVERIFIED`·`SM_NOT_REALIZED_D{d}`/`T2_P_NOT_REALIZED`/`T2_FALLBACK_BS1_COEXIST_D{d}`/`T2PRIME_L_OUT_OF_RANGE`/`STICKY_MODE_MISMATCH`·`I4_UNRESOLVED`. 승계: SP 계열 `SUBSTRATE_WARNING`(드라이버 변경)·`SUBSTRATE_UNCHECKED`·`SERVER_DEATH`(죽은 (arm, cap, L)은 `UNRESOLVED(arm_death)`로 두고 다른 arm 결과를 지우지 않으며 일반화하지 않는다)·`CLIENT_ERROR`·`SERVER_ERROR_HI`·`NOT_COLLECTED`(I-4·I-6, vanilla 경로 미방출 포함).
+항: `FORM_INADEQUATE_T1_D{d}`·`FORM_INADEQUATE_T2_P{P}`·`CAP_INVARIANT`/`CAP_DEPENDENT`·`CLOCK_SENSITIVE`·`PREFILL_SUPERLINEAR_SCOPED`/`PREFILL_NEAR_LINEAR_SCOPED`/`Q_UNRESOLVED`·`T2_J1_SLOPE_DEVIATES`·`RHO_D_INTERP`·`RHO_CLAMPED`·`SIGMA_NOT_COLLECTED`·`T3_WINDOW_SHORT`·**`CMEM_ACCT_HELD`/`CMEM_ACCT_MISS`/`CMEM_ORIG_OVERPREDICTS`**·`C_MEM_DRIFT`·`FILL_INCOMPLETE`·`INFEASIBLE_BY_RULE`·`TP2_NOT_BOOTABLE`·`CLIENT_ENGINE_AGREE_bs{b}`/`CLIENT_ENGINE_MISMATCH_bs{b}`/`CLIENT_ONLY_UNVERIFIED`·`SM_NOT_REALIZED_D{d}`/`T2PRIME_L_OUT_OF_RANGE`/`STICKY_MODE_MISMATCH`·`I4_UNRESOLVED`. **rev3.4 추가**: 창 상태 `FOREIGN_RESIDUAL`·`WINDOW_SHORT`·`WINDOW_CONTAMINATED`·`RECORDER_UNPROVEN`·`CG_UNPROVEN`·`PAD_MISMATCH`·`BENCH_INVALID`·`RETRACT`, 창 라벨 `CTX_OFF_NOMINAL`·`RAMP_EXCEEDED_BOUND`, T2′ `T2P_COEXIST_CONFIRMED_L{L}`/`T2P_COEXIST_UNCONFIRMED_L{L}`·`FORM_INADEQUATE_T2P_P{P}`. **rev3.4 폐지**: `T2_P_NOT_REALIZED`·`T2_FALLBACK_BS1_COEXIST_D{d}`(모든 sticky-D boot가 T2′), `CTX_UNREALIZED`(띠는 라벨로). 승계: SP 계열 `SUBSTRATE_WARNING`(드라이버 변경)·`SUBSTRATE_UNCHECKED`·`SERVER_DEATH`(죽은 (arm, cap, L)은 `UNRESOLVED(arm_death)`로 두고 다른 arm 결과를 지우지 않으며 일반화하지 않는다)·`CLIENT_ERROR`·`SERVER_ERROR_HI`·`NOT_COLLECTED`(I-4·I-6, vanilla 경로 미방출 포함).
 
 ### 9-2. 금지 문안 (승계 + 이 PREREG)
 - "hybrid는 KV가 작아 배치 여유가 크다"(L≈1–1.5k에서 REFUTED, 구간 확장 금지; 긴 L의 방향은 T4 측정 후 ②의 틀로만)
@@ -407,6 +440,8 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 
 추가 금지(V 분리에 따른 것): "이 항 값으로 G·λ\*\_SLO·goodput을 설명/예측했다"(조립은 이 문서 밖), "항 측정이 비용 모델을 검증했다".
 
+추가 금지(결정 28, rev3.4): "T1은 명목 ctx(2k·8k·…)에서 잰 값이다"(적합 입력·인용 ctx는 창 안 실제 평균 ctx, 명목 c는 셀 라벨) · 실제 ctx 병기 없이 "(bs, 8k) 셀의 decode step은 …ms" · "T2는 P = 108 − D에서의 단독 prefill 시간이다"/"T2로 prefill SM 민감도를 쟀다"(T2는 P = 108만, SM 축은 T2′) · T2′를 "다른 부하 없는 prefill 시간"으로 서술(bs=1 decode 동거 공시 문장 없이) · T2′ − T2를 "SM 감소 효과"로만 읽기(동거 효과가 섞임) · `T2P_COEXIST_UNCONFIRMED` 점(특히 `108v`)을 동시 실행 상태의 값으로 인용 · "ramp 상한이 실제 ramp를 예측했다"(사전값에서 유도한 보수적 상한일 뿐) · 가짜 엔진의 VALID 셀 수·ramp 비율을 실엔진 기대치로 인용 · rev3.3 설계로 잰 값과 rev3.4 값을 같은 표에 섞기.
+
 ## 10. 열린 결정 (항 측정 해당분, 사용자 몫, 권고 병기)
 **닫힌 것**: 결정 16 O-1·O-2·O-3, 결정 17(V 분리), **결정 18(2026-10-20): O-4 (가)·O-6 순차·O-8 포함·O-9′ [제안]값 봉인·O-10′ 유지·O-12 (b)·O-13 확장 안 함** — 아래 각 항목은 권고 원문 기록용이며 모두 권고안대로 닫혔다. 결정 22(계측 정책) → §2-2′. V 전용 O-5·O-7·O-9(V 부분)·O-10(k=5·소거 변형)·O-11은 V PREREG로 이월.
 - **O-4** TP2 96k 점의 의미: (가) gate 단위 시험(두 곳 패치 변형)으로 경계 이동 + 서빙 96k는 정상 점 / (나) 패치 토글 env. **권고 (가)** — 서버 사망 위험·digest 증가 없음.
@@ -419,7 +454,9 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 - **O-15 (rev3.1 신규, 결정 23: (b))** J-B 4.9 h(목표 4.4 초과): (a) 그대로(하드캡 5.9 h < 6 h) / (b) T4 boot 10개를 J-B2로 분리(H 대비와 T4는 서로 다른 Job이 되나 T4 산식 대조는 boot 단위라 영향 없음, Llama T4 1 boot는 H 대비 ⑤ 때문에 J-B1에 남김). **권고 (b)** — 외부 정지 선례(약 9.5 h)보다 아래라도 재개 단위가 작을수록 잃는 셀이 적다; 예약 합계는 거의 같다(boot 공통 오버헤드 없음).
 - **O-16 (결정 26: 포함; rev3.2 신규; rev3.3에서 B·C boot는 T3 때문에 필수가 되어 D 축 비용은 T1 2셀분만 남음)** J-H의 D 축: 포함 / 제외. **권고 포함** — Claim E 첫 화살표(층 종류별 SM 스케일링)에 대한 유효 측정이 0건인 상태에서 같은 골격 조성으로 재는 유일한 경로다(기술값, 판정 아님).
 - **O-17 (rev3.2 신규, 결정 26: 제외)** 순수 SSM 극한 a0(attention 0 / Mamba 31) 추가(+약 0.5 GPU-h): **권고 제외** — H의 질문은 attention 비율이 커질 때의 변화이며, a0은 Nano 원본보다 attention 쪽 반대편이라 우선순위가 낮다.
-- **O-13 (신규)** T2′ L 범위(4k·16k)를 T3의 L(8,192·32,768)까지 확장(+약 0.25 GPU-h): **권고 확장하지 않음** — T2′는 `T2_P_NOT_REALIZED` 조건부 대체이고 현재 규칙(밖은 `NA`)이 정직하다.
+- **O-13 (신규)** T2′ L 범위(4k·16k)를 T3의 L(8,192·32,768)까지 확장(+약 0.25 GPU-h): **권고 확장하지 않음** — T2′는 `T2_P_NOT_REALIZED` 조건부 대체이고 현재 규칙(밖은 `NA`)이 정직하다. → **결정 28 A-2로 대체**(T2′가 주 측정, L은 T2 격자 전체).
+- **O-18 (rev3.4 신규, 사용자 결정 대기)** ramp 인식 창의 예약 비용으로 shape C 보간 셀(bs 48–88: (48, 16k)·(64, 8k)·(64, 12k)·(88, 8k))과 (96, 8k)·(8, 64k)가 `INFEASIBLE_BY_RULE`이 된다(§3-1). 선택: (a) 그대로 두고 V PREREG에서 볼록껍질 밖 외삽으로 공시 / (b) Workspace smoke에서 실제 ramp를 재고 그 값 × 여유로 상한을 봉인 전에 다시 정한다(실제 step이 HBM roofline 하한보다 길면 상한이 줄어 일부 셀 회복; smoke 값은 설계 입력이지 인용 불가) / (c) 요청별 `max_new_tokens` 차등(먼저 입장하는 요청만 긴 출력) — 예약이 대략 절반으로 줄지만 도착 순서가 보장되지 않아 순서가 어긋나면 창이 깨진다(검출은 됨) / (d) 등록 노브 변경(예: T1 boot의 `--mem-fraction-static`)은 결정 13과 충돌. **권고 (b)** — 데이터 전 설계 보정이고 상한의 보수성(σ = 1에서도 하한 step 가정)이 손실의 주원인이다.
+- **O-19 (rev3.4 신규, 2단계)** J-C(TP2)의 T1 셀과 96k 점: TP2 boot의 context가 73,728이면 96k 입력이 불가하고, T1 셀의 실행 가능성도 rev3.4 규칙(TP2 풀)으로 다시 평가해야 한다. 2단계 하네스 작성 때 표와 함께 올린다.
 
 ## 11. [봉인 시 기입]과 하네스
 
@@ -428,10 +465,35 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 감사 쟁점은 두지 않는다(결정 17: 항 측정은 caveat를 붙여 봉인 후보). 단 gate·하네스층 감사와 result-analyst 분석은 별도다.
 
 ### 11-2. 하네스층
-신규 구현(차용 목록은 §2-4·§2-5): ① 새 디렉터리의 spec 주도 셀 클라이언트(T1 burst + 창, T3 동거, T2 단일 요청·T2′, T4 채우기) ② 창 추출·`S_eng` 계산(규칙 §1) ③ 클라이언트 토큰 간격 추정량 + **엔진 대 클라이언트 대조기(§1-7)** ④ 실행 가능성 평가(부팅 로그 → `INFEASIBLE_BY_RULE`, O+X = 498) ⑤ 캡처 bs 목록 검사(`ABORT_CG_BS`) + CG canary ⑥ D=64 index를 포함한 config와 실현 SM 배선 검사(`STICKY_WIRED_D64`; `SM_NOT_REALIZED` §1-8) ⑦ 엔진 모드 두 개(`108u`, `108v`)와 Llama 부팅 ⑧ T4 부팅 로그 파서 + 채우기 판정(**산식 A·B 동시 예측 기록, 부팅 직후 봉인**) ⑨ round 역순·boot 무작위 순서 ⑩ 맞춤 코드(상대오차 가중 최소제곱, LOO, 외삽 시험) + 분석기(fetch 전 커밋) ⑪ `SERVER_DEATH` 분류 ⑫ 재개·DONE 마커·sha ⑬ T3 분포·정지·σ·`n_it_obs` 기록기.
-변이 시험 후보: "cap 48 부팅인데 128로 기록" · "캡처 목록 밖 bs를 통과" · "ctx 띠 off-by-one" · "`INFEASIBLE_BY_RULE` 셀을 조용히 누락" · "T2에 첫 요청 워밍업 포함" · "Llama 셀을 Nano로 라벨" · "`108u`와 `108v` 합침" · "클라이언트 토큰 간격을 엔진 `S_eng`로 표기" · "`decode_fwd_host_ms`를 `decode_fwd_gpu_ms`로 대체" · "제외 round를 적합에 사용" · "대기 요청을 running으로 셈(T4)" · "TP2 앵커를 cap 128로 부팅" · "T4 예약 R을 0으로 둠(원식 회귀)" · "n\_A를 비대칭 형식으로 계산" · "불일치 bs를 제외하지 않음(§1-7)" · "정지(>5× 중앙값) 계산에서 중앙값을 동거 창으로 잡음" · "σ′와 σ를 함께 곱함" · "요청 SM을 실현 SM으로 기록".
+신규 구현(차용 목록은 §2-4·§2-5): ① 새 디렉터리의 spec 주도 셀 클라이언트(T1 burst + ramp 인식 창 + 창 뒤 HTTP 취소(rev3.4), T3 동거, T2 단일 요청·T2′(동거 확인), T4 채우기) ② 창 추출·`S_eng` 계산(규칙 §1) ③ 클라이언트 토큰 간격 추정량 + **엔진 대 클라이언트 대조기(§1-7)** ④ 실행 가능성 평가(부팅 로그 → `INFEASIBLE_BY_RULE`, O+X = 498) ⑤ 캡처 bs 목록 검사(`ABORT_CG_BS`) + CG canary ⑥ D=64 index를 포함한 config와 실현 SM 배선 검사(`STICKY_WIRED_D64`; `SM_NOT_REALIZED` §1-8) ⑦ 엔진 모드 두 개(`108u`, `108v`)와 Llama 부팅 ⑧ T4 부팅 로그 파서 + 채우기 판정(**산식 A·B 동시 예측 기록, 부팅 직후 봉인**) ⑨ round 역순·boot 무작위 순서 ⑩ 맞춤 코드(상대오차 가중 최소제곱, LOO, 외삽 시험) + 분석기(fetch 전 커밋) ⑪ `SERVER_DEATH` 분류 ⑫ 재개·DONE 마커·sha ⑬ T3 분포·정지·σ·`n_it_obs` 기록기.
+변이 시험 후보(rev3.4 추가, 하네스 `ct_mutants.py` M21–M26 전부 검출): "창을 첫 decode부터 시작(ramp 미인식)" · "명목 c로 적합" · "취소 누락으로 다음 셀에 잔여 요청" · "T2를 sticky-D boot에서 P=108−D로 라벨" · "T2′ 동거 미확인을 확인으로 라벨" · "ramp 상한 없이 O = 332 고정". 기존 후보: "cap 48 부팅인데 128로 기록" · "캡처 목록 밖 bs를 통과" · "ctx 띠 off-by-one" · "`INFEASIBLE_BY_RULE` 셀을 조용히 누락" · "T2에 첫 요청 워밍업 포함" · "Llama 셀을 Nano로 라벨" · "`108u`와 `108v` 합침" · "클라이언트 토큰 간격을 엔진 `S_eng`로 표기" · "`decode_fwd_host_ms`를 `decode_fwd_gpu_ms`로 대체" · "제외 round를 적합에 사용" · "대기 요청을 running으로 셈(T4)" · "TP2 앵커를 cap 128로 부팅" · "T4 예약 R을 0으로 둠(원식 회귀)" · "n\_A를 비대칭 형식으로 계산" · "불일치 bs를 제외하지 않음(§1-7)" · "정지(>5× 중앙값) 계산에서 중앙값을 동거 창으로 잡음" · "σ′와 σ를 함께 곱함" · "요청 SM을 실현 SM으로 기록".
 
-## 12. 봉인 체크리스트 (rev3.1, 2026-10-21)
+### 11-3. 하네스 해석 A-3…A-26 (rev3.4 명시, 결정 28 — 하네스층 감사 대상)
+
+결정 28이 닫은 것: A-1(§1-1 창 정의), A-2(§1-2·§1-8), A-6(T2-ext 삭제), A-11(J-H boot A의 T4 거절 사유는 I-5 OFF라 `NOT_COLLECTED`, P2는 동시 수만 필요). 나머지는 하네스가 택한 읽기이며 봉인 전 하네스층 감사가 검토한다(값은 `ct_spec.py` `AMBIGUITIES`와 같은 문장).
+- **A-3** O-12 (b): (88, 8k)·(88, 9k)를 등록하고 규칙이 판정; (80, 9k) 대체는 사용자 결정 없이는 돌리지 않는다. rev3.4에서는 셋 다 `INFEASIBLE_BY_RULE`(§3-1, O-18).
+- **A-4** `new_token_ratio`는 v0.5.10 부팅 로그에 없다 → `min(SGLANG_INIT_NEW_TOKEN_RATIO(0.7) × schedule_conservativeness, 1)`로 유도해 기록, `split_forward_token_budget`은 config 파일에서 읽는다.
+- **A-5** `108u`(sticky OFF)에도 `PDMUX_R2_FIXED_DSM` 값이 필요 → 44(동시 실행 시 그 division, T2′의 P 64).
+- **A-7** T2′ decode 요청: 입력 2,048, `max_new_tokens` 60,000(8 × 64k prefill을 P 44에서 버팀 [유도]), 측정 후 취소. **A-23** 그 decode의 ctx는 8회 prefill 동안 2k + 생성 수로 올라간다.
+- **A-8** boot·셀 순서 seed = SHA-256("cost|order|<라벨>") 앞 8바이트.
+- **A-9** 외삽 시험: 등록 순서대로 첫 가능한 수준(32k → 8k, 96 → 32), 남는 수준 < 2면 `NA`이며 `NA`는 실패로 세지 않는다. rev3.4: 수준은 명목 c.
+- **A-10** J-H1 "셀당 반복 4" = boot A 안에서 T1 셀마다 창 4개, 셀 값 = 창 중앙값들의 중앙값.
+- **A-12** 라벨 집계: AGREE는 (모델, 모드, bs)의 모든 창, W-INDEP는 모든 공통 셀·L, `CAP_INVARIANT`의 "3%"는 |ln| ≤ ln 1.03.
+- **A-13** `FILL_INCOMPLETE` = n\_real번째로 이른 첫 토큰이 가장 이른 완료보다 늦음, n\_real = 채우기 동안 엔진 `bs_real` 최대.
+- **A-14** J-H T2 격자에 8,800이 없어 q는 적합 이차식에서(`Q_FROM_FIT`). **A-15** `Q_UNRESOLVED` 구간 = boot별 q의 [min, max](bootstrap 미등록).
+- **A-16** fused\_sym T4 boot(O-8) = cap 48 boot와 같은 cap·네 L.
+- **A-17** γ\_j의 기준 = `108u`(PD-mux 엔진), D 축은 실현값.
+- **A-18** "창 300" = 300 S\_eng 간격 = r0 + 16 뒤 301 기록.
+- **A-19** P1·P2는 HELD 라벨만 등록 → 미충족은 `held = False`로 보고(새 라벨 만들지 않음).
+- **A-20** 실현 SM = 시작 시 1회 green read-out(`PDMUX_GREEN_READOUT`); PREREG의 "첫 요청 전후"를 이렇게 읽는다.
+- **A-21** warm-up·greedy·CG canary 실패는 abort가 아니라 problem으로 기록.
+- **A-22** `CLOCK_SENSITIVE`(창별 I-1)는 1단계에서 계산하지 않는다(clk.csv는 wall-clock, 창은 monotonic) — 2단계 또는 분석기에서 시각 정렬 후.
+- **A-24** TEL OFF에서의 창 안 동거 판정 = `mode` mixed · `bs_real` ≠ bs · 클라이언트 합류 수 ≠ bs(+0.25 s 여유); 잔여 요청 = `bs_real` > min(bs, 합류 수) (§1-1 창 정의 (4)–(5)).
+- **A-25** T2′ 엔진 확인 = TTFT 가운데 절반 안의 `decode_forward`(§1-8).
+- **A-26** 실제 ctx는 클라이언트 수신 토큰으로 계산 → 엔진보다 진행 중 토큰 1개 늦을 수 있다(적합 b에 최대 1 × c, 가짜 엔진에서 확인).
+- 상수 [제안, 봉인 시 확인]: 창 제외 상한 30, 합류 여유 0.25 s, ramp 여유 2 step/batch, vanilla ramp 64, σ = 1·θ = 1, 취소 시점 319 토큰.
+
+## 12. 봉인 체크리스트 (rev3.1, 2026-10-21; rev3.4 갱신 2026-10-22)
 
 | # | 항목 | 상태 | 막는 것 |
 |---|---|---|---|
@@ -441,7 +503,7 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 | 4 | engsync → main 병합 | **완료** — squash `ca1f30e7`(2026-10-21), 원자료 271개 약 217 MB 저장소 밖 이동(`engine_gate_prep/EXCLUDED_RAW_engsync_2026-10-21.sha256`), `.gitignore` 보강 | — |
 | 5 | ENGINE\_DIGEST 통과값 | **확인** — 병합 후 main 소스로 재구성한 트리(scratch 사본)에서 `99bbef91fe68…4325`, gate Job `digests.json`과 일치. 봉인 S1에 기입 | — |
 | 6 | gate 설계 문서 main 경로 | 완료 — `workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md` | — |
-| 7 | 신규 하네스(§11-2 ①–⑬ + §2-2′ 계측 매트릭스 검사·OFF 진단 boot) 구현·CPU 시험·변이 | 미착수 | 4 |
+| 7 | 신규 하네스(§11-2 ①–⑬ + §2-2′ 계측 매트릭스 검사·OFF 진단 boot) 구현·CPU 시험·변이 | **1단계 완료**(`af8c0500`) + **결정 28 반영**(rev3.4: ramp 인식 창·셀별 O·취소·실제 ctx 적합·T2 P=108 한정·T2′ 6 L·동거 확인, 변이 28/28 검출). 2단계(T3·J-H2·J-C) 미착수 | 4 |
 | 8 | 하네스 경로·보고서 파일명 | 대기 | 7 |
 | 9 | config digest(D=64 index 추가본, D별) | 대기 | 7 |
 | 10 | 하네스층 감사(최대 2회) | 대기 | 7 |
@@ -451,5 +513,8 @@ boot 200 s, boot별 warm-up 60 s(=boot당 0.072 h), 셀 오버헤드 15 s, decod
 | 14 | CPU preflight → `launch.sh` dry-run → 사용자 승인 → `--submit` | 대기 | 13 |
 | 15 | (rev3.2) 조성 변형 부팅 프로브(비측정, `scripts/vessl/compo_probe.sh`) PASS — 변형 a4·a13·a22·a31이 dummy·PD-mux·cudagraph로 부팅, 배너 s·k 대조 | **완료 — 전 단계 PASS**(run `compo_probe_20261021T131621Z`, 커밋 `1d7261c6`) | 사용자 승인(GPU) |
 | 16 | (rev3.2) O-16·O-17 | 완료(결정 26: O-16 포함, O-17 제외) | — |
+| 17 | (rev3.4) 결정 28 A-1·A-2·A-6·A-11 반영 | 완료(§1-1·§1-2·§1-8·§3-1·§4′·§7-4′·§9·§11-3) | — |
+| 18 | (rev3.4) O-18 shape C 셀 손실 처리 | **사용자 결정 대기**(권고 (b) smoke 실측으로 ramp 상한 재보정) | 13 |
+| 19 | (rev3.4) A-3…A-26 해석 하네스층 감사 | 대기(항목 10과 함께) | 13 |
 
 하네스 변이 시험 추가(§2-2′): "T3 셀을 T1 boot에서 실행(TEL 비대칭)" · "OFF 진단 boot에 계측 env가 남음" · "OFF 진단 비로 T1 값을 보정".

@@ -61,8 +61,21 @@ def _feat(form, bs, ctx, beta=None):
     return [1.0, bs ** beta, bs * ctx]
 
 
+def _btc(points):
+    """Points are (bs, ctx, T_ms) or (bs, actual ctx, T_ms, nominal c) (rev3.4): the fit reads the first three."""
+    return [(p[0], p[1], p[2]) for p in points]
+
+
+def _level(p, axis):
+    """Extrapolation-test level of a point: the NOMINAL c (cell label) on the ctx axis, bs on the bs axis."""
+    if axis == "ctx":
+        return p[3] if len(p) > 3 else p[1]
+    return p[0]
+
+
 def fit_form(points, form):
-    """points = [(bs, ctx, T_ms)] -> {coef, beta, pred(bs, ctx)} or None."""
+    """points = [(bs, ctx, T_ms[, c_nominal])] -> {coef, beta, pred(bs, ctx)} or None."""
+    points = _btc(points)
     if form == "F3":
         best = None
         for beta in S.F3_BETA_GRID:
@@ -95,7 +108,7 @@ def loo(points, form):
     errs = []
     if len(points) - 1 < N_PARAMS[form]:
         return None
-    for i, (b, c, t) in enumerate(points):
+    for i, (b, c, t) in enumerate(_btc(points)):
         f = fit_form(points[:i] + points[i + 1:], form)
         if f is None:
             return None
@@ -107,7 +120,7 @@ def extrap_test(points, form, axis):
     """Drop one level of `axis` (registered order, fallback) and predict it.  NA if fewer than 2 levels remain or the
     remaining points cannot identify the form."""
     order = S.T1_EXTRAP_CTX_ORDER if axis == "ctx" else S.T1_EXTRAP_BS_ORDER
-    key = (lambda p: p[1]) if axis == "ctx" else (lambda p: p[0])
+    key = lambda p: _level(p, axis)   # noqa: E731
     levels = {key(p) for p in points}
     for lev in order:
         if lev not in levels or len(levels - {lev}) < 2:
@@ -119,7 +132,8 @@ def extrap_test(points, form, axis):
         f = fit_form(keep, form)
         if f is None:
             continue
-        return {"level": lev, "max_err": max(rel_err(f["pred"](b, c), t) for b, c, t in drop), "n_dropped": len(drop)}
+        return {"level": lev, "max_err": max(rel_err(f["pred"](b, c), t) for b, c, t in _btc(drop)),
+                "n_dropped": len(drop)}
     return {"level": None, "max_err": None, "NA": True}
 
 
@@ -127,7 +141,7 @@ def assess(points, form):
     f = fit_form(points, form)
     if f is None:
         return None
-    resid = [rel_err(f["pred"](b, c), t) for b, c, t in points]
+    resid = [rel_err(f["pred"](b, c), t) for b, c, t in _btc(points)]
     lo = loo(points, form)
     ex = {ax: extrap_test(points, form, ax) for ax in ("ctx", "bs")}
     ex_vals = [e["max_err"] for e in ex.values() if e.get("max_err") is not None]

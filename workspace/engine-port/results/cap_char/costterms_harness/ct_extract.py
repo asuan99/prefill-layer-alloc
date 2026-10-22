@@ -9,10 +9,16 @@
   decode_forward records + client cell record -> T1 window, S_eng, client gap, ctx band, I-4 resolution
   client    -> T2 / T2' TTFT, T4 fill (n_real, FILL_INCOMPLETE, reason shares)
 
-Window rule (PREREG §1, concept from the N2 reducer, code new): the all-running stretch of the burst = maximal run of
-decode_forward records with consecutive `seq`, mode decode and bs_real == bs; drop the first TRIM_ITERS records, keep
-WINDOW_ITERS + 1 records (= WINDOW_ITERS intervals).  S_eng = t_host_start differences of consecutive records (ms).
-Batch-mean ctx at a record = mean over the bs requests of (c_in + tokens the client had received by t_host_start).
+Window rule (PREREG rev3.4 §1-1, decision 28 A-1, ramp-aware): r0 = the first decode_forward record of the cell with
+bs_real == bs; the window = records r0 + TRIM_ITERS .. r0 + TRIM_ITERS + WINDOW_ITERS (301 records, consecutive seq =
+WINDOW_ITERS intervals).  Interval k (record k -> k + 1) is EXCLUDED and counted when record k has bs_real != bs, mode
+!= decode (mixed = prefill tokens in the forward) or fewer than bs cell requests had their first token by t_host_start
+(client-side join confirmation -- the only co-residence evidence with TEL OFF; in PD-mux a request enters the decode
+batch only after its split-prefill span ends, so a joined cell cannot have one of its own prefills in flight).  S_eng =
+median of the included t_host_start differences (ms).  Actual ctx = mean over the included interval-start records of
+the batch-mean (c_in + tokens the client had received by t_host_start); it is the fit input, the nominal c is the
+cell label.  Foreign requests (a previous cell not cancelled) = a decode_forward whose bs_real exceeds min(bs, cell
+requests joined by t_host_start + JOIN_SLACK_S) -- e.g. a decode step before the cell's first token.
 """
 from __future__ import annotations
 
@@ -280,37 +286,24 @@ def bs_capturable(bs, cap_list):
     return cap_list is not None and bs in cap_list
 
 
-def feasibility(cells, f, cap):
-    """Every registered T1 cell -> {cell, run: bool, label, reasons}.  Inputs come from the boot log only."""
+def feasibility(cells, f, cap, o_map):
+    """Every registered T1 cell -> {cell, O, run: bool, label, reasons}.  Inputs: the boot log and the registered
+    per-cell O (`o_map[(bs, c)]`, ct_spec.o_tokens) only."""
     mt = mem_terms(f)
     kv = mt["kv_tokens"] if mt else None
     cap_list = f.get("capture_bs")
     out = []
     for bs, c in cells:
-        reasons = []
-        if bs > cap:
-            reasons.append(f"bs {bs} > cap {cap}")
-        if not bs_capturable(bs, cap_list):
-            reasons.append(f"bs {bs} not in capture list")
-        if kv is None:
-            reasons.append("no KV pool banner")
-        elif bs * (c + S.O_PLUS_X) > S.FEASIBLE_KV_FRAC * kv:
-            reasons.append(f"bs*(c+O+X) = {bs * (c + S.O_PLUS_X)} > {S.FEASIBLE_KV_FRAC} x {kv}")
-        if c - S.X_TOKENS + S.O_TOKENS > S.CONTEXT_LENGTH:
-            reasons.append("c_in + O > context_length")
-        out.append({"bs": bs, "c": c, "run": not reasons, "label": None if not reasons else "INFEASIBLE_BY_RULE",
+        O = o_map[(bs, c)]
+        reasons = S.feasible_cell(bs, c, O, kv, cap, bs_capturable(bs, cap_list))
+        out.append({"bs": bs, "c": c, "O": O, "run": not reasons, "label": None if not reasons else "INFEASIBLE_BY_RULE",
                     "reasons": reasons})
     return out
 
 
 def t1_cells_for_mode(mode):
     """Registered T1 cells of one J-A mode (§1-1 grid + 16k column + rev2 extra + O-12)."""
-    cells = [(bs, c) for bs in S.BS_GRID for c in S.C_GRID]
-    if mode in S.C16K_MODES:
-        cells += [(bs, S.C16K) for bs in S.BS_GRID]
-    if mode in S.EXTRA_MODES:
-        cells += list(S.EXTRA_CELLS) + list(S.O12_CELLS) + (list(S.O12_ALT_CELLS) if S.O12_ALT_ENABLED else [])
-    return cells
+    return S.ja_cells_for_mode(mode)
 
 
 # ============================================================================ T4 predictions (§1-4)
@@ -349,6 +342,14 @@ def request_ok(r, n_in, n_out):
             and r.get("finish") == "length")
 
 
+def burst_request_ok(r, n_in, O):
+    """T1 burst request (rev3.4): no error, exact input, at least ABORT_AT_TOKENS tokens, ended by the harness abort
+    or (zero-ramp cells) by length; never more than O."""
+    n = r.get("completion_tokens") or 0
+    return (r.get("error") is None and r.get("prompt_tokens") == n_in and S.ABORT_AT_TOKENS <= n <= O
+            and r.get("finish") in ("abort", "length"))
+
+
 # ============================================================================ T1 window
 def decode_records(records):
     return sorted((e for e in records if e.get("event") == "decode_forward"), key=lambda e: e["seq"])
@@ -359,37 +360,22 @@ def schema_problems(records):
     return [f"{len(bad)} decode records with an unknown schema"] if bad else []
 
 
-def full_batch_runs(recs, bs):
-    runs, cur = [], []
-    for e in recs:
-        ok = e.get("mode") == "decode" and e.get("bs_real") == bs
-        if ok and cur and e["seq"] == cur[-1]["seq"] + 1:
-            cur.append(e)
-        elif ok:
-            if cur:
-                runs.append(cur)
-            cur = [e]
-        else:
-            if cur:
-                runs.append(cur)
-            cur = []
-    if cur:
-        runs.append(cur)
-    return runs
+def first_reach_index(recs, bs):
+    """Index of the first record with bs_real == bs (decode or mixed); None if never reached."""
+    return next((i for i, e in enumerate(recs) if e.get("bs_real") == bs), None)
 
 
 def t1_window(records, cell, capture, log_slice="", presorted=False):
-    """One T1 window.  `records` = the boot's decode_forward records (any order), `cell` = the client cell record.
-    Status priority: BENCH_INVALID > RETRACT > RECORDER_UNPROVEN > WINDOW_SHORT > CTX_UNREALIZED > CG_UNPROVEN >
-    PAD_MISMATCH > VALID.  I4_UNRESOLVED is a label (§3-4), never an exclusion."""
+    """One T1 window (rev3.4).  `records` = the boot's decode_forward records, `cell` = the client cell record.
+    Status priority: BENCH_INVALID > FOREIGN_RESIDUAL > RETRACT > RECORDER_UNPROVEN > WINDOW_SHORT >
+    WINDOW_CONTAMINATED > CG_UNPROVEN > PAD_MISMATCH > VALID.  Labels (never exclusions): I4_UNRESOLVED,
+    CTX_OFF_NOMINAL, RAMP_EXCEEDED_BOUND."""
     bs, c, c_in = cell["bs"], cell["c"], cell["c_in"]
     reqs = cell["requests"]
-    out = {"cell_id": cell["cell_id"], "bs": bs, "c": c, "status": None, "labels": [], "detail": ""}
-    if len(reqs) != bs or not all(request_ok(r, c_in, cell["O"]) for r in reqs):
-        out.update(status="BENCH_INVALID", detail="request error / token counts / finish")
-        return out
-    if re.search(r"#retracted_reqs: *[1-9]", log_slice or ""):
-        out.update(status="RETRACT", detail="retract line in the cell's log slice")
+    O = cell.get("O", S.O_BASE)
+    out = {"cell_id": cell["cell_id"], "bs": bs, "c": c, "O": O, "status": None, "labels": [], "detail": ""}
+    if len(reqs) != bs or not all(burst_request_ok(r, c_in, O) for r in reqs):
+        out.update(status="BENCH_INVALID", detail="request error / input tokens / fewer than ABORT_AT_TOKENS tokens")
         return out
     t0, t1 = cell["t_first_send"], cell["t_end"]
     src = records if presorted else decode_records(records)
@@ -400,18 +386,31 @@ def t1_window(records, cell, capture, log_slice="", presorted=False):
             break
         if t0 <= e["t_host_start"] <= t1:
             recs.append(e)
-    runs = [r for r in full_batch_runs(recs, bs)]
-    run = max(runs, key=len) if runs else []
-    need = S.TRIM_ITERS + S.WINDOW_ITERS + 1
-    if len(run) < need:
-        # was the stretch cut by a seq gap (recorder) rather than by the burst?
-        allb = [e for e in recs if e.get("mode") == "decode" and e.get("bs_real") == bs]
-        gap = any(b["seq"] != a["seq"] + 1 for a, b in zip(allb, allb[1:])) and len(allb) >= need
-        out.update(status="RECORDER_UNPROVEN" if gap else "WINDOW_SHORT",
-                   detail=f"all-running run {len(run)} < {need} records" + (" (seq gap)" if gap else ""),
-                   run_len=len(run))
+    firsts = sorted(r["chunks"][0][0] for r in reqs)
+
+    def joined(t):
+        return bisect.bisect_right(firsts, t + S.JOIN_SLACK_S)
+    foreign = [e for e in recs if (e.get("bs_real") or 0) > min(bs, joined(e["t_host_start"]))]
+    if foreign:
+        out.update(status="FOREIGN_RESIDUAL", n_foreign_records=len(foreign),
+                   detail=f"{len(foreign)} decode records with bs_real above the joined cell requests (or > {bs})")
         return out
-    win = run[S.TRIM_ITERS:need]
+    if re.search(r"#retracted_reqs: *[1-9]", log_slice or ""):
+        out.update(status="RETRACT", detail="retract line in the cell's log slice")
+        return out
+    i0 = first_reach_index(recs, bs)
+    out["ramp_records"] = i0
+    out["ramp_steps_ub"] = O - S.O_BASE
+    if i0 is not None and i0 > O - S.O_BASE:
+        out["labels"].append("RAMP_EXCEEDED_BOUND")
+    need = S.TRIM_ITERS + S.WINDOW_ITERS + 1
+    win = recs[i0 + S.TRIM_ITERS:i0 + need] if i0 is not None else []
+    if len(win) < S.WINDOW_ITERS + 1:
+        out.update(status="WINDOW_SHORT", detail=f"{'bs never reached' if i0 is None else f'{len(win)} records after reach + trim'} < {S.WINDOW_ITERS + 1}")
+        return out
+    if any(b["seq"] != a["seq"] + 1 for a, b in zip(win, win[1:])):
+        out.update(status="RECORDER_UNPROVEN", detail="seq gap inside the window")
+        return out
     drops = [e.get("dropped_events") for e in win if e.get("dropped_events") is not None]
     if drops and max(drops) != min(drops):
         out.update(status="RECORDER_UNPROVEN", detail="dropped_events grew inside the window")
@@ -420,35 +419,53 @@ def t1_window(records, cell, capture, log_slice="", presorted=False):
     if any(b <= a for a, b in zip(ts, ts[1:])):
         out.update(status="RECORDER_UNPROVEN", detail="non-increasing t_host_start")
         return out
-    s_eng = [(b - a) * 1000.0 for a, b in zip(ts, ts[1:])]
     per_req = [([ch[0] for ch in r["chunks"]], [ch[1] for ch in r["chunks"]]) for r in reqs]
 
     def received(tl, cl, t):
         i = bisect.bisect_right(tl, t)
         return cl[i - 1] if i else 0
-    ctx = [sum(c_in + received(tl, cl, t) for tl, cl in per_req) / bs for t in ts]
-    ctx_p50 = median(ctx)
+    excl = {"bs_change": 0, "mixed": 0, "join_unconfirmed": 0}
+    s_eng, ctx = [], []
+    for e, nxt in zip(win, win[1:]):
+        t = e["t_host_start"]
+        why = None
+        if e.get("bs_real") != bs:
+            why = "bs_change"
+        elif e.get("mode") != "decode":
+            why = "mixed"
+        elif joined(t) != bs:
+            why = "join_unconfirmed"
+        if why:
+            excl[why] += 1
+            continue
+        s_eng.append((nxt["t_host_start"] - t) * 1000.0)
+        ctx.append(sum(c_in + received(tl, cl, t) for tl, cl in per_req) / bs)
+    n_ex = sum(excl.values())
     gpu = [e.get(I4_FIELD) for e in win]
     host = [e.get(I4_HOST_FIELD) for e in win]
     resolved = sum(1 for g in gpu if g is not None) / len(gpu)
     gaps = client_gaps(reqs, ts[0], ts[-1])
-    out.update(S_eng_ms=median(s_eng), n_intervals=len(s_eng), ctx_p50=ctx_p50,
+    ctx_mean = sum(ctx) / len(ctx) if ctx else None
+    out.update(S_eng_ms=median(s_eng) if s_eng else None, n_intervals=len(s_eng), n_excluded=n_ex, excluded=excl,
+               ctx_mean=ctx_mean, ctx_p50=median(ctx) if ctx else None,
                gpu_ms=median([g for g in gpu if g is not None]) if resolved else None,
                host_ms=median([h for h in host if h is not None]),
                i4_resolved=resolved, client_gap_ms=median(gaps) * 1000.0 if gaps else None, n_client_gaps=len(gaps),
-               seq_range=(win[0]["seq"], win[-1]["seq"]), t_range=(ts[0], ts[-1]),
+               seq_range=(win[0]["seq"], win[-1]["seq"]), reach_seq=recs[i0]["seq"], t_range=(ts[0], ts[-1]),
                bs_padded=sorted({e.get("bs_padded") for e in win}), graph=sorted({str(e.get("graph")) for e in win}),
                s_eng_source="decode_forward.t_host_start", raw_s_eng_ms=s_eng)
     if resolved < S.I4_RESOLVED_MIN:
         out["labels"].append("I4_UNRESOLVED")
-    if abs(ctx_p50 - c) > S.CTX_BAND:
-        out.update(status="CTX_UNREALIZED", detail=f"ctx p50 {ctx_p50:.1f} outside {c} +- {S.CTX_BAND}")
+    if ctx_mean is not None and abs(ctx_mean - c) > S.CTX_BAND:
+        out["labels"].append("CTX_OFF_NOMINAL")
+    if n_ex > S.WINDOW_EXCL_MAX or not s_eng:
+        out.update(status="WINDOW_CONTAMINATED", detail=f"{n_ex} excluded intervals > {S.WINDOW_EXCL_MAX}: {excl}")
         return out
     if any(e.get("graph") != "hit" for e in win):
         out.update(status="CG_UNPROVEN", detail="eager forward inside the window")
         return out
     exp = padded_bs(capture, bs)
-    if any(e.get("bs_padded") != exp for e in win):
+    if any(e.get("bs_padded") != exp for e in win if e.get("bs_real") == bs):
         out.update(status="PAD_MISMATCH", detail=f"bs_padded {out['bs_padded']} != expected {exp}")
         return out
     out["status"] = "VALID"
@@ -456,23 +473,29 @@ def t1_window(records, cell, capture, log_slice="", presorted=False):
 
 
 def client_only_window(cell):
-    """OFF diagnostic boots (no decode_forward): steady-state client gap over the all-running stretch, trimmed like the
-    engine window (first TRIM_ITERS tokens of the last-starting request skipped, WINDOW_ITERS tokens kept)."""
+    """OFF diagnostic boots (no decode_forward): the same ramp-aware rule on the client side.  Reach = the last
+    request's first token (all bs joined); TRIM_ITERS tokens of that request are skipped and WINDOW_ITERS more must
+    arrive; the window must close before any request ended by length (abort ends them all afterwards)."""
     reqs = cell["requests"]
-    if len(reqs) != cell["bs"] or not all(request_ok(r, cell["c_in"], cell["O"]) for r in reqs):
-        return {"cell_id": cell["cell_id"], "status": "BENCH_INVALID"}
-    # same stretch rule as the engine window, counted in tokens of the LAST-starting request: its first token opens
-    # the all-running stretch, TRIM_ITERS tokens are skipped and WINDOW_ITERS more must arrive before any request ends
-    t_first_done = min(r["chunks"][-1][0] for r in reqs)
+    O = cell.get("O", S.O_BASE)
+    base = {"cell_id": cell["cell_id"], "bs": cell["bs"], "c": cell["c"], "O": O, "labels": []}
+    if len(reqs) != cell["bs"] or not all(burst_request_ok(r, cell["c_in"], O) for r in reqs):
+        return dict(base, status="BENCH_INVALID")
+    ended = [r["chunks"][-1][0] for r in reqs if r.get("finish") == "length"]
+    t_end_ok = min(ended) if ended else float("inf")
     last = max(reqs, key=lambda r: r["chunks"][0][0])
     ch = last["chunks"]
     i0, i1 = S.TRIM_ITERS, S.TRIM_ITERS + S.WINDOW_ITERS
-    if len(ch) <= i1 or ch[i1][0] >= t_first_done:
-        return {"cell_id": cell["cell_id"], "status": "WINDOW_SHORT", "bs": cell["bs"], "c": cell["c"]}
+    if len(ch) <= i1 or ch[i1][0] >= t_end_ok:
+        return dict(base, status="WINDOW_SHORT")
     t_lo, t_hi = ch[i0][0], ch[i1][0]
     gaps = client_gaps(reqs, t_lo, t_hi)
-    return {"cell_id": cell["cell_id"], "status": "VALID", "client_gap_ms": median(gaps) * 1000.0,
-            "n_client_gaps": len(gaps), "bs": cell["bs"], "c": cell["c"]}
+    pts = [ch[k][0] for k in range(i0, i1)]
+    ctx = [sum(cell["c_in"] + tokens_by(r["chunks"], t) for r in reqs) / cell["bs"] for t in pts]
+    ctx_mean = sum(ctx) / len(ctx)
+    if abs(ctx_mean - cell["c"]) > S.CTX_BAND:
+        base["labels"].append("CTX_OFF_NOMINAL")
+    return dict(base, status="VALID", client_gap_ms=median(gaps) * 1000.0, n_client_gaps=len(gaps), ctx_mean=ctx_mean)
 
 
 # ============================================================================ T2 / T2'
@@ -486,6 +509,26 @@ def t2_value(seq_rec, warmup=S.T2_WARMUP_REPS):
         return {"L": seq_rec["L"], "status": "INVALID", "n_used": len(used), "n_bad": len(bad)}
     return {"L": seq_rec["L"], "status": "VALID", "ttft_ms": median([r["ttft_s"] * 1000.0 for r in used]),
             "n_used": len(used), "used_reps": [r["rep"] for r in used]}
+
+
+def t2p_coexist(seq_rec, dec_records, warmup=S.T2_WARMUP_REPS):
+    """Decision 28 A-2: was the bs=1 decode actually executing while each used prefill ran?  Engine evidence = a
+    decode_forward with bs_real >= 1 whose t_host_start lies in the middle of the TTFT (T2P_CONFIRM_WINDOW).
+    -> {label, n_dec_by_rep}; NOT_COLLECTED without engine records (OFF boots)."""
+    if not dec_records:
+        return {"label": "NOT_COLLECTED", "n_dec_by_rep": None}
+    ts = [e["t_host_start"] for e in dec_records]
+    n_by = {}
+    for r in seq_rec["reps"]:
+        if r["rep"] < warmup or r.get("t_first") is None:
+            continue
+        ttft = r["t_first"] - r["t_send"]
+        lo, hi = (r["t_send"] + f * ttft for f in S.T2P_CONFIRM_WINDOW)
+        i, j = bisect.bisect_left(ts, lo), bisect.bisect_right(ts, hi)
+        n_by[r["rep"]] = sum(1 for e in dec_records[i:j] if (e.get("bs_real") or 0) >= 1)
+    ok = bool(n_by) and all(v >= 1 for v in n_by.values())
+    return {"label": f"T2P_COEXIST_{'CONFIRMED' if ok else 'UNCONFIRMED'}_L{seq_rec['L']}", "n_dec_by_rep": n_by,
+            "confirmed": ok}
 
 
 # ============================================================================ T4 fill

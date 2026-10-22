@@ -39,7 +39,7 @@ SCENARIOS = {
     "JAF": {"job": "J-A", "truth": dict(FAST_PF, realize={"34": 36, "24": 16})},
     "JB2": {"job": "J-B2", "truth": {}},
     "CG": {"job": "J-TEST", "truth": {"capture_max": 48}},        # plan: cg_plan() (one cap-128 boot)
-    "JA0": {"job": "J-A", "truth": {}, "boots": ["ja1_D44", "ja1_108v"]},   # default prefill speed: A-1 ramp
+    "JA0": {"job": "J-A", "truth": {}, "boots": ["ja1_D44", "ja1_108u", "ja1_108v"]},   # default prefill: A-1 ramp
 }
 
 
@@ -98,9 +98,10 @@ def raw_seng(run, bid, seq_range):
     return X.median(d)
 
 
-def synth_window(c, c_in, bs=4, n=S.O_TOKENS, step=0.01):
-    """Synthetic all-running burst: record k at t=k*step, every request has k-1 tokens at record k (ctx_k = c_in+k-1);
-    the extractor's window keeps k = TRIM+1 .. TRIM+WINDOW+1 so ctx p50 = c_in + TRIM + WINDOW/2."""
+def synth_window(c, c_in, bs=4, n=S.O_BASE, step=0.01):
+    """Synthetic zero-ramp burst: record k at t=k*step (bs_real = bs from record 1 = first reach), every request has
+    k-1 tokens at record k (ctx_k = c_in+k-1); the window keeps records 1+TRIM .. 1+TRIM+WINDOW and averages ctx over
+    the WINDOW interval-start records, so ctx_mean = c_in + TRIM + (WINDOW-1)/2."""
     recs = [{"event": "decode_forward", "record_schema": X.DECODE_SCHEMA, "seq": k, "mode": "decode", "bs_real": bs,
              "bs_padded": bs, "graph": "hit", "t_host_start": k * step, "decode_fwd_gpu_ms": 9.0,
              "decode_fwd_host_ms": 0.5, "dropped_events": 0} for k in range(1, n)]
@@ -125,7 +126,7 @@ def o_cap48(run, A):
 def o_capture_feasibility(_run=None, _A=None):
     f = {"kv_cache_tokens": 10 ** 7, "kv_k_gib": 1.0, "kv_v_gib": 1.0, "capture_bs": [1, 2, 4, 8, 12, 16, 24, 32, 40, 48],
          "max_mamba_cache_size": None}
-    rows = X.feasibility([(64, 2048), (8, 2048)], f, 128)
+    rows = X.feasibility([(64, 2048), (8, 2048)], f, 128, {(64, 2048): S.O_BASE, (8, 2048): S.O_BASE})
     bad = []
     if rows[0]["run"] or rows[0]["label"] != "INFEASIBLE_BY_RULE":
         bad.append("bs 64 (not in the capture list) was allowed to run")
@@ -140,16 +141,18 @@ def o_cg_abort(run, A):
         ["cap-128 boot without bs 64/96 in the capture list was not aborted (ABORT_CG_BS)"]
 
 
+CTX_MEAN_OFFSET = 16 + (300 - 1) / 2       # independent restatement of the window: trim 16, 300 intervals
+
+
 def o_ctx_band(_run=None, _A=None):
+    """rev3.4: the band is a LABEL (CTX_OFF_NOMINAL, |actual mean - c| > 64), never an exclusion."""
     bad = []
     c = 8192
-    for delta, want in ((64, "VALID"), (-64, "VALID"), (65, "CTX_UNREALIZED"), (-65, "CTX_UNREALIZED")):
-        c_in = c + delta - (S.TRIM_ITERS + S.WINDOW_ITERS / 2)
-        recs, cell = synth_window(c, int(c_in) if float(c_in).is_integer() else c_in)
+    for delta, off in ((64, False), (-64, False), (65, True), (-65, True)):
+        recs, cell = synth_window(c, c + delta - CTX_MEAN_OFFSET)
         w = X.t1_window(recs, cell, [1, 2, 4, 8])
-        p50 = w.get("ctx_p50")
-        if w["status"] != want:
-            bad.append(f"ctx p50 {p50} (c{delta:+d}) -> {w['status']} != {want}")
+        if w["status"] != "VALID" or ("CTX_OFF_NOMINAL" in w["labels"]) != off:
+            bad.append(f"ctx mean {w.get('ctx_mean')} (c{delta:+d}) -> {w['status']} {w['labels']}")
     return bad
 
 
@@ -161,7 +164,8 @@ def o_infeasible_rows(run, A):
     ll = [v for k, v in A["tables"]["t1"].items() if "|llama|" in k]
     if ll:
         kv = raw_kv_tokens(run, "jh1_llama")
-        want = sum(1 for b, c in S.JH_T1_CELLS if b * (c + S.O_PLUS_X) > 0.95 * kv)
+        o_van = 332 + 64                                    # PREREG rev3.4 §3-1: vanilla O = O_BASE + 64
+        want = sum(1 for b, c in S.JH_T1_CELLS if b * (c - 166 + o_van) > 0.95 * kv)
         if ll[0]["n_infeasible"] != want:
             bad.append(f"llama infeasible rows {ll[0]['n_infeasible']} != {want}")
     else:
@@ -335,6 +339,92 @@ def o_sealed(run, A):
     return bad or ([] if any(v.get("t4_fills") for v in A["boots"].values()) else ["no fills"])
 
 
+def _raw_dec(run, bid):
+    return sorted((json.loads(x) for x in (Path(run) / "boots" / bid / "decode_probe.jsonl").read_text().splitlines()
+                   if '"decode_forward"' in x), key=lambda e: e["seq"])
+
+
+def _raw_cells(run, bid):
+    p = Path(run) / "boots" / bid / "cells.jsonl"
+    return [json.loads(x) for x in p.read_text().splitlines() if x.strip()] if p.exists() else []
+
+
+def o_window_reach(run, A):
+    """Decision 28 A-1, from the raw records: every feasible T1 cell of the PD-mux boots of JA0 is VALID and its window
+    starts TRIM records after the cell's first record with bs_real == bs (ramp-aware), with bs_real == bs throughout."""
+    bad = []
+    for bid in ("ja1_D44", "ja1_108u"):
+        v = A["boots"].get(bid) or {}
+        raw = _raw_dec(run, bid)
+        feas = [r for r in v.get("feasibility", []) if r["run"]]
+        cells = {(c["bs"], c["c"]): c for c in _raw_cells(run, bid) if c["kind"] == "t1"}
+        wins = {(w["bs"], w["c"]): w for w in v.get("t1_windows", [])}
+        if not feas or len(wins) != len(feas):
+            bad.append(f"{bid}: {len(wins)} windows for {len(feas)} feasible cells")
+        for key, w in wins.items():
+            if w.get("status") != "VALID":
+                bad.append(f"{bid} {key}: {w.get('status')}")
+                continue
+            c = cells[key]
+            inside = [e for e in raw if c["t_first_send"] <= e["t_host_start"] <= c["t_end"]]
+            reach = next(e["seq"] for e in inside if e["bs_real"] == key[0])
+            lo, hi = w["seq_range"]
+            if lo != reach + 16 or hi != reach + 316:
+                bad.append(f"{bid} {key}: window {lo}-{hi}, raw first reach {reach}")
+            if any(e["bs_real"] != key[0] for e in inside if lo <= e["seq"] <= hi):
+                bad.append(f"{bid} {key}: bs_real != bs inside the window")
+    return bad[:6]
+
+
+def o_fit_truth(run, A):
+    """108u decodes on 108 SM when no span is in flight: the F1 fit must return the fake's (a108, b108, c108)."""
+    t = dict(__import__("ct_fake_engine").DEFAULT_TRUTH)
+    fit = (A["fits"]["t1"].get("J-A1|r1|real_a4|108u|cap128") or {}).get("chosen")
+    if not fit:
+        return ["108u fit missing"]
+    bad = []
+    for got, want, nm in zip(fit["coef"], (t["a108"], t["b108"], t["c108"]), "abc"):
+        if abs(got / want - 1) > 1e-3:
+            bad.append(f"108u {nm} = {got} vs truth {want}")
+    return bad
+
+
+def o_no_residual(run, A):
+    """Raw records: inside every T1 cell interval the engine never decodes more requests than the cell sent."""
+    bad = []
+    for bid in A["boots"]:
+        raw = _raw_dec(run, bid) if (Path(run) / "boots" / bid / "decode_probe.jsonl").exists() else []
+        for c in _raw_cells(run, bid):
+            if c["kind"] != "t1":
+                continue
+            mx = max((e["bs_real"] for e in raw if c["t_first_send"] <= e["t_host_start"] <= c["t_end"]), default=0)
+            if mx > c["bs"]:
+                bad.append(f"{bid} {c['cell_id']}: bs_real {mx} > {c['bs']} (residual requests)")
+    return bad[:5] or ([] if any(_raw_cells(run, b) for b in A["boots"]) else ["no cells"])
+
+
+def o_t2_p108(_run=None, _A=None):
+    """Decision 28 A-2: T2 only in 108u / 108v; a sticky-D boot with T2 is refused by the plan check."""
+    bad = []
+    p = R.make_plan("J-A", 1)
+    if any(b["t2"] for b in p["boots"] if b["engine"] == "pdmux_sticky"):
+        bad.append("registered J-A plan has T2 in a sticky-D boot")
+    b = R._boot("J-A1", 1, "x", "T1T2", "nano", "pdmux_sticky", S.CAP_MAIN, D=44, t2=[4096])
+    if not any("T2 in a D44 boot" in x for x in R.plan_problems({"boots": [b]})):
+        bad.append("T2 in a sticky-D boot accepted (would be labelled P = 108 - D)")
+    return bad
+
+
+def o_t2p_confirm(run, A):
+    """Vanilla prefills first (the decode is not executing during the prefill), PD-mux decodes concurrently."""
+    bad = []
+    for bid, want in (("ja1_D44", "CONFIRMED"), ("ja1_108v", "UNCONFIRMED")):
+        for x in A["boots"][bid].get("t2p", []):
+            if x["L"] >= 4096 and want not in (x.get("coexist_engine") or {}).get("label", ""):
+                bad.append(f"{bid} L{x['L']}: {(x.get('coexist_engine') or {}).get('label')} (expected {want})")
+    return bad or ([] if A["boots"]["ja1_D44"].get("t2p") else ["no T2'"])
+
+
 # ---------------------------------------------------------------- mutants
 def _wrap(obj, name, fn):
     orig = getattr(obj, name)
@@ -442,6 +532,33 @@ def _late_prediction(orig, b, out, variant_dirs, make_server, run_id="local"):
     return res
 
 
+def _reach_first_decode(orig, recs, bs):
+    return 0 if recs else None
+
+
+def _nominal_ctx(orig, w):
+    return w["c"]
+
+
+def _no_cancel(orig, tr, hs):
+    return None
+
+
+def _t2_axis_d(orig, mode):
+    return S.TOTAL_SM - int(mode[1:]) if mode.startswith("D") else orig(mode)
+
+
+def _always_confirmed(orig, *a, **k):
+    out = orig(*a, **k)
+    if out.get("label") != "NOT_COLLECTED":
+        out = dict(out, confirmed=True, label=out["label"].replace("UNCONFIRMED", "CONFIRMED"))
+    return out
+
+
+def _o_base_only(orig, tr, cell_id, bs, c, rnd, O, **k):
+    return orig(tr, cell_id, bs, c, rnd, S.O_BASE, **k)
+
+
 MUTANTS = [
     # id, PREREG candidate (§11-2 / §12 text), stage, scenario, patch factory, oracle, plan subset
     ("M01", "cap 48 부팅인데 128로 기록", "run", "JAF", lambda: mock.patch.object(X, "logged_cap", lambda f: S.CAP_MAIN),
@@ -481,6 +598,17 @@ MUTANTS = [
      o_t3_rejected, None),
     ("M20", "T4 산식 예측을 채우기 뒤에 기록(봉인 순서)", "run", "JB2", lambda: _wrap(R, "run_boot", _late_prediction), o_sealed,
      ("J-B2", ["jb2_cap48"])),
+    # decision 28 (rev3.4)
+    ("M21", "창을 첫 decode부터 시작(ramp 미인식)", "analysis", "JA0", lambda: _wrap(X, "first_reach_index", _reach_first_decode),
+     o_window_reach, None),
+    ("M22", "명목 c로 적합", "analysis", "JA0", lambda: _wrap(R, "fit_ctx", _nominal_ctx), o_fit_truth, None),
+    ("M23", "취소 누락으로 다음 셀에 잔여 요청", "run", "JA0", lambda: _wrap(C, "cancel_burst", _no_cancel), o_no_residual,
+     ("J-A", ["ja1_D44"])),
+    ("M24", "T2를 sticky-D boot에서 P=108−D로 라벨", "unit", None, lambda: _wrap(R, "t2_axis", _t2_axis_d), o_t2_p108, None),
+    ("M25", "T2′ 동거 미확인을 확인으로 라벨", "analysis", "JA0", lambda: _wrap(X, "t2p_coexist", _always_confirmed),
+     o_t2p_confirm, None),
+    ("M26", "ramp 상한 없이 O = 332 고정(rev3.3 창)", "run", "JA0",
+     lambda: _wrap(C, "run_t1_cell", _o_base_only), o_window_reach, ("J-A", ["ja1_D44", "ja1_108u"])),
 ]
 
 

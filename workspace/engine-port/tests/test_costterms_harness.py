@@ -1,6 +1,6 @@
 """CPU tests of the cost-term measurement harness, stage 1 (results/cap_char/costterms_harness/).
 
-What this proves: the harness reproduces the PREREG rev3.3 registered values (cell grid, feasibility table, T4 pre-data
+What this proves: the harness reproduces the PREREG rev3.4 registered values (cell grid, feasibility table, T4 pre-data
 table), parses real SGLang boot logs of this project (compo probe), recovers the KNOWN ground truth of a fake engine
 end to end (client -> records -> windows -> fits -> labels) on a virtual clock and over HTTP with a real process, and
 FAILS under every stage-1 mutant of PREREG §11-2 / §12 (lesson 53).
@@ -43,9 +43,23 @@ def tmpdir(tc):
 # =============================================================================== registered values
 class TestSpec(unittest.TestCase):
     def test_window_constants(self):
-        self.assertEqual(S.O_TOKENS, S.TRIM_ITERS + S.WINDOW_ITERS + S.MARGIN_ITERS)
-        self.assertEqual(S.X_TOKENS * 2, S.O_TOKENS)
-        self.assertEqual(S.O_PLUS_X, 498)
+        self.assertEqual(S.O_BASE, S.TRIM_ITERS + S.WINDOW_ITERS + S.MARGIN_ITERS)
+        self.assertEqual(S.X_TOKENS * 2, S.O_BASE)
+        self.assertEqual(S.ABORT_AT_TOKENS, 319)
+        self.assertLess(S.ABORT_AT_TOKENS, S.O_BASE)
+
+    def test_ramp_rule(self):
+        """rev3.4 §1-1 / §3-1: O = O_BASE + ramp bound; single-span cells have no ramp; J-A O is uniform over modes."""
+        self.assertEqual(S.span_batches(32, 8192 - 166), [3] * 10 + [2])           # closes after crossing 16,384
+        self.assertEqual(S.span_batches(9, 2048 - 166), [9])
+        for cell in ((1, 2 * K), (8, 2 * K), (1, 64 * K)):
+            self.assertEqual(S.o_tokens(*cell, "JA"), S.O_BASE)
+        self.assertEqual(S.ja_pmin(8, 8 * K), 44)                                   # base grid includes D64
+        self.assertEqual(S.ja_pmin(32, 16 * K), 64)                                 # 16k column: D44 / 108u
+        self.assertEqual(S.ja_pmin(16, 16 * K), 44)                                 # OFF-only cell
+        self.assertEqual(S.o_tokens(32, 8 * K, "JA"), 6173)                         # PREREG rev3.4 §3-1 table
+        self.assertEqual(S.o_tokens(8, 32 * K, "VANILLA"), S.O_BASE + 64)
+        self.assertGreater(S.ramp_steps_ub(32, 8 * K, 44, sigma=1.5), S.ramp_steps_ub(32, 8 * K, 44))
 
     def test_prompt_seed_rule(self):
         import hashlib
@@ -68,25 +82,23 @@ class TestSpec(unittest.TestCase):
         self.assertIn("A-1", json.loads(S.spec_json())["AMBIGUITIES"])
 
     def test_feasibility_table_reproduces_prereg_3_1(self):
-        """PREREG §3-1 table at the derived cap-128 pool (895,781 tokens): 118 base + 10 rev2 cells; O-12 separate."""
+        """PREREG rev3.4 §3-1 table at the derived cap-128 pool (895,781 tokens): bs (c_in + O_cell) <= 0.95 KV."""
         f = {"kv_cache_tokens": 895781, "kv_k_gib": 1.0, "kv_v_gib": 1.0, "capture_bs": S.default_capture_list(128)}
-        base, extra, o12 = 0, 0, 0
+        per_mode = {}
         for mode in S.ALL_T1_MODES:
-            rows = X.feasibility(X.t1_cells_for_mode(mode), f, 128)
+            cells = X.t1_cells_for_mode(mode)
+            rows = X.feasibility(cells, f, 128, {c: S.o_tokens(*c, "JA") for c in cells})
+            self.assertEqual(len(rows), len(cells))                                 # every registered cell is a row
             run = {(r["bs"], r["c"]) for r in rows if r["run"]}
-            self.assertEqual(len(rows), len(X.t1_cells_for_mode(mode)))          # every registered cell is a row
-            base += len([c for c in run if c not in S.EXTRA_CELLS and c not in S.O12_CELLS])
-            extra += len([c for c in run if c in S.EXTRA_CELLS])
-            o12 += len([c for c in run if c in S.O12_CELLS])
-            for c in ((32, 32 * K), (48, 32 * K), (96, 16 * K), (32, 64 * K)):
+            per_mode[mode] = len(run)
+            for c in ((96, 8 * K), (8, 64 * K), (32, 32 * K), (64, 8 * K), (64, 12 * K), (88, 8 * K), (48, 16 * K)):
                 self.assertNotIn(c, run)
-            for c in ((96, 8 * K), (8, 64 * K), (1, 64 * K)):
+            for c in ((96, 2 * K), (48, 8 * K), (8, 32 * K), (1, 64 * K)):
                 self.assertIn(c, run)
             if mode in S.C16K_MODES:
-                self.assertIn((48, 16 * K), run)
-                self.assertIn((64, 12 * K), run)
-                self.assertNotIn((88, 9 * K), run)                                 # A-3: 854,832 > 850,992
-        self.assertEqual((base, extra, o12), (118, 10, 5))
+                self.assertIn((32, 16 * K), run)
+        self.assertEqual(per_mode, {"D16": 12, "D24": 15, "D34": 15, "D44": 15, "D64": 12, "108u": 15, "108v": 15})
+        self.assertEqual(sum(per_mode.values()), 99)                                # rev3.3: 133
 
     def test_prereg_t4_table(self):
         self.assertEqual(M.o_prereg_table(), [])
@@ -146,15 +158,37 @@ class TestExtractUnits(unittest.TestCase):
 
     def test_window_status_paths(self):
         c = 8192
-        c_in = c - (S.TRIM_ITERS + S.WINDOW_ITERS // 2)
+        c_in = c - 166
         recs, cell = M.synth_window(c, c_in)
         w = X.t1_window(recs, cell, [1, 2, 4, 8])
         self.assertEqual(w["status"], "VALID")
         self.assertAlmostEqual(w["S_eng_ms"], 10.0)
         self.assertEqual(w["n_intervals"], S.WINDOW_ITERS)
+        self.assertEqual(w["seq_range"], (1 + S.TRIM_ITERS, 1 + S.TRIM_ITERS + S.WINDOW_ITERS))
+        self.assertAlmostEqual(w["ctx_mean"], c_in + S.TRIM_ITERS + (S.WINDOW_ITERS - 1) / 2)
         r2 = [dict(e) for e in recs]
-        del r2[100]                                                    # seq gap inside the stretch
-        self.assertIn(X.t1_window(r2, cell, [1, 2, 4, 8])["status"], ("RECORDER_UNPROVEN", "WINDOW_SHORT"))
+        del r2[100]                                                    # seq gap inside the window
+        self.assertEqual(X.t1_window(r2, cell, [1, 2, 4, 8])["status"], "RECORDER_UNPROVEN")
+        # ramp: records below bs first -> the window starts TRIM after the first bs_real == bs record
+        rr = [dict(e, bs_real=(2 if e["seq"] <= 5 else 4)) for e in recs]
+        wr = X.t1_window(rr, cell, [1, 2, 4, 8])
+        self.assertEqual(wr["status"], "VALID")
+        self.assertEqual(wr["seq_range"][0], 6 + S.TRIM_ITERS)
+        # bs changes / mixed forwards inside the window are excluded and counted
+        r5 = [dict(e) for e in recs]
+        for e in r5[50:60]:
+            e["bs_real"] = 3
+        r5[70]["mode"] = "mixed"
+        w5 = X.t1_window(r5, cell, [1, 2, 4, 8])
+        self.assertEqual((w5["status"], w5["excluded"]["bs_change"], w5["excluded"]["mixed"]), ("VALID", 10, 1))
+        for e in r5[100:140]:
+            e["bs_real"] = 3
+        self.assertEqual(X.t1_window(r5, cell, [1, 2, 4, 8])["status"], "WINDOW_CONTAMINATED")
+        r6 = [dict(e) for e in recs]
+        r6[200]["bs_real"] = 5                                          # a foreign request
+        self.assertEqual(X.t1_window(r6, cell, [1, 2, 4, 8])["status"], "FOREIGN_RESIDUAL")
+        r7 = [dict(e, t_host_start=e["t_host_start"] - 1.0) if e["seq"] <= 3 else e for e in recs]
+        self.assertEqual(X.t1_window(r7, dict(cell, t_first_send=-2.0), [1, 2, 4, 8])["status"], "FOREIGN_RESIDUAL")
         r3 = [dict(e) for e in recs]
         r3[100]["graph"] = "eager"
         self.assertEqual(X.t1_window(r3, cell, [1, 2, 4, 8])["status"], "CG_UNPROVEN")
@@ -168,6 +202,8 @@ class TestExtractUnits(unittest.TestCase):
         self.assertEqual(X.t1_window(recs, cell, [1, 2, 4, 8], "x #retracted_reqs: 2, y")["status"], "RETRACT")
         short = recs[:S.TRIM_ITERS + S.WINDOW_ITERS - 1]
         self.assertEqual(X.t1_window(short, cell, [1, 2, 4, 8])["status"], "WINDOW_SHORT")
+        few = dict(cell, requests=[dict(r, completion_tokens=S.ABORT_AT_TOKENS - 1) for r in cell["requests"]])
+        self.assertEqual(X.t1_window(recs, few, [1, 2, 4, 8])["status"], "BENCH_INVALID")
 
     def test_t2_excludes_first_rep(self):
         reps = [{"rep": i, "ttft_s": (2.0 if i == 0 else 1.0 + 0.001 * i), "ok": True} for i in range(8)]
@@ -306,10 +342,12 @@ class TestVirtualE2E(unittest.TestCase):
         for n in S.VARIANTS:
             fit = A["fits"]["t1"][f"J-H1|r1|dummy_a{n}|108v|cap128"]["chosen"]
             a, b, c = self.truth_coef(n)
-            # cells are fitted at the nominal c; the median S_eng interval sits at decode ctx c + 0.5 (c_in = c - 166,
-            # intervals of steps 17..316 carry ctx c_in + 17 .. c_in + 316), so the fitted b absorbs 0.5 c exactly
-            for got, want in zip(fit["coef"], (a, b + 0.5 * c, c)):
-                self.assertAlmostEqual(got / want, 1.0, delta=1e-6)
+            # rev3.4: cells are fitted at the ACTUAL window mean ctx, so F1 returns the truth; the client count lags the
+            # engine by the one in-flight token (A-26), which moves at most 1 x c into b
+            got = fit["coef"]
+            self.assertAlmostEqual(got[0] / a, 1.0, delta=1e-6)
+            self.assertAlmostEqual(got[2] / c, 1.0, delta=1e-6)
+            self.assertLessEqual(abs(got[1] - b), 1.0001 * c)
         jh = A["jh1"]
         self.assertEqual(jh["w_indep"]["T1"]["label"], "WEIGHT_INDEP_HELD")
         self.assertEqual(jh["w_indep"]["T2"]["label"], "WEIGHT_INDEP_HELD")
@@ -342,22 +380,26 @@ class TestVirtualE2E(unittest.TestCase):
         self.assertEqual(M.o_excluded_boot(d, A), [])
         self.assertEqual(M.o_modes_separate(d, A), [])
         self.assertEqual(M.o_off_clean(d, A), [])
-        # A-2 (code fact reproduced by the fake): with an empty decode batch a sticky-D boot prefills on 108 SM, so
-        # T2 in D44 equals T2 in 108u; T2' (bs=1 decode running) is where P = 108 - D shows up.
-        t2 = A["tables"]["t2"]
-        d44, u = t2["J-A1|r1|real_a4|D44"], t2["J-A1|r1|real_a4|108u"]
-        for L, t in u["points"].items():
-            self.assertAlmostEqual(d44["points"][L] / t, 1.0, places=9)
-        self.assertIn("NOT_COLLECTED", d44["P_evidence"])
-        self.assertGreater(d44["t2prime"]["16384"], u["points"]["16384"])
+        # decision 28 A-2: T2 only in 108u / 108v; the sticky-D P axis is T2' with engine-confirmed co-residence
+        t2, t2p = A["tables"]["t2"], A["tables"]["t2prime"]
+        self.assertEqual(sorted(k.split("|")[3] for k in t2), ["108u", "108v"])
+        self.assertEqual(t2p["J-A1|r1|real_a4|D44"]["P"], 64)
+        self.assertEqual(t2p["J-A1|r1|real_a4|D34"]["P"], 72)                      # realized 36 -> 108 - 36
+        self.assertEqual(sorted(t2p["J-A1|r1|real_a4|D44"]["points_confirmed"]), sorted(map(str, S.T2P_L_GRID)))
 
-    def test_ja_default_ramp_shortens_pdmux_windows(self):
-        """A-1: with the fake's (invented) prefill speed, a PD-mux burst ramps over several spans, so O = 332 leaves
-        no 300-interval all-running stretch for (8, 8k); the vanilla engine prefills first and is VALID."""
-        _, A = self.runs["JA0"]
-        st = {(b, w["bs"], w["c"]): w["status"] for b, v in A["boots"].items() for w in v.get("t1_windows", [])}
-        self.assertEqual(st[("ja1_D44", 8, 8192)], "WINDOW_SHORT")
-        self.assertEqual(st[("ja1_108v", 8, 8192)], "VALID")
+    def test_ja_ramp_aware_windows(self):
+        """Decision 28 A-1 with the fake's (invented) prefill speed: every feasible PD-mux cell is VALID (rev3.3:
+        5-6 of 14-21), the window starts after the first full-batch record, the fit at the actual ctx returns the
+        truth, and vanilla T2' is not engine-confirmed (prefill first) while PD-mux T2' is."""
+        d, A = self.runs["JA0"]
+        self.assertEqual(M.o_window_reach(d, A), [])
+        self.assertEqual(M.o_fit_truth(d, A), [])
+        self.assertEqual(M.o_no_residual(d, A), [])
+        self.assertEqual(M.o_t2p_confirm(d, A), [])
+        self.assertEqual(M.o_t2_p108(), [])
+        ws = A["boots"]["ja1_D44"]["t1_windows"]
+        self.assertTrue(all(w["ramp_records"] <= w["ramp_steps_ub"] for w in ws))
+        self.assertTrue(any(w["ramp_records"] > 0 and "CTX_OFF_NOMINAL" in w["labels"] for w in ws))
 
     def test_jb2_t4(self):
         d, A = self.runs["JB2"]
