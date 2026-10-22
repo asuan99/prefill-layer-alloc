@@ -1,0 +1,16 @@
+# CANDIDATE (not sealed, not GPU-tested) -- cost-term measurement PREREG rev3.3 §1-1 "pdmux_n3_A_agn.yml 계열 + D=64
+# index 추가".  Same four divisions and thresholds as results/n3_capacity/configs/pdmux_n3_A_agn.yml plus a fifth
+# division (44, 64).  Stream groups become [(108,0), (92,16), (84,24), (74,34), (64,44), (44,64), (0,108)], so the
+# sticky target indices are D16 -> 1, D24 -> 2, D34 -> 3, D44 -> 4, D64 -> 5 and the plain unpartitioned group is 6
+# (ct_spec.STREAM_GROUPS / STICKY_IDX).  The threshold column is read only when PDMUX_R2_POLICY is unset (code
+# reading recorded in pdmux_n3_A_agn.yml); every cost-term boot runs PDMUX_R2_POLICY=fixed, so it is inert here.
+# Row 1 threshold must stay 0.  The config digest is a seal-time item (PREREG §11 "config digest, D별").
+sm_group_num: 7
+manual_divisions:
+  - [92, 16, 0]
+  - [84, 24, 18]
+  - [74, 34, 27]
+  - [64, 44, 36]
+  - [44, 64, 48]
+split_forward_token_budget: 65536
+decode_bs_divisor: 36
