@@ -7,7 +7,7 @@
 ## cost model 기여
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2 `T_span`), CM-4(T3 ρ), CM-5(T4 메모리·admission), (확장) TP2 항
 - 이번에 알게 된 것: CM-2 floor 9 ms+0.111 ms/토큰×L(≤16k, CONFIRMED) · Nano 실측 k 16,382 B/토큰·s 143.5 MB/요청(L\*≈8.8k) · chunk -1 장문 prefill 상한은 Triton causal_conv1d int32 오프셋(≈94.8k, 반증 실험 통과·감사 전) · **관측자 효과(분해 Job, agnostic·shape A·n=4): TEL 묶음(경로+PHASE_EVENTS, 몫 미분리) λ −1.7%, I-4 ITL p95 +1.0%** — 다른 arm·부하의 보정 계수 아님
-- promote 필요: 예 (결정) — 결정 24–29 · 예 — 정본 정정(§1-22 (108,0) 방향)
+- promote 필요: 예 (결정) — 결정 24–30 · 예 — 정본 정정(§1-22 (108,0) 방향)
 ## 현재 상태 (2026-10-21)
 - **엔진 묶음 main 병합 완료**: squash `ca1f30e7`(engsync `c875dc21`; engsync worktree·branch는 2026-10-21 폐기, git 밖 원자료 229개는 main worktree로 이동), ENGINE_DIGEST `99bbef91…` 병합 후 재계산 일치. 원자료 271개 약 217 MB는 `_vessl_fetch/_engsync_raw/`(manifest `engine_gate_prep/EXCLUDED_RAW_engsync_2026-10-21.sha256`). M3 rev12 봉인 검증 fail-closed(의도). 로컬 엔진 트리 2개는 구판(미동기화).
 - **분할 gate**(설계 `workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`, 감사 r1 GO-with-caveats·r2 상한):
@@ -28,11 +28,10 @@
 - 운영 사고·교훈: object-volume export 절단이 gamma-A·F에서 재발(분해 Job은 요약만 export해 288/288 무결) · 1회차 128k 프로브 폴링 오판으로 A100 약 60분 유휴(완료 판정은 SUMMARY/DONE 파일로) · VESSL 인증 만료 시 사용자 `vesslctl auth login`.
 ## 다음 행동
 1. (완료 2026-10-22 `1943b3b6`: `test_baseline_pass` 비결정성 = 가짜 엔진 결함 2건 수리, 50/50 통과; 실서버 G-α containment 최소 여유 B2 0.132 ms(허용오차 포함)) · 로컬 엔진 트리 재동기화 여부 결정
-2. 신규 하네스 1단계 완료(`af8c0500`, CPU 33시험·변이 22/22) → 결정 28(A-1 ramp 창·실제 평균 ctx, A-2 T2′ 주 측정, A-6 삭제) → rev3.4(`e9f3903a`) → 2단계·H-1~H-6 완료(`1cfaab35`: T3·J-H2·J-C, 시험 45/45·변이 40/40, ENGINE_DIGEST 검사·smoke 모드·원자료 볼륨 보관·셀 단위 재개, 예약 약 18.9 GPU-h [유도]; launch 연결 `48dd20ed`, smoke 계획 `results/cap_char/SMOKE_PLAN_costterms_2026-10-22.md`) → 2단계(T3·J-H2·J-C) → Job entry → 하네스 감사 → smoke(J-B2 16k 채우기 위험 확인) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
+2. 신규 하네스 1단계 완료(`af8c0500`, CPU 33시험·변이 22/22) → 결정 28(A-1 ramp 창·실제 평균 ctx, A-2 T2′ 주 측정, A-6 삭제) → rev3.4(`e9f3903a`) → 2단계·H-1~H-6 완료(`1cfaab35`: T3·J-H2·J-C, 시험 45/45·변이 40/40, ENGINE_DIGEST 검사·smoke 모드·원자료 볼륨 보관·셀 단위 재개, 예약 약 18.9 GPU-h [유도]; 결정 30: 장문 측정점(N=1 T2-ext, TP2 96k·124k) 별도 boot로 복구·측정점 삭제 원칙 고정; launch 연결 `48dd20ed`, smoke 계획 `results/cap_char/SMOKE_PLAN_costterms_2026-10-22.md`) → 2단계(T3·J-H2·J-C) → Job entry → 하네스 감사 → smoke(J-B2 16k 채우기 위험 확인) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
-- **rev3.5 초안 결정 4건** / 2단계 구현에서 드러남 / O-21 σ′ 분모를 같은 T3 boot·같은 L·P의 decode 1개 기준 span으로(권고, 다른 boot 비교 회피) · rev3.4 문안 유지 — O-20 J-H2 bs 32 셀이 a22·a31에서 불가 → 공통 비교는 T3 bs 8과 T1 (32,2k)로 공시(권고) — J-C: 96k 점 삭제(권고, 판별력 없음·G-β가 이미 경계 확인) · 별도 boot; 앵커 (32,32k) 불가 공시(권고); F4 stride는 배너 유도값 + G-β(권고, 엔진 로그 추가는 digest 변경) — O-22 J-B2 하드캡은 smoke S-B 실측 후 재계산(권고)
 - **presubmit reachability 차단 2건** / `reachability_spec.json`(M4R)·`reach_spec_rev3_A.json`(TC1 rev3)이 active 상태로 전역 차단(PROJECT_STATUS 1488-1495 기존 블로커, 후속 spec 없음) — rev3.3 측정과 무관 / 범위 한정 OVERRIDE 문서 + 사용자 승인으로 제출 허용(전례 `cp_baseline/OVERRIDE_*`, 권고) · 두 spec을 폐기 결정
 - **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의
