@@ -28,10 +28,11 @@
 - 운영 사고·교훈: object-volume export 절단이 gamma-A·F에서 재발(분해 Job은 요약만 export해 288/288 무결) · 1회차 128k 프로브 폴링 오판으로 A100 약 60분 유휴(완료 판정은 SUMMARY/DONE 파일로) · VESSL 인증 만료 시 사용자 `vesslctl auth login`.
 ## 다음 행동
 1. (완료 2026-10-22 `1943b3b6`: `test_baseline_pass` 비결정성 = 가짜 엔진 결함 2건 수리, 50/50 통과; 실서버 G-α containment 최소 여유 B2 0.132 ms(허용오차 포함)) · 로컬 엔진 트리 재동기화 여부 결정
-2. 신규 하네스 1단계 완료(`af8c0500`, CPU 33시험·변이 22/22) → 결정 28(A-1 ramp 창·실제 평균 ctx, A-2 T2′ 주 측정, A-6 삭제) → rev3.4·하네스 수정 완료(`e9f3903a`: ramp 창·실제 평균 ctx, T2′ 주 측정, 변이 28/28, 예약 약 18.8 GPU-h [유도], J-A 셀 133→99/라운드) → 2단계(T3·J-H2·J-C) → Job entry → 하네스 감사 → smoke(J-B2 16k 채우기 위험 확인) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
+2. 신규 하네스 1단계 완료(`af8c0500`, CPU 33시험·변이 22/22) → 결정 28(A-1 ramp 창·실제 평균 ctx, A-2 T2′ 주 측정, A-6 삭제) → rev3.4(`e9f3903a`) → 2단계·H-1~H-6 완료(`1cfaab35`: T3·J-H2·J-C, 시험 45/45·변이 40/40, ENGINE_DIGEST 검사·smoke 모드·원자료 볼륨 보관·셀 단위 재개, 예약 약 18.9 GPU-h [유도]; launch 연결 `48dd20ed`, smoke 계획 `results/cap_char/SMOKE_PLAN_costterms_2026-10-22.md`) → 2단계(T3·J-H2·J-C) → Job entry → 하네스 감사 → smoke(J-B2 16k 채우기 위험 확인) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
+- **rev3.5 초안 결정 4건** / 2단계 구현에서 드러남 / O-21 σ′ 분모를 같은 T3 boot·같은 L·P의 decode 1개 기준 span으로(권고, 다른 boot 비교 회피) · rev3.4 문안 유지 — O-20 J-H2 bs 32 셀이 a22·a31에서 불가 → 공통 비교는 T3 bs 8과 T1 (32,2k)로 공시(권고) — J-C: 96k 점 삭제(권고, 판별력 없음·G-β가 이미 경계 확인) · 별도 boot; 앵커 (32,32k) 불가 공시(권고); F4 stride는 배너 유도값 + G-β(권고, 엔진 로그 추가는 digest 변경) — O-22 J-B2 하드캡은 smoke S-B 실측 후 재계산(권고)
 - **presubmit reachability 차단 2건** / `reachability_spec.json`(M4R)·`reach_spec_rev3_A.json`(TC1 rev3)이 active 상태로 전역 차단(PROJECT_STATUS 1488-1495 기존 블로커, 후속 spec 없음) — rev3.3 측정과 무관 / 범위 한정 OVERRIDE 문서 + 사용자 승인으로 제출 허용(전례 `cp_baseline/OVERRIDE_*`, 권고) · 두 spec을 폐기 결정
 - **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의
