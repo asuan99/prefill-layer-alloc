@@ -76,6 +76,7 @@ def pad(b):
 def recorder():
     nxt, last_win, n_dec, hist, atcap = time.perf_counter(), time.perf_counter(), 0, {}, 0
     pend = None          # (t, bs): finalised with the REAL gap to the next tick so gpu_ms never exceeds the bracket
+    prev_b = 0
     while True:
         nxt += ROW_S
         while time.perf_counter() < nxt:
@@ -96,14 +97,23 @@ def recorder():
             hist[b0] = hist.get(b0, 0) + 1
             atcap += 1 if b0 >= CAP else 0
             if TEL_P:
-                emit(TEL_P, {"event": "decode_iteration", "t_launch": t0 + 0.0002, "t_sync": t0 + 0.95 * gap})
+                # causal like the real loop: t_host_start <= t_launch < t_sync < next t_host_start.  A fixed +0.2 ms
+                # launch offset broke this on scheduler catch-up bursts (gap < 0.2 ms): t_launch passed the next forward,
+                # i4_pdmux_pairs joined the wrong forward (ref < 0) and i4_B2 failed ~1/3 runs (2026-10-22).
+                emit(TEL_P, {"event": "decode_iteration", "t_launch": t0 + min(0.0002, 0.05 * gap), "t_sync": t0 + 0.95 * gap})
         with lock:
             b, w = state["active"], state["waiting"]
         pend = (t, b) if b > 0 else None
         if w > 0:
             with lock:
                 state["cap_stops"] += 1
-        if t - last_win >= 0.25 and ADM_P:
+        # idle -> busy closes the window, like the real lazy close at a phase onset (real G-alpha B2: the window boundary
+        # falls on the stair's first bs-M forward, +1.6 s into the stair).  Without it a fixed 0.25 s grid put the fake
+        # stair's 32 ms bs-40 stretch in a window whose midpoint precedes the stair window -> i5i6_B2 'M 40 != I-5 39'
+        # in ~30 % of runs (2026-10-22).
+        onset = b > 0 and prev_b == 0 and t > last_win
+        prev_b = b
+        if (onset or t - last_win >= 0.25) and ADM_P:
             cats = {c: 0 for c in AP.TERMINAL_CATEGORIES}
             with lock:
                 cs = state["cap_stops"]; state["cap_stops"] = 0
