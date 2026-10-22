@@ -2,7 +2,7 @@
 
 > **지위**: 사용자 결정 27(2026-10-22)로 고정한 **비용 모델의 수식 기반**이며 논문에 그대로 들어갈 수식이다. 측정이 아니라 닫힌 식이고, 모든 수치는 [유도]다.
 > **버전**: `analytic-v1 (2026-10-22)`. 계산의 단일 출처는 `workspace/engine-port/scripts/costmodel/analytic_terms.py`이고, 이 문서는 그 식을 서술한다. 시험 `workspace/engine-port/tests/test_analytic_terms.py`가 이 문서의 수치를 재현한다.
-> **변경 규칙**: 식을 고칠 때는 코드와 이 문서를 같은 커밋에서 함께 고치고 버전을 올린다(v1 → v2). 이미 쓴 식을 지우지 않고, 바뀐 이유와 날짜를 §9 이력에 남긴다. 비용 모델의 확장(PD-mux 항, 효율 η, 간섭 등)은 §8의 형태로 이 식 위에 덧붙인다.
+> **변경 규칙**: 식을 고칠 때는 코드와 이 문서를 같은 커밋에서 함께 고치고 버전을 올린다(v1 → v2). 그 다음 `python3 workspace/engine-port/scripts/costmodel/render_formula_tables.py`로 축 지도 artifact의 §8 수식 표를 다시 쓰고 같은 URL로 재발행한다(표는 코드가 생성, 손으로 고치지 않음). 이미 쓴 식을 지우지 않고, 바뀐 이유와 날짜를 §9 이력에 남긴다. 비용 모델의 확장(PD-mux 항, 효율 η, 간섭 등)은 §8의 형태로 이 식 위에 덧붙인다.
 > **출처**: 형식은 Marconi(Pan et al., MLSys 2025) 부록 A Table 1을 따르고, Nemotron-H 구조(GQA, Mamba2 SSD의 head·group, 비게이트 ReLU² MLP, SGLang의 fp32 SSM state)에 맞게 일반화했다. 모델 상수는 Nemotron-Nano-9B-v2-Base config(rev `dc0661c829b14e5b9246c05cfa89094a0875e052`).
 
 ## 1. 기호와 규약

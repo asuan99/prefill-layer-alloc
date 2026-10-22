@@ -32,3 +32,4 @@ python3 workspace/engine-port/scripts/discipline/check_citation_stops.py --file 
 - 2026-10-19 v6: 정본 위계 개정(사용자 결정)에 맞춰 claim 근거를 `reports/CONSENSUS.md` §6으로, 문서 지도의 위계·다음 행동 위치를 고쳤다. 이후 이 지도의 갱신은 `promote` 스킬 3절 마지막 단계가 맡는다.
 - 2026-10-21 v7: promote 4차 — §0 현재 상태 문단과 트랙 카드(main 상태·결정 대기, multigpu worktree 폐기·main 흡수)만 고쳤다. 새 판정 0, 재발행은 main 세션이 한다.
 - 2026-10-22 v8: §6 "코드 실행 흐름과 연구의 개입 지점" 신설(코드 읽기, 새 판정 0, 개입 종류 A–F 칩), E2 흐름 노드 정정(decode 비면 (108,0) 무분할 — 코드 `multiplexing_mixin.py:1151`; 이전 '(0,108) 복귀'는 방향 오기). 재발행 Version 9.
+- 2026-10-22 v9: §8 "비용 수식 (고정본)" 신설 — 기호·층별 식·모델 전체·조성 변형 표, `scripts/costmodel/render_formula_tables.py`가 `analytic_terms.py`에서 생성(손편집 금지, <!-- ANALYTIC:BEGIN/END --> 블록). 재발행 Version 10.
