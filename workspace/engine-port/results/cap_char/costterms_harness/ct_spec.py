@@ -7,8 +7,9 @@ leaves open are marked HARNESS_READING (a harness choice that the user must conf
 AMBIGUITIES below and in the hand-off report).  Nothing here is a measurement.
 
 Stage 1 = T1, T2, T2', T4 and the boots of J-H1 (vanilla boot A), J-A (T1/T2/T2' part, cap-invariance and OFF
-diagnostic boots) and J-B2 (T4).  Stage 2 (T3 co-residence, J-H2, J-C TP2) has only its interface here
-(`STAGE2_INTERFACE`): the plan checker already rejects a T3 cell in a non-TEL boot.
+diagnostic boots) and J-B2 (T4).  Stage 2 (this revision) = T3 co-residence (J-A T3 boots, J-H2 B/C boots) and J-C
+(TP2 + N=1 anchor).  The ONE knob the Workspace smoke may re-set before the seal (decision 29 O-18, H-6) is
+RAMP_SIGMA: every registered output length (o_tokens, t3_o_tokens, t3_ref_o_tokens) derives from it.
 
 `python3 ct_spec.py --json` prints the canonical JSON; `--sha256` its digest (the seal will pin that digest).
 """
@@ -24,9 +25,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "costmodel"))
 import analytic_terms as _AT  # noqa: E402  (underscore: kept out of the spec digest)
 
-SPEC_VERSION = "costterms-harness-spec/stage1-draft-2026-10-22b (decision 28)"
+SPEC_VERSION = "costterms-harness-spec/stage2-draft-2026-10-22 (decisions 28-29; rev3.5 draft)"
 PREREG_REL = "workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md"
-PREREG_REV = "rev3.4 (unsealed)"
+PREREG_REV = "rev3.5 draft (unsealed)"
 
 K = 1024
 # ---------------------------------------------------------------- substrate / server constants (§0, §1-1, §3-3)
@@ -267,39 +268,153 @@ def span_batches(bs, c_in, max_prefill=MAX_PREFILL_TOKENS):
     return out
 
 
-def ramp_steps_ub(bs, c, p_min, arch=None, sigma=None, theta=None):
-    """Upper bound on decode steps before bs_real reaches bs (PD-mux burst) [유도, 측정 아님]."""
-    sigma = RAMP_SIGMA if sigma is None else sigma
-    theta = RAMP_THETA if theta is None else theta
+def variant_arch(n_attn=4):
+    """analytic_terms Arch of a composition variant (same skeleton, n_attn attention / VARIANT_MAMBA[n] Mamba layers)."""
+    return _AT.nano9b_v2(n_attn, VARIANT_MAMBA[n_attn])
+
+
+def _bound_terms(arch):
     a = arch or _AT.nano9b_v2()
     dc = _AT.decode_coefficients(a, HBM_BYTES_PER_S)
     pf = _AT.prefill_flops(a, 1)
-    alpha, gam = pf["linear_per_token"], pf["quad_coeff"]
+    return dc, pf["linear_per_token"], pf["quad_coeff"]
+
+
+def span_ms_ub(L_tokens, p, arch=None, sigma=None, theta=None, n=1):
+    """Upper bound on one split-prefill span of n requests of L tokens on p prefill SM [유도]: CM-2 floor + analytic
+    attention quadratic term, (108/p)^theta SM scaling, x RAMP_SIGMA (the single smoke-adjustable knob, H-6)."""
+    sigma = RAMP_SIGMA if sigma is None else sigma
+    theta = RAMP_THETA if theta is None else theta
+    _, alpha, gam = _bound_terms(arch)
+    return (CM2_FIXED_MS + CM2_SLOPE_MS * n * L_tokens * (1.0 + gam * L_tokens / alpha)) * (TOTAL_SM / p) ** theta * sigma
+
+
+def step_ms_lb(bs_run, ctx, arch=None, tp=1):
+    """HBM-roofline lower bound on one decode step [유도]; with TP the per-rank traffic is 1/tp of it."""
+    dc, _, _ = _bound_terms(arch)
+    return (dc["a0_s"] + dc["b0_s_per_req"] * bs_run + dc["c0_s_per_req_token"] * bs_run * ctx) * 1000.0 / tp
+
+
+def ramp_steps_ub(bs, c, p_min, arch=None, sigma=None, theta=None, tp=1):
+    """Upper bound on decode steps before bs_real reaches bs (PD-mux burst) [유도, 측정 아님].  tp > 1 (J-C TP2): the
+    step lower bound is the per-rank roofline (1/tp); the span bound stays the N=1 CM-2 floor (assumed not faster than
+    TP2 prefill -- a violation shows as RAMP_EXCEEDED_BOUND)."""
     c_in = c - X_TOKENS
     batches = span_batches(bs, c_in)
     steps, done = 0, batches[0]
     for n in batches[1:]:
-        t_span = (CM2_FIXED_MS + CM2_SLOPE_MS * n * c_in * (1.0 + gam * c_in / alpha)) \
-            * (TOTAL_SM / p_min) ** theta * sigma
-        t_step = (dc["a0_s"] + dc["b0_s_per_req"] * done + dc["c0_s_per_req_token"] * done * c_in) * 1000.0
-        steps += math.ceil(t_span / t_step) + RAMP_INTERSPAN_STEPS
+        t_span = span_ms_ub(c_in, p_min, arch, sigma, theta, n=n)
+        steps += math.ceil(t_span / step_ms_lb(done, c_in, arch, tp)) + RAMP_INTERSPAN_STEPS
         done += n
     return steps
 
 
 def o_tokens(bs, c, family):
     """Registered max_new_tokens of a T1 burst cell.  family 'JA' (PD-mux ladder, uniform across its 7 modes),
-    'VANILLA' (J-H1: every boot vanilla)."""
+    'VANILLA' (every vanilla boot outside J-A), 'JH2|<n_attn>|<D>' (J-H2 PD-mux boot: variant priors, P = 108 - D),
+    'JC|<D>' (J-C PD-mux: uniform over TP2 and the N=1 anchor = the larger, i.e. the TP2 per-rank step bound)."""
     if family == "JA":
         return O_BASE + ramp_steps_ub(bs, c, ja_pmin(bs, c))
     if family == "VANILLA":
         return O_BASE + VANILLA_RAMP_STEPS
+    parts = family.split("|")
+    if parts[0] == "JH2":
+        n, d = int(parts[1]), int(parts[2])
+        return O_BASE + ramp_steps_ub(bs, c, TOTAL_SM - d, variant_arch(n))
+    if parts[0] == "JC":
+        d = int(parts[1])
+        return O_BASE + max(ramp_steps_ub(bs, c, TOTAL_SM - d, tp=t) for t in (1, JC_TP))
     raise ValueError(family)
 
 
-def feasible_cell(bs, c, O, kv_tokens, cap, capturable):
+# ---------------------------------------------------------------- T3 (§1-3, rev3.5 draft; J-A T3 boots and J-H2)
+T3_D = (24, 44)                     # sticky D of the T3 boots (TEL ON, §2-2')
+T3_BS = (8, 32)
+T3_L = (8 * K, 32 * K)
+T3_C = 8 * K                        # decode-batch ctx [제안] (c_in = T3_C - X_TOKENS)
+T3_M = {8 * K: 8, 32 * K: 3}        # m(L) [제안, 값 봉인]: prefill inputs per cell, sent ONE AT A TIME (A-28)
+T3_REPS = 2                         # per boot (= per round); J-A: x 2 rounds = 4 per cell
+T3_MIN_ITERS = 128                  # n_it_obs below this -> T3_WINDOW_SHORT
+T3_SOLO_PRE = 150                   # A-27: solo window = 150 intervals before the first prefill + 150 after the last
+T3_SOLO_POST = 150                  #       span (ABA; the ctx / clock drift of the co phase cancels to first order)
+T3_POST_TRIM = 2                    # records skipped after the last span end before the post solo window
+T3_PRE_TOKENS = 1 + TRIM_ITERS + T3_SOLO_PRE + 2       # 169: client waits for this before the first prefill
+T3_POST_TOKENS = T3_POST_TRIM + T3_SOLO_POST + 2       # 154: tokens after the last prefill's first token
+STALL_MULT = 5.0                    # §1-3 (b): a stall = an interval > 5 x the SOLO window median (never the co median)
+T3_REF_REPS = 8                     # sigma reference spans per (boot, L): 8 sequential prefills, the first excluded
+T3_REF_WARMUP = 1
+T3_REF_BS = 1                       # reference decode = ONE request at the T3 ctx (prefill on the same P as the cell)
+T3_REF_MIN_TOKENS = 16              # the reference decode has produced this many tokens before the first prefill
+
+
+def t3_o_tokens(bs, L, D, arch=None, tp=1):
+    """max_new of the T3 decode batch [유도]: ramp + pre window + m(L) spans + post window + margin.  Every term is an
+    upper bound from the same priors as o_tokens (RAMP_SIGMA is the only knob)."""
+    p, c_in = TOTAL_SM - D, T3_C - X_TOKENS
+    per_span = math.ceil(span_ms_ub(L, p, arch) / step_ms_lb(bs, c_in, arch, tp)) + RAMP_INTERSPAN_STEPS
+    return ramp_steps_ub(bs, T3_C, p, arch, tp=tp) + T3_PRE_TOKENS + T3_M[L] * per_span + T3_POST_TOKENS + MARGIN_ITERS
+
+
+def t3_ref_o_tokens(L, D, arch=None, tp=1):
+    p, c_in = TOTAL_SM - D, T3_C - X_TOKENS
+    per_span = math.ceil(span_ms_ub(L, p, arch) / step_ms_lb(T3_REF_BS, c_in, arch, tp)) + RAMP_INTERSPAN_STEPS
+    return T3_REF_MIN_TOKENS + T3_REF_REPS * per_span + MARGIN_ITERS
+
+
+def feasible_t3(bs, L, O_dec, kv_tokens, cap, capturable, context=None):
+    """§3-1 rule extended to T3: the decode batch's worst-case reservation plus the ONE in-flight prefill (L + 1)."""
+    context = CONTEXT_LENGTH if context is None else context
+    c_in = T3_C - X_TOKENS
+    reasons = []
+    if bs > cap:
+        reasons.append(f"bs {bs} > cap {cap}")
+    if not capturable:
+        reasons.append(f"bs {bs} not in capture list")
+    need = bs * (c_in + O_dec) + L + 1
+    if kv_tokens is None:
+        reasons.append("no KV pool banner")
+    elif need > FEASIBLE_KV_FRAC * kv_tokens:
+        reasons.append(f"bs*(c_in+O)+L+1 = {need} > {FEASIBLE_KV_FRAC} x {kv_tokens}")
+    if c_in + O_dec > context or L + 1 > context:
+        reasons.append(f"c_in + O = {c_in + O_dec} or L + 1 = {L + 1} > context_length {context}")
+    return reasons
+
+
+# ---------------------------------------------------------------- J-H2 (§4', rev3.5 draft)
+JH2_D = (24, 44)
+JH2_T1_CELLS = ((32, 2 * K), (32, 8 * K))
+JH2_T1_REPS = 2                     # A-31: "반복 2" read for the T1 cells as well (2 windows per cell per boot)
+
+# ---------------------------------------------------------------- J-C TP2 (§5, rev3.5 draft, O-19)
+JC_TP = 2
+JC_TP2_CAP = CAP_MAIN               # TP2 boots: cap 128 (§1-1 fixed knob)
+JC_ANCHOR_CAP = CAP_SMALL           # N=1 anchor: cap 48 (§5-2; TP2 앵커 cap 48 -- mutant "anchor at 128")
+JC_MODES = ("D44", "108v")
+JC_T1_CELLS = ((8, 2 * K), (8, 8 * K), (8, 32 * K), (32, 2 * K), (32, 8 * K), (32, 32 * K))
+JC_T1_REPS = 2
+JC_T2_L = (4 * K, 16 * K, 32 * K, 64 * K)     # T2 in 108v, T2' in D44 (decision 28 A-2 applied to §5-2)
+JC_T4_FILLS = ((16 * K, 4096), (64 * K, 8000))
+JC_OFF_T1_CELLS = ((8, 2 * K), (32, 2 * K), (32, 8 * K))   # O-14 OFF diagnostic (TP2 D44), 3 cells
+JC_ROUNDS = (1, 2)
+# O-19 96k point: options 'deleted' (recommended: G-beta already ran the stride-11,328 kernel cases -- pristine view
+# 189,000 MATCH / 190,500 CRASH -- and a patched serving 96k point cannot test the boundary) or 'separate_boot' (one
+# TP2 boot with context JC_LONG_CONTEXT, the LAST boot, a single T2 of JC_LONG_L).  User decision.
+JC_96K_MODE = "deleted"
+JC_LONG_L = 96 * K
+JC_LONG_CONTEXT = 131072
+JC_LONG_REPS = 2                    # rep 0 warm-up + 1 kept (it is a pass / fail point, not a T2 value)
+# F1-F5 (§5-1) predictions [유도, config arithmetic]
+JC_F_TOL = 0.02
+JC_CONV_DIM_N1 = 12288              # d_inner 10,240 + 2 x 8 x 128
+JC_INPROJ_N1 = 22656                # 2 x 10,240 + 2 x 1,024 + 128 heads
+JC_D_CONV = 4
+JC_STRIDE_TOL = 0.03                # conv_state banner has 2 decimals (~1.5 % at 0.13 GB)
+
+
+def feasible_cell(bs, c, O, kv_tokens, cap, capturable, context=None):
     """§3-1 (rev3.4): the ignore_eos admission check reserves input + max_new for every request in the worst case
     (no request has generated a token yet), so the timing-free sufficient condition is bs (c_in + O) <= 0.95 KV."""
+    context = CONTEXT_LENGTH if context is None else context
     c_in = c - X_TOKENS
     reasons = []
     if bs > cap:
@@ -310,16 +425,21 @@ def feasible_cell(bs, c, O, kv_tokens, cap, capturable):
         reasons.append("no KV pool banner")
     elif bs * (c_in + O) > FEASIBLE_KV_FRAC * kv_tokens:
         reasons.append(f"bs*(c_in+O) = {bs * (c_in + O)} > {FEASIBLE_KV_FRAC} x {kv_tokens}")
-    if c_in + O > CONTEXT_LENGTH:
+    if c_in + O > context:
         reasons.append(f"c_in + O = {c_in + O} > context_length")
     return reasons
 
 
-STAGE2_INTERFACE = {
-    "T3": "boot kind 'T3' (TEL ON), cells kind 't3' -- not implemented in stage 1; plan checker enforces TEL ON",
-    "J-H2": "variant x D {24, 44} PD-mux boots with T1 2 cells + T3 4 cells -- plan builder raises NotImplementedError",
-    "J-C": "TP2 boots (resourcespec-a100x2) -- plan builder raises NotImplementedError",
-}
+# ---------------------------------------------------------------- Job entry (H-2..H-4)
+ENGINE_DIGEST_EXPECTED = "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325"   # pathless-v1, 30 entries
+#   (G-alpha / G-beta PASS tree, PREREG §12 item 5); written to ENGINE_DIGEST.txt, checked by costterms_job.sh (rc 13)
+SUMMARY_FILES = ("analysis.json", "plan.json", "RUN_DONE", "SHA256SUMS", "RESUME_LOG.json", "SMOKE_UNSEALED",
+                 "t3_iterations.json")          # what goes under results/ (raw data stays on the cluster volume, H-3)
+SMOKE_MARKER = "SMOKE_UNSEALED"
+HARD_CAP_MIN = {"J-H1": 246, "J-A|1": 244, "J-A|2": 235, "J-B2": 78, "J-H2": 126, "J-C": 215}
+#   minutes, self-enforced by costterms_job.sh; J-H2 / J-C = ceil(1.2 x ct_timemodel hours) [유도, rev3.5 draft]; the
+#   stage-1 values are PREREG §7-4' (J-A now carries its T3 boots; ct_timemodel: 3.38 / 3.26 h, caps unchanged)
+JOB_GPUS = {"J-H1": 1, "J-A": 1, "J-B2": 1, "J-H2": 1, "J-C": 2}
 
 AMBIGUITIES = {
     "A-1": "RESOLVED decision 28: ramp-aware window (first bs_real == bs record, trim 16, 300 intervals), per-cell O = "
@@ -357,6 +477,33 @@ AMBIGUITIES = {
     "A-26": "actual ctx = c_in + tokens the CLIENT had received by t_host_start; it can lag the engine by the one "
             "in-flight token (bias <= 1 token, i.e. <= 1 x c in the fitted b)",
     "A-25": "T2' engine confirmation: a decode_forward (bs_real >= 1) starting in the middle half of every used TTFT",
+    "A-27": "T3 solo window = 150 intervals after reach + trim 16 (before the first prefill) + 150 intervals starting "
+            "T3_POST_TRIM records after the last span end (ABA); rho = median(co) / median(both solo halves)",
+    "A-28": "T3 prefills are sent one at a time (the next on the previous one's first token): FIFO would pack two "
+            "8,192-token inputs into one span (max_prefill_tokens 16,384) and §1-3 keeps only n_new = 1, "
+            "extend_tokens = L spans; the co window is the union of the qualifying spans (gaps are not co-residence)",
+    "A-29": "sigma' reference (rev3.5 draft §1-8): spans of the SAME T3 boot, same L, same prefill_sms, with ONE "
+            "decode request at the T3 ctx running (8 sequential prefills, first excluded) -- replaces the rev3.4 "
+            "denominator T2'(L, P) (client TTFT of another boot, TEL OFF)",
+    "A-30": "co-window membership: a decode_forward whose t_host_start lies in [span_start, span_end) of a qualifying "
+            "span; its interval runs to the next record (consecutive seq); n_it_obs = decode_iteration records with "
+            "t_launch in [span_start, span_end]",
+    "A-31": "J-H2 T1 cells: 2 windows per cell per boot (the '반복 2' of §4' read for T1 as well)",
+    "A-32": "J-C O: one O per (cell, mode) for TP2 and the N=1 anchor = the larger bound (TP2 per-rank step); "
+            "anchor (32, 32k) D44 then fails §3-1 at the cap-48 pool (O-19 option)",
+    "A-33": "TP2 records: rank-0 files (decode_probe.tp0 / tel.tp0 / green.tp0) are the measurement, rank 1 is a "
+            "consistency check (record count, bs_real sequence, green read-out); F4 stride = DERIVED from the "
+            "per-rank conv_state banner (no engine stride log exists; adding one changes ENGINE_DIGEST)",
+    "A-34": "I-1 clock covariates of T3 windows: clk.csv (nvidia-smi wall-clock) aligned by the (time.time, "
+            "perf_counter) pair the client records at each cell start; SW power cap = bit 0x4 of the event reasons",
+    "A-36": "cell order in a T3 boot: the sigma' reference cells first (rep 0 = the boot's first prefill of that L, "
+            "excluded as warm-up), then every other cell in seeded random order",
+    "A-37": "T_span_eng includes up to one decode interval of observation lag (prefill_span_end is emitted when the "
+            "loop observes completion); recorded per cell as span_obs_lag_bound_rel = LONGEST co interval / median span "
+            "(an upper bound per span), not corrected",
+    "A-35": "resume (H-4): a boot without DONE keeps its completed cells (one cells.jsonl line = one cell DONE) and the "
+            "remaining cells run in a NEW boot directory '<boot>@s<k>' (a different server lifetime is a different "
+            "boot; fits and sigma never pair across segments); requires PDMUX_COSTTERMS_RESUME=1 and the same plan",
 }
 
 

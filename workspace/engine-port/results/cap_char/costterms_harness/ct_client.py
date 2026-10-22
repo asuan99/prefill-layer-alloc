@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Cost-term harness, stage 1 -- spec-driven cell client (T1 burst, T2 single-request TTFT, T2' collection, T4 fill).
+"""Cost-term harness -- spec-driven cell client (T1 burst, T2 single-request TTFT, T2' collection, T4 fill; stage 2:
+T3 co-residence cell and the sigma' reference spans).
 
 The programs below talk to a TRANSPORT with five methods -- now(), start(rid, ids, max_new) -> handle,
 wait(pred, timeout), abort(handle), sleep(dt) (+ greedy(ids, n)) -- so the same client code runs against the real
@@ -43,6 +44,11 @@ class HttpTransport:
     @staticmethod
     def now():
         return time.perf_counter()
+
+    @staticmethod
+    def clock_pair():
+        """(wall, monotonic) read back to back -- aligns nvidia-smi clk.csv (wall) with the record clock (A-34)."""
+        return [time.time(), time.perf_counter()]
 
     def _run(self, h, ids):
         body = json.dumps({"input_ids": list(ids), "rid": h.rid, "stream": True,
@@ -275,3 +281,89 @@ def run_trailer(tr, boot_id, timeout=600.0):
     tr.wait(lambda: h.done, timeout)
     tr.sleep(S.IDLE_FLUSHES * S.PROBE_WINDOW_S + 0.1)
     return h.error is None
+
+
+# ============================================================================ stage 2: T3 (§1-3) and the sigma' reference
+def _tok(h):
+    return h.chunks[-1][1] if h.chunks else 0
+
+
+def _clock_pair(tr):
+    return tr.clock_pair() if hasattr(tr, "clock_pair") else None
+
+
+def run_t3_cell(tr, cell_id, bs, L, m, rnd, O_dec, timeout=3600.0, mark=None, rep=0):
+    """§1-3 T3 (rev3.5 draft).  (1) burst bs decode requests (c_in = T3_C - X, max_new = O_dec, ignore_eos); (2) wait
+    until EVERY request has T3_PRE_TOKENS tokens -- the decode batch has joined (ramp-aware, as T1) and the pre solo
+    window (trim 16 + 150 intervals) has run; (3) m prefill inputs of exactly L tokens, max_new 1, ONE AT A TIME (the
+    next is sent when the previous one's first token arrives, A-28); (4) after the last first token wait until every
+    decode request has T3_POST_TOKENS more tokens (post solo window), then abort the batch.  A decode request that
+    ends by length before step (4) completes makes the cell short (the extractor labels it)."""
+    c_in = S.T3_C - S.X_TOKENS
+    ids = S.prompt_ids("T3", bs, S.T3_C, rnd, c_in)
+    pf_ids = S.prompt_ids("T3P", 1, L, rnd, L)
+    rec = {"kind": "t3", "cell_id": cell_id, "bs": bs, "c": S.T3_C, "c_in": c_in, "L": L, "m": m, "O": int(O_dec),
+           "round": rnd, "rep": rep, "clock_pair": _clock_pair(tr), "prefills": []}
+    if mark:
+        mark("cell_start", cell_id)
+    rec["t_first_send"] = tr.now()
+    hs = [tr.start(f"{cell_id}-d{i}", ids, int(O_dec)) for i in range(bs)]
+    rec["pre_reached"] = tr.wait(lambda: all(h.done or _tok(h) >= S.T3_PRE_TOKENS for h in hs), timeout)
+    rec["t_pre_done"] = tr.now()
+    for j in range(m):
+        if any(h.done for h in hs):
+            rec["decode_ended_early"] = True
+            break
+        p = tr.start(f"{cell_id}-p{j}", pf_ids, 1)
+        tr.wait(lambda: p.done, timeout)
+        r = p.record()
+        r.update(j=j, ok=(r["error"] is None and r["prompt_tokens"] == L and r["completion_tokens"] == 1
+                          and r["finish"] == "length"))
+        rec["prefills"].append(r)
+    base = {h.rid: _tok(h) for h in hs}
+    rec["t_co_done"] = tr.now()
+    rec["post_reached"] = tr.wait(lambda: all(h.done or _tok(h) >= base[h.rid] + S.T3_POST_TOKENS for h in hs), timeout)
+    rec["n_ended_before_abort"] = sum(1 for h in hs if h.done)
+    rec["t_abort"] = tr.now()
+    cancel_burst(tr, hs)
+    rec["t_end"] = tr.now()
+    rec["requests"] = [h.record() for h in hs]
+    if mark:
+        mark("cell_end", cell_id)
+    return rec
+
+
+def run_t3_ref(tr, seq_id, L, rnd, O_ref, timeout=3600.0, mark=None):
+    """sigma' reference (rev3.5 draft §1-8, A-29): ONE decode request at the T3 ctx runs, then T3_REF_REPS prefills of
+    exactly L tokens one at a time (the first is the warm-up and is excluded by the extractor), then abort."""
+    c_in = S.T3_C - S.X_TOKENS
+    dec_ids = S.prompt_ids("T3R_DEC", 1, S.T3_C, rnd, c_in)
+    ids = S.prompt_ids("T3P", 1, L, rnd, L)
+    rec = {"kind": "t3ref", "seq_id": seq_id, "L": L, "round": rnd, "O": int(O_ref), "clock_pair": _clock_pair(tr),
+           "reps": []}
+    if mark:
+        mark("cell_start", seq_id)
+    rec["t_first_send"] = tr.now()
+    d = tr.start(f"{seq_id}-dec", dec_ids, int(O_ref))
+    tr.wait(lambda: d.done or _tok(d) >= S.T3_REF_MIN_TOKENS, timeout)
+    for i in range(S.T3_REF_REPS):
+        if d.done:
+            rec["decode_ended_early"] = True
+            break
+        h = tr.start(f"{seq_id}-p{i}", ids, 1)
+        tr.wait(lambda: h.done, timeout)
+        r = h.record()
+        r.update(rep=i, ok=(r["error"] is None and r["prompt_tokens"] == L and r["completion_tokens"] == 1
+                            and r["finish"] == "length"))
+        rec["reps"].append(r)
+    tr.abort(d)
+    rec["decode"] = d.record()
+    rec["t_end"] = tr.now()
+    if mark:
+        mark("cell_end", seq_id)
+    return rec
+
+
+def run_long_point(tr, seq_id, L, rnd, reps=S.JC_LONG_REPS, timeout=3600.0, mark=None):
+    """O-19 option 'separate_boot': the TP2 96k pass / fail point (same program as T2, its own term seed)."""
+    return dict(run_t2(tr, seq_id, L, rnd, reps=reps, timeout=timeout, mark=mark, term="LONG"), kind="long")

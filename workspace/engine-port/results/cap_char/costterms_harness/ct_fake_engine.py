@@ -25,8 +25,17 @@ What the core imitates (each item mirrors a code fact of SGLang v0.5.10 + this p
 
 Ground truth (ms): T_dec = (a + b * bs_padded + c * bs * ctx_mean) with a, b, c scaled (108 / D_real)^g and by the
 model composition; T_prefill(L, P) = (u + v L + w L^2) (108 / P)^theta, the first request of a new L in a boot x
-`warm_mult`.  Faults (truth keys) exist to make each harness mutant observable: realize, client_drift(_bs),
-i4_unresolved_every, retract_at_step, capture_max, weight_dependent, no_vanilla_probe.
+`warm_mult`.  Stage 2: a PD-mux span that starts while bs_dec decode requests run is slower by (1 + pf_coex bs_dec)
+(so sigma' = (1 + pf_coex bs) / (1 + pf_coex) for the T3 reference with ONE decode request); a decode step launched
+while a span is in flight is slower by kappa (rho truth), and every `stall_every`-th such step lasts stall_mult x the
+undisturbed step.  TP (--tp-size 2): per-rank banners ('TPr]' prefix), weights / mamba / KV bytes per rank = 1/tp,
+rank-suffixed files (decode_probe.tp0.jsonl, tel.tp1.jsonl, green.tp0.json; multigpu_guard.rank_suffixed_path) with
+tp_rank / dp_rank fields, decode x tp_dec_mult, prefill x tp_pf_mult.
+TEL phase events follow multiplexing_mixin._phase_on_*: prefill_span_start at issue, prefill_span_end when the loop
+observes completion (a decode-step boundary while decoding), decode_iteration emitted at t_sync (timestamp = t_sync,
+fields iter_seq, t_launch, t_sync, bs, stream_idx, prefill_sms, decode_sms, prefill_in_flight, ...).
+Faults (truth keys) exist to make each harness mutant observable: realize, client_drift(_bs), i4_unresolved_every,
+retract_at_step, capture_max, weight_dependent, no_vanilla_probe, stall_every.
 """
 from __future__ import annotations
 
@@ -64,6 +73,7 @@ DEFAULT_TRUTH = {
     "client_drift": 0.0, "client_drift_bs": None,
     "i4_unresolved_every": 0, "realize": {}, "retract_at_step": None, "capture_max": None,
     "weight_dependent": 0.0, "no_vanilla_probe": False, "boot_delay_s": 0.05,
+    "pf_coex": 0.0, "stall_every": 0, "stall_mult": 6.0, "tp_dec_mult": 0.62, "tp_pf_mult": 0.6,
 }
 
 
@@ -125,18 +135,19 @@ class EngineCore:
         self.pdmux = bool(_arg(a, "--enable-pdmux", False))
         self.eager = bool(_arg(a, "--disable-cuda-graph", False))
         self.mf = float(_arg(a, "--mem-fraction-static", 0.88))
+        self.tp = int(_arg(a, "--tp-size", 1))
         self.m = model_facts(self.model_path)
         self.sticky = self.env.get("PDMUX_STICKY_PARTITION") == "1"
         self.fixed_d = int(self.env["PDMUX_R2_FIXED_DSM"]) if self.env.get("PDMUX_R2_FIXED_DSM") else None
         self.groups = read_pdmux_config(_arg(a, "--pdmux-config-path")) if self.pdmux else None
         self.realize = {int(k): v for k, v in (self.truth.get("realize") or {}).items()}
         # memory
-        wbytes = self.m["params"] * 2
+        wbytes = self.m["params"] * 2 / self.tp            # per rank
         pool = NANO_BUDGET - wbytes
         slots = (self.cap + 1) if self.m["family"] == "nano" else 0
-        self.mamba_bytes = slots * self.m["s"]
+        self.mamba_bytes = slots * self.m["s"] / self.tp
         self.kv_bytes = pool - self.mamba_bytes
-        self.kv_tokens = int(self.kv_bytes // self.m["k"])
+        self.kv_tokens = int(self.kv_bytes // (self.m["k"] / self.tp))
         self.weight_gib = wbytes / GIB
         mx = min(256, self.cap) if self.truth.get("capture_max") is None else int(self.truth["capture_max"])
         self.capture = [] if self.eager else S.default_capture_list(mx)
@@ -150,6 +161,7 @@ class EngineCore:
             self.dec_p = None
         self.adm_p = self.env.get("PDMUX_ADMISSION_PATH")
         self.tel_p = self.env.get("PDMUX_TELEMETRY_PATH") if self.pdmux and self.env.get("PDMUX_PHASE_EVENTS") == "1" else None
+        self.co_steps = 0
         self.win = None
         self.sticky_idx = None
         if self.pdmux and self.sticky:
@@ -159,13 +171,22 @@ class EngineCore:
             self.sticky_idx = divs[0]
 
     # ---------------------------------------------------------------- output helpers
+    def rank_path(self, path, r):
+        """multigpu_guard.rank_suffixed_path: unchanged at tp = 1, '<stem>.tp<r><suffix>' otherwise."""
+        if self.tp <= 1:
+            return path
+        p = Path(path)
+        return str(p.with_name(f"{p.stem}.tp{r}{p.suffix}"))
+
     def _emit(self, path, rec):
         if not path:
             return
-        f = self.files.get(path)
-        if f is None:
-            f = self.files[path] = open(path, "a", buffering=1)
-        f.write(json.dumps(rec) + "\n")
+        for r in range(self.tp):
+            rp = self.rank_path(path, r)
+            f = self.files.get(rp)
+            if f is None:
+                f = self.files[rp] = open(rp, "a", buffering=1)
+            f.write(json.dumps(dict(rec, tp_rank=r, dp_rank=0) if self.tp > 1 else rec) + "\n")
 
     def _log(self, now, text):
         self.log_write(f"[{time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(self.wall0 + now))}] {text}\n")
@@ -208,11 +229,15 @@ class EngineCore:
               + t["c108"] * sc["c"] * r ** t["gc"] * bs * ctx_mean)
         if not self.pdmux:
             ms *= t["vanilla_mult"]
+        if self.tp > 1:
+            ms *= t["tp_dec_mult"]
         return ms
 
     def t_pf_ms(self, L, p_sm):
         t, sc = self.truth, self._scales()
         ms = (t["pf_u"] + t["pf_v"] * sc["v"] * L + t["pf_w4"] * sc["w"] * L * L) * (S.TOTAL_SM / p_sm) ** t["theta"]
+        if self.tp > 1:
+            ms *= t["tp_pf_mult"]
         if L not in self.seen_L:
             self.seen_L.add(L)
             ms *= t["warm_mult"]
@@ -237,33 +262,39 @@ class EngineCore:
               f"max_mamba_cache_size={self.mamba_cap}, cuda_graph_max_bs=256, "
               f"disable_radix_cache={bool(_arg(self.argv, '--disable-radix-cache', False))}, "
               f"disable_cuda_graph={self.eager}, enable_pdmux={self.pdmux}, "
-              f"pdmux_config_path={repr(_arg(self.argv, '--pdmux-config-path')) if self.pdmux else None}, tp_size=1)")
+              f"pdmux_config_path={repr(_arg(self.argv, '--pdmux-config-path')) if self.pdmux else None}, tp_size={self.tp})")
         L = [sa]
         if self.pdmux:
             L.append(f"PD-Multiplexing enabled with {len(self.groups)} stream groups, sm_counts (prefill_sm, decode_sm): "
                      f"{[tuple(g) for g in self.groups]}")
-        L.append(f"Load weight end. elapsed=0.12 s, type={self.m['arch']}, avail mem=62.13 GB, mem usage={self.weight_gib:.2f} GB.")
-        if self.m["family"] == "nano":
-            slots = self.cap + 1
-            ssm = slots * self.m["s_ssm"] / GIB
-            conv = slots * (self.m["s"] - self.m["s_ssm"]) / GIB
-            L.append(f"Mamba Cache is allocated. max_mamba_cache_size: {self.cap}, conv_state size: {conv:.2f}GB, ssm_state size: {ssm:.2f}GB ")
-        kv_gib = self.kv_tokens * self.m["k"] / 2 / GIB
-        L.append(f"KV Cache is allocated. #tokens: {self.kv_tokens}, K size: {kv_gib:.2f} GB, V size: {kv_gib:.2f} GB")
+        for r in range(self.tp):
+            pre = f"TP{r}] " if self.tp > 1 else ""
+            L.append(f"{pre}Load weight end. elapsed=0.12 s, type={self.m['arch']}, avail mem=62.13 GB, mem usage={self.weight_gib:.2f} GB.")
+            if self.m["family"] == "nano":
+                slots = self.cap + 1
+                ssm = slots * self.m["s_ssm"] / self.tp / GIB
+                conv = slots * (self.m["s"] - self.m["s_ssm"]) / self.tp / GIB
+                L.append(f"{pre}Mamba Cache is allocated. max_mamba_cache_size: {self.cap}, conv_state size: {conv:.2f}GB, ssm_state size: {ssm:.2f}GB ")
+            kv_gib = self.kv_tokens * self.m["k"] / self.tp / 2 / GIB
+            L.append(f"{pre}KV Cache is allocated. #tokens: {self.kv_tokens}, K size: {kv_gib:.2f} GB, V size: {kv_gib:.2f} GB")
         if not self.eager:
-            L.append(f"Capture cuda graph bs {self.capture}")
-        if self.dec_p:
-            L.append(f"decode probe ENABLED (I-4 events=True, I-6; all arms; pdmux={self.pdmux} capture_bs={self.capture}) -> {self.dec_p}")
-        if self.adm_p:
-            L.append(f"admission probe ENABLED (all arms; cap_slot_relation=identical cap_source=user) -> {self.adm_p}")
-        if self.pdmux and self.sticky:
-            L.append("PD-mux sticky partition ENABLED: decode holds its division while decode is busy (fixed target "
-                     f"index={self.sticky_idx}); the unpartitioned (0, total_sm) group is used only when the decode batch is empty")
-        if self.pdmux and self.env.get("PDMUX_GREEN_READOUT") == "1":
-            g = self.green()
-            L.append(f"PD-mux green read-out: {g}")
-            if self.env.get("PDMUX_GREEN_READOUT_PATH"):
-                Path(self.env["PDMUX_GREEN_READOUT_PATH"]).write_text(json.dumps(g, indent=2, sort_keys=True))
+            L.append(f"{'TP0] ' if self.tp > 1 else ''}Capture cuda graph bs {self.capture}")
+        for r in range(self.tp):
+            pre = f"TP{r}] " if self.tp > 1 else ""
+            if self.dec_p:
+                L.append(f"{pre}decode probe ENABLED (I-4 events=True, I-6; all arms; pdmux={self.pdmux} capture_bs={self.capture}) -> {self.rank_path(self.dec_p, r)}")
+            if self.adm_p:
+                L.append(f"{pre}admission probe ENABLED (all arms; cap_slot_relation=identical cap_source=user) -> {self.rank_path(self.adm_p, r)}")
+            if self.pdmux and self.sticky:
+                L.append(f"{pre}PD-mux sticky partition ENABLED: decode holds its division while decode is busy (fixed target "
+                         f"index={self.sticky_idx}); the unpartitioned (0, total_sm) group is used only when the decode batch is empty")
+            if self.pdmux and self.env.get("PDMUX_GREEN_READOUT") == "1":
+                g = self.green()
+                if self.tp > 1:
+                    g.update(tp_rank=r, dp_rank=0)
+                L.append(f"{pre}PD-mux green read-out: {g}")
+                if self.env.get("PDMUX_GREEN_READOUT_PATH"):
+                    Path(self.rank_path(self.env["PDMUX_GREEN_READOUT_PATH"], r)).write_text(json.dumps(g, indent=2, sort_keys=True))
         L.append(f"max_total_num_tokens={self.kv_tokens}, chunked_prefill_size={_arg(self.argv, '--chunked-prefill-size', 8192)}, "
                  f"max_prefill_tokens={self.max_prefill}, max_running_requests={self.cap}, context_len={self.ctx_len}, "
                  f"available_gpu_mem=28.01 GB")
@@ -368,9 +399,10 @@ class EngineCore:
         """-> (t_next or None, deliveries [(t, req, cum, finished)])."""
         out = []
         if self.span and self.span[1] <= now:
-            reqs = self.span[0]
-            self._tel(now, "prefill_span_end", span_seq=self.span_seq)
+            reqs, sidx_ = self.span[0], self.span[3]
             self.span = None
+            self._tel(now, "prefill_span_end", span_seq=self.span_seq, n_done=len(reqs), running_bs=len(self.running),
+                      queue_len=len(self.waiting), stream_idx=sidx_)
             for r in reqs:
                 if r.aborted:
                     self.kv_used -= r.n_in + r.max_new
@@ -404,12 +436,18 @@ class EngineCore:
             if self.span is None and self.waiting:
                 batch = self._admit(now)
                 if batch:
-                    p = self.prefill_sm(bool(self.running))
-                    dur = sum(self.t_pf_ms(r.n_in, p) for r in batch) / 1000.0
+                    busy = bool(self.running)
+                    p = self.prefill_sm(busy)
+                    coex = (1.0 + self.truth["pf_coex"] * len(self.running)) if busy else 1.0
+                    dur = sum(self.t_pf_ms(r.n_in, p) for r in batch) * coex / 1000.0
                     self.span_seq += 1
-                    self.span = (batch, now + dur, p)
+                    sidx = self._stream_idx(busy)
+                    self.span = (batch, now + dur, p, sidx)
+                    gp, gd = self.groups[sidx]
                     self._tel(now, "prefill_span_start", span_seq=self.span_seq, n_new=len(batch),
-                              extend_tokens=sum(r.n_in for r in batch))
+                              extend_tokens=sum(r.n_in for r in batch), running_bs=len(self.running),
+                              queue_len=len(self.waiting), cap=self.cap, stream_idx=sidx, prefill_sms=gp,
+                              decode_sms=gd)
                     self._log(now, f"Prefill batch, #new-seq: {len(batch)}, #new-token: {sum(r.n_in for r in batch)}, "
                                    f"#running-req: {len(self.running)}, #queue-req: {len(self.waiting)}, cuda graph: False")
             elif self.span is not None and self.waiting:
@@ -428,6 +466,11 @@ class EngineCore:
         bs_pad, graph = self.pad(bs)
         ctx = sum(r.n_in + r.gen for r in self.running) / bs
         ms = self.t_dec_ms(d_sm, bs_pad, bs, ctx) * (self.truth["kappa"] if in_flight else 1.0)
+        if in_flight:
+            self.co_steps += 1
+            se = int(self.truth.get("stall_every") or 0)
+            if se and self.co_steps % se == 0:
+                ms = ms / self.truth["kappa"] * self.truth["stall_mult"]
         dur = ms / 1000.0
         self.seq += 1
         self.step_n += 1
@@ -448,8 +491,12 @@ class EngineCore:
                                     "decode_fwd_host_ms": ms * self.truth["host_frac"], "decode_fwd_gpu_ms": gpu,
                                     "thread": "MainThread", "dropped_events": 0})
         self.iter_seq += 1
-        self._tel(now, "decode_iteration", iter_seq=self.iter_seq, t_launch=now + 0.02 * dur, t_sync=now + 0.95 * dur,
-                  decode_batch_size=bs, prefill_in_flight=in_flight, stream_idx=sidx)
+        if self.pdmux:
+            gp, gd = self.groups[sidx]
+            # emitted on decode sync (multiplexing_mixin._phase_on_decode_sync): timestamp = t_sync
+            self._tel(now + 0.95 * dur, "decode_iteration", iter_seq=self.iter_seq, t_launch=now + 0.02 * dur,
+                      t_sync=now + 0.95 * dur, bs=bs, stream_idx=sidx, prefill_sms=gp, decode_sms=gd,
+                      prefill_in_flight=in_flight, prefill_kernel_done_wait=False, queue_len=len(self.waiting))
         if self.adm_p:
             self._roll(now)
             self.win["n_dec"] += 1
@@ -474,6 +521,12 @@ class EngineCore:
         self.running = keep
         return t_end, out
 
+    def _stream_idx(self, decode_busy):
+        """multiplexing_mixin.adjust_stream_groups: empty decode -> group 0 (108, 0); busy -> sticky / fixed division."""
+        if not decode_busy:
+            return 0
+        return self.sticky_idx if self.sticky else self._fixed_idx()
+
     def _fixed_idx(self):
         for i, (p, d) in enumerate(self.groups):
             if 1 <= i <= len(self.groups) - 2 and d == self.fixed_d:
@@ -482,7 +535,9 @@ class EngineCore:
 
     def _tel(self, now, event, **f):
         if self.tel_p:
-            self._emit(self.tel_p, dict(event=event, timestamp_monotonic_s=now, dropped_events=0, phase="benchmark", **f))
+            self._emit(self.tel_p, dict(run_id=self.env.get("PDMUX_RUN_ID", "unlabeled"), workload_id="fake",
+                                        phase="benchmark", event=event, timestamp_monotonic_s=now, request_id="",
+                                        schema="pdmux.runtime-event/v1", dropped_events=0, **f))
 
     # ---------------------------------------------------------------- client-side lag (fault: drift)
     def client_time(self, t, req, cum):
@@ -520,6 +575,9 @@ class VirtualTransport:
 
     def now(self):
         return self.t
+
+    def clock_pair(self):
+        return [self.core.wall0 + self.t, self.t]
 
     def _push(self, t, kind, payload):
         self.n += 1

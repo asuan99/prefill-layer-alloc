@@ -117,9 +117,13 @@ if [[ "${target}" == */costterms_job.sh ]]; then
     case "${kv}" in PDMUX_COSTTERMS_JOB=*) ctj="${kv#*=}" ;; PDMUX_COSTTERMS_ROUND=*) ctr="${kv#*=}" ;;
       PDMUX_COSTTERMS_SEALED=1) ctsealed="yes" ;; esac
   done
-  case "${ctj}:${ctr}" in J-H1:*) ctcap=245 ;; J-A:1) ctcap=243 ;; J-A:2) ctcap=234 ;; J-B2:*) ctcap=78 ;; *) ctcap="" ;; esac
+  # caps = ct_spec.HARD_CAP_MIN (J-H2 / J-C: rev3.5 draft, ct_timemodel x 1.2); J-C runs on 2 GPUs (resourcespec-a100x2)
+  ctg=1
+  case "${ctj}:${ctr}" in J-H1:*) ctcap=246 ;; J-A:1) ctcap=244 ;; J-A:2) ctcap=235 ;; J-B2:*) ctcap=78 ;;
+    J-H2:*) ctcap=126 ;; J-C:*) ctcap=215; ctg=2 ;; *) ctcap="" ;; esac
   if [[ -n "${ctcap}" ]]; then
-    echo "costterms: job=${ctj} round=${ctr} sealed_env=${ctsealed} hardcap=${ctcap} min (self-enforced), cost bound <= \$$(awk -v c="${ctcap}" -v r="${PDMUX_VESSL_RATE_USD_H}" 'BEGIN{printf "%.2f", c/60*r}') (rate x cap)"
+    echo "costterms: job=${ctj} round=${ctr} gpus=${ctg} sealed_env=${ctsealed} hardcap=${ctcap} min (self-enforced), cost bound <= \$$(awk -v c="${ctcap}" -v r="${PDMUX_VESSL_RATE_USD_H}" 'BEGIN{printf "%.2f", c/60*r}') (rate x cap)"
+    [[ "${ctg}" == 2 && "${PDMUX_VESSL_SPEC:-}" != *a100x2* ]] && echo "costterms: WARNING J-C needs resourcespec-a100x2 (costterms_job.sh aborts rc 16 on a GPU-count mismatch)"
     [[ "${ctsealed}" == yes ]] || echo "costterms: WARNING no PDMUX_COSTTERMS_SEALED=1 -> the entry point refuses (rc 16 ABORT_UNSEALED); unsealed submit would only burn setup time"
   else
     echo "costterms: WARNING unknown job/round '${ctj}:${ctr}' -> the entry point aborts rc 16 (ABORT_CONFIG)"

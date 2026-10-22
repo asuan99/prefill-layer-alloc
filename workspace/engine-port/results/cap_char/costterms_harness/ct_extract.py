@@ -213,19 +213,23 @@ def label_problems(boot, f):
     pd = f["server_args"].get("enable_pdmux")
     if bool(pd) != boot["engine"].startswith("pdmux"):
         bad.append(f"ABORT_ENGINE_MODE: enable_pdmux={pd} for plan engine {boot['engine']}")
+    tp = boot.get("tp", 1)
+    if (f["server_args"].get("tp_size") or 1) != tp:
+        bad.append(f"ABORT_TP_LABEL: log tp_size {f['server_args'].get('tp_size')} != plan {tp}")
     if boot["engine"] == "pdmux_sticky":
-        if f.get("sticky_enabled_lines") != 1 or f.get("sticky_index") != S.STICKY_IDX[boot["D"]]:
+        if f.get("sticky_enabled_lines") != tp or f.get("sticky_index") != S.STICKY_IDX[boot["D"]]:
             bad.append(f"STICKY_MODE_MISMATCH: sticky lines {f.get('sticky_enabled_lines')} index "
                        f"{f.get('sticky_index')} != {S.STICKY_IDX[boot['D']]}")
     elif f.get("sticky_enabled_lines"):
         bad.append("STICKY_MODE_MISMATCH: sticky ENABLED on a non-sticky boot")
     mt = mem_terms(f)
     if boot["model"] == "nano" and mt is not None:
-        implied = round(mt["k"] / (2 * 8 * 128 * 2))           # attention layers implied by the KV banner
+        implied = round(mt["k"] * tp / (2 * 8 * 128 * 2))      # attention layers implied by the (per-rank) KV banner
         if implied != boot.get("variant"):
             bad.append(f"ABORT_VARIANT_LABEL: banner implies {implied} attention layers, plan a{boot.get('variant')}")
-    if f["server_args"].get("context_length") != S.CONTEXT_LENGTH:
-        bad.append(f"ABORT_CONTEXT: context_length {f['server_args'].get('context_length')} != {S.CONTEXT_LENGTH}")
+    want_ctx = boot.get("context", S.CONTEXT_LENGTH)
+    if f["server_args"].get("context_length") != want_ctx:
+        bad.append(f"ABORT_CONTEXT: context_length {f['server_args'].get('context_length')} != {want_ctx}")
     return bad
 
 
@@ -574,4 +578,368 @@ def t4_fill(fill, records, admission=None):
         out["reason_share_time"] = {k_: v / dur for k_, v in tw.items()} if dur else None
     else:
         out["reason_share_iter"] = out["reason_share_time"] = "NOT_COLLECTED"
+    return out
+
+
+# ============================================================================ stage 2: TEL phase events (§1-3, §1-6)
+TEL_EVENTS = ("prefill_span_start", "prefill_span_end", "decode_iteration")
+
+
+def tel_phase(records):
+    """-> (spans, iterations).  spans = start/end pairs by span_seq (a span without its end is kept with t_end None);
+    iterations = decode_iteration records sorted by t_launch.  Field names = multiplexing_mixin._phase_on_* ."""
+    starts, ends, its = {}, {}, []
+    for e in records:
+        ev = e.get("event")
+        if ev == "prefill_span_start":
+            starts[e["span_seq"]] = e
+        elif ev == "prefill_span_end":
+            ends[e["span_seq"]] = e
+        elif ev == "decode_iteration":
+            its.append(e)
+    spans = []
+    for q in sorted(starts):
+        s, e = starts[q], ends.get(q)
+        spans.append({"span_seq": q, "t_start": s["timestamp_monotonic_s"],
+                      "t_end": e["timestamp_monotonic_s"] if e else None, "n_new": s.get("n_new"),
+                      "extend_tokens": s.get("extend_tokens"), "prefill_sms": s.get("prefill_sms"),
+                      "decode_sms": s.get("decode_sms"), "running_bs": s.get("running_bs")})
+    its.sort(key=lambda e: e["t_launch"])
+    return spans, its
+
+
+def _dist(xs):
+    if not xs:
+        return None
+    return {"n": len(xs), "p50": quantile(xs, 0.5), "p90": quantile(xs, 0.9), "p95": quantile(xs, 0.95),
+            "p99": quantile(xs, 0.99), "max": max(xs)}
+
+
+def stall_stats(seq_vals, thr):
+    """seq_vals = list of runs (each run = consecutive intervals in record order).  A stall = interval > thr; runs of
+    consecutive stalls never cross a run boundary (span / window edge)."""
+    n_all = sum(len(r) for r in seq_vals)
+    n, runs = 0, []
+    for vals in seq_vals:
+        cur = 0
+        for x in vals:
+            if x > thr:
+                n, cur = n + 1, cur + 1
+            elif cur:
+                runs.append(cur)
+                cur = 0
+        if cur:
+            runs.append(cur)
+    return {"threshold_ms": thr, "n_stall": n, "q_stall": n / n_all if n_all else None,
+            "max_run": max(runs) if runs else 0, "runs": runs}
+
+
+def _span_for(spans, t_lo, t_hi):
+    """The span whose start lies in [t_lo, t_hi] (a prefill request's send .. first token)."""
+    c = [s for s in spans if t_lo <= s["t_start"] <= t_hi]
+    return c[0] if len(c) == 1 else None
+
+
+def _recs_in(recs, t_lo, t_hi, ts=None):
+    ts = ts if ts is not None else [e["t_host_start"] for e in recs]
+    i, j = bisect.bisect_left(ts, t_lo), bisect.bisect_left(ts, t_hi)
+    return i, j
+
+
+def n_it_in(its, t_lo, t_hi):
+    """decode_iteration records with t_launch in [t_lo, t_hi] (the PREREG's n_it_obs: a COUNT, never T_span/T_iter)."""
+    ts = [e["t_launch"] for e in its]
+    return bisect.bisect_right(ts, t_hi) - bisect.bisect_left(ts, t_lo)
+
+
+def t3_cell(dec_sorted, spans, its, cell, P_expected):
+    """One T3 cell (rev3.5 draft §1-3).  dec_sorted = decode_forward records sorted by seq (seq order = time order),
+    spans / its from tel_phase, P_expected = the boot's sticky prefill half (prefill_sms of the division).
+    Status: BENCH_INVALID > FOREIGN_RESIDUAL > RECORDER_UNPROVEN > WINDOW_SHORT > VALID; labels T3_WINDOW_SHORT
+    (n_it_obs < 128, rho conditional), SIGMA_NOT_COLLECTED (no TEL), RAMP_EXCEEDED_BOUND."""
+    bs, L, c_in = cell["bs"], cell["L"], cell["c_in"]
+    reqs, pfs = cell["requests"], cell.get("prefills", [])
+    out = {"cell_id": cell["cell_id"], "bs": bs, "L": L, "rep": cell.get("rep"), "O": cell["O"], "status": None,
+           "labels": [], "detail": ""}
+    if len(reqs) != bs or any(r.get("error") or r.get("prompt_tokens") != c_in for r in reqs) or \
+            len(pfs) != cell["m"] or not all(p.get("ok") for p in pfs) or not cell.get("pre_reached"):
+        out.update(status="BENCH_INVALID", detail=f"{len(pfs)}/{cell['m']} prefills ok / decode request error")
+        return out
+    t0, t1 = cell["t_first_send"], cell["t_end"]
+    ts_all = [e["t_host_start"] for e in dec_sorted]
+    i, j = _recs_in(dec_sorted, t0, t1 + 1e-9, ts_all)
+    recs = dec_sorted[i:j]
+    firsts = sorted(r["chunks"][0][0] for r in reqs if r.get("chunks"))
+
+    def joined(t):
+        return bisect.bisect_right(firsts, t + S.JOIN_SLACK_S)
+    foreign = [e for e in recs if (e.get("bs_real") or 0) > min(bs, joined(e["t_host_start"]))]
+    if foreign:
+        out.update(status="FOREIGN_RESIDUAL", detail=f"{len(foreign)} records above the joined decode requests")
+        return out
+    i0 = first_reach_index(recs, bs)
+    out["ramp_records"] = i0
+    ub = S.ramp_steps_ub(bs, S.T3_C, P_expected) if P_expected else None
+    out["ramp_steps_ub"] = ub
+    if i0 is not None and ub is not None and i0 > ub:
+        out["labels"].append("RAMP_EXCEEDED_BOUND")
+    # ---- spans of the cell's prefills (one per prefill; A-28), qualification (§1-3 (c))
+    cell_spans, why = [], {"no_span": 0, "n_new_or_tokens": 0, "P_mismatch": 0, "no_end": 0, "bs_change": 0,
+                           "no_decode_inside": 0}
+    for p in pfs:
+        sp = _span_for(spans, p["t_send"], p["t_first"]) if spans else None
+        if sp is None:
+            why["no_span"] += 1
+            continue
+        if sp["n_new"] != 1 or sp["extend_tokens"] != L:
+            why["n_new_or_tokens"] += 1
+            continue
+        if sp["prefill_sms"] != P_expected:
+            why["P_mismatch"] += 1
+            continue
+        if sp["t_end"] is None:
+            why["no_end"] += 1
+            continue
+        a, b = _recs_in(dec_sorted, sp["t_start"], sp["t_end"], ts_all)
+        inside = dec_sorted[a:b]
+        if not inside:
+            why["no_decode_inside"] += 1
+            continue
+        if any(e.get("bs_real") != bs or e.get("mode") != "decode" for e in inside):
+            why["bs_change"] += 1
+            continue
+        cell_spans.append((sp, a, b))
+    out["span_exclusions"] = why
+    out["n_spans"] = len(cell_spans)
+    have_tel = bool(spans)
+    # ---- co intervals (A-30)
+    co_runs, n_it = [], 0
+    for sp, a, b in cell_spans:
+        run = []
+        for k in range(a, b):
+            if k + 1 < len(dec_sorted) and dec_sorted[k + 1]["seq"] == dec_sorted[k]["seq"] + 1:
+                run.append((dec_sorted[k + 1]["t_host_start"] - dec_sorted[k]["t_host_start"]) * 1000.0)
+        co_runs.append(run)
+        n_it += n_it_in(its, sp["t_start"], sp["t_end"])
+    co = [x for r in co_runs for x in r]
+    # ---- solo windows (A-27): pre = reach + trim .. + 150 intervals, all before the first prefill was sent;
+    #      post = T3_POST_TRIM records after the last span end
+    t_first_pf = pfs[0]["t_send"]
+    pre = recs[i0 + S.TRIM_ITERS:i0 + S.TRIM_ITERS + S.T3_SOLO_PRE + 1] if i0 is not None else []
+    last_end = max((s["t_end"] for s in spans if s["t_end"] is not None and t_first_pf <= s["t_start"] <= t1),
+                   default=None)
+    if last_end is None:
+        last_end = max(p["t_first"] for p in pfs)
+    k_post = bisect.bisect_left([e["t_host_start"] for e in recs], last_end)
+    post = recs[k_post + S.T3_POST_TRIM:k_post + S.T3_POST_TRIM + S.T3_SOLO_POST + 1]
+
+    def solo_intervals(win, t_limit_lo, t_limit_hi):
+        vals, ex = [], {"bs_change": 0, "mixed": 0, "join_unconfirmed": 0, "outside_solo_phase": 0}
+        for e, nxt in zip(win, win[1:]):
+            t = e["t_host_start"]
+            if e.get("bs_real") != bs:
+                ex["bs_change"] += 1
+            elif e.get("mode") != "decode":
+                ex["mixed"] += 1
+            elif joined(t) != bs:
+                ex["join_unconfirmed"] += 1
+            elif not (t_limit_lo <= t and nxt["t_host_start"] <= t_limit_hi):
+                ex["outside_solo_phase"] += 1
+            else:
+                vals.append((nxt["t_host_start"] - t) * 1000.0)
+        return vals, ex
+    pre_v, pre_ex = solo_intervals(pre, t0, t_first_pf)
+    post_v, post_ex = solo_intervals(post, last_end, t1)
+    for win in (pre, post):
+        if any(b_["seq"] != a_["seq"] + 1 for a_, b_ in zip(win, win[1:])):
+            out.update(status="RECORDER_UNPROVEN", detail="seq gap inside a solo window")
+            return out
+    out.update(pre_seq=(pre[0]["seq"], pre[-1]["seq"]) if pre else None,
+               post_seq=(post[0]["seq"], post[-1]["seq"]) if post else None,
+               solo_exclusions={"pre": pre_ex, "post": post_ex}, n_pre=len(pre_v), n_post=len(post_v))
+    if len(pre) < S.T3_SOLO_PRE + 1 or len(post) < S.T3_SOLO_POST + 1 or \
+            sum(pre_ex.values()) + sum(post_ex.values()) > S.WINDOW_EXCL_MAX or not pre_v or not post_v:
+        out.update(status="WINDOW_SHORT", detail=f"solo windows pre {len(pre)} post {len(post)} records, "
+                                                 f"excluded {pre_ex} {post_ex}")
+        return out
+    solo = pre_v + post_v
+    med_solo = median(solo)
+    out.update(n_it_obs=n_it if have_tel else None, n_co=len(co), co=_dist(co), solo=_dist(solo),
+               solo_median_ms=med_solo, co_median_ms=median(co) if co else None,
+               rho=(median(co) / med_solo) if co else None,
+               stall_co=stall_stats(co_runs, S.STALL_MULT * med_solo),
+               stall_solo=stall_stats([pre_v, post_v], S.STALL_MULT * med_solo),
+               span_ms=[(sp["t_end"] - sp["t_start"]) * 1000.0 for sp, _, _ in cell_spans],
+               span_P=sorted({sp["prefill_sms"] for sp, _, _ in cell_spans}),
+               # A-37: prefill_span_end is emitted when the loop OBSERVES completion (after a decode step), so each
+               # T_span_eng carries up to one decode interval of observation lag; bound relative to the span
+               span_obs_lag_bound_rel=(max(co) / median([(sp["t_end"] - sp["t_start"]) * 1000.0
+                                                         for sp, _, _ in cell_spans])) if co else None,
+               n_it_prefill_in_flight=sum(1 for e in its if e.get("prefill_in_flight")
+                                          and any(sp["t_start"] <= e["t_launch"] <= sp["t_end"] for sp, _, _ in cell_spans)),
+               raw_co_ms=co, raw_solo_ms=solo,
+               co_ranges=[(sp["t_start"], sp["t_end"]) for sp, _, _ in cell_spans],
+               solo_ranges=[(pre[0]["t_host_start"], pre[-1]["t_host_start"]),
+                            (post[0]["t_host_start"], post[-1]["t_host_start"])])
+    per_req = [([ch[0] for ch in r["chunks"]], [ch[1] for ch in r["chunks"]]) for r in reqs]
+
+    def ctx_at(t):
+        tot = 0
+        for tl, cl in per_req:
+            q = bisect.bisect_right(tl, t)
+            tot += c_in + (cl[q - 1] if q else 0)
+        return tot / bs
+    co_t = [dec_sorted[k]["t_host_start"] for _, a, b in cell_spans for k in range(a, b)]
+    out["ctx_co"] = sum(map(ctx_at, co_t)) / len(co_t) if co_t else None
+    solo_t = [e["t_host_start"] for e in pre[:-1] + post[:-1]]
+    out["ctx_solo"] = sum(map(ctx_at, solo_t)) / len(solo_t) if solo_t else None
+    if not have_tel:
+        out["labels"].append("SIGMA_NOT_COLLECTED")
+    if not have_tel or n_it < S.T3_MIN_ITERS:
+        out["labels"].append("T3_WINDOW_SHORT")
+    if not co:
+        out.update(status="WINDOW_SHORT", detail="no qualifying co-residence span")
+        return out
+    out["status"] = "VALID"
+    return out
+
+
+def t3_ref(dec_sorted, spans, rec, P_expected):
+    """sigma' reference spans (A-29): rep >= T3_REF_WARMUP, span started between the rep's send and first token,
+    n_new 1, extend L, prefill_sms == P_expected, the ONE decode request executing inside (>= 1 decode_forward)."""
+    L = rec["L"]
+    out = {"seq_id": rec["seq_id"], "L": L, "status": None, "detail": ""}
+    if not spans:
+        out.update(status="SIGMA_NOT_COLLECTED", detail="no TEL phase events")
+        return out
+    ts_all = [e["t_host_start"] for e in dec_sorted]
+    durs, bad = [], []
+    used = [r for r in rec["reps"] if r["rep"] >= S.T3_REF_WARMUP]
+    for r in used:
+        sp = _span_for(spans, r["t_send"], r["t_first"]) if r.get("t_first") is not None else None
+        if not r.get("ok") or sp is None or sp["t_end"] is None:
+            bad.append((r["rep"], "no span / request not ok"))
+            continue
+        if sp["n_new"] != 1 or sp["extend_tokens"] != L or sp["prefill_sms"] != P_expected:
+            bad.append((r["rep"], f"span n_new {sp['n_new']} tokens {sp['extend_tokens']} P {sp['prefill_sms']}"))
+            continue
+        a, b = _recs_in(dec_sorted, sp["t_start"], sp["t_end"], ts_all)
+        if not any((e.get("bs_real") or 0) >= 1 for e in dec_sorted[a:b]):
+            bad.append((r["rep"], "decode not executing inside the span"))
+            continue
+        durs.append((sp["t_end"] - sp["t_start"]) * 1000.0)
+    if bad or len(used) != S.T3_REF_REPS - S.T3_REF_WARMUP:
+        out.update(status="INVALID", detail=str(bad[:4]), n_used=len(durs))
+        return out
+    out.update(status="VALID", span_ms=durs, median_ms=median(durs), P=P_expected, n_used=len(durs))
+    return out
+
+
+def sigma_prime(cell_out, ref_out):
+    """rev3.5 draft §1-8: sigma' = median T_span_eng(co, this cell) / median T_span_eng(reference, SAME boot, same L,
+    same P).  Engine span times only -- never client TTFT.  None + reason otherwise."""
+    if cell_out.get("status") != "VALID" or not cell_out.get("span_ms"):
+        return None, "cell not VALID"
+    if ref_out is None or ref_out.get("status") != "VALID":
+        return None, (ref_out or {}).get("status") or "no reference"
+    if cell_out.get("span_P") != [ref_out["P"]]:
+        return None, f"P mismatch {cell_out.get('span_P')} vs {ref_out['P']}"
+    return median(cell_out["span_ms"]) / ref_out["median_ms"], None
+
+
+# ============================================================================ stage 2: I-1 alignment (A-34)
+def read_clk(path):
+    """nvidia-smi clk.csv -> [(wall_s, sm_mhz, event_reasons_int, gpu_index)]; timestamps read as UTC."""
+    import calendar
+    import csv
+    out = []
+    p = Path(path) if path else None
+    if not p or not p.exists():
+        return out
+    with open(p, newline="") as fh:
+        rows = list(csv.reader(fh))
+    for r in rows[1:]:
+        try:
+            ts = r[0].strip()
+            base, frac = ts.split(".") if "." in ts else (ts, "0")
+            wall = calendar.timegm(__import__("time").strptime(base, "%Y/%m/%d %H:%M:%S")) + float("0." + frac)
+            mhz = float(r[1].strip().split()[0])
+            reasons = int(r[4].strip(), 16)
+            gpu = int(r[5].strip()) if len(r) > 5 and r[5].strip() else 0
+            out.append((wall, mhz, reasons, gpu))
+        except (ValueError, IndexError):
+            continue
+    return out
+
+
+def clock_covariates(clk, pair, ranges, gpu=0):
+    """SM clock median and SW-power-cap exposure (bit 0x4) of the clk samples inside monotonic ranges [(lo, hi)]."""
+    if not clk or not pair:
+        return {"status": "NOT_COLLECTED"}
+    off = pair[0] - pair[1]
+    xs = [(m, rs) for w, m, rs, g in clk if g == gpu and any(lo + off <= w <= hi + off for lo, hi in ranges)]
+    if not xs:
+        return {"status": "NO_SAMPLES"}
+    return {"status": "OK", "n": len(xs), "sm_mhz_median": median([m for m, _ in xs]),
+            "sw_power_cap_share": sum(1 for _, rs in xs if rs & 0x4) / len(xs)}
+
+
+# ============================================================================ stage 2: TP2 facts (§5-1 F1-F5)
+_RANK = re.compile(r"TP([0-9]+)\]")
+
+
+def rank_banners(text):
+    """Per-rank banner facts of a TP boot ('... TPr] <banner>' lines) -> {rank: facts subset}."""
+    out = {}
+    for ln in (text or "").splitlines():
+        m = _RANK.search(ln)
+        if not m:
+            continue
+        r = int(m.group(1))
+        f = out.setdefault(r, {})
+        if (k := re.search(r"KV Cache is allocated\. #tokens: *([0-9]+), *K size: *([0-9.]+) *GB, *V size: *([0-9.]+) *GB", ln)):
+            f.update(kv_cache_tokens=int(k.group(1)), kv_k_gib=float(k.group(2)), kv_v_gib=float(k.group(3)))
+        if (k := re.search(r"Mamba Cache is allocated\. *max_mamba_cache_size: *([0-9]+), *conv_state size: *([0-9.]+) *GB"
+                           r"(?:, *ssm_state size: *([0-9.]+) *GB)?", ln)):
+            f.update(max_mamba_cache_size=int(k.group(1)), mamba_conv_gib=float(k.group(2)),
+                     mamba_ssm_gib=float(k.group(3)) if k.group(3) else None)
+        if (k := re.search(r"Load weight end\..*?mem usage=([0-9.]+) *GB", ln)):
+            f["weight_gib"] = float(k.group(1))
+        if "PD-mux sticky partition ENABLED" in ln:
+            f["sticky_lines"] = f.get("sticky_lines", 0) + 1
+    return out
+
+
+def tp_facts(ranks, tp, n_mamba=27):
+    """F1 (s/N), F2 (k/N), F4 (derived stride), F5 (heads divisible + both ranks report) from per-rank banners."""
+    import analytic_terms as _AT2
+    a = _AT2.nano9b_v2()
+    s_pred = _AT2.state_bytes_per_request(a) / tp
+    k_pred = _AT2.kv_bytes_per_token(a) / tp
+    out = {"tp": tp, "ranks": sorted(ranks), "F1": {}, "F2": {}, "F4": {}}
+    per = {}
+    ranks = {int(r): f for r, f in ranks.items()}          # facts.json round trip turns the keys into strings
+    for r, f in ranks.items():
+        mt = mem_terms(f) if f.get("kv_cache_tokens") else None
+        if mt is None:
+            continue
+        conv = (f.get("mamba_conv_gib") or 0.0) * GIB
+        conv_dim = conv / (mt["slots"] * n_mamba * (S.JC_D_CONV - 1) * 2) if mt["slots"] else None
+        per[r] = {"s": mt["s"], "k": mt["k"], "conv_dim": conv_dim,
+                  "stride_derived": conv_dim * S.JC_INPROJ_N1 / S.JC_CONV_DIM_N1 if conv_dim else None}
+    out["per_rank"] = per
+    ok_ranks = sorted(per) == list(range(tp))
+    for key, pred, F_ in (("s", s_pred, "F1"), ("k", k_pred, "F2")):
+        vals = [per[r][key] for r in sorted(per)]
+        held = ok_ranks and bool(vals) and all(abs(v / pred - 1) <= S.JC_F_TOL for v in vals) and \
+            max(vals) - min(vals) <= S.JC_F_TOL * pred
+        out[F_] = {"pred": pred, "values": vals, "held": held}
+    sd = [per[r]["stride_derived"] for r in sorted(per) if per[r]["stride_derived"]]
+    want = S.JC_INPROJ_N1 / tp
+    out["F4"] = {"pred_stride": want, "stride_derived": sd, "source": "DERIVED from the conv_state banner (A-33)",
+                 "label": "F4_STRIDE_DERIVED" if ok_ranks and sd and all(abs(x / want - 1) <= S.JC_STRIDE_TOL for x in sd)
+                 else "F4_STRIDE_DERIVED_MISS",
+                 "boundary_pred": int((2 ** 31) // want)}
+    out["F5"] = {"heads_divisible": all(h % tp == 0 for h in (40, 8, 128)), "both_ranks_banner": ok_ranks,
+                 "held": ok_ranks and out["F1"]["held"] and out["F2"]["held"]}
     return out

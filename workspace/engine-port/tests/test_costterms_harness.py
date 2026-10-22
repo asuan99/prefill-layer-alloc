@@ -1,4 +1,4 @@
-"""CPU tests of the cost-term measurement harness, stage 1 (results/cap_char/costterms_harness/).
+"""CPU tests of the cost-term measurement harness, stages 1 + 2 (results/cap_char/costterms_harness/).
 
 What this proves: the harness reproduces the PREREG rev3.4 registered values (cell grid, feasibility table, T4 pre-data
 table), parses real SGLang boot logs of this project (compo probe), recovers the KNOWN ground truth of a fake engine
@@ -9,6 +9,7 @@ timing model is invented; its numbers are not predictions.
 """
 import importlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -32,6 +33,11 @@ M = importlib.import_module("ct_mutants")
 FE = importlib.import_module("ct_fake_engine")
 
 K = 1024
+
+
+def mock_attr(obj, name, value):
+    from unittest import mock
+    return mock.patch.object(obj, name, value)
 
 
 def tmpdir(tc):
@@ -319,7 +325,7 @@ class TestVirtualE2E(unittest.TestCase):
     def setUpClass(cls):
         cls.root = Path(tempfile.mkdtemp(prefix="ct_e2e_"))
         cls.runs = {}
-        for sc in ("JH1", "JH1F", "JAF", "JB2", "JA0"):
+        for sc in ("JH1", "JH1F", "JAF", "JB2", "JA0", "T3S", "JC"):
             d = cls.root / sc
             cls.runs[sc] = (d, M.run_scenario(sc, d, SRC))
 
@@ -515,9 +521,26 @@ class TestEntry(unittest.TestCase):
         r = subprocess.run(["bash", str(H / "costterms_job.sh")], env=dict(env, PDMUX_COSTTERMS_JOB="J-H1"),
                            capture_output=True, text=True)
         self.assertEqual(r.returncode, 16)
-        r = subprocess.run(["bash", str(H / "costterms_job.sh")], env=dict(env, PDMUX_COSTTERMS_JOB="J-C"),
+        r = subprocess.run(["bash", str(H / "costterms_job.sh")], env=dict(env, PDMUX_COSTTERMS_JOB="J-X"),
                            capture_output=True, text=True)
         self.assertIn("ABORT_CONFIG", r.stderr)
+        for job in ("J-H2", "J-C"):                                               # stage 2 jobs are known, unsealed
+            r = subprocess.run(["bash", str(H / "costterms_job.sh")], env=dict(env, PDMUX_COSTTERMS_JOB=job),
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 16)
+            self.assertIn("ABORT_UNSEALED", r.stderr)
+
+    def test_engine_digest_gate(self):
+        """H-2: a manifest that does not reproduce ENGINE_DIGEST.txt (here: absent) aborts with rc 13 before any run."""
+        self.assertEqual((H / "ENGINE_DIGEST.txt").read_text().strip(), S.ENGINE_DIGEST_EXPECTED)
+        d = tmpdir(self)
+        env = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_COSTTERMS")}
+        env.update(PDMUX_COSTTERMS_JOB="J-B2", PDMUX_COSTTERMS_TEST_MODE="1", PDMUX_DATA=str(d), PDMUX_JOB_NAME="t",
+                   PDMUX_COSTTERMS_SUMMARY=str(d / "sum"), PDMUX_COSTTERMS_OUT=str(d / "raw"))
+        r = subprocess.run(["bash", str(H / "costterms_job.sh")], env=env, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 13, r.stderr)
+        self.assertIn("ABORT_ENGINE_DIGEST", r.stderr)
+        self.assertFalse((d / "raw" / "plan.json").exists())
 
     def test_plans(self):
         for job, rnd in (("J-H1", 1), ("J-A", 1), ("J-A", 2), ("J-B2", 1)):
@@ -528,9 +551,25 @@ class TestEntry(unittest.TestCase):
                          [b["boot_id"].replace("ja2_", "") for b in a2["boots"]])
         self.assertEqual(len(R.make_plan("J-B2")["boots"]), 10)
         self.assertEqual(len(R.make_plan("J-H1")["boots"]), 7)
+        self.assertEqual(len(R.make_plan("J-A", 1)["boots"]), 12)                  # + T3 boots D24 / D44
+        self.assertEqual(len(R.make_plan("J-A", 2)["boots"]), 11)
         for job in ("J-H2", "J-C"):
-            with self.assertRaises(NotImplementedError):
-                R.make_plan(job)
+            self.assertEqual(R.plan_problems(R.make_plan(job)), [], job)
+        jh2 = R.make_plan("J-H2")["boots"]
+        self.assertEqual(sorted((b["variant"], b["D"]) for b in jh2), sorted((n, d) for n in S.VARIANTS for d in S.JH2_D))
+        self.assertTrue(all(b["kind"] == "T3" and b["dummy"] for b in jh2))
+        jc = R.make_plan("J-C")["boots"]
+        self.assertEqual(len(jc), 10)                                               # 96k deleted by default (O-19)
+        self.assertEqual({(b["tp"], b["cap"], b["gpus"]) for b in jc}, {(2, 128, "0,1"), (1, 48, "0")})
+        r1 = [b["boot_id"] for b in jc if b["boot_id"].startswith("jc1_")]
+        r2 = [b["boot_id"] for b in jc if b["boot_id"].startswith("jc2_")]
+        self.assertEqual([x.replace("jc1_", "") for x in r1][::-1], [x.replace("jc2_", "") for x in r2])   # ABBA
+        with mock_attr(S, "JC_96K_MODE", "separate_boot"):
+            p = R.make_plan("J-C")
+            self.assertEqual(p["boots"][-1]["long"], [S.JC_LONG_L])
+            self.assertEqual(R.plan_problems(p), [])
+            p["boots"].insert(0, p["boots"].pop())                               # the 96k boot must be last
+            self.assertTrue(any("LAST" in x for x in R.plan_problems(p)))
         with self.assertRaises(SystemExit):
             os.environ.pop("PDMUX_COSTTERMS_TEST_MODE")
             try:
@@ -543,6 +582,194 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(tuple(groups), S.STREAM_GROUPS)
         for d, i in S.STICKY_IDX.items():
             self.assertEqual(groups[i][1], d)
+
+
+# =============================================================================== stage 2 (T3, J-H2, J-C, Job entry)
+class TestStage2Spec(unittest.TestCase):
+    PROBE_POOLS = {4: 886804, 13: 419117, 22: 334083, 31: 298407}     # compo probe banners (design input, not citable)
+
+    def test_sigma_single_knob(self):
+        """H-6: RAMP_SIGMA alone moves every registered output length (T1 burst, T3 decode, sigma' reference)."""
+        base = (S.o_tokens(32, 8 * K, "JA"), S.t3_o_tokens(32, 8 * K, 44), S.t3_ref_o_tokens(32 * K, 44),
+                S.o_tokens(32, 8 * K, "JC|44"), S.o_tokens(32, 8 * K, "JH2|13|24"))
+        with mock_attr(S, "RAMP_SIGMA", 0.5):
+            low = (S.o_tokens(32, 8 * K, "JA"), S.t3_o_tokens(32, 8 * K, 44), S.t3_ref_o_tokens(32 * K, 44),
+                   S.o_tokens(32, 8 * K, "JC|44"), S.o_tokens(32, 8 * K, "JH2|13|24"))
+        self.assertTrue(all(a > b for a, b in zip(base, low)), (base, low))
+        self.assertEqual(S.o_tokens(32, 8 * K, "JA"), 6173)                          # stage-1 values unchanged
+        self.assertEqual(S.T3_PRE_TOKENS, 169)
+        self.assertEqual(S.T3_POST_TOKENS, 154)
+
+    def test_jh2_feasibility_on_probe_pools(self):
+        """rev3.5 draft §4' table: bs 8 T3 cells run in every variant; bs 32 only where the pool allows."""
+        cap = S.default_capture_list(128)
+        run = {}
+        for n in S.VARIANTS:
+            for d in S.JH2_D:
+                a = S.variant_arch(n)
+                for bs, L in [(b, l) for b in S.T3_BS for l in S.T3_L]:
+                    r = S.feasible_t3(bs, L, S.t3_o_tokens(bs, L, d, a), self.PROBE_POOLS[n], 128, bs in cap) + \
+                        S.feasible_t3(1, L, S.t3_ref_o_tokens(L, d, a), self.PROBE_POOLS[n], 128, True)
+                    run[(n, d, bs, L)] = not r
+                for bs, c in S.JH2_T1_CELLS:
+                    run[(n, d, "t1", c)] = not S.feasible_cell(bs, c, S.o_tokens(bs, c, f"JH2|{n}|{d}"),
+                                                               self.PROBE_POOLS[n], 128, True)
+        self.assertTrue(all(run[(n, d, 8, L)] for n in S.VARIANTS for d in S.JH2_D for L in S.T3_L))
+        self.assertTrue(all(run[(4, d, 32, L)] for d in S.JH2_D for L in S.T3_L))
+        self.assertEqual([k for k, v in run.items() if k[0] == 13 and k[2] == 32 and v], [(13, 24, 32, 8 * K)])
+        self.assertFalse(any(v for k, v in run.items() if k[0] in (22, 31) and k[2] == 32))
+        self.assertEqual({k for k, v in run.items() if k[2] == "t1" and not v},
+                         {(n, d, "t1", 8 * K) for n in (22, 31) for d in S.JH2_D})
+
+    def test_jc_feasibility(self):
+        """O-19 / A-32: one O per (cell, mode) for TP2 and the anchor; the anchor's cap-48 pool loses (32, 32k) D44."""
+        cap48 = S.default_capture_list(48)
+        for bs, c in S.JC_T1_CELLS:
+            O = S.o_tokens(bs, c, "JC|44")
+            n1 = S.feasible_cell(bs, c, O, 1588000, 48, bs in cap48)
+            tp2 = S.feasible_cell(bs, c, O, 3720000, 128, True)
+            self.assertEqual(not n1, (bs, c) != (32, 32 * K), (bs, c, n1))
+            self.assertEqual(tp2, [], (bs, c))
+            self.assertEqual(S.feasible_cell(bs, c, S.o_tokens(bs, c, "VANILLA"), 1588000, 48, True), [])
+        self.assertGreater(S.o_tokens(32, 8 * K, "JC|44"), S.o_tokens(32, 8 * K, "JA"))
+        self.assertEqual(int(2 ** 31 // (S.JC_INPROJ_N1 / 2)), 189573)              # 2 x 94,786.5
+
+    def test_time_model_and_caps(self):
+        tm = importlib.import_module("ct_timemodel")
+        h = {k: v[0] for k, v in tm.main().items()}
+        self.assertAlmostEqual(h["J-A|1"], 3.4, delta=0.05)                         # PREREG §7-4' J-A1 3.4 h
+        self.assertAlmostEqual(h["J-A|2"], 3.3, delta=0.05)
+        self.assertAlmostEqual(h["J-H1|1"], 3.4, delta=0.05)
+        for k in ("J-A|1", "J-A|2", "J-H1"):
+            self.assertGreaterEqual(S.HARD_CAP_MIN[k], 1.2 * h[k if "|" in k else f"{k}|1"] * 60, k)
+        self.assertGreaterEqual(S.HARD_CAP_MIN["J-H2"], 1.2 * h["J-H2|1"] * 60)
+        self.assertGreaterEqual(S.HARD_CAP_MIN["J-C"], 1.2 * h["J-C|1"] * 60)
+        txt = (H / "costterms_job.sh").read_text()
+        import re
+        for job, cap in (("J-H2", S.HARD_CAP_MIN["J-H2"]), ("J-C", S.HARD_CAP_MIN["J-C"])):
+            self.assertRegex(txt, rf"{job}\) +cap_min={cap};")
+        launch = (ENG / "scripts" / "vessl" / "launch.sh").read_text()
+        self.assertIn(f"J-H2:*) ctcap={S.HARD_CAP_MIN['J-H2']}", launch)
+        self.assertIn(f"J-C:*) ctcap={S.HARD_CAP_MIN['J-C']}", launch)
+
+    def test_real_tp2_banner_lines(self):
+        """Per-rank banner parse on lines copied verbatim from an M2G TP2 server log (2026-10-13)."""
+        text = ("[2026-10-13 09:08:59.130 TP0] Load weight end. elapsed=7.78 s, type=NemotronHForCausalLM, avail mem=75.72 GB, mem usage=2.20 GB.\n"
+                "[2026-10-13 09:08:59.158 TP1] Load weight end. elapsed=7.83 s, type=NemotronHForCausalLM, avail mem=75.58 GB, mem usage=2.20 GB.\n"
+                "[2026-10-13 09:08:59.167 TP1] Mamba Cache is allocated. max_mamba_cache_size: 384, conv_state size: 0.09GB, ssm_state size: 6.34GB \n"
+                "[2026-10-13 09:08:59.174 TP0] Mamba Cache is allocated. max_mamba_cache_size: 384, conv_state size: 0.09GB, ssm_state size: 6.34GB \n"
+                "[2026-10-13 09:08:59.209 TP1] KV Cache is allocated. #tokens: 28920927, K size: 27.58 GB, V size: 27.58 GB\n")
+        rb = X.rank_banners(text)
+        self.assertEqual(sorted(rb), [0, 1])
+        self.assertEqual(rb[1]["kv_cache_tokens"], 28920927)
+        self.assertEqual(rb[0]["max_mamba_cache_size"], 384)
+        self.assertNotIn("kv_cache_tokens", rb[0])
+        self.assertFalse(X.tp_facts(rb, 2)["F5"]["held"])                            # rank 0 has no KV banner here
+
+
+class TestStage2E2E(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.root = Path(tempfile.mkdtemp(prefix="ct_s2_"))
+        cls.runs = {sc: (cls.root / sc, M.run_scenario(sc, cls.root / sc, SRC)) for sc in ("T3S", "JC")}
+        d = cls.root / "JH2"
+        R.run_job("J-H2", d, 1, SRC, d / "variants", plan=M.sub_plan("J-H2", ["jh2_a31_D24", "jh2_a4_D44"]),
+                  make_server=lambda b, a, e: R.VirtualServer(b, a, e, dict(M.FAST_PF)))
+        cls.runs["JH2"] = (d, R.analyze(d))
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.root, True)
+
+    def test_t3_truth(self):
+        d, A = self.runs["T3S"]
+        self.assertEqual(M.o_t3_window(d, A), [])
+        self.assertEqual(M.o_t3_sigma_engine(d, A), [])
+        self.assertEqual(M.o_t3_rho_stall(d, A), [])
+        n = 0
+        for key, ck, w in M._t3_reps(A):
+            n += 1
+            bs = w["bs"]
+            truth = (1 + 0.004 * bs) / (1 + 0.004)                                   # fake pf_coex, 1-decode reference
+            self.assertLessEqual(abs(w["sigma_prime"] / truth - 1), w["span_obs_lag_bound_rel"] + 1e-9, (key, ck))
+            self.assertGreaterEqual(w["n_it_obs"], S.T3_MIN_ITERS)
+            self.assertGreater(w["stall_co"]["n_stall"], 0)
+            self.assertEqual(w["stall_solo"]["n_stall"], 0)
+            self.assertEqual(w["status"], "VALID")
+        self.assertEqual(n, 16)                                                      # 2 boots x 4 cells x 2 reps
+        tab = A["tables"]["t3"]["J-A1|r1|real_a4|D44"]
+        self.assertEqual(sorted(tab["cells"]), ["32x32768", "32x8192", "8x32768", "8x8192"])
+        self.assertAlmostEqual(tab["cells"]["8x8192"]["ln_rho_mean"], math.log(1.25), delta=0.01)
+        raw = json.loads((d / "t3_iterations.json").read_text())
+        self.assertEqual(len(raw["J-A1|r1|real_a4|D44"]["8x8192"]["0"]["solo_ms"]), 300)
+        self.assertNotIn("raw_co_ms", json.dumps(A))
+
+    def test_t3_sigma_not_collected_without_tel(self):
+        """A T3 cell analysed without TEL records: sigma' NA (never filled), SIGMA_NOT_COLLECTED, rho still computed."""
+        d, A = self.runs["T3S"]
+        c = tmpdir(self) / "copy"
+        shutil.copytree(d, c)
+        (c / "boots" / "ja1_t3_D44" / "tel.jsonl").unlink()
+        B = R.analyze(c)
+        v = B["boots"]["ja1_t3_D44"]
+        self.assertIn("SIGMA_NOT_COLLECTED", v["labels"])
+        tab = B["tables"]["t3"]["J-A1|r1|real_a4|D44"]["cells"]["8x8192"]
+        self.assertIsNone(tab["ln_sigma_prime_mean"])
+        self.assertEqual(tab["sigma_label"], "SIGMA_NOT_COLLECTED")
+        self.assertTrue(all(w.get("sigma_prime") is None for w in tab["reps"]))
+
+    def test_jc(self):
+        d, A = self.runs["JC"]
+        self.assertEqual(M.o_jc_ratios(d, A), [])
+        self.assertEqual(M.o_raw_not_exported(d, A), [])
+        jc = A["jc"]
+        self.assertIsNone(jc["F5_label"])
+        self.assertEqual(sorted(jc["ratios_t1"]["r1|D44"]), sorted(f"{b}x{c}" for b, c in S.JC_T1_CELLS
+                                                                    if (b, c) != (32, 32 * K)))
+        # fake span x tp_pf_mult 0.6; TTFT adds queue wait + observation at a decode boundary (decode x 0.62)
+        self.assertTrue(all(0.6 - 1e-6 <= x <= 0.62 + 1e-6 for x in jc["ratios_t2p"]["r1|D44"].values()),
+                        jc["ratios_t2p"]["r1|D44"])
+        self.assertEqual({x["labels"][0] for x in jc["t4"]["jc_tp2_t4"]}, {"CMEM_ACCT_HELD"})
+        self.assertTrue(all(r["bs_sequence_equal"] for r in jc["rank"].values()))
+        v = A["boots"]["jc1_n1_D44"]
+        self.assertEqual(v["identity"]["cap"], 48)
+        self.assertTrue((d / "boots" / "jc1_tp2_D44" / "decode_probe.tp1.jsonl").exists())
+        self.assertEqual(json.loads((d / "boots" / "jc1_tp2_D44" / "boot.json").read_text())["cuda_visible_devices"], "0,1")
+        self.assertEqual(json.loads((d / "boots" / "jc1_n1_D44" / "boot.json").read_text())["cuda_visible_devices"], "0")
+
+    def test_jh2(self):
+        d, A = self.runs["JH2"]
+        for bid in ("jh2_a31_D24", "jh2_a4_D44"):
+            v = A["boots"][bid]
+            self.assertTrue(v["usable"], v["problems"])
+            self.assertEqual(len(v["feasibility_t3"]), 4)                     # every registered T3 cell is a row
+            self.assertEqual(v["kind"], "T3")
+            self.assertTrue((d / "boots" / bid / "tel.jsonl").exists())        # TEL ON in both D boots (symmetric)
+        self.assertEqual(A["boots"]["jh2_a31_D24"]["identity"]["n_attn"], 31)
+        self.assertIn("J-H2|r1|dummy_a31|D24", A["jh2"]["dummy_a31"]["t3_keys"])
+        self.assertIsNotNone(A["tables"]["t3"]["J-H2|r1|dummy_a31|D24"]["a31_note"])
+
+    def test_smoke_and_resume(self):
+        self.assertEqual(M.o_smoke(), [])
+        self.assertEqual(M.o_resume(), [])
+        self.assertEqual(M.o_jc_anchor(), [])
+        p = M.sub_plan("J-A", ["ja1_D44"])
+        b = p["boots"][0]
+        with self.assertRaises(SystemExit):
+            R.select_cells(b, select=["ja1_D44:t2:4096"])                     # T2 is not registered in sticky D44
+        keep = R.select_cells(b, cells_per_boot=2)
+        self.assertEqual([k for k in keep if k.startswith("t1|")], ["t1|1x2048|0", "t1|8x2048|0"])
+        with self.assertRaises(SystemExit):
+            R.run_job("J-A", tmpdir(self), plan=p, select=["ja1_D44:t1:8x2048"])   # subsets are smoke-only
+        d = tmpdir(self)
+        mk = lambda b_, a, e: R.VirtualServer(b_, a, e, dict(M.FAST_PF))  # noqa: E731
+        R.run_job("J-A", d, plan=p, make_server=mk, smoke=True, select=["ja1_D44:t1:8x2048"])
+        os.environ.pop("PDMUX_COSTTERMS_TEST_MODE")
+        try:
+            with self.assertRaises(SystemExit):                                   # non-empty out without RESUME=1
+                R.run_job("J-A", d, plan=None, smoke=True, boots=["ja1_D44"], select=["ja1_D44:t1:8x2048"])
+        finally:
+            os.environ["PDMUX_COSTTERMS_TEST_MODE"] = "1"
 
 
 if __name__ == "__main__":

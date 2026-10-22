@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Cost-term harness, stage 1 -- Job runner and analyzer.  STATUS: CPU-tested against the fake engine only.
+"""Cost-term harness, stages 1 + 2 -- Job runner and analyzer.  STATUS: CPU-tested against the fake engine only.
 NOTHING HERE HAS RUN ON A GPU; writing it is not a PASS of anything and makes no performance claim.
 
-  ct_runner.py plan  --job J-H1|J-A|J-B2 [--round 1|2]          print the boot plan (order, argv, env keys, cells)
-  ct_runner.py run   --job ... --out DIR [--round N] [--variant-src DIR] [--variant-root DIR]
-  ct_runner.py analyze DIR                                       -> DIR/analysis.json (CPU)
+  ct_runner.py plan  --job J-H1|J-A|J-B2|J-H2|J-C [--round 1|2]  print the boot plan (order, argv, env keys, cells)
+  ct_runner.py run   --job ... --out RAW [--round N] [--variant-src DIR] [--variant-root DIR] [--resume]
+                     [--smoke [--boots a,b] [--cells-per-boot N | --select BOOT:KIND:SPEC,...]]
+  ct_runner.py analyze RAW [--summary DIR] [--clk clk.csv]       -> RAW/analysis.json (+ summary copy, CPU)
   ct_runner.py spec-sha                                          ct_spec digest (seal input)
 
 Job entry (experiment-runner): costterms_job.sh sets PDMUX_COSTTERMS_JOB / _ROUND and calls `run`; it refuses to run
@@ -75,13 +76,20 @@ def sha256_file(p):
 
 # ============================================================================ plans
 def _boot(job, rnd, boot_id, kind, model, engine, cap, *, D=None, variant=4, dummy=False, t1=(), t1_reps=1, t2=(),
-          t2p=(), t4=(), o_family="JA"):
+          t2p=(), t4=(), o_family="JA", t3=(), t3_reps=S.T3_REPS, t3ref=(), tp=1, gpus="0", context=None, long=()):
     mode = (f"D{D}" if engine == "pdmux_sticky" else "108u" if engine == "pdmux_108u" else "108v")
-    return {"job": job, "round": rnd, "boot_id": boot_id, "kind": kind, "model": model, "engine": engine, "mode": mode,
-            "D": D if engine == "pdmux_sticky" else None, "cap": cap, "variant": variant if model == "nano" else None,
-            "dummy": dummy, "t1": [list(c) for c in t1], "t1_reps": t1_reps, "t2": list(t2), "t2p": list(t2p),
-            "t4": [list(f) for f in t4], "o_family": o_family,
-            "t1_O": {f"{bs}x{c}": S.o_tokens(bs, c, o_family) for bs, c in t1}}
+    arch = S.variant_arch(variant) if model == "nano" else None
+    b = {"job": job, "round": rnd, "boot_id": boot_id, "kind": kind, "model": model, "engine": engine, "mode": mode,
+         "D": D if engine == "pdmux_sticky" else None, "cap": cap, "variant": variant if model == "nano" else None,
+         "dummy": dummy, "t1": [list(c) for c in t1], "t1_reps": t1_reps, "t2": list(t2), "t2p": list(t2p),
+         "t4": [list(f) for f in t4], "o_family": o_family,
+         "t1_O": {f"{bs}x{c}": S.o_tokens(bs, c, o_family) for bs, c in t1},
+         "t3": [list(c) for c in t3], "t3_reps": t3_reps, "t3ref": list(t3ref), "long": list(long),
+         "tp": tp, "gpus": gpus, "context": context or S.CONTEXT_LENGTH}
+    if t3 or t3ref:
+        b["t3_O"] = {f"{bs}x{L}": S.t3_o_tokens(bs, L, D, arch, tp) for bs, L in t3}
+        b["t3ref_O"] = {str(L): S.t3_ref_o_tokens(L, D, arch, tp) for L in t3ref}
+    return b
 
 
 def t2_axis(mode):
@@ -91,10 +99,15 @@ def t2_axis(mode):
     return S.TOTAL_SM if mode in S.T2_MODES else None
 
 
+def _t3_boot(job, rnd, boot_id, D, variant=4, dummy=False, t1=(), t1_reps=1, o_family="JA"):
+    cells = [(bs, L) for bs in S.T3_BS for L in S.T3_L]
+    return _boot(job, rnd, boot_id, "T3", "nano", "pdmux_sticky", S.CAP_MAIN, D=D, variant=variant, dummy=dummy,
+                 t1=t1, t1_reps=t1_reps, o_family=o_family, t3=cells, t3ref=S.T3_L)
+
+
 def plan_ja(rnd):
-    """J-A round rnd (stage-1 part): 7 mode boots (T1 + T2' everywhere, T2 only in 108u / 108v -- decision 28 A-2),
-    cap-invariance boot (round 1 only), OFF diagnostic boots (D44 PD-mux with T2', 108v with T2).  T3 boots (D24/D44,
-    TEL ON) are stage 2 and listed in plan['deferred']."""
+    """J-A round rnd: 7 mode boots (T1 + T2' everywhere, T2 only in 108u / 108v -- decision 28 A-2), T3 boots D24 /
+    D44 (TEL ON, §2-2'), cap-invariance boot (round 1 only), OFF diagnostic boots (D44 PD-mux with T2', 108v with T2)."""
     job = f"J-A{rnd}"
     boots = []
     for d in S.D_GRID:
@@ -104,6 +117,8 @@ def plan_ja(rnd):
                        t1=X.t1_cells_for_mode("108u"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID))
     boots.append(_boot(job, rnd, f"ja{rnd}_108v", "T1T2", "nano", "vanilla", S.CAP_MAIN,
                        t1=X.t1_cells_for_mode("108v"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID))
+    for d in S.T3_D:
+        boots.append(_t3_boot(job, rnd, f"ja{rnd}_t3_D{d}", d))
     boots.append(_boot(job, 1, "ja1_capinv_D44", "T1T2", "nano", "pdmux_sticky", S.CAP_SMALL, D=44, t1=S.CAP_INV_CELLS))
     boots.append(_boot(job, rnd, f"ja{rnd}_off_D44", "OFF", "nano", "pdmux_sticky", S.CAP_MAIN, D=44,
                        t1=S.OFF_T1_CELLS_JA, t2p=S.OFF_T2_L_JA))
@@ -116,8 +131,52 @@ def plan_ja(rnd):
         ordered = [b for b in reversed(ordered) if b["boot_id"] != "ja1_capinv_D44"]
         for b in ordered:
             b["boot_id"] = b["boot_id"].replace("ja1_", "ja2_")
-    return {"job": job, "boots": ordered,
-            "deferred": ["T3 boots D24/D44 (TEL ON) -- stage 2", "J-A1 cap-invariance boot only in round 1"]}
+    return {"job": job, "boots": ordered, "deferred": ["J-A1 cap-invariance boot only in round 1"]}
+
+
+def plan_jh2():
+    """J-H2 (§4', decision 25): per dummy variant, PD-mux sticky D24 and D44 boots (TEL ON, T3 boot rule): T1 (32, 2k)
+    and (32, 8k) + T3 bs {8, 32} x L {8k, 32k} x 2 + sigma' reference spans.  O from the variant's priors (§4')."""
+    boots = []
+    for n in S.VARIANTS:
+        for d in S.JH2_D:
+            boots.append(_t3_boot("J-H2", 1, f"jh2_a{n}_D{d}", d, variant=n, dummy=True, t1=S.JH2_T1_CELLS,
+                                  t1_reps=S.JH2_T1_REPS, o_family=f"JH2|{n}|{d}"))
+    order = list(range(len(boots)))
+    random.Random(S.order_seed("J-H2|boots")).shuffle(order)
+    return {"job": "J-H2", "boots": [boots[i] for i in order], "deferred": []}
+
+
+def plan_jc():
+    """J-C (§5, rev3.5 draft, O-19): TP2 (both GPUs) and the N=1 anchor (GPU 0 only, the other idle -- O-6 sequential)
+    for D44 (T1 + T2') and 108v (T1 + T2), 2 rounds ABBA; TP2 T4 boot (F3); TP2 OFF diagnostic (O-14); optional 96k
+    boot LAST (JC_96K_MODE)."""
+    boots = []
+    for rnd in S.JC_ROUNDS:
+        for tp, cap, gpus, tag in ((S.JC_TP, S.JC_TP2_CAP, "0,1", "tp2"), (1, S.JC_ANCHOR_CAP, "0", "n1")):
+            boots.append(_boot("J-C", rnd, f"jc{rnd}_{tag}_D44", "T1T2", "nano", "pdmux_sticky", cap, D=44,
+                               t1=S.JC_T1_CELLS, t1_reps=S.JC_T1_REPS, t2p=S.JC_T2_L, o_family="JC|44", tp=tp,
+                               gpus=gpus))
+            boots.append(_boot("J-C", rnd, f"jc{rnd}_{tag}_108v", "T1T2", "nano", "vanilla", cap,
+                               t1=S.JC_T1_CELLS, t1_reps=S.JC_T1_REPS, t2=S.JC_T2_L, o_family="VANILLA", tp=tp,
+                               gpus=gpus))
+    boots.append(_boot("J-C", 1, "jc_tp2_t4", "T4", "nano", "pdmux_sticky", S.JC_TP2_CAP, D=44, t4=S.JC_T4_FILLS,
+                       tp=S.JC_TP, gpus="0,1"))
+    boots.append(_boot("J-C", 1, "jc_tp2_off_D44", "OFF", "nano", "pdmux_sticky", S.JC_TP2_CAP, D=44,
+                       t1=S.JC_OFF_T1_CELLS, o_family="JC|44", tp=S.JC_TP, gpus="0,1"))
+    r1 = [b for b in boots if b["round"] == 1]
+    order = list(range(len(r1)))
+    random.Random(S.order_seed("J-C|boots")).shuffle(order)
+    r1 = [r1[i] for i in order]
+    r2 = {b["boot_id"]: b for b in boots if b["round"] == 2}
+    ordered = r1 + [r2[b["boot_id"].replace("jc1_", "jc2_")] for b in reversed(r1) if b["boot_id"].startswith("jc1_")]
+    if S.JC_96K_MODE == "separate_boot":
+        ordered.append(_boot("J-C", 1, "jc_tp2_long", "T1T2", "nano", "pdmux_sticky", S.JC_TP2_CAP, D=44,
+                             tp=S.JC_TP, gpus="0,1", context=S.JC_LONG_CONTEXT, long=[S.JC_LONG_L]))
+    elif S.JC_96K_MODE != "deleted":
+        raise ValueError(S.JC_96K_MODE)
+    return {"job": "J-C", "boots": ordered, "deferred": [] if S.JC_96K_MODE != "deleted"
+            else ["TP2 96k point deleted (O-19 option, user decision)"]}
 
 
 def plan_jh1():
@@ -163,8 +222,10 @@ def make_plan(job, rnd=1):
         return plan_jh1()
     if job == "J-B2":
         return plan_jb2()
-    if job in ("J-H2", "J-C"):
-        raise NotImplementedError(f"{job} is stage 2: {S.STAGE2_INTERFACE.get(job)}")
+    if job == "J-H2":
+        return plan_jh2()
+    if job == "J-C":
+        return plan_jc()
     raise ValueError(job)
 
 
@@ -189,6 +250,27 @@ def plan_problems(plan):
             want = sorted(map(list, X.t1_cells_for_mode(b["mode"])))
             if sorted(b["t1"]) != want:
                 bad.append(f"{b['boot_id']}: T1 cell set != registered ({len(b['t1'])} vs {len(want)})")
+        # ---- stage 2
+        if b["kind"] == "T3":
+            if b["engine"] != "pdmux_sticky" or b["D"] not in S.T3_D:
+                bad.append(f"{b['boot_id']}: T3 boot must be PD-mux sticky D in {S.T3_D}")
+            arch = S.variant_arch(b["variant"])
+            if any(b["t3_O"].get(f"{bs}x{L}") != S.t3_o_tokens(bs, L, b["D"], arch, b["tp"]) for bs, L in b["t3"]):
+                bad.append(f"{b['boot_id']}: T3 decode output length differs from the registered rule")
+            if sorted(map(int, b.get("t3ref_O", {}))) != sorted({L for _, L in b["t3"]}):
+                bad.append(f"{b['boot_id']}: sigma' reference L set != the T3 L set (same boot, same L)")
+        if b["job"] == "J-C":
+            if b["tp"] == 1 and b["cap"] != S.JC_ANCHOR_CAP:
+                bad.append(f"{b['boot_id']}: N=1 anchor cap {b['cap']} != {S.JC_ANCHOR_CAP} (§5-2)")
+            if b["tp"] == 1 and b["gpus"] != "0":
+                bad.append(f"{b['boot_id']}: N=1 anchor must use GPU 0 only (O-6 sequential)")
+            if b["tp"] == S.JC_TP and (b["cap"] != S.JC_TP2_CAP or b["gpus"] != "0,1"):
+                bad.append(f"{b['boot_id']}: TP2 boot cap / GPUs {b['cap']} {b['gpus']}")
+        if b["long"] and b is not plan["boots"][-1]:
+            bad.append(f"{b['boot_id']}: the 96k point must be the LAST boot of the Job (§5-3)")
+        for L in list(b["t2"]) + list(b["t2p"]) + list(b["long"]):
+            if L + 1 > b["context"]:
+                bad.append(f"{b['boot_id']}: L {L} + 1 > context_length {b['context']}")
     return bad
 
 
@@ -205,11 +287,13 @@ def server_argv(b, variant_dirs):
     a = model_args(b, variant_dirs) + [
         "--trust-remote-code", "--dtype", "bfloat16", "--attention-backend", S.ATTENTION_BACKEND,
         "--disable-radix-cache", "--mem-fraction-static", str(S.MEM_FRACTION), "--max-running-requests", str(b["cap"]),
-        "--context-length", str(S.CONTEXT_LENGTH), "--random-seed", str(S.SERVER_SEED), "--disable-piecewise-cuda-graph",
+        "--context-length", str(b.get("context", S.CONTEXT_LENGTH)), "--random-seed", str(S.SERVER_SEED), "--disable-piecewise-cuda-graph",
         "--chunked-prefill-size", "-1", "--disable-overlap-schedule", "--max-prefill-tokens", str(S.MAX_PREFILL_TOKENS),
         "--host", "127.0.0.1"]
     if b["model"] == "nano":
         a += ["--max-mamba-cache-size", str(b["cap"])]
+    if b.get("tp", 1) > 1:
+        a += ["--tp-size", str(b["tp"])]
     if b["engine"].startswith("pdmux"):
         a += ["--enable-pdmux", "--pdmux-config-path", str(CONFIG_PATH)]
     return a
@@ -220,6 +304,7 @@ def boot_env(b, bdir, base=None, run_id="local"):
     env = {k: v for k, v in base.items() if not (k.startswith("PDMUX_") and k not in KEEP_ENV)}
     env.pop("SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN", None)
     env.update(PDMUX_RUN_ID=run_id, PDMUX_WORKLOAD_ID=f"costterms_{b['boot_id']}", PYTHONUNBUFFERED="1", **S.HEARTBEAT_ENV)
+    env["CUDA_VISIBLE_DEVICES"] = b.get("gpus", "0")         # J-C: TP2 "0,1", anchor "0" (O-6); single-GPU Jobs "0"
     for k in ("FAKE_CT_TRUTH",):
         if k in base:
             env[k] = base[k]
@@ -371,25 +456,130 @@ def t4_predict(f, cap, fills):
     return [X.cmem_predictions(mt["pool_bytes"], mt["s"], mt["k"], cap, L, R) for L, R in fills]
 
 
+def rank_name(name, tp, r=0):
+    """multigpu_guard.rank_suffixed_path: 'decode_probe.jsonl' -> 'decode_probe.tp0.jsonl' when tp > 1."""
+    if tp <= 1:
+        return name
+    stem, dot, ext = name.partition(".")
+    return f"{stem}.tp{r}.{ext}"
+
+
+def cell_key(kind, what, k=0):
+    """Cell identity used by selection (smoke) and cell-level resume: 't1|8x2048|0', 't3|32x8192|1', 't2p|4096|0'."""
+    if isinstance(what, (tuple, list)):
+        what = "x".join(map(str, what))
+    return f"{kind}|{what}|{k}"
+
+
+def registered_cells(b, feas=None, feas3=None):
+    """Every cell of a boot in REGISTERED order (before the seeded shuffle): t1 (feasible, x reps), t2, t2p, t3 (feasible,
+    x reps), t3ref (for the L of feasible t3 cells), t4, long.  feas / feas3 None -> no feasibility filter (selection)."""
+    out = []
+    for c_ in [tuple(x) for x in b["t1"]]:
+        fe = next((x for x in feas if (x["bs"], x["c"]) == c_), None) if feas is not None else {"run": True}
+        if fe is not None and fe["run"]:
+            out += [("t1", c_, k) for k in range(b["t1_reps"])]
+    out += [("t2", L, 0) for L in b["t2"]] + [("t2p", L, 0) for L in b["t2p"]]
+    ok3 = []
+    for c_ in [tuple(x) for x in b.get("t3", [])]:
+        fe = next((x for x in feas3 if (x["bs"], x["L"]) == c_), None) if feas3 is not None else {"run": True}
+        if fe is not None and fe["run"]:
+            ok3.append(c_)
+            out += [("t3", c_, k) for k in range(b["t3_reps"])]
+    out += [("t3ref", L, 0) for L in b.get("t3ref", []) if feas3 is None or any(L == c_[1] for c_ in ok3)]
+    out += [("t4", tuple(x), 0) for x in b["t4"]] + [("long", L, 0) for L in b.get("long", [])]
+    return out
+
+
+def select_cells(b, cells_per_boot=None, select=None):
+    """Smoke / resume selection -> sorted list of cell keys kept for this boot (None = all).  `select` = list of
+    'BOOT:KIND:SPEC' (exact registered cells; an unregistered request raises); `cells_per_boot` N = first N cells of
+    each kind (t1 sorted by (O, -bs, c): the cheapest bursts with bs > 1 first, others in registered order)."""
+    if not select and cells_per_boot is None:
+        return None
+    reg = registered_cells(b)
+    keys = {cell_key(*c) for c in reg}
+    keep = set()
+    if select:
+        for item in select:
+            bid, kind, spec = item.split(":", 2)
+            if bid != b["boot_id"]:
+                continue
+            k = cell_key(kind, spec, 0)
+            if k not in keys:
+                raise SystemExit(f"ABORT_SELECT: {item} is not a registered cell of {bid} (registered: {sorted(keys)[:12]} ...)")
+            keep.add(k)
+    if cells_per_boot is not None and not select:
+        by = {}
+        for c in reg:
+            by.setdefault(c[0], []).append(c)
+        for kind, cs in by.items():
+            if kind == "t1":
+                cs = sorted(cs, key=lambda c: (b["t1_O"][f"{c[1][0]}x{c[1][1]}"], -c[1][0], c[1][1], c[2]))
+            keep |= {cell_key(*c) for c in cs[:cells_per_boot]}
+    return sorted(keep)
+
+
+def t3_feasibility(b, f):
+    """§3-1 extended to T3 cells and the sigma' reference (feasible_t3), from the boot log only."""
+    mt = X.mem_terms(f)
+    kv = mt["kv_tokens"] if mt else None
+    cap_list = f.get("capture_bs")
+    cap = X.logged_cap(f)
+    rows = []
+    for bs, L in [tuple(x) for x in b.get("t3", [])]:
+        O = b["t3_O"][f"{bs}x{L}"]
+        r1 = S.feasible_t3(bs, L, O, kv, cap, X.bs_capturable(bs, cap_list), b.get("context"))
+        r2 = S.feasible_t3(S.T3_REF_BS, L, b["t3ref_O"][str(L)], kv, cap, X.bs_capturable(S.T3_REF_BS, cap_list),
+                           b.get("context"))
+        reasons = r1 + [f"reference: {x}" for x in r2]
+        rows.append({"bs": bs, "L": L, "O": O, "O_ref": b["t3ref_O"][str(L)], "run": not reasons,
+                     "label": None if not reasons else "INFEASIBLE_BY_RULE", "reasons": reasons})
+    return rows
+
+
+def _run_cell(tr, b, kind, what, k, f, o_map, led):
+    if kind == "t1":
+        bs, c = what
+        return C.run_t1_cell(tr, f"t1_b{bs}_c{c}_k{k}", bs, c, b["round"], o_map[(bs, c)], mark=led)
+    if kind == "t2":
+        return C.run_t2(tr, f"t2_L{what}", what, b["round"], mark=led)
+    if kind == "t2p":
+        return C.run_t2prime(tr, f"t2p_L{what}", what, b["round"], mark=led)
+    if kind == "t3":
+        bs, L = what
+        return C.run_t3_cell(tr, f"t3_b{bs}_L{L}_k{k}", bs, L, S.T3_M[L], b["round"], b["t3_O"][f"{bs}x{L}"],
+                             mark=led, rep=k)
+    if kind == "t3ref":
+        return C.run_t3_ref(tr, f"t3ref_L{what}", what, b["round"], b["t3ref_O"][str(what)], mark=led)
+    if kind == "long":
+        return C.run_long_point(tr, f"long_L{what}", what, b["round"], mark=led)
+    L, R = what
+    return C.run_t4_fill(tr, f"t4_L{L}", L, R, X.logged_cap(f) + S.T4_FILL_EXTRA, mark=led)
+
+
 def run_boot(b, out, variant_dirs, make_server, run_id="local"):
     bdir = Path(out) / "boots" / b["boot_id"]
     if (bdir / "DONE").exists():
         return load(bdir / "boot_result.json", {})
     bdir.mkdir(parents=True, exist_ok=True)
-    for p in bdir.iterdir():                     # a partial boot is redone from scratch
+    for p in bdir.iterdir():                     # a partial boot directory is redone from scratch (resume: run_job)
         if p.is_file():
             p.unlink()
+    tp = b.get("tp", 1)
     led = Ledger(bdir / "events.jsonl")
     argv = server_argv(b, variant_dirs)
     env = boot_env(b, bdir, run_id=run_id)
     dump({"plan": b, "argv": argv, "pdmux_env": {k: v for k, v in sorted(env.items()) if k.startswith("PDMUX_")},
-          "spec_sha256": S.spec_sha256()}, bdir / "boot.json")
+          "cuda_visible_devices": env.get("CUDA_VISIBLE_DEVICES"), "spec_sha256": S.spec_sha256()}, bdir / "boot.json")
     led("boot_start", b["boot_id"])
     srv = make_server(bdir, argv, env)
     st = srv.start()
     res = {"boot_id": b["boot_id"], "start": st, "problems": [], "labels": []}
     if st != "ok":
         res["labels"].append("SERVER_DEATH")
+        if tp > 1:
+            res["labels"].append("TP2_NOT_BOOTABLE")
         res["problems"].append(f"boot {st}")
         srv.stop()
         dump(res, bdir / "boot_result.json")
@@ -398,17 +588,24 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
     text = srv.log.read_text(errors="replace")
     cfg_text = CONFIG_PATH.read_text() if b["engine"].startswith("pdmux") else None
     f = X.parse_boot_log(text, env, cfg_text)
+    if tp > 1:
+        f["rank_banners"] = X.rank_banners(text)
     dump(f, bdir / "facts.json")
     led("facts", "boot log parsed")
     probs = X.label_problems(b, f) + X.instrumentation_problems(b["kind"], env, f, None)
-    if b["kind"] != "T4" and b["cap"] == S.CAP_MAIN and b["t1"]:
+    if b["kind"] != "T4" and b["cap"] == S.CAP_MAIN and (b["t1"] or b.get("t3")):
         cg = X.capture_problems(f.get("capture_bs"))
         if cg:
             probs += [f"ABORT_CG_BS: {p}" for p in cg]
     res["problems"] = probs
     aborting = [p for p in probs if p.startswith("ABORT_")]
-    green = load(bdir / "green.json") if b["engine"].startswith("pdmux") else None
+    green = load(bdir / rank_name("green.json", tp)) if b["engine"].startswith("pdmux") else None
     sm = X.realized_sm(b, green)
+    if tp > 1 and b["engine"].startswith("pdmux"):
+        sm_r = [X.realized_sm(b, load(bdir / rank_name("green.json", tp, r))) for r in range(tp)]
+        sm["per_rank"] = sm_r
+        if not all(x["ok"] for x in sm_r):
+            sm.update(ok=False, label=sm["label"] or next(x["label"] for x in sm_r if not x["ok"]))
     dump(sm, bdir / "sm.json")
     if aborting:
         res["labels"].append("ABORTED")
@@ -419,7 +616,15 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
         return res
     o_map = {(bs, c): b["t1_O"][f"{bs}x{c}"] for bs, c in b["t1"]}
     feas = X.feasibility([tuple(c) for c in b["t1"]], f, X.logged_cap(f), o_map)
+    if b.get("context", S.CONTEXT_LENGTH) != S.CONTEXT_LENGTH:
+        for r in feas:
+            r["reasons"] = S.feasible_cell(r["bs"], r["c"], r["O"], (X.mem_terms(f) or {}).get("kv_tokens"),
+                                           X.logged_cap(f), X.bs_capturable(r["bs"], f.get("capture_bs")), b["context"])
+            r["run"], r["label"] = not r["reasons"], None if not r["reasons"] else "INFEASIBLE_BY_RULE"
     dump(feas, bdir / "feasibility.json")
+    feas3 = t3_feasibility(b, f) if b.get("t3") else None
+    if feas3 is not None:
+        dump(feas3, bdir / "feasibility_t3.json")
     led("feasibility_written", sha256=sha256_file(bdir / "feasibility.json"))
     if b["t4"]:
         pred = t4_predict(f, X.logged_cap(f), [tuple(x) for x in b["t4"]])
@@ -428,7 +633,7 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
     tr = srv.tr
     wu = C.run_warmup(tr, b["boot_id"])
     tr.sleep(S.PROBE_WINDOW_S * 1.2)
-    recs = X.read_jsonl(bdir / "decode_probe.jsonl")
+    recs = X.read_jsonl(bdir / rank_name("decode_probe.jsonl", tp))
     cg_hit = any(e.get("event") == "decode_forward" and e.get("graph") == "hit" for e in recs) if recs else \
         ("cuda graph: True" in srv.log.read_text(errors="replace"))
     wu["cg_canary"] = cg_hit
@@ -436,18 +641,18 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
         res["problems"].append(f"CORRECTNESS: warmup {wu['warmup_ok']} greedy {wu['greedy_ok']} cg_canary {wu['cg_canary']}")
     dump(wu, bdir / "correctness.json")
     led("correctness", json.dumps(wu))
-    cells = []
     for c_ in [tuple(x) for x in b["t1"]]:
-        fe = next((x for x in feas if (x["bs"], x["c"]) == c_), None)
-        if fe is None:                                   # every registered cell must have a feasibility row
+        if next((x for x in feas if (x["bs"], x["c"]) == c_), None) is None:   # every registered cell has a row
             res["problems"].append(f"FEASIBILITY_ROW_MISSING: {c_}")
-            continue
-        if fe["run"]:
-            for k in range(b["t1_reps"]):
-                cells.append(("t1", c_, k))
-    cells += [("t2", L, 0) for L in b["t2"]] + [("t2p", L, 0) for L in b["t2p"]] + [("t4", tuple(x), 0) for x in b["t4"]]
-    rng = random.Random(S.order_seed(f"{b['job']}|{b['boot_id']}|cells"))
+    cells = registered_cells(b, feas, feas3)
+    if b.get("only_cells") is not None:                      # smoke selection / resume segment (cell keys)
+        keep = set(b["only_cells"])
+        cells = [c for c in cells if cell_key(*c) in keep]
+    rng = random.Random(S.order_seed(f"{b['job']}|{b['boot_id'].split('@')[0]}|cells"))
     rng.shuffle(cells)
+    # A-36: the sigma' reference runs FIRST (its rep 0 is the boot's first prefill of that L = the warm-up), so no T3
+    # cell carries a first-of-L span; the rest stays in seeded random order
+    cells = sorted(c for c in cells if c[0] == "t3ref") + [c for c in cells if c[0] != "t3ref"]
     dump([list(map(str, c)) for c in cells], bdir / "cell_order.json")
     with open(bdir / "cells.jsonl", "a") as fh:
         for kind, what, k in cells:
@@ -455,24 +660,16 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
                 res["labels"].append("SERVER_DEATH")
                 break
             off0 = srv.log_size()
-            if kind == "t1":
-                bs, c = what
-                rec = C.run_t1_cell(tr, f"t1_b{bs}_c{c}_k{k}", bs, c, b["round"], o_map[(bs, c)], mark=led)
-            elif kind == "t2":
-                rec = C.run_t2(tr, f"t2_L{what}", what, b["round"], mark=led)
-            elif kind == "t2p":
-                rec = C.run_t2prime(tr, f"t2p_L{what}", what, b["round"], mark=led)
-            else:
-                L, R = what
-                rec = C.run_t4_fill(tr, f"t4_L{L}", L, R, X.logged_cap(f) + S.T4_FILL_EXTRA, mark=led)
+            rec = _run_cell(tr, b, kind, what, k, f, o_map, led)
             rec["log_offsets"] = [off0, srv.log_size()]
-            fh.write(json.dumps(rec) + "\n")
+            rec["cell_key"] = cell_key(kind, what, k)
+            fh.write(json.dumps(rec) + "\n")                  # one line = one finished cell (cell-level DONE, H-4)
             fh.flush()
             tr.sleep(0.5)                                   # settle between cells
     res["trailer_ok"] = C.run_trailer(tr, b["boot_id"]) if srv.alive() else False
     res["stop"] = srv.stop()
-    files = {"decode_probe": (bdir / "decode_probe.jsonl").exists(), "admission": (bdir / "admission.jsonl").exists(),
-             "tel": (bdir / "tel.jsonl").exists()}
+    files = {"decode_probe": any(bdir.glob("decode_probe*.jsonl")), "admission": any(bdir.glob("admission*.jsonl")),
+             "tel": any(bdir.glob("tel*.jsonl"))}
     res["problems"] += X.instrumentation_problems(b["kind"], env, None, files)
     dump(res, bdir / "boot_result.json")
     led("boot_end", b["boot_id"])
@@ -481,24 +678,107 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
     return res
 
 
-def run_job(job, out, rnd=1, variant_src=None, variant_root=None, make_server=None, run_id=None, plan=None):
-    """`plan` overrides the registered plan -- CPU tests only (refused outside PDMUX_COSTTERMS_TEST_MODE)."""
+def _plan_fingerprint(plan):
+    return hashlib.sha256(json.dumps({"spec": S.spec_sha256(), "boots": [
+        {k: v for k, v in b.items() if k not in ("only_cells",)} for b in plan["boots"]]}, sort_keys=True,
+        default=str).encode()).hexdigest()
+
+
+def resume_segments(plan, out):
+    """H-4 (A-35): a boot directory without DONE that holds finished cells (one cells.jsonl line each) is closed as
+    PARTIAL (its cells stay, DONE written) and a new boot '<id>@s<k>' with the REMAINING cells follows it; a directory
+    with no finished cell is simply redone.  A different server lifetime is a different boot.  -> (plan, log)."""
+    new, log = [], []
+    for b in plan["boots"]:
+        base = set(b["only_cells"]) if b.get("only_cells") is not None else {cell_key(*c) for c in registered_cells(b)}
+        done_all, cur, k = set(), b, 0
+        while True:
+            bdir = Path(out) / "boots" / cur["boot_id"]
+            if (bdir / "PARTIAL").exists():
+                done_all |= set(json.loads((bdir / "PARTIAL").read_text())["done_cells"])
+            elif (bdir / "DONE").exists() or not bdir.exists():
+                new.append(cur)
+                break
+            else:
+                fin = {json.loads(x).get("cell_key") for x in (bdir / "cells.jsonl").read_text().splitlines()
+                       if x.strip()} - {None} if (bdir / "cells.jsonl").exists() else set()
+                if not fin:
+                    new.append(cur)
+                    break
+                (bdir / "PARTIAL").write_text(json.dumps({"done_cells": sorted(fin), "t_wall": time.time()}))
+                (bdir / "DONE").write_text("partial: job stopped, remaining cells in the next segment\n")
+                log.append({"boot": cur["boot_id"], "kept_cells": len(fin)})
+                done_all |= fin
+            new.append(cur)
+            rest = base - done_all
+            if not rest:
+                break
+            k += 1
+            cur = dict(b, boot_id=f"{b['boot_id']}@s{k}", segment=k, resumed_from=cur["boot_id"], only_cells=sorted(rest))
+    return dict(plan, boots=new), log
+
+
+def run_job(job, out, rnd=1, variant_src=None, variant_root=None, make_server=None, run_id=None, plan=None,
+            smoke=False, boots=None, cells_per_boot=None, select=None, resume=None):
+    """`plan` overrides the registered plan -- CPU tests only (refused outside PDMUX_COSTTERMS_TEST_MODE).
+    smoke (H-1): no seal needed, SMOKE_UNSEALED marker forced, (boot, cell) subset via boots / cells_per_boot / select.
+    resume (H-4): an existing out directory is resumed only with resume=True (or PDMUX_COSTTERMS_RESUME=1) and the
+    same plan fingerprint; the fact is written to RESUME_LOG.json."""
     if plan is not None and not _test_mode():
         raise SystemExit("ABORT_PLAN_OVERRIDE: a plan override is a test hook")
     plan = plan or make_plan(job, rnd)
+    if boots and not smoke:
+        raise SystemExit("ABORT_SELECT: boot subsets are a smoke-only option (--smoke)")
+    if boots:
+        missing = set(boots) - {b["boot_id"] for b in plan["boots"]}
+        if missing:
+            raise SystemExit(f"ABORT_SELECT: unknown boots {sorted(missing)}")
+        plan = dict(plan, boots=[b for b in plan["boots"] if b["boot_id"] in boots])
+    if cells_per_boot is not None or select:
+        if not smoke:
+            raise SystemExit("ABORT_SELECT: cell subsets are a smoke-only option (--smoke)")
+        sel_boots = {x.split(":", 1)[0] for x in (select or [])}
+        kept = []
+        for b in plan["boots"]:
+            if select and b["boot_id"] not in sel_boots:
+                continue
+            kept.append(dict(b, only_cells=select_cells(b, cells_per_boot, select)))
+        plan = dict(plan, boots=kept)
+    if smoke:
+        plan = dict(plan, smoke=True)
     probs = plan_problems(plan)
     out = Path(out)
+    resume = resume if resume is not None else os.environ.get("PDMUX_COSTTERMS_RESUME") == "1"
+    prev = load(out / "plan.json")
+    rlog = load(out / "RESUME_LOG.json", [])
+    if prev is not None:
+        if prev.get("fingerprint") != _plan_fingerprint(plan):
+            raise SystemExit("ABORT_RESUME_MISMATCH: the out directory holds a different plan / spec")
+        if not resume and not _test_mode():
+            raise SystemExit("ABORT_OUT_NOT_EMPTY: set PDMUX_COSTTERMS_RESUME=1 to resume this directory")
     out.mkdir(parents=True, exist_ok=True)
-    dump({"plan": plan, "problems": probs, "spec_sha256": S.spec_sha256(), "prereg": S.PREREG_REL}, out / "plan.json")
+    if smoke:
+        (out / S.SMOKE_MARKER).write_text("Workspace smoke, NOT a measurement, numbers not citable; harness unsealed\n")
+    fp = _plan_fingerprint(plan)
+    dump({"plan": plan, "problems": probs, "spec_sha256": S.spec_sha256(), "prereg": S.PREREG_REL, "fingerprint": fp,
+          "smoke": bool(smoke)}, out / "plan.json")
     if probs:
         raise SystemExit(f"ABORT_PLAN: {probs}")
+    run_plan = plan
+    if prev is not None:
+        run_plan, seg_log = resume_segments(plan, out)
+        rlog.append({"t_wall": time.time(), "resumed": True, "done_boots": sorted(
+            b["boot_id"] for b in plan["boots"] if (out / "boots" / b["boot_id"] / "DONE").exists()),
+            "segments": seg_log, "job_name": os.environ.get("PDMUX_JOB_NAME")})
+        dump(rlog, out / "RESUME_LOG.json")
     vdirs = {}
-    if any(b["dummy"] for b in plan["boots"]):
+    if any(b["dummy"] for b in run_plan["boots"]):
         if variant_src is None:
             raise SystemExit("ABORT_VARIANT_SRC: dummy variants need --variant-src (Nano snapshot dir)")
-        vdirs = prepare_variants(variant_src, variant_root or (out / "variants"), plan)
+        vdirs = prepare_variants(variant_src, variant_root or (out / "variants"), run_plan)
     make_server = make_server or (lambda bdir, argv, env: ProcessServer(bdir, argv, env))
-    results = [run_boot(b, out, vdirs, make_server, run_id or os.environ.get("PDMUX_JOB_NAME", "local")) for b in plan["boots"]]
+    results = [run_boot(b, out, vdirs, make_server, run_id or os.environ.get("PDMUX_JOB_NAME", "local"))
+               for b in run_plan["boots"]]
     dump(results, out / "boots_result.json")
     sums = []
     for p in sorted(out.rglob("*")):
@@ -524,7 +804,7 @@ def boot_identity(b, f):
     arch = f.get("model_arch")
     model = {v: k for k, v in S.ARCH_BY_MODEL.items()}.get(arch)
     mt = X.mem_terms(f)
-    n_attn = round(mt["k"] / (2 * 8 * 128 * 2)) if (mt and model == "nano") else None
+    n_attn = round(mt["k"] * (f["server_args"].get("tp_size") or 1) / (2 * 8 * 128 * 2)) if (mt and model == "nano") else None
     lf = f["server_args"].get("load_format")
     pd = f["server_args"].get("enable_pdmux")
     sticky = f.get("sticky_index")
@@ -568,6 +848,8 @@ def analyze_boot(bdir):
     b = meta["plan"]
     f = load(bdir / "facts.json")
     res = load(bdir / "boot_result.json", {})
+    if (bdir / "PARTIAL").exists() and not res:
+        res = {"start": "ok", "problems": [], "labels": ["PARTIAL_SEGMENT"]}
     out = {"boot_id": b["boot_id"], "kind": b["kind"], "job": b["job"], "round": b["round"], "plan_mode": b["mode"],
            "problems": list(res.get("problems", [])), "labels": list(res.get("labels", []))}
     if f is None or "ABORTED" in out["labels"] or res.get("start") != "ok":
@@ -586,12 +868,26 @@ def analyze_boot(bdir):
     out["facts_summary"]["max_prefill_tokens"] = (f.get("final") or {}).get("max_prefill_tokens")
     out["mem"] = X.mem_terms(f)
     out["feasibility"] = load(bdir / "feasibility.json", [])
-    recs = X.read_jsonl(bdir / "decode_probe.jsonl")
+    out["feasibility_t3"] = load(bdir / "feasibility_t3.json")
+    tp = b.get("tp", 1)
+    out["tp"] = tp
+    if b.get("segment"):
+        out["segment"] = b["segment"]
+        out["labels"].append("RESUMED_SEGMENT")
+    recs = X.read_jsonl(bdir / rank_name("decode_probe.jsonl", tp))
     out["schema_problems"] = X.schema_problems(recs)
-    adm = X.read_jsonl(bdir / "admission.jsonl") if (bdir / "admission.jsonl").exists() else None
+    admp = bdir / rank_name("admission.jsonl", tp)
+    adm = X.read_jsonl(admp) if admp.exists() else None
+    if tp > 1:
+        out["tp_facts"] = X.tp_facts(f.get("rank_banners") or {}, tp)
+        out["tp_rank_consistency"] = rank_consistency(bdir, tp)
     logb = (bdir / "server.log").read_bytes()
     capture = f.get("capture_bs")
-    t1, t2, t2p, t4 = [], [], [], []
+    t1, t2, t2p, t4, t3c, t3r, longp = [], [], [], [], [], [], []
+    tel = X.read_jsonl(bdir / rank_name("tel.jsonl", tp))
+    spans, its = X.tel_phase(tel)
+    dec_seq = X.decode_records(recs)
+    p_exp = S.STREAM_GROUPS[S.STICKY_IDX[b["D"]]][0] if b["engine"] == "pdmux_sticky" else None
     have_engine = any(e.get("event") == "decode_forward" for e in recs)
     dec = X.decode_records(recs)
     if any(b_["t_host_start"] < a_["t_host_start"] for a_, b_ in zip(dec, dec[1:])):
@@ -616,8 +912,21 @@ def analyze_boot(bdir):
             t2p.append(v_)
         elif c["kind"] == "t4":
             t4.append(X.t4_fill(c, recs, adm))
-    out.update(t1_windows=t1, t2=t2, t2p=t2p, t4_fills=t4)
-    out["t2p_P"] = t2p_prefill_sm(b, load(bdir / "green.json"), sm)
+        elif c["kind"] == "t3":
+            w = X.t3_cell(dec_seq, spans, its, c, p_exp)
+            w["clock_pair"] = c.get("clock_pair")
+            w["t_range"] = (c["t_first_send"], c["t_end"])
+            t3c.append(w)
+        elif c["kind"] == "t3ref":
+            t3r.append(X.t3_ref(dec_seq, spans, c, p_exp))
+        elif c["kind"] == "long":
+            r0 = [r for r in c["reps"] if r["rep"] >= 1]
+            longp.append({"L": c["L"], "pass": bool(r0) and all(r.get("ok") for r in r0),
+                          "ttft_ms": [r["ttft_s"] * 1000.0 for r in r0 if r.get("ttft_s") is not None]})
+    out.update(t1_windows=t1, t2=t2, t2p=t2p, t4_fills=t4, t3_cells=t3c, t3_refs=t3r, long_points=longp)
+    if b["kind"] == "T3" and not tel:
+        out["labels"].append("SIGMA_NOT_COLLECTED")
+    out["t2p_P"] = t2p_prefill_sm(b, load(bdir / rank_name("green.json", tp)), sm)
     if t4:
         ok, why = ledger_order_ok(bdir)
         out["t4_prediction_order"] = why
@@ -625,6 +934,30 @@ def analyze_boot(bdir):
             out["problems"].append(f"T4_PREDICTION_NOT_SEALED: {why}")
         preds = load(bdir / "t4_prediction.json", [])
         out["t4"] = [F.t4_labels(fl, next(p for p in preds if p["L"] == fl["L"])) for fl in t4]
+    return out
+
+
+def rank_consistency(bdir, tp):
+    """A-33: rank 0 is the measurement; the other ranks must log the same decode_forward sequence (count, bs_real)."""
+    seqs = []
+    for r in range(tp):
+        d = X.decode_records(X.read_jsonl(bdir / rank_name("decode_probe.jsonl", tp, r)))
+        seqs.append([(e["seq"], e.get("bs_real")) for e in d])
+    same = all(x == seqs[0] for x in seqs[1:])
+    return {"n_records": [len(x) for x in seqs], "bs_sequence_equal": same,
+            "label": None if same else "TP_RANK_RECORDS_DIFFER"}
+
+
+def t3_join(v, boots):
+    """rho is inside each cell; sigma' pairs each VALID cell with the reference of the SAME boot and L (A-29).
+    `boots` (all analysed boots) is unused by design: pairing never crosses a boot (mutant M31 uses it)."""
+    refs = {r["L"]: r for r in v.get("t3_refs", [])}
+    out = []
+    for w in v.get("t3_cells", []):
+        sg, why = X.sigma_prime(w, refs.get(w["L"]))
+        out.append(dict(w, sigma_prime=sg, sigma_prime_reason=why,
+                        sigma_prime_def="median T_span_eng(co, this cell) / median T_span_eng(1-decode reference, "
+                                        "same boot, L, P)"))
     return out
 
 
@@ -645,7 +978,16 @@ def _fit_points(t1, cells=None):
             if (b_, c_) in ctx and (cells is None or (b_, c_) in cells)]
 
 
-def analyze(run_dir):
+def _tkey(v, ident):
+    k = f"{v['job']}|r{v['round']}|{ident['tag']}|{ident['mode']}|cap{ident['cap']}"
+    if v.get("tp", 1) > 1:
+        k += f"|tp{v['tp']}"
+    if v.get("segment"):
+        k += f"|s{v['segment']}"
+    return k
+
+
+def analyze(run_dir, summary_dir=None, clk_path=None):
     run_dir = Path(run_dir)
     boots = {}
     for bdir in sorted((run_dir / "boots").iterdir()):
@@ -669,7 +1011,7 @@ def analyze(run_dir):
         if v["kind"] == "OFF" or not v.get("t1_windows"):
             continue
         ident = v["identity"]
-        key = f"{v['job']}|r{v['round']}|{ident['tag']}|{ident['mode']}|cap{ident['cap']}"
+        key = _tkey(v, ident)
         vals = _cell_values(v["t1_windows"])
         t1_tab[key] = {"D_real": v["sm"].get("D_real"), "cells": {f"{b_}x{c_}": t for (b_, c_), t in sorted(vals.items())},
                        "ctx_actual": {f"{b_}x{c_}": x for (b_, c_), x in sorted(_cell_values(v["t1_windows"], fit_ctx).items())},
@@ -679,7 +1021,7 @@ def analyze(run_dir):
                        "n_infeasible": sum(1 for x in v["feasibility"] if x["label"] == "INFEASIBLE_BY_RULE"),
                        "labels": sorted({l for w in v["t1_windows"] for l in w.get("labels", [])})}
         pts = _fit_points(v["t1_windows"])
-        if len(pts) >= 4 and ident["cap"] == S.CAP_MAIN:
+        if len(pts) >= 4 and (ident["cap"] == S.CAP_MAIN or v["job"] == "J-C"):
             fit = F.fit_t1(pts, ident["mode"])
             fits[key] = {"chosen": _strip(fit["chosen"]), "F1": _strip(fit["F1"]), "label": fit["label"]}
     A["tables"]["t1"] = t1_tab
@@ -695,7 +1037,7 @@ def analyze(run_dir):
     A["fits"]["gamma_j"] = gam
     # ---- cap invariance (J-A1)
     capinv = next((v for v in usable.values() if v["identity"]["cap"] == S.CAP_SMALL and v["kind"] == "T1T2"
-                   and v.get("t1_windows")), None)
+                   and v.get("t1_windows") and v["job"].startswith("J-A")), None)
     if capinv:
         main44 = next((v for v in usable.values() if v["job"] == capinv["job"] and v["round"] == capinv["round"]
                        and v["identity"]["mode"] == "D44" and v["identity"]["cap"] == S.CAP_MAIN and v["kind"] == "T1T2"), None)
@@ -762,10 +1104,150 @@ def analyze(run_dir):
         A["jh1"] = analyze_jh1(jh)
     # ---- OFF diagnostic (descriptive)
     A["instr_effect"] = instr_effects(usable)
+    # ---- stage 2: T3, J-H2, J-C
+    clk = X.read_clk(clk_path) if clk_path else []
+    A["tables"]["t3"], raw3 = t3_tables(usable, clk)
+    jh2 = {k: v for k, v in usable.items() if v["job"] == "J-H2"}
+    if jh2:
+        A["jh2"] = analyze_jh2(jh2, A["tables"]["t1"], A["tables"]["t3"])
+    jc = {k: v for k, v in usable.items() if v["job"] == "J-C"}
+    if jc or any(v["job"] == "J-C" for v in boots.values()):
+        A["jc"] = analyze_jc(jc, boots, A)
+    A["resume_log"] = load(run_dir / "RESUME_LOG.json")
+    A["smoke"] = (run_dir / S.SMOKE_MARKER).exists()
+    if A["smoke"]:
+        A["labels"]["smoke"] = S.SMOKE_MARKER
     # ---- priors (comparison columns)
     A["priors"] = {f"a{n}": F.priors(n) for n in S.VARIANTS}
     dump(A, run_dir / "analysis.json")
+    if raw3:
+        dump(raw3, run_dir / "t3_iterations.json")
+    if summary_dir is not None:
+        export_summary(run_dir, summary_dir)
     return A
+
+
+def export_summary(run_dir, summary_dir):
+    """H-3: what goes under results/ -- analysis, plan, markers, sums, the T3 raw-value file and one DONE manifest per
+    boot; server logs / telemetry / decode records stay in the raw directory (cluster volume)."""
+    run_dir, sd = Path(run_dir), Path(summary_dir)
+    sd.mkdir(parents=True, exist_ok=True)
+    for name in S.SUMMARY_FILES:
+        if (run_dir / name).exists():
+            (sd / name).write_bytes((run_dir / name).read_bytes())
+    man = sd / "boot_manifests"
+    man.mkdir(exist_ok=True)
+    for d in sorted((run_dir / "boots").iterdir()) if (run_dir / "boots").exists() else []:
+        if (d / "DONE").exists():
+            (man / f"{d.name}.DONE").write_bytes((d / "DONE").read_bytes())
+    (sd / "RAW_LOCATION.txt").write_text(f"{run_dir.resolve()}\n")
+
+
+def t3_tables(usable, clk):
+    """Per (job, round, tag, D[, segment]) T3 boot: per cell the reps (rho, sigma', n_it_obs, stalls, distributions,
+    clock covariates) and the cell means of ln rho / ln sigma' over VALID reps (§1-3 맞춤).  Raw interval values go to
+    t3_iterations.json, not analysis.json."""
+    tab, raw = {}, {}
+    for v in usable.values():
+        if not v.get("t3_cells"):
+            continue
+        ident = v["identity"]
+        key = f"{v['job']}|r{v['round']}|{ident['tag']}|{ident['mode']}" + (f"|s{v['segment']}" if v.get("segment") else "")
+        joined = t3_join(v, usable)
+        cells = {}
+        for w in joined:
+            ck = f"{w['bs']}x{w['L']}"
+            raw.setdefault(key, {}).setdefault(ck, {})[str(w.get("rep"))] = {
+                "co_ms": w.pop("raw_co_ms", None), "solo_ms": w.pop("raw_solo_ms", None)}
+            if w.get("status") == "VALID":
+                w["clock_co"] = X.clock_covariates(clk, w.get("clock_pair"), w.get("co_ranges") or [])
+                w["clock_solo"] = X.clock_covariates(clk, w.get("clock_pair"), w.get("solo_ranges") or [])
+            for k_ in ("co_ranges", "solo_ranges", "span_ms"):
+                w.pop(k_, None)
+            cells.setdefault(ck, []).append(w)
+        summ = {}
+        for ck, ws in cells.items():
+            ok = [w for w in ws if w.get("status") == "VALID"]
+            lr = [math.log(w["rho"]) for w in ok if w.get("rho")]
+            ls = [math.log(w["sigma_prime"]) for w in ok if w.get("sigma_prime")]
+            summ[ck] = {"reps": ws, "n_valid": len(ok), "ln_rho_mean": sum(lr) / len(lr) if lr else None,
+                        "ln_sigma_prime_mean": sum(ls) / len(ls) if ls else None,
+                        "sigma_label": None if ls else "SIGMA_NOT_COLLECTED",
+                        "q_stall_mean": (sum(w["stall_co"]["q_stall"] for w in ok) / len(ok)) if ok else None,
+                        "max_stall_run": max((w["stall_co"]["max_run"] for w in ok), default=None),
+                        "n_it_obs": [w.get("n_it_obs") for w in ws],
+                        "labels": sorted({l for w in ws for l in w.get("labels", [])})}
+        for w in v["t3_cells"]:                       # raw interval arrays live only in t3_iterations.json
+            w.pop("raw_co_ms", None)
+            w.pop("raw_solo_ms", None)
+        tab[key] = {"D_real": (v.get("sm") or {}).get("D_real"), "P_real": (v.get("sm") or {}).get("P_real"),
+                    "cells": summ, "refs": v.get("t3_refs"), "feasibility": v.get("feasibility_t3"),
+                    "scope": "TEL ON boot; rho / sigma' = total effect incl. the power-limited clock (§1-3)",
+                    "a31_note": "attention-only decode: sigma' reads differently (§4')" if ident.get("n_attn") == 31 else None}
+    return tab, raw
+
+
+def analyze_jh2(jh2, t1tab, t3tab):
+    """J-H2 (descriptive): per variant the D24 / D44 decode-step ratio of the T1 cells (SM sensitivity of the
+    composition, no prediction registered) and the T3 rows of that variant."""
+    out = {}
+    for n in S.VARIANTS:
+        tag = f"dummy_a{n}"
+        rows = {d: next((t for k, t in t1tab.items() if k.startswith("J-H2|") and f"|{tag}|D{d}|" in k), None)
+                for d in S.JH2_D}
+        ratio = {}
+        if all(rows.values()):
+            for ck in rows[24]["cells"]:
+                if ck in rows[44]["cells"]:
+                    ratio[ck] = {"S_eng_D24_over_D44": rows[24]["cells"][ck] / rows[44]["cells"][ck],
+                                 "ctx_actual": {d: rows[d]["ctx_actual"].get(ck) for d in S.JH2_D}}
+        out[tag] = {"t1_sm_ratio": ratio, "t3_keys": sorted(k for k in t3tab if f"|{tag}|" in k),
+                    "note": "descriptive; variant weights / power state differ -- not an interference size (§4')"}
+    return out
+
+
+def analyze_jc(jc, boots, A):
+    """J-C (§5, rev3.5 draft): TP2 / N=1 ratios of the same cell in the same round, F1-F5, T4 (F3), 96k point."""
+    out = {"ratios_t1": {}, "ratios_t2": {}, "ratios_t2p": {}, "F": {}, "t4": {}, "long": None, "rank": {}}
+    by = {}
+    for v in jc.values():
+        if v["kind"] == "T1T2" and not v.get("long_points"):
+            by[(v["round"], v["identity"]["mode"], v.get("tp", 1))] = v
+    for (rnd, mode, tp), v in sorted(by.items()):
+        if tp == 1:
+            continue
+        a = by.get((rnd, mode, 1))
+        if a is None:
+            continue
+        t_tp, t_n1 = _cell_values(v["t1_windows"]), _cell_values(a["t1_windows"])
+        c_tp, c_n1 = _cell_values(v["t1_windows"], fit_ctx), _cell_values(a["t1_windows"], fit_ctx)
+        out["ratios_t1"][f"r{rnd}|{mode}"] = {f"{b_}x{c_}": {"ratio": t_tp[(b_, c_)] / t_n1[(b_, c_)],
+                                                              "ctx_tp2": c_tp.get((b_, c_)), "ctx_n1": c_n1.get((b_, c_))}
+                                              for (b_, c_) in sorted(t_tp) if (b_, c_) in t_n1}
+        x2 = {x["L"]: x["ttft_ms"] for x in v["t2"] if x["status"] == "VALID"}
+        y2 = {x["L"]: x["ttft_ms"] for x in a["t2"] if x["status"] == "VALID"}
+        if x2:
+            out["ratios_t2"][f"r{rnd}|{mode}"] = {str(L): x2[L] / y2[L] for L in sorted(x2) if L in y2}
+        xp = {x["L"]: x["ttft_ms"] for x in v["t2p"] if x["status"] == "VALID" and (x.get("coexist_engine") or {}).get("confirmed")}
+        yp = {x["L"]: x["ttft_ms"] for x in a["t2p"] if x["status"] == "VALID" and (x.get("coexist_engine") or {}).get("confirmed")}
+        if xp:
+            out["ratios_t2p"][f"r{rnd}|{mode}"] = {str(L): xp[L] / yp[L] for L in sorted(xp) if L in yp}
+    tps = [v for v in jc.values() if v.get("tp", 1) > 1]
+    for v in tps:
+        out["F"][v["boot_id"]] = v.get("tp_facts")
+        out["rank"][v["boot_id"]] = v.get("tp_rank_consistency")
+        if v.get("t4"):
+            out["t4"][v["boot_id"]] = v["t4"]
+        if v.get("long_points"):
+            out["long"] = v["long_points"]
+    f_ok = [x for x in out["F"].values() if x]
+    out["F5_label"] = None if f_ok and all(x["F5"]["held"] for x in f_ok) else "TP2_NOT_BOOTABLE"
+    dead = [k for k, v in boots.items() if v["job"] == "J-C" and v.get("tp", 1) > 1 and "TP2_NOT_BOOTABLE" in v["labels"]]
+    if dead:
+        out["F5_label"] = "TP2_NOT_BOOTABLE"
+        out["tp2_dead_boots"] = dead
+    out["note"] = "total-time ratios only; all-reduce not decomposed (§5-2); anchor cap 48 vs TP2 cap 128 (disclosed)"
+    return out
 
 
 def _status_counts(ws):
@@ -851,7 +1333,7 @@ def instr_effects(usable):
         ident = v["identity"]
         on = next((w for w in usable.values() if w["kind"] == "T1T2" and w["job"] == v["job"] and w["round"] == v["round"]
                    and w["identity"]["tag"] == ident["tag"] and w["identity"]["mode"] == ident["mode"]
-                   and w["identity"]["cap"] == ident["cap"]), None)
+                   and w["identity"]["cap"] == ident["cap"] and w.get("tp", 1) == v.get("tp", 1)), None)
         if on is None:
             continue
         off_t1 = _cell_values(v["t1_windows"], "client_gap_ms")
@@ -874,11 +1356,18 @@ def main(argv=None):
     r = sub.add_parser("run")
     r.add_argument("--job", required=True)
     r.add_argument("--round", type=int, default=1)
-    r.add_argument("--out", required=True)
+    r.add_argument("--out", required=True, help="RAW output directory (cluster volume in a Job, H-3)")
     r.add_argument("--variant-src")
     r.add_argument("--variant-root")
+    r.add_argument("--smoke", action="store_true", help="H-1: unsealed Workspace smoke, SMOKE_UNSEALED marker forced")
+    r.add_argument("--boots", help="comma-separated boot ids of the registered plan (subset)")
+    r.add_argument("--cells-per-boot", type=int, help="smoke: first N cells of each kind per boot")
+    r.add_argument("--select", help="smoke: comma-separated BOOT:KIND:SPEC, e.g. ja1_D44:t1:8x2048,ja1_D44:t2p:4096")
+    r.add_argument("--resume", action="store_true", help="H-4: resume an existing out directory (same plan)")
     a = sub.add_parser("analyze")
     a.add_argument("dir")
+    a.add_argument("--summary", help="H-3: copy the summary files (analysis, plan, markers, sums, manifests) here")
+    a.add_argument("--clk", help="nvidia-smi clk.csv for the T3 clock covariates (A-34)")
     sub.add_parser("spec-sha")
     ns = ap.parse_args(argv)
     if ns.cmd == "spec-sha":
@@ -888,17 +1377,21 @@ def main(argv=None):
         plan = make_plan(ns.job, ns.round)
         for b in plan["boots"]:
             print(json.dumps({"boot_id": b["boot_id"], "kind": b["kind"], "mode": b["mode"], "cap": b["cap"],
-                              "n_t1": len(b["t1"]), "t2": b["t2"], "t2p": b["t2p"], "t4": b["t4"]}))
+                              "tp": b["tp"], "n_t1": len(b["t1"]), "t2": b["t2"], "t2p": b["t2p"], "t3": b["t3"],
+                              "t4": b["t4"], "long": b["long"]}))
         print(json.dumps({"problems": plan_problems(plan), "deferred": plan["deferred"]}))
         return 0
     if ns.cmd == "run":
-        if os.environ.get("PDMUX_COSTTERMS_SEALED") != "1" and not _test_mode():
-            print("ABORT_UNSEALED: the cost-term harness is not sealed (PREREG §12 item 13)", file=sys.stderr)
+        if os.environ.get("PDMUX_COSTTERMS_SEALED") != "1" and not _test_mode() and not ns.smoke:
+            print("ABORT_UNSEALED: the cost-term harness is not sealed (PREREG §12 item 13); --smoke for a Workspace "
+                  "smoke (not a measurement)", file=sys.stderr)
             return 16
-        run_job(ns.job, ns.out, ns.round, ns.variant_src, ns.variant_root)
+        run_job(ns.job, ns.out, ns.round, ns.variant_src, ns.variant_root, smoke=ns.smoke,
+                boots=ns.boots.split(",") if ns.boots else None, cells_per_boot=ns.cells_per_boot,
+                select=ns.select.split(",") if ns.select else None, resume=True if ns.resume else None)
         return 0
     if ns.cmd == "analyze":
-        analyze(ns.dir)
+        analyze(ns.dir, ns.summary, ns.clk)
         return 0
     return 2
 

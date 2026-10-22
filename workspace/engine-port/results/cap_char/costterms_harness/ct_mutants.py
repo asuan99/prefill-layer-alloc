@@ -6,7 +6,9 @@ raw log text, the PREREG's own pre-data table).  tests/test_costterms_harness.py
 unmutated harness and fails under every mutant.
 
 stage: 'unit' (synthetic inputs), 'analysis' (re-analyse a stored virtual run), 'run' (re-run a small virtual plan).
-Stage-2 candidates (TP2 anchor cap, stall median in the co-residence window, sigma' x sigma) are listed in DEFERRED.
+Stage 2 (M27-M38): the three candidates deferred in stage 1 (TP2 anchor cap, stall median in the co-residence window,
+sigma' x sigma) + T3 (sigma from client TTFT, sigma' / rho paired across boots, n_it_obs by conversion, T3 window from
+the first decode, no ramp / co budget in the decode O) + Job entry (smoke marker, resume, raw data exported).
 """
 from __future__ import annotations
 
@@ -24,11 +26,7 @@ import ct_fit as F
 import ct_runner as R
 import ct_client as C
 
-DEFERRED = {
-    "TP2 앵커를 cap 128로 부팅": "J-C (stage 2)",
-    "정지(>5x 중앙값) 계산에서 중앙값을 동거 창으로 잡음": "T3 (stage 2)",
-    "σ′와 σ를 함께 곱함": "T3 (stage 2)",
-}
+DEFERRED = {}          # stage 1's three deferred candidates are M27-M29
 
 # ---------------------------------------------------------------- scenarios (virtual runs; truth = fake knobs)
 FAST_PF = {"pf_u": 0.5, "pf_v": 1e-5, "pf_w4": 0.0}
@@ -40,6 +38,9 @@ SCENARIOS = {
     "JB2": {"job": "J-B2", "truth": {}},
     "CG": {"job": "J-TEST", "truth": {"capture_max": 48}},        # plan: cg_plan() (one cap-128 boot)
     "JA0": {"job": "J-A", "truth": {}, "boots": ["ja1_D44", "ja1_108u", "ja1_108v"]},   # default prefill: A-1 ramp
+    "T3S": {"job": "J-A", "truth": {"stall_every": 13, "pf_coex": 0.004},       # stalls 6 x step, sigma' > 1
+            "boots": ["ja1_t3_D44", "ja1_t3_D24"]},
+    "JC": {"job": "J-C", "truth": dict(FAST_PF), "boots": ["jc1_tp2_D44", "jc1_n1_D44", "jc_tp2_t4"]},
 }
 
 
@@ -559,6 +560,303 @@ def _o_base_only(orig, tr, cell_id, bs, c, rnd, O, **k):
     return orig(tr, cell_id, bs, c, rnd, S.O_BASE, **k)
 
 
+# ---------------------------------------------------------------- stage 2 oracles (raw TEL / decode records / cells)
+def _raw_jsonl(path):
+    p = Path(path)
+    return [json.loads(x) for x in p.read_text().splitlines() if x.strip()] if p.exists() else []
+
+
+def _raw_spans(run, bid):
+    ev = _raw_jsonl(Path(run) / "boots" / bid / "tel.jsonl")
+    st = {e["span_seq"]: e for e in ev if e.get("event") == "prefill_span_start"}
+    en = {e["span_seq"]: e for e in ev if e.get("event") == "prefill_span_end"}
+    its = sorted(e["t_launch"] for e in ev if e.get("event") == "decode_iteration")
+    return [(st[q]["timestamp_monotonic_s"], en[q]["timestamp_monotonic_s"]) for q in sorted(st) if q in en], its, st
+
+
+def _span_of(spans, t0, t1):
+    c = [sp for sp in spans if t0 <= sp[0] <= t1]
+    return c[0] if len(c) == 1 else None
+
+
+def _t3_reps(A):
+    for key, tab in (A["tables"].get("t3") or {}).items():
+        for ck, c in tab["cells"].items():
+            for w in c["reps"]:
+                yield key, ck, w
+
+
+def _bid_of(A, key):
+    job, rnd, tag, mode = key.split("|")[:4]
+    return next(b for b, v in A["boots"].items() if v.get("identity") and v["job"] == job and f"r{v['round']}" == rnd
+                and v["identity"]["tag"] == tag and v["identity"]["mode"] == mode and v["kind"] == "T3")
+
+
+def o_t3_sigma_engine(run, A):
+    """sigma' from the RAW engine spans: the cell's own prefills (send .. first token) over the reference spans of the
+    SAME boot and L (reps >= 1) -- medians, compared to 1e-9 (never client TTFT, never another boot, never x sigma)."""
+    bad, n = [], 0
+    for key, ck, w in _t3_reps(A):
+        if w.get("status") != "VALID":
+            continue
+        bid = _bid_of(A, key)
+        spans, _, _ = _raw_spans(run, bid)
+        cells = _raw_cells(run, bid)
+        c = next(x for x in cells if x["kind"] == "t3" and x["cell_id"] == w["cell_id"])
+        ref = next(x for x in cells if x["kind"] == "t3ref" and x["L"] == c["L"])
+        co = [_span_of(spans, p["t_send"], p["t_first"]) for p in c["prefills"]]
+        rf = [_span_of(spans, r["t_send"], r["t_first"]) for r in ref["reps"] if r["rep"] >= 1]
+        want = X.median([(b - a) * 1000 for a, b in co]) / X.median([(b - a) * 1000 for a, b in rf])
+        n += 1
+        if w.get("sigma_prime") is None or abs(w["sigma_prime"] / want - 1) > 1e-9:
+            bad.append(f"{key} {ck} rep {w.get('rep')}: sigma' {w.get('sigma_prime')} != raw {want}")
+    return bad[:4] or ([] if n else ["no VALID T3 rep"])
+
+
+def o_t3_rho_stall(run, A):
+    """rho = median(co) / median(solo) of the cell's OWN raw intervals (t3_iterations.json); a stall = co interval >
+    5 x the SOLO median; n_it_obs = raw decode_iteration count with t_launch inside the qualifying spans."""
+    raw = json.loads((Path(run) / "t3_iterations.json").read_text())
+    bad, n, stalls = [], 0, 0
+    for key, ck, w in _t3_reps(A):
+        if w.get("status") != "VALID":
+            continue
+        r = raw[key][ck][str(w["rep"])]
+        rho = X.median(r["co_ms"]) / X.median(r["solo_ms"])
+        thr = 5.0 * X.median(r["solo_ms"])
+        ns = sum(1 for x in r["co_ms"] if x > thr)
+        stalls += ns
+        n += 1
+        if abs(w["rho"] / rho - 1) > 1e-9:
+            bad.append(f"{key} {ck}: rho {w['rho']} != raw {rho}")
+        if abs(w["stall_co"]["threshold_ms"] / thr - 1) > 1e-9 or w["stall_co"]["n_stall"] != ns:
+            bad.append(f"{key} {ck}: stall thr {w['stall_co']['threshold_ms']} n {w['stall_co']['n_stall']} != {thr} {ns}")
+        bid = _bid_of(A, key)
+        spans, its, _ = _raw_spans(run, bid)
+        c = next(x for x in _raw_cells(run, bid) if x["kind"] == "t3" and x["cell_id"] == w["cell_id"])
+        cnt = 0
+        for p in c["prefills"]:
+            sp = _span_of(spans, p["t_send"], p["t_first"])
+            cnt += sum(1 for t in its if sp[0] <= t <= sp[1])
+        if w.get("n_it_obs") != cnt:
+            bad.append(f"{key} {ck}: n_it_obs {w.get('n_it_obs')} != raw count {cnt}")
+    if n and not stalls:
+        bad.append("scenario has no stall (oracle cannot see a threshold defect)")
+    return bad[:4] or ([] if n else ["no VALID T3 rep"])
+
+
+def o_t3_window(run, A):
+    """Every T3 cell of the scenario is VALID and its pre solo window starts TRIM records after the raw first record of
+    the cell with bs_real == bs (ramp-aware, as T1); fake truth rho = kappa 1.25 (+- ctx drift 1 %)."""
+    bad, n = [], 0
+    for key, ck, w in _t3_reps(A):
+        n += 1
+        if w.get("status") != "VALID":
+            bad.append(f"{key} {ck}: {w.get('status')} {w.get('detail')}")
+            continue
+        bid = _bid_of(A, key)
+        c = next(x for x in _raw_cells(run, bid) if x["kind"] == "t3" and x["cell_id"] == w["cell_id"])
+        reach = next(e["seq"] for e in _raw_dec(run, bid) if c["t_first_send"] <= e["t_host_start"] <= c["t_end"]
+                     and e["bs_real"] == c["bs"])
+        if w["pre_seq"][0] != reach + 16:
+            bad.append(f"{key} {ck}: pre window starts at {w['pre_seq'][0]}, raw reach {reach}")
+        if abs(w["rho"] / 1.25 - 1) > 0.01:
+            bad.append(f"{key} {ck}: rho {w['rho']} vs fake kappa 1.25")
+    return bad[:4] or ([] if n else ["no T3 rep"])
+
+
+def o_jc_anchor(_run=None, _A=None):
+    """§5-2: the N=1 anchor boots at cap 48 (PREREG literal) on GPU 0 only; the plan check refuses a cap-128 anchor."""
+    bad = []
+    p = R.make_plan("J-C")
+    for b in p["boots"]:
+        if b["tp"] == 1 and (b["cap"] != 48 or b["gpus"] != "0"):
+            bad.append(f"{b['boot_id']}: anchor cap {b['cap']} gpus {b['gpus']}")
+    x = R._boot("J-C", 1, "x", "T1T2", "nano", "pdmux_sticky", 128, D=44, t1=[(8, 2048)], o_family="JC|44")
+    if not any("anchor cap" in q for q in R.plan_problems({"boots": [x]})):
+        bad.append("plan check accepted a cap-128 N=1 anchor")
+    return bad
+
+
+def o_jc_ratios(run, A):
+    """TP2 / N=1 decode-step ratio of the same cell = fake tp_dec_mult 0.62; F1 / F2 held from both rank banners."""
+    jc = A.get("jc") or {}
+    bad = []
+    rs = [x["ratio"] for r in jc.get("ratios_t1", {}).values() for x in r.values()]
+    if not rs or any(abs(x / 0.62 - 1) > 1e-6 for x in rs):
+        bad.append(f"TP2/N1 ratios {rs[:3]} != 0.62")
+    for bid, f in (jc.get("F") or {}).items():
+        if not (f and f["F1"]["held"] and f["F2"]["held"] and f["F4"]["label"] == "F4_STRIDE_DERIVED"):
+            bad.append(f"{bid}: F1/F2/F4 {f and (f['F1']['held'], f['F2']['held'], f['F4']['label'])}")
+    return bad
+
+
+def _smoke_run(root):
+    plan = sub_plan("J-A", ["ja1_D44"])
+    out = Path(root) / "smoke"
+    R.run_job("J-A", out, 1, None, None, make_server=lambda b, a, e: R.VirtualServer(b, a, e, dict(FAST_PF)),
+              plan=plan, smoke=True, select=["ja1_D44:t1:8x2048", "ja1_D44:t2p:4096"])
+    A = R.analyze(out, Path(root) / "summary")
+    return out, A
+
+
+def o_smoke(_run=None, _A=None):
+    import tempfile
+    root = Path(tempfile.mkdtemp(prefix="ct_smoke_"))
+    try:
+        out, A = _smoke_run(root)
+        bad = []
+        if not (out / "SMOKE_UNSEALED").exists() or not (root / "summary" / "SMOKE_UNSEALED").exists():
+            bad.append("SMOKE_UNSEALED marker missing (raw or summary)")
+        if not A.get("smoke"):
+            bad.append("analysis not flagged smoke")
+        w = A["boots"]["ja1_D44"]["t1_windows"]
+        if [(x["bs"], x["c"]) for x in w] != [(8, 2048)] or "ramp_steps_ub" not in w[0] or "ramp_records" not in w[0]:
+            bad.append(f"smoke cell set / ramp fields wrong: {[(x['bs'], x['c']) for x in w]}")
+        return bad
+    finally:
+        shutil.rmtree(root, True)
+
+
+def o_resume(_run=None, _A=None):
+    """Kill a boot after 2 finished cells, resume: the 2 stay (PARTIAL), the rest run once in '<boot>@s1', nothing runs
+    twice, RESUME_LOG.json and the analysis record it."""
+    import tempfile
+    root = Path(tempfile.mkdtemp(prefix="ct_resume_"))
+    plan = sub_plan("J-A", ["ja1_D44"])
+    out = root / "raw"
+    mk = lambda b, a, e: R.VirtualServer(b, a, e, dict(FAST_PF))  # noqa: E731
+    n = {"k": 0}
+    orig = R._run_cell
+
+    def dying(*a, **k):
+        n["k"] += 1
+        if n["k"] > 2:
+            raise KeyboardInterrupt("job stopped")
+        return orig(*a, **k)
+    try:
+        with mock.patch.object(R, "_run_cell", dying):
+            try:
+                R.run_job("J-A", out, 1, None, None, make_server=mk, plan=plan)
+            except KeyboardInterrupt:
+                pass
+        R.run_job("J-A", out, 1, None, None, make_server=mk, plan=plan, resume=True)
+        A = R.analyze(out)
+        bad = []
+        b0 = out / "boots" / "ja1_D44"
+        if not (b0 / "PARTIAL").exists():
+            bad.append("partial boot not kept")
+        keys = [json.loads(x)["cell_key"] for d in (b0, out / "boots" / "ja1_D44@s1") if (d / "cells.jsonl").exists()
+                for x in (d / "cells.jsonl").read_text().splitlines() if x.strip()]
+        reg = {R.cell_key(*c) for c in R.registered_cells(plan["boots"][0],
+                                                          json.loads((b0 / "feasibility.json").read_text()))}
+        if len(keys) != len(set(keys)) or set(keys) != reg:
+            bad.append(f"cells run {len(keys)} (unique {len(set(keys))}) vs registered feasible {len(reg)}")
+        if not json.loads((out / "RESUME_LOG.json").read_text() or "[]"):
+            bad.append("RESUME_LOG.json empty")
+        if "RESUMED_SEGMENT" not in A["boots"].get("ja1_D44@s1", {}).get("labels", []):
+            bad.append("segment boot not labelled RESUMED_SEGMENT")
+        return bad
+    except Exception as exc:  # noqa: BLE001
+        return [f"resume failed: {exc!r}"]
+    finally:
+        shutil.rmtree(root, True)
+
+
+def o_raw_not_exported(run, A):
+    import tempfile
+    sd = Path(tempfile.mkdtemp(prefix="ct_sum_"))
+    try:
+        R.export_summary(run, sd)
+        heavy = [p.name for p in sd.rglob("*") if p.is_file() and (p.name in ("server.log", "cells.jsonl")
+                 or p.name.startswith(("decode_probe", "tel", "admission")))]
+        bad = [f"raw files exported to results/: {heavy[:4]}"] if heavy else []
+        if not (sd / "analysis.json").exists() or not list((sd / "boot_manifests").glob("*.DONE")):
+            bad.append("summary misses analysis.json / boot DONE manifests")
+        return bad
+    finally:
+        shutil.rmtree(sd, True)
+
+
+# ---------------------------------------------------------------- stage 2 mutants
+def _stall_co_median(orig, seq_vals, thr):
+    co = [x for r in seq_vals for x in r]
+    return orig(seq_vals, S.STALL_MULT * X.median(co)) if co else orig(seq_vals, thr)
+
+
+def _sigma_times_sigma(orig, v, boots):
+    out = orig(v, boots)
+    for w in out:
+        if w.get("sigma_prime") and w.get("span_obs_lag_bound_rel") is not None:
+            w["sigma_prime"] *= 1.0 + 0.5 * w["span_obs_lag_bound_rel"] + 0.01   # "x sigma (vs T2)" combined
+    return out
+
+
+def _anchor_cap128(orig):
+    p = orig()
+    for b in p["boots"]:
+        if b["tp"] == 1:
+            b["cap"] = 128
+    return p
+
+
+def _sigma_client(orig, cell_out, ref_out):
+    sg, why = orig(cell_out, ref_out)
+    if sg is not None:
+        sg *= 1.0 + 1e-3        # client TTFT includes the queue wait: never equal to the engine span ratio
+    return sg, why
+
+
+def _sigma_other_boot(orig, v, boots):
+    others = [b for b in boots.values() if b is not v and b.get("t3_refs")]
+    if others:
+        v = dict(v, t3_refs=others[0]["t3_refs"])
+    return orig(v, boots)
+
+
+def _rho_other_boot(orig, v, boots):
+    out = orig(v, boots)
+    other = next((b for b in boots.values() if b is not v and b.get("t3_cells")), None)
+    if other:
+        solo = {(w["bs"], w["L"]): w.get("solo_median_ms") for w in other["t3_cells"]}
+        for w in out:
+            if w.get("rho") and solo.get((w["bs"], w["L"])):
+                w["rho"] = w["co_median_ms"] / solo[(w["bs"], w["L"])]
+    return out
+
+
+def _n_it_converted(orig, its, t_lo, t_hi):
+    ts = sorted(e["t_launch"] for e in its)
+    gaps = [b - a for a, b in zip(ts, ts[1:])]
+    return int(round((t_hi - t_lo) / X.median(gaps))) if gaps else 0
+
+
+def _t3_first_decode(orig, *a, **k):
+    with mock.patch.object(X, "first_reach_index", lambda recs, bs: 0 if recs else None):
+        return orig(*a, **k)
+
+
+def _t3_o_small(orig, tr, cell_id, bs, L, m, rnd, O_dec, **k):
+    return orig(tr, cell_id, bs, L, m, rnd, S.T3_PRE_TOKENS + S.T3_POST_TOKENS + S.MARGIN_ITERS, **k)
+
+
+def _no_smoke_marker(orig, *a, **k):
+    with mock.patch.object(S, "SMOKE_MARKER", "SMOKE_MARKER_DISABLED_BY_MUTANT"):
+        return orig(*a, **k)
+
+
+def _no_resume(orig, plan, out):
+    for b in plan["boots"]:
+        d = Path(out) / "boots" / b["boot_id"]
+        if d.exists() and not (d / "DONE").exists():
+            shutil.rmtree(d)                     # rev3.4 behaviour: redo the partial boot from scratch
+    return plan, []
+
+
+def _export_all(orig, run_dir, summary_dir):
+    shutil.copytree(run_dir, summary_dir, dirs_exist_ok=True)
+
+
 MUTANTS = [
     # id, PREREG candidate (§11-2 / §12 text), stage, scenario, patch factory, oracle, plan subset
     ("M01", "cap 48 부팅인데 128로 기록", "run", "JAF", lambda: mock.patch.object(X, "logged_cap", lambda f: S.CAP_MAIN),
@@ -609,6 +907,28 @@ MUTANTS = [
      o_t2p_confirm, None),
     ("M26", "ramp 상한 없이 O = 332 고정(rev3.3 창)", "run", "JA0",
      lambda: _wrap(C, "run_t1_cell", _o_base_only), o_window_reach, ("J-A", ["ja1_D44", "ja1_108u"])),
+    # stage 2 (rev3.5 draft): stage 1's deferred three + T3 + J-C + Job entry
+    ("M27", "정지(>5× 중앙값) 계산에서 중앙값을 동거 창으로 잡음", "analysis", "T3S",
+     lambda: _wrap(X, "stall_stats", _stall_co_median), o_t3_rho_stall, None),
+    ("M28", "σ′와 σ를 함께 곱함", "analysis", "T3S", lambda: _wrap(R, "t3_join", _sigma_times_sigma), o_t3_sigma_engine, None),
+    ("M29", "TP2 앵커를 cap 128로 부팅", "unit", None, lambda: _wrap(R, "plan_jc", _anchor_cap128), o_jc_anchor, None),
+    ("M30", "σ를 클라이언트 TTFT로 계산", "analysis", "T3S", lambda: _wrap(X, "sigma_prime", _sigma_client),
+     o_t3_sigma_engine, None),
+    ("M31", "σ′의 동거 창과 단독(기준) 창을 다른 boot에서 가져옴", "analysis", "T3S",
+     lambda: _wrap(R, "t3_join", _sigma_other_boot), o_t3_sigma_engine, None),
+    ("M32", "ρ의 동거 창과 단독 창을 다른 boot에서 가져옴", "analysis", "T3S",
+     lambda: _wrap(R, "t3_join", _rho_other_boot), o_t3_rho_stall, None),
+    ("M33", "n_it_obs를 환산 추정(T_span/T_iter)으로 대체", "analysis", "T3S", lambda: _wrap(X, "n_it_in", _n_it_converted),
+     o_t3_rho_stall, None),
+    ("M34", "T3 단독 창을 첫 decode부터 시작(합류 확인 없음)", "analysis", "T3S", lambda: _wrap(X, "t3_cell", _t3_first_decode),
+     o_t3_window, None),
+    ("M35", "T3 decode 출력 길이에 ramp·동거 예산 없음", "run", "T3S", lambda: _wrap(C, "run_t3_cell", _t3_o_small),
+     o_t3_window, ("J-A", ["ja1_t3_D44"])),
+    ("M36", "smoke 출력에 SMOKE_UNSEALED 표지 누락", "unit", None, lambda: _wrap(R, "run_job", _no_smoke_marker), o_smoke, None),
+    ("M37", "재개 시 완료 셀을 버리고 boot 전체 재실행(재개 미기록)", "unit", None,
+     lambda: _wrap(R, "resume_segments", _no_resume), o_resume, None),
+    ("M38", "원자료를 results/로 export", "run", "JC", lambda: _wrap(R, "export_summary", _export_all),
+     o_raw_not_exported, ("J-C", ["jc_tp2_t4"])),
 ]
 
 
