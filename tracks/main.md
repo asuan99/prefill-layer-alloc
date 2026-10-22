@@ -27,7 +27,7 @@
 - 설계 결정 원문(1–21): `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`. 비교·계획: `cap_char/COMPARE_shapeC_workloads_2026-10-20.md`, `PLAN_costmodel_terms_2026-10-20.md`, 그림 `cap_char/figures/`, 장문 길이 실측 `cap_char/longctx_stats/`.
 - 운영 사고·교훈: object-volume export 절단이 gamma-A·F에서 재발(분해 Job은 요약만 export해 288/288 무결) · 1회차 128k 프로브 폴링 오판으로 A100 약 60분 유휴(완료 판정은 SUMMARY/DONE 파일로) · VESSL 인증 만료 시 사용자 `vesslctl auth login`.
 ## 다음 행동
-1. `test_baseline_pass` 비결정성 수리(engine-porter) · 로컬 엔진 트리 재동기화 여부 결정(다른 트랙 공유 트리)
+1. (완료 2026-10-22 `1943b3b6`: `test_baseline_pass` 비결정성 = 가짜 엔진 결함 2건 수리, 50/50 통과; 실서버 G-α containment 최소 여유 B2 0.132 ms(허용오차 포함)) · 로컬 엔진 트리 재동기화 여부 결정
 2. 신규 하네스 구현(§12 #7) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
