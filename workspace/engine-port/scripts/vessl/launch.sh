@@ -109,6 +109,22 @@ if [[ "${target}" == */engine_gate_alpha.sh || "${target}" == */engine_gate_beta
   python3 "${here}/engine_gate_driver.py" plan-info "${gname}" --family "${gfam}" --rate "${PDMUX_VESSL_RATE_USD_H}" ${gcap:+--hardcap-min "${gcap}"} \
     || echo "WARNING: engine_gate plan-info failed" >&2
 fi
+# Cost-term measurement Jobs (PREREG_COSTMODEL_TERMS_MEAS rev3.4 sec 7-4): the hard cap is self-enforced inside costterms_job.sh
+# (timeout), so print the same caps here for the approver.  Display only; the caps live in costterms_job.sh.
+if [[ "${target}" == */costterms_job.sh ]]; then
+  ctj="" ctr=1 ctsealed="no"
+  for kv in "${extra_env[@]+"${extra_env[@]}"}"; do
+    case "${kv}" in PDMUX_COSTTERMS_JOB=*) ctj="${kv#*=}" ;; PDMUX_COSTTERMS_ROUND=*) ctr="${kv#*=}" ;;
+      PDMUX_COSTTERMS_SEALED=1) ctsealed="yes" ;; esac
+  done
+  case "${ctj}:${ctr}" in J-H1:*) ctcap=245 ;; J-A:1) ctcap=243 ;; J-A:2) ctcap=234 ;; J-B2:*) ctcap=78 ;; *) ctcap="" ;; esac
+  if [[ -n "${ctcap}" ]]; then
+    echo "costterms: job=${ctj} round=${ctr} sealed_env=${ctsealed} hardcap=${ctcap} min (self-enforced), cost bound <= \$$(awk -v c="${ctcap}" -v r="${PDMUX_VESSL_RATE_USD_H}" 'BEGIN{printf "%.2f", c/60*r}') (rate x cap)"
+    [[ "${ctsealed}" == yes ]] || echo "costterms: WARNING no PDMUX_COSTTERMS_SEALED=1 -> the entry point refuses (rc 16 ABORT_UNSEALED); unsealed submit would only burn setup time"
+  else
+    echo "costterms: WARNING unknown job/round '${ctj}:${ctr}' -> the entry point aborts rc 16 (ABORT_CONFIG)"
+  fi
+fi
 if [[ "${submit}" -ne 1 ]]; then
   echo "(dry-run: nothing uploaded or created; add --submit after approval)"
   exit 0
