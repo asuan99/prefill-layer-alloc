@@ -5,7 +5,8 @@ PREREG's arbitrary model value].  `python3 ct_timemodel.py` prints hours per Job
 Model (§7-4'): T1 cell = sum of the burst's prefill batches (batch 1 at 108 SM, the rest at the mode's concurrent
 prefill SM P, TTFT table x (108/P)^0.8; vanilla all at 108) + 318 steps x (12 + 0.45 bs)(108/D)^0.5 ms + 15.5 s;
 T2 = 8 TTFT(L) + 15 s; T2' = 8 TTFT(L)(108/P)^0.8 + 16 s; T3 cell = decode-batch ramp + m(L) TTFT(L, P)(108/P)^0.8
-+ 300 steps (+ 15.5 s); T3 reference = 8 TTFT(L, P) + 16 s; T4 fill 6 min; boot + warm-up 0.072 h (TP2 boot 400 s);
++ 300 steps (+ 15.5 s); T3 reference = 8 TTFT(L, P) + 16 s; long point (decision 30) = 8 TTFT(L) + 15 s; T4 fill
+6 min; boot + warm-up 0.072 h (TP2 boot 400 s);
 TP2 prefill 1.7x faster, TP2 decode step taken equal to N=1 (no model value given -- conservative).
 Feasibility is evaluated at the derived cap-128 / cap-48 pools (or a given pool), so INFEASIBLE cells cost nothing.
 """
@@ -18,7 +19,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ct_spec as S  # noqa: E402
 
-TTFT_S = {1024: 0.12, 2048: 0.24, 4096: 0.46, 8192: 0.92, 16384: 1.84, 32768: 4.0, 65536: 8.4}   # §7-1
+TTFT_S = {1024: 0.12, 2048: 0.24, 4096: 0.46, 8192: 0.92, 16384: 1.84, 32768: 4.0, 65536: 8.4,   # §7-1
+          98304: 14.0, 126976: 18.0}   # decision 30 long points: 128k probe descriptive values (GATE_SPLIT_DESIGN
+#                                        time basis "98k 약 14 s, 124k 약 18 s"), budget input only
 BOOT_H = 0.072
 TP2_BOOT_H = (400 + 60) / 3600
 TP2_PF = 1.7
@@ -78,7 +81,7 @@ def boot_hours(b, pool=None):
         t += b["t3_reps"] * (burst_prefill_s(bs, S.T3_C, P, False, tp) + S.T3_M[L] * ttft(L) * pf * (108 / P) ** 0.8
                              + 300 * step_s(bs, D) + CELL_OVH_S)
     t += sum(S.T3_REF_REPS * ttft(L) * pf * (108 / P) ** 0.8 + 16 for L in b.get("t3ref", []))
-    t += sum(2 * ttft(L) * pf + 15 for L in b.get("long", []))
+    t += sum(S.LONG_REPS * ttft(L) * pf + 15 for L in b.get("long", []))     # decision 30: T2 rule, 8 reps
     h = t / 3600 + FILL_H * len(b["t4"]) + (TP2_BOOT_H if tp > 1 else BOOT_H)
     return h
 

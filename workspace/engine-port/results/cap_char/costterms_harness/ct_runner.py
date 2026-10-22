@@ -131,7 +131,17 @@ def plan_ja(rnd):
         ordered = [b for b in reversed(ordered) if b["boot_id"] != "ja1_capinv_D44"]
         for b in ordered:
             b["boot_id"] = b["boot_id"].replace("ja1_", "ja2_")
-    return {"job": job, "boots": ordered, "deferred": ["J-A1 cap-invariance boot only in round 1"]}
+    else:             # decision 30: N=1 T2-ext in its own vanilla boot, context 131,072, the LAST boot of J-A1 only
+        ordered.append(long_boot(job, 1, "ja1_long_108v", tp=1, gpus="0"))
+    return {"job": job, "boots": ordered, "deferred": ["J-A1 cap-invariance boot only in round 1",
+                                                       "N=1 T2-ext long boot only in J-A1, last (decision 30)"]}
+
+
+def long_boot(job, rnd, boot_id, tp, gpus):
+    """Decision 30 long boot: vanilla 108v (P = 108), cap LONG_CAP, context LONG_CONTEXT, only the long points
+    (bridge 64k + T2-ext 96k / 124k, ascending), nothing else -- a death in it cannot cost any other registered cell."""
+    return _boot(job, rnd, boot_id, "T1T2", "nano", "vanilla", S.LONG_CAP, tp=tp, gpus=gpus,
+                 context=S.LONG_CONTEXT, long=list(S.LONG_L), o_family="VANILLA")
 
 
 def plan_jh2():
@@ -170,13 +180,12 @@ def plan_jc():
     r1 = [r1[i] for i in order]
     r2 = {b["boot_id"]: b for b in boots if b["round"] == 2}
     ordered = r1 + [r2[b["boot_id"].replace("jc1_", "jc2_")] for b in reversed(r1) if b["boot_id"].startswith("jc1_")]
-    if S.JC_96K_MODE == "separate_boot":
-        ordered.append(_boot("J-C", 1, "jc_tp2_long", "T1T2", "nano", "pdmux_sticky", S.JC_TP2_CAP, D=44,
-                             tp=S.JC_TP, gpus="0,1", context=S.JC_LONG_CONTEXT, long=[S.JC_LONG_L]))
+    if S.JC_96K_MODE == "included":       # decision 30: TP2 long boot LAST (96k required, 124k if feasible)
+        ordered.append(long_boot("J-C", 1, "jc_tp2_long_108v", tp=S.JC_TP, gpus="0,1"))
     elif S.JC_96K_MODE != "deleted":
         raise ValueError(S.JC_96K_MODE)
     return {"job": "J-C", "boots": ordered, "deferred": [] if S.JC_96K_MODE != "deleted"
-            else ["TP2 96k point deleted (O-19 option, user decision)"]}
+            else ["TP2 long point deleted (NOT the decision-30 default; disclose the lost TP2 long serving point)"]}
 
 
 def plan_jh1():
@@ -264,13 +273,31 @@ def plan_problems(plan):
                 bad.append(f"{b['boot_id']}: N=1 anchor cap {b['cap']} != {S.JC_ANCHOR_CAP} (§5-2)")
             if b["tp"] == 1 and b["gpus"] != "0":
                 bad.append(f"{b['boot_id']}: N=1 anchor must use GPU 0 only (O-6 sequential)")
-            if b["tp"] == S.JC_TP and (b["cap"] != S.JC_TP2_CAP or b["gpus"] != "0,1"):
+            if b["tp"] == S.JC_TP and not b["long"] and (b["cap"] != S.JC_TP2_CAP or b["gpus"] != "0,1"):
                 bad.append(f"{b['boot_id']}: TP2 boot cap / GPUs {b['cap']} {b['gpus']}")
-        if b["long"] and b is not plan["boots"][-1]:
-            bad.append(f"{b['boot_id']}: the 96k point must be the LAST boot of the Job (§5-3)")
-        for L in list(b["t2"]) + list(b["t2p"]) + list(b["long"]):
+            if b["tp"] == S.JC_TP and b["long"] and b["gpus"] != "0,1":
+                bad.append(f"{b['boot_id']}: TP2 long boot GPUs {b['gpus']}")
+        for L in list(b["t2"]) + list(b["t2p"]):
             if L + 1 > b["context"]:
                 bad.append(f"{b['boot_id']}: L {L} + 1 > context_length {b['context']}")
+        # ---- decision 30 long boots: separate, last, long-only, context 131,072, ascending L, P = 108
+        if b["long"]:
+            if b is not plan["boots"][-1]:
+                bad.append(f"{b['boot_id']}: a long boot must be the LAST boot of the Job (decision 30)")
+            if b["t1"] or b["t2"] or b["t2p"] or b.get("t3") or b["t4"]:
+                bad.append(f"{b['boot_id']}: a long boot carries only long points (decision 30: separate boot)")
+            if b["context"] != S.LONG_CONTEXT:
+                bad.append(f"{b['boot_id']}: long boot context {b['context']} != {S.LONG_CONTEXT}")
+            if list(b["long"]) != sorted(b["long"]):
+                bad.append(f"{b['boot_id']}: long L not ascending (a death at a larger L must keep the smaller)")
+            if t2_axis(b["mode"]) is None:
+                bad.append(f"{b['boot_id']}: long points in a {b['mode']} boot (T2 needs P = 108, decision 28 A-2)")
+            for L in b["long"]:
+                if L + S.LONG_MAX_NEW >= b["context"]:
+                    bad.append(f"{b['boot_id']}: ABORT_CONTEXT_TOO_SHORT L {L} + {S.LONG_MAX_NEW} >= context_length "
+                               f"{b['context']}")
+    if sum(1 for b in plan["boots"] if b["long"]) > 1:
+        bad.append("more than one long boot in a Job (decision 30: one, last)")
     return bad
 
 
@@ -409,7 +436,7 @@ class VirtualServer:
         return "ok"
 
     def alive(self):
-        return self.core is not None
+        return self.core is not None and not self.core.dead
 
     def log_size(self):
         self.lf.flush()
@@ -417,7 +444,8 @@ class VirtualServer:
 
     def stop(self):
         if self.core is not None:
-            self.core.flush(self.tr.now())
+            if not self.core.dead:
+                self.core.flush(self.tr.now())
             self.core.close()
         self.lf.close()
         return {"returncode": 0}
@@ -471,7 +499,7 @@ def cell_key(kind, what, k=0):
     return f"{kind}|{what}|{k}"
 
 
-def registered_cells(b, feas=None, feas3=None):
+def registered_cells(b, feas=None, feas3=None, feasL=None):
     """Every cell of a boot in REGISTERED order (before the seeded shuffle): t1 (feasible, x reps), t2, t2p, t3 (feasible,
     x reps), t3ref (for the L of feasible t3 cells), t4, long.  feas / feas3 None -> no feasibility filter (selection)."""
     out = []
@@ -487,8 +515,25 @@ def registered_cells(b, feas=None, feas3=None):
             ok3.append(c_)
             out += [("t3", c_, k) for k in range(b["t3_reps"])]
     out += [("t3ref", L, 0) for L in b.get("t3ref", []) if feas3 is None or any(L == c_[1] for c_ in ok3)]
-    out += [("t4", tuple(x), 0) for x in b["t4"]] + [("long", L, 0) for L in b.get("long", [])]
+    out += [("t4", tuple(x), 0) for x in b["t4"]]
+    out += [("long", L, 0) for L in b.get("long", []) if feasL is None or any(r["L"] == L and r["run"] for r in feasL)]
     return out
+
+
+def long_feasibility(b, f):
+    """Decision 30: each long L against the boot log -- per-rank KV token pool and the LOGGED context_len (the server
+    may clamp or reject a context; the plan value is not trusted).  A context failure is ABORT_CONTEXT_TOO_SHORT."""
+    mt = X.mem_terms(f)
+    kv = mt["kv_tokens"] if mt else None
+    ctx = (f.get("final") or {}).get("context_len") or f.get("server_args", {}).get("context_length")
+    rows = []
+    for L in b.get("long", []):
+        r = S.feasible_long(L, kv, ctx)
+        lab = None if not r else ("ABORT_CONTEXT_TOO_SHORT" if any(x.startswith("ABORT_CONTEXT_TOO_SHORT") for x in r)
+                                  else "INFEASIBLE_BY_RULE")
+        rows.append({"L": L, "run": not r, "label": lab, "reasons": r, "kv_tokens": kv, "context_logged": ctx,
+                     "required": L in S.JC_LONG_REQUIRED and b.get("tp", 1) > 1})
+    return rows
 
 
 def select_cells(b, cells_per_boot=None, select=None):
@@ -625,6 +670,10 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
     feas3 = t3_feasibility(b, f) if b.get("t3") else None
     if feas3 is not None:
         dump(feas3, bdir / "feasibility_t3.json")
+    feasL = long_feasibility(b, f) if b.get("long") else None
+    if feasL is not None:
+        dump(feasL, bdir / "feasibility_long.json")
+        res["problems"] += [f"{r['label']}: L {r['L']} not sent ({'; '.join(r['reasons'])})" for r in feasL if not r["run"]]
     led("feasibility_written", sha256=sha256_file(bdir / "feasibility.json"))
     if b["t4"]:
         pred = t4_predict(f, X.logged_cap(f), [tuple(x) for x in b["t4"]])
@@ -644,7 +693,7 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
     for c_ in [tuple(x) for x in b["t1"]]:
         if next((x for x in feas if (x["bs"], x["c"]) == c_), None) is None:   # every registered cell has a row
             res["problems"].append(f"FEASIBILITY_ROW_MISSING: {c_}")
-    cells = registered_cells(b, feas, feas3)
+    cells = registered_cells(b, feas, feas3, feasL)
     if b.get("only_cells") is not None:                      # smoke selection / resume segment (cell keys)
         keep = set(b["only_cells"])
         cells = [c for c in cells if cell_key(*c) in keep]
@@ -652,7 +701,9 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
     rng.shuffle(cells)
     # A-36: the sigma' reference runs FIRST (its rep 0 is the boot's first prefill of that L = the warm-up), so no T3
     # cell carries a first-of-L span; the rest stays in seeded random order
-    cells = sorted(c for c in cells if c[0] == "t3ref") + [c for c in cells if c[0] != "t3ref"]
+    # decision 30 (A-41): long points last, ascending L, never shuffled (a death at a larger L keeps the smaller ones)
+    longs = sorted((c for c in cells if c[0] == "long"), key=lambda c: c[1])
+    cells = sorted(c for c in cells if c[0] == "t3ref") + [c for c in cells if c[0] not in ("t3ref", "long")] + longs
     dump([list(map(str, c)) for c in cells], bdir / "cell_order.json")
     with open(bdir / "cells.jsonl", "a") as fh:
         for kind, what, k in cells:
@@ -662,10 +713,14 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
             off0 = srv.log_size()
             rec = _run_cell(tr, b, kind, what, k, f, o_map, led)
             rec["log_offsets"] = [off0, srv.log_size()]
+            rec["server_alive_after"] = srv.alive()           # decision 30: the cell a death happened in
             rec["cell_key"] = cell_key(kind, what, k)
             fh.write(json.dumps(rec) + "\n")                  # one line = one finished cell (cell-level DONE, H-4)
             fh.flush()
-            tr.sleep(0.5)                                   # settle between cells
+            if rec["server_alive_after"]:
+                tr.sleep(0.5)                               # settle between cells
+    if not srv.alive() and "SERVER_DEATH" not in res["labels"]:   # a death in the LAST cell (e.g. the 124k point)
+        res["labels"].append("SERVER_DEATH")
     res["trailer_ok"] = C.run_trailer(tr, b["boot_id"]) if srv.alive() else False
     res["stop"] = srv.stop()
     files = {"decode_probe": any(bdir.glob("decode_probe*.jsonl")), "admission": any(bdir.glob("admission*.jsonl")),
@@ -851,7 +906,8 @@ def analyze_boot(bdir):
     if (bdir / "PARTIAL").exists() and not res:
         res = {"start": "ok", "problems": [], "labels": ["PARTIAL_SEGMENT"]}
     out = {"boot_id": b["boot_id"], "kind": b["kind"], "job": b["job"], "round": b["round"], "plan_mode": b["mode"],
-           "problems": list(res.get("problems", [])), "labels": list(res.get("labels", []))}
+           "problems": list(res.get("problems", [])), "labels": list(res.get("labels", [])),
+           "long_plan": list(b.get("long", [])), "tp": b.get("tp", 1), "context_plan": b.get("context")}
     if f is None or "ABORTED" in out["labels"] or res.get("start") != "ok":
         out["usable"] = False
         return out
@@ -920,9 +976,9 @@ def analyze_boot(bdir):
         elif c["kind"] == "t3ref":
             t3r.append(X.t3_ref(dec_seq, spans, c, p_exp))
         elif c["kind"] == "long":
-            r0 = [r for r in c["reps"] if r["rep"] >= 1]
-            longp.append({"L": c["L"], "pass": bool(r0) and all(r.get("ok") for r in r0),
-                          "ttft_ms": [r["ttft_s"] * 1000.0 for r in r0 if r.get("ttft_s") is not None]})
+            longp.append(X.long_row(c, _log_slice(logb, c["log_offsets"])))
+    if b.get("long"):
+        longp = X.long_rows_complete(b["long"], longp, load(bdir / "feasibility_long.json", []), out["labels"])
     out.update(t1_windows=t1, t2=t2, t2p=t2p, t4_fills=t4, t3_cells=t3c, t3_refs=t3r, long_points=longp)
     if b["kind"] == "T3" and not tel:
         out["labels"].append("SIGMA_NOT_COLLECTED")
@@ -1087,6 +1143,8 @@ def analyze(run_dir, summary_dir=None, clk_path=None):
     A["tables"]["t2prime"] = t2p_tab
     A["fits"]["t2prime"] = t2p_fit
     A["fits"]["theta_prime"] = theta_prime(t2p_tab)
+    # ---- decision 30 long points (every boot, usable or not: a death keeps its earlier rows)
+    A["tables"]["t2_long"] = long_table(boots, usable)
     # ---- T4
     t4 = {}
     pools = {}
@@ -1125,6 +1183,49 @@ def analyze(run_dir, summary_dir=None, clk_path=None):
     if summary_dir is not None:
         export_summary(run_dir, summary_dir)
     return A
+
+
+def long_table(boots, usable):
+    """Decision 30: per long boot the rows (T2 value + serving check + death labels) and, descriptively, the join with
+    the same-Job, same-mode, same-tp 73,728-context T2 grid boot(s): bridge ratio at 65,536 and the grid-only quadratic
+    extrapolated to 96k / 124k vs the long values, plus the joint fit (T2_LONG_ACROSS_BOOTS: cap / context differ)."""
+    out = {}
+    for k, v in boots.items():
+        if not v.get("long_plan"):
+            continue
+        rows = v.get("long_points")
+        if rows is None:                                    # the long boot itself failed to start / aborted
+            ctx_abort = any(q.startswith("ABORT_CONTEXT") for q in v.get("problems", []))
+            rows = [{"L": L, "status": "NOT_RUN", "labels": ["ABORT_CONTEXT_TOO_SHORT" if ctx_abort else "NOT_RUN_BOOT_FAILED"]
+                     + (["SERVER_DEATH"] if "SERVER_DEATH" in v["labels"] else [])} for L in v["long_plan"]]
+        ent = {"job": v["job"], "round": v["round"], "tp": v.get("tp", 1), "mode": v["plan_mode"],
+               "context_plan": v.get("context_plan"), "cap": (v.get("identity") or {}).get("cap"),
+               "boot_labels": v["labels"], "rows": rows, "joins": {},
+               "scope": "P = 108 single-request prefill TTFT (T2 rule); separate last boot, context 131,072 (decision 30)"}
+        vals = {r["L"]: r["ttft_ms"] for r in rows if r.get("status") == "VALID"}
+        for g in usable.values():
+            gi = g.get("identity") or {}
+            if (g["job"] != v["job"] or g.get("long_plan") or g["kind"] == "OFF" or not g.get("t2")
+                    or gi.get("mode") != v["plan_mode"] or g.get("tp", 1) != v.get("tp", 1)):
+                continue
+            pts = [(x["L"], x["ttft_ms"]) for x in g["t2"] if x["status"] == "VALID"]
+            if len(pts) < 3:
+                continue
+            grid = dict(pts)
+            ft = F.fit_t2(pts)
+            j = {"bridge_L": S.LONG_BRIDGE_L,
+                 "bridge_ratio_long_over_grid": (vals[S.LONG_BRIDGE_L] / grid[S.LONG_BRIDGE_L])
+                 if S.LONG_BRIDGE_L in vals and S.LONG_BRIDGE_L in grid else None,
+                 "grid_fit_extrapolation_rel_err": {str(L): (ft["pred"](L) - vals[L]) / vals[L]
+                                                    for L in S.T2EXT_L if L in vals and ft} if ft else None,
+                 "label": "T2_LONG_ACROSS_BOOTS"}
+            both = pts + [(L, vals[L]) for L in S.T2EXT_L if L in vals]
+            fj = F.fit_t2(both) if len(both) > len(pts) else None
+            j["joint_fit_coef"] = fj["coef"] if fj else None
+            j["joint_fit_loo_internal"] = {str(a): b_ for a, b_ in fj["loo_internal"].items()} if fj else None
+            ent["joins"][g["boot_id"]] = j
+        out[k] = ent
+    return out
 
 
 def export_summary(run_dir, summary_dir):
@@ -1211,7 +1312,7 @@ def analyze_jc(jc, boots, A):
     out = {"ratios_t1": {}, "ratios_t2": {}, "ratios_t2p": {}, "F": {}, "t4": {}, "long": None, "rank": {}}
     by = {}
     for v in jc.values():
-        if v["kind"] == "T1T2" and not v.get("long_points"):
+        if v["kind"] == "T1T2" and not v.get("long_plan"):
             by[(v["round"], v["identity"]["mode"], v.get("tp", 1))] = v
     for (rnd, mode, tp), v in sorted(by.items()):
         if tp == 1:
@@ -1238,11 +1339,11 @@ def analyze_jc(jc, boots, A):
         out["rank"][v["boot_id"]] = v.get("tp_rank_consistency")
         if v.get("t4"):
             out["t4"][v["boot_id"]] = v["t4"]
-        if v.get("long_points"):
-            out["long"] = v["long_points"]
+    out["long"] = {k: x for k, x in A["tables"].get("t2_long", {}).items() if x["job"] == "J-C"} or None
     f_ok = [x for x in out["F"].values() if x]
     out["F5_label"] = None if f_ok and all(x["F5"]["held"] for x in f_ok) else "TP2_NOT_BOOTABLE"
-    dead = [k for k, v in boots.items() if v["job"] == "J-C" and v.get("tp", 1) > 1 and "TP2_NOT_BOOTABLE" in v["labels"]]
+    dead = [k for k, v in boots.items() if v["job"] == "J-C" and v.get("tp", 1) > 1 and "TP2_NOT_BOOTABLE" in v["labels"]
+            and not v.get("long_plan")]            # a failed long boot is a long-point result, not F5 (decision 30)
     if dead:
         out["F5_label"] = "TP2_NOT_BOOTABLE"
         out["tp2_dead_boots"] = dead

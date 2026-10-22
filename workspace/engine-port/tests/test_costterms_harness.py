@@ -547,11 +547,13 @@ class TestEntry(unittest.TestCase):
             p = R.make_plan(job, rnd)
             self.assertEqual(R.plan_problems(p), [], (job, rnd))
         a1, a2 = R.make_plan("J-A", 1), R.make_plan("J-A", 2)
-        self.assertEqual([b["boot_id"].replace("ja1_", "") for b in a1["boots"] if "capinv" not in b["boot_id"]][::-1],
+        self.assertEqual([b["boot_id"].replace("ja1_", "") for b in a1["boots"]
+                          if "capinv" not in b["boot_id"] and not b["long"]][::-1],
                          [b["boot_id"].replace("ja2_", "") for b in a2["boots"]])
+        self.assertEqual(a1["boots"][-1]["boot_id"], "ja1_long_108v")                # decision 30: last, round 1 only
         self.assertEqual(len(R.make_plan("J-B2")["boots"]), 10)
         self.assertEqual(len(R.make_plan("J-H1")["boots"]), 7)
-        self.assertEqual(len(R.make_plan("J-A", 1)["boots"]), 12)                  # + T3 boots D24 / D44
+        self.assertEqual(len(R.make_plan("J-A", 1)["boots"]), 13)                  # + T3 boots D24 / D44 + long boot
         self.assertEqual(len(R.make_plan("J-A", 2)["boots"]), 11)
         for job in ("J-H2", "J-C"):
             self.assertEqual(R.plan_problems(R.make_plan(job)), [], job)
@@ -559,17 +561,19 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(sorted((b["variant"], b["D"]) for b in jh2), sorted((n, d) for n in S.VARIANTS for d in S.JH2_D))
         self.assertTrue(all(b["kind"] == "T3" and b["dummy"] for b in jh2))
         jc = R.make_plan("J-C")["boots"]
-        self.assertEqual(len(jc), 10)                                               # 96k deleted by default (O-19)
-        self.assertEqual({(b["tp"], b["cap"], b["gpus"]) for b in jc}, {(2, 128, "0,1"), (1, 48, "0")})
+        self.assertEqual(len(jc), 11)                                               # decision 30: long boot included
+        self.assertEqual({(b["tp"], b["cap"], b["gpus"]) for b in jc if not b["long"]}, {(2, 128, "0,1"), (1, 48, "0")})
+        self.assertEqual((jc[-1]["tp"], jc[-1]["cap"], jc[-1]["gpus"], jc[-1]["mode"], jc[-1]["context"], jc[-1]["long"]),
+                         (2, S.LONG_CAP, "0,1", "108v", 131072, [65536, 98304, 126976]))
         r1 = [b["boot_id"] for b in jc if b["boot_id"].startswith("jc1_")]
         r2 = [b["boot_id"] for b in jc if b["boot_id"].startswith("jc2_")]
         self.assertEqual([x.replace("jc1_", "") for x in r1][::-1], [x.replace("jc2_", "") for x in r2])   # ABBA
-        with mock_attr(S, "JC_96K_MODE", "separate_boot"):
-            p = R.make_plan("J-C")
-            self.assertEqual(p["boots"][-1]["long"], [S.JC_LONG_L])
-            self.assertEqual(R.plan_problems(p), [])
-            p["boots"].insert(0, p["boots"].pop())                               # the 96k boot must be last
-            self.assertTrue(any("LAST" in x for x in R.plan_problems(p)))
+        p = R.make_plan("J-C")
+        p["boots"].insert(0, p["boots"].pop())                                   # the long boot must be last
+        self.assertTrue(any("LAST" in x for x in R.plan_problems(p)))
+        with mock_attr(S, "JC_96K_MODE", "deleted"):
+            self.assertEqual(len(R.make_plan("J-C")["boots"]), 10)
+            self.assertTrue(R.make_plan("J-C")["deferred"])
         with self.assertRaises(SystemExit):
             os.environ.pop("PDMUX_COSTTERMS_TEST_MODE")
             try:
@@ -637,7 +641,10 @@ class TestStage2Spec(unittest.TestCase):
     def test_time_model_and_caps(self):
         tm = importlib.import_module("ct_timemodel")
         h = {k: v[0] for k, v in tm.main().items()}
-        self.assertAlmostEqual(h["J-A|1"], 3.4, delta=0.05)                         # PREREG §7-4' J-A1 3.4 h
+        a1 = R.make_plan("J-A", 1)
+        long_h = sum(tm.boot_hours(b) for b in a1["boots"] if b["long"])
+        self.assertAlmostEqual(h["J-A|1"] - long_h, 3.4, delta=0.05)               # PREREG §7-4' J-A1 3.4 h (w/o long)
+        self.assertAlmostEqual(long_h, 0.17, delta=0.02)                            # decision 30 long boot [유도]
         self.assertAlmostEqual(h["J-A|2"], 3.3, delta=0.05)
         self.assertAlmostEqual(h["J-H1|1"], 3.4, delta=0.05)
         for k in ("J-A|1", "J-A|2", "J-H1"):
@@ -648,7 +655,9 @@ class TestStage2Spec(unittest.TestCase):
         import re
         for job, cap in (("J-H2", S.HARD_CAP_MIN["J-H2"]), ("J-C", S.HARD_CAP_MIN["J-C"])):
             self.assertRegex(txt, rf"{job}\) +cap_min={cap};")
+        self.assertIn(f"then cap_min={S.HARD_CAP_MIN['J-A|1']}; else cap_min={S.HARD_CAP_MIN['J-A|2']}", txt)
         launch = (ENG / "scripts" / "vessl" / "launch.sh").read_text()
+        self.assertIn(f"J-A:1) ctcap={S.HARD_CAP_MIN['J-A|1']}", launch)
         self.assertIn(f"J-H2:*) ctcap={S.HARD_CAP_MIN['J-H2']}", launch)
         self.assertIn(f"J-C:*) ctcap={S.HARD_CAP_MIN['J-C']}", launch)
 
@@ -774,3 +783,81 @@ class TestStage2E2E(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# =============================================================================== decision 30 (rev3.5): long points
+class TestDecision30Long(unittest.TestCase):
+    def test_feasible_long_rule(self):
+        G_BETA_POOL = 1588248                       # G-beta BETA1_fused banner (mem 0.6, cap 48, context 131,072)
+        for L in S.LONG_L:
+            self.assertEqual(S.feasible_long(L, G_BETA_POOL, 131072), [], L)
+            self.assertEqual(S.feasible_long(L, 3720000, 131072), [], L)            # TP2 per-rank token pool [유도]
+        self.assertEqual(S.feasible_long(65536, 895781, 73728), [])
+        for L in S.T2EXT_L:                                                        # the 73,728 grid boots cannot
+            r = S.feasible_long(L, 895781, 73728)
+            self.assertTrue(r and r[0].startswith("ABORT_CONTEXT_TOO_SHORT"), r)
+        self.assertTrue(S.feasible_long(131071, 10 ** 7, 131072))                  # L + 1 == context is refused
+        self.assertTrue(S.feasible_long(98304, 100000, 131072))                    # pool too small
+        self.assertEqual(S.T2EXT_L, (98304, 126976))
+        self.assertEqual(S.LONG_REPS, S.T2_REPS)
+        self.assertEqual(S.JC_96K_MODE, "included")
+
+    def test_plan_rules(self):
+        for job in ("J-A", "J-C"):
+            p = R.make_plan(job, 1)
+            self.assertEqual(R.plan_problems(p), [])
+            b = p["boots"][-1]
+            for bad, key in ((dict(b, context=73728), "ABORT_CONTEXT_TOO_SHORT"), (dict(b, long=[126976, 98304]), "ascending"),
+                             (dict(b, t2=[4096]), "only long"), (dict(b, engine="pdmux_sticky", mode="D44", D=44), "P = 108")):
+                q = dict(p, boots=p["boots"][:-1] + [bad])
+                self.assertTrue(any(key in x for x in R.plan_problems(q)), (job, key, R.plan_problems(q)))
+            q = dict(p, boots=p["boots"] + [dict(b, boot_id="x2")])
+            self.assertTrue(any("more than one long boot" in x for x in R.plan_problems(q)))
+
+    def _run(self, truth, boots):
+        d = tmpdir(self) / "run"
+        plan = {"job": "J-A", "deferred": [], "boots": boots}
+        R.run_job("J-A", d, 1, SRC, d / "variants", make_server=lambda b, a, e: R.VirtualServer(b, a, e, truth), plan=plan)
+        return d, R.analyze(d)
+
+    def test_long_rows_and_join(self):
+        grid = R._boot("J-X", 1, "ja1_108v_grid", "T1T2", "nano", "vanilla", S.CAP_MAIN, t2=S.T2_L_GRID)
+        lb = R.long_boot("J-X", 1, "ja1_long_108v", tp=1, gpus="0")
+        d, A = self._run(dict(M.FAST_PF), [grid, lb])
+        order = json.loads((d / "boots" / "ja1_long_108v" / "cell_order.json").read_text())
+        self.assertEqual([int(c[1]) for c in order], [65536, 98304, 126976])
+        ent = A["tables"]["t2_long"]["ja1_long_108v"]
+        self.assertEqual([r["status"] for r in ent["rows"]], ["VALID"] * 3)
+        self.assertEqual([r["labels"] for r in ent["rows"]], [[f"LONG_SERVED_L{L}"] for L in S.LONG_L])
+        self.assertTrue(all(r["completion_tokens"] == [1] * 8 and r["prompt_tokens"] == [r["L"]] * 8 for r in ent["rows"]))
+        j = ent["joins"]["ja1_108v_grid"]
+        self.assertEqual(j["label"], "T2_LONG_ACROSS_BOOTS")
+        self.assertAlmostEqual(j["bridge_ratio_long_over_grid"], 1.0, delta=0.02)   # fake prefill is cap-independent
+        self.assertTrue(all(abs(e) < 0.02 for e in j["grid_fit_extrapolation_rel_err"].values()), j)
+        self.assertEqual(json.loads((d / "boots" / "ja1_long_108v" / "boot.json").read_text())["argv"][
+            json.loads((d / "boots" / "ja1_long_108v" / "boot.json").read_text())["argv"].index("--context-length") + 1], "131072")
+
+    def test_death_in_middle_and_last_cell(self):
+        lb = R.long_boot("J-A1", 1, "ja1_long_108v", tp=1, gpus="0")
+        _, A = self._run(dict(M.FAST_PF, die_on_input_ge=98304), [lb])
+        rows = {r["L"]: r for r in A["tables"]["t2_long"]["ja1_long_108v"]["rows"]}
+        self.assertEqual(rows[65536]["status"], "VALID")
+        self.assertIn("SERVER_DEATH", rows[98304]["labels"])
+        self.assertIn("illegal_access", rows[98304]["signatures"])
+        self.assertEqual(rows[126976]["labels"], ["NOT_RUN_AFTER_SERVER_DEATH"])
+        _, B = self._run(dict(M.FAST_PF, die_on_input_ge=126976), [lb])              # death in the LAST cell
+        self.assertIn("SERVER_DEATH", B["boots"]["ja1_long_108v"]["labels"])
+        self.assertIn("LONG_NOT_SERVED_L126976", B["tables"]["t2_long"]["ja1_long_108v"]["rows"][2]["labels"])
+
+    def test_tp2_long_boot_runs(self):
+        p = R.make_plan("J-C")
+        lb = p["boots"][-1]
+        d = tmpdir(self) / "jc"
+        R.run_job("J-C", d, 1, SRC, d / "variants", make_server=lambda b, a, e: R.VirtualServer(b, a, e, dict(M.FAST_PF)),
+                  plan={"job": "J-C", "deferred": [], "boots": [lb]})
+        A = R.analyze(d)
+        ent = A["tables"]["t2_long"][lb["boot_id"]]
+        self.assertEqual(ent["tp"], 2)
+        self.assertEqual([r["status"] for r in ent["rows"]], ["VALID"] * 3)
+        self.assertEqual(A["jc"]["long"][lb["boot_id"]]["rows"][1]["L"], 98304)
+        self.assertIsNone(A["jc"].get("tp2_dead_boots"))

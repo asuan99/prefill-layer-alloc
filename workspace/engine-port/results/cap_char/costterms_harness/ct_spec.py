@@ -25,9 +25,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "costmodel"))
 import analytic_terms as _AT  # noqa: E402  (underscore: kept out of the spec digest)
 
-SPEC_VERSION = "costterms-harness-spec/stage2-draft-2026-10-22 (decisions 28-29; rev3.5 draft)"
+SPEC_VERSION = "costterms-harness-spec/stage2-2026-10-22 (decisions 28-30; rev3.5, unsealed)"
 PREREG_REL = "workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md"
-PREREG_REV = "rev3.5 draft (unsealed)"
+PREREG_REV = "rev3.5 (decision 30, unsealed)"
 
 K = 1024
 # ---------------------------------------------------------------- substrate / server constants (§0, §1-1, §3-3)
@@ -133,7 +133,25 @@ Q_THRESHOLD = 1.10
 J1_SLOPE_MS_PER_TOKEN = 0.111   # §1-2 J1 floor slope (mem 0.82), compared descriptively only
 J1_SLOPE_L_MAX = 16 * K
 J1_SLOPE_DEV = 0.05
-# T2-ext (96k, 124k) deleted (decision 28 A-6): context 73,728 cannot hold it; int64 correctness is G-beta's.
+# T2-ext RESTORED (decision 30, revising decision 28 A-6 within this scope): the long-context points are a cost
+# measurement (the gamma quadratic interval of T2, hybrid long-context motive, TP2 long serving), which G-beta's kernel
+# cases do not replace (they replace only the boundary-shift test).  They run in SEPARATE boots placed LAST in their Job
+# (a server death there cannot touch earlier cells) with context_length LONG_CONTEXT; the other boots keep 73,728.
+LONG_CONTEXT = 131072
+T2EXT_L = (96 * K, 124 * K)          # 98,304 and 126,976 (decision 30; the G-beta serving L)
+LONG_BRIDGE_L = 64 * K               # [제안] same-Job bridge point: the top L of the 73,728-context T2 grid, re-measured in
+#                                      the long boot so the across-boot join (cap / context differ) is visible
+LONG_L = (LONG_BRIDGE_L,) + T2EXT_L  # run in THIS order (ascending): a death at a larger L keeps the smaller ones
+LONG_REPS = T2_REPS                  # "반복은 T2와 같은 규칙": 8 per (boot, L), the first excluded (T2_WARMUP_REPS)
+LONG_MAX_NEW = 1                     # output 1 token (T2 estimand); the serving check needs prompt == L, completion == 1
+LONG_CAP = CAP_SMALL                 # [제안, 근거 기록] cap 48: the exact knob set (vanilla, mem 0.6, context 131,072,
+#   cap 48, chunked -1, radix off) under which G-beta beta-1 served 98,304 and 126,976 (2/2 each, no OOM / illegal;
+#   pdmux-engine-gate-beta-726de92-20261020112000/BETA1_fused) with NVML peak 79,852 MiB of 81,920 -- the activation
+#   headroom is the binding resource, and a cap-128 boot captures cuda graphs up to bs 128 (more graph memory, unmeasured
+#   at 126,976).  A single request uses one slot, so the cap only moves the KV / mamba split of the static pool.
+LONG_MODE_N1 = "108v"                # decision 30: N=1 T2-ext in a vanilla boot (P = 108, decision 28 A-2)
+LONG_MODE_TP2 = "108v"               # [제안, A-39] TP2 long boot: vanilla too -- T2 is defined only at P = 108 (108u / 108v);
+#   a sticky-D44 label on a no-decode prefill would be mutant M24's defect; 108v extends J-C's TP2 108v T2 grid
 T2_MODES = ("108u", "108v")     # decision 28 A-2: T2 only where prefill runs on 108 SM (vanilla / unpartitioned)
 T2P_L_GRID = T2_L_GRID          # decision 28 A-2: T2' (bs=1 decode co-resident) is the P-axis measurement, same L
 T2P_CONFIRM_WINDOW = (0.25, 0.75)   # [제안] co-residence confirmed iff a decode_forward (bs_real >= 1) starts in
@@ -399,10 +417,10 @@ JC_ROUNDS = (1, 2)
 # O-19 96k point: options 'deleted' (recommended: G-beta already ran the stride-11,328 kernel cases -- pristine view
 # 189,000 MATCH / 190,500 CRASH -- and a patched serving 96k point cannot test the boundary) or 'separate_boot' (one
 # TP2 boot with context JC_LONG_CONTEXT, the LAST boot, a single T2 of JC_LONG_L).  User decision.
-JC_96K_MODE = "deleted"
-JC_LONG_L = 96 * K
-JC_LONG_CONTEXT = 131072
-JC_LONG_REPS = 2                    # rep 0 warm-up + 1 kept (it is a pass / fail point, not a T2 value)
+JC_96K_MODE = "included"            # decision 30: default INCLUDED ('deleted' kept only as the disclosed alternative)
+JC_LONG_L = LONG_L                  # 96k required, 124k when the rank pool / context admit it (feasible_long, at run time)
+JC_LONG_REQUIRED = (96 * K,)
+JC_LONG_CONTEXT = LONG_CONTEXT
 # F1-F5 (§5-1) predictions [유도, config arithmetic]
 JC_F_TOL = 0.02
 JC_CONV_DIM_N1 = 12288              # d_inner 10,240 + 2 x 8 x 128
@@ -430,15 +448,31 @@ def feasible_cell(bs, c, O, kv_tokens, cap, capturable, context=None):
     return reasons
 
 
+def feasible_long(L, kv_tokens, context, max_new=LONG_MAX_NEW):
+    """Decision 30 long point: one request of L input tokens + max_new output must (a) fit the KV pool of the boot
+    (per rank for TP2: every rank holds all L tokens with 1/tp of the KV heads, so the per-rank TOKEN pool is the
+    bound) under the §3-1 margin and (b) stay strictly below context_length (SGLang rejects input + max_new >=
+    context_len).  -> [] or reasons; a context failure is ABORT_CONTEXT_TOO_SHORT (the request is not sent)."""
+    reasons = []
+    if kv_tokens is None:
+        reasons.append("no KV pool banner")
+    elif L + max_new > FEASIBLE_KV_FRAC * kv_tokens:
+        reasons.append(f"L + {max_new} = {L + max_new} > {FEASIBLE_KV_FRAC} x {kv_tokens}")
+    if context is None or L + max_new >= context:
+        reasons.append(f"ABORT_CONTEXT_TOO_SHORT: L + {max_new} = {L + max_new} >= context_length {context}")
+    return reasons
+
+
 # ---------------------------------------------------------------- Job entry (H-2..H-4)
 ENGINE_DIGEST_EXPECTED = "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325"   # pathless-v1, 30 entries
 #   (G-alpha / G-beta PASS tree, PREREG §12 item 5); written to ENGINE_DIGEST.txt, checked by costterms_job.sh (rc 13)
 SUMMARY_FILES = ("analysis.json", "plan.json", "RUN_DONE", "SHA256SUMS", "RESUME_LOG.json", "SMOKE_UNSEALED",
                  "t3_iterations.json")          # what goes under results/ (raw data stays on the cluster volume, H-3)
 SMOKE_MARKER = "SMOKE_UNSEALED"
-HARD_CAP_MIN = {"J-H1": 246, "J-A|1": 244, "J-A|2": 235, "J-B2": 78, "J-H2": 126, "J-C": 215}
-#   minutes, self-enforced by costterms_job.sh; J-H2 / J-C = ceil(1.2 x ct_timemodel hours) [유도, rev3.5 draft]; the
-#   stage-1 values are PREREG §7-4' (J-A now carries its T3 boots; ct_timemodel: 3.38 / 3.26 h, caps unchanged)
+HARD_CAP_MIN = {"J-H1": 246, "J-A|1": 256, "J-A|2": 235, "J-B2": 78, "J-H2": 126, "J-C": 229}
+#   minutes, self-enforced by costterms_job.sh; = ceil(1.2 x ct_timemodel hours) [유도, rev3.5]: J-A r1 3.55 h and J-C
+#   3.17 h carry the decision-30 long boots (+0.17 h / +0.19 h).  J-B2 stays 78 until the smoke S-B fill time re-derives
+#   it (decision 30: O-22 (a), PREREG §12 seal checklist) -- the time model alone says 2.32 h / 168 min.
 JOB_GPUS = {"J-H1": 1, "J-A": 1, "J-B2": 1, "J-H2": 1, "J-C": 2}
 
 AMBIGUITIES = {
@@ -450,7 +484,7 @@ AMBIGUITIES = {
     "A-4": "new_token_ratio is not in the boot log; recorded as min(SGLANG_INIT_NEW_TOKEN_RATIO(0.7) x "
            "schedule_conservativeness, 1) from server_args; split_forward_token_budget comes from the config file",
     "A-5": "108u needs a PDMUX_R2_FIXED_DSM value although sticky is OFF",
-    "A-6": "RESOLVED decision 28: T2-ext deleted",
+    "A-6": "RESOLVED decision 28: T2-ext deleted -> REVISED decision 30: restored in separate LAST boots (context 131,072)",
     "A-7": "T2' decode c_in = 2048 and its max_new",
     "A-8": "boot / cell order seed values",
     "A-9": "extrapolation test: fallback order vs both levels; NA treated as not failing",
@@ -504,6 +538,17 @@ AMBIGUITIES = {
     "A-35": "resume (H-4): a boot without DONE keeps its completed cells (one cells.jsonl line = one cell DONE) and the "
             "remaining cells run in a NEW boot directory '<boot>@s<k>' (a different server lifetime is a different "
             "boot; fits and sigma never pair across segments); requires PDMUX_COSTTERMS_RESUME=1 and the same plan",
+    "A-38": "decision 30 long boots (J-A1 N=1, J-C TP2): cap 48 (LONG_CAP) -- the knob set under which G-beta served "
+            "98,304 / 126,976 at mem 0.6 / context 131,072; a single request needs one slot (cap moves only the "
+            "KV / mamba split); the TP2 long boot is exempt from the TP2 cap-128 rule",
+    "A-39": "TP2 long boot mode = 108v (T2 needs P = 108, decision 28 A-2; extends J-C's TP2 108v T2 grid); the PD-mux "
+            "TP2 path at > 64k is NOT exercised (disclosed; a 108u long boot is the alternative)",
+    "A-40": "long boots re-measure L = 65,536 as a same-Job bridge to the 73,728-context grid boot of the same mode; "
+            "the across-boot T2 extension (grid-only quadratic extrapolated to 96k / 124k, and the joint fit) is "
+            "descriptive and labelled T2_LONG_ACROSS_BOOTS (cap 128 vs 48, context 73,728 vs 131,072 differ)",
+    "A-41": "long cells run in ascending L, never shuffled, always last in their boot; a server death labels the cell "
+            "it happened in SERVER_DEATH and every later L NOT_RUN_AFTER_SERVER_DEATH; nothing earlier is deleted; "
+            "feasibility (feasible_long) is re-evaluated from the boot log (pool, logged context_len) before sending",
 }
 
 

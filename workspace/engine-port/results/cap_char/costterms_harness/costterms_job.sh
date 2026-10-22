@@ -1,5 +1,5 @@
 #!/bin/bash
-# Job target for the cost-term measurement (PREREG_COSTMODEL_TERMS_MEAS_rev3, rev3.4 + rev3.5 draft): J-H1, J-A (with
+# Job target for the cost-term measurement (PREREG_COSTMODEL_TERMS_MEAS_rev3, rev3.5 incl. decision 30): J-H1, J-A (with
 # its T3 boots), J-B2, J-H2, J-C.  NOT SEALED: refuses to run unless PDMUX_COSTTERMS_SEALED=1 (set only after seal S1,
 # PREREG §12 item 13) or PDMUX_COSTTERMS_TEST_MODE=1 (CPU tests with the fake engine).  The Workspace smoke does not
 # use this file (ct_runner.py run --smoke, H-1).
@@ -30,10 +30,10 @@ summary="${PDMUX_COSTTERMS_SUMMARY:-${here}/../costterms_runs/${name}}"
 
 case "${job}" in              # hard caps (min) = ct_spec.HARD_CAP_MIN; GPUs = ct_spec.JOB_GPUS
   J-H1) cap_min=246; ngpu_want=1 ;;
-  J-A)  if [[ "${rnd}" == 1 ]]; then cap_min=244; else cap_min=235; fi; ngpu_want=1 ;;
+  J-A)  if [[ "${rnd}" == 1 ]]; then cap_min=256; else cap_min=235; fi; ngpu_want=1 ;;
   J-B2) cap_min=78;  ngpu_want=1 ;;
   J-H2) cap_min=126; ngpu_want=1 ;;
-  J-C)  cap_min=215; ngpu_want=2 ;;
+  J-C)  cap_min=229; ngpu_want=2 ;;
   *) echo "ABORT_CONFIG: PDMUX_COSTTERMS_JOB must be J-H1, J-A, J-B2, J-H2 or J-C; got '${job}'" >&2; exit 16 ;;
 esac
 if [[ "${PDMUX_COSTTERMS_SEALED:-}" != 1 && "${PDMUX_COSTTERMS_TEST_MODE:-}" != 1 ]]; then

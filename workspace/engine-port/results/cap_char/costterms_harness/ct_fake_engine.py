@@ -74,6 +74,9 @@ DEFAULT_TRUTH = {
     "i4_unresolved_every": 0, "realize": {}, "retract_at_step": None, "capture_max": None,
     "weight_dependent": 0.0, "no_vanilla_probe": False, "boot_delay_s": 0.05,
     "pf_coex": 0.0, "stall_every": 0, "stall_mult": 6.0, "tp_dec_mult": 0.62, "tp_pf_mult": 0.6,
+    # decision 30 long points: the server dies (illegal-access traceback) on an input of at least this many tokens;
+    # the logged / enforced context_len is clamped to this value (a server that does not honour --context-length)
+    "die_on_input_ge": None, "context_clamp": None,
 }
 
 
@@ -131,6 +134,9 @@ class EngineCore:
         self.cap = int(_arg(a, "--max-running-requests", 48))
         self.mamba_cap = _arg(a, "--max-mamba-cache-size")
         self.ctx_len = int(_arg(a, "--context-length", 131072))
+        if self.truth.get("context_clamp"):
+            self.ctx_len = min(self.ctx_len, int(self.truth["context_clamp"]))
+        self.dead = False
         self.max_prefill = int(_arg(a, "--max-prefill-tokens", 16384))
         self.pdmux = bool(_arg(a, "--enable-pdmux", False))
         self.eager = bool(_arg(a, "--disable-cuda-graph", False))
@@ -591,6 +597,20 @@ class VirtualTransport:
     def start(self, rid, ids, max_new):
         h = Handle(rid, len(ids), max_new, self.t)
         self.handles[rid] = h
+        die = self.core.truth.get("die_on_input_ge")
+        if self.core.dead:
+            h.error, h.done = "connection refused (server dead)", True
+            return h
+        if len(ids) + max_new >= self.core.ctx_len:       # SGLang: input + max_new >= context_len -> HTTP 400
+            h.error, h.done = (f"400 The input ({len(ids)} tokens) plus max_new_tokens is longer than the model's "
+                               f"context length ({self.core.ctx_len} tokens)"), True
+            return h
+        if die is not None and len(ids) >= int(die):
+            self.core.dead = True
+            self.core.log_write("Traceback (most recent call last):\nRuntimeError: CUDA error: an illegal memory access "
+                                "was encountered\n")
+            h.error, h.done = "connection reset (server died)", True
+            return h
         # deliveries come back from core.step(); the sink is only called by core.abort (handled in self.abort)
         self.core.submit(Req(rid, len(ids), max_new, lambda *a, **k: None, ids), self.t)
         self._kick()

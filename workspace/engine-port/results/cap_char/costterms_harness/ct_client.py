@@ -364,6 +364,8 @@ def run_t3_ref(tr, seq_id, L, rnd, O_ref, timeout=3600.0, mark=None):
     return rec
 
 
-def run_long_point(tr, seq_id, L, rnd, reps=S.JC_LONG_REPS, timeout=3600.0, mark=None):
-    """O-19 option 'separate_boot': the TP2 96k pass / fail point (same program as T2, its own term seed)."""
-    return dict(run_t2(tr, seq_id, L, rnd, reps=reps, timeout=timeout, mark=mark, term="LONG"), kind="long")
+def run_long_point(tr, seq_id, L, rnd, reps=S.LONG_REPS, timeout=3600.0, mark=None):
+    """Decision 30 long point (J-A1 N=1 T2-ext, J-C TP2): exactly the T2 program and T2 prompt seed (term "T2", so the
+    65,536 bridge point repeats the grid boot's prompt), 8 reps with rep 0 excluded downstream.  Every rep keeps
+    prompt / completion token counts and the error text: the serving check (LONG_SERVED_L{L}) reads them."""
+    return dict(run_t2(tr, seq_id, L, rnd, reps=reps, timeout=timeout, mark=mark, term="T2"), kind="long")

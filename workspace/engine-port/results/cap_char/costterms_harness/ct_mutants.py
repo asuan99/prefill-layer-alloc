@@ -9,6 +9,8 @@ stage: 'unit' (synthetic inputs), 'analysis' (re-analyse a stored virtual run), 
 Stage 2 (M27-M38): the three candidates deferred in stage 1 (TP2 anchor cap, stall median in the co-residence window,
 sigma' x sigma) + T3 (sigma from client TTFT, sigma' / rho paired across boots, n_it_obs by conversion, T3 window from
 the first decode, no ramp / co budget in the decode O) + Job entry (smoke marker, resume, raw data exported).
+Decision 30 (M39-M41b): long boot mid-Job, earlier results deleted on SERVER_DEATH, 96k tried at context 73,728 (plan
+and run time).
 """
 from __future__ import annotations
 
@@ -41,6 +43,11 @@ SCENARIOS = {
     "T3S": {"job": "J-A", "truth": {"stall_every": 13, "pf_coex": 0.004},       # stalls 6 x step, sigma' > 1
             "boots": ["ja1_t3_D44", "ja1_t3_D24"]},
     "JC": {"job": "J-C", "truth": dict(FAST_PF), "boots": ["jc1_tp2_D44", "jc1_n1_D44", "jc_tp2_t4"]},
+    # decision 30 long points: the server dies on the 126,976 input (after 65,536 and 98,304 were served)
+    "LONGDEATH": {"job": "J-A", "truth": dict(FAST_PF, die_on_input_ge=124 * 1024),
+                  "boots": ["ja1_off_108v", "ja1_long_108v"]},
+    # the server does not honour --context-length 131,072 and logs / enforces 73,728
+    "LONGCTX": {"job": "J-A", "truth": dict(FAST_PF, context_clamp=73728), "boots": ["ja1_long_108v"]},
 }
 
 
@@ -857,6 +864,126 @@ def _export_all(orig, run_dir, summary_dir):
     shutil.copytree(run_dir, summary_dir, dirs_exist_ok=True)
 
 
+# ---------------------------------------------------------------- decision 30 mutants (long points)
+def _long_mid_job(orig, rnd):
+    p = orig(rnd)
+    lb = [b for b in p["boots"] if b["long"]]
+    if lb:
+        p["boots"].remove(lb[0])
+        p["boots"].insert(len(p["boots"]) // 2, lb[0])
+    return p
+
+
+def _long_in_grid_boot(orig, rnd):
+    """the 96k / 124k points appended to the 73,728-context 108v grid boot instead of a separate long boot"""
+    p = orig(rnd)
+    lb = [b for b in p["boots"] if b["long"]]
+    if lb:
+        p["boots"].remove(lb[0])
+        g = next(b for b in p["boots"] if b["mode"] == "108v" and b["kind"] == "T1T2")
+        g["long"] = list(S.T2EXT_L)
+    return p
+
+
+def _wipe_on_death(orig, b, out, *a, **k):
+    res = orig(b, out, *a, **k)
+    if "SERVER_DEATH" in res.get("labels", []):
+        for d in (Path(out) / "boots").iterdir():
+            if d.name != b["boot_id"]:
+                shutil.rmtree(d, True)
+        (Path(out) / "boots" / b["boot_id"] / "cells.jsonl").write_text("")
+    return res
+
+
+def _no_context_guard(orig, b, f):
+    return [dict(r, run=True, label=None, reasons=[]) for r in orig(b, f)]
+
+
+@contextlib.contextmanager
+def _no_runtime_context_check():
+    """both run-time context checks off: the boot-level ABORT_CONTEXT (logged context != plan) and the per-L
+    feasible_long check against the logged context_len"""
+    with _wrap(R, "long_feasibility", _no_context_guard), \
+            _wrap(X, "label_problems", lambda orig, *a, **k: [q for q in orig(*a, **k) if not q.startswith("ABORT_CONTEXT")]):
+        yield
+
+
+def _raw_long_cells(run, bid):
+    p = Path(run) / "boots" / bid / "cells.jsonl"
+    return [json.loads(x) for x in p.read_text().splitlines() if x.strip() and json.loads(x).get("kind") == "long"] \
+        if p.exists() else []
+
+
+def o_long_placement(_run=None, _A=None):
+    """Decision 30: J-A1 and J-C each carry ONE long boot, the LAST one, long points only, context 131,072 > L + 1,
+    L = 65,536 / 98,304 / 126,976 ascending; J-A2 none; the plan check refuses a mid-Job long boot."""
+    bad = []
+    for job, rnd in (("J-A", 1), ("J-C", 1), ("J-A", 2)):
+        p = R.make_plan(job, rnd)
+        lb = [i for i, b in enumerate(p["boots"]) if b["long"]]
+        if job == "J-A" and rnd == 2:
+            if lb:
+                bad.append("J-A2 carries a long boot")
+            continue
+        if lb != [len(p["boots"]) - 1]:
+            bad.append(f"{job} r{rnd}: long boot positions {lb} of {len(p['boots'])}")
+            continue
+        b = p["boots"][-1]
+        if b["long"] != [65536, 98304, 126976] or b["context"] != 131072 or any(L + 1 >= b["context"] for L in b["long"]):
+            bad.append(f"{job}: long {b['long']} context {b['context']}")
+        if b["t1"] or b["t2"] or b["t2p"] or b["t4"] or b.get("t3") or b["engine"] != "vanilla":
+            bad.append(f"{job}: long boot not a separate vanilla long-only boot")
+        for g in p["boots"][:-1]:
+            if any(L >= 73728 for L in list(g["long"]) + list(g["t2"]) + list(g["t2p"])):
+                bad.append(f"{g['boot_id']}: L >= 73,728 in a 73,728-context boot")
+    x = R.make_plan("J-A", 1)
+    x["boots"].insert(0, x["boots"].pop())
+    if not any("LAST" in q for q in R.plan_problems(x)):
+        bad.append("plan check accepted a mid-Job long boot")
+    return bad
+
+
+def o_long_death(run, A):
+    """A server death at 126,976 keeps everything before it: the earlier boot (DONE, cells), the 65,536 / 98,304 rows
+    (served, VALID T2 value), and labels 126,976 SERVER_DEATH -- from the raw directory and the analysis."""
+    bad = []
+    off = Path(run) / "boots" / "ja1_off_108v"
+    if not (off / "DONE").exists() or not (off / "cells.jsonl").exists() or not (off / "cells.jsonl").read_text().strip():
+        bad.append("earlier boot ja1_off_108v lost after the long boot's death")
+    cells = {c["L"]: c for c in _raw_long_cells(run, "ja1_long_108v")}
+    for L in (65536, 98304):
+        c = cells.get(L)
+        if c is None or not all(r.get("error") is None and r.get("completion_tokens") == 1 for r in c["reps"]):
+            bad.append(f"raw long cell {L} missing / not served before the death")
+    res = json.loads((Path(run) / "boots" / "ja1_long_108v" / "boot_result.json").read_text())
+    if "SERVER_DEATH" not in res.get("labels", []):
+        bad.append("long boot death not labelled SERVER_DEATH")
+    rows = {r["L"]: r for x in (A or {}).get("tables", {}).get("t2_long", {}).values() for r in x["rows"]}
+    for L in (65536, 98304):
+        if rows.get(L, {}).get("status") != "VALID" or f"LONG_SERVED_L{L}" not in rows.get(L, {}).get("labels", []):
+            bad.append(f"analysis row {L}: {rows.get(L)}")
+    if "SERVER_DEATH" not in rows.get(126976, {}).get("labels", []):
+        bad.append(f"analysis row 126976 not SERVER_DEATH: {rows.get(126976)}")
+    if not (A or {}).get("boots", {}).get("ja1_off_108v", {}).get("usable"):
+        bad.append("earlier boot not usable in the analysis")
+    return bad
+
+
+def o_long_ctx_guard(run, A):
+    """No long request with L + 1 >= the LOGGED context_len is sent; such L are ABORT_CONTEXT_TOO_SHORT rows."""
+    bad = []
+    m = re.findall(r"context_len=([0-9]+)", raw_log(run, "ja1_long_108v"))
+    ctx = int(m[-1]) if m else None
+    for c in _raw_long_cells(run, "ja1_long_108v"):
+        if ctx is None or c["L"] + 1 >= ctx:
+            bad.append(f"long L {c['L']} sent to a server with context_len {ctx}")
+    rows = {r["L"]: r for x in (A or {}).get("tables", {}).get("t2_long", {}).values() for r in x["rows"]}
+    for L in (98304, 126976):
+        if "ABORT_CONTEXT_TOO_SHORT" not in rows.get(L, {}).get("labels", []):
+            bad.append(f"row {L} not ABORT_CONTEXT_TOO_SHORT: {rows.get(L)}")
+    return bad
+
+
 MUTANTS = [
     # id, PREREG candidate (§11-2 / §12 text), stage, scenario, patch factory, oracle, plan subset
     ("M01", "cap 48 부팅인데 128로 기록", "run", "JAF", lambda: mock.patch.object(X, "logged_cap", lambda f: S.CAP_MAIN),
@@ -929,6 +1056,14 @@ MUTANTS = [
      lambda: _wrap(R, "resume_segments", _no_resume), o_resume, None),
     ("M38", "원자료를 results/로 export", "run", "JC", lambda: _wrap(R, "export_summary", _export_all),
      o_raw_not_exported, ("J-C", ["jc_tp2_t4"])),
+    # decision 30 (rev3.5): long points restored in separate last boots
+    ("M39", "장문 boot를 Job 중간에 배치", "unit", None, lambda: _wrap(R, "plan_ja", _long_mid_job), o_long_placement, None),
+    ("M40", "SERVER_DEATH 시 앞 결과 삭제", "run", "LONGDEATH", lambda: _wrap(R, "run_boot", _wipe_on_death), o_long_death,
+     ("J-A", ["ja1_off_108v", "ja1_long_108v"])),
+    ("M41a", "context 73,728 boot에서 96k 시도(계획: grid boot에 장문 점)", "unit", None,
+     lambda: _wrap(R, "plan_ja", _long_in_grid_boot), o_long_placement, None),
+    ("M41b", "context 73,728 boot에서 96k 시도(실행: 로그 context 검사 생략)", "run", "LONGCTX",
+     _no_runtime_context_check, o_long_ctx_guard, ("J-A", ["ja1_long_108v"])),
 ]
 
 

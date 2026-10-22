@@ -515,6 +515,53 @@ def t2_value(seq_rec, warmup=S.T2_WARMUP_REPS):
             "n_used": len(used), "used_reps": [r["rep"] for r in used]}
 
 
+DEATH_SIGNATURES = (("illegal_access", "illegal memory access"), ("oom", "out of memory"), ("oom", "OutOfMemoryError"),
+                    ("traceback", "Traceback (most recent call last)"))
+
+
+def death_signatures(log_text):
+    """Signatures in the server-log slice of one cell (decision 30 SERVER_DEATH classification; descriptive)."""
+    return sorted({name for name, pat in DEATH_SIGNATURES if pat in (log_text or "")})
+
+
+def long_row(seq_rec, log_text=""):
+    """Decision 30 long point: the T2 value (same rule as T2: 8 reps, rep 0 excluded) + the engine-side serving check
+    = every rep (warm-up included) returned exactly L prompt tokens and LONG_MAX_NEW completion tokens, finish
+    'length', no error.  `server_alive_after` False marks the cell a server death happened in."""
+    L = seq_rec["L"]
+    v = t2_value(dict(seq_rec, kind="t2"))
+    reps = seq_rec.get("reps", [])
+    served = [bool(r.get("error") is None and r.get("prompt_tokens") == L and r.get("completion_tokens") == S.LONG_MAX_NEW
+                   and r.get("finish") == "length") for r in reps]
+    labels = [f"LONG_SERVED_L{L}" if reps and all(served) else f"LONG_NOT_SERVED_L{L}"]
+    if seq_rec.get("server_alive_after") is False:
+        labels.append("SERVER_DEATH")
+    return {"L": L, "status": v["status"], "ttft_ms": v.get("ttft_ms"), "n_used": v.get("n_used"),
+            "served_reps": sum(served), "n_reps": len(reps),
+            "prompt_tokens": [r.get("prompt_tokens") for r in reps],
+            "completion_tokens": [r.get("completion_tokens") for r in reps],
+            "errors": sorted({str(r["error"])[:120] for r in reps if r.get("error")}),
+            "signatures": death_signatures(log_text), "labels": labels}
+
+
+def long_rows_complete(planned, rows, feas_rows, boot_labels):
+    """Every planned long L gets a row (no silent omission): measured rows as they are, a not-sent row for an
+    infeasible L (INFEASIBLE_BY_RULE / ABORT_CONTEXT_TOO_SHORT), NOT_RUN_AFTER_SERVER_DEATH for an L after the death."""
+    by = {r["L"]: r for r in rows}
+    feas = {r["L"]: r for r in feas_rows or []}
+    out = []
+    for L in planned:
+        if L in by:
+            out.append(by[L])
+        elif L in feas and not feas[L]["run"]:
+            out.append({"L": L, "status": "NOT_RUN", "labels": [feas[L]["label"]], "reasons": feas[L]["reasons"]})
+        elif "SERVER_DEATH" in boot_labels:
+            out.append({"L": L, "status": "NOT_RUN", "labels": ["NOT_RUN_AFTER_SERVER_DEATH"]})
+        else:
+            out.append({"L": L, "status": "NOT_RUN", "labels": ["NOT_RUN"]})
+    return out
+
+
 def t2p_coexist(seq_rec, dec_records, warmup=S.T2_WARMUP_REPS):
     """Decision 28 A-2: was the bs=1 decode actually executing while each used prefill ran?  Engine evidence = a
     decode_forward with bs_real >= 1 whose t_host_start lies in the middle of the TTFT (T2P_CONFIRM_WINDOW).
