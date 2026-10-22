@@ -7,7 +7,7 @@
 ## cost model 기여
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2 `T_span`), CM-4(T3 ρ), CM-5(T4 메모리·admission), (확장) TP2 항
 - 이번에 알게 된 것: CM-2 floor 9 ms+0.111 ms/토큰×L(≤16k, CONFIRMED) · Nano 실측 k 16,382 B/토큰·s 143.5 MB/요청(L\*≈8.8k) · chunk -1 장문 prefill 상한은 Triton causal_conv1d int32 오프셋(≈94.8k, 반증 실험 통과·감사 전) · **관측자 효과(분해 Job, agnostic·shape A·n=4): TEL 묶음(경로+PHASE_EVENTS, 몫 미분리) λ −1.7%, I-4 ITL p95 +1.0%** — 다른 arm·부하의 보정 계수 아님
-- promote 필요: 예 (결정) — 결정 24–26 · 예 — 정본 정정(§1-22 (108,0) 방향)
+- promote 필요: 예 (결정) — 결정 24–28 · 예 — 정본 정정(§1-22 (108,0) 방향)
 ## 현재 상태 (2026-10-21)
 - **엔진 묶음 main 병합 완료**: squash `ca1f30e7`(engsync `c875dc21`; engsync worktree·branch는 2026-10-21 폐기, git 밖 원자료 229개는 main worktree로 이동), ENGINE_DIGEST `99bbef91…` 병합 후 재계산 일치. 원자료 271개 약 217 MB는 `_vessl_fetch/_engsync_raw/`(manifest `engine_gate_prep/EXCLUDED_RAW_engsync_2026-10-21.sha256`). M3 rev12 봉인 검증 fail-closed(의도). 로컬 엔진 트리 2개는 구판(미동기화).
 - **분할 gate**(설계 `workspace/engine-port/results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`, 감사 r1 GO-with-caveats·r2 상한):
@@ -28,13 +28,10 @@
 - 운영 사고·교훈: object-volume export 절단이 gamma-A·F에서 재발(분해 Job은 요약만 export해 288/288 무결) · 1회차 128k 프로브 폴링 오판으로 A100 약 60분 유휴(완료 판정은 SUMMARY/DONE 파일로) · VESSL 인증 만료 시 사용자 `vesslctl auth login`.
 ## 다음 행동
 1. (완료 2026-10-22 `1943b3b6`: `test_baseline_pass` 비결정성 = 가짜 엔진 결함 2건 수리, 50/50 통과; 실서버 G-α containment 최소 여유 B2 0.132 ms(허용오차 포함)) · 로컬 엔진 트리 재동기화 여부 결정
-2. 신규 하네스 1단계 완료(`af8c0500`, CPU 33시험·변이 22/22) → A-1·A-2 결정 → rev3.4 → 2단계(T3·J-H2·J-C) → Job entry → 하네스 감사 → smoke(J-B2 16k 채우기 위험 확인) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
+2. 신규 하네스 1단계 완료(`af8c0500`, CPU 33시험·변이 22/22) → 결정 28(A-1 ramp 창·실제 평균 ctx, A-2 T2′ 주 측정, A-6 삭제) → rev3.4·하네스 수정(진행 중) → 2단계(T3·J-H2·J-C) → Job entry → 하네스 감사 → smoke(J-B2 16k 채우기 위험 확인) → 하네스층 감사 → smoke → 봉인 S1 → preflight → J-A1·J-A2·J-B·J-C 제출 승인
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
-- **하네스 1단계 모호점 A-1(치명)** / PD-mux burst는 prefill 배치가 16,384 토큰에서 닫혀 요청이 span별로 엇갈려 시작 → O=332 창이 거의 성립 안 함(가짜 엔진: PD-mux 모드 VALID 5–6셀/14–21) / ramp 인식 창 + 실현 평균 ctx로 적합 + 창 뒤 취소(권고) · T1 boot의 max_prefill_tokens 상향 · PD-mux D 사다리 포기
-- **A-2(치명)** / decode가 비면 prefill은 group 0(108 SM)에서 돎(코드) → sticky-D boot의 T2는 사실상 P=108 / T2는 108에서만, P 축은 T2′(bs=1 decode 동거)로 주 측정 전환·L 범위 확장(권고, 동거 포함 estimand 공시) · T2에 TEL ON
-- **A-6·A-11 등** / T2-ext 96k·124k는 ctx 73,728에서 불가 → 삭제(권고, int64는 G-β로 확인됨) · J-H T4 거절 사유는 NOT_COLLECTED 수용(권고, P2는 동시 수만 필요) · A-3…A-23 하네스 해석은 rev3.4에 명시하고 하네스 감사로 검토(권고)
 - **presubmit reachability 차단 2건** / `reachability_spec.json`(M4R)·`reach_spec_rev3_A.json`(TC1 rev3)이 active 상태로 전역 차단(PROJECT_STATUS 1488-1495 기존 블로커, 후속 spec 없음) — rev3.3 측정과 무관 / 범위 한정 OVERRIDE 문서 + 사용자 승인으로 제출 허용(전례 `cp_baseline/OVERRIDE_*`, 권고) · 두 spec을 폐기 결정
 - **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의

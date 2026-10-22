@@ -149,3 +149,9 @@
 - Attention / Mamba2(SSD) / MLP 층의 FLOPs·상주 메모리·decode 트래픽 닫힌 식(Marconi 부록 A 형식을 Nemotron-H 구조로 일반화)을 **정본에 항상 반영하고 고정적으로 쓴다.** 논문에 들어갈 수식이다.
 - 정본 문서 `reports/cost_model/ANALYTIC_COST_FORMULAS.md`(analytic-v1), 계산 단일 출처 `workspace/engine-port/scripts/costmodel/analytic_terms.py`, 시험 `workspace/engine-port/tests/test_analytic_terms.py`. 식 변경은 코드·문서 동시, 버전 증가, 이력 기록.
 - 비용 모델은 이 수식을 사전(prior)으로 두고 측정(rev3.3 T1–T4, J-H)이 효율 η·PD-mux 항·간섭·할당 구조를 덧붙이는 방식으로 정립한다.
+
+## 결정 28 (2026-10-22) — 하네스 1단계 모호점 처리 (권고안 채택)
+- **A-1**: T1 창은 ramp 인식 방식으로 바꾼다 — 출력을 넉넉히 주고(`ignore_eos`), 엔진 `decode_forward`의 bs가 등록 bs에 처음 도달한 시점부터 300 step을 창으로 쓰며, 창 뒤 요청을 취소한다. 셀 문맥은 명목 c가 아니라 **창 안 실제 배치 평균 ctx**로 기록하고 그 값으로 적합한다(정본 수식상 decode 비용 ∝ Σctx). 창 안 prefill 동거 iteration은 제외·계수한다.
+- **A-2**: decode가 비면 prefill은 (108,0)에서 돈다(코드 사실) → T2는 P=108(vanilla·108 boot)에서만 잰다. prefill SM 축(P = 108−D)은 **T2′(bs=1 decode 동거 prefill)를 주 측정**으로 하고 L 범위를 T2와 같게 넓힌다(estimand에 decode 1개 동거 포함을 공시).
+- **A-6**: T2-ext(96k·124k) 삭제(ctx 73,728에서 불가, int64 정확성은 G-β로 확인). **A-11**: J-H T4의 거절 사유 `NOT_COLLECTED` 수용(P2는 동시 수만 필요). **A-3…A-23**: 하네스 해석을 PREREG rev3.4에 명시하고 하네스층 감사로 검토.
+- 셀 시간 증가에 따라 Job 시간·GPU-h를 다시 계산한다.
