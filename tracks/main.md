@@ -32,6 +32,7 @@
 3. G0 PREREG 작성 시 감사 §4(a) 규칙(헤드라인 셀 전 arm 계측 OFF, 파생량은 별도 boot)을 넣는다
 4. 이후: G0 튜닝(fused_tuned, cap=C_mem) → V PREREG(새 감사) → M3 재개 여부
 ## 사용자 결정 대기
+- **presubmit reachability 차단 2건** / `reachability_spec.json`(M4R)·`reach_spec_rev3_A.json`(TC1 rev3)이 active 상태로 전역 차단(PROJECT_STATUS 1488-1495 기존 블로커, 후속 spec 없음) — rev3.3 측정과 무관 / 범위 한정 OVERRIDE 문서 + 사용자 승인으로 제출 허용(전례 `cp_baseline/OVERRIDE_*`, 권고) · 두 spec을 폐기 결정
 - **로컬 엔진 트리 재동기화** / `sglang_engine_dev`·`_multigpu`가 구판이라 로컬 테스트 5건 실패·digest 재계산 불가(다른 트랙 공유) / multigpu 세션은 2026-10-21 폐기, amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차로 재동기화(권고) · scratch 사본으로만 계속
 - **LongBench v2·InfiniteBench(공식 가운데 절단)** / 보류(결정 12′) / 후속 재논의
 - 기존 유지: D-10 확정(G0 PREREG 전) · radix(OFF+편차 공시) · 장문 hold-out 모델 · CONSENSUS §1 행 38
