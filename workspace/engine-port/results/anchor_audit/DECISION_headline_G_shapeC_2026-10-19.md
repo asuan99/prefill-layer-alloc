@@ -173,3 +173,9 @@
 - **C-1 V(oracle 격차)·C-4 동적 여지(static arm만)를 다음 PREREG로 우선** 작성한다. 설계 초안 `cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md`. V의 구조는 항 Job fetch **전에** 봉인하는 것을 권고(결정 17의 "데이터 뒤 구조 선택" 위험을 제거).
 - **HyMux 구현은 C-4가 `DYNAMIC_HEADROOM_PRESENT`일 때만**. Falcon-H1-34B TP2/4·replica·Bullet/DuetServe 재구현·vLLM은 보류.
 - 열린 채로 둔 것: B-1(층별 span 시간 boot), B-2(J-H2 D16 추가) — smoke 뒤 사용자 결정.
+
+## 결정 32 (2026-10-26) — V-O·H-D CI 추정량 O-S1 (감사 r2 권고안 채택, 사용자 "진행")
+- 근거: `cap_char/AUDIT_rev36_planV_r2_2026-10-26.md` §사용자 결정(seed 4 percentile bootstrap 피복률 0.806, fold 단위 0.493 → 정본 §3 항목56(A) 금지 경우).
+- **V-O 축 N = (c)**: `R(N2) − R(D̂) = ln(λ*(D̂)/λ*(N2))`로 oracle 항이 상쇄되므로 교차적합 없이 전체 seed(4)의 seed 수준 짝차에 t(3) 95% CI.
+- **H-D = (a)**: seed 8, 교차적합 fold 대신 seed 수준 짝차(선택 seed 4 / 평가 seed 4, 역할 교대)에 t(n−1) 95% CI. 비용 약 2배 — 축소안(O-H4)은 열린 결정.
+- V-O 축 O는 CI를 쓰지 않으므로(문턱 라벨) 변경 없음. PLAN_V rev3에 반영.

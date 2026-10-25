@@ -1,7 +1,7 @@
-# 설계 초안 rev2 — V(조립 검증 + oracle 격차)와 동적 여지 검사(static arm만), 2026-10-26
+# 설계 초안 rev3 — V(조립 검증 + oracle 격차)와 동적 여지 검사(static arm만), 2026-10-26
 
 > **지위**: 설계 초안(PREREG 아님, 미봉인). 측정 0, GPU 0, 성능 판정 0. 결정 31(`../anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`)과 대조표 `reports/hymux_review/EXPERIMENT_CROSSWALK_2026-10-26.md` §4 C-1·C-4에서 나왔다.
-> **감사 이력**: 규칙층 r1 `AUDIT_rev36_planV_r1_2026-10-26.md`(V-O 死因 2·MAJOR 4, H-D 死因 2·MAJOR 3) → rev1 = 수리본 → 규칙층 r2 `AUDIT_rev36_planV_r2_2026-10-26.md`(최종, 새 문제 N-1 MAJOR·N-2…N-5 MINOR) → **rev2 = N-1…N-5 반영본**. 감사 상한 도달 — **CI 추정량은 사용자 결정 O-S1**(§4). rev0 대비 바뀐 곳은 각 항목 끝 `[r1 수리: …]`로 표시했다.
+> **감사 이력**: 규칙층 r1 `AUDIT_rev36_planV_r1_2026-10-26.md`(V-O 死因 2·MAJOR 4, H-D 死因 2·MAJOR 3) → rev1 = 수리본 → 규칙층 r2 `AUDIT_rev36_planV_r2_2026-10-26.md`(최종, 새 문제 N-1 MAJOR·N-2…N-5 MINOR) → rev2 = N-1…N-5 반영본 → **rev3 = 결정 32(O-S1: 축 N (c), H-D (a)) 반영본**. 감사 상한 도달 — 이후 변경은 사용자 결정. rev0 대비 바뀐 곳은 각 항목 끝 `[r1 수리: …]`로 표시했다.
 > **승계**: V의 예측기·셀·사다리·판정표·내부 앵커·귀무 예측기는 `PREREG_COSTMODEL_TERMS_rev2_2026-10-20.md` §6(이하 "rev2 §6")의 설계를 출발점으로 쓴다. 이 문서는 바뀌는 부분과 새로 더하는 부분만 적는다.
 > 수치 라벨: [유도] · [예보](타 모델·타 기판 값, 근거 아님) · [제안] · [결정] · [미정](사용자 결정 또는 G0 PREREG 몫).
 
@@ -36,10 +36,10 @@
 - **교차적합**: pass 1(seed 1, 2)로 oracle 집합을 고르고 pass 2(seed 3, 4)로 후회를 평가한 뒤, 역할을 바꿔 두 값을 평균한다. oracle 동률 폭 = max(3%, 선택 pass의 R9-6 해상도). seed 분할로 해상도가 √2배 거칠어짐을 공시한다. 평가 pass 해상도 > ln 1.05인 셀은 데이터 전에 `CM_NEAR_UNREACHABLE_RESOLUTION`으로 선언한다(`V_REG`).
 - 후회 `R(x) = ln(λ*_meas(oracle) / λ*_meas(x))`(교차적합 평균).
 - **축 O**(PD-mux D arm만의 oracle, R\_PD): `ORACLE_UNRESOLVED`(λ\* 미해결 또는 oracle 집합이 해상도 안에서 안 갈림) / `CM_IN_ORACLE`(D̂ ∈ oracle 집합) / `CM_NEAR_ORACLE`(R\_PD(D̂) ≤ ln 1.05) / `CM_FAR_FROM_ORACLE`.
-- **축 N**(기본 규칙 대비, N2와 N2′ 각각): D̂ = N2이면 `CM_EQUALS_DEFAULT`. 아니면 `R(N2) − R(D̂)`의 seed bootstrap 95% CI가 0을 넘고 점추정 ≥ ln 1.03이면 `CM_BEATS_DEFAULT`, CI가 0을 포함하면 `CM_TIES_DEFAULT`, CI가 0 아래면 `CM_WORSE_THAN_DEFAULT`.
+- **축 N**(기본 규칙 대비, N2와 N2′ 각각, 결정 32 (c)): `R(N2) − R(D̂) = ln(λ*(D̂)/λ*(N2))`이므로 oracle 항이 상쇄된다 → **교차적합 없이** 전체 seed 4의 seed 수준 짝차 `d_s = ln(λ*_s(D̂)/λ*_s(N2))`(seed s마다 같은 seed의 두 arm λ\*)에 t(3) 95% CI. D̂ = N2이면 `CM_EQUALS_DEFAULT`. 아니면 CI 하한 > 0 ∧ 점추정 ≥ ln 1.03 → `CM_BEATS_DEFAULT`, CI가 0을 포함 → `CM_TIES_DEFAULT`, CI 상한 < 0 → `CM_WORSE_THAN_DEFAULT`. seed별 λ\*가 해결되지 않은 seed가 있으면 그 셀의 축 N은 `CM_TIES_DEFAULT`가 아니라 `ORACLE_UNRESOLVED`와 같은 취급(`DEFAULT_UNRESOLVED`)으로 둔다.
 - **헤드라인은 두 축을 반드시 함께 인용한다.** fused를 포함한 전체 oracle 대비 후회 R\_all은 기술값이다(D̂는 D 격자 안에서만 고르므로 R\_all은 PD-mux 대 fused 격차를 섞는다). [r1 수리: V-O-4]
-- **셀 간 집계**: 축마다 두 셀 중 낮은 라벨을 전체 라벨로 한다. 라벨 순서 — 축 O: `CM_IN_ORACLE` > `CM_NEAR_ORACLE` > `CM_FAR_FROM_ORACLE` > `ORACLE_UNRESOLVED`, 축 N: `CM_BEATS_DEFAULT` > `CM_EQUALS_DEFAULT` = `CM_TIES_DEFAULT` > `CM_WORSE_THAN_DEFAULT`. [r1 수리: V-O-7, r2 N-4]
-- **CI 추정량 [미정, O-S1]**: 축 N과 H-D 라벨의 "95% CI"는 seed 4개 percentile bootstrap이면 과소피복이다(r2: 피복률 0.806, fold 단위 0.493, 정본 §3 항목56(A)). 사용자 결정 전까지 이 문서의 CI 문구는 O-S1의 선택으로 대체될 자리 표시다.
+- **셀 간 집계**: 축마다 두 셀 중 낮은 라벨을 전체 라벨로 한다. 라벨 순서 — 축 O: `CM_IN_ORACLE` > `CM_NEAR_ORACLE` > `CM_FAR_FROM_ORACLE` > `ORACLE_UNRESOLVED`, 축 N: `CM_BEATS_DEFAULT` > `CM_EQUALS_DEFAULT` = `CM_TIES_DEFAULT` > `CM_WORSE_THAN_DEFAULT` > `DEFAULT_UNRESOLVED`. [r1 수리: V-O-7, r2 N-4]
+- **CI 추정량 [결정 32]**: 축 N은 위 (c). 축 O는 문턱 라벨이라 CI를 쓰지 않는다. percentile bootstrap은 쓰지 않는다(정본 §3 항목56(A)).
 - 허용 문장 틀: "이 Job의 (셀)에서 비용 모델이 고른 static D는 PD-mux D 격자 oracle 대비 후회 …%(축 O: …)였고, HE0에서 옮긴 D=44 대비 …(축 N: …)였다." 금지: "비용 모델이 최적 설정을 찾는다"(두 셀·한 모델 범위 밖), "hybrid 고유 항 덕분"(V-O는 귀속을 판정하지 않음 — 소거 변형 후회는 기술값).
 
 ### 1-4. 사다리 — 예측기 비의존 [r1 수리: V-O-3]
@@ -70,12 +70,12 @@ rev2 V(3 arm/셀) = J-V1 3.8 h + J-V2a 3.7 + J-V2b 3.7 ≈ 11.2 GPU-h(rev2 §7).
 
 ### 2-2. 판정 [r1 수리: H-D-2·H-D-4]
 - **선택 단위 = phase 종류(W1, W3)**: phase 종류마다 arm 하나를 고르고 그 종류의 모든 인스턴스·seed를 풀링한다(인스턴스별 argmax 금지).
-- **교차적합**: 선택(seed 1, 2)과 평가(seed 3, 4)로 나누고 역할을 바꿔 평균한다.
+- **seed 8과 교차적합 [결정 32 (a)]**: seed 8개를 선택(seed 1–4)과 평가(seed 5–8)로 나누고 역할을 바꿔 평균한다. CI는 평가 쪽 seed 수준 짝차 `h_s = ln(G_phase-oracle,s / G_best,s)`(같은 seed의 trace에서 계산)에 t(n−1) 95%를 쓰고, 두 역할의 CI 중 **더 넓은 것**을 라벨에 쓴다. percentile bootstrap은 쓰지 않는다.
 - `G_best` = 전체 goodput이 가장 큰 단일 static D arm(평가 pass), `G_phase-oracle` = phase 종류별 선택 arm의 평가 pass phase goodput을 phase 길이로 가중 합산, `H = ln(G_phase-oracle / G_best)`.
 
 | 라벨 | 조건 |
 |---|---|
-| `DYNAMIC_HEADROOM_PRESENT` | 깨끗한 시작 변형에서 교차적합 H ≥ ln 1.03 ∧ seed bootstrap 95% CI 하한 > 0, **두 phase 길이 모두**, 어느 한 q에서 |
+| `DYNAMIC_HEADROOM_PRESENT` | 깨끗한 시작 변형에서 교차적합 H ≥ ln 1.03 ∧ t(n−1) 95% CI 하한 > 0, **두 phase 길이 모두**, 어느 한 q에서 |
 | `DYNAMIC_HEADROOM_ABSENT` | 깨끗한 시작 변형에서 **두 phase 길이·모든 q** CI 상한 < ln 1.03 |
 | `HEADROOM_UNRESOLVED` | 그 외(한 길이에서만 성립 포함) |
 
@@ -94,7 +94,7 @@ rev2 V(3 arm/셀) = J-V1 3.8 h + J-V2a 3.7 + J-V2b 3.7 ≈ 11.2 GPU-h(rev2 §7).
 - LO phase 절단: 저부하 phase는 도착률이 goodput을 묶어 arm 간 차가 0이 된다(HE0 범위 축소 근거). 그래서 rate를 용량 기준 q로 둔다.
 
 ### 2-4. 비용 [유도]
-static D arm 5 + fused\_tuned 1 + 전환 가능 구성 대조 1 = 7 arm × phase 길이 2 × q 2 × 변형 2 × seed 4. rev0의 8–12 GPU-h(arm 6 × 길이 2 × seed 4)에서 q·변형 축으로 약 4배가 되어 **약 32–48 GPU-h**(깨끗한 시작 변형의 drain 시간 미산정) — 축소안 [미정, O-H4]: q = 1.0만으로 1차 → `UNRESOLVED`일 때만 q = 0.8 추가(결정 30 형식 공시 필요; **이 축소안 아래에서는 q = 1.0 결과만으로 ABSENT를 선언할 수 없다** [r2 N-2]), 연속 변형은 phase 길이 1개만. W1·W3의 λ\*\_best-static 용량 측정 비용은 위 합계에 **미포함**이다 [r2 N-2]. V-O와 arm·config·boot를 공유하므로 같은 Job에 블록으로 넣으면 부팅 비용을 아낀다 [제안 — 같은 비교의 arm은 한 Job 안].
+static D arm 5 + fused\_tuned 1 + 전환 가능 구성 대조 1 = 7 arm × phase 길이 2 × q 2 × 변형 2 × **seed 8**(결정 32). rev0의 8–12 GPU-h(arm 6 × 길이 2 × seed 4)에서 q·변형 축으로 약 4배, seed로 2배가 되어 **약 64–96 GPU-h**(깨끗한 시작 변형의 drain 시간·용량 측정 미산정, arm 비례 외삽). **이 규모는 운영 규약상 축소안 결정(O-H4)이 사실상 선결이다.** — 축소안 [미정, O-H4]: q = 1.0만으로 1차 → `UNRESOLVED`일 때만 q = 0.8 추가(결정 30 형식 공시 필요; **이 축소안 아래에서는 q = 1.0 결과만으로 ABSENT를 선언할 수 없다** [r2 N-2]), 연속 변형은 phase 길이 1개만. W1·W3의 λ\*\_best-static 용량 측정 비용은 위 합계에 **미포함**이다 [r2 N-2]. V-O와 arm·config·boot를 공유하므로 같은 Job에 블록으로 넣으면 부팅 비용을 아낀다 [제안 — 같은 비교의 arm은 한 Job 안].
 
 ## 3. 순서와 선행 조건
 1. 비용 항 Job(J-A1·J-A2·J-B·J-C·J-H) 봉인·제출 — 진행 중 경로(smoke → 하네스층 감사 → 봉인).
@@ -112,7 +112,7 @@ static D arm 5 + fused\_tuned 1 + 전환 가능 구성 대조 1 = 7 arm × phase
 - O-H2 H-D를 V-O Job에 블록으로 합칠지(초안 권고: 합침).
 - O-H3 전환 가능 구성 대조 arm(다중 division 부팅)의 실현 가능성 — engine-porter 확인.
 - O-H4 H-D 비용 축소안.
-- **O-S1 CI 추정량(감사 r2가 사용자 결정으로 넘김)**: (a) seed 8(H-D·V-O 비용 약 2배) + seed 수준 짝차 t(n−1) / (b) seed 4 + t(n−1), `HEADROOM_UNRESOLVED`·`CM_TIES_DEFAULT`가 기본 결과임을 데이터 전 공시 / (c) 축 N은 R(N2) − R(D̂) = ln(λ\*(D̂)/λ\*(N2))로 oracle 항이 상쇄되므로 교차적합 없이 전체 seed 짝 t(3). **감사 권고: 축 N = (c), H-D = (a).**
+- ~~O-S1 CI 추정량~~ → **결정 32로 닫힘**: 축 N (c), H-D (a).
 
 ## 5. 등록 caveat(감사 r1 승계, 인용 금지 문장)
 - "V-O의 후회는 두 셀·Nano 한 모델·이 Job들의 값이다. N2(D=44)는 KISTI HE0에서 옮긴 상수다."
