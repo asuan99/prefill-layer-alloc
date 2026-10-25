@@ -8,7 +8,7 @@
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2·T2′ `T_span`), CM-4(T3 ρ·σ′), CM-5(T4), (확장) TP2·조성 항. 사전값 = `reports/cost_model/ANALYTIC_COST_FORMULAS.md`(analytic-v1, 계산 `scripts/costmodel/analytic_terms.py`)
 - 이번에 알게 된 것: 정본 수식 = 부팅 배너(파라미터 8,888,227,328·s 143.5 MB·k 16,384 B)와 일치, J1 floor 기울기 = 실효 약 141 TFLOP/s(피크 약 45%) [유도] · decode는 c* ≈ 17.5k 아래에서 SSM state 트래픽이 KV보다 큼 [유도] · 조성 프로브 전 단계 PASS(KV 풀 887k→298k 토큰) · 코드 사실: decode가 비면 분할 (108,0)
 - 2026-10-25 roofline 분석(수식 [유도] + J1 FLOOR.json 대조, 새 측정 0) **감사 r1 완료** `reports/figures/roofline/AUDIT_r1_2026-10-25.md`: 관측 floor = 이상 하한의 2.06–2.28배는 CONFIRMED(산술)이나 **"균일 η≈0.47–0.49" 해석 REFUTED**(격리 연산자 η: GEMM≈0.8·SSD scan≈0.05·gated_norm≈0.08, opchar 인용 금지 범위·반증 용도만) · 절편 7.2 ms는 추정량 의존(7–18 ms, 격리 합에도 ≈15 ms) → 고정 비용 아님 · decode 서술은 c·층 조건부로 정정(MLP 층 b≳150 ridge 위) · 128k 프로브 점은 내부 점검 절로 이동(±10%→−8~+11%) · **§8 η 첫 관측점 승격 = 감사 권고 불가**(허용 최대: CONSENSUS 아닌 수식 §6 실측 대조에 집계 ≈0.49 한 줄)
-- promote 필요: 예 (결정) — 결정 24–30 · 예 — 정본 정정(CONSENSUS §1-22 (108,0) 방향) · 예 (감사 판정) — roofline r1: 균일 η 해석 철회, §8 승격 불가(사용자 결정 대기)
+- promote 필요: 예 (결정) — 결정 24–30 · 예 — 정본 정정(CONSENSUS §1-22 (108,0) 방향) · 예 (감사 판정) — roofline r1: 균일 η 해석 철회, §8 승격 불가(사용자 결정 대기) · 예 (결정) — 결정 31
 ## 현재 상태 (2026-10-23)
 - **비용 항 PREREG rev3.5 확정·미봉인** `workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md` + **하네스 1·2단계 구현 완료** `results/cap_char/costterms_harness/`(최신 `e141a36e`: CPU 시험 50/50, 변이 44/44, ENGINE_DIGEST 검사 rc 13, smoke 모드, 원자료 클러스터 볼륨, 셀 단위 재개). Job: J-A1·J-A2·J-H1·J-H2·J-B2·J-C, 예약 약 19.4 GPU-h [유도].
   - 결정 28: T1 창 = ramp 인식(전원 합류 후 300 step·취소·실제 평균 ctx 적합), T2는 P=108만, P 축은 T2′. 결정 29: shape C 셀 손실은 smoke 후 ramp 상한 재설정. 결정 30: 장문 측정점(N=1 98k·124k, TP2 96k·124k) 별도 맨 끝 boot로 복구 + **측정점 삭제 원칙**(물리적 불가·더 강한 증거만 삭제). §11-4 삭제점 전수표.
@@ -20,6 +20,7 @@
 - 보고용 그림 6장 `reports/figures/current_2026-10-21/`(Claim G·HE0·layer-type·CM-2·CM-5·관측자 효과).
 - **roofline·스케일링 그림 묶음(2026-10-25)** `reports/figures/roofline/`(README.md = 용도·재현·한계·인용 규칙, `NEXT_SESSION_PROMPT.md` = 다음 세션 전달문) · T1 대조 틀 `t1_compare.py`(데이터 오면 `--data cells.csv`) · 감사 미호출.
 - **HyMux 원고 v4·검증 계획 문서 검수(2026-10-26)**: 두 Claude Docs에 댓글(원고 14·계획 9, 본문 무수정). 닫힌 식은 analytic-v1과 일치, §3 측정 주장 4건 정본 불일치(HE0 진동 서술·42→124 cudagraph OFF·Fig1=Ha8·80 SM 포화 금지 서술), §7 원자료 0. 대조표 `reports/hymux_review/EXPERIMENT_CROSSWALK_2026-10-26.md`(사슬 ①–⑤, 구체화 A-1…D-12)
+- **결정 31(2026-10-26)**: PREREG rev3.6 §1-9 분석 판정 A-1 BW(D)·A-2 시간 knee·A-3 θ′ P 선형성·A-4 조성 회귀 추가(하네스·GPU-h 불변, §12 항목 25 분석 코드 대기) · V-O(oracle 격차, D 격자 전체·귀무 N2=정본 기본 규칙)·H-D(phase oracle 대 best static) 설계 초안 · HyMux 구현은 H-D `PRESENT`일 때만
 - 설계 결정 원문 1–30: `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`.
 ## 다음 행동
 1. 미복구 설정 제약 점 반영(결정 후) → **하네스층 감사**(claims-auditor, 최대 2회; A-3…A-41 해석 포함)

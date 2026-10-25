@@ -166,3 +166,10 @@
 - **복구**: N=1 T2-ext(P = 108, L ∈ {98,304, 126,976})를 J-A1 맨 끝 vanilla boot(context 131,072)로, TP2 장문 점(96k, 가능하면 124k)을 J-C 맨 끝 boot(context 131,072)로 둔다. 실패는 `SERVER_DEATH` 등 라벨로 결과에 남긴다. 근거: 96k 점의 목적 중 ① 경계 이동 시험은 G-β로 대체되나 ② 장문 비용 측정점(γ 이차항 검증 구간, hybrid 장문 동기, TP2 장문 서빙 실증)은 대체되지 않는다. 결정 28의 A-6 삭제를 이 범위에서 개정한다.
 - **원칙(고정)**: 측정점은 물리적으로 불가능하거나 더 강한 증거로 대체될 때만 뺀다. 설정 제약(context, mem, 출력 길이 등) 때문이면 별도 boot나 보정으로 살린다. 빼는 경우 이유와 잃는 범위를 PREREG에 공시한다.
 - rev3.5 초안의 나머지 권고(O-21 σ′ 분모 = 같은 T3 boot 기준 span, O-20 J-H2 공통 비교 축소 공시, J-C 앵커 (32,32k) 불가 공시, F4 stride = 배너 유도값 + G-β, O-22 J-B2 하드캡 smoke 후 재계산)를 함께 채택한다.
+
+## 결정 31 (2026-10-26) — 비용 모델→goodput 실험 구체화 (권고안 채택, 사용자 "진행")
+- 근거: `reports/hymux_review/EXPERIMENT_CROSSWALK_2026-10-26.md` §4(HyMux 원고 v4·검증 계획 문서 검수에서 도출, 사슬 ①–⑤).
+- **A(GPU 0)**: 비용 항 PREREG에 판정 4개를 봉인 전 추가한다 → rev3.6 §1-9. A-1 BW(D) = W/a\_D, A-2 시간 knee b\_D/c\_D 대 2s/k, A-3 T2′ θ′의 P 선형성 라벨, A-4 조성 간 회귀(층 종류 차 t\_A − t\_M). 하네스·Job·GPU-h 불변(분석 코드는 fetch 전 커밋, §8-6).
+- **C-1 V(oracle 격차)·C-4 동적 여지(static arm만)를 다음 PREREG로 우선** 작성한다. 설계 초안 `cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md`. V의 구조는 항 Job fetch **전에** 봉인하는 것을 권고(결정 17의 "데이터 뒤 구조 선택" 위험을 제거).
+- **HyMux 구현은 C-4가 `DYNAMIC_HEADROOM_PRESENT`일 때만**. Falcon-H1-34B TP2/4·replica·Bullet/DuetServe 재구현·vLLM은 보류.
+- 열린 채로 둔 것: B-1(층별 span 시간 boot), B-2(J-H2 D16 추가) — smoke 뒤 사용자 결정.
