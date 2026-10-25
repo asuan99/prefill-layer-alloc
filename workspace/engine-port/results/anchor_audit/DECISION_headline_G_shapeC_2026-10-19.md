@@ -186,3 +186,10 @@
 - **O-V4 (β)**: arm 중심 사다리(rev2 §6-2) + 교차가 밖이면 같은 Job에서 그 방향 2 rung 1회 추가.
 - **§11-4 전부 복구**(§12 항목 24): L-15 J-C bs 48 (2k, 8k)(+1.00 GPU-h), L-7 J-A T1 (8, 64k) — (가) T1 boot context 131,072(+0.44), L-8 Llama T2-ext 98,304·126,976 — J-H1 맨 끝 장문 boot 2개(Llama + real a4, +0.35), L-14 J-C 앵커 (32, 32k) — 라운드마다 cap 32 앵커 boot(+0.78), TP2 장문 PD-mux 경로 — J-C 맨 끝 `108u` 장문 boot(+0.39) [모두 유도]. L-9 shape C는 smoke 뒤(결정 29). L-10·L-12는 결정 13(mem 0.6) 안에서 대안 없음 → 공시 유지.
 - 다음: 하네스 반영(코드·CPU 시험·변이) → 하네스층 감사(최대 2회) → Workspace smoke(사용자 승인).
+
+## 결정 34 (2026-10-26) — 하네스층 감사 r2 잔여와 smoke 시점 (권고안 채택, 사용자 선택)
+- **N-1 (a)**: `HARNESS_DIGEST`에 `scripts/costmodel/analytic_terms.py`·`scripts/compo/make_variant.py`·`scripts/bootstrap/engine_digest.py`·`job_entry.sh`와 전 Job `make_plan` 출력(셀별 O 포함) sha를 넣고, "analytic_terms 1바이트 변경 → rc 13" 변이를 시험에 추가한다. **3회차 감사 없이 그 시험 통과로 봉인 자격.** PREREG §3-1 "O … spec digest로 봉인된다" 문장 정정.
+- **A-49 추가**: ON D44·108v boot에 (16, 16k) 셀 추가(약 +0.07 h [유도]), OFF 비교 셀 4 → 5.
+- **A-50 기본 제외 유지**: 사망 전 VALID 셀은 `PRE_DEATH` 표에만, 적합 제외.
+- 함께 반영(감사 MINOR): N-2(vanilla에서 probe 부재는 매트릭스 위반이 아니라 `NOT_COLLECTED` → §1-7 fallback 경로 복원), N-3(재개 표기), `make`가 ERROR를 거부.
+- **Workspace smoke는 위 수리 뒤 사용자 승인**으로 실행. m12(원자료 보관 코드화 시점)는 열린 채.
