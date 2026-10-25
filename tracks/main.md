@@ -8,7 +8,7 @@
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2·T2′ `T_span`), CM-4(T3 ρ·σ′), CM-5(T4), (확장) TP2·조성 항. 사전값 = `reports/cost_model/ANALYTIC_COST_FORMULAS.md`(analytic-v1, 계산 `scripts/costmodel/analytic_terms.py`)
 - 이번에 알게 된 것: 정본 수식 = 부팅 배너(파라미터 8,888,227,328·s 143.5 MB·k 16,384 B)와 일치, J1 floor 기울기 = 실효 약 141 TFLOP/s(피크 약 45%) [유도] · decode는 c* ≈ 17.5k 아래에서 SSM state 트래픽이 KV보다 큼 [유도] · 조성 프로브 전 단계 PASS(KV 풀 887k→298k 토큰) · 코드 사실: decode가 비면 분할 (108,0)
 - 2026-10-25 roofline 분석(수식 [유도] + J1 FLOOR.json 대조, 새 측정 0) **감사 r1 완료** `reports/figures/roofline/AUDIT_r1_2026-10-25.md`: 관측 floor = 이상 하한의 2.06–2.28배는 CONFIRMED(산술)이나 **"균일 η≈0.47–0.49" 해석 REFUTED**(격리 연산자 η: GEMM≈0.8·SSD scan≈0.05·gated_norm≈0.08, opchar 인용 금지 범위·반증 용도만) · 절편 7.2 ms는 추정량 의존(7–18 ms, 격리 합에도 ≈15 ms) → 고정 비용 아님 · decode 서술은 c·층 조건부로 정정(MLP 층 b≳150 ridge 위) · 128k 프로브 점은 내부 점검 절로 이동(±10%→−8~+11%) · **§8 η 첫 관측점 승격 = 감사 권고 불가**(허용 최대: CONSENSUS 아닌 수식 §6 실측 대조에 집계 ≈0.49 한 줄)
-- promote 필요: 예 (결정) — 결정 24–30 · 예 — 정본 정정(CONSENSUS §1-22 (108,0) 방향) · 예 (감사 판정) — roofline r1: 균일 η 해석 철회, §8 승격 불가(사용자 결정 대기) · 예 (결정) — 결정 31 · 예 (감사 판정) — rev3.6′ GO-with-caveats · 예 (결정) — 결정 32
+- promote 필요: 예 (결정) — 결정 24–30 · 예 — 정본 정정(CONSENSUS §1-22 (108,0) 방향) · 예 (감사 판정) — roofline r1: 균일 η 해석 철회, §8 승격 불가(사용자 결정 대기) · 예 (결정) — 결정 31 · 예 (감사 판정) — rev3.6′ GO-with-caveats · 예 (결정) — 결정 32 · 예 (결정) — 결정 33
 ## 현재 상태 (2026-10-23)
 - **비용 항 PREREG rev3.5 확정·미봉인** `workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md` + **하네스 1·2단계 구현 완료** `results/cap_char/costterms_harness/`(최신 `e141a36e`: CPU 시험 50/50, 변이 44/44, ENGINE_DIGEST 검사 rc 13, smoke 모드, 원자료 클러스터 볼륨, 셀 단위 재개). Job: J-A1·J-A2·J-H1·J-H2·J-B2·J-C, 예약 약 19.4 GPU-h [유도].
   - 결정 28: T1 창 = ramp 인식(전원 합류 후 300 step·취소·실제 평균 ctx 적합), T2는 P=108만, P 축은 T2′. 결정 29: shape C 셀 손실은 smoke 후 ramp 상한 재설정. 결정 30: 장문 측정점(N=1 98k·124k, TP2 96k·124k) 별도 맨 끝 boot로 복구 + **측정점 삭제 원칙**(물리적 불가·더 강한 증거만 삭제). §11-4 삭제점 전수표.
@@ -23,6 +23,7 @@
 - **결정 31(2026-10-26)**: PREREG rev3.6 §1-9 분석 판정 A-1 BW(D)·A-2 시간 knee·A-3 θ′ P 선형성·A-4 조성 회귀 추가(하네스·GPU-h 불변, §12 항목 25 분석 코드 대기) · V-O(oracle 격차, D 격자 전체·귀무 N2=정본 기본 규칙)·H-D(phase oracle 대 best static) 설계 초안 · HyMux 구현은 H-D `PRESENT`일 때만
 - **감사 r1·r2(2026-10-26, 상한 도달)** `cap_char/AUDIT_rev36_planV_r{1,2}_2026-10-26.md`: PREREG rev3.6′ §1-9 AJ-1…AJ-4 **봉인 가능 GO-with-caveats**(r1 死因 3 해소) · PLAN_V rev2(N-1…N-5 반영)는 **CI 추정량 결정 O-S1 선결** 후 PREREG화
 - **결정 32(2026-10-26)**: O-S1 = V-O 축 N (c) 전체 seed 짝 t(3) · H-D (a) seed 8 + t(n−1) → PLAN_V rev3. H-D 비용 약 64–96 GPU-h [유도] → O-H4 축소안이 사실상 선결
+- **결정 33(2026-10-26)**: O-H4(q=1.0 먼저·연속 1길이, H-D 약 24–36 GPU-h)·O-V1 (c)·O-V4 (β) → PLAN_V rev4 · **§11-4 전부 복구**(L-7·L-8·L-14·L-15·TP2 장문 108u) → 하네스 반영 진행 중 → 하네스층 감사 → smoke
 - 설계 결정 원문 1–30: `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`.
 ## 다음 행동
 1. 미복구 설정 제약 점 반영(결정 후) → **하네스층 감사**(claims-auditor, 최대 2회; A-3…A-41 해석 포함)
@@ -32,7 +33,6 @@
 ## 사용자 결정 대기
 - **비용 모델→goodput 실험 구체화** / 대조표 §4 / A(PREREG 판정 추가: BW(D)·시간 knee·θ′ 선형성·조성 회귀, GPU 0) 봉인 전 반영 + C-1 V·C-4 동적 여지(static만) 우선(권고) · HyMux 구현 선행 · 현행 유지
 - **roofline η 정본 반영** / 감사 r1: 집계 η≈0.49는 층별 η_X 아님(§8 불가) / 수식 문서 §6 "실측 대조"에 집계 ≈0.49 한 줄만(권고, 결정 27 규칙·promote 경로) · 반영 안 함 · 층별 η 식별 GPU 측정(조성 변형 a4–a31 prefill floor, 승인 필요)
-- **§11-4 미복구 설정 제약 점** / 결정 30 원칙상 기본은 복구 / J-C bs48 (2k,8k) 사유 없는 삭제(+1.0) · J-A T1 (8,64k) context 131,072(+0.44) · Llama 장문 T2(+0.35) · J-C 앵커 cap 32(+0.78) · TP2 장문 PD-mux 108u(+0.39) — 전부 복구(권고, 합계 약 22.4 GPU-h [유도]) · shape C는 smoke 후
 - **presubmit reachability 차단 2건** / M4R·TC1 rev3 spec이 active로 전역 차단(측정과 무관) / 범위 한정 OVERRIDE + 승인(권고, 전례 `cp_baseline/OVERRIDE_*`) · 두 spec 폐기
 - **로컬 엔진 트리 재동기화** / 구판이라 로컬 테스트 5건 실패 / amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차(권고) · scratch 사본 유지
 - **임시 디렉터리 `/tmp/gate_t_*` 11개 삭제** / 테스트 진단 잔여물, 에이전트 삭제가 막힘 / 삭제(권고)
