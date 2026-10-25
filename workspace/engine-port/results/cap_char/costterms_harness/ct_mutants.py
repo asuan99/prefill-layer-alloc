@@ -31,6 +31,7 @@ import ct_extract as X
 import ct_fit as F
 import ct_runner as R
 import ct_client as C
+import ct_harness_digest as HD
 
 DEFERRED = {}          # stage 1's three deferred candidates are M27-M29
 
@@ -56,6 +57,12 @@ SCENARIOS = {
     "LONGDEATH2": {"job": "J-C", "truth": dict(FAST_PF, die_on_input_ge=124 * 1024),
                    "boots": ["jc_tp2_long_108v", "jc_tp2_long_108u"]},
     # decision 33 L-7: one J-A-style T1 boot at context 131,072 holding the (8, 64k) cell (job name J-X: no J-A cell-set rule)
+    # audit r1 m1: ON D44 vs OFF D44 of J-A (the OFF boot registers (16, 16k), the ON mode boot D44 does not run it)
+    "OFFJA": {"job": "J-A", "truth": dict(FAST_PF), "boots": ["ja1_D44", "ja1_off_D44"]},
+    # audit r1 m2: a grid boot whose server dies when the 150th request arrives (mid-way through the cells)
+    "DEATHGRID": {"job": "J-A", "truth": dict(FAST_PF, die_after_requests=150), "boots": ["ja1_108v"]},
+    # audit r1 m3: a same-skeleton Transformer variant (a31) T3 boot -- the ramp bound must use ITS structure
+    "JH2V": {"job": "J-H2", "truth": dict(FAST_PF), "boots": ["jh2_a31_D24"], "variant_src": True},
     "JAL7": {"job": "J-X", "truth": dict(FAST_PF), "plan_fn": lambda: l7_plan()},
 }
 
@@ -306,10 +313,358 @@ def o_mismatch_excluded(run, A):
     mm = [k for k, v in ag.items() if "MISMATCH" in v["label"]]
     bad = [] if any(k.endswith("|32") for k in mm) else [f"no MISMATCH_bs32 under client drift: {mm}"]
     for k in A["tables"]["t1_client_secondary"]:
-        m, mode, bs, _ = k.split("|")
-        if f"{m}|{mode}|{bs}" in mm:
+        pre, bs, _ = k.rsplit("|", 2)
+        tag, mode = pre.split("|")[2], pre.split("|")[3]
+        if any(m.startswith(f"{tag}|{mode}|") and m.endswith(f"|{bs}") for m in mm):
             bad.append(f"secondary table keeps MISMATCH row {k}")
     return bad[:5]
+
+
+def o_secondary_table(_run=None, _A=None):
+    """Audit r1 MAJOR-1, independent arithmetic: (i) the value of a (boot, bs, c) key is the MEDIAN of its windows (not the
+    last, not the mean); (ii) two boots with the same (model, mode, bs, c) but different tp / cap keep SEPARATE keys and
+    values; (iii) agreement is judged per (cap, tp): a MISMATCH N=1 anchor does not exclude the AGREEing TP2 boot."""
+    def w(boot, cap, tp, gap, eng=10.0):
+        return {"model": "real_a4", "mode": "D44", "cap": cap, "tp": tp, "bs": 8, "c": 2048, "boot_key": boot,
+                "S_eng_ms": eng, "client_gap_ms": gap}
+    cells = [w("J-C|r1|real_a4|D44|cap128|tp2", 128, 2, g, 10.0) for g in (10.0, 10.1, 10.2)] + \
+        [w("J-C|r1|real_a4|D44|cap48", 48, 1, g, 20.0) for g in (20.0, 20.2, 20.1)]
+    cells += [w("J-A1|r1|real_a4|D44|cap48", 48, 1, 99.0, 20.0)]            # a MISMATCH window in ANOTHER (cap 48, J-A1) key
+    ag = F.agreement_labels(cells)
+    tab = F.client_secondary_table(cells, ag)
+    bad = []
+    k_tp2, k_n1 = ("J-C|r1|real_a4|D44|cap128|tp2", 8, 2048), ("J-C|r1|real_a4|D44|cap48", 8, 2048)
+    if abs((tab.get(k_tp2) or {}).get("client_gap_ms", -1) - 10.1) > 1e-9:
+        bad.append(f"TP2 value {tab.get(k_tp2)} != median 10.1")
+    if k_n1 in tab:
+        bad.append("cap-48 N=1 key kept although its (cap 48, tp 1, bs 8) windows MISMATCH (99.0 vs 20.0)")
+    if len([k for k in ag if "AGREE" in ag[k]["label"]]) != 1 or len(ag) != 2:
+        bad.append(f"agreement groups {sorted(map(str, ag))}")
+    cells2 = [w("A", 128, 2, g) for g in (10.0, 10.1, 10.2)] + [w("B", 48, 1, g) for g in (10.0, 10.25, 10.1)]
+    t2 = F.client_secondary_table(cells2, F.agreement_labels(cells2))
+    if sorted(k[0] for k in t2) != ["A", "B"] or abs(t2[("A", 8, 2048)]["client_gap_ms"] - 10.1) > 1e-9 \
+            or abs(t2[("B", 8, 2048)]["client_gap_ms"] - 10.1) > 1e-9:
+        bad.append(f"separate-boot medians {t2}")
+    return bad
+
+
+@contextlib.contextmanager
+def _no_after_death():
+    with _wrap(R, "gpu_snapshot", lambda orig, path: None):
+        # also drop the label: run_boot reads b["after_prior_death"], so strip it from the plan the boots receive
+        orig_rb = R.run_boot
+        with mock.patch.object(R, "run_boot", lambda b, *a, **k: orig_rb({k_: v for k_, v in b.items() if k_ != "after_prior_death"}, *a, **k)):
+            yield
+
+
+@contextlib.contextmanager
+def _no_clock_pair():
+    """pre-repair: only T3 cells (which call C._clock_pair themselves) had a pair; the generic per-cell pair is dropped"""
+    class _NoPair:
+        def __init__(self, tr):
+            self._tr = tr
+
+        def __getattr__(self, name):
+            if name == "clock_pair":
+                raise AttributeError(name)
+            return getattr(self._tr, name)
+    orig = R.VirtualServer.start
+
+    def start(self):
+        r = orig(self)
+        self.tr = _NoPair(self.tr)
+        return r
+    with mock.patch.object(R.VirtualServer, "start", start):
+        yield
+
+
+def _digest_tree(root):
+    root = Path(root)
+    for n in HD.covered(HD.HERE):
+        shutil.copy(HD.HERE / n, root / n)
+    return root
+
+
+def o_harness_digest(_run=None, _A=None):
+    """Audit r1 MAJOR-2 (independent of ct_harness_digest.check): in a scratch copy of the harness, a digest made from it
+    passes; flipping ONE byte of a covered file, deleting a covered file, or a missing digest file must each be refused."""
+    import tempfile
+    root = Path(tempfile.mkdtemp(prefix="ct_hd_"))
+    bad = []
+    try:
+        _digest_tree(root)
+        (root / "HARNESS_DIGEST.txt").write_text(json.dumps(HD.make(root), sort_keys=True))
+        if HD.check(root):
+            bad.append(f"fresh digest refused: {HD.check(root)[:1]}")
+        victim = root / "ct_fit.py"
+        raw = victim.read_bytes()
+        victim.write_bytes(raw[:-1] + bytes([raw[-1] ^ 1]))
+        if not HD.check(root):
+            bad.append("one flipped byte in ct_fit.py accepted")
+        victim.write_bytes(raw)
+        (root / "costterms_job.sh").write_bytes((root / "costterms_job.sh").read_bytes() + b"#")
+        if not HD.check(root):
+            bad.append("one appended byte in costterms_job.sh accepted")
+        (root / "costterms_job.sh").write_bytes((root / "costterms_job.sh").read_bytes()[:-1])
+        (root / "ct_extract.py").unlink()
+        if not HD.check(root):
+            bad.append("deleted covered file accepted")
+        (root / "HARNESS_DIGEST.txt").unlink()
+        if not HD.check(root):
+            bad.append("absent HARNESS_DIGEST.txt accepted")
+    finally:
+        shutil.rmtree(root, True)
+    return bad
+
+
+def _digest_spec_only(orig, d=None, file=None):
+    """a check that only compares the canonical spec digest (the registered VALUES), not the code bytes"""
+    out = orig(d, file) if d is not None else orig()
+    return [q for q in out if q.startswith(("spec_sha256", "HARNESS_DIGEST.txt"))]
+
+
+def o_instr_scope(run, A):
+    """A-49: the OFF boot registers 6 T1 cells, the ON D44 boot runs 4 of them -- (16, 16k) is not an ON cell and (64, 8k) is
+    INFEASIBLE_BY_RULE there.  The output must say 4 of 6 compared and name both missing cells, never a bare
+    INSTR_EFFECT_SMALL."""
+    e = ((A.get("instr_effect") or {}).get("ja1_off_D44") or {}).get("T1") or {}
+    bad = []
+    if (e.get("cells_registered"), e.get("cells_compared")) != (6, 4):
+        bad.append(f"registered / compared {e.get('cells_registered')} / {e.get('cells_compared')} != 6 / 4")
+    if e.get("cells_missing") != ["(16, 16384)", "(64, 8192)"]:
+        bad.append(f"missing {e.get('cells_missing')}")
+    if "PARTIAL" not in (e.get("scope") or ""):
+        bad.append(f"scope {e.get('scope')}")
+    return bad
+
+
+def _instr_no_registered(orig, on, off, registered=None):
+    return orig(on, off)
+
+
+def o_death_grid(run, A):
+    """Audit r1 m2: in a dead grid boot (i) every registered cell is either a finished line or a NOT_RUN_AFTER_SERVER_DEATH
+    row (union == the planned cell order written before the run, no overlap); (ii) the VALID cells before the death are in
+    tables.pre_death with the PRE_DEATH label and NOT in the fit tables (default exclusion, A-50)."""
+    bid = "ja1_108v"
+    d = Path(run) / "boots" / bid
+    planned = {R.cell_key(x[0], x[1].strip("()").replace(", ", "x") if x[0] == "t1" else x[1], x[2])
+               for x in json.loads((d / "cell_order.json").read_text())}
+    done = {json.loads(x)["cell_key"] for x in (d / "cells.jsonl").read_text().splitlines() if x.strip()}
+    v = A["boots"][bid]
+    nr = {r["cell_key"] for r in v.get("not_run_after_death", [])}
+    bad = []
+    if "SERVER_DEATH" not in v["labels"] or not done or not nr:
+        bad.append(f"scenario did not kill the boot mid-way: labels {v['labels']} done {len(done)} not_run {len(nr)}")
+    if done & nr or (done | nr) != planned:
+        bad.append(f"registered {len(planned)} != finished {len(done)} + not-run {len(nr)}")
+    pd = A["tables"].get("pre_death", {}).get(bid)
+    if not pd or pd.get("label") != "PRE_DEATH" or pd.get("in_fit") or not (pd["t1"] or pd["t2"] or pd["t2p"]):
+        bad.append(f"pre_death table {pd and (pd.get('label'), pd.get('in_fit'))}")
+    if any(k.startswith("J-A1|r1|") and "108v" in k for k in A["tables"]["t1"]):
+        bad.append("pre-death cells entered the T1 fit tables")
+    return bad
+
+
+def o_resume_dead(_run=None, _A=None):
+    """Audit r1 m2: a boot that died after finishing some cells is resumed: its cells stay (death cell included, never
+    rewritten), the remaining cells run once in '<boot>@s1' on a healthy server."""
+    import tempfile
+    root = Path(tempfile.mkdtemp(prefix="ct_rd_"))
+    try:
+        plan = sub_plan("J-A", ["ja1_108v"])
+        out = root / "raw"
+        R.run_job("J-A", out, 1, None, None, make_server=lambda b, a, e: R.VirtualServer(b, a, e, dict(FAST_PF, die_after_requests=150)),
+                  plan=plan)
+        b0 = out / "boots" / "ja1_108v"
+        before = (b0 / "cells.jsonl").read_text()
+        R.run_job("J-A", out, 1, None, None, make_server=lambda b, a, e: R.VirtualServer(b, a, e, dict(FAST_PF)), plan=plan, resume=True)
+        bad = []
+        if (b0 / "cells.jsonl").read_text() != before:
+            bad.append("the dead boot's finished cells were rewritten")
+        seg = out / "boots" / "ja1_108v@s1"
+        if not (seg / "cells.jsonl").exists():
+            return bad + ["no resume segment for the dead boot's remaining cells"]
+        planned = {R.cell_key(x[0], x[1].strip("()").replace(", ", "x") if x[0] == "t1" else x[1], x[2])
+                   for x in json.loads((b0 / "cell_order.json").read_text())}
+        keys = [json.loads(x)["cell_key"] for d in (b0, seg) for x in (d / "cells.jsonl").read_text().splitlines() if x.strip()]
+        if len(keys) != len(set(keys)) or set(keys) != planned:
+            bad.append(f"cells over both segments {len(keys)} (unique {len(set(keys))}) != planned {len(planned)}")
+        return bad
+    finally:
+        shutil.rmtree(root, True)
+
+
+def o_engine_residual(_run=None, _A=None):
+    """Audit r1 m4: T2 / long (expect 0 engine requests in [t_send, t_first]) and T2' (exactly 1) are INVALID when the engine
+    saw a foreign request inside a used rep -- synthetic records, independent expectation."""
+    def seq(kind):
+        reps = [{"rep": k, "t_send": 10.0 * k, "t_first": 10.0 * k + 1.0, "ttft_s": 1.0, "ok": True,
+                 "coexist": True} for k in range(8)]
+        return {"L": 4096, "kind": kind, "reps": reps}
+
+    def rec(t, bs):
+        return {"event": "decode_forward", "seq": int(t * 10), "t_host_start": t, "bs_real": bs}
+    bad = []
+    clean_t2 = [rec(10.0 * k + 5.0, 1) for k in range(8)]                 # a decode between the reps, never inside
+    if X.t2_value_checked(seq("t2"), clean_t2, 0)["status"] != "VALID":
+        bad.append("clean T2 refused")
+    dirty = clean_t2 + [rec(30.4, 1)]                                       # inside rep 3's [30, 31]
+    v = X.t2_value_checked(seq("t2"), dirty, 0)
+    if v["status"] != "INVALID" or v.get("labels") != ["T2_ENGINE_RESIDUAL"]:
+        bad.append(f"T2 with a foreign decode inside rep 3: {v['status']} {v.get('labels')}")
+    one = [rec(10.0 * k + 0.5, 1) for k in range(8)]                        # exactly the one decode request in every window
+    if X.t2_value_checked(seq("t2p"), one, 1)["status"] != "VALID":
+        bad.append("clean T2' refused")
+    v = X.t2_value_checked(seq("t2p"), one + [rec(40.6, 2)], 1)
+    if v["status"] != "INVALID" or v.get("labels") != ["T2P_ENGINE_BS_NOT_ONE"]:
+        bad.append(f"T2' with bs_real 2: {v['status']} {v.get('labels')}")
+    lr = X.long_row(dict(seq("t2"), L=4096, reps=[dict(r, prompt_tokens=4096, completion_tokens=1, finish="length", error=None)
+                                               for r in seq("t2")["reps"]]), "", dirty)
+    if lr["status"] != "INVALID" or "T2_ENGINE_RESIDUAL" not in lr["labels"]:
+        bad.append(f"long row with a foreign decode: {lr['status']} {lr['labels']}")
+    return bad
+
+
+def o_context_boundary(_run=None, _A=None):
+    """Audit r1 m5: SGLang rejects input + max_new_tokens >= context_len, so a cell with c_in + O == context is INFEASIBLE;
+    one token less is feasible.  Same for the T3 prefill input (L + 1 == context) and the long point (feasible_long)."""
+    bad = []
+    big = 10 ** 7
+    c_in = 2048 - S.X_TOKENS
+    ctx = c_in + 332
+    if not S.feasible_cell(1, 2048, 332, big, 128, True, ctx):
+        bad.append("T1 cell with c_in + O == context accepted")
+    if S.feasible_cell(1, 2048, 332, big, 128, True, ctx + 1):
+        bad.append("T1 cell with c_in + O == context - 1 refused")
+    L = 8192
+    if not S.feasible_t3(1, L, 100, big, 128, True, L + 1):
+        bad.append("T3 prefill with L + 1 == context accepted")
+    if S.feasible_t3(1, L, 100, big, 128, True, L + 2):
+        bad.append("T3 prefill with L + 1 == context - 1 refused")
+    if not S.feasible_long(98304, big, 98305):
+        bad.append("long point with L + 1 == context accepted")
+    return bad
+
+
+def _feas_gt(orig, bs, c, O, kv, cap, capt, context=None):
+    """pre-repair strict '>' boundary: evaluate with context + 1"""
+    return orig(bs, c, O, kv, cap, capt, (S.CONTEXT_LENGTH if context is None else context) + 1)
+
+
+def _logged_ctx_is_argv(orig, f):
+    return f["server_args"].get("context_length")
+
+
+def o_context_abort(run, A):
+    """Audit r1 m5: a server that clamps the context after reading the argv (final line context_len 73,728, ServerArgs echo of
+    the argv 131,072) must make the boot ABORT_CONTEXT -- compared against the logged final value."""
+    v = A["boots"]["ja1_long_108v"]
+    return [] if any(q.startswith("ABORT_CONTEXT") for q in v["problems"]) else [f"no ABORT_CONTEXT: {v['problems']}"]
+
+
+def o_instr_violation(run, A):
+    """Audit r1 m6: any boot with an INSTR_MATRIX_VIOLATION problem is labelled and NOT usable (excluded from every fit).  The
+    fixture injects the violation (OFF boot with a leaked probe env) in the mutant run only, so the oracle passes vacuously on
+    the clean harness run and fails when the exclusion is removed."""
+    bad = []
+    for bid, v in A["boots"].items():
+        if any(q.startswith("INSTR_MATRIX_VIOLATION") for q in v["problems"]):
+            if "INSTR_MATRIX_VIOLATION" not in v["labels"] or v.get("usable"):
+                bad.append(f"{bid}: matrix violation but labels {v['labels']} usable {v.get('usable')}")
+    if "ja1_off_108v" not in A["boots"]:
+        bad.append("fixture boot missing")
+    return bad
+
+
+@contextlib.contextmanager
+def _leak_and_keep_usable():
+    with _wrap(R, "boot_env", _env_leak), _wrap(R, "instr_violation", lambda orig, out: False):
+        yield
+
+
+def o_t3_bound_structure(run, A):
+    """Audit r1 m3: the recorded T3 ramp bound of every cell equals ct_spec.ramp_steps_ub for the boot's OWN variant (a31), and
+    differs from the a4 value for at least one cell (else the check is vacuous)."""
+    v = A["boots"]["jh2_a31_D24"]
+    bad, diff = [], 0
+    for w in v["t3_cells"]:
+        want = S.ramp_steps_ub(w["bs"], S.T3_C, 84, S.variant_arch(31))
+        a4 = S.ramp_steps_ub(w["bs"], S.T3_C, 84)
+        diff += want != a4
+        if w.get("ramp_steps_ub") != want:
+            bad.append(f"bs {w['bs']} L {w['L']}: bound {w.get('ramp_steps_ub')} != a31 value {want}")
+    if not v["t3_cells"] or not diff:
+        bad.append("no T3 cell / a31 bound equals the a4 bound (vacuous)")
+    return bad[:3]
+
+
+def o_resume_t3(_run=None, _A=None):
+    """Audit r1 m7: a T3 boot killed after its sigma' references and some cells resumes in '<boot>@s1'; that segment contains the
+    sigma' reference cell of every L its T3 cells use (same server lifetime as the cells it normalises), and no T3 cell runs
+    twice."""
+    import tempfile
+    root = Path(tempfile.mkdtemp(prefix="ct_rt3_"))
+    plan = sub_plan("J-A", ["ja1_t3_D44"])
+    out = root / "raw"
+    mk = lambda b, a, e: R.VirtualServer(b, a, e, dict(FAST_PF))  # noqa: E731
+    n = {"k": 0}
+    orig = R._run_cell
+
+    def dying(*a, **k):
+        n["k"] += 1
+        if n["k"] > 4:
+            raise KeyboardInterrupt("job stopped")
+        return orig(*a, **k)
+    try:
+        with mock.patch.object(R, "_run_cell", dying):
+            try:
+                R.run_job("J-A", out, 1, None, None, make_server=mk, plan=plan)
+            except KeyboardInterrupt:
+                pass
+        R.run_job("J-A", out, 1, None, None, make_server=mk, plan=plan, resume=True)
+        seg = out / "boots" / "ja1_t3_D44@s1"
+        if not (seg / "cells.jsonl").exists():
+            return ["no resume segment"]
+        keys = [json.loads(x)["cell_key"] for x in (seg / "cells.jsonl").read_text().splitlines() if x.strip()]
+        bad = []
+        for L in {int(k.split("|")[1].split("x")[1]) for k in keys if k.startswith("t3|")}:
+            if f"t3ref|{L}|0" not in keys:
+                bad.append(f"segment has t3 cells of L {L} but no sigma' reference cell")
+        first = [json.loads(x)["cell_key"] for x in (out / "boots" / "ja1_t3_D44" / "cells.jsonl").read_text().splitlines() if x.strip()]
+        t3_all = [k for k in first + keys if k.startswith("t3|")]
+        if len(t3_all) != len(set(t3_all)):
+            bad.append("a T3 cell ran twice")
+        return bad
+    finally:
+        shutil.rmtree(root, True)
+
+
+def o_after_death(run, A):
+    """Audit r1 m8: after the first TP2 long boot died, the second long boot carries AFTER_PRIOR_DEATH (the first does not), and
+    every boot has GPU snapshots before / after."""
+    bad = []
+    l1, l2 = A["boots"]["jc_tp2_long_108v"]["labels"], A["boots"]["jc_tp2_long_108u"]["labels"]
+    if "AFTER_PRIOR_DEATH" in l1 or "AFTER_PRIOR_DEATH" not in l2:
+        bad.append(f"AFTER_PRIOR_DEATH labels: first {l1} second {l2}")
+    for bid in ("jc_tp2_long_108v", "jc_tp2_long_108u"):
+        for n in ("gpu_before.txt", "gpu_after.txt"):
+            if not (Path(run) / "boots" / bid / n).exists():
+                bad.append(f"{bid}: {n} missing")
+    return bad
+
+
+def o_clock_pairs(run, A):
+    """Audit r1 m10: every finished cell of every boot (T1, T2, T2', T4, long, ...) carries a (wall, monotonic) pair."""
+    bad = []
+    for d in sorted((Path(run) / "boots").iterdir()):
+        p = d / "cells.jsonl"
+        if p.exists():
+            for x in p.read_text().splitlines():
+                c = json.loads(x) if x.strip() else None
+                if c and not c.get("clock_pair"):
+                    bad.append(f"{d.name} {c.get('cell_key')}: no clock_pair")
+    return bad[:3]
 
 
 def o_realized_axis(run, A):
@@ -523,6 +878,22 @@ def _na_asym(orig, pool, s, k, cap, L, R_):
     p = orig(pool, s, k, cap, L, R_)
     p["n_A"] = min(cap, p["C_A"])
     return p
+
+
+def _secondary_last_window(orig, cells, agree):
+    """pre-repair behaviour: one entry per (boot, bs, c), the LAST window wins"""
+    out = {}
+    for c in cells:
+        if "MISMATCH" in agree.get(F.agree_key(c), {}).get("label", ""):
+            continue
+        out[(c["boot_key"], c["bs"], c["c"])] = {"client_gap_ms": c["client_gap_ms"], "n_windows": 1, "tag": None}
+    return out
+
+
+def _secondary_pooled_boots(orig, cells, agree):
+    """pre-repair pooling: TP2 / N=1 / cap 48 / cap 128 of the same (model, mode) share keys and agreement groups"""
+    cells = [dict(c, boot_key=c["model"] + "|" + c["mode"], cap=None, tp=1) for c in cells]
+    return orig(cells, F.agreement_labels(cells))
 
 
 def _keep_mismatch(orig, cells, agree):
@@ -743,6 +1114,9 @@ def o_smoke(_run=None, _A=None):
             bad.append("SMOKE_UNSEALED marker missing (raw or summary)")
         if not A.get("smoke"):
             bad.append("analysis not flagged smoke")
+        ed = out / "SMOKE_ENGINE_DIGEST.json"
+        if not ed.exists() or json.loads(ed.read_text()).get("status") not in ("NOT_CHECKED", "MATCH", "MISMATCH"):
+            bad.append("smoke output lacks the ENGINE_DIGEST check record (audit r1 m13)")
         w = A["boots"]["ja1_D44"]["t1_windows"]
         if [(x["bs"], x["c"]) for x in w] != [(8, 2048)] or "ramp_steps_ub" not in w[0] or "ramp_records" not in w[0]:
             bad.append(f"smoke cell set / ramp fields wrong: {[(x['bs'], x['c']) for x in w]}")
@@ -1358,6 +1732,39 @@ MUTANTS = [
     ("M13", "n_A를 비대칭 형식으로 계산", "unit", None, lambda: _wrap(X, "cmem_predictions", _na_asym), o_prereg_table, None),
     ("M14", "불일치 bs를 제외하지 않음(§1-7)", "analysis", "JH1F", lambda: _wrap(F, "client_secondary_table", _keep_mismatch),
      o_mismatch_excluded, None),
+    ("M49a", "client_secondary_table이 창마다 덮어씀(마지막 창만 남음)", "unit", None,
+     lambda: _wrap(F, "client_secondary_table", _secondary_last_window), o_secondary_table, None),
+    ("M49b", "TP2·N=1·cap 48/128 boot를 같은 (model, mode) 키로 합침", "unit", None,
+     lambda: _wrap(F, "client_secondary_table", _secondary_pooled_boots), o_secondary_table, None),
+    ("M50", "harness digest 검사가 spec 값만 비교하고 코드 바이트는 보지 않음", "unit", None,
+     lambda: _wrap(HD, "check", _digest_spec_only), o_harness_digest, None),
+    ("M51", "OFF 진단 비교가 비교 셀 수·빠진 셀을 산출에 남기지 않음(A-49)", "analysis", "OFFJA",
+     lambda: _wrap(F, "instrument_effect", _instr_no_registered), o_instr_scope, None),
+    ("M52", "사망 boot의 미실행 등록 셀에 NOT_RUN_AFTER_SERVER_DEATH 행을 남기지 않음", "analysis", "DEATHGRID",
+     lambda: _wrap(R, "not_run_rows", lambda orig, *a, **k: []), o_death_grid, None),
+    ("M53", "사망 전 VALID 셀을 기본으로 적합에 포함", "analysis", "DEATHGRID",
+     lambda: mock.patch.object(S, "PRE_DEATH_IN_FIT", True), o_death_grid, None),
+    ("M54", "사망 boot의 DONE 때문에 재개해도 남은 셀이 돌지 않음", "unit", None,
+     lambda: _wrap(R, "_died_with_cells", lambda orig, *a, **k: False), o_resume_dead, None),
+    ("M55", "T2·T2′·장문 셀의 엔진 측 잔여 요청 검사 생략", "unit", None,
+     lambda: _wrap(X, "engine_residual", lambda orig, *a, **k: {"reps": [], "n_by_rep": {}, "checked": False}),
+     o_engine_residual, None),
+    ("M56", "실행 가능성 경계를 엄격 부등호(>)로: c_in + O == context를 통과", "unit", None,
+     lambda: _wrap(S, "feasible_cell", _feas_gt), o_context_boundary, None),
+    ("M57", "ABORT_CONTEXT·T1 재계산이 로그 최종 context_len 대신 argv 되풀이 값을 씀", "run", "LONGCTX",
+     lambda: _wrap(X, "logged_context", _logged_ctx_is_argv), o_context_abort, ("J-A", ["ja1_long_108v"])),
+    ("M58", "계측 매트릭스 위반 boot를 적합에 그대로 둠(INSTR_MATRIX_VIOLATION 무시)", "run", "JAF", _leak_and_keep_usable,
+     o_instr_violation, ("J-A", ["ja1_off_108v"])),
+    ("M59", "T3 RAMP 문턱을 a4·tp1 구조로 계산(boot의 변형 구조 무시)", "analysis", "JH2V",
+     lambda: _wrap(X, "t3_cell", lambda orig, d, s_, i, c, p, arch=None, tp=1: orig(d, s_, i, c, p)), o_t3_bound_structure, None),
+    ("M60", "재개 T3 segment가 σ′ 기준 셀을 다시 돌리지 않음", "unit", None,
+     lambda: _wrap(R, "segment_ref_cells", lambda orig, rest: set()), o_resume_t3, None),
+    ("M61", "사망 뒤 boot에 AFTER_PRIOR_DEATH 표시·GPU 스냅샷을 남기지 않음", "run", "LONGDEATH2",
+     _no_after_death, o_after_death,
+     ("J-C", ["jc_tp2_long_108v", "jc_tp2_long_108u"])),
+    ("M62", "T1·T2 셀에 (wall, monotonic) 쌍을 남기지 않음", "run", "JAF",
+     _no_clock_pair, o_clock_pairs,
+     ("J-A", ["ja1_D34"])),
     ("M15", "요청 SM을 실현 SM으로 기록", "run", "JAF", lambda: _wrap(X, "realized_sm", _requested_sm), o_realized_axis,
      ("J-A", ["ja1_D34", "ja1_D24"])),
     ("M16", "dummy·real 라벨 뒤바꿈", "analysis", "JH1F", lambda: _wrap(R, "boot_identity", _identity_plan_loadformat),
@@ -1398,6 +1805,8 @@ MUTANTS = [
      o_t3_window, None),
     ("M35", "T3 decode 출력 길이에 ramp·동거 예산 없음", "run", "T3S", lambda: _wrap(C, "run_t3_cell", _t3_o_small),
      o_t3_window, ("J-A", ["ja1_t3_D44"])),
+    ("M63", "smoke 출력에 ENGINE_DIGEST 검사 결과 기록 누락", "unit", None, lambda: _wrap(R, "smoke_engine_digest", lambda orig, out: None),
+     o_smoke, None),
     ("M36", "smoke 출력에 SMOKE_UNSEALED 표지 누락", "unit", None, lambda: _wrap(R, "run_job", _no_smoke_marker), o_smoke, None),
     ("M37", "재개 시 완료 셀을 버리고 boot 전체 재실행(재개 미기록)", "unit", None,
      lambda: _wrap(R, "resume_segments", _no_resume), o_resume, None),

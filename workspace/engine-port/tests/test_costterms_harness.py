@@ -298,9 +298,9 @@ class TestFitUnits(unittest.TestCase):
         ag = F.agreement_labels([{"model": "m", "mode": "108v", "bs": 8, "S_eng_ms": 10.0, "client_gap_ms": 10.29},
                                  {"model": "m", "mode": "108v", "bs": 32, "S_eng_ms": 10.0, "client_gap_ms": 10.31},
                                  {"model": "m", "mode": "108v", "bs": 48, "S_eng_ms": None, "client_gap_ms": 10.0}])
-        self.assertEqual(ag[("m", "108v", 8)]["label"], "CLIENT_ENGINE_AGREE_bs8")
-        self.assertEqual(ag[("m", "108v", 32)]["label"], "CLIENT_ENGINE_MISMATCH_bs32")
-        self.assertEqual(ag[("m", "108v", 48)]["label"], "NOT_COLLECTED")
+        self.assertEqual(ag[("m", "108v", None, 1, 8)]["label"], "CLIENT_ENGINE_AGREE_bs8")
+        self.assertEqual(ag[("m", "108v", None, 1, 32)]["label"], "CLIENT_ENGINE_MISMATCH_bs32")
+        self.assertEqual(ag[("m", "108v", None, 1, 48)]["label"], "NOT_COLLECTED")
         self.assertEqual(F.w_indep({1: 10.0}, {1: 10.19})["label"], "WEIGHT_INDEP_HELD")
         self.assertEqual(F.w_indep({1: 10.0}, {1: 10.21})["label"], "WEIGHT_DEPENDENT")
         self.assertEqual(F.ctx_slope_prop({4: 1.0, 13: 3.25, 22: 5.5, 31: 7.75 * 1.24}, "WEIGHT_INDEP_HELD")["label"],
@@ -325,7 +325,7 @@ class TestVirtualE2E(unittest.TestCase):
     def setUpClass(cls):
         cls.root = Path(tempfile.mkdtemp(prefix="ct_e2e_"))
         cls.runs = {}
-        for sc in ("JH1", "JH1F", "JAF", "JB2", "JA0", "T3S", "JC"):
+        for sc in ("JH1", "JH1F", "JAF", "JB2", "JA0", "T3S", "JC", "OFFJA", "DEATHGRID", "JH2V"):
             d = cls.root / sc
             cls.runs[sc] = (d, M.run_scenario(sc, d, SRC))
 
@@ -1037,6 +1037,70 @@ class TestDecision33Analysis(unittest.TestCase):
         sib = A["tables"]["t2_long"]["jc_tp2_long_108u"]["siblings"]["jc_tp2_long_108v"]
         self.assertEqual(sorted(sib["ratio_this_over_sibling"]), ["65536", "98304"])          # 126,976 died in both
         self.assertIn("SAME_JOB_LONG_SIBLING", sib["label"])
+
+
+
+# =============================================================================== harness-layer audit r1 repairs (rev3.8)
+class TestAuditR1(unittest.TestCase):
+    def _job(self, env_extra):
+        d = tmpdir(self)
+        env = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_COSTTERMS")}
+        env.update(PDMUX_COSTTERMS_JOB="J-B2", PDMUX_DATA=str(d), PDMUX_JOB_NAME="t", PDMUX_COSTTERMS_SUMMARY=str(d / "sum"),
+                   PDMUX_COSTTERMS_OUT=str(d / "raw"), **env_extra)
+        return subprocess.run(["bash", str(H / "costterms_job.sh")], env=env, capture_output=True, text=True), d
+
+    def test_sealed_without_harness_digest_is_refused(self):
+        """MAJOR-2: PDMUX_COSTTERMS_SEALED=1 alone is not enough -- no HARNESS_DIGEST.txt (none exists before the seal), rc 13."""
+        self.assertFalse((H / "HARNESS_DIGEST.txt").exists())        # the mechanism ships, the digest is made AT the seal
+        r, d = self._job({"PDMUX_COSTTERMS_SEALED": "1"})
+        self.assertEqual(r.returncode, 13, r.stderr)
+        self.assertIn("ABORT_HARNESS_DIGEST", r.stderr)
+        self.assertFalse((d / "raw" / "plan.json").exists())          # nothing ran
+
+    def test_harness_digest_roundtrip_and_one_byte(self):
+        hd = importlib.import_module("ct_harness_digest")
+        d = tmpdir(self) / "h"
+        d.mkdir()
+        for n in hd.covered(H):
+            shutil.copy(H / n, d / n)
+        f = d / "HARNESS_DIGEST.txt"
+        self.assertEqual(hd.main(["make", "--dir", str(d), "--out", str(f)]), 0)
+        self.assertEqual(hd.main(["check", "--dir", str(d), "--file", str(f)]), 0)
+        self.assertEqual(sorted(json.loads(f.read_text())["files"]), hd.covered(H))
+        self.assertIn("costterms_job.sh", json.loads(f.read_text())["files"])
+        b = (d / "ct_spec.py").read_bytes()
+        (d / "ct_spec.py").write_bytes(b + b" ")
+        self.assertEqual(hd.main(["check", "--dir", str(d), "--file", str(f)]), 13)    # one byte (a registered value's comment)
+        (d / "ct_spec.py").write_bytes(b)
+        (d / "pdmux_costterms_D64_candidate.yml").write_bytes((d / "pdmux_costterms_D64_candidate.yml").read_bytes() + b"\n")
+        self.assertEqual(hd.main(["check", "--dir", str(d), "--file", str(f)]), 13)    # the config bytes are covered
+
+    def test_flags_are_all_listed(self):
+        """m9 / A-55: every flag the runner puts on a server argv is registered or listed as an unregistered knob."""
+        known = set(S.REGISTERED_FLAGS) | set(k for k in S.UNREGISTERED_KNOBS if k.startswith("--"))
+        flags = set()
+        for job in ("J-A", "J-H1", "J-C", "J-B2", "J-H2"):
+            for b in R.make_plan(job)["boots"]:
+                flags |= {a for a in R.server_argv(b, {n: Path("/x") for n in S.VARIANTS}) if a.startswith("--")}
+        self.assertEqual(flags - known, set())
+
+    def test_feasible_boundary_matches_sglang(self):
+        self.assertEqual(M.o_context_boundary(), [])
+
+    def test_launch_shows_setup_time_and_cap_total(self):
+        launch = (ENG / "scripts" / "vessl" / "launch.sh").read_text()
+        self.assertIn("wall-clock bound = hardcap", launch)
+        self.assertIn("setup/analysis allowance", launch)
+        for job, cap in (("J-C", S.HARD_CAP_MIN["J-C"]), ("J-A1", S.HARD_CAP_MIN["J-A|1"])):
+            self.assertLessEqual(cap + 30, 360, job)
+
+    def test_clk_copy_in_job_script(self):
+        txt = (H / "costterms_job.sh").read_text()
+        self.assertIn('${raw}/clk/${name}.csv', txt)
+
+    def test_secondary_keys_and_dead_boot_oracles_pass_on_clean_harness(self):
+        for o in (M.o_secondary_table, M.o_harness_digest, M.o_engine_residual, M.o_resume_dead, M.o_resume_t3):
+            self.assertEqual(o(), [], o.__name__)
 
 
 if __name__ == "__main__":

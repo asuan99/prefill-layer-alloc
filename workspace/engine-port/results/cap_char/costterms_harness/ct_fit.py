@@ -246,36 +246,44 @@ def j1_slope_label(points):
 
 
 # ============================================================================ §1-7 agreement
+def agree_key(w):
+    """Audit r1 MAJOR-1: agreement is judged per (model, mode, cap, tp, bs) -- a TP2 boot, an N=1 anchor, a cap-48 and a
+    cap-128 boot of the same (model, mode) are different servers and are never pooled."""
+    return (w["model"], w["mode"], w.get("cap"), w.get("tp", 1), w["bs"])
+
+
 def agreement_labels(windows):
-    """windows: [{model, mode, bs, S_eng_ms, client_gap_ms}] (VALID engine windows).  Per (model, mode, bs):
+    """windows: [{model, mode, cap, tp, bs, S_eng_ms, client_gap_ms}] (VALID engine windows).  Per agree_key:
     AGREE iff every window has |ln(client/S_eng)| <= ln 1.03 (A-12).  Missing S_eng -> NOT_COLLECTED."""
     groups = {}
     for w in windows:
-        groups.setdefault((w["model"], w["mode"], w["bs"]), []).append(w)
+        groups.setdefault(agree_key(w), []).append(w)
     out = {}
-    for key, ws in sorted(groups.items()):
+    for key, ws in sorted(groups.items(), key=lambda kv: str(kv[0])):
         if any(w.get("S_eng_ms") is None for w in ws):
             out[key] = {"label": "NOT_COLLECTED", "ln": None}
             continue
         lns = [math.log(w["client_gap_ms"] / w["S_eng_ms"]) if w.get("client_gap_ms") else float("inf") for w in ws]
         ok = all(abs(x) <= S.AGREE_LN for x in lns)
-        out[key] = {"label": f"CLIENT_ENGINE_{'AGREE' if ok else 'MISMATCH'}_bs{key[2]}", "ln": lns}
+        out[key] = {"label": f"CLIENT_ENGINE_{'AGREE' if ok else 'MISMATCH'}_bs{key[4]}", "ln": lns}
     return out
 
 
 def client_secondary_table(cells, agree):
-    """T1 secondary estimand (client gap) per (model, mode, bs, c), with MISMATCH bs EXCLUDED (§1-7)."""
-    out = {}
+    """T1 secondary estimand (client gap) per (boot key, bs, c), with MISMATCH (cap, tp, bs) EXCLUDED (§1-7).  Value =
+    median over the cell's VALID windows of client_gap_ms (audit r1 MAJOR-1: the old table kept the last window and pooled
+    boots of different cap / tp).  cells carry boot_key (= ct_runner._tkey of the boot)."""
+    acc = {}
     for c in cells:
-        key = (c["model"], c["mode"], c["bs"])
-        lab = agree.get(key, {}).get("label", "")
+        lab = agree.get(agree_key(c), {}).get("label", "")
         if "MISMATCH" in lab:
             continue
-        if lab == "NOT_COLLECTED":
-            tag = "CLIENT_ONLY_UNVERIFIED"
-        else:
-            tag = None
-        out[(c["model"], c["mode"], c["bs"], c["c"])] = {"client_gap_ms": c["client_gap_ms"], "tag": tag}
+        acc.setdefault((c.get("boot_key", c["model"] + "|" + c["mode"]), c["bs"], c["c"]), []).append((c, lab))
+    out = {}
+    for key, items in acc.items():
+        vals = [c["client_gap_ms"] for c, _ in items if c.get("client_gap_ms") is not None]
+        tag = "CLIENT_ONLY_UNVERIFIED" if items[0][1] == "NOT_COLLECTED" else None
+        out[key] = {"client_gap_ms": median(vals) if vals else None, "n_windows": len(vals), "tag": tag}
     return out
 
 
@@ -291,14 +299,20 @@ def cap_invariance(cap48, cap128):
 
 
 # ============================================================================ OFF diagnostic (§2-2' (2))
-def instrument_effect(on, off):
-    """on/off = {key: client value}.  Descriptive; NEVER modifies T1-T4 (decision 22)."""
+def instrument_effect(on, off, registered=None):
+    """on/off = {key: client value}.  Descriptive; NEVER modifies T1-T4 (decision 22).  Audit r1 m1 (A-49): the verdict covers
+    only the keys present in BOTH; `registered` (the OFF boot's registered keys) lets the output say how many of them were
+    compared and which are missing, so INSTR_EFFECT_SMALL on 4 of 5 registered cells is not read as 5 of 5."""
     common = sorted(set(on) & set(off), key=str)
     lns = {str(k): math.log(on[k] / off[k]) for k in common}
+    reg = sorted(set(registered), key=str) if registered is not None else sorted(off, key=str)
+    out = {"cells_compared": len(common), "cells_registered": len(reg),
+           "cells_missing": [str(k) for k in reg if k not in common]}
     if not lns:
-        return {"label": None, "ln": {}}
-    return {"label": "INSTR_EFFECT_SMALL" if all(abs(v) <= S.INSTR_SMALL_LN for v in lns.values())
-            else "INSTR_EFFECT_DISCLOSED", "ln": lns}
+        return dict(out, label=None, ln={})
+    lab = "INSTR_EFFECT_SMALL" if all(abs(v) <= S.INSTR_SMALL_LN for v in lns.values()) else "INSTR_EFFECT_DISCLOSED"
+    return dict(out, label=lab, ln=lns,
+                scope=f"{lab} on {len(common)} of {len(reg)} registered cells" + (" (PARTIAL)" if len(common) < len(reg) else ""))
 
 
 # ============================================================================ T4 labels (§1-4)

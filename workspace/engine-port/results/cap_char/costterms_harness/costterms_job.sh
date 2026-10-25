@@ -16,7 +16,7 @@
 # H-4 resume: give the SAME fixed PDMUX_COSTTERMS_OUT (e.g. /data/costterms/J-A_r1) to every submission and set
 # PDMUX_COSTTERMS_RESUME=1 on the re-submission; finished cells are kept, the rest run in new '<boot>@s<k>' boots, and
 # RESUME_LOG.json records it (report it in the result).  Without RESUME=1 a non-empty raw directory aborts (rc 16).
-# rc: 0 ok, 13 ABORT_ENGINE_DIGEST, 16 config / unsealed / substrate, 124/137 hard cap.  Nothing here prints the env.
+# rc: 0 ok, 13 ABORT_ENGINE_DIGEST / ABORT_HARNESS_DIGEST, 16 config / unsealed / substrate, 124/137 hard cap.  Nothing here prints the env.
 set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -39,6 +39,13 @@ esac
 if [[ "${PDMUX_COSTTERMS_SEALED:-}" != 1 && "${PDMUX_COSTTERMS_TEST_MODE:-}" != 1 ]]; then
   echo "ABORT_UNSEALED: cost-term harness not sealed (PREREG §12 item 13)" >&2
   exit 16
+fi
+# audit r1 MAJOR-2: a sealed Job must run the sealed harness bytes -- HARNESS_DIGEST.txt (written at the seal by
+# `ct_harness_digest.py make`, committed with it) is checked BEFORE anything runs; absent file or any differing byte ->
+# ABORT_HARNESS_DIGEST rc 13.  (Test mode without SEALED=1 skips it: the digest file does not exist before the seal.)
+if [[ "${PDMUX_COSTTERMS_SEALED:-}" == 1 ]]; then
+  python3 "${here}/ct_harness_digest.py" check --dir "${here}" --file "${PDMUX_COSTTERMS_HARNESS_DIGEST:-${here}/HARNESS_DIGEST.txt}" \
+    || { echo "ABORT_HARNESS_DIGEST: sealed harness bytes differ from this tree (see lines above)" >&2; exit 13; }
 fi
 mkdir -p "${raw}" "${summary}" || { echo "ERROR: cannot create ${raw} / ${summary}" >&2; exit 2; }
 
@@ -74,6 +81,10 @@ timeout -k 60 "$(( cap_min * 60 ))" python3 "${here}/ct_runner.py" "${args[@]}"
 rc=$?
 if [[ ${rc} -eq 124 || ${rc} -eq 137 ]]; then
   echo "{\"verdict\": \"HARDCAP_KILLED\", \"rc\": ${rc}}" > "${summary}/HARDCAP_KILLED.json"
+fi
+# audit r1 m10: keep this submission's clk.csv with the raw data (a resumed run analyses the clocks of all submissions)
+if [[ -f "${data}/runs/${name}/meta/clk.csv" ]]; then
+  mkdir -p "${raw}/clk" && cp "${data}/runs/${name}/meta/clk.csv" "${raw}/clk/${name}.csv" 2>/dev/null || true
 fi
 python3 "${here}/ct_runner.py" analyze "${raw}" --summary "${summary}" --clk "${data}/runs/${name}/meta/clk.csv" \
   || echo "analysis failed (rc=$?); raw data kept in ${raw}" >&2

@@ -77,6 +77,8 @@ DEFAULT_TRUTH = {
     # decision 30 long points: the server dies (illegal-access traceback) on an input of at least this many tokens;
     # the logged / enforced context_len is clamped to this value (a server that does not honour --context-length)
     "die_on_input_ge": None, "context_clamp": None,
+    # audit r1 m2: the server dies when the N-th request (counting warm-up) arrives -- a death in the middle of a grid boot
+    "die_after_requests": None,
 }
 
 
@@ -261,7 +263,7 @@ class EngineCore:
     def boot_lines(self):
         sa = (f"server_args=ServerArgs(model_path='{self.model_path}', tokenizer_path='{self.model_path}', "
               f"load_format='{self.load_format}', revision='{_arg(self.argv, '--revision', '')}', "
-              f"trust_remote_code=True, context_length={self.ctx_len}, mem_fraction_static={self.mf}, "
+              f"trust_remote_code=True, context_length={_arg(self.argv, '--context-length', 131072)}, mem_fraction_static={self.mf}, "
               f"max_running_requests={self.cap}, chunked_prefill_size={_arg(self.argv, '--chunked-prefill-size', 8192)}, "
               f"max_prefill_tokens={self.max_prefill}, schedule_conservativeness=1.0, random_seed={_arg(self.argv, '--random-seed', 1)}, "
               f"attention_backend='{_arg(self.argv, '--attention-backend', 'flashinfer')}', "
@@ -605,7 +607,9 @@ class VirtualTransport:
             h.error, h.done = (f"400 The input ({len(ids)} tokens) plus max_new_tokens is longer than the model's "
                                f"context length ({self.core.ctx_len} tokens)"), True
             return h
-        if die is not None and len(ids) >= int(die):
+        self.core.n_started = getattr(self.core, "n_started", 0) + 1
+        da = self.core.truth.get("die_after_requests")
+        if (die is not None and len(ids) >= int(die)) or (da is not None and self.core.n_started >= int(da)):
             self.core.dead = True
             self.core.log_write("Traceback (most recent call last):\nRuntimeError: CUDA error: an illegal memory access "
                                 "was encountered\n")

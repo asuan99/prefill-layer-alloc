@@ -170,6 +170,14 @@ def mem_terms(f):
             "kv_bytes": kv_bytes, "mamba_bytes": mamba}
 
 
+def logged_context(f):
+    """The context_len the server actually ran with (audit r1 m5): the FINAL scheduler line, not the ServerArgs echo of the
+    argv (a server may clamp / reject a context after reading the argv)."""
+    if f.get("final") and f["final"].get("context_len"):
+        return f["final"]["context_len"]
+    return f["server_args"].get("context_length")
+
+
 def logged_cap(f):
     """The cap the server actually ran with (final line max_running_requests; server_args as fallback)."""
     if f.get("final"):
@@ -228,8 +236,8 @@ def label_problems(boot, f):
         if implied != boot.get("variant"):
             bad.append(f"ABORT_VARIANT_LABEL: banner implies {implied} attention layers, plan a{boot.get('variant')}")
     want_ctx = boot.get("context", S.CONTEXT_LENGTH)
-    if f["server_args"].get("context_length") != want_ctx:
-        bad.append(f"ABORT_CONTEXT: context_length {f['server_args'].get('context_length')} != {want_ctx}")
+    if logged_context(f) != want_ctx:          # audit r1 m5: the FINAL logged context_len, not the argv echo
+        bad.append(f"ABORT_CONTEXT: logged context_len {logged_context(f)} != {want_ctx}")
     return bad
 
 
@@ -241,16 +249,16 @@ def instrumentation_problems(kind, env, f, files):
     for name, on in want.items():
         for key in S.PROBE_ENV[name]:
             if bool(env.get(key)) != on:
-                bad.append(f"{kind} boot: env {key} {'missing' if on else 'present'} (matrix {name}={'ON' if on else 'OFF'})")
+                bad.append(f"INSTR_MATRIX_VIOLATION: {kind} boot: env {key} {'missing' if on else 'present'} (matrix {name}={'ON' if on else 'OFF'})")
     if f is not None:
         if bool(f.get("decode_probe_enabled")) != i46:
-            bad.append(f"{kind} boot: 'decode probe ENABLED' log {'absent' if i46 else 'present'}")
+            bad.append(f"INSTR_MATRIX_VIOLATION: {kind} boot: 'decode probe ENABLED' log {'absent' if i46 else 'present'}")
         if bool(f.get("admission_probe_enabled")) != i5:
-            bad.append(f"{kind} boot: 'admission probe ENABLED' log {'absent' if i5 else 'present'}")
+            bad.append(f"INSTR_MATRIX_VIOLATION: {kind} boot: 'admission probe ENABLED' log {'absent' if i5 else 'present'}")
     if files is not None:
         for name, on in (("decode_probe", i46), ("admission", i5), ("tel", tel)):
             if files.get(name) and not on:
-                bad.append(f"{kind} boot wrote a {name} file")
+                bad.append(f"INSTR_MATRIX_VIOLATION: {kind} boot wrote a {name} file")
     return bad
 
 
@@ -290,7 +298,7 @@ def bs_capturable(bs, cap_list):
     return cap_list is not None and bs in cap_list
 
 
-def feasibility(cells, f, cap, o_map):
+def feasibility(cells, f, cap, o_map, context=None):
     """Every registered T1 cell -> {cell, O, run: bool, label, reasons}.  Inputs: the boot log and the registered
     per-cell O (`o_map[(bs, c)]`, ct_spec.o_tokens) only."""
     mt = mem_terms(f)
@@ -299,7 +307,7 @@ def feasibility(cells, f, cap, o_map):
     out = []
     for bs, c in cells:
         O = o_map[(bs, c)]
-        reasons = S.feasible_cell(bs, c, O, kv, cap, bs_capturable(bs, cap_list))
+        reasons = S.feasible_cell(bs, c, O, kv, cap, bs_capturable(bs, cap_list), context)
         out.append({"bs": bs, "c": c, "O": O, "run": not reasons, "label": None if not reasons else "INFEASIBLE_BY_RULE",
                     "reasons": reasons})
     return out
@@ -515,6 +523,37 @@ def t2_value(seq_rec, warmup=S.T2_WARMUP_REPS):
             "n_used": len(used), "used_reps": [r["rep"] for r in used]}
 
 
+def engine_residual(seq_rec, dec_records, expect_bs, warmup=S.T2_WARMUP_REPS):
+    """Audit r1 m4: a single-request prefill (T2, long point: nothing else running, expect_bs 0; T2': exactly the one decode
+    request, expect_bs 1) is only that estimand if the ENGINE saw no other request while it ran.  For every used rep, the
+    decode_forward records whose t_host_start lies in [t_send, t_first] must all have bs_real == expect_bs (expect 0: none at
+    all).  -> {reps: [offending rep], n_by_rep}.  Without engine records (OFF boots) nothing is checked (NOT_COLLECTED)."""
+    dec_records = [e for e in (dec_records or []) if e.get("event") == "decode_forward"]
+    if not dec_records:
+        return {"reps": [], "n_by_rep": {}, "checked": False}
+    ts = [e["t_host_start"] for e in dec_records]
+    n_by = {}
+    for r in seq_rec["reps"]:
+        if r["rep"] < warmup or r.get("t_first") is None:
+            continue
+        i, j = bisect.bisect_left(ts, r["t_send"]), bisect.bisect_right(ts, r["t_first"])
+        n_by[r["rep"]] = sum(1 for e in dec_records[i:j] if (e.get("bs_real") or 0) != expect_bs)
+    return {"reps": sorted(k for k, v in n_by.items() if v), "n_by_rep": n_by, "checked": True}
+
+
+def t2_value_checked(seq_rec, dec_records, expect_bs, warmup=S.T2_WARMUP_REPS):
+    """t2_value + the engine-side residual check (A-51 repair of audit r1 m4): a rep with a foreign request in its window makes
+    the whole (boot, L) value INVALID with label T2_ENGINE_RESIDUAL (T2' : T2P_ENGINE_BS_NOT_ONE)."""
+    v = t2_value(seq_rec, warmup)
+    res = engine_residual(seq_rec, sorted(dec_records, key=lambda e: e["t_host_start"]), expect_bs, warmup)
+    v["engine_residual"] = {"checked": res["checked"], "reps": res["reps"]}
+    if res["reps"]:
+        v["status"] = "INVALID"
+        v.pop("ttft_ms", None)
+        v["labels"] = [("T2P_ENGINE_BS_NOT_ONE" if expect_bs else "T2_ENGINE_RESIDUAL")]
+    return v
+
+
 DEATH_SIGNATURES = (("illegal_access", "illegal memory access"), ("oom", "out of memory"), ("oom", "OutOfMemoryError"),
                     ("traceback", "Traceback (most recent call last)"))
 
@@ -524,12 +563,12 @@ def death_signatures(log_text):
     return sorted({name for name, pat in DEATH_SIGNATURES if pat in (log_text or "")})
 
 
-def long_row(seq_rec, log_text=""):
+def long_row(seq_rec, log_text="", dec_records=None):
     """Decision 30 long point: the T2 value (same rule as T2: 8 reps, rep 0 excluded) + the engine-side serving check
     = every rep (warm-up included) returned exactly L prompt tokens and LONG_MAX_NEW completion tokens, finish
     'length', no error.  `server_alive_after` False marks the cell a server death happened in."""
     L = seq_rec["L"]
-    v = t2_value(dict(seq_rec, kind="t2"))
+    v = t2_value(dict(seq_rec, kind="t2")) if dec_records is None else t2_value_checked(dict(seq_rec, kind="t2"), dec_records, 0)
     reps = seq_rec.get("reps", [])
     served = [bool(r.get("error") is None and r.get("prompt_tokens") == L and r.get("completion_tokens") == S.LONG_MAX_NEW
                    and r.get("finish") == "length") for r in reps]
@@ -537,11 +576,11 @@ def long_row(seq_rec, log_text=""):
     if seq_rec.get("server_alive_after") is False:
         labels.append("SERVER_DEATH")
     return {"L": L, "status": v["status"], "ttft_ms": v.get("ttft_ms"), "n_used": v.get("n_used"),
-            "served_reps": sum(served), "n_reps": len(reps),
+            "engine_residual": v.get("engine_residual"), "served_reps": sum(served), "n_reps": len(reps),
             "prompt_tokens": [r.get("prompt_tokens") for r in reps],
             "completion_tokens": [r.get("completion_tokens") for r in reps],
             "errors": sorted({str(r["error"])[:120] for r in reps if r.get("error")}),
-            "signatures": death_signatures(log_text), "labels": labels}
+            "signatures": death_signatures(log_text), "labels": labels + v.get("labels", [])}
 
 
 def long_rows_complete(planned, rows, feas_rows, boot_labels):
@@ -699,7 +738,7 @@ def n_it_in(its, t_lo, t_hi):
     return bisect.bisect_right(ts, t_hi) - bisect.bisect_left(ts, t_lo)
 
 
-def t3_cell(dec_sorted, spans, its, cell, P_expected):
+def t3_cell(dec_sorted, spans, its, cell, P_expected, arch=None, tp=1):
     """One T3 cell (rev3.5 draft §1-3).  dec_sorted = decode_forward records sorted by seq (seq order = time order),
     spans / its from tel_phase, P_expected = the boot's sticky prefill half (prefill_sms of the division).
     Status: BENCH_INVALID > FOREIGN_RESIDUAL > RECORDER_UNPROVEN > WINDOW_SHORT > VALID; labels T3_WINDOW_SHORT
@@ -726,7 +765,7 @@ def t3_cell(dec_sorted, spans, its, cell, P_expected):
         return out
     i0 = first_reach_index(recs, bs)
     out["ramp_records"] = i0
-    ub = S.ramp_steps_ub(bs, S.T3_C, P_expected) if P_expected else None
+    ub = S.ramp_steps_ub(bs, S.T3_C, P_expected, arch, tp=tp) if P_expected else None    # audit r1 m3: the BOOT'S structure (registered t3_O rule)
     out["ramp_steps_ub"] = ub
     if i0 is not None and ub is not None and i0 > ub:
         out["labels"].append("RAMP_EXCEEDED_BOUND")

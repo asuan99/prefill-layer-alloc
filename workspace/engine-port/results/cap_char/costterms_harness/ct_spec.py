@@ -25,9 +25,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "costmodel"))
 import analytic_terms as _AT  # noqa: E402  (underscore: kept out of the spec digest)
 
-SPEC_VERSION = "costterms-harness-spec/stage2-2026-10-26 (decisions 28-30, 33; rev3.7, unsealed)"
+SPEC_VERSION = "costterms-harness-spec/stage2-2026-10-26 (decisions 28-30, 33; rev3.8 audit-r1 repairs, unsealed)"
 PREREG_REL = "workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md"
-PREREG_REV = "rev3.7 (decision 33, unsealed)"
+PREREG_REV = "rev3.8 (harness audit r1 repairs, unsealed)"
 
 K = 1024
 # ---------------------------------------------------------------- substrate / server constants (§0, §1-1, §3-3)
@@ -41,6 +41,21 @@ SPLIT_FORWARD_TOKEN_BUDGET = 65536    # §1-6 (config value; recorded per boot, 
 ATTENTION_BACKEND = "flashinfer"      # §3-3
 SERVER_SEED = 1                       # §2-3 "동일 server seed" -- value HARNESS_READING (engine gate precedent)
 HEARTBEAT_ENV = {"PDMUX_HEARTBEAT_S": "0"}   # §3-3
+# Audit r1 m9 (A-55): knobs the harness SETS (or leaves at a default) that the PREREG's fixed-knob list does not name.  They are
+# identical in every arm of every Job, so they cannot confound a comparison, but they are part of "this stack" and every
+# citation scope inherits them.  A test compares them against the argv the runner builds (a new flag must be listed here).
+REGISTERED_FLAGS = ("--model-path", "--revision", "--load-format", "--trust-remote-code", "--attention-backend",
+                    "--disable-radix-cache", "--mem-fraction-static", "--max-running-requests", "--context-length",
+                    "--random-seed", "--chunked-prefill-size", "--max-prefill-tokens", "--host", "--max-mamba-cache-size",
+                    "--tp-size", "--enable-pdmux", "--pdmux-config-path")
+UNREGISTERED_KNOBS = {
+    "--dtype": "bfloat16 (model default; also set by every M3 / N2 harness)",
+    "--disable-piecewise-cuda-graph": "piecewise cuda graph off (the decode cuda graph stays ON)",
+    "--disable-overlap-schedule": "overlap scheduler off: the engine loop is event_loop_normal-like in every boot",
+    "cuda_graph_max_bs": "SGLang default capture list for the cap (default_capture_list), recorded from the boot log",
+    "burst_prompts": "the requests of one T1 burst share one seeded prompt id stream per (bs, c, round) -- identical across arms",
+    "inter_cell_settle_s": "0.5 s sleep between cells (virtual / wall), not a measured idle",
+}
 
 NANO_ID = "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base"
 NANO_REV = "dc0661c829b14e5b9246c05cfa89094a0875e052"
@@ -142,6 +157,10 @@ T2EXT_L = (96 * K, 124 * K)          # 98,304 and 126,976 (decision 30; the G-be
 LONG_BRIDGE_L = 64 * K               # [제안] same-Job bridge point: the top L of the 73,728-context T2 grid, re-measured in
 #                                      the long boot so the across-boot join (cap / context differ) is visible
 LONG_L = (LONG_BRIDGE_L,) + T2EXT_L  # run in THIS order (ascending): a death at a larger L keeps the smaller ones
+# Audit r1 m2 (A-50): cells of a NON-long boot that finished (VALID) BEFORE a server death.  Default = EXCLUDED from every
+# fit / table of usable boots (conservative: a server that later died may already have been degrading); they are listed under
+# tables.pre_death with the PRE_DEATH label.  Flipping this is a user decision (PREREG §11-3 A-50).
+PRE_DEATH_IN_FIT = False
 LONG_REPS = T2_REPS                  # "반복은 T2와 같은 규칙": 8 per (boot, L), the first excluded (T2_WARMUP_REPS)
 LONG_MAX_NEW = 1                     # output 1 token (T2 estimand); the serving check needs prompt == L, completion == 1
 LONG_CAP = CAP_SMALL                 # [제안, 근거 기록] cap 48: the exact knob set (vanilla, mem 0.6, context 131,072,
@@ -422,8 +441,8 @@ def feasible_t3(bs, L, O_dec, kv_tokens, cap, capturable, context=None):
         reasons.append("no KV pool banner")
     elif need > FEASIBLE_KV_FRAC * kv_tokens:
         reasons.append(f"bs*(c_in+O)+L+1 = {need} > {FEASIBLE_KV_FRAC} x {kv_tokens}")
-    if c_in + O_dec > context or L + 1 > context:
-        reasons.append(f"c_in + O = {c_in + O_dec} or L + 1 = {L + 1} > context_length {context}")
+    if c_in + O_dec >= context or L + 1 >= context:      # same SGLang rule (input + max_new >= context_len is rejected)
+        reasons.append(f"c_in + O = {c_in + O_dec} or L + 1 = {L + 1} >= context_length {context}")
     return reasons
 
 
@@ -482,8 +501,8 @@ def feasible_cell(bs, c, O, kv_tokens, cap, capturable, context=None):
         reasons.append("no KV pool banner")
     elif bs * (c_in + O) > FEASIBLE_KV_FRAC * kv_tokens:
         reasons.append(f"bs*(c_in+O) = {bs * (c_in + O)} > {FEASIBLE_KV_FRAC} x {kv_tokens}")
-    if c_in + O > context:
-        reasons.append(f"c_in + O = {c_in + O} > context_length")
+    if c_in + O >= context:        # SGLang tokenizer_manager rejects input + max_new_tokens >= context_len (audit r1 m5)
+        reasons.append(f"c_in + O = {c_in + O} >= context_length")
     return reasons
 
 
@@ -506,7 +525,7 @@ def feasible_long(L, kv_tokens, context, max_new=LONG_MAX_NEW):
 ENGINE_DIGEST_EXPECTED = "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4fa627f4325"   # pathless-v1, 30 entries
 #   (G-alpha / G-beta PASS tree, PREREG §12 item 5); written to ENGINE_DIGEST.txt, checked by costterms_job.sh (rc 13)
 SUMMARY_FILES = ("analysis.json", "plan.json", "RUN_DONE", "SHA256SUMS", "RESUME_LOG.json", "SMOKE_UNSEALED",
-                 "t3_iterations.json")          # what goes under results/ (raw data stays on the cluster volume, H-3)
+                 "t3_iterations.json", "SMOKE_ENGINE_DIGEST.json")          # what goes under results/ (raw data stays on the cluster volume, H-3)
 SMOKE_MARKER = "SMOKE_UNSEALED"
 HARD_CAP_MIN = {"J-H1": 271, "J-A|1": 272, "J-A|2": 251, "J-B2": 78, "J-H2": 126, "J-C": 307}
 #   minutes, self-enforced by costterms_job.sh; = ceil(1.2 x ct_timemodel hours) [유도, rev3.7 = decision 33]: J-A r1 3.77 h,
@@ -615,6 +634,29 @@ AMBIGUITIES = {
             "that fixes their number / identity per Job and is checked on full plans (registry_problems)",
     "A-48": "pool arithmetic for the time model / pre-data tables: pool_with_context() = pool - ceil(cap x (context - 73,728) x 4 "
             "B / k); the 4 B per (slot, token) req_to_token entry and the cap-32 pool (PREREG pool - 33 s) / k are [유도]",
+    "A-49": "audit r1 m1: OFF diagnostic comparison covers the cells present in BOTH ON and OFF (J-A: 4 of 6); cells_compared / "
+            "cells_registered / cells_missing / scope are reported, INSTR_EFFECT_SMALL is never bare; adding ON pairs for "
+            "(16, 16k) is a USER decision (not done)",
+    "A-50": "audit r1 m2: dead grid boot -> NOT_RUN_AFTER_SERVER_DEATH row per registered cell; VALID cells before the death "
+            "are PRE_DEATH (tables.pre_death) and EXCLUDED from fits (PRE_DEATH_IN_FIT False; inclusion is a USER decision); "
+            "resume runs the remaining cells in '<boot>@s<k>' without overwriting finished cells (long boots exempt)",
+    "A-51": "audit r1 m4: T2 / long (0 engine requests) and T2' (exactly the one decode request) are INVALID when a decode_forward "
+            "with another bs_real lies inside a used rep's [t_send, t_first] (T2_ENGINE_RESIDUAL / T2P_ENGINE_BS_NOT_ONE)",
+    "A-52": "audit r1 m5: context checks use the FINAL logged context_len (logged_context); feasibility uses '>=' like SGLang "
+            "(input + max_new >= context_len is rejected); the fake engine echoes the argv in ServerArgs and writes the clamp "
+            "to the final line only",
+    "A-53": "audit r1 m6: INSTR_MATRIX_VIOLATION problem -> label + usable False",
+    "A-54": "audit r1 m3 / m7: T3 ramp bound from the boot's variant structure and tp; a resume segment with T3 cells re-runs "
+            "the sigma' reference cell of each L; segments are excluded from gamma_j fits and pair only with the same segment",
+    "A-55": "audit r1 m9: unregistered knobs (REGISTERED_FLAGS / UNREGISTERED_KNOBS): --dtype, --disable-piecewise-cuda-graph, "
+            "--disable-overlap-schedule, default cuda_graph_max_bs, shared burst prompt stream, 0.5 s inter-cell settle",
+    "A-56": "audit r1 m8 / m10 / m13: gpu_before / gpu_after snapshots + AFTER_PRIOR_DEATH; clock_pair at every cell start and "
+            "RAW/clk/<job>.csv per submission; SMOKE_ENGINE_DIGEST.json in smoke output",
+    "A-57": "audit r1 MAJOR-1 / 2: client_secondary_table keyed by (_tkey(boot), bs, c) with the window MEDIAN, agreement per "
+            "(model, mode, cap, tp, bs); HARNESS_DIGEST.txt made at the seal (ct_harness_digest.py), checked by "
+            "costterms_job.sh when SEALED=1 (ABORT_HARNESS_DIGEST rc 13)",
+    "A-58": "audit r1 m11 / m12: dry-run shows hardcap + 30 min setup allowance (<= 360 min principle); raw-data archive step "
+            "(sha256sum -c after fetch, local copy, re-verify) is DESIGN only",
 }
 
 

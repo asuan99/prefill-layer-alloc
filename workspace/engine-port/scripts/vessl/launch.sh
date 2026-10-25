@@ -124,6 +124,12 @@ if [[ "${target}" == */costterms_job.sh ]]; then
     J-H2:*) ctcap=126 ;; J-C:*) ctcap=307; ctg=2 ;; *) ctcap="" ;; esac
   if [[ -n "${ctcap}" ]]; then
     echo "costterms: job=${ctj} round=${ctr} gpus=${ctg} sealed_env=${ctsealed} hardcap=${ctcap} min (self-enforced), cost bound <= \$$(awk -v c="${ctcap}" -v r="${PDMUX_VESSL_RATE_USD_H}" 'BEGIN{printf "%.2f", c/60*r}') (rate x cap)"
+    # audit r1 m11: the hard cap (timeout) covers ct_runner only; image pull + install_runtime + analysis are NOT inside it and there
+    # is no vesslctl wall-clock cap -> show the wall-clock bound the Job really has.  Setup allowance 30 min [제안, 미측정; the
+    # Workspace smoke measures it]; the Job-level 6 h principle needs cap + setup <= 360 min.
+    ctsetup=30
+    echo "costterms: wall-clock bound = hardcap ${ctcap} + setup/analysis allowance ${ctsetup} [proposal, unmeasured] = $(( ctcap + ctsetup )) min (principle: <= 360 min)"
+    [[ $(( ctcap + ctsetup )) -le 360 ]] || echo "costterms: WARNING cap + setup exceeds 360 min -- split the Job (user decision)"
     [[ "${ctg}" == 2 && "${PDMUX_VESSL_SPEC:-}" != *a100x2* ]] && echo "costterms: WARNING J-C needs resourcespec-a100x2 (costterms_job.sh aborts rc 16 on a GPU-count mismatch)"
     [[ "${ctsealed}" == yes ]] || echo "costterms: WARNING no PDMUX_COSTTERMS_SEALED=1 -> the entry point refuses (rc 16 ABORT_UNSEALED); unsealed submit would only burn setup time"
   else
