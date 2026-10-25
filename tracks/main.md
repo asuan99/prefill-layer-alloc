@@ -19,6 +19,7 @@
 - `test_baseline_pass` 비결정성 = 가짜 엔진 결함 2건 수리(`1943b3b6`). presubmit 줄 인용 드리프트 수리(`10e33bfa`); reachability 2건 차단 남음.
 - 보고용 그림 6장 `reports/figures/current_2026-10-21/`(Claim G·HE0·layer-type·CM-2·CM-5·관측자 효과).
 - **roofline·스케일링 그림 묶음(2026-10-25)** `reports/figures/roofline/`(README.md = 용도·재현·한계·인용 규칙, `NEXT_SESSION_PROMPT.md` = 다음 세션 전달문) · T1 대조 틀 `t1_compare.py`(데이터 오면 `--data cells.csv`) · 감사 미호출.
+- **HyMux 원고 v4·검증 계획 문서 검수(2026-10-26)**: 두 Claude Docs에 댓글(원고 14·계획 9, 본문 무수정). 닫힌 식은 analytic-v1과 일치, §3 측정 주장 4건 정본 불일치(HE0 진동 서술·42→124 cudagraph OFF·Fig1=Ha8·80 SM 포화 금지 서술), §7 원자료 0. 대조표 `reports/hymux_review/EXPERIMENT_CROSSWALK_2026-10-26.md`(사슬 ①–⑤, 구체화 A-1…D-12)
 - 설계 결정 원문 1–30: `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`.
 ## 다음 행동
 1. 미복구 설정 제약 점 반영(결정 후) → **하네스층 감사**(claims-auditor, 최대 2회; A-3…A-41 해석 포함)
@@ -26,6 +27,7 @@
 3. (roofline 묶음) 감사 r1 반영 완료(README 정정) → §6 한 줄 추가 여부 사용자 결정 · r2는 사용자 요청 시만 · T1 데이터 오면 `t1_compare.py`로 decode 대조
 4. G0 PREREG(헤드라인 셀 전 arm 계측 OFF, 조성 변형 goodput 범위 = 결정 25) → V PREREG(oracle 격차 측정 추가 검토) → M3 재개 여부
 ## 사용자 결정 대기
+- **비용 모델→goodput 실험 구체화** / 대조표 §4 / A(PREREG 판정 추가: BW(D)·시간 knee·θ′ 선형성·조성 회귀, GPU 0) 봉인 전 반영 + C-1 V·C-4 동적 여지(static만) 우선(권고) · HyMux 구현 선행 · 현행 유지
 - **roofline η 정본 반영** / 감사 r1: 집계 η≈0.49는 층별 η_X 아님(§8 불가) / 수식 문서 §6 "실측 대조"에 집계 ≈0.49 한 줄만(권고, 결정 27 규칙·promote 경로) · 반영 안 함 · 층별 η 식별 GPU 측정(조성 변형 a4–a31 prefill floor, 승인 필요)
 - **§11-4 미복구 설정 제약 점** / 결정 30 원칙상 기본은 복구 / J-C bs48 (2k,8k) 사유 없는 삭제(+1.0) · J-A T1 (8,64k) context 131,072(+0.44) · Llama 장문 T2(+0.35) · J-C 앵커 cap 32(+0.78) · TP2 장문 PD-mux 108u(+0.39) — 전부 복구(권고, 합계 약 22.4 GPU-h [유도]) · shape C는 smoke 후
 - **presubmit reachability 차단 2건** / M4R·TC1 rev3 spec이 active로 전역 차단(측정과 무관) / 범위 한정 OVERRIDE + 승인(권고, 전례 `cp_baseline/OVERRIDE_*`) · 두 spec 폐기
