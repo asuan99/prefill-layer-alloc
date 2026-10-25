@@ -59,12 +59,28 @@ def burst_prefill_s(bs, c, P, vanilla, tp=1):
     return t / (TP2_PF if tp > 1 else 1)
 
 
+def pool_of(b):
+    """[유도] KV token pool the time model feasibility uses: the PREREG pools by cap / TP, derived for another cap (decision
+    33: cap 32 -> (pool - 33 s) / k ~ 1.73M) and reduced by the bigger req_to_token table of a 131,072-context boot
+    (decision 33 L-7: J-A T1 boots, ~ -0.2 %).  The boot log's banner replaces it at run time."""
+    cap, tp = b["cap"], b.get("tp", 1)
+    if tp > 1:
+        base = POOL_TP2_CAP128
+    elif cap == 128:
+        base = POOL_CAP128
+    elif cap == 48:
+        base = POOL_CAP48
+    else:
+        base = int((S.PREREG_POOL_BYTES - (cap + 1) * S.PREREG_S_BYTES) / S.PREREG_K_BYTES)
+    return S.pool_with_context(base, cap, b.get("context", S.CONTEXT_LENGTH))
+
+
 def boot_hours(b, pool=None):
     tp = b.get("tp", 1)
     van = b["engine"] == "vanilla"
     D = b["D"] or 108
     P = 108 - b["D"] if b["engine"] == "pdmux_sticky" else (S.PDMUX_108U_P if b["engine"] == "pdmux_108u" else 108)
-    pool = pool or (POOL_TP2_CAP128 if tp > 1 else POOL_CAP128 if b["cap"] == 128 else POOL_CAP48)
+    pool = pool or pool_of(b)
     caps = S.default_capture_list(b["cap"])
     pf = 1 / TP2_PF if tp > 1 else 1
     t = 0.0
@@ -94,6 +110,7 @@ def job_hours(plan, pools=None):
 def main():
     import ct_runner as R
     rows = {}
+    tot = 0.0
     for job, rnd in (("J-A", 1), ("J-A", 2), ("J-H1", 1), ("J-H2", 1), ("J-B2", 1), ("J-C", 1)):
         p = R.make_plan(job, rnd)
         pools = {}
@@ -104,8 +121,10 @@ def main():
         t3 = sum(boot_hours(b, pools.get(b["boot_id"])) for b in p["boots"] if b["kind"] == "T3")
         rows[f"{job}|{rnd}"] = (h, t3)
         ngpu = 2 if job == "J-C" else 1
+        tot += h * ngpu
         print(f"{job} r{rnd}: {h:.2f} h (T3 boots {t3:.2f} h), hard cap x1.2 = {1.2 * h:.2f} h = "
               f"{math.ceil(1.2 * h * 60)} min, reserved GPU-h {h * ngpu:.2f}")
+    print(f"total reserved GPU-h {tot:.2f} (J-B2 at its time-model 2.32 h; the registered J-B2 cap stays 78 min until the smoke)")
     return rows
 
 

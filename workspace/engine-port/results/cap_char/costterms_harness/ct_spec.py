@@ -25,9 +25,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "costmodel"))
 import analytic_terms as _AT  # noqa: E402  (underscore: kept out of the spec digest)
 
-SPEC_VERSION = "costterms-harness-spec/stage2-2026-10-22 (decisions 28-30; rev3.5, unsealed)"
+SPEC_VERSION = "costterms-harness-spec/stage2-2026-10-26 (decisions 28-30, 33; rev3.7, unsealed)"
 PREREG_REL = "workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md"
-PREREG_REV = "rev3.5 (decision 30, unsealed)"
+PREREG_REV = "rev3.7 (decision 33, unsealed)"
 
 K = 1024
 # ---------------------------------------------------------------- substrate / server constants (§0, §1-1, §3-3)
@@ -152,6 +152,33 @@ LONG_CAP = CAP_SMALL                 # [제안, 근거 기록] cap 48: the exact
 LONG_MODE_N1 = "108v"                # decision 30: N=1 T2-ext in a vanilla boot (P = 108, decision 28 A-2)
 LONG_MODE_TP2 = "108v"               # [제안, A-39] TP2 long boot: vanilla too -- T2 is defined only at P = 108 (108u / 108v);
 #   a sticky-D44 label on a no-decode prefill would be mutant M24's defect; 108v extends J-C's TP2 108v T2 grid
+LONG_MODE_TP2_PDMUX = "108u"         # decision 33 (L-8 follow-up, A-46): the PD-mux engine path (non-partitioned) at TP2 > 64k, a
+#   SECOND TP2 long boot placed after the 108v one -- same L, same rules, same cap / context (the only change is the engine)
+# Decision 33: long boots are a CONTIGUOUS SUFFIX of a Job (A-47) and their number is fixed per Job by this registry:
+#   key -> ((boot_id, model, dummy, engine, tp), ...) in plan order.  Plan builders read it; registry_problems() checks a
+#   full plan against it (a silently dropped long boot is a plan error, not a smaller Job).
+LONG_BOOTS = {
+    "J-A|1": (("ja1_long_108v", "nano", False, "vanilla", 1),),                      # decision 30 (L-1)
+    "J-H1": (("jh1_long_llama", "llama", False, "vanilla", 1),                      # decision 33 (L-8): Llama + real a4 in
+             ("jh1_long_real_a4", "nano", False, "vanilla", 1)),                     #   the SAME Job (PREREG §4 (4) contrast)
+    "J-C": (("jc_tp2_long_108v", "nano", False, "vanilla", 2),                      # decision 30 (L-2)
+            ("jc_tp2_long_108u", "nano", False, "pdmux_108u", 2)),                  # decision 33 (TP2 PD-mux path)
+}
+# Decision 33 (L-7, alternative (a)): the J-A T1 boots (the 7 mode boots, the cap-invariance boot and the OFF diagnostic
+# boots; NOT the T3 boots, which have no T1 cell) boot with context_length 131,072 so (8, 64k) (c_in + O = 79,459 >
+# 73,728) becomes feasible.  Cost: req_to_token pool ~ cap x context x 4 B grows, the KV pool shrinks by ~0.2 % [유도].
+JA_CONTEXT = LONG_CONTEXT
+REQ_TO_TOKEN_BYTES = 4               # [유도] int32 per (slot, token) entry of SGLang's req_to_token pool
+
+
+def pool_with_context(pool_tokens, cap, context, k_bytes=None):
+    """KV token pool of a boot whose context_length is `context` instead of CONTEXT_LENGTH [유도, design arithmetic]:
+    the larger req_to_token table (cap x delta-context x 4 B) comes out of the same static pool.  The boot log's KV banner
+    replaces this at run time; it is used by the time model and by the pre-data feasibility tables only."""
+    k = PREREG_K_BYTES if k_bytes is None else k_bytes
+    return int(pool_tokens - math.ceil(cap * (context - CONTEXT_LENGTH) * REQ_TO_TOKEN_BYTES / k))
+
+
 T2_MODES = ("108u", "108v")     # decision 28 A-2: T2 only where prefill runs on 108 SM (vanilla / unpartitioned)
 T2P_L_GRID = T2_L_GRID          # decision 28 A-2: T2' (bs=1 decode co-resident) is the P-axis measurement, same L
 T2P_CONFIRM_WINDOW = (0.25, 0.75)   # [제안] co-residence confirmed iff a decode_forward (bs_real >= 1) starts in
@@ -342,6 +369,8 @@ def o_tokens(bs, c, family):
     if parts[0] == "JC":
         d = int(parts[1])
         return O_BASE + max(ramp_steps_ub(bs, c, TOTAL_SM - d, tp=t) for t in (1, JC_TP))
+    if parts[0] == "JC1":          # decision 33 L-14: the cap-32 N=1 anchor's own O (N=1 step bound only, no TP2 maximum)
+        return O_BASE + ramp_steps_ub(bs, c, TOTAL_SM - int(parts[1]), tp=1)
     raise ValueError(family)
 
 
@@ -408,7 +437,17 @@ JC_TP = 2
 JC_TP2_CAP = CAP_MAIN               # TP2 boots: cap 128 (§1-1 fixed knob)
 JC_ANCHOR_CAP = CAP_SMALL           # N=1 anchor: cap 48 (§5-2; TP2 앵커 cap 48 -- mutant "anchor at 128")
 JC_MODES = ("D44", "108v")
-JC_T1_CELLS = ((8, 2 * K), (8, 8 * K), (8, 32 * K), (32, 2 * K), (32, 8 * K), (32, 32 * K))
+# decision 33 (L-14): per round ONE extra N=1 anchor boot at cap 32 (GPU 0 only) for (32, 32k) D44, the cell the cap-48
+# anchor pool cannot hold (A-32).  Its O is its OWN N=1 bound (family 'JC1|44'), smaller than the TP2-uniform O, so the cell's
+# ACTUAL ctx is reported next to the TP2 one (A-45).  Pool (cap 32) = (PREREG pool - 33 s) / k ~ 1.73M [유도].
+JC_ANCHOR32_CAP = 32
+JC_ANCHOR32_MODE_D = 44
+JC_ANCHOR32_CELLS = ((32, 32 * K),)
+JC_T1_CELLS_BS8_32 = ((8, 2 * K), (8, 8 * K), (8, 32 * K), (32, 2 * K), (32, 8 * K), (32, 32 * K))   # rev3.5 grid
+# decision 33 (L-15): the bs 48 row (48, 2k), (48, 8k) -- feasible on the cap-48 anchor pool and on the TP2 pool, so there was
+# no ground to delete them; (48, 32k) stays unregistered (anchor pool, a (C) loss kept disclosed, PREREG §11-4 L-15, A-43)
+JC_BS48_CELLS = ((48, 2 * K), (48, 8 * K))
+JC_T1_CELLS = JC_T1_CELLS_BS8_32 + JC_BS48_CELLS
 JC_T1_REPS = 2
 JC_T2_L = (4 * K, 16 * K, 32 * K, 64 * K)     # T2 in 108v, T2' in D44 (decision 28 A-2 applied to §5-2)
 JC_T4_FILLS = ((16 * K, 4096), (64 * K, 8000))
@@ -469,10 +508,12 @@ ENGINE_DIGEST_EXPECTED = "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4
 SUMMARY_FILES = ("analysis.json", "plan.json", "RUN_DONE", "SHA256SUMS", "RESUME_LOG.json", "SMOKE_UNSEALED",
                  "t3_iterations.json")          # what goes under results/ (raw data stays on the cluster volume, H-3)
 SMOKE_MARKER = "SMOKE_UNSEALED"
-HARD_CAP_MIN = {"J-H1": 246, "J-A|1": 256, "J-A|2": 235, "J-B2": 78, "J-H2": 126, "J-C": 229}
-#   minutes, self-enforced by costterms_job.sh; = ceil(1.2 x ct_timemodel hours) [유도, rev3.5]: J-A r1 3.55 h and J-C
-#   3.17 h carry the decision-30 long boots (+0.17 h / +0.19 h).  J-B2 stays 78 until the smoke S-B fill time re-derives
-#   it (decision 30: O-22 (a), PREREG §12 seal checklist) -- the time model alone says 2.32 h / 168 min.
+HARD_CAP_MIN = {"J-H1": 271, "J-A|1": 272, "J-A|2": 251, "J-B2": 78, "J-H2": 126, "J-C": 307}
+#   minutes, self-enforced by costterms_job.sh; = ceil(1.2 x ct_timemodel hours) [유도, rev3.7 = decision 33]: J-A r1 3.77 h,
+#   J-A r2 3.48 h (L-7 context 131,072: +0.22 h each), J-H1 3.75 h (L-8 Llama + real-a4 long boots: +0.35 h), J-C 4.26 h on
+#   2 GPUs (L-15 bs 48 row +0.50 h, L-14 cap-32 anchors +0.39 h, TP2 108u long boot +0.20 h).  All Jobs <= 6 h incl. the cap.
+#   J-B2 stays 78 until the smoke S-B fill time re-derives it (decision 30: O-22 (a), PREREG §12 seal checklist) -- the time
+#   model alone says 2.32 h / 168 min.
 JOB_GPUS = {"J-H1": 1, "J-A": 1, "J-B2": 1, "J-H2": 1, "J-C": 2}
 
 AMBIGUITIES = {
@@ -542,13 +583,38 @@ AMBIGUITIES = {
             "98,304 / 126,976 at mem 0.6 / context 131,072; a single request needs one slot (cap moves only the "
             "KV / mamba split); the TP2 long boot is exempt from the TP2 cap-128 rule",
     "A-39": "TP2 long boot mode = 108v (T2 needs P = 108, decision 28 A-2; extends J-C's TP2 108v T2 grid); the PD-mux "
-            "TP2 path at > 64k is NOT exercised (disclosed; a 108u long boot is the alternative)",
+            "TP2 path at > 64k is exercised by the decision-33 108u long boot (A-46), not by this one",
     "A-40": "long boots re-measure L = 65,536 as a same-Job bridge to the 73,728-context grid boot of the same mode; "
             "the across-boot T2 extension (grid-only quadratic extrapolated to 96k / 124k, and the joint fit) is "
             "descriptive and labelled T2_LONG_ACROSS_BOOTS (cap 128 vs 48, context 73,728 vs 131,072 differ)",
     "A-41": "long cells run in ascending L, never shuffled, always last in their boot; a server death labels the cell "
             "it happened in SERVER_DEATH and every later L NOT_RUN_AFTER_SERVER_DEATH; nothing earlier is deleted; "
             "feasibility (feasible_long) is re-evaluated from the boot log (pool, logged context_len) before sending",
+    "A-42": "decision 33 L-7 (alt. (a)): context_length 131,072 for every J-A boot that carries T1 / T2 / OFF cells (the 7 mode "
+            "boots, the cap-invariance boot, the 2 OFF diagnostic boots) so a pair (cap-invariance, ON / OFF) differs in one "
+            "knob only; the T3 boots (no T1 cell) stay at 73,728; the 'J-A T1 boot' of the decision is read as this set. "
+            "KV pool ~ -0.2 % (req_to_token cap x 57,344 x 4 B ~ +30 MB at cap 128) is disclosed and replaced by the boot "
+            "banner at run time; J-A results are 'context 131,072' knob results (grid boots of the other Jobs keep 73,728)",
+    "A-43": "decision 33 L-15: bs 48 row (48, 2k), (48, 8k) in TP2 and anchor x {D44, 108v} x 2 rounds x 2 windows; (48, 32k) is "
+            "NOT registered even though TP2 could hold it (the pair needs the cap-48 anchor, whose pool cannot): a (C) loss "
+            "kept disclosed (PREREG §11-4 L-15)",
+    "A-44": "decision 33 L-8: J-H1 long boots jh1_long_llama then jh1_long_real_a4 (vanilla 108v, cap 48, context 131,072, "
+            "L = 65,536 / 98,304 / 126,976 ascending, 8 reps, same rules as the Nano long boot); order Llama first (any "
+            "order is a choice); the J-H1 composition tests (w_indep, P1-P4) exclude them; the Llama / real-a4 per-L ratio is "
+            "descriptive (SAME_JOB_LONG_CONTRAST); Llama loads real weights by id + revision",
+    "A-45": "decision 33 L-14: per round one cap-32 N=1 D44 anchor boot (jc{r}_n1c32_D44, GPU 0 only, only (32, 32k), 2 windows) "
+            "with its OWN output length O (family JC1|44 = O_BASE + N=1 ramp bound, 15,502) instead of the TP2-uniform 30,592; "
+            "it is never the 'anchor' of the cap-48 pairs; the TP2 / cap-32 ratio of that single cell is reported with BOTH "
+            "actual ctx values and both O (ratios_t1_anchor32) -- a ctx difference, not a clean paired ratio",
+    "A-46": "decision 33 (TP2 PD-mux path): jc_tp2_long_108u = PD-mux engine, sticky OFF (PDMUX_R2_FIXED_DSM 44, value unused "
+            "at P = 108), TP2, cap 48, context 131,072, same L / rules as jc_tp2_long_108v, placed AFTER it (a PD-mux death "
+            "cannot touch the 108v rows); the per-L 108u / 108v ratio of the two long boots is descriptive "
+            "(SAME_JOB_LONG_SIBLING); 'PD-mux serves > 64k' is claimable only for the L whose rows are LONG_SERVED",
+    "A-47": "plan check generalised: long boots must form the contiguous LAST block of a Job (a measurement boot after any long "
+            "boot is ABORT_PLAN -- M39's intent); the old 'one long boot per Job' cap is replaced by a registry (LONG_BOOTS) "
+            "that fixes their number / identity per Job and is checked on full plans (registry_problems)",
+    "A-48": "pool arithmetic for the time model / pre-data tables: pool_with_context() = pool - ceil(cap x (context - 73,728) x 4 "
+            "B / k); the 4 B per (slot, token) req_to_token entry and the cap-32 pool (PREREG pool - 33 s) / k are [유도]",
 }
 
 

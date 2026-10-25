@@ -449,7 +449,7 @@ class TestVirtualE2E(unittest.TestCase):
                     mut = oracle(d, B)
                     R.analyze(d)
                 else:
-                    plan = M.cg_plan() if sc == "CG" else M.sub_plan(*sub)
+                    plan = M.plan_for(sc, sub)
                     root = tmpdir(self)
                     base = oracle(root / "base", M.run_scenario(sc, root / "base", SRC, plan=plan))
                     with M.applied(fac):
@@ -552,7 +552,7 @@ class TestEntry(unittest.TestCase):
                          [b["boot_id"].replace("ja2_", "") for b in a2["boots"]])
         self.assertEqual(a1["boots"][-1]["boot_id"], "ja1_long_108v")                # decision 30: last, round 1 only
         self.assertEqual(len(R.make_plan("J-B2")["boots"]), 10)
-        self.assertEqual(len(R.make_plan("J-H1")["boots"]), 7)
+        self.assertEqual(len(R.make_plan("J-H1")["boots"]), 9)                  # + Llama / real-a4 long boots (decision 33)
         self.assertEqual(len(R.make_plan("J-A", 1)["boots"]), 13)                  # + T3 boots D24 / D44 + long boot
         self.assertEqual(len(R.make_plan("J-A", 2)["boots"]), 11)
         for job in ("J-H2", "J-C"):
@@ -561,19 +561,22 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(sorted((b["variant"], b["D"]) for b in jh2), sorted((n, d) for n in S.VARIANTS for d in S.JH2_D))
         self.assertTrue(all(b["kind"] == "T3" and b["dummy"] for b in jh2))
         jc = R.make_plan("J-C")["boots"]
-        self.assertEqual(len(jc), 11)                                               # decision 30: long boot included
-        self.assertEqual({(b["tp"], b["cap"], b["gpus"]) for b in jc if not b["long"]}, {(2, 128, "0,1"), (1, 48, "0")})
-        self.assertEqual((jc[-1]["tp"], jc[-1]["cap"], jc[-1]["gpus"], jc[-1]["mode"], jc[-1]["context"], jc[-1]["long"]),
+        self.assertEqual(len(jc), 14)       # decision 30 long boot + decision 33: cap-32 anchors (2) and the 108u long boot
+        self.assertEqual({(b["tp"], b["cap"], b["gpus"]) for b in jc if not b["long"]},
+                         {(2, 128, "0,1"), (1, 48, "0"), (1, 32, "0")})
+        self.assertEqual((jc[-2]["tp"], jc[-2]["cap"], jc[-2]["gpus"], jc[-2]["mode"], jc[-2]["context"], jc[-2]["long"]),
                          (2, S.LONG_CAP, "0,1", "108v", 131072, [65536, 98304, 126976]))
-        r1 = [b["boot_id"] for b in jc if b["boot_id"].startswith("jc1_")]
+        self.assertEqual((jc[-1]["engine"], jc[-1]["mode"], jc[-1]["tp"]), ("pdmux_108u", "108u", 2))
+        r1 = [b["boot_id"] for b in jc if b["boot_id"].startswith("jc1_")]    # incl. jc1_n1c32_D44
         r2 = [b["boot_id"] for b in jc if b["boot_id"].startswith("jc2_")]
         self.assertEqual([x.replace("jc1_", "") for x in r1][::-1], [x.replace("jc2_", "") for x in r2])   # ABBA
         p = R.make_plan("J-C")
         p["boots"].insert(0, p["boots"].pop())                                   # the long boot must be last
         self.assertTrue(any("LAST" in x for x in R.plan_problems(p)))
         with mock_attr(S, "JC_96K_MODE", "deleted"):
-            self.assertEqual(len(R.make_plan("J-C")["boots"]), 10)
+            self.assertEqual(len(R.make_plan("J-C")["boots"]), 12)          # both TP2 long boots gone
             self.assertTrue(R.make_plan("J-C")["deferred"])
+            self.assertEqual(R.registry_problems(R.make_plan("J-C")), [])
         with self.assertRaises(SystemExit):
             os.environ.pop("PDMUX_COSTTERMS_TEST_MODE")
             try:
@@ -643,10 +646,10 @@ class TestStage2Spec(unittest.TestCase):
         h = {k: v[0] for k, v in tm.main().items()}
         a1 = R.make_plan("J-A", 1)
         long_h = sum(tm.boot_hours(b) for b in a1["boots"] if b["long"])
-        self.assertAlmostEqual(h["J-A|1"] - long_h, 3.4, delta=0.05)               # PREREG §7-4' J-A1 3.4 h (w/o long)
+        self.assertAlmostEqual(h["J-A|1"] - long_h, 3.4 + 0.22, delta=0.05)         # §7-4' J-A1 3.4 h + decision 33 L-7 (+0.22)
         self.assertAlmostEqual(long_h, 0.17, delta=0.02)                            # decision 30 long boot [유도]
-        self.assertAlmostEqual(h["J-A|2"], 3.3, delta=0.05)
-        self.assertAlmostEqual(h["J-H1|1"], 3.4, delta=0.05)
+        self.assertAlmostEqual(h["J-A|2"], 3.3 + 0.22, delta=0.05)
+        self.assertAlmostEqual(h["J-H1|1"], 3.4 + 0.35, delta=0.05)                 # decision 33 L-8: Llama + real-a4 long boots
         for k in ("J-A|1", "J-A|2", "J-H1"):
             self.assertGreaterEqual(S.HARD_CAP_MIN[k], 1.2 * h[k if "|" in k else f"{k}|1"] * 60, k)
         self.assertGreaterEqual(S.HARD_CAP_MIN["J-H2"], 1.2 * h["J-H2|1"] * 60)
@@ -781,8 +784,6 @@ class TestStage2E2E(unittest.TestCase):
             os.environ["PDMUX_COSTTERMS_TEST_MODE"] = "1"
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 # =============================================================================== decision 30 (rev3.5): long points
@@ -812,7 +813,8 @@ class TestDecision30Long(unittest.TestCase):
                 q = dict(p, boots=p["boots"][:-1] + [bad])
                 self.assertTrue(any(key in x for x in R.plan_problems(q)), (job, key, R.plan_problems(q)))
             q = dict(p, boots=p["boots"] + [dict(b, boot_id="x2")])
-            self.assertTrue(any("more than one long boot" in x for x in R.plan_problems(q)))
+            self.assertEqual(R.plan_problems(q), [])           # decision 33 (A-47): a long block of any size is structurally fine
+            self.assertTrue(any("registered" in x for x in R.registry_problems(q)), job)   # ... its size is the registry's
 
     def _run(self, truth, boots):
         d = tmpdir(self) / "run"
@@ -861,3 +863,181 @@ class TestDecision30Long(unittest.TestCase):
         self.assertEqual([r["status"] for r in ent["rows"]], ["VALID"] * 3)
         self.assertEqual(A["jc"]["long"][lb["boot_id"]]["rows"][1]["L"], 98304)
         self.assertIsNone(A["jc"].get("tp2_dead_boots"))
+
+
+# =============================================================================== decision 33 (rev3.7): the restored §11-4 points
+class TestDecision33(unittest.TestCase):
+    """L-15 bs 48 row, L-7 J-A context 131,072, L-8 J-H1 long boots, L-14 cap-32 anchor, TP2 108u long boot.  Values marked
+    [유도] are design arithmetic from the PREREG pools, not measurements; the oracle numbers are written down independently
+    of the code under test."""
+    POOL128, POOL48, POOLTP2 = 895781, 1588000, 3720000
+
+    def _hours(self, plan_boots):
+        tm = importlib.import_module("ct_timemodel")
+        return sum(tm.boot_hours(b) for b in plan_boots)
+
+    def test_registry(self):
+        self.assertEqual(set(S.LONG_BOOTS), {"J-A|1", "J-H1", "J-C"})
+        self.assertEqual([x[0] for x in S.LONG_BOOTS["J-C"]], ["jc_tp2_long_108v", "jc_tp2_long_108u"])
+        self.assertEqual([x[0] for x in S.LONG_BOOTS["J-H1"]], ["jh1_long_llama", "jh1_long_real_a4"])
+        for job, rnd in (("J-A", 1), ("J-A", 2), ("J-H1", 1), ("J-C", 1), ("J-B2", 1), ("J-H2", 1)):
+            p = R.make_plan(job, rnd)
+            self.assertEqual(R.plan_problems(p), [], (job, rnd))
+            self.assertEqual(R.registry_problems(p), [], (job, rnd))
+        p = R.make_plan("J-C")
+        p["boots"] = [b for b in p["boots"] if b["boot_id"] != "jc_tp2_long_108u"]
+        self.assertTrue(R.registry_problems(p))
+        p = R.make_plan("J-C")
+        p["boots"] = [b for b in p["boots"] if "n1c32" not in b["boot_id"]]
+        self.assertTrue(any("cap-32 anchor" in x for x in R.registry_problems(p)))
+
+    def test_full_plan_with_a_missing_long_boot_aborts(self):
+        orig = R.plan_jc
+
+        def short():
+            q = orig()
+            q["boots"] = [b for b in q["boots"] if b["boot_id"] != "jc_tp2_long_108u"]
+            return q
+        with mock_attr(R, "plan_jc", short):
+            with self.assertRaises(SystemExit) as cm:
+                R.run_job("J-C", tmpdir(self) / "x", 1, SRC)
+        self.assertIn("ABORT_PLAN", str(cm.exception))
+
+    def test_l15_bs48_row_feasibility(self):
+        cap48 = S.default_capture_list(48)
+        self.assertEqual(S.JC_BS48_CELLS, ((48, 2048), (48, 8192)))
+        for fam in ("JC|44", "VANILLA"):
+            for bs, c in S.JC_BS48_CELLS:
+                O = S.o_tokens(bs, c, fam)
+                self.assertEqual(S.feasible_cell(bs, c, O, self.POOL48, 48, bs in cap48), [], (fam, c))   # anchor
+                self.assertEqual(S.feasible_cell(bs, c, O, self.POOLTP2, 128, True), [], (fam, c))         # TP2
+        self.assertEqual([S.o_tokens(48, 2048, "JC|44"), S.o_tokens(48, 8192, "JC|44")], [2728, 11453])
+        self.assertTrue(S.feasible_cell(48, 32768, S.o_tokens(48, 32768, "JC|44"), self.POOL48, 48, True))   # (48, 32k): anchor pool
+        self.assertNotIn((48, 32768), S.JC_T1_CELLS)                                   # C loss kept disclosed (A-43)
+        self.assertEqual(len(S.JC_T1_CELLS), 8)
+        for b in R.make_plan("J-C")["boots"]:
+            if b["kind"] == "T1T2" and b["t1"] and not b["long"] and "n1c32" not in b["boot_id"]:
+                self.assertEqual(sorted(map(tuple, b["t1"])), sorted(S.JC_T1_CELLS), b["boot_id"])
+
+    def test_l7_context_recovers_exactly_8x64k(self):
+        self.assertEqual(S.JA_CONTEXT, 131072)
+        self.assertEqual(S.pool_with_context(self.POOL128, 128, 73728), self.POOL128)          # no change at the default
+        p131 = S.pool_with_context(self.POOL128, 128, 131072)
+        self.assertEqual(p131, 893988)
+        self.assertAlmostEqual(1 - p131 / self.POOL128, 0.002, delta=0.0003)                    # "KV pool ~ -0.2 %"  [유도]
+        self.assertAlmostEqual(128 * (131072 - 73728) * 4 / 1e6, 29.4, delta=0.1)               # "~ +30 MB" [유도]
+        cap = S.default_capture_list(128)
+        new = set()
+        for mode in S.ALL_T1_MODES:
+            for bs, c in S.ja_cells_for_mode(mode):
+                fam_o = S.o_tokens(bs, c, "JA")
+                was = not S.feasible_cell(bs, c, fam_o, self.POOL128, 128, bs in cap, 73728)
+                now = not S.feasible_cell(bs, c, fam_o, p131, 128, bs in cap, 131072)
+                self.assertTrue(now or not was, (mode, bs, c))          # nothing that ran before becomes infeasible
+                if now and not was:
+                    new.add((mode, bs, c))
+        self.assertEqual(new, {(m, 8, 65536) for m in S.ALL_T1_MODES})                          # exactly the 7 (8, 64k) cells
+        self.assertEqual(65536 - 166 + S.o_tokens(8, 65536, "JA"), 79459)
+        # L-10 / L-11 stay disclosed: (32, 64k), (48, 64k), (32, 32k) ... remain infeasible by pool (mem 0.6 is a decision-13 knob)
+        for bs, c in ((32, 65536), (48, 65536), (96, 32768), (32, 32768), (48, 32768)):
+            self.assertTrue(S.feasible_cell(bs, c, S.o_tokens(bs, c, "JA"), p131, 128, bs in cap, 131072), (bs, c))
+
+    def test_l14_cap32_anchor(self):
+        pool32 = int((S.PREREG_POOL_BYTES - 33 * S.PREREG_S_BYTES) / S.PREREG_K_BYTES)
+        self.assertEqual(pool32, 1728096)
+        O1, O2 = S.o_tokens(32, 32768, "JC1|44"), S.o_tokens(32, 32768, "JC|44")
+        self.assertEqual((O1, O2), (15502, 30592))
+        cap32 = S.default_capture_list(32)
+        self.assertEqual(S.feasible_cell(32, 32768, O1, pool32, 32, 32 in cap32), [])
+        self.assertTrue(S.feasible_cell(32, 32768, O1, self.POOL48, 48, True))       # the cap-48 anchor still cannot (A-32)
+        self.assertTrue(S.feasible_cell(32, 32768, O2, pool32, 32, True))            # ... but the TP2-uniform O does NOT: own O needed
+        self.assertEqual(32 * (32768 - 166 + O1), 1539328)                           # "1.54M <= 0.95 x 1.73M"
+        for r in (1, 2):
+            b = next(x for x in R.make_plan("J-C")["boots"] if x["boot_id"] == f"jc{r}_n1c32_D44")
+            self.assertEqual((b["tp"], b["cap"], b["gpus"], b["round"], b["t1_reps"]), (1, 32, "0", r, 2))
+            self.assertEqual(b["t1_O"], {"32x32768": 15502})
+
+    def test_time_deltas_match_prereg_claims(self):
+        """[유도] every restored point's reserved time against the numbers decision 33 quotes (GPU-h = h x GPUs)."""
+        with mock_attr(S, "JC_T1_CELLS", S.JC_T1_CELLS_BS8_32):
+            jc_no48 = self._hours(R.make_plan("J-C")["boots"])
+        jc = R.make_plan("J-C")["boots"]
+        self.assertAlmostEqual(2 * (self._hours(jc) - jc_no48), 1.00, delta=0.1)     # L-15 bs 48 row: +1.00 GPU-h (2 GPUs)
+        c32 = sum(self._hours([b]) for b in jc if "n1c32" in b["boot_id"])
+        self.assertAlmostEqual(2 * c32, 0.78, delta=0.05)         # L-14 +0.78 GPU-h (2-GPU Job, idle GPU included)
+        l108u = self._hours([b for b in jc if b["boot_id"] == "jc_tp2_long_108u"])
+        self.assertAlmostEqual(2 * l108u, 0.39, delta=0.03)       # TP2 108u long boot +0.39 GPU-h
+        jh = R.make_plan("J-H1")["boots"]
+        self.assertAlmostEqual(self._hours([b for b in jh if b["long"]]), 0.35, delta=0.03)   # L-8 +0.35 GPU-h
+        a1, a2 = R.make_plan("J-A", 1)["boots"], R.make_plan("J-A", 2)["boots"]
+        with mock_attr(S, "JA_CONTEXT", S.CONTEXT_LENGTH):
+            a1_73 = [dict(b, context=S.CONTEXT_LENGTH) if b["kind"] != "T3" and not b["long"] else b for b in a1]
+            a2_73 = [dict(b, context=S.CONTEXT_LENGTH) if b["kind"] != "T3" and not b["long"] else b for b in a2]
+        self.assertAlmostEqual(self._hours(a1) - self._hours(a1_73), 0.22, delta=0.03)        # L-7 +0.22 h / round
+        self.assertAlmostEqual(self._hours(a2) - self._hours(a2_73), 0.22, delta=0.03)
+
+    def test_job_hours_and_caps_within_six_hours(self):
+        tm = importlib.import_module("ct_timemodel")
+        h = {k: v[0] for k, v in tm.main().items()}
+        self.assertEqual({k: round(v, 2) for k, v in h.items()},
+                         {"J-A|1": 3.77, "J-A|2": 3.48, "J-H1|1": 3.75, "J-H2|1": 1.74, "J-B2|1": 2.32, "J-C|1": 4.26})
+        self.assertEqual(S.HARD_CAP_MIN, {"J-H1": 271, "J-A|1": 272, "J-A|2": 251, "J-B2": 78, "J-H2": 126, "J-C": 307})
+        for k, cap in S.HARD_CAP_MIN.items():
+            hh = h[k if "|" in k else f"{k}|1"]
+            if k != "J-B2":                                           # J-B2's cap is the smoke-pending 78 min (O-22)
+                self.assertEqual(cap, math.ceil(1.2 * hh * 60), k)
+            self.assertLessEqual(cap, 6 * 60, k)                      # the <= 6 h per Job principle, cap included
+            self.assertLessEqual(hh, 6.0, k)
+        txt = (H / "costterms_job.sh").read_text()
+        for pat in (r"J-H1\) cap_min=271;", r"then cap_min=272; else cap_min=251;", r"J-C\)  cap_min=307;"):
+            import re
+            self.assertRegex(txt, pat)
+        launch = (ENG / "scripts" / "vessl" / "launch.sh").read_text()
+        for frag in ("J-H1:*) ctcap=271", "J-A:1) ctcap=272", "J-A:2) ctcap=251", "J-C:*) ctcap=307"):
+            self.assertIn(frag, launch)
+
+
+class TestDecision33Analysis(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.root = Path(tempfile.mkdtemp(prefix="ct_d33_"))
+        cls.runs = {sc: (cls.root / sc, M.run_scenario(sc, cls.root / sc, SRC)) for sc in ("JH1", "JC", "LONGDEATH2")}
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.root, True)
+
+    def test_jh1_long_boots(self):
+        d, A = self.runs["JH1"]
+        self.assertEqual(M.o_l8_jh1_join(d, A), [])
+        self.assertEqual([b for b in A["boots"] if A["boots"][b]["long_plan"]], ["jh1_long_llama", "jh1_long_real_a4"])
+        lc = A["jh1"]["long_contrast"]
+        self.assertEqual(sorted(lc["ratio_llama_over_nano"]), ["126976", "65536", "98304"])
+        self.assertTrue(all(v > 0 for v in lc["ratio_llama_over_nano"].values()))
+        order = json.loads((d / "boots" / "jh1_long_llama" / "cell_order.json").read_text())
+        self.assertEqual([int(c[1]) for c in order], [65536, 98304, 126976])                  # ascending, never shuffled
+        facts = json.loads((d / "boots" / "jh1_long_llama" / "boot.json").read_text())["argv"]
+        self.assertEqual(facts[facts.index("--context-length") + 1], "131072")
+        self.assertEqual(facts[facts.index("--max-running-requests") + 1], "48")
+        self.assertIn("meta-llama/Llama-3.1-8B", facts)
+
+    def test_jc_anchor32_and_pairs(self):
+        d, A = self.runs["JC"]
+        self.assertEqual(M.o_l14_analysis(d, A), [])
+        self.assertEqual(M.o_jc_ratios(d, A), [])
+        row = A["jc"]["ratios_t1_anchor32"]["r1|D44"]["32x32768"]
+        self.assertEqual((row["O_tp2"], row["O_n1"]), (30592, 15502))
+        self.assertIn("ANCHOR32_OWN_O", row["label"])
+        self.assertIn("jc1_n1c32_D44", A["boots"])
+        self.assertEqual(A["boots"]["jc1_n1c32_D44"]["identity"]["cap"], 32)
+
+    def test_death_in_one_tp2_long_boot_keeps_the_other(self):
+        d, A = self.runs["LONGDEATH2"]
+        self.assertEqual(M.o_long_death2(d, A), [])
+        sib = A["tables"]["t2_long"]["jc_tp2_long_108u"]["siblings"]["jc_tp2_long_108v"]
+        self.assertEqual(sorted(sib["ratio_this_over_sibling"]), ["65536", "98304"])          # 126,976 died in both
+        self.assertIn("SAME_JOB_LONG_SIBLING", sib["label"])
+
+
+if __name__ == "__main__":
+    unittest.main()

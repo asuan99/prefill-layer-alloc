@@ -112,18 +112,19 @@ def plan_ja(rnd):
     boots = []
     for d in S.D_GRID:
         boots.append(_boot(job, rnd, f"ja{rnd}_D{d}", "T1T2", "nano", "pdmux_sticky", S.CAP_MAIN, D=d,
-                           t1=X.t1_cells_for_mode(f"D{d}"), t2p=S.T2P_L_GRID))
+                           t1=X.t1_cells_for_mode(f"D{d}"), t2p=S.T2P_L_GRID, context=S.JA_CONTEXT))
     boots.append(_boot(job, rnd, f"ja{rnd}_108u", "T1T2", "nano", "pdmux_108u", S.CAP_MAIN,
-                       t1=X.t1_cells_for_mode("108u"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID))
+                       t1=X.t1_cells_for_mode("108u"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID, context=S.JA_CONTEXT))
     boots.append(_boot(job, rnd, f"ja{rnd}_108v", "T1T2", "nano", "vanilla", S.CAP_MAIN,
-                       t1=X.t1_cells_for_mode("108v"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID))
+                       t1=X.t1_cells_for_mode("108v"), t2=S.T2_L_GRID, t2p=S.T2P_L_GRID, context=S.JA_CONTEXT))
     for d in S.T3_D:
         boots.append(_t3_boot(job, rnd, f"ja{rnd}_t3_D{d}", d))
-    boots.append(_boot(job, 1, "ja1_capinv_D44", "T1T2", "nano", "pdmux_sticky", S.CAP_SMALL, D=44, t1=S.CAP_INV_CELLS))
+    boots.append(_boot(job, 1, "ja1_capinv_D44", "T1T2", "nano", "pdmux_sticky", S.CAP_SMALL, D=44, t1=S.CAP_INV_CELLS,
+                       context=S.JA_CONTEXT))     # same context as ja*_D44: the cap-invariance pair differs in cap only (A-42)
     boots.append(_boot(job, rnd, f"ja{rnd}_off_D44", "OFF", "nano", "pdmux_sticky", S.CAP_MAIN, D=44,
-                       t1=S.OFF_T1_CELLS_JA, t2p=S.OFF_T2_L_JA))
+                       t1=S.OFF_T1_CELLS_JA, t2p=S.OFF_T2_L_JA, context=S.JA_CONTEXT))
     boots.append(_boot(job, rnd, f"ja{rnd}_off_108v", "OFF", "nano", "vanilla", S.CAP_MAIN,
-                       t1=S.OFF_T1_CELLS_JA, t2=S.OFF_T2_L_JA))
+                       t1=S.OFF_T1_CELLS_JA, t2=S.OFF_T2_L_JA, context=S.JA_CONTEXT))
     order = list(range(len(boots)))
     random.Random(S.order_seed("J-A|boots")).shuffle(order)
     ordered = [boots[i] for i in order]
@@ -132,16 +133,26 @@ def plan_ja(rnd):
         for b in ordered:
             b["boot_id"] = b["boot_id"].replace("ja1_", "ja2_")
     else:             # decision 30: N=1 T2-ext in its own vanilla boot, context 131,072, the LAST boot of J-A1 only
-        ordered.append(long_boot(job, 1, "ja1_long_108v", tp=1, gpus="0"))
+        ordered += long_boots("J-A|1")
     return {"job": job, "boots": ordered, "deferred": ["J-A1 cap-invariance boot only in round 1",
                                                        "N=1 T2-ext long boot only in J-A1, last (decision 30)"]}
 
 
-def long_boot(job, rnd, boot_id, tp, gpus):
-    """Decision 30 long boot: vanilla 108v (P = 108), cap LONG_CAP, context LONG_CONTEXT, only the long points
-    (bridge 64k + T2-ext 96k / 124k, ascending), nothing else -- a death in it cannot cost any other registered cell."""
-    return _boot(job, rnd, boot_id, "T1T2", "nano", "vanilla", S.LONG_CAP, tp=tp, gpus=gpus,
+def long_boot(job, rnd, boot_id, tp, gpus, model="nano", engine="vanilla", dummy=False, variant=4):
+    """Decision 30 / 33 long boot: P = 108 (vanilla 108v, or the PD-mux engine unpartitioned 108u at TP2 -- decision 33),
+    cap LONG_CAP, context LONG_CONTEXT, only the long points (bridge 64k + T2-ext 96k / 124k, ascending), nothing else -- a
+    death in it cannot cost any other registered cell.  model 'llama' (J-H1, decision 33 L-8) or 'nano'."""
+    return _boot(job, rnd, boot_id, "T1T2", model, engine, S.LONG_CAP, tp=tp, gpus=gpus, variant=variant, dummy=dummy,
                  context=S.LONG_CONTEXT, long=list(S.LONG_L), o_family="VANILLA")
+
+
+def long_boots(key):
+    """The registered long boots of a Job (S.LONG_BOOTS), in order -- always the contiguous suffix of the plan (A-47)."""
+    job = key.split("|")[0]
+    rnd = int(key.split("|")[1]) if "|" in key else 1
+    job = f"J-A{rnd}" if job == "J-A" else job              # J-A boots carry the round in the job name (plan_ja)
+    return [long_boot(job, rnd, bid, tp=tp, gpus="0,1" if tp > 1 else "0", model=model, engine=eng, dummy=dummy)
+            for bid, model, dummy, eng, tp in S.LONG_BOOTS[key]]
 
 
 def plan_jh2():
@@ -170,6 +181,10 @@ def plan_jc():
             boots.append(_boot("J-C", rnd, f"jc{rnd}_{tag}_108v", "T1T2", "nano", "vanilla", cap,
                                t1=S.JC_T1_CELLS, t1_reps=S.JC_T1_REPS, t2=S.JC_T2_L, o_family="VANILLA", tp=tp,
                                gpus=gpus))
+    for rnd in S.JC_ROUNDS:        # decision 33 (L-14): cap-32 N=1 anchor for (32, 32k) D44, own O, one per round
+        boots.append(_boot("J-C", rnd, f"jc{rnd}_n1c32_D44", "T1T2", "nano", "pdmux_sticky", S.JC_ANCHOR32_CAP,
+                           D=S.JC_ANCHOR32_MODE_D, t1=S.JC_ANCHOR32_CELLS, t1_reps=S.JC_T1_REPS, o_family="JC1|44", tp=1,
+                           gpus="0"))
     boots.append(_boot("J-C", 1, "jc_tp2_t4", "T4", "nano", "pdmux_sticky", S.JC_TP2_CAP, D=44, t4=S.JC_T4_FILLS,
                        tp=S.JC_TP, gpus="0,1"))
     boots.append(_boot("J-C", 1, "jc_tp2_off_D44", "OFF", "nano", "pdmux_sticky", S.JC_TP2_CAP, D=44,
@@ -180,8 +195,8 @@ def plan_jc():
     r1 = [r1[i] for i in order]
     r2 = {b["boot_id"]: b for b in boots if b["round"] == 2}
     ordered = r1 + [r2[b["boot_id"].replace("jc1_", "jc2_")] for b in reversed(r1) if b["boot_id"].startswith("jc1_")]
-    if S.JC_96K_MODE == "included":       # decision 30: TP2 long boot LAST (96k required, 124k if feasible)
-        ordered.append(long_boot("J-C", 1, "jc_tp2_long_108v", tp=S.JC_TP, gpus="0,1"))
+    if S.JC_96K_MODE == "included":       # decision 30: TP2 long boot LAST (96k required, 124k if feasible); decision 33: + 108u
+        ordered += long_boots("J-C")
     elif S.JC_96K_MODE != "deleted":
         raise ValueError(S.JC_96K_MODE)
     return {"job": "J-C", "boots": ordered, "deferred": [] if S.JC_96K_MODE != "deleted"
@@ -205,7 +220,9 @@ def plan_jh1():
                        t1=S.JH_T1_CELLS, t1_reps=S.JH_T1_REPS, t2=S.JH_T2_L, o_family="VANILLA"))
     order = list(range(len(boots)))
     random.Random(S.order_seed("J-H1|boots")).shuffle(order)
-    return {"job": "J-H1", "boots": [boots[i] for i in order], "deferred": ["J-H2 (B/C boots, T3) -- stage 2"]}
+    # decision 33 (L-8): Llama + real-a4 long boots LAST (vanilla 108v, context 131,072, cap 48): PREREG §4 (4) contrast
+    return {"job": "J-H1", "boots": [boots[i] for i in order] + long_boots("J-H1"),
+            "deferred": ["J-H2 (B/C boots, T3) -- stage 2"]}
 
 
 def plan_jb2():
@@ -249,7 +266,8 @@ def plan_problems(plan):
             bad.append(f"{b['boot_id']}: T3 cells in a TEL-OFF boot (matrix §2-2')")
         if b["t4"] and b["kind"] == "OFF":
             bad.append(f"{b['boot_id']}: T4 fill in an OFF diagnostic boot")
-        if b["kind"] == "T1T2" and b["t1"] and b["cap"] not in (S.CAP_MAIN, S.CAP_SMALL):
+        anchor32 = (b["job"] == "J-C" and b["tp"] == 1 and b["cap"] == S.JC_ANCHOR32_CAP)
+        if b["kind"] == "T1T2" and b["t1"] and b["cap"] not in (S.CAP_MAIN, S.CAP_SMALL) and not anchor32:
             bad.append(f"{b['boot_id']}: T1 boot cap {b['cap']}")
         if b["t2"] and t2_axis(b["mode"]) is None:
             bad.append(f"{b['boot_id']}: T2 in a {b['mode']} boot (decision 28 A-2: T2 only at P = 108; use T2')")
@@ -268,13 +286,27 @@ def plan_problems(plan):
                 bad.append(f"{b['boot_id']}: T3 decode output length differs from the registered rule")
             if sorted(map(int, b.get("t3ref_O", {}))) != sorted({L for _, L in b["t3"]}):
                 bad.append(f"{b['boot_id']}: sigma' reference L set != the T3 L set (same boot, same L)")
+        if b["job"].startswith("J-A") and b["kind"] in ("T1T2", "OFF") and not b["long"] and b["context"] != S.JA_CONTEXT:
+            bad.append(f"{b['boot_id']}: J-A T1 boot context {b['context']} != {S.JA_CONTEXT} (decision 33 L-7: (8, 64k) "
+                       f"needs c_in + O = 79,459 < context)")
+        if anchor32:            # decision 33 L-14: the cap-32 anchor carries exactly the (32, 32k) D44 cell with its own O
+            if (b["engine"], b["D"], sorted(map(list, b["t1"])), b["o_family"], b["gpus"]) != \
+                    ("pdmux_sticky", S.JC_ANCHOR32_MODE_D, sorted(map(list, S.JC_ANCHOR32_CELLS)), "JC1|44", "0"):
+                bad.append(f"{b['boot_id']}: cap-32 anchor must be sticky D{S.JC_ANCHOR32_MODE_D} on GPU 0 with only "
+                           f"{S.JC_ANCHOR32_CELLS} and its own O family JC1|44")
+        elif b["job"] == "J-C" and b["tp"] == 1 and b["cap"] != S.JC_ANCHOR_CAP:
+            bad.append(f"{b['boot_id']}: N=1 anchor cap {b['cap']} != {S.JC_ANCHOR_CAP} (§5-2)")
         if b["job"] == "J-C":
-            if b["tp"] == 1 and b["cap"] != S.JC_ANCHOR_CAP:
-                bad.append(f"{b['boot_id']}: N=1 anchor cap {b['cap']} != {S.JC_ANCHOR_CAP} (§5-2)")
             if b["tp"] == 1 and b["gpus"] != "0":
                 bad.append(f"{b['boot_id']}: N=1 anchor must use GPU 0 only (O-6 sequential)")
+            if b["tp"] == 1 and not anchor32 and not b["long"] and \
+                    sorted(map(list, b["t1"])) != sorted(map(list, S.JC_T1_CELLS)):
+                bad.append(f"{b['boot_id']}: N=1 anchor T1 cell set != registered J-C grid (decision 33 L-15 bs 48 row)")
             if b["tp"] == S.JC_TP and not b["long"] and (b["cap"] != S.JC_TP2_CAP or b["gpus"] != "0,1"):
                 bad.append(f"{b['boot_id']}: TP2 boot cap / GPUs {b['cap']} {b['gpus']}")
+            if b["tp"] == S.JC_TP and b["kind"] == "T1T2" and b["t1"] and not b["long"] and \
+                    sorted(map(list, b["t1"])) != sorted(map(list, S.JC_T1_CELLS)):
+                bad.append(f"{b['boot_id']}: TP2 T1 cell set != registered J-C grid (decision 33 L-15 bs 48 row)")
             if b["tp"] == S.JC_TP and b["long"] and b["gpus"] != "0,1":
                 bad.append(f"{b['boot_id']}: TP2 long boot GPUs {b['gpus']}")
         for L in list(b["t2"]) + list(b["t2p"]):
@@ -282,8 +314,10 @@ def plan_problems(plan):
                 bad.append(f"{b['boot_id']}: L {L} + 1 > context_length {b['context']}")
         # ---- decision 30 long boots: separate, last, long-only, context 131,072, ascending L, P = 108
         if b["long"]:
-            if b is not plan["boots"][-1]:
-                bad.append(f"{b['boot_id']}: a long boot must be the LAST boot of the Job (decision 30)")
+            i = plan["boots"].index(b)
+            if any(not x["long"] for x in plan["boots"][i + 1:]):       # decision 33 (A-47): the long boots are a suffix
+                bad.append(f"{b['boot_id']}: a long boot must be in the LAST contiguous block of long boots of the Job "
+                           f"(decision 30 / 33: a measurement boot after it would be exposed to its death)")
             if b["t1"] or b["t2"] or b["t2p"] or b.get("t3") or b["t4"]:
                 bad.append(f"{b['boot_id']}: a long boot carries only long points (decision 30: separate boot)")
             if b["context"] != S.LONG_CONTEXT:
@@ -296,8 +330,32 @@ def plan_problems(plan):
                 if L + S.LONG_MAX_NEW >= b["context"]:
                     bad.append(f"{b['boot_id']}: ABORT_CONTEXT_TOO_SHORT L {L} + {S.LONG_MAX_NEW} >= context_length "
                                f"{b['context']}")
-    if sum(1 for b in plan["boots"] if b["long"]) > 1:
-        bad.append("more than one long boot in a Job (decision 30: one, last)")
+    return bad
+
+
+def registry_problems(plan):
+    """Decision 33 (A-47): a FULL Job plan carries exactly the long boots S.LONG_BOOTS registers for it (id, model, load
+    format, engine, tp), as its last boots in that order, and every boot of the registered J-A / J-C / J-H1 sets; a
+    sub-plan (smoke / tests) is not checked.  `plan_problems` checks the structure, this checks the count."""
+    job = plan["job"]
+    if job.startswith("J-A") and len(job) == 4:
+        key = f"J-A|{job[3]}"
+    else:
+        key = job
+    want = S.LONG_BOOTS.get(key, ())
+    if key == "J-C" and S.JC_96K_MODE == "deleted":
+        want = ()
+    got = [(b["boot_id"], b["model"], b["dummy"], b["engine"], b.get("tp", 1)) for b in plan["boots"] if b["long"]]
+    bad = []
+    if got != [tuple(w) for w in want]:
+        bad.append(f"long boots {got} != registered {list(want)} (decision 33)")
+    tail = [b["boot_id"] for b in plan["boots"]][len(plan["boots"]) - len(want):] if want else []
+    if want and tail != [w[0] for w in want]:
+        bad.append(f"the registered long boots are not the last boots in order: tail {tail}")
+    if job == "J-C":
+        n32 = sorted(b["boot_id"] for b in plan["boots"] if b["tp"] == 1 and b["cap"] == S.JC_ANCHOR32_CAP)
+        if n32 != [f"jc{r}_n1c32_D44" for r in S.JC_ROUNDS]:
+            bad.append(f"cap-32 anchor boots {n32} != one per round (decision 33 L-14)")
     return bad
 
 
@@ -781,6 +839,7 @@ def run_job(job, out, rnd=1, variant_src=None, variant_root=None, make_server=No
     same plan fingerprint; the fact is written to RESUME_LOG.json."""
     if plan is not None and not _test_mode():
         raise SystemExit("ABORT_PLAN_OVERRIDE: a plan override is a test hook")
+    full = plan is None and not boots and cells_per_boot is None and not select
     plan = plan or make_plan(job, rnd)
     if boots and not smoke:
         raise SystemExit("ABORT_SELECT: boot subsets are a smoke-only option (--smoke)")
@@ -801,7 +860,7 @@ def run_job(job, out, rnd=1, variant_src=None, variant_root=None, make_server=No
         plan = dict(plan, boots=kept)
     if smoke:
         plan = dict(plan, smoke=True)
-    probs = plan_problems(plan)
+    probs = plan_problems(plan) + (registry_problems(plan) if full else [])
     out = Path(out)
     resume = resume if resume is not None else os.environ.get("PDMUX_COSTTERMS_RESUME") == "1"
     prev = load(out / "plan.json")
@@ -898,6 +957,12 @@ def ledger_order_ok(bdir):
     return True, "sealed before fill"
 
 
+def plan_tag(b):
+    """The identity tag a plan implies ('llama', 'real_a4', 'dummy_aN'); the analyzer joins long boots to grid boots with
+    the tag FROM THE LOG (boot_identity) and falls back to this one only when the long boot never produced a log."""
+    return "llama" if b["model"] == "llama" else f"{'dummy' if b['dummy'] else 'real'}_a{b['variant']}"
+
+
 def analyze_boot(bdir):
     meta = load(bdir / "boot.json")
     b = meta["plan"]
@@ -907,7 +972,8 @@ def analyze_boot(bdir):
         res = {"start": "ok", "problems": [], "labels": ["PARTIAL_SEGMENT"]}
     out = {"boot_id": b["boot_id"], "kind": b["kind"], "job": b["job"], "round": b["round"], "plan_mode": b["mode"],
            "problems": list(res.get("problems", [])), "labels": list(res.get("labels", [])),
-           "long_plan": list(b.get("long", [])), "tp": b.get("tp", 1), "context_plan": b.get("context")}
+           "long_plan": list(b.get("long", [])), "tp": b.get("tp", 1), "context_plan": b.get("context"),
+           "plan_tag": plan_tag(b), "cap_plan": b.get("cap")}
     if f is None or "ABORTED" in out["labels"] or res.get("start") != "ok":
         out["usable"] = False
         return out
@@ -1157,9 +1223,11 @@ def analyze(run_dir, summary_dir=None, clk_path=None):
     if pools:
         A["labels"]["c_mem_drift"] = F.c_mem_drift(pools)
     # ---- J-H1
-    jh = {k: v for k, v in usable.items() if v["job"] == "J-H1"}
+    jh = jh1_grid_boots(usable)
     if jh:
         A["jh1"] = analyze_jh1(jh)
+    if any(v["job"] == "J-H1" and v.get("long_plan") for v in boots.values()):
+        A.setdefault("jh1", {})["long_contrast"] = long_contrast(A["tables"]["t2_long"])
     # ---- OFF diagnostic (descriptive)
     A["instr_effect"] = instr_effects(usable)
     # ---- stage 2: T3, J-H2, J-C
@@ -1185,9 +1253,19 @@ def analyze(run_dir, summary_dir=None, clk_path=None):
     return A
 
 
+def long_join_ok(g, v):
+    """May the grid boot g be joined to the long boot v?  Same Job, same engine mode, same tp, SAME MODEL TAG (decision 33:
+    J-H1 has two long boots -- Llama and real a4 -- and each joins only its own grid boot), g not itself a long / OFF boot
+    and with a T2 grid."""
+    gi = g.get("identity") or {}
+    return not (g["job"] != v["job"] or g.get("long_plan") or g["kind"] == "OFF" or not g.get("t2")
+                or gi.get("mode") != v["plan_mode"] or g.get("tp", 1) != v.get("tp", 1)
+                or gi.get("tag") != ((v.get("identity") or {}).get("tag") or v.get("plan_tag")))
+
+
 def long_table(boots, usable):
     """Decision 30: per long boot the rows (T2 value + serving check + death labels) and, descriptively, the join with
-    the same-Job, same-mode, same-tp 73,728-context T2 grid boot(s): bridge ratio at 65,536 and the grid-only quadratic
+    the same-Job, same-mode, same-tp, same-model T2 grid boot(s) (context 73,728, or 131,072 in J-A -- recorded per join): bridge ratio at 65,536 and the grid-only quadratic
     extrapolated to 96k / 124k vs the long values, plus the joint fit (T2_LONG_ACROSS_BOOTS: cap / context differ)."""
     out = {}
     for k, v in boots.items():
@@ -1199,21 +1277,22 @@ def long_table(boots, usable):
             rows = [{"L": L, "status": "NOT_RUN", "labels": ["ABORT_CONTEXT_TOO_SHORT" if ctx_abort else "NOT_RUN_BOOT_FAILED"]
                      + (["SERVER_DEATH"] if "SERVER_DEATH" in v["labels"] else [])} for L in v["long_plan"]]
         ent = {"job": v["job"], "round": v["round"], "tp": v.get("tp", 1), "mode": v["plan_mode"],
+               "tag": (v.get("identity") or {}).get("tag") or v.get("plan_tag"),
                "context_plan": v.get("context_plan"), "cap": (v.get("identity") or {}).get("cap"),
                "boot_labels": v["labels"], "rows": rows, "joins": {},
                "scope": "P = 108 single-request prefill TTFT (T2 rule); separate last boot, context 131,072 (decision 30)"}
         vals = {r["L"]: r["ttft_ms"] for r in rows if r.get("status") == "VALID"}
         for g in usable.values():
             gi = g.get("identity") or {}
-            if (g["job"] != v["job"] or g.get("long_plan") or g["kind"] == "OFF" or not g.get("t2")
-                    or gi.get("mode") != v["plan_mode"] or g.get("tp", 1) != v.get("tp", 1)):
+            if not long_join_ok(g, v):
                 continue
             pts = [(x["L"], x["ttft_ms"]) for x in g["t2"] if x["status"] == "VALID"]
             if len(pts) < 3:
                 continue
             grid = dict(pts)
             ft = F.fit_t2(pts)
-            j = {"bridge_L": S.LONG_BRIDGE_L,
+            j = {"bridge_L": S.LONG_BRIDGE_L, "grid_context": g.get("context_plan"), "long_context": v.get("context_plan"),
+                 "grid_cap": gi.get("cap"), "long_cap": (v.get("identity") or {}).get("cap"),
                  "bridge_ratio_long_over_grid": (vals[S.LONG_BRIDGE_L] / grid[S.LONG_BRIDGE_L])
                  if S.LONG_BRIDGE_L in vals and S.LONG_BRIDGE_L in grid else None,
                  "grid_fit_extrapolation_rel_err": {str(L): (ft["pred"](L) - vals[L]) / vals[L]
@@ -1225,7 +1304,31 @@ def long_table(boots, usable):
             j["joint_fit_loo_internal"] = {str(a): b_ for a, b_ in fj["loo_internal"].items()} if fj else None
             ent["joins"][g["boot_id"]] = j
         out[k] = ent
+    # decision 33 (A-46): long boots of the same Job and tp that differ in ENGINE MODE only (J-C TP2 108u vs 108v): the
+    # per-L ratio of the two long boots' T2 values, descriptive (same Job, same node, same context / cap / L)
+    for k, e in out.items():
+        e["siblings"] = {}
+        for k2, e2 in out.items():
+            if k2 == k or e2["job"] != e["job"] or e2["tp"] != e["tp"] or e2["tag"] != e["tag"] or e2["mode"] == e["mode"]:
+                continue
+            a = {r["L"]: r["ttft_ms"] for r in e["rows"] if r.get("status") == "VALID"}
+            b_ = {r["L"]: r["ttft_ms"] for r in e2["rows"] if r.get("status") == "VALID"}
+            e["siblings"][k2] = {"mode": e2["mode"], "ratio_this_over_sibling": {str(L): a[L] / b_[L] for L in sorted(a) if L in b_},
+                                 "label": "SAME_JOB_LONG_SIBLING (descriptive; the engine mode is the only difference)"}
     return out
+
+
+def long_contrast(t2_long):
+    """Decision 33 (L-8): J-H1 Llama vs real-a4 long boots -- PREREG §4 (4) contrast at L = 65,536 / 98,304 / 126,976, both
+    from the SAME Job (rows VALID in both).  Descriptive per-L ratio Llama / Nano; no interpretation here."""
+    ll = next((e for e in t2_long.values() if e["job"] == "J-H1" and e.get("tag") == "llama"), None)
+    nn = next((e for e in t2_long.values() if e["job"] == "J-H1" and e.get("tag") == "real_a4"), None)
+    if not ll or not nn:
+        return {"label": "LONG_CONTRAST_NOT_COLLECTED", "ratio_llama_over_nano": None}
+    a = {r["L"]: r["ttft_ms"] for r in ll["rows"] if r.get("status") == "VALID"}
+    b = {r["L"]: r["ttft_ms"] for r in nn["rows"] if r.get("status") == "VALID"}
+    return {"label": "SAME_JOB_LONG_CONTRAST (descriptive; models differ, cap / context / mode equal)",
+            "ratio_llama_over_nano": {str(L): a[L] / b[L] for L in sorted(a) if L in b}}
 
 
 def export_summary(run_dir, summary_dir):
@@ -1307,12 +1410,26 @@ def analyze_jh2(jh2, t1tab, t3tab):
     return out
 
 
+def is_anchor32(v):
+    """The decision-33 cap-32 N=1 anchor (identity cap from the LOG): not the anchor of the cap-48 TP2 / N=1 pairs."""
+    return v.get("tp", 1) == 1 and v["identity"]["cap"] == S.JC_ANCHOR32_CAP
+
+
+def v_O(v, bs, c):
+    """The registered output length O of a T1 cell of an analysed boot (from its feasibility rows)."""
+    r = next((x for x in v.get("feasibility", []) if (x["bs"], x["c"]) == (bs, c)), None)
+    return r["O"] if r else None
+
+
 def analyze_jc(jc, boots, A):
     """J-C (§5, rev3.5 draft): TP2 / N=1 ratios of the same cell in the same round, F1-F5, T4 (F3), 96k point."""
     out = {"ratios_t1": {}, "ratios_t2": {}, "ratios_t2p": {}, "F": {}, "t4": {}, "long": None, "rank": {}}
-    by = {}
+    by, a32 = {}, {}
     for v in jc.values():
         if v["kind"] == "T1T2" and not v.get("long_plan"):
+            if is_anchor32(v):
+                a32[v["round"]] = v            # decision 33 L-14: its own table, never the cap-48 anchor of the pair
+                continue
             by[(v["round"], v["identity"]["mode"], v.get("tp", 1))] = v
     for (rnd, mode, tp), v in sorted(by.items()):
         if tp == 1:
@@ -1333,6 +1450,18 @@ def analyze_jc(jc, boots, A):
         yp = {x["L"]: x["ttft_ms"] for x in a["t2p"] if x["status"] == "VALID" and (x.get("coexist_engine") or {}).get("confirmed")}
         if xp:
             out["ratios_t2p"][f"r{rnd}|{mode}"] = {str(L): xp[L] / yp[L] for L in sorted(xp) if L in yp}
+    out["ratios_t1_anchor32"] = {}
+    for rnd, a in sorted(a32.items()):         # (32, 32k) D44: TP2 value / cap-32 anchor value, ACTUAL ctx of both reported
+        v = by.get((rnd, "D44", 2))
+        if v is None:
+            continue
+        t_tp, t_n1 = _cell_values(v["t1_windows"]), _cell_values(a["t1_windows"])
+        c_tp, c_n1 = _cell_values(v["t1_windows"], fit_ctx), _cell_values(a["t1_windows"], fit_ctx)
+        out["ratios_t1_anchor32"][f"r{rnd}|D44"] = {
+            f"{b_}x{c_}": {"ratio": t_tp[(b_, c_)] / t_n1[(b_, c_)], "ctx_tp2": c_tp.get((b_, c_)), "ctx_n1": c_n1.get((b_, c_)),
+                           "O_tp2": v_O(v, b_, c_), "O_n1": v_O(a, b_, c_),
+                           "label": "ANCHOR32_OWN_O (anchor cap 32 and O differ from TP2; compare at the actual ctx)"}
+            for (b_, c_) in sorted(t_tp) if (b_, c_) in t_n1}
     tps = [v for v in jc.values() if v.get("tp", 1) > 1]
     for v in tps:
         out["F"][v["boot_id"]] = v.get("tp_facts")
@@ -1347,7 +1476,8 @@ def analyze_jc(jc, boots, A):
     if dead:
         out["F5_label"] = "TP2_NOT_BOOTABLE"
         out["tp2_dead_boots"] = dead
-    out["note"] = "total-time ratios only; all-reduce not decomposed (§5-2); anchor cap 48 vs TP2 cap 128 (disclosed)"
+    out["note"] = ("total-time ratios only; all-reduce not decomposed (§5-2); anchor cap 48 (and cap 32 for (32, 32k) D44, "
+                   "own O) vs TP2 cap 128 (disclosed)")
     return out
 
 
@@ -1388,6 +1518,12 @@ def theta_prime(t2p_tab):
         out[g] = {"theta_prime": (sum(x * y for x, y in zip(xs, ys)) / den) if den > 0 else None, "P_ref": top["P"],
                   "n_points": len(xs)}
     return out
+
+
+def jh1_grid_boots(usable):
+    """The J-H1 boots the composition tests (w_indep, P1-P4) use: the grid boots only.  The decision-33 long boots (same
+    identity tags 'real_a4' / 'llama' as two grid boots, context 131,072, cap 48) are a separate table (long_contrast)."""
+    return {k: v for k, v in usable.items() if v["job"] == "J-H1" and not v.get("long_plan")}
 
 
 def analyze_jh1(jh):
