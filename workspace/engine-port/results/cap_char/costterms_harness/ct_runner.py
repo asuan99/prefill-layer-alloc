@@ -731,7 +731,7 @@ def run_boot(b, out, variant_dirs, make_server, run_id="local"):
         f["rank_banners"] = X.rank_banners(text)
     dump(f, bdir / "facts.json")
     led("facts", "boot log parsed")
-    probs = X.label_problems(b, f) + X.instrumentation_problems(b["kind"], env, f, None)
+    probs = X.label_problems(b, f) + X.instrumentation_problems(b["kind"], env, f, None, b["engine"])
     if b["kind"] != "T4" and b["cap"] == S.CAP_MAIN and (b["t1"] or b.get("t3")):
         cg = X.capture_problems(f.get("capture_bs"))
         if cg:
@@ -893,6 +893,17 @@ def resume_segments(plan, out):
             k += 1
             cur = dict(b, boot_id=f"{b['boot_id']}@s{k}", segment=k, resumed_from=cur["boot_id"], only_cells=sorted(rest))
     return dict(plan, boots=new), log
+
+
+ALL_PLANS = (("J-A", 1), ("J-A", 2), ("J-H1", 1), ("J-B2", 1), ("J-H2", 1), ("J-C", 1))
+
+
+def all_plans_sha():
+    """Audit r2 N-1: sha256 of the canonical JSON of EVERY Job's registered plan (boots, cells, per-cell O, T3 O, sigma' O, caps,
+    contexts, argv-relevant fields).  The spec digest holds constants only; the O values are COMPUTED from the constants and
+    from analytic_terms, so the sealed Job must also reproduce this plan fingerprint (HARNESS_DIGEST.plans_sha256)."""
+    plans = {f"{j}|{r}": make_plan(j, r) for j, r in ALL_PLANS}
+    return hashlib.sha256(json.dumps(plans, sort_keys=True, default=str, separators=(",", ":")).encode()).hexdigest()
 
 
 def run_job(job, out, rnd=1, variant_src=None, variant_root=None, make_server=None, run_id=None, plan=None,
@@ -1057,6 +1068,8 @@ def analyze_boot(bdir):
     out["sm"] = sm
     if sm and sm.get("label"):
         out["labels"].append(sm["label"])
+    if any(q.startswith("NOT_COLLECTED:") for q in out["problems"]):
+        out["labels"].append("ENGINE_PROBE_NOT_COLLECTED")          # audit r2 N-2: descriptive; the boot stays usable
     if instr_violation(out):          # audit r1 m6: a boot whose instrumentation differs from the §2-2' matrix is not a measurement
         out["labels"].append("INSTR_MATRIX_VIOLATION")
     dead = "SERVER_DEATH" in out["labels"] and not b.get("long")
@@ -1198,6 +1211,21 @@ def _tkey(v, ident):
     return k
 
 
+def agreement_windows(usable):
+    """§1-7 inputs: every VALID T1 window of every non-OFF usable boot.  A window without engine records (a vanilla boot whose
+    engine emits no decode probe, audit r2 N-2) is INCLUDED with S_eng_ms None -> its (model, mode, cap, tp, bs) group is
+    NOT_COLLECTED and the secondary table tags it CLIENT_ONLY_UNVERIFIED (the §1-7 fallback path)."""
+    wins = []
+    for v in usable.values():
+        for w in v.get("t1_windows", []):
+            if w.get("status") == "VALID" and v["kind"] != "OFF":
+                wins.append({"model": v["identity"]["tag"], "mode": v["identity"]["mode"], "bs": w["bs"], "c": w["c"],
+                             "cap": v["identity"]["cap"], "tp": v.get("tp", 1), "boot_key": _tkey(v, v["identity"]),
+                             "S_eng_ms": None if w.get("engine_records") == "NOT_COLLECTED" else w.get("S_eng_ms"),
+                             "client_gap_ms": w.get("client_gap_ms")})
+    return wins
+
+
 def _segment_key(k):
     last = k.rsplit("|", 1)[-1]
     return last[:1] == "s" and last[1:].isdigit()
@@ -1212,13 +1240,7 @@ def analyze(run_dir, summary_dir=None, clk_path=None):
     A = {"spec_sha256": S.spec_sha256(), "boots": boots, "tables": {}, "labels": {}, "priors": {}}
     usable = {k: v for k, v in boots.items() if v.get("usable")}
     # ---- §1-7 agreement over every VALID engine window
-    wins = []
-    for v in usable.values():
-        for w in v.get("t1_windows", []):
-            if w.get("status") == "VALID" and w.get("engine_records") != "NOT_COLLECTED" and v["kind"] != "OFF":
-                wins.append({"model": v["identity"]["tag"], "mode": v["identity"]["mode"], "bs": w["bs"], "c": w["c"],
-                             "cap": v["identity"]["cap"], "tp": v.get("tp", 1), "boot_key": _tkey(v, v["identity"]),
-                             "S_eng_ms": w.get("S_eng_ms"), "client_gap_ms": w.get("client_gap_ms")})
+    wins = agreement_windows(usable)
     agree = F.agreement_labels(wins)
     A["labels"]["agreement"] = {"|".join(map(str, k)): v for k, v in agree.items()}
     A["tables"]["t1_client_secondary"] = {"|".join(map(str, k)): v for k, v in F.client_secondary_table(wins, agree).items()}
@@ -1364,6 +1386,22 @@ def not_run_rows(b, out, bdir):
             continue
         rows.append({"cell_key": ck, "kind": kind, "what": list(what) if isinstance(what, tuple) else what,
                      "status": "NOT_RUN", "labels": ["NOT_RUN_AFTER_SERVER_DEATH"]})
+    return annotate_resumed(rows, b, bdir)
+
+
+def annotate_resumed(rows, b, bdir):
+    """Audit r2 N-3: a cell this dead boot did not run may have been run by a resume segment '<boot>@s<k>' (A-50 iii).  Mark such
+    rows `resumed_in` + label RESUMED_IN (the row stays: it says what THIS server lifetime did) so the list is not read as a gap."""
+    base = b["boot_id"].split("@")[0]
+    ran = {}
+    for seg in sorted(Path(bdir).parent.glob(base + "@s*")):
+        if seg.name != b["boot_id"]:
+            for c in _cells(seg):
+                ran.setdefault(c.get("cell_key"), seg.name)
+    for r in rows:
+        if r["cell_key"] in ran:
+            r["resumed_in"] = ran[r["cell_key"]]
+            r["labels"].append("RESUMED_IN")
     return rows
 
 
@@ -1738,7 +1776,11 @@ def main(argv=None):
     a.add_argument("--summary", help="H-3: copy the summary files (analysis, plan, markers, sums, manifests) here")
     a.add_argument("--clk", help="nvidia-smi clk.csv for the T3 clock covariates (A-34)")
     sub.add_parser("spec-sha")
+    sub.add_parser("plans-sha")
     ns = ap.parse_args(argv)
+    if ns.cmd == "plans-sha":
+        print(all_plans_sha())
+        return 0
     if ns.cmd == "spec-sha":
         print(S.spec_sha256())
         return 0

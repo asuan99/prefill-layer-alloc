@@ -241,7 +241,7 @@ def label_problems(boot, f):
     return bad
 
 
-def instrumentation_problems(kind, env, f, files):
+def instrumentation_problems(kind, env, f, files, engine=None):
     """§2-2' (1) matrix: env keys and their effects (log banner, files written) must match the boot kind."""
     i1, i46, i5, tel = S.INSTR[kind]
     bad = []
@@ -252,7 +252,12 @@ def instrumentation_problems(kind, env, f, files):
                 bad.append(f"INSTR_MATRIX_VIOLATION: {kind} boot: env {key} {'missing' if on else 'present'} (matrix {name}={'ON' if on else 'OFF'})")
     if f is not None:
         if bool(f.get("decode_probe_enabled")) != i46:
-            bad.append(f"INSTR_MATRIX_VIOLATION: {kind} boot: 'decode probe ENABLED' log {'absent' if i46 else 'present'}")
+            if engine == "vanilla" and i46 and not f.get("decode_probe_enabled"):
+                # audit r2 N-2 (§1-7 fallback): a vanilla boot whose engine emits no decode probe is not a matrix violation --
+                # the engine-side S_eng is simply NOT_COLLECTED and the client gap is reported CLIENT_ONLY_UNVERIFIED
+                bad.append("NOT_COLLECTED: vanilla boot: no 'decode probe ENABLED' log (engine-side S_eng not emitted)")
+            else:
+                    bad.append(f"INSTR_MATRIX_VIOLATION: {kind} boot: 'decode probe ENABLED' log {'absent' if i46 else 'present'}")
         if bool(f.get("admission_probe_enabled")) != i5:
             bad.append(f"INSTR_MATRIX_VIOLATION: {kind} boot: 'admission probe ENABLED' log {'absent' if i5 else 'present'}")
     if files is not None:

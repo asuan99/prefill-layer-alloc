@@ -25,9 +25,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "costmodel"))
 import analytic_terms as _AT  # noqa: E402  (underscore: kept out of the spec digest)
 
-SPEC_VERSION = "costterms-harness-spec/stage2-2026-10-26 (decisions 28-30, 33; rev3.8 audit-r1 repairs, unsealed)"
+SPEC_VERSION = "costterms-harness-spec/stage2-2026-10-26 (decisions 28-30, 33; rev3.9 decision 34, unsealed)"
 PREREG_REL = "workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md"
-PREREG_REV = "rev3.8 (harness audit r1 repairs, unsealed)"
+PREREG_REV = "rev3.9 (decision 34, unsealed)"
 
 K = 1024
 # ---------------------------------------------------------------- substrate / server constants (§0, §1-1, §3-3)
@@ -93,6 +93,11 @@ EXTRA_MODES = C16K_MODES
 # A-3: we register (88, 8k) and (88, 9k) and let the feasibility rule label (88, 9k); the (80, 9k) replacement is
 # NOT run unless the user decides so (O12_ALT_ENABLED).
 O12_CELLS = ((88, 8 * K), (88, 9 * K))
+# Decision 34 (A-49 add): the OFF diagnostic boots run (16, 16k); the ON D44 and 108v boots get that cell too so the
+# instrumentation-effect comparison has an ON pair for every feasible OFF cell (compared cells 4 -> 5 of 6; (64, 8k) stays
+# INFEASIBLE_BY_RULE in both).  One window per cell like every J-A cell.
+ON_PAIR_CELLS = ((16, 16 * K),)
+ON_PAIR_MODES = ("D44", "108v")
 O12_ALT_CELLS = ((80, 9 * K),)
 O12_ALT_ENABLED = False
 
@@ -299,6 +304,8 @@ def ja_cells_for_mode(mode):
         cells += [(bs, C16K) for bs in BS_GRID]
     if mode in EXTRA_MODES:
         cells += list(EXTRA_CELLS) + list(O12_CELLS) + (list(O12_ALT_CELLS) if O12_ALT_ENABLED else [])
+    if mode in ON_PAIR_MODES:
+        cells += [c for c in ON_PAIR_CELLS if c not in cells]
     return cells
 
 
@@ -527,9 +534,9 @@ ENGINE_DIGEST_EXPECTED = "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4
 SUMMARY_FILES = ("analysis.json", "plan.json", "RUN_DONE", "SHA256SUMS", "RESUME_LOG.json", "SMOKE_UNSEALED",
                  "t3_iterations.json", "SMOKE_ENGINE_DIGEST.json")          # what goes under results/ (raw data stays on the cluster volume, H-3)
 SMOKE_MARKER = "SMOKE_UNSEALED"
-HARD_CAP_MIN = {"J-H1": 271, "J-A|1": 272, "J-A|2": 251, "J-B2": 78, "J-H2": 126, "J-C": 307}
-#   minutes, self-enforced by costterms_job.sh; = ceil(1.2 x ct_timemodel hours) [유도, rev3.7 = decision 33]: J-A r1 3.77 h,
-#   J-A r2 3.48 h (L-7 context 131,072: +0.22 h each), J-H1 3.75 h (L-8 Llama + real-a4 long boots: +0.35 h), J-C 4.26 h on
+HARD_CAP_MIN = {"J-H1": 271, "J-A|1": 275, "J-A|2": 253, "J-B2": 78, "J-H2": 126, "J-C": 307}
+#   minutes, self-enforced by costterms_job.sh; = ceil(1.2 x ct_timemodel hours) [유도, rev3.7 = decision 33]: J-A r1 3.81 h,
+#   J-A r2 3.51 h (L-7 context 131,072: +0.22 h each; decision 34 A-49 ON pair (16, 16k): +0.04 h each), J-H1 3.75 h (L-8 Llama + real-a4 long boots: +0.35 h), J-C 4.26 h on
 #   2 GPUs (L-15 bs 48 row +0.50 h, L-14 cap-32 anchors +0.39 h, TP2 108u long boot +0.20 h).  All Jobs <= 6 h incl. the cap.
 #   J-B2 stays 78 until the smoke S-B fill time re-derives it (decision 30: O-22 (a), PREREG §12 seal checklist) -- the time
 #   model alone says 2.32 h / 168 min.
@@ -634,9 +641,10 @@ AMBIGUITIES = {
             "that fixes their number / identity per Job and is checked on full plans (registry_problems)",
     "A-48": "pool arithmetic for the time model / pre-data tables: pool_with_context() = pool - ceil(cap x (context - 73,728) x 4 "
             "B / k); the 4 B per (slot, token) req_to_token entry and the cap-32 pool (PREREG pool - 33 s) / k are [유도]",
-    "A-49": "audit r1 m1: OFF diagnostic comparison covers the cells present in BOTH ON and OFF (J-A: 4 of 6); cells_compared / "
-            "cells_registered / cells_missing / scope are reported, INSTR_EFFECT_SMALL is never bare; adding ON pairs for "
-            "(16, 16k) is a USER decision (not done)",
+    "A-49": "audit r1 m1 + decision 34: OFF diagnostic comparison covers the cells present in BOTH ON and OFF (J-A: 5 of 6 after "
+            "the (16, 16k) ON pair was added to D44 and 108v, ON_PAIR_CELLS; (64, 8k) is INFEASIBLE in both); cells_compared / "
+            "cells_registered / cells_missing / scope are reported, INSTR_EFFECT_SMALL is never bare; the O of (16, 16k) now uses "
+            "the ON mode's P (64)",
     "A-50": "audit r1 m2: dead grid boot -> NOT_RUN_AFTER_SERVER_DEATH row per registered cell; VALID cells before the death "
             "are PRE_DEATH (tables.pre_death) and EXCLUDED from fits (PRE_DEATH_IN_FIT False; inclusion is a USER decision); "
             "resume runs the remaining cells in '<boot>@s<k>' without overwriting finished cells (long boots exempt)",
@@ -657,6 +665,12 @@ AMBIGUITIES = {
             "costterms_job.sh when SEALED=1 (ABORT_HARNESS_DIGEST rc 13)",
     "A-58": "audit r1 m11 / m12: dry-run shows hardcap + 30 min setup allowance (<= 360 min principle); raw-data archive step "
             "(sha256sum -c after fetch, local copy, re-verify) is DESIGN only",
+    "A-59": "audit r2 N-1: HARNESS_DIGEST v2 = harness files + EXTERNAL files (analytic_terms.py, make_variant.py, engine_digest.py, "
+            "job_entry.sh) + spec_sha256 (constants) + plans_sha256 (canonical JSON of every Job's make_plan, i.e. the COMPUTED O); "
+            "check treats ERROR as a violation, make refuses ERROR / ABSENT values",
+    "A-60": "audit r2 N-2: a vanilla boot with no 'decode probe ENABLED' log is not an INSTR_MATRIX_VIOLATION: ENGINE_PROBE_NOT_COLLECTED, "
+            "boot usable, S_eng NOT_COLLECTED -> CLIENT_ONLY_UNVERIFIED rows (the §1-7 fallback is reachable)",
+    "A-61": "audit r2 N-3: not_run_after_death rows of a resumed dead boot carry resumed_in + RESUMED_IN for cells a '<boot>@s<k>' segment ran"
 }
 
 

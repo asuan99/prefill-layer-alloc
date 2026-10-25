@@ -120,7 +120,7 @@ if [[ "${target}" == */costterms_job.sh ]]; then
   # caps = ct_spec.HARD_CAP_MIN (rev3.7 = decisions 30 + 33 long boots / restored points, ct_timemodel x 1.2; J-B2 78 until the smoke re-derives
   # it, O-22); J-C runs on 2 GPUs (resourcespec-a100x2)
   ctg=1
-  case "${ctj}:${ctr}" in J-H1:*) ctcap=271 ;; J-A:1) ctcap=272 ;; J-A:2) ctcap=251 ;; J-B2:*) ctcap=78 ;;
+  case "${ctj}:${ctr}" in J-H1:*) ctcap=271 ;; J-A:1) ctcap=275 ;; J-A:2) ctcap=253 ;; J-B2:*) ctcap=78 ;;
     J-H2:*) ctcap=126 ;; J-C:*) ctcap=307; ctg=2 ;; *) ctcap="" ;; esac
   if [[ -n "${ctcap}" ]]; then
     echo "costterms: job=${ctj} round=${ctr} gpus=${ctg} sealed_env=${ctsealed} hardcap=${ctcap} min (self-enforced), cost bound <= \$$(awk -v c="${ctcap}" -v r="${PDMUX_VESSL_RATE_USD_H}" 'BEGIN{printf "%.2f", c/60*r}') (rate x cap)"

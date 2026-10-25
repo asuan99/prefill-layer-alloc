@@ -30,7 +30,7 @@ summary="${PDMUX_COSTTERMS_SUMMARY:-${here}/../costterms_runs/${name}}"
 
 case "${job}" in              # hard caps (min) = ct_spec.HARD_CAP_MIN; GPUs = ct_spec.JOB_GPUS
   J-H1) cap_min=271; ngpu_want=1 ;;
-  J-A)  if [[ "${rnd}" == 1 ]]; then cap_min=272; else cap_min=251; fi; ngpu_want=1 ;;
+  J-A)  if [[ "${rnd}" == 1 ]]; then cap_min=275; else cap_min=253; fi; ngpu_want=1 ;;
   J-B2) cap_min=78;  ngpu_want=1 ;;
   J-H2) cap_min=126; ngpu_want=1 ;;
   J-C)  cap_min=307; ngpu_want=2 ;;

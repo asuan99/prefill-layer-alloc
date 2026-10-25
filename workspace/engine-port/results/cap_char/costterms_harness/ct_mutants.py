@@ -63,6 +63,8 @@ SCENARIOS = {
     "DEATHGRID": {"job": "J-A", "truth": dict(FAST_PF, die_after_requests=150), "boots": ["ja1_108v"]},
     # audit r1 m3: a same-skeleton Transformer variant (a31) T3 boot -- the ramp bound must use ITS structure
     "JH2V": {"job": "J-H2", "truth": dict(FAST_PF), "boots": ["jh2_a31_D24"], "variant_src": True},
+    # audit r2 N-2: a vanilla boot (Llama) whose engine emits no decode probe -> S_eng NOT_COLLECTED, §1-7 fallback
+    "NOVAN": {"job": "J-H1", "truth": {"no_vanilla_probe": True}, "boots": ["jh1_llama"]},
     "JAL7": {"job": "J-X", "truth": dict(FAST_PF), "plan_fn": lambda: l7_plan()},
 }
 
@@ -379,42 +381,98 @@ def _no_clock_pair():
 
 
 def _digest_tree(root):
+    """scratch mirror of workspace/engine-port: root/results/cap_char/costterms_harness + the EXTERNAL files at their relative
+    paths (so ct_spec / ct_runner import and the plans fingerprint can be computed in the copy)."""
     root = Path(root)
+    h = root / "results" / "cap_char" / "costterms_harness"
+    h.mkdir(parents=True)
     for n in HD.covered(HD.HERE):
-        shutil.copy(HD.HERE / n, root / n)
-    return root
+        shutil.copy(HD.HERE / n, h / n)
+    eng = HD.eng_of(HD.HERE)
+    for n in HD.EXTERNAL:
+        (root / n).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(eng / n, root / n)
+    return h
+
+
+def _flip(path):
+    raw = Path(path).read_bytes()
+    Path(path).write_bytes(raw[:-1] + bytes([raw[-1] ^ 1]))
 
 
 def o_harness_digest(_run=None, _A=None):
-    """Audit r1 MAJOR-2 (independent of ct_harness_digest.check): in a scratch copy of the harness, a digest made from it
-    passes; flipping ONE byte of a covered file, deleting a covered file, or a missing digest file must each be refused."""
+    """Audit r1 MAJOR-2 + r2 N-1 (independent of ct_harness_digest.check): in a scratch mirror a freshly made digest passes;
+    one flipped byte of ANY covered file (harness files, analytic_terms.py, make_variant.py, engine_digest.py, job_entry.sh) is
+    refused; a REAL defect in analytic_terms (kv_bytes_per_token x3, which changes the registered O) is refused by the
+    plans fingerprint EVEN IF the sealer re-hashes the file; a missing file / digest is refused; `make` refuses error values."""
     import tempfile
     root = Path(tempfile.mkdtemp(prefix="ct_hd_"))
     bad = []
     try:
-        _digest_tree(root)
-        (root / "HARNESS_DIGEST.txt").write_text(json.dumps(HD.make(root), sort_keys=True))
-        if HD.check(root):
-            bad.append(f"fresh digest refused: {HD.check(root)[:1]}")
-        victim = root / "ct_fit.py"
-        raw = victim.read_bytes()
-        victim.write_bytes(raw[:-1] + bytes([raw[-1] ^ 1]))
-        if not HD.check(root):
-            bad.append("one flipped byte in ct_fit.py accepted")
-        victim.write_bytes(raw)
-        (root / "costterms_job.sh").write_bytes((root / "costterms_job.sh").read_bytes() + b"#")
-        if not HD.check(root):
+        h = _digest_tree(root)
+        f = h / "HARNESS_DIGEST.txt"
+        f.write_text(json.dumps(HD.make(h), sort_keys=True))
+        if HD.check(h):
+            bad.append(f"fresh digest refused: {HD.check(h)[:2]}")
+        dg = json.loads(f.read_text())
+        if set(dg.get("external", {})) != {"scripts/costmodel/analytic_terms.py", "scripts/compo/make_variant.py",
+                                           "scripts/bootstrap/engine_digest.py", "scripts/vessl/job_entry.sh"}:
+            bad.append(f"external coverage {sorted(dg.get('external', {}))}")
+        if not dg.get("plans_sha256") or str(dg["plans_sha256"]).startswith("ERROR"):
+            bad.append("no plans fingerprint in the digest")
+        victims = [h / "ct_fit.py", root / "scripts/costmodel/analytic_terms.py", root / "scripts/compo/make_variant.py",
+                   root / "scripts/bootstrap/engine_digest.py", root / "scripts/vessl/job_entry.sh"]
+        for v in victims:
+            raw = v.read_bytes()
+            _flip(v)
+            if not HD.check(h):
+                bad.append(f"one flipped byte in {v.name} accepted")
+            v.write_bytes(raw)
+        (h / "costterms_job.sh").write_bytes((h / "costterms_job.sh").read_bytes() + b"#")
+        if not HD.check(h):
             bad.append("one appended byte in costterms_job.sh accepted")
-        (root / "costterms_job.sh").write_bytes((root / "costterms_job.sh").read_bytes()[:-1])
-        (root / "ct_extract.py").unlink()
-        if not HD.check(root):
+        (h / "costterms_job.sh").write_bytes((h / "costterms_job.sh").read_bytes()[:-1])
+        # a real defect: O changes; the sealer 'fixes' the file hash -- only the plans fingerprint can still object
+        at = root / "scripts/costmodel/analytic_terms.py"
+        raw = at.read_text()
+        assert "return a.n_A * 2 * a.n_kv * a.d_h * a.beta" in raw
+        at.write_text(raw.replace("return a.n_A * 2 * a.n_kv * a.d_h * a.beta", "return 3 * a.n_A * 2 * a.n_kv * a.d_h * a.beta"))
+        forged = dict(dg, external=dict(dg["external"], **{"scripts/costmodel/analytic_terms.py": HD.sha(at)}))
+        f.write_text(json.dumps(forged, sort_keys=True))
+        probs = HD.check(h)
+        if not any(q.startswith("plans_sha256") for q in probs):
+            bad.append(f"kv_bytes_per_token x3 with a re-hashed file: plans fingerprint did not object ({probs[:2]})")
+        at.write_text(raw)
+        f.write_text(json.dumps(dg, sort_keys=True))
+        (h / "ct_extract.py").unlink()
+        if not HD.check(h):
             bad.append("deleted covered file accepted")
-        (root / "HARNESS_DIGEST.txt").unlink()
-        if not HD.check(root):
+        f.unlink()
+        if not HD.check(h):
             bad.append("absent HARNESS_DIGEST.txt accepted")
+        shutil.copy(HD.HERE / "ct_extract.py", h / "ct_extract.py")
+        at.unlink()                                          # make must not write a digest with an error / absent value
+        if HD.main(["make", "--dir", str(h), "--out", str(h / "X.txt")]) == 0 or (h / "X.txt").exists():
+            bad.append("make wrote a digest although analytic_terms.py is missing")
     finally:
         shutil.rmtree(root, True)
     return bad
+
+
+@contextlib.contextmanager
+def _make_accepts_error():
+    """pre-repair make(): no refusal of an ERROR / ABSENT value -- main() writes whatever make() returned"""
+    orig = HD.main
+
+    def main(argv=None):
+        a = list(argv)
+        if a and a[0] == "make" and "--out" in a:
+            dg = HD.make(a[a.index("--dir") + 1])
+            Path(a[a.index("--out") + 1]).write_text(json.dumps(dg))
+            return 0
+        return orig(argv)
+    with mock.patch.object(HD, "main", main):
+        yield
 
 
 def _digest_spec_only(orig, d=None, file=None):
@@ -424,14 +482,14 @@ def _digest_spec_only(orig, d=None, file=None):
 
 
 def o_instr_scope(run, A):
-    """A-49: the OFF boot registers 6 T1 cells, the ON D44 boot runs 4 of them -- (16, 16k) is not an ON cell and (64, 8k) is
-    INFEASIBLE_BY_RULE there.  The output must say 4 of 6 compared and name both missing cells, never a bare
+    """A-49: the OFF boot registers 6 T1 cells, the ON D44 boot runs 5 of them (decision 34 added the (16, 16k) ON pair); (64, 8k) is
+    INFEASIBLE_BY_RULE there.  The output must say 5 of 6 compared and name the missing cell, never a bare
     INSTR_EFFECT_SMALL."""
     e = ((A.get("instr_effect") or {}).get("ja1_off_D44") or {}).get("T1") or {}
     bad = []
-    if (e.get("cells_registered"), e.get("cells_compared")) != (6, 4):
-        bad.append(f"registered / compared {e.get('cells_registered')} / {e.get('cells_compared')} != 6 / 4")
-    if e.get("cells_missing") != ["(16, 16384)", "(64, 8192)"]:
+    if (e.get("cells_registered"), e.get("cells_compared")) != (6, 5):
+        bad.append(f"registered / compared {e.get('cells_registered')} / {e.get('cells_compared')} != 6 / 5")
+    if e.get("cells_missing") != ["(64, 8192)"]:
         bad.append(f"missing {e.get('cells_missing')}")
     if "PARTIAL" not in (e.get("scope") or ""):
         bad.append(f"scope {e.get('scope')}")
@@ -490,6 +548,12 @@ def o_resume_dead(_run=None, _A=None):
         keys = [json.loads(x)["cell_key"] for d in (b0, seg) for x in (d / "cells.jsonl").read_text().splitlines() if x.strip()]
         if len(keys) != len(set(keys)) or set(keys) != planned:
             bad.append(f"cells over both segments {len(keys)} (unique {len(set(keys))}) != planned {len(planned)}")
+        A = R.analyze(out)                                           # audit r2 N-3: the dead boot's list says where cells ran
+        seg_keys = {json.loads(x)["cell_key"] for x in (seg / "cells.jsonl").read_text().splitlines() if x.strip()}
+        rows = A["boots"]["ja1_108v"].get("not_run_after_death", [])
+        wrong = [r["cell_key"] for r in rows if (r["cell_key"] in seg_keys) != (r.get("resumed_in") == "ja1_108v@s1")]
+        if wrong or not any(r.get("resumed_in") for r in rows):
+            bad.append(f"RESUMED_IN annotation wrong / missing for {wrong[:2]}")
         return bad
     finally:
         shutil.rmtree(root, True)
@@ -665,6 +729,31 @@ def o_clock_pairs(run, A):
                 if c and not c.get("clock_pair"):
                     bad.append(f"{d.name} {c.get('cell_key')}: no clock_pair")
     return bad[:3]
+
+
+def o_novan_fallback(run, A):
+    """Audit r2 N-2: a vanilla boot without engine decode records stays usable, carries ENGINE_PROBE_NOT_COLLECTED (no
+    INSTR_MATRIX_VIOLATION), its agreement groups are NOT_COLLECTED and every secondary-table row is CLIENT_ONLY_UNVERIFIED --
+    the §1-7 fallback path is reachable."""
+    v = A["boots"]["jh1_llama"]
+    bad = []
+    if not v.get("usable") or "INSTR_MATRIX_VIOLATION" in v["labels"] or "ENGINE_PROBE_NOT_COLLECTED" not in v["labels"]:
+        bad.append(f"vanilla no-probe boot: usable {v.get('usable')} labels {v['labels']}")
+    ag = A["labels"]["agreement"]
+    if not ag or any(x["label"] != "NOT_COLLECTED" for x in ag.values()):
+        bad.append(f"agreement groups {sorted((k, x['label']) for k, x in ag.items())[:2]}")
+    sec = A["tables"]["t1_client_secondary"]
+    if not sec or any(x["tag"] != "CLIENT_ONLY_UNVERIFIED" for x in sec.values()):
+        bad.append(f"secondary rows {len(sec)} tags {sorted({x['tag'] for x in sec.values()})}")
+    return bad
+
+
+def _novan_violation(orig, *a, **k):
+    return [q.replace("NOT_COLLECTED:", "INSTR_MATRIX_VIOLATION:") for q in orig(*a, **k)]
+
+
+def _windows_engine_only(orig, usable):
+    return [w for w in orig(usable) if w.get("S_eng_ms") is not None]
 
 
 def o_realized_axis(run, A):
@@ -1736,14 +1825,28 @@ MUTANTS = [
      lambda: _wrap(F, "client_secondary_table", _secondary_last_window), o_secondary_table, None),
     ("M49b", "TP2·N=1·cap 48/128 boot를 같은 (model, mode) 키로 합침", "unit", None,
      lambda: _wrap(F, "client_secondary_table", _secondary_pooled_boots), o_secondary_table, None),
+    ("M64", "harness digest 검사가 외부 파일(analytic_terms 등)을 보지 않음", "unit", None,
+     lambda: _wrap(HD, "check", lambda orig, d=None, file=None: [q for q in (orig(d, file) if d is not None else orig()) if not q.startswith("external")]),
+     o_harness_digest, None),
+    ("M65", "harness digest 검사가 전 Job make_plan 지문(plans_sha256)을 보지 않음", "unit", None,
+     lambda: _wrap(HD, "check", lambda orig, d=None, file=None: [q for q in (orig(d, file) if d is not None else orig()) if not q.startswith("plans_sha256")]),
+     o_harness_digest, None),
+    ("M66", "make가 ERROR/ABSENT 값이 든 digest를 그대로 기록", "unit", None,
+     _make_accepts_error, o_harness_digest, None),
     ("M50", "harness digest 검사가 spec 값만 비교하고 코드 바이트는 보지 않음", "unit", None,
      lambda: _wrap(HD, "check", _digest_spec_only), o_harness_digest, None),
+    ("M67", "vanilla boot의 probe 부재를 매트릭스 위반으로 취급(§1-7 fallback 봉쇄)", "run", "NOVAN",
+     lambda: _wrap(X, "instrumentation_problems", _novan_violation), o_novan_fallback, ("J-H1", ["jh1_llama"])),
+    ("M68", "엔진 기록 없는 창을 2차 표·일치 판정에서 제외(fallback 경로 도달 불가)", "analysis", "NOVAN",
+     lambda: _wrap(R, "agreement_windows", _windows_engine_only), o_novan_fallback, None),
     ("M51", "OFF 진단 비교가 비교 셀 수·빠진 셀을 산출에 남기지 않음(A-49)", "analysis", "OFFJA",
      lambda: _wrap(F, "instrument_effect", _instr_no_registered), o_instr_scope, None),
     ("M52", "사망 boot의 미실행 등록 셀에 NOT_RUN_AFTER_SERVER_DEATH 행을 남기지 않음", "analysis", "DEATHGRID",
      lambda: _wrap(R, "not_run_rows", lambda orig, *a, **k: []), o_death_grid, None),
     ("M53", "사망 전 VALID 셀을 기본으로 적합에 포함", "analysis", "DEATHGRID",
      lambda: mock.patch.object(S, "PRE_DEATH_IN_FIT", True), o_death_grid, None),
+    ("M69", "재개된 사망 boot의 NOT_RUN 행에 실제 실행 segment(RESUMED_IN)를 표시하지 않음", "unit", None,
+     lambda: _wrap(R, "annotate_resumed", lambda orig, rows, b, bdir: rows), o_resume_dead, None),
     ("M54", "사망 boot의 DONE 때문에 재개해도 남은 셀이 돌지 않음", "unit", None,
      lambda: _wrap(R, "_died_with_cells", lambda orig, *a, **k: False), o_resume_dead, None),
     ("M55", "T2·T2′·장문 셀의 엔진 측 잔여 요청 검사 생략", "unit", None,

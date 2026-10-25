@@ -62,7 +62,7 @@ class TestSpec(unittest.TestCase):
             self.assertEqual(S.o_tokens(*cell, "JA"), S.O_BASE)
         self.assertEqual(S.ja_pmin(8, 8 * K), 44)                                   # base grid includes D64
         self.assertEqual(S.ja_pmin(32, 16 * K), 64)                                 # 16k column: D44 / 108u
-        self.assertEqual(S.ja_pmin(16, 16 * K), 44)                                 # OFF-only cell
+        self.assertEqual(S.ja_pmin(16, 16 * K), 64)                                 # was OFF-only (44); decision 34 ON pair: D44's P
         self.assertEqual(S.o_tokens(32, 8 * K, "JA"), 6173)                         # PREREG rev3.4 §3-1 table
         self.assertEqual(S.o_tokens(8, 32 * K, "VANILLA"), S.O_BASE + 64)
         self.assertGreater(S.ramp_steps_ub(32, 8 * K, 44, sigma=1.5), S.ramp_steps_ub(32, 8 * K, 44))
@@ -103,8 +103,8 @@ class TestSpec(unittest.TestCase):
                 self.assertIn(c, run)
             if mode in S.C16K_MODES:
                 self.assertIn((32, 16 * K), run)
-        self.assertEqual(per_mode, {"D16": 12, "D24": 15, "D34": 15, "D44": 15, "D64": 12, "108u": 15, "108v": 15})
-        self.assertEqual(sum(per_mode.values()), 99)                                # rev3.3: 133
+        self.assertEqual(per_mode, {"D16": 12, "D24": 15, "D34": 15, "D44": 16, "D64": 12, "108u": 15, "108v": 16})      # decision 34 A-49: +(16, 16k) in D44 and 108v
+        self.assertEqual(sum(per_mode.values()), 101)                               # rev3.3: 133; at context 73,728 (+7 (8, 64k) at 131,072 = 108)
 
     def test_prereg_t4_table(self):
         self.assertEqual(M.o_prereg_table(), [])
@@ -325,7 +325,7 @@ class TestVirtualE2E(unittest.TestCase):
     def setUpClass(cls):
         cls.root = Path(tempfile.mkdtemp(prefix="ct_e2e_"))
         cls.runs = {}
-        for sc in ("JH1", "JH1F", "JAF", "JB2", "JA0", "T3S", "JC", "OFFJA", "DEATHGRID", "JH2V"):
+        for sc in ("JH1", "JH1F", "JAF", "JB2", "JA0", "T3S", "JC", "OFFJA", "DEATHGRID", "JH2V", "NOVAN"):
             d = cls.root / sc
             cls.runs[sc] = (d, M.run_scenario(sc, d, SRC))
 
@@ -646,9 +646,9 @@ class TestStage2Spec(unittest.TestCase):
         h = {k: v[0] for k, v in tm.main().items()}
         a1 = R.make_plan("J-A", 1)
         long_h = sum(tm.boot_hours(b) for b in a1["boots"] if b["long"])
-        self.assertAlmostEqual(h["J-A|1"] - long_h, 3.4 + 0.22, delta=0.05)         # §7-4' J-A1 3.4 h + decision 33 L-7 (+0.22)
+        self.assertAlmostEqual(h["J-A|1"] - long_h, 3.4 + 0.26, delta=0.05)         # §7-4' J-A1 3.4 h + decision 33 L-7 (+0.22)
         self.assertAlmostEqual(long_h, 0.17, delta=0.02)                            # decision 30 long boot [유도]
-        self.assertAlmostEqual(h["J-A|2"], 3.3 + 0.22, delta=0.05)
+        self.assertAlmostEqual(h["J-A|2"], 3.3 + 0.26, delta=0.05)
         self.assertAlmostEqual(h["J-H1|1"], 3.4 + 0.35, delta=0.05)                 # decision 33 L-8: Llama + real-a4 long boots
         for k in ("J-A|1", "J-A|2", "J-H1"):
             self.assertGreaterEqual(S.HARD_CAP_MIN[k], 1.2 * h[k if "|" in k else f"{k}|1"] * 60, k)
@@ -980,8 +980,8 @@ class TestDecision33(unittest.TestCase):
         tm = importlib.import_module("ct_timemodel")
         h = {k: v[0] for k, v in tm.main().items()}
         self.assertEqual({k: round(v, 2) for k, v in h.items()},
-                         {"J-A|1": 3.77, "J-A|2": 3.48, "J-H1|1": 3.75, "J-H2|1": 1.74, "J-B2|1": 2.32, "J-C|1": 4.26})
-        self.assertEqual(S.HARD_CAP_MIN, {"J-H1": 271, "J-A|1": 272, "J-A|2": 251, "J-B2": 78, "J-H2": 126, "J-C": 307})
+                         {"J-A|1": 3.81, "J-A|2": 3.51, "J-H1|1": 3.75, "J-H2|1": 1.74, "J-B2|1": 2.32, "J-C|1": 4.26})
+        self.assertEqual(S.HARD_CAP_MIN, {"J-H1": 271, "J-A|1": 275, "J-A|2": 253, "J-B2": 78, "J-H2": 126, "J-C": 307})
         for k, cap in S.HARD_CAP_MIN.items():
             hh = h[k if "|" in k else f"{k}|1"]
             if k != "J-B2":                                           # J-B2's cap is the smoke-pending 78 min (O-22)
@@ -989,11 +989,11 @@ class TestDecision33(unittest.TestCase):
             self.assertLessEqual(cap, 6 * 60, k)                      # the <= 6 h per Job principle, cap included
             self.assertLessEqual(hh, 6.0, k)
         txt = (H / "costterms_job.sh").read_text()
-        for pat in (r"J-H1\) cap_min=271;", r"then cap_min=272; else cap_min=251;", r"J-C\)  cap_min=307;"):
+        for pat in (r"J-H1\) cap_min=271;", r"then cap_min=275; else cap_min=253;", r"J-C\)  cap_min=307;"):
             import re
             self.assertRegex(txt, pat)
         launch = (ENG / "scripts" / "vessl" / "launch.sh").read_text()
-        for frag in ("J-H1:*) ctcap=271", "J-A:1) ctcap=272", "J-A:2) ctcap=251", "J-C:*) ctcap=307"):
+        for frag in ("J-H1:*) ctcap=271", "J-A:1) ctcap=275", "J-A:2) ctcap=253", "J-C:*) ctcap=307"):
             self.assertIn(frag, launch)
 
 
@@ -1059,21 +1059,28 @@ class TestAuditR1(unittest.TestCase):
 
     def test_harness_digest_roundtrip_and_one_byte(self):
         hd = importlib.import_module("ct_harness_digest")
-        d = tmpdir(self) / "h"
-        d.mkdir()
-        for n in hd.covered(H):
-            shutil.copy(H / n, d / n)
-        f = d / "HARNESS_DIGEST.txt"
-        self.assertEqual(hd.main(["make", "--dir", str(d), "--out", str(f)]), 0)
-        self.assertEqual(hd.main(["check", "--dir", str(d), "--file", str(f)]), 0)
-        self.assertEqual(sorted(json.loads(f.read_text())["files"]), hd.covered(H))
-        self.assertIn("costterms_job.sh", json.loads(f.read_text())["files"])
-        b = (d / "ct_spec.py").read_bytes()
-        (d / "ct_spec.py").write_bytes(b + b" ")
-        self.assertEqual(hd.main(["check", "--dir", str(d), "--file", str(f)]), 13)    # one byte (a registered value's comment)
-        (d / "ct_spec.py").write_bytes(b)
-        (d / "pdmux_costterms_D64_candidate.yml").write_bytes((d / "pdmux_costterms_D64_candidate.yml").read_bytes() + b"\n")
-        self.assertEqual(hd.main(["check", "--dir", str(d), "--file", str(f)]), 13)    # the config bytes are covered
+        h = M._digest_tree(tmpdir(self) / "mirror")
+        f = h / "HARNESS_DIGEST.txt"
+        self.assertEqual(hd.main(["make", "--dir", str(h), "--out", str(f)]), 0)
+        self.assertEqual(hd.main(["check", "--dir", str(h), "--file", str(f)]), 0)
+        dg = json.loads(f.read_text())
+        self.assertEqual(sorted(dg["files"]), hd.covered(H))
+        self.assertEqual(sorted(dg["external"]), sorted(hd.EXTERNAL))
+        self.assertEqual(len(dg["plans_sha256"]), 64)
+        self.assertEqual(dg["plans_sha256"], R.all_plans_sha())                 # the mirror reproduces the real tree's plans
+        b = (h / "ct_spec.py").read_bytes()
+        (h / "ct_spec.py").write_bytes(b + b" ")
+        self.assertEqual(hd.main(["check", "--dir", str(h), "--file", str(f)]), 13)
+        (h / "ct_spec.py").write_bytes(b)
+        (h / "pdmux_costterms_D64_candidate.yml").write_bytes((h / "pdmux_costterms_D64_candidate.yml").read_bytes() + b"\n")
+        self.assertEqual(hd.main(["check", "--dir", str(h), "--file", str(f)]), 13)
+
+    def test_digest_n1_defects(self):
+        """N-1: (i) analytic_terms 1 byte, (ii) kv_bytes_per_token x3 (O changes; file re-hashed -> plans fingerprint objects),
+        (iii) make_variant 1 byte, (iv) engine_digest / job_entry 1 byte -- all inside the oracle; plus the real O change."""
+        self.assertEqual(M.o_harness_digest(), [])
+        before = S.o_tokens(32, 8 * K, "JA")
+        self.assertEqual(before, 6173)                                         # the number the audit quoted (6,173 -> 5,393)
 
     def test_flags_are_all_listed(self):
         """m9 / A-55: every flag the runner puts on a server argv is registered or listed as an unregistered knob."""
@@ -1101,6 +1108,62 @@ class TestAuditR1(unittest.TestCase):
     def test_secondary_keys_and_dead_boot_oracles_pass_on_clean_harness(self):
         for o in (M.o_secondary_table, M.o_harness_digest, M.o_engine_residual, M.o_resume_dead, M.o_resume_t3):
             self.assertEqual(o(), [], o.__name__)
+
+
+
+class TestDecision34(unittest.TestCase):
+    def test_a49_on_pair_cell(self):
+        """A-49 (decision 34): (16, 16k) is an ON cell of D44 and 108v only; same O in ON and OFF boots; feasible; +0.07 GPU-h."""
+        self.assertEqual(S.ON_PAIR_CELLS, ((16, 16384),))
+        have = [m for m in S.ALL_T1_MODES if (16, 16384) in S.ja_cells_for_mode(m)]
+        self.assertEqual(have, ["D44", "108v"])
+        cap = S.default_capture_list(128)
+        O = S.o_tokens(16, 16384, "JA")
+        self.assertEqual(S.feasible_cell(16, 16384, O, 893988, 128, 16 in cap, 131072), [])
+        for rnd in (1, 2):
+            p = R.make_plan("J-A", rnd)
+            on = [b for b in p["boots"] if b["kind"] == "T1T2" and b["cap"] == 128 and b["mode"] in ("D44", "108v") and not b["long"]]
+            off = [b for b in p["boots"] if b["kind"] == "OFF"]
+            self.assertEqual(len(on), 2)
+            for b in on + off:
+                self.assertIn([16, 16384], b["t1"])
+                self.assertEqual(b["t1_O"]["16x16384"], O)
+            self.assertEqual(R.plan_problems(p), [])
+        tm = importlib.import_module("ct_timemodel")
+        a1 = {b["boot_id"]: b for b in R.make_plan("J-A", 1)["boots"]}
+        cells = lambda b: [c for c in b["t1"] if c != [16, 16384]]            # noqa: E731
+        d = sum(tm.boot_hours(b) - tm.boot_hours(dict(b, t1=cells(b))) for b in a1.values() if b["mode"] in ("D44", "108v") and b["kind"] == "T1T2" and b["cap"] == 128)
+        self.assertAlmostEqual(2 * d, 0.07, delta=0.02)                        # both rounds, [유도]
+        self.assertEqual(S.HARD_CAP_MIN["J-A|1"], 275)
+        self.assertEqual(S.HARD_CAP_MIN["J-A|2"], 253)
+
+    def test_n2_n3_oracles(self):
+        d, A = TestDecision34Runs.runs["NOVAN"]
+        self.assertEqual(M.o_novan_fallback(d, A), [])
+        self.assertEqual(M.o_resume_dead(), [])
+
+    def test_all_jobs_within_six_hours(self):
+        tm = importlib.import_module("ct_timemodel")
+        h = {k: v[0] for k, v in tm.main().items()}
+        self.assertEqual({k: round(v, 2) for k, v in h.items()},
+                         {"J-A|1": 3.81, "J-A|2": 3.51, "J-H1|1": 3.75, "J-H2|1": 1.74, "J-B2|1": 2.32, "J-C|1": 4.26})
+        for k, cap in S.HARD_CAP_MIN.items():
+            self.assertLessEqual(cap + 30, 360, k)                              # cap + 30 min setup allowance (A-58)
+
+
+class TestDecision34Runs:
+    runs = {}
+
+
+def _setup_d34(cls=TestDecision34):
+    root = Path(tempfile.mkdtemp(prefix="ct_d34_"))
+    d = root / "NOVAN"
+    TestDecision34Runs.runs["NOVAN"] = (d, M.run_scenario("NOVAN", d, SRC))
+    TestDecision34._root = root
+
+
+TestDecision34.setUpClass = classmethod(lambda cls: _setup_d34())
+TestDecision34.tearDownClass = classmethod(lambda cls: shutil.rmtree(cls._root, True))
 
 
 if __name__ == "__main__":
