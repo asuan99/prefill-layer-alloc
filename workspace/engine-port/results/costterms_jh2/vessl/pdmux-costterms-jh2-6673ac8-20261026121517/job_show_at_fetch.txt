@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-costterms-jh2-6673ac8-20261026121517
+Slug:                 job-6hq8ql4roro0
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/6673ac817f5ad4e06402254e7efec6a6ef06d2a1/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-26T12:15:27Z
+Started At:           2026-10-26T12:15:29Z
+Completed At:         2026-10-26T16:53:40Z
+Duration:             4h38m11s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=6673ac817f5ad4e06402254e7efec6a6ef06d2a1, PDMUX_JOB_NAME=pdmux-costterms-jh2-6673ac8-20261026121517, PDMUX_CAMPAIGN=costterms_jh2, PDMUX_TARGET=workspace/engine-port/results/cap_char/costterms_harness/costterms_job.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1, PDMUX_COSTTERMS_JOB=J-H2, PDMUX_COSTTERMS_SEALED=1, PDMUX_COSTTERMS_OUT=/data/costterms/J-H2_r1
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

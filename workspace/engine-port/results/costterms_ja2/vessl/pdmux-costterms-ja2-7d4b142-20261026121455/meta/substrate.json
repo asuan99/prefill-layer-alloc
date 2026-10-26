@@ -1,0 +1,39 @@
+{
+  "gpu": {
+    "name": "NVIDIA A100-SXM4-80GB",
+    "uuid": "GPU-a23e1152-0853-ca4a-3d36-feaf9b9b6e30",
+    "driver_version": "580.178.04",
+    "compute_cap": "8.0",
+    "memory_total": "81920 MiB",
+    "clocks_max_sm": "1410 MHz",
+    "power_limit": "400.00 W",
+    "mig_mode": "Disabled"
+  },
+  "gpu_count": 1,
+  "gpus": [
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-a23e1152-0853-ca4a-3d36-feaf9b9b6e30",
+      "driver_version": "580.178.04",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 0
+    }
+  ],
+  "gpu_uuids": [
+    "GPU-a23e1152-0853-ca4a-3d36-feaf9b9b6e30"
+  ],
+  "hostname": "job-x9zcfha1sdx9-z78fc",
+  "commit": "7d4b142ac3771ee03e899dba17f0b833be33a07d",
+  "image": "ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d",
+  "spec": "resourcespec-a100x1",
+  "job_name": "pdmux-costterms-ja2-7d4b142-20261026121455",
+  "campaign": "costterms_ja2",
+  "target": "workspace/engine-port/results/cap_char/costterms_harness/costterms_job.sh",
+  "array_spec": "",
+  "image_pip_freeze.txt_sha256": "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324",
+  "image_python_torch.txt_sha256": "25072b0933afd254cc50b78a7aa43e34e43af33034036709169f08788d8686d3"
+}
