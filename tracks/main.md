@@ -8,7 +8,7 @@
 - 채우는 칸: CM-1(T1 `T_dec(D,bs,ctx)`), CM-2(T2·T2′ `T_span`), CM-4(T3 ρ·σ′), CM-5(T4), (확장) TP2·조성 항. 사전값 = `reports/cost_model/ANALYTIC_COST_FORMULAS.md`(analytic-v1, 계산 `scripts/costmodel/analytic_terms.py`)
 - 이번에 알게 된 것: 정본 수식 = 부팅 배너(파라미터 8,888,227,328·s 143.5 MB·k 16,384 B)와 일치, J1 floor 기울기 = 실효 약 141 TFLOP/s(피크 약 45%) [유도] · decode는 c* ≈ 17.5k 아래에서 SSM state 트래픽이 KV보다 큼 [유도] · 조성 프로브 전 단계 PASS(KV 풀 887k→298k 토큰) · 코드 사실: decode가 비면 분할 (108,0)
 - 2026-10-25 roofline 분석(수식 [유도] + J1 FLOOR.json 대조, 새 측정 0) **감사 r1 완료** `reports/figures/roofline/AUDIT_r1_2026-10-25.md`: 관측 floor = 이상 하한의 2.06–2.28배는 CONFIRMED(산술)이나 **"균일 η≈0.47–0.49" 해석 REFUTED**(격리 연산자 η: GEMM≈0.8·SSD scan≈0.05·gated_norm≈0.08, opchar 인용 금지 범위·반증 용도만) · 절편 7.2 ms는 추정량 의존(7–18 ms, 격리 합에도 ≈15 ms) → 고정 비용 아님 · decode 서술은 c·층 조건부로 정정(MLP 층 b≳150 ridge 위) · 128k 프로브 점은 내부 점검 절로 이동(±10%→−8~+11%) · **§8 η 첫 관측점 승격 = 감사 권고 불가**(허용 최대: CONSENSUS 아닌 수식 §6 실측 대조에 집계 ≈0.49 한 줄)
-- promote 필요: 예 (결정) — 결정 24–30 · 예 — 정본 정정(CONSENSUS §1-22 (108,0) 방향) · 예 (감사 판정) — roofline r1: 균일 η 해석 철회, §8 승격 불가(사용자 결정 대기) · 예 (결정) — 결정 31 · 예 (감사 판정) — rev3.6′ GO-with-caveats · 예 (결정) — 결정 32 · 예 (결정) — 결정 33 · 예 (감사 판정) — 하네스 r2 봉인 불가(N-1) · 예 (결정) — 결정 34
+- promote 필요: 예 (결정) — 결정 24–30 · 예 — 정본 정정(CONSENSUS §1-22 (108,0) 방향) · 예 (감사 판정) — roofline r1: 균일 η 해석 철회, §8 승격 불가(사용자 결정 대기) · 예 (결정) — 결정 31 · 예 (감사 판정) — rev3.6′ GO-with-caveats · 예 (결정) — 결정 32 · 예 (결정) — 결정 33 · 예 (감사 판정) — 하네스 r2 봉인 불가(N-1) · 예 (결정) — 결정 34 · 예 (감사 판정) — multi-GPU 인용 가능 문장·telemetry 비대칭 정정
 ## 현재 상태 (2026-10-23)
 - **비용 항 PREREG rev3.5 확정·미봉인** `workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md` + **하네스 1·2단계 구현 완료** `results/cap_char/costterms_harness/`(최신 `e141a36e`: CPU 시험 50/50, 변이 44/44, ENGINE_DIGEST 검사 rc 13, smoke 모드, 원자료 클러스터 볼륨, 셀 단위 재개). Job: J-A1·J-A2·J-H1·J-H2·J-B2·J-C, 예약 약 19.4 GPU-h [유도].
   - 결정 28: T1 창 = ramp 인식(전원 합류 후 300 step·취소·실제 평균 ctx 적합), T2는 P=108만, P 축은 T2′. 결정 29: shape C 셀 손실은 smoke 후 ramp 상한 재설정. 결정 30: 장문 측정점(N=1 98k·124k, TP2 96k·124k) 별도 맨 끝 boot로 복구 + **측정점 삭제 원칙**(물리적 불가·더 강한 증거만 삭제). §11-4 삭제점 전수표.
@@ -27,12 +27,14 @@
 - **하네스층 감사 r1·r2(2026-10-26, 상한 도달)** `cap_char/AUDIT_harness_costterms_r{1,2}_2026-10-26.md`: r1 死因 0·MAJOR 2·MINOR 13 → 수리 `ae875232`·`4430dc37`(PREREG rev3.8, 시험 67/67, 변이 78 전부 검출) → r2 **봉인 불가: N-1 HARNESS_DIGEST가 analytic_terms.py(등록 O 계산)·make_variant·engine_digest·job_entry·계산된 plan을 덮지 않음** · smoke는 진행 가능
 - **결정 34(2026-10-26)**: N-1 (a)·A-49 추가·A-50 기본 제외·N-2·N-3 → **수리 완료 `4e0ae086`·`001e4b21`(PREREG rev3.9)**: HARNESS_DIGEST v2(외부 4파일 + 전 Job plan sha), 시험 71/71·변이 84/84 → 봉인 자격 충족(3회차 감사 없음). main 세션 실트리 점검: analytic_terms 1줄 추가 → check rc 13. 예약 22.4 GPU-h, ≤6 h 위반 없음
 - **Workspace smoke(2026-10-26, 비측정·인용 불가)** `cap_char/costterms_smoke_20261026T054338Z/README.md`: 3 boot rc 0·ENGINE_DIGEST MATCH·실현 SM 일치 · **PD-mux bs 8 ramp 상한 0 대 실제 118 → 창 오염(모형 수리 필요)** · T4 16k `FILL_INCOMPLETE`(R 4,096이 채우기 전에 끝남, 설계 결정) · 16k 채우기 약 8.1 min(모형 6) → J-B2 캡 재계산 · Workspace standby
+- **multi-GPU 증거 검토(2026-10-26)** `reports/hymux_review/MULTIGPU_EVIDENCE_REVIEW_2026-10-26.md`: N>1 성능 수치 0 · S2f 조건 ① 세 Job 모두 FAIL(fused_sym boot2 미완) · 메인 지표 후보 G_SLO(PD-mux/tuned fused, 같은 Job) · rev12 J2·J4·J8도 telemetry 비대칭(CONSENSUS:8799 정정 후보) · Bullet 게재처 미확인
 - 설계 결정 원문 1–34: `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`.
 ## 다음 행동
 1. smoke 반영: PD-mux 소-bs ramp 하한 항 수리·T4 16k R 설계 결정·J-B2 캡 재계산(항목 22) → 봉인 S1(`ct_harness_digest.py make`) → preflight → dry-run → 제출 승인
 2. (roofline 묶음) 감사 r1 반영 완료(README 정정) → §6 한 줄 추가 여부 사용자 결정 · r2는 사용자 요청 시만 · T1 데이터 오면 `t1_compare.py`로 decode 대조
 3. G0 PREREG(헤드라인 셀 전 arm 계측 OFF, 조성 변형 goodput 범위 = 결정 25) → V PREREG(oracle 격차 측정 추가 검토) → M3 재개 여부
 ## 사용자 결정 대기
+- **multi-GPU의 논문 내 위치** / 검토 문서 §5 / (A) 단일 GPU 메인 + 실측 TP 이식성 절(J-C + TP {1,2,4} G_SLO, Nano+Llama, 약 70–112 GPU-h [유도]) · (B) multi-GPU 메인(G0 양의 결과 선행 + 대형 hybrid + TP ≤ 8, 150–240+) · 9.5 h 정지 원인 조회 선행
 - **T4 16k 채우기 `FILL_INCOMPLETE` 처리**(smoke) / R 4,096 출력이 채우기 완료 전 종료 / R 상향(예약 증가 → C_mem 변화 공시) · 16k 채우기를 기술값 라벨로 유지 · L 축소 — 하네스 담당 제안 뒤 결정 · m12 원자료 보관 코드화 시점
 - **roofline η 정본 반영** / 감사 r1: 집계 η≈0.49는 층별 η_X 아님(§8 불가) / 수식 문서 §6 "실측 대조"에 집계 ≈0.49 한 줄만(권고, 결정 27 규칙·promote 경로) · 반영 안 함 · 층별 η 식별 GPU 측정(조성 변형 a4–a31 prefill floor, 승인 필요)
 - **presubmit reachability 차단 2건** / M4R·TC1 rev3 spec이 active로 전역 차단(측정과 무관) / 범위 한정 OVERRIDE + 승인(권고, 전례 `cp_baseline/OVERRIDE_*`) · 두 spec 폐기
