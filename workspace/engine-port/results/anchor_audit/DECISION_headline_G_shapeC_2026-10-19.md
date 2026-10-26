@@ -193,3 +193,7 @@
 - **A-50 기본 제외 유지**: 사망 전 VALID 셀은 `PRE_DEATH` 표에만, 적합 제외.
 - 함께 반영(감사 MINOR): N-2(vanilla에서 probe 부재는 매트릭스 위반이 아니라 `NOT_COLLECTED` → §1-7 fallback 경로 복원), N-3(재개 표기), `make`가 ERROR를 거부.
 - **Workspace smoke는 위 수리 뒤 사용자 승인**으로 실행. m12(원자료 보관 코드화 시점)는 열린 채.
+
+## 결정 35 (2026-10-26) — multi-GPU는 GPU별 SM 분할 + DP 라우팅 설계로 (사용자 "진행")
+- 사용자 지시: "SM 분할은 각 GPU별로 하면서 DP를 진행하는 설계". 설계 초안 `dp_routing/PLAN_DP_routing_per_gpu_partition_2026-10-26.md`(독립 서버 N개 + 클라이언트 측 길이 기반 라우팅, arm R0–R4, 지표 G_SLO, Nano + Llama 대조). 다음 = 규칙층 감사(최대 2회).
+- 선행 확인 기록: M3 J2·J4·J8은 2026-10-18 21:14:03Z ±40 ms 동시 외부 종료(경과 시간 상한 아님, 사유 미확인).
