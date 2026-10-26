@@ -26,13 +26,14 @@
 - **결정 33(2026-10-26)**: O-H4(q=1.0 먼저·연속 1길이, H-D 약 24–36 GPU-h)·O-V1 (c)·O-V4 (β) → PLAN_V rev4 · **§11-4 전부 복구**(L-7·L-8·L-14·L-15·TP2 장문 108u) → 하네스 반영 진행 중 → 하네스층 감사 → smoke
 - **하네스층 감사 r1·r2(2026-10-26, 상한 도달)** `cap_char/AUDIT_harness_costterms_r{1,2}_2026-10-26.md`: r1 死因 0·MAJOR 2·MINOR 13 → 수리 `ae875232`·`4430dc37`(PREREG rev3.8, 시험 67/67, 변이 78 전부 검출) → r2 **봉인 불가: N-1 HARNESS_DIGEST가 analytic_terms.py(등록 O 계산)·make_variant·engine_digest·job_entry·계산된 plan을 덮지 않음** · smoke는 진행 가능
 - **결정 34(2026-10-26)**: N-1 (a)·A-49 추가·A-50 기본 제외·N-2·N-3 → **수리 완료 `4e0ae086`·`001e4b21`(PREREG rev3.9)**: HARNESS_DIGEST v2(외부 4파일 + 전 Job plan sha), 시험 71/71·변이 84/84 → 봉인 자격 충족(3회차 감사 없음). main 세션 실트리 점검: analytic_terms 1줄 추가 → check rc 13. 예약 22.4 GPU-h, ≤6 h 위반 없음
+- **Workspace smoke(2026-10-26, 비측정·인용 불가)** `cap_char/costterms_smoke_20261026T054338Z/README.md`: 3 boot rc 0·ENGINE_DIGEST MATCH·실현 SM 일치 · **PD-mux bs 8 ramp 상한 0 대 실제 118 → 창 오염(모형 수리 필요)** · T4 16k `FILL_INCOMPLETE`(R 4,096이 채우기 전에 끝남, 설계 결정) · 16k 채우기 약 8.1 min(모형 6) → J-B2 캡 재계산 · Workspace standby
 - 설계 결정 원문 1–34: `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`.
 ## 다음 행동
-1. **Workspace smoke 승인**(비측정, 상한 90분) → ramp 상한(O-18)·J-B2 하드캡 재설정 → 봉인 S1(`ct_harness_digest.py make`를 봉인 커밋에) → preflight → dry-run → 제출 승인
+1. smoke 반영: PD-mux 소-bs ramp 하한 항 수리·T4 16k R 설계 결정·J-B2 캡 재계산(항목 22) → 봉인 S1(`ct_harness_digest.py make`) → preflight → dry-run → 제출 승인
 2. (roofline 묶음) 감사 r1 반영 완료(README 정정) → §6 한 줄 추가 여부 사용자 결정 · r2는 사용자 요청 시만 · T1 데이터 오면 `t1_compare.py`로 decode 대조
 3. G0 PREREG(헤드라인 셀 전 arm 계측 OFF, 조성 변형 goodput 범위 = 결정 25) → V PREREG(oracle 격차 측정 추가 검토) → M3 재개 여부
 ## 사용자 결정 대기
-- **m12 원자료 보관 코드화 시점 · Workspace smoke 승인(결정 34: N-1 수리 뒤)** / 봉인 체크리스트 항목 27 · smoke 비측정 상한 90분
+- **T4 16k 채우기 `FILL_INCOMPLETE` 처리**(smoke) / R 4,096 출력이 채우기 완료 전 종료 / R 상향(예약 증가 → C_mem 변화 공시) · 16k 채우기를 기술값 라벨로 유지 · L 축소 — 하네스 담당 제안 뒤 결정 · m12 원자료 보관 코드화 시점
 - **roofline η 정본 반영** / 감사 r1: 집계 η≈0.49는 층별 η_X 아님(§8 불가) / 수식 문서 §6 "실측 대조"에 집계 ≈0.49 한 줄만(권고, 결정 27 규칙·promote 경로) · 반영 안 함 · 층별 η 식별 GPU 측정(조성 변형 a4–a31 prefill floor, 승인 필요)
 - **presubmit reachability 차단 2건** / M4R·TC1 rev3 spec이 active로 전역 차단(측정과 무관) / 범위 한정 OVERRIDE + 승인(권고, 전례 `cp_baseline/OVERRIDE_*`) · 두 spec 폐기
 - **로컬 엔진 트리 재동기화** / 구판이라 로컬 테스트 5건 실패 / amd·opchar 영향 확인 뒤 `install_runtime.sh` 절차(권고) · scratch 사본 유지

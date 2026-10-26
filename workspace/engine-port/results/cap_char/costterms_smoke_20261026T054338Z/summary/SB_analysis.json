@@ -1,0 +1,212 @@
+{
+ "boots": {
+  "jb2_capCA_L16384": {
+   "boot_id": "jb2_capCA_L16384",
+   "cap_plan": 80,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48,
+     56,
+     64,
+     72,
+     80
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1305896,
+    "max_mamba_cache_size": 80,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 80,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16378.744658135105,
+    "kv_bytes": 21388937134.08,
+    "kv_tokens": 1305896,
+    "mamba_bytes": 11628623953.92,
+    "pool_bytes": 33017561088.0,
+    "s": 143563258.69037038,
+    "slots": 81
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 16384,
+     "cap": 80,
+     "excluded": true,
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_A": 80,
+     "n_B": 64,
+     "n_real": 71
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 16384,
+     "N": 88,
+     "R": 4096,
+     "bench_ok": true,
+     "detail": "the n_real-th first token came after the earliest completion",
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_real": 71,
+     "n_real_admission_hist": 71,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.0337269636786545,
+      "max_prefill_tokens": 0.007693684022186438,
+      "no_waiting": 0.8573984612631955,
+      "other": 0.0,
+      "prefill_seat": 0.1011808910359635,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.08760367091769238,
+      "max_prefill_tokens": 0.04099240653519325,
+      "no_waiting": 0.5246107558694989,
+      "other": 0.0,
+      "prefill_seat": 0.34679316667761545,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  }
+ },
+ "fits": {
+  "gamma_j": {},
+  "t1": {},
+  "t2": {},
+  "t2prime": {},
+  "theta_prime": {}
+ },
+ "instr_effect": {},
+ "labels": {
+  "agreement": {},
+  "c_mem_drift": {
+   "label": null,
+   "median": 33017561088.0,
+   "outliers": {}
+  },
+  "q": {},
+  "smoke": "SMOKE_UNSEALED"
+ },
+ "priors": {
+  "a13": {
+   "a0_ms": 7.325070250122609,
+   "alpha_flop_per_token": 13909458944,
+   "b0_ms_per_req": 0.09386850809220207,
+   "c0_ms_per_req_token": 2.6114762138303088e-05,
+   "gamma_flop_per_token2": 133120,
+   "q_flop_prior": 1.5008115454563231,
+   "source": "analytic_terms analytic-v1 (2026-10-22), BW 2.039e+12 B/s [derived, comparison column, no verdict]"
+  },
+  "a22": {
+   "a0_ms": 6.510048612064738,
+   "alpha_flop_per_token": 12173606912,
+   "b0_ms_per_req": 0.046934254046101034,
+   "c0_ms_per_req_token": 4.4194212849436e-05,
+   "gamma_flop_per_token2": 225280,
+   "q_flop_prior": 1.9028978562946606,
+   "source": "analytic_terms analytic-v1 (2026-10-22), BW 2.039e+12 B/s [derived, comparison column, no verdict]"
+  },
+  "a31": {
+   "a0_ms": 5.695026974006867,
+   "alpha_flop_per_token": 10437754880,
+   "b0_ms_per_req": 0.0,
+   "c0_ms_per_req_token": 6.227366356056891e-05,
+   "gamma_flop_per_token2": 317440,
+   "q_flop_prior": 2.3611946951967013,
+   "source": "analytic_terms analytic-v1 (2026-10-22), BW 2.039e+12 B/s [derived, comparison column, no verdict]"
+  },
+  "a4": {
+   "a0_ms": 8.14009188818048,
+   "alpha_flop_per_token": 15645310976,
+   "b0_ms_per_req": 0.1408027621383031,
+   "c0_ms_per_req_token": 8.035311427170182e-06,
+   "gamma_flop_per_token2": 40960,
+   "q_flop_prior": 1.1451919002082067,
+   "source": "analytic_terms analytic-v1 (2026-10-22), BW 2.039e+12 B/s [derived, comparison column, no verdict]"
+  }
+ },
+ "resume_log": null,
+ "smoke": true,
+ "spec_sha256": "c7739d84227b83b91f565544c811818b5864dec9f0472dfec6de73b819b0797f",
+ "tables": {
+  "pre_death": {},
+  "t1": {},
+  "t1_client_secondary": {},
+  "t2": {},
+  "t2_long": {},
+  "t2prime": {},
+  "t3": {},
+  "t4": {
+   "jb2_capCA_L16384|L16384": {
+    "L": 16384,
+    "cap": 80,
+    "excluded": true,
+    "labels": [
+     "FILL_INCOMPLETE"
+    ],
+    "n_A": 80,
+    "n_B": 64,
+    "n_real": 71
+   }
+  }
+ }
+}
