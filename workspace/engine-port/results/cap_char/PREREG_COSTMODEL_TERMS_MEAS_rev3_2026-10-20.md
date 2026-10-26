@@ -1,6 +1,6 @@
 # 사전등록 rev3 (MEAS) — hybrid 서빙 비용 모델의 항 측정(T1–T4), 2026-10-20
 
-> **봉인 상태: 봉인 S1 (결정 38 집행; 하네스 커밋 `[SEAL_A]`, 봉인 커밋 = `HARNESS_DIGEST.txt`를 추가한 커밋 `[SEAL_B]`) · 감사 이력: 규칙층 2회(상한), 항 측정 부분 死因 0 · 이 문서는 감사 대상이 아니라 결정 17에 따라 봉인 후보.**
+> **봉인 상태: 봉인 S1 (결정 38 집행; 하네스 커밋 `b0c9d899`, 봉인 커밋 = `HARNESS_DIGEST.txt`를 추가한 커밋(`git log -1 --format=%h -- workspace/engine-port/results/cap_char/costterms_harness/HARNESS_DIGEST.txt`)) · 감사 이력: 규칙층 2회(상한), 항 측정 부분 死因 0 · 이 문서는 감사 대상이 아니라 결정 17에 따라 봉인 후보.**
 > 지위: `PREREG_COSTMODEL_TERMS_rev2_2026-10-20.md`에서 **항 측정(T1–T4, J-A1·J-A2·J-B·J-C, TP2 항, 계측, 선행 조건, 금지 문안)만** 옮기고 2회차 감사(`VERDICT_prereg_costmodel_rev2_rules_r2_2026-10-20.md`)의 [미등록] 체크리스트 중 항 측정 해당분을 채운 봉인용 문서다. 문서 작업(CPU)만 했다. 제출·GPU·커밋 없음. 측정 0, 성능 판정 0.
 > **V 한 줄**: V는 항 데이터 이후 별도 PREREG(새 감사)로 다룬다. 데이터를 본 뒤 구조를 고르는 위험은 그 PREREG에서 공시한다(결정 17).
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·모형 예보, 측정 아님) · [코드] · [결정](사용자 결정 문서 명시) · [제안](이 문서가 고른 값, 봉인 시 사용자 확인) · **[봉인 시 기입]**(봉인 순간에만 알 수 있는 값: digest·경로·gate 통과값).
@@ -723,7 +723,7 @@ rev3.5 초안 대비 예약 +0.55 GPU-h(J-A1 +0.17, J-C +0.38). 모든 Job이 4.
 | 10 | 하네스층 감사(최대 2회) | **2회 완료**(r1: 死因 0·MAJOR 2·MINOR 13 → r1 수리 rev3.8; r2: MAJOR 1(N-1)·MINOR 2) — 감사 상한 도달. **결정 34: N-1 수리 + 시험 통과(`test_costterms_harness` 전부·변이 전부 검출)로 봉인 자격**, 3회차 없음. rev3.9 수리 반영 | 7 |
 | 11 | Workspace smoke(비측정) → boot·셀 시간 실측으로 §7-4 재확인 | **완료**(2026-10-26, `costterms_smoke_20261026T054338Z/`; 관측 → rev3.10: ramp 하한·J-B2 캡·T4 공시) | 7 |
 | 12 | 부팅값(`new_token_ratio`·캡처 bs 목록·`split_forward_token_budget`/`max_prefill_tokens`) | 부팅 시 기록(봉인 대상 아님, 기록 규칙만 봉인) | — |
-| 13 | 봉인 S1(규칙·하네스·엔진·config digest) | **봉인됨**(결정 38; 하네스 `[SEAL_A]`, digest 커밋 `[SEAL_B]`) | 5–11 |
+| 13 | 봉인 S1(규칙·하네스·엔진·config digest) | **봉인됨**(결정 38; 하네스 `b0c9d899`, digest 커밋 = 위 `git log` 명령의 값) | 5–11 |
 | 14 | CPU preflight → `launch.sh` dry-run → 사용자 승인 → `--submit` | CPU preflight·dry-run **완료**(S1 직후, 제출 아님); 사용자 승인·`--submit` 대기 | 13 |
 | 15 | (rev3.2) 조성 변형 부팅 프로브(비측정, `scripts/vessl/compo_probe.sh`) PASS — 변형 a4·a13·a22·a31이 dummy·PD-mux·cudagraph로 부팅, 배너 s·k 대조 | **완료 — 전 단계 PASS**(run `compo_probe_20261021T131621Z`, 커밋 `1d7261c6`) | 사용자 승인(GPU) |
 | 16 | (rev3.2) O-16·O-17 | 완료(결정 26: O-16 포함, O-17 제외) | — |

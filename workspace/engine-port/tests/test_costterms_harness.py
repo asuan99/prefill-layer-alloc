@@ -1052,11 +1052,21 @@ class TestAuditR1(unittest.TestCase):
 
     def test_sealed_without_harness_digest_is_refused(self):
         """MAJOR-2: PDMUX_COSTTERMS_SEALED=1 alone is not enough -- no HARNESS_DIGEST.txt (none exists before the seal), rc 13."""
-        self.assertFalse((H / "HARNESS_DIGEST.txt").exists())        # the mechanism ships, the digest is made AT the seal
-        r, d = self._job({"PDMUX_COSTTERMS_SEALED": "1"})
+        r, d = self._job({"PDMUX_COSTTERMS_SEALED": "1", "PDMUX_COSTTERMS_HARNESS_DIGEST": "/nonexistent/HARNESS_DIGEST.txt"})
         self.assertEqual(r.returncode, 13, r.stderr)
         self.assertIn("ABORT_HARNESS_DIGEST", r.stderr)
         self.assertFalse((d / "raw" / "plan.json").exists())          # nothing ran
+
+    def test_sealed_tree_passes_the_harness_digest_check(self):
+        """S1 (decision 38): the committed HARNESS_DIGEST.txt matches this tree -- `check` rc 0 and costterms_job.sh with SEALED=1
+        gets past ABORT_HARNESS_DIGEST (it then stops at the ENGINE digest because the CPU has no runtime manifest)."""
+        hd = importlib.import_module("ct_harness_digest")
+        self.assertTrue((H / "HARNESS_DIGEST.txt").exists())
+        self.assertEqual(hd.check(H), [])
+        r, d = self._job({"PDMUX_COSTTERMS_SEALED": "1", "PDMUX_COSTTERMS_TEST_MODE": "1"})
+        self.assertNotIn("ABORT_HARNESS_DIGEST", r.stderr)
+        self.assertEqual(r.returncode, 13)
+        self.assertIn("ABORT_ENGINE_DIGEST", r.stderr)
 
     def test_harness_digest_roundtrip_and_one_byte(self):
         hd = importlib.import_module("ct_harness_digest")
