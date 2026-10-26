@@ -1,0 +1,1 @@
+log_mirror=1 heartbeat_s=300

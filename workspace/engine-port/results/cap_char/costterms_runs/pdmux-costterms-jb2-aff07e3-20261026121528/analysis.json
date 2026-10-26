@@ -1,0 +1,1809 @@
+{
+ "boots": {
+  "jb2_cap48": {
+   "boot_id": "jb2_cap48",
+   "cap_plan": 48,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1586264,
+    "max_mamba_cache_size": 48,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 48,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16380.975764942026,
+    "kv_bytes": 25984552140.8,
+    "kv_tokens": 1586264,
+    "mamba_bytes": 7033008947.2,
+    "pool_bytes": 33017561088.0,
+    "s": 143530794.84081632,
+    "slots": 49
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 8800,
+     "cap": 48,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD"
+     ],
+     "n_A": 48,
+     "n_B": 48,
+     "n_real": 48,
+     "ratio_A": 1.0,
+     "ratio_B": 1.0
+    },
+    {
+     "L": 16384,
+     "cap": 48,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD"
+     ],
+     "n_A": 48,
+     "n_B": 48,
+     "n_real": 48,
+     "ratio_A": 1.0,
+     "ratio_B": 1.0
+    },
+    {
+     "L": 4096,
+     "cap": 48,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD"
+     ],
+     "n_A": 48,
+     "n_B": 48,
+     "n_real": 48,
+     "ratio_A": 1.0,
+     "ratio_B": 1.0
+    },
+    {
+     "L": 65536,
+     "cap": 48,
+     "excluded": true,
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_A": 24,
+     "n_B": 21,
+     "n_real": 22
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 8800,
+     "N": 56,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 48,
+     "n_real_admission_hist": 48,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.00010185892538833715,
+      "cap": 0.11133180544945251,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.001324166030048383,
+      "no_waiting": 0.8623376623376623,
+      "other": 0.0,
+      "prefill_seat": 0.024904507257448433,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.00021312883810093903,
+      "cap": 0.399976397012279,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.013811287743466176,
+      "no_waiting": 0.43963929514198796,
+      "other": 0.0,
+      "prefill_seat": 0.14635989126416593,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    },
+    {
+     "L": 16384,
+     "N": 56,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 48,
+     "n_real_admission_hist": 48,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.044771890053839615,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.003967129498441485,
+      "no_waiting": 0.9006092377444035,
+      "other": 0.0,
+      "prefill_seat": 0.050651742703315385,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.13536153747932156,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.025713016002864904,
+      "no_waiting": 0.5626499913260481,
+      "other": 0.0,
+      "prefill_seat": 0.27627545519176544,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    },
+    {
+     "L": 4096,
+     "N": 56,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 48,
+     "n_real_admission_hist": 48,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.00014678899082568806,
+      "cap": 0.23530275229357797,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.0008807339449541285,
+      "no_waiting": 0.7509724770642202,
+      "other": 0.0,
+      "prefill_seat": 0.012697247706422018,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0002042772549805953,
+      "cap": 0.5457573231002913,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.003804560578952198,
+      "no_waiting": 0.3752823537098731,
+      "other": 0.0,
+      "prefill_seat": 0.0749514853559026,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    },
+    {
+     "L": 65536,
+     "N": 56,
+     "R": 8000,
+     "bench_ok": true,
+     "detail": "the n_real-th first token came after the earliest completion",
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_real": 22,
+     "n_real_admission_hist": 22,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.20538218000904568,
+      "max_prefill_tokens": 0.002532790592492085,
+      "no_waiting": 0.6575305291723202,
+      "other": 0.0,
+      "prefill_seat": 0.13455450022614202,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.3355713990658067,
+      "max_prefill_tokens": 0.0072558604746041505,
+      "no_waiting": 0.39327821073197056,
+      "other": 0.0,
+      "prefill_seat": 0.2638945297276186,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_capCA_L16384": {
+   "boot_id": "jb2_capCA_L16384",
+   "cap_plan": 80,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48,
+     56,
+     64,
+     72,
+     80
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1305896,
+    "max_mamba_cache_size": 80,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 80,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16378.744658135105,
+    "kv_bytes": 21388937134.08,
+    "kv_tokens": 1305896,
+    "mamba_bytes": 11628623953.92,
+    "pool_bytes": 33017561088.0,
+    "s": 143563258.69037038,
+    "slots": 81
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 16384,
+     "cap": 80,
+     "excluded": true,
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_A": 80,
+     "n_B": 64,
+     "n_real": 71
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 16384,
+     "N": 88,
+     "R": 4096,
+     "bench_ok": true,
+     "detail": "the n_real-th first token came after the earliest completion",
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_real": 71,
+     "n_real_admission_hist": 71,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.03946449359720605,
+      "max_prefill_tokens": 0.010011641443538999,
+      "no_waiting": 0.8188591385331782,
+      "other": 0.0,
+      "prefill_seat": 0.13166472642607682,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.07440658072317496,
+      "max_prefill_tokens": 0.036072063407635115,
+      "no_waiting": 0.5151395174808141,
+      "other": 0.0,
+      "prefill_seat": 0.374381838388376,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_capCA_L4096": {
+   "boot_id": "jb2_capCA_L4096",
+   "cap_plan": 156,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48,
+     56,
+     64,
+     72,
+     80,
+     88,
+     96,
+     104,
+     112,
+     120,
+     128,
+     136,
+     144,
+     152,
+     156
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 640022,
+    "max_mamba_cache_size": 156,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 156,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16373.999959751383,
+    "kv_bytes": 10479720202.24,
+    "kv_tokens": 640022,
+    "mamba_bytes": 22537840885.76,
+    "pool_bytes": 33017561088.0,
+    "s": 143553126.6608917,
+    "slots": 157
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 4096,
+     "cap": 156,
+     "excluded": true,
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_A": 156,
+     "n_B": 79,
+     "n_real": 108
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 4096,
+     "N": 164,
+     "R": 4096,
+     "bench_ok": true,
+     "detail": "the n_real-th first token came after the earliest completion",
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_real": 108,
+     "n_real_admission_hist": 108,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0001419849495953429,
+      "cap": 0.0,
+      "kv": 0.2245491977850348,
+      "max_prefill_tokens": 0.0022717591935254864,
+      "no_waiting": 0.7361209711770552,
+      "other": 0.0,
+      "prefill_seat": 0.03691608689478915,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.00015296555403580302,
+      "cap": 0.0,
+      "kv": 0.41947390317698763,
+      "max_prefill_tokens": 0.005640541351601916,
+      "no_waiting": 0.4545372559777021,
+      "other": 0.0,
+      "prefill_seat": 0.12019533393967248,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_capCA_L65536": {
+   "boot_id": "jb2_capCA_L65536",
+   "cap_plan": 27,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     27
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1770256,
+    "max_mamba_cache_size": 27,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 27,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16388.874877125116,
+    "kv_bytes": 29012504084.48,
+    "kv_tokens": 1770256,
+    "mamba_bytes": 4015794421.7599998,
+    "pool_bytes": 33028298506.239998,
+    "s": 143421229.34857142,
+    "slots": 28
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 65536,
+     "cap": 27,
+     "excluded": true,
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_A": 27,
+     "n_B": 24,
+     "n_real": 25
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 65536,
+     "N": 35,
+     "R": 8000,
+     "bench_ok": true,
+     "detail": "the n_real-th first token came after the earliest completion",
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_real": 25,
+     "n_real_admission_hist": 25,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.08352591614394189,
+      "max_prefill_tokens": 0.00231099372730274,
+      "no_waiting": 0.7906899966985804,
+      "other": 0.0,
+      "prefill_seat": 0.12347309343017497,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.14736886092975707,
+      "max_prefill_tokens": 0.014495551822534829,
+      "no_waiting": 0.6032879651889986,
+      "other": 0.0,
+      "prefill_seat": 0.23484762205870946,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_capCA_L8800": {
+   "boot_id": "jb2_capCA_L8800",
+   "cap_plan": 114,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48,
+     56,
+     64,
+     72,
+     80,
+     88,
+     96,
+     104,
+     112,
+     114
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1008005,
+    "max_mamba_cache_size": 114,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 114,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16383.003311610559,
+    "kv_bytes": 16514149253.12,
+    "kv_tokens": 1008005,
+    "mamba_bytes": 16503411834.880001,
+    "pool_bytes": 33017561088.0,
+    "s": 143507928.99895653,
+    "slots": 115
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 8800,
+     "cap": 114,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_MISS",
+      "CMEM_ORIG_OVERPREDICTS"
+     ],
+     "n_A": 114,
+     "n_B": 78,
+     "n_real": 92,
+     "ratio_A": 0.8070175438596491,
+     "ratio_B": 1.1794871794871795
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 8800,
+     "N": 122,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 92,
+     "n_real_admission_hist": 92,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.00014685366032748365,
+      "cap": 0.0,
+      "kv": 0.15801453851237243,
+      "max_prefill_tokens": 0.003891621998678317,
+      "no_waiting": 0.7587194360819444,
+      "other": 0.0,
+      "prefill_seat": 0.07922754974667744,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.00019396871433521054,
+      "cap": 0.0,
+      "kv": 0.3841576936066592,
+      "max_prefill_tokens": 0.018591843766645584,
+      "no_waiting": 0.3605119847221718,
+      "other": 0.0,
+      "prefill_seat": 0.23654450919018824,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_capCB_L16384": {
+   "boot_id": "jb2_capCB_L16384",
+   "cap_plan": 68,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48,
+     56,
+     64,
+     68
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1411034,
+    "max_mamba_cache_size": 68,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 68,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16391.099639668497,
+    "kv_bytes": 23128398888.96,
+    "kv_tokens": 1411034,
+    "mamba_bytes": 9910637035.52,
+    "pool_bytes": 33039035924.48,
+    "s": 143632420.8046377,
+    "slots": 69
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 16384,
+     "cap": 68,
+     "excluded": true,
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_A": 68,
+     "n_B": 68,
+     "n_real": 66
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 16384,
+     "N": 76,
+     "R": 4096,
+     "bench_ok": true,
+     "detail": "the n_real-th first token came after the earliest completion",
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_real": 66,
+     "n_real_admission_hist": 66,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.007055983659827314,
+      "no_waiting": 0.9024231733358091,
+      "other": 0.0,
+      "prefill_seat": 0.09052084300436357,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.040679365781963996,
+      "no_waiting": 0.6160116083414933,
+      "other": 0.0,
+      "prefill_seat": 0.34330902587654283,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_capCB_L4096": {
+   "boot_id": "jb2_capCB_L4096",
+   "cap_plan": 118,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48,
+     56,
+     64,
+     72,
+     80,
+     88,
+     96,
+     104,
+     112,
+     118
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 972959,
+    "max_mamba_cache_size": 118,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 118,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16377.18410350282,
+    "kv_bytes": 15934328668.16,
+    "kv_tokens": 972959,
+    "mamba_bytes": 17083232419.84,
+    "pool_bytes": 33017561088.0,
+    "s": 143556574.95663866,
+    "slots": 119
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 4096,
+     "cap": 118,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD"
+     ],
+     "n_A": 118,
+     "n_B": 118,
+     "n_real": 118,
+     "ratio_A": 1.0,
+     "ratio_B": 1.0
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 4096,
+     "N": 126,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 118,
+     "n_real_admission_hist": 118,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.00013421017313112335,
+      "cap": 0.17031270970339552,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.00201315259696685,
+      "no_waiting": 0.8007649979868474,
+      "other": 0.0,
+      "prefill_seat": 0.026774929539659105,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.00022363552671921837,
+      "cap": 0.5120187023623272,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.011277158095699121,
+      "no_waiting": 0.35745415749155585,
+      "other": 0.0,
+      "prefill_seat": 0.11902634652369867,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_capCB_L65536": {
+   "boot_id": "jb2_capCB_L65536",
+   "cap_plan": 24,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1796540,
+    "max_mamba_cache_size": 24,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 24,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16388.16882122302,
+    "kv_bytes": 29442000814.08,
+    "kv_tokens": 1796540,
+    "mamba_bytes": 3597035110.3999996,
+    "pool_bytes": 33039035924.480003,
+    "s": 143881404.41599998,
+    "slots": 25
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 65536,
+     "cap": 24,
+     "excluded": true,
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_A": 24,
+     "n_B": 24,
+     "n_real": 24
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 65536,
+     "N": 32,
+     "R": 8000,
+     "bench_ok": true,
+     "detail": "the n_real-th first token came after the earliest completion",
+     "labels": [
+      "FILL_INCOMPLETE"
+     ],
+     "n_real": 24,
+     "n_real_admission_hist": 24,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.0712558439464775,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.001719598043957225,
+      "no_waiting": 0.8354022247299694,
+      "other": 0.0,
+      "prefill_seat": 0.09162233327959589,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.15376950820574967,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.009138288797774164,
+      "no_waiting": 0.6084797976871735,
+      "other": 0.0,
+      "prefill_seat": 0.2286124053093026,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_capCB_L8800": {
+   "boot_id": "jb2_capCB_L8800",
+   "cap_plan": 93,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48,
+     56,
+     64,
+     72,
+     80,
+     88,
+     93
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1191997,
+    "max_mamba_cache_size": 93,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": 65536,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 93,
+    "load_format": "auto",
+    "mode": "D44",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16376.405612027547,
+    "kv_bytes": 19520626360.32,
+    "kv_tokens": 1191997,
+    "mamba_bytes": 13486197309.44,
+    "pool_bytes": 33006823669.760002,
+    "s": 143470184.14297873,
+    "slots": 94
+   },
+   "not_run_after_death": [],
+   "plan_mode": "D44",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 44,
+    "D_req": 44,
+    "P_real": 64,
+    "P_req": 64,
+    "detail": "group 4 decode 44 prefill 64 sticky_target 4",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 64,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 8800,
+     "cap": 93,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD"
+     ],
+     "n_A": 93,
+     "n_B": 93,
+     "n_real": 93,
+     "ratio_A": 1.0,
+     "ratio_B": 1.0
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 8800,
+     "N": 101,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 93,
+     "n_real_admission_hist": 93,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.00023512814483893723,
+      "cap": 0.15001175640724196,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.0057606395485539615,
+      "no_waiting": 0.7386550670115213,
+      "other": 0.0,
+      "prefill_seat": 0.10533740888784388,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.00022072124560678497,
+      "cap": 0.2711628381244128,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.022130185215726583,
+      "no_waiting": 0.4835496353454849,
+      "other": 0.0,
+      "prefill_seat": 0.222936620068769,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  },
+  "jb2_fused_cap48": {
+   "boot_id": "jb2_fused_cap48",
+   "cap_plan": 48,
+   "context_plan": 73728,
+   "facts_summary": {
+    "capture_bs": [
+     1,
+     2,
+     4,
+     8,
+     12,
+     16,
+     24,
+     32,
+     40,
+     48
+    ],
+    "init_new_token_ratio_derived": 0.7,
+    "kv_cache_tokens": 1588210,
+    "max_mamba_cache_size": 48,
+    "max_prefill_tokens": 16384,
+    "split_forward_token_budget": null,
+    "weight_gib": 16.58
+   },
+   "feasibility": [],
+   "feasibility_t3": null,
+   "identity": {
+    "cap": 48,
+    "load_format": "auto",
+    "mode": "108v",
+    "model": "nano",
+    "n_attn": 4,
+    "tag": "real_a4"
+   },
+   "job": "J-B2",
+   "kind": "T4",
+   "labels": [],
+   "long_plan": [],
+   "long_points": [],
+   "mem": {
+    "k": 16387.947320417323,
+    "kv_bytes": 26027501813.76,
+    "kv_tokens": 1588210,
+    "mamba_bytes": 7033008947.2,
+    "pool_bytes": 33060510760.96,
+    "s": 143530794.84081632,
+    "slots": 49
+   },
+   "not_run_after_death": [],
+   "plan_mode": "108v",
+   "plan_tag": "real_a4",
+   "problems": [],
+   "round": 1,
+   "schema_problems": [],
+   "sm": {
+    "D_real": 108,
+    "D_req": 108,
+    "P_real": 108,
+    "P_req": 108,
+    "detail": "vanilla: no partition",
+    "label": null,
+    "ok": true
+   },
+   "t1_windows": [],
+   "t2": [],
+   "t2p": [],
+   "t2p_P": 108,
+   "t3_cells": [],
+   "t3_refs": [],
+   "t4": [
+    {
+     "L": 65536,
+     "cap": 48,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD",
+      "CMEM_ORIG_OVERPREDICTS"
+     ],
+     "n_A": 24,
+     "n_B": 21,
+     "n_real": 21,
+     "ratio_A": 0.875,
+     "ratio_B": 1.0
+    },
+    {
+     "L": 8800,
+     "cap": 48,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD"
+     ],
+     "n_A": 48,
+     "n_B": 48,
+     "n_real": 48,
+     "ratio_A": 1.0,
+     "ratio_B": 1.0
+    },
+    {
+     "L": 4096,
+     "cap": 48,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD"
+     ],
+     "n_A": 48,
+     "n_B": 48,
+     "n_real": 48,
+     "ratio_A": 1.0,
+     "ratio_B": 1.0
+    },
+    {
+     "L": 16384,
+     "cap": 48,
+     "excluded": false,
+     "labels": [
+      "CMEM_ACCT_HELD"
+     ],
+     "n_A": 48,
+     "n_B": 48,
+     "n_real": 48,
+     "ratio_A": 1.0,
+     "ratio_B": 1.0
+    }
+   ],
+   "t4_fills": [
+    {
+     "L": 65536,
+     "N": 56,
+     "R": 8000,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 21,
+     "n_real_admission_hist": 21,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.23904858662523157,
+      "max_prefill_tokens": 0.0008366700531883105,
+      "no_waiting": 0.7601147433215801,
+      "other": 0.0,
+      "prefill_seat": 0.0,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.0,
+      "kv": 0.47650021241095747,
+      "max_prefill_tokens": 0.32871026596686986,
+      "no_waiting": 0.1947895216221727,
+      "other": 0.0,
+      "prefill_seat": 0.0,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    },
+    {
+     "L": 8800,
+     "N": 56,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 48,
+     "n_real_admission_hist": 48,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 2.42001839213978e-05,
+      "cap": 0.0991481535259668,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.0006534049658777406,
+      "no_waiting": 0.9001742413242341,
+      "other": 0.0,
+      "prefill_seat": 0.0,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 5.110139837631779e-07,
+      "cap": 0.5310054770350588,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.18569906000065092,
+      "no_waiting": 0.2832949519503064,
+      "other": 0.0,
+      "prefill_seat": 0.0,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    },
+    {
+     "L": 4096,
+     "N": 56,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 48,
+     "n_real_admission_hist": 48,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 4.466080121477379e-05,
+      "cap": 0.18297530257692823,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.0005805904157920593,
+      "no_waiting": 0.816399446206065,
+      "other": 0.0,
+      "prefill_seat": 0.0,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 6.841074079868615e-07,
+      "cap": 0.58929266779387,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.08490024482698248,
+      "no_waiting": 0.32580640327173954,
+      "other": 0.0,
+      "prefill_seat": 0.0,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    },
+    {
+     "L": 16384,
+     "N": 56,
+     "R": 4096,
+     "bench_ok": true,
+     "labels": [],
+     "n_real": 48,
+     "n_real_admission_hist": 48,
+     "n_real_source": "decode_forward.bs_real",
+     "reason_share_iter": {
+      "admitted_all": 0.0,
+      "cap": 0.0896044802240112,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.001225061253062653,
+      "no_waiting": 0.9091704585229261,
+      "other": 0.0,
+      "prefill_seat": 0.0,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     },
+     "reason_share_time": {
+      "admitted_all": 0.0,
+      "cap": 0.46373116028589734,
+      "kv": 0.0,
+      "max_prefill_tokens": 0.3004279346978564,
+      "no_waiting": 0.23584090501624627,
+      "other": 0.0,
+      "prefill_seat": 0.0,
+      "r2_latch": 0.0,
+      "unclassified": 0.0
+     }
+    }
+   ],
+   "t4_prediction_order": "sealed before fill",
+   "tp": 1,
+   "usable": true
+  }
+ },
+ "fits": {
+  "gamma_j": {},
+  "t1": {},
+  "t2": {},
+  "t2prime": {},
+  "theta_prime": {}
+ },
+ "instr_effect": {},
+ "labels": {
+  "agreement": {},
+  "c_mem_drift": {
+   "label": null,
+   "median": 33017561088.0,
+   "outliers": {}
+  },
+  "q": {}
+ },
+ "priors": {
+  "a13": {
+   "a0_ms": 7.325070250122609,
+   "alpha_flop_per_token": 13909458944,
+   "b0_ms_per_req": 0.09386850809220207,
+   "c0_ms_per_req_token": 2.6114762138303088e-05,
+   "gamma_flop_per_token2": 133120,
+   "q_flop_prior": 1.5008115454563231,
+   "source": "analytic_terms analytic-v1 (2026-10-22), BW 2.039e+12 B/s [derived, comparison column, no verdict]"
+  },
+  "a22": {
+   "a0_ms": 6.510048612064738,
+   "alpha_flop_per_token": 12173606912,
+   "b0_ms_per_req": 0.046934254046101034,
+   "c0_ms_per_req_token": 4.4194212849436e-05,
+   "gamma_flop_per_token2": 225280,
+   "q_flop_prior": 1.9028978562946606,
+   "source": "analytic_terms analytic-v1 (2026-10-22), BW 2.039e+12 B/s [derived, comparison column, no verdict]"
+  },
+  "a31": {
+   "a0_ms": 5.695026974006867,
+   "alpha_flop_per_token": 10437754880,
+   "b0_ms_per_req": 0.0,
+   "c0_ms_per_req_token": 6.227366356056891e-05,
+   "gamma_flop_per_token2": 317440,
+   "q_flop_prior": 2.3611946951967013,
+   "source": "analytic_terms analytic-v1 (2026-10-22), BW 2.039e+12 B/s [derived, comparison column, no verdict]"
+  },
+  "a4": {
+   "a0_ms": 8.14009188818048,
+   "alpha_flop_per_token": 15645310976,
+   "b0_ms_per_req": 0.1408027621383031,
+   "c0_ms_per_req_token": 8.035311427170182e-06,
+   "gamma_flop_per_token2": 40960,
+   "q_flop_prior": 1.1451919002082067,
+   "source": "analytic_terms analytic-v1 (2026-10-22), BW 2.039e+12 B/s [derived, comparison column, no verdict]"
+  }
+ },
+ "resume_log": null,
+ "smoke": false,
+ "spec_sha256": "05958844da0675f2b82da420ae273fbcf341a1f60ce51bc75e87c49473c25ea9",
+ "tables": {
+  "pre_death": {},
+  "t1": {},
+  "t1_client_secondary": {},
+  "t2": {},
+  "t2_long": {},
+  "t2prime": {},
+  "t3": {},
+  "t4": {
+   "jb2_cap48|L16384": {
+    "L": 16384,
+    "cap": 48,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD"
+    ],
+    "n_A": 48,
+    "n_B": 48,
+    "n_real": 48,
+    "ratio_A": 1.0,
+    "ratio_B": 1.0
+   },
+   "jb2_cap48|L4096": {
+    "L": 4096,
+    "cap": 48,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD"
+    ],
+    "n_A": 48,
+    "n_B": 48,
+    "n_real": 48,
+    "ratio_A": 1.0,
+    "ratio_B": 1.0
+   },
+   "jb2_cap48|L65536": {
+    "L": 65536,
+    "cap": 48,
+    "excluded": true,
+    "labels": [
+     "FILL_INCOMPLETE"
+    ],
+    "n_A": 24,
+    "n_B": 21,
+    "n_real": 22
+   },
+   "jb2_cap48|L8800": {
+    "L": 8800,
+    "cap": 48,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD"
+    ],
+    "n_A": 48,
+    "n_B": 48,
+    "n_real": 48,
+    "ratio_A": 1.0,
+    "ratio_B": 1.0
+   },
+   "jb2_capCA_L16384|L16384": {
+    "L": 16384,
+    "cap": 80,
+    "excluded": true,
+    "labels": [
+     "FILL_INCOMPLETE"
+    ],
+    "n_A": 80,
+    "n_B": 64,
+    "n_real": 71
+   },
+   "jb2_capCA_L4096|L4096": {
+    "L": 4096,
+    "cap": 156,
+    "excluded": true,
+    "labels": [
+     "FILL_INCOMPLETE"
+    ],
+    "n_A": 156,
+    "n_B": 79,
+    "n_real": 108
+   },
+   "jb2_capCA_L65536|L65536": {
+    "L": 65536,
+    "cap": 27,
+    "excluded": true,
+    "labels": [
+     "FILL_INCOMPLETE"
+    ],
+    "n_A": 27,
+    "n_B": 24,
+    "n_real": 25
+   },
+   "jb2_capCA_L8800|L8800": {
+    "L": 8800,
+    "cap": 114,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_MISS",
+     "CMEM_ORIG_OVERPREDICTS"
+    ],
+    "n_A": 114,
+    "n_B": 78,
+    "n_real": 92,
+    "ratio_A": 0.8070175438596491,
+    "ratio_B": 1.1794871794871795
+   },
+   "jb2_capCB_L16384|L16384": {
+    "L": 16384,
+    "cap": 68,
+    "excluded": true,
+    "labels": [
+     "FILL_INCOMPLETE"
+    ],
+    "n_A": 68,
+    "n_B": 68,
+    "n_real": 66
+   },
+   "jb2_capCB_L4096|L4096": {
+    "L": 4096,
+    "cap": 118,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD"
+    ],
+    "n_A": 118,
+    "n_B": 118,
+    "n_real": 118,
+    "ratio_A": 1.0,
+    "ratio_B": 1.0
+   },
+   "jb2_capCB_L65536|L65536": {
+    "L": 65536,
+    "cap": 24,
+    "excluded": true,
+    "labels": [
+     "FILL_INCOMPLETE"
+    ],
+    "n_A": 24,
+    "n_B": 24,
+    "n_real": 24
+   },
+   "jb2_capCB_L8800|L8800": {
+    "L": 8800,
+    "cap": 93,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD"
+    ],
+    "n_A": 93,
+    "n_B": 93,
+    "n_real": 93,
+    "ratio_A": 1.0,
+    "ratio_B": 1.0
+   },
+   "jb2_fused_cap48|L16384": {
+    "L": 16384,
+    "cap": 48,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD"
+    ],
+    "n_A": 48,
+    "n_B": 48,
+    "n_real": 48,
+    "ratio_A": 1.0,
+    "ratio_B": 1.0
+   },
+   "jb2_fused_cap48|L4096": {
+    "L": 4096,
+    "cap": 48,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD"
+    ],
+    "n_A": 48,
+    "n_B": 48,
+    "n_real": 48,
+    "ratio_A": 1.0,
+    "ratio_B": 1.0
+   },
+   "jb2_fused_cap48|L65536": {
+    "L": 65536,
+    "cap": 48,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD",
+     "CMEM_ORIG_OVERPREDICTS"
+    ],
+    "n_A": 24,
+    "n_B": 21,
+    "n_real": 21,
+    "ratio_A": 0.875,
+    "ratio_B": 1.0
+   },
+   "jb2_fused_cap48|L8800": {
+    "L": 8800,
+    "cap": 48,
+    "excluded": false,
+    "labels": [
+     "CMEM_ACCT_HELD"
+    ],
+    "n_A": 48,
+    "n_B": 48,
+    "n_real": 48,
+    "ratio_A": 1.0,
+    "ratio_B": 1.0
+   }
+  }
+ }
+}

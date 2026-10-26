@@ -1,0 +1,357 @@
+{
+ "fingerprint": "22a87348f1bb184e01165af7daf609d96a699d66988e86ff33ae26ae6553bb93",
+ "plan": {
+  "boots": [
+   {
+    "D": 44,
+    "boot_id": "jb2_capCA_L8800",
+    "cap": 114,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      8800,
+      4096
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": 44,
+    "boot_id": "jb2_capCB_L65536",
+    "cap": 24,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      65536,
+      8000
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": 44,
+    "boot_id": "jb2_capCB_L8800",
+    "cap": 93,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      8800,
+      4096
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": null,
+    "boot_id": "jb2_fused_cap48",
+    "cap": 48,
+    "context": 73728,
+    "dummy": false,
+    "engine": "vanilla",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "108v",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      4096,
+      4096
+     ],
+     [
+      8800,
+      4096
+     ],
+     [
+      16384,
+      4096
+     ],
+     [
+      65536,
+      8000
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": 44,
+    "boot_id": "jb2_capCA_L65536",
+    "cap": 27,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      65536,
+      8000
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": 44,
+    "boot_id": "jb2_capCB_L16384",
+    "cap": 68,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      16384,
+      4096
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": 44,
+    "boot_id": "jb2_capCB_L4096",
+    "cap": 118,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      4096,
+      4096
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": 44,
+    "boot_id": "jb2_capCA_L4096",
+    "cap": 156,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      4096,
+      4096
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": 44,
+    "boot_id": "jb2_capCA_L16384",
+    "cap": 80,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      16384,
+      4096
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   },
+   {
+    "D": 44,
+    "boot_id": "jb2_cap48",
+    "cap": 48,
+    "context": 73728,
+    "dummy": false,
+    "engine": "pdmux_sticky",
+    "gpus": "0",
+    "job": "J-B2",
+    "kind": "T4",
+    "long": [],
+    "mode": "D44",
+    "model": "nano",
+    "o_family": "JA",
+    "round": 1,
+    "t1": [],
+    "t1_O": {},
+    "t1_reps": 1,
+    "t2": [],
+    "t2p": [],
+    "t3": [],
+    "t3_reps": 2,
+    "t3ref": [],
+    "t4": [
+     [
+      4096,
+      4096
+     ],
+     [
+      8800,
+      4096
+     ],
+     [
+      16384,
+      4096
+     ],
+     [
+      65536,
+      8000
+     ]
+    ],
+    "tp": 1,
+    "variant": 4
+   }
+  ],
+  "deferred": [],
+  "job": "J-B2"
+ },
+ "prereg": "workspace/engine-port/results/cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md",
+ "problems": [],
+ "smoke": false,
+ "spec_sha256": "05958844da0675f2b82da420ae273fbcf341a1f60ce51bc75e87c49473c25ea9"
+}

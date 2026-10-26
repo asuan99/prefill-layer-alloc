@@ -1,0 +1,12 @@
+{
+  "samples": 124185,
+  "throttle_active_samples": 44458,
+  "throttle_flag": true,
+  "per_gpu": {
+    "0": {
+      "samples": 124185,
+      "throttle_active_samples": 44458,
+      "throttle_flag": true
+    }
+  }
+}
