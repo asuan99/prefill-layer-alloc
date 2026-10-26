@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-10-26T12:15:17Z	pdmux-costterms-jh1-6180cfd-20261026121507	6180cfd6a8476e2176ca5a3261e1831476db184b	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/results/cap_char/costterms_harness/costterms_job.sh		no
