@@ -33,7 +33,7 @@
 - **변화 trace 타당성 검토(2026-10-26)** `reports/hymux_review/CHANGE_TRACE_VALIDITY_2026-10-26.md`: 실 trace에 변동은 실재(Azure code 하루 6–11×, BurstGPT 분 단위 버스트, ServeGen 입력 1.63×)하나 우리 trace(17–67 s 사각파 + drain, 30↔60%)는 시간 척도가 다름 → HE0 일반화·라우팅 교대 결과가 약해짐, 정상 상태 근거 결론은 무관 · 권고: 서술 정정 + 실 trace 파라미터·재생 + 정상 상태 격자 논증
 - 설계 결정 원문 1–34: `workspace/engine-port/results/anchor_audit/DECISION_headline_G_shapeC_2026-10-19.md`.
 ## 다음 행동
-1. **봉인 S1 완료**(하네스 `b0c9d899`, 봉인 `c64de716`, 시험 73/73·변이 85/85, digest check rc 0) · ramp 하한·J-B2 캡 반영(예약 24.7 GPU-h, 최대 캡 312분) → J-A1 1차(`job-bnkxoji00zmy`) 6분 만에 `ABORT_HARNESS_DIGEST`(results symlink 아래 resolve() 경로 버그, 측정 0) → 수리·**봉인 S1′ `af28dfe8`** → **J-A1 재제출(08:32Z, `job-4euwgpvd00ao`)** → J-A2·J-H1·J-H2·J-B2·J-C · AJ 분석 코드(§12 항목 25)는 J-A1 fetch 전에 커밋 · 새 설계 동결 유지
+1. **봉인 S1 완료**(하네스 `b0c9d899`, 봉인 `c64de716`, 시험 73/73·변이 85/85, digest check rc 0) · ramp 하한·J-B2 캡 반영(예약 24.7 GPU-h, 최대 캡 312분) → J-A1 1차(`job-bnkxoji00zmy`) 6분 만에 `ABORT_HARNESS_DIGEST`(results symlink 아래 resolve() 경로 버그, 측정 0) → 수리·**봉인 S1′ `af28dfe8`** → **J-A1 재제출(08:32Z, `job-4euwgpvd00ao`)** → J-A2·J-H1·J-H2·J-B2·J-C · AJ 분석 코드 커밋 `ae590e71`(fetch 전, 시험 23/23, 하네스 digest 불변) · 알려진 사소한 결함: `ct_harness_digest.py check --dir`에 **상대 경로**를 주면 spec/plans sha가 ERROR:2(subprocess cwd 이중 경로) — Job은 절대 경로라 무관, 다음 봉인 때 수리 · 새 설계 동결 유지
 2. (roofline 묶음) 감사 r1 반영 완료(README 정정) → §6 한 줄 추가 여부 사용자 결정 · r2는 사용자 요청 시만 · T1 데이터 오면 `t1_compare.py`로 decode 대조
 3. G0 PREREG(헤드라인 셀 전 arm 계측 OFF, 조성 변형 goodput 범위 = 결정 25) → V PREREG(oracle 격차 측정 추가 검토) → M3 재개 여부
 ## 사용자 결정 대기
