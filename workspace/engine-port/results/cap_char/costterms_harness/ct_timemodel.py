@@ -13,10 +13,11 @@ Feasibility is evaluated at the derived cap-128 / cap-48 pools (or a given pool)
 from __future__ import annotations
 
 import math
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(os.path.abspath(__file__)).parent))
 import ct_spec as S  # noqa: E402
 
 TTFT_S = {1024: 0.12, 2048: 0.24, 4096: 0.46, 8192: 0.92, 16384: 1.84, 32768: 4.0, 65536: 8.4,   # §7-1

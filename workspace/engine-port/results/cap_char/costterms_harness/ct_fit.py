@@ -10,13 +10,14 @@ next to the fitted values; no label reads them (an unregistered verdict would be
 from __future__ import annotations
 
 import math
+import os
 import sys
 from pathlib import Path
 
 import ct_spec as S
 from ct_extract import median, quantile
 
-_ENG = Path(__file__).resolve().parents[3]
+_ENG = Path(os.path.abspath(__file__)).parents[3]
 sys.path.insert(0, str(_ENG / "scripts" / "costmodel"))
 import analytic_terms as AT  # noqa: E402
 

@@ -15,10 +15,11 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import os
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent
 CONFIG = "pdmux_costterms_D64_candidate.yml"
 EXTRA = ("costterms_job.sh", CONFIG, "ENGINE_DIGEST.txt")
 
@@ -33,7 +34,7 @@ def covered(d):
 
 
 def eng_of(d):
-    return Path(d).resolve().parents[2]
+    return Path(os.path.abspath(d)).parents[2]
 
 
 def sha(p):

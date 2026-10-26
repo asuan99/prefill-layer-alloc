@@ -26,6 +26,8 @@
 
 > **rev3.10 (2026-10-26 — 결정 38, 측정 우선)**: Workspace smoke(`costterms_smoke_20261026T054338Z/README.md`, 비측정·인용 불가) 세 관측을 설계 입력으로 반영했다. ① **PD-mux 소-bs ramp 하한**: S-A bs 8 × c 2k(D44)에서 상한 0 대 실제 118 records(창 오염) — burst 전체가 한 prefill batch에 들어가도 PD-mux는 seat를 순차 입장시키므로 `ramp_steps_ub`에 하한 항 `(bs − 1) × ⌈T_span_ub(c_in, P_min, n=1) / T_step_lb(bs_run = bs)⌉`(남은 bs − 1개 요청이 각각 최소 단일 요청 span 하나)를 넣었다 — 바뀐 J-A O: (8, 2k) 332 → 738 · (8, 8k) 1,583 → 1,949 · (8, 16k) 2,410 → 2,495 · (32, 2k) 1,464 → 1,603, 나머지 셀 불변(실행 가능성·시간 불변), 시험 `test_ramp_floor_covers_smoke_bs8`·변이 M70; ② **J-B2 하드캡**(§12 항목 22): 16k 채우기 1회 485 s(약 8.1 min, 모형 6 min) → `ct_timemodel.FILL_H` 485/3600(모든 채우기에 적용) → J-B2 2.88 h·**208분**, J-H1 4.13 h·**298분**, J-C 4.33 h·**312분**(2장 8.65 GPU-h), 나머지 불변; 모든 Job ≤ 6 h(캡 + 셋업 30분 ≤ 342분); ③ **T4 16k `FILL_INCOMPLETE`**는 코드 변경 없음, smoke 관측으로만 공시(§1-4). 함께 **봉인 S1 준비**(§12 항목 8·9·13·26의 [봉인 시 기입] 칸 채움). 수치는 [유도]·smoke 관측(비측정)이다.
 
+> **rev3.11 / 봉인 S1′(2026-10-26, 규칙 불변)**: J-A1 1차 제출(`job-bnkxoji00zmy`, 커밋 `d7bd6c93`)이 시작 6분 만에 `ABORT_HARNESS_DIGEST`(rc 13)로 측정 0인 채 멈췄다. 원인 = 하네스가 `Path(__file__).resolve()`로 경로를 잡아, `job_entry.sh`가 `workspace/engine-port/results`를 영속 볼륨 symlink로 바꾼 Job 배치에서 `workspace/engine-port` 기준점을 잃음(외부 4파일 ABSENT, spec·plans sha ERROR) — smoke는 symlink 없는 checkout이라 드러나지 않았다. 수리 = `ct_spec`·`ct_fit`·`ct_runner`·`ct_timemodel`·`ct_fake_engine`·`ct_harness_digest`의 경로 계산을 논리 경로(`os.path.abspath`)로 바꿈, 시험 `tests/test_costterms_symlink_layout.py`(Job과 같은 symlink 배치에서 digest make·spec/plans sha·봉인 digest check) 추가, 구 봉인 하네스는 같은 배치에서 실패함을 재현. 등록 규칙·셀·O·하드캡 불변(plans sha 재계산 후 digest 재생성). 결정 38에 따라 감사 없이 CPU 시험(costterms 76/76)으로 진행.
+
 ## R. rev2 → rev3 변경 대응표
 
 | 대상 | 처리 |

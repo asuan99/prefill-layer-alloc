@@ -19,10 +19,11 @@ import hashlib
 import json
 import math
 import random
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "costmodel"))
+sys.path.insert(0, str(Path(os.path.abspath(__file__)).parents[3] / "scripts" / "costmodel"))
 import analytic_terms as _AT  # noqa: E402  (underscore: kept out of the spec digest)
 
 SPEC_VERSION = "costterms-harness-spec/stage2-2026-10-26 (decisions 28-30, 33; rev3.9 decision 34, unsealed)"

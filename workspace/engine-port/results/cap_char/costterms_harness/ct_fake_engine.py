@@ -50,7 +50,7 @@ import threading
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent
 sys.path.insert(0, str(HERE))
 import ct_spec as S  # noqa: E402
 
