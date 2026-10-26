@@ -50,7 +50,7 @@
 | R4-D `pdmux_hetero_D·LEN` | 집합별 D(비용 모델 선택), cap은 R3과 같음 — **1차** [r1 수리 5] | LEN |
 | R4-DC `pdmux_hetero_DC·LEN` | 집합별 D + cap(C\_mem) — 묶음 처치, 기술값 [r1 수리 5] | LEN |
 - arm 순서: boot마다 정순·역순 교대(R0…R4-DC / R4-DC…R0). [r1 수리 10]
-- Llama 참조점: R2·R3 각 1셀(같은 Job), 모델 간 goodput 비·이중차분은 기술값으로도 내지 않는다. [r1 수리 1]
+- Llama 참조점: **R1·R1′(tuned fused `108v`, LL 대 LEN) 각 1셀**(같은 Job; 결정 37 — 결정 36의 R2·R3를 대체, Llama PD-mux는 정확성 게이트 미통과·D 축 없음), 모델 간 goodput 비·이중차분은 기술값으로도 내지 않는다. [r1 수리 1, r2 U-1]
 
 ### 2-5. D·cap 선택 규칙 [봉인 2단계, r1 수리 4]
 - (i) **비용 항 Job fetch 전** 봉인: τ 규칙, 집합 크기 규칙, LL 함수, D̂·D̂\_LEN·집합별 D의 목적함수 = "decode floor를 지키는 D 중 prefill 처리율 최대", **decode floor 수치 정의** = 그 집합의 기대 (bs, 평균 ctx)에서 `T1(D, bs, ctx) × ρ(D, bs, L̄)` ≤ (1 − m)·θ\_ITL(m = 0.1, θ\_ITL = 50 ms [제안]) — 쓰는 항 T1·T3(ρ)·T4(cap), 동률은 큰 D, 격자 = 비용 항 T1의 D 격자. cap = 그 집합 길이 분포의 C\_mem 산식(T4).
@@ -92,4 +92,4 @@
 5. "M3 rev12(`--dp-size`) DP 자료와 결합하지 않는다."
 
 ## 6. 감사 r2(최종) — `GO-with-caveats`, PREREG 작성 조건
-`AUDIT_dp_routing_r2_2026-10-26.md`. PREREG로 옮길 때 N-1(변화 trace 확인 판정·q 규칙)·N-2(분모 arm 교차적합 선택)·N-3(decode floor = cm_predict ITL 식, `RHO_CLAMPED`·`FLOOR_INFEASIBLE`)·N-4(n_long은 `108v` 예측으로 한 번)·N-5(R4-D는 R3 cap 아래, D̂_LEN = max 집합별 최소 적격 D)·N-6(클래스 정의 전 arm·Llama·변화 trace 공통) 문장을 원문 그대로 넣고, caveat 6–9를 §5에 승계한다. 하네스층 감사가 반영을 확인한다. 열린 사용자 결정: **U-1 Llama 참조점 arm**(감사 기록 끝).
+`AUDIT_dp_routing_r2_2026-10-26.md`. PREREG로 옮길 때 N-1(변화 trace 확인 판정·q 규칙)·N-2(분모 arm 교차적합 선택)·N-3(decode floor = cm_predict ITL 식, `RHO_CLAMPED`·`FLOOR_INFEASIBLE`)·N-4(n_long은 `108v` 예측으로 한 번)·N-5(R4-D는 R3 cap 아래, D̂_LEN = max 집합별 최소 적격 D)·N-6(클래스 정의 전 arm·Llama·변화 trace 공통) 문장을 원문 그대로 넣고, caveat 6–9를 §5에 승계한다. 하네스층 감사가 반영을 확인한다. U-1은 결정 37로 닫힘(Llama 참조점 = R1·R1′).
